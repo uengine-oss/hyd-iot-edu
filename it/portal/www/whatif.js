@@ -273,7 +273,7 @@
     const rows = m.items.map(i => `<div style="margin-bottom:var(--s2)"><div class="kv-line"><b>${esc(i.label)}</b> ${i.value_won == null ? '<span class="neg">미확인</span>' : `<span class="${i.value_won < 0 ? 'neg' : ''}">${esc(won(i.value_won))}</span>`}</div>`
       + `<div class="muted">${esc(i.formula || i.missing || '')}</div>`
       + UI.fold(`출처 ${(i.sources || []).length}`, (i.sources || []).map(x => `<div>${UI.chipText(x.kind, tone[x.kind] || 'neutral')} ${esc(x.where)}</div>`).join('') || '<span class="neg">출처 없음</span>', { cls: 'small' }) + '</div>').join('');
-    return UI.fold(`예상 손익 <b class="${m.total_won < 0 ? 'neg' : ''}">${esc(won(m.total_won))}</b>${m.complete ? '' : ' <span class="chip tone-warning sm">일부 미확인</span>'}`,
+    return UI.fold(`예상 손익 <b class="${m.total_won < 0 ? 'neg' : ''}">${esc(won(m.total_won))}</b>${m.complete || m.total_won == null ? '' : ' <span class="chip tone-warning sm">일부 미확인</span>'}`,
       rows + `<p class="field-hint">${esc(m.basis || '')} · 값 바꿔 보기와 경계값은 '조건별 손익' 화면에서</p>`, { cls: 'small' });
   }
 

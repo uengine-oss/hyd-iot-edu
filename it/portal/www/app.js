@@ -250,7 +250,8 @@ function renderUnits() {
     if (asset === 'HYD-01') {
       const phase = d.patterns?.COOLER_DEGRADATION?.phase || d.phase;
       repeat.textContent = !phase ? '감지기 상태를 읽지 못했습니다. 다시 주입하기 전에 연결 상태를 확인하세요.'
-        : phase === 'IDLE' ? '감지기가 다음 경보를 기다립니다. 새 실험은 쿨러 열화 주입으로 시작합니다.'
+        : phase === 'IDLE' ? (s.cooler_health < 1 ? `쿨러 성능 ${fmt(s.cooler_health * 100, 0)} % — 유온이 기준을 넘으면 감지기가 경보를 올립니다. 새 실험은 쿨러 복구 뒤 열화 주입으로 시작합니다.`
+          : '감지기가 다음 경보를 기다립니다. 새 실험은 쿨러 열화 주입으로 시작합니다.')
         : '거절 후 다시 시작하려면 쿨러 복구를 누르고 감지기가 대기 상태가 된 뒤 다시 주입하세요. 승인 대기 중에는 같은 처리 건에서 결정하세요.';
     }
     card.querySelector('.plc').innerHTML = UI.chip(s.state, UI.status(s.state) + (s.trip ? ' · ' + s.trip : ''));

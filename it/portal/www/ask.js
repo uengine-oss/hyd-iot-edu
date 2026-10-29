@@ -11,6 +11,10 @@
   const api = path => API.process + '/api/ask' + path;
   const uuid = () => UI.uuid();   // 비보안 문맥(IP 주소로 연 포털)에서도 같은 공용 생성기
   const toolName = c => UI.toolName(c.raw_tool || c.tool);
+  // 키 없는 PC(AI 응답 재생): 강의에서 다룬 질문에만 저장된 답이 있다 — 예시를 그 질문으로 보이고, 다시 진행은 같은 거절이라 숨긴다
+  const replay = () => A.status?.worker?.ai_mode === 'replay';
+  const recorded = () => A.status?.worker?.replay_questions || [];
+  const picks = () => recorded().length ? `<div class="row-wrap ask-picks">${recorded().map(q => `<button type="button" class="btn small" data-ask-pick="${esc(q)}">${esc(q)}</button>`).join('')}</div>` : '';
 
   async function loadStatus() {
     try {
@@ -92,7 +96,7 @@
     if (A.statusErr) return `<p class="neg" role="status">질문 기능 상태를 읽지 못했습니다: ${esc(A.statusErr)}</p>`;
     const s = A.status;
     if (!s) return '<p class="muted">상태를 확인하는 중…</p>';
-    if (s.ready) return `<span class="live-conn on">답할 일꾼 연결됨</span>`;
+    if (s.ready) return replay() ? UI.chipText('저장된 답 재생 · 키 없음', 'neutral') : `<span class="live-conn on">답할 일꾼 연결됨</span>`;
     return `<div class="ask-warn" role="status">${UI.chipText('지금은 답할 일꾼이 없습니다', 'warning')} <span>${esc(s.reason || '')}</span></div>`;
   }
   function agentOptions() {
@@ -153,7 +157,8 @@
   }
   function threadHtml(staticCalls) {
     const v = A.cur;
-    if (!v) return UI.empty('질문을 적고 보내세요', '예: 완제품 재고가 가장 적은 설비와 그 수량은? · HYD-01 팬 진동 최근 최대값은? · 어떤 규칙이 지금 성립하나?');
+    if (!v) return replay() ? UI.empty('강의에서 다룬 질문을 골라 보내세요', '이 PC는 API 키 없이 강의 때 저장한 답을 보여 줍니다. 위의 질문 단추를 누르면 질문 칸에 들어갑니다.')
+      : UI.empty('질문을 적고 보내세요', '예: 완제품 재고가 가장 적은 설비와 그 수량은? · HYD-01 팬 진동 최근 최대값은? · 어떤 규칙이 지금 성립하나?');
     const [label, tone] = STATE[v.state] || [v.state, 'neutral'];
     const live = LIVE.has(v.state);
     const calls = v.tool_calls || [];
@@ -164,8 +169,8 @@
           <span class="muted">${esc(UI.clean(v.message || ''))}</span><span class="ask-count">${window.hydTrace ? hydTrace.icon('tool') : ''}${calls.length}</span></div>
         <details class="fold small ask-process" ${live || A.processOpen ? 'open' : ''}><summary>처리 과정 · 도구 호출 ${calls.length} ${live && window.hydTrace ? hydTrace.spinner('sm') : ''}</summary><div class="fold-body"><div data-ask-trace>${staticCalls ? `<ol class="stack-list">${calls.map(callRow).join('')}</ol>` : ''}</div></div></details>
         ${resultHtml(v)}
-        ${v.state==='failed' ? UI.field({label:'다시 진행할 때 반영할 내용(선택)',input:`<textarea id="askRetryNote" rows="2" maxlength="1000">${esc(A.retryNote || '')}</textarea>`}) : ''}
-        <div class="form-actions">${v.state==='failed' ? `<button class="btn small" id="askRetry" ${A.sending?'disabled':''}>같은 질문 다시 진행</button>` : ''}<a class="btn small ghost" href="${esc(v.link)}">처리 과정 보기 →</a></div></div></div>`;
+        ${v.state==='failed' && !replay() ? UI.field({label:'다시 진행할 때 반영할 내용(선택)',input:`<textarea id="askRetryNote" rows="2" maxlength="1000">${esc(A.retryNote || '')}</textarea>`}) : ''}
+        <div class="form-actions">${v.state==='failed' && !replay() ? `<button class="btn small" id="askRetry" ${A.sending?'disabled':''}>같은 질문 다시 진행</button>` : ''}<a class="btn small ghost" href="${esc(v.link)}">처리 과정 보기 →</a></div></div></div>`;
   }
   function historyHtml() {
     if (A.histErr) return `<p class="neg">${esc('지난 질문을 읽지 못했습니다: ' + A.histErr)}</p>`;
@@ -179,7 +184,8 @@
   function formHtml() {
     return `<header class="card-head"><div class="card-title"><h3>에이전트에게 질문하기</h3></div><div class="card-actions">${readyHtml()}</div></header>
         <div class="form-grid">${UI.field({ label: '답할 에이전트', input: `<select id="askAgent">${agentOptions()}</select>` })}</div>${agentLine()}
-        <div class="ask-input">${UI.field({ label: '질문', hint: 'Enter 보내기 · Shift+Enter 줄바꿈. 에이전트는 자기 도구로 실제 조회한 결과만으로 답합니다.', input: `<textarea id="askText" rows="3" maxlength="1000"></textarea>` })}</div>
+        <div class="ask-input">${UI.field({ label: '질문', hint: replay() ? '이 PC는 API 키 없이 강의에서 다룬 질문에만 답합니다. 아래 질문을 눌러 넣고 보내세요.'
+          : 'Enter 보내기 · Shift+Enter 줄바꿈. 에이전트는 자기 도구로 실제 조회한 결과만으로 답합니다.', input: `<textarea id="askText" rows="3" maxlength="1000"></textarea>` })}${replay() ? picks() : ''}</div>
         <div class="form-actions"><button class="btn primary" id="askSend" ${A.sending || !A.draft.trim() ? 'disabled' : ''}>${A.sending ? '보내는 중…' : '보내기'}</button></div>`;
   }
   const layout = (form, err, thread, hist) => `<div class="ask-layout"><div class="ask-main"><section class="card ask-compose" data-ask-form>${form}</section><div data-ask-err>${err}</div><div data-ask-thread>${thread}</div></div>
@@ -228,6 +234,9 @@
     t?.addEventListener('input', e => { A.draft = e.target.value; const b = q('#askSend'); if (b) b.disabled = A.sending || !A.draft.trim(); });
     t?.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); } });
     q('#askSend')?.addEventListener('click', send);
+    form.querySelectorAll('[data-ask-pick]').forEach(b => b.addEventListener('click', () => {
+      A.draft = b.dataset.askPick; t.value = A.draft; t.focus(); const s = q('#askSend'); if (s) s.disabled = A.sending;
+    }));
   }
 
   window.hydAsk = { mount, show, _state: A, _render: render };

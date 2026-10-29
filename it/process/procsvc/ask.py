@@ -116,8 +116,12 @@ def agents(repo, tenant_id) -> list[dict]:
 def readiness(worker_probe, bridge: str | None) -> dict:
     """질문을 받을 수 있나. 워커 연결이 판단 기준이다(AGENT_BRIDGE=legacy여도 워커가 있으면 질문 작업은 워커가 집는다)."""
     w = worker_probe() if worker_probe else {'reachable': False, 'url': None, 'error': '워커 확인 경로가 없습니다'}
+    health = w.get('health') or {}
     out = {'ready': bool(w.get('reachable')), 'bridge': bridge, 'worker': {'url': w.get('url'), 'reachable': bool(w.get('reachable')),
-                                                                          'error': w.get('error'), 'agents': w.get('agents') or []}}
+                                                                          'error': w.get('error'), 'agents': w.get('agents') or [],
+                                                                          # 키 없는 PC: 저장된 답이 있는 질문만 답한다 — 화면이 예시로 보인다
+                                                                          'ai_mode': health.get('ai_mode'),
+                                                                          'replay_questions': health.get('replay_questions') or []}}
     if out['ready']:
         out['reason'] = None
         return out

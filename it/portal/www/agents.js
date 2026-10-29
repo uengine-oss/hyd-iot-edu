@@ -104,7 +104,7 @@
   function agentItem(a) {
     const sel = a.id === st.pick.agents && !st.form ? ' sel' : '';
     const agentSteps = a.steps.filter(s => s.agent).length;
-    const count = a.kind === 'agent' ? `맡은 단계 ${agentSteps} · 도구 ${a.tools.length} · 스킬 ${a.skills.length}` : `맡은 단계 ${a.steps.length}`;
+    const count = a.kind === 'agent' ? `맡은 단계 ${agentSteps} · 도구 ${a.tools.length || '전부'} · 스킬 ${a.skills.length}` : `맡은 단계 ${a.steps.length}`;
     return `<div class="item${sel}" role="button" tabindex="0" data-pick-agent="${esc(a.id)}" title="${esc(UI.actorName(a.id, a.name))}">` +
       `<div class="row"><strong>${esc(UI.actorName(a.id, a.name))}</strong>${a.kind === 'agent' ? mineChip(a.origin) : UI.chipText('시스템 수행자', 'neutral')}</div>` +
       `<span class="sub">${esc(clip(a.goal || a.role || '목표가 적혀 있지 않습니다'))}</span><span class="sub">${esc(count)}</span></div>`;
@@ -265,7 +265,7 @@
       let saved;
       if (f.kind === 'agent') saved = f.id ? await postJ(api('/api/agents/' + encodeURIComponent(f.id)), d, 'PUT') : await postJ(api('/api/agents'), d);
       else saved = f.id ? await postJ(api('/api/skills/' + encodeURIComponent(f.id)), d, 'PUT') : await postJ(api('/api/skills'), d);
-      UI.toast(f.kind === 'agent' ? `에이전트 '${saved.username}'을(를) 저장했습니다` : `스킬 '${saved.skill_name}'을(를) 저장했습니다`, { tone: 'ok' });
+      UI.toast(f.kind === 'agent' ? `에이전트 '${saved.username}'${window.hydWords.josa(saved.username, '을/를')} 저장했습니다` : `스킬 '${saved.skill_name}'${window.hydWords.josa(saved.skill_name, '을/를')} 저장했습니다`, { tone: 'ok' });
       st.form = null;
       if (f.kind === 'agent') st.pick.agents = saved.id; else st.pick.skills = saved.skill_name;
       st.busy = false;                              // 저장은 끝났다 — 다시 읽는 동안 연 새 폼의 저장 단추가 꺼진 채 남지 않게
@@ -344,7 +344,7 @@
     catch (e) { UI.toast(reason(e), { tone: 'neg', timeout: 8000 }); return null; }
   }
   async function cloneAgent(id) {
-    const copy = await act(() => postJ(api('/api/agents/' + encodeURIComponent(id) + '/clone'), {}), c => `'${c.username}'을(를) 만들었습니다 — 고친 뒤 저장하세요`);
+    const copy = await act(() => postJ(api('/api/agents/' + encodeURIComponent(id) + '/clone'), {}), c => `'${c.username}'${window.hydWords.josa(c.username, '을/를')} 만들었습니다 — 고친 뒤 저장하세요`);
     if (!copy) return;
     st.pick.agents = copy.id;
     await load();
@@ -353,12 +353,12 @@
     openForm('agent', d);
   }
   async function deleteAgent(d) {
-    if (!await UI.confirm({ title: `'${d.name}'을(를) 지울까요?`, body: '단계 배정도 함께 지워지고, 열려 있는 그 에이전트의 단계는 기본 담당으로 돌아갑니다.', ok: '지우기', danger: true })) return;
+    if (!await UI.confirm({ title: `'${d.name}'${window.hydWords.josa(d.name, '을/를')} 지울까요?`, body: '단계 배정도 함께 지워지고, 열려 있는 그 에이전트의 단계는 기본 담당으로 돌아갑니다.', ok: '지우기', danger: true })) return;
     const out = await act(() => del(api('/api/agents/' + encodeURIComponent(d.id))), o => `지웠습니다${o.returned_tasks.length ? ` · 열린 단계 ${o.returned_tasks.length}건은 기본 담당으로` : ''}`);
     if (out) { st.pick.agents = null; await load(); }
   }
   async function deleteSkill(s) {
-    if (!await UI.confirm({ title: `스킬 '${s.title}'을(를) 지울까요?`, body: s.agents.length ? `붙은 에이전트 ${s.agents.length}개에서도 떨어집니다.` : '', ok: '지우기', danger: true })) return;
+    if (!await UI.confirm({ title: `스킬 '${s.title}'${window.hydWords.josa(s.title, '을/를')} 지울까요?`, body: s.agents.length ? `붙은 에이전트 ${s.agents.length}개에서도 떨어집니다.` : '', ok: '지우기', danger: true })) return;
     const out = await act(() => del(api('/api/skills/' + encodeURIComponent(s.skill_name))), '지웠습니다');
     if (out) { st.pick.skills = null; await load(); }
   }

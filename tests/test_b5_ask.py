@@ -207,6 +207,14 @@ def test_legacy_mode_without_a_worker_creates_nothing_and_says_why(world):
     assert ask.readiness(UP, 'legacy')['ready'] and ask.readiness(UP, 'legacy')['reason'] is None
 
 
+def test_keyless_worker_hands_its_recorded_questions_to_the_question_screen():
+    """키 없는 PC: 워커 /health 의 저장된 질문을 질문 화면이 예시로 쓴다(2026-10-29 포털 점검)."""
+    replay = lambda: dict(UP(), health={'ai_mode': 'replay', 'replay_questions': ['HM-8 절차 번호는']})   # noqa: E731
+    worker = ask.readiness(replay, 'off')['worker']
+    assert worker['ai_mode'] == 'replay' and worker['replay_questions'] == ['HM-8 절차 번호는']
+    assert ask.readiness(UP, 'off')['worker']['replay_questions'] == []
+
+
 def test_waiting_question_explains_when_the_worker_disappears(world):
     rt = world['rt']; _people(rt)
     v = _ask(rt)

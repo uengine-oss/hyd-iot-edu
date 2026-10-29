@@ -403,7 +403,7 @@
       collect();
       const r = await call('POST', `/api/flows/${encodeURIComponent(S.view.definition_id)}/register`, { mapping: S.mapping });
       UI.toast(`판본 ${r.version} 등록 — 운영 판본은 그대로입니다`, { tone: 'ok' });
-      msg.textContent = `${r.name} 판본 ${r.version} 을(를) 등록했습니다.`; msg.className = 'form-msg pos';
+      msg.textContent = `${r.name} 판본 ${r.version}${window.hydWords.josa(String(r.version), '을/를')} 등록했습니다.`; msg.className = 'form-msg pos';
       await recheck(false); loadList();
     } catch (e) {
       msg.textContent = e.message; msg.className = 'form-msg neg';
@@ -418,11 +418,12 @@
     const ids = [...new Set([...L.drafts.map(d => d.proc_def_id), ...L.versions.map(v => v.id)])];
     box.innerHTML = ids.map(id => {
       const vs = L.versions.filter(v => v.id === id), d = L.drafts.find(x => x.proc_def_id === id);
+      const alertStart = d?.mapping?.start?.kind === 'alert';
       const registeredName = (vs[vs.length - 1] || {}).name || (d && d.mapping && d.mapping.name);
       const name = registeredName && registeredName !== id ? registeredName : UI.terms['def.' + id] || '이름 미등록 흐름';
       const rows = vs.map(v => `<li>판본 <b>${h(v.version)}</b> · ${h(UI.dateTime(v.registered_at))}
         <a class="btn small" href="${h(api(`/api/flows/${encodeURIComponent(id)}/versions/${encodeURIComponent(v.version)}/bpmn`))}" download>그림 받기</a>
-        <button class="btn small" data-start="${h(id)}" data-version="${h(v.version)}">직접 시작</button><div data-startbox="${h(id + '@' + v.version)}"></div></li>`).join('');
+        ${alertStart ? '<span class="muted">경보가 들어오면 시작</span>' : `<button class="btn small" data-start="${h(id)}" data-version="${h(v.version)}">직접 시작</button><div data-startbox="${h(id + '@' + v.version)}"></div>`}</li>`).join('');
       return UI.card({ title: h(name), sub: d ? '매핑 초안 있음' : '', body: (rows ? `<ul class="flow-versions">${rows}</ul>` : '<p class="muted">등록한 판본 없음</p>') + UI.metaFold([['흐름 식별자', h(id)]]),
         actions: (d ? `<button class="btn small" data-open="${h(id)}">매핑 열기</button>` : '') + `<button class="btn small danger" data-delete-flow="${h(id)}">이 흐름 지우기</button><div data-delete-box="${h(id)}"></div>` });
     }).join('');

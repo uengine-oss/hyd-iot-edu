@@ -23,6 +23,25 @@ STOP_MEASURES, REDUCE_MEASURES = {"msr:availability"}, {"msr:throughput", "msr:t
 LOAD_DESIGN = 90.0                                                      # 정상 운전 부하 (thermal.py 설계점): 이보다 낮게 설정하면 감산
 
 
+_DIGIT_FINAL = {'0': 21, '1': 8, '2': 0, '3': 16, '4': 0, '5': 0, '6': 1, '7': 8, '8': 8, '9': 0}
+
+
+def _obj(word: str) -> str:
+    """목적격 조사 — 끝소리로 고른다(포털 plainWords.josa 와 같은 규칙). 「팬 최대 운전을」 · 「부하 70 %를」."""
+    c = str(word).rstrip(" '\")]")[-1:]
+    if '가' <= c <= '힣':
+        final = (ord(c) - 0xAC00) % 28
+    elif c.isdigit():
+        final = _DIGIT_FINAL[c]
+    elif c.isascii() and c.isalpha():
+        final = {'L': 8, 'M': 16, 'N': 4, 'R': 8}.get(c.upper(), 0)
+    elif c in '%℃':
+        final = 0
+    else:
+        return '을(를)'
+    return '을' if final else '를'
+
+
 def _num(v):
     if isinstance(v, bool):
         return None
@@ -433,7 +452,7 @@ def explain(options: list[dict], rec: dict | None, facts: dict, fired: list[str]
     if not rec:
         return head + " 모두 규정상 제외됐다: " + "; ".join(f"{o['sopId']} {o['name']} ({o['violations'][0]['annotation']})" for o in options)
     fc = next((x for x in rec["forecast"] if x["variable"] == "sv:ts1"), None)
-    parts = [f"{head} 중 '{rec['sopId']} {rec['name']}'을(를) 권한다 (점수 {rec['score']})."]
+    parts = [f"{head} 중 '{rec['sopId']} {rec['name']}'{_obj(rec['name'])} 권한다 (점수 {rec['score']})."]
     if rec.get('economicComparison'):
         e=rec['economicComparison']
         parts.append(f"구매금액 {e['purchase_amount']:g} + 기대 불량비용 {e['expected_failure_cost']:g} + 전수 검사비용 {e['inspection_cost']:g} = 비교 총비용 {e['total_cost']:g}만 원. 실제 부품별 총비용이 낮은 순서로 비교했다.")

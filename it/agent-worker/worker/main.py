@@ -135,6 +135,7 @@ def build_runner(repo, *, login=_ai_login) -> Runner:
                "record": ai_replay.recording(runner_mod._exec_stream, library, lambda p: getattr(p, "id", settings.cli_agent)),
                "replay": ai_replay.replaying(library)}[mode]
     status["ai_mode"] = mode
+    status["replay_questions"] = library.questions() if mode == "replay" else []
     if mode == "replay":
         log.warning("AI 응답 재생으로 실행합니다: %s 로그인 · API 키가 없어(AI_MODE=%s) 저장된 AI 응답(%s, 업무 %d개)을 씁니다. 실제 AI로 하려면 API 키를 넣고 워커를 다시 켜세요.",
                     settings.cli_agent, settings.ai_mode, settings.ai_replay_dir, len(library.docs()))

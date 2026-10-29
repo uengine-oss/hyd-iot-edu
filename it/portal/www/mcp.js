@@ -285,7 +285,20 @@
     const r = res.result;
     return `<p class="kv-line">${r.is_error ? UI.chipText('도구가 오류를 돌려줌', 'danger') : UI.chipText('결과', 'success')} · ${res.elapsed_ms} ms · ${r.size_chars.toLocaleString()}자` +
       `${r.truncated ? ` · <b>${r.limit_chars.toLocaleString()}자에서 잘림</b>` : ''} · 보낸 입력 <code>${esc(JSON.stringify(res.arguments))}</code></p>` +
-      `<pre class="mcp-out">${esc(r.text)}</pre>`;
+      readable(r.text);
+  }
+  // 도구 결과는 {"result": "<JSON 글>"}처럼 한 번 더 감싸여 온다 — 풀어서 행이면 표로, 아니면 들여 쓴 JSON 으로. 원문은 접어 둔다
+  function readable(text) {
+    let v; try { v = JSON.parse(text); if (v && typeof v.result === 'string') v = JSON.parse(v.result); } catch (_) { return `<pre class="mcp-out">${esc(text)}</pre>`; }
+    const rows = Array.isArray(v) ? v : Array.isArray(v?.rows) ? v.rows : null;
+    const flat = rows && rows.length && rows.every(r => r && typeof r === 'object' && !Array.isArray(r));
+    const cols = flat ? [...new Set(rows.flatMap(r => Object.keys(r)))] : [];
+    const cell = x => esc(x == null ? '' : typeof x === 'object' ? JSON.stringify(x) : String(x));
+    const body = flat ? `<div class="table-scroll"><table class="compact-table"><thead><tr>${cols.map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead>`
+        + `<tbody>${rows.slice(0, 100).map(r => `<tr>${cols.map(c => `<td>${cell(r[c])}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`
+        + (rows.length > 100 ? `<p class="muted">${rows.length}행 중 100행만 표로 보입니다 — 나머지는 원문에</p>` : '')
+      : `<pre class="mcp-out">${esc(JSON.stringify(v, null, 2))}</pre>`;
+    return body + UI.fold('원문', `<pre class="mcp-out">${esc(text)}</pre>`, { cls: 'small' });
   }
 
   function wireTry(s, t) {

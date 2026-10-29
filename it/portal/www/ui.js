@@ -207,7 +207,13 @@ const UI = {
   },
   /* definition names (process definition JSON) → display names; the definition itself is not changed */
   flowName(name) { return this.terms['flow.name.' + name] || name; },
-  flowSeq(name) { return this.terms['flow.seq.' + name] || name || ''; },
+  // 조건식 이름(교대 흐름의 sender_decision == 'approve')은 그림에 사람 말로 보인다 — 「인계자 승인」
+  flowSeq(name) {
+    if (this.terms['flow.seq.' + name]) return this.terms['flow.seq.' + name];
+    const m = /^\s*(\w+)\s*==\s*'(\w+)'\s*$/.exec(name || '');
+    const who = { sender_decision: '인계자', receiver_decision: '인수자' }, what = { approve: '승인', revise: '보완 요청', reject: '거절', confirm: '확인' };
+    return m && who[m[1]] && what[m[2]] ? `${who[m[1]]} ${what[m[2]]}` : name || '';
+  },
   defName(id) { const base=String(id || '').split('.')[0]; return this.terms['def.'+base] || this.names[id] || '흐름 표시 이름 미등록'; },
   toolName(t) {
     const raw=String(t || ''), standard=this.standardToolName(raw);

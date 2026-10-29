@@ -309,6 +309,10 @@ class Library:
     def docs(self) -> list[dict]:
         return [self._read(p) for p in sorted(self.root.glob("*.json.gz"))] if self.root.is_dir() else []
 
+    def questions(self) -> list[str]:
+        """강의에서 다룬(저장된) 질문 — 키 없는 PC 의 질문 화면이 예시로 보이고, 다른 질문은 이것을 알려 거절한다."""
+        return [d["case"][len(QUESTION_PREFIX):] for d in self.docs() if str(d.get("case") or "").startswith(QUESTION_PREFIX)]
+
     def _owner_of(self, session: str) -> tuple[dict, int] | None:
         """실제 세션 id 가 어느 업무 파일의 몇 번째 실행인지(이어 하기 저장용). Claude Code 는 이어 해도 세션 id 가 같으므로
         그 세션의 마지막 실행을 고른다 — 첫 실행을 고르면 세 번째 이어 하기부터 가운데 실행이 지워진다(2026-10-23 실측)."""
@@ -558,7 +562,7 @@ def replaying(library: Library):
         if doc is None or i >= len(doc["runs"]):
             case = "" if resumed else library.case(request)
             if doc is None and case.startswith(QUESTION_PREFIX):
-                asked = [d["case"][len(QUESTION_PREFIX):] for d in library.docs() if str(d.get("case") or "").startswith(QUESTION_PREFIX)]
+                asked = library.questions()
                 yield _error("온라인(키 없는) 수업에서는 강의에서 다룬 질문에만 답할 수 있습니다. 다룬 질문: "
                              + (" / ".join(f"「{q}」" for q in asked) if asked else "없음")
                              + ". API 키를 넣으면 실제 AI로 어떤 질문이든 답합니다.")

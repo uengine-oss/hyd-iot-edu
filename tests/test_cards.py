@@ -164,3 +164,9 @@ def test_a_hit_policy_the_engine_does_not_apply_is_refused():
     with pytest.raises(ValueError, match='hitPolicy PRIORITY'):
         run(dmn=dmn)
     assert run(dmn=[dict(r, hitPolicy=cards.EXECUTED_HIT_POLICIES.get(r['decision'])) for r in DMN])['options']
+
+
+def test_recommendation_sentence_picks_the_object_particle():
+    """권고 문장은 「…을(를) 권한다」 자리표 대신 끝소리에 맞는 조사를 쓴다(2026-10-29 포털 점검)."""
+    assert [cards._obj(w) for w in ('팬 최대 운전', '쿨러 팬 점검 절차', '부하 80 %', 'SOP-COOL-13', 'OEM')] == ['을', '를', '를', '을', '을']
+    assert cards._obj('…') == '을(를)'      # 끝소리를 모르면 둘 다
