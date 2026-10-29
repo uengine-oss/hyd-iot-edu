@@ -1,6 +1,6 @@
 ---
 name: hyd-video
-description: "HYD 제조 AI 교육과정의 모든 강의 영상 — 이론 강의 영상(덱 장 그림 + 강사 복제 음성 + 자막)과 실습 영상(포털 Playwright 촬영, ARROWS · Notion · Neo4j Browser · bpmn.io · 웹 VS Code ego 촬영)과 그 실습 대본 · 촬영 큐 · 음성 · 자막 · other-pc · 노션 영상 게시 — 를 만들거나 고치거나 검수할 때 쓴다. 강의 영상 만들어줘, 실습 영상 찍어줘, 실습 대본, 음성 다시 뽑아줘, 영상 비용, 영상 검수에 쓴다. 덱은 hyd-course-deck, 이론 대본은 hyd-script, 가이드는 hyd-lab-guide."
+description: "HYD 제조 AI 교육과정의 모든 강의 영상 — 이론 강의 영상(덱 장 그림 + 강사 복제 음성 + 자막)과 실습 영상(포털 Playwright 촬영, ARROWS · Notion · Neo4j Browser · bpmn.io · 웹 VS Code ego 촬영)과 그 실습 대본 · 촬영 큐 · 음성 · 자막 · workspace 올리기 · 노션 영상 게시 — 를 만들거나 고치거나 검수할 때 쓴다. 강의 영상 만들어줘, 실습 영상 찍어줘, 실습 대본, 음성 다시 뽑아줘, 영상 비용, 영상 검수에 쓴다. 덱은 hyd-course-deck, 이론 대본은 hyd-script, 가이드는 hyd-lab-guide."
 ---
 
 # 영상 — 입구
