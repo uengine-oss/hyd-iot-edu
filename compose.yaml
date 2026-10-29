@@ -40,7 +40,7 @@ services:
     networks: [ot-net]
     ports: ["127.0.0.1:${HYD_PORT_1883:-1883}:1883", "127.0.0.1:${HYD_PORT_18083:-18083}:18083", "127.0.0.1:${HYD_PORT_8083:-8083}:8083"]   # 8083 = MQTT over WebSocket (A148: 03회차 대시보드 WebSocket Client 구독용)
     environment:
-      EMQX_DASHBOARD__DEFAULT_PASSWORD: public123   # 8자 이상 필수. 첫 로그인 때 변경을 요구하면 새 값으로 바꾸고 기억해 둘 것
+      EMQX_DASHBOARD__DEFAULT_PASSWORD: public123   # 8자 이상 필수. 첫 로그인 때 변경을 요구하면 새 값으로 바꾸고 기억해 둘 것(로컬 대시보드 공개 초기값 · 키검사: 허용)
     healthcheck:
       test: ["CMD", "emqx", "ctl", "status"]
       interval: 5s

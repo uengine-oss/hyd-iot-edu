@@ -14,7 +14,7 @@
   python 시간계산.py estimate <cues.json> [--target 분]       # 촬영 전 실습 큐 예상
   python 시간계산.py calibrate <근거폴더> [<근거폴더> ...]       # 말 길이 · 조작 계수 다시 맞추기
         근거폴더의 audio/*.json · *.json 중 {"text","duration_ms"}가 있는 문장 음성, 있으면 cues.json + <구간>/timing.json
-  python 시간계산.py calibrate-lecture [브랜치]                 # 이론 장 계수 다시 맞추기(기본 origin/other-pc의 영상 시간표 × 현재 산출물 대본)
+  python 시간계산.py calibrate-lecture                          # 이론 장 계수 다시 맞추기(로컬 영상 시간표 × 현재 산출물 대본)
   python 시간계산.py check <근거폴더> <구간[:자른ms]> ...        # 찍은 구간과 예상 비교
 """
 import json, re, subprocess, sys
@@ -177,16 +177,15 @@ def calibrate(dirs):
 TIMETABLE_DIR = 'course/videos/_작업/영상_자막_기록'
 
 
-def calibrate_lecture(branch='origin/other-pc'):
-    """강사 복제 음성 이론 영상의 장별 음성 시간(other-pc 시간표)과 현재 산출물 대본의 말 길이로 장 계수를 맞춘다."""
+def calibrate_lecture():
+    """강사 복제 음성 이론 영상의 장별 음성 시간(로컬 영상 시간표 — git이 무시하는 자리)과 현재 산출물 대본의 말 길이로 장 계수를 맞춘다."""
     k = load_coef()
-    git = lambda *a: subprocess.run(['git', '-c', 'core.quotepath=off', *a], cwd=HERE.parents[1],
-                                    capture_output=True, check=True).stdout.decode('utf-8')
-    names = [n for n in git('ls-tree', '--name-only', f'{branch}:{TIMETABLE_DIR}').split('\n') if n.endswith('_시간표.md')]
-    if not names:
-        raise SystemExit(f'{branch}:{TIMETABLE_DIR}에 시간표가 없다')
-    px, py, used, skipped = [], [], [], []
     root = HERE.parents[1]
+    tdir = root / TIMETABLE_DIR
+    names = sorted(f.name for f in tdir.glob('*_시간표.md')) if tdir.is_dir() else []
+    if not names:
+        raise SystemExit(f'{tdir}에 시간표가 없다 — 영상을 만든 로컬 영상 폴더가 필요하다')
+    px, py, used, skipped = [], [], [], []
     for n in names:
         m = re.match(r'(통합반|실전반)_(\d+)회차_(.+)_시간표\.md$', n)
         script = root / '산출물' / m.group(1) / '이론' / f'{m.group(2)}회차' / '대본' / f'{m.group(3)}.md' if m else None
@@ -194,7 +193,7 @@ def calibrate_lecture(branch='origin/other-pc'):
             skipped.append(f'{n}: 대응 대본 없음')
             continue
         slides = script_slides(script.read_text(encoding='utf-8'))
-        rows = re.findall(r'^\| (\d+) \| [\d:]+ \| ([\d.]+) \|$', git('show', f'{branch}:{TIMETABLE_DIR}/{n}'), flags=re.M)
+        rows = re.findall(r'^\| (\d+) \| [\d:]+ \| ([\d.]+) \|$', (tdir / n).read_text(encoding='utf-8'), flags=re.M)
         hit = 0
         for no, sec in rows:
             s = slides.get(int(no))
@@ -209,7 +208,7 @@ def calibrate_lecture(branch='origin/other-pc'):
     mean = sum(resid) / len(resid)
     k['lecture'] = {'scale': round(float(s), 4), 'per_slide': round(float(p), 2), 'slides': len(py),
                     'resid_sd_s': round((sum((r - mean) ** 2 for r in resid) / len(resid)) ** 0.5, 2), 'total_error_pct': round(sum(resid) / sum(py) * 100, 2),
-                    'sources': used, 'skipped': skipped, 'branch': branch}
+                    'sources': used, 'skipped': skipped, 'timetables': TIMETABLE_DIR}
     COEF.write_text(json.dumps(k, ensure_ascii=False, indent=1), encoding='utf-8')
     print(json.dumps(k['lecture'], ensure_ascii=False, indent=1))
 
@@ -241,7 +240,7 @@ if __name__ == '__main__':
     elif cmd == 'calibrate':
         calibrate(rest)
     elif cmd == 'calibrate-lecture':
-        calibrate_lecture(*rest)
+        calibrate_lecture()
     elif cmd == 'check':
         check(rest[0], rest[1:])
     else:

@@ -4,7 +4,7 @@
 #   ./stack.sh up      꺼진 것만 순서대로 켠다: dockerd → /etc/hosts → Supabase → compose(+MCP) → 호스트 워커 → 녹화 브라우저
 #   ./stack.sh up --build   main을 새로 병합한 뒤: 앱 이미지를 다시 빌드하고 바뀐 컨테이너를 다시 만든다(+ 업무 DB 새 마이그레이션 적용, 데이터 유지)
 # 세션 컨테이너가 다시 시작되면(uptime이 짧음) dockerd · /etc/hosts 줄 · 워커 · 녹화 브라우저가 모두 사라진다. 볼륨 · 이미지는 남는다.
-# compose는 저장소 루트(other-pc 체크아웃)에서 띄운다. other-pc가 origin/main을 병합하지 않았으면 옛 코드로 뜨므로 멈춘다.
+# compose는 저장소 루트(main 체크아웃)에서 띄운다. 체크아웃이 origin/main보다 뒤면 옛 코드로 뜨므로 멈춘다.
 set -u
 here="$(cd "$(dirname "$0")" && pwd)"; root="$(cd "$here/../../../.." && pwd)"
 ev="$root/.evidence/portal-video-$(date +%Y%m%d)"; mkdir -p "$ev"
@@ -22,10 +22,10 @@ if grep -q "host.docker.internal" /etc/hosts; then ok "/etc/hosts host.docker.in
 elif [ "$mode" = up ]; then echo "127.0.0.1 host.docker.internal" >> /etc/hosts && ok "/etc/hosts 줄 넣음"
 else bad "/etc/hosts 줄 없음"; fi
 docker info >/dev/null 2>&1 || exit 1
-# 3 코드 판본: other-pc가 main을 따라왔는지
+# 3 코드 판본: 체크아웃이 origin/main을 포함하는지
 git -C "$root" fetch -q origin main 2>/dev/null
-if git -C "$root" merge-base --is-ancestor origin/main HEAD 2>/dev/null; then ok "other-pc가 origin/main 포함($(git -C "$root" rev-parse --short origin/main))"
-else bad "other-pc가 origin/main을 아직 병합하지 않음 — 병합 뒤 이미지를 다시 빌드하고 띄운다(docker compose build)"; [ "$mode" = up ] && exit 1; fi
+if git -C "$root" merge-base --is-ancestor origin/main HEAD 2>/dev/null; then ok "체크아웃이 origin/main 포함($(git -C "$root" rev-parse --short origin/main))"
+else bad "체크아웃이 origin/main보다 뒤 — git pull 뒤 이미지를 다시 빌드하고 띄운다(docker compose build)"; [ "$mode" = up ] && exit 1; fi
 # 4 Supabase(업무 DB)
 if docker ps --format '{{.Names}}' | grep -q '^supabase_db_'; then ok "Supabase"
 elif [ "$mode" = up ]; then (cd "$root/it/supabase" && npx -y supabase@2.119.0 start > "$ev/supabase-start.log" 2>&1) && ok "Supabase 켬" || { bad "Supabase 실패($ev/supabase-start.log, ghcr 403이면 다시 실행)"; exit 1; }
