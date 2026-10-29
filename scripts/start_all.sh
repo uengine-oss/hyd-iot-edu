@@ -6,7 +6,7 @@
 # 오프라인 학생이 채우는 것은 .env의 LLM_API_KEY 한 줄이다(강의 중계 키). 포털의 AI 단계(판단 · 제안, 에이전트에게 질문)는
 # AI 워커 컨테이너가 이 키로 강의 중계를 부른다(AI_MODE=live).
 # 키가 비어 있으면(온라인 학생) AI 단계는 강사가 미리 실제 AI로 진행해 저장소에 올린 응답(it/agent-worker/replay/)을 재생한다(AI_MODE=replay).
-# 강사 AI 응답 저장: bash scripts/start_all.sh --record (키 필요, AI_MODE=record) — 보통은 scripts/record_replay.sh(AI응답저장.bat)가 부른다.
+# 강사 AI 응답 저장: bash scripts/start_all.sh --record (키 필요, AI_MODE=record) — 보통은 강사용 저장 도구(workspace 브랜치 `workspace/개발/scripts/record_replay.sh`)가 부른다.
 # 끌 때: bash scripts/stop_all.sh
 set -euo pipefail
 RECORD=0

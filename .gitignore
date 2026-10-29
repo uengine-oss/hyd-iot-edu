@@ -2,49 +2,31 @@ __pycache__/
 .pytest_cache/
 .env
 .env.sync-*
+.env.ports-tmp
 .venv/
 .venv314/
-.evidence/
 # Supabase CLI machine state and generated authentication material.
 it/supabase/.temp/
 it/supabase/.branches/
-# Local screenshots and run-specific review artifacts are archived outside Git.
-/UIUX_*/
-/hyd-iot-edu_UIUX_*.html
-/_삭제/
-/docs/ui-stability-review.md
-/docs/ui-visual-review-173.*
-/docs/stability-plan.md
-.superpowers/sdd/*/scenario_run*.log
-.superpowers/sdd/*/video_run*.log
-.claude/worktrees/
-
 # Per-PC host ports shared by startup and installation checks.
 /.hyd-runtime/
-.env.ports-tmp
 
-# main은 학생 등 다른 사람에게 공유되는 것만 둔다(사용자 2026-10-30). 아래 작업용은 이 PC에서 계속 고쳐 쓰고
-# main에는 올리지 않는다. 영상 · 자막 · 음성 캐시는 workspace 브랜치.
-/산출물/
-/제작용/
-/tests/
-/pytest.ini
-/requirements-dev.txt
-/students/
-/outputs/
+# main은 학생이 clone해 실행하는 것만 둔다(사용자 2026-10-30).
+# 작업 자료는 workspace/ 폴더 하나 = workspace 브랜치(workspace/동기화.py로 올림). Claude · Codex 규칙 파일도 그쪽에 백업한다.
+/workspace/
 /.claude/
 /CLAUDE.md
 /AGENTS.md
-/AI응답저장.bat
-/course/
-# 문서는 작업용이다. 시작.bat → start_all.sh → class_knowledge.py가 읽는 수업 문서 원문만 남긴다.
+# 진행 중 작업 자리(이 PC 전용 — 작업 스펙 · 녹화 원본 · 임시 출력, 확정되면 지운다). 어느 브랜치에도 올리지 않는다.
+/작업/
+# 문서는 시작.bat → start_all.sh → class_knowledge.py가 읽는 수업 문서 원문만 main에 둔다.
 /문서/*
 !/문서/시스템/
 /문서/시스템/*
 !/문서/시스템/참조/
 /문서/시스템/참조/*
 !/문서/시스템/참조/수업_문서_원문/
-# scripts는 학생 실행 파일(설치 · 시작 · 끄기 · 점검)이 실제로 부르는 것만 남긴다.
+# scripts는 학생 실행 파일(설치 · 시작 · 끄기 · 점검)이 실제로 부르는 것만 둔다.
 /scripts/*
 !/scripts/install_windows.ps1
 !/scripts/install_windows_runtime.ps1

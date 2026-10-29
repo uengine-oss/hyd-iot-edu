@@ -371,7 +371,7 @@ services:
       NEO4J_AUTH: neo4j/hydpass123
       TIME_SCALE: ${TIME_SCALE:-20}
       ENTERPRISE_URL: http://enterprise-sim:8095
-      # instance 모드(문서/시스템/1_목적과_방향.md): 경보가 프로세스 인스턴스를 열고 에이전트·사람은 그 안의 태스크. Supabase(supabase start)가 필요하다.
+      # instance 모드: 경보가 프로세스 인스턴스를 열고 에이전트·사람은 그 안의 태스크. Supabase(supabase start)가 필요하다.
       PROCESS_MODE: ${PROCESS_MODE:-legacy}
       PROCESS_REPO: ${PROCESS_REPO:-pg}
       SUPABASE_DSN: ${SUPABASE_DSN:-postgresql://postgres:postgres@host.docker.internal:54322/postgres}
@@ -464,7 +464,7 @@ services:
       - ./it/portal/www:/usr/share/nginx/html:ro
       - ./it/portal/nginx.conf:/etc/nginx/templates/default.conf.template:ro   # nginx 이미지가 환경변수를 채워 conf.d에 쓴다
 
-  # ───────────────────────────── instance 모드 (문서/시스템/1_목적과_방향.md): 프로세스 인스턴스 · Claude Code 에이전트 · MCP ─────────────────────────────
+  # ───────────────────────────── instance 모드: 프로세스 인스턴스 · Claude Code 에이전트 · MCP ─────────────────────────────
   # 프로필 `cliagents`(AI 워커 + 에이전트용 MCP)는 강의 배포본 COMPOSE_PROFILES(.env.example)에 들어 있다. Supabase 와 .env 의 LLM_API_KEY(강의 중계 키)가 필요하다.
   enterprise-mcp:                         # 업무 DB(Supabase ent 스키마)를 에이전트에게 읽기 전용 도구로 (WMS 예제의 wms-mcp 역할)
     restart: unless-stopped
