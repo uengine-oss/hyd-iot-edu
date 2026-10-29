@@ -10,7 +10,7 @@ md=$dir/${name}_오프라인_${n}회차.md
 pptx=산출물/$name/이론_오프라인/${n}회차/${name}_오프라인_${n}회차.pptx
 mkdir -p "$(dirname "$pptx")"
 python3 제작용/오프라인/decks/조립.py "$dir"
-python3 .claude/skills/lecture-deck/scripts/deck2pptx.py "$md" "$pptx" | tail -1
+python3 .claude/skills/hyd-course-deck/scripts/deck2pptx.py "$md" "$pptx" | tail -1
 python3 제작용/오프라인/decks/대조.py "$md" "$pptx" --fix | tail -3
 python3 제작용/오프라인/decks/대조.py "$md" "$pptx" | tail -1
 python3 제작용/오프라인/decks/노트점검.py "$md" "$pptx"

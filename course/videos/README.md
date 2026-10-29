@@ -1,6 +1,6 @@
 # 강의 영상
 
-영상 파일은 main · develop에 올리지 않고 `other-pc` 브랜치에만 둔다(이 폴더의 `.gitignore`는 develop 기준). 만드는 도구는 `제작용/기존제작/tools/video/강의영상.py`에, 만드는 순서는 스킬 `.claude/skills/hyd-lecture-video/`에 있다.
+영상 파일은 main · develop에 올리지 않고 `other-pc` 브랜치에만 둔다(이 폴더의 `.gitignore`는 develop 기준). 만드는 도구는 `제작용/기존제작/tools/video/강의영상.py`에, 만드는 순서는 스킬 `.claude/skills/hyd-video/`에 있다.
 
 ## 지금 있는 영상
 
