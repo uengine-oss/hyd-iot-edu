@@ -78,12 +78,12 @@ PYTHON=()
 for candidate in python python3 /opt/homebrew/opt/python@3.14/bin/python3.14 /usr/local/opt/python@3.14/bin/python3.14 \
   /Library/Frameworks/Python.framework/Versions/*/bin/python3 \
   "${local_apps:-/nonexistent}"/Programs/Python/Python*/python.exe "${program_files:-/nonexistent}"/Python*/python.exe; do
-  if command -v "$candidate" >/dev/null 2>&1 && "$candidate" -c 'import sys; assert sys.version_info >= (3, 14, 7)' >/dev/null 2>&1; then
+  if command -v "$candidate" >/dev/null 2>&1 && "$candidate" -c 'import sys; assert sys.version_info >= (3, 13)' >/dev/null 2>&1; then
     PYTHON=("$candidate"); break
   fi
 done
-if [ "${#PYTHON[@]}" -eq 0 ] && command -v py >/dev/null 2>&1 && py -3 -c 'import sys; assert sys.version_info >= (3, 14, 7)' >/dev/null 2>&1; then PYTHON=(py -3); fi
-[ "${#PYTHON[@]}" -gt 0 ] || die "Python 3.14.7 이상이 필요합니다. $INSTALL_ENTRY 을 실행하세요."
+if [ "${#PYTHON[@]}" -eq 0 ] && command -v py >/dev/null 2>&1 && py -3 -c 'import sys; assert sys.version_info >= (3, 13)' >/dev/null 2>&1; then PYTHON=(py -3); fi
+[ "${#PYTHON[@]}" -gt 0 ] || die "Python 3.13 이상이 필요합니다. $INSTALL_ENTRY 을 실행하세요."
 "${PYTHON[@]}" scripts/sync_class_key.py || die "실습랩 수업 키 설정을 확인하세요."
 "${PYTHON[@]}" scripts/prepare_ports.py || die "포트를 준비하지 못했습니다. Docker 상태와 폴더 쓰기 권한을 확인하세요."
 

@@ -61,7 +61,7 @@ def test_script_output_never_contains_key_and_startup_invokes_it_after_python(tm
     assert result.returncode == 0 and 'fixture-secret-key' not in result.stdout + result.stderr
     assert mod.values((path / '.env').read_text(encoding='utf8'))['LLM_API_KEY'] == 'fixture-secret-key'
     script = (ROOT / 'scripts' / 'start_all.sh').read_text(encoding='utf8')
-    assert script.index('scripts/sync_class_key.py') > script.index('Python 3.14.7 이상이 필요합니다')
+    assert script.index('scripts/sync_class_key.py') > script.index('Python 3.13 이상이 필요합니다')
     assert script.index('scripts/sync_class_key.py') < script.index('scripts/prepare_ports.py')
 
 

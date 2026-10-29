@@ -11,8 +11,9 @@ function Install-Winget($id,$action,$extra) {
 foreach ($case in @(
  @('Python 3.14.7',$null,0,'', $true),
  @('Python 3.15.0',$null,0,'', $true),
+ @('Python 3.13.5',$null,0,'', $true),
  @('Python 3.12.0',$null,1,'install',$true),
- @('Python 3.14.6','Python 3.14.6',1,'upgrade',$true),
+ @('Python 3.12.9','Python 3.14.6',1,'upgrade',$true),
  @($null,$null,1,'install',$false)
 )) {
  $script:pythonVersion=$case[0]; $script:pythonTarget=$case[1]
@@ -41,4 +42,4 @@ foreach ($case in @(
  if ($script:wslCalls -ne $case[2] -or $script:enabled -ne $case[3] -or $script:wslArgs -ne $case[4]) { throw 'WSL install policy mismatch' }
  if ($case[3] -gt 0 -and -not $script:restart) { throw 'Missing reboot notice' }
 }
-Write-Host 'PASS: 5 Python and 4 WSL mocked scenarios; no machine changes.'
+Write-Host 'PASS: 6 Python and 4 WSL mocked scenarios; no machine changes.'

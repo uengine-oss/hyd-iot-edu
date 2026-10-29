@@ -20,8 +20,9 @@ function Get-PythonVersion {
 function Ensure-Python {
     try {
         $found = Get-PythonVersion
-        if ((Get-InstallAction $found '3.14.7') -eq 'keep') {
-            Record 'Python' '있음' "$found — 기준 3.14.7 이상, 유지"; return
+        # 기준은 3.13 이상(사용자 2026-10-29): 학교 PC의 3.13.x는 그대로 쓰고, 없거나 낮을 때만 3.14를 옆에 설치한다
+        if ((Get-InstallAction $found '3.13.0') -eq 'keep') {
+            Record 'Python' '있음' "$found — 기준 3.13 이상, 유지"; return
         }
         # Older major/minor Python is a different winget package; install side by side.
         $target = Installed-App 'Python 3.14*'
@@ -29,7 +30,7 @@ function Ensure-Python {
         if ($action -eq 'keep') { throw 'Python 3.14 설치 기록은 있으나 실행할 수 없습니다. 기존 설치 복구가 필요합니다.' }
         Install-Winget 'Python.Python.3.14' $action @('--scope', 'machine')
         $after = Get-PythonVersion
-        if ((Get-InstallAction $after '3.14.7') -ne 'keep') { throw "Python 설치 후 기준 미충족: $after" }
+        if ((Get-InstallAction $after '3.13.0') -ne 'keep') { throw "Python 설치 후 기준 미충족: $after" }
         Record 'Python' '설치/업데이트함' "$after — 기존 Python/Anaconda는 삭제하지 않음"
     } catch { Record 'Python' '실패' $_.Exception.Message }
 }
