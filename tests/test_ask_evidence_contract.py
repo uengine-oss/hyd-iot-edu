@@ -227,3 +227,7 @@ def test_identifier_digits_are_not_separate_measurements():
     assert ask.result_comparison('1',calls)['status']=='review'
     assert ask.result_comparison('-1',calls)['status']=='review'
     assert ask.result_comparison('-12', [{'_output':'-12','output_complete':True}])['status']=='literal_match'
+    # A Korean particle glued to the id must not leave its tail behind as "-13" (2026-10-29 portal check).
+    calls=[{'_output':'{"sop":"SOP-COOL-13","role":"운전원"}', 'output_complete':True}]
+    assert ask.result_comparison('절차는 SOP-COOL-13이며 승인 역할은 운전원입니다', calls)['status']=='literal_match'
+    assert ask.result_comparison('절차는 SOP-COOL-14이며', calls)['missing']==['COOL-14']

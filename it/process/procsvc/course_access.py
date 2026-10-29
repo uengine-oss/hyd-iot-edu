@@ -25,7 +25,9 @@ class CourseState:
         return {'phase': 'course', 'label': '수업',
                 'capabilities': {'fixed_agents': True, 'handover': True, 'agent_authoring': True,
                     'provided_manuals': True, 'handover_flow': True, 'free_questions': self.questions_enabled,
-                    'tool_inspection': True, 'model_settings': False, 'tool_settings': False}}
+                    'tool_inspection': True, 'model_settings': False, 'tool_settings': False},
+                # the portal disables the other step selectors instead of letting the gate refuse them after a pick
+                'assignable_definitions': sorted(rules.HANDOVER_DEFINITIONS)}
 
 
 PERMANENT = re.compile(r'^/api/(?:ask(?:/|$)|agent-trials(?:/|$)|eval(?:/|$)|mcp(?:/|$)|'

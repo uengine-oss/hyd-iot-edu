@@ -373,7 +373,9 @@ def result_comparison(claimed, calls):
     import re
     def facts(value):
         text = value if isinstance(value, str) else json.dumps(value, ensure_ascii=False, default=str)
-        id_pattern = r'\b[a-z][a-z_]*:[a-zA-Z0-9_:-]+|\b[A-Z]{2,}-\d+(?:-\d+)*\b'
+        # ASCII edges, not \b: a Korean particle right after an id ("SOP-COOL-13이며")
+        # is a word character for \b, which left "-13" behind as a negative number.
+        id_pattern = r'(?<![A-Za-z0-9_])(?:[a-z][a-z_]*:[a-zA-Z0-9_:-]+|[A-Z]{2,}-\d+(?:-\d+)*(?![A-Za-z0-9_]))'
         ids = set(re.findall(id_pattern, text))
         # Digits inside an identifier are part of that identifier, not an
         # independent measurement (HYD-01 must not also become -1).

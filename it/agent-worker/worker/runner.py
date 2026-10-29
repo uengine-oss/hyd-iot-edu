@@ -658,10 +658,13 @@ class Runner:
         connection_error = isinstance(err, runtime_credentials.RuntimeConnectionError)
         from hydcommon.course_access import AccessDenied
         course_locked = isinstance(err, AccessDenied)
-        hint = relay_hint(msg)
+        # Only the replay's own guidance is written for people. Other RunFailed text can carry a remote or agent body,
+        # which public consumers must not show (test_worker_oauth_runtime).
+        people = isinstance(err, RunFailed) and str(err).startswith(ai_replay.ERROR_PREFIX)
+        hint = relay_hint(msg) or (str(err) if people else None)
         self.repo.record_events([{"job_id": "TASK_ERROR", "todo_id": row["id"], "proc_inst_id": row.get("proc_inst_id"), "crew_type": "agent",
                                   "event_type": "error", "data": {"name": "수업 권한 확인 필요" if course_locked else "도구 연결 확인 필요" if connection_error else "시스템 오류 알림", "goal": "오류 원인과 대처 안내를 전달합니다.",
-                                                                 "friendly": str(err) if connection_error or course_locked else (hint or "에이전트 실행이 실패했습니다. 담당자가 확인한 뒤 다시 보낼 수 있습니다."),
+                                                                 "friendly": str(err) if connection_error or course_locked or people else (hint or "에이전트 실행이 실패했습니다. 담당자가 확인한 뒤 다시 보낼 수 있습니다."),
                                                                  "hint": hint, "raw_error": msg}}])
 
     def _event(self, row: dict, job_id: str, event_type: str, data: dict, *, crew_type: str) -> None:

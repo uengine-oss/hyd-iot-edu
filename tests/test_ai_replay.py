@@ -790,3 +790,6 @@ def test_keyless_pc_answers_only_the_questions_recorded_in_class(tmp_path):
     text = _texts(repo, row)
     assert row["status"] != "SUBMITTED"
     assert "강의에서 다룬 질문에만" in text and "냉각 경보 원인은" in text
+    # 질문 화면은 hint 를 먼저 보인다 — 예외 이름(RunFailed) 없이 사람용 문장만(2026-10-29 포털 점검)
+    err = repo.list_events(todo_id=row["id"])[-1]["data"]
+    assert "강의에서 다룬 질문에만" in err["hint"] and "RunFailed" not in err["hint"] and "RunFailed" not in err["friendly"]

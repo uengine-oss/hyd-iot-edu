@@ -634,8 +634,11 @@ def replaying(library: Library):
     return run
 
 
+ERROR_PREFIX = "AI 응답 재생: "     # 재생이 직접 쓴 안내 — Runner 는 이것만 원문 그대로 사람에게 보인다
+
+
 def _error(message: str) -> ExecEvent:
-    return ExecEvent(kind=ExecEventKind.ERROR, is_error=True, text=f"AI 응답 재생: {message}")
+    return ExecEvent(kind=ExecEventKind.ERROR, is_error=True, text=ERROR_PREFIX + message)
 
 
 def used_notice(last: dict | None) -> str | None:

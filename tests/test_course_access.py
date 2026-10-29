@@ -35,6 +35,7 @@ def test_status_has_no_unlock_and_course_actions_are_open():
     caps = status['capabilities']
     assert caps['handover'] and caps['provided_manuals'] and caps['handover_flow'] and caps['agent_authoring']
     assert caps['model_settings'] is False and caps['tool_settings'] is False
+    assert status['assignable_definitions'] == sorted(rules.HANDOVER_DEFINITIONS)  # the portal disables the other steps
     for path in ('/api/course-access/unlock', '/api/course-access'):
         assert client.post(path, json={'code':'HYD1.anything', 'unlocked':True}).status_code == 403
 

@@ -98,7 +98,7 @@
     el.innerHTML = `
       <section class="card form" aria-label="그림 가져오기">
         <h3>그림 가져오기</h3>
-        <p class="field-hint">demo.bpmn.io 에서 흐름을 그리고 왼쪽 아래 <b>Download BPMN diagram</b> 으로 받은 .bpmn 파일을 고릅니다. 같은 흐름 id 로 다시 가져오면 앞서 고른 매핑이 남습니다.</p>
+        <p class="field-hint">제공된 교대 인수인계 흐름을 demo.bpmn.io 에서 열어 고친 뒤 왼쪽 아래 <b>Download BPMN diagram</b> 으로 받은 .bpmn 파일을 고릅니다. 수업에서는 이 흐름만 등록됩니다. 같은 흐름 id 로 다시 가져오면 앞서 고른 매핑이 남습니다.</p>
         <div class="form-grid">
           ${UI.field({ label: '.bpmn 파일', input: '<input type="file" id="flowFile" accept=".bpmn,.xml,application/xml,text/xml">', required: true })}
           ${UI.field({ label: '흐름 id (비우면 그림의 프로세스 id)', input: '<input id="flowId" placeholder="예: oil_check" autocomplete="off">' })}
@@ -484,7 +484,7 @@
   }
 
   async function doReset() {
-    const ok = await UI.confirm({ title: '기준으로 되돌리기', body: '가져온 흐름 · 판본 · 매핑 초안을 지웁니다. 기준 흐름과, 지금 경보에 배포된 흐름(수업 흐름 포함)은 남깁니다 — 배포를 내리려면 [관리] 탭의 「흐름 판본 배포 · 비교 · 되돌리기」를 쓰세요.', ok: '되돌리기', danger: true });
+    const ok = await UI.confirm({ title: '기준으로 되돌리기', body: '가져온 흐름 · 판본 · 매핑 초안을 지웁니다. 기준 흐름과, 지금 경보에 배포된 흐름(수업 흐름 포함)은 남깁니다.', ok: '되돌리기', danger: true });
     if (!ok) return;
     try {
       const r = await call('POST', '/api/flows/reset');
