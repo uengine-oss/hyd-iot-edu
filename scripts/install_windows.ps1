@@ -39,6 +39,12 @@ function Install-Winget($id, $action, $extra = @()) {
     Say "  winget $action --id $id" 'Cyan'
     $ErrorActionPreference = 'Continue'
     & $wingetExecutable $action -e --id $id --accept-package-agreements --accept-source-agreements --silent @extra
+    if ($action -eq 'upgrade' -and $LASTEXITCODE -eq -1978335212) {
+        # 0x8A150014: winget 이 기존 설치를 자기 패키지로 알아보지 못해 업그레이드 대상이 없다(공식 설치 파일로 깐 Node 등, 2026-10-29 학교 PC).
+        # 같은 패키지를 새로 설치하면 기존 설치 위에 기준 판이 올라간다 — 결과는 아래 확인(Ensure-Minimum)이 다시 판정한다
+        Say "  winget 이 기존 $id 를 업그레이드 대상으로 찾지 못해 install 로 다시 실행합니다" 'Yellow'
+        & $wingetExecutable install -e --id $id --accept-package-agreements --accept-source-agreements --silent @extra
+    }
     if ($LASTEXITCODE -in @(1641, 3010)) { $script:restart = $true }
     elseif ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne -1978335189) { throw "winget $action $id 실패(종료 코드 $LASTEXITCODE)" }
     Refresh-Path
