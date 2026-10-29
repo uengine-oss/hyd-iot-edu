@@ -223,7 +223,7 @@ def finished_extraction(key: str, fname: str, sha: str, document_id: str | None 
 
 def extract(key: str, reuse: bool) -> dict:
     fname = DOCS[key]
-    raw = (ROOT / "문서/시스템/참조/수업_문서_원문" / fname).read_bytes()
+    raw = (ROOT / "it/portal/www/samples" / fname).read_bytes()
     loaded = loaded_document(fname)
     st, pv = call("POST", "/api/kg/manuals/preview",
                   {"filename": fname, "data": base64.b64encode(raw).decode(), "document_id": loaded})

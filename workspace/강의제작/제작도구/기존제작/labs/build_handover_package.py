@@ -6,7 +6,7 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[5]
 SOURCES = ROOT/'it/process/definitions'
-MANUAL = ROOT/'문서/시스템/참조/수업_문서_원문/HI-01_shift-inspection-supplement.md'
+MANUAL = ROOT/'it/portal/www/samples/HI-01_shift-inspection-supplement.md'
 
 
 def build(course, day, emphasis, notebook):

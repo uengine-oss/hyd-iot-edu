@@ -925,7 +925,7 @@ def lab_91_config_bundle(r: Round):
 # 시간: 지식 추출 · 질문은 20배속 시간 창(승인 요청 30초 · 예측 유효시간)과 무관하다(사람 승인 단계가 없는 정의:
 #   manual_source_extraction · ask_agent). 한도는 「느린 PC에서도 수업 안에 끝나는가」로 잡는다 — 근거는 각 상수 주석.
 
-_B_DOC_DIR = ROOT / "문서/시스템/참조/수업_문서_원문"
+_B_DOC_DIR = ROOT / "it/portal/www/samples"
 _B_DOC_FILES = {"HM-8": "HM-8_cooler-fan-manual.md", "PM-02": "PM-02_powerpack-pm-checklist.md", "PR-07": "PR-07_spare-parts-standard.md"}
 # 추출 한 번의 한도: 실측 PR-07 116~141초(3_현황 2절), 워커 실행 한도 1800초(compose CLIAGENTS_RUN_TIMEOUT_SECONDS).
 # 교정 1~2회(검사 거부 → AI 재작성)를 넣어 4배 = 600초. 이보다 느리면 50분 실습 안에 세 문서를 못 끝낸다.

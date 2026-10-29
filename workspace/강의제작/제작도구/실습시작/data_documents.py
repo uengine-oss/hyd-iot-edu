@@ -18,7 +18,7 @@ import random
 import sys
 
 ROOT = Path(__file__).resolve().parents[4]
-SRC = ROOT / '문서/시스템/참조/수업_문서_원문'
+SRC = ROOT / 'it/portal/www/samples'
 SEED = 20261028
 BASE = dt.date(2026, 10, 28)          # 수업일. 작업지시·재고 내보내기의 기준일
 EDU = '교육용 가상 자료(공개 현업 문제 유형을 따라 생성). 실제 회사·제조사·설비의 기록이 아니다.'

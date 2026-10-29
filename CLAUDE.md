@@ -12,7 +12,7 @@
 
 | 자리 | 무엇 | 브랜치 |
 |---|---|---|
-| `README.md` · `compose*.yaml` · `.env.example` · 설치 · 시작 · 끄기 · 점검 실행 파일 · `scripts/`(실행 파일이 부르는 것만) · `it/` `ot/` `dmz/` `common/` · `문서/시스템/참조/수업_문서_원문/` | 학생이 clone해 실행하는 것 — 코드 · 프롬프트 · 설정 · 코드가 읽는 수업 데이터. 사람용 문서는 루트 README 하나 | main |
+| `README.md` · `compose*.yaml` · `.env.example` · 설치 · 시작 · 끄기 · 점검 실행 파일 · `scripts/`(실행 파일이 부르는 것만) · `it/` `ot/` `dmz/` `common/` | 학생이 clone해 실행하는 것 — 코드 · 프롬프트 · 설정 · 코드가 읽는 수업 데이터(수업 문서 원문은 `it/portal/www/samples/`). 사람용 문서는 루트 README 하나 | main |
 | `workspace/README.md` | **하려는 일 → 읽을 문서 하나** 색인(진입 표는 여기 한 곳) | workspace |
 | `workspace/강의제작/지침/` | 산출물 문서 여섯(실라버스 · 덱 · 대본 · 영상 · 코딩랩 · 가이드) · 사실표 · 설계서 | workspace |
 | `workspace/강의제작/산출물/` | 완성본 최신 판만(과정별 이론 · 이론_오프라인 · 실습, 영상, 실라버스 엑셀) | workspace |

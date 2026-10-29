@@ -5,7 +5,7 @@
 - 열·압력: ot/plant-sim/plantsim/thermal.py (step, 고장 강도), plc.py (check_interlock 65 ℃ 초과 트립)
 - 조치 후 예측: common/hydcommon/forecast.py predict (외란 변화 중 거부, 트립 중 RESET 없는 제어 거부, 작업지시는 물리 효과 없음)
 - 수신 주기·유예: common/hydcommon/daq_contract.py, it/detector/det/observations.py (PLC_STATE 10 s + 유예 2 s)
-규칙 원문은 it/neo4j/v2/instances.cypher의 줄을 그대로 옮기고, 문서 원문은 문서/시스템/참조/수업_문서_원문/에서 읽는다.
+규칙 원문은 it/neo4j/v2/instances.cypher의 줄을 그대로 옮기고, 문서 원문은 it/portal/www/samples/에서 읽는다.
 
 사용: from data_conditions import build; files, events = build()
 files: {파일 이름: 텍스트}, events: 강사용 사례 메타(범주·설계 의도). 학생 폴더에는 files만 쓴다.
@@ -363,7 +363,7 @@ def rule_excerpt():
 
 
 def documents():
-    src = ROOT/'문서/시스템/참조/수업_문서_원문'
+    src = ROOT/'it/portal/www/samples'
     hm8 = (src/'HM-8_cooler-fan-manual.md').read_text(encoding='utf-8-sig')
     hi01 = (src/'HI-01_shift-inspection-supplement.md').read_text(encoding='utf-8-sig')
     for need in ['### SOP-COOL-11', '### SOP-COOL-14', '## HM-8.8']:
