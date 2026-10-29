@@ -6,7 +6,7 @@
 왜(사용자 결정 2026-10-25): 학생 PC의 시작 지식(구조판)에는 고장 · 원인 · 조치가 없어 4회차 인제스천보다 앞선
 판단 · What-if 실습이 후보 0개였다. 그래서 검토본을 처음부터 넣고, 4회차 인제스천은 같은 문서를 다시 올려 과정을 배우는 실습(문서 개정)으로 둔다.
 AI를 부르지 않는다 — 모든 PC가 같은 지식으로 시작한다(it/neo4j/class-knowledge/<문서>.json, 검토 기록 review 포함).
-원문(문서/시스템/참조/수업_문서_원문/)이 검토본을 만든 판과 다르면(sha256) 넣지 않고 멈춘다 — 다른 글에 옛 인용을 붙이지 않는다.
+원문(it/portal/www/samples/)이 검토본을 만든 판과 다르면(sha256) 넣지 않고 멈춘다 — 다른 글에 옛 인용을 붙이지 않는다.
 원문 판본 id(source_id)는 PC마다 새로 생긴다. 원문 sha256이 같으면 글자 위치도 같으므로, 검토본 인용(anchor)의 판본 id만 새 것으로 바꿔 넣는다
 (서버가 인용 글자 · 위치를 다시 대조한다 — manual_review.validate).
 """
@@ -24,7 +24,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 API = os.environ.get("PROCESS_URL", "http://127.0.0.1:8080")
 SEEDS = ROOT / "it" / "neo4j" / "class-knowledge"
-ORIGINALS = ROOT / "문서" / "시스템" / "참조" / "수업_문서_원문"
+ORIGINALS = ROOT / "it" / "portal" / "www" / "samples"   # 포털이 학생에게 내주는 수업 문서와 같은 파일
 ORDER = ("HM-8", "PM-02", "PR-07")                   # 적재 순서: 쿨러 → 정기 정비 → 구매(뒤 문서가 앞 문서의 고장 유형 · 부품을 쓴다)
 
 

@@ -19,13 +19,6 @@ it/supabase/.branches/
 /AGENTS.md
 # 진행 중 작업 자리(이 PC 전용 — 작업 스펙 · 녹화 원본 · 임시 출력, 확정되면 지운다). 어느 브랜치에도 올리지 않는다.
 /작업/
-# 문서는 시작.bat → start_all.sh → class_knowledge.py가 읽는 수업 문서 원문만 main에 둔다.
-/문서/*
-!/문서/시스템/
-/문서/시스템/*
-!/문서/시스템/참조/
-/문서/시스템/참조/*
-!/문서/시스템/참조/수업_문서_원문/
 # scripts는 학생 실행 파일(설치 · 시작 · 끄기 · 점검)이 실제로 부르는 것만 둔다.
 /scripts/*
 !/scripts/install_windows.ps1
