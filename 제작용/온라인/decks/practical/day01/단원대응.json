@@ -1,6 +1,6 @@
 {
   "source": "제작용/온라인/decks/integrated/day01/통합반_01일차.md",
-  "source_sha256": "8657828f4a211f68989993db367ccf0c0ccd06bead307e898254d25e404d7229",
+  "source_sha256": "0ff7971f64e443bf5e7d909770e84fe8828b3af2d9f2ef4498e0eaec9dfacfb7",
   "slides": [
     {
       "slide": 1,
@@ -11,7 +11,7 @@
     {
       "slide": 2,
       "title": "학습목표",
-      "screen_sha256": "3e139b3c1c6c9986e98e33fd8fc5b0f0513e9f279fd054e8cd9ed1f9f7b804f7",
+      "screen_sha256": "816d54f1b6291627e83aa9b8c833296670ab3681c8e348adcb58f30925a8e9a7",
       "assets": []
     },
     {
@@ -275,26 +275,26 @@
     },
     {
       "slide": 42,
-      "title": "실습: 실행 환경 구성과 서비스 동작 확인",
-      "screen_sha256": "07259db939881e53f1955d739a3581deda85e98a644dc2a7aa8ea55fa7beaf2e",
+      "title": "실습: 실습 환경을 시작하고 HYD 포털 둘러보기",
+      "screen_sha256": "e85830b4d7efec93f0bed2f44f7b0930f79025287e465f5eb251c35c2eb6ae8c",
       "assets": []
     },
     {
       "slide": 43,
-      "title": "실습에서 쓰는 도구와 확인하는 상태",
-      "screen_sha256": "7dbc61d9f70cb1e99ef91ebf5efd93f33e030010f382d134df5d9b60c4aa1c3f",
+      "title": "실습에서 쓰는 도구와 포털의 화면",
+      "screen_sha256": "54bcc8d934f21088054f70fbd1870fc0b889c07837e6bc9fedfd48fd875347a9",
       "assets": []
     },
     {
       "slide": 44,
-      "title": "실습: 설비 이상에서 조치까지 전체 과정 시연",
-      "screen_sha256": "7d15588cc6557c16b70fe7e27187e117c72799321061cddabed54fa8c62a06f7",
+      "title": "실습: 설비 이상 발생부터 판단 · 승인 · 조치까지 전체 과정 경험",
+      "screen_sha256": "e889f510f7ad60b9cbeff667710f816c905e8e7ac8791c03fef4e4df48a5c273",
       "assets": []
     },
     {
       "slide": 45,
-      "title": "전체 과정 관찰과 작업지시의 근거 추적",
-      "screen_sha256": "f9fdfd6a500673585e5c9353df6ed4bde6b5978bd6a91d98d0a9e967fba1f53e",
+      "title": "매뉴얼 적재에서 승인 · 조치까지 따라가는 사건 한 건",
+      "screen_sha256": "0f3553767bd4ddea0f5e41b85f3d22db3c22b265f310318c778ed5c1fa94fca5",
       "assets": []
     },
     {
