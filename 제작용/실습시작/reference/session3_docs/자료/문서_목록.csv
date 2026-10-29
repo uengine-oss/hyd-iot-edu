@@ -1,8 +1,0 @@
-문서 식별자,판,상태,시행일,파일,SHA-256,제목,비고
-HM-8,1.0,폐기,2025-03-10,HM-8_rev1.0_cooler-fan-manual.md,d6a0b5856b414d92d0e8529dae4d8318b917888b93871761d0b82720c6d09ef4,유압 파워유닛 쿨러 팬 정비 매뉴얼,2026-09-01 1.1판으로 대체. 현장 정비실 게시본 전사
-HM-8,1.1,현행,2026-09-01,HM-8_cooler-fan-manual.md,6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256,유압 파워유닛 쿨러 팬 정비 매뉴얼,"절 번호 체계 변경, 안전 조항 보완. 포털 수업용 승인 원문과 같은 판"
-HM-8,1.2,개정 요청(미승인),,,,유압 파워유닛 쿨러 팬 정비 매뉴얼,변경 요청 CR-2026-031 검토 중. 배포 파일 없음
-PM-02,2.0,현행,2026-01-15,PM-02_powerpack-pm-checklist.md,2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a,유압 파워팩 정기 점검표와 시행 기준,포털 수업용 승인 원문과 같은 판
-PR-07,1.3,현행,2026-04-01,PR-07_spare-parts-standard.md,7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563,예비품 관리 · 구매 기준서,포털 수업용 승인 원문과 같은 판
-HI-01,1.0,보충,2026-10-27,HI-01_shift-inspection-supplement.md,2a0e533c3a9fa7cebc2dfd6fdda140feab92e04002d5d28de2a13eb44e3980dd,설비 점검·이상 확인 보충 매뉴얼,기존 HM-8·PM-02·PR-07을 대체하지 않는 보충 문서
-OEM-HPP45A-MM,C,참고(제조사),2024-06-01,OEM-HPP45A-MM_maintenance-excerpt.md,7b4cdbecf66e6c787e2e8622210a1878155b86babbd28d99c4ea2e61710247d1,HPP-45A 유압 파워팩 정비 지침 발췌(영한),영문 원본과 사내 번역. 회사 기준과의 관계는 문서 머리말

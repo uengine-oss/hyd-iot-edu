@@ -170,13 +170,9 @@ function Select-RelaySettings($root, $explicitFile) {
         $path = [System.IO.Path]::GetFullPath($explicitFile)
         return [pscustomobject]@{ Path = $path; Values = (Read-RelaySettings $path) }
     }
-    $paths = @((Join-Path $root '.env'), (Join-Path $root 'course/labs/offline/05-2-cause-agent/.env'))
-    foreach ($path in $paths) {
-        $values = Read-RelaySettings $path
-        # 키가 있는 파일을 선택한 뒤 누락 항목을 보고한다. 서로 다른 파일의 값을 섞지 않는다.
-        if ($values['LLM_API_KEY']) { return [pscustomobject]@{ Path = $path; Values = $values } }
-    }
-    return [pscustomobject]@{ Path = $paths[0]; Values = @{} }
+    # 키가 있을 때만 루트 값을 쓰고, 없으면 빈 설정으로 누락을 보고한다.
+    if ($rootValues['LLM_API_KEY']) { return [pscustomobject]@{ Path = $rootPath; Values = $rootValues } }
+    return [pscustomobject]@{ Path = $rootPath; Values = @{} }
 }
 function Test-ClassroomKey($root, $values) {
     # Reuse the startup contract inside the already-running process container.

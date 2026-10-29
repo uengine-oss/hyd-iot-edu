@@ -22,3 +22,41 @@ it/supabase/.branches/
 # Per-PC host ports shared by startup and installation checks.
 /.hyd-runtime/
 .env.ports-tmp
+
+# main은 학생 등 다른 사람에게 공유되는 것만 둔다(사용자 2026-10-30). 아래 작업용은 이 PC에서 계속 고쳐 쓰고
+# main에는 올리지 않는다. 영상 · 자막 · 음성 캐시는 workspace 브랜치.
+/산출물/
+/제작용/
+/tests/
+/pytest.ini
+/requirements-dev.txt
+/students/
+/outputs/
+/.claude/
+/CLAUDE.md
+/AGENTS.md
+/AI응답저장.bat
+/course/
+# 문서는 작업용이다. 시작.bat → start_all.sh → class_knowledge.py가 읽는 수업 문서 원문만 남긴다.
+/문서/*
+!/문서/시스템/
+/문서/시스템/*
+!/문서/시스템/참조/
+/문서/시스템/참조/*
+!/문서/시스템/참조/수업_문서_원문/
+# scripts는 학생 실행 파일(설치 · 시작 · 끄기 · 점검)이 실제로 부르는 것만 남긴다.
+/scripts/*
+!/scripts/install_windows.ps1
+!/scripts/install_windows_runtime.ps1
+!/scripts/install_windows_winget.ps1
+!/scripts/install_version_policy.ps1
+!/scripts/install_macos.sh
+!/scripts/macos_paths.sh
+!/scripts/windows_paths.sh
+!/scripts/start_all.sh
+!/scripts/stop_all.sh
+!/scripts/prepare_ports.py
+!/scripts/class_knowledge.py
+!/scripts/c3_flows.py
+!/scripts/check_windows.ps1
+!/scripts/check_classroom.py

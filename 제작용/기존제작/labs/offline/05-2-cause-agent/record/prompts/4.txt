@@ -1,1 +1,0 @@
-agent_config.json 의 tools 목록에 read_sensor를 내가 직접 더했어. tools.py 에 read_sensor를 만들어 줘. agent.py 는 고칠 곳이 있을 때만 고치고, 고쳤다면 어디를 왜 고쳤는지 말해 줘. 실행은 내가 할게.
