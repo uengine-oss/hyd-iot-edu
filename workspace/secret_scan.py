@@ -1,6 +1,6 @@
 """git 트리(브랜치 · 커밋)에 키가 들어 있는지 찾는다. 공개 브랜치에 올리기 전에 돌린다.
 
-    python scripts/secret_scan.py <브랜치|커밋> [--key-file 경로 ...]
+    python workspace/secret_scan.py <브랜치|커밋> [--key-file 경로 ...]
 
 - 모든 텍스트 파일에서 알려진 키 꼴(ElevenLabs · OpenAI · Anthropic · GitHub · Notion · AWS)과 개인 키 블록을 찾는다.
 - 설정 파일(.env · .md · .json · .yaml · .toml · .ini · .cfg · .txt)에서는 값이 든 `…KEY= / …TOKEN= / …SECRET= / …PASSWORD=` 줄도 찾는다.
@@ -10,9 +10,10 @@
 - `--key-file`(또는 환경변수 HYD_ELEVENLABS_KEY_FILE · HYD_VSCODE_TOKEN_FILE)을 주면 그 파일의 실제 값이 들어 있는지도 견준다.
   값은 이 프로세스 안에서만 읽고 어디에도 찍지 않는다(걸린 곳은 경로 · 줄 번호만).
 - 일부러 둔 로컬 기본값은 그 줄에 `키검사: 허용`과 까닭을 적으면 뺀다(외부 서비스 키에는 쓰지 않는다).
+- `.zip`은 열어서 안의 파일도 같은 규칙으로 본다(학생 패키지 ZIP 속 `.env` · 설정). 걸린 곳은 `묶음.zip!안/경로:줄`로 찍는다.
 - 걸린 곳이 하나라도 있으면 종료 코드 1, 없으면 0.
 """
-import os, re, subprocess, sys
+import io, os, re, subprocess, sys, zipfile
 
 KEY_SHAPES = [
     ("ElevenLabs 키", re.compile(rb"\bsk_[0-9a-f]{40,}\b")),
@@ -28,7 +29,7 @@ ENV_VALUE = re.compile(rb"(?im)^[ \t]*(?:export[ \t]+)?[A-Z0-9_]*(?:KEY|TOKEN|SE
 FAKE = re.compile(rb"(?i)test|fake|dummy|example|placeholder|change|your|literal|<|\$\{")
 ALLOW = re.compile(r"키검사:\s*허용".encode())   # 일부러 둔 로컬 기본값 줄에 까닭과 함께 단다
 CONFIG = (".md", ".json", ".yaml", ".yml", ".toml", ".ini", ".cfg", ".txt", ".conf", ".properties")
-BINARY = (".mp4", ".mp3", ".wav", ".flac", ".webm", ".png", ".jpg", ".jpeg", ".gif", ".pdf", ".zip", ".pptx", ".xlsx", ".docx")
+BINARY = (".mp4", ".mp3", ".wav", ".flac", ".webm", ".png", ".jpg", ".jpeg", ".gif", ".pdf", ".pptx", ".xlsx", ".docx")
 
 
 def is_env(name):
@@ -42,6 +43,34 @@ def git(*a):
 
 def line_of(body, pos):
     return body.count(b"\n", 0, pos) + 1
+
+
+def scan(name, body, secrets):
+    """한 파일(또는 ZIP 안 한 파일)에서 걸린 곳 수를 센다."""
+    if name.lower().endswith(".zip"):
+        hits = 0
+        with zipfile.ZipFile(io.BytesIO(body)) as z:
+            for info in z.infolist():
+                if not info.is_dir() and not info.filename.lower().endswith(BINARY):
+                    hits += scan(f"{name}!{info.filename}", z.read(info), secrets)
+        return hits
+    found = []
+    allowed = {line_of(body, m.start()) for m in ALLOW.finditer(body)}
+    for label, rx in KEY_SHAPES:
+        found += [(m.start(), label) for m in rx.finditer(body) if not FAKE.search(m.group(0))]
+    if is_env(name):
+        found += [(m.start(), ".env에 든 값") for m in ENV_VALUE.finditer(body) if not FAKE.search(m.group(1))]
+    elif name.lower().endswith(CONFIG):
+        found += [(m.start(), "값이 든 키 줄") for m in KEY_LINE.finditer(body) if not FAKE.search(m.group(1))]
+    for f, v in secrets:
+        if v in body:
+            found.append((body.index(v), f"키 파일({os.path.basename(f)})의 실제 값"))
+    hits = 0
+    for pos, label in found:
+        if line_of(body, pos) in allowed and not label.startswith("키 파일"):
+            continue
+        print(f"{name}:{line_of(body, pos)}: {label}"); hits += 1
+    return hits
 
 
 def main():
@@ -73,21 +102,7 @@ def main():
         cat.stdin.write(sha.encode() + b"\n"); cat.stdin.flush()
         size = int(cat.stdout.readline().split()[2])
         body = cat.stdout.read(size); cat.stdout.read(1)
-        found = []
-        allowed = {line_of(body, m.start()) for m in ALLOW.finditer(body)}
-        for label, rx in KEY_SHAPES:
-            found += [(m.start(), label) for m in rx.finditer(body) if not FAKE.search(m.group(0))]
-        if is_env(name):
-            found += [(m.start(), ".env에 든 값") for m in ENV_VALUE.finditer(body) if not FAKE.search(m.group(1))]
-        elif name.lower().endswith(CONFIG):
-            found += [(m.start(), "값이 든 키 줄") for m in KEY_LINE.finditer(body) if not FAKE.search(m.group(1))]
-        for f, v in secrets:
-            if v in body:
-                found.append((body.index(v), f"키 파일({os.path.basename(f)})의 실제 값"))
-        for pos, label in found:
-            if line_of(body, pos) in allowed and not label.startswith("키 파일"):
-                continue
-            print(f"{name}:{line_of(body, pos)}: {label}"); hits += 1
+        hits += scan(name, body, secrets)
     print(f"{ref}: 걸린 곳 {hits}")
     sys.exit(1 if hits else 0)
 

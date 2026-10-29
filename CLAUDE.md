@@ -2,17 +2,17 @@
 
 ## 0. 무엇이든 시키면
 
-스킬 `hyd-task`의 순서를 밟는다: **작업 폴더 → 읽을 문서 하나 → 만들기 · 검사 → 제자리에 넣기(최신 하나만) → 두 브랜치 동기화 → 작업 폴더 정리.** 세션이 열리면 훅(`.claude/hooks/작업안내.sh`)이 구조와 열린 작업 폴더를 보여 준다. 열린 작업이 있으면 그 폴더의 `스펙.md` · `기록.md`부터 읽고 잇는다.
+스킬 `hyd-task`의 순서를 밟는다: **작업 폴더 → 읽을 문서 하나 → 만들기 · 검사 → 제자리에 넣기(최신 하나만) → 두 브랜치 동기화 → 작업 폴더 정리.** 열린 작업 폴더(`작업/<날짜>_<제목>/`)가 있으면 그 `스펙.md` · `기록.md`부터 읽고 잇는다. 대화가 요약되면 훅(`.claude/hooks/compact-reread.sh`)이 그 폴더와 문서를 다시 읽게 한다.
 
 - 기존 대화의 확정 결정 · 완료 증거 · 실패 원인을 이어받고, 끝낸 일은 반복하지 않는다. 첫 조회는 git · 실행 상태와 작업 폴더 기록의 차이만 본다.
 - 완료 조건에 직접 기여하는 묶음 하나를 끝낸 뒤 다음으로 간다. 유료 실행은 목적 · 성공 기준 · 상한을 정하고, 실패한 같은 조건을 재실행하지 않는다.
-- 안 쓰는 것은 적대적으로 쳐낸다 — 지금 수업 · 개발에 쓰이지 않거나 최신 판이 따로 있으면 지운다(지운 것은 git 이력에 있다). 같은 사실은 한 곳에만 쓰고 나머지는 가리킨다.
+- 딱 봤을 때 정말 필요한가로 본다 — 분명히 필요 없는 것(지금 수업 · 개발에 쓰이지 않거나 최신 판이 따로 있는 것)과 판단이 서지 않는 것을 나눠, 「이건 이런 건데 필요합니까」로 묻는다("알아서 해"로 맡겼으면 분명한 것은 지우고 애매한 것만 묻는다, 지운 것은 git 이력에 있다). 같은 사실은 한 곳에만 쓰고 나머지는 가리킨다.
 
 ## 1. 구조 — 어디에 무엇이 있나
 
 | 자리 | 무엇 | 브랜치 |
 |---|---|---|
-| `README.md` · `compose*.yaml` · `.env.example` · 설치 · 시작 · 끄기 · 점검 실행 파일 · `scripts/`(실행 파일이 부르는 것만) · `it/` `ot/` `dmz/` `common/` | 학생이 clone해 실행하는 것 — 코드 · 프롬프트 · 설정 · 코드가 읽는 수업 데이터(수업 문서 원문은 `it/portal/www/samples/`). 사람용 문서는 루트 README 하나 | main |
+| `README.md` · `compose*.yaml` · `.env.example` · `setup/`(설치 · 시작 · 끄기 · 점검 실행 파일) · `scripts/`(그 파일이 부르는 것만) · `it/` `ot/` `dmz/` `common/` | 학생이 clone해 실행하는 것 — 코드 · 프롬프트 · 설정 · 코드가 읽는 수업 데이터(수업 문서 원문은 `it/portal/www/samples/`). 사람용 문서는 루트 README 하나 | main |
 | `workspace/README.md` | **하려는 일 → 읽을 문서 하나** 색인(진입 표는 여기 한 곳) | workspace |
 | `workspace/강의제작/지침/` | 산출물 문서 여섯(실라버스 · 덱 · 대본 · 영상 · 코딩랩 · 가이드) · 사실표 · 설계서 | workspace |
 | `workspace/강의제작/산출물/` | 완성본 최신 판만(과정별 이론 · 이론_오프라인 · 실습, 영상, 실라버스 엑셀) | workspace |
@@ -26,7 +26,7 @@
 ## 2. 브랜치와 동기화
 
 - 브랜치는 main · workspace 둘뿐이다(다른 브랜치 · 태그를 만들지 않는다). main은 `.gitignore`로 `workspace/` · `작업/` · 루트 작업 파일을 무시한다. workspace는 main과 이력을 공유하지 않고 병합하지 않는다.
-- 동기화는 `PYTHONUTF8=1 .venv314/Scripts/python.exe workspace/동기화.py` 하나로 한다 — `commit "메시지" [main 경로 …]`(workspace = 그 시점 모습 그대로, main = 준 경로만) → `push`(두 브랜치 키 검사 0일 때만, 강제 push 없음). 받기는 `pull`. 사용법 전부는 그 파일 머리에 있다.
+- 동기화는 `PYTHONUTF8=1 .venv314/Scripts/python.exe workspace/동기화.py` 하나로 한다 — `commit "메시지" [main 경로 …]`(workspace = 그 시점 모습 그대로, main = 준 경로만) → `push`(두 브랜치 키 검사 0일 때만, 강제 push 없음). push · 지우기는 기본으로 먼저 묻고, 사용자가 "알아서 해"로 맡긴 작업이면 묻지 않는다(헌법 4절). 받기는 `pull`. 사용법 전부는 그 파일 머리에 있다.
 - 노션 · 학생 링크는 커밋 고정 주소라 이력을 다시 쓰거나 브랜치를 지우지 않는다. 공개 저장소다 — 키 · 개인 정보 · 실물 매뉴얼 PDF를 어느 브랜치에도 올리지 않는다.
 
 ## 3. 기록
@@ -37,6 +37,7 @@
 
 ## 4. 시스템 규칙
 
+- **유지보수가 1순위다.** 지금 로직을 살려 근본 원인을 고치고, 방법이 여럿이면 관리할 곳(파일 · 설정 · 도구 · 규칙 사본)이 줄어드는 쪽, 새 장치보다 지우기를 먼저 고른다. 시험은 한 기능을 한 곳에서 실제로 판정한다 — 가짜는 시스템 밖만, 호출 횟수 · 문자열 존재 · 현재 값 고정 같은 장난감 금지. 설계가 갈리면 uengine-oss ProcessGPT 계열 레포를 참고한다.
 - **fable 모델을 쓰지 않는다**(사용자 지시 2026-10-10). 메인 세션 · 서브에이전트 · 워커 모두. 서브에이전트는 `opus`.
 - **배속 기본 20배(`TIME_SCALE=20`).** 가상 설비라 수업 · 실습 · 검사 모두 20배속이다. "1~2배속 권장" 문구를 쓰지 않는다. 20배속에서 흔들리는 코드는 배속 기준으로 고친다. 배율은 plant-sim · detector · process · agent에 함께 적용한다(`/api/time_scale`은 plant 물리만 바꾼다). 바꿀 때는 `workspace/개발/문서/RUNBOOK.md` 표를 따른다.
 - **통합 시험(`workspace/개발/scripts/scenario_*`)이 도는 동안 `docker compose build/up/restart` 금지.** 의존 서비스가 바뀌면 process가 재시작돼 시험이 `RemoteDisconnected`로 끊긴다. 배포는 시험 전에 끝내고 `docker inspect hyd-iot-edu-process-1 --format '{{.State.StartedAt}} {{.RestartCount}}'`로 안정을 확인한다. 에러 없이 조용히 재시작했으면 커널 OOM을 의심한다(`wsl -d docker-desktop -e sh -c "dmesg | grep -i oom"`). 통합 시험 전에는 호스트 워커를 멈춘다(워커가 에이전트 작업을 가져간다).
@@ -48,6 +49,7 @@
 
 ## 5. 내용 규칙
 
+- **수업 경계**: 학생은 포털 기능을 다 실제로 눌러 써 본다. 통제하는 것은 AI가 답을 만드는 자리뿐이고(키 없음 = 강사 녹화 재생, 키 있음 = 실제 AI + 큰 문서 인제스천은 제공 문서 캐시, 같은 요청은 저장 응답), 막는 것은 악용 지점(허용 밖 문서 · 대용량 · 외부 도구 서버 등록 · 수업 모델 밖 모델)뿐이다. 재생에서 녹화 밖 행동은 학생이 알아듣는 말로 안내하고 실패로 둔다. PBL 해제는 강사가 한 곳에서 한 번에 하고, 비용의 최종 방어는 중계 키 한도다.
 - 시나리오 · BPMN · 온톨로지는 저장소에 있는 이름만 쓴다. 작업 전에 코드(agentsvc · procsvc · entsim · seed)를 먼저 읽는다. 정본 위치: `workspace/개발/문서/ontology/schema-v2.md`, `it/neo4j/v2/instances.cypher`, 템플릿 `it/neo4j/templates/`. 온톨로지는 객체 모델(클래스 · 속성 · 관계)이다. 프로세스 설명은 온톨로지가 아니다.
 - 해피패스 · 구세주 데이터 금지: 사례마다 손익으로 지는 대안과 실제로 밟는 비해피 가지가 있어야 한다.
 - 승인 전 에이전트는 조회 · 계산 · 보고서만 한다. 사람 승인 1회 뒤 process가 실행한다.
@@ -66,7 +68,7 @@
 | | 로컬 Windows |
 |---|---|
 | Python | `.venv314/Scripts/python.exe`(늘 `PYTHONUTF8=1`). uv 파이썬은 Smart App Control이 막는다 |
-| 단위 시험 | 저장소에 없다 — 로직 개편 세션이 새로 짠다. 옛 시험 333개 · 기준선(3,585 통과)은 git `03c23fdd:tests/`(꺼내기 `git archive 03c23fdd tests pytest.ini \| tar -x`, 돌리기 전 `. workspace/개발/scripts/host_libpq.sh`) |
+| 단위 시험 | 저장소에 없다 — 로직 개편 세션이 새로 짠다. 옛 시험 · 기준선(3,585 통과)은 git `03c23fdd:tests/`(꺼내기 `git archive 03c23fdd tests pytest.ini \| tar -x`, 돌리기 전 `. workspace/개발/scripts/host_libpq.sh`) |
 | 통합 시험 | `workspace/개발/scripts/scenario_instance_test.py`(쿨러, `--worker`면 실제 워커 기대), `scenario_pump_fan_test.py`(펌프 · 팬 · 가림) |
 | 워커 | `bash workspace/개발/scripts/run_worker_host.sh`(`CLIAGENTS_DEFAULT_CLI=claude-code`). 멈출 때는 `workspace/개발/scripts/stop_worker_host.ps1` 또는 PowerShell `Get-CimInstance Win32_Process \| ? CommandLine -like '*worker.main*'` → `taskkill //PID //F`, 포트 8097/8098이 내려갔는지 확인. 워커 1개가 python 2개로 보인다 |
 | 로그 인코딩 | 워커 로그에 cp949가 섞인다. 바이트로 읽어 `errors='replace'`로 디코드 |

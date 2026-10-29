@@ -1,5 +1,4 @@
-# Combined test environment (Python 3.12-3.14). Service requirements are isolated
-# image environments and cannot be composed: fastmcp requires newer pydantic.
+# 이 PC의 개발 · 제작 도구 환경(.venv314). 서비스 요구 파일은 이미지마다 따로라 합칠 수 없다(fastmcp가 더 새 pydantic을 요구).
 pytest>=8,<10
 pytest-asyncio>=0.24
 fastapi==0.142.2
@@ -26,6 +25,9 @@ paho-mqtt>=2.1
 playwright>=1.45
 PyYAML>=6
 openpyxl==3.1.5
+python-pptx>=1.0
+pymupdf>=1.24
+Pillow>=10
 edge-tts>=6.1
 imageio-ffmpeg>=0.5
 git+https://github.com/uengine-oss/cliagents@7c7a3923984f8247a27233cedb786e1a9097d451
