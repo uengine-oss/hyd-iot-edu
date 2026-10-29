@@ -148,3 +148,15 @@ def test_a_new_extraction_request_is_the_selected_run_not_the_one_already_opened
       manualSelectionTest.render(); }""")
     page.wait_for_function("() => document.querySelector('#manualExtractionRuns').options.length > 2")
     assert page.locator('#manualExtractionRuns').input_value() == 'run-new'
+
+
+def test_choosing_a_different_file_returns_to_new_document_but_same_file_keeps_revision(page):
+    # 2026-10-29 실측: HM-8 개정 선택이 남은 채 HI-01 을 고르면 HI-01 이 HM-8 의 개정으로 올라가 HM-8 지식이 지워졌다
+    setup_selection(page)
+    page.evaluate("""manualSelectionTest.update([{document_id:'doc:hm8',filename:'HM-8_cooler-fan-manual.md',current:true}]);""")
+    select = page.locator('#manualDocumentId')
+    select.select_option('doc:hm8')
+    page.set_input_files('#manualFile', files=[{'name':'HM-8_cooler-fan-manual.md','mimeType':'text/markdown','buffer':b'# HM-8'}])
+    assert select.input_value() == 'doc:hm8'                       # 같은 이름: 개정 그대로
+    page.set_input_files('#manualFile', files=[{'name':'HI-01_shift-inspection-supplement.md','mimeType':'text/markdown','buffer':b'# HI-01'}])
+    assert select.input_value() == ''                              # 다른 이름: 새 문서 등록

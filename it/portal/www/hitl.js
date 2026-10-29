@@ -818,7 +818,17 @@
     } catch (e) { if ($('#manualFile').files[0] === f) $('#manualResult').innerHTML = `<div class="neg">미리보기 실패: ${esc(e.message)}</div>`; }
     finally { b.disabled = false; b.textContent = UI.t('kn.preview'); }
   });
-  $('#manualFile').addEventListener('change', () => { H.preview = null; $('#manualFilename').textContent = $('#manualFile').files[0]?.name || UI.t('kn.noFile'); renderPreview(); });
+  $('#manualFile').addEventListener('change', () => {
+    H.preview = null;
+    const name = $('#manualFile').files[0]?.name;
+    // 앞 문서의 「문서 개정」 선택이 다른 파일에 남으면 그 파일이 앞 문서의 개정으로 올라가 앞 문서 지식이 지워진다
+    // (2026-10-29 실측: HM-8 다음 HI-01). 등록된 문서의 개정이 골라져 있을 때 이름이 다른 파일을 고르면 새 문서 등록으로
+    // 되돌린다. 아직 등록하지 않은 검토 중인 원문은 다음 파일도 같은 문서로 이어 올린다.
+    const select = $('#manualDocumentId');
+    const registered = select?.value ? H.manualDocuments?.get(select.value) : null;
+    if (registered && registered.filename !== name) select.value = '';
+    $('#manualFilename').textContent = name || UI.t('kn.noFile'); renderPreview();
+  });
 
   /* ================================================= 업무 데이터 연결 (DDL → System · InputData, 되돌리기 가능) */
   async function loadIngests() {
