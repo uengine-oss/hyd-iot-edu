@@ -452,7 +452,8 @@ def explain(options: list[dict], rec: dict | None, facts: dict, fired: list[str]
     if not rec:
         return head + " 모두 규정상 제외됐다: " + "; ".join(f"{o['sopId']} {o['name']} ({o['violations'][0]['annotation']})" for o in options)
     fc = next((x for x in rec["forecast"] if x["variable"] == "sv:ts1"), None)
-    parts = [f"{head} 중 '{rec['sopId']} {rec['name']}'{_obj(rec['name'])} 권한다 (점수 {rec['score']})."]
+    label = rec['name'] if str(rec['name']).startswith(str(rec['sopId'])) else f"{rec['sopId']} {rec['name']}"   # 변경안 이름은 절차 번호로 시작한다
+    parts = [f"{head} 중 '{label}'{_obj(rec['name'])} 권한다 (점수 {rec['score']})."]
     if rec.get('economicComparison'):
         e=rec['economicComparison']
         parts.append(f"구매금액 {e['purchase_amount']:g} + 기대 불량비용 {e['expected_failure_cost']:g} + 전수 검사비용 {e['inspection_cost']:g} = 비교 총비용 {e['total_cost']:g}만 원. 실제 부품별 총비용이 낮은 순서로 비교했다.")

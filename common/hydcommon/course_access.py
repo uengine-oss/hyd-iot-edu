@@ -17,6 +17,8 @@ COURSE_RUNS = {'c3_cooling': {'T_agent'}, 'c3_pm': {'T_agent'}, 'c3_spare': {'T_
 HANDOVER_DEFINITIONS = frozenset(('ShiftHandover', 'shift_handover'))
 CONTENT = json.loads(Path(__file__).with_name('course_content.json').read_text(encoding='utf8'))
 AGENT_SERVERS = frozenset(('neo4j', 'enterprise', 'hyd-dmn'))
+# 키 없는 PC 의 AI 응답 재생이 직접 쓴 안내의 머리말 — 워커는 이 안내만 사람에게 그대로 보이고, 질문 화면은 머리말을 떼고 보인다
+REPLAY_NOTICE = 'AI 응답 재생: '
 
 
 def agent_configuration_error(model, tools):

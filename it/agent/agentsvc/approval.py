@@ -87,6 +87,8 @@ def current_options(kg, tsdb, decision, option_id, parameters=None):
         reviewed = {'parameters': normalized, 'base_policy_sha256':cards.policy_digest(rules, reference),
                     'reference_name': reference.get('name'), 'reference_actions':reference.get('actions') or []}
     known = dict(pattern=pattern, cause=cause, failure_mode=failure)
+    if prior.get('failure_mode_name'):    # 다시 보기 문장도 처음 판단처럼 고장 유형을 이름으로(「fm:…」 id 가 아니라)
+        known['failure_mode_name'] = prior['failure_mode_name']
     if part is not None:
         known.update(purchase_part=part['id'],purchase_part_no=part['partNo'],purchase_part_name=part.get('name'))
     facts, provenance = decide.gather_facts(inputs, decision['asset'], known, tsdb, strict=True)

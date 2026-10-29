@@ -72,8 +72,9 @@
   function table(rows) {
     if (!rows || !rows.length) return '';
     const cols = [...new Set(rows.flatMap(r => Object.keys(r)))];
-    return `<table class="compact-table"><thead><tr>${cols.map(c => `<th>${escH(c)}</th>`).join('')}</tr></thead><tbody>${
-      rows.map(r => `<tr>${cols.map(c => `<td>${escH(r[c] == null ? '–' : typeof r[c] === 'number' ? num(r[c]) : r[c])}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+    // 열이 많으면 카드 밖으로 넘쳤다 — 카드 안에서 가로로 스크롤한다
+    return `<div class="table-scroll"><table class="compact-table"><thead><tr>${cols.map(c => `<th>${escH(c)}</th>`).join('')}</tr></thead><tbody>${
+      rows.map(r => `<tr>${cols.map(c => `<td>${escH(r[c] == null ? '–' : typeof r[c] === 'number' ? num(r[c]) : r[c])}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
   }
   function basis(m) {
     const d = m.definition || {};

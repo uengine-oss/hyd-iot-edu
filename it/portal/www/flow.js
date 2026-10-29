@@ -9,6 +9,24 @@
 (function () {
   const LANES = [['agent', 'flow.lane.agent'], ['human', 'flow.lane.human'], ['system', 'flow.lane.system']];
   const TW = 120, TH = 44, GW = 18, EV = 15;
+  // 상자 안 글자 폭(12px 글꼴, 한글 1칸 · 영문 · 숫자 · 기호 0.6칸)으로 나눈다 — 상자 안쪽 104px ≈ 8.5칸
+  const MAXW = 8.5, width = t => [...t].reduce((w, c) => w + (/[ㄱ-힣]/.test(c) ? 1 : 0.6), 0);
+  function fitLines(name, max) {
+    if (width(name) <= MAXW) return [name];
+    const parts = name.split(' · ');                     // 「원인 진단 · 냉각 조치 제안」은 가운뎃점에서 먼저 나눈다
+    if (max > 1 && parts.length === 2 && parts.every(x => width(x) <= MAXW)) return parts;
+    const words = name.split(' ').filter(w => w !== '·'), lines = [];
+    let cur = '';
+    for (const w of words) { const next = cur ? cur + ' ' + w : w; if (cur && width(next) > MAXW) { lines.push(cur); cur = w; } else cur = next; }
+    if (cur) lines.push(cur);
+    const out = lines.slice(0, max);
+    if (lines.length > max || width(out[out.length - 1]) > MAXW) {
+      let last = lines.slice(max - 1).join(' ');
+      while (width(last + '…') > MAXW && last.length > 1) last = last.slice(0, -1);
+      out[max - 1] = last.trimEnd() + '…';
+    }
+    return out;
+  }
   // PITCH: distance between depths on the primary axis · ROW: distance between stacked nodes on the secondary axis · HEAD: lane header size on the primary axis
   const METRICS = {
     horizontal: { PITCH: 142, HEAD: 96, TOP: 8, LANE_MIN: 88, ROW: 62, vertical: false },
@@ -147,7 +165,11 @@
       const name = UI.flowName(n.name);
       if (n.kind === 'task') {
         const roleName = g.lane.get(n.id) === 'human' ? n.role : '';
-        s += `<g class="${cls}" data-node="${esc(n.id)}"><rect x="${cx - TW / 2}" y="${cy - TH / 2}" width="${TW}" height="${TH}" rx="8"/><text x="${cx}" y="${cy + (roleName ? -2 : 4)}" text-anchor="middle" class="f-t">${esc(name)}</text>${roleName ? `<text x="${cx}" y="${cy + 13}" text-anchor="middle" class="f-s">${esc(roleName)}</text>` : ''}</g>`;
+        const lines = fitLines(name, roleName ? 1 : 2), y0 = cy + (roleName ? -2 : lines.length > 1 ? -3 : 4);
+        const title = lines.some(l => l.endsWith('…')) ? `<title>${esc(name)}</title>` : '';     // 줄여 쓴 이름은 마우스를 올리면 전체
+        s += `<g class="${cls}" data-node="${esc(n.id)}">${title}<rect x="${cx - TW / 2}" y="${cy - TH / 2}" width="${TW}" height="${TH}" rx="8"/>`
+          + lines.map((l, i) => `<text x="${cx}" y="${y0 + i * 14}" text-anchor="middle" class="f-t">${esc(l)}</text>`).join('')
+          + `${roleName ? `<text x="${cx}" y="${cy + 13}" text-anchor="middle" class="f-s">${esc(roleName)}</text>` : ''}</g>`;
       } else if (n.kind === 'gateway') {
         const lab = vertical ? `<text x="${cx + GW + 6}" y="${cy + 4}" class="f-s">${esc(name)}</text>` : `<text x="${cx}" y="${cy - GW - 6}" text-anchor="middle" class="f-s">${esc(name)}</text>`;
         s += `<g class="${cls}"><path d="M${cx} ${cy - GW} L${cx + GW} ${cy} L${cx} ${cy + GW} L${cx - GW} ${cy} Z"/><text x="${cx}" y="${cy + 5}" text-anchor="middle" class="f-g">×</text>${lab}</g>`;

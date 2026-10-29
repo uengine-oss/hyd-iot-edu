@@ -41,6 +41,7 @@ def page():
         helper = (WWW/'app.js').read_text(encoding='utf8').split('/* ---------------- tabs')[0]
         page.add_script_tag(content=helper + "\nconst API={process:'',agent:''}; function selectTab(n){state.tab=n;document.querySelectorAll('.view').forEach(e=>e.classList.toggle('active',e.id==='view-'+n));} window.hydApp={};")
         page.add_script_tag(path=str(WWW/'ui.js'))
+        page.add_script_tag(path=str(WWW/'plainWords.js'))     # 포털처럼 조사 도우미(hydWords)를 먼저 — agents.js 알림이 쓴다
         navigation=(WWW/'app.js').read_text(encoding='utf8').split('/* ---------------- tabs ---------------- */')[1].split("selectTab('main');")[0]
         page.add_script_tag(content=navigation)
         yield page

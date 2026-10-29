@@ -337,7 +337,7 @@ function cardHtml(o, opt = {}) {
     ${(o.gains || []).some(uncond) || (o.losses || []).some(uncond) ? `<div><dt>${esc(UI.t('fold.kpi'))}</dt><dd>${kpiAll}</dd></div>` : ''}
     ${softAll ? `<div><dt>${esc(UI.t('fold.penalty'))}</dt><dd><span class="hmeta">${softAll}</span></dd></div>` : ''}
     <div><dt>${esc(UI.t('skill.actions'))}</dt><dd>${(o.actions || []).map(a => `${esc(actionLabel(a))} <span class="muted">(${esc(a.code)}${a.value != null ? '=' + esc(a.value) : ''}${a.targetName ? ' → ' + esc(a.targetName) : ''})</span>`).join(' · ') || esc(UI.t('card.noAction'))}</dd></div>
-    ${(o.forecast || []).length ? `<div><dt>${esc(UI.t('score.forecast'))}</dt><dd>${(o.forecast || []).map(f => `${esc(f.name)} ${esc(f.value)}${esc(f.unit || '')} <span class="muted">(${esc(f.method)})</span>`).join(' · ')}</dd></div>` : ''}
+    ${(o.forecast || []).length ? `<div><dt>${esc(UI.t('score.forecast'))}</dt><dd>${(o.forecast || []).map(f => `<span title="계산 방법: ${esc(f.method)}">${esc(f.name)} ${esc(f.value)}${esc(f.unit || '')}</span>`).join(' · ')}</dd></div>` : ''}
     ${(o.gains || []).some(cond) || (o.losses || []).some(cond) ? `<div><dt>${esc(UI.t('card.expected'))}</dt><dd><span class="hkpi">${(o.gains || []).filter(cond).map(x => effChip(x, 'pos')).join('')}${(o.losses || []).filter(cond).map(x => effChip(x, 'neg')).join('')}</span></dd></div>` : ''}
     ${(o.selectedBy || []).length ? `<div><dt>${esc(UI.t('skill.rules'))}</dt><dd>${(o.selectedBy || []).map(r => `${esc(UI.ruleLabel(r))}${(r.sources || []).length ? ` <span class="muted">(${esc(r.sources.join(', '))})</span>` : ''}${r.annotation || UI.names[r.rule] ? '' : UI.fold('규칙 원문',`<pre>${esc(JSON.stringify(r,null,2))}</pre>`,{cls:'small'})}`).join('<br>')}</dd></div>` : ''}
     ${(o.steps || []).length ? `<div><dt>${esc(UI.t('card.steps'))}</dt><dd><ol style="margin:0;padding-left:18px">${(o.steps || []).map(s => `<li>${esc(UI.idText(s.text))}${s.manual ? ` <span class="muted" title="${esc(s.manual.excerpt || '')}">[${esc(s.manual.ref)} ${esc(s.manual.title || '')}]</span>` : ''}</li>`).join('')}</ol></dd></div>` : ''}
@@ -589,8 +589,8 @@ function txDiffFold(x) {
   const show = v => v == null || v === '' ? '–' : typeof v === 'object' ? JSON.stringify(v) : /^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(String(v)) ? UI.dateTime(v) : String(v);
   const keys = [...new Set([...Object.keys(b || {}), ...Object.keys(a || {})])].filter(k => JSON.stringify((b || {})[k] ?? null) !== JSON.stringify((a || {})[k] ?? null));
   const body = !keys.length ? `<p class="muted">${esc(UI.t('tx.noDiff'))}</p>`
-    : `${b ? '' : `<p class="muted">${esc(UI.t('tx.created'))}</p>`}<table class="compact-table"><thead><tr><th>${esc(UI.t('tx.col.field'))}</th><th>${esc(UI.t('tx.col.before'))}</th><th>${esc(UI.t('tx.col.after'))}</th></tr></thead><tbody>` +
-      keys.map(k => `<tr><td class="mono">${esc(k)}</td><td>${esc(show((b || {})[k]))}</td><td><b>${esc(show((a || {})[k]))}</b></td></tr>`).join('') + '</tbody></table>';
+    : `${b ? '' : `<p class="muted">${esc(UI.t('tx.created'))}</p>`}<div class="table-scroll"><table class="compact-table"><thead><tr><th>${esc(UI.t('tx.col.field'))}</th><th>${esc(UI.t('tx.col.before'))}</th><th>${esc(UI.t('tx.col.after'))}</th></tr></thead><tbody>` +
+      keys.map(k => `<tr><td class="mono">${esc(k)}</td><td>${esc(show((b || {})[k]))}</td><td><b>${esc(show((a || {})[k]))}</b></td></tr>`).join('') + '</tbody></table></div>';
   return UI.fold(`${esc(UI.t('tx.beforeAfter'))} <span class="chip tone-neutral sm">${keys.length}</span>`, body, { cls: 'small' });
 }
 

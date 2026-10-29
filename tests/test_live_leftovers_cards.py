@@ -145,7 +145,9 @@ def test_a_cooling_cards_read_exactly_as_before(tmp_path):
     assert len(folds) == 1 and A["origin"]["cause_basis"] in html.unescape(folds[0])
     raw = dict(raw, path=re.sub(r'<details class="fold small" ><summary>판단 근거 설명 원문</summary>.*?</details>', "", raw["path"], count=1, flags=re.S))
     now = screens(raw)
+    # 2026-10-29 갱신: 예측 계산 방법(m; constant inputs)은 카드 글에서 빼고 값에 마우스를 올리면 보이게 했다(포털 점검 가독성) — 고정본에서 그 꼬리만 뺐다
     assert now == json.loads(A_BEFORE.read_text(encoding="utf-8"))
+    assert 'title="계산 방법: m; constant inputs"' in "".join(raw["cards"])
     assert "예측 평형 유온 49.8℃ · 토출 압력 182bar" in now["approval"] and "예측 평형 유온 62.5℃ · 토출 압력 182bar" in now["alts"]
     assert "이 안의 값" not in now["alts"] and "정비 시점" not in now["alts"]
 

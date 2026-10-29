@@ -289,3 +289,13 @@ def test_instruction_1_1_looks_at_the_agents_own_student_servers_first():
 def test_failed_question_shows_the_workers_korean_hint_before_the_raw_error():
     events = [{"event_type": "error", "data": {"raw_error": "RunFailed: 403 key not allowed to access model", "hint": "에이전트의 모델 이름을 강의 중계가 받지 않습니다"}}]
     assert ask._error_reason(events).startswith("에이전트의 모델 이름")
+
+
+def test_keyless_refusal_reads_as_one_sentence():
+    """재생 안내는 「에이전트 실행이 실패했습니다: AI 응답 재생: …」로 겹치지 않고 그 안내 한 문장으로(2026-10-29 포털 점검)."""
+    from hydcommon.course_access import REPLAY_NOTICE
+    wi = {'status': 'IN_PROGRESS', 'draft_status': 'FAILED'}
+    events = [{'event_type': 'error', 'data': {'hint': REPLAY_NOTICE + '이 PC는 API 키 없이 강의에서 다룬 질문에만 답합니다.'}}]
+    assert ask._state({'status': 'RUNNING'}, wi, events) == ('failed', '이 PC는 API 키 없이 강의에서 다룬 질문에만 답합니다.')
+    other = [{'event_type': 'error', 'data': {'raw_error': 'RunFailed: 시간 초과'}}]
+    assert ask._state({'status': 'RUNNING'}, wi, other)[1].startswith('에이전트 실행이 실패했습니다: ')

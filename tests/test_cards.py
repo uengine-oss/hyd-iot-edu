@@ -170,3 +170,15 @@ def test_recommendation_sentence_picks_the_object_particle():
     """권고 문장은 「…을(를) 권한다」 자리표 대신 끝소리에 맞는 조사를 쓴다(2026-10-29 포털 점검)."""
     assert [cards._obj(w) for w in ('팬 최대 운전', '쿨러 팬 점검 절차', '부하 80 %', 'SOP-COOL-13', 'OEM')] == ['을', '를', '를', '을', '을']
     assert cards._obj('…') == '을(를)'      # 끝소리를 모르면 둘 다
+
+
+def test_recommendation_sentence_names_a_variant_once():
+    """변경안 이름(「SOP-… 변경안: 팬 100%」)은 절차 번호를 두 번 쓰지 않는다(2026-10-29 포털 점검)."""
+    r = run()
+    rec = next(o for o in r["options"] if o["id"] == r["recommended"])
+    facts = dict(BASE, failure_mode_name='쿨러 냉각 성능 상실')
+    variant = dict(rec, name=f"{rec['sopId']} 변경안: 팬 100%")
+    text = cards.explain(r["options"], variant, facts)
+    assert f"'{rec['sopId']} 변경안: 팬 100%'를 권한다" in text and text.count(rec['sopId']) >= 1, text
+    assert f"{rec['sopId']} {rec['sopId']}" not in text
+    assert f"'{rec['sopId']} {rec['name']}'" in cards.explain(r["options"], rec, facts)

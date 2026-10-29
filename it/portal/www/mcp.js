@@ -5,7 +5,7 @@
    원본: process-gpt-vue3 account-settings/MCPServer.vue(서버 목록 + 검사 요약 · 도구 수 · 펼침) · process-gpt-mcp-validator(도구 목록 · 실패 사유).
    ④ B2 등록 · 고치기 · 지우기 · 연결 검사 · 기준으로 되돌리기: 폼 → 연결 검사 통과해야 저장(실패는 사유), 기준 서버는 보기만,
       학생 서버는 "내가 등록" 표시. 검사를 통과한 서버의 읽기 전용 도구만 에이전트 도구로 고를 수 있다(/api/mcp/selectable).
-   랩업(Claude Code)에서 tenants.mcp 에 넣은 서버도 여기 그대로 나타난다("포털 밖에서 추가" — 연결 검사를 해야 쓰인다).
+   코딩 랩(Claude Code)에서 tenants.mcp 에 넣은 서버도 여기 그대로 나타난다("포털 밖에서 추가" — 연결 검사를 해야 쓰인다).
    API: procsvc/mcp_api.py (/api/mcp/servers · /api/mcp/servers/{name}/tools · …/tools/{tool}/call · /api/mcp/calls),
         procsvc/mcp_registry.py (POST /api/mcp/servers · PUT/DELETE /api/mcp/servers/{name} · POST …/{name}/check · POST /api/mcp/check ·
         GET /api/mcp/selectable · POST /api/mcp/reset). */
@@ -189,7 +189,7 @@
     const agents = s.agents.length ? s.agents.map(a => `<b>${esc(a.name)}</b>`).join(', ') : '<span class="muted">이 서버를 도구로 적은 에이전트가 없습니다</span>';
     const taskNames = [...new Set(s.tasks.map(t => t.activity_name))];
     const undeclared = s.tasks.some(t => !t.declared);
-    const tasks = taskNames.length ? taskNames.map(esc).join(' · ') + (undeclared ? ' <span class="muted">(단계에 도구 지정이 없어 테넌트 서버 전부를 씁니다)</span>' : '') : '<span class="muted">없음</span>';
+    const tasks = taskNames.length ? taskNames.map(esc).join(' · ') + (undeclared ? ' <span class="muted">(단계에 도구를 정하지 않아 등록된 서버를 모두 씁니다)</span>' : '') : '<span class="muted">없음</span>';
     const status = s.config_error ? `<p class="field-error" role="alert">${esc(s.config_error)}</p>`
       : r.loading ? `<p class="muted" role="status">연결 확인 중… (최대 4초)</p>`
       : r.status === 'ok' ? `<p class="kv-line">연결됨 · 도구 <b>${tools.length}</b>개 · ${r.elapsed_ms} ms · ${esc(UI.dateTime(r.checked_at))} 확인</p>`
@@ -348,6 +348,8 @@
     const c = s.check || {};
     const when = c.checked_at ? ` · ${esc(UI.dateTime(c.checked_at))}` : '';
     if (s.selectable) return `<p class="kv-line">${UI.chipText('에이전트 도구로 고를 수 있음', 'success')} 연결 검사 통과${when} — 읽기 전용 도구만 에이전트에 붙습니다</p>`;
+    // 기본 서버는 기본 에이전트가 이미 쓴다 — 목록 카드와 같은 말로(「고를 수 없음 · 연결 검사 전」은 바로 위 연결됨과 어긋났다)
+    if (s.origin === 'seed') return `<p class="kv-line">${UI.chipText('기본 에이전트가 쓰는 서버', 'neutral')}</p>`;
     return `<p class="kv-line">${UI.chipText('에이전트 도구로 고를 수 없음', 'warning')} ${esc(CHECK[c.status] || '연결 검사 전')}${when}` +
       `${c.status === 'failed' && c.error ? ` — ${esc(c.error)}` : ''}${c.status === 'ok' ? ' — 읽기 전용으로 표시한 도구가 없습니다(표시만 없는 도구는 "읽기로 확인")' : ''}</p>`;
   }

@@ -97,7 +97,7 @@
     S.el = el;
     el.innerHTML = `
       <section class="card form" aria-label="그림 가져오기">
-        <h3>그림 가져오기</h3>
+        <header class="card-head"><div class="card-title"><h3>그림 가져오기</h3></div></header>
         <p class="field-hint">제공된 교대 인수인계 흐름을 demo.bpmn.io 에서 열어 고친 뒤 왼쪽 아래 <b>Download BPMN diagram</b> 으로 받은 .bpmn 파일을 고릅니다. 수업에서는 이 흐름만 등록됩니다. 같은 흐름 id 로 다시 가져오면 앞서 고른 매핑이 남습니다.</p>
         <div class="form-grid">
           ${UI.field({ label: '.bpmn 파일', input: '<input type="file" id="flowFile" accept=".bpmn,.xml,application/xml,text/xml">', required: true })}

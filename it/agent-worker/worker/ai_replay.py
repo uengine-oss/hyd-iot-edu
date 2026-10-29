@@ -42,6 +42,7 @@ from pathlib import Path
 from typing import Callable, Iterable
 
 from cliagents import ExecEvent, ExecEventKind
+from hydcommon.course_access import REPLAY_NOTICE
 from procsvc import mcp_check
 
 from . import env_guard
@@ -563,9 +564,9 @@ def replaying(library: Library):
             case = "" if resumed else library.case(request)
             if doc is None and case.startswith(QUESTION_PREFIX):
                 asked = library.questions()
-                yield _error("온라인(키 없는) 수업에서는 강의에서 다룬 질문에만 답할 수 있습니다. 다룬 질문: "
+                yield _error("이 PC는 API 키 없이 강의에서 다룬 질문에만 답합니다. 다룬 질문: "
                              + (" / ".join(f"「{q}」" for q in asked) if asked else "없음")
-                             + ". API 키를 넣으면 실제 AI로 어떤 질문이든 답합니다.")
+                             + ". 질문 칸 아래의 질문 단추를 눌러 넣고 보내세요.")
                 return
             what = (f"「{doc['step']}」의 이어지는 응답" if doc and resumed else _what(step_of(request), case, attempt))
             yield _error(f"{what}의 저장된 AI 응답이 없습니다. API 키를 넣으면 실제 AI로 실행합니다.")
@@ -638,7 +639,7 @@ def replaying(library: Library):
     return run
 
 
-ERROR_PREFIX = "AI 응답 재생: "     # 재생이 직접 쓴 안내 — Runner 는 이것만 원문 그대로 사람에게 보인다
+ERROR_PREFIX = REPLAY_NOTICE       # 재생이 직접 쓴 안내 — Runner 는 이것만 원문 그대로 사람에게 보인다
 
 
 def _error(message: str) -> ExecEvent:

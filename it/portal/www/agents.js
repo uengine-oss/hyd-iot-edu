@@ -96,8 +96,8 @@
   }
   function emptyDetail() {
     return st.tab === 'agents'
-      ? UI.empty('에이전트가 없습니다', '"새 에이전트"로 만들거나 랩업에서 users 표에 넣으면 여기에 나타납니다.')
-      : UI.empty('아직 스킬이 없습니다', '"새 스킬"로 SKILL.md 를 쓰거나 랩업에서 tenant_skills 표에 넣으면 여기에 나타납니다.');
+      ? UI.empty('에이전트가 없습니다', '"새 에이전트"로 만들거나 코딩 랩에서 users 표에 넣으면 여기에 나타납니다.')
+      : UI.empty('아직 스킬이 없습니다', '"새 스킬"로 SKILL.md 를 쓰거나 코딩 랩에서 tenant_skills 표에 넣으면 여기에 나타납니다.');
   }
 
   /* ---------- 목록 ---------- */
@@ -378,7 +378,7 @@
     st.host.innerHTML =
       `<div class="page-head"><h1>AI 에이전트</h1><div class="page-tools"><button type="button" class="btn small" data-ag-reload>다시 읽기</button>` +
       `<button type="button" class="btn small" data-ag-reset title="내가 만든 것만 지웁니다">기준으로 되돌리기</button></div></div>` +
-      `<p class="muted">에이전트 · 스킬을 만들고 단계에 맡겨 보세요. 기본 에이전트는 보호되어 복제해서 고칩니다. 랩업(Claude Code)에서 넣은 것도 다시 읽으면 함께 보입니다.</p>` +
+      `<p class="muted">에이전트 · 스킬을 만들고 단계에 맡겨 보세요. 기본 에이전트는 보호되어 복제해서 고칩니다. 코딩 랩(Claude Code)에서 넣은 것도 다시 읽으면 함께 보입니다.</p>` +
       (st.error ? `<div class="neg" role="status">${esc(st.error)}</div>` : '') +
       UI.tabs([['agents', '에이전트', n], ['skills', '스킬', m], ['assign', '담당 배정']], st.tab, 'data-ag-tab') + body;
   }

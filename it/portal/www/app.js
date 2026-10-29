@@ -386,7 +386,7 @@ function unitSvg(asset) {
     <circle class="ts1-bulb" cx="240" cy="80" r="11" fill="#1e8e5a"/><text class="sym" x="240" y="84" text-anchor="middle">T</text>
     <text class="ts1 v-ts1" x="240" y="112" text-anchor="middle">–</text>
     <rect class="cooler" x="262" y="55" width="70" height="50" rx="3"/>${fins}
-    <text x="310" y="143" text-anchor="middle">냉각 효율 <tspan class="v-ce">–</tspan> %</text>
+    <text x="305" y="143" text-anchor="start">냉각 효율 <tspan class="v-ce">–</tspan> %</text>
     <g class="fan"><circle class="fanring" cx="350" cy="80" r="14"/>
       <path class="blade" d="${blade}"/><path class="blade" d="${blade}" transform="rotate(120 350 80)"/><path class="blade" d="${blade}" transform="rotate(240 350 80)"/></g>
     <text x="350" y="110" text-anchor="middle">팬 <tspan class="v-fan">–</tspan> %</text>

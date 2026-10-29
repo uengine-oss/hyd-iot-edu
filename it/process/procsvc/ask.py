@@ -25,6 +25,7 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
+from hydcommon.course_access import REPLAY_NOTICE
 from hydcommon.timeutil import parse_iso
 from pydantic import BaseModel
 
@@ -508,7 +509,10 @@ def _state(inst, wi, events, now=None) -> tuple[str, str]:
     ds = wi.get('draft_status')
     fb = wi.get('feedback') if isinstance(wi.get('feedback'), dict) else {}
     if ds == 'FAILED':
-        return 'failed', '에이전트 실행이 실패했습니다: ' + (_error_reason(events) or '사유 기록 없음')
+        reason = _error_reason(events) or '사유 기록 없음'
+        if reason.startswith(REPLAY_NOTICE):      # 키 없는 PC 의 재생 안내는 실패 꼬리 없이 그 안내 한 문장으로
+            return 'failed', reason[len(REPLAY_NOTICE):]
+        return 'failed', '에이전트 실행이 실패했습니다: ' + reason
     if ds == 'HUMAN_ASKED':
         return 'asking', '에이전트가 사람에게 묻고 기다립니다 (처리 과정 보기에서 답할 수 있습니다)'
     if ds == 'FB_REQUESTED' and fb.get('kind') == 'validation':
