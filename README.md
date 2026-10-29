@@ -182,6 +182,8 @@ Set-Location -LiteralPath 'C:\hyd-iot-edu'
 
 **설치 정책:** Docker 4.87.0·VS Code 1.132.0(2026년 8월 판)·Node.js 24.22.1·Python 3.13 이상은 유지하고 낮거나 없으면 설치·업데이트한다. Git·WSL은 준비 시점의 공식 최신 안정판을 확인한다. 기존 BAT는 두 제품을 과거 최소 기준으로 유지할 수 있어 최신 확인을 대신하지 않는다. WSL용 Windows 기능도 준비한다. 기존 Python·Anaconda와 데이터는 삭제하지 않는다. 재부팅 후 확인이 필요한 항목은 완료로 표시하지 않는다. 이 범위는 포털 실행 환경이며 XG5000은 별도 설치 대상이다.
 
+**XG5000 4.73(직접 설치 — winget에 없어 `설치.bat`이 건드리지 않음, 학교 설치 목록 8번):** [한국어판 약 394 MB](https://sftpssqblobcdn.blob.core.windows.net/prod/largefile/document/16849776042931/XG5000_V4.73_20230522_Kr.exe) · [영어판](https://sftpssqblobcdn.blob.core.windows.net/prod/largefile/document/16849776042930/XG5000_V4.73_20230522_En.exe). LS ELECTRIC 자료 페이지(<https://ssq.ls-electric.com/kr/ko/product/document/2201>)의 판 목록에서 4.73을 고른 파일이며, 절차는 [학교 PC 설치 확인 E-7](산출물/설치/학교PC_설치확인/학교PC_설치확인.md#e-7-xg5000-473).
+
 **중계 설정(3번):** Google Drive에 보관한 `.env`의 `OPENAI_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` 세 값을 **저장소 루트 `.env`**에 복사·저장한다. 루트 `.env`가 없으면 `.env.example`을 복사해 만든다. `OPENAI_API_KEY`는 비워도 된다. `점검.bat`을 더블클릭하면 루트 설정을 자동 사용한다. 루트에 중계키가 없을 때만 기존 실습 폴더 설정을 사용하며, 명시적인 `-LlmEnvFile` 지정은 우선한다. 이미 발급한 중계키이므로 **gcloud 조회·재발급은 필요 없다.** 값이 있으면 점검 때 다시 묻지 않는다. 중계 서버 「건너뜀」은 연결 확인 완료가 아니다. 실제 키를 넣은 파일은 커밋·푸시하지 않는다.
 
 **WSL·Docker에서 막히면(2번):** [오류 해결 가이드](문서/시스템/참조/Windows_Docker_설치.md)에서 Hyper-V 지원 여부 확인 → 가능하면 Docker를 Hyper-V로 실행 → 불가능하면 WSL 오류 복구 순서로 진행한다. Docker가 정상 실행되면 위 3번으로 돌아온다. 이미 WSL 설치에 실패한 학교 PC는 이 단계부터 이어가며, 정상화한 뒤 전체 `설치.bat`을 반복해 WSL을 다시 설치할 필요는 없다. 나머지 도구의 실패 항목은 별도로 해결한다.
