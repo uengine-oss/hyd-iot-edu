@@ -1,5 +1,5 @@
 #!/bin/bash
-cd "$(dirname "$0")" || exit 1
+cd "$(dirname "$0")/.." || exit 1
 if [ "$(uname -s)" != Darwin ]; then
   echo 'Mac 전용입니다. Windows에서는 시작.bat을 실행하세요.'
   exit 1

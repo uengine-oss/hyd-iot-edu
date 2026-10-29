@@ -1,7 +1,7 @@
 @echo off
 rem 실습 스택 켜기 - 더블클릭. Git for Windows의 bash로 scripts\start_all.sh를 실행한다.
 chcp 65001 >nul
-cd /d "%~dp0"
+cd /d "%~dp0.."
 setlocal
 set "GITBASH="
 for %%B in ("%ProgramFiles%\Git\bin\bash.exe" "%ProgramFiles(x86)%\Git\bin\bash.exe" "%LOCALAPPDATA%\Programs\Git\bin\bash.exe") do if exist "%%~B" set "GITBASH=%%~B"

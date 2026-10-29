@@ -1,10 +1,10 @@
 __pycache__/
 .pytest_cache/
 .env
-.env.sync-*
 .env.ports-tmp
 .venv/
 .venv314/
+.codegraph/
 # Supabase CLI machine state and generated authentication material.
 it/supabase/.temp/
 it/supabase/.branches/

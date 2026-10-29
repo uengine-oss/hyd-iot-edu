@@ -80,7 +80,7 @@ wsl --update
 
 [저장소 main](https://github.com/uengine-oss/hyd-iot-edu/tree/main) · [ZIP 다운로드](https://github.com/uengine-oss/hyd-iot-edu/archive/refs/heads/main.zip)
 
-GitHub의 **Code → Download ZIP**으로 받거나 위 ZIP 링크를 사용한다. 탐색기에서 **모두 압축 풀기**로 새 폴더에 풀고 기존 프로젝트에 덮어쓰지 않는다. `README.md`, `compose.yaml`, `scripts`, `시작.bat`이 함께 있는 폴더가 프로젝트 루트다. ZIP 안에서 실행하거나 시작 파일만 따로 옮기지 않는다.
+GitHub의 **Code → Download ZIP**으로 받거나 위 ZIP 링크를 사용한다. 탐색기에서 **모두 압축 풀기**로 새 폴더에 풀고 기존 프로젝트에 덮어쓰지 않는다. `README.md`, `compose.yaml`, `scripts`, `setup`이 함께 있는 폴더가 프로젝트 루트다. ZIP 안에서 실행하거나 시작 파일만 따로 옮기지 않는다.
 
 VS Code의 **File → Open Folder**에서 이 프로젝트 폴더를 연다. 한국어 표시가 필요하면 [Microsoft 한국어 언어 팩](https://marketplace.visualstudio.com/items?itemName=MS-CEINTL.vscode-language-pack-ko)을 설치하고 [표시 언어](https://code.visualstudio.com/docs/configure/locales)를 변경할 수 있다. AI 코딩을 사용할 경우 [OpenAI Codex 확장](https://learn.chatgpt.com/docs/codex/ide)을 설치하고 본인 계정을 연결한다. 사용 가능한 모델·사용량은 계정과 제품에 따라 다르다.
 
@@ -92,8 +92,8 @@ VS Code의 **File → Open Folder**에서 이 프로젝트 폴더를 연다. 한
 <summary>Windows: 설치.bat</summary>
 
 1. [저장소 main](https://github.com/uengine-oss/hyd-iot-edu/tree/main)을 열고 **Code → Download ZIP**으로 프로젝트 전체를 받는다.
-2. 탐색기에서 **모두 압축 풀기**를 선택한다. 압축을 푼 폴더 안에 `설치.bat`, `시작.bat`, `scripts` 폴더가 함께 있는지 확인한다. ZIP 안에서 바로 실행하거나 배치 파일만 따로 옮기지 않는다. 기존 프로젝트 폴더에 덮어쓰지 않는다.
-3. **`설치.bat`을 더블클릭**하고 관리자 승인 창의 내용을 확인한 뒤 승인한다. 앞에서 소개한 Docker Desktop·VS Code·Node.js·Git·Python과 WSL 실행 기능을 준비한다. 개별 설치 옵션을 하나씩 설정하는 대신 배치가 설치를 진행한다.
+2. 탐색기에서 **모두 압축 풀기**를 선택한다. 압축을 푼 폴더 안에 `setup` 폴더(설치 · 시작 · 끄기 · 점검)와 `scripts` 폴더가 함께 있는지 확인한다. ZIP 안에서 바로 실행하거나 배치 파일만 따로 옮기지 않는다. 기존 프로젝트 폴더에 덮어쓰지 않는다.
+3. **`setup` 폴더의 `설치.bat`을 더블클릭**하고 관리자 승인 창의 내용을 확인한 뒤 승인한다. 앞에서 소개한 Docker Desktop·VS Code·Node.js·Git·Python과 WSL 실행 기능을 준비한다. 개별 설치 옵션을 하나씩 설정하는 대신 배치가 설치를 진행한다.
 4. 결과 표에서 설치·업데이트·유지 여부를 확인한다. 실패 항목은 비고를 확인하고, 재부팅 안내가 나오면 재부팅한다.
 
 Windows에서는 설치·업데이트가 필요한 항목에 `winget`을 사용한다. 실행 경로에서 찾지 못하면 Windows에 등록된 앱 설치 관리자(App Installer)의 위치를 자동 확인한다. 사용자 이름·드라이브·패키지 버전 경로를 직접 입력할 필요는 없다. 이미 기준을 만족하는 항목은 `winget` 없이도 유지 여부를 확인한다.
@@ -107,8 +107,8 @@ Windows에서는 설치·업데이트가 필요한 항목에 `winget`을 사용�
 <details>
 <summary>macOS: 설치.command</summary>
 
-1. 같은 저장소에서 **Code → Download ZIP**으로 받고 Finder에서 ZIP을 열어 압축을 푼다. `설치.command`, `시작.command`, `scripts` 폴더를 함께 둔다. 기존 프로젝트에 덮어쓰지 않는다.
-2. **`설치.command`를 더블클릭**한다. [Homebrew](https://brew.sh/)가 없으면 공식 설치 스크립트로 먼저 준비한다. 터미널의 설치 내용·Enter·관리자 암호 요청을 확인한다. 암호 입력 중 글자가 보이지 않는 것은 정상이다. 전체 파일을 `sudo`로 실행하지 않는다.
+1. 같은 저장소에서 **Code → Download ZIP**으로 받고 Finder에서 ZIP을 열어 압축을 푼다. `setup` 폴더(`설치.command` · `시작.command`)와 `scripts` 폴더를 함께 둔다. 기존 프로젝트에 덮어쓰지 않는다.
+2. **`setup` 폴더의 `설치.command`를 더블클릭**한다. [Homebrew](https://brew.sh/)가 없으면 공식 설치 스크립트로 먼저 준비한다. 터미널의 설치 내용·Enter·관리자 암호 요청을 확인한다. 암호 입력 중 글자가 보이지 않는 것은 정상이다. 전체 파일을 `sudo`로 실행하지 않는다.
 3. Docker Desktop·VS Code·Node.js·Git·Python의 `[유지]`·`[완료]`·`[실패]` 결과를 확인한다. 기준 미달인 항목만 [Homebrew 설치·업데이트](https://docs.brew.sh/Manpage)를 수행한다. 의존 패키지도 함께 설치될 수 있다. Docker·VS Code는 업데이트 전에 작업을 저장하고 종료한다. `/Applications`와 `~/Applications`의 앱을 확인하며 두 곳에 중복된 앱은 자동 교체하지 않는다.
 4. **Python도 설치 파일이 준비한다.** 3.13 이상이 있으면 유지하며 기존 Python·Anaconda는 삭제하지 않는다. Mac에는 WSL·Git Bash가 필요 없다.
 5. Docker Desktop을 열어 초기 설정과 약관 동의를 완료하고 **Engine running**을 확인한다. 현재 macOS가 [Docker Desktop 지원 조건](https://docs.docker.com/desktop/setup/install/mac-install/)과 Homebrew 지원 조건을 만족해야 한다.
@@ -116,11 +116,11 @@ Windows에서는 설치·업데이트가 필요한 항목에 `winget`을 사용�
 ZIP 다운로드 후 실행 권한 오류가 나면 터미널에서 `cd ` 뒤에 압축을 푼 폴더를 끌어다 놓고 Enter를 누른 다음 아래를 한 번 실행한다. 이후 더블클릭할 수 있다.
 
 ```bash
-chmod +x 설치.command 시작.command
-./설치.command
+chmod +x setup/설치.command setup/시작.command
+./setup/설치.command
 ```
 
-보안 경고가 나오면 출처와 파일을 확인한 뒤 **시스템 설정 → 개인정보 보호 및 보안**에서 해당 파일의 실행 허용을 확인한다. 보안 기능 전체를 끄지 않는다. 더블클릭 대신 프로젝트 폴더에서 `bash 설치.command`, `bash 시작.command`로 실행할 수도 있다.
+보안 경고가 나오면 출처와 파일을 확인한 뒤 **시스템 설정 → 개인정보 보호 및 보안**에서 해당 파일의 실행 허용을 확인한다. 보안 기능 전체를 끄지 않는다. 더블클릭 대신 프로젝트 폴더에서 `bash setup/설치.command`, `bash setup/시작.command`로 실행할 수도 있다.
 
 **Mac 검증 범위:** 설치 정책과 쉘 구문은 자동 검사 대상이다. 실제 Intel·Apple Silicon Mac에서 설치, Docker 이미지 실행, 포털 접속까지의 검증은 아직 완료하지 않았다.
 
@@ -128,7 +128,7 @@ chmod +x 설치.command 시작.command
 
 ## 시스템 시작과 종료
 
-Docker Desktop에서 **Engine running**을 확인하고 프로젝트 루트의 **Windows `시작.bat` / macOS `시작.command`**를 실행한다. 실행 창은 유지한다. 두 시작 파일은 `scripts/start_all.sh`를 실행한다. 보안 차단이 발생하면 실행을 중단하고 원인을 확인한다. 보안 기능 해제나 차단된 파일의 우회 실행을 전제로 하지 않는다.
+Docker Desktop에서 **Engine running**을 확인하고 `setup` 폴더의 **Windows `시작.bat` / macOS `시작.command`**를 실행한다. 실행 창은 유지한다. 두 시작 파일은 `scripts/start_all.sh`를 실행한다. 보안 차단이 발생하면 실행을 중단하고 원인을 확인한다. 보안 기능 해제나 차단된 파일의 우회 실행을 전제로 하지 않는다.
 
 | 단계 | 처리 내용 |
 |---|---|
@@ -147,7 +147,7 @@ Docker Desktop에서 **Engine running**을 확인하고 프로젝트 루트의 *
 
 ## 루트 실행 파일
 
-프로젝트 루트의 실행 파일은 더블클릭으로 쓴다. Windows는 `.bat`, macOS는 `.command`이며, macOS에 파일이 없는 단계는 표의 명령을 프로젝트 폴더에서 실행한다.
+`setup` 폴더의 실행 파일은 더블클릭으로 쓴다. Windows는 `.bat`, macOS는 `.command`이며, macOS에 파일이 없는 단계는 표의 명령을 프로젝트 폴더에서 실행한다.
 
 | 언제 | Windows | macOS | 하는 일 |
 |---|---|---|---|
@@ -164,7 +164,8 @@ Docker Desktop에서 **Engine running**을 확인하고 프로젝트 루트의 *
 |---|---|
 | `ot/` `dmz/` `it/` | 시스템의 코드. 망의 영역대로 나뉜다(현장, 완충 구역, 사무) |
 | `common/` | 여러 서비스가 함께 쓰는 코드(공용 토픽 · 스키마 등). 서비스 이미지를 만들 때 함께 들어간다 |
-| `scripts/` | 루트의 설치 · 시작 · 끄기 · 점검 파일이 부르는 실행 스크립트 |
+| `setup/` | 더블클릭하는 설치 · 시작 · 끄기 · 점검 파일(Windows `.bat` · macOS `.command`) |
+| `scripts/` | `setup/` 파일이 부르는 실행 스크립트 |
 | `it/portal/www/samples/` | 수업 문서 원문(매뉴얼 · 점검표 · 구매 기준) — 포털 실습에서 올리는 파일이고, 시작할 때 포털 지식에 미리 넣는다 |
 
 ## 지키는 것

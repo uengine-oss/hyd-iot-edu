@@ -1,14 +1,13 @@
 .git
 .venv
 .venv314
-work
 .env
 .env.*
-.evidence
 .hyd-runtime
-UIUX_*
-hyd-iot-edu_UIUX_*.html
-_삭제
 **/__pycache__
 .pytest_cache
-video
+# 이 PC의 작업 자료 · 진행 중 작업 · 규칙 · 색인(main에 없음) — 빌드 문맥에 넣지 않는다
+workspace
+작업
+.claude
+.codegraph
