@@ -1,57 +1,55 @@
-"""실전반 온라인 1회차: 최신 공통 1회차 본문과 과정별 대본을 조립한다.
+"""실전반 온라인 1회차 덱 MD를 통합반 1회차 원고에서 조립한다(기준_이론덱 D7-1).
 
-python 만들기/decks/practical/day01/조립.py [--source-root 최신통합반저장소]
-본문은 바꾸지 않는다. 표지 과정과 발표자 노트만 과정에 맞추고 그림은 그대로 복사한다.
+python 제작용/온라인/decks/practical/day01/조립.py
+
+1회차는 두 과정 공통이다 — 화면 · 발표자 노트 모두 통합반 원고 그대로 옮긴다(손으로 고치지 않는다).
+덱이 쓰는 그림은 이 폴더로 복사하고 해시를 맞춘다. 장마다 화면 해시를 단원대응.json에 남긴다.
+확정 덱이라 PPTX는 다시 빌드하지 않는다(D9-5) — 노트가 바뀌면 커밋본 PPTX에 노트 칸만 주입한다.
 """
 from pathlib import Path
-import argparse,hashlib,json,re,shutil
+import hashlib, json, re, shutil
 
-HERE=Path(__file__).resolve().parent
-ROOT=HERE.parents[3]
-def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
-def speech(block):
-    rest=block.split('\n',1)[1]
-    return ' '.join(s.replace('**','').strip() for s in rest.splitlines() if s.strip() and not s.startswith(('>','# ','---')))
-def screen(block):
-    return re.sub(r'^- 노트:.*\n?', '', block.split('### 화면 내용',1)[1].split('### 화면 구성',1)[0],flags=re.M).strip()
-def main():
-    ap=argparse.ArgumentParser();ap.add_argument('--source-root',type=Path,default=ROOT);args=ap.parse_args()
-    src=args.source_root/'만들기/decks/integrated/day01/통합반_01일차.md'
-    folder=ROOT/'산출물/교재/대본/실전반_온라인/01회차'
-    config=json.loads((folder/'구성.json').read_text('utf8'))
-    assert sha(src)==config['source_deck_sha256'],'공통 원본 버전 변경: 대응과 검토를 먼저 갱신하세요'
-    original=src.read_text('utf8');blocks=re.split(r'(?=^## SLIDE )',original,flags=re.M)[1:]
-    notes={};covered=[]
-    for u in config['units']:
-        if u['kind']!='pptx':continue
-        text=(folder/u['file']).read_text('utf8')
-        for b in re.split(r'(?=^## \[SLIDE )',text,flags=re.M)[1:]:
-            m=re.match(r'## \[SLIDE (\d+)(?:~(\d+))?\]',b);start=int(m[1]);end=int(m[2] or start)
-            notes[start]=speech(b)
-            for n in range(start,end+1):
-                covered.append(n)
-                if n>start:notes[n]=''
-    assert covered==list(range(1,79))
-    assembled=[];provenance=[]
-    for n,b in enumerate(blocks,1):
-        assert b.startswith(f'## SLIDE {n:02d} — ')
-        new=b
-        if n==1:
-            assert new.count('- 과정: 설비 데이터와 지식 모델')==1
-            new=new.replace('- 과정: 설비 데이터와 지식 모델','- 과정: 실전반 온라인 1회차',1)
-        new=re.sub(r'^- 노트:.*\n?','',new,flags=re.M)
-        new=new.replace('### 화면 구성','- 노트: '+notes[n]+'\n\n### 화면 구성',1)
-        expected=screen(b).replace('- 과정: 설비 데이터와 지식 모델','- 과정: 실전반 온라인 1회차') if n==1 else screen(b)
-        assert screen(new)==expected,(n,'공통 본문 변경')
-        assets=[]
-        for rel in re.findall(r'^- 그림: (.+)$',new,re.M):
-            p=src.parent/rel.strip();target=HERE/rel.strip();target.parent.mkdir(parents=True,exist_ok=True)
-            shutil.copy2(p,target);assert sha(p)==sha(target)
-            assets.append({'path':rel.strip(),'sha256':sha(p)})
-        assembled.append(new)
-        provenance.append({'slide':n,'source_slide':n,'source_title':b.splitlines()[0].split(' — ',1)[1],'screen_sha256':hashlib.sha256(screen(new).encode()).hexdigest(),'body_unchanged':True,'cover_course_changed':n==1,'assets':assets})
-    header='<!-- 조립.py 생성. 공통 본문 고정. 표지 과정과 과정별 발표자 노트만 조립한다. 직접 수정하지 않는다. -->\n'
-    (HERE/'실전반_01일차.md').write_text(header+original.split('## SLIDE ')[0]+''.join(assembled),encoding='utf8')
-    (HERE/'단원대응.json').write_text(json.dumps({'source':'만들기/decks/integrated/day01/통합반_01일차.md','source_sha256':sha(src),'slides':provenance},ensure_ascii=False,indent=2),encoding='utf8')
-    print('78장 조립, 공통 본문 불변, 그림 해시 일치, 과정별 발표자 노트 반영')
-if __name__=='__main__':main()
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parents[4]
+SRC = ROOT / '제작용/온라인/decks/integrated/day01/통합반_01일차.md'
+OUT = HERE / '실전반_01일차.md'
+HEADER = '<!-- 조립.py 생성: 통합반 1회차 원고(화면 · 노트)를 그대로 옮긴 공통 1회차. 직접 고치지 않고 통합반 원고를 고친 뒤 다시 조립한다. -->\n'
+
+
+def sha(b: bytes) -> str:
+    return hashlib.sha256(b).hexdigest()
+
+
+def screen(block: str) -> str:
+    s = block.split('### 화면 내용', 1)[1].split('### 화면 구성', 1)[0]
+    return re.sub(r'^- 노트:.*\n?', '', s, flags=re.M).strip()
+
+
+def main() -> None:
+    text = SRC.read_text('utf8')
+    blocks = re.split(r'(?=^## SLIDE )', text, flags=re.M)[1:]
+    slides = []
+    for n, b in enumerate(blocks, 1):
+        if not b.startswith(f'## SLIDE {n:02d} — '):
+            raise SystemExit(f'{SRC}: {n}장 머리가 「## SLIDE {n:02d} — 」가 아니다')
+        assets = []
+        for rel in re.findall(r'^- 그림: (.+)$', b, re.M):
+            src, dst = SRC.parent / rel.strip(), HERE / rel.strip()
+            if not src.exists():
+                raise SystemExit(f'{SRC}: {n}장 그림 없음 {src}')
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, dst)
+            if sha(src.read_bytes()) != sha(dst.read_bytes()):
+                raise SystemExit(f'{dst}: 복사본 해시가 다르다')
+            assets.append({'path': rel.strip(), 'sha256': sha(dst.read_bytes())})
+        slides.append({'slide': n, 'title': b.splitlines()[0].split(' — ', 1)[1],
+                       'screen_sha256': sha(screen(b).encode()), 'assets': assets})
+    OUT.write_text(HEADER + text, encoding='utf8', newline='\n')
+    (HERE / '단원대응.json').write_text(json.dumps(
+        {'source': SRC.relative_to(ROOT).as_posix(), 'source_sha256': sha(SRC.read_bytes()), 'slides': slides},
+        ensure_ascii=False, indent=2) + '\n', encoding='utf8', newline='\n')
+    print(f'{len(slides)}장 조립: 화면 · 노트 = 통합반 원고, 그림 {sum(len(s["assets"]) for s in slides)}개 해시 일치')
+
+
+if __name__ == '__main__':
+    main()
