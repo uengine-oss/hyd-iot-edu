@@ -1,7 +1,0 @@
-c3_cooling.200f4227-870b-4c48-a2a8-7b5d548b3738|c3_cooling|COMPLETED
-ask_agent.aa306396-8d96-4db4-adbf-9624ce0ffe0c|ask_agent|COMPLETED
-c3_cooling.60c36781-cf00-4076-b8bb-e68a61557f35|c3_cooling|COMPLETED
-c3_pm.96f52d4d-2cf7-4aad-8980-e6ce9930253d|c3_pm|COMPLETED
-c3_spare.b94dc10c-8629-434a-85ff-4aa74238ca71|c3_spare|COMPLETED
-manual_source_extraction.afa21046-5216-4cd3-9e28-572bb6347e5c|manual_source_extraction|COMPLETED
-ShiftHandover.0eb3309d-83cc-4118-a3a6-a1ee794bdd9c|ShiftHandover|COMPLETED

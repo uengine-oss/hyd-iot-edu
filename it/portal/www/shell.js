@@ -3,7 +3,7 @@
    참고: process-gpt-vue3 src/router/MainRoutes.ts(경로 → 화면, /todolist/:taskId · /instancelist/:instId),
          src/layouts/full/vertical-header/VerticalHeader.vue:146·224(알림 배지를 'update-notification-badge' 이벤트로 갱신),
          src/layouts/full/vertical-sidebar/VerticalSidebar.vue:115-117(머리글 묶음 + 항목).
-   계약 문서: 문서/시스템/검증_기록/2026-10-08/u7-shell.md
+   계약 문서: 문서/시스템/참조/u7-shell.md
 
    주소: #/<화면>                         예) #/decision · #/inbox
          #/instances/<처리 건 id>

@@ -5,7 +5,7 @@
     ... --only cooler|pump|fan|oil|bundle   (쉼표로 여러 개 가능, 예 --only pump,fan)
 
 브라우저 클릭 대신 **포털 화면 JS(it/portal/www/*.js)가 부르는 것과 같은 HTTP API를 같은 본문으로** 순서대로 부른다. 어느 화면의
-어느 호출인지는 `문서/시스템/검증_기록/2026-10-08/v-student-paths.md` 표에 파일:줄로 적었다.
+어느 호출인지는 git 이력 `39f447ce:문서/시스템/검증_기록/2026-10-08/v-student-paths.md` 표에 파일:줄로 적었다.
 
 학생 동선(DECISIONS §111 ④ · TODO B · V 행):
   0 준비     모드 확인(/api/process/mode) · 시작 상태 내보내기(/api/config/export) · 기준으로 되돌리기(/api/config/reset, --no-reset-start 로 끔)

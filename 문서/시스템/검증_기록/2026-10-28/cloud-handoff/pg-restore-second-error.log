@@ -1,2 +1,0 @@
-pg_restore: error: could not execute query: ERROR:  role "hyd_enterprise_reader" does not exist
-Command was: CREATE POLICY enterprise_mcp_reader ON ent.assets FOR SELECT TO hyd_enterprise_reader USING (true);

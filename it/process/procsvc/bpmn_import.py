@@ -14,7 +14,7 @@
 
 참고 원본(데이터로만 읽음): process-gpt-bpmn-extractor src/pdf2bpmn/bpmn_to_json.py:155-370(lane → role, task · event ·
 gateway · sequenceFlow 추출), process-gpt-vue3 src/components/api/ProcessGPTBackend.ts:573-685(proc_def.bpmn · 판본 snapshot 에
-XML 원본). 차이는 문서/시스템/검증_기록/2026-10-08/b3-bpmn.md.
+XML 원본). 차이는 git 이력 39f447ce:문서/시스템/검증_기록/2026-10-08/b3-bpmn.md.
 """
 from __future__ import annotations
 

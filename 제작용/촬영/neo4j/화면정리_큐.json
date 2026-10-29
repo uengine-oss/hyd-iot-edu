@@ -1,5 +1,0 @@
-{"voice_id":"1PdAOcPlPTz12RwMyFVp","model_id":"eleven_v4","cues":[
-{"id":"clean401","segment":4,"text":"새 탭 기능을 알려 주는 안내가 나왔네요. 이번에는 스트림에서 쿼리를 실행할 거라, 디스미스를 눌러 닫겠습니다.","ops":[["click","Dismiss"]]},
-{"id":"clean402","segment":4,"text":"아래에는 소개 카드와 연결 결과가 있습니다. 쿼리 결과를 보기 편하도록 화면만 정리할게요. 위쪽 입력칸에 콜론 클리어를 적고 엔터를 누르겠습니다. 데이터는 그대로 두고 화면의 카드만 비우는 명령입니다.","ops":[["type",":clear"],["key","Enter"]]},
-{"id":"clean403","segment":4,"text":"왼쪽 맨 위의 원통 모양 버튼이 데이터베이스 오버뷰입니다. 여기를 눌러 준비된 데이터의 종류를 확인하겠습니다.","ops":[["click","Database overview"]]}
-]}

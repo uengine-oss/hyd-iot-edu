@@ -3,7 +3,7 @@
     .venv/bin/python scripts/probe_b7_oil_live.py --expect legacy --out .evidence/a160/b7-legacy   # AGENT_BRIDGE=legacy, 호스트 워커 정지
     .venv/bin/python scripts/probe_b7_oil_live.py --expect worker --out .evidence/a160/b7-worker   # AGENT_BRIDGE=off, 호스트 워커 1개
 
-순서는 `문서/시스템/검증_기록/2026-10-08/b7-oil.md` "메인이 라이브로 확인할 순서" 그대로다.
+순서는 git 이력 `39f447ce:문서/시스템/검증_기록/2026-10-08/b7-oil.md` "메인이 라이브로 확인할 순서" 그대로다.
   1. 지식: OIL_ANALYSIS 패턴 → 고장 유형 1행, rule:cand-oil -OUTPUTS-> SOP 가 있어야 한다(HM-9 인제스천 뒤 — 없으면 좌표와 함께 멈춘다).
   2. 기준 안 입력 → 경보 없음 + 사유, 처리 건 0.
   3. 학생 그림 예(`tests/fixtures/bpmn/oil_maintenance_student.bpmn`)를 B3 로 가져와 부품 · 담당을 매핑 → 사전 검사 → 판본 등록 → B4 배포.

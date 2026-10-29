@@ -1,4 +1,4 @@
-"""T2 학생 지식 적재 · 되돌리기 · 꼭 답할 질문 검사 틀 (전체 과정 랩업 — 문서/시스템/검증_기록/2026-10-09/capstone-lab.md 6.1, 단계 3).
+"""T2 학생 지식 적재 · 되돌리기 · 꼭 답할 질문 검사 틀 (전체 과정 랩업 — 문서/시스템/참조/capstone-lab.md 6.1, 단계 3).
 
 students/<내ID>/ 로 복사해 그 폴더의 schema.json(T1) · graph.json · questions.cypher 를 읽는다(다른 폴더는 --dir, 예: --dir students/_template/example_meeting).
 확정 스키마 v2 와 수업 기준 노드는 바꾸지 않는다.

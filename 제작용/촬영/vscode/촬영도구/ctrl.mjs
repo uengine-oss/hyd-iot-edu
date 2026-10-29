@@ -70,8 +70,8 @@ export async function run(opts){
   ctx.say=async(id,fn,opt)=>{const f=AUDIO+'/'+id+'.json';const c=JSON.parse(await fs.readFile(f,'utf8').catch(()=>{throw Error('Voice cue missing: '+f+' (생성 후 촬영)');}));await cue(ctx,c,fn,opt);};
   // 이어 찍기: 앞 구간 끝 포인터 위치에 표시·실제 포인터를 둔다(녹화 전, 화면에 남지 않음).
   // 이어 찍기: 앞 구간이 끝난 페이지가 아니면 녹화 전에 그 페이지를 연다(화면에 남지 않음).
-  // 이어 찍기: 앞 구간 끝 URL과 다르면 녹화 전에 그 주소를 연다(화면에 남지 않음). 토큰은 config.tokenFile에서 읽어 붙인다.
-  if(opts.resumeUrl){if(!(await serial(()=>p.url())).startsWith(opts.resumeUrl.split('?')[0])){const tkn=(await fs.readFile(CFG.tokenFile,'utf8')).trim();await serial(()=>p.goto(opts.resumeUrl.replace('tkn=REDACTED','tkn='+tkn)));await serial(()=>p.waitForSelector('.monaco-workbench',{state:'visible',timeout:60000}));await sleep(4000);}}
+  // 이어 찍기: 앞 구간 끝 URL과 다르면 녹화 전에 그 주소를 연다(화면에 남지 않음). 토큰은 환경변수 HYD_VSCODE_TOKEN_FILE이 가리키는 파일에서 읽어 붙인다(없으면 멈춘다).
+  if(opts.resumeUrl){if(!(await serial(()=>p.url())).startsWith(opts.resumeUrl.split('?')[0])){const tf=process.env.HYD_VSCODE_TOKEN_FILE;if(!tf)throw Error('HYD_VSCODE_TOKEN_FILE 없음: 이 PC의 serve-web 접속 토큰 파일 경로를 환경변수 HYD_VSCODE_TOKEN_FILE에 넣는다 (촬영도구/ctrl.mjs, 설정 예는 촬영준비.md 3절)');const tkn=(await fs.readFile(tf,'utf8').catch(()=>{throw Error('HYD_VSCODE_TOKEN_FILE이 가리키는 파일 없음: '+tf+' (촬영도구/ctrl.mjs)');})).trim();await serial(()=>p.goto(opts.resumeUrl.replace('tkn=REDACTED','tkn='+tkn)));await serial(()=>p.waitForSelector('.monaco-workbench',{state:'visible',timeout:60000}));await sleep(4000);}}
   // 페이지를 새로 열었으면 화살표가 없으므로 ui.mjs의 설치 함수로 그 자리에 다시 그린다.
   if(opts.pointer){const q=opts.pointer;const {installPointerInPage}=await import('file:///'+HERE+'ui.mjs?'+Date.now());
    await serial(()=>p.evaluate(installPointerInPage,q));await serial(()=>p.evaluate(q=>{const e=document.getElementById('recording-pointer');if(window.__glide?.cancel)window.__glide.cancel();window.__glide=null;e.style.transform=`translate(${q.x}px,${q.y}px)`;},q));await serial(()=>p.mouse.move(q.x,q.y,{steps:1}));}

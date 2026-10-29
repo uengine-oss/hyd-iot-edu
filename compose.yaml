@@ -394,7 +394,7 @@ services:
       # Optional operator settings; unset values are omitted, never printed.
       HYD_MCP_OAUTH_CLIENTS:
       HYD_MCP_OAUTH_PRIVATE_ORIGINS:
-      # C2 승인 뒤 실행 부품 (문서/시스템/검증_기록/2026-10-09/c2-execution.md)
+      # C2 승인 뒤 실행 부품 (git 이력 39f447ce:문서/시스템/검증_기록/2026-10-09/c2-execution.md)
       #   대기 압축: 시간 대기 · 입고 확인과 그 경계 타이머만 배속 × 이 배율 (60 → 20배속에서 납기 5일 = 6분). 설비 · 감지기 · 재관측은 배속만.
       PROCESS_WAIT_COMPRESSION: ${PROCESS_WAIT_COMPRESSION:-60}
       #   정비 수행 모사 = 실습 시뮬레이터 조작(현장 정비 대역). plant-sim 과 process 가 함께 붙은 sim-net 으로 compose 서비스 이름으로 간다

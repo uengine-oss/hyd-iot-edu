@@ -1,8 +1,0 @@
-{"voice_id":"1PdAOcPlPTz12RwMyFVp","model_id":"eleven_v4","cues":[
-{"id":"int501","segment":5,"text":"노드 아래에는 설비, 구성 요소, 부품, 센서처럼 데이터의 종류가 나옵니다. 이론에서 배운 레이블입니다. 그 아래에는 구성, 계측, 관측처럼 연결을 구분하는 관계 유형이 있어요. 쿼리를 적을 때 이 이름과 방향을 사용합니다.","ops":[["point","labels"],["point","relationships"]]},
-{"id":"int502","segment":5,"text":"오른쪽 위 달러 표시 옆이 쿼리 입력칸입니다. 여기에 문장을 적고 오른쪽 런을 누르면 아래에 결과가 생깁니다. 먼저 노드 하나를 찾는 짧은 문장부터 실행해 볼게요.","ops":[["point","editor"],["point","Run"]]},
-{"id":"int503","segment":5,"text":"위쪽 입력칸을 누르고 매치에 쿨러 노드를 적겠습니다. 괄호 안의 씨는 찾은 대상을 뒤에서 부를 이름이고, 콜론 뒤의 컴포넌트는 대상의 종류입니다. 중괄호에는 찾을 식별자를 넣겠습니다.","ops":[["type","MATCH (c:Component {id:'comp:cooler'})"]]},
-{"id":"int504","segment":5,"text":"시프트와 엔터를 함께 눌러 다음 줄로 내려가겠습니다. 리턴에는 쿨러의 식별자와 이름을 적을게요. 에이에스 뒤에 붙인 이름은 결과 표의 열 제목입니다.","ops":[["key","Shift+Enter"],["type","RETURN c.id AS id, c.name AS name;"]]},
-{"id":"int505","segment":5,"text":"오른쪽 런을 눌러 실행하겠습니다.","ops":[["click","Run"]]},
-{"id":"int506","segment":5,"text":"쿨러 식별자와 이름이 한 행으로 나왔습니다. 매치가 대상을 찾고, 리턴이 화면에서 볼 항목을 정한 결과입니다. 이제 이 노드에서 센서까지 관계를 하나 붙여 보겠습니다.","ops":[["point","result"]]}
-]}

@@ -34,7 +34,7 @@ def render(spec=None, course='통합반'):
     return '\n\n'.join(out)+'\n'
 
 if __name__=='__main__':
-    for course, name in [('통합반','통합반_기본과설비탐색_큐.json'),('실전반','실전반_설비탐색_큐.json')]:
+    for course in ['통합반','실전반']:
         number='04' if course=='통합반' else '05'
         output=ROOT/f'산출물/{course}/실습/02회차/대본/{number}_실습_관계조회.md'
         output.write_text(render(SPEC,course),encoding='utf-8')

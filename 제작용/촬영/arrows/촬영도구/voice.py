@@ -1,15 +1,15 @@
 """안치윤 음성 생성(구간 단위). 사용: python voice.py <구간번호...>
-큐는 근거 폴더의 cues.json(목소리 · 모델도 거기서). 키는 config.json의 keyFile에서만 읽고 출력하지 않는다. 이미 있는 큐는 다시 만들지 않는다(같은 문장이면 재사용)."""
+큐는 근거 폴더의 cues.json(목소리 · 모델도 거기서). 키는 환경변수 HYD_ELEVENLABS_KEY_FILE이 가리키는 파일에서만 읽고 출력하지 않는다. 이미 있는 큐는 다시 만들지 않는다(같은 문장이면 재사용)."""
 import json, re, subprocess, sys, urllib.request, urllib.error
 from pathlib import Path
-from common import CFG, WORK, ffmpeg
+from common import WORK, ffmpeg, secret_file
 sys.stdout.reconfigure(encoding='utf-8')
 root = WORK
 ff = ffmpeg()
-raw = Path(CFG['keyFile']).read_text(encoding='utf-8-sig')
+raw = secret_file('HYD_ELEVENLABS_KEY_FILE').read_text(encoding='utf-8-sig')
 m = re.search(r'(sk_[A-Za-z0-9]+)', raw)
 if not m:
-    raise RuntimeError(f"{CFG['keyFile']}: ElevenLabs key (sk_...) not found")
+    raise SystemExit('HYD_ELEVENLABS_KEY_FILE이 가리키는 파일에서 ElevenLabs 키(sk_…)를 찾지 못함 (촬영도구/voice.py)')
 key = m.group(1)
 cfg = json.loads((root / 'cues.json').read_text(encoding='utf-8'))
 segs = {int(s) for s in sys.argv[1:]}

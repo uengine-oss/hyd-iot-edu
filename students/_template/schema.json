@@ -1,5 +1,5 @@
 {
-  "_comment": "T1 학생 이름 공간 스키마 틀(전체 과정 랩업, 문서/시스템/검증_기록/2026-10-09/capstone-lab.md 3.3 · 6.1). students/<내ID>/schema.json 으로 복사하고 ns 를 내 ID 로 바꾼다. 형식은 확정 스키마(it/neo4j/v2/schema.json)와 같다: classes[name · label_ko · layer · properties] · relationships[type · from · to · cardinality]. v2 클래스 · 관계는 다시 정의하지 않고 그대로 쓴다(Process · Task · Role · Rule · KnowledgeSource …). 아래는 3절 예시(분기 고객 리뷰 회의 준비)다. 검사: python scripts/ontology_v2.py check-extra --extra students/<내ID>/schema.json",
+  "_comment": "T1 학생 이름 공간 스키마 틀(전체 과정 랩업, 문서/시스템/참조/capstone-lab.md 3.3 · 6.1). students/<내ID>/schema.json 으로 복사하고 ns 를 내 ID 로 바꾼다. 형식은 확정 스키마(it/neo4j/v2/schema.json)와 같다: classes[name · label_ko · layer · properties] · relationships[type · from · to · cardinality]. v2 클래스 · 관계는 다시 정의하지 않고 그대로 쓴다(Process · Task · Role · Rule · KnowledgeSource …). 아래는 3절 예시(분기 고객 리뷰 회의 준비)다. 검사: python scripts/ontology_v2.py check-extra --extra students/<내ID>/schema.json",
   "ns": "s00",
   "name": "학생 업무 사전 — 분기 고객 리뷰 회의 준비 (예시)",
   "version": "0.1.0",

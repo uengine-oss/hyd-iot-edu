@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-STUDENT = HERE.parents[3] / "course" / "labs" / "offline" / HERE.name
+STUDENT = HERE.parents[4] / "course" / "labs" / "offline" / HERE.name
 PROMPTS = HERE / "record" / "prompts"
 RUNS = HERE / "record" / "runs"
 POLISH_FILE = HERE / "record" / "guide_polish.json"

@@ -111,7 +111,10 @@ def main():
         lines.append(f'| {name} | check_candidates(인자 없음) | {rc} | {expect or "해당 문구 없음"} | {"예" if hit else "아니오"} |')
     # 실습5 카드 검사기
     lab5 = work / 'lab5'
-    shutil.copytree(LAB5, lab5, ignore=shutil.ignore_patterns('__pycache__', '랩_연결.json'))
+    # 강사 실행 폴더에는 학생 시작본과 다른 파일 · 답 코드 · 결과 카드만 있으므로, 학생 시작본 위에 덮어 실행 폴더를 만든다.
+    skip = shutil.ignore_patterns('__pycache__', '랩_연결.json')
+    shutil.copytree(LAB5_STUDENT, lab5, ignore=skip)
+    shutil.copytree(LAB5, lab5, ignore=skip, dirs_exist_ok=True)
     # 강사 실행 폴더의 검사기는 옛 사본일 수 있으므로, 학생 시작본에 실제로 들어가는 검사기·도구로 바꿔 시험한다.
     for name in ['check_card.py', 'lab_cypher.py', 'lab_db.py']:
         shutil.copy2(LAB5_STUDENT / name, lab5 / name)

@@ -1,2 +1,0 @@
-pg_restore: error: could not execute query: ERROR:  must be owner of extension pg_stat_statements
-Command was: COMMENT ON EXTENSION pg_stat_statements IS 'track planning and execution statistics of all SQL statements executed';

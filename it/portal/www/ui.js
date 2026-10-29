@@ -566,7 +566,7 @@ function humanQuestionText(data) {
 UI.loadNames();   // A141: 원문 id → 이름 사전(정적 names.json). 읽기 전에는 id 가 그대로 보이고, 화면은 주기 갱신 때 따라온다.
 
 /* A5 (U7 포털 셸): 수강생 동선 메뉴 이름 · 새 화면 아이콘 · 토스트 · 확인 대화상자 · 로딩/오류 블록.
-   덧붙이기만 한다(위 UI 객체는 그대로). 계약 문서: 문서/시스템/검증_기록/2026-10-08/u7-shell.md */
+   덧붙이기만 한다(위 UI 객체는 그대로). 계약 문서: 문서/시스템/참조/u7-shell.md */
 Object.assign(UI.terms, {
   'var.approval': '승인 여부', 'var.approval_reason': '결정 사유', 'var.result_report': '결과 보고', 'var.request_id': '요청 번호', 'var.approved_option': '승인한 안',
   'nav.inbox': '내 작업함', 'nav.agents': '에이전트', 'nav.mcp': '도구 연결', 'nav.compare': '시험 비교', 'nav.eval': '판단 채점',

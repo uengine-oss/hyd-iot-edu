@@ -5,7 +5,7 @@ shape — `mcpServers: {name: {command, args, env}}` for stdio servers, `{type: 
 servers (the shape process-gpt-sample-app-wms documents). Claude Code reads a project-scoped `.mcp.json`, so one run's
 tools stay in one run's workspace; HTTP servers are written in Claude Code's native `{type: "http", url, headers}` form.
 
-G2 (capstone, 문서/시스템/검증_기록/2026-10-09/capstone-lab.md 5.2):
+G2 (capstone, 문서/시스템/참조/capstone-lab.md 5.2):
   ⓪ an HTTP server's `headers` (a token-protected server such as Google's) are written into .mcp.json with it — the
      portal's connection check (procsvc/mcp_check._StreamableHttp) and the system task after approval already send them,
      so without this the agent alone failed authentication. Claude Code's .mcp.json takes `headers` for http/sse servers;

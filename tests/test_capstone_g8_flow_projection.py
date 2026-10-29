@@ -1,4 +1,4 @@
-"""G8 (전체 과정 랩업 — 문서/시스템/검증_기록/2026-10-09/capstone-lab.md 5.2, 선택): 학생 흐름을 학생 이름 공간 그래프에 투영.
+"""G8 (전체 과정 랩업 — 문서/시스템/참조/capstone-lab.md 5.2, 선택): 학생 흐름을 학생 이름 공간 그래프에 투영.
 
 흐름 정의(판본 JSON) → Process · Event · Task · Gateway · SEQUENCE_FLOW · PERFORMED_BY 를 v2 클래스 그대로, ns · id 접두어를 붙여 만든다.
 그래프 없이 본다: 투영 결과가 v2 + ns 규칙 검사(ontology_v2.validate_ns)를 통과하는가, 레인 역할을 수업 기준 Role 에 잇거나 학생 Role 로 만드는가,

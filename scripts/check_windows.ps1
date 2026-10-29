@@ -56,7 +56,7 @@ function Show-Results {
     Say "`n== 결과" 'White'
     $results | Format-Table -AutoSize -Wrap | Out-String -Width 160 | Write-Host
     $bad = @($results | Where-Object { $_.결과 -eq '실패' })
-    if ($bad.Count) { Say "실패 $($bad.Count)건. 내용을 보고 학교PC_설치확인.md C절(막혔을 때)을 따르세요." 'Red' }
+    if ($bad.Count) { Say "실패 $($bad.Count)건. 위 표에서 실패 항목의 「내용」을 보고 고친 뒤 다시 점검하세요." 'Red' }
     else { Say '모두 통과했습니다.' 'Green' }
     Read-Host '창을 닫으려면 Enter' | Out-Null
 }
