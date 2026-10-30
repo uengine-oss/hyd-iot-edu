@@ -1,7 +1,7 @@
 """U3 (A2 MCP 부분) — 도구 호출 기록: events 의 도구 호출(tool_usage_started/finished)을 서버 · 도구별로 모은다(읽기 전용).
 
-워커가 남기는 도구 이름은 CLI 마다 다르다 — Claude Code 'mcp__<서버>__<도구>', Codex '<서버>/<도구>'(cliagents codex.py).
-둘 다 같은 (서버, 도구)로 읽는다. 시작 · 끝 이벤트는 tool_use_id 로 한 줄로 묶어 입력 · 결과 · 걸린 시간을 보인다.
+도구 이름은 Claude Code 형식 'mcp__<서버>__<도구>' 하나다(워커 CLI 와 process 의 MCP 단계 기록 service_parts 가 같은 형식으로 남긴다).
+시작 · 끝 이벤트는 tool_use_id 로 한 줄로 묶어 입력 · 결과 · 걸린 시간을 보인다.
 입력 · 결과는 비밀값을 가리고(mcp_check.mask_value) 글자 수를 줄여 돌려준다. 원본 events 행은 건드리지 않는다.
 """
 from __future__ import annotations
@@ -18,20 +18,12 @@ DETAIL_CHARS = 4000
 
 
 def parse_tool(raw) -> tuple[str | None, str]:
-    """'mcp__hyd-dmn__diagnose' → ('hyd-dmn', 'diagnose'); 'hyd-dmn/diagnose' → 같음; 'Read' → (None, 'Read')."""
+    """'mcp__hyd-dmn__diagnose' → ('hyd-dmn', 'diagnose'); 'Read' → (None, 'Read') — MCP 도구가 아니다."""
     name = str(raw or "")
     if name.startswith("mcp__"):
         server, sep, tool = name[5:].partition("__")
         return (server, tool) if sep and server and tool else (None, name)
-    if "/" in name:
-        server, _, tool = name.partition("/")
-        return (server, tool) if server and tool else (None, name)
     return None, name
-
-
-def same_server(found: str | None, wanted: str) -> bool:
-    """Codex 는 서버 이름의 '-' 를 '_' 로 바꿔 쓰기도 한다(probe_codex_tool_scope: mcp__hyd_dmn__)."""
-    return found is not None and (found == wanted or found.replace("-", "_") == wanted.replace("-", "_"))
 
 
 def brief(value, limit: int) -> str:
@@ -72,29 +64,16 @@ def _ms(a, b) -> int | None:
 
 
 def recent_tool_events(repo, limit: int = SCAN_LIMIT) -> list[dict]:
-    """최근 도구 이벤트(새것 먼저) + 그 단계 이름 · 처리 건 이름. PgRepo 는 한 번의 SQL, MemoryRepo 는 사전을 훑는다."""
-    if hasattr(repo, "_conn") and hasattr(repo, "_row"):
-        with repo._conn() as c:
-            rows = c.execute("""select e.id, e.todo_id, e.proc_inst_id, e.event_type::text as event_type, e.data, e.timestamp,
-                                       t.activity_id, t.activity_name, i.proc_inst_name
-                                  from events e
-                                  left join todolist t on t.id::text = e.todo_id
-                                  left join bpm_proc_inst i on i.proc_inst_id = e.proc_inst_id
+    """최근 도구 이벤트(새것 먼저) + 그 단계 이름 · 처리 건 이름 — 한 번의 SQL."""
+    with repo._conn() as c:
+        rows = c.execute("""select e.id, e.todo_id, e.proc_inst_id, e.event_type::text as event_type, e.data, e.timestamp,
+                                   t.activity_id, t.activity_name, i.proc_inst_name
+                              from events e
+                              left join todolist t on t.id::text = e.todo_id
+                              left join bpm_proc_inst i on i.proc_inst_id = e.proc_inst_id
                                  where e.event_type::text = any(%s)
                                  order by e.timestamp desc limit %s""", (list(TOOL_EVENTS), limit)).fetchall()
-        return [repo._row(r) for r in rows]
-    events = [e for e in getattr(repo, "events", []) if e.get("event_type") in TOOL_EVENTS]
-    events = sorted(events, key=lambda e: str(e.get("timestamp") or ""), reverse=True)[:limit]
-    out, items, insts = [], {}, {}
-    for e in events:
-        tid, pid = e.get("todo_id"), e.get("proc_inst_id")
-        if tid and tid not in items:
-            items[tid] = repo.get_workitem(tid) or {}
-        if pid and pid not in insts:
-            insts[pid] = repo.get_instance(pid) or {}
-        w, i = items.get(tid) or {}, insts.get(pid) or {}
-        out.append(dict(e, activity_id=w.get("activity_id"), activity_name=w.get("activity_name"), proc_inst_name=i.get("proc_inst_name")))
-    return out
+    return [repo._row(r) for r in rows]
 
 
 def calls(rows: list[dict], *, server: str | None = None, tool: str | None = None, limit: int = 50) -> list[dict]:
@@ -109,7 +88,7 @@ def calls(rows: list[dict], *, server: str | None = None, tool: str | None = Non
             except ValueError:
                 data = {}
         srv, name = parse_tool(data.get("tool"))
-        if srv is None or (server and not same_server(srv, server)) or (tool and name != tool):
+        if srv is None or (server and srv != server) or (tool and name != tool):
             continue
         key = (e.get("todo_id"), data.get("tool_use_id")) if data.get("tool_use_id") else ("event", e.get("id"))
         g = groups.get(key)

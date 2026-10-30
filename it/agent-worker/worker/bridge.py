@@ -2,14 +2,14 @@
 
 Tools reach a CLI agent as MCP servers registered per run. The servers come from `tenants.mcp` in the product's own
 shape — `mcpServers: {name: {command, args, env}}` for stdio servers, `{type: "url", url, transport}` for streamable-HTTP
-servers (the shape process-gpt-sample-app-wms documents). Claude Code reads a project-scoped `.mcp.json`, so one run's
-tools stay in one run's workspace; HTTP servers are written in Claude Code's native `{type: "http", url, headers}` form.
+servers (the shape process-gpt-sample-app-wms documents). Claude Code reads the run's `.mcp.json`
+(--mcp-config --strict-mcp-config), so one run's tools stay in one run's workspace; HTTP servers are written in Claude Code's
+native `{type: "http", url, headers}` form.
 
-G2 (capstone, 문서/시스템/참조/capstone-lab.md 5.2):
+G2 (PBL — 학생이 등록한 서버):
   ⓪ an HTTP server's `headers` (a token-protected server such as Google's) are written into .mcp.json with it — the
      portal's connection check (procsvc/mcp_check._StreamableHttp) and the system task after approval already send them,
-     so without this the agent alone failed authentication. Claude Code's .mcp.json takes `headers` for http/sse servers;
-     Codex takes `http_headers`. cleanup() removes them after the run like `env`.
+     so without this the agent alone failed authentication. cleanup() removes them after the run like `env`.
   ① `${SECRET:KEY}` placeholders in headers/env are filled here, right before the file is written (ProcessGPT mcp-hub
      catalog.py resolve_template, 115~137). The values come from context.prepare (the mcp_secrets table + HYD_SECRET_*),
      carried next to mcpServers under SECRETS_KEY so select_servers/gate_servers pass them through without a runner change;
@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -29,7 +28,7 @@ from procsvc import mcp_secrets
 
 MCP_CONFIG_FILENAME = ".mcp.json"
 CONFIG_HOME_DIRNAME = ".agent-home"
-#: B2: the HYD-only key of a tenants.mcp entry (origin · connection-check stamp). Never written to .mcp.json / codex config.
+#: B2: the HYD-only key of a tenants.mcp entry (origin · connection-check stamp). Never written to .mcp.json.
 META_KEY = "hyd"
 #: G2: top-level key of the run's tenant_mcp copy that carries secret values from context.prepare to install(). Never written out.
 SECRETS_KEY = "hydSecrets"
@@ -54,11 +53,6 @@ def cleanup(workdir: Path) -> list[str]:
     credentials): the run is over, so the servers' env (DSNs, passwords) is removed from the workspace's .mcp.json — the
     directory is kept for 72 h for resumes, and every run calls install() again before it starts. Returns the server names
     whose env was removed."""
-    # A114 (A113 r14 A4): the Codex path wrote the same server env (DSNs, the Neo4j password) into codex-mcp.toml — a copy
-    # of what is passed with -c — and left it in the 72 h workspace. install() rewrites it before every run, so it goes.
-    codex_copy = Path(workdir) / "codex-mcp.toml"
-    if codex_copy.exists():
-        codex_copy.unlink()
     path = Path(workdir) / MCP_CONFIG_FILENAME
     if not path.exists():
         return []
@@ -263,7 +257,7 @@ _LITERAL_SECRET_MIN = 8
 
 
 def _written_secrets(original: dict | None, resolved: dict | None, stdio: list[McpServer], http: dict[str, str]) -> list[str]:
-    """W2 (2026-10-23 검수): every secret this run writes in clear into the workspace config (.mcp.json / codex config) —
+    """W2 (2026-10-23 검수): every secret this run writes in clear into the workspace config (.mcp.json) —
     the values filled from ${SECRET:KEY} (and the header/env values they were filled into) and the literal values under a
     secret-looking header or env name (a stdio server's NEO4J_PASSWORD). The agent can Read its workspace, so these join
     the redaction list: trace, events rows, stored tool outputs and CLI errors must not carry them."""
@@ -287,12 +281,10 @@ def _written_secrets(original: dict | None, resolved: dict | None, stdio: list[M
 RUN_SCOPE_SERVERS = ("hyd-dmn",)
 
 
-def install(workdir: Path, tenant_mcp: dict | None, *, provider_id: str = "claude-code", isolate_config_dir: bool = False,
-            extra_env: dict[str, str] | None = None, host_rewrite: dict[str, str] | None = None,
-            read_tools: dict[str, list[str]] | None = None, run_headers: dict[str, str] | None = None) -> BridgeResult:
-    """Register the tenant's servers for one run in `workdir` (idempotent: rewrites the same entries).
-    read_tools (B2, from gate_servers): a gated server's read-only tools — Codex enables only those (Claude Code gets them
-    through --allowedTools / --disallowedTools in the runner)."""
+def install(workdir: Path, tenant_mcp: dict | None, *, extra_env: dict[str, str] | None = None,
+            host_rewrite: dict[str, str] | None = None, run_headers: dict[str, str] | None = None) -> BridgeResult:
+    """Register the tenant's servers for one run in `workdir` (idempotent: rewrites the same entries). A gated server's
+    read-only tools reach Claude Code through --allowedTools / --disallowedTools in the runner."""
     private = ((tenant_mcp or {}).get(RUNTIME_KEY) or {}).values()
     redaction_values = [value for held in private for value in (held.get("headers") or {}).values()]
     original = tenant_mcp
@@ -303,26 +295,6 @@ def install(workdir: Path, tenant_mcp: dict | None, *, provider_id: str = "claud
     headers_of = lambda name: dict(_headers(tenant_mcp, name), **((run_headers or {}) if name in RUN_SCOPE_SERVERS else {}))   # noqa: E731
     redaction_values += [value.removeprefix(scheme) for value in redaction_values for scheme in _AUTH_SCHEMES if value.startswith(scheme)]
     redaction_values = list(dict.fromkeys(redaction_values))
-    if provider_id == "codex":
-        # cliagents' installed McpServer/install_bridge only supports stdio.
-        # Native per-invocation overrides support both transports and keep the
-        # user's config, login and session store intact. Never register tenant
-        # servers globally: another tenant could overwrite them during a run.
-        entries = {s.name: {"command": s.command, "args": s.args, "env": s.env} for s in stdio}
-        entries.update({name: dict({"url": url}, **({"http_headers": headers_of(name)} if headers_of(name) else {}))
-                        for name, url in http.items()})
-        for name, entry in entries.items():
-            entry.update(required=True, startup_timeout_sec=60, default_tools_approval_mode="approve")
-            if name == "neo4j":
-                entry["enabled_tools"] = ["get_neo4j_schema", "read_neo4j_cypher"]
-            elif name in (read_tools or {}):
-                entry["enabled_tools"] = list(read_tools[name])
-        path = workdir / "codex-mcp.toml"
-        config = "mcp_servers=" + _inline_toml(entries)
-        path.write_text(config + "\n", encoding="utf-8")
-        return BridgeResult(servers=list(entries), config_path=str(path), dropped=dropped, redaction_values=redaction_values,
-                            extra_args=["--ignore-user-config", "--disable", "apps",
-                                        "-c", "project_doc_max_bytes=0", "-c", config])
     path = workdir / MCP_CONFIG_FILENAME
     # A resumed workspace may have had a different capability selection. Rebuild
     # the entire run-local registry instead of retaining previously allowed tools.
@@ -342,26 +314,13 @@ def install(workdir: Path, tenant_mcp: dict | None, *, provider_id: str = "claud
         entries.pop(name, None)         # an earlier run's entry for a server this run cannot start
     config["mcpServers"] = entries
     path.write_text(json.dumps(config, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    return BridgeResult(servers=list(entries), config_path=str(path), env=runtime_env(workdir, provider_id, isolate_config_dir),
+    return BridgeResult(servers=list(entries), config_path=str(path), env=runtime_env(workdir),
                         dropped=dropped, redaction_values=redaction_values, extra_args=["--mcp-config", str(path), "--strict-mcp-config"])
 
 
-def _inline_toml(value) -> str:
-    if isinstance(value, dict):
-        return "{" + ", ".join(json.dumps(str(k)) + "=" + _inline_toml(v) for k, v in value.items()) + "}"
-    if isinstance(value, list):
-        return "[" + ", ".join(_inline_toml(v) for v in value) + "]"
-    return json.dumps(value, ensure_ascii=False)
-
-
-def runtime_env(workdir: Path, provider_id: str, isolate_config_dir: bool) -> dict[str, str]:
-    """Per-run config home for Claude Code (the product's RuntimeLease) — only when an API key authenticates the CLI;
-    a subscription login lives in the shared config dir and would be lost (지운 DECISIONS.md 12번, git 이력)."""
-    if provider_id != "claude-code":
-        return {}
-    env = {"ENABLE_CLAUDEAI_MCP_SERVERS": "false"}
-    if not isolate_config_dir and os.getenv('HYD_MANAGED_MODEL_REQUIRED') != '1':
-        return env
-    home = workdir / CONFIG_HOME_DIRNAME / provider_id
+def runtime_env(workdir: Path) -> dict[str, str]:
+    """Per-run config home for Claude Code (the product's RuntimeLease). The CLI authenticates only with this run's gateway token
+    (course_access.permit), never with a personal login, so no shared config dir is ever needed."""
+    home = workdir / CONFIG_HOME_DIRNAME / "claude-code"
     home.mkdir(parents=True, exist_ok=True)
-    return {**env, "CLAUDE_CONFIG_DIR": str(home)}
+    return {"ENABLE_CLAUDEAI_MCP_SERVERS": "false", "CLAUDE_CONFIG_DIR": str(home)}

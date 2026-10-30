@@ -1,4 +1,5 @@
-"""Internal, claim-bound OAuth credentials; never mounted on a portal route."""
+"""워커만 부르는 내부 경로의 공용 확인 — 실행기 인증 파일(_key), 살아 있는 점유(_claim), 로그인 연결 MCP 서버의 점유에 묶인 실행 자격(resolve ·
+authorize_relay). 포털 경로에는 붙이지 않는다. 쓰는 곳: 수업 경계 판정(course_policy) · 로컬 중계 관문(course_model) · MCP 로그인 중계."""
 import hmac
 import hashlib
 import base64
@@ -16,7 +17,11 @@ from . import mcp_registry, mcp_secrets, mcp_check
 
 
 def _key() -> str:
-    key_file = Path(os.getenv("HYD_WORKER_RUNTIME_KEY_FILE", "/data/mcp/worker-runtime.key"))
+    """워커 인증 파일(compose 가 process · 워커에 같은 자리를 준다 — HYD_WORKER_RUNTIME_KEY_FILE 한 곳)."""
+    path = os.getenv("HYD_WORKER_RUNTIME_KEY_FILE")
+    if not path:
+        raise HTTPException(503, "실행 연결 인증 파일 자리(HYD_WORKER_RUNTIME_KEY_FILE)가 설정되지 않았습니다")
+    key_file = Path(path)
     try:
         key = key_file.read_text(encoding="utf-8").strip()
     except OSError:

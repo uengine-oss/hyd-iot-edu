@@ -19,7 +19,7 @@
     'trace.failed': '실패', 'trace.running': '실행 중', 'trace.took': '걸림', 'trace.waitHuman': '담당자의 입력을 기다리는 중', 'trace.waitAgent': 'AI 에이전트가 일을 받기를 기다리는 중',
     'trace.working': 'AI 에이전트가 작업하는 중', 'trace.thinking': '다음 행동을 정하는 중', 'trace.waitSystem': '시스템이 처리하는 중', 'trace.waitTimer': '정해진 시간까지 기다리는 중',
     'trace.submitted': '결과를 받아 다음 단계로 넘기는 중', 'trace.pending': '조건이 맞을 때까지 보류', 'trace.asked': '사람에게 묻는 중', 'trace.left': '남음', 'trace.overdue': '기한 지남',
-    'trace.picked': '맡음', 'trace.done': '끝남', 'trace.outputs': '넘긴 값', 'trace.steps': '단계', 'trace.tools': '도구 호출', 'trace.status': '상태', 'trace.elapsed': '걸린 시간',
+    'trace.picked': '맡음', 'trace.done': '끝남', 'trace.outputs': '넘긴 값', 'trace.steps': '단계', 'trace.stepsDone': '마친 단계', 'trace.tools': '도구 호출', 'trace.status': '상태', 'trace.elapsed': '걸린 시간',
     'trace.gen': '회차', 'trace.detail': '단계 자세히', 'trace.answer': '답변', 'trace.more': '이전 기록 {n}건 더 보기', 'trace.case': '처리 건 전체', 'trace.next': '다음',
     'trace.kind.agent': 'AI 에이전트', 'trace.kind.human': '담당자', 'trace.kind.system': '시스템', 'trace.kind.timer': '대기', 'trace.kind.event': '이벤트',
     'trace.act.command': '설비 명령', 'trace.act.mail': '메일', 'trace.act.order': '발주', 'trace.act.receipt': '입고 확인', 'trace.act.schedule': '일정', 'trace.act.workorder': '정비 요청',
@@ -223,7 +223,7 @@
           }
           if (d.type === 'skill_used') {
             rows.push({key:'w:' + e.id, kind:'system', status:'idle', t0:e.timestamp, title:'스킬 파일 읽기 요청',
-              text:`${UI.skillLabel(d,true).label} · ${window.hydWords ? hydWords.toolName(d.via) : UI.toolName(d.via || '') || '도구'} · 읽기 성공 여부는 이 기록만으로 확인할 수 없습니다`, raw:d});
+              text:`${d.recorded ? `강사가 저장한 답의 실행 · 스킬 ${d.skill}` : UI.skillLabel(d,true).label} · ${window.hydWords ? hydWords.toolName(d.via) : UI.toolName(d.via || '') || '도구'} · 읽기 성공 여부는 이 기록만으로 확인할 수 없습니다`, raw:d});
             break;
           }
           if (e.job_id === 'MCP_RESULT_VALUES') {
@@ -313,7 +313,8 @@
     }).sort((a, b) => (ts(a.t0) ?? 9e15) - (ts(b.t0) ?? 9e15) || a.order - b.order);
     const loose = rowsOf(byTodo.get('') || [], null);       // instance-level records without a work item
     const inst = view && view.instance;
-    return { steps, loose, inst, done: steps.filter(s => s.state === 'ok').length, total: (def.activities || []).length,
+    // 마친 단계 수 = 끝낸 활동 수(같은 단계를 다시 수행해도 한 번). 정의 전체 활동 수로 나누지 않는다 — 타지 않은 갈래까지 분모에 들어가 덜 끝난 것처럼 보였다
+    return { steps, loose, inst, done: new Set(steps.filter(s => s.state === 'ok').map(s => s.w.activity_id)).size,
       tools: steps.reduce((n, s) => n + s.tools, 0), running: !!running, t0: inst && inst.start_date, t1: inst && inst.end_date };
   }
 
@@ -477,7 +478,7 @@
     const st = m.inst.status, tone = st === 'RUNNING' ? 'run' : st === 'COMPLETED' ? 'ok' : st === 'CANCELLED' || st === 'FAILED' ? 'fail' : 'idle';
     const el = m.t0 ? (m.t1 ? `<b>${esc(fmtMs(ts(m.t1) - ts(m.t0)))}</b>` : `<b data-since="${esc(m.t0)}">${esc(fmtMs(Date.now() - ts(m.t0)))}</b>`) : '<b>–</b>';
     return `<div class="tr-status ${tone}"><div><span>${esc(UI.t('trace.status'))}</span><b class="tr-st">${tone === 'run' ? spinner('sm') : stateMark(tone)} ${esc(UI.status(st))}</b></div>
-      <div><span>${esc(UI.t('trace.elapsed'))}</span>${el}</div><div><span>${esc(UI.t('trace.steps'))}</span><b>${m.done} / ${m.total}</b></div><div><span>${esc(UI.t('trace.tools'))}</span><b>${m.tools}</b></div></div>`;
+      <div><span>${esc(UI.t('trace.elapsed'))}</span>${el}</div><div><span>${esc(UI.t('trace.stepsDone'))}</span><b>${m.done}</b></div><div><span>${esc(UI.t('trace.tools'))}</span><b>${m.tools}</b></div></div>`;
   }
 
   /* ---------------------------------------------------------------- 1초 시계: 경과 · 남은 시간 (다시 그리지 않고 글자만) */

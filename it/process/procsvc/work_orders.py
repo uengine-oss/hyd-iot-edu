@@ -33,7 +33,7 @@ def request_for_option(option):
             **({'schedule_plan':deepcopy(option['maintenancePlan'])} if option.get('maintenancePlan') else {})}
 
 
-def prepare(ctx, decision, item, *, allow_before_recovery=False):
+def prepare(ctx, decision, item):
     """Save exactly the request that will be retried before calling CMMS."""
     inc_id = (decision.get('origin') or {}).get('incident')
     if not inc_id:
@@ -53,7 +53,7 @@ def prepare(ctx, decision, item, *, allow_before_recovery=False):
             if inc.work_order_request != request:
                 raise ValueError('work order retry conflicts with its saved request')
         else:
-            if inc.state != 'RESOLVED' and not ((not commands or allow_before_recovery) and inc.state == 'AWAITING_APPROVAL'):
+            if inc.state != 'RESOLVED' and not (not commands and inc.state == 'AWAITING_APPROVAL'):
                 raise ValueError(f'work order requires confirmed recovery or an approved work-order-only choice: {inc.state}')
             inc.work_order_request = request
             try:
@@ -64,7 +64,7 @@ def prepare(ctx, decision, item, *, allow_before_recovery=False):
     # Closed is an idempotent response replay; escalation requires human review.
     if inc.state not in ('RESOLVED', 'AWAITING_APPROVAL', 'CLOSED'):
         raise ValueError(f'work order needs review after Incident state {inc.state}')
-    if commands and inc.state == 'AWAITING_APPROVAL' and not allow_before_recovery:
+    if commands and inc.state == 'AWAITING_APPROVAL':
         raise ValueError('work order must wait for confirmed plant recovery')
     return inc
 

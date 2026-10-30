@@ -20,9 +20,11 @@
   function mount(el) {
     W.el = el;
     render();
-    if (!W.patterns) getJ(API.agent + '/api/ontology/patterns').then(p => { W.patterns = p || []; if (!W.pattern && W.patterns[0]) W.pattern = W.patterns[0].code; render(); })
-      .catch(e => { W.patterns = []; W.msg = '이상 패턴 목록을 읽지 못했습니다: ' + e.message; render(); });
+    if (!W.patterns) getJ(API.agent + '/api/ontology/patterns').then(p => { W.patterns = p || []; W.patternsError = ''; if (!W.pattern && W.patterns[0]) W.pattern = W.patterns[0].code; render(); })
+      .catch(e => { W.patterns = null; W.patternsError = e.message; W.msg = '이상 패턴 목록을 읽지 못했습니다: ' + e.message; render(); });
   }
+  // 패턴 목록을 못 읽었으면 셸이 메뉴를 다시 열 때 새로 읽는다
+  const failed = () => !W.patterns && !!W.patternsError;
 
   async function load() {
     if (W.busy) return;
@@ -277,6 +279,6 @@
       rows + `<p class="field-hint">${esc(m.basis || '')} · 값 바꿔 보기와 경계값은 '조건별 손익' 화면에서</p>`, { cls: 'small' });
   }
 
-  window.hydWhatif = { mount, moneyFold, _W: W, _render: render };
+  window.hydWhatif = { mount, failed, moneyFold, _W: W, _render: render };
   // 셸(shell.js MOUNTS.whatif)이 #/whatif 를 처음 열 때 mount(#whatifView)를 부른다.
 })();

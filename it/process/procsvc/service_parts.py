@@ -2,8 +2,9 @@
 
 모든 처리기는 _run_service 가 그 처리 건의 전이 잠금 안에서 부른다(행은 SUBMITTED, consumer '<engine>:service').
   * 끝나면 self.submit(…, by="process") 로 결과를 내고 흐름이 다음으로 간다.
-  * 기다리는 부품(시간 대기 · 입고 확인 · 작업지시 뒤 재관측)은 첫 실행에 끝 시각을 행의 draft · due_date 에 저장하고 SUBMITTED 로 둔다.
-    폴링(reconcile_services → procdb.waiting_services)이 2초마다 다시 부르고, 끝 시각이 지나면 제출한다. 재시작해도 저장한 시각을 쓴다.
+  * 기다리는 부품(시간 대기 · 입고 확인 · 재관측)은 첫 실행에 끝 시각을 행의 draft · due_date 에 저장하고 SUBMITTED 로 둔다.
+    폴링(reconcile_services → procdb.waiting_services)은 끝 시각이 지난 행만 다시 부르고 그때 제출한다. 재시작해도 저장한 시각을 쓴다.
+  * 시각은 모두 런타임의 주입 시계(self._now)에서 온다.
   * 실패는 ServiceExecutionError(응답 그대로) → _fail. 중복 방지 미확인 외부 쓰기는 즉시 PENDING, 나머지는 3회까지 재시도한다.
   * 바깥 효과(MCP 쓰기 · ERP 발주 · 입고 · 정비 모사)는 처리 건에 사람 승인(approved_by)이 있어야 실행한다(등록 검사에 더한 이중 확인).
     업무 쪽 멱등 키(decision + skill)와 지원하는 MCP의 idempotency_key(처리 건:작업)를 쓴다. 미지원·응답 불명은 재실행을 멈춘다.
@@ -14,7 +15,6 @@ import json
 import logging
 import uuid
 from copy import deepcopy
-from datetime import datetime, timezone
 
 from . import engine, effect_parts, inbox
 from . import definition as incident_def
@@ -22,10 +22,6 @@ from . import definition as incident_def
 log = logging.getLogger("process.service_parts")
 
 REOBSERVE_MAX_EXTENSIONS = incident_def.REOBSERVE_MAX_EXTENSIONS
-
-
-def _clock(now):
-    return now or datetime.now(timezone.utc)
 
 
 class ServicePartsRuntime:
@@ -230,7 +226,7 @@ class ServicePartsRuntime:
             raise ServiceExecutionError({"error": res.get("error") or (result.get("text") or "")[:300] or "MCP 도구가 오류를 돌려줬습니다",
                                          "server": server, "tool": tool, "status": res.get("status"), "error_kind": res.get("error_kind")})
         receipt = {"server": server, "tool": tool, "arguments": res.get("arguments", arguments), "idempotency_key": key,
-                   "idempotent": res.get("idempotent"), "result": result.get("text"), "called_at": engine.now_iso(_clock(now))}
+                   "idempotent": res.get("idempotent"), "result": result.get("text"), "called_at": engine.now_iso(self._now(now))}
         return receipt, result
 
     # ---------------------------------------------------------------- ERP 발주
@@ -249,7 +245,7 @@ class ServicePartsRuntime:
 
     # ---------------------------------------------------------------- 시간 대기
     def _run_wait(self, inst: dict, wi: dict, now) -> None:
-        clock = _clock(now)
+        clock = self._now(now)
         state = self._state(wi)
         if "wait" not in state:
             cfg = self._activity_of(wi).get("service") or {}
@@ -276,10 +272,10 @@ class ServicePartsRuntime:
         immediate = bool(((v.get("chosen_option") or {}).get("window") or {}).get("immediate"))
         if cfg.get("until") and immediate and "wait" not in state:
             # C3: 승인한 카드가 '즉시(지금 정지하고 시행)'면 기다릴 예정된 정비 시간이 없다 — 바로 정비한다
-            state = self._save_state(wi, wait={"due_at": engine.now_iso(_clock(now)), "real_s": 0, "label": "즉시 시행", "immediate": True})
+            state = self._save_state(wi, wait={"due_at": engine.now_iso(self._now(now)), "real_s": 0, "label": "즉시 시행", "immediate": True})
             self._event(wi, "WAIT_SKIPPED", "즉시 시행 — 예정된 정비 시간 대기 없음", {"window": (v.get("chosen_option") or {}).get("window")})
         if cfg.get("until"):                       # 예정된 정비 시간까지 먼저 기다린다(시간 대기와 같은 계산 · 같은 수업 압축)
-            clock = _clock(now)
+            clock = self._now(now)
             if "wait" not in state:
                 try:
                     plan = effect_parts.wait_for({"until": cfg["until"], "label": "예정된 정비 시간까지"}, v, clock, self.time_scale)
@@ -306,7 +302,7 @@ class ServicePartsRuntime:
                   + (f", 대상 {cfg['component']}" if cfg.get("component") else ""))
         out = {"asset": v.get("asset"), "component": cfg.get("component") or "all", "work_order": (wo or {}).get("ref") if isinstance(wo, dict) else None,
                "completed": state.get("completed"), "restored": state.get("restored"), "notice": notice,
-               "done_at": engine.now_iso(_clock(now))}
+               "done_at": engine.now_iso(self._now(now))}
         self._event(wi, "MAINTENANCE_DONE", "정비 완료 공지", {"notice": notice})
         self._after_commit(inbox.notify_participants, self.repo, self.tenant_id, dict(inst), "정비 완료", notice)
         self.submit(wi["id"], {"maintenance": out}, by="process", now=now)
@@ -318,7 +314,7 @@ class ServicePartsRuntime:
         po = v.get(cfg.get("purchase_order_var") or "purchase_order")
         if not isinstance(po, dict) or not po.get("ref"):
             raise ValueError("입고를 확인할 발주 영수증(purchase_order.ref)이 처리 건에 없습니다")
-        clock = _clock(now)
+        clock = self._now(now)
         state = self._state(wi)
         if cfg.get("immediate") and "wait" not in state:
             # C3 B · C 단순화: 발주 뒤 바로 입고 · 재고 반영(리드타임을 기다리지 않는다 — '처리되면 끝')
@@ -379,7 +375,7 @@ class ServicePartsRuntime:
         미달이면 리셋하지 않고 passed=False — 흐름의 분기가 '미달' 결과 보고로 간다(사람 task 없음)."""
         v = self._require_approval(inst, wi)
         cfg = self._activity_of(wi).get("service") or {}
-        clock = _clock(now)
+        clock = self._now(now)
         state = self._state(wi)
         if "settle" not in state:
             secs = engine.iso_duration_seconds(cfg.get("settle") or "PT10M") / max(1.0, self.time_scale)
@@ -442,7 +438,7 @@ class ServicePartsRuntime:
                 measured["reobservation"] = reading
         # C3: values = 측정값 목록(포털 결과 보고 카드 계약), facts = 처리 건의 승인 · 판정 값(전의 values dict)
         report = {"outcome": outcome, "level": level, "verdict": level, "title": title, "summary": summary, "by": "sys:process",
-                  "at": engine.now_iso(_clock(now)), "values": effect_parts.report_values(measured),
+                  "at": engine.now_iso(self._now(now)), "values": effect_parts.report_values(measured),
                   "facts": {k: v.get(k) for k in keep if v.get(k) is not None},
                   "refs": {k: (v.get(k) or {}).get("ref") for k in ("work_order", "purchase_order", "goods_receipt", "mcp_receipt")
                            if isinstance(v.get(k), dict) and (v.get(k) or {}).get("ref")}}
@@ -470,28 +466,30 @@ class ServicePartsRuntime:
                            {"instance": inst["proc_inst_id"], "outcome": outcome, "level": level, "title": title}, incident=v.get("incident"))
         self.submit(wi["id"], {"result_report": report}, by="process", now=now)
 
-    # ---------------------------------------------------------------- 작업지시로 닫힌 사건의 효과 재관측
-    def _reobserve_after_work_order(self, inst: dict, wi: dict, now, inc_id: str) -> None:
-        """설비 명령 없이 작업지시로 닫힌 사건(정비형 흐름: 예약 → 대기 → 정비 → 확인)의 재관측. 사건의 재관측(machine.on_timer)은 명령 뒤에만
-        돌기 때문에, 이전에는 이 task 가 사건 상태 CLOSED 만 보고 recovered=True 를 냈다(실제 관측 없음). 이제 같은 규칙으로 실제로 본다:
-        재관측 창(15 시뮬레이션 분 ÷ 배속)을 기다린 뒤 사건의 회복 기준 태그 최신값과 경보 해제(CLEAR)를 읽어, 기준 안 + 해제면 회복.
-        값은 기준 안인데 해제가 아직이면 창의 3분의 1씩 최대 3번 늘린다(machine 과 같음)."""
-        clock = _clock(now)
+    # ---------------------------------------------------------------- 재관측 (한 벌 — 명령 뒤 · 작업지시 뒤)
+    AFTER_LABEL = {"command": "명령 뒤", "work_order": "작업지시 뒤"}
+
+    def _reobserve(self, inst: dict, wi: dict, now, inc_id: str, *, after: str, cmd_id: str | None = None) -> None:
+        """재관측 규칙 하나(A-02): 창(15 시뮬레이션 분 ÷ 배속)의 마감을 이 행의 draft · due_date 에 저장하고 폴링이 판정한다 — process 가 다시
+        켜져도 저장한 마감으로 이어 간다(재관측은 읽기라 다시 해도 안전). 마감이 지나면 사건의 회복 기준 태그 최신값과 경보 해제(CLEAR)를 읽어
+        기준 안 + 해제면 회복. 값은 기준 안인데 해제가 아직이면 창의 3분의 1씩 최대 3번 늘린다(감지기 해제 지연 60 s, A072).
+        after='command': 명령을 낸 사건(RE_OBSERVING)이다 — 판정을 사건에 적는다(RESOLVED · ESCALATED). 'work_order': 명령 없이 작업지시로 닫힌
+        사건(정비형 흐름)이다 — 사건은 이미 닫혔고 이 단계의 회복 여부만 낸다."""
+        clock = self._now(now)
         state = self._state(wi)
         if "reobserve" not in state:
             secs = incident_def.REOBSERVE_SIM_S / max(1.0, self.time_scale)
-            plan = {"kind": "work_order", "started_at": engine.now_iso(clock), "due_at": engine.now_iso(clock + _td(secs)),
+            plan = {"kind": after, "cmd_id": cmd_id, "started_at": engine.now_iso(clock), "due_at": engine.now_iso(clock + _td(secs)),
                     "window_s": round(secs, 1), "extensions": 0}
             wi["due_date"] = plan["due_at"]
-            wi["log"] = (wi.get("log") or "") + f"re-observing after the work order for {secs:.0f} s; "
+            wi["log"] = (wi.get("log") or "") + f"re-observing {after} for {secs:.0f} s until {plan['due_at']}; "
             state = self._save_state(wi, reobserve=plan)
-            self._event(wi, "REOBSERVE_STARTED", "효과 재관측 시작 (작업지시 뒤)", {"plan": plan})
+            self._event(wi, "REOBSERVE_STARTED", f"효과 재관측 시작 ({self.AFTER_LABEL[after]})", {"plan": plan})
         plan = state["reobserve"]
         if effect_parts.parse_time(plan["due_at"]) > clock:
             return
         # A161-G3: with the window start, the reading carries the values seen during the window (reading.series)
-        reading = (self.hooks.recovery_reading(inc_id, since=plan["started_at"]) if plan.get("started_at")
-                   else self.hooks.recovery_reading(inc_id)) if self.hooks.recovery_reading is not None else None
+        reading = self.hooks.recovery_reading(inc_id, since=plan["started_at"], after=after) if self.hooks.recovery_reading is not None else None
         if not reading or not reading.get("criterion"):
             recovered, reading = False, dict(reading or {}, reason="회복 기준이 없거나 읽을 수 없습니다")
         else:
@@ -503,12 +501,25 @@ class ServicePartsRuntime:
                 wi["due_date"] = plan["due_at"]
                 self._save_state(wi, reobserve=plan)
                 self._event(wi, "REOBSERVATION_EXTENDED", "재관측 연장 (값은 기준 안, 경보 해제 대기)", {"reading": reading, "plan": plan})
+                if after == "command" and self.hooks.reobservation_extended is not None:
+                    self.hooks.reobservation_extended(inc_id, plan["cmd_id"], reading, plan["extensions"], secs)
                 return
-        v = engine.variables(inst)
-        self._after_commit(self.hooks.audit, v.get("asset", "-"), "process", "REOBSERVATION",
-                           {"instance": inst["proc_inst_id"], "after": "work_order", "passed": recovered, **{k: reading.get(k) for k in
-                            ("tag", "value", "criterion", "cleared")}}, incident=inc_id)
-        self._event(wi, "REOBSERVATION", "효과 재관측 판정", {"recovered": recovered, "reading": reading})
+        if after == "command":
+            if self.hooks.reobservation_verdict is None:
+                raise ValueError("재관측 판정을 사건에 적는 기능이 연결되지 않았습니다")
+            if not self.hooks.reobservation_verdict(inc_id, plan["cmd_id"], recovered, reading, plan["extensions"]):
+                # 그 사이 사건이 다른 길로 갔다(재작업으로 명령이 바뀜 등) — 이 창의 판정을 쓰지 않고 사건의 지금 상태를 따른다
+                snap = self.hooks.incident_snapshot(inc_id) or {}
+                if snap.get("state"):
+                    self.on_incident_update(snap["state"], inc_id, False, now)
+                return
+        else:
+            v = engine.variables(inst)
+            self._after_commit(self.hooks.audit, v.get("asset", "-"), "process", "REOBSERVATION",
+                               {"instance": inst["proc_inst_id"], "after": "work_order", "passed": recovered, **{k: reading.get(k) for k in
+                                ("tag", "value", "criterion", "cleared")}}, incident=inc_id)
+        self._event(wi, "REOBSERVATION", f"효과 재관측 판정 ({self.AFTER_LABEL[after]})", {"recovered": recovered, "reading": reading,
+                                                                                         "extensions": plan["extensions"]})
         self.submit(wi["id"], {"recovered": recovered}, by="process", now=now)
 
 

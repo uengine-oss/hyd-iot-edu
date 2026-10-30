@@ -129,7 +129,8 @@ def register(app, *, runtime_factory, admit, open_alerts=lambda: [], audit=lambd
     def runtime():
         rt = runtime_factory()
         if rt is None:
-            raise HTTPException(409, "사람 입력 경보는 instance 실행 서비스에서 받습니다 (PROCESS_MODE=instance)")
+            from .instances import NOT_READY      # 런타임 모듈 — 이 모듈이 먼저 읽혀도 순환 import 가 되지 않게 여기서
+            raise HTTPException(503, NOT_READY)
         return rt
 
     @app.get("/api/human-alerts/form")

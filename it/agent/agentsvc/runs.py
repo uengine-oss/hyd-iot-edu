@@ -1,4 +1,4 @@
-"""Agent run registry: one run per alertId (duplicate RAISE messages never start a second reasoning run)."""
+"""Agent run registry: 읽기 평가 실행(/api/agent/evaluate) 기록 — 실행마다 새 id, 최근 keep 개만 둔다."""
 from dataclasses import dataclass, field
 from collections import OrderedDict
 from threading import RLock
@@ -12,12 +12,11 @@ class Run:
     alert_id: str
     asset: str
     alert: dict
-    status: str = "RUNNING"          # RUNNING | SUBMITTED | EVALUATED (instance mode: read-only evaluation, no submit) | REJECTED_BY_GUARDRAIL | WITHHELD | FAILED
+    status: str = "RUNNING"          # RUNNING | EVALUATED (read-only evaluation, no submit) | REJECTED_BY_GUARDRAIL | WITHHELD | FAILED
     started: str = field(default_factory=now_iso)
     ended: str | None = None
     steps: list[dict] = field(default_factory=list)
     card: dict | None = None
-    incident_id: str | None = None
     error: str | None = None
     evaluation: dict | None = None
 
@@ -32,49 +31,29 @@ class Run:
     def to_dict(self) -> dict:
         return {"id": self.id, "alertId": self.alert_id, "asset": self.asset, "status": self.status,
                 "started": self.started, "ended": self.ended, "steps": self.steps, "card": self.card,
-                "incidentId": self.incident_id, "error": self.error, "evaluation": self.evaluation}
+                "error": self.error, "evaluation": self.evaluation}
 
 
 class RunRegistry:
     def __init__(self, keep: int = 200):
         self.keep = keep
         self._runs: OrderedDict[str, Run] = OrderedDict()
-        self._by_alert: dict[str, str] = {}
         self._seq = 0
         self._lock = RLock()
 
-    def create_if_new(self, alert: dict) -> Run | None:
+    def new(self, alert: dict) -> Run:
+        """같은 경보라도 평가할 때마다 새 실행(새 id)."""
         with self._lock:
-            return self._create_if_new(alert)
-
-    def _create_if_new(self, alert: dict) -> Run | None:
-        aid = alert.get("alertId")
-        if not aid or aid in self._by_alert:
-            return None
-        self._seq += 1
-        run = Run(id=f"RUN-{self._seq:04d}", alert_id=aid, asset=alert.get("asset", "?"), alert=alert)
-        self._runs[run.id] = run
-        self._by_alert[aid] = run.id
-        while len(self._runs) > self.keep:
-            old_id, old = self._runs.popitem(last=False)
-            if self._by_alert.get(old.alert_id)==old_id:
-                self._by_alert.pop(old.alert_id, None)
-        return run
-
-    def force_new(self, alert: dict) -> Run:
-        """Explicit fresh evaluation for the same alert, with a unique run ID."""
-        with self._lock:
-            self._by_alert.pop(alert.get("alertId"), None)
-            return self._create_if_new(alert)
+            self._seq += 1
+            run = Run(id=f"RUN-{self._seq:04d}", alert_id=alert.get("alertId"), asset=alert.get("asset", "?"), alert=alert)
+            self._runs[run.id] = run
+            while len(self._runs) > self.keep:
+                self._runs.popitem(last=False)
+            return run
 
     def get(self, run_id: str) -> Run | None:
         with self._lock:
             return self._runs.get(run_id)
-
-    def by_alert(self, alert_id: str) -> Run | None:
-        with self._lock:
-            rid = self._by_alert.get(alert_id)
-            return self._runs.get(rid) if rid else None
 
     def all(self) -> list[Run]:
         with self._lock:

@@ -17,3 +17,16 @@ function Get-InstallAction($found, $minimum) {
     if ($current -lt $required) { return 'upgrade' }
     return 'keep'
 }
+
+# 기준 판은 scripts\versions.txt 하나에서 읽는다(Mac 설치 · 시작도 같은 파일). 빠진 줄이 있으면 설치를 시작하지 않는다.
+function Get-InstallVersions {
+    $path = Join-Path $PSScriptRoot 'versions.txt'
+    $values = @{}
+    foreach ($line in (Get-Content -LiteralPath $path -Encoding UTF8)) {
+        if ($line -match '^([A-Z_]+)=(\S+)$') { $values[$Matches[1]] = $Matches[2] }
+    }
+    foreach ($name in 'DOCKER_DESKTOP_MIN', 'VSCODE_MIN', 'NODE_MIN', 'GIT_MIN', 'PYTHON_MIN', 'PYTHON_NEW', 'WSL_MIN', 'SUPABASE_CLI') {
+        if (-not $values[$name]) { throw "기준 판 파일($path)에 $name 줄이 없습니다." }
+    }
+    return $values
+}

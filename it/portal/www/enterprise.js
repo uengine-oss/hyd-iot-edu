@@ -118,9 +118,10 @@ function groupOf(label) {
   return i >= 0 ? i : ONTO_GROUPS.findIndex(g => g.other);
 }
 // A141: the graph API fills `name` with the id when a node has no name (Rule nodes) — then the names.json dictionary (annotation) applies
+// 이름 · 설명 속 경보 패턴 코드(COOLER_DEGRADATION 등)는 UI.words 가 사람 이름으로 바꾼다
 const nodeName = n => {
-  if (n.name && n.name !== n.id) return String(n.name);
-  if (n.props?.annotation || n.props?.title) return String(n.props.annotation || n.props.title);
+  if (n.name && n.name !== n.id) return UI.words(n.name);
+  if (n.props?.annotation || n.props?.title) return UI.words(n.props.annotation || n.props.title);
   const id = n.props?.definition_id || n.id;
   if (n.label === 'Process' || n.label === 'ProcessVersion') {
     const registered = ent.definitionNames[id + '@' + n.props?.version] || ent.definitionNames[id];
@@ -461,14 +462,14 @@ $('#decRun').addEventListener('click', runDecision);
 /* ================================================= 승인과 실행 */
 async function refreshProcess() {
   if (state.tab !== 'process') return;
-  if (!ent.mode) { try { ent.mode = await getJ(API.process + '/api/process/mode'); } catch (e) { ent.mode = null; } }   // 처리 건 방식이면 승인 폼 대신 처리 건으로 보낸다
   try { ent.decisions = await getJ(API.process + '/api/decisions'); ent.decisionsError = false; } catch (e) { ent.decisionsError = true; }
   try { [ent.entState, ent.tx] = await Promise.all([getJ(API.ent + '/api/state'), getJ(API.ent + '/api/transactions')]); } catch (e) { ent.entState = null; }
   if (!ent.decSel && ent.decisions.length) ent.decSel = ent.decisions[0].id;
   const selected = ent.decSel;
   if (selected) {
-    try { const detail = await getJ(API.process + '/api/decisions/' + selected); if (selected !== ent.decSel) return; ent.decDetail = detail; }
-    catch (e) { if (selected !== ent.decSel) return; ent.decDetail = null; }
+    // 고른 판단을 못 읽으면 「판단을 선택하세요」(안 고른 것)로 보이지 않는다 — 사유를 두고 2.5초마다 다시 읽는다
+    try { const detail = await getJ(API.process + '/api/decisions/' + selected); if (selected !== ent.decSel) return; ent.decDetail = detail; ent.decDetailError = ''; }
+    catch (e) { if (selected !== ent.decSel) return; ent.decDetail = null; ent.decDetailError = e.message; }
   }
   renderProcess();
 }
@@ -506,9 +507,9 @@ function renderProcess() {
 }
 function renderDecisionApproval() {
   const box = $('#decDetail'); const d = ent.decDetail;
-  if (!d) { ent.lastDetailSig = null; box.innerHTML = UI.empty(UI.t('proc.select')); return; }
+  if (!d) { ent.lastDetailSig = null; box.innerHTML = ent.decSel && ent.decDetailError ? UI.errorBlock('고른 판단을 읽지 못했습니다', ent.decDetailError + ' — 잠시 뒤 다시 읽습니다') : UI.empty(UI.t('proc.select')); return; }
   // the 2.5 s refresh must not wipe what the approver is typing or selecting: redraw only when the decision changed
-  const sig = d.id + '|' + d.state + '|' + (d.executions || []).length + '|' + (d.history || []).length + '|' + UI.namesVersion + '|' + ((ent.mode || {}).mode || '');
+  const sig = d.id + '|' + d.state + '|' + (d.executions || []).length + '|' + (d.history || []).length + '|' + UI.namesVersion;
   if (sig === ent.lastDetailSig && box.querySelector('.hitl-opts')) return;
   ent.lastDetailSig = sig;
   const roles = Object.entries(d.roles || {}).sort((a, b) => a[1].level - b[1].level);
@@ -522,8 +523,9 @@ function renderDecisionApproval() {
   let html = `<div class="detail-head"><div class="row"><h2>${esc(UI.idText(sc.name || ''))}</h2>${UI.chip(d.state)}</div><div class="sub">${esc(d.asset || '')}${d.approvedBy ? ` · ${esc(UI.t('inc.approvedBy'))} ${esc(d.approvedBy)}` : ''}</div></div>`;
   html += UI.evaluationHtml(d) + summaryBlock(d.explanation);
   html += UI.metaFold([[UI.t('dec.asset'), esc(d.asset || '')], ['고장 유형', esc(UI.idText(sc.failureMode || ''))], [UI.t('dec.cause'), esc(UI.idText(sc.cause || ''))], [UI.t('proc.submitted'), esc(UI.dateTime(d.created))], ['ID', `<span class="mono">${esc(d.id)}</span>`]], 'fold.case');
-  // 처리 건 방식에서는 이 판단의 승인이 처리 건의 사람 단계에서 이뤄진다(이 탭의 승인 API 는 409 로 거절) — 폼 대신 처리 건으로 가는 버튼 하나
-  const viaInstance = pending && (ent.mode || {}).mode === 'instance' && !!(d.origin || {}).incident;
+  // 사건(경보)에서 나온 판단은 처리 건의 승인 단계에서 승인 · 거절한다 — 폼 대신 처리 건으로 가는 버튼 하나(모드 조회에 기대지 않는다:
+  // 조회가 실패해도 옛 승인 폼으로 떨어져 409 를 받지 않게)
+  const viaInstance = pending && !!(d.origin || {}).incident;
   if (viaInstance) {
     html += `<div class="hitl-opts">${opts.map(o => cardHtml(o, { rec: d.recommended, chosen: d.chosen, maxAbs, decision: d })).join('')}</div>` +
       `<p class="field-hint">이 판단은 처리 건의 승인 단계에서 승인하거나 거절합니다.</p>` + UI.actions(`<button class="btn primary" id="decGoInstance">처리 건에서 승인하기 →</button>`, ent.form.msg || '');

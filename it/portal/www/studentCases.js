@@ -1,6 +1,6 @@
 /* K1: independent notebook configuration grouping; no identity/owner semantics. */
 (function () {
-  const h = value => String(value ?? '').replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
+  const h = esc;                                       // 포털 공용 이스케이프(ui.js)
   async function mount(host) {
     let rows = [], filter = '', busy = false;
     const drafts = new Map(), key = row => JSON.stringify([row.kind,row.asset_id]);

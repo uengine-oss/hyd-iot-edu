@@ -33,13 +33,13 @@ class ImportReq(BaseModel):
     definition_id: str | None = None
     # 새 경보 초안에만 적용. None은 기존 센서 기본값, []는 명시적으로 미선택.
     start_patterns: list[str] | None = None
-    # 강사 조립 스크립트(c3_flows.py)만 true — 지금 수업 흐름으로 배포된 흐름 id 를 다시 가져온다.
+    # 수업 흐름 설치(course_bootstrap — 시작.bat, 프로세스 안 호출)만 true — 지금 수업 흐름으로 배포된 흐름 id 를 다시 가져온다.
     class_flow: bool = False
 
 
 class MappingReq(BaseModel):
     mapping: dict | None = None
-    class_flow: bool = False          # 수업 흐름의 판본 등록은 강사 조립 스크립트(c3_flows.py)만 이 표시를 보낸다 — 포털은 보내지 않으므로 거절된다
+    class_flow: bool = False          # 수업 흐름의 판본 등록은 수업 흐름 설치(course_bootstrap)만 이 표시를 보낸다 — 밖에서 보내면 course_policy 가 거절한다
 
 
 def default_base_loader(rt) -> dict:
@@ -55,7 +55,8 @@ def register(app, *, runtime_factory, audit=lambda *a, **k: None, base_loader=de
     def runtime():
         rt = runtime_factory()
         if rt is None:
-            raise HTTPException(503, "흐름 가져오기에는 instance 실행 서비스가 필요합니다 (PROCESS_MODE=instance)")
+            from .instances import NOT_READY      # 런타임 모듈 — 이 모듈이 먼저 읽혀도 순환 import 가 되지 않게 여기서
+            raise HTTPException(503, NOT_READY)
         return rt
 
     async def run(fn):
@@ -81,6 +82,14 @@ def register(app, *, runtime_factory, audit=lambda *a, **k: None, base_loader=de
                 "reimport": report, "check": result, "next_version": result["definition"]["version"],
                 "versions": store.versions(def_id), "base": cat["base"]}
 
+    def course(check):
+        """수업 경계(course_policy) 판정 — 거절은 학생이 읽을 까닭과 403."""
+        from .course_policy import AccessDenied
+        try:
+            check(app.state.course)
+        except AccessDenied as exc:
+            raise HTTPException(403, str(exc)) from None
+
     def draft_of(store, def_id) -> dict:
         draft = store.get_draft(def_id)
         if draft is None:
@@ -103,6 +112,8 @@ def register(app, *, runtime_factory, audit=lambda *a, **k: None, base_loader=de
             def_id = (req.definition_id or "").strip() or bpmn_import.suggest_definition_id(parsed)
             if not bpmn_import.valid_definition_id(def_id):
                 raise HTTPException(400, {"reason": f"흐름 id '{def_id}'은(는) 쓸 수 없습니다 — 영문자로 시작하고 영문 · 숫자 · _ . - 만 (64자까지)"})
+            if not req.class_flow:
+                course(lambda policy: policy.import_flow(req.xml, def_id))
             store = FlowStore(rt.repo, rt.tenant_id)
             if store.is_protected(def_id):
                 raise HTTPException(409, {"reason": f"'{def_id}'은(는) 기준 흐름 id 입니다 — 기준은 바꾸지 않습니다. 다른 흐름 id 를 쓰세요"})
@@ -220,10 +231,8 @@ def register(app, *, runtime_factory, audit=lambda *a, **k: None, base_loader=de
                 raise HTTPException(409, {"reason": f"'{draft.get('name') or def_id}'은(는) 강사가 배포한 수업 흐름입니다 — 내 판본은 [흐름 가져오기]에서 "
                                                     "다른 흐름 id(예: my_cooling)로 가져와 등록하세요"})
             mapping = req.mapping if isinstance(req.mapping, dict) else (draft.get("mapping") or {})
-            if getattr(app.state, 'course_access', None) is not None:
-                from hydcommon.course_handover import DEFINITION, approved_xml, approved_mapping
-                if def_id == DEFINITION and (not approved_xml(draft['bpmn']) or not approved_mapping(mapping)):
-                    raise HTTPException(403, '제공된 교대 BPMN과 연결만 등록할 수 있습니다. 원본을 다시 가져와 확인하세요.')
+            if not req.class_flow:
+                course(lambda policy: policy.register_flow(def_id, draft['bpmn'], mapping))
             if isinstance(req.mapping, dict):
                 store.save_mapping(def_id, mapping)
             cat = catalog_of(rt)

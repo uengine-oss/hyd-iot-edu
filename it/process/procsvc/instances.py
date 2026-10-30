@@ -1,4 +1,4 @@
-"""Instance runtime (PROCESS_MODE=instance): the process instance owns the case; the agent and the people are tasks inside it.
+"""Instance runtime: the process instance owns the case; the agent and the people are tasks inside it.
 
 The runtime is the completion service of ProcessGPT in miniature (문서/시스템/참조/REPO_GAP.md §1):
 
@@ -10,12 +10,14 @@ The runtime is the completion service of ProcessGPT in miniature (문서/시스�
     timers       ─▶ fire_timeouts(): event work items past due_date ─▶ fire_event ─▶ attached task CANCELLED ─▶ escalate
     end event    ─▶ instance COMPLETED; ProcessInstance · WorkItem projected into the ontology (Execution layer)
 
-All IO goes through small callables (hooks) so this module is unit-testable with MemoryRepo and fakes.
+All IO goes through small callables (hooks) and the PostgreSQL repo (procdb.PgRepo). 시각은 모두 self.clock() 하나에서 온다
+(시험은 고정 시계를 준다) — 작업 행의 마감(due_date)이 시한의 유일한 원천이고 폴링이 판정한다.
 """
 from __future__ import annotations
 
 import json
 import logging
+import re
 import threading
 from uuid import uuid4
 from contextlib import contextmanager
@@ -25,7 +27,7 @@ from copy import deepcopy
 from datetime import datetime, timezone
 from typing import Callable
 
-from hydcommon.timeutil import now_iso, parse_iso
+from hydcommon.timeutil import parse_iso
 from hydcommon.process_contracts import pinned_form, validate_output
 from . import dependency_schedule, engine, inbox, procdb
 from . import definition as incident_def
@@ -41,9 +43,16 @@ from .service_parts import ServicePartsRuntime
 from . import effect_parts, approval_part
 
 log = logging.getLogger("process.instances")
+#: 처리 건 런타임이 아직 없을 때(기동 중 · 기동 실패) 화면에 가는 한 문장 — 런타임을 받아 쓰는 HTTP 경로가 모두 이 글로 503 을 낸다
+NOT_READY = "처리 흐름 서비스가 아직 켜지는 중입니다 — 1분 뒤 다시 시도하세요. 계속되면 시작.bat을 다시 실행하세요."
 
 MAX_RETRIES = 3                            # stop retrying after three failures; block for recovery, never imply success
 ENGINE_CONSUMER = "process-engine"
+# 커밋 뒤 효과의 학생용 이름(B-4 실패 기록) — 함수 이름 → 무엇을 남기려던 것인가
+_EFFECT_NAMES = {'_audit': '감사 기록', 'audit': '감사 기록', 'reject': '판단 원문의 거절 기록', 'record': '판단 기록',
+                 'notify_participants': '참여자 알림', '_notify_task': '담당자 알림', '_notify_end': '끝 알림', '_project': '지식 그래프 반영',
+                 'deliver_approval': '승인 전달', '_run_service': '시스템 단계 실행', '_reopen_for_recheck': '재분석 뒤 사건 다시 열기',
+                 '_close_service_progress': '도구 호출 기록 마무리', '_advance_delivered': '승인 뒤 다음 단계 진행'}
 EVENTS_WINDOW = 1500                       # A161-U1: events the instance view carries (newest); older pages via /api/events?before=
 
 
@@ -86,7 +95,10 @@ class Hooks:
     """IO the runtime needs from the process service. Every field has a harmless default so tests can pass only what they use."""
     new_incident: Callable[..., dict | None] = lambda alert, recovery_policy=None: None
     update_incident_card: Callable[[str, dict], None] = lambda inc_id, card: None  # the agent's guide card becomes the incident's card
-    approve_commands: Callable[[str, list[dict], str], dict] = lambda inc_id, commands, by: {}   # machine.on_approve wrapper -> cmd
+    approve_commands: Callable[..., dict] = lambda inc_id, commands, by, at=None: {}   # (사건, 명령, 승인자, 시각) → 송신 확인된 cmd
+    ack_timeout: Callable[[str, str], bool] | None = None                      # (사건, cmdId) → ACK 마감 지남 (machine.on_ack_timeout)
+    reobservation_extended: Callable[..., bool] | None = None                  # (사건, cmdId, 읽은 값, 연장 횟수, 초) — 창 연장 기록
+    reobservation_verdict: Callable[..., bool] | None = None                   # (사건, cmdId, 회복?, 읽은 값, 연장 횟수) — 판정을 사건에
     incident_state: Callable[[str], str | None] = lambda inc_id: None             # current Incident state (idempotent command issue)
     incident_snapshot: Callable[[str], dict | None] = lambda inc_id: None        # state/cleared restored from the Incident store
     decision_option: Callable[[str, str], dict | None] = lambda decision_id, option_id: None     # process 'book' lookup
@@ -124,10 +136,16 @@ class Hooks:
     case_started: Callable[[dict], None] | None = None                # C3: 처리 건이 막 열렸을 때(수업 버튼 연결 — 설비 주입 id 로)
 
 
+def _utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
 class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePartsRuntime):
     def __init__(self, repo, defn: engine.Definition, hooks: Hooks, time_scale: float = 20.0, tenant_id: str = "hyd",
-                 consumer: str = ENGINE_CONSUMER):
+                 consumer: str = ENGINE_CONSUMER, clock: Callable[[], datetime] | None = None):
         self.repo, self.defn, self.hooks, self.time_scale, self.tenant_id, self.consumer = repo, defn, hooks, time_scale, tenant_id, consumer
+        self.clock = clock or _utc_now
+        self._recorded_failures: set[tuple] = set()
         self._local=threading.local()
         self._actor_schema_lock = threading.Lock()
         self._actor_schema_ready = False
@@ -142,6 +160,23 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         if self.repo.deployed_version(defn.id, tenant_id) != defn.raw['version']:
             self.repo.record_deployment(defn.id, defn.raw['version'], tenant_id, action='seed', actor='process-engine',
                                         reason='기동 정의를 운영 판본으로 등록')
+
+    def _now(self, now: datetime | None = None) -> datetime:
+        """엔진이 시각을 읽는 단 하나의 자리 — 호출자가 시각을 주면 그것, 아니면 주입한 시계."""
+        return now or self.clock()
+
+    def _effect_failed(self, pid: str, fn, error: Exception) -> None:
+        """B-4: 커밋 뒤 효과(감사 · 판단 원문 거절 기록 · 알림 …)가 실패하면 로그로만 삼키지 않고 그 처리 건 기록에 남긴다(화면에 보인다)."""
+        name = getattr(fn, '__name__', None) or getattr(getattr(fn, 'func', None), '__name__', None) or type(fn).__name__
+        log.exception('post-commit effect %s failed for %s', name, pid)
+        try:
+            self.repo.record_events([{'job_id': 'POST_COMMIT_EFFECT_FAILED', 'todo_id': None, 'proc_inst_id': pid, 'crew_type': 'result',
+                                      'event_type': 'error',
+                                      'data': {'name': '처리 뒤 기록 실패', 'effect': name, 'raw_error': f'{type(error).__name__}: {str(error)[:300]}',
+                                               'friendly': f'처리는 저장됐지만 뒤따르는 기록({_EFFECT_NAMES.get(name, name)})을 남기지 못했습니다 — '
+                                                           '화면을 새로 고쳐도 남아 있으면 강사에게 알려 주세요'}}])
+        except Exception:  # noqa: BLE001 — 기록 저장소마저 실패하면 로그가 마지막 증거다
+            log.exception('post-commit effect failure could not be recorded for %s', pid)
 
     @contextmanager
     def _transition(self, pid):
@@ -177,8 +212,8 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
                             self._fail(args[1], ServiceLoopLimit('시스템 단계가 사람 대기 없이 100회 이어졌습니다. 반복 종료 조건을 확인하세요'), args[2])
                             continue
                     fn(*args, **kwargs)
-                except Exception:
-                    log.exception('post-commit effect failed for %s', pid)
+                except Exception as error:  # noqa: BLE001 — 다음 효과는 계속 돌고, 실패는 처리 건 기록에 남는다
+                    self._effect_failed(pid, fn, error)
         finally:
             self._local.effect_queue = None
 
@@ -192,7 +227,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
 
     def _check_deadline(self,wi,inst,defn,now):
         if inst.get('status')!='RUNNING':raise ValueError('instance is not running')
-        clock=now or datetime.now(timezone.utc)
+        clock=self._now(now)
         # C2: 멈추지 않는(알림) 타이머는 마감이 아니다 — 알림 뒤에도 담당자는 승인할 수 있다
         event_ids={e['id'] for e in defn.attached_events(wi['activity_id']) if e.get('cancelActivity') is not False}
         if any(w['activity_id'] in event_ids and w['status']=='IN_PROGRESS'
@@ -217,7 +252,6 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
 
     def preview_rework(self, proc_inst_id: str, workitem_id: str):
         """Read one consistent local snapshot; external effects still need live review."""
-        from . import rework
         with self._transition(proc_inst_id):
             inst = self.repo.get_instance(proc_inst_id)
             if not inst or inst.get('tenant_id') != self.tenant_id:
@@ -260,7 +294,8 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
                      'events':self.repo.list_events(todo_id=wid)}
 
     def start_definition(self, def_id, version, event_id, values=None, alert=None, name=None, now=None, _alert_policy=None,
-                         role_endpoints=None, _classroom_approval=None, _initial_agent_results=None, _coalesce_key=None):
+                         role_endpoints=None, _initial_agent_results=None, _coalesce_key=None):
+        now = self._now(now)
         if not isinstance(event_id,str) or not event_id.strip():
             raise ValueError('중복 실행을 구분할 event_id가 필요합니다')
         if not isinstance(version,str) or not version.strip():
@@ -283,21 +318,8 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
             raise ValueError('정의에 없는 역할입니다: ' + ', '.join(unknown_roles))
         values = dict(values or {})
         protected=(PROTECTED_OUTPUTS | {'decision_id','_runtime_coalescing'}).intersection(values)
-        if _classroom_approval is not None:
-            from . import classroom_agents
-            if defn.raw!=classroom_agents.isolated_definition(self,_classroom_approval):
-                raise ValueError('관리 실행은 강사가 승인한 격리 단계와 같아야 합니다')
-            classroom_agents.validate_input(_classroom_approval,{k:v for k,v in values.items()
-                if k not in ('classroom_execution','classroom_agent_reference')})
-            # Incident/decision identifiers are observations from the student,
-            # never authorization to run teacher-side business effects.
-            protected-= {'incident','decision_id'}
         if is_handover:
-            # The managed step also carries approved review notes and private
-            # run bindings. Validate all of those above, then retain the same
-            # semantic checks on the four original handover inputs.
-            handover.validate_start({k:v for k,v in values.items() if k in handover.START_INPUTS}
-                                    if _classroom_approval is not None else values)
+            handover.validate_start(values)
         if protected:
             raise ValueError('시작 변수로 Incident/승인 결과를 주입할 수 없습니다')
         # One short definition lock also serializes aliases with reused request
@@ -370,10 +392,6 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
                                                                        'friendly':f'수업 버튼 누름을 이 처리 건에 붙이지 못했습니다 — {str(e)[:300]}'}}])
         return inst
 
-    # ---------------------------------------------------------------- start
-    def find_by_alert(self, alert_id: str) -> dict | None:
-        return self.repo.find_event_instance(self.tenant_id, self.defn.id, alert_id)
-
     # ---------------------------------------------------------------- U4: deployed version · deploy · rollback · compare
     def deployed_definition(self, def_id: str | None = None) -> engine.Definition:
         """The version an alert RAISE opens: proc_def.prod_version of the alert definition (never the file, never `self.defn`)."""
@@ -412,7 +430,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
 
     def deploy_definition(self, def_id: str, version: str, by: str, reason: str, action: str = 'deploy', class_flow: bool = False) -> dict:
         """Make `version` the one new alerts open. Only a version that passes validate_definition; open instances keep theirs.
-        class_flow=True: 강사 조립 스크립트의 '수업 흐름' 배포(P9) — 포털의 [기준 흐름으로 되돌리기]가 남긴다(flow_deploy.deploy_reset)."""
+        class_flow=True: 수업 흐름 설치(course_bootstrap — 시작.bat)의 '수업 흐름' 배포(P9) — 포털의 [기준 흐름으로 되돌리기]가 남긴다(flow_deploy.deploy_reset)."""
         if class_flow and (action != 'deploy' or def_id in self.reference_ids):
             raise ValueError('수업 흐름 표시는 기준 흐름이 아닌 흐름의 배포에만 붙입니다'
                              + (f' — {def_id}은(는) 기준 흐름입니다' if def_id in self.reference_ids else ''))
@@ -434,7 +452,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
             raise ValueError(f'{def_id}@{version}은 이미 운영 판본입니다')
         if not class_flow and any(h['id'] == def_id and h.get('class_flow') for h in self.repo.deployed_heads(self.tenant_id)):
             # 표시 없이 바꾸면 수업 흐름이 학생 흐름이 되어 [기준 흐름으로 되돌리기]가 내린다(2026-10-25 학생 행위 점검)
-            raise ValueError(f'{def_id}은(는) 강사가 배포한 수업 흐름입니다 — 판본은 강사 스크립트(c3_flows.py deploy)로만 바꿉니다. 내 흐름은 다른 흐름 id 로 가져오세요')
+            raise ValueError(f'{def_id}은(는) 수업 기본 흐름이라 판본을 바꿀 수 없습니다. 고친 흐름은 다른 흐름 id 로 가져와 배포하세요')
         record = self.repo.record_deployment(def_id, version, self.tenant_id, action=action, actor=by.strip(), reason=reason.strip(),
                                              class_flow=bool(class_flow))
         self.hooks.audit('-', by.strip(), {'deploy': 'DEFINITION_DEPLOYED', 'rollback': 'DEFINITION_ROLLED_BACK',
@@ -473,16 +491,9 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         from . import alert_policy, flow_deploy
         return alert_policy.for_definition(flow_deploy.route_definition(self, pattern).raw,pattern)
 
-    def on_alert_raise(self, alert: dict, now: datetime | None = None) -> dict | None:
-        """Message start event: one RAISE alert opens one instance (duplicates of the same alertId are ignored)."""
-        alert_id, asset = alert.get("alertId"), alert.get("asset")
-        if not alert_id or not asset:
-            return None
-        policy=self.alert_policy(alert.get('pattern'));target=policy['target']
-        return self.start_definition(target['definition'],target['version'],alert_id,alert=alert,now=now,_alert_policy=policy)
-
     def receive_alert(self, alert: dict, policy: dict) -> dict:
-        """Resume one durable source receipt using its original immutable policy."""
+        """경보로 처리 건을 여는 단 하나의 길(B-10): 원천 접수(main._admit_alert · Kafka)가 접수 때 고른 정책 그대로 연다.
+        같은 경보 id 는 같은 처리 건이다(저장소에서 찾아 다시 열지 않는다)."""
         from . import alert_policy
         from .source_inbox import digest
         raw=self.definition_for({'tenant_id':self.tenant_id,'proc_def_id':policy['definition'],
@@ -524,6 +535,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
     def submit(self, workitem_id: str, output: dict | None, by: str | None = None, now: datetime | None = None) -> dict:
         """A person / a service turns a work item in: SUBMITTED, then the engine processes it right away (the polling loop
         would otherwise pick it up within its interval). Returns {instance, workitem, reached, ended, pending}."""
+        now = self._now(now)
         wi = self.repo.get_workitem(workitem_id)
         if not wi:
             raise KeyError(workitem_id)
@@ -547,6 +559,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
     @workitem_transition
     def process_workitem(self, wi: dict, now: datetime | None = None) -> dict:
         """The engine's turn for one SUBMITTED row (the product's handle_workitem): judge, DONE/PENDING, reach the next."""
+        now = self._now(now)
         fresh=self.repo.get_workitem(wi['id'])
         inst = self.repo.get_instance(wi["proc_inst_id"])
         if (not fresh or fresh['status']!='SUBMITTED' or fresh.get('consumer')!=wi.get('consumer')
@@ -560,10 +573,6 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
             return {'instance':inst, 'workitem':wi, 'reached':[], 'ended':None,
                     'pending':True, 'approval_status':approval['status']}
         defn = self.definition_for_workitem(wi)
-        managed_agent=bool(defn.raw.get('classroom_agent'))
-        if managed_agent:
-            from .classroom_agents import verify_instance
-            verify_instance(self,inst)
         form = pinned_form(defn.raw, (defn.activities.get(wi['activity_id']) or {}).get('tool'))
         citation_changes = []
         if form is not None:
@@ -590,7 +599,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         adv = engine.process_submitted(defn, inst, wi, rows, now=now, time_scale=self.time_scale)
         recheck = self._recheck_round(inst, rows + list(adv.created), defn) if adv.created else None
         output = wi.get("output") or {}
-        if not managed_agent and not adv.pending and isinstance(output.get("guide_card"),dict) and engine.variables(inst).get("incident"):
+        if not adv.pending and isinstance(output.get("guide_card"),dict) and engine.variables(inst).get("incident"):
             # This is required durable input for later approval, not a best-effort
             # projection. Persist it before committing DONE/next task. If the PG
             # commit then fails, replay writes the same guide; no command is sent.
@@ -600,6 +609,12 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
             self.repo.update_workitem(row)
         self.repo.insert_workitems(adv.created)
         self.repo.update_instance(inst)
+        if adv.ended == engine.HUMAN_CLOSE_END_EVENT:
+            # #15: 닫은 가지가 병렬 합류로 들어가 더 진행할 길이 없다 — 왜 끝났는지 처리 기록에 남긴다
+            self.repo.record_events([{'job_id':'CLOSED_BRANCH_END','todo_id':wi['id'],'proc_inst_id':wi['proc_inst_id'],'crew_type':'result',
+                'event_type':'task_completed','data':{'name':'닫은 단계 때문에 합류할 수 없어 처리 건을 닫음','join':adv.waiting_joins,
+                'friendly':'사람이 닫은 단계가 합류 지점으로 들어가 흐름이 더 나아갈 수 없습니다 — 처리 건을 「사람이 닫음」으로 끝냈습니다. '
+                           '같은 일을 다시 하려면 새 처리 건으로 시작하세요'}}])
         if citation_changes:
             self.repo.record_events([{'job_id':'citation-reconcile:'+uuid4().hex,'todo_id':wi['id'],
                 'proc_inst_id':wi['proc_inst_id'],'crew_type':'result','event_type':'task_working',
@@ -677,7 +692,9 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
     def poll_once(self, now: datetime | None = None) -> int:
         """Completion polling: claim SUBMITTED rows nobody holds and process them; a failure counts a retry, the third one
         blocks as PENDING with its error for recovery. An explicit current-condition
-        refusal stops immediately for new judgment and consent."""
+        refusal stops immediately for new judgment and consent. B-11: 처리 건 · 행 하나의 예외는 그 처리 건의 기록으로 남고,
+        이 바퀴의 다른 처리 건과 다른 일(대기 행 · 끝난 사건 정리 · 그래프 반영)은 계속 돈다."""
+        now = self._now(now)
         delivered = self.reconcile_approvals(now)
         claimed = self.repo.claim_submitted(self.consumer, tenant_id=self.tenant_id)
         for wi in claimed:
@@ -688,11 +705,32 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
                 else:
                     self.process_workitem(wi, now=now)
             except Exception as e:  # every failure releases or blocks the claim
-                self._fail(wi, e, now)
+                self._isolated(wi['proc_inst_id'], 'engine', self._fail, wi, e, now)
         serviced = self.reconcile_services(now)
         aborted = self.reconcile_terminal_incidents(now)
         self.reconcile_projections()
         return delivered+len(claimed)+serviced+aborted
+
+    def _isolated(self, pid: str, what: str, fn, *args):
+        """B-11: 처리 건 하나의 일 하나를 돌린다. 예외는 위로 올리지 않고 로그와 그 처리 건의 기록(event error)에 남긴다 — 한 처리 건이
+        폴링 한 바퀴(다른 처리 건 · 타이머)를 멈추지 않게. 돌려줌 = fn 의 결과(실패면 None)."""
+        try:
+            return fn(*args)
+        except Exception as error:  # noqa: BLE001
+            log.exception('instance %s: %s failed', pid, what)
+            key = (pid, what, type(error).__name__, str(error)[:300])
+            if key in self._recorded_failures:      # 같은 실패를 2초마다 다시 쌓지 않는다(처음 한 번만 기록, 로그는 매번)
+                return None
+            self._recorded_failures.add(key)
+            try:
+                self.repo.record_events([{'job_id': 'ENGINE_STEP_FAILED', 'todo_id': None, 'proc_inst_id': pid, 'crew_type': 'result',
+                                          'event_type': 'error',
+                                          'data': {'name': '엔진 처리 실패', 'step': what, 'raw_error': f'{type(error).__name__}: {str(error)[:300]}',
+                                                   'friendly': '이 처리 건을 진행하다 오류가 나 이번 차례를 건너뛰었습니다 — 2초 뒤 다시 시도합니다. '
+                                                               '같은 기록이 계속 쌓이면 강사에게 알려 주세요'}}])
+            except Exception:  # noqa: BLE001 — 기록 저장소마저 실패: 로그가 마지막 증거
+                log.exception('engine step failure could not be recorded for %s', pid)
+            return None
 
     CORRECTION_ROUNDS = 3   # product process_validator: bounded correction rounds, then stop with the best-known state
 
@@ -733,11 +771,14 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         msg = f"{type(err).__name__}: {str(err)[:300]}"
         log.warning("%s %s failed (%d/%d): %s", fresh["proc_inst_id"], fresh["activity_id"], retry, MAX_RETRIES, msg)
         fresh.update(retry=retry, consumer=None, log=(fresh.get("log") or "") + f"[Error] {msg}; ")
-        if review_required or effect_review or isinstance(err, ServiceLoopLimit) or retry >= MAX_RETRIES:
+        stopped = review_required or effect_review or isinstance(err, ServiceLoopLimit) or retry >= MAX_RETRIES
+        if stopped:
             fresh.update(status="PENDING", end_date=None)
         self.repo.update_workitem(fresh)
+        friendly = failure_sentence(fresh, err, retry, stopped=stopped, review_required=review_required, effect_review=effect_review)
         self.repo.record_events([{"job_id": "TASK_REVIEW_REQUIRED" if review_required else "TASK_ERROR", "todo_id": fresh["id"], "proc_inst_id": fresh["proc_inst_id"], "crew_type": "agent",
                                   "event_type": "error", "data": {"name": "현재 조건 변경 · 새 판단과 승인 필요" if review_required else "엔진 오류", "raw_error": msg, "retry": retry,
+                                                                  "friendly": friendly,
                                                                   "recovery": "verify_external_effect" if effect_review else "new_judgment_and_consent" if review_required else "bounded_retry",
                                                                   "external_effect_review": effect_review,
                                                                   "assessment": deepcopy(err.report) if review_required else None,
@@ -781,12 +822,8 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         self._check_deadline(wi,inst,self.definition_for(inst),now)
         return review
 
-    @workitem_transition
-    def select(self, workitem_id: str, decision_id: str, option_id: str, by: str, role: str, reason: str = "",
-               fan_pct: float | None = None, load_pct: float | None = None, now: datetime | None = None,
-               review_id: str | None = None) -> dict:
-        """Permission and feasibility are judged by the decision (ontology roles: Skill -APPROVED_BY-> Role), then the form
-        output {chosen_skill, chosen_skill_kind} is submitted and gw:control decides the path."""
+    def _open_card(self, workitem_id: str) -> dict:
+        """승인할 수 있는 카드 선택 작업 행 — 진행 중이 아니면 왜 아닌지 학생이 읽을 사유로 멈춘다."""
         wi = self.repo.get_workitem(workitem_id)
         if not wi or self._tool_of(wi) != "formHandler:select_card":
             raise KeyError(workitem_id)
@@ -796,6 +833,23 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
                 outcome = (engine.variables(ended).get("result_report") or {}).get("outcome") or "조치 전 종료"
                 raise ValueError(f"이 처리 건은 사건이 조치 전에 끝나 「{outcome}」로 닫혔습니다 — 승인할 일이 없습니다")
             raise ValueError(f"'{wi.get('activity_name') or wi['activity_id']}'은(는) 이미 처리된 승인입니다({wi['status']}) — 다시 승인하지 않습니다")
+        return wi
+
+    def select(self, workitem_id: str, decision_id: str, option_id: str, by: str, role: str, reason: str = "",
+               fan_pct: float | None = None, load_pct: float | None = None, now: datetime | None = None,
+               review_id: str | None = None) -> dict:
+        """Permission and feasibility are judged by the decision (ontology roles: Skill -APPROVED_BY-> Role), then the form
+        output {chosen_skill, chosen_skill_kind} is submitted and gw:control decides the path.
+        A-05: 바깥 응답을 기다리는 일(승인 현재 조건 검사 — agent, 견적 읽기 — 업무 시스템)은 처리 건 잠금 밖에서 먼저 하고, 잠금 안에서는
+        그때 본 처리 건이 그대로인지(카드 작업이 아직 진행 중 · 같은 재작업 세대 · 같은 판단)만 대조해 커밋한다 — 바깥 응답을 기다리는 동안
+        같은 처리 건의 워커 결과 저장 · 임대 갱신 · 화면 요청이 줄 서지 않게."""
+        now = self._now(now)
+        prepared = self._prepare_select(workitem_id, decision_id, option_id, by, role, reason, fan_pct, load_pct, now, review_id)
+        return self._commit_select(workitem_id, prepared, now)
+
+    def _prepare_select(self, workitem_id, decision_id, option_id, by, role, reason, fan_pct, load_pct, now, review_id) -> dict:
+        """잠금 없이: 승인자 · 판단 · 카드 확인, 승인 사본, 발주 금액, 승인 현재 조건 검사. 쓰지 않는다."""
+        wi = self._open_card(workitem_id)
         inst = self.repo.get_instance(wi["proc_inst_id"])
         self._check_deadline(wi,inst,self.definition_for(inst),now)
         values = engine.variables(inst)
@@ -805,7 +859,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         opt = deepcopy(self.hooks.decision_option(decision_id, option_id))
         if opt is None:
             raise ValueError("unknown option")
-        person = inbox.check_actor(self.repo, self.tenant_id, by, role)   # U5: "나"로 승인하면 그 역할의 구성원인지(아니면 403)
+        person = self._card_actor(by, role)                              # A-04: 사람 사용자 + 그 역할의 구성원(일반 승인과 같은 규칙)
         by_name = inbox.person_name(self.repo, self.tenant_id, by)       # 메일 · 보고 틀이 쓰는 승인자 이름(없으면 승인 전에 실패)
         # Validation must be pure: this hook returns an approved COPY, never mutates the external book.
         if review_id:
@@ -831,7 +885,20 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
                    # 냉각 명령이 멈췄다 — 예측 나이는 사람이 동의한 시각으로 잰다(입력 · 인터록 · 규칙은 전달 때 다시 본다)
                    'consented_at':engine.now_iso(now)}
         self.hooks.validate_approval(payload)
+        return {'generation': int(inst.get('rework_generation') or 0), 'decision': decision_id, 'opt': opt, 'plan': plan,
+                'commands': commands, 'payload': payload, 'purchase': purchase, 'person': person, 'by_name': by_name,
+                'by': by, 'role': role, 'reason': reason}
+
+    @workitem_transition
+    def _commit_select(self, workitem_id: str, p: dict, now) -> dict:
+        """잠금 안에서: 준비 때 본 처리 건이 그대로인지 대조하고, 승인 값 · 승인 전달 행 · 카드 제출을 한 번에 쓴다."""
+        wi = self._open_card(workitem_id)                 # 그 사이 다른 사람이 승인 · 거절했으면 「이미 처리된 승인」
+        inst = self.repo.get_instance(wi["proc_inst_id"])
+        if int(inst.get('rework_generation') or 0) != p['generation'] or engine.variables(inst).get('decision_id') not in (None, p['decision']):
+            raise ValueError('승인을 확인하는 사이 이 처리 건이 다시 수행돼 판단이 바뀌었습니다 — 화면을 새로 고친 뒤 새 카드를 검토하세요')
         self._check_deadline(wi,inst,self.definition_for(inst),now)
+        opt, plan, commands, payload, purchase = p['opt'], p['plan'], p['commands'], p['payload'], p['purchase']
+        person, by_name, by, role, reason, decision_id = p['person'], p['by_name'], p['by'], p['role'], p['reason'], p['decision']
         kind = "control" if any(a.get("kind") == "command" for a in opt.get("actions") or []) else "work_order"
         approved = {"commands": commands, "chosen_option": dict(deepcopy(opt), kind=kind), "approved_by": by,
                     "approved_by_name": by_name, "approved_role": role}
@@ -883,6 +950,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         """담당자가 조치 카드를 승인하지 않고 거절한다. 설비 · 업무 효과는 하나도 내지 않는다: 승인 값(approved_* · commands · chosen_option)을
         비우고 폼 결과 {approval: '반려', approval_reason} 만 제출해 흐름이 반려 가지(결과 보고: 반려 → 사건 '운전원 거부')로 간다.
         거절할 수 있는 사람 = 그 판단의 안을 하나라도 승인할 수 있는 역할(판단의 역할 등급)의 구성원. 판단 원문은 커밋 뒤 REJECTED 로 남긴다."""
+        now = self._now(now)
         wi = self.repo.get_workitem(workitem_id)
         if not wi or self._tool_of(wi) != self.APPROVAL_TOOL:
             raise KeyError(workitem_id)
@@ -901,7 +969,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         self._require_new_generation_decision(inst, decision_id)
         if values.get('decision_id') != decision_id:
             raise ValueError('decision does not belong to this instance')
-        person = inbox.check_actor(self.repo, self.tenant_id, by, role)
+        person = self._card_actor(by, role)
         by_name = inbox.person_name(self.repo, self.tenant_id, by)
         self.hooks.check_rejection(decision_id, role)
         cleared = dict.fromkeys(('commands', 'chosen_option', 'approved_by', 'approved_by_name', 'approved_role', *effect_parts.PURCHASE_VALUES))
@@ -929,6 +997,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         """에이전트가 낸 안 중 하나를 승인하거나 반려한다(approval_part). 승인자는 포털의 "나"(user:*)이고 이 단계 담당 역할의 구성원이어야
         한다(inbox.check_actor, 아니면 PermissionError → 403). 승인하면 서버가 approved_by · approved_role · approved_option(고른 안 사본)을
         넣고, 반려하면 그 값을 비운다. 그 뒤 폼 결과 {approval, approval_reason} 를 제출해 흐름이 분기로 간다."""
+        now = self._now(now)
         wi = self.repo.get_workitem(workitem_id)
         if not wi or self._tool_of(wi) != approval_part.TOOL:
             raise KeyError(workitem_id)
@@ -969,11 +1038,21 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         out = self.submit(wi["id"], {"approval": decision, "approval_reason": reason}, by=by, now=now)
         return dict(out, approval=decision, approved_option=chosen)
 
+    @staticmethod
+    def _require_person(by) -> None:
+        """승인자는 포털의 "나"(사람 사용자 user:*)다 — 조치 카드 승인 · 거절과 일반 승인이 같은 규칙(A-04)."""
+        if not str(by or "").startswith(inbox.PERSON):
+            raise PermissionError("승인은 포털에서 '나'(사람 사용자)를 고른 뒤 합니다 — 누가 승인했는지 모르는 승인은 받지 않습니다")
+
+    def _card_actor(self, by: str, role: str) -> str:
+        """조치 카드 승인 · 거절의 승인자: 사람 사용자이고 고른 역할의 구성원이어야 한다(역할 등급은 판단의 승인 역할이 따로 본다)."""
+        self._require_person(by)
+        return inbox.check_actor(self.repo, self.tenant_id, by, role)
+
     def _approval_actor(self, defn, inst: dict, activity: dict, by: str, role: str) -> str:
         """일반 승인의 승인자: 포털의 "나"(사람 사용자)이고, 이 단계 담당(처리 건의 역할 바인딩)과 맞아야 한다. 판단 엔진 카드처럼 역할 등급
         (Skill -APPROVED_BY-> Role)이 없으므로 담당 역할 그 자체만 받는다. 아니면 PermissionError(사유)."""
-        if not str(by or "").startswith(inbox.PERSON):
-            raise PermissionError("승인은 포털에서 '나'(사람 사용자)를 고른 뒤 합니다 — 누가 승인했는지 모르는 승인은 받지 않습니다")
+        self._require_person(by)
         endpoint = (engine.instance_binding(defn, inst, activity.get("role")) or {}).get("endpoint") or ""
         if endpoint.startswith(inbox.ROLE):
             if role != endpoint:
@@ -1000,7 +1079,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         return list((read or {}).get('records') or [])
 
     # ---------------------------------------------------------------- a person closes an agent task that cannot continue (A082)
-    HUMAN_CLOSE_END_EVENT = 'closed-by-human'
+    HUMAN_CLOSE_END_EVENT = engine.HUMAN_CLOSE_END_EVENT
 
     @workitem_transition
     def cancel_agent_task(self, workitem_id: str, by: str, reason: str, now: datetime | None = None) -> dict:
@@ -1016,7 +1095,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
             raise PermissionError('에이전트 작업만 취소할 수 있습니다')
         if not (wi['status'] == 'IN_PROGRESS' and wi.get('draft_status') == 'STARTED' and wi.get('consumer')):
             raise ValueError('워커가 실행 중인 에이전트 작업(STARTED)만 취소할 수 있습니다')
-        now = now or datetime.now(timezone.utc)
+        now = self._now(now)
         wi.update(draft_status='CANCELLED', log=(wi.get('log') or '') + f'[Cancel requested by {by.strip()}] {reason.strip()[:300]}; ')
         self.repo.update_workitem(wi)
         self.repo.record_events([{'job_id': 'TASK_CANCEL_REQUESTED', 'todo_id': wi['id'], 'proc_inst_id': wi['proc_inst_id'], 'crew_type': 'human',
@@ -1060,7 +1139,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
             state = self.hooks.incident_state(inc_id)
             if state is not None and state not in incident_def.TERMINAL:
                 raise ValueError(self._close_refusal(defn, state))
-        now = now or datetime.now(timezone.utc)
+        now = self._now(now)
         previous = dict(status=wi['status'], draft_status=wi.get('draft_status'), retry=wi.get('retry'))
         wi.update(status='CANCELLED', draft_status='CANCELLED', consumer=None, end_date=engine.now_iso(now),
                   log=(wi.get('log') or '') + f'[Closed by {by.strip()}] {reason.strip()[:300]}; ')
@@ -1122,16 +1201,12 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
     # ---------------------------------------------------------------- timers
     def fire_timeouts(self, now: datetime | None = None) -> list[dict]:
         """Boundary timer work items past their due_date fire: the attached human task is cancelled and the flow escalates."""
-        now = now or datetime.now(timezone.utc)
+        now = self._now(now)
         fired = []
         for wi in self.repo.due_timers(self.tenant_id,now):
-            try:
-                if self._fire_timeout(wi,now):
-                    fired.append(self.repo.get_workitem(wi['id']))
-            except Exception:
-                # A failed transition remains due; it must not starve other
-                # instances' timers or be reported as having fired.
-                log.exception('timer reconciliation failed for %s', wi['id'])
+            # A failed transition remains due; it must not starve other instances' timers or be reported as having fired.
+            if self._isolated(wi['proc_inst_id'], 'timer', self._fire_timeout, wi, now):
+                fired.append(self.repo.get_workitem(wi['id']))
         return fired
 
     @workitem_transition
@@ -1151,8 +1226,11 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         for row in adv.updated:self.repo.update_workitem(row)
         self.repo.insert_workitems(adv.created)
         self.repo.update_instance(inst)
-        self._after_commit(self.hooks.audit,engine.variables(inst).get('asset','-'),'process','SELECT_TIMEOUT',
-                           {'instance':inst['proc_inst_id'],'event':wi['activity_id'],'next':[w['activity_id'] for w in adv.reached]},
+        # A-08: 모든 경계 타이머(승인 지연 알림 · 카드 선택 시한 · 납기 초과 …)의 감사 이름 — 어느 타이머인지는 event 가 말한다
+        self._after_commit(self.hooks.audit,engine.variables(inst).get('asset','-'),'process','TIMER_FIRED',
+                           {'instance':inst['proc_inst_id'],'event':wi['activity_id'],'event_name':wi.get('activity_name'),
+                            'cancels_task':(defn.events.get(wi['activity_id']) or {}).get('cancelActivity') is not False,
+                            'next':[w['activity_id'] for w in adv.reached]},
                            incident=engine.variables(inst).get('incident'))
         self._after_commit(self._project,inst)
         # C2: 타이머 가지가 시스템 task(승인 지연 알림 · 지연 결과 보고)에 닿으면 바로 실행한다(submit 경로와 같음 — 기다리면 2초 폴링이 잡는다)
@@ -1169,24 +1247,25 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         lock and fresh row recheck prevent a live competing handler from replaying
         a completed task. Still-waiting early pages must not hide later work.
         """
+        now=self._now(now)
         changed=0;after=None
         while True:
-            rows=self.repo.waiting_services(self.tenant_id,after_id=after)
+            # B-2: 마감(due_date)이 남은 대기 행은 다시 집지 않는다 — 집을 때마다 담당 표식을 새로 써 그래프 반영 대기열이 쌓였다
+            rows=self.repo.waiting_services(self.tenant_id,now,after_id=after)
             if not rows:break
             for wi in rows:
-                self._run_service(self.repo.get_instance(wi['proc_inst_id']),wi,now)
+                self._isolated(wi['proc_inst_id'], 'service', lambda w=wi: self._run_service(self.repo.get_instance(w['proc_inst_id']),w,now))
                 fresh=self.repo.get_workitem(wi['id'])
                 changed+=int(fresh is not None and fresh['status']!=wi['status'])
             after=rows[-1]['id']
         return changed
 
     # ---------------------------------------------------------------- service tasks the process executes itself
-    def _tool_of(self, wi: dict) -> str:
-        """The definition's execution contract, independent of a designer's activity ID."""
-        inst = self.repo.get_instance(wi["proc_inst_id"])
-        definition = self.definition_for_workitem(wi)
-        activity = definition.activities.get(wi["activity_id"], {})
-        return str(activity.get("tool") or "")
+    @staticmethod
+    def _tool_of(wi: dict) -> str:
+        """The execution contract, independent of a designer's activity ID. A-09: 행의 tool 은 그 처리 건의 고정 판본 활동에서
+        만들 때 옮겨 적은 값이다(engine.new_workitem) — 같은 값을 정의 원문에서 다시 읽지 않는다."""
+        return str(wi.get("tool") or "")
 
     def _run_service(self, inst: dict, wi: dict, now: datetime | None) -> None:
         # A reached SYSTEM row must first have a committed executor claim. Never
@@ -1247,35 +1326,50 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
             self._local.service_progress_context = previous_progress
 
     def _run_command(self, inst: dict, wi: dict, now) -> None:
-        """Issue the chosen skill's PLC commands through the Incident (machine.on_approve). Completes when the ACK arrives."""
+        """승인한 명령을 사건으로 낸다(machine.on_approve → 승인 원장 · 명령 송신 확인). ACK 가 오면(원천 접수 → on_incident_update) 끝난다.
+        ACK 마감은 사건의 ack_due_at 을 이 행의 due_date 로 저장한다 — 폴링은 마감 전에는 이 행을 다시 집지 않고(B-2), 마감이 지나도 그 명령의
+        ACK 가 없으면 사건을 ACK 시간 초과로 넘긴다(A-02: 메모리 타이머 없음, 시각은 주입한 시계)."""
+        now = self._now(now)
         v = engine.variables(inst)
         inc_id, commands = v.get("incident"), v.get("commands") or []
         if not inc_id or not commands:
-            raise ValueError("command task requires an incident and approved commands")
-        state=self.hooks.incident_state(inc_id)
-        if state is None:raise ValueError('incident state unavailable; command not issued')
-        if state != 'AWAITING_APPROVAL':
-            self.on_incident_update(state,inc_id,False,now)
+            raise ValueError("설비 명령 단계에는 사건과 승인한 명령이 필요합니다 — 사람 승인을 거치지 않은 처리 건입니다")
+        snap = self.hooks.incident_snapshot(inc_id)
+        if snap is None:
+            raise ValueError("사건 기록을 읽지 못해 설비 명령을 내지 않았습니다")
+        state = snap["state"]
+        if state == "AWAITING_APPROVAL":
+            cmd = self.hooks.approve_commands(inc_id, commands, v.get("approved_by") or "process", now)
+            if not cmd.get("cmdId"):
+                raise ServiceExecutionError({"error": "설비 명령 경로가 명령 번호(cmdId)를 돌려주지 않았습니다", "result": cmd})
+            due = (self.hooks.incident_snapshot(inc_id) or {}).get("ackDueAt")
+            wi.update(due_date=due, log=(wi.get("log") or "") + f"action.cmd {cmd['cmdId']} issued; waiting ACK until {due}; ")
+            self.repo.update_workitem(wi)
             return
-        cmd = self.hooks.approve_commands(inc_id, commands, v.get("approved_by") or "process")
-        if not cmd.get("cmdId"):
-            raise ServiceExecutionError({"error": "command service returned no cmdId", "result": cmd})
-        wi["log"] = (wi.get("log") or "") + f"action.cmd {cmd['cmdId']} issued; waiting ACK; "
-        self.repo.update_workitem(wi)
+        if state == "AWAITING_ACK":
+            due = snap.get("ackDueAt")
+            if due and wi.get("due_date") != due:          # 송신 뒤 행 저장 전에 끊겼던 경우: 사건의 마감을 행에 옮긴다
+                wi["due_date"] = due
+                self.repo.update_workitem(wi)
+            if not due or parse_iso(due) > now or self.hooks.ack_timeout is None:
+                return
+            self.hooks.ack_timeout(inc_id, snap["cmdId"])
+            state = (self.hooks.incident_snapshot(inc_id) or snap)["state"]
+        self.on_incident_update(state, inc_id, False, now)
 
     def _run_reobserve(self, inst: dict, wi: dict, now) -> None:
-        """The Incident decides; rereading its durable state recovers a lost callback."""
-        if not wi.get('log'):
-            wi['log']='waiting for the incident re-observation verdict; '
-            self.repo.update_workitem(wi)
+        """재관측 한 벌(A-02): 명령 뒤(사건 RE_OBSERVING)든 작업지시 뒤(명령 없이 작업지시로 닫힌 사건)든 같은 규칙으로 실제 관측해 판정한다
+        (service_parts._reobserve — 창의 마감을 행에 저장하고 폴링이 판정, 재시작해도 이어짐). 그 밖의 사건 상태는 사건이 이미 판정했다."""
         inc_id=engine.variables(inst).get('incident')
         snap=self.hooks.incident_snapshot(inc_id) if inc_id else None
-        if snap and snap.get('state')=='CLOSED' and not snap.get('cmdId') and snap.get('workOrder'):
-            # C2: 명령 없이 작업지시로 닫힌 사건(정비형 흐름)의 재관측은 사건 상태가 아니라 실제 관측으로 판정한다
-            self._reobserve_after_work_order(inst,wi,now,inc_id)
+        if snap and snap.get('state')=='RE_OBSERVING' and snap.get('cmdId'):
+            self._reobserve(inst,wi,now,inc_id,after='command',cmd_id=snap['cmdId'])
             return
-        state=self.hooks.incident_state(inc_id)
-        if state:self.on_incident_update(state,inc_id,False,now)
+        if snap and snap.get('state')=='CLOSED' and not snap.get('cmdId') and snap.get('workOrder'):
+            self._reobserve(inst,wi,now,inc_id,after='work_order')
+            return
+        if snap:
+            self.on_incident_update(snap['state'],inc_id,False,now)
 
     def _run_work_order(self, inst: dict, wi: dict, now) -> None:
         from .work_orders import request_for_option
@@ -1359,7 +1453,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
             if reobs and not cmd and inc_state in ("WORK_ORDER_CREATED", "CLOSED"):
                 snap = self.hooks.incident_snapshot(inc_id) or {}
                 if not snap.get("cmdId") and snap.get("workOrder"):
-                    reobs = None      # C2: 작업지시로 닫힌 사건의 재관측은 실제 관측으로(_reobserve_after_work_order)
+                    reobs = None      # C2: 작업지시로 닫힌 사건의 재관측은 실제 관측으로(_reobserve, after=work_order)
             if cmd:
                 self.submit(cmd["id"], {}, by="process", now=now)
                 reobs = self._open_tool(inst, "incident:reobserve")
@@ -1415,13 +1509,15 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
     def _abort_before_action(self, inst, rows, inc_state, cleared, now):
         """A074: the case ended (alert cleared / rejected / escalated) while agent or selection work was still open — until now
         such instances stayed RUNNING forever (A072: adbf8350, 8b917b16, 99130019). Cancel the open work and hand the outcome
-        to the escalation review so the instance ends through ev:escalated with the recorded reason."""
+        to the escalation review so the instance ends through ev:escalated with the recorded reason. 돌려줌 = 바꿨는가."""
         defn = self.definition_for(inst)
+        route = self._before_action_route(defn)
+        if route is None:
+            return False
+        if route == "close":
+            return self._end_before_action(defn, inst, rows, inc_state, cleared, now)
         target = "task:escalate" if "task:escalate" in defn.activities else next(
-            (a["id"] for a in defn.activities.values() if a.get("tool") == self.ESCALATE_TOOL), None)
-        if target is None:
-            self._end_before_action(defn, inst, rows, inc_state, cleared, now)
-            return
+            a["id"] for a in defn.activities.values() if a.get("tool") == self.ESCALATE_TOOL)
         reason = f"incident {inc_state} before any action (cleared={bool(cleared)})"
         adv = engine.abort_to(defn, inst, rows, target, reason, now, self.time_scale)
         engine.set_variables(defn, inst, {"recovered": bool(cleared), "incident_outcome": inc_state},
@@ -1440,6 +1536,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
                            {"instance": inst["proc_inst_id"], "state": inc_state, "cleared": bool(cleared), "cancelled": [w["activity_id"] for w in adv.updated]},
                            incident=v.get("incident"))
         self._after_commit(self._project, inst)
+        return True
 
     # 에스컬레이션 단계가 없는 흐름(흐름 가져오기로 만든 수업 흐름 c3_* 등)이 조치 전에 끝난 사건을 닫는 기술 끝.
     # 'closed-by-human'(사람이 닫음) · 'administrative:approval-discard'(승인 폐기)와 같은 종류 — 흐름의 업무 끝 이벤트가 아니다.
@@ -1454,11 +1551,9 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         사유와 함께 취소한 뒤 기술 끝(BEFORE_ACTION_END_EVENT)으로 닫는다. 결과 보고 값에는 실제 사유('조치 전 해소' 등)를 싣는다 — 사건은 이미
         끝났으므로 다시 닫지 않는다. 사람 검토 대기열(alert_triage — 승인 단계 없음)은 건드리지 않는다. 흐름의 결과 보고가 이미 돌고 있으면
         (예: 반려 보고가 사건을 닫는 중) 흐름이 스스로 끝내게 둔다."""
-        if not any(a.get("tool") == self.APPROVAL_TOOL for a in defn.activities.values()):
-            return
         reports = {aid for aid, a in defn.activities.items() if a.get("tool") == effect_parts.REPORT_TOOL}
         if any(w["activity_id"] in reports and w["status"] in engine.LIVE_STATUSES for w in rows):
-            return
+            return False
         snap = self.hooks.incident_snapshot(engine.variables(inst).get("incident")) or {}
         inc_reason = snap.get("reason")
         outcome = self.BEFORE_ACTION_OUTCOME.get(inc_state, "조치 전 종료")
@@ -1498,10 +1593,14 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
                            {"instance": inst["proc_inst_id"], "state": inc_state, "cleared": bool(cleared), "cancelled": cancelled,
                             "end_event": self.BEFORE_ACTION_END_EVENT}, incident=v.get("incident"))
         self._after_commit(self._project, inst)
+        return True
 
     def reconcile_terminal_incidents(self, now=None) -> int:
         """Housekeeping: RUNNING instances whose Incident already ended before any action (missed callback, restart, or rows
-        created before A074) are routed to the escalation review. Idempotent; one instance per transition lock."""
+        created before A074) are routed to the escalation review or closed. Idempotent; one instance per transition lock.
+        A-03: 흐름에 이 결과를 처리할 길(에스컬레이션 · 승인 단계)이 없으면(사람 검토 대기열 alert_triage) 고르지 않는다 — 매 폴링 잠금만 잡고
+        아무것도 하지 않던 일을 없앤다. 실제로 바꾼 처리 건만 센다. B-11: 처리 건 하나의 실패는 그 처리 건 기록으로 남고 다음 처리 건은 계속."""
+        now = self._now(now)
         changed = 0
         for inst in self.repo.list_instances(status="RUNNING", limit=200, tenant_id=self.tenant_id):
             inc_id = engine.variables(inst).get("incident")
@@ -1510,21 +1609,33 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
             snap = self.hooks.incident_snapshot(inc_id)
             if not snap or snap.get("state") not in incident_def.TERMINAL:
                 continue
-            with self._transition(inst["proc_inst_id"]):
-                fresh = self.repo.get_instance(inst["proc_inst_id"])
-                if not fresh or fresh["status"] != "RUNNING":
-                    continue
-                rows = self.repo.list_workitems(proc_inst_id=fresh["proc_inst_id"], limit=None)
-                recheck = self._recheck_round(fresh, rows)
-                if recheck is not None:            # B7: a reopen lost after its commit (restart) is redone here
-                    self._after_commit(self._reopen_for_recheck, fresh["proc_inst_id"], recheck["id"], "process",
-                                       "재분석 뒤 다시 — 사건을 새 승인 대기로 (복구)")
-                    changed += 1
-                    continue
-                if self._command_never_issued(rows, snap, generation=fresh.get("rework_generation")) and self._escalation_not_open(rows):
-                    self._abort_before_action(fresh, rows, snap["state"], bool(snap.get("cleared")), now)
-                    changed += 1
+            changed += bool(self._isolated(inst["proc_inst_id"], "ended incident", self._reconcile_ended, inst, snap, now))
         return changed
+
+    def _reconcile_ended(self, inst: dict, snap: dict, now) -> bool:
+        if self._before_action_route(self.definition_for(inst)) is None:
+            return False
+        with self._transition(inst["proc_inst_id"]):
+            fresh = self.repo.get_instance(inst["proc_inst_id"])
+            if not fresh or fresh["status"] != "RUNNING":
+                return False
+            rows = self.repo.list_workitems(proc_inst_id=fresh["proc_inst_id"], limit=None)
+            recheck = self._recheck_round(fresh, rows)
+            if recheck is not None:            # B7: a reopen lost after its commit (restart) is redone here
+                self._after_commit(self._reopen_for_recheck, fresh["proc_inst_id"], recheck["id"], "process",
+                                   "재분석 뒤 다시 — 사건을 새 승인 대기로 (복구)")
+                return True
+            if self._command_never_issued(rows, snap, generation=fresh.get("rework_generation")) and self._escalation_not_open(rows):
+                return self._abort_before_action(fresh, rows, snap["state"], bool(snap.get("cleared")), now)
+            return False
+
+    def _before_action_route(self, defn) -> str | None:
+        """조치 전에 끝난 사건을 이 흐름이 어떻게 닫는가: 'escalate'(에스컬레이션 검토 단계) · 'close'(승인 단계가 있으면 기술 끝) · None(길 없음)."""
+        if "task:escalate" in defn.activities or any(a.get("tool") == self.ESCALATE_TOOL for a in defn.activities.values()):
+            return "escalate"
+        if any(a.get("tool") == self.APPROVAL_TOOL for a in defn.activities.values()):
+            return "close"
+        return None
 
     def _open_tool(self, inst: dict, tool: str) -> dict | None:
         return next((w for w in self.repo.list_workitems(proc_inst_id=inst["proc_inst_id"], limit=None)
@@ -1680,6 +1791,30 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
 
 
 
+_HANGUL = re.compile('[가-힣]')
+
+
+def failure_sentence(wi: dict, err: Exception, retry: int, *, stopped: bool, review_required: bool = False,
+                     effect_review: bool = False) -> str:
+    """A-06: 엔진이 단계 실패를 기록할 때 함께 남기는 학생용 문장(무엇이 · 왜 · 다음에 무엇을). 화면은 이 문장을 그대로 보인다 —
+    영문 내부 예외(raw_error)는 펼쳐 보기 칸에만 남는다. 사유가 한국어 문장이면 그대로 쓰고, 아니면 「내부 오류」라고 말한다."""
+    name = wi.get('activity_name') or wi.get('activity_id') or '시스템'
+    detail = (err.result.get('error') or err.result.get('detail')) if isinstance(err, ServiceExecutionError) else None
+    text = str(detail or err).strip()
+    reason = text[:240] if _HANGUL.search(text) else f'내부 오류({type(err).__name__})'
+    if review_required:
+        return f"'{name}' — 승인 뒤 현재 조건이 바뀌어 승인을 그대로 실행하지 않았습니다({reason}). 판단을 다시 받고 새로 승인하세요"
+    if effect_review:
+        return (f"'{name}' — 앞선 외부 쓰기(메일 · 발주 등)가 실제로 됐는지 확인되지 않아 자동 재시도를 멈췄습니다. "
+                "외부 결과를 확인한 뒤 이 단계를 [닫기]하거나 다시 수행하세요")
+    if isinstance(err, ServiceLoopLimit):
+        return f"'{name}' — 시스템 단계가 사람 대기 없이 계속 이어져 멈췄습니다. 흐름의 반복 끝 조건을 확인하세요"
+    if stopped:
+        return (f"'{name}' 단계가 {retry}번 실패해 멈췄습니다 — {reason}. "
+                "원인을 고친 뒤 [다시 수행]하거나, 더 진행할 수 없으면 [닫기]로 닫으세요")
+    return f"'{name}' 단계를 처리하지 못했습니다 — {reason}. 잠시 뒤 다시 시도합니다({retry}/{MAX_RETRIES})"
+
+
 def format_execution(rows: list[dict]) -> dict | None:
     """Flatten the EXECUTION_Q row into {instance, process, bindings, workitems[]} — None when the graph has no projection yet."""
     if not rows or not rows[0].get("instance"):
@@ -1708,7 +1843,7 @@ def format_execution(rows: list[dict]) -> dict | None:
 
 
 def _commands_of(opt: dict, fan_pct: float | None, load_pct: float | None) -> list[dict]:
-    """The chosen SOP skill's PLC commands as action.cmd items (same rule as main.hitl_decide: a person may adjust fan/load)."""
+    """The chosen SOP skill's PLC commands as action.cmd items (the approving person may adjust fan/load within the card's range)."""
     out = []
     for a in opt.get("actions") or []:
         if a.get("kind") != "command":

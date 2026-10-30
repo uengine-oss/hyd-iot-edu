@@ -1,10 +1,7 @@
 """Persistence of definitions, instances, work items and events in the ProcessGPT-shaped tables (Supabase/Postgres).
 
-Two implementations behind one small interface:
-  PgRepo      — psycopg 3 against the Supabase Postgres (it/supabase/migrations/20261003000001_process_engine.sql)
-  MemoryRepo  — dict-based, for unit tests and for PROCESS_MODE=legacy without a database. PROCESS_MODE=instance needs
-                PgRepo: source receipts, leases and the projection outbox are PostgreSQL rows (source_inbox.PgSourceInbox
-                refuses a MemoryRepo at startup with a clear message, A143).
+PgRepo — psycopg 3 against the Supabase Postgres (it/supabase/migrations/20261003000001_process_engine.sql). 학생 PC 의 구성은
+이것 하나다(메모리 저장소 판은 2026-10-30 지움 — 원천 접수 · 임대 · 투영 대기열이 모두 PostgreSQL 행이라 실행 서비스에서 쓸 수 없었다).
 
 The repo is deliberately thin: SQL only, no business rules. Which work items exist and what state they are in is the
 engine's decision (engine.py); here they are written down. The product's RPC names are kept so the lecture can point at
@@ -17,22 +14,19 @@ locks the parent instance first (_workitem_connection), including lease renew/cl
 """
 from __future__ import annotations
 
-import json
 import os
 import socket
 import threading
-import time
 import uuid
-from copy import deepcopy
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from typing import Protocol
-from .approval_store import MemoryApprovals, PgApprovals
-from .rework_store import MemoryReworks, PgReworks
-from .effect_store import MemoryEffects, PgEffects
-from .projection_repo import MemoryProjection, PgProjection
-from .agents_store import MemoryAgents, PgAgents          # U2: tenant skills · agent ↔ skill (read side)
-from .agent_authoring import MemoryAuthoring, PgAuthoring  # B1: 에이전트 · 스킬 · 배정 쓰기 + 되돌리기
+from .approval_store import PgApprovals
+from .rework_store import PgReworks
+from .effect_store import PgEffects
+from .projection_repo import PgProjection
+from .agents_store import PgAgents          # U2: tenant skills · agent ↔ skill (read side)
+from .agent_authoring import PgAuthoring    # B1: 에이전트 · 스킬 · 배정 쓰기 + 되돌리기
 from .effect_parts import TOOLS as C2_SERVICE_TOOLS
 
 #: process 가 다시 돌려 보는 서비스 줄(멱등 처리기만): 사건 경로 · CMMS 작업지시 + C2 승인 뒤 실행 부품(기다리는 부품은 끝날 때까지 여기서 다시 본다)
@@ -52,7 +46,7 @@ INSTANCE_COLS = ("proc_def_id", "proc_inst_id", "proc_inst_name", "root_proc_ins
 JSON_COLS = {"assignees", "output", "draft", "feedback", "role_bindings", "variables_data", "gateway_decisions", "definition", "mcp",
              "fields_json", "data", "initial_variables", "variable_sources", "flow_state"}
 STALE_MINUTES = 30
-# P9 (audit2 2026-10-23, 사용자 결정): 수업 흐름 표시. 강사 조립 스크립트(scripts/c3_flows.py)가 배포할 때(class_flow=True) 운영 포인터 머리
+# P9 (audit2 2026-10-23, 사용자 결정): 수업 흐름 표시. 수업 흐름 설치(course_bootstrap — 시작.bat)가 배포할 때(class_flow=True) 운영 포인터 머리
 # proc_def.owner 에 이 값을 남긴다 — 지금 배포의 주인이 '수업'이라는 뜻이다. 다른 배포 · 되돌리기 · 내리기는 owner 를 비운다(마지막 배포 행위가 정한다).
 # 포털의 [기준 흐름으로 되돌리기]는 이 표시가 있는 흐름을 남긴다. 흐름 id 접두어(c3_*)로 짐작하지 않는다. proc_def_deployment 는 action 에
 # 검사 제약이 있고 칸이 고정이라(마이그레이션 000044) 지금 표 구조 그대로 쓰는 머리의 owner 칸(000001, 이 서비스가 쓰지 않던 칸)에 둔다.
@@ -103,7 +97,7 @@ class Repo(Protocol):
     def pending_approvals(self, tenant_id: str, after_id: str | None = None, limit: int = 100) -> list[dict]: ...
     def incident_is_process_owned(self, incident_id: str) -> bool: ...
     def due_timers(self, tenant_id: str, now: datetime, limit: int = 100) -> list[dict]: ...
-    def waiting_services(self, tenant_id: str, after_id: str | None = None, limit: int = 100) -> list[dict]: ...
+    def waiting_services(self, tenant_id: str, now: datetime, after_id: str | None = None, limit: int = 100) -> list[dict]: ...
     def find_event_instance(self, tenant_id: str, def_id: str, event_id: str) -> dict | None: ...
     def insert_instance(self, inst: dict) -> None: ...
     def update_instance(self, inst: dict) -> None: ...
@@ -165,496 +159,6 @@ def consumer_name() -> str:
     return f"{socket.gethostname()}:{os.getpid()}"
 
 
-def _copy(v):
-    return json.loads(json.dumps(v)) if v is not None else None
-
-
-def _owns_claim(row,consumer):
-    return row.get('consumer')==consumer and row.get('status')=='IN_PROGRESS' and row.get('draft_status')=='STARTED'
-
-
-# ---------------------------------------------------------------- in-memory
-class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection, MemoryAgents, MemoryAuthoring):
-    def __init__(self):
-        self._lock = threading.RLock()
-        self.defs: dict[tuple[str, str], dict] = {}
-        self.def_versions: dict[tuple[str, str, str], dict] = {}
-        self.deployments: list[dict] = []
-        self.forms: dict[tuple[str, str], dict] = {}
-        self.tenants: dict[str, dict] = {"hyd": {"id": "hyd", "name": "hyd", "mcp": None}}
-        self.users: dict[str, dict] = {}
-        self.instances: dict[str, dict] = {}
-        self.workitems: dict[str, dict] = {}
-        self.events: list[dict] = []
-        self._stream_positions = {}
-        self._durable_service_progress_ids = set()
-        self._progress_local = threading.local()
-        self.event_payloads: dict[str, dict] = {}
-        self.notifications: list[dict] = []
-        self.role_members: list[dict] = []
-        self.assignments: list[dict] = []
-        self.approvals: dict[str, dict] = {}
-        self.reworks: dict[tuple, dict] = {}
-        self.effect_receipts: dict[tuple, dict] = {}
-        self.projection_jobs = {}
-        self._projection_sequence = 0
-
-    @contextmanager
-    def event_transaction(self, key: str):
-        with self._lock:
-            before = (_copy(self.instances), _copy(self.workitems), deepcopy(self.projection_jobs))
-            try:
-                yield
-            except Exception:
-                self.instances, self.workitems, self.projection_jobs = before
-                raise
-
-    def find_event_instance(self, tenant_id: str, def_id: str, event_id: str) -> dict | None:
-        return next((_copy(i) for i in self.instances.values()
-                     if i.get("tenant_id") == tenant_id and i.get("proc_def_id") == def_id
-                     and (i.get("start_event_id") == event_id or any(
-                         v.get('key') == '_runtime_coalescing' and event_id in v['value'].get('events', [])
-                         for v in i.get('variables_data', [])))), None)
-
-    def find_active_coalesced_instance(self, tenant_id: str, def_id: str, key: str) -> dict | None:
-        return next((_copy(i) for i in self.instances.values()
-                     if i.get('tenant_id') == tenant_id and i.get('proc_def_id') == def_id
-                     and i.get('status') == 'RUNNING' and not i.get('is_deleted') and any(
-                         v.get('key') == '_runtime_coalescing' and v['value'].get('key') == key
-                         for v in i.get('variables_data', []))), None)
-
-    @contextmanager
-    def instance_transaction(self, tenant_id: str, proc_inst_id: str):
-        with self._lock:
-            inst=self.instances.get(proc_inst_id)
-            if not inst or inst.get('tenant_id')!=tenant_id:raise KeyError('no such instance')
-            before=deepcopy((self.instances,self.workitems,self.events,self.notifications,self.approvals,self.reworks,self.projection_jobs,self.assignments))
-            self._progress_local.claims = deepcopy((self.instances, self.workitems))
-            try:yield
-            except Exception:
-                previous_ids = {e['id'] for e in before[2]}
-                durable = [deepcopy(e) for e in self.events if e['id'] in self._durable_service_progress_ids and e['id'] not in previous_ids]
-                self.instances,self.workitems,self.events,self.notifications,self.approvals,self.reworks,self.projection_jobs,self.assignments=before
-                self.events.extend(durable)
-                raise
-            finally:
-                self._progress_local.claims = None
-
-    def due_timers(self, tenant_id: str, now: datetime, limit: int = 100) -> list[dict]:
-        with self._lock:
-            rows=[w for w in self.workitems.values() if w.get('tenant_id')==tenant_id
-                  and w['status']=='IN_PROGRESS' and w.get('agent_orch')=='hyd-process'
-                  and w.get('user_id')=='sys:process' and w.get('due_date')
-                  and datetime.fromisoformat(w['due_date'].replace('Z','+00:00'))<=now
-                  and self.instances.get(w['proc_inst_id'],{}).get('status')=='RUNNING'
-                  and self.instances[w['proc_inst_id']].get('tenant_id')==tenant_id
-                  and not self.instances[w['proc_inst_id']].get('is_deleted')]
-            return [_copy(w) for w in sorted(rows,key=lambda w:(w['due_date'],w['id']))[:limit]]
-
-    def waiting_services(self, tenant_id: str, after_id: str | None = None, limit: int = 100) -> list[dict]:
-        with self._lock:
-            rows=[w for w in self.workitems.values() if w.get('tenant_id')==tenant_id and w['status']=='SUBMITTED'
-                  and w.get('agent_orch')=='hyd-process' and w.get('consumer') and not w.get('output')
-                  and w.get('tool') in SERVICE_QUEUE_TOOLS
-                  and self.instances.get(w['proc_inst_id'],{}).get('status')=='RUNNING'
-                  and self.instances[w['proc_inst_id']].get('tenant_id')==tenant_id
-                  and not self.instances[w['proc_inst_id']].get('is_deleted')
-                  and (after_id is None or w['id']>after_id)]
-            return [_copy(w) for w in sorted(rows,key=lambda w:w['id'])[:limit]]
-
-    # ---- definitions · forms · users · tenants
-    def upsert_proc_def(self, definition: dict, tenant_id: str = "hyd") -> None:
-        version = definition.get('version')
-        if not isinstance(version, str) or not version.strip():
-            raise ValueError('정의 버전(version)은 비어 있지 않은 문자열이어야 합니다')
-        with self._lock:
-            key = (definition['processDefinitionId'], tenant_id, version)
-            old = self.def_versions.get(key)
-            if old and json.dumps(old['definition'], sort_keys=True) != json.dumps(definition, sort_keys=True):
-                raise ValueError('이미 등록한 정의 버전은 변경할 수 없습니다. 새 버전을 사용하세요')
-            # U4: registering never moves the deployed pointer (prod_version); only record_deployment does.
-            head = self.defs.get(key[:2]) or {}
-            row = {'id': definition['processDefinitionId'], 'tenant_id': tenant_id,
-                   'name': definition.get('processDefinitionName'), 'definition': _copy(definition),
-                   'prod_version': head.get('prod_version'), 'type': 'bpmn', 'ontology_ref': definition.get('ontologyRef'),
-                   'owner': head.get('owner')}
-            if old is None:
-                self.def_versions[key] = dict(_copy(row), prod_version=version, message='HYD immutable registration',
-                                              registered_at=datetime.now(timezone.utc).isoformat())
-            self.defs[key[:2]] = row
-
-    def get_proc_def(self, def_id: str, tenant_id: str = "hyd", *, version: str | None = None) -> dict | None:
-        if version is not None:
-            return _copy(self.def_versions.get((def_id, tenant_id, version)))
-        return _copy(self.defs.get((def_id, tenant_id)))
-
-    def list_definitions(self, tenant_id: str = "hyd") -> list[dict]:
-        return [_copy(v) for (did,tenant,version),v in sorted(self.def_versions.items()) if tenant == tenant_id]
-
-    def deployed_version(self, def_id: str, tenant_id: str = "hyd") -> str | None:
-        head = self.defs.get((def_id, tenant_id))
-        return head.get('prod_version') if head else None
-
-    def record_deployment(self, def_id: str, version: str, tenant_id: str, *, action: str, actor: str, reason: str,
-                          class_flow: bool = False) -> dict:
-        with self._lock:
-            head = self.defs.get((def_id, tenant_id))
-            if (def_id, tenant_id, version) not in self.def_versions:
-                raise LookupError(f'등록되지 않은 정의 판본입니다: {def_id}@{version}')
-            if head is None:   # B3 가져온 흐름: PG 는 등록 때 proc_def 머리(prod_version NULL)를 넣는다 — 메모리는 첫 배포 때 같은 머리를 만든다
-                v = self.def_versions[(def_id, tenant_id, version)]
-                head = self.defs[(def_id, tenant_id)] = {'id': def_id, 'tenant_id': tenant_id, 'name': v.get('name'), 'definition': _copy(v.get('definition')),
-                                                         'prod_version': None, 'type': 'bpmn', 'ontology_ref': v.get('ontology_ref')}
-            row = {'id': str(uuid.uuid4()), 'tenant_id': tenant_id, 'proc_def_id': def_id, 'version': version,
-                   'previous_version': head.get('prod_version'), 'action': action, 'actor': actor, 'reason': reason,
-                   'created_at': datetime.now(timezone.utc).isoformat()}
-            head['prod_version'] = version
-            head['owner'] = CLASS_OWNER if class_flow else None
-            self.deployments.append(row)
-            return dict(_copy(row), class_flow=bool(class_flow))
-
-    def list_deployments(self, def_id: str, tenant_id: str = "hyd", limit: int = 50) -> list[dict]:
-        rows = [d for d in self.deployments if d['tenant_id'] == tenant_id and d['proc_def_id'] == def_id]
-        return [_copy(d) for d in list(reversed(rows))[:limit]]
-
-    def deployed_heads(self, tenant_id: str = "hyd") -> list[dict]:
-        out = []
-        for (def_id, tenant), head in self.defs.items():
-            if tenant != tenant_id or not head.get('prod_version'):
-                continue
-            seq = max((n for n, d in enumerate(self.deployments) if d['tenant_id'] == tenant_id and d['proc_def_id'] == def_id), default=-1)
-            last = self.deployments[seq] if seq >= 0 else {}
-            out.append({'id': def_id, 'prod_version': head['prod_version'], 'deployed_seq': seq,
-                        'deployed_at': last.get('created_at'), 'last_action': last.get('action'), 'deployed_by': last.get('actor'),
-                        'class_flow': head.get('owner') == CLASS_OWNER})
-        return sorted(out, key=lambda r: (r['deployed_seq'], r['id']), reverse=True)
-
-    def clear_deployment(self, def_id: str, tenant_id: str, *, actor: str, reason: str) -> dict:
-        with self._lock:
-            head = self.defs.get((def_id, tenant_id))
-            if head is None or not head.get('prod_version'):
-                raise LookupError(f'배포된 판본이 없는 정의입니다: {def_id}')
-            row = {'id': str(uuid.uuid4()), 'tenant_id': tenant_id, 'proc_def_id': def_id, 'version': None,
-                   'previous_version': head['prod_version'], 'action': 'withdraw', 'actor': actor, 'reason': reason,
-                   'created_at': datetime.now(timezone.utc).isoformat()}
-            head['prod_version'] = None
-            head['owner'] = None
-            self.deployments.append(row)
-            return _copy(row)
-
-    def upsert_form(self, form: dict, tenant_id: str = "hyd") -> None:
-        self.forms[(form["id"], tenant_id)] = dict(form, tenant_id=tenant_id)
-
-    def get_form(self, form_id: str, tenant_id: str = "hyd") -> dict | None:
-        return _copy(self.forms.get((form_id, tenant_id)))
-
-    def upsert_tenant(self, tenant: dict) -> None:
-        self.tenants[tenant["id"]] = dict(tenant)
-
-    def get_tenant(self, tenant_id: str = "hyd") -> dict | None:
-        return _copy(self.tenants.get(tenant_id))
-
-    def upsert_user(self, user: dict) -> None:
-        self.users[user["id"]] = dict(user)
-
-    def list_users(self, ids: list[str] | None = None, tenant_id: str = "hyd") -> list[dict]:
-        return [_copy(u) for u in self.users.values() if (ids is None or u["id"] in ids) and u.get("tenant_id", "hyd") == tenant_id]
-
-    # ---- instances
-    def insert_instance(self, inst: dict) -> None:
-        with self._lock:
-            self.instances.setdefault(inst["proc_inst_id"], _copy(inst))
-            self._enqueue_projection(inst)
-
-    def update_instance(self, inst: dict) -> None:
-        with self._lock:
-            prior = self.instances.get(inst['proc_inst_id'])
-            if prior is not None and prior.get('initial_variables') != inst.get('initial_variables'):
-                raise ValueError('저장된 시작 입력은 변경할 수 없습니다')
-            self.instances[inst['proc_inst_id']] = _copy(inst)
-            self._enqueue_projection(inst)
-
-    def get_instance(self, proc_inst_id: str) -> dict | None:
-        return _copy(self.instances.get(proc_inst_id))
-
-    def incident_is_process_owned(self, incident_id: str) -> bool:
-        return any(any(v.get('key')=='incident' and v.get('value')==incident_id
-                       for v in i.get('variables_data') or []) for i in self.instances.values())
-
-    def list_instances(self, status: str | None = None, limit: int = 100, tenant_id: str | None = None, incident_id: str | None = None,
-                       asset: str | None = None) -> list[dict]:
-        has = lambda i, key, val: any(v.get('key') == key and v.get('value') == val for v in i.get('variables_data') or [])
-        rows = [i for i in self.instances.values() if not i.get("is_deleted",False)
-                and (status is None or i["status"] == status) and (tenant_id is None or i.get("tenant_id") == tenant_id)
-                and (incident_id is None or has(i, 'incident', incident_id)) and (asset is None or has(i, 'asset', asset))]
-        return [_copy(i) for i in sorted(rows, key=lambda i: i["start_date"], reverse=True)[:limit]]
-
-    # ---- work items
-    def list_source_runs(self, tenant_id, def_id, event_prefix, limit=51, offset=0, cache_prefix=None):
-        rows=[i for i in self.instances.values() if i.get('tenant_id')==tenant_id and i.get('proc_def_id')==def_id
-              and not i.get('is_deleted',False) and (str(i.get('start_event_id') or '').startswith(event_prefix)
-                  or cache_prefix and str(i.get('start_event_id') or '').startswith(cache_prefix))]
-        rows.sort(key=lambda i:(i['start_date'],i['proc_inst_id']),reverse=True)
-        return [{k:_copy(i.get(k)) for k in ('proc_inst_id','status','start_date','end_date')} for i in rows[offset:offset+limit]]
-
-    def hide_instances(self, tenant_id, def_id, ids):
-        n=0
-        with self._lock:
-            for pid in ids:
-                i=self.instances.get(pid)
-                if i and i.get('tenant_id')==tenant_id and i.get('proc_def_id')==def_id and i.get('status')!='RUNNING' and not i.get('is_deleted'):
-                    i['is_deleted']=True;n+=1
-        return n
-
-    def insert_workitems(self, items: list[dict]) -> None:
-        with self._lock:
-            for w in items:
-                self.workitems[w["id"]] = _copy(w)
-                self._enqueue_projection(w)
-
-    def update_workitem(self, item: dict) -> None:
-        prior = self.workitems.get(item['id'])
-        if prior and any(prior.get(k) != item.get(k) for k in ('generation', 'rework_request_id', 'supersedes_id')):
-            raise ValueError('stored workitem generation identity is immutable')
-        self.insert_workitems([item])
-
-    def get_workitem(self, wid: str) -> dict | None:
-        return _copy(self.workitems.get(wid))
-
-    def list_workitems(self, proc_inst_id=None, status=None, user_id=None, agent_orch=None, limit=200, tenant_id=None, newest=False) -> list[dict]:
-        rows = [w for w in self.workitems.values()
-                if (proc_inst_id is None or w["proc_inst_id"] == proc_inst_id) and (status is None or w["status"] == status)
-                and (user_id is None or w.get("user_id") == user_id) and (agent_orch is None or w.get("agent_orch") == agent_orch) and (tenant_id is None or w.get("tenant_id") == tenant_id)]
-        ordered = sorted(rows, key=lambda w: w["start_date"])
-        kept = (ordered[-limit:] if limit else []) if newest and limit is not None else ordered[:limit]
-        return [_copy(w) for w in kept]
-
-    # ---- worker RPCs
-    def fetch_pending_task(self, agent_orch: str | None, consumer: str, limit: int = 1, tenant_id: str | None = None, proc_inst_id: str | None = None) -> list[dict]:
-        with self._lock:
-            out = []
-            for w in sorted(self.workitems.values(), key=lambda w: w["start_date"]):
-                if w["status"] != "IN_PROGRESS" or (agent_orch and w.get("agent_orch") != agent_orch) or (tenant_id is not None and w.get("tenant_id") != tenant_id) or (proc_inst_id is not None and w.get("proc_inst_id") != proc_inst_id):
-                    continue
-                expired = w.get("draft_status") == "STARTED" and w.get("lease_until") is not None \
-                    and w["lease_until"] < time.time() and int(w.get("claim_count") or 0) < MAX_CLAIMS
-                ready = (w.get("agent_mode") in ("DRAFT", "COMPLETE") and w.get("draft") is None and w.get("draft_status") is None) \
-                    or w.get("draft_status") == "FB_REQUESTED" or expired
-                if not ready:
-                    continue
-                if expired:
-                    w["log"] = (w.get("log") or "") + f"[Lease expired: reclaimed by {consumer} (claim {int(w.get('claim_count') or 0) + 1})] "
-                w["draft_status"], w["consumer"] = "STARTED", consumer
-                # A114 (agent-sdk function.sql:102-105): only a reclaim of an expired lease accumulates; a fresh claim or a
-                # re-claim after a person's answer (FB_REQUESTED) starts at 1, so feedback rounds do not use up the cap.
-                w["lease_until"] = time.time() + LEASE_SECONDS
-                w["claim_count"] = int(w.get("claim_count") or 0) + 1 if expired else 1
-                self._enqueue_projection(w)
-                out.append(_copy(w))
-                if len(out) >= limit:
-                    break
-            return out
-
-    def save_task_result(self, todo_id: str, payload: dict, final: bool, expected_consumer: str | None = None) -> bool:
-        with self._lock:
-            w = self.workitems.get(todo_id)
-            if not w or (expected_consumer is not None and not _owns_claim(w,expected_consumer)):
-                return False
-            if not final:
-                w["draft"] = _copy(payload)
-            elif w.get("agent_mode") == "COMPLETE":
-                w.update(output=_copy(payload), status="SUBMITTED", draft_status="COMPLETED", consumer=None)
-            else:
-                w.update(draft=_copy(payload), draft_status="COMPLETED", consumer=None)
-            self._enqueue_projection(w)
-            return True
-
-    def update_task_error(self, todo_id: str, expected_consumer: str | None = None) -> bool:
-        return self.set_draft_status(todo_id,"FAILED",expected_consumer=expected_consumer)
-
-    def set_draft_status(self, todo_id: str, draft_status: str | None, consumer: str | None = None, expected_consumer: str | None = None) -> bool:
-        with self._lock:
-            w=self.workitems.get(todo_id)
-            if not w or (expected_consumer is not None and not _owns_claim(w,expected_consumer)):
-                return False
-            w.update(draft_status=draft_status,consumer=consumer)
-            self._enqueue_projection(w)
-            return True
-
-    def release_worker_claim(self,todo_id: str,consumer: str) -> bool:
-        with self._lock:
-            w=self.workitems.get(todo_id)
-            if not w or w.get('consumer')!=consumer:return False
-            w['consumer']=None
-            self._enqueue_projection(w)
-            return True
-
-    def renew_task_lease(self, todo_id: str, consumer: str, seconds: int = LEASE_SECONDS) -> bool:
-        with self._lock:
-            w = self.workitems.get(todo_id)
-            if not w or w.get("consumer") != consumer or w.get("status") != "IN_PROGRESS" or w.get("draft_status") != "STARTED":
-                return False
-            w["lease_until"] = time.time() + seconds
-            return True
-
-    def clear_task_lease(self, todo_id: str, consumer: str) -> bool:
-        with self._lock:
-            w = self.workitems.get(todo_id)
-            if not w or w.get("consumer") != consumer:
-                return False
-            w["lease_until"] = None
-            return True
-
-    def expire_worker_leases(self, max_claims: int = MAX_CLAIMS) -> int:
-        with self._lock:
-            n = 0
-            for w in self.workitems.values():
-                if w.get("status") == "IN_PROGRESS" and w.get("draft_status") == "STARTED" and w.get("lease_until") is not None \
-                        and w["lease_until"] < time.time() and int(w.get("claim_count") or 0) >= max_claims:
-                    w.update(draft_status="FAILED", consumer=None, log=(w.get("log") or "") + f"[Lease expired after {w.get('claim_count')} claims: run marked FAILED] ")
-                    self._enqueue_projection(w); n += 1
-            return n
-
-    # ---- engine claim
-    def claim_submitted(self, consumer: str, limit: int = 10, tenant_id: str | None = None) -> list[dict]:
-        with self._lock:
-            out = []
-            for w in sorted(self.workitems.values(), key=lambda w: w["start_date"]):
-                if w["status"] == "SUBMITTED" and w.get("consumer") is None and (tenant_id is None or w.get("tenant_id") == tenant_id):
-                    w["consumer"] = consumer
-                    self._enqueue_projection(w)
-                    out.append(_copy(w))
-                    if len(out) >= limit:
-                        break
-            return out
-
-    def cleanup_stale_consumers(self, minutes: int = STALE_MINUTES) -> int:
-        return 0
-
-    # ---- events · notifications
-    def record_service_progress(self, tenant_id, proc_inst_id, todo_id, consumer, events):
-        from . import service_progress as progress
-        progress.validate_rows(events, proc_inst_id, todo_id)
-        claims = getattr(self._progress_local, 'claims', None) or (self.instances, self.workitems)
-        for row in events:
-            if row['job_id'] in ('SYSTEM_ATTEMPT_COMMITTED', 'SYSTEM_ATTEMPT_ROLLED_BACK'):
-                start = next((e for e in self.events if e.get('event_type') == 'tool_usage_started' and e.get('todo_id') == todo_id and (e.get('data') or {}).get('attempt_id') == row['data']['attempt_id']), None)
-                progress.require_closure(self.instances.get(proc_inst_id), self.workitems.get(todo_id), start, tenant_id, proc_inst_id, todo_id, consumer, row)
-            else:
-                progress.require_owner(claims[0].get(proc_inst_id), claims[1].get(todo_id), tenant_id, proc_inst_id, todo_id, consumer)
-        self.record_events(events)
-        self._durable_service_progress_ids.update(e['id'] for e in events)
-
-    def record_events(self, events: list[dict]) -> None:
-        with self._lock:
-            for evt in events:
-                e = dict(evt)
-                e.setdefault("id", str(uuid.uuid4()))
-                e.setdefault("timestamp", datetime.now(timezone.utc).isoformat())
-                e.setdefault("data", {})
-                self.events.append(e)
-
-    def insert_event(self, evt: dict) -> None:
-        self.record_events([evt])
-
-    def list_events(self, proc_inst_id=None, todo_id=None, limit=500, before=None) -> list[dict]:
-        rows = [e for e in self.events if (proc_inst_id is None or e.get("proc_inst_id") == proc_inst_id) and (todo_id is None or e.get("todo_id") == todo_id)]
-        if before is not None:                 # A161-G4: keyset page — rows older than the cursor event
-            pos = next((i for i, e in enumerate(rows) if e.get("id") == before), None)
-            if pos is None:
-                raise LookupError(f"events cursor '{before}' is not an event of this case")
-            rows = rows[:pos]
-        return [_copy(e) for e in rows] if limit is None else ([_copy(e) for e in rows[-limit:]] if limit > 0 else [])
-
-    def store_event_payload(self, payload: dict) -> None:
-        with self._lock:
-            self.event_payloads.setdefault(payload["id"], dict(payload, created_at=datetime.now(timezone.utc).isoformat()))
-
-    def get_event_payload(self, payload_id: str) -> dict | None:
-        row = self.event_payloads.get(payload_id)
-        return dict(row) if row else None
-
-    def list_events_since(self, since=None, limit=300) -> list[dict]:
-        """Events at or after `since` (ISO), oldest first; the caller drops ids it has seen (A091 SSE cursor)."""
-        rows = [e for e in self.events if since is None or str(e.get("timestamp") or "") >= since]
-        return [_copy(e) for e in sorted(rows, key=lambda e: (str(e.get("timestamp") or ""), e["id"]))[:limit]]
-
-    def list_stream_events(self, since=None, limit=300):
-        with self._lock:
-            for event in self.events:
-                self._stream_positions.setdefault(event['id'], len(self._stream_positions) + 1)
-            rows = [dict(_copy(e), stream_cursor=f"s:{self._stream_positions[e['id']]:020d}") for e in self.events]
-            rows.sort(key=lambda e: e['stream_cursor'])
-            if since is None:
-                return rows[-limit:]
-            key = 'stream_cursor' if str(since).startswith('s:') else 'timestamp'
-            return [e for e in rows if str(e.get(key) or '') >= since][:limit]
-
-    def find_task_event(self, todo_id, job_id, event_type):
-        return next((_copy(e) for e in reversed(self.events) if e.get('todo_id')==todo_id
-                     and e.get('job_id')==job_id and e.get('event_type')==event_type),None)
-
-    def insert_notification(self, note: dict) -> dict:
-        with self._lock:
-            row = dict(note, id=note.get("id") or str(uuid.uuid4()), tenant_id=note.get("tenant_id", "hyd"), is_read=False,
-                       created_at=datetime.now(timezone.utc).isoformat())
-            self.notifications.append(row)
-            return _copy(row)
-
-    def agent_task_origins(self, proc_inst_id: str, tenant_id: str) -> list[str]:
-        inst = self.instances.get(proc_inst_id)
-        if not inst or inst.get('tenant_id') != tenant_id:
-            return []
-        return sorted({e.get('job_id') or '' for e in self.events
-                       if e.get('proc_inst_id') == proc_inst_id and e.get('event_type') == 'task_started'})
-
-    # ---- U5 inbox: 업무분장 · 담당자 이력 · 사용자별 알림
-    def list_role_members(self, tenant_id: str, role_id: str | None = None) -> list[dict]:
-        return [_copy(m) for m in self.role_members if m["tenant_id"] == tenant_id and (role_id is None or m["role_id"] == role_id)]
-
-    def set_role_member(self, tenant_id: str, role_id: str, user_id: str, member: bool) -> None:
-        with self._lock:
-            self.role_members = [m for m in self.role_members if not (m["tenant_id"] == tenant_id and m["role_id"] == role_id and m["user_id"] == user_id)]
-            if member:
-                self.role_members.append({"tenant_id": tenant_id, "role_id": role_id, "user_id": user_id,
-                                          "created_at": datetime.now(timezone.utc).isoformat()})
-
-    def insert_assignment(self, row: dict) -> dict:
-        with self._lock:
-            saved = dict(row, id=row.get("id") or str(uuid.uuid4()), created_at=row.get("created_at") or datetime.now(timezone.utc).isoformat())
-            self.assignments.append(saved)
-            return _copy(saved)
-
-    def list_assignments(self, todo_id: str, tenant_id: str) -> list[dict]:
-        return [_copy(a) for a in self.assignments if a["todo_id"] == todo_id and a.get("tenant_id", "hyd") == tenant_id]
-
-    def _notes_for(self, tenant_id, user_ids):
-        return [n for n in self.notifications if n.get("tenant_id", "hyd") == tenant_id and n.get("user_id") in set(user_ids)]
-
-    def list_notifications(self, tenant_id, user_ids, unread_only=False, limit=100) -> list[dict]:
-        rows = [n for n in self._notes_for(tenant_id, user_ids) if not unread_only or not n.get("is_read")]
-        return [_copy(n) for n in sorted(rows, key=lambda n: (n["created_at"], n["id"]), reverse=True)[:limit]]
-
-    def count_unread_notifications(self, tenant_id, user_ids) -> int:
-        return sum(1 for n in self._notes_for(tenant_id, user_ids) if not n.get("is_read"))
-
-    def mark_notifications_read(self, tenant_id, user_ids, ids=None) -> int:
-        with self._lock:
-            n = 0
-            for note in self._notes_for(tenant_id, user_ids):
-                if not note.get("is_read") and (ids is None or note["id"] in set(ids)):
-                    note["is_read"] = True; n += 1
-            return n
-
-    def list_notifications_since(self, since=None, limit=300, tenant_id=None, user_ids=None) -> list[dict]:
-        rows = [n for n in self.notifications if (since is None or str(n.get("created_at") or "") >= since)
-                and (tenant_id is None or n.get("tenant_id", "hyd") == tenant_id) and (user_ids is None or n.get("user_id") in set(user_ids))]
-        return [_copy(n) for n in sorted(rows, key=lambda n: (str(n.get("created_at") or ""), n["id"]))[:limit]]
-
-    def ping(self) -> bool:
-        return True
-
-
 # ---------------------------------------------------------------- postgres (Supabase)
 class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthoring):
     def __init__(self, dsn: str | None = None):
@@ -702,25 +206,6 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
                     {'key':'_runtime_coalescing','value':{'key':key}}]))).fetchone())
 
     @contextmanager
-    def classroom_authoring_transaction(self, tenant_id: str):
-        """Short instructor import; serialize authoring and work creation too.
-
-        An advisory lock alone would not exclude the ordinary portal writers.
-        Bound lock acquisition so a live class cannot leave the CLI waiting.
-        """
-        with self.event_transaction('classroom-authoring:'+tenant_id):
-            with self._conn() as c:
-                c.execute("set local lock_timeout = '5s'")
-                c.execute("lock table users, tenant_skills, agent_skills, activity_agent_map, "
-                          "proc_def, proc_def_version, todolist in share row exclusive mode")
-                yield
-
-    def classroom_has_live_work(self, tenant_id: str) -> bool:
-        with self._conn() as c:
-            return c.execute("select 1 from todolist where tenant_id=%s and agent_orch='cliagents' "
-                             "and status not in ('DONE','CANCELLED') limit 1", (tenant_id,)).fetchone() is not None
-
-    @contextmanager
     def instance_transaction(self, tenant_id: str, proc_inst_id: str):
         if getattr(self._local,'connection',None) is not None:
             raise RuntimeError('nested storage transaction; runtime must reuse its transition')
@@ -744,15 +229,17 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
                 and w.status='IN_PROGRESS' and w.agent_orch='hyd-process' and w.user_id='sys:process'
                 and w.due_date<=%s order by w.due_date,w.id limit %s""",(tenant_id,tenant_id,now,limit)).fetchall()]
 
-    def waiting_services(self, tenant_id: str, after_id: str | None = None, limit: int = 100) -> list[dict]:
+    def waiting_services(self, tenant_id: str, now: datetime, after_id: str | None = None, limit: int = 100) -> list[dict]:
+        """process 가 이미 집었던(consumer 있음) 시스템 단계 중 다시 볼 차례인 행: 마감(due_date)이 없거나 지난 행만(B-2 — 기다리는 행을
+        2초마다 다시 집어 담당 표식을 새로 쓰면 그래프 반영 대기열이 쌓였다). 마감 = ACK 마감 · 재관측 창 · 대기 부품의 끝 시각."""
         with self._conn() as c:
             return [self._row(w) for w in c.execute("""select w.* from todolist w join bpm_proc_inst i using(proc_inst_id)
                 where w.tenant_id=%s and i.tenant_id=%s and i.status='RUNNING' and not i.is_deleted
                 and w.status='SUBMITTED' and w.agent_orch='hyd-process' and w.consumer is not null
                 and coalesce(w.output,'{}'::jsonb)='{}'::jsonb
-                and w.tool = any(%s)
+                and w.tool = any(%s) and (w.due_date is null or w.due_date<=%s)
                 and (%s::uuid is null or w.id>%s::uuid) order by w.id limit %s""",
-                (tenant_id,tenant_id,list(SERVICE_QUEUE_TOOLS),after_id,after_id,limit)).fetchall()]
+                (tenant_id,tenant_id,list(SERVICE_QUEUE_TOOLS),now,after_id,after_id,limit)).fetchall()]
 
     def _val(self, col: str, v):
         if col in JSON_COLS and v is not None:
@@ -1069,7 +556,7 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
             if cursor is None:
                 raise LookupError(f"events cursor '{before}' is not an event of this case")
             where.append("(timestamp, id) < (%s, %s)"); args += [cursor["timestamp"], cursor["id"]]
-        # A161-U1: the newest `limit` rows, oldest first (MemoryRepo's rows[-limit:]). It returned the OLDEST rows, so a long
+        # A161-U1: the newest `limit` rows, oldest first (newest page, oldest first). It returned the OLDEST rows, so a long
         # agent run (hundreds of usage rows) cut the newest tool calls out of the instance view and the screen stopped moving.
         sql = ("select * from (select * from events" + (" where " + " and ".join(where) if where else "")
                + " order by timestamp desc, id desc limit %s) x order by timestamp, id")
@@ -1195,7 +682,3 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
         except Exception:  # noqa: BLE001
             return False
 
-
-def make_repo() -> Repo:
-    """PROCESS_REPO=memory (tests, no DB) | pg (default — Supabase)."""
-    return MemoryRepo() if os.getenv("PROCESS_REPO", "pg") == "memory" else PgRepo()

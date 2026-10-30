@@ -1,6 +1,8 @@
 /* Shared presentation helpers. API identifiers stay unchanged — only on-screen wording lives here.
    A122 (문서/시스템/참조/UIUX_PLAN.md §2 명칭표 · §3 공통 컴포넌트 · §5.2 상태): every user-facing phrase comes from UI.terms,
    every status chip from UI.chip(), every form field from UI.field(). Change the wording here and all screens follow. */
+// 포털 전체의 HTML 이스케이프 하나(이 파일이 가장 먼저 실린다 — 다른 화면은 사본을 두지 않는다)
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const UI = {
   toolCallKey(event) {
     return JSON.stringify([event.proc_inst_id ?? null,event.todo_id ?? null,event.job_id ?? null,event.data?.tool_use_id || event.id]);
@@ -21,15 +23,13 @@ const UI = {
   evaluationRawHtml(record, parent) {
     const info=this.evaluationInfo(record,parent);
     if(info.state==='execution') return '';
-    const escape=v=>String(v ?? '').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-    return this.fold('평가 범위 원문',`<pre>${escape(JSON.stringify(info.raw,null,2))}</pre>`,{cls:'small'}).replace('<details','<details data-evaluation-raw');
+    return this.fold('평가 범위 원문',`<pre>${esc(JSON.stringify(info.raw,null,2))}</pre>`,{cls:'small'}).replace('<details','<details data-evaluation-raw');
   },
   evaluationHtml(record, parent, opt = {}) {
     const info=this.evaluationInfo(record,parent);
     if(info.state==='execution') return '';
     const text=info.state==='analysis' ? '규칙 비교 · 모의 순위 / 실제 승인 · 실행 준비는 확인하지 않음' : info.state==='structural' ? '구조 검사 / 실제 승인 · 실행 준비는 확인하지 않음' : '승인 · 실행 준비 검사 기록 확인 안 됨 · 실행 가능 여부 확인 안 됨';
-    const escape=v=>String(v ?? '').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-    return `<div class="muted" role="status" data-evaluation-notice><p>${escape(text)}</p>${opt.raw===false ? '' : this.evaluationRawHtml(record,parent)}</div>`;
+    return `<div class="muted" role="status" data-evaluation-notice><p>${esc(text)}</p>${opt.raw===false ? '' : this.evaluationRawHtml(record,parent)}</div>`;
   },
   skillLabel(k, historical = false) {
     const raw = k.name || k.skill_name || k.skill || '';
@@ -234,7 +234,8 @@ const UI = {
   name(id) { return (id && this.names[id]) || id || ''; },
   idText(text) { return this.words(String(text ?? '').replace(this.ID_RE, m => this.names[m] || m)); },
   // A161-U1: 화면에 쓰지 않는 말(데이터 · 온톨로지 원문에 남은 것) → 화면 말. "정비창"은 "예정된 정비 시간"으로 부른다(사용자 결정 2026-10-09).
-  words(text) { return String(text ?? '').replace(/야간\s*정비창/g, '야간 정비 시간').replace(/정비창/g, '예정된 정비 시간'); },
+  // 문장 속 경보 패턴 코드(그래프 규칙 설명 「COOLER_DEGRADATION 경보에서 …」 등)도 사람 이름으로 — 표에 있는 코드만 바꾼다
+  words(text) { return String(text ?? '').replace(/야간\s*정비창/g, '야간 정비 시간').replace(/정비창/g, '예정된 정비 시간').replace(/\b[A-Z][A-Z_]{3,}[A-Z]\b/g, code => this.patterns[code] || code); },
   async loadNames() {
     try { const r = await fetch('names.json', { cache: 'no-store' }); if (r.ok) { this.names = await r.json(); this.namesVersion = Object.keys(this.names).length; } } catch (e) { /* 사전이 없으면 id 그대로 보인다 */ }
   },
@@ -268,9 +269,8 @@ const UI = {
     [/^\[Cancel requested by (.+?)\] ?(.*)$/, (m, U) => `[${U.who(m[1])} 실행 취소 요청] ${m[2]}`.trim()],
     [/^\[Closed by (.+?)\] ?(.*)$/, (m, U) => `[${U.who(m[1])} 단계 닫음] ${m[2]}`.trim()],
     [/^\[DEFERRED\] ?(.*)$/, m => `[보류] ${m[1]}`.trim()],
-    [/^(\d+(?:\.\d+)?) sim-s = (\d+(?:\.\d+)?) s$/, m => `시뮬레이션 ${m[1]}초 = 실제 ${m[2]}초`],
     [/^cleared before any action$/, () => '조치 전에 경보 해제'],
-    [/^cleared=(True|False) (\w+)=([\d.]+) \(criterion (.+)\)$/, m => `경보 해제 ${m[1] === 'True' ? '예' : '아니요'} · ${m[2]} ${m[3]} (기준 ${m[4]})`],
+    [/^cleared=(True|False) (\w+)=(-?[\d.]+|None) \(criterion (.+)\)$/, m => `경보 해제 ${m[1] === 'True' ? '예' : '아니요'} · ${m[2]} ${m[3] === 'None' ? '값 없음' : m[3]} (기준 ${m[4]})`],
     [/^alert (ALT-[\w-]+)$/, m => `경보 ${m[1]}`],
     [/^source handler lease expired$/, () => '원천 처리기 임대 만료'],
     [/^[A-Z_]{4,}$/, (m, U) => U.status(m[0])],
@@ -360,11 +360,18 @@ const UI = {
   },
   chipText(label, tone = 'neutral') { return `<span class="chip tone-${tone}">${esc(label)}</span>`; },
 
+  /* ---------- 경보 패턴 이름(감지기 · 업무 경보 · 인터록 트립 코드 → 사람 말). 포털 전체가 이 표 하나를 쓴다 ---------- */
+  patterns: { COOLER_DEGRADATION: '쿨러 성능 저하', PUMP_LEAKAGE: '펌프 내부 누설', FAN_VIBRATION: '팬 진동 상승', OVER_TEMPERATURE: '유온 과열',
+    TEMP_TRIP: '유온 보호 정지', OVERHEAT_TRIP: '유온 보호 정지', LOW_PRESSURE_TRIP: '저압 인터록 트립', HIGH_VIBRATION_TRIP: '고진동 인터록 트립',
+    OIL_ANALYSIS: '오일 분석 기준 이탈', PM_DUE: '정기 정비 도래', SPARE_BELOW_MIN: '예비품 재고 기준 이탈' },
+  // 표에 없는 코드(PBL 에서 학생이 만든 경보 등)는 지어내지 않고 원래 코드를 그대로 둔다
+  patternName(code) { return code ? this.patterns[code] || this.idText(code) : ''; },
+
   /* ---------- 수행 주체 (명칭표 "행위자") ---------- */
   performers: { 'sys:agent': 'AI 에이전트', agent: 'AI 에이전트', 'role:operator': '운전원', operator: '운전원', 'role:prod-mgr': '생산관리자', 'role:maint-mgr': '설비보전팀장',
     'role:plant-mgr': '공장장', 'role:quality-mgr': '품질팀장', 'role:purchasing-mgr': '구매팀장', 'role:purchasing': '구매 담당', 'sys:scada': '설비', plc: '설비', 'sys:process': '시스템', process: '시스템',
     'sys:cmms': '정비 시스템', detector: '탐지기', legacy: 'AI 에이전트', cliagents: 'AI 에이전트', human: '담당자', result: '시스템' },
-  actorName(id, name) { return id === 'sys:agent' && name === 'AI 에이전트 (Claude Code)' ? '인공지능 에이전트' : name; },
+  // 시드의 기본 AI 수행자 이름(제품 이름이 붙음)은 화면에서 「인공지능 에이전트」 — 처리 기록 · 그래프의 실행 주체 노드(id 가 다름)도 같은 이름이라 이름으로 본다
   who(id) { return this.performers[id] || id || '–'; },
   roleName(id, definition) { return (definition?.roles || []).find(r => r.endpoint === id)?.name || this.who(id); },
   // 담당자 칸: 값이 고른 "나"(user:*)면 이름을 읽기 전용으로 보이고 id 는 숨은 칸에 실어 보낸다(원문 id 를 학생에게 보이지 않는다).
@@ -484,7 +491,7 @@ const UI = {
   // read-only labelled value (이전 단계 입력 · 변수)
   readonly(label, value, sub = '') { return `<div class="field ro"><label>${esc(label)}</label><div class="ro-value">${value}</div>${sub ? `<p class="field-hint">${esc(sub)}</p>` : ''}</div>`; },
 
-  // Labels and units follow enterprise-sim/entsim/data.py. Unknown fields retain their exact key/value.
+  // Labels and units follow the business DB seed (it/supabase/seed.sql). Unknown fields retain their exact key/value.
   facts: {
     due_in_h: ['납기까지', '시간'], remaining_qty: ['생산 잔량', '개'], rate_per_h: ['생산 속도', '개/시간'],
     hour_value: ['생산 시간당 가치', '만원/시간'], alt_asset: ['대체 설비', ''], alt_free_h: ['대체 설비 가용 시간', '시간'],
@@ -596,15 +603,14 @@ Object.assign(UI.terms, {
     if (!extra[name]) return base.call(this, name);
     return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${extra[name]}"/></svg>`;
   };
-  const html = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
   // 로딩 블록: 빈 블록(UI.empty)과 같은 자리·크기, 문구만 다르다.
   UI.loading = function (text, cls = '') {
-    return `<div class="empty state-loading ${cls}" role="status" aria-live="polite"><i class="spin" aria-hidden="true"></i><b>${html(text || this.t('loading'))}</b></div>`;
+    return `<div class="empty state-loading ${cls}" role="status" aria-live="polite"><i class="spin" aria-hidden="true"></i><b>${esc(text || this.t('loading'))}</b></div>`;
   };
   // 오류 블록: 무엇을 못 했는지 + 사람이 읽을 사유 한 줄 + (선택) 다시 시도 버튼. 버튼은 data-retry 로 찾아 붙인다.
   UI.errorBlock = function (title, reason = '', { retry = false, cls = '' } = {}) {
-    return `<div class="empty state-error ${cls}" role="alert"><b>${html(title || this.t('error.load'))}</b>${reason ? `<span>${html(reason)}</span>` : ''}${retry ? `<button type="button" class="btn small" data-retry>${html(this.t('state.retry'))}</button>` : ''}</div>`;
+    return `<div class="empty state-error ${cls}" role="alert"><b>${esc(title || this.t('error.load'))}</b>${reason ? `<span>${esc(reason)}</span>` : ''}${retry ? `<button type="button" class="btn small" data-retry>${esc(this.t('state.retry'))}</button>` : ''}</div>`;
   };
 
   // 토스트: 화면 아래쪽에 잠깐 뜨는 한 줄. tone = 'ok' | 'neg' | 'neutral'. 같은 문구가 겹치면 하나만 둔다.
@@ -615,7 +621,7 @@ Object.assign(UI.terms, {
     [...host.children].filter(n => n.dataset.text === text).forEach(n => n.remove());
     const node = document.createElement('div');
     node.className = 'toast tone-' + tone; node.dataset.text = text; node.setAttribute('role', tone === 'neg' ? 'alert' : 'status');
-    node.innerHTML = `<span>${html(text)}</span><button type="button" class="toast-x" aria-label="닫기">×</button>`;
+    node.innerHTML = `<span>${esc(text)}</span><button type="button" class="toast-x" aria-label="닫기">×</button>`;
     node.querySelector('.toast-x').addEventListener('click', () => node.remove());
     host.append(node);
     if (timeout > 0) setTimeout(() => node.remove(), timeout);
@@ -646,8 +652,8 @@ Object.assign(UI.terms, {
     return new Promise(resolve => {
       const dlg = document.createElement('dialog');
       dlg.className = 'confirm-dialog';
-      dlg.innerHTML = `<form method="dialog"><h3>${html(title)}</h3>${body ? `<p>${html(body)}</p>` : ''}
-        <div class="form-actions"><button value="cancel" class="btn" autofocus>${html(cancel || this.t('dialog.cancel'))}</button><button value="ok" class="btn ${danger ? 'danger' : 'primary'}">${html(ok || this.t('dialog.ok'))}</button></div></form>`;
+      dlg.innerHTML = `<form method="dialog"><h3>${esc(title)}</h3>${body ? `<p>${esc(body)}</p>` : ''}
+        <div class="form-actions"><button value="cancel" class="btn" autofocus>${esc(cancel || this.t('dialog.cancel'))}</button><button value="ok" class="btn ${danger ? 'danger' : 'primary'}">${esc(ok || this.t('dialog.ok'))}</button></div></form>`;
       document.body.append(dlg);
       const done = v => { dlg.remove(); resolve(v); };
       dlg.addEventListener('close', () => done(dlg.returnValue === 'ok'));

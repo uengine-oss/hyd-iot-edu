@@ -15,11 +15,11 @@
     POST   /api/role-members                             {role_id, user_id} 역할에 사람 넣기 · DELETE /api/role-members?role_id=&user_id= (넣은 것만)
     POST   /api/agents/reset                             기준으로 되돌리기: 내가 만든 에이전트 · 스킬 · 배정 · 업무분장만 지움
 
-거절은 모두 사람이 읽을 사유(detail)와 함께: 403 기본 보호 · 404 없음 · 409 중복/실행 중 · 422 입력. 409 unless PROCESS_MODE=instance.
+거절은 모두 사람이 읽을 사유(detail)와 함께: 403 기본 보호 · 404 없음 · 409 중복/실행 중 · 422 입력 · 503 처리 흐름 서비스가 켜지는 중(instances.NOT_READY).
 """
 from __future__ import annotations
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 from . import agent_authoring as A
@@ -92,13 +92,9 @@ def mount(app: FastAPI) -> None:
         rt = _rt()
 
         def work():
-            agents = [u for u in rt.repo.list_users(None, rt.tenant_id) if u.get("is_agent")]
-            models = sorted({str(u.get("model")).strip() for u in agents if str(u.get("model") or "").strip()})
+            from .course_policy import COURSE_MODEL
             servers = A.server_options(rt.repo, rt.tenant_id)
-            if getattr(app.state, "course_access", None) is not None:
-                from hydcommon.course_access import AGENT_SERVERS
-                servers = [server for server in servers if server["name"] in AGENT_SERVERS]
-                models = [model for model in models if model == "coding"]
+            models = [COURSE_MODEL]                  # 수업 모델 하나(course_policy) — 다른 모델은 저장 때 거절된다
             return {"servers": servers,
                     "skills": [{"skill_name": s["skill_name"], "title": skill_title(s),
                                 "description": s.get("description") or "", "origin": A.origin_of(s)}
@@ -128,11 +124,10 @@ def mount(app: FastAPI) -> None:
         return await _call(A.delete_agent, rt, agent_id, by=by)
 
     @app.post("/api/agents/{agent_id}/clone", status_code=201)
-    async def clone_agent(agent_id: str, request: Request, req: CloneReq | None = None):
+    async def clone_agent(agent_id: str, req: CloneReq | None = None):
         rt = _rt()
         body = req.model_dump() if req else {}
-        return await _call(A.clone_agent, rt.repo, rt.tenant_id, agent_id, body, by=body.get("by"),
-                           course_restricted=getattr(request.app.state, "course_access", None) is not None)
+        return await _call(A.clone_agent, rt.repo, rt.tenant_id, agent_id, body, by=body.get("by"))
 
     @app.post("/api/agents/{agent_id}/skills")
     async def attach_skill(agent_id: str, req: AttachReq):

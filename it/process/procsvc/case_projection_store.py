@@ -20,6 +20,8 @@ class CaseProjectionStore:
                 consumer text primary key,digest text not null,queued_at real not null)''')
             self.db.execute('''create table if not exists projection_repairs (
                 request_id text primary key,fingerprint text not null,result text not null)''')
+            # 옛 판은 그래프가 받은 행을 처리 표시만 하고 남겼다 — 다시 켤 때 지운다(finish_case_projection 참고)
+            self.db.execute('delete from case_projection_outbox where processed_at is not null')
             row=self.db.execute('select body from snapshot where id=1').fetchone()
             if row:self._enqueue_case_snapshot(json.loads(row[0]))
 
@@ -68,10 +70,16 @@ class CaseProjectionStore:
             return batch
 
     def finish_case_projection(self,job,error=None):
+        # 그래프가 받은 행은 지운다: 받은 행을 다시 읽는 곳이 없고(배치 · 상태 · 수리 조회는 처리 전 행만, 변경 감지는 case_projection_source),
+        # 남기면 사건 · 판단이 바뀔 때마다 그 원문 전체가 한 줄씩 끝없이 쌓였다(10-07 실측 8,615행 188 MB). 판번호(id)는 AUTOINCREMENT 라
+        # 지워도 다시 나오지 않는다. 실패한 행은 남겨 다음 배치가 다시 보낸다.
         with self._lock,self.db:
-            self.db.executemany('''update case_projection_outbox set attempts=attempts+1,
-                processed_at=?,last_error=?,retry_at=? where id=? and processed_at is null''',
-                [(None if error else time.time(),error,time.time()+5,jid) for jid in job['ids']])
+            if error is None:
+                self.db.executemany('delete from case_projection_outbox where id=? and processed_at is null',[(jid,) for jid in job['ids']])
+            else:
+                self.db.executemany('''update case_projection_outbox set attempts=attempts+1,
+                    last_error=?,retry_at=? where id=? and processed_at is null''',
+                    [(error,time.time()+5,jid) for jid in job['ids']])
 
     def case_projection_status(self,limit=100):
         with self._lock:

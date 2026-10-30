@@ -121,19 +121,16 @@
     return {state:s,refresh,select,setUrl,connect,reopen,poll,returned,cancel,disconnect,dispose};
   }
   const mounted=new WeakMap();
+  // 포털 공용 요청 함수(requestJ) 하나로 — 같은 주소(nginx 프록시, HttpOnly 연결 쿠키)라 credentials 를 싣고 20초 제한. 서버 까닭 코드는 error.code 로
   async function request(path,body) {
-    const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),20000);
     try {
-      const response=await fetch(path,{method:body===undefined?'GET':'POST',credentials:'same-origin',signal:abort.signal,headers:body===undefined?{}:{'Content-Type':'application/json'},...(body===undefined?{}:{body:JSON.stringify(body)})});
-      const result=await response.json();
-      if(!response.ok){const error=new Error('서비스 연결 요청을 완료하지 못했습니다.');error.code=result?.detail?.reason_code;error.status=response.status;throw error;}
-      return result;
-    } finally {clearTimeout(timer);}
+      return await requestJ(path,{credentials:'same-origin',timeout:20000,...(body===undefined?{}:{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})});
+    } catch (error) { error.code=error.detail?.reason_code; throw error; }
   }
   function mount(host,{onConnected}={}) {
     if(!host)return;
     mounted.get(host)?.dispose();
-    const e=UI.esc || esc;
+    const e=esc;
     host.innerHTML=UI.card({title:'서비스 연결',body:`<p>현재 수업에서 함께 쓰는 공용 연결입니다. 다른 학생의 개인 계정을 자동으로 섞어 쓰지 않습니다.</p>
       <div class="form-grid"><div class="field"><label for="mcpConnectService">서비스</label><select id="mcpConnectService"><option value="">서비스 목록 조회 중</option></select></div>
       <div class="field" data-connect-url hidden><label for="mcpConnectUrl">서버 주소</label><input id="mcpConnectUrl" type="url" placeholder="https://서비스주소/mcp" autocomplete="url"></div></div>

@@ -26,7 +26,7 @@
     try { X.people = await getJ(url('/api/inbox/users')); X.err = ''; }
     catch (e) {
       X.people = null;
-      X.err = e.status === 409 ? '내 작업함은 처리 건 방식(PROCESS_MODE=instance)에서만 열립니다.' : `사용자 목록을 읽지 못했습니다: ${e.message}`;
+      X.err = `사용자 목록을 읽지 못했습니다: ${e.message}`;
       return;
     }
     // 사람 이름을 포털 전체의 "누가" 표시에 등록한다(작업 담당 · 승인자 · 기록이 id 대신 이름으로 보인다)
@@ -75,20 +75,10 @@
     };
   }
 
-  /* ------------------------------------------------ 이동: #/instances/<id>/task/<taskId> */
+  /* ------------------------------------------------ 이동: #/instances/<id>/task/<taskId> — 주소는 셸(shell.js)이 읽는다 */
   function go(link) {
-    if (!link) return;
-    if (location.hash === link) route(); else location.hash = link;
+    if (link) window.hydShell.navigate(link);
   }
-  function route() {
-    const m = /^#\/instances\/([^/]+)(?:\/task\/([^/]+))?$/.exec(location.hash);
-    if (!m) { if (location.hash === '#/inbox') selectTab('inbox'); return; }
-    const [, pid, tid] = m.map(decodeURIComponent);
-    selectTab('instances');
-    if (tid && window.hydInstancesOpenTask) window.hydInstancesOpenTask(pid, tid);
-    else if (window.hydInstancesSelect) window.hydInstancesSelect(pid);
-  }
-  window.addEventListener('hashchange', route);
 
   async function markRead(ids) {
     const m = me(); if (!m) return;
@@ -152,7 +142,12 @@
   }
 
   function renderInto(root) {
-    if (X.err && !X.people) { root.innerHTML = UI.empty('내 작업함을 열 수 없습니다', X.err); return; }
+    // 사람 목록을 못 읽으면 「나」를 고를 수 없다 — 다시 시도 단추를 두고, 메뉴를 다시 열어도 셸이 새로 읽는다(failed)
+    if (X.err && !X.people) {
+      root.innerHTML = UI.errorBlock('내 작업함을 열 수 없습니다', X.err, { retry: true });
+      root.querySelector('[data-retry]')?.addEventListener('click', () => refresh());
+      return;
+    }
     if (!X.people) { root.innerHTML = UI.empty('읽는 중…', '', 'compact'); return; }
     const m = me();
     const unread = (X.box && X.box.unread) || 0;
@@ -235,7 +230,8 @@
     return UI.readonly(UI.t('form.by'), `${esc(m.name)} <span class="muted">(나)</span>`);
   }
 
-  window.hydInbox = { mount, badge, mountMe, unread, me, whoFields, byField, refresh, X };
+  const failed = () => !X.people && !!X.err;
+  window.hydInbox = { mount, failed, badge, mountMe, unread, me, whoFields, byField, refresh, X };
 
   // 목록 행은 <a>(주소 복사·새 탭 가능) — 링크 색 대신 기존 목록 행 모양을 쓴다
   const style = el('style', null, '.inbox-body a.item{display:block;color:inherit;text-decoration:none}.inbox-body a.item.unread strong{font-weight:700}.inbox-body a.item:not(.unread){opacity:.78}.inbox-badge{white-space:nowrap}');
@@ -246,7 +242,7 @@
     const slot = document.getElementById('inboxBadge'); if (slot && !slot.firstChild) slot.appendChild(badge());
     render();
     await refresh();
-    connect(); route();
+    connect();
     setInterval(() => { if (me() && state.tab === 'inbox') refresh(); }, 15000);   // 경과 시간 갱신(새 알림은 SSE 가 바로 부른다)
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();

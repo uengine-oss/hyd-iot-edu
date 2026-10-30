@@ -58,7 +58,8 @@ PROCESS_ORCH = "hyd-process"          # service tasks the process service execut
 SYSTEM_USER = "sys:process"           # performer of event work items (the product writes nextUserEmail="system")
 # C2 (확정 TODO C, 결정 4): 기다리는 부품(시간 대기 · 입고 확인)은 업무 시간(예정된 정비 시간까지 몇 시간, 납기 며칠)을 기다린다. 배속(TIME_SCALE)만으로는
 # 20배속에서도 납기 5일이 6시간이라 수업에서 볼 수 없으므로, 그 부품과 그 부품에 붙은 경계 타이머에만 수업용 압축 배율을 한 번 더 곱한다.
-# 설비 물리 · 감지기 · 재관측 · 사람 응답 타이머(TIME_SCALE 규칙)는 그대로다. 값은 instance_mode.build 가 PROCESS_WAIT_COMPRESSION 으로 정한다.
+# 설비 물리 · 감지기 · 재관측(TIME_SCALE 규칙)은 그대로다. 값은 instance_mode.build 가 PROCESS_WAIT_COMPRESSION 으로 정한다.
+# 사람 단계에 붙은 타이머(승인 지연 알림 · 카드 선택 시한)는 벽시계다(결정 2026-10-30) — 사람이 읽고 고르는 시간은 설비 시간이 아니다.
 WAIT_TOOLS = ("process:wait", "enterprise:GR_CONFIRM", "plant:restore")   # 정비 수행은 예정된 정비 시간까지 기다릴 수 있다(until)
 _WAIT_COMPRESSION = [1.0]
 
@@ -77,7 +78,10 @@ def wait_compression() -> float:
 
 
 def timer_scale(activity: dict | None, time_scale: float) -> float:
-    """경계 타이머의 배율: 기다리는 부품에 붙은 타이머는 배속 × 수업 압축, 그 밖은 배속 그대로."""
+    """경계 타이머의 배율: 사람 단계에 붙은 타이머는 1(벽시계 — 승인 지연 · 카드 선택 시한, #2), 기다리는 부품에 붙은 타이머는
+    배속 × 수업 압축, 그 밖(에이전트 · 시스템 단계)은 배속 그대로."""
+    if activity and is_human(activity):
+        return 1.0
     if activity and activity.get("tool") in WAIT_TOOLS:
         return max(1.0, time_scale) * wait_compression()
     return time_scale
@@ -276,13 +280,19 @@ def iso_duration_seconds(text: str) -> float:
 
 
 def _properties(seq: dict) -> dict:
+    """흐름 선의 properties(default · priority). 깨진 JSON 은 조용히 빈 값으로 바꾸지 않는다(A-11) — 그 선 id 를 붙인 오류로 실패한다
+    (등록 검사도 이 함수를 써서 등록 전에 거절된다)."""
     p = seq.get("properties")
+    if p is None:
+        return {}
     if isinstance(p, str):
         try:
             p = json.loads(p)
-        except json.JSONDecodeError:
-            p = {}
-    return p if isinstance(p, dict) else {}
+        except json.JSONDecodeError as e:
+            raise ValueError(f"흐름 선 {seq.get('id') or '(id 없음)'}의 properties가 올바른 JSON이 아닙니다: {e.msg}") from e
+    if not isinstance(p, dict):
+        raise ValueError(f"흐름 선 {seq.get('id') or '(id 없음)'}의 properties는 객체여야 합니다")
+    return p
 
 
 # ---------------------------------------------------------------- variables (product shape: list of {key, name, value})
@@ -624,14 +634,36 @@ def _advance(defn: Definition, inst: dict, node_id: str, workitems: list[dict], 
     arrivals = (inst.get('flow_state') or {}).get('end_arrivals', [])
     live = any(row['status'] in {'IN_PROGRESS', 'SUBMITTED', 'PENDING'}
                for row in list(rows.values()) + adv.created)
-    if arrivals and not live and not dependency_schedule.waiting(inst, list(rows.values())):
-        adv.ended = arrivals[-1]['event']
-        inst.update(status="COMPLETED", end_event=adv.ended, end_date=now_iso(now), current_activity_ids=[])
-        for row in rows.values():
-            if row["status"] == "TODO" or (row["status"] == "IN_PROGRESS" and row["activity_id"] in defn.events):
-                row.update(status="CANCELLED", end_date=now_iso(now), log=(row.get("log") or "") + f"cancelled: instance ended ({adv.ended}); ")
-                if row not in adv.updated and row not in adv.created:
-                    adv.updated.append(row)
+    if live or dependency_schedule.waiting(inst, list(rows.values())):
+        return
+    if arrivals:
+        _end(defn, inst, rows, adv, arrivals[-1]['event'], now)
+    elif any(_join_blocked(defn, join, list(rows.values())) for join in adv.waiting_joins):
+        # #15: 사람이 [닫기]로 닫은 가지(CANCELLED)가 병렬 합류로 들어가면 그 합류는 영영 열리지 않는다. 남은 가지가 합류에 닿아 더 진행할 일이
+        # 없으면 처리 건을 사람이 닫은 것과 같은 기술 끝으로 닫는다 — RUNNING 인데 열린 일이 0인 처리 건을 남기지 않는다.
+        _end(defn, inst, rows, adv, HUMAN_CLOSE_END_EVENT, now)
+
+
+#: 사람이 멈춘 작업을 닫아 처리 건이 끝났다는 기술 끝(흐름의 업무 끝 이벤트가 아니다) — instances.close_agent_task 와 #15 합류가 쓴다.
+HUMAN_CLOSE_END_EVENT = 'closed-by-human'
+
+
+def _end(defn: Definition, inst: dict, rows: dict[str, dict], adv: Advance, end_event: str, now) -> None:
+    adv.ended = end_event
+    inst.update(status="COMPLETED", end_event=end_event, end_date=now_iso(now), current_activity_ids=[])
+    for row in rows.values():
+        if row["status"] == "TODO" or (row["status"] == "IN_PROGRESS" and row["activity_id"] in defn.events):
+            row.update(status="CANCELLED", end_date=now_iso(now), log=(row.get("log") or "") + f"cancelled: instance ended ({end_event}); ")
+            if row not in adv.updated and row not in adv.created:
+                adv.updated.append(row)
+
+
+def _join_blocked(defn: Definition, gateway_id: str, workitems: list[dict]) -> bool:
+    """병렬 합류로 들어오는 가지 중 하나의 마지막 행이 취소됐다(사람이 닫음) — 다시 수행하지 않는 한 이 합류는 열리지 않는다."""
+    rows = _by_activity(workitems)
+    return is_parallel_join(defn, gateway_id) and any(
+        seq["source"] in defn.activities and (rows.get(seq["source"]) or {}).get("status") == "CANCELLED"
+        for seq in defn.sequences if seq["target"] == gateway_id)
 
 
 def _join_ready(defn: Definition, gateway_id: str, workitems: list[dict]) -> bool:
@@ -742,10 +774,8 @@ def _judge(defn: Definition, node_id: str, values: dict) -> tuple[dict, bool, li
             if st:
                 decisions[tgt]["selected"].append(gs["id"])
         has_default = "default" in decisions[tgt]
-        if gw_type == "parallelGateway":
-            gw_ok = all(states.values()) if states else True
-        else:
-            gw_ok = any(states.values()) or has_default
+        # 병렬 분기는 모든 가지를 연다(등록 검사가 병렬 선의 조건을 금지 — A-11: 조건 판정 갈래를 지움)
+        gw_ok = gw_type == "parallelGateway" or any(states.values()) or has_default
         ok = ok or gw_ok
     reasons = [] if ok else [{"type": "PROCEED_CONDITION_NOT_MET", "reason": "시퀀스/게이트웨이 조건 불만족"}]
     return decisions, ok, reasons

@@ -1,21 +1,18 @@
-"""Question-only MCP facade: disclose and execute approved classroom reads only."""
+"""「에이전트에게 질문」 전용 MCP 창구: 수업이 허용한 조회 도구(hydcommon.handover_tools.QUESTION_READS)만 보이고 실행한다.
+
+도구 호출은 process 의 MCP 도구 실행 API(/api/mcp/servers/<서버>/tools/<도구>/call)로 간다 — 서버 설정 · 비밀은 process 만 쥔다.
+CLI 에는 서버마다 stdio 창구(python -m worker.question_tools)를 붙이고, 창구는 목록 파일에 적힌 허용 도구만 연다.
+"""
+import asyncio
 import json
 import os
 from pathlib import Path
 import sys
-from urllib.parse import quote, urlsplit
+from urllib.parse import quote
 
 import httpx
 from hydcommon.handover_tools import question_read
-from .runtime_credentials import RuntimeConnectionError
-
-
-def _base(url):
-    parsed = urlsplit(url)
-    if (parsed.scheme != 'http' or parsed.hostname not in ('process', '127.0.0.1', 'localhost')
-            or parsed.username or parsed.password or parsed.path not in ('', '/') or parsed.query or parsed.fragment):
-        raise RuntimeConnectionError('수업 조회 연결 주소를 확인하세요')
-    return url.rstrip('/')
+from .course_access import RuntimeConnectionError, process_base as _base
 
 
 class Refused(Exception):
@@ -101,9 +98,45 @@ class Transport:
         return {'state':'DONE','result':value}
 
 
+def server(name, tools, transport):
+    """목록(tools)의 서버 name 도구를 원래 이름 · 입력 스키마 그대로 여는 FastMCP 창구. 실행은 transport.call(서버/도구, 인자)."""
+    from fastmcp import FastMCP
+    from fastmcp.tools import Tool
+    from fastmcp.tools.tool import ToolResult
+    from fastmcp.exceptions import ToolError
+    from pydantic import PrivateAttr
+    from mcp.types import TextContent, ToolAnnotations
+
+    class CourseTool(Tool):
+        _qualified: str = PrivateAttr()
+
+        async def run(self, arguments):
+            from procsvc.mcp_check import _argument_problem
+            problem = _argument_problem({'input_schema': self.parameters}, arguments)
+            if problem:
+                raise ToolError('조회 인자가 도구 입력 스키마와 다릅니다: ' + problem['error'])
+            try:
+                value = await asyncio.to_thread(transport.call, self._qualified, arguments)
+            except Exception:
+                raise ToolError('현재 상태 조회에 실패했습니다. 다른 설비 상태로 대체하지 마세요') from None
+            text = json.dumps(value.get('result'), ensure_ascii=False)
+            if value['state'] == 'FAILED':
+                raise ToolError(value['result'] if isinstance(value.get('result'), str) else text)
+            return ToolResult(content=[TextContent(type='text', text=text)])
+
+    app = FastMCP('HYD course question ' + name)
+    for meta in tools:
+        if meta['server'] != name:
+            continue
+        tool = CourseTool(name=meta['name'], description=meta['description'], parameters=meta['inputSchema'],
+                          annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False))
+        tool._qualified = name + '/' + meta['name']
+        app.add_tool(tool)
+    return app
+
+
 if __name__ == '__main__':
     import argparse
-    from .managed_tools import server
     parser=argparse.ArgumentParser();parser.add_argument('--server',required=True);parser.add_argument('--catalog',required=True);parser.add_argument('--url',required=True)
     args=parser.parse_args()
     rows=json.loads(Path(args.catalog).read_text(encoding='utf8'))

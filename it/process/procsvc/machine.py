@@ -1,8 +1,11 @@
 """Incident state machine (L9, pure logic). IO happens through the Effects interface so it can be unit-tested.
 
 v3 section 9 sequence: approve → action.cmd (expiresAt = +120 s) → ACK within 30 s → re-observe 15 min (÷ TIME_SCALE)
-→ CLEAR and the pattern's recovery criterion (definition.RECOVERY: TS1 < 55 · PS1 >= 165 · VS1 < 1.2) → work order → close.
-Failures escalate; the process never retries a command.
+→ CLEAR and the pattern's recovery criterion → work order → close. Failures escalate; the process never retries a command.
+
+시한은 여기서 재지 않는다(메모리 타이머 없음). ACK 마감(ack_due_at)은 사건에 적고, 명령 단계 작업 행이 그 시각을 저장해 폴링이
+판정한다(on_ack_timeout). 재관측 창 · 연장 · 판정 규칙은 재관측 단계 하나(service_parts._reobserve)가 갖고, 이 기계는 그 판정을
+사건에 적기만 한다(on_reobservation). 그래서 process 가 다시 켜져도 재관측은 저장한 마감으로 이어진다.
 """
 from dataclasses import dataclass, field
 from copy import deepcopy
@@ -12,7 +15,6 @@ import itertools
 import secrets
 import threading
 
-from hydcommon import schemas
 from hydcommon.timeutil import now_iso, plus_seconds, to_iso
 from . import definition as d
 
@@ -23,9 +25,9 @@ _inc_seq = itertools.count(1)
 # executor threads (instance-mode hooks, approval delivery), and store.save() snapshots them from either side. Every
 # transition below and every snapshot capture (store.Store.save) holds this lock, so a snapshot never contains a state
 # that disagrees with its own history and a decision is never captured between clear() and update(). Re-entrant: a
-# transition's Effects may persist (emit_cmd → persist → save). Nothing blocking (network, DB) runs under it — the
-# callers do their I/O before or after the transition (timer: latest_tag before on_timer; enterprise: exec_skill before
-# record_execution / on_work_order).
+# transition's Effects may persist. Nothing blocking (network, DB) runs under it — the callers do their I/O before or
+# after the transition (command: Kafka between on_approve and on_command_sent; re-observation: tag reads before
+# on_reobservation; enterprise: exec_skill before record_execution / on_work_order).
 STATE_LOCK = threading.RLock()
 
 
@@ -44,9 +46,7 @@ def new_incident_id(now: datetime | None = None) -> str:
 
 
 class Effects:
-    def emit_cmd(self, cmd: dict) -> None: ...
     def emit_audit(self, evt: dict) -> None: ...
-    def set_timer(self, name: str, seconds: float) -> None: ...
 
 
 @dataclass
@@ -61,6 +61,7 @@ class Incident:
     cmd_id: str | None = None
     approval_id: str | None = None      # A148: the approval ledger record id the gateway matches the command against
     expires_at: str | None = None
+    ack_due_at: str | None = None       # 명령을 보낸 뒤 ACK 를 기다리는 마감(벽시계, definition.ACK_TIMEOUT_S) — 명령 단계 행이 이 시각을 저장한다
     approved_by: str | None = None
     actions: list[dict] = field(default_factory=list)
     ack: dict | None = None
@@ -100,7 +101,8 @@ class Incident:
 
     def to_dict(self) -> dict:
         return {"id": self.id, "asset": self.asset, "alertId": self.alert_id, "state": self.state, "reason": self.reason,
-                "history": self.history, "cmdId": self.cmd_id, "approvalId": self.approval_id, "expiresAt": self.expires_at, "approvedBy": self.approved_by,
+                "history": self.history, "cmdId": self.cmd_id, "approvalId": self.approval_id, "expiresAt": self.expires_at,
+                "ackDueAt": self.ack_due_at, "approvedBy": self.approved_by,
                 "actions": self.actions, "ack": self.ack, "cleared": self.cleared, "workOrder": self.work_order,
                 "workOrderRequest": self.work_order_request,
                 "reobsExtensions": self.reobs_extensions,
@@ -108,9 +110,14 @@ class Incident:
                 "created": self.created, "closed": self.closed, "card": self.card, "terminal": self.state in d.TERMINAL}
 
 
-def _go(inc: Incident, state: str, note: str | None = None) -> None:
+def _go(inc: Incident, state: str, note: str | None = None, reobservation: dict | None = None) -> None:
+    """사건 이력 한 줄. reobservation = 재관측 시작 · 판정의 칸(화면이 문장에서 뽑지 않게): tag · op · limit · sim_s, 판정이면 value(못 읽었으면
+    None) · cleared · recovered · extensions."""
     inc.state = state
-    inc.history.append({"state": state, "t": now_iso(), "note": note})
+    entry = {"state": state, "t": now_iso(), "note": note}
+    if reobservation is not None:
+        entry["reobservation"] = dict(reobservation)
+    inc.history.append(entry)
     if state in d.TERMINAL:
         inc.closed = now_iso()
 
@@ -156,7 +163,9 @@ def _validate_actions(inc: Incident, actions: list[dict]) -> list[dict]:
 
 
 @_transition
-def on_approve(inc: Incident, approved_by: str, actions: list[dict], now: datetime, fx: Effects, time_scale: float = 20.0) -> dict:
+def on_approve(inc: Incident, approved_by: str, actions: list[dict], now: datetime, fx: Effects) -> dict:
+    """승인한 명령을 사건에 적고(CMD_ISSUED) 보낼 action.cmd 를 돌려준다. 보내는 일은 호출자가 이 전이 밖에서 한다 — 승인 원장 송신이
+    확인된 뒤에 명령을 보내고(A148: cmd-gateway 는 원장 기록이 있는 명령만 넘긴다), 결과를 on_command_sent / on_command_send_failed 로 적는다."""
     if inc.state != "AWAITING_APPROVAL":
         raise ValueError(f"cannot approve in state {inc.state}")
     if inc.recovery is None:
@@ -172,14 +181,28 @@ def on_approve(inc: Incident, approved_by: str, actions: list[dict], now: dateti
            "approvedBy": approved_by, "approvalId": inc.approval_id, "issuedAt": to_iso(now), "expiresAt": inc.expires_at}
     _audit(inc, fx, "operator", "GUIDE_APPROVED", {"approvedBy": approved_by, "actions": acts})
     _go(inc, "CMD_ISSUED", inc.cmd_id)
-    # A148: the approval ledger record goes out on the audit topic *before* the command — cmd-gateway forwards only a
-    # command whose cmdId has this record and whose fingerprint (HMAC over the approved fields) matches it.
-    _audit(inc, fx, "process", schemas.CMD_APPROVAL_LEDGER_EVENT, schemas.approval_ledger_record(cmd))
-    fx.emit_cmd(cmd)
-    _audit(inc, fx, "process", "CMD_PUBLISHED", {"cmdId": inc.cmd_id, "expiresAt": inc.expires_at})
-    _go(inc, "AWAITING_ACK")
-    fx.set_timer("ack", d.ACK_TIMEOUT_S)
     return cmd
+
+
+@_transition
+def on_command_sent(inc: Incident, cmd_id: str, now: datetime, fx: Effects) -> None:
+    """원장과 명령이 Kafka 에 실린 것을 확인한 뒤: ACK 를 기다린다. 마감은 사건에 적고(벽시계 ACK_TIMEOUT_S) 명령 단계 행이 저장한다."""
+    if inc.state != "CMD_ISSUED" or inc.cmd_id != cmd_id:
+        raise ValueError(f"명령 {cmd_id}을(를) 보낸 사건 상태가 아닙니다 (지금 {inc.state}, 명령 {inc.cmd_id})")
+    inc.ack_due_at = to_iso(plus_seconds(now, d.ACK_TIMEOUT_S))
+    _audit(inc, fx, "process", "CMD_PUBLISHED", {"cmdId": inc.cmd_id, "expiresAt": inc.expires_at, "ackDueAt": inc.ack_due_at})
+    _go(inc, "AWAITING_ACK")
+
+
+@_transition
+def on_command_send_failed(inc: Incident, cmd_id: str, error: str, fx: Effects) -> bool:
+    """승인 원장이나 명령을 Kafka 에 싣지 못했다 — 설비에 닿았는지 알 수 없으므로 다시 보내지 않고 사람 검토로 넘긴다."""
+    if inc.state != "CMD_ISSUED" or inc.cmd_id != cmd_id:
+        return False
+    inc.reason = "CMD_SEND_FAILED"
+    _audit(inc, fx, "process", "CMD_SEND_FAILED", {"cmdId": cmd_id, "error": error[:500]})
+    _go(inc, "ESCALATED", f"command not published: {error[:200]}")
+    return True
 
 
 REOPENABLE = {"AWAITING_APPROVAL", "ACKED", "RE_OBSERVING", "RESOLVED", "WORK_ORDER_CREATED", "ESCALATED"}
@@ -198,7 +221,7 @@ def on_rework_reopen(inc: Incident, request_id: str, by: str, role: str, reason:
                            "ack": inc.ack, "expiresAt": inc.expires_at, "approvedBy": inc.approved_by, "workOrder": inc.work_order,
                            "workOrderRequest": inc.work_order_request, "reason_before": inc.reason, "effects": effects,
                            "by": by, "role": role, "reason": reason, "t": now_iso()})
-    inc.cmd_id, inc.expires_at, inc.approved_by, inc.actions, inc.ack = None, None, None, [], None
+    inc.cmd_id, inc.expires_at, inc.ack_due_at, inc.approved_by, inc.actions, inc.ack = None, None, None, None, [], None
     inc.work_order, inc.work_order_request, inc.reobs_extensions, inc.reason, inc.closed = None, None, 0, None, None
     _audit(inc, fx, "operator", "INCIDENT_REOPENED", {"request_id": request_id, "by": by, "role": role, "reason": reason,
                                                        "superseded": inc.superseded[-1]["cmdId"], "effects": effects})
@@ -239,8 +262,9 @@ def on_reject(inc: Incident, by: str, reason: str, fx: Effects) -> None:
 
 
 @_transition
-def on_status(inc: Incident, status: dict, now: datetime, fx: Effects, time_scale: float = 20.0) -> None:
-    """plant.status carries the PLC ACK as cmdId/result. Only the incident's own cmdId counts (stale/retained ids are ignored)."""
+def on_status(inc: Incident, status: dict, now: datetime, fx: Effects) -> None:
+    """plant.status carries the PLC ACK as cmdId/result. Only the incident's own cmdId counts (stale/retained ids are ignored).
+    ACK DONE 이면 재관측 상태로 간다 — 창 · 판정은 재관측 단계가 저장한 마감으로 한다(service_parts._reobserve)."""
     if inc.state != "AWAITING_ACK" or not inc.cmd_id or status.get("cmdId") != inc.cmd_id:
         return
     result = status.get("result")
@@ -250,9 +274,9 @@ def on_status(inc: Incident, status: dict, now: datetime, fx: Effects, time_scal
     if result == "DONE":
         _audit(inc, fx, "plc", "ACK_DONE", {"cmdId": inc.cmd_id})
         _go(inc, "ACKED")
-        secs = d.REOBSERVE_SIM_S / max(1.0, time_scale)
-        _go(inc, "RE_OBSERVING", f"{d.REOBSERVE_SIM_S} sim-s = {secs:.0f} s")
-        fx.set_timer("reobs", secs)
+        tag, op, limit = inc.recovery or (None, None, None)
+        _go(inc, "RE_OBSERVING", f"효과 확인 시작 — 설비 시간 {d.REOBSERVE_SIM_S // 60}분 동안 지켜본다",
+            reobservation={"tag": tag, "op": op, "limit": limit, "sim_s": d.REOBSERVE_SIM_S})
     else:
         inc.reason = f"PLC REJECTED: {status.get('reason')}"
         _audit(inc, fx, "plc", "ACK_REJECTED", {"cmdId": inc.cmd_id, "reason": status.get("reason")})
@@ -274,66 +298,68 @@ def on_alert(inc: Incident, alert: dict, fx: Effects) -> None:
 
 
 @_transition
-def on_timer(inc: Incident, name: str, now: datetime, latest_ts1: float | None, fx: Effects, time_scale: float = 20.0,
-             cmd_id: str | None = None, series: dict | None = None) -> None:
-    """latest_ts1: the latest value of the incident's recovery tag (inc.recovery[0]); the name is historical — for a
-    cooler incident it is TS1, for a pump incident PS1, for a fan incident VS1.
-    cmd_id: the command that armed this timer. A timer armed for a command that a rework has since superseded (A072) must
-    not judge the next command's window; it is recorded and ignored.
-    series: A161-G3 — the window's sampled values (reobs_series.build), kept on the Incident and summarised in the audit."""
-    if cmd_id is not None and cmd_id != inc.cmd_id:
-        _audit(inc, fx, "process", "TIMER_IGNORED", {"timer": name, "armedFor": cmd_id, "current": inc.cmd_id, "state": inc.state})
-        return
-    if name == "ack" and inc.state == "AWAITING_ACK":
-        inc.reason = "ACK_TIMEOUT"
-        _audit(inc, fx, "process", "ACK_TIMEOUT", {"cmdId": inc.cmd_id})
-        _go(inc, "ESCALATED", "no ACK within 30 s")
-    elif name == "reobs" and inc.state == "RE_OBSERVING":
-        if inc.recovery is None:
-            inc.reason='UNSUPPORTED_RECOVERY_CRITERION'
-            _audit(inc,fx,'process',inc.reason,{'pattern':inc.pattern})
-            _go(inc,'ESCALATED',inc.reason)
-            return
-        tag, op, limit = inc.recovery
-        value = latest_ts1
-        inside = value is not None and {'<':lambda:value<limit,'>=':lambda:value>=limit}[op]()
-        ok = inc.cleared and inside
-        trend = _keep_series(inc, series, extending=not ok and inside and inc.reobs_extensions < d.REOBSERVE_MAX_EXTENSIONS)
-        if not ok and inside and inc.reobs_extensions < d.REOBSERVE_MAX_EXTENSIONS:
-            # the value is already inside the limit but the detector's CLEAR (hysteresis line held 60 s) has not landed yet:
-            # give it one more third of the window instead of escalating a recovery that is visibly under way
-            inc.reobs_extensions += 1
-            secs = d.REOBSERVE_SIM_S / max(1.0, time_scale) / 3
-            _audit(inc, fx, "process", "REOBSERVATION_EXTENDED", {"tag": tag, "value": value, "ts1": value if tag == "TS1" else None,
-                                                                  "cleared": inc.cleared, "extension": inc.reobs_extensions, "seconds": round(secs, 1),
-                                                                  **trend})
-            fx.set_timer("reobs", secs)
-            return
-        _audit(inc, fx, "process", "REOBSERVATION", {"cleared": inc.cleared, "tag": tag, "value": value, "criterion": f"{tag} {op} {limit}",
-                                                     "ts1": value if tag == "TS1" else None, "passed": ok, "extensions": inc.reobs_extensions,
-                                                     **trend})
-        if not ok:
-            inc.reason = "MITIGATION_FAILED"
-            _go(inc, "ESCALATED", f"cleared={inc.cleared} {tag}={value} (criterion {tag} {op} {limit})")
-            return
-        _go(inc, "RESOLVED", f"{tag} {value} {op} {limit}")
-        # Recovery is an observation. The CMMS service supplies an actual receipt
-        # before this Incident can claim a work order and close.
+def on_ack_timeout(inc: Incident, cmd_id: str, fx: Effects) -> bool:
+    """명령 단계 행이 저장한 ACK 마감이 지났는데 그 명령의 ACK 가 오지 않았다. 다른 명령(재작업으로 바뀐 것)의 마감은 무시한다."""
+    if inc.state != "AWAITING_ACK" or inc.cmd_id != cmd_id:
+        return False
+    inc.reason = "ACK_TIMEOUT"
+    _audit(inc, fx, "process", "ACK_TIMEOUT", {"cmdId": inc.cmd_id, "ackDueAt": inc.ack_due_at})
+    _go(inc, "ESCALATED", f"no ACK within {d.ACK_TIMEOUT_S} s")
+    return True
 
 
-def _keep_series(inc: Incident, series: dict | None, *, extending: bool) -> dict:
-    """A161-G3: store the window's values on the Incident (the extension count it covers included) and return the compact
-    audit summary {"series": {samples · min · max · first · last · inside_share}} — the points stay on the Incident only."""
+def _series_summary(series: dict | None) -> dict:
+    """A161-G3: the compact audit summary {"series": {samples · min · max · first · last · inside_share}} — the points stay on the Incident."""
     if not series:
         return {}
-    inc.reobs_series = dict(series, extensions=inc.reobs_extensions + (1 if extending else 0))
     return {"series": {k: series.get(k) for k in ("samples", "min", "max", "first", "last", "inside_share", "from", "to", "error")
                        if k != "error" or series.get("error")}}
 
 
 @_transition
+def on_reobservation_extended(inc: Incident, cmd_id: str, reading: dict, extension: int, seconds: float, fx: Effects) -> bool:
+    """재관측 단계가 창을 늘렸다(값은 기준 안, 감지기 해제 대기) — 사건에는 연장 횟수와 감사 기록만 남는다."""
+    if inc.state != "RE_OBSERVING" or inc.cmd_id != cmd_id:
+        return False
+    inc.reobs_extensions = extension
+    if reading.get("series"):
+        inc.reobs_series = dict(reading["series"], extensions=extension)
+    _audit(inc, fx, "process", "REOBSERVATION_EXTENDED", {
+        "tag": reading.get("tag"), "value": reading.get("value"), "ts1": reading.get("value") if reading.get("tag") == "TS1" else None,
+        "cleared": reading.get("cleared"), "extension": extension, "seconds": round(seconds, 1), **_series_summary(reading.get("series"))})
+    return True
+
+
+@_transition
+def on_reobservation(inc: Incident, cmd_id: str, passed: bool, reading: dict, extensions: int, fx: Effects) -> bool:
+    """재관측 단계의 판정을 사건에 적는다: 회복(기준 안 + 경보 해제)이면 RESOLVED, 아니면 ESCALATED(완화 실패). 판정 규칙은 재관측
+    단계 하나가 갖는다 — 여기서는 다시 재지 않는다. 다른 명령의 창이었으면(재작업) 적지 않는다(False)."""
+    if inc.state != "RE_OBSERVING" or inc.cmd_id != cmd_id:
+        return False
+    inc.reobs_extensions = extensions
+    if reading.get("series"):
+        inc.reobs_series = dict(reading["series"], extensions=extensions)
+    tag, value, criterion = reading.get("tag"), reading.get("value"), reading.get("criterion")
+    _audit(inc, fx, "process", "REOBSERVATION", {"cleared": reading.get("cleared"), "tag": tag, "value": value, "criterion": criterion,
+                                                 "ts1": value if tag == "TS1" else None, "passed": bool(passed), "extensions": extensions,
+                                                 **_series_summary(reading.get("series"))})
+    fields = {"tag": tag, "op": reading.get("op"), "limit": reading.get("limit"), "value": value, "cleared": reading.get("cleared"),
+              "recovered": bool(passed), "extensions": extensions, "sim_s": d.REOBSERVE_SIM_S * (1 + extensions / 3)}
+    if not criterion:
+        inc.reason = "UNSUPPORTED_RECOVERY_CRITERION"
+        _go(inc, "ESCALATED", inc.reason, reobservation=fields)
+    elif not passed:
+        inc.reason = "MITIGATION_FAILED"
+        _go(inc, "ESCALATED", f"cleared={reading.get('cleared')} {tag}={value} (criterion {criterion})", reobservation=fields)
+    else:
+        # Recovery is an observation. The CMMS service supplies an actual receipt before this Incident can claim a work order and close.
+        _go(inc, "RESOLVED", f"{tag} {value} ({criterion})", reobservation=fields)
+    return True
+
+
+@_transition
 def record_reobs_series(inc: Incident, series: dict | None) -> None:
-    """A161-G3: the work-order re-observation (service_parts) reads its window outside on_timer; it keeps its series here."""
+    """A161-G3: 작업지시로 닫힌 사건의 재관측(service_parts._reobserve)은 사건 상태를 바꾸지 않는다 — 창의 값 흐름만 여기 남긴다."""
     if series:
         inc.reobs_series = dict(series)
 

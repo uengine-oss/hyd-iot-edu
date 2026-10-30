@@ -9,10 +9,13 @@
   try { W.showIds = localStorage.getItem('hyd:record:ids') === '1'; } catch (_) { /* 저장소가 없으면 기본(숨김) */ }
 
   /* ---------------------------------------------------------------- 시스템 (어디에 물었나 · 어디에 했나) */
+  // 도구 서버 표시 이름 — 포털 전체(도구 연결 · 에이전트 · 시험 비교 · 질문 · 처리 기록)가 이 표 하나를 쓴다
   const SERVERS = {
     neo4j: '지식 그래프', 'hyd-dmn': '판단 시스템', enterprise: '업무 자료 (생산 · 구매 · 정비)', 'enterprise-maint': '정비 업무 자료',
     'enterprise-purchase': '구매 업무 자료', 'hyd-effects': '메일 · 알림', effects: '메일 · 알림',
   };
+  // 등록한 설명이 한국어면 그것, 아니면 위 표, 둘 다 없으면 서버 이름 그대로(학생이 지은 이름은 내부어가 아니다)
+  W.serverName = (name, description) => description && /[가-힣]/.test(description) ? description.split(/\r?\n/)[0] : SERVERS[name] || name || '';
   const SYSTEMS = {
     'sys:cmms': '정비 관리', 'sys:erp': '구매 · 재고 관리', 'sys:mes': '생산 관리', 'sys:scm': '공급망 관리', 'sys:qms': '품질 시스템',
     'sys:scada': '설비 제어', 'sys:plc': '설비 제어', 'sys:agent': '에이전트', 'sys:process': '업무 처리', 'sys:erp-monitor': '재고 감시', 'sys:cmms-monitor': '정비 계수기 감시',
@@ -173,7 +176,6 @@
   };
 
   /* ---------------------------------------------------------------- 경보 패턴 · 규칙 식 */
-  const PATTERNS = { PM_DUE: '정기 정비 도래', SPARE_BELOW_MIN: '예비품 재고 기준 이탈' };
   /* 원인 이름표 — 판단 origin.cause_route(dmn-mcp 가 실제로 원인을 받아 준 근거). 센서 진단(증상 → 고장 유형 ← 원인)이 아닌 업무 경보의
      원인은 고장 판정이 아니라 "왜 이 부품인가"(재고: 부품 → 그 부품이 고치는 원인) · "왜 이 정비인가"(정기 정비: 정비가 막는 고장의 원인)다.
      칸이 없는 판단(이 칸 이전 기록)은 진단 이름표 — 그때 판단 기록은 모두 진단 근거 문장으로 적혔다. 모르는 값은 지어내지 않고 실패한다. */
@@ -197,7 +199,7 @@
     if (key==='pattern') { const label=W.pattern(value); return label===value ? '경보 패턴 표시 이름 기록 없음 · 원문 확인' : label; }
     return W.value(key,value);
   };
-  W.pattern = code => (typeof PATTERN_LABEL !== 'undefined' && PATTERN_LABEL[code]) || PATTERNS[code] || UI.idText(code || '');
+  W.pattern = code => UI.patternName(code);   // 경보 패턴 이름표는 ui.js 하나
   const OPS = { '>': '보다 높음', '>=': '이상', '<': '보다 낮음', '<=': '이하', '==': '같음', '!=': '다름' };
   W.op = op => OPS[op] || op;
   W.sym = op => ({ '>=': '≥', '<=': '≤', '==': '=', '!=': '≠' })[op] || op;
@@ -490,7 +492,7 @@
     if (withFinal === '으로') return f && f !== 8 ? '으로' : '로';
     return f ? withFinal : without;
   };
-  W.who = id => UI.actorName(id, W.caseNames[id] || UI.names?.[id] || UI.performers?.[id] || (/^agent:/.test(id || '') ? 'AI 에이전트' : /^user:/.test(id || '') ? '담당자 (이름 확인 안 됨)' : W.idName(id)) || '–');
+  W.who = id => W.caseNames[id] || UI.names?.[id] || UI.performers?.[id] || (/^agent:/.test(id || '') ? 'AI 에이전트' : /^user:/.test(id || '') ? '담당자 (이름 확인 안 됨)' : W.idName(id)) || '–';
 
   /* ---------------------------------------------------------------- 원래 이름(id) 보이기 */
   W.id = id => W.showIds && id ? ` <code class="cr-id">${esc(id)}</code>` : '';

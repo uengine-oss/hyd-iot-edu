@@ -40,6 +40,8 @@ def to_kafka(topic: str, payload: bytes):
     try:
         body = json.loads(payload.decode())
     except (UnicodeDecodeError, json.JSONDecodeError):
+        # 깨진 글(UTF-8 · JSON 아님)도 버리되 센다 — /healthz 의 malformed 가 「설비 쪽에서 엉뚱한 값이 온다」를 보인다
+        state["malformed"] = state.get("malformed", 0) + 1
         return None
     if not isinstance(body, dict):
         # A list/number/string payload on plant/+/status used to raise AttributeError inside the paho callback thread
@@ -95,7 +97,9 @@ async def pump():
             c_msgs.inc(topic=ktopic)
             state["count"] += 1
         except Exception as e:  # noqa: BLE001
-            log.warning("send failed: %s", e)
+            # 그 메시지는 버린다(다음 값이 곧 온다) — 대신 세어 /healthz 의 send_failed 로 보인다(로그 한 줄로 끝내지 않는다)
+            state["send_failed"] = state.get("send_failed", 0) + 1
+            log.warning("send failed (%d so far): %s", state["send_failed"], e)
             await asyncio.sleep(0.5)
 
 
@@ -113,7 +117,7 @@ def health() -> dict:
     return {"ok": bool(state["mqtt"]) and bool(state["kafka"]) and not state.get("pump_dead", False),
             "mqtt": state["mqtt"], "kafka": state["kafka"], "pump_dead": state.get("pump_dead", False),
             "pump_error": state.get("pump_error"), "replicated": state["count"],
-            "dropped": state.get("dropped", 0), "malformed": state.get("malformed", 0),
+            "dropped": state.get("dropped", 0), "malformed": state.get("malformed", 0), "send_failed": state.get("send_failed", 0),
             "last_event_age_s": round(time.time() - state["last_ts"], 1) if state["last_ts"] else None}
 
 

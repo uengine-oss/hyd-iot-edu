@@ -36,6 +36,7 @@ class Context:
     definition: dict | None = None     # proc_def.definition — the designer's agentConfig/skills per activity live here
     profile: dict | None = None        # U2: the agent this item is assigned to (users row) — its settings: agents_store.agent_settings
     form_contract: str | None = None
+    course: dict | None = None          # 서버의 수업 경계 판정 {'slot', 'phase'} — Runner.handle 이 실행 직전에 채운다
 
     @property
     def extras(self) -> dict[str, Any]:

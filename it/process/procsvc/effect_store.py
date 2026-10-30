@@ -2,43 +2,6 @@
 
 Same connection/rollback scope as the process rows; mutations run under the owning instance transition lock.
 """
-from copy import deepcopy
-from datetime import datetime, timezone
-
-MUTABLE = ("status", "results", "error", "history")
-
-
-class MemoryEffects:
-    def insert_effect_receipt(self, row):
-        key = (row["tenant_id"], row["proc_inst_id"], row["request_id"])
-        with self._lock:
-            inst = self.instances.get(row["proc_inst_id"])
-            if not inst or inst["tenant_id"] != row["tenant_id"]:
-                raise ValueError("effect receipt ownership mismatch")
-            if key in self.effect_receipts:
-                raise ValueError("effect receipt request already exists")
-            stored = deepcopy(row)
-            stored["created_at"] = stored["updated_at"] = datetime.now(timezone.utc).isoformat()   # as the PG table stamps
-            self.effect_receipts[key] = stored
-
-    def update_effect_receipt(self, row):
-        key = (row["tenant_id"], row["proc_inst_id"], row["request_id"])
-        with self._lock:
-            prior = self.effect_receipts.get(key)
-            if prior is None:
-                raise KeyError("no such effect receipt")
-            for k in MUTABLE:
-                prior[k] = deepcopy(row[k])
-            prior["updated_at"] = datetime.now(timezone.utc).isoformat()
-
-    def get_effect_receipt(self, tenant_id, proc_inst_id, request_id):
-        with self._lock:
-            return deepcopy(self.effect_receipts.get((tenant_id, proc_inst_id, request_id)))
-
-    def list_effect_receipts(self, tenant_id, proc_inst_id):
-        with self._lock:   # insertion order == creation order, as the PG table orders by created_at
-            return [deepcopy(r) for key, r in self.effect_receipts.items() if key[:2] == (tenant_id, proc_inst_id)]
-
 
 class PgEffects:
     def insert_effect_receipt(self, row):

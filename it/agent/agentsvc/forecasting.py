@@ -13,11 +13,15 @@ from . import decide
 # and the command (TS1 rises while the card is read), and at TIME_SCALE=20 a few wall-clock seconds are minutes of
 # simulated time, so the budget grows with the *simulated* time elapsed between the two forecasts' source timestamps
 # (`max_adverse_rate_per_sim_min`, bounded by the lumped model's heating rate: ≤ 1.2 ℃/sim-min for the teaching cooler
-# case, vibration 0.004/℃). Past `max_review_age_sim_s` the reviewed forecast is stale whatever the values did.
-REVIEW_POLICY = {'version': 'simulator-consent-v2',
+# case, vibration 0.004/℃), up to `max_budget_sim_s` of simulated time.
+# 검토한 카드의 신선도(`max_review_age_wall_s`)는 벽시계다(결정 2026-10-30, #2) — 사람이 카드를 읽고 고르는 시간에 배속을 곱하지 않는다.
+# 전에는 1800 시뮬레이션 초 = 20배속 90초라, 학생이 카드를 1분 남짓 읽으면 승인이 「오래된 예측」으로 거절됐다. 그 사이 설비 변화는
+# 위의 악화 허용폭 검사(시뮬레이션 시간 기준)가 지킨다.
+REVIEW_POLICY = {'version': 'simulator-consent-v3',
                  'max_adverse_change': {'ts1': 0.5, 'ts1_peak': 2.0, 'vs1': 0.05, 'vs1_peak': 0.05},
                  'max_adverse_rate_per_sim_min': {'ts1': 1.0, 'ts1_peak': 1.5, 'vs1': 0.006, 'vs1_peak': 0.006},
-                 'max_review_age_sim_s': 1800}
+                 'max_budget_sim_s': 1800,
+                 'max_review_age_wall_s': 1800}
 
 
 # Names the approval refusal shows a person (2026-10-23 audit P14: '예측 model_revision 변경', '예측 입력 fan_pct 변경').
@@ -66,15 +70,15 @@ def stack_time_scale():
     return scale
 
 
-def _elapsed_sim_s(old, current, time_scale):
-    """Simulated seconds between the reviewed and the current forecast's plant timestamps; None when either is unknown."""
+def _elapsed_wall_s(old, current):
+    """Wall-clock seconds between the reviewed and the current forecast's plant timestamps; None when either is unknown."""
     try:
         stamps = [datetime.fromisoformat(str(c.get('source_t') or '').replace('Z', '+00:00')) for c in (old, current)]
     except ValueError:
         return None
     if any(s.tzinfo is None for s in stamps):
         return None
-    return max(0.0, (stamps[1] - stamps[0]).total_seconds()) * time_scale
+    return max(0.0, (stamps[1] - stamps[0]).total_seconds())
 
 
 def binding(kg, asset):
@@ -154,18 +158,18 @@ def consent_changes(old, current, time_scale=None, consented_at=None):
         return ['검토한 현재 모델 예측이 없거나 예측을 확인할 수 없습니다']
     reasons = []
     scale = stack_time_scale() if time_scale is None else float(time_scale)
-    elapsed = _elapsed_sim_s(old, current, scale)
-    age = elapsed
-    if consented_at and elapsed is not None:
+    wall = _elapsed_wall_s(old, current)
+    age = wall
+    if consented_at and wall is not None:
         # 예측 나이는 사람이 동의한 시각까지만 잰다 — 승인 뒤 전달까지의 몇 초가 승인을 뒤집지 않는다(지금보다 늦은 동의 시각은 지금으로).
-        # 아래 악화 허용폭은 전달 시각까지의 경과(elapsed)로 그대로 잰다
-        at_consent = _elapsed_sim_s(old, {'source_t': consented_at}, scale)
+        # 아래 악화 허용폭은 전달 시각까지의 경과로 그대로 잰다
+        at_consent = _elapsed_wall_s(old, {'source_t': consented_at})
         if at_consent is not None:
-            age = min(elapsed, at_consent)
-    max_age = REVIEW_POLICY['max_review_age_sim_s']
+            age = min(wall, at_consent)
+    max_age = REVIEW_POLICY['max_review_age_wall_s']
     if age is not None and age > max_age:
-        reasons.append(f'검토한 예측이 시뮬레이션 {age / 60:.0f}분 전 상태입니다: 새 카드 검토가 필요합니다')
-    minutes = min(elapsed or 0.0, max_age) / 60
+        reasons.append(f'검토한 카드가 {age / 60:.0f}분 전 예측입니다(검토 뒤 {max_age // 60}분이 지났습니다): 새 카드 검토가 필요합니다')
+    minutes = min((wall or 0.0) * scale, REVIEW_POLICY['max_budget_sim_s']) / 60
     for key in ('model_id', 'model_revision', 'scope', 'binding', 'horizon_s', 'parameters',
                 'actions', 'assumptions', 'review_policy'):
         if old.get(key) != current.get(key):

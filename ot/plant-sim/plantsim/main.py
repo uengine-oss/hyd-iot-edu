@@ -45,8 +45,6 @@ class ModeReq(BaseModel):
     mode: str
 
 
-class ScaleReq(BaseModel):
-    scale: float
 
 
 class ManualReq(BaseModel):
@@ -119,15 +117,6 @@ def manual(req: ManualReq):
     r = plant.command(req.asset, plc.normalize_manual(req.writes), source="FUXA")
     edge._publish_status(req.asset)
     return {"cmdId": r.cmd_id, "result": r.result, "reason": r.reason, "applied": r.writes_applied}
-
-
-@app.post("/api/time_scale")
-def time_scale(req: ScaleReq):
-    if not (1 <= req.scale <= 200):
-        raise HTTPException(400, "scale must be 1..200")
-    with plant.lock:
-        plant.time_scale = float(req.scale)
-    return {"time_scale": plant.time_scale}
 
 
 @app.post("/api/reset")

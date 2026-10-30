@@ -1,9 +1,8 @@
-"""process (L9): mini-BPMN engine. Guide card in -> human approval -> action.cmd -> ACK -> re-observe -> work order -> close.
+"""process (L9): 처리 건 엔진. 경보 원천 접수 → 처리 건(에이전트 · 사람 · 시스템 단계) → 사람 승인 → action.cmd → ACK → 재관측 → 작업지시 → 닫힘.
 
-Only this service may write action.cmd (the agent has no command authority). Timers are asyncio tasks; the re-observation
-verdict reads the latest value of the incident's recovery tag from TimescaleDB (TS1 for a cooler, PS1 pump, VS1 fan —
-definition.RECOVERY). The human approval is POST /api/incidents/{id}/decide (legacy, action card) or
-POST /api/todolist/{id}/select (instance mode); POST /api/incidents/{id}/approve is retired and answers 409.
+Only this service may write action.cmd (the agent has no command authority). 사람 승인은 POST /api/todolist/{id}/select 하나다.
+시한은 메모리 타이머가 아니라 작업 행의 마감(due_date)이다 — ACK 마감 · 재관측 창 · 경계 타이머 모두 폴링이 판정한다(instances).
+재관측 판정은 사건의 회복 기준 태그 최신값을 TimescaleDB(tag_1s)에서 읽는다.
 """
 import asyncio
 import copy
@@ -19,18 +18,18 @@ import psycopg
 from fastapi import HTTPException
 from pydantic import BaseModel
 
-from hydcommon import topics
+from hydcommon import schemas, topics
 from hydcommon.kafka import consumer as make_consumer, producer as make_producer
 from hydcommon.metrics import Registry
 from hydcommon.service import make_app
 from hydcommon.timeutil import now, now_iso
-from . import decisions as declib, definition, ingest, graph_ingest, instance_mode, kgadmin, machine, work_orders, current_approval, engine, reobs_series
+from . import decisions as declib, definition, ingest, graph_ingest, instance_mode, kgadmin, machine, current_approval, engine, reobs_series
 from .store import Store
 from . import skill_graph
 from . import ranking_policy
 from . import bsc_conditions
 from .knowledge_projection import KnowledgeReconciler
-from .case_projection import CaseProjector, incident_params as _incident_params
+from .case_projection import CaseProjector
 from .source_inbox import PgSourceInbox, kafka_record, source_record
 from .source_delivery import SourceDelivery, SourcePending
 from .oauth_access_log import install as _install_oauth_access_log_filter
@@ -41,9 +40,7 @@ _install_oauth_access_log_filter()
 TIME_SCALE = float(os.getenv("TIME_SCALE", "20"))
 PG_DSN = os.getenv("PG_DSN", "postgresql://hyd:hyd@timescaledb:5432/hyd")
 ENTERPRISE_URL = os.getenv("ENTERPRISE_URL", "http://enterprise-sim:8095")
-# legacy  : the agent submits a guide card → Incident (v2 behaviour, scenario_test.py 62/62)
-# instance: an alert opens a process instance; the agent and the people are tasks inside it (ProcessGPT-shaped, 문서/시스템/1_목적과_방향.md)
-PROCESS_MODE = os.getenv("PROCESS_MODE", "legacy")
+KAFKA_SEND_TIMEOUT_S = 10.0          # 승인 원장 · 명령 송신 확인을 기다리는 한도
 
 reg = Registry()
 c_inc = reg.counter("process_incidents_total", "incidents by terminal state")
@@ -71,43 +68,50 @@ def persist():
         _wake_case_projection()
 
 
+def _send(topic: str, key, value) -> "asyncio.Future":
+    """Kafka 송신 하나를 이벤트 루프에 맡긴다(어느 스레드에서든). 돌려준 future 는 브로커가 받았다고 답할 때 끝난다."""
+    if producer is None or loop is None or loop.is_closed():
+        raise RuntimeError('Kafka 송신기가 아직 준비되지 않았습니다')
+
+    async def delivered():
+        return await (await producer.send(topic, key=key, value=value))
+    return asyncio.run_coroutine_threadsafe(delivered(), loop)
+
+
+def _send_logged(topic: str, key, value, what: str) -> None:
+    """기다리지 않는 송신(감사 기록). 실패는 조용히 버리지 않고 로그에 남긴다(A-07)."""
+    def done(fut):
+        if fut.cancelled():
+            log.error('%s not sent to %s: cancelled', what, topic)
+        elif fut.exception() is not None:
+            log.error('%s not sent to %s: %s', what, topic, fut.exception())
+    try:
+        _send(topic, key, value).add_done_callback(done)
+    except RuntimeError as exc:
+        log.error('%s not sent to %s: %s', what, topic, exc)
+
+
+def _send_and_wait(topic: str, key, value) -> None:
+    """브로커가 받았다고 답할 때까지 기다린다 — 승인 원장 · 명령. 이벤트 루프 스레드에서는 부르지 않는다(스스로를 기다리게 됨)."""
+    try:
+        running = asyncio.get_running_loop()
+    except RuntimeError:
+        running = None
+    if running is not None and running is loop:
+        raise RuntimeError('명령 송신 확인은 이벤트 루프 밖에서 기다려야 합니다')
+    _send(topic, key, value).result(timeout=KAFKA_SEND_TIMEOUT_S)
+
+
 class Fx(machine.Effects):
-    """Effects for one incident: publish to Kafka, keep an audit copy, schedule timers."""
+    """Effects for one incident: keep an audit copy and publish it to Kafka (fire-and-forget, failures logged)."""
 
     def __init__(self, inc: machine.Incident):
         self.inc = inc
 
-    def emit_cmd(self, cmd: dict) -> None:
-        persist()  # durable CMD_ISSUED before any external side effect
-        asyncio.run_coroutine_threadsafe(producer.send(topics.K_CMD, key=topics.asset_key(cmd["asset"]), value=cmd), loop)
-
     def emit_audit(self, evt: dict) -> None:
         audit_log.insert(0, evt)
         del audit_log[500:]
-        asyncio.run_coroutine_threadsafe(producer.send(topics.K_AUDIT, key=topics.asset_key(self.inc.asset), value=evt), loop)
-
-    def set_timer(self, name: str, seconds: float) -> None:
-        cmd_id = self.inc.cmd_id          # the timer belongs to this command; a rework may supersede it before it fires
-        loop.call_soon_threadsafe(lambda: asyncio.create_task(fire_timer(self.inc.id, name, seconds, cmd_id)))
-
-
-async def fire_timer(inc_id: str, name: str, seconds: float, cmd_id: str | None = None):
-    await asyncio.sleep(seconds)
-    inc = incidents.get(inc_id)
-    if not inc:
-        return
-    value = await asyncio.get_running_loop().run_in_executor(None, latest_tag, inc.asset, inc.recovery[0]) if name == "reobs" and inc.recovery else None
-    series = None
-    if name == "reobs" and inc.recovery and inc.state == "RE_OBSERVING" and (cmd_id is None or cmd_id == inc.cmd_id):
-        # A161-G3: the values the verdict is about, not just the last one (sampled; reobs_series.py)
-        series = await asyncio.get_running_loop().run_in_executor(None, window_series, inc, "command")
-    machine.on_timer(inc, name, now(), value, Fx(inc), time_scale=TIME_SCALE, cmd_id=cmd_id, series=series)
-    _after(inc)
-    if inc.state == 'RESOLVED':
-        rt = instance_mode.current()
-        owned = await asyncio.get_running_loop().run_in_executor(None, rt.repo.incident_is_process_owned, inc.id) if rt else False
-        if not owned:
-            await asyncio.get_running_loop().run_in_executor(None, _complete_legacy_work_order, inc)
+        _send_logged(topics.K_AUDIT, topics.asset_key(self.inc.asset), evt, f"audit {evt.get('event')}")
 
 
 def latest_tag(asset: str, tag: str = "TS1") -> float | None:
@@ -157,15 +161,18 @@ def latest_ts1(asset: str) -> float | None:
     return latest_tag(asset, "TS1")
 
 
-def _after(inc: machine.Incident):
-    """Runs on the event loop or on a worker thread (instance-mode hooks), so it schedules through the global loop."""
+def _after(inc: machine.Incident, *, advance: bool = True):
+    """Runs on the event loop or on a worker thread (instance-mode hooks), so it schedules through the global loop.
+    advance=False: 사건만 저장하고 처리 건 진행은 예약하지 않는다 — 지금 그 처리 건의 단계 안에서 실패를 올릴 때(그 단계의 실패 기록이
+    먼저 남고, 다음 폴링이 사건 상태로 진행한다. 예약하면 다른 스레드의 진행과 실패 기록의 앞뒤가 그때그때 갈린다)"""
     persist()
     if inc.state in definition.TERMINAL:
         c_inc.inc(state=inc.state)
         if inc.state == "CLOSED" and loop is not None:
             loop.run_in_executor(None, record_incident, inc)
     g_open.set(sum(1 for i in list(incidents.values()) if i.state not in definition.TERMINAL))
-    instance_mode.on_incident_update(inc)
+    if advance:
+        instance_mode.on_incident_update(inc)
 
 
 def _wake_case_projection():
@@ -206,20 +213,10 @@ def _scm_sync_once():
     return report
 
 
-def _lease_sweep_once():
-    """A097: a worker run whose lease expired three times is marked FAILED so a person can close it (A082)."""
-    from . import procdb
-    rt = instance_mode.current()
-    n = rt.repo.expire_worker_leases() if rt is not None else 0
-    if n:
-        log.warning("worker lease sweep: %d run(s) marked FAILED after %d expired claims", n, procdb.MAX_CLAIMS)
-    return {"failed": n}
-
-
 async def _ddl_sync_loop():
     interval = float(os.getenv("DDL_SYNC_INTERVAL_S", "60"))
     while True:
-        for name, once in (("DDL source", _ddl_sync_once), ("SCM source", _scm_sync_once), ("worker lease", _lease_sweep_once)):
+        for name, once in (("DDL source", _ddl_sync_once), ("SCM source", _scm_sync_once)):
             try:
                 await asyncio.to_thread(once)
             except Exception:  # noqa: BLE001
@@ -284,18 +281,16 @@ async def _receive_retrying(pairs):
 async def consume():
     global producer
     producer = await make_producer()
-    durable=source_inbox is not None
-    cons = await make_consumer([topics.K_STATUS, topics.K_ALERTS], group="process", from_latest=not durable,
-                               auto_commit=not durable,raw_values=durable)
+    cons = await make_consumer([topics.K_STATUS, topics.K_ALERTS], group="process", from_latest=False,
+                               auto_commit=False, raw_values=True)
     state["kafka"] = True
-    log.info("consuming plant.status (ACK) and alerts (CLEAR)")
+    log.info("consuming plant.status (ACK) and alerts (RAISE · CLEAR) into the durable source receipts")
     from aiokafka import TopicPartition
     while True:
       batches = await cons.getmany(timeout_ms=250, max_records=SOURCE_BATCH_MAX)
       if not batches:
           continue
       for tp, recs in batches.items():
-        if durable:
             # A080: receive the whole fetched batch on one DB connection (one committed transaction per receipt, as
             # before) and commit the offset once per batch. On a receipt failure the failed delivery and everything after
             # it stay unacknowledged and are retried; nothing is committed past a missing event.
@@ -328,44 +323,6 @@ async def consume():
                 log.error('source receipt failed: %s/%s/%s: %s',failed.topic,failed.partition,failed.offset,error)
                 start=done
                 await asyncio.sleep(1)
-            continue
-        for rec in recs:
-          try:
-              _legacy_record(rec)
-          except Exception:  # noqa: BLE001 — A108: one failed receipt must not end the consumer (legacy auto-commit path)
-              log.exception('legacy record handling failed on %s/%s', rec.topic, rec.offset)
-
-
-def _legacy_record(rec):
-        v = rec.value
-        if not isinstance(v, dict) or "_raw" in v:
-            log.warning("ignoring malformed record on %s", rec.topic)
-            return
-        if rec.topic == topics.K_STATUS and v.get("asset"):
-            plant_status[v["asset"]] = v
-        if rec.topic == topics.K_ALERTS and v.get("state") == "RAISE":
-            instance_mode.on_alert_raise(v)      # message start event (ev:alert): one RAISE opens one process instance
-            if instance_mode.current() is None and definition.recovery_for(v.get('pattern')) is None:
-                if not any(i.alert_id==v.get('alertId') for i in list(incidents.values())):
-                    inc=machine.Incident.from_card(machine.new_incident_id(),{'alert':v,'recommended':[]})
-                    machine.on_card(inc);incidents[inc.id]=inc;state['incidents']=len(incidents)
-                    _audit(inc.asset,'process','UNSUPPORTED_ALERT_PATTERN',{'alert':v},incident=inc.id)
-                    _after(inc)
-        for inc in list(incidents.values()):
-            if inc.state in definition.TERMINAL:
-                if (rec.topic == topics.K_ALERTS and inc.reason == 'UNSUPPORTED_ALERT_PATTERN'
-                        and v.get('alertId') == inc.alert_id and v.get('state') == 'CLEAR' and not inc.cleared):
-                    machine.on_alert(inc,v,Fx(inc))
-                    _after(inc)  # Source CLEAR is recorded; ESCALATED remains human review.
-                continue  # next incident
-            try:
-                if rec.topic == topics.K_STATUS and v.get("asset") == inc.asset:
-                    machine.on_status(inc, v, now(), Fx(inc), time_scale=TIME_SCALE)
-                elif rec.topic == topics.K_ALERTS:
-                    machine.on_alert(inc, v, Fx(inc))
-                _after(inc)
-            except Exception as e:  # noqa: BLE001
-                log.warning("record on %s failed for %s: %s", rec.topic, inc.id, e)
 
 
 def _apply_source_event(receipt):
@@ -384,7 +341,7 @@ def _apply_source_event(receipt):
         if receipt['kind']=='CLEAR' and not inc.cleared:
             machine.on_alert(inc,value,Fx(inc))
         elif receipt['kind']=='ACK':
-            machine.on_status(inc,value,now(),Fx(inc),time_scale=TIME_SCALE)
+            machine.on_status(inc,value,now(),Fx(inc))
         persist()
         rt.on_incident_update(inc.state,inc.id,inc.cleared)
         return {'incident':inc.id,'state':inc.state,'cleared':inc.cleared,'cmdId':inc.cmd_id,
@@ -408,17 +365,14 @@ def _health_state():
     """Report actual processing readiness without opening another DB connection."""
     ready = state["kafka"] and not any(state.get(k) for k in
         ('consumer_dead', 'source_receive_error', 'source_handler_error', 'source_policy_error', 'startup_db_error'))
-    snapshot = {**state, "ok": bool(ready)}
-    if PROCESS_MODE == 'instance':
-        runtime = instance_mode.runtime_readiness()
-        snapshot['runtime'] = runtime
-        snapshot['ok'] = bool(ready and runtime['ready'])
-    return snapshot
+    runtime = instance_mode.runtime_readiness()
+    return {**state, "ok": bool(ready and runtime['ready']), 'runtime': runtime}
 
 
 app = make_app("process (L9: mini-BPMN — approval, action.cmd, ACK, re-observation, work order)", reg,
                _health_state)
-instance_mode.mount(app, PROCESS_MODE)      # /api/instances · /api/todolist · … (409 unless PROCESS_MODE=instance)
+# /api/instances · /api/todolist · … — 경보로 처리 건을 여는 길은 원천 접수 하나(_admit_alert, 아래)
+instance_mode.mount(app, admit_alert=lambda alert: _admit_alert(alert))
 from . import agents_api
 agents_api.mount(app)                       # U2: /api/agents · /api/skills · /api/agent-bindings (instance mode)
 from . import inbox_api
@@ -443,14 +397,14 @@ if memdebug.enabled():                      # A131: GET /debug/memory only with 
         "snapshot_json_bytes": _snapshot_bytes,
         "case_projection_pending": lambda: store.case_projection_status(limit=1)["pending"] if store else None,
         "runtime": lambda: (lambda rt: None if rt is None else {
-            "repo": type(rt.repo).__name__, "repo_local": sorted(vars(rt.repo._local)) if hasattr(rt.repo, "_local") else None,
-            "runtime_local": sorted(vars(rt._local)), "memory_repo_sizes": {k: len(v) for k, v in vars(rt.repo).items()
-                                                                           if isinstance(v, (dict, list))} if type(rt.repo).__name__ == "MemoryRepo" else None,
+            "repo": type(rt.repo).__name__, "repo_local": sorted(vars(rt.repo._local)), "runtime_local": sorted(vars(rt._local)),
         })(instance_mode.current()),
     }, get_loop=lambda: loop)
 
 
-def _approve_incident(inc: machine.Incident, by: str, commands: list[dict]) -> dict:
+def _approve_incident(inc: machine.Incident, by: str, commands: list[dict], at: datetime | None = None) -> dict:
+    """승인한 명령을 낸다: 사건에 CMD_ISSUED 를 먼저 저장하고, 승인 원장 송신이 확인된 뒤 명령을 보낸다(A148 · A-07). 둘 중 하나라도
+    브로커가 받지 않으면 다시 보내지 않고 사건을 사람 검토(CMD_SEND_FAILED)로 넘긴 뒤 실패를 알린다 — 조용히 ACK 시간 초과로 보이지 않게."""
     rt = instance_mode.current()
     inst = rt.instance_of_incident(inc.id) if rt else None
     current_id = engine.variables(inst).get('decision_id') if inst else None
@@ -463,7 +417,22 @@ def _approve_incident(inc: machine.Incident, by: str, commands: list[dict]) -> d
     _check_current_approval(d, d['chosen'], d['approvedRole'])
     from .approval_hooks import require_reviewed_commands
     require_reviewed_commands(next(o for o in d['options'] if o['id'] == d['chosen']), commands)
-    cmd = machine.on_approve(inc, by, commands, now(), Fx(inc), time_scale=TIME_SCALE)
+    at = at or now()
+    fx = Fx(inc)
+    cmd = machine.on_approve(inc, by, commands, at, fx)
+    persist()                      # durable CMD_ISSUED before any external side effect
+    ledger = {"t": now_iso(), "incident": inc.id, "asset": inc.asset, "actor": "process",
+              "event": schemas.CMD_APPROVAL_LEDGER_EVENT, "detail": schemas.approval_ledger_record(cmd)}
+    try:
+        _send_and_wait(topics.K_AUDIT, topics.asset_key(inc.asset), ledger)
+        audit_log.insert(0, ledger)
+        _send_and_wait(topics.K_CMD, topics.asset_key(cmd["asset"]), cmd)
+    except Exception as exc:  # noqa: BLE001 — 송신 실패는 사건 사유로 남기고 이 단계를 실패시킨다(재전송하지 않음)
+        error = f"{type(exc).__name__}: {str(exc)[:300]}"
+        machine.on_command_send_failed(inc, cmd["cmdId"], error, fx)
+        _after(inc, advance=False)
+        raise ValueError(f"설비 명령을 명령 통로에 싣지 못했습니다({error}) — 명령은 다시 보내지 않고 이 처리 건을 사람 검토(미달)로 넘깁니다") from exc
+    machine.on_command_sent(inc, cmd["cmdId"], at, fx)
     _after(inc)
     return cmd
 
@@ -480,14 +449,13 @@ def _instance_context() -> instance_mode.ProcessContext:
                                         cypher=_q, exec_skill=exec_skill, record_decision=record_decision, approve_incident=_approve_incident,
                                         get_loop=lambda: loop, check_approval=_check_current_approval, after_incident=_after,
                                         reviews=_review_service, record_incident=record_incident, approval_receipts=_approval_receipts,
-                                        accept_evaluation=_publish_legacy_evaluation, exec_compensation=_exec_compensation,
-                                        latest_tag=latest_tag, window_series=window_series)
+                                        exec_compensation=_exec_compensation, latest_tag=latest_tag, window_series=window_series)
 
 
 def _exec_compensation(body: dict) -> dict:
     """POST one compensation skill (A072) to the enterprise systems; the enterprise keeps it idempotent per decision/skill/ref."""
     req = urllib.request.Request(ENTERPRISE_URL + "/api/exec", data=json.dumps(body, ensure_ascii=False).encode(),
-                                 headers={"Content-Type": "application/json"}, method="POST")
+                                 headers={"Content-Type": "application/json", **instance_mode.caller_headers()}, method="POST")
     try:
         with urllib.request.urlopen(req, timeout=10) as r:
             return json.loads(r.read())
@@ -518,6 +486,7 @@ def _watch(task):
 @app.on_event("startup")
 async def _startup():
     global loop, store, source_inbox, source_delivery, case_projector, case_projection_event, case_projection_task, knowledge_reconciler
+    instance_mode.caller_headers()            # 하-04 · 하-05: process 만 아는 실행 호출 값이 없으면 뜨지 않는다(조용히 쓰기 실패로 돌지 않게)
     loop = asyncio.get_running_loop()
     store = Store(os.getenv("PROCESS_STATE_PATH", "/data/process.sqlite3"))
     saved_incidents, saved_book, saved_audit = store.restore()
@@ -527,24 +496,22 @@ async def _startup():
     audit_log[:] = saved_audit
     state["incidents"] = len(incidents)
     persist()
-    if PROCESS_MODE == "instance":
-        # A151 (70-A): a DB paused while the container restarts no longer kills startup — bounded backoff, then the loops start once
-        ctx=_instance_context()
-        rt=await instance_mode.retry_startup(lambda: instance_mode.build(ctx), 'instance runtime', state)
-        instance_mode.start_loops(rt, ctx)
-        rt.hooks.case_started=_link_injection     # C3: 수업 버튼의 설비 주입 → 그 주입이 연 처리 건 (누름 id 로 연결)
-        source_inbox=PgSourceInbox(rt.repo,rt.tenant_id)
-        plant_status.update(await instance_mode.retry_startup(lambda: asyncio.to_thread(source_inbox.latest_states), 'plant status', state))
-        source_delivery=SourceDelivery(source_inbox,rt,_apply_source_event,owner=rt.consumer+'-source')
-        asyncio.create_task(_source_loop()).add_done_callback(_watch)
-        if os.getenv('BUSINESS_MONITOR','0')!='0':
-            # C2: 업무 표 기준값 감시 — 재고 재주문점 이탈(C) · 운전시간 정기 정비 도래(B)가 처리 건을 스스로 연다(business_monitor.py)
-            from . import business_monitor
-            asyncio.create_task(business_monitor.run(instance_mode.enterprise_read,_admit_human_alert,
-                                                     float(os.getenv('BUSINESS_MONITOR_INTERVAL_S','15')),audit=_audit))
+    # A151 (70-A): a DB paused while the container restarts no longer kills startup — bounded backoff, then the loops start once
+    ctx=_instance_context()
+    rt=await instance_mode.retry_startup(lambda: instance_mode.build(ctx), 'instance runtime', state)
+    instance_mode.start_loops(rt, ctx)
+    rt.hooks.case_started=_link_injection     # C3: 수업 버튼의 설비 주입 → 그 주입이 연 처리 건 (누름 id 로 연결)
+    source_inbox=PgSourceInbox(rt.repo,rt.tenant_id)
+    plant_status.update(await instance_mode.retry_startup(lambda: asyncio.to_thread(source_inbox.latest_states), 'plant status', state))
+    source_delivery=SourceDelivery(source_inbox,rt,_apply_source_event,owner=rt.consumer+'-source')
+    asyncio.create_task(_source_loop()).add_done_callback(_watch)
+    if os.getenv('BUSINESS_MONITOR','0')!='0':
+        # C2: 업무 표 기준값 감시 — 재고 재주문점 이탈(C) · 운전시간 정기 정비 도래(B)가 처리 건을 스스로 연다(business_monitor.py)
+        from . import business_monitor
+        asyncio.create_task(business_monitor.run(instance_mode.enterprise_read,_admit_alert,
+                                                 float(os.getenv('BUSINESS_MONITOR_INTERVAL_S','15')),audit=_audit))
     case_projector = CaseProjector(store, _q, _incident_projected)
-    active_runtime=instance_mode.current()
-    knowledge_reconciler=KnowledgeReconciler(store,_q,os.getenv('TENANT_ID','hyd'),active_runtime.repo if active_runtime else None)
+    knowledge_reconciler=KnowledgeReconciler(store,_q,os.getenv('TENANT_ID','hyd'),rt.repo)
     case_projection_event = asyncio.Event()
     case_projection_event.set()
     case_projection_task = asyncio.create_task(_case_projection_loop())
@@ -559,16 +526,6 @@ async def graph_projection_status():
     result = await asyncio.to_thread(store.case_projection_status)
     knowledge=await asyncio.to_thread(knowledge_reconciler.status) if knowledge_reconciler else None
     return result | {'worker_running': case_projection_task is not None and not case_projection_task.done(),'knowledge':knowledge}
-
-
-class ApproveReq(BaseModel):
-    approvedBy: str = "OP-17"
-    actions: list[dict]
-
-
-class RejectReq(BaseModel):
-    by: str = "OP-17"
-    reason: str = ""
 
 
 class SourceRetryReq(BaseModel):
@@ -600,57 +557,18 @@ async def retry_source_event(receipt_id: int,req: SourceRetryReq):
     return row
 
 
-@app.post("/api/incidents")
-async def create_incident(card: dict):   # async: mutates incidents on the loop thread, like consume()
-    if not card.get("alert") or not card.get("recommended"):
-        raise HTTPException(400, "card needs alert and recommended actions")
-    alert_id = card["alert"].get("alertId")
-    if not alert_id or not card['alert'].get('asset'):
-        raise HTTPException(400,'alert에는 alertId와 asset이 필요합니다')
-    rt=instance_mode.current()
-    if rt is not None:
-        try:
-            if source_delivery is not None:
-                record=source_record(topics.K_ALERTS,None,None,card['alert'],source='http')
-                if record['kind']!='RAISE':raise ValueError('가이드에는 원천 RAISE 경보가 필요합니다')
-                policy=await asyncio.to_thread(rt.alert_policy,record['payload'].get('pattern'))
-                receipt=await asyncio.to_thread(source_inbox.receive,record,policy)
-                await source_delivery.wait_for(receipt)
-            else:
-                await asyncio.get_running_loop().run_in_executor(None,rt.on_alert_raise,card['alert'])
-        except (ValueError,LookupError) as exc:
-            raise HTTPException(409,str(exc))
-        except TimeoutError as exc:
-            raise HTTPException(503,str(exc))
-    for inc in list(incidents.values()):
-        if inc.alert_id == alert_id:
-            if (inc.asset,inc.pattern)!=(card['alert'].get('asset'),card['alert'].get('pattern')):
-                raise HTTPException(409,'같은 경보 ID의 설비/패턴이 다릅니다')
-            if rt is not None and inc.state=='AWAITING_APPROVAL' and not inc.card.get("recommended"):
-                # instance mode: the incident was opened by the instance; the agent's card fills it in
-                inc.card = dict(card, incident=inc.id, alert=inc.card['alert'])
-                persist()
-                return {"id": inc.id, "state": inc.state, "duplicate": True, "cardUpdated": True}
-            return {"id": inc.id, "state": inc.state, "duplicate": True}
-    inc = machine.Incident.from_card(machine.new_incident_id(), card)
-    machine.on_card(inc)
-    incidents[inc.id] = inc
-    state["incidents"] += 1
-    Fx(inc).emit_audit({"t": inc.created, "incident": inc.id, "asset": inc.asset, "actor": "agent", "event": "GUIDE_SUBMITTED",
-                        "detail": {"alertId": alert_id, "topCause": card.get("topCause"), "citations": len(card.get("citations") or [])}})
-    _after(inc)
-    log.info("incident %s created for %s", inc.id, alert_id)
-    return {"id": inc.id, "state": inc.state}
+def _runtime_or_503():
+    rt = instance_mode.current()
+    if rt is None:
+        raise HTTPException(503, instance_mode.instances.NOT_READY)
+    return rt
 
 
 @app.get('/api/alerts/policy')
 async def alert_execution_policy(pattern: str = ''):
-    rt=instance_mode.current()
-    if rt is not None:
-        return await asyncio.get_running_loop().run_in_executor(None,rt.alert_policy,pattern)
-    criterion=definition.recovery_for(pattern)
-    return {'pattern':pattern,'route':'response' if criterion else 'triage','criterion':criterion,
-            'definition':'legacy-incident','version':'explicit-patterns-v1'}
+    """경보 패턴 → 그 패턴을 받는 배포 흐름과 회복 기준(agent 의 읽기 평가가 먼저 묻는다)."""
+    rt = _runtime_or_503()
+    return await asyncio.get_running_loop().run_in_executor(None, rt.alert_policy, pattern)
 
 
 @app.get("/api/incidents")
@@ -665,57 +583,6 @@ def get_incident(inc_id: str):
         raise HTTPException(404, "no such incident")
     rt=instance_mode.current()
     return inc.to_dict() | {'processOwned':bool(rt and rt.repo.incident_is_process_owned(inc_id))}
-
-
-async def _require_legacy_incident(inc_id):
-    rt = instance_mode.current()
-    if rt and inc_id and await asyncio.get_running_loop().run_in_executor(None, rt.repo.incident_is_process_owned, inc_id):
-        raise HTTPException(409, '프로세스 인스턴스의 사람 작업에서 승인·복구하세요')
-
-
-async def _require_legacy_decision(d):
-    if d.get('process_approval_id'):
-        raise HTTPException(409, '이미 접수된 프로세스 승인입니다. 해당 작업에서 전달 상태를 확인하세요')
-    await _require_legacy_incident((d.get('origin') or {}).get('incident'))
-
-
-@app.post("/api/incidents/{inc_id}/approve")
-async def approve(inc_id: str, req: ApproveReq):
-    inc = incidents.get(inc_id)
-    if not inc:
-        raise HTTPException(404, "no such incident")
-    await _require_legacy_incident(inc_id)
-    raise HTTPException(409, '원자 명령만으로 승인할 수 없습니다. 조치 카드에서 SOP와 승인 역할을 선택하세요')
-
-
-@app.post('/api/incidents/{inc_id}/work-order-retry')
-async def retry_legacy_work_order(inc_id: str):
-    inc = incidents.get(inc_id)
-    if inc is None:
-        raise HTTPException(404, 'no such incident')
-    await _require_legacy_incident(inc_id)
-    if inc.state not in ('RESOLVED', 'AWAITING_APPROVAL') or not inc.work_order_request:
-        raise HTTPException(409, '재전달할 승인된 작업지시가 없습니다')
-    if inc.state == 'AWAITING_APPROVAL' and not inc.work_order_request['work_order_only']:
-        raise HTTPException(409, '설비 재관측이 끝나지 않았습니다')
-    result = await asyncio.get_running_loop().run_in_executor(None, _complete_legacy_work_order, inc)
-    if result.get('ok') is not True:
-        raise HTTPException(502, result)
-    return {'incident':inc.to_dict(), 'work_order':result}
-
-
-@app.post("/api/incidents/{inc_id}/reject")
-async def reject(inc_id: str, req: RejectReq):
-    inc = incidents.get(inc_id)
-    if not inc:
-        raise HTTPException(404, "no such incident")
-    await _require_legacy_incident(inc_id)
-    try:
-        machine.on_reject(inc, req.by, req.reason, Fx(inc))
-    except ValueError as e:
-        raise HTTPException(400, str(e))
-    _after(inc)
-    return {"id": inc.id, "state": inc.state}
 
 
 @app.get("/api/audit")
@@ -744,25 +611,13 @@ def summary():
 
 
 # ---------------------------------------------------------------- enterprise decisions (L7 -> L8 -> L9)
-class DecisionApproveReq(BaseModel):
-    option: str
-    by: str = "승인자"
-    role: str
-    reason: str = ""
-
-
-class DecisionRejectReq(BaseModel):
-    by: str = "승인자"
-    reason: str = ""
-
-
 def _audit(asset: str, actor: str, event: str, detail: dict, incident: str | None = None):
     evt = {"t": now_iso(), "incident": incident, "asset": asset, "actor": actor, "event": event, "detail": detail}
     audit_log.insert(0, evt)
     del audit_log[500:]
     persist()
-    if producer is not None and loop is not None:   # callable from worker threads too (instance-mode hooks)
-        asyncio.run_coroutine_threadsafe(producer.send(topics.K_AUDIT, key=topics.asset_key(asset if asset in ("HYD-01", "HYD-02", "HYD-03") else "HYD-01"), value=evt), loop)
+    # callable from worker threads too (instance hooks); a send failure is logged, never silent (A-07)
+    _send_logged(topics.K_AUDIT, topics.asset_key(asset if asset in ("HYD-01", "HYD-02", "HYD-03") else "HYD-01"), evt, f"audit {event}")
 
 
 # atomic system transactions of an SOP skill -> the enterprise-sim job that performs them
@@ -829,7 +684,7 @@ def exec_skill(d: dict, item: dict) -> dict:
             "by": d.get("approvedBy"), "params": params}
     try:
         req = urllib.request.Request(ENTERPRISE_URL + "/api/exec", data=json.dumps(body, ensure_ascii=False).encode(),
-                                     headers={"Content-Type": "application/json"}, method="POST")
+                                     headers={"Content-Type": "application/json", **instance_mode.caller_headers()}, method="POST")
         with urllib.request.urlopen(req, timeout=10) as r:
             tx = json.loads(r.read())
         if not isinstance(tx.get('ref'), str) or not tx['ref'].strip():
@@ -837,63 +692,6 @@ def exec_skill(d: dict, item: dict) -> dict:
         return out | {"ok": True, "ref": tx.get("ref"), "detail": tx.get("detail"), "after": tx.get("after")}
     except Exception as e:  # noqa: BLE001
         return out | {"ok": False, "error": str(e)[:200]}
-
-
-def _work_order_context():
-    from types import SimpleNamespace
-    return SimpleNamespace(incidents=incidents, persist=persist, audit=_audit, after_incident=_after)
-
-
-def _freeze_legacy_work_order(inc, by):
-    action = next((a for a in inc.card.get('recommended', []) if a.get('kind')=='work_order'), None)
-    if action is None:
-        raise ValueError('승인 가이드에 후속 작업지시가 없습니다. 정비 계획 검토가 필요합니다')
-    option = {'id':action.get('skillId') or action.get('actionId') or action['code'],
-              'sopId':(action.get('sop') or {}).get('id'),
-              'name':(action.get('sop') or {}).get('name') or action.get('name'),
-              'actions':[{'kind':'command'}]}
-    item = {'skill':option['id'], 'sop':option['sopId'], 'code':'WO_CREATE',
-            'name':option['name'], 'system':'sys:cmms', 'value':action.get('value'),
-            'param':action.get('param'), 'source':'approved-legacy-guide'}
-    d = {'id':inc.id, 'chosen':option['id'], 'approvedBy':by, 'options':[option],
-         'asset':inc.asset, 'origin':{'incident':inc.id}}
-    work_orders.prepare(_work_order_context(), d, item, allow_before_recovery=True)
-
-
-def _complete_legacy_work_order(inc):
-    """Legacy guide approval still requires a real, idempotent CMMS receipt."""
-    item = {}
-    try:
-        saved = inc.work_order_request
-        if saved:
-            item = copy.deepcopy(saved['item'])
-            option = {'id':saved['option'], 'sopId':item.get('sop'), 'name':saved['option_name'],
-                      'actions':[{'kind':'command'}] if not saved['work_order_only'] else []}
-            if item.get('code') == 'WO_RESCHEDULE':
-                option['maintenancePlan'] = {k:copy.deepcopy(item[k]) for k in
-                    ('code','ref','expected_order','window','hours_at_window','limit_hours','cycle','scope','assets','staffing','parts_totals','model_applicability','source_id','policy') if k in item}
-            elif item.get('schedule_plan'):
-                option['maintenancePlan']=copy.deepcopy(item['schedule_plan'])
-            d = {'id':saved['decision'], 'chosen':saved['option'], 'approvedBy':saved['by'],
-                 'options':[option], 'asset':inc.asset, 'origin':{'incident':inc.id}}
-        else:
-            raise ValueError('승인 당시의 작업지시 요청이 없습니다. 정비 계획 검토가 필요합니다')
-        ctx = _work_order_context()
-        work_orders.prepare(ctx, d, item)
-        result = exec_skill(d, item)
-        if result.get('ok') is not True:
-            raise RuntimeError(result.get('error') or 'CMMS failed')
-        work_orders.confirm(ctx, inc, item, result)
-        decision = book.get(saved['decision'])
-        if decision is not None:
-            from .approval_hooks import record_execution
-            record_execution(decision, result)
-            persist()
-        return result
-    except Exception as exc:
-        _audit(inc.asset, 'process', 'WORK_ORDER_FAILED', {'error':str(exc), 'retryable':inc.state=='RESOLVED'}, incident=inc.id)
-        return {'ok':False, 'code':'WO_CREATE', 'error':str(exc),
-                'skill':item.get('skill'), 'system':item.get('system', 'sys:cmms')}
 
 
 def record_decision(d: dict) -> None:
@@ -916,13 +714,6 @@ def _create_decision(payload: dict):
     with rt._transition(inst['proc_inst_id']) if inst else nullcontext():
         if inst:
             inst = rt.repo.get_instance(inst['proc_inst_id'])
-            legacy=origin.get('legacy_attempt')
-            if legacy is not None:
-                if not isinstance(legacy,dict):raise HTTPException(409,'invalid legacy attempt')
-                wi=rt.repo.get_workitem(legacy.get('workitem'))
-                if (not wi or wi['proc_inst_id']!=inst['proc_inst_id'] or wi['status']!='IN_PROGRESS'
-                        or wi.get('draft_status')!='STARTED' or wi.get('consumer')!=legacy.get('owner')):
-                    raise HTTPException(409,'legacy assessment no longer owns the task')
             scope = origin.get('process_scope')
             if int(inst.get('rework_generation') or 0) > 0 or scope is not None:
                 from .decision_scope import validate_submission
@@ -945,8 +736,7 @@ def _create_decision(payload: dict):
 def _store_decision(payload):
     if payload["id"] in book:
         d = book[payload["id"]]
-        if any((payload.get('origin') or {}).get(key) != (d.get('origin') or {}).get(key)
-               for key in ('process_scope','legacy_attempt')):
+        if (payload.get('origin') or {}).get('process_scope') != (d.get('origin') or {}).get('process_scope'):
             raise HTTPException(409, '같은 판단 ID를 다른 작업/세대에서 재사용할 수 없습니다')
         return {"id": d["id"], "state": d["state"], "duplicate": True}
     origin=payload.get('origin') or {}
@@ -969,16 +759,7 @@ def _store_decision(payload):
     _audit(d.get("asset") or "-", "agent", "DECISION_SUBMITTED",
            {"decision": d["id"], "cards": [o.get("sopId") for o in d.get("options", [])], "recommended": d.get("recommended")},
            incident=(d.get("origin") or {}).get("incident"))
-    instance_mode.bridge_legacy_agent(d)
     return {"id": d["id"], "state": d["state"]}
-
-
-def _publish_legacy_evaluation(payload,card):
-    rt=instance_mode.current()
-    if rt is None:raise ValueError('instance runtime required')
-    rt.hooks.update_incident_card(payload['origin']['incident'],card)
-    _create_decision(payload)
-    return book[payload['id']]
 
 
 @app.get("/api/decisions")
@@ -993,48 +774,6 @@ def get_decision(did: str):
     if not d:
         raise HTTPException(404, "no such decision")
     return d
-
-
-@app.post("/api/decisions/{did}/approve")
-async def approve_decision(did: str, req: DecisionApproveReq):
-    d = book.get(did)
-    if not d:
-        raise HTTPException(404, "no such decision")
-    await _require_legacy_decision(d)
-    try:
-        await asyncio.get_running_loop().run_in_executor(None, _check_current_approval, d, req.option, req.role)
-        plan = declib.approve(d, req.option, req.by, req.role, req.reason)
-    except PermissionError as e:
-        _audit(d.get("asset") or "-", req.by, "DECISION_DENIED", {"decision": did, "option": req.option, "role": req.role, "reason": str(e)})
-        raise HTTPException(403, str(e))
-    except ValueError as e:
-        raise HTTPException(400, str(e))
-    _audit(d.get("asset") or "-", req.by, "DECISION_APPROVED",
-           {"decision": did, "option": req.option, "role": req.role, "override": d["override"], "reason": req.reason}, incident=(d.get("origin") or {}).get("incident"))
-    loop_ = asyncio.get_running_loop()
-    results = [await loop_.run_in_executor(None, exec_skill, d, item) for item in plan["enterprise"]]
-    declib.record_execution(d, results, plan)
-    persist()
-    for r in results:
-        _audit(d.get("asset") or "-", "process", "SKILL_EXECUTED" if r["ok"] else "SKILL_FAILED",
-               {"decision": did, "skill": r["skill"], "code": r.get("code"), "system": r["system"], "ref": r.get("ref"), "detail": r.get("detail") or r.get("error")})
-    loop_.run_in_executor(None, record_decision, d)
-    return {"id": did, "state": d["state"], "executions": d["executions"]}
-
-
-@app.post("/api/decisions/{did}/reject")
-async def reject_decision(did: str, req: DecisionRejectReq):
-    d = book.get(did)
-    if not d:
-        raise HTTPException(404, "no such decision")
-    await _require_legacy_decision(d)
-    try:
-        declib.reject(d, req.by, req.reason)
-    except ValueError as e:
-        raise HTTPException(400, str(e))
-    _audit(d.get("asset") or "-", req.by, "DECISION_REJECTED", {"decision": did, "reason": req.reason})
-    asyncio.get_running_loop().run_in_executor(None, record_decision, d)
-    return {"id": did, "state": d["state"]}
 
 
 # ---------------------------------------------------------------- knowledge administration (humans edit the ontology through L9)
@@ -1134,32 +873,15 @@ from pathlib import Path
 from .manual_sources import ManualSources
 from . import manual_api
 from .manual_approved_cache import ApprovedExtractions
-from . import course_access, course_bootstrap
+from . import course_policy, course_bootstrap
 course_bootstrap.mount(app)
-_course_store = course_access.mount(app,
-    archive_factory=lambda: ManualSources(Path(os.getenv('PROCESS_STATE_PATH', '/data/process.sqlite3')).with_name('manuals.sqlite3')),
-    tenant=os.getenv('TENANT_ID', 'hyd'))
+_course = course_policy.mount(app, runtime_factory=instance_mode.current)   # 수업 경계 정본(단계 선언이 깨졌으면 여기서 멈춘다)
 from . import course_model
-course_model.mount(app, access_store=_course_store, runtime_factory=instance_mode.current, settings=os.environ)
-_classroom_client = None
-if os.getenv('HYD_CLASSROOM_URL'):
-    from .classroom_client import Client as ClassroomClient
-    _classroom_client = ClassroomClient(os.environ['HYD_CLASSROOM_URL'],
-        lambda: os.getenv('LLM_API_KEY', ''),
-        Path(os.getenv('PROCESS_STATE_PATH', '/data/process.sqlite3')).with_name('classroom.sqlite3'))
+course_model.mount(app, policy=_course, runtime_factory=instance_mode.current, settings=os.environ)
 manual_api.register(app,
     archive_factory=lambda: ManualSources(Path(os.getenv("PROCESS_STATE_PATH", "/data/process.sqlite3")).with_name("manuals.sqlite3")),
     driver_factory=_kg, tenant=os.getenv("TENANT_ID", "hyd"), audit=_audit,
-    runtime_factory=instance_mode.current, managed_client=_classroom_client,
-    approved_cache=ApprovedExtractions())
-# Instructor server only. The public proxy exposes this subtree; the parent
-# process API remains on the private network with the managed worker and DB.
-if os.getenv('HYD_CLASSROOM_AUTHORITY_ENABLED') == '1':
-    from . import classroom_config
-    app.mount('/classroom', classroom_config.build(settings=os.environ,
-        runtime_factory=instance_mode.current,
-        archive_factory=lambda: ManualSources(Path(os.getenv('PROCESS_STATE_PATH', '/data/process.sqlite3')).with_name('manuals.sqlite3')),
-        driver_factory=_kg))
+    runtime_factory=instance_mode.current, approved_cache=ApprovedExtractions())
 # A9 옛 DB 뜻 복원: AI candidates (agent task) → a person's review → only approved meanings reach the DDL plan
 from . import legacy_meaning, legacy_meaning_api
 from .legacy_meaning_store import LegacyMeaningStore
@@ -1172,8 +894,7 @@ legacy_meaning_api.register(app, driver_factory=_kg, tenant=os.getenv("TENANT_ID
 from . import eval_api, judgment_eval, procdb as _procdb
 eval_api.register(app, driver_factory=_kg, book=book, incidents=incidents, runtime_factory=instance_mode.current, audit=_audit,
     agent_url=os.getenv('AGENT_URL', 'http://agent:8091'),
-    store_factory=lambda: (judgment_eval.PgEvalStore(_procdb.SUPABASE_DSN, os.getenv("TENANT_ID", "hyd"))
-                           if PROCESS_MODE == 'instance' and os.getenv('PROCESS_REPO', 'pg') != 'memory' else judgment_eval.MemoryEvalStore()))
+    store_factory=lambda: judgment_eval.PgEvalStore(_procdb.SUPABASE_DSN, os.getenv("TENANT_ID", "hyd")))
 # U3 (A2 MCP): 도구 지도 · 읽기 전용 도구 써 보기 · 호출 기록 — tenants.mcp 와 events 를 읽기만 한다 (procsvc/mcp_api.py)
 from . import mcp_api
 mcp_api.register(app, runtime_factory=instance_mode.current, audit=_audit)
@@ -1204,7 +925,7 @@ agent_trials.register(app, runtime_factory=instance_mode.current)
 # B5 에이전트에게 질문하기: 질문 하나 = 처리 건 하나(정식 정의 ask_agent), 답할 에이전트 선택, 근거 대조 (procsvc/ask.py)
 from . import ask
 ask.register(app, runtime_factory=instance_mode.current, definitions_dir=instance_mode.DEFINITIONS_DIR,
-             worker_probe=lambda: instance_mode.worker_status(), bridge=lambda: instance_mode.AGENT_BRIDGE)
+             worker_probe=lambda: instance_mode.worker_status())
 # B3 bpmn.io 그림 가져오기: task 별 부품 · 담당 매핑 → 사전 검사 → 판본 등록(그림 원본 함께), 기준으로 되돌리기 (flows_api.py)
 from . import flows_api
 flows_api.register(app, runtime_factory=instance_mode.current, audit=_audit)
@@ -1213,18 +934,22 @@ from . import config_bundle
 config_bundle.register(app, runtime_factory=instance_mode.current, audit=_audit)
 
 
-# B7 사람 입력 경보(오일 분석 결과): 센서 경보와 같은 계약의 경보를 만들어 POST /api/incidents 와 같은 원천 접수 경로로 보낸다 (human_alert.py)
-async def _admit_human_alert(alert: dict) -> None:
-    rt = instance_mode.current()
-    if source_delivery is not None:
-        record = source_record(topics.K_ALERTS, None, None, alert, source='http')
-        if record['kind'] != 'RAISE':
-            raise ValueError('사람 입력 경보가 원천 RAISE 형식이 아닙니다')
-        policy = await asyncio.to_thread(rt.alert_policy, record['payload'].get('pattern'))
-        receipt = await asyncio.to_thread(source_inbox.receive, record, policy)
-        await source_delivery.wait_for(receipt)
-    else:
-        await asyncio.get_running_loop().run_in_executor(None, rt.on_alert_raise, alert)
+# 경보로 처리 건을 여는 길은 원천 접수 하나다(B-10): Kafka 경보 · 사람 입력 경보(B7, human_alert.py) · 업무 감시 · 수업 버튼 ·
+# 강의 도우미(/api/instances/start alert) 모두 같은 접수 → 같은 처리기(rt.receive_alert)로 간다. 같은 경보는 같은 처리 건이다.
+async def _admit_alert(alert: dict) -> dict:
+    """경보 하나를 원천 접수하고 처리될 때까지 기다린다. 돌려줌 = 접수 결과 {instance, incident, definition, duplicate}."""
+    rt = _runtime_or_503()
+    if source_delivery is None or source_inbox is None:
+        raise TimeoutError('원천 접수가 아직 준비되지 않았습니다 — 잠시 뒤 다시 시도하세요')
+    record = source_record(topics.K_ALERTS, None, None, alert, source='http')
+    if record['kind'] != 'RAISE':
+        raise ValueError(record.get('error') or '경보는 asset · alertId · state RAISE 를 가진 원천 형식이어야 합니다')
+    policy = await asyncio.to_thread(rt.alert_policy, record['payload'].get('pattern'))
+    receipt = await asyncio.to_thread(source_inbox.receive, record, policy)
+    # 새 접수는 PENDING 으로 생긴다. 같은 배달이면 처음 접수 행이(처리됨 등), 같은 경보의 다른 배달이면 DUPLICATE 행이 돌아온다
+    duplicate = receipt['status'] != 'PENDING'
+    handled = await source_delivery.wait_for(receipt)
+    return dict(handled.get('result') or {}, duplicate=duplicate)
 
 
 # C3 B · C 단순화: 포털 '결함 실험'의 버튼 (scenario_buttons.py). [정기 점검] · [재고 보충]은 업무 감시와 같은 계약의 경보를 만들어 같은
@@ -1251,9 +976,7 @@ def _last_press(asset: str) -> dict | None:
 
 
 def _scenario_rt():
-    if PROCESS_MODE != "instance":
-        raise HTTPException(409, "처리 건 모드(PROCESS_MODE=instance)에서만 쓸 수 있습니다")
-    return instance_mode.current()
+    return _runtime_or_503()
 
 
 async def _reanchor_if_idle(rt, button: str | None = None) -> dict:
@@ -1315,7 +1038,7 @@ async def scenario_start(key: str, body: dict | None = None):
             raise HTTPException(409, str(e))
         alert = prep["alert"]
         try:
-            await _admit_human_alert(alert)
+            await _admit_alert(alert)
         except (ValueError, LookupError) as e:       # P8 (audit2): /api/human-alerts 와 같은 사유 · 같은 코드, 누름 기록은 error 칸에
             _press_audit(alert["asset"], person, button, key, alert["evidence"]["requested_at"], instance=None, alertId=alert["alertId"],
                          error=f"경보를 접수하지 못했습니다: {e}")
@@ -1412,7 +1135,7 @@ def _link_injection(inst: dict) -> None:
 
 def _entsim_post(path: str, body: dict) -> dict:
     req = urllib.request.Request(ENTERPRISE_URL + path, data=json.dumps(body, ensure_ascii=False).encode(),
-                                 headers={"Content-Type": "application/json"}, method="POST")
+                                 headers={"Content-Type": "application/json", **instance_mode.caller_headers()}, method="POST")
     try:
         with urllib.request.urlopen(req, timeout=10) as r:
             return json.loads(r.read())
@@ -1423,7 +1146,7 @@ def _entsim_post(path: str, body: dict) -> dict:
 
 
 from . import human_alert
-human_alert.register(app, runtime_factory=instance_mode.current, admit=_admit_human_alert, audit=_audit,
+human_alert.register(app, runtime_factory=instance_mode.current, admit=_admit_alert, audit=_audit,
                      open_alerts=lambda: [(i.card.get('alert') or {}, i.state) for i in list(incidents.values())
                                           if i.state not in definition.TERMINAL])
 
@@ -1431,14 +1154,14 @@ human_alert.register(app, runtime_factory=instance_mode.current, admit=_admit_hu
 # ---------------------------------------------------------------- 인제스천 (회의 2번 · 6번): 회사 DB 의 DDL → System · InputData, 되돌리기, 규칙 → SQL
 @app.post("/api/kg/ddl/preview")
 async def kg_ddl_preview(body: dict):
-    """body = {filename, data(base64) | text}. Parses CREATE TABLE statements and proposes the ontology plan
-    (System per source system, InputData per selected column with provenance). Nothing is written."""
+    """body = {filename, text}. Parses CREATE TABLE statements and proposes the ontology plan
+    (System per source system, InputData per selected column with provenance). Nothing is written.
+    포털은 파일 내용을 글(text)로 읽어 보낸다 — 예전 base64(data) 갈래는 읽는 함수가 없어 부르면 내부 오류가 났다(지움)."""
     name = str(body.get("filename") or "schema.sql")
     loop_ = asyncio.get_running_loop()
-    try:
-        text = body.get("text") if isinstance(body.get("text"), str) and body.get("text") else await loop_.run_in_executor(None, lambda: _extract_text(name, body.get("data", "")))
-    except Exception as e:  # noqa: BLE001
-        raise HTTPException(400, f"파일을 읽을 수 없다: {e}")
+    text = body.get("text")
+    if not isinstance(text, str) or not text.strip():
+        raise HTTPException(400, "DDL 파일 내용이 비어 있습니다 — CREATE TABLE 문이 든 .sql 파일을 다시 고르세요")
     try:
         tables = ingest.parse_ddl(text)
         legacy = legacy_meaning.summary(tables, text)          # A9: columns without a meaning and the dump's sample rows
@@ -1614,132 +1337,3 @@ async def kg_ranking_policy_write(rule: str, body: dict):
         raise HTTPException(404, str(exc))
     except (ValueError, TypeError) as exc:
         raise HTTPException(400, str(exc))
-
-
-# ---------------------------------------------------------------- HITL: one human decision for an equipment anomaly
-class HitlDecideReq(BaseModel):
-    decision: str
-    option: str
-    by: str = "승인자"
-    role: str
-    reason: str = ""
-    fan_pct: float | None = None
-    load_pct: float | None = None
-    review_id: str | None = None
-
-
-def _commands_of(opt: dict, req: HitlDecideReq) -> list[dict]:
-    """The chosen SOP skill's PLC commands as action.cmd items. A person may adjust fan / load inside the ontology range."""
-    from hydcommon.execution_scope import require_executable
-    require_executable(opt)
-    out = []
-    for a in opt.get("actions") or []:
-        if a.get("kind") != "command":
-            continue
-        item = {"code": a["code"]}
-        if a.get("param"):
-            v = a.get("value")
-            if a["param"] == "fan_pct" and req.fan_pct is not None:
-                v = req.fan_pct
-            if a["param"] == "load_pct" and req.load_pct is not None:
-                v = req.load_pct
-            item[a["param"]] = v
-        out.append(item)
-    return out
-
-
-@app.post('/api/incidents/{inc_id}/decision-preview')
-async def legacy_decision_preview(inc_id: str, req: instance_mode.ReviewReq):
-    await _require_legacy_incident(inc_id)
-    d = book.get(req.decision)
-    if not d or (d.get('origin') or {}).get('incident') != inc_id:
-        raise HTTPException(404,'no such incident decision')
-    await _require_legacy_decision(d)
-    try:
-        return await asyncio.get_running_loop().run_in_executor(None,lambda:
-            _review_service().create(req.decision,req.option,req.parameters,{'kind':'legacy','incident':inc_id}))
-    except ValueError as exc:
-        raise HTTPException(409,str(exc))
-
-
-@app.post("/api/incidents/{inc_id}/decide")
-async def hitl_decide(inc_id: str, req: HitlDecideReq):
-    """The operator picks one ranked action card (= one SOP skill of the failure mode). Its PLC commands go out through the
-    incident (action.cmd -> gateway -> PLC); a card without commands closes the incident as 'no immediate command'. Its system
-    transactions (CMMS work order, ERP purchase request) run in the enterprise systems. The choice is written back to the
-    ontology as a DecisionCase and becomes a precedent for the next decision of the same failure mode."""
-    inc = incidents.get(inc_id)
-    d = book.get(req.decision)
-    if not inc or not d:
-        raise HTTPException(404, "no such incident or decision")
-    await _require_legacy_incident(inc_id)
-    await _require_legacy_decision(d)
-    if inc.state != "AWAITING_APPROVAL":
-        raise HTTPException(409, f"incident is {inc.state}")
-    if (d.get("origin") or {}).get("incident") != inc_id or d.get("asset") != inc.asset:
-        raise HTTPException(400, "decision does not belong to this incident")
-    opt = next((o for o in d.get("options", []) if o["id"] == req.option), None)
-    if opt is None:
-        raise HTTPException(400, "unknown option")
-    try:
-        scope = {'kind':'legacy','incident':inc_id}
-        candidate = (_review_service().snapshot(req.review_id,req.decision,req.option,scope)
-                     if req.review_id else copy.deepcopy(d))
-        opt = next(o for o in candidate['options'] if o['id']==req.option)
-        commands = _commands_of(opt, req)
-        plan = declib.approve(candidate, req.option, req.by, req.role, req.reason)
-        if commands:                          # validate the command before consuming the human decision
-            machine._validate_actions(inc, commands)
-        from .approval_hooks import require_reviewed_commands
-        require_reviewed_commands(opt, commands)
-        await asyncio.get_running_loop().run_in_executor(None, _check_current_approval, candidate, req.option, req.role)
-        # The read yields to other requests; check whether another choice won.
-        if inc.state != 'AWAITING_APPROVAL':
-            raise ValueError(f'incident is {inc.state}')
-        candidate = (_review_service().snapshot(req.review_id,req.decision,req.option,scope)
-                     if req.review_id else copy.deepcopy(d))
-        plan = declib.approve(candidate, req.option, req.by, req.role, req.reason)
-    except PermissionError as e:
-        _audit(inc.asset, req.by, "DECISION_DENIED", {"decision": d["id"], "option": req.option, "role": req.role, "reason": str(e)}, incident=inc_id)
-        raise HTTPException(403, str(e))
-    except ValueError as e:
-        raise HTTPException(400, str(e))
-    before = copy.deepcopy(d)
-    with machine.STATE_LOCK:   # A143: the decision is never captured by an executor-thread snapshot between clear() and update()
-        d.update(candidate)
-        try:
-            work_orders.prepare(_work_order_context(), d, work_orders.request_for_option(opt), allow_before_recovery=True)
-        except Exception as e:
-            d.clear()
-            d.update(before)
-            raise HTTPException(400, str(e))
-    _audit(inc.asset, req.by, "DECISION_APPROVED", {"decision": d["id"], "option": req.option, "sop": opt.get("sopId"), "role": req.role,
-                                                     "override": d["override"], "reason": req.reason, "via": "HITL 조치 카드 선택"}, incident=inc_id)
-    cmd = None
-    try:
-        if commands:
-            cmd = machine.on_approve(inc, req.by, commands, now(), Fx(inc), time_scale=TIME_SCALE)
-            for item in plan.get('ot', []):
-                d['executions'].append({'skill':item['skill'], 'code':item.get('code'),
-                    'status':'VIA_HITL', 'system':item.get('system'), 't':now_iso(),
-                    'detail':f"PLC 명령 {item.get('code')}={item.get('value')} — Incident의 ACK/재관측 결과를 확인하세요"})
-        else:
-            inc.approved_by = req.by
-    except ValueError as e:
-        raise HTTPException(400, str(e))
-    _after(inc)
-    loop_ = asyncio.get_running_loop()
-    results = [await loop_.run_in_executor(None, exec_skill, d, item)
-               for item in plan["enterprise"] if item.get('code') not in ('WO_CREATE','WO_RESCHEDULE')]
-    from .approval_hooks import record_execution
-    for result in results:
-        record_execution(d, result)
-    if not commands and all(r.get('ok') for r in results):
-        results.append(await loop_.run_in_executor(None, _complete_legacy_work_order, inc))
-    persist()
-    for r in results:
-        _audit(inc.asset, "process", "SKILL_EXECUTED" if r["ok"] else "SKILL_FAILED",
-               {"decision": d["id"], "skill": r["skill"], "code": r.get("code"), "system": r["system"], "ref": r.get("ref"),
-                "detail": r.get("detail") or r.get("error")}, incident=inc_id)
-    loop_.run_in_executor(None, record_decision, d)
-    return {"incident": inc.to_dict() | {"card": None}, "decision": {"id": d["id"], "state": d["state"], "executions": d["executions"]}, "cmd": cmd}

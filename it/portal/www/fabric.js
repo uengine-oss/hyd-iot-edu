@@ -46,7 +46,7 @@
     const q = S.queries.find(x => x.id === S.query);
     const form = `<div class="card">${UI.section('', UI.field({ label: '설비', input: `<input id="fabAsset" list="fabAssets" value="${esc(S.asset)}"><datalist id="fabAssets">${assetCodes().map(c => `<option value="${esc(c)}">`).join('')}</datalist>` }) +
       UI.field({ label: '질문', input: `<select id="fabQuery">${opts.map(([k, l]) => `<option value="${esc(k)}"${k === S.query ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>`,
-                 hint: q ? q.question : '업무 DB에서 설비 코드로 이어진 표와 시계열 DB의 태그별 최신값을 출처와 함께 모읍니다' }))}` +
+                 hint: S.errors.queries ? `준비된 질문 목록을 읽지 못했습니다 — ${S.errors.queries}` : q ? q.question : '업무 DB에서 설비 코드로 이어진 표와 시계열 DB의 태그별 최신값을 출처와 함께 모읍니다' }))}` +
       UI.actions(`<button class="btn primary" id="fabRun"${S.busy ? ' disabled' : ''}>${S.busy ? '읽는 중…' : '묶어 보기'}</button>`) + '</div>';
     return form + `<div id="fabResult">${result()}</div>`;
   }
@@ -142,7 +142,8 @@
     const [src, links, queries] = await Promise.allSettled([getJ(API.process + '/api/fabric/sources'), getJ(API.process + '/api/fabric/links'), getJ(API.process + '/api/fabric/queries')]);
     S.sources = src.status === 'fulfilled' ? src.value : null; S.errors.sources = src.status === 'rejected' ? src.reason.message : '';
     S.links = links.status === 'fulfilled' ? links.value : null; S.errors.links = links.status === 'rejected' ? links.reason.message : '';
-    S.queries = queries.status === 'fulfilled' ? queries.value : [];
+    // 질문 목록을 못 읽으면 조용히 빈 목록으로 두지 않는다 — 사유를 질문 칸 아래에(기본 질문 하나로는 계속 묶어 볼 수 있다)
+    S.queries = queries.status === 'fulfilled' ? queries.value : []; S.errors.queries = queries.status === 'rejected' ? queries.reason.message : '';
     render();
   }
   async function run() {
@@ -174,8 +175,6 @@
     }
     render(); load();
   }
-  window.hydFabric = { mount };
-  // 셸이 화면을 열 때 그린다(U7 셸이 직접 mount 를 불러도 된다). 처음 열릴 때 한 번, 다시 열면 상태를 새로 읽는다.
-  const view = document.getElementById('view-fabric'), host = document.getElementById('fabricView');
-  if (view && host) new MutationObserver(() => { if (view.classList.contains('active')) mount(host); }).observe(view, { attributes: true, attributeFilter: ['class'] });
+  // 셸이 처음 열 때 mount, 다시 열면 show 로 상태를 새로 읽는다
+  window.hydFabric = { mount, show: mount };
 })();

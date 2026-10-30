@@ -31,9 +31,6 @@ def submission_scope(payload):
     scope = origin.get('process_scope')
     if isinstance(scope, dict) and scope.get('workitem'):
         return tuple(scope.get(k) for k in ('tenant', 'instance', 'workitem', 'generation', 'version'))
-    legacy = origin.get('legacy_attempt')
-    if isinstance(legacy, dict) and legacy.get('workitem'):
-        return ('legacy', origin.get('incident'), legacy['workitem'])
     return None
 
 
@@ -90,15 +87,3 @@ def reject(d: dict, by: str, reason: str) -> None:
         raise ValueError(f"decision is {d['state']}")
     d.update(state="REJECTED", approvedBy=by, reason=reason)
     d["history"].append({"state": "REJECTED", "t": _now(), "by": by, "reason": reason})
-
-
-@_transition
-def record_execution(d: dict, results: list[dict], plan: dict) -> None:
-    for r in results:
-        d["executions"].append({"skill": r["skill"], "code": r.get("code"), "status": "DONE" if r.get("ok") else "FAILED", "ref": r.get("ref"),
-                                "system": r.get("system"), "detail": r.get("detail") or r.get("error"), "t": _now()})
-    for s in plan.get("ot", []):
-        d["executions"].append({"skill": s["skill"], "code": s.get("code"), "status": "VIA_HITL", "system": s.get("system"), "t": _now(),
-                                "detail": f"PLC 명령 {s.get('code')}={s.get('value')} — 인시던트 승인 → action.cmd → cmd-gateway 경로로만 실행된다"})
-    d["state"] = "EXECUTED" if all(r.get("ok") for r in results) else "PARTIAL"
-    d["history"].append({"state": d["state"], "t": _now()})

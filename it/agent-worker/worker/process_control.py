@@ -92,8 +92,8 @@ def reap_stale_group(workdir):
     Returns the killed group id, or None. A recorded leader that is still alive but started at another time is a reused
     pid, not ours — it is left alone. Windows needs none of this: the job object dies with the worker."""
     if os.name=='nt':return None
-    from . import managed_isolation
-    path=managed_isolation.group_file(workdir) if managed_isolation.enabled() else Path(workdir)/GROUP_FILE
+    from . import cli_sandbox
+    path=cli_sandbox.group_file(workdir) if cli_sandbox.enabled() else Path(workdir)/GROUP_FILE
     try:
         record=json.loads(path.read_text(encoding='utf-8'))
         pgid=int(record['pgid']);start=record['start']
@@ -127,9 +127,9 @@ class _ProcessTree:
                 kwargs['creationflags']=kwargs.get('creationflags',0)|subprocess.CREATE_NO_WINDOW
             else:
                 kwargs['start_new_session']=True
-            from . import managed_isolation
-            if managed_isolation.enabled():
-                argv,kwargs=managed_isolation.prepare(args[0],kwargs)
+            from . import cli_sandbox
+            if cli_sandbox.enabled():
+                argv,kwargs=cli_sandbox.prepare(args[0],kwargs)
                 args=(argv,*args[1:])
             try:
                 self.process=subprocess.Popen(*args,**kwargs)
@@ -164,8 +164,8 @@ def controlled_stream(stream,provider,request,env,check_stop,failed):
     """
     messages=queue.Queue(maxsize=128)
     workdir=getattr(request,'workdir',None)
-    from . import managed_isolation
-    record=(managed_isolation.group_file(workdir) if managed_isolation.enabled() else Path(workdir)/GROUP_FILE) if workdir and Path(workdir).is_dir() else None
+    from . import cli_sandbox
+    record=(cli_sandbox.group_file(workdir) if cli_sandbox.enabled() else Path(workdir)/GROUP_FILE) if workdir and Path(workdir).is_dir() else None
     stop=threading.Event();tree=_ProcessTree(record)
     done=object();failure=[]
     def send(item):

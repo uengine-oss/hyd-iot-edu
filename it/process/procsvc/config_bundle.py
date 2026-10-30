@@ -461,8 +461,9 @@ def validate(rt, base_loader, bundle, secrets: dict | None = None, skip_missing_
             if not _text(a.get(key)).strip():
                 problems.append(_problem(where, f"{label} 칸이 비어 있습니다"))
         model = _text(a.get("model")).strip()
-        if model and not A.MODEL_RE.match(model):
-            problems.append(_problem(where, f"모델 이름 모양이 아닙니다: {model[:60]}"))
+        from .course_policy import Policy
+        if Policy.agent_model_error(model):
+            problems.append(_problem(where, Policy.agent_model_error(model)))
         tools, dropped = [], []
         for t in csv_list(a.get("tools")):
             if t in skipped_servers:
@@ -894,7 +895,8 @@ def register(app, *, runtime_factory, audit=lambda *a, **k: None, base_loader=No
     def runtime():
         rt = runtime_factory()
         if rt is None:
-            raise HTTPException(503, "구성 내보내기 · 가져오기에는 instance 실행 서비스가 필요합니다 (PROCESS_MODE=instance)")
+            from .instances import NOT_READY      # 런타임 모듈 — 이 모듈이 먼저 읽혀도 순환 import 가 되지 않게 여기서
+            raise HTTPException(503, NOT_READY)
         return rt
 
     async def run(fn):

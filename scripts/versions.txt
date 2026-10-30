@@ -1,0 +1,11 @@
+# 설치 · 시작이 쓰는 프로그램 기준 판 — 이 파일 하나가 기준이다(Windows 설치 · Mac 설치 · 시작 · 끄기가 여기서 읽는다).
+# *_MIN: 이 판과 같거나 높으면 그대로 두고, 없거나 낮으면 설치 · 업데이트한다. PYTHON_NEW: Python 이 없거나 낮을 때 새로 넣는 판.
+# 셸은 이 파일을 그대로 불러 쓰고(. scripts/versions.txt), PowerShell 은 「이름=값」 줄만 읽는다 — 이 모양 그대로 고친다.
+DOCKER_DESKTOP_MIN=4.87.0
+VSCODE_MIN=1.132.0
+NODE_MIN=24.22.1
+GIT_MIN=2.54.0
+PYTHON_MIN=3.13.0
+PYTHON_NEW=3.14.7
+WSL_MIN=2.7.12.0
+SUPABASE_CLI=2.119.0

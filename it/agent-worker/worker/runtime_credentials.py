@@ -1,37 +1,20 @@
-"""Obtain fresh OAuth headers from process; the worker never holds its encryption key."""
+"""로그인 연결(OAuth) MCP 서버의 실행 머리글을 process 에서 그 점유에 묶어 받는다 — 워커는 암호화 키를 쥐지 않는다(PBL 단계 기능)."""
 import json
-import os
 import urllib.error
-import urllib.parse
 import urllib.request
-from pathlib import Path
 
 from . import bridge
+from .course_access import RuntimeConnectionError, _NoRedirect, process_base, read_key
 
 
-class RuntimeConnectionError(RuntimeError):
-    pass
-
-
-def attach(config, row, tenant_id):
+def attach(config, row, tenant_id, *, process_url, key_file):
     servers = (config or {}).get("mcpServers") or {}
     requested = {name: bridge.config_fingerprint(entry) for name, entry in servers.items()
                  if isinstance(entry, dict) and (entry.get("hyd") or {}).get("oauth_connection")}
     if not requested:
         return config
-    url = os.getenv("PROCESS_URL", "http://127.0.0.1:8080").rstrip("/")
-    parsed = urllib.parse.urlsplit(url)
-    if parsed.username or parsed.password or parsed.query or parsed.fragment or not parsed.hostname or \
-            parsed.scheme != "https" and not (parsed.scheme == "http" and parsed.hostname in {"127.0.0.1", "localhost", "::1", "process"}):
-        raise RuntimeConnectionError("로그인 연결의 실행 주소는 HTTPS 또는 로컬 교육 서비스여야 합니다")
-    default = (Path(os.getenv("LOCALAPPDATA", str(Path.home()))) / "HYD" / "mcp" / "worker-runtime.key"
-               if os.name == "nt" else Path(os.getenv("XDG_STATE_HOME", str(Path.home() / ".local" / "state"))) / "hyd" / "mcp" / "worker-runtime.key")
-    try:
-        key = Path(os.getenv("HYD_WORKER_RUNTIME_KEY_FILE", str(default))).read_text(encoding="utf-8").strip()
-    except OSError:
-        raise RuntimeConnectionError("실행 연결 인증 파일이 준비되지 않았습니다. 연결 설정을 확인하세요") from None
-    if len(key) < 32:
-        raise RuntimeConnectionError("실행 연결 인증 파일이 올바르지 않습니다")
+    url = process_base(process_url)
+    key = read_key(key_file)
     body = {"tenant_id": tenant_id, "todo_id": row["id"], "consumer": row.get("consumer"), "servers": requested}
     request = urllib.request.Request(url + "/internal/worker/mcp-runtime", data=json.dumps(body).encode(),
         headers={"Authorization": "Bearer " + key, "Content-Type": "application/json"}, method="POST")
@@ -68,7 +51,3 @@ def attach(config, row, tenant_id):
         entry["url"] = url + entry["path"]
     return dict(config, **{bridge.RUNTIME_KEY: held})
 
-
-class _NoRedirect(urllib.request.HTTPRedirectHandler):
-    def redirect_request(self, req, fp, code, msg, headers, newurl):
-        return None

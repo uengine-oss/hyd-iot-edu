@@ -9,7 +9,7 @@
 
   감시 규칙 하나 = (읽을 업무 데이터 · 조건 · 회차 키 · 경보 모양). 규칙이 조건을 만족하면 센서 경보 · 사람 입력 경보(B7)와 **같은 계약**
   (`alertId · asset · pattern · severity · state=RAISE · t · evidence`, 출처 `source: "erp" | "cmms"`)의 경보를 만들어 같은 원천 접수 경로
-  (main._admit_human_alert → source_inbox → 경보 정책 → start_definition → Incident)로 보낸다. 어느 흐름이 여는지는 경보 정책
+  (main._admit_alert → source_inbox → 경보 정책 → start_definition → Incident)로 보낸다. 어느 흐름이 여는지는 경보 정책
   (B4 flow_deploy.route_definition)이 정한다 — 이 패턴을 받는 배포 흐름이 없으면 기준 흐름의 unsupported → 사람 검토(alert_triage).
 
   회차(episode): 같은 이탈이 이어지는 동안은 같은 alertId 라 몇 번을 보아도 처리 건은 하나다(start_definition 의 event_id 중복 거절).

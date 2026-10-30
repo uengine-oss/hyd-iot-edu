@@ -21,9 +21,6 @@ from __future__ import annotations
 import logging
 import re
 import secrets
-from copy import deepcopy
-
-from hydcommon.timeutil import now_iso
 
 from .agents_store import SKILL_NAME_RE, csv_list, split_frontmatter
 
@@ -32,7 +29,6 @@ log = logging.getLogger("process.agent_authoring")
 USER = "user"
 SEED = "seed"
 KIND_MAP = "agent_map"
-MODEL_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/@-]{0,99}$")
 ROLE_KEY_RE = re.compile(r"^[a-z0-9](?:[a-z0-9]|-(?!-)){0,39}$")
 ROLE_KINDS = ("manager", "operator")          # users.role — agents_store.ROLE_WORDS 의 사람 쪽 두 낱말(시드와 같은 값)
 LIMITS = {"name": 60, "role": 200, "goal": 500, "persona": 2000, "description": 300, "content": 60000}
@@ -121,8 +117,10 @@ def _agent_fields(repo, tenant_id: str, body: dict, *, self_id: str | None = Non
     role = _text(body, "role", "역할")
     persona = _text(body, "persona", "성격 · 말투")
     model = str(body.get("model") or "").strip()
-    if model and not MODEL_RE.match(model):
-        raise AuthoringError(f"모델 이름 모양이 아닙니다: {model[:60]} (영문 · 숫자 · . _ : / @ - 만, 비우면 실행기 기본 모델)")
+    from .course_policy import Policy
+    reason = Policy.agent_model_error(model)        # 수업 모델 밖 모델은 두 단계 모두 악용 지점(course_policy)
+    if reason:
+        raise AuthoringError(reason, 403)
     same = [u for u in repo.list_users(None, tenant_id)
             if u.get("is_agent") and u.get("id") != self_id and _name(u).strip().lower() == name.lower()]
     if same:
@@ -183,7 +181,7 @@ def update_agent(repo, tenant_id: str, agent_id: str, body: dict, *, by: str | N
     return _agent(repo, tenant_id, agent_id)
 
 
-def clone_agent(repo, tenant_id: str, agent_id: str, body: dict | None = None, *, by: str | None = None, course_restricted: bool = False) -> dict:
+def clone_agent(repo, tenant_id: str, agent_id: str, body: dict | None = None, *, by: str | None = None) -> dict:
     """기본이든 내가 만든 것이든 사본(origin=user)을 만든다. 시스템 수행자(SCADA · CMMS …)는 에이전트 설정이 없어 복제하지 않는다."""
     src = _agent(repo, tenant_id, agent_id)
     if (src.get("agent_type") or "agent") != "agent":
@@ -199,10 +197,6 @@ def clone_agent(repo, tenant_id: str, agent_id: str, body: dict | None = None, *
     payload = {"name": name, "goal": src.get("goal") or "", "role": src.get("role") or "", "persona": src.get("persona") or "",
                "model": src.get("model") or "", "tools": csv_list(src.get("tools")), "skills": skills,
                "work_rules": src.get("work_rules") or ""}             # G9: 사본도 원본과 같은 업무 규칙 아래에서 돈다
-    if course_restricted:
-        from hydcommon.course_access import agent_configuration_error
-        reason = agent_configuration_error(payload['model'], payload['tools'])
-        if reason:raise AuthoringError(reason, 403)
     if not payload["goal"].strip():
         payload["goal"] = f"{_name(src)}의 사본"
     return create_agent(repo, tenant_id, payload, by=by)
@@ -379,19 +373,14 @@ def assignment_board(rt) -> dict:
         steps.append({**s, "default_names": [names.get(a, a) for a in s["default_agents"]],
                       "assigned": {"agent_id": m["agent_id"], "name": names.get(m["agent_id"], m["agent_id"]), "by": m.get("by_user"),
                                    "updated_at": m.get("updated_at")} if m else None})
-    from . import inbox, instance_mode
-    bridge = getattr(instance_mode, "AGENT_BRIDGE", None)
+    from . import inbox
     members = repo.list_role_members(tenant_id)
     roles = [{"id": r["id"], "name": _name(r), "origin": origin_of(r),
               "members": [{"id": m["user_id"], "name": names.get(m["user_id"], m["user_id"]), "origin": origin_of(m)}
                           for m in members if m["role_id"] == r["id"]]} for r in inbox.role_users(repo, tenant_id)]
     return {"steps": steps, "roles": roles, "people": [{"id": u["id"], "name": _name(u)} for u in inbox.person_users(repo, tenant_id)],
             "orphans": [{"definition_id": k[0], "activity_id": k[1], "agent_id": m["agent_id"]} for k, m in maps.items()],
-            "agents": [{"id": u["id"], "name": _name(u), "origin": origin_of(u)} for u in sorted(agents_of(repo, tenant_id), key=_name)],
-            "agent_bridge": bridge,
-            "bridge_note": ("지금 처리 엔진은 내장 결정론 경로(AGENT_BRIDGE=legacy)로 에이전트 단계를 처리합니다 — 배정은 작업 담당으로 기록 · 표시되지만 "
-                            "판단은 내장 경로가 합니다. 배정한 에이전트의 프로필 · 스킬 · 도구로 실제 실행하려면 워커 경로(AGENT_BRIDGE=off + 워커)로 켜야 합니다.")
-            if bridge == "legacy" else None}
+            "agents": [{"id": u["id"], "name": _name(u), "origin": origin_of(u)} for u in sorted(agents_of(repo, tenant_id), key=_name)]}
 
 
 def set_assignment(rt, definition_id: str, activity_id: str, agent_id: str, *, by: str | None = None) -> dict:
@@ -570,105 +559,7 @@ def reset(rt, *, by: str | None = None) -> dict:
     return {**counts, "kept_roles": kept_roles, "returned_tasks": moved}
 
 
-# ---------------------------------------------------------------- 저장소 (Memory · Pg)
-class MemoryAuthoring:
-    """MemoryRepo 의 쓰기 쪽. users · _skills · _agent_skills · role_members 는 MemoryRepo/MemoryAgents 의 것을 같이 쓴다."""
-    def _maps(self) -> dict:
-        if not hasattr(self, "_agent_map"):
-            self._agent_map = {}
-        return self._agent_map
-
-    def write_agent(self, row: dict, skills: list[str], *, create: bool) -> None:
-        row = {k: v for k, v in row.items() if k != "skills"}
-        row["updated_at"] = now_iso()
-        if create:
-            row.setdefault("created_at", row["updated_at"])
-        self.users[row["id"]] = deepcopy(row)
-        tenant = row.get("tenant_id", "hyd")
-        rows = self._agent_skill_rows()
-        rows[:] = [r for r in rows if not (r["user_id"] == row["id"] and r["tenant_id"] == tenant)]
-        for s in skills:
-            self.attach_skill(row["id"], s, tenant)
-
-    def remove_agent(self, tenant_id: str, agent_id: str) -> None:
-        self.users.pop(agent_id, None)
-        self._agent_skill_rows()[:] = [r for r in self._agent_skill_rows() if r["user_id"] != agent_id]
-        for k in [k for k, m in self._maps().items() if m["agent_id"] == agent_id]:
-            del self._maps()[k]
-
-    def write_skill(self, row: dict, *, create: bool) -> None:
-        now = now_iso()
-        key = (row.get("tenant_id") or "hyd", row["skill_name"])
-        old = self._skill_rows().get(key) or {}
-        self._skill_rows()[key] = {"description": "", "content": "", **old, **row, "tenant_id": key[0], "updated_at": now,
-                                   "created_at": old.get("created_at") or now}
-
-    def remove_skill(self, tenant_id: str, name: str) -> None:
-        self._skill_rows().pop((tenant_id, name), None)
-        self._agent_skill_rows()[:] = [r for r in self._agent_skill_rows() if not (r["tenant_id"] == tenant_id and r["skill_name"] == name)]
-
-    def link_skill(self, tenant_id: str, agent_id: str, name: str, on: bool) -> None:
-        if on:
-            self.attach_skill(agent_id, name, tenant_id)
-        else:
-            self._agent_skill_rows()[:] = [r for r in self._agent_skill_rows()
-                                           if not (r["tenant_id"] == tenant_id and r["user_id"] == agent_id and r["skill_name"] == name)]
-
-    def list_agent_map(self, tenant_id: str) -> list[dict]:
-        return [deepcopy(m) for (t, _, _), m in sorted(self._maps().items()) if t == tenant_id]
-
-    def get_agent_map(self, tenant_id: str, proc_def_id: str | None, activity_id: str) -> dict | None:
-        m = self._maps().get((tenant_id, proc_def_id, activity_id))
-        return deepcopy(m) if m else None
-
-    def put_agent_map(self, row: dict) -> None:
-        key = (row["tenant_id"], row["proc_def_id"], row["activity_id"])
-        now = now_iso()
-        self._maps()[key] = {**row, "created_at": (self._maps().get(key) or {}).get("created_at") or now, "updated_at": now}
-
-    def drop_agent_map(self, tenant_id: str, proc_def_id: str, activity_id: str) -> bool:
-        return self._maps().pop((tenant_id, proc_def_id, activity_id), None) is not None
-
-    def put_role_member(self, tenant_id: str, role_id: str, user_id: str, origin: str) -> None:
-        self.set_role_member(tenant_id, role_id, user_id, True)
-        for m in self.role_members:
-            if m["tenant_id"] == tenant_id and m["role_id"] == role_id and m["user_id"] == user_id:
-                m["origin"] = origin
-
-    def write_role(self, row: dict) -> None:
-        if row["id"] in self.users:
-            raise AuthoringError(f"이미 있는 id 입니다: {row['id']}", 409)
-        self.users[row["id"]] = dict(row, updated_at=now_iso(), created_at=now_iso())
-
-    def remove_role(self, tenant_id: str, role_id: str) -> None:
-        u = self.users.get(role_id)
-        if not u or u.get("is_agent") or origin_of(u) != USER or u.get("tenant_id", "hyd") != tenant_id:
-            raise AuthoringError("기본 역할이거나 이미 지워진 역할이라 지우지 않았습니다", 409)
-        del self.users[role_id]
-        self.role_members = [m for m in self.role_members if m["role_id"] != role_id]      # Pg 는 FK on delete cascade
-
-    def reset_user_authoring(self, tenant_id: str, keep_roles: list[str] | tuple = ()) -> dict:
-        roles = [uid for uid, u in self.users.items() if u.get("tenant_id", "hyd") == tenant_id and not u.get("is_agent")
-                 and uid.startswith("role:") and origin_of(u) == USER and uid not in keep_roles]
-        agents = [uid for uid, u in self.users.items() if u.get("tenant_id", "hyd") == tenant_id and u.get("is_agent") and origin_of(u) == USER]
-        skills = [n for (t, n), s in self._skill_rows().items() if t == tenant_id and origin_of(s) == USER]
-        maps = [k for k in self._maps() if k[0] == tenant_id]
-        members = [m for m in self.role_members if m["tenant_id"] == tenant_id and origin_of(m) == USER]
-        before = len(self._agent_skill_rows())
-        for k in maps:
-            del self._maps()[k]
-        for aid in agents:
-            self.remove_agent(tenant_id, aid)
-        for n in skills:
-            self.remove_skill(tenant_id, n)
-        self.role_members = [m for m in self.role_members if m not in members]
-        for rid in roles:
-            self.users.pop(rid, None)
-            self.role_members = [m for m in self.role_members if m["role_id"] != rid]
-        return {"agents": len(agents), "skills": len(skills), "attachments": before - len(self._agent_skill_rows()),
-                "assignments": len(maps), "role_members": len(members), "roles": len(roles)}
-
-
+# ---------------------------------------------------------------- 저장소 (PostgreSQL)
 class PgAuthoring:
     AGENT_COLS = ("username", "role", "goal", "persona", "model", "tools", "work_rules")
 

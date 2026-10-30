@@ -1,8 +1,9 @@
 """Durable source receipts used by the instance-mode Kafka/HTTP delivery path.
 
 Kafka coordinates identify a delivery; business identity identifies the event.
-All deliveries retain their payload. Duplicate and conflicting deliveries never
-replace the first event's payload or its pinned execution policy.
+경보(RAISE · CLEAR) · 명령 응답(ACK) · 잘못 들어온 수신(INVALID)은 원문과 함께 접수 기록으로 남는다. 설비 상태(STATUS)는 설비별
+최신 상태 한 줄만 갱신한다(A-01). Duplicate and conflicting deliveries never replace the first event's payload or its pinned
+execution policy.
 """
 from copy import deepcopy
 import base64
@@ -91,11 +92,6 @@ The caller may acknowledge its Kafka offset only after receive() returns. This
 class does not execute a process, issue a command or declare business completion.
 """
     def __init__(self, repo, tenant_id='hyd'):
-        # A143 (remaining-sweep 14): instance mode used to fail at startup with AttributeError('MemoryRepo' has no '_conn')
-        # when PROCESS_REPO=memory. The inbox is PostgreSQL-only (advisory locks, FOR UPDATE, committed receipts), so say so.
-        if not hasattr(repo, '_conn') or not hasattr(repo, '_local'):
-            raise RuntimeError('PROCESS_MODE=instance requires PROCESS_REPO=pg: source receipts (process_source_inbox) are '
-                               f'PostgreSQL rows; {type(repo).__name__} serves unit tests and PROCESS_MODE=legacy only')
         self.repo, self.tenant_id = repo, tenant_id
 
     def receive(self, record, policy=None):
@@ -129,6 +125,14 @@ class does not execute a process, issue a command or declare business completion
             raise ValueError('RAISE requires the policy selected at receipt time')
         pinned = deepcopy(policy)
         digest(pinned)  # JSON validity, including no non-finite policy numbers.
+        observed_at = source_time(record['payload']) if record['topic'] == topics.K_STATUS else None
+        if record['kind'] == 'STATUS' and observed_at is not None:
+            # A-01: 설비 상태 수신의 목적은 「최신 상태」다 — 최신 상태 표만 갱신하고 접수 기록은 남기지 않는다(20배속에서 초당 약 3.6건이
+            # 영구 접수 행 + 원문으로 쌓여 학생 PC의 DB 가 끝없이 커졌다). 같은 수신이 다시 와도 시각 비교라 결과가 같다.
+            with c.transaction():
+                self._keep_latest_state(c, record, observed_at, None)
+            return {'id': None, 'topic': record['topic'], 'kind': 'STATUS', 'asset': record['asset'], 'status': 'STATE_ONLY',
+                    'source_time': observed_at.isoformat()}
         with c.transaction():
             origin = [self.tenant_id,record['delivery_key']]
             c.execute('select pg_advisory_xact_lock(hashtextextended(%s,0))',
@@ -145,8 +149,7 @@ class does not execute a process, issue a command or declare business completion
                 where tenant_id=%s and event_key=%s and parent_id is null for update''',
                 (self.tenant_id, record['event_key'])).fetchone()
             status, parent, error = ('INVALID' if record['kind'] == 'INVALID' else 'PENDING'), None, record['error']
-            observed_at=source_time(record['payload']) if record['topic']==topics.K_STATUS else None
-            if record['kind']=='STATUS' and observed_at is None:
+            if record['kind']=='STATUS':          # 시각 없는 상태만 여기 온다 — 무엇이 잘못 들어왔는지 접수 기록으로 남긴다
                 status,error='INVALID','status requires an explicit source timestamp with timezone'
             if first:
                 parent = first['id']
@@ -162,17 +165,17 @@ class does not execute a process, issue a command or declare business completion
                  record['event_key'], record['asset'], record['kind'], self.repo._Jsonb(record['payload']),
                  record['payload_sha'], record['semantic_sha'], self.repo._Jsonb(pinned), status, parent, error,
                  record['wire_kind'],record['wire_base64'],record['wire_sha'])).fetchone()
-            if record['kind'] in ('STATUS','ACK') and observed_at is not None:
-                c.execute('''insert into process_source_state(tenant_id,asset,source_time,receipt_id,payload)
-                    values(%s,%s,%s,%s,%s) on conflict(tenant_id,asset) do update set
-                    source_time=excluded.source_time,receipt_id=excluded.receipt_id,payload=excluded.payload
-                    where process_source_state.source_time<excluded.source_time''',
-                    (self.tenant_id,record['asset'],observed_at,row['id'],self.repo._Jsonb(record['payload'])))
-                if record['kind']=='STATUS' and status=='PENDING':
-                    row=c.execute("""update process_source_inbox set status='HANDLED',handled_at=now(),
-                        result='{"observation":"source timestamp compared; latest state retained"}'::jsonb
-                        where id=%s returning *""",(row['id'],)).fetchone()
+            if record['kind']=='ACK' and observed_at is not None:
+                self._keep_latest_state(c, record, observed_at, row['id'])
             return self.repo._row(row)
+
+    def _keep_latest_state(self, c, record, observed_at, receipt_id):
+        """설비별 최신 상태 한 줄 — 더 새 원천 시각일 때만 바꾼다. receipt_id 는 ACK 접수(상태만 온 수신은 없음)."""
+        c.execute('''insert into process_source_state(tenant_id,asset,source_time,receipt_id,payload)
+            values(%s,%s,%s,%s,%s) on conflict(tenant_id,asset) do update set
+            source_time=excluded.source_time,receipt_id=excluded.receipt_id,payload=excluded.payload
+            where process_source_state.source_time<excluded.source_time''',
+            (self.tenant_id,record['asset'],observed_at,receipt_id,self.repo._Jsonb(record['payload'])))
 
     def latest_states(self):
         with self.repo._conn() as c:

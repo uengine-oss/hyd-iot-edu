@@ -8,19 +8,12 @@
 
 제품 대조: process-gpt-vue3 ProcessGPTBackend.ts:573-685 putRawDefinition 은 proc_def.bpmn 과 proc_def_version.snapshot 에 XML 을
 저장한다(같은 칸). 판본 번호는 HYD 규칙(학생 흐름마다 1, 2, 3 …, 같은 번호는 바꿀 수 없음).
-MemoryRepo(단위 시험) 는 repo.def_versions 에 판본을 넣고, 머리(proc_def)와 초안은 이 객체가 들고 있다.
 """
 from __future__ import annotations
 
 import re
-import threading
-from copy import deepcopy
-from datetime import datetime, timezone
-
-from . import procdb
 
 ORIGIN = "user"
-_MEM_LOCK = threading.RLock()
 
 
 class FlowBusy(ValueError):
@@ -31,10 +24,6 @@ class FlowBusy(ValueError):
         super().__init__(f"진행 중인 처리 건 {len(running)}건이 내가 가져온 흐름을 씁니다: {names} — 끝내거나 닫은 뒤 되돌리세요")
 
 
-def _now() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
-
-
 def next_version(existing: list[str]) -> str:
     nums = [int(v) for v in existing if re.fullmatch(r"\d+", str(v or ""))]
     return str(max(nums) + 1) if nums else "1"
@@ -43,19 +32,10 @@ def next_version(existing: list[str]) -> str:
 class FlowStore:
     def __init__(self, repo, tenant_id: str):
         self.repo, self.tenant_id = repo, tenant_id
-        self.memory = isinstance(repo, procdb.MemoryRepo)
-        if self.memory:
-            with _MEM_LOCK:
-                if not hasattr(repo, "_b3_flows"):
-                    repo._b3_flows = {"drafts": {}, "heads": {}, "versions": {}}   # versions: (def, tenant, version) → {snapshot, at, file}
-            self.mem = repo._b3_flows
 
     # ------------------------------------------------------------ 보호
     def is_protected(self, def_id: str) -> bool:
         """기준(학생이 만든 것이 아닌) 정의 id 인가 — 그 id 로는 가져오지 않는다."""
-        if self.memory:
-            mine = {k for k, v in self.mem["heads"].items() if k[1] == self.tenant_id}
-            return any(k[0] == def_id and k[1] == self.tenant_id for k in self.repo.def_versions) and (def_id, self.tenant_id) not in mine
         with self.repo._conn() as c:
             row = c.execute("""select exists(select 1 from proc_def_version where tenant_id=%s and proc_def_id=%s
                                    and coalesce(origin,'')<>'user')
@@ -65,18 +45,11 @@ class FlowStore:
 
     # ------------------------------------------------------------ 초안(매핑)
     def get_draft(self, def_id: str) -> dict | None:
-        if self.memory:
-            return deepcopy(self.mem["drafts"].get((def_id, self.tenant_id)))
         with self.repo._conn() as c:
             return self.repo._row(c.execute("select proc_def_id, bpmn, file_name, mapping, updated_at from proc_bpmn_draft "
                                             "where tenant_id=%s and proc_def_id=%s", (self.tenant_id, def_id)).fetchone())
 
     def save_draft(self, def_id: str, bpmn: str, file_name: str | None, mapping: dict) -> None:
-        if self.memory:
-            with _MEM_LOCK:
-                self.mem["drafts"][(def_id, self.tenant_id)] = {"proc_def_id": def_id, "bpmn": bpmn, "file_name": file_name,
-                                                               "mapping": deepcopy(mapping), "updated_at": _now()}
-            return
         with self.repo._conn() as c:
             c.execute("""insert into proc_bpmn_draft (tenant_id, proc_def_id, bpmn, file_name, mapping, updated_at)
                          values (%s,%s,%s,%s,%s,now())
@@ -85,13 +58,6 @@ class FlowStore:
                       (self.tenant_id, def_id, bpmn, file_name, self.repo._Jsonb(mapping)))
 
     def save_mapping(self, def_id: str, mapping: dict) -> None:
-        if self.memory:
-            with _MEM_LOCK:
-                d = self.mem["drafts"].get((def_id, self.tenant_id))
-                if d is None:
-                    raise KeyError(f"가져온 그림이 없습니다: {def_id}")
-                d.update(mapping=deepcopy(mapping), updated_at=_now())
-            return
         with self.repo._conn() as c:
             n = c.execute("update proc_bpmn_draft set mapping=%s, updated_at=now() where tenant_id=%s and proc_def_id=%s",
                           (self.repo._Jsonb(mapping), self.tenant_id, def_id)).rowcount
@@ -101,14 +67,6 @@ class FlowStore:
     # ------------------------------------------------------------ 판본
     def versions(self, def_id: str | None = None) -> list[dict]:
         """학생 판본 목록 [{id, version, name, registered_at, file_name}] (오래된 것 먼저)."""
-        if self.memory:
-            rows = []
-            for (did, tenant, version), meta in self.mem["versions"].items():
-                if tenant != self.tenant_id or (def_id and did != def_id):
-                    continue
-                d = self.repo.def_versions.get((did, tenant, version)) or {}
-                rows.append({"id": did, "version": version, "name": d.get("name"), "registered_at": meta["at"], "file_name": meta.get("file")})
-            return sorted(rows, key=lambda r: (r["id"], int(r["version"]) if r["version"].isdigit() else 0))
         with self.repo._conn() as c:
             rows = c.execute("""select proc_def_id as id, version, definition->>'processDefinitionName' as name,
                                        "timeStamp" as registered_at, message as file_name
@@ -117,8 +75,6 @@ class FlowStore:
             return [self.repo._row(r) for r in rows]
 
     def drafts(self) -> list[dict]:
-        if self.memory:
-            return [{k: v for k, v in d.items() if k != "bpmn"} for (did, tenant), d in sorted(self.mem["drafts"].items()) if tenant == self.tenant_id]
         with self.repo._conn() as c:
             return [self.repo._row(r) for r in c.execute("select proc_def_id, file_name, mapping, updated_at from proc_bpmn_draft "
                                                          "where tenant_id=%s order by proc_def_id", (self.tenant_id,)).fetchall()]
@@ -127,26 +83,6 @@ class FlowStore:
         """새 판본 번호를 정해 정의 + .bpmn 원본을 함께 넣는다. 운영 판본 포인터는 건드리지 않는다. 돌려줌: 넣은 정의(판본 포함)."""
         def_id = raw["processDefinitionId"]
         message = f"bpmn.io 가져오기: {file_name or '그림'}"
-        if self.memory:
-            with _MEM_LOCK:
-                mine = [v for (d, t, v) in self.repo.def_versions if d == def_id and t == self.tenant_id]
-                raw = dict(raw, version=next_version(mine))
-                key = (def_id, self.tenant_id, raw["version"])
-                if key in self.repo.def_versions:
-                    raise ValueError("이미 등록한 판본은 바꿀 수 없습니다")
-                self.repo.def_versions[key] = {"id": def_id, "tenant_id": self.tenant_id, "name": raw.get("processDefinitionName"),
-                                               "definition": deepcopy(raw), "prod_version": raw["version"], "type": "bpmn",
-                                               "ontology_ref": raw.get("ontologyRef"), "message": message}
-                self.mem["versions"][key] = {"snapshot": bpmn, "at": _now(), "file": file_name}
-                head = self.mem["heads"].setdefault((def_id, self.tenant_id), {"prod_version": None})
-                head.update(bpmn=bpmn, name=raw.get("processDefinitionName"))
-                # B7: PG 등록처럼 proc_def 머리 행도 둔다(prod_version 은 그대로) — B4 배포(record_deployment)가 머리를 찾는다
-                old_head = self.repo.defs.get((def_id, self.tenant_id)) or {}
-                # 등록은 운영 포인터(prod_version)와 그 배포의 주인 표시(owner — 수업 흐름, procdb.CLASS_OWNER)를 건드리지 않는다
-                self.repo.defs[(def_id, self.tenant_id)] = {"id": def_id, "tenant_id": self.tenant_id, "name": raw.get("processDefinitionName"),
-                                                            "definition": None, "prod_version": old_head.get("prod_version"), "type": "bpmn",
-                                                            "ontology_ref": raw.get("ontologyRef"), "owner": old_head.get("owner")}
-            return raw
         with self.repo._conn() as c, c.transaction():
             c.execute("select pg_advisory_xact_lock(hashtextextended(%s, 0))", (f"b3-flow:{self.tenant_id}:{def_id}",))
             existing = [r["version"] for r in c.execute("select version from proc_def_version where tenant_id=%s and proc_def_id=%s",
@@ -168,10 +104,6 @@ class FlowStore:
 
     def bpmn_of(self, def_id: str, version: str | None = None) -> str | None:
         """판본의 그림 원본(.bpmn). version 이 없으면 proc_def.bpmn(마지막으로 등록한 그림)."""
-        if self.memory:
-            if version is None:
-                return (self.mem["heads"].get((def_id, self.tenant_id)) or {}).get("bpmn")
-            return (self.mem["versions"].get((def_id, self.tenant_id, version)) or {}).get("snapshot")
         with self.repo._conn() as c:
             if version is None:
                 row = c.execute("select bpmn from proc_def where tenant_id=%s and id=%s and isdeleted=false", (self.tenant_id, def_id)).fetchone()
@@ -183,11 +115,6 @@ class FlowStore:
     # ------------------------------------------------------------ 기준으로 되돌리기
     def running(self) -> list[dict]:
         """B6: 되돌리기 전 확인 — 학생 판본을 쓰는 진행 중(NEW · RUNNING) 처리 건. 아무것도 바꾸지 않는다(reset 의 거절 조건과 같다)."""
-        if self.memory:
-            pinned = {(d, v) for d, t, v in self.mem["versions"] if t == self.tenant_id}
-            return [{k: i.get(k) for k in ("proc_inst_id", "proc_def_id", "proc_def_version")} for i in self.repo.instances.values()
-                    if i.get("tenant_id") == self.tenant_id and not i.get("is_deleted") and i.get("status") in ("NEW", "RUNNING")
-                    and (i.get("proc_def_id"), i.get("proc_def_version")) in pinned]
         with self.repo._conn() as c:
             return [dict(r) for r in c.execute("""select proc_inst_id, proc_def_id, proc_def_version from bpm_proc_inst i
                     where tenant_id=%s and not is_deleted and status in ('NEW','RUNNING') and exists (select 1 from proc_def_version v
@@ -200,33 +127,6 @@ class FlowStore:
         keep: 지우지 않을 정의 id — 경보 경로에 배포된 흐름(2026-10-23 점검: 수업 흐름 c3_* 도 origin=user 라, 학생이 [기준으로 되돌리기]를
         누르면 강사가 배포한 수업 흐름까지 지워져 [정기 점검] · [재고 보충]이 「배포되어 있지 않습니다」로 멈췄다)."""
         keep = sorted(set(keep))
-        if self.memory:
-            with _MEM_LOCK:
-                keys = [k for k in self.mem["versions"] if k[1] == self.tenant_id and (def_id is None or k[0] == def_id) and k[0] not in keep]
-                pinned = {(d, v) for d, t, v in keys}
-                insts = [i for i in self.repo.instances.values() if i.get("tenant_id") == self.tenant_id and not i.get("is_deleted")
-                         and (i.get("proc_def_id"), i.get("proc_def_version")) in pinned]
-                running = [i for i in insts if i.get("status") in ("NEW", "RUNNING")]
-                if running:
-                    raise FlowBusy([{k: i.get(k) for k in ("proc_inst_id", "proc_def_id", "proc_def_version")} for i in running])
-                for i in insts:
-                    i["is_deleted"] = True
-                    self.repo.update_instance(i)
-                for k in keys:
-                    self.repo.def_versions.pop(k, None)
-                    self.mem["versions"].pop(k, None)
-                heads = [k for k in self.mem["heads"] if k[1] == self.tenant_id and (def_id is None or k[0] == def_id) and k[0] not in keep]
-                for k in heads:
-                    self.mem["heads"].pop(k, None)
-                    self.repo.defs.pop(k, None)
-                drafts = [k for k in self.mem["drafts"] if k[1] == self.tenant_id and (def_id is None or k[0] == def_id) and k[0] not in keep]
-                for k in drafts:
-                    self.mem["drafts"].pop(k, None)
-            from .student_cases import Store
-            for gone in ([def_id] if def_id else sorted({k[0] for k in keys} | {k[0] for k in heads} | {k[0] for k in drafts})) if keep else [def_id]:
-                Store(self.repo, self.tenant_id).remove('flows', gone)
-            return {"versions": len(keys), "definitions": len(heads), "drafts": len(drafts), "hidden_instances": len(insts), "kept": keep,
-                    "projection_instances": [i["proc_inst_id"] for i in insts]}
         with self.repo._conn() as c, c.transaction():
             c.execute("select pg_advisory_xact_lock(hashtextextended(%s, 0))", (f"b3-flow-reset:{self.tenant_id}",))
             pinned = """exists (select 1 from proc_def_version v where v.tenant_id=i.tenant_id and v.proc_def_id=i.proc_def_id

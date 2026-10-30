@@ -102,6 +102,12 @@ def validate_definition(raw):
                 raise ValueError(f"병렬 합류 {g['id']}로 들어오는 흐름의 출발은 활동 또는 이벤트여야 합니다 (게이트웨이 직결 불가)")
         elif g.get('type') != 'exclusiveGateway':
             raise ValueError('등록 경로는 현재 exclusiveGateway와 parallelGateway만 검증되었습니다')
+        elif any(s['source'] in defn.gateways for s in defn.incoming(g['id'])) and not any(
+                engine._properties(s).get('default') is True or not s.get('condition') for s in defn.outgoing(g['id'])):
+            # #16: 앞 작업이 진행 가능한지 보는 판정(engine._judge)은 분기 한 단계만 본다. 분기에서 바로 이어지는 분기의 조건이 모두 거짓이면
+            # 흐름이 오류 없이 사라졌다(앞 작업은 DONE, 다음 작업 없음). 그런 분기는 「그 밖의 경우」 선을 꼭 갖게 한다.
+            raise ValueError(f"분기 {g.get('name') or g['id']}는 다른 분기에서 바로 이어지므로 「그 밖의 경우」(조건 없는 기본 선)가 하나 있어야 합니다 "
+                             "— 조건이 모두 맞지 않을 때 흐름이 갈 곳이 없습니다")
     for e in defn.events.values():
         if e.get('type') not in {'startEvent','endEvent','boundaryEvent'}:
             raise ValueError(f"지원하지 않는 이벤트: {e.get('type')}")

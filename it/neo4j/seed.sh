@@ -1,6 +1,5 @@
 #!/bin/bash
 # kg-seed: load the ontology v2 (schema-first: v2/schema.json -> v2/constraints.cypher + v2/instances.cypher). Idempotent.
-# A graph seeded by the old v1 ontology (Scenario · Procedure · InfoType …) is cleared once, so v1 and v2 never mix.
 # 확정 TODO C1: 시드는 두 판이다. SEED_EDITION=structure(수업용 구조판, 강의 배포 기본) | full(회귀용 전체판). 표시 규칙은 edition.sh.
 set -e
 URI=${NEO4J_URI:-bolt://neo4j:7687}
@@ -19,13 +18,6 @@ for i in $(seq 1 60); do
   if cy "RETURN 1" >/dev/null 2>&1; then break; fi
   echo "waiting for neo4j ($i)"; sleep 3
 done
-V1=$(cy "MATCH (n) WHERE n:Scenario OR n:Procedure OR n:InfoType OR n:Policy OR n:ManualUpload RETURN count(n)" | tail -1)
-if [ "$V1" != "0" ]; then
-  echo "v1 ontology found ($V1 marker nodes) — clearing the graph for v2"
-  cy "MATCH (n) DETACH DELETE n" >/dev/null
-  for c in $(cy "SHOW CONSTRAINTS YIELD name RETURN name" | tail -n +2 | tr -d '"'); do cy "DROP CONSTRAINT \`$c\` IF EXISTS" >/dev/null; done
-  for x in $(cy "SHOW INDEXES YIELD name, type, owningConstraint WHERE type <> 'LOOKUP' AND owningConstraint IS NULL RETURN name" | tail -n +2 | tr -d '"'); do cy "DROP INDEX \`$x\` IF EXISTS" >/dev/null; done
-fi
 echo "seed edition: $EDITION (structure = 수업용 구조판, 고장 · 조치 지식은 문서 적재로 / full = 회귀용 전체판)"
 echo "seeding ontology v2: constraints ..."
 cy -f "$SEED_DIR/v2/constraints.cypher"

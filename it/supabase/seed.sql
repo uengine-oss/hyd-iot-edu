@@ -1,4 +1,4 @@
--- 교육용 가상 데이터 (it/enterprise-sim/entsim/data.py 와 같은 값). 회사 · 고객 · 금액은 모두 예시. 금액 만원, 시간 h.
+-- 교육용 가상 데이터. 회사 · 고객 · 금액은 모두 예시. 금액 만원, 시간 h.
 -- `supabase start` / `supabase db reset` 이 마이그레이션 뒤에 실행한다. 멱등.
 
 -- B-ERP-20261012-v1: 원문 PM-02 기본·4,000h 패키지가 요구하는 리턴 필터의 공식 초기 실습 데이터.
@@ -83,7 +83,7 @@ insert into public.users (id, email, username, role, is_agent, agent_type, goal,
   ('role:maint-mgr', 'maintmgr@hyd.local',  '설비보전팀장', 'manager', false, null,     null, null, 'hyd'),
   ('role:purchasing',     'purchasing@hyd.local',    '구매 담당', 'manager', false, null, null, null, 'hyd'),
   ('role:purchasing-mgr', 'purchasingmgr@hyd.local', '구매팀장',  'manager', false, null, null, null, 'hyd'),
-  ('sys:agent',      null, 'AI 에이전트 (Claude Code)', 'agent', true, 'agent',  '경보의 원인을 진단하고 조치 카드를 올린다', 'neo4j,enterprise,hyd-dmn', 'hyd'),
+  ('sys:agent',      null, '인공지능 에이전트', 'agent', true, 'agent',  '경보의 원인을 진단하고 조치 카드를 올린다', 'neo4j,enterprise,hyd-dmn', 'hyd'),
   ('sys:scada',      null, 'SCADA',        'system',    true,  'system', 'PLC 명령 발행 (Incident 경로)', null, 'hyd'),
   ('sys:process',    null, '프로세스',     'system',    true,  'system', '타이머 · 재관측', null, 'hyd'),
   ('sys:cmms',       null, 'CMMS',         'system',    true,  'system', '작업지시', null, 'hyd'),

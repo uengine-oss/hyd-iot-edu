@@ -4,23 +4,23 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>유압설비 모니터링 · 조치 포탈</title>
-<link rel="stylesheet" href="tokens.css?v=20261008-a147">
-<link rel="stylesheet" href="styles.css?v=20261008-a147">
-<link rel="stylesheet" href="enterprise.css?v=20261008-a147">
-<link rel="stylesheet" href="main.css?v=20261008-a147">
-<link rel="stylesheet" href="hitl.css?v=20261008-a147">
-<link rel="stylesheet" href="instances.css?v=20261012-toolnames">
-<link rel="stylesheet" href="components.css?v=20261008-a147">
-<link rel="stylesheet" href="taskDetail.css?v=20261008-u1">
-<link rel="stylesheet" href="mcp.css?v=20261008-u3">
-<link rel="stylesheet" href="mcpConnections.css?v=20261013-connections">
-<link rel="stylesheet" href="shell.css?v=20261008-u7">
-<link rel="stylesheet" href="kpi.css?v=20261008-a8">
-<link rel="stylesheet" href="flows.css?v=20261011-portal">
-<link rel="stylesheet" href="compare.css?v=20261008-a10">
-<link rel="stylesheet" href="trace.css?v=20261029-ux3">
-<link rel="stylesheet" href="caseRecord.css?v=20261009-a161g">
-<link rel="stylesheet" href="theme.css?v=20261029-ux6">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="enterprise.css">
+<link rel="stylesheet" href="main.css">
+<link rel="stylesheet" href="hitl.css">
+<link rel="stylesheet" href="instances.css">
+<link rel="stylesheet" href="components.css">
+<link rel="stylesheet" href="taskDetail.css">
+<link rel="stylesheet" href="mcp.css">
+<link rel="stylesheet" href="mcpConnections.css">
+<link rel="stylesheet" href="shell.css">
+<link rel="stylesheet" href="kpi.css">
+<link rel="stylesheet" href="flows.css">
+<link rel="stylesheet" href="compare.css">
+<link rel="stylesheet" href="trace.css">
+<link rel="stylesheet" href="caseRecord.css">
+<link rel="stylesheet" href="theme.css">
 </head>
 <body>
 <a class="skip-link" href="#content">본문으로 건너뛰기</a>
@@ -65,7 +65,7 @@
 <header class="strip">
   <button class="menu-toggle" id="menuToggle" aria-label="메뉴 열기" aria-expanded="false" aria-controls="navigation">☰</button>
   <div class="breadcrumb"><span id="pageGroup">시스템</span><b id="pageLocation">홈</b></div>
-  <div class="strip-status"><span id="inboxBadge"></span><span class="env-badge">시뮬레이션</span><span>진행 중 <b id="openCount" class="num">–</b></span><details class="stream-ticker" id="streamTicker" aria-live="polite"><summary><i class="live-dot off"></i><span>연결 중</span></summary></details><div class="dots" id="healthDots"></div></div>
+  <div class="strip-status"><span id="courseStatus" class="course-status" aria-live="polite"></span><span id="inboxBadge"></span><span class="env-badge">시뮬레이션</span><span>진행 중 <b id="openCount" class="num">–</b></span><details class="stream-ticker" id="streamTicker" aria-live="polite"><summary><i class="live-dot off"></i><span>연결 중</span></summary></details><div class="dots" id="healthDots"></div></div>
   <details class="clock-pop"><summary aria-label="시뮬레이션 시각">시뮬레이션 시각</summary><div><span>시뮬레이션 시각 <b id="simT" class="num">–</b></span><span>시간 배율 <b id="scale" class="num">–</b>×</span></div></details>
   <!-- A5 (U7): "나" 자리 · 알림 배지. 내용은 window.hydInbox 가 채운다(없으면 비어 있음 표시). -->
   <div class="shell-me" id="shellMe" aria-label="나"></div>
@@ -214,7 +214,7 @@
     <h2 class="sec">매뉴얼 등록</h2>
     <div class="upload card" id="manualUpload">
       <div class="form-grid">
-        <div class="field"><label>매뉴얼 파일</label><label class="file-picker"><span class="btn small">파일 선택</span><input type="file" id="manualFile" accept=".md,.txt,.pdf" aria-label="매뉴얼 파일 선택"><span class="file-name" id="manualFilename">선택한 파일 없음</span></label><p class="field-hint">절 제목과 번호 매긴 단계가 있는 문서 · 예시 문서 <a href="samples/HM-8_cooler-fan-manual.md" download>A 쿨러 · 팬(HM-8)</a> → <a href="samples/PM-02_powerpack-pm-checklist.md" download>B 정기 점검표(PM-02)</a> → <a href="samples/PR-07_spare-parts-standard.md" download>C 예비품 기준(PR-07)</a> 순서로 적재</p></div>
+        <div class="field"><label>매뉴얼 파일</label><label class="file-picker"><span class="btn small">파일 선택</span><input type="file" id="manualFile" accept=".md,.txt,.pdf" aria-label="매뉴얼 파일 선택"><span class="file-name" id="manualFilename">선택한 파일 없음</span></label><p class="field-hint">절 제목과 번호 매긴 단계가 있는 문서 · 제공 문서 <a href="samples/HM-8_cooler-fan-manual.md" download>A 쿨러 · 팬(HM-8)</a> → <a href="samples/PM-02_powerpack-pm-checklist.md" download>B 정기 점검표(PM-02)</a> → <a href="samples/PR-07_spare-parts-standard.md" download>C 예비품 기준(PR-07)</a> 순서로 적재</p><p class="field-hint" id="manualScope" hidden></p></div>
         <div class="field"><label for="manualBy">담당자</label><input id="manualBy" value="지식 관리자"></div>
         <div class="field"><label for="manualDocumentId">등록할 문서</label><select id="manualDocumentId" aria-describedby="manualDocumentHelp"><option value="">새 문서 등록</option></select><p id="manualDocumentHelp" class="muted">파일을 미리보기 전에 등록할 문서를 선택하세요.</p></div>
       </div>
@@ -355,47 +355,47 @@
   </nav>
 
 <div id="caption"></div>
-<script src="ui.js?v=20261029-ux2"></script>
-<script src="layers.js?v=20261008-a147"></script>
-<script src="app.js?v=20261029-ux3"></script>
-<script src="trace.js?v=20261012-pm-deferral"></script>
-<script src="enterprise.js?v=20261029-ux5"></script>
-<script src="main.js?v=20261013-node-labels"></script>
-<script src="flow.js?v=20261029-ux3"></script>
-<script src="legacyMeaning.js?v=20261023-audit2"></script>
-<script src="hitl.js?v=20261023-audit2"></script>
-<script src="instanceSteps.js?v=20261008-a147"></script>
-<script src="instanceRework.js?v=20261023-audit2"></script>
-<script src="instanceEffects.js?v=20261023-audit2"></script>
-<script src="taskDeferral.js?v=20261023-audit2"></script>
-<script src="approvalCard.js?v=20261023-audit2"></script>
-<script src="plainWords.js?v=20261012-public-language"></script>
-<script src="caseRecord.js?v=20261013-process-labels"></script>
-<script src="resultReport.js?v=20261012-remaining"></script>
-<script src="instances.js?v=20261023-audit2"></script>
-<script src="toolNames.js?v=20261012-display"></script>
-<script src="liveStream.js?v=20261023-audit2"></script>
-<script src="inbox.js?v=20261023-audit2"></script>
-<script src="taskDetail.js?v=20261023-audit2"></script>
-<script src="agentsPanel.js?v=20261009-u1"></script>
-<script src="definitionRegistry.js?v=20261012-display"></script>
-<script src="agents.js?v=20261029-ux3"></script>
-<script src="definitionDeploy.js?v=20261023-audit2"></script>
-<script src="sourceEvents.js?v=20261008-a147"></script>
-<script src="evaluation.js?v=20261014-render-fix"></script>
-<script src="mcpConnections.js?v=20261014-refresh-state"></script>
-<script src="mcp.js?v=20261029-ux3"></script>
-<script src="whatif.js?v=20261029-ux2"></script>
+<script src="ui.js"></script>
+<script src="layers.js"></script>
+<script src="app.js"></script>
+<script src="courseAccess.js"></script>
+<script src="trace.js"></script>
+<script src="enterprise.js"></script>
+<script src="main.js"></script>
+<script src="flow.js"></script>
+<script src="legacyMeaning.js"></script>
+<script src="hitl.js"></script>
+<script src="instanceSteps.js"></script>
+<script src="instanceRework.js"></script>
+<script src="instanceEffects.js"></script>
+<script src="taskDeferral.js"></script>
+<script src="approvalCard.js"></script>
+<script src="plainWords.js"></script>
+<script src="caseRecord.js"></script>
+<script src="resultReport.js"></script>
+<script src="instances.js"></script>
+<script src="toolNames.js"></script>
+<script src="liveStream.js"></script>
+<script src="inbox.js"></script>
+<script src="taskDetail.js"></script>
+<script src="agentsPanel.js"></script>
+<script src="definitionRegistry.js"></script>
+<script src="agents.js"></script>
+<script src="definitionDeploy.js"></script>
+<script src="sourceEvents.js"></script>
+<script src="evaluation.js"></script>
+<script src="mcpConnections.js"></script>
+<script src="mcp.js"></script>
+<script src="whatif.js"></script>
 <!-- 새 화면 스크립트(window.hydInbox 등)는 이 줄 위에 둔다. shell.js 는 맨 마지막: selectTab 을 감싸고 해시 주소를 맞춘다. -->
-<script src="fabric.js?v=20261008-a11"></script>
-<script src="kpi.js?v=20261029-ux4"></script>
-<script src="ask.js?v=20261029-ux2"></script>
-<script src="compare.js?v=20261029-ux3"></script>
-<script src="flows.js?v=20261029-ux3"></script>
-<script src="studentCases.js?v=20261012-k1"></script>
-<script src="configBundle.js?v=20261012-k1"></script>
-<script src="oilInput.js?v=20261008-b7"></script>
-<script src="shell.js?v=20261023-audit2"></script>
-<script src="courseAccess.js?v=20261029-ux"></script>
+<script src="fabric.js"></script>
+<script src="kpi.js"></script>
+<script src="ask.js"></script>
+<script src="compare.js"></script>
+<script src="flows.js"></script>
+<script src="studentCases.js"></script>
+<script src="configBundle.js"></script>
+<script src="oilInput.js"></script>
+<script src="shell.js"></script>
 </body>
 </html>

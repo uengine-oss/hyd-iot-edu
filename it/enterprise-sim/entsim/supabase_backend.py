@@ -1,7 +1,6 @@
-"""enterprise-sim backed by the Supabase `ent` schema (ENTERPRISE_BACKEND=supabase).
+"""enterprise-sim backed by the Supabase `ent` schema — 업무 데이터의 한 벌.
 
-Same HTTP contract as the in-memory backend (data.py + state.py): reads return {"system", "facts", "records"},
-POST /api/exec runs one approved skill transaction idempotently. The difference is where the truth lives — in the
+reads return {"system", "facts", "records"}, POST /api/exec runs one approved skill transaction idempotently. The difference is where the truth lives — in the
 business DB the agent also reads through enterprise-mcp — so what the agent saw and what the process changed are
 the same rows (회의 L350~353: 업무 데이터는 RDB 에).
 """

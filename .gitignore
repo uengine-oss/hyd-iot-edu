@@ -1,14 +1,17 @@
 __pycache__/
 .pytest_cache/
+# 이 PC의 키 · 값(시작이 만든다). .env.example 만 저장소에 둔다. *.hyd-tmp = 시작이 파일을 한 번에 바꿀 때 거치는 임시 파일
 .env
-.env.ports-tmp
+.env.*
+!.env.example
+*.hyd-tmp
 .venv/
 .venv314/
 .codegraph/
 # Supabase CLI machine state and generated authentication material.
 it/supabase/.temp/
 it/supabase/.branches/
-# Per-PC host ports shared by startup and installation checks.
+# 이 폴더 · 이 PC의 프로젝트 이름 · 포트 기록(시작이 쓰고 점검 · 개발 도구가 읽는다).
 /.hyd-runtime/
 
 # main은 학생이 clone해 실행하는 것만 둔다(사용자 2026-10-30).
@@ -21,6 +24,7 @@ it/supabase/.branches/
 /작업/
 # scripts는 학생 실행 파일(설치 · 시작 · 끄기 · 점검)이 실제로 부르는 것만 둔다.
 /scripts/*
+!/scripts/versions.txt
 !/scripts/install_windows.ps1
 !/scripts/install_windows_runtime.ps1
 !/scripts/install_windows_winget.ps1
@@ -28,10 +32,13 @@ it/supabase/.branches/
 !/scripts/install_macos.sh
 !/scripts/macos_paths.sh
 !/scripts/windows_paths.sh
+!/scripts/find_python.sh
 !/scripts/start_all.sh
 !/scripts/stop_all.sh
+!/scripts/check_all.sh
+!/scripts/hyd_env.py
 !/scripts/prepare_ports.py
+!/scripts/check_stack.py
+!/scripts/relay_probe.py
 !/scripts/class_knowledge.py
 !/scripts/c3_flows.py
-!/scripts/check_windows.ps1
-!/scripts/check_classroom.py

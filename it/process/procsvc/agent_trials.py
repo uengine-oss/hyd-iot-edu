@@ -115,46 +115,7 @@ def apply_variant(profile: dict, variant: dict | None) -> tuple[dict, dict]:
     return used, {"without_tools": drop_t, "without_skills": drop_s}
 
 
-# ---------------------------------------------------------------- store (memory · Supabase)
-class MemoryTrials:
-    def __init__(self):
-        self.snapshots: dict[str, dict] = {}
-        self.trials: dict[str, dict] = {}
-
-    def create_snapshot(self, tenant, scenario) -> dict:
-        s = {"id": _id("SNAP"), "tenant_id": tenant, "asset": scenario["asset"], "pattern": scenario["pattern"],
-             "entries": {}, "created_at": _now(), "updated_at": _now()}
-        self.snapshots[s["id"]] = s
-        return json.loads(json.dumps(s))
-
-    def get_snapshot(self, tenant, sid) -> dict | None:
-        s = self.snapshots.get(sid)
-        return json.loads(json.dumps(s)) if s and s["tenant_id"] == tenant else None
-
-    def latest_snapshot(self, tenant, scenario) -> dict | None:
-        rows = [s for s in self.snapshots.values() if s["tenant_id"] == tenant and s["asset"] == scenario["asset"]
-                and s["pattern"] == scenario["pattern"]]
-        return json.loads(json.dumps(max(rows, key=lambda s: s["created_at"]))) if rows else None
-
-    def add_entries(self, tenant, sid, added: dict) -> None:
-        s = self.snapshots[sid]
-        for k, v in added.items():
-            s["entries"].setdefault(k, v)            # first read wins: a recorded input is never replaced
-        s["updated_at"] = _now()
-
-    def save_trial(self, rec: dict) -> dict:
-        self.trials[rec["id"]] = json.loads(json.dumps(rec))
-        return rec
-
-    def get_trial(self, tenant, tid) -> dict | None:
-        t = self.trials.get(tid)
-        return json.loads(json.dumps(t)) if t and t["tenant_id"] == tenant else None
-
-    def list_trials(self, tenant, asset=None, limit=30) -> list[dict]:
-        rows = [t for t in self.trials.values() if t["tenant_id"] == tenant and (asset is None or t["asset"] == asset)]
-        return [summary(t) for t in sorted(rows, key=lambda t: (t["created_at"], t["id"]), reverse=True)[:limit]]
-
-
+# ---------------------------------------------------------------- store (Supabase)
 class PgTrials:
     def __init__(self, repo):
         self.repo = repo
@@ -213,11 +174,7 @@ class PgTrials:
 
 
 def store_for(repo):
-    if hasattr(repo, "dsn") and hasattr(repo, "_conn"):
-        return PgTrials(repo)
-    if not hasattr(repo, "_agent_trials"):
-        repo._agent_trials = MemoryTrials()
-    return repo._agent_trials
+    return PgTrials(repo)
 
 
 def summary(t: dict) -> dict:
@@ -397,7 +354,8 @@ def register(app, *, runtime_factory, evaluate=None):
     def service() -> TrialService:
         rt = runtime_factory()
         if rt is None:
-            raise HTTPException(503, "에이전트 설정 원천(업무 흐름 DB)에 연결된 instance 실행 서비스가 필요합니다")
+            from .instances import NOT_READY      # 런타임 모듈 — 이 모듈이 먼저 읽혀도 순환 import 가 되지 않게 여기서
+            raise HTTPException(503, NOT_READY)
         return TrialService(rt.repo, rt.tenant_id, evaluate or call_agent)
 
     async def run(fn):

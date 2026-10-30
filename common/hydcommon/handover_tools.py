@@ -1,4 +1,5 @@
-"""Fixed classroom handover reads, shared by gateway and CLI permission checks."""
+"""수업 AI 단계가 쓸 수 있는 조회 도구 허용 목록 한 곳 — 교대 인수인계 초안(워커의 --allowedTools, worker/settings.handover_allowed_tools)과
+「에이전트에게 질문」(질문 전용 MCP 창구, worker/question_tools). 판단 제출 · 발주 같은 쓰기 도구는 어느 목록에도 없다 — 목록 밖 도구는 허용되지 않는다."""
 
 HANDOVER_READS = {
     'neo4j': ('get_neo4j_schema', 'read_neo4j_cypher'),
@@ -8,12 +9,7 @@ HANDOVER_READS = {
 }
 
 
-def handover_read(server, name):
-    return name in HANDOVER_READS.get(server, ())
-
-
-# Ordinary classroom questions may inspect domain reasoning as well as the
-# handover's source data. Submission tools are deliberately not present.
+# 질문은 인계 원천 데이터에 더해 판단 근거(진단 · 규칙 · 예측)까지 읽을 수 있다.
 QUESTION_READS = {
     **HANDOVER_READS,
     'hyd-dmn': HANDOVER_READS['hyd-dmn'] + (

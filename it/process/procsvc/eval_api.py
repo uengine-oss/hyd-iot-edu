@@ -181,7 +181,8 @@ def register(app, *, driver_factory, store_factory, agent_url: str, book: dict, 
     def runtime():
         rt = runtime_factory()
         if rt is None:
-            raise ValueError('지난 처리 건 채점에는 처리 건 기능(PROCESS_MODE=instance)이 필요합니다')
+            from .instances import NOT_READY      # 런타임 모듈 — 이 모듈이 먼저 읽혀도 순환 import 가 되지 않게 여기서
+            raise ValueError(NOT_READY)
         return rt
 
     def candidates(limit: int) -> list[dict]:

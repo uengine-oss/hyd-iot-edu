@@ -20,17 +20,18 @@ function Get-PythonVersion {
 function Ensure-Python {
     try {
         $found = Get-PythonVersion
-        # 기준은 3.13 이상(사용자 2026-10-29): 학교 PC의 3.13.x는 그대로 쓰고, 없거나 낮을 때만 3.14를 옆에 설치한다
-        if ((Get-InstallAction $found '3.13.0') -eq 'keep') {
-            Record 'Python' '있음' "$found — 기준 3.13 이상, 유지"; return
+        # 기준(PYTHON_MIN) 이상이면 학교 PC의 Python을 그대로 쓰고(사용자 2026-10-29), 없거나 낮을 때만 PYTHON_NEW 판을 옆에 설치한다
+        if ((Get-InstallAction $found $V.PYTHON_MIN) -eq 'keep') {
+            Record 'Python' '있음' "$found — 기준 $($V.PYTHON_MIN) 이상, 유지"; return
         }
+        $line = ($V.PYTHON_NEW -split '\.')[0..1] -join '.'
         # Older major/minor Python is a different winget package; install side by side.
-        $target = Installed-App 'Python 3.14*'
-        $action = Get-InstallAction $target '3.14.7'
-        if ($action -eq 'keep') { throw 'Python 3.14 설치 기록은 있으나 실행할 수 없습니다. 기존 설치 복구가 필요합니다.' }
-        Install-Winget 'Python.Python.3.14' $action @('--scope', 'machine')
+        $target = Installed-App "Python $line*"
+        $action = Get-InstallAction $target $V.PYTHON_NEW
+        if ($action -eq 'keep') { throw "Python $line 설치 기록은 있으나 실행할 수 없습니다. 기존 설치 복구가 필요합니다." }
+        Install-Winget "Python.Python.$line" $action @('--scope', 'machine')
         $after = Get-PythonVersion
-        if ((Get-InstallAction $after '3.13.0') -ne 'keep') { throw "Python 설치 후 기준 미충족: $after" }
+        if ((Get-InstallAction $after $V.PYTHON_MIN) -ne 'keep') { throw "Python 설치 후 기준 미충족: $after" }
         Record 'Python' '설치/업데이트함' "$after — 기존 Python/Anaconda는 삭제하지 않음"
     } catch { Record 'Python' '실패' $_.Exception.Message }
 }
@@ -47,8 +48,8 @@ function Ensure-WSL {
             }
         }
         $found = Version-Of 'wsl.exe' @('--version')
-        $action = Get-InstallAction $found '2.7.12.0'
-        if ($action -eq 'keep') { Record 'WSL' '있음' "WSL $(ConvertTo-InstallVersion $found) — 기준 2.7.12.0 이상, 유지"; return }
+        $action = Get-InstallAction $found $V.WSL_MIN
+        if ($action -eq 'keep') { Record 'WSL' '있음' "WSL $(ConvertTo-InstallVersion $found) — 기준 $($V.WSL_MIN) 이상, 유지"; return }
         $ErrorActionPreference = 'Continue'
         if ($action -eq 'install') { & wsl.exe --install --no-distribution }
         else { & wsl.exe --update }
@@ -57,7 +58,7 @@ function Ensure-WSL {
         if ($code -eq 3010) { $script:restart = $true }
         elseif ($code -ne 0) { throw "WSL $action 실패(종료 코드 $code)" }
         $after = Version-Of 'wsl.exe' @('--version')
-        if ((Get-InstallAction $after '2.7.12.0') -ne 'keep') {
+        if ((Get-InstallAction $after $V.WSL_MIN) -ne 'keep') {
             if ($script:restart) { Record 'WSL' '재부팅 후 재확인' '재부팅 후 설치.bat을 다시 실행하세요. 완료 판정 전입니다.'; return }
             throw "WSL 설치 후 기준 미충족: $after"
         }

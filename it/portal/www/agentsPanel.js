@@ -55,5 +55,4 @@
   selectTab = function (name) { _sel(name); if (name === 'instances') load(); };
   window.hydApp.selectTab = selectTab;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', load); else load();
-  window.hydAgents = { A, load, render };
 })();

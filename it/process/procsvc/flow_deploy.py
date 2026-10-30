@@ -13,10 +13,11 @@
 마지막 배포 기록이 seed(기동·마이그레이션 백필)인 흐름은 경보 경로를 가져가지 않는다 — 사람이 배포한 적 없는 옛 등록본이
 조용히 경보를 가로채지 않게.
 
-수업 흐름(P9, 사용자 결정 2026-10-23): 강사 조립 스크립트(`scripts/c3_flows.py deploy`)는 배포 본문에 `class_flow: true`를 실어 배포의
-주인을 '수업'으로 남긴다(proc_def.owner = procdb.CLASS_OWNER — 다른 배포 · 되돌리기 · 내리기는 지운다). 포털의 [기준 흐름으로 되돌리기]
-(본문에 include_class 없음)는 그 흐름을 경보 경로에 남기고 학생이 배포한 흐름만 내린다 — 응답 `kept`에 남긴 흐름을 싣는다. 강사가
-`scripts/c3_flows.py deploy-reset BY`(본문 `include_class: true`)로 누르면 수업 흐름도 내린다. 흐름 id 접두어(c3_*)로 짐작하지 않는다.
+수업 흐름(P9, 사용자 결정 2026-10-23): 시작.bat 이 부르는 수업 흐름 설치(`POST /api/course-bootstrap`, course_bootstrap.py)는 배포 본문에
+`class_flow: true`를 실어 배포의 주인을 '수업'으로 남긴다(proc_def.owner = procdb.CLASS_OWNER — 다른 배포 · 되돌리기 · 내리기는 지운다.
+그 표시는 프로세스 안 호출만 실을 수 있다 — course_policy). 포털의 [기준 흐름으로 되돌리기]는 그 흐름을 경보 경로에 남기고 학생이 배포한
+흐름만 내린다 — 응답 `kept`에 남긴 흐름을 싣는다. 수업 흐름까지 내리는 것은 출발본 불러오기(config_bundle — 파일이 수업 흐름을 다시
+배포한다) 하나다. 흐름 id 접두어(c3_*)로 짐작하지 않는다.
 
 제품 근거: process-gpt-vue3 `ProcessDefinitionVersionManager.vue`(반영 버전 = prod_version), `utils/bpmnDiff.ts`(바뀐 요소 목록).
 """
@@ -111,7 +112,8 @@ def routes(rt) -> dict:
 
 def deploy_reset(rt, by: str, reason: str | None = None, include_class: bool = False) -> dict:
     """운영 포인터를 기준으로: 학생 흐름은 경보 경로에서 내리고, 기준 흐름의 운영 판본은 기준 판본으로. 등록한 판본·열린 처리 건은 그대로.
-    include_class=False(포털): 강사가 배포한 수업 흐름(class_flow)은 남기고 응답 kept 에 싣는다. True(강사 스크립트): 수업 흐름도 내린다."""
+    include_class=False(포털 · 관리 탭 되돌리기): 수업 흐름(class_flow)은 남기고 응답 kept 에 싣는다. True(출발본 불러오기 — config_bundle):
+    수업 흐름도 내린다(파일이 다시 배포한다)."""
     if not isinstance(by, str) or not by.strip():
         raise ValueError('되돌린 사람을 적으세요')
     _require_base(rt)
@@ -175,15 +177,14 @@ def compare_with_reference(rt, def_id: str, version: str | None = None) -> dict:
 class ResetReq(BaseModel):
     by: str = Field(min_length=1, max_length=200)
     reason: str | None = Field(default=None, max_length=2000)
-    # P9: 포털은 보내지 않는다(수업 흐름을 남김). 강사 스크립트(scripts/c3_flows.py deploy-reset)만 true — 수업 흐름도 내린다
-    include_class: bool = False
 
 
 def mount(app: FastAPI, runtime_factory) -> None:
     def _rt():
         rt = runtime_factory()
         if rt is None:
-            raise HTTPException(409, 'instance 모드가 아닙니다 (PROCESS_MODE=instance)')
+            from .instances import NOT_READY      # 런타임 모듈 — 이 모듈이 먼저 읽혀도 순환 import 가 되지 않게 여기서
+            raise HTTPException(503, NOT_READY)
         return rt
 
     @app.get('/api/flows/deployments')
@@ -198,7 +199,7 @@ def mount(app: FastAPI, runtime_factory) -> None:
     def flow_deploy_reset(req: ResetReq):
         """기준 흐름으로 되돌리기 — 운영 포인터만(학생 흐름 정의를 지우는 것은 B3 /api/flows/reset)."""
         try:
-            return deploy_reset(_rt(), req.by, req.reason, include_class=req.include_class)
+            return deploy_reset(_rt(), req.by, req.reason)        # HTTP 로는 수업 흐름을 내리지 않는다(남김)
         except LookupError as e:
             raise HTTPException(404, str(e))
         except ValueError as e:

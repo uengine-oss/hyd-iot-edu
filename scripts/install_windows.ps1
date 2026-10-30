@@ -1,9 +1,7 @@
-﻿# 학생 PC에 실습 필수 프로그램을 최소 기준보다 낮거나 없으면 설치·업데이트한다. 저장소 루트의 설치.bat을 더블클릭하면 관리자 권한으로 이 파일을 실행한다.
-#   2026-10-22 강사 PC 실측 최소 버전:
-#   Docker Desktop 4.87.0 · VS Code 1.132.0(2026년 8월 판) · Node.js 24.22.1 · Git 2.54.0
-#   7번 Arduino IDE는 빼고, 8번 XG5000 4.73은 직접 설치한다(사용자 2026-10-19).
-#   + supabase CLI: 목록 밖. 업무 DB를 켜는 데 쓰고, 없어도 시작.bat이 npx로 대신 받는다
-# Python 3.13 이상(없으면 3.14 설치) · WSL 2.7.12.0과 필요한 Windows 기능을 포함한다.
+﻿# 학생 PC에 실습 필수 프로그램이 기준 판보다 낮거나 없으면 설치·업데이트한다. setup 폴더의 설치.bat을 더블클릭하면 관리자 권한으로 이 파일을 실행한다.
+#   기준 판은 scripts\versions.txt 하나(Docker Desktop · VS Code · Node.js · Git · Python · WSL · Supabase CLI — Mac 설치 · 시작도 같은 파일을 읽는다).
+#   Arduino IDE는 빼고, XG5000 4.73은 직접 설치한다(사용자 2026-10-19). Supabase CLI는 npx로 받아 둔다(시작.bat도 npx로 쓴다).
+# Python · WSL과 필요한 Windows 기능을 포함한다.
 # 설치는 winget(Windows 기본 설치 도구)으로 한다.
 # 기준과 같거나 높으면 유지, 낮거나 없으면 설치/업데이트 후 버전을 재확인한다.
 # 버전을 확인할 수 없으면 실패로 표시한다. 끝에 결과와 재시작 필요 여부를 보인다.
@@ -11,6 +9,7 @@ $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 . (Join-Path $PSScriptRoot 'install_version_policy.ps1')
 . (Join-Path $PSScriptRoot 'install_windows_winget.ps1')
+$V = Get-InstallVersions
 
 function Say($text, $color = 'Gray') { Write-Host $text -ForegroundColor $color }
 function Stop-WithPause($text) { Say "`n[멈춤] $text" 'Red'; Read-Host '창을 닫으려면 Enter'; exit 1 }
@@ -99,7 +98,7 @@ Ensure-WSL
 Say "`n[준비] Python"
 Ensure-Python
 
-# 1. Docker Desktop 4.87.0
+# 1. Docker Desktop
 Say "`n[1/4] Docker Desktop"
 function Get-DockerVersion {
 $dockerExe = Join-Path $env:ProgramFiles 'Docker\Docker\Docker Desktop.exe'
@@ -113,7 +112,7 @@ if ($dockerVersion -or (Test-Path $dockerExe)) {
 }
 return $null
 }
-Ensure-Minimum 'Docker Desktop' 'Docker.DockerDesktop' '4.87.0' { Get-DockerVersion }
+Ensure-Minimum 'Docker Desktop' 'Docker.DockerDesktop' $V.DOCKER_DESKTOP_MIN { Get-DockerVersion }
 # docker-users 그룹: 지금 로그인한 계정과 「Authenticated Users」(로그인한 모든 계정)를 넣는다.
 # 학교는 이 PC를 다른 PC로 복제하고 학생은 다른 계정으로 로그인할 수 있어서, 계정 하나만 넣으면 복제된 PC에서 Docker가 막힌다.
 if (Get-LocalGroup -Name 'docker-users' -ErrorAction SilentlyContinue) {
@@ -130,10 +129,10 @@ if (Get-LocalGroup -Name 'docker-users' -ErrorAction SilentlyContinue) {
     }
 }
 
-# 2. VS Code: 2026년 8월 판(1.132.0, 2026-08-05) 이상이면 그대로 둔다(사용자 2026-10-29). 낮거나 없을 때만 설치 · 업데이트
+# 2. VS Code: 기준 판(2026년 8월 판) 이상이면 그대로 둔다(사용자 2026-10-29). 낮거나 없을 때만 설치 · 업데이트
 #    신규는 PC 전체 설치, 업데이트는 기존 설치 범위 유지
 Say "`n[2/4] Visual Studio Code"
-Ensure-Minimum 'VS Code' 'Microsoft.VisualStudioCode' '1.132.0' {
+Ensure-Minimum 'VS Code' 'Microsoft.VisualStudioCode' $V.VSCODE_MIN {
 $v = Installed-App 'Microsoft Visual Studio Code*'
 if (-not $v) { $v = Version-Of 'code' @('--version') }
 return $v
@@ -141,31 +140,31 @@ return $v
 
 # 3. Node.js (+ supabase CLI: 없어도 시작.bat이 npx로 대신 받는다)
 Say "`n[3/4] Node.js"
-Ensure-Minimum 'Node.js' 'OpenJS.NodeJS' '24.22.1' {
+Ensure-Minimum 'Node.js' 'OpenJS.NodeJS' $V.NODE_MIN {
 $v = Version-Of 'node' @('--version')
 if (-not $v) { $v = Installed-App 'Node.js*' }
 return $v
 }
 # Supabase uses the supported npx distribution, not npm global install.
 try {
-    $v = Version-Of 'npx.cmd' @('-y', 'supabase@2.119.0', '--version')
-    if ((Get-InstallAction $v '2.119.0') -ne 'keep') { throw 'Supabase CLI 준비 실패: Node.js와 네트워크를 확인하세요.' }
+    $v = Version-Of 'npx.cmd' @('-y', "supabase@$($V.SUPABASE_CLI)", '--version')
+    if ((Get-InstallAction $v $V.SUPABASE_CLI) -ne 'keep') { throw 'Supabase CLI 준비 실패: Node.js와 네트워크를 확인하세요.' }
     Record 'supabase CLI' '준비함' "$v — npx 실행 준비 완료"
 } catch { Record 'supabase CLI' '실패' $_.Exception.Message }
 
 # 4. Git (시작.bat이 Git Bash로 스크립트를 돌린다)
 Say "`n[4/4] Git"
-Ensure-Minimum 'Git' 'Git.Git' '2.54.0' {
+Ensure-Minimum 'Git' 'Git.Git' $V.GIT_MIN {
 $v = Version-Of 'git' @('--version')
 if (-not $v) { $v = Installed-App 'Git version *' }
 return $v
 }
 
-# 저장소 폴더: 복제된 PC의 다른 계정도 쓰게 한다. 사용자 폴더(C:\Users\…) 안이면 다른 계정이 못 쓰니 공용 폴더로 옮기라고 알린다.
+# 저장소 폴더: 복제된 PC의 다른 계정도 쓰게 한다. 사용자 폴더(C:\Users\…) 안이면 개인 PC로 보고 그대로 둔다(여러 계정이 쓸 PC면 공용 폴더에 받으라는 안내만 — 실패가 아니다).
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $usersRoot = Join-Path $env:SystemDrive 'Users'
 if ($repo.StartsWith($usersRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
-    Record '저장소 위치' '옮김 권장' "$repo — 복제할 PC라면 C:\hyd-iot-edu 같은 공용 폴더에 다시 받는다"
+    Record '저장소 위치' '개인 폴더' "$repo — 이 계정만 씁니다. 여러 계정이 함께 쓸(복제할) PC라면 C:\hyd-iot-edu 같은 공용 폴더에 받으세요"
 }
 else {
     $ErrorActionPreference = 'Continue'
@@ -187,8 +186,8 @@ if ($ramGb -lt 8) { Record 'PC 메모리' '부족할 수 있음' "$ramGb GB — 
 
 Say "`n== 결과" 'White'
 $results | Format-Table -AutoSize -Wrap | Out-String -Width 160 | Write-Host
-$failed = @($results | Where-Object { $_.결과 -in @('실패', '꺼짐', '옮김 권장') })
-if ($failed.Count) { Say "손이 필요한 항목이 $($failed.Count)개 있습니다(실패 · 꺼짐 · 옮김 권장). 위 비고대로 한 뒤 설치.bat을 다시 실행하세요." 'Red' }
+$failed = @($results | Where-Object { $_.결과 -in @('실패', '꺼짐') })
+if ($failed.Count) { Say "손이 필요한 항목이 $($failed.Count)개 있습니다(실패 · 꺼짐). 위 비고대로 한 뒤 설치.bat을 다시 실행하세요." 'Red' }
 if ($restart) { Say "PC를 다시 시작하세요. 다시 시작한 뒤 Docker Desktop을 한 번 열어 약관에 동의하고, 그다음 시작.bat을 더블클릭합니다." 'Yellow' }
 elseif (-not $failed.Count) { Say "설치 대상 확인이 끝났습니다. Docker Linux 엔진 실행과 실습용 접속 설정을 확인한 뒤 시작.bat을 실행하세요." 'Green' }
 Read-Host '창을 닫으려면 Enter'

@@ -7,7 +7,6 @@ under the saved decision/skill key. PLC commands are reached only afterwards.
 from copy import deepcopy
 import logging
 
-from hydcommon.timeutil import now_iso
 from . import decisions, engine, rework_effects
 
 log = logging.getLogger(__name__)
@@ -84,6 +83,7 @@ class ApprovalDelivery:
     def discard_approval(self, wid, by, role, reason, request_id, now=None):
         if not isinstance(reason, str) or not reason.strip() or not isinstance(request_id, str) or not request_id.strip():
             raise ValueError('폐기 사유와 중복 방지 요청 ID가 필요합니다')
+        now = self._now(now)
         wi, _ = self._discard_owner(wid, by, role)
         with self._transition(wi['proc_inst_id']):
             wi, row = self._discard_owner(wid, by, role)
@@ -128,6 +128,9 @@ class ApprovalDelivery:
             after = rows[-1]['todo_id']
 
     def deliver_approval(self, wid, now=None):
+        """승인 하나를 전달한다(업무 거래 실행 → DELIVERED). #17: 전달은 그것만으로 커밋한다 — 뒤따르는 흐름 진행(_advance_delivered)이
+        실패해도 전달을 되돌려 같은 승인을 2초마다 다시 보내지 않는다. 진행 실패는 엔진의 보통 실패 길(_fail: 기록 · 재시도 · 멈춤)로 간다."""
+        now = self._now(now)
         wi = self.repo.get_workitem(wid)
         if not wi or wi.get('tenant_id') != self.tenant_id:
             raise KeyError('no such approval work item')
@@ -166,9 +169,10 @@ class ApprovalDelivery:
             self.repo.record_events([{'job_id':'APPROVAL_DELIVERY', 'todo_id':wid,
                 'proc_inst_id':wi['proc_inst_id'], 'crew_type':'human', 'event_type':'task_working',
                 'data':{'name':'승인 전달 완료', 'approval':wid, 'results':results, 'attempt':row['attempts']}}])
-            wi['consumer'] = self.consumer
+            # 승인 대기 표식을 풀어 엔진이 집을 수 있는 보통 SUBMITTED 행으로 — 커밋 뒤 바로 진행하고, 그 사이 끊겨도 폴링이 집는다
+            wi['consumer'] = None
             self.repo.update_workitem(wi)
-            self.process_workitem(wi, now=now)
+            self._after_commit(self._advance_delivered, wid, now)
             v = engine.variables(inst)
             self._after_commit(self.hooks.audit, v.get('asset', '-'), row['payload']['by'],
                 'DECISION_APPROVED', {'decision':row['decision_id'], 'option':row['payload']['option'],
@@ -176,7 +180,18 @@ class ApprovalDelivery:
                 incident=v.get('incident'))
             self._after_commit(self.hooks.record_approval, deepcopy(row))
 
+    def _advance_delivered(self, wid, now=None):
+        """전달된 승인 행을 흐름으로 진행한다. 실패하면 승인 전달은 그대로 두고 그 행만 엔진 실패로 기록한다(재시도 → 3번이면 멈춤)."""
+        wi = self.repo.get_workitem(wid)
+        if not wi or wi['status'] != 'SUBMITTED' or wi.get('consumer') is not None:
+            return                                        # 폴링이 먼저 집었거나 이미 진행됐다
+        try:
+            self.process_workitem(wi, now=now)
+        except Exception as error:  # noqa: BLE001 — 엔진의 보통 실패 길
+            self._fail(wi, error, now)
+
     def retry_approval(self, wid, by, role=None, now=None):
+        now = self._now(now)
         wi = self.repo.get_workitem(wid)
         if not wi or wi.get('tenant_id') != self.tenant_id:
             raise KeyError('no such approval work item')

@@ -119,16 +119,16 @@ def for_run(root: Path, run_id: str, *, tenant_id: str = "") -> Workspace:
     return ws
 
 
-def provision(ws: Workspace, *, agent_id: str, constitution: str, schema_prompt: str, task: dict, skills: list[dict] | None = None) -> list[str]:
-    """Write what the CLI reads before it starts: the constitution (CLAUDE.md — work_rules.constitution of the agent's
-    business part, G9), the schema brief, the task record, and (U2)
-    the assigned agent's skills in the CLI's own layout — cliagents puts a skill at `.claude/skills/<name>/SKILL.md` for
-    Claude Code and `.agents/skills/<name>/SKILL.md` for Codex (process-gpt-cli-agent core/skills.py build_bundle → emit).
+def provision(ws: Workspace, *, agent_id: str, schema_prompt: str, task: dict, skills: list[dict] | None = None) -> list[str]:
+    """Write what the agent reads in its workspace before it starts: the schema brief, the task record, and (U2) the assigned
+    agent's skills in the CLI's own layout (`.claude/skills/<name>/SKILL.md`, cliagents emit — process-gpt-cli-agent core/skills.py).
+    The work rules (work_rules.constitution) are not a file here: the CLI runs without project setting sources
+    (cli_sandbox.cli_args), so a CLAUDE.md would not be read — the runner hands them over with --append-system-prompt.
     Idempotent — a resumed run rewrites the same files; skills left from an earlier attempt are removed first, so the
     folder holds exactly this run's skills. Returns the skill files written (workspace-relative)."""
     for root in SKILL_ROOTS.values():
         shutil.rmtree(ws.path / root, ignore_errors=True)
-    bundle = ArtifactBundle().add_constitution(constitution)
+    bundle = ArtifactBundle()
     for skill in skills or []:
         bundle.add_skill(skill["skill_name"], skill_markdown(skill), description=str(skill.get("description") or ""))
     sink = Utf8DirectorySink(str(ws.path))
@@ -162,16 +162,10 @@ def sweep(root: Path, retention_seconds: int, *, now: float | None = None, keep=
 
 
 def _run_dirs(root: Path) -> list[Path]:
-    found: list[Path] = []
-    for first in root.iterdir():
-        if not first.is_dir():
-            continue
-        children = [c for c in first.iterdir() if c.is_dir()]
-        if children and all(not c.name.startswith(".") for c in children) and not (first / "CLAUDE.md").exists():
-            found.extend(children)          # a tenant folder holds run folders
-        else:
-            found.append(first)
-    return found
+    """Run folders as for_run lays them out: <root>/<tenant>/<run> (the worker always names its tenant). A folder whose name starts
+    with "." is not a tenant (the worker's own state, e.g. .ai-cache)."""
+    return [run for tenant in root.iterdir() if tenant.is_dir() and not tenant.name.startswith(".")
+            for run in tenant.iterdir() if run.is_dir()]
 
 
 def _last_touched(path: Path) -> float:

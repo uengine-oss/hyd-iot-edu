@@ -23,8 +23,9 @@
   const TR = () => window.hydTrace;
   const e = s => esc(s);
   const ts = x => { const t = x ? Date.parse(x) : NaN; return Number.isFinite(t) ? t : null; };
-  const fmtMs = ms => TR() ? TR().fmtMs(ms) : `${Math.round(ms / 1000)} s`;
-  const hhmmss = t => { const d = new Date(t); return Number.isNaN(d.getTime()) ? '' : d.toLocaleTimeString('en-GB', { hour12: false }); };
+  const fmtMs = ms => TR().fmtMs(ms), hhmmss = t => TR().hhmmss(t);   // 시간 표시는 trace.js 하나
+  // 결과 값이 아직 없을 때의 문장 — 진행 중일 때만 「…하는 중」. 끝났거나 멈춘 단계는 그 상태와 함께 「결과 기록 없음」(진행 중처럼 읽히지 않게)
+  const notYet = (b, doing) => b.live ? doing : `결과 기록이 없습니다 — 단계 상태: ${UI.status(b.w.status)}${b.w.draft_status === 'FAILED' ? ' · 실행 실패' : ''}.`;
   const icon = (k, cls) => TR() ? TR().icon(k, cls) : '';
   const vars = inst => Object.fromEntries(((inst && inst.variables_data) || []).map(r => [r.key, r.value]));
   const nm = id => W().idName(id);
@@ -266,17 +267,17 @@
         const miss = (sd.skills_missing || []).length ? `<p class="cr-gapline">배정됐지만 본문이 없어 넣지 못한 스킬: ${e(sd.skills_missing.join(', '))}</p>` : '';
         return head + `<p>${e(UI.skillDeliverySummary(skills))}</p>` + table + note + miss;
       }).join('');
-      const read = used.length ? `<ul class="cr-list">${used.map(r => { const x = r.data; return `<li>${e(hhmmss(r.t0))} <b>${e(UI.skillLabel(x,true).label)}</b> — ${e(W().toolName(x.via))} 파일 읽기 요청${x.known === false ? ` ${UI.chipText('제공 목록에 없는 스킬', 'warning')}` : x.version ? ` <span class="muted">판 ${e(x.version)}</span>` : ''}${UI.fold('읽기 요청 원문',rawBlock(x),{cls:'small'})}${W().id(r.job)}</li>`; }).join('')}</ul>` : '<p class="muted">파일 읽기 기록 없음</p>';
+      const read = used.length ? `<ul class="cr-list">${used.map(r => { const x = r.data; return `<li>${e(hhmmss(r.t0))} <b>${e(x.recorded ? `스킬 ${x.skill}` : UI.skillLabel(x,true).label)}</b> — ${e(W().toolName(x.via))} 파일 읽기 요청${x.recorded ? ' <span class="muted">강사가 저장한 답의 실행</span>' : x.known === false ? ` ${UI.chipText('제공 목록에 없는 스킬', 'warning')}` : x.version ? ` <span class="muted">판 ${e(x.version)}</span>` : ''}${UI.fold('읽기 요청 원문',rawBlock(x),{cls:'small'})}${W().id(r.job)}</li>`; }).join('')}</ul>` : '<p class="muted">파일 읽기 기록 없음</p>';
       sections.push(sec('스킬 전달 · 파일 읽기 기록', `${delivery}<h6>이 단계의 파일 읽기 요청 ${used.length}건 <span class="muted">(모든 실행의 도구 호출 기록)</span></h6>${read}
         <p class="muted">파일 읽기 요청은 읽기 성공을 뜻하지 않습니다. 본문을 업무에 적용했는지는 이 기록만으로 확인할 수 없습니다.</p>
-        ${ag ? `<dl class="cr-kv"><div><dt>AI 일꾼</dt><dd>${named(UI.actorName(w.user_id, ag.name) || W().who(w.user_id), w.user_id)}</dd></div><div><dt>쓸 수 있는 도구</dt><dd>${servers.map(x => `<span class="chip tone-neutral sm">${e(W().system(x))}</span>`).join(' ') || '–'}</dd></div></dl>` : ''}`, { open: true }));
+        ${ag ? `<dl class="cr-kv"><div><dt>AI 일꾼</dt><dd>${named(ag.name || W().who(w.user_id), w.user_id)}</dd></div><div><dt>쓸 수 있는 도구</dt><dd>${servers.map(x => `<span class="chip tone-neutral sm">${e(W().system(x))}</span>`).join(' ') || '–'}</dd></div></dl>` : ''}`, { open: true }));
       const skills = runs.flatMap(r => Array.isArray(r.data.skills) ? r.data.skills : []);
       if (skills.length) chips.push(chip(UI.skillDeliverySummary(skills), skills.some(k=>k.written === false) ? 'danger' : 'neutral'));
       chips.push(chip(used.length ? `파일 읽기 요청 ${used.length}건` : '파일 읽기 기록 없음', 'neutral'));
     } else {
       const servers = (ag && ag.tools) || [];
       sections.push(sec('스킬 전달 · 파일 읽기 기록', `<p class="cr-gapline">스킬 전달 기록이 없습니다. 전달 여부를 확인할 수 없습니다.</p>${skillCalls.length ? `<p>이 처리 건의 스킬 도구 호출: ${skillCalls.map(r => `<b>${e(W().ask(r.tool, r.input))}</b>`).join(', ')}</p>` : ''}
-        ${ag ? `<dl class="cr-kv"><div><dt>AI 일꾼</dt><dd>${named(UI.actorName(w.user_id, ag.name) || W().who(w.user_id), w.user_id)}</dd></div>
+        ${ag ? `<dl class="cr-kv"><div><dt>AI 일꾼</dt><dd>${named(ag.name || W().who(w.user_id), w.user_id)}</dd></div>
           <div><dt>현재 설정의 스킬</dt><dd>${(ag.skills || []).length ? ag.skills.map(s => `<span class="chip tone-neutral sm">${e(s)}</span>`).join(' ') : '<span class="muted">설정 없음</span>'}</dd></div>
           <div><dt>쓸 수 있는 도구</dt><dd>${servers.map(s => `<span class="chip tone-neutral sm">${e(W().system(s))}</span>`).join(' ') || '–'}</dd></div></dl>
           <p class="cr-gapline">현재 설정은 이 처리 건에 전달된 스킬의 기록이 아닙니다.</p>` : ''}`, {open:true}));
@@ -334,7 +335,7 @@
     else sentence = b.terminal?.event_type === 'task_deferred' ? `도구를 ${tools.length}번 쓴 실행은 평가를 보류했습니다. 다시 평가할 때까지 기다립니다.` : b.awaiting ? 'AI 일꾼이 일을 받기를 기다리는 중입니다.' : b.live ? (tools.length ? `도구를 ${tools.length}번 썼고, 지금 일하는 중입니다.` : 'AI 일꾼이 실행을 시작했습니다.') : '기록된 결과 문장이 없습니다.';
     if (recorded && d && d!==ctx.d) sentence = `당시 ${sentence}`;
     const lastOpen = b.live ? [...b.rows].reverse().find(r => r.kind === 'tool' && r.status === 'running') : null;
-    return Object.assign(b, { type: 'agent', lane: 'agent', icon: 'agent', title: b.name, actor: ag ? UI.actorName(w.user_id, ag.name) : W().who(w.user_id) || 'AI 일꾼', sentence, chips, sections,
+    return Object.assign(b, { type: 'agent', lane: 'agent', icon: 'agent', title: b.name, actor: ag ? ag.name : W().who(w.user_id) || 'AI 일꾼', sentence, chips, sections,
       now: lastOpen ? `${W().toolName(lastOpen.tool)} — ${W().ask(lastOpen.tool, lastOpen.input)}` : b.live ? '다음 행동을 정하는 중' : '', ids: [w.user_id, w.activity_id] });
   }
 
@@ -512,7 +513,7 @@
       icon = 'order'; target = '구매 · 재고 관리';
       const po = out.purchase_order || v.purchase_order || {};
       const sup = supplierName(ctx, v.approved_supplier);
-      sentence = po.ref ? `${target}에 발주 ${po.ref}${W().josa(po.ref, '을/를')} 넣었습니다 — ${sup} ${v.approved_qty != null ? v.approved_qty + '개' : ''} ${v.approved_amount != null ? W().num(v.approved_amount) + '만원' : ''}${po.after && po.after.lead_d != null ? `, 리드타임 ${po.after.lead_d}일` : ''}.` : `${target}에 발주를 넣는 중입니다.`;
+      sentence = po.ref ? `${target}에 발주 ${po.ref}${W().josa(po.ref, '을/를')} 넣었습니다 — ${sup} ${v.approved_qty != null ? v.approved_qty + '개' : ''} ${v.approved_amount != null ? W().num(v.approved_amount) + '만원' : ''}${po.after && po.after.lead_d != null ? `, 리드타임 ${po.after.lead_d}일` : ''}.` : notYet(b, `${target}에 발주를 넣는 중입니다.`);
       if (po.ref) chips.push(chip(po.ref, 'accent'));
       if (v.approved_amount != null) chips.push(chip(`${W().num(v.approved_amount)}만원`));
       if (v.approved_qty != null) chips.push(chip(`${v.approved_qty}개`));
@@ -524,19 +525,19 @@
       const waitEv = b.rows.find(r => r.kind === 'sys' && r.data && r.data.plan);
       const skipped = b.rows.find(r => r.kind === 'sys' && r.job === 'WAIT_SKIPPED');
       sentence = w.status === 'DONE' ? `${skipped ? '즉시 ' : waitEv ? '예정된 정비 시간까지 기다린 뒤 ' : ''}정비를 했고, 정비 오더 ${m.work_order || ''} 완료와 설비 ${({ all: '전체', pump: '펌프', cooler: '쿨러', fan: '쿨러 팬' })[m.component] || nm(m.component) || ''} 복구를 기록했습니다.`
-        : waitEv ? `예정된 정비 시간까지 기다리는 중입니다 (${virtual(waitEv.data.plan)}).` : '정비를 하는 중입니다.';
+        : !b.live ? notYet(b) : waitEv ? `예정된 정비 시간까지 기다리는 중입니다 (${virtual(waitEv.data.plan)}).` : '정비를 하는 중입니다.';
       if (waitEv) chips.push(chip(`대기 ${virtual(waitEv.data.plan)}`));
       if (m.work_order) chips.push(chip(`${m.work_order} 완료`, 'success'));
       if (m.notice) sections.push(sec('정비 완료 알림', `<p>${e(W().text(m.notice))}</p>`, { open: true }));
     } else if (tool === 'process:wait') {
       icon = 'timer'; target = W().system('sys:process');
       const p = (out.waited) || ((b.rows.find(r => r.data && r.data.plan) || {}).data || {}).plan;
-      sentence = p ? `${p.label || '정해진 시간'}까지 기다렸습니다 (${virtual(p)}).` : '정해진 시간까지 기다리는 중입니다.';
+      sentence = p ? `${p.label || '정해진 시간'}까지 기다렸습니다 (${virtual(p)}).` : notYet(b, '정해진 시간까지 기다리는 중입니다.');
     } else if (tool === 'mcp:call') {
       icon = 'tool'; const r = Object.values(out).find(x => x && x.tool) || {};
-      target = W().system(r.server); sentence = r.tool ? `${target}의 ‘${W().toolName(`mcp__${r.server}__${r.tool}`)}’${W().josa(W().toolName(`mcp__${r.server}__${r.tool}`), '을/를')} 불렀습니다.` : '승인 뒤 도구를 부르는 중입니다.';
+      target = W().system(r.server); sentence = r.tool ? `${target}의 ‘${W().toolName(`mcp__${r.server}__${r.tool}`)}’${W().josa(W().toolName(`mcp__${r.server}__${r.tool}`), '을/를')} 불렀습니다.` : notYet(b, '승인 뒤 도구를 부르는 중입니다.');
     } else {
-      sentence = UI.logText(w.log) || (w.status === 'DONE' ? `‘${b.name}’${W().josa(b.name, '을/를')} 마쳤습니다.` : `‘${b.name}’${W().josa(b.name, '을/를')} 하는 중입니다.`);
+      sentence = UI.logText(w.log) || (w.status === 'DONE' ? `‘${b.name}’${W().josa(b.name, '을/를')} 마쳤습니다.` : notYet(b, `‘${b.name}’${W().josa(b.name, '을/를')} 하는 중입니다.`));
       target = W().who(w.user_id);
     }
     if (b.rows.length) sections.push(sec(`시스템 기록 ${b.rows.length}줄`, sysRowsHtml(b), { open: b.live }));
@@ -578,14 +579,15 @@
       const obs = hist.find(h => h.state === 'RE_OBSERVING');
       const fin = [...hist].reverse().find(h => /RESOLVED|ESCALATED|NOT_RECOVERED|MITIGATION_FAILED/.test(h.state) && h.note);
       const crit = inc && inc.recoveryPolicy && inc.recoveryPolicy.criterion;
-      const m = fin && /(\w+)\s+(-?[\d.]+)\s*(<=|>=|<|>)\s*(-?[\d.]+)/.exec(fin.note);
+      const m = fin && fin.reobservation;           // 서버가 사건 이력에 남긴 칸(machine._go): tag · op · limit · value · cleared · recovered
       const rec = out.recovered != null ? out.recovered : v.recovered;
       verdict = rec;
       if (!inc) incidentGap(ctx, '재관측 기준 · 사건 기록');
-      const tag = m ? m[1].toLowerCase() : crit ? String(crit[0]).toLowerCase() : '';
-      const valTxt = m ? `${W().fieldName(tag)} ${W().num(+m[2])} ${W().unit(tag)}` : '';
-      sentence = rec == null ? `설비가 기준 안으로 돌아오는지 지켜보는 중입니다${obs && obs.note ? ` (${UI.logText(obs.note)})` : ''}.`
-        : `${obs && obs.note ? UI.logText(obs.note) + ' 동안 ' : ''}지켜본 뒤 ${reobsBasis(valTxt, crit, rec)}${rec ? '회복으로' : '미회복으로'} 판정했습니다.`;
+      const tag = m && m.tag ? m.tag.toLowerCase() : crit ? String(crit[0]).toLowerCase() : '';
+      const valTxt = m && m.tag ? `${W().fieldName(tag)} ${m.value == null ? '값 없음' : `${W().num(m.value)} ${W().unit(tag)}`}` : '';
+      const span = obs && obs.reobservation && obs.reobservation.sim_s ? `설비 시간 ${Math.round(obs.reobservation.sim_s / 60)}분` : '';
+      sentence = rec == null ? `설비가 기준 안으로 돌아오는지 지켜보는 중입니다${span ? ` (${span})` : ''}.`
+        : `${span ? span + ' 동안 ' : ''}지켜본 뒤 ${reobsBasis(valTxt, crit, rec)}${rec ? '회복으로' : '미회복으로'} 판정했습니다.`;
       // A161-G3: 지켜본 동안의 값 흐름 (사건 reobsSeries, 작업지시 뒤 재관측은 REOBSERVATION 이벤트 reading.series)
       const evSeries = (b.rows.find(r => r.data && r.data.reading && r.data.reading.series) || {}).data;
       const series = (inc && inc.reobsSeries) || (evSeries && evSeries.reading.series) || (out.reading && out.reading.series) || null;
@@ -610,7 +612,7 @@
       const settle = b.rows.find(r => r.job === 'TEST_RUN_STARTED');
       verdict = tr ? tr.passed : null;
       sentence = tr ? `${settle && settle.data && settle.data.plan ? `안정될 때까지 기다린 뒤(${virtual(settle.data.plan)}) ` : ''}${(tr.readings || []).length}개 값을 재어 ${tr.passed ? '모두 기준 안 — 통과' : '기준 밖 값이 있어 미달'}로 판정했습니다.${tr.counter && tr.counter.detail ? ` ${W().text(tr.counter.detail)}.` : ''}`
-        : settle ? `시운전 — 안정될 때까지 기다리는 중입니다 (${virtual(settle.data.plan)}).` : '시운전을 준비하는 중입니다.';
+        : !b.live ? notYet(b) : settle ? `시운전 — 안정될 때까지 기다리는 중입니다 (${virtual(settle.data.plan)}).` : '시운전을 준비하는 중입니다.';
       (tr && tr.readings || []).forEach(r => chips.push(chip(`${W().fieldName(String(r.tag).toLowerCase())} ${r.value == null ? '모름' : W().num(r.value)} ${W().sym(r.op)} ${W().num(r.limit)}${W().unit(String(r.tag).toLowerCase()) ? ' ' + W().unit(String(r.tag).toLowerCase()) : ''}`, r.ok ? 'success' : 'danger')));
       if (tr) sections.push(sec('잰 값과 기준', `<div class="cr-scroll"><table class="cr-table"><thead><tr><th>값</th><th>잰 값</th><th>기준</th><th>판정</th></tr></thead><tbody>${(tr.readings || []).map(r => `<tr><td>${named(W().fieldName(String(r.tag).toLowerCase()), r.tag)}</td><td class="num">${r.value == null ? '모름' : e(W().value(String(r.tag).toLowerCase(), r.value))}</td><td class="num">${e(W().sym(r.op))} ${e(W().num(r.limit))}</td><td>${UI.chipText(r.ok ? '통과' : '미달', r.ok ? 'success' : 'danger')}</td></tr>`).join('')}</tbody></table></div>${tr.at ? `<p class="muted">잰 시각 ${e(hhmmss(tr.at))}</p>` : ''}`, { open: true }));
     } else {   // 입고 확인
@@ -620,7 +622,7 @@
       verdict = gr ? true : w.status === 'CANCELLED' ? false : null;
       sentence = gr ? `입고 예정까지 기다린 뒤${waitR ? `(${virtual(waitR.data.plan)})` : ''} 입고 · 검수 ${gr.ref || ''}${W().josa(gr.ref || '검수', '을/를')} 기록했습니다 — ${W().text(gr.detail || '')}.`
         : w.status === 'CANCELLED' ? `입고를 기다리던 중 ${delayR ? '공급사가 납기를 늦췄고, ' : ''}정해 둔 기한이 먼저 와서 멈췄습니다. 입고는 기록되지 않았습니다.`
-        : waitR ? `입고 예정까지 기다리는 중입니다 (${virtual(waitR.data.plan)}${delayR ? ', 공급사 지연 반영' : ''}).` : '입고를 확인하는 중입니다.';
+        : !b.live ? notYet(b) : waitR ? `입고 예정까지 기다리는 중입니다 (${virtual(waitR.data.plan)}${delayR ? ', 공급사 지연 반영' : ''}).` : '입고를 확인하는 중입니다.';
       if (waitR) chips.push(chip(`리드타임 ${waitR.data.plan.lead_d != null ? waitR.data.plan.lead_d + '일' : ''}`));
       if (delayR) chips.push(chip(`공급사 지연 ${delayR.data.plan.delay_d}일`, 'warning'));
       if (gr) chips.push(chip(gr.ref || '입고', 'success'));
@@ -691,7 +693,7 @@
     }
     sections.push(sec('결과 보고 원문', rawBlock(rep), { raw: true }));
     return Object.assign(b, { type: 'report', lane: 'system', icon: 'flag', title: b.name, actor: `${W().system('sys:process')} → 담당자 알림`,
-      sentence: rep ? `${W().text(rep.title || '결과')}: ${rep.outcome || ''}${rep.summary ? ' — ' + W().text(vv?.summary || rep.summary) : ''}` : '결과를 정리하는 중입니다.', chips, sections,
+      sentence: rep ? `${W().text(rep.title || '결과')}: ${rep.outcome || ''}${rep.summary ? ' — ' + W().text(vv?.summary || rep.summary) : ''}` : notYet(b, '결과를 정리하는 중입니다.'), chips, sections,
       state: rep && vv && vv.verdict === 'fail' ? 'bad' : undefined, ids: [w.tool] });
   }
   // 결과 보고 단계가 없는 흐름: 처리 건 값으로 결과를 만든다(끝난 경우만)
@@ -710,7 +712,7 @@
     const G = ctx.gaps;
     const tools = steps.flatMap(s => (s.rows || []).filter(r => r.kind === 'tool'));
     const cut = tools.filter(r => r.status === 'warn' && !(r.full && r.full.stored)), blocked = tools.filter(r => r.status === 'blocked');
-    if (cut.length) G.push({ key: 'cut', strong: true, text: `도구 결과 ${cut.length}건이 너무 커서 잘렸습니다 (${[...new Set(cut.map(r => W().toolName(r.tool)))].join(', ')}). AI 일꾼은 그 결과를 다 보지 못했고, 원래 결과는 워커 PC 의 임시 파일에만 있어 처리 건에 남지 않습니다. 그 뒤 판단은 판단 엔진이 저장한 값(아래 대안 · 데이터)으로 확인할 수 있습니다.` });
+    if (cut.length) G.push({ key: 'cut', strong: true, text: `도구 결과 ${cut.length}건이 너무 커서 잘렸습니다 (${[...new Set(cut.map(r => W().toolName(r.tool)))].join(', ')}). AI 일꾼은 그 결과를 다 보지 못했고, 잘린 뒤의 원래 결과는 처리 건에 남지 않습니다. 그 뒤 판단은 판단 엔진이 저장한 값(아래 대안 · 데이터)으로 확인할 수 있습니다.` });
     if (blocked.length) G.push({ key: 'blocked', text: `안전 장치가 막은 명령 ${blocked.length}건 — 실행되지 않았고, 막힌 명령의 결과는 없습니다.` });
     const skillsRecorded = steps.filter(s => s.type === 'agent').every(s => {
       const evs = ctx.byTodo.get(s.key) || [], starts = evs.filter(x=>x.event_type === 'task_started');
@@ -731,8 +733,8 @@
     const pg = ctx.view.events_page;
     if (pg ? pg.has_more && !ctx.olderDone : (ctx.view.events || []).length >= EVENTS_WINDOW) G.push({ key: 'cap', strong: true, text: pg ? '이 처리 건은 기록이 많아 가장 최근 줄부터 받았습니다. 맨 위 "이전 기록 더 보기"로 앞쪽 기록을 더 받을 수 있습니다.' : `이 처리 건은 기록이 많아 가장 최근 ${W().num(EVENTS_WINDOW)}줄만 받았습니다. 앞쪽 도구 호출 일부가 빠졌을 수 있습니다.` });
     if (ctx.read.decision.state === 'error') G.push({ key: 'dec', strong: true, text: `판단 기록을 읽지 못해 대안 · 가져온 데이터 · 지식 경로를 보이지 못했습니다 — ${ctx.read.decision.error}` });
-    if (ctx.d && !(ctx.d.provenance || []).length) G.push({ key: 'prov', text: '판단에 가져온 데이터의 출처 목록(provenance)이 없습니다. 도구 호출의 받은 값으로만 확인할 수 있습니다.' });
-    if (steps.some(s => s.type === 'system' && /메일/.test(s.sentence || ''))) G.push({ key: 'mail', text: '메일은 보냄 결과(성공)까지만 기록됩니다. 받는 사람이 읽었는지는 알 수 없습니다 (수업 메일함 Inbucket 에서 확인).' });
+    if (ctx.d && !(ctx.d.provenance || []).length) G.push({ key: 'prov', text: '판단에 가져온 데이터의 출처 목록이 없습니다. 도구 호출의 받은 값으로만 확인할 수 있습니다.' });
+    if (steps.some(s => s.type === 'system' && /메일/.test(s.sentence || ''))) G.push({ key: 'mail', text: '메일은 보냄 결과(성공)까지만 기록됩니다. 받는 사람이 읽었는지는 알 수 없습니다 (보낸 내용은 위 「보낸 메일」에서 확인).' });
   }
 
   /* ================================================================ HTML 조각 */

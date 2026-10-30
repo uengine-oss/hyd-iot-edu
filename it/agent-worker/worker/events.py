@@ -205,10 +205,13 @@ def skills_provided(entries: list[dict], *, cli: str, missing: list[str]) -> UiE
 
 class SkillReads:
     """Records the first tool request referring to each skill file; this is not proof of a successful read.
-    Paths outside the provided set are still reported (known=false)."""
+    Paths outside the provided set are still reported (known=false).
+    recorded=True — 키 없는 PC의 재생: 이 요청은 강사가 저장한 실행의 것이라 이번 실행에 준 스킬과 견주지 않는다(known=None ·
+    recorded=True). 학생이 실습에서 만든 스킬은 녹화한 스킬과 이름이 다를 수 있어, 견주면 늘 「제공 목록에 없는 스킬」이 된다."""
 
-    def __init__(self, provided: list[dict] | None = None):
-        self._by_name = {e["name"]: e for e in provided or []}
+    def __init__(self, provided: list[dict] | None = None, *, recorded: bool = False):
+        self._by_name = {} if recorded else {e["name"]: e for e in provided or []}
+        self._recorded = recorded
         self._seen: set[tuple[str, str]] = set()
 
     def on_tool_start(self, event: ExecEvent) -> list[UiEvent]:
@@ -227,8 +230,11 @@ class SkillReads:
                 continue
             self._seen.add((name, file))
             known = self._by_name.get(name)
-            data = {"content": f"스킬 \u2018{name}\u2019의 {file} 파일 읽기를 요청했습니다", "skill": name, "file": file, "via": event.tool or "tool",
-                    "tool_use_id": event.tool_use_id, "known": known is not None}
+            who = "강사가 저장한 답의 실행이 " if self._recorded else ""
+            data = {"content": f"{who}스킬 \u2018{name}\u2019의 {file} 파일 읽기를 요청했습니다", "skill": name, "file": file, "via": event.tool or "tool",
+                    "tool_use_id": event.tool_use_id, "known": None if self._recorded else known is not None}
+            if self._recorded:
+                data["recorded"] = True
             if known:
                 data.update(sha256=known["sha256"], version=known["version"], source=known["source"])
                 if known.get("title"):

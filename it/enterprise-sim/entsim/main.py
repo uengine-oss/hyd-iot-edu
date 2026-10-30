@@ -1,111 +1,42 @@
 """enterprise-sim (L9 연계 대상): mock ERP · MES · CMMS · QMS · SCM · EMS in one small process.
 
-Two backends, one HTTP contract:
-  ENTERPRISE_BACKEND=memory   (default) data.py dictionaries + SQLite state — no other service needed
-  ENTERPRISE_BACKEND=supabase the Supabase `ent` schema (it/supabase) — the same rows the agent reads through enterprise-mcp
-The agent reaches these endpoints only through InputData nodes of the ontology (which system holds which fact);
-only the process service may POST /api/exec after a human approved a decision.
+업무 데이터는 Supabase 의 `ent` 스키마 한 벌이다(it/supabase) — 에이전트가 enterprise-mcp 로 읽는 것과 같은 행(메모리판은 2026-10-30 지움).
+The agent reaches these endpoints only through InputData nodes of the ontology (which system holds which fact).
+쓰기 끝점(/api/exec · 초기화 · 기준점)은 process 만 부른다 — 요청에 process 만 아는 값(실행 호출 토큰)이 있어야 받는다(하-05).
 """
+import hmac
 import logging
 import os
 
 from fastapi import HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 
+import psycopg
+
 from hydcommon.metrics import Registry
 from hydcommon.service import make_app
-from . import data
-from .state import EnterpriseState, memory_tables, snapshot_view
+from .supabase_backend import SupabaseEnterprise
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 log = logging.getLogger("enterprise-sim")
-BACKEND = os.getenv("ENTERPRISE_BACKEND", "memory")
 reg = Registry()
 c_reads = reg.counter("enterprise_reads_total", "reads by system")
 c_exec = reg.counter("enterprise_exec_total", "executed skills by system")
 
 
-class MemoryEnterprise:
-    """data.py reads + state.py writes behind the same four methods the Supabase backend has."""
-
-    def __init__(self):
-        self.st = EnterpriseState(os.getenv("ENTERPRISE_STATE_PATH"))
-        self._reads = {"mes_orders": self._mes_orders, "erp_contract": data.erp_contract, "erp_inventory": data.erp_inventory,
-                       "cmms_history": self._cmms_history, "cmms_tasks": data.cmms_tasks, "qms_lots": data.qms_lots, "scm_suppliers": data.scm_suppliers, "ems_demand": data.ems_demand,
-                       # C2: 예비품 재고(바뀌는 값 → state) · 부품별 견적 · 다가오는 예정된 정비 시간 · 발주 한 건
-                       "spare_stock": self.st.spare_stock, "part_quotes": data.part_quotes, "maintenance_windows": data.maintenance_windows,
-                       "purchase_order": self.st.purchase_order,
-                       # C2 시나리오 B: 정기 정비 계획 · 운전시간 계수기 (설비별 한 행)
-                       "pm_status": self.st.pm_status}
-
-    def _mes_orders(self, asset: str) -> dict:
-        out = data.mes_orders(asset)
-        live = [data.current_order(o) for o in self.st.snapshot()["mes"]["orders"] if o["asset"] == asset or o.get("moved_from") == asset]
-        out["records"] = live or out["records"]
-        return out
-
-    def _cmms_history(self, asset: str) -> dict:
-        data._check(asset)                                           # 모르는 설비는 KeyError(404) — 상태를 읽기 전에
-        done, orders = self.st.maintenance_records(asset)
-        return data.cmms_history(asset, done, orders)
-
-    def read(self, name: str, **params) -> dict:
-        fn = self._reads[name]
-        return fn(*[v for v in params.values()]) if params else fn()
-
-    def execute(self, req: dict) -> dict:
-        return self.st.execute(req)
-
-    def transactions(self, decision: str | None = None) -> list[dict]:
-        return self.st.transactions(decision)
-
-    def snapshot(self) -> dict:
-        snap = self.st.snapshot()
-        # A086: hours as of now. 칸 이름 · 표 이름은 업무 DB 백엔드와 같은 한 모양(state.snapshot_view, 점검 E9)
-        return snapshot_view([data.current_order(o) for o in snap["mes"]["orders"]], memory_tables(snap))
-
-    def reset_spare_stock(self, part: str | None = None) -> dict:
-        return self.st.reset_spare_stock(part)
-
-    def reset_pm_counters(self, asset: str | None = None) -> dict:
-        return self.st.reset_pm_counters(asset)
-
-    def reset(self) -> None:
-        self.st.reset()
-        self.st.reanchor()       # A086: the teaching scenario's times start again from now (Supabase: ent.reanchor_scenario_times)
-
-    def reanchor(self) -> None:
-        self.st.reanchor()       # 저장 상태에도 남겨 재시작이 기준점을 옮기지 않는다(점검 E8)
-
-    def scenario_times_stale(self) -> bool:
-        return data.scenario_times_stale()
-
-    def archive(self, ref: str | None = None) -> dict:
-        return self.st.archive(ref)
-
-    def ping(self) -> bool:
-        return True
+SUPABASE_DSN = os.getenv("SUPABASE_DSN", "postgresql://postgres:postgres@host.docker.internal:54322/postgres")
+# 하-05: 쓰기 끝점은 process 만 아는 값(머리글 X-HYD-Process-Caller)이 맞는 요청만 받는다 — 주석 「process 만 부른다」만으로 막지 않는다
+CALLER_HEADER = "X-HYD-Process-Caller"
+CALLER_TOKEN = os.environ.get("PROCESS_CALLER_TOKEN", "")
+if not CALLER_TOKEN:
+    raise RuntimeError("PROCESS_CALLER_TOKEN 이 설정되지 않아 enterprise-sim 을 띄우지 않습니다 — 업무 쓰기를 process 만 부르게 하는 값입니다")
+WRITE_PATHS = frozenset({"/api/exec", "/api/reset", "/api/reanchor", "/erp/spare/reset", "/cmms/pm/reset"})
+ent = SupabaseEnterprise(lambda: psycopg.connect(SUPABASE_DSN, connect_timeout=5))
+app = make_app("enterprise-sim (mock ERP/MES/CMMS/QMS/SCM/EMS for L7-L9 scenarios, Supabase ent schema)", reg,
+               lambda: {"ok": ent.ping(), "transactions": len(ent.transactions()) if ent.ping() else None})
 
 
-def _backend():
-    if BACKEND == "supabase":
-        import psycopg
-        from .supabase_backend import SupabaseEnterprise
-        dsn = os.getenv("SUPABASE_DSN", "postgresql://postgres:postgres@host.docker.internal:54322/postgres")
-        return SupabaseEnterprise(lambda: psycopg.connect(dsn, connect_timeout=5))
-    return MemoryEnterprise()
-
-
-ent = _backend()
-app = make_app(f"enterprise-sim (mock ERP/MES/CMMS/QMS/SCM/EMS for L7-L9 scenarios, backend={BACKEND})", reg,
-               lambda: {"ok": ent.ping(), "backend": BACKEND, "transactions": len(ent.transactions()) if ent.ping() else None})
-
-
-try:                                                    # 업무 DB 백엔드의 연결 · 잠금 · 시간 초과(일시 장애) 예외
-    import psycopg
-    _DB_UNAVAILABLE: tuple = (psycopg.OperationalError, psycopg.InterfaceError)
-except ImportError:                                     # psycopg 없는 메모리 전용 설치 — 이 예외가 날 곳이 없다
-    _DB_UNAVAILABLE = ()
+_DB_UNAVAILABLE: tuple = (psycopg.OperationalError, psycopg.InterfaceError)   # 업무 DB 의 연결 · 잠금 · 시간 초과(일시 장애)
 
 
 def _db_unavailable_detail(e: Exception) -> str:
@@ -127,6 +58,15 @@ async def _db_unavailable(_request: Request, e: Exception):
 
 for _cls in _DB_UNAVAILABLE:
     app.add_exception_handler(_cls, _db_unavailable)
+
+
+@app.middleware("http")
+async def _process_only(request: Request, call_next):
+    """하-05: 업무 쓰기(실행 · 초기화 · 기준점)는 process 만 — 값이 없거나 다르면 실행하지 않고 403."""
+    if request.method == "POST" and request.url.path in WRITE_PATHS and not hmac.compare_digest(
+            request.headers.get(CALLER_HEADER, "").encode(), CALLER_TOKEN.encode()):
+        return JSONResponse(status_code=403, content={"detail": "업무 시스템 쓰기는 사람 승인을 거친 process 만 부를 수 있습니다"})
+    return await call_next(request)
 
 
 def _read(system: str, name: str, **params):
@@ -205,12 +145,12 @@ def purchase_order(ref: str):
 
 def _scenario_reset(fn, arg):
     """B · C [초기화]가 다른 시나리오가 잡은 수량 때문에 되돌릴 수 없으면(예: B 오더가 시작값보다 많이 출고) 이유를 그대로 409 로 낸다 —
-    두 백엔드 모두 'INVALID:' 로 시작하는 거절이다(2026-10-23 점검 E1 · E2 · E3)."""
+    업무 DB 는 'INVALID:' 로 시작하는 거절을 낸다(2026-10-23 점검 E1 · E2 · E3)."""
     try:
         return fn(arg)
-    except KeyError as e:                       # 모르는 부품 · 설비: 두 백엔드 모두 404(메모리는 KeyError → 500, 업무 DB 는 빈 200 이었다, 점검 E11)
+    except KeyError as e:                       # 모르는 부품 · 설비: 404(업무 DB 는 빈 200 이었다, 점검 E11)
         raise HTTPException(404, f"unknown {e.args[0] if e.args else arg}")
-    except Exception as e:  # noqa: BLE001 — 메모리 ValueError · 업무 DB 22023
+    except Exception as e:  # noqa: BLE001 — 업무 DB 22023
         msg = str(e).splitlines()[0] if str(e) else type(e).__name__
         if msg.startswith("INVALID:"):
             raise HTTPException(409, msg[:300])
@@ -240,10 +180,6 @@ def pm_reset(body: dict | None = None):
 def execute(req: dict):
     try:
         tx = ent.execute(req)
-    except ValueError as e:
-        # A143 (remaining-sweep 16): the memory backend raises the idempotency conflict as ValueError; same code as supabase
-        msg = str(e)
-        raise HTTPException(409 if "idempotency" in msg else 400, msg)
     except Exception as e:  # noqa: BLE001 — database errors from ent.exec_skill (unknown skill, idempotency conflict)
         msg = str(e).splitlines()[0]
         if _is_db_unavailable(e):    # 연결 장애 · 교착 · 시간 초과는 거절이 아니다(2026-10-23 점검: 400으로 나가 「거절」로 읽혔다)

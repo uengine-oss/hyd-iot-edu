@@ -1,7 +1,7 @@
 """B5 — 에이전트에게 질문하기 (ProcessGPT의 대표 상호작용: 질문 하나 = 처리 건 하나).
 
     POST /api/ask {question, agent?, by?, request_id?}   질문 → 정식 정의 ask_agent 1.0의 처리 건 하나(답할 에이전트 = 고른 에이전트)
-    GET  /api/ask/status                                답할 수 있나(워커 연결 · 결정론 대체 모드) + 고를 수 있는 에이전트
+    GET  /api/ask/status                                답할 수 있나(AI 워커 상태) + 고를 수 있는 에이전트
     GET  /api/ask                                       지난 질문 목록(최근 것 먼저)
     GET  /api/ask/{proc_inst_id}                        한 질문: 진행 상태 · 도구 호출(실시간) · 답 + 근거 또는 답할 수 없음 + 이유 · 처리 과정 링크
     POST /api/ask/reset                                 기준으로 되돌리기: 끝난 질문 기록을 목록에서 지운다(정의 · 에이전트 · 기준 데이터는 그대로)
@@ -15,8 +15,7 @@
 서버는 에이전트의 자기 보고를 그대로 믿지 않는다: 근거로 적은 질의가 이 작업의 실제 도구 호출 기록(events)에 있는지 대조하고,
 없으면 "답할 수 없음 + 이유"로 보여 준다(근거 없는 답을 성공처럼 보이지 않는다).
 
-결정론 대체 모드(AGENT_BRIDGE=legacy)의 내장 판단은 경보 처리 건의 판단 4단계만 채운다. 자유 질문에 답할 일꾼(워커)이 없으면
-질문을 처리 건으로 만들지 않고 503 + 사람이 읽을 사유를 돌려준다(legacy_meaning_api와 같은 방식 — 아무도 집지 않을 처리 건을 남기지 않는다).
+답할 AI 워커가 켜져 있지 않으면 질문을 처리 건으로 만들지 않고 503 + 학생이 할 일을 적은 사유를 돌려준다(아무도 집지 않을 처리 건을 남기지 않는다).
 """
 from __future__ import annotations
 
@@ -25,7 +24,6 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-from hydcommon.course_access import REPLAY_NOTICE
 from hydcommon.timeutil import parse_iso
 from pydantic import BaseModel
 
@@ -114,27 +112,22 @@ def agents(repo, tenant_id) -> list[dict]:
     return sorted(out, key=lambda a: (not a['default'], a['mine'], a['name']))
 
 
-def readiness(worker_probe, bridge: str | None) -> dict:
-    """질문을 받을 수 있나. 워커 연결이 판단 기준이다(AGENT_BRIDGE=legacy여도 워커가 있으면 질문 작업은 워커가 집는다)."""
-    w = worker_probe() if worker_probe else {'reachable': False, 'url': None, 'error': '워커 확인 경로가 없습니다'}
+NOT_READY = 'AI 워커가 아직 켜지는 중이거나 꺼져 있어 질문을 보내지 않았습니다. 1분 뒤 다시 보내고, 계속되면 시작.bat을 다시 실행하세요.'
+NOT_PICKED = ('{age}초째 답할 AI 워커가 질문을 집지 않았습니다 — AI 워커에 연결할 수 없습니다. 시작.bat을 다시 실행하면 이어서 답합니다'
+              '(처리 과정 보기에서 닫을 수도 있습니다).')
+BUSY = '{age}초째 대기 중 — AI 워커는 켜져 있습니다(앞 작업을 처리하는 중일 수 있습니다).'
+RUNTIME_NOT_READY = '질문을 받을 처리 흐름 서비스가 아직 켜지는 중입니다. 1분 뒤 다시 보내세요.'
+
+
+def readiness(worker_probe) -> dict:
+    """질문을 받을 수 있나 — AI 워커가 상태 확인(/health)에 「켜짐」으로 답하는가(켜지는 중 · 오류면 503 이라 닿지 않음으로 온다)."""
+    w = worker_probe()
     health = w.get('health') or {}
-    out = {'ready': bool(w.get('reachable')), 'bridge': bridge, 'worker': {'url': w.get('url'), 'reachable': bool(w.get('reachable')),
-                                                                          'error': w.get('error'), 'agents': w.get('agents') or [],
-                                                                          # 키 없는 PC: 저장된 답이 있는 질문만 답한다 — 화면이 예시로 보인다
-                                                                          'ai_mode': health.get('ai_mode'),
-                                                                          'replay_questions': health.get('replay_questions') or []}}
-    if out['ready']:
-        out['reason'] = None
-        return out
-    where = f"{w.get('url') or '워커 주소 미설정'} — {w.get('error') or '응답 없음'}"
-    if bridge == 'legacy':
-        out['reason'] = ('지금은 결정론 대체 모드(AGENT_BRIDGE=legacy)입니다. 이 모드의 내장 판단은 경보 처리 건의 판단 4단계(원인 진단 · 조치 후보 · '
-                         '규정 검토 · 우선순위)만 채우고, 자유 질문에 답할 AI 일꾼(워커)은 없습니다. 질문은 처리 건으로 만들지 않았습니다. '
-                         f'워커 연결 확인: {where}. 시작.bat을 다시 실행하면 AI 일꾼이 함께 켜집니다(.env AGENT_BRIDGE=off).')
-    else:
-        out['reason'] = (f'AI 일꾼(워커)에 연결할 수 없어 질문을 처리 건으로 만들지 않았습니다: {where}. '
-                         '시작.bat을 다시 실행해 AI 일꾼을 켠 뒤 다시 보내세요.')
-    return out
+    ready = bool(w.get('reachable'))
+    return {'ready': ready, 'reason': None if ready else NOT_READY,
+            'worker': {'reachable': ready, 'agents': w.get('agents') or [],
+                       # 키 없는 PC: 저장된 답이 있는 질문만 답한다 — 화면이 예시로 보인다
+                       'ai_mode': health.get('ai_mode'), 'replay_questions': health.get('replay_questions') or []}}
 
 
 # ---------------------------------------------------------------- 질문 → 처리 건
@@ -155,21 +148,26 @@ def check_agent(repo, tenant_id, agent_id) -> dict:
     return found
 
 
-def execution_binding(question, settings, *, version=None):
-    """Bind a question to the execution-relevant agent settings, not its label."""
+def agent_identity(settings) -> dict:
+    """실행에 영향을 주는 에이전트 설정(표시 이름 · 시각은 뺀다). 질문 묶음 · AI 워커의 같은 요청 판정이 같은 함수를 쓴다."""
     from dataclasses import asdict
-    from .classroom_authority import digest
     value = asdict(settings)
     value['profile'] = {k:v for k,v in (value.get('profile') or {}).items()
                         if k not in {'username','name','created_at','updated_at'}}
-    return digest({'question':question,'agent':value,'version':version or VERSION})
+    return value
 
 
-def start(rt, question, agent_id=None, by=None, request_id=None, *, definitions_dir, worker_probe, bridge) -> dict:
+def execution_binding(question, settings, *, version=None):
+    """Bind a question to the execution-relevant agent settings, not its label."""
+    from .course_ledger import digest
+    return digest({'question':question,'agent':agent_identity(settings),'version':version or VERSION})
+
+
+def start(rt, question, agent_id=None, by=None, request_id=None, *, definitions_dir, worker_probe) -> dict:
     """질문 하나 = 처리 건 하나. 같은 request_id로 다시 보내면 같은 처리 건을 돌려준다(중복 클릭 · 재시도)."""
     q = check_question(question)
     agent = check_agent(rt.repo, rt.tenant_id, agent_id)
-    ready = readiness(worker_probe, bridge)
+    ready = readiness(worker_probe)
     if not ready['ready']:
         raise WorkerUnavailable(ready['reason'])
     request_id = str(uuid.UUID(request_id)) if request_id else str(uuid.uuid4())
@@ -318,8 +316,8 @@ def _queries(value):
 
 def _matches(item, call) -> bool:
     def advertised(name):
-        # Codex exposes a hyphenated MCP server with underscores in its
-        # function namespace. Preserve the complete server and tool identity;
+        # The model may write a hyphenated MCP server name with underscores
+        # when it cites evidence. Preserve the complete server and tool identity;
         # verdict rejects collisions instead of guessing between real servers.
         server, sep, tool = short_tool(str(name or '').strip()).partition('/')
         return (server.replace('-', '_'), tool) if sep else None
@@ -489,8 +487,8 @@ def _error_reason(events) -> str | None:
     for e in reversed(events):
         if e.get('event_type') == 'error':
             d = e.get('data') or {}
-            # 워커가 할 일로 옮긴 안내(hint — 중계 모델 · 키 거절)가 있으면 그것을 먼저 보인다. 원문은 처리 과정 기록에 남는다
-            return str(d.get('hint') or d.get('raw_error') or d.get('content') or d.get('error') or d.get('message') or '')[:600] or None
+            # 학생이 읽는 칸은 friendly 하나다(워커가 쓴다 — 내부어 · 예외 이름 없음). 원문(raw_error)은 처리 과정의 접힌 칸에만 있다
+            return str(d.get('friendly') or d.get('name') or '')[:600] or None
     return None
 
 
@@ -509,10 +507,7 @@ def _state(inst, wi, events, now=None) -> tuple[str, str]:
     ds = wi.get('draft_status')
     fb = wi.get('feedback') if isinstance(wi.get('feedback'), dict) else {}
     if ds == 'FAILED':
-        reason = _error_reason(events) or '사유 기록 없음'
-        if reason.startswith(REPLAY_NOTICE):      # 키 없는 PC 의 재생 안내는 실패 꼬리 없이 그 안내 한 문장으로
-            return 'failed', reason[len(REPLAY_NOTICE):]
-        return 'failed', '에이전트 실행이 실패했습니다: ' + reason
+        return 'failed', _error_reason(events) or '에이전트 실행이 실패했습니다(사유 기록 없음). 처리 과정을 강사에게 보여 주세요.'
     if ds == 'HUMAN_ASKED':
         return 'asking', '에이전트가 사람에게 묻고 기다립니다 (처리 과정 보기에서 답할 수 있습니다)'
     if ds == 'FB_REQUESTED' and fb.get('kind') == 'validation':
@@ -548,12 +543,7 @@ def view(rt, proc_inst_id, *, worker_probe=None, now=None) -> dict:
     if state == 'waiting' and worker_probe is not None:
         age = _age_s((wi or {}).get('start_date') or inst.get('start_date'), now)
         if age is not None and age >= WAIT_PROBE_AFTER_S:
-            w = worker_probe()
-            if not w.get('reachable'):
-                out['message'] = (f"{int(age)}초째 아무도 집지 않았습니다 — AI 일꾼(워커)에 연결할 수 없습니다: {w.get('url')} — "
-                                  f"{w.get('error') or '응답 없음'}. 워커를 켜면 이어서 답합니다(처리 과정 보기에서 닫을 수도 있습니다)")
-            else:
-                out['message'] = f'{int(age)}초째 대기 중 — 워커는 연결돼 있습니다(다른 작업을 처리 중일 수 있습니다)'
+            out['message'] = (BUSY if worker_probe().get('reachable') else NOT_PICKED).format(age=int(age))
     return out
 
 
@@ -596,15 +586,15 @@ class AskRetryReq(BaseModel):
     reason: str
 
 
-def register(app, *, runtime_factory, definitions_dir, worker_probe, bridge):
-    """bridge: () -> AGENT_BRIDGE 값. worker_probe: () -> instance_mode.worker_status() 모양."""
+def register(app, *, runtime_factory, definitions_dir, worker_probe):
+    """worker_probe: () -> instance_mode.worker_status() 모양({'reachable', 'health', 'agents', …})."""
     import asyncio
     from fastapi import HTTPException
 
     def rt():
         r = runtime_factory()
         if r is None:
-            raise HTTPException(409, '질문은 처리 건으로 실행되므로 instance 모드(PROCESS_MODE=instance)가 필요합니다')
+            raise HTTPException(503, RUNTIME_NOT_READY)
         return r
 
     async def run(fn):
@@ -622,7 +612,7 @@ def register(app, *, runtime_factory, definitions_dir, worker_probe, bridge):
     @app.get('/api/ask/status')
     async def ask_status():
         r = rt()
-        return await run(lambda: readiness(worker_probe, bridge()) | {'agents': agents(r.repo, r.tenant_id), 'default': DEFAULT_AGENT})
+        return await run(lambda: readiness(worker_probe) | {'agents': agents(r.repo, r.tenant_id), 'default': DEFAULT_AGENT})
 
     @app.get('/api/ask')
     async def ask_history(limit: int = 30):
@@ -633,7 +623,7 @@ def register(app, *, runtime_factory, definitions_dir, worker_probe, bridge):
     async def ask_start(req: AskReq):
         r = rt()
         return await run(lambda: start(r, req.question, req.agent, req.by, req.request_id, definitions_dir=definitions_dir,
-                                       worker_probe=worker_probe, bridge=bridge()))
+                                       worker_probe=worker_probe))
 
     @app.post('/api/ask/reset')
     async def ask_reset():

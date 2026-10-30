@@ -68,18 +68,11 @@
   const S = { el: null, cat: null, view: null, mapping: null, list: null, busy: false, timer: null, result: null };
   const api = p => API.process + p;
   const h = s => esc(s);
+  // 공용 요청 함수 하나(requestJ) — 고칠 곳 목록(problems)은 서버 사유 칸(error.detail)에서 꺼낸다
   async function call(method, path, body) {
-    let r;
-    try { r = await fetch(api(path), { method, cache: 'no-store', headers: body ? { 'Content-Type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined }); }
-    catch (e) { throw new Error(typeof NETWORK_DOWN === 'string' ? NETWORK_DOWN : '서비스에 연결하지 못했습니다.'); }   // 연결 거부 · 끊김(영문 Failed to fetch)
-    const j = await r.json().catch(() => ({}));
-    if (!r.ok) {
-      const d = j.detail;
-      const e = new Error(typeof d === 'string' ? d : (d && d.reason) || `요청 실패 (${r.status})`);
-      e.problems = (d && d.problems) || null; e.status = r.status;
-      throw e;
-    }
-    return j;
+    try {
+      return await requestJ(api(path), { ...(method === 'GET' ? {} : { method }), ...(body ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}) });
+    } catch (e) { e.problems = (e.detail && e.detail.problems) || null; throw e; }
   }
   // 두 번 누름 방지: 요청이 끝날 때까지 그 버튼을 잠그고 같은 동작을 다시 보내지 않는다
   const locks = new Set();
@@ -101,7 +94,7 @@
         <p class="field-hint">제공된 교대 인수인계 흐름을 demo.bpmn.io 에서 열어 고친 뒤 왼쪽 아래 <b>Download BPMN diagram</b> 으로 받은 .bpmn 파일을 고릅니다. 수업에서는 이 흐름만 등록됩니다. 같은 흐름 id 로 다시 가져오면 앞서 고른 매핑이 남습니다.</p>
         <div class="form-grid">
           ${UI.field({ label: '.bpmn 파일', input: '<input type="file" id="flowFile" accept=".bpmn,.xml,application/xml,text/xml">', required: true })}
-          ${UI.field({ label: '흐름 id (비우면 그림의 프로세스 id)', input: '<input id="flowId" placeholder="예: oil_check" autocomplete="off">' })}
+          ${UI.field({ label: '흐름 id (비우면 그림의 프로세스 id)', input: '<input id="flowId" placeholder="예: oil_check" autocomplete="off">', hint: ' ' })}
         </div>
         <div class="form-actions"><span class="form-msg" id="flowImportMsg" role="status"></span><button class="btn primary" id="flowImport">가져오기</button></div>
       </section>
@@ -109,8 +102,20 @@
       ${UI.fold('내가 가져온 흐름 · 판본', '<div id="flowList"></div><div class="form-actions"><button class="btn small danger" id="flowReset">기준으로 되돌리기</button></div>', { open: true })}`;
     el.querySelector('#flowImport').addEventListener('click', e => once('import', e.currentTarget, doImport));
     el.querySelector('#flowReset').addEventListener('click', doReset);
+    idField();
     return Promise.all([loadCatalog(), loadList()]);
   }
+  // 수업 경계(서버 GET /api/course-access 의 importable_flow): 수업 단계에서는 제공 흐름 하나만 가져온다 — 흐름 id 칸을 그 흐름으로 고정해
+  // 다른 id 를 적어 거절당하지 않게 한다. PBL(값 null)이면 칸을 연다
+  function idField() {
+    const input = S.el && S.el.querySelector('#flowId'); if (!input) return;
+    const only = hydCourseAccess.access && hydCourseAccess.access.importable_flow;
+    input.disabled = !!only; input.value = only ? '' : input.value;
+    input.placeholder = only ? `수업 단계: ${only} (그림의 프로세스 id 그대로)` : '예: oil_check';
+    const hint = input.closest('.field')?.querySelector('.field-hint');
+    if (hint) hint.textContent = only ? hydCourseAccess.importBlocked('') : '';
+  }
+  hydCourseAccess.onChange(() => { idField(); if (S.list) renderList(); });
 
   async function loadCatalog() { S.cat = await call('GET', '/api/flows/catalog'); }
   async function loadList() {
@@ -149,8 +154,7 @@
     const v = S.view, p = v.parsed, m = S.mapping, box = S.el.querySelector('#flowEditor');
     const lanes = p.lanes.length ? p.lanes.map(l => `<tr><td>${h(l.name || '(이름 없음)')}</td><td><select data-lane="${h(l.id)}"><option value="">(고르지 않음)</option>${roleOpts(m.lanes[l.id] || '', false)}</select></td></tr>`).join('') : '';
     const start = m.start || {};
-    const patternNames = { COOLER_DEGRADATION: '쿨러 성능 저하', PUMP_LEAKAGE: '펌프 누설', FAN_VIBRATION: '팬 진동', OIL_ANALYSIS: '오일 분석', PM_DUE: '정기 점검 도래', SPARE_BELOW_MIN: '재고 보충 필요' };
-    const patterns = S.cat.patterns.map(pt => `<label class="chk"><input type="checkbox" data-pattern="${h(pt)}" ${(start.patterns || []).includes(pt) ? 'checked' : ''}> ${h(patternNames[pt] || (typeof PATTERN_LABEL !== 'undefined' && PATTERN_LABEL[pt]) || UI.idText(pt))}</label>`).join(' ');
+    const patterns = S.cat.patterns.map(pt => `<label class="chk"><input type="checkbox" data-pattern="${h(pt)}" ${(start.patterns || []).includes(pt) ? 'checked' : ''}> ${h(UI.patternName(pt))}</label>`).join(' ');
     box.innerHTML = `
       <section class="card form" aria-label="매핑">
         <h3>${h(m.name || p.process.name || '가져온 흐름')} <span class="muted">· 다음 판본 ${h(v.next_version)}</span></h3>
@@ -168,7 +172,7 @@
         ${branchSection()}
         <div id="flowProblems">${resultBlock(v.check)}</div>
         <div class="form-actions"><span class="form-msg" id="flowMsg" role="status"></span>
-          <button class="btn" id="flowCheck">검사</button><button class="btn primary" id="flowRegister">판본 등록</button></div>
+          <button class="btn" id="flowCheck">저장 · 검사</button><button class="btn primary" id="flowRegister">판본 등록</button></div>
       </section>`;
     wire(box);
     fieldEditors(box);
@@ -276,7 +280,7 @@
     const part = host && S.cat.parts.find(x => x.key === (S.mapping.tasks[host.id] || {}).part);
     const dflt = b.timer || (part && part.default_timer);
     return `<div class="field" data-row="${h(b.id)}"><label>${h(b.name || '시간 초과')} — ${h(host ? host.name : '')}</label>
-      <input type="number" min="0.1" step="any" data-timer="${h(b.id)}" value="${h(m ? minutesOf(m) : '')}" placeholder="${dflt ? '기본 ' + minutesOf(dflt) + '분' : '분'}"><p class="field-hint">분 (20배속에서는 실제 시간이 1/20)</p></div>`;
+      <input type="number" min="0.1" step="any" data-timer="${h(b.id)}" value="${h(m ? minutesOf(m) : '')}" placeholder="${dflt ? '기본 ' + minutesOf(dflt) + '분' : '분'}"><p class="field-hint">분</p></div>`;
   }
 
   function branchSection() {
@@ -423,7 +427,7 @@
       const name = registeredName && registeredName !== id ? registeredName : UI.terms['def.' + id] || '이름 미등록 흐름';
       const rows = vs.map(v => `<li>판본 <b>${h(v.version)}</b> · ${h(UI.dateTime(v.registered_at))}
         <a class="btn small" href="${h(api(`/api/flows/${encodeURIComponent(id)}/versions/${encodeURIComponent(v.version)}/bpmn`))}" download>그림 받기</a>
-        ${alertStart ? '<span class="muted">경보가 들어오면 시작</span>' : `<button class="btn small" data-start="${h(id)}" data-version="${h(v.version)}">직접 시작</button><div data-startbox="${h(id + '@' + v.version)}"></div>`}</li>`).join('');
+        ${alertStart ? '<span class="muted">경보가 들어오면 시작</span>' : `<button class="btn small" data-start="${h(id)}" data-version="${h(v.version)}"${hydCourseAccess.startBlocked(id) ? ` disabled title="${h(hydCourseAccess.startBlocked(id))}"` : ''}>직접 시작</button><div data-startbox="${h(id + '@' + v.version)}"></div>`}</li>`).join('');
       return UI.card({ title: h(name), sub: d ? '매핑 초안 있음' : '', body: (rows ? `<ul class="flow-versions">${rows}</ul>` : '<p class="muted">등록한 판본 없음</p>') + UI.metaFold([['흐름 식별자', h(id)]]),
         actions: (d ? `<button class="btn small" data-open="${h(id)}">매핑 열기</button>` : '') + `<button class="btn small danger" data-delete-flow="${h(id)}">이 흐름 지우기</button><div data-delete-box="${h(id)}"></div>` });
     }).join('');

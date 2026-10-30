@@ -3,49 +3,6 @@
 The payload is immutable; only delivery status/results/history may change.
 These mixins share the same connection/rollback scope as the process rows.
 """
-from copy import deepcopy
-
-
-class MemoryApprovals:
-    def insert_approval(self, row):
-        with self._lock:
-            wi = self.workitems.get(row['todo_id'])
-            if not wi or (wi['tenant_id'], wi['proc_inst_id']) != (row['tenant_id'], row['proc_inst_id']):
-                raise ValueError('approval work item ownership mismatch')
-            if row['todo_id'] in self.approvals or any(
-                (x['tenant_id'], x['decision_id']) == (row['tenant_id'], row['decision_id'])
-                for x in self.approvals.values()
-            ):
-                raise ValueError('decision already has an approval intent')
-            self.approvals[row['todo_id']] = deepcopy(row)
-
-    def get_approval(self, todo_id, tenant_id):
-        with self._lock:
-            row = self.approvals.get(todo_id)
-            return deepcopy(row) if row and row['tenant_id'] == tenant_id else None
-
-    def update_approval(self, row):
-        with self._lock:
-            prior = self.approvals.get(row['todo_id'])
-            if not prior or prior['tenant_id'] != row['tenant_id']:
-                raise KeyError('no such approval')
-            for key in ('status', 'attempts', 'results', 'error', 'history'):
-                prior[key] = deepcopy(row[key])
-
-    def list_approvals(self, proc_inst_id, tenant_id):
-        with self._lock:
-            return [deepcopy(x) for x in self.approvals.values()
-                    if x['proc_inst_id'] == proc_inst_id and x['tenant_id'] == tenant_id]
-
-    def pending_approvals(self, tenant_id, after_id=None, limit=100):
-        with self._lock:
-            rows = [x for x in self.approvals.values()
-                    if x['tenant_id'] == tenant_id and x['status'] == 'PENDING'
-                    and (after_id is None or x['todo_id'] > after_id)
-                    and self.instances.get(x['proc_inst_id'], {}).get('status') == 'RUNNING'
-                    and not self.instances[x['proc_inst_id']].get('is_deleted')
-                    and self.workitems.get(x['todo_id'], {}).get('status') == 'SUBMITTED']
-            return deepcopy(sorted(rows, key=lambda x: x['todo_id'])[:limit])
 
 
 class PgApprovals:

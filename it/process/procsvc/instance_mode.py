@@ -1,13 +1,11 @@
-"""Instance mode wiring for the process service (PROCESS_MODE=instance).
+"""Instance runtime wiring for the process service — 학생 PC 의 단 하나의 구성(처리 건 엔진 + Supabase PostgreSQL + AI 워커 하나).
 
-main.py keeps the legacy behaviour and calls into this module at four points: startup, every Incident transition,
-every alerts RAISE message, and when the legacy agent submits a decision. Everything else that instance mode needs
-(hooks, the engine polling loop, HTTP routes) lives here so main.py stays a thin FastAPI shell.
+main.py calls into this module at two points: startup and every Incident transition. 경보로 처리 건을 여는 길은 main 의 원천
+접수 하나다(admit_alert). Everything else (hooks, the engine polling loop, HTTP routes) lives here.
 
-    main.py ──start(ctx)──▶ InstanceRuntime(repo, definition, hooks) + polling loop (SUBMITTED → engine, timers, stale consumers)
+    main.py ──build(ctx) · start_loops──▶ InstanceRuntime(PgRepo, definition, hooks) + polling loop
+                                         (SUBMITTED → engine, 마감 지난 타이머 · 대기 행, 워커 임대 정리, 오래 붙잡힌 소비자)
             ──on_incident_update(inc)──▶ service tasks task:command / task:reobserve are turned in from Incident states
-            ──on_alert_raise(alert)──▶ a RAISE opens an instance (message start event)
-            ──bridge_legacy_agent(decision)──▶ AGENT_BRIDGE=legacy plays the four agent tasks through the worker's own RPCs
 """
 from __future__ import annotations
 
@@ -29,23 +27,20 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from hydcommon.timeutil import now_iso
-from . import decisions as declib, definition, engine, instances, machine, procdb, reobs_series, work_orders
+from . import engine, instances, machine, procdb, reobs_series, work_orders
 from .definition_registry import validate_definition
 from .approval_hooks import DecisionDelivery, record_execution as _record_execution
 from . import task_deferral
 from . import approval_part
-from .legacy_assessment import LegacyAssessment
 
 log = logging.getLogger("process.instance_mode")
 
 DEFINITIONS_DIR = Path(os.getenv("PROCESS_DEFINITIONS", "/srv/definitions"))
 DEFINITION_FILE = os.getenv("PROCESS_DEFINITION_FILE", "anomaly_response_v22.json")   # A116: 2.2 = 2.1 in the product's agent-task shape
-# legacy: while the cliagents worker is absent, the legacy agent's card + decision complete the instance's agent tasks
-#         through the same RPCs the worker would use (fetch_pending_task → save_task_result).   off: the tasks wait for the worker.
-AGENT_BRIDGE = os.getenv("AGENT_BRIDGE", "legacy")
 POLL_INTERVAL_S = float(os.getenv("ENGINE_POLL_INTERVAL_S", "2"))     # the product polls every 5 s; faster here for the classroom
 WORKER_URL = os.getenv("WORKER_URL", "http://agent-worker:8097")       # the cliagents worker's /health · /agents (monitoring, 회의 L434)
 STALE_CLEANUP_EVERY = 150                                              # × POLL_INTERVAL_S ≈ 5 min (the product's cleanup_task)
+LEASE_SWEEP_EVERY = 30                                                 # × POLL_INTERVAL_S ≈ 1 min: 임대가 세 번 끝난 워커 실행 → FAILED (A-10)
 # A151 (A148 item 70-A): how long startup waits for an unreachable DB before giving up and letting the restart policy act
 STARTUP_DB_WAIT_S = float(os.getenv("PROCESS_STARTUP_DB_WAIT_S", "60"))
 # C2 (확정 TODO C) 승인 뒤 실행 부품의 연결 · 수업 설정 (git 이력 39f447ce:문서/시스템/검증_기록/2026-10-09/c2-execution.md)
@@ -59,6 +54,18 @@ WAIT_COMPRESSION = float(os.getenv("PROCESS_WAIT_COMPRESSION", "60"))
 # 여기에 없는 이름은 tenants.mcp 에서 연결 검사를 통과한(설정 해시가 같은) 서버만 쓴다.
 EFFECT_MCP_SERVERS = json.loads(os.getenv("EFFECT_MCP_SERVERS") or json.dumps(
     {"hyd-effects": {"type": "url", "url": "http://effects-mcp:8197/mcp", "transport": "streamable_http"}}))
+# 하-04 · 하-05: 업무 시뮬레이터의 쓰기 끝점과 승인 뒤 메일 도구(effects-mcp)는 이 값이 맞는 호출만 받는다 — process 만 아는 값이다
+# (에이전트 · 워커 · 포털에는 넘기지 않는다). 없으면 process 가 뜨지 않는다(main._startup).
+CALLER_HEADER = "X-HYD-Process-Caller"
+
+
+def caller_headers() -> dict:
+    token = os.environ.get("PROCESS_CALLER_TOKEN", "")
+    if not token:
+        raise RuntimeError("PROCESS_CALLER_TOKEN 이 설정되지 않아 업무 시스템 쓰기 · 승인 뒤 메일 도구를 부를 수 없습니다 — 시작.bat 을 다시 실행하세요")
+    return {CALLER_HEADER: token}
+
+
 ENTERPRISE_READS = {"part_quotes": ("/scm/quotes", "part"), "purchase_order": ("/erp/purchase_orders/{ref}", None),
                     "spare_stock": ("/erp/spare_stock", "part"), "maintenance_windows": ("/cmms/windows", "asset"),
                     "pm_status": ("/cmms/pm_status", "asset")}
@@ -76,14 +83,13 @@ class ProcessContext:
     cypher: Callable[..., list]                     # (query, **params) -> rows   (Neo4j write transaction)
     exec_skill: Callable[[dict, dict], dict]        # (decision, item) -> enterprise transaction result
     record_decision: Callable[[dict], None]
-    approve_incident: Callable[[object, str, list[dict]], dict]   # (incident, by, commands) -> action.cmd
+    approve_incident: Callable[..., dict]           # (incident, by, commands, at) -> action.cmd (송신 확인 뒤)
     get_loop: Callable[[], asyncio.AbstractEventLoop | None]
     check_approval: Callable[[dict, str, str], dict]  # must reread current policy/sources; explicit test double in unit tests
     after_incident: Callable | None = None
     reviews: Callable | None = None
     record_incident: Callable | None = None
     approval_receipts: Callable | None = None
-    accept_evaluation: Callable | None = None
     exec_compensation: Callable | None = None     # (request) → enterprise /api/exec with a compensation skill (A072)
     latest_tag: Callable[[str, str], float | None] | None = None   # C2: (asset, tag) → 최신값 (작업지시 뒤 재관측)
     window_series: Callable | None = None     # A161-G3: (incident, after, since) → 재관측 창의 값 흐름 (reobs_series.build 모양)
@@ -162,11 +168,12 @@ async def _event_frames(repo, since, is_disconnected, interval, keepalive_s, fet
         await asyncio.sleep(interval)
 
 
-def build(ctx: ProcessContext) -> instances.InstanceRuntime:
-    """Create the runtime (repo + definition + hooks) and make it current. No background tasks — unit-testable."""
+def build(ctx: ProcessContext, repo: procdb.PgRepo | None = None, clock: Callable | None = None) -> instances.InstanceRuntime:
+    """Create the runtime (repo + definition + hooks) and make it current. No background tasks — unit-testable.
+    repo: 기본은 SUPABASE_DSN 의 PgRepo(시험은 시험 DB 의 PgRepo). clock: () → 지금(UTC) — 엔진의 모든 시각 판정이 이것을 쓴다."""
     global _runtime, _ctx
     _ctx = ctx
-    repo = procdb.make_repo()
+    repo = repo or procdb.PgRepo()
     defn = _bootstrap_definition(repo, os.getenv('TENANT_ID','hyd'))
     # B4: 기준 흐름 = 기동 파일(PROCESS_DEFINITION_FILE)의 판본 — 배포된 학생 판본으로 기동해도 "기준 흐름으로 되돌리기"는 이 판본으로 간다.
     # P10: 그 판본 원문을 먼저 등록해 둔다(운영 포인터 · 머리의 마지막 등록 원문은 아래 런타임이 기동 정의로 둔다)
@@ -174,15 +181,16 @@ def build(ctx: ProcessContext) -> instances.InstanceRuntime:
     base_problem = _register_reference(repo, seed, defn, os.getenv('TENANT_ID','hyd'))
     engine.configure_wait_compression(WAIT_COMPRESSION)
     _runtime = instances.InstanceRuntime(repo, defn, _hooks(ctx), time_scale=ctx.time_scale,
-                                        tenant_id=os.getenv('TENANT_ID','hyd'), consumer=f"process-engine:{procdb.consumer_name()}")
+                                        tenant_id=os.getenv('TENANT_ID','hyd'), consumer=f"process-engine:{procdb.consumer_name()}",
+                                        clock=clock)
     triage = _runtime.register_definition(json.loads((DEFINITIONS_DIR/'alert_triage_v1.json').read_text(encoding='utf-8')))
     _runtime.base_version, _runtime.reference_ids, _runtime.base_problem = seed.raw['version'], {seed.id, triage['id']}, base_problem
     from . import ask
     ask.register_definition(_runtime, DEFINITIONS_DIR)     # B5: 에이전트에게 질문하기 (정식 정의 ask_agent 1.0)
     _runtime.register_definition(json.loads((DEFINITIONS_DIR/'shift_handover_v1.json').read_text(encoding='utf-8')))
     ctx.state["mode"], ctx.state["supabase"] = "instance", repo.ping()
-    log.info("instance mode: definition %s@%s (%d activities), repo %s, agent bridge %s", defn.id, defn.raw.get('version'),
-             len(defn.activities), type(repo).__name__, AGENT_BRIDGE)
+    log.info("instance runtime: definition %s@%s (%d activities), repo %s", defn.id, defn.raw.get('version'),
+             len(defn.activities), type(repo).__name__)
     return _runtime
 
 
@@ -239,15 +247,10 @@ def start_loops(rt: instances.InstanceRuntime, ctx: ProcessContext) -> None:
         raise RuntimeError("instance polling already running")
     _poll_status.update(status="preparing", last_success_at=None, failure_kind=None)
     _poll_task = asyncio.create_task(_polling())
-    if AGENT_BRIDGE == 'legacy':
-        asyncio.create_task(_legacy_polling(rt,ctx))
 
 
 def _transient_db_errors() -> tuple[type[BaseException], ...]:
-    try:
-        import psycopg
-    except ImportError:          # MemoryRepo-only environments: nothing is a DB connection error
-        return ()
+    import psycopg
     return (psycopg.OperationalError, psycopg.InterfaceError)
 
 
@@ -285,43 +288,42 @@ async def retry_startup(step: Callable[[], object], what: str, state: dict, budg
         return out
 
 
-def _evaluate_legacy(alert):
-    url=os.getenv('AGENT_URL','http://agent:8091')+'/api/agent/evaluate'
-    req=urllib.request.Request(url,data=json.dumps({'alert':alert}).encode(),
-                               headers={'Content-Type':'application/json'},method='POST')
-    with urllib.request.urlopen(req,timeout=90) as response:
-        data=response.read(2_000_001)
-    if len(data)>2_000_000:raise ValueError('agent evaluation response exceeds 2 MB')
-    return json.loads(data)
+def sweep_worker_leases(rt: instances.InstanceRuntime) -> int:
+    """A097 · A-10: 임대가 세 번 끝난 워커 실행을 FAILED 로 — 사람이 [닫기]로 닫을 수 있게(A082). 엔진 폴링의 정리 주기에서 돈다."""
+    n = rt.repo.expire_worker_leases()
+    if n:
+        log.warning("worker lease sweep: %d run(s) marked FAILED after %d expired claims", n, procdb.MAX_CLAIMS)
+    return n
 
 
-async def _legacy_polling(rt,ctx):
-    worker=LegacyAssessment(rt,_evaluate_legacy,ctx.accept_evaluation,_bridge_legacy_agent)
-    while True:
+def poll_round(rt: instances.InstanceRuntime, tick: int) -> list[str]:
+    """폴링 한 바퀴(B-11). 일마다 따로 가둔다 — 처리 건 하나 · 일 하나의 예외가 타이머 발화나 다른 일을 멈추지 않는다(처리 건 단위
+    격리는 각 일 안에서 한다). 돌려줌 = 실패한 일의 이름(비면 성공)."""
+    steps = [("engine", rt.poll_once), ("timers", rt.fire_timeouts)]
+    if tick % LEASE_SWEEP_EVERY == 0:
+        steps.append(("worker leases", lambda: sweep_worker_leases(rt)))
+    if tick % STALE_CLEANUP_EVERY == 0:
+        steps.append(("stale consumers", rt.repo.cleanup_stale_consumers))
+    failed = []
+    for name, step in steps:
         try:
-            await _in_executor(worker.tick)
-        except Exception:
-            log.exception('legacy assessment delivery failed; durable attempt retained')
-        await asyncio.sleep(POLL_INTERVAL_S)
+            step()
+        except Exception:  # noqa: BLE001 — 기록하고 다음 일로(실패는 /healthz 의 runtime.failure_kind 로 보인다)
+            log.exception("instance polling: %s failed", name)
+            failed.append(name)
+    return failed
 
 
 async def _polling() -> None:
-    """The completion polling of ProcessGPT: SUBMITTED rows → engine; boundary timers; stale consumers every ~5 min."""
+    """The completion polling of ProcessGPT: SUBMITTED rows → engine; boundary timers; worker leases ~1 min; stale consumers ~5 min."""
     tick = 0
     try:
         while True:
             await asyncio.sleep(POLL_INTERVAL_S)
             tick += 1
-            try:
-                await _in_executor(_runtime.poll_once)
-                if AGENT_BRIDGE == 'legacy':
-                    await _in_executor(reconcile_legacy_decisions)
-                await _in_executor(_runtime.fire_timeouts)
-                if tick % STALE_CLEANUP_EVERY == 0:
-                    await _in_executor(_runtime.repo.cleanup_stale_consumers)
-            except Exception as e:  # noqa: BLE001
-                _poll_status.update(status="failed", failure_kind=type(e).__name__)
-                log.warning("instance polling failed (%s)", type(e).__name__)
+            failed = await _in_executor(poll_round, _runtime, tick)
+            if failed:
+                _poll_status.update(status="failed", failure_kind=", ".join(failed))
             else:
                 _poll_status.update(status="ready", last_success_at=now_iso(), failure_kind=None)
     except asyncio.CancelledError:
@@ -351,16 +353,6 @@ def _schedule(fn, *args) -> None:
 def on_incident_update(inc: machine.Incident) -> None:
     if _runtime is not None:
         _schedule(_runtime.on_incident_update, inc.state, inc.id, inc.cleared)
-
-
-def on_alert_raise(alert: dict) -> None:
-    if _runtime is not None:
-        _schedule(_runtime.on_alert_raise, alert)
-
-
-def bridge_legacy_agent(decision: dict) -> None:
-    if _runtime is not None and AGENT_BRIDGE == "legacy":
-        _schedule(_bridge_legacy_agent, decision)
 
 
 # ---------------------------------------------------------------- hooks: how the runtime touches the Incident / decision world of main.py
@@ -407,49 +399,51 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
         inc.card = dict(card, incident=inc.id, alert=inc.card.get('alert'))
         ctx.persist()
 
-    def approve_commands(inc_id: str, commands: list[dict], by: str) -> dict:
+    def approve_commands(inc_id: str, commands: list[dict], by: str, at=None) -> dict:
         inc = ctx.incidents.get(inc_id)
         if inc is None:
             raise ValueError(f"no such incident {inc_id}")
-        return ctx.approve_incident(inc, by, commands)
+        return ctx.approve_incident(inc, by, commands, at)
+
+    def _incident_change(inc_id: str, change) -> bool:
+        """사건 전이 하나(machine.on_*) → 저장 · 감사 · 처리 건 갱신. change(inc, fx) 가 False 면 아무것도 하지 않는다."""
+        inc = ctx.incidents.get(inc_id)
+        if inc is None:
+            raise ValueError(f"no such incident {inc_id}")
+        fx = work_orders._Audit()
+        changed = change(inc, fx)
+        if changed:
+            ctx.persist()
+            for event in fx.events:
+                ctx.audit(event["asset"], event["actor"], event["event"], event["detail"], incident=inc.id)
+            if ctx.after_incident:
+                ctx.after_incident(inc)
+        return bool(changed)
+
+    def ack_timeout(inc_id: str, cmd_id: str) -> bool:
+        return _incident_change(inc_id, lambda inc, fx: machine.on_ack_timeout(inc, cmd_id, fx))
+
+    def reobservation_extended(inc_id: str, cmd_id: str, reading: dict, extension: int, seconds: float) -> bool:
+        return _incident_change(inc_id, lambda inc, fx: machine.on_reobservation_extended(inc, cmd_id, reading, extension, seconds, fx))
+
+    def reobservation_verdict(inc_id: str, cmd_id: str, passed: bool, reading: dict, extensions: int) -> bool:
+        return _incident_change(inc_id, lambda inc, fx: machine.on_reobservation(inc, cmd_id, passed, reading, extensions, fx))
 
     def incident_state(inc_id: str) -> str | None:
         inc = ctx.incidents.get(inc_id)
         return inc.state if inc is not None else None
 
     def reopen_incident(inc_id: str, request_id: str, by: str, role: str, reason: str, effects: dict) -> bool:
-        inc = ctx.incidents.get(inc_id)
-        if inc is None:
-            raise ValueError(f"no such incident {inc_id}")
-        fx = work_orders._Audit()
-        changed = machine.on_rework_reopen(inc, request_id, by, role, reason, effects, fx)
-        if changed:
-            ctx.persist()
-            for event in fx.events:
-                ctx.audit(event["asset"], event["actor"], event["event"], event["detail"], incident=inc.id)
-            if ctx.after_incident:
-                ctx.after_incident(inc)
-        return changed
+        return _incident_change(inc_id, lambda inc, fx: machine.on_rework_reopen(inc, request_id, by, role, reason, effects, fx))
 
     def reopen_for_recheck(inc_id: str, request_id: str, by: str, reason: str) -> bool:
         # B7: 작업지시로만 닫힌 사건 — 흐름이 재분석 뒤 새 판단 · 승인으로 되돌아가면 다음 승인을 받도록 다시 연다(machine.on_recheck_reopen)
-        inc = ctx.incidents.get(inc_id)
-        if inc is None:
-            raise ValueError(f"no such incident {inc_id}")
-        fx = work_orders._Audit()
-        changed = machine.on_recheck_reopen(inc, request_id, by, reason, fx)
-        if changed:
-            ctx.persist()
-            for event in fx.events:
-                ctx.audit(event["asset"], event["actor"], event["event"], event["detail"], incident=inc.id)
-            if ctx.after_incident:
-                ctx.after_incident(inc)
-        return changed
+        return _incident_change(inc_id, lambda inc, fx: machine.on_recheck_reopen(inc, request_id, by, reason, fx))
 
     def incident_snapshot(inc_id: str) -> dict | None:
         inc=ctx.incidents.get(inc_id)
         return {'state':inc.state,'cleared':inc.cleared,'cmdId':inc.cmd_id,'superseded':bool(inc.superseded),
-                'workOrder':bool(inc.work_order),'reason':inc.reason} if inc is not None else None
+                'workOrder':bool(inc.work_order),'reason':inc.reason,'ackDueAt':inc.ack_due_at} if inc is not None else None
 
     def decision_option(decision_id: str, option_id: str) -> dict | None:
         d = ctx.book.get(decision_id) or {}
@@ -471,34 +465,13 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
         return result
 
     def close_incident_effect(inc_id: str, receipt: dict) -> bool:
-        inc = ctx.incidents.get(inc_id)
-        if inc is None:
-            raise ValueError(f"no such incident {inc_id}")
-        fx = work_orders._Audit()
-        changed = machine.on_business_effect(inc, receipt, fx)
-        if changed:
-            ctx.persist()
-            for event in fx.events:
-                ctx.audit(event["asset"], event["actor"], event["event"], event["detail"], incident=inc.id)
-            if ctx.after_incident:
-                ctx.after_incident(inc)
-        return changed
+        return _incident_change(inc_id, lambda inc, fx: machine.on_business_effect(inc, receipt, fx))
 
     def close_incident_result(inc_id: str, level: str, summary: str) -> bool:
-        inc = ctx.incidents.get(inc_id)
-        if inc is None:
-            raise ValueError(f"no such incident {inc_id}")
-        fx = work_orders._Audit()
-        changed = machine.on_result_report(inc, level, summary, fx)
-        if changed:
-            ctx.persist()
-            for event in fx.events:
-                ctx.audit(event["asset"], event["actor"], event["event"], event["detail"], incident=inc.id)
-            if ctx.after_incident:
-                ctx.after_incident(inc)
-        return changed
+        return _incident_change(inc_id, lambda inc, fx: machine.on_result_report(inc, level, summary, fx))
 
-    def recovery_reading(inc_id: str, since: str | None = None) -> dict | None:
+    def recovery_reading(inc_id: str, since: str | None = None, after: str = "work_order") -> dict | None:
+        """사건의 회복 기준 태그 최신값 · 경보 해제 · (since 가 있으면) 재관측 창의 값 흐름. after = 'command' | 'work_order'(창의 종류)."""
         inc = ctx.incidents.get(inc_id)
         if inc is None or inc.recovery is None:
             return None
@@ -508,14 +481,14 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
         reading = {"tag": tag, "op": op, "limit": limit, "value": value, "inside": inside, "cleared": bool(inc.cleared),
                    "criterion": f"{tag} {op} {limit}"}
         if since and ctx.window_series is not None:
-            # A161-G3: the work-order re-observation window (since = its start) — the trend goes on the reading (the step's
-            # REOBSERVATION event) and on the Incident (reobsSeries), like the command path's timer
+            # A161-G3: the re-observation window (since = its start) — the trend goes on the reading (the step's
+            # REOBSERVATION event) and on the Incident (reobsSeries)
             try:
-                series = ctx.window_series(inc, "work_order", since)
+                series = ctx.window_series(inc, after, since)
             except Exception as e:  # noqa: BLE001 — the trend is supporting evidence; the verdict never waits for it, but the gap is recorded
                 log.warning("re-observation series for %s could not be read", inc_id, exc_info=True)
                 series = reobs_series.unavailable(f"재관측 창의 값을 읽지 못했습니다: {type(e).__name__}: {str(e)[:200]}", tag=tag, op=op,
-                                                  limit=limit, since=since, until=None, after="work_order", extensions=inc.reobs_extensions)
+                                                  limit=limit, since=since, until=None, after=after, extensions=inc.reobs_extensions)
             if series:
                 reading["series"] = series
                 machine.record_reobs_series(inc, series)
@@ -532,7 +505,7 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
             return {"status": "failed", "error": str(e), "error_kind": "config"}
         rt = current()
         if rt is None:
-            return {"status": "failed", "error": "instance 실행 서비스가 없어 비밀 값 표를 읽을 수 없습니다", "error_kind": "config"}
+            return {"status": "failed", "error": instances.NOT_READY, "error_kind": "config"}
         try:            # G2: ${SECRET:KEY} 는 부르기 직전에만 채운다 — 값이 없으면 빈 토큰으로 부르지 않고 사유로 멈춘다
             spec, used = mcp_secrets.runtime_spec(rt.repo, rt.tenant_id, server, entry)
             spec = mcp_check.normalize(spec)
@@ -554,7 +527,8 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
 
     def _effect_server(name: str) -> dict:
         if name in EFFECT_MCP_SERVERS:
-            return EFFECT_MCP_SERVERS[name]
+            entry = EFFECT_MCP_SERVERS[name]       # process 설정의 승인 뒤 쓰기 서버 — process 만 아는 값을 실어 부른다(하-04)
+            return dict(entry, headers={**(entry.get("headers") or {}), **caller_headers()})
         from . import mcp_registry
         rt = current()
         servers = mcp_registry.store_for(rt.repo).servers(rt.tenant_id) if rt is not None else {}
@@ -578,7 +552,8 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
                            ensure_actor_schema=lambda: ctx.cypher(instances.ACTOR_CONSTRAINT_Q), audit=ctx.audit,
                            enterprise_read=enterprise_read, mcp_call=mcp_call, mcp_read=mcp_read, plant_restore=plant_restore,
                            close_incident_effect=close_incident_effect, recovery_reading=recovery_reading,
-                           read_tag=ctx.latest_tag, close_incident_result=close_incident_result)
+                           read_tag=ctx.latest_tag, close_incident_result=close_incident_result, ack_timeout=ack_timeout,
+                           reobservation_extended=reobservation_extended, reobservation_verdict=reobservation_verdict)
 
 
 def enterprise_read(name: str, params: dict) -> dict:
@@ -609,154 +584,6 @@ def plant_restore(asset: str, component: str | None) -> dict:
 
 def _open_incident_for(ctx: ProcessContext, alert_id: str | None) -> machine.Incident | None:
     return next((i for i in list(ctx.incidents.values()) if i.alert_id == alert_id), None)
-
-
-# ---------------------------------------------------------------- legacy agent bridge
-def reconcile_legacy_decisions() -> None:
-    """Recover persisted legacy results after SKIP LOCKED or process restart.
-
-    An empty claim can be temporary. Only an already identified legacy run is
-    resumed; changing the default bridge must never take over a Codex run.
-    """
-    if AGENT_BRIDGE != 'legacy' or _runtime is None or _ctx is None:
-        return
-    by_incident = {}
-    for d in list(_ctx.book.values()):
-        inc_id = (d.get('origin') or {}).get('incident')
-        if inc_id:
-            by_incident.setdefault(inc_id, []).append(d)
-    for inc_id, decisions in by_incident.items():
-        inst = _runtime.instance_of_incident(inc_id)
-        if not inst or inst['status'] != 'RUNNING' or inst.get('is_deleted') or int(inst.get('rework_generation') or 0) > 0:
-            continue
-        rows = _runtime.repo.list_workitems(proc_inst_id=inst['proc_inst_id'], limit=None)
-        if not any(_legacy_key(w) in {'task:diagnose','task:candidates','task:compliance','task:rank'}
-                   and w['status'] in {'IN_PROGRESS','SUBMITTED'} for w in rows):
-            continue
-        started = _runtime.repo.agent_task_origins(inst['proc_inst_id'], _runtime.tenant_id)
-        if any(not job.startswith('legacy:') for job in started):
-            continue
-        # B7: a decision a person already approved (delivered) belongs to an earlier round; a flow that loops back to a new
-        # judgment (re-analysis after a work order) must get a fresh assessment, never a replay of the approved one.
-        approved = {d['id'] for d in decisions if d.get('process_approval_id')}
-        jobs = {job[len('legacy:'):] for job in started} - approved
-        if len(jobs) > 1:
-            log.error('legacy recovery refused mixed decision jobs: %s', inst['proc_inst_id'])
-            continue
-        candidates = [d for d in decisions if d['id'] not in approved and (not jobs or d['id'] in jobs)]
-        if candidates:
-            _bridge_legacy_agent(max(candidates, key=lambda d: d.get('created') or ''))
-
-
-def _bridge_legacy_agent(decision: dict) -> None:
-    """The legacy agent did diagnose → candidates → compliance → rank in one Python run. Replay its results into the
-    instance's four agent tasks exactly the way the cliagents worker would: fetch_pending_task → save_task_result(final),
-    then the engine processes each SUBMITTED row (poll_once) which opens the next one."""
-    inc_id = (decision.get("origin") or {}).get("incident")
-    inst = _runtime.instance_of_incident(inc_id) if inc_id else None
-    if inst is None:
-        return
-    if int(inst.get('rework_generation') or 0) > 0 or (decision.get('origin') or {}).get('process_scope'):
-        return  # old deterministic results cannot populate a new generation or a claimed CLI run
-    rows=_runtime.repo.list_workitems(proc_inst_id=inst['proc_inst_id'],limit=None)
-    if any(_legacy_key(w)=='task:diagnose' and w['status'] in {'PENDING','IN_PROGRESS'}
-           and (w.get('feedback') or {}).get('reassessment') for w in rows):
-        return  # a prior decision cannot substitute for the requested fresh assessment
-    outputs = _legacy_outputs(decision, _ctx.incidents.get(inc_id))
-    job_id = f"legacy:{decision['id']}"
-    for _ in range(len(outputs)):
-        wi = _claim_own(inst["proc_inst_id"])
-        if wi is None:
-            return
-        _event(job_id, wi, inst, "task_started", {"goal": wi.get("activity_name"), "name": "legacy agent", "role": "L8 판단 파이프라인 (LLM 워커 없음)",
-                                                   "task_description": (wi.get("query") or "")[:200]})
-        evidence = _legacy_evidence(decision, _ctx.incidents.get(inc_id)).get(_legacy_key(wi))
-        if evidence:                                          # U1: how the built-in pipeline judged, as one row of this task's trace
-            _event(job_id, wi, inst, "task_working", evidence)
-        if not _runtime.repo.save_task_result(wi["id"], outputs.get(_legacy_key(wi), {}), final=True,
-                                              expected_consumer='legacy-agent'):
-            return
-        _event(job_id, wi, inst, "task_completed", {"output_keys": sorted(outputs.get(_legacy_key(wi), {}))})
-        _runtime.poll_once()
-
-
-def _legacy_key(wi: dict) -> str:
-    """B3: a flow imported from bpmn.io keeps its drawn task ids, while its scenario agent parts carry the base activity's
-    contract (same tool · form). The built-in pipeline's outputs are keyed by the base activity, so match by that tool."""
-    aid = wi.get('activity_id')
-    if _runtime is None or aid in _runtime.defn.activities:
-        return aid
-    return next((a['id'] for a in _runtime.defn.activities.values() if wi.get('tool') and a.get('tool') == wi.get('tool')), aid)
-
-
-def _claim_own(proc_inst_id: str) -> dict | None:
-    """The bridge has one decision; claim only that instance before applying LIMIT.
-
-    The real worker still polls the tenant queue. Never claim unrelated rows and
-    reset their draft state: that can lose FB_REQUESTED or strand a batch claim.
-    """
-    with _runtime._transition(proc_inst_id):
-        inst = _runtime.repo.get_instance(proc_inst_id)
-        if int(inst.get('rework_generation') or 0) > 0:
-            return None
-        rows = _runtime.repo.fetch_pending_task("cliagents", "legacy-agent", limit=1,
-                    tenant_id=_runtime.tenant_id, proc_inst_id=proc_inst_id)
-    return rows[0] if rows else None
-
-
-def _legacy_outputs(d: dict, inc: machine.Incident | None) -> dict[str, dict]:
-    origin, opts = d.get("origin") or {}, d.get("options") or []
-    return {
-        "task:diagnose": {"cause": origin.get("cause"), "failure_mode": origin.get("failureMode"), "guide_card": inc.card if inc else {}},
-        "task:candidates": {"candidates": [o["id"] for o in opts]},
-        "task:compliance": {"compliance": {o["id"]: {"feasible": o.get("feasible"),
-                                                     "excluded": [v.get("annotation") for v in o.get("violations") or []],
-                                                     "penalties": [p.get("annotation") for p in o.get("penalties") or []],
-                                                     "warnings": [w.get("annotation") for w in o.get("warnings") or []]} for o in opts}},
-        "task:rank": {"decision": {"recommended": d.get("recommended"), "explanation": d.get("explanation"),
-                                   "order": [f"{o.get('rank')}. {o.get('sopId')} {o.get('name')}" for o in opts]}, "decision_id": d["id"]},
-    }
-
-
-def _legacy_evidence(d: dict, inc: machine.Incident | None) -> dict[str, dict]:
-    """U1 (블랙박스 0): the built-in pipeline has no tool calls or prose to show, so each of its four tasks records the numbers
-    it decided with — cause score = prior × passed evidence weight / all evidence weight (agentsvc card.rank_causes), the rules
-    that selected each card, the compliance outcome, and each card's score parts under the ranking rule's formula. Values are
-    copied from the decision and the guide card as they are; nothing is recomputed here."""
-    opts, card = d.get("options") or [], (inc.card if inc else {}) or {}
-    causes = card.get("causes") or []
-    top = next((c for c in causes if c.get("id") == card.get("topCause")), causes[0] if causes else None)
-    def passed(c):
-        evs = c.get("evidence") or []
-        return sum(1 for e in evs if e.get("passed") is True), len(evs)
-    rank_rule = d.get("rankRule") or {}
-    rec = next((o for o in opts if o.get("id") == d.get("recommended")), None)
-    out = {
-        "task:diagnose": {"type": "evidence", "name": "판단 근거", "method": "원인 점수 = 사전확률 × (통과한 근거 가중치 ÷ 전체 근거 가중치)",
-                          "content": (f"원인 후보 {len(causes)}개를 관측 근거로 비교 — 판정 {top.get('name') or top.get('id')} (점수 {top.get('score')})"
-                                      if top else "원인 후보가 없습니다"),
-                          "causes": [{"id": c.get("id"), "name": c.get("name"), "prior": c.get("prior"), "score": c.get("score"),
-                                      "passed": passed(c)[0], "evidence": passed(c)[1]} for c in causes]},
-        "task:candidates": {"type": "evidence", "name": "판단 근거", "method": "조치 후보 선정 규칙이 발동한 조치만 후보로 올림",
-                            "content": f"선정 규칙으로 조치 후보 {len(opts)}장",
-                            "cards": [{"id": o.get("id"), "name": o.get("name"),
-                                       "rules": [r.get("annotation") or r.get("rule") for r in o.get("selectedBy") or []]} for o in opts]},
-        "task:compliance": {"type": "evidence", "name": "판단 근거", "method": "규정 규칙을 후보마다 대어 제외 · 감점 · 경고",
-                            "content": (f"규정 검사 — 제외 {sum(1 for o in opts if not o.get('feasible'))}장 · "
-                                        f"감점 {sum(len(o.get('penalties') or []) for o in opts)}건 · 경고 {sum(len(o.get('warnings') or []) for o in opts)}건")},
-        "task:rank": {"type": "evidence", "name": "판단 근거",
-                      "method": f"순위 규칙 {rank_rule.get('annotation') or rank_rule.get('rule') or '없음'}의 식으로 구성 점수를 더함",
-                      "content": (f"1위 {rec.get('name')} (점수 {rec.get('score')})" if rec else "규정을 통과한 카드가 없습니다"),
-                      "formula": (rank_rule.get("rankingPolicy") or {}).get("components") or {},
-                      "cards": [{"id": o.get("id"), "name": o.get("name"), "rank": o.get("rank"), "score": o.get("score"),
-                                 "parts": o.get("scoreParts") or {}, "feasible": o.get("feasible")} for o in opts]},
-    }
-    return out
-
-
-def _event(job_id: str, wi: dict, inst: dict, event_type: str, data: dict) -> None:
-    _runtime.repo.record_events([{"job_id": job_id, "todo_id": wi["id"], "proc_inst_id": inst["proc_inst_id"], "crew_type": "result",
-                                  "event_type": event_type, "data": data}])
 
 
 # ---------------------------------------------------------------- agent worker monitoring
@@ -803,7 +630,7 @@ class RollbackReq(BaseModel):
 
 class DeployReq(RollbackReq):
     version: str = Field(min_length=1, max_length=200)
-    # P9: 강사 조립 스크립트(scripts/c3_flows.py deploy)만 True — 포털의 [기준 흐름으로 되돌리기]가 남기는 '수업 흐름' 배포
+    # P9: 시작.bat 이 부르는 수업 흐름 설치(course_bootstrap — 프로세스 안 호출만, course_policy 가 그 밖은 거절)만 True — 포털의 [기준 흐름으로 되돌리기]가 남기는 '수업 흐름' 배포
     class_flow: bool = False
 
 
@@ -828,7 +655,7 @@ class CloseReq(BaseModel):
 class SelectReq(BaseModel):
     decision: str
     option: str
-    by: str = "승인자"
+    by: str                             # 포털의 "나"(user:*) — 누가 승인했는지 모르는 승인은 받지 않는다(A-04)
     role: str
     reason: str = ""
     fan_pct: float | None = None
@@ -883,11 +710,12 @@ class EffectReq(ApprovalDiscardReq):
 
 def _rt() -> instances.InstanceRuntime:
     if _runtime is None:
-        raise HTTPException(409, "process is in legacy mode (set PROCESS_MODE=instance)")
+        raise HTTPException(503, instances.NOT_READY)
     return _runtime
 
 
-def mount(app: FastAPI, process_mode: str) -> None:
+def mount(app: FastAPI, *, admit_alert: Callable) -> None:
+    """admit_alert(alert) → 접수 결과(async, main 의 원천 접수) — 강의 도우미가 경보로 처리 건을 열 때도 같은 길로 간다(B-10)."""
     @app.post("/internal/worker/mcp-runtime")
     async def worker_mcp_runtime(request: Request):
         from .worker_credentials import resolve
@@ -920,7 +748,7 @@ def mount(app: FastAPI, process_mode: str) -> None:
     @app.get("/api/process/mode")
     def process_mode_info():
         rt = _runtime
-        return {"mode": process_mode, "agent_bridge": AGENT_BRIDGE if rt else None, "definition": rt.defn.id if rt else None,
+        return {"mode": "instance", "definition": rt.defn.id if rt else None,
                 "deployed_version": rt.repo.deployed_version(rt.defn.id, rt.tenant_id) if rt else None,
                 "repo": type(rt.repo).__name__ if rt else None, "time_scale": rt.time_scale if rt else None, "engine": rt.consumer if rt else None}
 
@@ -1124,23 +952,32 @@ def mount(app: FastAPI, process_mode: str) -> None:
 
     @app.post("/api/instances/start")
     async def start_instance(req: StartReq):
-        """Lecture helper: open an instance from a hand-written alert (the normal path is the Kafka alerts RAISE message)."""
+        """정의 하나를 직접 시작하거나(definition_id · version · event_id), 손으로 쓴 경보로 처리 건을 연다(alert). 경보는 Kafka 경보와
+        같은 원천 접수 → 경보 정책 → 배포 흐름 길 하나로만 간다(B-10) — 어느 흐름이 여는지는 정책이 정하고, 같은 경보는 같은 처리 건이다."""
         rt = _rt()
         try:
-            if req.definition_id:
-                event_id = req.event_id or (req.alert or {}).get('alertId')
-                inst = await _in_executor(rt.start_definition,req.definition_id,req.version,event_id,
-                                          req.variables,req.alert,req.name)
-            elif req.alert is not None:
-                inst = await _in_executor(rt.on_alert_raise, req.alert)
+            if req.alert is not None:
+                policy = await _in_executor(rt.alert_policy, req.alert.get('pattern'))
+                target = policy['target']
+                if req.definition_id and (req.definition_id, req.version or target['version']) != (target['definition'], target['version']):
+                    raise HTTPException(409, f"이 경보({req.alert.get('pattern')})는 배포된 흐름 {target['definition']} {target['version']}이(가) 엽니다 — "
+                                             "흐름을 바꾸려면 그 흐름을 배포하세요")
+                admitted = await admit_alert(req.alert)
+                if admitted.get('duplicate'):
+                    raise HTTPException(409, f"이 경보로 이미 열린 처리 건이 있습니다: {admitted.get('instance')}")
+                inst = await _in_executor(rt.repo.get_instance, admitted['instance'])
+            elif req.definition_id:
+                inst = await _in_executor(rt.start_definition, req.definition_id, req.version, req.event_id, req.variables, None, req.name)
+                if inst is None:
+                    raise HTTPException(409, f"같은 요청 id({req.event_id})로 이미 시작한 처리 건이 있습니다")
             else:
-                raise ValueError('정의 ID/버전/event_id 또는 alert가 필요합니다')
+                raise ValueError('시작할 정의(definition_id · version · event_id) 또는 경보(alert)가 필요합니다')
         except LookupError as e:
-            raise HTTPException(404,str(e))
+            raise HTTPException(404, str(e))
         except ValueError as e:
-            raise HTTPException(400,str(e))
-        if inst is None:
-            raise HTTPException(409, "alert already has a running instance or is malformed (needs alertId, asset)")
+            raise HTTPException(400, str(e))
+        except TimeoutError as e:
+            raise HTTPException(503, str(e))
         return inst
 
     @app.get("/api/todolist")

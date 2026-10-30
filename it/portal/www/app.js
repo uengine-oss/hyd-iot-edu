@@ -4,15 +4,18 @@
 const $ = (s, r = document) => r.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
 const fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toFixed(d);
-const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const HTTP_DEFAULT_DETAIL = { 'Not Found': '서버에 이 기능의 주소가 없습니다 — 서비스가 이 화면보다 이전 판일 수 있습니다', 'Method Not Allowed': '서버가 이 요청 방식을 받지 않습니다',
   'Internal Server Error': '서버 내부 오류', 'Bad Gateway': '중계 서버 오류', 'Service Unavailable': '서비스를 쓸 수 없는 상태입니다' };
 const NETWORK_DOWN = '서비스에 연결하지 못했습니다(서비스가 꺼져 있거나 주소가 다릅니다). 서비스 상태를 확인한 뒤 다시 시도하세요.';
+// 포털의 요청 함수 하나. options.timeout(ms): 기본은 읽기 8초 · 쓰기 30초, 0 이면 제한 없음(오래 걸리는 계산 · 채점처럼 화면이 따로 진행을 보일 때만).
+// options.withHeaders: 응답 머리글도 필요할 때(파일 이름) — {body, headers} 를 돌려준다.
 async function requestJ(url, options = {}) {
+  const { timeout, withHeaders, ...init } = options;
+  const limit = timeout != null ? timeout : init.method ? 30000 : 8000;
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), options.method ? 30000 : 8000);
+  const timer = limit > 0 ? setTimeout(() => controller.abort(), limit) : 0;
   try {
-    const r = await fetch(url, { cache: 'no-store', ...options, signal: controller.signal });
+    const r = await fetch(url, { cache: 'no-store', ...init, signal: controller.signal });
     let j;
     try { j = await r.json(); }
     catch (_) { throw new Error(`서버 응답을 읽을 수 없습니다 (${r.status}). 다시 조회하세요.`); }
@@ -24,25 +27,25 @@ async function requestJ(url, options = {}) {
       error.status = r.status; error.detail = j.detail;
       throw error;
     }
-    return j;
+    return withHeaders ? { body: j, headers: r.headers } : j;
   } catch (e) {
-    if (e.name === 'AbortError') throw new Error(options.method ? '응답 시간 초과. 처리 결과를 새로 확인한 뒤 다시 시도하세요.' : '응답 시간 초과. 연결 상태를 확인하세요.');
+    if (e.name === 'AbortError') throw new Error(init.method ? '응답 시간 초과. 처리 결과를 새로 확인한 뒤 다시 시도하세요.' : '응답 시간 초과. 연결 상태를 확인하세요.');
     if (e instanceof TypeError && e.status == null) throw new Error(NETWORK_DOWN);   // 연결 거부 · 네트워크 끊김(영문 Failed to fetch)
     throw e;
   } finally { clearTimeout(timer); }
 }
-const getJ = url => requestJ(url);
+const getJ = (url, options) => requestJ(url, options);
 function requireList(value, label) {
   if (!Array.isArray(value)) throw new Error(`${label} 응답 형식이 올바르지 않습니다. 다시 조회하세요.`);
   return value;
 }
-const postJ = (url, body, method = 'POST') => requestJ(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
+const postJ = (url, body, method = 'POST', options = {}) => requestJ(url, { ...options, method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
 function keyboardItem(item) {
   item.tabIndex = 0; item.setAttribute('role', 'button');
   item.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); item.click(); } });
 }
 
-const state = { tab: 'main', plant: null, det: null, incidents: [], runs: [], selected: null, detail: null, run: null, definition: null, audit: [], waves: {}, log: [], selectedAsset: null, showAll: false, incShown: 20 };
+const state = { tab: 'main', plant: null, det: null, detError: '', incidents: [], runs: [], runsError: '', selected: null, detail: null, run: null, audit: [], auditError: '', waves: {}, log: [], selectedAsset: null, showAll: false, incShown: 20 };
 
 /* ---------------- tabs ---------------- */
 function selectTab(name) {
@@ -178,14 +181,16 @@ async function pollHealth() {
 
 /* ---------------- 결함 시뮬레이션 ---------------- */
 const FAULT_LABEL = { cooler_degradation: '쿨러 성능 저하', pump_leakage: '펌프 내부 누설', fan_vibration: '팬 베어링 마모', restore: '복구' };
-// 2026-10-25: 업무 경보(정기 정비 도래 · 재고 기준 이탈)와 인터록 트립도 사람 말로 — 흐름 배포 화면 「경보 → 흐름」 표가 PM_DUE 같은 코드를 보였다
-const PATTERN_LABEL = { COOLER_DEGRADATION: '쿨러 성능 저하', PUMP_LEAKAGE: '펌프 내부 누설', FAN_VIBRATION: '팬 진동 상승', OVER_TEMPERATURE: '유온 과열', TEMP_TRIP: '유온 보호 정지', OVERHEAT_TRIP: '유온 보호 정지', LOW_PRESSURE_TRIP: '저압 인터록 트립', HIGH_VIBRATION_TRIP: '고진동 인터록 트립', OIL_ANALYSIS: '오일 분석 기준 이탈', PM_DUE: '정기 정비 도래', SPARE_BELOW_MIN: '예비품 재고 기준 이탈' };
+// 감지기를 못 읽었으면 「감시 중」(정상)으로 보이지 않는다 — 읽기 전 · 실패를 따로 보인다
+function detectorUnknown() { return state.det ? '' : UI.chipText(state.detError ? '감지기 응답 없음' : '감지기 확인 중', state.detError ? 'danger' : 'neutral'); }
+function phaseChip(d) { return detectorUnknown() || UI.chip(d.phase || 'IDLE'); }
 function phaseHtml(d) {
+  if (detectorUnknown()) return detectorUnknown() + (state.detError ? ` <span class="muted">${esc(state.detError)}</span>` : '');
   // one line per detector pattern that is not idle; the cooler pattern alone when everything is quiet
   const pats = Object.entries(d.patterns || { COOLER_DEGRADATION: { phase: d.phase, alert_id: d.alert_id } });
   const busy = pats.filter(([, p]) => p.phase && p.phase !== 'IDLE');
   if (!busy.length) return UI.chip('IDLE');
-  return busy.map(([code, p]) => `${UI.chip(p.phase)} <span class="muted">${esc(PATTERN_LABEL[code] || code)}</span>`).join('<br>');
+  return busy.map(([code, p]) => `${UI.chip(p.phase)} <span class="muted">${esc(UI.patternName(code))}</span>`).join('<br>');
 }
 function tsColor(t) { return t >= 65 ? 'trip' : t >= 60 ? 'hot' : ''; }
 function sparkline(svg, values, min, max) {
@@ -356,13 +361,15 @@ $('#btnReset').addEventListener('click', async (e) => {
   catch (err) { scenarioMessage('초기화 실패: ' + err.message, true); }
   finally { b.disabled = false; await refreshFast(); }
 });
-// 2026-10-23: 화면의 배율 선택(5 · 10 · 20 · 40)은 설비 물리만 바꿔(/api/time_scale) 감지 · 처리 · 에이전트(20배)와 어긋났다 — 고정 표시로 바꿨다
+// 2026-10-23: 화면의 배율 선택(5 · 10 · 20 · 40)은 설비 물리만 바꿔 감지 · 처리 · 에이전트(20배)와 어긋났다 — 고정 표시로 바꿨다(설비 배율 API는 지움)
 
-function renderGwLog(entries) {
+// failed: 제어 게이트웨이 기록을 못 읽은 사유 — 「아직 명령 기록이 없습니다」로 보이지 않는다
+function renderGwLog(entries, failed = '') {
   const box = $('#gwLog'); box.innerHTML = '';
   const mine = state.log.map(l => `<div>${esc(l)}</div>`).join('');
   const gw = (entries || []).slice(0, 12).map(e => UI.eventRecord({ time: e.t, name: e.ok ? '명령 검증 통과' : '명령 거절', actor: e.asset, detail: e.reason || '', raw: e })).join('');
-  box.innerHTML = (mine + gw) || `<div class="muted">${esc(UI.t('plant.noCmd'))}</div>`;
+  const why = failed ? `<div class="neg" role="status">제어 게이트웨이 기록을 읽지 못했습니다: ${esc(failed)}</div>` : '';
+  box.innerHTML = why + ((mine + gw) || (failed ? '' : `<div class="muted">${esc(UI.t('plant.noCmd'))}</div>`));
 }
 
 
@@ -423,7 +430,7 @@ function renderScada() {
     const running = s.state === 'RUN' && t.FanSpeedSP > 0;
     fan.classList.toggle('stop', !running);
     fan.style.setProperty('--spin', (running ? (2.4 * 60 / Math.max(10, t.FanSpeedSP)).toFixed(2) : 2) + 's');
-    card.querySelector('.f-phase').innerHTML = `${esc(UI.t('plant.phase'))} ${UI.chip(d.phase || 'IDLE')}`;
+    card.querySelector('.f-phase').innerHTML = `${esc(UI.t('plant.phase'))} ${phaseChip(d)}`;
     card.querySelector('.f-inc').title = inc ? inc.id : (s.cmdId ? `${s.cmdId} · ${s.reason || ''}` : '');
     card.querySelector('.f-inc').innerHTML = inc ? `${esc(UI.t('case'))} ${UI.chip(inc.state)}` : (s.cmdId ? `${esc(UI.t('plant.lastCmd'))} · ${esc(UI.status(s.result))}` : esc(UI.t('inc.noAlert')));
   }
@@ -458,7 +465,7 @@ function renderIncList() {
     keyboardItem(it);
     it.dataset.itemId = inc.id;
     it.title = inc.id;   // A141: 사건 id 는 목록 글자로 보이지 않고 상세의 상세 정보 접기에서 본다
-    it.innerHTML = `<div class="row"><strong>${esc(inc.asset)} · ${esc(PATTERN_LABEL[(inc.card || {}).alert?.pattern] || UI.t('case'))}</strong>${UI.chip(inc.state)}</div><span class="sub">${esc(UI.t('inc.alertAt'))} ${esc(UI.dateTime(inc.created))}</span>`;
+    it.innerHTML = `<div class="row"><strong>${esc(inc.asset)} · ${esc(UI.patternName((inc.card || {}).alert?.pattern) || UI.t('case'))}</strong>${UI.chip(inc.state)}</div><span class="sub">${esc(UI.t('inc.alertAt'))} ${esc(UI.dateTime(inc.created))}</span>`;
     it.addEventListener('click', () => { state.selected = inc.id; state.selectedAsset = inc.asset; renderScada(); renderIncList(); loadDetail(); });
     box.append(it);
   }
@@ -513,6 +520,7 @@ function timelineHtml(inc) {
   }).join('') + '</div>';
 }
 function traceHtml(run) {
+  if (!run && state.runsError) return `<div class="neg" role="status">에이전트 분석 기록을 읽지 못했습니다: ${esc(state.runsError)}</div>`;
   if (!run) return `<div class="muted">${esc(UI.t('inc.noTrace'))}</div>`;
   let html = `<div class="muted">${UI.chip(run.status)} ${esc(UI.t('inst.started'))} ${esc(UI.time(run.started))}${run.ended ? ' · ' + esc(UI.t('inst.ended')) + ' ' + esc(UI.time(run.ended)) : ''}${run.error ? ' · ' + esc(run.error) : ''}</div><div class="trace">`;
   for (const s of run.steps) {
@@ -528,7 +536,7 @@ function guideCardHtml(card) {
   let summary = card.summary;
   if (!card.summarySource || card.summarySource === 'template') {
     const top = card.causes?.[0], alert = card.alert || {};
-    const pattern = PATTERN_LABEL[alert.pattern] || alert.pattern || '설비 이상';
+    const pattern = UI.patternName(alert.pattern) || '설비 이상';
     summary = `${alert.asset || ''} · ${pattern}.` + (top ? ` 가장 유력한 원인은 ‘${top.name}’입니다.` : '') +
       (card.recommended?.length ? ' 권장 조치: ' + card.recommended.map(a => a.name + (a.kind === 'command' ? ` ${a.value}${/_pct$/.test(a.param) ? ' %' : ''}` : '')).join(', ') + '.' : '');
   }
@@ -554,13 +562,13 @@ function guideCardHtml(card) {
 function renderDetail() {
   const box = $('#incDetail');
   const inc = state.detail, run = state.run;
-  const signature = JSON.stringify([inc, run, inc && state.audit.filter(a => a.incident === inc.id), UI.namesVersion]);
+  const signature = JSON.stringify([inc, run, inc && state.audit.filter(a => a.incident === inc.id), state.auditError, state.runsError, UI.namesVersion]);
   if ((inc || run) && box.dataset.signature === signature) return;
   box.dataset.signature = signature; box.dataset.incident = inc?.id || '';
   if (!inc && !run) {
     if (state.selectedAsset && state.plant && state.plant.units[state.selectedAsset]) {
       const u = state.plant.units[state.selectedAsset], t = u.tags, s = u.status, d = (state.det && state.det.assets && state.det.assets[state.selectedAsset]) || {};
-      box.innerHTML = `<div class="detail-head"><div class="row"><h2>${esc(state.selectedAsset)}</h2>${UI.chip(s.mode)}${UI.chip(s.state)}${UI.chip(d.phase || 'IDLE')}</div><div class="sub">${esc(UI.t('plant.ts1'))} ${fmt(t.TS1, 1)} ℃ · ${esc(UI.t('plant.ce'))} ${fmt(t.CE, 0)} % · ${esc(UI.t('plant.fan'))} ${fmt(t.FanSpeedSP, 0)} % · ${esc(UI.t('plant.load'))} ${fmt(t.LoadSP, 0)} %</div></div>` +
+      box.innerHTML = `<div class="detail-head"><div class="row"><h2>${esc(state.selectedAsset)}</h2>${UI.chip(s.mode)}${UI.chip(s.state)}${phaseChip(d)}</div><div class="sub">${esc(UI.t('plant.ts1'))} ${fmt(t.TS1, 1)} ℃ · ${esc(UI.t('plant.ce'))} ${fmt(t.CE, 0)} % · ${esc(UI.t('plant.fan'))} ${fmt(t.FanSpeedSP, 0)} % · ${esc(UI.t('plant.load'))} ${fmt(t.LoadSP, 0)} %</div></div>` +
         UI.empty(UI.t('inc.noAlert'), UI.t('inc.noAlertSub'), 'compact');
     } else {
       box.innerHTML = UI.empty(UI.t('inc.select'), UI.t('inc.selectSub'));
@@ -569,7 +577,7 @@ function renderDetail() {
   }
   let html = '';
   if (inc) {
-    const pattern = PATTERN_LABEL[(inc.card || {}).alert?.pattern] || '';
+    const pattern = UI.patternName((inc.card || {}).alert?.pattern);
     // A141: 경보 · 승인자 · 종결 시각 · id 는 상세 정보 접기로
     html += `<div class="detail-head"><div class="row"><h2>${esc(inc.asset)} ${esc(UI.t('case'))}${pattern ? ' · ' + esc(pattern) : ''}</h2>${UI.chip(inc.state)}</div></div>`;
     html += UI.metaFold([[UI.t('inc.alertAt'), esc(UI.dateTime(inc.created))], [UI.t('inc.approvedBy'), esc(inc.approvedBy || '')], [UI.t('closed'), inc.closed ? esc(UI.dateTime(inc.closed)) : ''], ['ID', `<span class="mono">${esc(inc.id)}</span>`]]);
@@ -586,7 +594,8 @@ function renderDetail() {
   html += UI.fold(esc(UI.t('inc.agentTrace')), traceHtml(run));
   if (inc) {
     const audit = state.audit.filter(a => a.incident === inc.id);
-    html += UI.fold(`${esc(UI.t('inc.log'))} <span class="chip tone-neutral sm">${audit.length}</span>`, '<div class="audit">' + (audit.map(a => UI.eventRecord({ time: a.t, name: a.event, actor: a.actor, detail: a.detail?.reason || '', raw: a })).join('') || `<div class="muted">${esc(UI.t('empty.noData'))}</div>`) + '</div>');
+    const auditFail = state.auditError ? `<div class="neg" role="status">처리 기록을 읽지 못했습니다: ${esc(state.auditError)}${audit.length ? ' — 마지막으로 읽은 기록입니다' : ''}</div>` : '';
+    html += UI.fold(`${esc(UI.t('inc.log'))} <span class="chip tone-neutral sm">${audit.length}</span>`, '<div class="audit">' + auditFail + (audit.map(a => UI.eventRecord({ time: a.t, name: a.event, actor: a.actor, detail: a.detail?.reason || '', raw: a })).join('') || (auditFail ? '' : `<div class="muted">${esc(UI.t('empty.noData'))}</div>`)) + '</div>');
   }
   html += '</div>';
   box.innerHTML = html;
@@ -623,7 +632,7 @@ async function refreshFast() {
       if (!plant || !plant.units || typeof plant.units !== 'object' || Array.isArray(plant.units) || Object.values(plant.units).some(u => !u?.tags || !u?.status)) throw new Error('설비 상태 응답 형식이 올바르지 않습니다.');
       state.plant = plant; state.plantError = '';
     } catch (e) { state.plant = null; state.plantError = e.message; }
-    try { state.det = await getJ(API.detector + '/api/detector/state'); } catch (e) { state.det = null; }
+    try { state.det = await getJ(API.detector + '/api/detector/state'); state.detError = ''; } catch (e) { state.det = null; state.detError = e.message; }
     if (state.plant) {
       $('#simT').textContent = `${Math.floor(state.plant.sim_t / 60)}분 ${Math.floor(state.plant.sim_t % 60)}초`;
       $('#scale').textContent = state.plant.time_scale;
@@ -636,7 +645,7 @@ async function refreshFast() {
       }
     } else { $('#simT').textContent = '설비 상태 읽기 실패'; $('#scale').textContent = '–'; }
     $('#simT').title = state.plantError || '';
-    if (state.tab === 'scenario') { renderUnits(); try { renderGwLog(await getJ(API.gateway + '/api/gateway/log')); } catch (e) { renderGwLog([]); } }
+    if (state.tab === 'scenario') { renderUnits(); try { renderGwLog(await getJ(API.gateway + '/api/gateway/log')); } catch (e) { renderGwLog([], e.message); } }
     if (state.tab === 'incidents') renderScada();
   } finally { refreshFast.busy = false; }
 }
@@ -644,10 +653,10 @@ async function refreshSlow() {
   if (refreshSlow.busy) return; refreshSlow.busy = true;
   try {
     try { state.incidents = requireList(await getJ(API.process + '/api/incidents'), '사건 목록'); state.incidentError = ''; } catch (e) { state.incidentError = e.message; }
-    try { state.runs = requireList(await getJ(API.agent + '/api/agent/runs'), '분석 목록'); } catch (e) { state.runs = []; }
-    try { state.audit = requireList(await getJ(API.process + '/api/audit'), '처리 기록'); } catch (e) { state.audit = []; }
+    // 못 읽은 기록은 「없음」이 아니다 — 사유를 두고 상세에서 실패로 보인다(지난 목록은 그대로)
+    try { state.runs = requireList(await getJ(API.agent + '/api/agent/runs'), '분석 목록'); state.runsError = ''; } catch (e) { state.runsError = e.message; }
+    try { state.audit = requireList(await getJ(API.process + '/api/audit'), '처리 기록'); state.auditError = ''; } catch (e) { state.auditError = e.message; }
     if (state.tab === 'scenario' || state.tab === 'incidents' || !state.biz || state.biz.failed) await refreshBiz();
-    if (!state.definition) { try { state.definition = await getJ(API.process + '/api/definition'); } catch (e) { } }
     $('#openCount').textContent = state.incidentError ? '읽기 실패' : state.incidents.filter(i => !i.terminal).length;
     $('#openCount').title = state.incidentError || '';
     if (state.tab === 'incidents') { renderScada(); renderIncList(); if (state.selected) await loadDetail(); else if (state.selectedAsset) { const o = openIncidentFor(state.selectedAsset); if (o) { state.selected = o.id; await loadDetail(); } else renderDetail(); } }

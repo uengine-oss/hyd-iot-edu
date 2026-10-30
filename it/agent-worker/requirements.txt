@@ -1,9 +1,7 @@
 psycopg[binary]==3.2.3
 git+https://github.com/uengine-oss/cliagents@7c7a3923984f8247a27233cedb786e1a9097d451
-jsonschema==4.26.0                    # procsvc.mcp_check (secret-name check in bridge._written_secrets), same pin as it/process
-sqlglot==27.24.2                     # procsvc.ask → hydcommon.sql_read for canonical evidence comparison
-neo4j==6.3.1                         # bounded read-only Neo4j MCP adapter (same as development tests)
-fastmcp==2.13.0.2
-fastapi==0.142.2                     # managed execution uses procsvc HTTP contracts
-pydantic==2.13.5                     # same runtime contract as development/process models
-httpx>=0.28.1,<1                     # managed classroom client; do not rely on transitive installs
+jsonschema==4.26.0                    # procsvc.mcp_check (도구 입력 검사 · 비밀 이름 판정), it/process 와 같은 판
+neo4j==5.27.0                        # hydcommon.neo4j_mcp — 읽기 전용 Neo4j 조회 MCP(CLI 가 이 이미지의 파이썬으로 띄운다), it/process 와 같은 판
+fastmcp==2.13.0.2                    # hydcommon.neo4j_mcp · worker.question_tools 의 MCP 창구
+pydantic==2.13.5                     # procsvc.ask · fastmcp 도구 모델(process 와 같은 판)
+httpx>=0.28.1,<1                     # worker.question_tools 가 process 도구 실행 API 를 부른다

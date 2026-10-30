@@ -4,16 +4,14 @@
     (→ SUBMITTED only when the task's agent_mode is COMPLETE; in DRAFT mode only the draft is stored)
 The repo method names are the product's; PgRepo runs them as HYD's lock-ordered SQL (claim_process_workitems with a
 tenant filter, result saved by a conditional UPDATE on the expected consumer — see it/process/procsvc/procdb.py).
-A small HTTP surface answers what an operator asks: /health (runs in flight), /agents?check_auth=1 (which CLIs exist
-here; with check_auth=1 each CLI's own auth/login status probe is run, A129).
+A small HTTP surface answers what an operator asks: /health (runs in flight, AI 모드, 키 없는 PC가 답하는 질문),
+/agents (whether the CLI exists here).
 """
 from __future__ import annotations
 
 import json
 import logging
-import os
 import signal
-import subprocess
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -22,15 +20,15 @@ from urllib.parse import urlparse
 from cliagents import Surface, registry
 
 from . import ai_replay, env_guard, workspace
-from . import runner as runner_mod
+from .course_access import CourseAccess
 from .runner import Runner
-from .settings import AGENT_TYPE, settings
+from .settings import AGENT_TYPE, PROVIDER, settings
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 log = logging.getLogger("worker")
 # A095: settings are captured above; from here on no child process (the CLI agent, its MCP servers) can inherit the
-# worker's own credentials. The Codex relay key is handed over by name only when that provider runs (settings.codex_model_provider_env_key).
-_SCRUBBED = env_guard.scrub(keep=(settings.codex_model_provider_env_key,))
+# worker's own credentials. The CLI authenticates only with the per-run gateway token (course_access.permit).
+_SCRUBBED = env_guard.scrub()
 if _SCRUBBED:
     log.info("child-process environment: removed %s", ", ".join(_SCRUBBED))
 status = {"status": "starting", "agent_type": AGENT_TYPE, "ai_mode": None, "runs_in_flight": 0, "max_concurrent_runs": 1, "polls": 0, "handled": 0,
@@ -44,37 +42,10 @@ def _repo():
     return PgRepo(settings.supabase_dsn)
 
 
-#: A129 (process-gpt-cli-agent core/availability.py): how each CLI is asked whether it has credentials — read-only status
-#: commands, no model call. `installed` is cheap (PATH); `authenticated` costs a subprocess per agent, so it is opt-in
-#: (`/agents?check_auth=1`), and a probe that hangs or errors reports None ("unknown") rather than a false "log in first".
-_AUTH_PROBES = {"claude-code": ["auth", "status"], "codex": ["login", "status"]}
-_PROBE_TIMEOUT_S = 10
-
-
-def _probe_auth(agent_id: str, executable: str | None, *, runner=None) -> tuple[bool | None, str]:
-    probe = _AUTH_PROBES.get(agent_id)
-    if not probe or not executable:
-        return None, ""
-    try:
-        completed = (runner or subprocess.run)([executable, *probe], capture_output=True, text=True, timeout=_PROBE_TIMEOUT_S)
-    except (OSError, subprocess.SubprocessError):
-        return None, ""
-    if completed.returncode == 0:
-        return True, ""
-    detail = (completed.stderr or completed.stdout or "").strip().splitlines()
-    return False, detail[0] if detail else "not logged in"
-
-
-def agents(check_auth: bool = False) -> list[dict]:
-    """Which CLI agents exist in this container — the same probe the product's picker uses (auth state on request)."""
-    out = []
-    for a in registry.availability(Surface.EXEC, refresh=True):
-        row = {"agent_id": a.agent_id, "installed": a.installed, "install_hint": None if a.installed else a.install_hint,
-               "default": a.agent_id == settings.cli_agent}
-        if check_auth:
-            row["authenticated"], row["auth_hint"] = _probe_auth(a.agent_id, a.executable_path) if a.installed else (None, "")
-        out.append(row)
-    return out
+def agents() -> list[dict]:
+    """Whether the CLI this worker runs (settings.PROVIDER) is installed here — the product picker's availability probe."""
+    return [{"agent_id": a.agent_id, "installed": a.installed, "install_hint": None if a.installed else a.install_hint}
+            for a in registry.availability(Surface.EXEC, refresh=True) if a.agent_id == PROVIDER]
 
 
 class Http(BaseHTTPRequestHandler):
@@ -83,7 +54,7 @@ class Http(BaseHTTPRequestHandler):
         if path.path in ("/health", "/healthz"):
             body, code = dict(status, runs_in_flight=_runner.in_flight if _runner else 0), 200 if status["status"] == "ok" else 503
         elif path.path == "/agents":
-            body, code = {"agents": agents(any(f"check_auth={v}" in (path.query or "") for v in ("1", "true", "yes")))}, 200
+            body, code = {"agents": agents()}, 200
         else:
             body, code = {"error": "not found"}, 404
         data = json.dumps(body, ensure_ascii=False).encode()
@@ -114,35 +85,19 @@ def sweep_forever() -> None:
         time.sleep(_SWEEP_INTERVAL_S)
 
 
-def _ai_login() -> bool | None:
-    """AI_MODE=auto: 이 워커가 AI를 부를 수 있나. 키 환경 변수가 있으면 예, 선택한 CLI가 없거나 로그인이 없다고 답하면 아니요,
-    확인할 수 없으면 None(그때는 재생으로 켜진다 — 키가 확인될 때만 실제 AI)."""
-    if settings.cli_agent == "claude-code" and settings.isolate_config_dir:          # ANTHROPIC_API_KEY 로 인증
-        return True
-    if settings.cli_agent == "codex" and settings.codex_model_provider_base_url and os.getenv(settings.codex_model_provider_env_key):
-        return True
-    row = next((a for a in registry.availability(Surface.EXEC, refresh=True) if a.agent_id == settings.cli_agent), None)
-    if row is None or not row.installed:
-        return False
-    return _probe_auth(row.agent_id, row.executable_path)[0]
-
-
-def build_runner(repo, *, login=_ai_login) -> Runner:
-    """AI_MODE 에 따라 CLI 실행 자리(exec_fn)만 바꾼다 — 나머지 실행 · 결과 검사 · 저장은 같다."""
-    mode = ai_replay.resolve_mode(settings.ai_mode, login)
-    library = ai_replay.Library(settings.ai_replay_dir, case_of=ai_replay.case_of_instance(repo))
-    exec_fn = {"live": None,
-               "record": ai_replay.recording(runner_mod._exec_stream, library, lambda p: getattr(p, "id", settings.cli_agent)),
-               "replay": ai_replay.replaying(library)}[mode]
-    status["ai_mode"] = mode
-    status["replay_questions"] = library.questions() if mode == "replay" else []
-    if mode == "replay":
-        log.warning("AI 응답 재생으로 실행합니다: %s 로그인 · API 키가 없어(AI_MODE=%s) 저장된 AI 응답(%s, 업무 %d개)을 씁니다. 실제 AI로 하려면 API 키를 넣고 워커를 다시 켜세요.",
-                    settings.cli_agent, settings.ai_mode, settings.ai_replay_dir, len(library.docs()))
-    elif mode == "record":
-        log.info("AI 응답 저장: 실제 AI 실행을 %s 에 업무마다 저장합니다", settings.ai_replay_dir)
-    from .course_access import CourseAccess
-    return Runner(settings, repo, exec_fn=exec_fn, ai_mode=mode, course_access=CourseAccess())
+def build_runner(repo) -> Runner:
+    """AI_MODE(live · record · replay — 다른 값은 켜지지 않는다)에 따라 AI 응답 자리만 바꾼다. 나머지 실행 · 결과 검사 · 저장은 같다."""
+    if not settings.process_url or not settings.runtime_key_file:
+        raise RuntimeError("PROCESS_URL(process 주소) · HYD_WORKER_RUNTIME_KEY_FILE(실행기 인증 파일)이 없어 AI 워커를 켜지 않습니다")
+    course = ai_replay.Library(settings.ai_replay_dir, ai_replay.COURSE)
+    responses = ai_replay.Responses(settings.ai_mode, course=course, cache=ai_replay.Library(settings.ai_cache_dir, ai_replay.REUSE))
+    status["ai_mode"] = responses.mode
+    status["replay_questions"] = course.questions() if responses.mode == "replay" else []
+    if responses.mode == "replay":
+        log.warning("AI 응답 재생으로 실행합니다: 강사 녹화(%s, %d개)를 씁니다 — 실제 AI 를 부르지 않습니다.", settings.ai_replay_dir, len(course.docs()))
+    elif responses.mode == "record":
+        log.info("AI 응답 녹화: 실제 AI 실행을 수업 AI 자리마다 %s 에 남깁니다", settings.ai_replay_dir)
+    return Runner(settings, repo, responses=responses, course=CourseAccess(settings.process_url, settings.runtime_key_file))
 
 
 def install_stop_signals() -> list[str]:
@@ -176,7 +131,7 @@ def main() -> None:
     threading.Thread(target=sweep_forever, daemon=True).start()
     _runner = build_runner(_repo())
     log.info("cliagents agent type up: consumer=%s agent_orch=%s cli=%s permission=%s http=:%d", settings.consumer, settings.agent_orch,
-             settings.cli_agent, settings.default_permission.value, settings.health_port)
+             PROVIDER, settings.default_permission.value, settings.health_port)
     while True:
         try:
             # 2026-10-25: 켜자마자 일을 집으면 그 일이 끝날 때까지 /healthz 가 503(starting)이라 포털 상태 점이 「응답 없음」이었다

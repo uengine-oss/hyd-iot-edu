@@ -1,6 +1,6 @@
 """Durable process snapshot. Uncertain in-flight execution needs review, never replay.
 
-save() is called from the event-loop thread (legacy Incident path) and from executor threads
+save() is called from the event-loop thread (source receipts) and from executor threads
 (instance runtime hooks). Two locks: `_lock` guards the shared SQLite connection; machine.STATE_LOCK
 (A143) guards the in-memory incidents/book while they are captured — every Incident transition
 (machine.on_*) and every decision mutation (decisions, approval_hooks, work_orders) holds the same
@@ -16,7 +16,6 @@ from pathlib import Path
 
 from hydcommon.timeutil import now_iso
 from .machine import Incident, STATE_LOCK
-from .definition import TERMINAL
 from .case_projection_store import CaseProjectionStore
 
 
@@ -74,21 +73,18 @@ class Store(CaseProjectionStore):
             except TypeError:
                 self._enqueue_case_snapshot(json.loads(body))
 
+    #: 다시 켜졌을 때 사람 검토로 넘기는 사건 상태 — 명령을 보냈는지 · ACK 가 왔는지 알 수 없는 순간뿐이다. 재관측(RE_OBSERVING)은
+    #: 읽기라 재관측 단계가 저장한 마감으로 이어서 판정하고, 회복 판정 뒤(RESOLVED)는 흐름의 작업지시가 이어 간다.
+    UNCERTAIN_ON_RESTART = frozenset({"CMD_ISSUED", "AWAITING_ACK"})
+
     def restore(self):
         with self._lock:
             row = self.db.execute("SELECT body FROM snapshot WHERE id=1").fetchone()
         data = json.loads(row[0]) if row else {}
         incidents = {v["id"]: Incident(**v) for v in data.get("incidents", [])}
         for inc in incidents.values():
-            # Recovery was observed and the exact CMMS request was durably saved.
-            # Replaying that idempotent request does not replay a PLC command.
-            cmms_pending = inc.state == 'RESOLVED' and inc.work_order_request is not None
-            if inc.state not in TERMINAL | {"AWAITING_APPROVAL"} and not cmms_pending:
+            if inc.state in self.UNCERTAIN_ON_RESTART:
                 inc.state, inc.reason = "ESCALATED", "PROCESS_RESTART_REVIEW"
                 inc.history.append({"state": inc.state, "t": now_iso(), "note": inc.reason})
-        book = data.get("book", {})
-        for d in book.values():
-            if d["state"] == "APPROVED" and not d.get('process_approval_id'):
-                d.update(state="PARTIAL", reason="PROCESS_RESTART_REVIEW")
-                d["history"].append({"state": "PARTIAL", "t": now_iso(), "reason": "PROCESS_RESTART_REVIEW"})
-        return incidents, book, data.get("audit", [])
+                inc.closed = now_iso()
+        return incidents, data.get("book", {}), data.get("audit", [])

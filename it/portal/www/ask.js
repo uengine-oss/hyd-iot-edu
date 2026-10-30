@@ -96,7 +96,7 @@
     if (A.statusErr) return `<p class="neg" role="status">질문 기능 상태를 읽지 못했습니다: ${esc(A.statusErr)}</p>`;
     const s = A.status;
     if (!s) return '<p class="muted">상태를 확인하는 중…</p>';
-    if (s.ready) return replay() ? UI.chipText('저장된 답 재생 · 키 없음', 'neutral') : `<span class="live-conn on">답할 일꾼 연결됨</span>`;
+    if (s.ready) return replay() ? UI.chipText('강사가 저장한 답 재생', 'neutral') : `<span class="live-conn on">답할 일꾼 연결됨</span>`;
     return `<div class="ask-warn" role="status">${UI.chipText('지금은 답할 일꾼이 없습니다', 'warning')} <span>${esc(s.reason || '')}</span></div>`;
   }
   function agentOptions() {
@@ -107,7 +107,7 @@
     if (!a) return '';
     // 에이전트의 도구는 서버 이름이다(neo4j · hyd-dmn · 학생 서버) — 도구 id 용 UI.toolName 은 「도구 표시 이름 미등록」을 보였다(2026-10-25 수업 한 바퀴).
     // 기본 서버는 사람 이름으로, 학생이 지은 서버 이름은 그대로 보인다
-    const serverLabel = t => { const n = window.hydAgents?.serverName?.(t); return n && n !== '서버 표시 이름 미등록' ? n : t; };
+    const serverLabel = t => hydWords.serverName(t);
     const tools = a.tools.length ? a.tools.map(t => UI.chipText(serverLabel(t), 'neutral')).join(' ') : UI.chipText('도구 전부', 'neutral');
     return `<p class="field-hint">${esc(a.goal || a.role || '')}</p><div class="row-wrap ask-tools">${tools}${a.skills.length ? ' ' + a.skills.map(x => UI.chipText(x, 'accent')).join(' ') : ''}</div>`;
   }
@@ -132,7 +132,9 @@
   // the agent's work as a live trace (one work item, flat rows) — fed by GET /api/todolist/{id} and the SSE bus
   function ensureTrace(v) {
     if (!window.hydTrace || !v.workitem) return null;
+    if (A.traceWid === v.workitem && A.traceErr) return null;     // 처리 과정을 못 읽은 질문 — 다른 질문을 열면 다시 읽는다
     if (A.traceWid !== v.workitem) {
+      A.traceErr = '';
       A.traceWid = v.workitem; A.item = null;
       A.traceHost = document.createElement('div'); A.traceHost.className = 'ask-trace';
       A.trace = hydTrace.mount(A.traceHost, { flat: true, workitem: () => A.traceWid, detachedOk: true });
@@ -142,8 +144,9 @@
   }
   async function loadItem() {
     const wid = A.traceWid; if (!wid) return;
-    try { const item = await getJ(API.process + '/api/todolist/' + encodeURIComponent(wid)); if (wid === A.traceWid) { A.item = item; feed(); } }
-    catch (_) { /* the ask view still shows its own tool list */ }
+    // 처리 과정을 못 읽으면 빈 접기로 두지 않는다 — 처리 과정 자리를 버리고 질문이 가진 도구 호출 목록 + 사유 한 줄로 그린다
+    try { const item = await getJ(API.process + '/api/todolist/' + encodeURIComponent(wid)); if (wid === A.traceWid) { A.item = item; A.traceErr = ''; feed(); } }
+    catch (e) { if (wid === A.traceWid) { A.traceErr = e.message; A.traceHost = null; A.trace = null; render(); } }
   }
   function feed() {
     if (!A.trace || !A.item || !A.cur) return;
@@ -157,7 +160,7 @@
   }
   function threadHtml(staticCalls) {
     const v = A.cur;
-    if (!v) return replay() ? UI.empty('강의에서 다룬 질문을 골라 보내세요', '이 PC는 API 키 없이 강의 때 저장한 답을 보여 줍니다. 위의 질문 단추를 누르면 질문 칸에 들어갑니다.')
+    if (!v) return replay() ? UI.empty('강의에서 다룬 질문을 골라 보내세요', '이 PC는 강의 때 강사가 저장한 답을 보여 줍니다. 위의 질문 단추를 누르면 질문 칸에 들어갑니다.')
       : UI.empty('질문을 적고 보내세요', '예: 완제품 재고가 가장 적은 설비와 그 수량은? · HYD-01 팬 진동 최근 최대값은? · 어떤 규칙이 지금 성립하나?');
     const [label, tone] = STATE[v.state] || [v.state, 'neutral'];
     const live = LIVE.has(v.state);
@@ -165,9 +168,9 @@
     return `<div class="ask-thread">
       <div class="ask-q"><div class="ask-bubble">${esc(v.question)}</div><span class="muted">${esc(v.asked_by || '')} · ${esc(UI.dateTime(v.started))}</span></div>
       <div class="ask-a card">
-        <div class="ask-a-head"><span class="tr-block k-agent${live ? ' live' : ''}">${window.hydTrace ? hydTrace.icon('agent') : ''}</span><b>${esc(v.agent && v.agent.name || '')}</b>${UI.chipText(label, tone)}
+        <div class="ask-a-head"><span class="tr-block k-agent${live ? ' live' : ''}">${window.hydTrace ? hydTrace.icon('agent') : ''}</span><b>${esc(v.agent ? v.agent.name : '')}</b>${UI.chipText(label, tone)}
           <span class="muted">${esc(UI.clean(v.message || ''))}</span><span class="ask-count">${window.hydTrace ? hydTrace.icon('tool') : ''}${calls.length}</span></div>
-        <details class="fold small ask-process" ${live || A.processOpen ? 'open' : ''}><summary>처리 과정 · 도구 호출 ${calls.length} ${live && window.hydTrace ? hydTrace.spinner('sm') : ''}</summary><div class="fold-body"><div data-ask-trace>${staticCalls ? `<ol class="stack-list">${calls.map(callRow).join('')}</ol>` : ''}</div></div></details>
+        <details class="fold small ask-process" ${live || A.processOpen ? 'open' : ''}><summary>처리 과정 · 도구 호출 ${calls.length} ${live && window.hydTrace ? hydTrace.spinner('sm') : ''}</summary><div class="fold-body">${A.traceErr ? `<p class="field-hint">자세한 처리 과정을 읽지 못해 도구 호출 목록만 보입니다 — ${esc(A.traceErr)}</p>` : ''}<div data-ask-trace>${staticCalls ? `<ol class="stack-list">${calls.map(callRow).join('')}</ol>` : ''}</div></div></details>
         ${resultHtml(v)}
         ${v.state==='failed' && !replay() ? UI.field({label:'다시 진행할 때 반영할 내용(선택)',input:`<textarea id="askRetryNote" rows="2" maxlength="1000">${esc(A.retryNote || '')}</textarea>`}) : ''}
         <div class="form-actions">${v.state==='failed' && !replay() ? `<button class="btn small" id="askRetry" ${A.sending?'disabled':''}>같은 질문 다시 진행</button>` : ''}<a class="btn small ghost" href="${esc(v.link)}">처리 과정 보기 →</a></div></div></div>`;
@@ -178,13 +181,13 @@
     const kind = h => h.verdict === 'answered' ? UI.chipText('답함', 'success') : h.verdict === 'unanswerable' ? UI.chipText('답할 수 없음', 'warning')
       : UI.chipText((STATE[h.state] || [h.state])[0], (STATE[h.state] || [0, 'neutral'])[1]);
     return `<div class="list ask-history">${A.history.map(h => `<button type="button" class="item${A.cur && A.cur.id === h.id ? ' sel' : ''}" data-ask-open="${esc(h.id)}"><div class="row"><strong>${esc(h.question)}</strong>${kind(h)}</div>
-      <span class="sub">${esc(h.agent && h.agent.name || '')} · 도구 ${h.calls}건 · ${esc(UI.dateTime(h.started))}</span></button>`).join('')}</div>`
+      <span class="sub">${esc(h.agent ? h.agent.name : '')} · 도구 ${h.calls}건 · ${esc(UI.dateTime(h.started))}</span></button>`).join('')}</div>`
       + `<div class="form-actions"><button type="button" class="btn small" id="askReset">끝난 질문 기록 지우기</button></div>`;
   }
   function formHtml() {
     return `<header class="card-head"><div class="card-title"><h3>에이전트에게 질문하기</h3></div><div class="card-actions">${readyHtml()}</div></header>
         <div class="form-grid">${UI.field({ label: '답할 에이전트', input: `<select id="askAgent">${agentOptions()}</select>` })}</div>${agentLine()}
-        <div class="ask-input">${UI.field({ label: '질문', hint: replay() ? '이 PC는 API 키 없이 강의에서 다룬 질문에만 답합니다. 아래 질문을 눌러 넣고 보내세요.'
+        <div class="ask-input">${UI.field({ label: '질문', hint: replay() ? '이 PC는 강의에서 다룬 질문에만 강사가 저장한 답으로 답합니다. 아래 질문을 눌러 넣고 보내세요.'
           : 'Enter 보내기 · Shift+Enter 줄바꿈. 에이전트는 자기 도구로 실제 조회한 결과만으로 답합니다.', input: `<textarea id="askText" rows="3" maxlength="1000"></textarea>` })}${replay() ? picks() : ''}</div>
         <div class="form-actions"><button class="btn primary" id="askSend" ${A.sending || !A.draft.trim() ? 'disabled' : ''}>${A.sending ? '보내는 중…' : '보내기'}</button></div>`;
   }
@@ -210,7 +213,7 @@
     const thread = A.el.querySelector('[data-ask-thread]');
     const v = A.cur, trace = v ? ensureTrace(v) : null;
     const proc = thread.querySelector('.ask-process'); if (proc) A.processOpen = proc.open;
-    const tSig = JSON.stringify(v && [v.id, v.state, v.message, (v.tool_calls || []).length, v.result, (v.agent || {}).name, A.sending]);
+    const tSig = JSON.stringify(v && [v.id, v.state, v.message, (v.tool_calls || []).length, v.result, (v.agent || {}).name, A.sending, A.traceErr]);
     if (thread._sig !== tSig) {
       thread._sig = tSig;
       thread.innerHTML = threadHtml(!A.traceHost);
@@ -239,18 +242,6 @@
     }));
   }
 
+  // 셸이 처음 열 때 mount, 다시 열 때 show
   window.hydAsk = { mount, show, _state: A, _render: render };
-
-  // 셸 MOUNTS 에 'ask' 가 없을 때를 위한 자리: #view-ask 가 열리면 #askView 에 그린다(kpi.js 와 같은 방식).
-  function autoMount() {
-    const view = document.getElementById('view-ask'), host = document.getElementById('askView');
-    if (!view || !host) return;
-    let done = false;
-    const check = () => { if (!view.classList.contains('active')) return; if (!done) { done = true; mount(host); } else show(); };
-    new MutationObserver(check).observe(view, { attributes: true, attributeFilter: ['class'] });
-    check();
-  }
-  if (typeof document !== 'undefined' && document.getElementById) {
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', autoMount); else autoMount();
-  }
 })();

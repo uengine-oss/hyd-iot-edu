@@ -12,7 +12,6 @@
     query: '업무 자료 자유 질의', describe_schema: '업무 자료 구조 조회', describe_catalog: '업무 자료 목록 조회', get_neo4j_schema: '그래프 구조 조회',
     purchase_context:'구매 부품 근거 조회', evaluate_purchase:'구매 후보 비교', submit_purchase:'구매 판단 등록 (승인 · 실행 아님)',
   };
-  const SERVER = { 'hyd-dmn': '판단 엔진', enterprise: '업무 자료', neo4j: '지식 그래프', '-': '' };
   const STATUS = { EVALUATED: ['판단 완료', 'success'], WITHHELD: ['근거 부족 · 보류', 'warning'], NO_ENGINE_TOOL: ['판단 도구 없음', 'danger'],
     FAILED: ['실패', 'danger'], NO_FEASIBLE_OPTION: ['가능한 조치 없음', 'danger'], REJECTED_BY_GUARDRAIL: ['안전 규칙으로 중단', 'danger'] };
   const CALL = { DONE: ['완료', 'success'], BLOCKED: ['막힘', 'warning'], FAILED: ['실패', 'danger'] };
@@ -20,7 +19,7 @@
     result: null, history: null, pick: { a: '', b: '' }, histBusy: false };
   const api = path => API.process + path;
   const toolName = (t, server) => ['purchase_context','evaluate_purchase','submit_purchase'].includes(t) && server && server!=='hyd-dmn' ? UI.toolName(server+'/'+t) : TOOL[t] || UI.toolName(t);
-  const serverName = s => SERVER[s] ?? s;
+  const serverName = s => s === '-' ? '' : hydWords.serverName(s);   // 도구 서버 이름표는 plainWords.js 하나
   const chip = ([label, tone]) => UI.chipText(label, tone);
   const statusChip = s => chip(STATUS[s] || [s || '–', 'neutral']);
   const agentName = id => (S.opts?.agents || []).find(a => a.id === id)?.name || UI.who(id);
@@ -44,12 +43,12 @@
   function formCard() {
     const o = S.opts;
     if (!o) return S.error ? UI.empty('시험 설정을 불러오지 못했습니다', S.error) : UI.empty(UI.t('loading'));
-    if (!o.agents.length) return UI.empty('AI 에이전트가 없습니다', '코딩 랩에서 에이전트를 추가하면(users · is_agent) 여기에 나타납니다.');
+    if (!o.agents.length) return UI.empty('AI 에이전트가 없습니다', '[에이전트] 화면에서 만들거나 코딩 랩에서 추가하면 여기에 나타납니다.');
     const opt = (list, value, label, cur) => list.map(x => `<option value="${esc(value(x))}" ${value(x) === cur ? 'selected' : ''}>${esc(label(x))}</option>`).join('');
     const b = o.agents.find(a => a.id === S.form.b) || o.agents[0];
     const box = (kind, name, label, off) => `<label class="cmp-check"><input type="checkbox" data-drop="${kind}" value="${esc(name)}" ${off ? '' : 'checked'}> ${label}</label>`;
     const variant = UI.fold(`B를 바꿔 보기 <span class="muted">— 이번 시험에만, 저장하지 않음</span>${S.dropTools.length + S.dropSkills.length ? ` ${UI.chipText(`${S.dropTools.length + S.dropSkills.length}개 뺌`, 'warning')}` : ''}`,
-      `<p class="field-hint">체크를 풀면 B에서 그 도구 · 스킬을 빼고 시험합니다. 더하기는 코딩 랩(Claude Code)에서 합니다.</p>
+      `<p class="field-hint">체크를 풀면 B에서 그 도구 · 스킬을 빼고 시험합니다. 더하려면 [에이전트] 화면에서 그 에이전트를 고칩니다.</p>
        <div class="cmp-checks"><b>도구</b>${b.tools.length ? b.tools.map(t => box('tool', t, esc(serverName(t) || t), S.dropTools.includes(t))).join('') : '<span class="muted">없음</span>'}</div>
        <div class="cmp-checks"><b>스킬</b>${b.skills.length ? b.skills.map(k => box('skill', k.name, esc(k.description || k.name), S.dropSkills.includes(k.name))).join('') : '<span class="muted">없음</span>'}</div>
        <button type="button" class="btn small" data-act="reset" ${S.dropTools.length + S.dropSkills.length ? '' : 'disabled'}>원래대로</button>`, { open: !!(S.dropTools.length + S.dropSkills.length) });
@@ -222,8 +221,4 @@
     },
   };
 
-  // 셸이 mount 를 부르기 전(지금의 탭 방식): 화면이 처음 보일 때 한 번 그린다
-  const host = document.getElementById('compareView');
-  const nav = document.querySelector('.rail nav button[data-tab="compare"]');
-  if (host && nav) nav.addEventListener('click', () => { if (S.el !== host) window.hydCompare.mount(host); });
 })();

@@ -179,13 +179,13 @@
       title: '코드 이름 열의 뜻 후보 받기',
       body: `<p class="muted">열 이름 조각 · 샘플 값 분포 · 키 관계를 관찰해 AI 일꾼에게 넘깁니다. 후보는 사람이 승인한 것만 미리보기와 적재에 들어갑니다.</p>
         ${(L.notes || []).map(n => `<p class="muted">${esc(n)}</p>`).join('')}`,
-      actions: `<button class="btn primary" id="lmAsk" ${S.busy ? 'disabled' : ''}>AI에게 뜻 후보 묻기</button>`,
+      actions: `<button class="btn primary" id="lmAsk" ${S.busy ? 'disabled' : ''}${hydCourseAccess.attrs('ddl.meanings')}>AI에게 뜻 후보 묻기</button>`,
     });
     else {
       body += statusHtml();
       if (done) body += candidatesHtml();
       body += historyHtml();
-      if (done || (S.data && ['FAILED', 'CANCELLED'].includes(S.data.status))) body += `<p><button class="btn small" id="lmAgain">후보 다시 받기</button></p>`;
+      if (done || (S.data && ['FAILED', 'CANCELLED'].includes(S.data.status))) body += `<p><button class="btn small" id="lmAgain"${hydCourseAccess.attrs('ddl.meanings')}>후보 다시 받기</button></p>`;
     }
     if (S.error) body += `<p class="neg" role="alert">${esc(S.error)}</p>`;
     el.innerHTML = UI.fold(`옛 DB 뜻 복원 <span class="chip tone-neutral sm">${esc(sumLine)}</span>`, body, { open: !!(S.run || ctx.preview.meaningReview) });

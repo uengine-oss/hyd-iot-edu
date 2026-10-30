@@ -25,6 +25,7 @@ from . import mcp_calls, mcp_check, mcp_registry, mcp_secrets
 CALL_SEMAPHORE = asyncio.Semaphore(3)           # 동시에 세 연결까지만 — 스레드 풀과 메모리(A131)를 지킨다
 LIST_TIMEOUT = (0.5, 6.0, 4.0)                  # (최소, 최대, 기본) 초 — 포털 GET 8초 제한 안
 CALL_TIMEOUT = (0.5, 25.0, 15.0)                # 포털 POST 30초 제한 안
+CALL_RESULT_CHARS = 200_000                     # 도구 써 보기 · 질문 에이전트 조회 결과의 글자 수 상한(넘으면 truncated)
 
 
 def _timeout(raw, bounds) -> float:
@@ -111,7 +112,8 @@ def register(app, *, runtime_factory, audit):
     def runtime():
         rt = runtime_factory()
         if rt is None:
-            raise HTTPException(503, "도구 지도에는 instance 실행 서비스가 필요합니다 (PROCESS_MODE=instance)")
+            from .instances import NOT_READY      # 런타임 모듈 — 이 모듈이 먼저 읽혀도 순환 import 가 되지 않게 여기서
+            raise HTTPException(503, NOT_READY)
         return rt
 
     def servers_of(rt) -> dict:
@@ -161,9 +163,6 @@ def register(app, *, runtime_factory, audit):
 
         def work():
             servers = servers_of(rt)
-            if getattr(app.state, 'course_access', None) is not None:
-                from hydcommon.course_access import AGENT_SERVERS
-                servers = {name: spec for name, spec in servers.items() if name in AGENT_SERVERS}
             used = usage(rt.repo, rt.tenant_id, list(servers))
             try:                                                                                     # B2: 출처 · 고칠 수 있음 · 마지막 검사
                 marks = mcp_registry.annotate(mcp_registry.store_for(rt.repo), rt.tenant_id, servers)
@@ -175,19 +174,12 @@ def register(app, *, runtime_factory, audit):
 
     @app.get("/api/mcp/servers/{name}/tools")
     async def server_tools(name: str, timeout: float | None = None):
-        course = getattr(app.state, 'course_access', None) is not None
-        if course:
-            from hydcommon.course_access import AGENT_SERVERS
-            if name not in AGENT_SERVERS:raise HTTPException(404, '수업에서 준비한 서버가 아닙니다.')
         rt = runtime()
         limit = _timeout(timeout, LIST_TIMEOUT)
         spec, used = await run(lambda: spec_of(rt, name))
         async with CALL_SEMAPHORE:
             result = mcp_secrets.redact(await run(lambda: mcp_check.check(spec, limit)), used)
         await run(lambda: auth_result(rt, name, result))
-        if course:
-            from hydcommon.handover_tools import question_read
-            result['tools'] = [tool for tool in result.get('tools', []) if question_read(name, tool.get('name'))]
         return {"name": name, "timeout_s": limit, **{k: result[k] for k in ("status", "tools", "error", "error_kind", "checked_at",
                                                                            "elapsed_ms", "server_info", "protocol_version", "transport")}}
 
@@ -203,7 +195,7 @@ def register(app, *, runtime_factory, audit):
         async with CALL_SEMAPHORE:
             confirmed = await run(lambda: confirmed_of(rt, name))
             result = mcp_secrets.redact(await run(lambda: mcp_check.call(spec, tool, arguments, limit,
-                max_chars=200_000 if getattr(app.state, 'course_access', None) is not None else mcp_check.MAX_RESULT_CHARS,
+                max_chars=CALL_RESULT_CHARS,
                 confirmed=confirmed)), used)
         await run(lambda: auth_result(rt, name, result))
         audit("-", str(body.get("by") or "포털"), "MCP_TOOL_TRIED",

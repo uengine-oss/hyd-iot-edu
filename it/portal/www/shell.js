@@ -1,5 +1,7 @@
 /* A5 (U7) 포털 셸 — 수강생 동선 메뉴 · 상단바("나" · 알림 배지) · 해시 주소 · 새 화면 자리(mount).
-   맨 마지막에 읽힌다(app.js · enterprise.js · hitl.js · instances.js 가 감싼 selectTab 을 한 번 더 감싼다). 기존 화면 로직은 건드리지 않는다.
+   맨 마지막에 읽힌다(app.js · enterprise.js · hitl.js · instances.js 가 감싼 selectTab 을 한 번 더 감싼다).
+   주소(해시)를 읽고 쓰는 곳은 이 파일 하나다 — 처리 건 화면은 hydInstances.openTask · route 로만 잇는다.
+   새 화면을 그리는 길도 여기 하나다(MOUNTS → mount 한 번, 다시 열 때 show). 처음 읽기에 실패한 화면은 failed() 가 참이면 다시 연 때 새로 그린다.
    참고: process-gpt-vue3 src/router/MainRoutes.ts(경로 → 화면, /todolist/:taskId · /instancelist/:instId),
          src/layouts/full/vertical-header/VerticalHeader.vue:146·224(알림 배지를 'update-notification-badge' 이벤트로 갱신),
          src/layouts/full/vertical-sidebar/VerticalSidebar.vue:115-117(머리글 묶음 + 항목).
@@ -11,9 +13,8 @@
    '#/'로 시작하지 않는 해시(#content 같은 본문 건너뛰기)는 주소로 보지 않는다. */
 (function () {
   // 새 화면: 메뉴 키 → 전역 이름. 컨테이너는 <section id="view-<키>"> 안의 <div id="<키>View">.
-  const MOUNTS = { inbox: 'hydInbox', agents: 'hydAgents', mcp: 'hydMcp', compare: 'hydCompare', eval: 'hydEval', whatif: 'hydWhatif', kpi: 'hydKpi', fabric: 'hydFabric' };
-  MOUNTS.flows = 'hydFlows';                                         // B3 흐름 가져오기 (flows.js)
-  MOUNTS.oil = 'hydOilInput';                                        // B7 오일 분석 입력 (oilInput.js)
+  const MOUNTS = { inbox: 'hydInbox', agents: 'hydAgents', mcp: 'hydMcp', compare: 'hydCompare', eval: 'hydEval', whatif: 'hydWhatif', kpi: 'hydKpi',
+    fabric: 'hydFabric', ask: 'hydAsk', flows: 'hydFlows', oil: 'hydOilInput' };
   const mounted = {};
   let applying = false;
 
@@ -37,12 +38,10 @@
     }
     return h;
   }
-  // 처리 건 화면이 지금 보여 주는 것. A1 이 hydInstances.route() 를 주면 그것을, 아니면 I.sel · I.taskSel 을 읽는다.
+  // 처리 건 화면이 지금 보여 주는 것(instances.js 의 route: 고른 처리 건 · 열어 둔 단계)
   function instanceRoute() {
     const H = window.hydInstances;
-    if (!H) return {};
-    if (typeof H.route === 'function') { try { return H.route() || {}; } catch (e) { return {}; } }
-    return H.I ? { inst: H.I.sel || null, task: H.I.taskSel || null } : {};
+    return H ? H.route() : {};
   }
   function currentRoute() {
     const tab = state.tab;
@@ -56,11 +55,7 @@
 
   /* ------------------------------------------------ 처리 건 · task 열기 */
   function openInstance(inst, task) {
-    const H = window.hydInstances;
-    // A1 훅: openTask(inst, task) 가 있으면 task 상세(다섯 칸)까지 그쪽이 연다.
-    if (H && typeof H.openTask === 'function') { selectTab('instances'); H.openTask(inst, task || null); return; }
-    // 기본: 처리 건 선택 상태를 먼저 맞춘 뒤 화면을 연다(instances.js 의 selectTab 감싸기가 load(true) 를 부른다).
-    if (H && H.I) { H.I.sel = inst; H.I.taskSel = task || null; }
+    window.hydInstances.openTask(inst, task || null);   // 고를 처리 건 · 단계를 먼저 맞춘 뒤 화면을 연다(selectTab 이 다시 읽는다)
     selectTab('instances');
   }
   function apply(route) {
@@ -93,6 +88,8 @@
       if (!mounted[name]) box.innerHTML = UI.empty(UI.t('shell.notReady'), UI.t('shell.notReadySub'));
       return;
     }
+    // 처음 읽기에 실패한 화면(사람 목록 · 입력 칸 · 패턴 등)은 다시 열 때 새로 그린다 — 한 번 실패하면 새로 고침 전까지 굳지 않게
+    if (mounted[name] && typeof mod.failed === 'function' && mod.failed()) mounted[name] = false;
     if (!mounted[name]) {
       mounted[name] = true;
       box.innerHTML = '';
@@ -178,7 +175,8 @@
 
   window.hydShell = {
     parse, format, href: format,
-    navigate(target) { location.hash = typeof target === 'string' ? target : format(target); },
+    // 링크로 이동: 같은 주소를 다시 눌러도(해시 변화 없음) 그 화면을 다시 연다
+    navigate(target) { const h = typeof target === 'string' ? target : format(target); if (location.hash === h) apply(parse(h)); else location.hash = h; },
     route: currentRoute,
     refreshBadge, renderMe, show,
     mounted,

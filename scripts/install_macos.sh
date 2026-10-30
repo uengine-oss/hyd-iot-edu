@@ -1,6 +1,8 @@
 #!/bin/bash
-# macOS 기본 Bash 3.2 호환. Windows 설치 기준과 같은 최소 버전을 사용한다.
+# macOS 기본 Bash 3.2 호환. 기준 판은 scripts/versions.txt 하나(Windows 설치 · 시작과 같은 파일).
 set -uo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/versions.txt"
+PYTHON_FORMULA="python@${PYTHON_NEW%.*}"   # 예: 3.14.7 → python@3.14 (없거나 기준보다 낮을 때 새로 넣는 판)
 
 version_valid() { [[ "$1" =~ ^[0-9]+(\.[0-9]+){1,3}$ ]]; }
 version_ge() {
@@ -15,10 +17,12 @@ version_ge() {
 # missing과 unknown을 구별한다. 읽을 수 없는 기존 앱은 덮어쓰지 않는다.
 detect_version() {
   local app='' candidate='' found='' output=''
-  if [ "$1" = python@3.14 ]; then
-    local best='' v=''
-    for candidate in python3 /opt/homebrew/opt/python@3.14/bin/python3.14 /usr/local/opt/python@3.14/bin/python3.14 /Library/Frameworks/Python.framework/Versions/*/bin/python3; do
+  if [ "$1" = "$PYTHON_FORMULA" ]; then
+    local best='' v='' line="${PYTHON_NEW%.*}"
+    for candidate in python3 "/opt/homebrew/opt/$PYTHON_FORMULA/bin/python$line" "/usr/local/opt/$PYTHON_FORMULA/bin/python$line" /Library/Frameworks/Python.framework/Versions/*/bin/python3; do
       command -v "$candidate" >/dev/null 2>&1 || continue
+      # 개발자 도구가 없으면 /usr/bin/python3 은 실행하는 순간 설치 창을 띄우는 자리표시 — 건너뛴다(git 과 같은 판정)
+      if [ "$(command -v "$candidate")" = /usr/bin/python3 ] && ! xcode-select -p >/dev/null 2>&1; then continue; fi
       v=$("$candidate" --version 2>/dev/null) || continue
       v=${v#Python }
       version_valid "$v" || continue
@@ -125,15 +129,15 @@ main() {
   [ "$(id -u)" -ne 0 ] || { echo 'sudo로 전체 스크립트를 실행하지 마세요. 일반 계정에서 설치.command를 여세요.'; return 1; }
   . "$(dirname "${BASH_SOURCE[0]}")/macos_paths.sh"
   local failed=0
-  ensure_package docker-desktop 4.87.0 cask || failed=1
-  ensure_package visual-studio-code 1.143.0 cask || failed=1
-  ensure_package node 24.22.1 formula || failed=1
-  ensure_package git 2.54.0 formula || failed=1
-  ensure_package python@3.14 3.14.7 formula || failed=1
+  ensure_package docker-desktop "$DOCKER_DESKTOP_MIN" cask || failed=1
+  ensure_package visual-studio-code "$VSCODE_MIN" cask || failed=1
+  ensure_package node "$NODE_MIN" formula || failed=1
+  ensure_package git "$GIT_MIN" formula || failed=1
+  ensure_package "$PYTHON_FORMULA" "$PYTHON_MIN" formula || failed=1   # 기준 이상 Python 이 있으면 그대로(Windows 와 같게)
   echo 'Supabase CLI 실행 파일을 준비합니다(시스템 데이터는 시작 파일에서 받습니다).'
   local supabase_version
-  supabase_version=$(npx -y supabase@2.119.0 --version) || failed=1
-  version_ge "$supabase_version" 2.119.0 || failed=1
+  supabase_version=$(npx -y "supabase@$SUPABASE_CLI" --version) || failed=1
+  version_ge "$supabase_version" "$SUPABASE_CLI" || failed=1
   echo 'Mac에는 WSL이 필요 없습니다.'
   if [ "$failed" -eq 0 ]; then
     echo '도구가 기준을 만족합니다. Docker Desktop의 초기 설정을 완료한 뒤 시작.command를 실행하세요.'

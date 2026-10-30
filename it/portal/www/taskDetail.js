@@ -15,8 +15,7 @@
   const HIDDEN_OUTPUT = new Set(['text', 'cliagents_session_id']);
   const REFRESH_ON = new Set(['task_started', 'task_completed', 'task_cancelled', 'human_asked', 'human_response', 'error']);
   const DECISION_TOOLS = new Set(['formHandler:rank', 'formHandler:select_card']);
-  const HASH_RE = /^#\/instances\/([^/]+)(?:\/task\/([^/]+))?$/;
-  const OP = { lt: '<', lte: '≤', gt: '>', gte: '≥', eq: '=', '<': '<', '>=': '≥' };
+  const OP = { lt: '<', lte: '≤', gt: '>', gte: '≥', eq: '=', '<': '<', '>=': '≥', '<=': '≤', '>': '>' };
   const TAG = { TS1: '유온 TS1', PS1: '압력 PS1', VS1: '진동 VS1' };
   const NOTE_SHOW = 600;
   const T = { wid: null, act: null, item: null, error: null, host: null, loading: false, rendered: null,
@@ -43,7 +42,7 @@
     'td.timeout': '선택 기한이 지나 책임자 확인 단계로 넘어갔습니다', 'td.decFail': '조치 카드를 읽지 못했습니다',
     'td.cmdId': '명령 번호', 'td.ackWait': '설비 응답을 기다리는 중', 'td.ackDone': '설비가 실행함', 'td.ackRejected': '설비가 거부함', 'td.interlock': '인터록',
     'td.criterion': '회복 기준', 'td.remeasure': '재측정', 'td.remeasureIn': '재측정까지', 'td.remeasureDue': '재측정 시각 지남 · 판정 대기', 'td.extensions': '연장',
-    'td.cleared': '경보 해제', 'td.recoveryBasis': '회복 근거', 'td.incFail': '사건 상태를 읽지 못했습니다', 'td.scaleNote': '모의 {sim} = 실제 {real} ({x}배속)',
+    'td.cleared': '경보 해제', 'td.recoveryBasis': '회복 근거', 'td.incFail': '사건 상태를 읽지 못했습니다', 'td.scaleNote': '설비 시간 {sim} 창',
     'td.source': '원문', 'td.pages': '쪽', 'td.chars': '자', 'td.segment': '담당 구간', 'td.feedback': '사람 검토 판정', 'td.sections': '절', 'td.procedures': '절차', 'td.warnings': '주의',
     'td.steps': '단계', 'td.pageReviews': '페이지 검토',
     'td.now': '지금', 'td.ended': '끝', 'td.nowTool': '도구 {tool} 호출 중', 'td.nowNote': '판단을 정리하는 중', 'td.nowBasis': '판단 근거를 기록함', 'td.nowStarted': '작업을 시작함',
@@ -57,8 +56,6 @@
     'var.decision_id': '조치 카드 묶음 번호', 'var.incident': '사건', 'var.commands': '설비 명령', 'var.chosen_option': '고른 조치 카드', 'var.incident_outcome': '사건 결과',
     'var.manual_source': '원문 문서', 'var.review_feedback': '사람 검토 판정', 'var.segment': '담당 구간', 'var.proposal': '추출 제안', 'var.ontology_catalog': '온톨로지 목록' })
     .forEach(([k, label]) => { if (!(k in UI.terms)) UI.terms[k] = label; });
-
-  if (!UI.performers['legacy agent']) UI.performers['legacy agent'] = '내장 판단 파이프라인';   // process instance_mode._bridge_legacy_agent 의 이름
 
   const view = () => (window.hydInstances && window.hydInstances.I && window.hydInstances.I.view) || null;
   const vars = inst => Object.fromEntries((inst.variables_data || []).map(x => [x.key, x.value]));
@@ -79,7 +76,7 @@
     for (const a of (v.definition || {}).activities || []) { const x = (((a.form || {}).fields_json) || []).find(y => y && y.key === key && y.text && y.text !== key); if (x) return x.text; }
     return row && row.name && row.name !== key ? row.name : key;
   }
-  function fmtMs(ms) { return ms < 1000 ? `${Math.round(ms)} ms` : ms < 60000 ? `${(ms / 1000).toFixed(1)} s` : ms < 3600000 ? `${Math.floor(ms / 60000)}분 ${Math.round((ms % 60000) / 1000)}초` : `${Math.floor(ms / 3600000)}시간 ${Math.round((ms % 3600000) / 60000)}분`; }
+  const fmtMs = ms => hydTrace.fmtMs(ms);   // 시간 표시는 trace.js 하나
   const num = x => typeof x === 'number' && Number.isFinite(x) ? (Number.isInteger(x) ? x.toLocaleString('ko-KR') : String(Math.round(x * 100) / 100)) : (x == null ? '–' : String(x));
   const signed = x => typeof x === 'number' && Number.isFinite(x) ? (x > 0 ? '+' : '') + num(x) : '미확인';
   function brief(x, n = 160) {
@@ -120,7 +117,7 @@
     if (key === 'chosen_skill_kind' && (value === 'control' || value === 'work_order')) return esc(value === 'control' ? UI.t('chip.control') : UI.t('chip.workOrder'));
     if (typeof value==='string' && ['incident','alert_id','alertId'].includes(key)) return esc(`${key==='incident' ? '사건' : '경보'} 식별값 있음 · 원문 확인`)+rawFold(value,'raw:'+key);
     if (typeof value==='string' && key==='pattern') {
-      const label=window.hydWords ? hydWords.startValue(key,value) : typeof PATTERN_LABEL!=='undefined' && PATTERN_LABEL[value] || UI.terms['val.'+value] || '경보 패턴 표시 이름 기록 없음 · 원문 확인';
+      const label=window.hydWords ? hydWords.startValue(key,value) : UI.patternName(value);
       return esc(label)+rawFold(value,'raw:'+key);
     }
     if (typeof value === 'string' && UI.terms['val.' + value]) return esc(UI.terms['val.' + value]);   // A161-U1 (결함 4): answered → 답함 …
@@ -279,54 +276,11 @@
     return `${hint}<div class="ro-grid">${rows}</div>`;
   }
 
-  /* ---------- ② 처리 과정 타임라인 (events + 작업 행 자체) ---------- */
-  function timelineItems(w, evs, v, live) {
-    if (window.hydTrace) evs=hydTrace.publicNotes(evs);
-    const items = [];
-    const byTool = new Map();
-    const hasStart = evs.some(e => e.event_type === 'task_started'), hasEnd = evs.some(e => ['task_completed', 'task_cancelled'].includes(e.event_type));
-    if (!hasStart && w.start_date) items.push({ t: w.start_date, cls: 'done', title: kindOf(w) === 'human' ? UI.t('td.assigned') : UI.t('td.start'), text: UI.who(w.user_id) });
-    evs.forEach(e => {
-      const d = e.data || {};
-      switch (e.event_type) {
-        case 'tool_usage_started': { const prior=byTool.get(UI.toolCallKey(e)); if (prior) { Object.assign(prior,{t:e.timestamp,text:window.hydWords ? hydWords.ask(d.tool,d.input) : '도구 요청 목적 기록 없음 · 원문 확인',raw:d}); return; } const it = { t: e.timestamp, cls: 'current', title: UI.toolName(d.tool), text: window.hydWords ? hydWords.ask(d.tool,d.input) : '도구 요청 목적 기록 없음 · 원문 확인', code: d.tool !== 'ToolSearch', raw: d, key: UI.toolCallKey(e), running: true, k: 'tool:' + UI.toolCallKey(e) }; byTool.set(UI.toolCallKey(e), it); items.push(it); return; }
-        case 'tool_usage_finished': {
-          const it = byTool.get(UI.toolCallKey(e));
-          if (it) { it.cls = d.is_error ? 'fail' : 'done'; it.running = false; it.dur = fmtMs(new Date(e.timestamp) - new Date(it.t)); it.result = !d.is_error && window.hydWords ? hydWords.got(d.tool,d.output) : brief(d.output, 200); it.rawOut = d; it.error = !!d.is_error; return; }
-          const orphan={t:e.timestamp,cls:d.is_error ? 'fail' : 'done',title:UI.toolName(d.tool),result:!d.is_error && window.hydWords ? hydWords.got(d.tool,d.output) : brief(d.output,200),rawOut:d,k:'tool:'+UI.toolCallKey(e)}; items.push(orphan);byTool.set(UI.toolCallKey(e),orphan);return;
-        }
-        case 'task_started': items.push({ t: e.timestamp, cls: 'done', title: UI.t('td.start'), text: `${UI.who(d.role || 'agent')}${d.name ? ' · ' + UI.who(d.name) : ''}`, foldTitle: d.task_description ? UI.t('td.instruction') : '', foldBody: UI.idText(d.task_description || ''), k: 'start:' + e.id }); return;
-        case 'task_working':
-          if (d.type === 'text') { items.push({ t: e.timestamp, cls: 'note', title: UI.t('td.note'), html: noteHtml(d.content, 'note:' + e.id), k: 'note:' + e.id }); return; }
-          if (d.type === 'evidence') { items.push({ t: e.timestamp, cls: 'note', title: d.name || UI.t('td.basis'), html: evidenceHtml(d), k: 'ev:' + e.id }); return; }
-          if (d.type === 'usage') { items.push({ t: e.timestamp, cls: 'done', small: true, title: UI.t('td.tokens'), text: `${UI.t('stream.tokens')} ${(d.usage || {}).input_tokens ?? '–'} / ${(d.usage || {}).output_tokens ?? '–'}` }); return; }
-          if (d.name === '승인 접수') { items.push({ t: e.timestamp, cls: 'done', title: d.name, text: `${d.by || ''}${d.role ? ' (' + UI.roleName(d.role, v.definition) + ')' : ''}`, raw: d, k: 'w:' + e.id }); return; }
-          if (d.session_id || d.model) { items.push({ t: e.timestamp, cls: 'done', title: UI.t('td.start'), text: d.model ? `${UI.t('td.model')} ${d.model}` : '', small: true }); return; }
-          items.push({ t: e.timestamp, cls: 'done', title: UI.logText(d.name || UI.t('stream.working')), text: UI.logText(d.content || d.message || ''), code: d.type === 'file_artifact' || /^\s*(```|\{|\[)/.test(d.content || d.message || ''), raw: d.content || d.message ? null : d, k: 'w:' + e.id }); return;   // 에이전트가 쓴 파일 내용 · 결과 JSON을 그대로 말한 메시지는 코드로
-        case 'human_asked': items.push({ t: e.timestamp, cls: 'ask', title: UI.t('stream.asked'), text: humanQuestionText(d), options: Array.isArray(d.options) ? d.options.filter(x => typeof x === 'string') : [], k: 'ask:' + e.id }); return;
-        case 'human_response': items.push({ t: e.timestamp, cls: 'done', title: UI.t('stream.answered'), text: `${d.answer || ''}${d.by ? ' — ' + d.by : ''}`, k: 'ans:' + e.id }); return;
-        case 'task_completed': items.push({ t: e.timestamp, cls: 'done', title: UI.t('stream.done'), text: (d.output_keys || []).length ? `${UI.t('td.outputKeys')} ${d.output_keys.map(k => UI.terms['var.' + k] || k).join(', ')}` : brief(d.text, 160), chip: d.result_source === 'file' ? UI.chipText(UI.t('inst.resultFile')) : '',
-          foldTitle: d.text && (d.output_keys || []).length ? UI.t('td.finalText') : '', foldBody: readable(d.text), k: 'done:' + e.id }); return;
-        case 'task_cancelled': items.push({ t: e.timestamp, cls: 'fail', title: e.job_id === 'TASK_CANCEL_REQUESTED' ? UI.t('stream.cancelReq') : e.job_id === 'TASK_CLOSED' ? UI.t('stream.closed') : UI.t('stream.stopped'), text: UI.logText(brief(d.goal || d.reason, 200)), raw: d, k: 'c:' + e.id }); return;
-        case 'error': items.push({ t: e.timestamp, cls: 'fail', title: d.name || UI.t('stream.error'), text: d.friendly || d.message || brief(d.raw_error || d.content, 200), foldTitle: d.raw_error ? UI.t('raw') : '', foldBody: d.raw_error || '', k: 'err:' + e.id }); return;
-        default: items.push({ t: e.timestamp, cls: e.event_type === 'TASK_REVIEW_REQUIRED' || e.job_id === 'TASK_REVIEW_REQUIRED' ? 'ask' : 'done', title: UI.eventName(e.job_id === 'TASK_REVIEW_REQUIRED' ? e.job_id : e.event_type), text: UI.logText(d.message || d.note || d.friendly || d.reason || '') || ((d.assessment || {}).reasons || []).join('; '), raw: d, k: 'x:' + e.id });
-      }
-    });
-    // the engine's own notes on the row (approval accepted, command issued, waiting ACK …) — no timestamp of their own
-    String(w.log || '').split(/;\s*/).map(s => s.trim()).filter(Boolean).forEach((seg, i) => items.push({ t: null, order: i, cls: 'done', title: UI.logText(seg), small: true }));
-    if (!hasEnd && w.end_date) items.push({ t: w.end_date, cls: w.status === 'CANCELLED' ? 'fail' : 'done', title: UI.status(w.status), text: '' });
-    if (live) {
-      const k = kindOf(w);
-      const title = w.draft_status === 'HUMAN_ASKED' ? UI.t('td.askWait') : w.status === 'PENDING' ? UI.t('td.pendingWait') : w.status === 'SUBMITTED' ? UI.t('td.engineWorking')
-        : k === 'agent' ? UI.t('td.agentWorking') : k === 'human' ? UI.t('td.humanWaiting') : UI.t('td.systemWaiting');
-      items.push({ t: null, cls: 'current', live: true, title, text: w.due_date ? `${UI.t('inst.due')} ${UI.time(w.due_date)}` : '' });
-    }
-    return items;
-  }
+  /* ---------- ② 처리 과정 타임라인 ---------- */
   // A161-U1: 처리 건 상세의 실시간 처리 과정(trace.js)과 같은 행 — 도구 한 줄(소요 시간, 누르면 요청 · 응답), 에이전트 말, 사람 질문 상자.
-  // 판단 근거(evidence)는 이 패널만의 표(원인 점수 · 카드 점수 구성)를 그대로 쓴다. trace.js 가 없으면 예전 타임라인.
+  // 판단 근거(evidence)는 이 패널만의 표(원인 점수 · 카드 점수 구성)를 그대로 쓴다. 이벤트 → 행 변환은 trace.js(hydTrace) 하나다.
   function timelineHtml(w, evs, v, live) {
-    if (window.hydTrace && hydTrace.rowsOf) {
+    {
       const m = hydTrace.build({ view: { ...v, workitems: [w], events: evs }, onlyWorkitem: w.id });
       const s = m.steps[0] || { rows: [], live: false };
       const rows = s.rows.slice();
@@ -342,16 +296,6 @@
       if (!html) return `<p class="muted">${esc(UI.t('td.noTrace'))}</p>`;
       return `<div class="tr td-trace" data-td-timeline><div class="tr-rows">${html}</div></div>`;
     }
-    const items = timelineItems(w, evs, v, live);
-    if (!items.length) return `<p class="muted">${esc(UI.t('td.noTrace'))}</p>`;
-    return `<div class="timeline td-timeline" data-td-timeline>${items.map(it => `<div class="tl ${esc(it.cls)}${it.small ? ' small' : ''}${it.live ? ' live' : ''}"><div class="dot"></div><div class="tl-body">
-        <div class="tl-head">${it.t ? `<time title="${esc(UI.dateTime(it.t))}">${esc(UI.time(it.t))}</time>` : it.live ? `<i class="live-dot on"></i>` : '<time></time>'}<b>${esc(it.title)}</b>${it.chip || ''}${it.running ? `<span class="chip tone-accent sm">${esc(UI.t('td.running'))}</span>` : ''}${it.dur ? `<span class="dur">${esc(it.dur)}</span>` : ''}</div>
-        ${it.text ? `<div class="tl-text">${it.code ? `<code>${esc(it.text)}</code>` : esc(it.text)}</div>` : ''}${it.html || ''}${it.result != null ? `<div class="tl-text res${it.error ? ' neg' : ''}">→ <code>${esc(it.result)}</code></div>` : ''}
-        ${it.options && it.options.length ? `<div class="row-wrap">${it.options.map(o => `<span class="chip tone-neutral sm">${esc(o)}</span>`).join('')}</div>` : ''}
-        ${it.foldTitle ? `<details class="fold small" data-k="${esc(it.k)}"><summary>${esc(it.foldTitle)}</summary><pre>${esc(it.foldBody)}</pre></details>` : ''}
-        ${UI.toolIdentityFold(it.raw?.tool || it.rawOut?.tool)}
-        ${it.raw || it.rawOut ? `<details class="fold small" data-k="${esc(it.k)}:raw"><summary>${esc(UI.t('raw'))}</summary><pre>${esc(JSON.stringify(it.rawOut ? { ...(it.raw || {}), ...it.rawOut } : it.raw, null, 2))}</pre></details>` : ''}
-      </div></div>`).join('')}</div>`;
   }
 
   /* ---------- ③ 판단 · 출력 ---------- */
@@ -420,33 +364,32 @@
       rows.push(UI.readonly(UI.t('td.response'), ack ? `${ack.result === 'DONE' ? UI.chipText(UI.t('td.ackDone'), 'success') : UI.chipText(UI.t('td.ackRejected'), 'danger')}${ack.reason ? ` <span class="muted">${esc(UI.logText(ack.reason))}</span>` : ''}${ack.interlock ? ` · ${esc(UI.t('td.interlock'))} ${esc(ack.interlock)}` : ''}`
         : inc.state === 'AWAITING_ACK' ? `<span class="muted">${esc(UI.t('td.ackWait'))}</span>` : esc(UI.status(inc.state)), ack && ack.t ? UI.dateTime(ack.t) : ''));
     }
-    if (tool === 'incident:reobserve') rows.push(...reobserveRows(inc));
+    if (tool === 'incident:reobserve') rows.push(...reobserveRows(inc, w));
     return rows.length ? `<div class="ro-grid">${rows.join('')}</div>` : '';
   }
-  // 재측정까지 남은 시간: 사건 이력의 RE_OBSERVING 기록(시각 · "모의 900초 = 실제 45초")에서 계산 — 배속은 서버가 적은 값을 쓴다
-  function reobsWindow(inc) {
+  // 재측정까지 남은 시간: 효과 확인 단계 행이 저장한 마감(due_date — 서버 service_parts._reobserve, 연장하면 늘어남)과
+  // 사건 이력 RE_OBSERVING 칸의 설비 시간 창(sim_s)
+  function reobsWindow(inc, w) {
     const h = (inc.history || []).filter(x => x.state === 'RE_OBSERVING').pop();
-    const m = h && String(h.note || '').match(/^(\d+(?:\.\d+)?) sim-s = (\d+(?:\.\d+)?) s$/);
-    if (!h || !m) return null;
-    const sim = Number(m[1]), real = Number(m[2]);
-    return { at: new Date(h.t), sim, real, due: new Date(new Date(h.t).getTime() + real * 1000), scale: real > 0 ? Math.round(sim / real) : null };
+    if (!h || !h.reobservation || !w || !w.due_date) return null;
+    return { at: new Date(h.t), sim: h.reobservation.sim_s, due: new Date(w.due_date) };
   }
-  function reobserveRows(inc) {
+  function reobserveRows(inc, w) {
     const rows = [];
     const crit = (inc.recoveryPolicy || {}).criterion;
     if (Array.isArray(crit)) rows.push(UI.readonly(UI.t('td.criterion'), `<span class="kv">${esc(TAG[crit[0]] || crit[0])} ${esc(OP[crit[1]] || crit[1])} ${esc(num(crit[2]))}</span> + ${esc(UI.t('td.cleared'))}`));
-    const win = reobsWindow(inc);
+    const win = reobsWindow(inc, w);
     if (win) {
       const left = win.due - new Date();
-      const scaleText = UI.t('td.scaleNote').replace('{sim}', fmtMs(win.sim * 1000)).replace('{real}', fmtMs(win.real * 1000)).replace('{x}', win.scale ?? '–');
+      const scaleText = UI.t('td.scaleNote').replace('{sim}', fmtMs(win.sim * 1000));
       const value = inc.state === 'RE_OBSERVING' ? (left > 0 ? `${esc(UI.t('td.remeasureIn'))} <b class="td-count">${esc(fmtMs(left))}</b>` : esc(UI.t('td.remeasureDue'))) : `${esc(UI.dateTime(win.due.toISOString()))}`;
       rows.push(UI.readonly(UI.t('td.remeasure'), value + (inc.reobsExtensions ? ` · ${esc(UI.t('td.extensions'))} ${esc(inc.reobsExtensions)}회` : ''), scaleText));
     }
     rows.push(UI.readonly(UI.t('td.cleared'), esc(inc.cleared ? UI.t('yes') : UI.t('no'))));
     const verdict = (inc.history || []).filter(x => ['RESOLVED', 'ESCALATED'].includes(x.state)).pop();
     if (verdict) {
-      const m = String(verdict.note || '').match(/^(\w+) ([\d.\-]+|None) (<|>=) ([\d.]+)$/);
-      const text = m ? `${TAG[m[1]] || m[1]} ${m[2]} ${OP[m[3]]} ${m[4]}` : UI.logText(verdict.note || inc.reason || '');
+      const r = verdict.reobservation;            // 서버가 남긴 판정 칸(machine._go) — 없으면 그 줄의 글을 보인다
+      const text = r && r.tag ? `${TAG[r.tag] || r.tag} ${r.value == null ? '값 없음' : num(r.value)} ${OP[r.op] || r.op} ${num(r.limit)}${r.cleared === false ? ' · 경보 해제 안 됨' : ''}` : UI.logText(verdict.note || inc.reason || '');
       rows.push(UI.readonly(UI.t('td.recoveryBasis'), `${UI.chip(verdict.state)} ${esc(text)}`, UI.dateTime(verdict.t)));
     }
     return rows;
@@ -559,7 +502,6 @@
     const w = T.wid && workitemOf(T.wid);
     const actId = T.act || (w && w.activity_id);
     document.querySelectorAll('#instDetail .f-node[data-node]').forEach(g => g.classList.toggle('picked', !!actId && g.dataset.node === actId));
-    document.querySelectorAll('#instDetail .step-row[data-step-task]').forEach(d => d.classList.toggle('picked', !!w && d.dataset.stepTask === w.id));
   }
 
   /* ---------- 지금: <단계> — <누가> <무엇을 하는 중> ---------- */
@@ -589,7 +531,7 @@
     }
     if (tool === 'incident:command') return [UI.t('system'), UI.t('td.nowCmd')];
     if (tool === 'incident:reobserve') {
-      const inc = T.inc && T.inc.id === vars(v.instance).incident ? T.inc : null, win = inc && reobsWindow(inc);
+      const inc = T.inc && T.inc.id === vars(v.instance).incident ? T.inc : null, win = inc && reobsWindow(inc, w);
       const left = win ? win.due - new Date() : null;
       return [UI.t('system'), `${UI.t('td.nowReobs')}${left == null ? '' : left > 0 ? ` · ${UI.t('td.remeasureIn')} ${fmtMs(left)}` : ` · ${UI.t('td.remeasureDue')}`}`];
     }
@@ -681,17 +623,10 @@
     catch (e) { if (T.wid === wid) T.error = e.message; }
     finally { T.loading = false; }
   }
-  function setHash(pid, wid) {
-    if (typeof location === 'undefined' || typeof history === 'undefined' || !pid) return;
-    const h = `#/instances/${encodeURIComponent(pid)}` + (wid ? `/task/${encodeURIComponent(wid)}` : '');
-    if (location.hash !== h) history.replaceState(null, '', h);
-  }
-  const ourHash = () => typeof location !== 'undefined' && HASH_RE.test(location.hash);
   async function open(wid) {
     if (!wid) return;
     T.act = null;
     if (T.wid !== wid) { T.wid = wid; T.item = null; T.error = null; }
-    const v = view(); if (v && workitemOf(wid)) setHash(v.instance.proc_inst_id, wid);
     render();
     await refresh(); render();
     const panel = T.host && T.host.querySelector('[data-task-detail]');
@@ -704,7 +639,7 @@
     const panel = T.host && T.host.querySelector('[data-task-detail]');
     if (panel && panel.scrollIntoView) panel.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }
-  function close() { const v = view(); T.wid = null; T.act = null; T.item = null; T.rendered = null; if (v && ourHash()) setHash(v.instance.proc_inst_id, null); render(); }
+  function close() { T.wid = null; T.act = null; T.item = null; T.rendered = null; render(); }
   function mount(host) {
     T.host = host || null;
     const v = view();
@@ -712,7 +647,7 @@
       const wid = T.pending.wid; T.pending = null;
       if (wid && workitemOf(wid)) { open(wid); return; }
     }
-    if (T.wid && !workitemOf(T.wid)) { T.wid = null; T.item = null; T.rendered = null; if (v && ourHash()) setHash(v.instance.proc_inst_id, null); }   // another instance is selected now
+    if (T.wid && !workitemOf(T.wid)) { T.wid = null; T.item = null; T.rendered = null; }   // another instance is selected now
     if (T.act) { if (!v || !activityOf(v, T.act)) T.act = null; }
     render();
   }
@@ -728,18 +663,6 @@
   }
   function isLive() { const w = T.wid && workitemOf(T.wid); const v = view(); return !!(w && v && UI.taskExecution(w, eventsOf(w,v,T.item), v.instance).live); }
   const onInstances = () => typeof state !== 'undefined' && state.tab === 'instances';
-  // a #/instances/<처리 건>/task/<단계> address (shared link, reload) selects the instance, shows its 흐름 tab and opens the step
-  function fromHash() {
-    if (typeof location === 'undefined') return;
-    const m = location.hash.match(HASH_RE); if (!m || !window.hydInstances) return;
-    const pid = decodeURIComponent(m[1]), wid = m[2] ? decodeURIComponent(m[2]) : null;
-    const I = window.hydInstances.I;
-    if (I.sel === pid && (!wid || wid === T.wid) && onInstances()) return;
-    I.sel = pid; I.taskSel = null; if (wid) I.tab = 'flow';
-    T.pending = { pid, wid };
-    if (onInstances()) window.hydInstances.load(true); else window.hydApp.selectTab('instances');
-  }
-
   if (typeof document !== 'undefined' && document.addEventListener) {
     setInterval(() => { if (T.wid && onInstances() && isLive()) refresh().then(render); }, 2500);
     setInterval(() => { if (onInstances()) renderNow(); }, 1000);    // countdowns (기한 · 재측정) tick without a reload
@@ -749,17 +672,13 @@
       if (now) { const tab = document.querySelector('#instDetail [data-inst-tab="flow"]'); if (tab && !tab.classList.contains('on')) tab.click(); open(now.dataset.tdOpen); return; }
       if (!e.target.closest('#instDetail')) return;
       const node = e.target.closest('.f-node[data-node]');
-      if (node) { openActivity(node.dataset.node); return; }
-      const row = e.target.closest('.step-row[data-step-task]');
-      if (row && e.target.closest('summary') && row.dataset.stepTask) open(row.dataset.stepTask);
+      if (node) openActivity(node.dataset.node);
     });
     // the instance detail is redrawn by instances.js every few seconds: re-apply the highlight after each redraw
     const observe = () => { const box = document.getElementById('instDetail'); if (!box) return; new MutationObserver(() => { if (T.wid || T.act) requestAnimationFrame(highlight); }).observe(box, { childList: true, subtree: true }); };
-    const boot = () => { observe(); fromHash(); };
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
-    if (typeof window !== 'undefined' && window.addEventListener) window.addEventListener('hashchange', fromHash);
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', observe); else observe();
   }
 
-  window.hydTaskDetail = { open, openActivity, close, mount, onEvent, render, renderNow, nowHtml, refresh, fromHash, T };
+  window.hydTaskDetail = { open, openActivity, close, mount, onEvent, render, renderNow, nowHtml, refresh, T };
   window.addEventListener('hyd-tool-payload',()=>{if(T.host?.isConnected)render();});
 })();

@@ -18,14 +18,12 @@ This module is copied into the worker image (it/agent-worker/Dockerfile): stdlib
 from __future__ import annotations
 
 import re
-from copy import deepcopy
 from dataclasses import asdict, dataclass, field
 
-from hydcommon.timeutil import now_iso
 
 SKILL_NAME_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
-#: where each CLI discovers a skill (cliagents layouts: claude_code.py skill_path · codex.py _SKILL_PATH)
-SKILL_ROOTS = {"claude-code": ".claude/skills", "codex": ".agents/skills"}
+#: where the CLI discovers a skill (cliagents layout claude_code.py skill_path) — the worker runs Claude Code only (settings.PROVIDER)
+SKILL_ROOTS = {"claude-code": ".claude/skills"}
 MODEL_KEYS = ("agent_model", "agentModel", "model")
 #: users.role holds a category code in the HYD seed, not a sentence; say it in words where it is shown or prompted
 ROLE_WORDS = {"agent": "AI 에이전트", "system": "시스템 수행자", "operator": "운전원", "manager": "관리자"}
@@ -119,7 +117,7 @@ class AgentSettings:
     def skill_names(self) -> list[str]:
         return [s["skill_name"] for s in self.skills]
 
-    def instructions(self, skill_root: str = SKILL_ROOTS["claude-code"], *, skills_inline: bool = False) -> str:
+    def instructions(self, skill_root: str = SKILL_ROOTS["claude-code"]) -> str:
         """The section the worker adds to the run's prompt (process-gpt-cli-agent core/subagents.py:36-46 joins
         role · goal · persona the same way). Empty for a work item without an agent profile."""
         p = self.profile or {}
@@ -136,10 +134,7 @@ class AgentSettings:
         if self.skills:
             listed = "\n".join(f"- `{s['skill_name']}`" + (f": {s['description']}" if s.get("description") else "")
                                + f" — `{skill_root}/{s['skill_name']}/SKILL.md`" for s in self.skills)
-            delivery = ('이 지시에 등록·검증된 스킬 본문이 함께 제공됩니다. 아래 본문에서 업무에 해당하는 절차를 따르세요. '
-                        '목록의 경로는 출처 표시이며 본문을 받기 위해 파일 읽기 도구를 호출할 필요가 없습니다. '
-                        if skills_inline else
-                        f"작업 디렉터리의 `{skill_root}/<이름>/SKILL.md` 에 이 에이전트의 스킬이 있습니다. 업무에 해당하는 스킬을 먼저 읽고 그 절차를 따르세요. ")
+            delivery = f"작업 디렉터리의 `{skill_root}/<이름>/SKILL.md` 에 이 에이전트의 스킬이 있습니다. 업무에 해당하는 스킬을 먼저 읽고 그 절차를 따르세요. "
             text += (("\n\n" if text else "") + "## 배정된 스킬\n" + delivery
                      + "스킬은 결과 제출 형식을 바꾸지 않습니다.\n" + listed)
         return text
@@ -211,42 +206,7 @@ def agent_settings(repo, tenant_id: str, agent, *, activity: dict | None = None)
                          work_rules=(str(profile.get("work_rules") or "").strip() or None) if profile else None)
 
 
-# ---------------------------------------------------------------- repositories (read only; MemoryRepo also seeds for tests)
-class MemoryAgents:
-    def _skill_rows(self) -> dict:
-        if not hasattr(self, "_skills"):
-            self._skills = {}
-        return self._skills
-
-    def _agent_skill_rows(self) -> list:
-        if not hasattr(self, "_agent_skills"):
-            self._agent_skills = []
-        return self._agent_skills
-
-    def list_skills(self, tenant_id: str = "hyd", names: list[str] | None = None) -> list[dict]:
-        return [deepcopy(s) for (t, n), s in sorted(self._skill_rows().items()) if t == tenant_id and (names is None or n in names)]
-
-    def get_skill(self, tenant_id: str, name: str) -> dict | None:
-        row = self._skill_rows().get((tenant_id, name))
-        return deepcopy(row) if row else None
-
-    def list_agent_skills(self, tenant_id: str = "hyd", user_id: str | None = None) -> list[dict]:
-        return [deepcopy(r) for r in self._agent_skill_rows() if r["tenant_id"] == tenant_id and (user_id is None or r["user_id"] == user_id)]
-
-    # what the wrap-up's SQL does against Supabase — the in-memory repo needs it to stand in (tests, PROCESS_REPO=memory)
-    def put_skill(self, skill: dict) -> None:
-        if not SKILL_NAME_RE.match(skill["skill_name"]):
-            raise ValueError(f"스킬 이름은 소문자·숫자·하이픈만 씁니다: {skill['skill_name']}")
-        key = (skill.get("tenant_id") or "hyd", skill["skill_name"])
-        self._skill_rows()[key] = {"description": "", "content": "", **skill, "tenant_id": key[0], "updated_at": now_iso()}
-
-    def attach_skill(self, user_id: str, skill_name: str, tenant_id: str = "hyd") -> None:
-        if (tenant_id, skill_name) not in self._skill_rows():          # the FK of agent_skills → tenant_skills
-            raise ValueError(f"없는 스킬입니다: {skill_name}")
-        if not any(r["user_id"] == user_id and r["tenant_id"] == tenant_id and r["skill_name"] == skill_name for r in self._agent_skill_rows()):
-            self._agent_skill_rows().append({"user_id": user_id, "tenant_id": tenant_id, "skill_name": skill_name, "created_at": now_iso()})
-
-
+# ---------------------------------------------------------------- repository (read only)
 class PgAgents:
     def list_skills(self, tenant_id: str = "hyd", names: list[str] | None = None) -> list[dict]:
         with self._conn() as c:

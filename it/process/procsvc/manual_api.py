@@ -1,6 +1,7 @@
 """Original → source-backed preview → human review → atomic graph endpoints."""
 import asyncio
 import base64
+import hashlib
 from urllib.parse import quote
 
 from fastapi import HTTPException
@@ -9,11 +10,13 @@ from fastapi.responses import Response
 from uuid import uuid4
 
 from . import manual_graph, manual_review, manual_extraction, manual_golden, manual_knowledge, manual_preflight, manual_cache
+from .course_policy import AccessDenied
 from .manual_sources import MAX_BYTES
 
 
-def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_factory=lambda: None,
-             cache_context=None, managed_client=None, approved_cache=None):
+def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_factory, approved_cache):
+    """approved_cache = 강사 서명 추출 묶음(제공 문서는 늘 여기서 — AI 0회). 그 밖의 문서는 수업 경계(app.state.course)가 PBL 단계에서만
+    받고 실제 AI 추출로 간다."""
     async def run(fn):
         try:
             return await asyncio.get_running_loop().run_in_executor(None, fn)
@@ -21,6 +24,8 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
             raise HTTPException(409, str(exc)) from exc
         except KeyError as exc:
             raise HTTPException(404, '문서 판본 또는 배치를 찾을 수 없습니다') from exc
+        except AccessDenied as exc:
+            raise HTTPException(403, str(exc)) from exc
         except ValueError as exc:
             raise HTTPException(400, str(exc)) from exc
 
@@ -31,7 +36,8 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
     def runtime():
         rt = runtime_factory()
         if rt is None or rt.tenant_id != tenant:
-            raise HTTPException(503, '문서 추출에는 같은 tenant의 instance 실행 서비스가 필요합니다')
+            from .instances import NOT_READY
+            raise HTTPException(503, NOT_READY)
         return rt
 
     def current_catalog(session):
@@ -50,18 +56,11 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
             request_id = body.get('request_id')
             if not isinstance(request_id,str):raise ValueError('재전송에 사용할 request_id UUID가 필요합니다')
             source = archive_factory().get(tenant,source_id)
-            if approved_cache:
+            if approved_cache.covers(source):
                 return approved_cache.start(runtime(), source, request_id, graph(manual_knowledge.catalog),
                                             body.get('review_feedback'))
-            if managed_client:
-                return managed_client.start(tenant, source, body.get('review_feedback'))
-            # The authority hook is server-owned. No scope/profile/reextract
-            # override from the student's request body is accepted here.
-            context = cache_context(source, body.get('review_feedback')) if cache_context else None
+            app.state.course.document(source['sha256'])
             catalog = graph(manual_knowledge.catalog)          # C1: the ids the document may point at, pinned with the run
-            if context is not None:
-                return manual_cache.start(runtime(), source, request_id, catalog, scope=context['scope'],
-                                          profile=context['profile'], feedback=body.get('review_feedback'))
             inst = manual_extraction.start(runtime(),source,request_id,review_feedback=body.get('review_feedback'),catalog=catalog)
             seg = manual_extraction.engine.variables(inst).get('segment') or {}
             return dict(instance=inst['proc_inst_id'],status=inst['status'],source_id=source_id,segments=seg.get('total',1))
@@ -71,13 +70,12 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
     async def extraction_result(source_id: str, instance_id: str):
         def work():
             source = archive_factory().get(tenant,source_id)
-            if approved_cache:
+            if approved_cache.covers(source):
                 approved_cache.authorize(source)
-            if cache_context:
-                cache_context(source, None)  # Revoked document access cannot be restored by a cache hit.
+            else:
+                app.state.course.document(source['sha256'])
             previous = graph(lambda session: manual_graph.head(session,tenant,source['document_id']))
-            value = (managed_client.result(tenant, source, instance_id, previous) if managed_client and not approved_cache else
-                     manual_cache.result(runtime(),archive_factory(),source,instance_id,previous))
+            value = manual_cache.result(runtime(),archive_factory(),source,instance_id,previous)
             if value.get('preview'):
                 # The graph tags a document's nodes with its tenant-scoped key, not the raw document id (F-1: the raw id
                 # made this document's own SOPs show up as another document's).
@@ -97,13 +95,10 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
     async def extraction_history(source_id: str, limit: int = 50, offset: int = 0):
         def work():
             source = archive_factory().get(tenant,source_id)
-            if approved_cache:
-                approved_cache.authorize(source)
-            if managed_client and not approved_cache:
-                return managed_client.history(tenant, source, limit, offset)
             if not 1 <= limit <= 100 or offset < 0:raise ValueError('목록 범위가 올바르지 않습니다')
-            context = (approved_cache.context(source) if approved_cache else
-                       cache_context(source, None) if cache_context else None)
+            context = approved_cache.context(source) if approved_cache.covers(source) else None
+            if context is None:
+                app.state.course.document(source['sha256'])
             cache_prefix = None
             if context is not None:
                 key = manual_cache.identity(tenant, source, graph(manual_knowledge.catalog), **context)
@@ -114,8 +109,7 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
         return await run(work)
 
     def preview(source):
-        if managed_client:
-            managed_client.authorize_hash(source['sha256'])
+        app.state.course.document(source['sha256'])
         def with_catalog(session):
             modes = session.run('MATCH (f:FailureMode) OPTIONAL MATCH (f)-[:OCCURS_IN]->(c:Component) '
                                 "RETURN f.id AS id, f.name + ' ' + coalesce(c.name, '') AS name").data()
@@ -135,9 +129,9 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
                 raw = base64.b64decode(data, validate=True)
             except Exception as exc:
                 raise ValueError('base64 파일 데이터가 올바르지 않습니다') from exc
-            if managed_client:
-                import hashlib
-                managed_client.authorize_hash(hashlib.sha256(raw).hexdigest())
+            if not raw:
+                raise ValueError('빈 파일입니다 — 내용이 있는 문서를 고르세요')
+            app.state.course.document(hashlib.sha256(raw).hexdigest())     # 저장 전에: 수업 단계는 제공 문서만 받는다
             source = archive_factory().save(tenant, body.get('filename'), raw,
                                              document_id=body.get('document_id'))
             return preview(source)
@@ -169,8 +163,7 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
     async def changes(body: dict):
         def work():
             plan = manual_review.validate(archive_factory(), tenant, body)
-            if managed_client:
-                managed_client.authorize_hash(archive_factory().get(tenant, body['source_id'])['sha256'])
+            app.state.course.document(archive_factory().get(tenant, plan['source_id'])['sha256'])
             return graph(lambda session: manual_graph.revision_preview(session, plan))
         return await run(work)
 
@@ -179,14 +172,15 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
         def work():
             # All source/shape checks run before even opening the graph connection.
             plan = manual_review.validate(archive_factory(), tenant, body)
-            if managed_client:
-                managed_client.authorize_hash(archive_factory().get(tenant, body['source_id'])['sha256'])
+            app.state.course.document(archive_factory().get(tenant, plan['source_id'])['sha256'])
+            if body.get('golden_questions'):
+                app.state.course.action('documents.golden')
             if body.get('method') == manual_extraction.CONTRACT or body.get('extraction') is not None:
                 binding = body.get('extraction')
                 if not isinstance(binding,dict) or not isinstance(binding.get('instance'),str):
                     raise ValueError('추출 제안의 실제 작업 연결이 필요합니다')
                 source = archive_factory().get(tenant,plan['source_id'])
-                if approved_cache:approved_cache.authorize(source)
+                if approved_cache.covers(source):approved_cache.authorize(source)
                 current = manual_cache.result(runtime(),archive_factory(),source,binding['instance'],plan['previous_batch'])['preview']
                 if current is None or current['extraction'] != binding:
                     raise ValueError('추출 작업이 완료되지 않았거나 검토한 작업 세대가 다릅니다')

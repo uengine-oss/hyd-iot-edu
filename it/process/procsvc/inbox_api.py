@@ -11,7 +11,7 @@
 
 권한: HYD 포털에는 로그인이 없어 user_id 를 호출자가 준다(기존 by·role 과 같은 수준). 승인 권한(역할 403)은 /select 가 그대로 검사하고,
 "나"(user:*)로 승인하면 그 사람이 내세운 역할의 구성원인지도 본다(inbox.check_actor). 수동 재배정·위임·외부 알림은 범위 밖(TODO A3).
-409 unless PROCESS_MODE=instance (instance_mode._rt)."""
+처리 엔진이 준비되기 전에는 503 (instance_mode._rt)."""
 from __future__ import annotations
 
 import uuid

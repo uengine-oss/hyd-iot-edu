@@ -94,8 +94,11 @@ def register(app, *, driver_factory, tenant, audit, runtime_factory, store_facto
 
     def runtime():
         rt = runtime_factory()
-        if rt is None or rt.tenant_id != tenant:
-            raise HTTPException(503, 'AI 뜻 후보에는 같은 tenant의 instance 실행 서비스가 필요합니다 (PROCESS_MODE=instance)')
+        if rt is None:
+            from .instances import NOT_READY
+            raise HTTPException(503, NOT_READY)
+        if rt.tenant_id != tenant:          # 둘 다 TENANT_ID 에서 온다 — 다르면 기동 구성이 깨진 것
+            raise RuntimeError(f'처리 건 런타임의 테넌트 {rt.tenant_id} 와 DB 뜻 복원의 테넌트 {tenant} 가 다릅니다')
         return rt
 
     @app.post('/api/kg/ddl/meanings')

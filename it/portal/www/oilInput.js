@@ -7,7 +7,6 @@
   const O = { el: null, form: null, err: '', sending: false, last: null,
               draft: { asset: 'HYD-01', item: '', value: '', out: null, memo: '', by: '' } };
   const api = p => API.process + p;
-  if (typeof PATTERN_LABEL !== 'undefined' && !PATTERN_LABEL.OIL_ANALYSIS) PATTERN_LABEL.OIL_ANALYSIS = '오일 분석 기준 이탈 (사람 입력)';
 
   function meNow() { return (window.hydInbox && window.hydInbox.me && window.hydInbox.me()) || null; }
 
@@ -20,6 +19,8 @@
     render();
   }
   function show() { render(); }
+  // 입력 칸을 못 읽었으면 셸이 메뉴를 다시 열 때 새로 읽는다(새로 고침 전까지 굳지 않게) — 오류 자리의 [다시 시도]도 같은 길
+  const failed = () => !O.form && !!O.err;
   const pattern = () => O.form && O.form.patterns.find(p => p.code === 'OIL_ANALYSIS');
 
   async function send() {
@@ -52,8 +53,12 @@
   function render() {
     if (!O.el) return;
     const p = pattern(), d = O.draft, m = meNow();
-    if (!O.form) { O.el.innerHTML = O.err ? UI.errorBlock('입력 칸을 읽지 못했습니다', O.err) : UI.loading('입력 칸을 읽는 중…'); return; }
-    if (!p) { O.el.innerHTML = UI.empty('사람 입력 경보 종류가 없습니다', '서버의 human_alert 계약을 확인하세요'); return; }
+    if (!O.form) {
+      O.el.innerHTML = O.err ? UI.errorBlock('입력 칸을 읽지 못했습니다', O.err, { retry: true }) : UI.loading('입력 칸을 읽는 중…');
+      O.el.querySelector('[data-retry]')?.addEventListener('click', () => mount(O.el));
+      return;
+    }
+    if (!p) { O.el.innerHTML = UI.empty('오일 분석 입력 칸이 서버에 없습니다', '처리 서비스가 이 화면과 다른 판일 수 있습니다. 강사에게 알리세요.'); return; }
     const opt = (v, t, sel) => `<option value="${esc(v)}" ${v === sel ? 'selected' : ''}>${esc(t)}</option>`;
     const unit = (p.items.find(i => i.key === d.item) || {}).unit || '';
     const body = `<p class="field-hint">작동유는 실시간 센서가 없어 정기 오일 분석 결과를 사람이 넣습니다. 기준 이탈이면 센서 경보와 같은 길로 처리 건이 열립니다.</p>
@@ -84,5 +89,5 @@
     q('#oilSend')?.addEventListener('click', send);
   }
 
-  window.hydOilInput = { mount, show, _state: O, _render: render };
+  window.hydOilInput = { mount, show, failed, _state: O, _render: render };
 })();

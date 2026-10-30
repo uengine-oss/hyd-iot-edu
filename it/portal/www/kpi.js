@@ -10,40 +10,18 @@
   const TONE = { met: 'success', missed: 'danger', no_target: 'neutral', partial: 'warning', no_data: 'neutral', unavailable: 'neutral', error: 'danger' };
   const ROLE = { lagging: ['후행 · 결과', 'accent'], leading: ['선행 · 동인', 'neutral'] };
   const EFFECT = { '-1': ['나쁜 쪽', 'danger'], '0': ['경로마다 다름', 'warning'], '1': ['좋은 쪽', 'success'] };
-  const escH = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  const chip = (label, tone = 'neutral') => `<span class="chip tone-${tone}">${escH(label)}</span>`;
+  const escH = esc;                                    // 포털 공용 이스케이프(ui.js)
+  const chip = (label, tone = 'neutral') => UI.chipText(label, tone);
   const num = v => v == null || Number.isNaN(Number(v)) ? '–' : Number(v).toLocaleString('ko-KR', { maximumFractionDigits: 2 });
   const when = v => { if (!v) return '–'; const d = new Date(v); return Number.isNaN(d.getTime()) ? String(v) : d.toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }); };
-  const fold = (summary, body, open = false) => (typeof UI !== 'undefined' && UI.fold) ? UI.fold(summary, body, { open })
-    : `<details class="fold" ${open ? 'open' : ''}><summary>${summary}</summary><div class="fold-body">${body}</div></details>`;
-  const empty = (title, sub = '') => `<div class="empty"><b>${escH(title)}</b>${sub ? `<span>${escH(sub)}</span>` : ''}</div>`;   // UI.empty 와 같은 모양
-  const name = id => (typeof UI !== 'undefined' && UI.name) ? UI.name(id) : id;
+  const fold = (summary, body, open = false) => UI.fold(summary, body, { open });
+  const empty = (title, sub = '') => UI.empty(title, sub);
+  const name = id => UI.name(id);
 
-  function base() {
-    // eslint-disable-next-line no-undef
-    if (typeof API !== 'undefined' && API.process) return API.process;
-    return `${location.protocol}//${location.hostname || 'localhost'}:8080`;
-  }
-  async function getJSON(path) {
-    // eslint-disable-next-line no-undef
-    if (typeof requestJ === 'function') return requestJ(base() + path);
-    const ctl = new AbortController(); const timer = setTimeout(() => ctl.abort(), 15000);
-    try {
-      const r = await fetch(base() + path, { cache: 'no-store', signal: ctl.signal });
-      const j = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(typeof j.detail === 'string' ? j.detail : `요청 실패 (${r.status})`);
-      return j;
-    } catch (e) { throw e.name === 'AbortError' ? new Error('응답 시간 초과. 처리 서비스 연결을 확인하세요.') : e; } finally { clearTimeout(timer); }
-  }
-
-  async function postJSON(path, body) {
-    // eslint-disable-next-line no-undef
-    if (typeof requestJ === 'function') return requestJ(base() + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
-    const r = await fetch(base() + path, { method: 'POST', cache: 'no-store', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
-    const j = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(typeof j.detail === 'string' ? j.detail : `요청 실패 (${r.status})`);
-    return j;
-  }
+  // 지표 계산은 시계열 · 업무 DB · 그래프 · 처리 기록을 함께 읽어 몇 초 걸린다 — 공용 요청 함수에 읽기 제한만 30초로(화면은 「계산하는 중」을 보인다)
+  const SLOW = { timeout: 30000 };
+  const getJSON = path => getJ(API.process + path, SLOW);
+  const postJSON = (path, body) => postJ(API.process + path, body, 'POST', SLOW);
   const trialOn = st => Object.keys(st.applied || {}).length > 0;
 
   // 표시 문구만 바꾼다. 원천 식·열과 API 값은 계산 근거에 그대로 보존한다.
@@ -167,7 +145,7 @@
       const stat = (label, n, sub, hot) => `<div class="card${hot ? ' hot' : ''}"><span>${label}</span><b>${n}</b><small>${sub}</small></div>`;
       const stats = `<div class="stat-cards">${stat('미달', s.missed, '원인 찾기를 누르세요', s.missed > 0)}${stat('달성', s.met, '목표 이상')}
         ${stat('실적만', s.no_target + s.partial, `목표 없음 ${s.no_target} · 부분 실적 ${s.partial}`)}${stat('계산 불가 · 기록 없음', s.unavailable + s.no_data + s.error, `원천 없음 ${s.unavailable} · 기록 없음 ${s.no_data} · 조회 실패 ${s.error}`)}</div>`;
-      const win = `<p class="kv-line">${escH(d.window.label)}${d.window.start ? ` (${when(d.window.start)} ~ ${when(d.window.end)})` : ''} · 설비 시간 배율 ${num(d.timeScale)}× · 지표 ${s.total}개</p>`;
+      const win = `<p class="kv-line">${escH(d.window.label)}${d.window.start ? ` (${when(d.window.start)} ~ ${when(d.window.end)})` : ''} · 지표 ${s.total}개</p>`;
       const persp = d.perspectives.map(p => `<h2 class="sec">${escH(p.name)}</h2>${p.objectives.map(o => `
         <div class="kpi-obj"><h3>${escH(o.name)}</h3>${o.supports.length ? `<small>받치는 목표 → ${o.supports.map(x => escH(x.name)).join(' · ')}</small>` : ''}</div>
         <div class="cards three">${o.measures.map(card).join('')}</div>`).join('')}`).join('');
@@ -238,17 +216,6 @@
     return st;
   }
 
-  window.hydKpi = { mount, _render: render, _card: card, _tracePanel: tracePanel };
-
-  // 지금 셸: #view-kpi 가 열릴 때 #kpiView 에 그린다 (U7 셸 재편 뒤에는 셸이 mount 를 부른다)
-  function autoMount() {
-    const view = document.getElementById('view-kpi'), host = document.getElementById('kpiView');
-    if (!view || !host) return;
-    const check = () => { if (view.classList.contains('active')) mount(host); };
-    new MutationObserver(check).observe(view, { attributes: true, attributeFilter: ['class'] });
-    check();
-  }
-  if (typeof document !== 'undefined' && document.getElementById) {
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', autoMount); else autoMount();
-  }
+  // 셸이 처음 열 때 mount, 다시 열 때마다 show(같은 기간으로 다시 계산)
+  window.hydKpi = { mount, show: mount, _render: render, _card: card, _tracePanel: tracePanel };
 })();

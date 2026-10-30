@@ -16,24 +16,25 @@ log = logging.getLogger("worker.settings")
 #: The orchestration value this worker polls (todolist.agent_orch). One value for every CLI (the product's AGENT_TYPE).
 AGENT_TYPE = "cliagents"
 _PERMISSION_BY_NAME = {p.value: p for p in Permission}
+#: The one CLI this worker runs (cliagents provider id). The course gateway, the replay recordings and the sandbox are built for it.
+PROVIDER = "claude-code"
 #: Business agents read/calculate through checked MCP tools and write their result with native workspace editing tools.
-#: A Python shell can bypass every MCP read-only check by issuing HTTP/SQL itself; it is never pre-approved.
+#: A Python shell can bypass every MCP read-only check by issuing HTTP/SQL itself; it is never pre-approved. The CLI's
+#: built-in tool set is Read · Write · Edit (+ Skill) (cli_sandbox.cli_args), so only those native names are listed.
 DEFAULT_ALLOWED_TOOLS = ("mcp__neo4j__get_neo4j_schema,mcp__neo4j__read_neo4j_cypher,mcp__enterprise__*,mcp__hyd-dmn__*,"
-                         "mcp__enterprise-maint__*,mcp__enterprise-purchase__*,Read,Glob,Grep,"
-                         "Write,Edit,Skill")   # U2: Skill = the assigned .claude/skills/<name>/SKILL.md
+                         "mcp__enterprise-maint__*,mcp__enterprise-purchase__*,Read,Write,Edit,Skill")   # Skill = the assigned skills
+MODES = ("live", "record", "replay")
 
 BLOCKED_SHELL_TOOLS = ('Bash', 'PowerShell')
 
 from hydcommon.handover_tools import HANDOVER_READS
 
 
-def handover_allowed_tools(allowed, servers, read_tools=None):
-    # Do not carry the general hyd-dmn wildcard (including submit_decision)
-    # into a handover task, even if an activity or profile requests it.
-    native = [tool for tool in allowed if tool in ('Read', 'Glob', 'Grep', 'Write', 'Edit', 'Skill')]
-    return native + [f'mcp__{server}__{tool}' for server, names in HANDOVER_READS.items()
-                     if server in servers for tool in names
-                     if read_tools is None or tool in read_tools.get(server, ())]
+def handover_allowed_tools(allowed, servers):
+    """교대 인수인계 단계는 허용 목록 한 곳(hydcommon.handover_tools.HANDOVER_READS)의 조회 도구만 미리 허용한다 — hyd-dmn 의
+    일반 허용(mcp__hyd-dmn__*, 판단 제출 포함)을 가져오지 않는다. 목록 밖 도구는 머리 없는 실행에서 승인 요청이 되어 실행되지 않는다."""
+    native = [tool for tool in allowed if not tool.startswith('mcp__') and tool.split('(', 1)[0] not in BLOCKED_SHELL_TOOLS]
+    return native +[f'mcp__{server}__{tool}' for server, names in HANDOVER_READS.items() if server in servers for tool in names]
 
 
 def run_allowed_tools(allowed: list[str], servers: list[str], read_tools: dict[str, list[str]] | None = None) -> list[str]:
@@ -83,17 +84,10 @@ class Settings:
     poll_interval_s: float = float(os.getenv("POLL_INTERVAL_S", "3"))          # the product sleeps 10 s when idle
     # the DB the worker claims from and stores into (the product's SUPABASE_URL + service key; here the Postgres DSN)
     supabase_dsn: str = os.getenv("SUPABASE_DSN", "postgresql://postgres:postgres@host.docker.internal:54322/postgres")
-    # which CLI agent runs the task (cliagents provider id), on which model, with how much permission
-    cli_agent: str = os.getenv("CLIAGENTS_DEFAULT_CLI", os.getenv("CLI_AGENT", "claude-code"))
-    model: str | None = os.getenv("CLI_MODEL") or None
-    reasoning_effort: str = os.getenv("CLI_REASONING_EFFORT", "low")
-    # HYD addition (A073): run Codex against an OpenAI-compatible model server (the course LiteLLM relay, model `coding`) by inline
-    # `-c model_provider` overrides per run — the personal ~/.codex/config.toml is never edited (--ignore-user-config).
-    # The API key stays in the worker process environment under `codex_model_provider_env_key`; it is never written to a file.
-    codex_model_provider_base_url: str = os.getenv("CODEX_MODEL_PROVIDER_BASE_URL", "")
-    codex_model_provider_name: str = os.getenv("CODEX_MODEL_PROVIDER_NAME", "HYD LiteLLM relay")
-    codex_model_provider_env_key: str = os.getenv("CODEX_MODEL_PROVIDER_ENV_KEY", "CODEX_MODEL_PROVIDER_API_KEY")
-    codex_model: str | None = os.getenv("CODEX_MODEL") or None
+    # process: the course boundary decision, the local model gateway (the model is the gateway's — course_ledger.POLICY), the
+    # question tools and OAuth MCP credentials all go to this one address with the one worker credential file
+    process_url: str = os.getenv("PROCESS_URL", "")
+    runtime_key_file: str = os.getenv("HYD_WORKER_RUNTIME_KEY_FILE", "")
     default_permission: Permission = field(default_factory=lambda: _PERMISSION_BY_NAME.get(os.getenv("CLIAGENTS_DEFAULT_PERMISSION", ""), Permission.WORKSPACE_WRITE))
     run_timeout_s: float = float(os.getenv("CLIAGENTS_RUN_TIMEOUT_SECONDS", "1800"))
     max_format_corrections: int = int(os.getenv("MAX_FORMAT_CORRECTIONS", "2"))     # A086: same-session shape fixes before failing
@@ -112,18 +106,14 @@ class Settings:
     # this default). It used to be duplicated in compose.yaml without the python entries, so the container could not run
     # the A077 citation-offset script without a permission request.
     allowed_tools: list[str] = field(default_factory=lambda: _csv(os.getenv("ALLOWED_TOOLS") or DEFAULT_ALLOWED_TOOLS))
-    # Claude Code keeps its login under CLAUDE_CONFIG_DIR. Isolating it per run (the product's RuntimeLease) is only safe when
-    # an API key authenticates the CLI; a subscription login lives in the shared config dir and must not be relocated.
-    isolate_config_dir: bool = bool(os.getenv("ANTHROPIC_API_KEY"))
     # host run (subscription login): container host:port -> what this machine reaches, applied to tenants.mcp entries
     mcp_host_rewrite: str = os.getenv("MCP_HOST_REWRITE", "")
     health_port: int = int(os.getenv("HEALTH_PORT", os.getenv("PORT", "8097")))
     cancel_check_every_s: float = 2.0
     lease_renew_every_s: float = float(os.getenv("LEASE_RENEW_EVERY_S", "30"))     # A097: agent-sdk lease.py renews a 120 s lease every 30 s
-    # AI 응답 저장 · 재생(worker/ai_replay.py): auto(API 키 · CLI 로그인이 없으면 replay) · live · record · replay
-    # 기본 live: 교실 워커는 원본 키를 환경에 두지 않고 실행 때 받으므로 auto 는 키를 못 보고 replay 로 켜진다.
+    # AI 응답(worker/ai_replay.py): live(실제 AI — 같은 요청이 앞서 성공했으면 그 결과를 다시 씀) · record(강사 녹화) · replay(키 없는 PC).
     # 컨테이너 워커는 시작 스크립트(start_all.sh)가 .env 의 LLM_API_KEY 로 정해 compose 가 넘긴다: 키 있음 live · 없음 replay · --record.
-    ai_mode: str = os.getenv("AI_MODE", "live")
+    ai_mode: str = os.getenv("AI_MODE", "")              # 없으면 켜지지 않는다(세 모드 밖 — 조용히 실제 AI로 켜지지 않게)
     ai_replay_dir: Path = Path(os.getenv("AI_REPLAY_DIR", str(Path(__file__).resolve().parents[1] / "replay")))
 
 
@@ -134,6 +124,11 @@ class Settings:
     @property
     def retention_seconds(self) -> int:
         return self.workspace_retention_hours * 3600
+
+    @property
+    def ai_cache_dir(self) -> Path:
+        """키 있는 PC의 같은 요청 저장(이 PC 것 — 녹화 폴더와 따로). 작업 폴더 정리(workspace.sweep)는 점으로 시작하는 폴더를 건너뛴다."""
+        return self.workspace_root / ".ai-cache"
 
 
 settings = Settings()

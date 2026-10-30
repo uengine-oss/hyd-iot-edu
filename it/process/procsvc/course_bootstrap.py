@@ -1,15 +1,13 @@
-"""Idempotent installation of the three shipped classroom flows, never a flag
+"""Idempotent installation of the three shipped course flows, never a flag
 for arbitrary authoring. Only in-process ASGI calls carry bootstrap authority.
 """
 import asyncio
 import json
-from pathlib import Path
 
 import httpx
 from fastapi import HTTPException, Request
-from hydcommon import course_access
 
-FLOWS = json.loads(Path(course_access.__file__).with_name('course_flows.json').read_text(encoding='utf8'))
+from .course_policy import COURSE_FLOWS as FLOWS
 PATHS = {'/api/flows/import'} | {
     path for did in FLOWS for path in (f'/api/flows/{did}/check',f'/api/flows/{did}/register',
                                       f'/api/process/definitions/{did}/deploy')}

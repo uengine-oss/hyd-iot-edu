@@ -33,7 +33,6 @@ import hashlib
 import json
 import os
 import re
-from copy import deepcopy
 
 from . import mcp_check, mcp_secrets
 
@@ -198,75 +197,6 @@ def gate_of(check: dict, confirmed: dict | None = None) -> dict:
 
 
 # ---------------------------------------------------------------- 저장소 (tenants.mcp + mcp_server_checks)
-class MemoryMcpStore:
-    """MemoryRepo 의 tenants 를 그대로 쓰고, 검사 기록은 repo 옆에 둔다(시험 · PROCESS_REPO=memory)."""
-
-    def __init__(self, repo):
-        self.repo = repo
-        if not hasattr(repo, "_mcp_checks"):
-            repo._mcp_checks = {}
-        self.checks_ = repo._mcp_checks
-
-    def _tenant(self, tenant_id):
-        t = self.repo.get_tenant(tenant_id)
-        if t is None:
-            raise RegistryError(404, f"테넌트 {tenant_id} 가 없습니다")
-        return t
-
-    def servers(self, tenant_id) -> dict:
-        mcp = self._tenant(tenant_id).get("mcp") or {}
-        config = mcp.get("mcpServers") if isinstance(mcp, dict) else None
-        return deepcopy(config) if isinstance(config, dict) else {}
-
-    def _write(self, tenant_id, fn):
-        t = self._tenant(tenant_id)
-        mcp = deepcopy(t.get("mcp")) if isinstance(t.get("mcp"), dict) else {}
-        servers = mcp.get("mcpServers") if isinstance(mcp.get("mcpServers"), dict) else {}
-        out = fn(servers)
-        mcp["mcpServers"] = servers
-        self.repo.upsert_tenant(dict(t, mcp=mcp))
-        return out
-
-    def insert_server(self, tenant_id, name, entry) -> bool:
-        def fn(servers):
-            if name in servers:
-                return False
-            servers[name] = deepcopy(entry)
-            return True
-        return self._write(tenant_id, fn)
-
-    def replace_server(self, tenant_id, name, entry) -> bool:
-        def fn(servers):
-            if name not in servers:
-                return False
-            servers[name] = deepcopy(entry)
-            return True
-        return self._write(tenant_id, fn)
-
-    def set_meta(self, tenant_id, name, meta) -> bool:
-        def fn(servers):
-            if not isinstance(servers.get(name), dict):
-                return False
-            servers[name][META_KEY] = deepcopy(meta)
-            return True
-        return self._write(tenant_id, fn)
-
-    def delete_server(self, tenant_id, name) -> bool:
-        return self._write(tenant_id, lambda servers: servers.pop(name, None) is not None)
-
-    def save_check(self, tenant_id, name, record, by) -> None:
-        self.checks_[(tenant_id, name)] = dict(deepcopy(record), server_name=name, checked_by=by)
-
-    def checks(self, tenant_id) -> dict:
-        return {n: deepcopy(r) for (t, n), r in self.checks_.items() if t == tenant_id}
-
-    def delete_checks(self, tenant_id, names=None) -> int:
-        keys = [k for k in self.checks_ if k[0] == tenant_id and (names is None or k[1] in names)]
-        for k in keys:
-            del self.checks_[k]
-        return len(keys)
-
-
 class PgMcpStore:
     """한 서버 칸만 jsonb_set / #- 로 바꾼다(다른 칸 · 다른 키는 건드리지 않는다)."""
 
@@ -342,9 +272,7 @@ class PgMcpStore:
 
 
 def store_for(repo):
-    if hasattr(repo, "dsn") and hasattr(repo, "_conn"):
-        return PgMcpStore(repo)
-    return MemoryMcpStore(repo)
+    return PgMcpStore(repo)
 
 
 # ---------------------------------------------------------------- 상태 · 선택 가능 도구 (B1 에이전트 폼이 쓰는 모양)
@@ -643,7 +571,8 @@ def mount(app, *, runtime_factory, audit):
     def runtime():
         rt = runtime_factory()
         if rt is None:
-            raise HTTPException(503, "도구 서버 등록에는 instance 실행 서비스가 필요합니다 (PROCESS_MODE=instance)")
+            from .instances import NOT_READY      # 런타임 모듈 — 이 모듈이 먼저 읽혀도 순환 import 가 되지 않게 여기서
+            raise HTTPException(503, NOT_READY)
         return rt
 
     async def run(fn):

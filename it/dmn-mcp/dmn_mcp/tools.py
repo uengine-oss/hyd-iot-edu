@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import psycopg
 
-from agentsvc import card as cardlib, decide as decidelib, llm
+from agentsvc import card as cardlib, decide as decidelib
 from agentsvc.tools import mcp_ent, mcp_kg, mcp_prom, mcp_tsdb
 from agentsvc.tools.prometheus import Prometheus
 from hydcommon.fabric import CROSS_QUERIES, ENT, TS, Fabric
@@ -514,4 +514,4 @@ class DmnTools:
                 basis)
 
     def health(self) -> dict:
-        return {"neo4j": self.kg.ping(), "llm": llm.available()}
+        return {"neo4j": self.kg.ping()}

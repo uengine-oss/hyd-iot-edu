@@ -11,7 +11,7 @@
           (agent /api/agent/evaluate 실행 기록) · worker_judgement()(지난 처리 건의 실제 워커 출력)이 같은 모양으로 만든다.
   반복    aggregate() — 같은 항목 N회의 평균 · 최저 · 최고 · 흔들림(최빈 결과 비율). N회가 모두 같으면 identical=True(결정론 — 1회와 같다).
   전후    compare(run_a, run_b) — 항목별 점수 변화 + knowledge_diff()로 두 실행 사이 지식 그래프에서 끊긴 · 생긴 관계와 바뀐 항목(E5).
-순수 로직이다(네트워크 · DB 없음). 저장소(MemoryEvalStore · PgEvalStore)만 I/O 를 한다.
+순수 로직이다(네트워크 · DB 없음). 저장소(PgEvalStore)만 I/O 를 한다.
 """
 from __future__ import annotations
 
@@ -19,7 +19,6 @@ import hashlib
 import json
 import re
 import statistics
-import threading
 from collections import Counter
 from copy import deepcopy
 from datetime import datetime, timezone
@@ -427,55 +426,6 @@ def worker_judgement(candidate: dict, decision: dict | None, guide_card: dict | 
 # ---------------------------------------------------------------- 저장소 (정답표 항목 + 채점 실행)
 def _run_head(r: dict) -> dict:
     return {**{k: deepcopy(r.get(k)) for k in (*RUN_HEAD, 'golden_version')}, 'knowledge': public_knowledge(r.get('knowledge'))}
-
-
-class MemoryEvalStore:
-    kind = 'memory'
-
-    def __init__(self):
-        self._lock = threading.Lock()
-        self._runs: dict[str, dict] = {}
-        self._golden: dict[str, dict] = {}
-
-    # 정답표
-    def golden_list(self) -> list[dict]:
-        with self._lock:
-            return [deepcopy(v) for v in sorted(self._golden.values(), key=lambda x: x['id'])]
-
-    def golden_get(self, iid: str) -> dict | None:
-        with self._lock:
-            return deepcopy(self._golden.get(iid))
-
-    def golden_put(self, item: dict, by: str, *, create: bool) -> dict:
-        with self._lock:
-            exists = item['id'] in self._golden
-            if create and exists:
-                raise FileExistsError(item['id'])
-            if not create and not exists:
-                raise KeyError(item['id'])
-            rec = {**deepcopy(item), 'item_hash': item_hash(item), 'updated_by': by, 'updated_at': _now()}
-            self._golden[item['id']] = rec
-            return deepcopy(rec)
-
-    def golden_delete(self, iid: str) -> None:
-        with self._lock:
-            if self._golden.pop(iid, None) is None:
-                raise KeyError(iid)
-
-    # 실행
-    def put(self, run: dict) -> None:
-        with self._lock:
-            if run['id'] in self._runs:
-                raise ValueError('같은 실행 id 가 이미 있습니다')
-            self._runs[run['id']] = deepcopy(run)
-
-    def get(self, rid: str) -> dict | None:
-        with self._lock:
-            return deepcopy(self._runs.get(rid))
-
-    def list(self, limit: int = 50) -> list[dict]:
-        with self._lock:
-            return [_run_head(r) for r in sorted(self._runs.values(), key=lambda r: r['created'], reverse=True)[:limit]]
 
 
 class PgEvalStore:

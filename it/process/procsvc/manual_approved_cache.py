@@ -11,12 +11,12 @@ from pathlib import Path
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
-from hydcommon import course_access as rules
+from . import course_policy as rules
 from . import manual_cache, manual_extraction as extraction
 
 
 DOMAIN = b'hyd-approved-extractions-v1\x00'
-BUNDLE = Path(rules.__file__).with_name('course_extractions.json')
+BUNDLE = rules.HERE / 'course_extractions.json'
 
 
 class ApprovedExtractions:
@@ -33,9 +33,13 @@ class ApprovedExtractions:
         self.payload = payload
         self.digest = hashlib.sha256(rules.canonical(payload)).hexdigest()
 
+    def covers(self, source):
+        """이 문서(원문 sha256)가 강사가 검토 · 서명한 추출본을 가졌는가 — 가졌으면 AI 없이 이 묶음에서 낸다."""
+        return source['sha256'] in self.payload['documents']
+
     def authorize(self, source):
         entry = self.payload['documents'].get(source['sha256'])
-        if entry is None or not rules.approved_document(source['sha256']):
+        if entry is None:
             raise ValueError('강사가 제공한 수업 문서만 추출할 수 있습니다')
         if manual_cache.source_fingerprint(source) != entry['source_fingerprint']:
             raise ValueError('제공 문서의 원문·파서 판본이 다릅니다. 강사에게 확인하세요')

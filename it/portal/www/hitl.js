@@ -1,14 +1,12 @@
 /* 조치 선택 패널 · 업무 흐름(승인과 실행) · 조치 방법 목록 · 매뉴얼 등록 · 업무 데이터 연결 (loaded after app.js / enterprise.js / main.js / flow.js).
-   - 조치 선택 패널 (이상 확인 · 조치): the agent's ranked action candidates → one human decision. In instance mode the decision is made in the
-     처리 건 screen (the legacy /decide endpoint answers 409 there — A122 UIUX_PLAN §1.2), so the panel links there instead of showing a form.
+   - 조치 선택 패널 (이상 확인 · 조치): the agent's ranked action candidates. The decision is made in the 처리 건 screen (A122 UIUX_PLAN §1.2) —
+     the panel shows the cards and one link there; there is no second approval form.
    - 업무 흐름: hydFlow draws the definition of the instance behind the selected decision (UIUX_PLAN §4).
    - 조치 방법: list / edit skills; add a new skill matched to a failure mode (written by the process service)
    - 매뉴얼 등록 · 업무 데이터 연결 (지식 관리 탭) */
 (function () {
-  const H = { inc: null, decs: [], dec: null, sig: null, form: { option: null, reason: '', role: null, by: 'OP-17', fan: null, load: null }, msg: '', busy: false,
-    skills: [], catalog: null, manualCatalog: null, manualCatalogError: '', skillSel: null, skillNew: false, skillDrafts: new Map(), preview: null, mode: null, instByIncident: new Map() };
-  getJ(API.process + '/api/process/mode').then(m => { H.mode = m; }).catch(() => { H.mode = null; });
-  const instanceMode = () => !H.mode || H.mode.mode === 'instance';
+  const H = { inc: null, decs: [], dec: null, decErr: '', sig: null,
+    skills: [], catalog: null, catalogError: '', manualCatalog: null, manualCatalogError: '', skillSel: null, skillNew: false, skillDrafts: new Map(), preview: null, instByIncident: new Map() };
   // Selection values are exact document identities; filenames are business labels.
   function selectManualDocument(id, filename) {
     const select = $('#manualDocumentId'); if (!select) return;
@@ -52,19 +50,17 @@
     const box = document.getElementById('hitlPanel'); if (!box) return;
     const inc = state.tab === 'incidents' ? state.detail : null;
     if (!inc) { if (box.innerHTML) box.innerHTML = ''; H.sig = null; return; }
-    let decs = [];
-    try { decs = (await getJ(API.process + '/api/decisions')).filter(d => (d.origin || {}).incident === inc.id); } catch (e) { }
+    // 판단 목록 · 판단을 못 읽으면 「조치 후보를 만드는 중」으로 두지 않는다 — 사유를 H.decErr 에 두고 패널에 보인다(1.5초마다 다시 읽는다)
+    let decs = [], dec = null, decErr = '';
+    try { decs = (await getJ(API.process + '/api/decisions')).filter(d => (d.origin || {}).incident === inc.id); } catch (e) { decErr = '판단 목록을 읽지 못했습니다: ' + e.message; }
     const prim = decs[0] || null;
-    let dec = null;
-    if (prim) { try { dec = await getJ(API.process + '/api/decisions/' + prim.id); } catch (e) { } }
+    if (prim) { try { dec = await getJ(API.process + '/api/decisions/' + prim.id); } catch (e) { decErr = '판단을 읽지 못했습니다: ' + e.message; } }
     if (state.tab !== 'incidents' || state.detail?.id !== inc.id) return;
-    const sig = [inc.id, inc.state, decs.length, dec && dec.id, dec && dec.state, H.msg, H.mode && H.mode.mode, UI.namesVersion].join('|');
+    const sig = [inc.id, inc.state, decs.length, dec && dec.id, dec && dec.state, decErr, UI.namesVersion].join('|');
     if (!force && sig === H.sig) return;
-    if (H.inc && (H.inc.id !== inc.id || H.dec?.id !== dec?.id)) H.form = { option: null, reason: '', role: null, by: 'OP-17', fan: null, load: null };
-    H.sig = sig; H.inc = inc; H.decs = decs; H.dec = dec;
+    H.sig = sig; H.inc = inc; H.decs = decs; H.dec = dec; H.decErr = decErr;
     renderHitl();
   }
-  const cmdOf = (o, param) => ((o && o.actions) || []).find(a => a.kind === 'command' && a.param === param);
   function decidedCard(d, inc) {
     const opts = d.options || [];
     const ch = opts.find(o => o.id === d.chosen) || {};
@@ -80,59 +76,27 @@
     const box = document.getElementById('hitlPanel'); const inc = H.inc, d = H.dec;
     let html = '<section class="hitl">';
     if (!d) {
-      html += inc.state === 'AWAITING_APPROVAL' ? UI.empty(UI.t('inc.waiting'), '', 'compact') : UI.empty(UI.t('inc.noCandidates'), `${UI.status(inc.state)}${inc.reason ? ' · ' + UI.status(inc.reason) : ''}`, 'compact');
+      html += H.decErr ? UI.errorBlock('조치 후보를 읽지 못했습니다', H.decErr + ' — 잠시 뒤 다시 읽습니다', { cls: 'compact' })
+        : inc.state === 'AWAITING_APPROVAL' ? UI.empty(UI.t('inc.waiting'), '', 'compact') : UI.empty(UI.t('inc.noCandidates'), `${UI.status(inc.state)}${inc.reason ? ' · ' + UI.status(inc.reason) : ''}`, 'compact');
       box.innerHTML = html + '</section>'; return;
     }
     const opts = d.options || [];
     const maxAbs = Math.max(1, ...opts.map(o => Math.abs(o.score || 0)));
     const pending = d.state === 'PENDING_APPROVAL';
-    const legacy = !instanceMode();
-    if (!H.form.option) H.form.option = d.recommended || (opts.find(o => o.feasible) || opts[0] || {}).id;
-    const chosenOpt = opts.find(o => o.id === H.form.option);
-    const fanA = cmdOf(chosenOpt, 'fan_pct'), loadA = cmdOf(chosenOpt, 'load_pct'), pumpA = cmdOf(chosenOpt, 'pump');
-    if (H.form.cardFor !== H.form.option) { H.form.fan = fanA ? fanA.value : null; H.form.load = loadA ? loadA.value : null; H.form.cardFor = H.form.option; }
-    const parameters = { ...(fanA ? { fan_pct: H.form.fan } : {}), ...(loadA ? { load_pct: H.form.load } : {}) };
-    const review = window.hydCards?.reviewMatches(H.form.review, d.id, H.form.option, parameters, { kind: "legacy", incident: inc.id }) ? H.form.review : null;
-    const reviewed = review?.snapshot?.options?.[0];
-    const changed = (fanA && H.form.fan !== fanA.value) || (loadA && H.form.load !== loadA.value);
-    const canApprove = reviewed ? reviewed.feasible : chosenOpt?.feasible && !changed;
-    const roles = Object.entries(review?.snapshot?.roles || d.roles || {}).sort((a, b) => a[1].level - b[1].level);
-    if (!H.form.role) H.form.role = ((chosenOpt && chosenOpt.approver) || {}).id || (roles[0] || [''])[0];
     const sc = d.scenario || {};
     html += `<div class="detail-head"><div class="row"><h2 style="font-size:16px">${esc(pending ? UI.t('select') : UI.t('decision'))}</h2>${UI.chip(d.state)}</div><div class="sub">${esc(UI.idText(sc.failureMode || ''))}${sc.cause ? ' · ' + esc(UI.idText(sc.cause)) : ''}</div></div>`;
     html += summaryBlock(d.explanation);
-    if (pending && !legacy) {
-      // 409 in instance mode: the choice is made in the 처리 건 screen — one link, no dead form (UIUX_PLAN §1.2)
+    if (pending) {
+      // 고르기 · 승인은 처리 건 화면에서 한다 — 여기는 카드와 링크 하나(UIUX_PLAN §1.2)
       html += '<div class="hitl-opts">' + opts.map(o => hydCards.cardHtml(o, { rec: d.recommended, chosen: d.chosen, maxAbs, decision: d })).join('') + '</div>';
       html += UI.actions(`<button class="btn primary" id="hGoInstance">${esc(UI.t('btn.goInstance'))}</button>`);
-    } else if (pending) {
-      const live = inc.state === 'AWAITING_APPROVAL';
-      // A141: 사건 정보(설비 · 고장 유형 · 원인 · 경보 시각)는 접기로
-      html += UI.metaFold([[UI.t('dec.asset'), esc(inc.asset)], ['고장 유형', esc(UI.idText(sc.failureMode || ''))], [UI.t('dec.cause'), esc(UI.idText(sc.cause || ''))], [UI.t('inc.alertAt'), esc(UI.dateTime(inc.created))]], 'fold.case');
-      html += `<div class="form">` +
-        UI.section(UI.t('form.section.choice'), `<div class="hitl-opts wide">${opts.map(o => hydCards.cardHtml(o, { rec: d.recommended, chosen: d.chosen, selectable: true, reviewable: true, selected: H.form.option === o.id, pending, maxAbs, decision: d })).join('')}</div>` +
-          (live && (fanA || loadA || pumpA) ? `<div class="form-grid wide">${pumpA ? UI.readonly(UI.t('form.pump'), esc(pumpA.value)) : ''}${fanA ? hydCards.rangeField('hFan', UI.t('form.fan'), fanA, H.form.fan) : ''}${loadA ? hydCards.rangeField('hLoad', UI.t('form.load'), loadA, H.form.load) : ''}</div>` : '') +
-          `<div class="wide" id="hReviewed">${reviewed ? `<p class="kv-line"><b>${esc(UI.t('card.reviewed'))}</b> · ${esc(UI.time(review.created))}</p>${hydCards.cardHtml(reviewed, { maxAbs, decision: review.snapshot })}` : `<p class="field-hint">${esc(UI.t('form.hint.preview'))}</p>`}</div>`) +
-        hydCards.whoFields('h', H.form, roles) +
-        UI.actions(`<button class="btn outline" id="hPreview" ${live && !H.busy && H.form.option ? '' : 'disabled'}>${esc(UI.t('btn.preview'))}</button><button class="btn primary" id="hGo" ${live && canApprove && !H.busy ? '' : 'disabled'}>${esc(UI.t('btn.decide'))}</button>`, H.msg) + '</div>';
     } else {
       html += decidedCard(d, inc);
       html += UI.fold(`${esc(UI.t('candidate'))} <span class="chip tone-neutral sm">${opts.length}</span>`, '<div class="hitl-opts">' + opts.map(o => hydCards.cardHtml(o, { rec: d.recommended, chosen: d.chosen, maxAbs, decision: d })).join('') + '</div>', { cls: 'plain' });
     }
     html += '</section>';
     box.innerHTML = html;
-    box.querySelectorAll('input[name=hopt]').forEach(r => r.addEventListener('change', () => { H.form.option = r.value; H.form.review = null; H.msg = ''; const o = (H.dec.options || []).find(x => x.id === r.value); if (o && o.approver) H.form.role = o.approver.id; renderHitl(); }));
-    const on = (id, ev, fn) => { const e = document.getElementById(id); if (e) e.addEventListener(ev, fn); };
-    const invalidate = () => { H.form.review = null; const go = $('#hGo'); if (go) go.disabled = true; const r = $('#hReviewed'); if (r) r.innerHTML = `<p class="field-hint">${esc(UI.t('form.hint.preview'))}</p>`; };
-    on('hFan', 'input', e => { H.form.fan = +e.target.value; e.target.nextElementSibling.textContent = e.target.value + ' %'; invalidate(); });
-    on('hLoad', 'input', e => { H.form.load = +e.target.value; e.target.nextElementSibling.textContent = e.target.value + ' %'; invalidate(); });
-    on('hFan', 'change', renderHitl); on('hLoad', 'change', renderHitl);
-    on('hBy', 'input', e => H.form.by = e.target.value);
-    on('hRole', 'change', e => { H.form.role = e.target.value; H.msg = ''; });
-    on('hReason', 'input', e => H.form.reason = e.target.value);
-    on('hGo', 'click', decideNow);
-    on('hPreview', 'click', () => previewChoice(parameters));
-    on('hGoInstance', 'click', async () => {
+    box.querySelector('#hGoInstance')?.addEventListener('click', async () => {
       const b = $('#hGoInstance'); b.disabled = true;
       try { await openIncident(inc.id); } finally { b.disabled = false; }
     });
@@ -144,31 +108,7 @@
     selectTab('instances'); if (id && window.hydInstancesSelect) window.hydInstancesSelect(id);
     return !!id;
   }
-  async function previewChoice(parameters) {
-    if (H.busy) return; H.busy = true; H.msg = ''; renderHitl();
-    const form = H.form, decision = H.dec.id, option = form.option;
-    try { const review = await postJ(API.process + `/api/incidents/${encodeURIComponent(H.inc.id)}/decision-preview`, { decision, option, parameters });
-      if (H.form === form && H.dec?.id === decision && H.form.option === option) H.form.review = review;
-    } catch (e) { if (H.form === form) { H.form.review = null; H.msg = e.message; } }
-    finally { H.busy = false; if (H.inc) renderHitl(); }
-  }
-  async function decideNow() {
-    if (H.busy) return; H.busy = true;
-    const go = $('#hGo'); if (go) { go.disabled = true; go.textContent = '처리 중…'; }
-    try {
-      await postJ(API.process + `/api/incidents/${H.inc.id}/decide`, { decision: H.dec.id, option: H.form.option, by: H.form.by || '승인자', role: H.form.role,
-        reason: H.form.reason, fan_pct: H.form.fan, load_pct: H.form.load, review_id: matchingReviewId(H.form, H.dec) });
-      H.msg = '';
-      await refreshSlow();
-    } catch (e) { H.msg = e.message; }
-    finally { H.busy = false; await refreshHitl(true); }
-  }
-  function matchingReviewId(form, decision) {
-    const option = decision?.options?.find(o => o.id === form.option);
-    const parameters = { ...(cmdOf(option, 'fan_pct') ? { fan_pct: form.fan } : {}), ...(cmdOf(option, 'load_pct') ? { load_pct: form.load } : {}) };
-    return window.hydCards?.reviewMatches(form.review, decision?.id, form.option, parameters, { kind: "legacy", incident: H.inc.id }) ? form.review.id : null;
-  }
-  window.hydHitl = { H, refreshHitl, decideNow, openIncident };
+  window.hydHitl = { H, refreshHitl, openIncident };
   setInterval(() => refreshHitl(false), 1500);
 
   /* ================================================= 승인과 실행: 업무 흐름 — the instance behind the selected decision, drawn from its definition */
@@ -218,7 +158,7 @@
   async function loadSkills() {
     if (!H.skills.length) $('#skillList').innerHTML = `<div class="muted" role="status">${esc(UI.t('loading'))}</div>`;
     try { H.skills = requireList(await getJ(API.process + '/api/kg/skills'), '조치 방법 목록'); } catch (e) { $('#skillList').innerHTML = UI.empty(UI.t('error.load'), e.message, 'compact'); return; }
-    if (!H.catalog) { try { H.catalog = await getJ(API.process + '/api/kg/catalog'); } catch (e) { H.catalog = { roles: [], failureModes: [], manualSections: [] }; } }
+    if (!H.catalog) { try { H.catalog = await getJ(API.process + '/api/kg/catalog'); H.catalogError = ''; } catch (e) { H.catalogError = e.message; } }
     if (!H.skillSel && H.skills.length && !H.skillNew) H.skillSel = H.skills[0].id;
     renderSkillList(); renderSkillDetail();
   }
@@ -256,6 +196,7 @@
         <tr><th>${esc(UI.t('skill.rules'))}</th><td>${(k.rules || []).map(r => `<span class="${r.effect === 'EXCLUDE' ? 'hard' : r.effect === 'SELECT' ? '' : 'soft'}">${esc({ EXCLUDE: UI.t('chip.excluded'), SELECT: '후보', PENALTY: UI.t('card.penalty'), WARN: UI.t('card.warn') }[r.effect] || r.effect)} · ${esc(UI.ruleLabel(r))}${UI.fold('규칙 원문',`<pre>${esc(JSON.stringify(r,null,2))}</pre>`,{cls:'small'})}</span>`).join(' ') || esc(UI.t('skill.none'))}</td></tr>
         <tr><th>${esc(UI.t('skill.affects'))}</th><td>${(k.affects || []).map(a => `${esc(a.name)} ${a.sign > 0 ? '↑' : '↓'}`).join(', ') || esc(UI.t('skill.none'))}</td></tr></table>`;
     box.innerHTML = `<div class="detail-head"><div class="row"><h2>${esc(H.skillNew ? UI.t('skill.new') : k.name)}</h2>${k.kind ? UI.chipText(k.kind === 'control' ? UI.t('skill.kind.control') : UI.t('skill.kind.workOrder'), k.kind === 'control' ? 'accent' : 'warning') : ''}</div></div>${H.skillNew ? '' : UI.metaFold([['조치 식별자',esc(k.id)],['절차 번호',esc(k.sopId || '')]])}
+      ${H.catalogError ? `<p class="neg" role="status">승인 역할 · 고장 유형 목록을 읽지 못해 고를 칸이 비어 있습니다 — ${esc(H.catalogError)}. [취소]를 누르면 다시 읽습니다.</p>` : ''}
       <div class="form skill-edit">` +
       UI.section(UI.t('method'),
         UI.field({ label: UI.t('skill.name'), required: true, input: `<input id="skName" value="${esc(k.name)}" maxlength="80">` }) +
@@ -324,7 +265,7 @@
       } catch (e) {
         if (e.status >= 400 && e.status < 500) { draft.pending = null; saveSkillDraft(key, draft); }
         if (box.dataset.key === key) {
-          lockFields(); $('#skMsg').textContent = '저장 결과: ' + e.message + (draft.pending ? ' 같은 요청으로 결과를 다시 확인하세요.' : ' 현재 내용을 다시 확인한 뒤 수정하세요.');
+          lockFields(); $('#skMsg').textContent = '저장하지 못했습니다: ' + e.message + (draft.pending ? ' 같은 요청으로 결과를 다시 확인하세요.' : e.status === 409 ? ' 다른 곳에서 먼저 고쳤을 수 있습니다 — [취소]로 저장본을 다시 읽은 뒤 고치세요.' : '');
         }
       } finally { if (box.contains(b)) b.disabled = !!k.source_document && !draft.pending; }
     });
@@ -391,7 +332,7 @@
     return `<div class="form golden-form" data-golden-form="${esc(batch)}"><div class="form-grid">
       ${UI.field({ label: UI.t('golden.questions'), required: true, hint: UI.t('golden.questionsHint'), cls: 'wide', input: `<textarea rows="4" data-golden-q aria-label="${esc(UI.t('golden.questions'))}" ${dis}>${esc(g.draft || '')}</textarea>` })}
       ${UI.field({ label: UI.t('form.by'), input: `<input data-golden-by value="${esc(g.by != null ? g.by : $('#manualBy').value)}" ${dis}>` })}
-    </div>${UI.actions(`<button type="button" class="btn primary" data-golden-ask ${dis}>${esc(g.busy ? UI.t('golden.asking') : UI.t('golden.ask'))}</button>`, g.msg || '')}</div>`;
+    </div>${UI.actions(`<button type="button" class="btn primary" data-golden-ask ${dis}${hydCourseAccess.attrs('documents.golden')}>${esc(g.busy ? UI.t('golden.asking') : UI.t('golden.ask'))}</button>`, g.msg || '')}</div>`;
   }
   // A141 다이어트: 질문 카드 = 질문 · 판정 칩 · 답 한 단락. 집계 칩 묶음 · 요약 문단 · 확신도 · 근거 · 질의는 접기 안.
   function goldenItems(r) {
@@ -673,7 +614,7 @@
         if (result.preview) { await loadManualCatalog(); H.preview = result.preview; renderPreview(); }
         else {
           const seg = result.progress ? ` · 구간 ${result.progress.done}/${result.progress.total} 완료` + (result.segments || []).filter(s => s.status !== 'DONE').map(s => ` [${s.index}: ${UI.status(s.status)}]`).join('') : '';
-          $('#manualAgentStatus').textContent = '추출 상태: ' + UI.status(result.status) + seg + (result.log ? ' · ' + result.log : '') + (result.managed ? ' — 강사 관리 서버에서 처리 중입니다. 오류가 지속되면 강사에게 확인하세요.' : ` — ${UI.t('nav.instances')} 화면에서 단계 · 오류를 확인할 수 있습니다.`);
+          $('#manualAgentStatus').textContent = '추출 상태: ' + UI.status(result.status) + seg + (result.log ? ' · ' + result.log : '') + (` — ${UI.t('nav.instances')} 화면에서 단계 · 오류를 확인할 수 있습니다.`);
         }
       } catch (e) { if (H.preview === r) $('#manualAgentStatus').textContent = '결과 확인 실패: ' + e.message; }
     });
@@ -818,6 +759,15 @@
     } catch (e) { if ($('#manualFile').files[0] === f) $('#manualResult').innerHTML = `<div class="neg">미리보기 실패: ${esc(e.message)}</div>`; }
     finally { b.disabled = false; b.textContent = UI.t('kn.preview'); }
   });
+  // 수업 경계(서버 GET /api/course-access): 수업 단계에서는 제공 문서만 등록된다 — 고르기 전에 안내하고, 골든 질문 평가 단추는 서버 까닭으로 끈다
+  function courseScope() {
+    const box = $('#manualScope'); if (box) {
+      box.hidden = !hydCourseAccess.documentsProvidedOnly;
+      box.textContent = '수업 단계에서는 위 제공 문서(내용을 고치지 않은 원문)만 등록됩니다. 다른 문서는 PBL 단계에서 엽니다.';
+    }
+    hydCourseAccess.apply($('#manualHistory'));
+  }
+  hydCourseAccess.onChange(courseScope);
   $('#manualFile').addEventListener('change', () => {
     H.preview = null;
     const name = $('#manualFile').files[0]?.name;
@@ -832,21 +782,21 @@
 
   /* ================================================= 업무 데이터 연결 (DDL → System · InputData, 되돌리기 가능) */
   async function loadIngests() {
+    const box = $('#ddlHistory'); if (!box) return;
     try {
       const rows = await getJ(API.process + '/api/kg/ingests');
-      const box = $('#ddlHistory'); if (!box) return;
       const batches = {};
       rows.forEach(r => { (batches[r.batch] = batches[r.batch] || []).push(r); });
       const keys = Object.keys(batches);
-      box.innerHTML = keys.length ? UI.fold(`연결 배치 <span class="chip tone-neutral sm">${keys.length}</span>`, `<div class="table-scroll"><table class="prov"><thead><tr><th>배치</th><th>사용 항목</th><th>출처</th><th></th></tr></thead><tbody>`
-        + keys.map(k => `<tr><td><code>${esc(k)}</code></td><td>${batches[k].map(r => `${esc(LABEL_KO[r.label] || r.label)} ${r.nodes}`).join(' · ')}</td><td class="muted">${esc((batches[k][0] || {}).source || '')}</td><td><button class="btn small" data-clear="${esc(k)}">되돌리기</button></td></tr>`).join('') + '</tbody></table></div>', { cls: 'plain', open: true }) : '';
+      box.innerHTML = `<p id="ddlHistoryMsg" class="muted" role="status"></p>` + (keys.length ? UI.fold(`연결 배치 <span class="chip tone-neutral sm">${keys.length}</span>`, `<div class="table-scroll"><table class="prov"><thead><tr><th>배치</th><th>사용 항목</th><th>출처</th><th></th></tr></thead><tbody>`
+        + keys.map(k => `<tr><td><code>${esc(k)}</code></td><td>${batches[k].map(r => `${esc(LABEL_KO[r.label] || r.label)} ${r.nodes}`).join(' · ')}</td><td class="muted">${esc((batches[k][0] || {}).source || '')}</td><td><button class="btn small" data-clear="${esc(k)}">되돌리기</button></td></tr>`).join('') + '</tbody></table></div>', { cls: 'plain', open: true }) : '');
       box.querySelectorAll('[data-clear]').forEach(b => b.addEventListener('click', async () => {
         if (!confirm(`${b.dataset.clear} 배치의 변경을 되돌립니다. 다른 배치가 사용하는 항목은 유지합니다. 계속할까요?`)) return;
         b.disabled = true;
-        try { const out = await postJ(API.process + '/api/kg/ingests/' + encodeURIComponent(b.dataset.clear) + '?by=' + encodeURIComponent($('#ddlBy').value), null, 'DELETE'); $('#ddlMsg').textContent = `되돌리기 완료: ${out.deleted} 삭제 · ${out.restored || 0} 복원 · ${out.retained || 0} 유지`; await loadIngests(); if (window.hydEnt) hydEnt.loadGraph(true); }
-        catch (e) { $('#ddlMsg').textContent = '되돌리기 실패: ' + e.message; b.disabled = false; }
+        try { const out = await postJ(API.process + '/api/kg/ingests/' + encodeURIComponent(b.dataset.clear) + '?by=' + encodeURIComponent($('#ddlBy').value), null, 'DELETE'); $('#ddlHistoryMsg').textContent = `되돌리기 완료: ${out.deleted} 삭제 · ${out.restored || 0} 복원 · ${out.retained || 0} 유지`; await loadIngests(); if (window.hydEnt) hydEnt.loadGraph(true); }
+        catch (e) { $('#ddlHistoryMsg').textContent = '되돌리기 실패: ' + e.message; b.disabled = false; }
       }));
-    } catch (e) { }
+    } catch (e) { box.innerHTML = `<p class="neg" role="status">연결 이력을 읽지 못했습니다: ${esc(e.message)}</p>`; }
   }
   function renderDdlPreview() {
     const p = H.ddl; const box = $('#ddlResult');

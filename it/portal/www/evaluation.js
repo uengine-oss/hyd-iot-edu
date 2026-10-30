@@ -17,12 +17,8 @@
   const pct = (x) => Math.round((x || 0) * 100) + ' %';
   const ok = (b) => UI.chipText(b ? '맞음' : '틀림', b ? 'success' : 'danger');
 
-  async function longJ(url, method, body) {           // 채점 실행은 N회 판단이라 30초를 넘길 수 있다 — 끊지 않고 기다린다
-    const r = await fetch(url, { method, cache: 'no-store', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    const j = await r.json().catch(() => ({}));
-    if (!r.ok) { const d = j.detail; throw new Error(typeof d === 'string' ? d : Array.isArray(d) ? d.map(x => x.msg || JSON.stringify(x)).join(' · ') : `요청 실패 (${r.status})`); }
-    return j;
-  }
+  // 채점 실행은 N회 판단이라 30초를 넘길 수 있다 — 공용 요청 함수에 시간 제한 없이(끊김 · 거절 문구는 공용 함수가 학생 말로 바꾼다)
+  const longJ = (url, method, body) => postJ(url, body, method, { timeout: 0 });
   const msg = (key, text, bad = true) => { const m = q(`[data-msg="${key}"]`); if (m) { m.textContent = text || ''; m.className = 'form-msg ' + (bad ? 'neg' : 'pos'); } };
 
   /* ---------------------------------------------------------------- 뼈대 */
@@ -356,12 +352,4 @@
     return load();
   }
   window.hydEval = { mount };
-
-  // 포털 셸이 아직 mount 를 부르지 않으면: 판단 채점 화면이 처음 보일 때 그린다.
-  const view = document.getElementById('view-evaluation'), host = document.getElementById('evalView');
-  if (view && host) {
-    const once = () => { if (view.classList.contains('active') && E.el !== host) mount(host); };
-    new MutationObserver(once).observe(view, { attributes: true, attributeFilter: ['class'] });
-    once();
-  }
 })();

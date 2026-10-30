@@ -164,8 +164,7 @@
     S.rows.forEach(r => { r.fresh = false; });
     box.querySelectorAll('[data-inst]').forEach(row => row.addEventListener('click', () => {
       if (!row.dataset.inst) return;
-      if (row.dataset.todo && window.hydInstancesOpenTask) window.hydInstancesOpenTask(row.dataset.inst, null);
-      else if (window.hydInstancesSelect) window.hydInstancesSelect(row.dataset.inst);
+      if (window.hydInstancesSelect) window.hydInstancesSelect(row.dataset.inst);
     }));
     box.querySelector('#streamMore')?.addEventListener('click', () => { S.showAll = true; render(); });
     const count = document.getElementById('streamCount'); if (count) count.textContent = `${rows.length}`;

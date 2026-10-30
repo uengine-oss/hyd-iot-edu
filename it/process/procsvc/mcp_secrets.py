@@ -139,33 +139,6 @@ def missing_reason(name: str | None, missing: list[str]) -> str:
 
 
 # ---------------------------------------------------------------- 저장소 (public.mcp_secrets)
-class MemorySecretStore:
-    def __init__(self, repo):
-        self.repo = repo
-        if not hasattr(repo, "_mcp_secrets"):
-            repo._mcp_secrets = {}
-        self.rows = repo._mcp_secrets
-
-    def values(self, tenant_id) -> dict[str, str]:
-        return {k: r["value"] for (t, k), r in self.rows.items() if t == tenant_id}
-
-    def keys(self, tenant_id) -> list[dict]:
-        return [{"key": k, "updated_at": r.get("updated_at"), "updated_by": r.get("updated_by")}
-                for (t, k), r in sorted(self.rows.items()) if t == tenant_id]
-
-    def put(self, tenant_id, key, value, by, now) -> None:
-        self.rows[(tenant_id, key)] = {"value": value, "updated_by": by, "updated_at": now}
-
-    def delete(self, tenant_id, key) -> bool:
-        return self.rows.pop((tenant_id, key), None) is not None
-
-    def delete_all(self, tenant_id) -> int:
-        keys = [k for k in self.rows if k[0] == tenant_id]
-        for k in keys:
-            del self.rows[k]
-        return len(keys)
-
-
 class PgSecretStore:
     """public.mcp_secrets (migration 20261009000050). 표가 없으면 모든 동작이 503 사유로 멈춘다 — 표가 없는 것을
     '값이 없음'(빈 dict · 0건)으로 보이면 강사는 값을 넣으라는 엉뚱한 안내만 받는다."""
@@ -209,9 +182,7 @@ class PgSecretStore:
 
 
 def store_for(repo):
-    if hasattr(repo, "dsn") and hasattr(repo, "_conn"):
-        return PgSecretStore(repo)
-    return MemorySecretStore(repo)
+    return PgSecretStore(repo)
 
 
 def load(repo, tenant_id: str, environ=None) -> dict[str, str]:
@@ -323,7 +294,8 @@ def mount(app, *, runtime_factory, audit):
     def runtime():
         rt = runtime_factory()
         if rt is None:
-            raise HTTPException(503, "비밀 값에는 instance 실행 서비스가 필요합니다 (PROCESS_MODE=instance)")
+            from .instances import NOT_READY      # 런타임 모듈 — 이 모듈이 먼저 읽혀도 순환 import 가 되지 않게 여기서
+            raise HTTPException(503, NOT_READY)
         return rt
 
     async def run(fn):

@@ -2,7 +2,7 @@
 
 지표 21개(온톨로지 Measure: 목표값 · 방향 · 식 문자열 · kpiRole)는 지식 그래프에서 읽고, 실적은 세 원천에서 계산한다.
   처리 기록  Supabase public.bpm_proc_inst (처리 건 · 고른 조치)
-  업무 DB    Supabase ent.* (작업지시 · 구매요청 · 재고 · 에너지 요율 · 공급사 견적)
+  업무 DB    Supabase ent.* (작업지시 · 발주 · 재고 · 에너지 요율 · 공급사 품질 · 정비 표준 작업)
   시계열 DB  TimescaleDB tag_1m (1분 집계) · alerts (경보 · 트립)
 지표마다 계산 정의(원천 표 · 열 · 식)를 DEFINITIONS 에 한 줄씩 둔다. 원천이 없으면 숫자를 지어내지 않고 "계산 불가 — 사유"를 낸다.
 식 문자열이 있는 합성 지표(영업이익 · 총비용)는 그래프의 식을 그대로 풀어 구성 지표 실적으로 계산하고, 구성 지표 하나라도
@@ -132,12 +132,19 @@ SQL_TAG_PEAK = """SELECT DISTINCT ON (asset) asset, bucket AS at, max AS peak, c
 SQL_TAG_AVG = """SELECT asset, avg(avg) AS mean, count(*)::int AS n FROM tag_1m
  WHERE name = %(tag)s AND bucket >= %(t0)s AND bucket < %(t1)s GROUP BY asset ORDER BY asset"""
 SQL_ENERGY_RATE = "SELECT site, energy_rate FROM ent.energy_demand ORDER BY site"
-SQL_WORK_ORDERS = """SELECT w.id, w.asset, w.task, w.option_id, w.decision_id, w.created_at, m.clean_cost
- FROM ent.work_orders w LEFT JOIN ent.maintenance_profiles m ON m.asset = w.asset
+# 정비비 원천은 조건별 손익(entsim → ent.cmms_tasks)과 같은 한 곳: 설비별 정비 표준 작업의 SOP별 작업비(세척은 그 설비 정비 기준표의
+# clean_cost). 작업지시의 SOP 는 정기 정비 범위 오더면 package.package_sop(실제 정비 패키지), 아니면 task 글 머리(process 가
+# '<SOP> <조치 이름> → 작업지시 <값>'으로 남긴다 — main.exec_skill). 표준 작업표에 없는 SOP 는 비용 원천 없음.
+SQL_WORK_ORDERS = """SELECT w.id, w.asset, w.task, w.option_id, w.decision_id, w.created_at, x.sop,
+       t.rec->>'name' AS std_name, (t.rec->>'labor_cost')::numeric AS labor_cost
+ FROM ent.work_orders w
+ CROSS JOIN LATERAL (SELECT coalesce(w.package->>'package_sop', substring(w.task from '^(SOP-[A-Za-z0-9-]+)')) AS sop) x
+ LEFT JOIN LATERAL (SELECT r AS rec FROM jsonb_array_elements(ent.cmms_tasks(w.asset)->'records') r WHERE r->>'sop' = x.sop) t ON true
  WHERE w.cancelled_at IS NULL AND w.created_at >= %(t0)s AND w.created_at < %(t1)s ORDER BY w.created_at"""
-SQL_PURCHASES = """SELECT r.id, r.part, r.supplier, r.supplier_name, r.asset, r.decision_id, r.created_at,
-       s.price, s.quality_score, p.name AS quote_part
- FROM ent.purchase_requests r LEFT JOIN ent.suppliers s ON s.id = r.supplier LEFT JOIN ent.parts p ON p.part_no = s.part_no
+# 발주 금액 · 단가는 발주 행 그대로(amount = 수량 × 단가, 승인 경로에서 ERP 가 견적으로 확정 — c2_execution). 공급사 표는 품질 점수만 읽는다.
+SQL_PURCHASES = """SELECT r.id, r.part, r.part_no, r.qty, r.unit_price, r.amount, r.supplier, r.supplier_name, r.asset, r.decision_id, r.created_at,
+       s.quality_score
+ FROM ent.purchase_requests r LEFT JOIN ent.suppliers s ON s.id = r.supplier
  WHERE r.cancelled_at IS NULL AND r.created_at >= %(t0)s AND r.created_at < %(t1)s ORDER BY r.created_at"""
 SQL_INVENTORY = "SELECT asset, fg_item, fg_stock FROM ent.fg_inventory ORDER BY asset"
 SQL_INSTANCES = """SELECT proc_inst_id, proc_def_id, status::text AS status, start_date, end_date, end_event, variables_data
@@ -219,7 +226,7 @@ def calc_mtbf(f: Fetch, w: Window, ctx: dict) -> Calc:
         return Calc(None, per, rows, [], status='no_data', detail=detail,
                     reason=f'기간 안 고장(보호 정지) 0건 — 운전 {sum(run_h.values()):.0f} h(설비 시간) 동안 고장이 없어 평균 간격을 나눌 수 없습니다')
     return Calc(round(sum(run_h.values()) / total_f, 1), per, rows, _trip_events([t for t in trips if t['in_window']]), detail=detail,
-                note=f'운전 시간 = (관측 분 − 보호 정지 분) ÷ 60 × 배속 {scale:g}')
+                note=f'운전 시간(설비 시간) = (관측 분 − 보호 정지 분) ÷ 60 × {scale:g} — 가상 설비는 실제 시간보다 {scale:g}배 빨리 돈다')
 
 
 def calc_safety_margin(f: Fetch, w: Window, ctx: dict) -> Calc:
@@ -270,11 +277,11 @@ def calc_energy_cost(f: Fetch, w: Window, ctx: dict) -> Calc:
 
 def calc_maint_cost(f: Fetch, w: Window, ctx: dict) -> Calc:
     rows_ = f('biz', 'work_orders', SQL_WORK_ORDERS, w.params)
-    rows = [('biz', 'ent.work_orders', len(rows_))]
+    rows = [('biz', 'ent.work_orders', len(rows_)), ('biz', 'ent.cmms_tasks', sum(1 for r in rows_ if r['labor_cost'] is not None))]
     per, unknown, detail = {}, [], []
     for r in rows_:
-        cost = float(r['clean_cost']) if '세척' in (r['task'] or '') and r['clean_cost'] is not None else None
-        detail.append({'작업지시': r['id'], '설비': r['asset'], '작업': r['task'], '비용 만원': cost})
+        cost = None if r['labor_cost'] is None else float(r['labor_cost'])
+        detail.append({'작업지시': r['id'], '설비': r['asset'], '작업 SOP': r['sop'] or '–', '표준 작업': r['std_name'] or '–', '작업비 만원': cost})
         if cost is None:
             unknown.append(r)
         else:
@@ -282,63 +289,67 @@ def calc_maint_cost(f: Fetch, w: Window, ctx: dict) -> Calc:
     value = round(sum(per.values()), 2)
     if unknown:
         return Calc(value, per, rows, status='partial', detail=detail,
-                    reason=f'작업지시 {len(rows_)}건 중 {len(unknown)}건은 업무 DB에 작업 비용이 없어 셀 수 없습니다 (비용은 '
-                           f'정비 기준표의 세척 비용만 있음): ' + ', '.join(sorted({u["task"] for u in unknown}))[:200])
+                    reason=f'작업지시 {len(rows_)}건 중 {len(unknown)}건은 업무 DB 정비 표준 작업에 그 작업의 작업비가 없어 셀 수 없습니다: '
+                           + ', '.join(sorted({u['sop'] or '작업 SOP 기록 없음' for u in unknown}))[:200])
     return Calc(value, per, rows, detail=detail, note=f'기간 합계 · 작업지시 {len(rows_)}건')
 
 
-def _purchases(f: Fetch, w: Window):
-    rows_ = f('biz', 'purchases', SQL_PURCHASES, w.params)
-    known, unknown = [], []
-    for r in rows_:
-        (known if r['price'] is not None and r['quote_part'] and r['quote_part'] in (r['part'] or '') else unknown).append(r)
-    return rows_, known, unknown
-
-
-def _purchase_reason(rows_, unknown) -> str:
-    pairs = sorted({f"{u['part']}({u['supplier_name'] or u['supplier']})" for u in unknown})
-    return (f'구매요청 {len(rows_)}건 중 {len(unknown)}건은 업무 DB 공급사 견적(ent.suppliers)에 같은 부품의 단가가 없습니다: '
-            + ', '.join(pairs)[:200])
+def _num(x):
+    return None if x is None else float(x)
 
 
 def _purchase_detail(rows_):
-    return [{'구매요청': r['id'], '부품': r['part'], '공급사': r['supplier_name'] or r['supplier'],
-             '견적 부품': r['quote_part'], '단가 만원': float(r['price']) if r['price'] is not None and r['quote_part'] and r['quote_part'] in (r['part'] or '') else None}
-            for r in rows_]
+    return [{'발주': r['id'], '부품': r['part'], '공급사': r['supplier_name'] or r['supplier'], '수량': r['qty'],
+             '단가 만원': _num(r['unit_price']), '금액 만원': _num(r['amount']), '공급사 품질': _num(r['quality_score'])} for r in rows_]
+
+
+def _missing(rows_, missing, what) -> str:
+    pairs = sorted({f"{u['part']}({u['supplier_name'] or u['supplier']})" for u in missing})
+    return f'발주 {len(rows_)}건 중 {len(missing)}건은 {what}: ' + ', '.join(pairs)[:200]
+
+
+NO_AMOUNT = '수량 · 금액 없이 기록된 구매요청이라 금액을 셀 수 없습니다'
 
 
 def calc_part_cost(f: Fetch, w: Window, ctx: dict) -> Calc:
-    rows_, known, unknown = _purchases(f, w)
-    rows = [('biz', 'ent.purchase_requests', len(rows_)), ('biz', 'ent.suppliers', len(known))]
-    per = {}
-    for r in known:
-        per[r['asset']] = per.get(r['asset'], 0.0) + float(r['price'])
+    """부품 구매비 = Σ 기간 발주 금액(amount). 금액이 없는 행(수량 없이 남은 옛 구매요청)은 지어내지 않고 부분 실적."""
+    rows_ = f('biz', 'purchases', SQL_PURCHASES, w.params)
+    rows = [('biz', 'ent.purchase_requests', len(rows_))]
+    per, missing = {}, []
+    for r in rows_:
+        if r['amount'] is None:
+            missing.append(r)
+        else:
+            per[r['asset']] = per.get(r['asset'], 0.0) + float(r['amount'])
     value = round(sum(per.values()), 2)
-    if unknown:
-        return Calc(value, per, rows, status='partial', reason=_purchase_reason(rows_, unknown), detail=_purchase_detail(rows_))
-    return Calc(value, per, rows, detail=_purchase_detail(rows_), note=f'기간 합계 · 요청 1건 = 1개 (구매요청 표에 수량 열 없음)')
+    if missing:
+        return Calc(value, per, rows, status='partial', reason=_missing(rows_, missing, NO_AMOUNT), detail=_purchase_detail(rows_))
+    return Calc(value, per, rows, detail=_purchase_detail(rows_), note=f'기간 합계 · 발주 {len(rows_)}건(금액 = 수량 × 단가)')
 
 
-def _purchase_avg(f, w, column, label):
-    rows_, known, unknown = _purchases(f, w)
-    rows = [('biz', 'ent.purchase_requests', len(rows_)), ('biz', 'ent.suppliers', len(known))]
+def _purchase_avg(f, w, column, label, missing_text, rows_tables):
+    rows_ = f('biz', 'purchases', SQL_PURCHASES, w.params)
+    known = [r for r in rows_ if r[column] is not None]
+    missing = [r for r in rows_ if r[column] is None]
+    rows = [('biz', t, len(rows_) if t == 'ent.purchase_requests' else len(known)) for t in rows_tables]
     if not rows_:
-        return Calc(None, rows=rows, status='no_data', reason='기간 안 구매요청이 없습니다')
+        return Calc(None, rows=rows, status='no_data', reason='기간 안 발주가 없습니다')
     if not known:
-        return Calc(None, rows=rows, status='no_data', reason=_purchase_reason(rows_, unknown), detail=_purchase_detail(rows_))
+        return Calc(None, rows=rows, status='no_data', reason=_missing(rows_, missing, missing_text), detail=_purchase_detail(rows_))
     value = round(sum(float(r[column]) for r in known) / len(known), 3)
-    calc = Calc(value, {}, rows, detail=_purchase_detail(rows_), note=f'{label} · 단가를 아는 구매요청 {len(known)}건 평균')
-    if unknown:
-        calc.status, calc.reason = 'partial', _purchase_reason(rows_, unknown)
+    calc = Calc(value, {}, rows, detail=_purchase_detail(rows_), note=f'{label} · 발주 {len(known)}건 평균(건마다 한 번)')
+    if missing:
+        calc.status, calc.reason = 'partial', _missing(rows_, missing, missing_text)
     return calc
 
 
 def calc_part_price(f, w, ctx):
-    return _purchase_avg(f, w, 'price', '공급사 견적 단가')
+    return _purchase_avg(f, w, 'unit_price', '발주 단가', '단가 없이 기록된 구매요청입니다', ['ent.purchase_requests'])
 
 
 def calc_part_quality(f, w, ctx):
-    return _purchase_avg(f, w, 'quality_score', '공급사 품질 점수(0~1)')
+    return _purchase_avg(f, w, 'quality_score', '공급사 품질 점수(0~1)', '공급사의 품질 점수가 업무 DB에 없습니다',
+                         ['ent.purchase_requests', 'ent.suppliers'])
 
 
 def calc_inventory(f: Fetch, w: Window, ctx: dict) -> Calc:
@@ -394,16 +405,15 @@ DEFINITIONS: dict[str, dict] = {
                            formula='Σ 설비별 평균 전력(kW) × 24'),
     'msr:energy-cost': dict(fn=calc_energy_cost, sources=[('ts', 'tag_1m', 'avg · name=EPS1'), ('biz', 'ent.energy_demand', 'energy_rate (만원/kWh)')],
                             formula='전력 사용량(kWh/일) × 30 × energy_rate'),
-    'msr:maint-cost': dict(fn=calc_maint_cost, unit='만원 (기간 합계)', sources=[('biz', 'ent.work_orders', 'created_at · task · asset (취소 제외)'),
-                                                        ('biz', 'ent.maintenance_profiles', 'clean_cost (세척 작업 1회 비용)')],
-                           formula='Σ 기간 작업지시 비용 (세척 작업 = clean_cost, 그 밖의 작업은 비용 원천 없음 → 부분 실적)'),
-    'msr:part-cost': dict(fn=calc_part_cost, unit='만원 (기간 합계)', sources=[('biz', 'ent.purchase_requests', 'created_at · part · supplier (취소 제외)'),
-                                                      ('biz', 'ent.suppliers · ent.parts', 'price · part_no → name')],
-                          formula='Σ 기간 구매요청 견적 단가 (요청 1건 = 1개, 견적 부품과 요청 부품이 같을 때만)'),
-    'msr:part-price': dict(fn=calc_part_price, sources=[('biz', 'ent.purchase_requests', 'part · supplier'), ('biz', 'ent.suppliers', 'price')],
-                           formula='단가를 아는 기간 구매요청의 견적 단가 평균'),
-    'msr:part-quality': dict(fn=calc_part_quality, sources=[('biz', 'ent.purchase_requests', 'part · supplier'), ('biz', 'ent.suppliers', 'quality_score')],
-                             formula='단가를 아는 기간 구매요청 공급사의 품질 점수 평균'),
+    'msr:maint-cost': dict(fn=calc_maint_cost, unit='만원 (기간 합계)', sources=[('biz', 'ent.work_orders', 'created_at · 작업 SOP(task 머리 · package_sop) · asset (취소 제외)'),
+                                                        ('biz', 'ent.cmms_tasks(설비)', 'SOP별 작업비 labor_cost (세척은 정비 기준표 clean_cost) — 조건별 손익과 같은 원천')],
+                           formula='Σ 기간 작업지시의 표준 작업비 (표준 작업표에 없는 SOP 는 비용 원천 없음 → 부분 실적)'),
+    'msr:part-cost': dict(fn=calc_part_cost, unit='만원 (기간 합계)', sources=[('biz', 'ent.purchase_requests', 'created_at · amount (= 수량 × 단가, 취소 제외)')],
+                          formula='Σ 기간 발주 금액 (금액 없이 남은 옛 구매요청은 부분 실적)'),
+    'msr:part-price': dict(fn=calc_part_price, sources=[('biz', 'ent.purchase_requests', 'unit_price (발주 단가)')],
+                           formula='기간 발주 단가의 평균 (발주 한 건 = 한 번)'),
+    'msr:part-quality': dict(fn=calc_part_quality, sources=[('biz', 'ent.purchase_requests', 'supplier'), ('biz', 'ent.suppliers', 'quality_score')],
+                             formula='기간 발주 공급사의 품질 점수 평균 (발주 한 건 = 한 번)'),
     'msr:inventory': dict(fn=calc_inventory, sources=[('biz', 'ent.fg_inventory', 'fg_stock')], formula='Σ fg_stock (현재값)'),
     'msr:precedent': dict(fn=calc_precedent, unit='건 (기간)', sources=[('proc', 'bpm_proc_inst', 'start_date · variables_data.chosen_skill')],
                           formula='기간에 시작한 처리 건 중 chosen_skill(사람이 고른 조치)이 있는 건 수'),

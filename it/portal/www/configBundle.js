@@ -3,26 +3,17 @@
    불러오기는 "되돌리기 → 순서대로 적용 → 다시 읽어 대조"이고, 실패하면 어디서 왜 멈췄는지와 적용 전 상태로 되돌렸는지 보여 준다.
    비밀값(MCP 접속 헤더 · 환경변수의 토큰 등)은 파일에 없다 — 필요하면 여기서 입력하거나 그 서버만 건너뛴다. */
 (function () {
-  const H = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  const base = () => (typeof API !== 'undefined' ? API.process : '');
+  const H = esc;                                        // 포털 공용 이스케이프(ui.js)
+  const IMPORT = 'config.import';                        // 수업 경계 행동 키 — 수업 단계에서는 서버가 막고 까닭을 준다(courseAccess.js)
   const COUNT_WORDS = { mcp_servers: 'MCP 서버', skills: '스킬', agents: '에이전트', role_members: '업무분장', flows: '흐름',
     flow_versions: '흐름 판본', assignments: '단계 배정', deployments: '배포', secrets_needed: '입력할 비밀값' };
 
+  // 공용 요청 함수 하나(requestJ) — 불러오기는 MCP 연결 검사를 하므로 3분, 내보내기는 파일 이름 머리글이 필요하다. 서버 사유 칸(detail)은 그대로 쓴다
   async function call(path, body) {
-    const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 180000);      // 불러오기는 MCP 연결 검사를 하므로 길게
     try {
-      const r = await fetch(base() + path, body === undefined ? { cache: 'no-store', signal: ctl.signal }
-        : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: ctl.signal });
-      const j = await r.json().catch(() => ({}));
-      if (!r.ok) {
-        const d = j.detail, e = new Error(typeof d === 'string' ? d : (d && d.reason) || `요청 실패 (${r.status})`);
-        e.detail = d && typeof d === 'object' ? d : {}; e.status = r.status; throw e;
-      }
-      return { body: j, headers: r.headers };
-    } catch (e) {
-      if (e.name === 'AbortError') throw new Error('응답 시간 초과 — 잠시 뒤 상태를 확인하세요');
-      throw e;
-    } finally { clearTimeout(timer); }
+      return await requestJ(API.process + path, { timeout: 180000, withHeaders: true,
+        ...(body === undefined ? {} : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }) });
+    } catch (e) { if (!e.detail || typeof e.detail !== 'object') e.detail = {}; throw e; }
   }
 
   const list = items => items && items.length ? `<ul>${items.map(x => `<li>${H(x)}</li>`).join('')}</ul>` : '';
@@ -35,7 +26,7 @@
       UI.card({ title: '출발본 불러오기', sub: '강사가 준 출발본 파일을 올리면 지금 구성을 기준으로 되돌린 뒤 파일 내용으로 다시 세웁니다. 망쳐도 다시 불러오면 됩니다.',
         body: `<div class="form-grid"><div class="field wide"><label for="cfgFile">출발본 파일(.json)</label><input type="file" id="cfgFile" accept=".json,application/json"></div></div>
           <div id="cfgSecrets"></div>
-          <div class="form-actions"><span class="form-msg" id="cfgImportMsg" role="status"></span><button type="button" class="btn primary" id="cfgImport">불러오기</button></div>
+          <div class="form-actions"><span class="form-msg" id="cfgImportMsg" role="status"></span><button type="button" class="btn primary" id="cfgImport"${hydCourseAccess.attrs(IMPORT)}>불러오기</button></div>
           <div id="cfgImportResult"></div>` }) +
       UI.card({ title: '기준으로 되돌리기', sub: '내가 만든 에이전트 · 스킬 · 배정 · 업무분장 · MCP 서버 · 흐름 · 배포와 끝난 질문 기록을 지웁니다. 기준은 그대로입니다.',
         body: `<div class="form-actions"><span class="form-msg" id="cfgResetMsg" role="status"></span><button type="button" class="btn danger" id="cfgReset">기준으로 되돌리기</button></div>
@@ -62,7 +53,7 @@
       $('cfgSecrets').innerHTML = UI.section('비밀값 입력', needs.map(n => n.slots.map(s =>
         UI.field({ label: `${n.server} · ${s.label}`, input: `<input type="password" autocomplete="off" data-server="${H(n.server)}" data-slot="${H(s.slot)}">`,
           hint: '파일에는 담지 않은 값입니다' })).join('')).join('')) +
-        `<div class="form-actions"><button type="button" class="btn" id="cfgSkip">비밀값이 없는 서버만 건너뛰고 불러오기</button></div>`;
+        `<div class="form-actions"><button type="button" class="btn" id="cfgSkip"${hydCourseAccess.attrs(IMPORT)}>비밀값이 없는 서버만 건너뛰고 불러오기</button></div>`;
       $('cfgSkip').addEventListener('click', () => run(true));
     }
     function secretsFromForm() {
@@ -98,7 +89,7 @@
       } catch (e) {
         msg('cfgImportMsg', e.message, true); showFailure(e.detail || {});
         if (e.detail && e.detail.needs_secrets && !e.detail.problems) secretForm(e.detail.needs_secrets);
-      } finally { $('cfgImport').disabled = false; }
+      } finally { $('cfgImport').disabled = false; hydCourseAccess.apply(el); }
     }
     $('cfgFile').addEventListener('change', async () => {
       pending = null; $('cfgSecrets').innerHTML = ''; $('cfgImportResult').innerHTML = '';
@@ -110,11 +101,11 @@
     });
     $('cfgImport').addEventListener('click', async () => {
       if (!pending) { msg('cfgImportMsg', '출발본 파일을 고르세요', true); return; }
-      const yes = await UI.confirm({ title: '출발본을 불러올까요?', body: '지금 내가 만든 구성을 지우고 파일 내용으로 다시 세웁니다. 강사가 배포한 수업 흐름도 파일 내용대로 바뀝니다. 기준 구성과 질문 기록은 그대로입니다.', ok: '불러오기' });
+      const yes = await UI.confirm({ title: '출발본을 불러올까요?', body: '지금 내가 만든 구성을 지우고 파일 내용으로 다시 세웁니다. 수업 흐름(시작할 때 설치되는 A · B · C)도 파일 내용대로 바뀝니다. 기준 구성과 질문 기록은 그대로입니다.', ok: '불러오기' });
       if (yes) run(false);
     });
     $('cfgReset').addEventListener('click', async () => {
-      const yes = await UI.confirm({ title: '기준으로 되돌릴까요?', body: '내가 만든 구성을 모두 지웁니다. 강사가 배포한 수업 흐름은 남습니다. 먼저 출발본으로 받아 두면 다시 불러올 수 있습니다.', ok: '되돌리기', danger: true });
+      const yes = await UI.confirm({ title: '기준으로 되돌릴까요?', body: '내가 만든 구성을 모두 지웁니다. 수업 흐름(시작할 때 설치되는 A · B · C)은 남습니다. 먼저 출발본으로 받아 두면 다시 불러올 수 있습니다.', ok: '되돌리기', danger: true });
       if (!yes) return;
       $('cfgReset').disabled = true;
       try {
@@ -130,5 +121,9 @@
   }
 
   window.hydConfig = { mount: render, counts };
-  document.addEventListener('DOMContentLoaded', () => { const el = document.getElementById('configBundleView'); if (el) render(el); });
+  document.addEventListener('DOMContentLoaded', () => {
+    const el = document.getElementById('configBundleView'); if (!el) return;
+    render(el);
+    hydCourseAccess.onChange(() => hydCourseAccess.apply(el));   // 수업 범위가 늦게 와도 불러오기 단추를 맞춘다
+  });
 })();

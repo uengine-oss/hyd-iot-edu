@@ -14,6 +14,9 @@
 .strip-status > span { white-space: nowrap; }
 .strip-status .dots { min-width: 0; max-width: 360px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-shrink: 4; }
 .clock-pop, .shell-bell { flex-shrink: 0; }
+/* 지금 단계(수업 / PBL) 한 줄 — courseAccess.js. 읽기 실패면 칩 + [다시 시도] */
+.course-status { display: inline-flex; align-items: center; gap: 4px; }
+.course-status:empty { display: none; }
 @media (max-width: 1200px) { .strip-status .dots { max-width: 160px; } }
 .shell-me {
   display: flex;

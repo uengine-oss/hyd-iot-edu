@@ -1,54 +1,43 @@
-"""agent (L8): alert -> data-trust check -> T1 causes -> evidence SQL -> T2 actions -> guide card -> guardrail -> process API.
+"""agent (L8): 읽기 전용 판단 서비스 — alert -> data-trust check -> T1 causes -> evidence SQL -> T2 actions -> guide card -> guardrail
+-> 조치 카드 평가(제출하지 않음).
 
 The LangGraph/MCP/LiteLLM stack of the full architecture is collapsed into one process (the `tools.mcp_*` modules are
 in-process functions, not MCP servers), but the discipline is kept: tools are read-only and every step is recorded in the
-run trace. The legacy pipeline writes to the process service twice and nowhere else: POST /api/incidents (the guide card,
-step 7 below) and then POST /api/decisions (the ranked action cards, decide.submit). PROCESS_MODE=instance hands the
-action-card step to the process instance's agent task instead (see /api/agent/decide and dmn-mcp).
+run trace. 경보마다 스스로 돌던 옛 자동 파이프라인(가이드 카드 · 판단 제출)은 지웠다(2026-10-30) — 판단 제출은 처리 건의 에이전트
+단계(AI 워커 → dmn-mcp submit_decision) 하나뿐이다. 여기 남은 것은 읽기 평가(/api/agent/evaluate — 판단 채점) · 규칙 판단 · 예측 ·
+승인 현재 조건 검사 · 가정 실험이다.
 """
 import asyncio
-import json
 import logging
 import os
 import re
-import urllib.request
 from urllib.parse import quote
 
 from fastapi import HTTPException
 from pydantic import BaseModel
 
-from hydcommon import topics
-from hydcommon.kafka import consumer as make_consumer
 from hydcommon.metrics import Registry
 from hydcommon.service import make_app
-from . import card as cardlib, decide as decidelib, guardrail, llm, whatif
+from . import card as cardlib, decide as decidelib, guardrail, whatif
 from .runs import RunRegistry
 from .tools import mcp_ent, mcp_kg, mcp_prom, mcp_tsdb
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 log = logging.getLogger("agent")
 PROCESS_URL = os.getenv("PROCESS_URL", "http://process:8080")
-AUTOMATIC_PIPELINE = os.getenv("PROCESS_MODE", "legacy") != "instance"
 
 reg = Registry()
 c_runs = reg.counter("agent_runs_total", "agent runs by status")
 runs = RunRegistry()
-state = {"kafka": False, "neo4j": False, "runs": 0, "llm": llm.available(), "llm_model": llm.MODEL}
+state = {"neo4j": False, "runs": 0}
 kg: mcp_kg.KnowledgeGraph | None = None
 tsdb = mcp_tsdb.TimeSeriesDB()
 decisions = decidelib.DecisionRegistry("agent")
 whatifs = whatif.Sessions()
 
 
-def submit_card(card: dict) -> dict:
-    req = urllib.request.Request(f"{PROCESS_URL}/api/incidents", data=json.dumps(card, ensure_ascii=False).encode(),
-                                 headers={"Content-Type": "application/json"}, method="POST")
-    with urllib.request.urlopen(req, timeout=10) as r:
-        return json.loads(r.read())
-
-
-def pipeline(run, *, do_submit=True) -> None:
-    """Synchronous reasoning pipeline (runs in a worker thread)."""
+def pipeline(run) -> None:
+    """Synchronous read-only reasoning pipeline (runs in a worker thread). 제출 · 쓰기는 없다 — 끝에 조치 카드를 평가만 한다."""
     alert, asset = run.alert, run.asset
     try:
         policy=decidelib._get_json(f"{PROCESS_URL}/api/alerts/policy?pattern={quote(str(alert.get('pattern') or ''),safe='')}")
@@ -109,47 +98,18 @@ def pipeline(run, *, do_submit=True) -> None:
             c_runs.inc(status="REJECTED_BY_GUARDRAIL")
             log.warning("run %s rejected by guardrail: %s", run.id, violations)
             return
-        if not do_submit:
-            d = decidelib.decide(kg, decisions, tsdb, asset, alert.get('pattern',''), causes[0], do_submit=False,
-                                origin={'kind':'alert','alertId':alert['alertId'],'pattern':alert['pattern'],
-                                        'cause':causes[0]['id'],'failureMode':causes[0].get('failureModeId')})
-            if d.get('status') != 'EVALUATED' or not (d.get('result') or {}).get('options'):
-                run.step('cards',d,status='FAILED')
-                run.finish('WITHHELD',d.get('error') or d.get('explanation') or '검증된 조치 대안을 만들지 못했습니다')
-                return
-            run.evaluation = {k:d.get(k) for k in ('id','schema','scenario','asset','origin','recommended','explanation',
-                                                    'rankRule','roles','facts','provenance','applicable')}
-            run.evaluation.update(options=d['result']['options'],rankRule=d['result'].get('rankRule'))
-            run.step('cards',d,note='읽기 평가 결과: 프로세스 점유 확인 후 접수하며 여기서는 제출/실행하지 않습니다')
-            run.finish('EVALUATED')
+        d = decidelib.decide(kg, decisions, tsdb, asset, alert.get('pattern',''), causes[0], do_submit=False,
+                            origin={'kind':'alert','alertId':alert['alertId'],'pattern':alert['pattern'],
+                                    'cause':causes[0]['id'],'failureMode':causes[0].get('failureModeId')})
+        if d.get('status') != 'EVALUATED' or not (d.get('result') or {}).get('options'):
+            run.step('cards',d,status='FAILED')
+            run.finish('WITHHELD',d.get('error') or d.get('explanation') or '검증된 조치 대안을 만들지 못했습니다')
             return
-        # 7. submit (the agent's only write)
-        res = submit_card(card)
-        run.incident_id = res.get("id")
-        card["incident"] = run.incident_id
-        run.step("submit", res, note="process API에 카드 제출 (에이전트의 유일한 쓰기)")
-        if res.get('state')!='AWAITING_APPROVAL':
-            run.finish('WITHHELD','사건이 조치 선택 상태가 아니므로 카드 제출을 중단합니다')
-            c_runs.inc(status='WITHHELD')
-            return
-        # 8. action cards (L7 -> L8 -> L9): DMN rules + forecasts + BSC trade-offs + precedents -> ranked SOP skills for the human
-        linked = {}
-        try:
-            d = decidelib.decide(kg, decisions, tsdb, asset, alert.get("pattern", ""), causes[0],
-                                 origin={"kind": "alert", "alertId": alert.get("alertId"), "incident": run.incident_id,
-                                         "pattern": alert.get("pattern"), "cause": causes[0]["id"], "failureMode": causes[0].get("failureModeId")})
-            res = d.get("result") or {}
-            linked = {"decision": d["id"], "status": d["status"], "recommended": d.get("recommended"),
-                      "cards": [f"{o['rank']}. {o['sopId']} {o['name']}" + ("" if o["feasible"] else " (제외)") for o in res.get("options", [])],
-                      "explanation": d.get("explanation")}
-        except Exception as e:  # noqa: BLE001
-            log.warning("action-card decision skipped: %s", e)
-            linked = {"error": str(e)}
-        run.step("cards", linked, status="DONE" if linked.get("status") == "SUBMITTED" else "FAILED",
-                 note="조치 카드: DMN 후보 · 규정 규칙 → 예측 · BSC 상충 · 선례로 순위 → 사람이 고를 카드 2~3장 제출")
-        run.finish("SUBMITTED")
-        c_runs.inc(status="SUBMITTED")
-        log.info("run %s submitted as incident %s", run.id, run.incident_id)
+        run.evaluation = {k:d.get(k) for k in ('id','schema','scenario','asset','origin','recommended','explanation',
+                                                'rankRule','roles','facts','provenance','applicable')}
+        run.evaluation.update(options=d['result']['options'],rankRule=d['result'].get('rankRule'))
+        run.step('cards',d,note='읽기 평가 결과: 제출 · 실행하지 않습니다(판단 제출은 처리 건의 에이전트 단계만)')
+        run.finish('EVALUATED')
     except Exception as e:  # noqa: BLE001
         log.exception("run %s failed", run.id)
         run.step("error", {"error": str(e)}, status="FAILED")
@@ -157,30 +117,8 @@ def pipeline(run, *, do_submit=True) -> None:
         c_runs.inc(status="FAILED")
 
 
-async def consume():
-    global kg
-    kg = mcp_kg.KnowledgeGraph()
-    state["neo4j"] = kg.ping()
-    cons = await make_consumer([topics.K_ALERTS], group="agent", from_latest=True)
-    state["kafka"] = True
-    log.info("consuming alerts (RAISE only)")
-    async for rec in cons:
-        alert = rec.value
-        if not isinstance(alert, dict) or alert.get("state") != "RAISE" or not alert.get("alertId"):
-            continue
-        if not AUTOMATIC_PIPELINE:
-            log.info("RAISE %s is owned by the instance worker; legacy pipeline skipped", alert["alertId"])
-            continue
-        run = runs.create_if_new(alert)
-        if run is None:
-            log.info("duplicate RAISE for %s ignored", alert.get("alertId"))
-            continue
-        state["runs"] += 1
-        asyncio.get_running_loop().run_in_executor(None, pipeline, run)
-
-
 app = make_app("agent (L8: ontology-grounded guide cards, read-only tools)", reg,
-               lambda: {**state, "ok": state["kafka"] and not state.get("consumer_dead", False)})
+               lambda: {**state, "ok": kg is not None and state["neo4j"]})
 
 
 class EvaluationReq(BaseModel):
@@ -192,9 +130,9 @@ def evaluate_without_submission(req: EvaluationReq):
     if (req.alert.get('state')!='RAISE' or any(not isinstance(req.alert.get(k),str) or not req.alert[k]
                                              for k in ('alertId','asset','pattern'))):
         raise HTTPException(400,'원천 RAISE 경보의 ID/설비/패턴이 필요합니다')
-    run = runs.force_new(req.alert)
+    run = runs.new(req.alert)
     state['runs'] += 1
-    pipeline(run,do_submit=False)
+    pipeline(run)
     return run.to_dict()
 
 
@@ -217,17 +155,11 @@ def agent_trial(req: TrialReq):
     return {'trial': out, 'added': snap.added}
 
 
-def _watch(task):
-    """If the consume loop ever exits, /healthz reports it (503) instead of looking healthy while doing nothing."""
-    state["consumer_dead"] = True
-    state["consumer_error"] = repr(task.exception()) if not task.cancelled() and task.exception() else "exited"
-    log.error("consumer task ended: %s", state["consumer_error"])
-
-
 @app.on_event("startup")
 async def _startup():
-    llm.announce()
-    asyncio.create_task(consume()).add_done_callback(_watch)
+    global kg
+    kg = mcp_kg.KnowledgeGraph()
+    state["neo4j"] = await asyncio.to_thread(kg.ping)
 
 
 @app.get("/api/agent/runs")
@@ -241,17 +173,6 @@ def get_run(run_id: str):
     if not r:
         raise HTTPException(404, "no such run")
     return r.to_dict()
-
-
-@app.post("/api/agent/replay/{alert_id}")
-async def replay(alert_id: str):
-    """Lecture helper: re-run the pipeline for an alert that was already processed."""
-    prev = runs.by_alert(alert_id)
-    if not prev:
-        raise HTTPException(404, "unknown alert")
-    run = runs.force_new(prev.alert)
-    asyncio.get_running_loop().run_in_executor(None, pipeline, run)
-    return {"run": run.id}
 
 
 # ---------------------------------------------------------------- L7/L8 endpoints for the portal

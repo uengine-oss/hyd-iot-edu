@@ -22,9 +22,9 @@ FAILURE_STATES = {
 }
 TERMINAL = {"CLOSED", "ESCALATED", "REJECTED_BY_OPERATOR", "RESOLVED_WITHOUT_ACTION"}
 
-ACK_TIMEOUT_S = 30           # wall clock (v3 7.3)
+ACK_TIMEOUT_S = 30           # wall clock (v3 7.3) — 명령 단계 행의 마감(due_date)으로 저장해 폴링이 판정한다
 CMD_EXPIRY_S = 120           # wall clock (v3 7.2)
-REOBSERVE_SIM_S = 15 * 60    # simulated seconds; divided by TIME_SCALE
+REOBSERVE_SIM_S = 15 * 60    # simulated seconds; divided by TIME_SCALE — 재관측 단계 행의 마감으로 저장한다(service_parts._reobserve)
 REOBSERVE_TS1_MAX = 55.0
 REOBSERVE_MAX_EXTENSIONS = 3   # extra third-windows while the value is already inside the limit but the detector CLEAR (hysteresis held 60 s)
                                # has not landed yet. A072 run 4 (1x): one extension ended 3 s before CLEAR arrived → MITIGATION_FAILED on a recovered plant.
@@ -68,8 +68,12 @@ def escalation_cause(reason: str | None) -> tuple[str, bool] | None:
     if reason == "ACK_TIMEOUT":
         return (f"설비 명령의 응답(ACK)이 {ACK_TIMEOUT_S}초 안에 오지 않았습니다 — 명령이 실행됐는지 알 수 없어 재관측하지 않았습니다. "
                 "PLC · 명령 게이트웨이 연결을 확인하세요", False)
+    if reason == "CMD_SEND_FAILED":
+        return ("설비 명령을 명령 통로(Kafka)에 싣지 못했습니다 — 명령이 설비에 닿았는지 알 수 없어 다시 보내지 않고 재관측하지 않았습니다. "
+                "명령 통로 연결을 확인하고 설비 상태를 사람이 확인하세요", False)
     if reason == "PROCESS_RESTART_REVIEW":
-        return ("설비 명령 · 재관측 중에 process 가 다시 시작돼 결과를 끝까지 확인하지 못했습니다 — 설비 상태를 사람이 확인하세요", True)
+        return ("설비 명령의 응답(ACK)을 기다리는 중에 process 가 다시 시작돼 명령이 실행됐는지 알 수 없습니다 — 재관측하지 않았습니다. "
+                "설비 상태를 사람이 확인하세요", False)
     if reason == "UNSUPPORTED_RECOVERY_CRITERION":
         return ("이 경보 패턴에는 회복 기준이 없어 재관측으로 판정하지 못했습니다", True)
     return (f"사건이 에스컬레이션됐습니다(사유 {reason})", True)

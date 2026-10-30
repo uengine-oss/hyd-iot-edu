@@ -7,68 +7,6 @@ uncommitted older enqueue. Projection revisions fence delayed graph deliveries.
 from contextlib import contextmanager
 
 
-class MemoryProjection:
-    def enqueue_projection_cleanup(self, tenant, pid):
-        with self._lock:
-            if not self.projection_status(tenant, pid)['pending']:
-                self._enqueue_projection(dict(tenant_id=tenant, proc_inst_id=pid))
-
-    def enqueue_knowledge_projections(self,tenant):
-        with self._lock:
-            pids={p['proc_inst_id'] for p in self.instances.values() if p['tenant_id']==tenant}
-            pids.update(j['proc_inst_id'] for j in list(self.projection_jobs.values()) if j['tenant_id']==tenant)
-            for pid in pids:self._enqueue_projection(dict(tenant_id=tenant,proc_inst_id=pid))
-
-    def enqueue_incident_projections(self,tenant,incident):
-        with self._lock:
-            for inst in self.instances.values():
-                if inst['tenant_id']==tenant and any(v.get('key')=='incident' and v.get('value')==incident for v in inst.get('variables_data') or []):
-                    self._enqueue_projection(inst)
-
-    def _enqueue_projection(self, row):
-        if row.get('proc_inst_id'):
-            self._projection_sequence += 1
-            self.projection_jobs[self._projection_sequence] = {
-                'id': self._projection_sequence, 'tenant_id': row['tenant_id'],
-                'proc_inst_id': row['proc_inst_id'], 'processed_at': None,
-                'attempts': 0, 'last_error': None}
-
-    def pending_projections(self, tenant, limit=20):
-        with self._lock:
-            blocked={j['proc_inst_id'] for j in self.projection_jobs.values() if not j['processed_at'] and (j['last_error'] or '').startswith('ProjectionConflict:')}
-            return list(dict.fromkeys(j['proc_inst_id'] for j in self.projection_jobs.values()
-                                      if j['tenant_id'] == tenant and not j['processed_at'] and j['proc_inst_id'] not in blocked))[:limit]
-
-    @contextmanager
-    def projection_snapshot(self, tenant, pid):
-        # Memory adapter uses its transaction lock; production holds no source
-        # row lock during graph IO.
-        with self._lock:
-            jobs = [j['id'] for j in self.projection_jobs.values()
-                    if j['tenant_id'] == tenant and j['proc_inst_id'] == pid and not j['processed_at']]
-            if not jobs or any((self.projection_jobs[j]['last_error'] or '').startswith('ProjectionConflict:') for j in jobs):
-                yield None
-                return
-            self._projection_sequence += 1
-            inst = self.get_instance(pid)
-            yield {'ids': jobs, 'revision': self._projection_sequence, 'instance': inst,
-                   'items': self.list_workitems(proc_inst_id=pid, limit=None)}
-
-    def finish_projection(self, snapshot, error=None):
-        with self._lock:
-            for jid in snapshot['ids']:
-                j = self.projection_jobs[jid]
-                j.update(attempts=j['attempts'] + 1, last_error=error,
-                         processed_at=None if error else True, revision=snapshot['revision'])
-
-    def projection_status(self, tenant, pid):
-        with self._lock:
-            jobs = [j for j in self.projection_jobs.values() if j['tenant_id'] == tenant and j['proc_inst_id'] == pid]
-            pending = [j for j in jobs if not j['processed_at']]
-            return {'pending': len(pending), 'last_error': next((j['last_error'] for j in reversed(pending) if j['last_error']), None),
-                    'last_revision': max((j.get('revision', 0) for j in jobs if j['processed_at']), default=None)}
-
-
 class PgProjection:
     def enqueue_projection_cleanup(self, tenant, pid):
         with self._conn() as c:
@@ -131,11 +69,17 @@ class PgProjection:
                 c.execute('select pg_advisory_unlock(hashtextextended(%s,0))', (key,))
 
     def finish_projection(self, snapshot, error=None):
+        """스냅숏이 본 대기열 행을 처리 표시한다. A-01: 처리한 행은 처리 건마다 마지막 하나(마지막 반영 판 last_revision 의 원천)만 남기고
+        지운다 — 처리 표시만 하고 지우지 않아 작업 행이 바뀔 때마다 한 줄씩 끝없이 쌓였다. 아직 처리하지 않은 행은 건드리지 않는다."""
         with self._conn() as c:
-            c.execute('''update execution_projection_outbox set attempts=attempts+1,last_error=%s,revision=%s,
+            done = c.execute('''update execution_projection_outbox set attempts=attempts+1,last_error=%s,revision=%s,
                 processed_at=case when %s::text is null then now() else null end,
-                retry_at=now()+interval '5 seconds' where id=any(%s) and processed_at is null''',
-                      (error, snapshot['revision'], error, snapshot['ids']))
+                retry_at=now()+interval '5 seconds' where id=any(%s) and processed_at is null
+                returning tenant_id,proc_inst_id,id''',
+                      (error, snapshot['revision'], error, snapshot['ids'])).fetchall()
+            if error is None and done:
+                c.execute('''delete from execution_projection_outbox where tenant_id=%s and proc_inst_id=%s
+                    and processed_at is not null and id < %s''', (done[0]['tenant_id'], done[0]['proc_inst_id'], max(r['id'] for r in done)))
 
     def projection_status(self, tenant, pid):
         with self._conn() as c:

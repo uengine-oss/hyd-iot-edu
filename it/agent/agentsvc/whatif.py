@@ -39,7 +39,7 @@ COMPONENT_LABELS = {'bsc': '성과 지표', 'forecast': '예측', 'warn': '경�
 DOC_LOAD = {'kind': '문서', 'where': '설비 모델의 설계 부하 90 % (정상 운전점)', 'ref': 'ot/plant-sim/plantsim/thermal.py · cards.LOAD_DESIGN'}
 DOC_FAN = {'kind': '문서', 'where': '설비 모델의 정상 팬 60 %, 팬 최대 100 % — 업무 DB 팬 최대 추가 전력은 60 → 100 % 증가분',
            'ref': 'thermal.py 정상 운전점 · EMS fan_boost_kw'}
-DOC_TS1 = {'kind': '문서', 'where': '매뉴얼 유온 55 ℃ 기준 (순위 정책 품질 항목과 같은 선)', 'ref': 'HM-7.5 · ranking-default.json quality'}
+DOC_TS1 = {'kind': '문서', 'where': '매뉴얼 유온 55 ℃ 기준 (순위 정책 품질 항목과 같은 선)', 'ref': 'HM-7.5 · 순위 정책 rule:rank-value 의 quality'}
 ASSUME_FX = {'kind': '가정', 'where': '환율 1 % → 수입 부품값 1 % (부품 전량 수입 가정). 방향은 지식 지도의 환율 → 부품 단가 (+, 강함)',
              'ref': 'ext:fx -INFLUENCES(+1, high)-> msr:part-price'}
 ASSUME_RISK = {'kind': '가정', 'where': '원인이 남아 있는 동안 고장 확률 = 운전 시간 ÷ MTBF, 근본 조치 카드(작업지시 포함)는 첫 주에 원인을 없앤다',

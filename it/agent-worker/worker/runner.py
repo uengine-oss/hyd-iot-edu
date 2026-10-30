@@ -1,49 +1,57 @@
 """One claimed work item from start to stored result (process-gpt-cli-agent/executor.py, synchronous).
 
-    fetch_pending_task ─▶ context (form · users · tenant MCP) ─▶ workspace per run ─▶ .mcp.json bridge ─▶ prompt
-      ─▶ coding agent headless (cliagents stream_exec) ─▶ UI events + events rows ─▶ outcome against the form contract
+    fetch_pending_task ─▶ context (form · users · tenant MCP) ─▶ 수업 경계 판정(process) ─▶ workspace per run ─▶ .mcp.json bridge ─▶ prompt
+      ─▶ AI 응답(ai_replay: 실제 CLI · 강사 녹화 재생 · 같은 요청 저장 — 실제 CLI 는 로컬 중계 관문의 실행 토큰으로만 모델을 부른다)
+      ─▶ UI events + events rows ─▶ outcome against the form contract
       ─▶ save_task_result(final=True)  (agent_mode COMPLETE: the row becomes SUBMITTED and the engine takes it from there;
                                         DRAFT: only the draft is stored)
+
+The CLI is Claude Code (settings.PROVIDER) and nothing else. Its work rules (work_rules.constitution — common part + the agent's
+business part) go in with --append-system-prompt: the CLI runs without user · project setting sources (cli_sandbox.cli_args), so
+a CLAUDE.md in the workspace would not be read.
+
+Everything the claim stores goes through one repo that hides this run's secrets (diagnostics.HiddenRepo): events, the result,
+the deferral, stored tool outputs, notifications. A failure the student can act on is a Stop (its sentence is the friendly line);
+any other failure shows one plain sentence and keeps its original only in raw_error.
 
 fetch_pending_task / save_task_result are repo method names kept from the product; PgRepo runs them as HYD's lock-ordered
 SQL (it/process/procsvc/procdb.py). There is no separate lease-renew thread: the lease is renewed inside check_stop on the
 main thread every LEASE_RENEW_EVERY_S (30 s), alongside the cancel check (_stream).
-
-Less is observable with a CLI than with an in-process graph, so more has to be said out loud: a run that could not use its
-tools pauses as a human question, a run that produced prose where the form wanted fields fails instead of storing a shrug,
-a cancelled run says it was cancelled.
 """
 from __future__ import annotations
 
+import hashlib
 import json
-import os
-from pathlib import Path
 import logging
 import time
 import uuid
 from contextlib import nullcontext
 from dataclasses import asdict, replace
+from pathlib import Path
 from typing import Callable, Iterable
 
 from cliagents import ExecEvent, ExecEventKind, ExecRequest, Permission, Surface, registry, stream_exec
-from procsvc import task_deferral, work_rules
+from procsvc import ask, engine, task_deferral, work_rules
 from procsvc.agents_store import SKILL_ROOTS, agent_settings, skill_markdown
+from procsvc.course_ledger import POLICY, digest, reason_in
 
-from . import ai_replay, bridge, context, hitl, outcome, payloads, prompt, workspace, runtime_credentials
+from . import ai_replay, bridge, cli_sandbox, context, diagnostics, hitl, outcome, payloads, prompt, workspace, runtime_credentials
 from . import events as ui_events
-from .settings import Settings, effective_permission, run_allowed_tools, run_disallowed_tools
+from .course_access import CourseAccess, Stop
+from .settings import PROVIDER, Settings, effective_permission, handover_allowed_tools, run_allowed_tools, run_disallowed_tools
 from .process_control import controlled_stream, reap_stale_group
 
 log = logging.getLogger("worker.runner")
 ExecFn = Callable[[object, ExecRequest, dict | None], Iterable[ExecEvent]]
 _PERMISSION_BY_NAME = {p.value: p for p in Permission}
-# A114: the same spellings process-gpt-cli-agent core/selection.py accepts (work item, agent record and chat body never
-# agreed on casing); HYD's earlier cli/agent stay last for definitions written before.
+# A114: the same spellings process-gpt-cli-agent core/selection.py accepts — a definition that names another CLI fails loudly
 _AGENT_KEYS = ("agent_cli", "agentCli", "cli_agent", "cliAgent", "cli", "agent")
 _PERMISSION_KEYS = ("agent_permission", "agentPermission", "permission")
 # G9: said on the case when the agent has no business part — the student sees which rules the agent ran under
 NO_WORK_RULES_NOTICE = ("이 에이전트에는 업무 규칙이 붙어 있지 않아 공통 규칙만 넣었습니다 — 작업 폴더 밖 금지 · 도구로 확인 · "
                         "지어내지 않기 · 승인 전 쓰기 금지 · 근거 인용. 업무 고유 규칙은 에이전트 목표 · 스킬에 적으세요.")
+GENERIC_FAILURE = "에이전트 실행이 실패했습니다. 처리 과정의 원문을 강사에게 보여 주면 원인을 확인할 수 있습니다."
+REQUEST_FORMAT = 1          # 같은 요청 판정 재료의 판(바꾸면 앞선 저장을 다시 쓰지 않는다)
 
 
 def _first(config: dict, keys) -> str | None:
@@ -67,23 +75,26 @@ class LeaseLost(Cancelled):
     drop the run (fencing), but do not tell anyone a person cancelled it."""
 
 
+class RelayStopped(Stop):
+    """로컬 중계 관문 · 강의 중계가 모델 호출을 거절했다 — 문장은 관문 사유 표(course_ledger.REASONS)."""
+    title = "AI 중계 멈춤"
+
+
 class Runner:
-    def __init__(self, s: Settings, repo, exec_fn: ExecFn | None = None, schema_prompt: str | None = None, resolve_provider=None,
-                 ai_mode: str = "live", course_access=None):
+    def __init__(self, s: Settings, repo, *, responses: ai_replay.Responses, course: CourseAccess, exec_fn: ExecFn | None = None,
+                 schema_prompt: str | None = None, resolve_provider=None):
         self.s, self.repo = s, repo
-        self.ai_mode = ai_mode                      # ai_replay: live · record · replay (main 이 정한다)
-        self.exec_fn = exec_fn or _exec_stream
+        self.responses, self.course = responses, course
+        self.exec_fn = exec_fn or _exec_stream       # 실제 CLI 실행(테스트는 바깥 CLI 대체물)
         self.schema_prompt = schema_prompt if schema_prompt is not None else _read(s.schema_prompt_path)
         self.resolve_provider = resolve_provider or _resolve_provider
         self.in_flight = 0
-        self.course_access = course_access
+        self._secrets: list[str] = []
+        self._permitted = False          # 이 점유가 관문 토큰을 받았다(끝날 때 장부 실행을 닫는다)
 
     # ---- polling
     def poll_once(self, on_polled=None) -> int:
         """on_polled: 일거리 조회가 성공한 바로 뒤(작업을 돌리기 전)에 부른다 — 상태 점이 긴 첫 작업 내내 「켜지는 중」으로 남지 않게."""
-        from . import student_execution
-        client=student_execution.configured(self.s)
-        if client is not None:client.reconcile_cancellations(self.repo,self.s.tenant_id)
         claim_owner=f"{self.s.consumer}:{uuid.uuid4().hex}"
         rows = self.repo.fetch_pending_task(self.s.agent_orch, claim_owner, limit=1, tenant_id=self.s.tenant_id)
         if on_polled:
@@ -95,77 +106,75 @@ class Runner:
     def handle(self, row: dict) -> None:
         job_id = f"run-{row['id'][:8]}-{uuid.uuid4().hex}"
         self.in_flight += 1
+        store = self.repo
+        self._secrets = list(diagnostics.ENV_SECRETS)
+        self._permitted = False
+        self.repo = diagnostics.HiddenRepo(store, self._secrets)      # 이 점유가 남기는 것은 모두 여기를 지난다
+        ours = True
+        # 하-03: 이어 할 작업 폴더가 있었는지는 폴더를 만들기 전에 잰다
+        existed = workspace.locate(self.s.workspace_root, row["id"], tenant_id=self.s.tenant_id).exists
         try:
             ctx = context.prepare(self.repo, row, self.s.tenant_id)
-            if self.course_access is not None:
-                from procsvc.engine import variables
-                self.course_access(ctx.definition, row.get('activity_id'),
-                                   variables(self.repo.get_instance(row.get('proc_inst_id')) or {}))
-            from . import student_execution
-            client=student_execution.configured(self.s)
-            if client is not None:
-                if (ctx.definition or {}).get('classroom_agent'):
-                    raise RunFailed('강사 관리 워커에 학생 위임 주소를 함께 설정할 수 없습니다')
-                student_execution.execute(self,row,ctx,job_id,client)
-            else:
-                self.run(row, ctx, job_id)
+            ctx.course = self.course.decide(row, self.s.tenant_id)   # 수업 경계 판정은 서버가 내린다 — 자리 이름은 녹화를 찾는 열쇠
+            self.run(row, ctx, job_id, workspace_existed=existed)
         except Cancelled as stop:
             self.repo.release_worker_claim(row['id'],row['consumer'])
             if isinstance(stop, LeaseLost) or self._reclaimed(row):
+                ours = False
                 log.info("%s %s lease lost: another worker took over", row.get("proc_inst_id"), row.get("activity_id"))
                 self._event(row, job_id, "task_cancelled", {"name": "실행 중단", "goal": "응답이 끊긴 사이 다른 실행기가 이 작업을 이어받았습니다."}, crew_type="agent")
             else:
                 log.info("%s %s cancelled by a person", row.get("proc_inst_id"), row.get("activity_id"))
                 self._event(row, job_id, "task_cancelled", {"name": "작업 취소", "goal": "담당자가 실행을 취소했습니다."}, crew_type="agent")
         except Exception as e:  # noqa: BLE001 — every failure path ends in a DB state, never a lost claim
-            self._fail(row, job_id, e)
+            ours = self._fail(row, job_id, e)
         finally:
             self.in_flight -= 1
-            try:    # A096: no tenant credential stays in the retained workspace after the run (install() rewrites them next run)
-                workdir = workspace.for_run(self.s.workspace_root, row["id"], tenant_id=self.s.tenant_id).path
-                bridge.cleanup(workdir)
-                from .managed_isolation import cleanup_skills
-                cleanup_skills(workdir)
-            except Exception as e:  # noqa: BLE001
-                log.warning("%s workspace credential cleanup failed: %s", row.get("id"), e)
+            self.repo = store
+            if self._permitted:
+                try:      # 끝 상태를 작업 행에 쓴 뒤 닫는다. 닿지 못하면 관문이 다음 판정 때 작업 행으로 닫는다(course_ledger._close_ended)
+                    self.course.end(row, self.s.tenant_id)
+                except Stop as e:
+                    log.warning("%s 관문 장부 실행을 닫지 못했습니다(다음 판정 때 작업 행으로 닫힘): %s", row.get("id"), e)
+            if ours:      # 하-02: 다른 워커가 이어받은 작업 폴더의 자격 정보는 그 워커 것이다 — 지우지 않는다
+                try:    # A096: no tenant credential stays in the retained workspace after the run (install() rewrites them next run)
+                    workdir = workspace.locate(self.s.workspace_root, row["id"], tenant_id=self.s.tenant_id).path
+                    bridge.cleanup(workdir)
+                    cli_sandbox.cleanup_skills(workdir)
+                except Exception as e:  # noqa: BLE001
+                    log.warning("%s workspace credential cleanup failed: %s", row.get("id"), e)
+            else:
+                log.info("%s workspace left to the worker that took the claim over", row.get("id"))
 
     # ---- one run
-    def run(self, row: dict, ctx: context.Context, job_id: str) -> None:
-        deadline = time.monotonic() + self.s.run_timeout_s
+    def run(self, row: dict, ctx: context.Context, job_id: str, *, workspace_existed: bool = True) -> None:
         caps = context.activity_capabilities(ctx.definition, row.get("activity_id") or "")
         config = caps.get("agent_config") or {}
-        # A114 (process-gpt-cli-agent core/selection.py _AGENT_KEYS · vue3 AgentSelectField.vue:327): the product UI stores
-        # the choice as agent_cli; reading only cli/agent ran a definition set to Codex as Claude Code without a word.
-        provider_id = str(_first(config, _AGENT_KEYS) or self.s.cli_agent)
+        named = _first(config, _AGENT_KEYS)
+        if named not in (None, PROVIDER):
+            raise Stop(f"이 단계에 지정된 실행기({named})는 이 시스템에 없습니다 — AI 단계는 Claude Code 하나로 실행합니다. "
+                       "흐름의 에이전트 설정에서 실행기 칸을 비우세요.")
+        live = self.responses.mode != "replay"
         handover_task = ctx.form_contract == 'shift-handover-draft-v1'
         result_check_task = ctx.form_contract == 'manual-source-proposal-v1'
-        if handover_task and provider_id != 'claude-code':
-            raise ValueError('교대 인수인계의 도구 제한은 현재 강의 Claude Code 실행기에서 검증됐습니다')
-        # U2 (TODO A2): the assigned agent's settings — model · MCP servers · skills · profile text — from the one source
+        question_task = row.get('proc_def_id') == ask.DEFINITION_ID and ctx.form_contract == ask.CONTRACT
+        # U2 (TODO A2): the assigned agent's settings — MCP servers · skills · profile text — from the one source
         # (users · agent_skills · tenant_skills) through the same function the portal and a trial run read.
-        # Model: the activity's agentConfig > the agent's model > the worker default.
         agent = agent_settings(self.repo, self.s.tenant_id, ctx.profile, activity=caps)
-        if row.get('proc_def_id') == 'ask_agent' and ctx.form_contract == 'ask-answer-v1':
-            from procsvc import ask, engine
-            instance = self.repo.get_instance(row['proc_inst_id'])
+        instance = self.repo.get_instance(row['proc_inst_id']) if row.get('proc_inst_id') else None
+        values = engine.variables(instance) if instance else {}
+        if question_task:
             if not instance:
-                raise RunFailed('질문 처리 건을 확인할 수 없습니다.')
-            values = engine.variables(instance)
+                raise Stop('질문 처리 건을 찾을 수 없습니다. 질문을 다시 보내세요.')
             binding = (values.get('_runtime_coalescing') or {}).get('key')
-            # Legacy in-flight questions predate this binding; retain their
-            # recovery path. New questions must use their original settings.
             if binding and binding != ask.execution_binding(values.get('question'), agent, version=instance.get('proc_def_version')):
-                raise RunFailed('질문을 보낸 뒤 에이전트 설정이 바뀌었습니다. 기존 설정으로 되돌려 재개하거나 기존 질문을 종료한 뒤 새 질문을 보내세요.')
-        model = agent.model or self.s.model
-        if self.course_access is not None:
-            if provider_id != 'claude-code':raise RunFailed('수업 실행기는 강사가 지정한 기본 실행기를 사용합니다.')
-            model = 'coding'
-        permission = effective_permission(provider_id, _PERMISSION_BY_NAME.get(str(_first(config, _PERMISSION_KEYS) or ""), self.s.default_permission))
-        provider = self.resolve_provider(provider_id)
+                raise Stop('질문을 보낸 뒤 에이전트 설정이 바뀌었습니다. 기존 설정으로 되돌려 재개하거나 기존 질문을 종료한 뒤 새 질문을 보내세요.')
+        permission = effective_permission(PROVIDER, _PERMISSION_BY_NAME.get(str(_first(config, _PERMISSION_KEYS) or ""), self.s.default_permission))
+        provider = self.resolve_provider()
         ws = workspace.for_run(self.s.workspace_root, row["id"], tenant_id=self.s.tenant_id)
         # W1 (2026-10-23 검수): a worker that died without unwinding (SIGKILL, OOM) left its CLI running in this workspace —
         # kill that process group first, so it cannot write output/result.json after the clear below and pass as this run.
-        orphan = reap_stale_group(ws.path) if ws.exists else None
+        orphan = reap_stale_group(ws.path) if workspace_existed else None
         if orphan is not None:
             log.warning("%s killed CLI process group %s left by an earlier worker process", row.get("id"), orphan)
             self._event(row, job_id, "task_working", {"type": "notice", "content": "이전 실행기가 남긴 에이전트 프로세스를 끝내고 새로 시작합니다."}, crew_type="agent")
@@ -174,7 +183,7 @@ class Runner:
         # (UnknownWorkRules, its reason on the case); no key = common part only, said on the case — never a silent default business.
         rules = work_rules.rules_for(agent.work_rules)
         constitution = work_rules.constitution(rules)
-        written = workspace.provision(ws, agent_id=provider_id, constitution=constitution, schema_prompt=self.schema_prompt,
+        written = workspace.provision(ws, agent_id=PROVIDER, schema_prompt=self.schema_prompt,
                             task={"id": row["id"], "proc_inst_id": row.get("proc_inst_id"), "activity_id": row.get("activity_id"),
                                   "activity_name": row.get("activity_name"), "form_id": ctx.form_id, "form_fields": ctx.form_fields,
                                   "process_scope": context.process_scope(row), "query": row.get("query"),
@@ -186,60 +195,61 @@ class Runner:
             log.info("%s %s skills in the workspace: %s", row.get("proc_inst_id"), row.get("activity_id"), ", ".join(written) or "-")
         # A161-G1: the skills this run actually had (name · content hash · where it came from), recorded on the instance before the
         # CLI starts — the portal showed the agent's *current* setting, which an edit after the run silently changes.
-        # Every run's task_started row carries the list (empty = no skill); a run with skills also gets its own skills_provided row.
-        provided = _provided_skills(ws, agent.skills, provider_id, activity_skills=caps.get("skills") or [])
-        skill_text = ''
-        if provider_id == 'codex':
-            from .skill_context import inline_skills
-            skill_text = inline_skills(ws, agent.skills, provided, provider_id)
+        provided = _provided_skills(ws, agent.skills, activity_skills=caps.get("skills") or [])
         if provided or agent.missing_skills:
-            self._event(row, job_id, "task_working", ui_events.skills_provided(provided, cli=provider_id, missing=agent.missing_skills).as_dict(),
+            self._event(row, job_id, "task_working", ui_events.skills_provided(provided, cli=PROVIDER, missing=agent.missing_skills).as_dict(),
                         crew_type="agent")
         if agent.missing_skills:    # the product names a skill that did not arrive (cli-agent executor.py:181-189); silence would read as "ignored my skill"
             log.warning("%s %s assigned skills with no stored text: %s", row.get("proc_inst_id"), row.get("activity_id"), ", ".join(agent.missing_skills))
             self._event(row, job_id, "task_working", {"type": "notice", "content": "배정된 스킬 중 저장된 본문이 없어 넣지 못한 것이 있습니다: " + ", ".join(agent.missing_skills)}, crew_type="agent")
-        from . import managed_model
-        remote_agent=bool((ctx.definition or {}).get('classroom_agent'))
-        question_task = self.ai_mode != 'replay' and self.course_access is not None and row.get('proc_def_id') == 'ask_agent' and ctx.form_contract == 'ask-answer-v1' and not remote_agent
-        managed=None
-        if remote_agent:
-            from . import managed_tools
-            managed=managed_model.attach(row,self.s.tenant_id,provider_id)
-            tenant_mcp,read_tools=managed_tools.attach(managed,ws.path,handover=handover_task)
-            missing_tools=[]
-            gate=bridge.Gate(config=tenant_mcp,read_tools=read_tools)
-        else:
-            tenant_mcp, missing_tools = bridge.select_servers(ctx.tenant_mcp, [] if question_task and agent.tools is None else agent.tools)      # A095 + U2
-            tenant_mcp = runtime_credentials.attach(tenant_mcp, row, self.s.tenant_id)
-            gate = bridge.gate_servers(tenant_mcp, trusted=_trusted_servers(self.s.allowed_tools))
+        questions_live = question_task and live
+        tenant_mcp, missing_tools = bridge.select_servers(ctx.tenant_mcp, [] if questions_live and agent.tools is None else agent.tools)  # A095 + U2
+        tenant_mcp = runtime_credentials.attach(tenant_mcp, row, self.s.tenant_id, process_url=self.s.process_url, key_file=self.s.runtime_key_file)
+        gate = bridge.gate_servers(tenant_mcp, trusted=_trusted_servers(self.s.allowed_tools))
         if missing_tools:
             log.warning("%s %s declares MCP tools the tenant does not have: %s", row.get("proc_inst_id"), row.get("activity_id"), ", ".join(missing_tools))
             self._event(row, job_id, "task_working", {"type": "notice", "content": "등록되지 않은 도구 서버는 연결하지 못했습니다: " + ", ".join(missing_tools)}, crew_type="agent")
         if agent.tools == []:
             self._event(row, job_id, "task_working", {"type": "notice", "content": "에이전트의 도구와 이 단계가 허용한 도구가 겹치지 않아 도구 서버 없이 실행합니다."}, crew_type="agent")
         tenant_mcp = gate.config
-        if question_task:
+        selected = tenant_mcp     # 이 단계에 고른 도구 서버(같은 요청 판정 재료 — 아래 질문 창구 · 결과 검사 창구는 작업 폴더마다 경로가 달라 넣지 않는다)
+        if questions_live:
             from . import question_tools
-            tenant_mcp, question_reads = question_tools.attach(tenant_mcp, ws.path, os.getenv('HYD_MANAGED_MODEL_URL', ''))
-            gate.read_tools = question_reads
+            tenant_mcp, gate.read_tools = question_tools.attach(tenant_mcp, ws.path, self.s.process_url)
         if gate.dropped:
             log.warning("%s %s MCP servers left out by the connection-check gate: %s", row.get("proc_inst_id"), row.get("activity_id"), gate.dropped)
             self._event(row, job_id, "task_working", {"type": "notice", "content": "연결 검사 게이트로 연결하지 않은 도구 서버: "
                                                       + ", ".join(f"{n}({why})" for n, why in gate.dropped.items())}, crew_type="agent")
-        extras = dict(ctx.extras, agent_instructions=agent.instructions(SKILL_ROOTS.get(provider_id, SKILL_ROOTS["claude-code"]),
-                                                                      skills_inline=provider_id == 'codex'))
-        if remote_agent:
-            extras['tenant_mcp']={'mcpServers':{name:{'transport':'managed-student','tools':tools} for name,tools in gate.read_tools.items()}}
+        extras = dict(ctx.extras, agent_instructions=agent.instructions(SKILL_ROOTS[PROVIDER]))
         (ws.context_dir / 'input.json').write_text(json.dumps(prompt.input_payload(row, extras), ensure_ascii=False, indent=2), encoding='utf-8')
         if result_check_task:
             from . import result_check
             tenant_mcp = result_check.attach(tenant_mcp, ws.path, self.s.max_result_file_bytes)
             gate.read_tools[result_check.SERVER] = [result_check.TOOL]
-        bridged = bridge.install(ws.path, tenant_mcp, provider_id=provider_id, isolate_config_dir=self.s.isolate_config_dir,
-                                 host_rewrite=bridge.parse_host_rewrite(self.s.mcp_host_rewrite), read_tools=gate.read_tools,
+        bridged = bridge.install(ws.path, tenant_mcp, host_rewrite=bridge.parse_host_rewrite(self.s.mcp_host_rewrite),
                                  run_headers={"X-HYD-Process-Scope": json.dumps(context.process_scope(row), separators=(",", ":"))})
+        self._secrets.extend(bridged.redaction_values)
+        servers = sorted(((tenant_mcp or {}).get("mcpServers") or {}).keys())
+        if handover_task:
+            allowed = handover_allowed_tools(self.s.allowed_tools, servers)
+        elif questions_live:
+            reads = [f'mcp__{server}__{tool}' for server in servers for tool in gate.read_tools.get(server, ())]
+            allowed = run_allowed_tools([t for t in self.s.allowed_tools if not t.startswith('mcp__')], [], {}) + reads
+        else:
+            allowed = run_allowed_tools(self.s.allowed_tools, servers, gate.read_tools)
+        # B-03: 업무 규칙은 시스템 프롬프트로 — 설정 출처를 끈 CLI 는 작업 폴더의 규칙 파일을 읽지 않는다
+        extra_args = [*bridged.extra_args, "--append-system-prompt", constitution, "--allowedTools", ",".join(allowed),
+                      "--disallowedTools", ",".join(run_disallowed_tools(gate.blocked_tools)), *cli_sandbox.cli_args(ws.path, agent.skills)]
+        # The course gateway is a compatible gateway, not Claude's deferred-tool protocol: load the approved MCP schemas eagerly.
+        env = dict(bridged.env or {}, ENABLE_TOOL_SEARCH='false')
+        slot = (ctx.course or {}).get('slot')
+        claim = self.responses.claim(
+            cli=self.exec_fn, slot=slot, case=ai_replay.course_case(slot, values), attempt=ai_replay.attempt_of(row),
+            request_key=_request_key(row, ctx, agent, constitution, self.schema_prompt, extras, selected, gate, allowed) if live else None,
+            step=str(row.get("activity_name") or ""), provider=PROVIDER,
+            source={"todo_id": str(row["id"]), "generation": int(row.get("generation") or 0)}, accepted=self._accepted)
         if ctx.human_answer:
-            plan = hitl.durable_resume(row) or hitl.plan_resume(ws.path, workspace_exists=ws.exists)
+            plan = hitl.durable_resume(row) or hitl.plan_resume(ws.path, workspace_exists=workspace_existed)
             hitl.clear(ws.path)     # A144: the pending question is answered; a stale cache must not count a later re-ask as a duplicate
             text = prompt.resume_prompt(ctx.human_answer, previous_summary=str(row.get("draft") or "")[:2000], restarted=plan.restarted,
                                        process_scope=context.process_scope(row))
@@ -249,69 +259,38 @@ class Runner:
                 self._event(row, job_id, "task_working", {"type": "notice", "content": f"이전 실행을 이어갈 수 없어 새로 시작합니다. ({plan.reason})"}, crew_type="agent")
         else:
             text = prompt.build(row, extras, workdir=str(ws.path))
-            resume_session = _session_of(row)
-        extra_args = list(bridged.extra_args)
-        if provider_id == "claude-code":
-            extra_args += ["--append-system-prompt", prompt.LANGUAGE_RULE]
-        if provider_id == "codex":
-            # This is a business task, not a developer resuming the parent repo.
-            # Codex skips inherited AGENTS files; supply only this run's contract.
-            text = constitution + "\n\n## Ontology schema\n" + self.schema_prompt + "\n\n" + text
-            if skill_text:
-                text += '\n\n' + skill_text
-            extra_args += ["-c", "model_reasoning_effort=" + json.dumps(config.get("reasoning_effort") or self.s.reasoning_effort)]
-            if self.s.codex_model_provider_base_url:
-                # Codex 0.151 accepts only wire_api="responses"; the LiteLLM relay serves /v1/responses (route check 2026-10-19).
-                table = ", ".join(f"{k}={json.dumps(v, ensure_ascii=False)}" for k, v in (
-                    ("name", self.s.codex_model_provider_name), ("base_url", self.s.codex_model_provider_base_url),
-                    ("env_key", self.s.codex_model_provider_env_key), ("wire_api", "responses")))
-                extra_args += ["-c", "model_provider=hydllm", "-c", "model_providers.hydllm={" + table + "}"]
-                if not agent.model and self.s.codex_model:
-                    model = self.s.codex_model
-        if provider_id == "claude-code":
-            servers = sorted(((tenant_mcp or {}).get("mcpServers") or {}).keys())
-            if handover_task:
-                from .settings import handover_allowed_tools
-                extra_args += ['--allowedTools', ','.join(handover_allowed_tools(
-                    self.s.allowed_tools, servers, gate.read_tools if remote_agent else None))]
-            elif question_task:
-                native = [tool for tool in self.s.allowed_tools if not tool.startswith('mcp__')]
-                reads = [f'mcp__{server}__{tool}' for server in servers for tool in gate.read_tools.get(server, ())]
-                extra_args += ['--allowedTools', ','.join(run_allowed_tools(native, [], {}) + reads)]
-            elif self.s.allowed_tools or result_check_task or remote_agent:
-                extra_args += ["--allowedTools", ",".join(run_allowed_tools(self.s.allowed_tools, servers, gate.read_tools))]
-            denied = run_disallowed_tools(gate.blocked_tools)
-            if handover_task:
-                denied.append('mcp__hyd-dmn__submit_decision')
-            if denied:
-                extra_args += ["--disallowedTools", ",".join(denied)]
-        # 재생은 CLI·모델을 부르지 않는다 — 실행 토큰을 받으면 키 없는 PC(process에 LLM_API_KEY 없음)에서 여기서 멈춘다(K1, 2026-10-28)
-        if not remote_agent and self.ai_mode != 'replay':
-            managed = managed_model.attach(row, self.s.tenant_id, provider_id)
-        if managed:
-            from .managed_isolation import cli_args
-            extra_args += cli_args(ws.path, agent.skills)
-            model = managed['model']
-            bridged.env = dict(bridged.env or {}, **managed['env'])
-            bridged.redaction_values.extend(managed['secrets'])
-            if managed.get('deadline') is not None:
-                deadline = min(deadline, time.monotonic()+max(0, managed['deadline']-time.time()))
-        if provider_id == 'claude-code' and (managed or self.course_access is not None):
-            # Luna uses a compatible gateway, not Claude's deferred-tool protocol.
-            # Load the approved MCP schemas eagerly; permissions stay unchanged.
-            bridged.env = dict(bridged.env or {}, ENABLE_TOOL_SEARCH='false')
+            # #10: 임대 만료 뒤 재점유(워커 재시작 · 끊김)는 끝나지 않은 실행을 이어 받는다 — 다시 낸 응답이면 그 실행을 처음부터 다시 낸다
+            resume_session = claim.resumable(ai_replay.resume_after(_session_of(row), reclaimed=int(row.get("claim_count") or 1) > 1))
         if result_check_task:
             text += '\n\n' + result_check.INSTRUCTION
-        text = _deliver_prompt(text, ws, self.s.max_inline_prompt_chars, provider_id=provider_id)
-        request = ExecRequest(prompt=text, workdir=str(ws.path), model=model, permission=permission, resume_session=resume_session, extra_args=extra_args)
-        crew = f"{self.s.agent_orch}:{provider_id}"
-        self._event(row, job_id, "task_started", dict(ui_events.task_started(row, getattr(provider, "display_name", provider_id)),
+        text = _deliver_prompt(text, ws, self.s.max_inline_prompt_chars)
+        request = ExecRequest(prompt=text, workdir=str(ws.path), model=None, permission=permission, resume_session=resume_session, extra_args=extra_args)
+        timing = {"deadline": time.monotonic() + self.s.run_timeout_s, "limit": self.s.run_timeout_s}
+        permit: dict = {}
+
+        def stream(req):
+            """한 스트림: 실제 CLI 면 이 점유의 관문 토큰(처음 한 번 받는다)으로 모델을 부르게 하고, 다시 낼 응답이면 토큰 없이."""
+            run_env = env
+            if claim.needs_model(req):
+                if not permit:
+                    permit.update(self.course.permit(row, self.s.tenant_id))
+                    self._permitted = True
+                    self._secrets.extend(permit['secrets'])
+                    if permit.get('deadline') is not None:      # B-01: 관문 실행 기한(한 번의 실행)이 더 짧으면 그것이 한도다
+                        left = max(0.0, permit['deadline'] - time.time())
+                        if time.monotonic() + left < timing["deadline"]:
+                            timing.update(deadline=time.monotonic() + left, limit=left)
+                req = replace(req, model=permit['model'])
+                run_env = dict(env, **permit['env'])
+            return req, self._stream(row, job_id, provider, req, run_env, claim, f"{self.s.agent_orch}:{PROVIDER}",
+                                     trace_path=ws.path / f"{job_id}.events.jsonl", skills=provided,
+                                     deadline=timing["deadline"], limit_s=timing["limit"])
+
+        self._event(row, job_id, "task_started", dict(ui_events.task_started(row, getattr(provider, "display_name", PROVIDER)),
                                                       skills=provided, skills_missing=list(agent.missing_skills)), crew_type="result")
-        final_text, session_id, paused = self._stream(row, job_id, provider, request, bridged.env or None, crew,
-                                                       trace_path=ws.path / f"{job_id}.events.jsonl", skills=provided,
-                                                       redaction_values=bridged.redaction_values, deadline=deadline)
-        # 저장된 응답임을 알리되 결과 검사·교정은 live와 같은 경로를 쓴다.
-        found = ai_replay.used_notice(getattr(self.exec_fn, "last", None)) if self.ai_mode == "replay" else None
+        request, (final_text, session_id, paused) = stream(request)
+        # 다시 낸 응답임을 알리되 결과 검사·교정은 실제 실행과 같은 경로를 쓴다.
+        found = claim.notice()
         if found:
             self._event(row, job_id, "task_working", {"type": "notice", "content": found}, crew_type="agent")
         corrections = 0
@@ -331,12 +310,15 @@ class Runner:
                 task_deferral.defer(self.repo,self.s.tenant_id,row['id'],expected_consumer=row['consumer'],
                                     request_id=job_id,assessment=assessment,session_id=session_id or None)
                 hitl.clear(ws.path)
+                claim.keep("deferred", self._secrets)
                 return
             if question is not None:
-                self._pause(row, ws, provider_id, session_id or "", question['question'], job_id, options=question['options'])
+                self._pause(row, ws, PROVIDER, session_id or "", question['question'], job_id, options=question['options'])
+                claim.keep("asked", self._secrets)
                 return
             if paused is not None and not result.contract_met:
-                self._pause(row, ws, provider_id, session_id or "", paused, job_id)
+                self._pause(row, ws, PROVIDER, session_id or "", paused, job_id)
+                claim.keep("asked", self._secrets)
                 return
             if result.contract_met or not session_id or corrections >= self.s.max_format_corrections:
                 break
@@ -345,12 +327,8 @@ class Runner:
             correction = prompt.format_correction(result.mismatch_reason, ctx.form_fields, form_contract=ctx.form_contract)
             if result_check_task:
                 correction += '\n\n' + result_check.INSTRUCTION
-            if skill_text:
-                correction += '\n\n' + skill_text
-            request = replace(request, prompt=_deliver_prompt(correction, ws, self.s.max_inline_prompt_chars, provider_id=provider_id),
-                              resume_session=session_id)
-            final_text, resumed, paused = self._stream(row, job_id, provider, request, bridged.env or None, crew, trace_path=ws.path / f"{job_id}.events.jsonl",
-                                                  skills=provided, redaction_values=bridged.redaction_values, deadline=deadline)
+            request, (final_text, resumed, paused) = stream(replace(request, prompt=_deliver_prompt(correction, ws, self.s.max_inline_prompt_chars),
+                                                                    resume_session=session_id))
             session_id = resumed or session_id
         if not result.contract_met:
             raise RunFailed(f"결과가 요구된 출력 형식과 맞지 않습니다: {result.mismatch_reason}\n\n에이전트 응답:\n{result.raw_text[:1000]}")
@@ -364,19 +342,26 @@ class Runner:
         self._event(row, job_id, "task_completed", {"output_keys": sorted(result.outputs), "text": result.raw_text[:2000], "session_id": session_id,
                                                    "result_source": result.source}, crew_type="result")
         hitl.clear(ws.path)
+        claim.keep("submitted", self._secrets)
         (ws.path / "outputs").mkdir(exist_ok=True)
-        (ws.path / "outputs" / "result.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        (ws.path / "outputs" / "result.json").write_text(json.dumps(diagnostics.hide(payload, self._secrets), ensure_ascii=False, indent=2),
+                                                         encoding="utf-8")
         log.info("%s %s submitted (%s) from %s", row.get("proc_inst_id"), row.get("activity_id"), ", ".join(sorted(result.outputs)) or "text", result.source)
 
-    def _stream(self, row: dict, job_id: str, provider, request: ExecRequest, env: dict | None, crew: str, trace_path=None,
-                skills: list[dict] | None = None, redaction_values: list[str] | None = None,
-                deadline: float | None = None) -> tuple[str, str | None, str | None]:
+    def _accepted(self, source: dict) -> bool:
+        """같은 요청 저장을 다시 써도 되는가: 저장한 실행의 작업이 지금도 그 세대로 끝남(처리 흐름이 결과를 받아들임)."""
+        row = self.repo.get_workitem(str(source.get("todo_id") or "")) if source.get("todo_id") else None
+        return bool(row) and row.get("status") == "DONE" and int(row.get("generation") or 0) == int(source.get("generation") or 0)
+
+    def _stream(self, row: dict, job_id: str, provider, request: ExecRequest, env: dict | None, responses, crew: str, trace_path=None,
+                skills: list[dict] | None = None, deadline: float | None = None, limit_s: float | None = None) -> tuple[str, str | None, str | None]:
         """Forward progress to the events table; stop when a person cancels. Returns (final text, session, pause reason)."""
         final_text, session_id, pause_reason, streamed, pending_rows, last_error = "", None, None, [], [], None
         persisted_session = request.resume_session
         last_check = time.monotonic()
+        limit_s = limit_s or self.s.run_timeout_s
         if deadline is None:
-            deadline = last_check + self.s.run_timeout_s
+            deadline = last_check + limit_s
         last_renew = time.monotonic()
         outage = {"since": None}
         def db_ok():
@@ -418,21 +403,20 @@ class Runner:
                     if self._reclaimed(row):raise LeaseLost()
                     if self._cancelled(row):raise Cancelled()
             if time.monotonic()>deadline:
-                raise RunFailed(f"실행 제한 시간을 초과했습니다({self.s.run_timeout_s:g}s). 지금까지의 산출물은 보존됩니다.")
+                raise Stop(f"AI 단계가 한 번 실행 시간({_duration(limit_s)})을 넘어 멈췄습니다. 같은 단계를 다시 실행하면 새로 "
+                           "시작합니다(작업 폴더에 쓴 것은 남아 있습니다).")
         check_stop()
-        gen = (self.exec_fn(provider,request,env,check_stop=check_stop)
-               if self.exec_fn is _exec_stream or getattr(self.exec_fn, "accepts_check_stop", False)
-               else self.exec_fn(provider,request,env))
+        gen = responses(provider, request, env, check_stop=check_stop)
         trace = trace_path.open("a", encoding="utf-8") if trace_path else None
         console = ui_events.ConsoleLog()                      # U1: tool call start/end as one terminal line each
         notes = ui_events.NoteBuffer(limit=None)              # Public prose stays complete; private THINKING is never recorded.
-        from uuid import uuid4
-        public_run = uuid4().hex
+        public_run = uuid.uuid4().hex
         public_message, public_sequence, public_parts = 0, 0, []
         public_sent = 0
         public_chars = 0
         public_last_sent = None
-        skill_reads = ui_events.SkillReads(skills)            # A161-G1: a skill file the agent opens becomes a skill_used row
+        # A161-G1: a skill file the agent opens becomes a skill_used row. 재생이면 그 요청은 녹화한 실행의 것이다(events.SkillReads)
+        skill_reads = ui_events.SkillReads(skills, recorded=self.responses.mode == "replay")
         def emit(ui):
             line = console.line(ui, row)
             if line:
@@ -442,11 +426,8 @@ class Runner:
                 pending_rows.append(r)
         try:
             for ev in gen:
-                if redaction_values:
-                    from procsvc.mcp_secrets import redact
-                    ev = replace(ev, **redact(asdict(ev), redaction_values))
                 if trace:
-                    trace.write(json.dumps(asdict(ev), ensure_ascii=False, default=str) + "\n")
+                    trace.write(json.dumps(diagnostics.hide(asdict(ev), self._secrets), ensure_ascii=False, default=str) + "\n")
                     trace.flush()
                 if ev.session_id:
                     session_id = ev.session_id
@@ -472,11 +453,9 @@ class Runner:
                 elif ev.kind is ExecEventKind.PERMISSION_REQUEST:
                     pause_reason = pause_reason or (ev.text or "권한이 필요합니다")      # first refusal wins
                 elif ev.kind is ExecEventKind.ERROR and not final_text:
-                    # Codex reports non-fatal notices as error items too (custom model provider: "Model metadata for … not
-                    # found. Defaulting to fallback metadata", live 2026-10-06) and then continues with the turn. Judge at
-                    # the end of the stream: a run that still ends without a result fails with the last reported error.
+                    # A non-fatal notice can arrive as an error item and the turn continues. Judge at the end of the stream:
+                    # a run that still ends without a result fails with the last reported error (_fail turns it into one sentence).
                     last_error = ev.text or "agent error"
-                    self._event(row, job_id, "task_working", {"type": "notice", "content": f"에이전트 오류 보고(이어지는 결과를 확인합니다): {last_error[:500]}"}, crew_type=crew)
                 if ev.kind is ExecEventKind.ASSISTANT_TEXT:
                     notes.add(ev.text)
                     public_parts.append(ev.text or '')
@@ -515,8 +494,7 @@ class Runner:
                             **({'full_input':dict(metadata,direction='input')} if metadata else {})))
                     if ui.type == "tool_end":
                         ui = self._keep_full_output(ui, ev, row, job_id,
-                            allowed_directory=payloads.result_directory(request.workdir, session_id, env)
-                            if crew.endswith(":claude-code") else None, redaction_values=redaction_values)
+                            allowed_directory=payloads.result_directory(request.workdir, session_id, env))
                     emit(ui)
                 if ev.kind is ExecEventKind.TOOL_START:
                     for ui in skill_reads.on_tool_start(ev):
@@ -530,11 +508,6 @@ class Runner:
                         pending_rows = []
                         db_ok()
                 check_stop()
-        except Exception as exc:
-            if redaction_values and not isinstance(exc, Cancelled):
-                from procsvc.mcp_secrets import redact
-                raise RunFailed(redact(str(exc), redaction_values)) from None
-            raise
         finally:
             if trace:
                 trace.close()
@@ -560,28 +533,23 @@ class Runner:
             raise RunFailed(last_error)
         return (final_text or "".join(streamed)).strip(), session_id, pause_reason
 
-    def _keep_full_output(self, ui: ui_events.UiEvent, ev: ExecEvent, row: dict, job_id: str, *, allowed_directory: Path | None = None,
-                          redaction_values: list[str] | None = None) -> ui_events.UiEvent:
+    def _keep_full_output(self, ui: ui_events.UiEvent, ev: ExecEvent, row: dict, job_id: str, *,
+                          allowed_directory: Path | None = None) -> ui_events.UiEvent:
         """A161-G2: a tool result the row cannot hold whole (the CLI moved it to a temp file, or the preview cut it) is stored once in
         event_payloads and the tool_end row gets `full_output` (ref · summary). A storage failure is said in the row, never fatal."""
         raw = ev.text or ev.tool_output
         captured = payloads.capture(raw, preview_cut=ui_events.preview_cut(raw), allowed_directory=allowed_directory)
         if captured is None:
             return ui
-        if redaction_values:
-            from procsvc.mcp_secrets import redact
-            captured = redact(captured, redaction_values)
+        captured = diagnostics.hide(captured, self._secrets)     # the summary on the row is cut from it
         if captured.get("content") is None:
             return ui_events.UiEvent(ui.type, dict(ui.data, full_output=payloads.unread_reference(captured)))
         payload, summary = payloads.payload_row(captured, tool=ui.data.get("tool") or "tool", tool_use_id=ev.tool_use_id, job_id=job_id,
                                                 todo_id=row["id"], proc_inst_id=row.get("proc_inst_id"))
-        store = getattr(self.repo, "store_event_payload", None)
         try:
-            if store is None:
-                raise RuntimeError("이 저장소는 도구 결과 원문 저장을 지원하지 않습니다")
             if not payload["proc_inst_id"]:      # the portal reads a payload only through its case (tenant check) — none, no row
                 raise RuntimeError("처리 건(proc_inst_id)이 없는 작업이라 원문을 저장하지 않았습니다")
-            store(payload)
+            self.repo.store_event_payload(payload)
             ref = payloads.reference(payload, summary, stored=True)
         except Exception as e:  # noqa: BLE001 — the trace keeps going; the row says the original was not kept
             log.warning("%s %s full tool result not stored: %s", row.get("proc_inst_id"), ui.data.get("tool"), e)
@@ -647,57 +615,61 @@ class Runner:
             log.exception('pending file cache failed; question/session already persisted in DB')
         log.info("%s %s paused for a person: %s", row.get("proc_inst_id"), row.get("activity_id"), question[:80])
 
-    def _fail(self, row: dict, job_id: str, err: Exception) -> None:
+    def _fail(self, row: dict, job_id: str, err: Exception) -> bool:
+        """실패를 그 작업에 남긴다. False = 이 점유가 이미 남의 것(늦게 온 실패는 버린다)."""
         if not self.repo.update_task_error(row['id'],expected_consumer=row['consumer']):
             self.repo.release_worker_claim(row['id'],row['consumer'])
             self._event(row,job_id,'task_cancelled',{'name':'실행 결과 폐기','goal':'작업 취소 또는 점유 변경 후 도착한 오류'},crew_type='agent')
-            return
-        from .diagnostics import excerpt
-        msg = excerpt(f"{type(err).__name__}: {err}")
-        log.warning("%s %s failed: %s", row.get("proc_inst_id"), row.get("activity_id"), msg)
-        connection_error = isinstance(err, runtime_credentials.RuntimeConnectionError)
-        from hydcommon.course_access import AccessDenied
-        course_locked = isinstance(err, AccessDenied)
-        # Only the replay's own guidance is written for people. Other RunFailed text can carry a remote or agent body,
-        # which public consumers must not show (test_worker_oauth_runtime).
-        people = isinstance(err, RunFailed) and str(err).startswith(ai_replay.ERROR_PREFIX)
-        hint = relay_hint(msg) or (str(err) if people else None)
+            return False
+        raw = diagnostics.excerpt(f"{type(err).__name__}: {err}", secrets=self._secrets)
+        log.warning("%s %s failed: %s", row.get("proc_inst_id"), row.get("activity_id"), raw)
+        relay = None if isinstance(err, Stop) else reason_in(str(err))      # B-05: CLI 오류 글 안의 관문 거절 코드
+        if isinstance(err, Stop):
+            name, friendly = err.title, str(err)
+        elif relay:
+            name, friendly = RelayStopped.title, relay
+        else:
+            name, friendly = "에이전트 실행 실패", GENERIC_FAILURE
         self.repo.record_events([{"job_id": "TASK_ERROR", "todo_id": row["id"], "proc_inst_id": row.get("proc_inst_id"), "crew_type": "agent",
-                                  "event_type": "error", "data": {"name": "수업 권한 확인 필요" if course_locked else "도구 연결 확인 필요" if connection_error else "시스템 오류 알림", "goal": "오류 원인과 대처 안내를 전달합니다.",
-                                                                 "friendly": str(err) if connection_error or course_locked or people else (hint or "에이전트 실행이 실패했습니다. 담당자가 확인한 뒤 다시 보낼 수 있습니다."),
-                                                                 "hint": hint, "raw_error": msg}}])
+                                  "event_type": "error", "data": {"name": name, "goal": "오류 원인과 대처 안내를 전달합니다.",
+                                                                 "friendly": friendly, "raw_error": raw}}])
+        return True
 
     def _event(self, row: dict, job_id: str, event_type: str, data: dict, *, crew_type: str) -> None:
         self.repo.record_events([{"job_id": job_id, "todo_id": row["id"], "proc_inst_id": row.get("proc_inst_id"), "crew_type": crew_type,
                                   "event_type": event_type, "data": data}])
 
 
-def relay_hint(raw: str) -> str | None:
-    """강의 중계(LiteLLM)가 거절한 실행을 학생이 할 일로 옮긴다(2026-10-25 수업 한 바퀴: 「403 key not allowed to access model …」 영문이 질문 화면에 그대로 보였다).
-    모르는 오류는 None — 원문은 raw_error 에 그대로 남는다."""
-    text = str(raw or "")
-    low = text.lower()
-    if '수업 실행 또는 누적 사용량 한도 초과' in text:
-        return '이 작업 또는 수업의 사용 한도에 도달했습니다. 실행 기록을 강사에게 확인받으세요. 잠시 기다려도 한도가 초기화되지는 않습니다.'
-    if "not allowed to access model" in low or "invalid model" in low or ("model" in low and "not found" in low):
-        return "에이전트의 모델 이름을 강의 중계가 받지 않습니다 — [에이전트]에서 이 에이전트의 모델 칸을 비우면(실행기 기본 모델) 다시 됩니다"
-    if "401" in text or "invalid api key" in low or "authentication_error" in low or "failed to authenticate" in low:
-        return "강의 중계 키가 맞지 않거나 만료됐습니다 — .env 의 LLM_API_KEY 를 확인하고 시작.bat 을 다시 실행하세요"
-    if "429" in text or "rate limit" in low or "budget" in low:
-        return "강의 중계가 지금 요청을 더 받지 않습니다(사용 한도 · 혼잡) — 1분 뒤 다시 보내고, 계속되면 강사에게 알려 주세요"
-    return None
+def _duration(seconds: float) -> str:
+    """실행 기한을 학생 말로(관문이 준 실제 기한 — 워커 자체 기한이 아님)."""
+    return f"{round(seconds / 60)}분" if seconds >= 90 else f"{max(1, round(seconds))}초"
+
+
+def _request_key(row, ctx, agent, constitution, schema_prompt, extras, tenant_mcp, gate, allowed) -> str:
+    """같은 요청 판정(ai_replay 의 같은 요청 저장): 실행에 영향을 주는 것 전부 — 정의 · 단계 · 지시와 입력(query) · 피드백 · 폼 · 에이전트 설정
+    · 업무 규칙 · 스키마 설명 · 스킬 본문 · 도구 서버 설정 · 허용 도구 · 모델. 처리 건마다 새로 생기는 id(작업 · 처리 건 · 점유)는 넣지 않는다."""
+    material = {
+        "format": REQUEST_FORMAT, "definition": row.get("proc_def_id"), "version": row.get("version"), "activity": row.get("activity_id"),
+        "query": row.get("query"), "feedback": ctx.feedback, "answer": ctx.human_answer,
+        "form": {"id": ctx.form_id, "fields": ctx.form_fields, "contract": ctx.form_contract},
+        "agent": ask.agent_identity(agent), "instructions": extras.get("agent_instructions"), "rules": constitution,
+        "schema": hashlib.sha256(schema_prompt.encode("utf-8")).hexdigest(),
+        "skills": sorted([s["skill_name"], hashlib.sha256(skill_markdown(s).encode("utf-8")).hexdigest()] for s in agent.skills),
+        "tools": {name: bridge.config_fingerprint(spec) for name, spec in ((tenant_mcp or {}).get("mcpServers") or {}).items()
+                  if isinstance(spec, dict)},
+        "reads": gate.read_tools, "blocked": gate.blocked_tools, "allowed": sorted(allowed), "model": POLICY["model"],
+    }
+    return digest(json.loads(json.dumps(material, ensure_ascii=False, default=str)))[:32]
 
 
 PROMPT_FILE = "context/prompt.md"
 
 
-def _deliver_prompt(text: str, ws, max_inline: int, *, provider_id: str = "claude-code") -> str:
-    """Codex receives the complete text through stdin at the process boundary.
-
-    A077: Claude receives the prompt as one argv element, and Windows CreateProcess refuses command lines over ~32 K
+def _deliver_prompt(text: str, ws, max_inline: int) -> str:
+    """A077: Claude receives the prompt as one argv element, and Windows CreateProcess refuses command lines over ~32 K
     characters (WinError 206, seen on a correction round that carried the previous 21 KB proposal). Long prompts are written
     into the run workspace and the argv prompt becomes a short pointer; short prompts stay inline so nothing else changes."""
-    if provider_id == "codex" or len(text) <= max_inline:
+    if len(text) <= max_inline:
         return text
     path = ws.path / PROMPT_FILE
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -707,12 +679,12 @@ def _deliver_prompt(text: str, ws, max_inline: int, *, provider_id: str = "claud
             "파일 내용은 지시이며, 파일 안에 인용된 문서 본문은 분석 대상 데이터입니다.")
 
 
-def _provided_skills(ws, skills: list[dict], provider_id: str, *, activity_skills) -> list[dict]:
+def _provided_skills(ws, skills: list[dict], *, activity_skills) -> list[dict]:
     """A161-G1: each skill as written into this run's workspace (the hash is of that file). source: "activity" when the step
     names it (definition activity.skills), "agent" when it came from the agent's agent_skills rows. A skill whose file is not in
     the workspace is still listed (hash of the stored text) but marked written=false with the reason — the agent could not
     read it, and the record must not say it had it."""
-    root = SKILL_ROOTS.get(provider_id, SKILL_ROOTS["claude-code"])
+    root = SKILL_ROOTS[PROVIDER]
     named = {str(n) for n in activity_skills}
     out = []
     for skill in skills:
@@ -752,15 +724,10 @@ def _exec_stream(provider, request, env, *, check_stop=None):
     # Pinned cliagents records process exit/stderr only in its thread-local
     # result slot; stream_exec itself emits a blank success on startup failure.
     # The controlled adapter reads it after exhaustion in its own pump thread.
-    stream = stream_exec
-    if getattr(provider, "id", None) == "codex":
-        from functools import partial
-        from .codex_provider import stream_with_prompt_stdin
-        stream = partial(stream_with_prompt_stdin, stream_exec)
-    yield from controlled_stream(stream,provider,request,env,check_stop or (lambda:None),RunFailed)
+    yield from controlled_stream(stream_exec,provider,request,env,check_stop or (lambda:None),RunFailed)
 
 
-_exec_stream.accepts_check_stop = True          # ai_replay.recording 이 실제 CLI 실행을 감쌀 때 취소 · 기한 검사를 넘긴다
+_exec_stream.accepts_check_stop = True
 
 
 def _asker_of(row: dict) -> str:
@@ -768,15 +735,11 @@ def _asker_of(row: dict) -> str:
     return "role:operator"
 
 
-def _resolve_provider(provider_id: str):
-    """One place to swap the provider registry (tests pass a fake). cliagents resolves the CLI (shutil.which) but keeps the bare
+def _resolve_provider():
+    """One place to build the CLI provider (tests pass a fake). cliagents resolves the CLI (shutil.which) but keeps the bare
     name in argv; on Windows CreateProcess does not search PATHEXT, so `claude` (the npm shim claude.cmd) raises WinError 2
     (live check 2026-10-04). Hand the provider its full path."""
-    if provider_id == "codex":
-        from .codex_provider import WorkerCodexProvider
-        provider = WorkerCodexProvider()
-    else:
-        provider = registry.resolve(provider_id, surface=Surface.EXEC)
+    provider = registry.resolve(PROVIDER, surface=Surface.EXEC)
     try:
         provider.executable = _unshim(provider.resolve_executable())
     except Exception:  # noqa: BLE001 — not installed: exec_argv raises the library's own AgentNotInstalledError later

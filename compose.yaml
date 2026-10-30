@@ -1,6 +1,7 @@
 # hyd-iot-edu — 유압설비 IoT-SCADA 학생용 프로토타입 (v3 아키텍처 L1~L9)
-# 프로필: ot · backbone · detect · knowledge · agent · enterprise · process (기본, .env COMPOSE_PROFILES)
-#         monitor(Prometheus) · tools(Redpanda Console) 는 선택 — 경량 기본 구성에서 뺐다. 필요하면 COMPOSE_PROFILES에 추가.
+# 기본 서비스는 모두 뜬다(프로필 없음 — 학생 PC 구성은 이 파일 하나가 정한다. .env 에는 키 · 이 PC 값만 둔다).
+# 선택 도구만 프로필: monitor(Prometheus) · tools(Redpanda Console) — 쓰려면 .env 에 COMPOSE_PROFILES=monitor,tools.
+# ${이름:?…} 값은 시작 파일(scripts/start_all.sh)이 .env 에 정한다 — 시작 파일을 먼저 실행한다.
 name: hyd-iot-edu
 
 x-logging: &log                          # 컨테이너 로그가 디스크(WSL vhdx)를 키우지 않게 순환
@@ -24,7 +25,6 @@ volumes:
   redpanda-data: {}
   process-data: {}
   detector-data: {}
-  enterprise-data: {}
   worker-data: {}                          # agent-worker: 인스턴스별 작업공간 · Claude Code 세션 (재시작 뒤 resume)
   worker-runtime: {}                       # process가 생성하는 실행 인증; worker에는 읽기 전용
   effects-data: {}                         # C2 effects-mcp: 쓰기 도구 멱등 키 기록
@@ -36,7 +36,6 @@ services:
     logging: *log
     mem_limit: 320m
     image: emqx/emqx:5.8
-    profiles: [ot]
     networks: [ot-net]
     ports: ["127.0.0.1:${HYD_PORT_1883:-1883}:1883", "127.0.0.1:${HYD_PORT_18083:-18083}:18083", "127.0.0.1:${HYD_PORT_8083:-8083}:8083"]   # 8083 = MQTT over WebSocket (A148: 03회차 대시보드 WebSocket Client 구독용)
     environment:
@@ -53,7 +52,6 @@ services:
     logging: *log
     mem_limit: 96m
     build: { context: ., dockerfile: ot/plant-sim/Dockerfile }
-    profiles: [ot]
     networks: [ot-net, sim-net]           # sim-net: process 의 정비 수행 모사가 시뮬레이터 API(:8000)만 부른다(OT MQTT 에는 닿지 않음)
     ports: ["127.0.0.1:${HYD_PORT_8000:-8000}:8000"]
     environment:
@@ -71,21 +69,23 @@ services:
     logging: *log
     mem_limit: 192m
     image: frangoteam/fuxa:latest
-    profiles: [ot]
     networks: [ot-net]
     ports: ["127.0.0.1:${HYD_PORT_1881:-1881}:1881"]
     depends_on:
       emqx: { condition: service_healthy }
+    healthcheck:                          # 이미지에 curl 이 없어 node 로 화면 응답을 본다
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:1881/api/settings', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      <<: *py-health
 
   fuxa-init:                              # FUXA 프로젝트(태그·뷰·알람) 자동 주입
     logging: *log
     mem_limit: 64m
     image: python:3.12-slim
-    profiles: [ot]
     networks: [ot-net]
     volumes: ["./ot/fuxa:/work:ro"]
     command: ["python", "/work/init.py"]
-    depends_on: [fuxa]
+    depends_on:
+      fuxa: { condition: service_healthy }
     restart: "no"
 
 
@@ -95,13 +95,11 @@ services:
     logging: *log
     mem_limit: 128m
     build: { context: ., dockerfile: dmz/connect-ingest/Dockerfile }
-    profiles: [backbone]
     networks: [ot-net, it-net]
     ports: ["127.0.0.1:${HYD_PORT_8093:-8093}:8093"]
     environment:
       MQTT_HOST: emqx
       KAFKA_BOOTSTRAP: redpanda:9092
-      CMD_FINGERPRINT_KEY: ${CMD_FINGERPRINT_KEY:-hyd-cmd-approval-local}   # A148 check ⑤: must equal process's key (approval ledger HMAC)
     depends_on:
       redpanda: { condition: service_healthy }
       topic-init: { condition: service_completed_successfully }
@@ -114,12 +112,12 @@ services:
     logging: *log
     mem_limit: 128m
     build: { context: ., dockerfile: dmz/cmd-gateway/Dockerfile }
-    profiles: [detect]
     networks: [ot-net, it-net]
     ports: ["127.0.0.1:${HYD_PORT_8090:-8090}:8090"]
     environment:
       MQTT_HOST: emqx
       KAFKA_BOOTSTRAP: redpanda:9092
+      CMD_FINGERPRINT_KEY: ${CMD_FINGERPRINT_KEY:?시작 파일이 정합니다}   # 승인 장부 지문(HMAC) — process 와 같은 값(hydcommon/schemas.py)
     depends_on:
       redpanda: { condition: service_healthy }
       topic-init: { condition: service_completed_successfully }
@@ -133,7 +131,6 @@ services:
     logging: *log
     mem_limit: 448m
     image: redpandadata/redpanda:v24.2.7
-    profiles: [backbone]
     networks: [it-net]
     command:
       - redpanda start
@@ -156,7 +153,6 @@ services:
     logging: *log
     mem_limit: 128m
     image: redpandadata/redpanda:v24.2.7
-    profiles: [backbone]
     networks: [it-net]
     entrypoint: ["/bin/bash", "/topics.sh"]
     volumes: ["./it/redpanda/topics.sh:/topics.sh:ro"]
@@ -184,7 +180,6 @@ services:
     image: timescale/timescaledb:2.17.2-pg16
     command: ["postgres", "-c", "shared_buffers=64MB", "-c", "work_mem=4MB", "-c", "max_connections=40",
               "-c", "timescaledb.max_background_workers=4", "-c", "max_worker_processes=10", "-c", "timescaledb.telemetry_level=off"]
-    profiles: [backbone]
     networks: [it-net]
     ports: ["127.0.0.1:${HYD_PORT_5432:-5432}:5432"]
     environment:
@@ -206,12 +201,10 @@ services:
     logging: *log
     mem_limit: 128m
     build: { context: ., dockerfile: it/connect-sink/Dockerfile }
-    profiles: [backbone]
     networks: [it-net]
     ports: ["127.0.0.1:${HYD_PORT_8094:-8094}:8094"]
     environment:
       KAFKA_BOOTSTRAP: redpanda:9092
-      CMD_FINGERPRINT_KEY: ${CMD_FINGERPRINT_KEY:-hyd-cmd-approval-local}   # A148: approval ledger HMAC key shared with cmd-gateway
       PG_DSN: postgresql://hyd:hyd@timescaledb:5432/hyd
     depends_on:
       redpanda: { condition: service_healthy }
@@ -226,7 +219,6 @@ services:
     logging: *log
     mem_limit: 192m
     image: grafana/grafana:11.3.0
-    profiles: [backbone]
     networks: [it-net]
     ports: ["127.0.0.1:${HYD_PORT_3000:-3000}:3000"]
     environment:
@@ -240,13 +232,15 @@ services:
       - ./it/grafana/provisioning:/etc/grafana/provisioning:ro
     depends_on:
       timescaledb: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:3000/api/health"]
+      <<: *py-health
 
   detector:                               # L4 스트림 처리 · CEP (Flink 역할)
     restart: unless-stopped
     logging: *log
     mem_limit: 256m
     build: { context: ., dockerfile: it/detector/Dockerfile }
-    profiles: [detect]
     networks: [it-net]
     ports: ["127.0.0.1:${HYD_PORT_8092:-8092}:8092"]
     volumes: ["detector-data:/data"]
@@ -282,7 +276,6 @@ services:
     logging: *log
     mem_limit: 1536m                      # APOC schema discovery + v2 query plans
     image: neo4j:5.26-community
-    profiles: [knowledge]
     networks: [it-net]
     ports: ["127.0.0.1:${HYD_PORT_7474:-7474}:7474", "127.0.0.1:${HYD_PORT_7687:-7687}:7687"]
     environment:
@@ -308,7 +301,6 @@ services:
     logging: *log
     mem_limit: 384m
     image: neo4j:5.26-community
-    profiles: [knowledge]
     networks: [it-net]
     entrypoint: ["/bin/bash", "/seed/seed.sh"]
     environment:
@@ -323,11 +315,9 @@ services:
     logging: *log
     mem_limit: 192m
     build: { context: ., dockerfile: it/agent/Dockerfile }
-    profiles: [agent]
     networks: [it-net]
     ports: ["127.0.0.1:${HYD_PORT_8091:-8091}:8091"]
     environment:
-      PROCESS_MODE: ${PROCESS_MODE:-legacy}
       KAFKA_BOOTSTRAP: redpanda:9092
       TSDB_DSN: ${TSDB_READ_DSN:-postgresql://hyd_timeseries_reader:hyd-timeseries-read-local@timescaledb:5432/hyd}
       DAQ_PROFILE: ${DAQ_PROFILE:-lite}     # Evidence 구간 공백 한도 = 감지기와 같은 수집 계약 (A083)
@@ -336,12 +326,6 @@ services:
       PROCESS_URL: http://process:8080
       ENTERPRISE_URL: http://enterprise-sim:8095
       ENTERPRISE_READ_DSN: ${ENTERPRISE_READ_DSN:-postgresql://hyd_enterprise_reader:hyd-enterprise-read-local@host.docker.internal:54322/postgres}
-      LLM_PROVIDER: ${LLM_PROVIDER:-auto}
-      LLM_MODEL: ${LLM_MODEL:-}
-      # This read-only evaluator uses a template; model calls belong to the
-      # budgeted worker gateway, so no provider credentials enter this service.
-      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
-      LLM_TIMEOUT_SECONDS: ${LLM_TIMEOUT_SECONDS:-8}
     extra_hosts: ["host.docker.internal:host-gateway"]   # ENTERPRISE_READ_DSN points at the host Supabase; Docker Desktop resolves the name by itself, Linux Engine only with this
     depends_on:
       kg-seed: { condition: service_completed_successfully }
@@ -357,9 +341,8 @@ services:
   process:                                # L9 프로세스 엔진 (미니 BPMN: 승인 → action.cmd → ACK → 재관측 → 종결)
     restart: unless-stopped
     logging: *log
-    mem_limit: ${PROCESS_MEM_LIMIT:-512m}
+    mem_limit: 768m                       # PG 원천 · 승인 · 투영 큐와 사건 스냅숏을 함께 든다(512m 에서 509 MiB 실측)
     build: { context: ., dockerfile: it/process/Dockerfile }
-    profiles: [process]
     networks: [it-net, sim-net]           # sim-net: 정비 수행 모사가 plant-sim 을 서비스 이름(plant-sim:8000)으로 부른다 (Linux 에서 호스트 루프백 불가).
                                           # ot-net 에는 붙이지 않는다 — IT 서비스가 OT(emqx)에 직접 닿으면 DMZ(cmd-gateway)가 유일한 하향 통로가 아니게 된다
     ports: ["127.0.0.1:${HYD_PORT_8080:-8080}:8080"]
@@ -371,30 +354,29 @@ services:
       NEO4J_AUTH: neo4j/hydpass123
       TIME_SCALE: ${TIME_SCALE:-20}
       ENTERPRISE_URL: http://enterprise-sim:8095
-      # instance 모드: 경보가 프로세스 인스턴스를 열고 에이전트·사람은 그 안의 태스크. Supabase(supabase start)가 필요하다.
-      PROCESS_MODE: ${PROCESS_MODE:-legacy}
-      PROCESS_REPO: ${PROCESS_REPO:-pg}
+      # 경보가 프로세스 인스턴스(처리 건)를 열고 에이전트 · 사람은 그 안의 작업 — 업무 DB(Supabase)가 원천이다.
       SUPABASE_DSN: ${SUPABASE_DSN:-postgresql://postgres:postgres@host.docker.internal:54322/postgres}
       # A11 데이터 패브릭(/api/fabric/*): 쓰기 연결이 아니라 두 전용 읽기 계정만 쓴다
       ENTERPRISE_READ_DSN: ${ENTERPRISE_READ_DSN:-postgresql://hyd_enterprise_reader:hyd-enterprise-read-local@host.docker.internal:54322/postgres}
       TSDB_READ_DSN: ${TSDB_READ_DSN:-postgresql://hyd_timeseries_reader:hyd-timeseries-read-local@timescaledb:5432/hyd}
-      AGENT_BRIDGE: ${AGENT_BRIDGE:-legacy}
-      # 포털 "에이전트 현황": 워커의 /health · /agents. 컨테이너 워커면 agent-worker:8097, 강사 PC 워커(run_worker_host.sh)면 host.docker.internal:8097
+      # 포털 "에이전트 현황": 워커의 /health · /agents. 컨테이너 워커(기본)면 agent-worker:8097, 개발용 호스트 워커면 .env 에 host.docker.internal:8097
       WORKER_URL: ${WORKER_URL:-http://agent-worker:8097}
       # A131: 1 mounts GET /debug/memory (tracemalloc · RSS · container sizes) for OOM diagnosis; off in the product default
       PROCESS_MEMDEBUG: ${PROCESS_MEMDEBUG:-0}
-      # OAuth credentials are encrypted with a key in the existing persistent
-      # process volume. Provision once with scripts/setup_mcp_oauth_keys.py.
+      # 외부 도구 서버 OAuth 자격 증명은 process 데이터 볼륨의 키 파일로 암호화한다(PBL 단계에서 쓴다).
       HYD_MCP_OAUTH_KEY_FILE: /data/mcp/oauth.key
       HYD_WORKER_RUNTIME_KEY_FILE: /run/hyd-credentials/runtime.key
-      HYD_CLASSROOM_URL: ${HYD_CLASSROOM_URL:-}
+      # 강의 중계(LiteLLM, Anthropic 방식 주소 — 끝에 /v1 없음). 키는 process 만 받고 워커 CLI 에는 작업에 묶인 토큰만 간다(course_model.py)
       LLM_API_KEY: ${LLM_API_KEY:-}
-      LLM_RELAY_URL: ${LLM_RELAY_URL:-}
+      LLM_RELAY_URL: ${LLM_RELAY_URL:-https://knu-litellm-1087825885001.asia-northeast3.run.app}
+      # 업무 시스템 쓰기 · 승인 뒤 메일 도구를 process 만 부르게 하는 값(enterprise-sim · effects-mcp 와 같은 값), 승인 장부 지문 키(cmd-gateway 와 같은 값)
+      PROCESS_CALLER_TOKEN: ${PROCESS_CALLER_TOKEN:?시작 파일이 정합니다}
+      CMD_FINGERPRINT_KEY: ${CMD_FINGERPRINT_KEY:?시작 파일이 정합니다}
       HYD_MCP_OAUTH_CALLBACK_URL: ${HYD_MCP_OAUTH_CALLBACK_URL:-http://localhost:8088/api/mcp/connections/callback}
       # Optional operator settings; unset values are omitted, never printed.
       HYD_MCP_OAUTH_CLIENTS:
       HYD_MCP_OAUTH_PRIVATE_ORIGINS:
-      # C2 승인 뒤 실행 부품 (git 이력 39f447ce:문서/시스템/검증_기록/2026-10-09/c2-execution.md)
+      # C2 승인 뒤 실행 부품
       #   대기 압축: 시간 대기 · 입고 확인과 그 경계 타이머만 배속 × 이 배율 (60 → 20배속에서 납기 5일 = 6분). 설비 · 감지기 · 재관측은 배속만.
       PROCESS_WAIT_COMPRESSION: ${PROCESS_WAIT_COMPRESSION:-60}
       #   정비 수행 모사 = 실습 시뮬레이터 조작(현장 정비 대역). plant-sim 과 process 가 함께 붙은 sim-net 으로 compose 서비스 이름으로 간다
@@ -418,16 +400,13 @@ services:
     logging: *log
     mem_limit: 96m
     build: { context: ., dockerfile: it/enterprise-sim/Dockerfile }
-    profiles: [enterprise]
     networks: [it-net]
     ports: ["127.0.0.1:${HYD_PORT_8095:-8095}:8095"]
     environment:
-      ENTERPRISE_STATE_PATH: /data/enterprise.sqlite3
-      # memory(기본): data.py 딕셔너리 + SQLite 상태 · supabase: Supabase ent 스키마가 원천 (instance 모드와 함께 쓴다, API 계약은 같다)
-      ENTERPRISE_BACKEND: ${ENTERPRISE_BACKEND:-memory}
+      # 업무 DB(Supabase ent 스키마)가 원천이다
       SUPABASE_DSN: ${SUPABASE_DSN:-postgresql://postgres:postgres@host.docker.internal:54322/postgres}
+      PROCESS_CALLER_TOKEN: ${PROCESS_CALLER_TOKEN:?시작 파일이 정합니다}   # 쓰기 · 초기화 끝점은 process 만(머리글 X-HYD-Process-Caller)
     extra_hosts: ["host.docker.internal:host-gateway"]
-    volumes: ["enterprise-data:/data"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8095/healthz')"]
       <<: *py-health
@@ -437,13 +416,13 @@ services:
     logging: *log
     mem_limit: 128m
     build: { context: ., dockerfile: it/effects-mcp/Dockerfile }
-    profiles: [process]
     networks: [it-net]
     ports: ["127.0.0.1:${HYD_PORT_8197:-8197}:8197"]
     environment:
       SMTP_HOST: ${EFFECTS_SMTP_HOST:-host.docker.internal}      # Supabase 로컬 Inbucket (it/supabase/config.toml [inbucket] smtp_port)
       SMTP_PORT: ${EFFECTS_SMTP_PORT:-54325}
       EFFECTS_STATE_PATH: /data/effects.sqlite3
+      PROCESS_CALLER_TOKEN: ${PROCESS_CALLER_TOKEN:?시작 파일이 정합니다}   # 쓰기 도구는 process 만
     extra_hosts: ["host.docker.internal:host-gateway"]
     volumes: ["effects-data:/data"]
     healthcheck:
@@ -455,7 +434,6 @@ services:
     logging: *log
     mem_limit: 32m
     image: nginx:1.27-alpine
-    profiles: [process]
     networks: [it-net]
     ports: ["127.0.0.1:${HYD_PORT_8088:-8088}:80"]
     environment:
@@ -463,15 +441,17 @@ services:
     volumes:
       - ./it/portal/www:/usr/share/nginx/html:ro
       - ./it/portal/nginx.conf:/etc/nginx/templates/default.conf.template:ro   # nginx 이미지가 환경변수를 채워 conf.d에 쓴다
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      <<: *py-health
 
-  # ───────────────────────────── instance 모드: 프로세스 인스턴스 · Claude Code 에이전트 · MCP ─────────────────────────────
-  # 프로필 `cliagents`(AI 워커 + 에이전트용 MCP)는 강의 배포본 COMPOSE_PROFILES(.env.example)에 들어 있다. Supabase 와 .env 의 LLM_API_KEY(강의 중계 키)가 필요하다.
+  # ───────────────────────────── AI 워커 · 에이전트용 MCP ─────────────────────────────
+  # 키 있는 PC는 실제 AI(강의 중계 — process 관문 경유), 키 없는 PC는 강사가 저장한 응답 재생(AI_MODE, 시작 파일이 정한다).
   enterprise-mcp:                         # 업무 DB(Supabase ent 스키마)를 에이전트에게 읽기 전용 도구로 (WMS 예제의 wms-mcp 역할)
     restart: unless-stopped
     logging: *log
     mem_limit: 160m
     build: { context: ., dockerfile: it/enterprise-mcp/Dockerfile }
-    profiles: [cliagents]
     networks: [it-net]
     ports: ["127.0.0.1:${HYD_PORT_8199:-8199}:8199"]
     environment:
@@ -486,7 +466,6 @@ services:
     logging: *log
     mem_limit: 160m
     build: { context: ., dockerfile: it/enterprise-mcp/Dockerfile }
-    profiles: [cliagents]
     networks: [it-net]
     ports: ["127.0.0.1:${HYD_PORT_8196:-8196}:8196"]
     environment:
@@ -503,7 +482,6 @@ services:
     logging: *log
     mem_limit: 160m
     build: { context: ., dockerfile: it/enterprise-mcp/Dockerfile }
-    profiles: [cliagents]
     networks: [it-net]
     ports: ["127.0.0.1:${HYD_PORT_8195:-8195}:8195"]
     environment:
@@ -520,11 +498,9 @@ services:
     logging: *log
     mem_limit: 192m
     build: { context: ., dockerfile: it/dmn-mcp/Dockerfile }
-    profiles: [cliagents]
     networks: [it-net]
     ports: ["127.0.0.1:${HYD_PORT_8198:-8198}:8198"]
     environment:
-      PROMETHEUS_URL: http://prometheus:9090
       TSDB_DSN: ${TSDB_READ_DSN:-postgresql://hyd_timeseries_reader:hyd-timeseries-read-local@timescaledb:5432/hyd}
       DAQ_PROFILE: ${DAQ_PROFILE:-lite}     # Evidence 구간 공백 한도 = 감지기와 같은 수집 계약 (A083)
       NEO4J_URI: bolt://neo4j:7687
@@ -546,38 +522,29 @@ services:
     logging: *log
     mem_limit: 768m
     build: { context: ., dockerfile: it/agent-worker/Dockerfile }
-    profiles: [cliagents]
     networks: [it-net]
     ports: ["127.0.0.1:${HYD_PORT_8097:-8097}:8097"]
     # 저장된 AI 응답(재생모드.md): 강사 저장(AI_MODE=record)은 저장소 폴더에 쓰고, 키 없는 PC 재생은 git pull 로 받은 그 폴더를 읽는다
     volumes: ["worker-data:/workspace", "worker-runtime:/run/hyd-credentials:ro", "./it/agent-worker/replay:/srv/replay"]
     environment:
       # 시작 스크립트가 .env 에 정한다: 키 있으면 live, 없으면 replay(강사가 저장한 응답), 저장은 start_all.sh --record
-      AI_MODE: ${AI_MODE:-live}
+      AI_MODE: ${AI_MODE:?시작 파일이 정합니다}
       AI_REPLAY_DIR: /srv/replay
       # the worker is the ProcessGPT agent type `cliagents` (process-gpt-cli-agent): it polls todolist through fetch_pending_task,
       # reads the tenant's MCP servers from tenants.mcp (seed.sql) and stores results with save_task_result.
       SUPABASE_DSN: ${SUPABASE_DSN:-postgresql://postgres:postgres@host.docker.internal:54322/postgres}
       TENANT_ID: hyd
       CONSUMER_ID: agent-worker:docker
-      HYD_CLASSROOM_URL: ${HYD_CLASSROOM_URL:-}
-      # 원본 중계 키는 process만 읽는다. CLI에는 현재 작업에 묶인 토큰만 전달한다.
-      HYD_MANAGED_MODEL_REQUIRED: "1"
-      HYD_MANAGED_MODEL_URL: http://process:8080
+      # 원본 중계 키는 process만 읽는다. 수업 판정 · 모델 관문 · 실행 토큰은 모두 process 한 주소(worker/course_access.py),
+      # CLI 의 모델 주소 · 모델 이름은 관문이 실행마다 준다. 실행기 인증 파일은 process 가 만든 것을 읽기 전용으로 본다(같은 볼륨 · 같은 경로)
+      PROCESS_URL: http://process:8080
       HYD_WORKER_RUNTIME_KEY_FILE: /run/hyd-credentials/runtime.key
-      ANTHROPIC_MODEL: ${LLM_MODEL:-coding}
-      ANTHROPIC_SMALL_FAST_MODEL: ${LLM_MODEL:-coding}
-      ANTHROPIC_DEFAULT_OPUS_MODEL: ${LLM_MODEL:-coding}
-      ANTHROPIC_DEFAULT_SONNET_MODEL: ${LLM_MODEL:-coding}
-      ANTHROPIC_DEFAULT_HAIKU_MODEL: ${LLM_MODEL:-coding}
-      CLI_MODEL: ${LLM_MODEL:-coding}
       DISABLE_TELEMETRY: "1"
       CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1"
-      CLIAGENTS_DEFAULT_CLI: ${CLIAGENTS_DEFAULT_CLI:-claude-code}
       CLIAGENTS_DEFAULT_PERMISSION: ${CLIAGENTS_DEFAULT_PERMISSION:-workspace_write}
       CLIAGENTS_RUN_TIMEOUT_SECONDS: ${CLIAGENTS_RUN_TIMEOUT_SECONDS:-1800}
       CLIAGENTS_WORKSPACE_ROOT: /workspace
-      ALLOWED_TOOLS: ${ALLOWED_TOOLS:-}                         # empty = worker/settings.py DEFAULT_ALLOWED_TOOLS (one list; it includes `python <file>` for the A077 script)
+      ALLOWED_TOOLS: ${ALLOWED_TOOLS:-}                         # 비우면 worker/settings.py 의 DEFAULT_ALLOWED_TOOLS(허용 도구 목록 한 곳)
     extra_hosts: ["host.docker.internal:host-gateway"]
     depends_on:
       process: { condition: service_healthy }

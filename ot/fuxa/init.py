@@ -1,6 +1,8 @@
 """fuxa-init: wait for FUXA, then upload project.json through POST /api/project (no auth in student edition).
 
-Idempotent: FUXA keeps no volume here, so every `docker compose up` re-uploads the same project.
+FUXA 에는 볼륨이 없어 컨테이너를 새로 만들면 빈 프로젝트로 뜬다. 그래서 시작할 때마다 저장소의 화면(ot/fuxa/project.json)을 다시
+올린다 — FUXA 화면에서 손으로 고친 내용은 다음 시작에 덮어써진다(수업 실습은 FUXA 화면을 고치지 않는다 — 실라버스 대조 2026-10-30).
+화면을 바꾸려면 project.json 을 고친다(생성기는 workspace 브랜치 workspace/개발/scripts/build_fuxa_project.py).
 """
 import json
 import os

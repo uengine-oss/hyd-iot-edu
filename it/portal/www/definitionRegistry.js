@@ -8,7 +8,14 @@
     busy=true;
     const buttons=[...$r('definitionEditor').querySelectorAll('button')];buttons.forEach(b => b.disabled=true);
     try { await fn(); } catch(e) { message(e.message,true); }
-    finally { busy=false;buttons.forEach(b => b.disabled=false); }
+    finally { busy=false;buttons.forEach(b => b.disabled=false);syncStart(); }
+  }
+  // 수업 경계(서버 GET /api/course-access 의 startable_definitions): 수업 단계에서 시작할 수 없는 정의를 고르면 [실행]을 끄고 까닭을 보인다
+  function syncStart() {
+    const button=$r('definitionStart'), value=$r('definitionChoice').value;
+    const why=value ? hydCourseAccess.startBlocked(JSON.parse(value)[0]) : '';
+    if (!busy) button.disabled=!!why;
+    button.title=why;
   }
   async function refresh(selected) {
     const current = selected || $r('definitionChoice').value;
@@ -20,6 +27,7 @@
       select.appendChild(option);
     });
     if ([...select.options].some(o => o.value===current)) select.value=current;
+    syncStart();
   }
   function choice() {
     const value=$r('definitionChoice').value;
@@ -35,6 +43,8 @@
     if ($r('definitionEditor').open && !definitions.length) action(() => refresh());
   });
   $r('definitionRefresh').addEventListener('click', () => action(() => refresh()));
+  $r('definitionChoice').addEventListener('change', syncStart);
+  hydCourseAccess.onChange(syncStart);
   $r('definitionCopy').addEventListener('click', () => action(async () => {
     const [id,version]=choice();
     const d=await getJ(API.process+'/api/process/definitions/'+encodeURIComponent(id)+'?version='+encodeURIComponent(version));
