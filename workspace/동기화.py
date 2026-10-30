@@ -198,8 +198,33 @@ def commit(msg, main_paths):
         git("update-ref", f"refs/heads/{BRANCH}", c, t)
         print(f"workspace {t[:8]} → {c[:8]}")
     if main_paths:
-        git("commit", "-m", msg + "\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>", "--", *main_paths)
-        print(git("show", "--stat", "--format=main %h %s", "HEAD"))
+        commit_main(msg + "\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\n", main_paths)
+
+
+def commit_main(body, paths):
+    """main에 준 경로만 커밋한다(같은 체크아웃의 다른 작업이 섞이지 않게). HEAD에서 시작한 따로 색인에 그 경로만 작업 트리 모습으로
+    넣고, 실행 권한은 진짜 색인의 값(`git update-index --chmod=+x`)을 따른다 — `git commit -- 경로`는 HEAD에서 새로 만든 색인에
+    파일을 더해, core.filemode=false인 Windows에서 새 파일을 늘 100644로 커밋했다(setup/*.command 두 번). 커밋 뒤 진짜 색인의
+    그 경로를 새 커밋에 맞춘다."""
+    staged = {}
+    for entry in filter(None, git("ls-files", "-s", "-z", "--", *paths).split("\0")):
+        meta, path = entry.split("\t", 1)
+        staged[path] = meta.split()[0]
+    head = git("rev-parse", "HEAD").strip()
+    with tempfile.TemporaryDirectory() as d:
+        env = dict(os.environ, GIT_INDEX_FILE=str(Path(d) / "index"))
+        git("read-tree", head, env=env)
+        git("add", "-A", "--", *paths, env=env)            # 줄끝 · 속성은 `git commit`과 같은 설정(.gitattributes)대로
+        for path in [p for p, mode in staged.items() if mode == "100755"]:
+            git("update-index", "--chmod=+x", "--", path, env=env)
+        tree = git("write-tree", env=env).strip()
+    if tree == git("rev-parse", f"{head}^{{tree}}").strip():
+        print("main: 준 경로에 바뀐 것이 없다 — 커밋하지 않는다")
+        return
+    c = git("commit-tree", tree, "-p", head, inp=body.encode("utf-8")).strip()
+    git("update-ref", "HEAD", c, head)
+    git("reset", "-q", "--", *paths)
+    print(git("show", "--stat", "--format=main %h %s", "HEAD"))
 
 
 def push():
