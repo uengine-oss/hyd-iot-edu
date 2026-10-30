@@ -83,6 +83,11 @@ python workspace/개발/scripts/course_phase_sign.py course <비밀 키 파일> 
 | 경보가 안 난다 | 감지기 상태 `curl -s 127.0.0.1:8092/api/detector/state`의 `phase` · `slope` — 후보가 설비 시간 60초 유지돼야 경보 |
 | 배속(`TIME_SCALE`, 기본 20)을 바꿨다 | plant-sim · detector · process · agent에 함께 준다. 감지기 상태 파일은 배율별로(`DETECTOR_STATE_PATH=/data/detector-scale<N>.sqlite3`) |
 
-## 7. 이 문서가 확인하지 못한 것
+## 7. 확인하지 못한 것 · 아직 정하지 않은 것
 
-- 설치 실행 파일(관리자 승인 창이 필요해 2026-10-30 확인에서 건너뜀), Mac 경로, 실제 PC 재부팅 뒤 Docker Desktop 기동까지 포함한 시간.
+- 확인 못 함: 설치 실행 파일(관리자 승인 창이 필요해 2026-10-30 확인에서 건너뜀), Mac 경로, 실제 PC 재부팅 뒤 Docker Desktop 기동까지 포함한 시간.
+- PBL 단계 선언의 서명 키: 지금은 제공 문서 추출 묶음에 서명한 강사 키를 함께 쓴다(`course_policy.PHASE_KEYS`, 서명 영역이 달라 서로 재사용은 안 됨). 따로 쓰려면 `course_phase_sign.py keygen <저장소 밖 파일>` 뒤 화면에 나온 공개 키로 `PHASE_KEYS`를 바꾼다.
+- 업무 DB 포트(이 PC 64322 등)는 `supabase start`가 PC 밖(0.0.0.0)에도 연다 — 비밀번호는 기본값이고 Supabase CLI에는 묶을 주소 설정이 없다. 지금은 수업 PC 방화벽에 맡긴다.
+- 공용 PC: 설치가 사용자 폴더 밖 저장소에 「로그인한 모든 계정 수정」 권한을 주므로(`scripts/install_windows.ps1`) `.env`의 중계 키를 다음 계정도 읽는다. 학생 한 명 전용 PC면 문제없다. 근본 해결은 키를 계정별 자리로 옮기는 것 — 키를 읽는 곳 `scripts/hyd_env.py`와 README 안내를 함께 바꾼다.
+- 교대 인수인계 정의가 두 벌이다(학생이 가져오는 `ShiftHandover`, 제공 정의 `shift_handover` — 같은 녹화 자리). 제공 정의를 지우면 관리할 곳이 줄지만 녹화 도구 · 교재 참조를 함께 고쳐야 한다.
+- 녹화가 없는 AI 단계(교대 보완 2 · 재작업 · 재평가)는 `재생모드.md` 7절.
