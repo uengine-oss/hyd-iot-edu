@@ -26,6 +26,8 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(ROOT / "scripts"))
+from prepare_ports import saved_port  # noqa: E402 — 시작이 정한 이 PC의 포트(.hyd-runtime/ports.json)
 CHECK_NAMES = {'cause': '원인 적중', 'top': '1위 허용', 'forbidden': '빠질 조치', 'evidence': '근거 포함'}
 
 
@@ -75,7 +77,7 @@ def show_run(run: dict) -> None:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description='AI 판단 채점 (process /api/eval)')
-    ap.add_argument('--process', default=os.getenv('PROCESS_URL', 'http://localhost:8080'))
+    ap.add_argument('--process', default=os.getenv('PROCESS_URL') or f'http://127.0.0.1:{saved_port(ROOT, 8080)}')
     ap.add_argument('--json', action='store_true', help='응답 원문(JSON)으로 출력')
     sub = ap.add_subparsers(dest='cmd', required=True)
     sub.add_parser('golden')

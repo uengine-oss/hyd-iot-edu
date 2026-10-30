@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 저장된 AI 응답 목록 — 촬영(AI_MODE=record) 뒤 업무마다 저장됐는지 확인한다. workspace/개발/문서/재생모드.md 5절.
+# 수업 녹화 목록 — 녹화(AI_MODE=record) 뒤 수업 AI 자리마다 녹화가 있는지 확인한다(빠진 자리가 있으면 종료 코드 1). workspace/개발/문서/재생모드.md
 #   bash workspace/개발/scripts/ai_replay_list.sh            (기본 폴더 it/agent-worker/replay/, 다른 폴더는 인자로)
 set -euo pipefail
 cd "$(dirname "$0")/../../.."

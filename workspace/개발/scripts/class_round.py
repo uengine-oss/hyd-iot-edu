@@ -29,8 +29,10 @@ from pathlib import Path
 from typing import Any, Callable
 
 ROOT = Path(__file__).resolve().parents[3]
-# 선택 도구(FUXA · Redpanda console · Prometheus)는 수업 프로필에 없어 그 주소 확인이 실패하는 것이 정상이다
-IGNORED_REQUESTS = (":1881", ":8085", ":9090", ":9644", "favicon.ico")
+sys.path[:0] = [str(ROOT / "it" / "process"), str(ROOT / "common")]
+from procsvc.mcp_registry import BASE_SERVERS  # noqa: E402 — 에이전트가 쓰는 기본 도구 서버 정본
+# 선택 도구(Redpanda console · Prometheus)는 기본 구성에 없어 그 주소 확인이 실패하는 것이 정상이다(FUXA 는 기본 구성)
+IGNORED_REQUESTS = (":8085", ":9090", ":9644", "favicon.ico")
 
 
 def host_ports() -> dict[int, int]:
@@ -832,9 +834,8 @@ def lab_90_menu_sweep(r: Round):
     for tab, title in tabs:
         button = r.page.locator(f"button[data-tab='{tab}']").first
         if button.is_disabled():
-            # 수업 잠금이 닫은 메뉴(courseAccess.js closedTabs) — 열리지 않는 것이 정상이고, 이유가 사람 글이어야 한다
-            ok, why = r.human_message(button.get_attribute("title") or "")
-            r.check(f"메뉴 「{title}」 — 수업 잠금으로 꺼짐 · 이유를 알린다", ok and bool(button.get_attribute("title")), why, kind="exception")
+            # 메뉴 잠금은 없다(수업 단계에서도 모든 메뉴를 연다 — course_policy.view, 막는 것은 행동 넷뿐)
+            r.check(f"메뉴 「{title}」 — 꺼져 있지 않다", False, button.get_attribute("title") or "(까닭 없음)")
             continue
         try:
             r.tab(tab)
@@ -848,9 +849,18 @@ def lab_90_menu_sweep(r: Round):
             r.check(f"메뉴 「{title}」 열기", False, f"{type(e).__name__}: {e}")
 
 
+def _course_phase(r) -> str:
+    """지금 수업 단계 — 서버 정본(GET /api/course-access 의 phase: course | pbl). 읽지 못하면 실패로 남기고 수업으로 본다."""
+    code, access = r.api("GET", f"{r.process}/api/course-access")
+    phase = access.get("phase") if code == 200 and isinstance(access, dict) else None
+    r.check("수업 단계를 서버에서 읽는다", phase in ("course", "pbl"), f"{code} {str(access)[:120]}")
+    return phase or "course"
+
+
 # ====================================================================== 91 · 그 밖에: 구성 내보내기 → 기준으로 되돌리기 → 불러오기
-@lab("91", "그 밖에 — 구성 내보내기 → 기준으로 되돌리기(수업 흐름 남김) → 불러오기, 깨진 파일")
+@lab("91", "그 밖에 — 구성 내보내기 → 기준으로 되돌리기(수업 흐름 남김) → 불러오기(수업 단계는 막힘 · PBL 에서 열림), 깨진 파일")
 def lab_91_config_bundle(r: Round):
+    phase = _course_phase(r)
     r.tab("admin")
     panel = r.page.locator("#configBundlePanel")                         # 관리 탭의 접힌 칸 — 학생처럼 먼저 연다
     if panel.count() and not panel.evaluate("d => d.open"):
@@ -880,10 +890,25 @@ def lab_91_config_bundle(r: Round):
     r.page.wait_for_timeout(800)
     bmsg = _a_txt(r, "#cfgImportMsg")
     r.check("깨진 파일을 고르면 「JSON 파일이 아닙니다」로 막는다", "JSON 파일이 아닙니다" in bmsg, bmsg, kind="exception")
-    # 받은 파일 불러오기 → 내가 만든 것이 돌아온다
+    # 받은 파일 불러오기: 수업 단계는 막힌다(외부 도구 서버 · 다른 흐름이 함께 들어온다) — 단추가 꺼져 있거나 눌렀을 때 거절, 까닭은 사람 글
     r.page.set_input_files("#cfgFile", str(path))
     r.page.wait_for_timeout(800)
-    r.page.click("#cfgImport")
+    button = r.page.locator("#cfgImport")
+    if phase == "course":
+        if button.is_disabled():
+            reason = button.get_attribute("title") or _a_txt(r, "#cfgImportMsg")
+        else:
+            button.click()
+            if r.page.locator("dialog.confirm-dialog button[value=ok]").count():
+                r.page.locator("dialog.confirm-dialog button[value=ok]").click()
+            r.wait(60, lambda: (t := _a_txt(r, "#cfgImportMsg")) and "불러오는 중" not in t, every=1)
+            reason = _a_txt(r, "#cfgImportMsg")
+        ok, why = r.human_message(reason)
+        code, _ = r.api("POST", r.process + "/api/config/import", bundle)
+        r.check("수업 단계: [불러오기]는 PBL 에서 연다는 까닭을 사람 글로 · 서버도 거절(403)", ok and "PBL" in reason and code == 403,
+                f"{why} · 직접 요청 {code}", kind="exception")
+        return
+    button.click()
     r.page.locator("dialog.confirm-dialog button[value=ok]").click()
     r.wait(180, lambda: (t := _a_txt(r, "#cfgImportMsg")) and "불러오는 중" not in t, every=2)
     imsg = _a_txt(r, "#cfgImportMsg")
@@ -891,24 +916,6 @@ def lab_91_config_bundle(r: Round):
         r.page.click("#cfgSkip")
         r.wait(180, lambda: (t := _a_txt(r, "#cfgImportMsg")) and "불러오는 중" not in t, every=2)
         imsg = _a_txt(r, "#cfgImportMsg")
-    # 7회차에 등록한 학생 MCP 서버가 꺼져 있으면 불러오기는 연결 검사에서 멈추고 통째로 되돌린다(설계) — 학생은 안내대로 서버를 켜고 다시 누른다
-    down = re.search(r"host\.docker\.internal:(\d+)", imsg) if "연결 검사 실패" in imsg else None
-    if down:
-        ok, why = r.human_message(imsg)
-        r.check("학생 MCP 서버가 꺼져 있으면 → 서버를 켜라는 한국어 안내 · 불러오기 전 상태로 되돌림", ok and "되돌려" in imsg, imsg[:300], kind="exception")
-        proc, up = _b_start_mcp(r, _b_student_schema(r), int(down.group(1)))
-        try:
-            r.check("안내대로 학생 MCP 서버를 켰다", up, down.group(1))
-            r.page.click("#cfgImport")
-            r.page.locator("dialog.confirm-dialog button[value=ok]").click()
-            r.wait(180, lambda: (t := _a_txt(r, "#cfgImportMsg")) and "불러오는 중" not in t and t != imsg, every=2)
-            imsg = _a_txt(r, "#cfgImportMsg")
-            if r.page.locator("#cfgSkip").count():
-                r.page.click("#cfgSkip")
-                r.wait(180, lambda: (t := _a_txt(r, "#cfgImportMsg")) and "불러오는 중" not in t, every=2)
-                imsg = _a_txt(r, "#cfgImportMsg")
-        finally:
-            _b_stop_mcp(proc)
     ok, why = r.human_message(imsg)
     agents_after = len(r.get(r.process + "/api/agents")) if agents_before is not None else None
     r.check("받은 파일 [불러오기] → 한국어 결과 · 내가 만든 에이전트 수가 돌아옴", ok and (agents_before is None or agents_after == agents_before),
@@ -933,20 +940,11 @@ _B_EXTRACT_LIMIT_S = 600
 # 질문 한 번의 한도: 시간 창 없음(ask_agent 정의에 타이머 없음). A 전체(215~218초)보다 짧아야 수업 흐름이 선다 → 300초.
 _B_ASK_LIMIT_S = 300
 _B_ASK_LIVE = {"waiting", "running", "submitted", "correcting", "asking"}      # ask.js LIVE 와 같은 낱말
-_B_AGENT_NAME = "나의 쿨러 점검 에이전트"                                      # students/_template/agent/goal.md 칸 설명대로
+_B_AGENT_NAME = "나의 쿨러 점검 에이전트"
 _B_MCP_NAME = "s01-table"                                                     # mcp_registry.NAME_RE: 소문자 · 숫자 · 하이픈
-_B_STUDENT = "s01"
 
 
 # ---------------------------------------------------------------------- 공통 도우미 (part B 전용, 이름 앞 _b_)
-def _b_toast_text(r, timeout_s: float = 10) -> str:
-    """가장 최근 토스트 문구(ui.js UI.toast: #toastHost .toast). 없으면 ''."""
-    loc = r.page.locator("#toastHost .toast")
-    try:
-        loc.last.wait_for(timeout=timeout_s * 1000)
-        return loc.last.inner_text().replace("×", "").strip()
-    except Exception:
-        return ""
 
 
 def _b_clear_toasts(r):
@@ -1129,47 +1127,6 @@ def _b_run_extraction(r, key: str, sid: str, i: int) -> dict:
            "quality": [f"{f['sop']}#{f['order'] or '-'} {f['kind']}" for f in _b_quality(src, body["preview"])]}
     r.memo.setdefault("b_extractions", {}).setdefault(key, []).append(out)
     return out
-
-
-def _b_review_exceptions(r, key: str):
-    """적재 전 예외 경로(화면): 검토 표시 없이 적재 · 고장 유형 비우기 · 빈 단계 · 참고 절차 사용 방식 미선택. 모두 원래 값으로 되돌린다."""
-    page = r.page
-    msg = lambda: page.locator("#manualMsg").inner_text().strip()                            # noqa: E731
-    page.uncheck("#manualReviewed")
-    page.click("#manualCommit")
-    r.check("검토 표시 없이 적재를 누르면 막고 할 일을 말한다", "검토 완료" in msg(), msg(), kind="exception")
-    fms = page.locator("select[data-fm]:not([disabled])")
-    if fms.count():
-        sel = fms.first
-        sop, keep = sel.get_attribute("data-fm"), sel.input_value()
-        sel.select_option("")
-        page.check("#manualReviewed")
-        page.click("#manualCommit")
-        r.check("고장 유형을 비우고 적재 → 「고장 유형을 고르세요」로 막음", "고장 유형을 고르세요" in msg() and sop in msg(), msg(), kind="exception")
-        sel.select_option(keep)
-    steps = page.locator("textarea[data-manual-step]")
-    if steps.count():
-        ta = steps.first
-        keep = ta.input_value()
-        ta.fill("")
-        r.check("단계를 고치면 검토 표시가 풀리고 다시 검토하라는 문구가 보인다",
-                not page.is_checked("#manualReviewed") and page.locator("#manualReviewChanged").is_visible(), "", kind="quality")
-        page.check("#manualReviewed")
-        page.click("#manualCommit")
-        r.wait(30, lambda: msg().startswith("실패") or msg().startswith("적재 완료"), every=1)
-        ok, why = r.human_message(msg())
-        r.check("빈 단계로 적재 → 서버가 거절하고 한국어로 사유를 말한다", msg().startswith("실패") and "빈 단계" in msg() and ok, why, kind="exception")
-        ta.fill(keep)
-    kinds = page.locator("select[data-kind]")
-    if kinds.count():
-        k = kinds.first
-        keep = k.input_value()
-        k.select_option("reference")
-        page.check("#manualReviewed")
-        page.click("#manualCommit")
-        r.check("참고 절차로 바꾸고 사용 방식을 안 고르면 막는다", "참고 보관" in msg(), msg(), kind="exception")
-        k.select_option(keep)
-    page.uncheck("#manualReviewed")
 
 
 def _b_apply_review(r, key: str, preview_body: dict) -> list[str]:
@@ -1368,12 +1325,13 @@ def _b_agents(r) -> list[dict]:
     return r.get(f"{r.process}/api/agents")
 
 
-def _b_agent_form(r, *, name=None, role=None, goal=None, persona=None, model=None, tools=None) -> str:
-    """열린 에이전트 폼 칸을 채우고 저장한다. 폼 오류 문구(없으면 '')를 돌려준다(agents.js formHtml · submitForm). 코드 확인."""
+def _b_agent_form(r, *, name=None, role=None, goal=None, persona=None, tools=None) -> str:
+    """열린 에이전트 폼 칸을 채우고 저장한다. 폼 오류 문구(없으면 '')를 돌려준다(agents.js formHtml · submitForm). 코드 확인.
+    모델은 고르는 칸이 없다 — 두 단계 모두 「수업 모델(강사 지정)」 읽기 전용 표시다."""
     page = r.page
     form = page.locator("[data-ag-form]")
     form.wait_for(timeout=10_000)
-    for key, val in (("name", name), ("role", role), ("goal", goal), ("persona", persona), ("model", model)):
+    for key, val in (("name", name), ("role", role), ("goal", goal), ("persona", persona)):
         if val is not None:
             form.locator(f"[data-f='{key}']").fill(val)
     if tools is not None:
@@ -1425,28 +1383,17 @@ def _b_ask(r, agent_id: str, question: str) -> dict:
             "screen": page.locator(f".ask-a:has(a[href='{href}'])").first.inner_text()[-1500:] if href and page.locator(f".ask-a:has(a[href='{href}'])").count() else ""}
 
 
-def _b_check_model_override(r: Round, agent_id: str, course: bool):
-    """Check model policy without issuing a question when a course denies the edit."""
-    # 수업에서는 모델 변경을 저장 전에 막고, 다른 일반 운영 모드는 기존 실행 시 검사를 유지한다.
-    _b_open_agent_edit(r, agent_id)
-    err = _b_agent_form(r, model="gpt-9-ultra")
-    if course:
-        ok, why = r.human_message(err)
-        current = next(a for a in _b_agents(r) if a["id"] == agent_id)
-        r.check("허용하지 않은 모델은 저장 전에 차단되고 원래 설정을 유지한다",
-                "기본 모델" in err and ok and current.get("model") in (None, "", "coding"), why, kind="exception")
-        err = _b_agent_form(r, model="")
-    else:
-        warn = _b_toast_text(r, 3)
-        r.check("모양이 맞는 모델 이름은 저장된다(중계 목록은 실행 때 확인)", not err, f"저장 결과 '{err}' · 토스트 '{warn}'", kind="quality")
-        bad = _b_ask(r, agent_id, "HYD-01 유온 최근 값은?")
-        ok, why = r.human_message(bad.get("message") or bad.get("reason") or "")
-        r.check("엉뚱한 모델로 실행 → 무한 대기 없이 실패 · 사람 글로 무엇을 고칠지(모델 칸)", bad.get("state") in ("failed", "done") and bad.get("seconds", 999) <= _B_ASK_LIMIT_S and ok
-                and (bad.get("state") != "failed" or "모델 칸" in (bad.get("message") or "")),
-                f"{bad.get('state')} · {why}", kind="exception", seconds=bad.get("seconds"))
-        _b_open_agent_edit(r, agent_id)
-        err = _b_agent_form(r, model="")
-    r.check("모델 칸을 비워 되돌림(실행기 기본 모델)", not err and not next(a for a in _b_agents(r) if a["id"] == agent_id).get("model"), err, kind="exception")
+def _b_check_model_override(r: Round, agent_id: str):
+    """수업 모델 밖 모델은 두 단계 모두 서버가 막는다(악용 지점 — course_policy.agent_model_error). 화면에는 모델 칸이 없으므로
+    화면을 거치지 않고 서버에 직접 보내는 경우를 본다. 질문을 부르지 않는다."""
+    before = next(a for a in _b_agents(r) if a["id"] == agent_id)
+    code, body = r.api("PUT", f"{r.process}/api/agents/{agent_id}", {**{k: before.get(k) or "" for k in ("name", "role", "goal", "persona")},
+                                                                      "tools": before.get("tools") or [], "model": "gpt-9-ultra"})
+    detail = str(body.get("detail") if isinstance(body, dict) else body)
+    ok, why = r.human_message(detail)
+    after = next(a for a in _b_agents(r) if a["id"] == agent_id)
+    r.check("수업 모델 밖 모델을 서버에 직접 보내면 거절되고 원래 설정을 유지한다",
+            400 <= code < 500 and "수업 모델" in detail and ok and after.get("model") == before.get("model"), f"{code} {why}", kind="exception")
 
 
 @lab("06", "5-1 · 4-1 나의 첫 에이전트 (에이전트 · 에이전트에게 질문)")
@@ -1458,12 +1405,10 @@ def lab_06_first_agent(r: Round):
     page.click("[data-new-agent]")
     err = _b_agent_form(r)
     r.check("빈 폼 저장 → 「이름 칸을 채워야 합니다」", "이름" in err and "채워야" in err, err, kind="exception")
-    err = _b_agent_form(r, name="모델 실험", goal="모델 칸 시험", model="모델 이름!")
-    code, access = r.api("GET", f"{r.process}/api/course-access")
-    course = code == 200 and isinstance(access, dict) and access.get("capabilities", {}).get("model_settings") is False
-    expected = "기본 모델" if course else "모델 이름 모양"
-    r.check("허용하지 않은 모델 → 저장 거절 · 사람 글", expected in err and r.human_message(err)[0], err, kind="exception")
-    err = _b_agent_form(r, name="냉각 긴급 대응 에이전트", goal="기본 에이전트와 같은 이름", model="")
+    form_text = page.locator("[data-ag-form]").inner_text()
+    r.check("모델은 고르는 칸 없이 「수업 모델(강사 지정)」로 보인다", page.locator("[data-ag-form] [data-f='model']").count() == 0 and "수업 모델" in form_text,
+            form_text[:200], kind="exception")
+    err = _b_agent_form(r, name="냉각 긴급 대응 에이전트", goal="기본 에이전트와 같은 이름")
     r.check("기본 에이전트와 같은 이름 → 거절", "같은 이름" in err, err, kind="exception")
 
     mine = next((a for a in _b_agents(r) if a.get("name") == _B_AGENT_NAME and a.get("origin") == "user"), None)
@@ -1471,7 +1416,7 @@ def lab_06_first_agent(r: Round):
                    goal="쿨러 과열 경보 한 건에 대해 지식 그래프의 원인 · 조치 절차와 센서 기록을 찾아 정리하고, HM-8 매뉴얼 규칙을 지키는 조치 후보 3개를 "
                         "순위와 함께 제안한다. 승인 전에는 조회 · 계산 · 요약만 한다.",
                    persona="근거(조회한 도구와 값)를 먼저 말한다. 조회해서 나오지 않으면 지어내지 않고 모른다고 한다.",
-                   model="", tools=["neo4j", "hyd-dmn"])
+                   tools=["neo4j", "hyd-dmn"])
     if mine:                                                                                    # 두 번째 실행 PC: 같은 이름이 이미 있다 → 중복 거절을 먼저 본다
         err = _b_agent_form(r, **profile)
         r.check("같은 이름 중복 → 거절(두 번째 실행 PC)", "같은 이름" in err, err, kind="exception")
@@ -1515,7 +1460,7 @@ def lab_06_first_agent(r: Round):
         # 연속 확인: 이미 실제 Luna 로 검증한 같은 질문은 다시 만들지 않는다(6_남은_일.md 「새 로컬 학생 질문의 정보 없음 실제 검증」)
         r.not_measured.append(dict(lab=r.lab, name="기준 에이전트 비교 · 지식에 없는 질문(고객센터 전화번호)",
                                    why="--ai-runs 1: 같은 질문의 기존 실제 실행 증거(course-model-unknown-question-live)를 재사용, 재생성하지 않음"))
-        _b_check_model_override(r, mine["id"], course)
+        _b_check_model_override(r, mine["id"])
         return
 
     # ---- 기준 에이전트와 비교(같은 질문을 기본 에이전트에게)
@@ -1532,78 +1477,13 @@ def lab_06_first_agent(r: Round):
         r.check("답할 수 없음 이유가 사람 글", ok, why, kind="exception")
     r.check("답할 수 없음 카드가 화면에 보인다", "답할 수 없음" in unk.get("screen", ""), unk.get("screen", "")[-200:], kind="exception")
 
-    _b_check_model_override(r, mine["id"], course)
+    _b_check_model_override(r, mine["id"])
     r.check("질문 화면 에이전트 도구 칩이 사람 이름으로 보인다",
             "도구 표시 이름" not in (r.tab("ask") or page.locator("[data-ask-form]").inner_text()),
             page.locator("[data-ask-form]").inner_text()[:300], kind="quality")       # ask.js:91 UI.toolName(서버 이름) — 라이브에서 「확인 중」 3개
 
 
 # ---------------------------------------------------------------------- 07
-def _b_free_port(start: int = 8311) -> int:
-    import socket
-    for port in range(start, start + 50):
-        with socket.socket() as s:
-            try:
-                s.bind(("0.0.0.0", port))
-                return port
-            except OSError:
-                continue
-    raise RuntimeError("학생 MCP 서버에 쓸 빈 포트가 없습니다")
-
-
-def _b_student_schema(r) -> str:
-    """T3(VS Code 랩)에서 학생이 한 일의 대역: students/_template/table.sql 을 s01 · 새 암호로 실행한다. 상태를 바꾼다(DB 쓰기) —
-    메인이 한 바퀴를 돌릴 때만. 지우기: drop schema stu_s01 cascade; drop role stu_s01_reader;"""
-    import secrets
-    import psycopg
-    pw = "stu-" + secrets.token_hex(8)
-    sql = (ROOT / "students/_template/table.sql").read_text(encoding="utf-8").replace("s00", _B_STUDENT).replace("change-me", pw)
-    db_port = host_ports().get(54322, 54322)
-    with psycopg.connect(f"postgresql://postgres:postgres@127.0.0.1:{db_port}/postgres", autocommit=True, connect_timeout=5) as c:
-        c.execute(sql)
-        c.execute(f"alter role stu_{_B_STUDENT}_reader password '{pw}'")                       # 두 번째 실행: 역할이 이미 있으면 암호만 바꾼다
-    return f"postgresql://stu_{_B_STUDENT}_reader:{pw}@127.0.0.1:{db_port}/postgres"
-
-
-def _b_start_mcp(r, dsn: str, port: int):
-    import os
-    import subprocess
-    env = dict(os.environ, STUDENT_DSN=dsn, STUDENT_SCHEMA=f"stu_{_B_STUDENT}", MCP_PORT=str(port), PYTHONUTF8="1")
-    log = open(r.out / f"mcp_table_reader-{port}.log", "ab")
-    proc = subprocess.Popen([sys.executable, str(ROOT / "students/_template/mcp_table_reader/server.py")],
-                            env=env, stdout=log, stderr=subprocess.STDOUT, cwd=str(ROOT))
-    ok = r.wait(30, lambda: r.api("GET", f"http://127.0.0.1:{port}/healthz", timeout=3)[1].get("ok"), every=1)
-    return proc, bool(ok)
-
-
-def _b_stop_mcp(proc):
-    if proc and proc.poll() is None:
-        proc.terminate()
-        try:
-            proc.wait(10)
-        except Exception:
-            proc.kill()
-
-
-def _b_mcp_form(r, *, name: str, url: str, description: str = "", dry: bool = False, edit: bool = False) -> tuple[str, str]:
-    """도구 연결 → 운영자 직접 등록 · 연결 설정 → 서버 직접 등록 폼. (폼 오류, 검사 결과 글)을 돌려준다(mcp.js renderForm · submitForm)."""
-    page = r.page
-    form = page.locator("#mcpForm .mcp-form")
-    if not form.count():
-        if not page.locator("#mcpOperator").evaluate("d => d.open"):
-            page.locator("#mcpOperator > summary").click()                                     # 라이브 확인
-        page.click("#mcpAdd")                                                                   # 라이브 확인
-        form.wait_for(timeout=5000)
-    if not edit:
-        form.locator("[data-f='name']").fill(name)
-    form.locator("[data-f='url']").fill(url)
-    form.locator("[data-f='description']").fill(description)
-    _b_clear_toasts(r)
-    page.click("#mcpDry" if dry else "#mcpSave")
-    r.wait(20, lambda: not page.locator("#mcpForm .mcp-form").count() or not page.locator("#mcpDry").is_disabled(), every=0.5)
-    err = page.locator("#mcpForm .form-msg.neg")
-    res = page.locator("#mcpFormResult")
-    return (err.first.inner_text().strip() if err.count() else ""), (res.first.inner_text().strip() if res.count() else "")
 
 
 def _b_mcp_select(r, name: str):
@@ -1612,13 +1492,6 @@ def _b_mcp_select(r, name: str):
     r.wait(15, lambda: page.locator(f"#mcpServers [data-open='{name}']").count(), every=1)
     page.locator(f"#mcpServers [data-open='{name}']").first.click()                            # 「도구 보기」 — 라이브 확인(기준 서버)
     page.locator("#mcpDetail .mcp-detail").wait_for(timeout=10_000)
-
-
-def _b_mcp_probe(r, name: str) -> str:
-    _b_mcp_select(r, name)
-    _b_clear_toasts(r)
-    r.page.click("#mcpProbe")                                                                   # 「연결 검사」 — 코드 확인
-    return _b_toast_text(r, 15)
 
 
 def _b_mcp_try(r, tool: str, inputs: dict) -> str:
@@ -1636,15 +1509,13 @@ def _b_mcp_try(r, tool: str, inputs: dict) -> str:
 @lab("07", "6-1 · 4-4 도구(MCP) 연결 · 써 보기 · 에이전트에 연결")
 def lab_07_mcp_tools(r: Round):
     page = r.page
-    code, access = r.api("GET", f"{r.process}/api/course-access")
-    if code == 200 and isinstance(access, dict) and access.get("capabilities", {}).get("tool_inspection") is True:
-        # 학생 화면에서 준비된 조회 경로와 차단 경계를 검사한다. 아래 교재의
-        # 개인 서버 등록은 현재 정책과 충돌하므로 성공으로 바꾸지 않는다.
+    if _course_phase(r) == "course":
+        # 학생 화면에서 준비된 조회 경로와 차단 경계를 검사한다(수업 단계는 외부 도구 서버 등록을 막는다 — 악용 지점)
         r.tab("mcp")
         r.wait(20, lambda: page.locator("#mcpServers [data-open='hyd-dmn']").count(), every=0.5)
         servers = r.get(f"{r.process}/api/mcp/servers").get("servers", [])
         names = {server["name"] for server in servers}
-        r.check("준비된 조회 서버만 표시", names == {"neo4j", "enterprise", "hyd-dmn"}, str(sorted(names)))
+        r.check("준비된 서버(에이전트가 쓰는 기본 서버 전부)가 보인다", names == set(BASE_SERVERS), str(sorted(names)))
         r.check("서버 관리 화면은 감춰짐", page.locator("#mcpOperator").is_hidden(), kind="exception")
         _b_mcp_select(r, "hyd-dmn")
         page.locator("#mcpPane [data-try='inputs']").wait_for(timeout=15_000)
@@ -1662,148 +1533,8 @@ def lab_07_mcp_tools(r: Round):
         r.not_measured.append(dict(lab=r.lab, name="6회차 대본의 포털 개인 서버 등록 단계",
                                    why="최신 실라버스는 포털 등록을 요구하지 않음 · 대본 정합은 교재 작업(미해결)"))
         return
-    # ---- 사전 준비 서버 상태(기준 서버는 보기만)
-    r.tab("mcp")
-    r.wait(20, lambda: page.locator("#mcpServers [data-name]").count() >= 5, every=1)
-    page.wait_for_timeout(5000)                                                                 # 서버마다 연결 확인(최대 4초, mcp.js probe)
-    cards = page.locator("#mcpServers").inner_text()
-    r.check("사전 준비 서버 5개가 연결됨 · 워커에서 실행으로 보인다", cards.count("연결됨") >= 4 and "연결 실패" not in cards, cards[:400])
-    _b_mcp_select(r, "enterprise")
-    r.check("기준 서버는 고치기 · 지우기 버튼이 없다", page.locator("#mcpEdit, #mcpDelete").count() == 0, kind="exception")
-    tools = page.locator("#mcpPane .mcp-tool").count()
-    r.check("기준 서버 도구 목록(이름 · 입력 형식)이 보인다", tools > 0, f"도구 {tools}개")
-
-    # ---- 학생 PC: 내 업무 표 + 내 서버 띄우기(README: STUDENT_DSN · STUDENT_SCHEMA · MCP_PORT python server.py)
-    try:
-        dsn = _b_student_schema(r)
-    except Exception as e:
-        r.check("T3 학생 업무 표(stu_s01) 준비", False, f"{type(e).__name__}: {e}")
-        return
-    port = _b_free_port()
-    proc, up = _b_start_mcp(r, dsn, port)
-    r.check(f"학생 MCP 서버가 내 PC에서 뜬다(포트 {port})", up, f"로그 {r.out}/mcp_table_reader-{port}.log")
-    if not up:
-        _b_stop_mcp(proc)
-        return
-    url = f"http://host.docker.internal:{port}/mcp"                                            # README · 폼 안내 문구와 같은 주소
-    try:
-        # 컨테이너 워커가 학생 PC 서버에 닿는 길: compose agent-worker · process 의 extra_hosts host-gateway (compose.yaml:345 · 405 · 573)
-        import subprocess
-        worker_id = subprocess.run(["docker", "compose", "ps", "-q", "agent-worker"], cwd=ROOT,
-                                   capture_output=True, text=True, timeout=15, check=True).stdout.strip()
-        if not worker_id:
-            raise RuntimeError("현재 Compose 프로젝트의 agent-worker 컨테이너가 없습니다")
-        hosts = subprocess.run(["docker", "inspect", "--format", "{{json .HostConfig.ExtraHosts}}", worker_id],
-                               capture_output=True, text=True, timeout=15, check=True).stdout
-        r.check("컨테이너 워커에 host.docker.internal → host-gateway 가 있다", "host.docker.internal:host-gateway" in hosts, hosts.strip(), kind="quality")
-    except Exception as e:                                                                      # docker 명령이 없는 PC(강의실 Windows 아님)는 판정만 남긴다
-        r.check("컨테이너 워커 extra_hosts 확인", False, f"{type(e).__name__}: {e}", kind="quality")
-
-    try:
-        # ---- 등록: 예외 먼저(잘못된 이름 · 꺼진 주소 검사만) → 정상 등록 → 중복 · 기준 이름
-        servers = {s["name"]: s for s in r.get(f"{r.process}/api/mcp/servers")["servers"]}
-        r.tab("mcp")
-        err, _ = _b_mcp_form(r, name="S01_Table", url=url, description="내 업무 표 읽기")
-        r.check("잘못된 서버 이름 → 거절 · 무엇을 쓸지 말한다", "소문자" in err and r.human_message(err)[0], err, kind="exception")
-        err, res = _b_mcp_form(r, name=_B_MCP_NAME, url=f"http://host.docker.internal:{_b_free_port(port + 1)}/mcp", dry=True)
-        ok, why = r.human_message(res)
-        r.check("꺼진 주소로 연결 검사만 → 실패 사유(연결 거부)가 사람 글", "연결 검사 실패" in res and ok, why, kind="exception")
-        if _B_MCP_NAME in servers:                                                              # 두 번째 실행 PC: 이미 있다 → 고치기(새 포트)
-            page.locator("#mcpFormClose").click()
-            _b_mcp_select(r, _B_MCP_NAME)
-            page.click("#mcpEdit")
-            err, res = _b_mcp_form(r, name=_B_MCP_NAME, url=url, description="내 업무 표 읽기", edit=True)
-            r.check("이미 등록한 내 서버를 고치기(새 주소) → 검사 후 저장", not err, err or res)
-        else:
-            err, res = _b_mcp_form(r, name=_B_MCP_NAME, url=url, description="내 업무 표 읽기")
-            toast = _b_toast_text(r, 5)
-            r.check("내 서버 검사 후 등록 → 읽기 도구 3개", not err and "등록했습니다" in toast and "3개" in toast, err or toast)
-        err, _ = _b_mcp_form(r, name=_B_MCP_NAME, url=url)
-        r.check("같은 이름 중복 등록 → 거절 · 고치기를 쓰라고 말한다", "이미 있습니다" in err, err, kind="exception")
-        err, _ = _b_mcp_form(r, name="enterprise", url=url)
-        r.check("기준 서버 이름으로 등록 → 거절", "기준" in err, err, kind="exception")
-        if page.locator("#mcpFormClose").count():
-            page.locator("#mcpFormClose").click()
-
-        # ---- 연결 검사 → 써 보기 → (없는 표 · 틀린 입력) → 호출 기록
-        toast = _b_mcp_probe(r, _B_MCP_NAME)
-        r.check("내 서버 연결 검사 통과 · 도구 수", "통과" in toast, toast)
-        detail = page.locator("#mcpDetail").inner_text()
-        r.check("「에이전트 도구로 고를 수 있음」 · 「내가 등록」", "에이전트 도구로 고를 수 있음" in detail, detail[:300])
-        out = _b_mcp_try(r, "list_tables", {})
-        r.check("써 보기 list_tables → meeting · attendee 표", "meeting" in out and "attendee" in out, out[:300])
-        out = _b_mcp_try(r, "read_rows", {"table": "meeting", "limit": "5"})
-        r.check("써 보기 read_rows → 행 · 보낸 입력 · 시간", f"{_B_STUDENT}:meeting-q3" in out and "보낸 입력" in out, out[:300])
-        out = _b_mcp_try(r, "read_rows", {"table": "no_such_table", "limit": "5"})
-        r.check("없는 표 → 도구가 한국어로 거절(있는 표 목록)", "없습니다" in out and "meeting" in out, out[:300], kind="exception")
-        chip = page.locator("#mcpResult .chip").first.inner_text() if page.locator("#mcpResult .chip").count() else ""
-        r.check("없는 표 결과 칩이 성공(「결과」)이 아니라 오류로 보인다", chip != "결과", f"칩 '{chip}' — 도구가 {{result: error}} 봉투를 돌려도 is_error 가 아니라 초록 칩(mcp.js resultHtml · mcp_check.shape_result)",
-                kind="quality")
-        out = _b_mcp_try(r, "read_rows", {"table": "meeting", "limit": "abc"})
-        r.check("limit 에 글자 → 보내기 전에 「정수여야 합니다」", "정수" in out, out[:200], kind="exception")
-        code, body = r.api("POST", f"{r.process}/api/mcp/servers/{_B_MCP_NAME}/tools/drop_tables/call", {"arguments": {}, "timeout": 10, "by": "수업 한 바퀴"})
-        # 화면에는 도구 이름을 적는 칸이 없다(목록에서만 고름) → 잘못된 도구 이름은 API 로만 볼 수 있다(관측 보완)
-        r.check("없는 도구 이름 → 404 · 한국어 사유", code == 404 and r.human_message(str((body or {}).get("detail")))[0], f"{code} {body}", kind="exception")
-        page.click("#mcpDetail [data-mcp-tab='calls']")
-        r.wait(10, lambda: "불러오는 중" not in page.locator("#mcpCallList").inner_text(), every=1)
-        r.check("호출 기록(에이전트 실행 전): 비어 있음 안내가 사람 글", r.human_message(page.locator("#mcpCallList").inner_text())[0],
-                page.locator("#mcpCallList").inner_text()[:200], kind="normal")
-
-        # ---- 기존(내) 에이전트에 연결해 실행(AI 3회) — 컨테이너 워커 → host.docker.internal → 학생 PC 서버
-        agent_id = r.memo.get("my_agent")
-        if not agent_id:
-            r.check("06의 나의 에이전트가 있어야 연결할 수 있다", False)
-            return
-        _b_open_agent_edit(r, agent_id)
-        page.locator("[data-ag-form]").wait_for(timeout=10_000)
-        r.check("에이전트 폼 도구 목록에 내 서버가 「연결 확인됨」으로 보인다",
-                page.locator(f"[data-ag-form] input[data-f-tool][value='{_B_MCP_NAME}']").count() == 1, kind="normal")
-        err = _b_agent_form(r, tools=["neo4j", "hyd-dmn", _B_MCP_NAME])
-        r.check("나의 에이전트 도구에 내 서버 붙이기", not err, err)
-        q = f"내 업무 표(stu_{_B_STUDENT})에서 회의 {_B_STUDENT}:meeting-q3 에 잡힌 회의실 좌석 수와, 필수 참석자 가운데 아직 응답하지 않은 사람의 이메일을 알려 줘."
-
-        def ask_once(i):
-            v = _b_ask(r, agent_id, q)
-            used = [t for t in v["tools"] if _B_MCP_NAME in t]
-            v.update(student_tool_used=bool(used), answer_has_seats=bool(re.search(r"\b4\s*(?:석|개|명|좌석)?", v["answer"])),
-                     answer_has_customer="customer@example.com" in v["answer"])
-            return v
-
-        runs = r.repeat3("내 서버를 쓰는 질문", ask_once, ("kind", "student_tool_used", "answer_has_seats", "answer_has_customer"), limit_s=_B_ASK_LIMIT_S)
-        last = runs[-1]
-        r.check("컨테이너 워커가 학생 PC 서버 도구를 실제로 불렀다", last.get("student_tool_used"), str(last.get("tools")))
-        r.check("답이 표의 실제 값(좌석 4 · 무응답 customer@)과 맞고 근거 확인", last.get("answer_has_seats") and last.get("answer_has_customer") and last.get("verified_ok"),
-                last.get("answer"), kind="quality")
-        _b_mcp_select(r, _B_MCP_NAME)
-        page.click("#mcpDetail [data-mcp-tab='calls']")
-        r.wait(15, lambda: page.locator("#mcpCallList .mcp-calls li").count(), every=1)
-        calls = page.locator("#mcpCallList").inner_text()
-        r.check("호출 기록: 도구 이름 · 입력 · 결과 · 처리 건 링크", page.locator("#mcpCallList .mcp-calls li").count() >= 1 and "입력" in calls and "처리 건" in calls, calls[:400])
-
-        # ---- 서버가 꺼진 상태: 검사 실패 사유 · 에이전트가 지어내지 않음 → 다시 켜고 검사(되돌리기)
-        _b_stop_mcp(proc)
-        toast = _b_mcp_probe(r, _B_MCP_NAME)
-        ok, why = r.human_message(toast)
-        r.check("서버를 끄고 연결 검사 → 실패(연결 거부) · 사람 글", "실패" in toast and ok, why, kind="exception")
-        # 검사 결과로 상세 머리(gateLine)가 다시 그려질 때까지(final5: 토스트 직후 옛 상세를 읽음 — 카드에는 이미 「연결 검사 실패」)
-        r.wait(15, lambda: "고를 수 없음" in page.locator("#mcpDetail").inner_text(), every=1)
-        r.check("검사 실패 뒤 「에이전트 도구로 고를 수 없음」", "고를 수 없음" in page.locator("#mcpDetail").inner_text(), kind="exception")
-        off = _b_ask(r, agent_id, q)
-        r.check("서버가 꺼졌을 때 질문 → 표 값을 지어내지 않는다", not ("customer@example.com" in off["answer"] and off.get("kind") == "answered"),
-                f"{off.get('kind')} · {off.get('answer')[:200]}", kind="exception")
-        proc, up = _b_start_mcp(r, dsn, port)
-        toast = _b_mcp_probe(r, _B_MCP_NAME)
-        r.check("서버를 다시 켜고 연결 검사 → 다시 통과(뒤처진 학생 따라붙기)", up and "통과" in toast, toast, kind="exception")
-    finally:
-        _b_stop_mcp(proc)
-        # 다음 실습이 꺼진 학생 서버를 붙인 채 에이전트를 돌리지 않게 도구를 뗀다(등록은 남긴다 — 메뉴 순회에서 「연결 거부」 칩으로 보인다)
-        if r.memo.get("my_agent"):
-            try:
-                _b_open_agent_edit(r, r.memo["my_agent"])
-                _b_agent_form(r, tools=["neo4j", "hyd-dmn"])
-            except Exception:
-                pass
-        r.memo["b_mcp"] = {"name": _B_MCP_NAME, "port": port, "server_stopped": True}
+    # PBL 단계의 개인 도구 서버 등록 · 써 보기는 학생 랩 시작본(VS Code 랩)이 main 에 없어 이 도구가 재지 않는다
+    r.not_measured.append(dict(lab=r.lab, name="PBL 단계 개인 도구 서버 등록 · 써 보기", why="학생 랩 시작본 서버가 main 에 없음 — PBL 단계 수업에서 확인"))
 
 
 # ====================================================================== part_C
@@ -1823,147 +1554,12 @@ def lab_07_mcp_tools(r: Round):
 
 C_AI_WAIT_S = 900          # 판단 · 제안 결과(카드)까지 기다리는 상한 — 워커 4단계 기준 흐름 회귀가 쓰는 900초와 같다(scenario_pump_fan_test --worker)
 C_AI_LIMIT_S = 300         # repeat3 소요 시간 판정 — 수업 진행상 한 단계 5분. 근거: B 의 야간 정비 창(가상 9 h = 실제 27분) 안에 승인까지 끝나야 한다
-C_RAISE_WAIT_S = 300       # 쿨러 moderate 열화 → COOLER_DEGRADATION RAISE(20배속, 평형 62.5 ℃ · 경보선 55 ℃) 넉넉히
-C_DELAY_NOTICE_S = 30      # PT10M ÷ 20
-C_REVIEW_TTL_S = 90        # 1800 시뮬레이션 초 ÷ 20
-C_FLOWS = ROOT / "students" / "flows"
 C_MAILS = {"production": "production@hyd.local", "supplier": "supplier@hyd.local", "receiving": "receiving@hyd.local"}
 C_PEOPLE = {"role:operator": "user:kim-op", "role:prod-mgr": "user:lee-prod", "role:maint-mgr": "user:park-maint",
             "role:purchasing": "user:jung-buy", "role:purchasing-mgr": "user:han-buymgr"}
-C_ROLE_NAME = {"운전원": "role:operator", "생산관리자": "role:prod-mgr", "설비보전팀장": "role:maint-mgr", "구매 담당": "role:purchasing",
-               "구매팀장": "role:purchasing-mgr"}
 
 
-# ====================================================================== bpmn.io 꼴 그림 만들기
-# 학생이 demo.bpmn.io 에서 새로 그려 [Download BPMN diagram] 으로 받은 파일 모양: 고유 id(Activity_0abc123 · Gateway_ · Event_ · Flow_ ·
-# StartEvent_1 · Process_), incoming/outgoing 자식, bpmndi:BPMNDiagram(좌표). students/flows/*.bpmn(T_agent 꼴 id)과 다르다.
-# 시작은 bpmn.io 기본값인 빈 시작(메시지 정의 없음) — 그래서 가져오면 시작 조건 기본값이 「사람 입력 · 직접 시작」이 되고,
-# 학생이 「경보로 시작」을 직접 골라야 한다(bpmn_import.merge_mapping 513-519).
-def _c_fnv(text: str) -> int:
-    h = 0xcbf29ce484222325
-    for b in text.encode("utf-8"):
-        h = ((h ^ b) * 0x100000001b3) & 0xFFFFFFFFFFFFFFFF
-    return h
-
-
-def _c_bid(prefix: str, seed: str) -> str:
-    """bpmn.io 가 붙이는 꼴의 id: 접두어 + 7글자(첫 글자 0/1, 나머지 base36)."""
-    n, digits = _c_fnv(seed), "0123456789abcdefghijklmnopqrstuvwxyz"
-    tail = "".join(digits[(n >> (6 * i)) % 36] for i in range(6))
-    return f"{prefix}_{n % 2}{tail}"
-
-
-def _c_esc(s: str) -> str:
-    return str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
-
-
-def _c_draw(seed: str, name: str, nodes: list, flows: list, lanes: list | None = None, interrupting_timer: bool = False) -> tuple[str, dict]:
-    """nodes = [(key, kind, 이름, 열, 행, 붙을 key)] kind: start · task · userTask · serviceTask · xor · end · timer
-    flows = [(key, 출발 key, 도착 key, 선 이름)]  lanes = [(이름, [node key…])] (있으면 풀 하나 + 칸)
-    돌려줌: (xml, {key: 생성 id}). interrupting_timer=True 는 bpmn.io 기본 타이머(끊는 경계 이벤트, cancelActivity 속성 없음)."""
-    ids = {"__proc": _c_bid("Process", seed), "__defs": _c_bid("Definitions", seed + "d")}
-    for k, kind, *_ in nodes:
-        ids[k] = ("StartEvent_1" if kind == "start" else
-                  _c_bid({"task": "Activity", "userTask": "Activity", "serviceTask": "Activity", "xor": "Gateway"}.get(kind, "Event"), seed + k))
-    for k, *_ in flows:
-        ids[k] = _c_bid("Flow", seed + k)
-    inc, out = {}, {}
-    for k, s, t, _n in flows:
-        out.setdefault(s, []).append(ids[k]); inc.setdefault(t, []).append(ids[k])
-    size = {"start": (36, 36), "end": (36, 36), "timer": (36, 36), "xor": (50, 50)}
-    pos = {}
-    for k, kind, _nm, col, row, *_ in nodes:
-        w, h = size.get(kind, (100, 80))
-        pos[k] = (180 + col * 160, 100 + row * 140, w, h)
-    body = []
-    for k, kind, nm, col, row, *rest in nodes:
-        attr = f' name="{_c_esc(nm)}"' if nm else ""
-        kids = "".join(f"<bpmn:incoming>{f}</bpmn:incoming>" for f in inc.get(k, [])) + "".join(f"<bpmn:outgoing>{f}</bpmn:outgoing>" for f in out.get(k, []))
-        if kind == "start":
-            body.append(f'<bpmn:startEvent id="{ids[k]}"{attr}>{kids}</bpmn:startEvent>')
-        elif kind == "end":
-            body.append(f'<bpmn:endEvent id="{ids[k]}"{attr}>{kids}</bpmn:endEvent>')
-        elif kind == "xor":
-            body.append(f'<bpmn:exclusiveGateway id="{ids[k]}"{attr}>{kids}</bpmn:exclusiveGateway>')
-        elif kind == "timer":
-            cancel = "" if interrupting_timer else ' cancelActivity="false"'
-            body.append(f'<bpmn:boundaryEvent id="{ids[k]}"{attr}{cancel} attachedToRef="{ids[rest[0]]}">{kids}'
-                        f'<bpmn:timerEventDefinition id="{_c_bid("TimerEventDefinition", seed + k)}" /></bpmn:boundaryEvent>')
-        else:
-            body.append(f'<bpmn:{kind} id="{ids[k]}"{attr}>{kids}</bpmn:{kind}>')
-    for k, s, t, nm in flows:
-        attr = f' name="{_c_esc(nm)}"' if nm else ""
-        body.append(f'<bpmn:sequenceFlow id="{ids[k]}"{attr} sourceRef="{ids[s]}" targetRef="{ids[t]}" />')
-    lane_xml, collab, plane_ref = "", "", ids["__proc"]
-    if lanes:
-        part = _c_bid("Participant", seed)
-        collab = f'<bpmn:collaboration id="{_c_bid("Collaboration", seed)}"><bpmn:participant id="{part}" name="{_c_esc(name)}" processRef="{ids["__proc"]}" /></bpmn:collaboration>'
-        lane_xml = f'<bpmn:laneSet id="{_c_bid("LaneSet", seed)}">' + "".join(
-            f'<bpmn:lane id="{_c_bid("Lane", seed + ln)}" name="{_c_esc(ln)}">' + "".join(f"<bpmn:flowNodeRef>{ids[n]}</bpmn:flowNodeRef>" for n in members) + "</bpmn:lane>"
-            for ln, members in lanes) + "</bpmn:laneSet>"
-        plane_ref = _c_bid("Collaboration", seed)
-    di = []
-    for k, (x, y, w, h) in pos.items():
-        di.append(f'<bpmndi:BPMNShape id="{ids[k]}_di" bpmnElement="{ids[k]}"><dc:Bounds x="{x}" y="{y}" width="{w}" height="{h}" /><bpmndi:BPMNLabel /></bpmndi:BPMNShape>')
-    for k, s, t, _n in flows:
-        (sx, sy, sw, sh), (tx, ty, tw, th) = pos[s], pos[t]
-        di.append(f'<bpmndi:BPMNEdge id="{ids[k]}_di" bpmnElement="{ids[k]}"><di:waypoint x="{sx + sw}" y="{sy + sh // 2}" /><di:waypoint x="{tx}" y="{ty + th // 2}" /></bpmndi:BPMNEdge>')
-    xml = ('<?xml version="1.0" encoding="UTF-8"?>\n'
-           '<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" '
-           'xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" '
-           f'id="{ids["__defs"]}" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="17.11.1">\n'
-           f'{collab}<bpmn:process id="{ids["__proc"]}" isExecutable="false">{lane_xml}' + "\n".join(body) + "</bpmn:process>\n"
-           f'<bpmndi:BPMNDiagram id="BPMNDiagram_1"><bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="{plane_ref}">' + "".join(di)
-           + "</bpmndi:BPMNPlane></bpmndi:BPMNDiagram>\n</bpmn:definitions>\n")
-    return xml, ids
-
-
-# 세 흐름의 그림 — 이름은 학생이 새로 붙인 것(참조 파일과 일부 다름), ref 는 students/flows/*.mapping.json 의 키(학생이 표를 보며 고르는 줄)
-_C_APPROVAL_PART = [  # 공통 승인 단계: 승인 → 승인?(승인/거절), 점선 타이머 → 지연 알림
-    ("P", "userTask", None, 2, 0), ("B", "timer", "승인 지연", 2, 1, "P"), ("N", "serviceTask", "승인 지연 알림", 3, 2), ("EN", "end", "알림", 4, 2),
-    ("G1", "xor", "승인?", 3, 0), ("RJ", "serviceTask", "결과 보고: 거절", 4, 1), ("ERJ", "end", "거절 종결", 5, 1)]
-C_SPECS = {
-    "cooling": {"file": "cooling-emergency", "name": "내 냉각 긴급 대응", "pattern": "COOLER_DEGRADATION", "approver": "운전원",
-                "names": {"S": "쿨러 과열 경보", "A": "원인 진단 · 냉각 조치 제안", "P": "운전원 승인", "C": "냉각 명령", "O": "재관측",
-                          "G2": "유온 정상?", "W": "작업지시 등록", "ROK": "결과 보고: 정상", "RF": "결과 보고: 미달", "E": "끝"},
-                "ref": {"A": "T_agent", "P": "T_approve", "N": "T_notice", "RJ": "R_rejected", "C": "T_cmd", "O": "T_reobs", "W": "T_wo",
-                        "ROK": "R_ok", "RF": "R_fail", "B": "B_overdue", "f_ok": "F_approved", "f_rej": "F_rejected", "f_yes": "F_yes", "f_no": "F_no"},
-                "tail": [("C", "serviceTask", None, 4, 0), ("O", "serviceTask", None, 5, 0), ("G2", "xor", None, 6, 0), ("W", "serviceTask", None, 7, 0),
-                         ("ROK", "serviceTask", None, 8, 0), ("E", "end", None, 9, 0), ("RF", "serviceTask", None, 7, 1)],
-                "tail_flows": [("f_ok", "G1", "C", "승인"), ("f4", "C", "O", ""), ("f5", "O", "G2", ""), ("f_yes", "G2", "W", "예"), ("f_no", "G2", "RF", "아니오"),
-                               ("f6", "W", "ROK", ""), ("f7", "ROK", "E", ""), ("f8", "RF", "E", "")]},
-    "pm": {"file": "pm-planning", "name": "내 정기 정비", "pattern": "PM_DUE", "approver": "설비보전팀장",
-           "names": {"S": "정기 점검 요청", "A": "정비 계획 제안", "P": "설비보전팀장 승인", "W": "정비 오더 등록 · 공지 메일", "ROK": "결과 보고", "E": "끝"},
-           "ref": {"A": "T_agent", "P": "T_approve", "N": "T_notice", "RJ": "R_rejected", "W": "T_wo", "ROK": "R_ok", "B": "B_overdue",
-                   "f_ok": "F_approved", "f_rej": "F_rejected"},
-           "tail": [("W", "serviceTask", None, 4, 0), ("ROK", "serviceTask", None, 5, 0), ("E", "end", None, 6, 0)],
-           "tail_flows": [("f_ok", "G1", "W", "승인"), ("f4", "W", "ROK", ""), ("f5", "ROK", "E", "")]},
-    "spare": {"file": "spare-purchase", "name": "내 예비품 구매", "pattern": "SPARE_BELOW_MIN", "approver": "구매 담당",
-              "names": {"S": "재고 보충 요청", "A": "발주안 제안", "P": "구매 담당 승인", "PO": "ERP 발주 · 공급사 메일", "GR": "입고 · 재고 반영",
-                        "ROK": "결과 보고", "E": "끝"},
-              "ref": {"A": "T_agent", "P": "T_approve", "N": "T_notice", "RJ": "R_rejected", "PO": "T_po", "GR": "T_gr", "ROK": "R_ok", "B": "B_overdue",
-                      "f_ok": "F_approved", "f_rej": "F_rejected"},
-              "tail": [("PO", "serviceTask", None, 4, 0), ("GR", "serviceTask", None, 5, 0), ("ROK", "serviceTask", None, 6, 0), ("E", "end", None, 7, 0)],
-              "tail_flows": [("f_ok", "G1", "PO", "승인"), ("f4", "PO", "GR", ""), ("f5", "GR", "ROK", ""), ("f6", "ROK", "E", "")]},
-}
-
-
-def _c_spec_xml(kind: str, seed: str, interrupting_timer: bool = False) -> tuple[str, dict, dict]:
-    """(xml, ids, 단계 이름표 {key: 이름})."""
-    sp = C_SPECS[kind]
-    names = dict(sp["names"])
-    names.setdefault("N", "승인 지연 알림"); names.setdefault("RJ", "결과 보고: 거절")
-    nodes = [("S", "start", names["S"], 0, 0), ("A", "task", names["A"], 1, 0)]
-    for k, knd, nm, col, row, *att in _C_APPROVAL_PART + sp["tail"]:
-        nodes.append((k, knd, names.get(k, nm), col, row, *att))
-    flows = [("f1", "S", "A", ""), ("f2", "A", "P", ""), ("f3", "P", "G1", ""), ("f_rej", "G1", "RJ", "거절"), ("frj", "RJ", "ERJ", ""),
-             ("fov", "B", "N", ""), ("fne", "N", "EN", "")] + sp["tail_flows"]
-    xml, ids = _c_draw(seed, sp["name"], nodes, flows, interrupting_timer=interrupting_timer)
-    return xml, ids, {k: n[2] for k, n in zip([n[0] for n in nodes], nodes)}
-
-
-def _c_mapping(kind: str) -> dict:
-    return json.loads((C_FLOWS / f"{C_SPECS[kind]['file']}.mapping.json").read_text(encoding="utf-8"))
+C_SPECS = {"pm": {"name": "내 정기 정비"}, "spare": {"name": "내 예비품 구매"}}   # B · C 확인 줄의 이름표(흐름 정본은 it/process/procsvc/course_flows.json)
 
 
 # ====================================================================== 화면 조작 도우미 (흐름 가져오기)
@@ -1972,22 +1568,16 @@ def _c_settle(r, ms: int = 900):
     r.page.wait_for_timeout(ms)
 
 
-def _c_free_id(r, base: str) -> str:
-    """같은 스택에서 다시 돌려도 「새로 그린 흐름」이 되게: 이미 초안이 있으면 뒤에 번호. 학생이 my_cooling 을 쓰는 것과 같은 꼴."""
-    for n in range(0, 50):
-        cand = base if n == 0 else f"{base}{n + 1}"
-        code, _ = r.api("GET", f"{r.process}/api/flows/{cand}")
-        if code == 404:
-            return cand
-    return f"{base}_{int(time.time()) % 100000}"
-
-
 def _c_import(r, xml: str, file_name: str, def_id: str) -> tuple[str, bool]:
-    """[흐름 가져오기] 화면: 파일 고르기 → 흐름 id → [가져오기]. (메시지, 성공?)"""
+    """[흐름 가져오기] 화면: 파일 고르기 → 흐름 id → [가져오기]. (메시지, 성공?)
+    수업 단계에서는 흐름 id 칸이 잠겨 그림의 프로세스 id 를 그대로 쓴다(flows.js idField) — 그때는 칸을 건드리지 않는다."""
     r.tab("flows")
     r.page.wait_for_selector("#flowFile", state="attached")
     r.page.set_input_files("#flowFile", files=[{"name": file_name, "mimeType": "application/xml", "buffer": xml.encode("utf-8")}])
-    r.page.fill("#flowId", def_id)
+    if r.page.locator("#flowId").is_enabled():
+        r.page.fill("#flowId", def_id)
+    elif def_id:
+        return f"흐름 id 칸이 잠겨 있어 {def_id} 를 적을 수 없다(수업 단계)", False
     r.page.click("#flowImport")
     msg = r.page.locator("#flowImportMsg")
     r.wait(30, lambda: msg.inner_text().strip() not in ("", "읽는 중…"), every=0.5)
@@ -2113,74 +1703,8 @@ def _c_register(r) -> tuple[bool, str, str | None]:
     msg = r.page.locator("#flowMsg")
     r.wait(30, lambda: ("등록" in msg.inner_text()) or "neg" in (msg.get_attribute("class") or ""), every=0.5)
     text = msg.inner_text().strip()
-    m = re.search(r"판본 (\S+) 을\(를\) 등록했습니다", text)
+    m = re.search(r"판본 (\S+?)(?:을|를) 등록했습니다", text)          # 화면 문구: 「<이름> 판본 1을 등록했습니다.」(flows.js — 조사는 hydWords.josa)
     return bool(m), text, (m.group(1) if m else None)
-
-
-def _c_fill_cooling_like(r, kind: str, names: dict, *, skip: tuple = ()):
-    """mapping.json 대로 화면 입력. skip = 일부러 빼 둘 ref(예외 경로: 부품 누락 · 분기 조건 누락)."""
-    sp, m = C_SPECS[kind], _c_mapping(kind)
-    r.page.locator("#flowEditor #flowName").fill(m.get("name") and sp["name"])
-    _c_apply_start(r, m["start"])
-    ref = sp["ref"]
-    # 승인 단계를 먼저(분기 값 approval 이 그 뒤로 보인다), 그다음 나머지
-    order = ["A", "P"] + [k for k in ref if k not in ("A", "P", "B") and not k.startswith("f_")]
-    for key in order:
-        rk = ref[key]
-        if rk in skip or rk not in m["tasks"]:
-            continue
-        _c_apply_task(r, names[key], m["tasks"][rk])
-    if "B_overdue" not in skip:
-        r.page.locator("#flowEditor input[data-timer]").first.fill(str(int(re.match(r"PT(\d+)M", m["timers"]["B_overdue"]).group(1))))
-        _c_settle(r, 500)
-    for fkey, (gw, target) in {"f_ok": ("승인?", names.get(sp["tail_flows"][0][2])), "f_rej": ("승인?", names["RJ"]),
-                               "f_yes": ("유온 정상?", names.get("W")), "f_no": ("유온 정상?", names.get("RF"))}.items():
-        rk = ref.get(fkey)
-        if not rk or rk in skip:
-            continue
-        _c_apply_branch(r, gw, target, m["flows"][rk])
-
-
-# ---------------------------------------------------------------------- 배포 · 되돌리기 ([관리] 탭)
-def _c_admin_deploy_panel(r):
-    r.tab("admin")
-    panel = r.page.locator("#definitionDeployPanel")
-    if not panel.evaluate("e => e.open"):
-        panel.locator(":scope > summary").click()
-    else:
-        r.page.click("#deployRefresh")
-    r.wait(20, lambda: r.page.locator("#deployChoice option").count() > 0 and "불러오는 중" not in r.page.locator("#deployChoice").inner_text(), every=0.5)
-    r.page.wait_for_timeout(800)
-    return panel
-
-
-def _c_deploy(r, def_id: str, version: str, *, by: str = "학생 한 명", reason: str = "실습 9-3 내가 그린 흐름 배포") -> tuple[bool, str]:
-    _c_admin_deploy_panel(r)
-    r.page.locator("#deployChoice").select_option(def_id)
-    r.wait(20, lambda: r.page.locator(f"#deployVersions [data-deploy='{version}']").count() > 0, every=0.5)
-    r.page.fill("#deployBy", by)
-    r.page.fill("#deployReason", reason)
-    r.page.evaluate("() => { const m = document.getElementById('deployMessage'); if (m) m.textContent = ''; }")   # 앞 결과를 이번 결과로 읽지 않게
-    r.page.click(f"#deployVersions [data-deploy='{version}']")
-    msg = r.page.locator("#deployMessage")
-    r.wait(30, lambda: msg.inner_text().strip() != "", every=0.5)
-    text = msg.inner_text().strip()
-    return ("배포" in text and "neg" not in (msg.get_attribute("class") or "")), text
-
-
-def _c_reset_to_reference(r, by: str = "학생 한 명") -> tuple[bool, str]:
-    """[기준 흐름으로 되돌리기] → 확인 대화상자 [되돌리기]. 학생 흐름만 내리고 수업 흐름(c3_*)은 남긴다(flow_deploy.deploy_reset)."""
-    _c_admin_deploy_panel(r)
-    btn = r.page.locator("#deployResetRef")
-    if btn.is_disabled():
-        return False, "되돌릴 것이 없음(버튼 꺼짐)"
-    r.page.fill("#deployBy", by)
-    r.page.evaluate("() => { const m = document.getElementById('deployMessage'); if (m) m.textContent = ''; }")
-    btn.click()
-    r.page.locator("dialog.confirm-dialog button[value=ok]").click()
-    msg = r.page.locator("#deployMessage")
-    r.wait(30, lambda: msg.inner_text().strip() != "", every=0.5)
-    return "neg" not in (msg.get_attribute("class") or ""), msg.inner_text().strip()
 
 
 def _c_routes(r) -> dict:
@@ -2328,24 +1852,6 @@ def _c_biz_chip(r, asset: str) -> str:
     return r.page.locator(f"#units .unit[data-asset='{asset}'] .biz-alert").inner_text().strip()
 
 
-def _c_build_flow(r, kind: str, base_id: str) -> dict:
-    """정상 경로만으로 그림 → 가져오기 → mapping.json 대로 입력 → 검사 → 등록 → 배포. 앞 실습 없이 혼자 돌 때도 쓴다."""
-    def_id = _c_free_id(r, base_id)
-    xml, ids, names = _c_spec_xml(kind, def_id)
-    msg, ok = _c_import(r, xml, f"{def_id}.bpmn", def_id)
-    r.check(f"{kind} 그림 가져오기(bpmn.io 꼴 id · 좌표)", ok, msg)
-    _c_fill_cooling_like(r, kind, names)
-    passed, problems, deps = _c_check(r)
-    r.check(f"{kind} 사전 검사 통과", passed, "; ".join(problems) or deps)
-    reg, text, ver = _c_register(r)
-    r.check(f"{kind} 판본 등록", reg, text)
-    dep, dtext = _c_deploy(r, def_id, ver or "1") if reg else (False, "등록 실패로 배포하지 않음")
-    r.check(f"{kind} 배포", dep, dtext)
-    route = _c_routes(r).get(C_SPECS[kind]["pattern"]) or {}
-    r.check(f"{kind} 경보 경로 = 내가 배포한 흐름", route.get("definition") == def_id and route.get("source") == "내가 배포한 흐름", json.dumps(route, ensure_ascii=False))
-    return {"def_id": def_id, "version": ver or "1", "names": names, "ids": ids}
-
-
 # ====================================================================== 09 · 등록된 실행 흐름 비교 (최신 실라버스 통합 31 · 실전 68)
 _C_CLASS_STEPS = {"c3_cooling": ("T_agent", "T_approve", "T_cmd", "T_reobs"), "c3_pm": ("T_agent", "T_approve", "T_wo"),
                   "c3_spare": ("T_agent", "T_approve", "T_po", "T_gr")}
@@ -2420,10 +1926,14 @@ def _c_biz_round(r, kind: str, asset: str, person: str, *, check_effects) -> lis
     sp = C_SPECS[kind]
     # 최신 실라버스(통합 33 · 35, 실전 70 · 72): 포털의 준비된 시나리오 B · C 를 실행한다. 준비되지 않은 흐름 등록은 서버가 막는다.
     did = {"pm": "c3_pm", "spare": "c3_spare"}[kind]
-    acts = {x.get("id"): x.get("name") for x in _c_class_definition(r, did).get("activities") or []}
-    names = {"P": acts.get("T_approve")}
-    if not names["P"]:
-        r.check(f"{sp['name']}: 준비된 흐름의 승인 단계를 읽었다", False, json.dumps(acts, ensure_ascii=False)[:300]); return []
+    # 경보 패턴 · 승인 역할은 배포된 수업 흐름에서 읽는다(사본을 두지 않는다): 승인 단계의 역할 이름 → 정의의 역할 칸이 가리키는 역할 id
+    pattern = next((p for p, x in _c_routes(r).items() if x.get("definition") == did), None)
+    defn = _c_class_definition(r, did)
+    approve = next((x for x in defn.get("activities") or [] if x.get("id") == "T_approve"), {})
+    names = {"P": approve.get("name")}
+    approver = next((x.get("endpoint") for x in defn.get("roles") or [] if x.get("name") == approve.get("role")), None)
+    if not names["P"] or not approver or not pattern:
+        r.check(f"{sp['name']}: 준비된 흐름의 승인 단계 · 역할 · 경보 패턴을 읽었다", False, json.dumps(approve, ensure_ascii=False)[:300]); return []
     _c_me(r, person)
 
     def run_once(i):
@@ -2482,11 +1992,11 @@ def _c_biz_round(r, kind: str, asset: str, person: str, *, check_effects) -> lis
         ("window",) if kind == "pm" else ("supplier", "qty", "amount")), limit_s=C_AI_LIMIT_S, single=1)
     ok_outcome = "정상" if kind == "pm" else "입고 완료"
     r.check(f"{sp['name']}: 처리 건이 모두 준비된 수업 흐름으로 열렸다", all(x.get("definition") == did for x in runs), str([x.get("definition") for x in runs]))
-    r.check(f"{sp['name']}: 카드 승인 역할 = 흐름 승인 담당({sp['approver']})", all(x.get("approver") == C_ROLE_NAME[sp["approver"]] for x in runs if not x.get("error")),
+    r.check(f"{sp['name']}: 카드 승인 역할 = 흐름 승인 담당({approve.get('role')})", all(x.get("approver") == approver for x in runs if not x.get("error")),
             str([x.get("approver") for x in runs]), kind="ai3")
     r.check(f"{sp['name']}: 거절 → 반려, 승인 → 정상 종결", [x.get("outcome") for x in runs] == (["반려", ok_outcome, "반려"] if r.ai_runs >= 3 else [ok_outcome]),
             str([x.get("outcome") for x in runs]))
-    route = _c_routes(r).get(sp["pattern"]) or {}
+    route = _c_routes(r).get(pattern) or {}
     r.check(f"{sp['name']}: 실행 뒤에도 경보 경로는 준비된 수업 흐름", route.get("definition") == did and route.get("class_flow") is True, json.dumps(route, ensure_ascii=False))
     return runs
 
@@ -2618,7 +2128,7 @@ def lab_13_shift_handover(r):
     agent_name = '교대 인수인계 ' + sid
     error = _b_agent_form(r, name=agent_name, role='인계안 작성 담당',
         goal='승인된 보충 매뉴얼과 현재 설비·정비·ERP를 대조하여 다음 교대가 확인하고 이어갈 일을 작성한다.',
-        persona='불일치와 정보 부족을 숨기지 않고 조회 근거를 남긴다.', model='', tools=['neo4j', 'enterprise', 'hyd-dmn'])
+        persona='불일치와 정보 부족을 숨기지 않고 조회 근거를 남긴다.', tools=['neo4j', 'enterprise', 'hyd-dmn'])
     r.check('학생 교대 에이전트 저장', not error, error)
     mine = next((a for a in _b_agents(r) if a.get('name') == agent_name), None)
     if error or not mine: return
@@ -2821,8 +2331,23 @@ def _c_fault_case(r, asset: str, fault: str, pattern: str):
 
 @lab("93", "그 밖에 — 펌프 · 팬 결함 실험과 [다시 평가]를 워커 모드(AI)로")
 def lab_93_pump_fan(r):
-    mode = r.get(f"{r.process}/api/process/mode")
-    r.check("워커 모드(AGENT_BRIDGE=off)", mode.get("agent_bridge") == "off", json.dumps(mode, ensure_ascii=False))
+    if _course_phase(r) == "course":
+        # 펌프 · 팬 경보는 기준 흐름(anomaly_response)을 연다 — 수업 AI 자리가 아니므로 수업 단계에서는 AI 를 부르지 않고 까닭을 남긴다
+        r.tab("scenario"); r.page.click("#btnReset"); r.page.wait_for_timeout(3000)
+        before = _c_instance_ids(r)
+        got = r.api("POST", f"{r.plant}/api/fault", {"asset": "HYD-02", "type": "pump_leakage"})
+        inst = _c_new_instance(r, before, None, 240)
+        r.check("펌프 누설 주입 → 처리 건이 열림", got[0] == 200 and bool(inst), str(got)[:120])
+        if inst:
+            pid = inst["proc_inst_id"]
+            stopped = r.wait(C_AI_WAIT_S, lambda: next((w for w in _c_view(r, pid)["workitems"] if w.get("agent_mode")
+                                                        and w["status"] in ("FAILED", "ERROR", "CANCELLED", "DONE", "COMPLETED")), None), every=5)
+            ok, why = r.human_message((stopped or {}).get("log") or "")
+            r.check("수업 단계: 수업 밖 흐름의 AI 단계는 실행하지 않고 까닭을 사람 글로", bool(stopped) and stopped["status"] not in ("DONE", "COMPLETED") and ok,
+                    f"{(stopped or {}).get('status')} · {why}", kind="exception")
+            _a_restore_and_close(r, pid)
+        r.tab("scenario"); r.page.click("#btnReset"); r.page.wait_for_timeout(3000)
+        return
     r.tab("scenario")
     # 결함 시뮬레이션 화면에는 펌프 · 팬 결함 버튼이 없다(쿨러 · B · C 만) — 실라버스에 펌프 · 팬 실습이 없다(차이 있음, 유지). 주입은 설비 API 로 한다
     r.page.locator("#btnReset").click()

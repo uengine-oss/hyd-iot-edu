@@ -110,44 +110,7 @@ flowchart TB
 
 ![온톨로지 클래스와 관계](ontology-classes.svg)
 
-| 계층 | 클래스 (영문) | 클래스 (한글) | 준용 표준 |
-|---|---|---|---|
-| 가치 계층 (BSC) | Perspective | BSC 관점 | BSC Perspective |
-| 가치 계층 (BSC) | Objective | 전략 목표 (조직 목표) | BSC Strategic Objective |
-| 가치 계층 (BSC) | Measure | 성과 지표 | BSC Measure (성과 지표) |
-| 프로세스 계층 | Process | 프로세스 | BPMN Process |
-| 프로세스 계층 | FlowNode | 흐름 노드 (추상) | BPMN FlowNode (추상) |
-| 프로세스 계층 | Event | 이벤트 | BPMN Event |
-| 프로세스 계층 | Task | 작업 | BPMN Task |
-| 프로세스 계층 | Gateway | 게이트웨이 | BPMN Gateway |
-| 리소스 계층 | OrgUnit | 조직 (부서) | 조직 단위 |
-| 리소스 계층 | Role | 역할 | BPMN Performer / 직무 |
-| 리소스 계층 | System | 정보 시스템 | 정보 시스템 (BPMN DataStore 취지) |
-| 리소스 계층 | Asset | 설비 | ISO 14224 Equipment unit / MIMOSA Asset |
-| 리소스 계층 | Component | 구성 요소 | ISO 14224 Maintainable item |
-| 리소스 계층 | Sensor | 센서 | MIMOSA DA (Data Acquisition) |
-| 리소스 계층 | Actuator | 구동기 | 구동기 (PLC 쓰기 대상) |
-| 리소스 계층 | StateVariable | 상태 변수 | 공정 상태 변수 |
-| 리소스 계층 | Part | 부품 | 예비품 / 자재 |
-| 리소스 계층 | Supplier | 공급사 | 공급사 |
-| 설비 진단 지식 (리소스 계층의 설비 코어) | AnomalyPattern | 이상 패턴 | ISO 13374 SD (State Detection) |
-| 설비 진단 지식 (리소스 계층의 설비 코어) | Symptom | 증상 | ISO 13374 HA (Health Assessment) — 관측 증상 |
-| 설비 진단 지식 (리소스 계층의 설비 코어) | FailureMode | 고장 유형 | ISO 14224 Failure mode |
-| 설비 진단 지식 (리소스 계층의 설비 코어) | Cause | 원인 | ISO 14224 Failure cause |
-| 설비 진단 지식 (리소스 계층의 설비 코어) | Evidence | 증거 | MIMOSA 확증 규칙 |
-| 설비 진단 지식 (리소스 계층의 설비 코어) | Step | SOP 단계 | SOP 단계 |
-| 설비 진단 지식 (리소스 계층의 설비 코어) | ManualSection | 매뉴얼 절 | 지식 베이스 문서 조각 |
-| 스킬 · 규칙 계층 | Skill | 조치 방법 (스킬 = SOP) | 조치 방법 = SOP (DMN 판단의 출력 · BPMN 서비스 작업이 수행) |
-| 스킬 · 규칙 계층 | Action | 원자 조치 | 원자 조치 (PLC 쓰기 또는 시스템 트랜잭션) |
-| 스킬 · 규칙 계층 | Decision | 판단 (DMN) | DMN Decision |
-| 스킬 · 규칙 계층 | InputData | 입력 데이터 | DMN InputData |
-| 스킬 · 규칙 계층 | DecisionTable | 결정표 | DMN Decision Table |
-| 스킬 · 규칙 계층 | Rule | 규칙 | DMN Decision Rule |
-| 스킬 · 규칙 계층 | KnowledgeSource | 지식 출처 | DMN KnowledgeSource |
-| 외부 변수 · 예측 | ExternalVariable | 외부 변수 | 외생 변수 |
-| 외부 변수 · 예측 | Forecast | 예측 | 예측 |
-| 운영 기록 | Incident | 사건 | 사건 기록 |
-| 운영 기록 | DecisionCase | 판단 사례 | DMN 판단의 실행 인스턴스 |
+클래스 목록(영문 · 한글 · 계층 · 준용 표준)은 위 표 파일 하나가 정본이다 — 이 문서에 사본을 두지 않는다.
 
 ### 클래스 속성
 
@@ -272,7 +235,7 @@ schema_prompt.md (스키마) ─┘
 2. **경로 질의:** 증상에서 고장 유형과 원인, 증거를 찾고, 그 고장 유형에 매칭된 조치 방법(스킬 = SOP)과 원자 조치, 단계, 매뉴얼까지 한 번에 가져온다.
 3. **카드 작성:** 고장 유형에 맞는 후보 스킬을 결정표 규칙으로 고르고, 규정 규칙으로 거르고, 예측값과 득실 성과 지표를 붙인다.
 4. **사람 확인:** 카드마다 출처(규칙의 근거 문서, SOP 단계의 매뉴얼 절, 원인의 증거)를 보여 준다.
-5. **선례:** 사람의 선택은 DecisionCase로 남고, 다음 판단에서 같은 원인의 선택 이력으로 읽힌다. 단, 교육용 고정(DECISIONS 110 ④): 선례 몫은 미리 넣은 예시(`seeded = true`, `case:demo-1..3`)만 센다 — 승인으로 투영된 사례는 그래프에 남지만 순위에 들어가지 않는다(`templates/t3_precedents.cypher`의 `WHERE dc.seeded = true` 한 줄을 빼면 제품처럼 쌓이는 학습이 켜진다).
+5. **선례:** 사람의 선택은 DecisionCase로 남고, 다음 판단에서 같은 원인의 선택 이력으로 읽힌다. 단, 교육용 고정: 선례 몫은 미리 넣은 예시(`seeded = true`, `case:demo-1..3`)만 센다 — 승인으로 투영된 사례는 그래프에 남지만 순위에 들어가지 않는다(`templates/t3_precedents.cypher`의 `WHERE dc.seeded = true` 한 줄을 빼면 제품처럼 쌓이는 학습이 켜진다).
 
 질의 예시는 [queries.cypher](../../../../it/neo4j/v2/queries.cypher)에 있다. 블록마다 자연어 질문과 정답 Cypher가 있다.
 
@@ -325,9 +288,8 @@ schema_prompt.md (스키마) ─┘
 | `it/neo4j/v2/instances.cypher` | 가상 기업 "경남유압" 인스턴스 (세 결함 · 회의 예시 포함) |
 | `it/neo4j/v2/queries.cypher` | 자연어 질문과 정답 Cypher 15개 |
 | `workspace/개발/scripts/ontology_v2.py` | 생성 · 적재 · 검사 · 질의 실행 |
-| `tests/test_ontology_schema.py` | 스키마 정합성, 생성 파일 최신 여부, 검사기 동작 |
 
-운영 Neo4j(컨테이너 `hyd-iot-edu-neo4j-1`, 포트 7687)는 kg-seed가 v2를 적재한다. 스키마 검사와 질의 예시는 운영 그래프에 바로 돌린다.
+운영 Neo4j(compose 서비스 `neo4j`, 포트 7687 — 셸은 `docker compose exec neo4j cypher-shell`)는 kg-seed가 v2를 적재한다. 스키마 검사와 질의 예시는 운영 그래프에 바로 돌린다.
 
 ```bash
 python workspace/개발/scripts/ontology_v2.py gen                                    # schema.json을 고쳤으면 먼저 (OWL · 설명문 · 제약 · SVG · 표 생성)
@@ -341,7 +303,7 @@ python workspace/개발/scripts/ontology_v2.py queries  --uri bolt://127.0.0.1:7
 
 Neo4j Browser는 http://127.0.0.1:7474 (neo4j / hydpass123)다.
 
-검증 결과 (2026-10-02):
+검증 결과 (2026-10-02 기록 — 지금 판의 클래스 · 관계 수는 `it/neo4j/v2/schema.json`과 [class-table.md](class-table.md)):
 
 | 항목 | 결과 |
 |---|---|
@@ -370,7 +332,7 @@ Neo4j Browser는 http://127.0.0.1:7474 (neo4j / hydpass123)다.
 
 ## 11. 서비스가 v2를 쓰는 방식 (2026-10-02 이전 완료)
 
-실행 중인 프로토타입은 이제 v2 그래프만 쓴다. kg-seed가 v1 노드를 한 번 지우고 v2를 적재한다 (v1 시드와 템플릿은 `it/neo4j/v1/`에 보관).
+실행 중인 프로토타입은 이제 v2 그래프만 쓴다. kg-seed가 v1 노드를 한 번 지우고 v2를 적재한다(v1 시드 · 템플릿은 2026-10-30에 지웠다 — git 이력에 있다).
 
 | 서비스 | v2에서 하는 일 | 쓰는 템플릿 |
 |---|---|---|
@@ -388,6 +350,6 @@ Neo4j Browser는 http://127.0.0.1:7474 (neo4j / hydpass123)다.
 
 `Step-[:DOCUMENTS]->Skill`은 새 문서의 원문 단계가 기존 Skill을 정확히 재참조하는 출처 관계다. SOP 번호와 전체 단계가 같아야 하며 검토한 기존 승인·Action·시스템·active Step/Section 계약의 hash를 pin한다. 기존 `HAS_STEP`에는 새 원문을 섞지 않고 기존 소유권·실행 내용도 바꾸지 않는다. 개정/rollback은 source journal·인용·현재 graph·pin이 검증된 provenance만 별도로 보존하며 위조/변형된 외부 관계는 drift로 거절한다. 실행 HISTORY와 source provenance를 같은 의미로 취급하지 않는다.
 
-- 펌프 누설과 팬 베어링 결함은 온톨로지와 판단 엔진에는 들어 있지만 설비 시뮬레이터와 CEP에는 아직 없다. 지금은 "조치 판단 규칙" 화면에서 가정 실행으로만 볼 수 있고, 해당 예측값은 설계 목표값이다. PLC에는 펌프 전환 · 정지 명령이 없어서 게이트웨이가 허용 목록에서 거부한다.
+- 펌프 누설과 팬 진동은 설비 시뮬레이터(`ot/plant-sim`) · 감지기(`it/detector`)에도 있다(개발용 통합 시험 `workspace/개발/scripts/scenario_pump_fan_test.py`). 수업 단계에서는 이 두 경보 처리 건의 AI 단계가 수업 AI 자리 밖이라 실행되지 않는다(`it/process/procsvc/course_policy.py` — 강사가 PBL 단계를 열면 실행).
 - 기존 전사 판단 시나리오 4개(납기, 구매, 품질 보류, 피크 전력)는 v2에서 빠졌다. 구매 시나리오의 상충은 q8의 부품가 경로로 들어 있다.
 - 설명 영상은 v1 화면으로 녹화되어 있다.

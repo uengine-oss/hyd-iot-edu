@@ -7,7 +7,12 @@ import argparse
 from datetime import datetime
 import json
 from pathlib import Path
+import sys
 import urllib.request
+
+ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(ROOT / "scripts"))
+from prepare_ports import saved_port  # noqa: E402 — 시작이 정한 이 PC의 포트(.hyd-runtime/ports.json)
 
 
 def get(url):
@@ -50,10 +55,11 @@ def main():
     parser.add_argument('instance')
     parser.add_argument('--out', required=True)
     args = parser.parse_args()
-    view = get('http://localhost:8080/api/instances/' + args.instance)
+    process, enterprise = (f'http://127.0.0.1:{saved_port(ROOT, p)}' for p in (8080, 8095))
+    view = get(process + '/api/instances/' + args.instance)
     variables = {row['key']: row.get('value') for row in view['instance']['variables_data']}
-    incident = get('http://localhost:8080/api/incidents/' + variables['incident'])
-    transactions = get('http://localhost:8095/api/transactions')
+    incident = get(process + '/api/incidents/' + variables['incident'])
+    transactions = get(enterprise + '/api/transactions')
     report = compare(view, incident, transactions)
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)

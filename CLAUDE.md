@@ -39,17 +39,17 @@
 
 - **유지보수가 1순위다.** 지금 로직을 살려 근본 원인을 고치고, 방법이 여럿이면 관리할 곳(파일 · 설정 · 도구 · 규칙 사본)이 줄어드는 쪽, 새 장치보다 지우기를 먼저 고른다. 시험은 한 기능을 한 곳에서 실제로 판정한다 — 가짜는 시스템 밖만, 호출 횟수 · 문자열 존재 · 현재 값 고정 같은 장난감 금지. 설계가 갈리면 uengine-oss ProcessGPT 계열 레포를 참고한다.
 - **fable 모델을 쓰지 않는다**(사용자 지시 2026-10-10). 메인 세션 · 서브에이전트 · 워커 모두. 서브에이전트는 `opus`.
-- **배속 기본 20배(`TIME_SCALE=20`).** 가상 설비라 수업 · 실습 · 검사 모두 20배속이다. "1~2배속 권장" 문구를 쓰지 않는다. 20배속에서 흔들리는 코드는 배속 기준으로 고친다. 배율은 plant-sim · detector · process · agent에 함께 적용한다(`/api/time_scale`은 plant 물리만 바꾼다). 바꿀 때는 `workspace/개발/문서/RUNBOOK.md` 표를 따른다.
-- **통합 시험(`workspace/개발/scripts/scenario_*`)이 도는 동안 `docker compose build/up/restart` 금지.** 의존 서비스가 바뀌면 process가 재시작돼 시험이 `RemoteDisconnected`로 끊긴다. 배포는 시험 전에 끝내고 `docker inspect hyd-iot-edu-process-1 --format '{{.State.StartedAt}} {{.RestartCount}}'`로 안정을 확인한다. 에러 없이 조용히 재시작했으면 커널 OOM을 의심한다(`wsl -d docker-desktop -e sh -c "dmesg | grep -i oom"`). 통합 시험 전에는 호스트 워커를 멈춘다(워커가 에이전트 작업을 가져간다).
+- **배속 기본 20배(`TIME_SCALE=20`, compose 한 곳).** 가상 설비 · 감지기 · 재관측 · 부품 대기는 20배속이다. "1~2배속 권장" 문구를 쓰지 않는다. 20배속에서 흔들리는 코드는 배속 기준으로 고친다. **사람이 읽고 고르는 시간(승인 시한 · 승인 카드 신선도 · 승인 지연 알림)은 벽시계다**(2026-10-30 — 20배속이면 학생이 카드를 읽기 전에 시한이 지났다). compose가 plant-sim · detector · process에 넘기고 agent는 process에서 읽는다. 바꿀 때는 `workspace/개발/문서/RUNBOOK.md`를 따른다.
+- **떠 있는 스택을 쓰는 테스트 · 도구(화면 순회 `test_portal_ui.py`, `class_round.py`, `scenario_pump_fan_test.py`)가 도는 동안 `docker compose build/up/restart` 금지.** 의존 서비스가 바뀌면 process가 재시작돼 `RemoteDisconnected`로 끊긴다. 배포는 그 전에 끝내고 `docker inspect $(docker compose ps -q process) --format '{{.State.StartedAt}} {{.RestartCount}}'`로 안정을 확인한다(컨테이너 이름은 PC마다 다르다 — 이 PC는 `.hyd-runtime/project.json`의 이름). 에러 없이 조용히 재시작했으면 커널 OOM을 의심한다(`wsl -d docker-desktop -e sh -c "dmesg | grep -i oom"`). 호스트 워커를 쓰는 개발 중에는 컨테이너 워커를 멈춘다(`docker compose stop agent-worker` — 워커는 늘 하나).
 - 완주 · E2E 검증은 학생 대역 1명 · 인스턴스 1건 · 1회. 학생 수만큼 동시에 돌리지 않는다.
-- AI 워커(`agent-worker` 컨테이너)와 에이전트용 MCP(enterprise-mcp · -maint · -purchase · dmn-mcp)는 프로필 `cliagents`이고 `.env.example`의 `COMPOSE_PROFILES`에 들어 있다. 시스템 안의 모든 AI(에이전트 · 질문 · 문서 인제스천)는 강의 중계 LiteLLM(GCP Cloud Run, 키별 비용 한도 · 가장 싼 모델, 첫 요청은 콜드스타트로 느림 — 의도)으로 간다. 워커 CLI는 키를 받지 않고 process의 로컬 중계 관문(`procsvc/course_model.py`, 작업에 묶인 토큰 · PC당 호출 상한)을 거치며, process가 `.env`의 `LLM_API_KEY` · `LLM_RELAY_URL`로 중계를 부른다. 학생 바이브 코딩은 각자 Codex 계정이라 시스템과 별개다. 호스트 워커(`workspace/개발/scripts/run_worker_host.sh`)는 개발용이며 컨테이너 워커와 함께 돌리지 않는다(워커는 하나).
+- AI 워커(`agent-worker` 컨테이너)와 에이전트용 MCP(enterprise-mcp · -maint · -purchase · dmn-mcp)는 기본 서비스다(선택 프로필은 `monitor` · `tools`뿐). 시스템 안의 모든 AI(에이전트 · 질문 · 문서 인제스천)는 강의 중계 LiteLLM(GCP Cloud Run, 키별 비용 한도 · 가장 싼 모델, 첫 요청은 콜드스타트로 느림 — 의도)으로 간다. 워커 CLI는 키를 받지 않고 process의 로컬 중계 관문(`procsvc/course_model.py`, 작업에 묶인 토큰 · PC당 호출 상한)을 거치며, process가 `.env`의 `LLM_API_KEY`와 compose의 `LLM_RELAY_URL`로 중계를 부른다(장부 `procsvc/course_ledger.py`). 학생 바이브 코딩은 각자 Codex 계정이라 시스템과 별개다. 호스트 워커(`workspace/개발/scripts/run_worker_host.sh`)는 개발용이며 컨테이너 워커와 함께 돌리지 않는다(워커는 하나).
 - AI 응답 재생과 저장분(`it/agent-worker/replay/`)은 main에 있다. 시작.bat(`scripts/start_all.sh`)이 `.env`의 `LLM_API_KEY`로 `AI_MODE`를 적는다: 키 있음 live, 없음 replay(강사 저장 응답). 저장은 `bash workspace/개발/scripts/record_replay.sh`(동작 · 규칙은 `workspace/개발/문서/재생모드.md`).
-- Supabase 로컬: `cd it/supabase && supabase start`(PostgreSQL 15, 포트 54322). `supabase stop --no-backup`은 볼륨을 지운다.
+- Supabase 로컬: 시작 스크립트가 `npx -y supabase@2.119.0 start`로 켠다(PostgreSQL 15). 이 PC의 project_id · 포트는 git 밖 `it/supabase/.env` · `.hyd-runtime/`에 있고 `config.toml`은 커밋된 값 그대로다(이 PC의 업무 DB 포트 64322). `supabase stop --no-backup`은 볼륨을 지운다.
 - 컨테이너 · Supabase · 워커는 스스로 켜고 끄고, 시험 잔재(임시 DB · 시험 인스턴스)는 스스로 정리한다. 끈 뒤 실제로 꺼졌는지 확인한다. 프로젝트 데이터 볼륨 · 원자료 · 강사 손질본 삭제와 결제는 묻는다.
 
 ## 5. 내용 규칙
 
-- **수업 경계**: 학생은 포털 기능을 다 실제로 눌러 써 본다. 통제하는 것은 AI가 답을 만드는 자리뿐이고(키 없음 = 강사 녹화 재생, 키 있음 = 실제 AI + 큰 문서 인제스천은 제공 문서 캐시, 같은 요청은 저장 응답), 막는 것은 악용 지점(허용 밖 문서 · 대용량 · 외부 도구 서버 등록 · 수업 모델 밖 모델)뿐이다. 재생에서 녹화 밖 행동은 학생이 알아듣는 말로 안내하고 실패로 둔다. PBL 해제는 강사가 한 곳에서 한 번에 하고, 비용의 최종 방어는 중계 키 한도다.
+- **수업 경계**: 학생은 포털 기능을 다 실제로 눌러 써 본다. 통제하는 것은 AI가 답을 만드는 자리뿐이고(키 없음 = 강사 녹화 재생, 키 있음 = 실제 AI + 큰 문서 인제스천은 제공 문서 캐시, 같은 요청은 저장 응답), 막는 것은 악용 지점(허용 밖 문서 · 대용량 · 외부 도구 서버 등록 · 수업 모델 밖 모델)뿐이다. 재생에서 녹화 밖 행동은 학생이 알아듣는 말로 안내하고 실패로 둔다. 이 규칙의 정본은 `it/process/procsvc/course_policy.py` 한 곳이고 화면 · 워커는 서버에서 읽는다. PBL 해제는 강사 서명 단계 선언(`it/process/procsvc/course_phase.json`, 도구 `workspace/개발/scripts/course_phase_sign.py`)을 커밋 · push하는 것 하나이고, 학생 PC에서는 풀 수 없다. 비용의 최종 방어는 중계 키 한도다.
 - 시나리오 · BPMN · 온톨로지는 저장소에 있는 이름만 쓴다. 작업 전에 코드(agentsvc · procsvc · entsim · seed)를 먼저 읽는다. 정본 위치: `workspace/개발/문서/ontology/schema-v2.md`, `it/neo4j/v2/instances.cypher`, 템플릿 `it/neo4j/templates/`. 온톨로지는 객체 모델(클래스 · 속성 · 관계)이다. 프로세스 설명은 온톨로지가 아니다.
 - 해피패스 · 구세주 데이터 금지: 사례마다 손익으로 지는 대안과 실제로 밟는 비해피 가지가 있어야 한다.
 - 승인 전 에이전트는 조회 · 계산 · 보고서만 한다. 사람 승인 1회 뒤 process가 실행한다.
@@ -68,8 +68,8 @@
 | | 로컬 Windows |
 |---|---|
 | Python | `.venv314/Scripts/python.exe`(늘 `PYTHONUTF8=1`). uv 파이썬은 Smart App Control이 막는다 |
-| 단위 시험 | 저장소에 없다 — 로직 개편 세션이 새로 짠다. 옛 시험 · 기준선(3,585 통과)은 git `03c23fdd:tests/`(꺼내기 `git archive 03c23fdd tests pytest.ini \| tar -x`, 돌리기 전 `. workspace/개발/scripts/host_libpq.sh`) |
-| 통합 시험 | `workspace/개발/scripts/scenario_instance_test.py`(쿨러, `--worker`면 실제 워커 기대), `scenario_pump_fan_test.py`(펌프 · 팬 · 가림) |
-| 워커 | `bash workspace/개발/scripts/run_worker_host.sh`(`CLIAGENTS_DEFAULT_CLI=claude-code`). 멈출 때는 `workspace/개발/scripts/stop_worker_host.ps1` 또는 PowerShell `Get-CimInstance Win32_Process \| ? CommandLine -like '*worker.main*'` → `taskkill //PID //F`, 포트 8097/8098이 내려갔는지 확인. 워커 1개가 python 2개로 보인다 |
+| 테스트 | `workspace/개발/tests/`(설정 `workspace/개발/pytest.ini`, 공통 준비 `conftest.py`, 모듈 하나당 파일 하나). 한 줄: `. workspace/개발/scripts/host_libpq.sh; HYD_TEST_DSN=postgresql://postgres:postgres@127.0.0.1:64322/hyd_test HYD_TEST_PORTAL_URL=http://127.0.0.1:8088 PYTHONUTF8=1 .venv314/Scripts/python.exe -m pytest -c workspace/개발/pytest.ini workspace/개발/tests` — DB 이름 `postgres`는 거절(업무 DB 보호), 그 DB를 지우고 마이그레이션 · 시드로 다시 만든다. 옛 시험은 git `03c23fdd:tests/`(재료로만) |
+| 떠 있는 스택 확인 | 점검 `bash scripts/check_all.sh`(= 점검.bat), 수업 한 바퀴 `workspace/개발/scripts/class_round.py`, 펌프 · 팬은 `scenario_pump_fan_test.py`(PBL 단계에서만 — 수업 단계에서는 그 AI 단계가 수업 밖) |
+| 워커 | 개발용 호스트 워커 `bash workspace/개발/scripts/run_worker_host.sh`(먼저 컨테이너 워커를 멈춘다 — 스크립트가 검사). 멈출 때는 `workspace/개발/scripts/stop_worker_host.ps1` 또는 PowerShell `Get-CimInstance Win32_Process \| ? CommandLine -like '*worker.main*'` → `taskkill //PID //F`, 포트 8097/8098이 내려갔는지 확인. 워커 1개가 python 2개로 보인다 |
 | 로그 인코딩 | 워커 로그에 cp949가 섞인다. 바이트로 읽어 `errors='replace'`로 디코드 |
 | Docker | Docker Desktop(메모리 4 GB 이상). 꺼져 있으면 직접 켜고 `docker info` 응답을 기다린다 |

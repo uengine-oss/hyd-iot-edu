@@ -1,4 +1,5 @@
-"""C3 조립: 수업 문서 A(HM-8) → B(PM-02) → C(PR-07)를 실제 워커(LLM)로 추출하고, 명시 검토 기록을 적용해 그래프에 적재한다.
+"""C3 조립: 수업 문서 A(HM-8) → B(PM-02) → C(PR-07)의 추출을 받아(제공 문서는 process 가 강사 서명 추출본을 돌려준다 — AI 0회,
+course_policy · manual_api), 명시 검토 기록을 적용해 그래프에 적재한다.
 포털 지식 관리 화면과 같은 API · 같은 적재 본문({...미리보기, links, knowledge, by, reviewed: true})을 쓴다.
 
 검토 없이는 적재하지 않는다(실라버스 OL7 "사람이 확인한 것만 지식에 잇는다"). 사용자가 Codex에 검토를 명시 위임한 경우
@@ -34,8 +35,10 @@ import urllib.request
 import uuid
 from pathlib import Path
 
-API = os.environ.get("PROCESS_URL", "http://127.0.0.1:8080")
 ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(ROOT / "scripts"))
+from prepare_ports import saved_port  # noqa: E402 — 시작이 정한 이 PC의 포트(.hyd-runtime/ports.json)
+API = os.environ.get("PROCESS_URL") or f"http://127.0.0.1:{saved_port(ROOT, 8080)}"
 OUT = ROOT / "작업" / "c3_ingest"
 DOCS = {"HM-8": "HM-8_cooler-fan-manual.md", "PM-02": "PM-02_powerpack-pm-checklist.md", "PR-07": "PR-07_spare-parts-standard.md"}
 LINK_FIELDS = ("failureMode", "relation", "kind", "approver", "actions", "addresses", "affects", "scope", "executable", "parts", "supplier_policy", "maintenance_policy", "purchase_comparison_policy")

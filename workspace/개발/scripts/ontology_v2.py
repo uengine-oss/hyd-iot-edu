@@ -7,7 +7,7 @@
   python workspace/개발/scripts/ontology_v2.py check-extra --extra students/<ID>/schema.json   # 학생 스키마 파일만 검사 (Neo4j 없이)
   python workspace/개발/scripts/ontology_v2.py validate --extra students/<ID>/schema.json      # 학생 이름 공간(ns) 노드만, v2 + 학생 스키마로 검사
 
-G4 (전체 과정 랩업, 문서/시스템/참조/capstone-lab.md 3.3 안 다): 학생은 확정 스키마(schema.json)를 고치지 않고
+G4 (전체 과정 랩업, git 이력 03c23fdd:문서/시스템/참조/capstone-lab.md 3.3 안 다): 학생은 확정 스키마(schema.json)를 고치지 않고
 같은 형식의 학생 스키마 파일(students/<ID>/schema.json, "ns": "<ID>")에 업무 고유 클래스 · 관계만 더한다. 검사기는 그 파일을 "추가 층"으로
 합쳐 쓴다: v2 클래스 · 관계는 그대로 검사하고, 학생 클래스는 학생 파일로 검사한다. 학생 노드 규칙: ns = "<ID>" 필수, id 는 "<ID>:" 로 시작.
 학생 파일의 "ns" 는 필수이고 students/<ID>/ 폴더 이름과 같아야 한다. 그 이름 공간 노드가 0개면 PASS 가 아니라 FAIL(접속 그래프 확인).
@@ -360,7 +360,7 @@ def gen_prompt(s: dict) -> str:
 LAYER_COLORS = {"value": "#6d28d9", "process": "#1d4ed8", "resource": "#4b5563", "diagnosis": "#b42318",
                 "skill": "#0f766e", "external": "#9a6700", "record": "#7c2d12"}
 SVG_COLUMNS = [["value"], ["process"], ["resource"], ["diagnosis"], ["skill"], ["external", "record"]]
-DOCS = ROOT / "문서/시스템/참조/ontology"
+DOCS = ROOT / "workspace/개발/문서/ontology"   # 사람이 읽는 생성물(클래스 그림 · 표) — workspace 브랜치
 
 
 def _xml(v: str) -> str:

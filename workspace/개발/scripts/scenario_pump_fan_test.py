@@ -1,8 +1,10 @@
-"""Pump leakage · fan vibration · masked mitigation against the running stack (PROCESS_MODE=instance, C4).
+"""Pump leakage · fan vibration · masked mitigation against the running stack (C4) — 실제 AI 워커 하나(컨테이너 또는 개발용 호스트 워커).
 
-    python workspace/개발/scripts/scenario_pump_fan_test.py            # ~6 min at TIME_SCALE=20
+    python workspace/개발/scripts/scenario_pump_fan_test.py                    # 에이전트 단계마다 최대 900 s
     python workspace/개발/scripts/scenario_pump_fan_test.py --only pump|fan|mask
-    python workspace/개발/scripts/scenario_pump_fan_test.py --worker --reassess-held   # real host workers (AGENT_BRIDGE=off): 900 s agent wait, held diagnosis reassessed
+    python workspace/개발/scripts/scenario_pump_fan_test.py --reassess-held    # held diagnosis reassessed
+펌프 · 팬 경보는 기준 흐름(anomaly_response)을 연다 — 수업 AI 자리가 아니라 수업 단계에서는 그 AI 단계를 실행하지 않는다(course_policy).
+그래서 강사가 PBL 단계로 연 스택에서만 돈다(수업 단계면 처음에 멈춘다). 주소는 시작이 쓴 .hyd-runtime/ports.json 에서 읽는다.
 
 pump  HYD-02: pump_leakage → PUMP_LEAKAGE RAISE → instance → cards (압력 상향 excluded, 예비 펌프 전환 recommended)
       → 생산관리자 selects switch-standby-pump → action.cmd PUMP_SELECT → PLC pump B → PS1 back ≥ 165 → CLEAR
@@ -21,13 +23,17 @@ import urllib.error
 import urllib.request
 import uuid
 
+ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(ROOT / "scripts"))
+from prepare_ports import saved_port  # noqa: E402 — 시작이 정한 이 PC의 포트(.hyd-runtime/ports.json)
+
 H = "http://127.0.0.1"
-PLANT, DETECTOR, PROCESS, ENT = f"{H}:8000", f"{H}:8092", f"{H}:8080", f"{H}:8095"
+PLANT, DETECTOR, PROCESS, ENT = (f"{H}:{saved_port(ROOT, p)}" for p in (8000, 8092, 8080, 8095))
 results: list[tuple[str, bool, str]] = []
 observed_instances = []
 reassessment_evidence = []
 REASSESS_HELD = False
-AGENT_WAIT = 120 + 30   # legacy bridge; --worker: 900 s for four coding-agent runs in sequence (same as scenario_instance_test.py)
+AGENT_WAIT = 900        # four coding-agent runs in sequence
 
 
 def get(url, timeout=10):
@@ -117,7 +123,6 @@ def run_to_selection(asset, fault, pattern, raise_timeout):
         return None
     pid, inc_id = inst["proc_inst_id"], variables(inst).get("incident")
     observed_instances.append(pid)
-    bridge = get(f'{PROCESS}/api/process/mode').get('agent_bridge')
     stopped = {}
     def selected_or_stopped():
         current = items(pid)
@@ -127,12 +132,6 @@ def run_to_selection(asset, fault, pattern, raise_timeout):
         if blocked:
             stopped.update(reason='task pending', tasks=[w['activity_id'] for w in blocked])
             return current
-        if bridge == 'legacy' and not REASSESS_HELD:
-            matching = [r for r in get(f'{H}:8091/api/agent/runs') if r.get('alertId') == alert_id]
-            latest = max(matching, key=lambda r:r.get('started') or '', default=None)
-            if latest and latest['status'] in {'WITHHELD','FAILED','REJECTED_BY_GUARDRAIL'}:
-                stopped.update(run=latest['id'], status=latest['status'], reason=latest.get('error'))
-                return current
         return None
     tl, dt = wait_for(selected_or_stopped, AGENT_WAIT)
     held=(tl or {}).get('task:diagnose') or {}
@@ -285,27 +284,26 @@ def scenario_mask():
 
 
 def main():
-    global REASSESS_HELD, AGENT_WAIT
+    global REASSESS_HELD
     ap = argparse.ArgumentParser()
     ap.add_argument('--only', choices=['pump','fan','mask'])
     ap.add_argument('--out', help='preserve this run decisions, instances and plant observations')
     ap.add_argument('--standby-ready', action='store_true', help='explicit test fixture: CMMS HYD-02 ready=true; restore prior value')
-    ap.add_argument('--worker', action='store_true', help='expect the cliagents host workers (AGENT_BRIDGE=off): wait 900 s for the agent tasks')
     ap.add_argument('--reassess-held', action='store_true', help='explicit test-user reassessment after a fresh 2-minute source window; no automatic production retry')
     args = ap.parse_args()
     REASSESS_HELD=args.reassess_held
-    if args.worker: AGENT_WAIT=900
     out=Path(args.out) if args.out else None
     if out: out.mkdir(parents=True,exist_ok=False)
     conn=None; prior=None
     def save(name,value):
         if out: (out/(name+'.json')).write_text(json.dumps(value,ensure_ascii=False,indent=2,default=str),encoding='utf8')
     try:
-        mode = get(f'{PROCESS}/api/process/mode')
-        check('process in instance mode', mode.get('mode')=='instance', json.dumps(mode,ensure_ascii=False))
+        phase = get(f'{PROCESS}/api/course-access').get('phase')
+        if not check('PBL 단계(기준 흐름의 AI 단계가 도는 단계)', phase == 'pbl', f'phase={phase} — 수업 단계에서는 펌프 · 팬 AI 단계가 거절된다'):
+            return
         if args.standby_ready:
             import psycopg
-            conn=psycopg.connect('postgresql://postgres:postgres@127.0.0.1:54322/postgres',autocommit=True)
+            conn=psycopg.connect(f'postgresql://postgres:postgres@127.0.0.1:{saved_port(ROOT, 54322)}/postgres',autocommit=True)
             row=conn.execute("select standby_ready from ent.maintenance_profiles where asset='HYD-02'").fetchone()
             assert row is not None, 'missing maintenance source row'
             prior=row[0];save('readiness-before',{'HYD-02':prior})

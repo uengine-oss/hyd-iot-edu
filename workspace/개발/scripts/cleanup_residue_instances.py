@@ -12,14 +12,18 @@ Anything started at/after --before is kept (a regression running right now).
 import argparse
 import json
 import os
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 import psycopg
 from neo4j import GraphDatabase
 
-DSN = os.environ.get('SUPABASE_DSN', 'postgresql://postgres:postgres@127.0.0.1:54322/postgres')
-NEO4J = ('bolt://127.0.0.1:7687', ('neo4j', os.environ.get('NEO4J_PASSWORD', 'hydpass123')))
+ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(ROOT / "scripts"))
+from prepare_ports import saved_port  # noqa: E402 — 시작이 정한 이 PC의 포트(.hyd-runtime/ports.json)
+DSN = os.environ.get('SUPABASE_DSN') or f'postgresql://postgres:postgres@127.0.0.1:{saved_port(ROOT, 54322)}/postgres'
+NEO4J = (f'bolt://127.0.0.1:{saved_port(ROOT, 7687)}', ('neo4j', os.environ.get('NEO4J_PASSWORD', 'hydpass123')))
 OPEN = ('TODO', 'IN_PROGRESS', 'SUBMITTED', 'PENDING')
 
 

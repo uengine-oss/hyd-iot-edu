@@ -16,6 +16,8 @@ from pathlib import Path
 from neo4j import GraphDatabase
 
 ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(ROOT / "scripts"))
+from prepare_ports import saved_port  # noqa: E402 — 시작이 정한 이 PC의 포트(.hyd-runtime/ports.json)
 OUT = ROOT / "it" / "portal" / "www" / "names.json"
 # 프로세스 실행 기록(FlowNode · ProcessInstance · ProcessVersion · IngestionBatch · IngestionControl)은 화면에 id 로 나오지 않으므로 뺀다
 SKIP_LABELS = ["FlowNode", "ProcessInstance", "ProcessVersion", "IngestionBatch", "IngestionControl"]
@@ -55,7 +57,7 @@ def display_name(label):
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--uri", default=os.environ.get("NEO4J_URI", "bolt://127.0.0.1:7687"))
+    ap.add_argument("--uri", default=os.environ.get("NEO4J_URI") or f"bolt://127.0.0.1:{saved_port(ROOT, 7687)}")
     ap.add_argument("--user", default=os.environ.get("NEO4J_USER", "neo4j"))
     ap.add_argument("--password", default=os.environ.get("NEO4J_PASSWORD", "hydpass123"))
     ap.add_argument("--out", default=str(OUT))
