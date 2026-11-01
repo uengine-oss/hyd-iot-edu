@@ -5,8 +5,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY common/hydcommon /srv/hydcommon
 COPY it/process/procsvc /srv/procsvc
 COPY it/process/definitions /srv/definitions
-ENV PYTHONUNBUFFERED=1 PROCESS_DEFINITIONS=/srv/definitions
-# A131 (OOM 2026-10-07, .evidence/a131): the Python heap stays flat (~76 MB traced) while RSS climbs 420→675 MB under the
+COPY it/neo4j/templates /srv/templates
+ENV PYTHONUNBUFFERED=1 KG_TEMPLATES=/srv/templates
+# A131 (OOM 2026-10-07): the Python heap stays flat (~76 MB traced) while RSS climbs 420→675 MB under the
 # portal/worker read pattern; mallinfo2 showed 343 MB *free* inside glibc arenas against 131 MB in use. Every request thread
 # gets its own arena (default 8×cores) and freed request garbage (700 KB instance views, 14 MB snapshot strings) stays there.
 # Two arenas, a fixed mmap threshold (large buffers go back to the kernel on free instead of raising the threshold to 14 MB

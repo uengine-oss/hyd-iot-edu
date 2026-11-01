@@ -1,8 +1,8 @@
-fastapi==0.115.6
-uvicorn[standard]==0.34.0
-aiokafka==0.12.0
+fastapi==0.142.2
+uvicorn[standard]==0.54.0
+aiokafka==0.14.0
 # A148 (sweep 69): decode every codec a Kafka client may use — one snappy record ended the consume loop
 python-snappy==0.7.3
-lz4==4.3.3
-zstandard==0.23.0
-neo4j==5.27.0
+lz4==4.4.5
+zstandard==0.25.0
+neo4j==6.3.1

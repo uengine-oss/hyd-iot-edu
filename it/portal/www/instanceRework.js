@@ -1,28 +1,15 @@
 /* Rework is a reviewed new generation. A lost response replays the same request.
-   A122: same form frame as the other panels — title + one hint → impact card → 담당자 · 역할 · 사유 → buttons bottom-right (UIUX_PLAN §1.3). */
+   Same form frame as the other panels — title + one hint → impact card → 담당자 · 역할 · 사유 → buttons bottom-right.
+   막힘 사유 문장은 서버가 막힘마다 함께 준다(procsvc/rework.py BLOCKER_TEXT) — 화면은 그 문장을 그대로 보인다. */
 (function () {
   const states = new Map();
-  const reasons = {
-    instance_not_running: '종료된 처리 건은 다시 열지 않습니다.', initial_inputs_unavailable: '시작 값 원문이 없어 복원 범위를 확인해야 합니다.',
-    start_workitem_superseded: '이 단계는 이미 다음 차수로 대체됐습니다.', start_workitem_not_reached: '아직 시작하지 않은 단계입니다.',
-    ambiguous_workitem_order: '최신 단계를 하나로 결정할 수 없습니다.', ambiguous_previous_producer: '재사용할 선행 결과를 하나로 결정할 수 없습니다.',
-    variable_provenance_requires_review: '값의 출처를 확인해야 합니다.', approval_requires_review: '기존 승인에 대한 검토가 필요합니다.',
-    service_effects_require_review: '시작된 서비스의 실행 효과를 확인해야 합니다.', incident_rework_effect_contract_pending: '사건의 효과 조회가 연결되지 않았습니다.',
-    dependency_restart_requires_scheduler: '다른 흐름에 있는 의존 단계의 재시작 순서를 검토해야 합니다.',
-    condition_replay_requires_arrival: '조건을 다시 판단할 선행 단계의 실제 도달 근거를 확인해야 합니다.',
-    dependency_control_arrival_unavailable: '이전 단계가 실제로 시작된 근거가 없어 자동으로 다시 열 수 없습니다.',
-    ambiguous_dependency_producer: '새 입력을 생산하는 단계를 하나로 결정할 수 없습니다.',
-    dependency_cycle_requires_review: '서로의 새 결과를 기다리는 순환 의존을 검토해야 합니다.',
-    incident_not_active_for_rework: '현재 사건이 조치 선택 대기 상태가 아니거나 이미 해제됐습니다.',
-    incident_effects_require_compensation: '설비 명령·응답 또는 정비 요청이 있어 기존 조치의 후속 검토가 필요합니다.',
-    decision_effects_require_compensation: '판단에 연결된 업무 실행 기록이 있습니다. 기존 효과를 먼저 검토해야 합니다.',
-    current_decision_original_missing: '현재 판단 원문을 찾을 수 없습니다.', rework_requires_new_decision: '새 판단을 만드는 에이전트 단계부터 선택하세요.',
-    approval_decision_original_missing: '승인에 연결된 판단 원문을 찾을 수 없습니다.', approval_effects_require_review: '전달된 승인 또는 다른 단계의 승인이 있어 별도 검토가 필요합니다.',
-    untracked_decision_consent: '승인 내역의 출처를 확인할 수 없습니다.'
-  };
   const key = id => 'hyd:rework:' + id;
+  const valueName = k => UI.t('var.' + k) === 'var.' + k ? k : UI.t('var.' + k);
+  const names = keys => keys.map(valueName).join(', ');
   function stateFor(view, by) {
     const id = view.instance.proc_inst_id;
+    // 본 처리 건 상태만 들고 있는다 — 다른 처리 건 상태는 응답을 기다리는 요청이 없으면 버린다(세션 저장소에 요청이 따로 남는다)
+    for (const [other, st] of states) if (other !== id && !st.pending) states.delete(other);
     if (!states.has(id)) {
       let pending = null;
       try { pending = JSON.parse(sessionStorage.getItem(key(id)) || 'null'); } catch (_) { /* Storage unavailable: in-memory retry still works. */ }
@@ -50,6 +37,9 @@
   }
   function mount(host, { view, by, changed }) {
     if (!host) return;
+    // 입력 칸에서 글을 쓰는 중이면 다시 그리지 않는다(2초 다시 그리기가 한글 조합을 끊는다) — 칸을 벗어난 뒤 다음 그리기에서 반영된다
+    const typing = document.activeElement;
+    if (typing && host.contains(typing) && /^(INPUT|TEXTAREA|SELECT)$/.test(typing.tagName)) return;
     const id = view.instance.proc_inst_id, s = stateFor(view, by);
     if (s.preview && s.basis !== snapshot(view) && !s.pending) {
       s.preview = null; s.confirmed = false; s.error = '단계 상태가 바뀌었습니다. 영향 범위를 다시 확인하세요.';
@@ -67,16 +57,16 @@
         const effects = p.effects, inc = effects?.incident;
         const receipts = effects ? Object.values(effects.enterprise_receipts || {}).flat().length : null;
         detail = UI.card({ title: '영향 범위', cls: 'soft', body: `<p>시작: <b>${esc(taskName(p.start_workitem))}</b> · 영향받는 단계 ${esc(p.affected_workitems.length)}건 · 취소될 단계 ${esc(p.cancel_workitems.length)}건</p>
-          <p>무효화할 값: ${esc(p.invalidated_variables.join(', ') || '없음')}<br>시작 값으로 복원: ${esc(p.restored_input_variables.join(', ') || '없음')}<br>선행 결과 재사용: ${esc(p.retained_outputs.map(x => x.variable).join(', ') || '없음')}</p>
+          <p>다시 만들 값: ${esc(names(p.invalidated_variables) || '없음')}<br>시작 값으로 되돌릴 값: ${esc(names(p.restored_input_variables) || '없음')}<br>앞 단계 결과를 그대로 쓸 값: ${esc(names(p.retained_outputs.map(x => x.variable)) || '없음')}</p>
           ${Object.values(p.reasons || {}).some(items => items.some(x => x.kind === 'condition_recheck')) ? '<p>바뀐 입력을 쓰는 분기 앞의 검토 단계도 다시 수행합니다.</p>' : ''}
           ${inc ? `<p>${esc(UI.t('case'))} ${UI.chip(inc.state)} · ${esc(UI.t('command'))} ${esc(inc.cmdId || '없음')} · 업무 실행 기록 ${esc(receipts)}건 · 이전 승인 폐기 ${esc((p.retire_approvals || []).length)}건</p>` : '<p>연결된 설비 사건이 없는 일반 프로세스입니다.</p>'}
-          ${p.blockers.length ? `<div class="rework-blocked"><b>추가 검토가 필요합니다</b><ul>${p.blockers.map(b => `<li>${esc(reasons[b.code] || '지원 범위를 확인해야 합니다.')} ${esc(b.variable || (b.workitem ? taskName(b.workitem) : '') || '')}</li>`).join('')}</ul></div>` : '<p>새 차수를 요청할 수 있습니다. 접수 시 상태와 효과를 다시 확인합니다.</p>'}
+          ${p.blockers.length ? `<div class="rework-blocked"><b>추가 검토가 필요합니다</b><ul>${p.blockers.map(b => `<li>${esc(b.text)}${b.variable ? ` <small>(값: ${esc(valueName(b.variable))})</small>` : b.workitem ? ` <small>(단계: ${esc(taskName(b.workitem))})</small>` : ''}</li>`).join('')}</ul></div>` : '<p>새 차수를 요청할 수 있습니다. 접수 시 상태와 효과를 다시 확인합니다.</p>'}
           ${UI.fold(esc(UI.t('raw')), `<pre>${esc(JSON.stringify({ workitems: p.affected_workitems, reasons: p.reasons, candidate_variables: p.candidate_variables, blockers: p.blockers, effects: p.effects }, null, 2))}</pre>`, { cls: 'small' })}` });
       }
       const finished = view.instance.status !== 'RUNNING' && !s.pending;   // A091: a finished instance folds this panel to one line
       const body = `${s.success ? `<p class="rework-success" role="status">${esc(s.success.generation)}${esc(UI.t('inst.gen'))} 요청이 접수됐습니다. 새 단계의 진행과 사람 선택을 확인하세요.</p>` : ''}
         ${finished ? '<p class="muted">종료된 처리 건입니다. 다시 수행 이력만 남아 있습니다.</p>' : `<div class="form">
-        <section class="form-section"><div class="form-grid">${UI.field({ label: '다시 시작할 단계', required: true, hint: '조건이나 판단 근거가 바뀌었다면 시작할 단계를 고릅니다. 이전 결과는 이력으로 남습니다.', input: `<select id="rwStart" ${locked}><option value="">${esc(UI.t('step'))} 선택</option>${list.map(w => `<option value="${esc(w.id)}" ${w.id === s.workitem ? 'selected' : ''}>${esc(w.activity_name)} · ${esc(w.generation || 0)}${esc(UI.t('inst.gen'))} · ${esc(UI.status(w.status))}</option>`).join('')}</select>` })}
+        <section class="form-section"><div class="form-grid">${UI.field({ label: '다시 시작할 단계', required: true, hint: '조건이나 판단 근거가 바뀌었다면 시작할 단계를 고릅니다. 이전 결과는 이력으로 남습니다.', input: `<select id="rwStart" ${locked}><option value="">${esc(UI.t('step'))} 선택</option>${list.map(w => `<option value="${esc(w.id)}" ${w.id === s.workitem ? 'selected' : ''}>${esc(w.activity_name)}${w.generation ? ` · ${esc(w.generation)}${esc(UI.t('inst.gen'))}` : ''} · ${esc(UI.status(w.status))}</option>`).join('')}</select>` })}
           <div class="field"><label>&nbsp;</label><button class="btn outline" id="rwPreview" ${locked}>${esc(UI.t('btn.effects'))}</button></div></div></section>
         ${detail}
         <section class="form-section"><h4>${esc(UI.t('form.section.who'))}</h4><div class="form-grid">

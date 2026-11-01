@@ -42,7 +42,7 @@ class ApprovedExtractions:
         if entry is None:
             raise ValueError('강사가 제공한 수업 문서만 추출할 수 있습니다')
         if manual_cache.source_fingerprint(source) != entry['source_fingerprint']:
-            raise ValueError('제공 문서의 원문·파서 판본이 다릅니다. 강사에게 확인하세요')
+            raise ValueError('제공 문서와 내용은 같지만 파일 형식(확장자)이나 글 읽는 방식이 달라 강사 검토본을 쓸 수 없습니다 — 포털에서 받은 제공 문서 파일 이름(확장자) 그대로 올리세요')
         return entry
 
     def context(self, source):
@@ -54,7 +54,7 @@ class ApprovedExtractions:
         entry = self.authorize(source)
         feedback = extraction.validate_review_feedback(feedback)
         if feedback and feedback['items']:
-            raise ValueError('수정 의견은 현재 제안의 검토 화면에서 반영하세요. 새 추출은 강사 준비에서 수행합니다')
+            raise ValueError('제공 문서는 강사 검토본을 그대로 씁니다(AI 추출을 다시 하지 않습니다) — 고칠 곳은 이 검토 화면에서 직접 고친 뒤 적재하세요')
         def rebind(value):
             if isinstance(value, dict):
                 return {k: source['source_id'] if k == 'source_id' else rebind(v) for k, v in value.items()}

@@ -50,7 +50,8 @@ function Install-Winget($id, $action, $extra = @()) {
 }
 
 $results = [System.Collections.Generic.List[object]]::new()
-$restart = $false
+$restart = $false     # PC 다시 시작이 필요함(설치 프로그램 요구 · WSL / Windows 기능)
+$relogin = $false     # 다시 로그인이면 됨(그룹 권한)
 function Record($name, $state, $note) { $results.Add([pscustomobject]@{ 프로그램 = $name; 결과 = $state; 비고 = $note }) }
 function Installed-App($pattern) {
     # 「앱 및 기능」 목록에서 이름이 맞는 첫 프로그램의 판을 돌려준다(없으면 $null)
@@ -87,7 +88,9 @@ function Ensure-Minimum($name, $id, $minimum, [scriptblock]$probe, $installExtra
         $state = '설치함'
         if ($action -eq 'upgrade') { $state = '업데이트함' }
         Record $name $state "$after — 기준 $minimum 이상 확인"
-        if ($name -eq 'Docker Desktop') { $script:restart = $true }
+        # 재부팅은 설치 프로그램이 요구할 때(winget 종료 코드 3010 · 1641 — Install-Winget)와 WSL · Windows 기능을 켰을 때만.
+        # Docker Desktop 새 설치는 이 계정을 docker-users 그룹에 넣으므로 다시 로그인이면 된다(업데이트는 둘 다 필요 없다)
+        if ($name -eq 'Docker Desktop' -and $action -eq 'install') { $script:relogin = $true }
     }
     catch { Record $name '실패' $_.Exception.Message }
 }
@@ -124,7 +127,7 @@ if (Get-LocalGroup -Name 'docker-users' -ErrorAction SilentlyContinue) {
     }
     foreach ($w in $wanted) {
         if ($members -contains $w.Sid) { Record 'docker-users 그룹' '있음' $w.Name; continue }
-        try { Add-LocalGroupMember -Group 'docker-users' -Member $w.Sid; $restart = $true; Record 'docker-users 그룹' '추가함' "$($w.Name) — 다시 로그인하면 적용" }
+        try { Add-LocalGroupMember -Group 'docker-users' -Member $w.Sid; $script:relogin = $true; Record 'docker-users 그룹' '추가함' "$($w.Name) — 다시 로그인하면 적용" }
         catch { Record 'docker-users 그룹' '실패' "$($w.Name): $($_.Exception.Message)" }
     }
 }
@@ -188,7 +191,8 @@ Say "`n== 결과" 'White'
 $results | Format-Table -AutoSize -Wrap | Out-String -Width 160 | Write-Host
 $failed = @($results | Where-Object { $_.결과 -in @('실패', '꺼짐') })
 if ($failed.Count) { Say "손이 필요한 항목이 $($failed.Count)개 있습니다(실패 · 꺼짐). 위 비고대로 한 뒤 설치.bat을 다시 실행하세요." 'Red' }
-if ($restart) { Say "PC를 다시 시작하세요. 다시 시작한 뒤 Docker Desktop을 한 번 열어 약관에 동의하고, 그다음 시작.bat을 더블클릭합니다." 'Yellow' }
+if ($restart) { Say "PC를 다시 시작하세요(WSL · Windows 기능 또는 설치 프로그램이 요구합니다). 다시 시작한 뒤 Docker Desktop을 한 번 열어 약관에 동의하고, 그다음 시작.bat을 더블클릭합니다." 'Yellow' }
+elseif ($relogin) { Say "로그아웃한 뒤 다시 로그인하세요(Docker 사용 권한이 그때 적용됩니다 — PC 재시작은 필요 없습니다). 그다음 Docker Desktop을 한 번 열어 약관에 동의하고 시작.bat을 더블클릭합니다." 'Yellow' }
 elseif (-not $failed.Count) { Say "설치 대상 확인이 끝났습니다. Docker Linux 엔진 실행과 실습용 접속 설정을 확인한 뒤 시작.bat을 실행하세요." 'Green' }
 Read-Host '창을 닫으려면 Enter'
 if ($failed.Count) { exit 1 }

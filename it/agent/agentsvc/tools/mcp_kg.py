@@ -11,25 +11,28 @@ against the fresh plant snapshot; the graph only binds which model/revision an a
 import os
 from pathlib import Path
 
-from neo4j import GraphDatabase, unit_of_work
+from neo4j import unit_of_work
 
-TEMPLATES = Path(os.getenv("KG_TEMPLATES", "/srv/templates"))
+from hydcommon import graphdb
+
+
+
+def templates() -> Path:
+    """템플릿 폴더(KG_TEMPLATES — 이미지는 /srv/templates). 부를 때 읽는다."""
+    return Path(os.getenv("KG_TEMPLATES", "/srv/templates"))
 
 
 class KnowledgeGraph:
     def __init__(self):
-        uri = os.getenv("NEO4J_URI", "bolt://neo4j:7687")
-        user, pwd = os.getenv("NEO4J_AUTH", "neo4j/hydpass123").split("/", 1)
-        # liveness_check_timeout=0: 풀에서 꺼낸 연결을 쓰기 전에 살아 있는지 확인한다. neo4j 가 다시 뜨면(볼륨 교체 · 재시작) 풀에 남은
-        # 끊긴 연결이 다음 조회를 ServiceUnavailable 로 실패시켰다(2026-10-09 회귀: 승인 조건 검사 실패). 재시도 없이(bounded) 새 연결을 쓴다.
-        self.driver = GraphDatabase.driver(uri, auth=(user, pwd),
-                                          connection_timeout=3, connection_acquisition_timeout=5,
-                                          max_transaction_retry_time=0, liveness_check_timeout=0)
+        # 드라이버는 한 곳(hydcommon.graphdb.connect — 주소 · 인증 · 「없는 이름」 알림 끔 · 끊긴 풀 연결 거름, 결정 2). 이 서비스의 한도만 준다:
+        # 연결 3초 · 풀에서 꺼내기 5초 · 재시도 없음(bounded — 실패는 부르는 쪽이 UNKNOWN 으로 다룬다).
+        self.driver = graphdb.connect(connection_timeout=3, connection_acquisition_timeout=5, max_transaction_retry_time=0)
         self._cache: dict[str, str] = {}
+        self.ping_error: str | None = None
 
     def template(self, name: str) -> str:
         if name not in self._cache:
-            text = (TEMPLATES / f"{name}.cypher").read_text(encoding="utf-8")
+            text = (templates() / f"{name}.cypher").read_text(encoding="utf-8")
             self._cache[name] = "\n".join(l for l in text.splitlines() if not l.strip().startswith("//"))
         return self._cache[name]
 
@@ -43,8 +46,9 @@ class KnowledgeGraph:
             return s.execute_read(read)
 
     # ---- T1 / T2: diagnosis and the failure mode's SOP skills
-    def t1_causes(self, pattern: str, asset: str) -> list[dict]:
-        return self._run("t1_causes", pattern=pattern, asset=asset)
+    def t1_causes(self, pattern: str) -> list[dict]:
+        """경보 패턴 → 증상 → 고장 유형 → 원인 후보 + 증거 규칙. 설비는 묻지 않는다(고장 지식은 설비 형식 공통 — 템플릿에 $asset 없음)."""
+        return self._run("t1_causes", pattern=pattern)
 
     def t2_skills(self, cause_id: str) -> list[dict]:
         return self._run("t2_skills", cause=cause_id)
@@ -99,15 +103,18 @@ class KnowledgeGraph:
         return self._run("t0_namespaces")
 
     def template_text(self, name: str) -> str:
-        return (TEMPLATES / f"{name}.cypher").read_text(encoding="utf-8")
+        return (templates() / f"{name}.cypher").read_text(encoding="utf-8")
 
     def ping(self) -> bool:
+        """지금 그래프에 닿는가(5초 한도). 닿지 못하면 False 이고 그 까닭은 ping_error 에 남는다 — 상태 확인이 그대로 보인다."""
         try:
             @unit_of_work(timeout=5.0)
             def read(tx):
                 return tx.run("RETURN 1").single()
             with self.driver.session() as s:
                 s.execute_read(read)
+            self.ping_error = None
             return True
-        except Exception:  # noqa: BLE001
+        except Exception as e:  # noqa: BLE001 — 닿지 못한 모든 까닭이 상태 확인의 답이다(까닭을 남긴다)
+            self.ping_error = f"{type(e).__name__}: {str(e)[:200]}"
             return False

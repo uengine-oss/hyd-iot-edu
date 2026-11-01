@@ -3,13 +3,15 @@
 회의 L136~138: 온톨로지가 잘 구성됐는지는 "그런 상황을 던졌을 때 진단 · 판단을 정확히 하고 액션까지 수행하는지"로 확인한다.
 여기서는 그 확인을 반복 가능하게 만든다.
 
-  정답표  **데이터**다. 코드 · 시드 · 파일에 정답이 없다. 강사 · 수강생이 포털(또는 CLI · API)에서 항목을 적어 저장하고, 처음엔 비어 있다.
+  정답표  **데이터**다. 코드 · 시드 · 파일에 정답이 없다. 강사 · 수강생이 포털(또는 API)에서 항목을 적어 저장하고, 처음엔 비어 있다.
           항목 = 경보 상황(설비 · 패턴 · 가정 사실) + 기대 원인 · 고장 유형, 1위로 허용되는 조치, 빠져야 할 조치(제외돼야 / 1위면 안 됨),
           근거에 있어야 할 지식 id. validate_item()은 모양만 검사하고, 이름이 지식 그래프에 있는지는 eval_api 가 그래프에 묻는다.
-  채점    score_judgement(item, judged) — 순수 함수(A10 이 같은 함수를 쓴다). 원인 적중 · 1위 허용 · 빠질 조치 미추천 · 근거 포함률 → 가중 합(0~100).
+  채점    score_judgement(item, judged) — 순수 함수. 원인 적중 · 1위 허용 · 빠질 조치 미추천 · 근거 포함률 → 가중 합(0~100).
+          정답표에 적지 않은 검사(빠질 조치를 비운 항목)는 가중치에서 빼고 나머지로 다시 나눈다 — 검사할 것이 없는 칸을 「맞음」으로 세지 않는다.
           judged 는 normalize_decision()(agent /api/agent/decide 응답 · process 가 받은 판단) 또는 normalize_evaluation()
           (agent /api/agent/evaluate 실행 기록) · worker_judgement()(지난 처리 건의 실제 워커 출력)이 같은 모양으로 만든다.
-  반복    aggregate() — 같은 항목 N회의 평균 · 최저 · 최고 · 흔들림(최빈 결과 비율). N회가 모두 같으면 identical=True(결정론 — 1회와 같다).
+  반복    aggregate() — 같은 항목 N회의 평균 · 최저 · 최고 · 흔들림(최빈 결과 비율) · 검사마다 N회 중 맞은 수. N회가 모두 같으면
+          identical=True(결정론 — 1회와 같다).
   전후    compare(run_a, run_b) — 항목별 점수 변화 + knowledge_diff()로 두 실행 사이 지식 그래프에서 끊긴 · 생긴 관계와 바뀐 항목(E5).
 순수 로직이다(네트워크 · DB 없음). 저장소(PgEvalStore)만 I/O 를 한다.
 """
@@ -20,7 +22,6 @@ import json
 import re
 import statistics
 from collections import Counter
-from copy import deepcopy
 from datetime import datetime, timezone
 from uuid import uuid4
 
@@ -30,10 +31,14 @@ PATHS = ('decide', 'evaluate', 'worker')
 MAX_REPEATS = 10
 NOT_JUDGED = ('WITHHELD', 'ERROR', 'EMPTY', 'FAILED', 'REJECTED_BY_GUARDRAIL')
 ITEM_ID = re.compile(r'^[a-z0-9][a-z0-9-]{1,63}$')
+#: 판단 경로마다 화면에 그대로 보이는 안내(학생 말 — 서비스 주소 · 개발 낱말 없이)
 PATH_NOTES = {
-    'decide': '규칙 판단(agent /api/agent/decide) — LLM 없이 결정론적이다. 같은 지식 · 같은 사실이면 1회로 충분하고, N>1 은 실시간 근거 값이 바뀔 때의 흔들림만 잰다. 정답표의 가정 사실을 그대로 넣는다.',
-    'evaluate': '에이전트 읽기 평가(agent /api/agent/evaluate) — 경보 한 건을 전체 파이프라인(근거 조회 → 원인 → 조치 카드 → 가드레일)으로 돌리되 제출하지 않는다. 사실은 지금 설비 · 업무 DB 값이며, 정답표 가정과 다르면 항목에 표시한다.',
-    'worker': '지난 처리 건 — 실제 AI 일꾼(워커)이 낸 원인 · 근거와 제출된 조치 판단을 채점한다. 같은 항목에 맞는 처리 건 여러 개는 반복으로 묶어 흔들림을 잰다.',
+    'decide': '규칙 판단 — AI 모델 없이 조치 판단 규칙만으로 판단합니다. 같은 지식 · 같은 사실이면 결과가 늘 같아 1회면 충분하고, '
+              '여러 번 돌리면 지금 설비 값이 바뀔 때 결과가 달라지는지만 봅니다. 정답표의 가정 사실을 그대로 넣습니다.',
+    'evaluate': '규칙 읽기 평가 — AI 모델 없이 경보 한 건을 근거 조회 → 원인 → 조치 카드 → 안전 규칙 검사까지 실제로 돌리되 판단을 등록하지는 않습니다. '
+                '사실은 지금 설비 · 업무 DB 값이며, 정답표의 가정과 다르면 항목에 표시합니다.',
+    'worker': '지난 처리 건 — 실제 처리 건에서 AI 일꾼이 낸 원인 · 근거와 등록된 조치 판단을 채점합니다. 같은 항목에 맞는 처리 건 여러 개는 '
+              '반복으로 묶어 결과가 흔들리는지 봅니다.',
 }
 BOOKKEEPING_LABELS = ['ManualIngestionBatch', 'ManualIngestionDocument', 'IngestionBatch', 'IngestionControl', 'KnowledgeEdit']
 SNAPSHOT_CAP = 50000
@@ -61,42 +66,42 @@ def validate_item(item: dict) -> dict:
         raise ValueError('정답표 항목은 객체여야 합니다')
     iid = str(item.get('id') or '').strip()
     if not ITEM_ID.match(iid):
-        raise ValueError('id 는 영문 소문자 · 숫자 · 하이픈 2~64자여야 합니다 (예: cooler-auto)')
+        raise ValueError('항목 이름은 영문 소문자 · 숫자 · 하이픈 2~64자여야 합니다 (예: cooler-auto)')
     out = {'id': iid}
-    for key in ('title', 'asset', 'pattern'):
+    for key, label in (('title', '제목'), ('asset', '설비'), ('pattern', '이상 패턴')):
         v = item.get(key)
         if not isinstance(v, str) or not v.strip():
-            raise ValueError(f'{key} 가 비어 있습니다')
+            raise ValueError(f'{label} 칸이 비어 있습니다')
         out[key] = v.strip()
     facts = item.get('facts', {})
     if not isinstance(facts, dict):
-        raise ValueError('facts 는 객체여야 합니다 (가정 사실이 없으면 {})')
+        raise ValueError('가정 사실은 이름 → 값 묶음이어야 합니다 (가정 사실이 없으면 비워 두세요)')
     out['facts'] = {str(k): v for k, v in facts.items() if v is not None and v != ''}
     exp = item.get('expected')
     if not isinstance(exp, dict) or not str(exp.get('cause') or '').startswith('cause:') or not str(exp.get('failure_mode') or '').startswith('fm:'):
-        raise ValueError('expected 에 원인(cause:…)과 고장 유형(fm:…)이 필요합니다')
+        raise ValueError('기대 원인(cause:…)과 고장 유형(fm:…)을 모두 적으세요')
     out['expected'] = {'cause': exp['cause'].strip(), 'failure_mode': exp['failure_mode'].strip()}
     allowed = item.get('allowed_top')
     if not isinstance(allowed, list) or not allowed or any(not isinstance(s, str) or not s.startswith('skill:') for s in allowed):
-        raise ValueError('allowed_top 은 1위로 허용되는 조치(skill:…) 목록(1개 이상)이어야 합니다')
+        raise ValueError('1위로 허용되는 조치(skill:…)를 하나 이상 적으세요')
     out['allowed_top'] = list(dict.fromkeys(s.strip() for s in allowed))
     forbidden = item.get('forbidden') or []
     if not isinstance(forbidden, list):
-        raise ValueError('forbidden 은 목록이어야 합니다')
+        raise ValueError('빠져야 할 조치는 목록이어야 합니다')
     out['forbidden'] = []
     for j, f in enumerate(forbidden):
         if not isinstance(f, dict) or not str(f.get('skill') or '').startswith('skill:') or f.get('expect') not in FORBIDDEN_EXPECTS:
-            raise ValueError(f"forbidden[{j}] 은 {{skill: skill:…, expect: {' | '.join(FORBIDDEN_EXPECTS)}}} 이어야 합니다")
+            raise ValueError(f"빠져야 할 조치 {j + 1}번째 줄은 조치(skill:…)와 기대(제외돼야 함 · 1위면 안 됨)가 있어야 합니다")
         if f['skill'] in out['allowed_top']:
-            raise ValueError(f"forbidden[{j}].skill '{f['skill']}' 이 allowed_top 에도 있습니다")
+            raise ValueError(f"빠져야 할 조치 {j + 1}번째 줄의 '{f['skill']}' 이(가) 1위로 허용되는 조치에도 있습니다")
         if f.get('rule') is not None and not str(f['rule']).startswith('rule:'):
-            raise ValueError(f'forbidden[{j}].rule 은 rule:… 이어야 합니다')
+            raise ValueError(f'빠져야 할 조치 {j + 1}번째 줄의 근거 규칙은 rule:… 이어야 합니다')
         out['forbidden'].append({k: f[k] for k in ('skill', 'expect', 'rule', 'why') if f.get(k)})
     if len({f['skill'] for f in out['forbidden']}) != len(out['forbidden']):
-        raise ValueError('forbidden 에 같은 조치가 두 번 있습니다')
+        raise ValueError('빠져야 할 조치에 같은 조치가 두 번 있습니다')
     req = item.get('required_evidence')
     if not isinstance(req, list) or not req or any(not isinstance(r, str) or not r.strip() for r in req):
-        raise ValueError('required_evidence 는 근거에 있어야 할 지식 id 목록(1개 이상)이어야 합니다')
+        raise ValueError('근거에 있어야 할 지식 id 를 하나 이상 적으세요')
     out['required_evidence'] = list(dict.fromkeys(r.strip() for r in req))
     out['note'] = str(item.get('note') or '')[:500]
     return out
@@ -189,9 +194,10 @@ def withheld(reason: str, status: str = 'WITHHELD') -> dict:
             'decision_id': None, 'reason': reason}
 
 
-# ---------------------------------------------------------------- 채점 (순수 함수 — A10 이 그대로 쓴다)
+# ---------------------------------------------------------------- 채점 (순수 함수)
 def score_judgement(item: dict, judged: dict, weights: dict | None = None) -> dict:
-    """정답표 항목 하나 × 판단 하나 → 점수(0~100)와 검사 네 칸. 판단이 없거나(보류 · 오류 · 가드레일) 후보가 비면 0점이다(부분 점수 없음)."""
+    """정답표 항목 하나 × 판단 하나 → 점수(0~100)와 검사 네 칸. 판단이 없으면(보류 · 오류 · 안전 규칙 중단) 0점이다(부분 점수 없음).
+    정답표가 적지 않은 검사(빠질 조치 없음)는 점수에서 빼고 나머지 가중치로 다시 나눈다(만점 100 그대로) — 빈 검사를 「맞음」으로 세지 않는다."""
     w = weights or DEFAULT_WEIGHTS
     exp = item['expected']
     by_id = {o['id']: o for o in judged.get('options') or []}
@@ -208,30 +214,36 @@ def score_judgement(item: dict, judged: dict, weights: dict | None = None) -> di
             ok = rec != f['skill']
             got = '1위 추천됨' if rec == f['skill'] else ('후보 아님' if o is None else f"{o['rank']}위")
         details.append({'skill': f['skill'], 'expect': f['expect'], 'rule': f.get('rule'), 'ok': ok, 'got': got})
-    forbidden_ratio = (sum(d['ok'] for d in details) / len(details)) if details else 1.0
+    forbidden_ratio = (sum(d['ok'] for d in details) / len(details)) if details else None   # None = 정답표가 이 검사를 적지 않음
     cited = set(judged.get('cited') or [])
     found = [e for e in item['required_evidence'] if e in cited]
     missing = [e for e in item['required_evidence'] if e not in cited]
     evidence_ratio = len(found) / len(item['required_evidence'])
     if judged.get('status') in NOT_JUDGED:
         cause_ok = top_ok = False
-        forbidden_ratio = evidence_ratio = 0.0
+        evidence_ratio = 0.0
+        forbidden_ratio = None if forbidden_ratio is None else 0.0     # 정답표가 적지 않은 검사는 판단이 없어도 점수 밖이다
         details = [dict(d, ok=False, got=judged.get('status')) for d in details]
     used = judged.get('facts_used') or {}
     mismatch = [{'key': k, 'want': v, 'got': used.get(k)} for k, v in (item.get('facts') or {}).items() if k in used and used[k] != v]
-    score = 100 * (w['cause'] * cause_ok + w['top'] * top_ok + w['forbidden'] * forbidden_ratio + w['evidence'] * evidence_ratio)
+    parts = {'cause': float(cause_ok), 'top': float(top_ok), 'forbidden': forbidden_ratio, 'evidence': evidence_ratio}
+    scored = {k: v for k, v in parts.items() if v is not None}
+    score = 100 * sum(w[k] * v for k, v in scored.items()) / sum(w[k] for k in scored)
     return {'score': round(score, 1), 'status': judged.get('status'), 'reason': judged.get('reason'),
             'outcome': f"{judged.get('cause') or '-'} → {rec or '-'}",
             'checks': {'cause': {'ok': cause_ok, 'got': judged.get('cause'), 'got_failure_mode': judged.get('failure_mode'), 'want': exp['cause'], 'want_failure_mode': exp['failure_mode']},
                        'top': {'ok': top_ok, 'got': rec, 'allowed': list(item['allowed_top']),
                                'order': [f"{o['rank']}. {o['id']}" + ('' if o['feasible'] else ' (제외)') for o in judged.get('options') or []]},
-                       'forbidden': {'ok': forbidden_ratio == 1.0, 'ratio': round(forbidden_ratio, 3), 'detail': details},
+                       'forbidden': {'ok': True if forbidden_ratio is None else forbidden_ratio == 1.0,
+                                     'ratio': None if forbidden_ratio is None else round(forbidden_ratio, 3), 'scored': forbidden_ratio is not None,
+                                     'detail': details},
                        'evidence': {'ok': evidence_ratio == 1.0, 'ratio': round(evidence_ratio, 3), 'found': found, 'missing': missing}},
             'facts_mismatch': mismatch, 'decision_id': judged.get('decision_id'), 'run_id': judged.get('run_id')}
 
 
 def aggregate(item: dict, judged_runs: list[dict], weights: dict | None = None, *, deterministic: bool = False) -> dict:
-    """같은 항목 N회 → 평균 · 최저 · 최고 · 흔들림. identical=True 면 N회가 모두 같은 결과 · 같은 점수(결정론 — 1회와 같다)."""
+    """같은 항목 N회 → 평균 · 최저 · 최고 · 흔들림 · 검사마다 N회 중 맞은 수(check_hits). checks 는 마지막 회차의 검사(상세 줄)다.
+    identical=True 면 N회가 모두 같은 결과 · 같은 점수(결정론 — 1회와 같다)."""
     if not judged_runs:
         raise ValueError(f"항목 {item['id']} 의 판단 결과가 없습니다")
     runs = [score_judgement(item, j, weights) for j in judged_runs]
@@ -244,8 +256,8 @@ def aggregate(item: dict, judged_runs: list[dict], weights: dict | None = None, 
             'repeats': len(runs), 'score': round(statistics.fmean(scores), 1), 'min': min(scores), 'max': max(scores),
             'stability': round(modal_n / len(runs), 3), 'modal_outcome': modal, 'outcomes': dict(outcomes),
             'identical': len(outcomes) == 1 and min(scores) == max(scores), 'deterministic': deterministic,
-            'checks': last['checks'], 'status': last['status'], 'reason': last['reason'], 'facts_mismatch': last['facts_mismatch'],
-            'runs': runs}
+            'checks': last['checks'], 'check_hits': {c: sum(1 for r in runs if r['checks'][c]['ok']) for c in last['checks']},
+            'status': last['status'], 'reason': last['reason'], 'facts_mismatch': last['facts_mismatch'], 'runs': runs}
 
 
 def summarize(results: list[dict]) -> dict:
@@ -377,7 +389,14 @@ def compare(a: dict, b: dict) -> dict:
 
 
 # ---------------------------------------------------------------- 실제 워커 경로: 지난 처리 건 고르기
-FACT_KEYS = ('plc_mode', 'plc_state', 'standby_ready', 'fan100_hours')
+#: 정답표에 적는 가정 사실 — 판단 규칙 입력 가운데 정답표가 고정할 수 있는 것(화면 이름 · 선택지). 채점 화면은 이 표를 읽어 칸을 그린다.
+FACT_CHOICES = {
+    'plc_mode': {'label': '운전 모드', 'choices': [['REMOTE_AUTO', '원격 자동'], ['REMOTE_MANUAL', '원격 수동'], ['LOCAL', '현장 제어']]},
+    'plc_state': {'label': '설비 상태', 'choices': [['RUN', '운전 중'], ['TRIP', '보호 정지']]},
+    'standby_ready': {'label': '예비 펌프', 'choices': [[True, '가용'], [False, '정비 중']]},
+    'fan100_hours': {'label': '팬 100 % 연속 운전 (시간)', 'number': True},
+}
+FACT_KEYS = tuple(FACT_CHOICES)
 
 
 def instance_candidate(inst: dict, decision_lookup) -> dict | None:
@@ -424,10 +443,6 @@ def worker_judgement(candidate: dict, decision: dict | None, guide_card: dict | 
 
 
 # ---------------------------------------------------------------- 저장소 (정답표 항목 + 채점 실행)
-def _run_head(r: dict) -> dict:
-    return {**{k: deepcopy(r.get(k)) for k in (*RUN_HEAD, 'golden_version')}, 'knowledge': public_knowledge(r.get('knowledge'))}
-
-
 class PgEvalStore:
     """Supabase(마이그레이션 20261008000030): judgment_golden_items(정답표 항목, 고치면 덮어씀 · 지문 item_hash)와
     judgment_eval_runs(실행 하나 = 행 하나, 불변). 항목 결과 · 지식 상태는 jsonb."""
@@ -455,10 +470,6 @@ class PgEvalStore:
     def golden_list(self) -> list[dict]:
         with self._conn() as c:
             return [self._golden_row(r) for r in c.execute('select * from judgment_golden_items where tenant_id=%s order by id', (self.tenant,)).fetchall()]
-
-    def golden_get(self, iid: str) -> dict | None:
-        with self._conn() as c:
-            return self._golden_row(c.execute('select * from judgment_golden_items where tenant_id=%s and id=%s', (self.tenant, iid)).fetchone())
 
     def golden_put(self, item: dict, by: str, *, create: bool) -> dict:
         h = item_hash(item)
@@ -499,6 +510,13 @@ class PgEvalStore:
     def get(self, rid: str) -> dict | None:
         with self._conn() as c:
             return self._row(c.execute('select * from judgment_eval_runs where id=%s and tenant_id=%s', (rid, self.tenant)).fetchone(), True)
+
+    def reset(self) -> dict:
+        """기준으로 되돌리기(config_bundle): 이 테넌트의 정답표 항목과 채점 실행을 모두 지운다 — 학생이 포털에서 만든 기록이다."""
+        with self._conn() as c, c.transaction():
+            runs = c.execute('delete from judgment_eval_runs where tenant_id=%s', (self.tenant,)).rowcount
+            items = c.execute('delete from judgment_golden_items where tenant_id=%s', (self.tenant,)).rowcount
+        return {'golden_items': items or 0, 'runs': runs or 0}
 
     def list(self, limit: int = 50) -> list[dict]:
         with self._conn() as c:

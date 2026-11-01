@@ -39,28 +39,31 @@ def _request(method, url, *, body=None, transport=None):
     return result
 
 
-def attach(config, workdir, url, *, transport=None):
+def attach(reads, workdir, url, *, transport=None):
+    """reads: 이 질문에 쓰는 서버와 정해진 조회 도구 {서버: [도구 …]} — 규칙 한 곳(procsvc/agents_store.run_servers, 질문 폼 계약의
+    QUESTION_READS)이 정한 그대로. 서버마다 process 의 도구 목록을 받아 그 가운데 정해진 조회 도구만(실제로 있고 부를 수 있는 것) 창구에 연다.
+    목록 밖 서버를 여기서 거르지 않는다 — 고르는 일은 run_servers 가 했다(예전 사본 튜플이 정기 정비 · 구매 에이전트의 질문을 「수업에 허용되지
+    않은 도구 서버」로 멈췄다, 검진 G1-02)."""
     base = _base(url)
-    selected = ((config or {}).get('mcpServers') or {})
-    if not isinstance(selected, dict):raise RuntimeConnectionError('수업 조회 서버 설정을 확인하세요')
+    if not isinstance(reads, dict):
+        raise RuntimeConnectionError('수업 조회 서버 설정을 확인하세요')
     catalog, names = [], {}
-    for server in sorted(selected):
-        if not isinstance(server, str) or server not in ('neo4j', 'enterprise', 'hyd-dmn'):
-            raise RuntimeConnectionError('수업에 허용되지 않은 도구 서버입니다')
+    for server in sorted(reads):
+        allowed = {t for t in reads[server] or () if question_read(server, t)}
         try:payload = _request('GET', base+'/api/mcp/servers/'+quote(server,safe='')+'/tools', transport=transport)
-        except Refused:raise RuntimeConnectionError('선택한 수업 조회 서버가 연결되지 않았습니다') from None
+        except Refused as refused:raise RuntimeConnectionError(f'질문에 쓸 도구 서버 {server}의 도구 목록을 받지 못했습니다 — {refused}') from None
         if payload.get('status') != 'ok' or not isinstance(payload.get('tools'), list):
-            raise RuntimeConnectionError('선택한 수업 조회 서버가 연결되지 않았습니다')
+            raise RuntimeConnectionError(f'질문에 쓸 도구 서버 {server}이(가) 연결되지 않았습니다 — 도구 연결 화면에서 연결 상태를 확인하세요')
         for tool in payload['tools']:
             if not isinstance(tool, dict):raise RuntimeConnectionError('수업 조회 도구 목록이 올바르지 않습니다')
             name = tool.get('name')
-            if not question_read(server, name) or not tool.get('callable'):continue
+            if name not in allowed or not tool.get('callable'):continue
             schema = tool.get('input_schema')
             if not isinstance(schema, dict) or schema.get('type') != 'object':
                 raise RuntimeConnectionError('수업 조회 도구 입력 형식이 올바르지 않습니다')
             catalog.append({'server':server, 'name':name, 'description':tool.get('description') or '', 'inputSchema':schema})
             names.setdefault(server, []).append(name)
-        if server not in names:raise RuntimeConnectionError('선택한 서버에 허용된 조회 도구가 없습니다')
+        if server not in names:raise RuntimeConnectionError(f'도구 서버 {server}에 질문에 쓸 수 있는 조회 도구가 없습니다')
     path = Path(workdir)/'question-tool-catalog.json'
     path.write_text(json.dumps(catalog,ensure_ascii=False),encoding='utf8')
     servers = {server:{'command':sys.executable,

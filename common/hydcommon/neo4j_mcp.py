@@ -3,9 +3,10 @@
 0.4.1 silently drops lists >=128 and cuts JSON tokens without a marker. This adapter
 keeps small results compatible, bounds large results explicitly, and checks Neo4j's
 compiled query type before executing. It never exposes a write tool.
+Served over HTTP by dmn-mcp at /neo4j/mcp (it/dmn-mcp/dmn_mcp/server.py, driver from hydcommon.graphdb) — the class
+neo4j tool server; there is no stdio entry point any more (decision 3: a Python process per list/call cost 1.8~3.6 s).
 """
 import json
-import os
 from typing import Annotated, Literal
 
 from pydantic import Field
@@ -14,14 +15,6 @@ MAX_ROWS = 100
 MAX_CHARS = 16000
 MAX_CELL_CHARS = 1200
 MAX_LIST = 64
-
-
-def local_launch(command, args):
-    """Use this installation, even when the CLI starts the server from a per-task workspace."""
-    if command in ('python', 'python3') and args == ['-m', 'hydcommon.neo4j_mcp']:
-        import sys
-        return sys.executable, [os.path.abspath(__file__)]
-    return command, args
 
 
 def dumps(value):
@@ -137,13 +130,3 @@ def create_server(driver, *, database='neo4j', timeout=30):
         return await schema(driver,name=name,section=section,offset=offset,limit=limit,database=database,timeout=timeout)
     return app
 
-
-def main():
-    from neo4j import AsyncGraphDatabase
-    driver = AsyncGraphDatabase.driver(os.environ['NEO4J_URI'],
-        auth=(os.getenv('NEO4J_USERNAME', 'neo4j'), os.environ['NEO4J_PASSWORD']))
-    create_server(driver, database=os.getenv('NEO4J_DATABASE', 'neo4j')).run(transport='stdio')
-
-
-if __name__ == '__main__':
-    main()

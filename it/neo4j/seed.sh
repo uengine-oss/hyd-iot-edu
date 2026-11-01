@@ -1,52 +1,50 @@
 #!/bin/bash
-# kg-seed: load the ontology v2 (schema-first: v2/schema.json -> v2/constraints.cypher + v2/instances.cypher). Idempotent.
-# 확정 TODO C1: 시드는 두 판이다. SEED_EDITION=structure(수업용 구조판, 강의 배포 기본) | full(회귀용 전체판). 표시 규칙은 edition.sh.
-set -e
+# kg-seed: 온톨로지 v2의 제약(v2/constraints.cypher — schema.json에서 생성)과 기준 데이터를 적재하고, 들어간 것을 되읽어 검사한다.
+# 시작할 때마다 돈다(compose kg-seed). 모든 문장은 id로 MERGE · SET만 하므로 몇 번을 돌려도 그래프가 같다.
+# 고장 · 원인 · 조치(SOP) · 매뉴얼 규칙은 여기서 넣지 않는다 — 수업 문서 적재가 만든다(scripts/class_knowledge.py).
+# 실패는 그 자리에서 멈춘다: agent · dmn-mcp는 이 서비스가 성공해야 뜬다(compose depends_on service_completed_successfully).
+set -euo pipefail
 URI=${NEO4J_URI:-bolt://neo4j:7687}
 USER=neo4j; PASS=${NEO4J_PASSWORD:-hydpass123}
-EDITION=${SEED_EDITION:-structure}
-case "$EDITION" in structure|full) ;; *) echo "SEED_EDITION must be structure or full (got '$EDITION')"; exit 1;; esac
 SEED_DIR=${SEED_DIR:-/seed}
-. "$SEED_DIR/edition.sh"
-cy() { cypher-shell -a "$URI" -u $USER -p $PASS --format plain "$@"; }
-load() {   # $1 = file under v2/ — only the statements of this edition
-  local tmp; tmp=$(mktemp)
-  seed_edition_filter "$EDITION" "$SEED_DIR/v2/$1" > "$tmp"
-  cy -f "$tmp"; rm -f "$tmp"
-}
-for i in $(seq 1 60); do
+SEED_FILES=(instances.cypher scenario_structure.cypher pm_capabilities.cypher)   # 이 순서로 적재한다(뒤 파일이 앞 파일의 노드를 잇는다)
+cy() { cypher-shell -a "$URI" -u "$USER" -p "$PASS" --format plain "$@"; }
+
+WAIT_TRIES=${SEED_WAIT_TRIES:-60}; WAIT_S=3   # 기본 3분. 느린 PC · 시험은 SEED_WAIT_TRIES로 바꾼다
+for ((i = 1; i <= WAIT_TRIES; i++)); do
   if cy "RETURN 1" >/dev/null 2>&1; then break; fi
-  echo "waiting for neo4j ($i)"; sleep 3
+  if ((i == WAIT_TRIES)); then
+    echo "kg-seed FAILED: Neo4j($URI)에 $((WAIT_TRIES * WAIT_S))초 동안 닿지 못했다 — 마지막 시도의 오류:" >&2
+    cy "RETURN 1" >&2 || true
+    exit 1
+  fi
+  echo "waiting for neo4j ($i/$WAIT_TRIES)"; sleep "$WAIT_S"
 done
-echo "seed edition: $EDITION (structure = 수업용 구조판, 고장 · 조치 지식은 문서 적재로 / full = 회귀용 전체판)"
+
 echo "seeding ontology v2: constraints ..."
 cy -f "$SEED_DIR/v2/constraints.cypher"
-echo "seeding ontology v2: instances (가치 BSC · 프로세스 BPMN · 리소스 · 설비 진단 · 스킬=SOP · 규칙 DMN · 외부 변수) ..."
-load instances.cypher
-echo "seeding ontology v2: knowledge_a098 (전문가 질문 3건의 답: 유량→생산량 · 작동유 열화 원인/증상 · 저압/고진동 트립) ..."
-load knowledge_a098.cypher
-echo "seeding ontology v2: scenario_structure (시나리오 B · C 구조: 정기 정비 도래 · 재고 기준 이탈 패턴, 구매 담당 역할, 판단 입력, 리턴 필터) ..."
-load scenario_structure.cypher
-load pm_capabilities.cypher
-# A156: the detector reads only AnomalyPatterns with detectionMode='held' (it/detector/det/pattern_source.py). Without this file
-# a fresh volume leaves the detector unhealthy ("catalog must contain 1..64 held patterns") — seen on the first cloud boot.
-# Additive and idempotent (coalesce keeps edited values), same file and order as scripts/ontology_v2.py load.
-echo "seeding ontology v2: detector-patterns (held 탐지 정의: detectionMode · clearRule · 유지 시간) ..."
-load detector-patterns.cypher
-# A144 (O04): read back what was just loaded. Every line of seed_checks.cypher is one query that returns offending rows;
-# any row means the seed did not land as the scenarios expect, and the service fails (compose: agent · dmn-mcp depend on
-# kg-seed completing successfully, so a broken graph never starts the judgment services). Lines marked for one edition run only there.
-echo "--- read-back checks (v2/seed_checks.cypher, $EDITION) ---"
+for f in "${SEED_FILES[@]}"; do
+  echo "seeding ontology v2: $f ..."
+  cy -f "$SEED_DIR/v2/$f"
+done
+
+# 되읽기 검사: seed_checks.cypher의 주석 아닌 줄 하나가 질의 하나이고 「문제가 있는 노드 · 관계」를 problem 열로 돌려준다.
+# 질의가 행을 돌려주거나 질의 자체가 실패(문법 · 판 차이)하면 그 검사는 실패다 — 한 개라도 실패하면 kg-seed가 실패한다.
+echo "--- read-back checks (v2/seed_checks.cypher) ---"
 FAILED=0; CHECKS=0
 while IFS= read -r q; do
-  CHECKS=$((CHECKS+1))
-  ROWS=$(cy "$q" | tail -n +2 | sed '/^$/d')
-  if [ -n "$ROWS" ]; then echo "CHECK FAILED: $ROWS"; FAILED=$((FAILED+1)); fi
-done < <(seed_edition_checks "$EDITION" "$SEED_DIR/v2/seed_checks.cypher")
+  case "$q" in ''|//*) continue;; esac
+  CHECKS=$((CHECKS + 1))
+  if ! OUT=$(cy "$q" 2>&1); then
+    echo "CHECK ERROR (질의가 실패했다): $q"; echo "$OUT" | tail -n 5
+    FAILED=$((FAILED + 1)); continue
+  fi
+  ROWS=$(printf '%s\n' "$OUT" | tail -n +2 | sed '/^$/d')
+  if [ -n "$ROWS" ]; then echo "CHECK FAILED: $ROWS"; FAILED=$((FAILED + 1)); fi
+done < "$SEED_DIR/v2/seed_checks.cypher"
 echo "read-back: $CHECKS checks, $FAILED failed"
-if [ "$FAILED" != "0" ]; then echo "kg-seed FAILED read-back"; exit 1; fi
+if [ "$CHECKS" = "0" ]; then echo "kg-seed FAILED: 되읽기 검사 파일에 질의가 없다 ($SEED_DIR/v2/seed_checks.cypher)" >&2; exit 1; fi
+if [ "$FAILED" != "0" ]; then echo "kg-seed FAILED read-back" >&2; exit 1; fi
 echo "--- node counts by label ---"
 cy "MATCH (n) UNWIND labels(n) AS l RETURN l AS label, count(*) AS n ORDER BY l"
-echo "--- 고장 유형별 조치 방법 (스킬 = SOP) ---"
-cy "MATCH (fm:FailureMode)-[k:MITIGATED_BY|REMEDIED_BY|PREVENTED_BY]->(s:Skill) RETURN fm.name, type(k), s.sopId, s.name ORDER BY fm.name, type(k) DESC, s.sopId"
-echo "kg-seed done ($EDITION)"
+echo "kg-seed done"

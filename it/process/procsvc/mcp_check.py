@@ -2,34 +2,36 @@
 
 process-gpt-mcp-validator(validator.py)의 절차(세션 열기 → initialize → 도구 적재 → 시간 제한 → 실패 사유)를 따르되
 langchain_mcp_adapters 대신 표준 라이브러리 transport와 JSON Schema 입력 검증을 쓴다.
-서버 설정은 읽기만 한다(tenants.mcp — 랩업에서 추가한 서버도 같은 칸). 저장·등록·수정·삭제는 없다.
+서버 설정은 읽기만 한다(tenants.mcp). 저장·등록·수정·삭제는 mcp_registry 가 한다.
 
-transport
-  stdio            : 명령을 process 컨테이너 안에서 띄워 줄 단위 JSON-RPC. 명령이 이 컨테이너에 없으면 그 사실이 실패 사유다
-                     (명령형 서버는 워커 PC 에서 돈다 — it/agent-worker/worker/bridge.py).
+transport — 포털 · process 가 연결하는 도구 서버는 HTTP 주소 하나다
   streamable_http  : POST 한 번에 JSON 또는 SSE 로 응답(MCP 2025-03-26+). Mcp-Session-Id 를 되돌려 준다.
   sse              : GET 스트림의 endpoint 이벤트로 POST 주소를 받고, 응답은 스트림으로 온다(MCP 2024-11-05).
+  명령형(stdio)    : 받지 않는다(STDIO_REFUSED). process 안에서 남의 명령을 띄우지 않는다 — 명령으로 띄우는 서버는 HTTP 로 띄워
+                     그 주소를 등록한다(내 PC 의 도구에서 stdio 로 쓰는 서버는 그 PC 설정에 둔다).
   그 밖(websocket …): 명확한 설정 오류.
+읽기 상한: 응답 메시지 하나 MAX_WIRE_BYTES, 시간은 세션 마감(timeout) — 스트림을 읽는 줄마다 두 상한을 함께 본다(_sse_events).
 
 읽기 전용 판정(read_only_verdict): 서버가 도구에 readOnlyHint=true 를 붙였고(MCP 2025-03-26 ToolAnnotations), 이름이
 쓰기·실행을 뜻하지 않을 때만 시험 호출을 허용한다. 표시가 없거나 쓰기로 표시했거나 이름이 쓰기(submit · write · delete …)면
 사유와 함께 거부한다. 호출 직전에 서버에서 도구 목록을 다시 받아 판정한다(클라이언트가 보낸 판정은 믿지 않는다).
 
-결과는 사람이 읽는 한국어 사유(error)와 분류(error_kind: config · exec · refused · unreachable · timeout · auth · not_mcp ·
-protocol · server · closed · too_large)로 돌려준다. 폴백·빈 성공은 없다: 도구 목록을 받지 못하면 status 는 'failed' 다.
+결과는 사람이 읽는 한국어 사유(error)와 분류(error_kind: config · refused · unreachable · timeout · auth · not_mcp ·
+protocol · server · closed · too_large · busy)로 돌려준다. 폴백·빈 성공은 없다: 도구 목록을 받지 못하면 status 는 'failed' 다.
+서버 응답 본문은 오류 문구에 싣지 않는다 — 아무 주소에나 요청을 보내 그 응답을 화면으로 읽는 길이 되지 않게.
 """
 from __future__ import annotations
 
 import http.client
+import ipaddress
 import json
-import os
+import logging
 import queue
 import re
-import shutil
 import socket
-import subprocess
 import threading
 import time
+from contextlib import contextmanager
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -42,13 +44,16 @@ from referencing.exceptions import NoSuchResource, Unresolvable
 
 from .mcp_secrets import is_reference_only
 
+log = logging.getLogger("process.mcp_check")
 PROTOCOL_VERSION = "2025-06-18"
 CLIENT_INFO = {"name": "hyd-process-mcp-check", "version": "1.0"}
 DEFAULT_TIMEOUT = 10.0
 MAX_TIMEOUT = 60.0
-TRANSPORTS = ("stdio", "streamable_http", "sse")
+TRANSPORTS = ("streamable_http", "sse")
 _TRANSPORT_ALIASES = {"http": "streamable_http", "streamable-http": "streamable_http", "streamablehttp": "streamable_http",
-                      "url": "streamable_http", "stdio": "stdio", "sse": "sse", "streamable_http": "streamable_http"}
+                      "url": "streamable_http", "sse": "sse", "streamable_http": "streamable_http"}
+STDIO_REFUSED = ("명령형(stdio) 서버는 포털에 등록하지 않습니다 — 서버를 HTTP(Streamable HTTP)로 띄워 그 주소를 등록하세요 "
+                 "(내 PC 의 도구에서 명령으로 띄워 쓰는 서버는 그 PC 의 설정에 둡니다)")
 MASK = "********"
 # 설정(env · headers) 이름: OPENAI_API_KEY · NEO4J_PASSWORD · Authorization … — 환경변수 이름의 *KEY 는 거의 비밀이다.
 SECRET_KEY_RE = re.compile(r"(pass|pwd|secret|token|key|auth|dsn|credential|cookie|signature)", re.I)
@@ -59,7 +64,71 @@ _KV_PASSWORD_RE = re.compile(r"((?:password|passwd|pwd|secret|token|api[_-]?key)
 _BEARER_RE = re.compile(r"(Bearer\s+)[A-Za-z0-9._~+/=-]{6,}")
 MAX_WIRE_BYTES = 2_000_000                       # 서버 응답 한 개의 상한 — 넘으면 too_large 로 끊는다(메모리 A131)
 MAX_RESULT_CHARS = 20_000                        # 화면에 돌려주는 결과 글자 수 상한 — 넘으면 잘라 truncated 로 알린다
-_NO_PROXY = urllib.request.build_opener(urllib.request.ProxyHandler({}))   # 컨테이너 안 서비스는 프록시 없이 직접 간다
+PORTAL_SLOTS = 3                                 # 포털이 여는 연결(목록 · 써 보기 · 연결 검사 · 등록)은 동시에 이만큼 — 스레드 · 메모리(A131)
+ADDRESS_REFUSED = "링크로컬 · 미지정 · 멀티캐스트 주소라 도구 서버 주소가 될 수 없습니다"
+LOOPBACK_REFUSED = ("이 컴퓨터 자신(루프백)을 가리켜 process 컨테이너 자신에 닿습니다 — 내 PC에서 띄운 서버는 localhost · 127.0.0.1 대신 "
+                    "host.docker.internal 로 적으세요")
+_SLOTS = threading.BoundedSemaphore(PORTAL_SLOTS)
+
+
+# ---------------------------------------------------------------- 주소 규칙(P3-06) — 이름 · 숫자 IP 모두 실제로 닿는 주소로 판정
+def _ip_problem(ip, *, student: bool) -> str | None:
+    ip = getattr(ip, "ipv4_mapped", None) or ip
+    if ip.is_link_local or ip.is_unspecified or ip.is_multicast:
+        return ADDRESS_REFUSED
+    if student and ip.is_loopback:
+        return LOOPBACK_REFUSED
+    return None
+
+
+def address_problem(hostname: str, *, student: bool) -> str | None:
+    """그 이름이 가리키는 모든 주소를 본다(`2852039166` · `0` · 그런 주소로 풀리는 이름 포함). 학생 서버(student)는 루프백도 거절 —
+    process 컨테이너 안의 루프백은 process 자신이다. 이름을 찾을 수 없으면 None — 연결 검사가 「주소를 찾을 수 없습니다」로 실패시킨다."""
+    found = []
+    try:                                                    # 숫자 표기(10진 · 16진 · 8진 · 줄인 점 표기)는 운영체제와 상관없이 같은 주소로 읽는다
+        found.append(socket.inet_ntoa(socket.inet_aton(hostname)))
+    except OSError:
+        pass
+    try:
+        found += [info[4][0] for info in socket.getaddrinfo(hostname, None, type=socket.SOCK_STREAM)]
+    except (socket.gaierror, UnicodeError):
+        pass
+    for address in found:
+        problem = _ip_problem(ipaddress.ip_address(address.split("%")[0]), student=student)
+        if problem:
+            return f"url: '{hostname}' 는 {problem}"
+    return None
+
+
+def _guarded_connection(address, timeout=socket._GLOBAL_DEFAULT_TIMEOUT, source_address=None, **kw):
+    """연결한 뒤 실제 상대 주소를 다시 본다 — 검사와 연결 사이에 이름이 다른 주소로 바뀌어도(DNS 재결합) 링크로컬 등에는 보내지 않는다."""
+    sock = socket.create_connection(address, timeout, source_address, **kw)
+    problem = _ip_problem(ipaddress.ip_address(sock.getpeername()[0].split("%")[0]), student=False)
+    if problem:
+        sock.close()
+        raise CheckError("config", f"'{address[0]}' 는 {problem}")
+    return sock
+
+
+class _GuardedHttp(urllib.request.HTTPHandler):
+    def http_open(self, req):
+        return self.do_open(_connection(http.client.HTTPConnection), req)
+
+
+class _GuardedHttps(urllib.request.HTTPSHandler):
+    def https_open(self, req):
+        return self.do_open(_connection(http.client.HTTPSConnection), req, context=self._context)
+
+
+def _connection(base):
+    def make(*args, **kw):
+        conn = base(*args, **kw)
+        conn._create_connection = _guarded_connection
+        return conn
+    return make
+
+
+_NO_PROXY = urllib.request.build_opener(urllib.request.ProxyHandler({}), _GuardedHttp(), _GuardedHttps())   # 프록시 없이 직접 · 상대 주소 확인
 
 
 class CheckError(Exception):
@@ -71,45 +140,33 @@ class CheckError(Exception):
 
 
 # ---------------------------------------------------------------- 설정 정규화 · 비밀값 가림
-def normalize(spec) -> dict:
-    """tenants.mcp 의 서버 한 칸을 검사 가능한 형태로 만든다. 잘못된 입력은 ValueError('칸: 사유')."""
+def normalize(spec, *, student: bool = False) -> dict:
+    """tenants.mcp 의 서버 한 칸을 검사 가능한 형태로 만든다. 잘못된 입력은 ValueError('칸: 사유').
+    student: 학생 서버(기준 다섯 밖 — 포털 · 출발본 · SQL 로 넣은 것)면 루프백도 거절한다(address_problem)."""
     if not isinstance(spec, dict):
         raise ValueError("설정은 객체({command…} 또는 {url…})여야 합니다")
     transport = spec.get("transport") or spec.get("type")
-    if transport is None:
-        transport = "stdio" if spec.get("command") else ("streamable_http" if spec.get("url") else None)
-    if transport is None:
-        raise ValueError("transport: command(명령형) 또는 url(HTTP) 가운데 하나는 있어야 합니다")
-    key = str(transport).strip().lower()
+    if spec.get("command") or str(transport or "").strip().lower() == "stdio":
+        raise ValueError(STDIO_REFUSED)
+    if transport is None and not spec.get("url"):
+        raise ValueError("url: 도구 서버의 HTTP 주소가 필요합니다 (예: http://host.docker.internal:8301/mcp)")
+    key = str(transport or "streamable_http").strip().lower()
     if key not in _TRANSPORT_ALIASES:
-        raise ValueError(f"transport: '{transport}' 는 지원하지 않습니다 (가능: stdio · streamable_http · sse)")
-    transport = _TRANSPORT_ALIASES[key]
-    out: dict = {"transport": transport}
-    if transport == "stdio":
-        command = spec.get("command")
-        if not isinstance(command, str) or not command.strip():
-            raise ValueError("command: 명령형(stdio) 서버는 실행할 명령이 필요합니다")
-        out["command"] = command.strip()
-        args = spec.get("args") or []
-        if not isinstance(args, list) or any(not isinstance(a, str) for a in args):
-            raise ValueError("args: 문자열 목록이어야 합니다")
-        out["args"] = list(args)
-        out["env"] = _str_map(spec.get("env"), "env")
-        if spec.get("cwd"):
-            out["cwd"] = str(spec["cwd"])
-    else:
-        url = spec.get("url") or spec.get("serverUrl")
-        if not isinstance(url, str) or not url.strip():
-            raise ValueError("url: HTTP 서버는 주소가 필요합니다")
-        url = url.strip()
-        parsed = urllib.parse.urlsplit(url)
-        if parsed.scheme not in ("http", "https") or not parsed.hostname:
-            raise ValueError("url: http:// 또는 https:// 로 시작하는 주소여야 합니다 (예: http://dmn-mcp:8198/mcp)")
-        out["url"] = url
-        out["type"] = "url"                                     # bridge.py 가 읽는 제품 형태를 유지한다
-        out["headers"] = _str_map(spec.get("headers"), "headers")
-    if spec.get("_oauth_transport"):
-        out["_oauth_transport"] = True
+        raise ValueError(f"transport: '{transport}' 는 지원하지 않습니다 (가능: streamable_http · sse)")
+    out: dict = {"transport": _TRANSPORT_ALIASES[key]}
+    url = spec.get("url") or spec.get("serverUrl")
+    if not isinstance(url, str) or not url.strip():
+        raise ValueError("url: HTTP 서버는 주소가 필요합니다")
+    url = url.strip()
+    parsed = urllib.parse.urlsplit(url)
+    if parsed.scheme not in ("http", "https") or not parsed.hostname:
+        raise ValueError("url: http:// 또는 https:// 로 시작하는 주소여야 합니다 (예: http://dmn-mcp:8198/mcp)")
+    problem = address_problem(parsed.hostname, student=student)
+    if problem:
+        raise ValueError(problem)
+    out["url"] = url
+    out["type"] = "url"                                     # bridge.py 가 읽는 제품 형태를 유지한다
+    out["headers"] = _str_map(spec.get("headers"), "headers")
     return out
 
 
@@ -136,13 +193,21 @@ def mask_url(url: str) -> str:
     return urllib.parse.urlunsplit((p.scheme, netloc, p.path, p.query, p.fragment))
 
 
+def is_secret_value(key: str, value) -> bool:
+    """설정 칸 값 하나가 비밀인가 — 화면 가림(masked)과 출발본 내보내기(config_bundle)의 한 판정.
+    비밀 이름(Authorization · *TOKEN …)의 값이거나 값 안에 비밀번호 · 토큰 꼴이 있으면 비밀. '${SECRET:X}' 같은 비밀 이름 참조는 비밀이 아니다."""
+    if not isinstance(value, str) or value == "" or is_reference_only(value):
+        return False
+    return is_secret_key(key) or mask_text(value) != value
+
+
 def masked(spec: dict) -> dict:
-    """응답용 사본: env·headers 의 비밀스러운 이름은 값을 가리고, url 의 비밀번호도 가린다."""
+    """응답용 사본: 접속 헤더의 비밀 값은 가리고, url 의 비밀번호도 가린다."""
     out = json.loads(json.dumps(spec))
-    for field in ("env", "headers"):
+    for field in ("headers",):
         if isinstance(out.get(field), dict):
             # G2: '${SECRET:KEY}' · 'Bearer ${SECRET:KEY}' 는 비밀이 아니라 비밀의 이름이라 그대로 보인다(값은 mcp_secrets 표에만)
-            out[field] = {k: (MASK if is_secret_key(k) and v != "" and not is_reference_only(v) else v) for k, v in out[field].items()}
+            out[field] = {k: (MASK if is_secret_value(k, v) else v) for k, v in out[field].items()}
     if isinstance(out.get("url"), str):
         out["url"] = mask_url(out["url"])
     return out
@@ -174,10 +239,9 @@ def _parse_message(raw, *, where: str) -> dict:
     try:
         msg = json.loads(raw) if not isinstance(raw, (dict, list)) else raw
     except (TypeError, ValueError):
-        snippet = raw.decode("utf-8", "replace") if isinstance(raw, (bytes, bytearray)) else str(raw)
-        raise CheckError("protocol", f"프로토콜 오류 — {where}이(가) MCP(JSON-RPC 2.0) 형식이 아닙니다: {snippet.strip()[:120]!r}")
+        raise CheckError("protocol", f"프로토콜 오류 — {where}이(가) MCP(JSON-RPC 2.0) 형식이 아닙니다. 주소가 도구 서버의 MCP 끝점인지 확인하세요")
     if not isinstance(msg, dict) or msg.get("jsonrpc") != "2.0":
-        raise CheckError("protocol", f"프로토콜 오류 — {where}에 jsonrpc 2.0 봉투가 없습니다: {json.dumps(msg, ensure_ascii=False)[:120]}")
+        raise CheckError("protocol", f"프로토콜 오류 — {where}에 jsonrpc 2.0 봉투가 없습니다. 주소가 도구 서버의 MCP 끝점인지 확인하세요")
     return msg
 
 
@@ -191,23 +255,46 @@ def _result_of(msg: dict, method: str) -> dict:
     return result
 
 
-def _iter_sse(lines) -> "iter[tuple[str, str]]":
-    """(event, data) 쌍. lines 는 bytes 줄 반복자."""
-    event, data = "message", []
-    for line in lines:
-        line = line.decode("utf-8", "replace").rstrip("\r\n")
+def _sse_events(stream, before_read=None) -> "iter[tuple[str, str]]":
+    """(event, data) 쌍. stream 은 readline(limit) 을 가진 응답. 줄 하나 · 이벤트 하나의 data 가 MAX_WIRE_BYTES 를 넘으면 그 자리에서
+    too_large 로 멈추고(다 모은 뒤가 아니라), before_read 가 있으면 줄을 읽기 전마다 부른다(세션 마감 확인 · 소켓 시간 맞추기) —
+    「: ping」만 보내는 서버도 마감에서 끝난다."""
+    event, data, size = "message", [], 0
+    while True:
+        if before_read is not None:
+            before_read()
+        raw = stream.readline(MAX_WIRE_BYTES + 1)
+        if not raw:
+            break
+        if len(raw) > MAX_WIRE_BYTES:
+            raise _too_large()
+        line = raw.decode("utf-8", "replace").rstrip("\r\n")
         if line == "":
             if data:
                 yield event, "\n".join(data)
-            event, data = "message", []
+            event, data, size = "message", [], 0
         elif line.startswith(":"):
             continue
         elif line.startswith("event:"):
             event = line[6:].strip()
         elif line.startswith("data:"):
-            data.append(line[5:].lstrip())
+            part = line[5:].lstrip()
+            size += len(part)
+            if size > MAX_WIRE_BYTES:
+                raise _too_large()
+            data.append(part)
     if data:
         yield event, "\n".join(data)
+
+
+def _bound_reads(resp, session: "_Session"):
+    """응답 소켓의 읽기 한 번 시간을 세션에 남은 시간으로 맞추는 함수. 소켓 시간 제한은 읽기 한 번마다라 줄마다 다시 맞추지 않으면,
+    조금씩 보내는 서버가 마감을 넘겨 스레드를 붙잡는다(실측: 1초마다 ping 이면 12초 — P3-05)."""
+    sock = resp.fp.raw._sock                                          # http.client 응답의 소켓(urllib 응답도 같은 구조)
+
+    def before_read():
+        sock.settimeout(max(0.05, session.remaining()))
+    return before_read
 
 
 class _Session:
@@ -283,14 +370,16 @@ def _words(name: str) -> list[str]:
 
 
 def read_only_verdict(tool: dict) -> tuple[bool, str | None]:
-    """(시험 호출 허용?, 거부 사유). 서버의 readOnlyHint=true 와 '쓰기가 아닌 이름'이 둘 다 맞아야 허용한다."""
+    """(시험 호출 허용?, 거부 사유). 서버의 readOnlyHint=true 와 '쓰기가 아닌 이름'이 둘 다 맞아야 허용한다.
+    거부 사유는 도구 연결 화면에 그대로 보이는 학생 문장이다 — 표시 이름(readOnlyHint · destructiveHint)은 쓰지 않는다(한바퀴3). 예외는 표시가
+    없는 도구 하나: 고칠 사람(서버를 쓰는 학생 · 강사)이 서버 코드에 적을 표시 이름 그대로가 할 일이라 이름을 둔다."""
     name = str(tool.get("name") or "")
     notes = tool.get("annotations") or {}
     hit = next((w for w in _words(name) if w in _WRITE_WORDS), None)
     if notes.get("destructiveHint") is True and notes.get("readOnlyHint") is not True:
-        return False, "서버가 이 도구를 되돌릴 수 없는 쓰기(destructiveHint)로 표시했습니다 — 포털에서는 읽기 전용 도구만 써 볼 수 있습니다"
+        return False, "서버가 이 도구를 되돌릴 수 없는 쓰기 도구로 표시했습니다 — 포털에서는 읽기 전용 도구만 써 볼 수 있습니다"
     if notes.get("readOnlyHint") is False:
-        return False, "서버가 이 도구를 쓰기 도구(readOnlyHint=false)로 표시했습니다 — 처리 건 안에서 사람 승인 뒤에만 쓰입니다"
+        return False, "서버가 이 도구를 쓰기 도구로 표시했습니다 — 포털 써 보기에서는 쓰기 도구를 부르지 않습니다"
     if hit:
         return False, (f"이름의 '{hit}' 가 쓰기·실행을 뜻합니다 — 서버가 읽기 전용으로 표시했더라도 포털에서는 부르지 않습니다"
                        if notes.get("readOnlyHint") is True else f"이름의 '{hit}' 가 쓰기·실행을 뜻합니다 — 포털에서는 읽기 전용 도구만 써 볼 수 있습니다")
@@ -347,78 +436,6 @@ def shape_result(result: dict, max_chars: int = MAX_RESULT_CHARS) -> dict:
             "json": parsed is not None, "size_chars": size, "truncated": truncated, "limit_chars": max_chars}
 
 
-# ---------------------------------------------------------------- stdio
-class _Stdio:
-    def __init__(self, spec: dict):
-        from hydcommon.neo4j_mcp import local_launch
-        self.command, args = local_launch(spec['command'], list(spec.get('args') or []))
-        exe = shutil.which(self.command)
-        if exe is None:
-            raise CheckError("exec", f"'{self.command}' 명령을 이 서비스(process 컨테이너)에서 찾을 수 없습니다. 명령형(stdio) 서버는 "
-                                     "워커가 도는 PC 에서 실행되므로, 그 PC 에 설치돼 있는지는 워커 쪽에서 확인해야 합니다")
-        env = dict(os.environ)
-        env.update(spec.get("env") or {})
-        try:
-            self.proc = subprocess.Popen([exe, *args], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                         stderr=subprocess.PIPE, env=env, cwd=spec.get("cwd") or None)
-        except OSError as e:
-            raise CheckError("exec", f"'{self.command}' 를 실행하지 못했습니다: {e.strerror or e}")
-        self.q: queue.Queue = queue.Queue()
-        threading.Thread(target=self._reader, daemon=True).start()
-        self.stderr_tail: list[str] = []
-        threading.Thread(target=self._stderr, daemon=True).start()
-
-    def _reader(self):
-        for line in self.proc.stdout:
-            if line.strip():
-                self.q.put(line)
-        self.q.put(None)
-
-    def _stderr(self):
-        for line in self.proc.stderr:
-            self.stderr_tail.append(line.decode("utf-8", "replace").rstrip())
-            del self.stderr_tail[:-8]
-
-    def send(self, payload: dict, session: _Session):
-        session.remaining()
-        try:
-            self.proc.stdin.write((json.dumps(payload, ensure_ascii=False) + "\n").encode())
-            self.proc.stdin.flush()
-        except (BrokenPipeError, OSError):
-            raise self._exited()
-
-    def recv(self, session: _Session) -> dict:
-        try:
-            line = self.q.get(timeout=session.remaining())
-        except queue.Empty:
-            raise CheckError("timeout", f"{session.timeout:g}초 안에 '{self.command}' 가 응답하지 않았습니다 (시간 초과)")
-        if line is None:
-            raise self._exited()
-        if len(line) > MAX_WIRE_BYTES:
-            raise _too_large()
-        return _parse_message(line, where=f"'{self.command}' 의 출력")
-
-    def _exited(self) -> CheckError:
-        time.sleep(0.05)
-        code = self.proc.poll()
-        tail = " | ".join(self.stderr_tail[-3:])
-        return CheckError("closed", f"'{self.command}' 서버 프로세스가 종료됐습니다" + (f" (종료 코드 {code})" if code is not None else "")
-                          + (f": {tail[:300]}" if tail else ". 명령·인자·환경변수를 확인하세요"))
-
-    def on_initialized(self, init: dict):
-        pass
-
-    def close(self):
-        try:
-            self.proc.stdin.close()
-        except OSError:
-            pass
-        try:
-            self.proc.wait(timeout=1.0)
-        except subprocess.TimeoutExpired:
-            self.proc.kill()
-
-
 def _too_large() -> CheckError:
     return CheckError("too_large", f"서버 응답 하나가 {MAX_WIRE_BYTES // 1_000_000} MB 를 넘어 읽기를 멈췄습니다 — 입력을 좁혀(기간 · 행 수) 다시 부르세요")
 
@@ -431,9 +448,9 @@ def _http_error(exc: Exception, url: str, timeout: float) -> CheckError:
     if isinstance(exc, urllib.error.HTTPError):
         code = exc.code
         if code in (401, 403):
-            # G2 ③: 토큰이 필요한 서버(구글 등)는 만료가 흔하다 — 일반 연결 실패와 갈라 무엇을 할지 말한다(OAuth 갱신은 사용자 몫)
-            return CheckError("auth", f"인증 실패 (HTTP {code}) — 인증이 만료되었거나 없습니다. 연결을 다시 하세요: 토큰을 새로 받아 "
-                                      "포털 MCP 화면 '비밀 값'(${SECRET:이름})에 넣고 연결 검사를 다시 누르세요")
+            # G2 ③: 토큰이 필요한 서버는 만료가 흔하다 — 일반 연결 실패와 갈라 무엇을 할지 말한다(토큰을 다시 받는 일은 사람 몫)
+            return CheckError("auth", f"인증 실패 (HTTP {code}) — 인증이 만료되었거나 없습니다. 토큰을 새로 받아 "
+                                      "도구 연결 화면의 '비밀 값'(${SECRET:이름})에 넣고 연결 검사를 다시 누르세요")
         if code in (404, 405, 406, 415):
             return CheckError("not_mcp", f"MCP 끝점이 아닙니다 (HTTP {code}) — 주소 경로(보통 /mcp 또는 /sse)를 확인하세요")
         return CheckError("server", f"서버 오류 (HTTP {code}) — 서버 로그를 확인하세요")
@@ -449,40 +466,13 @@ def _http_error(exc: Exception, url: str, timeout: float) -> CheckError:
     return CheckError("unreachable", f"{host} 에 연결하지 못했습니다 — 서버가 켜져 있는지, 주소·포트와 방화벽·네트워크 연결을 확인한 뒤 연결 검사를 다시 누르세요")
 
 
-class _OAuthResponse:
-    def __init__(self, connection, response):
-        self.connection, self.response = connection, response
-    def __getattr__(self, key):
-        return getattr(self.response, key)
-    def __iter__(self):
-        return iter(self.response)
-    def __enter__(self):
-        return self
-    def __exit__(self, *args):
-        self.close()
-    def close(self):
-        self.response.close()
-        self.connection.close()
-
-
-def _open(req: urllib.request.Request, timeout: float, *, oauth=False):
-    if oauth:
-        from .mcp_oauth import Transport, OAuthError
-        try:
-            conn, response = Transport().open(req.get_method(), req.full_url, req.data, dict(req.header_items()), max(0.05, timeout))
-            if response.status >= 400:
-                conn.close()
-                raise CheckError("auth" if response.status in (401, 403) else "http", "외부 도구 서버가 요청을 승인하지 않았습니다.")
-            return _OAuthResponse(conn, response)
-        except OAuthError:
-            raise CheckError("auth_transport", "외부 도구의 안전한 연결을 확인하지 못했습니다.") from None
+def _open(req: urllib.request.Request, timeout: float):
     return _NO_PROXY.open(req, timeout=max(0.05, timeout))
 
 
 class _StreamableHttp:
     def __init__(self, spec: dict):
         self.url, self.headers, self.session_id, self.protocol = spec["url"], dict(spec.get("headers") or {}), None, None
-        self.oauth = bool(spec.get("_oauth_transport"))
         self.pending: list[dict] = []
 
     def _headers(self) -> dict:
@@ -497,22 +487,22 @@ class _StreamableHttp:
         left = session.remaining()
         req = urllib.request.Request(self.url, data=json.dumps(payload).encode(), headers=self._headers(), method="POST")
         try:
-            with _open(req, left, oauth=self.oauth) as resp:
+            with _open(req, left) as resp:
                 sid = resp.headers.get("Mcp-Session-Id")
                 if sid:
                     self.session_id = sid
                 ctype = (resp.headers.get("Content-Type") or "").split(";")[0].strip().lower()
                 if "id" not in payload:                              # 알림: 202/204, 본문 없음
                     return
+                before_read = _bound_reads(resp, session)
                 if ctype == "application/json":
+                    before_read()
                     body = resp.read(MAX_WIRE_BYTES + 1)
                     if len(body) > MAX_WIRE_BYTES:
                         raise _too_large()
                     self.pending.append(_parse_message(body, where="HTTP 응답"))
                 elif ctype == "text/event-stream":
-                    for event, data in _iter_sse(resp):
-                        if len(data) > MAX_WIRE_BYTES:
-                            raise _too_large()
+                    for event, data in _sse_events(resp, before_read):
                         if event != "message":
                             continue
                         msg = _parse_message(data, where="SSE 이벤트")
@@ -520,9 +510,8 @@ class _StreamableHttp:
                         if msg.get("id") == payload["id"] and ("result" in msg or "error" in msg):
                             break
                 else:
-                    body = resp.read(200)
-                    raise CheckError("not_mcp", f"MCP 끝점이 아닙니다 — 응답이 JSON 도 SSE 도 아닙니다 (Content-Type {ctype or '없음'}, HTTP {resp.status}): "
-                                                f"{body.decode('utf-8', 'replace').strip()[:80]!r}")
+                    raise CheckError("not_mcp", f"MCP 끝점이 아닙니다 — 응답이 JSON 도 SSE 도 아닙니다 (Content-Type {ctype or '없음'}, HTTP {resp.status}). "
+                                                "주소 경로(보통 /mcp)를 확인하세요")
         except CheckError:
             raise
         except (urllib.error.URLError, OSError, http.client.HTTPException) as e:
@@ -540,7 +529,7 @@ class _StreamableHttp:
         if not self.session_id:
             return
         try:                                                     # 스펙: 클라이언트는 세션을 DELETE 로 끝내는 것이 좋다(서버가 405 여도 무방)
-            with _open(urllib.request.Request(self.url, headers=self._headers(), method="DELETE"), 2.0, oauth=self.oauth):
+            with _open(urllib.request.Request(self.url, headers=self._headers(), method="DELETE"), 2.0):
                 pass
         except Exception:  # noqa: BLE001
             pass
@@ -566,10 +555,12 @@ class _Sse:
 
     def _reader(self):
         try:
-            for event, data in _iter_sse(self.resp):
+            for event, data in _sse_events(self.resp):
                 self.q.put((event, data))
-        except Exception as e:  # noqa: BLE001
-            self.q.put(("__error__", str(e)))
+        except CheckError as e:
+            self.q.put(("__error__", e))
+        except Exception as e:  # noqa: BLE001 — 끊긴 사유는 받는 쪽이 closed 로 알린다(예외 글 · 본문은 싣지 않는다)
+            self.q.put(("__error__", CheckError("closed", f"SSE 스트림 읽기가 끊겼습니다 ({type(e).__name__})")))
         self.q.put(None)
 
     def _next(self, session: _Session):
@@ -580,7 +571,7 @@ class _Sse:
         if item is None:
             raise CheckError("closed", "서버가 SSE 스트림을 닫았습니다 — MCP 서버가 아니거나 세션을 거부했습니다")
         if item[0] == "__error__":
-            raise CheckError("closed", f"SSE 스트림 읽기 실패: {item[1][:160]}")
+            raise item[1]
         return item
 
     def send(self, payload: dict, session: _Session):
@@ -592,7 +583,7 @@ class _Sse:
                                      headers={"Content-Type": "application/json", **self.headers}, method="POST")
         try:
             with _open(req, session.remaining()) as resp:
-                resp.read()
+                resp.read(MAX_WIRE_BYTES + 1)                       # 응답은 스트림으로 온다 — POST 본문은 버린다(크기 상한 안에서)
         except (urllib.error.URLError, OSError, http.client.HTTPException) as e:
             raise _http_error(e, self.endpoint, session.timeout)
 
@@ -600,8 +591,6 @@ class _Sse:
         while True:
             event, data = self._next(session)
             if event == "message":
-                if len(data) > MAX_WIRE_BYTES:
-                    raise _too_large()
                 return _parse_message(data, where="SSE 이벤트")
 
     def on_initialized(self, init: dict):
@@ -623,6 +612,19 @@ def _clamp(timeout) -> float:
     return float(min(max(timeout or DEFAULT_TIMEOUT, 0.1), MAX_TIMEOUT))
 
 
+@contextmanager
+def portal_slot(wait: float):
+    """포털이 여는 연결 하나의 자리(동시에 PORTAL_SLOTS 개). 자리가 wait 초 안에 나지 않으면 CheckError(busy).
+    도구 지도 · 써 보기(mcp_api)와 연결 검사 · 등록(mcp_registry.run_check)이 함께 쓴다. 처리 흐름 안의 호출(승인 뒤 시스템 task ·
+    읽기 확인)은 쓰지 않는다 — 포털에서 누른 검사 때문에 처리 건이 기다리지 않게."""
+    if not _SLOTS.acquire(timeout=max(0.0, wait)):
+        raise CheckError("busy", f"다른 도구 연결 {PORTAL_SLOTS}개가 진행 중입니다 — 잠시 뒤 다시 누르세요")
+    try:
+        yield
+    finally:
+        _SLOTS.release()
+
+
 def _with_session(spec: dict, timeout: float, work) -> dict:
     """연결 → initialize → work(session, init) . 예외를 던지지 않고 status · error 로 답한다."""
     started = time.monotonic()
@@ -631,14 +633,12 @@ def _with_session(spec: dict, timeout: float, work) -> dict:
     transport = None
     try:
         kind = spec["transport"]
-        if kind == "stdio":
-            transport = _Stdio(spec)
-        elif kind == "streamable_http":
+        if kind == "streamable_http":
             transport = _StreamableHttp(spec)
         elif kind == "sse":
             transport = _Sse(spec, timeout)
         else:
-            raise CheckError("config", f"transport '{kind}' 는 이 서비스에서 연결할 수 없습니다 (가능: stdio · streamable_http · sse)")
+            raise CheckError("config", f"transport '{kind}' 는 연결할 수 없습니다 (가능: streamable_http · sse)")
         session = _Session(transport, timeout)
         init = _initialize(session)
         out.update(init)
@@ -648,8 +648,10 @@ def _with_session(spec: dict, timeout: float, work) -> dict:
             out["status"] = "ok"
     except CheckError as e:
         out.update(status="failed", error=e.message, error_kind=e.kind)
-    except Exception as e:  # noqa: BLE001 — 분류 못 한 실패도 사유는 남긴다
-        out.update(status="failed", error=f"예상하지 못한 오류: {type(e).__name__}: {str(e)[:160]}", error_kind="protocol")
+    except Exception as e:  # noqa: BLE001 — 분류 못 한 실패도 사유는 남긴다. 예외 글은 싣지 않는다(머리글 값 같은 비밀이 섞일 수 있다 — P3-17)
+        log.warning("MCP connection to %s failed unexpectedly: %s", spec.get("url"), type(e).__name__)
+        out.update(status="failed", error=f"연결 중 예상하지 못한 오류가 났습니다({type(e).__name__}) — 주소와 접속 헤더 값을 확인하고 다시 검사하세요",
+                   error_kind="protocol")
     finally:
         if transport is not None:
             try:
@@ -695,6 +697,13 @@ def call(spec: dict, tool: str, arguments: dict, timeout: float = DEFAULT_TIMEOU
 
 
 IDEMPOTENCY_ARG = "idempotency_key"
+#: JSON Schema 검사 낱말 → 학생 말(값은 싣지 않는다 — 거절된 값에 비밀이 있을 수 있다)
+_SCHEMA_WORDS = {"required": "꼭 넣어야 할 칸이 빠졌습니다", "type": "값의 종류(글 · 숫자 · 목록 …)가 다릅니다",
+                 "enum": "고를 수 있는 값이 아닙니다", "additionalProperties": "받지 않는 칸이 있습니다",
+                 "minimum": "값이 너무 작습니다", "maximum": "값이 너무 큽니다", "exclusiveMinimum": "값이 너무 작습니다",
+                 "exclusiveMaximum": "값이 너무 큽니다", "minLength": "글이 너무 짧습니다", "maxLength": "글이 너무 깁니다",
+                 "pattern": "글의 모양이 정해진 규칙과 다릅니다", "format": "값의 형식이 다릅니다", "minItems": "목록 항목이 너무 적습니다",
+                 "maxItems": "목록 항목이 너무 많습니다", "const": "정해진 값과 다릅니다"}
 
 
 def _no_schema_retrieval(uri):
@@ -724,7 +733,8 @@ def _argument_problem(meta: dict, arguments: dict) -> dict | None:
                 "error_kind": "input_schema", "result": None}
     if error is None:
         return None
-    return {"status": "refused", "error": f"도구 입력이 서버의 inputSchema 계약을 지키지 않습니다 ({error.validator})",
+    where = ".".join(str(p) for p in error.absolute_path) or "입력 전체"
+    return {"status": "refused", "error": f"도구 입력이 서버가 정한 입력 형식과 맞지 않습니다 — {where}: {_SCHEMA_WORDS.get(error.validator, '형식 규칙')}",
             "error_kind": "input", "result": None}
 
 

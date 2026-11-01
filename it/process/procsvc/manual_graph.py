@@ -227,7 +227,7 @@ def desired(plan):
             manual_references.reference_shape(p['id'], p)
             existing = p.get('existing_skill_id')
             target = ('Skill', existing) if existing else node('Skill', skill_id(p['id']), name=p['name'], sopId=p['id'],
-                kind='reference', executable=False, description=f"매뉴얼 {plan['filename']}의 비실행 참고 절차",
+                kind='reference', executable=False, description=f"제공 문서 {plan['filename']}의 참고 절차(실행하지 않음)",
                 source_id=plan['source_id'], citation=canonical(p['anchor']))
             for step in p['steps']:
                 # Source version identity is distinct from stable active Step.
@@ -238,7 +238,7 @@ def desired(plan):
                 edge(st, 'DOCUMENTS', target) if existing else edge(target, 'HAS_STEP', st)
             continue
         skill = node('Skill', skill_id(p['id']), name=p['name'], sopId=p['id'], kind=p['kind'],
-                     description=f"매뉴얼 {plan['filename']}에서 검토한 SOP", source_id=plan['source_id'],
+                     description=f"제공 문서 {plan['filename']}에서 검토해 넣은 조치 방법", source_id=plan['source_id'],
                      citation=canonical(p['anchor']), **{k: p[k] for k in ('scope', 'executable', 'supplier_policy') if k in p},
                      **({'maintenance_policy':canonical(p['maintenance_policy'])} if p.get('maintenance_policy') else {}),
                      **({'purchase_comparison_policy':canonical(p['purchase_comparison_policy'])} if p.get('purchase_comparison_policy') else {}))

@@ -1,4 +1,5 @@
 """Execution cannot turn source-only documentation into an approved action."""
+from .maintenance_policy import PM_PATTERN
 
 
 def require_decision_option(decision, option):
@@ -17,11 +18,11 @@ def require_executable(option):
         raise ValueError('명시한 실행 검사 모드·확인 상태가 올바르지 않습니다')
     if option.get('kind') == 'reference' or option.get('executable') is False:
         raise ValueError('참고 보관 절차는 승인하거나 설비·업무 조치로 실행할 수 없습니다')
-    if option.get('pattern') == 'PM_DUE' and (
+    if option.get('pattern') == PM_PATTERN and (
             option.get('evaluation_mode') != 'execution' or option.get('execution_checked') is not True
             or not isinstance(option.get('maintenancePlan'), dict)):
         raise ValueError('PM 실행에는 검증된 실제 정비 정책·전체 범위 계획이 필요합니다')
-    if option.get('pattern') == 'PM_DUE':
+    if option.get('pattern') == PM_PATTERN:
         from .maintenance_policy import policy
         approved = option['maintenancePlan']
         policy(approved.get('policy'))

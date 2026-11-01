@@ -26,8 +26,32 @@ class CourseDenied(Stop):
     title = '수업 권한 확인 필요'
 
 
+class LedgerDenied(Stop):
+    """관문 장부가 이 실행을 열지 않았다(한도 · 동시 실행 · 실행 시간 · 끝난 점유) — 권한 문제가 아니다(검진 P2-13). 머리말은 사유 코드로 고른다."""
+    title = 'AI 사용 한도'
+
+    def __init__(self, code: str, text: str):
+        super().__init__(text)
+        self.code = code
+        self.title = LEDGER_TITLES[code]
+
+
+#: 관문 장부 거절 코드(procsvc/course_ledger.REASONS — 문장의 정본) → 처리 기록 머리말. 문장은 그 표의 것을 코드 글자 없이 쓴다.
+LEDGER_TITLES = {'run_limit': 'AI 사용 한도', 'task_limit': 'AI 사용 한도', 'pc_limit': 'AI 사용 한도', 'concurrent': '다른 AI 단계 실행 중',
+                 'run_time': 'AI 실행 다시 필요', 'claim_ended': 'AI 실행 다시 필요', 'token': 'AI 실행 다시 필요'}
+
+
+def ledger_denial(detail: str) -> LedgerDenied | None:
+    """403 본문 「[HYD:<code>] 문장」 → LedgerDenied. 코드가 없으면(수업 경계 거절 — 문장만) None."""
+    from procsvc.course_ledger import REASONS
+    for code in LEDGER_TITLES:
+        if f'[HYD:{code}]' in detail:
+            return LedgerDenied(code, REASONS[code].text)
+    return None
+
+
 class RuntimeConnectionError(Stop):
-    """process(수업 판정 · 관문 · 로그인 연결)에 닿지 못했거나 답이 계약과 다르다."""
+    """process(수업 판정 · 관문 · 질문 조회 도구)에 닿지 못했거나 답이 계약과 다르다."""
     title = '연결 확인 필요'
 
 
@@ -73,8 +97,11 @@ class CourseAccess:
             reply = json.loads(raw)
         except urllib.error.HTTPError as exc:
             detail = _detail(exc)
-            if exc.code == 403 and detail:          # process 가 학생 말로 쓴 거절(수업 경계 · 장부 상한 · 동시 실행)
-                raise CourseDenied(detail) from None
+            if exc.code == 401:                      # 실행기 인증 거절(course_policy.require_worker) — 수업 경계가 아니라 연결 문제
+                raise RuntimeConnectionError(f'{what}을(를) 받지 못했습니다 — process 가 이 워커의 실행기 인증을 받지 않았습니다'
+                                             '(인증 파일이 process 의 것과 다릅니다). 시작.bat을 다시 실행하세요.') from None
+            if exc.code == 403 and detail:          # process 가 학생 말로 쓴 거절: 장부(코드가 실린 것)와 수업 경계(문장만)
+                raise (ledger_denial(detail) or CourseDenied(detail)) from None
             raise RuntimeConnectionError(f'{what}을(를) 받지 못했습니다({exc.code}){" — " + detail if detail else ""}') from None
         except (OSError, ValueError):
             raise RuntimeConnectionError(f'{what}을(를) 받지 못했습니다 — process 서비스에 닿지 않습니다. 시작.bat을 다시 실행하세요.') from None

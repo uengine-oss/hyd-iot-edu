@@ -8,17 +8,20 @@ One source each, read on every run (nothing is copied or cached):
   * step ↔ skill/tools — the definition activity's `skills` / `tools` (read by the worker since A095, skills used since U2).
 HYD difference: the product keeps SKILL.md files in a skills store (deepagents core/skills/tools.py:702-716 registers only the
 name in tenant_skills); HYD keeps the text in tenant_skills.content so the portal and the worker read the same row.
-The portal only reads. A student adds an agent or a skill in the wrap-up (Claude Code → SQL), see
-git 이력 39f447ce:문서/시스템/검증_기록/2026-10-08/u2-agents-skills.md.
+This module only reads; the portal writes these rows through agent_authoring.py (B1).
 
-`agent_settings()` is the one function that answers "what will this agent run with" — the worker calls it for every run and
-a trial run (A10) can call it with any agent id to get the same model · MCP servers · skills · instructions.
+`agent_settings()` is the one function that answers "what will this agent run with" — the worker calls it for every run and the
+portal shows the same answer (agents_api run settings). `run_servers()` is the one rule for "which MCP servers does this run
+actually work with" (the agent/activity selection, narrowed for the class AI steps whose read tools are fixed) — the tool map
+(mcp_api), the agent detail (agents_api) and the question screen (ask) read it, and the worker must select the same way.
 This module is copied into the worker image (it/agent-worker/Dockerfile): stdlib + hydcommon only.
 """
 from __future__ import annotations
 
 import re
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
+
+from hydcommon.handover_tools import HANDOVER_READS, QUESTION_READS
 
 
 SKILL_NAME_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
@@ -27,6 +30,11 @@ SKILL_ROOTS = {"claude-code": ".claude/skills"}
 MODEL_KEYS = ("agent_model", "agentModel", "model")
 #: users.role holds a category code in the HYD seed, not a sentence; say it in words where it is shown or prompted
 ROLE_WORDS = {"agent": "AI 에이전트", "system": "시스템 수행자", "operator": "운전원", "manager": "관리자"}
+#: class AI steps whose read tools are fixed (form contract of the step → allowed read tools per server, hydcommon.handover_tools):
+#: the shift-handover draft and the question answer. Every other agent step uses the read tools its servers' check stamped.
+HANDOVER_CONTRACT = "shift-handover-draft-v1"
+QUESTION_CONTRACT = "ask-answer-v1"
+FIXED_READS = {HANDOVER_CONTRACT: HANDOVER_READS, QUESTION_CONTRACT: QUESTION_READS}
 
 
 def csv_list(value) -> list[str]:
@@ -80,15 +88,32 @@ def skill_title(skill: dict) -> str:
 
 
 def activity_capabilities(definition: dict | None, activity_id: str) -> dict:
-    """The designer's choices for this activity (the product's core/activity.py): agentConfig{cli, model, permission}, skills, tools."""
+    """The designer's choices for this activity (the product's core/activity.py): agentConfig{cli, model, permission}, skills, tools,
+    and the contract of the form it fills (`tool: formHandler:<form>` → forms[<form>].contract)."""
     if not isinstance(definition, dict):
         return {}
     for a in definition.get("activities") or []:
         if isinstance(a, dict) and a.get("id") == activity_id:
             config = a.get("agentConfig") or a.get("agent_config") or {}
+            tool = str(a.get("tool") or "")
+            form = (definition.get("forms") or {}).get(tool.split(":", 1)[1]) if tool.startswith("formHandler:") else None
             return {"agent_config": config if isinstance(config, dict) else {}, "skills": list(a.get("skills") or []),
-                    "tools": list(a.get("tools") or a.get("mcpServers") or [])}
+                    "tools": list(a.get("tools") or a.get("mcpServers") or []),
+                    "contract": form.get("contract") if isinstance(form, dict) else None}
     return {}
+
+
+def run_servers(tools: list[str] | None, tenant_servers, contract: str | None = None) -> dict[str, list[str] | None]:
+    """The MCP servers one run works with → {server: allowed read tools (fixed list) | None (the read tools its check stamped)}.
+    tools: AgentSettings.tools (None = no declaration = every tenant server; [] = no overlap = none). For a class AI step with a
+    fixed read list (FIXED_READS by the step's form contract) only the servers that list names are used, with exactly those tools —
+    a selected server outside it would run with no allowed tool, so it is left out (the worker says so in a notice)."""
+    names = list(tenant_servers)
+    chosen = names if tools is None else [t for t in tools if t in names]
+    fixed = FIXED_READS.get(contract or "")
+    if fixed is None:
+        return {s: None for s in chosen}
+    return {s: list(fixed[s]) for s in chosen if s in fixed}
 
 
 def _first(config: dict, keys) -> str | None:
@@ -147,17 +172,6 @@ class AgentSettings:
                 "skill_labels": [{"name": s["skill_name"], "title": skill_title(s)} for s in self.skills],
                 "missing_skills": list(self.missing_skills),
                 "work_rules": self.work_rules}
-
-
-def execution_settings(settings):
-    """Only data consumed by execution, stable across DB exports/imports."""
-    value=asdict(settings)
-    profile=settings.profile
-    value['profile']=None if profile is None else {
-        key:str(profile.get(key) or '').strip() for key in ('id','username','name','role','goal','persona')}
-    value['skills']=[{key:str(skill.get(key) or '') for key in ('skill_name','description','content')}
-                     for skill in settings.skills]
-    return value
 
 
 def agent_settings(repo, tenant_id: str, agent, *, activity: dict | None = None) -> AgentSettings:

@@ -2,18 +2,18 @@
    API: process /api/eval/* (procsvc/eval_api.py). 정답표는 화면에서 적는 데이터이고 처음엔 비어 있다 — 이 파일에도 정답은 없다.
    화면: window.hydEval.mount(el). 포털 셸이 컨테이너(#evalView)를 주면 그 안에 전부 그린다. 채점은 처리 건 · 설비 명령 · 기준 데이터를 바꾸지 않는다. */
 (function () {
-  const E = { el: null, golden: [], storage: '', paths: {}, maxRepeats: 10, runs: [], sel: null, run: null, editing: null,
+  const E = { el: null, golden: [], storage: '', paths: {}, maxRepeats: 10, assets: [], facts: {}, runs: [], sel: null, run: null, editing: null,
     knowledge: null, cands: null, patterns: null, cmp: null, busy: false, picked: new Set() };
-  const PATH = { decide: '규칙 판단', evaluate: '에이전트 읽기 평가', worker: '지난 처리 건 (실제 AI 일꾼)' };
+  const PATH = { decide: '규칙 판단', evaluate: '규칙 읽기 평가', worker: '지난 처리 건 (실제 AI 일꾼)' };
   const CHECK = { cause: '원인 적중', top: '1위 허용', forbidden: '빠질 조치 미추천', evidence: '근거 포함' };
   const EXPECT = { excluded: '제외돼야 함', not_recommended: '1위면 안 됨' };
-  const FACT = { plc_mode: '운전 모드', plc_state: '설비 상태', standby_ready: '예비 펌프', fan100_hours: '팬 100 % 연속 운전 (시간)' };
-  const ASSETS = ['HYD-01', 'HYD-02', 'HYD-03'];
+  // 설비 목록 · 가정 사실(이름 · 선택지)은 서버가 준다(GET /api/eval/golden 의 assets · facts — judgment_eval.FACT_CHOICES)
+  const factLabel = k => (E.facts[k] || {}).label || k;
   const q = (sel) => E.el.querySelector(sel);
   const nm = (id) => `<span title="${esc(id || '')}">${esc(UI.name(id) || '–')}</span>`;
   const outcomeText = (o) => String(o || '').split(' → ').map(x => x === '-' ? '없음' : UI.name(x)).join(' → ');
-  const factVal = (k, v) => k === 'standby_ready' ? (v ? '가용' : '정비 중') : typeof v === 'string' ? UI.status(v) : String(v);
-  const factsText = (f) => Object.entries(f || {}).map(([k, v]) => `${FACT[k] || k} ${factVal(k, v)}`).join(' · ') || '가정 사실 없음 (지금 값 사용)';
+  const factVal = (k, v) => { const hit = ((E.facts[k] || {}).choices || []).find(([value]) => value === v); return hit ? hit[1] : typeof v === 'string' ? UI.status(v) : String(v); };
+  const factsText = (f) => Object.entries(f || {}).map(([k, v]) => `${factLabel(k)} ${factVal(k, v)}`).join(' · ') || '가정 사실 없음 (지금 값 사용)';
   const pct = (x) => Math.round((x || 0) * 100) + ' %';
   const ok = (b) => UI.chipText(b ? '맞음' : '틀림', b ? 'success' : 'danger');
 
@@ -25,7 +25,7 @@
   function skeleton() {
     E.el.innerHTML = `
       <div class="page-head"><h1>판단 채점</h1><div class="page-tools"><button type="button" class="btn small" data-act="reload">${esc(UI.t('btn.reload'))}</button></div></div>
-      <p class="card-sub">경보 상황마다 기대하는 원인 · 1위로 허용되는 조치 · 빠져야 할 조치 · 있어야 할 근거를 정답표에 적고, AI 판단을 대어 점수를 냅니다. 지식을 고치기 전과 후에 한 번씩 채점해 두 실행을 비교합니다. 채점은 처리 건 · 설비 명령 · 기준 데이터를 바꾸지 않습니다.</p>
+      <p class="card-sub">경보 상황마다 기대하는 원인 · 1위로 허용되는 조치 · 빠져야 할 조치 · 있어야 할 근거를 정답표에 적고, 판단을 대어 점수를 냅니다(세 경로 가운데 AI가 판단하는 것은 「지난 처리 건」 하나 — 규칙 판단 · 읽기 평가는 AI 모델 없이 판단 엔진만 돕니다). 지식을 고치기 전과 후에 한 번씩 채점해 두 실행을 비교합니다. 채점은 처리 건 · 설비 명령 · 기준 데이터를 바꾸지 않습니다.</p>
       <div class="stat-cards" data-r="stats"></div>
       <div class="sec-head"><h2>1. 정답표</h2><button type="button" class="btn small" data-act="new">새 항목 적기</button></div>
       <div data-r="golden"></div>
@@ -97,13 +97,11 @@
       UI.section('경보 상황',
         UI.field({ label: '제목', required: true, input: `<input data-f="title" value="${esc(it.title || '')}" placeholder="예: 쿨러 성능 저하 · 원격 자동 운전">` }) +
         UI.field({ label: '항목 이름 (영문 소문자 · 숫자 · 하이픈)', required: true, hint: '저장한 뒤에는 바꿀 수 없습니다', input: `<input data-f="id" value="${esc(it.id || '')}" ${isNew ? '' : 'disabled'} placeholder="예: cooler-auto">` }) +
-        UI.field({ label: '설비', required: true, input: sel('asset', ASSETS.map(a => [a, a]), it.asset || ASSETS[0]) }) +
+        UI.field({ label: '설비', required: true, input: sel('asset', E.assets.map(a => [a, a]), it.asset || E.assets[0]) }) +
         UI.field({ label: '이상 패턴', required: true, error: E.patterns ? '' : E.patternError || '', input: pats.length ? sel('pattern', pats, it.pattern || pats[0][0]) : `<input data-f="pattern" value="${esc(it.pattern || '')}">` })) +
-      UI.section('가정 사실 (비우면 지금 값)',
-        UI.field({ label: FACT.plc_mode, input: sel('plc_mode', [['', '지금 값'], ['REMOTE_AUTO', '원격 자동'], ['REMOTE_MANUAL', '원격 수동'], ['LOCAL', '현장 제어']], f.plc_mode) }) +
-        UI.field({ label: FACT.plc_state, input: sel('plc_state', [['', '지금 값'], ['RUN', '운전 중'], ['TRIP', '보호 정지']], f.plc_state) }) +
-        UI.field({ label: FACT.standby_ready, input: sel('standby_ready', [['', '지금 값'], ['true', '가용'], ['false', '정비 중']], f.standby_ready == null ? '' : String(f.standby_ready)) }) +
-        UI.field({ label: FACT.fan100_hours, input: `<input data-f="fan100_hours" type="number" min="0" step="1" value="${esc(f.fan100_hours ?? '')}" placeholder="지금 값">` })) +
+      UI.section('가정 사실 (비우면 지금 값)', Object.entries(E.facts).map(([k, spec]) => UI.field({ label: spec.label,
+        input: spec.number ? `<input data-f="${esc(k)}" data-fact="number" type="number" min="0" step="1" value="${esc(f[k] ?? '')}" placeholder="지금 값">`
+          : sel(k, [['', '지금 값'], ...spec.choices.map(([v, l]) => [JSON.stringify(v), l])], f[k] == null ? '' : JSON.stringify(f[k])) })).join('')) +
       UI.section('기대하는 판단',
         UI.field({ label: '기대 원인', required: true, input: `<input data-f="cause" list="evalDlCause" value="${esc(it.expected.cause || '')}">`, hint: '지식 지도의 원인 이름을 고르세요' }) +
         UI.field({ label: '고장 유형', required: true, input: `<input data-f="failure_mode" list="evalDlFm" value="${esc(it.expected.failure_mode || '')}">` }) +
@@ -119,10 +117,8 @@
   function readForm() {
     const v = (k) => { const n = q(`[data-f="${k}"]`); return n ? n.value.trim() : ''; };
     const facts = {};
-    if (v('plc_mode')) facts.plc_mode = v('plc_mode');
-    if (v('plc_state')) facts.plc_state = v('plc_state');
-    if (v('standby_ready')) facts.standby_ready = v('standby_ready') === 'true';
-    if (v('fan100_hours') !== '') facts.fan100_hours = Number(v('fan100_hours'));
+    Object.entries(E.facts).forEach(([k, spec]) => { const raw = v(k);           // 선택지 값은 JSON 글로 담아 종류(글 · 참/거짓)를 그대로 되살린다
+      if (raw !== '') facts[k] = spec.number ? Number(raw) : JSON.parse(raw); });
     const forbidden = String(q('[data-f="forbidden"]').value || '').split('\n').map(s => s.trim()).filter(Boolean).map((line, i) => {
       const m = line.match(/^(\S+)\s*=\s*(제외|1위\s*아님)\s*(?:\((\S+)\))?$/);
       if (!m) throw new Error(`빠져야 할 조치 ${i + 1}번째 줄: "조치 = 제외" 또는 "조치 = 1위 아님" 형식으로 적으세요`);
@@ -143,9 +139,9 @@
     const target = path === 'worker' ? '' : `<p class="field-hint">채점할 항목: ${picked.length ? picked.map(it => esc(it.title)).join(' · ') : `정답표 전체 (${E.golden.length}개)`}</p>`;
     q('[data-r="runform"]').innerHTML =
       `<div class="form-grid">` +
-      UI.field({ label: '판단 경로', input: `<select data-f="path">${Object.entries(PATH).map(([k, l]) => `<option value="${k}" ${k === path ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`, hint: UI.clean(String(E.paths[path] || '').replace(/\s*\((?:agent|process)\s+\/api\/[^)]*\)/g, '').replace(/N>1 은/g, '여러 번은')), cls: 'wide' }) + // A161-U1 (결함 18): 내부 API 경로는 화면에 두지 않는다
+      UI.field({ label: '판단 경로', input: `<select data-f="path">${Object.entries(PATH).map(([k, l]) => `<option value="${k}" ${k === path ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`, hint: String(E.paths[path] || ''), cls: 'wide' }) + // 경로 안내는 서버 문장(judgment_eval.PATH_NOTES) 그대로
       (path === 'worker' ? '' : UI.field({ label: '반복 횟수', input: `<input data-f="repeats" type="number" min="1" max="${E.maxRepeats}" value="${esc(E.repeats || 1)}">`,
-        hint: path === 'decide' ? '규칙 판단은 결정론적이라 1회면 충분합니다. 여러 번 돌려 모두 같으면 "N회 모두 같음"으로 보입니다.' : '같은 경보를 여러 번 판단해 흔들림을 잽니다.' })) +
+        hint: '같은 항목을 여러 번 판단해 결과가 흔들리는지 봅니다. 모두 같으면 「N회 모두 같음」으로 보입니다.' })) +
       UI.field({ label: UI.t('form.by'), required: true, input: `<input data-f="runBy" value="${esc(E.by || '')}">` }) +
       UI.field({ label: UI.t('form.note'), input: `<input data-f="runNote" placeholder="예: 관계 하나 끊기 전">` }) +
       `</div>` + target + (path === 'worker' ? `<div data-r="cands">${renderCands()}</div>` : '') +
@@ -200,27 +196,34 @@
     if (!E.runs.length) { host.innerHTML = UI.empty('아직 채점 실행이 없습니다', '정답표를 적고 채점을 실행하면 여기에 남습니다'); return; }
     host.innerHTML = E.runs.map(r => `<div class="item${r.id === E.sel ? ' sel' : ''}" data-run="${esc(r.id)}" tabindex="0" role="button">
       <div class="row"><strong>평균 ${esc(r.summary.score)}점 · 항목 ${esc(r.summary.items)}</strong>${UI.chipText(PATH[r.path] || r.path, r.path === 'worker' ? 'accent' : 'neutral')}</div>
-      <span class="sub">${esc(UI.dateTime(r.created))} · ${esc(r.by)}${r.note ? ' · ' + esc(r.note) : ''}</span></div>`).join('');
+      <span class="sub">${esc(UI.dateTime(r.created))} · ${esc(UI.who(r.by))}${r.note ? ' · ' + esc(r.note) : ''}</span></div>`).join('');
   }
   function checkLine(key, c) {
     let detail = '';
     if (key === 'cause') detail = `판단 ${nm(c.got)} · 정답 ${nm(c.want)}` + (c.got_failure_mode !== c.want_failure_mode ? ` <small>(고장 유형 ${nm(c.got_failure_mode)} / ${nm(c.want_failure_mode)})</small>` : '');
     if (key === 'top') detail = `1위 ${nm(c.got)} · 허용 ${c.allowed.map(nm).join(', ')}`;
-    if (key === 'forbidden') detail = c.detail.length ? c.detail.map(d => `${nm(d.skill)} ${esc(EXPECT[d.expect])} → ${esc(UI.idText(d.got))}${d.ok ? '' : ' ✗'}`).join(' · ') : '정답표에 빠질 조치 없음';
+    if (key === 'forbidden') detail = c.detail.length ? c.detail.map(d => `${nm(d.skill)} ${esc(EXPECT[d.expect])} → ${esc(UI.idText(d.got))}${d.ok ? '' : ' ✗'}`).join(' · ') : '정답표에 빠질 조치 없음 — 점수에 넣지 않음';
     if (key === 'evidence') detail = `${pct(c.ratio)}` + (c.missing.length ? ` · 빠진 근거 ${c.missing.map(nm).join(', ')}` : '');
     return `<li>${ok(c.ok)} <b>${esc(CHECK[key])}</b> ${detail}</li>`;
+  }
+  // 반복이면 검사마다 N회 중 맞은 수(서버 aggregate 의 check_hits), 아래 상세 줄은 마지막 회차 — 점수(평균)와 섞어 읽지 않게 밝힌다
+  function checkLines(r) {
+    const lines = Object.keys(CHECK).map(k => checkLine(k, r.checks[k])).join('');
+    if (!(r.repeats > 1) || !r.check_hits) return `<ul class="plain">${lines}</ul>`;
+    const hits = Object.keys(CHECK).map(k => `${esc(CHECK[k])} ${esc(r.check_hits[k])}/${esc(r.repeats)}`).join(' · ');
+    return `<p><b>${esc(r.repeats)}회 중 맞은 수</b> ${hits}</p><p class="field-hint">아래는 마지막 회차의 검사입니다</p><ul class="plain">${lines}</ul>`;
   }
   function itemResult(r) {
     const title = (E.golden.find(it => it.id === r.item) || {}).title || r.title;
     const repeat = r.repeats > 1 ? (r.identical ? `<p class="field-hint">${esc(r.repeats)}회 모두 같은 결과${r.deterministic ? ' — 결정론적이라 1회와 같습니다' : ''}</p>`
       : `<p class="form-msg neg">흔들림: ${esc(r.repeats)}회 중 가장 많은 결과 ${pct(r.stability)} · 점수 ${esc(r.min)}~${esc(r.max)}</p>` +
         UI.fold('회차별 결과', `<ul class="plain">${Object.entries(r.outcomes).map(([o, n]) => `<li>${esc(outcomeText(o))} — ${esc(n)}회</li>`).join('')}</ul>`)) : '';
-    const mismatch = (r.facts_mismatch || []).length ? `<p class="form-msg neg">정답표의 가정과 판단 때 사실이 다릅니다: ${r.facts_mismatch.map(m => `${esc(FACT[m.key] || m.key)} 정답표 ${esc(factVal(m.key, m.want))} / 판단 때 ${esc(factVal(m.key, m.got))}`).join(' · ')}</p>` : '';
+    const mismatch = (r.facts_mismatch || []).length ? `<p class="form-msg neg">정답표의 가정과 판단 때 사실이 다릅니다: ${r.facts_mismatch.map(m => `${esc(factLabel(m.key))} 정답표 ${esc(factVal(m.key, m.want))} / 판단 때 ${esc(factVal(m.key, m.got))}`).join(' · ')}</p>` : '';
     const inst = (r.instances || []).length ? UI.fold(`채점한 처리 건 ${r.instances.length}건`, `<ul class="plain">${r.instances.map(i => `<li>${esc(i.name || UI.defName(i.instance))} · ${esc(UI.dateTime(i.started))} · 고른 조치 ${nm(i.chosen_skill)}</li>`).join('')}</ul>`) : '';
     return UI.card({ title: esc(title), chips: r.status && r.status !== 'EVALUATED' ? UI.chip(r.status) : '', value: `${esc(r.score)}점`,
       sub: `${esc(r.asset)} · ${esc(patternName(r.pattern))} · ${esc(factsText(r.facts))}`,
       body: `<p><b>판단</b> ${esc(outcomeText(r.modal_outcome))}</p>` + (r.reason ? `<p class="form-msg neg">${esc(UI.idText(r.reason))}</p>` : '') +
-        `<ul class="plain">${Object.keys(CHECK).map(k => checkLine(k, r.checks[k])).join('')}</ul>` + mismatch + repeat + inst +
+        checkLines(r) + mismatch + repeat + inst +
         UI.fold('조치 순위 (판단 원문)', `<ol>${(r.checks.top.order || []).map(o => `<li>${esc(UI.idText(o.replace(/^\d+\.\s*/, '')))}</li>`).join('') || '<li>후보 없음</li>'}</ol>`) });
   }
   function knowledgeLine(k) {
@@ -233,7 +236,7 @@
     if (!r) { host.innerHTML = UI.empty('실행을 선택하세요', '항목별 점수와 검사 네 칸이 보입니다'); return; }
     const s = r.summary;
     host.innerHTML = UI.card({ title: `평균 ${esc(s.score)}점`, chips: UI.chipText(PATH[r.path] || r.path),
-      sub: `${esc(UI.dateTime(r.created))} · ${esc(r.by)}${r.note ? ' · ' + esc(r.note) : ''}`,
+      sub: `${esc(UI.dateTime(r.created))} · ${esc(UI.who(r.by))}${r.note ? ' · ' + esc(r.note) : ''}`,
       body: `<p>${Object.entries({ cause_hits: '원인 적중', top_ok: '1위 허용', forbidden_ok: '빠질 조치 미추천', evidence_ok: '근거 모두 포함' }).map(([k, l]) => `${esc(l)} <b>${esc(s[k])}/${esc(s.items)}</b>`).join(' · ')}` +
         (s.withheld ? ` · 판단 없음(보류 · 오류) <b>${esc(s.withheld)}</b>` : '') + (s.unstable ? ` · 흔들림 <b>${esc(s.unstable)}</b>` : '') + `</p>` +
         `<p class="field-hint">채점 때 지식: ${knowledgeLine(r.knowledge)}</p>` }) + (r.items || []).map(itemResult).join('');
@@ -247,7 +250,7 @@
 
   /* ---------------------------------------------------------------- 4. 전 · 후 비교 */
   function renderCmpForm() {
-    const opts = (cur) => E.runs.map(r => `<option value="${esc(r.id)}" ${r.id === cur ? 'selected' : ''}>${esc(UI.dateTime(r.created))} · ${esc(r.by)} · ${esc(r.summary.score)}점${r.note ? ' · ' + esc(r.note) : ''}</option>`).join('');
+    const opts = (cur) => E.runs.map(r => `<option value="${esc(r.id)}" ${r.id === cur ? 'selected' : ''}>${esc(UI.dateTime(r.created))} · ${esc(UI.who(r.by))} · ${esc(r.summary.score)}점${r.note ? ' · ' + esc(r.note) : ''}</option>`).join('');
     if (E.runs.length < 2) { q('[data-r="cmpform"]').innerHTML = UI.empty('비교하려면 채점 실행이 두 개 필요합니다', '지식을 고치기 전에 한 번, 고친 뒤에 한 번 채점하세요 (예: Neo4j Browser에서 관계 하나 끊기 · 매뉴얼 하나 더 넣기)'); return; }
     q('[data-r="cmpform"]').innerHTML = `<div class="form-grid">` +
       UI.field({ label: '전 (고치기 전 실행)', input: `<select data-f="before">${opts(E.cmpBefore || E.runs[1].id)}</select>` }) +
@@ -328,7 +331,7 @@
   async function loadGolden() {
     try {
       const g = await getJ(API.process + '/api/eval/golden');
-      E.golden = g.items || []; E.storage = g.storage; E.paths = g.paths || {}; E.maxRepeats = g.max_repeats || 10;
+      E.golden = g.items || []; E.storage = g.storage; E.paths = g.paths || {}; E.maxRepeats = g.max_repeats; E.assets = g.assets || []; E.facts = g.facts || {};
       for (const id of [...E.picked]) if (!E.golden.some(it => it.id === id)) E.picked.delete(id);
       renderGolden();
     } catch (e) { E.golden = []; q('[data-r="golden"]').innerHTML = `<p class="form-msg neg" role="alert">정답표를 읽지 못했습니다: ${esc(e.message)}</p>`; }

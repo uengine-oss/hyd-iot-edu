@@ -10,6 +10,7 @@ import json
 from datetime import datetime, timezone
 import logging
 import os
+import threading
 import urllib.error
 import urllib.request
 from contextlib import nullcontext
@@ -18,7 +19,7 @@ import psycopg
 from fastapi import HTTPException
 from pydantic import BaseModel
 
-from hydcommon import schemas, topics
+from hydcommon import graphdb, schemas, topics
 from hydcommon.kafka import consumer as make_consumer, producer as make_producer
 from hydcommon.metrics import Registry
 from hydcommon.service import make_app
@@ -26,17 +27,13 @@ from hydcommon.timeutil import now, now_iso
 from . import decisions as declib, definition, ingest, graph_ingest, instance_mode, kgadmin, machine, current_approval, engine, reobs_series
 from .store import Store
 from . import skill_graph
-from . import ranking_policy
-from . import bsc_conditions
 from .knowledge_projection import KnowledgeReconciler
 from .case_projection import CaseProjector
 from .source_inbox import PgSourceInbox, kafka_record, source_record
 from .source_delivery import SourceDelivery, SourcePending
-from .oauth_access_log import install as _install_oauth_access_log_filter
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 log = logging.getLogger("process")
-_install_oauth_access_log_filter()
 TIME_SCALE = float(os.getenv("TIME_SCALE", "20"))
 PG_DSN = os.getenv("PG_DSN", "postgresql://hyd:hyd@timescaledb:5432/hyd")
 ENTERPRISE_URL = os.getenv("ENTERPRISE_URL", "http://enterprise-sim:8095")
@@ -45,13 +42,14 @@ KAFKA_SEND_TIMEOUT_S = 10.0          # 승인 원장 · 명령 송신 확인을 
 reg = Registry()
 c_inc = reg.counter("process_incidents_total", "incidents by terminal state")
 g_open = reg.gauge("process_open_incidents", "incidents not in a terminal state")
-state = {"kafka": False, "incidents": 0}
+state: dict = {}                     # 처리 오류 · 시작 표시(/healthz 가 읽는 칸만 — _health_state)
 incidents: dict[str, machine.Incident] = {}
 book: dict[str, dict] = {}          # action-card decisions (L9, ontology v2)
 audit_log: list[dict] = []
 SOURCE_BATCH_MAX = int(os.getenv('SOURCE_BATCH_MAX', '50'))   # A080: deliveries received per DB connection and per offset commit (~6 s at 20x)
 plant_status: dict[str, dict] = {}   # latest plant.status per asset (PLC mode / state for the agent's DMN facts)
 producer = None
+consumer_client = None
 loop: asyncio.AbstractEventLoop | None = None
 store = None
 source_inbox = None
@@ -110,20 +108,24 @@ class Fx(machine.Effects):
 
     def emit_audit(self, evt: dict) -> None:
         audit_log.insert(0, evt)
-        del audit_log[500:]
+        del audit_log[AUDIT_PAGE_MAX:]
         _send_logged(topics.K_AUDIT, topics.asset_key(self.inc.asset), evt, f"audit {evt.get('event')}")
 
 
-def latest_tag(asset: str, tag: str = "TS1") -> float | None:
-    """Latest 1 s value of one tag (the incident's recovery tag: TS1 · PS1 · VS1) from TimescaleDB."""
+class TagReadError(RuntimeError):
+    """시계열(tag_1s)을 읽지 못했다 — 「값이 아직 없다」(None)와 다르다. 판정하는 쪽이 까닭을 판정 기록에 남긴다(P5-05)."""
+
+
+def latest_tag(asset: str, tag: str) -> float | None:
+    """One tag's latest 1 s value (the incident's recovery tag: TS1 · PS1 · VS1) from TimescaleDB. None = no row yet;
+    a read failure raises TagReadError with its reason (never the same None)."""
     try:
         with psycopg.connect(PG_DSN, autocommit=True, connect_timeout=5) as conn, conn.cursor() as cur:
             cur.execute("SELECT value FROM tag_1s WHERE asset=%s AND name=%s ORDER BY time DESC LIMIT 1", (asset, tag))
             row = cur.fetchone()
-            return float(row[0]) if row else None
-    except Exception as e:  # noqa: BLE001
-        log.warning("latest_tag %s failed: %s", tag, e)
-        return None
+    except psycopg.Error as e:
+        raise TagReadError(f"시계열(tag_1s)에서 {asset} {tag} 최신값을 읽지 못했습니다: {type(e).__name__}: {str(e).strip()[:200]}") from e
+    return None if row is None or row[0] is None else float(row[0])
 
 
 def tag_series(asset: str, tag: str, since: str, until: str | None = None) -> list[tuple[str, float]]:
@@ -157,19 +159,13 @@ def window_series(inc: machine.Incident, after: str, since: str | None = None) -
     return reobs_series.build(rows, **where)
 
 
-def latest_ts1(asset: str) -> float | None:
-    return latest_tag(asset, "TS1")
-
-
 def _after(inc: machine.Incident, *, advance: bool = True):
     """Runs on the event loop or on a worker thread (instance-mode hooks), so it schedules through the global loop.
     advance=False: 사건만 저장하고 처리 건 진행은 예약하지 않는다 — 지금 그 처리 건의 단계 안에서 실패를 올릴 때(그 단계의 실패 기록이
     먼저 남고, 다음 폴링이 사건 상태로 진행한다. 예약하면 다른 스레드의 진행과 실패 기록의 앞뒤가 그때그때 갈린다)"""
-    persist()
+    persist()                      # 저장이 사건 그래프 반영도 깨운다(_wake_case_projection)
     if inc.state in definition.TERMINAL:
         c_inc.inc(state=inc.state)
-        if inc.state == "CLOSED" and loop is not None:
-            loop.run_in_executor(None, record_incident, inc)
     g_open.set(sum(1 for i in list(incidents.values()) if i.state not in definition.TERMINAL))
     if advance:
         instance_mode.on_incident_update(inc)
@@ -178,11 +174,6 @@ def _after(inc: machine.Incident, *, advance: bool = True):
 def _wake_case_projection():
     if loop is not None and case_projection_event is not None and not loop.is_closed():
         loop.call_soon_threadsafe(case_projection_event.set)
-
-
-def record_incident(inc: machine.Incident) -> None:
-    # Only wake delivery; the mutable caller snapshot is never graph authority.
-    _wake_case_projection()
 
 
 def _incident_projected(incident_id):
@@ -278,51 +269,61 @@ async def _receive_retrying(pairs):
             delay = min(delay * 2, 30.0)
 
 
+async def receive_records(recs, commit=None) -> None:
+    """Kafka 에서 받은 원천 레코드 한 묶음(한 파티션, 받은 차례)을 원천 접수에 넣는다 — 경보(RAISE)의 흐름 정책 고르기 → 한 DB 연결의 접수
+    (source_inbox.receive_many) → 설비 최신 상태(plant_status) 갱신. consume() 과 테스트가 이 함수 하나를 부른다(G5b-03 · 06).
+    A080: 접수는 레코드마다 커밋되고, 접수된 앞부분마다 commit(마지막으로 접수한 레코드)를 부른다(offset 은 부르는 쪽 — Kafka).
+    접수에 실패한 레코드부터는 1초 뒤 다시(빠진 사건 뒤로는 commit 하지 않는다). 돌아오면 묶음 전체가 접수된 것이다."""
+    items = []
+    for rec in recs:
+        record = kafka_record(rec)
+        policy = await _alert_policy_retrying(record['payload'].get('pattern')) if record['kind'] == 'RAISE' else None
+        items.append((rec, record, policy))
+    start = 0
+    while start < len(items):
+        rows, error, states = await _receive_retrying([(r, p) for _, r, p in items[start:]])
+        done = start + len(rows)
+        if states:
+            plant_status.update(states)
+        if done > start and commit is not None:
+            await commit(items[done - 1][0])
+        if error is None:
+            state.pop('source_receive_error', None)
+            return
+        failed = items[done][0]
+        state['source_receive_error'] = str(error)
+        log.error('source receipt failed: %s/%s/%s: %s', failed.topic, failed.partition, failed.offset, error)
+        start = done
+        await asyncio.sleep(1)
+
+
+#: process 가 원천 접수로 받는 Kafka 토픽 — 설비 상태(명령 응답 ACK) · 경보(RAISE · CLEAR) · 감사(명령 관문 거절 REJECT, G3b-9:
+#: 받지 않으면 관문이 거절한 명령을 30초 응답 없음으로만 알았다). 어떤 레코드가 원천 사건인지는 source_inbox.source_record 가 정한다.
+SOURCE_TOPICS = (topics.K_STATUS, topics.K_ALERTS, topics.K_AUDIT)
+
+
 async def consume():
-    global producer
+    global producer, consumer_client
     producer = await make_producer()
-    cons = await make_consumer([topics.K_STATUS, topics.K_ALERTS], group="process", from_latest=False,
-                               auto_commit=False, raw_values=True)
-    state["kafka"] = True
-    log.info("consuming plant.status (ACK) and alerts (RAISE · CLEAR) into the durable source receipts")
+    cons = consumer_client = await make_consumer(list(SOURCE_TOPICS), group="process", from_latest=False,
+                                                 auto_commit=False, raw_values=True)
+    state["consumer_started"] = True
+    log.info("consuming plant.status (ACK) · alerts (RAISE · CLEAR) · audit (cmd-gateway REJECT) into the durable source receipts")
     from aiokafka import TopicPartition
+
+    async def commit(last):
+        try:
+            await cons.commit({TopicPartition(last.topic, last.partition): last.offset + 1})
+        except Exception:
+            # Rebalance/network failure may redeliver an already committed receipt. Every later offset also passes receive() first.
+            log.exception('durable source will tolerate offset redelivery: %s/%s/%s', last.topic, last.partition, last.offset)
     while True:
-      batches = await cons.getmany(timeout_ms=250, max_records=SOURCE_BATCH_MAX)
-      if not batches:
-          continue
-      for tp, recs in batches.items():
-            # A080: receive the whole fetched batch on one DB connection (one committed transaction per receipt, as
-            # before) and commit the offset once per batch. On a receipt failure the failed delivery and everything after
-            # it stay unacknowledged and are retried; nothing is committed past a missing event.
-            items=[]
-            for rec in recs:
-                record=kafka_record(rec)
-                policy=None
-                if record['kind']=='RAISE':
-                    policy=await _alert_policy_retrying(record['payload'].get('pattern'))
-                items.append((rec,record,policy))
-            start=0
-            while start<len(items):
-                rows,error,states=await _receive_retrying([(r,p) for _,r,p in items[start:]])
-                done=start+len(rows)
-                if states:
-                    plant_status.update(states)
-                if done>start:
-                    last=items[done-1][0]
-                    try:
-                        await cons.commit({TopicPartition(last.topic,last.partition):last.offset+1})
-                    except Exception:
-                        # Rebalance/network failure may redeliver an already committed
-                        # receipt. Every later offset also passes receive() first.
-                        log.exception('durable source will tolerate offset redelivery: %s/%s/%s',last.topic,last.partition,last.offset)
-                if error is None:
-                    state.pop('source_receive_error',None)
-                    break
-                failed=items[done][0]
-                state['source_receive_error']=str(error)
-                log.error('source receipt failed: %s/%s/%s: %s',failed.topic,failed.partition,failed.offset,error)
-                start=done
-                await asyncio.sleep(1)
+        batches = await cons.getmany(timeout_ms=250, max_records=SOURCE_BATCH_MAX)
+        if not batches:
+            continue
+        state["last_record_at"] = now_iso()
+        for _tp, recs in batches.items():
+            await receive_records(recs, commit)
 
 
 def _apply_source_event(receipt):
@@ -331,24 +332,30 @@ def _apply_source_event(receipt):
         inc=next((i for i in list(incidents.values()) if i.alert_id==value['alertId']),None)
     else:
         inc=next((i for i in list(incidents.values()) if i.cmd_id==value['cmdId']),None)
-    if inc is None:raise SourcePending('연결할 원천 사건/명령이 아직 없습니다')
+        if inc is None:
+            # process 는 사건에 명령 id 를 먼저 저장한 뒤에 명령을 보낸다(_approve_incident) — 어느 사건에도 없는 명령 id 의 응답은 process 가
+            # 낸 명령이 아니다(FUXA 수동 조작 · 다음 명령에 밀린 옛 응답). 기다릴 짝이 없으므로 대기로 두지 않고 끝낸다(P2-01: 5초마다 영원히 다시 처리)
+            return {'cmdId':value['cmdId'],'asset':value.get('asset'),'disposition':'process 가 낸 명령의 응답이 아님 — 할 일 없음'}
+    if inc is None:raise SourcePending('연결할 원천 사건이 아직 없습니다')
     if value['asset']!=inc.asset or (receipt['kind']=='CLEAR' and 'pattern' in value and value['pattern']!=inc.pattern):
-        raise ValueError('원천 해제/응답의 설비 또는 경보 패턴이 사건과 다릅니다')
+        raise ValueError('원천 해제 · 명령 응답의 설비 또는 경보 패턴이 사건과 다릅니다')
     inst=rt.instance_of_incident(inc.id)
     # Use the same instance lock as approval/task transitions. Source receipt
     # fencing alone cannot prevent a previously running handler from finishing.
     with rt._transition(inst['proc_inst_id']) if inst else nullcontext():
         if receipt['kind']=='CLEAR' and not inc.cleared:
-            machine.on_alert(inc,value,Fx(inc))
+            machine.on_alert(inc,value,Fx(inc),trip=machine.active_trip(inc.asset,list(incidents.values())))
         elif receipt['kind']=='ACK':
             machine.on_status(inc,value,now(),Fx(inc))
+        elif receipt['kind']=='REJECT':      # G3b-9: 명령 관문이 이 명령을 설비로 넘기지 않음 — 30초 응답 없음을 기다리지 않고 그 까닭으로
+            machine.on_gateway_rejected(inc,value['cmdId'],value.get('check'),value.get('reason_text'),Fx(inc))
         persist()
         rt.on_incident_update(inc.state,inc.id,inc.cleared)
         return {'incident':inc.id,'state':inc.state,'cleared':inc.cleared,'cmdId':inc.cmd_id,
                 'ack':inc.ack,'disposition':'correlated source observed; recovery is not inferred'}
 
 
-async def _source_loop():
+async def source_loop():
     while producer is None:await asyncio.sleep(.1)
     while True:
         try:
@@ -361,16 +368,24 @@ async def _source_loop():
             await asyncio.sleep(1)
 
 
+HEALTH_ERRORS = ('source_receive_error', 'source_handler_error', 'source_policy_error', 'startup_db_error')
+
+
 def _health_state():
-    """Report actual processing readiness without opening another DB connection."""
-    ready = state["kafka"] and not any(state.get(k) for k in
-        ('consumer_dead', 'source_receive_error', 'source_handler_error', 'source_policy_error', 'startup_db_error'))
+    """지금 처리할 수 있는가 — DB 를 새로 열지 않고 메모리에서 잰 것만(P5-16: 시작 때 한 번 정한 값은 싣지 않는다).
+    ok = Kafka 소비를 시작했고 · 멈춘 반복이 없고 · 원천 접수/처리 오류가 없고 · 처리 엔진 폴링이 돈다(runtime — DB 상태는 여기서 드러난다).
+    kafka.last_record_at = 마지막으로 받은 원천 레코드 시각(설비 상태가 1초마다 오므로 오래 멈춰 있으면 브로커 · 설비 쪽을 본다).
+    그래프 반영 대기는 GET /api/graph-projections(DB 를 읽는다)."""
     runtime = instance_mode.runtime_readiness()
-    return {**state, "ok": bool(ready and runtime['ready']), 'runtime': runtime}
+    errors = {k: state[k] for k in HEALTH_ERRORS if state.get(k)}
+    stopped = dict(state.get("stopped_loops") or {})
+    ready = state.get("consumer_started") and not errors and not stopped and runtime['ready']
+    return {"ok": bool(ready), "runtime": runtime, "errors": errors, "stopped_loops": stopped,
+            "kafka": {"consumer_started": bool(state.get("consumer_started")), "last_record_at": state.get("last_record_at")},
+            "incidents": len(incidents)}
 
 
-app = make_app("process (L9: mini-BPMN — approval, action.cmd, ACK, re-observation, work order)", reg,
-               _health_state)
+app = make_app("process — 처리 건 엔진(원천 접수 · 사람 승인 · 설비 명령 · ACK · 재관측 · 작업지시)", reg, _health_state)
 # /api/instances · /api/todolist · … — 경보로 처리 건을 여는 길은 원천 접수 하나(_admit_alert, 아래)
 instance_mode.mount(app, admit_alert=lambda alert: _admit_alert(alert))
 from . import agents_api
@@ -379,28 +394,6 @@ from . import inbox_api
 inbox_api.mount(app)                        # U5: /api/inbox/* (나 · 내 작업함 · 알림 · 업무분장 읽기)
 from . import agent_authoring_api
 agent_authoring_api.mount(app)              # B1: 에이전트 · 스킬 쓰기 · 단계/역할 배정 · POST /api/agents/reset
-
-from . import memdebug
-if memdebug.enabled():                      # A131: GET /debug/memory only with PROCESS_MEMDEBUG=1 (OOM diagnosis, dev only)
-    def _snapshot_bytes():
-        if store is None:
-            return None
-        with store._lock:
-            row = store.db.execute("select length(body) from snapshot where id=1").fetchone()
-        return row[0] if row else 0
-
-    memdebug.register(app, {
-        "incidents": lambda: len(incidents), "book": lambda: len(book), "audit_log": lambda: len(audit_log),
-        "plant_status": lambda: len(plant_status), "state_keys": lambda: sorted(state),
-        "metrics_series": lambda: {n: len(s) for n, s in list(reg._counters.items()) + list(reg._gauges.items())},
-        "sse_stream_clients": lambda: instance_mode.stream_clients,
-        "snapshot_json_bytes": _snapshot_bytes,
-        "case_projection_pending": lambda: store.case_projection_status(limit=1)["pending"] if store else None,
-        "runtime": lambda: (lambda rt: None if rt is None else {
-            "repo": type(rt.repo).__name__, "repo_local": sorted(vars(rt.repo._local)), "runtime_local": sorted(vars(rt._local)),
-        })(instance_mode.current()),
-    }, get_loop=lambda: loop)
-
 
 def _approve_incident(inc: machine.Incident, by: str, commands: list[dict], at: datetime | None = None) -> dict:
     """승인한 명령을 낸다: 사건에 CMD_ISSUED 를 먼저 저장하고, 승인 원장 송신이 확인된 뒤 명령을 보낸다(A148 · A-07). 둘 중 하나라도
@@ -416,10 +409,11 @@ def _approve_incident(inc: machine.Incident, by: str, commands: list[dict], at: 
     d = choices[0]
     _check_current_approval(d, d['chosen'], d['approvedRole'])
     from .approval_hooks import require_reviewed_commands
-    require_reviewed_commands(next(o for o in d['options'] if o['id'] == d['chosen']), commands)
+    option = next(o for o in d['options'] if o['id'] == d['chosen'])
+    require_reviewed_commands(option, commands)
     at = at or now()
     fx = Fx(inc)
-    cmd = machine.on_approve(inc, by, commands, at, fx)
+    cmd = machine.on_approve(inc, by, option, commands, at, fx)
     persist()                      # durable CMD_ISSUED before any external side effect
     ledger = {"t": now_iso(), "incident": inc.id, "asset": inc.asset, "actor": "process",
               "event": schemas.CMD_APPROVAL_LEDGER_EVENT, "detail": schemas.approval_ledger_record(cmd)}
@@ -444,29 +438,68 @@ def _check_current_approval(d, option, role, consented_at=None):
     return current_approval.require(lambda *_: report, d, option, role)
 
 
-def _instance_context() -> instance_mode.ProcessContext:
+def instance_context() -> instance_mode.ProcessContext:
     return instance_mode.ProcessContext(incidents=incidents, book=book, state=state, time_scale=TIME_SCALE, persist=persist, audit=_audit,
-                                        cypher=_q, exec_skill=exec_skill, record_decision=record_decision, approve_incident=_approve_incident,
+                                        cypher=_q, exec_skill=exec_skill, approve_incident=_approve_incident,
                                         get_loop=lambda: loop, check_approval=_check_current_approval, after_incident=_after,
-                                        reviews=_review_service, record_incident=record_incident, approval_receipts=_approval_receipts,
-                                        exec_compensation=_exec_compensation, latest_tag=latest_tag, window_series=window_series)
+                                        reviews=_review_service, approval_receipts=_approval_receipts,
+                                        exec_compensation=_exec_compensation, latest_tag=latest_tag, tag_read_error=TagReadError,
+                                        window_series=window_series)
+
+
+class ServiceRefused(ValueError):
+    """바깥 서비스(업무 시스템 · 설비 시뮬레이터)가 요청을 거절했거나 닿지 않았다. 메시지 = 사람이 읽는 사유(그 서비스가 준 detail 그대로 포함),
+    status = 그 서비스의 HTTP 상태(닿지 않았으면 None)."""
+    def __init__(self, message: str, status: int | None = None):
+        super().__init__(message)
+        self.status = status
+
+
+def _service_json(base: str, label: str, path: str, body: dict | None = None, *, headers: dict | None = None, timeout: float = 10) -> dict:
+    """바깥 서비스 HTTP 한 번(body 가 있으면 POST, 없으면 GET) → JSON. 거절 · 닿지 않음은 ServiceRefused — FastAPI 의 detail(거절 까닭)을
+    버리지 않는다(P5-04: 「HTTP Error 400: Bad Request」만 남아 학생 · 강사가 정비 창 · 공급사 거절 까닭을 못 봤다). 업무 시스템 · 설비
+    시뮬레이터를 부르는 길은 모두 이것 하나다."""
+    data = None if body is None else json.dumps(body, ensure_ascii=False).encode()
+    req = urllib.request.Request(base.rstrip("/") + path, data=data, method="GET" if body is None else "POST",
+                                 headers={"Content-Type": "application/json", **(headers or {})})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return json.loads(r.read())
+    except urllib.error.HTTPError as e:
+        raw = e.read().decode(errors="replace")
+        try:
+            detail = json.loads(raw).get("detail", raw)
+        except (ValueError, AttributeError):
+            detail = raw
+        if not isinstance(detail, str):
+            detail = json.dumps(detail, ensure_ascii=False)
+        raise ServiceRefused(f"{label}이(가) 요청을 거절했습니다(HTTP {e.code}, {path.split('?')[0]}): {detail[:300]}", e.code) from None
+    except OSError as e:
+        raise ServiceRefused(f"{label}에 닿지 못했습니다({path.split('?')[0]}): {type(e).__name__}: {str(e)[:200]}") from None
+
+
+def _enterprise(path: str, body: dict | None = None) -> dict:
+    """업무 시스템(enterprise-sim) — 쓰기는 process 만 아는 실행 호출 값을 싣는다(하-05)."""
+    return _service_json(ENTERPRISE_URL, "업무 시스템(enterprise-sim)", path, body,
+                         headers=instance_mode.caller_headers() if body is not None else None)
 
 
 def _exec_compensation(body: dict) -> dict:
-    """POST one compensation skill (A072) to the enterprise systems; the enterprise keeps it idempotent per decision/skill/ref."""
-    req = urllib.request.Request(ENTERPRISE_URL + "/api/exec", data=json.dumps(body, ensure_ascii=False).encode(),
-                                 headers={"Content-Type": "application/json", **instance_mode.caller_headers()}, method="POST")
+    """POST one compensation skill (A072) to the enterprise systems; the enterprise keeps it idempotent per decision/skill/ref.
+    업무 시스템이 역거래를 거절하면(4xx — 다시 보내도 같은 답) CompensationRefused(그 효과는 사람 확인으로 정리 — P4-11), 연결 실패 · 5xx 는
+    ServiceRefused 그대로(다시 시도할 수 있는 실패)."""
+    from .effect_compensation import CompensationRefused
     try:
-        with urllib.request.urlopen(req, timeout=10) as r:
-            return json.loads(r.read())
-    except urllib.error.HTTPError as e:
-        raise ValueError(f"enterprise refused the compensation: {e.code} {e.read().decode(errors='replace')[:200]}")
+        return _enterprise("/api/exec", body)
+    except ServiceRefused as e:
+        if e.status is not None and 400 <= e.status < 500:
+            raise CompensationRefused(str(e)) from None
+        raise
 
 
 def _approval_receipts(decision_id):
     from urllib.parse import urlencode
-    with urllib.request.urlopen(ENTERPRISE_URL + '/api/transactions?' + urlencode({'decision': decision_id}), timeout=10) as response:
-        return json.loads(response.read())
+    return _enterprise('/api/transactions?' + urlencode({'decision': decision_id}))
 
 
 def _review_service():
@@ -476,56 +509,119 @@ def _review_service():
     return DecisionReviews(store,book,incidents,current_approval.preview)
 
 
-def _watch(task):
-    """If the consume loop ever exits, /healthz reports it (503) instead of looking healthy while doing nothing."""
-    state["consumer_dead"] = True
-    state["consumer_error"] = repr(task.exception()) if not task.cancelled() and task.exception() else "exited"
-    log.error("consumer task ended: %s", state["consumer_error"])
+_tasks: dict[str, asyncio.Task] = {}      # 이름 → 백그라운드 반복(끄기가 모두 멈춘다)
+_stopping = False
+
+
+def background(coro, name: str) -> asyncio.Task:
+    """백그라운드 반복 하나를 띄운다. 끄기가 아닌데 끝나면(예외든 그냥 끝이든) /healthz 가 그 이름과 까닭으로 503 을 낸다 — 아무 일도 안 하면서
+    건강해 보이지 않게(원천 처리 · Kafka 소비뿐 아니라 그래프 반영 · 원천 카탈로그 동기화 반복도)."""
+    task = asyncio.create_task(coro, name=name)
+    _tasks[name] = task
+    task.add_done_callback(_watch)
+    return task
+
+
+def _watch(task: asyncio.Task):
+    if _tasks.get(task.get_name()) is task:
+        del _tasks[task.get_name()]       # 끝난 반복은 끄기가 기다릴 일이 아니다(끝난 까닭은 아래 stopped_loops 에 남는다)
+    if _stopping:
+        return
+    error = task.exception() if not task.cancelled() else None
+    reason = f"{type(error).__name__}: {str(error)[:300]}" if error else ("취소됨" if task.cancelled() else "반복이 끝남")
+    state.setdefault("stopped_loops", {})[task.get_name()] = reason
+    log.error("background loop %s ended: %s", task.get_name(), reason)
+
+
+@app.on_event("shutdown")
+async def _shutdown():
+    """끄기(P5-17): 반복을 멈추고, Kafka 소비 그룹을 떠나고(다시 켤 때 파티션을 바로 받게), 송신기가 쥔 감사 기록을 다 보낸 뒤 닫고,
+    작업 스레드의 처리 건 갱신이 끝나기를 기다린 뒤 사건 저장소를 닫는다."""
+    global _stopping, producer, consumer_client, _graph
+    _stopping = True
+    for task in list(_tasks.values()):
+        task.cancel()
+    await asyncio.gather(*_tasks.values(), return_exceptions=True)
+    if consumer_client is not None:
+        await consumer_client.stop()
+        consumer_client = None
+    if producer is not None:
+        await producer.stop()          # aiokafka: 쌓인 송신을 다 보낸(flush) 뒤 닫는다
+        producer = None
+    await instance_mode.stop_loops()
+    await drain_scheduled_updates()
+    if _graph is not None:
+        _graph.close()
+        _graph = None                  # 다음 쓰임(같은 프로세스에서 다시 켬)이 닫힌 드라이버를 받지 않게 — _shared_graph 가 새로 잇는다
+    if store is not None:
+        store.db.close()
+
+
+async def drain_scheduled_updates() -> None:
+    """이 루프의 작업 스레드에 맡긴 처리 건 갱신(instance_mode._schedule — 사건이 바뀔 때마다)이 다 끝날 때까지 기다린다. 끄기 · 테스트의
+    world 닫기가 사건 저장소를 닫기 전에 부른다 — 전에는 기다리지 않아 끄는 순간 돌던 갱신이 닫힌 저장소에 부딪히거나(FA2 검증 P5-17)
+    테스트에서는 다음 world 의 준비 중에 앞 world 의 갱신이 돌았다(FA1 검증 §4-6). 기본 실행기를 닫으므로 그 뒤 새 갱신은 받지 않는다."""
+    await asyncio.get_running_loop().shutdown_default_executor()
+
+
+async def restore_and_build(ctx: instance_mode.ProcessContext, *, state_path: str | None = None, repo=None, clock=None):
+    """process 한 번의 기동에서 백그라운드 반복을 뺀 전부 — `_startup`과 테스트가 이 함수 하나를 부른다(G5b-03).
+      ① 실행 호출 값 확인(없으면 뜨지 않는다) ② 사건 저장 파일 복원(사건 · 판단 · 감사 — 메모리에 있던 앞 값은 버린다)
+      ③ 처리 엔진 런타임 구성(DB 가 잠깐 멈춰 있으면 제한된 재시도, A151) ④ 원천 접수 · 원천 처리기 · 설비 최신 상태 · 사건 그래프 반영기 · 지식 정리기.
+    ctx = instance_context()(테스트는 바깥 자리만 바꾼 사본 — 그래프 질의는 ctx.cypher 하나를 모두가 쓴다), state_path = 사건 저장 파일
+    (기본 PROCESS_STATE_PATH), repo · clock = instance_mode.build 에 그대로. 이벤트 루프(main.loop) · Kafka 송신기는 부르는 쪽이 정한다.
+    돌려줌 = 처리 엔진 런타임(instance_mode.current() 와 같은 것)."""
+    global store, source_inbox, source_delivery, case_projector, knowledge_reconciler, _stopping
+    _stopping = False                         # 새 기동은 끄는 중이 아니다(끈 뒤 같은 프로세스에서 다시 켜면 멈춘 반복을 다시 알린다)
+    instance_mode.caller_headers()            # 하-04 · 하-05: process 만 아는 실행 호출 값이 없으면 뜨지 않는다(조용히 쓰기 실패로 돌지 않게)
+    schemas.fingerprint_key()                 # G3b-30: 승인 장부 지문 키가 없으면 첫 승인에서가 아니라 켜질 때 멈춘다
+    store = Store(state_path or os.getenv("PROCESS_STATE_PATH", "/data/process.sqlite3"))
+    saved_incidents, saved_book, saved_audit = store.restore()
+    incidents.clear()
+    incidents.update(saved_incidents)
+    book.clear()
+    book.update(saved_book)
+    audit_log[:] = saved_audit
+    persist()
+    rt = await instance_mode.retry_startup(lambda: instance_mode.build(ctx, repo=repo, clock=clock), 'instance runtime', state)
+    rt.hooks.case_started = _link_injection     # C3: 수업 버튼의 설비 주입 → 그 주입이 연 처리 건 (누름 id 로 연결)
+    source_inbox = PgSourceInbox(rt.repo, rt.tenant_id)
+    states = await instance_mode.retry_startup(lambda: asyncio.to_thread(source_inbox.latest_states), 'plant status', state)
+    plant_status.clear()
+    plant_status.update(states)
+    source_delivery = SourceDelivery(source_inbox, rt, _apply_source_event, owner=rt.consumer + '-source')
+    case_projector = CaseProjector(store, ctx.cypher, _incident_projected)
+    knowledge_reconciler = KnowledgeReconciler(store, ctx.cypher, os.getenv('TENANT_ID', 'hyd'), rt.repo)
+    return rt
 
 
 @app.on_event("startup")
 async def _startup():
-    global loop, store, source_inbox, source_delivery, case_projector, case_projection_event, case_projection_task, knowledge_reconciler
-    instance_mode.caller_headers()            # 하-04 · 하-05: process 만 아는 실행 호출 값이 없으면 뜨지 않는다(조용히 쓰기 실패로 돌지 않게)
+    global loop, case_projection_event, case_projection_task
     loop = asyncio.get_running_loop()
-    store = Store(os.getenv("PROCESS_STATE_PATH", "/data/process.sqlite3"))
-    saved_incidents, saved_book, saved_audit = store.restore()
-    incidents.update(saved_incidents)
-    # decisions made on the v1 ontology (Scenario / Option) cannot be shown or executed any more
-    book.update({k: d for k, d in saved_book.items() if d.get("schema") == "v2"})
-    audit_log[:] = saved_audit
-    state["incidents"] = len(incidents)
-    persist()
-    # A151 (70-A): a DB paused while the container restarts no longer kills startup — bounded backoff, then the loops start once
-    ctx=_instance_context()
-    rt=await instance_mode.retry_startup(lambda: instance_mode.build(ctx), 'instance runtime', state)
+    ctx = instance_context()
+    rt = await restore_and_build(ctx)
     instance_mode.start_loops(rt, ctx)
-    rt.hooks.case_started=_link_injection     # C3: 수업 버튼의 설비 주입 → 그 주입이 연 처리 건 (누름 id 로 연결)
-    source_inbox=PgSourceInbox(rt.repo,rt.tenant_id)
-    plant_status.update(await instance_mode.retry_startup(lambda: asyncio.to_thread(source_inbox.latest_states), 'plant status', state))
-    source_delivery=SourceDelivery(source_inbox,rt,_apply_source_event,owner=rt.consumer+'-source')
-    asyncio.create_task(_source_loop()).add_done_callback(_watch)
-    if os.getenv('BUSINESS_MONITOR','0')!='0':
-        # C2: 업무 표 기준값 감시 — 재고 재주문점 이탈(C) · 운전시간 정기 정비 도래(B)가 처리 건을 스스로 연다(business_monitor.py)
-        from . import business_monitor
-        asyncio.create_task(business_monitor.run(instance_mode.enterprise_read,_admit_alert,
-                                                 float(os.getenv('BUSINESS_MONITOR_INTERVAL_S','15')),audit=_audit))
-    case_projector = CaseProjector(store, _q, _incident_projected)
-    knowledge_reconciler=KnowledgeReconciler(store,_q,os.getenv('TENANT_ID','hyd'),rt.repo)
+    background(source_loop(), 'source handler')
     case_projection_event = asyncio.Event()
     case_projection_event.set()
-    case_projection_task = asyncio.create_task(_case_projection_loop())
-    asyncio.create_task(_ddl_sync_loop())
-    asyncio.create_task(consume()).add_done_callback(_watch)
+    case_projection_task = background(_case_projection_loop(), 'graph projection')
+    background(_ddl_sync_loop(), 'source catalog sync')
+    background(consume(), 'kafka consumer')
 
 
 @app.get('/api/graph-projections')
 async def graph_projection_status():
+    """그래프 반영 대기 현황 한 곳(P5-07, RUNBOOK §6 이 가리킨다): 사건 · 판단(pending · items — 이 PC 의 사건 저장 파일),
+    처리 건 실행(execution — 업무 DB 대기열, 충돌 수 · 가장 오래된 대기 포함), 반영 반복이 도는지, 지식 변경 확인."""
     if store is None:
         raise HTTPException(503, '사건 저장소가 준비되지 않았습니다')
+    rt = _runtime_or_503()
     result = await asyncio.to_thread(store.case_projection_status)
-    knowledge=await asyncio.to_thread(knowledge_reconciler.status) if knowledge_reconciler else None
-    return result | {'worker_running': case_projection_task is not None and not case_projection_task.done(),'knowledge':knowledge}
+    execution = await asyncio.to_thread(rt.repo.projection_backlog, rt.tenant_id)
+    knowledge = await asyncio.to_thread(knowledge_reconciler.status) if knowledge_reconciler else None
+    return result | {'execution': execution, 'knowledge': knowledge, 'definition_cleanup': rt.graph_cleanup_status(),
+                     'worker_running': case_projection_task is not None and not case_projection_task.done()}
 
 
 class SourceRetryReq(BaseModel):
@@ -580,14 +676,22 @@ def list_incidents():
 def get_incident(inc_id: str):
     inc = incidents.get(inc_id)
     if not inc:
-        raise HTTPException(404, "no such incident")
+        raise HTTPException(404, f"사건 {inc_id} 이(가) 없습니다")
     rt=instance_mode.current()
     return inc.to_dict() | {'processOwned':bool(rt and rt.repo.incident_is_process_owned(inc_id))}
 
 
+AUDIT_PAGE_MAX = 500          # 메모리 · 저장 파일이 쥔 감사 기록 줄 수(_audit) — 한 번에 그보다 많이 줄 것이 없다
+
+
 @app.get("/api/audit")
-def get_audit():
-    return audit_log[:100]
+def get_audit(incident: str | None = None, limit: int = 100):
+    """최근 감사 기록(새것 먼저). incident 를 주면 그 사건의 기록만 거른 뒤 자른다(W2-06: 전체의 최근 100줄에서 거르면 지난 사건의 기록이 「없음」으로
+    보였다). 메모리에는 최근 AUDIT_PAGE_MAX 줄만 있다 — 그보다 오래된 기록은 Kafka 감사 토픽(시계열 DB)에 있다."""
+    if not 1 <= limit <= AUDIT_PAGE_MAX:
+        raise HTTPException(400, f"limit 은 1~{AUDIT_PAGE_MAX} 사이여야 합니다")
+    rows = [e for e in list(audit_log) if incident is None or e.get("incident") == incident]
+    return rows[:limit]
 
 
 @app.get("/api/plant/{asset}/status")
@@ -595,26 +699,21 @@ def get_plant_status(asset: str):
     """Latest plant.status (PLC mode · state · last ACK) — the agent's source for the DMN facts plc_mode / plc_state."""
     st = plant_status.get(asset)
     if not st:
-        raise HTTPException(404, f"no plant.status seen for {asset} yet")
+        raise HTTPException(404, f"{asset} 의 설비 상태(plant.status)를 아직 받지 못했습니다")
     return st
 
 
-@app.get("/api/definition")
-def get_definition():
-    return definition.as_json() | {"time_scale": TIME_SCALE}
-
-
-@app.get("/api/summary")
-def summary():
-    return {"open": [i.to_dict() | {"card": None} for i in list(incidents.values()) if i.state not in definition.TERMINAL],
-            "total": len(incidents), "time_scale": TIME_SCALE}
+@app.get("/api/time-scale")
+def get_time_scale():
+    """배속(TIME_SCALE, compose 한 곳) — agent · dmn-mcp 가 읽는다(CLAUDE.md 4절). 사람이 읽고 고르는 시한은 벽시계라 여기 없다."""
+    return {"time_scale": TIME_SCALE}
 
 
 # ---------------------------------------------------------------- enterprise decisions (L7 -> L8 -> L9)
 def _audit(asset: str, actor: str, event: str, detail: dict, incident: str | None = None):
     evt = {"t": now_iso(), "incident": incident, "asset": asset, "actor": actor, "event": event, "detail": detail}
     audit_log.insert(0, evt)
-    del audit_log[500:]
+    del audit_log[AUDIT_PAGE_MAX:]
     persist()
     # callable from worker threads too (instance hooks); a send failure is logged, never silent (A-07)
     _send_logged(topics.K_AUDIT, topics.asset_key(asset if asset in ("HYD-01", "HYD-02", "HYD-03") else "HYD-01"), evt, f"audit {event}")
@@ -642,7 +741,8 @@ def _window_params(window, opt: dict) -> dict:
         return out or {"window": "즉시"}
     if isinstance(window, str) and window.strip():
         return {"window_id": window.strip()} if window.strip().startswith("MW-") else {"window": window.strip()}
-    return {"window": "예정된 정비 시간 (야간)" if "night" in opt["id"] else "즉시"}
+    # 카드 · 흐름이 정비 시점을 싣지 않은 작업지시(센서 경보 조치)는 즉시다 — 카드 id 글자로 시점을 짐작하지 않는다(G2-09)
+    return {"window": "즉시"}
 
 
 def exec_skill(d: dict, item: dict) -> dict:
@@ -680,23 +780,17 @@ def exec_skill(d: dict, item: dict) -> dict:
         params = {"ref": item.get("ref")}
         if item.get("sop"):
             params["sop"] = item["sop"]
+        if item.get("basis"):            # H-11: 입고 확인의 시간 근거(수업 즉시 입고 · 시간 압축 — service_parts.receipt_basis)를 거래 기록에
+            params["basis"] = item["basis"]
     body = {"decision": d["id"], "option": opt["id"], "skill": job, "system": item.get("system"), "asset": d.get("asset"),
             "by": d.get("approvedBy"), "params": params}
     try:
-        req = urllib.request.Request(ENTERPRISE_URL + "/api/exec", data=json.dumps(body, ensure_ascii=False).encode(),
-                                     headers={"Content-Type": "application/json", **instance_mode.caller_headers()}, method="POST")
-        with urllib.request.urlopen(req, timeout=10) as r:
-            tx = json.loads(r.read())
-        if not isinstance(tx.get('ref'), str) or not tx['ref'].strip():
-            raise ValueError('enterprise response has no actual transaction reference')
-        return out | {"ok": True, "ref": tx.get("ref"), "detail": tx.get("detail"), "after": tx.get("after")}
-    except Exception as e:  # noqa: BLE001
-        return out | {"ok": False, "error": str(e)[:200]}
-
-
-def record_decision(d: dict) -> None:
-    """The persisted source and queue own delivery, including retries/restart."""
-    _wake_case_projection()
+        tx = _enterprise("/api/exec", body)
+    except ServiceRefused as e:
+        return out | {"ok": False, "error": str(e)}
+    if not isinstance(tx, dict) or not isinstance(tx.get('ref'), str) or not tx['ref'].strip():
+        return out | {"ok": False, "error": f"업무 시스템 응답에 실제 거래 번호(ref)가 없습니다: {json.dumps(tx, ensure_ascii=False)[:200]}"}
+    return out | {"ok": True, "ref": tx.get("ref"), "detail": tx.get("detail"), "after": tx.get("after")}
 
 
 @app.post("/api/decisions")
@@ -704,31 +798,73 @@ async def create_decision(payload: dict):
     return await asyncio.get_running_loop().run_in_executor(None, _create_decision, payload)
 
 
+DECISION_ID_MAX = 200
+
+
+def _decision_problems(payload) -> list[dict]:
+    """판단 접수 본문의 모양(판단 엔진 dmn-mcp 가 보내는 계약) — 틀린 칸마다 {field, reason}. 모양이 맞아야 장부에 쓴다(P5-01)."""
+    if not isinstance(payload, dict):
+        return [{"field": "", "reason": "판단 본문이 객체가 아닙니다"}]
+    out = []
+
+    def text(value, limit=DECISION_ID_MAX):
+        return isinstance(value, str) and value.strip() != "" and len(value) <= limit
+    if not text(payload.get("id")):
+        out.append({"field": "id", "reason": f"판단 id 가 없습니다(글, {DECISION_ID_MAX}자 이하)"})
+    if not text(payload.get("asset")):
+        out.append({"field": "asset", "reason": "설비 id 가 없습니다"})
+    options = payload.get("options")
+    if not isinstance(options, list) or not options:
+        out.append({"field": "options", "reason": "조치 카드 목록이 비었거나 목록이 아닙니다"})
+    else:
+        ids = []
+        for n, o in enumerate(options):
+            if not isinstance(o, dict) or not text(o.get("id")):
+                out.append({"field": f"options[{n}]", "reason": "조치 카드는 id(글)가 있는 객체여야 합니다"})
+            else:
+                ids.append(o["id"])
+        twice = sorted({i for i in ids if ids.count(i) > 1})
+        if twice:
+            out.append({"field": "options", "reason": f"조치 카드 id {', '.join(twice)} 가 두 번 이상 있습니다"})
+        rec = payload.get("recommended")
+        if rec is not None and rec not in ids:
+            out.append({"field": "recommended", "reason": "추천 카드 id 가 조치 카드 목록에 없습니다"})
+    origin = payload.get("origin")
+    if not isinstance(origin, dict):
+        out.append({"field": "origin", "reason": "판단의 출처(사건 · 처리 건 작업)가 객체로 없습니다"})
+    return out
+
+
 def _create_decision(payload: dict):
-    """Serialize acceptance with rework so a late producer cannot bind to a new generation."""
-    if not payload.get("id") or not payload.get("options"):
-        raise HTTPException(400, "decision needs id and options")
-    origin = payload.get('origin') or {}
-    rt = instance_mode.current()
-    inst = rt.instance_of_incident(origin.get('incident')) if rt and origin.get('incident') else None
-    with rt._transition(inst['proc_inst_id']) if inst else nullcontext():
-        if inst:
-            inst = rt.repo.get_instance(inst['proc_inst_id'])
-            scope = origin.get('process_scope')
-            if int(inst.get('rework_generation') or 0) > 0 or scope is not None:
-                from .decision_scope import validate_submission
-                try:
-                    import uuid
-                    wid = str(uuid.UUID(scope.get('workitem', ''))) if isinstance(scope, dict) else None
-                    workitem = rt.repo.get_workitem(wid) if wid else None
-                    validate_submission(inst, rt.definition_for(inst), workitem, scope)
-                except (ValueError, TypeError, AttributeError) as error:
-                    raise HTTPException(409, str(error))
-        elif origin.get('process_scope') is not None:
-            raise HTTPException(409, '판단의 활성 프로세스 인스턴스를 찾을 수 없습니다')
-        elif (rt and origin.get('incident') and payload['id'] not in book
-              and rt.repo.incident_is_process_owned(origin['incident'])):
-            raise HTTPException(409, '종료된 프로세스 사건에 새 판단을 접수할 수 없습니다')
+    """판단 하나를 접수한다 — 판단은 경보로 열린 처리 건의 에이전트 단계 안에서만 생긴다(W3-05 · P1-20). 그 처리 건의 사건(origin.incident)과
+    지금 점유된 생산 작업(origin.process_scope — 작업 행 · 세대 · 판본 · 점유한 워커)이 맞을 때만 받는다: 승인할 길이 없는 판단(사건 없음)이
+    장부에 영원히 「승인 대기」로 남지 않고, 그 작업을 점유한 워커 말고는(다른 웹 페이지 · 손 요청) 판단을 쓸 수 없다(P5-08).
+    승인과 겹치지 않게 처리 건 잠금 안에서 판정 → 쓴다."""
+    problems = _decision_problems(payload)
+    if problems:
+        raise HTTPException(400, {"reason": "판단 형식이 맞지 않아 접수하지 않았습니다 — " + " · ".join(f"{p['field']}: {p['reason']}" for p in problems),
+                                  "problems": problems})
+    origin = payload['origin']
+    if not isinstance(origin.get('incident'), str) or not origin['incident'].strip() or not isinstance(origin.get('process_scope'), dict):
+        raise HTTPException(409, '판단은 경보로 열린 처리 건의 에이전트 단계 안에서만 접수합니다 — 처리 건의 사건(incident)과 '
+                                 '생산 작업(process_scope)이 없는 판단은 승인할 길이 없습니다')
+    rt = _runtime_or_503()
+    inst = rt.instance_of_incident(origin['incident'])
+    if inst is None:
+        raise HTTPException(409, f"사건 {origin['incident']} 을(를) 맡은 처리 건이 없습니다 — 판단을 접수하지 않았습니다")
+    with rt._transition(inst['proc_inst_id']):
+        inst = rt.repo.get_instance(inst['proc_inst_id'])
+        scope = origin['process_scope']
+        from .decision_scope import validate_submission
+        try:
+            import uuid
+            workitem = rt.repo.get_workitem(str(uuid.UUID(str(scope.get('workitem') or ''))))
+        except ValueError:
+            raise HTTPException(409, '판단의 생산 작업(process_scope.workitem)이 작업 id 꼴이 아닙니다') from None
+        try:
+            validate_submission(inst, rt.definition_for(inst), workitem, scope)
+        except ValueError as error:
+            raise HTTPException(409, str(error)) from None
         return _store_decision(payload)
 
 
@@ -772,26 +908,37 @@ def list_decisions():
 def get_decision(did: str):
     d = book.get(did)
     if not d:
-        raise HTTPException(404, "no such decision")
-    return d
+        raise HTTPException(404, f"판단 {did} 이(가) 없습니다")
+    out = copy.deepcopy(d)              # 응답 사본에만 싣는다 — 장부 원본은 바꾸지 않는다
+    for opt in out.get("options") or []:
+        opt["approvable_roles"] = declib.approver_roles(d, opt)   # 그 안을 승인할 수 있는 역할(판정 정본 decisions.holds_approver_role — 화면 사본 없이 단추를 켜고 끔)
+    return out
 
 
 # ---------------------------------------------------------------- knowledge administration (humans edit the ontology through L9)
 def _kg():
-    from neo4j import GraphDatabase
-    user, pwd = os.getenv("NEO4J_AUTH", "neo4j/hydpass123").split("/", 1)
-    # liveness_check_timeout=0: neo4j 재시작 뒤 풀에 남은 끊긴 연결을 쓰기 전에 걸러 낸다(agentsvc.tools.mcp_kg 와 같음)
-    return GraphDatabase.driver(os.getenv("NEO4J_URI", "bolt://neo4j:7687"), auth=(user, pwd), liveness_check_timeout=0)
+    """새 Neo4j 드라이버 하나 — 받은 쪽이 닫는다(`with _kg() as driver`). 설정 · 알림 · 풀 확인은 hydcommon.graphdb 한 곳(결정 2)."""
+    return graphdb.connect()
+
+
+_graph = None
+_graph_lock = threading.Lock()
+
+
+def _shared_graph():
+    """_q 가 함께 쓰는 드라이버 하나(처음 질의 때 연다). 투영 · 정리 주기가 질의마다 드라이버 · 연결 풀을 새로 만들지 않게 — 드라이버는 여러
+    스레드가 함께 써도 되고 세션은 질의마다 따로다. 끄기(_shutdown)가 닫는다."""
+    global _graph
+    with _graph_lock:
+        if _graph is None:
+            _graph = graphdb.connect()
+        return _graph
 
 
 def _q(cypher: str, **params) -> list[dict]:
     # managed write transaction: the driver retries a dropped connection and transient errors
-    drv = _kg()
-    try:
-        with drv.session() as s:
-            return s.execute_write(lambda tx: [r.data() for r in tx.run(cypher, **params)])
-    finally:
-        drv.close()
+    with _shared_graph().session() as s:
+        return s.execute_write(lambda tx: [r.data() for r in tx.run(cypher, **params)])
 
 
 SKILL_Q = """
@@ -829,14 +976,10 @@ async def kg_catalog():
 
 
 def _author_skill(sid, values, body, create=False):
-    driver = _kg()
-    try:
-        with driver.session() as session:
-            return skill_graph.write(session, SKILL_Q, sid, values, create=create,
-                expected_revision=body.get('revision'), request_id=body.get('request_id'),
-                by=str(body.get('by') or '지식 관리자'))
-    finally:
-        driver.close()
+    with _shared_graph().session() as session:
+        return skill_graph.write(session, SKILL_Q, sid, values, create=create,
+            expected_revision=body.get('revision'), request_id=body.get('request_id'),
+            by=str(body.get('by') or '지식 관리자'))
 
 
 @app.put("/api/kg/skills/{sid}")
@@ -845,7 +988,7 @@ async def kg_update_skill(sid: str, body: dict):
         values = kgadmin.validate_skill(body)
         out = await asyncio.get_running_loop().run_in_executor(None, lambda: _author_skill(sid, values, body))
     except KeyError:
-        raise HTTPException(404, 'no such skill')
+        raise HTTPException(404, f'조치 방법(스킬) {sid} 이(가) 지식 그래프에 없습니다') from None
     except skill_graph.Conflict as error:
         raise HTTPException(409, str(error))
     except ValueError as error:
@@ -904,10 +1047,6 @@ mcp_registry.mount(app, runtime_factory=instance_mode.current, audit=_audit)
 # G2 (전체 과정 랩업): MCP 설정의 ${SECRET:KEY} 값 — 쓰기만 하고 돌려주지 않는다 (procsvc/mcp_secrets.py)
 from . import mcp_secrets
 mcp_secrets.mount(app, runtime_factory=instance_mode.current, audit=_audit)
-
-# Browser consent belongs to the external service; no portal login is added.
-from . import mcp_oauth
-mcp_oauth.mount(app, runtime_factory=instance_mode.current, audit=_audit)
 
 # A11 데이터 패브릭 미니: 업무 DB · 시계열 DB 읽기 전용 묶어 보기 (전용 읽기 계정만, fabric_api.py)
 from . import fabric_api
@@ -1030,12 +1169,22 @@ async def scenario_start(key: str, body: dict | None = None):
         raise HTTPException(404, f"모르는 시나리오 {key}")
     person = scenario_buttons.who(body)
     button = scenario_buttons.SCENARIOS[key]["button"]
+    spec = scenario_buttons.SCENARIOS[key]
     async with _scenario_lock(key):
+        # 거절 검사를 기준점보다 먼저(P5-18 · P4-24) — 거절된 누름은 업무 시각을 바꾸지 않고, 감사 기록에 그 까닭으로 남는다
+        try:
+            await asyncio.to_thread(scenario_buttons.refusal, key, instance_mode.enterprise_read, rt, _scenario_route)
+        except scenario_buttons.Refused as e:
+            _press_audit(spec["asset"], person, button, key, datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                         instance=None, error=str(e), refused=True, reanchored=False)
+            raise HTTPException(409, str(e)) from None
         reanchor = await _reanchor_if_idle(rt, button)
         try:
             prep = await asyncio.to_thread(scenario_buttons.prepare, key, instance_mode.enterprise_read, rt, _scenario_route, person)
-        except scenario_buttons.Refused as e:
-            raise HTTPException(409, str(e))
+        except scenario_buttons.Refused as e:          # 기준점을 옮긴 뒤의 업무 값이 거절 조건에 들었다(드묾) — 옮긴 것까지 남긴다
+            _press_audit(spec["asset"], person, button, key, datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                         instance=None, error=str(e), refused=True, **_reanchor_audit(reanchor))
+            raise HTTPException(409, str(e)) from None
         alert = prep["alert"]
         try:
             await _admit_alert(alert)
@@ -1069,6 +1218,12 @@ async def scenario_reset(key: str, body: dict | None = None):
     spec = scenario_buttons.SCENARIOS[key]
     person = scenario_buttons.who(body)
     async with _scenario_lock(key):          # [정기 점검] · [재고 보충]의 검사~접수 도중에 업무 값을 바꾸지 않게
+        try:
+            await asyncio.to_thread(scenario_buttons.reset_refusal, rt, key)
+        except scenario_buttons.Refused as e:
+            _press_audit(spec["asset"], person, "초기화", key, datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                         instance=None, error=str(e), refused=True, reanchored=False)
+            raise HTTPException(409, str(e)) from None
         await asyncio.to_thread(_entsim_post, *spec["reset"])
         reanchor = await _reanchor_if_idle(rt, "초기화")
         at = datetime.now(timezone.utc).isoformat(timespec="seconds")
@@ -1109,16 +1264,16 @@ async def scenario_a_button(act: str, body: dict | None = None):
             "plant": res, "reanchored": reanchor["moved"], "reanchor": reanchor}
 
 
+def _route_error(e: ServiceRefused) -> HTTPException:
+    """수업 버튼 라우트의 바깥 서비스 실패 → 그 서비스의 거절(400 · 404 · 409)은 같은 코드, 그 밖(닿지 않음 · 5xx)은 502 — 사유는 그대로."""
+    return HTTPException(e.status if e.status in (400, 404, 409) else 502, str(e))
+
+
 def _plant_post(path: str, body: dict) -> dict:
-    req = urllib.request.Request(instance_mode.PLANT_SIM_URL.rstrip("/") + path, data=json.dumps(body, ensure_ascii=False).encode(),
-                                 headers={"Content-Type": "application/json"}, method="POST")
     try:
-        with urllib.request.urlopen(req, timeout=10) as r:
-            return json.loads(r.read())
-    except urllib.error.HTTPError as e:
-        raise HTTPException(e.code if e.code in (400, 404, 409) else 502, f"plant-sim {path}: {e.read().decode(errors='replace')[:300]}")
-    except OSError as e:
-        raise HTTPException(502, f"plant-sim {path} 응답 없음: {e}")
+        return _service_json(instance_mode.PLANT_SIM_URL, "설비 시뮬레이터(plant-sim)", path, body)
+    except ServiceRefused as e:
+        raise _route_error(e) from None
 
 
 def _link_injection(inst: dict) -> None:
@@ -1134,15 +1289,10 @@ def _link_injection(inst: dict) -> None:
 
 
 def _entsim_post(path: str, body: dict) -> dict:
-    req = urllib.request.Request(ENTERPRISE_URL + path, data=json.dumps(body, ensure_ascii=False).encode(),
-                                 headers={"Content-Type": "application/json", **instance_mode.caller_headers()}, method="POST")
     try:
-        with urllib.request.urlopen(req, timeout=10) as r:
-            return json.loads(r.read())
-    except urllib.error.HTTPError as e:
-        raise HTTPException(e.code if e.code in (400, 404, 409) else 502, f"enterprise-sim {path}: {e.read().decode(errors='replace')[:300]}")
-    except OSError as e:
-        raise HTTPException(502, f"enterprise-sim {path} 응답 없음: {e}")
+        return _enterprise(path, body)
+    except ServiceRefused as e:
+        raise _route_error(e) from None
 
 
 from . import human_alert
@@ -1152,60 +1302,59 @@ human_alert.register(app, runtime_factory=instance_mode.current, admit=_admit_al
 
 
 # ---------------------------------------------------------------- 인제스천 (회의 2번 · 6번): 회사 DB 의 DDL → System · InputData, 되돌리기, 규칙 → SQL
-@app.post("/api/kg/ddl/preview")
-async def kg_ddl_preview(body: dict):
-    """body = {filename, text}. Parses CREATE TABLE statements and proposes the ontology plan
-    (System per source system, InputData per selected column with provenance). Nothing is written.
-    포털은 파일 내용을 글(text)로 읽어 보낸다 — 예전 base64(data) 갈래는 읽는 함수가 없어 부르면 내부 오류가 났다(지움)."""
+from hydcommon.fabric import DDL_SOURCES as _fabric_ddl_sources, SOURCES as _fabric_sources
+
+
+def _ddl_preview(body: dict) -> dict:
+    """미리보기 한 번(쓰지 않음): CREATE TABLE 해석 → 출처 시스템 · 입력 데이터 계획 + 옛 DB 뜻 요약 + 지금 그래프의 시스템 목록.
+    해석은 큰 DDL 에서 몇 초가 걸리므로 이벤트 루프가 아니라 이 함수(작업 스레드)에서 돈다(P5-03)."""
     name = str(body.get("filename") or "schema.sql")
-    loop_ = asyncio.get_running_loop()
     text = body.get("text")
     if not isinstance(text, str) or not text.strip():
         raise HTTPException(400, "DDL 파일 내용이 비어 있습니다 — CREATE TABLE 문이 든 .sql 파일을 다시 고르세요")
     try:
-        tables = ingest.parse_ddl(text)
+        course_policy.within_text_max(text, 'DDL 파일')
+    except course_policy.AccessDenied as e:
+        raise HTTPException(400, f"{e} 가져올 표의 CREATE TABLE 문만 남긴 .sql 파일로 다시 고르세요") from None
+    try:
+        from . import ddl_sync
+        from .procdb import SUPABASE_DSN
+        tables, datasource, where = ddl_sync.place(text, body.get("datasource"),
+                                                   lambda: psycopg.connect(SUPABASE_DSN, connect_timeout=5))
         legacy = legacy_meaning.summary(tables, text)          # A9: columns without a meaning and the dump's sample rows
         review = _legacy.review_for(body.get("meaning_review"), text)
         refl = legacy_meaning.apply_comments(tables, review["review"]) if review else None
         plan = ingest.plan(tables, filename=name, batch=ingest.new_batch_id("ddl"),
                            selection=body.get("selection"), systems=body.get("systems"),
-                           datasource=body.get("datasource", "hyd-enterprise"), catalog=body.get("catalog", "postgres"))
+                           datasource=datasource, catalog=body.get("catalog", "postgres"))
         plan["legacy"] = legacy
+        plan["sourceNotes"] = where
+        plan["sourceOptions"] = [{"id": d, "label": _fabric_sources[d]["label"], "schema": _fabric_sources[d]["schema"]}
+                                 for d in _fabric_ddl_sources]
         if review:
             plan["meaningReview"] = _legacy.applied(plan, review, refl)
     except (ValueError, TypeError) as e:
-        raise HTTPException(400, str(e))
+        raise HTTPException(400, str(e)) from None
     if not tables:
-        raise HTTPException(400, "CREATE TABLE 문을 찾지 못했다")
-    systems = await loop_.run_in_executor(None, lambda: _q("MATCH (s:System) RETURN s.id AS id, s.name AS name, s.zone AS zone ORDER BY s.id"))
-    plan["existingSystems"] = systems
+        raise HTTPException(400, "CREATE TABLE 문을 찾지 못했습니다 — 표 정의(CREATE TABLE)가 든 .sql 파일인지 확인하세요")
+    plan["existingSystems"] = _q("MATCH (s:System) RETURN s.id AS id, s.name AS name, s.zone AS zone ORDER BY s.id")
     plan["chars"] = len(text)
     return plan
 
 
-@app.post("/api/kg/ddl/sync")
-async def kg_ddl_sync():
-    """A087: poll the live business catalog now; physical inputs whose column vanished or changed type are marked."""
-    try:
-        return await asyncio.get_running_loop().run_in_executor(None, _ddl_sync_once)
-    except Exception as e:  # noqa: BLE001
-        raise HTTPException(502, f"원천 카탈로그 동기화 실패: {str(e)[:200]}")
-
-
-@app.post("/api/kg/scm/sync")
-async def kg_scm_sync():
-    """A089: apply the business database's supplier master data to the graph now."""
-    try:
-        return await asyncio.get_running_loop().run_in_executor(None, _scm_sync_once)
-    except Exception as e:  # noqa: BLE001
-        raise HTTPException(502, f"SCM 원천 동기화 실패: {str(e)[:200]}")
+@app.post("/api/kg/ddl/preview")
+async def kg_ddl_preview(body: dict):
+    """body = {filename, text}. Parses CREATE TABLE statements and proposes the ontology plan
+    (System per source system, InputData per selected column with provenance). Nothing is written.
+    포털은 파일 내용을 글(text)로 읽어 보낸다 — 예전 base64(data) 갈래는 읽는 함수가 없어 부르면 내부 오류가 났다(지움)."""
+    return await asyncio.get_running_loop().run_in_executor(None, _ddl_preview, body)
 
 
 @app.post("/api/kg/ddl/commit")
 async def kg_ddl_commit(body: dict):
     """body = the preview plan (possibly edited: selection/systems) + {by}. Applies the ownership journal and nodes in one transaction."""
     if not body.get("inputs") and not body.get("systems"):
-        raise HTTPException(400, "적재할 시스템 · 입력 데이터가 없다")
+        raise HTTPException(400, "적재할 시스템 · 입력 데이터가 없습니다 — 미리보기에서 표 · 열을 하나 이상 고르세요")
     by = str(body.get("by") or "지식 관리자")
     plan = {"batch": body.get("batch") or ingest.new_batch_id("ddl"), "filename": body.get("filename", "schema.sql"),
             "systems": body.get("systems") or [], "inputs": body.get("inputs") or []}
@@ -1217,7 +1366,7 @@ async def kg_ddl_commit(body: dict):
         raise HTTPException(400, str(e))
 
     def run():
-        with _kg() as drv, drv.session() as session:
+        with _shared_graph().session() as session:
             return graph_ingest.commit(session, plan)
     try:
         out = await asyncio.get_running_loop().run_in_executor(None, run)
@@ -1236,6 +1385,18 @@ async def kg_ddl_commit(body: dict):
     return out
 
 
+@app.post("/api/kg/scm-sync")
+async def scm_sync_now():
+    """업무 DB 의 공급사 · 견적을 지금 한 번 그래프로(60초 주기 반복과 같은 _scm_sync_once) — 수업 지식 적재(scripts/class_knowledge.py)가
+    매뉴얼을 넣기 전에 부른다(G3a-25 순서). 돌려줌 = 동기화 보고 그대로: missing_part(그래프에 없는 부품의 견적 '부품/공급사')가 남으면
+    부른 쪽이 그 좌표로 멈춘다. 업무 DB · 그래프를 못 읽으면 503 과 까닭."""
+    try:
+        return await asyncio.to_thread(_scm_sync_once)
+    except Exception as e:  # noqa: BLE001 — 까닭을 그대로 돌려 부른 쪽이 멈추게 한다(조용히 넘기지 않음)
+        log.exception("SCM source sync on request failed")
+        raise HTTPException(503, f"공급사 · 견적을 그래프로 옮기지 못했습니다({type(e).__name__}): {str(e)[:300]}") from None
+
+
 @app.get("/api/kg/ingests")
 async def kg_ingests():
     """Active batch claims by label; shared nodes may be retained or restored on clear."""
@@ -1246,7 +1407,7 @@ async def kg_ingests():
 async def kg_ingest_clear(batch: str, by: str = "지식 관리자"):
     """Release one batch's claims and restore the latest remaining revision atomically."""
     def run():
-        with _kg() as drv, drv.session() as session:
+        with _shared_graph().session() as session:
             return graph_ingest.clear(session, batch)
     try:
         out = await asyncio.get_running_loop().run_in_executor(None, run)
@@ -1258,82 +1419,3 @@ async def kg_ingest_clear(batch: str, by: str = "지식 관리자"):
         raise HTTPException(502, f"되돌리기 실패: {str(e)[:200]}")
     _audit("-", by, "INGEST_CLEARED", out)
     return out
-
-
-@app.post("/api/kg/rules/sql")
-async def kg_rule_sql(body: dict):
-    """회의 6번: a rule's threshold tests → the SQL that checks them against the ingested tables.
-    body = {rule: 'rule:…'} (TESTS read from the ontology) or {tests: [{variable, operator, value}]}."""
-    loop_ = asyncio.get_running_loop()
-    tests = body.get("tests")
-    if not tests and body.get("rule"):
-        tests = await loop_.run_in_executor(None, lambda: _q(
-            "MATCH (r:Rule {id: $id})-[t:TESTS]->(i:InputData) RETURN i.variable AS variable, t.operator AS operator, t.value AS value", id=body["rule"]))
-    if not tests:
-        raise HTTPException(400, "tests 또는 rule 이 필요하다")
-    inputs = await loop_.run_in_executor(None, lambda: _q(
-        "MATCH (i:InputData) WHERE i.table IS NOT NULL RETURN i.variable AS variable, i.datasource AS datasource, "
-        "i.catalog AS catalog, i.schema AS schema, i.table AS table, i.column AS column, i.assetColumn AS assetColumn, i.derive AS derive"))
-    mapped = {}
-    used = {t.get("variable") for t in tests}
-    for item in inputs:
-        if item["variable"] not in used:
-            continue
-        if item["variable"] in mapped and mapped[item["variable"]] != item:
-            raise HTTPException(409, "같은 변수가 여러 원천을 가리킵니다. 원천 정보를 다시 적재하세요")
-        mapped[item["variable"]] = item
-    try:
-        return ingest.tests_to_sql(tests, mapped)
-    except (ValueError, KeyError, TypeError) as e:
-        raise HTTPException(400, str(e))
-
-
-@app.get('/api/kg/ranking-policy/{rule}')
-async def kg_ranking_policy(rule: str):
-    def run():
-        with _kg() as driver, driver.session() as session:
-            return ranking_policy.read(session, rule)
-    try:
-        return await asyncio.get_running_loop().run_in_executor(None, run)
-    except KeyError as exc:
-        raise HTTPException(404, str(exc))
-    except skill_graph.Conflict as exc:
-        raise HTTPException(409, str(exc))
-
-
-@app.get('/api/kg/bsc/conditions')
-async def kg_bsc_conditions():
-    def run():
-        with _kg() as driver, driver.session() as session:
-            return bsc_conditions.read(session)
-    return await asyncio.get_running_loop().run_in_executor(None, run)
-
-
-@app.put('/api/kg/bsc/conditions/{edge}')
-async def kg_bsc_condition_write(edge: str, body: dict):
-    def run():
-        with _kg() as driver, driver.session() as session:
-            return bsc_conditions.write(session, edge, body)
-    try:
-        return await asyncio.get_running_loop().run_in_executor(None, run)
-    except skill_graph.Conflict as exc:
-        raise HTTPException(409, str(exc))
-    except KeyError as exc:
-        raise HTTPException(404, str(exc))
-    except (ValueError, TypeError) as exc:
-        raise HTTPException(400, str(exc))
-
-
-@app.put('/api/kg/ranking-policy/{rule}')
-async def kg_ranking_policy_write(rule: str, body: dict):
-    def run():
-        with _kg() as driver, driver.session() as session:
-            return ranking_policy.write(session, rule, body)
-    try:
-        return await asyncio.get_running_loop().run_in_executor(None, run)
-    except skill_graph.Conflict as exc:
-        raise HTTPException(409, str(exc))
-    except KeyError as exc:
-        raise HTTPException(404, str(exc))
-    except (ValueError, TypeError) as exc:
-        raise HTTPException(400, str(exc))

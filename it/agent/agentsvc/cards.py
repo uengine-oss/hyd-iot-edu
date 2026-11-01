@@ -13,12 +13,9 @@ from __future__ import annotations
 import hashlib
 import json
 from hydcommon import ranking, bsc
+from hydcommon.maintenance_policy import PM_PATTERN
+from hydcommon.skill_scope import PURCHASE_PATTERN, purchase_rule_problem
 
-STRENGTH_NOTE = "강도 high 1 · medium 0.6 · low 0.3 (경로의 곱), 조건부 경로는 절반"
-WARN_COST = 0.5
-PENALTY_SCALE = 20.0
-PRECEDENT_WEIGHT = 1.5
-FORECAST_REF, FORECAST_SPAN, FORECAST_CAP = 55.0, 3.0, 2.0
 STOP_MEASURES, REDUCE_MEASURES = {"msr:availability"}, {"msr:throughput", "msr:tp"}
 LOAD_DESIGN = 90.0                                                      # 정상 운전 부하 (thermal.py 설계점): 이보다 낮게 설정하면 감산
 
@@ -133,15 +130,27 @@ def candidate_facts(base: dict, skill: dict, forecasts: dict, suppliers: dict) -
 
 
 MAINTENANCE_ORDER = "WO_CREATE"      # 정비 작업지시 — 이 동작이 있는 카드만 정비 시점(창 · 즉시)을 가진다
+#: 다음 예정된 정비 시간(CMMS 정비 계획 · 운전시간 계수기 한 행의 이번 야간 창) — 완화 조치 카드의 작업지시가 가는 창
+NEXT_WINDOW = "hours_at_next_window"
+IMMEDIATE = {"immediate": True, "name": "즉시 (지금 정지하고 시행)", "label": "즉시"}
+
+
+def _commands(skill: dict) -> list[dict]:
+    return [a for a in skill.get("actions") or [] if a.get("code") and a.get("kind", "command") == "command"]
 
 
 def option_window(compliance: list[dict], sid: str, skill: dict, windows: dict | None) -> dict | None:
-    """C3: 카드가 고른 정비 시점. 일정 판단(사실에 windows_by_variable 이 있음)에서 이 카드에만 걸린 규정이 시험하는 변수가 가리키는
-    예정된 정비 시간을 카드에 싣는다(예: 이번 정비 시간의 운전시간 → 이번 창, 미룬 정비 시간의 운전시간 → 그다음 창).
-    어떤 창 변수도 시험하지 않는 정비 카드(정비 작업지시 WO_CREATE 를 내는 작업지시 카드)는 '즉시'다. 정비 작업이 없는 카드 — 예: 발주만 하는
-    구매 카드 — 에는 정비 시점이 없다. 일정 판단이 아니면 None(작업지시는 흐름의 window_var 를 쓴다)."""
-    if not isinstance(windows, dict) or not windows:
-        return None
+    """카드의 정비 작업지시가 언제 시행되는가 — 정비 시점은 이 함수 한 곳이 정하고, 예측(지금 정지) · 생산 영향 · 손익 · 실제 작업지시
+    (process 가 승인한 카드의 window 를 CMMS 요청에 싣는다, procsvc/instances._run_work_order)가 모두 이 값을 읽는다(검진 G1-05 · 06).
+
+      ① 이 카드에만 걸린 규정이 시험하는 창 변수(windows_by_variable)가 있으면 그 예정된 정비 시간(C3 정기 정비: 이번 창 · 미룬 창).
+      ② 정지 명령(STOP)과 작업지시를 함께 내는 카드는 「명시 정지 명령 뒤 즉시 정비」.
+      ③ 지금 설비 설정을 바꾸는 완화 조치(명령)와 작업지시를 함께 내는 카드(예: SOP-COOL-13 「부하 70 %와 야간 핀 세척」)는 완화한 채
+         운전하다 다음 예정된 정비 시간(NEXT_WINDOW)에 작업한다 — 그 창을 모르면 시점을 지어내지 않고 None.
+      ④ 작업지시만 내는 카드(예: SOP-COOL-14 쿨러 핀 세척 「설비를 정지하고 … LOTO」, SOP-PM-12 「지금 바로 정지하고 시행」)는 지금
+         설비를 세우고 시행한다(즉시).
+    작업지시가 없는 카드(명령만 · 발주만)에는 정비 시점이 없다(None)."""
+    windows = windows if isinstance(windows, dict) else {}
     for r in compliance:
         if not (r.get("applies") and sid in r["applies"]):
             continue
@@ -149,16 +158,30 @@ def option_window(compliance: list[dict], sid: str, skill: dict, windows: dict |
             w = windows.get(t.get("variable"))
             if isinstance(w, dict) and w.get("id"):
                 return dict(w, basis=t.get("variable"))
-    if skill.get("kind") == "work_order" and any(a.get("code") == MAINTENANCE_ORDER for a in skill.get("actions") or []):
-        return {"immediate": True, "name": "즉시 (지금 정지하고 시행)", "label": "즉시"}
-    return None
+    if not any(a.get("code") == MAINTENANCE_ORDER for a in skill.get("actions") or []):
+        return None
+    commands = _commands(skill)
+    if any(a["code"] == "STOP" for a in commands):
+        return dict(immediate=True, label="즉시", name="명시 정지 명령 뒤 즉시 정비")
+    if commands:
+        w = windows.get(NEXT_WINDOW)
+        return dict(w, basis=NEXT_WINDOW) if isinstance(w, dict) and w.get("id") else None
+    return dict(IMMEDIATE)
+
+
+def stops_now(window: dict | None) -> bool:
+    """이 카드가 지금 설비를 세우는가(작업지시를 지금 시행) — 예측은 정지한 설비로, 생산 영향은 정지로 본다."""
+    return bool(isinstance(window, dict) and window.get("immediate"))
 
 
 def production_effect(o: dict) -> str:
-    """What the card does to production, read from its PLC commands: a STOP command = stop, a load set-point under the
-    design load = reduce, any other command = keep. A card without commands (work order only) falls back to its BSC losses
-    (availability loss = stop, throughput loss = reduce). Live check 2026-10-04: judging every card by BSC losses marked all
-    three cooler cards 'stop' because each lists 생산량·가동률 ↓ in its trade-offs."""
+    """What the card does to production: a card that stops the plant now (a STOP command, or a work order done now —
+    option_window) = stop, a load set-point under the design load = reduce, any other command = keep. A card without
+    commands or work order (a purchase) falls back to its BSC losses (availability loss = stop, throughput loss = reduce).
+    Live check 2026-10-04: judging every card by BSC losses marked all three cooler cards 'stop' because each lists
+    생산량·가동률 ↓ in its trade-offs. 2026-10-30 검진 G1-05: 「지금 정지하고 세척」 카드가 명령이 없다고 'keep' 이 되어 납기 가점을 받았다."""
+    if stops_now(o.get("window")):
+        return "stop"
     commands = {a.get("code"): a.get("value") for a in o.get("actions") or [] if a.get("code") and a.get("kind", "command") == "command"}
     if commands:
         if "STOP" in commands:
@@ -194,15 +217,15 @@ def rank_policy(rules, facts):
     matches = []
     for rule in rules:
         if rule['effect'] != 'RANK':
-            raise ValueError('ranking table contains a non-RANK rule')
+            raise ValueError(f'순위 결정표에 순위(RANK)가 아닌 규칙 {rule.get("rule")}이(가) 있습니다 — 지식의 결정표를 확인하세요')
         fired, unknown = rule_fires(rule, facts) if rule.get('tests') else (True, [])
         if unknown and not any(test_ok(t, facts) is False for t in rule['tests']):
-            raise ValueError('ranking rule input is unknown: ' + ', '.join(unknown))
+            raise ValueError('순위 규칙을 고를 입력값이 미확인입니다: ' + ', '.join(unknown))
         if fired:
             matches.append(rule)
     if len(matches) != 1:
         # UNIQUE (EXECUTED_HIT_POLICIES): two applicable ranking policies are a table error, not a choice
-        raise ValueError('exactly one applicable executable ranking rule is required')
+        raise ValueError(f'지금 사실에 맞는 순위 규칙이 정확히 하나여야 하는데 {len(matches)}개입니다 — 지식의 순위 결정표를 확인하세요')
     return matches[0], ranking.validate(matches[0].get('rankingPolicy'))
 
 
@@ -240,9 +263,9 @@ def scoped_skills(pattern: str, skills: dict[str, dict], purchase_part: str | No
     """
     if any(s.get('kind') == 'reference' or s.get('executable') is False for s in skills.values()):
         skills = {sid:s for sid,s in skills.items() if s.get('kind') != 'reference' and s.get('executable') is not False}
-    if pattern == 'PM_DUE':
+    if pattern == PM_PATTERN:
         return {sid: skill for sid, skill in skills.items() if skill.get('scope') != 'purchase' and skill.get('relation') == 'PREVENTED_BY'}
-    if pattern != 'SPARE_BELOW_MIN':
+    if pattern != PURCHASE_PATTERN:
         if any(k.get('scope') == 'purchase' for k in skills.values()):
             return {sid: skill for sid, skill in skills.items() if skill.get('scope') != 'purchase'}
         return skills
@@ -261,6 +284,47 @@ def scoped_skills(pattern: str, skills: dict[str, dict], purchase_part: str | No
                     for a in skill.get('actions') or [])}
 
 
+def _known_false(rule: dict, known: dict) -> bool:
+    """이미 아는 사실(경보 종류 · 원인 · 고장 유형)로 시험 하나가 거짓이면 이 규칙은 맞을 수 없다(AND)."""
+    return any(test_ok(t, known) is False for t in rule.get('tests') or [])
+
+
+def candidate_skills(dmn: list[dict], skills: dict[str, dict], known: dict) -> dict[str, dict]:
+    """이미 아는 사실로 거짓이 아닌 후보 선택 규칙이 내놓을 수 있는 스킬(원인 한정 스킬은 그 원인일 때만) — evaluate 와 같은 거름."""
+    tables = _by_decision(dmn)
+    scoped = scoped_skills(known.get('pattern'), skills, known.get('purchase_part'))
+    out: dict[str, dict] = {}
+    for r in tables.get('dec:action-candidates', []):
+        if _known_false(r, known):
+            continue
+        for sid in r.get('outputs') or []:
+            k = scoped.get(sid)
+            if k is not None and (not k.get('addresses') or known.get('cause') in k['addresses']):
+                out[sid] = k
+    return out
+
+
+def needed_variables(dmn: list[dict], skills: dict[str, dict], known: dict) -> set[str]:
+    """이 판단이 원천에서 읽어야 하는 판단 변수: 맞을 수 있는 후보 규칙 · 그 후보에 걸리는 규정 · 순위 정책 입력(구매 총비용 비교가 아닐
+    때) · 작업지시 카드의 정비 시점(NEXT_WINDOW). 성과 지표 경로의 조건 문장은 사실로 해석하지 않는다(조건부 득실, hydcommon.bsc). 판단이 쓰지 않는 사실은 읽지 않는다 — 냉각 판단 근거에
+    펌프 씰 재고가 실리고, 쓰지도 않는 업무 원천이 끊겨도 판단이 멈췄다(검진 G1-24 · H-8)."""
+    tables = _by_decision(dmn)
+    candidates = candidate_skills(dmn, skills, known)
+    need: set[str] = set()
+    for r in tables.get('dec:action-candidates', []):
+        if not _known_false(r, known):
+            need.update(t.get('variable') for t in r.get('tests') or [])
+    for r in tables.get('dec:compliance', []):
+        if any(compliance_applies(r, k) for k in candidates.values()):
+            need.update(t.get('variable') for t in r.get('tests') or [])
+    if not known.get('purchase_part'):
+        need |= ranking_variables(dmn)
+    if any(any(a.get('code') == MAINTENANCE_ORDER for a in k.get('actions') or []) for k in candidates.values()):
+        need.add(NEXT_WINDOW)
+    need.discard(None)
+    return need
+
+
 def evaluate(dmn: list[dict], skills: dict[str, dict], base_facts: dict, forecasts: dict[str, dict], tradeoffs: list[dict],
              precedents: list[dict], suppliers: dict[str, dict], forecast_contexts: dict | None = None,
              measure_weights: dict[str, float] | None = None, *, evaluation_mode: str = 'rule_analysis') -> dict:
@@ -276,8 +340,9 @@ def evaluate(dmn: list[dict], skills: dict[str, dict], base_facts: dict, forecas
     selected_by: dict[str, list[dict]] = {}
     for r in tables.get("dec:action-candidates", []):
         if base_facts.get('purchase_part') and any(sid in skills for sid in r.get('outputs') or []):
-            if not any(t.get('variable') == 'pattern' and t.get('operator') == '==' and t.get('value') == 'SPARE_BELOW_MIN' for t in r.get('tests') or []):
-                raise ValueError('명시 구매 범위의 후보 규칙에는 pattern == SPARE_BELOW_MIN 조건이 필요합니다')
+            problem = purchase_rule_problem(r.get('tests'))
+            if problem:
+                raise ValueError(f"{r['rule']}: {problem}")
         fired, unknown = rule_fires(r, base_facts)
         trace.append({"decision": "dec:action-candidates", "rule": r["rule"], "when": r.get("when"), "fired": fired, "unknown": unknown})
         if fired and r["effect"] == "SELECT":
@@ -354,18 +419,14 @@ def evaluate(dmn: list[dict], skills: dict[str, dict], base_facts: dict, forecas
              "precedent": {"n": p["n"], "share": round(p["n"] / total_prec, 2), "reasons": p.get("reasons") or []} if p and total_prec else None,
              "facts": {k2: cf[k2] for k2 in ("forecast_ts1", "forecast_ps1", "skill_kind", "skill_code", "supplier_avl",
                                              "po_amount", "lead_slack_days", "supplier_fail_rate") if k2 in cf}}
-        o["production"] = production_effect(o)
         window = option_window(tables.get("dec:compliance", []), sid, k, base_facts.get("windows_by_variable"))
-        if base_facts.get('pattern') == 'PM_DUE' and evaluation_mode == 'execution' and window is None \
-                and any(a.get('code') == 'STOP' and a.get('kind') == 'command' for a in k.get('actions') or []) \
-                and any(a.get('code') == 'WO_CREATE' for a in k.get('actions') or []):
-            window = dict(immediate=True,label='즉시',name='명시 정지 명령 뒤 즉시 정비')
         if window:
             o["window"] = window
-        if base_facts.get('pattern') == 'PM_DUE' and evaluation_mode == 'execution':
+        o["production"] = production_effect(o)
+        if base_facts.get('pattern') == PM_PATTERN and evaluation_mode == 'execution':
             from hydcommon.maintenance_plan import plan
             try:
-                o['maintenancePlan'] = plan(k, base_facts, window)
+                o['maintenancePlan'] = plan(k, base_facts, window, tables.get('dec:compliance', []))
             except ValueError as exc:
                 if getattr(exc,'diagnostics',None):
                     o['maintenanceDiagnostics']=exc.diagnostics
@@ -436,6 +497,11 @@ def same_orders(options: list[dict]) -> None:
                 o['sameOrderAs'] = [{'id': x['id'], 'sopId': x.get('sopId')} for x in same if x is not o]
 
 
+def _clause(text) -> str:
+    """이어 붙일 문장 조각: 끝의 마침표를 떼어 「.;」 · 「..」가 생기지 않게 한다(검진 G1-18)."""
+    return str(text or '').strip().rstrip('.')
+
+
 def _names(xs: list[dict], n: int = 3) -> str:
     return ", ".join(f"{x['name']} {'↑' if x['dir'] == 1 else '↓'}" + (f" [{x['owner']}]" if x.get("owner") else "") for x in xs[:n])
 
@@ -450,10 +516,12 @@ def explain(options: list[dict], rec: dict | None, facts: dict, fired: list[str]
         return "이 고장 유형에 맞는 조치 후보가 없다 (후보 선택 규칙이 맞지 않음)."
     head = f"{subject} — 후보 {len(options)}장"
     if not rec:
-        return head + " 모두 규정상 제외됐다: " + "; ".join(f"{o['sopId']} {o['name']} ({o['violations'][0]['annotation']})" for o in options)
+        return head + " 모두 규정상 제외됐다: " + "; ".join(f"{o['sopId']} {o['name']} ({_clause(o['violations'][0]['annotation'])})" for o in options) + "."
     fc = next((x for x in rec["forecast"] if x["variable"] == "sv:ts1"), None)
     label = rec['name'] if str(rec['name']).startswith(str(rec['sopId'])) else f"{rec['sopId']} {rec['name']}"   # 변경안 이름은 절차 번호로 시작한다
-    parts = [f"{head} 중 '{label}'{_obj(rec['name'])} 권한다 (점수 {rec['score']})."]
+    basis = (f"비교 총비용 {rec['economicComparison']['total_cost']:g}만 원" if rec.get('economicComparison')
+             else f"점수 {rec['score']:g}")       # 구매 카드의 점수는 총비용의 음수다 — 「점수 -420.0」 대신 그 뜻으로
+    parts = [f"{head} 중 '{label}'{_obj(rec['name'])} 권한다 ({basis})."]
     if rec.get('economicComparison'):
         e=rec['economicComparison']
         parts.append(f"구매금액 {e['purchase_amount']:g} + 기대 불량비용 {e['expected_failure_cost']:g} + 전수 검사비용 {e['inspection_cost']:g} = 비교 총비용 {e['total_cost']:g}만 원. 실제 부품별 총비용이 낮은 순서로 비교했다.")
@@ -466,14 +534,14 @@ def explain(options: list[dict], rec: dict | None, facts: dict, fired: list[str]
                 parts.append(f"{names}은 같은 공급사({o['economicComparison']['supplier']}) · 같은 수량 · 같은 총비용의 같은 발주다"
                              "(절차 단계만 다르다). 이 카드들의 앞뒤는 총비용 차이가 아니라 승인 수준과 후보 규칙에 적힌 순서다.")
     if fc:
-        parts.append(f"예측 유온 {fc['value']} {fc['unit']}.")
+        parts.append(f"예측 유온 {fc['value']:.1f} {fc['unit']}" + (" (지금 정지한 설비)." if stops_now(rec.get('window')) else "."))
     if rec["gains"]:
         parts.append("득: " + _names(sorted(rec["gains"], key=lambda g: -g["weight"])) + ".")
     if rec["losses"]:
         parts.append("실: " + _names(sorted(rec["losses"], key=lambda g: -g["weight"])) + ".")
     out = [o for o in options if not o["feasible"]]
     if out:
-        parts.append("제외: " + "; ".join(f"'{o['name']}' — {o['violations'][0]['annotation']}" for o in out) + ".")
+        parts.append("제외: " + "; ".join(f"'{o['name']}' — {_clause(o['violations'][0]['annotation'])}" for o in out) + ".")
     if rec["precedent"]:
         parts.append(f"같은 고장 유형에서 사람이 이 안을 고른 선례 {rec['precedent']['n']}건 ({int(rec['precedent']['share'] * 100)} %).")
     delivery = rec['scoreParts'].get('delivery', 0)

@@ -16,20 +16,20 @@ from urllib.parse import quote
 from fastapi import HTTPException
 from pydantic import BaseModel
 
+from hydcommon.maintenance_policy import PM_PATTERN
 from hydcommon.metrics import Registry
+from hydcommon.skill_scope import PURCHASE_PATTERN
 from hydcommon.service import make_app
 from . import card as cardlib, decide as decidelib, guardrail, whatif
-from .runs import RunRegistry
+from .runs import Run
 from .tools import mcp_ent, mcp_kg, mcp_prom, mcp_tsdb
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 log = logging.getLogger("agent")
-PROCESS_URL = os.getenv("PROCESS_URL", "http://process:8080")
+PROCESS_URL = decidelib.PROCESS_URL
 
 reg = Registry()
-c_runs = reg.counter("agent_runs_total", "agent runs by status")
-runs = RunRegistry()
-state = {"neo4j": False, "runs": 0}
+state = {"runs": 0}
 kg: mcp_kg.KnowledgeGraph | None = None
 tsdb = mcp_tsdb.TimeSeriesDB()
 decisions = decidelib.DecisionRegistry("agent")
@@ -44,19 +44,17 @@ def pipeline(run) -> None:
         run.step('alert_policy',policy,note='프로세스 정의의 경보 지원 범위/사람 검토 경로')
         if policy.get('route')!='response':
             run.finish('WITHHELD','이 경보는 명시된 사람 검토 경로에서 확인합니다')
-            c_runs.inc(status='WITHHELD')
             return
         # 1. data trust (mcp-prom)
         fresh = mcp_prom.freshness(tsdb, asset)
         run.step("freshness", fresh, note="mcp-prom: 데이터 신선도·수집 상태")
         if not fresh["ok"]:
-            run.card = {"incident": None, "alert": alert, "freshness": fresh, "causes": [], "recommended": [], "citations": [],
+            run.card = {"incident": None, "alert": alert, "freshness": fresh, "causes": [], "citations": [],
                         "summary": f"데이터 신뢰 불가: {fresh['reason']}. 추론을 보류합니다."}
             run.finish("WITHHELD")
-            c_runs.inc(status="WITHHELD")
             return
         # 2. T1 cause candidates (mcp-kg)
-        t1 = kg.t1_causes(alert.get("pattern", ""), asset)
+        t1 = kg.t1_causes(alert.get("pattern", ""))
         t1, human = cardlib.with_human_evidence(t1, alert)       # B7: 사람 입력 경보(오일 분석)는 입력한 결과가 증거
         run.step("t1_causes", [{k: r.get(k) for k in ("causeId", "cause", "prior", "failureMode")} | {"evidence": [e["id"] for e in r.get("evidence") or []]} for r in t1],
                  note="mcp-kg T1: 경보 패턴 → 증상 → 고장모드 → 원인 후보 + 증거 규칙"
@@ -71,7 +69,6 @@ def pipeline(run) -> None:
             run.card = cardlib.build_card(None, alert, causes, {}, fresh)
             run.step('evidence_assessment', assessment, note=assessment['reason'])
             run.finish('WITHHELD', assessment['reason'])
-            c_runs.inc(status='WITHHELD')
             return
         run.step("rank", [{"id": c["id"], "name": c["name"], "score": c["score"], "prior": c["prior"]} for c in causes],
                  note="원인 점수 = 사전확률 × 통과 증거 가중치 비율")
@@ -81,21 +78,16 @@ def pipeline(run) -> None:
                                 "actions": [f"{a['code']}={a.get('value')}" for a in r.get("actions") or []], "steps": len(r.get("steps") or [])}
                                for r in next(iter(t2.values()), [])],
                  note="mcp-kg T2: 원인 → 고장 유형 → 조치 방법(스킬 = SOP) → 원자 조치 · 단계 · 매뉴얼 절")
-        # 5. card (+ optional LLM narrative)
+        # 5. card — 원인 · 근거 · 조치 방법 목록(문장은 엔진 틀 — 모델을 부르지 않는다)
         card = cardlib.build_card(None, alert, causes, t2, fresh)
-        # Classroom AI runs through the checked worker. A direct legacy HTTP
-        # evaluation must not create a second, unguarded model request.
-        summary, source = card["summary"], "template"
-        card["summary"], card["summarySource"] = summary, source
-        run.step("card", {"summary": summary, "source": source, "citations": card["citations"]}, note="가이드 카드 조립 (근거 노드 ID 인용)")
+        run.step("card", {"summary": card["summary"], "citations": card["citations"]}, note="가이드 카드 조립 (근거 노드 ID 인용)")
         # 6. guardrail
         violations = guardrail.check(card)
         run.step("guardrail", {"violations": violations}, status="DONE" if not violations else "FAILED",
-                 note="가드레일: 인용 누락·범위 밖 파라미터·명령 필드 금지")
+                 note="가드레일: 인용 누락 · 미확인 근거 · 명령 칸 금지")
         run.card = card
         if violations:
             run.finish("REJECTED_BY_GUARDRAIL", "; ".join(violations))
-            c_runs.inc(status="REJECTED_BY_GUARDRAIL")
             log.warning("run %s rejected by guardrail: %s", run.id, violations)
             return
         d = decidelib.decide(kg, decisions, tsdb, asset, alert.get('pattern',''), causes[0], do_submit=False,
@@ -114,11 +106,15 @@ def pipeline(run) -> None:
         log.exception("run %s failed", run.id)
         run.step("error", {"error": str(e)}, status="FAILED")
         run.finish("FAILED", str(e))
-        c_runs.inc(status="FAILED")
 
 
-app = make_app("agent (L8: ontology-grounded guide cards, read-only tools)", reg,
-               lambda: {**state, "ok": kg is not None and state["neo4j"]})
+def health() -> dict:
+    """지식 그래프에 지금 닿는지 물을 때마다 잰다 — 켜질 때 한 번만 재면 Neo4j보다 먼저 뜬 날(PC · Docker 재시작) 영영 503이다."""
+    up = kg is not None and kg.ping()
+    return {**state, "neo4j": up, "ok": up, **({} if up else {"neo4j_error": kg.ping_error if kg is not None else "아직 켜지는 중"})}
+
+
+app = make_app("agent (L8: ontology-grounded guide cards, read-only tools)", reg, health)
 
 
 class EvaluationReq(BaseModel):
@@ -130,7 +126,7 @@ def evaluate_without_submission(req: EvaluationReq):
     if (req.alert.get('state')!='RAISE' or any(not isinstance(req.alert.get(k),str) or not req.alert[k]
                                              for k in ('alertId','asset','pattern'))):
         raise HTTPException(400,'원천 RAISE 경보의 ID/설비/패턴이 필요합니다')
-    run = runs.new(req.alert)
+    run = Run.new(req.alert)
     state['runs'] += 1
     pipeline(run)
     return run.to_dict()
@@ -159,20 +155,6 @@ def agent_trial(req: TrialReq):
 async def _startup():
     global kg
     kg = mcp_kg.KnowledgeGraph()
-    state["neo4j"] = await asyncio.to_thread(kg.ping)
-
-
-@app.get("/api/agent/runs")
-def list_runs():
-    return [r.to_dict() | {"card": None, "steps": [{"name": s["name"], "status": s["status"], "t": s["t"]} for s in r.steps]} for r in runs.all()]
-
-
-@app.get("/api/agent/runs/{run_id}")
-def get_run(run_id: str):
-    r = runs.get(run_id)
-    if not r:
-        raise HTTPException(404, "no such run")
-    return r.to_dict()
 
 
 # ---------------------------------------------------------------- L7/L8 endpoints for the portal
@@ -185,7 +167,7 @@ class DecideReq(BaseModel):
 
 def _kg():
     if kg is None:
-        raise HTTPException(503, "knowledge graph not connected yet")
+        raise HTTPException(503, "agent 가 아직 켜지는 중이라 지식 그래프에 연결하지 않았습니다 — 잠시 뒤 다시 시도하세요")
     return kg
 
 
@@ -216,27 +198,19 @@ def ontology_template(name: str):
         raise HTTPException(404, "no such template")
 
 
-@app.get("/api/ontology/roles")
-def ontology_roles():
-    return _kg().roles()
-
-
 @app.get("/api/ontology/patterns")
 def ontology_patterns():
     return _kg().patterns()
 
 
 #: 설비 센서가 아니라 업무 표 감시가 내는 경보(it/neo4j/v2/scenario_structure.cypher — detectionMode · Symptom 없음). 원인 진단 대상이 아니다
-BUSINESS_PATTERNS = frozenset({"PM_DUE", "SPARE_BELOW_MIN"})
+BUSINESS_PATTERNS = frozenset({PM_PATTERN, PURCHASE_PATTERN})
 
 
 def _no_cause_message(k, pattern: str) -> str:
     """원인 후보가 없을 때 학생이 읽는 문장(2026-10-25 수업 한 바퀴: 「no cause candidates for pattern …」가 판단 규칙 · 손익 화면에 그대로 보였다).
     고장 유형이 없는 패턴(정기 정비 도래 · 재고 기준 이탈)은 원인 진단 대상이 아니라 업무 흐름의 에이전트가 판단한다."""
-    try:
-        meta = next((p for p in k.patterns() if p.get("code") == pattern), {})
-    except Exception:  # noqa: BLE001 — 이름을 못 읽어도 안내는 낸다
-        meta = {}
+    meta = next((p for p in k.patterns() if p.get("code") == pattern), {})
     name = meta.get("name") or pattern
     if pattern in BUSINESS_PATTERNS:
         return f"'{name}'은(는) 고장 원인을 진단하는 이상 패턴이 아닙니다 — 업무 흐름(정기 정비 · 예비품 구매)의 에이전트가 판단합니다. 쿨러 성능 저하 같은 설비 이상 패턴을 고르세요"
@@ -245,14 +219,14 @@ def _no_cause_message(k, pattern: str) -> str:
 
 def _manual_decide(k, req: DecideReq, capture: dict | None = None) -> dict:
     """Same pipeline as an alert, without submitting: T1 causes → evidence → top cause → action cards."""
-    t1 = k.t1_causes(req.pattern, req.asset)
+    t1 = k.t1_causes(req.pattern)
     if not t1:
         raise HTTPException(404, _no_cause_message(k, req.pattern))
     try:
         results = tsdb.evaluate([e for r in t1 for e in (r.get("evidence") or [])], req.asset)
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:  # noqa: BLE001 — 근거 조회 실패는 그 까닭과 함께 보류(값 없음으로 판단하지 않는다)
         log.warning("evidence source unavailable: %s", e)
-        raise HTTPException(503, '근거 원천 조회 실패로 판단을 보류합니다') from e
+        raise HTTPException(503, f'설비 근거(시계열 DB)를 읽지 못해 판단을 보류합니다 — {type(e).__name__}: {str(e)[:200]}') from e
     causes = cardlib.rank_causes(t1, results)
     assessment = cardlib.evidence_status(causes)
     if assessment['withheld']:
@@ -261,6 +235,9 @@ def _manual_decide(k, req: DecideReq, capture: dict | None = None) -> dict:
         causes.sort(key=lambda c: c["id"] != req.facts["cause"])
     d = decidelib.decide(k, decisions, tsdb, req.asset, req.pattern, causes[0], origin={"kind": "manual", "pattern": req.pattern},
                          overrides={x: v for x, v in (req.facts or {}).items() if x != "cause"}, do_submit=False, capture=capture)
+    if d.get("error_code") == "INVALID_FACT":
+        # 사람이 바꿔 넣은 사실(음수 시간 · 형식이 다른 값 · 없는 변수)은 판단 실패가 아니라 입력 거절이다 — 4xx 와 그 문장(한바퀴3)
+        raise HTTPException(422, d["error"])
     d["causes"] = [{"id": c["id"], "name": c["name"], "score": c["score"], "failureMode": c.get("failureMode"),
                     "evidence": c["evidence"]} for c in causes]
     return d
@@ -318,7 +295,7 @@ def _whatif_view(s: dict, sid: str, trial=None, policy=None) -> dict:
     return {"id": sid, "asset": s["asset"], "pattern": s["pattern"], "cause": s["cause"], "created": s["created"],
             "decisionId": s["decisionId"], "variables": whatif.variable_list(s["mf"], trial), "policy": whatif.policy_view(s["bundle"]["dmn"]),
             "perspectives": whatif.perspective_view(s["bundle"]),
-            "policyTrial": policy or {"weights": {}, "penalties": {}}, "trial": trial or {}, **ev,
+            "policyTrial": policy or {"weights": {}, "penalties": {}}, "trial": trial or {}, "limits": whatif.LIMITS, **ev,
             "baseTop": s["baseTop"], "summary": whatif.summary(ev, s["baseTop"] if (trial or (policy and any(policy.values()))) else None),
             "original": {"unchanged": unchanged, "fingerprint": s["fingerprint"][:12],
                          "note": "업무 DB · 지식 그래프 · 순위 정책은 읽기만 했고, 시험값은 이 계산의 사본에만 적용됐습니다"}}
@@ -392,16 +369,15 @@ class ApprovalCheckReq(BaseModel):
     consented_at: str | None = None      # 사람이 승인한 시각 — 예측 나이를 이 시각으로 잰다(process 가 승인 때 기록)
 
 
-class ForecastReq(BaseModel):
-    asset: str
-    actions: list[dict]
-    horizon_s: float = 900
-
-
 class ChoicePreviewReq(BaseModel):
     decision: dict
     option: str
     parameters: dict
+
+
+def _source_failure(e: Exception) -> HTTPException:
+    """원천(업무 시스템 · 설비 상태)을 읽지 못한 것은 이 승인을 거절한 것이 아니라 검사를 못 한 것이다 — 503 과 그 자리의 까닭(H-8)."""
+    return HTTPException(503, str(e))
 
 
 @app.post('/api/agent/choice-preview')
@@ -409,20 +385,10 @@ def choice_preview(req: ChoicePreviewReq):
     from .approval import preview
     try:
         return preview(_kg(), tsdb, req.decision, req.option, req.parameters)
+    except (decidelib.FactUnavailable, mcp_ent.SourceUnavailable) as e:
+        raise _source_failure(e) from e
     except ValueError as e:
         raise HTTPException(409, str(e))
-
-
-@app.post('/api/agent/forecast')
-def forecast_actions(req: ForecastReq):
-    """Read-only counterfactual; cannot submit a decision or send a command."""
-    from .forecasting import current
-    try:
-        return current(_kg(), req.asset, req.actions, req.horizon_s)
-    except ValueError as e:
-        raise HTTPException(409, str(e))
-    except OSError as e:
-        raise HTTPException(503, 'forecast source unavailable') from e
 
 
 @app.post('/api/agent/approval-check')
@@ -431,18 +397,7 @@ def approval_check(req: ApprovalCheckReq):
     from .approval import assess
     try:
         return assess(_kg(), tsdb, req.decision, req.option, req.role, consented_at=req.consented_at)
+    except (decidelib.FactUnavailable, mcp_ent.SourceUnavailable) as e:
+        raise _source_failure(e) from e
     except ValueError as e:
         raise HTTPException(409, str(e))
-
-
-@app.get("/api/agent/decisions")
-def list_decisions():
-    return [{k: d.get(k) for k in ("id", "created", "scenario", "asset", "status", "recommended", "applicable", "origin")} for d in decisions.all()]
-
-
-@app.get("/api/agent/decisions/{did}")
-def get_decision(did: str):
-    d = decisions.get(did)
-    if not d:
-        raise HTTPException(404, "no such decision")
-    return d

@@ -10,7 +10,8 @@
   merge_mapping(parsed, old) 다시 가져오기: 같은 task id(·lane · 선 · 타이머 id)의 앞선 매핑을 유지한다.
   check(parsed, mapping, ctx) 정의 JSON 을 만들고 사전 검사(칸 위치와 사유): 부품 · 담당 · 값 연결 · 설비 명령 앞 사람 승인 ·
                              끝 닫힘 · 분기 조건 · 끊긴 선 · 되돌아가는 선(루프). 통과하면 등록 검사(validate_definition)까지.
-  structure(raw)             id · 이름을 뺀 구조 서명 — 기준 흐름을 다시 그린 그림이 같은 정의가 되는지 비교(시험)할 때 쓴다.
+
+크기 한도 · 정의 폴더는 수업 경계 정본(course_policy.TEXT_MAX · DEFINITIONS) 하나를 쓴다 — 가져오기 · 출발본 · 수업 판정이 같은 값.
 
 참고 원본(데이터로만 읽음): process-gpt-bpmn-extractor src/pdf2bpmn/bpmn_to_json.py:155-370(lane → role, task · event ·
 gateway · sequenceFlow 추출), process-gpt-vue3 src/components/api/ProcessGPTBackend.ts:573-685(proc_def.bpmn · 판본 snapshot 에
@@ -26,13 +27,12 @@ import math
 import re
 import xml.etree.ElementTree as ET
 from copy import deepcopy
-from pathlib import Path
 
 from . import engine, effect_parts, approval_part
+from .course_policy import DEFINITIONS, TEXT_MAX
 from .definition_registry import PROTECTED_OUTPUTS, validate_definition
 
 BPMN_NS = "http://www.omg.org/spec/BPMN/20100524/MODEL"
-MAX_XML_BYTES = 2_000_000
 
 TASK_TYPES = {"task": "작업", "userTask": "사람 작업", "manualTask": "수작업", "serviceTask": "서비스 작업",
               "scriptTask": "스크립트 작업", "businessRuleTask": "규칙 작업", "sendTask": "보내기 작업", "receiveTask": "받기 작업"}
@@ -75,7 +75,8 @@ EFFECT_TOOLS = {"incident:command": "설비 명령", "enterprise:WO_CREATE": "�
                 **effect_parts.EFFECTS}                                                 # C2: MCP 쓰기 · ERP 발주 · 정비 수행 모사 · 입고 확인
 # C2: 승인 경로가 확정하는 발주 값의 자료형 (분기 조건 approved_amount > 300 의 값)
 SERVER_VALUE_TYPES = {"approved_amount": "Number", "approved_qty": "Number", "approved_unit_price": "Number",
-                      "approved_supplier": "Text", "approved_part_no": "Text", "approved_option": "Object"}
+                      "approved_supplier": "Text", "approved_supplier_name": "Text", "approved_part_no": "Text",
+                      "approved_option": "Object"}
 FIELD_TYPES = ("text", "textarea", "number", "integer", "boolean", "select", "object", "array")
 DATA_TYPE = {"text": "Text", "textarea": "Text", "select": "Text", "number": "Number", "integer": "Number",
              "boolean": "Boolean", "object": "Object", "array": "Array"}
@@ -121,10 +122,11 @@ def _label(item: dict) -> str:
 def parse_bpmn(xml_text: str) -> dict:
     if not isinstance(xml_text, str) or not xml_text.strip():
         raise BpmnError("빈 파일입니다 — bpmn.io 의 'Download BPMN diagram'으로 받은 .bpmn 파일을 고르세요")
-    if len(xml_text.encode("utf-8")) > MAX_XML_BYTES:
-        raise BpmnError(f"파일이 너무 큽니다 (최대 {MAX_XML_BYTES // 1_000_000} MB)")
-    head = xml_text[:4096].upper()
-    if "<!DOCTYPE" in head or "<!ENTITY" in xml_text.upper():
+    if len(xml_text) > TEXT_MAX:
+        raise BpmnError(f"흐름 그림(.bpmn)은 {TEXT_MAX:,}자 이하여야 합니다(지금 {len(xml_text):,}자)")
+    upper = xml_text.upper()
+    # 파일 어디에 있든(P5-15 — 앞부분만 보면 긴 주석 뒤의 DOCTYPE 이 지나갔다). 이 검사가 흐름 XML 을 읽는 모든 길(가져오기 · 출발본 · 수업 판정)의 하나다
+    if "<!DOCTYPE" in upper or "<!ENTITY" in upper:
         raise BpmnError("DOCTYPE · ENTITY 선언이 있는 XML 은 읽지 않습니다 (bpmn.io 파일에는 없습니다)")
     try:
         root = ET.fromstring(xml_text)
@@ -134,7 +136,8 @@ def parse_bpmn(xml_text: str) -> dict:
         raise BpmnError(f"XML 을 읽을 수 없습니다 ({line}행 {col}열) — 태그가 닫히지 않았거나 파일이 잘렸습니다. bpmn.io 에서 [Download BPMN diagram]으로 다시 받아 가져오세요") from e
     ns, tag = _local(root.tag)
     if ns != BPMN_NS or tag != "definitions":
-        raise BpmnError("BPMN 2.0 파일이 아닙니다 (맨 바깥 요소가 bpmn:definitions 가 아님)")
+        # 학생 문장 — XML 요소 이름(bpmn:definitions)을 보이지 않고 할 일을 말한다(한바퀴3 13 실습)
+        raise BpmnError("BPMN 2.0 흐름 그림 파일이 아닙니다 — bpmn.io 에서 [Download BPMN diagram]으로 받은 .bpmn 파일을 고르세요")
     processes = [p for p in root.findall(f"{{{BPMN_NS}}}process")]
     with_nodes = [p for p in processes if any(_local(c.tag)[1] not in IGNORED for c in p)]
     names = {}
@@ -289,7 +292,7 @@ def catalog(base: dict, users: list[dict] | None = None, *, include_handover=Tru
     경계 타이머는 그림에 그린 것만 쓰되, 기준에서 그 부품에 붙어 있던 기간을 기본값으로 알려 준다."""
     handover_catalog = None
     if include_handover and base.get('processDefinitionId') != 'shift_handover':
-        source = Path(__file__).resolve().parents[1]/'definitions/shift_handover_v1.json'
+        source = DEFINITIONS / 'shift_handover_v1.json'
         handover_catalog = catalog(json.loads(source.read_text(encoding='utf8')), users, include_handover=False)
     forms = base.get("forms") or {}
     roles = {r["name"]: r for r in base.get("roles") or []}
@@ -394,7 +397,8 @@ def catalog(base: dict, users: list[dict] | None = None, *, include_handover=Tru
             "alert_start": {k: deepcopy(v) for k, v in start_event.items() if k not in ("id", "name")} if start_event.get("eventDefinition") == "message" else None,
             "data": {**(handover_catalog['data'] if handover_catalog else {}),
                      **{d["name"]: deepcopy(d) for d in base.get("data") or [] if isinstance(d, dict) and d.get("name")}},
-            "field_types": list(FIELD_TYPES), "ops": list(OPS), "alert_start_values": list(ALERT_START_VALUES)}
+            "field_types": list(FIELD_TYPES), "ops": list(OPS), "alert_start_values": list(ALERT_START_VALUES),
+            "report_outcomes": list(effect_parts.REPORT_OUTCOMES)}       # 결과 보고의 결과 고르기(화면 flows.js) — 정본은 effect_parts 한 곳
 
 
 # ---------------------------------------------------------------- 3. 매핑 (기본값 · 다시 가져오기)
@@ -544,38 +548,63 @@ class _Graph:
             stack.extend(self.attached.get(n, []) if stop(n) else self.succ(n))
         return seen
 
-    def ancestors(self, target) -> set[str]:
-        seen, stack = set(), list(self.pred.get(target, []))
-        while stack:
-            n = stack.pop()
-            if n in seen:
+    def components(self) -> list[set[str]]:
+        """강한 연결 요소 전부(Tarjan) — 재귀 대신 반복문이라 긴 사슬에서도 재귀 한도로 멈추지 않는다(P5-02: task 1,500개에서 RecursionError).
+        나오는 차례 = 뒤 요소 먼저(어떤 요소도 그것이 닿는 요소들보다 늦게 나온다)."""
+        index, low, onstack, stack, out, counter = {}, {}, set(), [], [], 0
+        for root in self.nodes:
+            if root in index:
                 continue
-            seen.add(n)
-            stack.extend(self.pred[n])
-        return seen
+            index[root] = low[root] = counter; counter += 1
+            stack.append(root); onstack.add(root)
+            work = [(root, iter(self.succ(root)))]
+            while work:
+                v, todo = work[-1]
+                for w in todo:
+                    if w not in index:
+                        index[w] = low[w] = counter; counter += 1
+                        stack.append(w); onstack.add(w)
+                        work.append((w, iter(self.succ(w))))
+                        break
+                    if w in onstack:
+                        low[v] = min(low[v], index[w])
+                else:
+                    work.pop()
+                    if work:
+                        parent = work[-1][0]
+                        low[parent] = min(low[parent], low[v])
+                    if low[v] == index[v]:
+                        comp = set()
+                        while True:
+                            w = stack.pop(); onstack.discard(w); comp.add(w)
+                            if w == v:
+                                break
+                        out.append(comp)
+        return out
+
+    def cyclic(self, comp: set[str]) -> bool:
+        return len(comp) > 1 or next(iter(comp)) in self.succ(next(iter(comp)))
 
     def sccs(self) -> list[set[str]]:
-        index, low, onstack, stack, out, counter = {}, {}, set(), [], [], [0]
-        def strong(v):
-            index[v] = low[v] = counter[0]; counter[0] += 1
-            stack.append(v); onstack.add(v)
-            for w in self.succ(v):
-                if w not in index:
-                    strong(w); low[v] = min(low[v], low[w])
-                elif w in onstack:
-                    low[v] = min(low[v], index[w])
-            if low[v] == index[v]:
-                comp = set()
-                while True:
-                    w = stack.pop(); onstack.discard(w); comp.add(w)
-                    if w == v:
-                        break
-                if len(comp) > 1 or v in self.succ(v):
-                    out.append(comp)
-        for v in self.nodes:
-            if v not in index:
-                strong(v)
-        return out
+        """되돌아가는 선이 만든 요소(둘 이상이거나 자기 자신으로 가는 선)."""
+        return [c for c in self.components() if self.cyclic(c)]
+
+    def all_ancestors(self) -> dict[str, set[str]]:
+        """노드마다 그 노드에 닿는 모든 앞 노드(되돌아가는 선 안의 노드는 자기 자신도). 강한 연결 요소를 한 덩어리로 묶어 앞에서 뒤로 한 번만
+        훑는다 — 노드마다 따로 거슬러 오르면 단계 수의 제곱으로 느려졌다(P5-02)."""
+        comps = self.components()
+        of = {n: i for i, comp in enumerate(comps) for n in comp}
+        anc: dict[int, set[str]] = {}
+        for i in reversed(range(len(comps))):            # 앞 요소 먼저(components 차례의 거꾸로)
+            got = set(comps[i]) if self.cyclic(comps[i]) else set()
+            for n in comps[i]:
+                for p in self.pred[n]:
+                    j = of[p]
+                    if j != i:
+                        got |= anc[j]
+                        got |= comps[j]
+            anc[i] = got
+        return {n: anc[of[n]] for n in self.nodes}
 
 
 def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
@@ -670,8 +699,7 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
                 a["agent"] = m["agent"]
             if p["form_id"]:
                 forms[p["form_id"]] = deepcopy(p["form"])
-            if lane_r and lane_r != a.get("role") and p["kind"] != "human":
-                pass                                           # 시스템 · 에이전트 부품은 부품 담당이 정한다(칸 이름은 그림 정보)
+            # 시스템 · 에이전트 부품의 담당은 부품이 정한다(칸 이름은 그림 정보) — 사람 부품만 위에서 역할을 바꾼다
             if p["tool"] == "enterprise:WO_CREATE" and isinstance(m.get("config"), dict) and m["config"]:
                 # C2: 작업지시 부품의 선택 설정 — 정비 시점 값 이름(window_var) · 생산팀 공지 메일(mail)
                 a["service"] = deepcopy(m["config"])
@@ -793,22 +821,23 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
                 "type": gw["gateway_type"]}
         names = set()
         if gw["gateway_type"] == "exclusiveGateway" and len(outs) > 1:
-            defaults = 0
             for f in outs:
                 spec = flow_map.get(f["id"]) if isinstance(flow_map.get(f["id"]), dict) else None
                 if spec is None and gw.get("default") == f["id"]:
                     spec = {"default": True}
+                where = dict(f, name=f["name"] or f"{_label(gw)} → {_label(g.nodes.get(f['target'], {'id': f['target']}))}")
                 if spec is None and f.get("condition_xml"):
                     try:
-                        engine.compile_condition(f["condition_xml"]); spec = {"text": f["condition_xml"]}
-                    except Exception:  # noqa: BLE001
-                        spec = None
-                where = dict(f, name=f["name"] or f"{_label(gw)} → {_label(g.nodes.get(f['target'], {'id': f['target']}))}")
+                        engine.compile_condition(f["condition_xml"])
+                    except (ValueError, SyntaxError) as e:      # 틀린 식을 「조건 없음」으로 바꾸지 않는다(P5-19)
+                        problems.append(problem(where, "condition", f"그림에 적은 조건식 '{f['condition_xml'][:120]}'을(를) 읽을 수 없습니다 — "
+                                                f"값 이름 · 비교(==, !=, >, >=, <, <=) · 기준 값으로 쓰거나(예: approval == '승인') 매핑에서 조건을 고르세요 ({e})"))
+                        continue
+                    spec = {"text": f["condition_xml"]}
                 if not spec:
                     problems.append(problem(where, "condition", f"분기 {_label(gw)}에서 나가는 선의 조건이 없습니다 (값 · 비교 · 기준을 고르거나 '그 밖의 경우')"))
                     continue
                 if spec.get("default"):
-                    defaults += 1
                     cond_of[f["id"]] = {"default": True}
                     continue
                 try:
@@ -818,11 +847,18 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
                     continue
                 cond_of[f["id"]] = {"condition": text}
                 names |= {n.id for n in ast.walk(engine.compile_condition(text)) if isinstance(n, ast.Name)} - {"True", "False", "None"}
-            if defaults > 1:
-                problems.append(problem(gw, "condition", "'그 밖의 경우' 선은 하나만 둘 수 있습니다"))
             item["conditionData"] = sorted(names)
         elif gw["gateway_type"] == "exclusiveGateway":
             item["conditionData"] = []
+        else:
+            # 병렬 분기는 나가는 선을 모두 탄다 — 선에 조건이 있으면(매핑 · 그림) 조용히 버리지 않고 사유로 멈춘다(P5-11: 배타를 병렬로 바꾼 그림이
+            # 「검사 통과」로 거절 · 확인 가지를 함께 열었다)
+            for f in outs:
+                spec = flow_map.get(f["id"]) if isinstance(flow_map.get(f["id"]), dict) else None
+                if (spec and not spec.get("default")) or f.get("condition_xml"):
+                    where = dict(f, name=f["name"] or f"{_label(gw)} → {_label(g.nodes.get(f['target'], {'id': f['target']}))}")
+                    problems.append(problem(where, "condition", f"병렬 분기 {_label(gw)}는 조건 없이 나가는 선을 모두 탑니다 — 조건으로 갈래를 고르려면 "
+                                                               "배타(X) 분기로 바꾸고, 함께 진행할 것이면 이 선의 조건을 지우세요"))
         gateways.append(item)
     for f in parsed["flows"]:
         if f["source"] not in g.nodes or f["target"] not in g.nodes:
@@ -843,8 +879,9 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
     # -- 값 연결: 다음 단계가 기다리는 값을 앞 단계(또는 시작)가 내는가
     extracted_types = {k: t for a in activities for k, t in effect_parts.extract_types(a).items()}
     available = {}
+    ancestors = g.all_ancestors() if start_node else {}
     for nid in g.nodes:
-        anc = g.ancestors(nid) if start_node else set()
+        anc = ancestors.get(nid, set())
         vals = [{"value": v, "from": "start"} for v in start_values]
         for v, producers in produced_by.items():
             src = [pid for pid in producers if pid in anc]
@@ -1121,35 +1158,3 @@ def _graph_problems(parsed: dict, g: _Graph, start_node: dict | None, problems: 
             problems.append(problem(item, "flow", "시작에서 닿지 않습니다"))
         if nid in reach and nid not in to_end and g.out[nid]:
             problems.append(problem(item, "flow", "여기서 끝 이벤트에 닿지 못합니다 (끝이 닫히지 않음)"))
-
-
-# ---------------------------------------------------------------- 5. 구조 서명 (id · 이름 · 설명 제외)
-def structure(raw: dict) -> dict:
-    acts = {a["id"]: a for a in raw.get("activities") or []}
-    events = {e["id"]: e for e in raw.get("events") or []}
-    gws = {g["id"]: g for g in raw.get("gateways") or []}
-    roles = {r["name"]: r.get("endpoint") for r in raw.get("roles") or []}
-    label = {}
-    for a in acts.values():
-        label[a["id"]] = "A:" + str(a.get("tool"))
-    for g in gws.values():
-        label[g["id"]] = f"G:{g.get('type')}:{','.join(sorted(g.get('conditionData') or []))}"
-    for e in events.values():
-        if e["type"] == "boundaryEvent":
-            label[e["id"]] = f"B:{e.get('timer')}@{label.get(e.get('attachedTo'))}"
-        else:
-            label[e["id"]] = f"{e['type']}:{e.get('eventDefinition') or 'none'}"
-    def act(a):
-        keep = ("type", "agent", "agentMode", "orchestration", "decision", "tool", "instruction", "checkpoints", "duration")
-        return {**{k: a.get(k) for k in keep}, "role": roles.get(a.get("role")), "inputData": sorted(a.get("inputData") or []),
-                "outputData": sorted(a.get("outputData") or [])}
-    edges = sorted((label[s["source"]], label[s["target"]], s.get("condition") or "", bool(engine._properties(s).get("default")))
-                   for s in raw.get("sequences") or [])
-    edges += sorted((label[a["id"]], label[ev], "boundary", False) for a in acts.values() for ev in a.get("attachedEvents") or [])
-    start = [e for e in events.values() if e["type"] == "startEvent"]
-    return {"activities": sorted((label[a["id"]], repr(act(a))) for a in acts.values()),
-            "events": sorted(label[e] for e in events),
-            "start": [{k: v for k, v in e.items() if k not in ("id", "name")} for e in start],
-            "gateways": sorted(label[g] for g in gws), "edges": edges, "roles": sorted(roles.items()),
-            "data": sorted(d["name"] for d in raw.get("data") or []), "forms": {k: v for k, v in sorted((raw.get("forms") or {}).items())},
-            "alertPolicy": raw.get("alertPolicy")}

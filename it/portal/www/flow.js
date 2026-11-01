@@ -1,4 +1,4 @@
-/* A122 — business-process flow drawn straight from the process definition JSON (문서/시스템/참조/UIUX_PLAN.md §4, option B).
+/* A122 — business-process flow drawn straight from the process definition JSON (workspace/개발/문서/UIUX_PLAN.md §4).
    Lanes are the three doers only: 에이전트 (sys:agent) · 담당자 (role:*) · 시스템 (sys:scada · sys:process · sys:cmms · start/end).
    Columns are "longest distance from the start event" (same rule as instanceSteps.js flowGraph). A boundary timer is a small
    circle on its task's border. Node colour = state of the newest work item for that activity (done · current · skipped · fail).
@@ -95,7 +95,7 @@
   function states(def, g, workitems, instance) {
     const st = {}; const latest = new Map();
     (workitems || []).forEach(w => { const o = latest.get(w.activity_id); if (!o || (w.generation || 0) > (o.generation || 0) || ((w.generation || 0) === (o.generation || 0) && (w.start_date || '') >= (o.start_date || ''))) latest.set(w.activity_id, w); });
-    const step = window.hydSteps ? window.hydSteps.stepStateOf : s => s === 'DONE' ? 'done' : s === 'CANCELLED' ? 'skipped' : ['IN_PROGRESS', 'SUBMITTED', 'PENDING', 'NEW'].includes(s) ? 'current' : 'todo';
+    const step = hydSteps.stepStateOf;   // 단계 상태 규칙은 instanceSteps.js 하나(먼저 실린다)
     g.nodes.forEach(n => {
       const w = latest.get(n.id);
       let s = w ? step(w.status) : 'todo';
@@ -215,18 +215,5 @@
   // A141: narrow viewport (≤ 1100 px, the same breakpoint as the rest of the shell) → vertical orientation. 1440 keeps the horizontal diagram.
   function narrow() { return window.innerWidth <= 1100; }
 
-  // Definition lookup for screens that have no instance in hand (승인과 실행 before a decision is linked):
-  // the newest registered version of the anomaly_response definition, read once.
-  let defCache = null;
-  async function latestDefinition() {
-    if (defCache) return defCache;
-    try {
-      const list = await getJ(API.process + '/api/process/definitions');
-      const mine = list.filter(d => d.id === 'anomaly_response' && d.form_source !== 'legacy-live').sort((a, b) => String(b.version).localeCompare(String(a.version), undefined, { numeric: true }));
-      const pick = mine[0]; if (!pick) return null;
-      defCache = await getJ(API.process + '/api/process/definitions/' + encodeURIComponent(pick.id) + '?version=' + encodeURIComponent(pick.version));
-    } catch (e) { defCache = null; }
-    return defCache;
-  }
-  window.hydFlow = { render, mount, latestDefinition, narrow };
+  window.hydFlow = { render, mount, narrow };
 })();

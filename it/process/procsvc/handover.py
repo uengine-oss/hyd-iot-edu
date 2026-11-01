@@ -3,6 +3,8 @@ from copy import deepcopy
 from datetime import datetime
 import json
 
+from hydcommon import topics
+
 from . import ask
 
 DEFINITION_ID = 'shift_handover'
@@ -25,6 +27,8 @@ def validate_start(values):
         value = values[key]
         if not isinstance(value, str) or not value.strip() or len(value)>maximum:
             raise ValueError('인수인계 시작 입력이 비어 있거나 한도를 넘었습니다: '+key)
+    if values['asset'].strip() not in topics.ASSETS:
+        raise ValueError(f"없는 설비입니다: {values['asset']} — 설비는 {', '.join(topics.ASSETS)} 중 하나입니다")
     try:
         moment = datetime.fromisoformat(values['as_of'].replace('Z', '+00:00'))
         if moment.utcoffset() is None: raise ValueError()

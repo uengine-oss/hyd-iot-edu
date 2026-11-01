@@ -1,6 +1,5 @@
 """Versioned message admission and recovery criteria, without a fallback sensor."""
 import math
-from . import definition
 
 
 def validate(raw):
@@ -23,16 +22,15 @@ def validate(raw):
 
 
 def for_definition(raw,pattern):
+    """경보 하나를 이 정의가 받는 길. 회복 기준은 정의의 alertPolicy 하나에서만 온다 — 정책이 없는 정의는 경보를 받지 않는다(코드 상수 기준으로
+    대신하지 않는다)."""
     policy=raw.get('alertPolicy')
     if policy is None:
-        # Immutable pre-policy definitions remain explicit legacy profiles. They
-        # never acquire a cooler fallback for an unknown alarm.
-        criterion=definition.recovery_for(pattern)
-        target={'definition':'alert_triage','version':'1.0'}
-    else:
-        c=policy['patterns'].get(pattern) if isinstance(pattern,str) else None
-        criterion=(c['tag'],c['op'],c['limit']) if c else None
-        target=policy['unsupported']
+        raise ValueError(f"흐름 {raw.get('processDefinitionId')} {raw.get('version')}에는 경보 정책(alertPolicy)이 없어 경보를 받을 수 없습니다 — "
+                         "경보 정책이 있는 판본을 배포하세요")
+    c=policy['patterns'].get(pattern) if isinstance(pattern,str) else None
+    criterion=(c['tag'],c['op'],c['limit']) if c else None
+    target=policy['unsupported']
     return {'pattern':pattern,'route':'response' if criterion else 'triage','criterion':criterion,
             'definition':raw['processDefinitionId'],'version':raw['version'],
             'target':({'definition':raw['processDefinitionId'],'version':raw['version']} if criterion else target)}
@@ -41,7 +39,8 @@ def for_definition(raw,pattern):
 def require_triage(defn):
     """A fallback is a human review, not an alternate path to unreviewed effects."""
     from . import engine
-    if not defn.activities or any(not engine.is_human(a) or a.get('tool')=='formHandler:select_card'
+    from .approval_part import CARD_TOOL
+    if not defn.activities or any(not engine.is_human(a) or a.get('tool')==CARD_TOOL
                                   or a.get('orchestration') not in engine.NO_MODE
                                   for a in defn.activities.values()):
         raise ValueError('미지원 경보 경로는 조치 선택/에이전트/서비스 없는 사람 검토여야 합니다')

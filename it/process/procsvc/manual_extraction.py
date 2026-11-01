@@ -248,9 +248,7 @@ def validate_proposal(source, proposal, *, segment=False):
                         proposal['warnings'].append(f"{p['id']}: {key} 정책 제외 — {exc}. 원문의 시행 · 비교 기준을 확인하고 다시 추출하거나 검토본을 쓰세요")
             if p.get('link') is not None:                      # C1: suggested link — shape only, the reviewer decides
                 link=manual_knowledge.validate_link(p['id'],p['link'],sops=seen,require_failure_mode=False)
-                if link.get('affects') is not None:
-                    from .manual_review import validate_affects
-                    validate_affects(p['id'],link['affects'])
+                kgadmin.validate_affects(link.get('affects'), p['id'])
         except ValueError as exc:
             errors.append(str(exc))
     if proposal.get('knowledge') is not None:
@@ -422,41 +420,30 @@ def content_issues(proposal, source, catalog, *, segment=False, criteria_scope=T
     return list(dict.fromkeys(issues))
 
 
-def _criteria_contract(inst):
-    version = str(inst.get('proc_def_version') or '')
-    return bool(re.fullmatch(r'\d+\.\d+', version)) and tuple(map(int, version.split('.'))) >= (2, 13)
+def contract_at_least(inst, version) -> bool:
+    """이 추출 처리 건의 정의 판본이 version(예: (2, 13)) 이상인가 — 판본마다 더해진 내용 검사를 그 판 이후 실행에만 건다(옛 실행은 그 판의 계약대로)."""
+    have = str(inst.get('proc_def_version') or '')
+    return bool(re.fullmatch(r'\d+\.\d+', have)) and tuple(map(int, have.split('.'))) >= tuple(version)
 
 
-def _package_contract(inst):
-    version = str(inst.get('proc_def_version') or '')
-    return bool(re.fullmatch(r'\d+\.\d+', version)) and tuple(map(int, version.split('.'))) >= (2, 16)
+CRITERIA_FROM, PACKAGE_FROM, FORECAST_FROM = (2, 13), (2, 16), (2, 18)   # 판정 기준 절 · 정비 묶음 · 예측 유온 경고 검사가 들어온 판
 
 
-def _forecast_contract(inst):
-    version = str(inst.get('proc_def_version') or '')
-    return bool(re.fullmatch(r'\d+\.\d+', version)) and tuple(map(int, version.split('.'))) >= (2, 18)
+def scopes(inst) -> dict:
+    """그 처리 건의 판본이 받는 내용 검사(content_issues 의 *_scope) — 추출 결과 · 캐시 결과 · 구간 합치기가 같이 쓴다."""
+    return dict(criteria_scope=contract_at_least(inst, CRITERIA_FROM), package_scope=contract_at_least(inst, PACKAGE_FROM),
+                forecast_scope=contract_at_least(inst, FORECAST_FROM))
 
 
 def validate_result(form, inst, output):
+    """이 모듈의 계약(추출 제안) 검사 — 계약마다 검사 함수를 고르는 표는 처리 엔진 한 곳(instances.result_contracts)이다."""
     if form and form.get('contract') == CONTRACT:
         variables = engine.variables(inst)
         proposal = validate_proposal(variables.get('manual_source'), (output or {}).get('proposal'), segment=bool(variables.get('segment')))
         issues=content_issues(proposal, variables.get('manual_source'), variables.get('ontology_catalog'),
-                              segment=bool(variables.get('segment')), criteria_scope=_criteria_contract(inst),
-                              package_scope=_package_contract(inst), forecast_scope=_forecast_contract(inst))
+                              segment=bool(variables.get('segment')), **scopes(inst))
         if issues:
             raise ValueError(' / '.join(issues))
-    else:
-        from . import manual_golden, legacy_meaning   # A118 golden report · A9 legacy column meanings share the correction loop
-        manual_golden.validate_result(form, inst, output)
-        legacy_meaning.validate_result(form, inst, output)
-        from . import ask                             # B5: 질문 답 계약(근거 · 답할 수 없는 이유)도 같은 교정 루프
-        ask.validate_result(form, inst, output)
-        from . import handover
-        handover.validate_result(form, inst, output)
-
-
-CORRECTABLE_CONTRACTS = (CONTRACT, 'manual-golden-report-v1', 'legacy-meaning-candidates-v1', 'ask-answer-v1', 'shift-handover-draft-v1')
 
 
 REVIEW_FEEDBACK_MAX = 20
@@ -696,8 +683,7 @@ def _group_result(rt, source, inst, previous_batch):
         parts.append((s,_translate(local,s)))
     merged=manual_segments.merge(source,parts,review_feedback=engine.variables(inst).get('review_feedback'))
     proposal=validate_proposal(source,merged)
-    issues=content_issues(proposal,source,engine.variables(inst).get('ontology_catalog'), criteria_scope=_criteria_contract(inst),
-                          package_scope=_package_contract(inst), forecast_scope=_forecast_contract(inst))
+    issues=content_issues(proposal,source,engine.variables(inst).get('ontology_catalog'), **scopes(inst))
     proposal['warnings'].extend('전체 문서 검사: '+issue for issue in issues)
     extraction=dict(instance=lead['instance'],workitem=lead['workitem'],session_id=(workitems[0].get('output') or {}).get('cliagents_session_id'),
                     generation=sum(wi.get('generation',0) for wi in workitems),

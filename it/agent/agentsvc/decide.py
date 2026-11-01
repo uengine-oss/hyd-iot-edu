@@ -1,9 +1,12 @@
 """L8 action-card decision (IO side of cards.py), traced step by step like the guide-card run.
 
-ontology (T3 DMN rules) -> inputs (InputData -SOURCED_FROM-> System | Sensor) -> facts (TSDB · process · MES) ->
-candidates (dec:action-candidates) -> compliance (dec:compliance) -> forecasts · BSC trade-offs · precedents ->
-rank (dec:rank-actions) -> guardrail -> submit (POST process /api/decisions — the agent's only write *of action cards*;
-the legacy pipeline in main.py has already posted the guide card to /api/incidents before calling decide()).
+ontology (T3 DMN rules) -> inputs (InputData -SOURCED_FROM-> System | Sensor) -> facts (TSDB · process · MES, 이 판단이 쓰는
+변수만 — cards.needed_variables) -> candidates (dec:action-candidates) -> compliance (dec:compliance) -> forecasts · BSC trade-offs ·
+precedents -> rank (dec:rank-actions) -> guardrail -> submit (dmn-mcp 의 submit_decision · submit_purchase 만: POST process
+/api/decisions — 에이전트의 유일한 쓰기, 승인 대기 카드 등록).
+
+원천 읽기가 실패하면 판단은 그 자리의 까닭으로 실패한다(FactUnavailable — 어느 판단 변수 · 어느 원천 · 왜). 값 없음(None)으로 바꿔
+뒤 검사가 엉뚱한 까닭을 말하게 하지 않는다(검진 H-8). 원천이 값을 주지 않은 것(빈 칸)만 「미확인」으로 규칙에 간다.
 """
 from __future__ import annotations
 
@@ -18,6 +21,8 @@ import urllib.request
 from datetime import datetime, timezone
 
 from . import cards, guardrail
+from hydcommon.maintenance_policy import PM_PATTERN
+from hydcommon.skill_scope import PURCHASE_PATTERN
 from .tools import mcp_ent
 from .tools.physical import binding, is_physical, read_physical, read_physical_fact
 
@@ -25,11 +30,19 @@ log = logging.getLogger("agent.decide")
 PROCESS_URL = os.getenv("PROCESS_URL", "http://process:8080")
 # C2 (확정 2026-10-09): 업무 경보 시나리오의 판단 입력 — 온톨로지 InputData 의 변수 이름(scenario_structure.cypher) 그대로.
 #   B 정기 정비: CMMS 정기 정비 계획 · 운전시간 계수기 한 행(GET /cmms/pm_status — ent.pm_status)
-#   C 예비품 구매: ERP 예비품 재고(GET /erp/spare_stock) — 재주문점 아래인 부품(없으면 정비 키트 부품)의 한 행
+#   C 예비품 구매: ERP 예비품 재고(GET /erp/spare_stock) — 구매 판단이 명시한 부품(재주문점 아래)의 한 행
 CMMS_PM_FACTS = ("hours_since_pm", "hours_at_next_window", "hours_at_following_window", "pm_crew_available", "spare_available")
 ERP_SPARE_FACTS = ("spare_gap", "need_qty", "need_by_days")
 SENSOR_TAGS = {"ts1": "TS1", "ce": "CE", "ps1": "PS1", "fs1": "FS1", "vs1": "VS1", "load": "LoadSP"}
-MAX_APPROVAL_FACT_AGE_S = float(os.getenv('APPROVAL_FACT_MAX_AGE_S', '15'))
+MAX_APPROVAL_FACT_AGE_S = 15.0       # 승인 · 예측에 쓰는 설비 값의 최대 나이(벽시계 초) — 환경 변수 손잡이를 두지 않는다(아무도 주지 않았다)
+
+
+class FactUnavailable(RuntimeError):
+    """판단 변수를 원천에서 읽지 못했다 — 문장은 학생이 읽는다(무엇 · 어디 · 왜 · 다시 시도). variable · source 는 기록용."""
+
+    def __init__(self, variable: str, name: str | None, source: str | None, reason: str):
+        self.variable, self.source = variable, source
+        super().__init__(f"판단 사실 「{name or variable}」을(를) 원천({source or '출처 미상'})에서 읽지 못해 판단을 멈췄습니다 — {reason}")
 
 
 def _now() -> str:
@@ -43,12 +56,14 @@ ID_SERVICES = ("agent", "mcp")
 
 
 class DecisionRegistry:
+    """판단 id 를 만든다(서비스 이름 + 순번 + 48비트). 판단 기록은 보관하지 않는다 — 저장된 판단의 정본은 process 의 판단 장부이고,
+    이 서비스 안의 사본(최근 200건)은 읽는 곳이 없이 메모리만 차지했다(검진 G1-15)."""
+
     def __init__(self, service: str = "agent"):
         if service not in ID_SERVICES:
             raise ValueError(f"판단 id 를 만드는 서비스는 {', '.join(ID_SERVICES)} 중 하나입니다 (받은 값: {service!r})")
         self.service = service
         self._lock = threading.Lock()
-        self._items: dict[str, dict] = {}
         self._seq = 0
 
     def new_id(self, kind: str) -> str:
@@ -62,25 +77,6 @@ class DecisionRegistry:
         with self._lock:
             self._seq += 1
             return f"{kind}-{datetime.now():%m%d}-{self.service}-{self._seq:03d}-{secrets.token_hex(6)}"
-
-    def put(self, d: dict) -> None:
-        with self._lock:
-            self._items[d["id"]] = d
-            if len(self._items) > 200:
-                self._items.pop(next(iter(self._items)))
-
-    def get(self, did: str) -> dict | None:
-        return self._items.get(did)
-
-    def submitted(self, record: dict, decision_id: str) -> None:
-        """Only a confirmed process submission earns a persisted-decision id."""
-        with self._lock:
-            self._items.pop(record["id"], None)
-            record["id"] = decision_id
-            self._items[decision_id] = record
-
-    def all(self) -> list[dict]:
-        return sorted(self._items.values(), key=lambda d: d["created"], reverse=True)
 
 
 def _get_json(url: str, timeout: float = 5.0) -> dict:
@@ -108,11 +104,12 @@ def submit(payload: dict) -> dict:
         refused = SubmitRefused(f"process 가 판단 등록을 거절했습니다 (HTTP {e.code}): {detail}"[:600])
         refused.status = e.code
         raise refused from e
-    # 2026-10-23 검수: process 는 이미 장부에 있는 id 를 받으면(작업 · 세대가 같을 때) 새 카드를 저장하지 않고 옛 판단을
-    # `duplicate: true` 로 돌려준다. 이 판단의 id 는 방금 새로 만든 것이라 같은 id 가 있으면 다른 판단과 충돌한 것이다.
+    # 2026-10-23 검수: process 는 같은 작업 · 세대(process_scope)의 판단이 이미 장부에 있으면 새 카드를 저장하지 않고 그 판단을
+    # `duplicate: true` 로 돌려준다(procsvc/main · decisions). 이 판단 id 는 방금 새로 만든 것이라, 그 응답은 이 작업 · 세대에 앞선 판단이
+    # 있다는 뜻이다 — id 가 겹친 것이 아니다(검진 G1-11).
     if not isinstance(res, dict) or res.get('id') != payload['id'] or res.get('duplicate'):
-        refused = SubmitRefused('process 가 이 판단을 새로 저장하지 않았습니다: 같은 판단 id 의 다른 판단이 장부에 이미 있습니다 '
-                                f"({payload['id']}, 응답 {json.dumps(res, ensure_ascii=False)[:200]})"[:600])
+        refused = SubmitRefused('process 가 이 판단을 새로 저장하지 않았습니다: 이 작업 · 세대에는 이미 등록한 판단이 있습니다 '
+                                f"({res.get('id') if isinstance(res, dict) else '-'}) — 새 판단은 재작업이나 새 처리 건에서 냅니다"[:600])
         refused.status = 409
         raise refused
     return res
@@ -127,9 +124,12 @@ def source_time(response: dict, asset: str) -> dict:
             'source_time': 'record updated_at' if stamps else '원천이 행 시점을 주지 않음'}
 
 
-def gather_facts(inputs: list[dict], asset: str, known: dict, tsdb, *, strict: bool = False) -> tuple[dict, list[dict]]:
-    """Fetch every InputData the DMN rules may test, from the source the ontology names for it.
-    known: facts the pipeline already has (pattern, cause, failure_mode, alert evidence). Returns (facts, provenance)."""
+def gather_facts(inputs: list[dict], asset: str, known: dict, tsdb, *, variables=None, strict: bool = False) -> tuple[dict, list[dict]]:
+    """Fetch the InputData facts, each from the source the ontology names for it.
+    known: facts the caller already has (pattern, cause, failure_mode, alert evidence, purchase part). variables: the judgment
+    variables to read (cards.needed_variables — a decision reads only what its rules · policy test); None = every declared
+    InputData (dmn-mcp 의 gather_facts 도구 — 그 도구의 목적이 「판단 사실 전부 보기」다). Returns (facts, provenance).
+    A source that cannot be read raises FactUnavailable with its reason — never a silent None (H-8)."""
     facts, prov = dict(known), []
     plant = erp = qms = pm = spare = None
     identities = {}
@@ -137,33 +137,36 @@ def gather_facts(inputs: list[dict], asset: str, known: dict, tsdb, *, strict: b
         identities.setdefault(item['variable'], set()).add(json.dumps(binding(item), sort_keys=True))
     for i in inputs:
         var, src, kind = i["variable"], i["source"], i["sourceKind"]
+        if variables is not None and var not in variables:
+            continue
         row = {"variable": var, "name": i["name"], "source": src, "sourceName": i["sourceName"], "represents": i.get("representsName")}
         physical = is_physical(i)
         if physical:
             row['binding'] = binding(i)
         try:
             if len(identities[var]) != 1:
-                raise ValueError('ambiguous InputData bindings for variable')
+                raise ValueError(f'지식 그래프에 판단 변수 {var}의 출처 정의(InputData)가 여러 개라 어느 것을 읽을지 정할 수 없습니다 — 지식 작성자가 하나로 정리해야 합니다')
             if physical:
                 if not src:
-                    raise ValueError('physical InputData has no declared source')
+                    raise ValueError('업무 DB 물리 출처가 선언됐는데 출처 시스템(SOURCED_FROM)이 없습니다')
                 if i.get('sourceState') not in (None, 'OK'):
                     # A087: the business DDL changed under this binding (column gone or meaning changed) — never read it
                     raise ValueError(f"원천 열이 DDL 동기화에서 {i['sourceState']}로 확인돼 판단에 쓰지 않습니다"
                                      f" (선언 {i.get('sqlType')}, 현재 {i.get('sourceLiveType') or '없음'}). 지식 작성자가 DDL을 다시 적재·검토해야 합니다")
                 facts[var], anchor = read_physical_fact(i, asset) if i.get('derive') else (read_physical(i, asset), None)
-                row.update(value=facts[var], how='명시된 업무 DB 물리 출처의 설비별 단일 행' + (' (시각 열을 지금부터 h로 환산)' if i.get('derive') else ''),
+                row.update(value=facts[var], how='업무 DB에서 이 설비의 한 행' + (' (시각 칸을 지금부터 남은 시간으로 바꿈)' if i.get('derive') else ''),
                            observed_at=_now(), **({'anchor': anchor} if i.get('derive') else {}))
             elif var in facts and facts[var] is not None:
-                row.update(value=facts[var], how="파이프라인이 이미 가진 값")
+                row.update(value=facts[var], how="경보 · 진단에서 이미 정해진 값")
             elif kind == "Sensor" or var in SENSOR_TAGS and src in ("sys:scada",):
                 tag = i.get("tag") or SENSOR_TAGS.get(var)
                 v, age = tsdb.latest(asset, tag)
                 row['age_seconds'] = age
                 if strict and (age is None or not -2 <= age <= MAX_APPROVAL_FACT_AGE_S):
-                    raise ValueError(f'{tag} 최신값 시각을 신뢰할 수 없습니다 (age={age})')
+                    raise ValueError(f'센서 {tag} 최신값이 ' + ('없습니다' if age is None else f'{age:.0f}초 전 값입니다')
+                                     + f' — 승인 검사는 {MAX_APPROVAL_FACT_AGE_S:g}초 이내 값만 씁니다')
                 facts[var] = None if v is None else round(v, 3)
-                row.update(value=facts[var], how=f"TimescaleDB tag_1s {tag} 최신값 ({age:.0f} s 전)" if v is not None else f"TimescaleDB {tag} 값 없음")
+                row.update(value=facts[var], how=f"설비 센서 「{i.get('name') or tag}」 최신값({age:.0f}초 전)" if v is not None else f"설비 센서 「{i.get('name') or tag}」 값 없음")
             elif src == "sys:scada" and var in ("plc_mode", "plc_state"):
                 if plant is None:
                     plant = _get_json(f"{PROCESS_URL}/api/plant/{asset}/status")
@@ -174,9 +177,9 @@ def gather_facts(inputs: list[dict], asset: str, known: dict, tsdb, *, strict: b
                     age = (datetime.now(timezone.utc) - observed).total_seconds()
                     row.update(age_seconds=age, observed_at=plant['t'])
                     if not -2 <= age <= MAX_APPROVAL_FACT_AGE_S:
-                        raise ValueError(f'PLC 상태가 오래됐거나 미래 시각입니다 (age={age})')
+                        raise ValueError(f'PLC 상태가 {age:.0f}초 전 값입니다 — 승인 검사는 {MAX_APPROVAL_FACT_AGE_S:g}초 이내 값만 씁니다')
                 facts[var] = plant.get("mode" if var == "plc_mode" else "state")
-                row.update(value=facts[var], how="plant.status 최신 메시지 (process 서비스가 구독)")
+                row.update(value=facts[var], how="PLC 운전 상태 최신값")
             elif src == "sys:historian" and var == "fan100_hours":
                 if strict:
                     _, age = tsdb.latest(asset, 'FanSpeedSP')
@@ -187,8 +190,7 @@ def gather_facts(inputs: list[dict], asset: str, known: dict, tsdb, *, strict: b
                 scale = stack_time_scale()
                 facts[var] = tsdb.fan100_hours(asset, time_scale=scale)
                 row.update(value=facts[var], time_scale=scale,
-                           how=f"TimescaleDB FanSpeedSP ≥ 99 % 현재 연속 운전 시간, 설비 시간(실제 시간 × 배율 {scale:g}) "
-                               "(HM-8.5 · 8.8; 관측 없으면 미확인)")
+                           how=f"팬 99 % 이상 연속 운전 시간(설비 시간 = 실제 시간 × 배속 {scale:g}, 매뉴얼 HM-8.5 · 8.8 — 관측이 없으면 미확인)")
             elif src == "sys:mes" and var == "order_due_h":
                 mes = mcp_ent.fetch("/mes/orders?asset={asset}", asset)
                 facts[var] = (mes.get("facts") or {}).get("due_in_h")
@@ -198,10 +200,10 @@ def gather_facts(inputs: list[dict], asset: str, known: dict, tsdb, *, strict: b
             elif src == 'sys:mes' and var == 'production_running':
                 mes = mcp_ent.fetch('/mes/orders?asset={asset}', asset)
                 rows = mes.get('records')
-                if not isinstance(rows,list) or any(not isinstance(r,dict) or not isinstance(r.get('status'),str) for r in rows):
-                    raise ValueError('MES 생산 오더의 실제 상태 목록을 확인할 수 없습니다')
+                if not isinstance(rows, list) or any(not isinstance(r, dict) or not isinstance(r.get('status'), str) for r in rows):
+                    raise ValueError('MES 생산 오더의 실제 상태 목록이 응답에 없습니다')
                 facts[var] = any(r.get('asset') == asset and r['status'] == 'RUNNING' for r in rows)
-                row.update(value=facts[var],how='MES 현재 설비 생산 오더의 실제 RUNNING 상태',**source_time(mes,asset))
+                row.update(value=facts[var], how='MES 현재 설비 생산 오더가 생산 중(RUNNING)인가', **source_time(mes, asset))
             elif src == "sys:erp" and var in ("order_penalty_per_h", "order_customer_tier"):
                 # 회의 L385~404: 납기 상충은 설비 상태만이 아니라 계약(지연 보상 · 고객 등급)을 같이 봐야 판단된다
                 if erp is None:
@@ -229,15 +231,18 @@ def gather_facts(inputs: list[dict], asset: str, known: dict, tsdb, *, strict: b
                     facts.setdefault("windows_by_variable", pm_windows(pm.get('facts') or {}))
                     pmfacts = pm.get('facts') or {}
                     facts.update(existing_pm_order=pmfacts.get('existing_pm_order'),
-                                 pm_planned_wo=pmfacts.get('pm_planned_wo'),pm_cycle=pmfacts.get('pm_cycle'),
+                                 pm_planned_wo=pmfacts.get('pm_planned_wo'), pm_cycle=pmfacts.get('pm_cycle'),
                                  pm_limit_hours=(pmfacts.get('pm_interval_h') * (1 + pmfacts.get('pm_tolerance_pct') / 100)
-                                     if type(pmfacts.get('pm_interval_h')) in (int,float) and type(pmfacts.get('pm_tolerance_pct')) in (int,float) else None))
+                                     if type(pmfacts.get('pm_interval_h')) in (int, float) and type(pmfacts.get('pm_tolerance_pct')) in (int, float) else None))
                 facts[var] = (pm.get('facts') or {}).get(var)
                 row.update(value=facts[var], how='CMMS 정기 정비 계획 · 운전시간 계수기 (예정된 정비 시간까지의 운전시간 · 인원 · 정비 키트 재고)',
                            **source_time(pm, asset))
             elif src == "sys:erp" and var in ERP_SPARE_FACTS:
                 if spare is None:
-                    spare = spare_facts(asset, known['purchase_part_no']) if known.get('purchase_part_no') else spare_facts(asset)
+                    if not known.get('purchase_part_no'):
+                        raise ValueError('구매할 부품이 정해지지 않은 판단이라 ERP 예비품 재고를 읽지 않습니다 — 예비품 구매 판단(submit_purchase · '
+                                         'evaluate_purchase)은 부족 부품 번호를 명시합니다')
+                    spare = spare_facts(asset, known['purchase_part_no'])
                     facts.update({k: spare.get(k) for k in ("spare_part_no", "spare_quotes", "need_qty", "need_by_days") if k not in facts})
                 facts[var] = spare.get(var)
                 row.update(value=facts[var], how=f"ERP 예비품 재고 {spare.get('spare_part_no')} (가용 = 실물 − 예약 + 입고 예정, 재주문점 · 목표 · 필요일)",
@@ -245,11 +250,16 @@ def gather_facts(inputs: list[dict], asset: str, known: dict, tsdb, *, strict: b
             elif src in ("sys:agent", "sys:scm", "sys:process", "sys:cep"):
                 row.update(value=facts.get(var), how="후보마다 계산하거나 경보 · 결정 시점에 정해진다")
             else:
-                facts[var] = None
-                row.update(value=None, how="출처 조회 방법 없음")
-        except Exception as e:  # noqa: BLE001
-            facts[var] = None
-            row.update(value=None, error=str(e)[:160])
+                raise ValueError(f'출처 {src} 에서 이 변수를 읽는 방법이 엔진에 없습니다 — 지식의 출처(SOURCED_FROM)를 확인하세요')
+        except FactUnavailable:
+            raise
+        except mcp_ent.SourceUnavailable as e:
+            raise FactUnavailable(var, i.get('name'), i.get('sourceName') or src, str(e)) from e
+        except (OSError, urllib.error.URLError) as e:
+            raise FactUnavailable(var, i.get('name'), i.get('sourceName') or src,
+                                  f'원천에 닿지 못했습니다({type(e).__name__}: {str(e)[:160]}) — 잠시 뒤 다시 시도하세요') from e
+        except Exception as e:  # noqa: BLE001 — 계약 위반 · 지식 결함도 그 변수의 까닭으로(조용히 None 으로 두지 않는다)
+            raise FactUnavailable(var, i.get('name'), i.get('sourceName') or src, str(e)[:300] or type(e).__name__) from e
         prov.append(row)
     return facts, prov
 
@@ -276,26 +286,80 @@ def pm_context(asset):
                 observed_at=_now(),source_as_of=response.get('as_of'))
 
 
-def spare_facts(asset: str, part_no: str | None = None) -> dict:
-    """C 판단의 재고 사실: 재주문점 아래인 중요 예비품(여럿이면 차이가 큰 것), 없으면 정기 정비 키트 부품. 그 부품의 공급사 견적도 함께
-    (spare_quotes: 공급사 → 단가 · 리드타임 · 불량률 · AVL — 카드마다 발주 금액 · 납기 여유를 계산하는 데 쓴다, cards.candidate_facts)."""
+def spare_facts(asset: str, part_no: str) -> dict:
+    """C 판단의 재고 사실: 구매 판단이 명시한 부품(재주문점 아래)의 한 행과 그 부품의 공급사 견적
+    (spare_quotes: 공급사 → 단가 · 리드타임 · 불량률 · AVL — 카드마다 발주 금액 · 납기 여유를 계산하는 데 쓴다, cards.candidate_facts).
+    부품을 고르지 않는다 — 예전의 「재주문점 아래 첫 부품, 없으면 P-PMP-SEAL」은 판단과 무관한 부품을 근거에 실었다(검진 G1-24)."""
+    if not isinstance(part_no, str) or not part_no:
+        raise ValueError('ERP 예비품 재고는 구매할 부품 번호를 명시해 읽습니다')
     stock = mcp_ent.fetch('/erp/spare_stock', asset)
     rows = [r for r in stock.get('records') or [] if isinstance(r, dict)]
-    below = sorted((r for r in rows if r.get('below_reorder_point')), key=lambda r: r.get('spare_gap') or 0)
-    if part_no is not None:
-        matches = [r for r in rows if r.get('part_no') == part_no and r.get('below_reorder_point')]
-        if len(matches) != 1:
-            raise ValueError('요청한 구매 부품의 실제 재주문점 이탈 행을 확인할 수 없습니다')
-        row = matches[0]
-    else:
-        row = below[0] if below else next((r for r in rows if r.get('part_no') == 'P-PMP-SEAL'), rows[0] if rows else {})
-    part = row.get('part_no')
+    matches = [r for r in rows if r.get('part_no') == part_no and r.get('below_reorder_point')]
+    if len(matches) != 1:
+        raise ValueError(f'ERP 재고에서 {part_no}의 재주문점 이탈 행을 ' + ('찾지 못했습니다 — 지금은 재주문점 아래가 아닙니다' if not matches
+                                                                   else f'{len(matches)}개 찾아 하나로 정할 수 없습니다'))
+    row = matches[0]
     quotes = {}
-    if part:
-        for q in (mcp_ent.fetch(f'/scm/quotes?part={part}', asset).get('records') or []):
-            quotes[q['supplier']] = {k: q.get(k) for k in ('price', 'lead_d', 'fail_rate', 'avl', 'name')}
-    return {'spare_part_no': part, 'spare_gap': row.get('spare_gap'), 'need_qty': row.get('need_qty'),
+    for q in (mcp_ent.fetch(f'/scm/quotes?part={part_no}', asset).get('records') or []):
+        quotes[q['supplier']] = {k: q.get(k) for k in ('price', 'lead_d', 'fail_rate', 'avl', 'name')}
+    return {'spare_part_no': part_no, 'spare_gap': row.get('spare_gap'), 'need_qty': row.get('need_qty'),
             'need_by_days': row.get('need_by_days'), 'spare_quotes': quotes}
+
+
+def check_overrides(inputs: list[dict], overrides: dict | None) -> dict:
+    """가정 실험(읽기 전용)에서 사람이 바꿔 넣는 사실: 지식에 있는 판단 변수만, 그 변수의 형식(typeRef)으로. 음수 시간 · 형식이 다른 값을
+    그대로 규칙에 넣어 「한국어로 답했으니 통과」가 되던 빈틈(검진 G5a-7 ③)을 여기서 거절한다."""
+    out = {}
+    declared = {i['variable']: i for i in inputs}
+    for key, value in (overrides or {}).items():
+        item = declared.get(key)
+        if item is None:
+            raise ValueError(f'바꿔 넣을 수 없는 사실입니다: {key} — 지식 그래프의 판단 입력(InputData) 변수만 바꿀 수 있습니다')
+        kind, name = item.get('typeRef'), item.get('name') or key
+        if kind == 'number':
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+                raise ValueError(f'「{name}」에는 숫자를 넣습니다(받은 값: {value!r})')
+            if value < 0 and (key.endswith(('_h', '_hours', '_qty', '_days')) or key.startswith(('hours_', 'hot_lot_'))):
+                raise ValueError(f'「{name}」은(는) 시간 · 수량이라 음수일 수 없습니다(받은 값: {value:g})')
+        elif kind == 'boolean':
+            if type(value) is not bool:
+                raise ValueError(f'「{name}」에는 참 · 거짓을 넣습니다(받은 값: {value!r})')
+        elif kind in ('string', 'enum'):
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f'「{name}」에는 비어 있지 않은 글을 넣습니다(받은 값: {value!r})')
+        else:
+            raise ValueError(f'「{name}」의 형식({kind})은 가정 실험에서 바꿀 수 없습니다')
+        out[key] = value
+    return out
+
+
+def judgment_variables(dmn, skills, known, pattern, purchase) -> set[str]:
+    """이 판단이 원천에서 읽을 변수: 규칙 · 정책이 시험하는 것(cards.needed_variables) + 엔진이 그 패턴에서 쓰는 업무 사실."""
+    need = cards.needed_variables(dmn, skills, known)
+    if pattern == PM_PATTERN:
+        need |= set(CMMS_PM_FACTS)                   # hydcommon.maintenance_plan 이 정비 계획을 이 사실로 짠다
+    if purchase:
+        need |= set(ERP_SPARE_FACTS)                 # 총비용 비교의 필요 수량 · 필요일
+    return need
+
+
+def judgment_context(kg, known: dict) -> dict:
+    """한 판단의 지식 묶음(규칙 · 입력 정의 · 후보 스킬 · 성과 지표 경로)과 그 판단이 읽을 변수 — decide · 승인 검사 · 시험 실행 ·
+    dmn-mcp 의 판단 사실 도구가 같은 함수로 같은 변수를 같은 원천에서 읽는다."""
+    pattern, purchase = known.get('pattern'), known.get('purchase_part')
+    dmn, inputs = kg.dmn(), kg.inputs()
+    ids = sorted({sid for r in dmn if r["decision"] == "dec:action-candidates" for sid in r.get("outputs") or []})
+    skills = cards.scoped_skills(pattern, {r["skillId"]: r for r in kg.skills(ids)}, purchase)
+    ids = [sid for sid in ids if sid in skills]
+    tradeoffs = kg.tradeoffs(ids)
+    return dict(dmn=dmn, inputs=inputs, skills=skills, candidate_ids=ids, tradeoffs=tradeoffs,
+                variables=judgment_variables(dmn, skills, known, pattern, bool(purchase)))
+
+
+def facts_for(kg, tsdb, asset: str, known: dict, *, strict: bool = False) -> tuple[dict, list[dict]]:
+    """known(경보 종류 · 원인 · 고장 유형 · 구매 부품)에 대한 판단이 쓰는 사실만 읽는다(원천 실패는 FactUnavailable)."""
+    ctx = judgment_context(kg, known)
+    return gather_facts(ctx['inputs'], asset, known, tsdb, variables=ctx['variables'], strict=strict)
 
 
 def decide(kg, registry: DecisionRegistry, tsdb, asset: str, pattern: str, cause: dict, origin: dict | None = None,
@@ -314,55 +378,57 @@ def decide(kg, registry: DecisionRegistry, tsdb, asset: str, pattern: str, cause
 
     rec = {"id": registry.new_id("EVAL"), "created": _now(), "schema": "v2", "asset": asset, "origin": origin or {"kind": "manual"},
            "status": "RUNNING", "steps": steps}
-    registry.put(rec)
     try:
-        dmn = kg.dmn()
-        step("ontology", {"decisions": sorted({r["decision"] for r in dmn}), "rules": len(dmn),
-                          "candidateRules": [r["rule"] for r in dmn if r["decision"] == "dec:action-candidates"]},
-             "mcp-kg T3-b: DMN 판단 → 결정표 → 규칙(임계값 TESTS · OUTPUTS · APPLIES_TO · 근거)")
-        inputs = kg.inputs()
         known = {"pattern": pattern, "cause": cause["id"], "failure_mode": cause.get("failureModeId"),
                  "failure_mode_name": cause.get("failureMode")}
         if purchase_part is not None:
-            if pattern != 'SPARE_BELOW_MIN':
+            if pattern != PURCHASE_PATTERN:
                 raise ValueError('명시 구매 Part 경로는 SPARE_BELOW_MIN에서만 사용합니다')
             known.update(purchase_part=purchase_part['id'], purchase_part_no=purchase_part['partNo'],
                          purchase_part_name=purchase_part.get('name'))
-        facts, prov = gather_facts(inputs, asset, known, tsdb)
+        ctx = judgment_context(kg, known)
+        dmn, inputs, skills, cand_ids, tradeoffs = ctx['dmn'], ctx['inputs'], ctx['skills'], ctx['candidate_ids'], ctx['tradeoffs']
+        step("ontology", {"decisions": sorted({r["decision"] for r in dmn}), "rules": len(dmn),
+                          "candidateRules": [r["rule"] for r in dmn if r["decision"] == "dec:action-candidates"]},
+             "mcp-kg T3-b: DMN 판단 → 결정표 → 규칙(임계값 TESTS · OUTPUTS · APPLIES_TO · 근거)")
+        try:
+            overrides = check_overrides(inputs, overrides)
+        except ValueError:
+            rec['error_code'] = 'INVALID_FACT'           # 사람이 넣은 사실이 틀렸다 — 수동 판단 API 는 4xx 로 돌려준다(main._manual_decide)
+            raise
+        if pattern == PM_PATTERN and not skills:
+            rec['error_code'] = 'BUSINESS_CANDIDATES_MISSING'
+            raise ValueError('PM_DUE 예방 정비 후보 지식이 없습니다: PREVENTED_BY 스킬과 후보 규칙을 확인하세요. 고장 대응 카드로 대체하지 않습니다')
+        if pattern == PURCHASE_PATTERN and not skills:
+            rec['error_code'] = 'BUSINESS_CANDIDATES_MISSING'
+            raise ValueError('SPARE_BELOW_MIN 구매 후보 지식이 없습니다: PR_CREATE만 수행하는 work_order 스킬과 후보 규칙을 확인하세요. 운전·정비 카드로 대체하지 않습니다')
+        variables = ctx['variables'] | set(overrides)
+        try:
+            facts, prov = gather_facts(inputs, asset, known, tsdb, variables=variables)
+            if pattern == PM_PATTERN:
+                facts['pm_context'] = pm_context(asset)
+        except (FactUnavailable, mcp_ent.SourceUnavailable) as exc:
+            rec['error_code'] = 'SOURCE_UNAVAILABLE'
+            step("facts", {"error": str(exc)}, "판단 사실을 원천에서 읽지 못해 판단을 멈췄다", status="FAILED")
+            raise
         if overrides:
             facts.update(overrides)
             for p in prov:
                 if p["variable"] in overrides:
                     p.update(value=overrides[p["variable"]], how="사람이 바꿔 넣은 값 (가정 실험)")
-        step("facts", prov, "T3-h: InputData -SOURCED_FROM-> 시스템 · 센서 — 규칙이 검사할 사실을 온톨로지가 정한 출처에서 가져온다",
-             status="DONE" if not any(p.get("error") for p in prov) else "FAILED")
-        cand_ids = sorted({sid for r in dmn if r["decision"] == "dec:action-candidates" for sid in r.get("outputs") or []})
-        skills = {r["skillId"]: r for r in kg.skills(cand_ids)}
-        skills = cards.scoped_skills(pattern, skills, purchase_part['id'] if purchase_part else None)
-        if pattern == 'PM_DUE':
-            try:
-                facts['pm_context']=pm_context(asset)
-            except Exception as exc:
-                facts['pm_context']=dict(asset=asset,error=str(exc))
-        if pattern == 'PM_DUE' and not skills:
-            rec['error_code'] = 'BUSINESS_CANDIDATES_MISSING'
-            raise ValueError('PM_DUE 예방 정비 후보 지식이 없습니다: PREVENTED_BY 스킬과 후보 규칙을 확인하세요. 고장 대응 카드로 대체하지 않습니다')
-        if pattern == 'SPARE_BELOW_MIN' and not skills:
-            rec['error_code'] = 'BUSINESS_CANDIDATES_MISSING'
-            raise ValueError('SPARE_BELOW_MIN 구매 후보 지식이 없습니다: PR_CREATE만 수행하는 work_order 스킬과 후보 규칙을 확인하세요. 운전·정비 카드로 대체하지 않습니다')
-        if pattern == 'SPARE_BELOW_MIN':
-            if purchase_part is not None and facts.get('spare_part_no') != purchase_part['partNo']:
-                rec['error_code'] = 'BUSINESS_FACTS_MISSING'
-                raise ValueError('요청한 구매 Part와 실제 ERP 부족부품 사실이 다릅니다. 다른 부품의 견적으로 판단하지 않습니다')
+        step("facts", prov, "T3-h: InputData -SOURCED_FROM-> 시스템 · 센서 — 이 판단의 규칙 · 정책이 검사할 사실만 온톨로지가 정한 출처에서 가져온다")
+        if pattern == PURCHASE_PATTERN:
             missing = [key for key in ERP_SPARE_FACTS if type(facts.get(key)) not in (int, float)
                        or not math.isfinite(facts[key])]
             if missing or facts['need_qty'] <= 0:
                 rec['error_code'] = 'BUSINESS_FACTS_MISSING'
                 raise ValueError('SPARE_BELOW_MIN 구매 판단의 실제 업무 사실을 확인할 수 없습니다: ' + ', '.join(missing or ['need_qty']))
-        cand_ids = [sid for sid in cand_ids if sid in skills]
-        forecasts, forecast_contexts = ({}, None) if purchase_part is not None else forecasting.candidates(kg, asset, skills)
-        step('forecast', forecast_contexts, '구매는 물리 예측을 사용하지 않고 검토된 원문 총비용과 실제 부품 견적을 비교한다' if purchase_part is not None else '설비별 명시 모델과 동일 시점 원천으로 조치별 예측; 고정 설계점으로 대체하지 않음')
-        tradeoffs = kg.tradeoffs(cand_ids)
+        compliance = [r for r in dmn if r['decision'] == 'dec:compliance']
+        stopping = {sid for sid, k in skills.items()
+                    if cards.stops_now(cards.option_window(compliance, sid, k, facts.get('windows_by_variable')))}
+        forecasts, forecast_contexts = ({}, None) if purchase_part is not None else forecasting.candidates(kg, asset, skills, stopping)
+        step('forecast', forecast_contexts, '구매는 물리 예측을 사용하지 않고 검토된 원문 총비용과 실제 부품 견적을 비교한다' if purchase_part is not None
+             else '설비별 명시 모델과 동일 시점 원천으로 조치별 예측(지금 작업지시를 시행하는 카드는 정지한 설비로); 고정 설계점으로 대체하지 않음')
         precedents = kg.precedents(cause.get("failureModeId") or "")
         suppliers = kg.suppliers()
         if purchase_part is not None:
@@ -385,7 +451,7 @@ def decide(kg, registry: DecisionRegistry, tsdb, asset: str, pattern: str, cause
                     rec['error_code'] = 'BUSINESS_FACTS_MISSING'
                     raise ValueError(f'실제 공급사 견적의 수치 범위를 확인하세요: {supplier}')
         result = cards.evaluate(dmn, skills, facts, forecasts, tradeoffs, precedents, suppliers, forecast_contexts, evaluation_mode='execution')
-        if pattern == 'SPARE_BELOW_MIN' and not result['options']:
+        if pattern == PURCHASE_PATTERN and not result['options']:
             rec['error_code'] = 'BUSINESS_CANDIDATES_MISSING'
             step('candidates', result['trace'], '현재 업무 사실·원인으로 선택된 구매 후보 없음', status='FAILED')
             raise ValueError('SPARE_BELOW_MIN의 현재 업무 사실·원인에 맞게 발화한 구매 후보가 없습니다. 후보 규칙과 구매 지식을 확인하세요')
@@ -410,8 +476,9 @@ def decide(kg, registry: DecisionRegistry, tsdb, asset: str, pattern: str, cause
         step("guardrail", {"violations": violations}, "가드레일: 규칙 인용 · 권고 카드의 규정 · 승인 역할 · SOP 단계",
              status="DONE" if not violations else "FAILED")
         roles = {r["id"]: {"name": r["name"], "level": r["level"], "dept": r["deptName"]} for r in kg.roles()}
-        scenario = {"id": "dec:rank-actions", "name": f"{cause.get('failureMode') or ''} 조치 판단", "pattern": pattern,
-                    "cause": cause.get("name"), "failureMode": cause.get("failureMode")}
+        subject = (purchase_part.get('name') or purchase_part['partNo']) + ' 구매' if purchase_part is not None else cause.get('failureMode') or ''
+        scenario = {"id": "dec:rank-actions", "name": f"{subject} 판단" if purchase_part is not None else f"{subject} 조치 판단",
+                    "pattern": pattern, "cause": cause.get("name"), "failureMode": cause.get("failureMode")}
         rec.update(scenario=scenario, result=result, facts=facts, provenance=prov, roles=roles,
                    recommended=result["recommended"], explanation=result["explanation"], applicable=bool(result["options"]))
         if violations:
@@ -435,7 +502,7 @@ def decide(kg, registry: DecisionRegistry, tsdb, asset: str, pattern: str, cause
             except Exception:
                 rec['error_code'] = 'SUBMIT_FAILED'      # unreachable process, timeout, unreadable reply
                 raise
-            registry.submitted(rec, res.get('id') or decision_id)
+            rec["id"] = res['id']     # only a confirmed process submission earns a persisted-decision id (submit checked it is decision_id)
             step("submit", res, "process API에 조치 카드 제출 (에이전트의 유일한 쓰기) — 실행은 사람이 고른 뒤 L9가 한다")
             rec["status"] = "SUBMITTED"
         elif rec["status"] == "RUNNING":

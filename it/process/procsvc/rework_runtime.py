@@ -74,7 +74,7 @@ class ReworkRuntime:
             if proposal['snapshot_token'] != snapshot_token:
                 raise ValueError('미리보기 이후 실행 상태가 바뀌었습니다. 영향 범위를 다시 확인하세요')
             if not proposal['execution_available']:
-                raise ValueError('재작업 검토가 필요합니다: ' + ', '.join(b['code'] for b in proposal['blockers']))
+                raise ValueError(rework.blocked_message(proposal['blockers']))
             for wid in proposal.get('retire_approvals', []):
                 _, approval = self._discard_owner(wid, by, role)
                 previous_status = approval['status']
@@ -110,4 +110,5 @@ class ReworkRuntime:
             for row in adv.reached:
                 if row['status'] == 'SUBMITTED' and row.get('agent_orch') == engine.PROCESS_ORCH:
                     self._after_commit(self._run_service, inst, row, now)
-        return result
+        # 첫 응답도 저장된 영수증 그대로 — 같은 요청 id 로 다시 보낸 응답(prior['result'])과 같다
+        return self.repo.get_rework(self.tenant_id, proc_inst_id, request_id)['result']

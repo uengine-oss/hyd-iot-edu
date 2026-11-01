@@ -1,7 +1,7 @@
 """Bind a submitted decision to the exact producing work item and generation.
 
-The consumer is a claim fence, not user authentication. Generation-zero legacy
-submissions remain explicit compatibility; rework requires a claimed producer.
+The consumer is a claim fence, not user authentication. 판단 접수와 결과 대조는 세대와 상관없이 같은 규칙이다(P1-20 — 0세대 판단을
+범위 없이 받던 호환 갈래를 지움: 워커 · dmn-mcp 는 늘 실행 머리글로 process_scope 를 싣는다).
 """
 from . import engine
 

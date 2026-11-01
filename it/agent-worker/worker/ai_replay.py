@@ -1,16 +1,19 @@
 """AI 응답 저장 · 다시 쓰기 — 한 장치(같은 녹화 형식 · 같은 재생기)로 세 모드를 돈다. 문서: workspace/개발/문서/재생모드.md
 
     AI_MODE=live    키 있는 PC: 실제 AI. 같은 설정 · 같은 입력으로 앞서 성공한 실행이 이 PC에 있으면 그 응답을 다시 쓴다(같은 요청 저장)
-    AI_MODE=record  강사: 실제 AI로 실행하고, 점유가 저장된 결과(제출 · 사람 질문 · 보류)로 끝나면 그 실행을 수업 녹화로 남긴다
+    AI_MODE=record  강사: 실제 AI로 실행하고, 점유가 제출 또는 사람 질문으로 끝나면 그 실행을 수업 녹화로 남긴다(근거 부족 보류로 끝난
+                  실행은 녹화하지 않는다 — 좋은 녹화를 보류로 덮어 키 없는 학생이 늘 보류를 보게 되던 것, 검진 G1-22)
     AI_MODE=replay  키 없는 PC: CLI · 모델을 부르지 않고 그 수업 AI 자리의 강사 녹화를 낸다
 
 녹화를 찾는 열쇠
-  수업 녹화(AI_REPLAY_DIR — 저장소 it/agent-worker/replay/): 서버가 준 수업 AI 자리(procsvc/course_policy — c3_cooling/T_agent ·
-    handover/draft-1~3 · question)와 무엇에 대한 처리 건인가(경보 종류 · 질문 글). 학생이 바꿀 수 있는 작업 이름 · 흐름 id 는 열쇠가 아니다 —
+  수업 녹화(AI_REPLAY_DIR — 저장소 it/agent-worker/replay/): 서버가 준 수업 AI 자리(정본 procsvc/course_policy, 워커는 process 의 판정 ·
+    GET /api/course-access 로만 읽는다 — c3_cooling/T_agent · handover/draft-1~3 · question)와 무엇에 대한 처리 건인가(경보 종류 · 질문 글). 학생이 바꿀 수 있는 작업 이름 · 흐름 id 는 열쇠가 아니다 —
     이름을 바꾼 교대 흐름도 같은 녹화를 낸다. 같은 작업을 새로 하는 실행(재작업 세대 · 보류 뒤 재평가)은 실행 차례 runs[].attempt 로 가린다.
   같은 요청 저장(이 PC의 <작업 공간>/.ai-cache): 실행에 영향을 주는 것 전부의 해시(정의 · 단계 · 지시 · 입력 · 피드백 · 폼 · 에이전트 설정 ·
-    업무 규칙 · 스킬 본문 · 도구 서버 · 모델 — Runner._request_material). 하나라도 다르면 새로 실행한다. 결과 검사를 통과해 제출한 실행만
-    저장하고, 그 실행의 작업이 지금도 끝남(DONE — 처리 흐름이 결과를 받아들임)일 때만 다시 쓴다.
+    업무 규칙 · 스킬 본문 · 도구 서버 · 모델 — runner._request_key). 하나라도 다르면 새로 실행한다. 결과 검사를 통과해 제출한 실행만
+    저장하고, 그 실행의 작업이 지금도 끝남(DONE — 처리 흐름이 결과를 받아들임)일 때만 다시 쓴다. 질문(「에이전트에게 질문」)은 저장하지
+    않는다 — 답은 지금의 지식 그래프 · 업무 DB 를 읽어 만들고 그 상태는 열쇠에 없어서, 적재 · 재고가 바뀐 뒤 같은 질문에 옛 답이 나왔다
+    (검진 G1-09). 작업 행이 없어졌거나 작업 폴더 보존 기간(72 시간) 동안 다시 쓰이지 않은 저장은 작업 폴더 정리(sweep_cache)가 지운다.
 
 녹화 하나 = 파일 하나(<열쇠>.json.gz). 안에는 실행이 순서대로 있다 — 첫 실행, 같은 세션을 이어 간 실행(사람 답 뒤 · 결과 교정 · 처리 흐름이
 결과를 돌려보낸 뒤). 다시 낼 때 이어 하기는 세션 replay:<열쇠>:<순번>(수업 녹화) · reuse:<열쇠>:<순번>(같은 요청)으로 다음 실행을 고른다.
@@ -32,7 +35,7 @@ import json
 import logging
 import re
 from dataclasses import asdict
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Callable, Iterable
 
@@ -52,12 +55,17 @@ TASK_FILE = "context/task.json"
 SWAPS_FILE = "context/ai-replay-swaps.json"     # 이어 하기 실행이 이어 받을 바꿔 끼울 값(저장 id → 이 PC의 새 id)
 QUESTION_PREFIX = "질문 "
 DEFERRED_MARK = "[DEFERRED]"       # task_deferral.defer 가 작업 log 에 남기는 표시 — 보류 한 번에 하나
-STORED = ("submitted", "asked", "deferred")
+COURSE_KEPT = ("submitted", "asked")            # 수업 녹화로 남기는 끝(사람 질문은 그 뒤 이어지는 실행과 한 녹화)
+CACHE_KEPT = ("submitted",)                     # 같은 요청 저장으로 남기는 끝
+UNCACHED_SLOTS = ("question",)                  # 지금의 지식 · 업무 상태로 답하는 자리 — 같은 요청 저장을 쓰지 않는다(G1-09)
+#: 다시 부르는 쓰기 도구(submit_decision · submit_purchase)는 판단 전체를 계산한다 — 원천 읽기 한도(agent mcp_ent 15초) · process 제출
+#: 한도(10초)보다 길게 기다린다. 연결 확인용 기본 10초로는 바쁜 PC에서 정상 판단이 「응답하지 않았습니다」로 멈췄다(2026-10-30 테스트 실측).
+WRITE_CALL_TIMEOUT_S = 60.0
 
 
 class NotRecorded(Stop):
     """녹화(저장)에 없는 실행 — 문장은 학생이 할 일까지 쓴다."""
-    title = "AI 응답 재생 범위 밖"
+    title = "강의 녹화에 없는 AI 단계"
 
 
 # ---------------------------------------------------------------- 열쇠
@@ -115,7 +123,10 @@ class Library:
         return self.root / f"{key}.json.gz"
 
     def _read(self, path: Path) -> dict:
-        doc = json.loads(gzip.decompress(path.read_bytes()).decode("utf-8"))
+        try:
+            doc = json.loads(gzip.decompress(path.read_bytes()).decode("utf-8"))
+        except (OSError, EOFError, UnicodeDecodeError, ValueError) as exc:   # 깨진 gzip · 잘린 파일 · 글자 아님 · JSON 아님
+            raise RuntimeError(f"저장된 AI 응답 파일을 읽지 못했습니다({type(exc).__name__}: {exc}): {path}") from exc
         if doc.get("format") != FORMAT:
             raise RuntimeError(f"저장된 AI 응답 파일의 형식이 다릅니다({doc.get('format')} — 지금은 {FORMAT}): {path}")
         return doc
@@ -126,6 +137,10 @@ class Library:
 
     def delete(self, key: str) -> None:
         self.file_of(key).unlink(missing_ok=True)
+
+    def touch(self, key: str) -> None:
+        """다시 쓴 저장의 시각을 지금으로(보존 기간은 마지막으로 쓰인 때부터 — sweep_cache)."""
+        self.file_of(key).touch()
 
     def docs(self) -> list[tuple[str, dict]]:
         return [(p.name[: -len(".json.gz")], self._read(p)) for p in sorted(self.root.glob("*.json.gz"))] if self.root.is_dir() else []
@@ -174,6 +189,16 @@ def _event_dict(ev: ExecEvent) -> dict:
     if ev.kind is not ExecEventKind.UNKNOWN:
         d.pop("raw")
     return d
+
+
+def partial_chunk(ev) -> bool:
+    """CLI 가 토큰마다 보내는 부분 응답 조각(stream_event 의 content_block_delta — 라이브러리가 일부러 UNKNOWN 으로 둔다). 같은 내용이
+    완성된 이벤트(설명 글 · 도구 호출)로 다시 오므로 처리 기록 · 화면 어디에도 쓰이지 않는데, 녹화 · 실행 추적의 95 %를 차지했다(검진 G1-08).
+    녹화 · 같은 요청 저장 · 실행 추적에 남기지 않고, 옛 녹화를 다시 낼 때도 건너뛴다. 모델 호출 경계(message_start)는 남긴다."""
+    kind = ev.kind.value if isinstance(ev, ExecEvent) else ev.get("kind")
+    raw = (ev.raw if isinstance(ev, ExecEvent) else ev.get("raw")) or {}
+    return kind == ExecEventKind.UNKNOWN.value and isinstance(raw, dict) and raw.get("type") == "stream_event" \
+        and (raw.get("event") or {}).get("type") == "content_block_delta"
 
 
 def _event_from(d: dict) -> ExecEvent:
@@ -235,7 +260,7 @@ def capture(request, events: list[ExecEvent]) -> dict:
     """스트림 하나가 끝난 바로 뒤의 실행(결과 파일 · 큰 도구 결과도 그때 읽는다 — 교정 실행이 결과 파일을 다시 쓰기 전에)."""
     result_path = Path(request.workdir) / RESULT_FILE
     run = {"session_id": next((ev.session_id for ev in events if ev.session_id), None),
-           "events": _joined([_event_dict(ev) for ev in events if ev.kind is not ExecEventKind.THINKING]),
+           "events": _joined([_event_dict(ev) for ev in events if ev.kind is not ExecEventKind.THINKING and not partial_chunk(ev)]),
            "result_file": result_path.read_text(encoding="utf-8") if result_path.is_file() else None,
            "context": _task_context(request.workdir)}
     run["tool_outputs_full"] = _persisted_full(run["events"], request.workdir)
@@ -248,19 +273,8 @@ def _id_like(s: str) -> bool:
     return len(s) >= 5 and not re.search(r"\s", s) and bool(re.search(r"\d", s)) and bool(re.search(r"\D", s))
 
 
-CASE_FIELDS = ("alertId", "alert_id", "incident", "t", "as_of")
-
-
-def _case_value(key: str, value: str) -> bool:
-    """입력 가운데 처리 건마다 새로 생기는 값: 경보 · 사건 id, 경보 · 기준 시각(*_at · *_since), 날짜가 박힌 id(MW-HYD-02-N-202610282113)."""
-    return key in CASE_FIELDS or key.endswith(("_at", "_since")) or bool(re.search(r"\d{8}", value))
-
-
-def _selector(value) -> bool:
-    """데이터를 고르는 기준 값의 모양: 공백 없는 코드(설비 HYD-01 · 부품 P-PMP-SEAL · 계획 PM-HYD-02-2000 …)."""
-    return isinstance(value, str) and bool(value) and not re.search(r"\s", value) and bool(re.search(r"[\d\-_:./]", value))
-
-
+#: 데이터를 고르는 입력 — 녹화와 다르면 바꿔 끼우지 않고 멈춘다(다른 설비 · 부품의 실측을 이 처리 건 것처럼 보이지 않게). 이 표 한 곳이 정한다:
+#: 값의 모양(공백 없는 코드)으로 가르면 「버튼을 누른 사람」(requested_user) · 짧은 보완 요청 글까지 멈춤 사유가 됐다(검진 G1-03).
 FIELD_NAMES = {"asset": "설비", "part_no": "부품 번호", "kit_part_no": "부품 번호", "plan_id": "정비 계획", "bundle_peer": "함께 정비할 설비",
                "pattern": "경보 종류"}
 
@@ -295,12 +309,14 @@ class _Swaps:
             return
         if old == new or key is None:
             return
-        if isinstance(old, str) and isinstance(new, str) and _case_value(key, old) and _case_value(key, new):
-            self.exact.setdefault(old, new)
-        elif _selector(old) or _selector(new):
-            label = FIELD_NAMES.get(key, key)
+        if key in FIELD_NAMES:
+            label = FIELD_NAMES[key]
             raise NotRecorded(f"강의 녹화의 「{step}」은 {label} {old or '(빈 값)'} 처리 건으로 만들었습니다(지금은 {new or '(빈 값)'}). "
                               f"키 없는 PC는 녹화와 같은 {label}로만 재생합니다 — {label}을(를) {old or '(빈 값)'}(으)로 해서 다시 시작하세요.")
+        if isinstance(old, str) and isinstance(new, str) and old and new:
+            # 처리 건마다 달라지는 값(경보 · 사건 id · 시각)과 데이터를 고르지 않는 값(누른 사람 · 보완 요청 글)은 녹화 글 속의 그 값만
+            # 이 처리 건의 값으로 바꾼다(글 속 부분 바꾸기는 id 모양 값만 — _Swaps.text)
+            self.exact.setdefault(old, new)
 
     def pair_created(self, old, new) -> None:
         """쓰기 도구가 새로 만든 것의 id 만 짝짓는다: 결과 문서 맨 위의 id(submit_decision · submit_purchase 의 document.id)."""
@@ -382,14 +398,14 @@ class _Tools:
 
     def writes(self, server: str, tool: str) -> bool:
         if server not in self.servers:
-            raise NotRecorded(f"강의 녹화의 「{self.step}」은 도구 서버 {server}을(를) 썼는데 지금 이 단계의 에이전트에는 그 서버가 없습니다. "
-                              f"[에이전트]에서 이 에이전트의 도구 서버에 {server}을(를) 다시 넣고 실행하세요.")
+            raise NotRecorded(f"강의 녹화의 「{self.step}」은 도구 서버 「{server}」을(를) 썼는데 지금 이 단계의 에이전트에는 그 서버가 없습니다. "
+                              f"[에이전트] 화면에서 이 에이전트의 도구에 「{server}」을(를) 다시 고르고 실행하세요.")
+        if self.servers[server].get("command"):  # 워커 자신의 조회 창구(질문 · 결과 검사) — 쓰기 도구가 없다
+            return False
         try:
             spec = mcp_check.normalize(self.servers[server])
         except ValueError as e:
-            raise NotRecorded(f"도구 서버 {server}의 설정이 올바르지 않아 「{self.step}」을 재생하지 못했습니다: {e}") from None
-        if spec["transport"] == "stdio":         # 이 시스템의 명령형 서버는 읽기 전용 neo4j 뿐이다
-            return False
+            raise NotRecorded(f"도구 서버 「{server}」의 설정이 올바르지 않아 「{self.step}」을 재생하지 못했습니다: {e}") from None
         if server not in self.listed:
             out = mcp_check.check(spec)
             if out["status"] != "ok":
@@ -402,21 +418,27 @@ class _Tools:
 
     def call(self, server: str, tool: str, arguments: dict) -> dict:
         # 승인 뒤 시스템 작업의 쓰기 호출과 같은 함수(입력 형식 검사 포함)
-        out = mcp_check.call_effect(mcp_check.normalize(self.servers[server]), tool, arguments, max_chars=1_000_000)
+        out = mcp_check.call_effect(mcp_check.normalize(self.servers[server]), tool, arguments, max_chars=1_000_000,
+                                    timeout=WRITE_CALL_TIMEOUT_S)
         if out["status"] != "ok":
             raise NotRecorded(f"「{self.step}」에서 녹화된 AI가 부른 {server}/{tool}을(를) 이 PC에서 다시 부르지 못했습니다: {out.get('error')}")
         return out["result"]
 
 
-def play(library: Library, key: str, doc: dict, i: int, request, check_stop, last: dict) -> Iterable[ExecEvent]:
-    """녹화의 i번째 실행을 이 처리 건의 값으로 바꿔 끼워 낸다. 결과 파일도 녹화 당시 것을 바꿔 둔다. last 에 알림 재료를 남긴다."""
+def play(library: Library, key: str, doc: dict, i: int, request, check_stop, last: dict, *, reclaimed: bool = False) -> Iterable[ExecEvent]:
+    """녹화의 i번째 실행을 이 처리 건의 값으로 바꿔 끼워 낸다. 결과 파일도 녹화 당시 것을 바꿔 둔다. last 에 알림 재료를 남긴다.
+    reclaimed: 워커가 끊긴 뒤 다시 잡은 점유가 같은 실행을 처음부터 다시 내는 것 — 그 실행이 이미 부른 쓰기 도구(판단 등록)는 다시 부르지
+    않고 그때 받은 결과를 쓴다(process 는 한 작업 · 세대에 판단 하나만 받는다 — 다시 부르면 409 로 단계가 실패했다, 검진 G1-11)."""
     saved = doc["runs"][i]
     step = doc.get("step") or "이 단계"
     swaps = _Swaps()
     carried = Path(request.workdir) / SWAPS_FILE
     resumed = bool((request.resume_session or "").startswith(library.prefix))
-    if resumed and carried.is_file():        # 이어 하기: 앞 실행이 다시 부른 쓰기 도구의 새 id(판단 id 등)를 이어 받는다
-        swaps.exact.update(json.loads(carried.read_text(encoding="utf-8")))
+    done: dict[str, str] = {}                # 이 실행이 이미 부른 쓰기 도구의 결과(tool_use_id → 결과 글)
+    if (resumed or reclaimed) and carried.is_file():   # 이어 하기 · 재점유: 앞 실행이 부른 쓰기 도구의 새 id 와 결과를 이어 받는다
+        held = json.loads(carried.read_text(encoding="utf-8"))
+        swaps.exact.update(held["exact"])
+        done = dict(held["results"]) if reclaimed and not resumed else {}
     elif not resumed:
         carried.unlink(missing_ok=True)
     swaps.pair_case(saved.get("context") or {}, _task_context(request.workdir), step)
@@ -424,8 +446,9 @@ def play(library: Library, key: str, doc: dict, i: int, request, check_stop, las
     session = library.session(key, i)
     last.update(step=step, recorded_at=doc.get("recorded_at"), rerun=[], kept_errors=0, attempt=_attempt_label(_attempt(saved)),
                 library=library.prefix)
-    yield ExecEvent(kind=ExecEventKind.RUN_START, session_id=session)
-    events = saved["events"]
+    events = [d for d in saved["events"] if not partial_chunk(d)]
+    if not any(d["kind"] == ExecEventKind.RUN_START.value for d in events):    # 녹화에 실행 시작 줄이 있으면 그것 하나만(G1-08)
+        yield ExecEvent(kind=ExecEventKind.RUN_START, session_id=session)
     live: dict[str, dict] = {}
     for n, d in enumerate(events):
         if check_stop:
@@ -442,7 +465,10 @@ def play(library: Library, key: str, doc: dict, i: int, request, check_stop, las
                 last["kept_errors"] += 1
                 yield _event_from(d)
                 continue
-            result = tools.call(*target, d["tool_input"] if isinstance(d["tool_input"], dict) else {})
+            if d.get("tool_use_id") in done:          # 재점유: 끊기기 전에 이미 부른 쓰기 — 그때의 결과
+                result = {"text": done[d["tool_use_id"]], "is_error": False}
+            else:
+                result = tools.call(*target, d["tool_input"] if isinstance(d["tool_input"], dict) else {})
             live[d.get("tool_use_id")] = result
             last["rerun"].append(f"{target[0]}/{target[1]}")
             if _failed(result["text"], result["is_error"]):
@@ -453,9 +479,10 @@ def play(library: Library, key: str, doc: dict, i: int, request, check_stop, las
                 raise NotRecorded(f"「{step}」의 녹화된 쓰기 결과를 읽을 수 없어 새로 만든 id 를 바꿔 끼우지 못했습니다. 강사에게 알려 주세요"
                                   + (f"(이 PC에는 이미 등록됐습니다 — id {made}, 승인 대기 목록에서 확인하세요)." if made else "."))
             swaps.pair_created(old, new)
-            # 바로 남긴다 — Runner 는 결과를 받으면 이 생성기를 끝까지 돌리지 않고 닫을 수 있다
+            done[d["tool_use_id"]] = result["text"]
+            # 바로 남긴다 — Runner 는 결과를 받으면 이 생성기를 끝까지 돌리지 않고 닫을 수 있고, 워커가 그 사이 죽을 수도 있다
             carried.parent.mkdir(parents=True, exist_ok=True)
-            carried.write_text(json.dumps(swaps.exact, ensure_ascii=False), encoding="utf-8")
+            carried.write_text(json.dumps({"exact": swaps.exact, "results": done}, ensure_ascii=False), encoding="utf-8")
         if d["kind"] == ExecEventKind.TOOL_END.value and d.get("tool_use_id") in live:
             d.update(text=live[d["tool_use_id"]]["text"], tool_output=live[d["tool_use_id"]]["text"], is_error=False)
         else:
@@ -469,18 +496,33 @@ def play(library: Library, key: str, doc: dict, i: int, request, check_stop, las
                         encoding="utf-8")
 
 
-def notice(last: dict | None) -> str | None:
-    """처리 과정에 남길 한 줄. 포털 처리 과정은 긴 줄 끝을 「…」로 자르므로 핵심(새 추론 아님)을 앞에 둔다."""
+def korea_time(recorded_at: str | None) -> str:
+    """녹화 시각(「2026-10-28 12:08 UTC」) → 학생이 읽는 한국 시각(「2026-10-28 21:08」). 읽을 수 없으면 원문."""
+    try:
+        t = datetime.strptime(str(recorded_at), "%Y-%m-%d %H:%M UTC").replace(tzinfo=timezone.utc)
+    except ValueError:
+        return str(recorded_at)
+    return (t + timedelta(hours=9)).strftime("%Y-%m-%d %H:%M")
+
+
+def notice(last: dict | None, skills: list[str] | None = None) -> str | None:
+    """처리 과정에 남길 한 줄. 포털 처리 과정은 긴 줄 끝을 「…」로 자르므로 핵심(새 추론 아님)을 앞에 둔다.
+    skills: 이번 실행에 붙인 스킬 — 다시 낸 응답에는 반영되지 않는다(키 없는 PC에서 스킬을 붙이고 뗀 차이를 보려는 실습이 같은 답을 보고
+    「스킬이 아무 일도 하지 않는다」로 배우지 않게, 실라버스 포털 실습 3번)."""
     if not last:
         return None
     rerun = f" 쓰기 도구({', '.join(dict.fromkeys(last['rerun']))})는 이 PC에서 다시 실행했습니다." if last.get("rerun") else ""
     kept = (f" 저장 때 오류였던 쓰기 호출 {last['kept_errors']}건은 다시 부르지 않고 그 오류를 그대로 보였습니다." if last.get("kept_errors") else "")
+    when = korea_time(last.get("recorded_at"))
     if last.get("library") == REUSE:
-        return (f"같은 설정 · 같은 입력의 앞선 실행 결과를 다시 썼습니다(새로 추론하지 않음 — {last['recorded_at']} 실행).{rerun}{kept} "
+        return (f"같은 설정 · 같은 입력의 앞선 실행 결과를 다시 썼습니다(새로 추론하지 않음 — {when} 실행).{rerun}{kept} "
                 "새로 추론하게 하려면 입력이나 에이전트 설정을 바꿔 실행하세요.")
     attempt = f" · {last['attempt']}" if last.get("attempt") else ""
-    return (f"AI 응답 재생 — 강사가 미리 실행해 둔 응답이며 지금 AI가 새로 추론한 것이 아닙니다(「{last['step']}」{attempt}, {last['recorded_at']} 저장)."
-            f"{rerun}{kept} 같은 단계면 같은 응답을 쓰므로 지금의 경보 세기 · 사람의 답이 녹화 때와 달라도 응답은 그대로입니다.")
+    unused = (f" 이번 실행에 붙인 스킬({', '.join(skills)})은 이 답에 반영되지 않았습니다 — 스킬을 붙이고 뗀 차이는 키가 있는 PC에서 실제 AI로 봅니다."
+              if skills else "")
+    return (f"AI 응답 재생 — 강사가 미리 실행해 둔 응답이며 지금 AI가 새로 추론한 것이 아닙니다(「{last['step']}」{attempt}, {when} 저장)."
+            f"{rerun}{kept}{unused} 같은 단계면 같은 응답을 쓰므로 지금의 경보 세기 · 사람의 답 · 에이전트 설정이 녹화 때와 달라도 응답은 그대로입니다. "
+            "응답 속 작업지시 · 발주 번호와 수치 · 시각은 강사 PC에서 저장할 때의 것이라 이 PC의 업무 데이터와 다를 수 있습니다.")
 
 
 # ---------------------------------------------------------------- 점유 하나의 AI 응답
@@ -494,14 +536,19 @@ class Responses:
         self.mode, self.course, self.cache = mode, course, cache if mode == "live" else None
 
     def claim(self, *, cli, slot: str | None, case: str, attempt: tuple[int, int], request_key: str | None, step: str,
-              provider: str, source: dict, accepted: Callable[[dict], bool]) -> Claim:
+              provider: str, source: dict, accepted: Callable[[dict], bool], reclaimed: bool = False,
+              skills: list[str] | None = None) -> Claim:
         return Claim(self, cli=cli, slot=slot, case=case, attempt=attempt, request_key=request_key, step=step,
-                     provider=provider, source=source, accepted=accepted)
+                     provider=provider, source=source, accepted=accepted, reclaimed=reclaimed, skills=skills)
 
 
 class Claim:
-    def __init__(self, responses: Responses, *, cli, slot, case, attempt, request_key, step, provider, source, accepted):
+    def __init__(self, responses: Responses, *, cli, slot, case, attempt, request_key, step, provider, source, accepted,
+                 reclaimed=False, skills=None):
         self.r, self.cli = responses, cli
+        self.reclaimed, self.skills = reclaimed, list(skills or [])
+        if slot in UNCACHED_SLOTS:
+            request_key = None              # 지금 상태로 답하는 자리 — 같은 요청 저장을 읽지도 쓰지도 않는다(G1-09)
         self.slot, self.case, self.attempt, self.request_key = slot, case, tuple(attempt), request_key
         self.step, self.provider, self.source, self.accepted = step, provider, source, accepted
         self.captured: list[tuple[str | None, dict]] = []      # (그 스트림의 resume_session, 실행)
@@ -551,6 +598,7 @@ class Claim:
             doc = self.r.cache.load(self.request_key)
             if doc is not None:
                 if self.accepted(doc.get("source") or {}):
+                    self.r.cache.touch(self.request_key)
                     return ("play", self.request_key, doc, 0, self.r.cache)
                 log.info("같은 요청 저장 %s: 그 실행의 작업이 지금은 끝남이 아니라(돌려보냄 · 재작업 · 초기화) 버리고 새로 실행합니다", self.request_key)
                 self.r.cache.delete(self.request_key)
@@ -567,14 +615,15 @@ class Claim:
             self.last = {}
             if not request.resume_session:
                 self.played = library.prefix
-            yield from play(library, key, doc, i, request, check_stop, self.last)
+            yield from play(library, key, doc, i, request, check_stop, self.last, reclaimed=self.reclaimed and not request.resume_session)
             return
         self.last = {}
         events: list[ExecEvent] = []
         gen = self.cli(provider, request, env, check_stop=check_stop) if getattr(self.cli, "accepts_check_stop", False) \
             else self.cli(provider, request, env)
         for ev in gen:
-            events.append(ev)
+            if not partial_chunk(ev):
+                events.append(ev)
             yield ev
         self.captured.append((request.resume_session, capture(request, events)))
 
@@ -610,19 +659,22 @@ class Claim:
     def notice(self) -> str | None:
         if self.dropped and not self.last:
             return "앞서 다시 쓴 같은 요청의 결과를 처리 흐름이 돌려보내, 그 저장을 버리고 실제 AI로 새로 실행했습니다."
-        return notice(self.last)
+        return notice(self.last, self.skills if self.last.get("library") == COURSE else None)
 
     def keep(self, outcome: str, secrets) -> None:
-        """점유가 저장된 결과로 끝났을 때 받아 둔 실행을 남긴다. 실패 · 취소로 끝난 점유는 부르지 않는다(좋은 녹화를 덮지 않는다)."""
-        if outcome not in STORED or not self.captured:
+        """점유가 끝났을 때 받아 둔 실행을 남긴다. 실패 · 취소로 끝난 점유는 부르지 않는다(좋은 녹화를 덮지 않는다)."""
+        if not self.captured:
             return
         if self.r.mode == "record":
             if not self.slot:
                 log.warning("「%s」은 수업 AI 자리가 아니라 녹화하지 않았습니다", self.step)
                 return
+            if outcome not in COURSE_KEPT:
+                log.warning("「%s」이(가) %s(으)로 끝나 녹화하지 않았습니다 — 수업 녹화는 제출 · 사람 질문으로 끝난 실행만 남깁니다", self.step, outcome)
+                return
             for resume, run in self.captured:
                 self._keep_course(resume, run, secrets)
-        elif self.r.mode == "live" and outcome == "submitted" and self.request_key and self.played is None \
+        elif self.r.mode == "live" and outcome in CACHE_KEPT and self.request_key and self.played is None \
                 and self.captured[0][0] is None:      # 이 점유가 새로 시작해 실제 AI로 끝까지 간 실행만
             doc = {"request": self.request_key, "step": self.step, "case": self.case, "provider": self.provider,
                    "source": self.source, "runs": [run for _, run in self.captured]}
@@ -648,10 +700,44 @@ class Claim:
         library.write(key, doc, secrets)
 
 
+def sweep_cache(cache: Library, workitem_exists: Callable[[str], bool], retention_seconds: float, *, now: float | None = None) -> list[str]:
+    """같은 요청 저장 가운데 다시 쓸 수 없는 것을 지운다(검진 G1-09 — 끝없이 쌓였다): ① 그 실행의 작업 행이 더 없음(처리 건을 지웠거나 데이터를
+    비움) ② 작업 폴더와 같은 보존 기간(settings.workspace_retention_hours) 동안 쓰이지 않음 — 열쇠에 경보 id · 시각 · 센서 값이 든 처리 건
+    (c3 흐름)은 같은 요청이 다시 오지 않아 작업 행이 남아도 다시 쓰이지 않는다. 다시 쓸 때 파일 시각을 새로 한다(Library.touch). 지운 열쇠 목록."""
+    import time
+    cutoff = (time.time() if now is None else now) - retention_seconds
+    removed = []
+    for key, doc in cache.docs():
+        todo = str((doc.get("source") or {}).get("todo_id") or "")
+        if not todo or not workitem_exists(todo) or cache.file_of(key).stat().st_mtime < cutoff:
+            cache.delete(key)
+            removed.append(key)
+    return removed
+
+
 # ---------------------------------------------------------------- 녹화 목록(강사 확인)
-def listing(library: Library) -> tuple[list[dict], list[str]]:
-    """(녹화마다 한 줄, 녹화가 없는 수업 AI 자리). 자리는 서버의 정본(course_policy.AI_SLOTS)에서 읽는다."""
-    from procsvc.course_policy import AI_SLOTS
+def course_slots(process_url: str) -> list[dict]:
+    """수업 AI 자리 [{slot, recorded}] — 정본(procsvc/course_policy)을 process 의 GET /api/course-access 에서 읽는다(워커는 규칙 모듈을
+    가져오지 않는다: 워커 이미지에는 그 모듈이 읽는 정의 폴더가 없어 녹화 목록이 죽었다 — 검진 P2-04). recorded=False 는 녹화하지 않고 키 없는
+    PC에서 학생 문장으로 멈추기로 한 자리(기록 §2-5 — 교대 보완 2)."""
+    import urllib.request
+    from .course_access import process_base
+    url = process_base(process_url) + "/api/course-access"
+    try:
+        with urllib.request.urlopen(url, timeout=15) as r:
+            view = json.loads(r.read(1_000_001))
+    except (OSError, ValueError) as e:
+        raise RuntimeError(f"수업 AI 자리를 process({url})에서 읽지 못했습니다 — 스택이 켜져 있는지 확인하세요: {type(e).__name__}: {e}") from None
+    slots = view.get("ai_slots") if isinstance(view, dict) else None
+    if not isinstance(slots, list) or any(not isinstance(x, dict) or not isinstance(x.get("slot"), str) or type(x.get("recorded")) is not bool
+                                          for x in slots):
+        raise RuntimeError(f"process 의 수업 AI 자리(ai_slots) 응답 형식이 올바르지 않습니다: {url}")
+    return slots
+
+
+def listing(library: Library, slots: list[dict]) -> tuple[list[dict], list[str], list[str]]:
+    """(녹화마다 한 줄, 녹화해야 하는데 없는 자리, 녹화하지 않기로 한 자리). slots = course_slots(...)."""
+    course = {x["slot"] for x in slots}
     rows = []
     for key, doc in library.docs():
         path = library.file_of(key)
@@ -660,26 +746,31 @@ def listing(library: Library) -> tuple[list[dict], list[str]]:
                      "runs": len(doc["runs"]), "attempts": later, "recorded_at": doc.get("recorded_at"),
                      "kb": max(1, round(path.stat().st_size / 1024)),
                      "masked": gzip.decompress(path.read_bytes()).decode("utf-8").count(REDACTED),
-                     "course": doc.get("slot") in AI_SLOTS.values()})
-    missing = sorted(set(AI_SLOTS.values()) - {r["slot"] for r in rows})
-    return sorted(rows, key=lambda r: (r["slot"], r["case"])), missing
+                     "course": doc.get("slot") in course})
+    recorded = {r["slot"] for r in rows}
+    missing = sorted(x["slot"] for x in slots if x["recorded"] and x["slot"] not in recorded)
+    unrecorded = sorted(x["slot"] for x in slots if not x["recorded"])
+    return sorted(rows, key=lambda r: (r["slot"], r["case"])), missing, unrecorded
 
 
 def main(argv: list[str] | None = None) -> int:
-    """python -m worker.ai_replay [폴더] — 수업 녹화 목록과 빠진 수업 AI 자리(있으면 종료 코드 1). 기본 폴더는 AI_REPLAY_DIR."""
+    """python -m worker.ai_replay [폴더] — 수업 녹화 목록과 빠진 수업 AI 자리(있으면 종료 코드 1). 기본 폴더는 AI_REPLAY_DIR, 자리는
+    PROCESS_URL 의 process 에서 읽는다."""
     import sys
     from .settings import settings
     args = sys.argv[1:] if argv is None else argv
     root = Path(args[0]) if args else settings.ai_replay_dir
-    rows, missing = listing(Library(root))
+    rows, missing, unrecorded = listing(Library(root), course_slots(settings.process_url))
     print(f"수업 녹화: {root} — {len(rows)}개")
     for r in rows:
         masked = f", 비밀값 가림 {r['masked']}곳" if r["masked"] else ""
         later = f"(그 가운데 {', '.join(r['attempts'])})" if r["attempts"] else ""
         stale = "" if r["course"] else "  ← 수업 AI 자리가 아님(쓰이지 않는 녹화)"
-        print(f"  {r['recorded_at']}  {r['slot'] or '-'}  {r['case'] or '-'}  「{r['step']}」  실행 {r['runs']}개{later} · {r['kb']} KB{masked}  ({r['file']}){stale}")
+        print(f"  {korea_time(r['recorded_at'])}  {r['slot'] or '-'}  {r['case'] or '-'}  「{r['step']}」  실행 {r['runs']}개{later} · {r['kb']} KB{masked}  ({r['file']}){stale}")
+    for slot in unrecorded:
+        print(f"  [녹화하지 않는 자리] {slot} — 키 없는 PC에서는 학생이 알아듣는 안내로 멈춥니다(정한 것)")
     for slot in missing:
-        print(f"  [녹화 없음] {slot} — 키 없는 PC에서 이 자리는 「녹화 범위 밖」으로 멈춥니다")
+        print(f"  [녹화 없음] {slot} — 녹화해야 하는 자리입니다. 키 없는 PC에서 이 단계는 「강의 녹화에 없는 AI 단계」로 멈춥니다")
     return 1 if missing else 0
 
 

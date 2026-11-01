@@ -124,16 +124,24 @@ ensure_package() {
   echo "[완료] $package $after"
 }
 
+# 확인 · 설치할 프로그램 한 줄에 하나: 패키지 기준판 종류(Windows 설치와 같은 versions.txt 기준). main 은 이 목록만 돈다
+required_packages() {
+  echo "docker-desktop $DOCKER_DESKTOP_MIN cask"
+  echo "visual-studio-code $VSCODE_MIN cask"
+  echo "node $NODE_MIN formula"
+  echo "git $GIT_MIN formula"
+  echo "$PYTHON_FORMULA $PYTHON_MIN formula"   # 기준 이상 Python 이 있으면 그대로(Windows 와 같게)
+}
+
 main() {
   [ "$(uname -s)" = Darwin ] || { echo 'Mac 전용 설치 도구입니다.'; return 1; }
   [ "$(id -u)" -ne 0 ] || { echo 'sudo로 전체 스크립트를 실행하지 마세요. 일반 계정에서 설치.command를 여세요.'; return 1; }
   . "$(dirname "${BASH_SOURCE[0]}")/macos_paths.sh"
-  local failed=0
-  ensure_package docker-desktop "$DOCKER_DESKTOP_MIN" cask || failed=1
-  ensure_package visual-studio-code "$VSCODE_MIN" cask || failed=1
-  ensure_package node "$NODE_MIN" formula || failed=1
-  ensure_package git "$GIT_MIN" formula || failed=1
-  ensure_package "$PYTHON_FORMULA" "$PYTHON_MIN" formula || failed=1   # 기준 이상 Python 이 있으면 그대로(Windows 와 같게)
+  local failed=0 spec
+  # 목록을 표준 입력으로 흘리지 않는다 — Homebrew 설치 프로그램이 표준 입력에서 Enter 를 읽는다
+  for spec in $(required_packages | tr ' ' ':'); do
+    ensure_package "${spec%%:*}" "$(echo "$spec" | cut -d: -f2)" "${spec##*:}" || failed=1
+  done
   echo 'Supabase CLI 실행 파일을 준비합니다(시스템 데이터는 시작 파일에서 받습니다).'
   local supabase_version
   supabase_version=$(npx -y "supabase@$SUPABASE_CLI" --version) || failed=1

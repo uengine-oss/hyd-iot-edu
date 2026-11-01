@@ -1,7 +1,7 @@
 {
   "processDefinitionId": "anomaly_response",
   "processDefinitionName": "설비 이상 조치",
-  "version": "2.2",
+  "version": "2.3",
   "description": "경보(alerts RAISE)가 프로세스 인스턴스를 열고, AI 에이전트가 네 개의 판단 작업(원인 진단 · 조치 후보 · 규정 검토 · 우선순위)을 맡아 조치 카드를 올리면, 사람이 카드 하나를 고르고(승인, 폼 select_card 제출), 프로세스가 PLC 명령 · 재관측 · 작업지시를 실행해 종결한다. AI 에이전트 작업은 ProcessGPT와 같은 모양(userTask + agentMode COMPLETE + orchestration cliagents)으로 적는다. 온톨로지 v2 proc:anomaly-response 의 흐름 노드와 1:1 대응한다 (it/neo4j/v2/instances.cypher 5절).",
   "ontologyRef": "proc:anomaly-response",
   "megaProcessId": "설비 운영",
@@ -70,12 +70,12 @@
     {
       "name": "chosen_skill_kind",
       "type": "Text",
-      "description": "고른 스킬의 종류: control(즉시 제어) | work_order(작업지시만)"
+      "description": "고른 카드의 조치 종류: control(설비 명령 있음) | work_order(작업지시만) | purchase(발주만) | other(명령 · 작업지시 · 발주 없음 — 흐름이 실행하지 않음)"
     },
     {
       "name": "recovered",
       "type": "Boolean",
-      "description": "재관측 결과 — 경보 해제 and TS1 < 55 ℃"
+      "description": "재관측 결과 — 경보 해제 and 경보 패턴별 회복 기준(이 정의의 alertPolicy) 충족"
     },
     {
       "name": "work_order",
@@ -137,7 +137,7 @@
       "eventDefinition": "timer",
       "timer": "PT10M",
       "attachedTo": "task:select",
-      "description": "운전원이 10분 안에 카드를 고르지 않으면 생산관리자에게 넘어간다 (시간 배율 적용)."
+      "description": "운전원이 10분 안에 카드를 고르지 않으면 생산관리자에게 넘어간다(사람이 읽고 고르는 시간이라 벽시계 — 배속을 곱하지 않는다)."
     },
     {
       "id": "ev:closed",
@@ -234,7 +234,7 @@
       "orchestration": "cliagents",
       "decision": "dec:rank-actions",
       "tool": "formHandler:rank",
-      "instruction": "BSC 득실(AFFECTS → INFLUENCES 경로) · 예측 · 경고 · 감점 · 선례로 후보 순위를 매기고, 업무 DB(Supabase MCP)에서 납기 · 계약 · 재고를 읽어 영향을 설명에 넣는다. 사람이 고를 카드 2~3장과 권고 1장을 process /api/decisions 에 제출한다. 승인 역할은 온톨로지 Skill -APPROVED_BY-> Role 을 따른다.",
+      "instruction": "BSC 득실(AFFECTS → INFLUENCES 경로) · 예측 · 경고 · 감점 · 선례로 후보 순위를 매기고, 업무 시스템 조회 서버(enterprise)에서 납기 · 계약 · 재고를 읽어 영향을 설명에 넣는다. 사람이 고를 카드 2~3장과 권고 1장을 process /api/decisions 에 제출한다. 승인 역할은 온톨로지 Skill -APPROVED_BY-> Role 을 따른다.",
       "inputData": [
         "candidates",
         "compliance",
@@ -255,7 +255,7 @@
       "role": "운전원",
       "tool": "formHandler:select_card",
       "agent": null,
-      "instruction": "에이전트가 올린 카드 중 하나를 고르거나 거부한다. 고른 카드의 승인 역할보다 낮은 역할이면 process 가 거절한다(403).",
+      "instruction": "에이전트가 올린 카드 중 하나를 고른다(이 흐름의 승인 단계는 거절 값을 내지 않는다). 고른 카드의 승인 역할보다 낮은 역할이면 process 가 거절한다(403).",
       "inputData": [
         "decision"
       ],
@@ -424,7 +424,7 @@
       "id": "seq:gw-recovered-wo",
       "source": "gw:recovered",
       "target": "task:work-order",
-      "name": "TS1 < 55 and 경보 해제",
+      "name": "회복 기준 충족 and 경보 해제",
       "condition": "recovered == True"
     },
     {
@@ -478,7 +478,7 @@
         },
         {
           "key": "failure_mode",
-          "text": "고장 유형 노드 id (예: fm:cooling-loss)",
+          "text": "고장 유형 노드 id (예: fm:cooler-cooling-loss)",
           "type": "text"
         },
         {
@@ -528,22 +528,17 @@
             },
             {
               "work_order": "작업지시만"
+            },
+            {
+              "purchase": "발주만"
+            },
+            {
+              "other": "실행할 조치 없음"
             }
           ]
         }
       ]
     }
-  },
-  "contractProvenance": {
-    "kind": "new-version-contract",
-    "source": "it/process/definitions/anomaly_response_v21.json, A116 2026-10-07",
-    "predecessor": "2.1",
-    "corrections": [
-      "A116 (r14 B5): agent activities userTask + agentMode (ProcessGPT shape) instead of businessRuleTask",
-      "A116: agentMode/orchestration none dropped (product determine_agent_mode treats none as absent)"
-    ],
-    "historicalFormReconstruction": false,
-    "predecessorFileSha256": "33963f2cb666e2f14c52706afb72b29f9426a0a9b414a6319480023596f7e867"
   },
   "alertPolicy": {
     "patterns": {

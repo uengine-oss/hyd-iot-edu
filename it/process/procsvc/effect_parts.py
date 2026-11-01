@@ -14,8 +14,8 @@
 활동(activity) 모양: {"type": "serviceTask", "tool": <tool>, "service": {<부품 설정>}, "inputData": [...], "outputData": [...]}.
 설정 · 출력 이름은 validate(activity)가 검사하고(등록 · 가져오기 검사), 실행은 instances.InstanceRuntime 의 부품 처리기가 한다.
 
-시간: 업무 시간(예정된 정비 시간까지 9 h, 리드타임 5일)은 가상 시간이다. 실제 대기 = 가상 시간 ÷ (TIME_SCALE × 수업 압축 배율)
-(engine.wait_compression, 환경변수 PROCESS_WAIT_COMPRESSION). 설비 물리 · 감지기 · 재관측 · 사람 응답 타이머는 배속만 쓴다.
+시간: 업무 시간(예정된 정비 시간까지 9 h, 리드타임 5일)은 가상 시간이다. 시간 규칙의 정본은 engine.py 머리말 「시간 규칙」이다 — 여기
+대기 계산(wait_plan)은 그 규칙의 「기다리는 부품 = 배속 × 수업 압축」을 쓴다. 엔진은 기다리는 부품을 아래 WAIT_TOOL · GR_TOOL · RESTORE_TOOL 로 안다.
 """
 from __future__ import annotations
 
@@ -38,12 +38,14 @@ TOOLS = (MCP_TOOL, PR_TOOL, WAIT_TOOL, RESTORE_TOOL, GR_TOOL, TEST_RUN_TOOL, REP
 #: 바깥(업무 시스템 · 메일 · 설비 시뮬레이터)에 효과를 내는 부품 — 앞 경로에 사람 승인이 있어야 등록된다(bpmn_import.check)
 EFFECTS = {MCP_TOOL: "MCP 쓰기(메일 등)", PR_TOOL: "ERP 발주", RESTORE_TOOL: "정비 수행 모사", GR_TOOL: "입고 확인",
            TEST_RUN_TOOL: "시운전 확인 · 계수기 리셋"}
-#: 시운전 기준 기본값(파워팩 정상 운전점 PS1 182 bar · FS1 9.0 l/min · VS1 0.6 mm/s, 경보선 = 사건 회복 기준과 같은 값 — definition.RECOVERY)
+#: 시운전 기준 기본값(흐름의 시운전 task 설정이 없을 때). 파워팩 정상 운전점 PS1 182 bar · FS1 9.0 l/min · VS1 0.6 mm/s 의 아래 한계 —
+#: 경보 회복 기준(흐름 정의 alertPolicy)과는 다른 계약이다(시운전은 유량도 본다)
 TEST_RUN_CRITERIA = {"PS1": [">=", 165.0], "FS1": [">=", 8.0], "VS1": ["<", 1.2]}
 TEST_RUN_OPS = (">=", ">", "<=", "<")
 #: 결과 보고의 결과 → 등급(ok 정상 종결 · fail 미달 종결 · rejected 반려 종결 · info 알림만, 사건은 그대로)
 #: 반려(캡스톤 G1 사람 승인의 반려 가지)도 처리 건의 끝이다 — 사건이 있으면 사건 모델의 '운전원 거부'(REJECTED_BY_OPERATOR)로 닫는다
-REPORT_OUTCOMES = {"정상": "ok", "입고 완료": "ok", "미달": "fail", "지연": "fail", "알림": "info", "승인 지연": "info", "반려": "rejected"}
+REPORT_OUTCOMES = {"정상": "ok", "입고 완료": "ok", "정비 요청 등록": "ok", "미달": "fail", "지연": "fail", "실행하지 않음": "fail",
+                   "알림": "info", "승인 지연": "info", "반려": "rejected"}
 
 NAME_RE = re.compile(r"^[a-z0-9](?:[a-z0-9]|-(?!-)){0,39}$")         # mcp_registry.NAME_RE 와 같음
 TOOL_RE = re.compile(r"^[A-Za-z0-9_.-]{1,64}$")
@@ -53,7 +55,8 @@ PLACEHOLDER = re.compile(r"\{([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)*)\}")
 COMPONENTS = ("cooler", "pump", "fan")                                  # plant-sim 복구 대상(ot/plant-sim FaultReq.component)
 #: 승인 경로(select)가 카드에서 확정해 처리 건 값으로 넣는 발주 값 — ERP 발주 · 공급사 메일 · 결과 보고가 쓴다. 2차 승인은 없다
 #: (확정 2026-10-09: 담당자 승인 1회. 전결 기준 300만 원 초과는 에이전트 요약 · 승인 화면에 표시만 한다 — PR-07 규칙 rule:pur-amount WARN)
-PURCHASE_VALUES = ("approved_amount", "approved_qty", "approved_supplier", "approved_unit_price", "approved_part_no")
+#: approved_supplier_name = 업무 DB 공급사 원장의 이름(견적 읽기가 싣는 ent.suppliers.name) — 화면이 공급사 이름을 사전에 박지 않고 이 값을 쓴다
+PURCHASE_VALUES = ("approved_amount", "approved_qty", "approved_supplier", "approved_supplier_name", "approved_unit_price", "approved_part_no")
 
 PARTS = {
     "svc:mcp-call": {
@@ -85,7 +88,7 @@ PARTS = {
         "tool": RESTORE_TOOL, "name": "정비 수행 (모사)", "outputs": ["maintenance"], "inputs": ["asset"],
         "help": "현장 정비를 모사합니다: (until 을 정하면 예정된 정비 시간까지 기다린 뒤) 작업지시가 있으면 CMMS 에서 완료 처리(표준 부품 소모), "
                 "설비 시뮬레이터의 대상 부품을 정상으로 되돌리고, 완료 공지를 처리 건 참여자에게 남깁니다. 설비 명령 경로(PLC)가 아닌 실습 시뮬레이터 조작입니다.",
-        "config": {"component": "되돌릴 부품: cooler · pump · fan (비우면 설비 전체)", "sop": "작업지시 완료 때 부품 소모 기준 SOP (예: SOP-PMP-04, 비우면 카드의 SOP)",
+        "config": {"component": "되돌릴 부품: cooler · pump · fan (비우면 설비 전체)", "sop": "작업지시 완료 때 부품 소모 기준 SOP (예: SOP-COOL-14 — 업무 DB 표준 작업 ent.task_standards 의 번호, 비우면 카드의 SOP)",
                    "work_order_var": "작업지시 영수증 값 이름 (기본 work_order)",
                    "until": "먼저 기다릴 시각이 든 처리 건 값 (예: work_order.after.window_starts_at — 예정된 정비 시간, 수업 압축 적용)"},
     },
@@ -107,7 +110,7 @@ PARTS = {
         "tool": REPORT_TOOL, "name": "결과 보고", "outputs": ["result_report"],
         "help": "처리 결과(정상 · 미달 · 지연 · 알림)를 담당자 화면에 알리고 기록합니다. 정상 · 미달은 사건을 닫고, 알림은 사건을 그대로 둡니다. "
                 "사람 task 가 아닙니다 — 담당자는 보기만 합니다.",
-        "config": {"outcome": "결과: 정상 · 입고 완료 · 미달 · 지연 · 알림 · 승인 지연 · 반려", "title": "제목 틀 (예: {asset} 정기 정비 결과)",
+        "config": {"outcome": "결과: 정상 · 입고 완료 · 정비 요청 등록 · 미달 · 지연 · 실행하지 않음 · 알림 · 승인 지연 · 반려", "title": "제목 틀 (예: {asset} 정기 정비 결과)",
                    "summary": "요약 틀 — 처리 건 값 {이름} 을 넣는다. 없는 값은 '(없음)'",
                    "notify": "추가 보고 대상 목록: role(역할 ID), when(처리 건 값 조건). 승인을 추가하지 않습니다."},
     },
@@ -448,9 +451,10 @@ def test_run_verdict(criteria: dict, readings: dict) -> tuple[bool, list[dict]]:
     return ok_all, rows
 
 
-# C3: 결과 보고 카드의 측정값(포털 resultReport.js 계약 values:[{name, value, unit?, limit?, ok?}]) — 태그 이름은 화면 말로
-TAG_LABELS = {"TS1": ("유온", "℃"), "PS1": ("압력", "bar"), "FS1": ("유량", "l/min"), "VS1": ("진동", "mm/s"),
-              "CE": ("냉각 효율", "%"), "CP": ("냉각 동력", "kW"), "EPS1": ("모터 전력", "W")}
+# C3: 결과 보고 카드의 측정값(포털 resultReport.js 계약 values:[{name, value, unit?, limit?, ok?}]) — 태그 이름 · 단위는 온톨로지 센서
+# (it/neo4j/v2/instances.cypher Sensor · StateVariable — 유온 · 토출 압력 · 유량 · 팬 진동)와 설비 모형(ot/plant-sim thermal: 모터 전력 kW)의 값
+TAG_LABELS = {"TS1": ("유온", "℃"), "PS1": ("토출 압력", "bar"), "FS1": ("유량", "l/min"), "VS1": ("팬 진동", "mm/s"),
+              "CE": ("냉각 효율", "%"), "CP": ("냉각 동력", "kW"), "EPS1": ("모터 전력", "kW")}
 _OP_TEXT = {"<": "<", "<=": "≤", ">": ">", ">=": "≥"}
 
 
@@ -501,7 +505,7 @@ def report_values(v: dict) -> list[dict]:
             rows.append({"name": "정비 시점", "value": when})
         notice = wo.get("notice") if isinstance(wo.get("notice"), dict) else None
         if notice is not None:
-            rows.append({"name": "공지 메일", "value": "보냄" + (" (재전송 아님)" if notice.get("idempotent") is False else ""), "ok": True})
+            rows.append({"name": "공지 메일", "value": "보냄", "ok": True})
     po = v.get("purchase_order")
     if isinstance(po, dict) and isinstance(po.get("notice"), dict):
         rows.append({"name": "공급사 메일", "value": "보냄", "ok": True})
@@ -598,7 +602,9 @@ def purchase_quote(option: dict, values: dict, quotes: list[dict]) -> dict | Non
         raise ValueError(f"ERP 에 {part} 의 {supplier} 견적이 없어 발주 금액을 확정할 수 없습니다")
     price = quote["price"]
     amount = price * qty
-    return {"approved_supplier": supplier, "approved_part_no": part, "approved_qty": qty, "approved_unit_price": price,
+    if not quote.get("name"):
+        raise ValueError(f"ERP 견적 {part} · {supplier} 에 공급사 이름이 없어 발주 값을 확정할 수 없습니다(견적 읽기 ent.part_quotes_read 의 name)")
+    return {"approved_supplier": supplier, "approved_supplier_name": quote["name"], "approved_part_no": part, "approved_qty": qty, "approved_unit_price": price,
             "approved_amount": int(amount) if float(amount).is_integer() else amount,
             "quote": {"supplier": supplier, "name": quote.get("name"), "price": price, "lead_d": quote.get("lead_d"),
                       "avl": quote.get("avl"), "fail_rate": quote.get("fail_rate")}}

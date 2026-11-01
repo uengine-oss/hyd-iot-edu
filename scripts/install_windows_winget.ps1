@@ -27,5 +27,5 @@ function Resolve-WingetExecutable {
     foreach ($candidate in @(Get-WingetCandidates | Select-Object -Unique)) {
         if (Test-WingetExecutable $candidate) { return $candidate }
     }
-    throw 'App Installer (winget) is unavailable. Install or repair Microsoft App Installer from https://apps.microsoft.com/detail/9nblggh4nns1, then rerun 설치.bat.'
+    throw 'Windows 설치 도구(winget)를 찾지 못했습니다. Microsoft Store에서 「앱 설치 관리자(App Installer)」(https://apps.microsoft.com/detail/9nblggh4nns1)를 설치하거나 업데이트한 뒤 설치.bat을 다시 실행하세요.'
 }

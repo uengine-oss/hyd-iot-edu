@@ -14,13 +14,13 @@ create() {
 }
 create plant.tag     $((DAY))          # 경량: 1일 (DB에 적재되므로 Kafka는 짧게)
 create plant.wave    $((DAY / 4))      # DAQ_PROFILE=full일 때만 쓰임
-create plant.status  $((7*DAY))
+create plant.status  $((DAY))          # 경량: 1일 — 상태는 실시간으로만 읽힌다(감지기 · process · 적재의 ACK)
 create feat.1s       $((3*DAY))
 create alerts        $((365*DAY))
 create action.cmd    $((365*DAY))
 create audit         $((5*365*DAY))
 # 이미 만들어진 토픽에도 보존 기간을 맞춘다 (재실행 안전) — 실패하면 그대로 실패
-for tr in "plant.tag $((DAY))" "plant.wave $((DAY / 4))" "feat.1s $((3*DAY))" "plant.status $((7*DAY))"; do
+for tr in "plant.tag $((DAY))" "plant.wave $((DAY / 4))" "feat.1s $((3*DAY))" "plant.status $((DAY))"; do
   set -- $tr
   rpk topic alter-config "$1" --brokers "$B" --set "retention.ms=$2" >/dev/null || { echo "토픽 $1 의 보존 기간을 맞추지 못했습니다." >&2; exit 1; }
 done

@@ -33,6 +33,8 @@ FAN_NORMAL, FAN_MAX = 60.0, 100.0  # 설비 모델 정상 운전점 팬 60 %, �
 QUALITY_TS1 = 55.0                 # 고온 로트 품질 위험 기준 (매뉴얼 HM-7.5 "TS1 55 ℃ 미만", 순위 정책 quality 항목과 같은 선)
 FX_TO_PART = 1.0                   # 환율 1 % → 수입 부품값 1 % (가정: 부품 전량 수입. 부호는 온톨로지 ext:fx -INFLUENCES(+1)-> msr:part-price)
 WEEK_HOURS = 120.0                 # 주 운전 시간 (가정: 주 5일 × 24 h 연속 운전)
+# 시험값 한도 한 곳 — 검사(check_policy · weeks)가 쓰고, 시작 응답(limits)으로 화면이 읽는다(화면에 숫자 사본을 두지 않는다, 검진 W3-26)
+LIMITS = {'weights': (-10.0, 10.0), 'penalties': (0.0, 1000.0), 'perspectives': (0.0, 10.0), 'weeks': (1, 12)}
 # 순위 정책 항목 이름 (포털 ui.js score.* 와 같은 말). 정책에 새 항목이 생기면 그 키를 그대로 보인다.
 COMPONENT_LABELS = {'bsc': '성과 지표', 'forecast': '예측', 'warn': '경고', 'penalty': '감점', 'precedent': '과거 선택', 'delivery': '납기', 'quality': '품질'}
 
@@ -42,7 +44,7 @@ DOC_FAN = {'kind': '문서', 'where': '설비 모델의 정상 팬 60 %, 팬 최
 DOC_TS1 = {'kind': '문서', 'where': '매뉴얼 유온 55 ℃ 기준 (순위 정책 품질 항목과 같은 선)', 'ref': 'HM-7.5 · 순위 정책 rule:rank-value 의 quality'}
 ASSUME_FX = {'kind': '가정', 'where': '환율 1 % → 수입 부품값 1 % (부품 전량 수입 가정). 방향은 지식 지도의 환율 → 부품 단가 (+, 강함)',
              'ref': 'ext:fx -INFLUENCES(+1, high)-> msr:part-price'}
-ASSUME_RISK = {'kind': '가정', 'where': '원인이 남아 있는 동안 고장 확률 = 운전 시간 ÷ MTBF, 근본 조치 카드(작업지시 포함)는 첫 주에 원인을 없앤다',
+ASSUME_RISK = {'kind': '가정', 'where': '원인이 남아 있는 동안 고장 확률 = 운전 시간 ÷ MTBF, 근본 조치 카드(작업지시 포함)는 그 작업을 시작할 때 원인을 없앤다',
                'ref': 'Skill relation REMEDIED_BY · WO_CREATE'}
 ASSUME_WEEK = {'kind': '가정', 'where': '주 운전 시간 120 h (주 5일 × 24 h 연속 운전)'}
 ASSUME_RESTORE = {'kind': '가정', 'where': '근본 조치 뒤에는 정상 부하 90 % · 팬 60 %로 돌아간다. 완화 카드의 설정은 기간 내내 유지된다'}
@@ -148,7 +150,8 @@ def variable_list(mf: dict, trial: dict | None = None) -> list[dict]:
         base, src = _base(mf, vid)
         t = (trial or {}).get(vid)
         out.append({'id': vid, 'label': spec['label'], 'unit': spec['unit'], 'base': base, 'value': base if t is None else t,
-                    'trial': t is not None, 'kinds': list(spec['kinds']), 'source': src, 'fact': spec.get('fact')})
+                    'trial': t is not None, 'kinds': list(spec['kinds']), 'source': src, 'fact': spec.get('fact'),
+                    'lo': spec.get('lo', 0.0), 'hi': spec.get('hi')})
     return out
 
 
@@ -177,7 +180,27 @@ def card_shape(o: dict) -> dict:
     ts1 = next((f.get('value') for f in o.get('forecast') or [] if f.get('variable') == 'sv:ts1'), None)
     return {'load': cards.LOAD_DESIGN if load is None else load, 'load_cmd': load is not None, 'fan_delta': 0.0 if fan is None else fan - FAN_NORMAL,
             'stop_cmd': 'STOP' in cmds, 'wos': wos, 'pr': pr, 'ts1': _finite(ts1),
-            'remedy': bool(wos) or o.get('relation') == 'REMEDIED_BY'}
+            'remedy': bool(wos) or o.get('relation') == 'REMEDIED_BY', 'window': o.get('window')}
+
+
+def work_start_h(shape: dict, mf: dict) -> tuple[float | None, str]:
+    """작업지시의 작업(정지)이 지금부터 몇 h 뒤에 시작하는가 — 카드의 정비 시점(cards.option_window) 한 값에서 읽는다(검진 G1-06:
+    야간 창의 작업지시를 납기 전 정지로 셌다). 지금 = 업무 DB 값을 읽은 시각(mf.read_at — 같은 입력이면 같은 결과). (h | None, 설명)."""
+    w = shape.get('window')
+    if not shape['wos'] and not shape['stop_cmd']:
+        return None, '정지 없음'
+    if shape['stop_cmd'] or cards.stops_now(w):
+        return 0.0, '지금 정지하고 시행'
+    if not isinstance(w, dict) or not w.get('starts_at'):
+        return None, '작업지시를 언제 시행하는지(예정된 정비 시간) 판단에 없음'
+    try:
+        start = datetime.fromisoformat(str(w['starts_at']).replace('Z', '+00:00'))
+        now = datetime.fromisoformat(str(mf['read_at']).replace('Z', '+00:00'))
+    except (ValueError, KeyError):
+        return None, '예정된 정비 시간의 시각을 읽을 수 없음'
+    if start.tzinfo is None or now.tzinfo is None:
+        return None, '예정된 정비 시간의 시각에 시간대가 없음'
+    return max(0.0, (start - now).total_seconds() / 3600), f"{w.get('name') or '예정된 정비 시간'}({w['starts_at']})에 시행"
 
 
 def _src_field(mf, key, trial_vid=None, trial=None):
@@ -247,29 +270,56 @@ def card_money(o: dict, mf: dict, trial: dict | None = None, hours: float | None
     stop_unknown = bool(tmiss) or (s['stop_cmd'] and not tasks)
     why_stop = ('업무 DB CMMS 표준 작업에 이 카드 작업지시(' + ', '.join(t['sop'] for t in tmiss) + ')의 정지 시간 · 작업비가 없음') if tmiss else \
         '정지 명령의 정지 시간을 업무 DB에서 찾을 수 없음 (CMMS 표준 작업 없음)'
+    t0, when = work_start_h(s, mf)
+    timing_src = {'kind': '데이터' if t0 is not None else '문서', 'where': f"작업 시점: {when}" + (f" — 지금부터 {t0:g} h 뒤" if t0 else ''),
+                  'ref': '카드의 정비 시점(window) · CMMS 예정된 정비 시간'}
+    timing_unknown = (bool(s['wos']) or s['stop_cmd']) and t0 is None
+    # 근본 조치(원인을 없앤 작업)가 끝나면 정상 부하로 돌아간다(ASSUME_RESTORE). 완화 카드의 설정은 그 전까지 유지된다.
+    r_after = 1.0 if s['remedy'] and s['wos'] else r
+
+    def segments(period):
+        """[0, period] 를 (카드 설정으로 운전, 작업 정지, 작업 뒤 운전) 시간으로 나눈다 — 작업이 기간 뒤면 정지 0."""
+        if t0 is None:
+            return period, 0.0, 0.0
+        pre = min(t0, period)
+        down = max(0.0, min(t0 + stop_h, period) - pre)
+        return pre, down, max(0.0, period - pre - down)
     # 1. 생산 감소
     if H is None or hv is None:
         items.append(_missing('production', '생산 감소', '납기 · 시간당 생산 가치 값이 업무 DB에 없음', [due_src, hv_src]))
-    elif stop_unknown:
+    elif timing_unknown:
+        items.append(_missing('production', '생산 감소', when, [hv_src]))
+    elif stop_unknown and t0 < H:              # 정지 시간을 모르는 작업이 기간 안에서 시작한다(기간 뒤 작업이면 정지 시간이 상관없다)
         items.append(_missing('production', '생산 감소', why_stop, [hv_src]))
     else:
-        lost_h = H * (1 - r) + stop_h
+        pre, down, post = segments(H)
+        lost_h = pre * (1 - r) + down + post * (1 - r_after)
         items.append(_item('production', '생산 감소', hv * lost_h,
-                           f"시간당 생산 가치 {hv:g}만원 × (기간 {H:g} h × (1 − 부하 {s['load']:g}/90) + 작업 정지 {stop_h:g} h)",
-                           [hv_src, due_src, load_src, DOC_LOAD] + stop_src))
+                           f"시간당 생산 가치 {hv:g}만원 × (부하 {s['load']:g}/90 운전 {pre:g} h의 감산 + 작업 정지 {down:g} h"
+                           + (f" + 작업 뒤 운전 {post:g} h의 감산" if post and r_after < 1 else '') + f") — 기간 {H:g} h(납기까지)",
+                           [hv_src, due_src, load_src, DOC_LOAD, timing_src] + stop_src))
     # 2. 납기 지연 위약금
     rem, rem_src = ins.get('mes.remaining_qty')
     pen, pen_src = ins.get('erp.penalty_per_h')
     if None in (due, rem, rate, pen) or rate * r <= 0:
         items.append(_missing('delay', '납기 지연 위약금', '오더 잔량 · 생산 속도 · 위약금 · 납기 중 업무 DB에 없는 값이 있음', [rem_src, rate_src, pen_src, due_src]))
-    elif stop_unknown:
+    elif timing_unknown:
+        items.append(_missing('delay', '납기 지연 위약금', when, [pen_src]))
+    elif stop_unknown and rem / (rate * r) > t0:   # 정지 시간을 모르는 작업이 잔량을 끝내기 전에 시작한다
         items.append(_missing('delay', '납기 지연 위약금', why_stop, [pen_src]))
     else:
-        finish = stop_h + rem / (rate * r)
+        before = rem / (rate * r)                          # 작업 정지 없이 잔량을 끝내는 시간
+        if t0 is None or before <= t0:
+            finish = before
+            how = f"잔량 {rem:g} ÷ ({rate:g} × {s['load']:g}/90) ea/h = {before:.2f} h" + (" — 작업 시작 전에 끝남" if t0 is not None else '')
+        else:
+            left = rem - rate * r * t0
+            finish = t0 + stop_h + left / (rate * r_after)
+            how = f"작업 전 {t0:g} h 생산 + 정지 {stop_h:g} h + 남은 {left:g} ÷ ({rate:g} × {r_after * cards.LOAD_DESIGN:g}/90) ea/h = {finish:.2f} h"
         late = max(0.0, finish - max(0.0, due))
         items.append(_item('delay', '납기 지연 위약금', pen * late,
-                           f"위약금 {pen:g}만원/h × 지연 {late:.2f} h (정지 {stop_h:g} h + 잔량 {rem:g} ÷ ({rate:g} × {s['load']:g}/90) ea/h = {finish:.2f} h, 납기 {max(0.0, due):g} h)",
-                           [pen_src, rem_src, rate_src, due_src, load_src, DOC_LOAD] + stop_src))
+                           f"위약금 {pen:g}만원/h × 지연 {late:.2f} h ({how}, 납기 {max(0.0, due):g} h)",
+                           [pen_src, rem_src, rate_src, due_src, load_src, DOC_LOAD, timing_src] + stop_src))
     # 3. 품질 클레임 위험
     qty, qty_src = ins.get('qms.auto_qty')
     claim, claim_src = ins.get('qms.auto_claim')
@@ -284,16 +334,23 @@ def card_money(o: dict, mf: dict, trial: dict | None = None, hours: float | None
                            (f"불량 확률 {p:g} × 클레임 {claim:g}만원 (예측 유온 {s['ts1']:g} ℃ ≥ 55 ℃, 출하 대기 로트 {qty:g} ea)" if hot else
                             f"예측 유온 {s['ts1']:g} ℃ < 55 ℃ 또는 출하 대기 로트 {qty:g} ea → 0"),
                            [p_src, claim_src, qty_src, DOC_TS1, {'kind': '문서', 'where': f"카드의 예측 유온 {s['ts1']:g} ℃ (설비 모델 예측)"}]))
-    # 4. 고장 위험 (원인이 남는 카드만)
+    # 4. 고장 위험 — 원인이 남아 있는 동안(작업지시로 근본 조치하는 카드는 그 작업을 시작할 때까지)
     fc, fc_src = ins.get('erp.failure_cost')
     mtbf, mtbf_src = ins.get('cmms.mtbf_h')
-    if s['remedy']:
+    if s['remedy'] and not s['wos']:
         items.append(_item('failure', '고장 위험', 0.0, '근본 조치 카드 — 원인을 없애므로 고장 위험을 더하지 않음', [ASSUME_RISK]))
-    elif None in (fc, mtbf, H) or mtbf <= 0:
-        items.append(_missing('failure', '고장 위험', 'ERP 고장 비용 · CMMS MTBF · 납기 중 없는 값이 있음', [fc_src, mtbf_src]))
+    elif s['remedy'] and t0 == 0:
+        items.append(_item('failure', '고장 위험', 0.0, '지금 근본 조치하는 카드 — 원인을 없애므로 고장 위험을 더하지 않음', [ASSUME_RISK, timing_src]))
     else:
-        prob = min(1.0, H / mtbf)
-        items.append(_item('failure', '고장 위험', fc * prob, f"고장 비용 {fc:g}만원 × 기간 {H:g} h ÷ MTBF {mtbf:g} h", [fc_src, mtbf_src, due_src, ASSUME_RISK]))
+        exposure = None if H is None else (min(t0, H) if s['remedy'] and t0 is not None else (None if s['remedy'] else H))
+        if None in (fc, mtbf, exposure) or mtbf <= 0:
+            items.append(_missing('failure', '고장 위험', 'ERP 고장 비용 · CMMS MTBF · 납기 · 작업 시점 중 없는 값이 있음', [fc_src, mtbf_src, timing_src]))
+        else:
+            prob = min(1.0, exposure / mtbf)
+            items.append(_item('failure', '고장 위험', fc * prob,
+                               f"고장 비용 {fc:g}만원 × 원인이 남는 {exposure:g} h ÷ MTBF {mtbf:g} h"
+                               + (f" (근본 조치는 {t0:g} h 뒤 시작)" if s['remedy'] else ''),
+                               [fc_src, mtbf_src, due_src, ASSUME_RISK] + ([timing_src] if s['wos'] else [])))
     # 5. 정비 작업비 · 6. 부품비
     if tmiss:
         items.append(_missing('work', '정비 작업비', why_stop))
@@ -370,22 +427,25 @@ def check_policy(dmn: list[dict], policy: dict | None, perspectives: dict | None
             x = _finite(w)
             if k not in known:
                 raise ValueError(f'지식 그래프에 없는 관점입니다: {k}')
-            if x is None or not 0 <= x <= 10:
-                raise ValueError(f"관점 '{known[k]}' 중요도는 0 ~ 10배 사이 숫자여야 합니다")
+            lo, hi = LIMITS['perspectives']
+            if x is None or not lo <= x <= hi:
+                raise ValueError(f"관점 '{known[k]}' 중요도는 {lo:g} ~ {hi:g}배 사이 숫자여야 합니다")
             out['perspectives'][k] = x
     for k, w in (policy.get('weights') or {}).items():
         x = _finite(w)
         if k not in comps:
             raise ValueError(f'순위 정책에 없는 항목입니다: {k}')
-        if x is None or not -10 <= x <= 10:
-            raise ValueError(f'{k} 가중치는 -10 ~ 10 사이 숫자여야 합니다')
+        lo, hi = LIMITS['weights']
+        if x is None or not lo <= x <= hi:
+            raise ValueError(f"순위 항목 '{COMPONENT_LABELS.get(k, k)}' 가중치는 {lo:g} ~ {hi:g} 사이 숫자여야 합니다")
         out['weights'][k] = x
     for k, v in (policy.get('penalties') or {}).items():
         x = _finite(v)
         if k not in pens:
             raise ValueError(f'감점 규칙이 아닙니다: {k}')
-        if x is None or not 0 <= x <= 1000:
-            raise ValueError(f'{k} 감점은 0 ~ 1000 사이 숫자여야 합니다')
+        lo, hi = LIMITS['penalties']
+        if x is None or not lo <= x <= hi:
+            raise ValueError(f'감점 규칙 {k}의 감점은 {lo:g} ~ {hi:g} 사이 숫자여야 합니다')
         out['penalties'][k] = x
     return out
 
@@ -640,8 +700,9 @@ def _round_toward(b, a, span):
 
 # ---------------------------------------------------------------- ③ 몇 주 What-if
 def weeks(bundle: dict, mf: dict, card_id: str, weeks_n: int = 4, change: dict | None = None, policy: dict | None = None) -> dict:
-    if not 1 <= int(weeks_n) <= 12:
-        raise ValueError('기간은 1 ~ 12주입니다')
+    lo, hi = LIMITS['weeks']
+    if not lo <= int(weeks_n) <= hi:
+        raise ValueError(f'기간은 {lo} ~ {hi}주입니다')
     opts = {o['id']: o for o in _feasible_cache(bundle, policy)}
     if card_id not in opts:
         raise ValueError(f'이 판단에 없는 카드입니다: {card_id}')

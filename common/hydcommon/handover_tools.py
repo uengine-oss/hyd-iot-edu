@@ -1,4 +1,4 @@
-"""수업 AI 단계가 쓸 수 있는 조회 도구 허용 목록 한 곳 — 교대 인수인계 초안(워커의 --allowedTools, worker/settings.handover_allowed_tools)과
+"""수업 AI 단계가 쓸 수 있는 조회 도구 허용 목록 한 곳 — 교대 인수인계 초안(단계 계약 → 허용 조회 도구, procsvc/agents_store.FIXED_READS — 워커가 서버에서 받아 --allowedTools 로)과
 「에이전트에게 질문」(질문 전용 MCP 창구, worker/question_tools). 판단 제출 · 발주 같은 쓰기 도구는 어느 목록에도 없다 — 목록 밖 도구는 허용되지 않는다."""
 
 HANDOVER_READS = {
@@ -13,8 +13,7 @@ HANDOVER_READS = {
 QUESTION_READS = {
     **HANDOVER_READS,
     'hyd-dmn': HANDOVER_READS['hyd-dmn'] + (
-        'diagnose', 'dmn_rules', 'gather_facts', 'prometheus_metadata',
-        'prometheus_series', 'prometheus_query', 'evaluate_cards',
+        'diagnose', 'dmn_rules', 'gather_facts', 'evaluate_cards',
         'read_evaluation_evidence', 'forecast_actions', 'business_causes',
         'purchase_context', 'evaluate_purchase', 'precedents', 'tradeoffs', 'fabric_query'),
 }

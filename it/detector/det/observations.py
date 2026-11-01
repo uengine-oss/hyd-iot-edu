@@ -5,7 +5,7 @@ from hydcommon.daq_contract import reporting_interval
 
 
 class Observations:
-    def __init__(self, profile='lite', grace_s=2.):
+    def __init__(self, profile, grace_s):
         reporting_interval('TS1', profile)
         if not math.isfinite(grace_s) or grace_s < 0:
             raise ValueError('Observation grace must be finite and nonnegative')

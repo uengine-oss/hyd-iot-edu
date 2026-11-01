@@ -1,7 +1,11 @@
 """Read-only incident evidence and admission of rework before external effects.
 
-Original cards and approval payloads remain evidence. Supersession lives in the
-PG generation receipt, so no SQLite mutation can survive a rolled-back request.
+Original cards and approval payloads remain evidence. The generation itself lives in
+the PG rework receipt. Reopening the Incident (SQLite snapshot) happens inside the same
+request before the PG commit (rework_runtime.request_rework): if the rest fails, PG rolls
+back while the Incident stays reopened. The portal then re-sends the same request id
+(instanceRework.js keeps the pending request); reopening is idempotent per request id
+(machine.reopen), so the retry commits the generation without reopening twice.
 """
 from copy import deepcopy
 
@@ -97,7 +101,7 @@ def admit(proposal, defn, inst, work, approvals, evidence, receipts=()):
     in its history. Nothing here reverses a PLC command."""
     proposal = deepcopy(proposal)
     blockers = proposal['blockers']
-    def block(code, **detail): blockers.append(dict(code=code, **detail))
+    def block(code, **detail): blockers.append(rework.blocker(code, **detail))
     values = engine.variables(inst)
     incident = evidence['incident']
     decisions = {d['id']: d for d in evidence['decisions']}
@@ -112,11 +116,9 @@ def admit(proposal, defn, inst, work, approvals, evidence, receipts=()):
         block('incident_command_in_flight')
     elif incident.get('state') not in effects_mod.REOPENABLE:
         block('incident_not_active_for_rework')
-    elif incident.get('state') != 'AWAITING_APPROVAL':
-        if settled:
-            proposal['reopen_incident'] = True
-        else:
-            block('incident_not_active_for_rework')
+    elif incident.get('state') != 'AWAITING_APPROVAL' and settled:
+        proposal['reopen_incident'] = True
+    # 효과가 남은 동안은 효과 막힘 하나가 할 일(보상 · 확인)을 말한다 — 사건이 끝났다는 틀린 말을 덧붙이지 않는다
     if not settled:
         block(effects_mod.BLOCKER, effects=list(outcome['pending']))
     proposal['effects_resolution'] = {'effects': effects, **outcome}

@@ -1,5 +1,5 @@
 /* Shared presentation helpers. API identifiers stay unchanged — only on-screen wording lives here.
-   A122 (문서/시스템/참조/UIUX_PLAN.md §2 명칭표 · §3 공통 컴포넌트 · §5.2 상태): every user-facing phrase comes from UI.terms,
+   A122 (workspace/개발/문서/UIUX_PLAN.md §4 용어 · §5 상태): every user-facing phrase comes from UI.terms,
    every status chip from UI.chip(), every form field from UI.field(). Change the wording here and all screens follow. */
 // 포털 전체의 HTML 이스케이프 하나(이 파일이 가장 먼저 실린다 — 다른 화면은 사본을 두지 않는다)
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -43,10 +43,6 @@ const UI = {
     const alias=/^([^/\s]+)\/([^/\s]+)$/.exec(raw);
     return alias ? `mcp__${alias[1]}__${alias[2]}` : raw;
   },
-  standardToolName(t) {
-    const key=this.toolKey(t), family=key.replace(/^mcp__enterprise-(?:maint|purchase)__/, 'mcp__enterprise__');
-    return this.terms['tool.'+key] || this.terms['tool.'+family] || '';
-  },
   // _provided_skills omits written on a verified file; Codex adds prompt
   // delivery after checking registered bytes/hash. Missing metadata is unknown.
   skillDelivery(k) {
@@ -61,31 +57,31 @@ const UI = {
     return [['file','파일 전달'],['prompt','프롬프트로 본문 전달'],['failed','전달 실패'],['unknown','전달 상태 기록 없음']]
       .filter(([k])=>counts[k]).map(([k,n])=>`${n} ${counts[k]}개`).join(' · ') || '제공된 스킬 없음';
   },
-  /* ---------- 명칭표 (UIUX_PLAN §2) — 화면 문구만. 코드·API·DB 이름은 그대로다. ---------- */
+  /* ---------- 명칭표 (UIUX_PLAN §4) — 화면 문구만. 코드·API·DB 이름은 그대로다. ---------- */
   terms: {
     // 메뉴 · 헤더
     'nav.main': '홈', 'nav.home': '시스템 구성', 'nav.scenario': '결함 시뮬레이션', 'nav.incidents': '이상 확인 · 조치', 'nav.trends': '실시간 모니터링',
     'nav.ontology': '지식 지도', 'nav.skills': '조치 방법', 'nav.decision': '조치 판단 규칙', 'nav.process': '승인과 실행', 'nav.instances': '처리 건',
     'nav.knowledge': '지식 관리', 'nav.admin': '관리', 'nav.mcp': '도구 연결',
-    'nav.group.plant': '설비', 'nav.group.decide': '판단과 처리', 'nav.group.manage': '관리',
-    'header.services': '서비스', 'header.noResponse': '응답 없음', 'header.connected': '연결됨', 'header.connecting': '연결 중', 'header.waiting': '연결됨 · 대기', 'header.disconnected': '끊김 · 재연결 중', 'header.streamOff': '실시간 꺼짐 (기본 처리 모드)',
-    'header.open': '진행 중', 'header.simTime': '시뮬레이션 시각', 'header.scale': '시간 배율', 'header.simBadge': '시뮬레이션', 'header.menu': '메뉴',
+    'nav.group.plant': '설비', 
+    'header.services': '서비스', 'header.noResponse': '응답 없음', 'header.connected': '연결됨', 'header.connecting': '연결 중', 'header.waiting': '연결됨 · 대기', 'header.disconnected': '끊김 · 재연결 중',
+    
     // 공통 단위
-    'case': '사건', 'instance': '처리 건', 'step': '단계', 'myTurn': '내 차례', 'agent': 'AI 에이전트', 'operator': '운전원', 'system': '시스템',
+    'case': '사건', 'instance': '처리 건', 'step': '단계', 'agent': 'AI 에이전트', 'operator': '운전원', 'system': '시스템',
     'candidate': '조치 후보', 'decision': '결정', 'decisions': '판단 결과', 'method': '조치 방법', 'select': '조치 선택', 'escalate': '책임자 확인',
-    'reobserve': '효과 확인', 'reobserve15': '효과 확인 (15분)', 'workOrder': '정비 요청', 'command': '설비에 명령', 'control': '설비 제어', 'ack': '설비 응답',
+    'reobserve': '효과 확인', 'workOrder': '정비 요청', 'command': '설비에 명령', 'control': '설비 제어', 'ack': '설비 응답',
     'alert': '설비 경보', 'closed': '종결', 'done': '완료', 'knowledge': '지식', 'rule': '규칙', 'kpi': '성과 지표',
     // 버튼
-    'btn.decide': '결정', 'btn.approve': '승인', 'btn.reject': '반려', 'btn.submit': '제출', 'btn.answer': '답변', 'btn.rework': '다시 수행', 'btn.confirm': '확인',
+    'btn.approve': '승인', 'btn.reject': '반려', 'btn.submit': '제출', 'btn.answer': '답변', 'btn.rework': '다시 수행', 'btn.confirm': '확인',
     'btn.preview': '예측 다시 보기', 'btn.effects': '영향 보기', 'btn.reassess': '다시 평가', 'btn.reload': '다시 읽기', 'btn.save': '저장', 'btn.cancel': '변경 취소',
-    'btn.run': '판단 실행', 'btn.running': '판단 중…', 'btn.all': '전체 보기', 'btn.fit': '전체 흐름 보기', 'btn.unfit': '읽기 편한 크기로 보기', 'btn.more': '더 보기',
+    'btn.run': '판단 실행', 'btn.running': '판단 중…', 'btn.fit': '전체 흐름 보기', 'btn.unfit': '읽기 편한 크기로 보기', 'btn.more': '더 보기',
     'btn.retry': '같은 내용 다시 전달', 'btn.closeTask': '단계 닫기', 'btn.cancelTask': '실행 취소', 'btn.goInstance': '처리 건에서 선택하기 →',
     // 폼 라벨
     'form.by': '담당자', 'form.role': '역할', 'form.reason': '사유', 'form.note': '메모', 'form.answer': '답변', 'form.fan': '팬 속도', 'form.load': '펌프 부하', 'form.pump': '운전 펌프',
-    'form.section.case': '사건', 'form.section.choice': '선택', 'form.section.who': '사유 · 담당', 'form.required': '필수',
-    'form.hint.role': '카드의 승인 역할 이상이어야 합니다', 'form.hint.reason': '왜 이 조치를 고르는지 한 줄로 적습니다', 'form.hint.preview': '조치값을 바꿨으면 예측을 다시 본 뒤 결정합니다',
-    'form.hint.answer': '답변은 같은 단계에서 이어서 반영됩니다', 'form.useCurrent': '현재 값 사용', 'form.pickRole': '역할 선택',
-    'form.timeout': '10분 안에 고르지 않으면 책임자에게 넘어갑니다', 'form.deadline': '기한',
+    'form.section.who': '사유 · 담당', 
+    'form.hint.reason': '왜 이 조치를 고르는지 한 줄로 적습니다', 'form.hint.preview': '조치값을 바꿨으면 예측을 다시 본 뒤 결정합니다',
+    'form.hint.answer': '답변은 같은 단계에서 이어서 반영됩니다', 'form.pickRole': '역할 선택',
+    'form.deadline': '기한',
     'form.err.required': '필수 항목을 입력하세요', 'form.err.reason': '사유를 입력하세요', 'form.err.byRole': '담당자와 역할을 입력하세요', 'form.err.byRoleReason': '담당자 · 역할 · 사유를 입력하세요',
     // 카드 칩
     'chip.recommended': '추천', 'chip.chosen': '결정', 'chip.excluded': '제외', 'chip.control': '설비 제어', 'chip.workOrder': '정비 요청',
@@ -94,8 +90,8 @@ const UI = {
     'card.penalty': '감점', 'card.warn': '경고', 'card.noAction': '세부 동작 없음',
     'score.bsc': '성과 지표', 'score.forecast': '예측', 'score.warn': '경고', 'score.penalty': '감점', 'score.precedent': '과거 선택', 'score.delivery': '납기', 'score.quality': '품질',
     // 조치 판단 규칙
-    'dec.conditions': '판단 조건', 'dec.asset': '설비', 'dec.pattern': '이상 패턴', 'dec.mode': '운전 모드', 'dec.state': '설비 상태', 'dec.fan': '팬 100 % 연속 운전 (시간)', 'dec.standby': '예비 펌프',
-    'dec.standbyReady': '가용', 'dec.standbyBusy': '정비 중', 'dec.empty': '설비와 이상 패턴을 고르고 판단을 실행하세요', 'dec.loading': '규칙을 사실에 대어 보는 중…',
+    'dec.asset': '설비', 'dec.mode': '운전 모드', 'dec.state': '설비 상태', 'dec.fan': '팬 100 % 연속 운전 (시간)', 'dec.standby': '예비 펌프',
+    'dec.empty': '설비와 이상 패턴을 고르고 판단을 실행하세요', 'dec.loading': '규칙을 사실에 대어 보는 중…',
     'dec.cause': '원인', 'dec.causeTop': '판정', 'dec.causeMore': '다른 원인 후보', 'dec.candidates': '조치 후보', 'dec.rules': '적용한 규칙', 'dec.inputs': '판단에 쓴 값', 'dec.trace': '처리 과정',
     'dec.summaryMore': '자세히', 'dec.fired': '발동', 'dec.notApplicable': '해당 없음', 'dec.noFact': '사실 없음', 'dec.ruleSelect': '후보 선택', 'dec.ruleCompliance': '규정 적합성',
     'dec.col.rule': '규칙', 'dec.col.target': '대상', 'dec.col.result': '결과', 'dec.col.input': '입력 데이터', 'dec.col.source': '출처', 'dec.col.value': '값', 'dec.col.how': '가져온 방법',
@@ -103,55 +99,57 @@ const UI = {
     // 이상 확인 · 조치
     'inc.select': '설비를 선택하세요', 'inc.selectSub': '위 설비 카드를 누르면 사건과 조치 과정이 보입니다', 'inc.noAlert': '경보 없음', 'inc.noAlertSub': '결함을 주입하면 여기에 나타납니다',
     'inc.noCase': '사건 없음', 'inc.list': '사건', 'inc.listAll': '전체 사건', 'inc.progress': '조치 과정', 'inc.evidence': '분석 근거', 'inc.agentTrace': '에이전트 처리 과정', 'inc.log': '기록',
-    'inc.decisionCard': '결정', 'inc.waiting': '조치 후보를 만드는 중…', 'inc.noCandidates': '고를 조치 후보가 없습니다', 'inc.alertAt': '경보', 'inc.approvedBy': '승인',
-    'inc.runOnly': '분석만 있음', 'inc.noTrace': '이 경보의 에이전트 처리 기록이 없습니다', 'inc.noGuide': '아직 분석 결과가 없습니다', 'inc.freshness': '데이터 상태', 'inc.fresh': '정상', 'inc.stale': '신뢰 불가',
-    'inc.causes': '가능한 원인', 'inc.recommended': '권장 조치', 'inc.range': '허용 범위', 'inc.constraints': '제약', 'inc.noEvidence': '증거 규칙 없음', 'inc.unknown': '판정 미확인', 'inc.pass': '조건 충족', 'inc.fail': '조건 미충족',
+    'inc.waiting': '조치 후보를 만드는 중…', 'inc.noCandidates': '고를 조치 후보가 없습니다', 'inc.alertAt': '경보', 'inc.approvedBy': '승인',
+    'inc.noGuide': '아직 분석 결과가 없습니다', 'inc.freshness': '데이터 상태', 'inc.fresh': '정상', 'inc.stale': '신뢰 불가',
+    'inc.causes': '가능한 원인', 'inc.recommended': '권장 조치', 'inc.noEvidence': '증거 규칙 없음', 'inc.unknown': '판정 미확인', 'inc.pass': '조건 충족', 'inc.fail': '조건 미충족',
     'inc.observed': '관측', 'inc.woPending': '정비 요청 발행 대기', 'inc.reasonLabel': '사유',
     // 처리 건
-    'inst.running': '진행 중', 'inst.myTurn': '내 차례', 'inst.asked': '질문', 'inst.activity': '에이전트 활동', 'inst.list': '처리 건', 'inst.recent': '최근 50건', 'inst.filterRunning': '진행 중', 'inst.filterDone': '완료',
+    'inst.running': '진행 중', 'inst.myTurn': '내 차례', 'inst.asked': '질문', 
     'inst.empty': '아직 처리 건이 없습니다', 'inst.emptySub': '경보가 나면 여기에 나타납니다', 'inst.select': '처리 건을 선택하세요', 'inst.selectSub': '결과 · 흐름 · 기록을 볼 수 있습니다',
-    'inst.noTodo': '지금 할 일이 없습니다', 'inst.noTodoSub': '차례가 오면 여기에 나타납니다', 'inst.off': '처리 건 기능이 꺼져 있습니다. 관리자에게 문의하세요.', 'inst.noConn': '처리 서비스에 연결할 수 없습니다',
+    'inst.noTodo': '지금 할 일이 없습니다', 'inst.noTodoSub': '차례가 오면 여기에 나타납니다', 'inst.noConn': '처리 서비스에 연결할 수 없습니다',
     'inst.tab.result': '결과', 'inst.tab.flow': '진행 상황', 'inst.tab.log': '단계 표', 'inst.tab.record': '처리 기록', 'inst.started': '시작', 'inst.ended': '종료', 'inst.justStarted': '방금 시작', 'inst.elapsed': '분 경과', 'inst.took': '분 만에',
-    'inst.values': '값', 'inst.initial': '시작 값', 'inst.steps': '단계', 'inst.events': '에이전트 활동', 'inst.graph': '지식 반영', 'inst.now': '지금', 'inst.next': '다음', 'inst.finished': '끝',
-    'inst.stepsDone': '단계 완료', 'inst.waitingResult': '새 결과를 기다리는 단계', 'inst.endWaiting': '일부 경로가 종료 지점에 닿았습니다. 남은 단계가 끝나면 처리 건이 종료됩니다.',
+    'inst.initial': '시작 값', 'inst.steps': '단계', 'inst.events': '에이전트 활동', 'inst.graph': '지식 반영', 
+    'inst.waitingResult': '새 결과를 기다리는 단계', 'inst.endWaiting': '일부 경로가 종료 지점에 닿았습니다. 남은 단계가 끝나면 처리 건이 종료됩니다.',
     'inst.approval': '승인 전달', 'inst.effects': '이전 조치의 영향', 'inst.rework': '다시 수행', 'inst.reworkHistory': '다시 수행 이력', 'inst.reassess': '다시 평가', 'inst.woFailed': '정비 요청 전달 실패',
     'inst.gen': '차', 'inst.askTitle': '에이전트의 질문', 'inst.askWait': '질문을 읽는 중…', 'inst.loadingCards': '조치 후보를 불러오는 중…', 'inst.noForm': '이 단계의 입력 양식을 찾을 수 없습니다',
     'inst.followWo': '함께 발행될 정비 요청', 'inst.source.input': '시작 값', 'inst.source.runtime': '시스템', 'inst.source.none': '출처 없음', 'inst.structured': '구조화된 값', 'inst.noValue': '값 없음',
     'inst.noResult': '아직 결정된 조치가 없습니다', 'inst.noResultSub': '단계가 끝나면 결과가 여기에 나타납니다',
-    'var.asset': '설비', 'var.pattern': '이상 패턴', 'var.cause': '원인', 'var.failure_mode': '고장 유형', 'var.chosen_skill': '고른 조치', 'var.chosen_skill_kind': '조치 종류', 'var.recovered': '회복', 'var.work_order': '정비 요청', 'var.note': '메모', 'var.approved_by': '승인자', 'var.approved_by_name': '승인자 이름', 'var.approved_role': '승인 역할', 'var.alert_id': '경보', 'var.incident':'사건', 'var._deferral':'보류 평가 기록', 'ontology.field.AnomalyPattern.code':'이상 패턴 코드', 'ontology.class.AnomalyPattern':'이상 패턴', 'val.SPARE_BELOW_MIN':'예비품 재고 기준 이탈', 'val.PM_DUE':'정기 정비 도래',
+    'var.asset': '설비', 'var.pattern': '이상 패턴', 'var.cause': '원인', 'var.failure_mode': '고장 유형', 'var.chosen_skill': '고른 조치', 'var.chosen_skill_kind': '조치 종류', 'var.recovered': '회복', 'var.work_order': '정비 요청', 'var.note': '메모', 'var.approved_by': '승인자', 'var.approved_by_name': '승인자 이름', 'var.approved_role': '승인 역할', 'var.alert_id': '경보', 'var.incident':'사건', 'var._deferral':'보류 평가 기록',
+    // 처리 건 변수의 화면 이름(정의 설명문에는 규칙 id · 클래스 이름이 섞여 화면 이름으로 쓰지 않는다)
+    'var.alert': '경보 메시지', 'var.guide_card': '원인 분석 카드', 'var.candidates': '조치 후보', 'var.compliance': '규정 판정', 'var.decision': '조치 카드 묶음', 'var.decision_id': '조치 카드 묶음 번호', 'var.commands': '설비 명령', 'var.chosen_option': '고른 조치 카드', 'var.incident_outcome': '사건 결과', 'var.manual_source': '원문 문서', 'var.review_feedback': '사람 검토 판정', 'var.segment': '담당 구간', 'var.proposal': '추출 제안', 'var.ontology_catalog': '지식 목록', 'ontology.field.AnomalyPattern.code':'이상 패턴 코드', 'ontology.class.AnomalyPattern':'이상 패턴', 'val.SPARE_BELOW_MIN':'예비품 재고 기준 이탈', 'val.PM_DUE':'정기 정비 도래',
     'var.package_semantics':'정비 내용의 기록 의미','var.configured_base_package':'등록된 기본 정비 내용','val.base_interval_configuration':'등록된 기본 정비 설정 · 이번 차례 패키지 선택 아님',
-    'inst.output': '출력', 'inst.gateway': '분기 판정', 'inst.due': '기한', 'inst.prevTask': '이전 단계', 'inst.inputs': '전달된 값', 'inst.raw': '원문',
+    'inst.output': '출력', 'inst.due': '기한', 'inst.prevTask': '이전 단계', 
     'inst.projectionPending': '반영 대기', 'inst.projectionAll': '사건 · 판단 반영 대기 (전체)', 'inst.projectionNone': '조회하지 못함', 'inst.query': '질의 보기',
     'inst.stepTable.step': '단계', 'inst.stepTable.status': '상태', 'inst.stepTable.who': '누가', 'inst.stepTable.when': '시각', 'inst.stepTable.result': '결과',
     'inst.closeReason': '이 단계를 닫는 사유', 'inst.cancelReason': '실행을 취소하는 사유',
     // 승인과 실행
-    'proc.flow': '업무 흐름', 'proc.list': '판단 결과', 'proc.empty': '아직 제출된 판단이 없습니다', 'proc.emptySub': '경보가 나면 에이전트가 조치 후보를 제출합니다', 'proc.select': '판단을 선택하세요',
-    'proc.manual': '수동 실행', 'proc.override': '추천과 다른 선택', 'proc.submitted': '제출', 'proc.executions': '실행 결과', 'proc.history': '이력', 'proc.systems': '기업 시스템 현황', 'proc.tx': '시스템 실행 이력',
+    'proc.flow': '업무 흐름', 'proc.empty': '아직 제출된 판단이 없습니다', 'proc.emptySub': '경보가 나면 에이전트가 조치 후보를 제출합니다', 'proc.select': '판단을 선택하세요',
+    'proc.manual': '수동 실행', 'proc.override': '추천과 다른 선택', 'proc.submitted': '제출', 'proc.executions': '실행 결과', 'proc.history': '이력', 
     'proc.noChange': '변경 없음', 'proc.noTx': '아직 실행 이력이 없습니다', 'tx.beforeAfter': '변경 전·후', 'tx.col.field': '항목', 'tx.col.before': '변경 전', 'tx.col.after': '변경 후', 'tx.noDiff': '바뀐 값 없음', 'tx.created': '새로 만듦', 'proc.noEnt': '기업 시스템에 연결할 수 없습니다', 'proc.listError': '판단 목록을 갱신할 수 없습니다. 마지막으로 받은 목록입니다.',
-    'proc.flowEmpty': '판단을 선택하면 진행 상태가 표시됩니다', 'proc.flowManual': '수동 실행 판단은 진행 상태가 없습니다', 'proc.approving': '승인 중…', 'proc.rejecting': '반려 중…',
+    'proc.flowEmpty': '판단을 고르면 그 처리 건의 흐름이 보입니다', 
     'proc.legend.done': '완료', 'proc.legend.now': '진행 중', 'proc.legend.stop': '중단', 'proc.legend.skipped': '건너뜀',
-    'sys.MES': '생산 주문', 'sys.CMMS': '정비 요청', 'sys.ERP': '구매 · 출하', 'sys.QMS': '품질 처분', 'sys.EMS': '에너지 제어',
+    
     // 설비
     'plant.ts1': '유온', 'plant.ce': '냉각 효율', 'plant.cp': '냉각 능력', 'plant.fan': '팬 속도', 'plant.load': '펌프 부하', 'plant.ps1': '토출 압력', 'plant.fs1': '유량', 'plant.vs1': '팬 진동', 'plant.pump': '운전 펌프',
     'plant.health': '쿨러 성능 비율', 'plant.phase': '경보', 'plant.state': '설비 상태', 'plant.lastCmd': '최근 명령 결과', 'plant.trip': '보호 정지 기준 65 °C', 'plant.spark': '압력 추이 · 1초 간격',
-    'plant.faults': '결함 실험', 'plant.modes': '운전 모드', 'plant.manual': '수동 조작 · 적용 시 원격 수동으로 전환', 'plant.recentCmd': '최근 제어 요청 결과', 'plant.noCmd': '아직 명령 기록이 없습니다',
-    'plant.noConn': '설비 시뮬레이터에 연결할 수 없습니다', 'plant.noConnSub': '연결되면 자동으로 다시 표시됩니다', 'plant.scaleNote': '설비 시뮬레이션 배율입니다. 탐지와 효과 확인 시간은 서비스 시작 시 설정한 배율을 씁니다.',
+    'plant.faults': '결함 실험', 'plant.modes': '운전 모드', 'plant.manual': '수동 조작 · 적용 시 원격 수동으로 전환', 'plant.noCmd': '아직 명령 기록이 없습니다',
+    'plant.noConn': '설비 시뮬레이터에 연결할 수 없습니다', 'plant.noConnSub': '연결되면 자동으로 다시 표시됩니다', 
     'plant.standby': '예비', 'plant.none': '아직 없음', 'plant.faultOn': '결함 진행 중', 'plant.current': '현재 상태',
     // 홈
     'main.assets': '설비', 'main.openCases': '열린 사건', 'main.knowledge': '지식 항목', 'main.scale': '시간 배율', 'main.go.scenario': '결함 시뮬레이션', 'main.go.incidents': '이상 확인 · 조치', 'main.go.instances': '처리 건',
     'main.go.scenario.sub': '설비에 결함을 넣고 경보를 봅니다', 'main.go.incidents.sub': '사건의 원인과 조치 과정을 봅니다', 'main.go.instances.sub': '내 차례와 처리 흐름을 봅니다',
-    'main.hot': '고온 · 정지', 'main.cool': '모든 설비 유온 55 ℃ 미만', 'main.noConn': '설비 연결 끊김', 'main.none': '없음', 'main.links': '연결', 'main.waitNeo': '지식 저장소 연결 대기',
-    'main.liveTs1': '실시간 유온', 'main.zoom': '도식 확대', 'main.unzoom': '화면에 맞추기', 'main.check': '설비 상태 확인', 'main.arch': '시스템 구성 보기',
+    'main.hot': '고온 · 정지', 'main.cool': '모든 설비 유온 55 ℃ 미만', 'main.noConn': '설비 연결 끊김', 'main.none': '없음', 'main.links': '연결', 
+    'main.liveTs1': '실시간 유온', 'main.zoom': '도식 확대', 'main.unzoom': '화면에 맞추기', 
     // 지식 지도 · 지식 관리 · 조치 방법
     'onto.stats': '항목 {n} · 연결 {e} · 조치 방법 {s} · 규칙 {r} · 성과 지표 {k}', 'onto.path': '강조 경로 {n}개', 'onto.found': '검색 결과 {n}개', 'onto.scroll': '지도 안에서 좌우로 이동',
     'onto.hint': '항목을 누르면 연결된 관계가 강조됩니다', 'onto.out': '나가는 관계', 'onto.in': '들어오는 관계', 'onto.loadFail': '지식을 불러올 수 없습니다', 'onto.loadFailSub': '연결을 확인하고 다시 읽기를 누르세요',
-    'kn.manual': '매뉴얼 등록', 'kn.ddl': '업무 데이터 연결', 'kn.query': '질의 보기', 'kn.pickFile': '파일 선택', 'kn.noFile': '선택한 파일 없음', 'kn.preview': '미리보기', 'kn.by': '담당자',
+    'kn.noFile': '선택한 파일 없음', 'kn.preview': '미리보기', 
     'kn.docs': '등록된 매뉴얼', 'kn.docsEmpty': '등록된 매뉴얼이 없습니다', 'kn.docsEmptySub': '위에서 매뉴얼 파일을 골라 미리보기 뒤 적재하면 여기에 나타납니다', 'kn.history': '매뉴얼 등록 이력',
     'kn.current': '현재 판본', 'kn.previous': '이전 판본', 'kn.rolledBack': '되돌림', 'kn.revise': '이 문서 개정', 'kn.undo': '이 판본 되돌리기', 'kn.sections': '절', 'kn.procedures': '조치 방법', 'kn.steps': '단계',
     // 이 문서로 답할 수 있는 질문 (A118 골든 퀘스천 — 화면 문구만)
     'golden.title': '이 문서로 답할 수 있는 질문', 'golden.questions': '질문', 'golden.questionsHint': '한 줄에 하나 · 최대 20개 · 이 문서를 읽은 뒤 답할 수 있어야 하는 질문을 적습니다',
     'golden.ask': '확인 요청', 'golden.asking': '요청 중…', 'golden.askMore': '다른 질문 확인하기', 'golden.pending': '진행 중', 'golden.correcting': '교정 중', 'golden.done': '완료', 'golden.failed': '실패',
-    'golden.checking': '질문 {n}개를 지식에 대어 보는 중…', 'golden.checkingSub': 'AI 에이전트가 이 문서가 넣은 지식만으로 답하는지 확인합니다', 'golden.none': '아직 확인한 질문이 없습니다',
+    'golden.checking': '질문 {n}개를 지식에 대어 보는 중…', 'golden.checkingSub': 'AI 에이전트가 이 문서가 넣은 지식만으로 답하는지 확인합니다', 
     'golden.answerable': '답할 수 있음', 'golden.partial': '일부', 'golden.notYet': '아직 못 함', 'golden.grounded': '근거 있음', 'golden.confidence': '확신도',
     'golden.conf.high': '높음', 'golden.conf.medium': '보통', 'golden.conf.low': '낮음', 'golden.evidence': '근거 보기', 'golden.cited': '인용한 지식 항목', 'golden.noCited': '인용한 항목 없음', 'golden.query': '질의 보기',
     'golden.err.empty': '질문을 한 줄 이상 적으세요', 'golden.err.many': '질문은 최대 20개입니다', 'golden.err.load': '확인 결과를 읽지 못했습니다', 'golden.corrections': '형식 교정 {n}회',
@@ -162,18 +160,7 @@ const UI = {
     'def.anomaly_response': '설비 이상 조치', 'def.alert_triage': '미지원 경보 현장 검토', 'def.ask_agent': '에이전트에게 질문하기',
     'def.c3_cooling': '냉각 긴급 대응', 'def.c3_pm': '정기 정비', 'def.c3_spare': '예비품 구매',
     'def.manual_extraction': '매뉴얼 추출', 'def.manual_source_extraction': '문서 원천 추출', 'def.golden_questions': '매뉴얼 확인 질문', 'def.timeseries_question': '시계열 질문', 'def.business_question': '업무 질문', 'def.rule_question': '규칙 질문',
-    'tool.Write': '파일 쓰기', 'tool.Read': '파일 읽기', 'tool.Edit': '파일 수정', 'tool.Glob': '파일 찾기', 'tool.Grep': '내용 검색', 'tool.PowerShell': '명령 실행', 'tool.Bash': '명령 실행', 'tool.ToolSearch': '도구 검색', 'tool.WebFetch': '웹 읽기', 'tool.WebSearch': '웹 검색', 'tool.Agent': '하위 에이전트',
-    'tool.mcp__neo4j__read_neo4j_cypher': '지식 그래프 조회', 'tool.mcp__neo4j__write_neo4j_cypher': '지식 그래프 쓰기', 'tool.mcp__neo4j__get_neo4j_schema': '지식 그래프 구조 조회',
-    'tool.mcp__hyd-dmn__timeseries_query': '시계열 조회', 'tool.mcp__hyd-dmn__timeseries_schema': '시계열 구조 조회', 'tool.mcp__hyd-dmn__dmn_rules': '판단 규칙 조회', 'tool.mcp__hyd-dmn__evaluate_cards': '조치 후보 평가', 'tool.mcp__hyd-dmn__diagnose': '원인 진단',
-    'tool.mcp__hyd-dmn__gather_facts': '사실 수집', 'tool.mcp__hyd-dmn__inputs': '판단 입력 조회', 'tool.mcp__hyd-dmn__prometheus_metadata': '지표 목록 조회', 'tool.mcp__hyd-dmn__prometheus_query': '지표 조회', 'tool.mcp__hyd-dmn__prometheus_series': '지표 시계열 조회', 'tool.mcp__hyd-dmn__precedents': '과거 선택 조회', 'tool.mcp__hyd-dmn__submit_decision': '판단 제출', 'tool.mcp__hyd-dmn__tradeoffs': '성과 지표 상충 경로', 'tool.mcp__hyd-dmn__forecast_actions': '조치 효과 예측', 'tool.mcp__hyd-dmn__fabric_query': '두 자료 묶어 보기',
-    'tool.mcp__enterprise__query': '업무 데이터 조회', 'tool.mcp__enterprise__describe_catalog': '업무 데이터 목록', 'tool.mcp__enterprise__describe_schema': '업무 데이터 구조', 'tool.mcp__enterprise__mes_orders': '생산 주문 조회', 'tool.mcp__enterprise__erp_contract': '계약 조회', 'tool.mcp__enterprise__erp_inventory': '재고 조회',
-    'tool.mcp__enterprise__pm_status':'정비 계수기 · 계획 조회', 'tool.mcp__enterprise__maintenance_windows':'정비 시간 계획 조회',
-    'tool.mcp__enterprise__cmms_history':'정비 이력 조회', 'tool.mcp__enterprise__spare_stock':'예비품 재고 조회',
-    'tool.mcp__enterprise__part_quotes':'공급사 견적 조회', 'tool.mcp__enterprise__scm_suppliers':'공급사 조회',
-    'tool.mcp__hyd-dmn__business_causes':'업무 경보 원인 조회',
-    'tool.mcp__hyd-dmn__purchase_context':'구매 부품 근거 조회', 'tool.mcp__hyd-dmn__evaluate_purchase':'구매 후보 비교', 'tool.mcp__hyd-dmn__submit_purchase':'구매 판단 등록 (승인 · 실행 아님)',
-    'tool.mcp__codex__list_mcp_resources':'참고 자료 목록 조회', 'tool.mcp__codex__list_mcp_resource_templates':'참고 자료 형식 조회',
-    'skill.list': '조치 방법', 'skill.new': '새 조치 방법', 'skill.select': '조치 방법을 선택하세요', 'skill.name': '이름', 'skill.desc': '설명', 'skill.approver': '승인 역할', 'skill.kind': '종류',
+    'skill.new': '새 조치 방법', 'skill.select': '조치 방법을 선택하세요', 'skill.name': '이름', 'skill.desc': '설명', 'skill.approver': '승인 역할', 'skill.kind': '종류',
     'skill.kind.control': '설비 제어', 'skill.kind.workOrder': '정비 요청', 'skill.rel.remedy': '근본 조치', 'skill.rel.mitigate': '즉시 완화', 'skill.rel.prevent': '예방 조치', 'skill.sop': '절차 번호', 'skill.fm': '대상 고장 유형', 'skill.relation': '관계',
     'skill.steps': '절차 — 한 줄에 한 단계', 'skill.stepsTitle': '절차', 'skill.linked': '연결된 지식', 'skill.causes': '해당 원인', 'skill.actions': '세부 동작', 'skill.rules': '적용 규칙', 'skill.affects': '영향 지표',
     'skill.allCauses': '고장 유형의 모든 원인', 'skill.noSteps': '절차 없음', 'skill.none': '없음', 'skill.noFm': '대상 고장 유형 없음', 'skill.add': '추가', 'skill.unsaved': '저장하지 않은 변경 사항',
@@ -181,9 +168,9 @@ const UI = {
     // 스트림
     'stream.title': '에이전트 활동', 'stream.filter.all': '전체', 'stream.filter.tool': '도구', 'stream.filter.task': '단계', 'stream.filter.human': '사람', 'stream.filter.error': '오류', 'stream.filter.work': '진행',
     'stream.pause': '멈춤', 'stream.resume': '다시 흐르게', 'stream.empty': '아직 활동이 없습니다', 'stream.emptySub': '에이전트가 일하면 여기에 실시간으로 나타납니다', 'stream.all': '모두 보기',
-    'stream.tool': '도구', 'stream.toolDone': '도구 결과', 'stream.start': '단계 시작', 'stream.done': '단계 완료', 'stream.working': '진행', 'stream.cancel': '단계 취소', 'stream.deferred': '보류', 'stream.reassess': '다시 평가 요청',
-    'stream.asked': '사람에게 질문', 'stream.answered': '사람의 답변', 'stream.error': '오류', 'stream.model': '모델 응답 중', 'stream.tokens': '토큰', 'stream.cancelReq': '실행 취소 요청 (사람)', 'stream.closed': '단계 닫음 (사람)', 'stream.stopped': '실행 멈춤',
-    // 흐름도 (정의 이름 → 화면 이름, UIUX_PLAN §4.1)
+    'stream.tool': '도구', 'stream.start': '단계 시작', 'stream.done': '단계 완료', 'stream.working': '진행', 'stream.cancel': '단계 취소', 'stream.deferred': '보류', 'stream.reassess': '다시 평가 요청',
+    'stream.asked': '사람에게 질문', 'stream.answered': '사람의 답변', 'stream.error': '오류', 'stream.cancelReq': '실행 취소 요청 (사람)', 'stream.closed': '단계 닫음 (사람)', 'stream.stopped': '실행 멈춤',
+    // 흐름도 (정의 이름 → 화면 이름, UIUX_PLAN §4)
     'flow.lane.agent': '에이전트', 'flow.lane.human': '담당자', 'flow.lane.system': '시스템',
     'flow.name.경보 수신': '설비 경보', 'flow.name.원인 진단': '원인 진단', 'flow.name.조치 후보 조회': '조치 후보 조회', 'flow.name.규정 검토': '규정 검토', 'flow.name.우선순위 · 카드 작성': '조치 후보 정리',
     'flow.name.조치 카드 선택 (HITL)': '조치 선택', 'flow.name.상급자 호출': '책임자 확인', 'flow.name.PLC 명령 발행': '설비에 명령', 'flow.name.재관측 (15분)': '효과 확인 (15분)', 'flow.name.정비 작업지시': '정비 요청',
@@ -191,14 +178,14 @@ const UI = {
     'flow.name.즉시 제어 포함?': '설비 제어가 있나?', 'flow.name.회복?': '회복됐나?',
     // A6: 끝 이벤트 id가 이름 없이 오는 자리(처리 건 목록 end_event · 로그 "instance ended (ev:…)") — 정의 events[].name과 같은 말
     'flow.name.start': '시작', 'flow.name.alert': '설비 경보', 'flow.name.select-timeout': '선택 시간 초과', 'flow.name.unhandled-alert': '미지원 경보 접수', 'flow.name.review-recorded': '현장 검토 기록 완료',
-    'flow.name.escalate': '책임자 확인', 'flow.name.triage': '현장 검토', 'flow.name.end': '종료', 'flow.name.closed': '종결', 'flow.name.escalated': '책임자 확인으로 종료', 'flow.name.closed-by-human': '사람이 닫음', 'flow.name.incident-ended-before-action': '조치 전 해소', 'flow.name.rejected': '반려', 'flow.name.accepted': '승인',
+    'flow.name.escalate': '책임자 확인', 'flow.name.triage': '현장 검토', 'flow.name.end': '종료', 'flow.name.closed': '종결', 'flow.name.escalated': '책임자 확인으로 종료', 'flow.name.rejected': '반려', 'flow.name.accepted': '승인',
     'flow.seq.선택 스킬 kind == control': '설비 제어', 'flow.seq.선택 스킬 kind == work_order': '정비 요청만', 'flow.seq.TS1 < 55 and 경보 해제': '회복', 'flow.seq.미회복': '미회복',
     // 일반
     // A161-U1: 결과 값(영문 코드) → 화면 말 (판단 · 출력 칸)
     'val.answered': '답함', 'val.unanswerable': '답할 수 없음', 'val.not_answerable': '답할 수 없음', 'val.ok': '정상', 'val.normal': '정상', 'val.abnormal': '비정상',
     'val.recovered': '회복', 'val.not_recovered': '미회복', 'val.approved': '승인', 'val.rejected': '반려', 'val.pending': '대기',
     'inst.cannotOpen': '이 처리 건은 열 수 없습니다',
-    'empty.noData': '없음', 'loading': '불러오는 중…', 'error.load': '불러오지 못했습니다', 'more': '자세히', 'raw': '원문', 'yes': '예', 'no': '아니요', 'and': '·',
+    'empty.noData': '없음', 'loading': '불러오는 중…', 'error.load': '불러오지 못했습니다', 'more': '자세히', 'raw': '원문', 'yes': '예', 'no': '아니요', 
   },
   t(key, vars) {
     let s = Object.prototype.hasOwnProperty.call(this.terms, key) ? this.terms[key] : key;
@@ -215,36 +202,41 @@ const UI = {
     return m && who[m[1]] && what[m[2]] ? `${who[m[1]]} ${what[m[2]]}` : name || '';
   },
   defName(id) { const base=String(id || '').split('.')[0]; return this.terms['def.'+base] || this.names[id] || '흐름 표시 이름 미등록'; },
-  toolName(t) {
-    const raw=String(t || ''), standard=this.standardToolName(raw);
-    if(standard)return standard;
-    const registered=window.hydToolNames?.resolve(raw);
-    if(registered?.name)return registered.name;
-    return registered?.state === 'error' ? '도구 표시 이름 읽기 실패' : ['loading','unread'].includes(registered?.state) ? '도구 표시 이름 확인 중' : registered?.state === 'missing' ? '도구 표시 이름 미등록' : '도구 표시 이름 기록 없음';
-  },
+  // 도구 표시 이름은 plainWords(hydWords) 사전 하나가 정한다(W3-09) — 이 함수는 그 문을 연다
+  toolName(t) { return window.hydWords.toolName(t); },
   toolIdentityFold(raw) {
-    if (!raw || this.standardToolName(raw) || window.hydToolNames?.resolve(raw).name) return '';
+    if (!raw || window.hydWords.knownTool(raw)) return '';
     return this.fold('호출 도구 원문',`<pre>${esc(raw)}</pre>`,{cls:'small'});
   },
 
-  /* ---------- A141 원문 id → 이름 (names.json: scripts/portal_names.py 가 Neo4j 실제 이름으로 생성) ----------
+  /* ---------- A141 원문 id → 이름 (names.json: workspace/개발/scripts/portal_names.py 가 Neo4j 실제 이름으로 생성) ----------
      응답에 이름이 있으면 그것을 쓰고, 없을 때만 이 사전으로 바꾼다. 사전에 없는 id 는 그대로 둔다(지어내지 않음). */
   names: {}, namesVersion: 0,
-  ID_RE: /\b(?:pattern|fm|cause|rule|skill|sym|ap|evd|msr|sv|dec|dt|act|part|sup|comp|sens|actr|role|org|sys|asset|obj|persp|ks|ms|step|ev|src|proc|task|gw|inp|xv|fc):[A-Za-z0-9_][A-Za-z0-9_.:-]*/g,
+  // 문장 속 원래 id(접두어:이름 — fm: · cause: · action: · in: · sen: · dept: · ks:manual:… 등)는 접두어 목록 없이 한 꼴로 찾고, 사전에 있는 것만 이름으로 바꾼다(W2-02)
+  ID_RE: /\b[a-z][a-z-]*:[A-Za-z0-9_][A-Za-z0-9_.:%-]*/g,
   name(id) { return (id && this.names[id]) || id || ''; },
   idText(text) { return this.words(String(text ?? '').replace(this.ID_RE, m => this.names[m] || m)); },
   // A161-U1: 화면에 쓰지 않는 말(데이터 · 온톨로지 원문에 남은 것) → 화면 말. "정비창"은 "예정된 정비 시간"으로 부른다(사용자 결정 2026-10-09).
   // 문장 속 경보 패턴 코드(그래프 규칙 설명 「COOLER_DEGRADATION 경보에서 …」 등)도 사람 이름으로 — 표에 있는 코드만 바꾼다
   words(text) { return String(text ?? '').replace(/야간\s*정비창/g, '야간 정비 시간').replace(/정비창/g, '예정된 정비 시간').replace(/\b[A-Z][A-Z_]{3,}[A-Z]\b/g, code => this.patterns[code] || code); },
+  // 이름 사전 읽기: 실패를 삼키지 않는다 — 머리에 한 번 알리고 10초 뒤 다시 읽는다(그동안 원래 id · 「표시 이름 미등록」이 보일 수 있다, W1-28)
   async loadNames() {
-    try { const r = await fetch('names.json', { cache: 'no-store' }); if (r.ok) { this.names = await r.json(); this.namesVersion = Object.keys(this.names).length; } } catch (e) { /* 사전이 없으면 id 그대로 보인다 */ }
+    try {
+      const r = await fetch('names.json', { cache: 'no-store' });
+      if (!r.ok) throw new Error(`요청 실패 ${r.status}`);
+      this.names = await r.json(); this.namesVersion = Object.keys(this.names).length; this.namesError = '';
+    } catch (e) {
+      this.namesError = e.message;
+      console.error('이름 사전(names.json)을 읽지 못했습니다', e);
+      if (this.toast) this.toast(`이름 사전을 읽지 못해 원래 id 가 보일 수 있습니다(${e.message}) — 10초 뒤 다시 읽습니다`, { tone: 'neg', timeout: 8000 });
+      setTimeout(() => this.loadNames(), 10000);
+    }
   },
 
   /* ---------- A141 단계 로그(영문) → 화면 문구. 원문은 호출하는 쪽이 접기에 보존한다.
      A155: process 는 로그를 "조각; 조각; "으로 덧붙인다(procsvc instances.py·engine.py). logText 가 ';'로 먼저 자르므로
      패턴은 조각 하나에 맞춰야 한다 — ';'를 품은 패턴은 맞을 수 없다. ---------- */
   logPatterns: [
-    [/^cancelled: instance ended \((?:ev:)?([\w-]+)\)$/, (m, U) => `처리 건 종료(${U.flowName(m[1])})로 취소`],
     [/^cancelled: (?:ev:|task:)?([\w-]+) completed first;?$/, m => m[1] === 'select-timeout' ? '선택 시간 초과가 먼저 와서 취소' : '다른 갈래가 먼저 끝나 취소'],   // A147: 경계 타이머 경쟁
     [/^human approval accepted$/, () => '담당자 승인 접수'],
     [/^delivery tracked separately$/, () => '전달은 별도로 추적'],
@@ -266,6 +258,7 @@ const UI = {
     [/^\[Lease expired: reclaimed by (.+?) \(claim (\d+)\)\]$/, m => `실행 임대 만료 · 다른 작업자가 이어받음 (${m[2]}번째)`],
     [/^action\.cmd (CMD-[\w-]+) issued$/, m => `설비 명령 ${m[1]} 전송`],
     [/^waiting ACK$/, () => '설비 응답 대기'],
+    [/^waiting ACK until (\S+)$/, (m, U) => `설비 응답 대기(${U.dateTime(m[1])}까지)`],   // instances.py 명령 전송 로그
     [/^\[Cancel requested by (.+?)\] ?(.*)$/, (m, U) => `[${U.who(m[1])} 실행 취소 요청] ${m[2]}`.trim()],
     [/^\[Closed by (.+?)\] ?(.*)$/, (m, U) => `[${U.who(m[1])} 단계 닫음] ${m[2]}`.trim()],
     [/^\[DEFERRED\] ?(.*)$/, m => `[보류] ${m[1]}`.trim()],
@@ -285,7 +278,13 @@ const UI = {
   },
   clean(text) {
     if (text == null) return '';
-    return this.words(String(text).replace(this.PATH_RE, m => this.baseName(m) || '작업 폴더').replace(this.MODEL_RE, 'AI 모델'));
+    return this.words(this.mask(text));
+  },
+  // 원문 칸(물은 원문 · 받은 원문)용: 이 PC 경로 · 모델 이름만 가리고 글은 그대로 — 코드 값을 이름으로 바꾸지 않는다(words 는 설명 문장용).
+  // 한바퀴3: 「물은 원문」의 "pattern": "COOLER_DEGRADATION" 이 "쿨러 성능 저하"로 바뀌어 원문이 실제 호출과 달랐다
+  mask(text) {
+    if (text == null) return '';
+    return String(text).replace(this.PATH_RE, m => this.baseName(m) || '작업 폴더').replace(this.MODEL_RE, 'AI 모델');
   },
   // 도구 결과 문구로 본 상태: ok | warn(잘림 · 막힘) | fail. 칩이 "완료"인데 실제로는 잘린 결과를 받은 경우를 가려낸다(A160 결함 5)
   outcome(output, isError) {
@@ -295,32 +294,12 @@ const UI = {
     if (isError) return { tone: 'fail', label: this.t('trace.failed'), text: '' };
     return { tone: 'ok', label: '', text: '' };
   },
-  pmErrorMessage(raw) {
-    const text=String(raw ?? '').trim();
-    const errors=[
-      ['INVALID: source maintenance requires approval identity','원문 정비 실행의 실제 승인 신원을 확인할 수 없습니다.'],
-      ['INVALID: scheduling requires explicit WO_CREATE plan','명시적인 새 정비 오더 생성 계획이 없어 등록할 수 없습니다.'],
-      ['INVALID: this PM cycle already has a work order','이번 정비 차례에 이미 오더가 있어 중복 등록할 수 없습니다.'],
-      ['INVALID: source scoped work order group missing','원문 정비 범위의 실제 오더 묶음을 확인할 수 없습니다.'],
-      ['INVALID: compensation must identify actual original scope transaction','취소할 실제 원래 정비 범위 거래를 확인할 수 없습니다.'],
-      ['INVALID: scoped order group incomplete','정비 범위의 오더 묶음이 완전하지 않아 전체 처리를 할 수 없습니다.'],
-      ['INVALID: one scoped order advanced; whole cancellation needs review','대상 설비 중 정비 오더가 변경되어 전체 취소를 다시 검토해야 합니다.'],
-      ['INVALID: actual scoped part reservations changed','실제 정비 부품 예약이 변경되어 전체 취소를 다시 검토해야 합니다.'],
-    ];
-    return errors.find(([original])=>text===original || text.endsWith(': '+original))?.[1] || null;
-  },
   logText(raw) {
     const text = String(raw ?? '').trim(); if (!text) return '';
-    const pm=this.pmErrorMessage(text); if(pm) return pm;
     return text.split(/;\s*/).map(s => s.trim()).filter(Boolean).map(seg => {
       for (const [re, fn] of this.logPatterns) { const m = seg.match(re); if (m) return fn(m, this); }
       return this.idText(seg);
     }).join(' · ');
-  },
-  // 번역된 문구 + 원문 접기(원문이 다를 때만)
-  logHtml(raw, cls = 'kv-line') {
-    const text = this.logText(raw); if (!text) return '';
-    return `<p class="${cls}">${esc(text)}</p>` + (text !== String(raw).trim() ? this.fold(esc(this.t('log.raw')), `<pre>${esc(raw)}</pre>`, { cls: 'small' }) : '');
   },
   // 보조 메타(담당자 · 시각 · id)는 기본 접기: items = [[label, value]], 값이 비면 뺀다
   metaFold(items, label = 'fold.meta') {
@@ -329,12 +308,12 @@ const UI = {
     return this.fold(esc(this.t(label)), `<dl class="meta-list">${rows.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${v}</dd></div>`).join('')}</dl>`, { cls: 'small' });
   },
 
-  /* ---------- 상태 이름 (UIUX_PLAN §5.2 D3 + 사건 상태) ---------- */
+  /* ---------- 상태 이름 (UIUX_PLAN §5 + 사건 상태) ---------- */
   states: {
     PENDING_APPROVAL: "승인 대기", AWAITING_APPROVAL: "조치 선택 대기", GUIDE_RECEIVED: "분석 완료", CMD_ISSUED: "명령 전송", AWAITING_ACK: "설비 응답 대기",
     ACKED: "설비 응답", RE_OBSERVING: "효과 확인 중", RESOLVED: "이상 완화", WORK_ORDER_CREATED: "정비 요청 완료", CLOSED: "종결",
-    ESCALATED: "미달", REJECTED_BY_OPERATOR: "반려", RESOLVED_WITHOUT_ACTION: "자연 회복", APPROVED: "승인됨", EXECUTED: "실행 완료",
-    PARTIAL: "일부 실행", REJECTED: "반려", FAILED: "실패", SUBMITTED: "제출됨", DONE: "완료", RUNNING: "진행 중",
+    ESCALATED: "책임자 확인", REJECTED_BY_OPERATOR: "반려", RESOLVED_WITHOUT_ACTION: "자연 회복", APPROVED: "승인됨", EXECUTED: "실행 완료",
+    PARTIAL: "일부 실행", REJECTED: "반려", CLOSED_UNAPPROVED: "승인 전 종료", FAILED: "실패", SUBMITTED: "제출됨", DONE: "완료", RUNNING: "진행 중",
     RUN: "운전 중", TRIP: "보호 정지", STOP: "계획 정지", RAISED: "경보 발생", RAISE: "경보 발생", CLEAR: "경보 해제", CLEARING: "회복 확인 중",
     CANDIDATE: "이상 징후", IDLE: "감시 중", VIA_HITL: "사람 승인 필요", REMOTE_AUTO: "원격 자동", REMOTE_MANUAL: "원격 수동", LOCAL: "현장 제어",
     WITHHELD: "데이터 부족", REJECTED_BY_GUARDRAIL: "안전 규칙으로 중단", NO_FEASIBLE_OPTION: "가능한 조치 없음", NOT_APPLICABLE: "해당 없음", EVALUATED: "판단 완료",
@@ -343,15 +322,29 @@ const UI = {
     UNSUPPORTED_ALERT_PATTERN: "정의에 없는 경보 패턴", SELECT_TIMEOUT: "선택 시간 초과", NOT_RECOVERED: "미회복",
     RECORDED: "기록됨", HANDLED: "처리 완료", QUEUED: "대기열", CLAIMED: "처리 중", WAITING: "대기", SUPERSEDED: "대체됨", ACTIVE: "현재 판본", ROLLED_BACK: "되돌림",   // A6
     UNKNOWN: "판정 불가", UNSUPPORTED: "지원하지 않음", READY: "준비됨", OCR_REQUIRED: "글자 인식 필요", AWAITING_AGENT: "에이전트 대기", BLOCKED_FOR_REVIEW: "사람 확인 필요", CORRECTED: "교정됨",
-    PROCESS_RESTART_REVIEW: "서비스 재시작 후 재검토", MITIGATION_FAILED: "완화 실패", ACK_TIMEOUT: "설비 응답 시간 초과", PASS: "통과", INTERLOCK: "인터록",
+    PROCESS_RESTART_REVIEW: "서비스 재시작 후 재검토", MITIGATION_FAILED: "완화 실패", ACK_TIMEOUT: "설비 응답 시간 초과", PASS: "통과", INTERLOCK: "안전 연동",
   },
   tones: {
-    neutral: ['TODO', 'NEW', 'SKIPPED', 'IDLE', 'STOP', 'NOT_APPLICABLE', 'GUIDE_RECEIVED', 'LOCAL', 'DISCARDED'],
+    neutral: ['TODO', 'NEW', 'SKIPPED', 'IDLE', 'STOP', 'NOT_APPLICABLE', 'GUIDE_RECEIVED', 'LOCAL', 'DISCARDED', 'CLOSED_UNAPPROVED'],
     accent: ['IN_PROGRESS', 'SUBMITTED', 'RUNNING', 'STARTED', 'FB_REQUESTED', 'APPROVED', 'CMD_ISSUED', 'AWAITING_ACK', 'REMOTE_AUTO', 'RE_OBSERVING', 'DELIVERED'],
     success: ['DONE', 'COMPLETED', 'CLOSED', 'EXECUTED', 'RESOLVED', 'RESOLVED_WITHOUT_ACTION', 'RUN', 'ACKED', 'WORK_ORDER_CREATED', 'EVALUATED', 'CLEAR', 'OK'],
     warning: ['PENDING', 'HUMAN_ASKED', 'PENDING_APPROVAL', 'AWAITING_APPROVAL', 'PARTIAL', 'VIA_HITL', 'WITHHELD', 'REMOTE_MANUAL', 'CLEARING', 'CANDIDATE'],
     danger: ['ESCALATED', 'CANCELLED', 'FAILED', 'REJECTED', 'REJECTED_BY_OPERATOR', 'REJECTED_BY_GUARDRAIL', 'NO_FEASIBLE_OPTION', 'TRIP', 'RAISED', 'RAISE'],
   },
+  // 처리 건 값(variables_data 행 목록) → {키: 값} — 화면 모듈이 같은 펼치기를 따로 두지 않는다(W1-11)
+  valuesOf(inst) { return Object.fromEntries(((inst && inst.variables_data) || []).map(r => [r.key, r.value])); },
+  // 작업 행의 주체: AI 일꾼(워커 단계) · 사람(사람 단계) · 시스템(그 밖 — 서비스 · 설비 · 타이머)
+  doerOf(w) { return w.agent_orch === 'cliagents' || w.agent_mode ? 'agent' : !w.agent_orch && !w.agent_mode ? 'human' : 'system'; },
+  // 처리 건 작업 행을 일어난 차례로: 시작 시각 → 끝 시각 → 같은 순간이면 흐름 순서(서버 view.flow_order = 정의의 흐름 차례 — 단계 id → 순번).
+  // 한 트랜잭션에서 연달아 끝난 시스템 단계(정비 오더 등록 → 결과 보고)는 시각이 같다 — 시각만으로는 순서가 거꾸로 보일 수 있다(W1-01).
+  workitemOrder(view) {
+    const rank = new Map(Object.entries(view?.flow_order || {}));
+    const at = x => { const t = x ? Date.parse(x) : NaN; return Number.isFinite(t) ? t : 9e15; };
+    return (a, b) => at(a.start_date) - at(b.start_date) || at(a.end_date) - at(b.end_date) || (rank.get(a.activity_id) ?? 9e9) - (rank.get(b.activity_id) ?? 9e9);
+  },
+  // 승인 전달(승인한 내용을 업무 시스템 · 설비로 넘기는 일)의 상태 — 단계 상태(PENDING = 보류)와 다른 축이라 이름표를 따로 둔다(W1-04)
+  deliveryStates: { PENDING: '전달 대기', DELIVERED: '전달 완료', FAILED: '전달 실패', DISCARDED: '승인 폐기' },
+  deliveryChip(value) { return this.chip(value, this.deliveryStates[value] || this.status(value), { PENDING: 'warning', DELIVERED: 'success', FAILED: 'danger', DISCARDED: 'neutral' }[value]); },
   status(value) { return this.states[value] || value || "–"; },
   toneOf(value) { for (const [tone, list] of Object.entries(this.tones)) if (list.includes(value)) return tone; return 'neutral'; },
   chip(value, label, tone) {
@@ -361,49 +354,50 @@ const UI = {
   chipText(label, tone = 'neutral') { return `<span class="chip tone-${tone}">${esc(label)}</span>`; },
 
   /* ---------- 경보 패턴 이름(감지기 · 업무 경보 · 인터록 트립 코드 → 사람 말). 포털 전체가 이 표 하나를 쓴다 ---------- */
-  patterns: { COOLER_DEGRADATION: '쿨러 성능 저하', PUMP_LEAKAGE: '펌프 내부 누설', FAN_VIBRATION: '팬 진동 상승', OVER_TEMPERATURE: '유온 과열',
-    TEMP_TRIP: '유온 보호 정지', OVERHEAT_TRIP: '유온 보호 정지', LOW_PRESSURE_TRIP: '저압 인터록 트립', HIGH_VIBRATION_TRIP: '고진동 인터록 트립',
-    OIL_ANALYSIS: '오일 분석 기준 이탈', PM_DUE: '정기 정비 도래', SPARE_BELOW_MIN: '예비품 재고 기준 이탈' },
+  // 경보 패턴 코드 → 이름: 그래프(AnomalyPattern.name)가 정본 — agent /api/ontology/patterns 를 한 번 읽어 채운다(화면 사본 없음, G3b-8)
+  patterns: {}, patternsError: '',
+  async loadPatterns() {
+    try {
+      const list = await getJ(API.agent + '/api/ontology/patterns');
+      this.patterns = Object.fromEntries(requireList(list, '경보 패턴 목록').filter(p => p.code && p.name).map(p => [p.code, p.name]));
+      this.patternsError = ''; this.namesVersion += 1;   // 이름이 바뀌었으니 서명에 namesVersion 을 쓰는 화면이 다시 그린다
+    } catch (e) {
+      this.patternsError = e.message;
+      console.error('경보 패턴 이름을 읽지 못했습니다', e);
+      if (this.toast) this.toast(`경보 패턴 이름을 읽지 못해 영문 코드가 보일 수 있습니다(${e.message}) — 10초 뒤 다시 읽습니다`, { tone: 'neg', timeout: 8000 });
+      setTimeout(() => this.loadPatterns(), 10000);
+    }
+  },
   // 표에 없는 코드(PBL 에서 학생이 만든 경보 등)는 지어내지 않고 원래 코드를 그대로 둔다
   patternName(code) { return code ? this.patterns[code] || this.idText(code) : ''; },
 
   /* ---------- 수행 주체 (명칭표 "행위자") ---------- */
-  performers: { 'sys:agent': 'AI 에이전트', agent: 'AI 에이전트', 'role:operator': '운전원', operator: '운전원', 'role:prod-mgr': '생산관리자', 'role:maint-mgr': '설비보전팀장',
-    'role:plant-mgr': '공장장', 'role:quality-mgr': '품질팀장', 'role:purchasing-mgr': '구매팀장', 'role:purchasing': '구매 담당', 'sys:scada': '설비', plc: '설비', 'sys:process': '시스템', process: '시스템',
-    'sys:cmms': '정비 시스템', detector: '탐지기', legacy: 'AI 에이전트', cliagents: 'AI 에이전트', human: '담당자', result: '시스템' },
+  // 시스템(sys:* · actr:* · 감지기) 이름은 plainWords W.system 한 길(W2-03 — 「정비 시스템」/「정비 관리」 두 벌이었다) — 그래프 id 의 이름은 names.json(portal_names.PLAIN). 여기는 사람 역할 · 수행 갈래만
+  performers: { agent: 'AI 에이전트', 'role:operator': '운전원', operator: '운전원', 'role:prod-mgr': '생산관리자', 'role:maint-mgr': '설비보전팀장',
+    'role:plant-mgr': '공장장', 'role:quality-mgr': '품질팀장', 'role:purchasing-mgr': '구매팀장', 'role:purchasing': '구매 담당', plc: '설비', process: '시스템',
+    cliagents: 'AI 에이전트', human: '담당자', result: '시스템' },
   // 시드의 기본 AI 수행자 이름(제품 이름이 붙음)은 화면에서 「인공지능 에이전트」 — 처리 기록 · 그래프의 실행 주체 노드(id 가 다름)도 같은 이름이라 이름으로 본다
-  who(id) { return this.performers[id] || id || '–'; },
+  // 사람 이름은 내 작업함이 사람 목록을 읽으면 performers 에 채운다(inbox.js). 읽기 전 · 못 읽은 사람 id 는 원래 id(user:…)를 보이지 않는다
+  who(id) {
+    if (id == null || id === '') return '–';
+    if (this.performers[id]) return this.performers[id];
+    if (/^(sys|actr|sen):/.test(id) || id === 'detector') return window.hydWords.system(id);
+    return /^user:/.test(id) ? '담당자 (이름 확인 안 됨)' : /^agent:/.test(id) ? 'AI 에이전트' : id;
+  },
   roleName(id, definition) { return (definition?.roles || []).find(r => r.endpoint === id)?.name || this.who(id); },
   // 담당자 칸: 값이 고른 "나"(user:*)면 이름을 읽기 전용으로 보이고 id 는 숨은 칸에 실어 보낸다(원문 id 를 학생에게 보이지 않는다).
   // attrs 는 입력 요소의 속성 원문(id="rwBy" · data-retry-by 등) — 읽는 코드는 그대로 .value 를 읽는다.
   actorInput(attrs, value, extra = '') {
     const m = window.hydInbox?.me?.();
-    if (m && value === m.id) return `<input type="hidden" ${attrs} value="${esc(value)}"><span class="ro-value">${esc(m.name)} <span class="muted">(나)</span></span>`;
-    return `<input ${attrs} value="${esc(value || '')}" ${extra}>`;
+    if (m) return `<input type="hidden" ${attrs} value="${esc(m.id)}"><span class="ro-value">${esc(m.name)} <span class="muted">(나)</span></span>`;
+    // 서버는 사람 행동을 등록된 「나」(user:…)로만 받는다 — 자유 글 칸을 두지 않는다(W1-08)
+    return `<input type="hidden" ${attrs} value=""><span class="field-hint" data-pick-me>먼저 위의 [나 고르기]에서 나를 고르세요 — 누가 했는지 기록에 남습니다.</span>`;
   },
-  // 요청 id: crypto.randomUUID 는 보안 문맥(https · localhost)에만 있다 — 강사 PC IP 로 연 포털에서도 버튼이 멈추지 않게 getRandomValues 로 같은 v4 를 만든다
-  uuid() {
-    const c = window.crypto;
-    if (c && typeof c.randomUUID === 'function') { try { return c.randomUUID(); } catch (_) { /* 비보안 문맥: 아래로 */ } }
-    const b = new Uint8Array(16);
-    if (c && typeof c.getRandomValues === 'function') c.getRandomValues(b); else for (let i = 0; i < 16; i++) b[i] = Math.random() * 256 | 0;
-    b[6] = (b[6] & 0x0f) | 0x40; b[8] = (b[8] & 0x3f) | 0x80;
-    const h = [...b].map(x => x.toString(16).padStart(2, '0')).join('');
-    return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
-  },
+  // 요청 id(같은 요청을 다시 보낼 때 서버가 알아보는 번호). 포털은 127.0.0.1 에만 열리므로(compose.yaml) 늘 보안 문맥 — randomUUID 가 있다
+  uuid() { return window.crypto.randomUUID(); },
   // 서버가 영문으로 돌려주는 거절 사유 → 학생이 읽을 한국어 한 줄(모르는 문구는 그대로 둔다)
   serverTexts: [
-    [/^\S+ is (DONE|COMPLETED|SUBMITTED|CANCELLED)$/, '이미 처리된 단계입니다 — 다른 담당자가 먼저 처리했거나 단계가 닫혔습니다.'],
-    [/^task deadline expired$/, '선택 기한이 지나 이 단계가 닫혔습니다.'],
-    [/^instance is not running$/, '처리 건이 이미 끝났습니다.'],
-    [/^decision does not belong to this instance$/, '이 처리 건의 판단이 아닙니다 — 화면을 새로 읽은 뒤 다시 확인하세요.'],
-    [/^unknown option$/, '고른 안을 서버가 찾지 못했습니다 — 화면을 새로 읽은 뒤 다시 고르세요.'],
-    [/^no such selection task$/, '선택 단계를 찾지 못했습니다 — 이미 처리됐을 수 있습니다.'],
-    [/^task is not waiting for this deferral$/, '이 보류는 이미 다시 평가됐거나 바뀌었습니다 — 화면을 새로 읽은 뒤 확인하세요.'],
-    [/^task is no longer in the active instance generation$/, '이 단계는 다시 수행으로 대체됐습니다 — 새 차수의 단계를 확인하세요.'],
     [/^no such work item$/, '작업을 찾지 못했습니다 — 이미 처리됐거나 지워졌을 수 있습니다.'],
-    [/^(\w+) must be nonblank text, at most (\d+) characters$/, m => `${({ by: '담당자', reason: '사유' })[m[1]] || m[1]} 칸을 1~${m[2]}자로 적으세요.`],
-    [/^same request id contains different input$/, '같은 요청 번호로 다른 내용이 왔습니다 — 화면을 새로 읽은 뒤 다시 요청하세요.'],
     // 입력 검사(422)의 프레임워크 기본 문구 — 2026-10-25 수업 한 바퀴: [다시 평가] 긴 사유에 「String should have at most 2000 characters」가 그대로 보였다
     [/^String should have at most (\d+) characters?$/, m => `${m[1]}자 이하로 줄여 적으세요.`],
     [/^String should have at least (\d+) characters?$/, m => `${m[1]}자 이상 적으세요.`],
@@ -426,9 +420,11 @@ const UI = {
     const date = new Date(value);
     return Number.isNaN(date.getTime()) ? value || '–' : date.toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
   },
+  // 시각(시:분:초, 24시간) — 포털의 시각 형식 하나(처리 과정 · 처리 기록 · 결과 보고가 같은 꼴, W1-14)
   time(value) {
+    if (value == null || value === '') return '–';   // new Date(null) 은 1970년 0시 — 「09:00:00」을 지어 보이지 않는다
     const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? value || '–' : date.toLocaleTimeString('ko-KR', { hour12: false });
+    return Number.isNaN(date.getTime()) ? value || '–' : date.toLocaleTimeString('en-GB', { hour12: false });
   },
   eventNames: {
     task_deferred: '진단 보류', task_reassessment_requested: '다시 평가 요청',
@@ -453,30 +449,26 @@ const UI = {
   eventRecord({ time, name, actor = '', detail = '', raw, chips = '', extra = '' }) {
     return `<article class="event-record"><header><time title="${esc(this.dateTime(time))}">${esc(this.time(time))}</time><strong>${esc(this.eventName(name))}</strong><span>${esc(this.who(actor))}</span>${chips}</header>${detail ? `<p>${esc(detail)}</p>` : ''}${extra}${raw ? `<details class="fold small"><summary>${esc(this.t('raw'))}</summary><pre>${esc(JSON.stringify(raw, null, 2))}</pre></details>` : ''}</article>`;
   },
-  condition(value) {
-    return { 'cmms_cleans_60d >= 3': '최근 60일 동안 쿨러 세척 3회 이상', 'qms_hot_min > 0': '과열 구간에 생산된 로트가 있음' }[value] || value;
-  },
-
-  /* ---------- 공통 컴포넌트 (UIUX_PLAN §3, uiux-refs R3·R5·R6·R10·R12) ---------- */
-  // card: 제목 · 칩 · 핵심 값 · 보조 1줄 · 본문 (R3 순서)
+  /* ---------- 공통 컴포넌트 (UIUX_PLAN §1) ---------- */
+  // card: 제목 · 칩 · 핵심 값 · 보조 1줄 · 본문
   card({ title, chips = '', value = '', sub = '', body = '', cls = '', actions = '', attrs = '' }) {
     return `<section class="card ${cls}" ${attrs}>` +
       (title || chips || actions ? `<header class="card-head"><div class="card-title">${title ? `<h3>${title}</h3>` : ''}${chips ? `<span class="card-chips">${chips}</span>` : ''}</div>${actions ? `<div class="card-actions">${actions}</div>` : ''}</header>` : '') +
       (value ? `<div class="card-value">${value}</div>` : '') + (sub ? `<p class="card-sub">${sub}</p>` : '') + (body ? `<div class="card-body">${body}</div>` : '') + '</section>';
   },
-  // field: 라벨 위 · 입력 아래 · 필수 * · 도움말 1줄 (R5)
+  // field: 라벨 위 · 입력 아래 · 필수 * · 도움말 1줄
   field({ label, input, hint = '', required = false, cls = '', error = '' }) {
     const inputId = /\bid="([^"]+)"/.exec(input)?.[1];
     return `<div class="field ${cls}"><label${inputId ? ` for="${inputId}"` : ''}>${esc(label)}${required ? ' <i class="req" aria-hidden="true">*</i>' : ''}</label>${input}${error ? `<p class="field-error" role="alert">${esc(error)}</p>` : hint ? `<p class="field-hint">${esc(hint)}</p>` : ''}</div>`;
   },
-  // form section: 제목 + 필드 격자 (R6)
+  // form section: 제목 + 필드 격자
   section(title, body, cls = '') { return `<section class="form-section ${cls}">${title ? `<h4>${esc(title)}</h4>` : ''}<div class="form-grid">${body}</div></section>`; },
   actions(body, msg = '') { return `<div class="form-actions">${msg ? `<span class="form-msg neg" role="status">${esc(msg)}</span>` : ''}${body}</div>`; },
-  // fold: 요약 한 줄 + 꺾쇠 (R12)
+  // fold: 요약 한 줄 + 꺾쇠
   fold(summary, body, { open = false, cls = '' } = {}) { return `<details class="fold ${cls}" ${open ? 'open' : ''}><summary>${summary}</summary><div class="fold-body">${body}</div></details>`; },
-  // empty: 굵은 한 줄 + 보조 한 줄 (R10)
+  // empty: 굵은 한 줄 + 보조 한 줄
   empty(title, sub = '', cls = '') { return `<div class="empty ${cls}"><b>${esc(title)}</b>${sub ? `<span>${esc(sub)}</span>` : ''}</div>`; },
-  // tabs: 밑줄형 (R12). items = [[key, label, count?]]
+  // tabs: 밑줄형. items = [[key, label, count?]]
   tabs(items, active, attr = 'data-tab-key') {
     return `<div class="tabs" role="tablist">${items.map(([k, l, n]) => `<button type="button" role="tab" class="tab${k === active ? ' on' : ''}" ${attr}="${esc(k)}" aria-selected="${k === active}">${esc(l)}${n != null ? ` <span class="chip tone-neutral sm">${esc(n)}</span>` : ''}</button>`).join('')}</div>`;
   },
@@ -491,36 +483,6 @@ const UI = {
   // read-only labelled value (이전 단계 입력 · 변수)
   readonly(label, value, sub = '') { return `<div class="field ro"><label>${esc(label)}</label><div class="ro-value">${value}</div>${sub ? `<p class="field-hint">${esc(sub)}</p>` : ''}</div>`; },
 
-  // Labels and units follow the business DB seed (it/supabase/seed.sql). Unknown fields retain their exact key/value.
-  facts: {
-    due_in_h: ['납기까지', '시간'], remaining_qty: ['생산 잔량', '개'], rate_per_h: ['생산 속도', '개/시간'],
-    hour_value: ['생산 시간당 가치', '만원/시간'], alt_asset: ['대체 설비', ''], alt_free_h: ['대체 설비 가용 시간', '시간'],
-    alt_rate_per_h: ['대체 설비 생산 속도', '개/시간'], changeover_h: ['설비 전환 시간', '시간'], order_id: ['생산오더', ''],
-    sales_order: ['판매 주문', ''], customer_tier: ['고객 구분', ''], penalty_per_h: ['시간당 지체상금', '만원/시간'],
-    failure_cost: ['돌발 고장 비용', '만원'], claim_cost: ['품질 클레임 비용', '만원'],
-    fg_item: ['완제품 품목', ''], fg_stock: ['완제품 재고', '개'], ship_in_h: ['출하까지', '시간'],
-    cleans_60d: ['최근 60일 세척 횟수', '회'], last_clean_days: ['마지막 세척 후', '일'], clean_h: ['세척 소요', '시간'],
-    clean_cost: ['세척 비용', '만원'], night_in_h: ['예정된 정비 시간까지', '시간'], oil_risk_per_h: ['시간당 작동유 위험 비용', '만원/시간'], mtbf_h: ['평균 고장 간격', '시간'],
-    hot_min: ['과열 지속 시간', '분'], auto_lot: ['자동차 고객 로트', ''], auto_qty: ['자동차 고객 수량', '개'],
-    gen_lot: ['일반 고객 로트', ''], gen_qty: ['일반 고객 수량', '개'], inspect_h: ['검사 소요', '시간'],
-    inspect_cost: ['전수검사 비용', '만원'], sample_cost: ['표본검사 비용', '만원'],
-    gen_defect_p: ['일반 고객 불량 확률', '확률'], auto_defect_p: ['자동차 고객 불량 확률', '확률'],
-    gen_claim: ['일반 고객 클레임 손실', '만원'], auto_claim: ['자동차 고객 클레임 손실', '만원'],
-    std_price: ['기준 구매 단가', '만원'], contract_kw: ['계약 전력', 'kW'], demand_kw: ['현재 전력 수요', 'kW'],
-    fan_boost_kw: ['팬 증속 추가 전력', 'kW'], basic_rate: ['기본 요금 단가', '만원/kW'], peak_h: ['피크 시간', '시간'],
-    peak_window: ['피크 시간대', ''], outdoor_c: ['외기 온도', '°C'], energy_rate: ['전력량 요금 단가', '만원/kWh'],
-  },
-  factList(facts) {
-    return '<dl class="fact-list">' + Object.entries(facts || {}).map(([key, value]) => {
-      const short = key.replace(/^(mes|erp|cmms|qms|scm|ems)_/, '');
-      let spec = this.facts[short];
-      const supplier = short.match(/^([abc])_(price|fail|lead_d|avl)$/);
-      if (supplier) { const field = { price: ['구매 단가', '만원'], fail: ['고장 확률', '확률'], lead_d: ['납기', '일'], avl: ['승인 공급사', '여부'] }[supplier[2]]; spec = [supplier[1].toUpperCase() + ' 공급사 ' + field[0], field[1]]; }
-      const [label, unit] = spec || [key, ''];
-      const shown = unit === '확률' ? Number(value) * 100 + ' %' : unit === '여부' ? (value ? '예' : '아니요') : `${typeof value === 'number' ? value.toLocaleString('ko-KR') : value}${unit ? ' ' + unit : ''}`;
-      return `<div title="${esc(key)}"><dt>${esc(label)}</dt><dd>${esc(shown)}</dd></div>`;
-    }).join('') + '</dl>';
-  },
   // Human-readable labels belong to the UI; API step names and raw records stay intact.
   steps: {
     freshness: ['데이터 상태 확인', '최근 데이터가 들어오는지 확인합니다.'],
@@ -559,7 +521,6 @@ const UI = {
       process: "M3 4h6v6H3Zm12 10h6v6h-6ZM9 7h9v7M6 10v7h9",
       gear: "M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm8 4-2-1 1-2-2-2-2 1-1-2h-4l-1 2-2-1-2 2 1 2-2 1v4l2 1-1 2 2 2 2-1 1 2h4l1-2 2 1 2-2-1-2 2-1Z",
       book: "M4 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4Zm16 0h-7a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h8Z",
-      tools: "M14 4v4a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V4M16 10v10M8 4v3M8 11v9M5 7h6v4H5Z",
     };
     return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${paths[name] || paths.home}"/></svg>`;
   },
@@ -573,7 +534,7 @@ function humanQuestionText(data) {
 UI.loadNames();   // A141: 원문 id → 이름 사전(정적 names.json). 읽기 전에는 id 가 그대로 보이고, 화면은 주기 갱신 때 따라온다.
 
 /* A5 (U7 포털 셸): 수강생 동선 메뉴 이름 · 새 화면 아이콘 · 토스트 · 확인 대화상자 · 로딩/오류 블록.
-   덧붙이기만 한다(위 UI 객체는 그대로). 계약 문서: 문서/시스템/참조/u7-shell.md */
+   덧붙이기만 한다(위 UI 객체는 그대로). 화면 규칙: workspace/개발/문서/UIUX_PLAN.md */
 Object.assign(UI.terms, {
   'var.approval': '승인 여부', 'var.approval_reason': '결정 사유', 'var.result_report': '결과 보고', 'var.request_id': '요청 번호', 'var.approved_option': '승인한 안',
   'nav.inbox': '내 작업함', 'nav.agents': '에이전트', 'nav.mcp': '도구 연결', 'nav.compare': '시험 비교', 'nav.eval': '판단 채점',
@@ -581,7 +542,6 @@ Object.assign(UI.terms, {
   'nav.ask': '에이전트에게 질문',   // B5
   'nav.group.work': '작업', 'nav.group.judge': '판단', 'nav.group.knowledge': '지식', 'nav.group.ai': '인공지능 설정', 'nav.group.kpi': '성과', 'nav.group.system': '시스템',
   'shell.me': '나', 'shell.meNone': '선택 안 함', 'shell.bell': '알림', 'shell.bellCount': '새 알림 {n}건',
-  'shell.notReady': '준비 중', 'shell.notReadySub': '이 화면은 아직 연결되지 않았습니다. 기능이 붙으면 이 자리에 나타납니다.',
   'shell.mountFail': '화면을 그리지 못했습니다', 'shell.unknownRoute': '없는 화면 주소입니다. 홈으로 이동했습니다.',
   'dialog.ok': '확인', 'dialog.cancel': '취소', 'state.retry': '다시 시도',
 });
@@ -615,6 +575,7 @@ Object.assign(UI.terms, {
 
   // 토스트: 화면 아래쪽에 잠깐 뜨는 한 줄. tone = 'ok' | 'neg' | 'neutral'. 같은 문구가 겹치면 하나만 둔다.
   UI.toast = function (message, { tone = 'neutral', timeout = 4000 } = {}) {
+    if (!['ok', 'neg', 'neutral'].includes(tone)) console.error(`UI.toast: 모르는 tone '${tone}' — ok · neg · neutral 중 하나`, message);   // 색이 빠진 채 조용히 지나가지 않게(W3-22)
     let host = document.getElementById('toastHost');
     if (!host) { host = document.createElement('div'); host.id = 'toastHost'; host.className = 'toast-host'; host.setAttribute('aria-live', 'polite'); document.body.append(host); }
     const text = String(message ?? '');

@@ -1,6 +1,8 @@
-"""Guardrail policy (v3 L8 '가드레일 정책'): no command authority, every claim cites a node id, parameters inside range.
+"""Guardrail policy (v3 L8 '가드레일 정책'): no command authority, every claim cites a node id.
 
-check() returns a list of violations; an empty list means the card may be submitted to the process engine.
+check() 는 가이드 카드(원인 · 근거 · 조치 방법 목록)를, check_cards() 는 조치 카드 묶음을 본다. 둘 다 위반 문장 목록을 돌려주고, 빈 목록이면
+그 카드 묶음을 판단으로 쓸 수 있다(이 서비스는 제출하지 않는다 — 판단 등록은 dmn-mcp 의 submit_decision · submit_purchase).
+문장은 처리 기록 · 판단 채점 화면에 그대로 보인다 — 학생이 읽는 한국어로 쓴다(검진 G1-10).
 """
 FORBIDDEN_KEYS = {"writes", "cmdId", "expiresAt", "mqtt", "topic"}
 
@@ -8,48 +10,33 @@ FORBIDDEN_KEYS = {"writes", "cmdId", "expiresAt", "mqtt", "topic"}
 def check(card: dict) -> list[str]:
     v: list[str] = []
     if card.get('withheld') or (card.get('evidence_status') or {}).get('withheld'):
-        v.append('evidence assessment withheld; no action may be submitted')
+        v.append('근거 판정이 보류라 조치를 낼 수 없습니다')
     cites = set(card.get("citations") or [])
     if not cites:
-        v.append("citations list is empty")
+        v.append("인용한 지식 노드가 하나도 없습니다")
     if not card.get("causes"):
-        v.append("no cause candidates")
+        v.append("원인 후보가 없습니다")
     fresh = card.get("freshness") or {}
     if not fresh.get("ok", False):
-        v.append(f"data freshness not ok (age {fresh.get('age_s')} s) — reasoning withheld")
+        v.append(f"설비 데이터가 신선하지 않아(나이 {fresh.get('age_s')}초) 추론을 보류합니다")
 
     # command authority: the agent must never emit command-shaped fields
-    for k in FORBIDDEN_KEYS & set(card.keys()):
-        v.append(f"command field '{k}' present on card (agent has no command authority)")
+    for k in sorted(FORBIDDEN_KEYS & set(card.keys())):
+        v.append(f"카드에 설비 명령 칸 '{k}'이(가) 있습니다 — 에이전트는 명령 권한이 없습니다")
 
     for c in card.get("causes") or []:
         if not c.get("id"):
-            v.append(f"cause '{c.get('name')}' has no node id")
+            v.append(f"원인 '{c.get('name')}'에 지식 노드 id 가 없습니다")
         elif c["id"] not in cites:
-            v.append(f"cause {c['id']} not in citations")
+            v.append(f"원인 {c['id']}을(를) 인용하지 않았습니다")
         for e in c.get("evidence") or []:
             if e.get('status') == 'UNKNOWN' or e.get('error') or ('passed' in e and e['passed'] is None):
-                v.append(f"evidence {e.get('id')} is unknown")
+                v.append(f"근거 {e.get('id')}의 판정이 미확인입니다")
             if e.get("id") and e["id"] not in cites:
-                v.append(f"evidence {e['id']} not in citations")
-
-    for a in card.get("recommended") or []:
-        for k in FORBIDDEN_KEYS & set(a.keys()):
-            v.append(f"command field '{k}' present on action {a.get('code')} (agent has no command authority)")
-        if not a.get("actionId"):
-            v.append(f"action {a.get('code')} has no node id")
-        elif a["actionId"] not in cites:
-            v.append(f"action {a['actionId']} not in citations")
-        rng, val = a.get("paramRange"), a.get("value")
-        if rng and val is not None and not (rng[0] <= val <= rng[1]):
-            v.append(f"action {a.get('code')} value {val} outside paramRange {rng}")
-        if a.get("kind") == "command" and a.get("param"):
-            # a parameterised command needs its value; a numeric value also needs the ontology's min/max (fan_pct, load_pct).
-            # A categorical value (PUMP_SELECT pump = 'B') has no range by nature — live check 2026-10-04.
-            if val is None:
-                v.append(f"command action {a.get('code')} lacks value")
-            elif isinstance(val, (int, float)) and not isinstance(val, bool) and not rng:
-                v.append(f"command action {a.get('code')} lacks paramRange/value")
+                v.append(f"근거 {e['id']}을(를) 인용하지 않았습니다")
+    for k in card.get("skills") or []:
+        if k.get("id") and k["id"] not in cites:
+            v.append(f"조치 방법 {k['id']}을(를) 인용하지 않았습니다")
     return v
 
 

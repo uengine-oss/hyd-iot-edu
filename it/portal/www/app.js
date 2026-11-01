@@ -1,5 +1,5 @@
 /* Portal logic — plain JS, no framework, so students can read the whole flow in one file.
-   Data comes straight from each service on its host port (CORS enabled); the portal container only serves files.
+   Data comes from each service through the portal's own origin (/svc/<service>/… — nginx.conf passes it on; addresses in layers.js API).
    A122: wording comes from UI.terms (ui.js); cards · chips · folds · empty states from the UI helpers. APIs unchanged. */
 const $ = (s, r = document) => r.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
@@ -45,9 +45,12 @@ function keyboardItem(item) {
   item.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); item.click(); } });
 }
 
-const state = { tab: 'main', plant: null, det: null, detError: '', incidents: [], runs: [], runsError: '', selected: null, detail: null, run: null, audit: [], auditError: '', waves: {}, log: [], selectedAsset: null, showAll: false, incShown: 20 };
+const state = { tab: 'main', plant: null, det: null, detError: '', incidents: [], selected: null, detail: null, incAudit: null, waves: {}, log: [], selectedAsset: null, showAll: false, incShown: 20 };
 
 /* ---------------- tabs ---------------- */
+// 탭에 들어올 때 할 일: 화면 모듈은 selectTab 을 감싸지 않고 이 표에 적는다(실린 차례대로 불린다 — 셸이 맨 마지막). fn(name)
+const tabHooks = [];
+window.hydTabs = { onShow(fn) { tabHooks.push(fn); } };
 function selectTab(name) {
   if (!document.getElementById('view-' + name)) return;
   const changed = state.tab !== name;
@@ -64,6 +67,7 @@ function selectTab(name) {
   if (name === 'incidents') { renderScada(); renderIncList(); renderDetail(); }
   if (name === 'trends') renderTrends();
   updateNavigation(name);
+  tabHooks.forEach(fn => fn(name));
 }
 document.querySelectorAll('[data-term]').forEach(n => { const t = UI.t(n.dataset.term); if (t !== n.dataset.term) n.textContent = t; });
 const navButtons = [...document.querySelectorAll('.rail nav button[data-tab]')];
@@ -121,7 +125,7 @@ function renderStack() {
   for (const L of LAYERS) {
     const zone = L.zone === 'mixed' ? 'it' : L.zone;
     const row = el('div', 'layer zone-' + zone + (L.focus ? ' focus' : ''));
-    row.append(el('div', 'zone', `<i class="z ${zone}">${esc(zone.toUpperCase())}</i>`));            // A122: zone chip instead of the layer number (UIUX_PLAN §1.6)
+    row.append(el('div', 'zone', `<i class="z ${zone}">${esc(zone.toUpperCase())}</i>`));            // A122: zone chip instead of the layer number (UIUX_PLAN §1)
     row.append(el('div', 'name', `<strong>${esc(L.name)}</strong><span>${esc(L.role)}</span>`));
     const comps = el('div', 'comps');
     for (const c of L.comps) {
@@ -138,7 +142,7 @@ function renderStack() {
   }
 }
 // A147: 선택 도구(FUXA · Prometheus · Redpanda Console)는 5초 상태 확인에서 뺀다. 꺼진 포트에 보내는 요청은 fetch · img · WebSocket
-// 어느 방식이든 브라우저가 콘솔에 ERR_CONNECTION_REFUSED 를 남기기 때문이다(.evidence/a147/probe-methods.txt). 링크를 누를 때만
+// 어느 방식이든 브라우저가 콘솔에 ERR_CONNECTION_REFUSED 를 남기기 때문이다. 링크를 누를 때만
 // 한 번 확인해 켜져 있으면 열고, 꺼져 있으면 "(꺼짐)"을 표시한다.
 async function reachable(url) {
   const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 3000);
@@ -183,11 +187,14 @@ async function pollHealth() {
 const FAULT_LABEL = { cooler_degradation: '쿨러 성능 저하', pump_leakage: '펌프 내부 누설', fan_vibration: '팬 베어링 마모', restore: '복구' };
 // 감지기를 못 읽었으면 「감시 중」(정상)으로 보이지 않는다 — 읽기 전 · 실패를 따로 보인다
 function detectorUnknown() { return state.det ? '' : UI.chipText(state.detError ? '감지기 응답 없음' : '감지기 확인 중', state.detError ? 'danger' : 'neutral'); }
-function phaseChip(d) { return detectorUnknown() || UI.chip(d.phase || 'IDLE'); }
+// 감지기 패턴(쿨러 · 펌프 · 팬 …) 중 가장 급한 단계 — 설비 카드는 쿨러 하나(옛 최상위 phase)가 아니라 모든 패턴을 본다(G3b-11)
+const PHASE_ORDER = ['RAISED', 'CLEARING', 'CANDIDATE', 'IDLE'];
+function worstPhase(d) { const all = Object.values(d.patterns || {}).map(p => p.phase).filter(Boolean); return PHASE_ORDER.find(x => all.includes(x)) || 'IDLE'; }
+function phaseChip(d) { return detectorUnknown() || UI.chip(worstPhase(d)); }
 function phaseHtml(d) {
   if (detectorUnknown()) return detectorUnknown() + (state.detError ? ` <span class="muted">${esc(state.detError)}</span>` : '');
   // one line per detector pattern that is not idle; the cooler pattern alone when everything is quiet
-  const pats = Object.entries(d.patterns || { COOLER_DEGRADATION: { phase: d.phase, alert_id: d.alert_id } });
+  const pats = Object.entries(d.patterns || {});
   const busy = pats.filter(([, p]) => p.phase && p.phase !== 'IDLE');
   if (!busy.length) return UI.chip('IDLE');
   return busy.map(([code, p]) => `${UI.chip(p.phase)} <span class="muted">${esc(UI.patternName(code))}</span>`).join('<br>');
@@ -253,13 +260,13 @@ function renderUnits() {
     card.querySelector('.phase').innerHTML = phaseHtml(d);
     const repeat = card.querySelector('.repeat-guide');
     if (asset === 'HYD-01') {
-      const phase = d.patterns?.COOLER_DEGRADATION?.phase || d.phase;
+      const phase = d.patterns?.COOLER_DEGRADATION?.phase;
       repeat.textContent = !phase ? '감지기 상태를 읽지 못했습니다. 다시 주입하기 전에 연결 상태를 확인하세요.'
         : phase === 'IDLE' ? (s.cooler_health < 1 ? `쿨러 성능 ${fmt(s.cooler_health * 100, 0)} % — 유온이 기준을 넘으면 감지기가 경보를 올립니다. 새 실험은 쿨러 복구 뒤 열화 주입으로 시작합니다.`
           : '감지기가 다음 경보를 기다립니다. 새 실험은 쿨러 열화 주입으로 시작합니다.')
         : '거절 후 다시 시작하려면 쿨러 복구를 누르고 감지기가 대기 상태가 된 뒤 다시 주입하세요. 승인 대기 중에는 같은 처리 건에서 결정하세요.';
     }
-    card.querySelector('.plc').innerHTML = UI.chip(s.state, UI.status(s.state) + (s.trip ? ' · ' + s.trip : ''));
+    card.querySelector('.plc').innerHTML = UI.chip(s.state, UI.status(s.state) + (s.trip_text ? ' · ' + s.trip_text : ''));
     card.querySelector('.ack').textContent = s.cmdId ? UI.status(s.result) + (s.reason ? ' · ' + s.reason : '') : UI.t('plant.none');
     card.querySelector('.ack').title = s.cmdId ? `${s.cmdId}${s.reason ? ' · ' + s.reason : ''}` : '';
     card.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === s.mode)));
@@ -321,7 +328,7 @@ document.addEventListener('click', e => {
 // 누가 눌렀나: 포털에서 고른 '나'(로그인 없음 — inbox.js). 처리 건 기록(SCENARIO_BUTTON)과 시작 경보 근거에 남는다
 function pressedBy() {
   const me = window.hydInbox && window.hydInbox.me && window.hydInbox.me();
-  return { by: me ? me.name : '나 미선택', user_id: me ? me.id : null, roles: me ? me.roles : [] };
+  return { by: me ? me.name : null, user_id: me ? me.id : null, roles: me ? me.roles : [] };   // 「나」가 없으면 이름을 지어 보내지 않는다(서버가 미선택으로 남긴다)
 }
 async function refreshBiz() {
   try { state.biz = await getJ(API.process + '/api/scenario/status'); } catch (e) { state.biz = { failed: e.message }; }
@@ -331,7 +338,7 @@ async function unitAction(asset, act, mode, button) {
   if (button) button.disabled = true;
   scenarioMessage(`${asset} 처리 중…`);
   try {
-    if (act === 'degrade') { const r = await postJ(API.process + '/api/scenario/A/degrade', pressedBy()); logLine(`${asset} 쿨러 열화 시작 · ${pressedBy().by} · ${UI.time(r.at)}${anchorNote(r)}`); await refreshBiz(); }
+    if (act === 'degrade') { const r = await postJ(API.process + '/api/scenario/A/degrade', pressedBy()); logLine(`${asset} 쿨러 열화 시작 · ${pressedBy().by || '나 미선택'} · ${UI.time(r.at)}${anchorNote(r)}`); await refreshBiz(); }
     else if (act === 'restore') { const r = await postJ(API.process + '/api/scenario/A/restore', pressedBy()); logLine(`${asset} 쿨러 복구${r.instance ? ' · 열화로 열린 처리 건에 기록' : ' · 연결된 처리 건 없음(감사 기록에 남김)'}`); await refreshBiz(); }
     else if (act === 'biz-start') {
       const exp = EXPERIMENT[asset];
@@ -346,14 +353,14 @@ async function unitAction(asset, act, mode, button) {
       logLine(`${asset} ${exp.title} 초기화 — 업무 데이터를 수업 시작값으로${anchorNote(state.biz)}`);
     }
     else if (act === 'mode') { await postJ(API.plant + '/api/mode', { asset, mode }); logLine(`${asset} 운전 모드 → ${UI.status(mode)}`); }
-    else if (act === 'fan') { const r = await postJ(API.plant + '/api/manual', { asset, writes: { FanSpeedSP: 80 } }); logLine(`${asset} 수동 팬 80 % → ${UI.status(r.result)} ${r.reason || ''}`); }
-    else if (act === 'load') { const r = await postJ(API.plant + '/api/manual', { asset, writes: { LoadSP: 70 } }); logLine(`${asset} 수동 부하 70 % → ${UI.status(r.result)} ${r.reason || ''}`); }
-    else if (act === 'reset') { const r = await postJ(API.plant + '/api/manual', { asset, writes: { Reset: 1 } }); logLine(`${asset} 보호 정지 해제 → ${UI.status(r.result)} ${r.reason || ''}`); }
+    else if (act === 'fan') { const r = await postJ(API.plant + '/api/manual', { asset, writes: { FanSpeedSP: 80 } }); logLine(`${asset} 수동 팬 80 % → ${UI.status(r.result)} ${r.reason_text || ''}`); }
+    else if (act === 'load') { const r = await postJ(API.plant + '/api/manual', { asset, writes: { LoadSP: 70 } }); logLine(`${asset} 수동 부하 70 % → ${UI.status(r.result)} ${r.reason_text || ''}`); }
+    else if (act === 'reset') { const r = await postJ(API.plant + '/api/manual', { asset, writes: { Reset: 1 } }); logLine(`${asset} 보호 정지 해제 → ${UI.status(r.result)} ${r.reason_text || ''}`); }
   } catch (e) { logLine('실패: ' + e.message); }
   finally { if (button) button.disabled = false; }
   refreshFast();
 }
-function logLine(s) { state.log.unshift(`${new Date().toLocaleTimeString()}  ${s}`); state.log = state.log.slice(0, 30); if (state.tab === 'scenario') scenarioMessage(s, s.startsWith('실패:') || s.includes('REJECTED')); }
+function logLine(s) { state.log.unshift(`${UI.time(new Date())}  ${s}`); state.log = state.log.slice(0, 30); if (state.tab === 'scenario') scenarioMessage(s, s.startsWith('실패:') || s.includes('REJECTED')); }
 function scenarioMessage(text, failed = false) { const box = $('#scenarioMsg'); box.textContent = text; box.classList.toggle('neg', failed); }
 $('#btnReset').addEventListener('click', async (e) => {
   const b = e.currentTarget; b.disabled = true; scenarioMessage('초기화 중…');
@@ -416,9 +423,9 @@ function renderScada() {
     }
     const t = u.tags, s = u.status, d = (state.det && state.det.assets && state.det.assets[asset]) || {};
     const inc = openIncidentFor(asset);
-    const alarm = d.phase === 'RAISED' || d.phase === 'CANDIDATE' || d.phase === 'CLEARING' || s.state === 'TRIP';
+    const alarm = worstPhase(d) !== 'IDLE' || s.state === 'TRIP';
     card.classList.toggle('alarm', alarm); card.classList.toggle('trip', s.state === 'TRIP'); card.classList.toggle('sel', state.selectedAsset === asset);
-    card.querySelector('.chips').innerHTML = UI.chip(s.mode) + UI.chip(s.state, UI.status(s.state) + (s.trip ? ' ' + s.trip : '')) + bizAlertHtml(asset);
+    card.querySelector('.chips').innerHTML = UI.chip(s.mode) + UI.chip(s.state, UI.status(s.state) + (s.trip_text ? ' · ' + s.trip_text : '')) + bizAlertHtml(asset);
     const set = (cls, v) => { const n = card.querySelector('.' + cls); if (n) n.textContent = v; };
     set('v-ts1', fmt(t.TS1, 1) + ' ℃'); set('v-ts3', fmt(t.TS3, 0)); set('v-ce', fmt(t.CE, 0)); set('v-fan', fmt(t.FanSpeedSP, 0));
     set('v-load', fmt(t.LoadSP, 0)); set('v-eps', fmt(t.EPS1, 1)); set('v-ps1', fmt(t.PS1, 0));
@@ -440,7 +447,7 @@ async function selectAsset(asset) {
   const list = incidentsFor(asset);
   const pick = list.find(i => !i.terminal) || list[0] || null;
   state.selected = pick ? pick.id : null;
-  if (!pick) { state.detail = null; state.run = null; }
+  if (!pick) { state.detail = null; state.incAudit = null; }
   renderScada(); renderIncList();
   if (pick) await loadDetail(); else renderDetail();
   const det = $('#hitlPanel'); if (det) det.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -450,7 +457,7 @@ $('#btnAllInc').addEventListener('click', () => { state.showAll = true; state.in
 /* ---------------- 사건 목록 · 상세 ---------------- */
 function renderIncList() {
   const box = $('#incList');
-  const sig = JSON.stringify([state.selectedAsset, state.showAll, state.selected, state.incidents, state.incidentError, state.runs, state.incShown]);
+  const sig = JSON.stringify([state.selectedAsset, state.showAll, state.selected, state.incidents, state.incidentError, state.incShown]);
   if (box.dataset.sig === sig) return;
   box.dataset.sig = sig;
   const focused = box.contains(document.activeElement) ? document.activeElement.dataset.itemId : null;
@@ -469,34 +476,26 @@ function renderIncList() {
     it.addEventListener('click', () => { state.selected = inc.id; state.selectedAsset = inc.asset; renderScada(); renderIncList(); loadDetail(); });
     box.append(it);
   }
-  // runs without incident (withheld / guardrail-rejected) are still worth seeing
-  for (const r of state.runs.filter(r => !r.incidentId && r.status !== 'RUNNING' && (!state.selectedAsset || state.showAll || r.asset === state.selectedAsset))) {
-    const it = el('div', 'item');
-    keyboardItem(it);
-    it.dataset.itemId = r.id;
-    it.innerHTML = `<div class="row"><strong>${esc(r.asset)} · ${esc(UI.t('inc.runOnly'))}</strong>${UI.chip(r.status)}</div><span class="sub">${esc(UI.dateTime(r.started))}</span>`;
-    it.addEventListener('click', () => { state.selected = null; state.detail = null; loadRun(r.id).then(renderDetail); });
-    box.append(it);
-  }
   if (paged.rest) { const more = el('div', '', UI.moreButton(paged.rest)); more.querySelector('button').addEventListener('click', () => { state.incShown += UI.PAGE; renderIncList(); }); box.append(more); }
   if (focused) [...box.children].find(e => e.dataset.itemId === focused)?.focus({ preventScroll: true });
   box.scrollTop = scroll;
 }
-async function loadRun(id) { try { state.run = await getJ(API.agent + '/api/agent/runs/' + id); } catch (e) { state.run = null; } }
+// 사건 상세 = 사건 하나 + 그 사건의 처리 기록(서버가 사건으로 거른 감사 기록 — 전체 최근 100건에서 거르지 않는다, W2-06).
+// AI 일꾼의 처리 과정은 처리 건 기록이 정본이다 — 옛 agent 실행 목록(/api/agent/runs, 지금은 판단 채점 실행만 남는다)을 읽지 않는다(W2-05 · G1-07)
 async function loadDetail() {
   if (!state.selected) return;
   const selected = state.selected;
+  let detail, audit;
   try {
-    const detail = await getJ(API.process + '/api/incidents/' + selected);
-    const found = state.runs.find(r => r.alertId === detail.alertId);
-    const run = found ? await getJ(API.agent + '/api/agent/runs/' + found.id).catch(() => null) : null;
-    if (state.selected !== selected) return;
-    state.detail = detail; state.run = run;
+    [detail, audit] = await Promise.all([getJ(API.process + '/api/incidents/' + encodeURIComponent(selected)),
+      getJ(API.process + '/api/audit?incident=' + encodeURIComponent(selected) + '&limit=500').then(rows => ({ rows: requireList(rows, '처리 기록') }), e => ({ rows: state.incAudit?.id === selected ? state.incAudit.rows : [], error: e.message }))]);
   } catch (e) {
     if (state.selected !== selected) return;
-    $('#incDetail').innerHTML = `<div class="neg" role="status">${esc(UI.t('error.load'))} ${esc(e.message)}</div>`;
-    $('#incDetail').dataset.signature = ''; state.detail = null; state.run = null; return;
+    $('#incDetail').innerHTML = UI.errorBlock(UI.t('error.load'), e.message);
+    $('#incDetail').dataset.signature = ''; state.detail = null; state.incAudit = null; return;
   }
+  if (state.selected !== selected) return;
+  state.detail = detail; state.incAudit = { id: selected, ...audit };
   renderDetail();
 }
 /* C5: the case's progress as a vertical, time-ordered card list built from inc.history (state → who → when). */
@@ -511,17 +510,15 @@ function timelineHtml(inc) {
     let note = '', raw = '';
     if (h.state === 'ACKED' && inc.ack) note = `${UI.status(inc.ack.result)}${inc.ack.interlock ? ' · ' + UI.status('INTERLOCK') + ' ' + UI.status(inc.ack.interlock) : ''}${inc.ack.reason ? ' · ' + UI.logText(inc.ack.reason) : ''}`;
     else if (h.state === 'WORK_ORDER_CREATED' && inc.workOrder) note = `${inc.workOrder.ref || inc.workOrder.id || ''}${inc.workOrder.requested_value ? ' · ' + inc.workOrder.requested_value : ''}`;
-    else if (h.state === 'AWAITING_APPROVAL' && inc.approvedBy) note = `${UI.t('inc.approvedBy')} ${inc.approvedBy}`;
-    else if (h.state === 'ESCALATED' && inc.reason) note = UI.status(inc.reason);
+    else if (h.state === 'AWAITING_APPROVAL' && inc.approvedBy) note = `${UI.t('inc.approvedBy')} ${UI.who(inc.approvedBy)}`;
+    else if (h.state === 'ESCALATED' && inc.reason) note = UI.logText(inc.reason);   // 서버 사유(영문일 수 있음)는 로그 번역을 거친다(W2-15)
     else if (h.note && !/^alert |^CMD-|^WO-/.test(h.note)) { note = UI.logText(h.note); raw = note !== h.note.trim() ? h.note : ''; }   // A141: 영문 단계 기록 → 화면 문구, 원문은 접기
     // A141: 수행 주체는 보조 정보 — 카드 글자 대신 title 로만. 화면에는 단계 이름 · 시각 · 결과 한 줄
-    const who = h.state === 'AWAITING_APPROVAL' && inc.approvedBy ? inc.approvedBy : UI.who(HISTORY_WHO[h.state] || 'sys:process');
+    const who = UI.who(h.state === 'AWAITING_APPROVAL' && inc.approvedBy ? inc.approvedBy : HISTORY_WHO[h.state] || 'sys:process');
     return `<div class="tl ${cls}"><span class="dot"></span>${UI.card({ title: esc(UI.status(h.state)), attrs: `title="${esc(who)}"`, sub: `<span class="meta"><span>${esc(UI.dateTime(h.t))}</span>${note ? `<span>${esc(note)}</span>` : ''}</span>`, body: raw ? UI.fold(esc(UI.t('log.raw')), `<pre>${esc(raw)}</pre>`, { cls: 'small' }) : '' })}</div>`;
   }).join('') + '</div>';
 }
 function traceHtml(run) {
-  if (!run && state.runsError) return `<div class="neg" role="status">에이전트 분석 기록을 읽지 못했습니다: ${esc(state.runsError)}</div>`;
-  if (!run) return `<div class="muted">${esc(UI.t('inc.noTrace'))}</div>`;
   let html = `<div class="muted">${UI.chip(run.status)} ${esc(UI.t('inst.started'))} ${esc(UI.time(run.started))}${run.ended ? ' · ' + esc(UI.t('inst.ended')) + ' ' + esc(UI.time(run.ended)) : ''}${run.error ? ' · ' + esc(run.error) : ''}</div><div class="trace">`;
   for (const s of run.steps) {
     const out = s.output == null ? '' : JSON.stringify(s.output, null, 1);
@@ -533,39 +530,30 @@ function traceHtml(run) {
 /* 분석 근거 (C1: no summarySource · citation ids · prior probabilities on screen) */
 function guideCardHtml(card) {
   if (!card) return `<div class="muted">${esc(UI.t('inc.noGuide'))}</div>`;
-  let summary = card.summary;
-  if (!card.summarySource || card.summarySource === 'template') {
-    const top = card.causes?.[0], alert = card.alert || {};
-    const pattern = UI.patternName(alert.pattern) || '설비 이상';
-    summary = `${alert.asset || ''} · ${pattern}.` + (top ? ` 가장 유력한 원인은 ‘${top.name}’입니다.` : '') +
-      (card.recommended?.length ? ' 권장 조치: ' + card.recommended.map(a => a.name + (a.kind === 'command' ? ` ${a.value}${/_pct$/.test(a.param) ? ' %' : ''}` : '')).join(', ') + '.' : '');
-  }
+  // 요약은 원인까지만 — 권장 조치는 판단 카드(SOP 하나 단위, 처리 건 승인 단계)가 정한다(G1-04: 가이드 카드의 조치 목록은 여러 절차를 섞었다)
+  const top = card.causes?.[0], alert = card.alert || {};
+  const summary = `${alert.asset || ''} · ${UI.patternName(alert.pattern) || '설비 이상'}.` + (top ? ` 가장 유력한 원인은 ‘${top.name}’입니다.` : '');
   let html = `<p class="prose" style="margin:0 0 var(--s3)">${esc(summary)}</p>`;
   html += `<div class="kv-line">${esc(UI.t('inc.freshness'))}: ${card.freshness && card.freshness.ok ? esc(UI.t('inc.fresh')) : esc(UI.t('inc.stale'))} (${fmt(card.freshness && card.freshness.age_s, 1)} s)</div>`;
   html += `<h4 style="margin:var(--s4) 0 var(--s2);font-size:13px">${esc(UI.t('inc.causes'))}</h4><div class="stack-list">`;
   (card.causes || []).forEach((c, i) => {
     const ev = (c.evidence || []).map(e => {
       const unknown = e.status === 'UNKNOWN' || e.passed == null || e.value == null || !!e.error;
-      return `<div class="kv-line"><span class="${unknown ? 'muted' : e.passed ? 'pos' : 'neg'}">${esc(e.name)}</span> — ${unknown ? esc(UI.t('inc.unknown')) : e.passed ? esc(UI.t('inc.pass')) : esc(UI.t('inc.fail'))} · ${esc(UI.t('inc.observed'))} ${esc(fmt(e.value, 2))}${unknown ? ` <span class="muted">${esc(e.error || e.reason || '')}</span>` : ''}</div>`;
+      const unit = window.hydWords.unit(e.tag);          // 값 단위 사전 한 곳(plainWords.js) — 「관측 46.20」만으로는 무엇인지 읽히지 않았다
+      return `<div class="kv-line"><span class="${unknown ? 'muted' : e.passed ? 'pos' : 'neg'}">${esc(e.name)}</span> — ${unknown ? esc(UI.t('inc.unknown')) : e.passed ? esc(UI.t('inc.pass')) : esc(UI.t('inc.fail'))} · ${esc(UI.t('inc.observed'))} ${esc(fmt(e.value, 2))}${unit ? ' ' + esc(unit) : ''}${unknown ? ` <span class="muted">${esc(e.error || e.reason || '')}</span>` : ''}</div>`;
     }).join('');
     html += UI.card({ title: esc(c.name), chips: i === 0 ? UI.chipText(UI.t('dec.causeTop'), 'accent') : '', value: `<span class="kv">${esc(UI.t('card.score'))} <small></small>${fmt(c.score, 2)}</span>`, sub: esc(c.description || ''), body: ev || `<span class="muted">${esc(UI.t('inc.noEvidence'))}</span>`, cls: 'soft' });
   });
-  html += `</div><h4 style="margin:var(--s4) 0 var(--s2);font-size:13px">${esc(UI.t('inc.recommended'))}</h4><div class="stack-list">`;
-  for (const a of card.recommended || []) {
-    let body = '';
-    if (a.kind === 'command' && a.paramRange) body += `<div class="kv-line">${esc(({ fan_pct: '팬 속도', load_pct: '펌프 부하', pump: '운전 펌프' })[a.param] || a.param)} <b>${esc(a.value)}${/_pct$/.test(a.param) ? ' %' : ''}</b> · ${esc(UI.t('inc.range'))} ${a.paramRange[0]}~${a.paramRange[1]}${(a.constraints || []).length ? ` · ${esc(UI.t('inc.constraints'))}: ${(a.constraints || []).map(k => esc(k.name)).join(' · ')}` : ''}</div>`;
-    if (a.sop && a.sop.steps && a.sop.steps.length) body += `<ol style="margin:var(--s2) 0 0 18px;padding:0">` + a.sop.steps.map(s => `<li>${esc(s.text)}${s.manual ? ` <span class="muted">— 매뉴얼 ${esc(s.manual.ref)} ${esc(s.manual.title)}</span>` : ''}</li>`).join('') + '</ol>';
-    html += UI.card({ title: esc(a.name), chips: UI.chipText(a.kind === 'command' ? UI.t('chip.control') : UI.t('chip.workOrder'), a.kind === 'command' ? 'accent' : 'warning'), sub: a.sop ? esc(a.sop.id || '') : '', body, cls: 'soft' });
-  }
-  return html + '</div>';
+  html += `</div><p class="field-hint" style="margin-top:var(--s3)">조치는 이 원인을 바탕으로 AI 일꾼이 낸 판단 카드(처리 건의 승인 단계)에서 고르고 승인합니다.</p>`;
+  return html;
 }
 function renderDetail() {
   const box = $('#incDetail');
-  const inc = state.detail, run = state.run;
-  const signature = JSON.stringify([inc, run, inc && state.audit.filter(a => a.incident === inc.id), state.auditError, state.runsError, UI.namesVersion]);
-  if ((inc || run) && box.dataset.signature === signature) return;
+  const inc = state.detail;
+  const signature = JSON.stringify([inc, state.incAudit, state.woMsg, UI.namesVersion]);
+  if (inc && box.dataset.signature === signature) return;
   box.dataset.signature = signature; box.dataset.incident = inc?.id || '';
-  if (!inc && !run) {
+  if (!inc) {
     if (state.selectedAsset && state.plant && state.plant.units[state.selectedAsset]) {
       const u = state.plant.units[state.selectedAsset], t = u.tags, s = u.status, d = (state.det && state.det.assets && state.det.assets[state.selectedAsset]) || {};
       box.innerHTML = `<div class="detail-head"><div class="row"><h2>${esc(state.selectedAsset)}</h2>${UI.chip(s.mode)}${UI.chip(s.state)}${phaseChip(d)}</div><div class="sub">${esc(UI.t('plant.ts1'))} ${fmt(t.TS1, 1)} ℃ · ${esc(UI.t('plant.ce'))} ${fmt(t.CE, 0)} % · ${esc(UI.t('plant.fan'))} ${fmt(t.FanSpeedSP, 0)} % · ${esc(UI.t('plant.load'))} ${fmt(t.LoadSP, 0)} %</div></div>` +
@@ -580,46 +568,48 @@ function renderDetail() {
     const pattern = UI.patternName((inc.card || {}).alert?.pattern);
     // A141: 경보 · 승인자 · 종결 시각 · id 는 상세 정보 접기로
     html += `<div class="detail-head"><div class="row"><h2>${esc(inc.asset)} ${esc(UI.t('case'))}${pattern ? ' · ' + esc(pattern) : ''}</h2>${UI.chip(inc.state)}</div></div>`;
-    html += UI.metaFold([[UI.t('inc.alertAt'), esc(UI.dateTime(inc.created))], [UI.t('inc.approvedBy'), esc(inc.approvedBy || '')], [UI.t('closed'), inc.closed ? esc(UI.dateTime(inc.closed)) : ''], ['ID', `<span class="mono">${esc(inc.id)}</span>`]]);
+    html += UI.metaFold([[UI.t('inc.alertAt'), esc(UI.dateTime(inc.created))], [UI.t('inc.approvedBy'), esc(inc.approvedBy ? UI.who(inc.approvedBy) : '')], [UI.t('closed'), inc.closed ? esc(UI.dateTime(inc.closed)) : ''], ['ID', `<span class="mono">${esc(inc.id)}</span>`]]);
     html += `<h3 style="font-size:14px;margin:var(--s3) 0 var(--s2)">${esc(UI.t('inc.progress'))}</h3>` + timelineHtml(inc);
+    // 정비 요청 전달은 처리 건의 승인 전달이 한다 — 실패하면 그 처리 건의 「정비 요청 전달 실패」에서 같은 내용으로 다시 전달한다(instances.js)
     if (inc.workOrderRequest && !inc.workOrder) {
-      html += `<p class="kv-line">${esc(UI.t('inc.woPending'))}: ${esc(inc.workOrderRequest.item.value || inc.workOrderRequest.item.name || '')}</p>`;
-      if (inc.processOwned === false && (inc.state === 'RESOLVED' || (inc.state === 'AWAITING_APPROVAL' && inc.workOrderRequest.work_order_only)))
-        html += `<div class="form-actions"><button class="btn small" id="btnWorkOrderRetry">${esc(UI.t('btn.retry'))}</button></div>`;
+      html += `<p class="kv-line">${esc(UI.t('inc.woPending'))}: ${esc(inc.workOrderRequest.item.value || inc.workOrderRequest.item.name || '')}</p>` +
+        UI.actions(`<button class="btn small" id="btnWorkOrderInstance">처리 건에서 전달 상태 보기 →</button>`, state.woMsg?.inc === inc.id ? state.woMsg.text : '');
     }
   }
-  const card = (inc && inc.card) || (run && run.card);
+  const card = inc.card;
   html += '<div class="stack-list" style="margin-top:var(--s4)">';
   html += UI.fold(esc(UI.t('inc.evidence')), guideCardHtml(card));
-  html += UI.fold(esc(UI.t('inc.agentTrace')), traceHtml(run));
-  if (inc) {
-    const audit = state.audit.filter(a => a.incident === inc.id);
-    const auditFail = state.auditError ? `<div class="neg" role="status">처리 기록을 읽지 못했습니다: ${esc(state.auditError)}${audit.length ? ' — 마지막으로 읽은 기록입니다' : ''}</div>` : '';
+  // AI 일꾼이 무엇을 조회 · 판단했는지는 이 사건의 처리 건 「처리 기록」에 있다 — 여기서는 그리로 가는 길 하나
+  html += UI.fold(esc(UI.t('inc.agentTrace')), `<p class="muted">AI 일꾼의 조회 · 판단 과정은 이 사건의 처리 건 「처리 기록」 탭에 단계별로 남습니다.</p>${UI.actions('<button class="btn small" id="btnIncInstance">처리 건에서 보기 →</button>', state.woMsg?.inc === inc.id ? state.woMsg.text : '')}`);
+  {
+    const audit = state.incAudit?.id === inc.id ? state.incAudit.rows : [], auditError = state.incAudit?.id === inc.id ? state.incAudit.error : '';
+    const auditFail = auditError ? `<div class="neg" role="status">처리 기록을 읽지 못했습니다: ${esc(auditError)}${audit.length ? ' — 마지막으로 읽은 기록입니다' : ''}</div>` : '';
     html += UI.fold(`${esc(UI.t('inc.log'))} <span class="chip tone-neutral sm">${audit.length}</span>`, '<div class="audit">' + auditFail + (audit.map(a => UI.eventRecord({ time: a.t, name: a.event, actor: a.actor, detail: a.detail?.reason || '', raw: a })).join('') || (auditFail ? '' : `<div class="muted">${esc(UI.t('empty.noData'))}</div>`)) + '</div>');
   }
   html += '</div>';
   box.innerHTML = html;
-  const wr = $('#btnWorkOrderRetry'); if (wr) wr.addEventListener('click', async () => {
-    wr.disabled = true;
-    try { await postJ(API.process + `/api/incidents/${encodeURIComponent(inc.id)}/work-order-retry`, {}); }
-    catch (e) { alert(UI.t('workOrder') + ' 재전달 실패: ' + e.message); }
-    finally { await refreshSlow(); await loadDetail(); }
-  });
+  // 처리 건으로 가는 단추(정비 요청 전달 상태 · AI 처리 과정) — 못 찾거나 실패하면 그 자리에 까닭을 남긴다
+  box.querySelectorAll('#btnWorkOrderInstance, #btnIncInstance').forEach(b => b.addEventListener('click', async () => {
+    b.disabled = true; state.woMsg = null;
+    try { if (!(await window.hydHitl.openIncident(inc.id))) state.woMsg = { inc: inc.id, text: '이 사건의 처리 건을 찾지 못했습니다 — 「처리 건」 화면에서 직접 고르세요.' }; }
+    catch (e) { state.woMsg = { inc: inc.id, text: '처리 건을 열지 못했습니다: ' + e.message }; }
+    finally { b.disabled = false; if (state.woMsg) renderDetail(); }
+  }));
 }
 
 /* ---------------- 실시간 모니터링 ---------------- */
 async function trendsNotice() {
   const n = $('#trendsNotice'); if (!n) return;
   // Grafana sends no CORS headers: an opaque (no-cors) response means reachable, a network error means it is down
-  try { await fetch(API.grafana + '/api/health', { mode: 'no-cors', cache: 'no-store' }); n.hidden = true; }
+  try { await fetch(P(3000) + '/api/health', { mode: 'no-cors', cache: 'no-store' }); n.hidden = true; }
   catch (e) { n.hidden = false; n.innerHTML = '<b>그래프 서비스가 응답하지 않습니다.</b> 센서값은 결함 시뮬레이션 · 이상 확인 화면에서 1초마다 갱신됩니다.'; }
 }
 function renderTrends() {
   trendsNotice();
   const asset = $('#selAsset').value;
-  const base = `${API.grafana}/d-solo/hyd-trend/hyd?orgId=1&var-asset=${asset}&refresh=5s&from=now-10m&to=now&theme=light&panelId=`;
+  const base = `${P(3000)}/d-solo/hyd-trend/hyd?orgId=1&var-asset=${asset}&refresh=5s&from=now-10m&to=now&theme=light&panelId=`;
   $('#pTs1').src = base + 7; $('#pScore').src = base + 8; $('#pCe').src = base + 9; $('#pSp').src = base + 11; $('#pAlerts').src = base + 12;
-  $('#grafanaLink').href = `${API.grafana}/d/hyd-trend?orgId=1&var-asset=${asset}&refresh=5s`;
+  $('#grafanaLink').href = `${P(3000)}/d/hyd-trend?orgId=1&var-asset=${asset}&refresh=5s`;
 }
 $('#selAsset').addEventListener('change', renderTrends);
 
@@ -634,7 +624,8 @@ async function refreshFast() {
     } catch (e) { state.plant = null; state.plantError = e.message; }
     try { state.det = await getJ(API.detector + '/api/detector/state'); state.detError = ''; } catch (e) { state.det = null; state.detError = e.message; }
     if (state.plant) {
-      $('#simT').textContent = `${Math.floor(state.plant.sim_t / 60)}분 ${Math.floor(state.plant.sim_t % 60)}초`;
+      const st = Math.floor(state.plant.sim_t);
+      $('#simT').textContent = `${st >= 3600 ? Math.floor(st / 3600) + '시간 ' : ''}${Math.floor(st % 3600 / 60)}분 ${st % 60}초`;
       $('#scale').textContent = state.plant.time_scale;
       $('#scaleNow').textContent = state.plant.time_scale;
       $('#scaleFixed').classList.toggle('neg', Number(state.plant.time_scale) !== 20);
@@ -653,20 +644,11 @@ async function refreshSlow() {
   if (refreshSlow.busy) return; refreshSlow.busy = true;
   try {
     try { state.incidents = requireList(await getJ(API.process + '/api/incidents'), '사건 목록'); state.incidentError = ''; } catch (e) { state.incidentError = e.message; }
-    // 못 읽은 기록은 「없음」이 아니다 — 사유를 두고 상세에서 실패로 보인다(지난 목록은 그대로)
-    try { state.runs = requireList(await getJ(API.agent + '/api/agent/runs'), '분석 목록'); state.runsError = ''; } catch (e) { state.runsError = e.message; }
-    try { state.audit = requireList(await getJ(API.process + '/api/audit'), '처리 기록'); state.auditError = ''; } catch (e) { state.auditError = e.message; }
     if (state.tab === 'scenario' || state.tab === 'incidents' || !state.biz || state.biz.failed) await refreshBiz();
     $('#openCount').textContent = state.incidentError ? '읽기 실패' : state.incidents.filter(i => !i.terminal).length;
     $('#openCount').title = state.incidentError || '';
     if (state.tab === 'incidents') { renderScada(); renderIncList(); if (state.selected) await loadDetail(); else if (state.selectedAsset) { const o = openIncidentFor(state.selectedAsset); if (o) { state.selected = o.id; await loadDetail(); } else renderDetail(); } }
   } finally { refreshSlow.busy = false; }
 }
-renderStack(); pollHealth(); refreshFast(); refreshSlow();
+renderStack(); pollHealth(); refreshFast(); refreshSlow(); UI.loadPatterns();
 setInterval(refreshFast, 1000); setInterval(refreshSlow, 2000); setInterval(pollHealth, 5000);
-
-/* ---------------- presentation hooks (used by video/record_demo.py) ---------------- */
-if (new URLSearchParams(location.search).get('present') === '1') document.body.classList.add('present');
-window.setCaption = (text) => { $('#caption').textContent = text || ''; };
-window.hydApp = { selectTab, state, selectAsset: async (a) => { selectTab('incidents'); await refreshSlow(); await selectAsset(a); },
-  selectIncident: async (id) => { state.selected = id; selectTab('incidents'); await refreshSlow(); const inc = state.incidents.find(i => i.id === id); if (inc) state.selectedAsset = inc.asset; renderScada(); renderIncList(); await loadDetail(); }, refreshSlow, refreshFast };

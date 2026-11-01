@@ -2,8 +2,8 @@
 
 ProcessGPT's principle "repeated judgments become DMN rules; the LLM gathers and explains" (process-gpt README,
 Deterministic Regularization). Claude Code calls these to get rule results it must not re-derive by itself.
-Nothing here writes to a plant or an enterprise system; `submit_decision` posts the ranked cards to the process
-service, which is the agent's only write (same as the legacy agent service).
+Nothing here writes to a plant or an enterprise system; `submit_decision` · `submit_purchase` post the ranked cards to the
+process service (a person approves them there).
 """
 from __future__ import annotations
 
@@ -11,31 +11,31 @@ import psycopg
 
 from agentsvc import card as cardlib, decide as decidelib
 from agentsvc.tools import mcp_ent, mcp_kg, mcp_prom, mcp_tsdb
-from agentsvc.tools.prometheus import Prometheus
 from hydcommon.fabric import CROSS_QUERIES, ENT, TS, Fabric
+from hydcommon.maintenance_policy import PM_PATTERN
+from hydcommon.skill_scope import PURCHASE_PATTERN
 
 
 #: Recorded in a decision's origin: where the cause argument of evaluate_cards/submit_decision was checked against.
 CAUSE_BASIS = "ontology T1 (pattern → symptom → failure mode ← cause), same query as diagnose"
-#: C2: 업무 경보(재고 · 운전시간)에는 증상(T1)이 없다. 원인은 업무 근거로 이어진 것만 받는다(business_causes 와 같은 질의).
+#: C2: 정기 정비 도래(PM_DUE)에는 증상(T1)이 없다. 원인은 업무 근거로 이어진 것만 받는다(business_causes 와 같은 질의).
+#: 재고 기준 이탈(SPARE_BELOW_MIN)은 원인 경로가 없다 — 부품이 근거다(purchase_context · evaluate_purchase · submit_purchase).
+#: 2026-10-30 검진 G2-26: 원인 경로가 남아 있을 때 경보의 부품이 아니라 모자란 모든 부품에서 사전 확률 1순위를 골랐다.
 BUSINESS_CAUSE_BASIS = {
-    "SPARE_BELOW_MIN": "ontology: cause -INVOLVES_PART-> part (ERP 재주문점 아래 부품), cause -CAUSES-> failure mode",
-    "PM_DUE": "ontology: failure mode -PREVENTED_BY-> skill (정기 정비가 막는 고장), cause -CAUSES-> failure mode",
+    PM_PATTERN: "ontology: failure mode -PREVENTED_BY-> skill (정기 정비가 막는 고장), cause -CAUSES-> failure mode",
 }
-#: 원인 근거의 종류(판단 origin.cause_route) — 화면이 원인을 '진단'으로 읽을지, '이 부품이 고치는 원인' · '정비로 막는 원인'으로 읽을지 정한다.
-#: 라이브 3차: 업무 경보도 cause_basis 에 T1(증상) 문장이 적혀 C 발주가 고장 진단처럼 보였다.
+#: 원인 근거의 종류(판단 origin.cause_route) — 화면이 원인을 '진단'으로 읽을지 '정비로 막는 원인'으로 읽을지 정한다.
+#: 라이브 3차: 업무 경보도 cause_basis 에 T1(증상) 문장이 적혀 고장 진단처럼 보였다.
 DIAGNOSIS_ROUTE = "diagnosis"
-BUSINESS_CAUSE_ROUTE = {"SPARE_BELOW_MIN": "part", "PM_DUE": "prevention"}
+BUSINESS_CAUSE_ROUTE = {PM_PATTERN: "prevention"}
 BUSINESS_CAUSES = {
-    # 재고가 모자란 부품을 쓰는 원인(그 부품을 교체해 고치는 고장) — 구매 SOP 가 ADDRESSES 로 그 원인을 가리킨다
-    "SPARE_BELOW_MIN": "MATCH (c:Cause)-[:INVOLVES_PART]->(p:Part) WHERE p.partNo IN $parts MATCH (c)-[:CAUSES]->(fm:FailureMode) "
-                       "RETURN c.id AS causeId, c.name AS cause, fm.id AS failureModeId, fm.name AS failureMode, p.partNo AS partNo, "
-                       "c.prior AS prior ORDER BY c.prior DESC",
     # 정기 정비가 막는 고장과 그 원인
-    "PM_DUE": "MATCH (fm:FailureMode)-[:PREVENTED_BY]->(:Skill) WITH DISTINCT fm MATCH (c:Cause)-[:CAUSES]->(fm) "
-              "RETURN c.id AS causeId, c.name AS cause, fm.id AS failureModeId, fm.name AS failureMode, null AS partNo, "
+    PM_PATTERN: "MATCH (fm:FailureMode)-[:PREVENTED_BY]->(:Skill) WITH DISTINCT fm MATCH (c:Cause)-[:CAUSES]->(fm) "
+              "RETURN c.id AS causeId, c.name AS cause, fm.id AS failureModeId, fm.name AS failureMode, "
               "c.prior AS prior ORDER BY c.prior DESC",
 }
+PURCHASE_ROUTE = ("재고 기준 이탈(SPARE_BELOW_MIN)은 고장 원인이 아니라 부족한 부품이 근거입니다 — "
+                  "purchase_context(asset, part_no) · evaluate_purchase · submit_purchase 를 쓰세요")
 
 
 def ok(document) -> dict:
@@ -44,7 +44,8 @@ def ok(document) -> dict:
 
 
 def error(kind: str, message: str) -> dict:
-    """kind: INVALID (bad input) | UNKNOWN (engine / graph / network)."""
+    """kind: INVALID (bad input) | UNKNOWN (engine / graph / network). KeyError · TypeError 는 엔진 · 그래프 결함이라 UNKNOWN 이다 —
+    INVALID 로 내면 에이전트가 자기 인자 탓으로 알고 인자를 바꿔 되풀이했다(검진 G2-18)."""
     return {"result": "error", "error_kind": kind, "message": message}
 
 
@@ -178,7 +179,8 @@ def enveloped(fn):
             return ok(fn(*a, **kw))
         except NotRegistered as e:
             return error(e.kind, str(e)[:800])
-        except (KeyError, ValueError, TypeError) as e:
+        except ValueError as e:
+            # 인자 · 지식 · 원천 확인이 거절한 것(이 모듈과 엔진이 ValueError 로 낸다) — 고쳐 다시 부를 수 있다
             return error("INVALID", f"{type(e).__name__}: {str(e)[:300]}")
         except psycopg.Error as e:
             # Invalid generated SQL can be repaired from the current metadata;
@@ -196,7 +198,6 @@ class DmnTools:
         self.kg = kg or mcp_kg.KnowledgeGraph()
         self.tsdb = tsdb or mcp_tsdb.TimeSeriesDB()
         self.registry = decidelib.DecisionRegistry("mcp")
-        self.prometheus = Prometheus()
         self._fabric = fabric
         from collections import OrderedDict
         from threading import Lock
@@ -311,7 +312,7 @@ class DmnTools:
         alert = {"asset": asset, "pattern": pattern}
         if not fresh["ok"]:
             return {"withheld": True, "freshness": fresh, "card": None, "reason": f"데이터 신뢰 불가: {fresh['reason']}"}
-        t1 = self.kg.t1_causes(pattern, asset)
+        t1 = self.kg.t1_causes(pattern)
         human = {}
         if any(not r.get("evidence") for r in t1):
             t1, human = cardlib.with_human_evidence(t1, self.human_alert(asset, pattern, alert_id))
@@ -362,7 +363,7 @@ class DmnTools:
 
     def gather_facts(self, asset: str, pattern: str, cause: str, failure_mode: str) -> dict:
         known = {"pattern": pattern, "cause": cause, "failure_mode": failure_mode}
-        facts, provenance = decidelib.gather_facts(self.kg.inputs(), asset, known, self.tsdb)
+        facts, provenance = decidelib.facts_for(self.kg, self.tsdb, asset, known)      # 판단과 같은 변수 · 같은 원천(실패는 FactUnavailable)
         return {"facts": facts, "provenance": provenance}
 
     # ---- task:rank
@@ -385,6 +386,9 @@ class DmnTools:
         if overrides:
             # the same guard decide() applies, raised here before any graph/DB IO: what-if facts never reach a live submission
             raise ValueError('가정 facts는 읽기 전용 evaluate_cards에서만 사용할 수 있습니다')
+        if not isinstance(incident, str) or not incident.strip():
+            # 승인은 처리 건 하나의 승인 단계뿐이다 — 처리 건 밖 판단은 승인할 곳이 없어 영원히 대기로 남았다(검진 W3-05, submit_purchase 와 같은 규칙)
+            raise ValueError('이 처리 건의 실제 incident id가 필요합니다(task.json inputs.incident)')
         c, basis = self._diagnosed_cause(asset, pattern, cause, failure_mode)
         origin = {"kind": "alert", "alertId": alert_id, "incident": incident, "pattern": pattern, "cause": cause, "failureMode": failure_mode,
                   **basis}
@@ -417,7 +421,7 @@ class DmnTools:
         part = self._purchase_part(asset, part_no)
         procedures = self._graph("MATCH (:System {id:'sys:erp'})-[:HAS_SKILL]->(s:Skill {scope:'purchase'})-[:INVOLVES_PART]->(:Part {id:$part}) "
                                  'RETURN s.id AS id,s.sopId AS sopId,s.name AS name,s.executable AS executable,s.source_id AS source_id', part=part['id'])
-        return dict(pattern='SPARE_BELOW_MIN', route='purchase-part', part=part, procedures=procedures,
+        return dict(pattern=PURCHASE_PATTERN, route='purchase-part', part=part, procedures=procedures,
                     basis='실제 ERP 재주문점 이탈 부품 → Part ← INVOLVES_PART ← 원문 구매 Skill ← ERP')
 
     def _purchase_decision(self, asset, part_no, *, incident=None, alert_id=None, overrides=None, process_scope=None, submit=False,
@@ -425,12 +429,12 @@ class DmnTools:
         if submit and overrides:
             raise ValueError('가정 구매 facts는 읽기 전용 evaluate_purchase에서만 사용합니다')
         part = self._purchase_part(asset, part_no)
-        origin = dict(kind='alert' if submit else 'mcp', pattern='SPARE_BELOW_MIN', cause_route='purchase-part',
+        origin = dict(kind='alert' if submit else 'mcp', pattern=PURCHASE_PATTERN, cause_route='purchase-part',
                       part=part, cause_basis='실제 ERP 부족부품 → Part ← 원문 구매 Skill',
                       **(dict(incident=incident, alertId=alert_id) if submit else {}))
         if process_scope is not None:
             origin['process_scope'] = dict(process_scope)
-        rec = decidelib.decide(self.kg, self.registry, self.tsdb, asset, 'SPARE_BELOW_MIN',
+        rec = decidelib.decide(self.kg, self.registry, self.tsdb, asset, PURCHASE_PATTERN,
                               dict(id=None, name=None, failureModeId=None, failureMode=None), origin=origin,
                               overrides=overrides, do_submit=submit, purchase_part=part)
         if rec.get('status') == 'FAILED':
@@ -452,17 +456,14 @@ class DmnTools:
                                        process_scope=process_scope, submit=True)
 
     def business_causes(self, asset: str, pattern: str) -> dict:
-        """C2: 업무 경보(SPARE_BELOW_MIN · PM_DUE)의 원인 후보 — 센서 증상이 없으므로 진단(diagnose) 대신 업무 근거로 그래프에서 읽는다.
-        재고: ERP 에서 재주문점 아래인 부품 → 그 부품을 쓰는 원인. 정기 정비: 정비가 막는(PREVENTED_BY) 고장의 원인.
+        """정기 정비 도래(PM_DUE)의 원인 후보 — 센서 증상이 없으므로 진단(diagnose) 대신 정비가 막는(PREVENTED_BY) 고장의 원인을 그래프에서 읽는다.
         돌려준 cause · failure_mode 를 evaluate_cards · submit_decision 에 그대로 넘긴다(원인 한정 SOP 가 후보에서 빠지지 않게)."""
+        if pattern == PURCHASE_PATTERN:
+            raise ValueError(PURCHASE_ROUTE)
         if pattern not in BUSINESS_CAUSES:
             raise ValueError(f"{pattern} 은(는) 업무 경보가 아닙니다 — 센서 경보는 diagnose 를 쓰세요")
-        parts = []
-        if pattern == "SPARE_BELOW_MIN":
-            rows = (mcp_ent.fetch("/erp/spare_stock", asset).get("records") or [])
-            parts = [r["part_no"] for r in rows if r.get("below_reorder_point")]
-        causes = self._graph(BUSINESS_CAUSES[pattern], parts=parts)
-        return {"pattern": pattern, "basis": BUSINESS_CAUSE_BASIS[pattern], "parts_below_reorder_point": parts, "causes": causes,
+        causes = self._graph(BUSINESS_CAUSES[pattern])
+        return {"pattern": pattern, "basis": BUSINESS_CAUSE_BASIS[pattern], "causes": causes,
                 "top_cause": causes[0]["causeId"] if causes else None, "failure_mode": causes[0]["failureModeId"] if causes else None}
 
     def precedents(self, failure_mode: str) -> list[dict]:
@@ -494,6 +495,8 @@ class DmnTools:
         if not isinstance(cause, str) or not cause or not isinstance(failure_mode, str) or not failure_mode:
             raise ValueError("cause와 failure_mode는 비어 있지 않은 노드 id여야 합니다")
         basis = {"cause_basis": CAUSE_BASIS, "cause_route": DIAGNOSIS_ROUTE}
+        if pattern == PURCHASE_PATTERN:
+            raise ValueError(PURCHASE_ROUTE)
         if pattern in BUSINESS_CAUSES:
             basis = {"cause_basis": BUSINESS_CAUSE_BASIS[pattern], "cause_route": BUSINESS_CAUSE_ROUTE[pattern]}
             # C2: 업무 경보는 업무 근거로 이어진 원인만 받는다(business_causes 와 같은 질의)
@@ -501,7 +504,7 @@ class DmnTools:
             if not listed:
                 raise ValueError(f"{cause}는 {pattern}의 업무 근거({BUSINESS_CAUSE_BASIS[pattern]})에 없는 원인입니다. business_causes 결과를 쓰세요")
         else:
-            t1 = self.kg.t1_causes(pattern, asset)
+            t1 = self.kg.t1_causes(pattern)
             listed = [r for r in t1 if r.get("causeId") == cause]
         if not listed:
             raise ValueError(f"{cause}는 {pattern}의 진단 지식(T1)에 없는 원인입니다. diagnose 결과의 원인 id를 쓰세요")

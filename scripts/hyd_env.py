@@ -7,6 +7,7 @@
   · '…' 은 글자 그대로, "…" 은 \\n · \\" · \\\\ 를 풀고 여러 줄도 받는다. 닫는 따옴표 뒤의 글자는 버린다.
   · 같은 키가 여러 번 있으면 마지막 값이 쓰인다. 값 안의 $변수 치환은 하지 않는다(시작이 읽는 키는 쓰지 않는다).
 쓸 때는 그 키가 있는 줄을 모두 새 값으로 바꾸고(없으면 끝에 붙임 · 공백 · # 이 든 값은 따옴표로 감쌈) 나머지 줄은 그대로 둔다.
+끌 키(쓰이지 않는 옛 줄)는 그 줄(여러 줄 값이면 그 줄 모두) 앞에 DISABLED 머리를 붙여 주석으로 바꾼다 — 지우지 않아 무엇이 있었는지 남는다.
 줄 끝은 LF, BOM 없이, 같은 폴더의 임시 파일(.env.hyd-tmp — git · Docker 가 무시)을 거쳐 한 번에 바꾼다.
 
     python scripts/hyd_env.py ai-mode [--record]   # 키 유무로 AI 단계 방식(live · replay · record)을 정해 .env 의 AI_MODE 에 적고 그 낱말을 출력
@@ -20,6 +21,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 KEY = re.compile(r'[A-Za-z_][A-Za-z0-9_.-]*')
+DISABLED = '# (쓰지 않는 옛 줄 — 시작이 막음) '
 ESCAPES = {'n': '\n', 'r': '\r', 't': '\t', '"': '"', '\\': '\\', '$': '$'}
 
 
@@ -97,8 +99,10 @@ def _formatted(name: str, value: str) -> str:
     return f'{name}="' + value.replace('\\', '\\\\').replace('"', '\\"') + '"'
 
 
-def with_updates(text: str, updates: dict[str, str]) -> str:
-    """키가 있는 줄을 모두 새 값으로, 없는 키는 끝에 붙인다. 나머지 줄은 그대로, 줄 끝 LF."""
+def with_updates(text: str, updates: dict[str, str], disable: tuple[str, ...] = ()) -> str:
+    """키가 있는 줄을 모두 새 값으로, 없는 키는 끝에 붙인다. disable 키의 줄은 DISABLED 주석으로. 나머지 줄은 그대로, 줄 끝 LF."""
+    if clash := sorted(set(updates) & set(disable)):
+        raise ValueError(f'같은 키를 쓰면서 끌 수 없다: {clash}')
     formatted = {name: _formatted(name, value) for name, value in updates.items()}
     lines = text.lstrip('﻿').replace('\r\n', '\n').replace('\r', '\n').split('\n')
     if lines and lines[-1] == '':
@@ -111,14 +115,18 @@ def with_updates(text: str, updates: dict[str, str]) -> str:
         for first, last in spans.get(name, []):
             lines[first] = line
             drop.update(range(first + 1, last + 1))   # 여러 줄 값의 나머지 줄
+    for name in disable:
+        for first, last in spans.get(name, []):
+            for n in range(first, last + 1):
+                lines[n] = DISABLED + lines[n]
     out = [line for n, line in enumerate(lines) if n not in drop]
     out.extend(line for name, line in formatted.items() if name not in spans)
     return '\n'.join(out) + '\n'
 
 
-def write_updates(path: Path, updates: dict[str, str]) -> None:
+def write_updates(path: Path, updates: dict[str, str], disable: tuple[str, ...] = ()) -> None:
     text = path.read_text(encoding='utf-8') if path.exists() else ''
-    new = with_updates(text, updates)
+    new = with_updates(text, updates, disable)
     if new == text:
         return
     temp = path.with_name(path.name + '.hyd-tmp')

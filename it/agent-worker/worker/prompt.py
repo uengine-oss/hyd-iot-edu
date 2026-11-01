@@ -11,10 +11,10 @@ import json
 from typing import Any
 
 def build(row: dict[str, Any], extras: dict[str, Any], *, workdir: str) -> str:
-    """The prompt for one work item: 업무 · 지시사항 · 참여자 · 입력 데이터 · 피드백 · 참고 자료 · 작업 공간 · 결과 제출 형식."""
+    """The prompt for one work item: 업무 · 지시사항(입력 [InputData] 포함) · 참여자 · 앞서 낸 결과 · 피드백 · 작업 공간 · 결과 제출 형식."""
     sections: list[str] = ["당신은 ProcessGPT 업무 프로세스의 담당 에이전트입니다. 아래 업무를 끝까지 수행하고, 마지막에 결과를 제시하세요. "
-                           "진행 중에 남기는 설명과 마지막 메시지는 한국어로 쓰세요 — 포털 처리 과정에 그대로 보입니다(A158). "
-                           "설명 문장에는 노드 id(예: skill:fan-max) 대신 이름(예: 팬 최대)을 쓰세요. 결과 필드의 id 값은 형식대로 둡니다."]
+                           "진행 중에 남기는 설명과 마지막 메시지는 한국어로 쓰세요 — 포털 처리 과정에 그대로 보입니다. "
+                           "설명 문장에는 노드 id(예: skill:sop-cool-11) 대신 이름(예: 팬 최대 운전)을 쓰세요. 결과 필드의 id 값은 형식대로 둡니다."]
     activity = (row.get("activity_name") or "").strip()
     query = (row.get("query") or "").strip()
     if activity:
@@ -26,15 +26,12 @@ def build(row: dict[str, Any], extras: dict[str, Any], *, workdir: str) -> str:
     participants = _participants(extras)
     if participants:
         sections.append(f"## 참여자\n{participants}")
-    inputs = _inputs(row, extras)
-    if inputs:
-        sections.append(f"## 입력 데이터\n{inputs}")
+    previous = _previous(row)
+    if previous:
+        sections.append(f"## 이 작업이 앞서 낸 결과\n{previous}")
     feedback = (extras.get("summarized_feedback") or "").strip()
     if feedback:
         sections.append("## 이전 결과에 대한 피드백\n" f"{feedback}\n\n" "이 피드백을 반영해 결과를 수정하세요. 같은 결과를 반복하지 마세요.")
-    sources = _sources(extras)
-    if sources:
-        sections.append(f"## 참고 자료\n{sources}")
     sections.append("## 작업 공간\n" f"작업 디렉터리는 `{workdir}` 입니다. 산출 파일은 이 디렉터리 안에 만드세요. 이 디렉터리 밖에는 쓰지 마세요. "
                     "온톨로지 스키마 설명은 `context/schema_prompt.md` 에 있습니다.")
     sections.append(FILE_READ_RULE)
@@ -67,8 +64,12 @@ LANGUAGE_RULE = ("## 언어\n도구 호출 사이의 진행 설명, 판단 이�
                  "일정의 숫자 시각은 도구가 반환한 날짜·시간대까지 그대로 쓰세요(예: window.starts_at). "
                  "UTC/Z/오프셋을 지우거나 날짜·시간대를 추측하지 마세요. 정확한 시각을 확인하지 못하면 카드의 일정 이름으로 설명하세요.")
 
+#: 이 작업이 앞서 낸 결과 파일 — runner 가 이 자리에 쓰고 지시문(FILE_READ_RULE · 교정 지시)이 이 이름을 가리킨다(G1-27 — 두 벌이던 경로)
+PREVIOUS_RESULT_FILE = "context/previous-result.json"
+
 FILE_READ_RULE = ("## 작업 파일 읽기\n작업 파일과 등록 스킬은 BOM 없는 UTF-8 원문입니다. "
-                  "기본 Read 도구로 context/task.json과 context/input.json의 필요한 부분을 읽으세요. "
+                  "입력 데이터는 위 지시사항의 [InputData] 에 있습니다. 작업 기록이 더 필요하면 기본 Read 도구로 context/task.json 의 필요한 부분을 "
+                  f"읽고, 이 작업이 앞서 낸 결과는 있을 때만 {PREVIOUS_RESULT_FILE} 에 있습니다. "
                   "결과 파일은 기본 Write 도구로 UTF-8 JSON을 쓰세요. Bash·PowerShell·Python 실행을 요구하지 마세요. "
                   "깨진 문자열을 추측해 복원하거나 원본 파일에 BOM을 붙여 고치지 마세요.")
 
@@ -209,26 +210,29 @@ def _participants(extras: dict[str, Any]) -> str:
 INLINE_INPUT_LIMIT = 8000
 
 
-def input_payload(row: dict[str, Any], extras: dict[str, Any]):
-    return row.get("output") or row.get("draft") or extras.get("sensitive_data")
+def previous_result(row: dict[str, Any]):
+    """이 작업이 앞서 낸 결과(재작업 · 돌려보낸 뒤 · 사람 답 뒤 — 작업 행 output). 첫 실행이면 None.
+    예전 이름 「입력 데이터」(context/input.json)는 실제 입력이 아니라 이 값(+ 진행 중 초안)이었고 첫 실행마다 null 파일을 읽게 했다(검진
+    G1-27). 실제 입력은 지시(query)의 [InputData] 에 있다. 실행 세션 id(cliagents_session_id)는 결과가 아니라 뺀다."""
+    out = row.get("output")
+    if isinstance(out, str) and out.strip().startswith("{"):
+        try:
+            out = json.loads(out)
+        except json.JSONDecodeError:
+            pass
+    if isinstance(out, dict):
+        out = {k: v for k, v in out.items() if k != "cliagents_session_id"}
+    return out or None
 
 
-def _inputs(row: dict[str, Any], extras: dict[str, Any]) -> str:
-    payload = input_payload(row, extras)
+def _previous(row: dict[str, Any]) -> str:
+    payload = previous_result(row)
     if not payload:
         return ""
     if not isinstance(payload, str):
         payload = json.dumps(payload, ensure_ascii=False, indent=2)
     if len(payload) > INLINE_INPUT_LIMIT:
-        return (payload[:INLINE_INPUT_LIMIT] + f'\n…[truncated: {len(payload)-INLINE_INPUT_LIMIT}자 생략]\n'
-                '전체 입력은 context/input.json에 보존되어 있습니다. 피드백과 관련된 항목만 찾아 읽고 수정하세요. '
+        return (payload[:INLINE_INPUT_LIMIT] + f'\n…[잘림: {len(payload)-INLINE_INPUT_LIMIT}자 생략]\n'
+                f'전체는 {PREVIOUS_RESULT_FILE} 에 있습니다. 피드백과 관련된 항목만 찾아 읽고 수정하세요. '
                 '위 발췌는 잘린 데이터이며 완전한 JSON이 아닐 수 있습니다.')
     return payload
-
-
-def _sources(extras: dict[str, Any]) -> str:
-    lines = []
-    for s in extras.get("sources") or []:
-        if isinstance(s, dict) and (s.get("file_name") or s.get("file_path")):
-            lines.append(f"- {s.get('file_name') or ''} {f'({s.get('file_path')})' if s.get('file_path') else ''}".strip())
-    return "\n".join(lines)

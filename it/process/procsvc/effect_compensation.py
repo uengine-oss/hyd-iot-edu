@@ -4,10 +4,12 @@ The product (process-gpt-completion `compensation.py`) inverts only what its wor
 becomes a DELETE of exactly those values — and refuses the whole undo when any effect cannot be reversed, handing the
 rework to the agent instead of leaving a half-undone world. HYD has three kinds of effect and the same rule:
 
-  enterprise transaction  reversible when the business system offers the exact inverse of that record (CMMS work order →
-                          cancel, ERP purchase request → cancel, MES reallocation → restore, QMS hold → release). The
-                          inverse is keyed by the original reference and is refused once the record moved on.
-  irreversible enterprise release-lot · substitute-shipment · demand-control: nothing is undone; a person acknowledges.
+  enterprise transaction  reversible when the business system's contract for that skill names an exact inverse (CMMS work
+                          order → cancel, ERP purchase request → cancel — the business DB ent.skill_contracts, carried on
+                          each ledger row as inverse · irreversible_reason). The inverse is keyed by the original
+                          reference; a refused inverse (record moved on) is acknowledged by a person instead.
+  irreversible enterprise the contract has no inverse (goods receipt, completed maintenance, counter reset …): nothing is
+                          undone; a person acknowledges.
   PLC command             never reversed by an automatic counter-command. A person acknowledges the plant state and the
                           Incident is reopened for a new decision (the command history stays).
 
@@ -19,28 +21,17 @@ import hashlib
 import json
 import uuid
 
-from . import engine
+from . import engine, machine
 
-# Mirrors it/enterprise-sim/entsim/state.py (tests cross-check both tables). The process never derives an inverse itself.
-INVERSE_OF = {"skill:schedule-maintenance": "skill:cancel-work-order", "skill:procure-part": "skill:cancel-purchase-request",
-              "skill:reallocate-production": "skill:restore-production", "skill:hold-lot": "skill:release-hold"}
-C2_INVERSE_OF = {"skill:schedule-maintenance-scoped": "skill:cancel-maintenance-scoped"}
-ALL_INVERSE_OF = {**INVERSE_OF, **C2_INVERSE_OF}
-IRREVERSIBLE = {"skill:release-lot": "출하 승인은 출하 절차로 넘어가 되돌릴 수 없다",
-                "skill:substitute-shipment": "대체 출하는 물류가 움직여 되돌릴 수 없다",
-                "skill:demand-control": "수요 제어 지시는 이미 외부에 전달돼 되돌릴 수 없다"}
-# C2 승인 뒤 실행 부품의 거래 (entsim.state.C2_IRREVERSIBLE 와 같은 사유)
-C2_IRREVERSIBLE = {"skill:receive-goods": "입고 · 검수는 실물이 창고에 들어와 되돌릴 수 없다(반품은 별도 절차)",
-                   "skill:reschedule-maintenance": "정비 일정은 기존 오더 상태와 기한을 다시 검토한 새 일정 변경으로 정정한다",
-                   "skill:complete-maintenance": "정비는 현장에서 이미 수행되어 되돌릴 수 없다",
-                   "skill:issue-spare": "출고된 예비품은 반납 입고로 되돌린다(수업은 재고 초기화)",
-                   "skill:pm-advance": "운전시간은 흘러간 시간이라 되돌리지 않는다(수업은 계수기 초기화)",
-                   "skill:pm-reset": "정기 정비가 끝나 다음 주기가 시작됐다(정정은 새 기록으로)",
-                   "skill:delay-delivery": "공급사가 알린 납기 변경이라 되돌리지 않는다"}
 PLC_REASON = "물리 명령은 자동 역명령으로 보상하지 않는다. 설비 상태를 확인한 사람의 승인 뒤 사건을 다시 연다"
-# Terminal incidents (ESCALATED · CLOSED · REJECTED · RESOLVED_WITHOUT_ACTION) end their own path; they are not reopened.
-REOPENABLE = {"AWAITING_APPROVAL", "ACKED", "RE_OBSERVING", "RESOLVED", "WORK_ORDER_CREATED"}
+#: 다시 열 수 있는 사건 상태 — 사건 모델(machine) 한 곳이 갖는다(끝난 사건 definition.TERMINAL 은 다시 열지 않는다)
+REOPENABLE = machine.REOPENABLE
 BLOCKER = "effects_require_compensation_or_review"
+
+
+class CompensationRefused(ValueError):
+    """업무 시스템이 역거래를 받지 않았다(4xx — 원 기록이 이미 다음 상태로 넘어감 등). 잠깐의 연결 실패와 달리 다시 보내도 같은 답이므로,
+    그 효과는 보상 대신 사람 확인으로 정리한다(review_effects). 보상 실행 연결(main._exec_compensation)이 이 예외로 알린다."""
 
 
 def _fp(value) -> str:
@@ -56,12 +47,17 @@ def inventory(evidence: dict) -> list[dict]:
         inverse = [tx for tx in ledger if tx.get("compensates")]
         for tx in forward:
             skill = tx.get("skill")
+            # 되돌리기 계약은 업무 시스템이 거래마다 싣는다(enterprise-sim /api/transactions ← 업무 DB ent.skill_contracts 한 곳) —
+            # process 는 계약을 따로 들고 있지 않다. 칸이 없으면 계약이 어긋난 응답이라 실패한다(되돌릴 수 있다고 짐작하지 않는다)
+            if "inverse" not in tx or "irreversible_reason" not in tx:
+                raise ValueError(f"업무 시스템 거래 {tx.get('id')}({skill}) 응답에 되돌리기 계약(inverse · irreversible_reason)이 없습니다 — "
+                                 "enterprise-sim 판을 확인하세요")
             undo = next((c for c in inverse if c.get("compensates") == tx.get("id")
-                         or (c.get("skill") == ALL_INVERSE_OF.get(skill) and c.get("ref") == tx.get("ref"))), None)
+                         or (c.get("skill") == tx["inverse"] and c.get("ref") == tx.get("ref"))), None)
             effects.append({"id": f"tx:{tx.get('id')}", "kind": "enterprise", "decision": did, "tx": tx.get("id"),
                             "skill": skill, "system": tx.get("system"), "ref": tx.get("ref"), "detail": tx.get("detail"),
-                            "reversible": skill in ALL_INVERSE_OF, "inverse": ALL_INVERSE_OF.get(skill),
-                            "irreversible_reason": IRREVERSIBLE.get(skill) or C2_IRREVERSIBLE.get(skill) or (None if skill in ALL_INVERSE_OF else "되돌리기 계약이 없는 거래"),
+                            "reversible": tx["inverse"] is not None, "inverse": tx["inverse"],
+                            "irreversible_reason": None if tx["inverse"] is not None else tx["irreversible_reason"],
                             "compensated_by": undo.get("id") if undo else None,
                             "fingerprint": _fp(["tx", did, tx.get("id"), skill, tx.get("ref")])})
     ledger_refs = {e["ref"] for e in effects}
@@ -117,6 +113,11 @@ def explained_services(defn, work, affected: set, effects: list[dict], outcome: 
     return out
 
 
+def refused_compensations(receipts: list[dict]) -> set[str]:
+    """업무 시스템이 역거래를 거절한(CompensationRefused) 효과 id — 보상으로는 끝낼 수 없어 사람 확인으로 정리한다."""
+    return {r["effect"] for x in receipts if x.get("kind") == "compensation" for r in x.get("results") or [] if r.get("refused")}
+
+
 def resolution(effects: list[dict], receipts: list[dict]) -> dict:
     """Which effects are compensated, acknowledged, or still pending, judged only from durable receipts and the ledger."""
     acknowledged = {}
@@ -153,6 +154,15 @@ def _review_level(evidence: dict, approvals: list[dict], role: str) -> tuple[int
     return level, need
 
 
+def _mark_refused(effects: list[dict], receipts: list[dict]) -> list[dict]:
+    """업무 시스템이 역거래를 거절한 되돌릴 수 있는 효과는 사람 확인 대상으로 보인다(보상 단추 대신 확인 칸)."""
+    refused = refused_compensations(receipts)
+    for e in effects:
+        if e["id"] in refused and e.get("reversible"):
+            e["compensation_refused"] = True
+    return effects
+
+
 class EffectRuntime:
     """Compensation and review receipts on the instance; mixed into InstanceRuntime."""
 
@@ -165,20 +175,22 @@ class EffectRuntime:
         return evidence, approvals, receipts
 
     def effects_view(self, proc_inst_id: str) -> dict:
-        with self._transition(proc_inst_id):
+        """조회 — 처리 건 전이 잠금을 잡지 않는다(엔진 · 워커 저장과 다투지 않고, 업무 시스템 원장 HTTP 를 잠금 안에서 기다리지 않는다).
+        한 시점의 읽기 전용 스냅숏(다시 수행 미리보기와 같은 repo.read_snapshot)으로 읽는다. 보상 · 확인(쓰기)은 잠금 안에서 다시 읽어 판정한다."""
+        with self.repo.read_snapshot():
             inst = self.repo.get_instance(proc_inst_id)
             if not inst or inst.get("tenant_id") != self.tenant_id:
                 raise KeyError("no such instance")
             evidence, approvals, receipts = self._effect_case(inst)
-            effects = inventory(evidence)
             defn = self.definition_for(inst)
-            roles = sorted({defn.role_endpoint(a.get("role")) for a in defn.activities.values()
-                            if engine.is_human(a) and defn.role_endpoint(a.get("role"))})
-            incident = evidence["incident"]
-            return {"instance": proc_inst_id, "incident": {k: incident.get(k) for k in ("id", "state", "cmdId", "cleared", "workOrder")},
-                    "effects": effects, "resolution": resolution(effects, receipts), "receipts": receipts,
-                    "reopen_required": incident.get("state") != "AWAITING_APPROVAL", "review_roles": roles,
-                    "scope": "조회는 상태를 바꾸지 않습니다. 되돌릴 수 있는 거래는 보상 요청으로, 나머지는 사람의 확인으로만 해결됩니다."}
+        effects = _mark_refused(inventory(evidence), receipts)
+        roles = sorted({defn.role_endpoint(a.get("role")) for a in defn.activities.values()
+                        if engine.is_human(a) and defn.role_endpoint(a.get("role"))})
+        incident = evidence["incident"]
+        return {"instance": proc_inst_id, "incident": {k: incident.get(k) for k in ("id", "state", "cmdId", "cleared", "workOrder")},
+                "effects": effects, "resolution": resolution(effects, receipts), "receipts": receipts,
+                "reopen_required": incident.get("state") != "AWAITING_APPROVAL", "review_roles": roles,
+                "scope": "조회는 상태를 바꾸지 않습니다. 되돌릴 수 있는 거래는 보상 요청으로, 나머지는 사람의 확인으로만 해결됩니다."}
 
     def _authorize_review(self, defn, evidence, approvals, by, role, reason):
         human = {defn.role_endpoint(a.get("role")) for a in defn.activities.values() if engine.is_human(a)}
@@ -200,42 +212,42 @@ class EffectRuntime:
             prior = self.repo.get_effect_receipt(self.tenant_id, proc_inst_id, request_id)
             request = {"kind": "compensation", "by": by, "role": role, "reason": reason, "effects": sorted(effect_ids or [])}
             if prior:
+                # 영수증 넣기와 결과는 한 트랜잭션이라 저장된 영수증은 늘 끝난 것(DELIVERED · FAILED)이다 — 같은 요청은 그 영수증을 그대로.
+                # 실패한 보상을 이어 하려면 새 요청 ID 로 다시 요청한다(이미 보상된 효과는 원장 영수증으로 해결돼 빠진다)
                 if prior["request"] != request:
                     raise ValueError("같은 요청 ID에 다른 보상 내용을 사용할 수 없습니다")
-                if prior["status"] != "PENDING":
-                    return deepcopy(prior)
-                receipt = prior
-            else:
-                evidence, approvals, receipts = self._effect_case(inst)
-                self._authorize_review(self.definition_for(inst), evidence, approvals, by, role, reason)
-                effects = inventory(evidence)
-                pending = set(resolution(effects, receipts)["pending"])
-                chosen = [e for e in effects if e["id"] in pending and e["reversible"] and (not effect_ids or e["id"] in effect_ids)]
-                missing = set(effect_ids or []) - {e["id"] for e in chosen}
-                if missing:
-                    raise ValueError("보상할 수 없는 효과입니다 (되돌릴 수 없거나 이미 해결됨): " + ", ".join(sorted(missing)))
-                if not chosen:
-                    raise ValueError("보상할 수 있는 미해결 효과가 없습니다")
-                receipt = {"tenant_id": self.tenant_id, "proc_inst_id": proc_inst_id, "request_id": request_id, "kind": "compensation",
-                           "status": "PENDING", "request": request, "effects": deepcopy(chosen), "results": [], "error": None,
-                           "history": [{"status": "PENDING", "t": engine.now_iso(now), "by": by, "role": role}]}
-                self.repo.insert_effect_receipt(receipt)
+                return deepcopy(prior)
+            evidence, approvals, receipts = self._effect_case(inst)
+            self._authorize_review(self.definition_for(inst), evidence, approvals, by, role, reason)
+            effects = inventory(evidence)
+            pending = set(resolution(effects, receipts)["pending"])
+            refused = refused_compensations(receipts)
+            chosen = [e for e in effects if e["id"] in pending and e["reversible"] and e["id"] not in refused
+                      and (not effect_ids or e["id"] in effect_ids)]
+            missing = set(effect_ids or []) - {e["id"] for e in chosen}
+            if missing:
+                raise ValueError("보상할 수 없는 효과입니다 (되돌릴 수 없거나, 이미 해결됐거나, 업무 시스템이 역거래를 거절해 확인으로 정리할 효과): "
+                                 + ", ".join(sorted(missing)))
+            if not chosen:
+                raise ValueError("보상할 수 있는 미해결 효과가 없습니다")
             if self.hooks.exec_compensation is None:
                 raise ValueError("기업 보상 실행이 연결되지 않았습니다")
-            results, failed = list(receipt.get("results") or []), None
-            done = {r.get("effect") for r in results if r.get("ok")}
+            receipt = {"tenant_id": self.tenant_id, "proc_inst_id": proc_inst_id, "request_id": request_id, "kind": "compensation",
+                       "status": "PENDING", "request": request, "effects": deepcopy(chosen), "results": [], "error": None,
+                       "history": [{"status": "PENDING", "t": engine.now_iso(now), "by": by, "role": role}]}
+            self.repo.insert_effect_receipt(receipt)
+            results, failed = [], None
             for e in receipt["effects"]:
-                if e["id"] in done:
-                    continue
                 try:
                     tx = self.hooks.exec_compensation({"decision": e["decision"], "skill": e["inverse"], "asset": engine.variables(inst).get("asset"),
                                                        "by": by, "params": {"ref": e["ref"]}, "compensates": e["tx"]})
                     if not isinstance(tx, dict) or not tx.get("id") or tx.get("ref") != e["ref"]:
                         raise ValueError(f"보상 응답이 원거래 참조와 다릅니다: {tx}")
                     results.append({"effect": e["id"], "ok": True, "tx": tx.get("id"), "ref": tx.get("ref"), "skill": e["inverse"], "detail": tx.get("detail")})
-                except Exception as error:  # noqa: BLE001 — recorded, never hidden; replay with the same request id resumes
+                except Exception as error:  # noqa: BLE001 — 영수증 · 사건 기록에 그대로 남긴다(삼키지 않음)
                     failed = f"{type(error).__name__}: {str(error)[:300]}"
-                    results.append({"effect": e["id"], "ok": False, "skill": e["inverse"], "error": failed})
+                    results.append({"effect": e["id"], "ok": False, "skill": e["inverse"], "error": failed,
+                                    "refused": isinstance(error, CompensationRefused)})
                     break
             receipt.update(results=results, status="FAILED" if failed else "DELIVERED", error=failed)
             receipt["history"].append({"status": receipt["status"], "t": engine.now_iso(now), "error": failed})
@@ -271,9 +283,11 @@ class EffectRuntime:
             unknown = [i for i in effect_ids if i not in effects]
             if unknown:
                 raise ValueError("현재 효과 목록에 없는 ID입니다: " + ", ".join(unknown))
-            reversible = [i for i in effect_ids if effects[i]["reversible"] and not effects[i].get("compensated_by")]
+            refused = refused_compensations(receipts)
+            reversible = [i for i in effect_ids if effects[i]["reversible"] and not effects[i].get("compensated_by") and i not in refused]
             if reversible:
-                raise ValueError("되돌릴 수 있는 거래는 확인이 아니라 보상 요청으로 처리해야 합니다: " + ", ".join(reversible))
+                raise ValueError("되돌릴 수 있는 거래는 확인이 아니라 보상 요청으로 처리해야 합니다(업무 시스템이 역거래를 거절했을 때만 확인으로 정리합니다): "
+                                 + ", ".join(reversible))
             if any(i not in pending for i in effect_ids):
                 raise ValueError("이미 해결된 효과가 포함돼 있습니다")
             if evidence["incident"].get("state") == "AWAITING_ACK":

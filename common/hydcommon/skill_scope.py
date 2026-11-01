@@ -1,4 +1,9 @@
-"""Explicit source-backed purchasing domain; legacy Skills remain fault actions."""
+"""Explicit source-backed purchasing domain; legacy Skills remain fault actions.
+
+Supplier classification is graph data, not a display string: `oem` (a Supplier property, carried on each partSuppliers row of
+the skill — it/neo4j/templates/t3_skills.cypher) says whether a supplier delivers the maker's genuine part. Renaming a
+supplier changes nothing; a partSuppliers row without a true/false oem is an error, never read as "not genuine".
+"""
 import re
 import math
 from copy import deepcopy
@@ -9,6 +14,15 @@ PURCHASE_ACTION = 'action:purchase-request'
 PURCHASE_ROLE = 'role:purchasing'
 PURCHASE_SYSTEM = 'sys:erp'
 SUPPLIER_POLICIES = ('oem', 'lowest_approved', 'fastest_quote')
+PURCHASE_PATTERN = 'SPARE_BELOW_MIN'     # the business alert that starts a purchase decision (business_monitor · scenario C)
+
+
+def purchase_rule_problem(tests) -> str | None:
+    """A purchase candidate rule must fire on the purchase alert (pattern == PURCHASE_PATTERN) — the only alert the
+    purchase decision runs on. One check for the graph validator and the manual loader (procsvc.manual_knowledge)."""
+    if any(t.get('variable') == 'pattern' and t.get('operator') == '==' and t.get('value') == PURCHASE_PATTERN for t in tests or []):
+        return None
+    return f'구매 후보 규칙에는 예비품 재고 기준 이탈 경보 조건(pattern == {PURCHASE_PATTERN})이 있어야 합니다 — 구매 판단은 이 경보에서만 돕니다'
 
 
 class SupplierUnresolved(ValueError):
@@ -31,6 +45,10 @@ def resolve_supplier(skill, facts):
     quotes = facts.get('spare_quotes')
     if not isinstance(quotes, dict) or not quotes:
         raise ValueError('동적 공급사 선택에 실제 부품별 견적이 필요합니다')
+    part = facts.get('purchase_part')
+    links = {r.get('supplier'): r for r in skill.get('partSuppliers') or [] if r.get('part') == part}
+    if any(type(r.get('oem')) is not bool for r in links.values()):
+        raise ValueError('부품 공급 관계에 순정 공급사 여부(oem)가 없습니다 — 지식 그래프의 Supplier.oem을 확인하세요')
     eligible = []
     for supplier, quote in quotes.items():
         if not isinstance(quote, dict) or type(quote.get('avl')) is not bool or any(
@@ -39,16 +57,17 @@ def resolve_supplier(skill, facts):
             raise ValueError('실제 부품별 견적의 수치와 AVL을 확인할 수 없습니다')
         if quote['price'] < 0 or quote['lead_d'] < 0 or not 0 <= quote['fail_rate'] <= 1:
             raise ValueError('실제 부품별 견적의 수치 범위가 잘못되었습니다')
-        if policy == 'oem' and quote.get('name') != 'B-OEM (순정)':
+        genuine = (links.get(supplier) or {}).get('oem') is True
+        if policy == 'oem' and not genuine:
             continue
-        if policy == 'lowest_approved' and (not quote['avl'] or quote.get('name') == 'B-OEM (순정)'):
+        if policy == 'lowest_approved' and (not quote['avl'] or genuine):
             continue
         eligible.append((supplier, quote))
     if not eligible:
         raise SupplierUnresolved('원문 공급사 선택 정책을 충족하는 실제 견적이 없습니다')
     if policy == 'oem':
         if len(eligible) != 1:
-            raise SupplierUnresolved('정본 순정 라벨 B-OEM (순정)의 실제 견적이 유일하지 않습니다')
+            raise SupplierUnresolved('순정 공급사(oem)의 실제 견적이 하나가 아닙니다')
         chosen = eligible[0]
     else:
         metric = 'price' if policy == 'lowest_approved' else 'lead_d'
@@ -58,15 +77,14 @@ def resolve_supplier(skill, facts):
             raise SupplierUnresolved('원문에 없는 동률 공급사 선택을 추정하지 않습니다')
         chosen = winners[0]
     supplier, quote = chosen
-    part = facts.get('purchase_part')
-    if not any(r.get('part') == part and r.get('supplier') == supplier for r in skill.get('partSuppliers') or []):
+    if supplier not in links:
         raise SupplierUnresolved(f'선택한 실제 견적 공급사({supplier})와 요청 Part의 SUPPLIED_BY 관계가 없습니다')
     result = deepcopy(skill)
     result['actions'][0]['value'] = supplier
     result['resolvedSupplier'] = dict(id=supplier, policy=policy, part=part,
                                       partNo=facts.get('spare_part_no'), quote=deepcopy(quote),
                                       quoteSource='/scm/quotes', quoteSet=deepcopy(quotes),
-                                      classificationLabel=quote.get('name'))
+                                      genuine=links[supplier]['oem'])
     return result
 
 
@@ -189,10 +207,9 @@ def purchase_graph_issues(nodes, relationships):
             issues.append(f'{rid}: 참고 구매 SOP는 후보 Rule 출력이 될 수 없습니다')
         if any(p.get('scope') != PURCHASE for p in outputs):
             issues.append(f'{rid}: 구매와 고장 조치 후보를 같은 Rule에 섞지 않습니다')
-        pattern_test = any(r['a'] == rid and r['type'] == 'TESTS' and
-                           by_id.get(r['b'], {}).get('props', {}).get('variable') == 'pattern' and
-                           r['props'].get('operator') == '==' and r['props'].get('value') == 'SPARE_BELOW_MIN'
-                           for r in relationships)
-        if not pattern_test:
-            issues.append(f'{rid}: 구매 후보 Rule은 pattern == SPARE_BELOW_MIN을 명시해야 합니다')
+        tests = [dict(variable=by_id.get(r['b'], {}).get('props', {}).get('variable'), operator=r['props'].get('operator'),
+                      value=r['props'].get('value')) for r in relationships if r['a'] == rid and r['type'] == 'TESTS']
+        problem = purchase_rule_problem(tests)
+        if problem:
+            issues.append(f'{rid}: {problem}')
     return issues

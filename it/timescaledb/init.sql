@@ -1,4 +1,6 @@
--- hyd-iot-edu TimescaleDB schema (v3 section 5.3, student edition)
+-- hyd-iot-edu TimescaleDB schema (v3 section 5.3, student edition) — applied once, when the volume is created (initdb).
+-- What came later is added by connect-sink each time it connects, for new and old databases alike (it/connect-sink/app/main.py
+-- SCHEMA): sink_offsets, alerts.name (the pattern's display name) and the 30-day pruning job of alerts · actions · audit.
 CREATE EXTENSION IF NOT EXISTS timescaledb;
 
 -- 1 Hz tags (TS1..TS4, PS1..PS6, EPS1, FS1..2, VS1, CE, CP, SE, FanSpeedSP, LoadSP)
@@ -36,7 +38,7 @@ CREATE TABLE alerts (
   evidence   jsonb
 );
 
--- actions: approved action.cmd + PLC ACK (from plant.status)
+-- actions: commands cmd-gateway forwarded after its checks (audit CMD_FORWARDED) + the PLC ACK (from plant.status)
 CREATE TABLE actions (
   cmd_id      text PRIMARY KEY,
   incident    text,

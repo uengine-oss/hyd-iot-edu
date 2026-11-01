@@ -1,38 +1,35 @@
-"""G2 (전체 과정 랩업, 문서/시스템/참조/capstone-lab.md 5.2) — MCP 서버 설정의 비밀 자리표시자 `${SECRET:KEY}`.
+"""G2 — MCP 서버 설정의 비밀 자리표시자 `${SECRET:KEY}`.
 
-구글처럼 토큰이 필요한 서버를 학생 · 강사가 등록할 때, 설정(tenants.mcp)에는 토큰 대신 자리표시자만 둔다:
+토큰이 필요한 HTTP 서버를 등록할 때 설정(tenants.mcp)에는 토큰 대신 자리표시자만 둔다:
 
   "my-drive": {"type": "url", "url": "https://…/mcp", "headers": {"Authorization": "Bearer ${SECRET:GOOGLE_TOKEN}"}}
 
-값은 별도 칸(public.mcp_secrets, migration 20261009000050)에 두고, 실행 직전에만 채운다 — 연결 검사(mcp_registry.run_check),
-도구 지도 써 보기(mcp_api.spec_of), 승인 뒤 시스템 task(instance_mode.mcp_call), 워커가 에이전트용 .mcp.json 을 쓸 때(bridge.install).
+값은 비밀 값 표(public.mcp_secrets, migration 20261009000050) 한 곳에 두고, 실행 직전에만 채운다 — 연결 검사(mcp_registry.run_check),
+도구 써 보기(mcp_api), 승인 뒤 시스템 task(instance_mode.mcp_call), 워커가 에이전트용 .mcp.json 을 쓸 때(worker bridge).
 값은 어떤 API 응답에도 실리지 않는다(GET 은 이름 · 고친 시각 · 쓰는 서버만). 토큰을 갈아 끼워도 설정 해시(fingerprint)는 그대로라
-연결 검사 도장이 유지된다 — 해시는 자리표시자가 든 설정으로 계산한다.
+연결 검사 도장이 유지된다 — 해시는 자리표시자가 든 설정으로 계산한다. 토큰을 받는 일(외부 계정 로그인 · 갱신)은 하지 않는다 —
+사람이 받은 토큰을 '비밀 값'에 넣고, 만료되면 연결 검사가 401 사유로 실패한다.
 
 참고(같은 모양): ProcessGPT mcp-hub `services/mcp-hub/src/mcp_hub/catalog.py` 115~137행 resolve_template(헤더의 ${SECRET:X} 를
 입력받은 env 로 치환), `gallery/servers.json` 108행("Authorization": "Bearer ${SECRET:GITHUB_TOKEN}"), `conformance.py` 57~63행
 (하드코딩된 시크릿 경고). 다른 점: mcp-hub 는 설치 때 한 번 채워 연결정보에 저장하지만, 여기서는 설정에 자리표시자를 남기고
-실행 때마다 채운다 — "비밀은 설정 · 화면에 남지 않는다"(설계 G2 ①).
+실행 때마다 채운다 — "비밀은 설정 · 화면에 남지 않는다".
 
-자리표시자는 headers 와 env 값에서만 읽는다(mcp-hub 도 headers · env). url · args 안의 자리표시자는 채우지 않고 사유와 함께 거절한다 —
-워커가 실행 뒤 작업 폴더에서 지우는 칸이 env · headers 뿐이라서다(bridge.cleanup).
-
-값 찾는 순서: 비밀 값 표(포털에서 넣음) → 환경 변수 HYD_SECRET_<KEY>(강사가 워커 · process 환경에 직접 둘 때).
-OAuth 동의 · 갱신은 하지 않는다(구글 인증은 사용자가 맡는다) — 토큰이 만료되면 401 사유와 함께 연결 검사가 실패한다.
+자리표시자는 headers 값에서만 읽는다(포털에 등록하는 서버는 HTTP 주소 하나 — mcp_check.normalize). url 안의 자리표시자는 채우지 않고
+사유와 함께 거절한다 — 워커가 실행 뒤 작업 폴더에서 지우는 칸이 headers 뿐이라서다(worker bridge.cleanup).
 """
 from __future__ import annotations
 
-import os
 import re
 from copy import deepcopy
 
 PLACEHOLDER_RE = re.compile(r"\$\{SECRET:([^}]*)\}")
 KEY_RE = re.compile(r"^[A-Z][A-Z0-9_]{0,63}$")
-ENV_PREFIX = "HYD_SECRET_"
-FIELDS = ("headers", "env")                      # 자리표시자를 채우는 칸
+FIELDS = ("headers",)                            # 자리표시자를 채우는 칸
 MAX_VALUE = 8000
-#: 값 전체가 자리표시자(+ 인증 방식 낱말)이면 화면에 그대로 보여도 된다 — 비밀이 아니라 비밀의 이름이다
+#: 값 전체가 자리표시자(+ 인증 방식 낱말)이면 화면 · 파일에 그대로 보여도 된다 — 비밀이 아니라 비밀의 이름이다
 _SCHEMES = ("", "bearer", "basic", "token")
+_CONTROL_RE = re.compile(r"[\x00-\x1f\x7f]")
 
 
 class SecretError(Exception):
@@ -42,11 +39,12 @@ class SecretError(Exception):
 
 
 def valid_key(key: str) -> bool:
-    return bool(KEY_RE.match(str(key or ""))) and not str(key).startswith("HYD_OAUTH_")
+    return bool(KEY_RE.match(str(key or "")))
 
 
 def is_reference_only(value) -> bool:
-    """'${SECRET:X}' · 'Bearer ${SECRET:X}' 처럼 비밀 값이 아니라 비밀 이름만 든 값인가(가리지 않아도 되는가)."""
+    """'${SECRET:X}' · 'Bearer ${SECRET:X}' 처럼 비밀 값이 아니라 비밀 이름만 든 값인가(가리지 않아도 되는가).
+    비밀 판정의 한 곳 — 화면 가림(mcp_check.masked)과 출발본 내보내기(config_bundle)가 같이 쓴다."""
     if not isinstance(value, str) or "${SECRET:" not in value:
         return False
     rest = PLACEHOLDER_RE.sub("", value).strip().lower()
@@ -54,7 +52,7 @@ def is_reference_only(value) -> bool:
 
 
 def references(entry) -> list[str]:
-    """설정 한 칸이 쓰는 비밀 이름(중복 없이, 나온 순서). headers · env 값만 본다."""
+    """설정 한 칸이 쓰는 비밀 이름(중복 없이, 나온 순서). headers 값만 본다."""
     out: list[str] = []
     if not isinstance(entry, dict):
         return out
@@ -70,15 +68,12 @@ def references(entry) -> list[str]:
 
 
 def misplaced(entry) -> list[str]:
-    """headers · env 밖(url · args · command)의 자리표시자, 이름 규칙에 맞지 않는 자리표시자 — 등록 때 사유로 거절한다."""
+    """headers 밖(url)의 자리표시자, 이름 규칙에 맞지 않는 자리표시자 — 등록 때 사유로 거절한다."""
     out: list[str] = []
     if not isinstance(entry, dict):
         return out
-    for field in ("url", "command"):
-        if isinstance(entry.get(field), str) and "${SECRET:" in entry[field]:
-            out.append(f"{field}: 비밀 자리표시자는 headers · env 값에만 쓸 수 있습니다")
-    if any(isinstance(a, str) and "${SECRET:" in a for a in entry.get("args") or []):
-        out.append("args: 비밀 자리표시자는 headers · env 값에만 쓸 수 있습니다 — 서버가 환경 변수로 받게 하세요")
+    if isinstance(entry.get("url"), str) and "${SECRET:" in entry["url"]:
+        out.append("url: 비밀 자리표시자는 접속 헤더 값에만 쓸 수 있습니다")
     for key in references(entry):
         if not valid_key(key):
             out.append(f"${{SECRET:{key}}}: 비밀 이름은 대문자 · 숫자 · 밑줄(_) 64자 이내, 첫 글자는 대문자여야 합니다 (예: GOOGLE_TOKEN)")
@@ -98,11 +93,6 @@ def literal_secrets(entry) -> list[str]:
             if is_secret_key(k) and isinstance(v, str) and v.strip() and "${SECRET:" not in v:
                 out.append(f"{field}.{k}")
     return out
-
-
-def env_values(environ=None) -> dict[str, str]:
-    env = os.environ if environ is None else environ
-    return {k[len(ENV_PREFIX):]: v for k, v in env.items() if k.startswith(ENV_PREFIX) and valid_key(k[len(ENV_PREFIX):]) and v != ""}
 
 
 def resolve(entry: dict, values: dict[str, str] | None) -> tuple[dict, list[str]]:
@@ -134,8 +124,7 @@ def resolve(entry: dict, values: dict[str, str] | None) -> tuple[dict, list[str]
 def missing_reason(name: str | None, missing: list[str]) -> str:
     keys = " · ".join(missing)
     who = f"MCP 서버 '{name}' 에 필요한" if name else "이 서버에 필요한"
-    return (f"{who} 비밀 값 {keys} 이(가) 없습니다 — 포털 MCP 화면의 '비밀 값'에 넣거나 "
-            f"환경 변수 {ENV_PREFIX}<이름> 으로 두세요")
+    return f"{who} 비밀 값 {keys} 이(가) 없습니다 — 도구 연결 화면의 '비밀 값'에 넣은 뒤 다시 하세요"
 
 
 # ---------------------------------------------------------------- 저장소 (public.mcp_secrets)
@@ -163,7 +152,7 @@ class PgSecretStore:
         return [{"key": r["key"], "updated_at": r["updated_at"].isoformat() if hasattr(r["updated_at"], "isoformat") else r["updated_at"],
                  "updated_by": r["updated_by"]} for r in rows]
 
-    def put(self, tenant_id, key, value, by, now) -> None:
+    def put(self, tenant_id, key, value, by) -> None:
         with self.repo._conn() as c:
             self._require(c)
             c.execute("insert into mcp_secrets (tenant_id, key, value, updated_by, updated_at) values (%s, %s, %s, %s, now()) "
@@ -185,35 +174,20 @@ def store_for(repo):
     return PgSecretStore(repo)
 
 
-def load(repo, tenant_id: str, environ=None) -> dict[str, str]:
-    """실행 직전에 채울 값: 환경 변수 HYD_SECRET_* 위에 비밀 값 표를 덮는다(표가 이긴다). 표가 없으면 환경 변수만."""
-    values = env_values(environ)
-    if repo is not None:
-        values.update({k: v for k, v in store_for(repo).values(tenant_id).items() if not k.startswith("HYD_OAUTH_")})
-    return values
+def load(repo, tenant_id: str) -> dict[str, str]:
+    """실행 직전에 채울 값 — 비밀 값 표 하나."""
+    return store_for(repo).values(tenant_id)
 
 
-def runtime_spec(repo, tenant_id: str, name: str, entry: dict, environ=None) -> tuple[dict, list[str]]:
+def runtime_spec(repo, tenant_id: str, name: str, entry: dict) -> tuple[dict, list[str]]:
     """실행 직전 설정: (자리표시자를 채운 사본, 채운 비밀 값들 — 결과 · 오류를 redact 할 때 쓴다).
     값이 없으면 SecretError(422, 사유) — 빈 토큰으로 부르지 않는다. 자리표시자가 없으면 표를 읽지 않는다."""
     keys = references(entry)
-    values = load(repo, tenant_id, environ) if keys else {}
+    values = load(repo, tenant_id) if keys else {}
     resolved, missing = resolve(entry, values)
     if missing:
         raise SecretError(422, missing_reason(name, missing))
-    used = [values[k] for k in keys]
-    if (entry.get("hyd") or {}).get("oauth_connection"):
-        from . import mcp_oauth
-        try:
-            headers = mcp_oauth.access_headers(repo, tenant_id, name, entry, environ)
-        except mcp_oauth.OAuthError as exc:
-            raise SecretError(exc.status, exc.reason) from None
-        resolved = deepcopy(resolved)
-        resolved["headers"] = dict(resolved.get("headers") or {}, **headers)
-        resolved["_oauth_transport"] = True
-        used.extend(OAuthSecret(v) for v in headers.values())
-        used.extend(OAuthSecret(v.removeprefix("Bearer ")) for v in headers.values())
-    return resolved, used
+    return resolved, [values[k] for k in keys]
 
 
 #: 이보다 짧은 값은 가리지 않는다 — 한두 글자 값으로 응답 전체를 망가뜨리지 않게(그런 값은 비밀이라 볼 수 없다)
@@ -221,14 +195,10 @@ REDACT_MIN = 4
 REDACTED = "[비밀 값 가림]"
 
 
-class OAuthSecret(str):
-    """Opaque OAuth/key material is redacted even when unusually short."""
-
-
 def redact(obj, used: list[str]):
     """응답 · 감사 · 검사 기록에 실릴 값에서 실행 때 채운 비밀 값을 지운다. 서버가 토큰을 되돌려 주거나(오류 본문 · 에코 도구)
-    stdio 서버가 stderr 에 환경 변수를 찍어도 값이 화면 · 저장소로 새지 않게 한다."""
-    secrets = sorted({v for v in used or [] if isinstance(v, str) and (len(v) >= REDACT_MIN or isinstance(v, OAuthSecret) and v)}, key=len, reverse=True)
+    오류 문구에 머리글 값이 섞여도 값이 화면 · 저장소로 새지 않게 한다."""
+    secrets = sorted({v for v in used or [] if isinstance(v, str) and len(v) >= REDACT_MIN}, key=len, reverse=True)
     if not secrets:
         return obj
 
@@ -247,38 +217,46 @@ def redact(obj, used: list[str]):
 
 
 # ---------------------------------------------------------------- 동작 (API 가 부른다)
-def overview(repo, tenant_id: str, servers: dict, environ=None) -> dict:
+def overview(repo, tenant_id: str, servers: dict) -> dict:
     """이름 · 고친 시각 · 쓰는 서버 · 값 있음 여부. 값은 싣지 않는다."""
-    stored = {r["key"]: r for r in store_for(repo).keys(tenant_id) if not r["key"].startswith("HYD_OAUTH_")}
-    env = env_values(environ)
+    stored = {r["key"]: r for r in store_for(repo).keys(tenant_id)}
     used: dict[str, list[str]] = {}
     for name, entry in (servers or {}).items():
         for key in references(entry):
             used.setdefault(key, []).append(name)
     keys = sorted(set(stored) | set(used))
-    return {"tenant": tenant_id, "rule": "비밀 값은 저장만 하고 다시 보여 주지 않습니다. 서버 설정의 headers · env 에 ${SECRET:이름} 으로 적으면 "
+    return {"tenant": tenant_id, "rule": "비밀 값은 저장만 하고 다시 보여 주지 않습니다. 서버 설정의 접속 헤더에 ${SECRET:이름} 으로 적으면 "
                                          "연결 검사 · 시스템 task · 에이전트 실행 직전에 채웁니다.",
-            "secrets": [{"key": k, "stored": k in stored, "from_env": k in env and k not in stored,
-                         "updated_at": (stored.get(k) or {}).get("updated_at"), "updated_by": (stored.get(k) or {}).get("updated_by"),
-                         "used_by": used.get(k, []), "missing": k not in stored and k not in env} for k in keys]}
+            "secrets": [{"key": k, "stored": k in stored, "updated_at": (stored.get(k) or {}).get("updated_at"),
+                         "updated_by": (stored.get(k) or {}).get("updated_by"), "used_by": used.get(k, []), "missing": k not in stored}
+                        for k in keys]}
+
+
+def check_value(value) -> str:
+    """넣을 비밀 값 하나의 검사 → 저장할 값. 줄바꿈 · 탭 같은 제어 문자는 받지 않는다 — 머리글 값이 되면 요청이 깨지고,
+    그 실패 문구에 값이 그대로 실릴 수 있다(앞뒤 공백 · 줄바꿈은 지운다)."""
+    if not isinstance(value, str) or not value.strip():
+        raise SecretError(422, "value: 비밀 값이 비었습니다")
+    value = value.strip()
+    if len(value) > MAX_VALUE:
+        raise SecretError(422, f"value: {MAX_VALUE}자 이하여야 합니다")
+    if "${SECRET:" in value:
+        raise SecretError(422, "value: 비밀 값 안에 다른 자리표시자를 쓸 수 없습니다")
+    if _CONTROL_RE.search(value):
+        raise SecretError(422, "value: 값 가운데에 줄바꿈 · 탭 같은 보이지 않는 글자가 섞여 있습니다 — 토큰을 한 줄로 다시 복사해 넣으세요")
+    return value
 
 
 def put(repo, tenant_id: str, key: str, value, by: str, now: str) -> dict:
     if not valid_key(key):
         raise SecretError(422, "key: 대문자 · 숫자 · 밑줄(_) 64자 이내, 첫 글자는 대문자여야 합니다 (예: GOOGLE_TOKEN)")
-    if not isinstance(value, str) or not value.strip():
-        raise SecretError(422, "value: 비밀 값이 비었습니다")
-    if len(value) > MAX_VALUE:
-        raise SecretError(422, f"value: {MAX_VALUE}자 이하여야 합니다")
-    if "${SECRET:" in value:
-        raise SecretError(422, "value: 비밀 값 안에 다른 자리표시자를 쓸 수 없습니다")
-    store_for(repo).put(tenant_id, key, value.strip(), by, now)
+    store_for(repo).put(tenant_id, key, check_value(value), by)
     return {"key": key, "stored": True, "updated_by": by, "updated_at": now}
 
 
 def remove(repo, tenant_id: str, key: str) -> dict:
     if not valid_key(key):
-        raise SecretError(422, "이 비밀 이름은 연결 서비스에서 관리합니다.")
+        raise SecretError(422, "key: 대문자 · 숫자 · 밑줄(_) 64자 이내, 첫 글자는 대문자여야 합니다 (예: GOOGLE_TOKEN)")
     if not store_for(repo).delete(tenant_id, key):
         raise SecretError(404, f"비밀 값 '{key}' 가 없습니다")
     return {"key": key, "deleted": True}

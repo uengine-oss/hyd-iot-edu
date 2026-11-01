@@ -11,8 +11,11 @@
     기준 흐름의 `unsupported` → 사람 검토(alert_triage). 작동유 흐름은 학생이 만든다(정답을 박지 않음).
   - B3 흐름 가져오기의 "경보 시작" 패턴 목록에 이 패턴을 보탠다(`policy_patterns`). 회복 기준(재관측 기준)은 아래 계약 그대로.
 
-사람 입력 패턴은 이 표에만 있다(감지기 패턴의 회복 기준 `definition.RECOVERY` 처럼 명시 계약). 표의 지식 id · 입력 변수는 시드
-`it/neo4j/v2/knowledge_a098.cypher` 와 시험으로 대조한다(tests/test_b7_oil.py).
+사람 입력 패턴은 이 표에만 있다(흐름 정의 alertPolicy 에 들어갈 명시 계약). 표의 지식 id · 입력 변수는 시드
+`it/neo4j/v2/instances.cypher`(이상 패턴 · 입력 절)의 것이다(workspace/개발/tests/test_human_alert.py 가 실제 시드 그래프와 대조한다).
+
+같은 설비 · 같은 종류의 사람 입력 경보가 아직 처리 중이면(사건이 끝나지 않음) 새 입력은 거절한다(409) — 수업 버튼의 「진행 중이면 거절」과 같은
+규칙. 두 사람이 같은 이상을 입력해 처리 건 · 사건이 둘 생기지 않게 한다.
 """
 from __future__ import annotations
 
@@ -98,8 +101,8 @@ def build_alert(body: dict, now: datetime | None = None) -> tuple[dict | None, s
     role = _text(body, "role", "입력자 역할", 120, required=False) or None
     memo = _text(body, "memo", "메모", 2000, required=False)
     if not out_of_spec:
-        return None, (f"{item['text']} 이(가) 기준 안이라 경보를 만들지 않았습니다 — 지식의 패턴 검사(오일 분석 결과 기준 이탈 == 예)를 "
-                      "충족하지 않습니다. 처리 건은 열리지 않습니다")
+        return None, (f"{item['text']}이(가) 기준 안이라 경보를 만들지 않았습니다 — 기준 이탈을 「예」로 고른 입력만 경보가 됩니다. "
+                      "처리 건은 열리지 않습니다")
     clock = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
     t = clock.isoformat(timespec="milliseconds").replace("+00:00", "Z")
     alert_id = f"{asset}-{code}-H{clock.strftime('%Y%m%d%H%M%S')}-{secrets.token_hex(2)}"
@@ -147,6 +150,15 @@ def register(app, *, runtime_factory, admit, open_alerts=lambda: [], audit=lambd
         except ValueError as e:
             raise HTTPException(400, str(e)) from e
         loop = asyncio.get_running_loop()
+        if alert is not None:
+            # 같은 설비 · 같은 종류의 사람 입력 경보로 연 처리 건이 아직 진행 중인가(대응 흐름이든 사람 검토든 — 사람 검토는 사건이 없어 처리 건으로 본다)
+            from . import engine
+            running = await loop.run_in_executor(None, lambda: rt.repo.list_instances("RUNNING", None, rt.tenant_id, asset=alert["asset"]))
+            busy = next((i for i in running if is_human_alert(engine.variables(i).get("alert"))
+                         and engine.variables(i)["alert"].get("pattern") == alert["pattern"]), None)
+            if busy is not None:
+                raise HTTPException(409, f"{alert['asset']}의 {PATTERNS[alert['pattern']]['name']} 처리 건이 아직 진행 중입니다 — 같은 이상을 다시 "
+                                         "입력하지 않습니다. 처리 건 화면에서 그 처리 건을 끝낸 뒤 새 결과를 입력하세요")
         if alert is None:
             await loop.run_in_executor(None, lambda: audit(body.get("asset") or "-", str(body.get("by") or "-"), "HUMAN_INPUT_IN_SPEC",
                                                            {"pattern": body.get("pattern"), "item": body.get("item"), "reason": reason}))

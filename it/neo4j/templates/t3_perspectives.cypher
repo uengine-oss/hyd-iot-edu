@@ -1,4 +1,4 @@
-// T3-p (B5 What-if 관점 중요도): BSC 관점과 그 관점에 속한 성과 지표. 읽기만.
+// T3-p — BSC 관점과 그 관점에 속한 성과 지표(What-if의 관점 중요도). 읽기만.
 // Measure -MEASURES-> Objective -IN_PERSPECTIVE-> Perspective
 MATCH (p:Perspective)
 OPTIONAL MATCH (m:Measure)-[:MEASURES]->(:Objective)-[:IN_PERSPECTIVE]->(p)

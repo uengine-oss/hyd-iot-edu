@@ -1,7 +1,17 @@
-"""Source-declared PM applicability and cadence, separate from alert generations."""
+"""Source-declared PM applicability and cadence, separate from alert generations.
+
+Generic over PM documents: a policy is the base interval and tolerance, the same-model assets and one or more packages whose
+intervals are whole multiples of the base interval (the smallest one is the base interval) and whose parts include every
+smaller package's parts — the cumulative structure service() relies on when it picks the largest package due. No part
+name, package count or interval ratio of one document is required (a PBL document with other parts or packages loads too).
+The bundle staffing requirement is the source's compliance rule (crew_required), not a constant here.
+"""
 from copy import deepcopy
 import json
 import math
+
+PM_PATTERN = 'PM_DUE'                    # the business alert that starts a PM decision (business_monitor · scenario B)
+CREW_VARIABLE = 'pm_crew_available'      # InputData in:pm-crew — the crew at the target window
 
 
 def consistent_packages(procedures):
@@ -49,12 +59,15 @@ def policy(value):
         if not isinstance(value.get(key),dict) or not value[key].get('quote'):
             raise ValueError('정비 주기와 동일 모델 적용 범위의 원문 인용이 필요합니다')
     packages=value.get('packages')
-    if not isinstance(packages,list) or len(packages)!=3:
-        raise ValueError('원문 2천/4천/8천 시간 패키지 세 개를 모두 명시하세요')
+    if not isinstance(packages,list) or not packages:
+        raise ValueError('원문 정비 패키지를 하나 이상 명시하세요')
     periods=[]
     for package in packages:
         if not isinstance(package,dict) or type(package.get('interval_h')) not in (int,float) or not package.get('sop') or not package.get('name'):
             raise ValueError('패키지 간격·원문 SOP·이름이 필요합니다')
+        ratio=package['interval_h']/value['interval_h']
+        if not math.isfinite(ratio) or ratio<1 or not math.isclose(ratio,round(ratio),abs_tol=1e-9):
+            raise ValueError(f"패키지 {package['name']}의 간격 {package['interval_h']} h가 기본 정비 간격 {value['interval_h']} h의 정수배가 아닙니다")
         periods.append(package['interval_h'])
         parts=package.get('parts')
         if not isinstance(parts,list) or not parts or len({p.get('part_no') or ('source',p.get('name')) for p in parts if isinstance(p,dict)}) != len(parts):
@@ -69,21 +82,27 @@ def policy(value):
                 raise ValueError('원문 부품과 실제 부품 번호의 명시 연결이 필요합니다')
             if part.get('qty') is not None and (type(part['qty']) not in (int,float) or not math.isfinite(part['qty']) or part['qty']<=0):
                 raise ValueError('부품 수량은 원문에서 확인된 양수 또는 미상 null입니다')
-    if sorted(periods) != [value['interval_h'],value['interval_h']*2,value['interval_h']*4]:
-        raise ValueError('패키지 주기와 기본 정비 간격이 일치하지 않습니다')
+    if len(set(periods))!=len(periods) or min(periods)!=value['interval_h']:
+        raise ValueError('패키지 간격이 겹치거나 가장 짧은 패키지가 기본 정비 간격과 다릅니다')
     ordered=sorted(packages,key=lambda p:p['interval_h'])
-    required_names={'펌프 축 씰 키트','리턴 필터 엘리먼트'}
-    if not required_names <= {p.get('name') for p in ordered[0]['parts']}:
-        raise ValueError('원문 기본 패키지의 씰 키트와 리턴 필터 범위를 모두 보존하세요')
     previous={(p.get('part_no'),p.get('name'),p.get('qty')) for p in ordered[0]['parts']}
     for package in ordered[1:]:
         current={(p.get('part_no'),p.get('name'),p.get('qty')) for p in package['parts']}
         if not previous <= current:
             raise ValueError('큰 원문 패키지는 작은 패키지의 모든 부품 범위를 포함해야 합니다')
         previous=current
-    if not any(p.get('name')=='작동유' for p in ordered[-1]['parts']):
-        raise ValueError('8천 시간 원문 패키지의 작동유를 미상 수량이라도 보존하세요')
     return deepcopy(value)
+
+
+def crew_required(rules, skill_id):
+    """The crew a bundle needs, from the source's compliance rule that applies to this SOP (PM-02: two units bundled need N
+    maintenance people -> a rule testing pm_crew_available < N). None when no such rule applies; two values are an error."""
+    found = {t['value'] for r in rules or [] if not r.get('applies') or skill_id in r['applies'] for t in r.get('tests') or []
+             if t.get('variable') == CREW_VARIABLE and t.get('operator') == '<'
+             and type(t.get('value')) in (int, float) and t['value'] > 0}
+    if len(found) > 1:
+        raise ValueError(f'{skill_id}: 정비 인원 기준 규칙이 서로 다른 값({sorted(found)})으로 둘 이상입니다')
+    return next(iter(found)) if found else None
 
 
 def service(row,contract):
@@ -108,7 +127,8 @@ def service(row,contract):
                 package_sop=package['sop'],package_name=package['name']),package
 
 
-def scope(contract,context,asset,window):
+def scope(contract,context,asset,window,crew_required=None):
+    """The real execution scope of one PM decision. A bundle needs crew_required (the source rule's crew)."""
     rows=context.get('records');stock=context.get('parts')
     def fail(message):
         observed=[]
@@ -202,8 +222,12 @@ def scope(contract,context,asset,window):
             issues.append('원문 패키지 전체 부품 가용 재고가 부족합니다: '+str(parts_by_no[part_no].get('name') or part_no))
         if contract['stock_effect']=='issue' and parts_by_no[part_no]['on_hand']-parts_by_no[part_no]['reserved']<quantity:
             issues.append('원문 패키지의 실제 출고 가능한 실물 재고가 부족합니다: '+str(parts_by_no[part_no].get('name') or part_no))
-    observed_crews=[by_asset[code].get('pm_crew_available') for code in selected]
-    required=4 if len(selected)==2 else None
+    observed_crews=[by_asset[code].get(CREW_VARIABLE) for code in selected]
+    required=None
+    if len(selected)==2:
+        if type(crew_required) not in (int,float) or crew_required<=0:
+            fail('묶음 정비에 필요한 정비 인원(원문 규칙의 정비 인원 기준)을 지식에서 찾지 못했습니다')
+        required=crew_required
     if any(type(crew) not in (int,float) or not math.isfinite(crew) or crew<0 for crew in observed_crews):
         fail('실제 목표 정비 창의 정비 인원을 확인할 수 없습니다')
     crew=min(observed_crews)

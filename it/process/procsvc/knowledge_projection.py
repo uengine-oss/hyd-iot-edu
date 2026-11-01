@@ -1,7 +1,7 @@
 """Reconcile graph joins after knowledge changes without replaying business work.
 
 The inventory covers lookup keys used by case/execution projections, including
-physical node identity and Process/HAS_NODE membership. Projection-owned nodes
+physical node identity (Asset · AnomalyPattern · Cause · Decision · Skill · Role · System · Process). Projection-owned nodes
 are excluded so reconciliation cannot trigger itself forever. This is eventual
 join repair, not a new diagnosis, approval, or graph-backup recovery protocol.
 """
@@ -16,10 +16,6 @@ MATCH (n) WHERE n:Asset OR n:AnomalyPattern OR n:Cause OR n:Decision OR n:Skill 
 RETURN 'node' AS kind, elementId(n) AS identity, n.id AS id,n.code AS code,
        [label IN labels(n) WHERE label IN ['Asset','AnomalyPattern','Cause','Decision','Skill','Role','System','Process']] AS labels,
        null AS source,null AS target
-UNION ALL
-MATCH (p:Process)-[r:HAS_NODE]->(n:FlowNode)
-RETURN 'membership' AS kind,elementId(r) AS identity,n.id AS id,null AS code,
-       [] AS labels,elementId(p) AS source,elementId(n) AS target
 '''
 
 
@@ -30,9 +26,10 @@ def digest(rows):
 
 
 class KnowledgeReconciler:
-    def __init__(self,store,query,tenant,repo=None,interval=15):
+    def __init__(self,store,query,tenant,repo,interval=15):
+        # repo = 처리 건 저장소(PgRepo — 실행 그래프 반영 대기열). key 는 SQLite 검사점 이름이라 저장된 값과 같게 둔다
         self.store,self.query,self.tenant,self.repo=store,query,tenant,repo
-        self.key=tenant+(':instance' if repo is not None else ':legacy')
+        self.key=tenant+':instance'
         self.interval=interval;self.next_check=0;self.last_checked=None;self.last_error=None;self.observed=None
 
     def status(self):
@@ -52,7 +49,7 @@ class KnowledgeReconciler:
             if old and old['digest']==self.observed:
                 self.last_error=None
                 return False
-            if self.repo is not None:self.repo.enqueue_knowledge_projections(self.tenant)
+            self.repo.enqueue_knowledge_projections(self.tenant)
             self.store.enqueue_knowledge_cases(self.key,self.observed)
             self.last_error=None
             return True

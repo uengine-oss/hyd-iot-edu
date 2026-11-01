@@ -5,6 +5,7 @@ never rewinds a business record, issues a command, resets a graph fence, or mark
 a delivery complete. The ordinary projector must still return an exact receipt.
 """
 import argparse
+from contextlib import contextmanager
 import json
 import os
 from pathlib import Path
@@ -107,10 +108,18 @@ def execution_drift(source,graph):
     return out
 
 
+@contextmanager
+def source_snapshot(repo):
+    """원천(처리 건 · 작업 행 · 반영 대기열)을 한 시점으로 읽는 연결 하나 — 트랜잭션 안의 repeatable read(P5-25: autocommit 연결에서
+    `set transaction` 은 경고만 남기고 문장마다 따로 읽었다). 조회(inspect_execution)와 적용(repair_execution)이 같은 규칙이다."""
+    with repo._psycopg.connect(repo.dsn,autocommit=True,connect_timeout=5,row_factory=repo._dict_row) as c,c.transaction():
+        c.execute('set transaction isolation level repeatable read')
+        yield c
+
+
 def inspect_execution(repo,query,tenant,pid):
     if getattr(repo._local,'connection',None) is not None:raise RuntimeError('inspect projection outside business transactions')
-    with repo._conn() as c:
-        c.execute('set transaction isolation level repeatable read')
+    with source_snapshot(repo) as c:
         source=execution_source(repo,c,tenant,pid)
         pending=c.execute('select id,revision,attempts,last_error from execution_projection_outbox where tenant_id=%s and proc_inst_id=%s and processed_at is null order by id',(tenant,pid)).fetchall()
     source=json.loads(json.dumps(source,default=str))
@@ -212,10 +221,10 @@ def main():
     ap.add_argument('--id');ap.add_argument('--tenant',default=os.getenv('TENANT_ID','hyd'))
     ap.add_argument('--file',type=Path,required=True);ap.add_argument('--by');ap.add_argument('--reason');ap.add_argument('--request-id')
     args=ap.parse_args()
-    from .main import _kg
+    from hydcommon import graphdb
     from .procdb import PgRepo
     from .store import Store
-    with _kg() as driver:
+    with graphdb.connect() as driver:
         def q(query,**params):
             with driver.session() as session:return session.execute_write(lambda tx:tx.run(query,**params).data())
         plan=json.loads(args.file.read_text(encoding='utf8')) if args.mode=='apply' else None

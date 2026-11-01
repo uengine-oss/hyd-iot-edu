@@ -2,10 +2,11 @@ groups:
   - name: platform
     rules:
       - alert: IngestStalled
-        expr: ingest_last_event_age_seconds > 30
+        # -1 = no OT message accepted since connect-ingest started (ingest_last_event_age_seconds) — that is stalled too
+        expr: ingest_last_event_age_seconds > 30 or ingest_last_event_age_seconds == -1
         for: 30s
         labels: { severity: warning }
-        annotations: { summary: "connect-ingest has not seen an OT message for 30 s (v3 M4: 수집 지연 경보)" }
+        annotations: { summary: "connect-ingest has not accepted an OT message for 30 s (v3 M4: 수집 지연 경보)" }
       - alert: GatewayRejections
         expr: increase(gateway_decisions_total{result="REJECT"}[5m]) > 3
         labels: { severity: warning }

@@ -20,6 +20,7 @@ import json
 import logging
 import re
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 log = logging.getLogger('procsvc.course_ledger')
@@ -60,10 +61,11 @@ REASONS = {
     'relay_config': Reason('이 PC에 강의 중계 설정(.env의 LLM_API_KEY)이 없어 실제 AI를 부를 수 없습니다. 키를 넣고 시작.bat을 다시 실행하세요.', 503, False),
     'relay_auth': Reason('강의 중계가 이 PC의 키를 받지 않습니다(틀렸거나 만료). .env의 LLM_API_KEY가 수업에서 받은 키와 같은지 확인하고 '
                          '시작.bat을 다시 실행하세요.', 502, False),
-    'relay_budget': Reason('강의 중계 키의 사용 한도를 다 썼습니다. 강사에게 알려 주세요.', 429, False),
+    'relay_budget': Reason('강의 중계의 AI 사용 한도(이 키의 한도 또는 중계 쪽 모델 계정의 잔액)를 다 썼습니다. 강사에게 알려 주세요.', 429, False),
     'relay_model': Reason('강의 중계가 수업 모델을 받지 않습니다. 강사에게 알려 주세요.', 502, False),
     'relay_busy': Reason('강의 중계가 지금 붐벼 요청을 받지 못했습니다. 1분쯤 뒤 이 단계를 다시 실행하세요.', 429, True),
     'relay_rejected': Reason('강의 중계가 이 요청을 받지 않았습니다. 처리 과정을 강사에게 보여 주세요.', 502, False),
+    'relay_empty': Reason('강의 중계가 AI 답 없이 빈 응답을 보냈습니다(중계 쪽 모델 계정 문제). 다시 실행해도 같으니 강사에게 알려 주세요.', 502, False),
     'relay_failed': Reason('강의 중계에 닿지 못했거나 중계가 응답을 끝내지 못했습니다. 잠시 뒤 다시 실행하고, 계속되면 강사에게 알려 주세요.', 502, True),
 }
 _CODE = re.compile(r'\[HYD:([a-z_]+)\]')
@@ -96,9 +98,11 @@ def digest(value) -> str:
 
 
 class CourseLedger:
-    def __init__(self, connect, policy: dict = POLICY):
+    def __init__(self, connect, policy: dict = POLICY, clock=None):
         # connect() → psycopg 연결(dict_row). 연결 하나 = 거래 하나(with 블록이 끝나면 커밋).
+        # clock() → 지금(시간대 있는 datetime). 실행 기한 · 임대 판정은 모두 이 시계 하나로 잰다(DB 시각 함수를 섞지 않는다) — 기본은 벽시계
         self.connect, self.policy = connect, policy
+        self.clock = clock or (lambda: datetime.now(timezone.utc))
 
     # ---- 계정(PC의 테넌트 하나)
     def _account(self, db, tenant: str) -> dict:
@@ -112,16 +116,16 @@ class CourseLedger:
             db.execute('UPDATE hyd_course_grants SET policy=%s WHERE account=%s', (Jsonb(self.policy), tenant))
         return row
 
-    def _close_ended(self, db, tenant: str) -> None:
+    def _close_ended(self, db, tenant: str, now: datetime) -> None:
         """작업 행이 더는 그 점유가 아니면 실행을 닫는다: 점유가 끝남 → ENDED, 실행 기한이 지났거나 임대가 끊김(워커가 끝을 못 씀) → EXPIRED."""
         db.execute('''WITH held AS (
-                SELECT r.id, r.deadline <= now() AS late,
+                SELECT r.id, r.deadline <= %(now)s AS late,
                        coalesce(w.consumer = r.consumer AND w.status = 'IN_PROGRESS' AND w.draft_status = 'STARTED', false) AS owned,
-                       coalesce(w.lease_until > now(), false) AS leased
+                       coalesce(w.lease_until > %(now)s, false) AS leased
                 FROM hyd_course_runs r LEFT JOIN todolist w ON w.id::text = r.todo_id
-                WHERE r.account = %s AND r.state = 'OPEN')
+                WHERE r.account = %(tenant)s AND r.state = 'OPEN')
             UPDATE hyd_course_runs r SET state = CASE WHEN h.late OR (h.owned AND NOT h.leased) THEN 'EXPIRED' ELSE 'ENDED' END
-            FROM held h WHERE r.id = h.id AND (h.late OR NOT h.owned OR NOT h.leased)''', (tenant,))
+            FROM held h WHERE r.id = h.id AND (h.late OR NOT h.owned OR NOT h.leased)''', {'now': now, 'tenant': tenant})
 
     def _task_use(self, db, tenant: str, todo_id: str) -> dict:
         return db.execute('''SELECT coalesce(sum(calls),0) AS calls, coalesce(sum(input_bytes),0) AS input_bytes,
@@ -133,11 +137,12 @@ class CourseLedger:
         """지금 점유(row — worker_credentials._claim 이 확인한 살아 있는 점유)의 실행. 같은 점유면 같은 실행, 새 점유면 새 실행.
         → {run_id, model, deadline(epoch)}. 거절은 Denied."""
         todo_id, consumer = str(row['id']), str(row['consumer'])
+        now = self.clock()
         with self.connect() as db:
             grant = self._account(db, tenant)
-            self._close_ended(db, tenant)
-            run = db.execute('SELECT *, deadline > now() AS active FROM hyd_course_runs WHERE account=%s AND todo_id=%s AND consumer=%s',
-                             (tenant, todo_id, consumer)).fetchone()
+            self._close_ended(db, tenant, now)
+            run = db.execute('SELECT *, deadline > %s AS active FROM hyd_course_runs WHERE account=%s AND todo_id=%s AND consumer=%s',
+                             (now, tenant, todo_id, consumer)).fetchone()
             if run:
                 if run['state'] != 'OPEN':
                     raise Denied('run_time' if not run['active'] else 'claim_ended')
@@ -150,17 +155,19 @@ class CourseLedger:
             live = db.execute("SELECT count(*) AS n FROM hyd_course_runs WHERE account=%s AND state='OPEN'", (tenant,)).fetchone()['n']
             if live >= self.policy['max_concurrency']:
                 raise Denied('concurrent')
-            run = db.execute('''INSERT INTO hyd_course_runs(id,account,todo_id,generation,consumer,state,deadline)
-                VALUES (%s,%s,%s,%s,%s,'OPEN',now() + %s * interval '1 second') RETURNING *, true AS active''',
-                (uuid4(), tenant, todo_id, int(row.get('generation') or 0), consumer, self.policy['run']['seconds'])).fetchone()
+            run = db.execute('''INSERT INTO hyd_course_runs(id,account,todo_id,generation,consumer,state,created_at,deadline)
+                VALUES (%s,%s,%s,%s,%s,'OPEN',%s,%s) RETURNING *, true AS active''',
+                (uuid4(), tenant, todo_id, int(row.get('generation') or 0), consumer, now,
+                 now + timedelta(seconds=self.policy['run']['seconds']))).fetchone()
             return self._view(run)
 
     def end(self, tenant: str, todo_id: str, consumer: str) -> int:
         """워커가 그 점유를 끝냈다(결과 제출 · 실패 · 사람 대기 · 보류 · 취소 — 끝 상태를 작업 행에 쓴 뒤). 워커가 끝을 알리지 못하고 죽어도
         _close_ended 가 작업 행으로 닫는다."""
         with self.connect() as db:
-            return len(db.execute('''UPDATE hyd_course_runs SET state = CASE WHEN deadline <= now() THEN 'EXPIRED' ELSE 'ENDED' END
-                WHERE account=%s AND todo_id=%s AND consumer=%s AND state='OPEN' RETURNING id''', (tenant, str(todo_id), str(consumer))).fetchall())
+            return len(db.execute('''UPDATE hyd_course_runs SET state = CASE WHEN deadline <= %s THEN 'EXPIRED' ELSE 'ENDED' END
+                WHERE account=%s AND todo_id=%s AND consumer=%s AND state='OPEN' RETURNING id''',
+                (self.clock(), tenant, str(todo_id), str(consumer))).fetchall())
 
     def _view(self, run) -> dict:
         return dict(run_id=str(run['id']), model=self.policy['model'], deadline=run['deadline'].timestamp())
@@ -176,7 +183,7 @@ class CourseLedger:
                 raise Denied('token')
             tenant = owner['account']
             grant = self._account(db, tenant)       # 계정 행을 먼저 잠근다(open_run 과 같은 순서)
-            run = db.execute('SELECT *, deadline > now() AS active FROM hyd_course_runs WHERE id=%s FOR UPDATE', (run_id,)).fetchone()
+            run = db.execute('SELECT *, deadline > %s AS active FROM hyd_course_runs WHERE id=%s FOR UPDATE', (self.clock(), run_id)).fetchone()
             if run['todo_id'] != str(todo_id) or run['consumer'] != str(consumer):
                 raise Denied('claim_ended')
             if run['state'] != 'OPEN' or not run['active']:

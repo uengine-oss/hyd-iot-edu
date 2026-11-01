@@ -15,35 +15,25 @@ BLOCK_SUFFIXES = ("_DSN", "_PASSWORD", "_SECRET", "_SERVICE_KEY",
                   # A114 (A113 r14 A5; deepagents 10-06 now passes only TENANT_ID into its sandbox): tokens and API keys
                   # of other services (GH_TOKEN, LLM_API_KEY of the internal narrative model …) are not the CLI's business
                   "_TOKEN", "_API_KEY", "_ACCESS_KEY", "_PRIVATE_KEY")
-def secret_keys(environ, block=DEFAULT_BLOCK, suffixes=BLOCK_SUFFIXES) -> list[str]:
-    """Which keys of `environ` must not reach a child process (explicit names plus credential-looking suffixes)."""
+#: 이름이 비밀을 말하는 변수(HYD_SECRET_<이름>) — 예전에는 도구 서버 비밀 값을 여기서 받아 채웠고 그 길은 지웠다(비밀 값 원천은 비밀 값 표
+#: 하나, procsvc/mcp_secrets). 강사가 아직 이 이름으로 값을 두었어도 CLI 에는 넘기지 않는다.
+BLOCK_PREFIXES = ("HYD_SECRET_",)
+
+
+def secret_keys(environ, block=DEFAULT_BLOCK, suffixes=BLOCK_SUFFIXES, prefixes=BLOCK_PREFIXES) -> list[str]:
+    """Which keys of `environ` must not reach a child process (explicit names plus credential-looking suffixes · prefixes)."""
     out = []
     for k in environ:
         up = k.upper()
-        if up in block or any(up.endswith(s) for s in suffixes):
+        if up in block or any(up.endswith(s) for s in suffixes) or any(up.startswith(p) for p in prefixes):
             out.append(k)
     return sorted(out)
-
-
-#: G2 (capstone): values for MCP `${SECRET:KEY}` placeholders the lecturer put in the worker's environment as HYD_SECRET_<KEY>.
-#: They are held here and removed from the environment like every other secret — bridge.install writes them only into the
-#: run's .mcp.json headers/env (cleared after the run), never into the CLI's environment.
-SECRET_PREFIX = "HYD_SECRET_"
-_HELD: dict[str, str] = {}
-
-
-def held_secrets() -> dict[str, str]:
-    """HYD_SECRET_* values scrub() took out of the environment (name with the prefix -> value)."""
-    return dict(_HELD)
 
 
 def scrub(environ=None) -> list[str]:
     """Remove the secret keys from the process environment (default: os.environ). Returns what was removed."""
     env = os.environ if environ is None else environ
-    held = sorted(k for k in env if k.upper().startswith(SECRET_PREFIX))
-    removed = sorted(set(secret_keys(env)) | set(held))
+    removed = secret_keys(env)
     for k in removed:
-        if k in held:
-            _HELD[k] = env[k]
         del env[k]
     return removed

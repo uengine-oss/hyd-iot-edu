@@ -125,8 +125,15 @@ def sample_rows(text: str, tables) -> dict:
             continue
         target = tree.this
         table = target.this if isinstance(target, exp.Schema) else target
-        schema = identifier(table.args['db']) if table.args.get('db') else 'public'
-        key = (schema, identifier(table.this))
+        name = identifier(table.this)
+        if table.args.get('db'):
+            schema = identifier(table.args['db'])
+        else:   # 같은 덤프의 이름 없는 INSERT 는 이름 없는 CREATE 와 같은 스키마(연결의 search_path — ingest.parse_ddl default_schema)
+            same = [s for s, n in known if n == name]
+            if len(same) > 1:
+                raise ValueError(f'스키마 없는 INSERT 대상이 여러 스키마에 있습니다: {display_identifier(name)} ({", ".join(sorted(same))})')
+            schema = same[0] if same else 'public'
+        key = (schema, name)
         if key not in known:
             notes.append(f'정의가 없는 테이블의 INSERT는 건너뜀: {display_identifier(key[1])}')
             continue

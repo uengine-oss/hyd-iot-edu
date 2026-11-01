@@ -79,10 +79,9 @@
     }, 1500);
   }
   async function reset() {
-    const ok = UI.confirm ? await UI.confirm({ title: '지난 질문 기록 지우기', body: '끝난 질문 기록을 목록에서 지웁니다. 질문 정의 · 에이전트 · 업무 DB · 지식은 그대로입니다.', danger: true })
-      : window.confirm('끝난 질문 기록을 지울까요?');
+    const ok = await UI.confirm({ title: '지난 질문 기록 지우기', body: '끝난 질문 기록을 목록에서 지웁니다. 질문 정의 · 에이전트 · 업무 DB · 지식은 그대로입니다.', danger: true });
     if (!ok) return;
-    try { const r = await postJ(api('/reset'), {}); UI.toast && UI.toast(r.note, { tone: 'pos' }); if (A.cur && A.cur.state === 'done') A.cur = null; }
+    try { const r = await postJ(api('/reset'), {}); UI.toast(r.note, { tone: 'ok' }); if (A.cur && A.cur.state === 'done') A.cur = null; }
     catch (e) { A.err = '지우지 못했습니다: ' + e.message; }
     await loadHistory(); render();
   }
@@ -96,8 +95,8 @@
     if (A.statusErr) return `<p class="neg" role="status">질문 기능 상태를 읽지 못했습니다: ${esc(A.statusErr)}</p>`;
     const s = A.status;
     if (!s) return '<p class="muted">상태를 확인하는 중…</p>';
-    if (s.ready) return replay() ? UI.chipText('강사가 저장한 답 재생', 'neutral') : `<span class="live-conn on">답할 일꾼 연결됨</span>`;
-    return `<div class="ask-warn" role="status">${UI.chipText('지금은 답할 일꾼이 없습니다', 'warning')} <span>${esc(s.reason || '')}</span></div>`;
+    if (s.ready) return replay() ? UI.chipText('강사가 저장한 답 재생', 'neutral') : `<span class="live-conn on">답할 AI 일꾼 연결됨</span>`;
+    return `<div class="ask-warn" role="status">${UI.chipText('지금은 답할 AI 일꾼이 없습니다', 'warning')} <span>${esc(s.reason || '')}</span></div>`;
   }
   function agentOptions() {
     return A.agents.map(a => `<option value="${esc(a.id)}" ${a.id === A.agent ? 'selected' : ''}>${esc(a.name)}${a.default ? ' (기본)' : a.mine ? ' (내가 만든 것)' : ''}</option>`).join('');
@@ -105,11 +104,12 @@
   function agentLine() {
     const a = A.agents.find(x => x.id === A.agent);
     if (!a) return '';
-    // 에이전트의 도구는 서버 이름이다(neo4j · hyd-dmn · 학생 서버) — 도구 id 용 UI.toolName 은 「도구 표시 이름 미등록」을 보였다(2026-10-25 수업 한 바퀴).
-    // 기본 서버는 사람 이름으로, 학생이 지은 서버 이름은 그대로 보인다
+    // 질문에 실제로 연결하는 도구 서버(서버 계산 a.servers — 질문용 조회 도구가 있는 서버만, 워커와 같은 규칙)와 질문에는 쓰지 않는 서버(a.left_out)
     const serverLabel = t => hydWords.serverName(t);
-    const tools = a.tools.length ? a.tools.map(t => UI.chipText(serverLabel(t), 'neutral')).join(' ') : UI.chipText('도구 전부', 'neutral');
-    return `<p class="field-hint">${esc(a.goal || a.role || '')}</p><div class="row-wrap ask-tools">${tools}${a.skills.length ? ' ' + a.skills.map(x => UI.chipText(x, 'accent')).join(' ') : ''}</div>`;
+    const tools = a.servers.length ? a.servers.map(t => UI.chipText(serverLabel(t), 'neutral')).join(' ') : UI.chipText('질문에 쓸 도구 서버 없음', 'warning');
+    const out = a.left_out.length ? `<p class="field-hint">질문에는 쓰지 않는 도구 서버(질문용 조회 도구가 없음): ${a.left_out.map(t => esc(serverLabel(t))).join(', ')}</p>` : '';
+    const recorded = replay() ? '<p class="field-hint">이 PC는 키가 없어, 고른 에이전트 · 붙인 스킬과 관계없이 강사가 저장한 답을 보여 줍니다.</p>' : '';
+    return `<p class="field-hint">${esc(a.goal || a.role || '')}</p><div class="row-wrap ask-tools">${tools}${a.skills.length ? ' ' + a.skills.map(x => UI.chipText(x, 'accent')).join(' ') : ''}</div>${out}${recorded}`;
   }
   function resultHtml(v) {
     const r = v.result;
@@ -172,7 +172,7 @@
           <span class="muted">${esc(UI.clean(v.message || ''))}</span><span class="ask-count">${window.hydTrace ? hydTrace.icon('tool') : ''}${calls.length}</span></div>
         <details class="fold small ask-process" ${live || A.processOpen ? 'open' : ''}><summary>처리 과정 · 도구 호출 ${calls.length} ${live && window.hydTrace ? hydTrace.spinner('sm') : ''}</summary><div class="fold-body">${A.traceErr ? `<p class="field-hint">자세한 처리 과정을 읽지 못해 도구 호출 목록만 보입니다 — ${esc(A.traceErr)}</p>` : ''}<div data-ask-trace>${staticCalls ? `<ol class="stack-list">${calls.map(callRow).join('')}</ol>` : ''}</div></div></details>
         ${resultHtml(v)}
-        ${v.state==='failed' && !replay() ? UI.field({label:'다시 진행할 때 반영할 내용(선택)',input:`<textarea id="askRetryNote" rows="2" maxlength="1000">${esc(A.retryNote || '')}</textarea>`}) : ''}
+        ${v.state==='failed' && !replay() ? UI.field({label:'다시 진행할 때 반영할 내용(선택)',input:`<textarea id="askRetryNote" rows="2">${esc(A.retryNote || '')}</textarea>`}) : ''}
         <div class="form-actions">${v.state==='failed' && !replay() ? `<button class="btn small" id="askRetry" ${A.sending?'disabled':''}>같은 질문 다시 진행</button>` : ''}<a class="btn small ghost" href="${esc(v.link)}">처리 과정 보기 →</a></div></div></div>`;
   }
   function historyHtml() {
@@ -188,19 +188,14 @@
     return `<header class="card-head"><div class="card-title"><h3>에이전트에게 질문하기</h3></div><div class="card-actions">${readyHtml()}</div></header>
         <div class="form-grid">${UI.field({ label: '답할 에이전트', input: `<select id="askAgent">${agentOptions()}</select>` })}</div>${agentLine()}
         <div class="ask-input">${UI.field({ label: '질문', hint: replay() ? '이 PC는 강의에서 다룬 질문에만 강사가 저장한 답으로 답합니다. 아래 질문을 눌러 넣고 보내세요.'
-          : 'Enter 보내기 · Shift+Enter 줄바꿈. 에이전트는 자기 도구로 실제 조회한 결과만으로 답합니다.', input: `<textarea id="askText" rows="3" maxlength="1000"></textarea>` })}${replay() ? picks() : ''}</div>
+          : 'Enter 보내기 · Shift+Enter 줄바꿈. 에이전트는 자기 도구로 실제 조회한 결과만으로 답합니다.', input: `<textarea id="askText" rows="3" maxlength="${esc(window.hydCourseAccess.questionMaxChars || '')}"></textarea>` })}${replay() ? picks() : ''}</div>
         <div class="form-actions"><button class="btn primary" id="askSend" ${A.sending || !A.draft.trim() ? 'disabled' : ''}>${A.sending ? '보내는 중…' : '보내기'}</button></div>`;
   }
   const layout = (form, err, thread, hist) => `<div class="ask-layout"><div class="ask-main"><section class="card ask-compose" data-ask-form>${form}</section><div data-ask-err>${err}</div><div data-ask-thread>${thread}</div></div>
         <aside class="ask-side"><h2 class="sec">지난 질문</h2><div data-ask-history>${hist}</div></aside></div>`;
   function render() {
     if (!A.el) return;
-    if (!A.el.querySelector('[data-ask-form]')) {
-      A.el.innerHTML = layout('', '', '', '');
-      if (!A.el.querySelector('[data-ask-form]')) {      // no live DOM (node 시험): one static page
-        A.el.innerHTML = layout(formHtml(), A.err ? `<p class="neg" role="status">${esc(A.err)}</p>` : '', threadHtml(true), historyHtml()); return;
-      }
-    }
+    if (!A.el.querySelector('[data-ask-form]')) A.el.innerHTML = layout('', '', '', '');
     const form = A.el.querySelector('[data-ask-form]');
     const formSig = JSON.stringify([A.status, A.statusErr, A.agents.map(a => a.id), A.agent, A.sending]);
     if (form._sig !== formSig) {
@@ -243,5 +238,5 @@
   }
 
   // 셸이 처음 열 때 mount, 다시 열 때 show
-  window.hydAsk = { mount, show, _state: A, _render: render };
+  window.hydAsk = { mount, show };
 })();

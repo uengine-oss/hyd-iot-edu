@@ -2,11 +2,17 @@
 # 업무 DB(ent 스키마: ERP · MES · CMMS · QMS · SCM · EMS)와 프로세스 엔진 테이블(proc_def · proc_def_version · bpm_proc_inst · todolist ·
 # events · process_source_inbox/state · 승인·투영 outbox · 효과 영수증 등, migrations/ 참고)을 둔다.
 # 포트는 Supabase 기본값(54321~). 기존 스택(TimescaleDB 5432 · process 8080 · portal 8088)과 겹치지 않는다.
-# 다른 프로젝트의 supabase 와 함께 띄우려면 아래 포트만 바꾼다.
+# 다른 프로젝트의 supabase 와 함께 띄우려면 아래 포트만 바꾼다(시작이 이 PC 포트를 it/supabase/.env 에 따로 적는다 — scripts/prepare_ports.py).
+#
+# 켜는 것은 업무 DB(db)와 수업 메일함(inbucket)뿐이다. 시스템은 PostgreSQL 에 직접 붙고(process · 워커 = 소유자 연결, 에이전트 읽기 = 읽기 전용 계정)
+# REST API · 로그인 · 실시간 · 엣지 함수 · Studio 를 쓰지 않는다. 켜 두면 이 컨테이너들이 PC 밖(0.0.0.0)에 열려 — CLI 는 바인드 주소를 고를 수 없다 —
+# 같은 망 누구나 공개 기본 키로 가입해 업무 표에 쓸 수 있었고, API 게이트웨이(kong)의 /pg/ 길이 인증 없이 · 아무 출처(CORS *)에서나
+# 업무 DB 관리자 SQL 을 받았다(2026-10-30 검진 G2-02). 게이트웨이(kong)는 CLI 가 늘 띄우지만 뒤에 붙은 서비스가 없어 아무 데도 닿지 않는다.
+# 다시 켜려면(개발 PC 의 Studio 등) 해당 칸만 true 로 — 켜면 위 문제가 그 PC 에서 되살아난다(workspace/개발/문서/RUNBOOK.md §7).
 project_id = "hyd-portal-latest"
 
 [api]
-enabled = true
+enabled = false
 port = 54321
 schemas = ["public", "ent", "storage", "graphql_public"]
 extra_search_path = ["public", "ent", "extensions"]
@@ -25,10 +31,10 @@ default_pool_size = 20
 max_client_conn = 100
 
 [realtime]
-enabled = true
+enabled = false
 
 [studio]
-enabled = true
+enabled = false
 port = 54323
 api_url = "http://127.0.0.1"
 
@@ -45,23 +51,26 @@ enabled = false
 file_size_limit = "50MiB"
 
 [auth]
-enabled = true
+enabled = false
 site_url = "http://localhost:8088"
 additional_redirect_urls = ["http://localhost:8088"]
 jwt_expiry = 10800
 enable_refresh_token_rotation = true
 refresh_token_reuse_interval = 30
-enable_signup = true
+enable_signup = false
 enable_manual_linking = false
 
 [auth.email]
-enable_signup = true
+enable_signup = false
 double_confirm_changes = false
 enable_confirmations = false
 
 [auth.sms]
 enable_signup = false
 enable_confirmations = false
+
+[edge_runtime]
+enabled = false
 
 [analytics]
 enabled = false

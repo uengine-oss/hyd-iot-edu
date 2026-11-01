@@ -1,11 +1,13 @@
-"""B6 (확정 TODO B6, DECISIONS 110 ⑤): 구성 내보내기 · 가져오기 = 막별 "출발본", 하나의 "기준으로 되돌리기".
+"""B6: 구성 내보내기 · 가져오기 = 막별 "출발본", 하나의 "기준으로 되돌리기".
 
 강사가 막마다 출발본 파일을 주면 학생은 포털에서 한 번에 불러와 같은 지점에서 시작한다. 망쳐도 다시 불러오면 된다.
 출발본에는 **학생이 만든 것만** 담는다(B1~B4 가 origin='user' 등으로 구분한 것). 기준(seed) 것은 담지 않는다.
 
   GET  /api/config/export   → 파일 하나(JSON): 형식 이름 · 판수 · 만든 시각 · 내용
-        mcp_servers   B2 학생 서버(포털 등록 · 랩업 SQL). 비밀값(비밀 이름의 env · headers 값, 주소 비밀번호, 비밀이 든 인자)은
-                      값 대신 자리표시 ${HYD_SECRET:<칸>} 와 secrets 목록 — 파일에 비밀값이 남지 않는다.
+        mcp_servers   B2 학생 서버(포털 등록 · 포털 밖 추가). 설정에 그대로 적힌 비밀값(비밀 이름의 접속 헤더 값, 주소의 비밀번호 ·
+                      비밀 매개변수)은 값 대신 칸 자리표시 ${HYD_SECRET:<칸>} 와 secrets 목록 — 파일에 비밀값이 남지 않는다.
+                      비밀 값 표를 가리키는 참조 ${SECRET:이름} 은 비밀이 아니라 그대로 담는다(mcp_check.is_secret_value 한 판정) —
+                      불러올 때 이 PC 의 비밀 값 표에 그 이름이 있어야 한다(없으면 검증이 사유와 함께 멈춘다).
         skills        B1 학생 스킬(SKILL.md 본문 그대로)
         agents        B1 학생 에이전트(id · 프로필 · 스킬 이름 · 도구 서버 이름). id 를 그대로 담아 단계 배정이 같은 에이전트를 가리킨다.
         role_members  B1 학생이 넣은 업무분장(역할 ← 사람)
@@ -16,12 +18,15 @@
         1) 검증(아무것도 바꾸지 않음): 형식 · 판수 · 칸 · 이름 겹침 · 참조(스킬 · 도구 서버 · 에이전트 · 흐름 · 판본) ·
            흐름은 B3 사전 검사를 그대로 돌리고 다시 만든 정의가 파일의 해시와 같은지 · 비밀값 필요 → 422 사유
         2) 진행 중 처리 건 확인(아래 reset 과 같은 조건) → 409, 아무것도 바꾸지 않음
-        3) 지금 학생 구성을 안에서만 보관(비밀값 포함, 응답에 싣지 않음) → 되돌리기(B4 · B3 · B1 · B2 — 질문 기록은 구성이 아니라 그대로)
+        3) 지금 학생 구성을 안에서만 보관(비밀값 포함, 응답에 싣지 않음) — MCP 는 저장소 행 그대로(mcp_registry.snapshot) →
+           되돌리기(B4 · B3 · B1 · B2 — 비밀 값 표 · 질문 기록 · 채점 · 시험 기록은 구성이 아니라 그대로)
         4) 순서대로 적용: MCP → 스킬 → 에이전트 → 업무분장 → 흐름 등록(B3 경로, 사전 검사 통과해야) → 단계 배정 → 배포
         5) 다시 내보내 파일 내용과 같은지 대조(빈 성공 금지)
         실패하면 어디서 왜 실패했는지 + 적용된 것 · 안 된 것, 그리고 3)의 보관본으로 적용 전 상태를 다시 세운다(rolled_back).
+        MCP 보관본은 행 그대로 다시 쓴다 — 실시간 연결 검사를 다시 하지 않아 그 순간 외부 서버가 꺼져 있어도 학생 구성이 사라지지 않는다.
         같은 파일을 두 번 가져와도 되돌리기 → 적용이라 같은 결과다.
-  POST /api/config/reset    하나의 "기준으로 되돌리기": B4 deploy-reset → B3 flows reset → B1 agents reset → B2 mcp reset → B5 ask reset.
+  POST /api/config/reset    하나의 "기준으로 되돌리기": B4 deploy-reset → B3 flows reset → B1 agents reset → B2 mcp reset(비밀 값 포함) →
+        B5 ask reset → 판단 채점(정답표 · 실행 기록) → 시험 비교 기록.
         강사가 배포한 수업 흐름은 남긴다(흐름 배포 화면의 [기준 흐름으로 되돌리기]와 같다). 불러오기 3)의 되돌리기는 수업 흐름까지 지운다.
         먼저 409 조건을 모두 점검한다(학생 판본을 쓰는 진행 중 처리 건 · 학생 에이전트가 실행 중인 작업). 하나라도 있으면
         아무것도 지우지 않고 사유.
@@ -41,14 +46,14 @@ from copy import deepcopy
 from datetime import datetime, timezone
 
 from . import agent_authoring as A
-from . import bpmn_import, mcp_check, mcp_registry, work_rules, student_cases
+from . import bpmn_import, mcp_check, mcp_registry, mcp_secrets, student_cases
 from .agents_store import SKILL_NAME_RE, csv_list
 from .bpmn_store import FlowStore, next_version
 
 log = logging.getLogger("process.config_bundle")
 
 FORMAT = "hyd-config-bundle"
-FORMAT_VERSION = 1
+FORMAT_VERSION = 2   # 2: 흐름 판본 번호는 파일 안 꼬리표 · 정의 해시는 판본 번호를 뺀 내용(P3-01 — 되돌린 PC 는 같은 번호를 다시 쓰지 않는다)
 SECRET_RE = re.compile(r"\$\{HYD_SECRET:([^}]+)\}")
 AGENT_ID_RE = re.compile(r"^agent:u-[0-9a-f]{4,32}$")
 CONTENT_KEYS = ("mcp_servers", "skills", "agents", "role_members", "flows", "assignments", "deployments")
@@ -56,8 +61,10 @@ STEPS = (("mcp", "MCP 서버"), ("skills", "스킬"), ("agents", "에이전트")
          ("flows", "흐름 등록"), ("assignments", "단계 배정"), ("deployments", "배포"))
 STEP_LABEL = dict(STEPS) | {"reset": "적용 전 되돌리기", "verify": "적용 뒤 대조"}
 RESET_STEPS = (("deploy_reset", "배포 되돌리기(경보 → 기준 흐름)"), ("flows_reset", "가져온 흐름 지우기"),
-               ("agents_reset", "내가 만든 에이전트 · 스킬 · 배정 · 업무분장 지우기"), ("mcp_reset", "내가 등록한 MCP 서버 지우기"),
-               ("ask_reset", "끝난 질문 기록 지우기"))
+               ("agents_reset", "내가 만든 에이전트 · 스킬 · 역할 · 배정 · 업무분장 지우기"),
+               ("mcp_reset", "내가 등록한 MCP 서버 · 비밀 값 지우기"),
+               ("ask_reset", "끝난 질문 기록 지우기"), ("eval_reset", "판단 채점 정답표 · 실행 기록 지우기"),
+               ("trials_reset", "시험 비교 기록 지우기"))
 _LOCK = threading.Lock()          # 되돌리기 · 불러오기는 한 번에 하나(두 번 누름 · 두 탭)
 
 
@@ -77,7 +84,9 @@ def _now() -> str:
 
 
 def definition_hash(raw: dict) -> str:
-    return hashlib.sha256(json.dumps(raw, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode("utf-8")).hexdigest()
+    """정의 내용의 해시 — 판본 번호(version)는 뺀다. 번호는 등록하는 PC 가 정한다(bpmn_store: 한 번 쓴 번호는 되돌린 뒤에도 다시 쓰지 않음)."""
+    body = {k: v for k, v in raw.items() if k != "version"}
+    return hashlib.sha256(json.dumps(body, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode("utf-8")).hexdigest()
 
 
 def _token(slot: str) -> str:
@@ -85,12 +94,9 @@ def _token(slot: str) -> str:
 
 
 # ---------------------------------------------------------------- MCP 서버: 파일 칸 ↔ 등록 본문 (비밀값 자리표시)
-def _secret_value(key: str, value: str) -> bool:
-    return value != "" and (mcp_check.is_secret_key(key) or mcp_check.mask_text(value) != value)
-
-
 def server_item(name: str, entry: dict, *, include_secrets: bool = False) -> dict:
-    """tenants.mcp 한 칸 → 파일 칸. 비밀값은 자리표시(${HYD_SECRET:칸})로 바꾸고 secrets 에 칸 이름 · 설명을 적는다."""
+    """tenants.mcp 한 칸 → 파일 칸. 설정에 그대로 적힌 비밀값은 자리표시(${HYD_SECRET:칸})로 바꾸고 secrets 에 칸 이름 · 설명을 적는다.
+    비밀 판정은 화면 가림과 같은 한 함수(mcp_check.is_secret_value) — ${SECRET:이름} 참조는 비밀이 아니라 그대로 담는다."""
     spec = mcp_check.normalize(entry)
     item: dict = {"name": name, "origin": mcp_registry.origin_of(name, entry), "transport": spec["transport"]}
     secrets: list[dict] = []
@@ -101,30 +107,24 @@ def server_item(name: str, entry: dict, *, include_secrets: bool = False) -> dic
         secrets.append({"slot": slot, "label": label})
         return _token(slot)
 
-    if spec["transport"] == "stdio":
-        item["command"] = spec["command"]
-        item["args"] = [hide(f"args.{i}", f"명령 인자 {i + 1}번째", a) if mcp_check.mask_text(a) != a else a for i, a in enumerate(spec["args"])]
-        item["env"] = {k: (hide(f"env.{k}", f"환경변수 {k}", v) if _secret_value(k, v) else v) for k, v in (spec.get("env") or {}).items()}
-        if spec.get("cwd"):
-            item["cwd"] = spec["cwd"]
-    else:
-        url = spec["url"]
-        p = urllib.parse.urlsplit(url)
-        if p.password and not include_secrets:
-            host = (p.hostname or "") + (f":{p.port}" if p.port else "")
-            user = urllib.parse.unquote(p.username) if p.username else ""
-            url = urllib.parse.urlunsplit((p.scheme, f"{user}:{hide('url.password', '주소의 비밀번호', '')}@{host}", p.path, p.query, p.fragment))
-        # Preserve order, repeated keys and nonsecret bytes. Slots use the pair
-        # index so two credentials with the same key remain distinct.
-        p = urllib.parse.urlsplit(url)
-        query = []
-        for i, pair in enumerate(p.query.split('&')):
-            key, sep, value = pair.partition('=')
-            if sep and _secret_value(urllib.parse.unquote_plus(key), urllib.parse.unquote_plus(value)):
-                pair = key + '=' + hide(f'url.query.{i}', f'주소 매개변수 {urllib.parse.unquote_plus(key)} ({i + 1})', value)
-            query.append(pair)
-        item["url"] = urllib.parse.urlunsplit((p.scheme, p.netloc, p.path, '&'.join(query), p.fragment))
-        item["headers"] = {k: (hide(f"headers.{k}", f"접속 헤더 {k}", v) if _secret_value(k, v) else v) for k, v in (spec.get("headers") or {}).items()}
+    url = spec["url"]
+    p = urllib.parse.urlsplit(url)
+    if p.password and not include_secrets:
+        host = (p.hostname or "") + (f":{p.port}" if p.port else "")
+        user = urllib.parse.unquote(p.username) if p.username else ""
+        url = urllib.parse.urlunsplit((p.scheme, f"{user}:{hide('url.password', '주소의 비밀번호', '')}@{host}", p.path, p.query, p.fragment))
+    # Preserve order, repeated keys and nonsecret bytes. Slots use the pair
+    # index so two credentials with the same key remain distinct.
+    p = urllib.parse.urlsplit(url)
+    query = []
+    for i, pair in enumerate(p.query.split('&')):
+        key, sep, value = pair.partition('=')
+        if sep and mcp_check.is_secret_value(urllib.parse.unquote_plus(key), urllib.parse.unquote_plus(value)):
+            pair = key + '=' + hide(f'url.query.{i}', f'주소 매개변수 {urllib.parse.unquote_plus(key)} ({i + 1})', value)
+        query.append(pair)
+    item["url"] = urllib.parse.urlunsplit((p.scheme, p.netloc, p.path, '&'.join(query), p.fragment))
+    item["headers"] = {k: (hide(f"headers.{k}", f"접속 헤더 {k}", v) if mcp_check.is_secret_value(k, v) else v)
+                       for k, v in (spec.get("headers") or {}).items()}
     if isinstance(entry, dict) and entry.get("description"):
         item["description"] = entry["description"]
     item["secrets"] = secrets
@@ -139,47 +139,27 @@ def register_body(item: dict, values: dict | None = None) -> dict:
     """파일 칸 → B2 등록 본문. values = {칸: 비밀값}. 자리표시가 남으면 KeyError(칸)."""
     values = values or {}
     body = {"name": item.get("name"), "transport": item.get("transport")}
-    if item.get("transport") == "stdio":
-        body["command"] = item.get("command")
-        body["args"] = [_fill(str(a), values) for a in item.get("args") or []]
-        body["env"] = {k: _fill(str(v), values) for k, v in (item.get("env") or {}).items()}
-        if item.get("cwd"):
-            body["cwd"] = item["cwd"]
-    else:
-        url = str(item.get("url") or "")
-        if "url.password" in values and _token("url.password") in url:
-            url = url.replace(_token("url.password"), urllib.parse.quote(values["url.password"], safe=""))
-        for slot in SECRET_RE.findall(url):
-            if slot.startswith('url.query.'):
-                url = url.replace(_token(slot), urllib.parse.quote(values[slot], safe=""))
-        body["url"] = url
-        body["headers"] = {k: _fill(str(v), values) for k, v in (item.get("headers") or {}).items()}
+    if item.get("command") not in (None, ""):
+        body["command"] = item["command"]           # 옛 출발본의 명령형 서버 — 등록 검사가 학생이 읽을 사유로 거절한다
+    url = str(item.get("url") or "")
+    if "url.password" in values and _token("url.password") in url:
+        url = url.replace(_token("url.password"), urllib.parse.quote(values["url.password"], safe=""))
+    for slot in SECRET_RE.findall(url):
+        if slot.startswith('url.query.'):
+            url = url.replace(_token(slot), urllib.parse.quote(values[slot], safe=""))
+    body["url"] = url
+    body["headers"] = {k: _fill(str(v), values) for k, v in (item.get("headers") or {}).items()}
     if item.get("description"):
         body["description"] = item["description"]
     return body
 
 
 def _slots_in(item: dict) -> list[str]:
-    text = json.dumps({k: item.get(k) for k in ("url", "args", "env", "headers")}, ensure_ascii=False)
+    text = json.dumps({k: item.get(k) for k in ("url", "headers")}, ensure_ascii=False)
     return sorted(set(SECRET_RE.findall(text)))
 
 
 # ---------------------------------------------------------------- 내보내기
-def _agent_steps(def_id: str, raw: dict) -> list[dict]:
-    """정의 하나에서 에이전트가 맡는 단계(agent_authoring.agent_activities 와 같은 규칙)."""
-    from . import engine
-    roles = {r.get("name"): r for r in raw.get("roles") or [] if isinstance(r, dict)}
-    out = []
-    for a in raw.get("activities") or []:
-        if not isinstance(a, dict) or not a.get("id") or not engine.agent_mode_of(a):
-            continue
-        if not (a.get("orchestration") in engine.NO_MODE or a.get("orchestration") == engine.AGENT_ORCH):
-            continue
-        default = csv_list(a.get("agent")) or csv_list((roles.get(a.get("role")) or {}).get("endpoint"))
-        out.append({"definition_id": def_id, "activity_id": a["id"], "name": a.get("name") or a["id"], "default_agents": default})
-    return out
-
-
 def export_bundle(rt, base_loader, *, include_secrets: bool = False) -> dict:
     """학생이 만든 것만 담은 출발본. include_secrets=True 는 안에서만(불러오기 실패 때 적용 전 상태로 되돌리는 보관본) 쓴다."""
     from . import flow_deploy
@@ -276,7 +256,10 @@ def _refuse_if_busy(rt, verb: str) -> None:
                           blocking=found)
 
 
-def _reset_steps(rt, by: str, *, ask: bool, keep_class: bool) -> list[dict]:
+def _reset_steps(rt, by: str, *, records: bool, keep_class: bool) -> list[dict]:
+    """records=True(관리 탭 [기준으로 되돌리기]): 구성과 함께 학생 기록(비밀 값 · 끝난 질문 · 판단 채점 · 시험 비교)도 지운다.
+    records=False(출발본 불러오기 · 그 실패 복원): 구성만 — 비밀 값은 이 PC 의 자격 증명이라 남긴다(불러온 서버의 ${SECRET:이름} 이 쓴다)."""
+    from . import agent_trials, judgment_eval
     from . import ask as ask_mod
     from . import flow_deploy
     done = []
@@ -293,9 +276,11 @@ def _reset_steps(rt, by: str, *, ask: bool, keep_class: bool) -> list[dict]:
     work = [("deploy_reset", deploy_reset),
             ("flows_reset", lambda: FlowStore(rt.repo, rt.tenant_id).reset(keep=kept)),
             ("agents_reset", lambda: A.reset(rt, by=by)),
-            ("mcp_reset", lambda: mcp_registry.reset(mcp_registry.store_for(rt.repo), rt.tenant_id))]
-    if ask:
-        work.append(("ask_reset", lambda: ask_mod.reset(rt)))
+            ("mcp_reset", lambda: mcp_registry.reset(mcp_registry.store_for(rt.repo), rt.tenant_id, secrets=records))]
+    if records:
+        work += [("ask_reset", lambda: ask_mod.reset(rt)),
+                 ("eval_reset", lambda: judgment_eval.PgEvalStore(rt.repo.dsn, rt.tenant_id).reset()),
+                 ("trials_reset", lambda: agent_trials.store_for(rt.repo).reset(rt.tenant_id))]
     labels = dict(RESET_STEPS)
     for step, fn in work:
         try:
@@ -323,9 +308,15 @@ def _reset_text(step: str, r: dict) -> str:
         return f"판본 {r.get('versions', 0)} · 흐름 {r.get('definitions', 0)} · 초안 {r.get('drafts', 0)} · 목록에서 숨긴 끝난 처리 건 {r.get('hidden_instances', 0)}"
     if step == "agents_reset":
         return (f"에이전트 {r.get('agents', 0)} · 스킬 {r.get('skills', 0)} · 스킬 붙이기 {r.get('attachments', 0)} · 단계 배정 {r.get('assignments', 0)} · "
-                f"업무분장 {r.get('role_members', 0)} · 기본 담당으로 돌린 열린 단계 {len(r.get('returned_tasks') or [])}")
+                f"업무분장 {r.get('role_members', 0)} · 역할 {r.get('roles', 0)}" + (f"(흐름이 쓰는 역할 {len(r['kept_roles'])}개는 남김)" if r.get('kept_roles') else '')
+                + f" · 기본 담당으로 돌린 열린 단계 {len(r.get('returned_tasks') or [])}")
     if step == "mcp_reset":
-        return f"서버 {len(r.get('removed_servers') or [])}({', '.join(r.get('removed_servers') or []) or '없음'}) · 검사 기록 {r.get('removed_checks', 0)}"
+        return (f"서버 {len(r.get('removed_servers') or [])}({', '.join(r.get('removed_servers') or []) or '없음'}) · 검사 기록 {r.get('removed_checks', 0)} · "
+                f"비밀 값 {r.get('removed_secrets', 0)}")
+    if step == "eval_reset":
+        return f"정답표 항목 {r.get('golden_items', 0)} · 채점 실행 {r.get('runs', 0)}"
+    if step == "trials_reset":
+        return f"시험 실행 {r.get('trials', 0)} · 입력 스냅숏 {r.get('snapshots', 0)}"
     return r.get("note") or ""
 
 
@@ -335,13 +326,13 @@ def reset_all(rt, *, by: str = "포털", audit=None) -> dict:
         raise BundleError(409, "다른 되돌리기 · 불러오기가 진행 중입니다 — 끝난 뒤 다시 누르세요")
     try:
         _refuse_if_busy(rt, "되돌리지")
-        steps = _reset_steps(rt, by, ask=True, keep_class=True)
+        steps = _reset_steps(rt, by, records=True, keep_class=True)
     finally:
         _LOCK.release()
     if audit:
         audit("-", by, "CONFIG_RESET", {"steps": [s["step"] for s in steps]})
-    return {"steps": steps, "message": "기준으로 되돌렸습니다 — 내가 만든 에이전트 · 스킬 · 배정 · 업무분장 · MCP 서버 · 흐름 · 배포를 지웠고 "
-                                       "기준과 강사가 배포한 수업 흐름은 그대로입니다"}
+    return {"steps": steps, "message": "기준으로 되돌렸습니다 — 내가 만든 에이전트 · 스킬 · 역할 · 배정 · 업무분장 · MCP 서버 · 비밀 값 · 흐름 · 배포와 "
+                                       "끝난 질문 · 판단 채점 · 시험 비교 기록을 지웠고, 기준과 강사가 배포한 수업 흐름은 그대로입니다"}
 
 
 # ---------------------------------------------------------------- 검증(아무것도 바꾸지 않음)
@@ -370,7 +361,7 @@ def validate(rt, base_loader, bundle, secrets: dict | None = None, skip_missing_
     for key in CONTENT_KEYS:
         want = dict if key == "deployments" else list
         if not isinstance(content.get(key, want()), want):
-            problems.append(_problem(f"내용 {key}", "목록이어야 합니다" if want is list else "객체여야 합니다"))
+            problems.append(_problem(f"내용의 {CONTENT_WORDS[key]}", "목록이어야 합니다" if want is list else "객체여야 합니다"))
     if problems:
         raise BundleError(422, f"출발본 파일을 받을 수 없습니다 ({len(problems)}건) — {problems[0]['where']}: {problems[0]['reason']}", problems=problems)
     repo, tenant = rt.repo, rt.tenant_id
@@ -378,6 +369,7 @@ def validate(rt, base_loader, bundle, secrets: dict | None = None, skip_missing_
     users = repo.list_users(None, tenant)
     seed_users = {u["id"]: u for u in users if not (u.get("is_agent") and A.origin_of(u) == A.USER)}
     tenant_servers = mcp_registry.store_for(repo).servers(tenant)
+    stored_secrets = None                                  # 비밀 값 표의 이름들 — ${SECRET:이름} 참조가 있을 때만 읽는다
 
     # -- MCP
     plan_servers, skipped, needs = [], [], []
@@ -408,11 +400,18 @@ def validate(rt, base_loader, bundle, secrets: dict | None = None, skip_missing_
             continue
         try:
             body = register_body(item, {s: _text(given.get(s)) for s in slots})
-            mcp_registry.entry_from_body(body)
+            entry = mcp_registry.entry_from_body(body)
         except KeyError as e:
             problems.append(_problem(where, f"자리표시 {e} 에 넣을 값이 없습니다")); continue
         except mcp_registry.RegistryError as e:
             problems.append(_problem(where, e.reason)); continue
+        refs = mcp_secrets.references(entry)
+        if refs:
+            if stored_secrets is None:
+                stored_secrets = set(mcp_secrets.load(repo, tenant))
+            absent = [k for k in refs if k not in stored_secrets]
+            if absent:
+                problems.append(_problem(where, mcp_secrets.missing_reason(name, absent))); continue
         plan_servers.append({"name": name, "body": dict(body, name=name)})
     skipped_servers = {s["server"] for s in skipped}
     file_servers = {s["name"] for s in plan_servers} | {n["server"] for n in needs}     # 비밀값을 기다리는 서버도 파일에 있는 서버
@@ -433,7 +432,7 @@ def validate(rt, base_loader, bundle, secrets: dict | None = None, skip_missing_
         if old is not None and A.origin_of(old) != A.USER:
             problems.append(_problem(where, "기본 스킬과 이름이 같습니다 — 기준은 덮어쓰지 않습니다")); continue
         try:
-            A._skill_fields(name, {"description": s.get("description"), "content": s.get("content")})
+            A.skill_fields(name, {"description": s.get("description"), "content": s.get("content")})
         except A.AuthoringError as e:
             problems.append(_problem(where, e.message)); continue
         plan_skills.append({"skill_name": name, "description": _text(s.get("description")), "content": _text(s.get("content"))})
@@ -457,13 +456,13 @@ def validate(rt, base_loader, bundle, secrets: dict | None = None, skip_missing_
         ids.add(aid); names.add(name.lower())
         if name.lower() in seed_names:
             problems.append(_problem(where, "기본 에이전트와 이름이 같습니다 — 다른 이름을 쓰세요")); continue
-        for key, label in (("name", "이름"), ("goal", "목표")):
-            if not _text(a.get(key)).strip():
-                problems.append(_problem(where, f"{label} 칸이 비어 있습니다"))
         model = _text(a.get("model")).strip()
-        from .course_policy import Policy
-        if Policy.agent_model_error(model):
-            problems.append(_problem(where, Policy.agent_model_error(model)))
+        rules_key = _text(a.get("work_rules")).strip()
+        try:                      # 저장과 같은 칸 규칙(이름 · 목표 필수, 길이, 수업 모델, 업무 규칙) — 적용 단계에서 칸 규칙으로 실패하지 않게
+            A.agent_text_fields({"name": name, "goal": _text(a.get("goal")), "role": _text(a.get("role")), "persona": _text(a.get("persona")),
+                                 "model": model, "work_rules": rules_key})
+        except A.AuthoringError as e:
+            problems.append(_problem(where, e.message))
         tools, dropped = [], []
         for t in csv_list(a.get("tools")):
             if t in skipped_servers:
@@ -478,11 +477,6 @@ def validate(rt, base_loader, bundle, secrets: dict | None = None, skip_missing_
         for sk in csv_list(a.get("skills")):
             if sk not in file_skills and sk not in seed_skills:
                 problems.append(_problem(where, f"스킬 '{sk}' 가 파일에도 기본 스킬에도 없습니다(참조 없는 스킬)"))
-        rules_key = _text(a.get("work_rules")).strip()
-        try:
-            work_rules.rules_for(rules_key)
-        except work_rules.UnknownWorkRules as e:
-            problems.append(_problem(where, str(e)))
         plan_agents.append({"id": aid, "body": {"name": name, "goal": _text(a.get("goal")), "role": _text(a.get("role")),
                                                 "persona": _text(a.get("persona")), "model": model, "tools": tools, "work_rules": rules_key},
                             "skills": list(dict.fromkeys(csv_list(a.get("skills"))))})
@@ -536,14 +530,16 @@ def validate(rt, base_loader, bundle, secrets: dict | None = None, skip_missing_
         if not versions and not draft:
             problems.append(_problem(where, "판본도 초안도 없습니다")); continue
         plan_v, existing, ok = [], [], True
+        first = int(fstore.next_version(did))               # 이 PC 가 매길 번호(미리 보기) — 파일의 번호는 그 파일 안의 꼬리표다
         for v in versions:
             vwhere = f"{where} 판본 {_text(v.get('version')) if isinstance(v, dict) else '?'}"
             if not isinstance(v, dict) or not _text(v.get("bpmn")).strip() or not isinstance(v.get("mapping"), dict):
                 problems.append(_problem(vwhere, "그림(.bpmn)과 매핑이 있어야 합니다")); ok = False; break
-            want = next_version(existing)
-            if _text(v.get("version")) != want:
-                problems.append(_problem(vwhere, f"판본 번호가 이어지지 않습니다(다음 번호는 {want}) — 등록 순서대로 1, 2, 3 …")); ok = False; break
-            existing.append(want)
+            label = _text(v.get("version")).strip()
+            if not label or label in existing:
+                problems.append(_problem(vwhere, "판본 번호가 비었거나 같은 흐름에 두 번 있습니다")); ok = False; break
+            existing.append(label)
+            want = str(first + len(plan_v))
             try:
                 parsed = bpmn_import.parse_bpmn(v["bpmn"])
             except bpmn_import.BpmnError as e:
@@ -562,8 +558,8 @@ def validate(rt, base_loader, bundle, secrets: dict | None = None, skip_missing_
             if sha and definition_hash(result["definition"]) != sha:
                 problems.append(_problem(vwhere, "이 포털에서 다시 만든 정의가 내보낼 때와 다릅니다 — 기준 정의 파일(부품)이나 에이전트 목록이 "
                                                   "출발본을 만든 환경과 다릅니다")); ok = False; break
-            flow_steps[did] = _agent_steps(did, result["definition"])
-            plan_v.append({"version": want, "bpmn": v["bpmn"], "file_name": v.get("file_name"), "mapping": v["mapping"], "sha": sha})
+            flow_steps[did] = A.agent_steps_of(did, result["definition"])
+            plan_v.append({"label": label, "version": want, "bpmn": v["bpmn"], "file_name": v.get("file_name"), "mapping": v["mapping"], "sha": sha})
         if not ok:
             continue
         if draft is not None:
@@ -578,9 +574,9 @@ def validate(rt, base_loader, bundle, secrets: dict | None = None, skip_missing_
                            "draft": {"bpmn": _text(draft.get("bpmn")), "file_name": draft.get("file_name"), "mapping": draft["mapping"]} if draft else None})
 
     # -- 단계 배정
-    for d in A._latest_definitions(rt):
+    for d in A.latest_definitions(rt):
         if d["id"] not in flow_steps and (d["id"] in refs or not fstore.versions(d["id"])):
-            flow_steps.setdefault(d["id"], _agent_steps(d["id"], d.get("definition") or {}))
+            flow_steps.setdefault(d["id"], A.agent_steps_of(d["id"], d.get("definition") or {}))
     plan_maps, seen = [], set()
     for i, m in enumerate(content.get("assignments") or []):
         did, act, aid = (_text(m.get("definition_id")), _text(m.get("activity_id")), _text(m.get("agent_id"))) if isinstance(m, dict) else ("", "", "")
@@ -606,7 +602,7 @@ def validate(rt, base_loader, bundle, secrets: dict | None = None, skip_missing_
         did, ver = (_text(d.get("definition_id")), _text(d.get("version"))) if isinstance(d, dict) else ("", "")
         if ver not in flow_versions.get(did, set()):
             problems.append(_problem(f"배포 {did} 판본 {ver}", "그 흐름 판본이 파일에 없습니다")); continue
-        plan_deploys.append({"definition_id": did, "version": ver, "class_flow": d.get("class_flow") is True})
+        plan_deploys.append({"definition_id": did, "label": ver, "class_flow": d.get("class_flow") is True})
     ref = dep.get("reference")
     plan_ref = None
     if isinstance(ref, dict) and ref.get("version"):
@@ -631,11 +627,13 @@ def validate(rt, base_loader, bundle, secrets: dict | None = None, skip_missing_
 
 
 # ---------------------------------------------------------------- 적용
-def _apply(rt, base_loader, plan: dict, by: str) -> list[dict]:
-    """계획을 순서대로 적용한다. 실패하면 _StepFailed(어느 단계 · 무엇이 적용됐는지)."""
+def _apply(rt, base_loader, plan: dict, by: str, *, mcp_rows: dict | None = None) -> list[dict]:
+    """계획을 순서대로 적용한다. 실패하면 _StepFailed(어느 단계 · 무엇이 적용됐는지).
+    mcp_rows(실패 복원): MCP 는 등록(실시간 연결 검사) 대신 보관한 저장소 행을 그대로 다시 쓴다(mcp_registry.restore)."""
     repo, tenant = rt.repo, rt.tenant_id
     applied: list[dict] = []
     current = {"step": None, "items": []}
+    plan["version_map"] = {}
 
     def begin(step):
         current.update(step=step, items=[])
@@ -646,9 +644,12 @@ def _apply(rt, base_loader, plan: dict, by: str) -> list[dict]:
     try:
         begin("mcp")
         store = mcp_registry.store_for(repo)
-        for s in plan["mcp"]:
-            out = mcp_registry.register(store, tenant, s["body"], by)
-            current["items"].append(f"{s['name']} (읽기 도구 {len(out['gate']['read_tools'])}개)")
+        if mcp_rows is not None:
+            current["items"].extend(mcp_registry.restore(store, tenant, mcp_rows, by))
+        else:
+            for s in plan["mcp"]:
+                out = mcp_registry.register(store, tenant, s["body"], by)
+                current["items"].append(f"{s['name']} (읽기 도구 {len(out['gate']['read_tools'])}개)")
         done()
         begin("skills")
         for s in plan["skills"]:
@@ -659,7 +660,7 @@ def _apply(rt, base_loader, plan: dict, by: str) -> list[dict]:
         for a in plan["agents"]:
             if repo.list_users([a["id"]], tenant):
                 raise A.AuthoringError(f"에이전트 id '{a['id']}' 가 이미 있습니다", 409)
-            f = A._agent_fields(repo, tenant, {**a["body"], "skills": a["skills"]})
+            f = A.agent_fields(repo, tenant, {**a["body"], "skills": a["skills"]})
             f.pop("skills")
             repo.write_agent({"id": a["id"], **f, "is_agent": True, "agent_type": "agent", "tenant_id": tenant, "origin": A.USER}, [], create=True)
             for sk in a["skills"]:                   # 붙인 순서를 지킨다(실행 지시문의 스킬 순서)
@@ -689,10 +690,9 @@ def _apply(rt, base_loader, plan: dict, by: str) -> list[dict]:
                     first = result["problems"][0]
                     raise ValueError(f"흐름 '{did}' 판본 {v['version']}: 사전 검사를 통과하지 못했습니다 — {first['reason']}")
                 raw = fstore.register(result["definition"], v["bpmn"], v["file_name"])
-                if raw["version"] != v["version"]:
-                    raise ValueError(f"흐름 '{did}': 판본 {v['version']} 대신 {raw['version']} 로 등록됐습니다")
+                plan["version_map"][(did, v["label"])] = raw["version"]       # 파일 꼬리표 → 이 PC 가 매긴 번호(배포 · 대조가 쓴다)
                 if v["sha"] and definition_hash(raw) != v["sha"]:
-                    raise ValueError(f"흐름 '{did}' 판본 {v['version']}: 등록된 정의가 파일과 다릅니다")
+                    raise ValueError(f"흐름 '{did}' 판본 {v['label']}: 등록된 정의가 파일과 다릅니다")
                 current["items"].append(f"{raw.get('processDefinitionName') or did} 판본 {raw['version']}")
             if f["draft"]:
                 fstore.save_draft(did, f["draft"]["bpmn"], f["draft"]["file_name"], f["draft"]["mapping"])
@@ -706,9 +706,10 @@ def _apply(rt, base_loader, plan: dict, by: str) -> list[dict]:
         done()
         begin("deployments")
         for d in plan["deployments"]:
-            rt.deploy_definition(d["definition_id"], d["version"], by, "출발본 불러오기", class_flow=d["class_flow"])
-            row = repo.get_proc_def(d["definition_id"], tenant, version=d["version"]) or {}
-            current["items"].append(f"{row.get('name') or d['definition_id']} 판본 {d['version']} — 다음 경보부터")
+            version = plan["version_map"][(d["definition_id"], d["label"])]
+            rt.deploy_definition(d["definition_id"], version, by, "출발본 불러오기", class_flow=d["class_flow"])
+            row = repo.get_proc_def(d["definition_id"], tenant, version=version) or {}
+            current["items"].append(f"{row.get('name') or d['definition_id']} 판본 {version} — 다음 경보부터")
         if plan.get("reference"):
             r = plan["reference"]
             rt.deploy_definition(r["definition_id"], r["version"], by, "출발본 불러오기(기준 흐름 운영 판본)")
@@ -750,10 +751,12 @@ def _expected(bundle_content: dict, plan: dict) -> dict:
         for k in ("role", "persona", "model", "work_rules"):
             a[k] = _text(a.get(k))
         a["skills"] = list(dict.fromkeys(csv_list(a.get("skills"))))
+    numbers = plan.get("version_map") or {}                 # 파일 꼬리표 → 등록한 번호(_apply 가 채움)
     for f in c["flows"]:
         f.setdefault("draft", None)
         for v in f.setdefault("versions", []):
             v.setdefault("file_name", None)
+            v["version"] = numbers.get((f.get("definition_id"), _text(v.get("version")).strip()), v.get("version"))
         if f["draft"]:
             f["draft"].setdefault("file_name", None)
     filled = {s["name"]: s["body"] for s in plan["mcp"]}
@@ -772,6 +775,8 @@ def _expected(bundle_content: dict, plan: dict) -> dict:
             v.setdefault("definition_sha256", None)
     dep = c.setdefault("deployments", {})
     dep.setdefault("flows", []); dep.setdefault("reference", None)
+    for d in dep["flows"]:
+        d["version"] = numbers.get((d.get("definition_id"), _text(d.get("version")).strip()), d.get("version"))
     return _comparable(c)
 
 
@@ -828,9 +833,10 @@ def import_bundle(rt, base_loader, body: dict, *, audit=None) -> dict:
         plan = validate(rt, base_loader, bundle, body.get("secrets"), bool(body.get("skip_missing_secrets")))
         _refuse_if_busy(rt, "불러오지")
         before = export_bundle(rt, base_loader, include_secrets=True)          # 실패하면 이 상태로 다시 세운다(응답에 싣지 않음)
+        before_mcp = mcp_registry.snapshot(mcp_registry.store_for(rt.repo), rt.tenant_id)   # MCP 는 저장소 행 그대로(검사 없이 다시 쓴다)
         try:
             try:
-                reset_done = _reset_steps(rt, by, ask=False, keep_class=False)
+                reset_done = _reset_steps(rt, by, records=False, keep_class=False)
             except BundleError as e:
                 raise _StepFailed("reset", e.reason, [], [d["label"] for d in e.extra.get("done") or []]) from e
             applied = _apply(rt, base_loader, plan, by)
@@ -839,7 +845,7 @@ def import_bundle(rt, base_loader, body: dict, *, audit=None) -> dict:
                 raise _StepFailed("verify", "적용한 뒤 다시 읽은 구성이 파일과 다릅니다 — " + ", ".join(diff[:8]) + (" …" if len(diff) > 8 else ""),
                                   applied, [])
         except _StepFailed as e:
-            rolled_back, rollback_error = _restore(rt, base_loader, before, by)
+            rolled_back, rollback_error = _restore(rt, base_loader, before, before_mcp, by)
             failed_label = STEP_LABEL.get(e.step, "적용 뒤 대조")
             applied_steps = {a["step"] for a in e.applied}
             not_applied = [{"step": s, "label": l} for s, l in STEPS if s not in applied_steps and s != e.step]
@@ -859,16 +865,18 @@ def import_bundle(rt, base_loader, body: dict, *, audit=None) -> dict:
             "reset": reset_done, "applied": applied, "skipped": plan["skipped"], "verified": True}
 
 
-def _restore(rt, base_loader, before: dict, by: str) -> tuple[bool, str | None]:
-    """불러오기 실패 → 지금 것을 되돌리고 보관본을 다시 적용한다."""
+def _restore(rt, base_loader, before: dict, before_mcp: dict, by: str) -> tuple[bool, str | None]:
+    """불러오기 실패 → 지금 것을 되돌리고 보관본을 다시 적용한다. MCP 는 보관한 저장소 행을 그대로 다시 쓰고(실시간 검사 없음),
+    나머지는 보관본을 같은 검증 · 적용 경로로 다시 세운 뒤 대조한다."""
     try:
-        _reset_steps(rt, by, ask=False, keep_class=False)
+        _reset_steps(rt, by, records=False, keep_class=False)
         content = before["content"]
-        if not any((content.get(k) if k != "deployments" else (content[k].get("flows") or content[k].get("reference"))) for k in CONTENT_KEYS):
+        if not any((content.get(k) if k != "deployments" else (content[k].get("flows") or content[k].get("reference"))) for k in CONTENT_KEYS) \
+                and not before_mcp.get("checks"):
             return True, None
         secrets = {s["name"]: {} for s in content.get("mcp_servers") or []}
         plan = validate(rt, base_loader, before, secrets, False)
-        _apply(rt, base_loader, plan, by)
+        _apply(rt, base_loader, plan, by, mcp_rows=before_mcp)
         diff = _verify(rt, base_loader, content, plan)
         if diff:
             return False, "다시 세운 구성이 불러오기 전과 다릅니다 — " + ", ".join(diff[:5])

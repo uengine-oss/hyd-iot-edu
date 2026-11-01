@@ -12,7 +12,7 @@ HEADING = re.compile(r'^(#{1,3}) ', re.M)
 # A119 (r14 B1): the proposal now goes to a workspace file, so the output-token ceiling that set 40,000 (A093) is gone.
 # What still bounds one task is its *input*: the segment text sits in the agent's context twice (read as input, then
 # written back as cited JSON of about the same size) next to the instruction and schema brief, and one run must finish
-# inside CLIAGENTS_RUN_TIMEOUT_SECONDS (1,800 s). Measured ceiling: one task of 82,795 chars took 1,180 s (A092,
+# inside the worker's run limit (worker.settings run_timeout_s, 1,800 s). Measured ceiling: one task of 82,795 chars took 1,180 s (A092,
 # a092-ingest-large-1) — 80,000 keeps ~35 % time headroom under that and, at the pessimistic 1 token/char of CJK text,
 # 2 × 80 K + ~10 K brief stays under a 200 K-token context. EHU40 (126,168 chars) → 2 segments instead of 4.
 DEFAULT_MAX_CHARS = 80_000
@@ -26,9 +26,24 @@ def ranges_of(seg: dict) -> list[dict]:
     return [{'page': seg['page'], 'start': seg['start'], 'end': seg['end']}]
 
 
+SENTENCE_END = re.compile(r'[.!?。](?=\s)')
+
+
+def cut_point(text: str, a: int, limit: int) -> int:
+    """text[a:limit] 안에서 블록을 자를 자리(그 글자부터 다음 블록): 마지막 빈 줄 → 마지막 줄바꿈 → 마지막 문장 끝(. ! ? 。 뒤 공백)
+    순으로 찾는다. 셋 다 없는 한 덩어리 글(줄 · 문장 끝 없이 limit 글자를 넘는 글)만 limit 에서 자른다 — 그때는 앞뒤 구간이 그 문장을 나눠 갖는다."""
+    for mark in ('\n\n', '\n'):
+        at = text.rfind(mark, a, limit)
+        if at > a:
+            return at + len(mark)
+    ends = [m.end() for m in SENTENCE_END.finditer(text, a, limit)]
+    return ends[-1] + 1 if ends and ends[-1] + 1 < limit else limit
+
+
 def _blocks(source: dict, max_chars: int):
     """Heading-bounded blocks (page, start, end) in document order; a block never straddles a heading or a page, and a
-    block longer than max_chars is cut at the last paragraph break before the limit (never mid-line)."""
+    block longer than max_chars is cut at cut_point (paragraph break → line break → sentence end; only text without any
+    of them is cut at the limit)."""
     for page in source['pages']:
         text = page['text']
         if not text:
@@ -36,8 +51,7 @@ def _blocks(source: dict, max_chars: int):
         cuts = sorted({0, *(m.start() for m in HEADING.finditer(text)), len(text)})
         for a, b in zip(cuts, cuts[1:]):
             while b - a > max_chars:
-                cut = text.rfind('\n\n', a, a + max_chars)
-                cut = cut + 2 if cut > a else a + max_chars
+                cut = cut_point(text, a, a + max_chars)
                 yield page['page'], a, cut
                 a = cut
             if b > a:
@@ -93,7 +107,7 @@ def _continuation(procedures: list[dict], first_index: int, index: int, later: d
     return orders[0], orders[-1]
 
 
-SOP_ID = re.compile(r'^SOP-[A-Z0-9]+(?:-[A-Z0-9]+)*$')
+from .kgadmin import SOP_ID_RE as SOP_ID   # SOP 번호 모양 한 곳(kgadmin)
 
 
 def _drop_dangling_sop_refs(merged: dict) -> None:

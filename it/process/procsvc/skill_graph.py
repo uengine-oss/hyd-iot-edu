@@ -55,6 +55,10 @@ def link_candidate_rules(tx, sid, failure_mode):
     return rules
 
 
+def _relation_refused(rel):
+    return f"고장 유형과 조치 방법의 관계 '{rel}' 은(는) 쓸 수 없습니다 — 근본 조치 · 즉시 완화 · 예방 조치 가운데 고르세요"
+
+
 def write(session, query, sid, values, *, create=False, expected_revision=None, request_id=None, by='지식 관리자'):
     """The receipt, properties, steps and all relationships commit together.
 
@@ -67,8 +71,7 @@ def write(session, query, sid, values, *, create=False, expected_revision=None, 
     rid=str(uuid.UUID(request_id)) if request_id is not None else str(uuid.uuid4())
     intent={'skill':sid,'values':deepcopy(values),'create':create,'revision':expected_revision,'by':by}
     digest=fingerprint(intent)
-    manual_graph.ensure_schema(session)
-    session.run('CREATE CONSTRAINT knowledge_edit_id IF NOT EXISTS FOR (r:KnowledgeEdit) REQUIRE r.id IS UNIQUE').consume()
+    manual_graph.ensure_schema(session)     # 영수증(KnowledgeEdit.id) 유일 제약은 그래프 적재 때 한 곳(it/neo4j/v2/constraints.cypher)
 
     def run(tx):
         manual_graph._lock(tx)
@@ -82,7 +85,7 @@ def write(session, query, sid, values, *, create=False, expected_revision=None, 
             if current or tx.run('MATCH (k:Skill {sopId:$sop}) RETURN k.id AS id',sop=values['sopId']).single():
                 raise Conflict('이 SOP 또는 스킬이 이미 존재합니다. 기존 원문을 덮어쓰지 않았습니다')
         else:
-            if not current:raise KeyError('no such skill')
+            if not current:raise KeyError(sid)
             if len(current)!=1:raise Conflict('스킬의 승인 관계가 중복되어 먼저 정합성 검토가 필요합니다')
             if current[0].get('source_document'):
                 raise Conflict('원문에서 적재한 스킬입니다. 해당 문서의 개정·검토 경로에서 수정하세요')
@@ -104,11 +107,11 @@ def write(session, query, sid, values, *, create=False, expected_revision=None, 
             for i,text in enumerate(values['steps'],1):
                 tx.run('MATCH (k:Skill {id:$id}) CREATE (s:Step {id:$sid,order:$order,text:$text}) CREATE (k)-[:HAS_STEP]->(s)',id=sid,sid=step_ids[i-1],order=i,text=text).consume()
             rel=values['relation']
-            if rel not in kgadmin.FAILURE_RELATIONS:raise ValueError('unsupported failure relation')
+            if rel not in kgadmin.FAILURE_RELATIONS:raise ValueError(_relation_refused(rel))
             tx.run(f'MATCH (f:FailureMode {{id:$fm}}),(k:Skill {{id:$id}}),(s:System {{id:$performer}}) CREATE (f)-[:{rel}]->(k) CREATE (s)-[:HAS_SKILL]->(k)',fm=values['failureMode'],id=sid,performer=performer).consume()
         elif values.get('failureMode'):
             rel=values.get('relation') or 'REMEDIED_BY'
-            if rel not in kgadmin.FAILURE_RELATIONS:raise ValueError('unsupported failure relation')
+            if rel not in kgadmin.FAILURE_RELATIONS:raise ValueError(_relation_refused(rel))
             target=tx.run('MATCH (n:FailureMode {id:$id}) SET n.id=n.id RETURN n.id AS id',id=values['failureMode']).data()
             if len(target)!=1:raise ValueError('FailureMode 대상이 없거나 중복되어 변경하지 않았습니다')
             tx.run('MATCH (:FailureMode)-[old:MITIGATED_BY|REMEDIED_BY|PREVENTED_BY]->(k:Skill {id:$id}) DELETE old',id=sid).consume()

@@ -1,5 +1,5 @@
 /* 조치 선택 패널 · 업무 흐름(승인과 실행) · 조치 방법 목록 · 매뉴얼 등록 · 업무 데이터 연결 (loaded after app.js / enterprise.js / main.js / flow.js).
-   - 조치 선택 패널 (이상 확인 · 조치): the agent's ranked action candidates. The decision is made in the 처리 건 screen (A122 UIUX_PLAN §1.2) —
+   - 조치 선택 패널 (이상 확인 · 조치): the agent's ranked action candidates. The decision is made in the 처리 건 screen (A122 UIUX_PLAN §1) —
      the panel shows the cards and one link there; there is no second approval form.
    - 업무 흐름: hydFlow draws the definition of the instance behind the selected decision (UIUX_PLAN §4).
    - 조치 방법: list / edit skills; add a new skill matched to a failure mode (written by the process service)
@@ -68,7 +68,7 @@
     const roleName = ((d.roles || {})[d.approvedRole] || {}).name || d.approvedRole || '';
     // A141: 승인 시각은 기록 접기(audit)에 있으므로 카드에서는 뺀다
     return UI.card({ title: esc(UI.idText(ch.name || d.chosen || UI.t('decision'))), chips: UI.chip(d.state) + (d.override ? UI.chipText(UI.t('proc.override'), 'warning') : ''),
-      value: `<span class="kv">${esc(d.approvedBy || '–')}<small>${esc(roleName)}</small></span>`,
+      value: `<span class="kv">${esc(UI.who(d.approvedBy))}<small>${esc(roleName)}</small></span>`,
       sub: d.reason ? `${esc(UI.t('inc.reasonLabel'))}: ${esc(d.reason)}` : '',
       body: (d.executions || []).length ? `<div class="cards two">${d.executions.map(x => UI.card({ title: esc(UI.who(x.system) + (x.code ? ' · ' + hydCards.actionLabel({ code: x.code }) : '')), chips: UI.chip(x.status), value: x.ref ? `<span class="kv mono">${esc(x.ref)}</span>` : '', sub: esc(UI.idText(x.detail || '')), cls: 'soft' })).join('')}</div>` : '' });
   }
@@ -87,7 +87,7 @@
     html += `<div class="detail-head"><div class="row"><h2 style="font-size:16px">${esc(pending ? UI.t('select') : UI.t('decision'))}</h2>${UI.chip(d.state)}</div><div class="sub">${esc(UI.idText(sc.failureMode || ''))}${sc.cause ? ' · ' + esc(UI.idText(sc.cause)) : ''}</div></div>`;
     html += summaryBlock(d.explanation);
     if (pending) {
-      // 고르기 · 승인은 처리 건 화면에서 한다 — 여기는 카드와 링크 하나(UIUX_PLAN §1.2)
+      // 고르기 · 승인은 처리 건 화면에서 한다 — 여기는 카드와 링크 하나(UIUX_PLAN §1)
       html += '<div class="hitl-opts">' + opts.map(o => hydCards.cardHtml(o, { rec: d.recommended, chosen: d.chosen, maxAbs, decision: d })).join('') + '</div>';
       html += UI.actions(`<button class="btn primary" id="hGoInstance">${esc(UI.t('btn.goInstance'))}</button>`);
     } else {
@@ -98,48 +98,53 @@
     box.innerHTML = html;
     box.querySelector('#hGoInstance')?.addEventListener('click', async () => {
       const b = $('#hGoInstance'); b.disabled = true;
-      try { await openIncident(inc.id); } finally { b.disabled = false; }
+      const say = text => { b.closest('.form-actions').querySelector('.form-msg')?.remove(); if (text) b.insertAdjacentHTML('beforebegin', `<span class="form-msg neg" role="status">${esc(text)}</span>`); };
+      try { say(await openIncident(inc.id) ? '' : '이 사건의 처리 건을 찾지 못했습니다 — 「처리 건」 화면에서 직접 고르세요.'); }
+      catch (e) { say('처리 건을 열지 못했습니다: ' + e.message); }
+      finally { b.disabled = false; }
     });
   }
   // 사건 → 그 사건을 처리하는 처리 건으로 이동(조치 패널 · 「승인과 실행」 탭이 같이 쓴다). 찾으면 true
   async function openIncident(incId) {
     let id = H.instByIncident.get(incId);
     if (!id) { const list = await getJ(API.process + '/api/instances?limit=1&incident=' + encodeURIComponent(incId)); const found = list[0]; if (found) { id = found.proc_inst_id; H.instByIncident.set(incId, id); } }
-    selectTab('instances'); if (id && window.hydInstancesSelect) window.hydInstancesSelect(id);
-    return !!id;
+    if (!id) return false;              // 못 찾으면 탭을 옮기지 않는다 — 부르는 쪽이 그 자리에 「찾지 못함」을 보인다
+    selectTab('instances'); window.hydInstancesSelect(id);
+    return true;
   }
   window.hydHitl = { H, refreshHitl, openIncident };
   setInterval(() => refreshHitl(false), 1500);
 
   /* ================================================= 승인과 실행: 업무 흐름 — the instance behind the selected decision, drawn from its definition */
+  // 판단의 사건 → 처리 건 view. 없음(null)과 읽기 실패(예외)를 섞지 않는다 — 실패는 부르는 쪽이 사유로 보인다
   async function instanceFor(incId) {
-    if (!incId) return null;
     let id = H.instByIncident.get(incId);
     if (!id) {
-      try { const list = await getJ(API.process + '/api/instances?limit=1&incident=' + encodeURIComponent(incId)); const found = list[0]; if (found) { id = found.proc_inst_id; H.instByIncident.set(incId, id); } } catch (e) { }
+      const found = (await getJ(API.process + '/api/instances?limit=1&incident=' + encodeURIComponent(incId)))[0];
+      if (!found) return null;
+      id = found.proc_inst_id; H.instByIncident.set(incId, id);
     }
-    if (!id) return null;
-    try { return await getJ(API.process + '/api/instances/' + encodeURIComponent(id)); } catch (e) { return null; }
+    return getJ(API.process + '/api/instances/' + encodeURIComponent(id));
   }
   async function refreshProcBpmn() {
     if (state.tab !== 'process') return;
     const box = document.getElementById('procBpmn'); if (!box || !window.hydFlow) return;
     const d = hydEnt.ent.decDetail;
     const incId = d && (d.origin || {}).incident;
-    const view = await instanceFor(incId);
+    let view = null, error = '';
+    if (incId) { try { view = await instanceFor(incId); } catch (e) { error = e.message; } }
     if (state.tab !== 'process' || hydEnt.ent.decDetail?.id !== d?.id) return;
     const vertical = hydFlow.narrow(box);          // A141: 좁은 폭(1024)에서는 세로 배치 — 가로 스크롤 없음
-    const sig = [d && d.id, view && view.instance.status, view && view.workitems.map(w => w.id + w.status).join(','), vertical].join('|');
+    const sig = [d && d.id, error, view && view.instance.status, view && view.workitems.map(w => w.id + w.status).join(','), vertical].join('|');
     if (box.dataset.sig === sig) return; box.dataset.sig = sig;
     // 좁은 폭에서는 접기 안에 세로 배치(요약 줄에 처리 건 이름 · 상태), 넓은 폭은 그대로 펼친 가로 흐름도
     if (view) {
       const caption = `<b>${esc(view.instance.proc_inst_name)}</b> ${UI.chip(view.instance.status)}`;
       hydFlow.mount(box, hydFlow.render(view.definition, { workitems: view.workitems, instance: view.instance, vertical, caption: vertical ? '' : caption }), view.instance.proc_inst_id, { fold: vertical ? `${esc(UI.t('proc.flow'))} · ${caption}` : '' });
     } else {
-      const def = await hydFlow.latestDefinition();
-      if (state.tab !== 'process') return;
-      const caption = esc(d ? UI.t('proc.flowManual') : UI.t('proc.flowEmpty'));
-      hydFlow.mount(box, hydFlow.render(def, { vertical, caption: vertical ? '' : caption }), 'overview', { fold: vertical ? `${esc(UI.t('proc.flow'))} · <span class="muted" style="font-weight:400">${caption}</span>` : '' });
+      // 흐름 그림은 그 판단의 처리 건 정의로만 그린다(기준 흐름을 대신 그리지 않는다 — 수업 경보는 c3_* 흐름이 연다)
+      box.innerHTML = error ? UI.errorBlock('이 판단의 처리 건을 읽지 못했습니다', error + ' — 잠시 뒤 다시 읽습니다')
+        : UI.empty(!d ? UI.t('proc.flowEmpty') : incId ? '이 판단의 처리 건을 찾지 못했습니다' : '처리 건 없이 제출된 판단이라 진행 흐름이 없습니다', '', 'compact');
     }
   }
   setInterval(refreshProcBpmn, 2000);
@@ -157,7 +162,8 @@
   }
   async function loadSkills() {
     if (!H.skills.length) $('#skillList').innerHTML = `<div class="muted" role="status">${esc(UI.t('loading'))}</div>`;
-    try { H.skills = requireList(await getJ(API.process + '/api/kg/skills'), '조치 방법 목록'); } catch (e) { $('#skillList').innerHTML = UI.empty(UI.t('error.load'), e.message, 'compact'); return; }
+    try { H.skills = requireList(await getJ(API.process + '/api/kg/skills'), '조치 방법 목록'); }
+    catch (e) { $('#skillList').innerHTML = UI.errorBlock(UI.t('error.load'), e.message, { retry: true, cls: 'compact' }); $('#skillList').querySelector('[data-retry]')?.addEventListener('click', loadSkills); return; }
     if (!H.catalog) { try { H.catalog = await getJ(API.process + '/api/kg/catalog'); H.catalogError = ''; } catch (e) { H.catalogError = e.message; } }
     if (!H.skillSel && H.skills.length && !H.skillNew) H.skillSel = H.skills[0].id;
     renderSkillList(); renderSkillDetail();
@@ -367,7 +373,7 @@
   function renderGolden(batch) {
     const box = $('#manualHistory').querySelector(`[data-golden="${CSS.escape(batch)}"]`); if (!box) return;
     const open = box.querySelector('details.golden')?.open;
-    box.innerHTML = goldenSection(batch, open); wireGolden(box);
+    box.innerHTML = goldenSection(batch, open); wireGolden(box); hydCourseAccess.apply(box);   // 꺼진 까닭을 단추 옆 한 줄로(W3-07)
   }
   function wireGolden(root) {
     root.querySelectorAll('[data-golden-ask]').forEach(b => b.addEventListener('click', async () => {
@@ -402,7 +408,7 @@
       const counts = u => `${UI.t('kn.sections')} ${u.sections} · ${UI.t('kn.procedures')} ${u.procedures} · ${UI.t('kn.steps')} ${u.steps}`;
       const version = u => u.status === 'ROLLED_BACK' ? UI.chipText(UI.t('kn.rolledBack'), 'neutral') : u.current ? UI.chipText(UI.t('kn.current'), 'success') : UI.chipText(UI.t('kn.previous'), 'neutral');
       const buttons = u => `<button class="btn small" data-manual-revise="${esc(u.document_id)}">${esc(UI.t('kn.revise'))}</button>${u.current && u.status === 'ACTIVE' ? `<button class="btn small" data-manual-undo="${esc(u.batch)}">${esc(UI.t('kn.undo'))}</button>` : ''}`;
-      // 매뉴얼 배치 카드(R3): 제목 = 파일 · 칩 = 판본 · 핵심 값 = 절·조치 방법·단계 · 본문 = 이 문서로 답할 수 있는 질문(접기)
+      // 매뉴얼 배치 카드: 제목 = 파일 · 칩 = 판본 · 핵심 값 = 절·조치 방법·단계 · 본문 = 이 문서로 답할 수 있는 질문(접기)
       // A141: 담당자 · 시각은 아래 "매뉴얼 등록 이력" 접기 표에만 둔다
       const cards = current.map(u => UI.card({ title: `<a href="${API.process}/api/kg/manuals/sources/${encodeURIComponent(u.source_id)}/original">${esc(u.filename)}</a>`, chips: version(u), value: esc(counts(u)),
         actions: buttons(u), cls: 'manual-doc', body: `<div data-golden="${esc(u.batch)}">${goldenSection(u.batch, goldenOpen[u.batch])}</div>` })).join('');
@@ -410,7 +416,7 @@
         + (current.length ? `<div class="cards manual-docs">${cards}</div>` : UI.empty(UI.t('kn.docsEmpty'), UI.t('kn.docsEmptySub'), 'compact'))
         + (ups.length ? UI.fold(`${esc(UI.t('kn.history'))} <span class="chip tone-neutral sm">${ups.length}</span>`, `<div class="table-scroll"><table class="prov"><thead><tr><th>매뉴얼</th><th>등록 내용</th><th>담당자</th><th>등록 시각</th><th>판본</th></tr></thead><tbody>` + ups.map(u => `<tr><td><a href="${API.process}/api/kg/manuals/sources/${encodeURIComponent(u.source_id)}/original">${esc(u.filename)}</a></td><td>${esc(counts(u))}</td><td>${esc(u.by)}</td><td>${esc(UI.dateTime(u.t))}</td><td>${version(u)} ${buttons(u)}</td></tr>`).join('') + '</tbody></table></div><p class="muted">되돌리기는 최신 판본부터 진행합니다. 보관한 원문은 지우지 않습니다.</p>', { open: wasOpen, cls: 'plain manual-history' }) : '')
         + '<p class="muted" id="manualHistoryMsg" role="status"></p>';
-      wireGolden(history);
+      wireGolden(history); hydCourseAccess.apply(history);
       current.forEach(u => fetchGolden(u.batch).then(() => renderGolden(u.batch)));
       history.querySelectorAll('[data-manual-revise]').forEach(b => b.addEventListener('click', () => {
         selectManualDocument(b.dataset.manualRevise);
@@ -516,7 +522,7 @@
     // 이 문서에서 새로 나온 고장 유형 · 원인은 아직 카탈로그에 없다 — 제안 안의 이름을 먼저 쓴다(내부 id 를 화면에 내지 않는다)
     const name = id => own[id] || UI.name(id);
     if (group === 'causes') return `사전 확률 ${x.prior ?? '미정'}${x.failure_mode ? ' · ' + name(x.failure_mode) : ''}`;
-    if (group === 'evidence') return `${x.tag} ${x.aggregate || ''} ${x.window_seconds ?? ''}초 ${({ lt: '<', gt: '>', gte: '≥' })[x.expect] || x.expect} ${x.threshold} → ${name(x.cause)}`;
+    if (group === 'evidence') return `${hydWords.fieldName(String(x.tag || '').toLowerCase())} ${hydWords.agg(x.aggregate)}${x.window_seconds != null ? ` ${x.window_seconds}초` : ''} ${hydWords.sym(x.expect)} ${x.threshold} → ${name(x.cause)}`;
     if (group === 'rules') return `${({ SELECT: '후보', EXCLUDE: '제외', PENALTY: '감점', WARN: '경고' })[x.effect] || x.effect} · ${UI.ruleLabel(x)}${x.penalty != null ? ' · ' + x.penalty + '만 원' : ''}${(x.outputs || []).length ? ' → ' + x.outputs.map(o => name(o)).join(', ') : ''}`;
     return (x.symptoms || []).map(y => name(y)).join(', ');
   }
@@ -542,7 +548,7 @@
       ${manualValidationHtml(r.validation,r,{...H.catalog,...H.manualCatalog})}
       ${manualExecutionHtml(r.validation,r,{...H.catalog,...H.manualCatalog})}
       <p class="row-wrap"><a href="${API.process}/api/kg/manuals/sources/${encodeURIComponent(r.source_id)}/original">보관한 원본 내려받기</a> <button class="btn small" id="manualFullSource">추출 원문 전체 보기</button></p><div id="manualSourceText"></div>
-      <p class="row-wrap"><button class="btn small" id="manualAgentExtract" ${r.status === 'READY' ? '' : 'disabled'}>추출 제안 준비</button> <button class="btn small" id="manualAgentResult">추출 진행 · 결과 확인</button> <span id="manualAgentStatus" role="status" class="muted">${r.extraction ? '추출 제안입니다. 원문을 대조하고 검토 후 적재하세요.' : '현재 결과는 구조화된 줄 파서입니다. 원문에 근거한 추출 제안을 준비할 수 있습니다.'}</span></p>
+      <p class="row-wrap"><button class="btn small" id="manualAgentExtract" ${r.status === 'READY' ? '' : 'disabled'}>추출 제안 준비</button> <button class="btn small" id="manualAgentResult">추출 진행 · 결과 확인</button> <span id="manualAgentStatus" role="status" class="muted">${r.extraction ? (r.extraction.cache?.origin ? '강사가 검토 · 서명한 추출본입니다(제공 문서라 AI를 부르지 않았습니다). 원문을 대조하고 검토 후 적재하세요.' : '추출 제안입니다. 원문을 대조하고 검토 후 적재하세요.') : '현재 결과는 구조화된 줄 파서입니다. 원문에 근거한 추출 제안을 준비할 수 있습니다.'}</span></p>
       <div class="form-grid">${UI.field({ label: '이 문서의 추출 작업', input: `<select id="manualExtractionRuns"><option value="">${esc(UI.t('loading'))}</option></select>` })}</div><button class="btn small" id="manualExtractionMore" style="display:none">이전 추출 작업 더 보기</button>
       ${r.page_reviews ? UI.fold('페이지별 추출 검토 기록', r.page_reviews.map(p => `<p>${esc(p.page)}쪽: ${esc(p.note)}</p>`).join(''), { cls: 'small' }) : ''}
       <div class="mcols"><div><h3>매뉴얼 절</h3>${r.sections.map(s => `<div class="msec"><b>${esc(s.ref)}</b> ${esc(s.title)}${UI.fold('절 본문 전체', `<div class="muted" style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(s.excerpt)}</div>`, { cls: 'small' })}${citation(s.anchor)}</div>`).join('') || `<div class="muted">${esc(UI.t('skill.none'))}</div>`}</div>
@@ -693,7 +699,7 @@
         if (H.preview !== r) return;
         const activated = out.candidate_activation && typeof out.candidate_activation === 'object' ? Object.entries(out.candidate_activation) : [];
         $('#manualMsg').textContent = `적재 완료: 절 ${out.sections} · 조치 방법 ${out.procedures} · 단계 ${out.steps}. ` + (activated.length
-          ? '후보 규칙에 연결: ' + activated.map(([fm, rules]) => `${fm} → ${rules.join(', ')}`).join(' · ') + ' (되돌리면 함께 빠집니다)'
+          ? '후보 규칙에 연결: ' + activated.map(([fm, rules]) => `${hydWords.idName(fm)} → ${rules.map(r => hydWords.idName(r)).join(', ')}`).join(' · ') + ' (되돌리면 함께 빠집니다)'
           : '연결된 후보 규칙이 없어 판단 후보는 바뀌지 않았습니다.');
         c.textContent = '적재 완료';
         H.skills = [];
@@ -761,13 +767,20 @@
   });
   // 수업 경계(서버 GET /api/course-access): 수업 단계에서는 제공 문서만 등록된다 — 고르기 전에 안내하고, 골든 질문 평가 단추는 서버 까닭으로 끈다
   function courseScope() {
+    // 제공 문서 받기 링크: 서버 수업 경계가 가진 제공 문서 목록(course-access provided_documents = 강사 서명 추출 묶음) 하나에서 그린다(W2-21)
+    const docs = $('#providedDocs');
+    if (docs) {
+      const list = hydCourseAccess.access?.provided_documents;
+      docs.innerHTML = Array.isArray(list) ? list.map(f => `<a href="samples/${encodeURIComponent(f)}" download>${esc(f)}</a>`).join(' · ')
+        : hydCourseAccess.error ? `<span class="neg">수업 단계 정보를 읽지 못해 목록이 없습니다</span>` : esc(UI.t('loading'));
+    }
     const box = $('#manualScope'); if (box) {
       box.hidden = !hydCourseAccess.documentsProvidedOnly;
-      box.textContent = '수업 단계에서는 위 제공 문서(내용을 고치지 않은 원문)만 등록됩니다. 다른 문서는 PBL 단계에서 엽니다.';
+      box.textContent = hydCourseAccess.documentsProvidedOnly ? hydCourseAccess.reason('document') : '';   // 까닭 문장은 서버 수업 경계 한 곳(P2-05 · W2-08)
     }
     hydCourseAccess.apply($('#manualHistory'));
   }
-  hydCourseAccess.onChange(courseScope);
+  hydCourseAccess.onChange(courseScope); courseScope();   // 표가 먼저 와 있었으면 바로 그린다
   $('#manualFile').addEventListener('change', () => {
     H.preview = null;
     const name = $('#manualFile').files[0]?.name;
@@ -781,22 +794,23 @@
   });
 
   /* ================================================= 업무 데이터 연결 (DDL → System · InputData, 되돌리기 가능) */
-  async function loadIngests() {
+  // msg: 이력 위 알림 줄(되돌리기 결과) — 이력을 다시 그리면 그 줄도 새로 만들어지므로 그릴 때 함께 넣는다(한바퀴3: 결과 문장이 바로 지워졌다)
+  async function loadIngests(msg = '') {
     const box = $('#ddlHistory'); if (!box) return;
     try {
       const rows = await getJ(API.process + '/api/kg/ingests');
       const batches = {};
       rows.forEach(r => { (batches[r.batch] = batches[r.batch] || []).push(r); });
       const keys = Object.keys(batches);
-      box.innerHTML = `<p id="ddlHistoryMsg" class="muted" role="status"></p>` + (keys.length ? UI.fold(`연결 배치 <span class="chip tone-neutral sm">${keys.length}</span>`, `<div class="table-scroll"><table class="prov"><thead><tr><th>배치</th><th>사용 항목</th><th>출처</th><th></th></tr></thead><tbody>`
+      box.innerHTML = `<p id="ddlHistoryMsg" class="muted" role="status">${esc(msg)}</p>` + (keys.length ? UI.fold(`연결 배치 <span class="chip tone-neutral sm">${keys.length}</span>`, `<div class="table-scroll"><table class="prov"><thead><tr><th>배치</th><th>사용 항목</th><th>출처</th><th></th></tr></thead><tbody>`
         + keys.map(k => `<tr><td><code>${esc(k)}</code></td><td>${batches[k].map(r => `${esc(LABEL_KO[r.label] || r.label)} ${r.nodes}`).join(' · ')}</td><td class="muted">${esc((batches[k][0] || {}).source || '')}</td><td><button class="btn small" data-clear="${esc(k)}">되돌리기</button></td></tr>`).join('') + '</tbody></table></div>', { cls: 'plain', open: true }) : '');
       box.querySelectorAll('[data-clear]').forEach(b => b.addEventListener('click', async () => {
         if (!confirm(`${b.dataset.clear} 배치의 변경을 되돌립니다. 다른 배치가 사용하는 항목은 유지합니다. 계속할까요?`)) return;
         b.disabled = true;
-        try { const out = await postJ(API.process + '/api/kg/ingests/' + encodeURIComponent(b.dataset.clear) + '?by=' + encodeURIComponent($('#ddlBy').value), null, 'DELETE'); $('#ddlHistoryMsg').textContent = `되돌리기 완료: ${out.deleted} 삭제 · ${out.restored || 0} 복원 · ${out.retained || 0} 유지`; await loadIngests(); if (window.hydEnt) hydEnt.loadGraph(true); }
+        try { const out = await postJ(API.process + '/api/kg/ingests/' + encodeURIComponent(b.dataset.clear) + '?by=' + encodeURIComponent($('#ddlBy').value), null, 'DELETE'); await loadIngests(`되돌리기 완료: ${out.deleted} 삭제 · ${out.restored || 0} 복원 · ${out.retained || 0} 유지`); if (window.hydEnt) hydEnt.loadGraph(true); }
         catch (e) { $('#ddlHistoryMsg').textContent = '되돌리기 실패: ' + e.message; b.disabled = false; }
       }));
-    } catch (e) { box.innerHTML = `<p class="neg" role="status">연결 이력을 읽지 못했습니다: ${esc(e.message)}</p>`; }
+    } catch (e) { box.innerHTML = `<p id="ddlHistoryMsg" class="muted" role="status">${esc(msg)}</p><p class="neg" role="status">연결 이력을 읽지 못했습니다: ${esc(e.message)}</p>`; }
   }
   function renderDdlPreview() {
     const p = H.ddl; const box = $('#ddlResult');
@@ -807,12 +821,17 @@
       <div class="mcols"><div><h3>테이블 → 출처 시스템</h3>${p.tables.map(t => `<div class="msec"><b>${esc(t.table)}</b> <span class="muted">${esc(t.comment || '')}</span>
         ${UI.field({ label: '출처 시스템', input: `<select data-sys="${esc(t.table)}"><option value="">(없음 · 적재 안 함)</option>${sysOptions(t.system)}</select>` })}
         <div class="ddlcols">${t.columns.map(c => `<label><input type="checkbox" data-col="${esc(t.table)}" value="${esc(c)}" ${t.selected.includes(c) ? 'checked' : ''}> ${esc(c)}</label>`).join('')}</div></div>`).join('')}</div>
-      <div><h3>입력 데이터와 실제 위치</h3><p class="muted">${esc(p.datasource)} / ${esc(p.catalog)}</p><div class="table-scroll"><table class="prov"><thead><tr><th>이름</th><th>형</th><th>스키마 · 표 · 열</th><th>업무 시스템</th></tr></thead><tbody>${p.inputs.map(i => `<tr><td>${esc(i.name)}</td><td>${esc(i.typeRef)}</td><td>${esc(i.schema)}<br>${esc(i.table)}<br>${esc(i.column)}</td><td>${esc(i.system)}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">고른 열이 없습니다</td></tr>'}</tbody></table></div>${UI.fold('식별자와 규칙 변수', p.inputs.map(i => `<p>${esc(i.schema)} · ${esc(i.table)} · ${esc(i.column)}<br><code>${esc(i.id)}</code> <code>${esc(i.variable)}</code></p>`).join(''), { cls: 'small' })}</div></div>
+      <div><h3>입력 데이터와 실제 위치</h3>${UI.field({ label: '원천 연결', input: `<select id="ddlSource">${(p.sourceOptions || []).map(o => `<option value="${esc(o.id)}" ${o.id === p.datasource ? 'selected' : ''}>${esc(o.label)} (${esc(o.schema)} 스키마)</option>`).join('')}</select>`,
+        hint: (p.sourceNotes || []).join(' ') || '고른 원천의 표 · 열로 잇습니다' })}<p class="muted">${esc(p.datasource)} / ${esc(p.catalog)}</p><div class="table-scroll"><table class="prov"><thead><tr><th>이름</th><th>형</th><th>스키마 · 표 · 열</th><th>업무 시스템</th></tr></thead><tbody>${p.inputs.map(i => `<tr><td>${esc(i.name)}</td><td>${esc(i.typeRef)}</td><td>${esc(i.schema)}<br>${esc(i.table)}<br>${esc(i.column)}</td><td>${esc(i.system)}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">고른 열이 없습니다</td></tr>'}</tbody></table></div>${UI.fold('식별자와 규칙 변수', p.inputs.map(i => `<p>${esc(i.schema)} · ${esc(i.table)} · ${esc(i.column)}<br><code>${esc(i.id)}</code> <code>${esc(i.variable)}</code></p>`).join(''), { cls: 'small' })}</div></div>
       <div id="legacyMeaning"></div>
       ${UI.actions(`<button class="btn outline" id="ddlReplan">선택 반영</button><button class="btn primary" id="ddlCommit" ${p.inputs.length ? '' : 'disabled'}>적재</button>`)}<span id="ddlMsg" class="muted"></span></div>`;
     if (window.hydLegacy) hydLegacy.mount($('#legacyMeaning'), { preview: p, text: H.ddlText, by: () => $('#ddlBy').value,   // A9 옛 DB 뜻 복원
       replan: async review => { const sel = {}, sys = {}; p.tables.forEach(t => { sel[t.table] = t.selected; if (t.system) sys[t.table] = t.system; });
         H.ddl = await postJ(API.process + '/api/kg/ddl/preview', { filename: p.filename, text: H.ddlText, selection: sel, systems: sys, datasource: p.datasource, catalog: p.catalog, meaning_review: review || undefined }); renderDdlPreview(); } });
+    $('#ddlSource').addEventListener('change', async e => {   // 원천을 바꾸면 그 원천의 스키마로 다시 해석한다(서버 ddl_sync.place)
+      try { H.ddl = await postJ(API.process + '/api/kg/ddl/preview', { filename: p.filename, text: H.ddlText, datasource: e.target.value, catalog: p.catalog }); renderDdlPreview(); }
+      catch (err) { $('#ddlMsg').textContent = '실패: ' + err.message; }
+    });
     $('#ddlReplan').addEventListener('click', async () => {
       const selection = {}, systems = {};
       box.querySelectorAll('[data-sys]').forEach(s => { if (s.value) systems[s.dataset.sys] = s.value; });
@@ -836,24 +855,21 @@
     $('#ddlResult').innerHTML = `<div class="muted" role="status">${esc(UI.t('loading'))}</div>`;
     try {
       H.ddlText = await f.text();
-      const preview = await postJ(API.process + '/api/kg/ddl/preview', { filename: f.name, text: H.ddlText, datasource: $('#ddlDatasource').value.trim(), catalog: $('#ddlCatalog').value.trim() });
+      const preview = await postJ(API.process + '/api/kg/ddl/preview', { filename: f.name, text: H.ddlText, catalog: $('#ddlCatalog').value.trim() });
       if ($('#ddlFile').files[0] !== f) return;
       H.ddl = preview; renderDdlPreview(); await loadIngests();
     } catch (e) { if ($('#ddlFile').files[0] === f) $('#ddlResult').innerHTML = `<div class="neg">미리보기 실패: ${esc(e.message)}</div>`; }
     finally { b.disabled = false; b.textContent = UI.t('kn.preview'); }
   });
   $('#ddlFile').addEventListener('change', () => { H.ddl = null; $('#ddlFilename').textContent = $('#ddlFile').files[0]?.name || UI.t('kn.noFile'); renderDdlPreview(); });
-  ['ddlDatasource', 'ddlCatalog'].forEach(id => $('#' + id).addEventListener('input', () => { H.ddl = null; renderDdlPreview(); }));
+  $('#ddlCatalog').addEventListener('input', () => { H.ddl = null; renderDdlPreview(); });
 
   /* ------------------------------------------------ tab hooks */
-  const _sel = selectTab;
-  selectTab = function (name) {
-    _sel(name);
+  hydTabs.onShow(name => {
     if (name === 'skills') loadSkills();
     if (name === 'knowledge') { loadUploads(); loadIngests(); }
     if (name === 'incidents') refreshHitl(true);
     if (name === 'process') refreshProcBpmn();
     if (name !== 'incidents') { const b = document.getElementById('hitlPanel'); if (b) b.innerHTML = ''; H.sig = null; }
-  };
-  window.hydApp.selectTab = selectTab;
+  });
 })();

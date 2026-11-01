@@ -1,19 +1,19 @@
-/* U4 (TODO 4): 흐름 판본 배포 · 비교 · 되돌리기 — 경보가 여는 "운영 판본"을 바꾼다. 열린 처리 건은 자기 판본으로 끝난다.
+/* U4: 흐름 판본 배포 · 비교 · 되돌리기 — 경보가 여는 "운영 판본"을 바꾼다. 열린 처리 건은 자기 판본으로 끝난다.
    API: GET /api/process/definitions · GET …/{id}/versions · GET …/{id}/compare?from_version&to_version · POST …/{id}/deploy · POST …/{id}/rollback
    화면 기준: process-gpt-vue3 ProcessDefinitionVersionManager(판본 목록 · 반영 버전 표시 · 반영 요청) · VersionComparison(바뀐 요소 목록).
    B4: 경보 → 흐름 표(GET /api/flows/deployments) · 기준 흐름으로 되돌리기(POST /api/flows/deploy-reset) · 기준과 비교(GET /api/flows/deploy-compare). */
 (function () {
   const $d = id => document.getElementById(id);
   const base = id => API.process + '/api/process/definitions/' + encodeURIComponent(id);
-  let status = null, busy = false, compareWith = null;
-  const patName = p => UI.patternName(p);
+  let status = null, compareWith = null;
+  const patName = p => UI.patternName(p), nameOf = hydDefinitions.name;   // 패널 일 · 흐름 이름은 definitionRegistry.js 의 한 벌(W3-28)
   function box(id, before) { let el = $d(id); if (!el) { el = document.createElement('div'); el.id = id; $d(before).before(el); } return el; }
   async function loadRoutes() {
     const r = await getJ(API.process + '/api/flows/deployments');
-    const rows = r.routes.map(x => `<tr><th>${esc(patName(x.pattern))}</th><td>${esc(x.name || UI.defName(x.definition))} · 판본 ${esc(x.version)}</td><td>${UI.chipText(x.source, x.reference ? 'success' : 'warning')}</td></tr>`).join('');
-    const shadow = r.flows.filter(f => f.shadowed.length).map(f => `<p class="muted">${esc(f.name || f.definition)}: ${f.shadowed.map(patName).map(esc).join(', ')}는 더 최근에 배포한 흐름이 엽니다</p>`).join('');
-    // P9: [기준 흐름으로 되돌리기]는 시작이 설치한 수업 흐름을 남긴다 — 수업 흐름만 있으면 되돌릴 것이 없다(reset_needed, 옛 서버는 at_reference 로)
-    const resetNeeded = r.reset_needed ?? !r.at_reference;
+    const rows = r.routes.map(x => `<tr><th>${esc(patName(x.pattern))}</th><td>${esc(nameOf(x.definition, x.name))} · 판본 ${esc(x.version)}</td><td>${UI.chipText(x.source, x.reference ? 'success' : 'neutral')}</td></tr>`).join('');
+    const shadow = r.flows.filter(f => f.shadowed.length).map(f => `<p class="muted">${esc(nameOf(f.definition, f.name))}: ${f.shadowed.map(patName).map(esc).join(', ')}는 더 최근에 배포한 흐름이 엽니다</p>`).join('');
+    // P9: [기준 흐름으로 되돌리기]는 시작이 설치한 수업 흐름을 남긴다 — 수업 흐름만 있으면 되돌릴 것이 없다(서버 reset_needed)
+    const resetNeeded = r.reset_needed;
     box('deployRoutes', 'deployStatus').innerHTML = UI.card({
       title: '경보 → 흐름 (지금 배포된 것)', chips: r.at_reference ? UI.chipText('기준 흐름', 'success') : resetNeeded ? UI.chipText('내가 바꾼 흐름 있음', 'warning') : UI.chipText('수업 흐름', 'accent'),
       value: `기준 판본 <b>${esc(r.reference.version)}</b>${r.reference.changed ? ` · 지금 운영 ${esc(r.reference.deployed_version)}` : ''}`,
@@ -22,24 +22,25 @@
         `<div class="form-actions"><button type="button" class="btn" id="deployResetRef" ${resetNeeded ? '' : 'disabled'}>기준 흐름으로 되돌리기</button></div>`
     });
   }
-  const message = (text, error = false) => { $d('deployMessage').textContent = text; $d('deployMessage').className = 'form-msg ' + (error ? 'neg' : 'pos'); };
-  async function action(fn) {
-    if (busy) return;
-    busy = true;
-    // 잠그기 전 상태를 기억해 그대로 되돌린다 — 원래 꺼진 「운영 중」 · 배포 불가 판본 · 기준 되돌리기 버튼이 살아나지 않게
-    const buttons = [...$d('definitionDeployPanel').querySelectorAll('button')].map(b => [b, b.disabled]); buttons.forEach(([b]) => b.disabled = true);
-    try { await fn(); } catch (e) { message(e.message, true); }
-    finally { busy = false; buttons.forEach(([b, was]) => b.disabled = was); syncButtons(); }
+  const panel = hydDefinitions.task($d('definitionDeployPanel'), $d('deployMessage'), syncButtons), action = panel.run, message = panel.say;
+  // 담당자 = 포털의 「나」(사용자 표의 사람) — 자유 입력은 배포 이력에 지어낸 이름을 남겼다. 서버도 사람만 받는다(inbox.require_person)
+  function showMe() {
+    const m = window.hydInbox?.me?.(), el = $d('deployBy');
+    el.readOnly = true; el.value = m ? `${m.name} (나)` : ''; el.placeholder = '내 작업함에서 나를 고르세요';
+    return m;
+  }
+  function meId() {
+    const m = showMe();
+    if (!m) throw Error("담당자는 '나'입니다 — 내 작업함에서 나를 먼저 고르세요");
+    return m.id;
   }
   function who() {
-    const by = $d('deployBy').value.trim(), reason = $d('deployReason').value.trim();
-    if (!by) throw Error('담당자를 적으세요');
+    const by = meId(), reason = $d('deployReason').value.trim();
     if (!reason) throw Error('사유를 적으세요');
-    try { localStorage.setItem('hyd.deployBy', by); } catch (e) { /* per-viewer convenience only */ }
     return { by, reason };
   }
   function syncButtons() {
-    $d('deployRollback').disabled = busy || !status || !status.rollback_version;
+    $d('deployRollback').disabled = panel.busy || !status || !status.rollback_version;
     $d('deployRollback').textContent = status && status.rollback_version ? `이전 배포 판본(${status.rollback_version})으로 되돌리기` : '이전 배포 판본으로 되돌리기';
   }
   async function loadDefinitions(selected) {
@@ -48,7 +49,8 @@
     const select = $d('deployChoice'); const current = selected || select.value; select.replaceChildren();
     ids.forEach(id => {
       const row = rows.find(r => r.id === id), option = document.createElement('option');
-      option.value = id; option.textContent = `${row.name || UI.defName(id)}` + (row.deployed_version ? ` · 운영 판본 ${row.deployed_version}` : ' · 배포 전');   // A161-U1 결함 11: 내부 id 를 보이지 않는다
+      // 경보로 열지 않는 정의(질문 · 교대 등)는 배포 개념이 없다 — 「배포 전」을 붙이지 않는다(W3-29)
+      option.value = id; option.textContent = nameOf(id, row.name) + (row.deployed_version ? ` · 운영 판본 ${row.deployed_version}` : '');
       select.appendChild(option);
     });
     if (ids.includes(current)) select.value = current;
@@ -69,17 +71,17 @@
   function render() {
     const s = status, deployed = s.versions.find(v => v.deployed);
     $d('deployStatus').innerHTML = UI.card({
-      title: esc(s.name || UI.defName(s.id)), chips: s.alert_entry ? UI.chipText('경보 진입 정의', 'accent') : UI.chipText('직접 시작 전용', 'neutral'),
+      title: esc(nameOf(s.id, s.name)), chips: s.alert_entry ? UI.chipText('경보 진입 정의', 'accent') : UI.chipText('직접 시작 전용', 'neutral'),
       value: s.deployed_version ? `운영 판본 <b>${esc(s.deployed_version)}</b>` : '배포된 판본 없음',
       sub: s.alert_entry ? '다음 경보부터 운영 판본으로 처리 건이 열립니다. 이미 열린 처리 건은 자기 판본으로 끝납니다.' : '이 정의는 경보가 아니라 직접 시작으로만 실행됩니다.',
       body: deployed && deployed.registered_at ? `<p class="muted">운영 판본 등록 ${esc(UI.dateTime(deployed.registered_at))}${deployed.message ? ' · ' + esc(deployed.message) : ''}</p>` : ''
     });
     $d('deployVersions').innerHTML = [...s.versions].reverse().map(v => `<div class="item"><div class="row"><strong>판본 ${esc(v.version)}</strong>${versionChip(v)}</div>` +
-      `<p class="muted">${v.registered_at ? '등록 ' + esc(UI.dateTime(v.registered_at)) : '등록 시각 없음'}${v.form_source === 'legacy-live' ? ' · 기존 폼(판본 안에 폼 없음)' : ''}</p>` +
+      `<p class="muted">${v.registered_at ? '등록 ' + esc(UI.dateTime(v.registered_at)) : '등록 시각 없음'}</p>` +
       (v.problem ? UI.fold('검사 실패 사유', `<p class="neg">${esc(v.problem)}</p>`, { cls: 'small' }) : '') +
       `<div class="form-actions">` +
       (s.deployed_version && !v.deployed ? `<button type="button" class="btn small" data-compare="${esc(v.version)}">운영 판본과 비교</button>` : '') +
-      (!(s.reference && v.version === s.reference_version) ? `<button type="button" class="btn small" data-refcompare="${esc(v.version)}">기준과 비교</button>` : '') +
+      (refComparable(s, v) ? `<button type="button" class="btn small" data-refcompare="${esc(v.version)}">기준과 비교</button>` : '') +
       `<button type="button" class="btn ${v.deployed || !v.deployable ? 'small' : 'primary'}" data-deploy="${esc(v.version)}" ${v.deployed || !v.deployable ? 'disabled' : ''}>${v.deployed ? '운영 중' : '이 판본 배포'}</button></div></div>`).join('');
     $d('deployCompare').innerHTML = s.versions.length > 1 ? UI.section('판본 비교', `<div class="field"><label for="deployFrom">기준</label><select id="deployFrom">${s.versions.map(v => `<option value="${esc(v.version)}" ${v.deployed ? 'selected' : ''}>${esc(v.version)}${v.deployed ? ' (운영)' : ''}</option>`).join('')}</select></div>` +
       `<div class="field"><label for="deployTo">비교 대상</label><select id="deployTo">${s.versions.map(v => `<option value="${esc(v.version)}" ${v.version === (compareWith || s.versions[s.versions.length - 1].version) ? 'selected' : ''}>${esc(v.version)}</option>`).join('')}</select></div>`) +
@@ -87,16 +89,26 @@
     $d('deployHistory').innerHTML = UI.fold(`배포 이력 ${UI.chipText(String(s.history.length), 'neutral')}`,
       s.history.length ? `<div class="list">${s.history.map(h => `<div class="item"><div class="row"><strong>${esc(actionName(h.action))} → 판본 ${esc(h.version)}</strong><span class="muted">${esc(UI.dateTime(h.created_at))}</span></div>` +
         `<p class="muted">${h.previous_version ? '이전 ' + esc(h.previous_version) + ' · ' : ''}${esc(UI.who(h.actor))} · ${esc(h.reason)}</p></div>`).join('')}</div>` : UI.empty('배포 이력이 없습니다'), { cls: 'small' });
-    if (compareWith) runCompare();
+    if (compareWith) runCompare().catch(e => { $d('deployDiff').innerHTML = UI.errorBlock('판본을 비교하지 못했습니다', e.message); });
     syncButtons();
   }
-  const actionName = a => ({ seed: '기동 시드', deploy: '배포', rollback: '되돌리기', reset: '기준으로 되돌리기', withdraw: '경보 경로에서 내림' }[a] || a);
+  // 「기준과 비교」: 서버가 정한 이 흐름의 비교 기준(versions 응답 compare_base = flow_deploy.compare_base)이 있을 때만, 기준 판본 자신은 빼고(W3-03).
+  // 화면이 기준 규칙(경보 흐름인가 · 수업 흐름인가)을 따로 셈하지 않는다
+  const refComparable = (s, v) => !!s.compare_base && !(s.compare_base.definition === s.id && s.compare_base.version === v.version);
+  // 배포 · 되돌리기 결과 한 줄: 흐름은 이름으로, 경보는 경보 이름으로(서버 applies_to 의 경보 코드를 그대로 보이지 않는다 — W3-17)
+  function doneText(out, name, verb) {
+    const when = out.patterns.length ? `다음 경보(${out.patterns.map(patName).join(' · ')})부터` : out.applies_to;
+    return `「${nameOf(out.definition, name)}」 운영 판본 ${out.previous_version || '없음'} → ${out.version} ${verb}. ${when} 적용됩니다.`;
+  }
+  window.hydDefinitionDeploy = { refComparable, doneText };   // 시험(test_www_definitionDeploy)이 부른다
+  const actionName = a => ({ seed: '처음 설치', deploy: '배포', rollback: '되돌리기', reset: '기준으로 되돌리기', withdraw: '경보 경로에서 내림' }[a] || a);
   async function runRefCompare(version) {
     const d = await getJ(API.process + `/api/flows/deploy-compare?definition=${encodeURIComponent(status.id)}&version=${encodeURIComponent(version)}`);
-    box('deployRefDiff', 'deployCompare').innerHTML = UI.section(`기준(${d.reference.version})과 비교 — 판본 ${version}`,
-      d.same ? UI.empty('기준 흐름과 같습니다') :
+    const ref = d.reference;
+    box('deployRefDiff', 'deployCompare').innerHTML = UI.section(`판본 ${version} ↔ 기준 「${nameOf(ref.definition, ref.name)}」 판본 ${ref.version}`,
+      `<p class="muted">기준을 고른 까닭: ${esc(UI.plain(ref.why))}${ref.pattern ? ' — 경보 ' + esc(patName(ref.pattern)) : ''}</p>` + (d.same ? UI.empty('기준 흐름과 같습니다') :
         `<p class="muted">${esc(UI.plain(d.summary))}</p>` + (d.steps.length ? `<ul>${d.steps.map(t => `<li>${esc(UI.plain(t))}</li>`).join('')}</ul>` : '<p class="muted">바뀐 단계·연결은 없습니다</p>') +
-        UI.fold(`바뀐 것 전체 ${d.changes.length}`, `<div class="list">${d.changes.map(ch => `<div class="item"><strong>${esc(UI.plain(ch.text))}</strong></div>`).join('')}</div>`, { cls: 'small' }));
+        UI.fold(`바뀐 것 전체 ${d.changes.length}`, `<div class="list">${d.changes.map(ch => `<div class="item"><strong>${esc(UI.plain(ch.text))}</strong></div>`).join('')}</div>`, { cls: 'small' })));
   }
   async function runCompare() {
     const from = $d('deployFrom').value, to = $d('deployTo').value;
@@ -110,33 +122,31 @@
         '</div>').join('')}</div>`;
   }
   $d('definitionDeployPanel').addEventListener('toggle', () => {
+    if ($d('definitionDeployPanel').open) showMe();
     if ($d('definitionDeployPanel').open && !status) action(() => loadDefinitions());
   });
-  try { $d('deployBy').value = localStorage.getItem('hyd.deployBy') || ''; } catch (e) { /* storage may be blocked */ }
+  showMe();
   $d('deployChoice').addEventListener('change', () => action(() => loadStatus()));
   $d('deployRefresh').addEventListener('click', () => action(() => loadDefinitions()));
   $d('deployRollback').addEventListener('click', () => action(async () => {
     const out = await postJ(base(status.id) + '/rollback', who());
     await loadDefinitions(status.id);
-    message(`${out.definition} 운영 판본을 ${out.previous_version} → ${out.version}으로 되돌렸습니다. ${out.applies_to} 적용됩니다.`);
+    message(doneText(out, status.name, '되돌림'));
   }));
   $d('definitionDeployPanel').addEventListener('click', ev => {
     const deploy = ev.target.closest('[data-deploy]'), compare = ev.target.closest('[data-compare]'), refCompare = ev.target.closest('[data-refcompare]');
     if (ev.target.id === 'deployResetRef') return action(async () => {
-      const by = $d('deployBy').value.trim();
-      if (!by) throw Error('담당자를 적으세요');
+      const by = meId();
       if (!await UI.confirm({ title: '기준 흐름으로 되돌릴까요?', body: '학생이 배포한 흐름만 내립니다. 수업 흐름(시작할 때 설치되는 A · B · C)은 남습니다. 기준 흐름의 운영 판본은 기준 판본으로 돌리고, 등록한 판본과 열린 처리 건은 그대로입니다.', ok: '되돌리기', danger: true })) return;
       const out = await postJ(API.process + '/api/flows/deploy-reset', { by, reason: $d('deployReason').value.trim() || null });
       await loadDefinitions(status && status.id);
-      // 남긴 수업 흐름(응답 kept)을 토스트에 — 서버 문구가 이미 이름을 말하면 되풀이하지 않는다
-      const kept = (out.kept || []).map(k => k.name || k.definition).filter(Boolean);
-      message(out.message + (kept.length && !kept.every(n => String(out.message).includes(n)) ? ` · 남긴 수업 흐름: ${kept.join(', ')}` : ''));
+      message(out.message);   // 남긴 수업 흐름의 이름은 서버 문장이 말한다(flow_deploy.deploy_reset — kept 가 있으면 늘 이름까지)
     });
     if (refCompare) return action(() => runRefCompare(refCompare.dataset.refcompare));
     if (deploy) action(async () => {
       const out = await postJ(base(status.id) + '/deploy', { ...who(), version: deploy.dataset.deploy });
       await loadDefinitions(status.id);
-      message(`${out.definition} 운영 판본 ${out.previous_version || '없음'} → ${out.version} 배포. ${out.applies_to} 적용됩니다.`);
+      message(doneText(out, status.name, '배포'));
     });
     else if (compare) { compareWith = compare.dataset.compare; action(async () => { render(); }); }
     else if (ev.target.id === 'deployCompareRun') action(runCompare);

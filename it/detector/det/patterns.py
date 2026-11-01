@@ -7,9 +7,8 @@ import math
 import operator
 import re
 
-from hydcommon.daq_contract import ALWAYS, AUX, DEADBAND, reporting_interval
+from hydcommon.daq_contract import TAGS, reporting_interval
 
-TAGS = ALWAYS | AUX | set(DEADBAND)
 OPS = {ast.Gt: ('>', operator.gt), ast.GtE: ('>=', operator.ge),
        ast.Lt: ('<', operator.lt), ast.LtE: ('<=', operator.le),
        ast.Eq: ('==', operator.eq), ast.NotEq: ('!=', operator.ne)}
@@ -199,7 +198,7 @@ def compile_pattern(row):
     return Pattern(row['id'], row['code'], row['severity'], summary, rule, clear, hold, clear_hold, window, revision)
 
 
-def compile_catalog(rows, profile='lite', time_scale=20):
+def compile_catalog(rows, profile, time_scale):
     if not isinstance(rows, list) or not 1 <= len(rows) <= 64:
         raise DefinitionError('catalog must contain 1..64 held patterns')
     result, ids = {}, set()

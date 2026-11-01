@@ -3,10 +3,13 @@
 업무 데이터는 Supabase 의 `ent` 스키마 한 벌이다(it/supabase) — 에이전트가 enterprise-mcp 로 읽는 것과 같은 행(메모리판은 2026-10-30 지움).
 The agent reaches these endpoints only through InputData nodes of the ontology (which system holds which fact).
 쓰기 끝점(/api/exec · 초기화 · 기준점)은 process 만 부른다 — 요청에 process 만 아는 값(실행 호출 토큰)이 있어야 받는다(하-05).
+업무 DB 의 거절(SQLSTATE 22023 — 거래 규칙 · 입력)은 400(초기화는 409), 멱등 충돌(23505)은 409, 연결 · 잠금 · 시간 초과는 503, 그 밖은 500 이다.
 """
 import hmac
 import logging
 import os
+import time
+from contextlib import asynccontextmanager
 
 from fastapi import HTTPException, Query, Request
 from fastapi.responses import JSONResponse
@@ -30,10 +33,13 @@ CALLER_HEADER = "X-HYD-Process-Caller"
 CALLER_TOKEN = os.environ.get("PROCESS_CALLER_TOKEN", "")
 if not CALLER_TOKEN:
     raise RuntimeError("PROCESS_CALLER_TOKEN 이 설정되지 않아 enterprise-sim 을 띄우지 않습니다 — 업무 쓰기를 process 만 부르게 하는 값입니다")
-WRITE_PATHS = frozenset({"/api/exec", "/api/reset", "/api/reanchor", "/erp/spare/reset", "/cmms/pm/reset"})
+WRITE_PATHS = frozenset({"/api/exec", "/api/reanchor", "/erp/spare/reset", "/cmms/pm/reset"})
+#: 업무 거절(거래 규칙 · 입력 확인 — 업무 DB 함수의 raise … errcode 22023)과 멱등 충돌(23505)
+REFUSED, CONFLICT = "22023", "23505"
+#: 켜질 때 업무 DB 를 기다리는 시간 — Docker 를 다시 켜면 업무 DB(Supabase)가 이 컨테이너보다 늦게 뜬다(검진 G2-20: 시작 훅이 traceback 으로 세 번 죽었다)
+START_WAIT_S = 60.0
 ent = SupabaseEnterprise(lambda: psycopg.connect(SUPABASE_DSN, connect_timeout=5))
-app = make_app("enterprise-sim (mock ERP/MES/CMMS/QMS/SCM/EMS for L7-L9 scenarios, Supabase ent schema)", reg,
-               lambda: {"ok": ent.ping(), "transactions": len(ent.transactions()) if ent.ping() else None})
+app = make_app("enterprise-sim (mock ERP/MES/CMMS/QMS/SCM/EMS for L7-L9 scenarios, Supabase ent schema)", reg, ent.health)
 
 
 _DB_UNAVAILABLE: tuple = (psycopg.OperationalError, psycopg.InterfaceError)   # 업무 DB 의 연결 · 잠금 · 시간 초과(일시 장애)
@@ -73,7 +79,8 @@ def _read(system: str, name: str, **params):
     try:
         out = ent.read(name, **params)
     except KeyError:
-        raise HTTPException(404, f"unknown {next(iter(params.values()), '')}")
+        given = ", ".join(f"{k}={v}" for k, v in params.items() if v is not None)
+        raise HTTPException(404, f"{system} 에 그 대상의 자료가 없습니다({given or name}) — 설비 코드 · 부품 번호 · 기록 번호를 확인하세요")
     c_reads.inc(system=system)
     return out
 
@@ -145,15 +152,14 @@ def purchase_order(ref: str):
 
 def _scenario_reset(fn, arg):
     """B · C [초기화]가 다른 시나리오가 잡은 수량 때문에 되돌릴 수 없으면(예: B 오더가 시작값보다 많이 출고) 이유를 그대로 409 로 낸다 —
-    업무 DB 는 'INVALID:' 로 시작하는 거절을 낸다(2026-10-23 점검 E1 · E2 · E3)."""
+    업무 DB 는 SQLSTATE 22023 으로 까닭을 붙여 거절한다(2026-10-23 점검 E1 · E2 · E3)."""
     try:
         return fn(arg)
     except KeyError as e:                       # 모르는 부품 · 설비: 404(업무 DB 는 빈 200 이었다, 점검 E11)
-        raise HTTPException(404, f"unknown {e.args[0] if e.args else arg}")
-    except Exception as e:  # noqa: BLE001 — 업무 DB 22023
-        msg = str(e).splitlines()[0] if str(e) else type(e).__name__
-        if msg.startswith("INVALID:"):
-            raise HTTPException(409, msg[:300])
+        raise HTTPException(404, f"관리하지 않는 대상입니다: {e.args[0] if e.args else arg}")
+    except psycopg.Error as e:
+        if e.sqlstate == REFUSED:               # 다른 시나리오가 잡은 수량 때문에 되돌릴 수 없음 — 까닭 그대로
+            raise HTTPException(409, _first_line(e))
         raise
 
 
@@ -176,15 +182,20 @@ def pm_reset(body: dict | None = None):
     return _scenario_reset(ent.reset_pm_counters, (body or {}).get("asset"))
 
 
+def _first_line(e: Exception) -> str:
+    return ((str(e).splitlines() or [type(e).__name__])[0])[:300]
+
+
 @app.post("/api/exec")
 def execute(req: dict):
     try:
         tx = ent.execute(req)
-    except Exception as e:  # noqa: BLE001 — database errors from ent.exec_skill (unknown skill, idempotency conflict)
-        msg = str(e).splitlines()[0]
+    except psycopg.Error as e:
         if _is_db_unavailable(e):    # 연결 장애 · 교착 · 시간 초과는 거절이 아니다(2026-10-23 점검: 400으로 나가 「거절」로 읽혔다)
             raise HTTPException(503, _db_unavailable_detail(e))
-        raise HTTPException(409 if "idempotency" in msg else 400, msg[:300])
+        if e.sqlstate in (REFUSED, CONFLICT):    # 업무 규칙의 거절 · 멱등 충돌 — 업무 DB 가 쓴 까닭 그대로
+            raise HTTPException(409 if e.sqlstate == CONFLICT else 400, _first_line(e))
+        raise                        # 그 밖(SQL 결함 등)은 거절이 아니라 서버 오류 500 — 「거절」로 읽히지 않게
     c_exec.inc(system=tx["system"])
     log.info("exec %s %s -> %s (%s)", tx["skill"], tx["asset"], tx["ref"], tx.get("decision"))
     return tx
@@ -200,13 +211,6 @@ def snapshot():
     return ent.snapshot()
 
 
-@app.post("/api/reset")
-def reset():
-    """수업 · 검사 초기화: 운영 상태(진행 중 오더 · 재고 · 계수기 · 시각 기준점)를 시작값으로. 실행 기록은 지우지 않고 보관한다(GET /api/archive)."""
-    ent.reset()
-    return {"ok": True}
-
-
 @app.post("/api/reanchor")
 def reanchor():
     """시나리오 시각 기준점을 지금으로(생산 오더 납기 · 예정된 정비 시간 · 출하). 시나리오를 시작하거나 초기화할 때 process 가 부른다."""
@@ -214,17 +218,31 @@ def reanchor():
     return {"ok": True}
 
 
-@app.get("/api/archive")
-def archive(ref: str | None = Query(default=None)):
-    """초기화가 보관한 실행 기록(작업지시 · 발주 · 입고 · 거래 원장). ref = WO · PR · GR · TX id 또는 판단 id."""
-    return ent.archive(ref)
-
-
-@app.on_event("startup")
 def _anchor_on_start():
-    # 스택이 뜰 때, 기준점이 이미 지났으면(가장 이른 시나리오 기한이 지금 이전) 지금으로 — 오래 떠 있던 DB 의 '납기까지 −1 h' 같은 지난 시각으로
-    # 판단하지 않게. 지나지 않았으면 옮기지 않는다: 예정된 정비 시간 id 가 기준점 시각을 품어, 재시작(compose 재생성 · OOM)이 옮기면 승인 대기 중인
-    # B 카드의 창이 사라졌다(점검 E8). 수업 중 기준점은 process 가 설비 처리 건이 없을 때만 옮긴다(scenario_buttons.may_reanchor).
-    if ent.scenario_times_stale():
+    """스택이 뜰 때, 기준점이 이미 지났으면(가장 이른 시나리오 기한이 지금 이전) 지금으로 — 오래 떠 있던 DB 의 '납기까지 −1 h' 같은 지난 시각으로
+    판단하지 않게. 지나지 않았으면 옮기지 않는다: 예정된 정비 시간 id 가 기준점 시각을 품어, 재시작(compose 재생성 · OOM)이 옮기면 승인 대기 중인
+    B 카드의 창이 사라졌다(점검 E8). 수업 중 기준점은 process 가 설비 처리 건이 없을 때만 옮긴다(scenario_buttons.may_reanchor).
+    업무 DB 가 아직 안 떴으면 START_WAIT_S 동안 기다리고, 그래도 안 되면 까닭 한 줄로 실패한다(Docker 가 다시 켠다)."""
+    deadline = time.monotonic() + START_WAIT_S
+    while True:
+        try:
+            stale = ent.scenario_times_stale()
+            break
+        except psycopg.Error as e:
+            if not _is_db_unavailable(e) or time.monotonic() > deadline:
+                # 까닭 한 줄(연결 오류 사슬 없이) — uvicorn 이 「Application startup failed」로 끝내고 Docker 가 다시 켠다
+                raise RuntimeError("enterprise-sim 을 켜지 못했습니다 — " + (
+                    _db_unavailable_detail(e) if _is_db_unavailable(e) else _first_line(e))) from None
+            time.sleep(1.0)
+    if stale:
         log.info("scenario time anchor has passed — re-anchoring to now")
         ent.reanchor()
+
+
+@asynccontextmanager
+async def _lifespan(_app):
+    _anchor_on_start()
+    yield
+
+
+app.router.lifespan_context = _lifespan

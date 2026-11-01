@@ -17,7 +17,7 @@
         try { request = JSON.parse(sessionStorage.getItem(key)); } catch (_) { continue; }
         if (!request?.request_id) continue;
         const panel = document.createElement('div');
-        panel.innerHTML = UI.fold(`${esc(UI.t('inst.reassess'))} · 접수 확인 — ${esc(w.activity_name)}`, `<p>${esc(request.by)} · ${esc(request.reason)}</p>${UI.actions('<button class="btn" data-reassess-receipt>같은 요청의 접수 결과 확인</button>')}<p role="status"></p>`, { open: true });
+        panel.innerHTML = UI.fold(`${esc(UI.t('inst.reassess'))} · 접수 확인 — ${esc(w.activity_name)}`, `<p>${esc(UI.who(request.by))} · ${esc(request.reason)}</p>${UI.actions('<button class="btn" data-reassess-receipt>같은 요청의 접수 결과 확인</button>')}<p role="status"></p>`, { open: true });
         panel.querySelector('button').addEventListener('click', async e => {
           e.target.disabled = true;
           try {

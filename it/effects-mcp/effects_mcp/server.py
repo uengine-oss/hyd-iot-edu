@@ -1,7 +1,8 @@
 """effects-mcp (hyd-effects): 사람 승인 뒤 process 의 시스템 task 가 부르는 **쓰기** MCP 서버 (FastMCP, streamable HTTP).
 
     docker: MCP_PORT=8197 SMTP_HOST=host.docker.internal SMTP_PORT=54325
-    tools : send_mail   (1; 쓰기 — readOnlyHint=false, idempotency_key 로 멱등). 공급사 · 생산팀 메일은 수업 메일함 Inbucket 으로만 간다
+    tools : send_mail   (1; 쓰기 — readOnlyHint=false, idempotency_key 로 멱등). 받는 주소는 수업 도메인(@hyd.local)만 — 수업 메일함 Inbucket 으로만 간다
+    /healthz: 메일 서버(SMTP)가 답하는가
 
 에이전트에게는 붙이지 않는다: tenants.mcp 에 등록하지 않고(워커가 모름), process 의 EFFECT_MCP_SERVERS 로만 부른다
 (procsvc/instance_mode.py). 포털 '도구 써 보기'도 readOnlyHint=false 라 거절한다(mcp_check.read_only_verdict).
@@ -53,8 +54,10 @@ def send_mail(to: Annotated[str | list[str], Field(description="받는 주소 (�
 
 @mcp.custom_route("/healthz", methods=["GET"])
 async def healthz(_request):
+    from starlette.concurrency import run_in_threadpool
     from starlette.responses import JSONResponse
-    return JSONResponse({"ok": True, "tools": ["send_mail"]})
+    h = await run_in_threadpool(tools.smtp_ready)
+    return JSONResponse({**h, "tools": ["send_mail"]}, status_code=200 if h["ok"] else 503)
 
 
 if __name__ == "__main__":

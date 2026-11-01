@@ -153,29 +153,64 @@ def deploy_reset(rt, by: str, reason: str | None = None, include_class: bool = F
             'message': message, 'routes': routes(rt)}
 
 
+class NoComparisonBase(ValueError):
+    """이 정의에는 견줄 기준 흐름이 없다(경보로 시작하지 않는 흐름 · 강사가 설치한 수업 흐름) — 사유는 학생이 읽는 말."""
+
+
+def compare_base(rt, def_id: str, raw: dict | None = None) -> dict | None:
+    """「기준과 비교」의 기준(W3-03 — 어떤 흐름이든 냉각 기준 흐름과 견줘 76건 차이를 보였다). 돌려줌 {definition, version, name, pattern, why} 또는 None(pattern = 견준 경보 코드 — 문장에 넣지 않고 화면이 이름표로).
+      기준 흐름(anomaly_response) 자신 → 기준 판본(기동 파일 판본).
+      강사가 설치한 수업 흐름 → None(그 흐름이 수업의 기준이다).
+      경보로 시작하는 학생 흐름 → 이 흐름이 없을 때 그 첫 경보 패턴을 여는 흐름(다른 배포 흐름 — 수업 흐름 포함 — 이 없으면 기준 흐름의 기준 판본).
+      경보로 시작하지 않는 흐름(교대 · 질문 · 직접 시작) → None.
+    raw = 견줄 판본 원문(없으면 그 정의의 운영 판본, 그것도 없으면 마지막 등록 판본)."""
+    base_version = _base_version(rt)
+    if def_id == rt.defn.id:
+        return {'definition': rt.defn.id, 'version': base_version, 'name': rt.defn.name, 'pattern': None, 'why': '기준 흐름의 기준 판본'}
+    heads = rt.repo.deployed_heads(rt.tenant_id)
+    if any(h['id'] == def_id and h.get('class_flow') for h in heads):
+        return None
+    if raw is None:
+        version = rt.repo.deployed_version(def_id, rt.tenant_id)
+        row = rt.repo.get_proc_def(def_id, rt.tenant_id, version=version) if version else rt.repo.get_proc_def(def_id, rt.tenant_id)
+        raw = (row or {}).get('definition')
+    patterns = alert_patterns(raw or {})
+    if not patterns:
+        return None
+    for head, defn in _candidates(rt):
+        if head['id'] != def_id and patterns[0] in alert_patterns(defn.raw):
+            return {'definition': head['id'], 'version': head['prod_version'], 'name': defn.name, 'pattern': patterns[0],
+                    'why': '이 흐름이 없을 때 같은 경보를 여는 흐름'}
+    return {'definition': rt.defn.id, 'version': base_version, 'name': rt.defn.name, 'pattern': patterns[0],
+            'why': '이 흐름이 없을 때 같은 경보를 여는 기준 흐름'}
+
+
 def compare_with_reference(rt, def_id: str, version: str | None = None) -> dict:
-    """학생 판본(없으면 그 정의의 운영 판본) vs 기준 판본: 바뀐 단계·연결·조건을 사람이 읽는 목록으로 (definition_diff.compare)."""
+    """판본(없으면 그 정의의 운영 판본) vs 그 흐름의 비교 기준(compare_base): 바뀐 단계·연결·조건을 사람이 읽는 목록으로 (definition_diff.compare)."""
     from .definition_diff import compare, compare_import
     _require_base(rt)
-    base_version = _base_version(rt)
-    base = rt.repo.get_proc_def(rt.defn.id, rt.tenant_id, version=base_version)
-    if not base or not base.get('definition'):
-        raise LookupError(f'기준 판본 원문이 없습니다: {rt.defn.id}@{base_version}')
     version = version or rt.repo.deployed_version(def_id, rt.tenant_id)
     if not version:
         raise LookupError(f'비교할 판본을 지정하세요(배포된 판본이 없는 정의): {def_id}')
     row = rt.repo.get_proc_def(def_id, rt.tenant_id, version=version)
     if not row or not row.get('definition'):
         raise LookupError(f'등록되지 않은 정의 판본입니다: {def_id}@{version}')
+    target = compare_base(rt, def_id, row['definition'])
+    if target is None:
+        raise NoComparisonBase(f"「{row['definition'].get('processDefinitionName') or def_id}」에는 견줄 기준 흐름이 없습니다 — 경보로 시작하는 학생 흐름만 "
+                               '「그 경보를 원래 여는 흐름」과 견줍니다(강사가 설치한 수업 흐름은 그 자체가 기준입니다)')
+    base = rt.repo.get_proc_def(target['definition'], rt.tenant_id, version=target['version'])
+    if not base or not base.get('definition'):
+        raise LookupError(f"기준 판본 원문이 없습니다: {target['definition']}@{target['version']}")
     diff = (compare_import if row['definition'].get('bpmnImport') else compare)(base['definition'], row['definition'])
     steps = [c['text'] for c in diff['changes'] if c['kind'] in ('단계', '연결', '분기점', '이벤트')]
-    return dict(diff, reference={'definition': rt.defn.id, 'version': base_version}, target={'definition': def_id, 'version': version},
-                steps=steps, summary=('기준 흐름과 같습니다' if diff['same'] else
-                                      f"기준 대비 추가 {diff['counts']['추가']} · 삭제 {diff['counts']['삭제']} · 변경 {diff['counts']['변경']}"))
+    return dict(diff, reference=target, target={'definition': def_id, 'version': version},
+                steps=steps, summary=(f"「{target['name']}」와 같습니다" if diff['same'] else
+                                      f"「{target['name']}」 대비 추가 {diff['counts']['추가']} · 삭제 {diff['counts']['삭제']} · 변경 {diff['counts']['변경']}"))
 
 
 class ResetReq(BaseModel):
-    by: str = Field(min_length=1, max_length=200)
+    by: str = Field(default='', max_length=200)                  # 빈 값은 아래에서 학생이 알아듣는 문장으로 거절(422 꼴이 아니라)
     reason: str | None = Field(default=None, max_length=2000)
 
 
@@ -198,8 +233,17 @@ def mount(app: FastAPI, runtime_factory) -> None:
     @app.post('/api/flows/deploy-reset')
     def flow_deploy_reset(req: ResetReq):
         """기준 흐름으로 되돌리기 — 운영 포인터만(학생 흐름 정의를 지우는 것은 B3 /api/flows/reset)."""
+        rt = _rt()
+        by = req.by.strip()
+        if not by:
+            raise HTTPException(400, "누가 되돌렸는지 모릅니다 — 포털 위쪽에서 '나'(사람 사용자)를 고른 뒤 다시 누르세요")
+        try:                                                     # 되돌린 사람 = 포털의 「나」(사용자 표의 사람) — 지어낸 이름이 배포 이력에 남지 않게
+            from .inbox import require_person
+            require_person(rt.repo, rt.tenant_id, by)
+        except PermissionError as e:
+            raise HTTPException(403, str(e)) from None
         try:
-            return deploy_reset(_rt(), req.by, req.reason)        # HTTP 로는 수업 흐름을 내리지 않는다(남김)
+            return deploy_reset(rt, by, req.reason)        # HTTP 로는 수업 흐름을 내리지 않는다(남김)
         except LookupError as e:
             raise HTTPException(404, str(e))
         except ValueError as e:

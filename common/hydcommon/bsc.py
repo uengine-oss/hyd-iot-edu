@@ -1,66 +1,23 @@
-"""Path-preserving qualitative BSC effects with explicit three-state predicates.
+"""Path-preserving qualitative BSC effects.
 
-No natural-language condition parsing. Unknown effects remain identified estimates.
+No natural-language condition parsing: an edge that carries a condition sentence (AFFECTS / INFLUENCES `condition`) is
+UNKNOWN — the effect stays an identified estimate shown as conditional — and an edge without one holds (TRUE). The graph
+has no executable interpretation of a condition sentence (the reviewed-interpretation writer was removed: nothing could
+make one), so none is read here.
 """
 from copy import deepcopy
-import json
-import re
 
 from . import ranking
 
 STRENGTH = {'high':1.0,'medium':0.6,'low':0.3}
 
 
-def validate_policy(value):
-    if isinstance(value,str):
-        if len(value)>16000: raise ValueError('BSC condition policy is too large')
-        try: value=json.loads(value)
-        except (ValueError,RecursionError) as exc: raise ValueError('invalid BSC condition JSON') from exc
-    if not isinstance(value,dict) or set(value)!={'version','description','inputs','expression'}:
-        raise ValueError('BSC condition requires version, description, inputs and expression')
-    if type(value['version']) is not int or value['version']!=1:
-        raise ValueError('unsupported BSC condition version')
-    if not isinstance(value['description'],str) or len(value['description'])>2000:
-        raise ValueError('BSC condition description must preserve the reviewed text')
-    inputs=value['inputs']
-    if not isinstance(inputs,dict) or len(inputs)>32: raise ValueError('up to32 BSC condition inputs allowed')
-    for alias,source in inputs.items():
-        if not isinstance(alias,str) or not re.fullmatch(r'[a-z][a-z0-9_]{0,63}',alias) or alias in ranking.FUNCTIONS:
-            raise ValueError('invalid BSC condition alias')
-        if (not isinstance(source,dict) or set(source)!={'source','variable'} or source['source'] not in ('fact','forecast')
-                or not isinstance(source['variable'],str) or not 1<=len(source['variable'])<=160):
-            raise ValueError('BSC input must explicitly name a fact or forecast variable')
-    ranking.compile_expression(value['expression'],set(inputs))
-    return json.loads(ranking.canonical(value))
-
-
 def check_condition(edge, facts, forecasts):
     text=edge.get('condition') or ''
     result={'edge':edge['key'],'description':text,'status':'TRUE','inputs':{}}
-    raw=edge.get('conditionPolicy')
-    if raw is None and not text: return result
-    try:
-        if raw is None: raise ValueError('condition text has no reviewed executable interpretation')
-        policy=validate_policy(raw)
-        if policy['description']!=text: raise ValueError('condition description changed after interpretation')
-        for alias,source in policy['inputs'].items():
-            value=facts.get(source['variable']) if source['source']=='fact' else (forecasts.get(source['variable']) or {}).get('value')
-            result['inputs'][alias]=dict(source,value=value)
-        result['status']='TRUE' if ranking.predicate(policy['expression'],{a:v['value'] for a,v in result['inputs'].items()}) else 'FALSE'
-    except (ValueError,TypeError,KeyError) as exc:
-        result.update(status='UNKNOWN',error=str(exc))
+    if text:
+        result.update(status='UNKNOWN',error='조건 문장만 있고 판정할 수 있는 해석이 없습니다')
     return result
-
-
-def fact_variables(rows):
-    found=set()
-    for row in rows:
-        for edge in row.get('edges') or []:
-            if edge.get('conditionPolicy') is None: continue
-            try: policy=validate_policy(edge['conditionPolicy'])
-            except ValueError: continue
-            found.update(v['variable'] for v in policy['inputs'].values() if v['source']=='fact')
-    return found
 
 
 def evaluate_paths(rows, facts, forecasts):

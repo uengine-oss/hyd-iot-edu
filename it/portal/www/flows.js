@@ -2,31 +2,24 @@
    window.hydFlows.mount(el) 이 그린다(셸 MOUNTS.flows). UI 는 돌아갈 만큼만(다듬기는 실라버스 뒤).
    API: procsvc/flows_api.py (/api/flows/catalog · import · {id} · {id}/mapping · {id}/check · {id}/register ·
         {id}/versions/{v}/bpmn · reset), 직접 시작은 기존 POST /api/instances/start.
-   원본 대조: process-gpt-vue3 ProcessGPTBackend.ts:573-685(proc_def.bpmn · 판본 snapshot) — 화면 모델러는 만들지 않는다(DECISIONS 110 ②). */
+   원본 대조: process-gpt-vue3 ProcessGPTBackend.ts:573-685(proc_def.bpmn · 판본 snapshot) — 화면 모델러는 만들지 않는다(bpmn.io 에서 그린다). */
 (function () {
-  // ---------------------------------------------------------------- 순수 함수 (DOM 없이 시험 — tests/test_bpmn_import.py)
+  // ---------------------------------------------------------------- 값 다루기
   const TYPES = ['text', 'textarea', 'number', 'integer', 'boolean', 'select', 'object', 'array'];
   const TYPE_LABEL = { text: '글', textarea: '긴 글', number: '숫자', integer: '정수', boolean: '예/아니요', select: '고르기', object: '묶음(JSON)', array: '목록(JSON)' };
-  // "값이름 | 표시 이름 | 종류 | 고를 값(쉼표)" 한 줄에 칸 하나. 틀리면 Error(몇 번째 줄인지).
-  function parseFields(text) {
-    const out = [];
-    String(text || '').split('\n').map(s => s.trim()).filter(Boolean).forEach((line, i) => {
-      const [key, label, type, items] = line.split('|').map(s => (s || '').trim());
-      const kind = type || 'text';
-      if (!key) throw new Error(`${i + 1}번째 줄: 값 이름이 비었습니다`);
-      if (!TYPES.includes(kind)) throw new Error(`${i + 1}번째 줄: 종류 '${kind}'는 쓸 수 없습니다 (${TYPES.join(', ')})`);
-      const f = { key, text: label || key, type: kind };
-      if (kind === 'select') {
-        f.items = String(items || '').split(',').map(s => s.trim()).filter(Boolean);
-        if (!f.items.length) throw new Error(`${i + 1}번째 줄: 고르기 칸에는 고를 값을 쉼표로 적으세요`);
+  // 칸 배열(값 이름 · 화면 이름 · 종류 · 고를 값) 검사 — 틀리면 몇 번째 칸인지 학생 말로. 값 이름이 빈 새 줄은 뺀다
+  function checkFields(rows) {
+    return (rows || []).filter(r => (r.key || '').trim() || (r.text || '').trim()).map((r, i) => {
+      const key = (r.key || '').trim(), type = r.type || 'text';
+      if (!key) throw new Error(`${i + 1}번째 칸: 값 이름(영문)을 적으세요`);
+      if (!TYPES.includes(type)) throw new Error(`${i + 1}번째 칸: 종류 '${type}'는 쓸 수 없습니다`);
+      const f = { key, text: (r.text || '').trim() || key, type };
+      if (type === 'select') {
+        f.items = (r.items || []).map(x => String(x).trim()).filter(Boolean);
+        if (!f.items.length) throw new Error(`${i + 1}번째 칸(${f.text}): 고르기 칸에는 고를 값을 쉼표로 적으세요`);
       }
-      out.push(f);
+      return f;
     });
-    return out;
-  }
-  function fieldsText(fields) {
-    return (fields || []).map(f => [f.key, f.text && f.text !== f.key ? f.text : '', f.type && f.type !== 'text' ? f.type : '', (f.items || []).join(',')]
-      .join(' | ').replace(/( \| )+$/, '')).join('\n');
   }
   // 분기 기준 칸의 글 → 값: 예/아니요 · 숫자는 그 값, 나머지는 글.
   function parseValue(raw) {
@@ -60,10 +53,6 @@
     }
     return raw.trim();
   }
-  const pure = { parseFields, fieldsText, parseValue, minutesOf, isoOf, configValue };
-
-  if (typeof document === 'undefined') { window.hydFlows = { pure }; return; }
-
   // ---------------------------------------------------------------- 화면
   const S = { el: null, cat: null, view: null, mapping: null, list: null, busy: false, timer: null, result: null };
   const api = p => API.process + p;
@@ -91,15 +80,15 @@
     el.innerHTML = `
       <section class="card form" aria-label="그림 가져오기">
         <header class="card-head"><div class="card-title"><h3>그림 가져오기</h3></div></header>
-        <p class="field-hint">제공된 교대 인수인계 흐름을 demo.bpmn.io 에서 열어 고친 뒤 왼쪽 아래 <b>Download BPMN diagram</b> 으로 받은 .bpmn 파일을 고릅니다. 수업에서는 이 흐름만 등록됩니다. 같은 흐름 id 로 다시 가져오면 앞서 고른 매핑이 남습니다.</p>
+        <p class="field-hint">제공된 교대 인수인계 흐름을 demo.bpmn.io 에서 열어 고친 뒤 왼쪽 아래 <b>Download BPMN diagram</b> 으로 받은 .bpmn 파일을 고릅니다. 수업에서는 이 흐름만 등록됩니다. 같은 흐름 구분 이름으로 다시 가져오면 앞서 고른 매핑이 남습니다.</p>
         <div class="form-grid">
           ${UI.field({ label: '.bpmn 파일', input: '<input type="file" id="flowFile" accept=".bpmn,.xml,application/xml,text/xml">', required: true })}
-          ${UI.field({ label: '흐름 id (비우면 그림의 프로세스 id)', input: '<input id="flowId" placeholder="예: oil_check" autocomplete="off">', hint: ' ' })}
+          ${UI.field({ label: '흐름 구분 이름(영문 · 비우면 그림에 적힌 것)', input: '<input id="flowId" placeholder="예: oil_check" autocomplete="off">', hint: ' ' })}
         </div>
         <div class="form-actions"><span class="form-msg" id="flowImportMsg" role="status"></span><button class="btn primary" id="flowImport">가져오기</button></div>
       </section>
       <div id="flowEditor"></div>
-      ${UI.fold('내가 가져온 흐름 · 판본', '<div id="flowList"></div><div class="form-actions"><button class="btn small danger" id="flowReset">기준으로 되돌리기</button></div>', { open: true })}`;
+      ${UI.fold('가져온 흐름 · 판본', '<div id="flowList"></div><div class="form-actions"><button class="btn small danger" id="flowReset">기준으로 되돌리기</button></div>', { open: true })}`;
     el.querySelector('#flowImport').addEventListener('click', e => once('import', e.currentTarget, doImport));
     el.querySelector('#flowReset').addEventListener('click', doReset);
     idField();
@@ -111,9 +100,9 @@
     const input = S.el && S.el.querySelector('#flowId'); if (!input) return;
     const only = hydCourseAccess.access && hydCourseAccess.access.importable_flow;
     input.disabled = !!only; input.value = only ? '' : input.value;
-    input.placeholder = only ? `수업 단계: ${only} (그림의 프로세스 id 그대로)` : '예: oil_check';
+    input.placeholder = only ? '수업 단계: 제공한 교대 인수인계 흐름 그대로' : '예: oil_check';
     const hint = input.closest('.field')?.querySelector('.field-hint');
-    if (hint) hint.textContent = only ? hydCourseAccess.importBlocked('') : '';
+    if (hint) hint.textContent = only ? hydCourseAccess.reason('import_flow') : '';   // 까닭 문장은 서버 수업 경계 한 곳(course_policy)
   }
   hydCourseAccess.onChange(() => { idField(); if (S.list) renderList(); });
 
@@ -164,29 +153,41 @@
           <div class="field wide"><label class="chk"><input type="radio" name="flowStart" value="alert" ${start.kind === 'alert' ? 'checked' : ''}> 경보로 시작</label>
             <div class="chk-row">${patterns}</div><p class="field-hint">경보 정책(회복 기준)은 기준 흐름의 계약을 그대로 씁니다.</p></div>
           <div class="field wide"><label class="chk"><input type="radio" name="flowStart" value="human" ${start.kind === 'human' ? 'checked' : ''}> 사람 입력 · 직접 시작</label>
-            <textarea id="flowStartFields" rows="3" spellcheck="false" placeholder="값이름 | 표시 이름 | 종류 | 고를 값&#10;예) oil_iso | ISO 청정도 | text">${h(fieldsText(start.fields))}</textarea>
-            <p class="field-hint">한 줄에 칸 하나. 종류: ${TYPES.map(t => TYPE_LABEL[t] + ' ' + t).join(' · ')}</p></div>`)}
+            <div id="flowStartFields" data-rows-of="start"></div>
+            <p class="field-hint">칸마다 값 이름(영문) · 화면 이름 · 종류를 고릅니다. 고르기 칸의 고를 값은 쉼표로 나눕니다.</p></div>`)}
         ${lanes ? UI.section('담당 구역별 역할', `<table class="compact-table"><thead><tr><th>그림의 칸</th><th>역할</th></tr></thead><tbody>${lanes}</tbody></table>`) : ''}
         ${UI.section('단계별 부품 · 담당 · 설정', `<table class="compact-table flow-map"><thead><tr><th>그림의 단계</th><th>부품</th><th>담당</th><th>설정</th></tr></thead><tbody>${p.tasks.map(taskRow).join('')}</tbody></table>`)}
         ${p.boundaries.length ? UI.section('알림 기한', p.boundaries.map(timerRow).join('')) : ''}
         ${branchSection()}
         <div id="flowProblems">${resultBlock(v.check)}</div>
-        <div class="form-actions"><span class="form-msg" id="flowMsg" role="status"></span>
-          <button class="btn" id="flowCheck">저장 · 검사</button><button class="btn primary" id="flowRegister">판본 등록</button></div>
+        <div class="form-actions" id="flowActions">${actionsHtml()}</div>
       </section>`;
     wire(box);
     fieldEditors(box);
+    // 잠금은 칸 줄 편집기(fieldEditors)가 줄 · 단추를 그린 뒤에 건다 — 전에는 그 앞이라 시작 입력 · 출력 칸 줄이 잠기지 않았다(한바퀴3)
+    if (v.class_flow) box.querySelectorAll('section input, section select, section textarea, section button[data-add], section button[data-del]').forEach(n => { n.disabled = true; });   // 수업 흐름: 읽기만
+    const editable = hydCourseAccess.handoverEditable;   // 수업 단계의 제공 교대 흐름: 서버가 정한 칸만 연다(W3-08) — PBL 이면 null
+    if (!v.class_flow && editable && v.definition_id === hydCourseAccess.access?.importable_flow) {
+      const agentOk = new Set(editable.agent_tasks || []);
+      // 칸 줄 더하기 · 빼기(data-add · data-del)도 잠근다 — 단추가 열려 있으면 학생이 시작 입력 줄을 더했다가 등록에서야 거절됐다(한바퀴3)
+      box.querySelectorAll('section input, section select, section textarea, section button[data-add], section button[data-del]').forEach(n => {
+        const open = (n.id === 'flowName' && editable.flow_name) || (n.matches('[data-agent]') && agentOk.has(n.dataset.agent));
+        if (!open) { n.disabled = true; n.title = '수업 단계에서는 흐름 이름과 초안 단계의 에이전트만 바꿉니다'; }
+      });
+      box.querySelector('#flowActions')?.insertAdjacentHTML('beforebegin', '<p class="field-hint">수업 단계에서는 흐름 이름과 초안 단계(세 곳)의 에이전트만 바꿀 수 있습니다 — 나머지 칸은 제공한 그대로 읽기만 합니다.</p>');
+    }
   }
 
-  /* A161-U1 (A160 결함 6): "값이름 | 표시 이름 | 종류 | 고를 값" 한 줄 문법을 화면에 보이지 않고, 칸마다 입력 행(값 이름 · 화면 이름 · 종류 · 고를 값)으로 받는다.
-     행을 고치면 숨긴 글 칸에 같은 문법으로 다시 써 넣으므로 검사 · 등록(collect → parseFields)은 그대로다. process-gpt-vue3 FormDefinition.vue 의 칸 목록 편집과 같은 모양. */
+  /* 칸 목록 편집(값 이름 · 화면 이름 · 종류 · 고를 값 한 행씩) — 매핑의 칸 배열을 그대로 들고(el._rows) collect 가 그것을 읽는다.
+     화면 이름에 「|」 · 「,」가 들어가도 깨지지 않는다(W3-16). process-gpt-vue3 FormDefinition.vue 의 칸 목록 편집과 같은 모양. */
   function fieldEditors(box) {
-    box.querySelectorAll('textarea[data-fields], textarea[data-outputs], #flowStartFields').forEach(ta => {
-      if (ta.dataset.rows) return;
-      let rows; try { rows = parseFields(ta.value); } catch (_) { return; }      // a hand-written text that does not parse stays as text
-      ta.dataset.rows = '1'; ta.hidden = true;
-      const ed = document.createElement('div'); ed.className = 'field-rows';
-      const sync = () => { ta.value = fieldsText(rows.filter(r => r.key)); ta.dispatchEvent(new Event('input', { bubbles: true })); };
+    box.querySelectorAll('[data-rows-of]').forEach(ed => {
+      if (ed._rows) return;
+      const of = ed.dataset.rowsOf, task = S.mapping.tasks[ed.dataset.fields || ed.dataset.outputs] || {};
+      const source = of === 'start' ? (S.mapping.start || {}).fields : of === 'fields' ? task.fields : task.outputs;
+      const rows = ed._rows = structuredClone(source || []);
+      ed.classList.add('field-rows');
+      const sync = () => ed.dispatchEvent(new Event('change', { bubbles: true }));   // wire 의 change → collect → 검사
       const draw = () => {
         ed.innerHTML = (rows.length ? `<div class="field-row head"><span>값 이름</span><span>화면 이름</span><span>종류</span><span>고를 값</span><span></span></div>` : '')
           + rows.map((r, i) => `<div class="field-row" data-i="${i}"><input data-k="key" value="${h(r.key)}" placeholder="예) oil_iso" aria-label="값 이름">
@@ -200,17 +201,15 @@
         const row = e.target.closest('[data-i]'); if (!row) return;
         const r = rows[+row.dataset.i], k = e.target.dataset.k;
         if (k === 'items') r.items = e.target.value.split(',').map(x => x.trim()).filter(Boolean);
-        else if (k === 'text') r.text = e.target.value.trim() || r.key; else if (k === 'key') r.key = e.target.value.trim();
-        sync();
+        else if (k === 'text') r.text = e.target.value; else if (k === 'key') r.key = e.target.value.trim();
       });
-      ed.addEventListener('change', e => { if (e.target.dataset.k === 'type') { rows[+e.target.closest('[data-i]').dataset.i].type = e.target.value; sync(); draw(); } });
+      ed.addEventListener('change', e => { if (e.target.dataset.k === 'type') { rows[+e.target.closest('[data-i]').dataset.i].type = e.target.value; draw(); } });
       ed.addEventListener('click', e => {
         if (e.target.closest('[data-add]')) { rows.push({ key: '', text: '', type: 'text' }); draw(); ed.querySelector('.field-row:last-of-type input')?.focus(); }
         const del = e.target.closest('[data-del]'); if (del) { rows.splice(+del.closest('[data-i]').dataset.i, 1); sync(); draw(); }
       });
-      draw(); ta.after(ed);
+      draw();
     });
-    box.querySelectorAll('.field-hint').forEach(p => { if (/^한 줄에 칸 하나/.test(p.textContent)) p.textContent = '사람이 입력할 칸을 한 줄씩 추가합니다. 고르기 칸은 고를 값을 쉼표로 적습니다.'; });
   }
 
   function taskRow(t) {
@@ -229,7 +228,7 @@
       const outs = (part.form && part.form.fields_json || []).map(f => `<code>${h(f.key)}</code>`).join(' ');
       detail = `<details class="flow-contract"><summary>연결 값 보기</summary><p class="kv-line">받는 값 ${part.inputs.map(x => `<code>${h(x)}</code>`).join(' ') || '–'} · 내는 값 ${outs || (part.outputs.map(x => `<code>${h(x)}</code>`).join(' ') || '–')}${part.approval ? ' · <b>사람 승인</b>' : ''}${part.effect ? ` · <b>${h(UI.flowName(part.effect))}</b>(승인 뒤)` : ''}</p></details>`;
     } else if (part && part.key === 'human') {
-      detail = `<textarea data-fields="${h(t.id)}" rows="2" spellcheck="false" placeholder="값이름 | 표시 이름 | 종류">${h(fieldsText(m.fields))}</textarea>
+      detail = `<div data-fields="${h(t.id)}" data-rows-of="fields"></div>
         <input data-inputs="${h(t.id)}" value="${h((m.inputs || []).join(', '))}" placeholder="받을 값 (쉼표) — ${h(avail(t.id).join(', '))}">`;
     } else if (part && part.key === 'human:approve') {     // 캡스톤 G1: 고를 안이 든 값 · 구분 칸 · 추천 · 지는 안 · 근거 자료 (part.config 가 칸 설명)
       const cfg = m.config || {};
@@ -237,7 +236,7 @@
         + `<p class="kv-line">받을 수 있는 값 ${avail(t.id).map(x => `<code>${h(x)}</code>`).join(' ') || '–'} · 내는 값 <code>approval</code> <code>approval_reason</code> · <b>사람 승인</b></p>`;
     } else if (part && part.key === 'agent') {
       detail = `<textarea data-instruction="${h(t.id)}" rows="2" placeholder="지시문 — 무엇을 조회 · 계산해 무엇을 낼지">${h(m.instruction || '')}</textarea>
-        <textarea data-outputs="${h(t.id)}" rows="2" spellcheck="false" placeholder="결과 값 — 값이름 | 표시 이름 | 종류">${h(fieldsText(m.outputs))}</textarea>
+        <p class="field-hint">결과 값</p><div data-outputs="${h(t.id)}" data-rows-of="outputs"></div>
         <input data-inputs="${h(t.id)}" value="${h((m.inputs || []).join(', '))}" placeholder="받을 값 (쉼표) — ${h(avail(t.id).join(', '))}">`;
     }
     if (part?.key === 'task:decide') detail += UI.field({ label: '에이전트 지시문', input: `<textarea data-instruction="${h(t.id)}" rows="3">${h(m.instruction ?? part.contract?.instruction ?? '')}</textarea>` });
@@ -257,7 +256,7 @@
       if (['boolean', 'outcome', 'component'].includes(type)) {
         const choices = type === 'boolean' ? (key === 'effect' ? [['true', '변경 실행'], ['false', '조회만']] : [['true', '예'], ['false', '아니요']])
           : type === 'component' ? [['cooler', '쿨러'], ['pump', '펌프'], ['fan', '팬']]
-          : ['정상', '입고 완료', '미달', '지연', '알림', '승인 지연', '반려'].map(x => [x, x]);
+          : S.cat.report_outcomes.map(x => [x, x]);                       // 서버가 준 목록(effect_parts.REPORT_OUTCOMES 한 곳)
         input = `<select ${attrs}><option value="">기본값 사용</option>${choices.map(([v, name]) => `<option value="${h(v)}" ${String(value) === v ? 'selected' : ''}>${h(name)}</option>`).join('')}</select>`;
       } else if (['object', 'array', 'textarea'].includes(type)) input = `<textarea ${attrs} rows="3" spellcheck="false">${h(value === undefined ? '' : type !== 'textarea' ? JSON.stringify(value, null, 2) : value)}</textarea>`;
       else input = `<input ${attrs} value="${h(value ?? '')}">`;
@@ -324,7 +323,7 @@
     m.name = box.querySelector('#flowName').value.trim();
     const kind = (box.querySelector('input[name=flowStart]:checked') || {}).value;
     m.start = kind === 'alert' ? { kind, patterns: [...box.querySelectorAll('[data-pattern]')].filter(c => c.checked).map(c => c.dataset.pattern) }
-      : kind === 'human' ? { kind, fields: parseFields(box.querySelector('#flowStartFields').value) } : {};
+      : kind === 'human' ? { kind, fields: checkFields(box.querySelector('#flowStartFields')._rows) } : {};
     box.querySelectorAll('[data-lane]').forEach(s => { if (s.value) m.lanes[s.dataset.lane] = s.value; else delete m.lanes[s.dataset.lane]; });
     box.querySelectorAll('[data-part]').forEach(s => {
       const id = s.dataset.part, prev = m.tasks[id] || {};
@@ -335,8 +334,8 @@
     const set = (attr, fn) => box.querySelectorAll(`[data-${attr}]`).forEach(x => { const t = m.tasks[x.dataset[attr]]; if (t && !switched.has(x.dataset[attr])) fn(t, x); });
     set('role', (t, x) => { if (x.value) t.role = x.value; else delete t.role; });
     set('agent', (t, x) => { t.agent = x.value; });
-    set('fields', (t, x) => { t.fields = parseFields(x.value); });
-    set('outputs', (t, x) => { t.outputs = parseFields(x.value); });
+    set('fields', (t, x) => { t.fields = checkFields(x._rows); });
+    set('outputs', (t, x) => { t.outputs = checkFields(x._rows); });
     set('instruction', (t, x) => { t.instruction = x.value.trim(); });
     set('inputs', (t, x) => { t.inputs = x.value.split(',').map(s => s.trim()).filter(Boolean); });
     set('approval', (t, x) => { t.config = t.config || {}; if (x.value.trim()) t.config[x.dataset.cfg] = x.value.trim(); else delete t.config[x.dataset.cfg]; });
@@ -366,6 +365,14 @@
     return m;
   }
 
+  // 매핑 아래 행동: 수업 흐름(강사 설치)은 읽기만, 서버가 지금 등록할 수 없다고 하면(register.allowed=false — 수업 경계 · 기준 id) [판본 등록] 대신 그 까닭(W3-08)
+  function actionsHtml() {
+    const v = S.view || {};
+    if (v.class_flow) return '<p class="field-hint">강사가 설치한 수업 흐름이라 매핑을 읽기만 합니다 — 저장 · 등록하지 않습니다.</p>';
+    const reg = v.register || null;
+    return `<span class="form-msg" id="flowMsg" role="status"></span><button class="btn" id="flowCheck">저장 · 검사</button>` +
+      (reg && reg.allowed === false ? `<span class="field-hint" data-register-why>${h(reg.reason || '지금은 판본으로 등록할 수 없습니다')}</span>` : '<button class="btn primary" id="flowRegister">판본 등록</button>');
+  }
   function wire(box) {
     S.events?.abort(); S.events = new AbortController();
     const on = (type, fn) => box.addEventListener(type, fn, { signal: S.events.signal });
@@ -376,8 +383,10 @@
       if (e.target.matches('[data-part],[data-default],[data-var],input[name=flowStart]')) renderEditor();
       clearTimeout(S.timer); S.timer = setTimeout(() => recheck(false), 300);
     });
-    box.querySelector('#flowCheck').addEventListener('click', e => once('check', e.currentTarget, () => recheck(true)));
-    box.querySelector('#flowRegister').addEventListener('click', e => once('register', e.currentTarget, doRegister));
+    on('click', e => {
+      const check = e.target.closest('#flowCheck'), reg = e.target.closest('#flowRegister');
+      if (check) once('check', check, () => recheck(true)); else if (reg) once('register', reg, doRegister);
+    });
     on('click', e => {
       const li = e.target.closest('[data-goto]'); if (!li) return;
       const row = box.querySelector(`[data-row="${CSS.escape(li.dataset.goto)}"]`);
@@ -395,17 +404,26 @@
       const v = save ? await call('PUT', `/api/flows/${id}/mapping`, { mapping: S.mapping }) : await call('POST', `/api/flows/${id}/check`, { mapping: S.mapping });
       if (view !== S.view || revision !== S.revision) return;
       const changed = JSON.stringify(v.check.available) !== JSON.stringify(S.view.check.available);
-      S.view = Object.assign(S.view, { check: v.check, next_version: v.next_version, versions: v.versions });
-      if (changed) renderEditor(); else S.el.querySelector('#flowProblems').innerHTML = resultBlock(v.check);
+      const regBefore = JSON.stringify(S.view.register ?? null);
+      S.view = Object.assign(S.view, { check: v.check, next_version: v.next_version, versions: v.versions, register: v.register, class_flow: v.class_flow });
+      if (changed) renderEditor();
+      else {
+        S.el.querySelector('#flowProblems').innerHTML = resultBlock(v.check);
+        if (JSON.stringify(v.register ?? null) !== regBefore) S.el.querySelector('#flowActions').innerHTML = actionsHtml();
+      }
       if (save) { S.el.querySelector('#flowMsg').textContent = '매핑을 저장했습니다'; S.el.querySelector('#flowMsg').className = 'form-msg pos'; }
     } catch (e) { msg.textContent = e.message; msg.className = 'form-msg neg'; }
   }
 
+  // 누가 했는지: 판본 등록 · 되돌리기는 고른 「나」로 기록한다(서버 flows_api 가 by 를 요구한다) — 없으면 그 자리에서 안내하고 보내지 않는다
+  const meId = () => window.hydInbox?.me?.()?.id || '';
+  const NEED_ME = '누가 했는지 기록에 남기 때문에 먼저 위의 [나 고르기]에서 나를 고르세요.';
   async function doRegister() {
     const msg = S.el.querySelector('#flowMsg');
+    if (!meId()) { msg.textContent = '판본을 등록하려면 ' + NEED_ME; msg.className = 'form-msg neg'; return; }
     try {
       collect();
-      const r = await call('POST', `/api/flows/${encodeURIComponent(S.view.definition_id)}/register`, { mapping: S.mapping });
+      const r = await call('POST', `/api/flows/${encodeURIComponent(S.view.definition_id)}/register`, { mapping: S.mapping, by: meId() });
       UI.toast(`판본 ${r.version} 등록 — 운영 판본은 그대로입니다`, { tone: 'ok' });
       msg.textContent = `${r.name} 판본 ${r.version}${window.hydWords.josa(String(r.version), '을/를')} 등록했습니다.`; msg.className = 'form-msg pos';
       await recheck(false); loadList();
@@ -427,9 +445,11 @@
       const name = registeredName && registeredName !== id ? registeredName : UI.terms['def.' + id] || '이름 미등록 흐름';
       const rows = vs.map(v => `<li>판본 <b>${h(v.version)}</b> · ${h(UI.dateTime(v.registered_at))}
         <a class="btn small" href="${h(api(`/api/flows/${encodeURIComponent(id)}/versions/${encodeURIComponent(v.version)}/bpmn`))}" download>그림 받기</a>
-        ${alertStart ? '<span class="muted">경보가 들어오면 시작</span>' : `<button class="btn small" data-start="${h(id)}" data-version="${h(v.version)}"${hydCourseAccess.startBlocked(id) ? ` disabled title="${h(hydCourseAccess.startBlocked(id))}"` : ''}>직접 시작</button><div data-startbox="${h(id + '@' + v.version)}"></div>`}</li>`).join('');
-      return UI.card({ title: h(name), sub: d ? '매핑 초안 있음' : '', body: (rows ? `<ul class="flow-versions">${rows}</ul>` : '<p class="muted">등록한 판본 없음</p>') + UI.metaFold([['흐름 식별자', h(id)]]),
-        actions: (d ? `<button class="btn small" data-open="${h(id)}">매핑 열기</button>` : '') + `<button class="btn small danger" data-delete-flow="${h(id)}">이 흐름 지우기</button><div data-delete-box="${h(id)}"></div>` });
+        ${alertStart ? '<span class="muted">경보가 들어오면 시작</span>' : `<button class="btn small" data-start="${h(id)}" data-version="${h(v.version)}"${hydCourseAccess.startBlocked(id) ? ' disabled' : ''}>직접 시작</button>${hydCourseAccess.startBlocked(id) ? `<span class="field-hint">${h(hydCourseAccess.startBlocked(id))}</span>` : ''}<div data-startbox="${h(id + '@' + v.version)}"></div>`}</li>`).join('');
+      // 강사가 설치한 수업 흐름(서버 class_flow): 매핑은 열어 읽기만 하고(실라버스 [매핑 열기]) 지우기 단추를 달지 않는다(W3-04)
+      const classFlow = !!(d?.class_flow || vs.some(v => v.class_flow));
+      return UI.card({ title: h(name), chips: classFlow ? UI.chipText('수업 흐름(강사 설치) · 읽기만', 'neutral') : '', sub: d ? (classFlow ? '매핑 있음' : '매핑 초안 있음') : '', body: (rows ? `<ul class="flow-versions">${rows}</ul>` : '<p class="muted">등록한 판본 없음</p>') + UI.metaFold([['흐름 식별자', h(id)]]),
+        actions: (d ? `<button class="btn small" data-open="${h(id)}">매핑 열기</button>` : '') + (classFlow ? '' : `<button class="btn small danger" data-delete-flow="${h(id)}">이 흐름 지우기</button><div data-delete-box="${h(id)}"></div>`) });
     }).join('');
     box.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => openDraft(b.dataset.open)));
     box.querySelectorAll('[data-start]').forEach(b => b.addEventListener('click', () => startForm(b.dataset.start, b.dataset.version)));
@@ -448,7 +468,7 @@
       try {
         const result = await call('DELETE', '/api/flows/' + encodeURIComponent(id) + '?by=' + encodeURIComponent(by));
         if (S.view?.definition_id === id) { S.view = null; S.mapping = null; S.el.querySelector('#flowEditor').innerHTML = ''; }
-        UI.toast(result.projection_pending ? `흐름을 지웠습니다. 그래프 기록 ${result.projection_pending}건은 정리를 다시 시도하고 있습니다.` : '선택한 흐름을 지웠습니다.', { tone: result.projection_pending ? 'warning' : 'ok' }); await loadList();
+        UI.toast(result.projection_pending ? `흐름을 지웠습니다. 그래프 기록 ${result.projection_pending}건은 정리를 다시 시도하고 있습니다.` : '선택한 흐름을 지웠습니다.', { tone: result.projection_pending ? 'neutral' : 'ok' }); await loadList();
       } catch (e) { msg.textContent = e.message; box.querySelectorAll('button,input').forEach(n => { n.disabled = false; }); }
       finally { S.deleting = false; }
     };
@@ -491,12 +511,22 @@
   async function doReset() {
     const ok = await UI.confirm({ title: '기준으로 되돌리기', body: '가져온 흐름 · 판본 · 매핑 초안을 지웁니다. 기준 흐름과, 지금 경보에 배포된 흐름(수업 흐름 포함)은 남깁니다.', ok: '되돌리기', danger: true });
     if (!ok) return;
+    if (!meId()) { UI.toast('되돌리려면 ' + NEED_ME, { tone: 'neg', timeout: 8000 }); return; }
     try {
-      const r = await call('POST', '/api/flows/reset');
+      const r = await call('POST', '/api/flows/reset', { by: meId() });
       UI.toast(`되돌림 — 판본 ${r.versions} · 초안 ${r.drafts} 지움` + ((r.kept || []).length ? ` · 배포 중이라 남김: ${r.kept.join(', ')}` : ''), { tone: 'ok', timeout: 8000 });
       S.view = null; S.mapping = null; S.el.querySelector('#flowEditor').innerHTML = ''; loadList();
     } catch (e) { UI.toast(e.message, { tone: 'neg', timeout: 8000 }); }
   }
 
-  window.hydFlows = { mount, pure };
+  // 다시 열 때(셸 show): 카탈로그(에이전트 · 역할 · 부품)와 목록을 새로 읽는다. 한 번 읽고 굳으면 [에이전트] 화면에서 새로 만든 에이전트가
+  // 단계의 에이전트 고르기에 없었다(한바퀴3 17 — 실라버스 118행에서 만든 인수인계 에이전트를 119행에서 고를 수 없음). 펼친 매핑은 지금 칸 값을
+  // 담아(collect) 다시 그린다.
+  async function show() {
+    const before = JSON.stringify((S.cat && S.cat.agents) || []);
+    await Promise.all([loadCatalog(), loadList()]);
+    if (S.view && S.mapping && JSON.stringify(S.cat.agents) !== before) { collect(); renderEditor(); }
+  }
+
+  window.hydFlows = { mount, show };
 })();

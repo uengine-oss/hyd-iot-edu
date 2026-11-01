@@ -26,8 +26,8 @@ PERIODS = {'1h': ('최근 1시간', 1), '24h': ('최근 24시간', 24), '7d': ('
 EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
 
 SYSTEM = {'ts': '시계열 DB', 'biz': '업무 DB', 'proc': '처리 기록', 'graph': '지식 그래프'}
-STATUS = {'met': '달성', 'missed': '미달', 'no_target': '목표 없음', 'partial': '부분 실적', 'no_data': '기록 없음',
-          'unavailable': '계산 불가', 'error': '조회 실패'}
+STATUS = {'met': '달성', 'missed': '미달', 'no_target': '목표 없음', 'incomparable': '단위 달라 판정 안 함', 'partial': '부분 실적',
+          'no_data': '기록 없음', 'unavailable': '계산 불가', 'error': '조회 실패'}
 COMPUTED = ('met', 'missed', 'no_target')
 
 
@@ -203,7 +203,7 @@ def calc_availability(f: Fetch, w: Window, ctx: dict) -> Calc:
     obs, n_tag, trips, down, up = _uptime(f, w)
     rows = [('ts', 'tag_1m', n_tag), ('ts', 'alerts', len(trips))]
     if not obs:
-        return Calc(None, rows=rows, status='no_data', reason='기간 안 TS1 1분 집계(tag_1m)가 없습니다 — 설비 시뮬레이터 · 수집기가 '
+        return Calc(None, rows=rows, status='no_data', reason='기간 안 유온 센서의 1분 기록이 없습니다 — 설비 시뮬레이터 · 수집기가 '
                     '꺼져 있었거나 기간이 1분보다 짧습니다')
     per = {a: round(100 * up[a] / m, 2) for a, m in obs.items() if m}
     value = round(100 * sum(up.values()) / sum(obs.values()), 2)
@@ -216,7 +216,7 @@ def calc_mtbf(f: Fetch, w: Window, ctx: dict) -> Calc:
     scale = ctx['time_scale']
     rows = [('ts', 'tag_1m', n_tag), ('ts', 'alerts', len(trips))]
     if not obs:
-        return Calc(None, rows=rows, status='no_data', reason='기간 안 TS1 1분 집계(tag_1m)가 없어 운전 시간을 알 수 없습니다')
+        return Calc(None, rows=rows, status='no_data', reason='기간 안 유온 센서의 1분 기록이 없어 운전 시간을 알 수 없습니다')
     run_h = {a: up[a] / 60 * scale for a in obs}
     fails = {a: sum(1 for t in trips if t['asset'] == a and t['in_window']) for a in obs}
     per = {a: (round(run_h[a] / fails[a], 1) if fails[a] else None) for a in obs}
@@ -238,13 +238,13 @@ def calc_safety_margin(f: Fetch, w: Window, ctx: dict) -> Calc:
     n = sum(int(r['n']) for r in rows_)
     rows = [('graph', 'StateVariable.limit', 1), ('ts', 'tag_1m', n)]
     if not rows_:
-        return Calc(None, rows=rows, status='no_data', reason=f"기간 안 {lim['tag']} 1분 집계(tag_1m)가 없습니다")
+        return Calc(None, rows=rows, status='no_data', reason=f"기간 안 {lim['name']} 센서의 1분 기록이 없습니다")
     per = {r['asset']: round(float(lim['limit']) - float(r['peak']), 2) for r in rows_ if r['peak'] is not None}
     events = [{'asset': r['asset'], 'at': _utc(r['at']), 'end': _utc(r['at']) + timedelta(minutes=1), 'alert_id': None, 'weight': float(r['peak']),
                'label': f"{r['asset']} 최고 {lim['tag']} {float(r['peak']):.1f} {lim['unit'] or ''} ({_utc(r['at']):%m-%d %H:%M})"}
               for r in rows_ if r['peak'] is not None]
     if not per:
-        return Calc(None, rows=rows, status='no_data', reason=f"기간 안 {lim['tag']} 최고값이 모두 비어 있습니다")
+        return Calc(None, rows=rows, status='no_data', reason=f"기간 안 {lim['name']} 최고값이 모두 비어 있습니다")
     detail = [{'설비': r['asset'], f"최고 {lim['tag']}": round(float(r['peak']), 2), '한계': lim['limit'], '여유': per.get(r['asset'])} for r in rows_]
     return Calc(min(per.values()), per, rows, events, detail=detail,
                 note=f"{lim['name']} 한계 {lim['limit']} {lim['unit'] or ''} − 기간 최고값, 설비 중 가장 작은 여유")
@@ -254,7 +254,7 @@ def calc_energy_use(f: Fetch, w: Window, ctx: dict) -> Calc:
     rows_ = f('ts', 'tag_avg:EPS1', SQL_TAG_AVG, {**w.params, 'tag': 'EPS1'})
     rows = [('ts', 'tag_1m', sum(int(r['n']) for r in rows_))]
     if not rows_:
-        return Calc(None, rows=rows, status='no_data', reason='기간 안 EPS1(주 모터 전력) 1분 집계가 없습니다')
+        return Calc(None, rows=rows, status='no_data', reason='기간 안 주 모터 전력의 1분 기록이 없습니다')
     per = {r['asset']: round(float(r['mean']) * 24, 2) for r in rows_}
     detail = [{'설비': r['asset'], '평균 전력 kW': round(float(r['mean']), 3), 'kWh/일': per[r['asset']]} for r in rows_]
     return Calc(round(sum(per.values()), 2), per, rows, detail=detail, note='주 모터(EPS1)만 — 팬 전력 태그는 없음')
@@ -268,7 +268,7 @@ def calc_energy_cost(f: Fetch, w: Window, ctx: dict) -> Calc:
         return Calc(None, rows=rows, status='no_data', reason=use.reason)
     if len(rates) != 1:
         return Calc(None, rows=rows, status='no_data',
-                    reason=f'ent.energy_demand 사업장 행이 {len(rates)}개 — 적용할 전력량 요율을 하나로 정할 수 없습니다')
+                    reason=f'업무 DB의 전력 요율이 사업장 {len(rates)}곳 몫이라 적용할 요율을 하나로 정할 수 없습니다')
     rate = float(rates[0]['energy_rate'])
     per = {a: round(v * 30 * rate, 2) for a, v in use.per_asset.items()}
     return Calc(round(use.value * 30 * rate, 2), per, rows, detail=[{'kWh/일': use.value, '요율 만원/kWh': rate, '만원/월': round(use.value * 30 * rate, 2)}],
@@ -356,7 +356,7 @@ def calc_inventory(f: Fetch, w: Window, ctx: dict) -> Calc:
     rows_ = f('biz', 'inventory', SQL_INVENTORY)
     rows = [('biz', 'ent.fg_inventory', len(rows_))]
     if not rows_:
-        return Calc(None, rows=rows, status='no_data', reason='ent.fg_inventory 에 재고 행이 없습니다')
+        return Calc(None, rows=rows, status='no_data', reason='업무 DB에 완제품 재고 기록이 없습니다')
     per = {r['asset']: int(r['fg_stock']) for r in rows_}
     return Calc(sum(per.values()), per, rows, detail=[{'설비': r['asset'], '품목': r['fg_item'], '재고 ea': r['fg_stock']} for r in rows_],
                 note='현재값 — 재고 표는 이력이 없어 기간 선택과 무관')
@@ -417,24 +417,22 @@ DEFINITIONS: dict[str, dict] = {
     'msr:inventory': dict(fn=calc_inventory, sources=[('biz', 'ent.fg_inventory', 'fg_stock')], formula='Σ fg_stock (현재값)'),
     'msr:precedent': dict(fn=calc_precedent, unit='건 (기간)', sources=[('proc', 'bpm_proc_inst', 'start_date · variables_data.chosen_skill')],
                           formula='기간에 시작한 처리 건 중 chosen_skill(사람이 고른 조치)이 있는 건 수'),
-    'msr:revenue': dict(reason='업무 DB에 판매 · 매출 원장이 없습니다 — production_orders.hour_value 는 계획상 시간당 생산 가치, '
-                               'shipments 는 대체 출하 수량만 있고 단가가 없습니다'),
-    'msr:inventory-cost': dict(reason='보관 단가(개당 · 일당 보관비) 열이 업무 DB에 없습니다 — fg_inventory 에는 수량만 있습니다'),
-    'msr:penalty': dict(reason='오더 완료 · 출하 시각 기록이 없어 지연 시간을 셀 수 없습니다 — production_orders 에는 납기(due_at)만, '
-                               'sales_contracts 에는 시간당 지체상금 단가(penalty_per_h)만 있습니다'),
-    'msr:otd': dict(reason='납기 대비 실제 완료 · 출하 시각 기록이 없습니다 — production_orders 에는 due_at 만 있고 완료 시각 열이 없습니다'),
-    'msr:quality-claim': dict(reason='클레임 접수 기록 표가 없습니다 — quality_profiles 에는 고온 로트의 클레임 위험 금액, '
-                                     'lot_dispositions 에는 격리 · 출하 처분만 있습니다'),
+    'msr:revenue': dict(reason='업무 DB에 판매 · 매출 기록이 없습니다 — 생산 오더에는 계획상 시간당 생산 가치만 있고 판매 단가 · 판매 기록이 없습니다'),
+    'msr:inventory-cost': dict(reason='업무 DB에 보관 단가(개당 · 일당 보관비)가 없습니다 — 완제품 재고에는 수량만 있습니다'),
+    'msr:penalty': dict(reason='오더 완료 · 출하 시각 기록이 없어 늦어진 시간을 셀 수 없습니다 — 생산 오더에는 납기만, '
+                               '판매 계약에는 시간당 지체상금 단가만 있습니다'),
+    'msr:otd': dict(reason='납기 대비 실제 완료 · 출하 시각 기록이 없습니다 — 생산 오더에는 납기만 있고 완료 시각이 없습니다'),
+    'msr:quality-claim': dict(reason='클레임 접수 기록이 없습니다 — 품질 기준에는 고온 로트의 클레임 위험 금액만 있습니다'),
     'msr:brand': dict(reason='브랜드 신뢰 지수(고객 설문 · 평가) 원천이 없습니다'),
-    'msr:throughput': dict(reason='생산 개수 실적(생산 카운터 태그 · MES 실적 표)이 없습니다 — LoadSP 는 부하 설정(%)이고 '
-                                  'production_orders.rate_per_h 는 계획 속도입니다'),
-    'msr:oil-life': dict(reason='작동유 상태(산화도 · 수분 · 교환 기록) 측정 원천이 없습니다 — 유온 TS1 은 열화 요인일 뿐 잔여 수명 값이 아닙니다'),
+    'msr:throughput': dict(reason='생산 개수 실적(생산 카운터 · 생산 실적 기록)이 없습니다 — 부하 지령은 부하 설정(%)이고 '
+                                  '생산 오더의 생산 속도는 계획 값입니다'),
+    'msr:oil-life': dict(reason='작동유 상태(산화도 · 수분 · 교환 기록) 측정 원천이 없습니다 — 유온은 열화 요인일 뿐 잔여 수명 값이 아닙니다'),
 }
-TOKEN = re.compile(r'(msr|kpi):([\w-]+)')
+TOKEN = re.compile(r'msr:[\w-]+')
 
 
 def formula_terms(formula: str) -> list[tuple[int, str]]:
-    """'msr:revenue - kpi:cost' → [(1,'msr:revenue'), (-1,'msr:cost')]. 식의 kpi: 접두는 같은 Measure(msr:)를 가리킨다."""
+    """'msr:revenue - msr:cost' → [(1,'msr:revenue'), (-1,'msr:cost')]. 식의 이름은 그래프 Measure id 그대로다."""
     terms, sign, rest = [], 1, formula.strip()
     pos = 0
     for m in TOKEN.finditer(rest):
@@ -442,7 +440,7 @@ def formula_terms(formula: str) -> list[tuple[int, str]]:
         if between not in ('', '+', '-'):
             raise ValueError(f'식을 풀 수 없습니다: {formula}')
         sign = -1 if between == '-' else 1
-        terms.append((sign, 'msr:' + m.group(2)))
+        terms.append((sign, m.group(0)))
         pos = m.end()
     if rest[pos:].strip() or not terms:
         raise ValueError(f'식을 풀 수 없습니다: {formula}')
@@ -499,20 +497,25 @@ def evaluate(m: dict, f: Fetch, w: Window, ctx: dict, done: dict) -> dict:
         out.update(status='unavailable', reason=definition['reason'])
         return out
     if definition['kind'] == 'formula':
-        parts, missing, total, rows = [], [], 0.0, []
+        parts, missing, total, rows, units = [], [], 0.0, [], {}
         for sign, mid in formula_terms(m['formula']):
             sub = ctx['measures'].get(mid)
             r = evaluate(sub, f, w, ctx, done) if sub else None
-            if r is None or r.get('status') not in COMPUTED:
+            if r is None or r.get('status') not in COMPUTED + ('incomparable',):
                 missing.append(f"{(sub or {}).get('name', mid)}({STATUS.get((r or {}).get('status'), '없음')})")
                 continue
             total += sign * r['value']
             rows += r['rows']
-            parts.append({'sign': sign, 'measure': mid, 'name': sub['name'], 'value': r['value']})
+            units.setdefault(r['displayUnit'], []).append(sub['name'])
+            parts.append({'부호': '−' if sign < 0 else '+', '지표': sub['name'], '실적': r['value'], '단위': r['displayUnit']})
         if missing:
             out.update(status='unavailable', reason=f"식({definition['formula']})의 구성 지표를 계산할 수 없습니다: " + ', '.join(missing))
             return out
-        out.update(value=round(total, 2), rows=rows, detail=parts)
+        if len(units) > 1:      # 기간 합계와 월 환산을 더하지 않는다
+            out.update(status='unavailable', detail=parts,
+                       reason='구성 지표의 단위가 달라 더할 수 없습니다: ' + ' / '.join(f"{', '.join(n)} = {u}" for u, n in units.items()))
+            return out
+        out.update(value=round(total, 2), rows=rows, detail=parts, displayUnit=next(iter(units)))
     else:
         try:
             calc: Calc = DEFINITIONS[m['id']]['fn'](f, w, ctx | {'measure': m})
@@ -524,6 +527,10 @@ def evaluate(m: dict, f: Fetch, w: Window, ctx: dict, done: dict) -> dict:
         if calc.status:
             out['status'] = calc.status
             return out
+    if m.get('target') is not None and out['displayUnit'] != m.get('unit'):
+        out.update(status='incomparable', reason=f"실적은 {out['displayUnit']}이고 목표는 {m.get('unit')}이라 견주지 않습니다 — "
+                                                 "같은 단위의 목표가 있어야 달성 · 미달을 판정합니다")
+        return out
     met, rate = achievement(out['value'], m.get('target'), m.get('direction') or 'UP')
     out.update(met=met, rate=rate, status='no_target' if met is None else 'met' if met else 'missed')
     if met is not None and out['perAsset']:
@@ -597,10 +604,12 @@ def report(sources, period='24h', *, now=None, start=None, end=None, time_scale=
     original = _measures(f)
     trial = check_targets(original, targets)
     measures = _with_targets(original, trial)
+    source_errors = []
     try:
         supports = f('graph', 'supports', Q_SUPPORTS)
-    except SourceError:
+    except SourceError as exc:       # 지표 실적은 계산한다 — 목표 사이 받침선만 빠진 것을 화면에 알린다
         supports = []
+        source_errors.append(f'목표 사이의 받침 관계(전략맵 선)를 읽지 못했습니다 — {exc}')
     ctx = {'time_scale': float(time_scale), 'tenant': tenant, 'measures': measures, 'window': w}
     done: dict = {}
     results = {mid: evaluate(m, f, w, ctx, done) for mid, m in measures.items()}
@@ -621,8 +630,8 @@ def report(sources, period='24h', *, now=None, start=None, end=None, time_scale=
             o['measures'].sort(key=lambda x: (x['kpiRole'] != 'lagging', x['id']))
         out.append({'id': p['id'], 'name': p['name'], 'objectives': objs})
     counts = {s: sum(1 for r in results.values() if r['status'] == s) for s in STATUS}
-    rep = {'window': w.view(), 'timeScale': float(time_scale), 'perspectives': out,
-           'summary': {'total': len(results), **counts, 'labels': STATUS}}
+    rep = {'window': w.view(), 'timeScale': float(time_scale), 'perspectives': out, 'periods': {k: v[0] for k, v in PERIODS.items()},
+           'summary': {'total': len(results), **counts, 'labels': STATUS}, 'sourceErrors': source_errors}
     if trial:
         rep['trial'] = _trial_view(results, original, trial)
         for p in out:                       # 지표 카드는 results 의 사본이라 원래 판정을 다시 붙인다
@@ -708,10 +717,12 @@ def trace(sources, measure_id: str, period='24h', *, now=None, start=None, end=N
     ids = sorted(set(drivers) | {measure_id})
     sign_of = {measure_id: 1} | {k: v['sign'] for k, v in drivers.items()}
     patterns = {p['code']: p for p in f('graph', 'patterns:' + measure_id, Q_PATTERNS, {'ids': ids}) if p.get('code')}
+    source_errors = []
     try:
         pattern_names = {r['code']: r['name'] for r in f('graph', 'pattern_names', Q_PATTERN_NAMES)}
-    except SourceError:
+    except SourceError as exc:       # 처리 건은 그대로 보이고 경보 이름만 빠진 것을 알린다
         pattern_names = {}
+        source_errors.append(f'경보 패턴 이름을 읽지 못했습니다 — {exc}')
     causes = {c['id']: c for c in f('graph', 'causes:' + measure_id, Q_CAUSES, {'ids': ids})}
     skills: dict[str, dict] = {}
     for s in f('graph', 'skills:' + measure_id, Q_SKILLS, {'ids': ids}):
@@ -732,7 +743,7 @@ def trace(sources, measure_id: str, period='24h', *, now=None, start=None, end=N
         if ev:
             why.append('이 처리 건의 경보가 지표를 깎은 기록: ' + ev['label']); score, tier = 4, 2
         else:
-            ev = next((e for e in events if e['asset'] == i['asset'] and i['start'] and e['at']
+            ev = next((e for e in events if i['alertId'] and e['asset'] == i['asset'] and i['start'] and e['at']
                        and i['start'] <= (e.get('end') or e['at']) and (i['end'] or w.end) >= e['at']), None)
             if ev:
                 why.append('지표를 깎은 시각에 열려 있던 처리 건: ' + ev['label']); score, tier = 3, 1
@@ -780,10 +791,9 @@ def trace(sources, measure_id: str, period='24h', *, now=None, start=None, end=N
                             'effect': d['sign'] * good, 'paths': [{'effect': sg * good, 'path': t} for sg, t in sorted(d['signs'].items())]}
                            for k, d in drivers.items()), key=lambda d: (d['depth'], d['name'])),
         'objectives': [{'id': o['id'], 'name': o['name'], 'supports': [s for s in o['supports'] if s.get('id')]} for o in objectives],
-        'patterns': [{'code': c, 'name': p['name']} for c, p in sorted(patterns.items())],
         'skills': sorted(skills.values(), key=lambda s: (s['effect'], s['name'])),
         'instances': found[:30], 'instanceTotal': len(found), 'instancesRead': len(insts),
-        'assets': assets, 'actions': sorted(actions.values(), key=lambda a: -a['count']),
+        'assets': assets, 'actions': sorted(actions.values(), key=lambda a: -a['count']), 'sourceErrors': source_errors,
     }
 
 

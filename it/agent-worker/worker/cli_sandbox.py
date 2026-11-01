@@ -87,6 +87,29 @@ def _host():
         raise RuntimeError('AI 실행 격리(HYD_CLI_SANDBOX=landlock)에는 Linux root · setpriv 가 필요합니다')
 
 
+def verify():
+    """격리가 켜진 워커는 켜질 때 이 커널이 Landlock 파일 규칙을 실제로 거는지 한 번 해 본다 — 이미지 빌드 때 setpriv 옵션만 확인해서,
+    지원하지 않는 커널(다른 Docker 데스크톱)에서는 상태 점이 초록인데 모든 AI 단계가 일반 실패했다(검진 G1-25). 안 되면 켜지지 않고 까닭을
+    말한다(격리 없이 도는 폴백 없음). 격리가 꺼진 개발용 호스트 워커는 확인할 것이 없다."""
+    if not enabled():
+        return
+    _host()
+    import subprocess
+
+    def under_rule(*command):
+        return subprocess.run(['/usr/bin/setpriv', '--landlock-access', 'fs', '--landlock-rule', 'path-beneath:' + READ + ':/usr', '--',
+                               *command], capture_output=True, timeout=10)
+    done = under_rule('/usr/bin/true')
+    if done.returncode != 0:
+        detail = (done.stderr or done.stdout).decode('utf-8', 'replace').strip()[:300]
+        raise RuntimeError('이 PC 의 커널이 AI 실행 격리(Landlock 파일 규칙)를 걸지 못해 AI 워커를 켜지 않습니다 — Docker Desktop 을 '
+                           f'최신으로 올리거나 WSL2 커널을 확인하세요(setpriv 종료 {done.returncode}: {detail})')
+    # 규칙이 실제로 무는지: /usr 만 허락하고 /etc 의 보통 파일을 읽으면 거절돼야 한다(/etc/os-release 는 /usr 로 가는 링크라 쓰지 않는다)
+    if under_rule('/usr/bin/cat', '/etc/passwd').returncode == 0:
+        raise RuntimeError('AI 실행 격리(Landlock)를 걸었는데 허락하지 않은 파일이 읽혔습니다 — 이 커널에서는 격리가 실제로 걸리지 않아 '
+                           'AI 워커를 켜지 않습니다')
+
+
 def group_file(workdir):
     """Process ownership records must not be editable by the untrusted CLI."""
     _host()

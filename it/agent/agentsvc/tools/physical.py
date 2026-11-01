@@ -35,7 +35,7 @@ def scalar(value, type_ref):
              'string': isinstance(value, (str, UUID)),
              'date': isinstance(value, (datetime, date, time))}
     if not valid.get(type_ref, False):
-        raise ValueError('physical InputData value type does not match its declared typeRef')
+        raise ValueError(f'업무 DB 값의 형식({type(value).__name__})이 지식에 선언한 형식({type_ref})과 다릅니다')
     if value is None or type(value) in (bool, int, str):
         return value
     if isinstance(value, Decimal):
@@ -48,7 +48,7 @@ def scalar(value, type_ref):
         return value.isoformat()
     elif isinstance(value, UUID):
         return str(value)
-    raise ValueError('physical InputData requires a finite scalar value')
+    raise ValueError('업무 DB 값이 유한한 단일 값이 아닙니다')
 
 
 def read_physical(item, asset):
@@ -60,33 +60,34 @@ def read_physical_fact(item, asset):
     the anchor is the stored time itself — the business record a consent compares, while the hours keep moving."""
     derive = item.get('derive')
     if derive not in (None, DERIVE_HOURS):
-        raise ValueError('physical InputData derivation is not supported')
+        raise ValueError(f'지식에 선언한 값 변환({derive})을 엔진이 지원하지 않습니다')
     if item.get('datasource') != 'hyd-enterprise' or item.get('schema') != 'ent':
-        raise ValueError('physical InputData datasource/schema is not registered')
+        raise ValueError('지식에 선언한 업무 DB 출처(데이터 원본 · 스키마)가 등록된 것(hyd-enterprise · ent)이 아닙니다')
     for key in ('catalog', 'table', 'column', 'assetColumn'):
         if not isinstance(item.get(key), str) or not item[key] or '\x00' in item[key]:
-            raise ValueError(f'physical InputData requires explicit {key}')
+            raise ValueError(f'지식의 업무 DB 출처에 {key} 칸이 없습니다')
     if not isinstance(asset, str) or not asset:
-        raise ValueError('physical InputData requires an asset')
+        raise ValueError('업무 DB 값을 읽을 설비가 정해지지 않았습니다')
     dsn = os.getenv('ENTERPRISE_READ_DSN')
     if not dsn:
-        raise ValueError('physical InputData reader is not configured')
+        raise ValueError('업무 DB 읽기 연결(ENTERPRISE_READ_DSN)이 설정되지 않았습니다 — 시작.bat 으로 다시 켜세요')
     with reader_connection(dsn) as conn:
         conn.execute('set transaction read only')
         conn.execute("set local statement_timeout='3000ms'")
         conn.execute("set local lock_timeout='1000ms'")
         if conn.execute('select current_database()').fetchone()[0] != item['catalog']:
-            raise ValueError('physical InputData catalog does not match the connected database')
+            raise ValueError('지식에 선언한 업무 DB 이름이 연결된 DB와 다릅니다')
         column = sql.Identifier(item['column'])
-        hours = sql.SQL('round((extract(epoch from ({} - now())) / 3600)::numeric, 2)').format(column) if derive else sql.SQL('null')
-        query = sql.SQL('select {}, {} from {} where {} = %s limit 2').format(
-            column, hours, sql.Identifier(item['schema'], item['table']), sql.Identifier(item['assetColumn']))
+        # 남은 시간은 값의 형식을 먼저 본 뒤 여기서 계산한다 — DB 식으로 빼면 시각이 아닌 칸에서 DB 영어 오류가 한국어 까닭보다 먼저 나왔다
+        query = sql.SQL('select {}, now(), localtimestamp from {} where {} = %s limit 2').format(
+            column, sql.Identifier(item['schema'], item['table']), sql.Identifier(item['assetColumn']))
         rows = conn.execute(query, (asset,)).fetchall()
         if len(rows) != 1:
-            raise ValueError('physical InputData source row count is not one')
-        raw, derived = rows[0]
+            raise ValueError(f'업무 DB {item["schema"]}.{item["table"]}에서 이 설비의 행이 정확히 하나가 아닙니다({len(rows)}개 — 2개 이상이면 2)')
+        raw, now, local_now = rows[0]
         if derive:
             if raw is not None and not isinstance(raw, datetime):
-                raise ValueError('hours_from_now needs a point-in-time column')
+                raise ValueError('남은 시간으로 바꿀 칸이 시각 칸이 아닙니다')
+            derived = None if raw is None else round((raw - (now if raw.tzinfo else local_now)).total_seconds() / 3600, 2)
             return scalar(derived, item.get('typeRef')), scalar(raw, 'date')
         return scalar(raw, item.get('typeRef')), None

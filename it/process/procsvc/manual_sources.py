@@ -92,12 +92,29 @@ def extract(raw: bytes, filename: str) -> Extraction:
         if not is_pdf:
             raise ValueError('PDF 파일 서명이 일치하지 않습니다')
         import pypdf
-        reader = pypdf.PdfReader(io.BytesIO(raw))
-        if reader.is_encrypted:
+
+        def unreadable():
+            # 손상 · 내려받다 만 파일 · 지원하지 않는 구조. pypdf 는 깨진 구조에서 PyPdfError 밖의 예외(KeyError('/Kids') · AttributeError ·
+            # TypeError · UnboundLocalError …)도 낸다(FB 검증 P2-10 실측 — 300번 중 29번이 학생 문장 없이 404 · 500) — 파서 원문은 원인 체인에만
+            return ValueError('PDF를 읽을 수 없습니다(파일이 손상됐거나 끝까지 받지 못했거나 지원하지 않는 형식입니다) — '
+                              '원본 PDF를 다시 받아 올리세요')
+        try:
+            reader = pypdf.PdfReader(io.BytesIO(raw))
+            encrypted = reader.is_encrypted
+        except Exception as exc:  # noqa: BLE001 — 파서가 낸 어떤 실패든 같은 학생 문장의 거절로(삼키지 않고 원인 체인을 단다)
+            raise unreadable() from exc
+        if encrypted:
             raise ValueError('암호화된 PDF는 먼저 복호화해야 합니다')
-        if not 0 < len(reader.pages) <= MAX_PAGES:
+        try:
+            count = len(reader.pages)
+        except Exception as exc:  # noqa: BLE001 — 위와 같은 까닭
+            raise unreadable() from exc
+        if not 0 < count <= MAX_PAGES:
             raise ValueError('PDF는 1~500페이지여야 합니다')
-        pages = tuple(normalize_glyphs(page.extract_text() or '') for page in reader.pages)
+        try:
+            pages = tuple(normalize_glyphs(page.extract_text() or '') for page in reader.pages)
+        except Exception as exc:  # noqa: BLE001 — 위와 같은 까닭
+            raise unreadable() from exc
         empty = text_missing_pages(pages)
         return Extraction(pages, f'pypdf:{pypdf.__version__}:text-v2', 'application/pdf',
                           (empty_page_warning(empty, len(pages)),) if empty else (), status_of(empty, len(pages)))

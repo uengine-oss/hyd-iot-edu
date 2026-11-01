@@ -1,23 +1,24 @@
 """What the work item row does not carry: the form (output contract), the people and agents, the tenant's MCP servers.
 
 The product's ProcessGPTRequestContext.prepare_context (processgpt_agent_sdk/processgpt_agent_framework.py) gathers the
-same bundle: form_def by the row's tool, users split into agents/users, tenants.mcp, notify emails, sources, feedback.
+same bundle: form_def by the row's tool, users split into agents/users, tenants.mcp, feedback. (그 묶음의 form html · 알림 메일 ·
+참고 자료 칸은 프롬프트 · 열쇠 어디서도 읽지 않아 지웠다 — 검진 G1-23.)
 """
 from __future__ import annotations
 
 import logging
-import os
 from dataclasses import dataclass, field
 from typing import Any
 from hydcommon.process_contracts import pinned_form
 from procsvc import mcp_secrets
 from procsvc.agents_store import activity_capabilities as _activity_capabilities
 
-from . import bridge, env_guard
+from . import bridge
+from .outcome import FREEFORM_KEY
 
 log = logging.getLogger("worker.context")
 
-FREEFORM_FIELDS = [{"key": "freeform", "type": "textarea", "text": "자유형식 입력"}]
+FREEFORM_FIELDS = [{"key": FREEFORM_KEY, "type": "textarea", "text": "자유형식 입력"}]
 
 
 @dataclass
@@ -25,14 +26,11 @@ class Context:
     row: dict
     form_id: str
     form_fields: list[dict]
-    form_html: str | None = None
     agents: list[dict] = field(default_factory=list)
     users: list[dict] = field(default_factory=list)
     tenant_mcp: dict | None = None
-    notify_user_emails: str = ""
     feedback: str = ""                 # the product summarises long feedback with an LLM; here the text is passed as is
     human_answer: str = ""             # a person's answer to the agent's question (HITL resume)
-    sources: list[dict] = field(default_factory=list)
     definition: dict | None = None     # proc_def.definition — the designer's agentConfig/skills per activity live here
     profile: dict | None = None        # U2: the agent this item is assigned to (users row) — its settings: agents_store.agent_settings
     form_contract: str | None = None
@@ -42,9 +40,8 @@ class Context:
     def extras(self) -> dict[str, Any]:
         return {"id": self.row.get("id"), "proc_inst_id": self.row.get("root_proc_inst_id") or self.row.get("proc_inst_id"),
                 "activity_name": self.row.get("activity_name"), "agents": self.agents, "users": self.users, "tenant_mcp": bridge.without_secrets(self.tenant_mcp),
-                "form_fields": self.form_fields, "form_html": self.form_html, "form_id": self.form_id, "form_contract": self.form_contract,
-                "notify_user_emails": self.notify_user_emails, "summarized_feedback": self.feedback, "sources": self.sources,
-                "process_scope": process_scope(self.row)}
+                "form_fields": self.form_fields, "form_id": self.form_id, "form_contract": self.form_contract,
+                "summarized_feedback": self.feedback, "process_scope": process_scope(self.row)}
 
 
 def process_scope(row):
@@ -85,27 +82,25 @@ def prepare(repo, row: dict, tenant_id: str) -> Context:
     feedback = row.get("feedback") or {}
     if isinstance(feedback, str):
         feedback = {"text": feedback}
-    return Context(row=row, form_id=form_id or "freeform", form_fields=fields, form_html=(form or {}).get("html"), agents=agents, users=users,
-                   tenant_mcp=tenant_mcp, notify_user_emails=",".join(u.get("email") for u in users if u.get("email")),
-                   feedback=str(feedback.get("text") or "") if feedback else "", human_answer=str(feedback.get("human_answer") or "") if feedback else "",
-                   sources=[], definition=definition, profile=agent_profile(agents), form_contract=(form or {}).get('contract'))
+    return Context(row=row, form_id=form_id or "freeform", form_fields=fields, agents=agents, users=users,
+                   tenant_mcp=tenant_mcp, feedback=str(feedback.get("text") or "") if feedback else "", human_answer=str(feedback.get("human_answer") or "") if feedback else "",
+                   definition=definition, profile=agent_profile(agents), form_contract=(form or {}).get('contract'))
 
 
 def with_secrets(repo, tenant_id: str, tenant_mcp: dict | None) -> dict | None:
-    """G2: the values of the `${SECRET:KEY}` placeholders the tenant's servers name (mcp_secrets table, then HYD_SECRET_* the
-    worker held back from its environment — env_guard). Only bridge.install reads them. A lookup failure does not fail the claim
-    (the other servers still run): the table's values are left out, and the failure travels with the config so the gate's drop
-    reason — reported on the case by the runner — says the table could not be read, not just that a value is missing."""
+    """G2: the values of the `${SECRET:KEY}` placeholders the tenant's servers name — the secret table is their one source
+    (procsvc/mcp_secrets.load). Only bridge.install writes them. A lookup failure does not fail the claim (the other servers still
+    run): no value is filled, and the failure travels with the config so the gate's drop reason — reported on the case by the
+    runner — says the table could not be read, not just that a value is missing."""
     servers = tenant_mcp.get("mcpServers") if isinstance(tenant_mcp, dict) else None
     if not isinstance(servers, dict) or not any(mcp_secrets.references(s) for s in servers.values()):
         return tenant_mcp
-    environ = {**os.environ, **env_guard.held_secrets()}
     try:
-        values, error = mcp_secrets.load(repo, tenant_id, environ=environ), None
+        values, error = mcp_secrets.load(repo, tenant_id), None
     except Exception as e:  # noqa: BLE001 — a missing table or a DB hiccup must not fail the claim; it is named on the drop reason
         error = getattr(e, "reason", None) or f"{type(e).__name__}: {str(e)[:200]}"
         log.warning("MCP secret lookup failed for tenant %s: %s", tenant_id, error)
-        values = mcp_secrets.env_values(environ)
+        values = {}
     return bridge.attach_secrets(tenant_mcp, values, error=error)
 
 

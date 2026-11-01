@@ -89,15 +89,16 @@ class Table:
 
 
 # ---------------------------------------------------------------- DDL
-def parse_ddl(text: str) -> list[Table]:
-    """PostgreSQL table definitions, including quoted identifiers and literals."""
+def parse_ddl(text: str, default_schema: str = "public") -> list[Table]:
+    """PostgreSQL table definitions, including quoted identifiers and literals. An unqualified name is in `default_schema`
+    — the schema the DDL's connection resolves it to (ddl_sync.place: the registered source's schema, e.g. legacy)."""
     tables = []
     identities = set()
     for tree, comment in create_tables(text):
         ref = tree.this
         if ref.args.get("catalog"):
             raise ValueError("PostgreSQL DDL의 데이터베이스는 연결 정보로 지정하세요")
-        schema = identifier(ref.args["db"]) if ref.args.get("db") else "public"
+        schema = identifier(ref.args["db"]) if ref.args.get("db") else default_schema
         table = Table(schema=schema, name=identifier(ref.this), comment=comment)
         key = (table.schema, table.name)
         if key in identities:
@@ -135,7 +136,7 @@ def parse_ddl(text: str) -> list[Table]:
             raise ValueError(f"열이 없는 테이블: {table.qualified}")
         tables.append(table)
     by_identity={(t.schema,t.name):t for t in tables}
-    for schema,name,column,comment in source_comments(text):
+    for schema,name,column,comment in source_comments(text, default_schema):
         table=by_identity.get((schema,name))
         if table is None:
             continue  # Comments for other, existing objects in a migration.

@@ -5,12 +5,12 @@ PgRepo — psycopg 3 against the Supabase Postgres (it/supabase/migrations/20261
 
 The repo is deliberately thin: SQL only, no business rules. Which work items exist and what state they are in is the
 engine's decision (engine.py); here they are written down. The product's RPC names are kept so the lecture can point at
-them, but what runs is HYD's own lock-ordered SQL (migration 000004, DECISIONS 31): the worker claim is
+them, but what runs is HYD's own lock-ordered SQL (migration 000004): the worker claim is
 claim_process_workitems(…,'worker') with tenant/instance filters (fetch_pending_task is a thin wrapper of it), the
 engine claim claim_process_workitems(…,'engine') (claim_submitted_workitems wrapper), results are saved by a conditional
-UPDATE on the expected consumer (save_task_result RPC only when no expected_consumer is given), leases by
-renew_task_lease / clear_task_lease, sweeps by expire_worker_leases / cleanup_stale_consumers. Every work-item write
-locks the parent instance first (_workitem_connection), including lease renew/clear (A143).
+UPDATE on the expected consumer, leases by renew_task_lease / clear_task_lease, the worker sweep by expire_worker_leases.
+엔진이 집은 행은 엔진이 바퀴마다 놓는다(release_engine_claims). Every work-item write locks the parent instance first
+(_workitem_connection), including lease renew/clear (A143).
 """
 from __future__ import annotations
 
@@ -20,7 +20,6 @@ import threading
 import uuid
 from contextlib import contextmanager
 from datetime import datetime, timezone
-from typing import Protocol
 from .approval_store import PgApprovals
 from .rework_store import PgReworks
 from .effect_store import PgEffects
@@ -45,7 +44,6 @@ INSTANCE_COLS = ("proc_def_id", "proc_inst_id", "proc_inst_name", "root_proc_ins
                  "initial_variables", "variable_sources", "rework_generation", "rework_request_id", "flow_state")
 JSON_COLS = {"assignees", "output", "draft", "feedback", "role_bindings", "variables_data", "gateway_decisions", "definition", "mcp",
              "fields_json", "data", "initial_variables", "variable_sources", "flow_state"}
-STALE_MINUTES = 30
 # P9 (audit2 2026-10-23, 사용자 결정): 수업 흐름 표시. 수업 흐름 설치(course_bootstrap — 시작.bat)가 배포할 때(class_flow=True) 운영 포인터 머리
 # proc_def.owner 에 이 값을 남긴다 — 지금 배포의 주인이 '수업'이라는 뜻이다. 다른 배포 · 되돌리기 · 내리기는 owner 를 비운다(마지막 배포 행위가 정한다).
 # 포털의 [기준 흐름으로 되돌리기]는 이 표시가 있는 흐름을 남긴다. 흐름 id 접두어(c3_*)로 짐작하지 않는다. proc_def_deployment 는 action 에
@@ -53,106 +51,6 @@ STALE_MINUTES = 30
 CLASS_OWNER = "class"
 LEASE_SECONDS = 120      # A097: a worker claim lives this long unless renewed (agent-sdk lease.py: 120 s, renew every 30 s)
 MAX_CLAIMS = 3           # A097: after the third expired lease the row is FAILED for a person to close (agent-sdk max_claims)
-
-
-class Repo(Protocol):
-    def enqueue_knowledge_projections(self, tenant: str) -> None: ...
-    def pending_projections(self, tenant: str, limit: int = 20) -> list[str]: ...
-    def projection_snapshot(self, tenant: str, pid: str): ...
-    def finish_projection(self, snapshot: dict, error: str | None = None) -> None: ...
-    def projection_status(self, tenant: str, pid: str) -> dict: ...
-    # definitions · forms · users · tenants
-    def upsert_proc_def(self, definition: dict, tenant_id: str = "hyd") -> None: ...
-    def get_proc_def(self, def_id: str, tenant_id: str = "hyd", *, version: str | None = None) -> dict | None: ...
-    def list_definitions(self, tenant_id: str = "hyd") -> list[dict]: ...
-    # U4: the deployed ("운영") version of a definition — what an alert RAISE opens. proc_def.prod_version + proc_def_deployment history.
-    def deployed_version(self, def_id: str, tenant_id: str = "hyd") -> str | None: ...
-    def record_deployment(self, def_id: str, version: str, tenant_id: str, *, action: str, actor: str, reason: str,
-                          class_flow: bool = False) -> dict: ...
-    def list_deployments(self, def_id: str, tenant_id: str = "hyd", limit: int = 50) -> list[dict]: ...
-    # B4: every definition id that has a deployed version, with the time of its newest deployment record (alert routing by
-    # pattern — the newest deployed flow whose alertPolicy names the pattern opens it), and taking a flow off the alert path.
-    def deployed_heads(self, tenant_id: str = "hyd") -> list[dict]: ...
-    def clear_deployment(self, def_id: str, tenant_id: str, *, actor: str, reason: str) -> dict: ...
-    def get_form(self, form_id: str, tenant_id: str = "hyd") -> dict | None: ...
-    def get_tenant(self, tenant_id: str = "hyd") -> dict | None: ...
-    def list_users(self, ids: list[str] | None = None, tenant_id: str = "hyd") -> list[dict]: ...
-    # U2 (agents_store.py, read only): list_skills · get_skill · list_agent_skills
-    # instances
-    def event_transaction(self, key: str): ...
-    def find_active_coalesced_instance(self, tenant_id: str, def_id: str, key: str) -> dict | None: ...
-    def instance_transaction(self, tenant_id: str, proc_inst_id: str): ...
-    def insert_approval(self, row: dict) -> None: ...
-    def get_approval(self, todo_id: str, tenant_id: str) -> dict | None: ...
-    def update_approval(self, row: dict) -> None: ...
-    def get_rework(self, tenant_id: str, proc_inst_id: str, request_id: str) -> dict | None: ...
-    def list_reworks(self, tenant_id: str, proc_inst_id: str) -> list[dict]: ...
-    def insert_rework(self, row: dict) -> None: ...
-    def list_approvals(self, proc_inst_id: str, tenant_id: str) -> list[dict]: ...
-    # effect receipts (A072): compensation deliveries and human acknowledgements, replayed by request id
-    def insert_effect_receipt(self, row: dict) -> None: ...
-    def update_effect_receipt(self, row: dict) -> None: ...
-    def get_effect_receipt(self, tenant_id: str, proc_inst_id: str, request_id: str) -> dict | None: ...
-    def list_effect_receipts(self, tenant_id: str, proc_inst_id: str) -> list[dict]: ...
-    def pending_approvals(self, tenant_id: str, after_id: str | None = None, limit: int = 100) -> list[dict]: ...
-    def incident_is_process_owned(self, incident_id: str) -> bool: ...
-    def due_timers(self, tenant_id: str, now: datetime, limit: int = 100) -> list[dict]: ...
-    def waiting_services(self, tenant_id: str, now: datetime, after_id: str | None = None, limit: int = 100) -> list[dict]: ...
-    def find_event_instance(self, tenant_id: str, def_id: str, event_id: str) -> dict | None: ...
-    def insert_instance(self, inst: dict) -> None: ...
-    def update_instance(self, inst: dict) -> None: ...
-    def get_instance(self, proc_inst_id: str) -> dict | None: ...
-    def list_instances(self, status: str | None = None, limit: int = 100, tenant_id: str | None = None, incident_id: str | None = None,
-                       asset: str | None = None) -> list[dict]: ...
-    def list_source_runs(self, tenant_id, def_id, event_prefix, limit=51, offset=0) -> list[dict]: ...
-    def hide_instances(self, tenant_id, def_id, ids) -> int: ...   # B5: finished instances of one definition → is_deleted (rows kept)
-    # work items
-    def insert_workitems(self, items: list[dict]) -> None: ...
-    def update_workitem(self, item: dict) -> None: ...
-    def get_workitem(self, wid: str) -> dict | None: ...
-    # newest=True: 자를 때 최신 start_date 쪽을 남긴다(돌려주는 순서는 그대로 오래된 것부터). 기본은 전처럼 오래된 것부터 자른다
-    def list_workitems(self, proc_inst_id: str | None = None, status: str | None = None, user_id: str | None = None,
-                       agent_orch: str | None = None, limit: int = 200, tenant_id: str | None = None, newest: bool = False) -> list[dict]: ...
-    # the worker's RPCs (agent-sdk function.sql)
-    def fetch_pending_task(self, agent_orch: str | None, consumer: str, limit: int = 1, tenant_id: str | None = None, proc_inst_id: str | None = None) -> list[dict]: ...
-    def save_task_result(self, todo_id: str, payload: dict, final: bool, expected_consumer: str | None = None) -> bool: ...
-    def update_task_error(self, todo_id: str, expected_consumer: str | None = None) -> bool: ...
-    def set_draft_status(self, todo_id: str, draft_status: str | None, consumer: str | None = None, expected_consumer: str | None = None) -> bool: ...
-    def release_worker_claim(self,todo_id: str,consumer: str) -> bool: ...
-    # A097 (agent-sdk lease_until/claim_count/max_claims): a worker claim is a lease the runner renews; an expired lease
-    # is reclaimable by another worker (fetch_pending_task) and, past MAX_CLAIMS, marked FAILED by the engine's sweep
-    def renew_task_lease(self, todo_id: str, consumer: str, seconds: int = LEASE_SECONDS) -> bool: ...
-    # A115 (infra-docker init.sql:2559-2564): a claim path that does not renew the worker lease clears it, so no worker
-    # reclaims a row whose owner keeps its own expiry (legacy assessment)
-    def clear_task_lease(self, todo_id: str, consumer: str) -> bool: ...
-    def expire_worker_leases(self, max_claims: int = MAX_CLAIMS) -> int: ...
-    # the engine's claim (completion polling)
-    def claim_submitted(self, consumer: str, limit: int = 10, tenant_id: str | None = None) -> list[dict]: ...
-    def cleanup_stale_consumers(self, minutes: int = STALE_MINUTES) -> int: ...
-    # events · notifications
-    def record_events(self, events: list[dict]) -> None: ...
-    def record_service_progress(self, tenant_id: str, proc_inst_id: str, todo_id: str, consumer: str, events: list[dict]) -> None: ...
-    def find_task_event(self, todo_id: str, job_id: str, event_type: str) -> dict | None: ...
-    # A161-G4: `before` = an event id (keyset cursor): the newest `limit` rows strictly older than that event, oldest first.
-    # A cursor that is not an event of the same filter raises LookupError — an empty page would read as "no older rows"
-    def list_events(self, proc_inst_id: str | None = None, todo_id: str | None = None, limit: int = 500, before: str | None = None) -> list[dict]: ...
-    def list_events_since(self, since: str | None = None, limit: int = 300) -> list[dict]: ...   # A091 live stream cursor
-    # A161-G2: full tool results too large for an events row (migration 20261009000048), one row per (case, content sha256)
-    def store_event_payload(self, payload: dict) -> None: ...
-    def get_event_payload(self, payload_id: str) -> dict | None: ...
-    def agent_task_origins(self, proc_inst_id: str, tenant_id: str) -> list[str]: ...
-    def insert_notification(self, note: dict) -> dict: ...
-    # U5 (inbox): 역할 → 사람 업무분장 · 담당자 변경 이력 · 사용자별 알림 조회 (migration 000029)
-    def list_role_members(self, tenant_id: str, role_id: str | None = None) -> list[dict]: ...
-    def set_role_member(self, tenant_id: str, role_id: str, user_id: str, member: bool) -> None: ...
-    def insert_assignment(self, row: dict) -> dict: ...
-    def list_assignments(self, todo_id: str, tenant_id: str) -> list[dict]: ...
-    def list_notifications(self, tenant_id: str, user_ids: list[str], unread_only: bool = False, limit: int = 100) -> list[dict]: ...
-    def count_unread_notifications(self, tenant_id: str, user_ids: list[str]) -> int: ...
-    def mark_notifications_read(self, tenant_id: str, user_ids: list[str], ids: list[str] | None = None) -> int: ...
-    def list_notifications_since(self, since: str | None = None, limit: int = 300, tenant_id: str | None = None,
-                                 user_ids: list[str] | None = None) -> list[dict]: ...
-    def ping(self) -> bool: ...
 
 
 def consumer_name() -> str:
@@ -197,6 +95,37 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
                 and (start_event_id=%s or exists (select 1 from jsonb_array_elements(variables_data) v
                     where v->>'key'='_runtime_coalescing' and (v->'value'->'events') ? %s))""",
                 (tenant_id, def_id, event_id, event_id)).fetchone())
+
+    def add_coalesced_event(self, proc_inst_id: str, key: str, event_id: str, limit: int = 100) -> dict | None:
+        """같은 질문 다시 보내기(P1-02): 진행 중 처리 건의 행을 잠그고 다시 읽어 `_runtime_coalescing.events` 에 요청 id 하나만 더한다 —
+        variables_data 한 칸만 쓴다(다른 칸은 그대로). 그 사이 처리 건이 끝났으면 None(호출자가 새 처리 건을 연다). 한도를 넘으면 ValueError."""
+        with self._conn() as c:
+            row = c.execute("select * from bpm_proc_inst where proc_inst_id=%s for update", (proc_inst_id,)).fetchone()
+            if not row or row['status'] != 'RUNNING' or row['is_deleted']:
+                return None
+            variables = row['variables_data'] or []
+            binding = next((v['value'] for v in variables if isinstance(v, dict) and v.get('key') == '_runtime_coalescing'), None)
+            if not isinstance(binding, dict) or binding.get('key') != key:
+                return None
+            if len(binding.get('events') or []) >= limit:
+                raise ValueError(f'같은 질문을 {limit}번 넘게 다시 보냈습니다 — 앞 질문의 답을 기다리거나 새 질문으로 보내세요')
+            binding['events'] = list(binding.get('events') or []) + [event_id]
+            c.execute("update bpm_proc_inst set variables_data=%s where proc_inst_id=%s", (self._Jsonb(variables), proc_inst_id))
+            return self._row(dict(row, variables_data=variables))
+
+    @contextmanager
+    def read_snapshot(self):
+        """한 시점의 읽기 전용 스냅숏(REPEATABLE READ READ ONLY) — 그 안의 읽기가 모두 같은 시점을 본다. 잠금은 잡지 않는다(P1-04: 미리보기가
+        바깥 응답을 기다리는 동안 같은 처리 건의 쓰기를 막지 않게). 안에서 쓰면 DB 가 거절한다."""
+        if getattr(self._local, "connection", None) is not None:
+            raise RuntimeError("nested storage transaction; a snapshot opens its own")
+        with self._psycopg.connect(self.dsn, connect_timeout=5, row_factory=self._dict_row) as c:
+            c.execute("set transaction isolation level repeatable read read only")
+            self._local.connection = c
+            try:
+                yield
+            finally:
+                del self._local.connection
 
     def find_active_coalesced_instance(self, tenant_id: str, def_id: str, key: str) -> dict | None:
         with self._conn() as connection:
@@ -305,10 +234,19 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
             return self._row(c.execute("select * from proc_def where id = %s and tenant_id = %s and isdeleted = false", (def_id, tenant_id)).fetchone())
 
     def list_definitions(self, tenant_id: str = "hyd") -> list[dict]:
+        """정의마다 판본을 오래된 판본부터(version_key — 숫자는 수로, P3-13: 글자 순이면 '10' 이 '9' 보다 앞이라 10판부터 9판을 최신으로 봤다).
+        정의마다 마지막 행이 그 정의의 최신 판본이다."""
         with self._conn() as c:
-            return [self._row(r) for r in c.execute("""select proc_def_id as id,tenant_id,version as prod_version,
+            rows = [self._row(r) for r in c.execute("""select proc_def_id as id,tenant_id,version as prod_version,
                 definition->>'processDefinitionName' as name,definition,message,"timeStamp" as registered_at from proc_def_version
-                where tenant_id=%s and version_tag='hyd-immutable' order by proc_def_id,version""", (tenant_id,)).fetchall()]
+                where tenant_id=%s and version_tag='hyd-immutable'""", (tenant_id,)).fetchall()]
+        return sorted(rows, key=lambda r: (r['id'], version_key(r['prod_version'])))
+
+    def registered_versions(self, tenant_id: str = "hyd") -> list[tuple[str, str]]:
+        """등록된 (정의 id, 판본) — 원문 없이(지운 흐름 정리가 그래프와 대조한다)."""
+        with self._conn() as c:
+            return [(r['proc_def_id'], r['version']) for r in c.execute(
+                "select proc_def_id, version from proc_def_version where tenant_id=%s and version_tag='hyd-immutable'", (tenant_id,)).fetchall()]
 
     def deployed_version(self, def_id: str, tenant_id: str = "hyd") -> str | None:
         with self._conn() as c:
@@ -323,7 +261,7 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
             known = c.execute("""select 1 from proc_def_version where tenant_id=%s and proc_def_id=%s and version=%s
                                  and version_tag='hyd-immutable'""", (tenant_id, def_id, version)).fetchone()
             if head is None or known is None:
-                raise LookupError(f'등록되지 않은 정의 판본입니다: {def_id}@{version}')
+                raise LookupError(f'판본 {version}이(가) 등록돼 있지 않습니다(흐름 id {def_id} — 배포하는 사이에 지워졌을 수 있습니다)')
             c.execute("update proc_def set prod_version=%s, owner=%s, updated_at=now() where id=%s and tenant_id=%s and isdeleted=false",
                       (version, CLASS_OWNER if class_flow else None, def_id, tenant_id))
             row = c.execute("""insert into proc_def_deployment (tenant_id, proc_def_id, version, previous_version, action, actor, reason)
@@ -392,7 +330,7 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
             return self._row(c.execute("select * from bpm_proc_inst where proc_inst_id = %s", (proc_inst_id,)).fetchone())
 
     def incident_is_process_owned(self, incident_id: str) -> bool:
-        # Deleted/completed instances still own their Incident; legacy APIs must not reopen them.
+        # 지워졌거나 끝난 처리 건도 그 사건의 주인이다 — 처리 건 밖에서 그 사건에 새 판단을 붙이지 않는다(main._create_decision).
         with self._conn() as c:
             return c.execute('select exists(select 1 from bpm_proc_inst where variables_data @> %s::jsonb) as owned',
                              (self._Jsonb([{'key':'incident','value':incident_id}]),)).fetchone()['owned']
@@ -408,14 +346,19 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
                         self._Jsonb([{'key':'incident','value':incident_id}]),asset,self._Jsonb([{'key':'asset','value':asset}]),limit)).fetchall()
             return [self._row(r) for r in rows]
 
-    def list_source_runs(self, tenant_id, def_id, event_prefix, limit=51, offset=0, cache_prefix=None):
+    def list_source_runs(self, tenant_id, def_id, event_prefix, limit=51, offset=0, cache_prefix=None, status=None, exclude_def=None):
+        """시작 요청 id(start_event_id)의 앞부분으로 고른 처리 건(최신부터, 변수 없이 요약 칸만). def_id=None 이면 모든 정의,
+        status 를 주면 그 상태만, exclude_def 를 주면 그 정의는 빼고(시나리오 버튼 상태가 「이 버튼 경보로 연 처리 건」을 처리 건 전부를
+        변수째 읽지 않고 고른다 — P4-05)."""
         with self._conn() as c:
-            return [self._row(r) for r in c.execute('''select proc_inst_id,status,start_date,end_date from bpm_proc_inst
-                where tenant_id=%s and proc_def_id=%s and is_deleted=false and
+            return [self._row(r) for r in c.execute('''select proc_inst_id,proc_def_id,status,start_date,end_date,end_event
+                from bpm_proc_inst
+                where tenant_id=%s and (%s::text is null or proc_def_id=%s) and (%s::text is null or proc_def_id<>%s)
+                and is_deleted=false and (%s::text is null or status::text=%s) and
                 (left(start_event_id,%s)=%s or (%s <> '' and left(start_event_id,%s)=%s))
                 order by start_date desc,proc_inst_id desc limit %s offset %s''',
-                (tenant_id,def_id,len(event_prefix),event_prefix,cache_prefix or '',len(cache_prefix or ''),
-                 cache_prefix or '',limit,offset)).fetchall()]
+                (tenant_id,def_id,def_id,exclude_def,exclude_def,status,status,len(event_prefix),event_prefix,cache_prefix or '',
+                 len(cache_prefix or ''),cache_prefix or '',limit,offset)).fetchall()]
 
     def hide_instances(self, tenant_id, def_id, ids):
         if not ids:return 0
@@ -437,6 +380,16 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
         cols = [k for k in WORKITEM_COLS if k in item and k != "id"]
         with self._workitem_connection(item['id']) as c:
             c.execute(f"update todolist set {', '.join(f'{k} = %s' for k in cols)} where id = %s", [self._val(k, item[k]) for k in cols] + [item["id"]])
+
+    def stuck_workitems(self, tenant_id: str, proc_inst_ids: list[str]) -> list[dict]:
+        """처리 건들의 멈춘 단계 후보(PENDING, 또는 진행 중인데 실행이 실패 · 취소됨) — 처리 건 목록이 한 질의로 읽는다."""
+        if not proc_inst_ids:
+            return []
+        with self._conn() as c:
+            return [self._row(r) for r in c.execute("""select id, proc_inst_id, activity_id, activity_name, status, draft_status, draft, tool,
+                agent_orch from todolist where tenant_id=%s and proc_inst_id = any(%s)
+                and (status='PENDING' or (status='IN_PROGRESS' and draft_status in ('FAILED','CANCELLED')))
+                order by start_date""", (tenant_id, list(proc_inst_ids))).fetchall()]
 
     def get_workitem(self, wid: str) -> dict | None:
         with self._conn() as c:
@@ -461,11 +414,11 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
                 "select * from claim_process_workitems(%s,%s,%s,%s,%s,'worker')",
                 (consumer,limit,tenant_id,proc_inst_id,agent_orch)).fetchall()]
 
-    def save_task_result(self, todo_id: str, payload: dict, final: bool, expected_consumer: str | None = None) -> bool:
+    def save_task_result(self, todo_id: str, payload: dict, final: bool, expected_consumer: str) -> bool:
+        """워커 결과 저장 — 그 행을 집은 워커(expected_consumer)만 쓸 수 있다(다른 워커 · 늦은 실행의 결과는 False)."""
+        if not expected_consumer:
+            raise ValueError('워커 결과는 그 작업을 집은 워커 이름(expected_consumer)과 함께 저장합니다')
         with self._workitem_connection(todo_id) as c:
-            if expected_consumer is None:
-                c.execute("select save_task_result(%s, %s, %s)", (todo_id,self._Jsonb(payload),final))
-                return True
             return c.execute("""update todolist set
                 output=case when %s and agent_mode='COMPLETE' then %s else output end,
                 draft=case when not %s or agent_mode is distinct from 'COMPLETE' then %s else draft end,
@@ -495,7 +448,7 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
 
     def clear_task_lease(self, todo_id: str, consumer: str) -> bool:
         # A143: parent first like every other todolist write (the child UPDATE trigger writes the parent; a direct UPDATE
-        # deadlocked against an engine transition holding the instance — .evidence/a143/lease_lock_order.json)
+        # deadlocked against an engine transition holding the instance — A143 — git 4947e366 의 교착 재현)
         with self._workitem_connection(todo_id) as c:
             return c.execute("update todolist set lease_until = null where id = %s and consumer = %s", (todo_id, consumer)).rowcount == 1
 
@@ -510,9 +463,21 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
                 "select * from claim_process_workitems(%s,%s,%s,null,null,'engine')",
                 (consumer,limit,tenant_id)).fetchall()]
 
-    def cleanup_stale_consumers(self, minutes: int = STALE_MINUTES) -> int:
+    def release_engine_claims(self, consumer: str, tenant_id: str) -> int:
+        """이 엔진(consumer)이 집어 둔 채 남은 제출 행을 놓는다 — 엔진은 하나이고 집은 행을 같은 폴링 바퀴 안에서 처리하므로, 바퀴 처음에 이
+        이름으로 남은 행은 지난 바퀴 · 지난 기동이 처리 도중 끊긴 것이다(P1-05). 시스템 단계의 실행 표식(…:service:…)과 승인 전달 대기
+        (approval:waiting)는 각자의 정리(waiting_services · reconcile_approvals)가 다루므로 건드리지 않는다. 돌려줌 = 놓은 행 수."""
         with self._conn() as c:
-            return int(c.execute("select cleanup_stale_consumers(%s)", (minutes,)).fetchone()["cleanup_stale_consumers"])
+            parents = [r['proc_inst_id'] for r in c.execute(
+                """select distinct proc_inst_id from todolist where tenant_id=%s and status='SUBMITTED' and consumer=%s""",
+                (tenant_id, consumer)).fetchall()]
+        released = 0
+        for pid in parents:                    # 부모 먼저 잠그는 순서(_workitem_connection 과 같다) — 처리 건마다 짧은 트랜잭션
+            with self._conn() as c, c.transaction():
+                c.execute('select 1 from bpm_proc_inst where proc_inst_id=%s for update', (pid,)).fetchone()
+                released += c.execute("""update todolist set consumer=null where proc_inst_id=%s and status='SUBMITTED' and consumer=%s""",
+                                      (pid, consumer)).rowcount
+        return released
 
     # ---- events · notifications
     def record_service_progress(self, tenant_id, proc_inst_id, todo_id, consumer, events):
@@ -538,9 +503,6 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
         with self._conn() as c:
             c.execute("select record_events_bulk(%s)", (self._Jsonb([dict(e, id=e.get("id") or str(uuid.uuid4())) for e in events]),))
 
-    def insert_event(self, evt: dict) -> None:
-        self.record_events([evt])
-
     def list_events(self, proc_inst_id=None, todo_id=None, limit=500, before=None) -> list[dict]:
         where, args = [], []
         if proc_inst_id is not None:
@@ -563,14 +525,6 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
         with self._conn() as c:
             return [self._row(r) for r in c.execute(sql, args + [limit]).fetchall()]
 
-    def list_events_since(self, since=None, limit=300) -> list[dict]:
-        with self._conn() as c:
-            if since is None:
-                rows = c.execute("select * from (select * from events order by timestamp desc, id desc limit %s) x order by timestamp, id", (limit,)).fetchall()
-            else:
-                rows = c.execute("select * from events where timestamp >= %s::timestamptz order by timestamp, id limit %s", (since, limit)).fetchall()
-            return [self._row(r) for r in rows]
-
     def store_event_payload(self, payload: dict) -> None:
         with self._conn() as c:
             c.execute("""insert into event_payloads (id, content, chars, content_type, source, tool, tool_use_id, job_id, todo_id, proc_inst_id, meta)
@@ -580,21 +534,19 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
                        payload.get("proc_inst_id"), self._Jsonb(payload.get("meta") or {})))
 
     def list_stream_events(self, since=None, limit=300):
-        # Separate short publication transaction: no uncommitted source event can
-        # acquire a cursor. Serialize publishers so positions also commit in order.
+        """처리 기록 흐름(SSE)의 한 쪽. 위치는 커밋된 기록에만 따로 짧은 트랜잭션에서 매긴다(`publish_event_positions` — 마이그레이션 069 §11,
+        자체 권고 잠금으로 매기는 쪽을 줄 세워 위치가 커밋 순서대로) — 늦게 커밋된 기록이 앞선 위치 뒤에 숨지 않는다.
+        since: None(마지막 limit 건) 또는 앞서 받은 stream_cursor(`s:` + 위치 20자리, 그 위치부터 포함)."""
+        if since is not None and not str(since).startswith('s:'):
+            raise ValueError(f'처리 기록 흐름의 이어 받기 위치 {since!r}를 알 수 없습니다(s:로 시작하는 stream_cursor만 받습니다)')
         with self._psycopg.connect(self.dsn, row_factory=self._dict_row, connect_timeout=5) as c:
-            c.execute("select pg_advisory_xact_lock(hashtextextended('hyd:event-stream-publication',0))")
-            c.execute('''insert into event_stream_positions(event_id)
-                select e.id from events e where not exists
-                (select 1 from event_stream_positions s where s.event_id=e.id)
-                order by e.timestamp,e.id on conflict (event_id) do nothing''')
-            base = "select e.*, 's:' || lpad(s.position::text,20,'0') as stream_cursor from event_stream_positions s join events e on e.id=s.event_id"
+            c.execute('select public.publish_event_positions()')
+            c.commit()
+            base = "select e.*, 's:' || lpad(e.stream_position::text,20,'0') as stream_cursor from events e where e.stream_position is not null"
             if since is None:
-                rows = c.execute('select * from (' + base + ' order by s.position desc limit %s) q order by stream_cursor', (limit,)).fetchall()
-            elif str(since).startswith('s:'):
-                rows = c.execute(base + ' where s.position >= %s order by s.position limit %s', (int(since[2:]), limit)).fetchall()
-            else:  # Existing browsers can reconnect once with their old timestamp.
-                rows = c.execute(base + ' where e.timestamp >= %s::timestamptz order by s.position limit %s', (since, limit)).fetchall()
+                rows = c.execute('select * from (' + base + ' order by e.stream_position desc limit %s) q order by stream_cursor', (limit,)).fetchall()
+            else:
+                rows = c.execute(base + ' and e.stream_position >= %s order by e.stream_position limit %s', (int(since[2:]), limit)).fetchall()
             return [self._row(r) for r in rows]
 
     def get_event_payload(self, payload_id: str) -> dict | None:
@@ -667,13 +619,6 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
                                  (*args, since, limit)).fetchall()
             return [self._row(r) for r in rows]
 
-    def agent_task_origins(self, proc_inst_id: str, tenant_id: str) -> list[str]:
-        with self._conn() as c:
-            return [r['job_id'] or '' for r in c.execute(
-                "select distinct e.job_id from events e join bpm_proc_inst p on p.proc_inst_id=e.proc_inst_id "
-                "where p.proc_inst_id=%s and p.tenant_id=%s and e.event_type='task_started'",
-                (proc_inst_id, tenant_id)).fetchall()]
-
     def ping(self) -> bool:
         try:
             with self._conn() as c:
@@ -682,3 +627,7 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
         except Exception:  # noqa: BLE001
             return False
 
+
+def version_key(version: str) -> tuple:
+    """판본 문자열의 순서 키: 점으로 나눈 조각마다 숫자는 수로, 글은 글로('2.10' > '2.9', '10' > '9'). 판본 순서는 이 함수 하나가 정한다."""
+    return tuple((0, int(part), '') if part.isdigit() else (1, 0, part) for part in str(version).split('.'))

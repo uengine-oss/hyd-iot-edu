@@ -5,7 +5,7 @@ HYD retains immutable version elements too, so changed-definition exercises can
 compare their execution history. Relational definitions remain authoritative.
 """
 from urllib.parse import quote
-from .engine import _properties
+from .engine import sequence_properties
 
 
 def scoped(kind, *parts):
@@ -33,11 +33,10 @@ def definition_projection(defn, tenant):
                              messageRef=raw.get('messageRef'), correlationKey=raw.get('correlationKey'))
             else:
                 props['gatewayType'] = raw['type'].removesuffix('Gateway')
-            nodes.append({'id': node_id(raw['id']), 'label': label, 'props': props,
-                          'semantic_id': raw.get('ontologyRef') or raw['id']})
+            nodes.append({'id': node_id(raw['id']), 'label': label, 'props': props})
     flows = [{'source': node_id(s['source']), 'target': node_id(s['target']),
-              'id': s['id'], 'condition': s.get('condition'), 'priority': _properties(s).get('priority'),
-              'isDefault': _properties(s).get('default') is True} for s in defn.sequences]
+              'id': s['id'], 'condition': s.get('condition'), 'priority': sequence_properties(s).get('priority'),
+              'isDefault': sequence_properties(s).get('default') is True} for s in defn.sequences]
     return {'definition_id': defn.id, 'definition_name': defn.name, 'version_id': version_id,
             'nodes': nodes, 'flows': flows}, node_id
 
@@ -75,7 +74,7 @@ RETURN $id AS projection_key,$revision AS projection_revision,$payload_hash AS p
 # belong here, never semantic Process/HAS_NODE definitions.
 ORPHAN_VERSIONS_Q = '''
 MATCH (pv:ProcessVersion {tenant_id:$tenant})
-WHERE NOT pv.id IN $registered_versions
+WHERE NOT pv.id IN $registered_versions AND pv.id > $after
 OPTIONAL MATCH (pi:ProcessInstance)-[:USES_VERSION]->(pv)
 RETURN pv.id AS id,pv.definition_id AS definition_id,pv.version AS version,
        collect(pi.id) AS instances
@@ -103,15 +102,13 @@ CALL (pv) {
   FOREACH (_ IN CASE WHEN item.label='Event' THEN [1] ELSE [] END | SET n:Event)
   FOREACH (_ IN CASE WHEN item.label='Gateway' THEN [1] ELSE [] END | SET n:Gateway)
   MERGE (pv)-[:HAS_NODE]->(n)
-  WITH n,item
+  // 흐름의 정본은 실행 정의 하나다 — 그래프에 손으로 옮긴 흐름 사본(옛 MAPS_TO 대응)은 없다(FK G3a-7). 옛 그래프에 남은 대응은 반영할 때 지운다
+  WITH n
   CALL (n) { OPTIONAL MATCH (n)-[old:MAPS_TO]->() DELETE old RETURN count(*) AS removed }
-  OPTIONAL MATCH (:Process {id:$process})-[:HAS_NODE]->(semantic:FlowNode {id:item.semantic_id})
-  SET n.semantic_id=item.semantic_id,
-      n.semantic_warning=CASE WHEN semantic IS NULL AND $process IS NOT NULL THEN 'ontology flow mapping missing: '+item.props.element_id ELSE null END
-  FOREACH (_ IN CASE WHEN semantic IS NULL THEN [] ELSE [1] END | MERGE (n)-[:MAPS_TO]->(semantic))
-  RETURN count(*) AS definition_nodes,collect(n.semantic_warning) AS mapping_warnings
+  REMOVE n.semantic_id, n.semantic_warning
+  RETURN count(*) AS definition_nodes
 }
-SET pv.projection_warnings=mapping_warnings
+REMOVE pv.projection_warnings
 WITH pv
 CALL (pv) {
   UNWIND $flows AS flow
@@ -148,7 +145,7 @@ CALL (pi) {
   RETURN count(*) AS removed_items
 }
 OPTIONAL MATCH (p:Process {id:$process})
-SET pi.projection_warnings=(CASE WHEN p IS NULL AND $process IS NOT NULL THEN ['ontology process missing: '+$process] ELSE [] END)+coalesce(pv.projection_warnings,[])
+SET pi.projection_warnings=CASE WHEN p IS NULL AND $process IS NOT NULL THEN ['ontology process missing: '+$process] ELSE [] END
 WITH pi,pv,p
 CALL (pi,p) {
   OPTIONAL MATCH (pi)-[old:INSTANCE_OF]->() DELETE old

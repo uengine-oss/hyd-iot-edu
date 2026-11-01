@@ -6,7 +6,7 @@
     const drafts = new Map(), key = row => JSON.stringify([row.kind,row.asset_id]);
     const base = () => typeof API !== 'undefined' ? API.process : '';
     const request = (path, init) => requestJ(base() + path, init);
-    host.innerHTML = UI.card({ title:'내 사례', sub:'이 노트북에서 만든 흐름·에이전트·스킬·도구 서버를 사례 이름으로 묶습니다. 계정 소유권을 바꾸는 기능은 아닙니다.', body:
+    host.innerHTML = UI.card({ title:'내 사례', sub:'이 PC에서 만든 흐름·에이전트·스킬·도구 서버를 사례 이름으로 묶습니다. 계정 소유권을 바꾸는 기능은 아닙니다.', body:
       `<div class="row-wrap"><label for="caseFilter">사례</label><select id="caseFilter"><option value="">전체 구성</option></select><button class="btn small" id="caseReload">다시 읽기</button><button class="btn small primary" id="caseExport" disabled>이 사례 파일 받기</button></div><p class="field-hint">항목마다 사례 이름을 적고 저장하세요. 이름을 비우고 저장하면 꼬리표만 뗍니다. 파일에는 이 사례와 실행에 필요한 연결 구성을 담습니다.</p><p id="caseMessage" role="status"></p><div id="caseAssets"></div>` });
     const $ = id => host.querySelector('#'+id);
     const message = (text, bad=false) => { $('caseMessage').textContent=text; $('caseMessage').className=bad?'neg':'muted'; };

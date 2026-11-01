@@ -16,24 +16,24 @@
   };
   // 등록한 설명이 한국어면 그것, 아니면 위 표, 둘 다 없으면 서버 이름 그대로(학생이 지은 이름은 내부어가 아니다)
   W.serverName = (name, description) => description && /[가-힣]/.test(description) ? description.split(/\r?\n/)[0] : SERVERS[name] || name || '';
-  const SYSTEMS = {
-    'sys:cmms': '정비 관리', 'sys:erp': '구매 · 재고 관리', 'sys:mes': '생산 관리', 'sys:scm': '공급망 관리', 'sys:qms': '품질 시스템',
-    'sys:scada': '설비 제어', 'sys:plc': '설비 제어', 'sys:agent': '에이전트', 'sys:process': '업무 처리', 'sys:erp-monitor': '재고 감시', 'sys:cmms-monitor': '정비 계수기 감시',
-    'actr:pump-drive': '펌프 구동부', 'actr:fan-drive': '쿨러 팬 구동부', 'sys:tsdb': '센서 기록', detector: '센서 경보 감지기',
-  };
-  W.system = id => {
-    if (!id) return '';
-    if (SYSTEMS[id]) return SYSTEMS[id];
+  // 그래프에 있는 시스템 · 구동기(sys:* · actr:*)의 화면 이름은 이름 사전 names.json 한 곳(생성기 portal_names.py 의 PLAIN 표)이 정한다.
+  // 여기에는 그래프에 없는 감시 주체(업무 감시가 연 처리 건의 observedBy)와, 같은 대상을 서비스 이름으로 부르는 id → 그래프 id 만 둔다.
+  const MONITORS = { 'sys:erp-monitor': '재고 감시', 'sys:cmms-monitor': '정비 계수기 감시' };
+  const SAME = { detector: 'sys:cep' };
+  W.system = raw => {
+    if (!raw) return '';
+    const id = SAME[raw] || raw;
+    if (MONITORS[id]) return MONITORS[id];
     if (/^sen:/.test(id)) return `센서 ${String(id).slice(4).toUpperCase()}`;
-    if (/^sys:/.test(id) || /^actr:/.test(id)) return (UI.names && UI.names[id]) || id.replace(/^\w+:/, '').replace(/[-_]/g, ' ');
+    if (/^(sys|actr):/.test(id)) return (UI.names && UI.names[id]) || id.replace(/^\w+:/, '').replace(/[-_]/g, ' ');
     return SERVERS[id] || id;
   };
 
   /* ---------------------------------------------------------------- 값 이름 · 단위 (센서 태그 · 판단 사실 · 업무 값) */
   const F = {
     ts1: ['유온', '℃'], ts2: ['유온 2', '℃'], ts4: ['캐비닛 온도', '℃'], t_amb: ['주변 온도', '℃'], ce: ['냉각 효율', '%'], ps1: ['토출 압력', 'bar'], fs1: ['유량', 'L/min'],
-    vs1: ['진동', 'mm/s'], load: ['펌프 부하', '%'], loadsp: ['펌프 부하 설정', '%'], fanspeedsp: ['쿨러 팬 속도 설정', '%'], valvesp: ['메인 밸브 개도 설정', '%'], load_pct: ['펌프 부하', '%'], fan_pct: ['팬 속도', '%'], score: ['경보 점수', ''], ts1_slope: ['유온 상승 속도', '℃/s'],
-    vs1_slope: ['진동 상승 속도', 'mm/s²'], cooler_health: ['쿨러 상태', ''], plc_mode: ['운전 모드', ''], plc_state: ['설비 상태', ''], hot_lot_qty: ['출하 대기 로트', '개'],
+    vs1: ['진동', 'mm/s'], load: ['펌프 부하', '%'], loadsp: ['펌프 부하 설정', '%'], fanspeedsp: ['쿨러 팬 속도 설정', '%'], load_pct: ['펌프 부하', '%'], fan_pct: ['팬 속도', '%'], score: ['경보 점수', ''], ts1_slope: ['유온 상승 속도', '℃/설비 초']   /* 감지기 기울기는 설비 시간(TIME_SCALE 배속) 1초당 — G3b-25 */,
+    vs1_slope: ['진동 상승 속도', '(mm/s)/설비 초'], cooler_health: ['쿨러 상태', ''], plc_mode: ['운전 모드', ''], plc_state: ['설비 상태', ''], hot_lot_qty: ['출하 대기 로트', '개'],
     order_due_h: ['납기까지', 'h'], fan100_hours: ['팬 100 % 운전 누적', 'h'], standby_ready: ['예비 설비 준비', ''], order_customer_tier: ['고객 등급', ''],
     order_penalty_per_h: ['지연 보상', '만원/h'], hot_lot_claim: ['출하 로트 클레임', '만원'], oil_analysis_out_of_spec: ['오일 분석 기준 밖', ''],
     cause: ['판정 원인', ''], pattern: ['경보 패턴', ''], failure_mode: ['고장 유형', ''],
@@ -49,14 +49,14 @@
     part_no: ['부품 번호', ''], name: ['이름', ''], on_hand: ['현재고', '개'], reserved: ['정비 예약', '개'], available: ['가용 재고', '개'], on_order: ['입고 예정', '개'],
     spare_gap: ['가용 재고 − 재주문점', '개'], reorder_point: ['재주문점', '개'], target_stock: ['목표 재고', '개'], need_qty: ['필요 수량', '개'], need_by_days: ['필요일까지', '일'],
     below_since: ['기준 아래로 내려간 시각', ''], spare_quotes: ['공급사 견적', ''], po_amount: ['발주 금액', '만원'], lead_slack_days: ['납기 여유', '일'],
-    supplier_fail_rate: ['공급사 불량률(비율)', ''], supplier_avl: ['승인 공급사(AVL)', ''], approved_amount: ['승인 금액', '만원'], approved_qty: ['수량', '개'], approved_supplier: ['공급사', ''],
+    supplier_fail_rate: ['공급사 불량률(비율)', ''], supplier_avl: ['승인 공급사(AVL)', ''], approved_amount: ['승인 금액', '만원'], approved_qty: ['수량', '개'], approved_supplier: ['공급사', ''], approved_supplier_name: ['공급사 이름', ''],
     approved_unit_price: ['단가', '만원'], approved_part_no: ['부품', ''], lead_d: ['리드타임', '일'], delay_d: ['공급사 지연', '일'],
     // 업무 사실 (MES · 구매 · 재고 관리)
     due_in_h: ['납기까지', 'h'], remaining_qty: ['남은 수량', '개'], rate_per_h: ['시간당 생산', '개/h'], alt_rate_per_h: ['대체 설비 시간당', '개/h'], alt_free_h: ['대체 설비 빌 때까지', 'h'],
     changeover_h: ['전환 시간', 'h'], fg_stock: ['완제품 재고', '개'], ship_in_h: ['출하까지', 'h'], penalty_per_h: ['지연 보상', '만원/h'], failure_cost: ['고장 비용', '만원'],
     claim_cost: ['클레임 비용', '만원'], customer_tier: ['고객 등급', ''], order_id: ['생산 주문', ''], sales_order: ['판매 계약', ''],
   };
-  W.fieldName = (key, context) => { const k = String(key || ''); if(k==='package' && context?.package_semantics==='base_interval_configuration') return '등록된 기본 정비 내용'; const f = F[k] || F[k.toLowerCase()]; return W.caseFields?.[k] || (f ? f[0] : (UI.terms['var.' + k] || k.replace(/_/g, ' '))); };
+  W.fieldName = (key, context) => { const k = String(key || ''); if(k==='package' && context?.package_semantics==='base_interval_configuration') return '등록된 기본 정비 내용'; const f = F[k] || F[k.toLowerCase()]; return f ? f[0] : UI.terms['var.' + k] || W.caseFields?.[k] || k.replace(/_/g, ' '); };   // 화면 사전이 이긴다 — 처리 건 정의의 칸 설명(caseFields)은 사전에 없는 칸(학생 흐름의 칸)에만
   W.setpointsText = data => {
     const s = data?.setpoints;
     if (!s) return '';
@@ -152,7 +152,7 @@
   };
   W.unit = key => { const k = String(key || ''); const f = F[k] || F[k.toLowerCase()]; return f ? f[1] : ''; };
   W.known = key => !!(F[key] || F[String(key || '').toLowerCase()]);
-  const STATES = { REMOTE_AUTO: '원격 자동', REMOTE_MANUAL: '원격 수동', LOCAL: '현장 제어', RUN: '운전 중', STOP: '정지', TRIP: '보호 정지', PASS: '통과', DONE: '완료' };
+  const STATES = UI.states;   // 상태 이름은 ui.js 표 하나(UIUX_PLAN §5) — 여기 사본을 두지 않는다(W2-03: STOP 「정지」/「계획 정지」가 갈렸다)
   W.num = v => {
     if (typeof v !== 'number' || !Number.isFinite(v)) return v;
     const a = Math.abs(v);
@@ -202,10 +202,13 @@
   W.pattern = code => UI.patternName(code);   // 경보 패턴 이름표는 ui.js 하나
   const OPS = { '>': '보다 높음', '>=': '이상', '<': '보다 낮음', '<=': '이하', '==': '같음', '!=': '다름' };
   W.op = op => OPS[op] || op;
-  W.sym = op => ({ '>=': '≥', '<=': '≤', '==': '=', '!=': '≠' })[op] || op;
+  // 비교 기호 하나(식 기호 · 규칙의 낱말 연산자 lt · gte … 모두) — 화면의 다른 사본(taskDetail OP · hitl · caseRecord 삼항)은 이것을 쓴다(W1-11)
+  W.sym = op => ({ '>=': '≥', '<=': '≤', '==': '=', '!=': '≠', lt: '<', lte: '≤', le: '≤', gt: '>', gte: '≥', ge: '≥', eq: '=', ne: '≠' })[op] || op;
+  // 증거 규칙의 집계 이름(avg · slope …) — 원문 낱말을 화면에 내지 않는다
+  W.agg = a => ({ avg: '평균', mean: '평균', min: '최솟값', max: '최댓값', slope: '변화율', last: '마지막 값', latest: '최신값', sum: '합계', count: '개수' })[a] || a || '';
   // "TS1 > 55 and CE < 70 and slope(TS1) > 0" → "유온 > 55 ℃ 그리고 냉각 효율 < 70 % 그리고 유온 오르는 중"
-  // 설비 태그: 센서(TS1 · PS1 …) · 냉각 효율(CE) · 구동 설정값(LoadSP · FanSpeedSP · ValveSP, it/neo4j/v2/instances.cypher 의 Actuator resource)
-  const TAG = String.raw`[A-Z]{2,3}\d|CE|LoadSP|FanSpeedSP|ValveSP`;
+  // 설비 태그: 센서(TS1 · PS1 …) · 냉각 효율(CE) · 구동 설정값(LoadSP · FanSpeedSP, it/neo4j/v2/instances.cypher 의 Actuator resource)
+  const TAG = String.raw`[A-Z]{2,3}\d|CE|LoadSP|FanSpeedSP`;
   W.rule = expr => {
     if (!expr) return '';
     return String(expr)
@@ -262,7 +265,7 @@
     if (!resolved || typeof resolved!=='object') return '';
     const policies={oem:'정본 순정 견적',lowest_approved:'승인된 비순정 최저가',fastest_quote:'전체 견적 최단 납기'};
     const policy=Object.prototype.hasOwnProperty.call(policies,resolved.policy) ? policies[resolved.policy] : '선정 정책 기록 확인 필요';
-    const quote=resolved.quote || {}, label=quote.name || resolved.classificationLabel;
+    const quote=resolved.quote || {}, label=quote.name;
     const supplier=label && label!==resolved.id ? label : '공급사 표시 이름 기록 없음';
     return [policy,supplier,typeof quote.price==='number' ? `단가 ${W.num(quote.price)}만원` : '',typeof quote.lead_d==='number' ? `납기 ${W.num(quote.lead_d)}일` : '',quote.avl===true ? '등록 AVL 통과' : quote.avl===false ? '등록 AVL 미통과' : 'AVL 기록 미확인'].filter(Boolean).join(' · ');
   }
@@ -387,9 +390,12 @@
     Read: { name: '파일 읽기', minor: true, ask: i => UI.baseName(i.file_path || '') },
     Bash: { name: '명령 실행', minor: true, ask: shellAsk },
     Glob: { name: '파일 찾기', minor: true, ask: i => i.pattern || '' }, Grep: { name: '내용 찾기', minor: true, ask: i => i.pattern || '' },
+    PowerShell: { name: '명령 실행', minor: true, ask: shellAsk }, WebFetch: { name: '웹 읽기', minor: true, ask: i => i.url || '' }, WebSearch: { name: '웹 검색', minor: true, ask: i => i.query || '' },
+    Agent: { name: '하위 에이전트', minor: true },
     Skill: { name: '스킬 읽기', ask: i => i.skill || i.name || '' },
     'mcp__neo4j__read_neo4j_cypher': { name: '지식 그래프 조회', sys: '지식 그래프', ask: i => cypherAsk(i.query), got: rowsGot },
     'mcp__neo4j__get_neo4j_schema': { name: '지식 그래프 구조 보기', sys: '지식 그래프', ask: () => '어떤 종류의 노드 · 관계가 있나' },
+    'mcp__neo4j__write_neo4j_cypher': { name: '지식 그래프 쓰기', sys: '지식 그래프', ask: i => cypherAsk(i.query) },
     'mcp__hyd-dmn__diagnose': { name: '원인 진단', sys: '판단 시스템', ask: i => `${i.asset || ''} ‘${W.pattern(i.pattern)}’ 경보의 원인`,
       got: o => { const d = doc(parse(o)) || {}; const c = (d.causes || []).find(x => x.id === d.topCause) || (d.causes || [])[0]; return c ? `가장 유력한 원인 ‘${c.name}’ (점수 ${W.num(c.score)})` : ''; } },
     'mcp__hyd-dmn__business_causes': { name: '업무 경보 원인 찾기', sys: '판단 시스템 · 지식 그래프', ask: i => `${i.asset || ''} ‘${W.pattern(i.pattern)}’ 경보의 원인`,
@@ -414,6 +420,8 @@
     'mcp__hyd-dmn__forecast_actions': { name: '조치 효과 예측', sys: '판단 시스템' },
     'mcp__hyd-dmn__tradeoffs': { name: '성과 지표 득실 경로', sys: '판단 시스템 · 지식 그래프' },
     'mcp__hyd-dmn__inputs': { name: '판단 입력 보기', sys: '판단 시스템' },
+    'mcp__hyd-dmn__read_evaluation_evidence': { name: '대안 평가 근거 이어 읽기', sys: '판단 시스템', ask: i => i.field || '' },
+    'mcp__hyd-dmn__fabric_query': { name: '두 자료 묶어 보기', sys: '판단 시스템 · 센서 기록 · 업무 자료', ask: i => [i.asset, i.query].filter(Boolean).join(' · ') },
     'mcp__enterprise__mes_orders': { name: '생산 주문 조회', sys: '생산 관리', ask: i => i.asset || '', got: o => factsLine((doc(parse(o)) || {}).facts) },
     'mcp__enterprise__erp_contract': { name: '계약 조회', sys: '구매 · 재고 관리', ask: i => i.asset || '', got: o => factsLine((doc(parse(o)) || {}).facts) },
     'mcp__enterprise__erp_inventory': { name: '완제품 재고 조회', sys: '구매 · 재고 관리', ask: i => i.asset || '', got: o => factsLine((doc(parse(o)) || {}).facts) },
@@ -426,16 +434,25 @@
     cmms_history: { name: '정비 이력 조회', sys: '정비 관리' }, mes_orders: TOOLS['mcp__enterprise__mes_orders'], spare_stock: { name: '예비품 재고 조회', sys: '구매 · 재고 관리' },
     part_quotes: { name: '공급사 견적 조회', sys: '공급망 관리' }, scm_suppliers: { name: '공급사 조회', sys: '공급망 관리' },
     erp_contract: TOOLS['mcp__enterprise__erp_contract'], erp_inventory: TOOLS['mcp__enterprise__erp_inventory'], query: TOOLS['mcp__enterprise__query'],
+    describe_catalog: { name: '업무 자료 목록 보기', sys: '업무 자료' }, describe_schema: { name: '업무 자료 구조 보기', sys: '업무 자료' },
+    qms_lots: { name: '품질 로트 조회', sys: '품질 관리' }, ems_demand: { name: '전력 수요 조회', sys: '전력 관리' },
   };
   function spec(raw) {
     const t = UI.toolKey(raw);
     if (TOOLS[t]) return TOOLS[t];
     const m = /^mcp__([^_]+(?:[-_][^_]+)*?)__(.+)$/.exec(t);
     if (m && /^enterprise/.test(m[1]) && BIZ[m[2]]) return Object.assign({ ask: i => i.asset || i.part || '', got: o => factsLine((doc(parse(o)) || {}).facts) || rowsGot((doc(parse(o)))) }, BIZ[m[2]], { sys: BIZ[m[2]].sys || SERVERS[m[1]] });
-    if (m) return { name:UI.toolName(raw), sys:SERVERS[m[1]] || '도구 서버 표시 이름 미등록' };
-    return { name:UI.toolName(raw) };
+    if (m) return { name: registeredName(raw), sys: SERVERS[m[1]] || '도구 서버 표시 이름 미등록', unknown: !window.hydToolNames?.resolve(raw)?.name };
+    return { name: registeredName(raw), unknown: !window.hydToolNames?.resolve(raw)?.name };
+  }
+  // 사전에 없는 도구(학생이 붙인 바깥 서버 등): 서버에 등록된 이름(toolNames.js) — 없으면 그 상태를 그대로(지어내지 않는다)
+  function registeredName(raw) {
+    const r = window.hydToolNames?.resolve(raw);
+    if (r?.name) return r.name;
+    return r?.state === 'error' ? '도구 표시 이름 읽기 실패' : ['loading', 'unread'].includes(r?.state) ? '도구 표시 이름 확인 중' : r?.state === 'missing' ? '도구 표시 이름 미등록' : '도구 표시 이름 기록 없음';
   }
   W.toolName = raw => spec(raw).name;
+  W.knownTool = raw => !spec(raw).unknown;
   W.toolSystem = raw => spec(raw).sys || '';
   W.minorTool = raw => !!spec(raw).minor;
   // 물은 것 한 줄

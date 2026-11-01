@@ -36,10 +36,14 @@
     return detail !== receipt?.detail && report?.refs?.work_order === receipt?.ref && original === expected
       ? `정비 오더 ${receipt.ref} 등록 · 생산팀 공지 — ${detail}` : original;
   }
+  // 사건과 이 보고의 관계 한 줄: 보고가 사건을 닫았는가, 아니면 사건은 이미(앞 단계 — 작업지시 등록 · 입고 등에서) 끝났는가
   function incidentMeaning(report, incident, read) {
-    const action = report?.incident_closed === true ? '이 보고에서 사건 종결 처리: 수행함' : report?.incident_closed === false ? '이 보고에서 사건 종결 처리: 수행 안 함' : '이 보고의 사건 종결 처리 기록 없음';
-    const current = read?.state === 'loading' ? '현재 사건 상태: 조회 중' : read?.state === 'error' ? '현재 사건 상태: 조회 실패' : incident?.state === 'CLOSED' ? '현재 사건: 종결' : incident?.state ? '현재 사건 상태: ' + (UI.status ? UI.status(incident.state) : incident.state) : '현재 사건 상태: 확인 기록 없음';
-    return action + ' · ' + current;
+    if (read?.state === 'loading') return '사건 상태를 읽는 중입니다';
+    if (read?.state === 'error') return '사건 상태를 읽지 못했습니다';
+    const now = incident?.state ? (UI.status ? UI.status(incident.state) : incident.state) : null;
+    if (report?.incident_closed === true) return '이 보고가 사건을 닫았습니다' + (now ? ` (지금 사건: ${now})` : '');
+    if (report?.incident_closed === false) return now ? `사건은 이 보고가 닫지 않았습니다 — 지금 사건: ${now}${incident.state === 'CLOSED' ? '(앞 단계에서 이미 닫힘)' : ''}` : '사건은 이 보고가 닫지 않았습니다';
+    return '이 보고에는 사건을 닫았는지 기록이 없습니다' + (now ? ` (지금 사건: ${now})` : '');
   }
 
   function fromValues(v) {
@@ -52,7 +56,8 @@
       const alertId = v.alert_id || v.alert?.alertId;
       const summary = reportSummary(r, v);
       const shownSummary = alertId && typeof summary === 'string' ? summary.split(`경보 ${alertId}. `).join('') : summary;
-      return { verdict: verdict || verdictOf(r.outcome), label: r.outcome ? String(r.outcome) : free, title: r.title, summary: shownSummary, values: Array.isArray(r.values) ? r.values : [] };
+      return { verdict: verdict || verdictOf(r.outcome), label: r.outcome ? String(r.outcome) : free, title: r.title, summary: shownSummary, values: Array.isArray(r.values) ? r.values : [],
+               valuesError: r.values_error || '' };
     }
     if (v.test_run && typeof v.test_run === 'object') return { verdict: verdictOf(v.test_run.ok ?? v.test_run.verdict), title: '시운전 확인', summary: v.test_run.summary || '', values: Array.isArray(v.test_run.values) ? v.test_run.values : [] };
     if (typeof v.recovered === 'boolean') return { verdict: v.recovered ? 'ok' : 'fail', title: '재관측 확인', summary: v.recovered ? '경보가 풀리고 기준 안으로 돌아왔습니다' : '기준 안으로 돌아오지 않았습니다', values: [] };
@@ -63,13 +68,14 @@
     return null;
   }
 
-  // 시스템이 한 일: 사람 · 에이전트 단계가 아닌 끝난 작업 행(시간 순)
+  // 시스템이 한 일: 사람 · 에이전트 단계가 아닌 끝난 작업 행 — 시작 시각 순, 같은 시각(한 전이 사슬에서 연달아 끝남)이면 흐름 순서(서버 flow_order)
   function systemSteps(view) {
     const human = w => !w.agent_orch && !w.agent_mode;
     const agent = w => !!w.agent_mode || w.agent_orch === 'cliagents';
     const events = new Set((view.definition?.events || []).map(ev => ev.id));
-    return (view.workitems || []).filter(w => !human(w) && !agent(w) && !events.has(w.activity_id) && ['DONE', 'IN_PROGRESS', 'SUBMITTED', 'PENDING'].includes(w.status) && !/timeout/.test(w.activity_id || ''))
-      .sort((a, b) => String(a.start_date || '').localeCompare(String(b.start_date || '')));
+    const order = view.flow_order || {};
+    return (view.workitems || []).filter(w => !human(w) && !agent(w) && !events.has(w.activity_id) && ['DONE', 'IN_PROGRESS', 'SUBMITTED', 'PENDING'].includes(w.status))
+      .sort((a, b) => String(a.start_date || '').localeCompare(String(b.start_date || '')) || (order[a.activity_id] ?? 0) - (order[b.activity_id] ?? 0));
   }
   function refOf(out) {
     if (!out || typeof out !== 'object') return '';
@@ -89,8 +95,8 @@
     const label = (rep && rep.label) || (verdict === 'other' && done && !rep ? '처리 끝' : LABEL[verdict]);
     const approvalKey = (view.definition?.activities || []).find(a => a.tool === 'formHandler:approve')?.approval?.key || 'slot';
     const chosen = (v.chosen_option && v.chosen_option.name) || v.approved_option?.[approvalKey] || '';
-    // 승인자는 사람 id(user:…)로 저장된다 — 화면에는 이름으로 (C3: 블랙박스 점검에서 id만 보이던 곳)
-    const personName = id => { const p = window.hydInbox && window.hydInbox.X && (window.hydInbox.X.people || []).find(x => x.id === id); return p ? p.name : id; };
+    // 승인자 이름은 승인 경로가 처리 건 값에 넣은 approved_by_name(서버가 사람 목록에서 고른 이름) — 화면이 따로 찾지 않는다
+    const approver = v.approved_by_name || v.approved_by;
     const values = (rep && rep.values || []).map(x => `<div class="rr-val ${x.ok === false ? 'bad' : x.ok === true ? 'good' : ''}"><span>${e(UI.idText(x.name))}</span><b class="num">${e(num(x.value))}${x.unit ? ' ' + e(x.unit) : ''}</b>${x.limit != null ? `<small>기준 ${e(x.limit)}</small>` : ''}</div>`).join('');
     const steps = sys.map(w => {
       const st = w.status === 'DONE' ? 'done' : 'run';
@@ -100,10 +106,12 @@
     return `<section class="rr-card tone-${tone}" aria-label="결과 보고">
       <div class="rr-head"><span class="rr-badge">${e(label)}</span><div><h4>${e((rep && rep.title) || '결과 보고')}</h4>${rep && rep.summary ? `<p>${e(UI.idText(rep.summary))}</p>` : !done ? '<p>시스템이 실행하고 확인하는 중입니다. 끝나면 여기에 결과가 올라옵니다.</p>' : ''}</div></div>
       ${values ? `<div class="rr-vals">${values}</div>` : ''}
-      ${chosen || v.approved_by ? `<p class="rr-who"><span class="ap-label">승인한 안</span> <b>${e(UI.idText(chosen || '–'))}</b>${v.approved_by ? ` · ${e(personName(v.approved_by))}${v.approved_role ? ` (${e(UI.roleName(v.approved_role, view.definition))})` : ''}` : ''}</p>` : ''}
+      ${rep && rep.valuesError ? `<p class="neg">${e(rep.valuesError)}</p>` : ''}
+      ${!view.flow_order && sys.length > 1 ? '<p class="neg">처리 서비스 응답에 흐름 순서(flow_order)가 없어 같은 시각에 끝난 단계의 앞뒤를 가를 수 없습니다</p>' : ''}
+      ${chosen || v.approved_by ? `<p class="rr-who"><span class="ap-label">승인한 안</span> <b>${e(UI.idText(chosen || '–'))}</b>${approver ? ` · ${e(approver)}${v.approved_role ? ` (${e(UI.roleName(v.approved_role, view.definition))})` : ''}` : ''}</p>` : ''}
       ${steps ? `<div class="rr-steps-wrap"><span class="ap-label">시스템이 한 일</span><ol class="rr-steps">${steps}</ol></div>` : ''}
       ${window.hydRecord ? `<div class="rr-foot"><button type="button" class="btn small" data-open-record>처리 기록 보기</button><span class="muted">시작부터 담당자의 결정과 시스템 처리까지 단계별로</span></div>` : ''}
     </section>`;
   }
-  window.hydResultReport = { html, verdictOf, fromValues, receiptDetail, reportSummary, incidentMeaning };
+  window.hydResultReport = { html, fromValues, receiptDetail, incidentMeaning };
 })();

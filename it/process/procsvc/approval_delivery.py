@@ -10,6 +10,8 @@ import logging
 from . import decisions, engine, rework_effects
 
 log = logging.getLogger(__name__)
+#: 전달 바깥(트랜잭션 · 저장소)에서 같은 승인이 연달아 이만큼 실패하면 FAILED 로 멈춘다 — 2초마다 끝없이 다시 보내지 않고 화면에 실패를 보인다
+DELIVERY_STOP_AFTER = 3
 
 
 class ApprovalDelivery:
@@ -78,7 +80,8 @@ class ApprovalDelivery:
             inst, work, effects = self._discard_evidence(wi, row)
             return {'can_discard': True, 'approval': wid, 'instance': inst['proc_inst_id'],
                     **effects, 'cancel_workitems': [w['id'] for w in work if w['status'] not in engine.TERMINAL_STATUSES],
-                    'outcome': '승인 이력을 보존하고 인스턴스를 CANCELLED로 종료합니다. 사건 상태와 외부 효과를 변경하지 않습니다.'}
+                    'outcome': f"승인 기록은 남기고 이 처리 건을 「{engine.TECHNICAL_ENDS[engine.APPROVAL_DISCARD_END_EVENT]}」으로 끝냅니다. "
+                               '이미 끝난 사건과 업무 시스템 기록은 바꾸지 않습니다.'}
 
     def discard_approval(self, wid, by, role, reason, request_id, now=None):
         if not isinstance(reason, str) or not reason.strip() or not isinstance(request_id, str) or not request_id.strip():
@@ -98,13 +101,13 @@ class ApprovalDelivery:
             row['status'] = 'DISCARDED'
             row['history'].append(record)
             self.repo.update_approval(row)
+            # 전달 못 한 승인 행 · 보내지 않은 명령 행(PENDING)까지 남은 일을 모두 취소하고, 처리 건은 엔진의 끝 함수 하나로 닫는다
             for item in work:
                 if item['status'] not in engine.TERMINAL_STATUSES:
                     item.update(status='CANCELLED', consumer=None, end_date=engine.now_iso(now),
                                 log=(item.get('log') or '') + f'approval discarded: {request_id}; ')
                     self.repo.update_workitem(item)
-            inst.update(status='CANCELLED', current_activity_ids=[], end_date=engine.now_iso(now),
-                        end_event='administrative:approval-discard')
+            engine.finish(self.definition_for(inst), inst, work, engine.APPROVAL_DISCARD_END_EVENT, now, reason=f'승인 폐기 {request_id}')
             self.repo.update_instance(inst)
             self.repo.record_events([{'job_id': 'APPROVAL_DISCARDED', 'todo_id': wid, 'proc_inst_id': wi['proc_inst_id'],
                 'crew_type': 'human', 'event_type': 'task_working', 'data': {'name': '승인 폐기·인스턴스 취소', **record}}])
@@ -112,20 +115,45 @@ class ApprovalDelivery:
         return self.repo.get_approval(wid, self.tenant_id)
 
     def reconcile_approvals(self, now=None):
+        """대기 중 승인을 전달한다. 전달 바깥(트랜잭션 · 저장소)이 실패하면 그 처리 건 트랜잭션은 되돌아가 승인은 대기로 남는다 — 같은 승인이
+        DELIVERY_STOP_AFTER 번 연달아 그러면 따로 FAILED 로 기록해 멈춘다(실패 사유를 승인 기록 · 처리 건 기록에 남기고, 사람이 [다시 전달]한다)."""
         count, after = 0, None
+        failures = self.__dict__.setdefault('_delivery_failures', {})
         while True:
             rows = self.repo.pending_approvals(self.tenant_id, after_id=after)
             if not rows:
                 return count
             for row in rows:
+                wid = row['todo_id']
                 try:
-                    self.deliver_approval(row['todo_id'], now=now)
+                    self.deliver_approval(wid, now=now)
+                    failures.pop(wid, None)
                     count += 1
-                except Exception:
-                    # The instance transaction rolls back; preserve its pending
-                    # intent while allowing unrelated approvals and tasks to run.
-                    log.exception('approval reconciliation failed for %s', row['todo_id'])
+                except Exception as error:  # noqa: BLE001 — 다른 승인 · 단계는 계속 돈다. 실패는 로그와(멈출 때) 승인 기록에 남긴다
+                    log.exception('approval reconciliation failed for %s', wid)
+                    failures[wid] = failures.get(wid, 0) + 1
+                    if failures[wid] >= DELIVERY_STOP_AFTER:
+                        self._stop_delivery(wid, error, failures.pop(wid), now)
             after = rows[-1]['todo_id']
+
+    def _stop_delivery(self, wid, error, attempts, now=None):
+        """전달 바깥 실패가 이어진 승인을 FAILED(kind transient)로 — 새 트랜잭션에서. 이것도 실패하면 로그에 남고 다음 폴링이 다시 센다."""
+        now = self._now(now)
+        text = f'{type(error).__name__}: {str(error)[:300]}'
+        try:
+            wi = self.repo.get_workitem(wid)
+            with self._transition(wi['proc_inst_id']):
+                row = self.repo.get_approval(wid, self.tenant_id)
+                if not row or row['status'] != 'PENDING':
+                    return
+                row.update(status='FAILED', error=f'승인 전달이 {attempts}번 연달아 처리되지 못해 멈췄습니다 — {text}')
+                row['history'].append({'status': 'FAILED', 't': engine.now_iso(now), 'error': row['error'], 'kind': 'transient'})
+                self.repo.update_approval(row)
+                self.repo.record_events([{'job_id': 'APPROVAL_DELIVERY', 'todo_id': wid, 'proc_inst_id': wi['proc_inst_id'], 'crew_type': 'human',
+                                          'event_type': 'error', 'data': {'name': '승인 전달 실패', 'approval': wid, 'error': row['error'],
+                                                                          'attempt': row['attempts']}}])
+        except Exception:  # noqa: BLE001 — 저장소가 계속 실패하는 중이다. 로그에 남기고 다음 폴링이 다시 센다
+            log.exception('could not record the stopped delivery of %s', wid)
 
     def deliver_approval(self, wid, now=None):
         """승인 하나를 전달한다(업무 거래 실행 → DELIVERED). #17: 전달은 그것만으로 커밋한다 — 뒤따르는 흐름 진행(_advance_delivered)이
@@ -157,7 +185,10 @@ class ApprovalDelivery:
                 from .current_approval import ApprovalReviewRequired
                 kind = 'review_required' if isinstance(error, ApprovalReviewRequired) else 'transient'
                 row.update(status='FAILED', error=f'{type(error).__name__}: {str(error)[:500]}')
-                row['history'].append({'status':'FAILED', 't':engine.now_iso(now), 'error':row['error'], 'kind':kind})
+                entry = {'status':'FAILED', 't':engine.now_iso(now), 'error':row['error'], 'kind':kind}
+                if kind == 'review_required':   # agent 가 「새 미리 보기로 다시 검토하면 풀린다」고 판정했는가(문장 글자가 아니라 칸 — G4-16)
+                    entry['needs_new_preview'] = bool(error.report.get('needs_new_preview'))
+                row['history'].append(entry)
                 self.repo.update_approval(row)
                 self.repo.record_events([{'job_id':'APPROVAL_DELIVERY', 'todo_id':wid,
                     'proc_inst_id':wi['proc_inst_id'], 'crew_type':'human', 'event_type':'error',
@@ -178,7 +209,6 @@ class ApprovalDelivery:
                 'DECISION_APPROVED', {'decision':row['decision_id'], 'option':row['payload']['option'],
                  'role':row['payload']['role'], 'approval':wid, 'via':'durable instance approval'},
                 incident=v.get('incident'))
-            self._after_commit(self.hooks.record_approval, deepcopy(row))
 
     def _advance_delivered(self, wid, now=None):
         """전달된 승인 행을 흐름으로 진행한다. 실패하면 승인 전달은 그대로 두고 그 행만 엔진 실패로 기록한다(재시도 → 3번이면 멈춤)."""

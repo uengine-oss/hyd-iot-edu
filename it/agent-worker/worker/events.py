@@ -22,8 +22,10 @@ NOTE_MAX = 1_500           #: U1: one assistant note (the agent's own words betw
 
 #: UI event type → events.event_type (enum). UI events without a row type are streamed only.
 #: permission_request is streamed only: the pause (runner._pause) records the one human_asked row with its job id and signature.
+#: usage(토큰 사용량)는 행으로 남기지 않는다 — 포털 처리 과정 · 실행 흐름이 숨기고 process 도 읽지 않는데 실행마다 20~80행씩 쌓였다(검진 G1-23).
+#: 모델 호출 수 · 한도는 로컬 중계 관문 장부(procsvc/course_ledger)가 센다.
 ROW_TYPE = {"run_start": "task_working", "tool_start": "tool_usage_started", "tool_end": "tool_usage_finished",
-            "error": "error", "usage": "task_working", "file_artifact": "task_working", "assistant_note": "task_working",
+            "error": "error", "file_artifact": "task_working", "assistant_note": "task_working",
             "skills_provided": "task_working", "skill_used": "task_working"}
 
 

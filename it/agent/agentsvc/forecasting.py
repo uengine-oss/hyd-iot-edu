@@ -1,7 +1,6 @@
 """Read-only candidate forecast using fresh, explicitly modelled plant status."""
 from datetime import datetime, timezone
 import math
-import os
 from urllib.parse import quote
 
 from copy import deepcopy
@@ -48,25 +47,17 @@ def _scale(candidate):
 
 
 def stack_time_scale():
-    """Simulated seconds per wall-clock second of the running stack.
-
-    The process service publishes its TIME_SCALE on GET /api/definition in every mode. 2026-10-23 audit: this used to read
-    /api/process/mode, whose time_scale exists only with the instance runtime — in legacy mode it was null, the agent and
-    dmn-mcp containers have no TIME_SCALE (compose.yaml), and the forecast consent budget was computed at 1× on a 20×
-    stack. The agent's own TIME_SCALE is used only when the process cannot be reached; with neither the time scale is
-    unknown and the check fails with that reason (never a silent 1×)."""
+    """Simulated seconds per wall-clock second of the running stack — process GET /api/time-scale (compose 의 TIME_SCALE 한 곳이
+    plant-sim · detector · process 에 들어가고, agent · dmn-mcp 는 process 에서 읽는다 — CLAUDE.md 4절). process 에 닿지 못하거나 값이 틀리면
+    그 까닭으로 실패한다. 예전의 「닿지 못하면 이 서비스의 TIME_SCALE 환경 변수」 길은 compose 가 agent · dmn-mcp 에 그 값을 주지 않아
+    닿지 않는 폴백이었다(지움). 2026-10-23 audit: 1× 로 조용히 계산되던 예측 허용폭."""
     try:
-        published = decide._get_json(f'{decide.PROCESS_URL}/api/definition').get('time_scale')
-    except Exception as exc:  # noqa: BLE001 — unreachable process: the explicit environment value may stand in
-        reached, published = exc, None
-    else:
-        scale = _scale(published)
-        if scale is None:
-            raise ValueError(f'process 가 알려 준 설비 시간 배율(time_scale={published!r})이 올바르지 않습니다')
-        return scale
-    scale = _scale(os.getenv('TIME_SCALE'))
+        published = decide._get_json(f'{decide.PROCESS_URL}/api/time-scale').get('time_scale')
+    except Exception as exc:  # noqa: BLE001 — 닿지 못한 까닭을 그대로
+        raise ValueError(f'설비 시간 배속을 process 에서 읽지 못했습니다({type(exc).__name__}: {str(exc)[:160]}) — process 가 켜져 있는지 확인하세요') from exc
+    scale = _scale(published)
     if scale is None:
-        raise ValueError(f'설비 시간 배율(TIME_SCALE)을 확인할 수 없습니다: process 에 연결하지 못했고({reached}) 환경 변수도 없습니다')
+        raise ValueError(f'process 가 알려 준 설비 시간 배속(time_scale={published!r})이 올바르지 않습니다')
     return scale
 
 
@@ -85,7 +76,7 @@ def binding(kg, asset):
     row = kg.forecast_model(asset)
     if (row.get('asset'), row.get('model_id'), row.get('model_revision'), row.get('scope')) != (
             asset, MODEL_ID, MODEL_REVISION, MODEL_SCOPE):
-        raise ValueError('missing, incompatible or out-of-scope asset forecast model binding')
+        raise ValueError(f'지식 그래프에 {asset}의 설비 예측 모델 연결이 없거나 이 엔진의 모델({MODEL_ID} {MODEL_REVISION})과 다릅니다')
     number(row.get('horizon_s'), 'bound horizon_s', 0.001, 86400)
     return row
 
@@ -94,15 +85,32 @@ def source(asset):
     source = f'{decide.PROCESS_URL}/api/plant/{quote(asset, safe="")}/status'
     snapshot = decide._get_json(source)
     if snapshot.get('asset') != asset:
-        raise ValueError('forecast source asset does not match the request')
-    stamp = datetime.fromisoformat(str(snapshot.get('t') or '').replace('Z', '+00:00'))
+        raise ValueError(f'설비 상태 응답이 {asset}의 것이 아닙니다')
+    try:
+        stamp = datetime.fromisoformat(str(snapshot.get('t') or '').replace('Z', '+00:00'))
+    except ValueError:
+        raise ValueError('설비 상태에 읽을 수 있는 관측 시각이 없습니다') from None
     if stamp.tzinfo is None:
-        raise ValueError('forecast source timestamp requires a timezone')
+        raise ValueError('설비 상태 관측 시각에 시간대가 없습니다')
     age = (datetime.now(timezone.utc) - stamp).total_seconds()
     if not -2 <= age <= decide.MAX_APPROVAL_FACT_AGE_S:
-        raise ValueError('forecast source is stale or future-dated')
+        raise ValueError(f'설비 상태가 {age:.0f}초 전 값이라 지금 예측에 쓸 수 없습니다({decide.MAX_APPROVAL_FACT_AGE_S:g}초 이내만) — '
+                         '설비 시뮬레이터와 수집이 도는지 확인하고 다시 판단하세요')
     return snapshot, {'source':'process plant.status', 'kind':'explicit simulator model state',
                       'asset':asset, 'observed_at':snapshot['t'], 'age_seconds':age}
+
+
+#: 작업지시를 지금 시행하는 카드(cards.option_window 즉시)의 예측: 정비하는 동안 설비가 서 있다. 시스템이 PLC 에 정지 명령을 보내는
+#: 것이 아니라(정지 · LOTO 는 정비 작업의 첫 단계) 예측 입력에만 쓰는 동작이다 — 카드의 actions(실행 · 승인 대상)에는 넣지 않는다.
+WORK_ORDER_STOP = {'code': 'STOP', 'kind': 'command', 'name': '설비 정지(작업지시 즉시 시행)', 'basis': 'immediate_work_order'}
+
+
+def plant_actions(skill, snapshot, stops_now=False):
+    """예측에 넣는 동작: 카드의 원자 조치 + 지금 시행하는 작업지시면 운전 중인 설비의 정지(이미 STOP · TRIP 이면 더하지 않는다)."""
+    actions = deepcopy(skill.get('actions') or [])
+    if stops_now and snapshot.get('state') == 'RUN' and not any(a.get('code') == 'STOP' for a in actions):
+        actions.append(dict(WORK_ORDER_STOP))
+    return actions
 
 
 def _predict(bound, snapshot, provenance, actions, horizon_s):
@@ -120,8 +128,9 @@ def current(kg, asset, actions, horizon_s):
     return _predict(bound, snapshot, provenance, actions, horizon_s)
 
 
-def candidates(kg, asset, skills):
-    """One bound model and one fresh snapshot for all candidates. Never use design constants."""
+def candidates(kg, asset, skills, stopping=frozenset()):
+    """One bound model and one fresh snapshot for all candidates. Never use design constants.
+    stopping: 지금 설비를 세우고 작업지시를 시행하는 카드 id(cards.option_window 가 즉시라고 정한 것) — 정지한 설비로 예측한다."""
     forecasts, contexts = {}, {}
     try:
         bound = binding(kg, asset)
@@ -130,7 +139,7 @@ def candidates(kg, asset, skills):
         return {}, {sid: {'error': str(exc)[:300], 'execution_authorized': False} for sid in skills}
     for sid, skill in skills.items():
         try:
-            result = _predict(bound, snapshot, provenance, skill.get('actions') or [], bound['horizon_s'])
+            result = _predict(bound, snapshot, provenance, plant_actions(skill, snapshot, sid in stopping), bound['horizon_s'])
             contexts[sid] = result
             # Stable equilibrium is used for existing DMN thresholds/ranking. The
             # finite-horizon trajectory and its interlocks remain mandatory below.

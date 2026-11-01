@@ -1,4 +1,4 @@
-// 생성 파일 — scripts/ontology_v2.py gen (원본: schema.json). 직접 고치지 않는다.
+// 생성 파일 — workspace/개발/scripts/ontology_v2.py gen (원본: schema.json). 직접 고치지 않는다.
 
 CREATE CONSTRAINT v2_perspective_id IF NOT EXISTS FOR (n:Perspective) REQUIRE n.id IS UNIQUE;
 CREATE CONSTRAINT v2_objective_id IF NOT EXISTS FOR (n:Objective) REQUIRE n.id IS UNIQUE;
@@ -30,7 +30,6 @@ CREATE CONSTRAINT v2_decisiontable_id IF NOT EXISTS FOR (n:DecisionTable) REQUIR
 CREATE CONSTRAINT v2_rule_id IF NOT EXISTS FOR (n:Rule) REQUIRE n.id IS UNIQUE;
 CREATE CONSTRAINT v2_knowledgesource_id IF NOT EXISTS FOR (n:KnowledgeSource) REQUIRE n.id IS UNIQUE;
 CREATE CONSTRAINT v2_externalvariable_id IF NOT EXISTS FOR (n:ExternalVariable) REQUIRE n.id IS UNIQUE;
-CREATE CONSTRAINT v2_forecast_id IF NOT EXISTS FOR (n:Forecast) REQUIRE n.id IS UNIQUE;
 CREATE CONSTRAINT v2_incident_id IF NOT EXISTS FOR (n:Incident) REQUIRE n.id IS UNIQUE;
 CREATE CONSTRAINT v2_decisioncase_id IF NOT EXISTS FOR (n:DecisionCase) REQUIRE n.id IS UNIQUE;
 CREATE CONSTRAINT v2_ingestioncontrol_id IF NOT EXISTS FOR (n:IngestionControl) REQUIRE n.id IS UNIQUE;
@@ -45,7 +44,6 @@ CREATE CONSTRAINT v2_knowledgeedit_id IF NOT EXISTS FOR (n:KnowledgeEdit) REQUIR
 CREATE CONSTRAINT v2_manualingestiondocument_id IF NOT EXISTS FOR (n:ManualIngestionDocument) REQUIRE n.id IS UNIQUE;
 CREATE CONSTRAINT v2_manualingestionbatch_id IF NOT EXISTS FOR (n:ManualIngestionBatch) REQUIRE n.id IS UNIQUE;
 
-// 엔티티 인식(entity resolution)용 전문 검색 색인: 이름과 다른 이름(aliases)
-CREATE FULLTEXT INDEX ont_names IF NOT EXISTS FOR (n:Measure|Component|StateVariable|Symptom|Cause|ExternalVariable) ON EACH [n.name, n.aliases];
-CREATE CONSTRAINT execution_projection_id IF NOT EXISTS FOR (n:ExecutionProjection) REQUIRE n.id IS UNIQUE;
-CREATE CONSTRAINT case_projection_id IF NOT EXISTS FOR (n:CaseProjection) REQUIRE n.id IS UNIQUE;
+// 엔티티 인식(entity resolution)용 전문 검색 색인: 업무 클래스의 이름과 다른 이름(aliases)
+DROP INDEX ont_names IF EXISTS;
+CREATE FULLTEXT INDEX ont_names IF NOT EXISTS FOR (n:Perspective|Objective|Measure|OrgUnit|Role|System|Asset|Component|Sensor|Actuator|StateVariable|Part|Supplier|AnomalyPattern|Symptom|FailureMode|Cause|Evidence|Skill|Action|Decision|InputData|DecisionTable|KnowledgeSource|ExternalVariable) ON EACH [n.name, n.aliases];

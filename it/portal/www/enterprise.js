@@ -1,8 +1,7 @@
 /* 지식 지도 · 조치 판단 규칙 · 승인과 실행 (enterprise.js) — ontology v2.
    Loaded after app.js and reuses its helpers ($, el, esc, fmt, getJ, postJ, state, selectTab).
-   Data: agent (8091) for the ontology and the decision engine, process (8080) for approval, enterprise-sim (8095) for ERP/MES/…
-   A122: wording from UI.terms; action-candidate card = title · chips · score · one line · evidence folded (UIUX_PLAN §1.1 · §1.3 · §1.5). */
-API.ent = P(8095);
+   Data: agent for the ontology and the decision engine, process for approval, enterprise-sim for ERP/MES/… — all through the same-origin table API (layers.js).
+   A122: wording from UI.terms; action-candidate card = title · chips · score · one line · evidence folded. */
 
 // columns of the knowledge map = layers of the ontology v2 schema (it/neo4j/v2/schema.json); titles without framework names (명칭표)
 const ONTO_GROUPS = [
@@ -36,19 +35,17 @@ const RELATION_KO = {
 };
 const ent = { graph: null, graphAsset: null, sel: null, hidden: new Set(), focus: null, search: '', patterns: null, result: null,
   decisions: [], decSel: null, decDetail: null, entState: null, tx: [], roles: null, busy: false,
-  form: { by: '홍길동', role: null, reason: '', option: null }, lastDetailSig: null, decShown: 20,
+  form: { msg: '' }, lastDetailSig: null, decShown: 20,
   definitionNames: {}, definitionNamesError: '' };
 
 /* ------------------------------------------------ tab hooks */
-const _selectTab = selectTab;
-selectTab = function (name) {
-  _selectTab(name);
+hydTabs.onShow(name => {
   if (name === 'ontology') loadGraph();
   if (name === 'decision') loadDecisionView();
   if (name === 'process') refreshProcess();
-};
+});
 async function loadPatterns() {
-  if (!ent.patterns || !ent.patterns.length) { try { ent.patterns = await getJ(API.agent + '/api/ontology/patterns'); } catch (e) { ent.patterns = null; } }
+  if (!ent.patterns || !ent.patterns.length) { try { ent.patterns = await getJ(API.agent + '/api/ontology/patterns'); ent.patternsError = ''; } catch (e) { ent.patterns = null; ent.patternsError = e.message; } }
   return ent.patterns || [];
 }
 
@@ -287,11 +284,14 @@ function ruleChip(r, cls, label) {
 }
 // FAN_SET=100 → "팬 100 %" (명칭표 "카드"): the action code and target stay in the evidence fold
 const ACTION_KO = { FAN_SET: ['팬', ' %'], LOAD_SET: ['부하', ' %'], PUMP_SELECT: ['펌프', ''], WO_CREATE: [null, ''], PR_CREATE: ['구매 요청', ''] };
-function actionLabel(a) {
+function actionLabel(a, option) {
   const spec = ACTION_KO[a.code];
   if (spec && spec[0] === null) return UI.t('workOrder');
-  // 값이 id(구매요청의 공급사 sup:… 등)면 이름으로 — 숫자 값(팬 % 등)은 그대로
-  const value = a.value != null ? UI.idText(String(a.value)) : null;
+  // 값이 id 면 이름으로 — 숫자 값(팬 % 등)은 그대로. 구매 요청의 공급사(sup:…)는 그래프 시드가 아니라 업무 DB 동기화로 생겨 이름 사전에 없다:
+  // 그 카드가 정한 공급사의 견적 이름(resolvedSupplier.quote.name — 업무 DB ent.suppliers.name)으로
+  const resolved = option && option.resolvedSupplier;
+  const supplier = a.code === 'PR_CREATE' && resolved && resolved.id === a.value && resolved.quote && resolved.quote.name;
+  const value = supplier || (a.value != null ? UI.idText(String(a.value)) : null);
   if (spec) return `${spec[0]}${value != null ? ' ' + value + spec[1] : ''}`;
   return `${a.name || a.code}${value != null ? ' ' + value : ''}`;
 }
@@ -332,12 +332,12 @@ function cardHtml(o, opt = {}) {
   const kpiAll = `<span class="hkpi">${(o.gains || []).filter(uncond).map(x => effChip(x, 'pos')).join('')}${(o.losses || []).filter(uncond).map(x => effChip(x, 'neg')).join('')}</span>`;
   const softAll = `${(o.penalties || []).map(v => ruleChip(v, 'soft', `${UI.t('card.penalty')} ${v.penalty}`)).join('')}${(o.warnings || []).map(v => ruleChip(v, 'soft', UI.t('card.warn'))).join('')}`;
   const evidence = `
-    ${o.reviewed_choice ? `<p><b>${esc(UI.t('card.baseSop'))}</b> ${esc(o.reviewed_choice.reference_name || o.sopId)} · ${(o.reviewed_choice.reference_actions || []).map(a => esc(actionLabel(a))).join(' · ')}</p>` : ''}
+    ${o.reviewed_choice ? `<p><b>${esc(UI.t('card.baseSop'))}</b> ${esc(o.reviewed_choice.reference_name || o.sopId)} · ${(o.reviewed_choice.reference_actions || []).map(a => esc(actionLabel(a, o))).join(' · ')}</p>` : ''}
     <dl>${o.sopId ? `<div><dt>${esc(UI.t('card.sop'))}</dt><dd>${esc(o.sopId)}</dd></div>` : ''}
     <div><dt>${esc(UI.t('card.score'))}</dt><dd>${Object.entries(sp).map(([key, value]) => `${esc(scoreLabels[key] || key)} ${Number.isFinite(value) ? signNum(value) : '미확인'}`).join(' · ') || '–'}</dd></div>
     ${(o.gains || []).some(uncond) || (o.losses || []).some(uncond) ? `<div><dt>${esc(UI.t('fold.kpi'))}</dt><dd>${kpiAll}</dd></div>` : ''}
     ${softAll ? `<div><dt>${esc(UI.t('fold.penalty'))}</dt><dd><span class="hmeta">${softAll}</span></dd></div>` : ''}
-    <div><dt>${esc(UI.t('skill.actions'))}</dt><dd>${(o.actions || []).map(a => `${esc(actionLabel(a))} <span class="muted">(${esc(a.code)}${a.value != null ? '=' + esc(a.value) : ''}${a.targetName ? ' → ' + esc(a.targetName) : ''})</span>`).join(' · ') || esc(UI.t('card.noAction'))}</dd></div>
+    <div><dt>${esc(UI.t('skill.actions'))}</dt><dd>${(o.actions || []).map(a => `${esc(actionLabel(a, o))} <span class="muted">(${esc(a.code)}${a.value != null ? '=' + esc(a.value) : ''}${a.targetName ? ' → ' + esc(a.targetName) : ''})</span>`).join(' · ') || esc(UI.t('card.noAction'))}</dd></div>
     ${(o.forecast || []).length ? `<div><dt>${esc(UI.t('score.forecast'))}</dt><dd>${(o.forecast || []).map(f => `<span title="계산 방법: ${esc(f.method)}">${esc(f.name)} ${esc(f.value)}${esc(f.unit || '')}</span>`).join(' · ')}</dd></div>` : ''}
     ${(o.gains || []).some(cond) || (o.losses || []).some(cond) ? `<div><dt>${esc(UI.t('card.expected'))}</dt><dd><span class="hkpi">${(o.gains || []).filter(cond).map(x => effChip(x, 'pos')).join('')}${(o.losses || []).filter(cond).map(x => effChip(x, 'neg')).join('')}</span></dd></div>` : ''}
     ${(o.selectedBy || []).length ? `<div><dt>${esc(UI.t('skill.rules'))}</dt><dd>${(o.selectedBy || []).map(r => `${esc(UI.ruleLabel(r))}${(r.sources || []).length ? ` <span class="muted">(${esc(r.sources.join(', '))})</span>` : ''}${r.annotation || UI.names[r.rule] ? '' : UI.fold('규칙 원문',`<pre>${esc(JSON.stringify(r,null,2))}</pre>`,{cls:'small'})}`).join('<br>')}</dd></div>` : ''}
@@ -370,19 +370,11 @@ function reviewMatches(review, decision, option, parameters, scope = {}) {
     && Object.keys(saved).length === Object.keys(parameters).length
     && Object.entries(parameters).every(([key, value]) => saved[key] === value));
 }
-// shared "사건 / 선택 / 사유·담당" form pieces (UIUX_PLAN §1.3, R5 · R6)
+// shared "사건 / 선택 / 사유·담당" form pieces (UIUX_PLAN §1)
 function rangeField(id, label, a, value) {
   return `<div class="field range"><label for="${id}">${esc(label)}</label><div class="range-row"><input type="range" id="${id}" min="${a.min ?? 0}" max="${a.max ?? 100}" value="${esc(value)}"><output for="${id}">${esc(value)} %</output></div></div>`;
 }
-function whoFields(prefix, form, roles, { roleHint = UI.t('form.hint.role'), reasonHint = UI.t('form.hint.reason') } = {}) {
-  const asMe = window.hydInbox?.whoFields(prefix, form, roles, { reasonHint });   // U5: "나"를 골랐으면 승인자 = 나, 역할 = 내 역할(서버가 다시 검사)
-  if (asMe) return asMe;
-  return UI.section(UI.t('form.section.who'),
-    UI.field({ label: UI.t('form.by'), required: true, input: `<input id="${prefix}By" value="${esc(form.by || '')}">` }) +
-    UI.field({ label: UI.t('form.role'), required: true, hint: roleHint, input: `<select id="${prefix}Role">${roles.map(([id, r]) => `<option value="${esc(id)}" ${id === form.role ? 'selected' : ''}>${esc(r.name)}</option>`).join('')}</select>` }) +
-    UI.field({ label: UI.t('form.reason'), cls: 'wide', hint: reasonHint, input: `<textarea id="${prefix}Reason" rows="2">${esc(form.reason || '')}</textarea>` }));
-}
-window.hydCards = { cardHtml, reviewMatches, rangeField, whoFields, actionLabel };
+window.hydCards = { cardHtml, reviewMatches, rangeField, actionLabel };
 
 /* ================================================= 조치 판단 규칙 */
 async function loadDecisionView() {
@@ -391,7 +383,8 @@ async function loadDecisionView() {
   if (sel.options.length) return;
   const pats = await loadPatterns();
   pats.forEach(p => sel.append(new Option(`${p.name}${p.failureModes && p.failureModes.length ? ' → ' + p.failureModes.join(', ') : ''}`, p.code)));
-  if (!pats.length) $('#decResult').innerHTML = UI.empty(UI.t('dec.noPatterns'));
+  if (!pats.length) $('#decResult').innerHTML = UI.errorBlock(UI.t('dec.noPatterns'), ent.patternsError || '지식 그래프에 이상 패턴이 없습니다', { retry: true });
+  $('#decResult').querySelector('[data-retry]')?.addEventListener('click', () => loadDecisionView());
 }
 async function runDecision() {
   if (ent.busy) return; ent.busy = true;
@@ -463,7 +456,7 @@ $('#decRun').addEventListener('click', runDecision);
 async function refreshProcess() {
   if (state.tab !== 'process') return;
   try { ent.decisions = await getJ(API.process + '/api/decisions'); ent.decisionsError = false; } catch (e) { ent.decisionsError = true; }
-  try { [ent.entState, ent.tx] = await Promise.all([getJ(API.ent + '/api/state'), getJ(API.ent + '/api/transactions')]); } catch (e) { ent.entState = null; }
+  try { [ent.entState, ent.tx] = await Promise.all([getJ(API.ent + '/api/state'), getJ(API.ent + '/api/transactions?limit=12')]); ent.entError = ''; } catch (e) { ent.entState = null; ent.tx = []; ent.entError = e.message; }
   if (!ent.decSel && ent.decisions.length) ent.decSel = ent.decisions[0].id;
   const selected = ent.decSel;
   if (selected) {
@@ -491,7 +484,7 @@ function renderProcess() {
         `<span class="sub">${esc(d.asset || '')} · ${esc(UI.dateTime(d.created))}${(d.origin || {}).kind !== 'alert' ? ' · ' + esc(UI.t('proc.manual')) : ''}${d.override ? ' · ' + esc(UI.t('proc.override')) : ''}</span>`;
       it.addEventListener('click', async () => {
         if (ent.decSel === d.id && ent.decDetail) { UI.revealDetail($('#decDetail')); return; }
-        ent.decSel = d.id; ent.decDetail = null; ent.form.msg = ''; ent.form.option = null; ent.lastDetailSig = null;
+        ent.decSel = d.id; ent.decDetail = null; ent.form.msg = ''; ent.lastDetailSig = null;
         $('#decDetail').innerHTML = UI.empty(UI.t('loading'));
         await refreshProcess();
         if (ent.decSel === d.id) UI.revealDetail($('#decDetail'));
@@ -512,28 +505,22 @@ function renderDecisionApproval() {
   const sig = d.id + '|' + d.state + '|' + (d.executions || []).length + '|' + (d.history || []).length + '|' + UI.namesVersion;
   if (sig === ent.lastDetailSig && box.querySelector('.hitl-opts')) return;
   ent.lastDetailSig = sig;
-  const roles = Object.entries(d.roles || {}).sort((a, b) => a[1].level - b[1].level);
   const pending = d.state === 'PENDING_APPROVAL';
   const opts = d.options || [];
   const maxAbs = Math.max(1, ...opts.map(o => Math.abs(o.score || 0)));
-  if (!ent.form.option || !opts.some(o => o.id === ent.form.option)) ent.form.option = d.recommended || (opts.find(o => o.feasible) || opts[0] || {}).id;
-  if (!ent.form.role) ent.form.role = ((opts.find(o => o.id === ent.form.option) || {}).approver || {}).id || (roles[0] || [''])[0];
   const sc = d.scenario || {};
   // A141: 제출 시각 · id · 사건 정보(설비 · 고장 유형 · 원인)는 접기로. 화면에는 제목 · 상태 · 한 줄 요약 · 선택 카드 · 사유 · 승인 버튼만
-  let html = `<div class="detail-head"><div class="row"><h2>${esc(UI.idText(sc.name || ''))}</h2>${UI.chip(d.state)}</div><div class="sub">${esc(d.asset || '')}${d.approvedBy ? ` · ${esc(UI.t('inc.approvedBy'))} ${esc(d.approvedBy)}` : ''}</div></div>`;
+  let html = `<div class="detail-head"><div class="row"><h2>${esc(UI.idText(sc.name || ''))}</h2>${UI.chip(d.state)}</div><div class="sub">${esc(d.asset || '')}${d.approvedBy ? ` · ${esc(UI.t('inc.approvedBy'))} ${esc(UI.who(d.approvedBy))}` : ''}</div></div>`;
   html += UI.evaluationHtml(d) + summaryBlock(d.explanation);
   html += UI.metaFold([[UI.t('dec.asset'), esc(d.asset || '')], ['고장 유형', esc(UI.idText(sc.failureMode || ''))], [UI.t('dec.cause'), esc(UI.idText(sc.cause || ''))], [UI.t('proc.submitted'), esc(UI.dateTime(d.created))], ['ID', `<span class="mono">${esc(d.id)}</span>`]], 'fold.case');
-  // 사건(경보)에서 나온 판단은 처리 건의 승인 단계에서 승인 · 거절한다 — 폼 대신 처리 건으로 가는 버튼 하나(모드 조회에 기대지 않는다:
-  // 조회가 실패해도 옛 승인 폼으로 떨어져 409 를 받지 않게)
-  const viaInstance = pending && !!(d.origin || {}).incident;
-  if (viaInstance) {
+  // 판단은 처리 건의 승인 단계에서만 승인 · 거절한다(서버에 판단 단독 승인 길이 없다 — test_main.test_처리_건_밖의_옛_승인_경로는_없다).
+  // 사건(경보)에서 나온 판단은 처리 건으로 가는 버튼 하나, 사건 없이 들어온 판단은 승인할 길이 없음을 그대로 알린다(서버도 접수를 거절한다 — FA2 넘김).
+  if (pending && (d.origin || {}).incident) {
     html += `<div class="hitl-opts">${opts.map(o => cardHtml(o, { rec: d.recommended, chosen: d.chosen, maxAbs, decision: d })).join('')}</div>` +
       `<p class="field-hint">이 판단은 처리 건의 승인 단계에서 승인하거나 거절합니다.</p>` + UI.actions(`<button class="btn primary" id="decGoInstance">처리 건에서 승인하기 →</button>`, ent.form.msg || '');
   } else if (pending) {
-    html += `<div class="form">` +
-      UI.section(UI.t('form.section.choice'), `<div class="hitl-opts wide">${opts.map(o => cardHtml(o, { rec: d.recommended, chosen: d.chosen, selectable: true, selected: ent.form.option === o.id, pending: true, maxAbs, name: 'decOpt', decision: d })).join('')}</div>`) +
-      whoFields('dec', ent.form, roles) +
-      UI.actions(`<button class="btn outline" id="decReject">${esc(UI.t('btn.reject'))}</button><button class="btn primary" id="decApprove" ${UI.executionBlocked(opts.find(o=>o.id===ent.form.option),d) ? 'disabled' : ''}>${esc(UI.t('btn.approve'))}</button>`, ent.form.msg || '') + '</div>';
+    html += `<div class="hitl-opts">${opts.map(o => cardHtml(o, { rec: d.recommended, chosen: d.chosen, maxAbs, decision: d })).join('')}</div>` +
+      `<p class="neg" role="status">이 판단은 경보로 열린 처리 건 없이 제출돼 승인하거나 거절할 수 없습니다. 판단은 처리 건 안에서만 승인합니다 — 설비 경보(결함 시뮬레이션)로 처리 건을 열고 그 승인 단계에서 고르세요.</p>`;
   } else {
     html += `<h3 style="font-size:14px;margin:var(--s4) 0 var(--s2)">${esc(UI.t('decisions'))}</h3><div class="hitl-opts">` + opts.map(o => cardHtml(o, { rec: d.recommended, chosen: d.chosen, maxAbs, decision: d })).join('') + '</div>';
   }
@@ -547,44 +534,26 @@ function renderDecisionApproval() {
     catch (err) { ent.form.msg = err.message; ent.lastDetailSig = null; renderDecisionApproval(); }
     finally { b.disabled = false; }
   });
-  const by = $('#decBy'), role = $('#decRole'), reason = $('#decReason');
-  if (by) by.addEventListener('input', () => ent.form.by = by.value);
-  if (role) { ent.form.role = role.value; role.addEventListener('change', () => { ent.form.role = role.value; ent.form.msg = ''; }); }
-  if (reason) reason.addEventListener('input', () => ent.form.reason = reason.value);
-  box.querySelectorAll('input[name=decOpt]').forEach(r => r.addEventListener('change', () => { ent.form.option = r.value; const o = opts.find(x => x.id === r.value); if (o && o.approver) ent.form.role = o.approver.id; ent.lastDetailSig = null; renderDecisionApproval(); }));
-  const msg = t => { const m = box.querySelector('.form-msg'); if (m) m.textContent = t; else if (t) { ent.form.msg = t; ent.lastDetailSig = null; renderDecisionApproval(); } };
-  const ap = $('#decApprove'); if (ap) ap.addEventListener('click', async () => {
-    const controls = [...box.querySelectorAll('#decApprove,#decReject')];
-    controls.forEach(c => c.disabled = true); ap.textContent = UI.t('proc.approving');
-    try { ent.form.msg = ''; await postJ(API.process + `/api/decisions/${d.id}/approve`, { option: ent.form.option, by: ($('#decBy')?.value ?? ent.form.by) || '승인자', role: $('#decRole').value, reason: $('#decReason')?.value || '' }); await refreshProcess(); }
-    catch (e) { ent.form.msg = e.message; if (ent.decSel === d.id) msg(e.message); }
-    finally { controls.forEach(c => c.disabled = false); ap.textContent = UI.t('btn.approve'); }
-  });
-  const rj = $('#decReject'); if (rj) rj.addEventListener('click', async () => {
-    if (!$('#decReason').value.trim()) { ent.form.msg = UI.t('form.err.reason'); msg(ent.form.msg); $('#decReason').focus(); return; }
-    const controls = [...box.querySelectorAll('#decApprove,#decReject')];
-    controls.forEach(c => c.disabled = true); rj.textContent = UI.t('proc.rejecting');
-    try { await postJ(API.process + `/api/decisions/${d.id}/reject`, { by: $('#decBy')?.value ?? ent.form.by, reason: $('#decReason').value }); await refreshProcess(); }
-    catch (e) { if (ent.decSel === d.id) msg(e.message); }
-    finally { controls.forEach(c => c.disabled = false); rj.textContent = UI.t('btn.reject'); }
-  });
+}
+// 업무 시스템 보드: 업무 상태(/api/state — 생산 주문 · 정비 오더 · 구매 요청 · 입고)에 있는 표만 그린다.
+// 품질 처분 · 전력 · 대체 출하는 쓰는 거래가 없어 업무 DB에서 지웠다(FE 070) — 없는 칸을 읽지 않는다
+function systemBoards(s) {
+  return [
+    ['생산 관리', s.mes.orders.map(o => ({ ...o, where: o.moved_from ? `${o.moved_from} → ${o.asset}` : o.asset })), ['order_id', 'where', 'due_in_h'], ['생산오더', '설비', '납기까지 (시간)']],
+    ['정비 관리', s.cmms.work_orders, ['id', 'asset', 'task', 'window'], ['번호', '설비', '작업', '정비 시점']],
+    ['구매 · 재고 관리', [...s.erp.purchase_requests.map(p => ({ a: p.id, b: p.supplierName, c: p.status })),
+      ...s.erp.goods_receipts.map(g => ({ a: g.id, b: `${g.part_no || ''} ${g.qty}개 입고`, c: `검수 ${g.inspection}` }))], ['a', 'b', 'c'], ['번호', '대상', '상태']],
+  ];
 }
 function renderSystems() {
   const box = $('#sysBoards'); const s = ent.entState;
-  if (!s) { box.innerHTML = UI.empty(UI.t('proc.noEnt'), '', 'compact'); return; }
+  if (!s) { box.innerHTML = ent.entError ? UI.errorBlock(UI.t('proc.noEnt'), ent.entError + ' — 2.5초마다 다시 읽습니다', { cls: 'compact' }) : UI.empty(UI.t('loading'), '', 'compact'); $('#txList').innerHTML = ''; return; }
   const t = (rows, cols, labels) => rows.length ? '<div class="table-scroll" tabindex="0"><table><thead><tr>' + labels.map(x => `<th>${esc(x)}</th>`).join('') + '</tr></thead><tbody>' + rows.slice(0, 6).map(r => '<tr>' + cols.map(c => `<td>${esc(r[c] ?? '–')}</td>`).join('') + '</tr>').join('') + '</tbody></table></div>' : UI.empty(UI.t('proc.noChange'), '', 'compact');
-  const boards = [
-    ['생산 관리', t(s.mes.orders.map(o => ({ ...o, where: o.moved_from ? `${o.moved_from} → ${o.asset}` : o.asset })), ['order_id', 'where', 'due_in_h'], ['생산오더', '설비', '납기까지 (시간)'])],
-    ['정비 관리', t(s.cmms.work_orders, ['id', 'asset', 'task', 'window'], ['번호', '설비', '작업', '정비 시점'])],
-    ['구매 · 재고 관리', t([...s.erp.purchase_requests.map(p => ({ a: p.id, b: p.supplierName, c: p.status })), ...s.erp.shipments.map(x => ({ a: x.id, b: `${x.item} ${x.qty}개`, c: x.from }))], ['a', 'b', 'c'], ['번호', '대상', '상태 · 출고처'])],
-    // A098: the enterprise state exposes qms.lot_dispositions and ems.ems_actions (A086 schema)
-    ['품질 관리', t((s.qms?.lot_dispositions || []).map(h => ({ a: h.lot || h.lot_id || h.id, b: h.disposition || h.status || '' })), ['a', 'b'], ['로트', '처분'])],
-    ['전력 관리', t((s.ems?.ems_actions || []).map(x => ({ action: x.action || x.description || x.kind || JSON.stringify(x).slice(0, 80) })), ['action'], ['실행 내용'])],
-  ];
-  box.innerHTML = boards.map(([sys, body]) => `<div class="board"><header><b>${esc(UI.t('sys.' + sys))}</b><span>${esc(sys)}</span></header>${body}</div>`).join('');
+  const boards = systemBoards(s).map(([sys, rows, cols, labels]) => [sys, t(rows, cols, labels)]);
+  box.innerHTML = boards.map(([sys, body]) => `<div class="board"><header><b>${esc(sys)}</b></header>${body}</div>`).join('');
   $('#txList').innerHTML = ent.tx.length ? ent.tx.slice(0, 12).map(x => UI.eventRecord({ time: x.t, name: UI.who(x.system), actor: x.by, detail: x.detail, raw: x, extra: txDiffFold(x) })).join('') : `<div class="muted">${esc(UI.t('proc.noTx'))}</div>`;
 }
-// A147 (DECISIONS 97 후속): 거래가 바꾼 행의 변경 전·후 — 바뀐 항목만, 기본 닫힘. 기록이 없는 거래(before/after 둘 다 없음)는 접기도 없다
+// A147: 거래가 바꾼 행의 변경 전·후 — 바뀐 항목만, 기본 닫힘. 기록이 없는 거래(before/after 둘 다 없음)는 접기도 없다
 function txDiffFold(x) {
   const b = x.before || null, a = x.after || null;
   if (!b && !a) return '';
@@ -598,5 +567,4 @@ function txDiffFold(x) {
 
 initOntology();
 setInterval(() => { if (state.tab === 'process') refreshProcess(); }, 2500);
-window.hydApp.selectTab = selectTab;          // the recorder and ?present=1 hooks must see the loaders too
-window.hydEnt = { ent, runDecision, loadGraph, refreshProcess, loadDecisionView, renderDecision };
+window.hydEnt = { ent, systemBoards, runDecision, loadGraph, refreshProcess, loadDecisionView, renderDecision };

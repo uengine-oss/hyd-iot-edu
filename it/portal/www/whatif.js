@@ -48,6 +48,12 @@
     finally { W.busy = false; render(); }
   }
 
+  // 시험값 한도는 서버(agentsvc whatif 시작 응답 limits)가 정한다 — 화면에 숫자 사본을 두지 않는다(W3-26)
+  function lim(key) {
+    const v = W.base && W.base.limits && W.base.limits[key];
+    if (!Array.isArray(v) || v.length !== 2) throw new Error(`조건별 손익 시작 응답에 한도(${key})가 없습니다 — 서비스가 이 화면과 다른 판일 수 있습니다`);
+    return v;
+  }
   function reset() { W.values = {}; W.policy = { weights: {}, penalties: {}, perspectives: {} }; W.perspForm = {}; W.view = W.base; W.weeks = null; W.msg = ''; render(); }
 
   async function runWeeks() {
@@ -107,7 +113,7 @@
   function summaryHtml(v) {
     const n = trialCount();
     const chips = UI.chipText(`판단 1순위 · ${cardName(v.top.decision)}`, 'accent') + ' ' + UI.chipText(`손익 1순위 · ${cardName(v.top.money)}`, 'success')
-      + ' ' + (v.original && v.original.unchanged ? UI.chipText('원본 그대로', 'neutral') : UI.chipText('원본 확인 실패', 'danger'))
+      + ' ' + UI.chipText('원본 그대로', 'neutral')   // 원본이 바뀌었으면 서버(agentsvc main)가 500 으로 거절해 이 응답이 오지 않는다(W3-25)
       + (n ? ' ' + UI.chipText(`시험값 ${n}개 적용 중`, 'warning') : '') + (W.busy ? ' ' + UI.chipText('다시 계산하는 중…', 'neutral') : '');
     return `<div class="summary prose" style="margin-top:var(--s4)"><p style="margin:0 0 var(--s2)">${esc(v.summary)}</p><div class="card-chips">${chips}</div>`
       + `${n ? `<div class="form-actions" style="margin-top:var(--s2)"><button class="btn" id="wiReset">원래대로</button></div>` : ''}`
@@ -177,7 +183,7 @@
     const ruleBounds = (W.bounds || []).filter(b => b.variable.includes(':'));
     return `<p class="field-hint">순위 정책 항목 하나의 가중치나 감점 규칙 하나의 감점을 시험값으로 바꿉니다. 정책 원본은 그대로이며, 바꾼 식도 같은 안전 검사를 다시 통과해야 계산됩니다.</p>`
       + `<div class="form-grid">${UI.field({ label: '바꿀 규칙', input: `<select id="wiRuleTarget">${opts.map(([k, l]) => `<option value="${esc(k)}" ${k === W.ruleForm.target ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>` })}`
-      + UI.field({ label: '시험값', hint: '가중치는 −10 ~ 10배, 감점은 0 ~ 1000', input: `<input type="number" step="any" id="wiRuleValue" value="${esc(W.ruleForm.value)}">` }) + '</div>'
+      + UI.field({ label: '시험값', hint: `가중치는 ${lim('weights')[0]} ~ ${lim('weights')[1]}배, 감점은 ${lim('penalties')[0]} ~ ${lim('penalties')[1]}`, input: `<input type="number" step="any" id="wiRuleValue" value="${esc(W.ruleForm.value)}">` }) + '</div>'
       + UI.actions(`<button class="btn primary" id="wiRule" ${W.busy ? 'disabled' : ''}>다시 계산</button>`)
       + compareTable(v)
       + UI.fold('규칙마다 1순위가 바뀌는 값', boundaryLines(ruleBounds), { cls: 'small' })
@@ -193,7 +199,7 @@
     html += '<p class="field-hint">성과 관점마다 중요도(배)를 주면 카드 점수의 성과 지표 득실이 그 비중으로 다시 계산됩니다. 빈 칸은 1배, 0은 그 관점을 보지 않음. 원본 순위 정책 · 지식은 그대로입니다.</p>';
     html += `<div class="form-grid">${pv.perspectives.map(p => UI.field({ label: `${p.name} (배)`,
       hint: p.inUse ? '이 판단의 득실: ' + p.measures.join(', ') : '이 판단의 카드 득실에 나오지 않는 관점 — 바꿔도 순위가 그대로입니다',
-      input: `<input type="number" step="any" min="0" max="10" data-wi-persp="${esc(p.id)}" value="${esc(W.perspForm[p.id] ?? '')}" placeholder="1">` })).join('')}</div>`;
+      input: `<input type="number" step="any" min="${lim('perspectives')[0]}" max="${lim('perspectives')[1]}" data-wi-persp="${esc(p.id)}" value="${esc(W.perspForm[p.id] ?? '')}" placeholder="1">` })).join('')}</div>`;
     html += UI.actions(`<button class="btn primary" id="wiPersp" ${W.busy ? 'disabled' : ''}>관점 비중으로 다시 계산</button>`);
     const names = Object.fromEntries(pv.perspectives.map(p => [p.id, p.name]));
     const base = Object.fromEntries((W.base.cards || []).map(c => [c.id, c]));
@@ -214,7 +220,7 @@
       + `<div class="form-grid">${UI.field({ label: '조치 카드', input: `<select id="wiWCard">${cardOpts}</select>` })}`
       + UI.field({ label: '바꿀 값', input: `<select id="wiWVar">${vars.map(x => `<option value="${esc(x.id)}" ${x.id === f.variable ? 'selected' : ''}>${esc(x.label)} (${esc(x.unit)})</option>`).join('')}</select>` })
       + UI.field({ label: '새 값', hint: '비우면 기준만 계산합니다', input: `<input type="number" step="any" id="wiWValue" value="${esc(f.value)}">` })
-      + UI.field({ label: '기간 (주)', input: `<input type="number" min="1" max="12" id="wiWWeeks" value="${esc(f.weeks)}">` }) + '</div>'
+      + UI.field({ label: '기간 (주)', input: `<input type="number" min="${lim('weeks')[0]}" max="${lim('weeks')[1]}" id="wiWWeeks" value="${esc(f.weeks)}">` }) + '</div>'
       + UI.actions(`<button class="btn primary" id="wiWeeks" ${W.busy ? 'disabled' : ''}>주별 계산</button>`);
     if (!w) return html + UI.empty('카드와 바꿀 값을 고르고 주별 계산을 누르세요', '');
     const last = rows => rows && rows[rows.length - 1];
@@ -279,6 +285,6 @@
       rows + `<p class="field-hint">${esc(m.basis || '')} · 값 바꿔 보기와 경계값은 '조건별 손익' 화면에서</p>`, { cls: 'small' });
   }
 
-  window.hydWhatif = { mount, failed, moneyFold, _W: W, _render: render };
+  window.hydWhatif = { mount, failed, moneyFold };
   // 셸(shell.js MOUNTS.whatif)이 #/whatif 를 처음 열 때 mount(#whatifView)를 부른다.
 })();

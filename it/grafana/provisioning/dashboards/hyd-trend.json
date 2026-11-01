@@ -60,7 +60,7 @@
      "rawQuery": true,
      "format": "table",
      "editorMode": "code",
-     "rawSql": "SELECT raised_at AS time, 'RAISE ' || pattern || ' (' || alert_id || ')' AS text, asset AS tags FROM alerts WHERE asset='$asset' AND raised_at IS NOT NULL AND $__timeFilter(raised_at)"
+     "rawSql": "SELECT raised_at AS time, '경보 발생 · ' || name || ' (' || alert_id || ')' AS text, asset AS tags FROM alerts WHERE asset='$asset' AND raised_at IS NOT NULL AND $__timeFilter(raised_at)"
     }
    },
    {
@@ -76,11 +76,11 @@
      "rawQuery": true,
      "format": "table",
      "editorMode": "code",
-     "rawSql": "SELECT cleared_at AS time, 'CLEAR ' || pattern AS text, asset AS tags FROM alerts WHERE asset='$asset' AND cleared_at IS NOT NULL AND $__timeFilter(cleared_at)"
+     "rawSql": "SELECT cleared_at AS time, '경보 해제 · ' || name AS text, asset AS tags FROM alerts WHERE asset='$asset' AND cleared_at IS NOT NULL AND $__timeFilter(cleared_at)"
     }
    },
    {
-    "name": "승인 조치",
+    "name": "설비 명령",
     "datasource": {
      "type": "grafana-postgresql-datasource",
      "uid": "tsdb"
@@ -92,7 +92,7 @@
      "rawQuery": true,
      "format": "table",
      "editorMode": "code",
-     "rawSql": "SELECT issued_at AS time, '승인 조치 ' || cmd_id || ' by ' || coalesce(approved_by,'?') || ': ' || actions::text AS text, asset AS tags FROM actions WHERE asset='$asset' AND $__timeFilter(issued_at)"
+     "rawSql": "SELECT issued_at AS time, '설비 명령 ' || cmd_id || ' · 승인 ' || approved_by || ' · ' || actions::text AS text, asset AS tags FROM actions WHERE asset='$asset' AND $__timeFilter(issued_at)"
     }
    }
   ]
@@ -137,11 +137,11 @@
        },
        {
         "color": "#d97706",
-        "value": 60
+        "value": 55.0
        },
        {
         "color": "#dc2626",
-        "value": 65
+        "value": 65.0
        }
       ]
      },
@@ -778,7 +778,7 @@
    "id": 7,
    "type": "timeseries",
    "title": "유온 TS1 · 경보와 조치 전후 추이",
-   "description": "60 ℃ 경고 · 65 ℃ 보호 정지. 빨강은 경보 발생, 초록은 해제, 파랑은 승인된 조치입니다. 경보·조치 이력과 유온 변화를 함께 비교하세요.",
+   "description": "55 ℃ 경고 · 65 ℃ 보호 정지. 빨강은 경보 발생, 초록은 해제, 파랑은 관문을 통과한 설비 명령입니다. 경보·명령 이력과 유온 변화를 함께 비교하세요.",
    "datasource": {
     "type": "grafana-postgresql-datasource",
     "uid": "tsdb"
@@ -830,11 +830,11 @@
        },
        {
         "color": "#d97706",
-        "value": 60
+        "value": 55.0
        },
        {
         "color": "#dc2626",
-        "value": 65
+        "value": 65.0
        }
       ]
      }
@@ -1526,7 +1526,7 @@
      },
      "refId": "A",
      "rawQuery": true,
-     "rawSql": "SELECT pattern, severity, state, raised_at AS \"발생\", cleared_at AS \"해제\", alert_id FROM alerts WHERE asset='$asset' ORDER BY raised_at DESC LIMIT 20",
+     "rawSql": "SELECT name, severity, state, raised_at AS \"발생\", cleared_at AS \"해제\", alert_id FROM alerts WHERE asset='$asset' ORDER BY raised_at DESC LIMIT 20",
      "format": "table",
      "editorMode": "code"
     }
@@ -1592,46 +1592,16 @@
      {
       "matcher": {
        "id": "byName",
-       "options": "pattern"
+       "options": "name"
       },
       "properties": [
        {
         "id": "displayName",
-        "value": "경보 유형"
+        "value": "경보"
        },
        {
         "id": "custom.width",
         "value": 180
-       },
-       {
-        "id": "mappings",
-        "value": [
-         {
-          "type": "value",
-          "options": {
-           "COOLER_DEGRADATION": {
-            "text": "쿨러 성능 저하",
-            "index": 0
-           },
-           "PUMP_LEAKAGE": {
-            "text": "펌프 내부 누설",
-            "index": 1
-           },
-           "FAN_VIBRATION": {
-            "text": "팬 진동 상승",
-            "index": 2
-           },
-           "TEMP_TRIP": {
-            "text": "유온 보호 정지",
-            "index": 3
-           },
-           "OVERHEAT_TRIP": {
-            "text": "유온 보호 정지",
-            "index": 4
-           }
-          }
-         }
-        ]
        }
       ]
      },
@@ -1655,17 +1625,21 @@
          {
           "type": "value",
           "options": {
+           "LOW": {
+            "text": "낮음",
+            "index": 0
+           },
+           "MEDIUM": {
+            "text": "보통",
+            "index": 1
+           },
            "HIGH": {
             "text": "높음",
-            "index": 0
+            "index": 2
            },
            "CRITICAL": {
             "text": "긴급",
-            "index": 1
-           },
-           "WARNING": {
-            "text": "주의",
-            "index": 2
+            "index": 3
            }
           }
          }
@@ -1766,7 +1740,7 @@
   {
    "id": 13,
    "type": "table",
-   "title": "조치 (actions) — 승인된 action.cmd와 PLC ACK",
+   "title": "설비 명령 — 관문을 통과한 명령과 PLC 응답",
    "datasource": {
     "type": "grafana-postgresql-datasource",
     "uid": "tsdb"
@@ -1785,7 +1759,7 @@
      },
      "refId": "A",
      "rawQuery": true,
-     "rawSql": "SELECT issued_at AS \"발행\", cmd_id, incident, actions::text AS actions, approved_by, ack_result, ack_reason, ack_at FROM actions WHERE asset='$asset' ORDER BY issued_at DESC LIMIT 20",
+     "rawSql": "SELECT issued_at AS \"발행\", cmd_id AS \"명령 번호\", incident AS \"사건\", actions::text AS \"조치 내용\", approved_by AS \"승인한 사람\", ack_result AS \"PLC 응답\", ack_reason AS \"응답 사유\", ack_at AS \"응답 시각\" FROM actions WHERE asset='$asset' ORDER BY issued_at DESC LIMIT 20",
      "format": "table",
      "editorMode": "code"
     }
@@ -1859,7 +1833,7 @@
   {
    "id": 14,
    "type": "table",
-   "title": "감사 로그 (audit)",
+   "title": "처리 기록(감사)",
    "datasource": {
     "type": "grafana-postgresql-datasource",
     "uid": "tsdb"
@@ -1878,7 +1852,7 @@
      },
      "refId": "A",
      "rawQuery": true,
-     "rawSql": "SELECT time, incident, actor, event, detail::text AS detail FROM audit WHERE $__timeFilter(time) ORDER BY time DESC LIMIT 50",
+     "rawSql": "SELECT time AS \"시각\", incident AS \"사건\", actor AS \"누가\", event AS \"무엇을\", detail::text AS \"내용\" FROM audit WHERE $__timeFilter(time) ORDER BY time DESC LIMIT 50",
      "format": "table",
      "editorMode": "code"
     }

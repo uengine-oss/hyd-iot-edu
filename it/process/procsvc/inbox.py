@@ -7,7 +7,7 @@ HYD 에는 로그인이 없다. 작업(todolist)의 user_id 는 정의의 역할
              **여럿**이면 역할 공용(user_id 는 역할 그대로)으로 남긴다. 아무도 없으면 역할 그대로(누구의 작업함에도 안 뜬다 — 조용한 성공 금지,
              작업함 응답의 unassigned_roles 로 알린다).
     배정 이력 task_assignments(auto). 업무분장으로 사람에게 바로 배정된 것만 남는다. 수동 재배정·위임은 범위 밖(TODO A3).
-    승인자   포털의 "나"(user:*)로 승인하면 check_actor 가 그 사람이 내세운 역할의 구성원인지 본다(아니면 403). 역할 등급 검사
+    승인자   승인은 포털의 "나"(user:*)로만 한다 — check_actor 가 그 사람이 내세운 역할의 구성원인지 본다(아니면 403). 역할 등급 검사
              (Skill -APPROVED_BY-> Role, hooks.approve_decision)는 그대로 — 권한이 낮은 역할의 승인은 여전히 403.
     알림      notifications. 사람 단계가 열리면 배정된 사람(역할 공용이면 역할 구성원 모두)에게, 처리 건이 끝나면 참여자에게 쓴다.
              에이전트의 질문 알림은 워커가 쓴다(agent-worker runner._asker_of → role:operator). 역할 id 로 온 알림은 그 역할 사람이 모두 본다.
@@ -152,15 +152,24 @@ def _notify_end(repo, tenant, inst, end_name):
 
 
 # ---------------------------------------------------------------- 승인자 = "나"
-def check_actor(repo, tenant_id: str, by: str | None, role: str | None) -> str | None:
-    """포털의 "나"(사람 사용자 id)로 승인할 때, 그 사람이 내세운 역할의 구성원인지 서버가 확인한다.
-    by 가 user:* 가 아니면(회귀 검사기·옛 화면의 자유 입력) 아무것도 하지 않는다 — 역할 등급 검사(approve_decision)는 어느 쪽이든 그대로다.
-    통과하면 사람 id 를, 아니면 PermissionError(→ 403)."""
+NOT_A_PERSON = "이 일은 포털에서 '나'(사람 사용자)를 고른 뒤 합니다 — 누가 했는지 모르는 처리는 받지 않습니다"
+
+
+def require_person(repo, tenant_id: str, by: str | None) -> dict:
+    """사람이 한 일인지 확인하는 한 곳(승인 · 거절 · 제출 · 닫기 · 실행 취소 · 다시 평가): 포털의 "나"(사람 사용자 user:*)이고 사용자 표에 있는
+    사람이어야 한다. → 그 사용자 행. 아니면 PermissionError(→ 403) — 이름만 적은 자유 입력은 받지 않는다."""
     if not str(by or "").startswith(PERSON):
-        return None
+        raise PermissionError(NOT_A_PERSON)
     user = next(iter(repo.list_users([by], tenant_id)), None)
     if user is None or user.get("is_agent"):
         raise PermissionError(f"없는 사람 사용자입니다: {by}")
+    return user
+
+
+def check_actor(repo, tenant_id: str, by: str | None, role: str | None) -> str:
+    """승인자 확인: 사람(require_person)이고 그 사람이 내세운 역할의 구성원이어야 한다(역할 등급 검사 approve_decision 은 따로 그대로).
+    통과하면 사람 id, 아니면 PermissionError(→ 403)."""
+    user = require_person(repo, tenant_id, by)
     mine = roles_of(repo, tenant_id, by)
     if role not in mine:
         names = {r["id"]: r.get("username") or r["id"] for r in role_users(repo, tenant_id)}
@@ -171,9 +180,7 @@ def check_actor(repo, tenant_id: str, by: str | None, role: str | None) -> str |
 
 def require_task_actor(repo, tenant_id, inst, wi, by, *, question=False):
     """Use the same assignment rules for submission as for the person's inbox."""
-    user = next(iter(repo.list_users([by], tenant_id)), None) if str(by or '').startswith(PERSON) else None
-    if not user or user.get('is_agent'):
-        raise PermissionError("포털에서 '나'(등록된 사람 사용자)를 고른 뒤 제출하세요")
+    require_person(repo, tenant_id, by)
     mine = set(roles_of(repo, tenant_id, by)) | {by}
     allowed = ({b.get('endpoint') for b in inst.get('role_bindings') or []}
                | set(inst.get('participants') or [])) if question else {wi.get('user_id')}
@@ -182,12 +189,10 @@ def require_task_actor(repo, tenant_id, inst, wi, by, *, question=False):
 
 
 def person_name(repo, tenant_id: str, by: str | None) -> str:
-    """승인자 이름(메일 · 결과 보고 틀의 {approved_by_name}). 사람 사용자 id(user:*)면 사용자 표의 이름, 아니면 by 자체가 이미 이름이다
-    (회귀 검사기 · 옛 화면의 자유 입력 — check_actor 와 같은 갈래). 사람 id 인데 사용자 표에 이름이 없으면 LookupError(좌표: id)."""
-    if not str(by or "").startswith(PERSON):
-        return str(by or "")
-    user = next(iter(repo.list_users([by], tenant_id)), None)
-    if user is None or not user.get("username"):
+    """승인자 이름(메일 · 결과 보고 틀의 {approved_by_name}) — 사람 사용자(user:*)의 사용자 표 이름. 사람 id 가 아니면 PermissionError
+    (check_actor 와 같은 규칙), 사용자 표에 이름이 없으면 LookupError(좌표: id)."""
+    user = require_person(repo, tenant_id, by)
+    if not user.get("username"):
         raise LookupError(f"승인자 {by} 의 이름이 사용자 표(tenant {tenant_id})에 없습니다")
     return user["username"]
 
@@ -201,8 +206,9 @@ def inbox_view(rt, user_id: str, now=None) -> dict:
         raise LookupError(f"없는 사람 사용자입니다: {user_id}")
     my_roles = roles_of(repo, tenant, user_id)
     mine = set(my_roles) | {user_id}
-    instances = {i["proc_inst_id"]: i for i in repo.list_instances(status="RUNNING", limit=500, tenant_id=tenant)}
-    rows = repo.list_workitems(status="IN_PROGRESS", limit=500, tenant_id=tenant, newest=True)   # P4: 넘치면 오래된 행을 뺀다(처리 건 목록도 최신 500)
+    # 진행 중인 처리 건 · 열린 작업 전부(자르지 않는다 — 자르면 오래된 내 차례 작업이 말없이 사라진다). 열린 것만 읽으므로 크기는 지금 열린 일의 수다
+    instances = {i["proc_inst_id"]: i for i in repo.list_instances(status="RUNNING", limit=None, tenant_id=tenant)}
+    rows = repo.list_workitems(status="IN_PROGRESS", limit=None, tenant_id=tenant)
     tasks, asked, unassigned = [], [], {}
     timers: dict[str, list[dict]] = {}
     for w in rows:
@@ -236,7 +242,7 @@ def _kind(rt, inst, w) -> str:
         tool = (rt.definition_for(inst).activities.get(w["activity_id"]) or {}).get("tool") or ""
     except (LookupError, ValueError):
         tool = ""
-    return {"formHandler:select_card": "select", approval_part.TOOL: "approve"}.get(tool, "form")
+    return {approval_part.CARD_TOOL: "select", approval_part.TOOL: "approve"}.get(tool, "form")
 
 
 def _item(rt, inst, w, timers, kind, assignment, now=None) -> dict:

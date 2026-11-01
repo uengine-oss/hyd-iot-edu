@@ -32,7 +32,7 @@ class SourceDelivery:
         try:
             if receipt['kind']=='RAISE':
                 result=await asyncio.to_thread(self.runtime.receive_alert,receipt['payload'],receipt['policy'])
-            elif receipt['kind'] in ('CLEAR','ACK'):
+            elif receipt['kind'] in ('CLEAR','ACK','REJECT'):
                 result=await asyncio.to_thread(self.apply_event,receipt)
             else:raise ValueError('unexpected claimable source kind: '+receipt['kind'])
             if lost:return {'id':receipt['id'],'status':'CLAIM_LOST'}

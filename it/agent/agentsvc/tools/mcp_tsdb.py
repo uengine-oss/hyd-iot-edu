@@ -9,20 +9,20 @@ import math
 from datetime import timedelta
 
 import psycopg
-from hydcommon.daq_contract import reporting_interval
-from hydcommon.sql_read import guard, READ_FUNCTIONS
+from hydcommon.daq_contract import OBSERVATION_GRACE_S, profile_from_env, reporting_interval
+from hydcommon.sql_read import guard, TIMESERIES_FUNCTIONS
 from hydcommon.tool_result import checked
 
 from .. import card as cardlib
 
-TSDB_DSN = os.getenv("TSDB_DSN", "postgresql://hyd_timeseries_reader:hyd-timeseries-read-local@timescaledb:5432/hyd")
+#: 시계열 DB 읽기 전용 계정 주소 — compose 가 준다(코드에 기본 주소 · 비밀번호를 두지 않는다, G3b-26). 없으면 첫 조회가 그 까닭으로 실패한다.
+TSDB_READ_DSN = os.getenv("TSDB_READ_DSN")
 TABLES = frozenset({'tag_1s', 'feat_1s', 'tag_1m'})
-DAQ_PROFILE = os.getenv('DAQ_PROFILE', 'lite')
-OBSERVATION_GRACE_S = 2.0          # the detector's Observations grace: one contract for "no gap"
+DAQ_PROFILE = profile_from_env()          # 감지기와 같은 수집 계약(compose 의 DAQ_PROFILE — 코드 기본값 없음)
 
 
 def read_sql(sql):
-    return guard(sql, schema='public', tables=TABLES, functions=READ_FUNCTIONS | {'TIME_BUCKET'})
+    return guard(sql, schema='public', tables=TABLES, functions=TIMESERIES_FUNCTIONS)
 
 
 def observation_coverage(times, window_start, now, limit_s):
@@ -40,7 +40,9 @@ def observation_coverage(times, window_start, now, limit_s):
 
 class TimeSeriesDB:
     def __init__(self):
-        self.dsn = TSDB_DSN
+        if not TSDB_READ_DSN:
+            raise RuntimeError('시계열 DB 읽기 주소(TSDB_READ_DSN)가 없습니다 — compose.yaml 의 이 서비스 environment 를 확인하세요')
+        self.dsn = TSDB_READ_DSN
 
     def _conn(self):
         return psycopg.connect(self.dsn, autocommit=True, connect_timeout=5,

@@ -17,9 +17,9 @@ from . import env_guard
 
 
 def _env_secrets(environ) -> list[str]:
-    """워커가 켜질 때(자식 프로세스 환경 정리 전) 보이는 비밀 환경 변수 값 — env_guard 가 지우는 이름 · HYD_SECRET_*."""
+    """워커가 켜질 때(자식 프로세스 환경 정리 전) 보이는 비밀 환경 변수 값 — env_guard 가 지우는 이름."""
     blocked = set(env_guard.secret_keys(environ))
-    return [v for k, v in environ.items() if (k in blocked or k.upper().startswith(env_guard.SECRET_PREFIX)) and len(v) >= 8]
+    return [v for k, v in environ.items() if k in blocked and len(v) >= 8]
 
 
 ENV_SECRETS = _env_secrets(os.environ)      # main 이 env_guard.scrub 하기 전에 이 모듈을 읽는다(runner → diagnostics)
@@ -80,14 +80,21 @@ class HiddenRepo:
 
 _URL = re.compile(r'(?i)([a-z][a-z0-9+.-]*://)[^\s/@]+:[^\s/@]+@')
 _BEARER = re.compile(r'(?i)(\bBearer\s+)[^\s,;"\']+')
-_KV = re.compile(r'''(?ix)(\b(?:[a-z0-9_]*(?:password|passwd|secret|token|api_key|apikey)[a-z0-9_]*)["']?\s*[:=]\s*)(?:"[^"]*"|'[^']*'|[^\s,;}]+)''')
+_KV = re.compile(r'''(?ix)(\b(?P<name>[a-z0-9_]*(?:password|passwd|secret|token|api_key|apikey)[a-z0-9_]*)["']?\s*[:=]\s*)(?:"[^"]*"|'[^']*'|[^\s,;}]+)''')
+#: 이름에 token 이 들었어도 개수 · 사용량 칸(input_tokens · output_tokens · token_count · max_tokens …)은 비밀이 아니다 — 가리면 문맥 한도 ·
+#: 비용 오류를 원문에서 진단할 수 없었다(검진 G1-20)
+_COUNT_NAME = re.compile(r'(?i)(?:tokens|token_count|token_usage)$')
+
+
+def _hide_kv(m: re.Match) -> str:
+    return m.group(0) if _COUNT_NAME.search(m.group('name')) else m.group(1) + REDACTED
 
 
 def excerpt(value, limit=800, secrets=()):
     text = hide(str(value), list(secrets) + ENV_SECRETS)
     text = _URL.sub(r'\1' + REDACTED + '@', text)
     text = _BEARER.sub(r'\1' + REDACTED, text)
-    text = _KV.sub(r'\1' + REDACTED, text)
+    text = _KV.sub(_hide_kv, text)
     if len(text) <= limit:
         return text
     marker = '\n… [중간 생략] …\n'

@@ -1,8 +1,8 @@
 """B1 HTTP routes: 에이전트 · 스킬 만들기 · 고치기 · 지우기 · 붙이기, 단계 → 에이전트 · 역할 → 사람 배정, 되돌리기. 로직은 agent_authoring.py.
 
-    GET    /api/agent-authoring/options                  폼 선택지: 등록된 도구 서버(tenants.mcp, 검사 상태가 있으면 함께) · 스킬 · 모델 예시
+    GET    /api/agent-authoring/options                  폼 선택지: 등록된 도구 서버와 붙일 수 있는지(mcp_registry.selectable) · 스킬 · 수업 모델
     POST   /api/agents                                   새 에이전트 {name, role, goal, persona, model, tools[], skills[]} → origin=user
-    PUT    /api/agents/{id}                              고치기(내가 만든 것만 — 기본은 403 + 사유)
+    PUT    /api/agents/{id}                              고치기(내가 만든 것만 — 기본은 403 + 사유). 모든 칸을 보낸다(빠진 칸은 422)
     DELETE /api/agents/{id}                              지우기(내가 만든 것만; 실행 중이면 409, 열린 단계는 기본 담당으로 되돌림)
     POST   /api/agents/{id}/clone                        복제해서 고치기 {name?} — 기본 에이전트도 됨(사본은 origin=user)
     POST   /api/agents/{id}/skills                       {skill_name} 붙이기  ·  DELETE /api/agents/{id}/skills/{name} 떼기

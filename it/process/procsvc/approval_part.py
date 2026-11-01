@@ -29,6 +29,8 @@ from .effect_parts import IDENT_RE, PATH_RE, lookup
 
 KEY = "human:approve"
 TOOL = "formHandler:approve"
+#: HYD 판단 카드 승인(조치 카드 고르기) 도구 이름 — 이 이름의 주인은 여기 한 곳(instances · instance_mode · inbox · bpmn_import · alert_policy 가 가져다 쓴다)
+CARD_TOOL = "formHandler:select_card"
 FORM_ID = TOOL.split(":", 1)[1]
 APPROVE, REJECT = "승인", "반려"
 OUTPUTS = ("approval", "approval_reason")

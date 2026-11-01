@@ -13,50 +13,32 @@ KEYS = {'flows': 'definition_id', 'agents': 'id', 'skills': 'skill_name', 'mcp_s
 
 
 class Store:
+    """학생 사례 꼬리표(hyd_student_case_tags) — 처리 건 저장소(procdb.PgRepo)와 같은 DB."""
     def __init__(self, repo, tenant):
         self.repo, self.tenant = repo, tenant
 
     def rows(self):
-        if hasattr(self.repo, '_conn'):
-            with self.repo._conn() as c:
-                return [dict(r) for r in c.execute('select kind, asset_id, label from hyd_student_case_tags where tenant_id=%s order by kind, asset_id', (self.tenant,)).fetchall()]
-        return [dict(kind=k, asset_id=a, label=v) for (t, k, a), v in sorted(getattr(self.repo, '_student_cases', {}).items()) if t == self.tenant]
+        with self.repo._conn() as c:
+            return [dict(r) for r in c.execute('select kind, asset_id, label from hyd_student_case_tags where tenant_id=%s order by kind, asset_id', (self.tenant,)).fetchall()]
 
     def set(self, kind, asset_id, label):
-        if hasattr(self.repo, '_conn'):
-            with self.repo._conn() as c:
-                if label:
-                    c.execute('insert into hyd_student_case_tags(tenant_id,kind,asset_id,label) values (%s,%s,%s,%s) on conflict(tenant_id,kind,asset_id) do update set label=excluded.label', (self.tenant, kind, asset_id, label))
-                else:
-                    c.execute('delete from hyd_student_case_tags where tenant_id=%s and kind=%s and asset_id=%s', (self.tenant, kind, asset_id))
-        else:
-            with self.repo._lock:
-                if not hasattr(self.repo, '_student_cases'): self.repo._student_cases = {}
-                key = (self.tenant, kind, asset_id)
-                if label: self.repo._student_cases[key] = label
-                else: self.repo._student_cases.pop(key, None)
+        with self.repo._conn() as c:
+            if label:
+                c.execute('insert into hyd_student_case_tags(tenant_id,kind,asset_id,label) values (%s,%s,%s,%s) on conflict(tenant_id,kind,asset_id) do update set label=excluded.label', (self.tenant, kind, asset_id, label))
+            else:
+                c.execute('delete from hyd_student_case_tags where tenant_id=%s and kind=%s and asset_id=%s', (self.tenant, kind, asset_id))
 
     def remove(self, kind, asset_id=None):
-        if hasattr(self.repo, '_conn'):
-            with self.repo._conn() as c:
-                c.execute('delete from hyd_student_case_tags where tenant_id=%s and kind=%s and (%s::text is null or asset_id=%s)', (self.tenant, kind, asset_id, asset_id))
-        else:
-            with self.repo._lock:
-                rows = getattr(self.repo, '_student_cases', {})
-                for key in list(rows):
-                    if key[0] == self.tenant and key[1] == kind and (asset_id is None or key[2] == asset_id): del rows[key]
+        """자산을 지우는 곳(에이전트 · 스킬 · 도구 서버 · 흐름 삭제)이 부른다 — 읽기 경로는 꼬리표를 지우지 않는다."""
+        with self.repo._conn() as c:
+            c.execute('delete from hyd_student_case_tags where tenant_id=%s and kind=%s and (%s::text is null or asset_id=%s)', (self.tenant, kind, asset_id, asset_id))
 
     def replace(self, rows):
         # One transaction: a failed import must not leave half the labels behind.
-        if hasattr(self.repo, '_conn'):
-            with self.repo._conn() as c, c.transaction():
-                c.execute('delete from hyd_student_case_tags where tenant_id=%s', (self.tenant,))
-                for r in rows:
-                    c.execute('insert into hyd_student_case_tags(tenant_id,kind,asset_id,label) values (%s,%s,%s,%s)', (self.tenant, r['kind'], r['asset_id'], r['label']))
-        else:
-            with self.repo._lock:
-                old = getattr(self.repo, '_student_cases', {})
-                self.repo._student_cases = {k:v for k,v in old.items() if k[0] != self.tenant} | {(self.tenant,r['kind'],r['asset_id']):r['label'] for r in rows}
+        with self.repo._conn() as c, c.transaction():
+            c.execute('delete from hyd_student_case_tags where tenant_id=%s', (self.tenant,))
+            for r in rows:
+                c.execute('insert into hyd_student_case_tags(tenant_id,kind,asset_id,label) values (%s,%s,%s,%s)', (self.tenant, r['kind'], r['asset_id'], r['label']))
 
 
 def assets(content):
@@ -87,18 +69,10 @@ def validate_tags(rows, content):
 
 
 def live_tags(rt, content):
+    """지금 묶음에 있는 자산의 꼬리표. 읽기만 한다 — 묶음에 없는 자산의 꼬리표(읽을 수 없는 도구 서버 등)는 내보내지 않을 뿐 지우지 않는다.
+    꼬리표를 지우는 것은 그 자산을 지우는 곳(Store.remove)이다."""
     known = assets(content)
-    store = Store(rt.repo, rt.tenant_id)
-    rows = store.rows()
-    for row in rows:
-        if (row['kind'],row['asset_id']) not in known:
-            # An unreadable server is deliberately absent from a bundle, but
-            # editing its configuration must not erase its existing label.
-            if row['kind'] == 'mcp_servers':
-                from .mcp_registry import store_for
-                if row['asset_id'] in store_for(rt.repo).servers(rt.tenant_id): continue
-            store.set(row['kind'],row['asset_id'], '')
-    return [r for r in rows if (r['kind'],r['asset_id']) in known]
+    return [r for r in Store(rt.repo, rt.tenant_id).rows() if (r['kind'], r['asset_id']) in known]
 
 
 def catalog(bundle):

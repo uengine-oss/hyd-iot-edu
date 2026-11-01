@@ -4,9 +4,9 @@
 it/agent/agentsvc/trial.py)을 같은 입력 스냅숏으로 두 번 → 나란히 비교. 처리 건(bpm_proc_inst) · 작업(todolist) · 판단 제출 · 설비 명령을
 만들지 않는다. 이 모듈이 쓰는 곳은 시험 기록 두 표(agent_trial_snapshots · agent_trials, migration 20261008000040)뿐이다.
 
-에이전트 설정은 포털에서 바꾸지 않는다(읽기 전용). 원천은 랩업이 쓰는 그대로: users(is_agent, agent_type='agent')의 tools · skills,
-스킬 본문은 스킬 저장소(tenant_skills — A2/U2 가 있으면 그 repo 함수, 없으면 같은 표를 직접 읽음). 비교용 변형은 저장된 설정에서
-도구 · 스킬을 '빼 보기'만 하며 저장하지 않는다(원래대로 = 변형 없음).
+이 화면은 에이전트 설정을 바꾸지 않는다(바꾸기는 에이전트 화면 — agent_authoring). 원천은 그 화면이 쓰는 그대로: users(is_agent,
+agent_type='agent')의 tools, 붙인 스킬(agent_skills)과 본문(tenant_skills). 비교용 변형은 저장된 설정에서 도구 · 스킬을 '빼 보기'만
+하며 저장하지 않는다(원래대로 = 변형 없음).
 
 실제 Claude Code 워커 경로(b)를 쓰지 않는 이유: 워커는 todolist 행을 claim_process_workitems(…,'worker')로 집는데, 이 함수는 RUNNING
 상태의 부모 처리 건(bpm_proc_inst)이 있는 행만 고른다(migration 20261007000021). 결과 저장은 행을 SUBMITTED 로 바꿔 엔진이 다음 단계로
@@ -25,6 +25,8 @@ from datetime import datetime, timezone
 
 from fastapi import HTTPException
 
+from .agents_store import agent_settings, csv_list, run_servers
+
 SCENARIOS = [
     {"key": "cooler", "asset": "HYD-01", "pattern": "COOLER_DEGRADATION", "label": "쿨러 성능 저하 · HYD-01"},
     {"key": "pump", "asset": "HYD-02", "pattern": "PUMP_LEAKAGE", "label": "펌프 내부 누설 · HYD-02"},
@@ -42,65 +44,46 @@ def _id(prefix: str) -> str:
     return f"{prefix}-{datetime.now(timezone.utc):%m%d-%H%M%S}-{secrets.token_hex(2)}"
 
 
-def csv_list(value) -> list[str]:
-    if isinstance(value, str):
-        return [v.strip() for v in value.split(",") if v.strip()]
-    if isinstance(value, (list, tuple)):
-        return [str(v).strip() for v in value if str(v).strip()]
-    return []
-
-
 def canonical(value) -> str:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"), default=str)
 
 
-# ---------------------------------------------------------------- agent settings (read-only, same source as the lab)
-def _skill_rows(repo, tenant: str, names: list[str]) -> tuple[dict, str | None]:
-    """Skill bodies by name from the skill store. Returns (rows by name, note when the store itself is missing)."""
-    if not names:
-        return {}, None
-    reader = getattr(repo, "list_skills", None)          # A2/U2 repo function, when merged
-    if callable(reader):
-        return {r["skill_name"]: r for r in reader(tenant, names)}, None
-    conn = getattr(repo, "_conn", None)
-    if conn is None:
-        return {}, "스킬 저장소(tenant_skills)를 읽을 수 없는 저장소입니다"
-    with conn() as c:
-        exists = c.execute("select to_regclass('public.tenant_skills') is not null as ok").fetchone()
-        if not (exists or {}).get("ok"):
-            return {}, "스킬 저장소(tenant_skills)가 아직 없습니다"
-        rows = c.execute("select skill_name, description, content from tenant_skills where tenant_id = %s and skill_name = any(%s)",
-                         (tenant, list(names))).fetchall()
-    return {r["skill_name"]: dict(r) for r in rows}, None
-
-
-def agent_profiles(repo, tenant: str) -> dict:
+# ---------------------------------------------------------------- agent settings (read-only, the same rows the agent screen writes)
+def agent_profiles(rt) -> dict:
     """AI agents of the tenant (users.is_agent and agent_type 'agent' — systems like sys:scada are not agents) with their MCP
-    servers and skills. A skill named on the agent but absent from the store is kept with the reason, never dropped."""
+    servers and attached skills. A skill attached but absent from the store is kept with the reason, never dropped.
+    tools = the servers a real run of that agent uses (agent_settings → run_servers: no declaration = every tenant server).
+    trial_note = why the fixed scenarios cannot measure the agent's own work (it handles only flows the scenario alerts do not open)."""
+    from . import agents_api, flow_deploy, mcp_registry
+    repo, tenant = rt.repo, rt.tenant_id
     users = repo.list_users(None, tenant)
     agents = [u for u in users if u.get("is_agent") and (u.get("agent_type") or "agent") == "agent"]
-    assigned = {}
-    pairs = getattr(repo, "list_agent_skills", None)
-    if callable(pairs):
-        for row in pairs(tenant):
-            assigned.setdefault(row["user_id"], []).append(row["skill_name"])
-    names = sorted({n for u in agents for n in csv_list(u.get("skills")) + assigned.get(u["id"], [])})
-    store, store_note = _skill_rows(repo, tenant, names)
-    tenant_row = repo.get_tenant(tenant) or {}
-    mcp = tenant_row.get("mcp") or {}
-    if isinstance(mcp, str):
-        mcp = json.loads(mcp or "{}")
-    servers = sorted((mcp.get("mcpServers") or {}).keys())
+    assigned: dict[str, list[str]] = {}
+    for row in repo.list_agent_skills(tenant):
+        assigned.setdefault(row["user_id"], []).append(row["skill_name"])
+    names = sorted({n for u in agents for n in assigned.get(u["id"], [])})
+    store = {r["skill_name"]: r for r in repo.list_skills(tenant, names)} if names else {}
+    servers = sorted(mcp_registry.store_for(repo).servers(tenant))
+    scenario_flows = {flow_deploy.route_definition(rt, s["pattern"]).id for s in SCENARIOS}
+    steps: dict[str, list[dict]] = {}
+    for s in agents_api.step_runs(rt):
+        steps.setdefault(s["agent_id"], []).append(s)
     out = []
     for u in sorted(agents, key=lambda u: u["id"]):
         skills = []
-        for n in dict.fromkeys(csv_list(u.get("skills")) + assigned.get(u["id"], [])):
+        for n in dict.fromkeys(assigned.get(u["id"], [])):
             row = store.get(n)
             skills.append({"name": n, "description": (row or {}).get("description") or "", "content": (row or {}).get("content") or "",
-                           **({} if row else {"missing": store_note or "스킬 저장소에 이 이름의 스킬 본문이 없습니다"})})
+                           **({} if row else {"missing": "스킬 저장소에 이 이름의 스킬 본문이 없습니다"})})
+        mine = steps.get(u["id"], [])
+        note = None
+        if mine and not any(s["definition_id"] in scenario_flows for s in mine):
+            flows = " · ".join(dict.fromkeys(s["definition_name"] or s["definition_id"] for s in mine))
+            note = (f"이 에이전트가 맡는 흐름({flows})은 시험 시나리오(쿨러 · 펌프 · 팬 설비 이상)가 여는 흐름이 아니라 그 일을 여기서 재지 못합니다 "
+                    "— 시험하면 같은 설정으로 설비 이상 판단만 합니다")
         out.append({"id": u["id"], "name": u.get("username") or u["id"], "goal": u.get("goal"), "model": u.get("model"),
-                    "tools": csv_list(u.get("tools")), "skills": skills})
-    return {"agents": out, "tenant_servers": servers, "skill_store": store_note}
+                    "tools": list(run_servers(agent_settings(repo, tenant, u).tools, servers)), "skills": skills, "trial_note": note})
+    return {"agents": out, "tenant_servers": servers}
 
 
 def apply_variant(profile: dict, variant: dict | None) -> tuple[dict, dict]:
@@ -164,6 +147,13 @@ class PgTrials:
         row = dict(row)
         row["created_at"] = row["created_at"].isoformat() if hasattr(row["created_at"], "isoformat") else row["created_at"]
         return row
+
+    def reset(self, tenant) -> dict:
+        """기준으로 되돌리기(config_bundle): 이 테넌트의 시험 실행과 입력 스냅숏을 모두 지운다(학생이 만든 시험 기록)."""
+        with self._c() as c, c.transaction():
+            trials = c.execute("delete from agent_trials where tenant_id = %s", (tenant,)).rowcount
+            snaps = c.execute("delete from agent_trial_snapshots where tenant_id = %s", (tenant,)).rowcount
+        return {"trials": trials or 0, "snapshots": snaps or 0}
 
     def list_trials(self, tenant, asset=None, limit=30) -> list[dict]:
         with self._c() as c:
@@ -283,12 +273,12 @@ def call_agent(scenario: dict, agent: dict, entries: dict, tenant_servers: list[
 
 
 class TrialService:
-    def __init__(self, repo, tenant: str, evaluate=call_agent):
-        self.repo, self.tenant, self.evaluate = repo, tenant, evaluate
-        self.store = store_for(repo)
+    def __init__(self, rt, evaluate=call_agent):
+        self.rt, self.repo, self.tenant, self.evaluate = rt, rt.repo, rt.tenant_id, evaluate
+        self.store = store_for(rt.repo)
 
     def options(self) -> dict:
-        p = agent_profiles(self.repo, self.tenant)
+        p = agent_profiles(self.rt)
         return {"scenarios": SCENARIOS, **p}
 
     def _scenario(self, key) -> dict:
@@ -329,7 +319,7 @@ class TrialService:
 
     def run(self, body: dict) -> dict:
         scenario = self._scenario(body.get("scenario"))
-        p = agent_profiles(self.repo, self.tenant)
+        p = agent_profiles(self.rt)
         sides = [s for s in (body.get("a"), body.get("b")) if s]
         if not sides:
             raise ValueError("시험할 에이전트를 하나 이상 고르세요")
@@ -356,7 +346,7 @@ def register(app, *, runtime_factory, evaluate=None):
         if rt is None:
             from .instances import NOT_READY      # 런타임 모듈 — 이 모듈이 먼저 읽혀도 순환 import 가 되지 않게 여기서
             raise HTTPException(503, NOT_READY)
-        return TrialService(rt.repo, rt.tenant_id, evaluate or call_agent)
+        return TrialService(rt, evaluate or call_agent)
 
     async def run(fn):
         try:

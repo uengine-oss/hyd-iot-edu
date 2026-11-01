@@ -70,8 +70,7 @@ def result(rt, archive, source, pid, previous_batch):
     preview = value.get('preview')
     if value['status'] != 'DONE' or not preview:
         return value
-    issues = manual_extraction.content_issues(preview, original, variables.get('ontology_catalog'),
-                                             criteria_scope=manual_extraction._criteria_contract(inst))
+    issues = manual_extraction.content_issues(preview, original, variables.get('ontology_catalog'), **manual_extraction.scopes(inst))
     if issues:
         raise ValueError('저장된 추출 결과가 검증되지 않았습니다 — ' + ' / '.join(issues))
     # Only source citations change when identical approved bytes were uploaded

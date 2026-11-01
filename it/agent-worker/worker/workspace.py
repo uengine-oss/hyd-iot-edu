@@ -77,15 +77,6 @@ class Workspace:
             return False
         return resolved == root or root in resolved.parents
 
-    def relative(self, path: str | Path) -> str:
-        try:
-            return Path(path).resolve().relative_to(self.path.resolve()).as_posix()
-        except (ValueError, OSError):
-            return Path(path).as_posix()
-
-    def files(self) -> list[Path]:
-        return sorted(p for p in self.path.rglob("*") if p.is_file()) if self.exists else []
-
     @property
     def result_file(self) -> Path:
         return self.path / RESULT_FILE

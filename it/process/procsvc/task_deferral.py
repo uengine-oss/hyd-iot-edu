@@ -12,26 +12,30 @@ import json
 from hydcommon.timeutil import now_iso
 
 
+#: 칸 이름 → 학생이 읽는 이름(거절 문장)
+_FIELDS = {'request_id': '요청 id', 'expected_consumer': '실행 표식', 'session_id': '세션 id', 'reason': '사유', 'deferral_id': '보류 id', 'by': '요청자'}
+
+
 def _text(value, name, maximum=200):
     if not isinstance(value,str) or not value.strip() or len(value)>maximum:
-        raise ValueError(f'{name} must be nonblank text, at most {maximum} characters')
+        raise ValueError(f'{_FIELDS.get(name, name)}은(는) 비어 있지 않은 글이어야 하고 {maximum}자를 넘지 않아야 합니다')
     return value.strip()
 
 
 def _json(value):
     try:return json.dumps(value,ensure_ascii=False,sort_keys=True,separators=(',',':'),allow_nan=False)
-    except (ValueError,TypeError) as exc:raise ValueError('assessment must contain finite JSON values') from exc
+    except (ValueError,TypeError) as exc:raise ValueError('보류 근거는 JSON 으로 쓸 수 있는 값(유한한 수 · 글 · 목록 · 객체)이어야 합니다') from exc
 
 
 def validate(value):
     if not isinstance(value,dict) or set(value)!={'status','reason','evidence'}:
-        raise ValueError('deferral requires only status, reason and evidence')
+        raise ValueError('보류는 status · reason · evidence 세 칸만 씁니다')
     if value['status'] not in ('UNKNOWN','UNSUPPORTED'):
-        raise ValueError('deferral status must be UNKNOWN or UNSUPPORTED')
+        raise ValueError('보류 status 는 UNKNOWN(근거 부족) 또는 UNSUPPORTED(이 흐름이 다루지 않음)입니다')
     reason=_text(value['reason'],'reason',4000)
-    if not isinstance(value['evidence'],dict):raise ValueError('evidence must be an object')
+    if not isinstance(value['evidence'],dict):raise ValueError('보류 근거(evidence)는 객체여야 합니다')
     result=dict(status=value['status'],reason=reason,evidence=deepcopy(value['evidence']))
-    if len(_json(result).encode('utf-8'))>131072:raise ValueError('deferral evidence exceeds 128 KiB')
+    if len(_json(result).encode('utf-8'))>131072:raise ValueError('보류 근거가 128 KiB 를 넘습니다 — 원문 대신 출처 id 를 남기세요')
     return result
 
 
@@ -52,13 +56,13 @@ def control(text):
     try:value=json.loads(unfence(text))
     except (TypeError,ValueError):return None
     if not isinstance(value,dict) or '__deferred__' not in value:return None
-    if set(value)!={'__deferred__'}:raise ValueError('deferral and business output cannot be mixed')
+    if set(value)!={'__deferred__'}:raise ValueError('보류(__deferred__)와 업무 결과를 한 결과에 섞을 수 없습니다')
     return validate(value['__deferred__'])
 
 
 def _row(repo, tenant_id, workitem_id):
     row=repo.get_workitem(workitem_id)
-    if not row or row.get('tenant_id')!=tenant_id:raise KeyError('no such work item')
+    if not row or row.get('tenant_id')!=tenant_id:raise KeyError(workitem_id)
     return row
 
 
@@ -67,16 +71,16 @@ def _live(repo, row, tenant_id):
     if (not inst or inst.get('tenant_id')!=tenant_id or inst.get('is_deleted')
             or inst.get('status')!='RUNNING'
             or int(row.get('generation') or 0)!=int(inst.get('rework_generation') or 0)):
-        raise ValueError('task is no longer in the active instance generation')
+        raise ValueError('이 단계는 지금 처리 건의 세대가 아닙니다(처리 건이 끝났거나 다시 수행됨) — 화면을 새로 고치세요')
     if row.get('agent_mode') not in ('DRAFT','COMPLETE') or not row.get('agent_orch'):
-        raise ValueError('only agent tasks can defer an assessment')
+        raise ValueError('판단 보류는 AI 단계만 합니다')
 
 
 def _receipt(repo, row, job, kind, body):
     prior=repo.find_task_event(row['id'],job,kind)
     if prior:
         if prior['data'].get('request_sha')!=hashlib.sha256(_json(body).encode()).hexdigest():
-            raise ValueError('same request id contains different input')
+            raise ValueError('같은 요청 id 로 다른 내용을 보냈습니다 — 새 요청 id 로 다시 보내세요')
         return deepcopy(prior['data']['receipt'])
 
 
@@ -101,7 +105,7 @@ def defer(repo,tenant_id,workitem_id,*,expected_consumer,request_id,assessment,s
         _live(repo,row,tenant_id)
         if (row['status']!='IN_PROGRESS' or row.get('draft_status')!='STARTED'
                 or row.get('consumer')!=expected_consumer):
-            raise ValueError('assessment no longer owns this task attempt')
+            raise ValueError('이 실행은 더 이상 이 단계를 맡고 있지 않습니다(다른 실행이 집었거나 끝남) — 보류를 받지 않습니다')
         receipt=dict(id=request_id,workitem_id=workitem_id,assessment=assessment,reason=assessment['reason'],
                      at=now_iso(),generation=int(row.get('generation') or 0),agent_orch=row['agent_orch'],session_id=session_id)
         row.update(status='PENDING',consumer=None,draft_status=None,output=None,
@@ -124,7 +128,7 @@ def reassess(repo,tenant_id,workitem_id,*,deferral_id,request_id,by,reason,_lock
         previous=(row.get('draft') or {}).get('_deferral')
         if (row['status']!='PENDING' or row.get('consumer') is not None or not isinstance(previous,dict)
                 or previous.get('id')!=body['deferral_id']):
-            raise ValueError('task is not waiting for this deferral')
+            raise ValueError('이 단계는 그 보류에 대한 다시 평가를 기다리고 있지 않습니다 — 화면을 새로 고쳐 지금 보류를 보세요')
         receipt=dict(body,workitem_id=workitem_id,at=now_iso(),status='QUEUED')
         feedback={'reassessment':receipt,'text':f"새 근거로 다시 평가하세요. 이전 보류: {previous['reason']}\n"
                                                 f"요청자 {body['by']}: {body['reason']}\n이전 결과를 재사용하지 말고 원천을 다시 조회하세요."}

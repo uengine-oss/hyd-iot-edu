@@ -63,11 +63,8 @@ def propose(defn, inst, workitems, affected, control, root):
         consumed=conditions | set().union(*(condition_variables(defn,e['id']) for e in defn.attached_events(aid)))
         own_conditions=conditions & set(defn.activities[aid].get('outputData') or [])
         for key in sorted(set(defn.activities[aid].get('inputData') or []) | consumed):
-            binding=(defn.activities[aid].get('inputBindings') or {}).get(key)
             if key in (defn.activities[aid].get('outputData') or []) and key not in (defn.activities[aid].get('inputData') or []):
                 producers=[]
-            elif binding is not None and key not in consumed:
-                producers=[binding['activity']] if binding.get('activity') in activities else []
             else:
                 producers = sorted(p for p in activities if p != aid and key in (defn.activities[p].get('outputData') or []))
             if len(producers) > 1:
@@ -147,9 +144,6 @@ def ready(inst, row, workitems):
     by_id = {w['id']:w for w in workitems}
     latest = engine._by_activity(workitems)
     missing = []
-    for key in spec.get('initial_inputs',[]):
-        if not isinstance(inst.get('initial_variables'),dict) or key not in inst['initial_variables']:
-            missing.append(dict(variable=key,reason='initial_input_unavailable'))
     for dep in spec['requires']:
         producer = by_id.get(dep['workitem'])
         valid = (producer and producer['status'] == 'DONE' and producer['generation'] == dep['generation']
@@ -163,9 +157,8 @@ def ready(inst, row, workitems):
             continue
         for key in set(dep['variables']) | set(dep.get('condition_variables',[])):
             source = (inst.get('variable_sources') or {}).get(key) or {}
-            if (key not in (producer.get('output') or {}) or
-                    ((dep.get('mode')!='bound' or key in dep.get('condition_variables',[])) and (source.get('id') != producer['id']
-                     or key not in engine.variables(inst) or engine.variables(inst)[key] != producer['output'][key]))):
+            if (key not in (producer.get('output') or {}) or source.get('id') != producer['id']
+                    or key not in engine.variables(inst) or engine.variables(inst)[key] != producer['output'][key]):
                 missing.append(dict(workitem=dep['workitem'], variable=key, reason='fresh_output_unavailable'))
     spec['waiting_for'] = missing
     return not missing

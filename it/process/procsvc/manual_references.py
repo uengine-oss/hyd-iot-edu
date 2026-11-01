@@ -59,10 +59,10 @@ def contracts(tx, ids=None):
 
 def reference_shape(sop, link):
     if link.get('kind') != 'reference' or link.get('executable') is not False:
-        raise ValueError(f'{sop}: 참고 절차는 명시 kind=reference, executable=false여야 합니다')
+        raise ValueError(f'{sop}: 참고 절차는 종류를 「일반 원문 참고 절차」(kind=reference)로, 실행 후보에서 빼야(executable=false) 합니다')
     forbidden = ('failureMode', 'relation', 'approver', 'actions', 'addresses', 'affects', 'parts', 'supplier_policy', 'purchase_comparison_policy')
     if any(link.get(key) not in (None, [], {}) for key in forbidden) or link.get('scope') not in (None, 'fault'):
-        raise ValueError(f'{sop}: 참고 절차는 FM·승인·Action·업무 실행 연결을 갖지 않습니다. 원문 제안은 검토 기록에 보존하세요')
+        raise ValueError(f'{sop}: 참고 절차에는 고장 유형 · 관계 · 승인 역할 · 원자 조치 · 대상 원인 · 영향 · 구매 칸을 붙이지 않습니다(원문 제안은 검토 기록에 남습니다)')
     return dict(kind='reference', executable=False, failureMode=None, relation=None, approver=None)
 
 
@@ -72,25 +72,25 @@ def binding_shape(procedure, link):
     if not target and pin is None:
         return {}
     if link.get('kind') != 'reference':
-        raise ValueError(f"{procedure['id']}: 기존 Skill은 reference로만 재참조하며 소유권/실행 계약을 인수하지 않습니다")
+        raise ValueError(f"{procedure['id']}: 이미 있는 조치 방법은 일반 원문 참고 절차로만 다시 가리킵니다(그 조치 방법의 소유 · 실행 계약은 가져오지 않습니다)")
     if not isinstance(target, str) or not re.fullmatch(r'skill:[a-z0-9][a-z0-9:_.-]*', target):
-        raise ValueError(f"{procedure['id']}: 실제 existing_skill_id가 필요합니다")
+        raise ValueError(f"{procedure['id']}: 다시 가리킬 조치 방법(skill:…)을 고르세요")
     if not isinstance(pin, str) or not re.fullmatch(r'[0-9a-f]{64}', pin):
-        raise ValueError(f"{procedure['id']}: 검토한 대상의 reference_contract_sha256이 필요합니다")
+        raise ValueError(f"{procedure['id']}: 대조한 조치 방법의 실행 계약 지문이 없습니다 — 그 조치 방법을 다시 골라 대조하세요")
     return dict(existing_skill_id=target, reference_contract_sha256=pin)
 
 
 def check_binding(procedure, target, *, require_pin=True):
     sop, sid = procedure['id'], procedure['existing_skill_id']
     if not target or target['id'] != sid:
-        raise ValueError(f'{sop}: 참조할 Skill {sid}가 없습니다')
+        raise ValueError(f'{sop}: 다시 가리킬 조치 방법 {sid}이(가) 지식에 없습니다')
     if target['sopId'] != sop:
-        raise ValueError(f'{sop}: 기존 Skill의 SOP 번호와 다릅니다. 번호 alias나 새 ID로 우회하지 않습니다')
+        raise ValueError(f'{sop}: 이미 있는 조치 방법의 SOP 번호와 다릅니다 — 원문 번호 그대로인 조치 방법만 다시 가리킵니다')
     source = [dict(order=step['order'], text=step['text']) for step in procedure['steps']]
     if target['steps'] != source:
-        raise ValueError(f'{sop}: 기존 active 단계의 순서·내용과 원문 전체 단계가 정확히 같지 않습니다')
+        raise ValueError(f'{sop}: 지금 쓰는 조치 방법의 단계(순서 · 글)와 원문 전체 단계가 똑같지 않습니다')
     if require_pin and target['contract_sha256'] != procedure.get('reference_contract_sha256'):
-        raise ValueError(f'{sop}: 검토 뒤 기존 Skill의 실행 계약이 바뀌었습니다. 다시 조회·검토하세요')
+        raise ValueError(f'{sop}: 검토한 뒤 그 조치 방법의 실행 계약이 바뀌었습니다 — 다시 골라 대조하세요')
     return dict(skill=sid, sopId=sop, contract_sha256=target['contract_sha256'], owner=target['owner'],
                 source_steps_sha256=digest(source))
 
@@ -105,10 +105,10 @@ def check_plan(tx, plan):
         target = targets.get(p['existing_skill_id'])
         if target and target.get('owner'):
             if target['owner'] == plan['document']:
-                raise ValueError(f"{p['id']}: 같은 문서가 소유한 Skill은 기존 소유 개정 경로로 보존하세요. 외부 재참조로 바꾸지 않습니다")
+                raise ValueError(f"{p['id']}: 같은 문서가 가진 조치 방법은 문서 개정으로 고칩니다(다시 가리키기로 바꾸지 않습니다)")
             owner = tx.run('MATCH (d:ManualIngestionDocument {id:$id}) RETURN d.tenant AS tenant', id=target['owner']).data()
             if len(owner) != 1 or owner[0]['tenant'] != plan['tenant']:
-                raise ValueError(f"{p['id']}: 같은 tenant의 검증된 원문 소유 대상이 아닙니다")
+                raise ValueError(f"{p['id']}: 이 교육 공간에서 원문으로 검증한 조치 방법이 아닙니다")
         result[p['id']] = check_binding(p, target)
     return result
 

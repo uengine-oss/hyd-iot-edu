@@ -4,6 +4,7 @@ Wall-clock 1 s == TIME_SCALE simulated seconds (sub-stepped 1 s at a time so the
 thermal model stays stable).
 """
 from dataclasses import dataclass, field
+import math
 import threading
 
 from hydcommon.topics import ASSETS
@@ -17,6 +18,10 @@ FAULT_KINDS = {"cooler_degradation": ("cooler_health", thermal.DEGRADED_HEALTH),
                "pump_leakage": ("leak", thermal.DEGRADED_LEAK),
                "fan_vibration": ("bearing_wear", thermal.DEGRADED_BEARING)}
 HEALTHY = {"cooler_health": 1.0, "leak": 0.0, "bearing_wear": 0.0}
+# Physical domain of each disturbance variable (a fault target outside it, NaN or infinite is refused): cooler health 0..1
+# (0 = no forced cooling), leakage fraction 0..0.5 (beyond half the flow the pump model has no meaning), bearing wear 0..1.
+DOMAIN = {"cooler_health": (0.0, 1.0), "leak": (0.0, 0.5), "bearing_wear": (0.0, 1.0)}
+MAX_RAMP_S = 86400.0
 # C2: 정비 수행 모사의 복구 대상 부품 → 외란 변수 (온톨로지 Component id 도 받는다). 없으면 설비 전체를 되돌린다(이전과 같음).
 COMPONENTS = {"cooler": "cooler_health", "comp:cooler": "cooler_health", "pump": "leak", "pump-a": "leak", "comp:pump-a": "leak",
               "fan": "bearing_wear", "comp:fan": "bearing_wear"}
@@ -47,7 +52,6 @@ class Unit:
     state: thermal.UnitState = field(default_factory=thermal.UnitState)
     ctrl: plc.PlcState = field(default_factory=plc.PlcState)
     faults: dict[str, Fault] = field(default_factory=dict)   # attr -> ramp in progress
-    dirty_status: bool = True
     # C3: who asked for the last fault injection/restore on this unit ({id, kind, by, user_id, roles, at}) — published in
     # plant.status so the process links the case this injection causes to the button press by id (no time-window guess)
     injection: dict | None = None
@@ -59,7 +63,7 @@ class Unit:
 
 
 class Plant:
-    def __init__(self, time_scale: float = 20.0, assets=ASSETS):
+    def __init__(self, time_scale: float, assets=ASSETS):
         self.time_scale = time_scale
         self.units: dict[str, Unit] = {a: Unit(asset=a) for a in assets}
         for i, u in enumerate(self.units.values()):
@@ -75,10 +79,7 @@ class Plant:
                 for _ in range(steps):
                     self._apply_fault(u, 1.0)
                     thermal.step(u.state, 1.0, running=(u.ctrl.state == "RUN"))
-                    before = u.ctrl.state
                     plc.check_interlock(u.ctrl, u.state)
-                    if before != u.ctrl.state:
-                        u.dirty_status = True
             self.sim_t += steps
 
     @staticmethod
@@ -88,7 +89,6 @@ class Plant:
             if abs(cur - f.target) <= abs(f.rate_per_s * dt):
                 setattr(u.state, attr, f.target)
                 del u.faults[attr]
-                u.dirty_status = True  # publish the transition out of a non-stationary model domain
             else:
                 setattr(u.state, attr, cur + f.rate_per_s * dt)
 
@@ -109,6 +109,8 @@ class Plant:
             if kind not in DEFAULT_RAMP_S:
                 raise ValueError(f"unknown fault kind {kind}")
             ramp_sim_s = DEFAULT_RAMP_S[kind]
+        if isinstance(ramp_sim_s, bool) or not isinstance(ramp_sim_s, (int, float)) or not 0 < ramp_sim_s <= MAX_RAMP_S:
+            raise ValueError(f"ramp_sim_s must be a number in (0, {MAX_RAMP_S:g}] simulated seconds, got {ramp_sim_s!r}")
         if operating_point and kind != "restore":
             raise ValueError(f"operating_point goes with restore only (got {kind})")
         with self.lock:
@@ -125,7 +127,11 @@ class Plant:
                     if severity not in SEVERITY[kind]:
                         raise ValueError(f"unknown severity {severity} for {kind} (known: {sorted(SEVERITY[kind])})")
                     default = SEVERITY[kind][severity]
-                plan = {attr: float(default if target is None else target)}
+                value = default if target is None else target
+                lo, hi = DOMAIN[attr]
+                if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or not lo <= value <= hi:
+                    raise ValueError(f"target for {kind} ({attr}) must be a number in [{lo:g}, {hi:g}], got {value!r}")
+                plan = {attr: float(value)}
             else:
                 raise ValueError(f"unknown fault kind {kind}")
             for attr, tgt in plan.items():
@@ -133,13 +139,10 @@ class Plant:
                 u.faults[attr] = Fault(kind, attr, tgt, rate)
             # the unit's injection is always the *last* request: one without a press (the process's maintenance restore, a test
             # script) clears the previous press, so a later alert is never linked to a press that no longer describes the unit
-            injection = dict(origin, kind=kind, at=now_iso()) if origin is not None else None
-            if plan or injection != u.injection:
-                u.dirty_status = True
-            u.injection = injection
+            u.injection = dict(origin, kind=kind, at=now_iso()) if origin is not None else None
             setpoints = self._to_operating_point(u) if operating_point else None
             return {"asset": asset, "kind": kind, "targets": plan, "ramp_sim_s": ramp_sim_s,
-                    "target_health": plan.get("cooler_health", u.state.cooler_health), "injection": u.injection,
+                    "injection": u.injection,
                     "setpoints": setpoints}
 
     @staticmethod
@@ -147,25 +150,29 @@ class Plant:
         """Fan and load set-points back to normal. Returns what they were and what they are now (the caller shows both)."""
         before = {"FanSpeedSP": u.state.fan_pct, "LoadSP": u.state.load_pct}
         u.state.fan_pct, u.state.load_pct = thermal.NORMAL_FAN_PCT, thermal.NORMAL_LOAD_PCT
-        after = {"FanSpeedSP": u.state.fan_pct, "LoadSP": u.state.load_pct}
-        if after != before:
-            u.dirty_status = True
-        return {"before": before, "after": after}
+        return {"before": before, "after": {"FanSpeedSP": u.state.fan_pct, "LoadSP": u.state.load_pct}}
+
+    def reset(self) -> None:
+        """Every unit back to the healthy operating point: no faults, REMOTE_AUTO, RUN, fan 60, load 90, pump A, TS1 48."""
+        with self.lock:
+            for u in self.units.values():
+                u.faults.clear()
+                u.injection = None
+                u.state.cooler_health, u.state.leak, u.state.bearing_wear, u.state.pump = 1.0, 0.0, 0.0, "A"
+                u.state.fan_pct, u.state.load_pct = thermal.NORMAL_FAN_PCT, thermal.NORMAL_LOAD_PCT
+                u.state.ts1 = thermal.NORMAL_TS1
+                u.ctrl = plc.PlcState()
 
     # ---- commands (called from MQTT thread) ----
     def command(self, asset: str, cmd: dict, source: str) -> plc.CmdResult:
         with self.lock:
             u = self.units[asset]
-            r = plc.apply_command(u.ctrl, u.state, cmd, source=source, now=now())
-            u.dirty_status = True
-            return r
+            return plc.apply_command(u.ctrl, u.state, cmd, source=source, now=now())
 
     def set_mode(self, asset: str, mode: str, requester: str) -> bool:
         with self.lock:
             u = self.units[asset]
-            ok = plc.set_mode(u.ctrl, mode, requester)
-            u.dirty_status = True
-            return ok
+            return plc.set_mode(u.ctrl, mode, requester)
 
     # ---- snapshots ----
     def tags(self, asset: str) -> dict[str, float]:
@@ -179,9 +186,10 @@ class Plant:
             "FanSpeedSP": s.fan_pct, "LoadSP": s.load_pct,
         }
 
-    def status(self, asset: str) -> dict:
+    def status(self, asset: str, t: str | None = None) -> dict:
+        """The PLC status of one unit measured at `t` (the tick's time; now when not given)."""
         u = self.units[asset]
-        st = plc.status_payload(asset, u.ctrl, u.state, now_iso())
+        st = plc.status_payload(asset, u.ctrl, u.state, t or now_iso())
         st["sim_t"] = round(self.sim_t, 1)
         st["time_scale"] = self.time_scale
         st['disturbance_ramps'] = sorted(u.faults)

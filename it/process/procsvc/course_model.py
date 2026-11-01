@@ -8,6 +8,8 @@
 모델은 수업 정책 하나(course_ledger.POLICY['model'])이고 요청이 다른 모델이면 보내지 않는다. 거절 · 중계 실패는 Anthropic 오류 모양
 {"type":"error","error":{"type","message"}}이고 message 는 [HYD:<code>] + 학생 문장(course_ledger.REASONS 한 곳)이다 — 중계의 원문은
 넘기지 않는다(분류에만 쓴다). 다시 보내도 소용없는 거절에는 x-should-retry: false. 중계 설정 확인은 장부에 적기 전에 한다.
+스트리밍 답은 첫 내용 블록이 올 때까지 앞부분을 읽고 나서 흘려보낸다(stream_verdict) — 강의 중계(LiteLLM)는 뒤쪽 모델 계정의 거절
+(잔액 소진 등)을 스트리밍에서는 200 + 내용 없는 메시지(토큰 0)로 내므로, 그대로 흘리면 CLI 가 「답 없음」으로 끝나 까닭이 사라진다.
 """
 import asyncio
 import base64
@@ -22,9 +24,9 @@ from urllib.parse import urlsplit
 
 from fastapi import HTTPException
 
-from . import engine, worker_credentials
+from . import worker_credentials
 from .course_ledger import POLICY, REASONS, CourseLedger, Denied, coded
-from .course_policy import AccessDenied, canonical
+from .course_policy import AccessDenied, judged_claim, require_worker
 
 PREFIX = 'HydModel '
 TOKEN_SECONDS = 1800
@@ -64,7 +66,8 @@ def relay_url(url: str) -> str:
 def classify_relay(status: int, body: bytes) -> str:
     """강의 중계가 200이 아닌 응답을 줬을 때의 종류(원문은 분류에만 쓴다)."""
     text = body[:8192].decode('utf8', 'replace').lower()
-    if 'budget' in text:
+    # 키 예산(LiteLLM budget_exceeded)과 중계 뒤쪽 모델 계정의 잔액 소진(OpenAI insufficient_quota — 429 라 혼잡으로 읽혔다)
+    if 'budget' in text or 'insufficient_quota' in text or 'credit_balance' in text:
         return 'relay_budget'
     # LiteLLM 은 키에 허용되지 않은 모델을 403 「key not allowed to access model」로 거절한다 — 인증보다 먼저 본다
     if 'model' in text and any(w in text for w in ('not allowed', 'invalid model', 'not found', 'does not exist', 'no access')):
@@ -100,21 +103,16 @@ def _sign(raw: str) -> str:
 
 
 def issue(runtime, ledger, policy, body, authorization) -> dict:
-    """워커 요청 → 수업 경계 판정(course_policy) → 장부 실행 → 토큰. 거절은 403 + 학생 문장."""
-    if not hmac.compare_digest((authorization or '').removeprefix('Bearer ').encode(), worker_credentials._key().encode()):
-        raise HTTPException(403, '실행기 인증을 확인할 수 없습니다')
-    row = worker_credentials._claim(runtime, body)
-    inst = runtime.repo.get_instance(row['proc_inst_id'])
-    if not inst or inst.get('tenant_id') != runtime.tenant_id:
-        raise HTTPException(409, '이 작업의 처리 건이 없습니다')
-    values = engine.variables(inst)
+    """워커 요청 → 수업 경계 판정(course_policy.judged_claim — 워커용 판정과 같은 함수) → 장부 실행 → 토큰. 거절은 403 + 학생 문장 —
+    장부 거절(한도 · 동시 실행 · 시간)은 [HYD:<code>] + 사유 표 문장(워커가 코드로 머리말을 고른다). 입력 크기는 모델 호출마다
+    관문이 잰다(INPUT_MAX · 실행당 입력 상한) — 작업 변수 크기를 따로 막지 않는다(문서 넣기 구간 크기와 갈리던 두 번째 한도)."""
     try:
-        policy.ai_slot(inst['proc_def_id'], row['activity_id'], values)
-        if len(canonical(values)) > 128_000:
-            raise Denied('too_large')
+        row, _, _ = judged_claim(policy, runtime, body, authorization)
         run = ledger.open_run(runtime.tenant_id, row)
-    except (AccessDenied, Denied) as exc:
+    except AccessDenied as exc:
         raise HTTPException(403, str(exc)) from None
+    except Denied as exc:
+        raise HTTPException(403, coded(exc.code)) from None
     binding = dict(tenant_id=runtime.tenant_id, todo_id=str(row['id']), consumer=row['consumer'], run_id=run['run_id'],
                    model=run['model'], expires=min(time.time() + TOKEN_SECONDS, run['deadline']))
     raw = base64.urlsafe_b64encode(json.dumps(binding, separators=(',', ':')).encode()).decode()
@@ -185,6 +183,31 @@ async def _chunks(response, deadline):
         yield chunk
 
 
+def stream_verdict(head: bytes) -> str | None:
+    """강의 중계 SSE 앞부분 → 'content'(내용 블록이 왔다 — 흘려보낸다) · 거절 코드(내용 없이 끝났다 · 오류 사건) · None(더 읽는다).
+    끝난(빈 줄로 닫힌) 사건만 본다. 내용 블록 없이 message_stop 에 닿았고 사용량도 0이면 모델이 불리지 않은 빈 답이다(relay_empty) —
+    실제 모델의 답은 입력 토큰이 0일 수 없다."""
+    usage = {}
+    for raw in head.replace(b'\r\n', b'\n').split(b'\n\n')[:-1]:
+        data = b'\n'.join(line[5:].strip() for line in raw.split(b'\n') if line.startswith(b'data:'))
+        if not data:
+            continue
+        try:
+            event = json.loads(data)
+        except ValueError:
+            return 'relay_failed'
+        kind = event.get('type') if isinstance(event, dict) else None
+        if kind == 'content_block_start':
+            return 'content'
+        if kind == 'error':
+            return classify_relay(502, data)
+        if kind == 'message_delta':
+            usage = event.get('usage') or {}
+        if kind == 'message_stop':
+            return 'content' if usage.get('input_tokens') or usage.get('output_tokens') else 'relay_empty'
+    return None
+
+
 def mount(app, *, policy, runtime_factory, settings):
     """policy: course_policy.Policy(수업 경계), settings: 환경(LLM_API_KEY · LLM_RELAY_URL · HYD_WORKER_RUNTIME_KEY_FILE)."""
     import httpx
@@ -233,8 +256,7 @@ def mount(app, *, policy, runtime_factory, settings):
     @app.post('/internal/worker/model-runtime/end')
     async def end(request: Request):
         """워커가 점유를 끝낸 뒤 그 장부 실행을 닫는다(실행기 인증 파일)."""
-        if not hmac.compare_digest(request.headers.get('authorization', '').removeprefix('Bearer ').encode(), worker_credentials._key().encode()):
-            raise HTTPException(403, '실행기 인증을 확인할 수 없습니다')
+        require_worker(request.headers.get('authorization'))
         try:
             body = json.loads(await body_bytes(request, 16384))
             if not isinstance(body, dict) or not all(isinstance(body.get(k), str) and body[k] for k in ('tenant_id', 'todo_id', 'consumer')):
@@ -278,10 +300,33 @@ def mount(app, *, policy, runtime_factory, settings):
                 await response.aclose()
                 await client.aclose()
             raise Refusal(classify_relay(response.status_code, body))
+        chunks, head = _chunks(response, deadline), b''
+        if response.headers.get('content-type', '').startswith('text/event-stream'):
+            verdict = None
+            while verdict is None:
+                try:
+                    head += await anext(chunks)
+                except StopAsyncIteration:
+                    verdict = 'relay_failed'          # 판정 전에 끊김 — 끝나지 않은 답
+                    break
+                except asyncio.CancelledError:
+                    await response.aclose()
+                    await client.aclose()
+                    raise
+                except Exception:  # noqa: BLE001 — 중계에서 읽기 실패 · 기한 · 크기 한도만: 원문 없이 종류만
+                    verdict = 'relay_failed'
+                    break
+                verdict = stream_verdict(head)    # 판정 함수는 이 try 밖 — 그 함수의 결함은 「다시 실행」으로 가려지지 않고 그대로 오류로 난다
+            if verdict != 'content':
+                await response.aclose()
+                await client.aclose()
+                raise Refusal(verdict)
 
         async def stream():
             try:
-                async for chunk in _chunks(response, deadline):
+                if head:
+                    yield head
+                async for chunk in chunks:
                     yield chunk
             finally:
                 await response.aclose()

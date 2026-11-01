@@ -326,7 +326,11 @@ class ServicePartsRuntime:
             if lead_d is None and self.hooks.enterprise_read is not None:
                 facts = (self.hooks.enterprise_read("purchase_order", {"ref": po["ref"]}) or {}).get("facts") or {}
                 lead_d, delay_d = facts.get("lead_d"), facts.get("delay_d") or 0
-            plan = effect_parts.wait_plan((float(lead_d or 0) + float(delay_d)) * 86400, clock, self.time_scale, label="입고 예정까지",
+            if lead_d is None:
+                # 입고 예정 시각의 출처는 공급사 리드타임 하나다 — 없으면 0일(바로 입고)로 지어내지 않는다(즉시 입고는 흐름 설정 immediate 가 정한다)
+                raise ValueError(f"발주 {po['ref']} 의 공급사 리드타임(입고까지 걸리는 날 수)을 발주 영수증에도 구매 · 재고 관리 시스템에도 찾지 못해 "
+                                 "입고 예정 시각을 정할 수 없습니다 — 구매 · 재고 관리에서 그 발주의 리드타임을 확인한 뒤 이 단계를 다시 실행합니다")
+            plan = effect_parts.wait_plan((float(lead_d) + float(delay_d)) * 86400, clock, self.time_scale, label="입고 예정까지",
                                           source=f"{po['ref']} 리드타임 {lead_d}일" + (f" + 지연 {delay_d:g}일" if delay_d else ""))
             plan.update(lead_d=lead_d, delay_d=float(delay_d))
             wi["due_date"] = plan["due_at"]
@@ -348,7 +352,7 @@ class ServicePartsRuntime:
                 return
         if "receipt" not in state:
             item = {"skill": (v.get("chosen_option") or {}).get("id"), "code": "GR_CONFIRM", "name": "입고 · 검수", "system": "sys:erp",
-                    "ref": po["ref"], "source": "approved-purchase"}
+                    "ref": po["ref"], "source": "approved-purchase", "basis": receipt_basis(po, state["wait"])}
             state = self._save_state(wi, receipt=self._exec(inst, v, item, "입고 확인"))
         if "stock_after" not in state and self.hooks.enterprise_read is not None:
             # C3: 입고 뒤 재고(가용 · 재주문점)를 결과 보고에 싣는다 — '재고 보충 필요' 표시가 꺼졌는지의 근거
@@ -427,13 +431,13 @@ class ServicePartsRuntime:
         cause = incident_def.escalation_cause(v.get("incident_reason")) if v.get("incident_outcome") == "ESCALATED" else None
         if cause:
             template_summary, summary = summary, cause[0]
-        measured = dict(v)
+        measured, values_error = dict(v), None
         if (v.get("recovered") is not None and v.get("incident") and self.hooks.recovery_reading is not None and "reobservation" not in v
                 and (cause is None or cause[1])):
             try:
                 reading = self.hooks.recovery_reading(v["incident"])
-            except Exception:  # noqa: BLE001 — 측정값은 보조 정보, 읽기 실패로 결과 보고를 막지 않는다
-                reading = None
+            except Exception as e:  # noqa: BLE001 — 측정값은 보조 정보라 결과 보고는 낸다. 못 읽은 사실과 까닭은 보고에 싣는다
+                reading, values_error = None, f"회복 기준 측정값을 읽지 못했습니다 — {type(e).__name__}: {str(e)[:200]}"
             if reading and reading.get("tag"):
                 measured["reobservation"] = reading
         # C3: values = 측정값 목록(포털 결과 보고 카드 계약), facts = 처리 건의 승인 · 판정 값(전의 values dict)
@@ -442,6 +446,8 @@ class ServicePartsRuntime:
                   "facts": {k: v.get(k) for k in keep if v.get(k) is not None},
                   "refs": {k: (v.get(k) or {}).get("ref") for k in ("work_order", "purchase_order", "goods_receipt", "mcp_receipt")
                            if isinstance(v.get(k), dict) and (v.get(k) or {}).get("ref")}}
+        if values_error:
+            report["values_error"] = values_error
         if cause:
             report["cause"] = {"incident_state": "ESCALATED", "reason": v.get("incident_reason"), "text": cause[0], "reobserved": cause[1]}
             report["template_summary"] = template_summary
@@ -456,8 +462,9 @@ class ServicePartsRuntime:
         for notice in cfg.get("notify", []):
             if engine.eval_condition(notice["when"], v):
                 recipients.append(notice["role"])
-        # Portal notices are database writes: commit them with the report result,
-        # so a failed delivery rolls back and the existing service retry can recover.
+        # 포털 알림은 DB 쓰기다. 결과 보고에는 바깥 효과가 없어 알림을 보고 결과와 한 트랜잭션으로 저장한다(알림이 실패하면 함께 되돌아가 재시도).
+        # 정비 수행 · 입고 확인의 알림은 커밋 뒤다 — 그 단계의 바깥 효과(작업지시 완료 · 입고 거래) 기록이 알림 실패로 되돌아가면 재시도가
+        # 같은 거래를 다시 부르기 때문이다.
         report["notification_count"] = inbox.notify_participants(
             self.repo, self.tenant_id, dict(inst, participants=recipients),
             f"[{outcome}] {title}", summary or title)
@@ -521,6 +528,18 @@ class ServicePartsRuntime:
         self._event(wi, "REOBSERVATION", f"효과 재관측 판정 ({self.AFTER_LABEL[after]})", {"recovered": recovered, "reading": reading,
                                                                                          "extensions": plan["extensions"]})
         self.submit(wi["id"], {"recovered": recovered}, by="process", now=now)
+
+
+def receipt_basis(po: dict, plan: dict) -> str:
+    """입고 거래에 싣는 시간 근거(업무 DB 입고 기록에 남는다 — ERP 의 입고 예정 시각과 실제 입고 시각이 왜 다른지).
+    업무 시스템의 입고 예정(expected_at)은 업무 시각(발주 + 리드타임 일)이고, 수업은 그 대기를 줄이거나(배속 × 수업 압축) 건너뛴다(immediate)."""
+    after = po.get("after") if isinstance(po.get("after"), dict) else {}
+    lead, expected = after.get("lead_d"), after.get("expected_at")
+    planned = f"리드타임 {lead}일" + (f", 업무 시각 입고 예정 {expected}" if expected else "")
+    if plan.get("immediate"):
+        return f"수업 즉시 입고 — {planned}을(를) 기다리지 않고 발주 직후 입고했습니다(흐름 설정 immediate)"
+    return (f"수업 시간 압축 — {planned}을(를) 실제 {plan.get('real_s')}초로 줄여 입고했습니다"
+            f"(배속 {plan.get('time_scale')} × 수업 압축 {plan.get('compression')})")
 
 
 def _td(seconds: float):

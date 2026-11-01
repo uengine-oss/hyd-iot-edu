@@ -89,5 +89,5 @@
     q('#oilSend')?.addEventListener('click', send);
   }
 
-  window.hydOilInput = { mount, show, failed, _state: O, _render: render };
+  window.hydOilInput = { mount, show, failed };
 })();

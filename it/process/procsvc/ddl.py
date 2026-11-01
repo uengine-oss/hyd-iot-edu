@@ -26,12 +26,23 @@ def display_identifier(name: str) -> str:
     return name if re.fullmatch(r'[a-z_][a-z0-9_]*', name) else quoted(name)
 
 
+def syntax_error(error: SqlglotError, what: str = 'DDL') -> ValueError:
+    """sqlglot 오류 → 학생이 읽는 한 문장(몇째 줄 · 몇째 칸 · 그 자리의 글자). 토큰 덤프 · 터미널 색 코드는 싣지 않는다(P1-25)."""
+    errors = getattr(error, 'errors', None) or []
+    if errors:
+        e = errors[0]
+        near = (e.get('highlight') or '').strip()
+        return ValueError(f"{what} 구문 오류: {e.get('line')}번째 줄 {e.get('col')}번째 칸" + (f" 「{near[:40]}」 근처" if near else '')
+                          + " — 그 자리의 SQL 을 확인하세요(PostgreSQL CREATE TABLE · COMMENT ON 문)")
+    return ValueError(f"{what} 구문 오류: 따옴표나 괄호가 닫히지 않았거나 읽을 수 없는 글자가 있습니다 — SQL 문을 확인하세요")
+
+
 def statement_groups(text: str):
     """Token boundaries preserve semicolons inside literals and quoted names."""
     try:
         tokens = sqlglot.tokenize(text, read='postgres')
     except SqlglotError as error:
-        raise ValueError(f'DDL 구문 오류: {error}') from error
+        raise syntax_error(error) from error
     groups, current = [], []
     for token in tokens:
         if token.token_type == TokenType.SEMICOLON:
@@ -58,7 +69,7 @@ def create_tables(text: str):
         try:
             tree = sqlglot.parse_one(source, read='postgres')
         except SqlglotError as error:
-            raise ValueError(f'DDL 구문 오류: {error}') from error
+            raise syntax_error(error) from error
         if not isinstance(tree, exp.Create) or tree.kind != 'TABLE' or not isinstance(tree.this, exp.Schema):
             raise ValueError('열 정의가 있는 CREATE TABLE만 지원합니다')
         if not isinstance(tree.this.this, exp.Table) or tree.args.get('expression'):
@@ -67,8 +78,9 @@ def create_tables(text: str):
         yield tree.this, ' '.join(c.strip() for c in header)
 
 
-def source_comments(text: str):
-    """Explicit PostgreSQL COMMENT ON TABLE/COLUMN, including clear (IS NULL)."""
+def source_comments(text: str, default_schema: str = 'public'):
+    """Explicit PostgreSQL COMMENT ON TABLE/COLUMN, including clear (IS NULL). An unqualified target is in `default_schema`
+    (the connection's search_path — see ingest.parse_ddl)."""
     for group in statement_groups(text):
         if len(group)<3 or group[0].token_type!=TokenType.COMMENT or group[2].text.upper() not in ('TABLE','COLUMN'):
             continue
@@ -80,14 +92,14 @@ def source_comments(text: str):
         try:
             tree=sqlglot.parse_one(source,read='postgres')
         except SqlglotError as error:
-            raise ValueError(f'원천 주석 구문 오류: {error}') from error
+            raise syntax_error(error, '원천 주석') from error
         value=tree.args.get('expression')
         if not isinstance(tree,exp.Comment) or not isinstance(value,exp.Literal) or not value.is_string:
             raise ValueError('원천 주석은 문자열 또는 NULL이어야 합니다')
         target=tree.this
         if target.args.get('catalog'):
             raise ValueError('주석의 데이터베이스는 연결 정보로 지정하세요')
-        schema=identifier(target.args['db']) if target.args.get('db') else 'public'
+        schema=identifier(target.args['db']) if target.args.get('db') else default_schema
         kind=tree.args['kind'].upper()
         table=identifier(target.this if kind=='TABLE' else target.args['table'])
         column=identifier(target.this) if kind=='COLUMN' else None

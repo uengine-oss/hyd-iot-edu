@@ -40,11 +40,15 @@ def validate_fields(fields):
 
 
 def pinned_form(definition, tool):
-    """None means a pre-contract definition. A declared but missing form is an error."""
-    if not str(tool).startswith('formHandler:') or 'forms' not in definition:
+    """The form a formHandler tool names, from the definition version itself; None for a tool that is not a form.
+    A form tool on a definition without its form (or without `forms`) is an error — registration requires both."""
+    if not str(tool).startswith('formHandler:'):
         return None
     fid = tool.split(':', 1)[1]
-    form = definition['forms'].get(fid)
+    forms = definition.get('forms')
+    if not isinstance(forms, dict):
+        raise ValueError(f'정의 버전에 폼 선언(forms)이 없습니다: {fid}')
+    form = forms.get(fid)
     if not isinstance(form, dict):
         raise ValueError(f'정의 버전 안에 폼이 없습니다: {fid}')
     return dict(deepcopy(form), id=fid)

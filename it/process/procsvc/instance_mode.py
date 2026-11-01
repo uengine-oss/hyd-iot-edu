@@ -18,7 +18,6 @@ import re
 import urllib.request
 from copy import deepcopy
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Callable
 from functools import partial
 
@@ -27,22 +26,22 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from hydcommon.timeutil import now_iso
-from . import engine, instances, machine, procdb, reobs_series, work_orders
+from . import course_policy, engine, instances, machine, procdb, reobs_series, work_orders
 from .definition_registry import validate_definition
 from .approval_hooks import DecisionDelivery, record_execution as _record_execution
-from . import task_deferral
-from . import approval_part
+from . import approval_part, execution_graph
+from .current_approval import ApprovalReviewRequired
 
 log = logging.getLogger("process.instance_mode")
 
-DEFINITIONS_DIR = Path(os.getenv("PROCESS_DEFINITIONS", "/srv/definitions"))
-DEFINITION_FILE = os.getenv("PROCESS_DEFINITION_FILE", "anomaly_response_v22.json")   # A116: 2.2 = 2.1 in the product's agent-task shape
-POLL_INTERVAL_S = float(os.getenv("ENGINE_POLL_INTERVAL_S", "2"))     # the product polls every 5 s; faster here for the classroom
+#: 정의 파일 폴더 — 수업 경계 정본(course_policy.DEFINITIONS, 이 패키지 옆 definitions/) 하나를 가리킨다(P5-15 — 환경 변수 판이 따로 있었다)
+DEFINITIONS_DIR = course_policy.DEFINITIONS
+DEFINITION_FILE = "anomaly_response_v22.json"   # 기준 흐름 파일(A116: 2.2 = 2.1 in the product's agent-task shape)
+POLL_INTERVAL_S = 2.0                            # the product polls every 5 s; faster here for the classroom
 WORKER_URL = os.getenv("WORKER_URL", "http://agent-worker:8097")       # the cliagents worker's /health · /agents (monitoring, 회의 L434)
-STALE_CLEANUP_EVERY = 150                                              # × POLL_INTERVAL_S ≈ 5 min (the product's cleanup_task)
 LEASE_SWEEP_EVERY = 30                                                 # × POLL_INTERVAL_S ≈ 1 min: 임대가 세 번 끝난 워커 실행 → FAILED (A-10)
 # A151 (A148 item 70-A): how long startup waits for an unreachable DB before giving up and letting the restart policy act
-STARTUP_DB_WAIT_S = float(os.getenv("PROCESS_STARTUP_DB_WAIT_S", "60"))
+STARTUP_DB_WAIT_S = 60.0
 # C2 (확정 TODO C) 승인 뒤 실행 부품의 연결 · 수업 설정 (git 이력 39f447ce:문서/시스템/검증_기록/2026-10-09/c2-execution.md)
 ENTERPRISE_URL = os.getenv("ENTERPRISE_URL", "http://enterprise-sim:8095")
 # 정비 수행 모사: 실습 시뮬레이터 조작(현장 정비 대역)이지 설비 명령 경로(PLC)가 아니다. 컨테이너에서는 compose 서비스 이름(ot-net)으로 간다.
@@ -57,6 +56,8 @@ EFFECT_MCP_SERVERS = json.loads(os.getenv("EFFECT_MCP_SERVERS") or json.dumps(
 # 하-04 · 하-05: 업무 시뮬레이터의 쓰기 끝점과 승인 뒤 메일 도구(effects-mcp)는 이 값이 맞는 호출만 받는다 — process 만 아는 값이다
 # (에이전트 · 워커 · 포털에는 넘기지 않는다). 없으면 process 가 뜨지 않는다(main._startup).
 CALLER_HEADER = "X-HYD-Process-Caller"
+#: 승인 경로가 「현재 조건이 바뀌어 새 카드 검토(미리 보기 다시)가 필요」로 거절할 때의 409 코드 — 포털 · 점검이 문장 대신 이것으로 판정한다(G4-16)
+REVIEW_REQUIRED = "review_required"
 
 
 def caller_headers() -> dict:
@@ -82,16 +83,15 @@ class ProcessContext:
     audit: Callable[..., None]                      # (asset, actor, event, detail, incident=None)
     cypher: Callable[..., list]                     # (query, **params) -> rows   (Neo4j write transaction)
     exec_skill: Callable[[dict, dict], dict]        # (decision, item) -> enterprise transaction result
-    record_decision: Callable[[dict], None]
     approve_incident: Callable[..., dict]           # (incident, by, commands, at) -> action.cmd (송신 확인 뒤)
     get_loop: Callable[[], asyncio.AbstractEventLoop | None]
     check_approval: Callable[[dict, str, str], dict]  # must reread current policy/sources; explicit test double in unit tests
     after_incident: Callable | None = None
     reviews: Callable | None = None
-    record_incident: Callable | None = None
     approval_receipts: Callable | None = None
     exec_compensation: Callable | None = None     # (request) → enterprise /api/exec with a compensation skill (A072)
     latest_tag: Callable[[str, str], float | None] | None = None   # C2: (asset, tag) → 최신값 (작업지시 뒤 재관측)
+    tag_read_error: type[Exception] | None = None    # latest_tag 가 「읽지 못함」으로 올리는 예외(main.TagReadError) — 행 없음은 None
     window_series: Callable | None = None     # A161-G3: (incident, after, since) → 재관측 창의 값 흐름 (reobs_series.build 모양)
 
 
@@ -101,7 +101,6 @@ _poll_task: asyncio.Task | None = None
 _poll_status: dict = {"status": "preparing", "last_success_at": None, "failure_kind": None}
 EVENTS_PAGE_MAX = 5000        # A161-G4: one /api/events page at most (the instance view itself reads instances.EVENTS_WINDOW)
 PAYLOAD_CHUNK_CHARS = 200_000 # A161-G2: one /api/event-payloads chunk
-stream_clients = 0            # A131: open /api/events/stream generators (memory diagnostics; must return to 0 after disconnects)
 
 
 def current() -> instances.InstanceRuntime | None:
@@ -121,17 +120,12 @@ def runtime_readiness() -> dict:
 # ---------------------------------------------------------------- lifecycle
 async def event_stream(repo, since: str | None, is_disconnected, interval: float = 0.5, keepalive_s: float = 15.0,
                        fetch: Callable | None = None, ts_key: str = "timestamp", history: int = 60):
-    """Events use post-commit publication cursors, so late commits cannot hide behind an earlier timestamp.
-    Explicit fetch/ts_key keep the existing timestamp contract for notifications."""
-    global stream_clients
-    if fetch is None and hasattr(repo, 'list_stream_events'):
+    """처리 기록(events)은 커밋 뒤에 붙인 흐름 위치(stream_cursor)로 읽는다 — 늦게 커밋된 기록이 앞선 시각 뒤에 숨지 않게.
+    알림은 fetch · ts_key 를 주어 시각 커서로 읽는다(inbox_api)."""
+    if fetch is None:
         fetch, ts_key = repo.list_stream_events, 'stream_cursor'
-    stream_clients += 1
-    try:
-        async for frame in _event_frames(repo, since, is_disconnected, interval, keepalive_s, fetch or repo.list_events_since, ts_key, history):
-            yield frame
-    finally:
-        stream_clients -= 1
+    async for frame in _event_frames(repo, since, is_disconnected, interval, keepalive_s, fetch, ts_key, history):
+        yield frame
 
 
 def _sse_id(e: dict, ts_key: str) -> str:
@@ -186,9 +180,8 @@ def build(ctx: ProcessContext, repo: procdb.PgRepo | None = None, clock: Callabl
     triage = _runtime.register_definition(json.loads((DEFINITIONS_DIR/'alert_triage_v1.json').read_text(encoding='utf-8')))
     _runtime.base_version, _runtime.reference_ids, _runtime.base_problem = seed.raw['version'], {seed.id, triage['id']}, base_problem
     from . import ask
-    ask.register_definition(_runtime, DEFINITIONS_DIR)     # B5: 에이전트에게 질문하기 (정식 정의 ask_agent 1.0)
+    ask.register_definition(_runtime, DEFINITIONS_DIR)     # B5: 에이전트에게 질문하기 (제공 정의 ask_agent — 판본은 파일이 정한다)
     _runtime.register_definition(json.loads((DEFINITIONS_DIR/'shift_handover_v1.json').read_text(encoding='utf-8')))
-    ctx.state["mode"], ctx.state["supabase"] = "instance", repo.ping()
     log.info("instance runtime: definition %s@%s (%d activities), repo %s", defn.id, defn.raw.get('version'),
              len(defn.activities), type(repo).__name__)
     return _runtime
@@ -249,6 +242,19 @@ def start_loops(rt: instances.InstanceRuntime, ctx: ProcessContext) -> None:
     _poll_task = asyncio.create_task(_polling())
 
 
+async def stop_loops() -> None:
+    """끄기(main._shutdown): 엔진 폴링을 취소하고 그 바퀴가 끝날 때까지 기다린다. 폴링이 없으면 아무것도 하지 않는다."""
+    global _poll_task
+    task, _poll_task = _poll_task, None
+    if task is None or task.done():
+        return
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
+
+
 def _transient_db_errors() -> tuple[type[BaseException], ...]:
     import psycopg
     return (psycopg.OperationalError, psycopg.InterfaceError)
@@ -302,8 +308,6 @@ def poll_round(rt: instances.InstanceRuntime, tick: int) -> list[str]:
     steps = [("engine", rt.poll_once), ("timers", rt.fire_timeouts)]
     if tick % LEASE_SWEEP_EVERY == 0:
         steps.append(("worker leases", lambda: sweep_worker_leases(rt)))
-    if tick % STALE_CLEANUP_EVERY == 0:
-        steps.append(("stale consumers", rt.repo.cleanup_stale_consumers))
     failed = []
     for name, step in steps:
         try:
@@ -315,7 +319,7 @@ def poll_round(rt: instances.InstanceRuntime, tick: int) -> list[str]:
 
 
 async def _polling() -> None:
-    """The completion polling of ProcessGPT: SUBMITTED rows → engine; boundary timers; worker leases ~1 min; stale consumers ~5 min."""
+    """The completion polling of ProcessGPT: SUBMITTED rows → engine; boundary timers; worker leases ~1 min."""
     tick = 0
     try:
         while True:
@@ -343,10 +347,16 @@ def _in_executor(fn, *args):
 
 
 def _schedule(fn, *args) -> None:
-    """Fire-and-forget on a worker thread, from any thread (uses the loop main.py recorded at startup)."""
+    """처리 건 갱신을 작업 스레드에 맡긴다(어느 스레드에서든 — main.py 가 기동 때 남긴 루프). 실패는 fn 이 그 처리 건 기록에 남기고
+    (instances.on_incident_update 의 _isolated), 그래도 새어 나온 예외는 로그에 남긴다(P1-17 — 버린 future 의 예외가 묻히지 않게)."""
     loop = _ctx.get_loop() if _ctx else None
-    if loop is not None:
-        loop.run_in_executor(None, fn, *args)
+    if loop is None:
+        raise RuntimeError('process 이벤트 루프가 아직 없어 사건 갱신을 처리 건에 넘기지 못했습니다(기동 전)')
+
+    def done(future):
+        if not future.cancelled() and future.exception() is not None:
+            log.error('scheduled %s failed', getattr(fn, '__name__', fn), exc_info=future.exception())
+    loop.call_soon_threadsafe(lambda: loop.run_in_executor(None, fn, *args).add_done_callback(done))
 
 
 # ---------------------------------------------------------------- entry points main.py calls
@@ -359,24 +369,24 @@ def on_incident_update(inc: machine.Incident) -> None:
 def _hooks(ctx: ProcessContext) -> instances.Hooks:
     from .rework_effects import collect as collect_rework_effects
     delivery = DecisionDelivery(ctx)
-    def open_incident(alert: dict, recovery_policy=None) -> dict:
+    def open_incident(alert: dict, recovery_policy: dict) -> dict:
+        from . import definition
         existing = _open_incident_for(ctx, alert.get("alertId"))
         if existing:
             if existing.asset != alert.get('asset') or existing.pattern != alert.get('pattern'):
                 raise ValueError('경보 ID의 원천 설비/패턴이 기존 사건과 다릅니다')
-            if ctx.record_incident:
-                ctx.record_incident(existing)
+            if existing.state in definition.TERMINAL and existing.reason != 'UNSUPPORTED_ALERT_PATTERN':
+                # 끝난 사건(처리 건 없이 남아 닫힌 사건 — P1-30 정리 포함)의 경보 id 로 새 처리 건을 열지 않는다. 회복 기준 없는 경보의 사건은
+                # 처음부터 끝난 상태(현장 검토)라 그 처리 건을 다시 열 때 같은 사건을 쓴다
+                raise ValueError(f'경보 {alert.get("alertId")}의 사건 {existing.id}은(는) 이미 끝났습니다({existing.state}) — 같은 경보로 다시 열지 않습니다')
             return {"id": existing.id}
         triage = recovery_policy is not None and recovery_policy.get('route') == 'triage'
-        card = {"alert": alert, "recommended": [], "causes": [], "citations": [],
+        card = {"alert": alert, "causes": [], "citations": [],
                 "summary": "지원하는 회복 기준이 없어 현장 검토가 필요합니다" if triage else "에이전트 판단 대기 (프로세스 인스턴스가 열었다)"}
         inc = machine.Incident.from_card(machine.new_incident_id(), card,recovery_policy=recovery_policy)
         machine.on_card(inc)
         ctx.incidents[inc.id] = inc
-        ctx.state["incidents"] = len(ctx.incidents)
         ctx.persist()
-        if ctx.record_incident:
-            ctx.record_incident(inc)
         ctx.audit(inc.asset, "process", "INCIDENT_OPENED", {"alertId": inc.alert_id, "via": "instance"}, incident=inc.id)
         return {"id": inc.id}
 
@@ -402,14 +412,14 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
     def approve_commands(inc_id: str, commands: list[dict], by: str, at=None) -> dict:
         inc = ctx.incidents.get(inc_id)
         if inc is None:
-            raise ValueError(f"no such incident {inc_id}")
+            raise ValueError(f"사건 {inc_id}이(가) 사건 기록에 없습니다")
         return ctx.approve_incident(inc, by, commands, at)
 
     def _incident_change(inc_id: str, change) -> bool:
         """사건 전이 하나(machine.on_*) → 저장 · 감사 · 처리 건 갱신. change(inc, fx) 가 False 면 아무것도 하지 않는다."""
         inc = ctx.incidents.get(inc_id)
         if inc is None:
-            raise ValueError(f"no such incident {inc_id}")
+            raise ValueError(f"사건 {inc_id}이(가) 사건 기록에 없습니다")
         fx = work_orders._Audit()
         changed = change(inc, fx)
         if changed:
@@ -433,6 +443,13 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
         inc = ctx.incidents.get(inc_id)
         return inc.state if inc is not None else None
 
+    def open_incidents() -> list[tuple[str, str]]:
+        from . import definition
+        return [(inc.id, inc.created) for inc in list(ctx.incidents.values()) if inc.state not in definition.TERMINAL]
+
+    def process_ended(inc_id: str, end_label: str) -> bool:
+        return _incident_change(inc_id, lambda inc, fx: machine.on_process_ended(inc, end_label, fx))
+
     def reopen_incident(inc_id: str, request_id: str, by: str, role: str, reason: str, effects: dict) -> bool:
         return _incident_change(inc_id, lambda inc, fx: machine.on_rework_reopen(inc, request_id, by, role, reason, effects, fx))
 
@@ -452,7 +469,8 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
     def exec_enterprise(decision_id: str, item: dict) -> dict:
         d = ctx.book.get(decision_id)
         if d is None or not d.get("chosen"):
-            return {"ok": False, "error": f"decision {decision_id} not approved", "code": item.get("code"), "system": item.get("system")}
+            return {"ok": False, "error": f"판단 {decision_id}이(가) 승인되지 않아 업무 거래를 내지 않았습니다", "code": item.get("code"),
+                    "system": item.get("system")}
         inc = work_orders.prepare(ctx, d, item) if item.get('code') == 'WO_CREATE' else None
         result = ctx.exec_skill(d, item)
         if item.get('code') == 'WO_CREATE' and result.get('ok') is True:
@@ -476,10 +494,16 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
         if inc is None or inc.recovery is None:
             return None
         tag, op, limit = inc.recovery
-        value = ctx.latest_tag(inc.asset, tag) if ctx.latest_tag else None
+        if ctx.latest_tag is None:
+            raise ValueError('시계열(TimescaleDB) 읽기가 연결되지 않아 회복을 판정할 수 없습니다')
+        reason = None
+        try:
+            value = ctx.latest_tag(inc.asset, tag)
+        except (ctx.tag_read_error or ()) as e:     # P5-05: 값 없음(None)과 읽기 실패를 가른다 — 실패 까닭을 판정 기록에 싣는다
+            value, reason = None, str(e)
         inside = value is not None and (value < limit if op == "<" else value >= limit)
         reading = {"tag": tag, "op": op, "limit": limit, "value": value, "inside": inside, "cleared": bool(inc.cleared),
-                   "criterion": f"{tag} {op} {limit}"}
+                   "criterion": f"{tag} {op} {limit}", **({"reason": reason} if reason else {})}
         if since and ctx.window_series is not None:
             # A161-G3: the re-observation window (since = its start) — the trend goes on the reading (the step's
             # REOBSERVATION event) and on the Incident (reobsSeries)
@@ -542,14 +566,15 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
 
     return instances.Hooks(new_incident=open_incident, update_incident_card=update_incident_card, approve_commands=approve_commands,
                            incident_state=incident_state, incident_snapshot=incident_snapshot,
+                           open_incidents=open_incidents, process_ended=process_ended,
                            decision_option=decision_option, get_decision=lambda did: ctx.book.get(did), approve_decision=delivery.prepare,
                            preview_decision=delivery.preview, approve_review=delivery.prepare_review,
-                           validate_approval=delivery.validate, deliver_approval=delivery.deliver, record_approval=delivery.record,
-                           check_rejection=delivery.check_rejection, reject_decision=delivery.reject,
+                           validate_approval=delivery.validate, deliver_approval=delivery.deliver,
+                           check_rejection=delivery.check_rejection, reject_decision=delivery.reject, close_decision=delivery.close_unapproved,
                            approval_effects=delivery.effects, rework_effects=lambda inst: collect_rework_effects(ctx, inst),
                            reopen_incident=reopen_incident, reopen_for_recheck=reopen_for_recheck, exec_compensation=ctx.exec_compensation,
                            exec_enterprise=exec_enterprise, record_cypher=ctx.cypher, query_cypher=ctx.cypher,
-                           ensure_actor_schema=lambda: ctx.cypher(instances.ACTOR_CONSTRAINT_Q), audit=ctx.audit,
+                           ensure_actor_schema=lambda: ctx.cypher(execution_graph.ACTOR_CONSTRAINT_Q), audit=ctx.audit,
                            enterprise_read=enterprise_read, mcp_call=mcp_call, mcp_read=mcp_read, plant_restore=plant_restore,
                            close_incident_effect=close_incident_effect, recovery_reading=recovery_reading,
                            read_tag=ctx.latest_tag, close_incident_result=close_incident_result, ack_timeout=ack_timeout,
@@ -578,8 +603,9 @@ def plant_restore(asset: str, component: str | None) -> dict:
     try:
         with urllib.request.urlopen(req, timeout=10) as r:
             return dict(json.loads(r.read()), ok=True, url=PLANT_SIM_URL)
-    except Exception as e:  # noqa: BLE001 — 사유를 남기고 실패로
-        return {"ok": False, "error": f"설비 시뮬레이터 복구 요청 실패({PLANT_SIM_URL}): {str(e)[:200]}"}
+    except Exception as e:  # noqa: BLE001 — 사유를 남기고 실패로(부품이 이 결과로 단계를 실패시킨다)
+        return {"ok": False, "error": "설비 시뮬레이터에 정비 복구를 요청하지 못했습니다 — 시작.bat 으로 시스템을 다시 켠 뒤 다시 수행하세요",
+                "detail": f"{PLANT_SIM_URL}: {type(e).__name__}: {str(e)[:200]}"}
 
 
 def _open_incident_for(ctx: ProcessContext, alert_id: str | None) -> machine.Incident | None:
@@ -594,22 +620,24 @@ def _get_json(url: str, timeout: float = 2.0) -> dict:
 
 def worker_status(url: str = WORKER_URL) -> dict:
     """/health (runs_in_flight · polls · handled · last_poll) and /agents (which CLIs are installed) of the cliagents worker.
-    Unreachable is a normal classroom state (the worker may run on the lecturer's PC or not at all), so it is reported, not raised."""
-    out = {"url": url, "reachable": False, "agent_orch": "cliagents", "health": None, "agents": [], "error": None}
+    AI 워커는 기본 서비스다 — 닿지 않으면 그 사실과 까닭을 쉬운 말(error)로, 원문은 error_detail 로 돌려준다(이 화면은 상태 보기라 예외로 올리지 않는다)."""
+    out = {"url": url, "reachable": False, "agent_orch": "cliagents", "health": None, "agents": [], "error": None, "error_detail": None}
     try:
         out["health"] = _get_json(f"{url}/health")
         out["reachable"] = True
     except Exception as e:  # noqa: BLE001
-        out["error"] = f"{type(e).__name__}: {str(e)[:120]}"
+        out["error"] = "AI 워커에 닿지 않습니다 — 시작.bat 으로 시스템을 다시 켜거나 점검.bat 결과를 확인하세요"
+        out["error_detail"] = f"{type(e).__name__}: {str(e)[:120]}"
         return out
     try:
         out["agents"] = (_get_json(f"{url}/agents") or {}).get("agents") or []
     except Exception as e:  # noqa: BLE001
-        out["error"] = f"agents: {type(e).__name__}: {str(e)[:120]}"
+        out["error"] = "AI 워커는 켜져 있지만 쓸 수 있는 AI 도구 목록을 읽지 못했습니다"
+        out["error_detail"] = f"agents: {type(e).__name__}: {str(e)[:120]}"
     return out
 
 
-# ---------------------------------------------------------------- HTTP routes (registered in every mode; 409 unless instance mode is on)
+# ---------------------------------------------------------------- HTTP routes (런타임이 없으면 503 instances.NOT_READY)
 class StartReq(BaseModel):
     alert: dict | None = None
     definition_id: str | None = None
@@ -716,41 +744,14 @@ def _rt() -> instances.InstanceRuntime:
 
 def mount(app: FastAPI, *, admit_alert: Callable) -> None:
     """admit_alert(alert) → 접수 결과(async, main 의 원천 접수) — 강의 도우미가 경보로 처리 건을 열 때도 같은 길로 간다(B-10)."""
-    @app.post("/internal/worker/mcp-runtime")
-    async def worker_mcp_runtime(request: Request):
-        from .worker_credentials import resolve
-        raw = bytearray()
-        async for chunk in request.stream():
-            raw.extend(chunk)
-            if len(raw) > 16_384:
-                raise HTTPException(413, "실행 연결 요청이 허용 크기를 초과했습니다")
-        try:
-            body = json.loads(raw)
-        except (ValueError, UnicodeError):
-            raise HTTPException(422, "실행 연결 요청은 올바른 JSON이어야 합니다") from None
-        if not isinstance(body, dict):
-            raise HTTPException(422, "실행 연결 요청은 객체여야 합니다")
-        from fastapi.responses import JSONResponse
-        result = await _in_executor(resolve, _rt(), body, request.headers.get("authorization"))
-        return JSONResponse(result, headers={"Cache-Control": "no-store"})
-
-    @app.api_route("/internal/worker/mcp/{name}", methods=["POST", "GET", "DELETE"])
-    async def worker_mcp_relay(name: str, request: Request):
-        from .mcp_worker_relay import forward, MAX_BODY
-        raw = bytearray()
-        async for chunk in request.stream():
-            raw.extend(chunk)
-            if len(raw) > MAX_BODY:
-                raise HTTPException(413, "도구 요청이 허용 크기를 초과했습니다")
-        return await _in_executor(partial(forward, _rt(), name, request.headers.get("authorization"),
-                                          request.method, dict(request.headers), bytes(raw)))
-
     @app.get("/api/process/mode")
     def process_mode_info():
+        """처리 엔진이 지금 무엇으로 도는가 — 처리 방식은 하나(처리 건 엔진)라 그 칸은 없다(P1-22). runtime 은 폴링 상태(runtime_readiness):
+        켜지는 중 · 실패면 화면이 「실시간 꺼짐」 대신 그 까닭을 보인다."""
         rt = _runtime
-        return {"mode": "instance", "definition": rt.defn.id if rt else None,
+        return {"definition": rt.defn.id if rt else None,
                 "deployed_version": rt.repo.deployed_version(rt.defn.id, rt.tenant_id) if rt else None,
-                "repo": type(rt.repo).__name__ if rt else None, "time_scale": rt.time_scale if rt else None, "engine": rt.consumer if rt else None}
+                "time_scale": rt.time_scale if rt else None, "engine": rt.consumer if rt else None, "runtime": runtime_readiness()}
 
     @app.get("/api/process/definition")
     def process_definition():
@@ -783,7 +784,15 @@ def mount(app: FastAPI, *, admit_alert: Callable) -> None:
     async def deploy_definition(definition_id: str, req: DeployReq):
         """U4: make a version the one new alerts open. Refused unless it passes validate_definition; open instances keep theirs."""
         try:
-            return await _in_executor(lambda: _rt().deploy_definition(definition_id, req.version, req.by, req.reason, class_flow=req.class_flow))
+            rt = _rt()
+            # 배포 이력의 「누가」는 포털의 「나」(등록된 사람)만. 수업 흐름 설치(class_flow — 서버 안 호출만, course_policy 문지기)는 시작이 하는 일이라
+            # flows_api 와 같은 이름(BOOTSTRAP_ACTOR)으로 남긴다
+            from .flows_api import BOOTSTRAP_ACTOR
+            return await _in_executor(lambda: rt.deploy_definition(definition_id, req.version,
+                                                                   BOOTSTRAP_ACTOR if req.class_flow else rt.person(req.by), req.reason,
+                                                                   class_flow=req.class_flow))
+        except PermissionError as e:
+            raise HTTPException(403, str(e))
         except LookupError as e:
             raise HTTPException(404, str(e))
         except ValueError as e:
@@ -793,7 +802,10 @@ def mount(app: FastAPI, *, admit_alert: Callable) -> None:
     async def rollback_definition(definition_id: str, req: RollbackReq):
         """U4: back to the version deployed before the current one."""
         try:
-            return await _in_executor(_rt().rollback_definition, definition_id, req.by, req.reason)
+            rt = _rt()
+            return await _in_executor(lambda: rt.rollback_definition(definition_id, rt.person(req.by), req.reason))
+        except PermissionError as e:
+            raise HTTPException(403, str(e))
         except LookupError as e:
             raise HTTPException(404, str(e))
         except ValueError as e:
@@ -808,33 +820,32 @@ def mount(app: FastAPI, *, admit_alert: Callable) -> None:
             if r['id'] not in deployed:
                 deployed[r['id']] = await _in_executor(rt.repo.deployed_version, r['id'], rt.tenant_id)
         return [{'id':r['id'],'name':r.get('name'),'version':r['prod_version'],'registered_at':r.get('registered_at'),
-                 'deployed':r['prod_version']==deployed.get(r['id']),'deployed_version':deployed.get(r['id']),
-                 'form_source':'definition-version' if 'forms' in r['definition'] else 'legacy-live'} for r in rows]
+                 'deployed':r['prod_version']==deployed.get(r['id']),'deployed_version':deployed.get(r['id'])} for r in rows]
 
     @app.get('/api/process/definitions/{definition_id}')
     async def get_definition(definition_id: str, version: str):
         rt = _rt()
         row = await _in_executor(lambda: rt.repo.get_proc_def(definition_id, rt.tenant_id, version=version))
         if row is None:
-            raise HTTPException(404, 'no such definition version')
+            raise HTTPException(404, '그 정의 판본이 없습니다 — 판본 목록을 새로 고치세요')
         return row['definition']
 
     @app.post('/api/process/definitions', status_code=201)
     async def publish_definition(req: DefinitionReq):
         rt = _rt()
         try:
-            validate_definition(req.definition)
+            defn = validate_definition(req.definition)          # 검사 한 번(P1-34) — 틀린 정의는 400
         except ValueError as e:
             raise HTTPException(400,str(e))
         try:
-            return await _in_executor(rt.register_definition, req.definition)
-        except ValueError as e:
+            return await _in_executor(rt.store_definition, defn)
+        except ValueError as e:                                  # 같은 판본 번호에 다른 원문 — 409
             raise HTTPException(409,str(e))
 
     @app.get("/api/events/stream")
     async def events_stream(request: Request, since: str | None = None):
         """A091: server-sent stream of the product's events table (agent tool calls, task transitions, human answers …).
-        The portal shows them as they happen instead of re-reading an instance every two seconds."""
+        처리 기록 패널이 새 기록을 이 흐름으로 받는다(처리 건 화면의 단계 · 값은 따로 다시 읽는다)."""
         # A browser retry keeps the original URL but sends its newer last id.
         since = request.headers.get("last-event-id") or since or None
         return StreamingResponse(event_stream(_rt().repo, since, request.is_disconnected), media_type="text/event-stream",
@@ -844,6 +855,7 @@ def mount(app: FastAPI, *, admit_alert: Callable) -> None:
     async def list_instances(status: str | None = None, limit: int = 100, incident: str | None = None):
         rt = _rt()
         rows = await _in_executor(rt.repo.list_instances, status, min(max(limit,1),500), rt.tenant_id, incident)
+        await _in_executor(rt.annotate_list, rows)
         # List cards need the outcome badge, never complete proposals/source documents.
         fields = {'result_report': ('level', 'verdict', 'ok', 'status', 'outcome'),
                   'test_run': ('ok', 'verdict'), 'goods_receipt': ('ok',)}
@@ -868,7 +880,7 @@ def mount(app: FastAPI, *, admit_alert: Callable) -> None:
         except instances.InstanceRemoved as e:
             raise HTTPException(404, str(e))
         if view is None:
-            raise HTTPException(404, "no such instance")
+            raise HTTPException(404, '그 처리 건이 없습니다 — 처리 건 목록을 새로 고치세요')
         return view
 
     @app.get("/api/instances/{proc_inst_id}/graph")
@@ -879,7 +891,7 @@ def mount(app: FastAPI, *, admit_alert: Callable) -> None:
         except instances.InstanceRemoved as e:
             raise HTTPException(404, str(e))
         if view is None:
-            raise HTTPException(404, "no such instance")
+            raise HTTPException(404, '그 처리 건이 없습니다 — 처리 건 목록을 새로 고치세요')
         return view
 
     @app.get('/api/instances/{proc_inst_id}/rework-preview')
@@ -1002,7 +1014,7 @@ def mount(app: FastAPI, *, admit_alert: Callable) -> None:
         try:
             return await _in_executor(rt.workitem_view,wid)
         except KeyError:
-            raise HTTPException(404, "no such work item")
+            raise HTTPException(404, '그 단계가 없습니다 — 처리 건 화면을 새로 고치세요')
         except instances.InstanceRemoved as e:
             raise HTTPException(404, str(e))
         except (ValueError,LookupError) as e:
@@ -1014,7 +1026,7 @@ def mount(app: FastAPI, *, admit_alert: Callable) -> None:
         try:
             rt = _rt()
             item = await _in_executor(rt.workitem_view,wid)
-            if item['tool'] == 'formHandler:select_card':
+            if item['tool'] == approval_part.CARD_TOOL:
                 raise HTTPException(403,'조치 카드 승인은 /select의 역할 검사를 거쳐야 합니다')
             if item['tool'] == approval_part.TOOL:
                 raise HTTPException(403,'사람 승인(안 고르기)은 /approve의 역할 검사를 거쳐야 합니다')
@@ -1022,7 +1034,7 @@ def mount(app: FastAPI, *, admit_alert: Callable) -> None:
                 raise HTTPException(403,'사람 작업만 이 경로로 제출할 수 있습니다')
             return await _in_executor(rt.submit_human, wid, req.output, req.by)
         except KeyError:
-            raise HTTPException(404, "no such work item")
+            raise HTTPException(404, '그 단계가 없습니다 — 처리 건 화면을 새로 고치세요')
         except PermissionError as e:
             raise HTTPException(403, str(e))
         except ValueError as e:
@@ -1034,7 +1046,7 @@ def mount(app: FastAPI, *, admit_alert: Callable) -> None:
         try:
             return await _in_executor(_rt().close_agent_task, wid, req.by, req.reason)
         except KeyError:
-            raise HTTPException(404, 'no such work item')
+            raise HTTPException(404, '그 단계가 없습니다 — 처리 건 화면을 새로 고치세요')
         except PermissionError as e:
             raise HTTPException(403, str(e))
         except ValueError as e:
@@ -1046,7 +1058,7 @@ def mount(app: FastAPI, *, admit_alert: Callable) -> None:
         try:
             return await _in_executor(_rt().cancel_agent_task, wid, req.by, req.reason)
         except KeyError:
-            raise HTTPException(404, 'no such work item')
+            raise HTTPException(404, '그 단계가 없습니다 — 처리 건 화면을 새로 고치세요')
         except PermissionError as e:
             raise HTTPException(403, str(e))
         except ValueError as e:
@@ -1057,7 +1069,7 @@ def mount(app: FastAPI, *, admit_alert: Callable) -> None:
         try:
             return await _in_executor(_rt().preview_choice,wid,req.decision,req.option,req.parameters)
         except KeyError:
-            raise HTTPException(404,'no such selection task')
+            raise HTTPException(404, '그 승인(카드 선택) 단계가 없습니다 — 처리 건 화면을 새로 고치세요')
         except ValueError as exc:
             raise HTTPException(409,str(exc))
 
@@ -1073,12 +1085,15 @@ def mount(app: FastAPI, *, admit_alert: Callable) -> None:
             out['enterprise_results'] = approval['results']
             return out
         except KeyError:
-            raise HTTPException(404, "no such selection task")
+            raise HTTPException(404, '그 승인(카드 선택) 단계가 없습니다 — 처리 건 화면을 새로 고치세요')
         except PermissionError as e:
             _ctx.audit("-", req.by, "DECISION_DENIED", {"decision": req.decision, "option": req.option, "role": req.role, "reason": str(e)})
             raise HTTPException(403, str(e))
         except instances.SourceUnavailable as e:      # P11: ERP 무응답 — 상태는 되돌려졌고 다시 누를 수 있다
             raise HTTPException(503, str(e))
+        except ApprovalReviewRequired as e:           # G4-16: 화면 · 점검은 문장이 아니라 이 코드로 「새 카드 검토(미리 보기 다시)」 길을 탄다
+            # needs_new_preview: agent 보고 그대로 — 참이면 새 미리 보기로 풀린다(승인 전달 기록의 같은 칸과 같은 뜻, FD approval_delivery)
+            raise HTTPException(409, {"code": REVIEW_REQUIRED, "reason": str(e), "needs_new_preview": bool(e.report.get('needs_new_preview'))})
         except ValueError as e:
             raise HTTPException(400, str(e))
 
@@ -1088,7 +1103,7 @@ def mount(app: FastAPI, *, admit_alert: Callable) -> None:
         try:
             return await _in_executor(_rt().reject_card, wid, req.decision, req.by, req.role, req.reason)
         except KeyError:
-            raise HTTPException(404, "no such selection task")
+            raise HTTPException(404, '그 승인(카드 선택) 단계가 없습니다 — 처리 건 화면을 새로 고치세요')
         except PermissionError as e:
             _ctx.audit("-", req.by, "DECISION_DENIED", {"decision": req.decision, "option": None, "role": req.role, "reason": str(e)})
             raise HTTPException(403, str(e))
@@ -1101,7 +1116,7 @@ def mount(app: FastAPI, *, admit_alert: Callable) -> None:
         try:
             return await _in_executor(_rt().approve, wid, req.decision, req.option, req.by, req.role, req.reason)
         except KeyError:
-            raise HTTPException(404, "no such approval task")
+            raise HTTPException(404, '그 승인 단계가 없습니다 — 처리 건 화면을 새로 고치세요')
         except PermissionError as e:
             _ctx.audit("-", req.by, "APPROVAL_DENIED", {"workitem": wid, "role": req.role, "reason": str(e)})
             raise HTTPException(403, str(e))
@@ -1113,7 +1128,7 @@ def mount(app: FastAPI, *, admit_alert: Callable) -> None:
         try:
             return await _in_executor(_rt().retry_approval, wid, req.by, req.role)
         except KeyError:
-            raise HTTPException(404, 'no such approval work item')
+            raise HTTPException(404, '그 승인 단계가 없습니다 — 처리 건 화면을 새로 고치세요')
         except PermissionError as e:
             raise HTTPException(403, str(e))
         except ValueError as e:
@@ -1126,7 +1141,7 @@ def mount(app: FastAPI, *, admit_alert: Callable) -> None:
             await _in_executor(rt.retry_work_order, wid, req.by, req.role)
             return await _in_executor(rt.repo.get_workitem,wid)
         except KeyError:
-            raise HTTPException(404,'no such work item')
+            raise HTTPException(404, '그 단계가 없습니다 — 처리 건 화면을 새로 고치세요')
         except PermissionError as e:
             raise HTTPException(403,str(e))
         except ValueError as e:
@@ -1137,7 +1152,7 @@ def mount(app: FastAPI, *, admit_alert: Callable) -> None:
         try:
             return await _in_executor(_rt().preview_approval_discard, wid, req.by, req.role)
         except KeyError:
-            raise HTTPException(404, 'no such approval work item')
+            raise HTTPException(404, '그 승인 단계가 없습니다 — 처리 건 화면을 새로 고치세요')
         except PermissionError as exc:
             raise HTTPException(403, str(exc))
         except ValueError as exc:
@@ -1150,7 +1165,7 @@ def mount(app: FastAPI, *, admit_alert: Callable) -> None:
         try:
             return await _in_executor(_rt().discard_approval, wid, req.by, req.role, req.reason, req.request_id)
         except KeyError:
-            raise HTTPException(404, 'no such approval work item')
+            raise HTTPException(404, '그 승인 단계가 없습니다 — 처리 건 화면을 새로 고치세요')
         except PermissionError as exc:
             raise HTTPException(403, str(exc))
         except ValueError as exc:
@@ -1162,10 +1177,11 @@ def mount(app: FastAPI, *, admit_alert: Callable) -> None:
     async def reassess_task(wid: str, req: ReassessmentReq):
         rt=_rt()
         try:
-            return await _in_executor(partial(task_deferral.reassess,rt.repo,rt.tenant_id,wid,
-                                              **req.model_dump()))
+            return await _in_executor(partial(rt.reassess, wid, **req.model_dump()))
+        except PermissionError as exc:
+            raise HTTPException(403,str(exc))
         except KeyError:
-            raise HTTPException(404,'no such work item')
+            raise HTTPException(404, '그 단계가 없습니다 — 처리 건 화면을 새로 고치세요')
         except ValueError as exc:
             raise HTTPException(409,str(exc))
 
@@ -1175,7 +1191,7 @@ def mount(app: FastAPI, *, admit_alert: Callable) -> None:
         try:
             return await _in_executor(_rt().answer_human, wid, req.job_id, req.answer, req.by)
         except KeyError:
-            raise HTTPException(404, "no such work item")
+            raise HTTPException(404, '그 단계가 없습니다 — 처리 건 화면을 새로 고치세요')
         except PermissionError as e:
             raise HTTPException(403, str(e))
         except ValueError as e:
@@ -1193,14 +1209,14 @@ def mount(app: FastAPI, *, admit_alert: Callable) -> None:
             raise HTTPException(400,'proc_inst_id 또는 todo_id를 지정하세요')
         try:
             if proc_inst_id and await _in_executor(rt.instance_view,proc_inst_id) is None:
-                raise HTTPException(404,'no such instance')
+                raise HTTPException(404, '그 처리 건이 없습니다 — 처리 건 목록을 새로 고치세요')
         except instances.InstanceRemoved as e:
             raise HTTPException(404,str(e))
         if todo_id:
             try:
                 await _in_executor(rt.workitem_view,todo_id)
             except KeyError:
-                raise HTTPException(404,'no such work item')
+                raise HTTPException(404, '그 단계가 없습니다 — 처리 건 화면을 새로 고치세요')
         limit = max(1, min(int(limit), EVENTS_PAGE_MAX))
         try:
             rows = await _in_executor(rt.repo.list_events, proc_inst_id, todo_id, limit + 1, before)
@@ -1222,11 +1238,11 @@ def mount(app: FastAPI, *, admit_alert: Callable) -> None:
             raise HTTPException(400, "payload id 는 sha256 16진수 64자입니다")
         row = await _in_executor(rt.repo.get_event_payload, payload_id)
         if not row:
-            raise HTTPException(404, "no such payload")
+            raise HTTPException(404, '그 도구 결과 원문이 없습니다')
         # a payload is read only through its case: no case or another tenant's case → not found (fail closed)
         inst = await _in_executor(rt.repo.get_instance, row["proc_inst_id"]) if row.get("proc_inst_id") else None
         if not inst or inst.get("tenant_id") != rt.tenant_id:
-            raise HTTPException(404, "no such payload")
+            raise HTTPException(404, '그 도구 결과 원문이 없습니다')
         if inst.get("is_deleted"):
             raise HTTPException(404, instances.REMOVED_REASON)
         content = row.get("content") or ""
@@ -1240,11 +1256,3 @@ def mount(app: FastAPI, *, admit_alert: Callable) -> None:
     async def list_users():
         rt = _rt()
         return await _in_executor(rt.repo.list_users,None,rt.tenant_id)
-
-    @app.get("/api/forms/{form_id}")
-    async def get_form(form_id: str):
-        rt = _rt()
-        form = await _in_executor(rt.repo.get_form, form_id, rt.tenant_id)
-        if form is None:
-            raise HTTPException(404, "no such form")
-        return form

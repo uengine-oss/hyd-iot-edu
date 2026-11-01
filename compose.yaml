@@ -1,8 +1,15 @@
 # hyd-iot-edu — 유압설비 IoT-SCADA 학생용 프로토타입 (v3 아키텍처 L1~L9)
-# 기본 서비스는 모두 뜬다(프로필 없음 — 학생 PC 구성은 이 파일 하나가 정한다. .env 에는 키 · 이 PC 값만 둔다).
+# 기본 서비스는 모두 뜬다(프로필 없음). 학생 PC 구성(서비스 · 배속 · 메모리 · 강의 중계 주소)은 이 파일 하나가 정한다.
+# .env 에는 이 파일이 ${이름} 으로 읽는 값(학생 키 LLM_API_KEY · 시작 파일이 적는 이 PC 값)과 COMPOSE_* 만 둔다 —
+#   시작 파일(scripts/start_all.sh)이 그 밖의 옛 줄을 # 로 끄고 알린다. ${이름:?…} 값은 시작 파일이 정하므로 시작 파일을 먼저 실행한다.
 # 선택 도구만 프로필: monitor(Prometheus) · tools(Redpanda Console) — 쓰려면 .env 에 COMPOSE_PROFILES=monitor,tools.
-# ${이름:?…} 값은 시작 파일(scripts/start_all.sh)이 .env 에 정한다 — 시작 파일을 먼저 실행한다.
+# 개발 · 강사가 값을 바꿀 때는 이 파일을 고치지 않고 저장소 루트 compose.override.yaml(git 이 무시, compose 가 저절로 합친다)에 적는다.
 name: hyd-iot-edu
+
+x-class:                                 # 수업 구성 값 — 여러 서비스가 같은 값을 받아야 해서 여기 한 곳에 둔다
+  time-scale: &time-scale "20"           # 배속: 벽시계 1초 = 설비 20초(plant-sim · detector · process — agent · dmn-mcp 는 process 에서 읽는다)
+  daq-profile: &daq-profile lite         # 수집: lite = 예외 보고(데드밴드 · 하트비트), full = 전 태그 1 Hz + 100 Hz 파형. 감지기와 근거 조회가 같은 계약을 쓴다
+  tsdb-read-dsn: &tsdb-read-dsn postgresql://hyd_timeseries_reader:hyd-timeseries-read-local@timescaledb:5432/hyd   # 시계열 DB 읽기 전용 계정
 
 x-logging: &log                          # 컨테이너 로그가 디스크(WSL vhdx)를 키우지 않게 순환
   driver: json-file
@@ -17,7 +24,7 @@ x-py-health: &py-health
 networks:
   ot-net: {}
   it-net: {}
-  sim-net: {}                              # 실습 시뮬레이터 API 전용: process(정비 수행 모사) ↔ plant-sim 만. OT 망(emqx · PLC)은 DMZ 만 넘는다
+  sim-net: {}                              # 실습 시뮬레이터 API(:8000) 전용: process(정비 수행 모사) · portal(같은 출처 /svc/plant-sim/) ↔ plant-sim 만. OT 망(emqx · PLC)은 DMZ 만 넘는다
 
 volumes:
   tsdb-data: {}
@@ -27,7 +34,7 @@ volumes:
   detector-data: {}
   worker-data: {}                          # agent-worker: 인스턴스별 작업공간 · Claude Code 세션 (재시작 뒤 resume)
   worker-runtime: {}                       # process가 생성하는 실행 인증; worker에는 읽기 전용
-  effects-data: {}                         # C2 effects-mcp: 쓰기 도구 멱등 키 기록
+  effects-data: {}                         # effects-mcp: 쓰기 도구 멱등 키 기록
 
 services:
   # ───────────────────────────── OT (ot-net) ─────────────────────────────
@@ -37,7 +44,10 @@ services:
     mem_limit: 320m
     image: emqx/emqx:5.8
     networks: [ot-net]
-    ports: ["127.0.0.1:${HYD_PORT_1883:-1883}:1883", "127.0.0.1:${HYD_PORT_18083:-18083}:18083", "127.0.0.1:${HYD_PORT_8083:-8083}:8083"]   # 8083 = MQTT over WebSocket (A148: 03회차 대시보드 WebSocket Client 구독용)
+    # 입구 · 계정 · 토픽 규칙은 ot/emqx 한 곳(emqx.conf 머리말). 호스트 1883 · 8083(웹소켓 — 3회차 대시보드 구독) = 바깥 입구(컨테이너 1884 · 8083,
+    # 계정 student — 구독만). 서비스가 쓰는 안쪽 입구(컨테이너 1883)는 호스트에 열지 않는다 — 설비 명령은 cmd-gateway 만 보낸다
+    ports: ["127.0.0.1:${HYD_PORT_1883:-1883}:1884", "127.0.0.1:${HYD_PORT_18083:-18083}:18083", "127.0.0.1:${HYD_PORT_8083:-8083}:8083"]
+    volumes: ["./ot/emqx:/opt/emqx/etc/hyd:ro", "./ot/emqx/emqx.conf:/opt/emqx/etc/emqx.conf:ro"]
     environment:
       EMQX_DASHBOARD__DEFAULT_PASSWORD: public123   # 8자 이상 필수. 첫 로그인 때 변경을 요구하면 새 값으로 바꾸고 기억해 둘 것(로컬 대시보드 공개 초기값 · 키검사: 허용)
     healthcheck:
@@ -56,8 +66,8 @@ services:
     ports: ["127.0.0.1:${HYD_PORT_8000:-8000}:8000"]
     environment:
       MQTT_HOST: emqx
-      TIME_SCALE: ${TIME_SCALE:-20}
-      DAQ_PROFILE: ${DAQ_PROFILE:-lite}      # lite: 예외 보고(데드밴드·하트비트), 파형 없음 · full: 전 태그 1 Hz + 100 Hz 파형
+      TIME_SCALE: *time-scale
+      DAQ_PROFILE: *daq-profile
     depends_on:
       emqx: { condition: service_healthy }
     healthcheck:
@@ -68,7 +78,7 @@ services:
     restart: unless-stopped
     logging: *log
     mem_limit: 192m
-    image: frangoteam/fuxa:latest
+    image: frangoteam/fuxa:1.3.5          # 프로젝트(ot/fuxa/project.json)를 올려 확인한 판 — 판을 올리면 fuxa-init 업로드를 다시 확인한다
     networks: [ot-net]
     ports: ["127.0.0.1:${HYD_PORT_1881:-1881}:1881"]
     depends_on:
@@ -107,7 +117,7 @@ services:
       test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8093/healthz')"]
       <<: *py-health
 
-  cmd-gateway:                            # L3 DMZ: Kafka action.cmd/alerts → OT (검증 5종) — 유일한 하향 통로
+  cmd-gateway:                            # L3 DMZ: Kafka action.cmd/alerts → OT. gw/validate.py 의 검증(승인 장부 · 만료 · 중복 등)을 모두 통과한 명령만 내려보낸다
     restart: unless-stopped
     logging: *log
     mem_limit: 128m
@@ -246,12 +256,10 @@ services:
     volumes: ["detector-data:/data"]
     environment:
       KAFKA_BOOTSTRAP: redpanda:9092
-      TIME_SCALE: ${TIME_SCALE:-20}
-      DAQ_PROFILE: ${DAQ_PROFILE:-lite}
-      OBSERVATION_GRACE_S: ${OBSERVATION_GRACE_S:-2}
+      TIME_SCALE: *time-scale            # 저장 상태(/data)의 배속 · 수집 방식이 다르면 감지기가 켜지지 않는다 — 배속을 바꿀 때는 RUNBOOK 대로
+      DAQ_PROFILE: *daq-profile
       NEO4J_URI: bolt://neo4j:7687
       NEO4J_AUTH: neo4j/hydpass123
-      DETECTOR_STATE_PATH: ${DETECTOR_STATE_PATH:-/data/detector.sqlite3}   # 다른 시간 배율로 돌릴 때는 별도 파일을 지정한다(기존 상태 파일 보존; A072)
     depends_on:
       redpanda: { condition: service_healthy }
       topic-init: { condition: service_completed_successfully }
@@ -274,7 +282,7 @@ services:
   neo4j:                                  # L7 온톨로지 지식 그래프
     restart: unless-stopped
     logging: *log
-    mem_limit: 1536m                      # APOC schema discovery + v2 query plans
+    mem_limit: 1536m                      # APOC 스키마 조회 + 온톨로지 질의 계획
     image: neo4j:5.26-community
     networks: [it-net]
     ports: ["127.0.0.1:${HYD_PORT_7474:-7474}:7474", "127.0.0.1:${HYD_PORT_7687:-7687}:7687"]
@@ -287,11 +295,12 @@ services:
       NEO4J_server_memory_heap_max__size: 512m
       NEO4J_server_memory_pagecache_size: 48m
       NEO4J_server_jvm_additional: "-XX:MaxMetaspaceSize=384m"
-      NEO4J_server_memory_query__cache_per__db__cache__num__entries: "100"   # fewer cached plans = less metaspace (default 1000)
+      NEO4J_server_memory_query__cache_per__db__cache__num__entries: "100"   # 질의 계획 캐시를 줄여(기본 1000) 메타스페이스를 아낀다
       NEO4J_db_tx__log_rotation_retention__policy: "1 files"
+      NEO4J_dbms_usage__report_enabled: "false"   # 학생 PC가 Neo4j 회사로 사용 통계를 보내지 않게(dbms.usage_report.enabled)
     volumes: ["neo4j-data:/data"]
     healthcheck:
-      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/localhost/7687' || exit 1"]   # Bolt port probe: no extra JVM (cypher-shell) inside the memory cap
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/localhost/7687' || exit 1"]   # Bolt 포트만 연결해 본다 — 메모리 한도 안에서 JVM(cypher-shell)을 하나 더 띄우지 않는다
       interval: 5s
       timeout: 10s
       retries: 40
@@ -303,8 +312,6 @@ services:
     image: neo4j:5.26-community
     networks: [it-net]
     entrypoint: ["/bin/bash", "/seed/seed.sh"]
-    environment:
-      SEED_EDITION: ${SEED_EDITION:-structure}   # 확정 TODO C1: structure 수업용 구조판(강의 기본, 고장 · 조치 지식은 문서 적재) | full 회귀용 전체판(회귀 · 통합 시험)
     volumes: ["./it/neo4j:/seed:ro"]
     depends_on:
       neo4j: { condition: service_healthy }
@@ -318,22 +325,19 @@ services:
     networks: [it-net]
     ports: ["127.0.0.1:${HYD_PORT_8091:-8091}:8091"]
     environment:
-      KAFKA_BOOTSTRAP: redpanda:9092
-      TSDB_DSN: ${TSDB_READ_DSN:-postgresql://hyd_timeseries_reader:hyd-timeseries-read-local@timescaledb:5432/hyd}
-      DAQ_PROFILE: ${DAQ_PROFILE:-lite}     # Evidence 구간 공백 한도 = 감지기와 같은 수집 계약 (A083)
+      TSDB_READ_DSN: *tsdb-read-dsn
+      DAQ_PROFILE: *daq-profile          # 근거 구간의 공백 한도 = 감지기와 같은 수집 계약
       NEO4J_URI: bolt://neo4j:7687
       NEO4J_AUTH: neo4j/hydpass123
       PROCESS_URL: http://process:8080
       ENTERPRISE_URL: http://enterprise-sim:8095
       ENTERPRISE_READ_DSN: ${ENTERPRISE_READ_DSN:-postgresql://hyd_enterprise_reader:hyd-enterprise-read-local@host.docker.internal:54322/postgres}
-    extra_hosts: ["host.docker.internal:host-gateway"]   # ENTERPRISE_READ_DSN points at the host Supabase; Docker Desktop resolves the name by itself, Linux Engine only with this
+    extra_hosts: ["host.docker.internal:host-gateway"]   # 업무 DB(호스트의 Supabase) 이름 — Docker Desktop 은 스스로 풀고, Linux 엔진은 이 줄이 있어야 푼다
     depends_on:
       kg-seed: { condition: service_completed_successfully }
       connect-sink: { condition: service_healthy }
       process: { condition: service_healthy }
       enterprise-sim: { condition: service_healthy }
-      redpanda: { condition: service_healthy }
-      topic-init: { condition: service_completed_successfully }
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8091/healthz')"]
       <<: *py-health
@@ -352,41 +356,23 @@ services:
       PG_DSN: postgresql://hyd:hyd@timescaledb:5432/hyd
       NEO4J_URI: bolt://neo4j:7687
       NEO4J_AUTH: neo4j/hydpass123
-      TIME_SCALE: ${TIME_SCALE:-20}
+      TIME_SCALE: *time-scale
+      #   대기 압축: 시간 대기 · 입고 확인과 그 경계 타이머만 배속 × 이 배율(20배속 × 60 = 1200배 — 납기 5일이 6분). 설비 · 감지기 · 재관측은 배속만,
+      #   사람이 읽고 고르는 시간(승인 시한 · 카드 신선도 · 승인 지연 알림)은 벽시계다
+      PROCESS_WAIT_COMPRESSION: "60"
       ENTERPRISE_URL: http://enterprise-sim:8095
       # 경보가 프로세스 인스턴스(처리 건)를 열고 에이전트 · 사람은 그 안의 작업 — 업무 DB(Supabase)가 원천이다.
       SUPABASE_DSN: ${SUPABASE_DSN:-postgresql://postgres:postgres@host.docker.internal:54322/postgres}
-      # A11 데이터 패브릭(/api/fabric/*): 쓰기 연결이 아니라 두 전용 읽기 계정만 쓴다
+      # 데이터 패브릭(/api/fabric/*): 쓰기 연결이 아니라 두 전용 읽기 계정만 쓴다
       ENTERPRISE_READ_DSN: ${ENTERPRISE_READ_DSN:-postgresql://hyd_enterprise_reader:hyd-enterprise-read-local@host.docker.internal:54322/postgres}
-      TSDB_READ_DSN: ${TSDB_READ_DSN:-postgresql://hyd_timeseries_reader:hyd-timeseries-read-local@timescaledb:5432/hyd}
-      # 포털 "에이전트 현황": 워커의 /health · /agents. 컨테이너 워커(기본)면 agent-worker:8097, 개발용 호스트 워커면 .env 에 host.docker.internal:8097
-      WORKER_URL: ${WORKER_URL:-http://agent-worker:8097}
-      # A131: 1 mounts GET /debug/memory (tracemalloc · RSS · container sizes) for OOM diagnosis; off in the product default
-      PROCESS_MEMDEBUG: ${PROCESS_MEMDEBUG:-0}
-      # 외부 도구 서버 OAuth 자격 증명은 process 데이터 볼륨의 키 파일로 암호화한다(PBL 단계에서 쓴다).
-      HYD_MCP_OAUTH_KEY_FILE: /data/mcp/oauth.key
+      TSDB_READ_DSN: *tsdb-read-dsn
       HYD_WORKER_RUNTIME_KEY_FILE: /run/hyd-credentials/runtime.key
       # 강의 중계(LiteLLM, Anthropic 방식 주소 — 끝에 /v1 없음). 키는 process 만 받고 워커 CLI 에는 작업에 묶인 토큰만 간다(course_model.py)
       LLM_API_KEY: ${LLM_API_KEY:-}
-      LLM_RELAY_URL: ${LLM_RELAY_URL:-https://knu-litellm-1087825885001.asia-northeast3.run.app}
+      LLM_RELAY_URL: https://knu-litellm-1087825885001.asia-northeast3.run.app
       # 업무 시스템 쓰기 · 승인 뒤 메일 도구를 process 만 부르게 하는 값(enterprise-sim · effects-mcp 와 같은 값), 승인 장부 지문 키(cmd-gateway 와 같은 값)
       PROCESS_CALLER_TOKEN: ${PROCESS_CALLER_TOKEN:?시작 파일이 정합니다}
       CMD_FINGERPRINT_KEY: ${CMD_FINGERPRINT_KEY:?시작 파일이 정합니다}
-      HYD_MCP_OAUTH_CALLBACK_URL: ${HYD_MCP_OAUTH_CALLBACK_URL:-http://localhost:8088/api/mcp/connections/callback}
-      # Optional operator settings; unset values are omitted, never printed.
-      HYD_MCP_OAUTH_CLIENTS:
-      HYD_MCP_OAUTH_PRIVATE_ORIGINS:
-      # C2 승인 뒤 실행 부품
-      #   대기 압축: 시간 대기 · 입고 확인과 그 경계 타이머만 배속 × 이 배율 (60 → 20배속에서 납기 5일 = 6분). 설비 · 감지기 · 재관측은 배속만.
-      PROCESS_WAIT_COMPRESSION: ${PROCESS_WAIT_COMPRESSION:-60}
-      #   정비 수행 모사 = 실습 시뮬레이터 조작(현장 정비 대역). plant-sim 과 process 가 함께 붙은 sim-net 으로 compose 서비스 이름으로 간다
-      #   (호스트 포트 127.0.0.1:8000 은 Linux 컨테이너에서 닿지 않는다. Mac/Windows Docker Desktop 에서도 같은 값이 동작)
-      PLANT_SIM_URL: ${PLANT_SIM_URL:-http://plant-sim:8000}
-      #   승인 뒤 MCP 호출 서버 (기본 hyd-effects = effects-mcp). JSON {이름: tenants.mcp 와 같은 설정}
-      EFFECT_MCP_SERVERS: ${EFFECT_MCP_SERVERS:-}
-      #   업무 표 감시(재고 C · 정기 정비 B → 처리 건 자동 시작). 기본 0 = 끔: C3 부터 B · C 는 포털 결함 실험 버튼이 연다(시작 상태가 곧 도래 · 이탈이라 켜 두면 바로 열림)
-      BUSINESS_MONITOR: ${BUSINESS_MONITOR:-0}
-      BUSINESS_MONITOR_INTERVAL_S: ${BUSINESS_MONITOR_INTERVAL_S:-15}
     extra_hosts: ["host.docker.internal:host-gateway"]
     depends_on:
       redpanda: { condition: service_healthy }
@@ -411,7 +397,7 @@ services:
       test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8095/healthz')"]
       <<: *py-health
 
-  effects-mcp:                            # C2: 사람 승인 뒤 시스템 task 가 부르는 쓰기 MCP (메일 → Inbucket · CMMS 일정 · 처리 건 기록). 에이전트에는 붙이지 않는다
+  effects-mcp:                            # 사람 승인 뒤 시스템 task 가 부르는 쓰기 도구 서버(메일 보내기 send_mail). 에이전트에는 붙이지 않는다
     restart: unless-stopped
     logging: *log
     mem_limit: 128m
@@ -419,8 +405,7 @@ services:
     networks: [it-net]
     ports: ["127.0.0.1:${HYD_PORT_8197:-8197}:8197"]
     environment:
-      SMTP_HOST: ${EFFECTS_SMTP_HOST:-host.docker.internal}      # Supabase 로컬 Inbucket (it/supabase/config.toml [inbucket] smtp_port)
-      SMTP_PORT: ${EFFECTS_SMTP_PORT:-54325}
+      SMTP_PORT: ${EFFECTS_SMTP_PORT:-54325}   # 메일은 이 PC의 업무 DB 메일함(Supabase Inbucket, config.toml [inbucket] smtp_port)으로만 — 주소는 host.docker.internal(코드 기본값)
       EFFECTS_STATE_PATH: /data/effects.sqlite3
       PROCESS_CALLER_TOKEN: ${PROCESS_CALLER_TOKEN:?시작 파일이 정합니다}   # 쓰기 도구는 process 만
     extra_hosts: ["host.docker.internal:host-gateway"]
@@ -429,18 +414,22 @@ services:
       test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8197/healthz')"]
       <<: *py-health
 
-  portal:                                 # L9 운전원 가이드 앱 · 설비 포탈 (정적 SPA)
+  portal:                                 # L9 운전원 가이드 앱 · 설비 포탈 (정적 SPA + 서비스로 가는 같은 출처 길 /svc/…)
     restart: unless-stopped
     logging: *log
     mem_limit: 32m
-    image: nginx:1.27-alpine
-    networks: [it-net]
+    # 다른 서비스처럼 시작(up --build)이 같은 판의 화면을 이미지로 굽는다 — 실행 중에 받은 새 판 · 손댄 파일이 옛 판 서비스 앞에 바로 보이지 않는다.
+    # nginx 이미지가 templates 의 ${HYD_PORTS} 를 채워 conf.d 에 쓴다. 화면을 고치며 바로 보려면 compose.override.yaml 에서 두 자리를 bind mount 한다(RUNBOOK)
+    build:
+      context: ./it/portal
+      dockerfile_inline: |
+        FROM nginx:1.27-alpine
+        COPY www /usr/share/nginx/html
+        COPY nginx.conf /etc/nginx/templates/default.conf.template
+    networks: [it-net, sim-net]           # sim-net: 같은 출처 길 /svc/plant-sim/ 이 시뮬레이터 API(:8000)에만 닿는다(OT MQTT 망에는 붙지 않음)
     ports: ["127.0.0.1:${HYD_PORT_8088:-8088}:80"]
     environment:
-      HYD_PORTS: ${HYD_PORTS:-}                  # 겹쳐서 옮긴 바깥 포트 표 "원래=새것 …"(start_all.sh가 .env에 씀). 포털 화면에 끼워 넣는다
-    volumes:
-      - ./it/portal/www:/usr/share/nginx/html:ro
-      - ./it/portal/nginx.conf:/etc/nginx/templates/default.conf.template:ro   # nginx 이미지가 환경변수를 채워 conf.d에 쓴다
+      HYD_PORTS: ${HYD_PORTS:-}                  # 겹쳐서 옮긴 바깥 포트 표 "원래=새것 …"(시작이 .env에 씀). 새 탭으로 여는 도구 화면 주소에 쓴다
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
       <<: *py-health
@@ -461,7 +450,7 @@ services:
       test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8199/healthz')"]
       <<: *py-health
 
-  enterprise-mcp-maint:                   # C2: 업무 MCP 보전용(정비 계획 · 운전시간 계수기 · 작업지시 · 생산 오더) — 같은 코드, 도구 묶음만 다름
+  enterprise-mcp-maint:                   # 업무 도구 서버 보전용(정비 계획 · 운전시간 계수기 · 작업지시 · 생산 오더) — 같은 코드, 도구 묶음만 다름
     restart: unless-stopped
     logging: *log
     mem_limit: 160m
@@ -477,7 +466,7 @@ services:
       test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8196/healthz')"]
       <<: *py-health
 
-  enterprise-mcp-purchase:                # C2: 업무 MCP 구매용(ERP 예비품 재고 · SCM 공급사 견적)
+  enterprise-mcp-purchase:                # 업무 도구 서버 구매용(ERP 예비품 재고 · SCM 공급사 견적)
     restart: unless-stopped
     logging: *log
     mem_limit: 160m
@@ -501,15 +490,15 @@ services:
     networks: [it-net]
     ports: ["127.0.0.1:${HYD_PORT_8198:-8198}:8198"]
     environment:
-      TSDB_DSN: ${TSDB_READ_DSN:-postgresql://hyd_timeseries_reader:hyd-timeseries-read-local@timescaledb:5432/hyd}
-      DAQ_PROFILE: ${DAQ_PROFILE:-lite}     # Evidence 구간 공백 한도 = 감지기와 같은 수집 계약 (A083)
+      TSDB_READ_DSN: *tsdb-read-dsn
+      DAQ_PROFILE: *daq-profile          # 근거 구간의 공백 한도 = 감지기와 같은 수집 계약
       NEO4J_URI: bolt://neo4j:7687
       NEO4J_AUTH: neo4j/hydpass123
       PROCESS_URL: http://process:8080
       ENTERPRISE_URL: http://enterprise-sim:8095
       INGEST_URL: http://connect-ingest:8093/healthz
       ENTERPRISE_READ_DSN: ${ENTERPRISE_READ_DSN:-postgresql://hyd_enterprise_reader:hyd-enterprise-read-local@host.docker.internal:54322/postgres}
-    extra_hosts: ["host.docker.internal:host-gateway"]   # same reason as agent: physical InputData reads go to the host Supabase
+    extra_hosts: ["host.docker.internal:host-gateway"]   # agent 와 같은 까닭: 입력 데이터 원천 읽기가 호스트의 업무 DB 로 간다
     depends_on:
       kg-seed: { condition: service_completed_successfully }
       process: { condition: service_healthy }
@@ -530,8 +519,8 @@ services:
       # 시작 스크립트가 .env 에 정한다: 키 있으면 live, 없으면 replay(강사가 저장한 응답), 저장은 start_all.sh --record
       AI_MODE: ${AI_MODE:?시작 파일이 정합니다}
       AI_REPLAY_DIR: /srv/replay
-      # the worker is the ProcessGPT agent type `cliagents` (process-gpt-cli-agent): it polls todolist through fetch_pending_task,
-      # reads the tenant's MCP servers from tenants.mcp (seed.sql) and stores results with save_task_result.
+      # 워커는 ProcessGPT 에이전트 종류 `cliagents`(process-gpt-cli-agent): todolist 를 fetch_pending_task 로 집고,
+      # 테넌트의 도구 서버를 tenants.mcp(seed.sql)에서 읽고, 결과를 save_task_result 로 남긴다.
       SUPABASE_DSN: ${SUPABASE_DSN:-postgresql://postgres:postgres@host.docker.internal:54322/postgres}
       TENANT_ID: hyd
       CONSUMER_ID: agent-worker:docker
@@ -541,10 +530,7 @@ services:
       HYD_WORKER_RUNTIME_KEY_FILE: /run/hyd-credentials/runtime.key
       DISABLE_TELEMETRY: "1"
       CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1"
-      CLIAGENTS_DEFAULT_PERMISSION: ${CLIAGENTS_DEFAULT_PERMISSION:-workspace_write}
-      CLIAGENTS_RUN_TIMEOUT_SECONDS: ${CLIAGENTS_RUN_TIMEOUT_SECONDS:-1800}
-      CLIAGENTS_WORKSPACE_ROOT: /workspace
-      ALLOWED_TOOLS: ${ALLOWED_TOOLS:-}                         # 비우면 worker/settings.py 의 DEFAULT_ALLOWED_TOOLS(허용 도구 목록 한 곳)
+      CLIAGENTS_WORKSPACE_ROOT: /workspace   # 권한 · 실행 시한 · 허용 도구 목록은 worker/settings.py 한 곳
     extra_hosts: ["host.docker.internal:host-gateway"]
     depends_on:
       process: { condition: service_healthy }

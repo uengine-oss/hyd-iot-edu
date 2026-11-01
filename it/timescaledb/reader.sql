@@ -1,4 +1,6 @@
--- Dedicated sensor-query principal. Apply to existing databases without reset.
+-- Dedicated sensor-query principal (process · agent · dmn-mcp read tag_1s · feat_1s · tag_1m with it). Applied by initdb when
+-- the volume is created; a database created before this file existed gets it with (idempotent, no reset):
+--   docker compose exec -T timescaledb psql -U hyd -d hyd -f /docker-entrypoint-initdb.d/reader.sql
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='hyd_timeseries_reader') THEN
     CREATE ROLE hyd_timeseries_reader LOGIN PASSWORD 'hyd-timeseries-read-local';

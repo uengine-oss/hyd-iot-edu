@@ -1,4 +1,4 @@
-/* U1 — task 상세 패널 (처리 건 · 흐름 탭). 흐름도의 task 노드나 단계 행을 누르면 그 단계가 한 일을 다섯 칸으로 보여 준다:
+/* U1 — task 상세 패널 (처리 건 · 흐름 탭). 흐름도의 task 노드나 단계 행을 누르면 그 단계가 한 일을 네 칸으로 보여 준다:
      ① 받은 입력(값과 어느 단계에서 왔는지) ② 처리 과정 타임라인(시작 · 에이전트 판단 메시지 · 도구 호출 · 판단 근거 · 사람 질문 · 완료/실패)
      ③ 판단 · 출력(판단 근거 요지 + 읽기 쉬운 표, 원문은 접기) ④ 다음 단계로 넘긴 값 ⑤ 진행 중이면 그 단계만의 실시간 흐름.
    단계 종류별: 에이전트(원인 점수 · 조건 / 카드 점수 구성 / 판단 메시지), 사람(받은 카드 · 권고 · 고른 것 · 사유 · 승인자 · 대기 경과),
@@ -7,43 +7,40 @@
    process-gpt-vue3 대응: apps/todolist/WorkItem.vue(업무 상세 탭: 진행 · 기록 · 산출물), apps/todolist/InstanceTimeline.vue
    (events 를 todo_id 로 묶어 업무 하나 = 메시지 하나, isAgentFinished), ui/WorkItemChat.vue(도구 입력 · 결과 접기),
    apps/todolist/InstanceProgress.vue(흐름도 단계 → 그 단계 산출물).
-   읽는 것: GET /api/todolist/{id} (inputs · input_sources · 그 단계의 events · form), 처리 건 view(정의 · 변수 출처 · 승인),
+   읽는 것: GET /api/todolist/{id} (inputs · 그 단계의 events · form), 처리 건 view(정의 · 변수 출처 · 승인),
    GET /api/decisions/{id}(카드 · 점수 구성 — 순위 · 선택 단계), GET /api/incidents/{id}(명령 · 응답 · 효과 확인 — 시스템 단계),
    GET /api/events/stream(liveStream.js 가 push 때 onEvent 로 넘겨 준다 — todo_id 로 거른다). 엔진을 부르지 않는다(읽기만). */
 (function () {
-  const LIVE = new Set(['IN_PROGRESS', 'SUBMITTED', 'PENDING', 'NEW']);
+  const LIVE = { has: s => hydSteps.stepStateOf(s) === 'current' };   // 살아 있는 단계 상태 규칙은 instanceSteps.js 하나(W1-11)
   const HIDDEN_OUTPUT = new Set(['text', 'cliagents_session_id']);
   const REFRESH_ON = new Set(['task_started', 'task_completed', 'task_cancelled', 'human_asked', 'human_response', 'error']);
-  const DECISION_TOOLS = new Set(['formHandler:rank', 'formHandler:select_card']);
-  const OP = { lt: '<', lte: '≤', gt: '>', gte: '≥', eq: '=', '<': '<', '>=': '≥', '<=': '≤', '>': '>' };
-  const TAG = { TS1: '유온 TS1', PS1: '압력 PS1', VS1: '진동 VS1' };
   const NOTE_SHOW = 600;
   const T = { wid: null, act: null, item: null, error: null, host: null, loading: false, rendered: null,
-              dec: null, decId: null, decErr: null, inc: null, incId: null, incErr: null, incAt: 0, last: {}, pending: null };
+              dec: null, decId: null, decErr: null, inc: null, incId: null, incErr: null, incAt: 0, last: {}, lastOrder: [], pending: null };
   Object.assign(UI.terms, {
     'td.inputs': '받은 입력', 'td.trace': '처리 과정', 'td.output': '판단 · 출력', 'td.next': '다음 단계로 넘긴 값', 'td.close': '닫기',
     'td.noInputs': '이 단계는 입력 값을 읽지 않습니다', 'td.noOutput': '아직 출력이 없습니다', 'td.noNext': '넘긴 값 없음', 'td.noTrace': '아직 기록이 없습니다',
-    'td.captured': '단계를 시작할 때 고정한 값', 'td.waiting': '필요한 값이 아직 없어 기다리는 중', 'td.current': '처리 건의 현재 값 (단계가 끝난 뒤 바뀌었을 수 있음)',
-    'td.from': '에서 받음', 'td.start': '시작', 'td.assigned': '배정', 'td.running': '실행 중', 'td.result': '결과', 'td.error': '오류',
-    'td.agentWorking': '에이전트가 작업하는 중…', 'td.humanWaiting': '담당자의 입력을 기다리는 중', 'td.systemWaiting': '시스템 응답을 기다리는 중',
-    'td.engineWorking': '제출됨 · 다음 단계로 넘기는 중', 'td.pendingWait': '보류 · 조건이 맞을 때까지 대기', 'td.askWait': '사람의 답변을 기다리는 중',
-    'td.delivered': '넘김', 'td.superseded': '다른 차수의 값으로 대체됨', 'td.notYet': '아직 넘기지 않음', 'td.consumers': '받는 단계', 'td.noConsumer': '받는 단계 없음',
+    'td.current': '처리 건의 현재 값 (단계가 끝난 뒤 바뀌었을 수 있음)',
+    'td.from': '에서 받음', 'td.start': '시작', 'td.assigned': '배정', 'td.result': '결과', 
+    
+    
+    'td.delivered': '넘김', 'td.superseded': '다른 차수의 값으로 대체됨', 'td.notYet': '아직 넘기지 않음', 'td.consumers': '받는 단계', 
     'td.cards': '받은 조치 카드', 'td.chosen': '고른 조치', 'td.reason': '사유', 'td.approver': '승인자', 'td.delivery': '승인 전달', 'td.sent': '보낸 명령', 'td.response': '설비 응답',
-    'td.instruction': '에이전트에게 준 지시', 'td.tokens': '모델 사용량', 'td.options': '선택지', 'td.outputKeys': '출력', 'td.prose': '서술 결과',
+    'td.prose': '서술 결과',
     'td.planned': '아직 시작하지 않은 단계', 'td.plannedSub': '정의에 적힌 입력과 출력입니다', 'td.expects': '읽을 값', 'td.produces': '만들 값', 'td.who': '수행',
     'td.otherRound': '다음 회차 값', 'td.otherRoundSub': '이 단계는 다시 수행됐습니다. 아래는 이 회차가 받은 값이 아니라 처리 건의 지금 값입니다.',
-    'td.loadFail': '단계 상세를 읽지 못했습니다', 'td.liveOn': '실시간', 'td.model': '모델',
+    'td.loadFail': '단계 상세를 읽지 못했습니다', 'td.liveOn': '실시간', 
     // U1 추가: 판단 근거 · 사람 · 시스템 · 매뉴얼 · 지금
-    'td.note': '에이전트 판단', 'td.noteMore': '판단 전문', 'td.basis': '판단 근거', 'td.finalText': '에이전트 최종 답변',
+    'td.note': '에이전트 판단', 'td.noteMore': '판단 전문', 'td.basis': '판단 근거', 
     'td.cause': '원인', 'td.prior': '사전확률', 'td.causeScore': '점수', 'td.conditions': '근거 조건', 'td.passedOf': '통과 근거',
     'td.causeFormula': '원인 점수 = 사전확률 × (통과한 근거 가중치 ÷ 전체 근거 가중치). 확인되지 않은 근거가 있으면 점수를 매기지 않습니다.',
     'td.rank': '순위', 'td.card': '카드', 'td.parts': '점수 구성', 'td.verdict': '판정', 'td.formula': '점수 식', 'td.rankRule': '순위 규칙', 'td.selectedBy': '선정 규칙',
     'td.recommended': '권고', 'td.differs': '권고와 다름', 'td.decState': '판단 결과 상태', 'td.wait': '대기', 'td.waitFor': '경과', 'td.dueLeft': '기한까지', 'td.overdue': '기한 지남',
     'td.timeout': '선택 기한이 지나 책임자 확인 단계로 넘어갔습니다', 'td.decFail': '조치 카드를 읽지 못했습니다',
-    'td.cmdId': '명령 번호', 'td.ackWait': '설비 응답을 기다리는 중', 'td.ackDone': '설비가 실행함', 'td.ackRejected': '설비가 거부함', 'td.interlock': '인터록',
+    'td.cmdId': '명령 번호', 'td.ackWait': '설비 응답을 기다리는 중', 'td.ackDone': '설비가 실행함', 'td.ackRejected': '설비가 거부함', 'td.interlock': '안전 연동',
     'td.criterion': '회복 기준', 'td.remeasure': '재측정', 'td.remeasureIn': '재측정까지', 'td.remeasureDue': '재측정 시각 지남 · 판정 대기', 'td.extensions': '연장',
     'td.cleared': '경보 해제', 'td.recoveryBasis': '회복 근거', 'td.incFail': '사건 상태를 읽지 못했습니다', 'td.scaleNote': '설비 시간 {sim} 창',
-    'td.source': '원문', 'td.pages': '쪽', 'td.chars': '자', 'td.segment': '담당 구간', 'td.feedback': '사람 검토 판정', 'td.sections': '절', 'td.procedures': '절차', 'td.warnings': '주의',
+    'td.pages': '쪽', 'td.chars': '자', 'td.sections': '절', 'td.procedures': '절차', 'td.warnings': '주의',
     'td.steps': '단계', 'td.pageReviews': '페이지 검토',
     'td.now': '지금', 'td.ended': '끝', 'td.nowTool': '도구 {tool} 호출 중', 'td.nowNote': '판단을 정리하는 중', 'td.nowBasis': '판단 근거를 기록함', 'td.nowStarted': '작업을 시작함',
     'td.nowClaimed': 'AI 일꾼이 작업 중', 'td.nowQueued': 'AI 일꾼이 집어 가기를 기다리는 중', 'td.nowAsk': '사람의 답변을 기다리는 중', 'td.nowSubmitted': '결과 제출 · 다음 단계로 넘기는 중',
@@ -51,21 +48,15 @@
     'td.nowSystem': '처리하는 중', 'td.nothing': '지금 진행 중인 단계가 없습니다', 'td.seeOutput': '위 판단 · 출력의 값 그대로',
   });
 
-  // 처리 건 변수의 화면 이름 — 정의 설명문에는 규칙 id(dec:…)·클래스 이름이 섞여 있어 이름표를 따로 둔다(이미 있는 것은 덮지 않음)
-  Object.entries({ 'var.alert': '경보 메시지', 'var.guide_card': '원인 분석 카드', 'var.candidates': '조치 후보', 'var.compliance': '규정 판정', 'var.decision': '조치 카드 묶음',
-    'var.decision_id': '조치 카드 묶음 번호', 'var.incident': '사건', 'var.commands': '설비 명령', 'var.chosen_option': '고른 조치 카드', 'var.incident_outcome': '사건 결과',
-    'var.manual_source': '원문 문서', 'var.review_feedback': '사람 검토 판정', 'var.segment': '담당 구간', 'var.proposal': '추출 제안', 'var.ontology_catalog': '온톨로지 목록' })
-    .forEach(([k, label]) => { if (!(k in UI.terms)) UI.terms[k] = label; });
-
   const view = () => (window.hydInstances && window.hydInstances.I && window.hydInstances.I.view) || null;
-  const vars = inst => Object.fromEntries((inst.variables_data || []).map(x => [x.key, x.value]));
+  const vars = inst => UI.valuesOf(inst);
   const workitemOf = wid => { const v = view(); return (v && v.workitems.find(w => w.id === wid)) || null; };
   const activityOf = (v, id) => ((v.definition || {}).activities || []).find(a => a.id === id) || null;
   const isEventNode = (v, id) => ((v.definition || {}).events || []).some(e => e.id === id);
   function latestFor(v, activityId) {
     return v.workitems.filter(w => w.activity_id === activityId).sort((a, b) => (b.generation || 0) - (a.generation || 0) || (b.start_date || '').localeCompare(a.start_date || ''))[0] || null;
   }
-  const kindOf = w => (w.agent_orch === 'cliagents' || w.agent_mode) ? 'agent' : (!w.agent_orch && !w.agent_mode) ? 'human' : 'system';
+  const kindOf = w => UI.doerOf(w);
   function varName(key, v) {
     const row = ((v.definition || {}).data || []).find(d => d.name === key);
     if (UI.terms['var.' + key]) return UI.terms['var.' + key];
@@ -77,7 +68,7 @@
     return row && row.name && row.name !== key ? row.name : key;
   }
   const fmtMs = ms => hydTrace.fmtMs(ms);   // 시간 표시는 trace.js 하나
-  const num = x => typeof x === 'number' && Number.isFinite(x) ? (Number.isInteger(x) ? x.toLocaleString('ko-KR') : String(Math.round(x * 100) / 100)) : (x == null ? '–' : String(x));
+  const num = x => typeof x === 'number' && Number.isFinite(x) ? hydWords.num(x) : (x == null ? '–' : String(x));   // 숫자 형식은 포털 하나(W.num)
   const signed = x => typeof x === 'number' && Number.isFinite(x) ? (x > 0 ? '+' : '') + num(x) : '미확인';
   function brief(x, n = 160) {
     if (x == null) return '';
@@ -104,7 +95,6 @@
   const rawFold = (v, k) => v == null ? '' : `<details class="fold small" data-k="${esc(k)}"><summary>${esc(UI.t('raw'))}</summary><pre>${esc(JSON.stringify(v, null, 2))}</pre></details>`;
   const table = (head, rows) => `<div class="table-scroll"><table class="inst-table td-table"><thead><tr>${head.map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
   const scoreLabel = k => UI.terms['score.' + k] || k;
-  const timeScale = () => { const I = window.hydInstances && window.hydInstances.I; const x = I && I.mode && Number(I.mode.time_scale); return Number.isFinite(x) && x > 0 ? x : null; };
 
   /* ---------- 값 → 읽기 쉬운 HTML (키별 특수 렌더 → 일반 규칙) ---------- */
   function valueHtml(key, value, v, depth = 0) {
@@ -113,7 +103,7 @@
     if (special && value && typeof value === 'object') { const html = special(value, v); if (html) return html + rawFold(value, 'raw:' + key); }
     if (value == null) return `<span class="muted">${esc(UI.t('inst.noValue'))}</span>`;
     if (typeof value === 'boolean') return esc(value ? UI.t('yes') : UI.t('no'));
-    if (typeof value === 'number') return esc(value.toLocaleString('ko-KR'));
+    if (typeof value === 'number') return esc(hydWords.num(value));
     if (key === 'chosen_skill_kind' && (value === 'control' || value === 'work_order')) return esc(value === 'control' ? UI.t('chip.control') : UI.t('chip.workOrder'));
     if (typeof value==='string' && ['incident','alert_id','alertId'].includes(key)) return esc(`${key==='incident' ? '사건' : '경보'} 식별값 있음 · 원문 확인`)+rawFold(value,'raw:'+key);
     if (typeof value==='string' && key==='pattern') {
@@ -139,7 +129,7 @@
     const status = e.status || (e.passed === true ? 'PASS' : e.passed === false ? 'FAIL' : 'UNKNOWN');
     const tone = status === 'PASS' ? 'success' : status === 'FAIL' ? 'neutral' : 'warning';
     const label = status === 'PASS' ? UI.t('inc.pass') : status === 'FAIL' ? UI.t('inc.fail') : UI.t('inc.unknown');
-    const rule = e.expect && e.threshold != null ? ` ${OP[e.expect] || e.expect} ${num(e.threshold)}` : '';
+    const rule = e.expect && e.threshold != null ? ` ${hydWords.sym(e.expect)} ${num(e.threshold)}` : '';
     return `<div class="td-cond">${UI.chipText(label, tone)} ${esc(UI.idText(e.name || e.id || ''))}${esc(rule)} <span class="muted">· ${esc(UI.t('inc.observed'))} ${esc(num(e.value))}${e.weight != null ? ` · 가중치 ${esc(num(e.weight))}` : ''}</span>${status === 'UNKNOWN' && (e.error || e.reason) ? ` <span class="muted">${esc(UI.idText(e.error || e.reason))}</span>` : ''}</div>`;
   }
   // 원인 점수 · 조건 표 (guide_card.causes — 내장 판단 경로는 agentsvc card.rank_causes 의 prior · score · evidence 그대로)
@@ -265,13 +255,12 @@
     if (!keys.length) return `<p class="muted">${esc(UI.t('td.noInputs'))}</p>`;
     const current = vars(v.instance);
     const values = item ? item.inputs || {} : current;
-    const sources = (item && item.input_sources) || v.instance.variable_sources || {};
-    const state = item ? item.input_state : 'current';
+    const sources = v.instance.variable_sources || {};   // 입력은 늘 지금 처리 건 값 — 출처는 처리 건 view 의 variable_sources(입력 출처 묶기는 서버에서 지웠다)
     const rows = keys.map(k => UI.readonly(varName(k, v), valueHtml(k, values[k], v), originText(sources[k], v))).join('');
     // A161-U1 (A160 결함 16): an earlier round of a step that ran again shows the case's current values — say so plainly
-    const newer = state === 'current' && v.workitems.some(x => x.activity_id === w.activity_id && (x.generation || 0) > (w.generation || 0));
+    const newer = v.workitems.some(x => x.activity_id === w.activity_id && (x.generation || 0) > (w.generation || 0));
     const hint = newer ? `<p class="field-hint warn-hint">${UI.chipText(UI.t('td.otherRound'), 'warning')} ${esc(UI.t('td.otherRoundSub'))}</p>`
-      : `<p class="field-hint">${esc(UI.t(state === 'captured' ? 'td.captured' : state === 'waiting' ? 'td.waiting' : 'td.current'))}</p>`;
+      : `<p class="field-hint">${esc(UI.t('td.current'))}</p>`;
     if (newer) return `<p class="field-error">이 회차가 받은 값은 저장되어 있지 않습니다.</p>${UI.fold('처리 건의 현재 값 (이 회차 입력 아님)', `${hint}<div class="ro-grid">${rows}</div>`)}`;
     return `${hint}<div class="ro-grid">${rows}</div>`;
   }
@@ -328,7 +317,7 @@
       UI.readonly(UI.t('td.approver'), esc(UI.who(p.by || (d && d.approvedBy) || (w.status === 'DONE' ? current.approved_by : '') || '–')) + ((p.role || (d && d.approvedRole)) ? ` (${esc(UI.who(p.role || d.approvedRole))})` : '')),
       waitRow(w),
       d ? UI.readonly(UI.t('td.decState'), UI.chip(d.state)) : '',
-      approval ? UI.readonly(UI.t('td.delivery'), `${UI.chip(approval.status)} <span class="muted">· ${esc(approval.attempts)}회 시도</span>${approval.error ? `<p class="neg">${esc(approval.error)}</p>` : ''}`) : '',
+      approval ? UI.readonly(UI.t('td.delivery'), `${UI.deliveryChip(approval.status)} <span class="muted">· ${esc(approval.attempts)}회 시도</span>${approval.error ? `<p class="neg">${esc(approval.error)}</p>` : ''}`) : '',
     ];
     return `<div class="ro-grid">${rows.join('')}</div><p class="kv-line" style="margin-top:var(--s3)"><b>${esc(UI.t('td.cards'))}</b></p>${cards}${rawFold(w.output, 'raw:output')}`;
   }
@@ -358,10 +347,10 @@
     const tool = w.tool || ((activityOf(v, w.activity_id) || {}).tool) || '';
     const rows = [];
     if (tool === 'incident:command') {
-      rows.push(UI.readonly(UI.t('td.sent'), SPECIAL.commands(current.commands) || SPECIAL.commands(inc.actions) || `<span class="muted">${esc(UI.t('inst.noValue'))}</span>`, inc.approvedBy ? `${UI.t('td.approver')} ${inc.approvedBy}` : ''));
+      rows.push(UI.readonly(UI.t('td.sent'), SPECIAL.commands(current.commands) || SPECIAL.commands(inc.actions) || `<span class="muted">${esc(UI.t('inst.noValue'))}</span>`, inc.approvedBy ? `${UI.t('td.approver')} ${UI.who(inc.approvedBy)}` : ''));
       if (inc.cmdId) rows.push(UI.readonly(UI.t('td.cmdId'), `<span class="mono">${esc(inc.cmdId)}</span>`));
       const ack = inc.ack;
-      rows.push(UI.readonly(UI.t('td.response'), ack ? `${ack.result === 'DONE' ? UI.chipText(UI.t('td.ackDone'), 'success') : UI.chipText(UI.t('td.ackRejected'), 'danger')}${ack.reason ? ` <span class="muted">${esc(UI.logText(ack.reason))}</span>` : ''}${ack.interlock ? ` · ${esc(UI.t('td.interlock'))} ${esc(ack.interlock)}` : ''}`
+      rows.push(UI.readonly(UI.t('td.response'), ack ? `${ack.result === 'DONE' ? UI.chipText(UI.t('td.ackDone'), 'success') : UI.chipText(UI.t('td.ackRejected'), 'danger')}${ack.reason ? ` <span class="muted">${esc(UI.logText(ack.reason))}</span>` : ''}${ack.interlock ? ` · ${esc(UI.t('td.interlock'))} ${esc(UI.status(ack.interlock))}` : ''}`
         : inc.state === 'AWAITING_ACK' ? `<span class="muted">${esc(UI.t('td.ackWait'))}</span>` : esc(UI.status(inc.state)), ack && ack.t ? UI.dateTime(ack.t) : ''));
     }
     if (tool === 'incident:reobserve') rows.push(...reobserveRows(inc, w));
@@ -377,7 +366,7 @@
   function reobserveRows(inc, w) {
     const rows = [];
     const crit = (inc.recoveryPolicy || {}).criterion;
-    if (Array.isArray(crit)) rows.push(UI.readonly(UI.t('td.criterion'), `<span class="kv">${esc(TAG[crit[0]] || crit[0])} ${esc(OP[crit[1]] || crit[1])} ${esc(num(crit[2]))}</span> + ${esc(UI.t('td.cleared'))}`));
+    if (Array.isArray(crit)) rows.push(UI.readonly(UI.t('td.criterion'), `<span class="kv">${esc(hydWords.criterion(crit))}</span> + ${esc(UI.t('td.cleared'))}`));
     const win = reobsWindow(inc, w);
     if (win) {
       const left = win.due - new Date();
@@ -389,7 +378,7 @@
     const verdict = (inc.history || []).filter(x => ['RESOLVED', 'ESCALATED'].includes(x.state)).pop();
     if (verdict) {
       const r = verdict.reobservation;            // 서버가 남긴 판정 칸(machine._go) — 없으면 그 줄의 글을 보인다
-      const text = r && r.tag ? `${TAG[r.tag] || r.tag} ${r.value == null ? '값 없음' : num(r.value)} ${OP[r.op] || r.op} ${num(r.limit)}${r.cleared === false ? ' · 경보 해제 안 됨' : ''}` : UI.logText(verdict.note || inc.reason || '');
+      const text = r && r.tag ? `${hydWords.fieldName(String(r.tag).toLowerCase())} ${r.value == null ? '값 없음' : num(r.value)} ${hydWords.sym(r.op)} ${num(r.limit)}${r.cleared === false ? ' · 경보 해제 안 됨' : ''}` : UI.logText(verdict.note || inc.reason || '');
       rows.push(UI.readonly(UI.t('td.recoveryBasis'), `${UI.chip(verdict.state)} ${esc(text)}`, UI.dateTime(verdict.t)));
     }
     return rows;
@@ -438,7 +427,7 @@
       const value = (w.output || {})[key] !== undefined ? w.output[key] : (mine ? current[key] : undefined);
       const state = mine ? UI.chipText(UI.t('td.delivered'), 'success') : src && src.kind === 'workitem' ? UI.chipText(UI.t('td.superseded'), 'warning') : UI.chipText(UI.t('td.notYet'));
       // A161-U1 (A160 결함 7): only steps that really took the value — a branch the engine cancelled is not "받는 단계"
-      const consumers = acts.filter(a => a.id !== w.activity_id && ((a.inputData || []).includes(key) || Object.keys(a.inputBindings || {}).includes(key)))
+      const consumers = acts.filter(a => a.id !== w.activity_id && (a.inputData || []).includes(key))
         .map(a => ({ a, c: latestFor(v, a.id) })).filter(x => !x.c || x.c.status !== 'CANCELLED')
         .map(({ a, c }) => `${UI.flowName(a.name)}${c ? ` (${UI.status(c.status)})` : ` (${UI.status('TODO')})`}`);
       const shown = value === undefined ? `<span class="muted">${esc(UI.t('inst.noValue'))}</span>`
@@ -507,10 +496,10 @@
   /* ---------- 지금: <단계> — <누가> <무엇을 하는 중> ---------- */
   function doingOf(w, v) {
     const k = kindOf(w), tool = (activityOf(v, w.activity_id) || {}).tool || '';
-    if (w.status === 'PENDING') return [UI.t('system'), UI.t('td.nowPending')];
+    if (w.status === 'PENDING') return [UI.t('system'), esc(UI.t('td.nowPending'))];
     if (k === 'agent') {
-      if (w.draft_status === 'HUMAN_ASKED') return [UI.t('agent'), UI.t('td.nowAsk')];
-      if (w.status === 'SUBMITTED') return [UI.t('agent'), UI.t('td.nowSubmitted')];
+      if (w.draft_status === 'HUMAN_ASKED') return [UI.t('agent'), esc(UI.t('td.nowAsk'))];
+      if (w.status === 'SUBMITTED') return [UI.t('agent'), esc(UI.t('td.nowSubmitted'))];
       const evs = [...v.events.filter(e => e.todo_id === w.id), ...(T.last[w.id] || [])];
       const open = new Set(); let last = null;
       evs.sort((a, b) => String(a.timestamp || '').localeCompare(String(b.timestamp || ''))).forEach(e => {
@@ -519,41 +508,48 @@
         last = e;
       });
       const running = [...open].pop();
-      if (running != null) { const s = lastOf(evs, e => e.event_type === 'tool_usage_started' && UI.toolCallKey(e) === running); return [UI.t('agent'), UI.t('td.nowTool').replace('{tool}', UI.toolName(((s || {}).data || {}).tool))]; }
-      if (last && isNote(last)) return [UI.t('agent'), UI.t('td.nowNote')];
-      if (last && isEvidence(last)) return [UI.t('agent'), UI.t('td.nowBasis')];
-      return [UI.t('agent'), w.consumer ? (last ? UI.t('td.nowClaimed') : UI.t('td.nowStarted')) : UI.t('td.nowQueued')];
+      if (running != null) { const s = lastOf(evs, e => e.event_type === 'tool_usage_started' && UI.toolCallKey(e) === running); return [UI.t('agent'), esc(UI.t('td.nowTool').replace('{tool}', UI.toolName(((s || {}).data || {}).tool)))]; }
+      if (last && isNote(last)) return [UI.t('agent'), esc(UI.t('td.nowNote'))];
+      if (last && isEvidence(last)) return [UI.t('agent'), esc(UI.t('td.nowBasis'))];
+      return [UI.t('agent'), esc(w.consumer ? (last ? UI.t('td.nowClaimed') : UI.t('td.nowStarted')) : UI.t('td.nowQueued'))];
     }
     if (k === 'human') {
-      const spent = w.start_date ? ` · ${fmtMs(Math.max(0, new Date() - new Date(w.start_date)))} ${UI.t('td.waitFor')}` : '';
-      const due = w.due_date ? new Date(w.due_date) - new Date() : null;
-      return [UI.who(w.user_id), `${UI.t('td.nowHuman')}${spent}${due == null ? '' : due >= 0 ? ` · ${UI.t('td.dueLeft')} ${fmtMs(due)}` : ` · ${UI.t('td.overdue')}`}`];
+      const spent = w.start_date ? ` · ${clockSpan('since', w.start_date)} ${esc(UI.t('td.waitFor'))}` : '';
+      return [UI.who(w.user_id), `${esc(UI.t('td.nowHuman'))}${spent}${w.due_date ? ` · ${esc(UI.t('td.dueLeft'))} ${clockSpan('until', w.due_date)}` : ''}`];
     }
-    if (tool === 'incident:command') return [UI.t('system'), UI.t('td.nowCmd')];
+    if (tool === 'incident:command') return [UI.t('system'), esc(UI.t('td.nowCmd'))];
     if (tool === 'incident:reobserve') {
       const inc = T.inc && T.inc.id === vars(v.instance).incident ? T.inc : null, win = inc && reobsWindow(inc, w);
       const left = win ? win.due - new Date() : null;
-      return [UI.t('system'), `${UI.t('td.nowReobs')}${left == null ? '' : left > 0 ? ` · ${UI.t('td.remeasureIn')} ${fmtMs(left)}` : ` · ${UI.t('td.remeasureDue')}`}`];
+      return [UI.t('system'), `${esc(UI.t('td.nowReobs'))}${left == null ? '' : left > 0 ? ` · ${esc(UI.t('td.remeasureIn'))} ${clockSpan('until', win.due.toISOString())}` : ` · ${esc(UI.t('td.remeasureDue'))}`}`];
     }
-    if (tool === 'enterprise:WO_CREATE') return [UI.t('system'), UI.t('td.nowWo')];
-    return [UI.t('system'), UI.t('td.nowSystem')];
+    if (tool === 'enterprise:WO_CREATE') return [UI.t('system'), esc(UI.t('td.nowWo'))];
+    return [UI.t('system'), esc(UI.t('td.nowSystem'))];
   }
   function nowHtml(v) {
     const inst = v.instance;
     if (inst.status !== 'RUNNING') {
-      const end = inst.end_event ? ((v.definition || {}).events || []).find(e => e.id === inst.end_event) : null;
-      return `<div class="td-now done" role="status"><b>${esc(UI.t('td.ended'))}</b> ${esc(UI.flowName((end && end.name) || UI.status(inst.status)))}</div>`;
+      const endName = inst.end_label || UI.status(inst.status);   // 끝난 곳의 이름은 서버(engine.end_label — 기술 끝 포함)
+      return `<div class="td-now done" role="status"><b>${esc(UI.t('td.ended'))}</b>${endName && endName !== UI.t('td.ended') ? ' ' + esc(endName) : ''}</div>`;   // 끝 이벤트 이름이 「끝」이면 「끝 끝」으로 겹치지 않게
     }
     const cur = v.workitems.filter(w => LIVE.has(w.status) && !isEventNode(v, w.activity_id));
     if (!cur.length) return `<div class="td-now" role="status"><b>${esc(UI.t('td.now'))}</b> <span class="muted">${esc(UI.t('td.nothing'))}</span></div>`;
-    return `<div class="td-now" role="status"><i class="live-dot on"></i><b>${esc(UI.t('td.now'))}</b> ${cur.map(w => { const [who, what] = doingOf(w, v); return `<span class="td-now-item"><button type="button" class="linkish" data-td-open="${esc(w.id)}">${esc(UI.flowName(w.activity_name))}</button> — ${esc(who)} ${esc(what)}</span>`; }).join('<span class="muted"> · </span>')}</div>`;
+    return `<div class="td-now" role="status"><i class="live-dot on"></i><b>${esc(UI.t('td.now'))}</b> ${cur.map(w => { const [who, what] = doingOf(w, v); return `<span class="td-now-item"><button type="button" class="linkish" data-td-open="${esc(w.id)}">${esc(UI.flowName(w.activity_name))}</button> — ${esc(who)} ${what}</span>`; }).join('<span class="muted"> · </span>')}</div>`;
   }
+  const clockSpan = (kind, iso) => {
+    const t = new Date(iso) - new Date();
+    const text = kind === 'since' ? fmtMs(Math.max(0, -t)) : t >= 0 ? `${fmtMs(t)} ${UI.t('trace.left')}` : UI.t('trace.overdue');
+    return `<span data-${kind}="${esc(iso)}">${esc(text)}</span>`;
+  };
   function renderNow() {
     if (typeof document === 'undefined' || !document.getElementById) return;
     const box = document.getElementById('instNow'); const v = view();
     if (!box) return;
-    if (!v) { box.innerHTML = ''; return; }
-    box.innerHTML = nowHtml(v);
+    if (!v) { box.innerHTML = ''; box._key = ''; return; }
+    // 글이 바뀔 때만 다시 쓴다 — 1초마다 통째로 바꾸면 화면 읽기 프로그램이 매초 읽고 [단계 이름] 단추의 키보드 포커스가 풀린다(W1-29).
+    // 남은 시간처럼 매초 바뀌는 글은 trace.js 의 [data-until] · [data-since] 시계가 그 글자만 고친다
+    const html = nowHtml(v), key = html.replace(/(data-(?:since|until)="[^"]*">)[^<]*/g, '$1');
+    if (box._key !== key) { box.innerHTML = html; box._key = key; }
     ensureIncident(v);
   }
 
@@ -564,7 +560,6 @@
       if (record?.decision_id) return record.decision_id;
       if (record?.decision?.id) return record.decision.id;
     }
-    if (item?.input_state === 'captured') return item.inputs?.decision_id || item.inputs?.decision?.id || null;
     const sources = v.instance.variable_sources || {};
     if (['decision_id','decision'].some(k=>sources[k]?.kind==='workitem' && sources[k].id===w.id)) return vars(v.instance).decision_id || null;
     // 2026-10-23 점검: 승인(카드 선택) 단계는 판단을 앞 에이전트 단계에서 받는다. 위 셋에 걸리지 않아 판단 기록을 불러오지 않았고,
@@ -654,6 +649,7 @@
   // ⑤ liveStream.js hands every pushed SSE event here; the open task takes its own events, the 지금 line takes every task's latest
   function onEvent(e) {
     if (!e || !e.todo_id) return;
+    if (!T.last[e.todo_id]) { T.lastOrder.push(e.todo_id); if (T.lastOrder.length > 300) delete T.last[T.lastOrder.shift()]; }   // 단계 수 상한(하루 열어 두어도 쌓이지 않게, W1-30)
     const list = T.last[e.todo_id] || (T.last[e.todo_id] = []);
     if (!list.some(x => x.id === e.id)) { list.push(e); if (list.length > 20) list.shift(); }
     if (e.todo_id !== T.wid) { renderNow(); return; }

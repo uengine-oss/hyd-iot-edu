@@ -137,7 +137,7 @@
     const sql = (r.commentSql || []).join('\n');
     return UI.card({
       title: '미리보기에 반영된 뜻 검토', chips: UI.chipText(`승인 ${r.approved} · 고치기 ${r.edited} · 거부 ${r.rejected}`, 'success'),
-      body: `<p class="kv-line"><b>${esc(r.by)}</b> · ${esc(UI.dateTime(r.createdAt))} · 반영한 입력 ${r.applied.length}개</p>
+      body: `<p class="kv-line"><b>${esc(UI.who(r.by))}</b> · ${esc(UI.dateTime(r.createdAt))} · 반영한 입력 ${r.applied.length}개</p>
         ${r.reflected.map(x => `<div class="kv-line"><b>${esc(short(x.column))}</b> → ${esc(x.comment)} · ${linkText(x.link)}</div>`).join('')}
         ${sql ? UI.fold('DB 담당자에게 줄 열 주석 SQL (실행하지 않음)', `<pre>${esc(sql)}</pre>`, { cls: 'small' }) : ''}`,
       actions: `<button class="btn small" id="lmUnapply">검토 빼고 미리보기 (원래대로)</button>`,
@@ -149,7 +149,7 @@
     if (!list.length) return '';
     const cur = ctx.preview.meaningReview && ctx.preview.meaningReview.id;
     return UI.fold(`이 후보에 대한 검토 기록 <span class="chip tone-neutral sm">${list.length}</span>`, list.map(r => `<div class="kv-line">
-        <b>${esc(r.by)}</b> · ${esc(UI.dateTime(r.createdAt))} · 승인 ${r.approved} · 고치기 ${r.edited} · 거부 ${r.rejected}
+        <b>${esc(UI.who(r.by))}</b> · ${esc(UI.dateTime(r.createdAt))} · 승인 ${r.approved} · 고치기 ${r.edited} · 거부 ${r.rejected}
         ${r.id === cur ? UI.chipText('지금 반영 중', 'success') : `<button class="btn small" data-use-review="${esc(r.id)}">이 검토로 미리보기</button>`}
         ${UI.fold('결정', r.decisions.map(d => `<div>${esc(short(d.column))} ${UI.chipText(VERDICT[d.verdict], VTONE[d.verdict])} ${d.after ? esc(d.after.meaning) : ''}${d.note ? ` <span class="muted">— ${esc(d.note)}</span>` : ''}</div>`).join(''), { cls: 'small' })}</div>`).join(''), { cls: 'small' });
   }
@@ -185,17 +185,18 @@
       body += statusHtml();
       if (done) body += candidatesHtml();
       body += historyHtml();
-      if (done || (S.data && ['FAILED', 'CANCELLED'].includes(S.data.status))) body += `<p><button class="btn small" id="lmAgain"${hydCourseAccess.attrs('ddl.meanings')}>후보 다시 받기</button></p>`;
+      if (done || (S.data && ['FAILED', 'CANCELLED'].includes(S.data.status))) body += `<p><button class="btn small" id="lmAgain" ${S.busy ? 'disabled' : ''}${hydCourseAccess.attrs('ddl.meanings')}>후보 다시 받기</button></p>`;
     }
     if (S.error) body += `<p class="neg" role="alert">${esc(S.error)}</p>`;
     el.innerHTML = UI.fold(`옛 DB 뜻 복원 <span class="chip tone-neutral sm">${esc(sumLine)}</span>`, body, { open: !!(S.run || ctx.preview.meaningReview) });
+    hydCourseAccess.apply(el);   // attrs 로 그린 단추: 수업 단계에서 꺼진 까닭을 단추 옆 한 줄로(W3-07)
     wire();
   }
 
   function wire() {
     const on = (sel, fn) => { const b = el.querySelector(sel); if (b) b.addEventListener('click', fn); };
     on('#lmAsk', ask);
-    on('#lmAgain', () => { S.run = null; S.data = null; S.drafts = {}; ask(); });
+    on('#lmAgain', ask);   // 지난 결과는 새 요청이 받아들여진 뒤에만 비운다(ask) — 실패하면 앞 결과가 남는다(W3-21)
     on('#lmSave', save);
     on('#lmUnapply', async () => { try { await ctx.replan(null); } catch (e) { S.error = e.message; render(); } });
     el.querySelectorAll('[data-use-review]').forEach(b => b.addEventListener('click', async () => {

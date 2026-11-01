@@ -39,10 +39,11 @@ def check(decision, option, role, consented_at=None):
         if exc.code == 409 and detail:
             raise ApprovalReviewRequired({'allowed': False, 'decision': (decision or {}).get('id'), 'option': option,
                                           'reasons': [detail], 'source': 'agent approval-check 409'}) from exc
-        raise ValueError(f'현재 승인 조건을 확인할 수 없습니다(agent 응답 {exc.code}{": " + detail if detail else ""}). '
-                         '원천 연결을 확인하고 다시 판단하세요') from exc
+        raise ValueError(f'지금 조건에서 승인해도 되는지 판단 서비스가 확인하지 못했습니다(응답 {exc.code}{" — " + detail if detail else ""}). '
+                         '잠시 뒤 다시 승인하고, 계속되면 점검.bat 결과를 확인하세요') from exc
     except (OSError, ValueError) as e:
-        raise ValueError('현재 승인 조건을 확인할 수 없습니다. 원천 연결을 확인하고 다시 판단하세요') from e
+        raise ValueError('지금 조건에서 승인해도 되는지 판단 서비스에 닿지 못했습니다 — 잠시 뒤 다시 승인하고, 계속되면 점검.bat 결과를 '
+                         '확인하세요') from e
     if not isinstance(report, dict) or report.get('decision') != decision['id'] or report.get('option') != option:
         raise ValueError('현재 조건 검사 응답이 승인 대상과 일치하지 않습니다')
     return report
@@ -66,10 +67,6 @@ def preview(decision, option, parameters):
         with urllib.request.urlopen(request,timeout=20) as response:
             return json.load(response)
     except urllib.error.HTTPError as exc:
-        try:
-            detail = json.loads(exc.read()).get('detail')
-        except (ValueError,AttributeError):
-            detail = None
-        raise ValueError(str(detail or '현재 조건으로 새 예측을 만들 수 없습니다')) from exc
+        raise ValueError(_detail(exc) or f'지금 조건으로 새 예측을 만들 수 없습니다(판단 서비스 응답 {exc.code})') from exc
     except (OSError,ValueError) as exc:
-        raise ValueError('예측 원천 연결을 확인할 수 없습니다') from exc
+        raise ValueError('새 예측을 만들 판단 서비스에 닿지 못했습니다 — 잠시 뒤 다시 [새 예측 검토]를 누르세요') from exc

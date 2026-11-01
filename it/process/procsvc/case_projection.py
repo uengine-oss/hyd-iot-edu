@@ -99,7 +99,7 @@ class CaseProjector:
         except Exception as exc:
             try:self.store.finish_case_projection(job,f'{type(exc).__name__}: {str(exc)[:1000]}')
             except Exception:log.exception('case projection receipt failed; intent stays pending')
-            log.warning('case graph pending %s/%s: %s',job['kind'],job['source_id'],exc)
+            log.warning('case graph pending %s/%s: %s: %s',job['kind'],job['source_id'],type(exc).__name__,exc)
             return False
 
     def drain(self,limit=20):

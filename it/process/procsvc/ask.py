@@ -1,14 +1,14 @@
 """B5 — 에이전트에게 질문하기 (ProcessGPT의 대표 상호작용: 질문 하나 = 처리 건 하나).
 
-    POST /api/ask {question, agent?, by?, request_id?}   질문 → 정식 정의 ask_agent 1.0의 처리 건 하나(답할 에이전트 = 고른 에이전트)
-    GET  /api/ask/status                                답할 수 있나(AI 워커 상태) + 고를 수 있는 에이전트
+    POST /api/ask {question, agent?, by?, request_id?}   질문 → 정식 정의 ask_agent(판본은 정의 파일의 version)의 처리 건 하나(답할 에이전트 = 고른 에이전트)
+    GET  /api/ask/status                                답할 수 있나(AI 일꾼 상태) + 고를 수 있는 에이전트(그 에이전트가 질문에 쓰는 도구 서버)
     GET  /api/ask                                       지난 질문 목록(최근 것 먼저)
     GET  /api/ask/{proc_inst_id}                        한 질문: 진행 상태 · 도구 호출(실시간) · 답 + 근거 또는 답할 수 없음 + 이유 · 처리 과정 링크
+    POST /api/ask/{proc_inst_id}/retry                  실패해 멈춘 같은 질문을 같은 작업으로 다시 진행(질문한 사람만, 2회까지)
     POST /api/ask/reset                                 기준으로 되돌리기: 끝난 질문 기록을 목록에서 지운다(정의 · 에이전트 · 기준 데이터는 그대로)
 
-정의는 회귀 검사기(scripts/probe_business_questions · probe_timeseries_questions · probe_rule_questions)가 매번 임시로
-등록하던 질문 정의를 하나로 묶어 정식 파일(it/process/definitions/ask_agent_v1.json)로 올린 것이다. 기동 때 instance_mode.build가
-등록하고, 질문할 때도 같은 파일을 다시 등록한다(같은 판본이면 그대로).
+정의는 정식 파일 하나(it/process/definitions/ask_agent_v1.json)다. 기동 때 instance_mode.build가 등록하고, 질문할 때도 같은 파일을
+다시 등록한다(같은 판본이면 그대로). 질문이 쓰는 도구 서버는 agents_store.run_servers(질문 계약 — 질문용 조회 도구 표)로 정한다.
 
 답의 계약(폼 ask-answer-v1, 교정 루프 A077): status = answered | cannot_answer. answered면 answer와 근거(evidence: 도구 · 실행한 질의 ·
 결과)가 있어야 하고, cannot_answer면 reason이 있어야 한다. 형식이 틀리면 같은 세션에 교정 피드백이 간다.
@@ -28,15 +28,15 @@ from hydcommon.timeutil import parse_iso
 from pydantic import BaseModel
 
 from . import engine
+from .agents_store import QUESTION_CONTRACT
 from .instances import InstanceRuntime
 
 DEFINITION_FILE = 'ask_agent_v1.json'
 DEFINITION_ID = 'ask_agent'
-VERSION = '1.1'          # 1.1 (2026-10-25 수업 한 바퀴): 에이전트에 붙은 수강생 MCP 서버를 먼저 살핀다 — 3번 중 2번 그 표를 두고 지식 그래프만 뒤졌다. 등록된 1.0은 다시 쓰지 않는다
 ACTIVITY = 'task:answer'
 ROLE = '답변 에이전트'
 DEFAULT_AGENT = 'sys:agent'
-CONTRACT = 'ask-answer-v1'
+CONTRACT = QUESTION_CONTRACT     # 정의 파일 forms.ask_answer.contract 와 같은 값(질문용 조회 도구 표의 열쇠 — agents_store.FIXED_READS)
 EVENT_PREFIX = 'ask:'
 STATUSES = ('answered', 'cannot_answer')
 MAX_QUESTION_CHARS = 1000
@@ -44,7 +44,7 @@ WAIT_PROBE_AFTER_S = 10        # 아무도 집지 않은 지 이만큼 지나면
 
 
 class WorkerUnavailable(RuntimeError):
-    """답할 일꾼이 없다 — 처리 건을 만들지 않았다(사유는 사람이 읽을 문장)."""
+    """답할 AI 일꾼이 없다 — 처리 건을 만들지 않았다(사유는 사람이 읽을 문장)."""
 
 
 # ---------------------------------------------------------------- 정의
@@ -94,33 +94,46 @@ def validate_result(form, inst, output) -> None:
 
 # ---------------------------------------------------------------- 답할 에이전트 · 준비 상태
 def agents(repo, tenant_id) -> list[dict]:
-    """고를 수 있는 에이전트: users.is_agent 이고 시스템(SCADA · CMMS · 프로세스)이 아닌 것. 기본 에이전트가 먼저."""
-    from .agents_store import csv_list, role_text
+    """고를 수 있는 에이전트: users.is_agent 이고 시스템(SCADA · CMMS · 프로세스)이 아닌 것. 기본 에이전트가 먼저.
+    servers = 이 에이전트로 질문할 때 실제로 연결하는 도구 서버(agents_store.run_servers — 질문용 조회 도구 표, 워커와 같은 규칙),
+    left_out = 에이전트에 적혀 있지만 질문에는 쓰지 않는 서버(질문용 조회 도구가 없는 서버)."""
+    from . import mcp_registry
+    from .agents_store import agent_settings, csv_list, role_text, run_servers
+    tenant = mcp_registry.store_for(repo).servers(tenant_id)
     skills: dict[str, list[str]] = {}
-    try:
-        for r in repo.list_agent_skills(tenant_id):
-            skills.setdefault(r['user_id'], []).append(r['skill_name'])
-    except Exception:  # noqa: BLE001 — 스킬 표가 없어도 에이전트는 고를 수 있다
-        pass
+    for r in repo.list_agent_skills(tenant_id):
+        skills.setdefault(r['user_id'], []).append(r['skill_name'])
     out = []
     for u in repo.list_users(None, tenant_id):
         if not u.get('is_agent') or (u.get('agent_type') or 'agent') == 'system':
             continue
+        tools = csv_list(u.get('tools'))
+        servers = list(run_servers(agent_settings(repo, tenant_id, u).tools, tenant, CONTRACT))
         out.append({'id': u['id'], 'name': u.get('username') or u['id'], 'role': role_text(u.get('role')), 'goal': u.get('goal') or '',
-                    'tools': csv_list(u.get('tools')), 'skills': sorted(skills.get(u['id'], [])), 'model': u.get('model') or None,
+                    'tools': tools, 'servers': servers, 'left_out': [t for t in tools if t not in servers],
+                    'skills': sorted(skills.get(u['id'], [])), 'model': u.get('model') or None,
                     'default': u['id'] == DEFAULT_AGENT, 'mine': u.get('origin') == 'user'})
     return sorted(out, key=lambda a: (not a['default'], a['mine'], a['name']))
 
 
-NOT_READY = 'AI 워커가 아직 켜지는 중이거나 꺼져 있어 질문을 보내지 않았습니다. 1분 뒤 다시 보내고, 계속되면 시작.bat을 다시 실행하세요.'
-NOT_PICKED = ('{age}초째 답할 AI 워커가 질문을 집지 않았습니다 — AI 워커에 연결할 수 없습니다. 시작.bat을 다시 실행하면 이어서 답합니다'
+NOT_READY = 'AI 일꾼이 아직 켜지는 중이거나 꺼져 있어 질문을 보내지 않았습니다. 1분 뒤 다시 보내고, 계속되면 시작.bat을 다시 실행하세요.'
+NOT_PICKED = ('{age}초째 답할 AI 일꾼이 질문을 맡지 않았습니다 — AI 일꾼에 연결할 수 없습니다. 시작.bat을 다시 실행하면 이어서 답합니다'
               '(처리 과정 보기에서 닫을 수도 있습니다).')
-BUSY = '{age}초째 대기 중 — AI 워커는 켜져 있습니다(앞 작업을 처리하는 중일 수 있습니다).'
+BUSY = '{age}초째 대기 중 — AI 일꾼은 켜져 있습니다(앞 작업을 처리하는 중일 수 있습니다).'
 RUNTIME_NOT_READY = '질문을 받을 처리 흐름 서비스가 아직 켜지는 중입니다. 1분 뒤 다시 보내세요.'
+BAD_REQUEST_ID = '요청 번호의 형식이 올바르지 않습니다 — 화면을 새로 고친 뒤 다시 보내세요.'
+
+
+def request_uuid(value) -> str:
+    """화면이 만든 요청 번호(UUID) — 형식이 틀리면 학생이 읽을 사유로(라이브러리 영문 오류를 그대로 보이지 않는다)."""
+    try:
+        return str(uuid.UUID(str(value)))
+    except ValueError:
+        raise ValueError(BAD_REQUEST_ID) from None
 
 
 def readiness(worker_probe) -> dict:
-    """질문을 받을 수 있나 — AI 워커가 상태 확인(/health)에 「켜짐」으로 답하는가(켜지는 중 · 오류면 503 이라 닿지 않음으로 온다)."""
+    """질문을 받을 수 있나 — AI 일꾼(워커)이 상태 확인(/health)에 「켜짐」으로 답하는가(켜지는 중 · 오류면 503 이라 닿지 않음으로 온다)."""
     w = worker_probe()
     health = w.get('health') or {}
     ready = bool(w.get('reachable'))
@@ -157,10 +170,10 @@ def agent_identity(settings) -> dict:
     return value
 
 
-def execution_binding(question, settings, *, version=None):
-    """Bind a question to the execution-relevant agent settings, not its label."""
+def execution_binding(question, settings, *, version):
+    """Bind a question to the execution-relevant agent settings, not its label. version = the question definition's version."""
     from .course_ledger import digest
-    return digest({'question':question,'agent':agent_identity(settings),'version':version or VERSION})
+    return digest({'question':question,'agent':agent_identity(settings),'version':version})
 
 
 def start(rt, question, agent_id=None, by=None, request_id=None, *, definitions_dir, worker_probe) -> dict:
@@ -170,11 +183,13 @@ def start(rt, question, agent_id=None, by=None, request_id=None, *, definitions_
     ready = readiness(worker_probe)
     if not ready['ready']:
         raise WorkerUnavailable(ready['reason'])
-    request_id = str(uuid.UUID(request_id)) if request_id else str(uuid.uuid4())
-    register_definition(rt, definitions_dir)
+    request_id = request_uuid(request_id) if request_id else str(uuid.uuid4())
+    raw = definition(definitions_dir)
+    rt.register_definition(raw)
+    version = raw['version']
     event_id = EVENT_PREFIX + request_id
     from .agents_store import agent_settings
-    binding = execution_binding(q, agent_settings(rt.repo,rt.tenant_id,agent['id']))
+    binding = execution_binding(q, agent_settings(rt.repo,rt.tenant_id,agent['id']), version=version)
     previous = rt.repo.find_event_instance(rt.tenant_id,DEFINITION_ID,event_id)
     if previous:
         endpoint = next((b.get('endpoint') for b in previous.get('role_bindings',[]) if b.get('name')==ROLE),None)
@@ -184,7 +199,7 @@ def start(rt, question, agent_id=None, by=None, request_id=None, *, definitions_
         if previous_binding != binding:
             raise ValueError('이 요청 ID는 다른 에이전트 조건에 사용됐거나 기존 조건을 확인할 수 없습니다. 기존 질문을 확인하거나 새 질문을 보내세요')
         return view(rt,previous['proc_inst_id'])
-    inst = rt.start_definition(DEFINITION_ID, VERSION, event_id, values={'question': q, 'asked_by': str(by or '수강생').strip()[:120]},
+    inst = rt.start_definition(DEFINITION_ID, version, event_id, values={'question': q, 'asked_by': str(by or '수강생').strip()[:120]},
                                name='질문 · ' + (q if len(q) <= 40 else q[:40] + '…'), role_endpoints={ROLE: agent['id']},
                                _coalesce_key=binding)
     inst = inst or rt.repo.find_event_instance(rt.tenant_id, DEFINITION_ID, event_id)
@@ -370,27 +385,39 @@ def _matches(item, call) -> bool:
     return False
 
 
+_ID_PATTERN = (r'(?<![A-Za-z0-9_])(?:[a-z][a-z_]*:[a-zA-Z0-9_:-]+|[A-Z]{2,}-\d+(?:-\d+)*(?![A-Za-z0-9_])'
+               # 날짜 · 시각은 통째로 하나의 값이다(2026-10-30 을 2026 · 10 · 30 낱개 수로 쪼개지 않는다)
+               r'|\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?|(?<![\d:])\d{1,2}:\d{2}(?::\d{2})?(?![\d:]))')
+_NUMBER = r'(?<![\d.])-?\d[\d,]*(?:\.\d+)?(?![\d.])'
+
+
+def literal_facts(value) -> dict[str, str]:
+    """글 속 수치 · ID · 날짜 → {대조용 정규화 값: 글에 적힌 그대로}. 수치는 쉼표 · 끝자리 0을 지워 견주고(70 = 70.0 = 70.00),
+    화면에는 답에 적힌 글자를 그대로 돌려준다(정규화 값 7E+1 같은 내부 표기를 보이지 않는다 — P3-12)."""
+    from decimal import Decimal, InvalidOperation
+    import re
+    text = value if isinstance(value, str) else json.dumps(value, ensure_ascii=False, default=str)
+    # ASCII edges, not \b: a Korean particle right after an id ("SOP-COOL-13이며") is a word character for \b.
+    out = {m: m for m in re.findall(_ID_PATTERN, text)}
+    # Digits inside an identifier or a date are part of it, not an independent measurement (HYD-01 must not also become -1).
+    numeric_text = re.sub(_ID_PATTERN, lambda match: ' ' * len(match.group()), text)
+    for raw in re.findall(_NUMBER, numeric_text):
+        try:
+            key = format(Decimal(raw.replace(',', '')).normalize(), 'f')
+        except InvalidOperation:
+            continue
+        out.setdefault(key, raw)
+    return out
+
+
 def result_comparison(claimed, calls):
     """A warning about literal numbers/ids, never a semantic truth certificate (units/calculations may differ)."""
-    from decimal import Decimal
-    import re
-    def facts(value):
-        text = value if isinstance(value, str) else json.dumps(value, ensure_ascii=False, default=str)
-        # ASCII edges, not \b: a Korean particle right after an id ("SOP-COOL-13이며")
-        # is a word character for \b, which left "-13" behind as a negative number.
-        id_pattern = r'(?<![A-Za-z0-9_])(?:[a-z][a-z_]*:[a-zA-Z0-9_:-]+|[A-Z]{2,}-\d+(?:-\d+)*(?![A-Za-z0-9_]))'
-        ids = set(re.findall(id_pattern, text))
-        # Digits inside an identifier are part of that identifier, not an
-        # independent measurement (HYD-01 must not also become -1).
-        numeric_text = re.sub(id_pattern, lambda match: ' ' * len(match.group()), text)
-        numbers = {str(Decimal(n.replace(',', '')).normalize()) for n in
-                   re.findall(r'(?<![\d.])-?\d[\d,]*(?:\.\d+)?(?![\d.])', numeric_text)}
-        return numbers | ids
     originals = [c.get('_output') for c in calls if c.get('output_complete')]
     if not originals or len(originals) != len(calls):
         return {'status': 'unavailable', 'note': '조회 결과 원문 전체가 없어 답의 수치·ID를 대조하지 못했습니다'}
-    present = set().union(*(facts(x) for x in originals))
-    missing = sorted(facts(claimed) - present)
+    present = set().union(*(literal_facts(x) for x in originals))
+    stated = literal_facts(claimed)
+    missing = [stated[k] for k in sorted(stated) if k not in present]
     return {'status': 'review' if missing else 'literal_match', 'missing': missing,
             'note': ('조회 결과에서 찾지 못한 수치·ID가 있습니다. 계산·단위 환산 또는 잘못 옮긴 값인지 확인하세요' if missing else
                      '수치·ID의 표기만 대조했습니다. 답의 의미와 계산이 맞다는 보증은 아닙니다')}
@@ -454,7 +481,7 @@ def _task(rt, inst):
 
 def retry(rt, proc_inst_id, request_id, by, reason):
     """Explicit recovery of the same failed question; never reset its budget."""
-    request_id = str(uuid.UUID(request_id))
+    request_id = request_uuid(request_id)
     if not isinstance(reason,str) or not reason.strip() or len(reason)>1000:
         raise ValueError('재개 사유를 1000자 이내로 적으세요')
     with rt._transition(proc_inst_id):
@@ -494,7 +521,7 @@ def _error_reason(events) -> str | None:
 
 def _state(inst, wi, events, now=None) -> tuple[str, str]:
     if wi is None:
-        return 'broken', '질문 작업이 없습니다 (정의 확인 필요)'
+        return 'broken', '이 질문의 처리 단계를 찾지 못했습니다 — 처리 과정 보기를 강사에게 보여 주세요'
     # P2 (audit2 2026-10-23): 사람이 [닫기]로 닫은 질문은 처리 건이 COMPLETED(기술 끝 closed-by-human)이고 작업이 CANCELLED 다 — 처리 건
     # 상태만 보고 '답이 나왔습니다'로 읽으면 답 없는 질문에 서버 판정까지 붙었다. 닫힘을 먼저 본다.
     if (wi['status'] == 'CANCELLED' or inst.get('status') in ('CANCELLED', 'TERMINATED')
@@ -503,7 +530,7 @@ def _state(inst, wi, events, now=None) -> tuple[str, str]:
     if wi['status'] == 'DONE' or inst.get('status') == 'COMPLETED':
         return 'done', '답이 나왔습니다'
     if wi['status'] == 'PENDING':
-        return 'failed', '답을 받지 못했습니다: ' + (wi.get('log') or _error_reason(events) or '엔진이 결과를 받을 수 없어 보류했습니다')
+        return 'failed', '답을 받지 못했습니다: ' + (wi.get('log') or _error_reason(events) or '처리 흐름이 에이전트의 답을 받지 못해 멈췄습니다')
     ds = wi.get('draft_status')
     fb = wi.get('feedback') if isinstance(wi.get('feedback'), dict) else {}
     if ds == 'FAILED':
@@ -511,12 +538,12 @@ def _state(inst, wi, events, now=None) -> tuple[str, str]:
     if ds == 'HUMAN_ASKED':
         return 'asking', '에이전트가 사람에게 묻고 기다립니다 (처리 과정 보기에서 답할 수 있습니다)'
     if ds == 'FB_REQUESTED' and fb.get('kind') == 'validation':
-        return 'correcting', '답의 형식이 계약과 달라 같은 세션에 고쳐 달라고 돌려보냈습니다: ' + str((fb.get('history') or [''])[-1])[:300]
+        return 'correcting', '에이전트의 답이 정해진 답 형식과 달라 다시 고쳐 쓰라고 돌려보냈습니다: ' + str((fb.get('history') or [''])[-1])[:300]
     if wi['status'] == 'SUBMITTED':
-        return 'submitted', '답을 제출했습니다 · 엔진이 받는 중'
+        return 'submitted', '에이전트가 답을 냈습니다 — 처리 흐름이 받는 중입니다'
     if ds == 'STARTED':
         return 'running', '에이전트가 조회하는 중'
-    return 'waiting', '답할 일꾼(워커)이 아직 질문을 집지 않았습니다'
+    return 'waiting', '답할 AI 일꾼이 아직 질문을 맡지 않았습니다'
 
 
 def view(rt, proc_inst_id, *, worker_probe=None, now=None) -> dict:
@@ -556,7 +583,7 @@ def history(rt, limit=30) -> list[dict]:
             continue
         res = v['result'] or {}
         rows.append({k: v[k] for k in ('id', 'question', 'agent', 'started', 'ended', 'state', 'message', 'link')}
-                    | {'verdict': res.get('kind'), 'calls': v['counts']['data']})
+                    | {'verdict': res.get('kind'), 'calls': v['counts']['calls']})     # 본문의 「도구 호출 N」과 같은 기준(모든 도구)
     return rows
 
 

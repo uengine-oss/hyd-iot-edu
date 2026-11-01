@@ -1,15 +1,9 @@
-"""L9 knowledge administration (pure): manual -> SOP ingestion parser and skill edit validation.
+"""L9 지식 관리(순수 함수): 조치 방법(스킬 = SOP) 고치기 · 새로 만들기의 검사와, 문서 넣기가 같이 쓰는 줄 모양 · SOP 번호 · 영향 연결 규칙.
 
-Humans maintain the knowledge map (ontology v2) through the process service (the agent stays read-only):
-  - upload a maintenance manual (Markdown / text / PDF text) -> ManualSection nodes + one Skill (= SOP) per procedure with
-    its Step nodes, matched to the failure mode a person picks in the preview,
-  - edit skills (name, description, approver) or add a new SOP skill matched to a failure mode.
-
-Manual format the parser understands (PDF text works too, headings do not need '#'):
-    ## HM-8.1 쿨러 팬 벨트 점검          <- section: ref + title, following plain lines = excerpt
-    ### SOP-FAN-01 쿨러 팬 점검 절차      <- optional explicit procedure id + name
-    1. 설비를 정지한다.                  <- numbered lines = steps (1. or 1) ), linked to the enclosing section
-Numbered lines without an explicit SOP heading become procedure 'SOP-<section ref>' named after the section.
+사람이 process 서비스로 지식 지도(온톨로지 v2)를 고친다(에이전트는 읽기만):
+  - 조치 방법 고치기(이름 · 설명 · 승인 역할 · 영향) 또는 고장 유형에 맞춘 새 SOP 조치 방법 만들기(validate_skill),
+  - 매뉴얼 줄 구조 읽기(manual_review.proposal)가 쓰는 절 제목 · SOP 제목 줄 모양(SECTION_RE · SOP_RE)과 이름 낱말(_tokens).
+검사 문장은 학생에게 그대로 보인다(합니다체, 화면 말).
 """
 from __future__ import annotations
 
@@ -17,94 +11,45 @@ import re
 
 SECTION_RE = re.compile(r"^\s*#{0,4}\s*([A-Z]{1,6}-\d+(?:\.\d+)*)\s+(.+?)\s*$")
 SOP_RE = re.compile(r"^\s*#{0,4}\s*(SOP-[A-Z0-9]+(?:-[A-Z0-9]+)*)\s+(.+?)\s*$")
-STEP_RE = re.compile(r"^\s*(\d{1,2})[.)]\s+(.+?)\s*$")
-TITLE_RE = re.compile(r"^\s*#\s+(.+?)\s*$")
 
 
 def _tokens(s: str) -> set[str]:
     return {t for t in re.split(r"[\s·,()/\-]+", s or "") if t and t not in {"절차", "작업지시", "매뉴얼", "및"}}   # one-syllable words (팬, 핀) matter
 
 
-def parse_manual(text: str, filename: str, actions: list[dict] | None = None) -> dict:
-    sections: list[dict] = []
-    procs: dict[str, dict] = {}
-    order: list[str] = []
-    title = None
-    cur_sec = None
-    cur_proc = None
-    for raw in (text or "").splitlines():
-        line = raw.rstrip()
-        if not line.strip():
-            continue
-        m = SOP_RE.match(line)
-        if m:
-            cur_proc = procs.setdefault(m.group(1), {"id": m.group(1), "name": m.group(2), "section": cur_sec["ref"] if cur_sec else None, "steps": []})
-            if m.group(1) not in order:
-                order.append(m.group(1))
-            continue
-        m = SECTION_RE.match(line)
-        if m and not STEP_RE.match(line):
-            cur_sec = {"ref": m.group(1), "title": m.group(2), "excerpt": ""}
-            sections.append(cur_sec)
-            cur_proc = None
-            continue
-        m = STEP_RE.match(line)
-        if m:
-            if cur_proc is None:
-                pid = f"SOP-{cur_sec['ref']}" if cur_sec else "SOP-UPLOAD"
-                cur_proc = procs.setdefault(pid, {"id": pid, "name": cur_sec["title"] if cur_sec else filename, "section": cur_sec["ref"] if cur_sec else None, "steps": []})
-                if pid not in order:
-                    order.append(pid)
-            cur_proc["steps"].append({"order": len(cur_proc["steps"]) + 1, "text": m.group(2), "manual": cur_sec["ref"] if cur_sec else None})
-            continue
-        m = TITLE_RE.match(line)
-        if m and not sections:
-            title = m.group(1)
-            continue
-        if cur_sec is not None and cur_proc is None and len(cur_sec["excerpt"]) < 200:
-            cur_sec["excerpt"] = (cur_sec["excerpt"] + " " + line.strip().lstrip("#").strip()).strip()[:200]
-    procedures = [procs[i] for i in order if procs[i]["steps"]]
-    for p in procedures:
-        p["stepCount"] = len(p["steps"])
-        if actions:
-            name_t = _tokens(p["name"])
-            sec_t = _tokens(next((s["title"] for s in sections if s["ref"] == p["section"]), ""))
-            # a procedure's own name counts double; a manual procedure is maintenance work, so ties go to work-order actions
-            score = lambda a: (2 * len(name_t & _tokens(a["name"])) + len(sec_t & _tokens(a["name"])), a.get("kind") == "work_order")
-            best = max(actions, key=score)
-            p["suggestedAction"] = best["id"] if score(best)[0] else None
-    warnings = []
-    if not sections:
-        warnings.append("매뉴얼 절 제목(예: 'HM-8.1 쿨러 팬 벨트 점검')을 찾지 못했다.")
-    if not procedures:
-        warnings.append("번호 매긴 절차 단계(예: '1. 설비를 정지한다.')를 찾지 못했다.")
-    return {"filename": filename, "title": title, "sections": sections, "procedures": procedures, "warnings": warnings}
-
-
 SOP_ID_RE = re.compile(r"^SOP-[A-Z0-9]+(?:-[A-Z0-9]+)*$")
 
 
-def validate_affects(raw) -> list:
-    """A098 (A079 gave the manual-ingestion review an impact field; the admin skill edit lacked one, so seeded/early
-    skills could never reach a performance measure — audit Q04): [{target, sign, note?}] → the skill's AFFECTS edges.
-    target is a StateVariable or Measure id (checked in the graph at write time), sign is +/- (or ±1)."""
-    if not isinstance(raw, list) or len(raw) > 12:
-        raise ValueError("affects는 최대 12개의 {target, sign, note} 목록")
+AFFECTS_MAX = 12
+AFFECTS_TARGET = re.compile(r"^(sv|msr):[a-z0-9]+(?:-[a-z0-9]+)*$")
+AFFECTS_LABELS = {"sv": "StateVariable", "msr": "Measure"}
+SIGNS = {"+": 1, "-": -1, 1: 1, -1: -1, "1": 1, "-1": -1}
+
+
+def validate_affects(value, owner: str = "") -> list:
+    """조치 방법의 영향 연결(Skill -[:AFFECTS {sign}]-> StateVariable | Measure) 한 곳 — 관리 화면의 조치 방법 고치기(A098)와 문서 검토
+    (A079)가 같이 쓴다. [{target, sign(+/-), note?}] → [{target, label, sign(±1), note}]. 대상이 그래프에 있는지는 쓸 때 확인한다.
+    owner = 문장 앞에 붙일 SOP 번호. None = 영향 없음([])."""
+    where = f"{owner}: " if owner else ""
+    if value is None:
+        return []
+    if not isinstance(value, list) or len(value) > AFFECTS_MAX:
+        raise ValueError(f"{where}영향 연결은 최대 {AFFECTS_MAX}개의 목록입니다")
     out, seen = [], set()
-    for item in raw:
+    for item in value:
         if not isinstance(item, dict):
-            raise ValueError("affects 항목은 객체")
+            raise ValueError(f"{where}영향 연결 항목은 대상 · 방향이 있는 객체여야 합니다")
         target = str(item.get("target") or "").strip()
-        if not re.match(r"^(sv|msr):[a-z0-9-]+$", target):
-            raise ValueError(f"affects.target은 상태 변수(sv:…) 또는 성과 지표(msr:…) id: {target!r}")
-        sign = item.get("sign")
-        sign = {"+": 1, "-": -1, 1: 1, -1: -1, "1": 1, "-1": -1}.get(sign)
-        if sign is None:
-            raise ValueError("affects.sign은 + 또는 -")
+        if not AFFECTS_TARGET.fullmatch(target):
+            raise ValueError(f"{where}영향 대상은 상태 변수(sv:…) 또는 성과 지표(msr:…) id입니다(소문자 · 숫자 · '-'): {target!r}")
         if target in seen:
-            raise ValueError(f"affects.target 중복: {target}")
+            raise ValueError(f"{where}같은 영향 대상이 두 번 있습니다: {target}")
+        sign = SIGNS.get(item.get("sign"))
+        if sign is None:
+            raise ValueError(f"{where}영향 방향은 + 또는 - 입니다")
         seen.add(target)
-        out.append({"target": target, "sign": sign, "note": str(item.get("note") or "").strip()[:200]})
+        out.append({"target": target, "label": AFFECTS_LABELS[target.split(":")[0]], "sign": sign,
+                    "note": str(item.get("note") or "").strip()[:300]})
     return out
 
 
@@ -119,16 +64,16 @@ def validate_skill(body: dict, create: bool = False, *, source_backed: bool = Fa
     (ontology v2: Skill.sopId, Skill -HAS_STEP-> Step ≥ 1, FailureMode -MITIGATED_BY|REMEDIED_BY|PREVENTED_BY-> Skill ≥ 1)."""
     name = str(body.get("name") or "").strip()
     if body.get('scope') not in (None, 'fault', 'purchase'):
-        raise ValueError('스킬 영역은 기존 고장 조치 또는 purchase입니다')
+        raise ValueError('조치 방법의 업무 범위는 고장 조치 또는 구매(purchase)입니다')
     if body.get('scope') != 'purchase' and (body.get('executable') is not None or body.get('parts') is not None or body.get('supplier_policy') is not None):
-        raise ValueError('executable·Part 업무 범위는 명시 purchase SOP에서만 사용합니다')
+        raise ValueError('실행 여부 · 구매 부품 · 공급사 정책은 구매(purchase) 절차에서만 씁니다')
     if body.get('scope') == 'purchase':
         from hydcommon.skill_scope import purchase_shape
         scope_fields = purchase_shape(body, source_backed=source_backed)
     if not name:
-        raise ValueError("스킬 이름이 비어 있다")
+        raise ValueError("조치 방법 이름이 비어 있습니다")
     if len(name) > 80:
-        raise ValueError("스킬 이름은 80자 이내")
+        raise ValueError("조치 방법 이름은 80자 이내로 적습니다")
     out = {"name": name, "description": str(body.get("description") or "").strip()[:500]}
     if body.get('purchase_comparison_policy') is not None:
         if not source_backed or not create or body.get('scope') != 'purchase' or body.get('executable') is not True:
@@ -157,21 +102,21 @@ def validate_skill(body: dict, create: bool = False, *, source_backed: bool = Fa
         return out
     sop = str(body.get("sopId") or "").strip().upper()
     if not SOP_ID_RE.match(sop):
-        raise ValueError("SOP 번호는 'SOP-FAN-05'처럼 SOP-로 시작해야 한다")
+        raise ValueError("SOP 번호는 SOP-FAN-05처럼 SOP-로 시작하고 대문자 · 숫자를 '-'로 잇습니다")
     steps = body.get("steps") or []
     if isinstance(steps, str):
         steps = steps.splitlines()
     steps = [str(s).strip() for s in steps if str(s).strip()]
     if not steps:
-        raise ValueError("SOP 단계가 하나 이상 있어야 한다 (한 줄에 한 단계)")
+        raise ValueError("절차 단계가 하나 이상 있어야 합니다(한 줄에 한 단계)")
     if body.get('scope') == 'purchase':
         out.update(sopId=sop, steps=steps[:30], **scope_fields)
         return out
     if not str(body.get("failureMode") or "").strip():
-        raise ValueError("조치 방법은 고장 유형에 매칭되어야 한다 (failureMode)")
+        raise ValueError("조치 방법을 고장 유형에 연결하세요 — 검토 화면의 고장 유형 칸에서 고릅니다(구매 · 참고 절차는 업무 범위를 바꿉니다)")
     kind = body.get("kind") or "work_order"
     if kind not in ("control", "work_order"):
-        raise ValueError("스킬 종류는 control 또는 work_order")
+        raise ValueError("조치 방법 종류는 설비 명령(control) 또는 작업지시(work_order)입니다")
     relation = body.get("relation") or "REMEDIED_BY"
     if relation not in FAILURE_RELATIONS:
         raise ValueError(FAILURE_RELATION_HELP)

@@ -1,64 +1,74 @@
-"""Read-only HTTP routes for agents and skills (U2 · TODO A2). Mounted by main.py after instance_mode.mount.
+"""Read routes for agents and skills (U2). Mounted by main.py after instance_mode.mount. Writes are in agent_authoring_api.py (B1).
 
     GET /api/agents              agent cards: name · role · goal · model · MCP servers · skills · steps it takes
     GET /api/agents/{id}         one agent: the card + persona, each server's registration, each step's run settings
-                                 (agents_store.agent_settings — the same function the worker runs with) and the prompt section
+                                 (agents_store.agent_settings + run_servers — the same functions the worker runs with)
     GET /api/skills              skills (tenant_skills): title · description · agents it is attached to · steps that declare it
     GET /api/skills/{name}       one skill with its SKILL.md text
 
-These routes only read. B1 (DECISIONS 110 ①) added the writes in agent_authoring_api.py (create · edit · clone · delete agents
-and skills, step → agent assignment, reset); the wrap-up (Claude Code → SQL) still writes the same rows. Each card carries
-`origin` ('seed' = protected default, 'user' = made in the portal) and a step's performer follows the step → agent assignment
-(activity_agent_map) when there is one — the same rule the engine applies when the step opens (agent_authoring.apply_agent_map).
+Each card carries `origin` ('seed' = protected default, 'user' = made in the portal) and a step's performer follows the step → agent
+assignment (activity_agent_map) when there is one — the same rule the engine applies when the step opens (agent_authoring.apply_agent_map).
+`step_runs()` is the one answer to "which agent runs this step, with which MCP servers" — the agent detail and the tool map (mcp_api)
+both read it.
 """
 from __future__ import annotations
 
 from fastapi import FastAPI, HTTPException
 
-from . import engine, instance_mode, work_rules
-from .agent_authoring import origin_of
-from .agents_store import activity_capabilities, agent_settings, csv_list, role_text, skill_title
+from . import instance_mode, mcp_registry, work_rules
+from .agent_authoring import default_performers, is_agent_activity, latest_definitions, origin_of
+from .agents_store import activity_capabilities, agent_settings, csv_list, role_text, run_servers, skill_title
 
 
-def _servers(repo, tenant_id: str) -> dict[str, dict]:
-    mcp = (repo.get_tenant(tenant_id) or {}).get("mcp") or {}
-    servers = mcp.get("mcpServers") if isinstance(mcp, dict) else None
-    return servers if isinstance(servers, dict) else {}
-
-
-def _latest_definitions(rt) -> list[dict]:
-    """Registered definitions, newest version of each id; the running definition when nothing is registered under its id."""
-    latest: dict[str, dict] = {}
-    for r in rt.repo.list_definitions(rt.tenant_id):
-        latest[r["id"]] = r                       # ordered by (id, version): the last one wins
-    if rt.defn.id not in latest:
-        latest[rt.defn.id] = {"id": rt.defn.id, "name": rt.defn.name, "prod_version": rt.defn.raw.get("version"), "definition": rt.defn.raw}
-    return list(latest.values())
-
-
-def agent_steps(definitions: list[dict], maps: dict | None = None) -> list[dict]:
+def agent_steps(definitions: list[dict], maps: dict) -> list[dict]:
     """Every activity of the definitions with its performers: the activity's own `agent` (the product's AgentSelectField
     writes it) or the role's endpoint (HYD definitions: role "AI 에이전트" → sys:agent, "SCADA" → sys:scada).
-    `agent` marks the steps a coding-agent worker runs (agentMode set, orchestration cliagents) — only those have run settings."""
+    `agent` marks the steps a coding-agent worker runs (agent_authoring.is_agent_activity) — only those have run settings."""
     out = []
     for d in definitions:
         raw = d.get("definition") or {}
-        roles = {r.get("name"): r for r in raw.get("roles") or [] if isinstance(r, dict)}
         for a in raw.get("activities") or []:
             if not isinstance(a, dict) or not a.get("id"):
                 continue
-            performers = csv_list(a.get("agent")) or csv_list((roles.get(a.get("role")) or {}).get("endpoint"))
+            performers = default_performers(raw, a)
             if not performers:
                 continue
-            orch = a.get("orchestration")
-            is_agent = bool(engine.agent_mode_of(a)) and (orch in engine.NO_MODE or orch == engine.AGENT_ORCH)
-            mapped = (maps or {}).get((d["id"], a["id"])) if is_agent else None
+            is_agent = is_agent_activity(a)
+            mapped = maps.get((d["id"], a["id"])) if is_agent else None
             default = performers
             if mapped:                                   # B1: 단계 → 에이전트 배정이 이긴다(정의 원본은 그대로)
                 performers = [mapped]
             out.append({"definition_id": d["id"], "definition_name": d.get("name") or raw.get("processDefinitionName"),
                         "version": d.get("prod_version"), "activity_id": a["id"], "name": a.get("name") or a["id"], "agent": is_agent,
-                        "performers": performers, "default_performers": default, "assigned": bool(mapped), "caps": activity_capabilities(raw, a["id"]) if is_agent else {}})
+                        "performers": performers, "default_performers": default, "assigned": bool(mapped),
+                        "caps": activity_capabilities(raw, a["id"]) if is_agent else {}})
+    return out
+
+
+def _context(rt):
+    maps = {(m["proc_def_id"], m["activity_id"]): m["agent_id"] for m in rt.repo.list_agent_map(rt.tenant_id)}
+    steps = agent_steps(latest_definitions(rt), maps)
+    attached: dict[str, list[str]] = {}
+    for r in rt.repo.list_agent_skills(rt.tenant_id):
+        attached.setdefault(r["user_id"], []).append(r["skill_name"])
+    return steps, attached
+
+
+def step_runs(rt) -> list[dict]:
+    """에이전트 단계마다 실제로 맡는 에이전트(배정 반영)와 그 실행이 쓰는 도구 서버 — 워커와 같은 두 함수(agent_settings · run_servers).
+    → [{definition_id, definition_name, version, activity_id, name, agent_id, agent_name, servers: {서버: 정해진 읽기 도구 | None}}]"""
+    steps, _ = _context(rt)
+    users = {u["id"]: u for u in rt.repo.list_users(None, rt.tenant_id)}
+    tenant = mcp_registry.store_for(rt.repo).servers(rt.tenant_id)
+    out = []
+    for s in steps:
+        if not s["agent"]:
+            continue
+        performer = next((p for p in s["performers"] if (users.get(p) or {}).get("is_agent")), None)
+        settings = agent_settings(rt.repo, rt.tenant_id, users.get(performer), activity=s["caps"])
+        out.append({k: s[k] for k in ("definition_id", "definition_name", "version", "activity_id", "name")}
+                   | {"agent_id": performer, "agent_name": (users.get(performer) or {}).get("username") or performer,
+                      "servers": run_servers(settings.tools, tenant, s["caps"].get("contract"))})
     return out
 
 
@@ -74,51 +84,48 @@ def _card(user: dict, attached: list[str], steps: list[dict]) -> dict:
 
 
 def mount(app: FastAPI) -> None:
-    def _context():
-        rt = instance_mode._rt()
-        reader = getattr(rt.repo, "list_agent_map", None)
-        maps = {(m["proc_def_id"], m["activity_id"]): m["agent_id"] for m in reader(rt.tenant_id)} if callable(reader) else {}
-        steps = agent_steps(_latest_definitions(rt), maps)
-        attached: dict[str, list[str]] = {}
-        for r in rt.repo.list_agent_skills(rt.tenant_id):
-            attached.setdefault(r["user_id"], []).append(r["skill_name"])
-        return rt, steps, attached
-
     @app.get("/api/agents")
     def list_agents():
-        rt, steps, attached = _context()
+        rt = instance_mode._rt()
+        steps, attached = _context(rt)
         cards = [_card(u, attached.get(u["id"], []), steps) for u in rt.repo.list_users(None, rt.tenant_id) if u.get("is_agent")]
         return sorted(cards, key=lambda c: (c["kind"] != "agent", c["name"]))
 
     @app.get("/api/agents/{agent_id}")
     def get_agent(agent_id: str):
-        rt, steps, attached = _context()
+        rt = instance_mode._rt()
+        steps, attached = _context(rt)
         rows = [u for u in rt.repo.list_users([agent_id], rt.tenant_id) if u.get("is_agent")]
         if not rows:
             raise HTTPException(404, "그런 에이전트가 없습니다")
         user = rows[0]
         card = _card(user, attached.get(agent_id, []), steps)
-        servers = _servers(rt.repo, rt.tenant_id)
+        servers = mcp_registry.store_for(rt.repo).servers(rt.tenant_id)
         card["persona"] = user.get("persona") or ""
-        card["tools"] = [{"name": t, "registered": t in servers, "description": (servers.get(t) or {}).get("description") or "",
-                          "transport": "url" if (servers.get(t) or {}).get("url") else "command" if (servers.get(t) or {}).get("command") else None}
+        card["tools"] = [{"name": t, "registered": t in servers, "description": (servers.get(t) or {}).get("description") or ""}
                          for t in card["tools"]]
         skills = {s["skill_name"]: s for s in rt.repo.list_skills(rt.tenant_id, card["skills"])} if card["skills"] else {}
         card["skills"] = [{"skill_name": n, "found": n in skills, "title": skill_title(skills[n]) if n in skills else "",
                            "description": (skills.get(n) or {}).get("description") or ""} for n in card["skills"]]
-        # what the worker will run with — the same function, per step (a step may declare its own tools/skills/model)
+        # what the worker will run with — the same functions, per step (a step may declare its own tools/skills/model, and the
+        # class AI steps with a fixed read list use only those tools — run_servers)
         base = agent_settings(rt.repo, rt.tenant_id, user)
-        card["run"] = {"instructions": base.instructions(), "settings": base.summary(),
-                       "steps": [{"definition_id": s["definition_id"], "definition_name": s["definition_name"], "activity_id": s["activity_id"], "name": s["name"],
-                                  "settings": agent_settings(rt.repo, rt.tenant_id, user, activity=s["caps"]).summary()}
-                                 for s in steps if s["agent"] and agent_id in s["performers"]],
+        rows = []
+        for s in steps:
+            if not (s["agent"] and agent_id in s["performers"]):
+                continue
+            settings = agent_settings(rt.repo, rt.tenant_id, user, activity=s["caps"])
+            rows.append({"definition_id": s["definition_id"], "definition_name": s["definition_name"], "activity_id": s["activity_id"],
+                         "name": s["name"], "settings": settings.summary(), "servers": run_servers(settings.tools, servers, s["caps"].get("contract"))})
+        card["run"] = {"instructions": base.instructions(), "settings": base.summary(), "steps": rows,
                        "servers_registered": [{"name": n, "description": (servers.get(n) or {}).get("description") or ""} for n in sorted(servers)]}
         card["source"] = {"table": "public.users", "updated_at": user.get("updated_at") or user.get("created_at")}
         return card
 
     @app.get("/api/skills")
     def list_skills():
-        rt, steps, attached = _context()
+        rt = instance_mode._rt()
+        steps, attached = _context(rt)
         names = {u["id"]: u.get("username") or u["id"] for u in rt.repo.list_users(None, rt.tenant_id)}
         out = []
         for s in rt.repo.list_skills(rt.tenant_id):
@@ -133,7 +140,8 @@ def mount(app: FastAPI) -> None:
 
     @app.get("/api/skills/{name}")
     def get_skill(name: str):
-        rt, steps, attached = _context()
+        rt = instance_mode._rt()
+        steps, attached = _context(rt)
         row = rt.repo.get_skill(rt.tenant_id, name)
         if row is None:
             raise HTTPException(404, "그런 스킬이 없습니다")

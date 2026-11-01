@@ -3,6 +3,8 @@ import hashlib
 import json
 import time
 
+RETRY_MAX_S = 300        # 그래프가 받지 못한 행을 다시 보내는 가장 긴 간격(초)
+
 
 class CaseProjectionStore:
     def _init_case_projection(self):
@@ -77,9 +79,10 @@ class CaseProjectionStore:
             if error is None:
                 self.db.executemany('delete from case_projection_outbox where id=? and processed_at is null',[(jid,) for jid in job['ids']])
             else:
+                # 다시 보내는 간격은 실패할 때마다 두 배(5초 → 최대 RETRY_MAX_S) — Neo4j 가 오래 멈춰도 5초마다 경고로 로그를 덮지 않는다(P5-07)
                 self.db.executemany('''update case_projection_outbox set attempts=attempts+1,
-                    last_error=?,retry_at=? where id=? and processed_at is null''',
-                    [(error,time.time()+5,jid) for jid in job['ids']])
+                    last_error=?,retry_at=?+min(?,5*(1<<min(attempts,6))) where id=? and processed_at is null''',
+                    [(error,time.time(),RETRY_MAX_S,jid) for jid in job['ids']])
 
     def case_projection_status(self,limit=100):
         with self._lock:

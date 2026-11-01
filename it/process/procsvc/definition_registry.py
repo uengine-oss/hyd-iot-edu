@@ -3,6 +3,7 @@
 Product reference: vue3 ProcessGPTBackend.putRawDefinition/getExecutionDefinition.
 HYD deliberately requires an exact version and rejects unsupported execution shapes.
 """
+import json
 from copy import deepcopy
 from hydcommon.process_contracts import pinned_form, validate_fields
 from . import engine, alert_policy, effect_parts, approval_part
@@ -15,9 +16,25 @@ PROTECTED_OUTPUTS = {'incident','commands','approved_by','approved_by_name','app
                      *effect_parts.PURCHASE_VALUES}
 
 
+#: 정의 하나의 크기 상한(P1-16 — 큰 JSON 하나가 정의 판본 표에 남아 판본 목록 · 비교를 무겁게 하고, 긴 정의는 재귀 깊이 한도로 사유 없는 500 이었다).
+#: 제공 정의 · 수업 흐름은 노드 30개 · 글 40,000자 안쪽이다(test_definition_registry 가 잰다).
+MAX_NODES = 500
+MAX_DEFINITION_CHARS = 500_000
+_COLLECTION_WORDS = {'activities': '단계', 'events': '이벤트', 'gateways': '분기점', 'sequences': '연결'}
+
+
 def validate_definition(raw):
+    """등록 문지기 하나(JSON 등록 · 흐름 가져오기 · 배포 · 판본 상태가 모두 이것을 부른다). raw 는 고치지 않고, 저장할 모양(에이전트 단계를
+    제품 모양으로 맞춘 사본)을 담은 Definition 을 돌려준다(defn.raw). 실패는 무엇이 · 어디서를 담은 ValueError."""
     if not isinstance(raw, dict):
         raise ValueError('정의는 JSON 객체여야 합니다')
+    try:
+        size = len(json.dumps(raw, ensure_ascii=False))
+    except (TypeError, ValueError) as e:
+        raise ValueError(f'정의를 JSON 으로 쓸 수 없습니다: {e}') from e
+    if size > MAX_DEFINITION_CHARS:
+        raise ValueError(f'정의가 너무 큽니다({size:,}자 — 한도 {MAX_DEFINITION_CHARS:,}자). 흐름을 나누거나 설명을 줄이세요')
+    raw = deepcopy(raw)
     alert_policy.validate(raw)
     for key in ('processDefinitionId', 'processDefinitionName', 'version'):
         if not isinstance(raw.get(key), str) or not raw[key].strip():
@@ -31,6 +48,8 @@ def validate_definition(raw):
             raise ValueError(f'{collection}은 객체 목록이어야 합니다')
         field = 'name' if collection in ('roles','data') else 'id'
         ids = [v.get(field) for v in values]
+        if collection in ('activities', 'events', 'gateways', 'sequences') and len(values) > MAX_NODES:
+            raise ValueError(f'{_COLLECTION_WORDS[collection]}이(가) {len(values)}개로 한도 {MAX_NODES}개를 넘습니다. 흐름을 나누세요')
         if any(not isinstance(i,str) or not i.strip() for i in ids) or len(set(ids)) != len(ids):
             raise ValueError(f'{collection}의 {field}가 없거나 중복됩니다')
         if collection in ('activities','events','gateways'):
@@ -45,15 +64,15 @@ def validate_definition(raw):
     for s in raw.get('sequences',[]):
         if s.get('condition') is not None and not isinstance(s['condition'],str):
             raise ValueError('분기 condition은 문자열이어야 합니다')
-        props=engine._properties(s)
+        props=engine.sequence_properties(s)
         if 'priority' in props and type(props['priority']) is not int:
             raise ValueError('분기 priority는 정수여야 합니다')
         if 'default' in props and type(props['default']) is not bool:
             raise ValueError('분기 default는 boolean이어야 합니다')
     _normalize_agent_activities(raw)
     try:
-        defn = engine.Definition.from_dict(deepcopy(raw))
-    except (KeyError, TypeError, SyntaxError) as e:
+        defn = engine.Definition.from_dict(raw)
+    except (KeyError, TypeError) as e:
         raise ValueError(f'정의 구조가 올바르지 않습니다: {e}') from e
     for form in raw['forms'].values():
         if not isinstance(form, dict):
@@ -61,14 +80,10 @@ def validate_definition(raw):
         validate_fields(form.get('fields_json'))
         if any(f['key'] == '__human_input__' for f in form['fields_json']):
             raise ValueError('__human_input__은 에이전트 질문 제어용 예약 필드입니다')
-    from . import input_bindings
-    input_bindings.validate(defn)
     for a in defn.activities.values():
         kind = a['type']
         if PROTECTED_OUTPUTS.intersection(a.get('outputData') or []):
             raise ValueError('Incident와 승인 명령 값은 서버 승인 경로에서만 만들 수 있습니다')
-        if kind not in {'userTask','manualTask','serviceTask'}:
-            raise ValueError(f'아직 실행을 지원하지 않는 활동 타입: {kind}')
         if kind == 'serviceTask':
             if a.get('tool') not in SERVICE_TOOLS:
                 raise ValueError(f"지원하지 않는 서비스 도구: {a.get('tool')}")
@@ -102,12 +117,8 @@ def validate_definition(raw):
                 raise ValueError(f"병렬 합류 {g['id']}로 들어오는 흐름의 출발은 활동 또는 이벤트여야 합니다 (게이트웨이 직결 불가)")
         elif g.get('type') != 'exclusiveGateway':
             raise ValueError('등록 경로는 현재 exclusiveGateway와 parallelGateway만 검증되었습니다')
-        elif any(s['source'] in defn.gateways for s in defn.incoming(g['id'])) and not any(
-                engine._properties(s).get('default') is True or not s.get('condition') for s in defn.outgoing(g['id'])):
-            # #16: 앞 작업이 진행 가능한지 보는 판정(engine._judge)은 분기 한 단계만 본다. 분기에서 바로 이어지는 분기의 조건이 모두 거짓이면
-            # 흐름이 오류 없이 사라졌다(앞 작업은 DONE, 다음 작업 없음). 그런 분기는 「그 밖의 경우」 선을 꼭 갖게 한다.
-            raise ValueError(f"분기 {g.get('name') or g['id']}는 다른 분기에서 바로 이어지므로 「그 밖의 경우」(조건 없는 기본 선)가 하나 있어야 합니다 "
-                             "— 조건이 모두 맞지 않을 때 흐름이 갈 곳이 없습니다")
+        else:
+            _exclusive_shape(defn, g)
     for e in defn.events.values():
         if e.get('type') not in {'startEvent','endEvent','boundaryEvent'}:
             raise ValueError(f"지원하지 않는 이벤트: {e.get('type')}")
@@ -118,28 +129,18 @@ def validate_definition(raw):
                 raise ValueError('timer 기간은 0보다 커야 합니다')
             if 'cancelActivity' in e and not isinstance(e['cancelActivity'], bool):
                 raise ValueError('boundaryEvent cancelActivity는 true/false입니다 (false = 멈추지 않는 알림 타이머)')
-    # Loop re-entry exists in the engine; joins/cancellation across iterations still
-    # need integration coverage before the public registration contract accepts it.
-    # B3: a definition that declares loopPolicy "guarded" (bpmn_import writes it for a drawn back edge) is checked by
-    # _guarded_loops instead — every cycle leaves through an exclusive gateway and holds no parallel gateway.
-    visiting, visited = set(), set()
-    def visit(n):
-        if n in visiting:
-            if raw.get('loopPolicy') == 'guarded':
-                return
-            raise ValueError('등록 경로의 반복 실행은 아직 검증되지 않았습니다')
-        if n in visited:
-            return
-        visiting.add(n)
-        for s in defn.outgoing(n):
-            visit(s['target'])
-        visiting.remove(n); visited.add(n)
-    for n in all_ids:
-        visit(n)
-    if raw.get('loopPolicy') == 'guarded':
-        _guarded_loops(defn)
-    elif raw.get('loopPolicy') is not None:
+    # Loop re-entry exists in the engine; joins/cancellation across iterations still need integration coverage before the
+    # public registration contract accepts it. B3: a definition that declares loopPolicy "guarded" (bpmn_import writes it for
+    # a drawn back edge) is checked by _guarded_loops instead — every cycle leaves through an exclusive gateway and holds no
+    # parallel gateway. 순회는 반복문이다(P1-16: 재귀는 긴 직선 흐름 1,600단계에서 RecursionError 로 사유 없는 500 이었다).
+    policy = raw.get('loopPolicy')
+    if policy is not None and policy != 'guarded':
         raise ValueError("loopPolicy는 'guarded'만 지원합니다")
+    if policy is None and _has_cycle(defn, all_ids):
+        raise ValueError('등록 경로의 반복 실행은 아직 검증되지 않았습니다 — 되돌아가는 선이 있는 흐름은 흐름 가져오기로 등록하세요(반복 검사를 거친다)')
+    _exclusive_after_boundary_joins(defn)
+    if policy == 'guarded':
+        _guarded_loops(defn)
     if not any(e['type'] == 'endEvent' for e in defn.events.values()):
         raise ValueError('endEvent가 필요합니다')
     _static_connectivity(defn, all_ids)
@@ -150,9 +151,9 @@ def validate_definition(raw):
 def _normalize_agent_activities(raw):
     """A116 (r14 B5): store agent activities in the product's shape — userTask + agentMode DRAFT|COMPLETE + orchestration —
     so a definition made with the ProcessGPT designer registers here unchanged and a definition made here runs on the
-    product's polling service (which handles userTask/manualTask only; a businessRuleTask would never be picked up).
-    `businessRuleTask` + agentMode (HYD's shape before A116) is accepted and rewritten; agentMode none/null/'' is dropped;
-    an agent activity without orchestration gets cliagents (the product would default to crewai-deep-research)."""
+    product's polling service (which handles userTask/manualTask only). agentMode none/null/'' is dropped; an agent activity
+    without orchestration gets cliagents (the product would default to crewai-deep-research). businessRuleTask(A116 전 HYD 모양)는
+    받지 않는다 — 활동 종류 검사가 「userTask + agentMode 로 쓰세요」로 거절한다(옛 모양을 고쳐 받던 호환 갈래를 지움, P1-20)."""
     for a in raw.get('activities', []):
         if not isinstance(a, dict):
             continue
@@ -164,13 +165,88 @@ def _normalize_agent_activities(raw):
             raise ValueError(f"활동 {a.get('id')}의 agentMode는 none, DRAFT, COMPLETE 중 하나여야 합니다")
         if a.get('orchestration') in engine.NO_MODE:
             a.pop('orchestration', None)
-        if a.get('type') == 'businessRuleTask':
-            if 'agentMode' not in a:
-                raise ValueError(f"활동 {a.get('id')}: businessRuleTask는 agentMode DRAFT/COMPLETE가 있는 에이전트 작업일 때만 "
-                                 "userTask + agentMode로 등록합니다 (제품 엔진은 businessRuleTask를 실행하지 않습니다)")
-            a['type'] = 'userTask'
         if a.get('type') in engine.USER_TYPES and 'agentMode' in a and 'orchestration' not in a:
             a['orchestration'] = engine.AGENT_ORCH
+
+
+def _is_default(seq) -> bool:
+    """배타 분기의 「그 밖의 경우」 선: properties.default 가 참이거나 조건이 없는 선(엔진 _allowed_targets 와 같은 기준)."""
+    return engine.sequence_properties(seq).get('default') is True or not seq.get('condition')
+
+
+def _exclusive_shape(defn, g):
+    """배타 분기의 모양(P1-36 · #16). 엔진은 참인 조건 선 하나(여럿이면 priority · id 순)를, 없으면 기본 선을 탄다.
+    ① 기본 선은 하나뿐이어야 한다 — 둘 이상이면 엔진이 첫째를 조용히 골랐다(흐름 가져오기는 이미 거절했다 — 그 규칙이 이 한 곳으로 왔다).
+    ② 분기 앞이 단계가 아니면(다른 분기 · 시작 · 경계 타이머) 기본 선이 꼭 있어야 한다 — 단계 뒤 분기는 조건이 모두 거짓이면 그 단계가
+       「진행 멈춤」(PENDING)으로 남아 사람이 다시 수행 · 닫기로 다룰 수 있지만, 앞이 분기 · 이벤트면 멈출 행이 없거나(흐름이 오류 없이 사라짐)
+       아무도 닫을 수 없는 이벤트 행이 남는다."""
+    name = g.get('name') or g['id']
+    defaults = [s['id'] for s in defn.outgoing(g['id']) if _is_default(s)]
+    if len(defaults) > 1:
+        raise ValueError(f"분기 {name}에 「그 밖의 경우」 선(조건 없는 선 · 기본 선)이 {len(defaults)}개입니다({', '.join(defaults)}) — 하나만 두세요")
+    feeders = [s['source'] for s in defn.incoming(g['id']) if s['source'] not in defn.activities]
+    if feeders and not defaults:
+        raise ValueError(f"분기 {name}는 단계가 아닌 곳({', '.join(sorted(set(feeders)))})에서 바로 이어지므로 「그 밖의 경우」(조건 없는 기본 선)가 "
+                         "하나 있어야 합니다 — 조건이 모두 맞지 않을 때 흐름이 갈 곳이 없습니다")
+
+
+def _forward(defn, starts, stop):
+    """starts 에서 앞으로 닿는 노드(붙은 이벤트 포함), stop 노드에서 멈춘다."""
+    host_of = {ev['id']: a['id'] for a in defn.activities.values() for ev in defn.attached_events(a['id'])}
+    seen, stack = set(), list(starts)
+    while stack:
+        n = stack.pop()
+        if n in seen or n == stop:
+            continue
+        seen.add(n)
+        stack.extend([s['target'] for s in defn.outgoing(n)] + [ev for ev, host in host_of.items() if host == n])
+    return seen
+
+
+def _exclusive_after_boundary_joins(defn):
+    """P1-07: 한 단계와 그 단계를 끊는 경계 타이머는 서로를 취소한다(단계가 끝나면 타이머 취소, 타이머가 울리면 단계 취소). 둘의 길이 같은
+    병렬 합류의 다른 입구로 들어가면 그 합류는 처음부터 열릴 수 없다 — 등록하면 실행 때 아무도 닫지 않았는데 처리 건이 끝났다."""
+    for a in defn.activities.values():
+        for ev in defn.attached_events(a['id']):
+            if ev.get('cancelActivity') is False:
+                continue
+            for g in defn.gateways.values():
+                if not engine.is_parallel_join(defn, g['id']):
+                    continue
+                # 단계가 끝난 길(단계 자신 + 나가는 선 뒤)과 시한이 울린 길(시한 자신 + 그 뒤) — 단계에서 붙은 시한으로 건너가지 않는다
+                done = {a['id']} | _forward(defn, [s['target'] for s in defn.outgoing(a['id'])], g['id'])
+                fired = {ev['id']} | _forward(defn, [s['target'] for s in defn.outgoing(ev['id'])], g['id'])
+                entries = {s['source'] for s in defn.incoming(g['id'])}
+                if entries & (done - fired) and entries & (fired - done):
+                    raise ValueError(f"병렬 합류 {g.get('name') or g['id']}에 단계 {a.get('name') or a['id']}의 길과 그 단계를 끊는 시한 "
+                                     f"{ev.get('name') or ev['id']}의 길이 함께 들어갑니다 — 둘 중 하나만 일어나므로 합류가 열리지 않습니다. "
+                                     "시한 길은 배타 분기로 모으거나 따로 끝나게 그리세요")
+
+
+def _has_cycle(defn, nodes) -> bool:
+    """되돌아가는 선이 있는가(반복문 DFS — 깊은 흐름에서도 재귀 한도에 걸리지 않는다)."""
+    state = {}
+    for root in nodes:
+        if root in state:
+            continue
+        state[root] = 1
+        stack = [(root, iter([s['target'] for s in defn.outgoing(root)]))]
+        while stack:
+            node, children = stack[-1]
+            nxt = next(children, None)
+            if nxt is None:
+                state[node] = 2
+                stack.pop()
+            elif state.get(nxt) == 1:
+                return True
+            elif nxt not in state:
+                state[nxt] = 1
+                stack.append((nxt, iter([s['target'] for s in defn.outgoing(nxt)])))
+    return False
+
+
+#: 정의 data 의 자료형 이름 → 조건 자료형 검사(effect_parts.condition_type_problems)의 이름. 그 밖(Object · Array)은 비교 규칙이 없어 보지 않는다
+_CONDITION_TYPES = {'text': 'Text', 'string': 'Text', 'number': 'Number', 'integer': 'Number', 'float': 'Number', 'boolean': 'Boolean'}
 
 
 def _condition_variables(defn):
@@ -181,7 +257,7 @@ def _condition_variables(defn):
 
     A143 (remaining-sweep 19, D01 "outputData of the activity before the gateway"): the producer must also be able to run
     before the gateway judges. HYD allows a producer on another branch of the same instance (condition-recheck-v1: `a` on
-    a parallel path writes x, `g` after `b` reads it — the engine waits for it, 문서/시스템/참조/rework-conditions.md), so the rule is
+    a parallel path writes x, `g` after `b` reads it — the engine waits for it, dependency_schedule), so the rule is
     not "ancestor of the gateway" but "reachable from the start without passing through the gateway". A variable whose
     every producer sits behind the gateway (reachable only through it) can never exist when the gateway first judges,
     and the instance would wait forever."""
@@ -205,6 +281,13 @@ def _condition_variables(defn):
         undeclared = sorted(n for n in names if n not in defn.data)
         if undeclared:
             raise ValueError(f"분기 {s.get('id')}의 조건이 선언되지 않은 변수를 읽습니다: {', '.join(undeclared)} (data에 선언)")
+        # P1-03: 선언한 자료형과 맞지 않는 비교(글 값 > 70 · 수 값 in 수)는 실행 때 판정할 수 없다 — 등록 전에 거절한다. 검사기는 흐름 가져오기와
+        # 같은 하나(effect_parts.condition_type_problems)다.
+        types = {n: _CONDITION_TYPES[str(defn.data[n].get('type') or '').lower()] for n in names
+                 if str(defn.data[n].get('type') or '').lower() in _CONDITION_TYPES}
+        problems = effect_parts.condition_type_problems(cond, types)
+        if problems:
+            raise ValueError(f"분기 {s.get('id')}의 조건 {cond!r}이(가) 값의 자료형과 맞지 않습니다: {'; '.join(problems)}")
         unproduced = sorted(n for n in names if n not in produced)
         if unproduced:
             raise ValueError(f"분기 {s.get('id')}의 조건 변수 {', '.join(unproduced)}를 어떤 활동도 내지 않습니다 (outputData)")
@@ -279,26 +362,7 @@ def _guarded_loops(defn):
     nodes = [*defn.activities, *defn.events, *defn.gateways]
     host_of = {ev['id']: a['id'] for a in defn.activities.values() for ev in defn.attached_events(a['id'])}
     succ = {n: [s['target'] for s in defn.outgoing(n)] + [ev for ev, host in host_of.items() if host == n] for n in nodes}
-    index, low, on, stack, comps, counter = {}, {}, set(), [], [], [0]
-    def strong(v):
-        index[v] = low[v] = counter[0]; counter[0] += 1
-        stack.append(v); on.add(v)
-        for w in succ.get(v, []):
-            if w not in index:
-                strong(w); low[v] = min(low[v], low[w])
-            elif w in on:
-                low[v] = min(low[v], index[w])
-        if low[v] == index[v]:
-            comp = set()
-            while True:
-                w = stack.pop(); on.discard(w); comp.add(w)
-                if w == v:
-                    break
-            if len(comp) > 1 or v in succ.get(v, []):
-                comps.append(comp)
-    for v in nodes:
-        if v not in index:
-            strong(v)
+    comps = _strong_components(nodes, succ)
     for comp in comps:
         exits = [n for n in comp if defn.gateways.get(n, {}).get('type') == 'exclusiveGateway'
                  and any(s['target'] not in comp for s in defn.outgoing(n))]
@@ -306,3 +370,42 @@ def _guarded_loops(defn):
             raise ValueError(f"반복 경로({', '.join(sorted(comp))})에서 빠져나갈 배타 게이트웨이가 없습니다")
         if any(defn.gateways.get(n, {}).get('type') == 'parallelGateway' for n in comp):
             raise ValueError(f"반복 경로({', '.join(sorted(comp))}) 안의 병렬 게이트웨이는 아직 검증되지 않았습니다")
+
+
+def _strong_components(nodes, succ):
+    """강한 연결 요소(Tarjan, 반복문) 중 반복을 이루는 것(크기 2 이상 또는 자기 자신으로 돌아가는 노드)."""
+    index, low, on, stack, comps, counter = {}, {}, set(), [], [], 0
+    for root in nodes:
+        if root in index:
+            continue
+        work = [(root, 0)]
+        while work:
+            v, i = work.pop()
+            if i == 0:
+                index[v] = low[v] = counter
+                counter += 1
+                stack.append(v)
+                on.add(v)
+            children = succ.get(v, [])
+            if i > 0:
+                low[v] = min(low[v], low[children[i - 1]])
+            while i < len(children) and children[i] in index:
+                w = children[i]
+                if w in on:
+                    low[v] = min(low[v], index[w])
+                i += 1
+            if i < len(children):
+                work.append((v, i + 1))
+                work.append((children[i], 0))
+                continue
+            if low[v] == index[v]:
+                comp = set()
+                while True:
+                    w = stack.pop()
+                    on.discard(w)
+                    comp.add(w)
+                    if w == v:
+                        break
+                if len(comp) > 1 or v in children:
+                    comps.append(comp)
+    return comps

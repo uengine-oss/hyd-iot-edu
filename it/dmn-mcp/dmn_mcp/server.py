@@ -1,21 +1,24 @@
-"""hyd-dmn MCP: FastMCP server (streamable HTTP) wrapping the deterministic judgment engine.
+"""hyd-dmn MCP: 결정론 판단 엔진(agentsvc)을 도구로 내는 FastMCP 서버, 같은 프로세스에서 수업 neo4j 조회 도구도 함께 낸다.
 
-    docker: NEO4J_URI · NEO4J_AUTH · TSDB_DSN · DAQ_PROFILE · PROCESS_URL · ENTERPRISE_URL · ENTERPRISE_READ_DSN ·
-            INGEST_URL · PROMETHEUS_URL   MCP_PORT=8198
-    tools : diagnose · dmn_rules · inputs · gather_facts · timeseries_schema · timeseries_query ·
-            prometheus_metadata · prometheus_series · prometheus_query · evaluate_cards · forecast_actions ·
-            submit_decision · precedents · tradeoffs · fabric_query   (15; submit_decision is the only write)
+    docker: NEO4J_URI · NEO4J_AUTH · TSDB_READ_DSN · DAQ_PROFILE · PROCESS_URL · ENTERPRISE_URL · ENTERPRISE_READ_DSN · INGEST_URL   MCP_PORT=8198
+    주소  : /mcp        hyd-dmn — 아래 @mcp.tool 전부. 쓰기는 submit_decision · submit_purchase 둘(판단 카드를 process 에 올린다, 설비 명령 없음)
+            /neo4j/mcp  neo4j  — hydcommon.neo4j_mcp 의 읽기 도구 둘(read_neo4j_cypher · get_neo4j_schema)
+            /healthz    Neo4j 연결
+    neo4j 도구는 예전에 process · 워커가 부를 때마다 파이썬을 새로 띄우는 stdio 서버라 목록 한 번에 1.8~3.6초가 들어 4초 한도를 넘겼다(H-4,
+    학생 질문이 「연결 확인 필요」로 끝남). 새 컨테이너를 늘리지 않고(학생 PC 메모리) 이미 떠 있는 이 프로세스가 HTTP 로 낸다.
 """
 from __future__ import annotations
 
 import json
 import os
+from contextlib import asynccontextmanager
 from typing import Annotated
 
 from fastmcp import FastMCP
 from fastmcp.server.dependencies import get_http_headers
 from pydantic import Field
 
+from hydcommon import graphdb, neo4j_mcp
 from hydcommon.fabric import CROSS_QUERIES, ENT, TS
 
 from .tools import DmnTools, enveloped
@@ -48,12 +51,12 @@ mcp = FastMCP("hyd-dmn", instructions=(
     "Cause/FM을 추정하거나 reference 절차를 실행 후보로 만들지 않는다. 모든 도구는 {result: ok|error, document} 봉투로 답한다."))
 tools = DmnTools()
 READ = {"readOnlyHint": True, "destructiveHint": False}       # MCP ToolAnnotations — 포털 도구 써 보기는 readOnlyHint=true 만 부른다 (procsvc/mcp_check.py)
-WRITE = {"readOnlyHint": False, "destructiveHint": False}     # submit_decision: process 에 카드 묶음을 쓴다(설비 명령 아님)
+WRITE = {"readOnlyHint": False, "destructiveHint": False}     # submit_decision · submit_purchase: process 에 판단 카드를 쓴다(설비 명령 아님)
 
 Asset = Annotated[str, Field(description="설비 코드 (HYD-01 | HYD-02 | HYD-03)")]
 Pattern = Annotated[str, Field(description="이상 패턴 코드 (예: COOLER_DEGRADATION, PUMP_LEAKAGE, FAN_VIBRATION)")]
 Cause = Annotated[str, Field(description="원인 노드 id (예: cause:cooler-fin-fouling)")]
-FailureMode = Annotated[str, Field(description="고장 유형 노드 id (예: fm:cooling-loss)")]
+FailureMode = Annotated[str, Field(description="고장 유형 노드 id (예: fm:cooler-cooling-loss)")]
 Overrides = Annotated[dict | None, Field(description="가정 실험용 사실 덮어쓰기 (예: {\"plc_mode\": \"REMOTE_MANUAL\"}). 보통 비움")]
 
 
@@ -95,25 +98,6 @@ def timeseries_query(sql: Annotated[str, Field(description="timeseries_schema로
 
 
 @mcp.tool(annotations=READ)
-def prometheus_metadata(metric: str | None = None) -> dict:
-    """Prometheus가 수집한 지표 HELP/type/unit. metric은 정확한 이름(생략 시 목록). truncated면 목록 일부다. 생성 지표 up 등은 metadata에 없을 수 있어 prometheus_series로 확인한다. 현재 HYD는 플랫폼 지표이며 센서 태그를 추정하지 않는다."""
-    return enveloped(lambda: tools.prometheus.metadata(metric))()
-
-
-@mcp.tool(annotations=READ)
-def prometheus_series(selector: str, start: float | None = None, end: float | None = None) -> dict:
-    """실제 지표/레이블 집합 탐색. selector는 Prometheus series selector. start/end는 Unix초(둘 다 생략 시 최근5분), 최대24시간/200시리즈. 시리즈 존재는 해당 구간의 실제 관측값 존재를 보증하지 않는다."""
-    return enveloped(lambda: tools.prometheus.series(selector, start, end))()
-
-
-@mcp.tool(annotations=READ)
-def prometheus_query(expression: str, at: float | None = None, start: float | None = None,
-                     end: float | None = None, step: float | None = None) -> dict:
-    """메타데이터 확인 후 생성한 PromQL 읽기 실행. at=Unix초 단일시점(기본 현재), 또는 start/end/step초 모두 지정한 구간. 5초/24시간/200시리즈/20000점 제한. 빈 벡터·0·오류를 구분한다. 지속 조건은 timestamp/누락/관측간격까지 검사한다. 경고와 NaN/Inf를 보존한다."""
-    return enveloped(lambda: tools.prometheus.query(expression, at, start, end, step))()
-
-
-@mcp.tool(annotations=READ)
 def evaluate_cards(asset: Asset, pattern: Pattern, cause: Cause, failure_mode: FailureMode, overrides: Overrides = None,
                    detail_option: Annotated[str | None, Field(description="카드 하나의 전체 근거(순위 근거 · 득실 평가 · 단계 · 예측 맥락)가 필요할 때 그 카드 id 또는 SOP ID. 보통 비움")] = None) -> dict:
     """후보 선택 → 규정 판정(제외 · 감점 · 경고) → 예측 · BSC 상충 · 선례 → 순위. 제출하지 않는다 (task:candidates · task:compliance 용).
@@ -143,15 +127,16 @@ def submit_decision(asset: Asset, pattern: Pattern, cause: Cause, failure_mode: 
                     incident: Annotated[str, Field(description="이 인스턴스의 Incident id (task.json inputs.incident)")],
                     alert_id: Annotated[str | None, Field(description="경보 id")] = None, overrides: Overrides = None,
                     process_scope: Annotated[dict | None, Field(description="context/task.json의 process_scope 객체를 그대로 전달: tenant/instance/workitem/generation/version/consumer")] = None) -> dict:
-    """순위를 매긴 조치 카드 묶음을 process 에 제출한다 (사람이 고를 카드). 에이전트의 유일한 쓰기. 돌려준 id 가 decision_id 다.
+    """순위를 매긴 조치 카드 묶음을 process 에 제출한다 (사람이 고를 카드). 쓰기 도구(구매는 submit_purchase). 돌려준 id 가 decision_id 다.
     process 가 등록을 거절했거나(사유 포함) 연결 실패 · 후보 0개 · 가드레일 거절이면 성공이 아니라 오류 봉투다."""
     return enveloped(lambda: tools.submit_decision(asset, pattern, cause, failure_mode, incident, alert_id, overrides, run_scope(process_scope)))()
 
 
 @mcp.tool(annotations=READ)
 def business_causes(asset: Asset, pattern: Pattern) -> dict:
-    """업무 경보(SPARE_BELOW_MIN 재고 기준 이탈 · PM_DUE 정기 정비 도래)의 원인 후보 — 센서 증상이 없어 diagnose 대신 쓴다. 재고는 재주문점 아래
-    부품을 쓰는 원인, 정기 정비는 정비가 막는(PREVENTED_BY) 고장의 원인. 돌려준 top_cause · failure_mode 를 evaluate_cards · submit_decision 에 넘긴다."""
+    """정기 정비 도래 경보(PM_DUE)의 원인 후보 — 센서 증상이 없어 diagnose 대신 쓴다. 정비가 막는(PREVENTED_BY) 고장의 원인.
+    돌려준 top_cause · failure_mode 를 evaluate_cards · submit_decision 에 넘긴다. 재고 기준 이탈(SPARE_BELOW_MIN)은 원인이 아니라
+    부품이 근거라 purchase_context · evaluate_purchase · submit_purchase 를 쓴다."""
     return enveloped(lambda: tools.business_causes(asset, pattern))()
 
 
@@ -206,5 +191,24 @@ async def healthz(_request):
     return JSONResponse({"ok": h["neo4j"], **h}, status_code=200 if h["neo4j"] else 503)
 
 
+#: 수업 neo4j 조회 도구(tenants.mcp 의 neo4j = http://dmn-mcp:8198/neo4j/mcp). 드라이버는 hydcommon.graphdb 한 곳에서 연다(결정 2).
+NEO4J_PATH = "/neo4j"
+neo4j_tools = neo4j_mcp.create_server(graphdb.connect(asynchronous=True), database=os.getenv("NEO4J_DATABASE", "neo4j"))
+
+
+def app():
+    """두 MCP 앱을 한 ASGI 앱으로: hyd-dmn 은 /mcp · /healthz, neo4j 는 /neo4j/mcp. 두 앱의 세션 관리자(lifespan)를 함께 켠다."""
+    from starlette.applications import Starlette
+    from starlette.routing import Mount
+    dmn, neo = mcp.http_app(path="/mcp"), neo4j_tools.http_app(path="/mcp")
+
+    @asynccontextmanager
+    async def lifespan(parent):
+        async with dmn.lifespan(parent), neo.lifespan(parent):
+            yield
+    return Starlette(routes=[Mount(NEO4J_PATH, app=neo), Mount("/", app=dmn)], lifespan=lifespan)
+
+
 if __name__ == "__main__":
-    mcp.run(transport="http", host="0.0.0.0", port=int(os.getenv("MCP_PORT", "8198")), path="/mcp", uvicorn_config={"ws": "none"})
+    import uvicorn
+    uvicorn.run(app(), host="0.0.0.0", port=int(os.getenv("MCP_PORT", "8198")), ws="none")

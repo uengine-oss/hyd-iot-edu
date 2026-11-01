@@ -11,15 +11,15 @@
    데이터는 판단 결과(options · recommended · explanation)만 쓴다. 시나리오 이름 · id 를 코드에 두지 않는다. */
 (function () {
   const e = s => (typeof esc === 'function' ? esc(s) : String(s ?? ''));
-  const num = (v, d = 1) => Number.isFinite(+v) ? (+v).toFixed(d).replace(/\.0+$/, '') : '';
+  const num = v => Number.isFinite(+v) ? window.hydWords.num(+v) : '';   // 숫자 형식은 포털 하나(plainWords W.num — 크기별 자릿수, W1-12)
 
-  // 판단 설명에서 그 안을 말한 문장 하나를 꺼낸다("2순위 '팬 최대'(…)는 … 남습니다.") — 진 이유를 에이전트 말 그대로 보인다
+  // 판단 설명에서 그 안을 말한 문장 하나를 꺼낸다("2순위 '팬 최대'(…)는 … 남습니다.") — 진 이유를 판단 엔진 설명(규칙 문장) 그대로 보인다
   function sentenceAbout(text, name) {
     if (!text || !name) return '';
     const parts = String(text).split(/(?<=[.。])\s+/);
     return parts.find(p => p.includes(`'${name}'`) || p.includes(`‘${name}’`) || p.includes(`"${name}"`)) || '';
   }
-  const scoreText = o => window.hydWords?.purchaseEconomics(o) ? hydWords.purchaseCostLabel(o) : Number.isFinite(+o.score) ? `${num(o.score, 2)}점` : '';
+  const scoreText = o => window.hydWords?.purchaseEconomics(o) ? hydWords.purchaseCostLabel(o) : Number.isFinite(+o.score) ? `${num(o.score)}점` : '';
 
   /* 머리말 값(라이브 3차): 예측은 "이 안을 고르면 설비가 어떻게 되나"다. 판단 엔진은 모든 안에 예측을 붙인다(순위 식의 예측 · 품질 성분,
      규정의 예측 유온 검사, 승인 순간 재확인이 쓴다). 그러나 머리말에는 고르는 근거일 때만 둔다 — 설비를 바꾸는 안(kind control)이거나,
@@ -62,7 +62,7 @@
     const out = [];
     if (opt.head !== false) {
       if (forecastDecides(o, d.options)) {
-        const f = (o.forecast || []).slice(0, 2).map(x => `${e(UI.idText(x.name))} <b class="num">${e(num(x.value))}${e(x.unit || '')}</b>`);
+        const f = (o.forecast || []).slice(0, 2).map(x => `${e(UI.idText(x.name))} <b class="num">${e(num(x.value))}${x.unit ? ' ' + e(x.unit) : ''}</b>`);
         out.push(`예측 ${f.join(' · ')}`);
       } else {
         const v = ownValues(o, d);
@@ -93,16 +93,18 @@
       ${refHtml ? `<div class="ap-row"><span class="ap-label">출처</span><span class="row-wrap">${refHtml}</span></div>` : ''}</div>`;
   }
 
-  // 추천안과 견준 점수 항목 차이(지는 쪽 큰 것 2개 · 이기는 쪽 큰 것 1개) — "어디서 졌나"를 숫자 대신 말로
-  function partDiff(o, rec, options) {
+  // 추천안과 견준 점수 항목 차이(지는 쪽 큰 것 2개 · 이기는 쪽 큰 것 1개) — "어디서 졌나"를 말로. 승인 카드 · 처리 기록이 이 하나를 쓴다
+  // (numbers: 처리 기록처럼 점수 차이 숫자를 함께 보일 때)
+  function partDiff(o, rec, options, { numbers = false } = {}) {
     const economic=window.hydWords?.purchaseCostDiff(o,rec);
     if (economic) return economic;
     const a = o.scoreParts || {}, b = (rec && rec.scoreParts) || {};
     const d = Object.keys({ ...a, ...b }).map(k => [k, (+a[k] || 0) - (+b[k] || 0)]).filter(([, x]) => Math.abs(x) >= 0.05);
-    const lose = d.filter(([, x]) => x < 0).sort((x, y) => x[1] - y[1]).slice(0, 2).map(([k]) => UI.t('score.' + k));
-    const win = d.filter(([, x]) => x > 0).sort((x, y) => y[1] - x[1]).slice(0, 1).map(([k]) => UI.t('score.' + k));
+    const part = ([k, x]) => UI.t('score.' + k) + (numbers ? ` ${x > 0 ? '+' : ''}${num(x)}` : '');
+    const lose = d.filter(([, x]) => x < 0).sort((x, y) => x[1] - y[1]).slice(0, 2).map(part);
+    const win = d.filter(([, x]) => x > 0).sort((x, y) => y[1] - x[1]).slice(0, 1).map(part);
     const f = forecastDecides(o, options) ? (o.forecast || [])[0] : null, rf = rec && (rec.forecast || []).find(x => f && x.variable === f.variable);
-    const fc = f && rf ? `${UI.idText(f.name)} ${num(f.value)}${f.unit || ''} (추천 ${num(rf.value)}${rf.unit || ''})` : '';
+    const fc = f && rf ? `${UI.idText(f.name)} ${num(f.value)}${f.unit ? ' ' + f.unit : ''} (추천 ${num(rf.value)}${rf.unit ? ' ' + rf.unit : ''})` : '';
     return [lose.length ? `${lose.join(' · ')}에서 뒤짐` : '', win.length ? `${win.join(' · ')}에서 앞섬` : '', fc].filter(Boolean).join(' · ');
   }
 
@@ -112,7 +114,7 @@
     const out = !o.feasible;
     const said = UI.idText(sentenceAbout(explanation, o.name).replace(/^\s*\d+순위\s*/, ''));
     const why = out && (o.violations || [])[0] ? `제외 — ${e(UI.idText(o.violations[0].annotation || o.violations[0].message || o.violations[0].rule || ''))}`
-      : e(partDiff(o, rec, d.options) || (rec && Number.isFinite(+o.score) && Number.isFinite(+rec.score) ? `추천안보다 점수가 ${num(rec.score - o.score, 2)} 낮습니다` : ''));
+      : e(partDiff(o, rec, d.options) || (rec && Number.isFinite(+o.score) && Number.isFinite(+rec.score) ? `추천안보다 점수가 ${num(rec.score - o.score)} 낮습니다` : ''));
     const pick = pending && o.feasible && !UI.executionBlocked(o,d) ? `<label class="ap-switch"><input type="radio" name="hopt" value="${e(o.id)}" ${o.id === chosenId ? 'checked' : ''}> 이 안으로 바꾸기</label>` : '';
     return `<li class="ap-lost ${out ? 'out' : ''}"><div class="ap-lost-head"><b>${e(UI.idText(o.name))}</b>${out ? UI.chipText(UI.t('chip.excluded'), 'danger') : `<span class="muted num">${e(scoreText(o))}</span>`}${pick}</div>${UI.evaluationHtml(o,d)}${window.hydWords?.purchaseContextHtml(o,d) || ''}${window.hydWords?.maintenanceHtml(o) || ''}${why ? `<p>${why}</p>` : ''}${said && !out ? `<p class="muted">${e(said)}</p>` : ''}</li>`;
   }
@@ -128,7 +130,7 @@
       <p class="ap-desc">에이전트가 낸 안 ${opts.length}개가 모두 실행 검사에서 제외됐습니다. 안마다 제외 사유:</p>
       <ul class="ap-lost-list">${opts.map(o => { const why = excludedWhy(o); return `<li class="ap-lost out"><div class="ap-lost-head"><b>${e(UI.idText(o.name || o.id))}</b>${UI.chipText(UI.t('chip.excluded'), 'danger')}</div><p>제외 — ${e(why.length ? why.join(' · ') : '실행 검사를 통과하지 못했습니다')}</p></li>`; }).join('')}</ul>
       ${opt.adjust || ''}
-      ${d.explanation ? UI.fold('에이전트 설명 전문', `<p class="prose" style="margin:0">${e(UI.idText(d.explanation))}</p>`, { cls: 'small' }) : ''}
+      ${d.explanation ? UI.fold('판단 엔진 설명 전문 (규칙 문장)', `<p class="prose" style="margin:0">${e(UI.idText(d.explanation))}</p>`, { cls: 'small' }) : ''}
       ${opt.extra || ''}
     </div>`;
   }
@@ -140,10 +142,10 @@
     const changed = cur.id !== rec.id;
     const others = opts.filter(o => o.id !== cur.id).sort((a, b) => (b.feasible - a.feasible) || ((a.rank || 99) - (b.rank || 99)));
     const rs = reasons(cur, d);
-    const actions = (cur.actions || []).map(a => window.hydCards ? hydCards.actionLabel(a) : a.name).filter(Boolean);
+    const actions = (cur.actions || []).map(a => window.hydCards ? hydCards.actionLabel(a, cur) : a.name).filter(Boolean);
     const evaluation=UI.evaluationInfo(cur,d), blocked=UI.executionBlocked(cur,d);
     return `<div class="ap-card ${changed ? 'changed' : ''}">
-      <div class="ap-head"><span class="ap-kicker">${changed ? '담당자가 바꾼 안' : evaluation.state==='analysis' ? '규칙 비교 · 모의 1순위' : evaluation.state==='execution' ? 'AI 에이전트 추천' : '1순위 · 실행 검사 확인 안 됨'}</span>${changed && !blocked ? `<button type="button" class="btn small ghost" data-ap-back="${e(rec.id)}">추천안으로 되돌리기</button>` : ''}</div>
+      <div class="ap-head"><span class="ap-kicker">${changed ? '담당자가 바꾼 안' : evaluation.state==='analysis' ? '규칙 비교 · 모의 1순위' : evaluation.state==='execution' ? '판단 엔진 1순위 (AI가 고른 원인 · 근거로 계산)' : '1순위 · 실행 검사 확인 안 됨'}</span>${changed && !blocked ? `<button type="button" class="btn small ghost" data-ap-back="${e(rec.id)}">추천안으로 되돌리기</button>` : ''}</div>
       ${UI.evaluationHtml(cur,d,{raw:false})}
       <h4 class="ap-title">${e(UI.idText(cur.name || '–'))}</h4>
       ${cur.description ? `<p class="ap-desc">${e(UI.idText(cur.description))}</p>` : ''}
@@ -154,7 +156,7 @@
       ${evidence(cur)}
       ${opt.adjust || ''}
       ${others.length ? UI.fold(`다른 안 ${others.length}개는 왜 졌나`, `<ul class="ap-lost-list">${others.map(o => lostRow(o, rec, d, chosenId, opt.pending)).join('')}</ul>`, { cls: 'small' }) : ''}
-      ${d.explanation ? UI.fold('에이전트 설명 전문', `<p class="prose" style="margin:0">${e(UI.idText(d.explanation))}</p>`, { cls: 'small' }) : ''}
+      ${d.explanation ? UI.fold('판단 엔진 설명 전문 (규칙 문장)', `<p class="prose" style="margin:0">${e(UI.idText(d.explanation))}</p>`, { cls: 'small' }) : ''}
       ${opt.extra || ''}
       ${UI.evaluationRawHtml(cur,d)}
     </div>`;
@@ -200,14 +202,13 @@
       const r = at(values || {}, cfg.recommended);
       raw[cfg.recommended] = r;
       rec = list.find(o => isObj(o) && String(o[key]) === String(r)) || null;
-      if (r === undefined) problems.push(`추천 값 '${cfg.recommended}' 이(가) 받은 값에 없습니다`);
-      else if (!rec) problems.push(`추천 '${r}' 이(가) 고를 안 목록에 없습니다`);
+      if (r !== undefined && !rec) problems.push(`추천 '${r}' 이(가) 고를 안 목록에 없습니다`);   // 칸이 없으면 추천 없음(선택 칸 — approval_part.CONFIG)
     }
     const listOf = (field, ok, what) => {
       if (!cfg[field]) return [];
       const v = at(values || {}, cfg[field]);
       raw[cfg[field]] = v;
-      if (v === undefined) { problems.push(`${what} '${cfg[field]}' 이(가) 받은 값에 없습니다`); return []; }
+      if (v === undefined) return [];   // 선택 칸 — 없으면 빈 목록(서버 approval_part 와 같은 규칙, W1-27)
       if (!Array.isArray(v)) { problems.push(`${what} '${cfg[field]}' 이(가) 목록이 아닙니다`); return []; }
       v.forEach((x, i) => { const why = ok(x); if (why) problems.push(`${what} ${i + 1}번째: ${why}`); });
       return v.filter(x => !ok(x));
@@ -246,5 +247,5 @@
       ${off}${opt.extra || ''}</div>`;
   }
 
-  window.hydApprove = { html, reasons, forecastDecides, ownValues, sentenceAbout, proposal, proposalHtml };
+  window.hydApprove = { html, reasons, partDiff, forecastDecides, ownValues, sentenceAbout, proposal, proposalHtml };
 })();

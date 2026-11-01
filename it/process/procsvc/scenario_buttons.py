@@ -9,8 +9,11 @@
 다르고, 근거 값(evidence)은 감시와 같은 칸이다. 경보 id 끝에 누른 시각을 붙여 초기화 뒤 다시 누르면 새 처리 건이 된다.
 
 거절(409): 표시가 꺼져 있음(이미 처리됨 — 초기화 먼저) · 같은 시나리오 처리 건이 진행 중 · 그 패턴을 여는 흐름이 배포되지 않음.
+거절 검사(refusal)는 기준점을 옮기기 전에 한다 — 거절된 누름은 업무 시각을 바꾸지 않는다. 경보 근거는 옮긴 뒤 업무 값을 다시 읽어 만든다(prepare).
+[초기화]는 그 시나리오 처리 건이 진행 중이면 거절한다(reset_refusal): 초기화는 그 부품의 열린 발주를 닫고(ERP) 이번 회차 정비 오더 표시를
+지운다(CMMS) — 진행 중인 처리 건이 낸 발주 · 오더가 그 처리 건 모르게 바뀌면 입고 · 정비 단계가 없는 기록을 보고 멈춘다.
 
-시나리오 시각 기준점(생산 오더 납기 · 예정된 정비 시간)은 설비 처리 건이 하나도 진행 중이 아닐 때만 지금으로 옮긴다(may_reanchor). 예정된 정비
+시나리오 시각 기준점(생산 오더 납기 · 예정된 정비 시간)은 경보 대응 처리 건이 하나도 진행 중이 아닐 때만 지금으로 옮긴다(may_reanchor). 예정된 정비
 시간 id 가 기준점 시각을 품고 있어서, 진행 중인 처리 건이 승인 뒤 낼 작업지시의 창이 사라지기 때문이다.
 예외(P12, audit2 2026-10-23): 흐름이 스스로 '승인 지연'을 선언한 처리 건 — 열린 일이 사람 단계뿐이고 그 단계의 멈추지 않는 지연 타이머가 이미
 울린 처리 건(무응답 실습은 설계상 스스로 끝나지 않는다) — 은 기준점을 붙잡지 않는다. 붙잡으면 업무 시각이 벽시계로 줄어(enterprise-sim
@@ -29,16 +32,17 @@ import uuid
 from datetime import datetime, timezone
 from typing import Callable
 
-from hydcommon import topics
+from hydcommon.maintenance_policy import PM_PATTERN
+from hydcommon.skill_scope import PURCHASE_PATTERN
 
 from . import business_monitor, engine
 
 SCENARIOS: dict[str, dict] = {
-    "B": {"pattern": "PM_DUE", "asset": "HYD-02", "read": "pm_status", "params": {"asset": "HYD-02"}, "flag": "pm_alert",
+    "B": {"pattern": PM_PATTERN, "asset": "HYD-02", "read": "pm_status", "params": {"asset": "HYD-02"}, "flag": "pm_alert",
           "subject": "HYD-02", "label": "정기 점검 도래", "button": "정기 점검", "title": "정기 정비",
           "show": ("pm_since_h", "pm_interval_h", "pm_due_in_h", "pm_limit_in_h", "night_window_at", "pm_planned_wo", "pm_planned_window"),
           "reset": ("/cmms/pm/reset", {})},       # 세 대 모두 — 묶음 후보 HYD-03 계수기도 판단 사실이다
-    "C": {"pattern": "SPARE_BELOW_MIN", "asset": "HYD-03", "read": "spare_stock", "params": {"part": "P-PMP-SEAL"},
+    "C": {"pattern": PURCHASE_PATTERN, "asset": "HYD-03", "read": "spare_stock", "params": {"part": "P-PMP-SEAL"},
           "flag": "below_reorder_point", "subject": "P-PMP-SEAL", "label": "재고 보충 필요", "button": "재고 보충", "title": "예비품 구매",
           "show": ("part_no", "name", "on_hand", "reserved", "on_order", "available", "reorder_point", "target_stock", "need_qty"),
           "reset": ("/erp/spare/reset", {"part_no": "P-PMP-SEAL"})},
@@ -80,13 +84,11 @@ def event_prefix(spec: dict) -> str:
     return f"{source}-{spec['pattern']}-{re.sub(r'[^A-Za-z0-9-]', '', spec['subject'])}-"
 
 
-def _runs(rt, spec: dict) -> list[dict]:
-    """그 시나리오 설비의 처리 건 전부(최신 먼저) 중 이 버튼 경보로 열린 것. 테넌트 전체 최신 N건으로 자르지 않는다 — 질문 · 시험 실행
-    처리 건이 위로 쌓여도 진행 중인 처리 건을 놓치지 않게."""
-    prefix = event_prefix(spec)
-    # 사람 검토(alert_triage)는 흐름이 없을 때의 대기열이지 그 시나리오의 처리 건이 아니다
-    return [i for i in rt.repo.list_instances(None, None, rt.tenant_id, asset=spec["asset"])
-            if str(i.get("start_event_id") or "").startswith(prefix) and i.get("proc_def_id") != "alert_triage"]
+def _run(rt, spec: dict, status: str | None = None) -> dict | None:
+    """이 버튼 경보(경보 id 접두)로 열린 처리 건 중 최신 하나(status 를 주면 그 상태 중) — 저장소가 접두 · 상태로 걸러 한 행만 읽는다(처리 건이
+    쌓여도 2초 상태 조회가 무거워지지 않는다). 사람 검토(alert_triage)는 흐름이 없을 때의 대기열이지 그 시나리오의 처리 건이 아니다."""
+    rows = rt.repo.list_source_runs(rt.tenant_id, None, event_prefix(spec), limit=1, status=status, exclude_def="alert_triage")
+    return rows[0] if rows else None
 
 
 OPEN_STATUSES = ("NEW", "IN_PROGRESS", "SUBMITTED", "PENDING")
@@ -111,22 +113,29 @@ def _approval_overdue(defn: engine.Definition, inst: dict, rows: list[dict]) -> 
     return out
 
 
+def anchored(defn: engine.Definition) -> bool:
+    """기준점(납기 · 예정된 정비 시간)에 묶인 처리 건의 흐름인가 = 경보를 받아 대응하는 흐름(정의가 경보 정책 alertPolicy 를 선언 — 대응 흐름 A · B · C ·
+    기준 흐름 · 학생이 경보로 시작하게 가져온 흐름). 사람 검토(경보 분류) · 교대 인수인계 · 질문 흐름은 승인 뒤 낼 작업지시 · 발주가 없어 붙잡지 않는다.
+    변수 이름(asset)으로 짐작하지 않는다 — 교대 인수인계도 asset 값을 갖는다."""
+    return bool(defn.raw.get("alertPolicy"))
+
+
 def reanchor_blockers(rt) -> dict:
-    """진행 중인 설비 처리 건(A · B · C — 설비 값이 있는 처리 건)을 기준점 판단으로 나눈다.
+    """진행 중인 경보 대응 처리 건(anchored)을 기준점 판단으로 나눈다.
     blocked_by = 기준점을 붙잡는 처리 건(하나라도 있으면 옮기지 않는다), overdue = 승인 지연을 선언하고 사람만 기다려 붙잡지 않는 처리 건."""
     blocked, overdue = [], []
     for inst in rt.repo.list_instances("RUNNING", None, rt.tenant_id):
         v = engine.variables(inst)
-        if v.get("asset") not in topics.ASSETS:
-            continue
         item = {"instance": inst["proc_inst_id"], "definition": inst.get("proc_def_id"), "asset": v.get("asset"),
                 "started_at": inst.get("start_date")}
         try:
             defn = rt.definition_for(inst)
-            rows = rt.repo.list_workitems(proc_inst_id=inst["proc_inst_id"], limit=None)
         except (KeyError, LookupError, ValueError) as e:     # 정의를 읽지 못한 처리 건은 붙잡는 쪽으로 — 사유를 싣는다
             blocked.append(dict(item, name=inst.get("proc_inst_name") or inst.get("proc_def_id"), waiting_on=[], why=f"정의를 읽지 못함: {e}"))
             continue
+        if not anchored(defn):
+            continue
+        rows = rt.repo.list_workitems(proc_inst_id=inst["proc_inst_id"], limit=None)
         item["name"] = defn.name
         waiting = _approval_overdue(defn, inst, rows)
         if waiting is not None:
@@ -138,7 +147,7 @@ def reanchor_blockers(rt) -> dict:
 
 
 def may_reanchor(rt) -> bool:
-    """기준점을 붙잡는 설비 처리 건이 하나도 없으면 True (reanchor_blockers)."""
+    """기준점을 붙잡는 경보 대응 처리 건이 하나도 없으면 True (reanchor_blockers)."""
     return not reanchor_blockers(rt)["blocked_by"]
 
 
@@ -150,9 +159,10 @@ def reanchor_event(proc_inst_id: str, at: str, button: str | None) -> dict:
                              "바뀐 업무 값으로 다시 확인해 새 판단이 필요할 수 있습니다"}}
 
 
-def _brief(inst: dict | None) -> dict | None:
-    if not inst:
+def _brief(rt, row: dict | None) -> dict | None:
+    if not row:
         return None
+    inst = rt.repo.get_instance(row["proc_inst_id"])
     report = (engine.variables(inst).get("result_report") or {})
     return {"instance": inst["proc_inst_id"], "status": inst.get("status"), "started_at": inst.get("start_date"), "ended_at": inst.get("end_date"),
             "outcome": report.get("outcome")}
@@ -171,9 +181,8 @@ def status(read: Callable[[str, dict], dict], rt=None, last_press: Callable[[str
         except Exception as e:  # noqa: BLE001 — 한 업무 시스템이 없어도 다른 시나리오는 보인다
             item.update(alert=None, error=str(e)[:200])
         if rt is not None:
-            runs = _runs(rt, spec)
-            item["running"] = _brief(next((i for i in runs if i.get("status") == "RUNNING"), None))
-            item["last"] = _brief(runs[0] if runs else None)
+            item["running"] = _brief(rt, _run(rt, spec, "RUNNING"))
+            item["last"] = _brief(rt, _run(rt, spec))
         out[key] = item
     presses = {a: last_press(a) for a in (A_ASSET, *(sp["asset"] for sp in SCENARIOS.values()))} if last_press else {}
     return {"scenarios": out, "presses": presses, "as_of": datetime.now(timezone.utc).isoformat(timespec="seconds")}
@@ -236,20 +245,39 @@ def build_alert(key: str, row: dict, now: datetime | None = None, person: dict |
             "observedBy": {"id": f"sys:{source}-monitor", "name": f"{pat['name']} — [{spec['button']}] 버튼"}}
 
 
-def prepare(key: str, read: Callable[[str, dict], dict], rt, route: Callable[[str], str | None], person: dict | None = None) -> dict:
-    """시작 전 확인 → 경보. route(pattern) = 그 패턴을 여는 배포 흐름 id(기준 흐름이면 None)."""
+def refusal(key: str, read: Callable[[str, dict], dict], rt, route: Callable[[str], str | None]) -> dict:
+    """[정기 점검] · [재고 보충]을 받을지 — 기준점을 옮기기 전에 부른다(거절된 누름은 업무 시각을 바꾸지 않는다). 받으면 지금 업무 행, 아니면 Refused.
+    route(pattern) = 그 패턴을 여는 배포 흐름 id(기준 흐름이면 None)."""
     if key not in SCENARIOS:
         raise KeyError(key)
     spec = SCENARIOS[key]
     row = _row(read, spec)
     if not row.get(spec["flag"]):
         raise Refused(f"{spec['asset']}에 '{spec['label']}' 표시가 없습니다 — 이미 처리됐습니다. [초기화]로 수업 시작 상태로 되돌린 뒤 누르세요")
-    running = next((i for i in _runs(rt, spec) if i.get("status") == "RUNNING"), None)
-    if running:
+    if _run(rt, spec, "RUNNING"):
         raise Refused(f"{spec['asset']} {spec['title']} 처리 건이 이미 진행 중입니다 — 카드의 '처리 중' 표시를 눌러 그 처리 건을 보세요")
     if not route(spec["pattern"]):
         raise Refused(f"'{spec['label']}' 경보로 시작하는 {spec['title']} 흐름이 배포되어 있지 않습니다 — [관리] 탭의 「흐름 판본 배포 · 비교 · 되돌리기」에서 배포하세요(흐름 가져오기는 등록까지만 합니다)")
+    return row
+
+
+def prepare(key: str, read: Callable[[str, dict], dict], rt, route: Callable[[str], str | None], person: dict | None = None) -> dict:
+    """기준점을 옮긴 뒤 부른다: 같은 검사(refusal)를 지금 업무 값으로 다시 하고 경보를 만든다 — 경보 근거의 예정된 정비 시간이 새 기준점의 것이다."""
+    row = refusal(key, read, rt, route)
     return {"alert": build_alert(key, row, person=person), "row": row}
+
+
+def reset_refusal(rt, key: str) -> None:
+    """[초기화]를 받을지. 그 시나리오 처리 건이 진행 중이면 Refused — 초기화는 열린 발주를 닫고(C) 이번 회차 정비 오더 표시를 지워(B) 진행 중인
+    처리 건이 낸 기록을 그 처리 건 모르게 바꾼다. 학생은 그 처리 건을 먼저 끝낸다(카드 승인 · 거절, 보류된 단계는 [단계 닫기])."""
+    spec = SCENARIOS[key]
+    running = _run(rt, spec, "RUNNING")
+    if running:
+        stuck = rt.repo.stuck_workitems(rt.tenant_id, [running["proc_inst_id"]])
+        how = (f"멈춘 단계({', '.join(dict.fromkeys(w.get('activity_name') or w['activity_id'] for w in stuck))})가 있습니다 — 처리 건 화면에서 [닫기]로 "
+               "끝내거나 다시 수행한 뒤" if stuck else "처리 건 화면에서 조치 카드를 승인하거나 거절해 끝낸 뒤")
+        raise Refused(f"{spec['asset']} {spec['title']} 처리 건이 아직 진행 중이라 초기화하지 않았습니다 — 초기화하면 그 처리 건이 낸 발주 · 정비 오더 기록이 "
+                      f"바뀌어 처리 건이 어긋납니다. {how} [초기화]를 누르세요")
 
 
 class NotStarted(Exception):
@@ -284,5 +312,4 @@ def started(rt, key: str, alert: dict, definition: str | None, person: dict | No
 
 
 def last_instance(rt, key: str) -> dict | None:
-    runs = _runs(rt, SCENARIOS[key])
-    return runs[0] if runs else None
+    return _run(rt, SCENARIOS[key])

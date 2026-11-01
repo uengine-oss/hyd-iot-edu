@@ -18,6 +18,17 @@ from hydcommon.process_contracts import validate_output
 _FENCE = re.compile(r"```(?:json)?\s*(?P<body>\{.*?\})\s*```", re.DOTALL)
 DEFAULT_MAX_FILE_BYTES = 16 * 1024 * 1024
 NO_RESULT = "에이전트가 결과를 반환하지 않았습니다."
+FREEFORM_KEY = "freeform"          # 폼이 없는 단계의 칸 하나(worker/context.FREEFORM_FIELDS)
+
+
+def _no_constant(value):
+    raise ValueError(f"JSON 은 {value} 같은 비표준 숫자 상수를 받지 않습니다")
+
+
+def strict_loads(text: str):
+    """결과 JSON 읽기 한 곳(결과 해석 · 결과 검사 도구 worker/result_check 가 같이 쓴다): NaN · Infinity 를 받지 않는다 — 받아들이면 업무 DB
+    (jsonb) 저장에서 일반 실패가 되고, 결과 검사 도구는 같은 파일을 거절해 두 판정이 갈렸다(검진 G1-19)."""
+    return json.loads(text, parse_constant=_no_constant)
 
 
 @dataclass
@@ -43,23 +54,23 @@ def interpret(final_text: str, form_fields: Any, *, versioned: bool = False, res
     """A119 (r14 B1): when the run wrote `output/result.json`, that file is the result and the last message is only a
     note (studio writes `_parsed_*.json` and ingests the path — the output-token ceiling never applies). A file that is
     there but unreadable is a contract defect of the file (sent back for correction), never silently replaced by the
-    message; no file means the message route as before."""
+    message; no file means the message route as before. 폼이 없는 단계(자유형식 칸 하나)도 같은 규칙이다 — 예전에는 파일을 보기 전에
+    메시지로 끝내 파일에 쓴 답을 버리고 「파일을 썼습니다」 한 줄을 결과로 저장했다(검진 G1-01)."""
     text = (final_text or "").strip()
     keys = field_keys(form_fields)
-    if not keys or keys == ["freeform"]:
-        # W4 (2026-10-23 검수): a step without a form (a student's bpmn.io agent task) used to be SUBMITTED with an empty
-        # text when the CLI ended without a result — an empty answer is a missing answer, sent back like any other.
-        if not text:
-            return Outcome(raw_text=text, contract_met=False, mismatch_reason=NO_RESULT)
-        return Outcome(raw_text=text)
-    if result_file is not None and result_file.is_file():
+    if keys and result_file is not None and result_file.is_file():
         parsed, defect = _read_result_file(result_file, max_file_bytes)
         if defect:
             return Outcome(raw_text=text, contract_met=False, mismatch_reason=defect, missing_fields=keys, source="file")
         return _against_form(text, parsed, keys, form_fields, versioned, source="file")
     if not text:
         return Outcome(raw_text=text, contract_met=False, mismatch_reason=NO_RESULT, missing_fields=keys)
+    if not keys:
+        return Outcome(raw_text=text)
     parsed = _extract_object(text)
+    if keys == [FREEFORM_KEY] and (parsed is None or FREEFORM_KEY not in parsed):
+        # W4 (2026-10-23 검수): a step without a form (a student's bpmn.io agent task) — the answer may be plain text
+        return Outcome(raw_text=text)
     if parsed is None:
         return Outcome(raw_text=text, contract_met=False, mismatch_reason="결과가 JSON 객체가 아닙니다. 폼 필드에 채울 값을 판별할 수 없습니다.", missing_fields=keys)
     return _against_form(text, parsed, keys, form_fields, versioned, source="message")
@@ -105,7 +116,7 @@ def _read_result_file(path: Path, max_file_bytes: int) -> tuple[dict | None, str
     except (OSError, UnicodeDecodeError) as e:
         return None, f"결과 파일 `{RESULT_FILE}`을 UTF-8 텍스트로 읽을 수 없습니다: {e}"
     try:
-        value = json.loads(raw)
+        value = strict_loads(raw)
     except json.JSONDecodeError as e:
         return None, (f"결과 파일 `{RESULT_FILE}`이 올바른 JSON이 아닙니다: {e}. "
                       + _json_syntax_hint(raw, e)
@@ -171,8 +182,8 @@ def _extract_object(text: str) -> dict[str, Any] | None:
 
 def _load(candidate: str) -> dict[str, Any] | None:
     try:
-        value = json.loads(candidate.strip())
-    except (json.JSONDecodeError, ValueError):
+        value = strict_loads(candidate.strip())
+    except ValueError:                     # JSONDecodeError 도 ValueError — 비표준 상수가 든 글은 결과가 아니다
         return None
     return value if isinstance(value, dict) else None
 

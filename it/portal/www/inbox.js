@@ -1,14 +1,14 @@
-/* U5 (TODO A3) — 나 · 내 작업함 · 포털 안 알림. process 의 instance-mode API 를 읽는다(procsvc/inbox_api.py):
+/* U5 — 나 · 내 작업함 · 포털 안 알림. process 의 instance-mode API 를 읽는다(procsvc/inbox_api.py):
      GET  /api/inbox/users · /api/inbox?user_id= · /api/inbox/assignments
      GET  /api/inbox/notifications?user_id= · POST /api/inbox/notifications/read · SSE /api/inbox/notifications/stream?user_id=
    HYD 에는 로그인이 없다. "나"는 시드의 사람 사용자 중 하나를 고르고 브라우저에 기억한다(localStorage 'hyd.me').
    승인할 때는 자유 입력 대신 "나"와 "내 역할"이 들어가고, 서버가 그 사람이 그 역할의 구성원인지 · 역할 등급이 카드 승인 역할 이상인지
    둘 다 검사한다(아니면 403). 위임·외부 알림(메신저)은 범위 밖.
-   공개: window.hydInbox.mount(el) — 작업함 화면, window.hydInbox.badge() — 상단 "나 · 안 읽은 알림" 단추(요소를 돌려준다),
+   공개: window.hydInbox.mount(el) — 작업함 화면, mountMe(box) — 상단 「나」 자리(셸 #shellMe, 안 읽은 수는 셸의 종이 unread()로),
          window.hydInbox.me() · whoFields(prefix, form, roles) · byField(prefix, form) — 승인·제출 폼의 승인자 칸. */
 (function () {
   const KEY = 'hyd.me';
-  const X = { people: null, board: null, box: null, notes: [], tab: 'tasks', meId: null, es: null, live: 'off', err: '', mounts: [], badges: [], meBoxes: [], loading: false, timer: null };
+  const X = { people: null, board: null, box: null, notes: [], tab: 'tasks', meId: null, es: null, live: 'off', err: '', mounts: [], meBoxes: [], loading: false, timer: null };
   try { X.meId = localStorage.getItem(KEY); } catch (e) { X.meId = null; }
 
   const roleName = id => UI.who(id);
@@ -45,7 +45,8 @@
         const [box, notes] = await Promise.all([getJ(url('/api/inbox', { user_id: m.id })), getJ(url('/api/inbox/notifications', { user_id: m.id, limit: 50 }))]);
         X.box = box; X.notes = notes; X.err = '';
       } catch (e) { X.err = `내 작업함을 읽지 못했습니다: ${e.message}`; }
-      if (!X.board) { try { X.board = await getJ(url('/api/inbox/assignments')); } catch (e) { X.board = { error: e.message }; } }
+      // 업무분장(역할마다 사람)도 작업함과 함께 다시 읽는다 — 에이전트 화면에서 사람을 넣고 빼면 다음 읽기에 보인다(W3-19)
+      try { X.board = await getJ(url('/api/inbox/assignments')); } catch (e) { X.board = { error: e.message }; }
       render();
     } finally { X.loading = false; }
   }
@@ -168,14 +169,6 @@
     root.querySelector('[data-inbox-readall]')?.addEventListener('click', () => markRead(null));
   }
 
-  function badge() {
-    const b = el('button', 'btn small inbox-badge');
-    b.type = 'button';
-    b.addEventListener('click', () => { if (location.hash === '#/inbox') selectTab('inbox'); else location.hash = '#/inbox'; });
-    X.badges.push(b);
-    renderBadges();
-    return b;
-  }
   // 상단바 「나」 자리(shell.js #shellMe): 고른 사람 이름 또는 「선택 안 함」 — 누르면 내 작업함
   function mountMe(box) {
     if (!box) return;
@@ -197,10 +190,6 @@
       b.title = m ? `나: ${m.name} — 내 작업함 열기` : '내 작업함에서 나를 고릅니다';
     });
     if (X.lastUnread !== (m ? unread : 0)) { X.lastUnread = m ? unread : 0; window.dispatchEvent(new Event('hyd:badge')); }   // 종 숫자를 바로 갱신
-    X.badges.forEach(b => {
-      b.innerHTML = m ? `${esc(m.name)}${unread ? ` <span class="chip tone-accent sm">알림 ${unread}</span>` : ''}` : '나 고르기';
-      b.title = m ? `나: ${m.name} · 안 읽은 알림 ${unread}건 — 내 작업함 열기` : '나를 골라 내 작업함과 알림을 받습니다';
-    });
   }
 
   function mount(root) {
@@ -210,7 +199,7 @@
     refresh();
   }
 
-  /* ------------------------------------------------ 승인 · 제출 폼의 승인자 칸 (enterprise.js whoFields · instances.js 가 부른다) */
+  /* ------------------------------------------------ 승인 · 제출 폼의 승인자 칸 (instances.js 가 부른다 — 「나」가 없으면 null: 부르는 쪽이 「먼저 나를 고르세요」를 보인다) */
   const dropStale = form => { if (String(form.by || '').startsWith('user:')) form.by = ''; return null; };   // "나"를 지웠으면 자유 입력으로
   function whoFields(prefix, form, roles, { reasonHint = UI.t('form.hint.reason') } = {}) {
     const m = me(); if (!m) return dropStale(form);
@@ -231,15 +220,10 @@
   }
 
   const failed = () => !X.people && !!X.err;
-  window.hydInbox = { mount, failed, badge, mountMe, unread, me, whoFields, byField, refresh, X };
-
-  // 목록 행은 <a>(주소 복사·새 탭 가능) — 링크 색 대신 기존 목록 행 모양을 쓴다
-  const style = el('style', null, '.inbox-body a.item{display:block;color:inherit;text-decoration:none}.inbox-body a.item.unread strong{font-weight:700}.inbox-body a.item:not(.unread){opacity:.78}.inbox-badge{white-space:nowrap}');
-  document.head.appendChild(style);
+  window.hydInbox = { mount, failed, mountMe, unread, me, whoFields, byField, refresh, X };
 
   async function boot() {
     const root = document.getElementById('inboxView'); if (root) X.mounts.push(root);
-    const slot = document.getElementById('inboxBadge'); if (slot && !slot.firstChild) slot.appendChild(badge());
     render();
     await refresh();
     connect();

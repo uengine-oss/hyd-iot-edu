@@ -19,7 +19,7 @@ from urllib.parse import urlparse
 
 from cliagents import Surface, registry
 
-from . import ai_replay, env_guard, workspace
+from . import ai_replay, cli_sandbox, env_guard, workspace
 from .course_access import CourseAccess
 from .runner import Runner
 from .settings import AGENT_TYPE, PROVIDER, settings
@@ -31,8 +31,8 @@ log = logging.getLogger("worker")
 _SCRUBBED = env_guard.scrub()
 if _SCRUBBED:
     log.info("child-process environment: removed %s", ", ".join(_SCRUBBED))
-status = {"status": "starting", "agent_type": AGENT_TYPE, "ai_mode": None, "runs_in_flight": 0, "max_concurrent_runs": 1, "polls": 0, "handled": 0,
-          "last_poll": None, "error": None}
+status = {"status": "starting", "agent_type": AGENT_TYPE, "ai_mode": None, "replay_recordings": None, "runs_in_flight": 0,
+          "max_concurrent_runs": 1, "polls": 0, "handled": 0, "last_poll": None, "error": None}
 _runner: Runner | None = None
 _SWEEP_INTERVAL_S = 3600
 
@@ -60,9 +60,7 @@ class Http(BaseHTTPRequestHandler):
         data = json.dumps(body, ensure_ascii=False).encode()
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
-        # 포털 상단 상태 점이 브라우저에서 /healthz 를 읽는다(다른 포트 = 다른 출처). 상태만 담은 응답이라 출처를 묻지 않는다
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.end_headers()
+        self.end_headers()      # 포털은 같은 출처 경로(/svc/agent-worker/)로 읽는다 — 다른 출처 허용(CORS)을 두지 않는다(결정 1)
         self.wfile.write(data)
 
     def log_message(self, *a):  # quiet
@@ -76,10 +74,15 @@ def serve_http() -> None:
 def sweep_forever() -> None:
     while True:
         try:
+            repo = _repo()
             removed = workspace.sweep(settings.workspace_root, settings.retention_seconds,
-                                  keep=lambda wid: (_repo().get_workitem(wid) or {}).get("status") == "IN_PROGRESS")   # A104: open work keeps its session
+                                  keep=lambda wid: (repo.get_workitem(wid) or {}).get("status") == "IN_PROGRESS")   # A104: open work keeps its session
             if removed:
                 log.info("swept %d expired workspaces", len(removed))
+            dropped = ai_replay.sweep_cache(ai_replay.Library(settings.ai_cache_dir, ai_replay.REUSE), lambda wid: repo.get_workitem(wid) is not None,
+                                            settings.retention_seconds)
+            if dropped:
+                log.info("같은 요청 저장 %d개를 지웠습니다(그 작업이 더 없거나 보존 기간 동안 쓰이지 않음)", len(dropped))
         except Exception:  # noqa: BLE001
             log.exception("workspace sweep failed")
         time.sleep(_SWEEP_INTERVAL_S)
@@ -87,14 +90,22 @@ def sweep_forever() -> None:
 
 def build_runner(repo) -> Runner:
     """AI_MODE(live · record · replay — 다른 값은 켜지지 않는다)에 따라 AI 응답 자리만 바꾼다. 나머지 실행 · 결과 검사 · 저장은 같다."""
-    if not settings.process_url or not settings.runtime_key_file:
-        raise RuntimeError("PROCESS_URL(process 주소) · HYD_WORKER_RUNTIME_KEY_FILE(실행기 인증 파일)이 없어 AI 워커를 켜지 않습니다")
+    missing = [name for name, value in (("SUPABASE_DSN", settings.supabase_dsn), ("PROCESS_URL", settings.process_url),
+                                        ("HYD_WORKER_RUNTIME_KEY_FILE", settings.runtime_key_file)) if not value]
+    if missing:
+        raise RuntimeError(f"{' · '.join(missing)}(업무 DB · process 주소 · 실행기 인증 파일)이 없어 AI 워커를 켜지 않습니다 — compose.yaml 의 "
+                           "agent-worker environment 를 확인하세요")
+    cli_sandbox.verify()            # 격리가 켜진 이미지면 이 커널에서 실제로 걸리는지 켜질 때 한 번(G1-25)
     course = ai_replay.Library(settings.ai_replay_dir, ai_replay.COURSE)
     responses = ai_replay.Responses(settings.ai_mode, course=course, cache=ai_replay.Library(settings.ai_cache_dir, ai_replay.REUSE))
     status["ai_mode"] = responses.mode
-    status["replay_questions"] = course.questions() if responses.mode == "replay" else []
-    if responses.mode == "replay":
-        log.warning("AI 응답 재생으로 실행합니다: 강사 녹화(%s, %d개)를 씁니다 — 실제 AI 를 부르지 않습니다.", settings.ai_replay_dir, len(course.docs()))
+    replay = responses.mode == "replay"
+    docs = course.docs() if replay else []          # 녹화를 실제로 읽는다 — 깨진 파일이면 여기서 켜지지 않는다
+    status["replay_questions"] = course.questions() if replay else []
+    # 점검(scripts/check_stack.py)이 파일 수가 아니라 워커가 실제로 읽은 녹화 수를 본다(검진 G5b-19). 재생 모드가 아니면 없음(null)
+    status["replay_recordings"] = len(docs) if replay else None
+    if replay:
+        log.warning("AI 응답 재생으로 실행합니다: 강사 녹화(%s, %d개)를 씁니다 — 실제 AI 를 부르지 않습니다.", settings.ai_replay_dir, len(docs))
     elif responses.mode == "record":
         log.info("AI 응답 녹화: 실제 AI 실행을 수업 AI 자리마다 %s 에 남깁니다", settings.ai_replay_dir)
     return Runner(settings, repo, responses=responses, course=CourseAccess(settings.process_url, settings.runtime_key_file))

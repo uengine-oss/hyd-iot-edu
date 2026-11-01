@@ -3,6 +3,13 @@ from collections import defaultdict
 from threading import Lock
 
 
+def _escape(value, quote=True) -> str:
+    """Prometheus text format: a label value escapes backslash, double quote and line feed (HELP: backslash and line feed).
+    A label value comes from data (an MQTT tag name), so one odd name must not break the whole scrape."""
+    text = str(value).replace("\\", "\\\\").replace("\n", "\\n")
+    return text.replace('"', '\\"') if quote else text
+
+
 class Registry:
     def __init__(self):
         self._lock = Lock()
@@ -33,9 +40,9 @@ class Registry:
 
     @staticmethod
     def _fmt(name, series, typ, help_):
-        out = [f"# HELP {name} {help_}", f"# TYPE {name} {typ}"]
+        out = [f"# HELP {name} {_escape(help_, quote=False)}", f"# TYPE {name} {typ}"]
         for k, v in series.items():
-            lbl = ",".join(f'{a}="{b}"' for a, b in k)
+            lbl = ",".join(f'{a}="{_escape(b)}"' for a, b in k)
             out.append(f"{name}{{{lbl}}} {v}" if lbl else f"{name} {v}")
         return out
 

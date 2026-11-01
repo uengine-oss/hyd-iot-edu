@@ -14,7 +14,9 @@ from __future__ import annotations
 import re
 from copy import deepcopy
 
-from hydcommon.daq_contract import ALWAYS, AUX, DEADBAND
+from hydcommon.daq_contract import TAGS as TAG_NAMES
+from hydcommon.maintenance_policy import PM_PATTERN
+from hydcommon.skill_scope import purchase_rule_problem
 
 from . import kgadmin
 
@@ -24,12 +26,12 @@ ID_RE = {'failure_modes': re.compile(r'^fm:[a-z0-9]+(?:-[a-z0-9]+)*$'), 'causes'
          'evidence': re.compile(r'^evd:[a-z0-9]+(?:-[a-z0-9]+)*$'), 'rules': re.compile(r'^rule:[a-z0-9]+(?:-[a-z0-9]+)*$')}
 LABEL = {'failure_modes': 'FailureMode', 'causes': 'Cause', 'evidence': 'Evidence', 'rules': 'Rule'}
 REF_RE = {p: re.compile(rf'^{p}:[a-z0-9]+(?:-[a-z0-9.]+)*$') for p in ('comp', 'sym', 'part', 'sv', 'msr', 'in', 'action', 'role', 'skill', 'fm', 'cause')}
-SOP_RE = re.compile(r'^SOP-[A-Z0-9]+(?:-[A-Z0-9]+)*$')
+SOP_RE = kgadmin.SOP_ID_RE
 TABLES = {'dt:diagnose-cause': ('SELECT',), 'dt:action-candidates': ('SELECT',), 'dt:compliance': ('EXCLUDE', 'WARN', 'PENALTY')}
 OPERATORS = ('<', '<=', '>', '>=', '==', '!=')
 AGGREGATES = ('avg', 'max', 'min', 'range')
 EXPECTS = {'lt': '<', 'gt': '>', 'gte': '>='}
-TAGS = frozenset(ALWAYS | AUX | set(DEADBAND))
+TAGS = frozenset(TAG_NAMES)          # 증거가 읽을 수 있는 태그(설비 계약 hydcommon.daq_contract 한 곳)
 RELATIONS = kgadmin.FAILURE_RELATIONS      # 즉시 완화 · 근본 조치 · 예방 조치(정기 정비)
 SKILL_KINDS = ('control', 'work_order')
 ACTIONS_MAX = 10
@@ -129,7 +131,7 @@ def blanks_as_absent(link):
 
 def validate_link(sop, link, *, sops, require_failure_mode):
     """One SOP's reviewed (or suggested) connection: failure mode · relation · kind · approver · atomic actions · addressed causes.
-    affects is validated by manual_review.validate_affects (kept there for the A079 shape)."""
+    affects is validated by kgadmin.validate_affects (one rule for the admin skill edit and the review)."""
     if link is None:
         link = {}
     if not isinstance(link, dict):
@@ -141,18 +143,18 @@ def validate_link(sop, link, *, sops, require_failure_mode):
     out = {}
     if link.get('purchase_comparison_policy') is not None:
         if link.get('scope') != 'purchase' or link.get('executable') is not True:
-            raise ValueError('구매 비용 정책은 명시 실행 구매 SOP에만 연결합니다')
+            raise ValueError(f'{sop}: 구매 총비용 비교 정책은 실행하는 구매 절차(scope=purchase · executable=true)에만 붙입니다')
         from hydcommon.purchase_comparison import policy
         out['purchase_comparison_policy']=policy(link['purchase_comparison_policy'])
     if link.get('maintenance_policy') is not None:
         if link.get('scope') == 'purchase' or link.get('kind') == 'reference':
-            raise ValueError('PM 실행 정책은 구매·비실행 참고 절차에 붙이지 않습니다')
+            raise ValueError(f'{sop}: 정기 정비 시행 정책은 구매 절차 · 비실행 참고 절차에 붙이지 않습니다')
         from hydcommon.maintenance_policy import policy
         out['maintenance_policy']=policy(link['maintenance_policy'])
     if link.get('scope') not in (None, 'fault', 'purchase'):
-        raise ValueError(f'{sop}: 스킬 영역은 기존 고장 조치 또는 purchase입니다')
+        raise ValueError(f'{sop}: 조치 방법의 업무 범위는 고장 조치 또는 구매(purchase)입니다')
     if link.get('scope') != 'purchase' and (link.get('executable') is not None or link.get('parts') is not None or link.get('supplier_policy') is not None):
-        raise ValueError(f'{sop}: executable·Part 업무 범위는 명시 purchase SOP에만 둡니다')
+        raise ValueError(f'{sop}: 실행 여부 · 구매 부품 · 공급사 정책은 구매(purchase) 절차에서만 씁니다')
     if link.get('scope') == 'purchase':
         from hydcommon.skill_scope import purchase_shape
         out.update(purchase_shape(link, source_backed=True))
@@ -165,7 +167,7 @@ def validate_link(sop, link, *, sops, require_failure_mode):
         out['relation'] = link['relation']
     if link.get('kind') is not None:
         if link['kind'] not in SKILL_KINDS:
-            raise ValueError(f'{sop}: 스킬 종류는 control 또는 work_order')
+            raise ValueError(f'{sop}: 조치 방법 종류는 설비 명령(control) 또는 작업지시(work_order)입니다')
         out['kind'] = link['kind']
     if link.get('approver') is not None:
         out['approver'] = _ref(link['approver'], 'role', f'{sop} 승인 역할')
@@ -373,9 +375,9 @@ CATALOG_Q = {
     'patterns': 'MATCH (n:AnomalyPattern) RETURN n.id AS id, n.code AS code, n.name AS name ORDER BY id',
     'parts': 'MATCH (n:Part) OPTIONAL MATCH (n)-[x:SUPPLIED_BY]->(s:Supplier) OPTIONAL MATCH (c:Component)-[:USES_PART]->(n) '
              'RETURN n.id AS id, n.name AS name, n.partNo AS partNo, collect(DISTINCT c.id) AS usedIn, '
-             '[r IN collect(DISTINCT {supplier:s.id, name:s.name, avl:s.avl, price:x.price, failRate:x.failRate, leadDays:x.leadDays}) '
+             '[r IN collect(DISTINCT {supplier:s.id, name:s.name, avl:s.avl, oem:s.oem, price:x.price, failRate:x.failRate, leadDays:x.leadDays}) '
              'WHERE r.supplier IS NOT NULL] AS suppliers ORDER BY id',
-    'suppliers': 'MATCH (n:Supplier) RETURN n.id AS id, n.name AS name, n.avl AS avl ORDER BY id',
+    'suppliers': 'MATCH (n:Supplier) RETURN n.id AS id, n.name AS name, n.avl AS avl, n.oem AS oem ORDER BY id',
     'state_variables': 'MATCH (n:StateVariable) RETURN n.id AS id, n.name AS name, n.unit AS unit, n.kind AS kind ORDER BY id',
     'measures': 'MATCH (n:Measure) RETURN n.id AS id, n.name AS name, n.unit AS unit ORDER BY id',
     'actions': 'MATCH (n:Action) OPTIONAL MATCH (n)-[:TARGETS]->(t) RETURN n.id AS id, n.name AS name, n.code AS code, '
@@ -481,8 +483,10 @@ def graph_semantics(plan, catalog):
                     available = parts[part].get('suppliers') or []
                     if not available:
                         issue('PURCHASE_SUPPLIER_PART_MISMATCH', p['id'], 'link.parts', f"{p['id']}: {part}의 실제 공급 관계가 없습니다")
-                    elif p['supplier_policy'] == 'oem' and not any(s.get('name') == 'B-OEM (순정)' for s in available):
-                        issue('PURCHASE_OEM_SOURCE_MISSING', p['id'], 'link.supplier_policy', f"{p['id']}: {part}의 정본 순정 공급사 라벨 B-OEM (순정)이 없습니다")
+                    elif p['supplier_policy'] == 'oem' and not any(s.get('oem') is True for s in available):
+                        # 순정 여부는 공급사 노드의 oem 속성 하나로 본다(표시 이름 글자가 아니다 — 이름을 바꿔도 판정이 같다)
+                        issue('PURCHASE_OEM_SOURCE_MISSING', p['id'], 'link.supplier_policy',
+                              f"{p['id']}: {part}을(를) 공급하는 순정(제조사) 공급사가 지식에 없습니다(공급사의 순정 표시 oem)")
                 elif p.get('executable') and not p.get('supplier_policy'):
                     supplier = (p.get('actions') or [{}])[0].get('value')
                     if not any(s.get('supplier') == supplier for s in parts[part].get('suppliers') or []):
@@ -526,7 +530,7 @@ def graph_semantics(plan, catalog):
             for output in outputs:
                 if output and (output.get('kind') == 'reference' or output.get('executable') is False):
                     issue('RULE_OUTPUT_NOT_EXECUTABLE', r['id'], 'knowledge.rules.outputs', f"{r['id']}: 참고 절차는 실행 후보 Rule 출력이 될 수 없습니다")
-                if output and output.get('id') in own and any(t.get('variable') == 'pattern' and t.get('value') == 'PM_DUE' for t in r['tests']):
+                if output and output.get('id') in own and any(t.get('variable') == 'pattern' and t.get('value') == PM_PATTERN for t in r['tests']):
                     effect_codes = [actions.get(a['action'],{}).get('code') for a in output.get('actions') or []]
                     if sum(code in ('WO_CREATE','WO_RESCHEDULE') for code in effect_codes) != 1:
                         issue('PM_ORDER_EFFECT_REQUIRED',output['id'],'link.actions',f"{output['id']}: PM 실행 후보에는 원문 기반 오더 발행 또는 기존 오더 일정 변경 Action 하나가 필요합니다")
@@ -536,8 +540,9 @@ def graph_semantics(plan, catalog):
                     issue('RULE_OUTPUT_NOT_EXECUTABLE', r['id'], 'knowledge.rules.outputs', f"{r['id']}: 참고 보관 구매 절차는 실행 후보 Rule의 출력이 될 수 없습니다")
                 if any(p and p.get('scope') != 'purchase' for p in outputs):
                     issue('RULE_OUTPUT_SCOPE_MIXED', r['id'], 'knowledge.rules.outputs', f"{r['id']}: 구매 후보와 고장 조치 후보를 같은 Rule에 섞지 않습니다")
-                if not any(t.get('variable') == 'pattern' and t.get('operator') == '==' and t.get('value') == 'SPARE_BELOW_MIN' for t in r['tests']):
-                    issue('PURCHASE_RULE_PATTERN_REQUIRED', r['id'], 'knowledge.rules.tests', f"{r['id']}: 구매 후보 Rule은 pattern == SPARE_BELOW_MIN을 명시해야 합니다")
+                problem = purchase_rule_problem(r['tests'])       # 구매 판단이 도는 경보 조건 — 그래프 검사기와 같은 한 벌(hydcommon.skill_scope)
+                if problem:
+                    issue('PURCHASE_RULE_PATTERN_REQUIRED', r['id'], 'knowledge.rules.tests', f"{r['id']}: {problem}")
     return plan, issues
 
 

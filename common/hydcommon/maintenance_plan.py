@@ -10,7 +10,7 @@ import math
 #: the current value and only checks it against the limit — ent.pm_scope_check (056) reads v_hours from ent.pm_scope_row
 #: and raises only when it exceeds interval*(1+tolerance); ent.pm_reschedule (054) checks hours_at_following_window
 #: against the same limit. Neither compares the planned value. (2026-10-23 audit: B approvals more than ~36 s after the
-#: decision were refused as 'maintenancePlan changed' (approval) and, on the memory backend, at execution (E5).)
+#: decision were refused as 'maintenancePlan changed' at approval and at execution (E5).)
 ELAPSED_APPLICABILITY_FIELDS = ('target_hours',)   # assets[].applicability
 ELAPSED_PLAN_FIELDS = ('hours_at_window',)          # top level of a WO_RESCHEDULE plan
 
@@ -30,15 +30,16 @@ def without_elapsed(value):
     return result
 
 
-def plan(skill, facts, window):
-    from .maintenance_policy import policy, scope
+def plan(skill, facts, window, rules):
+    """`rules`: the compliance rules evaluated for this decision (the bundle crew requirement is one of them)."""
+    from .maintenance_policy import crew_required, policy, scope
     if not isinstance(skill.get('source_id'),str) or not skill['source_id'].strip():
         raise ValueError('실제 PM 실행 정책이 연결된 원문 판본을 확인할 수 없습니다')
     contract=policy(skill.get('maintenance_policy'))
     if any(contract[key].get('source_id')!=skill.get('source_id') for key in ('anchor','model_anchor')):
         raise ValueError('정비 정책과 동일 모델 인용이 실행 SOP의 원문 판본과 다릅니다')
     context=facts.get('pm_context') or {}
-    scoped=scope(contract,context,context.get('asset'),window)
+    scoped=scope(contract,context,context.get('asset'),window,crew_required(rules,skill.get('skillId')))
     actions = skill.get('actions') or []
     changes = [a for a in actions if a.get('code') == 'WO_RESCHEDULE']
     creates = [a for a in actions if a.get('code') == 'WO_CREATE']
@@ -75,15 +76,3 @@ def plan(skill, facts, window):
                 window=deepcopy(window),hours_at_window=hours,limit_hours=limit,
                 cycle=facts.get('pm_cycle'),source_id=skill.get('source_id'),policy=contract,**scoped)
 
-
-def recheck(approved,context):
-    from .maintenance_policy import policy,scope
-    if not isinstance(approved,dict) or approved.get('code') not in ('WO_CREATE','WO_RESCHEDULE'):
-        raise ValueError('승인한 원문 정비 계획이 없습니다')
-    current=scope(policy(approved.get('policy')),context,context.get('asset'),approved.get('window'))
-    # scope() fails when the current target hours exceed the source limit; the elapsed value itself is not compared.
-    now,then=without_elapsed(current),without_elapsed(approved)
-    for key in ('scope','stock_effect','assets','staffing','parts_totals','model_applicability'):
-        if now.get(key)!=then.get(key):
-            raise ValueError('승인 뒤 실제 정비 범위·패키지·운전시간·부품·인원 조건이 변경되었습니다')
-    return current

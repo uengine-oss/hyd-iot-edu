@@ -11,6 +11,7 @@
     NOT_ONE_ROW: ['설비별 1행 아님', 'warning'], NO_DATA: ['기록 없음', 'warning'], TYPE_CHANGED: ['형식 바뀜', 'danger'], COMMENT_CHANGED: ['뜻 바뀜', 'warning'] };
   const chip = (state) => { const [l, t] = STATE[state] || [state || '–', 'neutral']; return UI.chipText(l, t); };
   const srcChip = (id, label) => UI.chipText(label || id, SRC_TONE[id] || 'neutral');
+  const srcLabel = id => ((S.sources || []).find(s => s.id === id) || {}).label || id;   // 원천 이름은 서버(fabric.SOURCES) 한 곳
   const val = (v, unit) => v == null ? '<span class="field-hint">값 없음</span>' : `<b>${esc(typeof v === 'number' ? (Number.isInteger(v) ? v : v.toFixed(v < 10 ? 3 : 1)) : v)}</b>${unit ? ` <small>${esc(unit)}</small>` : ''}`;
   const code = (t) => t ? `<code>${esc(t)}</code>` : '';
   const when = (t) => t ? esc(UI.dateTime ? UI.dateTime(t) : t) : '';
@@ -55,7 +56,7 @@
     const r = S.result;
     if (!r) return UI.empty('설비와 질문을 고르고 "묶어 보기"를 누르세요', '두 DB에서 읽은 값마다 어느 원천 · 표 · 열에서 왔는지 함께 보입니다');
     const down = Object.entries(r.sources || {}).filter(([, s]) => !s.ok);
-    const warn = down.length ? `<p class="form-msg neg" role="status">일부 원천을 읽지 못했습니다 — ${down.map(([id, s]) => `${esc(id === 'hyd-enterprise' ? '업무 DB' : '시계열 DB')}: ${esc(s.reason)}`).join(' · ')}</p>` : '';
+    const warn = down.length ? `<p class="form-msg neg" role="status">일부 원천을 읽지 못했습니다 — ${down.map(([id, s]) => `${esc(srcLabel(id))}: ${esc(s.reason)}`).join(' · ')}</p>` : '';
     const notes = (r.notes || []).map(n => `<p class="field-hint">${esc(n)}</p>`).join('');
     const answer = r.query === 'asset' ? assetAnswer(r) : `<div class="table-scroll"><table class="compact-table"><thead><tr><th>항목</th><th>값</th><th>출처</th><th>위치</th></tr></thead><tbody>${
       r.answer.map(a => `<tr><td>${esc(a.label)}</td><td>${a.value == null ? chip(a.state) + ` <small>${esc(a.reason || '')}</small>` : val(a.value, a.unit)}</td>` +
@@ -75,7 +76,7 @@
   }
   function srcSummary(r) {
     const used = [...new Set(r.parts.map(p => p.source))];
-    return used.map(id => srcChip(id, id === 'hyd-enterprise' ? '업무 DB' : '시계열 DB')).join(' ');
+    return used.map(id => srcChip(id, srcLabel(id))).join(' ');
   }
   function assetAnswer(r) {
     const groups = [['hyd-enterprise', '업무 DB'], ['hyd-timeseries', '시계열 DB']];
@@ -104,8 +105,10 @@
   }
   function tableDetail(sid, name) {
     const meta = (S.tablesBySource && S.tablesBySource[sid] || []).find(t => t.name === name);
+    const listError = S.tablesError && S.tablesError[sid];
     const cols = meta ? `<div class="table-scroll"><table class="compact-table"><thead><tr><th>열</th><th>형식</th><th>키</th><th>뜻(주석)</th></tr></thead><tbody>${
-      meta.columns.map(c => `<tr><td>${code(c.name)}</td><td>${esc(c.type)}</td><td>${c.pk ? '기본키' : ''}${c.fk ? `→ ${esc(c.fk)}` : ''}</td><td>${esc(c.comment || '')}</td></tr>`).join('')}</tbody></table></div>` : '<p class="field-hint">열 읽는 중…</p>';
+      meta.columns.map(c => `<tr><td>${code(c.name)}</td><td>${esc(c.type)}</td><td>${c.pk ? '기본키' : ''}${c.fk ? `→ ${esc(c.fk)}` : ''}</td><td>${esc(c.comment || '')}</td></tr>`).join('')}</tbody></table></div>`
+      : listError ? UI.errorBlock('표의 열 목록을 읽지 못했습니다', listError + ' — 표를 다시 누르면 다시 읽습니다') : '<p class="field-hint">열 읽는 중…</p>';
     const sm = S.sample[sid + '|' + name];
     const sample = !sm ? '<p class="field-hint">샘플 읽는 중…</p>' : sm.error ? `<p class="form-msg neg">${esc(sm.error)}</p>` :
       `<h4>최신 ${sm.row_count}행</h4><pre>${esc(sm.statement)}</pre>` + rowsTable(sm.columns, sm.rows);
@@ -124,10 +127,13 @@
         `<td>${esc((c.unmatched || []).map(m => `${m.key}${m.name ? ` (${m.name})` : ''}`).join(', '))}</td></tr>`).join('')}</tbody></table></div>`;
     const order = ['OK', 'MISSING', 'SOURCE_DOWN', 'UNREGISTERED', 'TYPE_CHANGED', 'COMMENT_CHANGED', 'UNBOUND', 'DERIVED', 'OUTSIDE'];
     const byState = order.map(st => [st, L.inputs.filter(i => i.state === st)]).filter(([, l]) => l.length);
-    const inputs = byState.map(([st, list]) => UI.fold(`${chip(st)} ${list.length}개 — ${esc(list[0].reason || (st === 'OK' ? '원천 표 · 열에서 바로 읽음' : ''))}`,
-      `<div class="table-scroll"><table class="compact-table"><thead><tr><th>판단 입력</th><th>출처</th><th>원천 위치</th></tr></thead><tbody>${list.map(i =>
-        `<tr><td>${esc(i.name)}</td><td>${esc(UI.name(i.source) || i.sourceName || '')}</td><td>${i.datasource ? srcChip(i.datasource, i.datasource === 'hyd-enterprise' ? '업무 DB' : '시계열 DB') : ''} ${code(i.table ? i.table + '.' + i.column : '')} <small>${esc(i.where || (i.key ? i.key + ' = 설비' : ''))}</small></td></tr>`).join('')}</tbody></table></div>`,
-      { open: st !== 'OUTSIDE' && st !== 'DERIVED' && list.length <= 8 })).join('');
+    const inputs = byState.map(([st, list]) => {
+      const reasons = new Set(list.map(i => i.reason || ''));
+      const shared = reasons.size === 1 ? (list[0].reason || (st === 'OK' ? '원천 표 · 열에서 바로 읽음' : '')) : '항목마다 사유가 다릅니다(아래 표)';
+      return UI.fold(`${chip(st)} ${list.length}개 — ${esc(shared)}`,
+      `<div class="table-scroll"><table class="compact-table"><thead><tr><th>판단 입력</th><th>출처</th><th>원천 위치</th>${reasons.size > 1 ? '<th>사유</th>' : ''}</tr></thead><tbody>${list.map(i =>
+        `<tr><td>${esc(i.name)}</td><td>${esc(UI.name(i.source) || i.sourceName || '')}</td><td>${i.datasource ? srcChip(i.datasource, i.source_label || srcLabel(i.datasource)) : ''} ${code(i.table ? i.table + '.' + i.column : '')} <small>${esc(i.where || (i.key ? i.key + ' = 설비' : ''))}</small></td>${reasons.size > 1 ? `<td>${esc(i.reason || '')}</td>` : ''}</tr>`).join('')}</tbody></table></div>`,
+      { open: st !== 'OUTSIDE' && st !== 'DERIVED' && list.length <= 8 }); }).join('');
     return UI.card({ title: '클래스 ↔ 표 · 열', sub: '온톨로지 클래스의 식별 키가 원천의 어느 열과 같은 것을 가리키는지, 살아 있는 카탈로그에 대어 확인합니다', body: graph + classes }) +
       UI.card({ title: '판단 입력의 원천', sub: '지식 그래프의 SOURCED_FROM 링크와 업무 데이터 연결(DDL 적재)로 생긴 표 · 열 바인딩', body: inputs || UI.empty('판단 입력이 없습니다') });
   }
@@ -154,12 +160,16 @@
     finally { S.busy = false; render(); }
   }
   async function pickTable(sid, name) {
-    S.table[sid] = name; render();
-    S.tablesBySource = S.tablesBySource || {};
-    try {
-      if (!S.tablesBySource[sid]) S.tablesBySource[sid] = (await getJ(`${API.process}/api/fabric/sources/${encodeURIComponent(sid)}/tables`)).tables;
-      S.sample[sid + '|' + name] = await getJ(`${API.process}/api/fabric/sources/${encodeURIComponent(sid)}/tables/${encodeURIComponent(name)}/sample?limit=5`);
-    } catch (e) { S.sample[sid + '|' + name] = { error: e.message }; }
+    S.table[sid] = name;
+    S.tablesBySource = S.tablesBySource || {}; S.tablesError = S.tablesError || {};
+    delete S.tablesError[sid]; delete S.sample[sid + '|' + name];
+    render();
+    if (!S.tablesBySource[sid]) {
+      try { S.tablesBySource[sid] = (await getJ(`${API.process}/api/fabric/sources/${encodeURIComponent(sid)}/tables`)).tables; }
+      catch (e) { S.tablesError[sid] = e.message; }
+    }
+    try { S.sample[sid + '|' + name] = await getJ(`${API.process}/api/fabric/sources/${encodeURIComponent(sid)}/tables/${encodeURIComponent(name)}/sample?limit=5`); }
+    catch (e) { S.sample[sid + '|' + name] = { error: e.message }; }
     render();
   }
   function mount(el) {

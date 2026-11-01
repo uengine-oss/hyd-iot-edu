@@ -8,7 +8,7 @@ RETURN k.id AS skillId, k.sopId AS sopId, k.name AS name, k.kind AS kind, k.desc
        COLLECT { MATCH (k)-[:INVOLVES_PART]->(p:Part) RETURN p.id } AS parts,
        COLLECT { MATCH (k)-[co:CONSISTS_OF]->(:Action {code:'PR_CREATE'}) MATCH (p:Part)-[:SUPPLIED_BY]->(s:Supplier)
                  WHERE s.id=co.value RETURN DISTINCT p.id } AS supplierParts,
-       COLLECT { MATCH (k)-[:INVOLVES_PART]->(p:Part)-[:SUPPLIED_BY]->(s:Supplier) RETURN {part:p.id,supplier:s.id,name:s.name} } AS partSuppliers,
+       COLLECT { MATCH (k)-[:INVOLVES_PART]->(p:Part)-[:SUPPLIED_BY]->(s:Supplier) RETURN {part:p.id,supplier:s.id,name:s.name,oem:s.oem} } AS partSuppliers,
        COLLECT { MATCH (sys:System)-[:HAS_SKILL]->(k) RETURN sys.id ORDER BY sys.id } AS performers,
        relation, fmId AS failureModeId,
        CASE WHEN r IS NULL THEN null ELSE {id: r.id, name: r.name, level: r.level} END AS approver,

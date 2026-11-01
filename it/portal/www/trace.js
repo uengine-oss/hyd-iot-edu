@@ -13,26 +13,30 @@
    화면 정리: 모델 사용량(usage) · 실행 시작(run_start) 줄은 숨기고, 호스트 경로 · 모델 이름은 UI.clean, 원문 JSON 은 접기에만. */
 (function () {
   Object.assign(UI.terms, {
-    'trace.title': '처리 과정', 'trace.live': '실시간', 'trace.follow': '새 기록 따라가기', 'trace.empty': '아직 기록이 없습니다', 'trace.emptySub': '단계가 시작되면 여기에 바로 나타납니다',
+    'trace.title': '처리 과정', 'trace.empty': '아직 기록이 없습니다', 'trace.emptySub': '단계가 시작되면 여기에 바로 나타납니다',
     'trace.request': '요청', 'trace.response': '응답', 'trace.instruction': '에이전트에게 준 지시', 'trace.final': '에이전트 최종 답변', 'trace.file': '결과 파일 작성',
     'trace.truncated': '결과 잘림', 'trace.truncatedText': '결과가 너무 커서 일부만 받았습니다', 'trace.blocked': '안전 장치가 막음', 'trace.blockedText': '허용되지 않은 명령이라 실행하지 않았습니다',
-    'trace.failed': '실패', 'trace.running': '실행 중', 'trace.took': '걸림', 'trace.waitHuman': '담당자의 입력을 기다리는 중', 'trace.waitAgent': 'AI 에이전트가 일을 받기를 기다리는 중',
+    'trace.failed': '실패', 'trace.running': '실행 중', 'trace.waitHuman': '담당자의 입력을 기다리는 중', 'trace.waitAgent': 'AI 에이전트가 일을 받기를 기다리는 중',
     'trace.working': 'AI 에이전트가 작업하는 중', 'trace.thinking': '다음 행동을 정하는 중', 'trace.waitSystem': '시스템이 처리하는 중', 'trace.waitTimer': '정해진 시간까지 기다리는 중',
     'trace.submitted': '결과를 받아 다음 단계로 넘기는 중', 'trace.pending': '조건이 맞을 때까지 보류', 'trace.asked': '사람에게 묻는 중', 'trace.left': '남음', 'trace.overdue': '기한 지남',
-    'trace.picked': '맡음', 'trace.done': '끝남', 'trace.outputs': '넘긴 값', 'trace.steps': '단계', 'trace.stepsDone': '마친 단계', 'trace.tools': '도구 호출', 'trace.status': '상태', 'trace.elapsed': '걸린 시간',
-    'trace.gen': '회차', 'trace.detail': '단계 자세히', 'trace.answer': '답변', 'trace.more': '이전 기록 {n}건 더 보기', 'trace.case': '처리 건 전체', 'trace.next': '다음',
-    'trace.kind.agent': 'AI 에이전트', 'trace.kind.human': '담당자', 'trace.kind.system': '시스템', 'trace.kind.timer': '대기', 'trace.kind.event': '이벤트',
+    'trace.picked': '맡음', 'trace.outputs': '넘긴 값', 'trace.stepsDone': '마친 단계', 'trace.tools': '도구 호출', 'trace.status': '상태', 'trace.elapsed': '걸린 시간',
+    'trace.gen': '회차', 'trace.detail': '단계 자세히', 
+    
     'trace.act.command': '설비 명령', 'trace.act.mail': '메일', 'trace.act.order': '발주', 'trace.act.receipt': '입고 확인', 'trace.act.schedule': '일정', 'trace.act.workorder': '정비 요청',
     'trace.act.record': '기록', 'trace.act.check': '확인', 'trace.act.approve': '승인',
   });
 
   /* ---------------------------------------------------------------- 시간 */
+  // 걸린 시간 · 남은 시간: 먼저 보일 자리(0.1초 · 초 · 분)로 반올림한 뒤 나눈다 — 「1분 60초」 · 「1시간 60분」이 나오지 않는다. 단위는 한국어
   function fmtMs(ms) {
     if (!Number.isFinite(ms) || ms < 0) return '';
-    if (ms < 1000) return `${Math.round(ms)} ms`;
-    if (ms < 60000) return `${(ms / 1000).toFixed(1)} s`;
-    if (ms < 3600000) return `${Math.floor(ms / 60000)}분 ${Math.round((ms % 60000) / 1000)}초`;
-    return `${Math.floor(ms / 3600000)}시간 ${Math.round((ms % 3600000) / 60000)}분`;
+    const tenth = Math.round(ms / 100) / 10;
+    if (tenth < 10) return tenth < 0.1 ? '0.1초 미만' : `${tenth.toFixed(1)}초`;
+    const s = Math.round(ms / 1000);
+    if (s < 60) return `${s}초`;
+    if (s < 3600) return s % 60 ? `${Math.floor(s / 60)}분 ${s % 60}초` : `${s / 60}분`;
+    const min = Math.round(s / 60);
+    return min % 60 ? `${Math.floor(min / 60)}시간 ${min % 60}분` : `${min / 60}시간`;
   }
   const ts = x => { const t = x ? Date.parse(x) : NaN; return Number.isFinite(t) ? t : null; };
 
@@ -65,13 +69,13 @@
   const spinner = (cls = '') => `<span class="tr-spin ${cls}" role="img" aria-label="${esc(UI.t('trace.running'))}"></span>`;
 
   /* ---------------------------------------------------------------- 단계 종류 · 하는 일 (시나리오 이름을 쓰지 않는다: 정의의 tool · 이름 · 사건 종류로만) */
-  const isAgent = w => !!(w.agent_orch || w.agent_mode) && (w.agent_orch === 'cliagents' || !!w.agent_mode);
+  const isAgent = w => UI.doerOf(w) === 'agent';
   function stepKind(w, def) {
     const evDef = ((def || {}).events || []).find(e => e.id === w.activity_id);
     if (evDef) return evDef.eventDefinition === 'timer' ? 'timer' : 'event';
     if (isAgent(w)) return 'agent';
     if ((def?.activities || []).find(a => a.id === w.activity_id)?.type === 'serviceTask') return 'system';
-    if (!w.agent_orch && !w.agent_mode) return 'human';
+    if (UI.doerOf(w) === 'human') return 'human';
     return 'system';
   }
   // 시스템 · 사람 단계가 하는 일(아이콘 · 칩). B(예약 · 예정된 정비 시간 대기 · 교체) · C(발주 · 메일 · 입고 확인) 같은 단계도 tool · 이름으로 잡힌다.
@@ -91,7 +95,7 @@
   const ACT_ICON = { command: 'command', mail: 'mail', order: 'order', receipt: 'receipt', schedule: 'schedule', workorder: 'workorder', approve: 'human', check: 'timer' };
 
   /* ---------------------------------------------------------------- 이벤트 → 행 */
-  const HIDDEN = d => d && (d.type === 'usage' || d.type === 'run_start' || d.session_id && !d.content && !d.message && d.type !== 'text');
+  const HIDDEN = d => d && (d.type === 'run_start' || d.session_id && !d.content && !d.message && d.type !== 'text');
   function brief(x, n = 140) {
     if (x == null) return '';
     if (typeof x === 'string') {
@@ -144,7 +148,7 @@
     if (v && typeof v === 'object' && v.result === 'ok' && !vals.length) return '성공';
     return vals.join(' · ').slice(0, n) || brief(v, n);
   }
-  const hhmmss = t => { const d = new Date(t); return Number.isNaN(d.getTime()) ? '' : d.toLocaleTimeString('en-GB', { hour12: false }); };
+  const hhmmss = t => Number.isNaN(new Date(t).getTime()) ? '' : UI.time(t);   // 시각 형식은 UI.time 하나
   function pretty(v) {
     if (v == null) return '';
     let s = v;
@@ -242,7 +246,7 @@
             break;
           }
           if (HIDDEN(d)) break;
-          if (d.type === 'text') { rows.push({ key: 'note:' + e.id, kind: 'note', status: 'ok', t0: e.timestamp, title: UI.t('td.note') || '에이전트 판단', note: UI.clean(UI.idText(d.content || '')) }); break; }
+          if (d.type === 'text') { rows.push({ key: 'note:' + e.id, kind: 'note', status: 'ok', t0: e.timestamp, title: UI.t('td.note'), note: UI.clean(UI.idText(d.content || '')) }); break; }
           if (d.type === 'file_artifact') { rows.push({ key: 'file:' + e.id, kind: 'file', status: 'ok', t0: e.timestamp, title: UI.t('trace.file'), text: UI.baseName(d.path || '') || '', fold: [UI.t('trace.response'), pretty(d.content)] }); break; }
           if (d.type === 'evidence') { rows.push({ key: 'ev:' + e.id, kind: 'note', status: 'ok', t0: e.timestamp, title: d.name || UI.t('td.basis') || '판단 근거', note: UI.clean(UI.idText(d.content || d.method || '')) }); break; }
           rows.push({ key: 'w:' + e.id, kind: 'system', status: 'ok', t0: e.timestamp, title: UI.clean(UI.logText(d.name || '')) || UI.t('stream.working'), text: brief(d.content || d.message || (d.by ? `${d.by}${d.role ? ' · ' + UI.who(d.role) : ''}` : ''), 160), raw: d.content || d.message ? null : d });
@@ -451,11 +455,10 @@
         if (!s.rows.length && !(s.live && s.waitText) && !node.querySelector('.tr-none')) node.querySelector('.tr-rows').innerHTML = `<p class="tr-none">${esc(s.live ? UI.t('trace.working') : UI.t('trace.empty'))}</p>`;
         else if (s.rows.length || (s.live && s.waitText)) node.querySelector('.tr-none')?.remove();
       });
-      // open state: running · waiting steps open by default, finished ones folded unless the user opened them
       m.steps.forEach(s => {
         const node = [...stepsBox.children].find(n => n.dataset.key === s.key); if (!node) return;
         const user = C.openSteps.get(s.key);
-        const open = user != null ? user : (s.live || (opts.openAll === true));
+        const open = user != null ? user : (defaultOpen(s, view) || (opts.openAll === true));
         node.classList.toggle('open', open); node.classList.toggle('live', s.live); node.dataset.state = s.state;
         const head = node.querySelector('[data-tr-head]'); if (head) head.setAttribute('aria-expanded', String(open));
       });
@@ -494,5 +497,11 @@
   function onEvent(e) { TR.mounted.forEach(C => C.ingest(e)); }
   window.addEventListener('hyd-tool-payload',()=>TR.mounted.forEach(C=>{if(C.host.isConnected)C.draw();}));
 
-  window.hydTrace = { mount, build, rowsOf, publicNotes, onEvent, fmtMs, outBrief, hhmmss, icon, spinner, summaryHtml, rowHtml, waitRowHtml, TR };
+  // 단계 카드의 기본 펼침: 도는 단계와 사람을 기다리는 단계(멈춤 · 질문 · 사람 차례), 진행 중인 처리 건의 실패한 단계는 편다 — 그 단계 안에
+  // [단계 닫기] · [실행 취소] · 답하기가 있다(한바퀴3: 멈춘 AI 단계가 접혀 [단계 닫기]가 보이지 않았다). 끝난 단계는 사람이 열기 전엔 접는다.
+  function defaultOpen(s, view) {
+    const running = (view && view.instance && view.instance.status) === 'RUNNING';
+    return !!s.live || (running && ['pending', 'ask', 'wait', 'fail'].includes(s.state));
+  }
+  window.hydTrace = { defaultOpen, mount, build, rowsOf, publicNotes, onEvent, fmtMs, outBrief, hhmmss, icon, spinner, summaryHtml, rowHtml, waitRowHtml, TR };
 })();

@@ -21,12 +21,23 @@ COLLECTIONS = (('activities', '단계', 'id'), ('events', '이벤트', 'id'), ('
                ('sequences', '연결', 'id'), ('data', '변수', 'name'), ('roles', '역할', 'name'))
 FIELD_LABELS = {'name': '이름', 'type': '종류', 'role': '담당 역할', 'tool': '도구', 'agentMode': '에이전트 방식', 'orchestration': '실행 주체',
                 'agent': '에이전트', 'inputData': '입력 변수', 'outputData': '출력 변수', 'attachedEvents': '붙은 이벤트', 'description': '설명',
-                'agentConfig': '에이전트 설정', 'skills': '스킬', 'inputBindings': '입력 연결', 'condition': '분기 조건', 'source': '출발',
+                'agentConfig': '에이전트 설정', 'skills': '스킬', 'condition': '분기 조건', 'source': '출발',
                 'target': '도착', 'properties': '속성', 'timer': '시간 제한', 'eventDefinition': '이벤트 정의', 'attachedTo': '붙은 단계',
                 'endpoint': '담당자', 'fields_json': '입력 항목', 'processDefinitionName': '정의 이름', 'ontologyRef': '온톨로지 연결',
-                'alertPolicy': '경보 정책', 'megaProcessId': '대분류', 'majorProcessId': '중분류', 'contractProvenance': '계약 출처'}
-TOP_LEVEL = ('processDefinitionName', 'description', 'ontologyRef', 'alertPolicy', 'megaProcessId', 'majorProcessId')
-IGNORED = {'version'}
+                'alertPolicy': '경보 정책', 'megaProcessId': '대분류', 'majorProcessId': '중분류', 'contractProvenance': '계약 출처',
+                'instruction': '지시문', 'duration': '예상 시간', 'checkpoints': '확인 항목', 'decision': '판단 설정',
+                'conditionData': '조건 값', 'correlationKey': '연결 키', 'messageRef': '메시지', 'resolutionRule': '담당 정하는 규칙',
+                'cancelActivity': '시한에 단계 끊기', 'service': '부품 설정', 'loopPolicy': '반복 허용', 'bpmnImport': '그림 가져오기 기록',
+                'forms': '폼', 'priority': '우선순위', 'default': '기본 선'}
+#: 최상위 칸 가운데 비교에서 빼는 것 — 정의 id 와 판본 번호(비교 대상 그 자체). 그 밖의 칸은 모두 비교한다(P1-24: 전에는 정한 목록만 봐
+#: 반복 허용 정책 · 계약 출처가 바뀐 판본을 「차이 없음」으로 말했다). 단계 · 연결 등 목록 칸과 폼은 아래에서 따로 비교한다.
+TOP_SKIP = {'processDefinitionId', 'version', 'activities', 'events', 'gateways', 'sequences', 'data', 'roles', 'forms'}
+OTHER = '기타 설정'
+
+
+def _label(key: str) -> str:
+    """칸 이름 → 사람 이름. 표에 없는 칸은 「기타 설정(칸 이름)」 — 영문 칸 이름만 홀로 보이지 않게."""
+    return FIELD_LABELS.get(key) or f'{OTHER}({key})'
 
 
 def _text(value) -> str:
@@ -37,10 +48,6 @@ def _text(value) -> str:
     if isinstance(value, bool):
         return '예' if value else '아니오'
     return json.dumps(value, ensure_ascii=False, sort_keys=True)
-
-
-def _label(key: str) -> str:
-    return FIELD_LABELS.get(key, key)
 
 
 def _same(a, b) -> bool:
@@ -93,7 +100,7 @@ def _describe(kind: str, change: str, ident: str, item: dict, flow: dict | None)
 def compare(a: dict, b: dict) -> dict:
     """Changes from version a to version b, in the order people read a definition (top level, nodes, flows, variables, roles, forms)."""
     changes: list[dict] = []
-    for key in TOP_LEVEL:
+    for key in [k for k in list(a) + [k for k in b if k not in a] if k not in TOP_SKIP]:
         if not _same(a.get(key), b.get(key)):
             changes.append({'kind': '정의', 'change': '변경', 'id': key, 'name': _label(key), 'text': f'{_label(key)} 변경',
                             'fields': [{'label': _label(key), 'key': key, 'before': _text(a.get(key)), 'after': _text(b.get(key))}]})
@@ -238,4 +245,10 @@ def _form_text(form: dict) -> str:
     fields = form.get('fields_json') if isinstance(form, dict) else None
     if not isinstance(fields, list):
         return _text(form)
-    return ', '.join(f"{f.get('text') or f.get('key')}({f.get('key')}: {f.get('type')})" for f in fields if isinstance(f, dict)) or '항목 없음'
+    return ', '.join(f"{f.get('text') or f.get('key')}({_FIELD_TYPES.get(str(f.get('type')).lower(), f.get('type'))})"
+                     for f in fields if isinstance(f, dict)) or '항목 없음'
+
+
+#: 폼 항목 자료형 → 사람 이름(P1-24: 「(candidates: array)」처럼 영문 키 · 형이 보였다)
+_FIELD_TYPES = {'text': '글', 'textarea': '긴 글', 'number': '수', 'boolean': '예/아니오', 'select': '고르기', 'array': '목록', 'object': '묶음',
+                'date': '날짜', 'datetime': '날짜 시각'}

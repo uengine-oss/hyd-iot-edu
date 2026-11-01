@@ -20,7 +20,7 @@ die() { printf '\n[멈춤] %s\n' "$*" >&2; exit 1; }
 . scripts/macos_paths.sh
 . scripts/versions.txt
 INSTALL_ENTRY='설치.bat'; START_ENTRY='시작.bat'; STOP_ENTRY='끄기.bat'
-if [ "$(uname -s)" = Darwin ]; then INSTALL_ENTRY='설치.command'; START_ENTRY='시작.command'; STOP_ENTRY='bash scripts/stop_all.sh'; fi
+if [ "$(uname -s)" = Darwin ]; then INSTALL_ENTRY='설치.command'; START_ENTRY='시작.command'; STOP_ENTRY='끄기.command'; fi
 
 # 창이 늦게 떠 두 번 누르면 두 시작이 같은 .env · 업무 DB 를 동시에 고친다 — 하나만 돌게 한다(끝나지 못한 앞 시작의 표시는 넘겨받는다)
 LOCK=.hyd-runtime/start.lock
@@ -62,10 +62,8 @@ case "$AI_MODE_WANT" in
 esac
 # 프로젝트 이름 · 포트: 같은 폴더면 그대로, 옮긴 폴더면 이어받고, 다른 폴더가 쓰는 이름 · 다른 프로그램이 쓰는 포트는 피한다(까닭은 위에 출력)
 "${PYTHON[@]}" scripts/prepare_ports.py || die "이 PC의 프로젝트 이름 · 포트를 준비하지 못했습니다. 바로 위의 까닭대로 고친 뒤 다시 실행하세요."
-# 기본 포트 → 이 PC의 바깥 포트(.hyd-runtime/ports.json — 방금 정한 표)
-PROCESS_URL="http://127.0.0.1:$("${PYTHON[@]}" scripts/prepare_ports.py port 8080)"
+# 기본 포트 → 이 PC의 바깥 포트(.hyd-runtime/ports.json — 방금 정한 표. 6 · 7 · 8단계 스크립트도 이 표에서 process 주소를 찾는다)
 PORTAL="http://127.0.0.1:$("${PYTHON[@]}" scripts/prepare_ports.py port 8088)"
-export PROCESS_URL
 
 say "3/8 업무 DB(Supabase) 켜기 · 업데이트"
 command -v npx >/dev/null 2>&1 || die "npx(Node.js)가 없습니다. $INSTALL_ENTRY 을 실행하세요."
@@ -78,6 +76,8 @@ say "4/8 시스템 · AI 워커 빌드 · 기동 (처음은 이미지 받기 · 
 # .env 의 AI_MODE · 포트를 쓴다. 이 창에 다른 값이 남아 있으면 그것이 이기므로 비운다
 unset COMPOSE_PROFILES AI_MODE
 docker compose up -d --build || die "시스템을 켜지 못했습니다. 위 오류의 서비스 이름을 보고 'docker compose logs <서비스>'로 원인을 확인하세요."
+# 새 판이 compose 에서 뺀 볼륨은 down -v 도 지우지 않는다 — 옛 컨테이너가 새 판으로 바뀐 지금 지운다(지울 이름은 prepare_ports.py 의 표 하나)
+"${PYTHON[@]}" scripts/prepare_ports.py retire || die "지금 판이 쓰지 않는 옛 볼륨을 정리하지 못했습니다. 바로 위의 까닭을 강사에게 알려 주세요."
 
 say "5/8 서비스 확인 (최대 3분 기다립니다)"
 "${PYTHON[@]}" scripts/check_stack.py services --wait 180 || die "응답하지 않거나 멈춘 서비스가 있습니다(바로 위 줄). 고친 뒤 $START_ENTRY 을 다시 실행하세요."

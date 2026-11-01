@@ -1,17 +1,12 @@
 -- 교육용 가상 데이터. 회사 · 고객 · 금액은 모두 예시. 금액 만원, 시간 h.
--- `supabase start` / `supabase db reset` 이 마이그레이션 뒤에 실행한다. 멱등.
-
--- B-ERP-20261012-v1: 원문 PM-02 기본·4,000h 패키지가 요구하는 리턴 필터의 공식 초기 실습 데이터.
--- 12만원·실물2·기준1·목표2는 교육용 설계값이며 제조사 원문/실제 창고/시장 견적이 아니다.
--- 설계 근거: docs/handoff/verification/2026-10-12/education-fixture-correction/b-spec.md
--- migration 057과 동일. 기존 운영 품목·실물·예약·발주를 덮어쓰지 않는다. 작동유는 미상으로 남긴다.
-insert into ent.parts (part_no, name, std_price) values
-  ('P-RTN-FLT', '리턴 필터 엘리먼트', 12)
-on conflict (part_no) do nothing;
-insert into ent.spare_stock (part_no, on_hand, reserved, on_order, reorder_point, target_stock,
-                            reserved_for, base_on_hand, base_reserved, need_by_days) values
-  ('P-RTN-FLT', 2, 0, 0, 1, 2, 'HYD-02', 2, 0, null)
-on conflict (part_no) do nothing;
+-- `supabase start` / `supabase db reset` 이 마이그레이션 뒤에 실행한다(새 DB 에서만 — 이미 만든 DB 에는 다시 넣지 않는다). 멱등.
+-- 수업 시작값이 있는 곳은 두 갈래다:
+--   이 파일 — 설비 · 생산 오더 · 판매 계약 · 완제품 재고 · 정비 기준 · 품질 기준 · 공급사 원장(쿨러 코어 견적) · 전력 · 테넌트 · 사람 ·
+--             에이전트 · 폼 · 업무분장 · 스킬.
+--   마이그레이션 — 예비품 재고(045 → 047 · 057 · 062) · 부품별 견적(045) · 정기 정비 계수기 · 설정(045 → 047) · 예정된 정비 시간 규칙(045) ·
+--             CMMS 표준 작업(037 → 069 · 070). 표를 만들 때 함께 넣은 값이라 이미 쓰던 DB 도 같은 값을 갖는다.
+-- 시작값을 바꿀 때: 이 파일의 값이면 여기와 「옛 값일 때만 바꾸는」 새 데이터 마이그레이션(이미 만든 DB 용)을 함께, 마이그레이션의 값이면
+-- 새 마이그레이션 하나로. 마이그레이션이 모든 DB 에 넣는 행은 여기에 다시 적지 않는다.
 
 insert into ent.assets (code, name, line) values
   ('HYD-01', '유압 파워팩 1호기', '창원 1공장 A라인'),
@@ -36,8 +31,8 @@ insert into ent.fg_inventory (asset, fg_item, fg_stock, ship_at) values
   ('HYD-01', 'FG-AUTO-7', 900, now()), ('HYD-02', 'FG-IND-3', 100, now()), ('HYD-03', 'FG-AUTO-9', 200, now())
 on conflict (asset) do update set fg_stock = excluded.fg_stock;
 
-insert into ent.maintenance_profiles (asset, clean_h, clean_cost, night_window_at, oil_risk_per_h, mtbf_h, standby_ready) values
-  ('HYD-01', 3, 40, now(), 5, 1400, true), ('HYD-02', 3, 40, now(), 5, 2600, true), ('HYD-03', 3, 40, now(), 5, 3100, true)
+insert into ent.maintenance_profiles (asset, clean_h, clean_cost, oil_risk_per_h, mtbf_h, standby_ready) values
+  ('HYD-01', 3, 40, 5, 1400, true), ('HYD-02', 3, 40, 5, 2600, true), ('HYD-03', 3, 40, 5, 3100, true)
 on conflict (asset) do nothing;
 
 delete from ent.maintenance_history;
@@ -53,10 +48,10 @@ insert into ent.quality_profiles (asset, hot_min, auto_lot, auto_qty, gen_lot, g
 on conflict (asset) do nothing;
 
 insert into ent.parts (part_no, name, std_price) values ('P-CLR-CORE', '쿨러 코어', 250) on conflict (part_no) do nothing;
-insert into ent.suppliers (id, key, name, part_no, price, fail_rate, lead_d, avl, quality_score) values
-  ('sup:a', 'a', 'A정밀 (저가)', 'P-CLR-CORE', 180, 0.12, 3, true, 0.78),
-  ('sup:b', 'b', 'B-OEM (순정)', 'P-CLR-CORE', 260, 0.02, 5, true, 0.97),
-  ('sup:c', 'c', 'C트레이딩 (최저가)', 'P-CLR-CORE', 120, 0.20, 2, false, 0.61)
+insert into ent.suppliers (id, key, name, part_no, price, fail_rate, lead_d, avl, oem, quality_score) values
+  ('sup:a', 'a', 'A정밀 (저가)', 'P-CLR-CORE', 180, 0.12, 3, true, false, 0.78),
+  ('sup:b', 'b', 'B-OEM (순정)', 'P-CLR-CORE', 260, 0.02, 5, true, true, 0.97),
+  ('sup:c', 'c', 'C트레이딩 (최저가)', 'P-CLR-CORE', 120, 0.20, 2, false, false, 0.61)
 on conflict (id) do nothing;
 
 insert into ent.energy_demand (site, contract_kw, demand_kw, fan_boost_kw, basic_rate, peak_h, peak_window, outdoor_c, energy_rate) values
@@ -65,11 +60,11 @@ on conflict (site) do nothing;
 
 -- ============================================================================
 -- 프로세스 엔진 시드 (public) — 테넌트 MCP · 사람과 에이전트 · 폼 계약. ProcessGPT 는 화면에서 등록하는 것들이다.
+-- 수업 MCP 서버 다섯은 모두 HTTP 다. neo4j 조회 도구는 dmn-mcp 컨테이너가 같은 프로세스에서 /neo4j/mcp 로 낸다(새 컨테이너 없이).
 -- ============================================================================
 insert into public.tenants (id, name, owner, mcp) values ('hyd', '유압설비 교육 공장', 'role:prod-mgr', '{
   "mcpServers": {
-    "neo4j":      {"command": "python", "args": ["-m", "hydcommon.neo4j_mcp"],
-                   "env": {"NEO4J_URI": "bolt://neo4j:7687", "NEO4J_USERNAME": "neo4j", "NEO4J_PASSWORD": "hydpass123", "NEO4J_READ_ONLY": "true"}},
+    "neo4j":      {"type": "url", "url": "http://dmn-mcp:8198/neo4j/mcp", "transport": "streamable_http"},
     "enterprise": {"type": "url", "url": "http://enterprise-mcp:8199/mcp", "transport": "streamable_http"},
     "hyd-dmn":    {"type": "url", "url": "http://dmn-mcp:8198/mcp", "transport": "streamable_http"},
     "enterprise-maint":    {"type": "url", "url": "http://enterprise-mcp-maint:8196/mcp", "transport": "streamable_http"},
@@ -103,7 +98,7 @@ update public.users set work_rules = 'hyd-plant'
 
 -- 폼 = 작업의 결과 계약 (에이전트의 JSON 제출 형식 · 사람의 입력 폼). key 는 정의의 outputData 와 같다.
 insert into public.form_def (id, tenant_id, proc_def_id, activity_id, fields_json) values
-  ('diagnose',   'hyd', 'anomaly_response', 'task:diagnose',   '[{"key":"cause","type":"text","text":"판정한 원인 노드 id (예: cause:cooler-fin-fouling)"},{"key":"failure_mode","type":"text","text":"고장 유형 노드 id (예: fm:cooling-loss)"},{"key":"guide_card","type":"object","text":"hyd-dmn diagnose 도구가 돌려준 가이드 카드 객체 그대로 (alert · causes · recommended · skills · citations · summary)"}]'),
+  ('diagnose',   'hyd', 'anomaly_response', 'task:diagnose',   '[{"key":"cause","type":"text","text":"판정한 원인 노드 id (예: cause:cooler-fin-fouling)"},{"key":"failure_mode","type":"text","text":"고장 유형 노드 id (예: fm:cooler-cooling-loss)"},{"key":"guide_card","type":"object","text":"hyd-dmn diagnose 도구가 돌려준 가이드 카드 객체 그대로 (alert · causes · recommended · skills · citations · summary)"}]'),
   ('candidates', 'hyd', 'anomaly_response', 'task:candidates', '[{"key":"candidates","type":"array","text":"후보 스킬 id 목록 (dec:action-candidates 결과)"}]'),
   ('compliance', 'hyd', 'anomaly_response', 'task:compliance', '[{"key":"compliance","type":"object","text":"스킬 id → {feasible, excluded[], penalties[], warnings[]} (dec:compliance 결과)"}]'),
   ('rank',       'hyd', 'anomaly_response', 'task:rank',       '[{"key":"decision","type":"object","text":"순위 결과 요약 {recommended, explanation, order[]} — hyd-dmn evaluate_cards · submit_decision 결과"},{"key":"decision_id","type":"text","text":"submit_decision 이 돌려준 조치 카드 묶음 id"}]'),

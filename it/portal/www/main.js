@@ -2,11 +2,11 @@
    walks to decide what to do. Live values come from state.plant (app.js polling). A122: no layer numbers, no lecture copy. */
 (function () {
   const G = { asset: '#9aa7b5', obs: '#9aa7b5', failure: '#f07167', action: '#f5a623', org: '#b794f6', sys: '#2dd4bf', decision: '#7aa2ff', agent: '#ffffff' };
-  // knowledge-map nodes (a readable subset of the real ontology; ids match seed.cypher / seed_enterprise.cypher)
+  // knowledge-map nodes (a readable subset of the real ontology — it/neo4j/v2/instances.cypher 구조판 + 수업 매뉴얼 HM-8 의 절차)
   const N = [
     ['asset', 'HYD-01', 'asset', 700, 318], ['ts1', '센서 TS1', 'asset', 690, 226], ['ce', '센서 CE', 'asset', 706, 410],
     ['sym', '증상 · 유온 상승', 'obs', 800, 176], ['fm', '고장 유형 · 냉각 상실', 'failure', 822, 288], ['cause', '원인 · 쿨러 핀 오염', 'failure', 912, 200],
-    ['act', '조치 · 팬 속도 상향', 'action', 990, 112], ['sop', '절차 SOP-COOL-01', 'action', 1105, 152],
+    ['act', '조치 · 팬 속도 상향', 'action', 990, 112], ['sop', '절차 SOP-COOL-11', 'action', 1105, 152],
     ['agent', '인공지능 에이전트', 'agent', 960, 326], ['scn', '판단 · 납기 vs 보전', 'decision', 1090, 262],
     ['kpi1', '성과 지표 · 납기 준수율', 'org', 1095, 356], ['kpi2', '성과 지표 · 부품 단가', 'org', 1012, 428], ['dept', '영업팀 · 구매팀', 'org', 1112, 472],
     ['pol', '규정 · 유온 65 ℃', 'org', 826, 450], ['erp', '구매 · 재고', 'sys', 770, 494], ['mes', '생산 관리', 'sys', 862, 516], ['cmms', '정비 관리', 'sys', 962, 516],
@@ -129,9 +129,11 @@
     return st.map(([tab, t, d]) => `<button class="card" data-go="${tab}"><header class="card-head"><div class="card-title"><h3>${esc(UI.t(t))}</h3></div></header><p class="card-sub">${esc(UI.t(d))}</p><span class="go">열기 →</span></button>`).join('');
   }
 
-  let graphCount = null;
+  // 지식 수: 처음 한 번 읽고, 실패하면 사유를 두고 30초 뒤 다시 읽는다(시작 직후 Neo4j 가 늦게 떠도 새로 고침 없이 채워진다)
+  let graphCount = null, graphError = '';
   async function loadCounts() {
-    try { const g = await getJ(API.agent + '/api/ontology/graph?asset=HYD-01'); graphCount = { n: g.nodes.length, e: g.edges.length }; } catch (e) { graphCount = null; }
+    try { const g = await getJ(API.agent + '/api/ontology/graph?asset=HYD-01'); graphCount = { n: g.nodes.length, e: g.edges.length }; graphError = ''; }
+    catch (e) { graphCount = null; graphError = e.message; setTimeout(() => loadCounts().then(renderLive), 30000); }
   }
 
   function renderLive() {
@@ -149,8 +151,10 @@
     const n = v => Number(v).toLocaleString('ko-KR');
     box.innerHTML = [
       [UI.t('main.assets'), `${Object.keys(u).length}기`, alarms ? `${UI.t('main.hot')} ${alarms}기` : UI.t('main.cool'), alarms ? 'hot' : ''],
-      [UI.t('main.openCases'), $('#openCount').textContent === '–' ? '–' : String(open), open ? UI.t('nav.incidents') : UI.t('main.none'), open ? 'hot' : ''],
-      [UI.t('main.knowledge'), graphCount ? n(graphCount.n) : '–', graphCount ? `${UI.t('main.links')} ${n(graphCount.e)}` : UI.t('main.waitNeo'), ''],
+      // 사건 목록을 못 읽었으면 「0 · 없음」이 아니다(app.js 의 사건 목록 사유)
+      state.incidentError ? [UI.t('main.openCases'), '읽기 실패', state.incidentError, 'hot']
+        : [UI.t('main.openCases'), $('#openCount').textContent === '–' ? '–' : String(open), open ? UI.t('nav.incidents') : UI.t('main.none'), open ? 'hot' : ''],
+      [UI.t('main.knowledge'), graphCount ? n(graphCount.n) : '–', graphCount ? `${UI.t('main.links')} ${n(graphCount.e)}` : graphError ? `읽지 못함 — ${graphError} (30초 뒤 다시 읽음)` : UI.t('loading'), graphError ? 'hot' : ''],
       [UI.t('main.scale'), `${state.plant.time_scale ?? '–'}×`, `실제 1초 = 시뮬레이션 ${state.plant.time_scale ?? '–'}초`, ''],
     ].map(([k, v, s, cls]) => `<div class="card ${cls}"><span>${esc(k)}</span><b class="num">${esc(v)}</b><small>${esc(s)}</small></div>`).join('');
   }

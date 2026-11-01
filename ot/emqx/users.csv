@@ -1,0 +1,2 @@
+user_id,password,is_superuser
+student,student,false

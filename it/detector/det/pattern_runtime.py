@@ -1,4 +1,4 @@
-"""Definition-driven held patterns; source adapter and delivery are separate concerns."""
+"""Definition-driven held patterns over one observation store per asset; source adapter and delivery are separate concerns."""
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 import math
@@ -26,20 +26,24 @@ class Asset:
 class PatternRuntime:
     """Explicit catalog replacement, TS1 evaluation clock, no last-value interpolation.
 
-    Candidate holds restart on revision change. Raised alerts keep their original
-    definition until CLEAR, including when that definition is removed from the catalog.
-    Invalid catalog replacements fail atomically, leaving the applied catalog unchanged.
+    The runtime is the detector's only observation store: every accepted sample of an asset goes through observe() (its
+    validity, gaps and slope windows), whether or not a catalog has been read yet — the PLC trip watch and the features read
+    the same samples. Without a catalog (source not read yet) nothing is evaluated.
+    Candidate holds restart on revision change. Raised alerts keep their original definition until CLEAR, including when
+    that definition is removed from the catalog. Invalid catalog replacements fail atomically, leaving the applied catalog
+    unchanged. `names` (pattern code -> display name, every pattern in the graph) labels the alerts.
     """
-    def __init__(self, rows, profile='lite', time_scale=20., grace_s=2.):
+    def __init__(self, rows, profile, time_scale, grace_s, names=None):
         Observations(profile, grace_s)  # validate before accepting any catalog
         self.profile, self.time_scale, self.grace_s = profile, time_scale, grace_s
-        self.catalog = compile_catalog(rows, profile, time_scale)
+        self.catalog = compile_catalog(rows, profile, time_scale) if rows is not None else {}
+        self.names = dict(names or {})
         self.assets = {}
-        self.source_ready = True
+        self.source_ready = rows is not None
 
-    def replace(self, rows):
+    def replace(self, rows, names):
         validated = compile_catalog(rows, self.profile, self.time_scale)
-        self.catalog = validated
+        self.catalog, self.names = validated, dict(names)
         self.source_ready = True
 
     def source_failed(self):
@@ -49,26 +53,38 @@ class PatternRuntime:
                 if run.state.phase not in ('RAISED', 'CLEARING'):
                     cep.interrupt(run.state)
 
-    def invalidate(self, asset_id, name, reason):
+    def asset(self, asset_id):
         asset = self.assets.setdefault(asset_id, Asset(Observations(self.profile, self.grace_s)))
         self._sync(asset)
+        return asset
+
+    def invalidate(self, asset_id, name, reason):
+        asset = self.asset(asset_id)
         asset.observations.invalidate(name, reason)
         for run in asset.runs.values():
             if name in run.definition.inputs | {'TS1'}:
                 cep.interrupt(run.state)
                 run.quality = {'status': 'UNKNOWN', 'problems': {name: reason}}
         for (tag, _), window in asset.windows.items():
-            if name == tag or name == 'TS1':window.pts.clear()
+            if name == tag or name == 'TS1':
+                window.pts.clear()
+
+    def slope(self, asset_id, tag):
+        """Slope (per simulated second) of `tag` over the widest window a definition keeps for it; None when no definition
+        uses slope(tag) or the window holds fewer than two samples."""
+        asset = self.assets.get(asset_id)
+        windows = [w for (t, width), w in sorted(asset.windows.items(), key=lambda kv: -kv[0][1]) if t == tag] if asset else []
+        return windows[0].slope() if windows and len(windows[0].pts) >= 2 else None
 
     def snapshot(self):
-        return dict(profile=self.profile, time_scale=self.time_scale, grace_s=self.grace_s,
-                    catalog=[p.source() for p in self.catalog.values()],
+        return dict(profile=self.profile, time_scale=self.time_scale, grace_s=self.grace_s, names=self.names,
+                    catalog=[p.source() for p in self.catalog.values()] if self.catalog else None,
                     assets={asset_id: {code: dict(definition=run.definition.source(), state=asdict(run.state))
                                       for code, run in asset.runs.items()} for asset_id, asset in self.assets.items()})
 
     @classmethod
     def restore(cls, data):
-        runtime = cls(data['catalog'], data['profile'], data['time_scale'], data['grace_s'])
+        runtime = cls(data['catalog'], data['profile'], data['time_scale'], data['grace_s'], data.get('names'))
         runtime.source_ready = False  # recheck source; retain raised alerts while disconnected
         for asset_id, runs in data['assets'].items():
             asset = Asset(Observations(runtime.profile, runtime.grace_s))
@@ -100,24 +116,24 @@ class PatternRuntime:
         asset.windows = {key: asset.windows.get(key, SlopeWindow(key[1])) for key in required}
 
     def observe(self, asset_id, name, value, at, quality='good', now=None):
-        """Accept event seconds (UTC epoch); returns zero or more real state transitions."""
+        """Accept event seconds (UTC epoch); returns (status, events): status of the sample — 'valid', 'invalid' or 'ignored'
+        (older than or the same as the last one) — and zero or more real state transitions."""
         if type(at) not in (int, float) or not math.isfinite(at):
             raise ValueError('event timestamp must be finite seconds')
         now = at if now is None else now
         if type(now) not in (int, float) or not math.isfinite(now):
             raise ValueError('wall timestamp must be finite seconds')
-        asset = self.assets.setdefault(asset_id, Asset(Observations(self.profile, self.grace_s)))
-        self._sync(asset)
+        asset = self.asset(asset_id)
         old = asset.observations.samples.get(name)
         if old and old['time'] is not None and at < old['time']:
-            return []
+            return 'ignored', []
         if at > now + self.grace_s:
             asset.observations.invalidate(name, 'FUTURE_TIMESTAMP')
             status, gap = 'invalid', False
         else:
             status, gap = asset.observations.record(name, at, value, quality)
         if status == 'ignored':
-            return []
+            return status, []
         if gap or status == 'invalid':
             for run in asset.runs.values():
                 if name in run.definition.inputs | {'TS1'}:
@@ -127,12 +143,12 @@ class PatternRuntime:
                 if name == tag or name == 'TS1':
                     window.pts.clear()
         if status == 'invalid':
-            return []
+            return status, []
         for (tag, _), window in asset.windows.items():
             if tag == name:
                 window.push(at*self.time_scale, value)
         if name != 'TS1':
-            return []
+            return status, []
         for window in asset.windows.values():
             window.trim(at*self.time_scale)
         events = []
@@ -165,13 +181,14 @@ class PatternRuntime:
             hold = definition.clear_hold if run.state.phase in ('RAISED', 'CLEARING') else definition.hold
             event = cep._step(run.state, asset_id, at*self.time_scale, code, definition.severity,
                               cond, clear, hold, datetime.fromtimestamp(at, timezone.utc).isoformat(), evidence,
-                              max_gap_s=asset.observations.limit('TS1')*self.time_scale)
+                              max_gap_s=asset.observations.limit('TS1')*self.time_scale, name=self.names.get(code))
             if event:
                 events.append(event)
-        return events
+        return status, events
 
     def describe(self):
         return {'source_ready': self.source_ready, 'catalog': {code: p.describe() for code, p in self.catalog.items()},
+                'names': self.names,
                 'assets': {asset: {code: dict(phase=r.state.phase, alert_id=r.state.alert_id,
                                              revision=r.definition.revision, quality=r.quality)
                                    for code, r in state.runs.items()} for asset, state in self.assets.items()}}

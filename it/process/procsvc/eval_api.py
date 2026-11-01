@@ -1,4 +1,5 @@
-"""A4 (U6) — AI 판단 채점 HTTP (process 서비스). 순수 로직은 judgment_eval.py, 화면은 portal/www/evaluation.js, CLI 는 scripts/evaluate_judgment.py.
+"""A4 (U6) — AI 판단 채점 HTTP (process 서비스). 순수 로직은 judgment_eval.py, 화면은 portal/www/evaluation.js,
+개발용 CLI 는 workspace/개발/scripts/evaluate_judgment.py.
 
   GET    /api/eval/golden                 정답표(저장된 항목 — 처음엔 비어 있다) + 저장소 종류 + 판단 경로 안내 + 가중치
   POST   /api/eval/golden/items           {item, by}  항목 새로 적기 (모양 검사 + 인용 id 가 지식 그래프에 있는지)
@@ -8,7 +9,7 @@
   GET    /api/eval/worker-candidates      채점할 수 있는 지난 처리 건 (에이전트 task 출력 + 제출된 판단이 있는 것)
   POST   /api/eval/runs                   {path: decide|evaluate, items?, repeats?, by, note?}  정답표 항목을 agent 로 N회 판단해 채점
                                           {path: worker, instances: [{instance, item?}], by, note?}  지난 처리 건의 실제 워커 판단을 채점
-  GET    /api/eval/runs · /api/eval/runs/{id} · /api/eval/compare?before=&after=
+  GET    /api/eval/runs?limit=(1~100) · /api/eval/runs/{id} · /api/eval/compare?before=&after=
 채점은 읽기 전용이다 — agent decide · evaluate 는 제출하지 않고, 처리 건 · 설비 명령 · 기준 데이터를 만들거나 바꾸지 않는다.
 """
 from __future__ import annotations
@@ -27,6 +28,7 @@ from . import judgment_eval as je
 
 log = logging.getLogger('process.eval')
 MAX_WORKER_INSTANCES = 50          # 마이그레이션 30 의 repeats 상한과 같다
+LIST_LIMIT = (1, 100)              # 목록 요청(limit)의 범위 — 다른 목록 라우트(시험 비교 · 호출 기록)와 같은 꼴
 
 
 class RunReq(BaseModel):
@@ -132,6 +134,12 @@ def register(app, *, driver_factory, store_factory, agent_url: str, book: dict, 
         rows = graph_read(lambda tx: [r.data() for r in tx.run(q, ids=ids)])
         return list((rows[0] if rows else {}).get('missing') or [])
 
+    def limit_of(limit) -> int:
+        low, high = LIST_LIMIT
+        if not isinstance(limit, int) or not low <= limit <= high:
+            raise ValueError(f'limit: {low}~{high} 사이여야 합니다')
+        return limit
+
     def by_of(by: str) -> str:
         if not isinstance(by, str) or not by.strip():
             raise ValueError('누가 적었는지(by)가 필요합니다')
@@ -141,7 +149,9 @@ def register(app, *, driver_factory, store_factory, agent_url: str, book: dict, 
     @app.get('/api/eval/golden')
     async def golden():
         items = await run(lambda: store().golden_list())
+        from hydcommon.topics import ASSETS
         return {'items': items, 'storage': store().kind, 'paths': je.PATH_NOTES, 'weights': je.DEFAULT_WEIGHTS, 'max_repeats': je.MAX_REPEATS,
+                'assets': list(ASSETS), 'facts': je.FACT_CHOICES,
                 'empty_note': None if items else '정답표가 비어 있습니다. 경보 상황마다 기대 원인 · 허용 1위 조치 · 빠질 조치 · 있어야 할 근거를 적어 저장하세요.'}
 
     def save(req: GoldenReq, create: bool, iid: str | None = None) -> dict:
@@ -206,7 +216,7 @@ def register(app, *, driver_factory, store_factory, agent_url: str, book: dict, 
 
     @app.get('/api/eval/worker-candidates')
     async def worker_candidates(limit: int = 20):
-        return await run(lambda: candidates(limit))
+        return await run(lambda: candidates(limit_of(limit)))
 
     # ---------------------------------------------------------------- 채점 실행
     def server_run(req: RunReq, golden: list[dict]) -> list[dict]:
@@ -279,7 +289,7 @@ def register(app, *, driver_factory, store_factory, agent_url: str, book: dict, 
 
     @app.get('/api/eval/runs')
     async def list_runs(limit: int = 50):
-        return await run(lambda: store().list(limit))
+        return await run(lambda: store().list(limit_of(limit)))
 
     @app.get('/api/eval/runs/{rid}')
     async def get_run(rid: str):

@@ -1,53 +1,51 @@
 """detector (L4): Flink stand-in. plant.tag/plant.wave/plant.status -> feat.1s + alerts (RAISE/CLEAR).
 
-Per asset: feature slopes and z-score anomaly score (autoencoder slot), plus
-Neo4j TESTS/clearRule/hold definitions evaluated on each TS1 tick. Active alerts
-pin their definition; SQLite checkpoints and an outbox preserve alert identity
-across restart. Authoritative PLC trips are watched separately.
-Clocks: pattern hold/clear windows are measured in simulated seconds = event epoch seconds * TIME_SCALE
-(pattern_runtime.observe -> cep._step). sim_time() below, (event time - first event time) * TIME_SCALE, is used only
-for the TS1/VS1 slope windows shown on the portal; it is not the clock the patterns hold on.
+Per asset: one observation store (pattern_runtime) feeds the Neo4j TESTS/clearRule/hold definitions on each TS1 tick, the
+features (TS1 slope, z-score anomaly score — the autoencoder slot) and the authoritative PLC trip watch. Active alerts pin
+their definition; SQLite checkpoints and an outbox preserve alert identity across restart.
+Clocks: pattern hold/clear windows and slopes are measured in simulated seconds = event epoch seconds * TIME_SCALE; sample
+validity (missing · stale · future) is wall seconds (observations).
+Records: each one is checked against its contract (hydcommon.schemas — Kafka is reachable from the host, so the ingest's
+check is not the only gate). A record outside it is counted and logged with its coordinates; for a known asset · tag it
+also invalidates that observation (the hold is interrupted, it is never filled in). A record whose processing still raises
+is counted the same way and /healthz is 503 for a minute — one record never stops detection.
+Checkpoint: written at once when an alert is emitted (with its outbox entry) and otherwise every CHECKPOINT_S together with
+the Kafka commit; a restart replays at most that much, which the stored offsets and the restored runtime absorb.
 """
 import asyncio
 import logging
 import os
-import re
 import time
 from contextlib import AsyncExitStack
 from dataclasses import asdict, dataclass, field
 
+from aiokafka.structs import TopicPartition
 from fastapi import HTTPException
 
-from hydcommon import topics
-from hydcommon.kafka import consumer as make_consumer, producer as make_producer
+from hydcommon import graphdb, schemas, topics
+from hydcommon.daq_contract import OBSERVATION_GRACE_S, TAGS, profile_from_env
+from hydcommon.kafka import Delivery, consumer as make_consumer, producer as make_producer, replay_verdict
 from hydcommon.metrics import Registry
 from hydcommon.service import make_app
-from hydcommon.timeutil import parse_iso
+from hydcommon.timeutil import parse_iso, time_scale
 from . import cep, features
-from .observations import Observations
 from .pattern_runtime import PatternRuntime
 from .pattern_source import read_patterns
 from .store import Store
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 log = logging.getLogger("detector")
-TIME_SCALE = float(os.getenv("TIME_SCALE", "20"))
-DAQ_PROFILE = os.getenv('DAQ_PROFILE', 'lite')
-OBSERVATION_GRACE_S = float(os.getenv('OBSERVATION_GRACE_S', '2'))
-# Legacy display aliases only; these names do not select executable predicates.
-DISPLAY_STATES = {'COOLER_DEGRADATION': 'cep_state', 'PUMP_LEAKAGE': 'pump_state', 'FAN_VIBRATION': 'fan_state'}
-runtime = None
+TIME_SCALE = time_scale()
+DAQ_PROFILE = profile_from_env()
+STATE_PATH = os.getenv('DETECTOR_STATE_PATH', '/data/detector.sqlite3')
+CHECKPOINT_S = 5.0
+ERROR_WINDOW_S = 60.0
+runtime = PatternRuntime(None, DAQ_PROFILE, TIME_SCALE, OBSERVATION_GRACE_S)
 store = None
 pending_alerts = []
 catalog_status = {'ready': False, 'error': 'NOT_LOADED', 'checked_at': None, 'applied_at': None}
 mutation_lock = asyncio.Lock()
 refresh_lock = asyncio.Lock()
-PATTERN_SCOPE = os.getenv('DETECTOR_PATTERN_SCOPE', 'production')
-TOPIC_PREFIX = os.getenv('DETECTOR_TOPIC_PREFIX', '')
-if TOPIC_PREFIX:
-    if not re.fullmatch('[a-zA-Z0-9_-]{1,120}', TOPIC_PREFIX):raise ValueError('invalid detector topic prefix')
-    for key, suffix in [('K_TAG','tag'),('K_WAVE','wave'),('K_STATUS','status'),('K_FEAT','feat'),('K_ALERTS','alerts')]:
-        setattr(topics, key, f'{TOPIC_PREFIX}.{suffix}')
 
 reg = Registry()
 c_alerts = reg.counter("detector_alerts_total", "alerts emitted by pattern/state")
@@ -56,185 +54,113 @@ g_ts1 = reg.gauge("detector_ts1", "latest TS1 by asset")
 g_event_time = reg.gauge('detector_input_event_timestamp_seconds', 'last accepted source event timestamp by asset/tag')
 g_valid = reg.gauge('detector_pattern_inputs_valid', 'required inputs valid at last TS1 evaluation; inspect source event timestamps for current age')
 
-# fixed "trained" baseline of the healthy operating point (restart-safe; see features.Baseline for the learned variant)
-NORMAL = {"TS1": (48.0, 1.0), "CE": (84.0, 3.0), "VS1": (0.6, 0.05)}
-
 
 @dataclass
 class AssetState:
     asset: str
-    latest: dict = field(default_factory=dict)
-    slope: features.SlopeWindow = field(default_factory=lambda: features.SlopeWindow(window_s=60.0))
-    vs1_slope: features.SlopeWindow = field(default_factory=lambda: features.SlopeWindow(window_s=60.0))
-    cep_state: cep.CepState = field(default_factory=cep.CepState)
-    pump_state: cep.CepState = field(default_factory=cep.CepState)
-    fan_state: cep.CepState = field(default_factory=cep.CepState)
     trip_state: cep.TripState = field(default_factory=cep.TripState)
-    last_sim_t: float = 0.0
     score: float | None = None
     plc_state: str = "UNKNOWN"
-    observations: Observations = field(default_factory=lambda: Observations(DAQ_PROFILE, OBSERVATION_GRACE_S))
-    data_quality: dict = field(default_factory=dict)
 
 
-state = {"kafka": False, "t0": None, "tags": 0, "waves": 0, "alerts": 0}
+state = {"kafka": False, "tags": 0, "waves": 0, "statuses": 0, "alerts": 0, "rejected": 0, "last_rejected": None,
+         "record_errors": 0, "last_record_error": None, "last_record_error_at": None, "offset_resets": 0}
+delivery = Delivery()
 assets: dict[str, AssetState] = {}
-baseline = features.Baseline()
-baseline.stats.update(NORMAL)
 
 
 def get(asset: str) -> AssetState:
+    if asset not in topics.ASSETS:
+        raise schemas.RecordError(f"asset {asset!r} is not one of {list(topics.ASSETS)}")
     if asset not in assets:
         assets[asset] = AssetState(asset)
     return assets[asset]
 
 
-def sim_time(t_iso: str) -> float:
-    t = parse_iso(t_iso)
-    if state["t0"] is None:
-        state["t0"] = t
-    return (t - state["t0"]).total_seconds() * TIME_SCALE
+def samples(asset: str) -> dict:
+    return runtime.asset(asset).observations.samples
 
 
-def interrupt_input(a, name, reason):
-    if name == 'TS1':
-        a.slope.pts.clear()
-    elif name == 'VS1':
-        a.vs1_slope.pts.clear()
+def value(asset: str, tag: str):
+    sample = samples(asset).get(tag)
+    return sample['value'] if sample and sample.get('valid') else None
 
 
-def sync_pattern_view(a):
-    if runtime is None or a.asset not in runtime.assets:
-        return
-    runs = runtime.assets[a.asset].runs
-    a.data_quality = {code: run.quality for code, run in runs.items()}
-    for code, run in runs.items():
-        if code in DISPLAY_STATES:setattr(a, DISPLAY_STATES[code], run.state)
-        g_valid.set(int(run.quality.get('status') == 'VALID'), asset=a.asset, pattern=code)
-
-
-def pattern_observe(a, name, value, timestamp, quality='good'):
-    if runtime is None:return []
-    try:
-        at = parse_iso(timestamp).timestamp()
-    except (AttributeError, TypeError, ValueError):
-        runtime.invalidate(a.asset, name, 'INVALID_TIMESTAMP')
-        sync_pattern_view(a)
-        return []
-    events = runtime.observe(a.asset, name, value, at, quality, now=time.time())
-    sync_pattern_view(a)
-    return events
-
-
-def observe(a, name, value, timestamp, quality='good'):
-    try:
-        at = parse_iso(timestamp).timestamp()
-    except (AttributeError, TypeError, ValueError):
-        a.observations.invalidate(name, 'INVALID_TIMESTAMP')
-        a.latest.pop(name, None)
-        interrupt_input(a, name, 'INVALID_TIMESTAMP')
-        return None
-    old = a.observations.samples.get(name)
-    if old and old['time'] is not None and at < old['time']:
-        return None  # a delayed record must not overwrite the newer source state
-    if at > time.time() + OBSERVATION_GRACE_S:
-        a.observations.invalidate(name, 'FUTURE_TIMESTAMP')
-        a.latest.pop(name, None)
-        interrupt_input(a, name, 'FUTURE_TIMESTAMP')
-        return None  # do not advance the watermark into the future
-    status, gap = a.observations.record(name, at, value, quality)
-    if status == 'ignored':
-        return None
-    if status == 'invalid' or gap:
-        interrupt_input(a, name, 'INVALID_VALUE_OR_QUALITY' if status == 'invalid' else 'OBSERVATION_GAP')
-    if status == 'invalid':
-        a.latest.pop(name, None)
-        return None
-    a.latest[name] = value
-    g_event_time.set(at, asset=a.asset, tag=name)
-    return at
+def sync_quality_gauges(asset: str):
+    for code, run in runtime.asset(asset).runs.items():
+        g_valid.set(int(run.quality.get('status') == 'VALID'), asset=asset, pattern=code)
 
 
 async def on_tag(prod, v: dict):
     a = get(v["asset"])
-    name, val, t_iso = v["name"], v.get("v"), v.get("t")
-    events = pattern_observe(a, name, val, t_iso, v.get('q', 'good'))
-    at = observe(a, name, val, t_iso, v.get('q', 'good'))
-    if at is None:
+    name, val, t_iso = v["name"], v["v"], v["t"]
+    at = parse_iso(t_iso).timestamp()
+    status, events = runtime.observe(a.asset, name, val, at, v['q'], now=time.time())
+    sync_quality_gauges(a.asset)
+    if status != 'valid':
         return
-    if name == "VS1":
-        a.vs1_slope.push(sim_time(t_iso), val)
+    g_event_time.set(at, asset=a.asset, tag=name)
     if name != "TS1":
         return
-    t_sim = sim_time(t_iso)
-    a.last_sim_t = t_sim
-    a.slope.push(t_sim, val)
-    a.vs1_slope.trim(t_sim)
-    slope = a.slope.slope()
-    now = time.time()
-    score_problems = a.observations.problems(('TS1', 'CE', 'VS1'), at, now)
-    a.score = None if score_problems else features.anomaly_score(*(baseline.z(tag, a.latest[tag]) for tag in ('TS1', 'CE', 'VS1')))
+    observations = runtime.asset(a.asset).observations
+    problems = observations.problems(tuple(features.NORMAL), at, time.time())
+    a.score = None if problems else features.anomaly_score({sig: value(a.asset, sig) for sig in features.NORMAL})
     if a.score is not None:
         g_score.set(a.score, asset=a.asset)
     g_ts1.set(val, asset=a.asset)
-    key = topics.asset_key(a.asset)
-    await prod.send(topics.K_FEAT, key=key, value={"asset": a.asset, "t": t_iso, "sensor": "TS1", "mean": val,
-                                                   "rms": None, "slope": round(slope, 5), "score": a.score})
+    ts1_slope, vs1_slope = runtime.slope(a.asset, 'TS1'), runtime.slope(a.asset, 'VS1')
+    await delivery.send(prod, topics.K_FEAT, key=topics.asset_key(a.asset), value={
+        "asset": a.asset, "t": t_iso, "sensor": "TS1", "mean": val, "rms": None,
+        "slope": None if ts1_slope is None else round(ts1_slope, 5), "score": a.score})
     for ev in events:
-        # Preserve existing consumers' evidence field names alongside full definition provenance.
-        ev['evidence'].update(ts1=a.latest.get('TS1'), ce=a.latest.get('CE'), ps1=a.latest.get('PS1'),
-                              fs1=a.latest.get('FS1'), load=a.latest.get('LoadSP'), vs1=a.latest.get('VS1'),
-                              ts1_slope=slope, vs1_slope=a.vs1_slope.slope(), score=a.score)
-        await emit_alert(prod, ev)
+        # Keep the consumers' evidence field names (InputData.variable ts1 · ts1_slope …) next to the definition's own values.
+        ev['evidence'].update(ts1=value(a.asset, 'TS1'), ce=value(a.asset, 'CE'), ps1=value(a.asset, 'PS1'),
+                              fs1=value(a.asset, 'FS1'), load=value(a.asset, 'LoadSP'), vs1=value(a.asset, 'VS1'),
+                              ts1_slope=ts1_slope, vs1_slope=vs1_slope, score=a.score)
+        emit_alert(ev)
 
 
 async def on_wave(prod, v: dict):
-    f = features.wave_features(v.get("v") or [])
-    await prod.send(topics.K_FEAT, key=topics.asset_key(v["asset"]), value={
-        "asset": v["asset"], "t": v.get("t0"), "sensor": v["sensor"], "mean": f["mean"], "rms": f["rms"], "slope": f["slope"], "score": None})
+    get(v["asset"])
+    f = features.wave_features(v["v"])
+    await delivery.send(prod, topics.K_FEAT, key=topics.asset_key(v["asset"]), value={
+        "asset": v["asset"], "t": v["t0"], "sensor": v["sensor"], "mean": f["mean"], "rms": f["rms"], "slope": f["slope"], "score": None})
 
 
-async def on_status(prod, v: dict):
-    a = get(v.get("asset", "HYD-00"))
-    pattern_observe(a, 'PLC_STATE', v.get('state'), v.get('t'))
-    at = observe(a, 'PLC_STATE', v.get('state'), v.get('t'))
-    if at is None:
-        if not (a.observations.samples.get('PLC_STATE') or {}).get('valid'):
-            a.plc_state = 'UNKNOWN'
+def on_status(v: dict):
+    a = get(v["asset"])
+    at = parse_iso(v['t']).timestamp()
+    now = time.time()
+    status, _ = runtime.observe(a.asset, 'PLC_STATE', v['state'], at, now=now)
+    if status == 'ignored':
+        return
+    observations = runtime.asset(a.asset).observations
+    if status != 'valid' or observations.problems(('PLC_STATE',), at, now):
+        a.plc_state = 'UNKNOWN'
         return
     a.plc_state = v['state']
-    if a.observations.problems(('PLC_STATE',), at, time.time()):
-        interrupt_input(a, 'PLC_STATE', 'STALE')
-        return
-    ev = cep.trip_alert(a.trip_state, a.asset, tripped=(a.plc_state == "TRIP"), t_iso=v.get("t"), reason=v.get("trip"))
+    ev = cep.trip_alert(a.trip_state, a.asset, tripped=(a.plc_state == "TRIP"), t_iso=v["t"], reason=v.get("trip"),
+                        names=runtime.names)
     if ev:
-        await emit_alert(prod, ev)
+        emit_alert(ev)
 
 
-async def emit_alert(prod, ev: dict):
-    if store is not None:
-        pending_alerts.append(ev)
-    else:
-        await prod.send(topics.K_ALERTS, key=topics.asset_key(ev["asset"]), value=ev)
+def emit_alert(ev: dict):
+    pending_alerts.append(ev)
     c_alerts.inc(pattern=ev["pattern"], state=ev["state"])
     state["alerts"] += 1
     log.info("ALERT %s %s %s evidence=%s", ev["state"], ev["pattern"], ev["alertId"], ev.get("evidence"))
 
 
-def checkpoint(record=None):
-    if store is not None:
-        store.save(dict(scope=PATTERN_SCOPE, runtime=runtime.snapshot() if runtime else None,
-                        trips={a.asset: asdict(a.trip_state) for a in assets.values()}), record, pending_alerts)
-        pending_alerts.clear()
+def checkpoint(offsets=None):
+    store.save(dict(runtime=runtime.snapshot(), trips={a.asset: asdict(a.trip_state) for a in assets.values()}),
+               offsets, pending_alerts)
+    pending_alerts.clear()
 
 
 def fetch_catalog():
-    from neo4j import GraphDatabase
-    user, password = os.getenv('NEO4J_AUTH', 'neo4j/hydpass123').split('/', 1)
-    with GraphDatabase.driver(os.getenv('NEO4J_URI', 'bolt://neo4j:7687'), auth=(user,password),
-                              connection_timeout=3, connection_acquisition_timeout=5,
-                              max_transaction_retry_time=0) as driver:
-        return read_patterns(driver, scope=PATTERN_SCOPE)
+    with graphdb.connect(connection_timeout=3, connection_acquisition_timeout=5, max_transaction_retry_time=0) as driver:
+        return read_patterns(driver)
 
 
 async def refresh_catalog():
@@ -243,18 +169,17 @@ async def refresh_catalog():
 
 
 async def _refresh_catalog():
-    global runtime
     try:
-        rows = await asyncio.to_thread(fetch_catalog)
+        rows, names = await asyncio.to_thread(fetch_catalog)
         async with mutation_lock:
-            if runtime is None:runtime = PatternRuntime(rows, DAQ_PROFILE, TIME_SCALE, OBSERVATION_GRACE_S)
-            else:runtime.replace(rows)
+            runtime.replace(rows, names)
             catalog_status.update(ready=True, error=None, checked_at=time.time(), applied_at=time.time())
-            checkpoint()
+            if store is not None:
+                checkpoint()
         return True
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 — shown in /healthz (patterns.error, 503) and the log; held alerts stay pinned
         async with mutation_lock:
-            if runtime is not None:runtime.source_failed()
+            runtime.source_failed()
             catalog_status.update(ready=False, error=f'{type(exc).__name__}: {exc}', checked_at=time.time())
         log.warning('pattern source unavailable/rejected: %s', catalog_status['error'])
         return False
@@ -277,28 +202,73 @@ async def _stop_refresh(task):
     await asyncio.gather(task, return_exceptions=True)
 
 
+def restore(saved: dict) -> None:
+    """Runtime (raised alerts with their definitions) and trip states from the last checkpoint. A checkpoint written under
+    another TIME_SCALE / DAQ profile / grace is refused: its holds were measured on another clock (RUNBOOK: a separate
+    DETECTOR_STATE_PATH per time scale)."""
+    global runtime
+    if saved.get('runtime'):
+        restored = PatternRuntime.restore(saved['runtime'])
+        if (restored.profile, restored.time_scale, restored.grace_s) != (DAQ_PROFILE, TIME_SCALE, OBSERVATION_GRACE_S):
+            raise RuntimeError('persisted detector clock/reporting contract differs from environment; explicit state migration required')
+        runtime = restored
+    for asset, trip in saved.get('trips', {}).items():
+        get(asset).trip_state = cep.TripState(**trip)
+
+
+def _reject(rec, reason: str, asset=None, name=None):
+    state["rejected"] += 1
+    state["last_rejected"] = f"{rec.topic}/{rec.partition}/{rec.offset}: {reason}"[:200]
+    log.warning("rejected record %s", state["last_rejected"])
+    if asset in topics.ASSETS and (name in TAGS or name == 'PLC_STATE'):
+        runtime.invalidate(asset, name, 'INVALID_RECORD')
+
+
+async def process(prod, rec) -> None:
+    """One Kafka record: check it, then let the runtime see it."""
+    v = rec.value
+    raw = v if isinstance(v, dict) else {}
+    try:
+        if rec.topic == topics.K_TAG:
+            v = schemas.tag_record(raw.get('asset'), raw.get('name'), v)
+            state['tags'] += 1
+            await on_tag(prod, v)
+        elif rec.topic == topics.K_WAVE:
+            v = schemas.wave_record(raw.get('asset'), raw.get('sensor'), v)
+            state['waves'] += 1
+            await on_wave(prod, v)
+        elif rec.topic == topics.K_STATUS:
+            v = schemas.status_record(raw.get('asset'), v)
+            state['statuses'] += 1
+            on_status(v)
+    except schemas.RecordError as exc:
+        _reject(rec, str(exc), raw.get('asset'), 'PLC_STATE' if rec.topic == topics.K_STATUS else raw.get('name'))
+    except Exception as exc:  # noqa: BLE001 — module docstring: counted, logged with traceback, /healthz 503 for a minute
+        state["record_errors"] += 1
+        state["last_record_error"] = f"{rec.topic}/{rec.partition}/{rec.offset}: {type(exc).__name__}: {exc}"[:300]
+        state["last_record_error_at"] = time.time()
+        log.exception("record %s/%s/%s failed", rec.topic, rec.partition, rec.offset)
+        asset = raw.get('asset')
+        name = 'PLC_STATE' if rec.topic == topics.K_STATUS else raw.get('name')
+        if asset in topics.ASSETS and (name in TAGS or name == 'PLC_STATE'):
+            runtime.invalidate(asset, name, 'RECORD_FAILED')
+
+
 async def run():
-    global store, runtime
+    global store
     try:
         async with AsyncExitStack() as resources:
-            store = Store(os.getenv('DETECTOR_STATE_PATH', '/data/detector.sqlite3'))
+            store = Store(STATE_PATH)
             resources.callback(store.close)
             saved = store.load()
             if saved:
-                if saved.get('scope') != PATTERN_SCOPE:raise RuntimeError('persisted detector source scope differs from environment')
-                if saved.get('runtime'):
-                    runtime = PatternRuntime.restore(saved['runtime'])
-                    if (runtime.profile, runtime.time_scale, runtime.grace_s) != (DAQ_PROFILE,TIME_SCALE,OBSERVATION_GRACE_S):
-                        raise RuntimeError('persisted detector clock/reporting contract differs from environment; explicit state migration required')
-                for asset, trip in saved.get('trips', {}).items():get(asset).trip_state = cep.TripState(**trip)
-                if runtime:
-                    for asset in runtime.assets:sync_pattern_view(get(asset))
+                restore(saved)
             await refresh_catalog()
             refresh = asyncio.create_task(poll_catalog())
             resources.push_async_callback(_stop_refresh, refresh)
             prod = await make_producer()
             resources.push_async_callback(prod.stop)
-            cons = await make_consumer([topics.K_TAG, topics.K_WAVE, topics.K_STATUS], group=TOPIC_PREFIX or 'detector',
+            cons = await make_consumer([topics.K_TAG, topics.K_WAVE, topics.K_STATUS], group='detector',
                                        from_latest=True, auto_commit=False)
             resources.push_async_callback(cons.stop)
             while not cons.assignment():
@@ -307,31 +277,47 @@ async def run():
                 await cons.position(partition)
             state['kafka'] = True
             await drain_alerts(prod)
-            from aiokafka.structs import TopicPartition
+            done, last_checkpoint = {}, time.monotonic()
             async for rec in cons:
-                key = (rec.topic, rec.partition, rec.offset)
-                if not store.seen(*key):
+                position, max_ts = store.position(rec.topic, rec.partition)
+                verdict = replay_verdict(rec.offset, rec.timestamp, position, max_ts)
+                if verdict == 'recreated':
+                    store.forget(rec.topic, rec.partition)
+                    state['offset_resets'] += 1
+                    log.error('%s/%s: offset %s is below the checkpoint (%s) but newer than every processed record — the topic '
+                              'was recreated; its checkpoint is dropped and records are processed again', rec.topic,
+                              rec.partition, rec.offset, position)
+                    verdict = 'new'
+                if verdict == 'new':
                     async with mutation_lock:
-                        if isinstance(rec.value, dict) and '_raw' not in rec.value:
-                            if rec.topic == topics.K_TAG and all(k in rec.value for k in ('asset','name')):
-                                state['tags'] += 1
-                                await on_tag(prod, rec.value)
-                            elif rec.topic == topics.K_WAVE and all(k in rec.value for k in ('asset','sensor')):
-                                state['waves'] += 1
-                                await on_wave(prod, rec.value)
-                            elif rec.topic == topics.K_STATUS:
-                                await on_status(prod, rec.value)
-                        checkpoint(key)
-                await drain_alerts(prod)
-                await cons.commit({TopicPartition(rec.topic, rec.partition): rec.offset+1})
+                        await process(prod, rec)
+                        key = (rec.topic, rec.partition)
+                        done[key] = (rec.offset, max(rec.timestamp, done.get(key, (0, 0))[1]))
+                        emitted = bool(pending_alerts)
+                        if emitted:
+                            checkpoint(done)       # the transition and its outbox entry are durable before they are sent
+                    if emitted:
+                        await drain_alerts(prod)
+                if time.monotonic() - last_checkpoint >= CHECKPOINT_S:
+                    if done:
+                        async with mutation_lock:
+                            checkpoint(done)
+                        await cons.commit({TopicPartition(t, p): o + 1 for (t, p), (o, _) in done.items()})
+                        done = {}
+                    last_checkpoint = time.monotonic()
     finally:
         state['kafka'] = False
         store = None
 
 
-app = make_app("detector (L4: 1 s features + anomaly score + CEP)", reg,
-               lambda: {**{k: v for k, v in state.items() if k != "t0"}, 'patterns': catalog_status,
-                        "ok": state["kafka"] and catalog_status['ready'] and not state.get("consumer_dead", False)})
+def health() -> dict:
+    recent_error = state["last_record_error_at"] is not None and time.time() - state["last_record_error_at"] < ERROR_WINDOW_S
+    return {**{k: v for k, v in state.items() if k != "last_record_error_at"}, **delivery.health(), 'patterns': catalog_status,
+            "ok": state["kafka"] and catalog_status['ready'] and delivery.healthy() and not recent_error
+                  and not state.get("consumer_dead", False)}
+
+
+app = make_app("detector (L4: 1 s features + anomaly score + CEP)", reg, health)
 
 
 def _watch(task):
@@ -352,13 +338,13 @@ async def get_pattern_catalog():
 
 
 def pattern_catalog():
-    return dict(source=catalog_status, applied=runtime.describe() if runtime else None,
-                pending_alerts=len(store.pending()) if store else None)
+    return dict(source=catalog_status, applied=runtime.describe(), pending_alerts=len(store.pending()) if store else None)
 
 
 @app.post('/api/detector/patterns/reload')
 async def reload_patterns():
-    if not await refresh_catalog():raise HTTPException(503, detail=catalog_status)
+    if not await refresh_catalog():
+        raise HTTPException(503, detail=catalog_status)
     return pattern_catalog()
 
 
@@ -368,13 +354,18 @@ async def get_detector_state():
 
 
 def detector_state():
+    now = time.time()
+    described = runtime.describe()['assets']
+    view = {}
+    for asset in topics.ASSETS:
+        a = assets.get(asset) or AssetState(asset)
+        observations = runtime.asset(asset).observations
+        ts1_slope, vs1_slope = runtime.slope(asset, 'TS1'), runtime.slope(asset, 'VS1')
+        view[asset] = {"patterns": described.get(asset, {}), "ts1": value(asset, "TS1"), "ce": value(asset, "CE"),
+                       "ps1": value(asset, "PS1"), "fs1": value(asset, "FS1"), "vs1": value(asset, "VS1"),
+                       "slope": None if ts1_slope is None else round(ts1_slope, 5),
+                       "vs1_slope": None if vs1_slope is None else round(vs1_slope, 5), "score": a.score,
+                       "plc_state": a.plc_state, "tripped": a.trip_state.tripped, 'observations': observations.view(now)}
     return {"time_scale": TIME_SCALE, 'daq_profile': DAQ_PROFILE, 'observation_grace_wall_s': OBSERVATION_GRACE_S,
-            **{k: v for k, v in state.items() if k != "t0"},
-            "assets": {a.asset: {"phase": a.cep_state.phase, "alert_id": a.cep_state.alert_id, "since": a.cep_state.since,
-                                 "patterns": (runtime.describe()['assets'].get(a.asset, {}) if runtime else {}),
-                                 "sim_t": round(a.last_sim_t, 1), "ts1": a.latest.get("TS1"), "ce": a.latest.get("CE"),
-                                 "ps1": a.latest.get("PS1"), "fs1": a.latest.get("FS1"), "vs1": a.latest.get("VS1"),
-                                 "slope": round(a.slope.slope(), 5), "vs1_slope": round(a.vs1_slope.slope(), 5), "score": a.score,
-                                 "plc_state": a.plc_state, "tripped": a.trip_state.tripped,
-                                 'data_quality_at_last_tick': a.data_quality,
-                                 'observations': a.observations.view(time.time())} for a in assets.values()}}
+            "slope_unit": "per simulated second", **{k: v for k, v in state.items() if k != "last_record_error_at"},
+            "assets": view}

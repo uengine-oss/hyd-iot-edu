@@ -20,13 +20,21 @@ class FlowBusy(ValueError):
     """되돌리기를 막는 진행 중 처리 건."""
     def __init__(self, running: list[dict]):
         self.running = running
-        names = ", ".join(f"{r['proc_inst_id']}({r['proc_def_id']} 판본 {r['proc_def_version']})" for r in running[:5])
-        super().__init__(f"진행 중인 처리 건 {len(running)}건이 내가 가져온 흐름을 씁니다: {names} — 끝내거나 닫은 뒤 되돌리세요")
+        names = ", ".join(f"「{r.get('proc_inst_name') or r['proc_def_id']}」(판본 {r['proc_def_version']}"
+                          f"{', ' + str(r['start_date'])[:16].replace('T', ' ') + ' 시작' if r.get('start_date') else ''})" for r in running[:5])
+        super().__init__(f"진행 중인 처리 건 {len(running)}건이 내가 가져온 흐름을 씁니다: {names} — [처리 건]에서 끝내거나 닫은 뒤 되돌리세요")
 
 
 def next_version(existing: list[str]) -> str:
     nums = [int(v) for v in existing if re.fullmatch(r"\d+", str(v or ""))]
     return str(max(nums) + 1) if nums else "1"
+
+
+#: 그 흐름 id 에 한 번이라도 쓰인 판본 번호 — 지금 판본 · 판본으로 연 처리 건(되돌리기가 숨긴 것 포함) · 배포 기록(되돌리기가 지우지 않는다).
+#: 되돌리기 뒤 같은 번호를 다른 원문에 다시 쓰지 않는다(P5-24 — 숨긴 처리 건 · 받아 둔 그림 파일이 같은 번호의 다른 흐름을 가리키게 된다).
+USED_VERSIONS_SQL = """select version from proc_def_version where tenant_id=%(t)s and proc_def_id=%(d)s
+                       union select proc_def_version from bpm_proc_inst where tenant_id=%(t)s and proc_def_id=%(d)s
+                       union select version from proc_def_deployment where tenant_id=%(t)s and proc_def_id=%(d)s and version is not null"""
 
 
 class FlowStore:
@@ -74,6 +82,11 @@ class FlowStore:
                                 order by proc_def_id, "timeStamp", version""", (self.tenant_id, def_id, def_id)).fetchall()
             return [self.repo._row(r) for r in rows]
 
+    def next_version(self, def_id: str) -> str:
+        """다음에 등록할 판본 번호(미리 보기) — 등록(register)이 자문 잠금 안에서 같은 규칙으로 다시 정한다."""
+        with self.repo._conn() as c:
+            return next_version([r["version"] for r in c.execute(USED_VERSIONS_SQL, {"t": self.tenant_id, "d": def_id}).fetchall()])
+
     def drafts(self) -> list[dict]:
         with self.repo._conn() as c:
             return [self.repo._row(r) for r in c.execute("select proc_def_id, file_name, mapping, updated_at from proc_bpmn_draft "
@@ -85,9 +98,8 @@ class FlowStore:
         message = f"bpmn.io 가져오기: {file_name or '그림'}"
         with self.repo._conn() as c, c.transaction():
             c.execute("select pg_advisory_xact_lock(hashtextextended(%s, 0))", (f"b3-flow:{self.tenant_id}:{def_id}",))
-            existing = [r["version"] for r in c.execute("select version from proc_def_version where tenant_id=%s and proc_def_id=%s",
-                                                       (self.tenant_id, def_id)).fetchall()]
-            raw = dict(raw, version=next_version(existing))
+            used = [r["version"] for r in c.execute(USED_VERSIONS_SQL, {"t": self.tenant_id, "d": def_id}).fetchall()]
+            raw = dict(raw, version=next_version(used))
             inserted = c.execute("""insert into proc_def_version
                     (arcv_id, proc_def_id, version, version_tag, tenant_id, definition, snapshot, message, origin)
                     values (%s,%s,%s,'hyd-immutable',%s,%s,%s,%s,'user')
@@ -113,10 +125,16 @@ class FlowStore:
             return row["snapshot"] if row else None
 
     # ------------------------------------------------------------ 기준으로 되돌리기
+    @staticmethod
+    def _blocking_row(r) -> dict:
+        """거절 응답(409 본문 blocking — HTTPException 은 표준 JSON 으로 쓴다)에 싣는 진행 중 처리 건 한 줄 — 시작 시각은 ISO 문자열.
+        running() 과 reset() 의 FlowBusy 가 같은 꼴을 쓴다(한쪽만 고치면 다른 쪽이 datetime 으로 500 — 마지막고침 검증 A5)."""
+        return dict(r, start_date=r["start_date"].isoformat() if r["start_date"] else None)
+
     def running(self) -> list[dict]:
         """B6: 되돌리기 전 확인 — 학생 판본을 쓰는 진행 중(NEW · RUNNING) 처리 건. 아무것도 바꾸지 않는다(reset 의 거절 조건과 같다)."""
         with self.repo._conn() as c:
-            return [dict(r) for r in c.execute("""select proc_inst_id, proc_def_id, proc_def_version from bpm_proc_inst i
+            return [self._blocking_row(r) for r in c.execute("""select proc_inst_id, proc_inst_name, proc_def_id, proc_def_version, start_date from bpm_proc_inst i
                     where tenant_id=%s and not is_deleted and status in ('NEW','RUNNING') and exists (select 1 from proc_def_version v
                     where v.tenant_id=i.tenant_id and v.proc_def_id=i.proc_def_id and v.version=i.proc_def_version and v.origin='user')
                     order by start_date""", (self.tenant_id,)).fetchall()]
@@ -132,11 +150,11 @@ class FlowStore:
             pinned = """exists (select 1 from proc_def_version v where v.tenant_id=i.tenant_id and v.proc_def_id=i.proc_def_id
                         and v.version=i.proc_def_version and v.origin='user' and (%s::text is null or v.proc_def_id=%s)
                         and not (v.proc_def_id = any(%s::text[])))"""
-            running = c.execute(f"""select proc_inst_id, proc_def_id, proc_def_version from bpm_proc_inst i
+            running = c.execute(f"""select proc_inst_id, proc_inst_name, proc_def_id, proc_def_version, start_date from bpm_proc_inst i
                                     where tenant_id=%s and not is_deleted and status in ('NEW','RUNNING') and {pinned}
                                     order by start_date""", (self.tenant_id, def_id, def_id, keep)).fetchall()
             if running:
-                raise FlowBusy([dict(r) for r in running])
+                raise FlowBusy([self._blocking_row(r) for r in running])
             hidden = c.execute(f"update bpm_proc_inst i set is_deleted=true where tenant_id=%s and not is_deleted and {pinned} returning proc_inst_id",
                                (self.tenant_id, def_id, def_id, keep)).fetchall()
             versions = c.execute("delete from proc_def_version where tenant_id=%s and origin='user' and (%s::text is null or proc_def_id=%s) and not (proc_def_id = any(%s::text[]))", (self.tenant_id, def_id, def_id, keep)).rowcount

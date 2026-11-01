@@ -1,9 +1,10 @@
 """Durable source receipts used by the instance-mode Kafka/HTTP delivery path.
 
 Kafka coordinates identify a delivery; business identity identifies the event.
-경보(RAISE · CLEAR) · 명령 응답(ACK) · 잘못 들어온 수신(INVALID)은 원문과 함께 접수 기록으로 남는다. 설비 상태(STATUS)는 설비별
-최신 상태 한 줄만 갱신한다(A-01). Duplicate and conflicting deliveries never replace the first event's payload or its pinned
-execution policy.
+경보(RAISE · CLEAR) · 명령 응답(ACK) · 명령 관문의 거절(REJECT — audit 의 cmd-gateway CMD_REJECTED, 명령마다 한 번) · 잘못 들어온
+수신(INVALID)은 원문과 함께 접수 기록으로 남는다. 그 밖의 감사 기록(AUDIT — process 자신의 감사 등)은 행 없이 받은 것으로 지나간다. 설비 상태(STATUS)는 설비별
+최신 상태 한 줄만 갱신한다(A-01). 상태 수신마다 다시 실려 오는 같은 명령 응답(PLC 가 마지막 응답을 붙여 보낸다)도 행을 만들지 않고
+최신 상태만 고친다. Duplicate and conflicting deliveries never replace the first event's payload or its pinned execution policy.
 """
 from copy import deepcopy
 import base64
@@ -23,7 +24,7 @@ def digest(value):
 
 
 def source_record(topic, partition, offset, payload, *, source='kafka', wire=_DECODED):
-    if topic not in (topics.K_ALERTS, topics.K_STATUS):
+    if topic not in (topics.K_ALERTS, topics.K_STATUS, topics.K_AUDIT):
         raise ValueError('unsupported source topic')
     if source not in ('kafka','http'):
         raise ValueError('unsupported source transport')
@@ -38,7 +39,18 @@ def source_record(topic, partition, offset, payload, *, source='kafka', wire=_DE
     asset = asset if isinstance(asset, str) and asset.strip() else None
     origin = [source,topic,partition,offset] if source=='kafka' else [source,topic,digest(value)]
     kind, identity, semantic, error = 'STATUS', ['delivery', *origin], value, None
-    if topic == topics.K_ALERTS:
+    stored = value
+    if topic == topics.K_AUDIT:
+        kind = 'AUDIT'
+        if value.get('event') == 'CMD_REJECTED' and value.get('actor') == 'cmd-gateway':
+            detail = value.get('detail') if isinstance(value.get('detail'), dict) else {}
+            cmd_id = detail.get('cmdId')
+            stored = {'asset': asset, 'cmdId': cmd_id, 'check': detail.get('check'), 'reason_text': detail.get('reason_text')}
+            if asset and isinstance(cmd_id, str) and cmd_id:
+                kind, identity, semantic = 'REJECT', ['command-reject', cmd_id], stored
+            else:
+                kind, error = 'INVALID', 'gateway rejection requires asset and detail.cmdId'
+    elif topic == topics.K_ALERTS:
         aid, state = value.get('alertId'), value.get('state')
         if asset and isinstance(aid, str) and aid.strip() and state in ('RAISE', 'CLEAR'):
             kind, identity = state, ['alert', aid, state]
@@ -60,7 +72,7 @@ def source_record(topic, partition, offset, payload, *, source='kafka', wire=_DE
     else:raise ValueError('wire input must be bytes or a Kafka tombstone')
     return dict(source=source,delivery_key=digest(origin),topic=topic, partition_no=partition, offset_no=offset, asset=asset, kind=kind,
                 event_key=json.dumps(identity, ensure_ascii=False, separators=(',', ':')),
-                payload=value, payload_sha=digest(value), semantic_sha=digest(semantic), error=error,
+                payload=stored, payload_sha=digest(stored), semantic_sha=digest(semantic), error=error,
                 wire_kind=wire_kind,wire_base64=base64.b64encode(wire_bytes).decode('ascii'),
                 wire_sha=hashlib.sha256(wire_bytes).hexdigest())
 
@@ -126,6 +138,9 @@ class does not execute a process, issue a command or declare business completion
         pinned = deepcopy(policy)
         digest(pinned)  # JSON validity, including no non-finite policy numbers.
         observed_at = source_time(record['payload']) if record['topic'] == topics.K_STATUS else None
+        if record['kind'] == 'AUDIT':
+            # G3b-9: audit 토픽에서 원천 사건은 관문 거절(REJECT)뿐이다 — 다른 감사 기록(process 자신의 감사 등, 양이 많다)은 행을 만들지 않는다
+            return {'id': None, 'topic': record['topic'], 'kind': 'AUDIT', 'asset': record['asset'], 'status': 'NOT_A_SOURCE_EVENT'}
         if record['kind'] == 'STATUS' and observed_at is not None:
             # A-01: 설비 상태 수신의 목적은 「최신 상태」다 — 최신 상태 표만 갱신하고 접수 기록은 남기지 않는다(20배속에서 초당 약 3.6건이
             # 영구 접수 행 + 원문으로 쌓여 학생 PC의 DB 가 끝없이 커졌다). 같은 수신이 다시 와도 시각 비교라 결과가 같다.
@@ -148,6 +163,17 @@ class does not execute a process, issue a command or declare business completion
             first = c.execute('''select * from process_source_inbox
                 where tenant_id=%s and event_key=%s and parent_id is null for update''',
                 (self.tenant_id, record['event_key'])).fetchone()
+            if first and record['kind'] == 'ACK':
+                # PLC 는 마지막 명령 응답을 그 뒤 모든 상태 수신(초마다)에 다시 싣는다 — 같은 응답(같은 명령 · 같은 결과)을 이미 받았으면
+                # 접수 행을 새로 만들지 않고 최신 상태만 고친다(STATUS 와 같은 규칙). 같은 명령의 다른 결과(CONFLICT)는 내용마다 한 번만 남긴다.
+                seen = first if first['semantic_sha'] == record['semantic_sha'] else c.execute(
+                    '''select id from process_source_inbox where tenant_id=%s and event_key=%s and semantic_sha=%s limit 1''',
+                    (self.tenant_id, record['event_key'], record['semantic_sha'])).fetchone()
+                if seen:
+                    if observed_at is not None:
+                        self._keep_latest_state(c, record, observed_at, first['id'])
+                    return {'id': None, 'topic': record['topic'], 'kind': 'ACK', 'asset': record['asset'], 'status': 'STATE_ONLY',
+                            'receipt_id': seen['id'], 'source_time': observed_at.isoformat() if observed_at else None}
             status, parent, error = ('INVALID' if record['kind'] == 'INVALID' else 'PENDING'), None, record['error']
             if record['kind']=='STATUS':          # 시각 없는 상태만 여기 온다 — 무엇이 잘못 들어왔는지 접수 기록으로 남긴다
                 status,error='INVALID','status requires an explicit source timestamp with timezone'

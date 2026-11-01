@@ -1,7 +1,16 @@
 """Read-only machine checks. Neither human review nor permission to commit."""
 from copy import deepcopy
 
-from . import kgadmin, manual_knowledge, manual_review, manual_references
+from hydcommon.maintenance_policy import PM_PATTERN
+
+from . import kgadmin, manual_knowledge, manual_references
+
+
+# 검사 문장의 칸 이름(학생 화면 말) — 검토 화면의 칸 이름과 같다
+FIELD_LABELS = {'link.failureMode': '고장 유형', 'link.approver': '승인 역할', 'link.parts': '구매 부품', 'link.addresses': '대상 원인',
+                'link.affects': '영향 대상', 'component': '구성 요소', 'symptoms': '증상', 'leads_to': '이어지는 고장 유형',
+                'failure_mode': '고장 유형', 'parts': '부품', 'disturbs': '흔드는 상태 변수', 'cause': '원인', 'outputs': '규칙 결과',
+                'applies_to': '규칙 적용 대상', 'penalizes': '감점 지표'}
 
 
 def validate(proposal, catalog):
@@ -36,7 +45,7 @@ def validate(proposal, catalog):
             link = manual_knowledge.blanks_as_absent(link)
         try:
             normalized = manual_knowledge.validate_link(sop, link, sops=sops, require_failure_mode=False)
-            normalized['affects'] = manual_review.validate_affects(sop, link.get('affects'))
+            normalized['affects'] = kgadmin.validate_affects(link.get('affects'), sop)
         except ValueError as exc:
             issue('LINK_INVALID', sop, 'link', str(exc))
             continue
@@ -82,7 +91,7 @@ def validate(proposal, catalog):
 
     def ref(owner, field, value, group):
         if value is not None and value not in available[group]:
-            issue('REFERENCE_NOT_FOUND', owner, field, f'{owner}: {field}의 {value} 참조가 현재 지식에 없습니다')
+            issue('REFERENCE_NOT_FOUND', owner, field, f'{owner}: {FIELD_LABELS.get(field, field)} 칸에 적은 {value}이(가) 지금 지식에 없습니다')
 
     for p in plan['procedures']:
         sop = p['id']
@@ -153,11 +162,11 @@ def validate(proposal, catalog):
             continue
         issue('CANDIDATE_RULE_MISSING', p['id'], 'knowledge.rules',
               f"{p['id']}: 이 절차를 조치 후보로 내는 규칙이 없어 판단이 이 절차를 후보로 내지 못합니다. 원문이 후보 조건을 말하면 "
-              f"dt:action-candidates SELECT 규칙(outputs에 {p['id']})을 더하세요")
+              f"조치 후보 규칙(결과에 {p['id']}을 둔 선택 규칙)을 더하세요")
     execution = []
     pm_outputs = {ref for r in k.get('rules') or []
                   if r.get('effect') == 'SELECT' and r.get('table') == 'dt:action-candidates'
-                  and any(t.get('variable') == 'pattern' and t.get('value') == 'PM_DUE' for t in r.get('tests') or [])
+                  and any(t.get('variable') == 'pattern' and t.get('value') == PM_PATTERN for t in r.get('tests') or [])
                   for ref in r.get('outputs') or []}
     for p in procedures:
         raw_link = overrides[p['id']] if p['id'] in overrides else p.get('link')
@@ -165,9 +174,9 @@ def validate(proposal, catalog):
             own_issues = [i for i in issues if i.get('sop') == p['id']]
             if not isinstance(raw_link, dict) or not raw_link.get('maintenance_policy'):
                 own_issues.append(dict(code='PM_SCOPE_POLICY_REQUIRED',sop=p['id'],field='link.maintenance_policy',
-                    message='실제 PM 실행에는 원문 정비 묶음·모델 범위·주기·필수 부품 정책이 필요합니다'))
+                    message='실제 정기 정비 실행에는 원문의 정비 묶음 · 적용 설비 · 주기 · 필수 부품 정책이 필요합니다'))
             own_issues.append(dict(code='PM_ACTUAL_CONTEXT_REQUIRED',sop=p['id'],field='pm_context',
-                                  message='적재 전 구조 검사에는 실제 카운터·오더·창·재고·인력 검사가 포함되지 않습니다. 실행 시 다시 확인해야 합니다'))
+                                  message='적재 전 구조 검사는 실제 운전 시간 · 작업지시 · 정비 시간대 · 재고 · 인력을 보지 않습니다. 실행할 때 다시 확인합니다'))
             execution.append(dict(sop=p['id'],executable=True,ready=False,issues=own_issues,
                                   execution_checked=False,evaluation_mode='structural'))
         if isinstance(raw_link, dict) and raw_link.get('scope') == 'purchase':

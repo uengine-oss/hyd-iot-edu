@@ -7,8 +7,8 @@
    읽기 쉽게: 모델 사용량 · 실행 시작 줄은 숨기고, 도구 호출 시작과 결과는 한 줄(소요 시간), 처리 건 · 단계별로 묶고, 호스트 경로 · 모델 이름은 지운다.
    참고: process-gpt-vue3 components/ui/EventTimeline.vue(도구 시작이 열고 끝이 닫는 한 줄), Dify workflow/run/tracing-panel.tsx(단계별 묶음). */
 (function () {
-  const S = { es: null, rows: [], ids: new Set(), idOrder: [], starts: {}, finished: new Set(), connected: false, filter: 'all', paused: false,
-              reloadTimer: null, lastKey: null, showAll: false, lastTs: null, lastCursor: null, lastAt: 0, backoff: 0, subs: new Set(), off: false };
+  const S = { es: null, rows: [], ids: new Set(), idOrder: [], starts: new Map(), finished: new Map(), connected: false, filter: 'all', paused: false,
+              reloadTimer: null, lastKey: null, showAll: false, lastTs: null, lastCursor: null, lastAt: 0, backoff: 0, subs: new Set() };
   const MAX = 200, SHOWN = 40, IDS = 5000;
   const KIND = {
     tool_usage_started: ['tool', 'stream.tool'], tool_usage_finished: ['tool', 'stream.tool'],
@@ -17,7 +17,7 @@
     human_asked: ['human', 'stream.asked'], human_response: ['human', 'stream.answered'], error: ['error', 'stream.error'],
   };
   const RELOAD_ON = new Set(['task_started', 'task_completed', 'task_cancelled', 'task_deferred', 'human_asked', 'human_response', 'error']);
-  const noise = e => e.event_type === 'task_working' && e.data && (e.data.type === 'usage' || e.data.type === 'run_start');
+  const noise = e => e.event_type === 'task_working' && e.data && e.data.type === 'run_start';
 
   function instName(id) {
     const I = window.hydInstances && window.hydInstances.I;
@@ -26,14 +26,16 @@
     if (!id) return '';
     return UI.defName(id);          // A141: 'anomaly_response.…' → 설비 이상 조치 (UI.terms def.*)
   }
-  const activityByTodo = {};          // task_started carries the activity's goal; later events of the same work item reuse it
+  // 하루 수업 동안 탭을 열어 두어도 쌓이지 않게: 도구 시작 · 끝 · 단계 이름 기억은 id 기억(IDS)과 같은 상한, 오래된 것부터 버린다(W2-23)
+  function bounded(map, key, value) { map.delete(key); map.set(key, value); if (map.size > IDS) map.delete(map.keys().next().value); }
+  const activityByTodo = new Map();    // task_started carries the activity's goal; later events of the same work item reuse it
   function activityOf(e) {
     const I = window.hydInstances && window.hydInstances.I;
     const view = I && I.view;
     const w = view && view.workitems.find(x => x.id === e.todo_id);
-    if (e.event_type === 'task_started' && e.data && (e.data.goal || e.data.name) && e.todo_id) activityByTodo[e.todo_id] = e.data.goal || e.data.name;
+    if (e.event_type === 'task_started' && e.data && (e.data.goal || e.data.name) && e.todo_id) bounded(activityByTodo, e.todo_id, e.data.goal || e.data.name);
     if (w) return UI.flowName(w.activity_name);
-    return UI.flowName(activityByTodo[e.todo_id] || '');
+    return UI.flowName(activityByTodo.get(e.todo_id) || '');
   }
   const fmtMs = ms => window.hydTrace ? hydTrace.fmtMs(ms) : `${Math.round(ms)} ms`;
   function brief(v, n = 120) {
@@ -52,7 +54,7 @@
     switch (e.event_type) {
       case 'tool_usage_started': return { title: UI.toolName(d.tool), text: brief(d.input), dur: S.finished.has(d.tool_use_id) ? '' : UI.t('inst.running'), running: !S.finished.has(d.tool_use_id) };
       case 'tool_usage_finished': {
-        const started = S.starts[d.tool_use_id], o = UI.outcome(d.output, d.is_error);
+        const started = S.starts.get(d.tool_use_id), o = UI.outcome(d.output, d.is_error);
         return { title: UI.toolName(d.tool), text: o.text || brief(d.output), dur: started ? fmtMs(new Date(e.timestamp) - started) : '', tone: o.tone };
       }
       case 'task_working': return { title: ['text','public_text'].includes(d.type) ? '에이전트 판단' : d.type === 'file_artifact' ? UI.t('trace.file') : UI.clean(UI.logText(d.name || '')) || UI.t('stream.working'),
@@ -82,8 +84,8 @@
     if (e.timestamp && (!S.lastTs || e.timestamp > S.lastTs)) S.lastTs = e.timestamp;
     if (e.stream_cursor && (!S.lastCursor || e.stream_cursor > S.lastCursor)) S.lastCursor = e.stream_cursor;
     S.lastAt = Date.now();
-    if (e.event_type === 'tool_usage_started' && e.data && e.data.tool_use_id) S.starts[e.data.tool_use_id] = new Date(e.timestamp);
-    if (e.event_type === 'tool_usage_finished' && e.data && e.data.tool_use_id) S.finished.add(e.data.tool_use_id);
+    if (e.event_type === 'tool_usage_started' && e.data && e.data.tool_use_id) bounded(S.starts, e.data.tool_use_id, new Date(e.timestamp));
+    if (e.event_type === 'tool_usage_finished' && e.data && e.data.tool_use_id) bounded(S.finished, e.data.tool_use_id, true);
     activityOf(e);
     if (!noise(e)) { S.rows.unshift({ e, fresh }); if (S.rows.length > MAX) S.rows.pop(); }
     // every subscriber gets every event (history too: a trace mounted after the event still wants it)
@@ -110,20 +112,18 @@
     const { title } = describe(e);
     const isTool=e.event_type==='tool_usage_started'||e.event_type==='tool_usage_finished';
     const raw=(e.data||{}).tool||'';
-    const name=isTool ? (window.hydToolNames?.resolve(raw) || {name:UI.terms['tool.'+raw]||'',raw,reason:'도구 표시 이름 목록을 읽지 못했습니다.'}) : null;
+    const name=isTool ? UI.toolName(raw) : '';   // 도구 이름은 포털 사전 하나(hydWords) — 사전에 없으면 서버 등록 이름 · 그 상태
     const label=isTool ? (e.event_type==='tool_usage_started'?'도구 실행 중':(e.data?.is_error||e.data?.attempt_failed)?'도구 호출 실패':'도구 호출 끝남') : kind ? UI.t(kind[1]) : UI.eventName(e.event_type);
-    const body=isTool ? `<p>${esc(name.reason || '등록된 표시 이름입니다.')}</p><p>도구 식별 원문</p><code>${esc(raw)}</code>` : `<p>${esc(title)}</p>`;
-    t.innerHTML = `<summary><i class="live-dot ${kind ? kind[0] : ''}"></i><span>${esc(label)}</span><b>${esc(isTool ? name.name : title)}</b></summary><div class="ticker-detail">${body}</div>`;
-    if(isTool&&!name.name&&window.hydToolNames){
+    const body=isTool ? `<p>${esc(window.hydWords.toolSystem(raw) || '')}</p>${UI.toolIdentityFold(raw)}` : `<p>${esc(title)}</p>`;   // 원래 이름은 사전에 없는 도구일 때만 접어서
+    t.innerHTML = `<summary><i class="live-dot ${kind ? kind[0] : ''}"></i><span>${esc(label)}</span><b>${esc(isTool ? name : title)}</b></summary><div class="ticker-detail">${body}</div>`;
+    if(isTool&&!window.hydWords.knownTool(raw)&&window.hydToolNames){
       window.hydToolNames.load().then(()=>{if(S.lastKey===e.id && S.connected) tickerNameRefresh(e);});
     }
     t.classList.remove('flash'); void t.offsetWidth; t.classList.add('flash');
   }
   function tickerNameRefresh(e) {
     const t=document.getElementById('streamTicker');if(!t)return;
-    const n=window.hydToolNames.resolve((e.data||{}).tool);
-    const title=t.querySelector('summary b');if(title)title.textContent=n.name;
-    const reason=t.querySelector('.ticker-detail p');if(reason)reason.textContent=n.reason||'등록된 표시 이름입니다.';
+    const title=t.querySelector('summary b');if(title)title.textContent=UI.toolName((e.data||{}).tool);
   }
   function connState(text, ok) {
     const c = document.getElementById('streamConn'); if (c) { c.textContent = text; c.className = 'stream-conn ' + (ok ? 'on' : 'off'); }
@@ -135,7 +135,7 @@
   /* ---------------------------------------------------------------- 전체 활동 목록 (처리 건 · 단계별 묶음) */
   function render() {
     const box = document.getElementById('streamList'); if (!box || S.paused) return;
-    const merged = r => r.e.event_type === 'tool_usage_started' && r.e.data && S.finished.has(r.e.data.tool_use_id);   // R9: started+finished = one row
+    const merged = r => r.e.event_type === 'tool_usage_started' && r.e.data && S.finished.has(r.e.data.tool_use_id);   // started+finished = one row
     const publicRows = window.hydTrace ? hydTrace.publicNotes(S.rows.map(r=>r.e)).map(e=>({e,fresh:S.rows.some(r=>r.e.id===e.id && r.fresh)})) : S.rows;
     const rows = publicRows.filter(r => !merged(r)).filter(r => S.filter === 'all' ? true
       : S.filter === 'work' ? (KIND[r.e.event_type] || [''])[0] === 'work'
@@ -189,7 +189,7 @@
     es.addEventListener('history', ev => { try { push(JSON.parse(ev.data), false); } catch (e) { /* ignore a bad frame */ } renderSoon(); });
     es.onmessage = ev => { let e; try { e = JSON.parse(ev.data); } catch (_) { return; } if (push(e, true)) renderSoon(); };
     // A147: a dropped connection (readyState CONNECTING) is retried by the browser itself (Last-Event-ID resumes it).
-    // A non-200 answer closes the EventSource for good: legacy mode answers 409 → "실시간 꺼짐", anything else → our own backoff.
+    // A non-200 answer (서버가 아직 준비 안 됨 503 · 프록시 502 …) closes the EventSource for good → our own backoff.
     es.onerror = () => {
       S.connected = false;
       if (es.readyState !== EventSource.CLOSED) { connState(UI.t('header.disconnected'), false); return; }
@@ -197,10 +197,7 @@
       afterClose();
     };
   }
-  async function afterClose() {
-    let legacy = false;
-    try { legacy = !(await getJ(API.process + '/api/process/mode')).definition; } catch (_) { /* process unreachable: retry below */ }
-    if (legacy) { S.off = true; connState(UI.t('header.streamOff'), false); return; }
+  function afterClose() {
     connState(UI.t('header.disconnected'), false);
     S.backoff = Math.min(30000, (S.backoff || 1000) * 2);
     clearTimeout(S.retryTimer); S.retryTimer = setTimeout(connect, S.backoff);
@@ -211,9 +208,9 @@
     if (!Array.isArray(events) || !events.length) return;
     const newest = events.reduce((m, e) => (e.timestamp && e.timestamp > m ? e.timestamp : m), '');
     const behind = S.lastTs && newest > S.lastTs && (Date.parse(newest) - Date.parse(S.lastTs)) > 10000;
-    if (behind && !S.off && S.connected && Date.now() - (S.openedAt || 0) > 15000) { connect(); }
+    if (behind && S.connected && Date.now() - (S.openedAt || 0) > 15000) { connect(); }
   }
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && !S.off && (!S.es || S.es.readyState === EventSource.CLOSED)) connect(); });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && (!S.es || S.es.readyState === EventSource.CLOSED)) connect(); });
 
   function mount() {
     const box = document.getElementById('streamPanel'); if (!box) return;

@@ -1,11 +1,11 @@
 /* A5 (U7) 포털 셸 — 수강생 동선 메뉴 · 상단바("나" · 알림 배지) · 해시 주소 · 새 화면 자리(mount).
-   맨 마지막에 읽힌다(app.js · enterprise.js · hitl.js · instances.js 가 감싼 selectTab 을 한 번 더 감싼다).
+   맨 마지막에 읽힌다 — 탭 진입 표(app.js hydTabs.onShow)의 마지막 일로 메뉴 묶음 · 새 화면 자리 · 주소를 맞춘다.
    주소(해시)를 읽고 쓰는 곳은 이 파일 하나다 — 처리 건 화면은 hydInstances.openTask · route 로만 잇는다.
    새 화면을 그리는 길도 여기 하나다(MOUNTS → mount 한 번, 다시 열 때 show). 처음 읽기에 실패한 화면은 failed() 가 참이면 다시 연 때 새로 그린다.
    참고: process-gpt-vue3 src/router/MainRoutes.ts(경로 → 화면, /todolist/:taskId · /instancelist/:instId),
          src/layouts/full/vertical-header/VerticalHeader.vue:146·224(알림 배지를 'update-notification-badge' 이벤트로 갱신),
          src/layouts/full/vertical-sidebar/VerticalSidebar.vue:115-117(머리글 묶음 + 항목).
-   계약 문서: 문서/시스템/참조/u7-shell.md
+   화면 규칙: workspace/개발/문서/UIUX_PLAN.md
 
    주소: #/<화면>                         예) #/decision · #/inbox
          #/instances/<처리 건 id>
@@ -85,7 +85,10 @@
     if (!box) return;
     const mod = window[key];
     if (!mod || typeof mod.mount !== 'function') {
-      if (!mounted[name]) box.innerHTML = UI.empty(UI.t('shell.notReady'), UI.t('shell.notReadySub'));
+      // 화면 모듈이 실리지 않았다(스크립트 오류) — 「준비 중」이 아니라 실패로 보인다(W2-20)
+      console.error(`화면 모듈 ${key} 이(가) 없습니다 — index.html 의 스크립트 오류를 개발자 도구 콘솔에서 확인`);
+      if (!mounted[name]) box.innerHTML = UI.errorBlock('이 화면을 불러오지 못했습니다', '화면 프로그램이 실리지 않았습니다 — 새로 고쳐도 같으면 강사에게 알리세요.', { retry: true });
+      box.querySelector('[data-retry]')?.addEventListener('click', () => location.reload());
       return;
     }
     // 처음 읽기에 실패한 화면(사람 목록 · 입력 칸 · 패턴 등)은 다시 열 때 새로 그린다 — 한 번 실패하면 새로 고침 전까지 굳지 않게
@@ -116,22 +119,13 @@
   function renderMe() {
     const box = document.getElementById('shellMe');
     if (!box) return;
-    const H = window.hydInbox;
-    if (H && typeof H.mountMe === 'function') {
-      try { box.innerHTML = ''; H.mountMe(box); return; }
-      catch (e) { box.innerHTML = `${UI.icon('user')}<span>${esc(UI.t('shell.me'))} · ${esc(e.message || '')}</span>`; return; }
-    }
-    box.innerHTML = `${UI.icon('user')}<span class="shell-me-label">${esc(UI.t('shell.me'))} <b>${esc(UI.t('shell.meNone'))}</b></span>`;
-    box.title = '내 작업함 기능이 붙으면 여기서 나를 고릅니다';
+    box.innerHTML = ''; window.hydInbox.mountMe(box);   // inbox.js 가 먼저 실린다(index.html)
   }
   async function refreshBadge() {
     const badge = document.getElementById('shellBadge'), bell = document.getElementById('shellBell');
     if (!badge || !bell) return;
-    const H = window.hydInbox;
-    // hydInbox.unread() = 안 읽은 알림 수(숫자). badge() 는 단추 요소를 새로 만드는 함수라 여기서 부르지 않는다(5초마다 요소가 쌓였다)
-    if (!H || typeof H.unread !== 'function') { badge.hidden = true; bell.setAttribute('aria-label', UI.t('shell.bell')); bell.title = UI.t('shell.bell'); return; }
     try {
-      const n = Math.max(0, Number(await H.unread()) || 0);
+      const n = Math.max(0, Number(window.hydInbox.unread()) || 0);   // 안 읽은 알림 수(숫자)
       badge.hidden = n === 0;
       badge.textContent = n > 99 ? '99+' : String(n);
       const label = n ? UI.t('shell.bellCount', { n }) : UI.t('shell.bell');
@@ -142,16 +136,12 @@
     }
   }
 
-  /* ------------------------------------------------ selectTab 감싸기 */
-  const previousSelect = selectTab;
-  selectTab = function (name) {
-    previousSelect(name);
-    if (state.tab !== name) return;                                   // 없는 화면 — app.js 가 무시했다
+  /* ------------------------------------------------ 탭 진입(셸은 맨 마지막에 실려 표의 마지막 일이다) */
+  hydTabs.onShow(name => {
     setGroup(name);
     show(name);
     if (!applying) writeHash('push');
-  };
-  window.hydApp.selectTab = selectTab;
+  });
 
   function start() {
     const bell = document.getElementById('shellBell');
@@ -183,25 +173,4 @@
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
   else start();
-})();
-
-/* A161-U1 (A160 결함 10 · 18): 화면 모듈이 자기 머리글(제목 + 행동 버튼)을 그리면 바깥 제목을 숨겨 제목이 두 번 나오지 않게 한다.
-   모듈의 첫 제목이 바깥 h1 과 같은 글자일 때만("에이전트" ↔ "AI 에이전트"도 같은 화면으로 본다). */
-(function () {
-  const norm = t => String(t || '').replace(/\s+/g, ' ').replace(/^AI\s*/, '').trim();
-  function check(view) {
-    const head = view.querySelector(':scope > .page-head'), h1 = head && head.querySelector('h1'), mount = view.querySelector('.shell-mount');
-    if (!h1 || !mount) return;
-    const inner = mount.querySelector('h1, h2, .card-head h3');
-    const a = inner ? norm(inner.textContent) : '', b = norm(h1.textContent);
-    head.classList.toggle('dup-head', !!a && (a === b || (/^H[12]$/.test(inner.tagName) && a.startsWith(b))));
-  }
-  function boot() {
-    document.querySelectorAll('section.view').forEach(view => {
-      const mount = view.querySelector('.shell-mount'); if (!mount) return;
-      new MutationObserver(() => check(view)).observe(mount, { childList: true, subtree: true });
-      check(view);
-    });
-  }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();

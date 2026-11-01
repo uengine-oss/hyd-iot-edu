@@ -1,7 +1,8 @@
 /* B6 출발본: 내가 만든 구성(에이전트 · 스킬 · MCP · 업무분장 · 흐름 · 배정 · 배포)을 파일로 받기 · 파일로 불러오기 · 기준으로 되돌리기.
    API: GET /api/config/export · POST /api/config/import {bundle, secrets?, skip_missing_secrets?} · POST /api/config/reset
    불러오기는 "되돌리기 → 순서대로 적용 → 다시 읽어 대조"이고, 실패하면 어디서 왜 멈췄는지와 적용 전 상태로 되돌렸는지 보여 준다.
-   비밀값(MCP 접속 헤더 · 환경변수의 토큰 등)은 파일에 없다 — 필요하면 여기서 입력하거나 그 서버만 건너뛴다. */
+   설정에 그대로 적힌 비밀값(MCP 접속 헤더의 토큰 등)은 파일에 없다 — 필요하면 여기서 입력하거나 그 서버만 건너뛴다.
+   수업 단계에서 불러오기가 막혀 있으면 서버가 준 까닭을 단추 옆 글로 보인다(마우스를 올리지 않아도). */
 (function () {
   const H = esc;                                        // 포털 공용 이스케이프(ui.js)
   const IMPORT = 'config.import';                        // 수업 경계 행동 키 — 수업 단계에서는 서버가 막고 까닭을 준다(courseAccess.js)
@@ -26,12 +27,15 @@
       UI.card({ title: '출발본 불러오기', sub: '강사가 준 출발본 파일을 올리면 지금 구성을 기준으로 되돌린 뒤 파일 내용으로 다시 세웁니다. 망쳐도 다시 불러오면 됩니다.',
         body: `<div class="form-grid"><div class="field wide"><label for="cfgFile">출발본 파일(.json)</label><input type="file" id="cfgFile" accept=".json,application/json"></div></div>
           <div id="cfgSecrets"></div>
+          <p class="field-hint" id="cfgImportWhy"></p>
           <div class="form-actions"><span class="form-msg" id="cfgImportMsg" role="status"></span><button type="button" class="btn primary" id="cfgImport"${hydCourseAccess.attrs(IMPORT)}>불러오기</button></div>
           <div id="cfgImportResult"></div>` }) +
-      UI.card({ title: '기준으로 되돌리기', sub: '내가 만든 에이전트 · 스킬 · 배정 · 업무분장 · MCP 서버 · 흐름 · 배포와 끝난 질문 기록을 지웁니다. 기준은 그대로입니다.',
+      UI.card({ title: '기준으로 되돌리기', sub: '내가 만든 에이전트 · 스킬 · 역할 · 배정 · 업무분장 · MCP 서버 · 비밀 값 · 흐름 · 배포와 끝난 질문 · 판단 채점 · 시험 비교 기록을 지웁니다. 기준은 그대로입니다.',
         body: `<div class="form-actions"><span class="form-msg" id="cfgResetMsg" role="status"></span><button type="button" class="btn danger" id="cfgReset">기준으로 되돌리기</button></div>
           <div id="cfgResetResult"></div>` });
     const $ = id => el.querySelector('#' + id);
+    const why = () => { $('cfgImportWhy').textContent = hydCourseAccess.blocked(IMPORT); };
+    why();
     window.hydStudentCases?.mount($('studentCasesView'));
     const msg = (id, text, bad) => { $(id).textContent = text; $(id).className = 'form-msg ' + (bad ? 'neg' : 'pos'); };
     let pending = null;                                   // 비밀값을 기다리는 파일
@@ -55,6 +59,7 @@
           hint: '파일에는 담지 않은 값입니다' })).join('')).join('')) +
         `<div class="form-actions"><button type="button" class="btn" id="cfgSkip"${hydCourseAccess.attrs(IMPORT)}>비밀값이 없는 서버만 건너뛰고 불러오기</button></div>`;
       $('cfgSkip').addEventListener('click', () => run(true));
+      why();
     }
     function secretsFromForm() {
       const out = {};
@@ -79,17 +84,21 @@
       }
       $('cfgImportResult').innerHTML = parts.length ? UI.fold('왜 안 됐는지', parts.join(''), { open: true }) : '';
     }
+    let importing = false;                                // 불러오기 · 건너뛰고 불러오기는 한 번에 하나(두 번 누름)
     async function run(skip) {
       if (!pending) { msg('cfgImportMsg', '출발본 파일을 고르세요', true); return; }
-      $('cfgImport').disabled = true; msg('cfgImportMsg', '불러오는 중 — MCP 서버 연결 검사를 하므로 조금 걸립니다');
+      if (importing) return;
+      importing = true;
+      $('cfgImport').disabled = true; if ($('cfgSkip')) $('cfgSkip').disabled = true;
+      msg('cfgImportMsg', '불러오는 중 — MCP 서버 연결 검사를 하므로 조금 걸립니다');
       try {
         const { body } = await call('/api/config/import', { bundle: pending, secrets: secretsFromForm(), skip_missing_secrets: !!skip });
         msg('cfgImportMsg', body.message); $('cfgSecrets').innerHTML = ''; showResult(body);
-        if (UI.toast) UI.toast(body.message, { tone: 'pos' });
+        UI.toast(body.message, { tone: 'ok' });
       } catch (e) {
         msg('cfgImportMsg', e.message, true); showFailure(e.detail || {});
         if (e.detail && e.detail.needs_secrets && !e.detail.problems) secretForm(e.detail.needs_secrets);
-      } finally { $('cfgImport').disabled = false; hydCourseAccess.apply(el); }
+      } finally { importing = false; $('cfgImport').disabled = false; if ($('cfgSkip')) $('cfgSkip').disabled = false; hydCourseAccess.apply(el); why(); }
     }
     $('cfgFile').addEventListener('change', async () => {
       pending = null; $('cfgSecrets').innerHTML = ''; $('cfgImportResult').innerHTML = '';
@@ -105,13 +114,13 @@
       if (yes) run(false);
     });
     $('cfgReset').addEventListener('click', async () => {
-      const yes = await UI.confirm({ title: '기준으로 되돌릴까요?', body: '내가 만든 구성을 모두 지웁니다. 수업 흐름(시작할 때 설치되는 A · B · C)은 남습니다. 먼저 출발본으로 받아 두면 다시 불러올 수 있습니다.', ok: '되돌리기', danger: true });
+      const yes = await UI.confirm({ title: '기준으로 되돌릴까요?', body: '내가 만든 구성과 비밀 값, 끝난 질문 · 판단 채점 · 시험 비교 기록을 모두 지웁니다. 수업 흐름(시작할 때 설치되는 A · B · C)은 남습니다. 먼저 출발본으로 받아 두면 구성은 다시 불러올 수 있습니다(비밀 값 · 기록은 파일에 없습니다).', ok: '되돌리기', danger: true });
       if (!yes) return;
       $('cfgReset').disabled = true;
       try {
         const { body } = await call('/api/config/reset', {});
         msg('cfgResetMsg', body.message); $('cfgResetResult').innerHTML = UI.fold('지운 것', list(body.steps.map(s => `${s.label}: ${s.text}`)));
-        if (UI.toast) UI.toast(body.message, { tone: 'pos' });
+        UI.toast(body.message, { tone: 'ok' });
       } catch (e) {
         msg('cfgResetMsg', e.message, true);
         const d = e.detail || {};
@@ -120,10 +129,13 @@
     });
   }
 
-  window.hydConfig = { mount: render, counts };
+  window.hydConfig = { mount: render };
   document.addEventListener('DOMContentLoaded', () => {
     const el = document.getElementById('configBundleView'); if (!el) return;
     render(el);
-    hydCourseAccess.onChange(() => hydCourseAccess.apply(el));   // 수업 범위가 늦게 와도 불러오기 단추를 맞춘다
+    hydCourseAccess.onChange(() => {                       // 수업 범위가 늦게 와도 불러오기 단추와 까닭 글을 맞춘다
+      hydCourseAccess.apply(el);
+      const why = el.querySelector('#cfgImportWhy'); if (why) why.textContent = hydCourseAccess.blocked(IMPORT);
+    });
   });
 })();

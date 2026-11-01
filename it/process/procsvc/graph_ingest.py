@@ -108,8 +108,6 @@ def _claim(tx, label, item, batch, at):
         tx.run(f'CREATE (n:{label} {{id:$id}})', id=nid).consume()
         read = _read(tx, label, nid)
     props, current = read
-    if props.get('ingest_batch'):
-        raise Conflict('이전 방식의 적재 데이터입니다. 소유권 이력 없이 덮어쓸 수 없습니다')
     history = _history(props, current)
     base = props.get('_ingest_base', _json(current))
     # Existing semantic Systems retain their properties; DDL only claims usage.
@@ -172,9 +170,6 @@ def clear(session, batch):
         receipt = tx.run('MATCH (b:IngestionBatch {id:$id}) RETURN b.status AS status', id=batch).single()
         out = {'batch': batch, 'deleted': 0, 'restored': 0, 'retained': 0, 'replayed': False}
         if receipt is None:
-            legacy = tx.run('MATCH (n) WHERE n.ingest_batch=$batch RETURN count(n) AS n', batch=batch).single()
-            if legacy['n']:
-                raise Conflict('이전 배치에는 복원 이력이 없습니다. 자동 삭제하지 않습니다')
             raise KeyError(batch)
         if receipt['status'] == 'CLEARED':
             return dict(out, replayed=True)
@@ -227,8 +222,5 @@ def clear(session, batch):
 BATCHES_Q = '''
 MATCH (b:IngestionBatch {status:'ACTIVE'}), (n)
 WHERE b.id IN n._ingest_batches
-RETURN b.id AS batch, labels(n)[0] AS label, count(n) AS nodes, b.filename AS source, false AS legacy
-UNION ALL
-MATCH (n) WHERE n.ingest_batch IS NOT NULL
-RETURN n.ingest_batch AS batch, labels(n)[0] AS label, count(n) AS nodes, min(n.source_id) AS source, true AS legacy
+RETURN b.id AS batch, labels(n)[0] AS label, count(n) AS nodes, b.filename AS source
 '''

@@ -33,10 +33,9 @@ def check(workdir, max_bytes):
     except OSError:
         return {'ok': False, 'error': 'output/result.json 파일을 읽을 수 없습니다'}
     digest = hashlib.sha256(raw).hexdigest()
+    from .outcome import strict_loads
     try:
-        def non_json_constant(value):
-            raise ValueError('JSON은 NaN/Infinity 상수를 허용하지 않습니다')
-        value = json.loads(raw.decode('utf-8-sig'), parse_constant=non_json_constant)
+        value = strict_loads(raw.decode('utf-8-sig'))
     except UnicodeError:
         return {'ok': False, 'error': '결과 파일은 UTF-8이어야 합니다', 'sha256': digest}
     except json.JSONDecodeError as exc:

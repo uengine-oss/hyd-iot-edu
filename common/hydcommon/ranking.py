@@ -174,10 +174,6 @@ def calculate(text, context):
     return number(evaluate_expression(text, context))
 
 
-def predicate(text, context):
-    return truth(evaluate_expression(text, context))
-
-
 def score(policy, features, facts):
     policy=validate(policy)
     context=dict(features, **{alias:facts.get(var) for alias,var in policy['inputs'].items()})

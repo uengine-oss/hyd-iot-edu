@@ -1,24 +1,15 @@
 /* A10 에이전트 시험 비교 — window.hydCompare.mount(el).
    고정 시나리오(쿨러 · 펌프 · 팬) + 에이전트 A · B → 같은 입력 스냅숏으로 판단 단계만 시험 실행(처리 건 · 설비 명령 없음) → 나란히.
-   에이전트 설정은 읽기만 한다(코딩 랩에서 추가한 에이전트 · 스킬이 그대로 목록에 나온다). B 를 '바꿔 보기'는 이번 시험에만 쓰고 저장하지 않는다.
-   API: process /api/agent-trials/* (it/process/procsvc/agent_trials.py). 화면 문구 · 컴포넌트는 UI.*(ui.js). */
+   에이전트 설정은 읽기만 한다(에이전트 화면에서 만든 에이전트 · 스킬이 그대로 목록에 나온다). B 를 '바꿔 보기'는 이번 시험에만 쓰고 저장하지 않는다.
+   도구 이름은 이름 사전 하나(plainWords.js hydWords.toolName). API: process /api/agent-trials/* (it/process/procsvc/agent_trials.py). */
 (function () {
-  const TOOL = {
-    diagnose: '원인 진단', gather_facts: '판단 사실 수집', evaluate_cards: '후보 · 규정 · 순위 판단', precedents: '과거 선택 조회',
-    tradeoffs: '성과 지표 득실 조회', dmn_rules: '판단 규칙 조회', inputs: '판단 입력 · 출처 조회', timeseries_schema: '시계열 구조 조회',
-    timeseries_query: '시계열 질의', mes_orders: '생산 오더 조회', erp_contract: '계약 조회', erp_inventory: '재고 조회',
-    cmms_history: '정비 이력 조회', qms_lots: '품질 로트 조회', scm_suppliers: '공급사 조회', ems_demand: '전력 조회',
-    read_neo4j_cypher: '지식 그래프 질의', submit_decision: '판단 제출', write_neo4j_cypher: '지식 그래프 쓰기', forecast_actions: '조치 예측',
-    query: '업무 자료 자유 질의', describe_schema: '업무 자료 구조 조회', describe_catalog: '업무 자료 목록 조회', get_neo4j_schema: '그래프 구조 조회',
-    purchase_context:'구매 부품 근거 조회', evaluate_purchase:'구매 후보 비교', submit_purchase:'구매 판단 등록 (승인 · 실행 아님)',
-  };
   const STATUS = { EVALUATED: ['판단 완료', 'success'], WITHHELD: ['근거 부족 · 보류', 'warning'], NO_ENGINE_TOOL: ['판단 도구 없음', 'danger'],
     FAILED: ['실패', 'danger'], NO_FEASIBLE_OPTION: ['가능한 조치 없음', 'danger'], REJECTED_BY_GUARDRAIL: ['안전 규칙으로 중단', 'danger'] };
   const CALL = { DONE: ['완료', 'success'], BLOCKED: ['막힘', 'warning'], FAILED: ['실패', 'danger'] };
   const S = { el: null, opts: null, error: null, busy: false, form: { scenario: 'cooler', a: '', b: '', input: 'new' }, dropTools: [], dropSkills: [],
     result: null, history: null, pick: { a: '', b: '' }, histBusy: false };
   const api = path => API.process + path;
-  const toolName = (t, server) => ['purchase_context','evaluate_purchase','submit_purchase'].includes(t) && server && server!=='hyd-dmn' ? UI.toolName(server+'/'+t) : TOOL[t] || UI.toolName(t);
+  const toolName = (t, server) => hydWords.toolName(server && server !== '-' ? `mcp__${server}__${t}` : t);
   const serverName = s => s === '-' ? '' : hydWords.serverName(s);   // 도구 서버 이름표는 plainWords.js 하나
   const chip = ([label, tone]) => UI.chipText(label, tone);
   const statusChip = s => chip(STATUS[s] || [s || '–', 'neutral']);
@@ -46,6 +37,7 @@
     if (!o.agents.length) return UI.empty('AI 에이전트가 없습니다', '[에이전트] 화면에서 만들거나 코딩 랩에서 추가하면 여기에 나타납니다.');
     const opt = (list, value, label, cur) => list.map(x => `<option value="${esc(value(x))}" ${value(x) === cur ? 'selected' : ''}>${esc(label(x))}</option>`).join('');
     const b = o.agents.find(a => a.id === S.form.b) || o.agents[0];
+    const note = id => (o.agents.find(a => a.id === id) || {}).trial_note || '';   // 시험 시나리오로 그 에이전트의 일을 재지 못하는 까닭(서버가 정함)
     const box = (kind, name, label, off) => `<label class="cmp-check"><input type="checkbox" data-drop="${kind}" value="${esc(name)}" ${off ? '' : 'checked'}> ${label}</label>`;
     const variant = UI.fold(`B를 바꿔 보기 <span class="muted">— 이번 시험에만, 저장하지 않음</span>${S.dropTools.length + S.dropSkills.length ? ` ${UI.chipText(`${S.dropTools.length + S.dropSkills.length}개 뺌`, 'warning')}` : ''}`,
       `<p class="field-hint">체크를 풀면 B에서 그 도구 · 스킬을 빼고 시험합니다. 더하려면 [에이전트] 화면에서 그 에이전트를 고칩니다.</p>
@@ -54,8 +46,8 @@
        <button type="button" class="btn small" data-act="reset" ${S.dropTools.length + S.dropSkills.length ? '' : 'disabled'}>원래대로</button>`, { open: !!(S.dropTools.length + S.dropSkills.length) });
     const body = `<div class="form-grid">
         ${UI.field({ label: '시나리오', input: `<select data-f="scenario">${opt(o.scenarios, s => s.key, s => s.label, S.form.scenario)}</select>` })}
-        ${UI.field({ label: '에이전트 A', input: `<select data-f="a">${opt(o.agents, a => a.id, a => a.name, S.form.a)}</select>` })}
-        ${UI.field({ label: '에이전트 B', input: `<select data-f="b">${opt(o.agents, a => a.id, a => a.name, S.form.b)}</select>` })}
+        ${UI.field({ label: '에이전트 A', input: `<select data-f="a">${opt(o.agents, a => a.id, a => a.name, S.form.a)}</select>`, hint: note(S.form.a) })}
+        ${UI.field({ label: '에이전트 B', input: `<select data-f="b">${opt(o.agents, a => a.id, a => a.name, S.form.b)}</select>`, hint: note(S.form.b) })}
         ${UI.field({ label: '입력', input: `<select data-f="input"><option value="new" ${S.form.input === 'new' ? 'selected' : ''}>지금 원천에서 새로 읽어 고정</option><option value="latest" ${S.form.input === 'latest' ? 'selected' : ''}>이 시나리오의 직전 입력 다시 쓰기</option></select>`, hint: '두 에이전트는 항상 같은 입력으로 판단합니다' })}
       </div>${variant}`;
     return UI.card({ title: '시험 조건', chips: UI.chipText('처리 건 · 설비 명령 없음', 'neutral'), body,
@@ -103,10 +95,10 @@
       const words=window.hydWords, output=c.output ?? c.result ?? c.value;
       const purchaseError=output!=null && words.purchaseFailed(output);
       const result=output!=null ? words.purchaseGot(purchase,output) : '호출 완료 · 상세 결과 값 기록 없음';
-      const reason=String(c.reason || '').replace(/\b(?:purchase_context|evaluate_purchase|submit_purchase)\b/g,key=>TOOL[key]).replaceAll('hyd-dmn','판단 엔진');
+      const reason=String(c.reason || '').replace(/\b(?:purchase_context|evaluate_purchase|submit_purchase)\b/g,key=>toolName(key,'hyd-dmn')).replaceAll('hyd-dmn','판단 엔진');
       const why=reason && /[가-힣]/.test(reason) && !/[A-Za-z]+_[A-Za-z_]+/.test(reason) ? ' · '+words.text(reason) : '';
       const state=c.status==='BLOCKED' ? '구매 도구 요청이 차단됐습니다.'+ (why || ' 거절 사유 원문을 확인하세요.') : c.status==='FAILED' ? '구매 도구 호출에 실패했습니다.'+ (why || ' 사유 원문을 확인하세요.') : result;
-      return `<div class="cmp-call"><header><span class="num">${n}</span><b>${esc(TOOL[purchase])}</b><small class="muted">판단 엔진</small>${chip(purchaseError ? ['구매 요청 처리 실패','danger'] : CALL[c.status] || ['호출 상태 기록 확인 필요','neutral'])}</header><p>${esc(words.purchaseAsk(purchase,c.args))}</p><p>${esc(state)}</p>${UI.fold('구매 도구 호출 원문',`<pre>${esc(JSON.stringify(c,null,2))}</pre>`,{cls:'small'})}</div>`;
+      return `<div class="cmp-call"><header><span class="num">${n}</span><b>${esc(toolName(purchase,'hyd-dmn'))}</b><small class="muted">판단 엔진</small>${chip(purchaseError ? ['구매 요청 처리 실패','danger'] : CALL[c.status] || ['호출 상태 기록 확인 필요','neutral'])}</header><p>${esc(words.purchaseAsk(purchase,c.args))}</p><p>${esc(state)}</p>${UI.fold('구매 도구 호출 원문',`<pre>${esc(JSON.stringify(c,null,2))}</pre>`,{cls:'small'})}</div>`;
     }
     const args = Object.keys(c.args || {}).length ? UI.fold('입력', `<pre>${esc(JSON.stringify(c.args, null, 2))}</pre>`, { cls: 'small' }) : '';
     return `<div class="cmp-call"><header><span class="num">${n}</span><b>${esc(toolName(c.tool,c.server))}</b><small class="muted">${esc(serverName(c.server))}${c.by && c.by !== 'engine' ? ' · ' + esc(c.by) : ''}</small>${chip(st)}</header>

@@ -23,27 +23,26 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import re
 import time
 import uuid
-from contextlib import nullcontext
 from dataclasses import asdict, replace
 from pathlib import Path
 from typing import Callable, Iterable
 
 from cliagents import ExecEvent, ExecEventKind, ExecRequest, Permission, Surface, registry, stream_exec
 from procsvc import ask, engine, task_deferral, work_rules
-from procsvc.agents_store import SKILL_ROOTS, agent_settings, skill_markdown
+from procsvc.agents_store import SKILL_ROOTS, agent_settings, run_servers, skill_markdown
 from procsvc.course_ledger import POLICY, digest, reason_in
 
-from . import ai_replay, bridge, cli_sandbox, context, diagnostics, hitl, outcome, payloads, prompt, workspace, runtime_credentials
+from . import ai_replay, bridge, cli_sandbox, context, diagnostics, hitl, outcome, payloads, prompt, workspace
 from . import events as ui_events
 from .course_access import CourseAccess, Stop
-from .settings import PROVIDER, Settings, effective_permission, handover_allowed_tools, run_allowed_tools, run_disallowed_tools
+from .settings import PROVIDER, Settings, allowed_for_run, permission_of, run_disallowed_tools
 from .process_control import controlled_stream, reap_stale_group
 
 log = logging.getLogger("worker.runner")
 ExecFn = Callable[[object, ExecRequest, dict | None], Iterable[ExecEvent]]
-_PERMISSION_BY_NAME = {p.value: p for p in Permission}
 # A114: the same spellings process-gpt-cli-agent core/selection.py accepts — a definition that names another CLI fails loudly
 _AGENT_KEYS = ("agent_cli", "agentCli", "cli_agent", "cliAgent", "cli", "agent")
 _PERMISSION_KEYS = ("agent_permission", "agentPermission", "permission")
@@ -91,6 +90,7 @@ class Runner:
         self.in_flight = 0
         self._secrets: list[str] = []
         self._permitted = False          # 이 점유가 관문 토큰을 받았다(끝날 때 장부 실행을 닫는다)
+        self._definition: dict | None = None     # 이 점유의 고정 정의(사람 질문 알림 대상을 흐름에서 읽는다)
 
     # ---- polling
     def poll_once(self, on_polled=None) -> int:
@@ -124,8 +124,17 @@ class Runner:
                 log.info("%s %s lease lost: another worker took over", row.get("proc_inst_id"), row.get("activity_id"))
                 self._event(row, job_id, "task_cancelled", {"name": "실행 중단", "goal": "응답이 끊긴 사이 다른 실행기가 이 작업을 이어받았습니다."}, crew_type="agent")
             else:
-                log.info("%s %s cancelled by a person", row.get("proc_inst_id"), row.get("activity_id"))
-                self._event(row, job_id, "task_cancelled", {"name": "작업 취소", "goal": "담당자가 실행을 취소했습니다."}, crew_type="agent")
+                # 누가 멈췄는지는 작업 행이 말한다 — 사람의 취소 요청은 행이 진행 중인 채 draft_status CANCELLED(instances.cancel_agent_task),
+                # 처리 흐름이 닫은 것(경보 해제 · 처리 건 끝 등)은 행 자체가 끝나고 log 에 그 까닭(engine.finish 「cancelled: …;」)이 남는다
+                fresh = self.repo.get_workitem(row["id"]) or {}
+                if fresh.get("status") == "IN_PROGRESS":
+                    log.info("%s %s cancelled by a person", row.get("proc_inst_id"), row.get("activity_id"))
+                    self._event(row, job_id, "task_cancelled", {"name": "작업 취소", "goal": "담당자가 실행을 취소했습니다."}, crew_type="agent")
+                else:
+                    why = re.findall(r"cancelled: ([^;]+);", str(fresh.get("log") or ""))
+                    log.info("%s %s closed by the flow: %s", row.get("proc_inst_id"), row.get("activity_id"), why[-1] if why else fresh.get("status"))
+                    self._event(row, job_id, "task_cancelled", {"name": "실행 멈춤",
+                                "goal": "처리 흐름이 이 단계를 닫아 실행을 멈췄습니다" + (f" — {why[-1].strip()}" if why else ".")}, crew_type="agent")
         except Exception as e:  # noqa: BLE001 — every failure path ends in a DB state, never a lost claim
             ours = self._fail(row, job_id, e)
         finally:
@@ -148,6 +157,7 @@ class Runner:
 
     # ---- one run
     def run(self, row: dict, ctx: context.Context, job_id: str, *, workspace_existed: bool = True) -> None:
+        self._definition = ctx.definition
         caps = context.activity_capabilities(ctx.definition, row.get("activity_id") or "")
         config = caps.get("agent_config") or {}
         named = _first(config, _AGENT_KEYS)
@@ -169,7 +179,8 @@ class Runner:
             binding = (values.get('_runtime_coalescing') or {}).get('key')
             if binding and binding != ask.execution_binding(values.get('question'), agent, version=instance.get('proc_def_version')):
                 raise Stop('질문을 보낸 뒤 에이전트 설정이 바뀌었습니다. 기존 설정으로 되돌려 재개하거나 기존 질문을 종료한 뒤 새 질문을 보내세요.')
-        permission = effective_permission(PROVIDER, _PERMISSION_BY_NAME.get(str(_first(config, _PERMISSION_KEYS) or ""), self.s.default_permission))
+        # G1-13: 단계 정의의 권한 값은 이 워커가 지원하는 것만 — 모르는 값(오타)이나 셸 실행 권한(command_exec → 권한 묻기 없음)은 멈춘다
+        permission = permission_of(_first(config, _PERMISSION_KEYS), default=self.s.default_permission)
         provider = self.resolve_provider()
         ws = workspace.for_run(self.s.workspace_root, row["id"], tenant_id=self.s.tenant_id)
         # W1 (2026-10-23 검수): a worker that died without unwinding (SIGKILL, OOM) left its CLI running in this workspace —
@@ -203,25 +214,40 @@ class Runner:
             log.warning("%s %s assigned skills with no stored text: %s", row.get("proc_inst_id"), row.get("activity_id"), ", ".join(agent.missing_skills))
             self._event(row, job_id, "task_working", {"type": "notice", "content": "배정된 스킬 중 저장된 본문이 없어 넣지 못한 것이 있습니다: " + ", ".join(agent.missing_skills)}, crew_type="agent")
         questions_live = question_task and live
-        tenant_mcp, missing_tools = bridge.select_servers(ctx.tenant_mcp, [] if questions_live and agent.tools is None else agent.tools)  # A095 + U2
-        tenant_mcp = runtime_credentials.attach(tenant_mcp, row, self.s.tenant_id, process_url=self.s.process_url, key_file=self.s.runtime_key_file)
+        # 이 실행이 쓰는 도구 서버 · 정해진 읽기 도구 — 규칙 한 곳(procsvc/agents_store.run_servers: 포털 도구 지도 · 에이전트 상세 · 질문
+        # 화면과 같은 함수). 질문 · 교대 초안은 폼 계약의 정해진 조회 도구만, 도구를 적지 않은 에이전트(None)는 그 표의 서버 전부(G1-02).
+        tenant_servers = ((ctx.tenant_mcp or {}).get("mcpServers") or {}) if isinstance((ctx.tenant_mcp or {}).get("mcpServers"), dict) else {}
+        plan = run_servers(agent.tools, tenant_servers, ctx.form_contract)
+        declared = list(tenant_servers) if agent.tools is None else list(agent.tools)
+        missing_tools = [t for t in declared if t not in tenant_servers]
+        outside = [t for t in declared if t in tenant_servers and t not in plan]
+        tenant_mcp = dict(ctx.tenant_mcp or {}, mcpServers={name: spec for name, spec in tenant_servers.items() if name in plan})
         gate = bridge.gate_servers(tenant_mcp, trusted=_trusted_servers(self.s.allowed_tools))
         if missing_tools:
             log.warning("%s %s declares MCP tools the tenant does not have: %s", row.get("proc_inst_id"), row.get("activity_id"), ", ".join(missing_tools))
             self._event(row, job_id, "task_working", {"type": "notice", "content": "등록되지 않은 도구 서버는 연결하지 못했습니다: " + ", ".join(missing_tools)}, crew_type="agent")
-        if agent.tools == []:
+        if outside:
+            self._event(row, job_id, "task_working", {"type": "notice", "content": "이 단계는 수업이 정한 조회 도구만 씁니다 — 그 목록에 없는 도구 서버는 "
+                                                      "붙이지 않았습니다: " + ", ".join(outside)}, crew_type="agent")
+        if agent.tools == [] or (declared and not plan):
             self._event(row, job_id, "task_working", {"type": "notice", "content": "에이전트의 도구와 이 단계가 허용한 도구가 겹치지 않아 도구 서버 없이 실행합니다."}, crew_type="agent")
         tenant_mcp = gate.config
         selected = tenant_mcp     # 이 단계에 고른 도구 서버(같은 요청 판정 재료 — 아래 질문 창구 · 결과 검사 창구는 작업 폴더마다 경로가 달라 넣지 않는다)
+        fixed_reads = {server: tools for server, tools in plan.items() if tools is not None and server in ((tenant_mcp or {}).get("mcpServers") or {})}
         if questions_live:
             from . import question_tools
-            tenant_mcp, gate.read_tools = question_tools.attach(tenant_mcp, ws.path, self.s.process_url)
+            tenant_mcp, gate.read_tools = question_tools.attach(fixed_reads, ws.path, self.s.process_url)
         if gate.dropped:
             log.warning("%s %s MCP servers left out by the connection-check gate: %s", row.get("proc_inst_id"), row.get("activity_id"), gate.dropped)
             self._event(row, job_id, "task_working", {"type": "notice", "content": "연결 검사 게이트로 연결하지 않은 도구 서버: "
                                                       + ", ".join(f"{n}({why})" for n, why in gate.dropped.items())}, crew_type="agent")
         extras = dict(ctx.extras, agent_instructions=agent.instructions(SKILL_ROOTS[PROVIDER]))
-        (ws.context_dir / 'input.json').write_text(json.dumps(prompt.input_payload(row, extras), ensure_ascii=False, indent=2), encoding='utf-8')
+        previous = prompt.previous_result(row)
+        previous_file = ws.path / prompt.PREVIOUS_RESULT_FILE
+        if previous:
+            previous_file.write_text(json.dumps(previous, ensure_ascii=False, indent=2), encoding='utf-8')
+        else:
+            previous_file.unlink(missing_ok=True)
         if result_check_task:
             from . import result_check
             tenant_mcp = result_check.attach(tenant_mcp, ws.path, self.s.max_result_file_bytes)
@@ -230,13 +256,7 @@ class Runner:
                                  run_headers={"X-HYD-Process-Scope": json.dumps(context.process_scope(row), separators=(",", ":"))})
         self._secrets.extend(bridged.redaction_values)
         servers = sorted(((tenant_mcp or {}).get("mcpServers") or {}).keys())
-        if handover_task:
-            allowed = handover_allowed_tools(self.s.allowed_tools, servers)
-        elif questions_live:
-            reads = [f'mcp__{server}__{tool}' for server in servers for tool in gate.read_tools.get(server, ())]
-            allowed = run_allowed_tools([t for t in self.s.allowed_tools if not t.startswith('mcp__')], [], {}) + reads
-        else:
-            allowed = run_allowed_tools(self.s.allowed_tools, servers, gate.read_tools)
+        allowed = allowed_for_run(self.s.allowed_tools, servers, fixed_reads if (question_task or handover_task) else None, gate.read_tools)
         # B-03: 업무 규칙은 시스템 프롬프트로 — 설정 출처를 끈 CLI 는 작업 폴더의 규칙 파일을 읽지 않는다
         extra_args = [*bridged.extra_args, "--append-system-prompt", constitution, "--allowedTools", ",".join(allowed),
                       "--disallowedTools", ",".join(run_disallowed_tools(gate.blocked_tools)), *cli_sandbox.cli_args(ws.path, agent.skills)]
@@ -247,7 +267,8 @@ class Runner:
             cli=self.exec_fn, slot=slot, case=ai_replay.course_case(slot, values), attempt=ai_replay.attempt_of(row),
             request_key=_request_key(row, ctx, agent, constitution, self.schema_prompt, extras, selected, gate, allowed) if live else None,
             step=str(row.get("activity_name") or ""), provider=PROVIDER,
-            source={"todo_id": str(row["id"]), "generation": int(row.get("generation") or 0)}, accepted=self._accepted)
+            source={"todo_id": str(row["id"]), "generation": int(row.get("generation") or 0)}, accepted=self._accepted,
+            reclaimed=int(row.get("claim_count") or 1) > 1, skills=[e["name"] for e in provided])
         if ctx.human_answer:
             plan = hitl.durable_resume(row) or hitl.plan_resume(ws.path, workspace_exists=workspace_existed)
             hitl.clear(ws.path)     # A144: the pending question is answered; a stale cache must not count a later re-ask as a duplicate
@@ -450,8 +471,6 @@ class Runner:
                     final_text = ev.text or final_text
                 elif ev.kind is ExecEventKind.ASSISTANT_TEXT:
                     streamed.append(ev.text)
-                elif ev.kind is ExecEventKind.PERMISSION_REQUEST:
-                    pause_reason = pause_reason or (ev.text or "권한이 필요합니다")      # first refusal wins
                 elif ev.kind is ExecEventKind.ERROR and not final_text:
                     # A non-fatal notice can arrive as an error item and the turn continues. Judge at the end of the stream:
                     # a run that still ends without a result fails with the last reported error (_fail turns it into one sentence).
@@ -573,7 +592,7 @@ class Runner:
 
     # ---- outcomes
     def _pause(self, row: dict, ws: workspace.Workspace, agent_id: str, session_id: str, question: str, job_id: str,
-               options: list[str] | None = None, *, _locked=False) -> None:
+               options: list[str] | None = None) -> None:
         """Stop and wait for a person, without calling it done or failed (draft_status HUMAN_ASKED + human_asked event).
 
         A144 (A05 open end, `_pause` discarded remember()'s duplicate verdict): the DB is the authority. If the row already
@@ -581,7 +600,7 @@ class Runner:
         the existing job id, and do not insert a second human_asked event or notification. A re-ask after the person
         answered is a new question (new event + notification), because the answer consumed the previous one."""
         fingerprint = hitl.fingerprint(agent_id, question)
-        transaction=lambda:nullcontext() if _locked else self.repo.instance_transaction(self.s.tenant_id,row['proc_inst_id'])
+        transaction=lambda:self.repo.instance_transaction(self.s.tenant_id,row['proc_inst_id'])
         pending = hitl.pending_request(row)
         if pending is not None and pending.fingerprint == fingerprint:
             with transaction():
@@ -603,8 +622,14 @@ class Runner:
                                       "event_type": "human_asked", "status": "ASKED",
                                       "data": {"role": "user", "text": question, "type": "confirm", "options": options or [],
                                                "signature": request.fingerprint, "agent": agent_id, "session_id": session_id}}])
-            self.repo.insert_notification({"title": question[:200], "type": "workitem_bpm", "description": agent_id, "user_id": _asker_of(row),
-                                           "tenant_id": self.s.tenant_id, "url": f"/todolist/{row['id']}", "from_user_id": agent_id})
+            askers = _askers_of(self._definition, row.get("activity_id"))
+            for user_id in askers:
+                self.repo.insert_notification({"title": question[:200], "type": "workitem_bpm", "description": agent_id, "user_id": user_id,
+                                               "tenant_id": self.s.tenant_id, "url": f"/todolist/{row['id']}", "from_user_id": agent_id})
+            if not askers:
+                self.repo.record_events([{"job_id": ask_job, "todo_id": row["id"], "proc_inst_id": row.get("proc_inst_id"), "crew_type": "agent",
+                                          "event_type": "task_working", "data": {"type": "notice", "content":
+                                          "이 흐름에는 에이전트 질문을 받을 사람 단계가 없어 알림을 보내지 않았습니다 — 처리 건 화면에서 답하세요."}}])
         try:
             if not hitl.remember(ws.path, request):
                 # the file cache still held an older pending record with this fingerprint although the DB had none (or an
@@ -730,9 +755,32 @@ def _exec_stream(provider, request, env, *, check_stop=None):
 _exec_stream.accepts_check_stop = True
 
 
-def _asker_of(row: dict) -> str:
-    """Who gets the notification for an agent's question: the people of the instance roles, operator first."""
-    return "role:operator"
+def _askers_of(definition: dict | None, activity_id: str | None) -> list[str]:
+    """에이전트 질문 알림을 받을 역할 · 사람: 이 에이전트 단계 바로 뒤에 오는 사람 단계(흐름 연결을 따라 처음 만나는 사람 단계)의 역할
+    endpoint. 예: 냉각 판단 → 운전원 승인, 정기 정비 → 설비보전팀장, 교대 초안 → 인계자. 예전에는 늘 운전원(role:operator)이라 정비 · 구매
+    에이전트의 질문이 엉뚱한 사람에게 갔다(검진 G1-21). 사람 단계가 없는 흐름(질문에 답하기)은 빈 목록."""
+    if not isinstance(definition, dict) or not activity_id:
+        return []
+    acts = {a.get("id"): a for a in definition.get("activities") or [] if isinstance(a, dict)}
+    roles = {r.get("name"): r.get("endpoint") for r in definition.get("roles") or [] if isinstance(r, dict)}
+    nexts: dict[str, list[str]] = {}
+    for seq in definition.get("sequences") or []:
+        if isinstance(seq, dict):
+            nexts.setdefault(seq.get("source"), []).append(seq.get("target"))
+    found, seen, queue = [], {activity_id}, list(nexts.get(activity_id, []))
+    while queue:
+        node = queue.pop(0)
+        if node in seen:
+            continue
+        seen.add(node)
+        a = acts.get(node)
+        if a is not None and not a.get("agentMode") and roles.get(a.get("role")):
+            endpoint = roles[a["role"]]
+            if not str(endpoint).startswith(("agent:", "sys:")) and endpoint not in found:
+                found.append(endpoint)
+            continue
+        queue.extend(nexts.get(node, []))
+    return found
 
 
 def _resolve_provider():
@@ -760,7 +808,9 @@ def _unshim(executable: str) -> str:
 
 
 def _read(path) -> str:
+    """이미지에 넣은 온톨로지 스키마 설명(SCHEMA_PROMPT). 없으면 워커를 켜지 않는다 — 대체 문장으로 돌면 AI 가 스키마 없이 판단했다(검진 G1-24)."""
     try:
         return path.read_text(encoding="utf-8")
-    except OSError:
-        return "(schema_prompt.md 를 찾지 못했다 — Neo4j MCP get_neo4j_schema 로 스키마를 직접 확인하라)"
+    except OSError as e:
+        raise RuntimeError(f"온톨로지 스키마 설명 파일({path})을 읽지 못해 AI 워커를 켜지 않습니다 — 이미지를 다시 만드세요"
+                           f"(it/agent-worker/Dockerfile 의 schema_prompt.md 복사): {e}") from e

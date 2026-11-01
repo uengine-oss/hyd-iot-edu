@@ -83,36 +83,6 @@ def proposal(source, failure_modes=()):
             **({'text_missing_pages': list(source['text_missing_pages'])} if source.get('text_missing_pages') else {})}
 
 
-AFFECTS_MAX = 10
-AFFECTS_LABELS = {'sv:': 'StateVariable', 'msr:': 'Measure'}
-SIGNS = {'+': 1, '-': -1, 1: 1, -1: -1, '1': 1, '-1': -1}
-
-
-def validate_affects(sop, value):
-    """A079 (schema: Skill-[:AFFECTS {sign!}]->StateVariable|Measure). The reviewer says which variable or measure the
-    SOP moves and in which direction; without it an ingested SOP never reaches the BSC and scores 0 on gains/losses.
-    Target existence is checked at commit against the graph; only shape and sign are checked here."""
-    if value is None:
-        return []
-    if not isinstance(value, list) or len(value) > AFFECTS_MAX:
-        raise ValueError(f'{sop}: 영향 연결은 최대 {AFFECTS_MAX}개의 목록입니다')
-    out, seen = [], set()
-    for item in value:
-        if not isinstance(item, dict):
-            raise ValueError(f'{sop}: 영향 연결은 객체여야 합니다')
-        target = str(item.get('target') or '').strip()
-        label = next((lab for prefix, lab in AFFECTS_LABELS.items() if target.startswith(prefix)), None)
-        if not label or len(target) > 120 or target in seen:
-            raise ValueError(f'{sop}: 영향 대상은 상태 변수(sv:…) 또는 성과 지표(msr:…) id이며 중복될 수 없습니다')
-        sign = SIGNS.get(item.get('sign'))
-        if sign is None:
-            raise ValueError(f'{sop}: 영향 방향(sign)은 +/- 또는 1/-1 이어야 합니다')
-        note = str(item.get('note') or '').strip()[:300]
-        seen.add(target)
-        out.append(dict(target=target, label=label, sign=sign, note=note))
-    return out
-
-
 def validate(archive, tenant, body):
     """Validate the entire proposal before opening any graph write transaction."""
     if body.get('reviewed') is not True or not isinstance(body.get('by'), str) or not body['by'].strip():
@@ -192,7 +162,7 @@ def validate(archive, tenant, body):
             continue
         if p.get('existing_skill_id') or link.get('existing_skill_id') or p.get('reference_contract_sha256') or link.get('reference_contract_sha256'):
             raise ValueError(f'{sop}: 기존 Skill 재참조는 명시 reference 분기에서만 가능합니다')
-        affects = validate_affects(sop, link.get('affects'))
+        affects = kgadmin.validate_affects(link.get('affects'), sop)
         extra = manual_knowledge.validate_link(sop, {k: link.get(k) for k in ('actions', 'addresses')},
                                                sops=sop_ids, require_failure_mode=False)   # C1: CONSISTS_OF · ADDRESSES
         # validate_skill's legacy 30-step slice must never truncate source-backed SOPs.

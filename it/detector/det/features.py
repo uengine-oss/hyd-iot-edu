@@ -2,9 +2,12 @@
 import math
 from collections import deque
 
+# The "trained" baseline of the healthy operating point: (mean, std) per signal, fixed so the score is restart-safe.
+NORMAL = {"TS1": (48.0, 1.0), "CE": (84.0, 3.0), "VS1": (0.6, 0.05)}
+
 
 def wave_features(v: list[float]) -> dict:
-    """mean, rms and per-sample linear-regression slope of a 1 s waveform batch."""
+    """mean, rms and per-sample linear-regression slope of a 1 s waveform batch (checked by hydcommon.schemas.wave_record)."""
     n = len(v)
     if n == 0:
         return {"mean": None, "rms": None, "slope": None}
@@ -19,9 +22,9 @@ def wave_features(v: list[float]) -> dict:
 
 
 class SlopeWindow:
-    """Moving linear-regression slope over the last `window_s` simulated seconds (units: value per sim-second)."""
+    """Moving linear-regression slope over the last `window_s` simulated seconds (units: value per simulated second)."""
 
-    def __init__(self, window_s: float = 60.0):
+    def __init__(self, window_s: float):
         self.window_s = window_s
         self.pts: deque = deque()
 
@@ -46,35 +49,7 @@ class SlopeWindow:
         return sum((t - tm) * (v - vm) for t, v in self.pts) / sxx
 
 
-class Baseline:
-    """Per-signal normal statistics learned from the first n samples (the model's 'training set')."""
-
-    def __init__(self, n: int = 30, min_std: float = 0.5):
-        self.n, self.min_std = n, min_std
-        self.samples: dict[str, list[float]] = {}
-        self.stats: dict[str, tuple[float, float]] = {}
-
-    def push(self, sig: str, v: float) -> None:
-        if sig in self.stats:
-            return
-        s = self.samples.setdefault(sig, [])
-        s.append(v)
-        if len(s) >= self.n:
-            mean = sum(s) / len(s)
-            std = math.sqrt(sum((x - mean) ** 2 for x in s) / len(s))
-            self.stats[sig] = (mean, max(std, self.min_std))
-
-    def ready(self, sig: str) -> bool:
-        return sig in self.stats
-
-    def z(self, sig: str, v: float) -> float:
-        if sig not in self.stats:
-            return 0.0
-        mean, std = self.stats[sig]
-        return (v - mean) / std
-
-
-def anomaly_score(z_ts1: float, z_ce: float, z_vs1: float) -> float:
-    """Reconstruction-error proxy: RMS of z-scores, squashed to 0..1 (z≈4 → 1.0)."""
-    rms = math.sqrt((z_ts1 ** 2 + z_ce ** 2 + z_vs1 ** 2) / 3)
-    return round(min(1.0, rms / 4.0), 3)
+def anomaly_score(values: dict) -> float:
+    """Reconstruction-error proxy: RMS of the z-scores of TS1 · CE · VS1 against NORMAL, squashed to 0..1 (z≈4 → 1.0)."""
+    z = [(values[sig] - mean) / std for sig, (mean, std) in NORMAL.items()]
+    return round(min(1.0, math.sqrt(sum(x * x for x in z) / len(z)) / 4.0), 3)

@@ -10,6 +10,51 @@ import json
 
 from . import engine
 
+#: 다시 수행을 막는 사유 하나 = 코드 + 학생이 읽는 문장(무엇이 · 왜 · 다음에 무엇을). 막힘을 만드는 곳(이 파일 · dependency_schedule ·
+#: rework_effects)은 모두 blocker() 로 만든다 — 표에 없는 코드는 그 자리에서 KeyError 로 실패한다(화면이 뜻 없는 문장으로 메우지 않는다).
+#: 화면(instanceRework.js)은 text 를 그대로 보인다.
+BLOCKER_TEXT = {
+    'instance_not_running': '처리 건이 이미 끝났습니다 — 끝난 처리 건은 다시 수행하지 않습니다. 새 경보 · 새 처리 건으로 진행하세요.',
+    'initial_inputs_unavailable': '처리 건의 시작 값 원문이 없어 어디까지 되돌릴지 정할 수 없습니다 — 새 처리 건으로 다시 시작하세요.',
+    'ambiguous_workitem_order': '같은 단계의 최신 기록이 둘 이상이라 어느 것부터 다시 할지 정할 수 없습니다 — 강사에게 이 처리 건 기록을 보여 주세요.',
+    'start_workitem_superseded': '이 단계는 이미 다음 차수로 다시 수행됐습니다 — 목록에서 그 단계의 최신 차수를 고르세요.',
+    'start_workitem_not_reached': '이 단계는 아직 시작되지 않았습니다 — 이미 시작된 단계를 고르세요.',
+    'ambiguous_previous_producer': '이 값을 만든 앞 단계가 둘 이상이라 어느 결과를 다시 쓸지 정할 수 없습니다 — 더 앞 단계부터 다시 수행하세요.',
+    'variable_provenance_requires_review': '어느 단계가 만든 값인지 기록이 맞지 않는 값이 있습니다 — 그 값을 만든 단계부터 다시 수행하세요.',
+    'approval_requires_review': '이 처리 건에 이미 받은 승인이 남아 있어 그대로 다시 수행할 수 없습니다 — 그 승인을 먼저 정리해야 합니다'
+                                '(전달에 실패한 승인은 처리 건 화면에서 폐기할 수 있습니다).',
+    'service_effects_require_review': '이 처리 건에서 이미 실행된 시스템 단계가 있습니다 — 그 단계가 바깥(설비 · 업무 시스템)에 낸 일을 먼저 '
+                                      '정리해야 합니다. 사건이 있는 처리 건은 「실행 효과」 칸에서 보상하거나 확인하세요.',
+    'incident_rework_effect_contract_pending': '사건의 실행 효과를 조회하는 기능이 연결되지 않아 다시 수행할 수 없습니다 — 강사에게 알리세요.',
+    'condition_replay_requires_arrival': '분기 조건을 다시 판단할 앞 단계가 실제로 지나간 기록이 없습니다 — 그 분기 앞 단계부터 다시 수행하세요.',
+    'ambiguous_dependency_producer': '새 입력을 만드는 단계가 둘 이상이라 하나로 정할 수 없습니다 — 그 입력을 만드는 단계부터 다시 수행하세요.',
+    'dependency_reference_requires_review': '다른 단계가 참조하는 결과가 바뀌었거나 없어졌습니다 — 그 결과를 참조하는 단계를 포함해 앞에서부터 다시 수행하세요.',
+    'dependency_control_arrival_unavailable': '이전 단계가 실제로 시작된 기록이 없어 자동으로 다시 열 수 없습니다 — 더 앞 단계부터 다시 수행하세요.',
+    'rework_root_dependency_requires_review': '고른 시작 단계가 이번 다시 수행에서 새로 만들어질 다른 단계의 결과를 입력으로 받습니다 — '
+                                              '그 결과를 만드는 단계부터 다시 수행하세요.',
+    'dependency_cycle_requires_review': '서로의 새 결과를 기다리는 단계들이 있어 다시 수행할 순서를 정할 수 없습니다 — 강사에게 흐름 그림을 보여 주세요.',
+    'incident_not_active_for_rework': '사건이 이미 해제됐거나 끝나 다시 판단할 것이 없습니다 — 새 경보가 나면 새 처리 건으로 진행됩니다.',
+    'incident_command_in_flight': '설비 명령의 응답(ACK)을 기다리는 중입니다 — 응답이 온 뒤 영향 확인을 다시 누르세요.',
+    'effects_require_compensation_or_review': '이 사건이 이미 낸 실행 효과(설비 명령 · 작업지시 · 발주)가 아직 정리되지 않았습니다 — 「실행 효과」 칸에서 '
+                                              '되돌릴 수 있는 거래는 보상 요청하고, 나머지는 확인한 뒤 영향 확인을 다시 누르세요.',
+    'untracked_decision_consent': '승인 기록과 맞지 않는 판단(고른 안)이 있어 출처를 확인해야 합니다 — 강사에게 이 처리 건 기록을 보여 주세요.',
+    'current_decision_original_missing': '지금 판단의 원문(판단 기록)을 찾을 수 없어 다시 수행할 수 없습니다 — 강사에게 알리세요.',
+    'rework_requires_new_decision': '사건이 있는 처리 건은 새 판단부터 다시 해야 합니다 — 판단을 만드는 에이전트 단계(또는 그 앞)를 고르세요.',
+    'approval_decision_original_missing': '승인에 연결된 판단 원문을 찾을 수 없어 다시 수행할 수 없습니다 — 강사에게 알리세요.',
+    'approval_effects_require_review': '전달된 승인이 낸 효과가 아직 정리되지 않았거나, 고른 단계 밖의 승인입니다 — 「실행 효과」 칸에서 정리하거나 '
+                                       '승인 단계를 포함하도록 더 앞 단계를 고르세요.',
+}
+
+
+def blocker(code, **detail):
+    """막힘 하나 {code, text, …detail}. 문장이 없는 코드는 KeyError(코드 이름) — 만든 곳에서 바로 드러난다."""
+    return dict(code=code, text=BLOCKER_TEXT[code], **detail)
+
+
+def blocked_message(blockers) -> str:
+    """막힘 목록 → 거절 사유 한 문장(학생 앞으로 가는 400)."""
+    return '다시 수행할 수 없습니다: ' + ' / '.join(dict.fromkeys(b['text'] for b in blockers))
+
 
 def fingerprint(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True, ensure_ascii=False,
@@ -59,9 +104,6 @@ def plan(defn, inst, workitems, workitem_id, approvals=()):
                 add(event['id'], {'kind': 'boundary', 'source': node})
         for aid, activity in defn.activities.items():
             for key in sorted(outputs.intersection(activity.get('inputData') or [])):
-                binding = (activity.get('inputBindings') or {}).get(key)
-                if binding is not None and binding.get('activity') not in reasons:
-                    continue
                 add(aid, {'kind': 'input', 'variable': key})
         # Conditions consume variables even when the target task has no inputData.
         for sequence in defn.sequences:
@@ -89,7 +131,7 @@ def plan(defn, inst, workitems, workitem_id, approvals=()):
 
     blockers = []
     def block(code, **detail):
-        item = dict(code=code, **detail)
+        item = blocker(code, **detail)
         if item not in blockers:
             blockers.append(item)
     if inst.get('status') != 'RUNNING' or inst.get('is_deleted'):
@@ -183,7 +225,8 @@ def plan(defn, inst, workitems, workitem_id, approvals=()):
     from . import dependency_schedule
     schedule, schedule_blockers = dependency_schedule.propose(
         defn, inst, workitems, set(reasons), control, root['activity_id'])
-    blockers.extend(schedule_blockers)
+    for item in schedule_blockers:
+        block(**item)
     roles = sorted({defn.role_endpoint(a.get('role')) for a in defn.activities.values()
                     if engine.is_human(a) and defn.role_endpoint(a.get('role'))})
     candidate_sources = {key: {'kind': 'input'} for key in values}
@@ -213,7 +256,7 @@ def plan(defn, inst, workitems, workitem_id, approvals=()):
 def new_generation(defn, inst, workitems, proposal, request_id, now=None, time_scale=1.0):
     """Pure state transition; caller commits rows and immutable receipt atomically."""
     if proposal['blockers']:
-        raise ValueError('재작업 검토가 필요합니다: ' + ', '.join(b['code'] for b in proposal['blockers']))
+        raise ValueError(blocked_message(proposal['blockers']))
     latest = engine._by_activity(workitems)
     root = next(w for w in workitems if w['id'] == proposal['start_workitem'])
     inst['rework_generation'] = int(inst.get('rework_generation') or 0) + 1
@@ -248,8 +291,6 @@ def new_generation(defn, inst, workitems, proposal, request_id, now=None, time_s
         adv.created.append(row)
     from . import dependency_schedule
     dependency_schedule.install(inst, proposal.get('dependency_schedule'), adv.created, request_id)
-    from . import input_bindings
-    input_bindings.install(defn, inst, workitems + adv.created, adv.created)
     current = next(w for w in adv.created if w['activity_id'] == root['activity_id'])
     schedule = dependency_schedule.entry(inst, current)
     if schedule is not None:

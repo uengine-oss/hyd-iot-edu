@@ -1,5 +1,4 @@
 """Topic names exactly as in the v3 design document (sections 5.1 and 5.2)."""
-import re
 
 ASSETS = ("HYD-01", "HYD-02", "HYD-03")
 
@@ -19,12 +18,7 @@ def asset_key(asset_id: str) -> str:
     return asset_id.replace("-", "").lower()
 
 
-def asset_id(key: str) -> str:
-    """'hyd01' -> 'HYD-01'."""
-    m = re.fullmatch(r"([a-z]+)(\d+)", key)
-    if not m:
-        return key.upper()
-    return f"{m.group(1).upper()}-{m.group(2)}"
+ASSET_BY_KEY = {asset_key(a): a for a in ASSETS}
 
 
 # ---- OT MQTT (emqx) ----
@@ -57,12 +51,15 @@ def mqtt_alert(key: str) -> str:
 
 
 def parse_mqtt(topic: str):
-    """'plant/hyd02/tag/CE' -> ('hyd02', 'tag', 'CE'); 'plant/hyd02/status' -> ('hyd02', 'status', None)."""
+    """'plant/hyd02/tag/CE' -> ('HYD-02', 'tag', 'CE'); 'plant/hyd02/status' -> ('HYD-02', 'status', None);
+    'plant/hyd02/cmd/auto' -> ('HYD-02', 'cmd/auto', None). None for anything else, including an asset key that is not one
+    of ASSETS — a topic does not create an asset (no state, row or metric is made for an unknown key)."""
     parts = topic.split("/")
-    if len(parts) < 3 or parts[0] != "plant":
+    if len(parts) < 3 or parts[0] != "plant" or parts[1] not in ASSET_BY_KEY:
         return None
-    key, kind = parts[1], parts[2]
-    if kind == "cmd" and len(parts) == 4:
-        return key, f"cmd/{parts[3]}", None
-    rest = parts[3] if len(parts) > 3 else None
-    return key, kind, rest
+    asset, kind = ASSET_BY_KEY[parts[1]], parts[2]
+    if kind == "cmd":
+        return (asset, f"cmd/{parts[3]}", None) if len(parts) == 4 else None
+    if len(parts) > 4:
+        return None
+    return asset, kind, parts[3] if len(parts) == 4 else None

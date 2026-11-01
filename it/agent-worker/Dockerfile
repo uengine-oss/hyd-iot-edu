@@ -1,5 +1,6 @@
 # agent-worker: Claude Code(npm) + 워커. CLI 는 원본 키 없이 process 로컬 중계 관문이 그 점유에 묶어 준 실행 토큰으로만 모델을 부른다
-# (worker/course_access.py). Neo4j 조회 MCP 는 hydcommon/neo4j_mcp.py(이 이미지의 파이썬)로 돈다.
+# (worker/course_access.py). 도구 서버는 모두 HTTP 다(neo4j 조회는 dmn-mcp 가 낸다, 결정 3) — 이 이미지가 띄우는 명령형 창구는 워커 자신의
+# 질문 창구(worker/question_tools) · 결과 검사 창구(worker/result_check)뿐이다.
 FROM python:3.12-slim
 RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates git \
  && curl -fsSL https://deb.nodesource.com/setup_24.x | bash - && apt-get install -y --no-install-recommends nodejs \
@@ -17,7 +18,7 @@ COPY common/hydcommon /srv/hydcommon
 COPY it/process/procsvc /srv/procsvc
 COPY it/neo4j/v2/schema_prompt.md /srv/ontology/schema_prompt.md
 COPY it/agent-worker/worker /srv/worker
-ENV PYTHONUNBUFFERED=1 WORKSPACE_ROOT=/workspace SCHEMA_PROMPT=/srv/ontology/schema_prompt.md HYD_CLI_SANDBOX=landlock
+ENV PYTHONUNBUFFERED=1 CLIAGENTS_WORKSPACE_ROOT=/workspace SCHEMA_PROMPT=/srv/ontology/schema_prompt.md HYD_CLI_SANDBOX=landlock
 VOLUME ["/workspace"]
 EXPOSE 8097
 CMD ["python", "-m", "worker.main"]

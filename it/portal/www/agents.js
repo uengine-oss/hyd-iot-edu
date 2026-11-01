@@ -11,7 +11,7 @@
   const TOOLS_FROM = { agent: '에이전트 설정', activity: '단계 설정', 'agent+activity': '에이전트 도구 중 단계가 허용한 것' };
   const SHORT = 80;
   const st = { host: null, tab: 'agents', agents: null, skills: null, pick: { agents: null, skills: null }, detail: null, error: '', open: {}, seq: 0,
-    form: null, options: null, board: null, boardError: '', busy: false };
+    form: null, options: null, board: null, boardError: '', busy: false, acting: new Set() };
 
   const serverName = (name, description) => hydWords.serverName(name, description);   // 도구 서버 이름표는 plainWords.js 하나
   const course = () => window.hydCourseAccess;
@@ -33,12 +33,17 @@
   const clip = (t, n = 48) => (t.length > n ? t.slice(0, n) + '…' : t);
   const stepLabel = s => `${s.definition_name || UI.defName(s.definition_id)} · ${UI.flowName(s.name)}`;   // 정의에 등록된 이름 먼저
   const chips = (items, tone = 'neutral') => items.length ? items.map(t => UI.chipText(t, tone)).join(' ') : '<span class="muted">없음</span>';
-  function checkChip(c) {
-    if (!c) return '';
-    if (c.error) return ' ' + UI.chipText('검사 상태 모름', 'warning');
-    if (c.ok === true || c.status === 'ok' || c.status === 'passed') return ' ' + UI.chipText('연결 확인됨', 'success');
-    if (c.ok === false || c.status === 'failed' || c.status === 'error') return ' ' + UI.chipText('연결 실패', 'danger');
-    return '';
+  // 두 번 눌림 막기: 같은 일이 끝날 때까지 그 단추를 끈다(복제가 두 벌 생기거나 붙이기가 409 로 보이지 않게)
+  async function once(key, button, work) {
+    if (st.acting.has(key)) return null;
+    st.acting.add(key); if (button) button.disabled = true;
+    try { return await work(); } finally { st.acting.delete(key); if (button && button.isConnected) button.disabled = false; }
+  }
+  // 실행 설정의 도구 서버: 서버가 계산한 servers({서버: 정해진 조회 도구 | null}) 그대로 — 교대 · 질문처럼 조회 도구가 정해진 단계는 그 도구만
+  function runServersText(servers) {
+    const names = Object.keys(servers || {});
+    if (!names.length) return '없음(이 단계에서 쓰는 도구 서버가 없음)';
+    return names.map(n => servers[n] ? `${serverName(n)}(정해진 조회 도구 ${servers[n].length}개만)` : serverName(n)).join(', ');
   }
 
   /* ---------- 읽기 ---------- */
@@ -160,7 +165,7 @@
       const run = d.run || {};
       const stepRows = (run.steps || []).map(s => {
         const x = s.settings;
-        const tools = x.tools == null ? '등록된 도구 서버 전부' : x.tools.length ? x.tools.map(t => serverName(t)).join(', ') : '없음(겹치는 도구가 없음)';
+        const tools = runServersText(s.servers);
         return `<tr><td>${esc(UI.flowName(s.name))}</td><td>${esc(modelText(x.model))}${x.model_source ? `<br><span class="muted">${esc(MODEL_FROM[x.model_source] || '')}</span>` : ''}</td>` +
           `<td>${esc(tools)}${x.tools_source ? `<br><span class="muted">${esc(TOOLS_FROM[x.tools_source] || '')}</span>` : ''}</td>` +
           `<td>${esc(x.skills.length ? x.skills.map(n=>skillName(n,x.skill_labels || [])).join(', ') : '없음')}${x.missing_skills.length ? `<br><span class="neg">본문 없는 스킬 ${x.missing_skills.length}개</span>` : ''}${UI.fold('설정 식별자 원문',`<pre>${esc(JSON.stringify({skills:x.skills,missing_skills:x.missing_skills,tools:x.tools},null,2))}</pre>`,{cls:'small'})}</td></tr>`;
@@ -168,7 +173,7 @@
       html += UI.fold(`단계별 실제 실행 설정 <span class="chip tone-neutral sm">${(run.steps || []).length}</span>`,
         stepRows ? `<div class="table-scroll"><table class="compact-table"><thead><tr><th>단계</th><th>모델</th><th>도구 서버</th><th>스킬 파일</th></tr></thead><tbody>${stepRows}</tbody></table></div>`
           : UI.empty('맡은 단계가 없습니다', '처리 건에서는 불리지 않습니다.', 'compact'));
-      html += UI.fold('실행 지시문에 더해지는 내용', run.instructions ? `<pre>${esc(run.instructions)}</pre><p class="muted">워커가 이 내용을 지시문에 넣고, 스킬은 실행 작업 폴더에 SKILL.md 파일로 씁니다.</p>`
+      html += UI.fold('실행 지시문에 더해지는 내용', run.instructions ? `<pre>${esc(run.instructions)}</pre><p class="muted">AI 일꾼이 이 내용을 지시문에 넣고, 스킬은 실행 작업 폴더에 SKILL.md 파일로 씁니다.</p>`
         : UI.empty('더해지는 내용이 없습니다', '이름·목표·성격·스킬이 비어 있습니다.', 'compact'));
     }
     html += UI.metaFold([['식별자', `<span class="mono">${esc(d.id)}</span>`],
@@ -218,8 +223,11 @@
   function formHtml() {
     const f = st.form, d = f.draft, o = st.options || { servers: [], skills: [], models: [] };
     if (f.kind === 'agent') {
-      const tools = o.servers.length ? o.servers.map(s => `<label class="check"><input type="checkbox" data-f-tool value="${esc(s.name)}" ${d.tools.includes(s.name) ? 'checked' : ''}> ` +
-        `<span>${esc(serverName(s.name, s.description))}${checkChip(s.check)}</span></label>`).join('') : '<span class="muted">등록된 도구 서버가 없습니다</span>';
+      // 붙일 수 있는지는 서버 판정(mcp_registry.selectable) 그대로 — 붙일 수 없는 서버는 까닭과 함께 꺼 둔다(이미 붙어 있으면 뗄 수는 있다)
+      const tools = o.servers.length ? o.servers.map(s => { const on = d.tools.includes(s.name), off = !s.selectable && !on;
+        return `<label class="check"><input type="checkbox" data-f-tool value="${esc(s.name)}" ${on ? 'checked' : ''} ${off ? 'disabled' : ''}> ` +
+          `<span>${esc(serverName(s.name, s.description))}${s.selectable ? '' : ` ${UI.chipText('붙일 수 없음', 'warning')} <small class="muted">${esc(s.reason || '')}</small>`}</span></label>`; }).join('')
+        : '<span class="muted">등록된 도구 서버가 없습니다</span>';
       const skills = o.skills.length ? o.skills.map(s => `<label class="check"><input type="checkbox" data-f-skill value="${esc(s.skill_name)}" ${d.skills.includes(s.skill_name) ? 'checked' : ''}> ` +
         `<span>${esc(UI.skillLabel(s).label)} ${mineChip(s.origin)}</span></label>`).join('') : '<span class="muted">아직 스킬이 없습니다 — 스킬 탭에서 먼저 만드세요</span>';
       return `<div class="detail-head"><div class="row"><h2>${f.id ? '에이전트 고치기' : '새 에이전트'}</h2>${UI.chipText('내가 만든', 'success')}</div>` +
@@ -282,6 +290,7 @@
     if (st.boardError) return `<div class="neg" role="status">${esc(st.boardError)}</div>`;
     const b = st.board;
     if (!b) return UI.empty('불러오는 중', '', 'compact');
+    const closedWhy = [...new Set(b.steps.map(s => course().assignBlocked(s.definition_id)).filter(Boolean))];
     const rows = b.steps.map(s => {
       const cur = s.assigned ? s.assigned.agent_id : '';
       const opts = [`<option value="">기본 담당 (${esc(s.default_names.join(', '))})</option>`].concat(
@@ -293,6 +302,7 @@
     }).join('');
     const steps = UI.card({ title: '단계 → 담당 에이전트',
       body: `<p class="muted">흐름 정의는 그대로 두고, 이 단계가 열릴 때 고른 에이전트가 맡습니다. 기본 담당으로 되돌리면 다음에 열리는 단계부터 기본으로 실행됩니다.</p>` +
+        closedWhy.map(w => `<p class="field-hint">${esc(w)}</p>`).join('') +
         (rows ? `<div class="table-scroll"><table class="compact-table"><thead><tr><th>단계</th><th>기본 담당</th><th>지금 담당</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`
           : UI.empty('에이전트가 맡는 단계가 없습니다', '', 'compact')) });
     const roles = (b.roles || []).map(r => {
@@ -327,7 +337,7 @@
     await loadBoard(); await refreshAgents(); render();
   }
   async function refreshAgents() {
-    try { st.agents = await getJ(api('/api/agents')); registerNames(st.agents); } catch (e) { /* 목록 오류는 다음 다시 읽기에서 */ }
+    try { st.agents = await getJ(api('/api/agents')); registerNames(st.agents); st.error = ''; } catch (e) { st.error = reason(e); }
   }
   async function member(role_id, user_id, add) {
     try {
@@ -343,8 +353,8 @@
     try { const out = await fn(); if (ok) UI.toast(typeof ok === 'function' ? ok(out) : ok, { tone: 'ok' }); return out; }
     catch (e) { UI.toast(reason(e), { tone: 'neg', timeout: 8000 }); return null; }
   }
-  async function cloneAgent(id) {
-    const copy = await act(() => postJ(api('/api/agents/' + encodeURIComponent(id) + '/clone'), {}), c => `'${c.username}'${window.hydWords.josa(c.username, '을/를')} 만들었습니다 — 고친 뒤 저장하세요`);
+  async function cloneAgent(id, button) {
+    const copy = await once('clone:' + id, button, () => act(() => postJ(api('/api/agents/' + encodeURIComponent(id) + '/clone'), {}), c => `'${c.username}'${window.hydWords.josa(c.username, '을/를')} 만들었습니다 — 고친 뒤 저장하세요`));
     if (!copy) return;
     st.pick.agents = copy.id;
     await load();
@@ -363,9 +373,10 @@
     if (out) { st.pick.skills = null; await load(); }
   }
   async function resetAll() {
-    if (!await UI.confirm({ title: '기준으로 되돌릴까요?', body: '내가 만든 에이전트 · 스킬 · 단계 배정 · 넣은 업무분장을 모두 지웁니다. 기본 에이전트와 기본 업무분장은 그대로입니다.', ok: '되돌리기', danger: true })) return;
+    if (!await UI.confirm({ title: '기준으로 되돌릴까요?', body: '내가 만든 에이전트 · 스킬 · 스킬 붙이기 · 역할(흐름이 쓰는 역할은 남김) · 단계 배정 · 넣은 업무분장을 모두 지웁니다. 기본 에이전트와 기본 업무분장은 그대로입니다.', ok: '되돌리기', danger: true })) return;
     const out = await act(() => postJ(api('/api/agents/reset'), {}),
-      o => `되돌렸습니다 — 에이전트 ${o.agents} · 스킬 ${o.skills} · 단계 배정 ${o.assignments} · 업무분장 ${o.role_members}` + (o.returned_tasks.length ? ` · 열린 단계 ${o.returned_tasks.length}건 기본 담당으로` : ''));
+      o => `되돌렸습니다 — 에이전트 ${o.agents} · 스킬 ${o.skills} · 스킬 붙이기 ${o.attachments} · 역할 ${o.roles} · 단계 배정 ${o.assignments} · 업무분장 ${o.role_members}`
+        + (o.kept_roles.length ? ` · 흐름이 쓰는 역할 ${o.kept_roles.length}개는 남김` : '') + (o.returned_tasks.length ? ` · 열린 단계 ${o.returned_tasks.length}건 기본 담당으로` : ''));
     if (out) { st.form = null; st.pick = { agents: null, skills: null }; st.board = null; await load(); }
   }
 
@@ -401,24 +412,25 @@
     if (t.hasAttribute('data-new-skill')) return openForm('skill');
     if (t.hasAttribute('data-edit-agent') && st.detail) { await loadOptions(); return openForm('agent', st.detail); }
     if (t.hasAttribute('data-edit-skill') && st.detail) return openForm('skill', st.detail);
-    if (t.dataset.clone) return cloneAgent(t.dataset.clone);
+    if (t.dataset.clone) return cloneAgent(t.dataset.clone, t);
     if (t.hasAttribute('data-del-agent') && st.detail) return deleteAgent(st.detail);
     if (t.hasAttribute('data-del-skill') && st.detail) return deleteSkill(st.detail);
     if (t.hasAttribute('data-f-cancel')) { st.form = null; render(); return loadDetail(); }
     if (t.hasAttribute('data-attach') && st.detail) {
-      const sel = st.host.querySelector('[data-attach-to]');
-      if (sel && await act(() => postJ(api('/api/agents/' + encodeURIComponent(sel.value) + '/skills'), { skill_name: st.detail.skill_name }), '붙였습니다')) await load();
+      const sel = st.host.querySelector('[data-attach-to]'), skill = st.detail.skill_name;
+      if (sel && await once('attach:' + skill, t, () => act(() => postJ(api('/api/agents/' + encodeURIComponent(sel.value) + '/skills'), { skill_name: skill }), '붙였습니다'))) await load();
       return;
     }
     if (t.dataset.detach && st.detail) {
-      if (await act(() => del(api('/api/agents/' + encodeURIComponent(t.dataset.detach) + '/skills/' + encodeURIComponent(st.detail.skill_name))), '뗐습니다')) await load();
+      const skill = st.detail.skill_name;
+      if (await once('detach:' + t.dataset.detach + '/' + skill, t, () => act(() => del(api('/api/agents/' + encodeURIComponent(t.dataset.detach) + '/skills/' + encodeURIComponent(skill))), '뗐습니다'))) await load();
       return;
     }
-    if (t.dataset.memberAdd) { const sel = st.host.querySelector(`[data-member-pick="${CSS.escape(t.dataset.memberAdd)}"]`); return sel && member(t.dataset.memberAdd, sel.value, true); }
-    if (t.dataset.unmember) { const [r, u] = t.dataset.unmember.split('|'); return member(r, u, false); }
+    if (t.dataset.memberAdd) { const sel = st.host.querySelector(`[data-member-pick="${CSS.escape(t.dataset.memberAdd)}"]`); return sel && once('member:' + t.dataset.memberAdd, t, () => member(t.dataset.memberAdd, sel.value, true)); }
+    if (t.dataset.unmember) { const [r, u] = t.dataset.unmember.split('|'); return once('unmember:' + t.dataset.unmember, t, () => member(r, u, false)); }
     if (t.hasAttribute('data-role-add')) {
       const name = (st.host.querySelector('[data-role-name]') || {}).value || '', key = (st.host.querySelector('[data-role-key]') || {}).value || '';
-      if (await act(() => postJ(api('/api/roles'), { name: name.trim(), key: key.trim() || null }), r => `역할 '${r.name}'을 만들었습니다 — 아래 표에서 사람을 넣으세요`)) { await loadBoard(); render(); }
+      if (await once('role-add', t, () => act(() => postJ(api('/api/roles'), { name: name.trim(), key: key.trim() || null }), r => `역할 '${r.name}'을 만들었습니다 — 아래 표에서 사람을 넣으세요`))) { await loadBoard(); render(); }
       return;
     }
     if (t.dataset.roleDel) {
@@ -462,6 +474,7 @@
   }
   // 메뉴를 다시 열 때마다 다시 읽는다(셸 show) — 쓰는 중인 폼은 mount 가 그대로 둔다
   window.hydAgents = { mount, show: mount };
-  // 학생이 만든 에이전트의 이름을 처리 건 · 작업함 화면에도 (화면을 열지 않아도) — 실패하면 id 대신 이름이 안 보일 뿐, 화면은 그대로
-  if (typeof API !== 'undefined') getJ(api('/api/agents')).then(registerNames).catch(() => {});
+  // 학생이 만든 에이전트의 이름을 처리 건 · 작업함 화면에도 (화면을 열지 않아도). 실패하면 그 화면들은 이름 대신 식별자를 보인다 —
+  // 이 화면(에이전트)을 열면 같은 목록을 다시 읽어 실패 사유가 화면에 보인다. 여기서는 콘솔에 남긴다(삼키지 않는다)
+  if (typeof API !== 'undefined') getJ(api('/api/agents')).then(registerNames).catch(e => console.error('에이전트 이름 목록을 읽지 못했습니다:', e.message));
 })();

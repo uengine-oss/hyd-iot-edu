@@ -1,4 +1,4 @@
-# hyd-dmn MCP: the agent service's deterministic engine (agentsvc) served as MCP tools. Same templates, same env as `agent`.
+# hyd-dmn MCP: the agent service's deterministic engine (agentsvc) served as MCP tools at /mcp, plus the class neo4j read tools (hydcommon.neo4j_mcp) at /neo4j/mcp in the same process. Same templates, same env as `agent`.
 FROM python:3.12-slim
 WORKDIR /srv
 COPY it/dmn-mcp/requirements.txt /srv/requirements.txt

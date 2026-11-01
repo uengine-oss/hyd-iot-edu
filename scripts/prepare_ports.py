@@ -4,8 +4,12 @@
   project.json  이 폴더 경로와 Compose · 업무 DB(Supabase) 프로젝트 이름. 다음 시작이 「같은 폴더 · 옮긴 폴더 · 복사한 폴더」를 가른다
   ports.json    기본 포트 → 이 PC의 바깥 포트(시작 · 점검 · 개발 도구가 읽는다)
 만드는 것(git 밖):
-  .env              Compose 가 읽는 이 PC 값(COMPOSE_PROJECT_NAME · HYD_PORT_* · HYD_PORTS · 업무 DB 주소 · 메일함 SMTP 포트,
-                    없을 때 한 번 만드는 내부 확인 값 PROCESS_CALLER_TOKEN · CMD_FINGERPRINT_KEY)
+  .env              Compose 가 읽는 이 PC 값 — 이 목록이 정본이다(.env.example 은 여기를 가리킨다):
+                      COMPOSE_PROJECT_NAME(이 폴더의 프로젝트 이름) · HYD_PORT_<compose 포트>(바깥 포트) · HYD_PORTS(옮긴 포트 표 —
+                      포털이 새 탭 도구 주소에 쓴다) · SUPABASE_DSN · ENTERPRISE_READ_DSN(업무 DB 주소) · EFFECTS_SMTP_PORT(메일함 포트) ·
+                      없을 때 한 번 만드는 내부 확인 값 PROCESS_CALLER_TOKEN · CMD_FINGERPRINT_KEY. (AI_MODE 는 hyd_env.py ai-mode 가 적는다)
+                    compose.yaml 이 ${이름} 으로 읽지 않는 줄(앞 판의 배속 · 중계 주소 같은 수업 값 등)은 그 줄 앞에 # 를 붙여 끄고 알린다 —
+                    수업 구성은 compose.yaml 한 곳이 정한다. COMPOSE_* 는 Compose 자신의 설정이라 남긴다(없는 프로필을 적은 COMPOSE_PROFILES 는 끈다).
   it/supabase/.env  Supabase CLI 가 스스로 읽어 config.toml 값을 덮어쓰는 이 PC 값(SUPABASE_PROJECT_ID · SUPABASE_*_PORT · 로그인 주소).
                     근거(CLI 2.119.0 소스, 태그 커밋 3cb948c5): start · stop 은 apps/cli/src/command-internal/local-config-values.ts 의
                     envOverride("SUPABASE_<설정 경로>") — <workdir>/supabase/.env 값을 먼저, 없으면 셸 환경. migration up 은
@@ -13,7 +17,12 @@
 it/supabase/config.toml 은 커밋된 값 그대로 둔다. 앞 판 시작이 이 파일에 써 넣은 이 PC 값(업무 DB 이름 · 포트)은 첫 실행에서 위 기록으로
 옮긴 뒤, 그 칸들만 다를 때에 한해 커밋된 내용으로 되돌린다(다른 칸까지 고친 파일은 건드리지 않고 알린다).
 
-    python scripts/prepare_ports.py            # 시작이 부른다
+지운 볼륨(RETIRED_VOLUMES): compose.yaml 에서 뺀 볼륨은 `docker compose down -v` 도 지우지 않는다. 시작이 compose 를 켠 뒤
+(그 볼륨을 붙였던 옛 판 컨테이너가 새 판으로 바뀐 뒤) `retire` 로 이 폴더 프로젝트의 그 볼륨을 지우고 알린다 — 지울 이름은 아래 표에만 적는다
+(compose 에 없는 볼륨을 모두 지우면 이름을 바꾼 볼륨의 실습 기록까지 지운다).
+
+    python scripts/prepare_ports.py            # 시작 2단계가 부른다
+    python scripts/prepare_ports.py retire     # 시작 4단계(compose up) 뒤에 부른다
     python scripts/prepare_ports.py port 8088  # 기본 포트 8088 의 이 PC 바깥 포트
 """
 from __future__ import annotations
@@ -59,7 +68,10 @@ PC_SECRETS = ('PROCESS_CALLER_TOKEN', 'CMD_FINGERPRINT_KEY')
 LOCAL_DSNS = {
     'SUPABASE_DSN': 'postgresql://postgres:postgres@host.docker.internal:54322/postgres',
     'ENTERPRISE_READ_DSN': 'postgresql://hyd_enterprise_reader:hyd-enterprise-read-local@host.docker.internal:54322/postgres',
-    'HYD_MCP_OAUTH_CALLBACK_URL': 'http://localhost:8088/api/mcp/connections/callback',
+}
+# compose.yaml 에서 뺀 볼륨 → 뺀 날 · 까닭. 그 데이터는 지금 판의 어느 코드도 읽지 않는다
+RETIRED_VOLUMES = {
+    'enterprise-data': '2026-10-30 — 지운 메모리판 업무 시스템의 상태 파일 자리(업무 데이터는 업무 DB가 원천)',
 }
 
 
@@ -317,6 +329,29 @@ def read_saved_ports(path: Path) -> dict[int, int]:
         raise PrepareError(f'저장된 포트 표({path.as_posix()})를 읽을 수 없습니다({exc}). 그 파일을 지우고 다시 시작하세요.') from None
 
 
+# ---------------------------------------------------------------- .env 의 옛 줄
+def compose_reads(compose_text: str) -> tuple[set[str], set[str]]:
+    """(compose.yaml 이 ${이름} 으로 읽는 이름, 정의된 프로필). YAML 주석(공백 뒤 #)은 빼고 본다."""
+    body = '\n'.join(re.sub(r'(^|\s)#.*$', '', line) for line in compose_text.splitlines())
+    names = set(re.findall(r'\$\{([A-Za-z_][A-Za-z0-9_]*)', body))
+    profiles = {p.strip() for group in re.findall(r'profiles:\s*\[([^\]]*)\]', body) for p in group.split(',') if p.strip()}
+    return names, profiles
+
+
+def stale_keys(values: dict[str, str], compose_text: str) -> list[str]:
+    """.env 에 있지만 compose 가 읽지 않는 키 — 수업 값을 옛 줄이 조용히 덮지 않게 시작이 끈다(목록은 compose.yaml 에서 읽는다)."""
+    names, profiles = compose_reads(compose_text)
+    stale = []
+    for key, value in values.items():
+        if key == 'COMPOSE_PROFILES':
+            wanted = {p.strip() for p in value.split(',') if p.strip()}
+            if wanted - profiles - {'*'}:
+                stale.append(key)
+        elif not key.startswith('COMPOSE_') and key not in names:
+            stale.append(key)
+    return stale
+
+
 # ---------------------------------------------------------------- 쓰기
 def atomic_write(path: Path, text: str) -> None:
     temp = path.with_name(path.name + '.hyd-tmp')
@@ -381,7 +416,8 @@ def prepare(root: Path, *, inventory=None, container_ports=None, probe=available
     owned, occupied = docker_ports(names, mine) if container_ports is None else ports_from_containers(container_ports, names, mine)
     ports = allocate(service_ports | {d for d, _ in DB_FIELDS.values()}, previous, owned, occupied, probe)
 
-    updates = {'COMPOSE_PROJECT_NAME': names[0], **{f'HYD_PORT_{p}': str(port) for p, port in ports.items()},
+    # 업무 DB 포트는 it/supabase/.env 로 간다 — .env 에는 compose 가 읽는 포트만
+    updates = {'COMPOSE_PROJECT_NAME': names[0], **{f'HYD_PORT_{p}': str(ports[p]) for p in sorted(service_ports)},
                'HYD_PORTS': ' '.join(f'{p}={port}' for p, port in sorted(ports.items()) if p != port)}
     replacements = {54322: ports[54322], 8088: ports[8088], previous[54322]: ports[54322], previous[8088]: ports[8088]}
     for key, default in LOCAL_DSNS.items():
@@ -395,8 +431,13 @@ def prepare(root: Path, *, inventory=None, container_ports=None, probe=available
     if supa_path.exists() and not supa_path.read_text(encoding='utf-8').startswith(SUPABASE_ENV_HEAD):
         raise PrepareError(f'{SUPABASE_ENV.as_posix()} 가 시작이 만든 파일이 아닙니다. 그 안의 값을 다른 곳에 옮긴 뒤 파일을 지우고 다시 시작하세요.')
 
+    stale = stale_keys(values, compose_text)          # 시작이 쓰는 키는 모두 compose 가 읽는 키다(겹치면 hyd_env 가 멈춘다)
+    if stale:
+        notes.append(f'.env 의 옛 줄 {len(stale)}개({" · ".join(stale)})는 이제 쓰이지 않아 앞에 # 를 붙여 껐습니다 '
+                     f'(배속 · 강의 중계 주소 같은 수업 값은 compose.yaml 이 정합니다). 학생이 채우는 줄은 LLM_API_KEY 하나입니다.')
+
     runtime.mkdir(exist_ok=True)
-    hyd_env.write_updates(env_path, updates)
+    hyd_env.write_updates(env_path, updates, tuple(stale))
     atomic_write(supa_path, supabase_env_text(names[1], ports, config['site_url'], config['redirects'], {8088, previous[8088]}))
     atomic_write(ports_path, json.dumps({str(k): v for k, v in sorted(ports.items())}, indent=2) + '\n')
     atomic_write(record_path, json.dumps({'root': str(root), 'compose': names[0], 'supabase': names[1]}, ensure_ascii=False, indent=2) + '\n')
@@ -413,6 +454,31 @@ def prepare(root: Path, *, inventory=None, container_ports=None, probe=available
     return notes
 
 
+def retired_targets(compose_name: str, volumes: dict[str, dict]) -> list[str]:
+    """지울 볼륨 이름 — {볼륨 이름: 라벨} 중 이 프로젝트가 만든(compose 라벨) RETIRED_VOLUMES 의 볼륨만."""
+    return sorted(name for name, labels in volumes.items()
+                  if (labels or {}).get('com.docker.compose.project') == compose_name
+                  and (labels or {}).get('com.docker.compose.volume') in RETIRED_VOLUMES)
+
+
+def retire(root: Path) -> list[str]:
+    """시작 4단계 뒤: 이 폴더 프로젝트의 지운 볼륨을 지우고 알릴 말을 돌려준다. 지우지 못하면 그 까닭(Docker 의 말)으로 멈춘다."""
+    record_path = root / RUNTIME / 'project.json'
+    if not record_path.exists():
+        raise PrepareError('폴더 기록(.hyd-runtime/project.json)이 없습니다. 시작 파일을 처음부터 다시 실행하세요.')
+    compose_name = json.loads(record_path.read_text(encoding='utf-8'))['compose']
+    ids = subprocess.check_output(['docker', 'volume', 'ls', '-q', '--filter', f'label=com.docker.compose.project={compose_name}'], text=True).split()
+    labels = dict(zip(ids, _labels('volume', ids)))
+    notes = []
+    for name in retired_targets(compose_name, labels):
+        out = subprocess.run(['docker', 'volume', 'rm', name], capture_output=True, text=True, encoding='utf-8', errors='replace')
+        if out.returncode != 0:
+            raise PrepareError(f'지금 판이 쓰지 않는 옛 볼륨 {name} 을 지우지 못했습니다: {out.stderr.strip()[:300]} — '
+                               f'「docker ps -a --filter volume={name}」로 그 볼륨을 붙든 컨테이너를 확인해 강사에게 알려 주세요.')
+        notes.append(f'지금 판이 쓰지 않는 옛 볼륨 {name} 을 지웠습니다({RETIRED_VOLUMES[labels[name]["com.docker.compose.volume"]]}).')
+    return notes
+
+
 def saved_port(root: Path, default: int) -> int:
     ports = read_saved_ports(root / RUNTIME / 'ports.json')
     if not ports:
@@ -423,8 +489,8 @@ def saved_port(root: Path, default: int) -> int:
 def main(argv: list[str], root: Path = ROOT) -> int:
     args = argv[1:]
     try:
-        if args == []:
-            for note in prepare(root):
+        if args in ([], ['retire']):
+            for note in (prepare(root) if not args else retire(root)):
                 print(note)
             return 0
         if len(args) == 2 and args[0] == 'port' and args[1].isdigit():
@@ -437,7 +503,7 @@ def main(argv: list[str], root: Path = ROOT) -> int:
         # 명령 · 파일 이름까지만 보인다(.env 값은 예외 글에 들어가지 않는다)
         print(f'포트 준비가 실패했습니다 — {type(exc).__name__}: {exc}', file=sys.stderr)
         return 1
-    print('사용: prepare_ports.py | prepare_ports.py port <기본 포트>', file=sys.stderr)
+    print('사용: prepare_ports.py | prepare_ports.py retire | prepare_ports.py port <기본 포트>', file=sys.stderr)
     return 2
 
 

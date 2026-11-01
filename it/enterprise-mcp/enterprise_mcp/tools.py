@@ -4,9 +4,10 @@ Reads only. Every tool answers in the envelope the WMS sample uses ({"result": "
 "error_kind", "message"}); the document of a named read is the {"system", "facts", "records"} record the agent's decision
 engine already understands (enterprise-sim), so the ontology InputData -SOURCED_FROM-> System links keep working.
 `describe_catalog` (structured) and `describe_schema` (the same metadata rendered as quoted DDL text in `document`) hand
-the agent the view it needs to write its own SELECT (`query`); `query` runs it through sql_guard on a read-only,
-time-boxed connection. `guarded` turns a DB/connection failure of any tool into the error envelope (error_kind UNKNOWN)
-and a rejected statement into INVALID, so a tool never raises a stack trace at the MCP client.
+the agent the view it needs to write its own SELECT (`query`); `query` runs it through the shared read-only guard
+(hydcommon.sql_read) on a read-only, time-boxed connection. `guarded` turns a DB/connection failure of any tool into the
+error envelope (error_kind UNKNOWN) and a refused input (an unknown asset · part, a rejected statement, a bad catalog page)
+into INVALID, so a tool never raises a stack trace at the MCP client.
 """
 from __future__ import annotations
 
@@ -17,7 +18,8 @@ from typing import Callable
 import psycopg
 from hydcommon.tool_result import checked
 
-from .sql_guard import SqlRejected, guard
+from hydcommon.sql_read import SqlRejected, guard
+
 from .catalog import CATALOG_SQL, render
 
 READ_RPCS = {
@@ -45,16 +47,17 @@ def error(kind: str, message: str, **extra) -> dict:
 
 
 def guarded(fn):
-    """Envelope every failure of a tool: SqlRejected → INVALID, psycopg/connection/runtime errors → UNKNOWN (first line of
-    the DB message, no stack trace). KeyError (unknown fixed read) is a programming error and still raises."""
+    """Envelope every failure of a tool: a refused input (ValueError — SqlRejected, an unknown asset · part, a bad catalog page)
+    → INVALID, psycopg/connection/runtime errors → UNKNOWN (first line of the DB message, no stack trace). KeyError (unknown
+    fixed read name) is a programming error and still raises."""
     @functools.wraps(fn)
     def run(*a, **kw):
         try:
             return fn(*a, **kw)
-        except SqlRejected as e:
-            return error("INVALID", f"rejected: {e}", **({"statement": kw["sql"]} if "sql" in kw else {}))
+        except ValueError as e:
+            return error("INVALID", f"거절: {e}", **({"statement": kw["sql"]} if "sql" in kw else {}))
         except (psycopg.Error, RuntimeError, OSError) as e:
-            return error("UNKNOWN", f"database: {str(e).splitlines()[0][:200] if str(e) else type(e).__name__}",
+            return error("UNKNOWN", f"업무 DB 오류: {str(e).splitlines()[0][:200] if str(e) else type(e).__name__}",
                          **({"statement": kw["sql"]} if "sql" in kw else {}))
     return run
 
@@ -70,19 +73,22 @@ class EnterpriseTools:
 
     # ---- fixed reads (the ontology's named sources)
     def read(self, name: str, **params) -> dict:
+        """One named read. 규칙 하나: 업무 DB 함수가 사실(facts)을 돌려주지 않으면 그 대상이 없는 것이다(INVALID) — entsim 의 404 와 같은 규칙.
+        비울 수 있는 인자(pm_status 의 설비 · spare_stock 의 부품)는 비우면 함수가 전체를 돌려준다(2026-10-30 검진 G2-04: 설비를 비우면
+        「등록되지 않은 설비」로 거절됐고, 없는 부품은 「0건 성공」이었다)."""
         fn, arg_names = READ_RPCS[name]
         args = [params.get(a) for a in arg_names]
         with self._connect() as conn, conn.cursor() as cur:
             self._begin_read(cur)
-            if 'asset' in arg_names:
-                cur.execute('select exists(select 1 from ent.assets where code=%s)', (params.get('asset'),))
-                found = cur.fetchone()
-                if not found or not found[0]:
-                    raise SqlRejected('등록되지 않은 설비 코드입니다. 실제 설비 목록을 확인하세요')
             cur.execute(f"select {fn}({', '.join(['%s'] * len(args))})", args)
             row = cur.fetchone()
         value = row[0] if row else None
-        return ok(value if isinstance(value, dict) else json.loads(value or "{}"))
+        document = value if isinstance(value, dict) or value is None else json.loads(value)
+        if not isinstance(document, dict) or document.get("facts") is None:
+            given = ", ".join(f"{a}={params.get(a)}" for a in arg_names if params.get(a) is not None)
+            raise ValueError(f"업무 DB 에 그 대상의 자료가 없습니다({given or '값 없음 — 이 조회는 대상이 필요합니다'}). "
+                             "실제 설비 코드(HYD-01 · HYD-02 · HYD-03)와 부품 번호(spare_stock 결과)를 확인하세요")
+        return ok(document)
 
     # ---- the agent's own SQL (회의 6번)
     def describe_schema(self) -> dict:

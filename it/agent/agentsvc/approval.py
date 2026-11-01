@@ -8,7 +8,8 @@ from copy import deepcopy
 import hashlib
 import json
 from hydcommon.forecast import number
-from hydcommon import bsc
+from hydcommon.maintenance_policy import PM_PATTERN
+from hydcommon.skill_scope import PURCHASE_PATTERN
 
 from . import cards, decide, forecasting, guardrail
 
@@ -28,6 +29,13 @@ def consented(key, value):
         return value
     from hydcommon.maintenance_plan import without_elapsed
     return without_elapsed(value)
+
+
+#: 승인 보류 사유에 보이는 카드 칸 이름(학생 말 — 검진 G1-10: 「카드의 rankingEvidence 내용이 변경됐습니다」)
+CARD_FIELDS = {'sopId': '절차 번호', 'kind': '카드 종류', 'actions': '조치', 'approver': '승인 역할', 'steps': '절차 단계',
+               'warnings': '경고', 'penalties': '감점', 'forecast': '예측', 'policy_sha256': '적용 규칙', 'reviewed_choice': '검토한 조치값',
+               'rankingEvidence': '순위 근거', 'supplier_policy': '공급사 정책', 'resolvedSupplier': '정한 공급사',
+               'maintenancePlan': '정비 계획', 'economicComparison': '총비용 비교'}
 
 
 def unresolved(rule, facts):
@@ -70,14 +78,19 @@ def current_options(kg, tsdb, decision, option_id, parameters=None):
     part = None
     if purchase:
         declared = origin.get('part')
-        if pattern != 'SPARE_BELOW_MIN' or not isinstance(declared, dict) or not isinstance(declared.get('partNo'), str):
+        if pattern != PURCHASE_PATTERN or not isinstance(declared, dict) or not isinstance(declared.get('partNo'), str):
             raise ValueError('명시 구매 Part 경로의 원천 근거가 올바르지 않습니다')
         part = kg.purchase_part(declared['partNo'])
         if part.get('id') != declared.get('id') or cause is not None or failure is not None:
             raise ValueError('명시 구매 Part가 현재 지식과 다르거나 고장 근거가 혼합되었습니다')
-    rules, inputs = kg.dmn(), kg.inputs()
-    ids = sorted({sid for r in rules if r['decision'] == 'dec:action-candidates' for sid in r.get('outputs') or []})
-    skills = {r['skillId']: r for r in kg.skills(ids)}
+    known = dict(pattern=pattern, cause=cause, failure_mode=failure)
+    if prior.get('failure_mode_name'):    # 다시 보기 문장도 처음 판단처럼 고장 유형을 이름으로(「fm:…」 id 가 아니라)
+        known['failure_mode_name'] = prior['failure_mode_name']
+    if part is not None:
+        known.update(purchase_part=part['id'],purchase_part_no=part['partNo'],purchase_part_name=part.get('name'))
+    # 처음 판단과 같은 지식 묶음 · 같은 변수 · 같은 원천(decide.judgment_context) — 원천을 못 읽으면 그 까닭으로 승인 검사가 멈춘다
+    ctx = decide.judgment_context(kg, known)
+    rules, inputs, skills, tradeoffs = ctx['dmn'], ctx['inputs'], dict(ctx['skills']), ctx['tradeoffs']
     reference = deepcopy(skills.get(option_id))
     reviewed = None
     if parameters is not None:
@@ -86,31 +99,20 @@ def current_options(kg, tsdb, decision, option_id, parameters=None):
         skills[option_id], normalized = _parameterized(reference, parameters)
         reviewed = {'parameters': normalized, 'base_policy_sha256':cards.policy_digest(rules, reference),
                     'reference_name': reference.get('name'), 'reference_actions':reference.get('actions') or []}
-    known = dict(pattern=pattern, cause=cause, failure_mode=failure)
-    if prior.get('failure_mode_name'):    # 다시 보기 문장도 처음 판단처럼 고장 유형을 이름으로(「fm:…」 id 가 아니라)
-        known['failure_mode_name'] = prior['failure_mode_name']
-    if part is not None:
-        known.update(purchase_part=part['id'],purchase_part_no=part['partNo'],purchase_part_name=part.get('name'))
-    facts, provenance = decide.gather_facts(inputs, decision['asset'], known, tsdb, strict=True)
-    if part is not None and facts.get('spare_part_no') != part['partNo']:
-        raise ValueError('현재 ERP 부족부품과 명시 구매 Part가 일치하지 않습니다')
-    skills = cards.scoped_skills(pattern, skills, part['id'] if part else None)
-    if pattern == 'PM_DUE':
-        try:
-            facts['pm_context']=decide.pm_context(decision['asset'])
-        except Exception as exc:
-            facts['pm_context']=dict(asset=decision['asset'],error=str(exc))
-    forecasts, contexts = ({}, None) if part is not None else forecasting.candidates(kg, decision['asset'], skills)
+    facts, provenance = decide.gather_facts(inputs, decision['asset'], known, tsdb, variables=ctx['variables'], strict=True)
+    if pattern == PM_PATTERN:
+        facts['pm_context'] = decide.pm_context(decision['asset'])
+    compliance = [r for r in rules if r['decision'] == 'dec:compliance']
+    stopping = {sid for sid, k in skills.items() if cards.stops_now(cards.option_window(compliance, sid, k, facts.get('windows_by_variable')))}
+    forecasts, contexts = ({}, None) if part is not None else forecasting.candidates(kg, decision['asset'], skills, stopping)
     suppliers = kg.suppliers()
-    tradeoffs = kg.tradeoffs(ids)
     result = cards.evaluate(rules, skills, facts, forecasts, tradeoffs, kg.precedents(failure), suppliers, contexts, evaluation_mode='execution')
     current = next((o for o in result['options'] if o['id'] == option_id), None)
     roles = {r['id']: r for r in kg.roles()}
     if current is not None and reviewed is not None:
         current['reviewed_choice'] = reviewed
     return dict(rules=rules,skills=skills,facts=facts,provenance=provenance,forecasts=forecasts,
-                suppliers=suppliers,result=result,current=current,roles=roles,
-                bsc_variables=bsc.fact_variables([r for r in tradeoffs if r['skill']==option_id]))
+                suppliers=suppliers,result=result,current=current,roles=roles)
 
 
 def preview(kg, tsdb, decision, option_id, parameters):
@@ -145,7 +147,9 @@ def assess(kg, tsdb, decision, option_id, role, consented_at=None):
     provenance, forecasts, suppliers = data['provenance'], data['forecasts'], data['suppliers']
     current, roles = data['current'], data['roles']
     prior = decision.get('facts') or {}
-    report = dict(allowed=False, decision=decision['id'], option=option_id,
+    names = {p['variable']: p.get('name') or p['variable'] for p in [*(decision.get('provenance') or []), *provenance] if p.get('variable')}
+    label = lambda key: f"「{names.get(key, key)}」"   # noqa: E731 — 사유 문장에는 판단 변수 id 대신 지식의 이름
+    report = dict(allowed=False, needs_new_preview=False, decision=decision['id'], option=option_id,
                   checked_at=datetime.now(timezone.utc).isoformat(), facts=facts, provenance=provenance,
                   current_option=current, reasons=[], unknown=[],
                   policy_sha256=hashlib.sha256(canonical({'rules':rules,'skills':skills,'roles':roles}).encode()).hexdigest())
@@ -172,12 +176,15 @@ def assess(kg, tsdb, decision, option_id, role, consented_at=None):
     if current:
         reasons.extend(guardrail.check_cards({'options':[current],'recommended':option_id}))
         if forecasting.requires_plant_consent(old.get('actions')) or forecasting.requires_plant_consent(current.get('actions')):
-            reasons.extend(forecasting.consent_changes(old.get('forecastContext'), current.get('forecastContext'), consented_at=consented_at))
+            consent = forecasting.consent_changes(old.get('forecastContext'), current.get('forecastContext'), consented_at=consented_at)
+            reasons.extend(consent)
+            # 예측이 오래됐거나 바뀐 것은 새 미리 보기로 다시 검토하면 풀린다 — 화면 · 점검은 문장 글자가 아니라 이 칸으로 가린다(검진 G4-16)
+            report['needs_new_preview'] = bool(consent)
         # The chosen action, work content and consent context must remain what the
         # human saw. Continuous sensor changes matter through reevaluated rules.
         for key in ('sopId', 'kind', 'actions', 'approver', 'steps', 'warnings', 'penalties', 'forecast', 'policy_sha256', 'reviewed_choice', 'rankingEvidence', 'supplier_policy', 'resolvedSupplier', 'maintenancePlan', 'economicComparison'):
             if canonical(consented(key, old.get(key))) != canonical(consented(key, current.get(key))):
-                reasons.append(f'카드의 {key} 내용이 변경됐습니다. 새 판단을 검토하세요')
+                reasons.append(f'카드의 {CARD_FIELDS.get(key, key)} 내용이 바뀌었습니다. 새 판단을 검토하세요')
         need = current.get('approver') or {}
         actual_role = roles.get(role)
         if not actual_role or (role != need.get('id') and int(actual_role.get('level') or 0) <= int(need.get('level') or 0)):
@@ -197,7 +204,7 @@ def assess(kg, tsdb, decision, option_id, role, consented_at=None):
     for key in (() if economic else ('order_due_h', 'order_penalty_per_h', 'order_customer_tier', 'hot_lot_claim', 'hot_lot_qty')):
         if key in prior or key in facts:
             if not unchanged(key):
-                reasons.append(f'업무 판단 입력 {key}가 변경됐거나 확인되지 않습니다')
+                reasons.append(f'업무 판단 입력 {label(key)}이(가) 바뀌었거나 확인되지 않습니다')
     # Explicit physical inputs used by current rules are also human consent
     # context. Equal values from a different column/meaning are not equivalent.
     relevant = {t.get('variable') for r in rules for t in r.get('tests') or []
@@ -207,20 +214,18 @@ def assess(kg, tsdb, decision, option_id, role, consented_at=None):
     before = {p['variable']: p.get('binding') for p in decision.get('provenance') or [] if p.get('binding')}
     ranking_inputs = set() if economic else cards.ranking_variables(rules)
     relevant.update(ranking_inputs)
-    if not economic:
-        relevant.update(data['bsc_variables'])
     for key in sorted(ranking_inputs):
         if key in anchors_before or key in anchors_after:
             changed = not unchanged(key)
         else:
             changed = (key in prior) != (key in facts) or canonical(prior.get(key)) != canonical(facts.get(key))
         if changed:
-            reasons.append(f'순위 판단 입력 {key}가 변경됐습니다. 새 판단을 검토하세요')
+            reasons.append(f'순위 판단 입력 {label(key)}이(가) 바뀌었습니다. 새 판단을 검토하세요')
     after = {p['variable']: p.get('binding') for p in provenance if p.get('binding')}
     for key in sorted(relevant & (before.keys() | after.keys())):
         if canonical(before.get(key)) != canonical(after.get(key)):
-            reasons.append(f'업무 판단 입력 {key}의 물리 출처 또는 의미가 변경됐습니다')
+            reasons.append(f'업무 판단 입력 {label(key)}의 업무 DB 출처나 뜻이 바뀌었습니다')
         if not unchanged(key):
-            reasons.append(f'업무 판단 입력 {key}가 변경됐거나 확인되지 않습니다')
+            reasons.append(f'업무 판단 입력 {label(key)}이(가) 바뀌었거나 확인되지 않습니다')
     report['allowed'] = not reasons
     return report

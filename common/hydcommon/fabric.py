@@ -7,7 +7,7 @@ hyd_timeseries_reader)과 같은 SQL 가드(hydcommon.sql_read)를 쓴다. 참�
 아니라 바인더가 붙임)와 ontologic data-fabric(MindsDB 카탈로그). HYD는 원천이 둘뿐이라 카탈로그는 각 DB의 시스템 카탈로그를
 직접 읽는다.
 
-  1 원천(SOURCES)     : 연결 상태 · 표 · 열 · 샘플. 실패는 사람이 읽을 사유(failure_reason)로.
+  1 원천(SOURCES)     : 업무 DB(ent) · 옛 설비 DB(legacy, 같은 업무 DB 안) · 시계열 DB — 연결 상태 · 표 · 열 · 샘플. 실패는 사람이 읽을 사유(failure_reason)로.
   2 클래스 ↔ 표·열     : 온톨로지 클래스의 식별 키(CLASS_KEYS)와 InputData의 원천 링크(SOURCED_FROM · DDL 적재로 생긴 물리 바인딩)를
                         살아 있는 카탈로그에 대어 OK · MISSING을 판정한다. 이름으로 의미를 추측하지 않는다.
   3 묶어 보기         : 설비 하나 → 두 원천의 연결된 값을 출처(원천 · 표 · 열 · 조건 · 실행 SQL · 관측 시각)와 함께 합침,
@@ -26,19 +26,26 @@ from uuid import UUID
 
 import psycopg
 
-from .enterprise import reader_connection as enterprise_reader
-from .sql_read import MAX_ROWS, READ_FUNCTIONS, SqlRejected, guard
+from .enterprise import ReaderRoleRefused, reader_connection
+from .sql_read import MAX_ROWS, TIMESERIES_FUNCTIONS, SqlRejected, guard
 
-ENT, TS = 'hyd-enterprise', 'hyd-timeseries'
+ENT, TS, LEGACY = 'hyd-enterprise', 'hyd-timeseries', 'hyd-legacy'
 TS_TABLES = ('tag_1s', 'feat_1s', 'tag_1m')
 SOURCES = {
     ENT: dict(id=ENT, label='업무 DB', engine='Supabase PostgreSQL', schema='ent', role='hyd_enterprise_reader',
               env=('ENTERPRISE_READ_DSN',), systems=('sys:mes', 'sys:erp', 'sys:cmms', 'sys:qms', 'sys:scm'),
               about='ERP · MES · CMMS · QMS · SCM · EMS 업무 기록 (주문 · 계약 · 정비 · 품질 · 구매)'),
+    # 실라버스 통합 40행: 옛 설비 관리 시스템에서 옮긴 덤프(제공 파일 it/portal/www/samples/legacy-plant-db.sql = 마이그레이션
+    # 20261031000071_legacy_plant_db). 업무 DB 안의 스키마 하나라 같은 전용 읽기 계정 · 연결 주소로 읽는다.
+    LEGACY: dict(id=LEGACY, label='옛 설비 DB', engine='Supabase PostgreSQL', schema='legacy', role='hyd_enterprise_reader',
+                 env=('ENTERPRISE_READ_DSN',), systems=(),
+                 about='옛 설비 관리 시스템에서 옮긴 덤프 (설비 · 측정 · 작업지시 — 표 · 열 이름이 코드, 주석 없음)'),
     TS: dict(id=TS, label='시계열 DB', engine='TimescaleDB', schema='public', role='hyd_timeseries_reader',
-             env=('TSDB_READ_DSN', 'TSDB_DSN'), systems=('sys:historian',), tables=TS_TABLES,
+             env=('TSDB_READ_DSN',), systems=('sys:historian',), tables=TS_TABLES,
              about='센서 · 설정값 1초 기록(tag_1s), 파형 특징(feat_1s), 1분 집계(tag_1m)'),
 }
+#: DDL 적재(업무 데이터 연결)가 입력을 이을 수 있는 원천 = 업무 DB(Supabase) 안의 스키마. 미리보기의 원천 고르기 · DDL 동기화가 이것을 본다.
+DDL_SOURCES = (ENT, LEGACY)
 SAMPLE_MAX = 20
 RECENT = "time > now() - interval '10 minutes'"
 
@@ -55,14 +62,17 @@ CLASS_Q = """MATCH (n) WHERE n:Asset OR n:Sensor OR n:Actuator OR n:Part OR n:Su
 RETURN [l IN labels(n) WHERE l IN ['Asset','Sensor','Actuator','Part','Supplier']][0] AS klass, n.id AS id, n.name AS name,
        n.code AS code, n.tag AS tag, n.unit AS unit, n.resource AS resource, n.partNo AS partNo
 ORDER BY klass, id"""
-# it/neo4j/templates/t3_inputs.cypher 와 같은 열(process 이미지에는 템플릿 폴더가 없어 여기 둔다)
-INPUTS_Q = """MATCH (i:InputData)
-OPTIONAL MATCH (i)-[:SOURCED_FROM]->(src)
-RETURN i.id AS id, i.name AS name, i.variable AS variable, i.typeRef AS typeRef,
-       i.datasource AS datasource, i.schema AS schema, i.table AS table, i.column AS column, i.assetColumn AS assetColumn,
-       i.sqlType AS sqlType, i.derive AS derive, i.sourceState AS sourceState,
-       src.id AS source, coalesce(src.name, src.id) AS sourceName, labels(src)[0] AS sourceKind, src.tag AS tag
-ORDER BY i.id"""
+def inputs_query() -> str:
+    """판단 입력 데이터와 출처 질의 — 정본은 템플릿 it/neo4j/templates/t3_inputs.cypher 하나(agent · dmn-mcp 의 판단 입력 도구와 같은 파일).
+    이미지는 /srv/templates(KG_TEMPLATES — process · dmn-mcp · agent Dockerfile 이 같은 폴더를 넣는다). 없으면 그 자리와 함께 실패한다."""
+    from pathlib import Path
+    path = Path(os.getenv("KG_TEMPLATES", "/srv/templates")) / "t3_inputs.cypher"
+    try:
+        return path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        raise RuntimeError(f"판단 입력 질의 템플릿이 없습니다: {path} (KG_TEMPLATES — 이미지에 it/neo4j/templates 를 넣는다)") from None
+
+
 LIMIT_Q = """MATCH (p:AnomalyPattern)-[t:TESTS]->(i:InputData {variable: $variable}) WHERE t.operator IN ['>', '>=']
 RETURN p.name AS pattern, t.operator AS operator, t.value AS value, t.unit AS unit ORDER BY p.id LIMIT 1"""
 
@@ -134,29 +144,46 @@ def first_line(exc: BaseException) -> str:
     return (text.splitlines()[0] if text else type(exc).__name__)[:200]
 
 
+#: Server errors by SQLSTATE (the server's own code, not its wording).
+SQLSTATE_REASONS = {
+    '28P01': '읽기 전용 계정 인증에 실패했습니다 (계정 · 비밀번호 확인)',
+    '3D000': '데이터베이스 이름이 없습니다 (연결 주소의 DB 이름 확인)',
+    '22023': '읽기 전용 계정이 DB에 없습니다 (읽기 계정을 만드는 초기화 SQL 적용 확인)',     # set role 에 없는 역할
+    '57014': '연결 또는 조회 시간이 초과됐습니다 (5초)',
+    '42501': '읽기 권한이 없는 표입니다',
+    '25006': '읽기 전용 연결이라 쓰기를 거부했습니다',
+}
+# A connection that never reached a session has no SQLSTATE: psycopg 3 reports it as OperationalError with libpq's or its own
+# connect message. Those few fixed phrases are the only text still read, in this one table.
+CONNECT_REASONS = (
+    (('password authentication failed',), SQLSTATE_REASONS['28P01']),
+    (('does not exist',), None),                     # role or database — told apart below
+    (('failed to resolve host', 'translate host name', 'name or service not known', 'nodename nor servname'),
+     'DB 주소(호스트 이름)를 찾을 수 없습니다'),
+    (('timeout expired', 'timed out'), SQLSTATE_REASONS['57014']),
+    (('connection refused', 'could not connect', 'connection to server', 'server closed'),
+     'DB 서버에 연결할 수 없습니다 (서버가 켜져 있는지 · 주소 · 포트 확인)'),
+)
+
+
 def failure_reason(exc: BaseException) -> str:
-    """Connection/read failure → a Korean sentence naming what to check. Raw text stays in `detail`."""
+    """Connection/read failure → the Korean sentence a person reads (raw text stays in `detail`). Judged by exception type
+    and SQLSTATE; only a connection that failed before any session is judged by its connect message (CONNECT_REASONS)."""
     if isinstance(exc, SourceUnavailable):
         return exc.reason
-    low = str(exc).lower()
-    if 'dedicated unprivileged reader role' in low:
+    if isinstance(exc, ReaderRoleRefused):
         return '전용 읽기 계정이 아닌 계정으로 연결돼 거부했습니다 (쓰기 권한이 있는 계정은 쓰지 않습니다)'
-    if 'password authentication failed' in low:
-        return '읽기 전용 계정 인증에 실패했습니다 (계정 · 비밀번호 확인)'
-    if 'role' in low and 'does not exist' in low:
-        return '읽기 전용 계정이 DB에 없습니다 (읽기 계정을 만드는 초기화 SQL 적용 확인)'
-    if 'database' in low and 'does not exist' in low:
-        return '데이터베이스 이름이 없습니다 (연결 주소의 DB 이름 확인)'
-    if 'translate host name' in low or 'name or service not known' in low or 'nodename nor servname' in low:
-        return 'DB 주소(호스트 이름)를 찾을 수 없습니다'
-    if 'timeout' in low or 'timed out' in low or 'canceling statement' in low:
-        return '연결 또는 조회 시간이 초과됐습니다 (5초)'
-    if 'connection refused' in low or 'could not connect' in low or 'connection to server' in low or 'server closed' in low:
-        return 'DB 서버에 연결할 수 없습니다 (서버가 켜져 있는지 · 주소 · 포트 확인)'
-    if 'permission denied' in low:
-        return '읽기 권한이 없는 표입니다'
-    if 'read-only transaction' in low:
-        return '읽기 전용 연결이라 쓰기를 거부했습니다'
+    state = getattr(exc, 'sqlstate', None)
+    if state in SQLSTATE_REASONS:
+        return SQLSTATE_REASONS[state]
+    if isinstance(exc, psycopg.OperationalError) and state is None:
+        low = str(exc).lower()
+        for words, reason in CONNECT_REASONS:
+            if any(w in low for w in words):
+                if reason is None:
+                    reason = (SQLSTATE_REASONS['3D000'] if 'database' in low else
+                              '읽기 전용 계정이 DB에 없습니다 (읽기 계정을 만드는 초기화 SQL 적용 확인)')
+                return reason
     return 'DB 오류: ' + first_line(exc)
 
 
@@ -185,26 +212,11 @@ def ident(name: str) -> str:
 
 def guard_for(source: str, sql: str, limit: int) -> str:
     """The same read-only SELECT contract per source: ent tables only / the three time-series tables only."""
-    if source == ENT:
-        return guard(sql, limit, schema='ent')
+    if source in DDL_SOURCES:
+        return guard(sql, limit, schema=SOURCES[source]['schema'])
     if source == TS:
-        return guard(sql, limit, schema='public', tables=frozenset(TS_TABLES), functions=READ_FUNCTIONS | {'TIME_BUCKET'})
+        return guard(sql, limit, schema='public', tables=frozenset(TS_TABLES), functions=TIMESERIES_FUNCTIONS)
     raise ValueError(f'등록되지 않은 원천: {source}')
-
-
-def timeseries_reader(dsn: str):
-    """The time-series twin of hydcommon.enterprise.reader_connection: refuse anything but the dedicated reader."""
-    conn = psycopg.connect(dsn, autocommit=False, connect_timeout=5)
-    try:
-        row = conn.execute('select current_user, rolsuper, rolcreaterole, rolcreatedb, rolbypassrls '
-                           'from pg_roles where rolname=current_user').fetchone()
-        if row != ('hyd_timeseries_reader', False, False, False, False):
-            raise RuntimeError('timeseries requires the dedicated unprivileged reader role')
-        conn.rollback()
-        return conn
-    except Exception:
-        conn.close()
-        raise
 
 
 def env_connectors(env=None) -> dict:
@@ -216,7 +228,7 @@ def env_connectors(env=None) -> dict:
             dsn = next((env.get(n) for n in names if env.get(n)), None)
             if not dsn:
                 raise SourceUnavailable(f"연결 설정이 없습니다 ({' 또는 '.join(names)} 환경변수)")
-            return enterprise_reader(dsn) if source == ENT else timeseries_reader(dsn)
+            return reader_connection(dsn, SOURCES[source]['role'])
         return connect
     return {s: make(s) for s in SOURCES}
 
@@ -318,9 +330,9 @@ class Fabric:
 
     # ------------------------------------------------------------------ 2 클래스 ↔ 표·열
     def links(self) -> dict:
-        graph = {'ok': True}
+        graph, inputs_q = {'ok': True}, inputs_query()
         try:
-            nodes, inputs = self._graph_rows(CLASS_Q), self._graph_rows(INPUTS_Q)
+            nodes, inputs = self._graph_rows(CLASS_Q), self._graph_rows(inputs_q)
         except Exception as e:  # noqa: BLE001 — neo4j driver errors have no common base we import here
             graph, nodes, inputs = self._fail(e), [], []
         live, keys_found = {}, {}
@@ -362,11 +374,11 @@ class Fabric:
         row = {k: i.get(k) for k in ('id', 'name', 'variable', 'source', 'sourceName', 'sourceKind', 'sourceState')}
         if i.get('table') and i.get('column'):
             sid = i.get('datasource')
-            row.update(binding='physical', datasource=sid, table=i['table'], column=i['column'], key=i.get('assetColumn'),
-                       derive=i.get('derive'), how='DDL 적재로 연결된 업무 DB 열')
+            row.update(binding='physical', datasource=sid, source_label=SOURCES[sid]['label'] if sid in SOURCES else sid,
+                       table=i['table'], column=i['column'], key=i.get('assetColumn'), derive=i.get('derive'), how='DDL 적재로 연결된 열')
             src = live.get(sid)
-            if sid not in SOURCES or i.get('schema') != SOURCES[sid]['schema']:
-                row.update(state='UNREGISTERED', reason='등록된 원천(업무 DB · 시계열 DB)이 아닌 연결입니다')
+            if sid not in DDL_SOURCES or i.get('schema') != SOURCES[sid]['schema']:
+                row.update(state='UNREGISTERED', reason=f"등록된 원천({' · '.join(f"{SOURCES[d]['label']} {SOURCES[d]['schema']}" for d in DDL_SOURCES)} 스키마)이 아닌 연결입니다")
             elif not src['ok']:
                 row.update(state='SOURCE_DOWN', reason=src['reason'])
             elif i['column'] not in src['tables'].get(i['table'], {}):
@@ -375,7 +387,7 @@ class Fabric:
                 row.update(state='OK' if i.get('sourceState') in (None, 'OK') else i['sourceState'])
         elif i.get('sourceKind') == 'Sensor' and i.get('tag'):
             src = live[TS]
-            row.update(binding='sensor', datasource=TS, table='tag_1s', column='value', key='asset',
+            row.update(binding='sensor', datasource=TS, source_label=SOURCES[TS]['label'], table='tag_1s', column='value', key='asset',
                        where=f"name = '{i['tag']}'", how='센서 태그의 1초 기록')
             row.update(state='OK' if src['ok'] else 'SOURCE_DOWN', **({} if src['ok'] else {'reason': src['reason']}))
         else:
@@ -453,9 +465,9 @@ class Fabric:
         """Merged view: business rows whose foreign key points at ent.assets(code) + DDL-bound InputData values (업무 DB) and the
         newest sample of every tag recorded for the asset (시계열 DB). Each value names its class, source, table · column and
         condition. A tag no ontology class claims is shown as such, not dropped."""
-        graph = {'ok': True}
+        graph, inputs_q = {'ok': True}, inputs_query()
         try:
-            nodes, inputs = self._graph_rows(CLASS_Q), self._graph_rows(INPUTS_Q)
+            nodes, inputs = self._graph_rows(CLASS_Q), self._graph_rows(inputs_q)
         except Exception as e:  # noqa: BLE001
             graph, nodes, inputs = self._fail(e), [], []
         values, parts, status, found = [], [], {}, {}
@@ -587,5 +599,5 @@ def _pick(label: str, part: dict, how: tuple, unit) -> dict:
     return dict(out, value=row[cols.index(name)], column=name, row=0 if kind == 'first' else len(rows) - 1, rows=len(rows))
 
 
-__all__ = ['CLASS_KEYS', 'CROSS_QUERIES', 'ENT', 'Fabric', 'FabricUnavailable', 'SOURCES', 'SourceUnavailable', 'SqlRejected', 'TS',
-           'env_connectors', 'failure_reason', 'guard_for', 'timeseries_reader']
+__all__ = ['CLASS_KEYS', 'CROSS_QUERIES', 'DDL_SOURCES', 'ENT', 'LEGACY', 'Fabric', 'FabricUnavailable', 'SOURCES', 'SourceUnavailable', 'SqlRejected', 'TS',
+           'env_connectors', 'failure_reason', 'guard_for']

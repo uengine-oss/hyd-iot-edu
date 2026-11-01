@@ -109,9 +109,13 @@ def register(app, *, driver_factory, tenant, audit, runtime_factory, store_facto
                 raise ValueError('DDL 본문(text)이 필요합니다')
             request_id = body.get('request_id') or str(uuid4())
             rt = runtime()
-            tables = ingest.parse_ddl(text)
+            import psycopg
+            from . import ddl_sync
+            from .procdb import SUPABASE_DSN
+            # 미리보기와 같은 원천 · 스키마로 해석한다(뜻 검토의 열 키 = 스키마.표.열 이 적재 계획과 같아야 검토가 반영된다)
+            tables, datasource, _ = ddl_sync.place(text, body.get('datasource'), lambda: psycopg.connect(SUPABASE_DSN, connect_timeout=5))
             if not tables:
-                raise ValueError('CREATE TABLE 문을 찾지 못했다')
+                raise ValueError('CREATE TABLE 문을 찾지 못했습니다 — 표 정의(CREATE TABLE)가 든 .sql 파일인지 확인하세요')
             try:
                 with driver_factory() as drv, drv.session() as session:
                     ontology = read_ontology(session)
@@ -120,7 +124,7 @@ def register(app, *, driver_factory, tenant, audit, runtime_factory, store_facto
             except Exception as e:  # noqa: BLE001
                 raise HTTPException(502, f'온톨로지(그래프)를 읽지 못해 연결 후보를 만들 수 없습니다: {str(e)[:160]}') from e
             req = lm.request(filename=str(body.get('filename') or 'schema.sql'), text=text, tables=tables, ontology=ontology,
-                             datasource=str(body.get('datasource') or 'hyd-enterprise'), catalog=str(body.get('catalog') or 'postgres'),
+                             datasource=datasource, catalog=str(body.get('catalog') or 'postgres'),
                              by=body.get('by'))
             worker = worker_probe()
             if not worker.get('reachable'):

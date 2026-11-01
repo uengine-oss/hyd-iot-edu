@@ -1,13 +1,13 @@
-"""B1 (확정 TODO B · DECISIONS 110 ①): 포털에서 에이전트 · 스킬을 만들고 고치고 붙이기, 역할 → 사람 · 단계 → 에이전트 배정, 되돌리기.
+"""B1: 포털에서 에이전트 · 스킬을 만들고 고치고 붙이기, 역할 → 사람 · 단계 → 에이전트 배정, 되돌리기.
 
-원천은 U2 와 같다(읽는 쪽은 agents_store.agent_settings — 워커 · 포털 · A10 이 같은 함수를 부른다):
+원천은 U2 와 같다(읽는 쪽은 agents_store.agent_settings — 워커와 포털이 같은 함수를 부른다):
   에이전트 public.users(is_agent) · 스킬 public.tenant_skills · 붙이기 public.agent_skills · 업무분장 public.role_members.
 여기서 더한 것(migration 20261008000041):
   origin          'seed'(기본, 보호) | 'user'(포털에서 만든 것). 기본 행은 고치기 · 지우기를 사유와 함께 거절 → "복제해서 고치기"만.
   activity_agent_map  (정의 id, 단계 id) → 에이전트. 정의(BPMN) 원본은 그대로 두고, 흐름이 그 단계에 닿을 때 작업 행의 user_id 를
                   그 에이전트로 쓴다(apply_agent_map — inbox.apply_advance 가 엔진의 다섯 자리에서 부른다). 워커는 작업 행 user_id 로
                   프로필을 읽으므로(agent-worker context.prepare) 배정 = 실제 실행 담당. 적용 기록은 task_assignments(kind='agent_map').
-  reset           포털에서 만든 것(origin='user' 에이전트 · 스킬 · 업무분장 · 역할, 모든 단계 배정)만 지운다. 기본은 그대로.
+  reset           포털에서 만든 것(origin='user' 에이전트 · 스킬 · 스킬 붙이기 · 업무분장 · 역할, 모든 단계 배정)만 지운다. 기본은 그대로.
   역할 만들기     G10(전체 과정 랩업): users 의 role:<키> 행(사람 아님, origin='user'). 흐름 가져오기는 레인 이름 = 역할 이름이면 그 역할로
                   잇는다(bpmn_import.merge_mapping) — 그래서 역할 이름은 테넌트 안에서 겹치지 않게 받는다. 흐름 정의가 쓰는 역할은
                   지우지 않는다(지우기 · 되돌리기 모두).
@@ -60,31 +60,13 @@ def _text(body: dict, key: str, label: str, *, required: bool = False) -> str:
 
 
 # ---------------------------------------------------------------- 읽기 도우미
-def tenant_servers(repo, tenant_id: str) -> dict[str, dict]:
-    mcp = (repo.get_tenant(tenant_id) or {}).get("mcp") or {}
-    servers = mcp.get("mcpServers") if isinstance(mcp, dict) else None
-    return servers if isinstance(servers, dict) else {}
-
-
 def server_options(repo, tenant_id: str) -> list[dict]:
-    """에이전트 폼의 "쓸 도구" 선택지 = tenants.mcp 에 등록된 서버. 연결 검사 상태(B2)가 있으면 그대로 붙여 표시만 한다:
-    서버 설정의 `check` 칸, 또는 저장소가 `mcp_check_status(tenant_id)` → {서버: 상태} 를 주면 그것."""
-    servers = tenant_servers(repo, tenant_id)
-    status = {}
-    reader = getattr(repo, "mcp_check_status", None)
-    if callable(reader):
-        try:
-            status = reader(tenant_id) or {}
-        except Exception as e:  # noqa: BLE001 — 검사 상태는 보조 표시: 못 읽으면 사유를 붙이고 목록은 그대로
-            log.warning("mcp check status unreadable: %s", e)
-            status = {n: {"error": f"검사 상태를 읽지 못했습니다: {e}"} for n in servers}
-    out = []
-    for name, raw in servers.items():
-        raw = raw if isinstance(raw, dict) else {}
-        out.append({"name": name, "description": raw.get("description") or "",
-                    "transport": "url" if raw.get("url") else "command" if raw.get("command") else None,
-                    "check": status.get(name) or raw.get("check")})
-    return out
+    """에이전트 폼의 "쓸 도구" 선택지 = 등록된 서버와 그 서버를 붙일 수 있는지(mcp_registry.selectable — 저장 검사와 같은 판정).
+    붙일 수 없는 서버는 까닭과 함께 보여 폼에서 고르기 전에 안다(저장할 때야 422 로 거절되지 않게)."""
+    from . import mcp_registry
+    return [{"name": s["name"], "description": s.get("description") or "", "origin": s["origin"], "selectable": s["selectable"],
+             "reason": s["reason"], "check": s["check"]}
+            for s in mcp_registry.selectable(mcp_registry.store_for(repo), tenant_id)["servers"]]
 
 
 def agents_of(repo, tenant_id: str) -> list[dict]:
@@ -92,7 +74,7 @@ def agents_of(repo, tenant_id: str) -> list[dict]:
     return [u for u in repo.list_users(None, tenant_id) if u.get("is_agent") and (u.get("agent_type") or "agent") == "agent"]
 
 
-def _agent(repo, tenant_id: str, agent_id: str) -> dict:
+def get_agent(repo, tenant_id: str, agent_id: str) -> dict:
     row = next((u for u in repo.list_users([agent_id], tenant_id) if u.get("is_agent")), None)
     if row is None:
         raise AuthoringError(f"그런 에이전트가 없습니다: {agent_id}", 404)
@@ -111,7 +93,13 @@ def _protect(row: dict, what: str) -> None:
 
 
 # ---------------------------------------------------------------- 에이전트
-def _agent_fields(repo, tenant_id: str, body: dict, *, self_id: str | None = None) -> dict:
+#: 고치기(PUT)에 꼭 있어야 하는 칸 — 빠진 칸을 빈 값으로 읽어 도구 · 스킬 · 성격을 말없이 지우지 않는다(P3-26)
+AGENT_FIELDS = ("name", "role", "goal", "persona", "model", "tools", "skills", "work_rules")
+
+
+def agent_text_fields(body: dict) -> dict:
+    """저장소를 읽지 않는 칸 검사 — 이름 · 목표(필수) · 역할 · 성격 길이, 수업 모델, 업무 규칙 키. 출발본 검증(config_bundle.validate)도
+    같은 함수를 불러, 검증을 통과한 파일이 적용 단계에서 칸 규칙으로 실패하지 않는다."""
     name = _text(body, "name", "이름", required=True)
     goal = _text(body, "goal", "목표", required=True)
     role = _text(body, "role", "역할")
@@ -121,17 +109,30 @@ def _agent_fields(repo, tenant_id: str, body: dict, *, self_id: str | None = Non
     reason = Policy.agent_model_error(model)        # 수업 모델 밖 모델은 두 단계 모두 악용 지점(course_policy)
     if reason:
         raise AuthoringError(reason, 403)
+    key = str(body.get("work_rules") or "").strip() or None
+    from . import work_rules
+    try:
+        work_rules.rules_for(key)
+    except work_rules.UnknownWorkRules as e:
+        raise AuthoringError(str(e)) from e
+    return {"username": name, "goal": goal, "role": role or None, "persona": persona or None, "model": model or None, "work_rules": key}
+
+
+def agent_fields(repo, tenant_id: str, body: dict, *, self_id: str | None = None) -> dict:
+    out = agent_text_fields(body)
+    name = out["username"]
     same = [u for u in repo.list_users(None, tenant_id)
             if u.get("is_agent") and u.get("id") != self_id and _name(u).strip().lower() == name.lower()]
     if same:
         raise AuthoringError(f"같은 이름의 에이전트가 이미 있습니다: {name}", 409)
-    servers = tenant_servers(repo, tenant_id)
+    from . import mcp_registry   # B2 게이트: 연결 검사를 통과한(또는 기준) 서버만 에이전트 도구로 붙인다
+    store = mcp_registry.store_for(repo)
+    servers = store.servers(tenant_id)
     tools = list(dict.fromkeys(csv_list(body.get("tools"))))
     unknown = [t for t in tools if t not in servers]
     if unknown:
         raise AuthoringError(f"등록되지 않은 도구 서버입니다: {', '.join(unknown)} (등록된 서버: {', '.join(sorted(servers)) or '없음'})")
-    from . import mcp_registry   # B2 게이트: 연결 검사를 통과한(또는 기준) 서버만 에이전트 도구로 붙인다
-    refused = mcp_registry.refuse_reasons(mcp_registry.store_for(repo), tenant_id, tools)
+    refused = mcp_registry.refuse_reasons(store, tenant_id, tools)
     if refused:
         raise AuthoringError("붙일 수 없는 도구 서버가 있습니다 — " + " / ".join(refused))
     skills = list(dict.fromkeys(csv_list(body.get("skills"))))
@@ -140,16 +141,7 @@ def _agent_fields(repo, tenant_id: str, body: dict, *, self_id: str | None = Non
         missing = [s for s in skills if s not in stored]
         if missing:
             raise AuthoringError(f"없는 스킬은 붙일 수 없습니다: {', '.join(missing)}")
-    out = {"username": name, "goal": goal, "role": role or None, "persona": persona or None, "model": model or None,
-           "tools": ",".join(tools) if tools else None, "skills": skills}
-    if "work_rules" in body:            # G9: 업무 규칙 키 — 칸이 없으면 고치기에서 지금 값을 그대로 둔다
-        key = str(body.get("work_rules") or "").strip() or None
-        from . import work_rules
-        try:
-            work_rules.rules_for(key)
-        except work_rules.UnknownWorkRules as e:
-            raise AuthoringError(str(e)) from e
-        out["work_rules"] = key
+    out.update(tools=",".join(tools) if tools else None, skills=skills)
     return out
 
 
@@ -162,28 +154,31 @@ def _new_agent_id(repo, tenant_id: str) -> str:
 
 
 def create_agent(repo, tenant_id: str, body: dict, *, by: str | None = None) -> dict:
-    f = _agent_fields(repo, tenant_id, body)
+    f = agent_fields(repo, tenant_id, body)
     skills = f.pop("skills")
-    row = {"id": _new_agent_id(repo, tenant_id), "work_rules": None, **f, "is_agent": True, "agent_type": "agent", "tenant_id": tenant_id,
-           "origin": USER}                                  # G9: 칸을 안 주면 업무 규칙 없음(공통부만) — Pg 의 null 과 같은 모양
+    row = {"id": _new_agent_id(repo, tenant_id), **f, "is_agent": True, "agent_type": "agent", "tenant_id": tenant_id, "origin": USER}
     repo.write_agent(row, skills, create=True)
     log.info("agent created %s by %s", row["id"], by)
-    return _agent(repo, tenant_id, row["id"])
+    return get_agent(repo, tenant_id, row["id"])
 
 
 def update_agent(repo, tenant_id: str, agent_id: str, body: dict, *, by: str | None = None) -> dict:
-    row = _agent(repo, tenant_id, agent_id)
+    """고치기는 전 칸을 받는다(AGENT_FIELDS) — 빠진 칸은 사유와 함께 거절한다(빈 값으로 지우지 않는다)."""
+    missing = [k for k in AGENT_FIELDS if k not in body]
+    if missing:
+        raise AuthoringError(f"고치기에는 모든 칸이 필요합니다 — 빠진 칸: {', '.join(missing)} (지우려면 빈 값으로 보내세요)")
+    row = get_agent(repo, tenant_id, agent_id)
     _protect(row, "고칠")
-    f = _agent_fields(repo, tenant_id, body, self_id=agent_id)
+    f = agent_fields(repo, tenant_id, body, self_id=agent_id)
     skills = f.pop("skills")
     repo.write_agent({**row, **f}, skills, create=False)
     log.info("agent updated %s by %s", agent_id, by)
-    return _agent(repo, tenant_id, agent_id)
+    return get_agent(repo, tenant_id, agent_id)
 
 
 def clone_agent(repo, tenant_id: str, agent_id: str, body: dict | None = None, *, by: str | None = None) -> dict:
     """기본이든 내가 만든 것이든 사본(origin=user)을 만든다. 시스템 수행자(SCADA · CMMS …)는 에이전트 설정이 없어 복제하지 않는다."""
-    src = _agent(repo, tenant_id, agent_id)
+    src = get_agent(repo, tenant_id, agent_id)
     if (src.get("agent_type") or "agent") != "agent":
         raise AuthoringError(f"시스템 수행자 '{_name(src)}'은(는) 정해진 업무를 하는 시스템이라 복제할 수 없습니다", 403)
     taken = {_name(u).strip().lower() for u in repo.list_users(None, tenant_id) if u.get("is_agent")}
@@ -211,9 +206,27 @@ def running_rows(repo, tenant_id: str, agent_ids: list[str]) -> list[dict]:
     return out
 
 
+def _default_endpoint(rt, row):
+    """작업 행 단계의 정의상 기본 담당(역할 endpoint)과 그 이름. 정의 · 역할을 못 읽으면 (None, None)."""
+    try:
+        defn = rt.definition_for_workitem(row)
+        binding = defn.role_binding((defn.activities.get(row["activity_id"]) or {}).get("role"))
+    except (LookupError, ValueError):
+        binding = None
+    return (binding or {}).get("endpoint"), (binding or {}).get("name")
+
+
 def return_open_rows(rt, agent_ids: list[str], reason: str, by: str | None) -> list[dict]:
     """열려 있지만 아직 집히지 않은 단계(IN_PROGRESS, 실행 전)를 정의의 역할 담당으로 되돌린다 — 지워진 에이전트 id 로 남아
-    프로필 없이 실행되는 조용한 대체를 막는다. 되돌린 기록은 task_assignments(kind=agent_map)."""
+    프로필 없이 실행되는 조용한 대체를 막는다. 되돌린 기록은 task_assignments(kind=agent_map).
+    기본 담당을 찾을 수 없는 열린 단계가 하나라도 있으면 아무것도 옮기지 않고 409 로 거절한다(지운 뒤 그 단계가 주인 없이 남지 않게)."""
+    orphans = [w for aid in agent_ids
+               for w in rt.repo.list_workitems(status="IN_PROGRESS", user_id=aid, tenant_id=rt.tenant_id, limit=None)
+               if w.get("draft_status") != "STARTED" and not _default_endpoint(rt, w)[0]]
+    if orphans:
+        names = ", ".join(sorted({str(w.get("activity_name") or w.get("activity_id")) for w in orphans}))
+        raise AuthoringError(f"기본 담당을 찾을 수 없는 열린 단계가 {len(orphans)}건 있습니다({names}) — 그 처리 건을 끝내거나 닫은 뒤 다시 하세요"
+                             "(아무것도 바꾸지 않았습니다)", 409)
     moved = []
     for aid in agent_ids:
         for w in rt.repo.list_workitems(status="IN_PROGRESS", user_id=aid, tenant_id=rt.tenant_id, limit=None):
@@ -223,16 +236,10 @@ def return_open_rows(rt, agent_ids: list[str], reason: str, by: str | None) -> l
                 row = rt.repo.get_workitem(w["id"])
                 if not row or row.get("user_id") != aid or row.get("status") != "IN_PROGRESS" or row.get("draft_status") == "STARTED":
                     continue
-                try:
-                    defn = rt.definition_for_workitem(row)
-                    binding = defn.role_binding((defn.activities.get(row["activity_id"]) or {}).get("role"))
-                except (LookupError, ValueError):
-                    binding = None
-                endpoint = (binding or {}).get("endpoint")
-                if not endpoint:
-                    log.warning("no default performer for %s/%s — left with %s", row["proc_inst_id"], row["activity_id"], aid)
-                    continue
-                row["user_id"], row["username"] = endpoint, (binding or {}).get("name") or row.get("username")
+                endpoint, label = _default_endpoint(rt, row)
+                if not endpoint:                 # 앞에서 모두 확인했다 — 그 사이 정의가 바뀌었으면 여기서 멈춘다(반만 옮긴 채 지우지 않게)
+                    raise AuthoringError(f"단계 {row.get('activity_name') or row['activity_id']} 의 기본 담당을 찾을 수 없어 멈췄습니다", 409)
+                row["user_id"], row["username"] = endpoint, label or row.get("username")
                 row["assignees"] = list(row.get("assignees") or []) + [{"endpoint": endpoint, "kind": "agent", "via": aid, "resolution": "agent-map-removed"}]
                 rt.repo.update_workitem(row)
                 rt.repo.insert_assignment({"tenant_id": rt.tenant_id, "proc_inst_id": row["proc_inst_id"], "todo_id": row["id"], "from_user_id": aid,
@@ -243,7 +250,7 @@ def return_open_rows(rt, agent_ids: list[str], reason: str, by: str | None) -> l
 
 def delete_agent(rt, agent_id: str, *, by: str | None = None) -> dict:
     repo, tenant_id = rt.repo, rt.tenant_id
-    row = _agent(repo, tenant_id, agent_id)
+    row = get_agent(repo, tenant_id, agent_id)
     _protect(row, "지울")
     busy = running_rows(repo, tenant_id, [agent_id])
     if busy:
@@ -259,7 +266,7 @@ def delete_agent(rt, agent_id: str, *, by: str | None = None) -> dict:
 
 
 # ---------------------------------------------------------------- 스킬
-def _skill_fields(name: str, body: dict) -> dict:
+def skill_fields(name: str, body: dict) -> dict:
     content = str(body.get("content") or "")
     if len(content) > LIMITS["content"]:
         raise AuthoringError(f"스킬 문서가 너무 깁니다({len(content)}자, 최대 {LIMITS['content']}자)")
@@ -285,7 +292,7 @@ def create_skill(repo, tenant_id: str, body: dict, *, by: str | None = None) -> 
         raise AuthoringError(f"스킬 폴더 이름은 영문 소문자 · 숫자 · 하이픈만 씁니다(최대 64자): {name[:70]}")
     if repo.get_skill(tenant_id, name) is not None:
         raise AuthoringError(f"같은 이름의 스킬이 이미 있습니다: {name}", 409)
-    f = _skill_fields(name, body)
+    f = skill_fields(name, body)
     repo.write_skill({"tenant_id": tenant_id, "skill_name": name, **f, "owner_id": by, "origin": USER}, create=True)
     return repo.get_skill(tenant_id, name)
 
@@ -296,7 +303,7 @@ def update_skill(repo, tenant_id: str, name: str, body: dict, *, by: str | None 
         raise AuthoringError(f"그런 스킬이 없습니다: {name}", 404)
     if origin_of(row) != USER:
         raise AuthoringError(f"기본 스킬 '{name}'은(는) 고칠 수 없습니다 — 수업 기준이라 보호합니다. 새 이름으로 스킬을 만들어 쓰세요.", 403)
-    f = _skill_fields(name, body)
+    f = skill_fields(name, body)
     repo.write_skill({**row, **f}, create=False)
     return repo.get_skill(tenant_id, name)
 
@@ -315,7 +322,7 @@ def delete_skill(repo, tenant_id: str, name: str, *, by: str | None = None) -> d
 
 
 def attach_skill(repo, tenant_id: str, agent_id: str, skill_name: str) -> dict:
-    row = _agent(repo, tenant_id, agent_id)
+    row = get_agent(repo, tenant_id, agent_id)
     _protect(row, "스킬을 붙일")
     if repo.get_skill(tenant_id, skill_name) is None:
         raise AuthoringError(f"그런 스킬이 없습니다: {skill_name}", 404)
@@ -326,7 +333,7 @@ def attach_skill(repo, tenant_id: str, agent_id: str, skill_name: str) -> dict:
 
 
 def detach_skill(repo, tenant_id: str, agent_id: str, skill_name: str) -> dict:
-    row = _agent(repo, tenant_id, agent_id)
+    row = get_agent(repo, tenant_id, agent_id)
     _protect(row, "스킬을 뗄")
     if not any(r["skill_name"] == skill_name for r in repo.list_agent_skills(tenant_id, agent_id)):
         raise AuthoringError(f"'{_name(row)}'에 붙어 있지 않은 스킬입니다: {skill_name}", 404)
@@ -335,31 +342,52 @@ def detach_skill(repo, tenant_id: str, agent_id: str, skill_name: str) -> dict:
 
 
 # ---------------------------------------------------------------- 단계 → 에이전트
-def _latest_definitions(rt) -> list[dict]:
+def version_key(version) -> tuple:
+    """판본 정렬 열쇠 — 숫자 마디로 견준다('10' > '9', '1.10' > '1.9'). 저장소의 version 은 글자라
+    글자 순으로 고르면 10판부터 9판을 최신으로 본다(P3-13)."""
+    return tuple(int(n) for n in re.findall(r"\d+", str(version or ""))) or (0,)
+
+
+def latest_definitions(rt) -> list[dict]:
+    """등록된 흐름마다 가장 새 판본(숫자 순) 하나, 등록된 것이 없으면 실행 중인 기준 정의. 배정 · 에이전트 단계 · 도구 지도 · 출발본이 같이 쓴다."""
     latest: dict[str, dict] = {}
     for r in rt.repo.list_definitions(rt.tenant_id):
-        latest[r["id"]] = r
+        cur = latest.get(r["id"])
+        if cur is None or version_key(r.get("prod_version")) > version_key(cur.get("prod_version")):
+            latest[r["id"]] = r
     if rt.defn.id not in latest:
         latest[rt.defn.id] = {"id": rt.defn.id, "name": rt.defn.name, "prod_version": rt.defn.raw.get("version"), "definition": rt.defn.raw}
     return list(latest.values())
 
 
-def agent_activities(rt) -> list[dict]:
-    """배정할 수 있는 단계 = 코딩 에이전트 워커가 실행하는 단계(agentMode + cliagents) — 정의의 최신 판본 기준."""
+def is_agent_activity(a: dict) -> bool:
+    """코딩 에이전트 워커가 실행하는 단계(agentMode + cliagents 또는 오케스트레이션 없음) — 배정 · 실행 설정 · 출발본의 한 판정."""
     from . import engine
+    if not isinstance(a, dict) or not a.get("id") or not engine.agent_mode_of(a):
+        return False
+    orch = a.get("orchestration")
+    return orch in engine.NO_MODE or orch == engine.AGENT_ORCH
+
+
+def default_performers(raw: dict, a: dict) -> list[str]:
+    """단계의 기본 담당: 단계의 agent 칸(제품 AgentSelectField), 없으면 그 레인 역할의 endpoint."""
+    roles = {r.get("name"): r for r in raw.get("roles") or [] if isinstance(r, dict)}
+    return csv_list(a.get("agent")) or csv_list((roles.get(a.get("role")) or {}).get("endpoint"))
+
+
+def agent_steps_of(def_id: str, raw: dict) -> list[dict]:
+    """정의 하나에서 에이전트가 맡는 단계."""
+    return [{"definition_id": def_id, "activity_id": a["id"], "name": a.get("name") or a["id"], "default_agents": default_performers(raw, a)}
+            for a in raw.get("activities") or [] if is_agent_activity(a)]
+
+
+def agent_activities(rt) -> list[dict]:
+    """배정할 수 있는 단계 = 코딩 에이전트 워커가 실행하는 단계 — 정의의 최신 판본 기준."""
     out = []
-    for d in _latest_definitions(rt):
+    for d in latest_definitions(rt):
         raw = d.get("definition") or {}
-        roles = {r.get("name"): r for r in raw.get("roles") or [] if isinstance(r, dict)}
-        for a in raw.get("activities") or []:
-            if not isinstance(a, dict) or not a.get("id") or not engine.agent_mode_of(a):
-                continue
-            orch = a.get("orchestration")
-            if not (orch in engine.NO_MODE or orch == engine.AGENT_ORCH):
-                continue
-            default = csv_list(a.get("agent")) or csv_list((roles.get(a.get("role")) or {}).get("endpoint"))
-            out.append({"definition_id": d["id"], "definition_name": d.get("name") or raw.get("processDefinitionName"),
-                        "version": d.get("prod_version"), "activity_id": a["id"], "name": a.get("name") or a["id"], "default_agents": default})
+        for s in agent_steps_of(d["id"], raw):
+            out.append({**s, "definition_name": d.get("name") or raw.get("processDefinitionName"), "version": d.get("prod_version")})
     return out
 
 
@@ -388,7 +416,7 @@ def set_assignment(rt, definition_id: str, activity_id: str, agent_id: str, *, b
     step = next((s for s in agent_activities(rt) if s["definition_id"] == definition_id and s["activity_id"] == activity_id), None)
     if step is None:
         raise AuthoringError(f"에이전트가 맡는 단계가 아닙니다: {definition_id} · {activity_id} (사람 · 시스템 단계는 에이전트로 배정하지 않습니다)", 404)
-    row = _agent(repo, tenant_id, agent_id)
+    row = get_agent(repo, tenant_id, agent_id)
     if (row.get("agent_type") or "agent") != "agent":
         raise AuthoringError(f"시스템 수행자 '{_name(row)}'에게는 에이전트 단계를 배정할 수 없습니다")
     if agent_id in step["default_agents"]:
@@ -411,11 +439,8 @@ def apply_agent_map(rt, inst: dict, adv) -> None:
     rows = [r for r in adv.reached if r.get("status") == "IN_PROGRESS" and r.get("agent_mode") and r.get("agent_orch") == engine.AGENT_ORCH]
     if not rows:
         return
-    reader = getattr(rt.repo, "get_agent_map", None)
-    if not callable(reader):
-        return
     for row in rows:
-        m = reader(rt.tenant_id, row.get("proc_def_id"), row["activity_id"])
+        m = rt.repo.get_agent_map(rt.tenant_id, row.get("proc_def_id"), row["activity_id"])
         if not m or m["agent_id"] == row.get("user_id"):
             continue
         agent = next((u for u in rt.repo.list_users([m["agent_id"]], rt.tenant_id) if u.get("is_agent")), None)

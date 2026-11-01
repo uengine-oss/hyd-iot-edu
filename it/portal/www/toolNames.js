@@ -1,12 +1,11 @@
-/* Display metadata only. Reading saved catalogs never calls a student's tool. */
+/* 서버에 등록된 도구의 한글 표시 이름(학생이 붙인 바깥 도구 등 — 포털 사전 plainWords TOOLS 에 없는 것만 여기서 찾는다).
+   표시용 목록만 읽는다 — 학생의 도구를 부르지 않는다. 화면은 UI.toolName → hydWords.toolName(사전) → 여기(등록 이름) 차례로 찾는다. */
 (function () {
   const M={names:new Map(),reason:'도구 표시 이름을 아직 읽지 않았습니다.',state:'unread',pending:null,readAt:0};
   const korean = value => typeof value==='string' && /[가-힣]/.test(value) ? value.trim().split('\n')[0].slice(0,100) : '';
   function resolve(raw) {
     raw=String(raw||'');
-    const key=UI.toolKey(raw), standard=UI.standardToolName(raw);
-    if(standard)return {name:standard,raw,reason:'',state:'known'};
-    const known=M.names.get(key);
+    const known=M.names.get(UI.toolKey(raw));
     return known ? {...known,raw,state:'known'} : {name:'',raw,state:M.state === 'loaded' ? 'missing' : M.state,reason:M.reason || '등록 목록에 이 도구의 한글 표시 이름이 없습니다.'};
   }
   async function load(force=false) {

@@ -1,5 +1,5 @@
 /* A5 (U7) 포털 셸 — 메뉴 묶음 밀도 · 상단바("나" · 알림 배지) · 토스트 · 확인 대화상자 · 로딩/오류 블록.
-   tokens.css 의 색·간격만 쓴다(색을 새로 박지 않는다). 계약: 문서/시스템/참조/u7-shell.md */
+   tokens.css 의 색·간격만 쓴다(색을 새로 박지 않는다). 화면 규칙: workspace/개발/문서/UIUX_PLAN.md */
 
 /* 메뉴: 7묶음 23항목이 한 화면에 들어오도록 넓은 화면에서만 촘촘하게(터치 화면은 44px 유지) */
 @media (min-width: 721px) {
@@ -136,3 +136,7 @@
 .confirm-dialog h3 { margin: 0 0 var(--s2); font-size: 16px; }
 .confirm-dialog p { margin: 0 0 var(--s4); color: var(--ink-2); font-size: 14px; line-height: 1.6; }
 .confirm-dialog .form-actions { display: flex; justify-content: flex-end; gap: var(--s2); }
+/* 내 작업함 목록 행은 <a>(주소 복사 · 새 탭 가능) — 링크 색 대신 목록 행 모양(inbox.js 가 스크립트로 끼우던 규칙) */
+.inbox-body a.item { display: block; color: inherit; text-decoration: none; }
+.inbox-body a.item.unread strong { font-weight: 700; }
+.inbox-body a.item:not(.unread) { opacity: .78; }
