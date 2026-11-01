@@ -1,6 +1,6 @@
 # 포털 화면 규칙 — 화면을 고치거나 더할 때 읽는 한 장
 
-포털(`it/portal/www/`, 정적 JS — nginx가 process API로 프록시)의 화면 규칙이다. 화면을 더할 때는 **더한 것만** 이 규칙으로 다듬는다(기존 화면을 함께 재작성하지 않는다). 2026-10-07 승인안(화면별 정리 계획 · 공수 · 캡처)은 반영이 끝나 걷어냈다 — workspace 브랜치 이력 `266e90df:workspace/개발/문서/UIUX_PLAN.md`.
+포털(`it/portal/www/`, 정적 JS — 서비스는 같은 출처 `/svc/<서비스>/`로만 부르고 nginx가 프록시한다: `it/portal/nginx.conf`, 주소 함수는 `layers.js`의 `SVC` 하나)의 화면 규칙이다. 화면을 더할 때는 **더한 것만** 이 규칙으로 다듬는다(기존 화면을 함께 재작성하지 않는다). 2026-10-07 승인안(화면별 정리 계획 · 공수 · 캡처)은 반영이 끝나 걷어냈다 — workspace 브랜치 이력 `266e90df:workspace/개발/문서/UIUX_PLAN.md`.
 
 ## 1. 판정 기준
 | 기준 | 뜻 |
@@ -12,7 +12,7 @@
 | 글 폭 | 설명 · 요약 글은 `.prose`(최대 768px) |
 
 ## 2. 실패를 실패로 보인다(2026-10-30 점검에서 정한 규칙)
-- 읽기 실패를 「없음」 · 빈 목록 · 끝없는 「불러오는 중」으로 보이지 않는다. 그 자리에 `UI.errorBlock(사유, {retry})` — 사유는 서버의 학생용 문장, [다시 시도] 단추.
+- 읽기 실패를 「없음」 · 빈 목록 · 끝없는 「불러오는 중」으로 보이지 않는다. 그 자리에 `UI.errorBlock(제목, 사유, {retry})`(`ui.js`) — 사유는 서버의 학생용 문장, `retry`면 [다시 시도] 단추.
 - 「한 번 읽고 실패하면 끝」을 만들지 않는다: 처음 읽기에 실패한 화면은 셸의 `show()`가 메뉴를 다시 열 때 새로 그린다(화면 모듈의 `failed()`).
 - 요청은 `requestJ`(`app.js`) 하나로 — 네트워크 끊김 · 시간 초과 · 403/404/422를 쉬운 말로 바꾼다. 오래 걸리는 계산은 `timeout` 옵션. 사본 요청 함수를 만들지 않는다.
 - 학생에게 내부어를 보이지 않는다: 환경 변수 이름 · 표 이름 · 영문 예외 · 경보 코드(`COOLER_DEGRADATION` → `UI.patternName`) · 도구 서버 id(→ `hydWords.serverName`) · 실행기 제품 이름. 원문은 접기 안에서만.
@@ -55,6 +55,7 @@
 | SKIPPED(단계) | 건너뜀 | neutral |
 | 실행 HUMAN_ASKED | 답변 기다림 | warning |
 | 실행 STARTED · FB_REQUESTED · FAILED | 진행 중 · 반영 중 · 실패(danger) | — |
+| 승인 전달 PENDING · DELIVERED · FAILED · DISCARDED(단계 상태와 다른 축 — `UI.deliveryChip`) | 전달 대기 · 전달 완료 · 전달 실패 · 승인 폐기 | warning · success · danger · neutral |
 
 ## 6. 검사
 - 화면 순회 테스트 `workspace/개발/tests/test_portal_ui.py`(Playwright, 메뉴 23개 × 1366 · 1920): 콘솔 오류 · 실패 요청 · 14초 뒤 남는 로딩 · 내부어 · 가로 넘침 · 수업 단계에서 막힌 행동 단추가 켜져 있는지(눌리는데 거절). 떠 있는 스택에 `HYD_TEST_PORTAL_URL=http://127.0.0.1:<포털 포트>`로 돌린다(`RUNBOOK.md` §5). 쓰기 단추는 누르지 않는다.

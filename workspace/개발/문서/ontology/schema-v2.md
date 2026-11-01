@@ -2,11 +2,13 @@
 
 2026-10-01 회의의 지시에 따라 L7 온톨로지를 처음부터 다시 설계했다. 이 문서는 스키마(클래스와 관계의 틀)를 설명한다. 인스턴스는 스키마에 맞춰 따로 만든다.
 
+지금 판은 `schema.json`의 `version` 2.7.0이다(클래스 · 관계 수는 [class-table.md](class-table.md)). 2026-10-30에 쓰는 곳이 없는 요소를 판 번호를 올리지 않고 지웠다: 조치별 예측 클래스 Forecast(FORECASTS · ASSUMES · GIVEN), 손으로 옮겨 적은 업무 흐름이 쓰던 관계(READS · PRODUCES · INVOKES · PERFORMED_BY · CORRELATES · ATTACHED_TO), 실행 투영의 MAPS_TO. 시드도 한 벌이다(구조판 · 전체판 두 판을 없앴다).
+
 v2.6(2026-10-09)은 관계 하나만 더했다: `(:FailureMode)-[:PREVENTED_BY]->(:Skill)` 예방 조치(정기 정비). 기존 클래스 · 관계는 이름도 뜻도 그대로다(아래 "조치 방법" 절).
 
-v2.7(2026-10-12)은 기존 Skill에 명시 업무 범위 `scope=purchase`와 실행 후보 여부 `executable`을 더했다. 클래스는 그대로이며 INVOLVES_PART의 기존 Cause→Part에 Skill→Part 끝점을 가산했다. 구매 SOP는 검증된 보관 원문·단계·Part 범위와 ERP 수행 관계가 필요하다. 참고 보관(false)과 PR_CREATE 실행 후보(true)를 구분하며 실행 후보는 구매 승인 역할·공급사/부품 공급 관계를 추가 검사한다. 고장 유형을 지어내지 않고, 기존 scope 없는 고장 조치의 FM 필수 조건은 유지한다. 상세 계약은 구매 범위 모델(2026-10-12 검증 기록 — 남아 있지 않음)이다.
+v2.7(2026-10-12)은 기존 Skill에 명시 업무 범위 `scope=purchase`와 실행 후보 여부 `executable`을 더했다. 클래스는 그대로이며 INVOLVES_PART의 기존 Cause→Part에 Skill→Part 끝점을 가산했다. 구매 SOP는 검증된 보관 원문·단계·Part 범위와 ERP 수행 관계가 필요하다. 참고 보관(false)과 PR_CREATE 실행 후보(true)를 구분하며 실행 후보는 구매 승인 역할·공급사/부품 공급 관계를 추가 검사한다. 고장 유형을 지어내지 않고, 기존 scope 없는 고장 조치의 FM 필수 조건은 유지한다. 검사는 `validate`(구매 범위 — `hydcommon.skill_scope.purchase_graph_issues`)가 한다.
 
-v2.1(2026-10-02)은 세 표준을 미니멀 셋으로 다시 다듬었다. BPMN에서 프로세스의 시작 · 대상 · 실행 데이터 연결성을, DMN에서 임계값 기반 규정 · 판단 규칙을, BSC에서 지표 간 가치 상충과 소유 부서를 속성으로 담고, 세 결함 시나리오가 쓰지 않는 표준 요소는 뺐다 (3절의 미니멀 셋 표).
+v2.1(2026-10-02)은 세 표준(BPMN · DMN · BSC)을 시나리오가 쓰는 만큼의 미니멀 셋으로 다듬었다(3절의 미니멀 셋 표).
 
 ## 1. 왜 다시 만들었나
 
@@ -14,7 +16,7 @@ v1은 "시작 대상 → 조회 정보 → 규정 판단 → 실행"이라는 �
 
 v2의 설계 원칙은 여섯 가지다.
 
-1. **계층:** 맨 위에 BSC(관점 · 전략 목표 · 성과 지표), 그 아래 전략 목표(조직 목표)를 달성하는 프로세스, 일을 하는 리소스, 조치 방법인 스킬과 규칙이 있다. 옆에 외부 변수와 예측이 붙는다.
+1. **계층:** 맨 위에 BSC(관점 · 전략 목표 · 성과 지표), 그 아래 전략 목표(조직 목표)를 달성하는 프로세스, 일을 하는 리소스, 조치 방법인 스킬과 규칙이 있다. 옆에 외부 변수가 붙는다. 조치 후 예측값은 그래프에 두지 않는다 — 카드를 만들 때 설비 모델(`common/hydcommon/forecast.py`)이 그때 설비 상태로 계산하고, 그래프는 설비가 쓰는 모델 · 판만 가진다(`Asset.forecastModel` · `forecastRevision`, 템플릿 `t3_forecast_model`).
 1. **조치 방법은 Skill이다:** 스킬 하나가 SOP 하나다. 기존 고장 조치는 고장 유형(FailureMode)에 즉시 완화 · 근본 조치 · 예방 조치 중 하나로 매칭된다. 명시한 원문 구매 SOP는 Part 업무 범위에 연결하며 고장 유형을 추정하지 않는다. Part 범위는 이 SOP를 사용할 수 있는 부품 목록이다.
 2. **상충 관계가 핵심이다:** BSC 성과 지표끼리, 그리고 설비 상태와 성과 지표 사이에 `+`/`-` 영향 관계를 둔다. 에이전트는 이 관계를 따라 거시적으로 판단한다. 관계가 없으면 선을 긋지 않는다.
 3. **표준에서 준용한다:** 가치는 BSC, 프로세스는 BPMN, 규정과 판단은 DMN, 설비 진단은 ISO 13374 / MIMOSA(아키텍처 v4)를 따른다. 시나리오에 필요한 만큼만 가져왔다.
@@ -31,7 +33,8 @@ flowchart TB
     K -- "INFLUENCES +/-" --> K
   end
   subgraph P["프로세스 계층 · BPMN"]
-    PR[Process] --> FN["FlowNode: Event · Task · Gateway"]
+    PR[Process]
+    PV["ProcessVersion 배포 판본<br/>(운영 기록 — 처리 엔진 투영)"] -- HAS_NODE --> FN["FlowNode: Event · Task · Gateway"]
     FN -- SEQUENCE_FLOW --> FN
   end
   subgraph R["리소스 계층"]
@@ -53,20 +56,15 @@ flowchart TB
     DE --> IN[InputData]
     DE --> KS[KnowledgeSource 출처]
   end
-  subgraph X["외부 변수 · 예측"]
+  subgraph X["외부 변수"]
     EX[ExternalVariable]
-    FC[Forecast]
   end
   PR -- "ACHIEVES (조직 목표)" --> OB
   PR -- "ACTS_ON (대상)" --> AS
-  FN -- "READS · PRODUCES" --> IN
-  FN -. "CORRELATES (시작)" .-> AP
   RU -- "TESTS {operator, value}" --> IN
   AP -- "TESTS {operator, value}" --> IN
   IN -- REPRESENTS --> SV & K
   IN -- SOURCED_FROM --> SE & SY
-  FN -- PERFORMED_BY --> RO & SY
-  FN -- INVOKES --> DE
   RO & SY -- HAS_SKILL --> SK
   SK -- "AFFECTS +/-" --> SV & K
   SV -- "INFLUENCES +/-" --> SV & K
@@ -78,27 +76,27 @@ flowchart TB
   RU -- DERIVED_FROM --> KS & MS
   ST -- REFERS_TO --> MS
   AT -- TARGETS --> AC
-  FC -- ASSUMES --> SK
 ```
+
+그림에 없는 것: 흐름 노드의 수행자 · 데이터 입출력 · 부르는 판단 · 시작 경보는 그래프 관계가 아니다 — 실행 정의(`it/process/definitions/` · 수업 흐름 `it/process/procsvc/course_flows.json`)가 정본이고, 그래프의 흐름 노드는 배포된 정의 판본을 처리 엔진이 투영한 것이다. 운영 기록 계층(사건 · 판단 사례 · 처리 건 · 작업)도 그림에서 뺐다(전체는 [ontology-classes.svg](ontology-classes.svg)).
 
 ## 3. 표준 준용
 
 | 표준 | 가져온 요소 | v2 클래스 · 관계 |
 |---|---|---|
 | BSC | 관점, 전략 목표(조직 목표), 성과 지표, 전략맵 인과 | Perspective, Objective, Measure, `SUPPORTS`, `MEASURES`, `INFLUENCES`, `ACHIEVES`(프로세스 → 전략 목표) |
-| BPMN 2.0 | Process와 그 대상, Event(트리거는 eventDefinition · messageRef · correlationKey 속성), Task(user · service · businessRule), Gateway, SequenceFlow, 수행자, 데이터 입력 · 출력, 경계 이벤트 | Process, FlowNode, Event, Task, Gateway, `ACTS_ON`, `CORRELATES`, `SEQUENCE_FLOW`, `PERFORMED_BY`, `READS`, `PRODUCES`, `ATTACHED_TO` |
+| BPMN 2.0 | Process(객체: 달성 목표 · 대상 설비), 배포된 정의 판본의 흐름 노드 — Event(트리거는 eventDefinition · messageRef · correlationKey 속성), Task(taskType · 에이전트 작업이면 agentMode), Gateway, SequenceFlow | Process, ProcessVersion, FlowNode, Event, Task, Gateway, `ACHIEVES`, `ACTS_ON`, `HAS_NODE`, `SEQUENCE_FLOW`. 수행자 · 데이터 입출력 · 경계 부착 · 부르는 판단은 실행 정의에 있고 그래프에 두지 않는다 |
 | DMN 1.x | Decision, InputData, Decision Table(hit policy, Rule = 입력 항목의 임계값 검사), Knowledge Source, 정보 · 권한 요구 | Decision, InputData, DecisionTable, Rule, KnowledgeSource, `TESTS {operator, value}`, `REQUIRES_INPUT`, `REQUIRES_DECISION`, `GOVERNED_BY`, `DERIVED_FROM` |
-| BPMN ↔ DMN | businessRuleTask가 Decision을 호출 | `Task-[:INVOKES]->Decision` |
 | ISO 13374 / MIMOSA | SD 상태 감지, HA 건강 평가, AG 권고 | AnomalyPattern, Symptom, FailureMode, Cause, Evidence, ManualSection. AG 권고는 고장 유형에 매칭된 Skill(= SOP)과 Step |
 | ISO 14224 취지 | 설비 단위, 정비 가능 품목, 고장 모드 · 원인 | Asset, Component, FailureMode, Cause |
 
 ### 미니멀 셋 — 시나리오가 쓰는 것만
 
-표준의 모든 요소를 담지 않았다. 세 결함 시나리오(쿨러 핀 오염, 펌프 내부 누설, 팬 베어링 마모)가 실제로 쓰는 요소만 두었다. `validate`는 인스턴스가 쓰지 않는 스키마 요소를 보고하며, 지금은 0개다.
+표준의 모든 요소를 담지 않았다. 수업 시나리오(A 냉각 긴급 대응 · B 정기 정비 · C 예비품 구매)와 그 실행 기록이 실제로 쓰는 요소만 둔다(`schema.json` conventions `minimalSet`). `validate`는 인스턴스가 쓰지 않는 스키마 요소를 그때 그래프로 센다(이 문서에 수를 적지 않는다 — 수업 그래프는 시드 + 수업 문서 적재분이고, 실행 기록 요소는 처리 건이 돌아야 생긴다).
 
 | 표준 | 시나리오에 꼭 필요해서 담은 것 | 쓰지 않아 뺀 것 |
 |---|---|---|
-| BPMN | 시작 이벤트(메시지 = 경보, 상관 키 = 설비), 경계 타이머(선택 시간 초과), 종료(종결 · 에스컬레이션), 작업 3종(user · service · businessRule), 배타 게이트웨이, 작업의 데이터 입력 · 출력, 수행자, 프로세스 대상 | 중간 이벤트, 조건 · 신호 · 오류 이벤트, 병렬 · 포괄 게이트웨이, 수동 작업, 풀 · 레인 · 메시지 흐름, 하위 프로세스 |
+| BPMN | 프로세스의 달성 목표 · 대상 설비, 배포 판본의 흐름 노드 — 시작 이벤트(메시지 = 경보, 상관 키 = 설비), 경계 타이머, 종료, 작업 종류 · 게이트웨이 종류(허용값은 schema.json), 순서 흐름 | 중간 이벤트, 조건 · 신호 · 오류 이벤트, 풀 · 레인 · 메시지 흐름, 그래프 안의 수행자 · 데이터 입출력(실행 정의가 정본) |
 | DMN | 판단, 입력 데이터, 결정표, 임계값 검사(연산자 6종), hit policy 3종(PRIORITY · COLLECT · UNIQUE), 지식 출처, 정보 · 권한 요구 | hit policy FIRST · RULE ORDER, 업무 지식 모델(BKM), FEEL 함수, 출력 열 정의, 결정 서비스 |
 | BSC | 관점 4개, 전략목표, 성과 지표(방향 · 목표 · 경고 · 위험 임계값 · 계산식), 성과 지표 간 `+`/`-` 영향, 성과 지표 소유 부서 | 실행 과제(Initiative) 별도 클래스, 가중치 스코어카드, 목표 대비 실적 시계열 |
 
@@ -114,35 +112,38 @@ flowchart TB
 
 ### 클래스 속성
 
-
 전체 속성은 [schema_prompt.md](../../../../it/neo4j/v2/schema_prompt.md)에 있다. `!`는 필수 속성이다.
+
+속성의 허용값 · 필수 여부는 `it/neo4j/v2/schema.json`이 정본이다 — 생성물 `schema_prompt.md` · `ontology-schema.ttl`과 표 [class-table.md](class-table.md)에 그대로 나온다(이 표에는 사본을 두지 않는다).
 
 | 계층 | 클래스 | 핵심 속성 | 뜻 |
 |---|---|---|---|
 | BSC | Perspective | order! | BSC 관점. 학습=1 … 재무=4 |
 | | Objective | name! | 전략 목표 (조직 목표). 프로세스가 달성하려는 대상 |
 | | Measure | unit!, direction! (UP · DOWN), kpiRole! (leading 선행 동인 · lagging 후행 결과), formula, target, thresholdWarn · thresholdCrit | BSC 성과 지표. 상충 관계의 노드. 후행 지표는 선행 지표를 움직이지 않고, 선행 지표는 INFLUENCES 경로로 후행 지표에 닿는다 |
-| 프로세스 | Process | isExecutable | 업무 프로세스 |
-| | Event : FlowNode | position! (start · boundary · end), eventDefinition! (none · message · timer · escalation), messageRef, correlationKey, timer | 시작 · 경계 · 종료 이벤트. 트리거는 이 속성들이다 |
-| | Task : FlowNode | taskType! (user · service · businessRule) | 작업. 읽는 데이터(READS)와 만드는 데이터(PRODUCES)를 가진다 |
-| | Gateway : FlowNode | gatewayType! (exclusive) | 분기 |
-| 리소스 | OrgUnit · Role · System | level!, zone! | 조직, 역할, 정보 시스템(에이전트 포함) |
-| | Asset · Component · Sensor · Actuator | tag!, resource! | 설비와 계측 · 구동 |
-| | StateVariable | unit!, kind! (manipulated · controlled · disturbance) | 물리량. 물리 영향을 성과 지표로 잇는 다리 |
-| | Part · Supplier | avl! | 교체 부품과 공급사 |
-| 설비 진단 | AnomalyPattern | code!, rule!, holdSeconds | CEP 탐지 패턴. 탐지 임계값은 TESTS로 입력 데이터에 건다 |
-| | Symptom · FailureMode · Cause | prior! | 증상, 고장 모드, 원인 |
-| | Evidence | rule!, weight!, sql | 원인 확증 근거 |
+| 프로세스 | Process | isExecutable | 업무 프로세스(객체 — 이름 · 달성 목표 · 대상 설비). 처리 순서 · 담당 · 분기 조건은 실행 정의가 정본 |
+| | Event : FlowNode | position!, eventDefinition!, messageRef, correlationKey, timer | 시작 · 경계 · 종료 이벤트. 트리거는 이 속성들이다. 흐름 노드(FlowNode 공통: definition_id · version · element_id)는 처리 엔진이 배포 판본에서 투영한다 |
+| | Task : FlowNode | taskType!, tool, agentMode, orchestration | 작업. 에이전트 작업이면 agentMode(DRAFT · COMPLETE) |
+| | Gateway : FlowNode | gatewayType! | 분기(exclusive · parallel) |
+| 리소스 | OrgUnit · Role · System | level!(Role), zone!(System) | 조직, 역할, 정보 시스템(에이전트 포함) |
+| | Asset · Component · Sensor · Actuator | code!(Asset), tag!(Sensor), resource!(Actuator) | 설비와 계측 · 구동. Asset의 forecastModel · forecastRevision은 조치 후 예측에 쓰는 설비 모델 |
+| | StateVariable | unit!, kind! | 물리량. 물리 영향을 성과 지표로 잇는 다리 |
+| | Part · Supplier | partNo(Part), avl! · oem!(Supplier) | 교체 부품과 공급사. oem은 「순정 우선」 구매 절차가 고르는 값 |
+| 설비 진단 | AnomalyPattern | code!, rule!, holdSeconds, detectionMode, clearRule, severity | 감지기 탐지 패턴. 탐지 임계값은 TESTS로 입력 데이터에 걸고, 사람이 읽는 rule은 시드가 TESTS에서 만든다 |
+| | Symptom · FailureMode · Cause | prior!(Cause) | 증상, 고장 모드, 원인 |
+| | Evidence | rule!, sql!, expect!, threshold!, weight! | 원인 확증 근거 |
 | | ManualSection | ref!, title! | 매뉴얼 절 |
-| 스킬 · 규칙 | Skill | sopId!, kind! (control · work_order · business), description! | 조치 방법 = SOP = 조치 가이드 카드 한 장. 단계가 1개 이상, 고장 유형 매칭이 1개 이상 있어야 한다 |
+| 스킬 · 규칙 | Skill | sopId!, kind!, description!, scope, executable | 조치 방법 = SOP = 조치 가이드 카드 한 장. 단계가 1개 이상, 고장 유형 매칭이 1개 이상 있어야 한다(구매 SOP `scope=purchase`는 고장 유형 대신 Part 범위 · ERP, 참고 보관 `kind=reference`는 매칭 없음) |
 | | Step | order!, text! | SOP 단계. 근거 매뉴얼 절을 가리킨다 |
 | | Action | code!, kind!, param, min, max | 원자 조치 (PLC 쓰기 · 시스템 트랜잭션) |
 | | Decision | question! | 판단 정의 |
-| | InputData | variable!, typeRef! | 판단 · 작업 사이를 흐르는 데이터. 출처(SOURCED_FROM)나 만든 작업(PRODUCES)이 있고, 상태 변수 · 성과 지표를 가리킨다(REPRESENTS) |
-| | DecisionTable · Rule | hitPolicy! (PRIORITY · COLLECT · UNIQUE — 엔진이 평가하는 표는 cards.EXECUTED_HIT_POLICIES와 같아야 한다), when!, effect! (SELECT · EXCLUDE · PENALTY · WARN · RANK) | 결정표와 규칙. 규칙은 임계값 검사(TESTS)를 하나 이상 가진다 (RANK 제외) |
-| | KnowledgeSource | kind! (manual · regulation · policy · strategy) | 매뉴얼, 사내 규정, 정책, 전략맵 |
-| 외부 · 예측 | ExternalVariable · Forecast | unit!, value!, method! | 외생 변수, 조치별 예측값 |
+| | InputData | variable!, typeRef! | 판단 · 이상 패턴이 검사하는 데이터. 출처(SOURCED_FROM — 시스템 · 센서)가 있고, 상태 변수 · 성과 지표를 가리킨다(REPRESENTS) |
+| | DecisionTable · Rule | hitPolicy! (엔진이 평가하는 표는 cards.EXECUTED_HIT_POLICIES와 같아야 한다), when!, effect! | 결정표와 규칙. 규칙은 임계값 검사(TESTS)를 하나 이상 가진다 (RANK 제외) |
+| | KnowledgeSource | kind! | 매뉴얼, 사내 규정, 정책, 전략맵 |
+| 외부 | ExternalVariable | unit! | 외생 변수(환율 · 외기 온도 · 전력 단가 · 고객 수요) |
 | 운영 기록 | Incident · DecisionCase | alertId!, followedRecommendation! | 사건과 사람의 판단 사례(선례) |
+| | ProcessInstance · WorkItem · ProcessVersion · ExecutionActor(User · Agent) | status!(처리 건 · 작업), definition_id! · version!(판본) | 처리 건 · 작업 · 배포 판본 · 실제 담당자 — 처리 엔진이 실행을 투영한다 |
+| | IngestionControl · IngestionBatch · ExecutionProjection · CaseProjection · KnowledgeEdit · ManualIngestionDocument · ManualIngestionBatch | — | 적재 · 투영 · 편집의 영수증(내부 기록 — 지식 지도에 보이지 않는다) |
 
 ## 5. 상충 관계 규칙
 
@@ -167,40 +168,33 @@ flowchart TB
 
 - **SOP를 직접 갖는다:** 스킬은 `sopId`와 단계(`HAS_STEP → Step → REFERS_TO → ManualSection`)를 직접 갖는다. 별도 절차 클래스는 없다.
 - **고장 유형에 매칭된다:** `(:FailureMode)-[:MITIGATED_BY]->(:Skill)`은 즉시 완화, `(:FailureMode)-[:REMEDIED_BY]->(:Skill)`은 근본 조치, `(:FailureMode)-[:PREVENTED_BY]->(:Skill)`은 예방 조치다.
-- **예방 조치(v2.6 추가, 2026-10-09 확정):** 정기 정비는 생긴 고장을 없애는 일이 아니라 고장을 미리 막는 일이다(준용 EN 13306 preventive maintenance · ISO 14224 PM). 그래서 근본 조치(REMEDIED_BY)와 따로 둔다. 같은 양식(N:M, `_manual_document`)이고 필수 조건 "스킬은 고장 유형에 매칭"을 `MITIGATED_BY|REMEDIED_BY|PREVENTED_BY`로 넓혔을 뿐 기존 것은 바꾸지 않았다. 경보(고장) 대응 후보(t2 템플릿 · 자동 후보 연결)는 즉시 완화 · 근본 조치만 따라가고, 정기 정비 도래(PM_DUE) 후보는 문서가 낸 후보 규칙이 예방 조치 스킬을 고른다. 예: 펌프 체적 효율 저하 -PREVENTED_BY-> SOP-PM-21(2,000 h 패키지).
-- **원인 한정:** 근본 조치가 고장 유형의 특정 원인에만 맞으면 `(:Skill)-[:ADDRESSES]->(:Cause)`를 단다. 같은 "쿨러 냉각 성능 상실"이라도 핀 오염이면 세척, 외기 고온이면 환기 개선이다.
-- **스키마가 강제한다:** 단계가 없거나 고장 유형에 매칭되지 않은 스킬은 `validate`에서 위반으로 잡힌다.
-
-| 고장 유형 | 즉시 완화 SOP | 근본 조치 SOP |
-|---|---|---|
-| 쿨러 냉각 성능 상실 | SOP-COOL-01 팬 최대, SOP-COOL-02 팬 최대 + 부하 80 %, SOP-COOL-03 부하 70 % + 야간 세척 (핀 오염 한정) | SOP-COOL-04 쿨러 핀 세척 (핀 오염 한정), SOP-COOL-05 캐비닛 환기 개선 (외기 고온 한정) |
-| 펌프 체적 효율 저하 | SOP-PMP-01 예비 펌프 전환, SOP-PMP-02 부하 70 %, SOP-PMP-03 압력 설정 상향 (구 절차, 규정상 제외) | SOP-PMP-04 펌프 축 씰 교체 |
-| 팬 베어링 열화 | SOP-FAN-01 팬 40 % + 부하 80 %, SOP-FAN-02 팬 40 % | SOP-FAN-03 계획 정지 + 베어링 교체, SOP-FAN-04 팬 베어링 교체 |
-| 과열 정지 | SOP-TRIP-01 냉각 후 리셋 | 원인 고장 유형(냉각 성능 상실)의 근본 조치를 따른다 |
+- **예방 조치(v2.6 추가, 2026-10-09 확정):** 정기 정비는 생긴 고장을 없애는 일이 아니라 고장을 미리 막는 일이다(준용 EN 13306 preventive maintenance · ISO 14224 PM). 그래서 근본 조치(REMEDIED_BY)와 따로 둔다. 같은 양식(N:M, `_manual_document`)이고 필수 조건 "스킬은 고장 유형에 매칭"을 `MITIGATED_BY|REMEDIED_BY|PREVENTED_BY`로 넓혔을 뿐 기존 것은 바꾸지 않았다. 경보(고장) 대응 후보(t2 템플릿 · 자동 후보 연결)는 즉시 완화 · 근본 조치만 따라가고, 정기 정비 도래(PM_DUE) 후보는 문서가 낸 후보 규칙이 예방 조치 스킬을 고른다. 예: 주 펌프 체적 효율 저하 -PREVENTED_BY-> SOP-PM-21(2,000 h 정기 점검).
+- **원인 한정:** 근본 조치가 고장 유형의 특정 원인에만 맞으면 `(:Skill)-[:ADDRESSES]->(:Cause)`를 단다. 같은 "쿨러 냉각 성능 상실"이라도 핀 오염이면 핀 세척(SOP-COOL-14), 주변 온도 상승이면 캐비닛 환기 보강(SOP-COOL-15)이다.
+- **스키마가 강제한다:** 단계가 없거나 고장 유형에 매칭되지 않은 스킬은 `validate`에서 위반으로 잡힌다(구매 SOP는 Part 범위 · ERP 수행, 참고 보관은 실행 · 후보 관계 없음으로 따로 잰다).
+- **어느 SOP가 어느 고장 유형에 붙는가:** 시드에 없다 — 수업 문서(HM-8 · PM-02 · PR-07)의 강사 서명 추출 묶음 `it/process/procsvc/course_extractions.json`을 시작이 적재해 만든다(`scripts/class_knowledge.py`). 지금 그래프의 목록은 질의 `q2b-failure-mode-skills`(고장 유형 · 종류 · SOP · 단계 수 · 원인 한정)로 본다 — 이 문서에 사본을 두지 않는다.
 
 ### 임계값 규칙 (DMN)
 
 - 임계값은 문장이 아니라 관계다: `(:Rule|AnomalyPattern)-[:TESTS {operator, value, unit}]->(:InputData)`. 연산자는 `<`, `<=`, `>`, `>=`, `==`, `!=`다.
-- 한 규칙의 검사는 모두 AND다 (결정표의 한 행). OR는 행을 나눈다. 예: "트립 중"과 "과열 정지로 판정"은 별도 행 두 개가 같은 리셋 스킬을 낸다.
+- 한 규칙의 검사는 모두 AND다 (결정표의 한 행). OR는 행을 나눈다 — 두 조건 중 하나면 같은 스킬을 낼 때는 같은 스킬을 OUTPUTS로 가진 행 두 개를 둔다.
 - `when`은 같은 조건을 사람이 읽게 쓴 문장이다. 검사기가 `when`과 TESTS가 같은 변수 · 연산자 · 값인지 확인한다.
 - 입력 데이터는 `REPRESENTS`로 상태 변수나 성과 지표를 가리킨다. 그래서 "예측 유온 ≥ 65 ℃" 규칙이 유온의 인터록 한계 65 ℃와 같은 값임을 질의로 확인할 수 있다.
-- 탐지 임계값과 규칙 임계값 모두 근거 문서(`DERIVED_FROM`)를 가진다.
-- 온도와 압력 규칙이 모두 있다. 온도: 유온 > 55 ℃ 탐지, 예측 유온 ≥ 55 경고, ≥ 65 제외. 압력: 토출 압력 < 165 bar 탐지 · 원인 판정, 예측 압력 < 165 bar 경고, 저압 인터록 130 bar.
+- 근거 문서(`DERIVED_FROM`): 규칙(시드 `rule:ts1-hard` → 규정 `ks:sr-04`, 문서 적재 규칙 → 그 매뉴얼 절)과 B · C의 업무 표 감시 패턴(`scenario_structure.cypher`)이 가진다. 설비 센서 패턴(`instances.cypher` 4절)은 그래프 근거 연결이 없다 — 기준의 원문(HM-8.3 정상 52 ℃ 미만 · 경보 55 ℃ 초과)은 시드 주석에만 있다.
+- 임계값이 어디서 오는가: 탐지 임계값은 시드의 이상 패턴(`it/neo4j/v2/instances.cypher` 4절 — 예: 쿨러 성능 저하 TS1 > 55 ℃ · CE < 70 % · 유온 상승률 > 0, 해제 TS1 < 52), 시드 규칙은 예측 유온 인터록 제외 하나(`rule:ts1-hard`, 예측 유온 ≥ 65 ℃), 나머지 진단 · 후보 · 규정 규칙(예: 예측 유온 55 ℃ 이상 경고)은 수업 문서 적재가 만든다. 지금 그래프의 수치 임계값 전부와 이어진 상태 변수 한계 · 근거는 질의 `q14-thresholds`로 본다.
 
-### 세 결함 시나리오 — 시작 · 대상 · 데이터 · 임계값 · 상충
+### 수업 시나리오 — 시작 · 대상 · 데이터 · 임계값 · 상충
 
-| | 쿨러 핀 오염 | 펌프 내부 누설 | 팬 베어링 마모 |
-|---|---|---|---|
-| 시작 (BPMN) | 메시지 시작 이벤트 `alerts`, 상관 키 asset | 같음 | 같음 |
-| 대상 (BPMN) | 설비 HYD-01 (`ACTS_ON`) | 같음 | 같음 |
-| 탐지 임계값 (DMN) | ts1 > 55 ℃, ce < 70 %, ts1_slope > 0 [HM-7.3] | ps1 < 165 bar, fs1 < 8.0 l/min, load ≥ 80 % [HM-5.2] | vs1 > 1.2 mm/s, vs1_slope > 0 [HM-8.1] |
-| 원인 판정 규칙 (DMN) | pattern == COOLER_DEGRADATION, ce < 70 | pattern == PUMP_LEAKAGE | pattern == FAN_VIBRATION, ts1 < 52 |
-| 고장 유형 | 쿨러 냉각 성능 상실 | 펌프 체적 효율 저하 | 팬 베어링 열화 |
-| 조치 카드 (스킬 = SOP) | SOP-COOL-01 · 02 · 03 | SOP-PMP-01 · 02 · 03 | SOP-FAN-01 · 02 · 03 |
-| 걸리는 규정 (DMN) | 예측 유온 ≥ 55 경고, 팬 100 % > 24 h 감점, REMOTE_AUTO 아니면 제외 | 압력 상향 제외 (누설 시), 예비 펌프 미가용 시 제외, REMOTE_AUTO 아니면 제외 | 예측 유온 ≥ 55 경고, REMOTE_AUTO 아니면 제외 |
-| 상충 (BSC) | 생산량 · 매출 [생산팀] 대 보전비 · 작동유 수명 [설비보전팀] 대 전력 [에너지팀] | 가동률 [생산팀] 대 예비 설비 여유 · MTBF [설비보전팀] | 진동 · MTBF [설비보전팀] 대 인터록 여유 · 생산량 [생산팀] |
+시나리오는 셋이다: A 냉각 긴급 대응(쿨러 성능 저하 경보), B 정기 정비(정기 점검 도래 `PM_DUE`), C 예비품 구매(재고 보충 필요 `SPARE_BELOW_MIN`). 사실의 정본은 한 곳씩이다 — 사본 표를 두지 않는다.
 
-데이터는 작업 사이를 이렇게 흐른다 (q13). 원인 진단이 센서 · CEP 값을 읽어 고장 유형과 원인을 만든다. 조치 후보 조회가 그것을 읽어 예측 유온과 후보 속성을 만든다. 규정 검토와 우선순위가 그 값과 시스템 값(운전 모드, 예비 펌프 가용, 오더 납기)을 읽는다. 사람이 고른 스킬이 PLC 명령 또는 작업지시 작업으로 넘어간다.
+| 무엇 | 정본 | 그래프에서 보는 질의 |
+|---|---|---|
+| 처리 순서 · 승인 · 기한 · 시작 경보 | 수업 흐름 `it/process/procsvc/course_flows.json`(`c3_cooling` · `c3_pm` · `c3_spare`) | — |
+| 프로세스 객체(달성 목표 · 대상 설비) | `instances.cypher` 6절 | `q11-processes` |
+| 탐지 패턴 · 판단 입력 | `instances.cypher` 3 · 4절, B · C의 업무 표 감시 패턴 · 입력은 `scenario_structure.cypher`, B의 일정 옮기기 조치는 `pm_capabilities.cypher` | `q12-scenario-profile`(A), `q13-decision-inputs` |
+| 고장 유형 · 원인 · SOP · 규칙 | 강사 서명 추출 묶음 `course_extractions.json`(HM-8 · PM-02 · PR-07) | `q2b-failure-mode-skills`, `q3-candidate-cards` |
+| 상충(BSC) | `instances.cypher` 1절 | `q4-tradeoff-paths`, `q5-card-balance` |
+
+판단마다 검사하는 데이터와 그 출처(시스템 · 센서)는 `q13-decision-inputs`로 본다. 그래프에는 작업 사이 데이터 흐름(옛 READS · PRODUCES)을 두지 않는다 — 단계의 입력 · 출력은 실행 정의가 정한다.
 
 ## 6. 스키마 그림과 인스턴스 그림
 
@@ -210,14 +204,15 @@ flowchart TB
 flowchart LR
   ap["COOLER_DEGRADATION<br/>(AnomalyPattern)"] --> sym["유온 상승<br/>(Symptom)"] --> fm["쿨러 냉각 성능 상실<br/>(FailureMode)"]
   ca["쿨러 핀 오염<br/>(Cause)"] --> fm
-  ca --> ev["냉각 효율 70 % 미만 15분<br/>(Evidence)"]
-  fm -- MITIGATED_BY --> sk["SOP-COOL-02 팬 최대 + 부하 80 %<br/>(Skill)"]
+  ca --> ev["최근 30초 냉각 효율 평균 저하(70 % 미만)<br/>(Evidence)"]
+  fm -- MITIGATED_BY --> sk["SOP-COOL-12 팬 최대 운전과 부하 80 %<br/>(Skill)"]
   sk -- "CONSISTS_OF 100" --> a1["FAN_SET<br/>(Action)"]
   sk -- "CONSISTS_OF 80" --> a2["LOAD_SET<br/>(Action)"]
-  sk -- HAS_STEP --> st["2. 팬 속도를 100 %로 올린다<br/>(Step)"] --> hm["HM-7.3<br/>(ManualSection)"]
-  fc["유온 49.0 ℃<br/>(Forecast)"] -- ASSUMES --> sk
+  sk -- HAS_STEP --> st["2. 팬 속도를 100 %로 올린다<br/>(Step)"] --> hm["HM-8.5<br/>(ManualSection)"]
   sk -- "AFFECTS -1" --> ld["펌프 부하<br/>(StateVariable)"] -- "INFLUENCES +1" --> tp["생산량<br/>(성과 지표)"] -- "+1" --> rv["매출<br/>(성과 지표)"] -- "+1" --> op["영업이익<br/>(성과 지표)"]
 ```
+
+카드의 조치 후 예측 유온은 이 경로에 노드로 없다 — 카드를 만들 때 설비 모델이 그때 설비 상태로 계산한다(1절).
 
 Neo4j Browser에서 스키마 그림은 `CALL db.schema.visualization()`으로, 인스턴스 그림은 질의 결과로 따로 본다.
 
@@ -235,29 +230,13 @@ schema_prompt.md (스키마) ─┘
 2. **경로 질의:** 증상에서 고장 유형과 원인, 증거를 찾고, 그 고장 유형에 매칭된 조치 방법(스킬 = SOP)과 원자 조치, 단계, 매뉴얼까지 한 번에 가져온다.
 3. **카드 작성:** 고장 유형에 맞는 후보 스킬을 결정표 규칙으로 고르고, 규정 규칙으로 거르고, 예측값과 득실 성과 지표를 붙인다.
 4. **사람 확인:** 카드마다 출처(규칙의 근거 문서, SOP 단계의 매뉴얼 절, 원인의 증거)를 보여 준다.
-5. **선례:** 사람의 선택은 DecisionCase로 남고, 다음 판단에서 같은 원인의 선택 이력으로 읽힌다. 단, 교육용 고정: 선례 몫은 미리 넣은 예시(`seeded = true`, `case:demo-1..3`)만 센다 — 승인으로 투영된 사례는 그래프에 남지만 순위에 들어가지 않는다(`templates/t3_precedents.cypher`의 `WHERE dc.seeded = true` 한 줄을 빼면 제품처럼 쌓이는 학습이 켜진다).
+5. **선례:** 사람의 선택은 DecisionCase로 남고, 다음 판단에서 같은 원인의 선택 이력으로 읽힌다. 단, 교육용 고정: 선례 몫은 미리 넣은 예시(`seeded = true`)만 센다 — 수업 그래프에는 그런 예시가 없어 선례 몫은 늘 0이고, 승인으로 투영된 사례는 그래프에 남지만 순위에 들어가지 않는다(`templates/t3_precedents.cypher`의 `WHERE dc.seeded = true` 한 줄을 빼면 제품처럼 쌓이는 학습이 켜진다).
 
 질의 예시는 [queries.cypher](../../../../it/neo4j/v2/queries.cypher)에 있다. 블록마다 자연어 질문과 정답 Cypher가 있다.
 
-| 질의 | 질문 | 확인한 결과 |
-|---|---|---|
-| q1 | "유온 냉각"이 가리키는 노드 | 냉각 효율 저하, 유온, 유온 상승 순으로 찾음 |
-| q2 | 유온 상승의 고장 유형 · 원인 · 증거 · 조치 방법(SOP) · 매뉴얼 | 원인 2개. 핀 오염은 SOP 4개, 외기 고온은 SOP 3개(근본 조치는 환기 개선) |
-| q2b | 고장 유형별 조치 방법 | 고장 유형 4개에 SOP 14개, 단계 수와 원인 한정 여부 |
-| q3 | 쿨러 핀 오염 카드 비교 | 3장(SOP-COOL-01 · 02 · 03). 예측 유온 55.4 · 49.0 · 52.2 ℃와 걸리는 규칙, 승인 역할 |
-| q4 | "팬 최대 + 부하 80 %"의 이익 경로 | 득 경로(유온 ↓ → 트립 회피 → 가동률 · 매출)와 실 경로(전력 · 생산량) |
-| q5 | 팬 베어링 마모 카드별 득실 성과 지표와 소유 부서 | 조건 없는 득실과 조건부 득실을 나눠, 성과 지표마다 부서를 붙여 표시 (BSC 상충) |
-| q6 | "예비 펌프 전환" 카드의 출처 | 원인, 증거 2개, 선택 · 제한 규칙과 근거 절, SOP 단계 |
-| q7 | 성과 지표 → 프로세스 → 리소스 → 스킬 | 가동률 성과 지표부터 작업, 수행자, 스킬까지 |
-| q8 | 부품 단가를 낮추면 | 구매비 경로는 이익 +, 품질 경로 6개는 이익 - (공급사 변경 조건) |
-| q9 | 환율이 오르면 | 부품 단가 ↑ 이익 -, 매출 · 재고는 가격 정책 조건부 |
-| q10 | 쿨러 핀 오염의 선례 | 고른 카드, 횟수, 사유, 권고와 다르게 고른 횟수 |
-| q11 | 설비 이상 조치 프로세스 | 순서, 수행자, 각 단계가 부르는 판단, 분기 조건 |
-| q12 | 펌프 누설 시나리오 프로필 | 시작(메시지 · 상관 키), 대상 HYD-01, 탐지 임계값 3개, 원인 판정 규칙, 고장 유형, 카드 3장, 걸리는 규정 |
-| q13 | 작업별 데이터 흐름 | 작업 9개가 읽는 데이터의 출처(센서 · 시스템 · 앞 작업)와 만드는 데이터 |
-| q14 | 수치 임계값 전체 | 임계값 13개와 가리키는 상태 변수의 한계, 근거 문서. 예측 유온 ≥ 65 규칙 = 유온 한계 65 |
+질문 목록과 정답 Cypher는 `queries.cypher`의 블록마다 `@ask` 줄이 정본이다(이 문서에 사본을 두지 않는다). 예시 id는 수업 그래프(시드 + 수업 문서 적재분)의 것이다.
 
-**온톨로지의 몫과 판단 엔진의 몫:** 온톨로지는 방향과 경로, 출처를 준다. q5처럼 한 카드에 득과 실이 함께 나오면, 어느 쪽이 더 큰지는 예측값(Forecast)과 기업 시스템의 금액 사실로 판단 엔진이 계산한다. DMN 결정표 `dt:rank-actions`가 그 자리다.
+**온톨로지의 몫과 판단 엔진의 몫:** 온톨로지는 방향과 경로, 출처를 준다. q5처럼 한 카드에 득과 실이 함께 나오면, 어느 쪽이 더 큰지는 설비 모델이 계산한 조치 후 예측값(`hydcommon.forecast`, 에이전트 `agentsvc/forecasting.py`)과 기업 시스템의 금액 사실로 판단 엔진이 계산한다. DMN 결정표 `dt:rank-actions`가 그 자리다.
 
 ## 8. v1에서 v2로
 
@@ -285,36 +264,36 @@ schema_prompt.md (스키마) ─┘
 | `it/neo4j/v2/ontology-schema.ttl` | OWL 스키마 파일 (Turtle). 생성 파일. Neo4j n10s나 Protégé로 불러올 수 있다 |
 | `it/neo4j/v2/schema_prompt.md` | 에이전트에게 주는 스키마 설명. 생성 파일 |
 | `it/neo4j/v2/constraints.cypher` | id 고유 제약과 엔티티 인식 색인. 생성 파일 |
-| `it/neo4j/v2/instances.cypher` | 가상 기업 "경남유압" 인스턴스 (세 결함 · 회의 예시 포함) |
+| `it/neo4j/v2/instances.cypher` | 가상 기업 "경남유압" 기준 데이터: BSC · 리소스 · 판단 입력 · 이상 패턴 · 시드 규칙 · 프로세스 객체 · 외부 변수(회의 예시 포함). 고장 유형 · 원인 · SOP는 넣지 않는다(수업 문서 적재) |
+| `it/neo4j/v2/scenario_structure.cypher` · `pm_capabilities.cypher` | 시나리오 B · C가 기대는 자리(업무 표 감시 패턴 · 판단 입력, 정비 일정 옮기기 조치) |
+| `it/neo4j/v2/seed_checks.cypher` | kg-seed가 적재 직후 돌리는 되읽기 단언 |
+| `it/neo4j/seed.sh` | kg-seed 적재 순서(제약 → instances → scenario_structure → pm_capabilities → 되읽기) |
 | `it/neo4j/v2/queries.cypher` | 자연어 질문과 정답 Cypher 15개 |
-| `workspace/개발/scripts/ontology_v2.py` | 생성 · 적재 · 검사 · 질의 실행 |
+| `it/neo4j/templates/` | 서비스가 쓰는 읽기 질의(아래 11절) |
+| `workspace/개발/scripts/ontology_v2.py` | 생성 · 검사 · 질의 실행(적재는 kg-seed) |
 
-운영 Neo4j(compose 서비스 `neo4j`, 포트 7687 — 셸은 `docker compose exec neo4j cypher-shell`)는 kg-seed가 v2를 적재한다. 스키마 검사와 질의 예시는 운영 그래프에 바로 돌린다.
+운영 Neo4j(compose 서비스 `neo4j` — 이 PC의 바깥 포트는 `.hyd-runtime/ports.json`의 7687, 셸은 `docker compose exec neo4j cypher-shell`)는 kg-seed가 v2를 적재한다. 스키마 검사와 질의 예시는 이 PC 수업 그래프에 바로 돌린다(도구가 포트 · 인증을 스스로 읽는다).
 
 ```bash
-python workspace/개발/scripts/ontology_v2.py gen                                    # schema.json을 고쳤으면 먼저 (OWL · 설명문 · 제약 · SVG · 표 생성)
-docker compose up -d --force-recreate kg-seed                         # 운영 그래프에 다시 적재 (멱등, 사람이 고친 스킬 이름 · 설명은 유지)
-python workspace/개발/scripts/ontology_v2.py validate --uri bolt://127.0.0.1:7687    # PASS가 나와야 한다
-python workspace/개발/scripts/ontology_v2.py queries  --uri bolt://127.0.0.1:7687
+.venv314/Scripts/python.exe workspace/개발/scripts/ontology_v2.py gen        # schema.json을 고쳤으면 먼저 (OWL · 설명문 · 제약 · SVG · 표 생성)
+docker compose up -d --force-recreate kg-seed                                 # 운영 그래프에 다시 적재 (멱등, 사람이 고친 스킬 이름 · 설명은 유지)
+.venv314/Scripts/python.exe workspace/개발/scripts/ontology_v2.py validate   # 속성 · 끝점 · 다중도 · 필수 관계 — PASS가 나와야 한다
+.venv314/Scripts/python.exe workspace/개발/scripts/ontology_v2.py queries    # 빈 결과 질의가 있으면 종료 코드 1
 ```
 
-`load --wipe`는 그래프를 비우고 다시 적재하므로 운영 그래프에는 쓰지 않는다. 스키마를 실험할 때는 별도 Neo4j를 띄워 기본 주소(7688)로 쓴다:
-`docker run -d --name hyd-onto-v2 -p 127.0.0.1:7688:7687 -e NEO4J_AUTH=neo4j/hydpass123 neo4j:5.26-community`.
+이 도구는 그래프를 비우거나 적재하지 않는다. 빈 그래프에 시드를 처음부터 넣어 보는 실험은 운영 그래프에 하지 않고 테스트 픽스처로 한다 — `workspace/개발/tests/conftest.py`의 `neo4j_graph`(빈 그래프) · `seeded_graph`(kg-seed와 같은 시드), compose의 neo4j 이미지로 띄운 버릴 컨테이너.
 
-Neo4j Browser는 http://127.0.0.1:7474 (neo4j / hydpass123)다.
+Neo4j Browser는 http://127.0.0.1:7474 (neo4j / hydpass123 — 이 PC의 바깥 포트는 `.hyd-runtime/ports.json`의 7474)다.
 
-검증 결과 (2026-10-02 기록 — 지금 판의 클래스 · 관계 수는 `it/neo4j/v2/schema.json`과 [class-table.md](class-table.md)):
+검증은 테스트가 잰다(수치를 이 문서에 적지 않는다 — 지금 판의 클래스 · 관계 수는 [class-table.md](class-table.md)):
 
-| 항목 | 결과 |
+| 무엇을 | 테스트 |
 |---|---|
-| 스키마 | v2.1. 클래스 36, 관계 66 |
-| 인스턴스 | 노드 276, 관계 696 |
-| 스키마 검사 | 위반 0건 (PASS). 스킬 14개 모두 SOP 단계와 고장 유형 매칭 있음 |
-| 미니멀 셋 | 인스턴스가 쓰지 않는 스키마 요소 0개 (클래스 · 속성 · enum 값 · 관계 · 관계 속성) |
-| DMN · BPMN 일관성 | 규칙 문장과 임계값 일치, 규칙 입력의 판단 선언, 판단 작업의 입력 읽기, 데이터 출처 · 생산자 모두 통과 |
-| 질의 예시 | 15개 모두 결과 있음 |
-| OWL 파일 | rdflib로 파싱 성공 |
-| 단위 테스트 | 온톨로지 13개 포함 전체 150개 통과 |
+| 생성물(제약 · OWL · 설명문 · 그림 · 표) = 지금 스키마로 생성기를 돌린 결과 | `test_neo4j_schema.py`, `test_ontology_v2.py::test_생성물은_지금_생성기_결과와_같다` |
+| kg-seed가 넣은 수업 그래프가 스키마(속성 · 끝점 · 다중도 · 필수 관계)를 지킨다 | `test_ontology_v2.py::test_kg_seed_가_넣은_수업_그래프는_스키마를_지킨다`(`seeded_graph`) |
+| 다중도 검사 · 깨진 글자 멈춤 · 전문 검색 색인 대상 · 클래스별 OWL 설명 · 제약 중복 없음 | `test_ontology_v2.py`의 나머지 |
+
+질의 예시가 모두 행을 내는지는 `queries`(빈 결과가 있으면 종료 코드 1)로 이 PC 수업 그래프에서 본다 — q10은 승인한 처리 건이 있어야 행이 나온다.
 
 ## 10. AI가 만든 온톨로지를 평가하는 질문
 
@@ -326,21 +305,21 @@ Neo4j Browser는 http://127.0.0.1:7474 (neo4j / hydpass123)다.
 6. 조치 카드의 모든 주장에 출처 노드(규칙의 근거, 매뉴얼 절, 증거)가 있는가?
 1. 조치 방법이 SOP인 스킬로 명시되어 있고, 모든 스킬이 고장 유형에 매칭되는가?
 1. 임계값이 문장이 아니라 연산자 · 값 · 근거를 가진 관계로 있는가?
-1. 작업마다 읽는 데이터의 출처와 만드는 데이터가 이어져 있는가?
+1. 판단마다 검사하는 입력 데이터(REQUIRES_INPUT)에 출처(SOURCED_FROM — 시스템 · 센서)가 이어져 있는가?
 1. 시나리오가 쓰지 않는 표준 요소가 스키마에 남아 있지 않은가?
 1. `validate`가 PASS인가?
 
-## 11. 서비스가 v2를 쓰는 방식 (2026-10-02 이전 완료)
+## 11. 서비스가 v2를 쓰는 방식
 
-실행 중인 프로토타입은 이제 v2 그래프만 쓴다. kg-seed가 v1 노드를 한 번 지우고 v2를 적재한다(v1 시드 · 템플릿은 2026-10-30에 지웠다 — git 이력에 있다).
+서비스는 v2 그래프만 쓴다. kg-seed가 v2를 적재한다(v1 시드 · 템플릿은 2026-10-30에 지웠다 — git 이력에 있다). 읽기 질의는 `it/neo4j/templates/`의 허용 템플릿뿐이고, 부르는 곳은 `it/agent/agentsvc/tools/mcp_kg.py`(KnowledgeGraph) 한 곳이다 — 에이전트와 판단 엔진 도구 서버(dmn-mcp)가 이것을 쓴다.
 
 | 서비스 | v2에서 하는 일 | 쓰는 템플릿 |
 |---|---|---|
-| 에이전트 (L8) | 경보 → 원인 후보 · 증거 → 고장 유형의 SOP 스킬 → 가이드 카드 → DMN 후보 · 규정 규칙 → 예측 · BSC 득실 · 선례로 카드 순위 → 프로세스에 제출 | t1_causes, t2_skills, t3_dmn, t3_inputs, t3_skills, t3_tradeoffs, t3_forecasts, t3_precedents |
-| 프로세스 (L9) | 사람이 카드(SOP) 하나를 고르면 역할 권한 검사 → PLC 명령은 인시던트 · 게이트웨이로, 작업지시 · 구매는 CMMS · ERP로 → `DecisionCase`와 `Incident`를 그래프에 기록 | — (쓰기 질의) |
-| 포탈 | 지식 지도(계층별 열 · 이상 패턴 경로), 조치 판단 규칙(사실을 바꿔 규칙 반응 실습), HITL 카드 선택, 스킬(SOP) 카탈로그, 매뉴얼 → SOP 스킬 인제스천 | t0_patterns, t0_graph_* |
+| 에이전트 · 판단 엔진(agent · dmn-mcp) | 경보 → 원인 후보 · 증거 → 고장 유형의 SOP 스킬 → 가이드 카드 → DMN 후보 · 규정 규칙 → 조치 후 예측(설비 모델) · BSC 득실 · 선례로 카드 순위 → 처리 엔진에 제출. 구매 카드는 부품 · 공급사 · 승인 역할을 읽는다 | t1_causes, t2_skills, t3_skills, t3_dmn, t3_inputs, t3_tradeoffs, t3_forecast_model, t3_precedents, t3_roles, t3_perspectives, t3_suppliers, t3_purchase_part |
+| 처리 엔진(process) | 사람이 카드(SOP) 하나를 고르면 역할 권한 검사 → 설비 명령은 관문으로, 정비 요청 · 구매는 업무 시스템으로 → 사건 · 판단 사례(Incident · DecisionCase)와 처리 건 실행(ProcessInstance · WorkItem · ProcessVersion · 흐름 노드)을 그래프에 투영. 수업 문서 적재(매뉴얼 → 진단 지식 · SOP 스킬)도 여기서 한다 | — (쓰기 질의) |
+| 포털 | 지식 지도(계층별 열 · 이상 패턴 경로 · 이름 공간), 질의 보기(템플릿 원문 여덟), 조치 판단 규칙(사실을 바꿔 규칙 반응 실습), 조치 선택, 스킬(SOP) 카탈로그, 문서 등록 · 적재 | t0_patterns, t0_graph_nodes, t0_graph_edges, t0_namespaces(에이전트 API 경유) |
 
-판단 엔진은 LLM 없이 결정론적이다. 점수 식은 온톨로지의 `rule:rank-value` 주석에 적혀 있고, 에이전트는 그 식을 그대로 쓴다.
+판단 엔진은 LLM 없이 결정론적이다. 순위는 온톨로지 `rule:rank-value`의 `rankingPolicy`(JSON)를 판단 엔진이 실행해 정한다 — 같은 규칙의 `annotation`은 사람이 읽는 설명이다.
 
 ## 12. 남은 일
 
@@ -348,8 +327,7 @@ Neo4j Browser는 http://127.0.0.1:7474 (neo4j / hydpass123)다.
 
 `kind=reference`와 `executable=false`를 명시한 매뉴얼 절차는 원문 보관만 한다. FM·승인 역할이 미상이어도 Section·Step·실제 인용을 보존하지만 실행 시스템·Action·후보 Rule 연결은 만들지 않는다. 기존 fault 실행의 FM 요구와 purchase의 Part/ERP/승인/공급 계약은 유지한다.
 
-`Step-[:DOCUMENTS]->Skill`은 새 문서의 원문 단계가 기존 Skill을 정확히 재참조하는 출처 관계다. SOP 번호와 전체 단계가 같아야 하며 검토한 기존 승인·Action·시스템·active Step/Section 계약의 hash를 pin한다. 기존 `HAS_STEP`에는 새 원문을 섞지 않고 기존 소유권·실행 내용도 바꾸지 않는다. 개정/rollback은 source journal·인용·현재 graph·pin이 검증된 provenance만 별도로 보존하며 위조/변형된 외부 관계는 drift로 거절한다. 실행 HISTORY와 source provenance를 같은 의미로 취급하지 않는다.
+`Step-[:DOCUMENTS]->Skill`은 새 문서의 원문 단계가 기존 Skill을 정확히 재참조하는 출처 관계다. SOP 번호와 전체 단계가 같아야 하며 검토한 기존 승인·Action·시스템·현재 Step/Section 계약의 지문(hash)을 고정해 둔다. 기존 `HAS_STEP`에는 새 원문을 섞지 않고 기존 소유권·실행 내용도 바꾸지 않는다. 개정 · 되돌리기는 적재 기록 · 인용 · 지금 그래프 · 고정한 지문이 맞는 출처만 따로 보존하고, 바깥에서 바뀐 관계는 「달라짐」으로 거절한다. 실행 이력과 원문 출처는 같은 뜻으로 다루지 않는다.
 
-- 펌프 누설과 팬 진동은 설비 시뮬레이터(`ot/plant-sim`) · 감지기(`it/detector`)에도 있다(개발용 통합 시험 `workspace/개발/scripts/scenario_pump_fan_test.py`). 수업 단계에서는 이 두 경보 처리 건의 AI 단계가 수업 AI 자리 밖이라 실행되지 않는다(`it/process/procsvc/course_policy.py` — 강사가 PBL 단계를 열면 실행).
+- 펌프 누설과 팬 진동은 설비 시뮬레이터(`ot/plant-sim`) · 감지기(`it/detector`)에도 있다(확인: 수업 한 바퀴 `class_round.py` 실습 93, PBL 단계). 수업 단계에서는 이 두 경보 처리 건의 AI 단계가 수업 AI 자리 밖이라 실행되지 않는다(`it/process/procsvc/course_policy.py` — 강사가 PBL 단계를 열면 실행).
 - 기존 전사 판단 시나리오 4개(납기, 구매, 품질 보류, 피크 전력)는 v2에서 빠졌다. 구매 시나리오의 상충은 q8의 부품가 경로로 들어 있다.
-- 설명 영상은 v1 화면으로 녹화되어 있다.

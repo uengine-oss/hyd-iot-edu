@@ -5,21 +5,15 @@
 그 항목을 /System/Cryptexes/App/opt/homebrew/bin 으로 깨뜨리고 독립된 /opt/homebrew/bin 항목을 만들지 못했다(점검3_I I-02, 재현).
 bash 함수를 bash(3.2 호환 문법)로 직접 부른다.
 """
-import shutil
 import subprocess
-from pathlib import Path
 
 import pytest
 
-SCRIPT = Path(__file__).resolve().parents[3] / 'scripts' / 'macos_paths.sh'
+from conftest import bash, ROOT
+SCRIPT = ROOT / 'scripts' / 'macos_paths.sh'
 BREW = ['/opt/homebrew/bin', '/usr/local/bin']
 
 
-def bash() -> str:
-    for candidate in (r'C:\Program Files\Git\bin\bash.exe', shutil.which('bash')):
-        if candidate and Path(candidate).exists():
-            return candidate
-    pytest.fail('bash 가 없어 macos_paths.sh 를 돌리지 못했다 — Git for Windows(또는 bash)를 설치한다', pytrace=False)
 
 
 def brew_first(path: str, brew: list[str]) -> list[str]:

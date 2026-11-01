@@ -9,4 +9,9 @@ def test_개인_CLI_키와_업무_비밀은_CLI_에_넘기지_않고_실행에_�
     removed = env_guard.scrub(environ)
     assert sorted(environ) == ['HYD_WORKER_RUNTIME_KEY_FILE', 'PATH', 'PROCESS_URL']
     assert {'ANTHROPIC_API_KEY', 'CLAUDE_CODE_OAUTH_TOKEN', 'HYD_SECRET_GOOGLE'} <= set(removed)
-    assert env_guard.held_secrets()['HYD_SECRET_GOOGLE'] == 'g-secret-0000'
+
+
+def test_이름이_비밀을_말하는_HYD_SECRET_변수는_어디에도_보관하지_않고_지운다():
+    """P3-16: 도구 서버 비밀 값의 원천은 비밀 값 표 하나 — 환경 변수에서 받아 채우는 길은 지웠다. 그 이름의 값은 CLI 에 가지 않을 뿐이다."""
+    environ = {'HYD_SECRET_DRIVE': 'drive-token-0000', 'PATH': '/usr/bin'}
+    assert env_guard.scrub(environ) == ['HYD_SECRET_DRIVE'] and environ == {'PATH': '/usr/bin'}

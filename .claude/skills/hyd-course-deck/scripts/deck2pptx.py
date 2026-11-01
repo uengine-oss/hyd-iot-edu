@@ -12,6 +12,8 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import hashlib
+import importlib.util
 import io
 import os
 import re
@@ -19,6 +21,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -70,6 +73,8 @@ NEED = {"표지": ("기관", "과정"), "강조": ("문장",), "문답": ("문�
 SKILL_DIR = Path(__file__).resolve().parent.parent
 ICON_DIR = SKILL_DIR / "assets" / "icons" / "tabler-outline"
 LOGO = SKILL_DIR / "assets" / "logo" / "uengine-logo.svg"
+# 덱 MD 의 「레이아웃: 이름」 장을 그리는 코드(형식 문서 「레이아웃」 절) — 덱 원고와 같은 workspace 제작 도구 자리에 있다
+LAYOUT_CODE = SKILL_DIR.parents[1].parent / "workspace" / "강의제작" / "제작도구" / "온라인" / "tools" / "deck" / "설명레이아웃.py"
 ICON_CACHE = Path(os.environ.get("DECK2PPTX_CACHE") or Path(tempfile.gettempdir()) / "deck2pptx_icons")
 CHECK_ONLY = False      # --check: 캐시에 없는 그림은 메모리에서만 만들고, PPTX도 메모리에만 쓴다
 RENDER_FONT_KEYS = ("malgun", "mono", "consol", "menlo", "courier")   # 렌더 PDF에 박혀도 되는 글꼴 이름의 낱말
@@ -482,21 +487,27 @@ def set_bg(sl, color):
     bg.fore_color.rgb = color
 
 
+def svg_to_png(svg: bytes, scale: float, prefix: str):
+    """SVG 글을 PNG 로. 캐시 열쇠는 그릴 글과 배율의 sha256 — 같은 그림은 다시 맞고, 내용 · 색 · 굵기 · 배율이 바뀌면 새로 그린다."""
+    out = ICON_CACHE / f"{prefix}_{hashlib.sha256(svg + repr(scale).encode()).hexdigest()[:24]}.png"
+    if out.exists():
+        return out
+    doc = pymupdf.open(stream=svg, filetype="svg")
+    pix = doc[0].get_pixmap(matrix=pymupdf.Matrix(scale, scale), alpha=True)
+    if CHECK_ONLY:
+        return io.BytesIO(pix.tobytes("png"))
+    ICON_CACHE.mkdir(parents=True, exist_ok=True)
+    pix.save(out)
+    return out
+
+
 def svg_png(src: Path, color: RGBColor, key: str, scale: float, stroke: float | None = None) -> Path:
     if not src.is_file():
         raise DeckError(f"그림 파일 없음: {src}")
-    out = ICON_CACHE / f"{key}_{color}_{stroke}.png"
-    if not out.exists():
-        svg = src.read_text(encoding="utf-8").replace("currentColor", f"#{color}")
-        if stroke:
-            svg = svg.replace('stroke-width="2"', f'stroke-width="{stroke}"')
-        doc = pymupdf.open(stream=svg.encode("utf-8"), filetype="svg")
-        pix = doc[0].get_pixmap(matrix=pymupdf.Matrix(scale, scale), alpha=True)
-        if CHECK_ONLY:
-            return io.BytesIO(pix.tobytes("png"))
-        ICON_CACHE.mkdir(parents=True, exist_ok=True)
-        pix.save(out)
-    return out
+    svg = src.read_text(encoding="utf-8").replace("currentColor", f"#{color}")
+    if stroke:
+        svg = svg.replace('stroke-width="2"', f'stroke-width="{stroke}"')
+    return svg_to_png(svg.encode("utf-8"), scale, key)
 
 
 def pic_src(x):
@@ -895,14 +906,7 @@ def picture_file(base: Path, rel: str) -> Path:
     src = base / rel
     if src.suffix.lower() != ".svg":
         return src
-    out = ICON_CACHE / f"illust_{abs(hash(str(src.resolve())))}_{int(src.stat().st_mtime)}.png"
-    if not out.exists():
-        doc = pymupdf.open(stream=src.read_bytes(), filetype="svg")
-        pix = doc[0].get_pixmap(matrix=pymupdf.Matrix(3, 3), alpha=True)
-        if CHECK_ONLY:
-            return io.BytesIO(pix.tobytes("png"))
-        ICON_CACHE.mkdir(parents=True, exist_ok=True)
-        pix.save(out)
+    return svg_to_png(src.read_bytes(), 3, "illust")
     return out
 
 
@@ -1242,8 +1246,7 @@ def build(md_path, out) -> list[Slide]:
     prs.slide_width, prs.slide_height = Inches(SLIDE_W), Inches(SLIDE_H)
     blank = prs.slide_layouts[6]
     # 저장소의 추가 설명 레이아웃도 동일한 디자인 토큰·프레임을 사용한다.
-    import importlib.util
-    layout_path = Path(__file__).resolve().parents[4] / 'workspace/강의제작/제작도구/온라인/tools/deck/설명레이아웃.py'
+    layout_path = LAYOUT_CODE
     custom = None
     layout_names = {}
     for block in re.split(r'(?=^## SLIDE )', md_path.read_text(encoding='utf8'), flags=re.M):
@@ -1252,13 +1255,15 @@ def build(md_path, out) -> list[Slide]:
         if number and name:
             layout_names[int(number[1])] = name[1].strip()
     if layout_names:
+        if not layout_path.is_file():
+            raise DeckError(f"덱이 「레이아웃:」({', '.join(sorted(set(layout_names.values())))})을 쓰는데 그 코드 {layout_path} 가 없음 — "
+                            f"workspace 브랜치를 받은 저장소 루트의 .claude 에서 돌린다")
         spec = importlib.util.spec_from_file_location('lecture_layouts', layout_path)
         custom = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(custom)
     for page, s in enumerate(slides, 1):
         sl = prs.slides.add_slide(blank)
         if s.no in layout_names:
-            import sys
             custom.render(sys.modules[__name__], sl, s, page, layout_names[s.no])
         elif s.kind == "그림":
             render_picture(sl, s, page, md_path.parent)
@@ -1300,15 +1305,35 @@ def audit(pptx_path: Path, slides: list[Slide]) -> list[str]:
 
 
 @contextlib.contextmanager
-def _render_lock():
+def _render_lock(wait_s: float = 1200):
+    """렌더를 한 번에 하나씩 — 운영체제 파일 잠금(Windows msvcrt · 그 밖 fcntl). 잠금은 프로세스가 끝나면 저절로 풀린다."""
     lock = Path(tempfile.gettempdir()) / "deck2pptx_render.lock"
-    with open(lock, "w") as fh:
-        try:
+    with open(lock, "a+") as fh:
+        if os.name == "nt":
+            import msvcrt
+            def take():
+                fh.seek(0)
+                msvcrt.locking(fh.fileno(), msvcrt.LK_NBLCK, 1)
+            def release():
+                fh.seek(0)
+                msvcrt.locking(fh.fileno(), msvcrt.LK_UNLCK, 1)
+        else:
             import fcntl
-            fcntl.flock(fh, fcntl.LOCK_EX)      # 다른 렌더가 끝날 때까지 기다린다
-        except ImportError:                      # Windows: 잠금 없이 돈다
-            pass
-        yield
+            take = lambda: fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            release = lambda: fcntl.flock(fh, fcntl.LOCK_UN)
+        deadline = time.monotonic() + wait_s
+        while True:                              # 다른 렌더가 끝날 때까지 기다린다 — 두 운영체제 같은 시한
+            try:
+                take()
+                break
+            except OSError:
+                if time.monotonic() >= deadline:
+                    raise DeckError("다른 렌더가 20분 넘게 끝나지 않아 기다리기를 멈춤(남은 soffice 프로세스를 확인한다)") from None
+                time.sleep(2)
+        try:
+            yield
+        finally:
+            release()
 
 
 def render_png(pptx_path: Path, out_dir: Path) -> None:
@@ -1338,6 +1363,8 @@ def render_png(pptx_path: Path, out_dir: Path) -> None:
     # Windows용 pdftoppm은 전체 경로가 약 240자를 넘으면 「Couldn't open file」로 실패한다(2026-10-08 실측).
     if len(str(pdf.resolve())) > 235:
         raise DeckError(f"렌더 폴더 경로가 너무 김({len(str(pdf.resolve()))}자). 짧은 폴더를 --render로 준다: {out_dir}")
+    if not shutil.which("pdftoppm"):
+        raise DeckError("PNG 변환용 pdftoppm(Poppler)이 없음 — 설치하거나 PATH 에 넣는다(PDF 는 만들어졌다: " + str(pdf) + ")")
     r = subprocess.run(["pdftoppm", "-r", "80", "-png", pdf.name, pptx_path.stem], cwd=out_dir,
                        capture_output=True, text=True)
     if r.returncode:

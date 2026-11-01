@@ -2,25 +2,18 @@
 
 입력은 저장소의 실제 교대 녹화본(보완 1 초안)이 낸 도구 시작 기록이다 — 그 실행은 스킬 `my-shift-handover-review`의 SKILL.md를 연다.
 """
-import gzip
-import json
-from pathlib import Path
-
 import pytest
 from cliagents import ExecEvent, ExecEventKind
 
+from conftest import recording
 from worker.events import SkillReads
 
-REPLAY = Path(__file__).resolve().parents[3] / 'it' / 'agent-worker' / 'replay'
 RECORDED_SKILL = 'my-shift-handover-review'
 
 
 def recorded_tool_starts(slot):
-    for path in REPLAY.glob('*.json.gz'):
-        doc = json.loads(gzip.decompress(path.read_bytes()))
-        if doc['slot'] == slot:
-            return [ExecEvent(**{**e, 'kind': ExecEventKind(e['kind'])}) for run in doc['runs'] for e in run['events'] if e['kind'] == 'tool_start']
-    raise AssertionError(f'저장소에 {slot} 녹화가 없다')
+    doc = recording(slot)
+    return [ExecEvent(**{**e, 'kind': ExecEventKind(e['kind'])}) for run in doc['runs'] for e in run['events'] if e['kind'] == 'tool_start']
 
 
 def skill(name):

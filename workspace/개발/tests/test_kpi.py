@@ -108,18 +108,20 @@ def test_부품_품질은_발주한_공급사_품질점수의_평균이다(db, p
     assert calc.value == round(sum(scores) / len(scores), 3)
 
 
-def test_발주가_없으면_단가와_품질은_기록_없음이다(db, pg_dsn):
+@pytest.mark.parametrize('fn', [kpi.calc_part_price, kpi.calc_part_quality], ids=['부품 단가', '부품 품질'])
+def test_발주가_없으면_단가와_품질은_기록_없음이다(db, pg_dsn, fn):
     with _window(db) as box:
         pass
-    for fn in (kpi.calc_part_price, kpi.calc_part_quality):
-        calc = _calc(pg_dsn, fn, box['w'])
-        assert (calc.value, calc.status, calc.reason) == (None, 'no_data', '기간 안 발주가 없습니다')
+    calc = _calc(pg_dsn, fn, box['w'])
+    assert (calc.value, calc.status, calc.reason) == (None, 'no_data', '기간 안 발주가 없습니다')
 
 
-def test_수량_금액_없이_남은_옛_구매요청은_금액을_지어내지_않고_부분_실적이다(db, pg_dsn):
+def test_수량_금액_없이_들어온_구매요청은_금액을_지어내지_않고_부분_실적이다(db, pg_dsn):
+    """G5b-23: 「옛 길」이 아니다 — 승인 전달(approval_hooks.deliver)이 카드의 PR_CREATE 를 부품 번호 · 수량 없이 내는 꼴이 지금도 있다
+    (decisions.approve 의 실행 항목에 수량이 없고, 발주 task 가 없는 흐름의 구매 카드가 이 길로 간다)."""
     with _window(db) as box:
         _order(db, 'sup:b', 'P-PMP-SEAL', 2)
-        _exec(db, 'skill:procure-part', 'HYD-01', {'supplier': 'sup:a', 'part': '쿨러 코어'})   # 부품 번호 · 수량 없는 옛 길
+        _exec(db, 'skill:procure-part', 'HYD-01', {'supplier': 'sup:a', 'part': '쿨러 코어'})   # 카드 승인 전달과 같은 인자(공급사 · 부품 이름)
     calc = _calc(pg_dsn, kpi.calc_part_cost, box['w'])
     assert calc.status == 'partial'
     assert calc.value == 2 * _quote(db, 'P-PMP-SEAL', 'sup:b')
@@ -129,7 +131,7 @@ def test_수량_금액_없이_남은_옛_구매요청은_금액을_지어내지_
 
 def test_비승인_공급사_발주는_업무_DB가_거절해_지표에_들어가지_않는다(db, pg_dsn):
     with _window(db) as box:
-        with pytest.raises(psycopg.Error, match='approved vendor list'):
+        with pytest.raises(psycopg.Error, match='승인 공급사 목록\(AVL\)에 없어 발주하지 않습니다'):
             _order(db, 'sup:c', 'P-PMP-SEAL', 1)
     assert _calc(pg_dsn, kpi.calc_part_cost, box['w']).value == 0
 
@@ -150,24 +152,24 @@ def _labor(db, sop):
 
 def test_세척_작업지시의_보전비는_그_설비_정비_기준표의_세척_비용이다(db, pg_dsn):
     with _window(db) as box:
-        _work_order(db, 'HYD-01', 'SOP-COOL-04', '쿨러 핀 세척')
+        _work_order(db, 'HYD-01', 'SOP-COOL-14', '쿨러 핀 세척')
     calc = _calc(pg_dsn, kpi.calc_maint_cost, box['w'])
     assert (calc.status, calc.value) == (None, _clean_cost(db, 'HYD-01'))
 
 
-def test_씰_교체_작업지시의_보전비는_표준_작업표의_작업비다(db, pg_dsn):
+def test_표준_작업표의_작업비로_세고_원문에_작업비가_없는_팬_점검은_지어내지_않고_부분_실적이다(db, pg_dsn):
+    """070 이 SOP-FAN-11 · 12 작업비를 지웠다(강사 서명 원문에 없는 값) — 그 작업지시는 셀 수 없음으로 남고 다른 오더는 작업비로 센다."""
     with _window(db) as box:
-        _work_order(db, 'HYD-02', 'SOP-PMP-04', '펌프 축 씰 교체')
-        _work_order(db, 'HYD-03', 'SOP-FAN-04', '팬 베어링 교체')
+        _work_order(db, 'HYD-02', 'SOP-COOL-15', '캐비닛 환기 보강')
+        _work_order(db, 'HYD-03', 'SOP-FAN-11', '쿨러 팬 점검 절차')
     calc = _calc(pg_dsn, kpi.calc_maint_cost, box['w'])
-    assert calc.status is None, calc.reason
-    assert calc.value == _labor(db, 'SOP-PMP-04') + _labor(db, 'SOP-FAN-04')
-    assert calc.per_asset == {'HYD-02': _labor(db, 'SOP-PMP-04'), 'HYD-03': _labor(db, 'SOP-FAN-04')}
+    assert calc.status == 'partial' and calc.reason.endswith(': SOP-FAN-11'), calc.reason
+    assert calc.value == _labor(db, 'SOP-COOL-15') and calc.per_asset == {'HYD-02': _labor(db, 'SOP-COOL-15')}
 
 
 def test_표준_작업표에_없는_SOP는_비용을_지어내지_않고_그_SOP를_사유에_적는다(db, pg_dsn):
     with _window(db) as box:
-        _work_order(db, 'HYD-01', 'SOP-COOL-04', '쿨러 핀 세척')
+        _work_order(db, 'HYD-01', 'SOP-COOL-14', '쿨러 핀 세척')
         _work_order(db, 'HYD-01', 'SOP-COOL-11', '팬 최대 운전')   # 매뉴얼에서 온 조치 — 표준 작업표에 작업비가 없다
     calc = _calc(pg_dsn, kpi.calc_maint_cost, box['w'])
     assert calc.status == 'partial'
@@ -181,10 +183,10 @@ def test_정기_정비_범위_오더는_실제_정비_패키지의_SOP로_찾는
     with _window(db) as box:
         db.execute("""INSERT INTO ent.work_orders (id, asset, task, window_label, decision_id, option_id, requested_by, package)
                       VALUES (%s, 'HYD-02', 'SOP-PM-11 이번 예정된 정비 시간에 단독 시행 → 작업지시 SOP-PM-11', '즉시', 'test', 'test', 'kpi-test', %s::jsonb)""",
-                   [wo, json.dumps({'package_sop': 'SOP-PMP-04', 'package_name': '펌프 축 씰 교체'})])
+                   [wo, json.dumps({'package_sop': 'SOP-FAN-12', 'package_name': '벨트 교체 절차'})])
     calc = _calc(pg_dsn, kpi.calc_maint_cost, box['w'])
-    assert (calc.status, calc.value) == (None, _labor(db, 'SOP-PMP-04'))
-    assert calc.detail[0]['작업 SOP'] == 'SOP-PMP-04'
+    assert calc.detail[0]['작업 SOP'] == 'SOP-FAN-12'                      # 판단 SOP(SOP-PM-11)가 아니라 패키지 SOP 로 찾았다
+    assert (calc.status, calc.value) == ('partial', 0) and calc.reason.endswith(': SOP-FAN-12'), calc.reason   # 그 패키지 작업비는 원문에 없다(070)
 
 
 def test_작업지시가_없으면_보전비는_0이다(db, pg_dsn):
@@ -192,3 +194,54 @@ def test_작업지시가_없으면_보전비는_0이다(db, pg_dsn):
         pass
     calc = _calc(pg_dsn, kpi.calc_maint_cost, box['w'])
     assert (calc.status, calc.value, calc.note) == (None, 0, '기간 합계 · 작업지시 0건')
+
+
+# ------------------------------------------------------------------ 판정 · 합성 · 사유 문장
+def _evaluate(pg_dsn, measure, others=()):
+    src = kpi.PgSources(pg_dsn, pg_dsn, driver_factory=None)
+    try:
+        measures = {m['id']: m for m in (measure, *others)}
+        w = kpi.window(start='2001-01-01T00:00:00Z', end='2001-01-02T00:00:00Z')      # 다른 테스트의 행이 없는 기간(실적 0)
+        return kpi.evaluate(measure, kpi.Fetch(src), w, {'measures': measures, 'tenant': 'hyd', 'time_scale': 20.0, 'window': w}, {})
+    finally:
+        src.close()
+
+
+@pytest.mark.parametrize('mid', ['msr:maint-cost', 'msr:part-cost'], ids=['보전비', '부품 구매비'])
+def test_기간_합계_실적은_월_목표와_견주지_않고_까닭을_적는다(pg_dsn, mid):
+    """W2-24: 전에는 1시간 · 30일 합계를 같은 월 목표와 비교해 기간을 바꾸면 판정이 뒤집혔다."""
+    out = _evaluate(pg_dsn, {'id': mid, 'name': '비용', 'unit': '만원/월', 'target': 100.0, 'direction': 'DOWN'})
+    assert out['status'] == 'incomparable' and out['met'] is None and out['rate'] is None
+    assert out['reason'].startswith('실적은 만원 (기간 합계)이고 목표는 만원/월이라 견주지 않습니다')
+
+
+def test_같은_단위의_목표면_달성과_미달을_판정한다(pg_dsn):
+    out = _evaluate(pg_dsn, {'id': 'msr:part-cost', 'name': '부품 구매비', 'unit': '만원 (기간 합계)', 'target': 10 ** 9, 'direction': 'DOWN'})
+    assert out['status'] == 'met' and out['met'] is True
+
+
+def test_단위가_다른_구성_지표는_합성_지표에서_더하지_않는다(pg_dsn):
+    """P4-18: 전에는 기간 합계(보전비)와 다른 단위의 값을 더해 합성 지표로 냈다."""
+    maint = {'id': 'msr:maint-cost', 'name': '보전비', 'unit': '만원/월'}
+    stock = {'id': 'msr:inventory', 'name': '완제품 재고', 'unit': '개'}
+    total = {'id': 'msr:test-total', 'name': '시험 합계', 'unit': '만원/월', 'formula': 'msr:maint-cost + msr:inventory'}
+    out = _evaluate(pg_dsn, total, (maint, stock))
+    assert out['status'] == 'unavailable' and out['value'] is None
+    assert out['reason'] == '구성 지표의 단위가 달라 더할 수 없습니다: 보전비 = 만원 (기간 합계) / 완제품 재고 = 개'
+    assert [d['지표'] for d in out['detail']] == ['보전비', '완제품 재고'], '계산 근거 표는 한국어 열 이름'
+
+
+def test_같은_단위의_구성_지표는_합성_지표로_더하고_그_단위를_쓴다(pg_dsn):
+    maint = {'id': 'msr:maint-cost', 'name': '보전비', 'unit': '만원/월'}
+    parts = {'id': 'msr:part-cost', 'name': '부품 구매비', 'unit': '만원/월'}
+    total = {'id': 'msr:test-total', 'name': '시험 합계', 'unit': '만원 (기간 합계)', 'formula': 'msr:maint-cost + msr:part-cost'}
+    out = _evaluate(pg_dsn, total, (maint, parts))
+    assert out['displayUnit'] == '만원 (기간 합계)' and out['value'] == round(sum(d['실적'] for d in out['detail']), 2)
+
+
+@pytest.mark.parametrize('mid', sorted(m for m, d in kpi.DEFINITIONS.items() if 'reason' in d))
+def test_계산_불가_사유는_업무_말로_적고_표_열_이름을_쓰지_않는다(mid):
+    """W2-04: 전에는 사유를 표 · 열 이름으로 쓰고 화면이 단어를 갈아 끼워 「유온 유온 은」 같은 문장이 나왔다."""
+    import re
+    reason = kpi.DEFINITIONS[mid]['reason']
+    assert not re.search(r'\b[a-z]+_[a-z_0-9]+\b|ent\.|\b(?:TS1|EPS1|LoadSP)\b', reason), reason

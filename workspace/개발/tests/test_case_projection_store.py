@@ -7,9 +7,17 @@ from procsvc import machine
 from procsvc.store import Store
 
 
+
+def _cooling_policy():
+    """냉각 경보를 받은 흐름의 경보 정책(사건은 경보 정책이 있어야 만든다 — machine.Incident.from_card)."""
+    import json
+    from conftest import DEFINITIONS
+    from procsvc import alert_policy
+    return alert_policy.for_definition(json.loads((DEFINITIONS / 'anomaly_response_v22.json').read_text(encoding='utf8')), 'COOLER_DEGRADATION')
+
 def _incident(note):
     inc = machine.Incident.from_card('INC-test', {'alert': {'alertId': 'ALT-1', 'asset': 'HYD-01', 'pattern': 'COOLER_DEGRADATION'},
-                                                  'recommended': []})
+                                                  'recommended': []}, _cooling_policy())
     inc.history.append({'note': note})
     return {'INC-test': inc}
 

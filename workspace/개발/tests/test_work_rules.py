@@ -46,7 +46,19 @@ def test_제출_형식_보류_객체_언어_규칙은_작업_지시_한_곳에�
         assert marker not in text, f'고정 규칙이 작업 지시의 {marker} 를 되풀이한다'
 
 
-def test_포털_에이전트_화면은_워커가_넘기는_글과_같은_글을_본다():
-    for key, rule in work_rules.RULES.items():
-        assert work_rules.rule_card(key) == {'key': key, 'label': rule.title, 'content': work_rules.constitution(rule)}
-    assert work_rules.rule_card(None) is None
+@pytest.mark.parametrize('key, marker', [('hyd-plant', '## SQL을 직접 쓸 때'), ('hyd-handover', '## 인계 판단')])
+def test_포털_에이전트_화면의_규칙_카드는_공통부와_그_업무부를_모두_보인다(key, marker):
+    """G5b-08: 전에는 카드를 같은 함수로 만든 dict 와 비교했다(동어반복) — 이제 카드 글에 공통부 · 그 업무부의 정해진 자리가 다 있는지 본다."""
+    rule = work_rules.RULES[key]
+    card = work_rules.rule_card(key)
+    lines = card['content'].splitlines()
+    assert (card['key'], card['label'], lines[0]) == (key, rule.title, f'# {rule.title} — {work_rules.COMMON_TITLE}')
+    for part in (marker, rule.citation, rule.reassessment, rule.forbidden_effects, rule.forbidden_extra, rule.tool_sources.splitlines()[0],
+                 '- 작업 디렉터리 밖의 파일을 읽거나 수정하지 마세요', '## 절대 금지'):
+        assert part in card['content'], part
+    other = next(r for k, r in work_rules.RULES.items() if k != key)
+    assert other.forbidden_extra not in card['content'], '다른 업무의 금지 항목이 섞이지 않는다'
+
+
+def test_업무_규칙이_없는_에이전트에는_규칙_카드가_없다():
+    assert work_rules.rule_card(None) is None and work_rules.rule_card('') is None

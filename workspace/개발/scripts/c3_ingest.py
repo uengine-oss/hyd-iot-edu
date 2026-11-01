@@ -6,14 +6,15 @@ course_policy · manual_api), 명시 검토 기록을 적용해 그래프에 적
 검토 방식과 신원을 별도로 기록하며, 사람이 직접 검토했다고 표시하지 않는다. 2026-10-10 전에는 이 스크립트가 제안을 손대지 않고
 reviewed=true · 지어낸 검토자 이름으로 적재했고, 라이브 4차 C 판단은 그 검토되지 않은 지식(SOP-PUR-13 → A정밀 오연결)으로 돌았다.
 
-  1) 추출만  .venv/bin/python workspace/개발/scripts/c3_ingest.py extract PR-07 [HM-8 PM-02] [--reuse]
-             → 작업/c3_ingest/proposal-<문서>.json (제안 전체: 절차 · 연결 · 지식 · 경고). 적재하지 않는다.
+  결과 폴더 --out 은 늘 준다(열린 작업 폴더 아래, 예: 작업/<날짜>_<제목>/c3_ingest) — 작업 폴더 규칙 밖에 쌓이지 않게.
+  1) 추출만  .venv314/Scripts/python.exe workspace/개발/scripts/c3_ingest.py extract PR-07 [HM-8 PM-02] [--reuse] --out <폴더>
+             → <폴더>/proposal-<문서>.json (제안 전체: 절차 · 연결 · 지식 · 경고). 적재하지 않는다.
              --reuse 는 같은 원문의 끝난 추출을 다시 쓴다. 시드 구조(판단 입력)나 추출 지시 판본이 바뀌었으면 쓰지 않는다 —
              옛 추출은 옛 목록(ontology_catalog)을 보고 만든 것이다. 같은 내용의 어느 원문 판본에서도 끝난 추출을 못 찾으면
              새로 추출하지 않고 멈춘다. 같은 추출을 다시 적재할 때도 --reuse 로 미리보기를 새로 받는다 — 옛 proposal 파일의
              배치 id 는 첫 적재에 쓰여 「배치 ID가 이미 다른 내용/상태로 사용됐습니다」로 거부된다.
-  2) 적재    .venv/bin/python workspace/개발/scripts/c3_ingest.py commit PR-07 --review <검토 기록.json>
-             → 작업/c3_ingest/ingest-<문서>.json (영수증 · 적용한 검토 변경 · 원문 좌표)
+  2) 적재    .venv314/Scripts/python.exe workspace/개발/scripts/c3_ingest.py commit PR-07 --review <검토 기록.json> --out <폴더>
+             → <폴더>/ingest-<문서>.json (영수증 · 적용한 검토 변경 · 원문 좌표)
 
 검토 기록(문서 하나에 파일 하나, proposal-<문서>.json 을 원문과 대조한 뒤 실제 검토 방식·신원으로 쓴다):
   {"doc": "PR-07", "by": "실제 검토 신원", "extraction": "<proposal 의 extraction.instance>", "warnings_read": true,
@@ -39,7 +40,7 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "scripts"))
 from prepare_ports import saved_port  # noqa: E402 — 시작이 정한 이 PC의 포트(.hyd-runtime/ports.json)
 API = os.environ.get("PROCESS_URL") or f"http://127.0.0.1:{saved_port(ROOT, 8080)}"
-OUT = ROOT / "작업" / "c3_ingest"
+OUT: Path = Path()            # --out 으로 정한다(main)
 DOCS = {"HM-8": "HM-8_cooler-fan-manual.md", "PM-02": "PM-02_powerpack-pm-checklist.md", "PR-07": "PR-07_spare-parts-standard.md"}
 LINK_FIELDS = ("failureMode", "relation", "kind", "approver", "actions", "addresses", "affects", "scope", "executable", "parts", "supplier_policy", "maintenance_policy", "purchase_comparison_policy")
 PROCEDURE_FIELDS = ('steps', 'existing_skill_id', 'reference_contract_sha256')
@@ -253,7 +254,7 @@ def extract(key: str, reuse: bool) -> dict:
            "segments": inst.get("segments"), "extract_seconds": round(time.monotonic() - t_start, 1), "preview": preview}
     path = OUT / f"proposal-{key}.json"
     path.write_text(json.dumps(rec, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(json.dumps({"doc": key, "proposal": str(path.relative_to(ROOT)), "extraction": preview["extraction"]["instance"],
+    print(json.dumps({"doc": key, "proposal": str(path), "extraction": preview["extraction"]["instance"],
                       "procedures": len(preview["procedures"]), "warnings": len(preview.get("warnings") or []),
                       "knowledge": {k: len(v) for k, v in (preview.get("knowledge") or {}).items()}}, ensure_ascii=False))
     return rec
@@ -262,7 +263,7 @@ def extract(key: str, reuse: bool) -> dict:
 def commit(key: str, review_path: Path) -> int:
     proposal_path = OUT / f"proposal-{key}.json"
     if not proposal_path.exists():
-        raise ReviewError(f"{key}: 추출 제안 {proposal_path.relative_to(ROOT)} 이 없습니다 — 먼저 extract 로 추출하고 검토하세요")
+        raise ReviewError(f"{key}: 추출 제안 {proposal_path} 이 없습니다 — 먼저 extract 로 추출하고 검토하세요")
     rec = json.loads(proposal_path.read_text(encoding="utf-8"))
     review = json.loads(review_path.read_text(encoding="utf-8"))
     st, source = call("GET", f"/api/kg/manuals/sources/{rec['source_id']}")
@@ -287,17 +288,23 @@ def commit(key: str, review_path: Path) -> int:
 
 
 def main(argv: list[str]) -> int:
+    global OUT
     if not argv or argv[0] not in ("extract", "commit"):
         print(__doc__)
         return 2
     mode, rest = argv[0], argv[1:]
     reuse = "--reuse" in rest
     review = Path(rest[rest.index("--review") + 1]) if "--review" in rest else None
+    out = rest[rest.index("--out") + 1] if "--out" in rest and rest.index("--out") + 1 < len(rest) else None
+    if not out:
+        print("결과 폴더를 --out <폴더> 로 주세요(열린 작업 폴더 아래)")
+        return 2
     keys = [a for a in rest if a in DOCS]
-    unknown = [a for a in rest if a not in DOCS and a not in ("--reuse", "--review") and (review is None or a != str(review))]
+    unknown = [a for a in rest if a not in DOCS and a not in ("--reuse", "--review", "--out", out) and (review is None or a != str(review))]
     if unknown or not keys:
         print(f"문서 이름은 {', '.join(DOCS)} 중에서 고릅니다(알 수 없음: {unknown})")
         return 2
+    OUT = Path(out).resolve()
     OUT.mkdir(parents=True, exist_ok=True)
     if mode == "extract":
         for key in keys:

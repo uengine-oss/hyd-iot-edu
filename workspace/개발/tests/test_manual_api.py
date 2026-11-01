@@ -45,7 +45,9 @@ BIG = b'#' * (MAX_BYTES + 1)
     ('course', dict(filename='x.md', data='이건 base64 가 아님!'), 400, 'base64'),                       # 깨진 전송
     ('pbl', dict(filename='big.md', data=b64(BIG)), 400, '30 MiB 이하'),
     ('pbl', dict(filename='manual.docx', data=b64(b'PK\x03\x04 word')), 400, 'Markdown, TXT, PDF'),     # 다른 형식
-    ('pbl', dict(filename='manual.pdf', data=b64(b'not a pdf at all')), 400, 'PDF 파일 서명'),           # 깨진 PDF
+    ('pbl', dict(filename='manual.pdf', data=b64(b'not a pdf at all')), 400, 'PDF 파일 서명'),           # PDF가 아닌 파일
+    ('pbl', dict(filename='manual.pdf', data=b64(b'%PDF-1.4 garbage')), 400, 'PDF를 읽을 수 없습니다'),   # 머리만 PDF인 깨진 파일(P2-10: 500)
+    ('course', dict(filename='exact.md', data=b64(b'#' * MAX_BYTES)), 403, '강사가 제공한 수업 문서'),   # 한도 그대로는 크기로 막지 않는다
     ('pbl', dict(filename='notes.txt', data=b64(b'\xff\xfe\xfa\xfb\x81\xff')), 400, '해독할 수 없습니다'),  # 깨진 글자
     ('pbl', dict(filename='notes.txt', data=b64('설비\x00점검'.encode())), 400, 'NUL'),                  # 바이너리 섞임
     ('pbl', dict(filename='blank.md', data=b64(b'   \n\n  ')), 400, '비어 있거나'),                     # 내용 없는 글

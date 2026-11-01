@@ -1,7 +1,9 @@
 """시작 2단계(scripts/prepare_ports.py) — 이 폴더 · 이 PC의 프로젝트 이름과 포트를 정하고, git 이 추적하는 파일은 바꾸지 않는다.
 
 규칙(정답의 출처):
-  · 시작 뒤 `git status` 에 바뀐 파일이 없다(인수조건 22). 이 PC 값은 .hyd-runtime/ · .env · it/supabase/.env(모두 git 밖)에만.
+  · 시작 뒤 `git status` 에 바뀐 파일이 없다. 이 PC 값은 .hyd-runtime/ · .env · it/supabase/.env(모두 git 밖)에만.
+  · 수업 구성은 compose.yaml 한 곳 — .env 의 옛 줄(배속 · 중계 주소 등)은 컨테이너에 닿지 않고, 시작이 그 줄을 주석으로 끄고 알린다.
+  · compose 에서 뺀 볼륨은 시작이 compose 를 켠 뒤 이 폴더 프로젝트의 것만 지운다(Docker 는 실제로 돌린다 — 버릴 볼륨 이름).
   · 앞 판 시작이 config.toml 에 써 넣은 업무 DB 이름 · 포트를 이어받아 기존 볼륨(supabase_db_<이름>)에 그대로 붙는다.
   · 같은 폴더(두 번째 · 껐다 켜기 · 컨테이너만 지운 경우)는 이름 · 포트가 그대로, 옮긴 폴더는 실습 기록을 이어 쓰고,
     복사한 폴더 · 다른 폴더가 있는 새 폴더는 원래 폴더의 데이터를 건드리지 않고 따로 시작하며 그 사실을 알린다.
@@ -20,7 +22,7 @@ import pytest
 import hyd_env
 import prepare_ports as pp
 
-REPO = Path(__file__).resolve().parents[3]
+from conftest import ROOT as REPO, git
 FREE = lambda port: True
 
 
@@ -37,8 +39,6 @@ def dirty_config(project_id='hyd-system-audit-20261026', shift=10000, portal=808
     return text.replace('localhost:8088', f'localhost:{portal}')
 
 
-def git(root, *args):
-    return subprocess.run(['git', '-C', str(root), *args], capture_output=True, check=True, text=True, encoding='utf-8').stdout
 
 
 def make_checkout(root: Path, *, config=None, env='LLM_API_KEY=\n', commit=True) -> Path:
@@ -369,3 +369,120 @@ def test_라벨에서_폴더를_읽고_업무_DB_볼륨을_compose_볼륨으로_
     assert inv['supabase']['hyd-system-audit-20261026']['roots'] == {'D:\\work\\hyd'}
     assert inv['supabase']['hyd-portal-latest'] == {'roots': set(), 'volumes': True}
     assert 'hyd-portal-latest' not in inv['compose'] and inv['compose']['hyd-iot-edu']['volumes'] is True
+
+
+# ---------------------------------------------------------------- 수업 구성은 compose 한 곳(옛 판 .env 줄)
+OLD_ENV = ('LLM_API_KEY=\nTIME_SCALE=1\nLLM_RELAY_URL=https://old.example\nPROCESS_MODE=instance\nHYD_PORT_54322=54322\n'
+           'HYD_MCP_OAUTH_CALLBACK_URL=http://localhost:8088/api/mcp/connections/callback\n')
+OLD_KEYS = {'TIME_SCALE', 'LLM_RELAY_URL', 'PROCESS_MODE', 'HYD_PORT_54322', 'HYD_MCP_OAUTH_CALLBACK_URL'}
+
+
+# 학생이 시작 파일을 연 셸처럼 — 이 테스트 묶음이 넣은 환경 값(TIME_SCALE 등)은 compose 가 .env 보다 먼저 쓰므로 넘기지 않는다
+SHELL_ENV = {k: v for k, v in os.environ.items() if k.upper() in {'PATH', 'PATHEXT', 'SYSTEMROOT', 'WINDIR', 'COMSPEC', 'TEMP', 'TMP', 'USERPROFILE', 'HOME',
+                                                                'APPDATA', 'LOCALAPPDATA', 'PROGRAMDATA', 'PROGRAMFILES', 'DOCKER_HOST',
+                                                                'DOCKER_CONFIG', 'DOCKER_CONTEXT'}}
+
+
+def docker(*args, check=True):
+    try:
+        out = subprocess.run(['docker', *args], capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=300, env=SHELL_ENV)
+    except OSError as exc:
+        pytest.fail(f'docker 명령이 없어 실제 Compose · 볼륨 확인을 못 했다({exc})', pytrace=False)
+    if check and out.returncode:
+        pytest.fail(f'docker {" ".join(args[:3])} 실패 — Docker Desktop 을 켠다: {out.stderr.strip()[:300]}', pytrace=False)
+    return out
+
+
+def test_env에_옛_수업_값_줄이_있어도_컨테이너는_compose의_값을_받는다(tmp_path):
+    import yaml
+    root = make_checkout(tmp_path / 'hyd', env=OLD_ENV + 'AI_MODE=replay\nPROCESS_CALLER_TOKEN=t\nCMD_FINGERPRINT_KEY=k\n')
+    resolved = json.loads(docker('compose', '--project-directory', str(root), '-f', str(root / 'compose.yaml'), 'config', '--format', 'json').stdout)['services']
+    declared = yaml.safe_load((REPO / 'compose.yaml').read_text(encoding='utf-8'))
+    scale = declared['x-class']['time-scale']
+    timed = ('plant-sim', 'detector', 'process')
+    assert {s: resolved[s]['environment']['TIME_SCALE'] for s in timed} == dict.fromkeys(timed, scale)
+    assert resolved['process']['environment']['LLM_RELAY_URL'] == declared['services']['process']['environment']['LLM_RELAY_URL'] != 'https://old.example'
+
+
+def test_compose가_읽지_않는_옛_줄은_시작이_주석으로_끄고_한_번_알린다(tmp_path):
+    root = make_checkout(tmp_path / 'hyd', env=OLD_ENV)
+    notes = run(root)
+    text, values = (root / '.env').read_text(encoding='utf-8'), hyd_env.read(root / '.env')
+    assert not OLD_KEYS & set(values) and 'LLM_API_KEY' in values
+    assert hyd_env.DISABLED + 'TIME_SCALE=1' in text.splitlines()
+    assert [n for n in notes if '옛 줄' in n and all(k in n for k in OLD_KEYS)]
+    assert not [n for n in run(root) if '옛 줄' in n]                  # 두 번째 시작은 더 알릴 것이 없다
+
+
+@pytest.mark.parametrize('profiles, kept', [
+    ('monitor,tools', True), ('monitor', True), ('*', True),
+    ('ot,backbone,detect,knowledge,agent,enterprise,process,cliagents', False),   # 2026-10-29 판 .env.example 의 값 — 지금은 없는 프로필
+    ('monitor,ot', False),
+])
+def test_COMPOSE_PROFILES는_compose에_있는_프로필만_적었을_때_남긴다(tmp_path, profiles, kept):
+    root = make_checkout(tmp_path / 'hyd', env=f'LLM_API_KEY=\nCOMPOSE_PROFILES={profiles}\n')
+    run(root)
+    assert ('COMPOSE_PROFILES' in hyd_env.read(root / '.env')) is kept
+
+
+def test_업무_DB_포트는_env가_아니라_업무_DB_env에만_적는다(tmp_path):
+    root = make_checkout(tmp_path / 'hyd')
+    run(root, probe=lambda p: p != 54322)
+    env, supa = hyd_env.read(root / '.env'), hyd_env.read(root / 'it' / 'supabase' / '.env')
+    db = ports(root)[54322]
+    assert not {f'HYD_PORT_{d}' for d, _ in pp.DB_FIELDS.values()} & set(env)
+    assert supa['SUPABASE_DB_PORT'] == str(db) and f':{db}/' in env['SUPABASE_DSN']
+
+
+# ---------------------------------------------------------------- compose 에서 뺀 볼륨
+def test_지울_볼륨은_이_폴더_프로젝트가_만든_표의_이름만_고른다():
+    label = lambda project, volume: {'com.docker.compose.project': project, 'com.docker.compose.volume': volume}
+    volumes = {'hyd-a_enterprise-data': label('hyd-a', 'enterprise-data'),
+               'hyd-b_enterprise-data': label('hyd-b', 'enterprise-data'),      # 다른 폴더의 시스템
+               'hyd-a_process-data': label('hyd-a', 'process-data'),            # 지금 판이 쓰는 볼륨(실습 기록)
+               'hyd-a_enterprise-data2': {}}                                    # 사람이 만든 볼륨(라벨 없음)
+    assert pp.retired_targets('hyd-a', volumes) == ['hyd-a_enterprise-data']
+
+
+@pytest.fixture
+def throwaway_volumes():
+    made = []
+
+    def make(project, volume):
+        name = f'{project}_{volume}'
+        docker('volume', 'create', '--label', f'com.docker.compose.project={project}', '--label', f'com.docker.compose.volume={volume}', name)
+        made.append(name)
+        return name
+    yield make
+    for name in made:
+        docker('volume', 'rm', '-f', name, check=False)
+
+
+def listed(name):
+    return name in docker('volume', 'ls', '-q').stdout.split()
+
+
+def project_root(tmp_path, compose):
+    (tmp_path / '.hyd-runtime').mkdir()
+    (tmp_path / '.hyd-runtime' / 'project.json').write_text(json.dumps({'root': str(tmp_path), 'compose': compose, 'supabase': compose}), encoding='utf-8')
+    return tmp_path
+
+
+def test_시작은_이_폴더_프로젝트의_지운_볼륨을_실제로_지우고_다른_볼륨은_남긴다(tmp_path, throwaway_volumes, capsys):
+    mine, other = f'hyd-test-retire-{os.getpid()}', f'hyd-test-retire-other-{os.getpid()}'
+    retired, live, foreign = throwaway_volumes(mine, 'enterprise-data'), throwaway_volumes(mine, 'process-data'), throwaway_volumes(other, 'enterprise-data')
+    assert pp.main(['prepare_ports.py', 'retire'], root=project_root(tmp_path, mine)) == 0
+    assert (listed(retired), listed(live), listed(foreign)) == (False, True, True)
+    assert retired in capsys.readouterr().out
+
+
+def test_지울_볼륨을_컨테이너가_붙들고_있으면_그_이름과_확인_명령을_알리고_1로_끝난다(tmp_path, throwaway_volumes, capsys):
+    mine = f'hyd-test-retire-busy-{os.getpid()}'
+    retired = throwaway_volumes(mine, 'enterprise-data')
+    holder = docker('create', '-v', f'{retired}:/data', 'python:3.12-slim', 'true').stdout.strip()
+    try:
+        assert pp.main(['prepare_ports.py', 'retire'], root=project_root(tmp_path, mine)) == 1
+        err = capsys.readouterr().err
+        assert retired in err and f'docker ps -a --filter volume={retired}' in err and listed(retired)
+    finally:
+        docker('rm', '-f', holder, check=False)

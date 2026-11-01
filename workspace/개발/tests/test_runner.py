@@ -8,7 +8,7 @@ import psycopg
 import pytest
 from psycopg.rows import dict_row
 
-from conftest import RELAY_KEY, SERVER_SECRET, RecordedCli, ask_question, events_of, model_turns, recording, start_handover, task_of
+from conftest import rejected_first_replay, RELAY_KEY, SERVER_SECRET, RecordedCli, ask_question, events_of, model_turns, recording, start_handover, task_of
 
 
 def ledger_runs(dsn, todo_id=None):
@@ -42,14 +42,16 @@ def test_키_있는_PC의_교대_초안은_관문_토큰으로_모델을_부르�
 
 
 def test_업무_규칙은_CLI_시스템_프롬프트로_간다(course, worker):
-    from procsvc import work_rules
+    """CLI 가 받은 규칙 = 포털 에이전트 화면이 그 단계의 에이전트(agent:handover, 업무 규칙 칸은 seed 의 users.work_rules)에 보이는 글."""
     cli = RecordedCli(recording('handover/draft-1')['runs'][0])
     start_handover(course.rt)
     worker('live', cli).poll_once()
     args = cli.requests[0].request.extra_args
     # 설정 출처를 끈 CLI(--setting-sources '')는 작업 폴더의 규칙 파일을 읽지 않는다 — 규칙은 인자로 간다
     assert args[args.index('--setting-sources') + 1] == ''
-    assert args[args.index('--append-system-prompt') + 1] == work_rules.constitution(work_rules.rules_for('hyd-handover'))
+    status, shown = course.world.api('GET', '/api/agents/agent:handover')
+    assert status == 200 and shown['work_rules'] == 'hyd-handover', shown
+    assert args[args.index('--append-system-prompt') + 1] == shown['work_rules_detail']['content']
     assert not (__import__('pathlib').Path(cli.requests[0].request.workdir) / 'CLAUDE.md').exists()
 
 
@@ -120,7 +122,11 @@ def test_사람에게_묻고_멈춘_작업은_PC의_다른_AI_단계를_막지_�
     asked = dict(asked, events=[e for e in asked['events'] if e['kind'] != 'result'] + [{'kind': 'result', 'text': question}])
     first = start_handover(course.rt)
     worker('live', RecordedCli(asked, result_file=None, calls=2)).poll_once()
-    assert task_of(course.rt, first['proc_inst_id'], DRAFT)['draft_status'] == 'HUMAN_ASKED'
+    asked_task = task_of(course.rt, first['proc_inst_id'], DRAFT)
+    assert asked_task['draft_status'] == 'HUMAN_ASKED'
+    with psycopg.connect(course.dsn) as db:      # G1-21: 질문 알림은 이 단계 뒤 첫 사람 단계(인계자)에게 — 늘 운전원이 아니라
+        told = [r[0] for r in db.execute('SELECT user_id FROM notifications WHERE url=%s', (f"/todolist/{asked_task['id']}",))]
+    assert told == ['user:kim-op']
     second = start_handover(course.rt)
     worker('live', RecordedCli(recording('handover/draft-1')['runs'][0])).poll_once()
     assert task_of(course.rt, second['proc_inst_id'], DRAFT)['status'] == 'SUBMITTED'
@@ -163,6 +169,31 @@ def test_임대가_끊긴_사이_다른_워커가_잡으면_늦은_결과는_버
     assert taken['mcp'].read_text(encoding='utf8') == taken['before']
 
 
+@pytest.mark.parametrize('stop, name, said', [
+    ('person', '작업 취소', '담당자가 실행을 취소했습니다.'),
+    ('flow', '실행 멈춤', '처리 흐름이 이 단계를 닫아 실행을 멈췄습니다 — 조치 전 해소 — 사건 조치 전 자연 회복, 조치 전 종료'),
+], ids=['사람이 취소 요청', '처리 흐름이 닫음'])
+def test_실행_도중_멈추면_누가_왜_멈췄는지를_작업_행대로_적는다(course, worker, stop, name, said):
+    """재시작 확인(2026-11-01): 경보가 승인 전에 풀려 처리 흐름이 AI 단계를 닫았는데 「담당자가 실행을 취소했습니다」로 남았다 — 사람이 한 것처럼 읽혔다."""
+    run = recording('handover/draft-1')['runs'][0]
+
+    def stopped(n, cli):
+        if n == 3:
+            w = task_of(course.rt, inst['proc_inst_id'], DRAFT)
+            if stop == 'person':
+                course.rt.cancel_agent_task(w['id'], 'user:kim-op', '다시 하겠습니다')
+            else:                    # engine.finish 가 처리 건을 닫으며 남기는 그대로(행 끝 + 까닭 log)
+                with psycopg.connect(course.dsn) as db:
+                    db.execute("UPDATE todolist SET status='CANCELLED', end_date=now(), "
+                               "log=coalesce(log,'')||'cancelled: 조치 전 해소 — 사건 조치 전 자연 회복, 조치 전 종료; ' WHERE id=%s", (w['id'],))
+    inst = start_handover(course.rt)
+    worker('live', RecordedCli(run, after=stopped)).poll_once()
+    task = task_of(course.rt, inst['proc_inst_id'], DRAFT)
+    said_all = [(e['data']['name'], e['data']['goal']) for e in events_of(course.rt, task['id'], 'task_cancelled')]
+    assert said_all[-1] == (name, said), said_all                       # 사람 취소는 process 의 「실행 취소 요청」 뒤에 워커 문장이 온다
+    assert stop == 'person' or all('담당자' not in goal for _, goal in said_all), said_all
+
+
 # ---------------------------------------------------------------- 키 없는 PC(재생)
 def test_키_없는_PC의_교대_초안은_녹화를_재생해_제출하고_재생임을_알린다(course, worker, relay):
     inst = start_handover(course.rt)
@@ -172,6 +203,22 @@ def test_키_없는_PC의_교대_초안은_녹화를_재생해_제출하고_재�
     notes = [e['data'].get('content') for e in events_of(course.rt, task['id'], 'task_working')]
     assert any(str(n).startswith('AI 응답 재생') for n in notes)
     assert relay.requests == [] and ledger_runs(course.dsn) == []        # 재생은 관문 · 중계를 부르지 않는다
+
+
+def test_키_없는_PC의_교대_초안은_검사에_거절된_첫_답_뒤_녹화된_고친_답으로_이어_간다(course, worker, tmp_path):
+    """FX 넘김(교대 재생 거절): 강사 녹화 첫 실행의 근거 번호 하나가 범위 밖(13개 중 13번)이라 process 검사가 「거절 1/3」으로 돌려보낸다.
+    녹화에는 그 거절을 받고 AI 가 고친 둘째 실행이 함께 있다 — 워커가 다시 잡으면 그 실행으로 이어 가 검사를 통과한다(멈추지 않는다)."""
+    replay = rejected_first_replay(tmp_path)                    # 거절될 첫 실행 → 고친 둘째 실행(시험이 만든 녹화)
+    inst = start_handover(course.rt)
+    worker('replay', replay_dir=replay).poll_once()
+    course.rt.poll_once()
+    first = task_of(course.rt, inst['proc_inst_id'], DRAFT)
+    assert (first['status'], first['draft_status']) == ('IN_PROGRESS', 'FB_REQUESTED') and '[Rejected 1/3]' in (first['log'] or '')
+    worker('replay', replay_dir=replay).poll_once()
+    course.rt.poll_once()
+    task = task_of(course.rt, inst['proc_inst_id'], DRAFT)
+    assert task['status'] == 'DONE', (task['status'], task['log'])
+    assert task['output']['cliagents_session_id'].endswith(':1')
 
 
 def test_작업_이름을_바꾼_교대_흐름도_같은_녹화를_재생한다(course, worker):
@@ -195,7 +242,7 @@ def test_녹화와_다른_설비로_시작한_교대는_바꿔_끼우지_않고_
     task = task_of(course.rt, inst['proc_inst_id'], DRAFT)
     error = friendly(course.rt, task['id'])
     assert task['draft_status'] == 'FAILED' and task.get('output') is None
-    assert error['name'] == 'AI 응답 재생 범위 밖'
+    assert error['name'] == '강의 녹화에 없는 AI 단계'
     assert 'HYD-01' in error['friendly'] and 'HYD-02' in error['friendly']
 
 
@@ -217,46 +264,45 @@ def test_키_없는_PC의_질문은_강의에서_다룬_질문에만_답한다(c
 
 
 def test_워커가_다시_켜지면_끊긴_재생_실행을_처음부터_다시_낸다(course, worker):
-    """#10: 재생 중 워커가 죽으면(임대 만료 뒤 재점유) 다음 녹화 실행으로 넘어가지 않고 같은 실행을 다시 낸다."""
+    """#10 · G5b-07: 재생 중 워커가 죽으면(임대 만료 뒤 재점유) 다음 녹화 실행으로 넘어가지 않고 같은 실행을 다시 낸다.
+    준비는 죽은 워커가 DB 에 남기는 그대로 — 실제 점유(fetch_pending_task) 한 번, 저장된 세션 replay:<열쇠>:0, 지난 임대."""
+    from psycopg.types.json import Jsonb
+    from worker import ai_replay
     inst = start_handover(course.rt)
-    first = worker('replay')
-    real = first.responses.claim
-
-    def crashing(**kw):
-        claim = real(**kw)
-        inner = claim.__call__
-
-        def died(provider, request, env, *, check_stop=None):
-            gen = inner(provider, request, env, check_stop=check_stop)
-            yield next(gen)                                  # 세션 id(replay:<열쇠>:0)가 작업에 저장된 뒤
-            raise SystemExit('워커 프로세스가 죽었다')
-        claim.__class__ = type('Dying', (type(claim),), {'__call__': lambda self, *a, **k: died(*a, **k)})
-        return claim
-    first.responses.claim = crashing
-    with pytest.raises(SystemExit):
-        first.poll_once()
+    w = worker('replay', consumer='restarted-worker')
+    (dead,) = course.rt.repo.fetch_pending_task(w.s.agent_orch, 'dead-worker:1', limit=1, tenant_id=w.s.tenant_id)
+    session = f"{ai_replay.COURSE}{ai_replay.course_key('handover/draft-1', '')}:0"
     with psycopg.connect(course.dsn) as db:
-        db.execute("UPDATE todolist SET lease_until=now()-interval '1 second' WHERE draft_status='STARTED'")
-    worker('replay', consumer='restarted-worker').poll_once()
+        db.execute("UPDATE todolist SET draft=%s, lease_until=now()-interval '1 second' WHERE id=%s",
+                   (Jsonb({'cliagents_session_id': session}), dead['id']))
+    w.poll_once()
     task = task_of(course.rt, inst['proc_inst_id'], DRAFT)
     assert task['status'] == 'SUBMITTED', friendly(course.rt, task['id'])
-    assert task['output']['cliagents_session_id'].endswith(':0')
+    assert task['output']['cliagents_session_id'] == session
 
 
 # ---------------------------------------------------------------- 강사 녹화(record): 성공 확정 뒤에만 남긴다
-def test_녹화_모드에서_실패한_실행은_좋은_녹화를_덮지_않는다(course, worker, tmp_path, relay):
-    """#11: 녹화는 점유가 저장된 결과로 끝난 뒤에만 쓴다."""
+def _replay_copy(tmp_path):
     import shutil
+    from worker import ai_replay
     replay_dir = tmp_path / 'replay'
     shutil.copytree(__import__('conftest').REPLAY_DIR, replay_dir)
-    from worker import ai_replay
-    key = ai_replay.course_key('handover/draft-1', '')
+    return replay_dir, ai_replay.course_key('handover/draft-1', '')
+
+
+def test_녹화_모드에서_실패한_실행은_좋은_녹화를_덮지_않는다(course, worker, tmp_path, relay):
+    """#11: 녹화는 점유가 저장된 결과로 끝난 뒤에만 쓴다."""
+    replay_dir, key = _replay_copy(tmp_path)
     before = (replay_dir / f'{key}.json.gz').read_bytes()
     relay.answer(503, {'error': {'message': 'overloaded'}})
     start_handover(course.rt)
     worker('record', RecordedCli(recording('handover/draft-1')['runs'][0]), replay_dir=replay_dir).poll_once()
     assert (replay_dir / f'{key}.json.gz').read_bytes() == before
-    relay.reset()
+
+
+def test_녹화_모드에서_제출된_실행은_그_자리의_녹화를_새로_쓴다(course, worker, tmp_path):
+    from worker import ai_replay
+    replay_dir, key = _replay_copy(tmp_path)
     start_handover(course.rt)
     worker('record', RecordedCli(recording('handover/draft-1')['runs'][0]), replay_dir=replay_dir).poll_once()
     after = ai_replay.Library(replay_dir).load(key)
@@ -270,21 +316,36 @@ def recorded_question():
     return doc, doc['case'][len(ai_replay.QUESTION_PREFIX):]
 
 
-def test_같은_설정_같은_입력의_질문은_앞선_결과를_다시_쓰고_모델을_부르지_않는다(course, worker, relay):
+def test_같은_질문을_다시_해도_앞선_답을_다시_쓰지_않고_지금_상태로_새로_답한다(course, worker, relay):
+    """G1-09: 질문의 같은 요청 저장 열쇠에 지식 적재 · 업무 값이 없어 같은 질문에 옛 답을 냈다 — 질문은 저장하지 않는다(사용자 결정 기록).
+    비용은 관문 장부(호출 상한)가 막는다."""
     from procsvc import ask
     doc, question = recorded_question()
     first = ask_question(course.rt, question)
-    w = worker('live', RecordedCli(doc['runs'][0]))
-    w.poll_once()
+    worker('live', RecordedCli(doc['runs'][0])).poll_once()
     _complete(course.rt, first['id'])
     calls = len(relay.requests)
     second = ask_question(course.rt, question + ' ')
     worker('live', RecordedCli(doc['runs'][0])).poll_once()
-    task = task_of(course.rt, second['id'])
-    notes = [str(e['data'].get('content')) for e in events_of(course.rt, task['id'], 'task_working')]
-    assert len(relay.requests) == calls                              # AI 호출 0
-    assert any(n.startswith('같은 설정 · 같은 입력의 앞선 실행 결과를 다시 썼습니다(새로 추론하지 않음') for n in notes)
+    assert len(relay.requests) == calls + model_turns(doc['runs'][0])        # 실제 AI 를 다시 불렀다
     assert ask.view(course.rt, second['id'])['state'] in ('submitted', 'done')
+
+
+@pytest.mark.parametrize('agent', ['agent:pm-plan', 'agent:spare-buy'])
+def test_정기_정비_구매_에이전트에게_물어도_질문용_읽기_서버로_답한다(course, worker, agent):
+    """G1-02: 질문 창구가 허용 서버 사본(neo4j · enterprise · hyd-dmn)을 들고 목록 밖 서버(enterprise-maint 등)를 오류로 처리해,
+    두 에이전트에게 물으면 키 있는 PC 에서 늘 「연결 확인 필요」로 끝났다. 이제 질문용 읽기 목록(QUESTION_READS) 한 곳의 서버만 붙인다."""
+    from hydcommon.handover_tools import QUESTION_READS
+    from procsvc import ask
+    doc, question = recorded_question()
+    view = ask.start(course.rt, question, agent, '수강생', definitions_dir=__import__('conftest').DEFINITIONS,
+                     worker_probe=lambda: {'reachable': True})
+    cli = RecordedCli(doc['runs'][0])
+    worker('live', cli).poll_once()
+    after = ask.view(course.rt, view['id'])
+    assert after['state'] in ('submitted', 'done'), after['message']
+    attached = json.loads((__import__('pathlib').Path(cli.requests[0].request.workdir) / '.mcp.json').read_text(encoding='utf8'))['mcpServers']
+    assert attached and set(attached) <= set(QUESTION_READS)
 
 
 def _complete(rt, proc_inst_id):
@@ -345,9 +406,17 @@ def test_사람이_답한_뒤_작업_폴더가_정리돼_없으면_그_까닭을
 
 def test_관문이_정한_한_번_실행_기한을_넘으면_그_실제_기한으로_말하고_멈춘다(course, worker, monkeypatch):
     """B-01: 관문 기한(10분)으로 끊기는데 문구는 워커 자체 기한 「(1800s)」였다. 여기서는 관문 정책을 1초로 줄여 확인한다."""
-    monkeypatch.setattr(course.ledger, 'policy', dict(course.ledger.policy, run=dict(course.ledger.policy['run'], seconds=1)))
+    import time
+    from conftest import until
+    from procsvc import course_ledger
+    monkeypatch.setitem(course_ledger.POLICY['run'], 'seconds', 1)        # 관문 정책(설정 값) — 끝나면 되돌린다
     inst = start_handover(course.rt)
-    worker('live', RecordedCli(recording('handover/draft-1')['runs'][0], calls=0)).poll_once()
+
+    def past_deadline(n, cli):       # G5b-12: 「1초가 지났겠지」가 아니라 관문이 정한 기한(DB)을 이 PC 시계가 넘을 때까지
+        if n == 1:
+            deadline = ledger_runs(course.dsn)[-1]['deadline']
+            until(lambda: time.time() > deadline.timestamp(), '관문 실행 기한이 지남', timeout=30)
+    worker('live', RecordedCli(recording('handover/draft-1')['runs'][0], calls=0, after=past_deadline)).poll_once()
     task = task_of(course.rt, inst['proc_inst_id'], DRAFT)
     assert task['draft_status'] == 'FAILED'
     assert friendly(course.rt, task['id'])['friendly'].startswith('AI 단계가 한 번 실행 시간(1초)을 넘어 멈췄습니다')

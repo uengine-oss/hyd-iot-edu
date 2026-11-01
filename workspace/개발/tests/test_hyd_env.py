@@ -126,3 +126,25 @@ def test_다른_인코딩으로_저장한_env는_줄을_어림하지_않고_실�
     (tmp_path / '.env').write_bytes('# 수업 키\nLLM_API_KEY=sk\n'.encode('cp949'))
     with pytest.raises(UnicodeDecodeError):
         hyd_env.read(tmp_path / '.env')
+
+
+# ---------------------------------------------------------------- 쓰이지 않는 옛 줄 끄기
+@pytest.mark.parametrize('text, off, kept', [
+    ('LLM_API_KEY=\nTIME_SCALE=1\n', ('TIME_SCALE',), {'LLM_API_KEY': ''}),
+    ('export OLD=x\nA=1\n', ('OLD',), {'A': '1'}),
+    ('M="첫 줄\n둘째 줄"\nA=1\n', ('M',), {'A': '1'}),                 # 여러 줄 값은 그 줄 모두
+    ('OLD=1\nA=1\nOLD=2\n', ('OLD',), {'A': '1'}),                     # 같은 키가 두 번이면 둘 다
+], ids=['한_줄', 'export', '여러_줄_값', '같은_키_두_번'])
+def test_끌_키의_줄은_머리를_붙인_주석이_되어_다시_읽으면_없다(text, off, kept):
+    new = hyd_env.with_updates(text, {}, off)
+    assert hyd_env.parse(new) == kept
+    assert all(line.startswith(hyd_env.DISABLED) for line in new.splitlines() if any(k in line for k in off) or '둘째' in line)
+
+
+def test_끈_줄은_지우지_않아_무엇이_있었는지_남는다():
+    assert hyd_env.with_updates('TIME_SCALE=1\n', {}, ('TIME_SCALE',)) == hyd_env.DISABLED + 'TIME_SCALE=1\n'
+
+
+def test_같은_키를_쓰면서_끌_수는_없다():
+    with pytest.raises(ValueError, match='AI_MODE'):
+        hyd_env.with_updates('AI_MODE=live\n', {'AI_MODE': 'replay'}, ('AI_MODE',))

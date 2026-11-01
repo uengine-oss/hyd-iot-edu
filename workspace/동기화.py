@@ -1,11 +1,12 @@
 """main · workspace 두 브랜치와 작업 폴더를 다룬다. 체크아웃 · 색인을 건드리지 않고 브랜치를 바꾸지 않는다.
+실행은 CLAUDE.md 2절의 한 줄 — `PYTHONUTF8=1 .venv314/Scripts/python.exe workspace/동기화.py <명령>`(아래 <py>):
 
-    python workspace/동기화.py 시작 "제목"                     # 작업/<오늘>_<제목>/ 에 스펙.md · 기록.md 틀을 만든다
-    python workspace/동기화.py status                       # 작업 폴더 · 로컬 작업 자료와 workspace 끝의 차이
-    python workspace/동기화.py commit "메시지" [main 경로 ...]  # workspace에 지금 모습을 커밋 + (경로를 주면) main에 그 경로만 커밋
-    python workspace/동기화.py push                         # 두 브랜치 키 검사 0 확인 뒤 git push origin main workspace
-    python workspace/동기화.py 정리 [--실행]                  # 스펙.md에 「상태: 확정」인 작업 폴더를 지운다(--실행 없으면 목록만)
-    python workspace/동기화.py pull                         # origin/workspace를 받아 제자리에 푼다(로컬과 다른 파일이 있으면 멈춤)
+    <py> 시작 "제목"                     # 작업/<오늘>_<제목>/ 에 스펙.md · 기록.md 틀을 만든다
+    <py> status                       # 작업 폴더 · 로컬 작업 자료와 workspace 끝의 차이
+    <py> commit "메시지" [main 경로 ...]  # workspace에 지금 모습을 커밋 + (경로를 주면) main에 그 경로만 커밋. 메시지는 준 그대로(공동 저자 줄도 부르는 쪽이)
+    <py> push                         # 두 브랜치에서 origin 에 아직 없는 커밋 전부 키 검사 0 확인 뒤 git push origin main workspace
+    <py> 정리 [--실행]                  # 스펙.md에 「상태: 확정」인 작업 폴더를 지운다(--실행 없으면 목록만)
+    <py> pull                         # origin/workspace를 받아 제자리에 푼다 — 아래 「받기」
 
 - 작업 하나 = 작업/<날짜>_<제목>/ 폴더 하나(이 PC 전용, 어느 브랜치에도 올리지 않음). 확정되면 최종본은 workspace/강의제작/산출물/로
   바꿔 끼우고, 다시 만들 재료(큐 · 음성 캐시 등)는 workspace/강의제작/제작도구/로 옮긴 뒤 commit · push · 정리한다.
@@ -16,9 +17,14 @@
 - main은 이 자리들을 `.gitignore`로 무시한다. main 쪽은 준 경로만 커밋한다(같은 체크아웃의 다른 작업이 섞이지 않게).
 - commit 때 산출물에 같은 것의 이전 판(이름 끝 v1 · 날짜 · 사본)이 보이면 경고한다 — 최신 하나만 둔다.
 - 노션 영상 링크가 workspace 커밋을 가리키므로 커밋은 늘 앞 커밋 위에 쌓는다(이력을 다시 쓰지 않음, 강제 push 없음).
-- 공개 저장소다. 커밋마다 키 검사(secret_scan.py) 0이어야 브랜치에 붙는다.
+- 공개 저장소다. 키 검사(secret_scan.py)는 커밋마다 그 커밋이 새로 넣은 파일 판 · 메시지를 보고(main · workspace 모두 0이어야 브랜치에 붙는다),
+  push 는 origin 에 아직 없는 커밋 하나하나를 다시 본다 — 키를 넣은 커밋 뒤에 지우는 커밋을 더해도 앞 커밋은 이력으로 공개되기 때문이다.
+- GitHub 는 100 MiB 넘는 파일이 든 push 를 거절하고(50 MiB부터 경고) 이력은 다시 쓰지 않으므로, 그런 파일이 든 커밋은 만들지 않는다.
+- 받기(pull): 로컬 workspace 끝이 origin 의 조상일 때만 앞으로 옮긴다(아직 올리지 않은 로컬 커밋이 있으면 멈춤). 로컬 끝 이후 원격이 바꾸거나
+  지운 파일은, 로컬 파일이 로컬 끝의 판 그대로일 때만 바꾸거나 지운다 — 로컬에서 고친 파일과 겹치면 아무것도 쓰지 않고 목록을 내고 멈춘다.
+  로컬에서 지운 파일은 되살리지 않는다. 처음 받는 PC(로컬 끝 없음)는 없는 파일만 쓰고 다른 파일이 있으면 멈춘다.
 """
-import datetime, hashlib, os, re, shutil, subprocess, sys, tempfile
+import datetime, os, re, shutil, subprocess, sys, tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -39,13 +45,14 @@ WORK = ROOT / "작업"
 PATHS = ["workspace", ".claude", "CLAUDE.md", "AGENTS.md"]
 SKIP_DIRS = {"__pycache__", ".pytest_cache", "node_modules", "worktrees"}
 SKIP_FILES = {".claude/settings.local.json"}
+GITHUB_FILE_LIMIT, GITHUB_FILE_WARN = 100 * 1024 ** 2, 50 * 1024 ** 2
 OLD_VERSION = re.compile(r"(?:[_-]v\d+|[_-]\d{8}|[_ -]?사본\d*| \(\d+\))$", re.I)
 README = """# workspace — 작업 자료 브랜치
 
 학생이 받는 코드는 main 브랜치다. 이 브랜치는 강의를 만들고 시스템을 고치는 사람이 쓰는 작업 자료 전부다.
 
 - 어디부터: [workspace/README.md](workspace/README.md) — 하려는 일 → 읽을 문서 하나.
-- 받기(새 PC, main을 clone한 폴더에서, Git Bash): `git fetch origin workspace` → `git show origin/workspace:workspace/동기화.py > 동기화.py` → `python 동기화.py pull` → `rm 동기화.py`.
+- 받기(새 PC, main을 clone한 폴더에서, Git Bash): `git fetch origin workspace` → `git show origin/workspace:workspace/동기화.py > 동기화.py` → `PYTHONUTF8=1 python 동기화.py pull` → `rm 동기화.py`.
   PowerShell의 `>`는 인코딩을 바꿀 수 있어 쓰지 않는다.
 - 경로는 저장소 루트 기준 그대로다. main과 병합하지 않는다. 이력을 다시 쓰지 않는다(노션 영상 링크가 이 브랜치 커밋을 가리킨다).
 - 공개 저장소다. 키 · 개인 정보 · 실물 매뉴얼 PDF를 올리지 않는다.
@@ -53,7 +60,7 @@ README = """# workspace — 작업 자료 브랜치
 SPEC = """# {title}
 
 - 시작: {day} · 상태: 진행
-- 확정되면 이 줄의 상태를 「확정」으로 바꾸고 `python workspace/동기화.py 정리 --실행`으로 이 폴더를 지운다.
+- 확정되면 이 줄의 상태를 「확정」으로 바꾸고 `PYTHONUTF8=1 .venv314/Scripts/python.exe workspace/동기화.py 정리 --실행`으로 이 폴더를 지운다.
 
 ## 의도
 (왜 · 누구에게 무엇이 좋아지나)
@@ -131,6 +138,36 @@ def tip(ref=f"refs/heads/{BRANCH}"):
     return git("rev-parse", "--verify", "-q", ref).strip()
 
 
+def rev(ref):
+    """있으면 커밋 id, 없으면 ''(새 PC의 로컬 workspace 처럼)."""
+    r = subprocess.run(["git", "rev-parse", "--verify", "-q", f"{ref}^{{commit}}"], cwd=ROOT, capture_output=True, text=True)
+    return r.stdout.strip() if r.returncode == 0 else ""
+
+
+def is_ancestor(a, b):
+    return subprocess.run(["git", "merge-base", "--is-ancestor", a, b], cwd=ROOT).returncode == 0
+
+
+def check_sizes(old_tree, new_tree):
+    """새 트리가 넣는 파일 판의 크기 — GitHub 한도를 넘으면 커밋 전에 이름과 크기로 멈춘다."""
+    blobs = {}
+    for line in git("diff-tree", "-r", "--no-renames", old_tree, new_tree).splitlines():
+        meta, path = line.split("\t", 1)
+        if meta.split()[3] != "0" * 40:
+            blobs[path] = meta.split()[3]
+    if not blobs:
+        return
+    sizes = dict(zip(blobs, map(int, git("cat-file", "--batch-check=%(objectsize)", inp="\n".join(blobs.values()).encode() + b"\n").split())))
+    mib = lambda n: f"{n / 1024 ** 2:.1f} MiB"
+    for path, size in sizes.items():
+        if GITHUB_FILE_WARN < size <= GITHUB_FILE_LIMIT:
+            print(f"경고 — GitHub 가 경고하는 크기(50 MiB 초과): {path} {mib(size)}")
+    big = [f"{path} {mib(size)}" for path, size in sizes.items() if size > GITHUB_FILE_LIMIT]
+    if big:
+        sys.exit("GitHub 는 100 MiB 넘는 파일이 든 push 를 거절한다(이력은 다시 쓰지 않으므로 커밋하지 않았다) — 줄이거나 git 밖으로 옮긴다:\n  "
+                 + "\n  ".join(big))
+
+
 def build_tree(files):
     with tempfile.TemporaryDirectory() as d:
         env = dict(os.environ, GIT_INDEX_FILE=str(Path(d) / "index"))
@@ -143,8 +180,8 @@ def build_tree(files):
         return git("write-tree", env=env).strip()
 
 
-def scan(ref):
-    return subprocess.run([sys.executable, str(SCAN), ref], cwd=ROOT).returncode == 0
+def scan(*args):
+    return subprocess.run([sys.executable, str(SCAN), *args], cwd=ROOT).returncode == 0
 
 
 def tasks():
@@ -191,14 +228,14 @@ def commit(msg, main_paths):
     if tree == git("rev-parse", f"{t}^{{tree}}").strip():
         print("workspace: 바뀐 것이 없다 — 커밋하지 않는다")
     else:
-        body = msg + "\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\n"
-        c = git("commit-tree", tree, "-p", t, inp=body.encode("utf-8")).strip()
-        if not scan(c):
+        check_sizes(f"{t}^{{tree}}", tree)
+        c = git("commit-tree", tree, "-p", t, inp=(msg.rstrip("\n") + "\n").encode("utf-8")).strip()
+        if not scan(f"{t}..{c}"):
             sys.exit(f"키 검사에 걸렸다 — {c[:8]}를 workspace에 붙이지 않았다(위 목록을 고친 뒤 다시)")
         git("update-ref", f"refs/heads/{BRANCH}", c, t)
         print(f"workspace {t[:8]} → {c[:8]}")
     if main_paths:
-        commit_main(msg + "\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\n", main_paths)
+        commit_main(msg.rstrip("\n") + "\n", main_paths)
 
 
 def commit_main(body, paths):
@@ -221,7 +258,10 @@ def commit_main(body, paths):
     if tree == git("rev-parse", f"{head}^{{tree}}").strip():
         print("main: 준 경로에 바뀐 것이 없다 — 커밋하지 않는다")
         return
+    check_sizes(f"{head}^{{tree}}", tree)
     c = git("commit-tree", tree, "-p", head, inp=body.encode("utf-8")).strip()
+    if not scan(f"{head}..{c}"):
+        sys.exit(f"키 검사에 걸렸다 — {c[:8]}를 main에 붙이지 않았다(위 목록을 고친 뒤 다시)")
     git("update-ref", "HEAD", c, head)
     git("reset", "-q", "--", *paths)
     print(git("show", "--stat", "--format=main %h %s", "HEAD"))
@@ -229,8 +269,9 @@ def commit_main(body, paths):
 
 def push():
     for ref in ("main", BRANCH):
-        if not scan(ref):
-            sys.exit(f"{ref}: 키 검사에 걸렸다 — push하지 않았다")
+        if not scan(ref, "--올릴것"):
+            sys.exit(f"{ref}: 올릴 커밋에서 키 검사에 걸렸다 — push하지 않았다. 그 커밋은 이력으로 공개되므로 키를 지우는 커밋을 더해서는 풀리지 않는다 — "
+                     f"올리지 않은 커밋을 다시 만들거나(강제 push 없음), 이미 퍼졌으면 그 키를 바꾼다")
     print(git("push", "origin", "main", BRANCH))
     # 이 저장소의 fetch 설정은 main만 받는다 — 두 브랜치를 이름으로 받아 와야 origin/workspace가 새 값이 된다
     git("fetch", "-q", "origin", "+refs/heads/main:refs/remotes/origin/main", f"+refs/heads/{BRANCH}:refs/remotes/origin/{BRANCH}")
@@ -253,36 +294,77 @@ def clean(run):
         print("확정된 작업 폴더가 없다")
 
 
-def pull():
-    git("fetch", "-q", "origin", f"+refs/heads/{BRANCH}:refs/remotes/origin/{BRANCH}")
-    ref = f"refs/remotes/origin/{BRANCH}"
-    blobs = {}
+def tree_blobs(ref):
+    """{경로: 블롭} — 브랜치 맨 앞 README.md(이 도구가 만드는 것)는 뺀다."""
+    out = {}
     for e in filter(None, git("ls-tree", "-r", "-z", ref).split("\0")):
         meta, n = e.split("\t", 1)
-        if n != "README.md":
-            blobs[n] = meta.split()[2]
+        if n != "README.md" and meta.split()[1] == "blob":
+            out[n] = meta.split()[2]
+    return out
 
-    def blob_sha(p):                                   # git hash-object와 같은 값(파일마다 git을 부르지 않으려고)
-        data = p.read_bytes()
-        return hashlib.sha1(b"blob %d\0" % len(data) + data).hexdigest()
-    clash = [n for n in blobs if (ROOT / n).exists() and blob_sha(ROOT / n) != blobs[n]]
+
+def worktree_blobs(paths):
+    """{경로: 지금 파일을 git 에 넣으면 될 블롭} — 커밋(build_tree)과 같은 설정(core.autocrlf=false + .gitattributes)으로 계산한다.
+    이 PC의 git 설정(Windows 기본 autocrlf=true)을 따르면 줄끝만 다른 같은 파일을 「고친 판」으로 본다. 없는 파일은 뺀다."""
+    have = [p for p in paths if (ROOT / p).is_file()]
+    if not have:
+        return {}
+    out = git("-c", "core.autocrlf=false", "hash-object", "--stdin-paths", inp=("\n".join(have) + "\n").encode("utf-8")).split()
+    return dict(zip(have, out))
+
+
+def pull():
+    git("fetch", "-q", "origin", f"+refs/heads/{BRANCH}:refs/remotes/origin/{BRANCH}")
+    remote, local = rev(f"refs/remotes/origin/{BRANCH}"), rev(f"refs/heads/{BRANCH}")
+    if not remote:
+        sys.exit(f"origin 에 {BRANCH} 브랜치가 없다")
+    if local == remote:
+        print(f"workspace {local[:8]} = origin — 받을 것이 없다")
+        return
+    if local and not is_ancestor(local, remote):
+        if is_ancestor(remote, local):
+            sys.exit(f"로컬 workspace({local[:8]})가 origin 보다 앞서 있다 — 받을 것이 없고, 올리지 않은 커밋은 push 로 올린다")
+        sys.exit(f"로컬 workspace({local[:8]})와 origin({remote[:8]})이 갈라졌다 — 다른 PC가 올린 판과 이 PC의 올리지 않은 커밋이 함께 있다. "
+                 f"합치지 않는다(이력을 다시 쓰지 않음): 이 PC의 바뀐 파일을 옮겨 둔 뒤 새로 받거나, 다른 PC의 변경을 이 PC에서 다시 만든다")
+    theirs, base = tree_blobs(remote), (tree_blobs(local) if local else {})
+    now = worktree_blobs(sorted(set(theirs) | set(base)))
+    write, delete, clash = [], [], []
+    for n in sorted(set(theirs) | set(base)):
+        cur, old, new = now.get(n), base.get(n), theirs.get(n)
+        if cur == new:
+            continue                                   # 이미 원격 판
+        if new is None:                                # 원격에서 지움
+            if cur == old:
+                delete.append(n)
+            elif cur is not None:
+                clash.append(f"{n} — 원격에서 지웠는데 이 PC에서 고쳤다")
+        elif cur is None:
+            if old is None:
+                write.append(n)                        # 원격에 새로 생김(새 PC는 전부 여기)
+            elif old != new:
+                clash.append(f"{n} — 이 PC에서 지웠는데 원격에서 고쳤다")
+            # old == new: 이 PC에서 지운 파일 — 되살리지 않는다(다음 commit 에서 빠진다)
+        elif cur == old and local:
+            write.append(n)                            # 이 PC는 그대로, 원격이 고침
+        else:
+            clash.append(f"{n} — 이 PC에서 고친 판이 원격 판과 다르다")
     if clash:
-        sys.exit("로컬이 workspace와 다른 파일이 있어 덮어쓰지 않는다(먼저 commit하거나 그 파일을 치운다):\n  " + "\n  ".join(clash[:50]))
+        sys.exit("겹치는 파일이 있어 아무것도 쓰지 않았다(이 PC의 판을 commit · push 하거나 그 파일을 옮겨 둔 뒤 다시):\n  " + "\n  ".join(clash[:50]))
     # Windows tar는 한글 경로를 못 푼다 — cat-file --batch로 파일을 직접 꺼낸다
     cat = subprocess.Popen(["git", "cat-file", "--batch"], cwd=ROOT, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-    written = 0
-    for n in blobs:
-        cat.stdin.write(f"{ref}:{n}\n".encode("utf-8")); cat.stdin.flush()
+    for n in write:
+        cat.stdin.write(f"{theirs[n]}\n".encode()); cat.stdin.flush()
         size = int(cat.stdout.readline().split()[2])
         data = cat.stdout.read(size); cat.stdout.read(1)
         p = ROOT / n
-        if p.exists():
-            continue                                   # 위에서 같은 내용임을 확인했다
         p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_bytes(data); written += 1
+        p.write_bytes(data)
     cat.stdin.close(); cat.wait()
-    git("update-ref", f"refs/heads/{BRANCH}", git("rev-parse", ref).strip())
-    print(f"origin/{BRANCH} {git('rev-parse', '--short', ref).strip()} → 작업 자료 {len(blobs)}개(새로 쓴 것 {written})")
+    for n in delete:
+        (ROOT / n).unlink()
+    git("update-ref", f"refs/heads/{BRANCH}", remote, *([local] if local else []))
+    print(f"workspace {local[:8] or '(없음)'} → origin {remote[:8]} — 쓴 파일 {len(write)} · 지운 파일 {len(delete)}")
 
 
 if __name__ == "__main__":

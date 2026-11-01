@@ -7,7 +7,8 @@ from procsvc.store import Store
 
 def _incident(state, **fields):
     alert = {'alertId': 'ALT-1', 'asset': 'HYD-01', 'pattern': 'COOLER_DEGRADATION'}
-    inc = machine.Incident.from_card('INC-test', {'alert': alert, 'recommended': []})
+    inc = machine.Incident.from_card('INC-test', {'alert': alert, 'recommended': []},
+                                     recovery_policy={'pattern': 'COOLER_DEGRADATION', 'criterion': ('TS1', '<', 55.0)})
     inc.state = state
     for k, v in fields.items():
         setattr(inc, k, v)

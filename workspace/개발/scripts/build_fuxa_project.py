@@ -1,16 +1,21 @@
-"""Generate ot/fuxa/project.json — a FUXA 1.3 project bound to the OT MQTT topics.
+"""Generate ot/fuxa/project.json — a FUXA project bound to the OT MQTT topics (판은 compose.yaml 의 frangoteam/fuxa 고정 판 — 올리면 fuxa-init 업로드를 다시 확인한다).
 
+같은 재료면 늘 같은 파일이다: 화면 요소 id 는 만든 순서의 번호(uuid 아님). 유온 경고 · 정지선은 정본에서 읽는다(build_grafana_dashboard.ts1_limits).
+IT 경보 알람 문구는 패턴 이름을 박지 않는다 — 활성 경보 이름들은 관문이 alert 토픽의 display_text 로 낸다(화면의 「최근 경보」 칸).
 FUXA facts used here (read from the server source in the frangoteam/fuxa image):
   * devices[id] = {id, name, type:'MQTTclient', property:{address}, tags:{tagId:{id,name,type:'json',address,memaddress,options:{subs:[key]}}}}
   * a json tag with options.subs + memaddress reads payload[memaddress]; writing it publishes {memaddress: value}
   * view items reference tags with property.variableId = f"{deviceId}^~^{tagId}"
   * svgcontent must contain an element whose id == item id (widget markup copied from the demo project)
   * alarms[] = {name, property:{variableId}, high:{enabled,checkdelay,min,max,text,group,bkcolor,color,ackmode}, highhigh:{...}, ...}
-Run:  python workspace/개발/scripts/build_fuxa_project.py   (저장소 루트에서)
+Run:  .venv314/Scripts/python.exe workspace/개발/scripts/build_fuxa_project.py   (저장소 루트에서)
 """
 import json
-import uuid
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from build_grafana_dashboard import ts1_limits  # noqa: E402 — 유온 경고 · 정지선 정본 읽기는 한 곳
 
 ASSETS = ["HYD-01", "HYD-02", "HYD-03"]
 DEV = "emqx"
@@ -21,8 +26,13 @@ COL_W = 372
 COL_X0 = 20
 
 
+_ids: dict[str, int] = {}
+
+
 def uid(prefix):
-    return f"{prefix}_{uuid.uuid4()}"
+    """만든 순서의 번호 id — 같은 재료면 같은 파일(build_project 가 매번 처음부터 센다)."""
+    _ids[prefix] = _ids.get(prefix, 0) + 1
+    return f"{prefix}_{_ids[prefix]:04d}"
 
 
 def key(asset):
@@ -173,8 +183,9 @@ def build_view():
         v.text(x + 16, y + 70, "유온 TS1 (℃)", size=13, color="#374151")
         v.progress(x + 16, y + 80, 40, 220, f"{k}_TS1", f"{a} TS1", 0, 100, "#f97316")
         v.text(x + 62, y + 90, "100", size=10, color="#9ca3af")
-        v.text(x + 62, y + 152, "65 정지", size=11, color="#bd3547")
-        v.text(x + 62, y + 220, "48 정상", size=10, color="#22c55e")
+        warn, trip = ts1_limits()
+        v.text(x + 62, y + 300 - round(trip * 2.2) + 4, f"{trip:g} 정지", size=11, color="#bd3547")
+        v.text(x + 62, y + 300 - round(warn * 2.2) + 4, f"{warn:g} 경고", size=10, color="#d97706")
         v.text(x + 62, y + 300, "0", size=10, color="#9ca3af")
         v.value(x + 110, y + 130, f"{k}_TS1", f"{a} TS1", " ℃", w=150, size=38, color="#111827")
 
@@ -218,30 +229,32 @@ def build_view():
 
 def build_alarms():
     alarms = []
+    warn, trip = ts1_limits()
     off = {"enabled": False, "checkdelay": 1, "min": 0, "max": 0, "text": "", "group": "", "bkcolor": "", "color": "", "ackmode": 0}
     for a in ASSETS:
         k = key(a)
         alarms.append({"name": f"{a} TS1", "property": {"variableId": f"{k}_TS1", "variableSrc": DEV, "variable": f"{a} TS1"},
-                       "high": {"enabled": True, "checkdelay": 1, "min": 60, "max": 65, "text": f"{a} 유온 높음 (60 ℃ 초과)",
+                       "high": {"enabled": True, "checkdelay": 1, "min": warn, "max": trip, "text": f"{a} 유온 높음 ({warn:g} ℃ 초과)",
                                 "group": a, "bkcolor": "#f59e0b", "color": "#000000", "ackmode": 0},
-                       "highhigh": {"enabled": True, "checkdelay": 1, "min": 65, "max": 200, "text": f"{a} 유온 트립 구간 (65 ℃ 초과) — 인터록",
+                       "highhigh": {"enabled": True, "checkdelay": 1, "min": trip, "max": 200, "text": f"{a} 유온 보호 정지 구간 ({trip:g} ℃ 초과) — 인터록",
                                     "group": a, "bkcolor": "#dc2626", "color": "#ffffff", "ackmode": 0},
                        "low": dict(off), "info": dict(off), "actions": {"enabled": False, "values": []}})
         alarms.append({"name": f"{a} IT ALERT", "property": {"variableId": f"{k}_alert", "variableSrc": DEV, "variable": f"{a} IT alert level"},
-                       "highhigh": {"enabled": True, "checkdelay": 1, "min": 2, "max": 2, "text": f"{a} IT 경보: 쿨러 성능 저하 (Flink CEP RAISE)",
+                       "highhigh": {"enabled": True, "checkdelay": 1, "min": 2, "max": 2, "text": f"{a} IT 분석망 경보 — 화면의 「최근 경보」 칸에서 경보 이름을 보세요",
                                     "group": a, "bkcolor": "#7c3aed", "color": "#ffffff", "ackmode": 0},
                        "high": dict(off), "low": dict(off), "info": dict(off), "actions": {"enabled": False, "values": []}})
     return alarms
 
 
 def build_project():
+    _ids.clear()
     view = build_view()
     return {
         "version": "1.00",
         "name": "hyd-iot-edu",
         "server": {"id": "0", "name": "FUXA Server", "type": "FuxaServer", "property": {}},
         "devices": {DEV: {"id": DEV, "name": DEV, "type": "MQTTclient", "enabled": True,
-                          "property": {"address": "mqtt://emqx:1883", "clientId": "fuxa-ot", "timeout": 10000},
+                          "property": {"address": "mqtt://emqx:1883", "clientId": "fuxa-ot", "timeout": 10000, "username": "fuxa"},
                           "tags": build_tags()}},
         "hmi": {"views": [view],
                 "layout": {"start": view["id"], "zoom": "disabled",

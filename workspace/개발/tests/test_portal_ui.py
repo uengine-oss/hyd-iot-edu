@@ -1,8 +1,9 @@
 """포털 화면 순회 — 떠 있는 포털(환경 변수 HYD_TEST_PORTAL_URL, 예: http://127.0.0.1:8088)의 메뉴를 두 화면 크기(1366 · 1920)에서 실제
 브라우저(Playwright Chromium)로 하나씩 열고, 학생이 겪는 문제를 판정한다. 쓰기 단추는 누르지 않는다(학생 상태를 바꾸지 않음).
 
-메뉴마다: 콘솔 오류 0 · 실패한 요청 0 · 14초 뒤에도 남은 「…하는 중」 로딩 문구 없음 · 내부어(설정 이름 · 영문 경보 코드 · 표 이름) 없음 ·
-가로 넘침 없음 · 「눌리는데 거절」 없음 — 서버 수업 경계(GET /api/course-access)가 막은 행동 키를 단 요소는 꺼져 있고 서버 까닭을 보인다.
+메뉴마다 새 탭에서(앞 메뉴가 남긴 화면 상태 위에서 판정하지 않는다): 콘솔 오류 0 · 실패한 요청 0 · 14초 뒤에도 남은 「…하는 중」 로딩 문구 없음 ·
+내부어(설정 이름 · 영문 경보 코드 · 표 이름 · 사람 원래 id · 번역 안 된 명칭 키) 없음 · 가로 넘침 없음 · 「눌리는데 거절」 없음 — 서버 수업 경계
+(GET /api/course-access)가 막은 행동 키를 단 요소는 꺼져 있고 서버 까닭을 보인다 · 서비스 요청은 모두 포털과 같은 출처(/svc/<서비스>/ — nginx 프록시)다.
 메뉴 목록은 index.html 의 주 메뉴(.rail nav button[data-tab])에서 읽는다. 메뉴 잠금은 없다(모든 메뉴가 열린다).
 서버가 꺼져 있거나 이 판과 다르면 그 사실이 실패 문장에 그대로 나온다(조용히 건너뛰지 않는다).
 """
@@ -10,11 +11,10 @@ import os
 import re
 import time
 from html.parser import HTMLParser
-from pathlib import Path
 
 import pytest
 
-ROOT = Path(__file__).resolve().parents[3]
+from conftest import ROOT
 INDEX = ROOT / 'it' / 'portal' / 'www' / 'index.html'
 SIZES = [(1366, 768), (1920, 1080)]
 LOADING_LIMIT_S = 14
@@ -22,7 +22,8 @@ LOADING_LIMIT_S = 14
 LOADING = re.compile(r'([가-힣]+ 중…|불러오는 중|연결 확인 중|조회 중)')
 JARGON = re.compile(r'(AI_MODE|AGENT_BRIDGE|PROCESS_MODE|LLM_API_KEY|RunFailed|Traceback|\.env\b|tenants\.mcp|tenant_\w+|is_agent|users 표|'
                     r'Claude Code|Inbucket|provenance|API 키|undefined|NaN|\[object Object\]|\bnull\b|'
-                    r'COOLER_DEGRADATION|PUMP_LEAKAGE|FAN_VIBRATION|OIL_ANALYSIS|PM_DUE|SPARE_BELOW_MIN|HTTP \d{3}|status \d{3}|설비 시간 배율)')
+                    r'COOLER_DEGRADATION|PUMP_LEAKAGE|FAN_VIBRATION|OIL_ANALYSIS|PM_DUE|SPARE_BELOW_MIN|HTTP \d{3}|status \d{3}|설비 시간 배율|'
+                    r'\buser:[a-z]|\b(?:sys|inst|td|proc|nav|trace|inc|dec|kn|plant|main)\.[A-Za-z가-힣]|워커|폴링|기동 시드|프로세스 id|흐름 id|인스턴스|CANCELLED)')
 # 수업 단계에서 그 메뉴에 반드시 있어야 하는 행동 키(막힌 단추가 꺼진 채 보이는지 볼 자리)
 EXPECTED_ACTIONS = {'mcp': ['tool_servers.register'], 'admin': ['config.import']}
 
@@ -62,8 +63,10 @@ def portal_url():
     return url.rstrip('/')
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='module')
 def browser(portal_url):        # 포털 주소가 없으면 브라우저를 열지 않는다(뒤 테스트의 스레드에 이벤트 루프를 남기지 않게)
+    # 이 파일이 끝나면 닫는다: 세션 범위였을 때 sync_playwright 의 이벤트 루프가 전체 실행 끝까지 주 스레드에 남아, 알파벳 순서상 뒤의
+    # 테스트(질문 도구 · 데이터 수신 · 화면 시험)가 「asyncio.run() cannot be called from a running event loop」로 깨졌다(2026-11-01 전체 실행 4).
     from playwright.sync_api import sync_playwright
     with sync_playwright() as p:
         b = p.chromium.launch()
@@ -78,12 +81,21 @@ class Tour:
         self.ctx = browser.new_context(viewport={'width': size[0], 'height': size[1]}, locale='ko-KR')
         self.page = self.ctx.new_page()
         self.events = []
+        # 결정 1: 포털 화면(주 프레임)의 데이터 요청(fetch · XHR · SSE)은 포털과 같은 출처로만 — 다른 출처는 바깥 도구(Grafana · Neo4j · FUXA …)의
+        # 켜짐 확인(layers.js 의 그 주소)뿐. 화면에 끼운 바깥 도구(추세 메뉴의 Grafana iframe)가 자기 출처로 내는 요청은 그 도구의 것이라 세지 않는다
+        # (2026-11-01 — 주 프레임을 가리지 않아 Grafana 의 자기 요청을 포털 위반으로 셌다).
+        origin = re.match(r'^https?://[^/]+', url).group(0)
+        self.page.on('request', lambda r: self.events.append(('다른 출처 요청', f'{r.method} {r.url[:160]}'))
+                     if r.frame == self.page.main_frame and r.resource_type in ('fetch', 'xhr', 'eventsource')
+                     and not r.url.startswith(origin + '/') and r.url.rstrip('/') not in self.tool_probes else None)
+        self.tool_probes = set()
         self.page.on('console', lambda m: self.events.append(('콘솔 오류', m.text[:300])) if m.type == 'error' else None)
         self.page.on('pageerror', lambda e: self.events.append(('스크립트 오류', str(e)[:300])))
         self.page.on('response', lambda r: self.events.append(('실패 요청', f'{r.status} {r.request.method} {r.url[:160]}')) if r.status >= 400 else None)
         self.page.on('requestfailed', lambda r: self.events.append(('실패 요청', f'{r.failure} {r.method} {r.url[:160]}'))
                      if 'ERR_ABORTED' not in str(r.failure) else None)
         self.page.goto(url, wait_until='domcontentloaded', timeout=60000)
+        self.tool_probes |= {u.rstrip('/') for u in self.page.evaluate("() => LAYERS.flatMap(l => l.comps).flatMap(c => [c.health, c.entryHealth]).filter(u => u && !u.startsWith('/svc/'))")}   # 브라우저는 「…:7474」를 「…:7474/」로 보낸다 — 끝 / 를 떼어 견준다
         self.page.wait_for_function("() => window.hydCourseAccess && (window.hydCourseAccess.access || window.hydCourseAccess.error)", timeout=30000)
         self.access = self.page.evaluate('() => window.hydCourseAccess.access')
         self.access_error = self.page.evaluate('() => window.hydCourseAccess.error')
@@ -133,8 +145,9 @@ class Tour:
           .map(n => ({ key: n.dataset.courseAction, disabled: n.disabled, title: n.title, label: (n.innerText || n.value || '').trim().slice(0, 40) }))""")
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def tours(browser, portal_url):
+    """테스트마다 새 탭 — 화면 크기마다 하나씩 열고 그 테스트가 끝나면 닫는다(메뉴 순회 사이에 상태를 넘기지 않는다, G5b-11)."""
     made = {}
 
     def get(size):
@@ -163,7 +176,7 @@ def test_주_메뉴는_23개이고_하나도_잠겨_있지_않다(tours):
 
 def test_상단에_지금_단계가_한_줄로_보인다(tours):
     t = tours(SIZES[0])
-    assert t.access is not None, f'수업 범위(GET /api/course-access)를 읽지 못했다: {t.access_error}'
+    assert t.access is not None, f'수업 단계 정보(GET /api/course-access)를 읽지 못했다: {t.access_error}'
     line = t.page.inner_text('#courseStatus')
     expected = f"지금 단계: {t.access['label']}"
     assert line.startswith(expected), line
@@ -171,8 +184,8 @@ def test_상단에_지금_단계가_한_줄로_보인다(tours):
         assert 'PBL 기한 지남' in line
 
 
-def test_수업_범위를_못_읽으면_잠그지_않고_다시_시도를_보인다(browser, portal_url):
-    """처리 서비스가 늦게 뜬 상황(수업 범위 요청이 끊김) — 메뉴 · 단추를 잠그지 않고, 실패 문구와 [다시 시도]가 보이며 누르면 다시 읽는다."""
+def test_수업_단계_정보를_못_읽으면_잠그지_않고_다시_시도를_보인다(browser, portal_url):
+    """처리 서비스가 늦게 뜬 상황(수업 단계 정보 요청이 끊김) — 메뉴 · 단추를 잠그지 않고, 실패 문구와 [다시 시도]가 보이며 누르면 다시 읽는다."""
     ctx = browser.new_context(viewport={'width': 1366, 'height': 768}, locale='ko-KR')
     try:
         page = ctx.new_page()
@@ -180,7 +193,7 @@ def test_수업_범위를_못_읽으면_잠그지_않고_다시_시도를_보인
         page.goto(portal_url, wait_until='domcontentloaded')
         page.wait_for_function("() => window.hydCourseAccess && window.hydCourseAccess.error", timeout=30000)
         assert page.inner_text('#courseStatus [data-course-retry]') == '다시 시도'
-        assert page.get_attribute('#courseStatus', 'title').startswith('수업 범위를 읽지 못했습니다')
+        assert page.get_attribute('#courseStatus', 'title').startswith('수업 단계 정보를 읽지 못했습니다')
         assert page.eval_on_selector_all('.rail nav button[data-tab]', 'bs => bs.filter(b => b.disabled).length') == 0
         page.click('.rail nav button[data-tab="mcp"]')
         page.wait_for_selector('#mcpAdd', state='attached')       # 접어 둔 운영자 칸 안에 있다
@@ -201,7 +214,7 @@ def test_메뉴를_열면_오류_로딩_내부어_넘침_눌리는데_거절이_
     t = tours(size)
     t.open(tab)
     text = t.text()
-    problems = [] if t.access else [f'수업 범위(GET /api/course-access)를 읽지 못해 「눌리는데 거절」을 판정할 수 없다: {t.access_error}']
+    problems = [] if t.access else [f'수업 단계 정보(GET /api/course-access)를 읽지 못해 「눌리는데 거절」을 판정할 수 없다: {t.access_error}']
     problems += [f'{kind}: {what}' for kind, what in t.events]
     loading = sorted(set(LOADING.findall(text)))
     if loading:

@@ -1,20 +1,30 @@
-"""로컬 중계 관문의 실행 장부(procsvc/course_ledger.py) — 실행 하나 = 워커 점유 한 번. 실제 DB · 실제 처리 흐름의 작업 행으로 판정한다."""
+"""로컬 중계 관문의 실행 장부(procsvc/course_ledger.py) — 실행 하나 = 워커 점유 한 번. 실제 DB · 실제 처리 흐름의 작업 행으로 판정한다.
+
+장부의 기한 · 임대 판정은 장부 시계 하나로 잰다(바깥 — 테스트가 앞으로 옮긴다). 작업 행의 임대 시각은 워커 대기열(DB 함수)이 정하므로
+「새 워커가 끊긴 임대를 다시 잡음」만 그 임대 시각을 지난 시각으로 적어 흉내 낸다(대기열의 DB 시각을 옮기는 길이 따로 없다).
+"""
 import copy
 import json
 import uuid
+from datetime import datetime, timedelta
 
 import psycopg
 import pytest
 from psycopg.rows import dict_row
 
-from conftest import start_handover, task_of
+from conftest import EngineClock as Clock, start_handover, task_of
 from procsvc import course_ledger
 from procsvc.course_ledger import POLICY, REASONS, CourseLedger, Denied
 
 
 @pytest.fixture
-def ledger(course):
-    return CourseLedger(lambda: psycopg.connect(course.dsn, row_factory=dict_row), POLICY)
+def clock():
+    return Clock()
+
+
+@pytest.fixture
+def ledger(course, clock):
+    return CourseLedger(lambda: psycopg.connect(course.dsn, row_factory=dict_row), POLICY, clock=clock)
 
 
 def claim(rt, consumer=None):
@@ -49,14 +59,13 @@ def test_같은_점유는_토큰을_다시_받아도_같은_실행이다(course,
     assert len(runs(course.dsn)) == 1
 
 
-def test_같은_작업을_새로_점유하면_첫_실행_기한이_지나도_새_실행이_열린다(course, ledger):
+def test_같은_작업을_새로_점유하면_첫_실행_기한이_지나도_새_실행이_열린다(course, ledger, clock):
     """B-01: 옛 장부는 작업 행 · 세대 하나에 실행 하나라, 첫 예약 10분 뒤 이어 하기(사람 답 · 재평가 · 재개 · 교정)는 영구 거절이었다."""
     row = claim(course.rt)
     first = ledger.open_run('hyd', row)
     use(ledger, first, row, 3)
     ledger.end('hyd', row['id'], row['consumer'])
-    with psycopg.connect(course.dsn) as db:
-        db.execute("UPDATE hyd_course_runs SET deadline=now()-interval '1 minute'")
+    clock.advance(POLICY['run']['seconds'] + 60)
     again = reclaim(course.rt, row)
     second = ledger.open_run('hyd', again)
     use(ledger, second, again)
@@ -87,19 +96,42 @@ def _released(rt, row):
 
 
 def _lease_lapsed(rt, row):
+    """워커가 죽어 임대를 늘리지 못한 채 그 시각이 지났고(대기열의 DB 시각 — 위 머리말), 새 워커가 바로 그 작업을 다시 잡았다.
+    새 처리 건을 열기 전에 다시 잡는다 — 열린 작업이 둘이면 대기열이 어느 것을 줄지 정해져 있지 않아, 다른 작업을 잡으면 옛 점유가
+    「점유 중 · 임대 끊김」(EXPIRED)으로 남는다(2026-11-01 따로 돌려도 가끔 EXPIRED — 시험이 잡을 행을 정하지 않았던 것)."""
     with psycopg.connect(rt.repo.dsn) as db:
         db.execute("UPDATE todolist SET lease_until=now()-interval '1 second' WHERE id=%s", (row['id'],))
+    [again] = rt.repo.fetch_pending_task('cliagents', f'test-worker:{uuid.uuid4().hex}', tenant_id='hyd')
+    assert again['id'] == row['id']
+
+
+def _lease_ran_out(clock):
+    """워커가 죽은 채 임대 시각이 지났다(장부 시계로) — 아무도 다시 잡지 않았다."""
+    def end(rt, row):
+        lease = rt.repo.get_workitem(str(row['id']))['lease_until']
+        lease = datetime.fromisoformat(lease.replace('Z', '+00:00')) if isinstance(lease, str) else lease
+        clock.at = lease + timedelta(seconds=1)
+    return end
+
+
+def _run_time_passed(clock):
+    """점유는 살아 있는데 실행 기한(POLICY run.seconds)이 지났다."""
+    def end(rt, row):
+        clock.advance(POLICY['run']['seconds'] + 1)
+    return end
 
 
 @pytest.mark.parametrize('end, state', [
-    (_submitted, 'ENDED'), (_failed, 'ENDED'), (_asked, 'ENDED'), (_deferred, 'ENDED'), (_released, 'ENDED'),
-    (_lease_lapsed, 'ENDED'),
-], ids=['결과 제출', '실패', '사람 대기', '보류', '취소', '워커 재시작(임대 끊긴 작업을 새 워커가 다시 잡음)'])
-def test_끝난_점유의_실행은_작업_행으로_닫히고_동시_한도에_세지_않는다(course, ledger, end, state):
+    (lambda clock: _submitted, 'ENDED'), (lambda clock: _failed, 'ENDED'), (lambda clock: _asked, 'ENDED'),
+    (lambda clock: _deferred, 'ENDED'), (lambda clock: _released, 'ENDED'), (lambda clock: _lease_lapsed, 'ENDED'),
+    (_lease_ran_out, 'EXPIRED'), (_run_time_passed, 'EXPIRED'),
+], ids=['결과 제출', '실패', '사람 대기', '보류', '취소', '워커 재시작(임대 끊긴 작업을 새 워커가 다시 잡음)',
+        '워커가 죽어 임대 시각이 지남', '실행 기한이 지남'])
+def test_끝난_점유의_실행은_작업_행으로_닫히고_동시_한도에_세지_않는다(course, ledger, clock, end, state):
     """B-01 ②: 워커가 끝을 알리지 못해도(죽음) 작업 행이 정본이다. 끝난 점유는 PC의 하나뿐인 동시 실행 자리를 막지 않는다."""
     row = claim(course.rt)
     ledger.open_run('hyd', row)
-    end(course.rt, row)
+    end(clock)(course.rt, row)
     other = claim(course.rt)
     ledger.open_run('hyd', other)
     assert [r['state'] for r in runs(course.dsn)] == [state, 'OPEN']
@@ -177,14 +209,19 @@ def test_코드의_정책_판본이_바뀌면_장부_정책을_바꾸고_사용�
     assert any('정책 판본' in r.getMessage() for r in caplog.records)
 
 
-def test_실행_기한이_지나면_같은_점유의_호출은_시간_초과로_거절한다(course, ledger):
+@pytest.mark.parametrize('after, code', [(POLICY['run']['seconds'] - 1, None), (POLICY['run']['seconds'], 'run_time')],
+                         ids=['기한 1초 전 — 적힘', '기한 그 시각 — 시간 초과'])
+def test_실행_기한까지만_같은_점유의_호출을_적는다(course, ledger, clock, after, code):
     row = claim(course.rt)
     run = ledger.open_run('hyd', row)
-    with psycopg.connect(course.dsn) as db:
-        db.execute("UPDATE hyd_course_runs SET deadline=now()-interval '1 second'")
-    with pytest.raises(Denied) as caught:
+    clock.advance(after)
+    if code is None:
         use(ledger, run, row)
-    assert caught.value.code == 'run_time'
+        assert runs(course.dsn)[0]['calls'] == 1
+    else:
+        with pytest.raises(Denied) as caught:
+            use(ledger, run, row)
+        assert caught.value.code == code
 
 
 def test_다른_점유의_이름으로는_그_실행에_적을_수_없다(course, ledger):

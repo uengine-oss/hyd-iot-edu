@@ -46,3 +46,10 @@ def test_업무_DB_쓰기는_가린_뒤_넘기고_읽기는_그대로_넘긴다(
 def test_오류_글은_모르는_비밀도_이름_모양으로_가리고_길이를_줄인다(text, leaked):
     out = diagnostics.excerpt(text + ' ' + 'x' * 2000, limit=300)
     assert leaked not in out and len(out) <= 300 and '[중간 생략]' in out
+
+
+@pytest.mark.parametrize('text', ['{"usage": {"input_tokens": 5120, "output_tokens": 33}}', 'token_count=12 max_tokens: 32000'],
+                         ids=['사용량 JSON', '이름=값'])
+def test_오류_글의_토큰_개수_칸은_비밀이_아니라_그대로_남긴다(text):
+    """G1-20: 이름 모양 규칙이 token 을 부분 일치로 잡아 「input_tokens: [비밀 값 가림]」이 됐다 — 문맥 한도 · 비용 오류를 원문에서 진단할 수 없었다."""
+    assert diagnostics.excerpt(text) == text

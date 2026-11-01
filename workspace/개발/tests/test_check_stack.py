@@ -96,12 +96,8 @@ def test_기한이_지나도_뜨지_않은_서비스를_까닭과_함께_낸다(
 # ---------------------------------------------------------------- AI 단계
 @pytest.fixture
 def checkout(tmp_path):
-    def make(ai_mode, saved=0):
+    def make(ai_mode):
         (tmp_path / '.env').write_text(f'LLM_API_KEY=\nAI_MODE={ai_mode}\n', encoding='utf-8')
-        replay = tmp_path / 'it' / 'agent-worker' / 'replay'
-        replay.mkdir(parents=True, exist_ok=True)
-        for n in range(saved):
-            (replay / f'{n:016x}.json.gz').write_bytes(b'')
         return tmp_path
     return make
 
@@ -110,17 +106,20 @@ def never_relay(call):
     raise AssertionError('키 없는 PC에서 강의 중계를 불렀다')
 
 
-@pytest.mark.parametrize('ai_mode, worker, saved, relay_out, outcome', [
-    ('replay', 'replay', 6, None, NA),                     # 키 없음 + 저장 응답 있음 = 해당 없음(통과로 꾸미지 않음)
-    ('replay', 'replay', 0, None, FAIL),                   # 저장 응답이 없는 판
-    ('replay', 'live', 6, None, FAIL),                     # 워커가 다른 방식으로 켜짐
-    ('live', 'live', 0, {'ok': True, 'message': '강의 중계 연결됨'}, PASS),
-    ('live', 'live', 0, {'ok': False, 'message': '강의 중계가 이 키를 받지 않습니다'}, FAIL),
-], ids=['replay_saved', 'replay_empty', 'mode_mismatch', 'live_ok', 'live_refused'])
-def test_AI_단계는_방식에_따라_통과_해당없음_실패로_가른다(checkout, ai_mode, worker, saved, relay_out, outcome):
-    root = checkout(ai_mode, saved)
+# 워커 /health 의 실제 모양(it/agent-worker/worker/main.py): replay_recordings = 켜질 때 실제로 읽은 녹화 수(재생이 아니면 null).
+# 저장소 폴더의 파일 수가 아니라 워커가 읽은 수를 본다 — 빈 · 깨진 녹화 파일을 「있음」으로 세지 않는다(깨졌으면 워커가 켜지지 않는다)
+@pytest.mark.parametrize('ai_mode, health, relay_out, outcome', [
+    ('replay', {'ai_mode': 'replay', 'replay_recordings': 6}, None, NA),            # 키 없음 + 녹화 있음 = 해당 없음(통과로 꾸미지 않음)
+    ('replay', {'ai_mode': 'replay', 'replay_recordings': 0}, None, FAIL),          # 녹화가 없는 판
+    ('replay', {'ai_mode': 'replay'}, None, FAIL),                                  # 녹화 수를 알리지 않는 옛 워커
+    ('replay', {'ai_mode': 'live', 'replay_recordings': None}, None, FAIL),         # 워커가 다른 방식으로 켜짐
+    ('live', {'ai_mode': 'live', 'replay_recordings': None}, {'ok': True, 'message': '강의 중계 연결됨'}, PASS),
+    ('live', {'ai_mode': 'live', 'replay_recordings': None}, {'ok': False, 'message': '강의 중계가 이 키를 받지 않습니다'}, FAIL),
+], ids=['replay_saved', 'replay_empty', 'replay_old_worker', 'mode_mismatch', 'live_ok', 'live_refused'])
+def test_AI_단계는_방식에_따라_통과_해당없음_실패로_가른다(checkout, ai_mode, health, relay_out, outcome):
+    root = checkout(ai_mode)
     relay = (lambda call: relay_out) if relay_out else never_relay
-    got, note = cs.check_ai(root, relay_fn=relay, health_fn=lambda: {'ai_mode': worker})
+    got, note = cs.check_ai(root, relay_fn=relay, health_fn=lambda: health)
     assert got == outcome and note
 
 
@@ -181,8 +180,127 @@ def test_추천_카드나_승인할_사람이_없으면_까닭을_보이고_멈�
 @pytest.mark.parametrize('rows, ok, words', [
     ([('T_cmd', 'DONE'), ('T_reobs', 'DONE'), ('T_wo', 'DONE'), ('R_ok', 'DONE')], True, '작업지시'),
     ([('T_cmd', 'DONE'), ('T_reobs', 'DONE'), ('R_fail', 'DONE')], False, '미달'),
+    ([('T_wo_only', 'DONE'), ('T_fix', 'DONE'), ('T_reobs_wo', 'DONE'), ('R_wo_only', 'DONE')], True, '정비 수행 → 재관측(정상)'),
+    ([('T_wo_only', 'DONE'), ('R_wo_only', 'DONE')], False, '닿지 않았습니다'),          # 정비 · 재관측 없이 정상 보고 — 회복 확인 없는 종결은 통과가 아니다
+    ([('T_wo_only', 'DONE'), ('T_fix', 'DONE'), ('T_reobs_wo', 'DONE'), ('R_fail', 'DONE')], False, '정비 뒤'),
+    ([('R_kind', 'DONE')], False, '실행하지 않았습니다'),
     ([('T_approve', 'IN_PROGRESS')], False, '닿지 않았습니다'),
-])
+], ids=['명령 → 재관측 → 작업지시', '미달', '작업지시만 → 정비 → 재관측', '작업지시만 재관측 없음', '작업지시만 미달', '조치 종류 밖', '멈춤'])
 def test_승인_뒤_명령_재관측_작업지시가_정상_보고까지_가야_통과다(rows, ok, words):
     got, detail = cs.flow_result(view(*[(a, s, {}) for a, s in rows], status='COMPLETED'))
     assert got is ok and words in detail
+
+
+def test_쿨러_경보는_감지기의_패턴별_칸에서_읽는다():
+    """설비 하나에 패턴이 여럿이다 — 펌프 · 팬 패턴이 RAISED 여도 쿨러 판정은 쿨러 패턴 칸만 본다(감지기 API 실제 모양)."""
+    state = {'patterns': {'COOLER_DEGRADATION': {'phase': 'RAISED', 'alert_id': 'a1'}, 'PUMP_LEAKAGE': {'phase': 'IDLE'},
+                          'FAN_VIBRATION': {'phase': 'IDLE'}}, 'ts1': 61.2, 'ce': 40.0}
+    assert cs.cooler_phase(state) == 'RAISED'
+    assert cs.cooler_phase({**state, 'patterns': {**state['patterns'], 'COOLER_DEGRADATION': {'phase': 'IDLE'}, 'PUMP_LEAKAGE': {'phase': 'RAISED'}}}) == 'IDLE'
+
+
+# ---------------------------------------------------------------- 기다리기: 「아직 아님」과 「실패」를 가른다
+def test_기다리는_동안_서버_오류가_이어지면_시간이_다_됐을_때_그_오류를_까닭에_붙인다():
+    clock = Clock()
+    def probe():
+        raise cs.ApiError(500, 'relation ent.work_orders does not exist')
+    with pytest.raises(cs.Timeout) as caught:
+        cs.wait_for(60, probe, '처리 건이 열리지 않았습니다', sleep=clock.sleep, clock=clock)
+    assert '처리 건이 열리지 않았습니다' in str(caught.value) and 'ent.work_orders' in str(caught.value) and clock.now >= 60
+
+
+def test_잠깐_답하지_않던_서비스가_답하면_그_값을_낸다():
+    clock, answers = Clock(), [cs.ApiError(503, '켜지는 중'), None, {'phase': 'RAISED'}]
+    def probe():
+        answer = answers.pop(0)
+        if isinstance(answer, Exception):
+            raise answer
+        return answer
+    assert cs.wait_for(60, probe, '경보', sleep=clock.sleep, clock=clock) == {'phase': 'RAISED'}
+
+
+def test_응답_모양이_다르면_기다리지_않고_바로_드러난다():
+    clock = Clock()
+    with pytest.raises(KeyError):
+        cs.wait_for(420, lambda: {}['patterns'], '경보', sleep=clock.sleep, clock=clock)
+    assert clock.now == 0
+
+
+# ---------------------------------------------------------------- 포털: 화면과 같은 출처 길(/svc/…)
+@pytest.fixture
+def portal(tmp_path):
+    """포털 대역(바깥 — nginx 자리): 경로마다 정한 상태 코드로 답하는 실제 HTTP 서버. 시작이 남긴 포트 표가 그 포트를 가리킨다."""
+    import http.server
+    import json as _json
+    import threading
+    answers = {}
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            code = answers.get(self.path, 404)
+            self.send_response(code); self.end_headers(); self.wfile.write(b'{}')
+
+        def log_message(self, *args):
+            pass
+    server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    (tmp_path / '.hyd-runtime').mkdir()
+    (tmp_path / '.hyd-runtime' / 'ports.json').write_text(_json.dumps({'8088': server.server_address[1]}), encoding='utf-8')
+    yield tmp_path, answers
+    server.shutdown()
+
+
+@pytest.fixture
+def process_api():
+    """process 대역(바깥): 승인 고르기 · 미리 보기 요청을 받아 정한 답을 내고, 받은 몸을 남기는 실제 HTTP 서버."""
+    import http.server
+    import json as _json
+    import threading
+    plan, seen = {'select': []}, []
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_POST(self):
+            body = _json.loads(self.rfile.read(int(self.headers['Content-Length'])) or b'{}')
+            seen.append((self.path, body))
+            code, answer = plan['select'].pop(0) if self.path.endswith('/select') else (200, {'id': 'review-1'})
+            data = _json.dumps(answer, ensure_ascii=False).encode()
+            self.send_response(code); self.send_header('Content-Type', 'application/json'); self.end_headers(); self.wfile.write(data)
+
+        def log_message(self, *args):
+            pass
+    server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    yield f'http://127.0.0.1:{server.server_address[1]}', plan, seen
+    server.shutdown()
+
+
+APPROVAL = {'decision': 'd1', 'option': 'fan-up', 'by': 'user:kim-op', 'role': 'role:operator', 'reason': '점검'}
+
+
+def test_예측이_낡았다는_거절_코드면_미리_보기로_다시_검토해_그_검토로_승인한다(process_api):
+    url, plan, seen = process_api
+    plan['select'] = [(409, {'detail': {'code': 'review_required', 'reason': '현재 조건에서 승인을 보류합니다: 검토한 카드가 12분 전 예측입니다'}}),
+                      (200, {'approval_status': 'APPROVED'})]
+    cs.approve(url, 't1', APPROVAL)
+    assert [p for p, _ in seen] == ['/api/todolist/t1/select', '/api/todolist/t1/decision-preview', '/api/todolist/t1/select']
+    assert seen[-1][1] == dict(APPROVAL, review_id='review-1')
+
+
+def test_다른_까닭의_승인_거절은_그_문장으로_멈추고_다시_고르지_않는다(process_api):
+    url, plan, seen = process_api
+    plan['select'] = [(403, {'detail': '이 카드의 승인 역할(role:prod-mgr)이 아닙니다'})]
+    with pytest.raises(cs.CheckError, match='승인 역할'):
+        cs.approve(url, 't1', APPROVAL)
+    assert len(seen) == 1
+
+
+@pytest.mark.parametrize('screen, process, problem', [
+    (200, 200, None),
+    (200, 502, '/svc/process/healthz'),                 # 화면은 뜨는데 포털을 거쳐 process 에 닿는 길이 끊김
+    (500, 200, '/ '),
+], ids=['둘_다_됨', '같은_출처_길_끊김', '화면_오류'])
+def test_포털은_화면과_포털을_거쳐_process에_닿는_길을_둘_다_본다(portal, screen, process, problem):
+    root, answers = portal
+    answers.update({'/': screen, '/svc/process/healthz': process})
+    found = cs.portal_problems(root)
+    assert (found == []) if problem is None else (len(found) == 1 and problem.strip() in found[0])

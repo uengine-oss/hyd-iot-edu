@@ -1,0 +1,142 @@
+"""조치 판단(it/agent/agentsvc/decide.py) — 판단 사실은 온톨로지가 정한 원천에서, 읽지 못하면 그 자리 까닭으로 멈춘다(H-8),
+가정 실험의 바꿔 넣는 값은 판단 변수의 형식으로만. 실제 agent 서비스(stack) · 실제 그래프 · 업무 시스템(enterprise-sim)을 지난다."""
+import json
+import math
+import urllib.error
+import urllib.request
+
+import pytest
+
+from agentsvc import decide
+
+INPUTS = [{'variable': 'hours_at_next_window', 'name': '다음 정비 창까지 시간', 'typeRef': 'number'},
+          {'variable': 'ambient_c', 'name': '외기 온도', 'typeRef': 'number'},
+          {'variable': 'avl_ok', 'name': '승인 공급사', 'typeRef': 'boolean'},
+          {'variable': 'plc_mode', 'name': 'PLC 상태', 'typeRef': 'enum'},
+          {'variable': 'note_blob', 'name': '첨부', 'typeRef': 'object'}]
+
+
+@pytest.mark.parametrize('overrides, expect', [
+    ({'hours_at_next_window': 12}, {'hours_at_next_window': 12}),
+    ({'hours_at_next_window': 0}, {'hours_at_next_window': 0}),
+    ({'ambient_c': -5.0}, {'ambient_c': -5.0}),
+    ({'avl_ok': False, 'plc_mode': 'REMOTE_MANUAL'}, {'avl_ok': False, 'plc_mode': 'REMOTE_MANUAL'}),
+    (None, {}),
+], ids=['시간', '경계 0', '온도는 음수 가능', '참거짓 · 글', '없음'])
+def test_가정_실험은_지식에_있는_판단_변수만_그_형식으로_바꿔_넣는다(overrides, expect):
+    assert decide.check_overrides(INPUTS, overrides) == expect
+
+
+@pytest.mark.parametrize('overrides, needle', [
+    ({'secret_fact': 1}, '바꿔 넣을 수 없는 사실'),
+    ({'hours_at_next_window': -1}, '음수일 수 없습니다'),
+    ({'hours_at_next_window': '12'}, '숫자를 넣습니다'),
+    ({'hours_at_next_window': True}, '숫자를 넣습니다'),
+    ({'hours_at_next_window': math.inf}, '숫자를 넣습니다'),
+    ({'avl_ok': 1}, '참 · 거짓'),
+    ({'plc_mode': '  '}, '비어 있지 않은 글'),
+    ({'note_blob': {}}, '바꿀 수 없습니다'),
+], ids=['지식에 없는 변수', '음수 시간', '글자 숫자', '참거짓을 숫자로', '무한대', '숫자를 참거짓으로', '빈 글', '바꿀 수 없는 형식'])
+def test_형식이_다르거나_음수_시간인_가정값은_변수_이름과_함께_거절한다(overrides, needle):
+    """G5a-7 ③: 음수 시간 · 형식이 다른 값이 그대로 규칙에 들어갔다."""
+    with pytest.raises(ValueError) as e:
+        decide.check_overrides(INPUTS, overrides)
+    assert needle in str(e.value)
+
+
+def test_판단_id_는_서비스_이름을_달고_재시작해도_겹치지_않는다():
+    a, b = decide.DecisionRegistry('agent'), decide.DecisionRegistry('agent')
+    ids = {a.new_id('DEC'), b.new_id('DEC'), a.new_id('EVAL')}
+    assert len(ids) == 3 and all(i.split('-')[2] == 'agent' for i in ids)
+    with pytest.raises(ValueError):
+        a.new_id('RUN')
+    with pytest.raises(ValueError):
+        decide.DecisionRegistry('portal')
+
+
+def test_원천을_못_읽은_판단_사실은_무엇을_어디서_왜_로_말한다():
+    e = decide.FactUnavailable('hours_at_next_window', '다음 정비 창까지 시간', 'sys:mes', '업무 시스템이 15초 안에 답하지 않았습니다')
+    assert str(e) == ('판단 사실 「다음 정비 창까지 시간」을(를) 원천(sys:mes)에서 읽지 못해 판단을 멈췄습니다 — '
+                      '업무 시스템이 15초 안에 답하지 않았습니다') and e.variable == 'hours_at_next_window'
+
+
+# ---------------------------------------------------------------- 실제 agent 서비스
+def post(url, body, timeout=90):
+    req = urllib.request.Request(url, data=json.dumps(body).encode(), headers={'Content-Type': 'application/json'}, method='POST')
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return r.status, json.loads(r.read())
+    except urllib.error.HTTPError as e:
+        return e.code, json.loads(e.read() or b'null')
+
+
+@pytest.fixture
+def cooling(world):
+    """HYD-01 쿨러 오염이 끝까지 진행돼 유온이 경보선 위에 머문 설비가 30분째 보고하는 상태(경보 · 처리 건은 없음)."""
+    world.plant.inject('HYD-01', 'cooler_degradation', severity='moderate')
+    world.settle(1800)
+    world.reported_for('HYD-01')
+    return world
+
+
+def test_업무_시스템이_답하면_수동_판단이_조치_카드를_순위대로_낸다(cooling):
+    status, d = post(cooling.stack.services['agent'].url + '/api/agent/decide', {'asset': 'HYD-01', 'pattern': 'COOLER_DEGRADATION'})
+    assert status == 200 and d['status'] in ('EVALUATED', 'NO_FEASIBLE_OPTION') and 'error_code' not in d, d.get('error')
+    options = d['result']['options']
+    assert options and [o['rank'] for o in options] == sorted(o['rank'] for o in options)
+    assert d['provenance'] and all(p['how'] for p in d['provenance'])      # 사실마다 어느 원천에서 어떻게 읽었는지
+
+
+def test_업무_시스템이_답하지_않으면_판단은_그_자리_까닭으로_멈추고_다시_시도할_수_있다(cooling):
+    """H-8: 업무 시스템 읽기 실패가 None 으로 삼켜져 「값 없음」으로 판단했다(decide.py 250-252 · 354-356 옛 줄)."""
+    agent = cooling.stack.services['agent'].url + '/api/agent/decide'
+    with cooling.stack.services['enterprise-sim'].paused():
+        status, d = post(agent, {'asset': 'HYD-01', 'pattern': 'COOLER_DEGRADATION'})
+    assert status == 200 and d['status'] == 'FAILED' and d['error_code'] == 'SOURCE_UNAVAILABLE'
+    assert '읽지 못해 판단을 멈췄습니다' in d['error'] and '15초 안에 답하지 않았습니다' in d['error'] and '다시 시도' in d['error']
+    assert not d.get('result')
+    cooling.reported_for('HYD-01', seconds=120)     # 업무 시스템이 멈춘 동안에도 설비는 1초마다 보고했다(근거 구간에 빈칸이 없다 — 시험 시간과 무관하게)
+    status, again = post(agent, {'asset': 'HYD-01', 'pattern': 'COOLER_DEGRADATION'})          # 다시 답하면 같은 요청이 그대로 된다
+    assert status == 200 and again['status'] != 'FAILED', again.get('error')
+
+
+@pytest.mark.parametrize('facts, needle', [({'fan100_hours': -5}, '음수일 수 없습니다'), ({'secret_fact': 1}, '바꿔 넣을 수 없는 사실')],
+                         ids=['음수 시간', '지식에 없는 변수'])
+def test_수동_판단에_틀린_사실을_넣으면_엔진이_422와_그_문장으로_거절한다(cooling, facts, needle):
+    """한바퀴3 고침 4: 판단 엔진이 틀린 입력을 200 · status FAILED(판단 실패와 같은 꼴)로 돌려줬다 — 입력 거절은 4xx 다."""
+    status, d = post(cooling.stack.services['agent'].url + '/api/agent/decide', {'asset': 'HYD-01', 'pattern': 'COOLER_DEGRADATION', 'facts': facts})
+    assert status == 422 and needle in str(d.get('detail')), (status, d)
+
+
+def test_지금_설비를_세우고_세척하는_카드는_정지한_설비로_예측해_유온이_경보선_아래로_내려간다(cooling):
+    """G1-05: 정지 · 세척 카드(SOP-COOL-14 — 작업지시만, 지금 시행)를 「운전 계속」으로 예측해 거짓 62 ℃ 로 졌다. 판단(decide)이
+    cards.option_window → stops_now 로 정한 카드를 forecasting.candidates 에 정지로 넘기는지 실제 스택에서 본다."""
+    status, d = post(cooling.stack.services['agent'].url + '/api/agent/decide', {'asset': 'HYD-01', 'pattern': 'COOLER_DEGRADATION'})
+    assert status == 200 and 'error_code' not in d, d.get('error')
+    options = {o['sopId']: o for o in d['result']['options']}
+    ts1 = {sop: next((x['value'] for x in o['forecast'] if x['variable'] == 'sv:ts1'), None) for sop, o in options.items()}
+    assert ts1.get('SOP-COOL-14') is not None, ts1
+    assert ts1['SOP-COOL-14'] < 55, f'정지한 설비의 예측이 아니다(운전 계속이면 경보선 위): {ts1}'
+
+
+def test_판단_기록의_장면_이름은_학생이_읽는_고장_이름으로_쓴다(cooling):
+    """W1-13: 장면 이름이 dec:rank-actions(id)로 학생에게 보였다."""
+    status, d = post(cooling.stack.services['agent'].url + '/api/agent/decide', {'asset': 'HYD-01', 'pattern': 'COOLER_DEGRADATION'})
+    assert status == 200 and 'error_code' not in d, d.get('error')
+    scenario = d['scenario']
+    assert scenario['name'].endswith('조치 판단') and ':' not in scenario['name'], scenario     # 센서 출처 문장은 test_approval(원천을 새로 읽는 길)
+
+
+from test_mcp_tsdb import asset, put, tsdb, tsdb_module  # noqa: E402,F401 — 시계열 읽기 준비(compose agent 의 읽기 계정 · 설비 이름)
+
+
+def test_원천에서_새로_읽은_센서_사실은_학생이_읽는_센서_이름과_나이로_출처를_적는다(seeded_graph, timescale, tsdb, asset):
+    """W1-13: 센서 사실 출처가 태그 id 만으로 학생에게 보였다. 판단 · 승인 검사는 경보 · 진단이 이미 정한 값이 없을 때 센서를
+    시계열에서 읽는다 — 지식(시드 InputData in:ts1 → sen:ts1)과 실제 시계열로 그 길을 지난다."""
+    import re
+    from agentsvc.tools import mcp_kg
+    inputs = [i for i in mcp_kg.KnowledgeGraph().inputs() if i['variable'] == 'ts1']
+    put(timescale, asset, [('TS1', 51.5, 3)])
+    facts, prov = decide.gather_facts(inputs, asset, {}, tsdb, variables={'ts1'})
+    (row,) = prov
+    assert facts['ts1'] == 51.5 and re.fullmatch(r'설비 센서 「유온」 최신값\(\d+초 전\)', row['how']), row

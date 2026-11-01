@@ -29,8 +29,8 @@
 | `강의제작/지침/` | 산출물 문서 여섯 · 사실표(덱 · 대본의 숫자 근거) · 설계서 PDF |
 | `강의제작/산출물/` | 완성본 최신 판만 — [색인](강의제작/산출물/README.md), 영상 상태 표는 [영상/README.md](강의제작/산출물/영상/README.md) |
 | `강의제작/제작도구/` | 다시 만들 재료 — `온라인/`(온라인 덱 원고 · 4회차 이후 랩 빌더) · `오프라인/`(오프라인 덱 원고 · 조립) · `구성/`(회차 장 구성) · `실습시작/`(1~3회차 랩 · ZIP 빌더 · 강사 정답) · `촬영/`(도구별 촬영준비 · 촬영도구 · 음성 캐시 · 시간 계수) · `기존제작/`(이론 영상 도구 · 음성 캐시 · 덱 시간 도구 · 랩 이름 규칙) · `notion-design/` · `검사/`(재편검사 · 대응표) |
-| `개발/문서/` | 시스템 문서 소수 — 위 표의 여섯 |
+| `개발/문서/` | 시스템 문서 — 위 표의 여섯(RUNBOOK · 재생모드 · UIUX_PLAN · ontology/ · 구조개편_설계 · 교재_고칠곳)뿐 |
 | `개발/tests/` · `개발/pytest.ini` | 시스템 테스트(모듈 하나당 파일 하나, 실행 한 줄은 프로젝트 `CLAUDE.md` 6절 · `개발/문서/RUNBOOK.md` §5) |
-| `개발/scripts/` | 생성기(`ontology_v2.py` · `c3_ingest.py` · `portal_names.py` · `evaluate_judgment.py` · `build_grafana_dashboard.py` · `build_fuxa_project.py`) · 수업 한 바퀴 점검(`class_round.py`) · 펌프 · 팬 시나리오(`scenario_pump_fan_test.py`, PBL 단계) · 강사 AI 응답 저장(`record_replay.sh` · `ai_replay_list.sh`) · PBL 단계 서명(`course_phase_sign.py`) · 개발 워커 · 장애 대응 |
+| `개발/scripts/` | 생성기 — 만든 파일을 저장소에 둔다(`ontology_v2.py` 스키마 · `portal_names.py` 포털 이름 사전 · `build_grafana_dashboard.py` · `build_fuxa_project.py`) · 강사 도구(`c3_ingest.py` 수업 문서 셋 추출 · 검토 · 적재(포털과 같은 API) · `evaluate_judgment.py` 판단 채점 · `course_phase_sign.py` PBL 단계 서명 · `record_replay.sh` · `ai_replay_list.sh` AI 응답 저장 · 목록) · 수업 한 바퀴 확인(`class_round.py`) · 개발 워커(`run_worker_host.sh` · `stop_worker_host.ps1` · `host_libpq.sh`) |
 
 진행 중 작업은 저장소 루트 `작업/<날짜>_<제목>/`(이 PC 전용)에서 하고, 확정되면 최종본은 `강의제작/산출물/`, 재료는 `강의제작/제작도구/`로 넣은 뒤 그 폴더를 지운다.

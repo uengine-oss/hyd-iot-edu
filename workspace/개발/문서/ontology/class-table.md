@@ -35,7 +35,6 @@
 | 스킬 · 규칙 계층 | Rule | 규칙 | DMN Decision Rule |
 | 스킬 · 규칙 계층 | KnowledgeSource | 지식 출처 | DMN KnowledgeSource |
 | 외부 변수 · 예측 | ExternalVariable | 외부 변수 | 외생 변수 |
-| 외부 변수 · 예측 | Forecast | 예측 | 예측 |
 | 운영 기록 | Incident | 사건 | 사건 기록 |
 | 운영 기록 | DecisionCase | 판단 사례 | DMN 판단의 실행 인스턴스 |
 | 운영 기록 | IngestionControl | 적재 트랜잭션 제어 | HYD ingestion provenance (implementation record) |
