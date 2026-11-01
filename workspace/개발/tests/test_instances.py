@@ -563,6 +563,31 @@ def test_승인_전에_경보가_풀려_처리_건이_닫히면_승인_대기_�
     assert (d['state'], d['history'][-1]['reason']) == ('CLOSED_UNAPPROVED', '조치 전 해소')
 
 
+def test_보호_정지를_먼저_풀고_냉각_경보가_풀려도_자연_회복이_아니라_책임자_확인으로_닫는다(world):
+    """재시작 확인 · 독립 검증(2026-11-01~02): 설비가 유온 높음으로 보호 정지해 펌프가 멈추고 식어 경보가 풀렸는데 냉각 사건이 「자연 회복」으로
+    닫혔다. 사람이 PLC 를 리셋해 보호 정지가 먼저 풀린 뒤 냉각 경보가 풀리는 순서도 같다 — 감지기의 보호 정지 경보(근거 trip)를 원천 접수로 흘린다."""
+    alert, pid, did = world.start_cooling()
+    trip, _ = world.raise_alert('OVERHEAT_TRIP', 'HYD-01', trip='OVERTEMP')
+    world.clear_alert(trip)                                              # 사람이 보호 정지를 먼저 리셋
+    world.clear_alert(alert)
+    world.poll()
+    inc = world.incident(pid)
+    assert inc.state == 'ESCALATED' and inc.reason.startswith('TRIPPED_BEFORE_ACTION'), (inc.state, inc.reason)
+    assert world.main.book[did]['state'] == 'CLOSED_UNAPPROVED'
+
+
+def test_처리_건이_끝났는데_판단이_승인_대기로_남으면_폴링이_판단을_끝낸다(world):
+    """독립 검증(2026-11-02): 판단 닫기는 커밋 뒤에 따로 돈다 — 그 사이 process 가 다시 켜지면 판단이 승인 대기로 남았다. 처리 건만 끝나고
+    판단은 그대로인 상태(커밋 뒤 끊김)를 만들고 폴링 정리가 같은 규칙으로 끝내는지 본다."""
+    alert, pid, did = world.start_cooling()
+    with psycopg.connect(world.dsn, autocommit=True) as db:
+        db.execute("UPDATE bpm_proc_inst SET status='COMPLETED', end_event='closed-by-human' WHERE proc_inst_id=%s", (pid,))
+    world.incident(pid).state = 'ESCALATED'          # 사건은 이미 끝났다 — 사건 정리(reconcile_open_incidents)는 이 처리 건을 다시 보지 않는다
+    assert world.main.book[did]['state'] == 'PENDING_APPROVAL'
+    world.poll()
+    assert world.main.book[did]['state'] == 'CLOSED_UNAPPROVED'
+
+
 def test_승인_전에_경보가_풀리면_기준_흐름도_상급자_호출_없이_조치_전_해소로_닫는다(world):
     """P1-09: 전에는 기준 흐름이 저절로 나은 사건에도 「상급자 호출」 사람 단계를 열어 「에스컬레이션 종료」로 끝냈다."""
     alert, pid = _pump_case(world)

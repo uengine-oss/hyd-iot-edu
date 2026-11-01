@@ -43,3 +43,47 @@ def test_연결_배치를_되돌리면_이력을_다시_그린_뒤에도_되돌�
             b.close()
     finally:
         served.close()
+
+
+import pytest
+
+
+@pytest.mark.parametrize('cache, said', [
+    ({'key': 'k', 'reused': False, 'validated': True, 'origin': {'by': 'instructor'}}, '강사가 검토 · 서명한 추출본입니다(제공 문서라 AI를 부르지 않았습니다)'),
+    (None, '추출 제안입니다. 원문을 대조하고 검토 후 적재하세요.'),
+], ids=['제공 문서(강사 서명본)', '학생 문서(AI 추출)'])
+def test_추출_미리보기는_제공_문서면_강사_서명본이라_AI를_부르지_않았다고_말한다(cache, said):
+    """J4 D2(2026-11-01): 제공 문서 추출은 키가 있어도 늘 강사 서명본을 내고 AI 를 부르지 않는데(manual_api · manual_approved_cache), 검토
+    화면은 「추출 제안입니다」라고만 해 학생이 AI 추출로 믿었다. 미리보기 응답 꼴은 procsvc manual_cache.result 의 preview(extraction.cache)."""
+    from playwright.sync_api import sync_playwright
+    app = FastAPI()
+    app.mount('/', StaticFiles(directory=WWW, html=True))
+    served = Served(app)
+    preview = {'source_id': 'manual:s1', 'document_id': 'HM-8', 'filename': 'HM-8_cooler-fan-manual.md', 'chars': 10, 'status': 'READY',
+               'sections': [], 'procedures': [], 'warnings': [], 'knowledge': {}, 'validation': None,
+               'extraction': {'cache': cache} if cache else {'method': 'agent'}}
+
+    def answer(route):
+        url = route.request.url.split('?')[0]
+        if url.endswith('/api/kg/manuals/preview'):
+            return route.fulfill(json=preview)
+        if url.endswith('/extractions'):                                   # 추출 이력(manual_api extraction_history 꼴)
+            return route.fulfill(json={'items': [], 'offset': 0, 'limit': 50, 'next_offset': None})
+        if url.endswith('/api/kg/manuals/sources') or url.endswith('/api/kg/manuals'):
+            return route.fulfill(json={'items': []})
+        return route.fulfill(json={})
+    try:
+        with sync_playwright() as p:
+            b = p.chromium.launch()
+            page = b.new_page()
+            page.route('**/svc/**', answer)
+            page.goto(served.url + '/index.html')
+            page.locator("button[data-tab='knowledge']").first.click()
+            page.set_input_files('#manualFile', files=[{'name': 'HM-8_cooler-fan-manual.md', 'mimeType': 'text/markdown', 'buffer': '# HM-8'.encode()}])
+            page.locator('#manualPreview').click()
+            page.wait_for_selector('#manualAgentStatus', state='attached', timeout=15000)
+            text = page.locator('#manualAgentStatus').inner_text()
+            b.close()
+    finally:
+        served.close()
+    assert said in text, text

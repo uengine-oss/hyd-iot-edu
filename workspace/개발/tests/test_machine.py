@@ -210,11 +210,13 @@ def test_재작업은_끝나지_않은_사건만_다시_열고_같은_요청은_
         machine.on_rework_reopen(escalated, 'REQ-2', 'user:kim-op', 'role:operator', '다시', {}, fx)
 
 
-def _trip(asset, cleared=False):
+def _trip(asset, cleared=False, created=None):
     trip = machine.Incident.from_card('INC-T', {'alert': {'alertId': 'ALT-T', 'asset': asset, 'pattern': 'OVERHEAT_TRIP',
                                                           'evidence': {'trip': 'OVERTEMP'}}, 'causes': [], 'skills': []},
                                       recovery_policy=dict(POLICY, pattern='OVERHEAT_TRIP'))
     trip.cleared = cleared
+    if created:
+        trip.created = created
     return trip
 
 
@@ -222,13 +224,15 @@ def _trip(asset, cleared=False):
     ([], 'RESOLVED_WITHOUT_ACTION'),
     ([_trip('HYD-01')], 'ESCALATED'),
     ([_trip('HYD-02')], 'RESOLVED_WITHOUT_ACTION'),
-    ([_trip('HYD-01', cleared=True)], 'RESOLVED_WITHOUT_ACTION'),
-], ids=['보호 정지 없음', '같은 설비가 보호 정지 중', '다른 설비의 보호 정지', '보호 정지가 이미 풀림'])
+    ([_trip('HYD-01', cleared=True, created='2000-01-01T00:00:00.000Z')], 'RESOLVED_WITHOUT_ACTION'),
+    ([_trip('HYD-01', cleared=True, created='2999-01-01T00:00:00.000Z')], 'ESCALATED'),
+], ids=['보호 정지 없음', '같은 설비가 보호 정지 중', '다른 설비의 보호 정지', '이 사건 전에 끝난 보호 정지',
+        '이 사건 동안 보호 정지가 있었고 먼저 풀림'])
 def test_승인_전_해제는_같은_설비가_보호_정지_중이면_자연_회복이_아니라_책임자_확인이다(others, state):
     """재시작 확인(2026-11-01): HYD-02가 유온 높음으로 보호 정지해 펌프가 멈추고 식어 경보가 풀렸는데 냉각 사건이 「자연 회복」으로 닫혔다."""
     inc, fx = _incident(), Recorder()
     assert inc.state == 'AWAITING_APPROVAL'
-    machine.on_alert(inc, dict(ALERT, state='CLEAR'), fx, trip=machine.active_trip(inc.asset, [inc, *others]))
+    machine.on_alert(inc, dict(ALERT, state='CLEAR'), fx, trip=machine.active_trip(inc.asset, [inc, *others], since=inc.created))
     assert inc.state == state and inc.cleared
     if state == 'ESCALATED':
         assert '보호 정지(사유 OVERTEMP)' in definition.escalation_cause(inc.reason)[0]

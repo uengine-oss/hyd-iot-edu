@@ -46,8 +46,12 @@ def test_고를_수_있는_학생_서버가_지금_연결되지_않으면_카드
             page.wait_for_function("!document.querySelector(\"#mcpServers [data-name='tool-wear']\").textContent.includes('연결 확인 중')",
                                    timeout=15000)
             text = card.inner_text()
+            card.click()                                                  # 상세 화면도 같은 문장(카드 · 상세가 한 함수 stampGap)
+            page.wait_for_function("document.querySelector('#mcpDetail') && document.querySelector('#mcpDetail').textContent.includes('tool-wear')",
+                                   timeout=15000)
+            detail = page.locator('#mcpDetail').inner_text()
             b.close()
     finally:
         served.close()
-    assert said in text, text
-    assert tools['status'] == 'ok' or '에이전트 도구로 고를 수 있음' not in text, text
+    assert said in text and said in detail, (text, detail)
+    assert tools['status'] == 'ok' or ('에이전트 도구로 고를 수 있음' not in text and '에이전트 도구로 고를 수 있음' not in detail), (text, detail)

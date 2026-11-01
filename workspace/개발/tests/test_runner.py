@@ -171,7 +171,7 @@ def test_임대가_끊긴_사이_다른_워커가_잡으면_늦은_결과는_버
 
 @pytest.mark.parametrize('stop, name, said', [
     ('person', '작업 취소', '담당자가 실행을 취소했습니다.'),
-    ('flow', '실행 멈춤', '처리 흐름이 이 단계를 닫아 실행을 멈췄습니다 — 조치 전 해소 — 사건 조치 전 자연 회복, 조치 전 종료'),
+    ('flow', '실행 멈춤', '처리 흐름이 이 단계를 닫아 실행을 멈췄습니다 — 까닭은 이 처리 건의 처리 기록에 있습니다.'),
 ], ids=['사람이 취소 요청', '처리 흐름이 닫음'])
 def test_실행_도중_멈추면_누가_왜_멈췄는지를_작업_행대로_적는다(course, worker, stop, name, said):
     """재시작 확인(2026-11-01): 경보가 승인 전에 풀려 처리 흐름이 AI 단계를 닫았는데 「담당자가 실행을 취소했습니다」로 남았다 — 사람이 한 것처럼 읽혔다."""
@@ -182,16 +182,23 @@ def test_실행_도중_멈추면_누가_왜_멈췄는지를_작업_행대로_적
             w = task_of(course.rt, inst['proc_inst_id'], DRAFT)
             if stop == 'person':
                 course.rt.cancel_agent_task(w['id'], 'user:kim-op', '다시 하겠습니다')
-            else:                    # engine.finish 가 처리 건을 닫으며 남기는 그대로(행 끝 + 까닭 log)
-                with psycopg.connect(course.dsn) as db:
-                    db.execute("UPDATE todolist SET status='CANCELLED', end_date=now(), "
-                               "log=coalesce(log,'')||'cancelled: 조치 전 해소 — 사건 조치 전 자연 회복, 조치 전 종료; ' WHERE id=%s", (w['id'],))
+            else:                    # 처리 흐름이 진행 중인 단계를 닫는 실제 함수(engine.abort_to — 열린 행을 모두 까닭과 함께 끝낸다)
+                from datetime import datetime, timezone
+                from procsvc import engine
+                rt = course.rt
+                live = rt.repo.get_instance(inst['proc_inst_id'])
+                rows = rt.repo.list_workitems(inst['proc_inst_id'], None, None, None, None, rt.tenant_id)
+                adv = engine.abort_to(rt.definition_for(live), live, rows, 'task:sender', 'cancelled outside', datetime.now(timezone.utc))
+                for row in adv.updated:
+                    rt.repo.update_workitem(row)
+                rt.repo.insert_workitems(adv.created)
+                rt.repo.update_instance(live)
     inst = start_handover(course.rt)
     worker('live', RecordedCli(run, after=stopped)).poll_once()
     task = task_of(course.rt, inst['proc_inst_id'], DRAFT)
     said_all = [(e['data']['name'], e['data']['goal']) for e in events_of(course.rt, task['id'], 'task_cancelled')]
     assert said_all[-1] == (name, said), said_all                       # 사람 취소는 process 의 「실행 취소 요청」 뒤에 워커 문장이 온다
-    assert stop == 'person' or all('담당자' not in goal for _, goal in said_all), said_all
+    assert stop == 'person' or all('담당자' not in goal and 'cancelled' not in goal for _, goal in said_all), said_all   # 내부 글을 옮기지 않는다
 
 
 # ---------------------------------------------------------------- 키 없는 PC(재생)

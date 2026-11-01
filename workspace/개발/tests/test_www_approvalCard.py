@@ -29,3 +29,16 @@ def test_진_안의_이유는_승인_카드와_처리_기록이_같은_함수로
     rec = {'id': 'a', 'scoreParts': {'delivery': 0, 'forecast': 0}}
     got = run(FILES, "out([hydApprove.partDiff(DATA.o, DATA.rec, []), hydApprove.partDiff(DATA.o, DATA.rec, [], { numbers: true })])", {'o': o, 'rec': rec})
     assert got == ['납기에서 뒤짐 · 예측에서 앞섬', '납기 -0.67에서 뒤짐 · 예측 +0.26에서 앞섬']
+
+
+def test_판단_엔진이_고른_1순위는_AI_추천이_아니라_판단_엔진_1순위와_규칙_문장으로_말한다():
+    """J4 D1(2026-11-01): 순위는 판단 엔진(DMN 결정표 + 순위 식)이 결정론으로 계산하는데 화면이 「AI 에이전트 추천」 · 「에이전트 설명 전문」이라
+    불렀다. 선례는 미리 넣은 예시 고정이라 실제 승인 이력처럼 읽히지 않게 표시한다(독립 검증 2026-11-02)."""
+    opt = {'id': 'skill:sop-cool-11', 'name': '팬 최대 운전', 'feasible': True, 'rank': 1, 'actions': [],
+           'precedent': {'n': 2, 'share': 0.5, 'reasons': []}}
+    d = {'id': 'D-1', 'recommended': 'skill:sop-cool-11', 'options': [opt], 'evaluation_mode': 'execution', 'execution_checked': True,
+         'explanation': '1순위 팬 최대 운전.'}
+    got = run(FILES, r"out(hydApprove.html(DATA, null).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' '))", d)
+    assert '판단 엔진 1순위' in got and '판단 엔진 설명 전문 (규칙 문장)' in got, got
+    assert 'AI 에이전트 추천' not in got and '에이전트 설명 전문' not in got.replace('판단 엔진 설명 전문', ''), got
+    assert '과거 같은 선택 2건(미리 넣은 예시만 반영(교육용 고정))' in got, got
