@@ -302,12 +302,13 @@ def on_gateway_rejected(inc: Incident, cmd_id: str, check: str, text: str, fx: E
     return True
 
 
-def active_trip(asset: str, incidents) -> str | None:
-    """그 설비가 지금 보호 정지 중이면 그 사유. 보호 정지는 감지기가 따로 경보(근거 {"trip": 사유})를 올리고 PLC 가 TRIP 을 벗어날 때 같은
-    경보를 해제한다(detector cep.trip_alert) — 그 경보의 사건이 아직 해제되지 않았으면 보호 정지 중이다."""
+def active_trip(asset: str, incidents, since: str | None = None) -> str | None:
+    """그 설비가 보호 정지 중이거나, since(이 사건이 열린 시각) 뒤에 보호 정지가 있었으면 그 사유. 보호 정지는 감지기가 따로 경보(근거
+    {"trip": 사유})를 올리고 PLC 가 TRIP 을 벗어날 때 같은 경보를 해제한다(detector cep.trip_alert). 사람이 보호 정지를 먼저 풀고 냉각 경보가
+    나중에 풀려도 그 사이 설비가 멈춰 식은 값이다 — 회복이 아니다(독립 검증 2026-11-02)."""
     for other in incidents:
         evidence = ((other.card or {}).get("alert") or {}).get("evidence") or {}
-        if other.asset == asset and not other.cleared and evidence.get("trip"):
+        if other.asset == asset and evidence.get("trip") and (not other.cleared or (since is not None and other.created >= since)):
             return str(evidence["trip"])
     return None
 

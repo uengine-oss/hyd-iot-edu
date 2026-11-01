@@ -23,7 +23,6 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-import re
 import time
 import uuid
 from dataclasses import asdict, replace
@@ -125,16 +124,16 @@ class Runner:
                 self._event(row, job_id, "task_cancelled", {"name": "실행 중단", "goal": "응답이 끊긴 사이 다른 실행기가 이 작업을 이어받았습니다."}, crew_type="agent")
             else:
                 # 누가 멈췄는지는 작업 행이 말한다 — 사람의 취소 요청은 행이 진행 중인 채 draft_status CANCELLED(instances.cancel_agent_task),
-                # 처리 흐름이 닫은 것(경보 해제 · 처리 건 끝 등)은 행 자체가 끝나고 log 에 그 까닭(engine.finish 「cancelled: …;」)이 남는다
+                # 처리 흐름이 닫은 것(경보 해제 · 처리 건 끝 · 경계 타이머 등)은 행 자체가 끝난다. 까닭은 처리 흐름이 처리 기록에 학생 말로 남기므로
+                # 여기서 행의 log 글(내부 id 가 섞일 수 있다 — engine 「… completed first」)을 해석해 옮기지 않는다(독립 검증 2026-11-02)
                 fresh = self.repo.get_workitem(row["id"]) or {}
                 if fresh.get("status") == "IN_PROGRESS":
                     log.info("%s %s cancelled by a person", row.get("proc_inst_id"), row.get("activity_id"))
                     self._event(row, job_id, "task_cancelled", {"name": "작업 취소", "goal": "담당자가 실행을 취소했습니다."}, crew_type="agent")
                 else:
-                    why = re.findall(r"cancelled: ([^;]+);", str(fresh.get("log") or ""))
-                    log.info("%s %s closed by the flow: %s", row.get("proc_inst_id"), row.get("activity_id"), why[-1] if why else fresh.get("status"))
+                    log.info("%s %s closed by the flow (%s)", row.get("proc_inst_id"), row.get("activity_id"), fresh.get("status"))
                     self._event(row, job_id, "task_cancelled", {"name": "실행 멈춤",
-                                "goal": "처리 흐름이 이 단계를 닫아 실행을 멈췄습니다" + (f" — {why[-1].strip()}" if why else ".")}, crew_type="agent")
+                                "goal": "처리 흐름이 이 단계를 닫아 실행을 멈췄습니다 — 까닭은 이 처리 건의 처리 기록에 있습니다."}, crew_type="agent")
         except Exception as e:  # noqa: BLE001 — every failure path ends in a DB state, never a lost claim
             ours = self._fail(row, job_id, e)
         finally:

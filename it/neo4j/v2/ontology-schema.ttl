@@ -1290,7 +1290,7 @@ hyd:status a owl:DatatypeProperty ;
   rdfs:label "status" ;
   rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:Incident hyd:DecisionCase hyd:IngestionBatch hyd:ProcessInstance hyd:WorkItem hyd:ManualIngestionBatch ) ] ;
   rdfs:range rdfs:Literal ;
-  rdfs:comment "Incident: 사건 상태기계의 현재 상태 (procsvc/machine.py) 허용값: AWAITING_APPROVAL, CMD_ISSUED, AWAITING_ACK, ACKED, RE_OBSERVING, RESOLVED, WORK_ORDER_CREATED, CLOSED, ESCALATED, REJECTED_BY_OPERATOR, RESOLVED_WITHOUT_ACTION / DecisionCase: 판단의 상태 (procsvc/decisions.py) 허용값: PENDING_APPROVAL, APPROVED, REJECTED, EXECUTED, PARTIAL / IngestionBatch: 허용값: ACTIVE, CLEARED / ProcessInstance: 허용값: NEW, RUNNING, COMPLETED, CANCELLED / WorkItem: 허용값: NEW, TODO, IN_PROGRESS, SUBMITTED, PENDING, DONE, CANCELLED"@ko .
+  rdfs:comment "Incident: 사건 상태기계의 현재 상태 (procsvc/machine.py) 허용값: AWAITING_APPROVAL, CMD_ISSUED, AWAITING_ACK, ACKED, RE_OBSERVING, RESOLVED, WORK_ORDER_CREATED, CLOSED, ESCALATED, REJECTED_BY_OPERATOR, RESOLVED_WITHOUT_ACTION / DecisionCase: 판단의 상태 (procsvc/decisions.py) 허용값: PENDING_APPROVAL, APPROVED, REJECTED, CLOSED_UNAPPROVED, EXECUTED, PARTIAL / IngestionBatch: 허용값: ACTIVE, CLEARED / ProcessInstance: 허용값: NEW, RUNNING, COMPLETED, CANCELLED / WorkItem: 허용값: NEW, TODO, IN_PROGRESS, SUBMITTED, PENDING, DONE, CANCELLED"@ko .
 hyd:supersedes_id a owl:DatatypeProperty ;
   rdfs:label "supersedes_id" ;
   rdfs:domain hyd:WorkItem ;

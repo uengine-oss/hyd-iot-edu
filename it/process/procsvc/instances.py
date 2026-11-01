@@ -133,7 +133,8 @@ class Hooks:
     # reject_decision(판단, 누가, 사유)은 커밋 뒤 판단 원문을 REJECTED 로 남긴다
     check_rejection: Callable[[str, str], None] = _hook('check_rejection')
     reject_decision: Callable[[str, str, str], None] = _hook('reject_decision')
-    close_decision: Callable[[str, str], None] = _hook('close_decision')   # (판단, 처리 건이 끝난 곳) — 승인 없이 끝난 처리 건의 판단을 끝낸다
+    close_decision: Callable[[str, str], None] = _hook('close_decision')
+    pending_decisions: Callable[[], list] = _hook('pending_decisions')     # () → [(판단 id, 그 판단을 낸 처리 건 id)] — 승인 대기 판단만   # (판단, 처리 건이 끝난 곳) — 승인 없이 끝난 처리 건의 판단을 끝낸다
     deliver_approval: Callable[[dict], list[dict]] | None = None
     approval_effects: Callable | None = None  # authoritative read only; absent means unknown
     rework_effects: Callable | None = None
@@ -763,6 +764,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         serviced = self.reconcile_services(now)
         aborted = self.reconcile_terminal_incidents(now)
         settled = self.reconcile_open_incidents(now)
+        self.reconcile_open_decisions()
         self.reconcile_projections(now=now)
         return delivered+len(claimed)+serviced+aborted+settled
 
@@ -1695,6 +1697,17 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
             elif created and (now - parse_iso(created)).total_seconds() > ORPHAN_INCIDENT_S:
                 log.warning('incident %s has no process instance after %ss — escalated', inc_id, ORPHAN_INCIDENT_S)
                 changed += bool(self.hooks.process_ended(inc_id, '처리 건이 열리지 못함'))
+        return changed
+
+    def reconcile_open_decisions(self) -> int:
+        """처리 건은 끝났는데 승인 대기로 남은 판단을 끝낸다. 처리 건이 끝나는 자리마다 커밋 뒤에 바로 하고(_close_open_decision), 이 정리는
+        그것이 끊겼을 때(그 사이 process 다시 켜짐 · 저장소 실패)를 같은 규칙으로 다시 한다(독립 검증 2026-11-02). 돌려줌 = 끝낸 판단 수."""
+        changed = 0
+        for did, pid in self.hooks.pending_decisions():
+            inst = self.repo.get_instance(pid) if pid else None
+            if inst and inst.get('status') != 'RUNNING' and engine.variables(inst).get('decision_id') == did:
+                self._isolated(pid, 'decision settle', self.hooks.close_decision, did, self._end_label(inst))
+                changed += 1
         return changed
 
     def _settle_incident(self, proc_inst_id: str) -> bool:

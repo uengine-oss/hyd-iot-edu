@@ -150,8 +150,7 @@
         title: esc(serverLabel(s.name)), chips: statusChip(s.name) + UI.chipText(T[s.transport] || '설정 오류', 'neutral') + originChip(s),
         value: n != null ? `<span class="kv">도구 <b class="num">${n}</b><small>개</small></span>` : '',
         sub, body: `<p class="kv-line">${who}${tasks ? ` · 이 서버로 도는 단계 <b>${tasks}</b>개` : ''}</p>` +
-          // 고를 수 있음 = 마지막 연결 검사 통과 기록(서버 게이트), 위 상태 = 지금 다시 잰 것 — 둘이 갈리면 지금 붙여도 된다고 읽히지 않게 함께 말한다
-          `<p class="kv-line">${s.selectable && r.status === 'failed' ? `<span class="muted">지난 연결 검사는 통과했지만 지금은 연결되지 않습니다(${esc(KIND[r.error_kind] || '연결 검사 실패')}) — 서버를 켠 뒤 다시 읽으세요</span>`
+          `<p class="kv-line">${stampGap(s, r) ? `<span class="muted">${esc(stampGap(s, r))}</span>`
             : s.selectable ? '에이전트 도구로 고를 수 있음' : `<span class="muted">${esc(s.reason || '에이전트 도구로 고를 수 없음')}</span>`}</p>`,
         cls: 'clickable mcp-card' + (s.name === S.sel ? ' sel' : '') + (s.config_error || r.status === 'failed' ? ' failed' : ''),
         attrs: `data-name="${esc(s.name)}" tabindex="0" role="button" aria-pressed="${s.name === S.sel}"`,
@@ -191,7 +190,7 @@
       `<div class="card-actions"><button class="btn small" id="mcpProbe" ${r.loading || s.config_error ? 'disabled' : ''}>연결 검사</button>` +
       (s.editable ? `<button class="btn small" id="mcpEdit"${reg()}>고치기</button><button class="btn small" id="mcpDelete">지우기</button>` : '') +
       `</div></header>` +
-      status + gateLine(s) +
+      status + gateLine(s, r) +
       `<p class="kv-line">쓰는 에이전트: ${agents}</p><p class="kv-line">이 서버로 도는 단계: ${tasks}</p>` +
       UI.fold('설정 보기 (비밀값은 ******** 로 가림)', `<dl class="mcp-kv">${settings.map(([k, v]) => `<dt>${esc(k)}</dt><dd><code>${esc(v)}</code></dd>`).join('')}</dl>` +
         `<p class="field-hint">${s.editable ? '고치기는 연결 검사를 통과해야 저장됩니다.' : '기준(기본 제공) 서버는 고치거나 지울 수 없습니다 — 새 이름으로 등록해 쓰세요.'}</p>`) +
@@ -337,7 +336,16 @@
   }
 
   // ---------------------------------------------------------------- 등록 · 고치기 · 지우기 · 연결 검사 · 되돌리기
-  function gateLine(s) {
+  // 고를 수 있음 = 마지막 연결 검사 통과 기록(서버 게이트), 지금 상태 = 화면을 열 때 다시 잰 것 — 둘이 갈리면 지금 붙여도 된다고 읽히지 않게
+  // 그 사실을 말한다(카드 · 상세가 이 한 문장을 쓴다, 2026-11-01 메뉴 눈 확인 · 11-02 독립 검증)
+  function stampGap(s, r) {
+    return s.selectable && r && r.status === 'failed'
+      ? `지난 연결 검사는 통과했지만 지금은 연결되지 않습니다(${KIND[r.error_kind] || '연결 검사 실패'}) — 서버를 켠 뒤 다시 읽으세요` : '';
+  }
+
+  function gateLine(s, r) {
+    const gap = stampGap(s, r);
+    if (gap) return `<p class="kv-line">${UI.chipText('지금 연결 안 됨', 'warning')} ${esc(gap)}</p>`;
     const c = s.check || {};
     const when = c.checked_at ? ` · ${esc(UI.dateTime(c.checked_at))}` : '';
     if (s.selectable && s.origin === 'seed') return `<p class="kv-line">${UI.chipText('에이전트 도구로 고를 수 있음', 'success')} 기준 서버 — 기본 에이전트도 이 서버를 씁니다</p>`;

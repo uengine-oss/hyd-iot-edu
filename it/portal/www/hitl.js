@@ -607,7 +607,7 @@
         const created = await postJ(extractionUrl, { request_id: state.request_id });
         sessionStorage.setItem(extractionKey, JSON.stringify({ ...state, instance: created.instance }));
         await loadExtractions();
-        if (H.preview === r) $('#manualAgentStatus').textContent = '추출 요청을 접수했습니다. 진행 · 결과 확인을 누르세요.';
+        if (H.preview === r) $('#manualAgentStatus').textContent = created.cache?.origin ? '제공 문서라 강사가 검토 · 서명한 추출본을 냅니다(AI를 부르지 않습니다). 진행 · 결과 확인을 누르세요.' : '추출 요청을 접수했습니다. 진행 · 결과 확인을 누르세요.';
       } catch (e) { if (H.preview === r) $('#manualAgentStatus').textContent = '접수 확인 실패: ' + e.message + ' 같은 요청으로 다시 확인할 수 있습니다.'; }
       finally { if (H.preview === r) button.disabled = false; }
     });

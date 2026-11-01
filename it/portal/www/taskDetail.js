@@ -129,8 +129,9 @@
     const status = e.status || (e.passed === true ? 'PASS' : e.passed === false ? 'FAIL' : 'UNKNOWN');
     const tone = status === 'PASS' ? 'success' : status === 'FAIL' ? 'neutral' : 'warning';
     const label = status === 'PASS' ? UI.t('inc.pass') : status === 'FAIL' ? UI.t('inc.fail') : UI.t('inc.unknown');
-    const rule = e.expect && e.threshold != null ? ` ${hydWords.sym(e.expect)} ${num(e.threshold)}` : '';
-    return `<div class="td-cond">${UI.chipText(label, tone)} ${esc(UI.idText(e.name || e.id || ''))}${esc(rule)} <span class="muted">· ${esc(UI.t('inc.observed'))} ${esc(num(e.value))}${e.weight != null ? ` · 가중치 ${esc(num(e.weight))}` : ''}</span>${status === 'UNKNOWN' && (e.error || e.reason) ? ` <span class="muted">${esc(UI.idText(e.error || e.reason))}</span>` : ''}</div>`;
+    const unit = hydWords.unit(e.tag) ? ' ' + hydWords.unit(e.tag) : '';     // 값 단위 사전 한 곳(plainWords.js) — 사건 상세(app.js)와 같다
+    const rule = e.expect && e.threshold != null ? ` ${hydWords.sym(e.expect)} ${num(e.threshold)}${unit}` : '';
+    return `<div class="td-cond">${UI.chipText(label, tone)} ${esc(UI.idText(e.name || e.id || ''))}${esc(rule)} <span class="muted">· ${esc(UI.t('inc.observed'))} ${esc(num(e.value))}${esc(unit)}${e.weight != null ? ` · 가중치 ${esc(num(e.weight))}` : ''}</span>${status === 'UNKNOWN' && (e.error || e.reason) ? ` <span class="muted">${esc(UI.idText(e.error || e.reason))}</span>` : ''}</div>`;
   }
   // 원인 점수 · 조건 표 (guide_card.causes — 내장 판단 경로는 agentsvc card.rank_causes 의 prior · score · evidence 그대로)
   function causesTable(causes, top) {
@@ -675,6 +676,6 @@
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', observe); else observe();
   }
 
-  window.hydTaskDetail = { open, openActivity, close, mount, onEvent, render, renderNow, nowHtml, refresh, T };
+  window.hydTaskDetail = { open, openActivity, close, mount, onEvent, render, renderNow, nowHtml, valueHtml, refresh, T };
   window.addEventListener('hyd-tool-payload',()=>{if(T.host?.isConnected)render();});
 })();

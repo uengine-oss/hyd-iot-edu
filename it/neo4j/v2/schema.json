@@ -1694,6 +1694,7 @@
             "PENDING_APPROVAL",
             "APPROVED",
             "REJECTED",
+            "CLOSED_UNAPPROVED",
             "EXECUTED",
             "PARTIAL"
           ]

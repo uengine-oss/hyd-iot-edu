@@ -344,7 +344,7 @@ def _apply_source_event(receipt):
     # fencing alone cannot prevent a previously running handler from finishing.
     with rt._transition(inst['proc_inst_id']) if inst else nullcontext():
         if receipt['kind']=='CLEAR' and not inc.cleared:
-            machine.on_alert(inc,value,Fx(inc),trip=machine.active_trip(inc.asset,list(incidents.values())))
+            machine.on_alert(inc,value,Fx(inc),trip=machine.active_trip(inc.asset,list(incidents.values()),since=inc.created))
         elif receipt['kind']=='ACK':
             machine.on_status(inc,value,now(),Fx(inc))
         elif receipt['kind']=='REJECT':      # G3b-9: 명령 관문이 이 명령을 설비로 넘기지 않음 — 30초 응답 없음을 기다리지 않고 그 까닭으로

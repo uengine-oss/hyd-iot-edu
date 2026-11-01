@@ -571,6 +571,8 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
                            preview_decision=delivery.preview, approve_review=delivery.prepare_review,
                            validate_approval=delivery.validate, deliver_approval=delivery.deliver,
                            check_rejection=delivery.check_rejection, reject_decision=delivery.reject, close_decision=delivery.close_unapproved,
+                           pending_decisions=lambda: [(d['id'], ((d.get('origin') or {}).get('process_scope') or {}).get('instance'))
+                                                      for d in list(ctx.book.values()) if d.get('state') == 'PENDING_APPROVAL'],
                            approval_effects=delivery.effects, rework_effects=lambda inst: collect_rework_effects(ctx, inst),
                            reopen_incident=reopen_incident, reopen_for_recheck=reopen_for_recheck, exec_compensation=ctx.exec_compensation,
                            exec_enterprise=exec_enterprise, record_cypher=ctx.cypher, query_cypher=ctx.cypher,

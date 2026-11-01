@@ -73,7 +73,7 @@
     if (g.length) out.push(`좋아지는 것 ${g.join(' · ')}`);
     const l = (o.losses || []).filter(x => !x.conditional).map(x => e(x.name));
     if (l.length) out.push(`<span class="neg-soft">감수할 것 ${l.join(' · ')}</span>`);
-    if (o.precedent && o.precedent.n) out.push(`과거 같은 선택 ${o.precedent.n}건${o.precedent.reasons && o.precedent.reasons[0] ? ` — ${e(o.precedent.reasons[0])}` : ''}`);
+    if (o.precedent && o.precedent.n) out.push(`과거 같은 선택 ${o.precedent.n}건(${e(UI.t('card.precedentFixed'))})${o.precedent.reasons && o.precedent.reasons[0] ? ` — ${e(o.precedent.reasons[0])}` : ''}`);   // 선례는 미리 넣은 예시 고정(dmn_mcp) — 실제 승인 이력처럼 읽히지 않게
     const warn = [...(o.penalties || []), ...(o.warnings || [])].map(v => e(UI.idText(v.annotation || v.message || v.name || v.rule || '')));
     if (warn.length) out.push(`<span class="neg-soft">주의 ${warn.slice(0, 2).join(' · ')}</span>`);
     return out.slice(0, 4);
