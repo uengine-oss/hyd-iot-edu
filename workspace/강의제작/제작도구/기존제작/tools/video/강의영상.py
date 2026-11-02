@@ -21,6 +21,7 @@ ap.add_argument("out"); ap.add_argument("scripts", nargs="+")
 ap.add_argument("--target", type=float, default=0.0)
 ap.add_argument("--voice", default="nncZBoy1F7bDlybjMjgZ"); ap.add_argument("--model", default="eleven_v4")
 ap.add_argument("--speed", type=float, default=0.80); ap.add_argument("--env", default="")
+ap.add_argument("--audio-ledger", help="이 제작에서 음성을 먼저 생성한 경우 실제 구획별 음성 지출 기록")
 ap.add_argument("--gap", type=float, default=1.6); ap.add_argument("--dry", action="store_true")
 ap.add_argument("--breath", action="store_true", help="쉴 자리를 쉼_저장/ 에서 읽는다")
 ap.add_argument("--natural", action="store_true", help="장 안에는 쉼을 넣지 않고 음성 모델이 읽은 그대로 둔다(장 넘김에만 쉼)")
@@ -54,16 +55,25 @@ def deck_count(pptx):
     with zipfile.ZipFile(pptx) as z: return sum(bool(re.fullmatch(r"ppt/slides/slide\d+\.xml", n)) for n in z.namelist())
 
 
-def slides_text(script):
+def slides_text(script, study_waits=None):
     """대본의 장 구획을 (첫 장, 끝 장, 낭독할 글) 목록으로 돌려준다."""
+    def spoken(block):
+        t = re.sub(r"^---\s*$|^>.*$|^\|.*$", "", block, flags=re.M).replace("**", "")
+        t = re.sub(r"[A-Za-z][A-Za-z0-9 _\-/\.]*\(([가-힣 ]+)\)", r"\1", t)
+        t = re.sub(r"\n{3,}", "\n\n", t).strip()
+        return t
     parts = re.split(r"^## \[SLIDE ([0-9~]+)\].*$", Path(script).read_text(encoding="utf-8"), flags=re.M)
     out = []
     for i in range(1, len(parts), 2):
         first = int(parts[i].split("~")[0]); last = int(parts[i].split("~")[-1])
         t = re.split(r"^#{1,2} ", parts[i + 1], flags=re.M)[0]
-        t = re.sub(r"^---\s*$|^>.*$|^\|.*$", "", t, flags=re.M).replace("**", "")
-        t = re.sub(r"[A-Za-z][A-Za-z0-9 _\-/\.]*\(([가-힣 ]+)\)", r"\1", t)
-        t = re.sub(r"\n{3,}", "\n\n", t).strip()
+        if study_waits is not None:
+            for marker in re.finditer(r"^> \[대기 (\d+)초\]", t, flags=re.M):
+                prefix = spoken(t[:marker.start()])
+                if not prefix.endswith((".", "?", "!")):
+                    sys.exit(f"{script} SLIDE {first}: 학습 대기는 완결된 문장 뒤에 지정한다")
+                study_waits.setdefault(first, []).append((len("".join(prefix.split())), int(marker[1])))
+        t = spoken(t)
         if t: out.append((first, last, t))
     if not out: sys.exit(f"{script}: `## [SLIDE NN]` 구획이 없다")
     return out
@@ -91,9 +101,9 @@ def tts(text, prev, nxt):
 def dur(p): return float(run("ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(p)).strip())
 
 
-def check(script):
+def check(script, study_waits=None):
     """파일 하나의 장 구획, 덱, 영상 이름을 정하고 장 번호와 첫 문장을 점검한다. 문제를 글로 돌려준다."""
-    S = slides_text(script); pptx = deck_of(script); n = deck_count(pptx); probs = []
+    S = slides_text(script, study_waits); pptx = deck_of(script); n = deck_count(pptx); probs = []
     nums = [x for f, l, _ in S for x in range(f, l + 1)]
     if max(nums) > n: probs.append(f"SLIDE {max(nums)}가 덱 {pptx.name}의 {n}장을 넘는다")
     if nums != sorted(nums) or len(set(nums)) != len(nums): probs.append("SLIDE 번호가 겹치거나 거꾸로 간다")
@@ -103,7 +113,7 @@ def check(script):
     return S, pptx, name, probs
 
 
-def make(S, pptx, name):
+def make(S, pptx, name, study_waits=None):
 
     # 1) 슬라이드 그림
     img_dir = HERE / "슬라이드" / pptx.stem; img_dir.mkdir(parents=True, exist_ok=True)
@@ -120,6 +130,16 @@ def make(S, pptx, name):
     for i, (f, l, t) in enumerate(S):
         mp3, al, cost = tts(t, S[i - 1][2] if i else "", S[i + 1][2] if i + 1 < len(S) else "")
         spent += cost; rows.append({"first": f, "last": l, "text": t, "mp3": mp3, "al": al, "d": dur(mp3)})
+    if a.audio_ledger:
+        ledger = json.loads(Path(a.audio_ledger).read_text(encoding="utf-8"))
+        if spent or ledger["voice"] != a.voice:
+            sys.exit("캐시 전용 합성 또는 음성 생성 기록의 목소리가 일치하지 않는다")
+        for r in rows:
+            item = ledger["completed"][r["mp3"].stem]
+            if item["sha"] != hashlib.sha256(r["mp3"].read_bytes()).hexdigest():
+                sys.exit("음성 생성 기록과 현재 MP3 해시가 서로 다르다")
+            r["credit"] = int(item["credits"])
+            spent += r["credit"]
     speech = sum(r["d"] for r in rows)
 
     # 3) 쉼 넣기: 문장 끝, 물음 뒤, 문단 사이, 장이 넘어가는 자리에 말 없는 시간을 넣는다.
@@ -130,17 +150,29 @@ def make(S, pptx, name):
     def decimal(ch, i):
         """1.1처럼 숫자 사이의 점은 문장 끝이 아니다. 여기서 끊으면 숫자 가운데에 쉼과 자막 줄바꿈이 들어간다."""
         return ch[i] == "." and 0 < i < len(ch) - 1 and ch[i - 1].isdigit() and ch[i + 1].isdigit()
+    def sentence_mark(ch, i):
+        """인용 뒤 조사·인용 서술이 이어지면 한 문장, 독립 문장은 닫는 따옴표까지다."""
+        mark = i - 1 if ch[i] in "’”』」" and i else i
+        if ch[mark] not in ".?!" or decimal(ch, mark):
+            return ""
+        if mark == i:
+            return "" if i+1 < len(ch) and ch[i+1] in "’”』」" else ch[mark]
+        tail = "".join(ch[i+1:i+12])
+        if tail and (not tail[0].isspace() or re.match(r"\s+(?:하고|라고|하며|라며|라는|라는지)(?:\s|$)",tail)):
+            return ""
+        return ch[mark]
     def cuts(r):
         """((앞 문장 끝 글자의 끝, 다음 글자의 시작), 종류, 그 자리 앞의 문장) 목록과 마지막 문장. 넣을 자리는 build가 소리를 보고 정한다."""
         ch, st, en = r["al"].get("characters") or [], r["al"].get("character_start_times_seconds") or [], r["al"].get("character_end_times_seconds") or []
         out, i, b = [], 0, 0
         while i < len(ch):
-            if ch[i] in ".?!" and not decimal(ch, i):
+            mark = sentence_mark(ch, i)
+            if mark:
                 j = i + 1; para = False
                 while j < len(ch) and ch[j] in " \n\"'」)":
                     para = para or ch[j] == "\n"; j += 1
                 if j < len(ch):
-                    out.append(((en[i], st[j]), "para" if para else ("q" if ch[i] == "?" else "s"), "".join(ch[b:j]).strip())); b = j
+                    out.append(((en[i], st[j]), "para" if para else ("q" if mark == "?" else "s"), "".join(ch[b:j]).strip())); b = j
                 i = j
             else: i += 1
         return out, "".join(ch[b:]).strip()
@@ -175,8 +207,24 @@ def make(S, pptx, name):
     def lv(k): return k[0] if isinstance(k, tuple) else None
     for r in rows:
         c, tail = cuts(r); r["cuts"] = [(t, k) for t, k, _ in c]; r["sents"] = [x for _, _, x in c] + [tail]
-    if a.natural:
-        for r in rows: r["cuts"] = []
+    for r in rows:
+        waits = dict((study_waits or {}).get(r["first"], []))
+        if waits:
+            if "".join(r["al"]["characters"]) != r["text"]:
+                sys.exit(f"{name} SLIDE {r['first']}: 대기 위치와 음성 글자 불일치")
+            offset = 0
+            r["study_at"] = {}
+            for i, sentence in enumerate(r["sents"]):
+                offset += len("".join(sentence.split()))
+                if offset in waits:
+                    if i == len(r["cuts"]):
+                        r["study_tail"] = waits.pop(offset)
+                    else:
+                        r["study_at"][r["cuts"][i][0]] = waits.pop(offset)
+            if waits:
+                sys.exit(f"{name} SLIDE {r['first']}: 음성에서 학습 대기 문장 경계를 찾지 못했다")
+        if a.natural:
+            r["cuts"] = [(t, 0) for t, _ in r["cuts"] if t in r.get("study_at", {})]
     if a.breath and not a.natural:
         got = [breath(r["sents"]) for r in rows]
         miss = [r["first"] for r, v in zip(rows, got) if v is None]
@@ -185,7 +233,8 @@ def make(S, pptx, name):
         for r, v in zip(rows, got): r["cuts"] = [(t, (lv, k0)) for (t, k0), lv in zip(r["cuts"], v)]
     n = len(rows)
     base = sum(plen(k) for r in rows for _, k in r["cuts"]) + a.gap * n
-    scale = 1.0 if a.target <= 0 else min(2.2, max(0.3, (a.target - speech) / base))
+    fixed_wait = sum(sum(r.get("study_at", {}).values()) + r.get("study_tail", 0) for r in rows)
+    scale = 1.0 if a.target <= 0 else min(2.2, max(0.3, (a.target - speech - fixed_wait) / base))
     tempo = 1.0
     def build(r, path):
         wav = OUT / "tmp.wav"
@@ -205,12 +254,20 @@ def make(S, pptx, name):
                 sys.exit(f"{name} SLIDE {r['first']}: {win[0]:.2f}~{win[1]:.2f}초 문장 사이에 조용한 곳이 없다(가장 작은 세기 {peak}). 쉼을 넣으면 말이 잘린다. 이 장의 음성이나 쉼 자리를 확인한다")
             return (best[0] + best[-1]) / 2 + 0.005
         # 0초 쉼은 소리를 끊지 않으므로 조용한 곳을 찾지 않는다(쉼 자리 0이 말이 붙은 문장 사이를 잇는 방법이다)
-        r["cuts"] = [((t[0] if plen(k) * scale <= 0 else quiet(t)), k) for t, k in r["cuts"]]
+        extra = [r.get("study_at", {}).get(t, 0) for t, _ in r["cuts"]]
+        r["cuts"] = [((quiet(t) if plen(k) * scale > 0 or wait else t[0]), k) for (t, k), wait in zip(r["cuts"], extra)]
         out, pos, shift, marks = array.array("h"), 0, 0.0, []
-        for t, k in r["cuts"]:
+        r["study_intervals"] = []
+        for (t, k), wait in zip(r["cuts"], extra):
             cut = min(len(data), int(t * fr)); out.extend(data[pos:cut]); pos = cut
-            add = plen(k) * scale; out.extend(array.array("h", [0]) * int(add * fr)); shift += add; marks.append((t, shift))
-        out.extend(data[pos:]); out.extend(array.array("h", [0]) * int(a.gap * scale * fr))
+            if wait:
+                r["study_intervals"].append((len(out) / fr, wait))
+            add = plen(k) * scale + wait; out.extend(array.array("h", [0]) * int(add * fr)); shift += add; marks.append((t, shift))
+        out.extend(data[pos:])
+        if r.get("study_tail"):
+            r["study_intervals"].append((len(out) / fr, r["study_tail"]))
+            out.extend(array.array("h", [0]) * (r["study_tail"] * fr))
+        out.extend(array.array("h", [0]) * int(a.gap * scale * fr))
         with wave.open(str(path), "w") as w: w.setnchannels(1); w.setsampwidth(2); w.setframerate(fr); w.writeframes(out.tobytes())
         wav.unlink(); return len(out) / fr, marks
 
@@ -238,8 +295,12 @@ def make(S, pptx, name):
         for j, (c, s0, e0) in enumerate(zip(ch, st, en)):
             if b0 is None and c.strip(): b0 = s0
             buf += c
-            if c in ".?!\n" and buf.strip() and not decimal(ch, j):
-                k += 1; srt.append(f"{k}\n{ts(clock + sh(b0))} --> {ts(clock + sh(b0) + (e0 - b0))}\n{buf.strip()}\n"); buf, b0 = "", None
+            if (c == "\n" or sentence_mark(ch, j)) and buf.strip():
+                start = sh(b0); end = start + (e0 - b0)
+                for wait_start, seconds in r["study_intervals"]:
+                    if start < wait_start < end:
+                        end = wait_start
+                k += 1; srt.append(f"{k}\n{ts(clock + start)} --> {ts(clock + end)}\n{buf.strip()}\n"); buf, b0 = "", None
         r["start"] = clock; clock += dur(seg)   # 인코딩된 구획은 계산한 길이 d보다 조금 길다. 그 차이가 쌓여 자막과 시간표가 영상보다 앞서지 않게 실제 길이로 센다
     gap = a.gap * scale
     (OUT / "list.txt").write_text("".join(f"file '{s.name}'\n" for s in segs))
@@ -254,6 +315,14 @@ def make(S, pptx, name):
             f"- 말한 시간 합 {speech:.1f}초 · 넣은 쉼: 문장 {PS*scale:.2f}초 · 물음 {PQ*scale:.2f}초 · 문단 {PP*scale:.2f}초 · 장 넘김 {gap:.2f}초 (기본값의 {scale:.2f}배)"),
            f"- 영상 길이 {dur(OUT / (name + '.mp4')):.1f}초 · 목표 {a.target:.0f}초", "", "| 장 | 시작 | 음성(초) |", "|---|---|---|"]
     rep += [f"| {r['first']}{'~'+str(r['last']) if r['last']!=r['first'] else ''} | {int(r['start']//60)}:{int(r['start']%60):02d}" + (f" (SLIDE {r['last']}부터 {int(r['sw']//60)}:{r['sw']%60:04.1f})" if 'sw' in r else '') + f" | {r['d2']:.1f} |" for r in rows]
+    if a.audio_ledger:
+        rep += ["", "| 음성 구획 | 생성 크레딧 |", "|---|---:|"]
+        rep += [f"| {r['first']}{'~'+str(r['last']) if r['last']!=r['first'] else ''} | {r['credit']} |" for r in rows]
+    if fixed_wait:
+        rep += ["", f"학습 대기 합계 {fixed_wait}초", "", "| 장 | 대기 시작 | 대기 끝 | 길이 |", "|---|---|---|---|"]
+        for r in rows:
+            for start, seconds in r["study_intervals"]:
+                rep.append(f"| {r['first']} | {ts(r['start'] + start)} | {ts(r['start'] + start + seconds)} | {seconds}초 |")
     (SIDE / f"{name}_시간표.md").write_text("\n".join(rep) + "\n", encoding="utf-8")
     print("\n".join(rep[2:6]))
 
@@ -261,10 +330,11 @@ def make(S, pptx, name):
 OUT = Path(a.out)
 jobs, total, bad = [], 0, 0
 for sc in a.scripts:
-    S, pptx, name, probs = check(sc)
+    study_waits = {}
+    S, pptx, name, probs = check(sc, study_waits)
     chars = sum(len(t) for _, _, t in S); total += chars; bad += bool(probs)
     print(f"{name} · SLIDE {S[0][0]}~{S[-1][1]} · 구획 {len(S)}개 · {chars}자" + "".join(f"\n  ! {p}" for p in probs))
-    jobs.append((S, pptx, name))
+    jobs.append((S, pptx, name, study_waits))
 print(f"합계 {len(jobs)}편 · {total}자")
 if bad: sys.exit(f"점검에 걸린 파일이 {bad}개 있다. 고친 뒤 다시 돌린다")
 if a.dry: sys.exit()
