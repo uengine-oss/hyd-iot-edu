@@ -9,7 +9,10 @@ import matplotlib.pyplot as plt
 from matplotlib import font_manager
 HERE = Path(__file__).resolve().parent
 for f in ("malgun.ttf", "malgunbd.ttf"):
-    font_manager.fontManager.addfont(str(Path.home() / "Library/Fonts" / f))
+    font_path = Path.home() / "Library/Fonts" / f
+    if font_path.is_file():
+        font_manager.fontManager.addfont(str(font_path))
+font_manager.findfont("Malgun Gothic", fallback_to_default=False)
 plt.rcParams["font.family"] = "Malgun Gothic"
 plt.rcParams["axes.unicode_minus"] = False
 NAVY, SKY, BLUE, PALE, GREY, MUTED = "#13294B", "#5CB8F2", "#1A6FC4", "#E7F3FD", "#D3D9E1", "#5B6B82"

@@ -1,0 +1,182 @@
+{
+  "width_in": 7.9,
+  "height_in": 5.0,
+  "labels": [
+    {
+      "text": " 경보 조건의 기준 55 ℃",
+      "center_x_in": 1.6263636849143288,
+      "center_y_in": 1.858798211608271,
+      "bbox_w_in": 1.6727272727272726,
+      "bbox_h_in": 0.16240357678345949,
+      "font_pt": 11.0,
+      "font_weight": "normal",
+      "color": "#1a6fc4",
+      "rotation_ccw": 0.0
+    },
+    {
+      "text": "기준을 넘음 ",
+      "center_x_in": 4.424902967973189,
+      "center_y_in": 0.2505897845643945,
+      "bbox_w_in": 0.9590909090909091,
+      "bbox_h_in": 0.17882043087121247,
+      "font_pt": 12.0,
+      "font_weight": "normal",
+      "color": "#5b6b82",
+      "rotation_ccw": 0.0
+    },
+    {
+      "text": " 경보 발생",
+      "center_x_in": 5.971235067194159,
+      "center_y_in": 0.2505897845643945,
+      "bbox_w_in": 0.7909090909090909,
+      "bbox_h_in": 0.17882043087121247,
+      "font_pt": 12.0,
+      "font_weight": "bold",
+      "color": "#1a6fc4",
+      "rotation_ccw": 0.0
+    },
+    {
+      "text": "조건이\n이어진 시간",
+      "center_x_in": 5.240114489468661,
+      "center_y_in": 3.9975964232165397,
+      "bbox_w_in": 0.8272727272727273,
+      "bbox_h_in": 0.3248071535669192,
+      "font_pt": 11.0,
+      "font_weight": "bold",
+      "color": "#1a6fc4",
+      "rotation_ccw": 0.0
+    },
+    {
+      "text": "2026-10-10 실제 시각",
+      "center_x_in": 4.1475,
+      "center_y_in": 4.779812899502841,
+      "bbox_w_in": 1.5454545454545454,
+      "bbox_h_in": 0.1624035767834596,
+      "font_pt": 11.0,
+      "font_weight": "normal",
+      "color": "#5b6b82",
+      "rotation_ccw": 0.0
+    },
+    {
+      "text": "11:12:40",
+      "center_x_in": 0.7900000485506925,
+      "center_y_in": 4.566666666666666,
+      "bbox_w_in": 0.5818181818181818,
+      "bbox_h_in": 0.1527777777777778,
+      "font_pt": 11.0,
+      "font_weight": "normal",
+      "color": "#5b6b82",
+      "rotation_ccw": 0.0
+    },
+    {
+      "text": "11:12:50",
+      "center_x_in": 2.468750069358132,
+      "center_y_in": 4.566666666666666,
+      "bbox_w_in": 0.5818181818181818,
+      "bbox_h_in": 0.1527777777777778,
+      "font_pt": 11.0,
+      "font_weight": "normal",
+      "color": "#5b6b82",
+      "rotation_ccw": 0.0
+    },
+    {
+      "text": "11:13:00",
+      "center_x_in": 4.147500020807439,
+      "center_y_in": 4.566666666666666,
+      "bbox_w_in": 0.5818181818181818,
+      "bbox_h_in": 0.1527777777777778,
+      "font_pt": 11.0,
+      "font_weight": "normal",
+      "color": "#5b6b82",
+      "rotation_ccw": 0.0
+    },
+    {
+      "text": "11:13:10",
+      "center_x_in": 5.826250076293945,
+      "center_y_in": 4.566666666666666,
+      "bbox_w_in": 0.5818181818181818,
+      "bbox_h_in": 0.1527777777777778,
+      "font_pt": 11.0,
+      "font_weight": "normal",
+      "color": "#5b6b82",
+      "rotation_ccw": 0.0
+    },
+    {
+      "text": "11:13:20",
+      "center_x_in": 7.505000027743253,
+      "center_y_in": 4.566666666666666,
+      "bbox_w_in": 0.5818181818181818,
+      "bbox_h_in": 0.1527777777777778,
+      "font_pt": 11.0,
+      "font_weight": "normal",
+      "color": "#5b6b82",
+      "rotation_ccw": 0.0
+    },
+    {
+      "text": "유온 TS1 (℃)",
+      "center_x_in": 0.3836067831636679,
+      "center_y_in": 2.4,
+      "bbox_w_in": 0.1756652215514521,
+      "bbox_h_in": 1.018181818181818,
+      "font_pt": 12.5,
+      "font_weight": "normal",
+      "color": "#13294b",
+      "rotation_ccw": 90.0
+    },
+    {
+      "text": "50",
+      "center_x_in": 0.6133585858585859,
+      "center_y_in": 4.015292697482639,
+      "bbox_w_in": 0.17272727272727273,
+      "bbox_h_in": 0.1527777777777778,
+      "font_pt": 11.0,
+      "font_weight": "normal",
+      "color": "#5b6b82",
+      "rotation_ccw": 0.0
+    },
+    {
+      "text": "52",
+      "center_x_in": 0.6133585858585859,
+      "center_y_in": 3.2152926974826386,
+      "bbox_w_in": 0.17272727272727273,
+      "bbox_h_in": 0.15277777777777765,
+      "font_pt": 11.0,
+      "font_weight": "normal",
+      "color": "#5b6b82",
+      "rotation_ccw": 0.0
+    },
+    {
+      "text": "54",
+      "center_x_in": 0.6133585858585859,
+      "center_y_in": 2.4152926974826388,
+      "bbox_w_in": 0.17272727272727273,
+      "bbox_h_in": 0.15277777777777765,
+      "font_pt": 11.0,
+      "font_weight": "normal",
+      "color": "#5b6b82",
+      "rotation_ccw": 0.0
+    },
+    {
+      "text": "56",
+      "center_x_in": 0.6133585858585859,
+      "center_y_in": 1.615292697482639,
+      "bbox_w_in": 0.17272727272727273,
+      "bbox_h_in": 0.15277777777777765,
+      "font_pt": 11.0,
+      "font_weight": "normal",
+      "color": "#5b6b82",
+      "rotation_ccw": 0.0
+    },
+    {
+      "text": "58",
+      "center_x_in": 0.6133585858585859,
+      "center_y_in": 0.8152926974826391,
+      "bbox_w_in": 0.17272727272727273,
+      "bbox_h_in": 0.15277777777777765,
+      "font_pt": 11.0,
+      "font_weight": "normal",
+      "color": "#5b6b82",
+      "rotation_ccw": 0.0
+    }
+  ]
+}
