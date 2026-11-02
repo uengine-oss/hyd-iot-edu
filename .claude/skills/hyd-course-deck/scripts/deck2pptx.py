@@ -67,7 +67,7 @@ COUNTS = {"표지": (0, 0), "목차": (2, 9), "간지": (0, 0),
           "그림": (0, 4), "삽화": (0, 16), "풀이": (2, 6), "구조": (2, 12), "파이프라인": (3, 7), "관계도": (2, 8),
           "코드": (0, 4), "문답": (2, 5)}
 KEYS = {"유형", "메시지", "노트", "요소", "아이콘", "그림", "문장", "기관", "과정", "부제", "번호", "구분",
-        "머리", "영역", "연결", "사이", "코드", "라벨"}
+        "머리", "영역", "연결", "사이", "코드", "라벨", "단"}
 NEED = {"표지": ("기관", "과정"), "강조": ("문장",), "문답": ("문장",), "그림": ("그림",), "삽화": ("그림",), "구조": ("영역",),
         "코드": ("코드",), "관계도": ("연결",)}
 SKILL_DIR = Path(__file__).resolve().parent.parent
@@ -210,6 +210,14 @@ def validate(slides: list[Slide], md_path: Path) -> None:
             elif re.search(r"(다|요|까|음|함)[.?!]\s+\S", msg):
                 errs.append(f"{where} 메시지가 두 문장임(한 문장으로 쓴다): {msg}")
         lo, hi = COUNTS[sl.kind]
+        if "단" in sl.fields:
+            if sl.kind != "표" or sl.fields["단"] != "2":
+                errs.append(f"{where} `단:`은 표에서 `2`만 허용")
+            else:
+                lo, hi = 4, 12
+                heads = [x.strip() for x in sl.fields.get("머리", "").split("|")]
+                if len(heads) != 2 or not all(heads) or sl.icons or any(it.tag for it in sl.items):
+                    errs.append(f"{where} 두 단 표는 머리 두 칸과 라벨·값만 사용(아이콘·상태 칸 없음)")
         if not lo <= len(sl.items) <= hi:
             errs.append(f"{where} {sl.kind} 요소 {len(sl.items)}개 (허용 {lo}~{hi})")
         if sl.kind in ("그림", "삽화"):
@@ -407,9 +415,9 @@ def fit_tail(text: str, size: float, w: float, first_size, face) -> float:
 
 def add_text(sl, x, y, w, h, text, size, color, *, bold=False, align=PP_ALIGN.LEFT,
              anchor=MSO_ANCHOR.TOP, hi_color=SKY_D, name=None, slide_no=0, max_lines=None,
-             space_after=0, first_size=None, first_color=None, face=FONT):
+             space_after=0, first_size=None, first_color=None, face=FONT, shrink_tail=True):
     text = UNIT_GLUE.sub("\\1\u00a0\\2", text)   # 숫자와 단위(55 ℃, 46.2 %)가 두 줄로 갈리지 않게 붙인다
-    if not max_lines or max_lines > 1:
+    if shrink_tail and (not max_lines or max_lines > 1):
         size = fit_tail(text, size, w, first_size, face)
     if name:
         FIT.check(slide_no, name, text, size, w, h, max_lines, first_size, mono=face == MONO)
@@ -768,6 +776,8 @@ def render_compare(sl, s, page):
 
 def render_table(sl, s, page):
     """`라벨 | 값 | 상태` 2~9줄. `머리: A | B | C`를 주면 머리줄을 그린다. 값은 줄 높이만큼 여러 줄."""
+    if s.fields.get("단") == "2":
+        return render_table_columns(sl, s, page)
     top, end = frame(sl, s, page)
     head = [h.strip() for h in s.fields["머리"].split("|")] if s.fields.get("머리") else []
     n = len(s.items)
@@ -805,6 +815,36 @@ def render_table(sl, s, page):
             add_text(sl, MX + c1 + c2, y, c3 - 0.1, rh, it.tag.replace(" / ", "\n"), 12.5,
                      SKY_D if it.strong else MUTED, bold=True, anchor=MSO_ANCHOR.MIDDLE,
                      name=f"줄{i + 1} 상태", slide_no=s.no, max_lines=3)
+
+
+def render_table_columns(sl, s, page):
+    """두 칸 표를 왼쪽 단부터 읽는다. 단마다 최대 여섯 행, 글꼴 축소 없음."""
+    top, end = frame(sl, s, page)
+    heads = [h.strip() for h in s.fields["머리"].split("|")]
+    split = (len(s.items) + 1) // 2
+    gap, hh = 0.16, 0.44
+    width = (CW - gap) / 2
+    label_width = 1.30
+    rh = min(1.0, (end - top - hh) / split)
+    y0 = top + (end - top - hh - rh * split) / 2
+    for col, items in enumerate((s.items[:split], s.items[split:])):
+        x = MX + col * (width + gap)
+        add_box(sl, x, y0, width, hh - 0.06, NAVY, radius=0.12)
+        for hx, hw, text in ((x + 0.15, label_width - 0.15, heads[0]),
+                             (x + label_width, width - label_width - 0.05, heads[1])):
+            add_text(sl, hx, y0, hw, hh - 0.06, text, 13, WHITE, bold=True,
+                     anchor=MSO_ANCHOR.MIDDLE, name="머리", slide_no=s.no, max_lines=1)
+        for i, it in enumerate(items):
+            y = y0 + hh + i * rh
+            number = col * split + i + 1
+            add_box(sl, x, y + 0.035, width, rh - 0.07,
+                    SKY_SOFT if it.strong else PANEL, radius=0.08)
+            add_text(sl, x + 0.15, y, label_width - 0.15, rh, it.plain_title,
+                     14, NAVY, bold=True, anchor=MSO_ANCHOR.MIDDLE,
+                     name=f"줄{number} 라벨", slide_no=s.no, max_lines=2, shrink_tail=False)
+            add_text(sl, x + label_width, y, width - label_width - 0.05, rh,
+                     "\n".join(it.lines), 13, INK, anchor=MSO_ANCHOR.MIDDLE,
+                     name=f"줄{number} 값", slide_no=s.no, shrink_tail=False)
 
 
 def render_steps(sl, s, page):
