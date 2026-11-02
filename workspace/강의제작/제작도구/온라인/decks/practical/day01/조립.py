@@ -37,7 +37,7 @@ def main() -> None:
         if not b.startswith(f'## SLIDE {n:02d} — '):
             raise SystemExit(f'{SRC}: {n}장 머리가 「## SLIDE {n:02d} — 」가 아니다')
         assets = []
-        for rel in re.findall(r'^- 그림: (.+)$', b, re.M):
+        for rel in re.findall(r'^- (?:그림|라벨(?=: .+\.json$)): (.+)$', b, re.M):
             src, dst = SRC.parent / rel.strip(), HERE / rel.strip()
             if not src.exists():
                 raise SystemExit(f'{SRC}: {n}장 그림 없음 {src}')

@@ -72,10 +72,10 @@ def main():
         b = srcs[md][it['n']]
         screen = section(b, '화면 내용')
         def fig(m):
-            p = (md.parent / m.group(1)).resolve()
-            assert p.is_file(), f'{src} {it["n"]}장 그림 없음: {m.group(1)}'
-            return f"- 그림: {os.path.relpath(p, folder)}"
-        screen = re.sub(r'^- 그림: (.+)$', fig, screen, flags=re.M)
+            p = (md.parent / m.group(2)).resolve()
+            assert p.is_file(), f'{src} {it["n"]}장 {m.group(1)} 파일 없음: {p}'
+            return f"- {m.group(1)}: {os.path.relpath(p, folder)}"
+        screen = re.sub(r'^- (그림|라벨(?=: .+\.json$)): (.+)$', fig, screen, flags=re.M)
         for old, rep in it.get('note_edits', []):
             assert screen.count(old) == 1, f'{src} {it["n"]}장 노트 고칠 곳이 한 번이 아님: {old}'
             screen = screen.replace(old, rep)

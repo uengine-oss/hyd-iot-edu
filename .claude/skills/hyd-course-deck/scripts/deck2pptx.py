@@ -15,6 +15,7 @@ import contextlib
 import hashlib
 import importlib.util
 import io
+import json
 import os
 import re
 import shutil
@@ -926,6 +927,34 @@ def render_picture(sl, s, page, base: Path):
         pic.left = Inches(MX + (box_w - Emu(pic.width).inches) / 2)
     pic.line.color.rgb = LINE
     pic.line.width = Pt(1)
+    label_path = s.fields.get("라벨", "")
+    if label_path.endswith(".json"):
+        chart = json.loads((base / label_path).read_text(encoding="utf-8"))
+        scale = Emu(pic.width).inches / chart["width_in"]
+        for label in chart["labels"]:
+            width, height = label["bbox_w_in"], label["bbox_h_in"]
+            angle = label["rotation_ccw"]
+            if angle % 180 == 90:
+                width, height = height, width
+            width, height = (width + 0.06) * scale, (height + 0.07) * scale
+            x = pic.left + Inches(label["center_x_in"] * scale - width / 2)
+            y = pic.top + Inches(label["center_y_in"] * scale - height / 2)
+            box = sl.shapes.add_textbox(x, y, Inches(width), Inches(height))
+            box.name = "그래프 " + label["text"]
+            box.rotation = -angle % 360
+            frame_text = box.text_frame
+            frame_text.word_wrap = False
+            frame_text.margin_left = frame_text.margin_right = 0
+            frame_text.margin_top = frame_text.margin_bottom = 0
+            frame_text.vertical_anchor = MSO_ANCHOR.MIDDLE
+            paragraph = frame_text.paragraphs[0]
+            paragraph.alignment = PP_ALIGN.CENTER
+            run = paragraph.add_run()
+            run.text = label["text"]
+            run.font.name = FONT
+            run.font.size = Pt(label["font_pt"] * scale)
+            run.font.bold = label["font_weight"] == "bold"
+            run.font.color.rgb = RGBColor.from_string(label["color"].lstrip("#"))
     if not n:
         return
     px = MX + Emu(pic.width).inches + 0.4
@@ -1283,6 +1312,7 @@ def build(md_path, out) -> list[Slide]:
     validate(slides, md_path)
     DECK["기관"] = slides[0].fields.get("기관", "")
     prs = Presentation()
+    prs.core_properties.last_modified_by = ""
     prs.slide_width, prs.slide_height = Inches(SLIDE_W), Inches(SLIDE_H)
     blank = prs.slide_layouts[6]
     # 저장소의 추가 설명 레이아웃도 동일한 디자인 토큰·프레임을 사용한다.
