@@ -29,10 +29,10 @@ Windows에서는 Git Bash와 Docker Desktop의 WSL 2 기반 Linux 컨테이너�
 
 | 프로그램 | 프로젝트 준비 기준 | 공식 다운로드·문서 | 설치 확인 |
 |---|---|---|---|
-| VS Code | 1.132.0(2026년 8월 판) 이상. 프로젝트 편집용 | [Windows](https://code.visualstudio.com/download) · [macOS Universal ZIP](https://update.code.visualstudio.com/latest/darwin-universal/stable) · [Mac 설치](https://code.visualstudio.com/docs/setup/mac) | 정보(About) 또는 `code --version` |
-| Git | 2.54.0 이상 | [Windows](https://git-scm.com/install/windows) · [macOS](https://git-scm.com/install/mac) | `git --version` |
-| Node.js | 24.22.1 이상. 24.x LTS 권장 | [Windows x64 MSI](https://nodejs.org/dist/v24.22.1/node-v24.22.1-x64.msi) · [macOS PKG](https://nodejs.org/dist/v24.22.1/node-v24.22.1.pkg) · [다른 CPU·버전](https://nodejs.org/en/download) | `node --version`, `npm --version` |
 | Python | 3.13 이상(없으면 3.14.7 설치) | [Windows x64 EXE](https://www.python.org/ftp/python/3.14.7/python-3.14.7-amd64.exe) · [macOS Universal2 PKG](https://www.python.org/ftp/python/3.14.7/python-3.14.7-macos11.pkg) · [릴리스 정보](https://www.python.org/downloads/release/python-3147/) | `python --version` / macOS `python3 --version` |
+| Node.js | 24.22.1 이상. 24.x LTS 권장 | [Windows x64 MSI](https://nodejs.org/dist/v24.22.1/node-v24.22.1-x64.msi) · [macOS PKG](https://nodejs.org/dist/v24.22.1/node-v24.22.1.pkg) · [다른 CPU·버전](https://nodejs.org/en/download) | `node --version`, `npm --version` |
+| Git | 2.54.0 이상 | [Windows](https://git-scm.com/install/windows) · [macOS](https://git-scm.com/install/mac) | `git --version` |
+| VS Code | 1.132.0(2026년 8월 판) 이상. 프로젝트 편집용 | [Windows](https://code.visualstudio.com/download) · [macOS Universal ZIP](https://update.code.visualstudio.com/latest/darwin-universal/stable) · [Mac 설치](https://code.visualstudio.com/docs/setup/mac) | 정보(About) 또는 `code --version` |
 | WSL | 2.7.12.0 이상, WSL 2 실행 환경(Windows) | [설치](https://learn.microsoft.com/ko-kr/windows/wsl/install) · [명령](https://learn.microsoft.com/ko-kr/windows/wsl/basic-commands) | `wsl --version`, `wsl --status` |
 | Docker Desktop | 4.87.0 이상 | [Windows](https://docs.docker.com/desktop/setup/install/windows-install/) · [macOS](https://docs.docker.com/desktop/setup/install/mac-install/) | 앱 About, `docker info`, `docker compose version` |
 
@@ -42,14 +42,14 @@ Windows에서는 Git Bash와 Docker Desktop의 WSL 2 기반 Linux 컨테이너�
 
 ### 공식 설치 파일로 준비
 
-표의 Node.js 설치 파일은 **24.22.1**, Python 설치 파일은 **3.14.7**이다. Windows 링크는 x64용이며 ARM64 PC는 공식 배포 페이지에서 CPU에 맞는 파일을 선택한다. macOS는 Node.js PKG와 Python Universal2 PKG를 사용하며, VS Code Universal ZIP은 압축을 풀어 앱을 응용 프로그램 폴더로 옮긴다. VS Code 링크는 최신 안정판으로 연결되므로 기준 버전을 확인한다. 각 제품의 macOS 지원 조건은 공식 문서를 따른다.
+표의 Python 설치 파일은 **3.14.7**, Node.js 설치 파일은 **24.22.1**이다. Windows 링크는 x64용이며 ARM64 PC는 공식 배포 페이지에서 CPU에 맞는 파일을 선택한다. macOS는 Node.js PKG와 Python Universal2 PKG를 사용하며, VS Code Universal ZIP은 압축을 풀어 앱을 응용 프로그램 폴더로 옮긴다. VS Code 링크는 최신 안정판으로 연결되므로 기준 버전을 확인한다. 각 제품의 macOS 지원 조건은 공식 문서를 따른다.
 
 위 공식 링크에서 운영체제와 CPU에 맞는 안정판 설치 파일을 받는다. Windows에서 확인할 항목은 다음과 같다.
 
-- **VS Code:** 개인 계정은 User Installer 사용 가능. PATH 추가를 유지한다.
-- **Git:** 명령 프롬프트와 다른 프로그램에서 사용할 수 있는 권장 PATH 옵션을 유지한다. Git Bash도 함께 설치한다.
-- **Node.js:** npm과 PATH가 포함된 기본 구성으로 설치한다.
 - **Python:** 3.14.x 전통 설치기를 사용한다면 `Add python.exe to PATH`를 확인한다. [공식 설치 설명](https://docs.python.org/3.14/using/windows.html#the-full-installer-deprecated). Python Install Manager는 설치 방식과 화면이 다르다.
+- **Node.js:** npm과 PATH가 포함된 기본 구성으로 설치한다.
+- **Git:** 명령 프롬프트와 다른 프로그램에서 사용할 수 있는 권장 PATH 옵션을 유지한다. Git Bash도 함께 설치한다.
+- **VS Code:** 개인 계정은 User Installer 사용 가능. PATH 추가를 유지한다.
 - **WSL:** 아래 WSL 준비 절차에 따라 `wsl --version`으로 먼저 확인한다. 별도 Ubuntu는 설치하지 않는다.
 - **Docker Desktop:** WSL 2 옵션이 이미 선택돼 있으면 유지한다. 옵션 화면이 없으면 설치 후 설정에서 확인한다. Linux 컨테이너 엔진이 준비돼야 한다.
 
