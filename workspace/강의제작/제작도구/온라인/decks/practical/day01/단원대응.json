@@ -1,6 +1,6 @@
 {
   "source": "workspace/강의제작/제작도구/온라인/decks/integrated/day01/통합반_01일차.md",
-  "source_sha256": "71950cee15555d73a49449cf37349ddf54ee543c4499e3d4f4f945d4a0dcbc4c",
+  "source_sha256": "efb8d62d602fae90fc8fc740da5ae6b5f719e3ca54525a398db629de9c730941",
   "slides": [
     {
       "slide": 1,
@@ -58,30 +58,41 @@
     },
     {
       "slide": 10,
+      "title": "기록을 다시 꺼내 확인하고 고치는 길",
+      "screen_sha256": "6ed730f28b357e1e2fd21b530a38f2fe66ef2ee727b958ac6a09b32f1be91e33",
+      "assets": [
+        {
+          "path": "figures/기록_되짚기.svg",
+          "sha256": "fe14c07843ca47651c763447741b83cab1968ac4a97b674ea33c86aa0e23ecfa"
+        }
+      ]
+    },
+    {
+      "slide": 11,
       "title": "실습: Notion으로 지식 자산화를 위한 학습노트 만들기",
       "screen_sha256": "b4b3469a672ec4539f5e888b82e72b347b184a73f407b4e52c5fb40dbd998265",
       "assets": []
     },
     {
-      "slide": 11,
+      "slide": 12,
       "title": "주제별로 쌓고 다시 찾는 학습노트",
       "screen_sha256": "4e998cbd82dafc7e5525886900203750921cd5defa7c07acd36f9be59edb1b82",
       "assets": []
     },
     {
-      "slide": 12,
+      "slide": 13,
       "title": "설비 데이터가 판단으로 이어지는 시스템 / 구조와 데이터 흐름",
       "screen_sha256": "3648a57523225d836d917f4ce88a508944a285da2c9c6134258fb949c4a60103",
       "assets": []
     },
     {
-      "slide": 13,
+      "slide": 14,
       "title": "설비·센서·PLC·관제의 역할",
       "screen_sha256": "e12456c89711be14eb9d1306a9ddd5d4adf7bfb5c342bf4d0a95cc3640137af9",
       "assets": []
     },
     {
-      "slide": 14,
+      "slide": 15,
       "title": "유압 파워팩의 구성과 유온 TS1의 계측 지점",
       "screen_sha256": "75a5e85fa45cb5a8b78c2711c3e2f38790b146fef49cc2a0641ce425d6d12cc2",
       "assets": [
@@ -92,37 +103,37 @@
       ]
     },
     {
-      "slide": 15,
-      "title": "Layer 1 · PLC의 반복 제어와 우선하는 보호",
-      "screen_sha256": "081ac294908e6e85a969d8a87ac1e0b5814fde8c0a154e9cf66e42d69a23ee77",
-      "assets": []
-    },
-    {
       "slide": 16,
-      "title": "과열 · 저압 · 고진동의 보호 정지 한계",
-      "screen_sha256": "d5d69d5f181011341ccc354938407992e9626704d1fded9474f00a166b6dbfb6",
+      "title": "Layer 1 · PLC의 반복 제어와 우선하는 보호",
+      "screen_sha256": "262e0e3d191c1b61e0d2ed8c7e5347585e18c3dab63ab2e300df3a258beb693b",
       "assets": []
     },
     {
       "slide": 17,
+      "title": "과열 · 저압 · 고진동의 보호 정지 한계",
+      "screen_sha256": "a0b06bbdc5af34fd9b56b7622958180057aebb2c8d6d1b0a23a24a19091ad49c",
+      "assets": []
+    },
+    {
+      "slide": 18,
       "title": "현장 통신의 지연·지터·결정성",
       "screen_sha256": "47f9a8e89b6319fb74087564438168296b6fe0bf8879fd17e35d226225a52f62",
       "assets": []
     },
     {
-      "slide": 18,
+      "slide": 19,
       "title": "Layer 2 · 원시 값에서 태그 메시지로",
-      "screen_sha256": "5841abb720ce0f1d9c9c5fd9b5f03f9a818d5259175138f825feedd2159afda4",
+      "screen_sha256": "26fc7b905e36970a14c4bbca9754a44cedd9c4cac8f12e76720328e77403e289",
       "assets": []
     },
     {
-      "slide": 19,
+      "slide": 20,
       "title": "점대점 연결과 브로커 중개",
       "screen_sha256": "d67598f440019ba1a64bb6e9e28c035c6385988dc12358de507e44ee9fc4b19f",
       "assets": []
     },
     {
-      "slide": 20,
+      "slide": 21,
       "title": "MQTT와 브로커: 발행과 구독",
       "screen_sha256": "cfa8ae6d1c1fb8d982dad462913fa4d923913e88a7f2bae016d0d66f24f0ddc9",
       "assets": [
@@ -133,61 +144,72 @@
       ]
     },
     {
-      "slide": 21,
+      "slide": 22,
       "title": "토픽 주소와 송수신 사이의 의존성",
       "screen_sha256": "027b24e939a15105f2dc10c190c951a8585841e205e7fd6262d32d8ff6e950ef",
       "assets": []
     },
     {
-      "slide": 22,
+      "slide": 23,
       "title": "발행·구독의 전달과 보존 범위",
       "screen_sha256": "9a6378061a58680d2e39ac9edae4ba5e7ad34e0ba260c1b2da8b70278a1693c9",
       "assets": []
     },
     {
-      "slide": 23,
+      "slide": 24,
       "title": "OT와 IT를 직접 잇지 않는 이유",
       "screen_sha256": "f46131f13da5deff5f161c49ad0cec27464a78163d7e9a82c2382641a0606a06",
       "assets": []
     },
     {
-      "slide": 24,
+      "slide": 25,
       "title": "기밀성과 무결성: 읽기와 변경의 보호",
       "screen_sha256": "06d136c30a3c429fd692a9dc4fef25bad4bb00a4212724c730e1a37e8ac2b30b",
       "assets": []
     },
     {
-      "slide": 25,
+      "slide": 26,
       "title": "완충 구역과 단방향 수집",
       "screen_sha256": "54e657c88dc74869363a64a138f1b4b22bdef8d7429b297158cc86eb00c3224d",
       "assets": []
     },
     {
-      "slide": 26,
+      "slide": 27,
       "title": "Layer 3 · 메시지를 기록으로 옮긴다",
       "screen_sha256": "a02821eeae753d1c55a6cac5b7041d72518c74e1460f15dbe360a8defa8747bd",
       "assets": []
     },
     {
-      "slide": 27,
+      "slide": 28,
       "title": "이벤트 로그의 기록과 생산자·소비자",
       "screen_sha256": "2905439ddc191e2461e74a68dedebf243d168470dac60174f16316c7a68ae51e",
       "assets": []
     },
     {
-      "slide": 28,
+      "slide": 29,
+      "title": "소비자가 멈췄다 돌아올 때의 읽기 위치",
+      "screen_sha256": "9ac159e2f9bf6e9181aa387f8b1889c2d4219e174c982e311751ed58c9b924d6",
+      "assets": [
+        {
+          "path": "figures/읽기위치_전후.svg",
+          "sha256": "9ad73c2b2f1fe680a90eed9230775fd81db288ba640be6426592ecd05f9983c1"
+        }
+      ]
+    },
+    {
+      "slide": 30,
       "title": "오프셋과 파티션: 읽던 위치에서 다시 시작",
-      "screen_sha256": "dec905cf18c04e965ebeca9b400e9d63cd5a7fdb0583419113648fe0aeef8b9f",
+      "screen_sha256": "b6aed30a439e74dba93a54559cb393dd2b546ece249d223d399dd065775df0a2",
       "assets": []
     },
     {
-      "slide": 29,
+      "slide": 31,
       "title": "Layer 4 · 스트림 처리: 흐르는 데이터에서 알아챈다",
       "screen_sha256": "03d54f2348db454f3256abe99cfdee2e852c25bd37ee2234c6ecc9782f3ca12d",
       "assets": []
     },
     {
-      "slide": 30,
+      "slide": 32,
       "title": "복합 이벤트 처리: 경보 조건과 유지 시간",
       "screen_sha256": "57e972662a1a0381d6e693e3d57cb76e3eb2be48340cb672f7f840472fd0f99b",
       "assets": [
@@ -202,75 +224,86 @@
       ]
     },
     {
-      "slide": 31,
+      "slide": 33,
       "title": "경보의 발생·해제와 데이터 품질",
       "screen_sha256": "72e47d66f818933507be8d9f89baeef195975a17acf6b5b2daf7a0ccaac86288",
       "assets": []
     },
     {
-      "slide": 32,
+      "slide": 34,
       "title": "이상 이벤트: 경보 한 건의 실제 모습",
       "screen_sha256": "3b9973c4eeb9c57bceb511b532cc3c9ec6c92af0025e316510bf96e1e6c436e0",
       "assets": []
     },
     {
-      "slide": 33,
+      "slide": 35,
       "title": "Layer 5 · 시계열 저장소: 시각으로 찾는다",
       "screen_sha256": "845629830c8706a13c0f3ef28d93628a41f658904c4e5fa5b4a410196b9864e0",
       "assets": []
     },
     {
-      "slide": 34,
+      "slide": 36,
       "title": "Layer 6 · 운전 화면과 분석 화면",
       "screen_sha256": "e73e79e2baf25d75e4b253c8e8622990be5d93776a1009c90ab3a67e7a0dfce9",
       "assets": []
     },
     {
-      "slide": 35,
+      "slide": 37,
       "title": "경보·알람·인터록의 기준과 역할",
       "screen_sha256": "5ae76f304e5335f791f3064c2142e8f5f968b6ed31e138ded1fd300df02b4671",
       "assets": []
     },
     {
-      "slide": 36,
+      "slide": 38,
       "title": "Layer 7~9 · 지식·추천·승인·실행",
       "screen_sha256": "e4be087663b40c01a0f5682be23bb37cade02bd61a05b7338b6c082524f80eec",
       "assets": []
     },
     {
-      "slide": 37,
+      "slide": 39,
       "title": "승인된 명령이 PLC에 닿는 경로",
       "screen_sha256": "93e9e37875a887c4d1dde1a3acba1eaf39f06fef384df95706535e6d45f62ade",
       "assets": []
     },
     {
-      "slide": 38,
+      "slide": 40,
       "title": "명령 관문과 PLC가 검사하는 것",
       "screen_sha256": "d9775cc7b07b5be3bb08021c05f9cbe0e25ef254b78525c7832872edbc446127",
       "assets": []
     },
     {
-      "slide": 39,
+      "slide": 41,
       "title": "명령·확인 응답·재관측의 구별",
       "screen_sha256": "4af3622e5c15a3ff8b5ec8335bc9f118af48ae5c4c7fe276211148643589ab74",
       "assets": []
     },
     {
-      "slide": 40,
-      "title": "데이터 리니지: 원천 데이터에서 판단 결과까지",
-      "screen_sha256": "5bc1f58f234a954089699fff02616980e246b87b7aa3db6ba459d02084746904",
-      "assets": []
-    },
-    {
-      "slide": 41,
-      "title": "식별자로 이어지는 판단과 작업 기록",
-      "screen_sha256": "e6dbfe3a7b6b939a022faa261ac3cb6c927999fa2555844138b82c68b87ce1ff",
-      "assets": []
-    },
-    {
       "slide": 42,
+      "title": "데이터 리니지: 원천 데이터에서 판단 결과까지",
+      "screen_sha256": "7610e1ea840ae84798c1b90a9c9a4e9650a9ed22ea766b318143e9610fb35ac6",
+      "assets": []
+    },
+    {
+      "slide": 43,
+      "title": "값이 달라 보일 때 리니지로 좁혀 가는 길",
+      "screen_sha256": "924512cc9cfc3ec0778e4494f7dd7f4f1c5a437d3099bc881531a8db3167db4b",
+      "assets": [
+        {
+          "path": "figures/리니지_좁히기.svg",
+          "sha256": "27c97a7ae7a8b0b6878518a182b1ee9b8b130f0be0d83637b5a1cf3b1d3479ec"
+        }
+      ]
+    },
+    {
+      "slide": 44,
+      "title": "식별자로 이어지는 판단과 작업 기록",
+      "screen_sha256": "7fd49b18bf36fc2973cceaada638bfc28a5eb655263248d7247eb6359c07b83c",
+      "assets": []
+    },
+    {
+      "slide": 45,
       "title": "지나온 길: 아홉 기능 계층과 세 보안 영역",
-      "screen_sha256": "f46ad15acf3fa43bfb0504592a4cc95f5d3176bd831e65b6372e4028e38b70ba",
+      "screen_sha256": "3f4d4ae21547c28f36baced97049a13c29bfb742a51631fbe4e6c964a9389ac7",
       "assets": [
         {
           "path": "figures/계층_0_전체.svg",
@@ -279,7 +312,7 @@
       ]
     },
     {
-      "slide": 43,
+      "slide": 46,
       "title": "데이터 수집과 승인된 자동 명령의 두 경로",
       "screen_sha256": "7c1591ffcd31166d7917d4ac22f32ea43dfa034c766f69ad065f889cc8b25913",
       "assets": [
@@ -290,37 +323,37 @@
       ]
     },
     {
-      "slide": 44,
+      "slide": 47,
       "title": "실습: 실습 환경을 시작하고 HYD 포털 둘러보기",
       "screen_sha256": "e85830b4d7efec93f0bed2f44f7b0930f79025287e465f5eb251c35c2eb6ae8c",
       "assets": []
     },
     {
-      "slide": 45,
+      "slide": 48,
       "title": "실행 환경 준비와 포털 화면의 역할",
       "screen_sha256": "d4e2a0d42300749361d2497b361d3a59f6a829ab6d81cb025939b6e3af279333",
       "assets": []
     },
     {
-      "slide": 46,
+      "slide": 49,
       "title": "실습: 설비 이상 발생부터 판단·승인·조치까지 / 전체 과정 경험하기",
       "screen_sha256": "e889f510f7ad60b9cbeff667710f816c905e8e7ac8791c03fef4e4df48a5c273",
       "assets": []
     },
     {
-      "slide": 47,
+      "slide": 50,
       "title": "지식 적재와 쿨러 사건의 판단·승인·조치",
       "screen_sha256": "732555321c7ec98cea5675bd5b5544e289a7c3100622292e90ff0f0b11f18c80",
       "assets": []
     },
     {
-      "slide": 48,
+      "slide": 51,
       "title": "수치만으로 조치를 정할 수 없는 이유",
       "screen_sha256": "420639061de772983493028d215b4238f150b6cd3f845446a225745bc642fd7a",
       "assets": []
     },
     {
-      "slide": 49,
+      "slide": 52,
       "title": "경보 이후의 판단과 승인, 조치 뒤의 변화",
       "screen_sha256": "500a6d9f409337e66ca74fc383d61c44227fcd85265373d856efe224df52e1d3",
       "assets": [
@@ -335,43 +368,43 @@
       ]
     },
     {
-      "slide": 50,
+      "slide": 53,
       "title": "데이터, 정보, 지식과 판단의 네 질문",
       "screen_sha256": "ef14abbc86fdbb9ed4dd3276bca8664dccf9ac94d5fc10b60ce7b00e4b1ec02d",
       "assets": []
     },
     {
-      "slide": 51,
+      "slide": 54,
       "title": "원인 후보와 증거의 대조",
       "screen_sha256": "5865b04fb0fabc4a932a29a2a316159d3f6ef6de62ceae72ad74717a2712efb1",
       "assets": []
     },
     {
-      "slide": 52,
+      "slide": 55,
       "title": "원인에 따라 달라지는 근본 조치",
       "screen_sha256": "d084594a95ff77c75cf3006e15c41ecfa945249dbe9215ccf1ce12e27a71b894",
       "assets": []
     },
     {
-      "slide": 53,
+      "slide": 56,
       "title": "완화 조치와 근본 조치",
-      "screen_sha256": "dbf3f4c2fa883afeb6143730a659b303ec7f39876db1b881c236e61ec36baebe",
+      "screen_sha256": "0024397dac6d3825584ab04f9efd7ba8ed995e76a4bdb5d6b700a9006dbfdeaf",
       "assets": []
     },
     {
-      "slide": 54,
+      "slide": 57,
       "title": "같은 조치가 원인에 따라 설비를 세우는 경우",
-      "screen_sha256": "076709b147e5b65d787997708033c5560f4505c7e6b93d2dbb3231516d2ff1ff",
+      "screen_sha256": "2cbcb2e6bebe32e61e714b322d6cb4b5322f83187cda5b26738d425bd35745b9",
       "assets": []
     },
     {
-      "slide": 55,
+      "slide": 58,
       "title": "판단 근거의 연결",
       "screen_sha256": "cca244c22a36e724b2f18c5afe0b28df54c056d4bff0cdf22d9e3984e5fc4511",
       "assets": []
     },
     {
-      "slide": 56,
+      "slide": 59,
       "title": "판단에 쓰이는 정보가 놓인 곳",
       "screen_sha256": "7b920cacb4f659f7626b667764979c499c90f15b2c1214cd7719ab64f91d0218",
       "assets": [
@@ -382,61 +415,116 @@
       ]
     },
     {
-      "slide": 57,
+      "slide": 60,
       "title": "매뉴얼의 문장에 들어 있는 것과 없는 것",
-      "screen_sha256": "52a1c9b2081d821db288dece6f544e68f37ef1018383ae1f876c8dd03b88532f",
+      "screen_sha256": "c6cdf30ad6776ce54b66aba277872e007a460bf7ad0e6eeca9e36350d2908c4a",
       "assets": []
     },
     {
-      "slide": 58,
+      "slide": 61,
       "title": "숙련자의 판단 경로와 기록되지 않은 연결",
       "screen_sha256": "14ba6a3d9731d16f467beef9b276476330acb88af2f7ad953819561469469034",
       "assets": []
     },
     {
-      "slide": 59,
+      "slide": 62,
       "title": "표·문서·코드에서 지식을 분리하는 이유",
       "screen_sha256": "04ce66788ff4d6dba0125d07cd4308915df4465330770450263c7e878678436f",
       "assets": []
     },
     {
-      "slide": 60,
+      "slide": 63,
       "title": "AI에게 그대로 묻는 방식과 지식을 조회하게 하는 방식",
       "screen_sha256": "4e37c201c7ab2d0960968c6c95b029e8d59061517c0950d1b2630b0811fc8d82",
       "assets": []
     },
     {
-      "slide": 61,
+      "slide": 64,
       "title": "온톨로지의 정의와 관계",
       "screen_sha256": "af1c72a7520a1ac6a2c4269d99f790ade1567d8860d941925610fb30fc0797cd",
       "assets": []
     },
     {
-      "slide": 62,
+      "slide": 65,
       "title": "온톨로지: 공통 의미를 정의하는 지식 모델",
       "screen_sha256": "ea7e1dc270be1b964783146a6d93ae26d1f5e5a1095bbef21465adce30ca2576",
       "assets": []
     },
     {
-      "slide": 63,
+      "slide": 66,
+      "title": "종류: 사건의 이름이 답하는 질문",
+      "screen_sha256": "b686e9ac9c0296805f24fb00c9245dc9435d34f5198f8cff0800647e9d98c1ff",
+      "assets": [
+        {
+          "path": "figures/종류_네칸.svg",
+          "sha256": "a8182a97e83bbaa7897b44b844d60172f6a43cba0a98472fff5e910f65620af4"
+        }
+      ]
+    },
+    {
+      "slide": 67,
+      "title": "속성: 값을 담는 항목과 지금 측정한 값",
+      "screen_sha256": "6fd9a2b13b14a17fe2a1793a9b7de6cd6dac4a7ecaf67a0b1809c6528a82d00c",
+      "assets": [
+        {
+          "path": "figures/속성_눈금.svg",
+          "sha256": "94d56949f20eb3087cf16334c3e8a5221a41807f90d50c367c76a2f63fdd2f8a"
+        }
+      ]
+    },
+    {
+      "slide": 68,
+      "title": "관계: 선에 붙인 이름이 정하는 뜻",
+      "screen_sha256": "387ea5c2a76ed0405fff7dccc9895c45729e0d5bf085389ced24d793c3213e18",
+      "assets": [
+        {
+          "path": "figures/관계_이름.svg",
+          "sha256": "eca6398325bf60229f276ecb8797a7db204917cf99eb6207fdc0231a20c90f9a"
+        }
+      ]
+    },
+    {
+      "slide": 69,
       "title": "관계 제약: CAUSES로 이을 수 있는 출발점",
       "screen_sha256": "bc07840777d598b0bec2ba60df1a2d4f0531c0a8da5a1ee664e2d1bdb1a47bed",
       "assets": []
     },
     {
-      "slide": 64,
+      "slide": 70,
       "title": "같은 대상을 가리키는 여러 말",
       "screen_sha256": "5fd26b03766c2bfe05f1e94d4a470acf66c8c1af16351fed785d90d2c504ba46",
       "assets": []
     },
     {
-      "slide": 65,
+      "slide": 71,
       "title": "온톨로지·지식 그래프·그래프 DB·관계 그림",
       "screen_sha256": "c78e5696b3616084342fa4e8c48463f7e3fa91c1ec1bb18ee25124769fe24e10",
       "assets": []
     },
     {
-      "slide": 66,
+      "slide": 72,
+      "title": "지식을 더 채우는 일과 공통 정의를 바꾸는 일",
+      "screen_sha256": "eb6b8d686678f5cf93c1da3af1f859b6de883d8ab51fabb3bd5d5521213343ef",
+      "assets": [
+        {
+          "path": "figures/채우기_정의변경.svg",
+          "sha256": "74f82ae358df17db8d3fa6e0fa40c8fa4297c81880fb082d0817c1e4bd8d03ac"
+        }
+      ]
+    },
+    {
+      "slide": 73,
+      "title": "저장과 그림은 내용의 옳음을 보증하지 않는다",
+      "screen_sha256": "a6b1f0d5f3661c88306ab8e4ab6d50d1d8ce21f0c9bebdc7dfc3eca3a8cd5199",
+      "assets": [
+        {
+          "path": "figures/저장_그림_옳음.svg",
+          "sha256": "f3d8e9aced754a9bb12fab4bd6c2fe088d8086d2d6f37bfa95dc56932da94cbd"
+        }
+      ]
+    },
+    {
+      "slide": 74,
       "title": "노드·관계·방향을 문장으로 읽는다",
       "screen_sha256": "e09119457564da0ce709cba32005f3461d19f23fffd735f9fade522c22aaf017",
       "assets": [
@@ -447,7 +535,7 @@
       ]
     },
     {
-      "slide": 67,
+      "slide": 75,
       "title": "지식 그래프 지도: 설비 쪽과 진단 · 조치 쪽",
       "screen_sha256": "7e1c5a7ea990cd634daac20bcf43e8094685054043ce4864da86ed7a80c2d542",
       "assets": [
@@ -458,13 +546,13 @@
       ]
     },
     {
-      "slide": 68,
+      "slide": 76,
       "title": "관계의 방향: 저장된 방향과 따라가는 방향",
       "screen_sha256": "c14a974c5e82cdc8f64808f3d6d8632e4848e6494b5e2d0b286df0e24d325db4",
       "assets": []
     },
     {
-      "slide": 69,
+      "slide": 77,
       "title": "관계를 따라가는 과정 ①: 경보에서 고장 유형까지",
       "screen_sha256": "f7dde4073303e772eb72586c035d5113ae0cc5684448a2f15e96f386f531cd70",
       "assets": [
@@ -475,9 +563,9 @@
       ]
     },
     {
-      "slide": 70,
+      "slide": 78,
       "title": "관계를 따라가는 과정 ②: 원인 후보, 증거, 조치",
-      "screen_sha256": "c3b821fae9ec6d82f14e1c9f4d544f1690fe228d0019bcb3dbf8f046979f6ff9",
+      "screen_sha256": "f1a8a698e254345ea0f7de3ea5d6097b294834490cd100e9eaa6ae14a687a8ab",
       "assets": [
         {
           "path": "figures/경로2_2.svg",
@@ -486,69 +574,80 @@
       ]
     },
     {
-      "slide": 71,
+      "slide": 79,
+      "title": "증거 대조의 세 결과: 충족 · 해당 없음 · 보류",
+      "screen_sha256": "9fb6b3e4e53c9feb53cd9441d073cccf17913e37d0d6a263b1b01a55785f5b39",
+      "assets": [
+        {
+          "path": "figures/증거_세결과.svg",
+          "sha256": "8cc1b987c0f0410738ea6dd8726ab42557ff8279dc2f4e3f4bac1733b272093c"
+        }
+      ]
+    },
+    {
+      "slide": 80,
       "title": "판단 기록에 남기는 기준·값·조치의 근거",
       "screen_sha256": "329c43db067b2f1803ae7a7f98da3e35aa6bd4083ed9b01458dee4e9d01fd25a",
       "assets": []
     },
     {
-      "slide": 72,
+      "slide": 81,
       "title": "지식 모델이 판단과 업무에 쓰이는 자리",
       "screen_sha256": "4a2dfef5317c4b855b3b6eaea3b480946413a5e8dbc30737bb61204b69032c55",
       "assets": []
     },
     {
-      "slide": 73,
+      "slide": 82,
       "title": "실습: 설비 이상과 원인·조치의 관계를 시각화하기",
       "screen_sha256": "86bf5e9ff1715658b5770225fc84188eb5d3a59219ac417c7ec19dc69fd6bea8",
       "assets": []
     },
     {
-      "slide": 74,
+      "slide": 83,
       "title": "두 원인을 비교하는 관계 그림",
       "screen_sha256": "9d86aff17540459f6c099bea9598a59d852f33e1f194d8e1c5fa80081a72498a",
       "assets": []
     },
     {
-      "slide": 75,
+      "slide": 84,
       "title": "경보·판단·승인·실행 기록의 구별",
       "screen_sha256": "db5030673e54f78613a3904de56633dc9d0ab72885f939c9a3aa716f9b2072fd",
       "assets": []
     },
     {
-      "slide": 76,
+      "slide": 85,
       "title": "오늘 다룬 핵심 개념과 주요 용어 정리",
       "screen_sha256": "55a3c268e85a32a8ed6810b24a71c6a9f695ba3281ed7c509c9fae556948c982",
       "assets": []
     },
     {
-      "slide": 77,
+      "slide": 86,
       "title": "Review Quiz: 핵심 흐름 되짚어보기",
       "screen_sha256": "69615b41abf0b072e1f4b494c1895687aadd2f8b43c77b8bca6592a6cd367048",
       "assets": []
     },
     {
-      "slide": 78,
+      "slide": 87,
       "title": "Quiz 1. 경보 이후의 판단",
       "screen_sha256": "7b879718e90a6956d6a5522afff57c95fd303786ee3b05f893c3ee6f75b31328",
       "assets": []
     },
     {
-      "slide": 79,
+      "slide": 88,
       "title": "Quiz 2. 관계의 이름과 방향",
       "screen_sha256": "a18bed57be1d2c4545b1f625c674a0defb0b61b9d1c9ebad7d685ff380578b52",
       "assets": []
     },
     {
-      "slide": 80,
+      "slide": 89,
       "title": "Quiz 3. 추천과 실행의 책임 경계",
       "screen_sha256": "0bfe09542ade01786b1eabbd0714ae5860b6cfffda34b14beed4fb455e7aa400",
       "assets": []
     },
     {
-      "slide": 81,
+      "slide": 90,
       "title": "정답과 판단 기준",
-      "screen_sha256": "e8e5761fbf798f0fdab3c2d640143ed3c461ebf03133a76e307b1b1330c454dc",
+      "screen_sha256": "38b2b319becbd1428ed7852abbcd31f224295b3716b65e3adfaec230e31a5378",
       "assets": []
     }
   ]

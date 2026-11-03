@@ -1,156 +1,209 @@
 {
- "title": "식별자 · 적재 · SOP 연결 원리 이해하기",
- "intro": "통합반 오프라인 2회차 이론(50분) 덱. 실라버스 「통합반 오프라인 정규 10회」 14행의 범위로 온라인 통합반 2 · 3회차 덱의 장을 다시 묶었다. 온라인 장의 화면은 그대로 쓰고 노트는 [다음]과 표시한 연결 말만 새 순서에 맞췄다. 실습(15~17행)은 핸즈온 가이드가 맡는다. 조립: `bash workspace/강의제작/제작도구/오프라인/decks/만들기.sh integrated 02`.",
- "md": "통합반_오프라인_02회차.md",
- "slides": [
-  {
-   "new": "cover"
-  },
-  {
-   "new": "goals"
-  },
-  {
-   "new": "toc"
-  },
-  {
-   "new": "s1"
-  },
-  {
-   "src": "integrated/day02",
-   "n": 23
-  },
-  {
-   "src": "integrated/day02",
-   "n": 24
-  },
-  {
-   "src": "integrated/day02",
-   "n": 25
-  },
-  {
-   "new": "s2"
-  },
-  {
-   "src": "integrated/day02",
-   "n": 54
-  },
-  {
-   "src": "integrated/day02",
-   "n": 55
-  },
-  {
-   "src": "integrated/day02",
-   "n": 56
-  },
-  {
-   "src": "integrated/day02",
-   "n": 57,
-   "note_edits": [
-    [
-     "조회(처음 정한 역량 질문, 답의 행)",
-     "조회(처음 정한 질문, 답의 행)"
-    ]
-   ]
-  },
-  {
-   "new": "s3"
-  },
-  {
-   "src": "integrated/day02",
-   "n": 28
-  },
-  {
-   "src": "integrated/day02",
-   "n": 29
-  },
-  {
-   "src": "integrated/day02",
-   "n": 30
-  },
-  {
-   "src": "integrated/day02",
-   "n": 31,
-   "note_edits": [
-    [
-     ". 자료형 · 필수 · 허용값 · 시작과 끝을 정의로 적으면 모두 제약이 된다 = 단원 물음의 답",
-     ". 자료형 · 필수 · 허용값 · 시작과 끝을 정의로 적으면 모두 제약이 된다"
-    ]
-   ]
-  },
-  {
-   "src": "integrated/day02",
-   "n": 41
-  },
-  {
-   "new": "s4"
-  },
-  {
-   "src": "integrated/day03",
-   "n": 6,
-   "note_edits": [
-    [
-     "· 절차 번호: 두 번째 후보도 이름이 「팬 최대 운전」으로 시작 → 이름은 비슷해도 번호는 절차 하나만 가리킨다",
-     "· 절차 번호: 이름이 비슷한 절차가 있어도 번호는 절차 하나만 가리킨다"
-    ]
-   ]
-  },
-  {
-   "src": "integrated/day03",
-   "n": 7
-  },
-  {
-   "src": "integrated/day03",
-   "n": 8
-  },
-  {
-   "src": "integrated/day03",
-   "n": 11
-  },
-  {
-   "src": "integrated/day03",
-   "n": 14,
-   "note_edits": [
-    [
-     "→ 핀 오염인데 환기 보강을 추천하지 않으려면 이 연결까지 확인",
-     "→ 원인에 맞지 않는 근본 조치를 추천하지 않으려면 이 연결까지 확인"
-    ],
-    [
-     "맞는 근본 조치가 더해진다(지식 그래프 지도에서 고장 유형이 가운데였던 까닭)",
-     "맞는 근본 조치가 더해진다"
-    ],
-    [
-     ". 쿨러 사건 추천안에도 원인 → 고장 유형 → 완화 조치의 길과 근거 절이 그대로 적혔다",
-     ""
-    ]
-   ]
-  },
-  {
-   "new": "review"
-  },
-  {
-   "new": "terms"
-  },
-  {
-   "src": "integrated/day02",
-   "n": 68
-  },
-  {
-   "new": "q1"
-  },
-  {
-   "new": "q2"
-  },
-  {
-   "src": "integrated/day02",
-   "n": 71
-  },
-  {
-   "new": "answer"
-  }
- ],
- "note_end": [
-  "이어지는 실습: 모델의 ID · 자료형 · 필수값 · 관계 끝점을 원자료와 대조해 보완 · 적재하고, 같은 자료를 다시 넣어 개수가 그대로인지 본다. 다른 설비는 같은 스키마로 잇고 공용 부품은 ID를 재사용한다",
-  "SOP의 전제 · 금지 · 단계 · 완료를 가르고 모델의 식별자에 이어, 고른 고장의 절차와 금지 조건을 원문과 비교한다 — 진행은 핸즈온 가이드",
-  "다음 회차: 이 SOP 조건으로 조치의 허용 · 제외와 성과를 판정한다"
- ]
+  "title": "클래스·스키마·그래프 DB로 설비 지식의 구조 이해하기",
+  "intro": "통합반 오프라인 2회차 이론. 실라버스 「통합반 오프라인 정규 10회」 14행.",
+  "md": "통합반_오프라인_02회차.md",
+  "slides": [
+    {
+      "new": "cover",
+      "next": "학습목표"
+    },
+    {
+      "new": "goals",
+      "next": "목차"
+    },
+    {
+      "new": "toc",
+      "next": "대상과 속성·관계"
+    },
+    {
+      "new": "model",
+      "next": "같은 종류와 설비 한 대를 가르는 기준"
+    },
+    {
+      "src": "integrated/day02",
+      "n": 5,
+      "next": "센서 클래스의 속성과 속성값"
+    },
+    {
+      "src": "integrated/day02",
+      "n": 6,
+      "next": "센서의 값과 다른 대상을 가리키는 연결"
+    },
+    {
+      "src": "integrated/day02",
+      "n": 8,
+      "next": "다른 대상을 잇는 관계의 이름과 방향"
+    },
+    {
+      "src": "integrated/day02",
+      "n": 11,
+      "next": "하나의 센서에 몇 개가 이어질 수 있는지"
+    },
+    {
+      "src": "integrated/day02",
+      "n": 15,
+      "next": "여러 대상이 연결될 때 독립 클래스를 두는 기준"
+    },
+    {
+      "src": "integrated/day02",
+      "n": 21,
+      "next": "정보를 표현하는 네 가지 선택"
+    },
+    {
+      "src": "integrated/day02",
+      "n": 22,
+      "next": "각 대상과 연결을 다시 알아볼 공통 정의"
+    },
+    {
+      "new": "schema",
+      "next": "스키마와 인스턴스 데이터"
+    },
+    {
+      "src": "integrated/day02",
+      "n": 24,
+      "next": "식별자 · 이름 · 별칭"
+    },
+    {
+      "src": "integrated/day02",
+      "n": 25
+    },
+    {
+      "src": "integrated/day02",
+      "n": 26,
+      "next": "같은 식별자에 같은 뜻을 주는 클래스 정의"
+    },
+    {
+      "src": "integrated/day02",
+      "n": 30,
+      "next": "자료형과 허용값"
+    },
+    {
+      "src": "integrated/day02",
+      "n": 31,
+      "next": "목록과 열거형"
+    },
+    {
+      "src": "integrated/day02",
+      "n": 32,
+      "next": "필수 속성과 선택 속성"
+    },
+    {
+      "src": "integrated/day02",
+      "n": 33,
+      "next": "관계 정의와 유효한 연결"
+    },
+    {
+      "src": "integrated/day02",
+      "n": 34,
+      "next": "스키마의 제약과 데이터 오류"
+    },
+    {
+      "src": "integrated/day02",
+      "n": 35
+    },
+    {
+      "src": "integrated/day02",
+      "n": 36,
+      "next": "정의한 연결을 그래프에 저장하고 읽는 방법"
+    },
+    {
+      "new": "query",
+      "next": "테이블의 조인과 그래프의 연결"
+    },
+    {
+      "src": "integrated/day02",
+      "n": 45,
+      "next": "노드 · 레이블 · 관계 · 속성"
+    },
+    {
+      "src": "integrated/day02",
+      "n": 46,
+      "next": "온톨로지 스키마와 DB 제약"
+    },
+    {
+      "src": "integrated/day02",
+      "n": 47,
+      "next": "모델의 노드와 관계를 조회 패턴으로 표현하는 법"
+    },
+    {
+      "src": "integrated/day02",
+      "n": 49,
+      "next": "MATCH · RETURN: 패턴과 결과의 행"
+    },
+    {
+      "src": "integrated/day02",
+      "n": 50,
+      "next": "같은 대상이 여러 결과 행에 나타나는 경우"
+    },
+    {
+      "src": "integrated/day02",
+      "n": 52,
+      "next": "중복을 가린 결과로 실제 대상 수를 세는 방법"
+    },
+    {
+      "src": "integrated/day02",
+      "n": 53,
+      "next": "찾아낸 행에 조건을 적용하는 위치"
+    },
+    {
+      "src": "integrated/day02",
+      "n": 56,
+      "next": "찾는 패턴을 새로 저장하거나 다시 쓰는 방법"
+    },
+    {
+      "src": "integrated/day02",
+      "n": 61,
+      "next": "MERGE의 검색 조건과 SET의 변경값"
+    },
+    {
+      "src": "integrated/day02",
+      "n": 62,
+      "next": "같은 ID를 다시 넣은 뒤 확인할 값과 개수"
+    },
+    {
+      "src": "integrated/day02",
+      "n": 64,
+      "next": "센서의 태그와 유온 한계를 찾는 설계·조회 경로"
+    },
+    {
+      "src": "integrated/day02",
+      "n": 73,
+      "next": "오늘 다룬 핵심 개념과 주요 용어 정리"
+    },
+    {
+      "src": "integrated/day02",
+      "n": 74,
+      "next": "Review Quiz: 핵심 흐름 되짚어보기"
+    },
+    {
+      "src": "integrated/day02",
+      "n": 75,
+      "next": "Quiz 1. 스키마와 인스턴스"
+    },
+    {
+      "src": "integrated/day02",
+      "n": 76,
+      "next": "Quiz 2. 관계의 속성"
+    },
+    {
+      "src": "integrated/day02",
+      "n": 77,
+      "next": "Quiz 3. 저장을 막는 조건"
+    },
+    {
+      "src": "integrated/day02",
+      "n": 78,
+      "next": "정답과 판단 기준"
+    },
+    {
+      "src": "integrated/day02",
+      "n": 79
+    }
+  ],
+  "note_end": [
+    "이론 시간에는 대상을 식별하고 연결을 조회하는 기준을 배웠습니다. 이번에는 직접 모델을 적재하고 같은 질문의 결과를 원자료와 비교합니다.",
+    "설비와 부품의 연결을 반복해서 넣어도 식별자와 개수가 유지되는지 확인합니다.",
+    "다음에는 대상의 연결에 작업 절차와 조건을 잇습니다."
+  ],
+  "pptx_sha256": "067abefc08b289bee860643336f666f0e9d07aec3b41944b9964b7ec38233b70"
 }

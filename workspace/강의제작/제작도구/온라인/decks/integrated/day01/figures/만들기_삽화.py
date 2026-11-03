@@ -922,6 +922,215 @@ def data_command_routes() -> str:
     return svg(o, 1500, 600)
 
 
+# ───────────────────────── 14. 판단 · 분기 · 전후를 보이는 그림 ─────────────────────────
+
+def dash_line(x1, y1, x2, y2, color=NAVY, sw=SW, on=10, off=8):
+    """점선을 짧은 선분으로 그린다. 그림을 PNG로 바꾸는 PyMuPDF가 stroke-dasharray를 그리지 않는다."""
+    n = math.hypot(x2 - x1, y2 - y1)
+    ux, uy = (x2 - x1) / n, (y2 - y1) / n
+    o, t = [], 0.0
+    while t < n - 1:
+        e = min(t + on, n)
+        o.append(line(round(x1 + ux * t, 1), round(y1 + uy * t, 1), round(x1 + ux * e, 1), round(y1 + uy * e, 1), stroke=color, sw=sw))
+        t = e + off
+    return o
+
+
+def dash_rect(x, y, w, h, color=NAVY, sw=SW, on=10, off=8):
+    return (dash_line(x, y, x + w, y, color, sw, on, off) + dash_line(x + w, y, x + w, y + h, color, sw, on, off)
+            + dash_line(x + w, y + h, x, y + h, color, sw, on, off) + dash_line(x, y + h, x, y, color, sw, on, off))
+
+
+def note_doc(cx, cy, st: St, mark=None):
+    """기록 한 장. mark: 'gap' 빠진 줄(점선) · 'check' 확인 표시 · 'fix' 고친 줄(강조)."""
+    o = [rect(cx - 50, cy - 64, 100, 128, 8, fill=st.fill, stroke=st.line)]
+    for i, dy in enumerate((-40, -18, 4, 26)):
+        if mark == "gap" and i == 2:
+            o += dash_line(cx - 32, cy + dy, cx + 32, cy + dy, BLUE, 3.5, 7, 8)
+        elif mark == "fix" and i == 2:
+            o.append(line(cx - 32, cy + dy, cx + 32, cy + dy, stroke=SKY, sw=7))
+        else:
+            o.append(line(cx - 32, cy + dy, cx + 32, cy + dy, stroke=st.line, sw=2.5))
+    if mark in ("check", "fix"):
+        o.append(circle(cx + 46, cy + 56, 21, fill=SKY if mark == "fix" else st.soft, stroke=st.line, sw=3))
+        o.append(path(f"M {cx + 36},{cy + 56} L {cx + 44},{cy + 64} L {cx + 57},{cy + 47}", stroke=st.line, sw=3.5))
+    return o
+
+
+def record_trail() -> str:
+    """내 설명 → 출처 · 실습 기록 → 고친 설명."""
+    o = [arrow([(215, 215), (505, 115)], BLUE, sw=4.5), arrow([(215, 290), (505, 375)], BLUE, sw=4.5),
+         arrow([(690, 115), (975, 215)], NAVY, sw=4), arrow([(690, 375), (975, 290)], NAVY, sw=4)]
+    o += note_doc(150, 250, ON, "gap") + book_icon(600, 100, ON) + note_doc(600, 372, NORM, "check") + note_doc(1040, 250, ON, "fix")
+    return svg(o)
+
+
+def offset_rows() -> str:
+    """같은 레코드 다섯 칸 위에서 두 소비자의 읽기 위치. 위: 저장 서비스가 멈춘 동안, 아래: 돌아온 뒤."""
+    x0, cw, ch = 300, 170, 62
+    o: list[str] = []
+
+    def row(y, det_to, sto_from, sto_to):
+        for i in range(5):
+            o.append(rect(x0 + i * cw, y - ch / 2, cw, ch, 4, fill=LIGHT if i < det_to else WHITE, stroke=NAVY, sw=3))
+        o.append(arrow([(x0 + 6, y - ch / 2 - 22), (x0 + det_to * cw - 6, y - ch / 2 - 22)], BLUE, sw=7, size=18))
+        if sto_from == sto_to:
+            o.append(path(f"M {x0 + 6},{y + ch / 2 + 22} L {x0 + sto_to * cw - 6},{y + ch / 2 + 22}", stroke=NAVY, sw=7))
+            xm = x0 + sto_to * cw
+            o.append(line(xm - 6, y + ch / 2 + 10, xm - 6, y + ch / 2 + 34, stroke=NAVY, sw=7))
+        else:
+            o.append(path(f"M {x0 + 6},{y + ch / 2 + 22} L {x0 + sto_from * cw - 6},{y + ch / 2 + 22}", stroke=NAVY, sw=7))
+            o.append(arrow([(x0 + sto_from * cw - 6, y + ch / 2 + 22), (x0 + sto_to * cw - 6, y + ch / 2 + 22)], SKY, sw=7, size=18))
+
+    row(135, 4, 1, 1)
+    row(385, 5, 1, 3)
+    return svg(o)
+
+
+def diamond(cx, cy, hw, hh, st: St):
+    return [poly([(cx, cy - hh), (cx + hw, cy), (cx, cy + hh), (cx - hw, cy)], fill=st.soft, stroke=st.line, sw=SW)]
+
+
+def lineage_narrow() -> str:
+    """값이 달라 보일 때: 같은 대상 · 시각인가 → 원천인가 계산인가 → 확인할 곳."""
+    o = [rect(15, 185, 175, 150, 12, fill=LIGHT)]
+    o += diamond(375, 260, 125, 95, NORM) + diamond(700, 260, 125, 95, NORM)
+    o += [arrow([(190, 260), (246, 260)], NAVY), arrow([(500, 260), (571, 260)], BLUE, sw=5),
+          arrow([(375, 355), (375, 405)], NAVY),
+          path("M 700,165 L 700,85 L 840,85", stroke=BLUE, sw=5), arrow([(840, 85), (900, 85)], BLUE, sw=5),
+          arrow([(825, 260), (900, 260)], BLUE, sw=5)]
+    o += [rect(250, 405, 250, 100, 12, fill=WHITE), rect(900, 20, 285, 130, 12, fill=PALE, stroke=BLUE),
+          rect(900, 195, 285, 130, 12, fill=PALE, stroke=BLUE),
+          rect(900, 375, 285, 130, 12, fill=WHITE, stroke="none", sw=0)]
+    o += dash_rect(900, 375, 285, 130, NAVY, SW, 9, 8) + dash_line(1042, 325, 1042, 375, NAVY, 3, 6, 7)
+    return svg(o)
+
+
+def kinds_columns() -> str:
+    """쿨러 사건의 이름을 네 질문의 칸에 놓는다."""
+    xs = (150, 450, 750, 1050)
+    o: list[str] = []
+    for x in xs:
+        o.append(rect(x - 138, 8, 276, 504, 14, fill=LIGHT, stroke="none", sw=0))
+    y1, y2 = 185, 370
+    o += g(xs[0], y1, 0.9, radiator(-44, -34, 88, 68, ON, fins=8, r=7)) + gauge(xs[0], y2, ON, r=32, hot=True)
+    o += thermo(xs[1] - 14, y1 + 34, ON, s=0.72, level=0.7) + [arrow([(xs[1] + 22, y1 + 26), (xs[1] + 22, y1 - 34)], BLUE, sw=4, size=11)]
+    o += g(xs[1] - 14, y2, 0.8, radiator(-44, -34, 88, 68, NORM, fins=8, r=7)) + [arrow([(xs[1] + 42, y2 - 30), (xs[1] + 42, y2 + 30)], BLUE, sw=4, size=11)]
+    o += g(xs[2], y1, 0.9, dusty_cooler(0, 0, ON)) + fan(xs[2], y2, 40, NORM, rot=35)
+    for sgn in (-1, 1):
+        for rr in (50, 60):
+            a0, a1 = math.radians(-28), math.radians(28)
+            o.append(path(f"M {xs[2] + sgn * rr * math.cos(a0):.1f},{y2 + rr * math.sin(a0):.1f} A {rr} {rr} 0 0 {1 if sgn > 0 else 0} "
+                          f"{xs[2] + sgn * rr * math.cos(a1):.1f},{y2 + rr * math.sin(a1):.1f}", stroke=NAVY, sw=3))
+    o += fan(xs[3], y1, 44, ON, rot=20, hot=True)
+    o += g(xs[3], y2, 0.9, radiator(-44, -34, 88, 68, ON, fins=8, r=7))
+    for dx, dy in ((-52, -30), (56, -24), (-56, 24), (54, 30)):
+        o.append(path(f"M {xs[3] + dx},{y2 + dy - 9} L {xs[3] + dx},{y2 + dy + 9} M {xs[3] + dx - 9},{y2 + dy} L {xs[3] + dx + 9},{y2 + dy}", stroke=BLUE, sw=3.5))
+    return svg(o)
+
+
+def property_scale() -> str:
+    """왼쪽: 유온의 속성 항목. 오른쪽: 온도 눈금 위의 정상값 · 한계(설정)와 관측값."""
+    tx = lambda t: 530 + (t - 40) * 640 / 30
+    o = [circle(105, 255, 88, fill=PALE, sw=4)]
+    o += thermo(105, 295, ON, s=0.95, level=0.6)
+    for y in (105, 255, 405):
+        o.append(line(190, 255 + (y - 255) * 0.32, 235, y, stroke=NAVY, sw=3.5))
+        o.append(rect(235, y - 45, 225, 90, 10, fill=WHITE))
+    y = 270
+    o.append(rect(tx(40), y - 13, tx(70) - tx(40), 26, 13, fill=LIGHT))
+    o.append(rect(tx(48), y - 13, tx(65) - tx(48), 26, 0, fill=PALE, stroke="none", sw=0))
+    o.append(rect(tx(40), y - 13, tx(70) - tx(40), 26, 13))
+    for t in (48, 65):
+        o.append(line(tx(t), y - 44, tx(t), y + 13, stroke=NAVY, sw=5))
+    o.append(circle(tx(55.71), y, 16, fill=SKY, sw=4))
+    o += g(tx(55.71), 420, 0.8, cylinder_db(0, 0, ON))
+    o.append(arrow([(tx(55.71), 372), (tx(55.71), y + 22)], BLUE, sw=4.5))
+    o += dash_line(tx(55.71) + 24, y - 24, tx(65) - 8, y - 24, BLUE, 3.5, 7, 7)
+    return svg(o)
+
+
+def relation_named() -> str:
+    """이름 없는 선(왼쪽)과 이름 붙은 관계(오른쪽)."""
+    o: list[str] = []
+    for ox, named in ((0, False), (610, True)):
+        o.append(rect(ox + 15, 8, 560, 504, 14, fill=PALE if named else LIGHT, stroke="none", sw=0))
+        for ty in (120, 400):
+            if named:
+                o.append(arrow([(ox + 200, 260 + (ty - 260) * 0.25), (ox + 400, ty + (260 - ty) * 0.12)], BLUE, sw=5, size=15))
+            else:
+                o.append(line(ox + 200, 260 + (ty - 260) * 0.25, ox + 400, ty + (260 - ty) * 0.12, stroke=NAVY, sw=4))
+        o.append(circle(ox + 130, 260, 72, fill=SKY, sw=4))
+        o += g(ox + 130, 228, 0.5, broken_cooler(0, 0, NORM))
+        o.append(circle(ox + 465, 120, 58, fill=WHITE, sw=4))
+        o += fan(ox + 465, 120, 40, ON, rot=20, hot=True)
+        o.append(circle(ox + 465, 400, 58, fill=WHITE, sw=4))
+        o += g(ox + 465, 400, 0.72, radiator(-44, -34, 88, 68, ON, fins=8, r=7))
+    return svg(o)
+
+
+def fill_or_redefine() -> str:
+    """지식을 더 채운다(왼쪽) · 공통 정의를 바꾼다(오른쪽)."""
+    o: list[str] = []
+    for ox, redefine in ((0, False), (610, True)):
+        o.append(rect(ox + 15, 8, 560, 504, 14, fill=LIGHT, stroke="none", sw=0))
+        o.append(rect(ox + 45, 28, 500, 96, 12, fill=PALE if redefine else WHITE, stroke=BLUE if redefine else NAVY, sw=5 if redefine else 3))
+        o.append(arrow([(ox + 295, 124), (ox + 295, 168)], NAVY, sw=3.5, size=11))
+        tx, ty = ox + 460, 340
+        for i, yy in enumerate((215, 340, 465)):
+            new = (not redefine) and i == 1
+            start = (ox + 212, yy + (ty - yy) * 0.04)
+            end = (tx - 72, ty + (yy - ty) * 0.2)
+            if redefine:
+                o += dash_line(start[0], start[1], end[0], end[1], BLUE, 4, 9, 8)
+            else:
+                o.append(arrow([start, end], BLUE if new else NAVY, sw=5.5 if new else 3.5, size=15 if new else 13))
+            o.append(circle(ox + 195, yy, 14, fill=SKY if new else WHITE, stroke=BLUE if (new or redefine) else NAVY, sw=4))
+        o.append(circle(tx, ty, 66, fill=SKY, sw=4))
+    return svg(o)
+
+
+def stored_not_true() -> str:
+    """같은 잘못된 연결이 저장 · 그림에 그대로 남는다. 오른쪽은 따로 확인할 두 가지."""
+    o: list[str] = []
+
+    def pair(ax, ay, bx, by, r):
+        d_ = math.hypot(bx - ax, by - ay)
+        ux, uy = (bx - ax) / d_, (by - ay) / d_
+        return [arrow([(ax + ux * (r + 4), ay + uy * (r + 4)), (bx - ux * (r + 8), by - uy * (r + 8))], BLUE, sw=4, size=12),
+                circle(ax, ay, r, fill=SKY, sw=3.5), circle(bx, by, r, fill=WHITE, sw=3.5)]
+
+    o += pair(70, 260, 265, 260, 58)
+    o += [path("M 330,235 L 390,130", stroke=NAVY, sw=3.5), arrow([(390, 130), (440, 130)], NAVY, sw=3.5),
+          path("M 330,285 L 390,390", stroke=NAVY, sw=3.5), arrow([(390, 390), (440, 390)], NAVY, sw=3.5)]
+    o += g(510, 130, 0.95, cylinder_db(0, 0, ON)) + monitor(510, 390, ON, "chart")
+    o += [arrow([(585, 130), (640, 130)], NAVY, sw=3.5), arrow([(585, 390), (640, 390)], NAVY, sw=3.5)]
+    o += pair(695, 130, 880, 130, 58) + pair(695, 335, 880, 445, 58)
+    o += [rect(965, 40, 225, 440, 14, fill=PALE, stroke=BLUE, sw=3)]
+    for yy in (145, 345):
+        o.append(circle(1077, yy, 26, fill=WHITE, stroke=NAVY, sw=3))
+        o.append(path(f"M {1064},{yy} L {1074},{yy + 10} L {1091},{yy - 11}", stroke=BLUE, sw=4))
+    return svg(o)
+
+
+def evidence_outcomes() -> str:
+    """위: 후보 · 증거 · 대조의 세 상태. 아래: 대조에서 갈라지는 세 결과."""
+    o: list[str] = []
+    for x in (30, 440, 850):
+        o.append(rect(x, 14, 320, 96, 12, fill=WHITE))
+    o += [arrow([(350, 62), (440, 62)], NAVY), arrow([(760, 62), (850, 62)], NAVY)]
+    o += [line(1010, 110, 1010, 150, stroke=NAVY, sw=4), line(190, 150, 1010, 150, stroke=NAVY, sw=4)]
+    for x in (190, 600, 1010):
+        o.append(arrow([(x, 150), (x, 196)], NAVY, sw=4))
+    o += [rect(30, 196, 320, 256, 14, fill=PALE, stroke=BLUE, sw=4), rect(440, 196, 320, 256, 14, fill=LIGHT, stroke="none", sw=0),
+          rect(850, 196, 320, 256, 14, fill=WHITE, stroke="none", sw=0)]
+    o += dash_rect(850, 196, 320, 256, NAVY, SW, 9, 8)
+    o += g(190, 262, 0.85, dusty_cooler(0, 0, ON)) + fan(600, 262, 40, NORM, rot=35)
+    o += gauge(1010, 262, NORM, r=34, ang=-90)
+    o.append(line(976, 296, 1044, 228, stroke=BLUE, sw=5))
+    return svg(o)
+
+
 NEW_ONLY: set = {"경로2_1.svg", "경로2_2.svg", "데이터_명령_두경로.svg"}
 
 
@@ -936,7 +1145,10 @@ def main():
            "설비_3_TS1.svg": hyd_unit_f("ret cooler ts1"), "리니지_OT.svg": lineage_zone("OT"), "리니지_IT.svg": lineage_zone("IT"),
            "원인후보_1.svg": causes_f(0), "원인후보_2.svg": causes_f(1), "원인후보_3.svg": causes_f(2),
            "관계_만남.svg": relation_f("meet"), "관계_조치.svg": relation_f("act"), "연결_설비쪽.svg": connect_f("asset"),
-           "연결_진단쪽.svg": connect_f("diag"), "지식그래프_지도.svg": kg_map(), "흩어진정보_값.svg": scattered_f("val"), "흩어진정보_MES.svg": scattered_f("mes")}
+           "연결_진단쪽.svg": connect_f("diag"), "지식그래프_지도.svg": kg_map(), "흩어진정보_값.svg": scattered_f("val"), "흩어진정보_MES.svg": scattered_f("mes"),
+           "기록_되짚기.svg": record_trail(), "읽기위치_전후.svg": offset_rows(), "리니지_좁히기.svg": lineage_narrow(),
+           "종류_네칸.svg": kinds_columns(), "속성_눈금.svg": property_scale(), "관계_이름.svg": relation_named(),
+           "채우기_정의변경.svg": fill_or_redefine(), "저장_그림_옳음.svg": stored_not_true(), "증거_세결과.svg": evidence_outcomes()}
     for name, text in out.items():
         assert "<text" not in text
         if (HERE / name).exists() and name not in NEW_ONLY:

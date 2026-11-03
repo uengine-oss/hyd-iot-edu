@@ -1,0 +1,300 @@
+{
+  "source": "workspace\\강의제작\\제작도구\\온라인\\decks\\integrated\\sample\\figures\\만들기_그래프.py",
+  "source_sha256": "80aa51de5af75dc30f462096ee316f3afda45cd8c93c8c647709c80a3ef5c121",
+  "csv_inputs": {
+    "workspace\\강의제작\\제작도구\\온라인\\decks\\integrated\\sample\\figures\\그래프_데이터_tag_1s.csv": "1049f6e0a0273edfbf2b12c3037d71c5393aa9bb8f4b91ba36584593606a24e1"
+  },
+  "width_in": 7.9,
+  "height_in": 5.0,
+  "dpi": 220,
+  "labels": [
+    {
+      "text": "경보 조건의 기준 55 ℃",
+      "center_x_in": 6.97240910096602,
+      "center_y_in": 1.47752462670261,
+      "bbox_w_in": 1.6181818181818182,
+      "bbox_h_in": 0.16240357678345949,
+      "font_pt": 11.0,
+      "font_weight": "normal",
+      "color": "#1a6fc4",
+      "rotation_ccw": 0.0
+    },
+    {
+      "text": "쿨러 열화 시작",
+      "center_x_in": 0.8102230158719149,
+      "center_y_in": 0.2219105392813745,
+      "bbox_w_in": 1.1272727272727272,
+      "bbox_h_in": 0.17882043087121247,
+      "font_pt": 12.0,
+      "font_weight": "normal",
+      "color": "#5b6b82",
+      "rotation_ccw": 0.0
+    },
+    {
+      "text": "경보 발생",
+      "center_x_in": 2.323957816037265,
+      "center_y_in": 0.2219105392813745,
+      "bbox_w_in": 0.7318181818181818,
+      "bbox_h_in": 0.17882043087121247,
+      "font_pt": 12.0,
+      "font_weight": "bold",
+      "color": "#1a6fc4",
+      "rotation_ccw": 0.0
+    },
+    {
+      "text": "조치 승인",
+      "center_x_in": 4.710251565413041,
+      "center_y_in": 0.2219105392813745,
+      "bbox_w_in": 0.7318181818181818,
+      "bbox_h_in": 0.17882043087121247,
+      "font_pt": 12.0,
+      "font_weight": "bold",
+      "color": "#1a6fc4",
+      "rotation_ccw": 0.0
+    },
+    {
+      "text": "경보 해제",
+      "center_x_in": 6.313498158888383,
+      "center_y_in": 0.2219105392813745,
+      "bbox_w_in": 0.7318181818181818,
+      "bbox_h_in": 0.17882043087121247,
+      "font_pt": 12.0,
+      "font_weight": "normal",
+      "color": "#5b6b82",
+      "rotation_ccw": 0.0
+    },
+    {
+      "text": "경보에서 승인까지 108초",
+      "center_x_in": 3.5171046950600364,
+      "center_y_in": 2.4580188679245283,
+      "bbox_w_in": 1.9727272727272727,
+      "bbox_h_in": 0.18475613064236066,
+      "font_pt": 12.5,
+      "font_weight": "bold",
+      "color": "#1a6fc4",
+      "rotation_ccw": 0.0
+    },
+    {
+      "text": "최고 61.8 ℃",
+      "center_x_in": 4.233031527201335,
+      "center_y_in": 0.798788742841892,
+      "bbox_w_in": 0.8545454545454545,
+      "bbox_h_in": 0.16240357678345949,
+      "font_pt": 11.0,
+      "font_weight": "normal",
+      "color": "#13294b",
+      "rotation_ccw": 0.0
+    },
+    {
+      "text": "유온 TS1 (℃)",
+      "center_x_in": 0.3046067831636678,
+      "center_y_in": 1.5103773584905658,
+      "bbox_w_in": 0.17566522155145203,
+      "bbox_h_in": 1.018181818181818,
+      "font_pt": 12.5,
+      "font_weight": "normal",
+      "color": "#13294b",
+      "rotation_ccw": 90.0
+    },
+    {
+      "text": "45",
+      "center_x_in": 0.5343585858585858,
+      "center_y_in": 2.5893493012562234,
+      "bbox_w_in": 0.17272727272727273,
+      "bbox_h_in": 0.15277777777777765,
+      "font_pt": 11.0,
+      "font_weight": "normal",
+      "color": "#5b6b82",
+      "rotation_ccw": 0.0
+    },
+    {
+      "text": "50",
+      "center_x_in": 0.5343585858585858,
+      "center_y_in": 2.1058587352184883,
+      "bbox_w_in": 0.17272727272727273,
+      "bbox_h_in": 0.15277777777777765,
+      "font_pt": 11.0,
+      "font_weight": "normal",
+      "color": "#5b6b82",
+      "rotation_ccw": 0.0
+    },
+    {
+      "text": "55",
+      "center_x_in": 0.5343585858585858,
+      "center_y_in": 1.6223681691807523,
+      "bbox_w_in": 0.17272727272727273,
+      "bbox_h_in": 0.15277777777777765,
+      "font_pt": 11.0,
+      "font_weight": "normal",
+      "color": "#5b6b82",
+      "rotation_ccw": 0.0
+    },
+    {
+      "text": "60",
+      "center_x_in": 0.5343585858585858,
+      "center_y_in": 1.138877603143016,
+      "bbox_w_in": 0.17272727272727273,
+      "bbox_h_in": 0.15277777777777765,
+      "font_pt": 11.0,
+      "font_weight": "normal",
+      "color": "#5b6b82",
+      "rotation_ccw": 0.0
+    },
+    {
+      "text": "65",
+      "center_x_in": 0.5343585858585858,
+      "center_y_in": 0.6553870371052808,
+      "bbox_w_in": 0.17272727272727273,
+      "bbox_h_in": 0.15277777777777765,
+      "font_pt": 11.0,
+      "font_weight": "normal",
+      "color": "#5b6b82",
+      "rotation_ccw": 0.0
+    },
+    {
+      "text": "경보 조건의 기준 70 %",
+      "center_x_in": 6.981500010056929,
+      "center_y_in": 3.4276032430548113,
+      "bbox_w_in": 1.6,
+      "bbox_h_in": 0.16240357678345949,
+      "font_pt": 11.0,
+      "font_weight": "normal",
+      "color": "#1a6fc4",
+      "rotation_ccw": 0.0
+    },
+    {
+      "text": "2026-10-10 실제 시각 (설비 시간은 20배속)",
+      "center_x_in": 4.24625,
+      "center_y_in": 4.829812899502841,
+      "bbox_w_in": 3.0545454545454547,
+      "bbox_h_in": 0.1624035767834596,
+      "font_pt": 11.0,
+      "font_weight": "normal",
+      "color": "#5b6b82",
+      "rotation_ccw": 0.0
+    },
+    {
+      "text": "11:12",
+      "center_x_in": 0.8214765722101385,
+      "center_y_in": 4.616666666666667,
+      "bbox_w_in": 0.37727272727272726,
+      "bbox_h_in": 0.1527777777777778,
+      "font_pt": 11.0,
+      "font_weight": "normal",
+      "color": "#5b6b82",
+      "rotation_ccw": 0.0
+    },
+    {
+      "text": "11:13",
+      "center_x_in": 2.1471953131935813,
+      "center_y_in": 4.616666666666667,
+      "bbox_w_in": 0.37727272727272726,
+      "bbox_h_in": 0.1527777777777778,
+      "font_pt": 11.0,
+      "font_weight": "normal",
+      "color": "#5b6b82",
+      "rotation_ccw": 0.0
+    },
+    {
+      "text": "11:14",
+      "center_x_in": 3.472914071516557,
+      "center_y_in": 4.616666666666667,
+      "bbox_w_in": 0.37727272727272726,
+      "bbox_h_in": 0.1527777777777778,
+      "font_pt": 11.0,
+      "font_weight": "normal",
+      "color": "#5b6b82",
+      "rotation_ccw": 0.0
+    },
+    {
+      "text": "11:15",
+      "center_x_in": 4.798632821169766,
+      "center_y_in": 4.616666666666667,
+      "bbox_w_in": 0.37727272727272726,
+      "bbox_h_in": 0.1527777777777778,
+      "font_pt": 11.0,
+      "font_weight": "normal",
+      "color": "#5b6b82",
+      "rotation_ccw": 0.0
+    },
+    {
+      "text": "11:16",
+      "center_x_in": 6.124351562153209,
+      "center_y_in": 4.616666666666667,
+      "bbox_w_in": 0.37727272727272726,
+      "bbox_h_in": 0.1527777777777778,
+      "font_pt": 11.0,
+      "font_weight": "normal",
+      "color": "#5b6b82",
+      "rotation_ccw": 0.0
+    },
+    {
+      "text": "11:17",
+      "center_x_in": 7.450070320476185,
+      "center_y_in": 4.616666666666667,
+      "bbox_w_in": 0.37727272727272726,
+      "bbox_h_in": 0.1527777777777778,
+      "font_pt": 11.0,
+      "font_weight": "normal",
+      "color": "#5b6b82",
+      "rotation_ccw": 0.0
+    },
+    {
+      "text": "냉각 효율 CE (%)",
+      "center_x_in": 0.3023340558909406,
+      "center_y_in": 3.6764150943396228,
+      "bbox_w_in": 0.18021067609690666,
+      "bbox_h_in": 1.3227272727272728,
+      "font_pt": 12.5,
+      "font_weight": "normal",
+      "color": "#1a6fc4",
+      "rotation_ccw": 90.0
+    },
+    {
+      "text": "40",
+      "center_x_in": 0.5343585858585858,
+      "center_y_in": 4.336361879872576,
+      "bbox_w_in": 0.17272727272727273,
+      "bbox_h_in": 0.1527777777777778,
+      "font_pt": 11.0,
+      "font_weight": "normal",
+      "color": "#5b6b82",
+      "rotation_ccw": 0.0
+    },
+    {
+      "text": "55",
+      "center_x_in": 0.5343585858585858,
+      "center_y_in": 3.9495694270423876,
+      "bbox_w_in": 0.17272727272727273,
+      "bbox_h_in": 0.1527777777777778,
+      "font_pt": 11.0,
+      "font_weight": "normal",
+      "color": "#5b6b82",
+      "rotation_ccw": 0.0
+    },
+    {
+      "text": "70",
+      "center_x_in": 0.5343585858585858,
+      "center_y_in": 3.562776974212199,
+      "bbox_w_in": 0.17272727272727273,
+      "bbox_h_in": 0.15277777777777793,
+      "font_pt": 11.0,
+      "font_weight": "normal",
+      "color": "#5b6b82",
+      "rotation_ccw": 0.0
+    },
+    {
+      "text": "85",
+      "center_x_in": 0.5343585858585858,
+      "center_y_in": 3.17598452138201,
+      "bbox_w_in": 0.17272727272727273,
+      "bbox_h_in": 0.15277777777777765,
+      "font_pt": 11.0,
+      "font_weight": "normal",
+      "color": "#5b6b82",
+      "rotation_ccw": 0.0
+    }
+  ],
+  "method": "같은 Figure의 Text만 숨김;Line2D·Path·데이터·축lim·spine·눈금선·위치 불변",
+  "background_sha256": "0124d555ccf9119c2518e5e8ae2f1a3b06dfd8fffaf1c244be29bcc59405c5fe"
+}
