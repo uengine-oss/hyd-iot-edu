@@ -64,7 +64,7 @@ description: "HYD 교육과정 저장소에서 사용자가 무엇이든 하나�
 
 ## 5. 동기화
 
-`CLAUDE.md` 2절대로 `PYTHONUTF8=1 .venv314/Scripts/python.exe workspace/동기화.py commit "무엇을 왜" [main 경로 …] [--만 workspace 경로 …]` → `… push`. 다른 작업 폴더가 열려 있으면 `--만`으로 이 작업의 경로만 올린다(`status`가 로컬에만 · 내용 다름을 보여 준다). 이전 판 경고가 나오면 고치고 다시.
+`CLAUDE.md` 2절대로 `PYTHONUTF8=1 .venv314/Scripts/python.exe workspace/동기화.py pull` → `… commit "무엇을 왜" [main 경로 …] [--만 workspace 경로 …]` → 바로 `… push`. 다른 작업 폴더가 열려 있으면 `--만`으로 이 작업의 경로만 올린다(`status`가 로컬에만 · 내용 다름을 보여 준다). 이전 판 경고가 나오면 고치고 다시.
 
 ## 6. 정리
 

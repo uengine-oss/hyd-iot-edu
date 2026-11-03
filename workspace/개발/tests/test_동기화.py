@@ -5,7 +5,8 @@
   · 키 검사: 커밋은 그 커밋이 넣은 판을, push 는 origin 에 없는 커밋 하나하나를 본다 — 키를 넣고 지운 두 커밋도 push 하지 않는다.
   · GitHub 한도(100 MiB)를 넘는 파일이 든 커밋은 만들지 않는다. 커밋 메시지는 준 그대로다.
   · pull: 로컬 끝이 원격의 조상일 때만 앞으로. 원격이 고치거나 지운 파일은 로컬이 로컬 끝 판 그대로일 때만 바꾸거나 지우고,
-    로컬에서 고친 파일과 겹치면 아무것도 쓰지 않고 멈춘다. 로컬에서 지운 파일은 되살리지 않는다.
+    로컬에서 고친 파일과 겹치면 아무것도 쓰지 않고 멈춘다. 원격이 안 바꾼 파일은 로컬에서 고치거나 지웠어도 그대로 둔다.
+  · commit: 원격이 로컬 끝보다 앞서 있으면 커밋하지 않고 pull 을 먼저 하라고 멈춘다.
 실제 git 으로 임시 원격(bare) 하나와 PC 두 대(clone)를 만든다. 이 저장소는 건드리지 않는다. 도구는 그 PC의 workspace/ 에 복사한 것을 그대로 부른다.
 """
 import os
@@ -53,7 +54,7 @@ def origin(_template, tmp_path):
 
 def _build_origin(tmp_path):
     remote, a = tmp_path / 'origin.git', tmp_path / 'A'
-    git(tmp_path, 'init', '-q', '--bare', str(remote))
+    git(tmp_path, 'init', '-q', '--bare', '-b', 'main', str(remote))   # 실제 원격처럼 HEAD = main(clone이 main을 체크아웃한다)
     git(tmp_path, 'init', '-q', '-b', 'main', str(a))
     identity(a)
     git(a, 'remote', 'add', 'origin', str(remote))
@@ -172,6 +173,21 @@ def test_커밋_메시지는_준_그대로이고_공동_저자_줄을_붙이지_
     assert git(a, 'log', '-1', '--format=%B', 'refs/heads/workspace') == git(a, 'log', '-1', '--format=%B', 'main') == '메시지 그대로'
 
 
+def test_원격이_앞서_있으면_커밋하지_않고_pull을_먼저_하게_한_뒤_양쪽_변경이_함께_올라간다(origin, tmp_path):
+    remote, a = origin
+    b = second_pc(tmp_path, remote)
+    (a / 'workspace' / 'doc.txt').write_text('A가 고침\n', encoding='utf-8')
+    assert sync(a, 'commit', 'A 고침').returncode == 0 and sync(a, 'push').returncode == 0
+    before = git(b, 'rev-parse', 'workspace')
+    (b / 'workspace' / 'note.txt').write_text('B가 고침\n', encoding='utf-8')
+    out = sync(b, 'commit', 'B 고침', '--만', 'workspace/note.txt')
+    assert out.returncode == 1 and 'pull' in out.stderr and git(b, 'rev-parse', 'workspace') == before
+    assert sync(b, 'pull').returncode == 0
+    assert sync(b, 'commit', 'B 고침', '--만', 'workspace/note.txt').returncode == 0 and sync(b, 'push').returncode == 0
+    tip = remote_tip(b, 'workspace')
+    assert git(b, 'show', f'{tip}:workspace/doc.txt') == 'A가 고침' and git(b, 'show', f'{tip}:workspace/note.txt') == 'B가 고침'
+
+
 def test_키가_든_파일은_main에도_workspace에도_붙이지_않는다(origin):
     _, a = origin
     heads = git(a, 'rev-parse', 'main', 'workspace')
@@ -248,6 +264,36 @@ def test_이_PC에서_고친_파일과_겹치면_아무것도_쓰지_않고_멈�
     assert out.returncode == 1 and 'workspace/doc.txt' in out.stderr
     assert (b / 'workspace' / 'doc.txt').read_text(encoding='utf-8') == 'B가 고침\n' and not (b / 'workspace' / 'new.txt').exists()
     assert git(b, 'rev-parse', 'workspace') == before
+    assert f'git show {before[:8]}:' in out.stderr                     # 안내대로 로컬 끝 판으로 되돌리면 받아진다
+    (b / 'workspace' / 'doc.txt').write_bytes(subprocess.run(['git', 'show', f'{before}:workspace/doc.txt'], cwd=b, capture_output=True, check=True).stdout)
+    assert sync(b, 'pull').returncode == 0 and (b / 'workspace' / 'doc.txt').read_text(encoding='utf-8') == 'A가 고침\n'
+
+
+def test_원격이_안_바꾼_파일은_이_PC에서_고치는_중이어도_그대로_두고_원격_변경을_받는다(origin, tmp_path):
+    remote, a = origin
+    b = second_pc(tmp_path, remote)
+    (b / 'workspace' / 'note.txt').write_text('B의 미커밋\n', encoding='utf-8')
+    (a / 'workspace' / 'doc.txt').write_text('A가 고침\n', encoding='utf-8')
+    assert sync(a, 'commit', 'A 고침').returncode == 0 and sync(a, 'push').returncode == 0
+    out = sync(b, 'pull')
+    assert out.returncode == 0, out.stderr
+    assert (b / 'workspace' / 'doc.txt').read_text(encoding='utf-8') == 'A가 고침\n'
+    assert (b / 'workspace' / 'note.txt').read_text(encoding='utf-8') == 'B의 미커밋\n'
+    assert git(b, 'rev-parse', 'workspace') == remote_tip(b, 'workspace')
+
+
+def test_이_PC에만_있는_파일과_같은_이름을_원격이_다른_내용으로_올리면_멈춘다(origin, tmp_path):
+    remote, a = origin
+    b = second_pc(tmp_path, remote)
+    before = git(b, 'rev-parse', 'workspace')
+    (b / 'workspace' / 'video.mp4').write_text('이 PC의 옛 판\n', encoding='utf-8')
+    (a / 'workspace' / 'video.mp4').write_text('원격의 새 판\n', encoding='utf-8')
+    assert sync(a, 'commit', 'A 영상').returncode == 0 and sync(a, 'push').returncode == 0
+    out = sync(b, 'pull')
+    assert out.returncode == 1 and 'workspace/video.mp4' in out.stderr
+    assert (b / 'workspace' / 'video.mp4').read_text(encoding='utf-8') == '이 PC의 옛 판\n' and git(b, 'rev-parse', 'workspace') == before
+    (b / 'workspace' / 'video.mp4').unlink()                           # 안내대로 치우면 받아진다
+    assert sync(b, 'pull').returncode == 0 and (b / 'workspace' / 'video.mp4').read_text(encoding='utf-8') == '원격의 새 판\n'
 
 
 def test_이_PC에서_지운_파일은_되살리지_않는다(origin, tmp_path):
