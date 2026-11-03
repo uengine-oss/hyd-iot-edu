@@ -14,7 +14,8 @@ p.write_text(s,encoding='utf-8')
 (here/'settings.json').write_text(json.dumps({'practice_root':'D:/HYD-Practice'},indent=2),encoding='utf-8')
 data=json.loads((here/'package-index.json').read_text(encoding='utf-8'))
 for lab in data['labs']:
-    lab['url']=args.base_url.rstrip('/')+'/'+quote(lab.pop('path'))
+    relative = Path(lab.pop('path')).relative_to('workspace/강의제작').as_posix()
+    lab['url']=args.base_url.rstrip('/')+'/'+quote(relative)
 (here/'catalog.json').write_text(json.dumps(data,ensure_ascii=False,indent=2),encoding='utf-8')
 with zipfile.ZipFile(here/'실습시작.zip','w',zipfile.ZIP_DEFLATED) as z:
     for name in ['launcher.py','실습시작.cmd','catalog.json','settings.json']:z.write(here/name,'실습시작/'+name)

@@ -93,11 +93,25 @@ def open_document(target):
     else:
         webbrowser.open(str(target))
 
-def open_lab(folder):
+def open_lab(folder, *, guide_only=False):
     folder = Path(folder).resolve()
-    exe = code_executable()
-    subprocess.Popen([str(exe),'--new-window',str(folder),str(folder/'START.md')],shell=False)
+    if not guide_only:
+        exe = code_executable()
+        subprocess.Popen([str(exe),'--new-window',str(folder),str(folder/'START.md')],shell=False)
     open_document(folder/'guide.html')
+
+def open_neo4j(folder):
+    # 구판에서 이미 준비한 학생 DB는 연결만 복구한다. 학생의 변경을 다시 시드하지 않는다.
+    legacy_ready=(folder/'결과/예제_준비.json').is_file() and (folder/'랩_연결.json').is_file()
+    command=['lab_db.py','--no-open'] if legacy_ready else ['prepare_example.py']
+    prepared=subprocess.run([sys.executable,'-X','utf8',*command],cwd=folder,
+                            capture_output=True,encoding='utf-8',errors='replace')
+    if prepared.returncode:
+        raise RuntimeError('실습 DB 준비를 확인하세요.\n'+(prepared.stderr or prepared.stdout).strip()[-500:])
+    state=json.loads((folder/'랩_연결.json').read_text(encoding='utf-8'))
+    open_lab(folder,guide_only=True)
+    open_document(state['browser'])
+    return '가이드와 Neo4j Browser를 열었습니다. 연결 주소: '+state['bolt']
 
 def main():
     import tkinter as tk
@@ -131,8 +145,14 @@ def main():
         def work():
             folder=None
             try:
-                folder=acquire(item,root,reopen);open_lab(folder)
-                text='VS Code와 가이드 열기를 요청했습니다. 열린 폴더와 START.md를 확인하세요.\n'+str(folder)
+                folder=acquire(item,root,reopen)
+                entry=item.get('entry')
+                if entry=='neo4j':
+                    text=open_neo4j(folder)
+                else:
+                    guide_only=entry=='guide'
+                    open_lab(folder,guide_only=guide_only)
+                    text=('가이드에서 포털을 여는 첫 단계를 확인하세요.' if guide_only else 'VS Code와 가이드 열기를 요청했습니다. 열린 폴더와 START.md를 확인하세요.')+'\n'+str(folder)
             except Exception as e:
                 text=str(e)+(('\n'+str(folder)) if folder else '')+'\n다시 시도하거나 수동 ZIP을 이용하세요.'
             window.after(0,lambda:done(text))

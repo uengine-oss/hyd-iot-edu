@@ -48,7 +48,7 @@ def trials():
     noop = lambda s, g: None
     add('통합반', '원본 A', noop, True, ['구조 검사 통과', 'MONITORED_BY: Asset → Sensor 4개', 'Component를 거치지 않고 Asset에 바로 붙은 Sensor 4개(MONITORED_BY)'])
     add('통합반', '원본 B(SAME_ITEM_AS)', noop, True, ['구조 검사 통과', 'SAME_ITEM_AS: Part → Part 1개'], branch='B')
-    add('실전반', '원본 A', noop, True, ['구조 검사 통과', 'SUPPLIES 쌍 21개, 관계 21개(approved=true 18개, false 3개)'])
+    add('실전반', '원본 A', noop, True, ['구조 검사 통과', 'SUPPLIES: Supplier → Part 21개'])
     add('실전반', '원본 B(조건부 승인=비승인)', noop, True, ['구조 검사 통과'], branch='B')
     # 공통 구조(이전 12종을 다시 실행할 수 있게 옮김)
     add('통합반', '1 중복 id', lambda s, g: g['nodes'].append(copy.deepcopy(node(g, 'P-PMP-SEAL'))), False, ['중복 id: P-PMP-SEAL'])
@@ -82,17 +82,37 @@ def trials():
                 r.update(type='ATTACHED_TO', a=r['b'], b=r['a'])
     add('통합반', '21 방향 반대(Sensor → Asset/Component)에서도 설비 직결 센서가 드러남', reverse_fallback, True, ['구조 검사 통과', 'Component를 거치지 않고 Asset에 바로 붙은 Sensor', '(ATTACHED_TO)'], ['바로 붙은 Sensor 4개('])
 
-    # 리허설 2 실전 2-3: 공급 조건 출력 계약
-    def dup_pair(s, g):
-        r = copy.deepcopy(rel(g, 'SUPPLIES', 'supplier:A정밀', 'P-FAN-BRG')); r['props']['id'] = 'quote-2026-07-01'; r['props']['quote_date'] = '2026-07-01'
-        g['rels'].append(r)
-    add('실전반', '14 같은 쌍에 SUPPLIES 둘(재견적 둘 다 보존)', dup_pair, False, ['SUPPLIES supplier:A정밀→P-FAN-BRG가 2개'])
-    add('실전반', '15 approved 없음(결정 누락)', lambda s, g: rel(g, 'SUPPLIES', 'supplier:A정밀', 'P-CLR-CORE')['props'].pop('approved'), False, ['approved 없음'])
-    add('실전반', '16 schema의 approved를 글자로 정의', lambda s, g: s['relations']['SUPPLIES']['properties'].update(approved='string'), False, ["SUPPLIES.properties.approved는 'boolean'"])
-    add('실전반', '17 SUPPLIES 관계 이름 다름', lambda s, g: (s['relations'].update(QUOTED=s['relations'].pop('SUPPLIES')), [r.update(type='QUOTED') for r in g['rels'] if r['type'] == 'SUPPLIES']), False, ['공급 조건 관계 SUPPLIES가 없습니다'])
-    add('실전반', '18 불량률 % 숫자', lambda s, g: rel(g, 'SUPPLIES', 'supplier:C트레이딩', 'P-RTN-FLT')['props'].update(defect_rate=8), False, ['0~1 비율'])
-    add('실전반', '19 승인 상태를 글자로만 둠(approved 대신 status)', lambda s, g: [r['props'].pop('approved') for r in g['rels'] if r['type'] == 'SUPPLIES'], False, ['approved 없음'])
-    add('통합반', '20 통합반 검사기에는 공급 계약 검사가 없음', noop, True, [], ['SUPPLIES'])
+    # 업무 답의 적합성은 학생이 원자료로 입증한다. 구조 검사는 스키마와 그래프의 일관성을 본다.
+    def rename_relation(schema, graph):
+        schema['relations']['QUOTED'] = schema['relations'].pop('SUPPLIES')
+        for relation in graph['rels']:
+            if relation['type'] == 'SUPPLIES':
+                relation['type'] = 'QUOTED'
+
+    def use_offer_nodes(schema, graph):
+        supply = schema['relations'].pop('SUPPLIES')
+        schema['classes']['Offer'] = {'meaning': '공급 조건', 'required': {'id': 'string', 'approved': 'boolean'}}
+        schema['relations']['MADE_OFFER'] = {'from': supply['from'], 'to': 'Offer', 'cardinality': '1:N'}
+        schema['relations']['FOR_PART'] = {'from': 'Offer', 'to': supply['to'], 'cardinality': 'N:1'}
+        edges = []
+        for relation in graph['rels']:
+            if relation['type'] != 'SUPPLIES':
+                edges.append(relation)
+                continue
+            key = 'offer:' + relation['a'] + ':' + relation['b']
+            graph['nodes'].append({'labels': ['Offer'], 'props': {**relation['props'], 'id': key}})
+            edges.extend([{'type': 'MADE_OFFER', 'a': relation['a'], 'b': key},
+                          {'type': 'FOR_PART', 'a': key, 'b': relation['b']}])
+        graph['rels'] = edges
+
+    def missing_declared_field(schema, graph):
+        schema['relations']['SUPPLIES']['required'] = ['quote_date']
+        rel(graph, 'SUPPLIES')['props'].pop('quote_date')
+
+    add('실전반', '다른 관계 이름', rename_relation, True, ['QUOTED: Supplier → Part'])
+    add('실전반', '견적을 독립 대상으로 모델링', use_offer_nodes, True, ['MADE_OFFER: Supplier → Offer', 'FOR_PART: Offer → Part'])
+    add('실전반', '내 스키마에서 필수로 선언한 근거 날짜 누락', missing_declared_field, False, ['필수 속성 quote_date 없음'])
+    add('실전반', '내 스키마 자료형과 실제 승인 값 불일치', lambda s, g: s['relations']['SUPPLIES']['properties'].update(approved='string'), False, ['string 이어야 함'])
     return T
 
 

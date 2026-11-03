@@ -1,0 +1,1406 @@
+{
+  "sensor_change_check": [
+    {
+      "line": 2,
+      "change": "수정",
+      "observed": {
+        "id": "HYD-03:VS1",
+        "unit": "mm/s",
+        "normal": 0.6
+      }
+    },
+    {
+      "line": 3,
+      "change": "수정",
+      "observed": {
+        "id": "HYD-06:I_MOTOR",
+        "unit": "A",
+        "normal": 18.5
+      }
+    },
+    {
+      "line": 4,
+      "change": "삭제",
+      "observed": {
+        "id": "HYD-01:TS1",
+        "unit": "℃",
+        "normal": 48.0
+      }
+    }
+  ],
+  "baseline": [
+    [
+      {
+        "nodes": 206
+      }
+    ],
+    [
+      {
+        "relationships": 305
+      }
+    ],
+    [
+      {
+        "id": "HYD-01",
+        "name": "HYD-01 유압 파워팩",
+        "status": "가동"
+      },
+      {
+        "id": "HYD-02",
+        "name": "HYD-02 유압 파워팩",
+        "status": "가동"
+      },
+      {
+        "id": "HYD-03",
+        "name": "HYD-03 유압 파워팩",
+        "status": "가동"
+      },
+      {
+        "id": "HYD-04",
+        "name": "HYD-04 유압 파워팩",
+        "status": "가동"
+      },
+      {
+        "id": "HYD-05",
+        "name": "3라인 프레스 파워유닛 1호",
+        "status": "가동"
+      },
+      {
+        "id": "HYD-06",
+        "name": "3라인 프레스 파워유닛 2호",
+        "status": "가동"
+      },
+      {
+        "id": "HYD-07",
+        "name": "이동식 예비 파워팩",
+        "status": "예비(보관)"
+      }
+    ]
+  ],
+  "revised": [
+    [
+      {
+        "nodes": 206
+      }
+    ],
+    [
+      {
+        "relationships": 305
+      }
+    ],
+    [
+      {
+        "id": "HYD-01",
+        "name": "HYD-01 유압 파워팩",
+        "status": "가동"
+      },
+      {
+        "id": "HYD-02",
+        "name": "HYD-02 2라인 2호 파워팩",
+        "status": "가동"
+      },
+      {
+        "id": "HYD-03",
+        "name": "HYD-03 유압 파워팩",
+        "status": "가동"
+      },
+      {
+        "id": "HYD-04",
+        "name": "HYD-04 유압 파워팩",
+        "status": "가동"
+      },
+      {
+        "id": "HYD-05",
+        "name": "3라인 프레스 파워유닛 1호",
+        "status": "가동"
+      },
+      {
+        "id": "HYD-06",
+        "name": "3라인 프레스 파워유닛 2호",
+        "status": "가동"
+      },
+      {
+        "id": "HYD-07",
+        "name": "이동식 예비 파워팩",
+        "status": "불용(매각 예정)"
+      }
+    ]
+  ],
+  "baseline_part_assets": [
+    {
+      "part": "P-PMP-SEAL",
+      "asset": "HYD-01",
+      "component": "HYD-01:pump-a",
+      "component_name": "주 펌프 (A)"
+    },
+    {
+      "part": "P-PMP-SEAL",
+      "asset": "HYD-02",
+      "component": "HYD-02:pump-a",
+      "component_name": "주 펌프 (A)"
+    },
+    {
+      "part": "P-PMP-SEAL",
+      "asset": "HYD-03",
+      "component": "HYD-03:pump-a",
+      "component_name": "주 펌프 (A)"
+    }
+  ],
+  "revised_part_assets": {
+    "P-PMP-SEAL": [
+      {
+        "part": "P-PMP-SEAL",
+        "asset": "HYD-01",
+        "component": "HYD-01:pump-a",
+        "component_name": "주 펌프 (A)"
+      },
+      {
+        "part": "P-PMP-SEAL",
+        "asset": "HYD-02",
+        "component": "HYD-02:pump-a",
+        "component_name": "주 펌프 (A)"
+      },
+      {
+        "part": "P-PMP-SEAL",
+        "asset": "HYD-03",
+        "component": "HYD-03:pump-a",
+        "component_name": "주 펌프 (A)"
+      }
+    ],
+    "PS-4510": [
+      {
+        "part": "P-PMP-SEAL",
+        "asset": "HYD-01",
+        "component": "HYD-01:pump-a",
+        "component_name": "주 펌프 (A)"
+      },
+      {
+        "part": "P-PMP-SEAL",
+        "asset": "HYD-02",
+        "component": "HYD-02:pump-a",
+        "component_name": "주 펌프 (A)"
+      },
+      {
+        "part": "P-PMP-SEAL",
+        "asset": "HYD-03",
+        "component": "HYD-03:pump-a",
+        "component_name": "주 펌프 (A)"
+      }
+    ],
+    "P-PMP-SEAL-HT": [
+      {
+        "part": "P-PMP-SEAL-HT",
+        "asset": "HYD-04",
+        "component": "HYD-04:pump-a",
+        "component_name": "주 펌프 (A)"
+      }
+    ],
+    "미등록-품번": []
+  },
+  "repeat_load": "기준/수정 각 2회 동일",
+  "asset_counts": [
+    {
+      "asset": "HYD-01",
+      "components": 12,
+      "sensors": 18
+    },
+    {
+      "asset": "HYD-02",
+      "components": 12,
+      "sensors": 18
+    },
+    {
+      "asset": "HYD-03",
+      "components": 12,
+      "sensors": 18
+    },
+    {
+      "asset": "HYD-04",
+      "components": 11,
+      "sensors": 16
+    },
+    {
+      "asset": "HYD-05",
+      "components": 8,
+      "sensors": 9
+    },
+    {
+      "asset": "HYD-06",
+      "components": 8,
+      "sensors": 9
+    },
+    {
+      "asset": "HYD-07",
+      "components": 5,
+      "sensors": 2
+    }
+  ],
+  "sensors": [
+    {
+      "asset": "HYD-01",
+      "component": "HYD-01:cabinet",
+      "sensor": "HYD-01:TS4",
+      "tag": "TS4",
+      "kind": "measured",
+      "quantity": "제어반 내부 온도",
+      "unit": "℃",
+      "normal": 42.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-01",
+      "component": "HYD-01:cooler",
+      "sensor": "HYD-01:CE",
+      "tag": "CE",
+      "kind": "derived",
+      "quantity": "냉각 효율",
+      "unit": "%",
+      "normal": 84.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-01",
+      "component": "HYD-01:cooler",
+      "sensor": "HYD-01:CP",
+      "tag": "CP",
+      "kind": "derived",
+      "quantity": "냉각 동력",
+      "unit": "kW",
+      "normal": 1.5,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-01",
+      "component": "HYD-01:cooler",
+      "sensor": "HYD-01:FS2",
+      "tag": "FS2",
+      "kind": "measured",
+      "quantity": "냉각 회로 유량",
+      "unit": "L/min",
+      "normal": 10.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-01",
+      "component": "HYD-01:cooler",
+      "sensor": "HYD-01:TS1",
+      "tag": "TS1",
+      "kind": "measured",
+      "quantity": "유온",
+      "unit": "℃",
+      "normal": 48.0,
+      "limit": 65.0,
+      "direction": "upper"
+    },
+    {
+      "asset": "HYD-01",
+      "component": "HYD-01:cooler",
+      "sensor": "HYD-01:TS2",
+      "tag": "TS2",
+      "kind": "measured",
+      "quantity": "쿨러 출구 유온",
+      "unit": "℃",
+      "normal": 44.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-01",
+      "component": "HYD-01:fan",
+      "sensor": "HYD-01:FanSpeedSP",
+      "tag": "FanSpeedSP",
+      "kind": "setpoint",
+      "quantity": "팬 속도 설정값",
+      "unit": "%",
+      "normal": 60.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-01",
+      "component": "HYD-01:fan",
+      "sensor": "HYD-01:VS1",
+      "tag": "VS1",
+      "kind": "measured",
+      "quantity": "팬 진동",
+      "unit": "mm/s",
+      "normal": 0.6,
+      "limit": 2.0,
+      "direction": "upper"
+    },
+    {
+      "asset": "HYD-01",
+      "component": "HYD-01:motor",
+      "sensor": "HYD-01:EPS1",
+      "tag": "EPS1",
+      "kind": "measured",
+      "quantity": "모터 출력",
+      "unit": "kW",
+      "normal": 2.8,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-01",
+      "component": "HYD-01:pump-a",
+      "sensor": "HYD-01:FS1",
+      "tag": "FS1",
+      "kind": "measured",
+      "quantity": "유량",
+      "unit": "L/min",
+      "normal": 9.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-01",
+      "component": "HYD-01:pump-a",
+      "sensor": "HYD-01:LoadSP",
+      "tag": "LoadSP",
+      "kind": "setpoint",
+      "quantity": "부하 설정값",
+      "unit": "%",
+      "normal": 90.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-01",
+      "component": "HYD-01:pump-a",
+      "sensor": "HYD-01:PS1",
+      "tag": "PS1",
+      "kind": "measured",
+      "quantity": "토출 압력",
+      "unit": "bar",
+      "normal": 182.0,
+      "limit": 130.0,
+      "direction": "lower"
+    },
+    {
+      "asset": "HYD-01",
+      "component": "HYD-01:rtn-filter",
+      "sensor": "HYD-01:PS3",
+      "tag": "PS3",
+      "kind": "measured",
+      "quantity": "리턴 라인 압력",
+      "unit": "bar",
+      "normal": 2.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-01",
+      "component": "HYD-01:rtn-filter",
+      "sensor": "HYD-01:PS4",
+      "tag": "PS4",
+      "kind": "measured",
+      "quantity": "필터 차압",
+      "unit": "bar",
+      "normal": 1.5,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-01",
+      "component": "HYD-01:tank",
+      "sensor": "HYD-01:TS3",
+      "tag": "TS3",
+      "kind": "measured",
+      "quantity": "탱크 유온",
+      "unit": "℃",
+      "normal": 40.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-01",
+      "component": "HYD-01:valve",
+      "sensor": "HYD-01:PS2",
+      "tag": "PS2",
+      "kind": "measured",
+      "quantity": "시스템 압력",
+      "unit": "bar",
+      "normal": 150.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-01",
+      "component": "HYD-01:valve",
+      "sensor": "HYD-01:PS5",
+      "tag": "PS5",
+      "kind": "measured",
+      "quantity": "파일럿 압력",
+      "unit": "bar",
+      "normal": 8.5,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-01",
+      "component": "HYD-01:valve",
+      "sensor": "HYD-01:PS6",
+      "tag": "PS6",
+      "kind": "measured",
+      "quantity": "파일럿 후단 압력",
+      "unit": "bar",
+      "normal": 8.2,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-02",
+      "component": "HYD-02:cabinet",
+      "sensor": "HYD-02:TS4",
+      "tag": "TS4",
+      "kind": "measured",
+      "quantity": "제어반 내부 온도",
+      "unit": "℃",
+      "normal": 42.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-02",
+      "component": "HYD-02:cooler",
+      "sensor": "HYD-02:CE",
+      "tag": "CE",
+      "kind": "derived",
+      "quantity": "냉각 효율",
+      "unit": "%",
+      "normal": 84.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-02",
+      "component": "HYD-02:cooler",
+      "sensor": "HYD-02:CP",
+      "tag": "CP",
+      "kind": "derived",
+      "quantity": "냉각 동력",
+      "unit": "kW",
+      "normal": 1.5,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-02",
+      "component": "HYD-02:cooler",
+      "sensor": "HYD-02:FS2",
+      "tag": "FS2",
+      "kind": "measured",
+      "quantity": "냉각 회로 유량",
+      "unit": "L/min",
+      "normal": 10.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-02",
+      "component": "HYD-02:cooler",
+      "sensor": "HYD-02:TS1",
+      "tag": "TS1",
+      "kind": "measured",
+      "quantity": "유온",
+      "unit": "℃",
+      "normal": 48.0,
+      "limit": 65.0,
+      "direction": "upper"
+    },
+    {
+      "asset": "HYD-02",
+      "component": "HYD-02:cooler",
+      "sensor": "HYD-02:TS2",
+      "tag": "TS2",
+      "kind": "measured",
+      "quantity": "쿨러 출구 유온",
+      "unit": "℃",
+      "normal": 44.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-02",
+      "component": "HYD-02:fan",
+      "sensor": "HYD-02:FanSpeedSP",
+      "tag": "FanSpeedSP",
+      "kind": "setpoint",
+      "quantity": "팬 속도 설정값",
+      "unit": "%",
+      "normal": 60.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-02",
+      "component": "HYD-02:fan",
+      "sensor": "HYD-02:VS1",
+      "tag": "VS1",
+      "kind": "measured",
+      "quantity": "팬 진동",
+      "unit": "mm/s",
+      "normal": 0.6,
+      "limit": 2.0,
+      "direction": "upper"
+    },
+    {
+      "asset": "HYD-02",
+      "component": "HYD-02:motor",
+      "sensor": "HYD-02:EPS1",
+      "tag": "EPS1",
+      "kind": "measured",
+      "quantity": "모터 출력",
+      "unit": "kW",
+      "normal": 2.8,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-02",
+      "component": "HYD-02:pump-a",
+      "sensor": "HYD-02:FS1",
+      "tag": "FS1",
+      "kind": "measured",
+      "quantity": "유량",
+      "unit": "L/min",
+      "normal": 9.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-02",
+      "component": "HYD-02:pump-a",
+      "sensor": "HYD-02:LoadSP",
+      "tag": "LoadSP",
+      "kind": "setpoint",
+      "quantity": "부하 설정값",
+      "unit": "%",
+      "normal": 90.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-02",
+      "component": "HYD-02:pump-a",
+      "sensor": "HYD-02:PS1",
+      "tag": "PS1",
+      "kind": "measured",
+      "quantity": "토출 압력",
+      "unit": "bar",
+      "normal": 182.0,
+      "limit": 130.0,
+      "direction": "lower"
+    },
+    {
+      "asset": "HYD-02",
+      "component": "HYD-02:rtn-filter",
+      "sensor": "HYD-02:PS3",
+      "tag": "PS3",
+      "kind": "measured",
+      "quantity": "리턴 라인 압력",
+      "unit": "bar",
+      "normal": 2.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-02",
+      "component": "HYD-02:rtn-filter",
+      "sensor": "HYD-02:PS4",
+      "tag": "PS4",
+      "kind": "measured",
+      "quantity": "필터 차압",
+      "unit": "bar",
+      "normal": 1.5,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-02",
+      "component": "HYD-02:tank",
+      "sensor": "HYD-02:TS3",
+      "tag": "TS3",
+      "kind": "measured",
+      "quantity": "탱크 유온",
+      "unit": "℃",
+      "normal": 40.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-02",
+      "component": "HYD-02:valve",
+      "sensor": "HYD-02:PS2",
+      "tag": "PS2",
+      "kind": "measured",
+      "quantity": "시스템 압력",
+      "unit": "bar",
+      "normal": 150.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-02",
+      "component": "HYD-02:valve",
+      "sensor": "HYD-02:PS5",
+      "tag": "PS5",
+      "kind": "measured",
+      "quantity": "파일럿 압력",
+      "unit": "bar",
+      "normal": 8.5,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-02",
+      "component": "HYD-02:valve",
+      "sensor": "HYD-02:PS6",
+      "tag": "PS6",
+      "kind": "measured",
+      "quantity": "파일럿 후단 압력",
+      "unit": "bar",
+      "normal": 8.2,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-03",
+      "component": "HYD-03:cabinet",
+      "sensor": "HYD-03:TS4",
+      "tag": "TS4",
+      "kind": "measured",
+      "quantity": "제어반 내부 온도",
+      "unit": "℃",
+      "normal": 42.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-03",
+      "component": "HYD-03:cooler",
+      "sensor": "HYD-03:CE",
+      "tag": "CE",
+      "kind": "derived",
+      "quantity": "냉각 효율",
+      "unit": "%",
+      "normal": 84.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-03",
+      "component": "HYD-03:cooler",
+      "sensor": "HYD-03:CP",
+      "tag": "CP",
+      "kind": "derived",
+      "quantity": "냉각 동력",
+      "unit": "kW",
+      "normal": 1.5,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-03",
+      "component": "HYD-03:cooler",
+      "sensor": "HYD-03:FS2",
+      "tag": "FS2",
+      "kind": "measured",
+      "quantity": "냉각 회로 유량",
+      "unit": "L/min",
+      "normal": 10.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-03",
+      "component": "HYD-03:cooler",
+      "sensor": "HYD-03:TS1",
+      "tag": "TS1",
+      "kind": "measured",
+      "quantity": "유온",
+      "unit": "℃",
+      "normal": 48.0,
+      "limit": 65.0,
+      "direction": "upper"
+    },
+    {
+      "asset": "HYD-03",
+      "component": "HYD-03:cooler",
+      "sensor": "HYD-03:TS2",
+      "tag": "TS2",
+      "kind": "measured",
+      "quantity": "쿨러 출구 유온",
+      "unit": "℃",
+      "normal": 44.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-03",
+      "component": "HYD-03:fan",
+      "sensor": "HYD-03:FanSpeedSP",
+      "tag": "FanSpeedSP",
+      "kind": "setpoint",
+      "quantity": "팬 속도 설정값",
+      "unit": "%",
+      "normal": 60.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-03",
+      "component": "HYD-03:fan",
+      "sensor": "HYD-03:VS1",
+      "tag": "VS1",
+      "kind": "measured",
+      "quantity": "팬 진동",
+      "unit": "mm/s",
+      "normal": 0.6,
+      "limit": 2.0,
+      "direction": "upper"
+    },
+    {
+      "asset": "HYD-03",
+      "component": "HYD-03:motor",
+      "sensor": "HYD-03:EPS1",
+      "tag": "EPS1",
+      "kind": "measured",
+      "quantity": "모터 출력",
+      "unit": "kW",
+      "normal": 2.8,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-03",
+      "component": "HYD-03:pump-a",
+      "sensor": "HYD-03:FS1",
+      "tag": "FS1",
+      "kind": "measured",
+      "quantity": "유량",
+      "unit": "L/min",
+      "normal": 9.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-03",
+      "component": "HYD-03:pump-a",
+      "sensor": "HYD-03:LoadSP",
+      "tag": "LoadSP",
+      "kind": "setpoint",
+      "quantity": "부하 설정값",
+      "unit": "%",
+      "normal": 90.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-03",
+      "component": "HYD-03:pump-a",
+      "sensor": "HYD-03:PS1",
+      "tag": "PS1",
+      "kind": "measured",
+      "quantity": "토출 압력",
+      "unit": "bar",
+      "normal": 182.0,
+      "limit": 130.0,
+      "direction": "lower"
+    },
+    {
+      "asset": "HYD-03",
+      "component": "HYD-03:rtn-filter",
+      "sensor": "HYD-03:PS3",
+      "tag": "PS3",
+      "kind": "measured",
+      "quantity": "리턴 라인 압력",
+      "unit": "bar",
+      "normal": 2.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-03",
+      "component": "HYD-03:rtn-filter",
+      "sensor": "HYD-03:PS4",
+      "tag": "PS4",
+      "kind": "measured",
+      "quantity": "필터 차압",
+      "unit": "bar",
+      "normal": 1.5,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-03",
+      "component": "HYD-03:tank",
+      "sensor": "HYD-03:TS3",
+      "tag": "TS3",
+      "kind": "measured",
+      "quantity": "탱크 유온",
+      "unit": "℃",
+      "normal": 40.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-03",
+      "component": "HYD-03:valve",
+      "sensor": "HYD-03:PS2",
+      "tag": "PS2",
+      "kind": "measured",
+      "quantity": "시스템 압력",
+      "unit": "bar",
+      "normal": 150.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-03",
+      "component": "HYD-03:valve",
+      "sensor": "HYD-03:PS5",
+      "tag": "PS5",
+      "kind": "measured",
+      "quantity": "파일럿 압력",
+      "unit": "bar",
+      "normal": 8.5,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-03",
+      "component": "HYD-03:valve",
+      "sensor": "HYD-03:PS6",
+      "tag": "PS6",
+      "kind": "measured",
+      "quantity": "파일럿 후단 압력",
+      "unit": "bar",
+      "normal": 8.2,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-04",
+      "component": "HYD-04:cabinet",
+      "sensor": "HYD-04:TS4",
+      "tag": "TS4",
+      "kind": "measured",
+      "quantity": "제어반 내부 온도",
+      "unit": "℃",
+      "normal": 42.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-04",
+      "component": "HYD-04:cooler",
+      "sensor": "HYD-04:CE",
+      "tag": "CE",
+      "kind": "derived",
+      "quantity": "냉각 효율",
+      "unit": "%",
+      "normal": 88.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-04",
+      "component": "HYD-04:cooler",
+      "sensor": "HYD-04:CP",
+      "tag": "CP",
+      "kind": "derived",
+      "quantity": "냉각 동력",
+      "unit": "kW",
+      "normal": 1.5,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-04",
+      "component": "HYD-04:cooler",
+      "sensor": "HYD-04:FS2",
+      "tag": "FS2",
+      "kind": "measured",
+      "quantity": "냉각수 유량",
+      "unit": "L/min",
+      "normal": 18.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-04",
+      "component": "HYD-04:cooler",
+      "sensor": "HYD-04:TS1",
+      "tag": "TS1",
+      "kind": "measured",
+      "quantity": "유온",
+      "unit": "℃",
+      "normal": 46.0,
+      "limit": 65.0,
+      "direction": "upper"
+    },
+    {
+      "asset": "HYD-04",
+      "component": "HYD-04:cooler",
+      "sensor": "HYD-04:TS2",
+      "tag": "TS2",
+      "kind": "measured",
+      "quantity": "쿨러 출구 유온",
+      "unit": "℃",
+      "normal": 44.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-04",
+      "component": "HYD-04:motor",
+      "sensor": "HYD-04:EPS1",
+      "tag": "EPS1",
+      "kind": "measured",
+      "quantity": "모터 출력",
+      "unit": "kW",
+      "normal": 3.1,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-04",
+      "component": "HYD-04:pump-a",
+      "sensor": "HYD-04:FS1",
+      "tag": "FS1",
+      "kind": "measured",
+      "quantity": "유량",
+      "unit": "L/min",
+      "normal": 11.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-04",
+      "component": "HYD-04:pump-a",
+      "sensor": "HYD-04:LoadSP",
+      "tag": "LoadSP",
+      "kind": "setpoint",
+      "quantity": "부하 설정값",
+      "unit": "%",
+      "normal": 90.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-04",
+      "component": "HYD-04:pump-a",
+      "sensor": "HYD-04:PS1",
+      "tag": "PS1",
+      "kind": "measured",
+      "quantity": "토출 압력",
+      "unit": "bar",
+      "normal": 190.0,
+      "limit": 140.0,
+      "direction": "lower"
+    },
+    {
+      "asset": "HYD-04",
+      "component": "HYD-04:rtn-filter",
+      "sensor": "HYD-04:PS3",
+      "tag": "PS3",
+      "kind": "measured",
+      "quantity": "리턴 라인 압력",
+      "unit": "bar",
+      "normal": 2.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-04",
+      "component": "HYD-04:rtn-filter",
+      "sensor": "HYD-04:PS4",
+      "tag": "PS4",
+      "kind": "measured",
+      "quantity": "필터 차압",
+      "unit": "bar",
+      "normal": 1.5,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-04",
+      "component": "HYD-04:tank",
+      "sensor": "HYD-04:TS3",
+      "tag": "TS3",
+      "kind": "measured",
+      "quantity": "탱크 유온",
+      "unit": "℃",
+      "normal": 40.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-04",
+      "component": "HYD-04:valve",
+      "sensor": "HYD-04:PS2",
+      "tag": "PS2",
+      "kind": "measured",
+      "quantity": "시스템 압력",
+      "unit": "bar",
+      "normal": 150.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-04",
+      "component": "HYD-04:valve",
+      "sensor": "HYD-04:PS5",
+      "tag": "PS5",
+      "kind": "measured",
+      "quantity": "파일럿 압력",
+      "unit": "bar",
+      "normal": 8.5,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-04",
+      "component": "HYD-04:valve",
+      "sensor": "HYD-04:PS6",
+      "tag": "PS6",
+      "kind": "measured",
+      "quantity": "파일럿 후단 압력",
+      "unit": "bar",
+      "normal": 8.2,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-05",
+      "component": "HYD-05:cooler",
+      "sensor": "HYD-05:T_OIL",
+      "tag": "T_OIL",
+      "kind": "measured",
+      "quantity": "유온",
+      "unit": "℃",
+      "normal": 50.0,
+      "limit": 70.0,
+      "direction": "upper"
+    },
+    {
+      "asset": "HYD-05",
+      "component": "HYD-05:fan",
+      "sensor": "HYD-05:V_FAN",
+      "tag": "V_FAN",
+      "kind": "measured",
+      "quantity": "팬 진동",
+      "unit": "mm/s",
+      "normal": 0.8,
+      "limit": 2.8,
+      "direction": "upper"
+    },
+    {
+      "asset": "HYD-05",
+      "component": "HYD-05:motor",
+      "sensor": "HYD-05:I_MOTOR",
+      "tag": "I_MOTOR",
+      "kind": "measured",
+      "quantity": "모터 전류",
+      "unit": "A",
+      "normal": 18.5,
+      "limit": 25.0,
+      "direction": "upper"
+    },
+    {
+      "asset": "HYD-05",
+      "component": "HYD-05:pump",
+      "sensor": "HYD-05:P_MAIN",
+      "tag": "P_MAIN",
+      "kind": "measured",
+      "quantity": "토출 압력",
+      "unit": "bar",
+      "normal": 140.0,
+      "limit": 100.0,
+      "direction": "lower"
+    },
+    {
+      "asset": "HYD-05",
+      "component": "HYD-05:pump",
+      "sensor": "HYD-05:Q_MAIN",
+      "tag": "Q_MAIN",
+      "kind": "measured",
+      "quantity": "유량",
+      "unit": "L/min",
+      "normal": 12.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-05",
+      "component": "HYD-05:rtn-filter",
+      "sensor": "HYD-05:DP_FILTER",
+      "tag": "DP_FILTER",
+      "kind": "measured",
+      "quantity": "필터 차압",
+      "unit": "bar",
+      "normal": 0.8,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-05",
+      "component": "HYD-05:tank",
+      "sensor": "HYD-05:LVL_TANK",
+      "tag": "LVL_TANK",
+      "kind": "measured",
+      "quantity": "탱크 레벨",
+      "unit": "%",
+      "normal": 75.0,
+      "limit": 40.0,
+      "direction": "lower"
+    },
+    {
+      "asset": "HYD-05",
+      "component": "HYD-05:tank",
+      "sensor": "HYD-05:T_TANK",
+      "tag": "T_TANK",
+      "kind": "measured",
+      "quantity": "탱크 유온",
+      "unit": "℃",
+      "normal": 42.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-05",
+      "component": "HYD-05:valve",
+      "sensor": "HYD-05:P_PILOT",
+      "tag": "P_PILOT",
+      "kind": "measured",
+      "quantity": "파일럿 압력",
+      "unit": "bar",
+      "normal": 7.5,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-06",
+      "component": "HYD-06:cooler",
+      "sensor": "HYD-06:T_OIL",
+      "tag": "T_OIL",
+      "kind": "measured",
+      "quantity": "유온",
+      "unit": "℃",
+      "normal": 50.0,
+      "limit": 70.0,
+      "direction": "upper"
+    },
+    {
+      "asset": "HYD-06",
+      "component": "HYD-06:fan",
+      "sensor": "HYD-06:V_FAN",
+      "tag": "V_FAN",
+      "kind": "measured",
+      "quantity": "팬 진동",
+      "unit": "mm/s",
+      "normal": 0.8,
+      "limit": 2.8,
+      "direction": "upper"
+    },
+    {
+      "asset": "HYD-06",
+      "component": "HYD-06:motor",
+      "sensor": "HYD-06:I_MOTOR",
+      "tag": "I_MOTOR",
+      "kind": "measured",
+      "quantity": "모터 전류",
+      "unit": "A",
+      "normal": 18.5,
+      "limit": 25.0,
+      "direction": "upper"
+    },
+    {
+      "asset": "HYD-06",
+      "component": "HYD-06:pump",
+      "sensor": "HYD-06:P_MAIN",
+      "tag": "P_MAIN",
+      "kind": "measured",
+      "quantity": "토출 압력",
+      "unit": "bar",
+      "normal": 140.0,
+      "limit": 100.0,
+      "direction": "lower"
+    },
+    {
+      "asset": "HYD-06",
+      "component": "HYD-06:pump",
+      "sensor": "HYD-06:Q_MAIN",
+      "tag": "Q_MAIN",
+      "kind": "measured",
+      "quantity": "유량",
+      "unit": "L/min",
+      "normal": 12.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-06",
+      "component": "HYD-06:rtn-filter",
+      "sensor": "HYD-06:DP_FILTER",
+      "tag": "DP_FILTER",
+      "kind": "measured",
+      "quantity": "필터 차압",
+      "unit": "bar",
+      "normal": 0.8,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-06",
+      "component": "HYD-06:tank",
+      "sensor": "HYD-06:LVL_TANK",
+      "tag": "LVL_TANK",
+      "kind": "measured",
+      "quantity": "탱크 레벨",
+      "unit": "%",
+      "normal": 75.0,
+      "limit": 40.0,
+      "direction": "lower"
+    },
+    {
+      "asset": "HYD-06",
+      "component": "HYD-06:tank",
+      "sensor": "HYD-06:T_TANK",
+      "tag": "T_TANK",
+      "kind": "measured",
+      "quantity": "탱크 유온",
+      "unit": "℃",
+      "normal": 42.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-06",
+      "component": "HYD-06:valve",
+      "sensor": "HYD-06:P_PILOT",
+      "tag": "P_PILOT",
+      "kind": "measured",
+      "quantity": "파일럿 압력",
+      "unit": "bar",
+      "normal": 7.5,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-07",
+      "component": "HYD-07:pump",
+      "sensor": "HYD-07:PI-1",
+      "tag": "PI-1",
+      "kind": "measured",
+      "quantity": "토출 압력",
+      "unit": "bar",
+      "normal": 140.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-07",
+      "component": "HYD-07:tank",
+      "sensor": "HYD-07:TI-1",
+      "tag": "TI-1",
+      "kind": "measured",
+      "quantity": "유온",
+      "unit": "℃",
+      "normal": 45.0,
+      "limit": null,
+      "direction": null
+    }
+  ],
+  "shared_quantity": [
+    {
+      "asset": "HYD-01",
+      "component": "HYD-01:cooler",
+      "sensor": "HYD-01:TS1",
+      "tag": "TS1",
+      "kind": "measured",
+      "quantity": "유온",
+      "unit": "℃",
+      "normal": 48.0,
+      "limit": 65.0,
+      "direction": "upper"
+    },
+    {
+      "asset": "HYD-02",
+      "component": "HYD-02:cooler",
+      "sensor": "HYD-02:TS1",
+      "tag": "TS1",
+      "kind": "measured",
+      "quantity": "유온",
+      "unit": "℃",
+      "normal": 48.0,
+      "limit": 65.0,
+      "direction": "upper"
+    },
+    {
+      "asset": "HYD-03",
+      "component": "HYD-03:cooler",
+      "sensor": "HYD-03:TS1",
+      "tag": "TS1",
+      "kind": "measured",
+      "quantity": "유온",
+      "unit": "℃",
+      "normal": 48.0,
+      "limit": 65.0,
+      "direction": "upper"
+    },
+    {
+      "asset": "HYD-04",
+      "component": "HYD-04:cooler",
+      "sensor": "HYD-04:TS1",
+      "tag": "TS1",
+      "kind": "measured",
+      "quantity": "유온",
+      "unit": "℃",
+      "normal": 46.0,
+      "limit": 65.0,
+      "direction": "upper"
+    },
+    {
+      "asset": "HYD-05",
+      "component": "HYD-05:cooler",
+      "sensor": "HYD-05:T_OIL",
+      "tag": "T_OIL",
+      "kind": "measured",
+      "quantity": "유온",
+      "unit": "℃",
+      "normal": 50.0,
+      "limit": 70.0,
+      "direction": "upper"
+    },
+    {
+      "asset": "HYD-06",
+      "component": "HYD-06:cooler",
+      "sensor": "HYD-06:T_OIL",
+      "tag": "T_OIL",
+      "kind": "measured",
+      "quantity": "유온",
+      "unit": "℃",
+      "normal": 50.0,
+      "limit": 70.0,
+      "direction": "upper"
+    },
+    {
+      "asset": "HYD-07",
+      "component": "HYD-07:tank",
+      "sensor": "HYD-07:TI-1",
+      "tag": "TI-1",
+      "kind": "measured",
+      "quantity": "유온",
+      "unit": "℃",
+      "normal": 45.0,
+      "limit": null,
+      "direction": null
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-"""온라인2 독립 시작본과 오프라인1 진입 가이드. 강사 모델은 제작용에만 생성.
+"""온라인2 독립 시작본. 강사 모델은 제작용에만 생성.
 
 2회차 실습3·4 원자료는 data_session2.py가 만든다(교육용 가상 사례, 고정 시드).
 reference_model()의 반환 형식(schema dict, {'nodes':[{labels,props}], 'rels':[{type,a,b,props}]})은
@@ -21,7 +21,7 @@ TEACHER = ROOT/'workspace/강의제작/제작도구/실습시작/reference'
 COURSES = [('통합반','integrated'),('실전반','practical')]
 LAB3 = '02일차_실습3_온톨로지설계'
 LAB4 = '02일차_실습4_그래프구현과검증'
-VERSION = '2026-10-28-lab-v6-rh3'
+VERSION = '2026-11-02-lab-v7'
 
 def write(path, text):
     path.parent.mkdir(parents=True,exist_ok=True)
@@ -203,7 +203,7 @@ def page(title,intro,sections):
 
 RULES='''# 실습 작업 규칙
 
-- START.md의 이번 과제와 자료를 먼저 확인한다. 요구가 모호하면 필요한 질문을 한다.
+- 처음에는 파일을 바꾸지 않고, 학생이 해결하려는 업무와 관련 자료를 파악한다. 결과를 바꾸는 선택이 남아 있으면 근거가 있는 행을 짚고 학생에게 묻는다. 이미 정한 사항은 다시 묻지 않는다.
 - 입력/와 자료/는 보존한다. 새 코드와 산출물은 결과/에 작성한다.
 - 원자료에 없는 값·관계·실행 결과를 만들지 않는다. 미확인과 값 없음, 0을 구별한다.
 - 학생이 정한 요구와 제약 안에서 구현한다. 무관한 서비스·대시보드·선정 규칙을 추가하지 않는다.
@@ -212,7 +212,7 @@ RULES='''# 실습 작업 규칙
 - DB 작업은 안내된 별도 랩 주소만 사용한다. 포털 DB와 시스템 파일을 수정하거나 전체 삭제하지 않는다.
 - 접속 키·비밀번호를 코드나 결과 기록에 넣지 않는다. 개인 GitHub·commit·push는 요구하지 않는다.
 - 학생이 작성한 결과를 바꿀 때만 보관한다. 제공된 빈 틀(첫머리에 「제공 빈 틀」 표시가 있는 파일, 열 이름만 있는 CSV, 내용 없는 JSON)은 보관 없이 채운다.
-- START.md의 「정할 것」 절(「학생이 정할 것」 포함)에 해당하는 지점은 정하기 전에 학생에게 묻는다. 학생이 이미 정해 준 결정은 그대로 따르고, 묻지 못했으면 정하지 말고 미결로 표시한다. 정한 결정은 누가 어떤 근거로 정했는지 결과 기록에 남긴다.
+- 학생이 정한 목표·근거·제약과 첫 확인 사례를 짧게 되짚어 계획을 제안한다. 학생이 방향에 동의한 뒤 구현한다. 실행 중 새 선택이 필요할 때만 해당 근거를 들어 다시 상의하고, 답할 수 없는 것은 미결로 남긴다. 결과 기록에는 판단 이유와 그 선택으로 달라진 답을 남긴다.
 - START.md 「이번 범위 밖」의 일(다음 실습에서 할 일 포함)은 만들지 않는다.
 '''
 
@@ -291,7 +291,6 @@ try:
         for k,v in props.items():
             if k in pspec:check_value(f'{t} {a}→{b}',k,v,pspec[k])
             elif k!='id':warnings.append(f'{t}에 정의되지 않은 속성 {k}')
-#EXTRA
 except (OSError,ValueError,TypeError,AttributeError) as e:
     errors.append(str(e))
 if warnings:
@@ -327,34 +326,6 @@ if errors:
 print(f'구조 검사 통과: 노드 {len(nodes)}개, 관계 {len(rels)}개. 원자료의 의미·단위·질문별 답은 별도로 대조하세요.')
 '''
 
-# 실전반 실습3 공급 조건의 출력 계약(START.md 「공급 조건 형식」) 검사. 어느 견적·승인을 골라야 하는지는 판정하지 않는다.
-SUPPLY_CHECK='''    NEED={'approved':'boolean','price_manwon':'number','defect_rate':'number','lead_days':'integer','quote_date':'string'}
-    sspec=relations.get('SUPPLIES')
-    if not isinstance(sspec,dict):errors.append('schema.json relations에 공급 조건 관계 SUPPLIES가 없습니다(START.md 공급 조건 형식).')
-    else:
-        declared=sspec.get('properties',{}) or {}
-        for k,t in NEED.items():
-            if declared.get(k)!=t:errors.append(f'schema.json SUPPLIES.properties.{k}는 {t!r}이어야 합니다(현재 {declared.get(k)!r}).')
-    pairs={}
-    for r in rels:
-        if r.get('type')!='SUPPLIES':continue
-        a,b=r.get('a'),r.get('b');p=r.get('props') or {};pairs.setdefault((a,b),[]).append(p)
-        for k in NEED:
-            if p.get(k) is None:errors.append(f'SUPPLIES {a}→{b}: {k} 없음 — 이 쌍의 기준일 조건이 정해지지 않았습니다.')
-        d=p.get('defect_rate')
-        if isinstance(d,(int,float)) and not isinstance(d,bool) and not 0<=d<=1:errors.append(f'SUPPLIES {a}→{b}: defect_rate={d}는 0~1 비율이어야 합니다(% 표기 환산 확인).')
-    for (a,b),ps in sorted(pairs.items(),key=str):
-        if len(ps)>1:errors.append(f'SUPPLIES {a}→{b}가 {len(ps)}개: 공급사·부품 쌍마다 기준일 조건 하나만 둡니다. 견적 이력은 다른 종류·관계로 두세요.')
-    if not pairs:errors.append('graph.json에 SUPPLIES 관계가 없습니다.')
-    else:
-        yes=sum(1 for ps in pairs.values() for p in ps if p.get('approved') is True);no=sum(1 for ps in pairs.values() for p in ps if p.get('approved') is False)
-        print(f'참고: 공급 조건 SUPPLIES 쌍 {len(pairs)}개, 관계 {sum(len(ps) for ps in pairs.values())}개(approved=true {yes}개, false {no}개). 쌍마다 고른 견적·승인 근거는 자료_검토.md에서 원자료와 대조하세요.')
-'''
-
-def checker(supply):
-    if '#EXTRA' not in CHECKER:raise RuntimeError('CHECKER에 #EXTRA 자리가 없습니다')
-    return CHECKER.replace('#EXTRA\n',SUPPLY_CHECK if supply else '')
-
 QUESTIONS={
 '통합반':['설비별로 어떤 구성 요소에 어떤 센서·계산값·설정값이 붙어 있는가?',
           '각 센서가 재는 물리량과 단위·정상값·한계(위로 넘는지, 아래로 떨어지는지)는 무엇인가? 설비마다 태그 이름이 달라도 같은 물리량을 재는 센서를 함께 찾을 수 있는가?',
@@ -369,6 +340,10 @@ def lab4_questions(course):
     qs=list(QUESTIONS[course]);i,extra=LAB4_CONTEXT[course]
     head,sep,tail=qs[i].partition('? ')
     qs[i]=(head+'?'+extra+' '+tail) if sep else qs[i]+extra
+    if course == '실전반':
+        qs[0] = '세 설비가 함께 쓰는 펌프 축 씰 키트를 어느 설비·구성요소에서 쓰며, 기준일의 세 공급 조건은 어떤 근거로 구별할 수 있는가? ' + extra.strip()
+    else:
+        qs.append('포털 기준 지도에서 같은 대상을 찾아보면 내 모델과 식별자·관계 방향이 어디서 같고 어디서 다른가?')
     return qs+LAB4_EXTRA[course]
 LAB4_EXTRA={'통합반':['수정본을 반영한 뒤에도 같은 ID가 유지되고, 다시 적재해도 대상과 관계가 늘지 않는가?'],
             '실전반':['견적 납기와 지난 입고의 실측 납기는 공급사별로 얼마나 다른가?','수정본을 반영한 뒤에도 같은 ID가 유지되고, 다시 적재해도 대상과 관계가 늘지 않는가?']}
@@ -383,45 +358,30 @@ FORMAT='''## 결과 형식
 - 같은 두 대상 사이에 같은 관계를 여러 개 두려면 그 관계의 props에 `id`를 붙입니다.
 '''
 
-SUPPLY_FORMAT='''
-### 공급 조건 형식(다음 실습의 조회가 읽는 계약)
+# 두 과정은 각각 첫 설계 랩에서 도구를 배운다. 네 문장은 안내 HTML의 해당 행동에도 쓴다.
+OPEN_DESIGN = ('왼쪽 탐색기(Explorer) 맨 위에서 이 실습의 폴더 이름을 확인하세요. '
+               '가운데 편집기에 START.md 탭이 열려 있으면 이번 질문을 읽으세요. '
+               '탭이 보이지 않으면 탐색기에서 START.md를 누르면 됩니다.')
+OPEN_AI = ('활동 표시줄에서 사용하는 AI의 아이콘을 열고 패널 제목에서 Codex 또는 GitHub Copilot을 확인하세요. '
+           '패널 아래 입력칸에 이번 질문을 자기 말로 적고 보냅니다. 첫 요청에서는 파일을 바꾸지 말고 근거 행을 찾아 달라고 하세요. '
+           '답변에 나온 파일을 왼쪽 탐색기에서 열어 가운데 편집기의 실제 행을 읽습니다.')
+REVIEW_EDIT = ('편집 승인을 묻는 경우 경로와 변경 내용을 확인합니다. '
+               '결과/ 안에서 요청한 변경만 허용하세요. AI가 선택을 물으면 자료의 행을 확인하고 판단 이유를 답합니다.')
+OPEN_TERMINAL = ('메뉴에서 터미널 → 새 터미널(Terminal → New Terminal)을 선택하세요. '
+                 '아래쪽 터미널에 이번 실습 폴더의 경로와 입력 커서가 보이면 다음 명령을 쓰고 Enter를 누릅니다. '
+                 '출력 마지막 줄을 읽고 질문에 대한 실제 답은 원자료 행과 따로 대조하세요.')
+LAB_DB_UI = ('터미널에서 python lab_db.py를 실행하고 「랩 DB 준비 완료」와 이 폴더에 배정된 주소를 확인하세요. '
+             '열린 Neo4j Browser 위쪽에 조회문을 넣고 실행한 뒤 Table에서 행을 읽습니다. '
+             'AI가 명령 실행 승인을 요청하면 이 폴더의 적재·조회 명령과 랩_연결.json의 주소가 일치하는지 먼저 확인하세요.')
 
-- 공급사에서 부품으로 가는 관계 `SUPPLIES` 하나가 그 공급사·부품 쌍의 **기준일에 유효한 견적 조건 하나와 그 공급사의 승인 여부**입니다. 같은 쌍에 `SUPPLIES`를 둘 이상 두지 않고, 기준일에 유효한 조건이 없는 쌍은 이 관계를 두지 않습니다. 그 사정은 `결과/자료_검토.md`에 남깁니다.
-- `SUPPLIES`의 속성 중 다음은 반드시 둡니다: `approved`(boolean, 승인 공급사인지), `price_manwon`(number, 만원), `defect_rate`(number, 0~1 비율), `lead_days`(integer, 일), `quote_date`(string, 견적일). 출처·조건 같은 다른 속성은 직접 정합니다.
-- 견적·승인 이력을 함께 보존하려면 다른 종류나 관계로 둡니다(선택).
-'''
-
-TOOLS={
-'통합반':{3:'''## 처음 쓰는 도구
-
-- **VS Code**: 왼쪽 탐색기에서 이 폴더의 파일을 엽니다. 처음 열면 「이 폴더의 작성자를 신뢰합니까」가 나오면 신뢰를 누릅니다. CSV를 누르면 표 글자 그대로 보이고, 고친 파일은 `Ctrl+S`로 저장합니다.
-- **터미널**: 메뉴 「터미널 → 새 터미널」로 아래쪽에 엽니다. 이 폴더에서 열리는지 맨 앞 경로를 확인하고 `python check.py`처럼 명령을 입력합니다.
-- **Codex(AI)**: 왼쪽 막대의 Codex 아이콘을 눌러 채팅 창을 엽니다. 입력하기 전에 채팅 창 위쪽 탭이 Codex인지 확인합니다(옆의 Chat 탭은 GitHub Copilot이라 로그인 창이 뜹니다). 요청을 입력하면 이 폴더의 파일을 읽고, 허락하면 파일을 만들거나 명령을 실행합니다. AI가 「완료」라고 해도 실제 파일과 실행 출력으로 확인합니다.
-- **편집 승인 창**: AI가 파일을 고치려 하면 「Allow ChatGPT to edit the following file?」 창이 뜹니다. 창에 적힌 파일 경로가 `결과/` 아래인지 보고 「Allow once」(이번 한 번 허용)를 누릅니다. `입력/`·`자료/`의 파일이거나 요청하지 않은 파일이면 「Deny」(거부)를 누르고 이유를 채팅으로 알립니다.
-- **질문 카드**: AI가 정하기 전에 물어야 할 지점에서는 채팅에 질문 카드(Question 1 of 2, 선택지, 「(권장)」 표시, 직접 입력 칸)가 뜹니다. 「(권장)」은 AI의 추천일 뿐입니다. 원자료의 근거 줄을 열어 확인한 뒤 고르거나, 직접 입력 칸에 내 결정과 근거를 적고 보냅니다.
-''',4:'''## 처음 쓰는 도구
-
-- **랩 DB**: 이 폴더 전용으로 켜는 Neo4j 그래프 DB입니다. 포털 DB와 분리돼 있어 지우거나 다시 적재해도 포털에 영향이 없습니다. `python lab_db.py`가 Docker로 켜고 Neo4j Browser를 엽니다.
-- **Neo4j Browser**: 위쪽 입력 칸에 Cypher를 붙여 넣고 실행(▶)합니다. 결과는 그래프 또는 표(Table)로 볼 수 있고, 표가 원자료와 대조하기 쉽습니다.
-- 수백 개의 대상을 손으로 적재문에 옮기지 않습니다. AI에게 `입력/graph.json`을 읽어 적재문이나 적재 코드를 만들게 하고, 실행 결과의 개수로 확인합니다.
-- **명령 실행 승인 창**: AI가 Docker나 랩 DB 주소에 접속하는 명령을 실행하려 하면 이 폴더 밖 실행을 허락할지 묻는 창이 뜹니다. 명령이 `python lab_db.py`·이 폴더의 적재·조회 명령이고 주소가 `127.0.0.1`의 랩 DB인지 보고 「Allow once」, 아니면 「Deny」를 누릅니다.
-- **질문 카드**: 「학생이 정할 것」 지점에서 AI가 질문 카드로 묻습니다. 「(권장)」은 AI의 추천일 뿐입니다. 근거 줄을 열어 확인하고 고르며, 원하는 선택지가 없으면 직접 입력 칸에 결정과 근거를 적습니다.
-'''},
-'실전반':{3:'''## 처음 쓰는 도구
-
-VS Code 탐색기에서 파일을 열고 `Ctrl+S`로 저장합니다. 터미널(「터미널 → 새 터미널」)에서 명령을 실행하고, Codex 채팅(위쪽 탭이 Codex인지 확인)에서 AI에게 요청합니다. AI의 완료 보고는 실제 파일·실행 출력으로 확인합니다.
-파일 편집 승인 창(「Allow ChatGPT to edit …」)은 경로가 `결과/` 아래일 때만 「Allow once」, 아니면 「Deny」를 누릅니다. AI가 질문 카드로 물으면 「(권장)」은 추천일 뿐이므로 근거 줄을 확인하고 고르거나 직접 적습니다.
-''',4:'''## 처음 쓰는 도구
-
-`python lab_db.py`가 이 폴더 전용 Neo4j(랩 DB)를 Docker로 켜고 Browser를 엽니다. 포털 DB와 분리돼 있습니다. Browser 입력 칸에 Cypher를 넣어 실행하고 표(Table)로 원자료와 대조합니다. 수백 개 대상은 AI가 `입력/graph.json`에서 적재문을 만들게 합니다.
-AI가 Docker·랩 DB 명령을 실행하려 하면 폴더 밖 실행 승인 창이 뜹니다. 명령이 `python lab_db.py`·이 폴더의 적재·조회이고 주소가 `127.0.0.1` 랩 DB일 때만 「Allow once」를 누릅니다. AI가 질문 카드로 물으면 「(권장)」은 추천일 뿐이니 근거 줄을 확인하고 고르며, 원하는 선택지가 없으면 직접 입력 칸에 적습니다.
-'''}}
-
-def steps_text(rec):
-    return ('## 진행 방법\n\n'
-        '1. AI에게 파일은 바꾸지 말고 자료를 읽어 과제와 확인할 점을 파일·줄로 짚어 달라고 요청하세요. 짚어 준 근거는 원자료에서 직접 확인합니다.\n'
+def steps_text(rec, number):
+    first = OPEN_AI if number == 3 else 'AI 채팅에서 입력 파일과 수정본을 확인하고, 파일을 고치기 전에 처음 대조할 행을 짚어 보세요.'
+    permission = ' ' + REVIEW_EDIT if number == 3 else ''
+    db = '## 구현 실습에서 쓸 도구\n\n' + LAB_DB_UI + '\n\n' if number == 4 else ''
+    return (db + '## 진행 방법\n\n'
+        f'1. {first}\n'
         f'2. 목표·입력·지킬 조건과 내가 정한 결정을 자기 말로 `{rec}`에 적으세요. 자료를 읽는 방식에 따라 답이 달라지는 지점을 하나 이상 찾아, 무엇으로 정했고 근거가 어느 파일·줄인지 함께 적습니다. 구현 전에 질문별 기대 답을 원자료에서 몇 개 직접 찾아 둡니다.\n'
-        '3. AI에게 계획을 먼저 받아 검토한 뒤 구현을 맡기세요. 한 번에 다 맡기지 말고 확인할 수 있는 단위로 나눕니다.\n'
+        f'3. AI가 이해한 목적과 계획을 읽으세요. 앞에서 찾은 행에 적용하면 어떤 답이 나와야 하는지 서로 맞춘 뒤 구현을 맡깁니다. 다음 요청에는 방금 내린 결정과 확인에 필요한 파일·실행 결과만 짚어 주세요.{permission}\n'
         '4. 완료 보고에는 실행한 명령과 출력 원문을 붙여 달라고 요청하세요. 바뀐 파일도 확인합니다. 입력/·자료/는 바뀌지 않아야 합니다.\n'
         '5. 적어 둔 기대 답과 실제 결과를 대조하고, 다르면 입력·기대·실제를 함께 전달해 고치세요. 고친 뒤에는 내가 예로 든 행만 맞았는지가 아니라 같은 종류의 다른 행에도 통하는지 다시 세어 달라고 합니다.\n\n'
         '요청에 파일 이름을 쓸 때는 `결과/schema.json`처럼 백틱(`)으로 감쌉니다. 채팅 입력이 밑줄(_)을 서식으로 바꾸기 때문입니다.\n')
@@ -430,8 +390,8 @@ def start_text(course,number,questions):
     practical=course=='실전반'
     qlist='\n'.join(f'{i}. {q}' for i,q in enumerate(questions,1))
     if number==3 and not practical:
-        title='현장 자료를 질문에 답하는 모델로 만들기'
-        goal='창원1공장 유압 설비 7대의 대장·구성요소·SCADA 태그·예비품 자료를 하나의 설비 지식 모델(종류·속성·관계)로 정리합니다. 손으로 다 맞춰 볼 수 없는 양이므로 AI와 코드로 처리하고, 원자료와 자동으로 대조해 확인합니다.'
+        title='현장 정보를 체계화하는 온톨로지 직접 설계하기'
+        goal='포털 지도에서 오일 쿨러와 센서가 어떻게 연결되는지 살펴봤습니다. 이번에는 창원1공장 유압 설비 7대의 대장·구성요소·SCADA 태그·예비품 자료를 하나의 설비 지식 모델(종류·속성·관계)로 정리합니다. 손으로 다 맞춰 볼 수 없는 양이므로 AI와 코드로 처리하고, 원자료와 자동으로 대조해 확인합니다.'
         start='`자료/`의 CSV 8개와 `현장_메모.md`, `입력/관계그림.json`(앞 단계에서 그린 관계)에서 출발합니다. 이번 모델(스키마·인스턴스)은 아직 없습니다. 공급·입고 자료는 이번 질문 밖이며 모델에 넣지 않아도 됩니다.'
         work='종류와 개별 대상을 나누고 식별자·속성의 자료형·필수 여부·관계 방향·연결 수를 정의한 뒤, 그 정의로 원자료 전체의 인스턴스를 만듭니다. 원자료를 읽어 대상을 만드는 코드는 `결과/`에 두어 다시 실행할 수 있게 합니다. 자료를 정리하며 내린 처리는 `결과/자료_검토.md`에 자료·행 단위로 남깁니다.'
         cases='같은 태그 이름이 여러 설비에 있는 경우 / 이름이 다른데 같은 것을 재는 태그 / 같은 장치를 다르게 부른 이름 / 같은 대상이 두 번 나온 행 / 비어 있는 칸(단위·교체부품·정상값) / 단위 표기가 다른 값 / 계기 없는 계산값과 설정값 / 여러 설비가 함께 쓰는 부품과 한 설비만 쓰는 부품 / 품번 대신 품명·다른 표기로 적힌 칸 / 원자료에 없는 품번'
@@ -442,47 +402,55 @@ def start_text(course,number,questions):
         outputs='`결과/schema.json`, `결과/graph.json`, `결과/요구사항.md`, `결과/자료_검토.md`, 모델을 만든 코드'
         command='python check.py'
     elif number==3:
-        title='부품의 사용 설비와 공급 정보를 연결하기'
-        goal='앞 단계에서 만든 설비·부품 모델에 구매팀의 견적·승인·품번 자료를 연결해, 부품별 사용 설비와 공급 조건을 함께 답하는 모델로 확장합니다. 공급사를 고르거나 점수화하지는 않습니다.'
+        title='설비·부품·공급 정보를 연결하는 온톨로지 설계하기'
+        goal='포털 지도에서는 펌프에서 씰 키트와 공급사를 찾았습니다. 이번에는 제공된 설비·부품 모델에 구매팀의 견적·승인·품번 자료를 연결해, 부품별 사용 설비와 공급 조건을 함께 답하는 모델로 확장합니다. 공급사를 고르거나 점수화하지는 않습니다.'
         start='`입력/schema.json`·`graph.json`은 설비 7대·구성요소·센서·부품까지 정리된 앞 단계 완성 모델입니다. 공급 정보는 아직 연결되어 있지 않습니다. `자료/`에 원자료 전체(견적·승인 공급사·품번 교차표·입고 이력 포함)가 있습니다.'
-        work='공급 자료를 모델의 어디에 어떤 종류·속성·관계로 둘지 정하고, 기존 설비·부품 연결과 ID를 유지하면서 모델을 확장합니다. 값마다 단위와 출처(파일·날짜)를 남기고, 원자료에서 공급 정보를 만드는 코드를 `결과/`에 둡니다. 자료를 정리하며 내린 처리는 `결과/자료_검토.md`에 남깁니다.'
+        work='공급 자료를 모델의 어디에 어떤 종류·속성·관계로 둘지 정하고, 기존 설비·부품 연결과 ID를 유지하면서 모델을 확장합니다. 여러 설비가 함께 쓰는 품번 하나를 골라, 모델에서 그 품목이 몇 개이고 어느 설비에서 그 품목으로 이어지는지 원자료와 대조합니다. 값마다 단위와 출처(파일·날짜)를 남기고, 원자료에서 공급 정보를 만드는 코드를 `결과/`에 둡니다. 자료를 정리하며 내린 처리는 `결과/자료_검토.md`에 남깁니다.'
         cases='같은 대상의 여러 기록(같은 쌍·같은 품목이 여러 줄이나 여러 파일에 나오는 경우) / 출처마다 다른 값이나 표기 / 비슷한 이름의 다른 품번과 원자료에 없는 품번'
-        decide=('- 공급사·부품 쌍마다 기준일에 유효한 견적 조건을 무엇으로 볼지(같은 쌍의 견적이 여러 줄일 때 포함)\n'
-                '- `approved`를 무엇으로 정할지: 출처마다 승인 표시가 다르거나, 승인에 조건·기한이 붙은 경우\n'
+        decide=('- 기준일에 제시할 조건을 어떤 기록에서 가져올지, 다른 날짜나 조건의 기록은 어떻게 구분할지\n'
+                '- 출처마다 승인 표시가 다르거나 조건·기한이 붙었을 때 구매 담당자에게 무엇을 보여 줄지\n'
                 '- 그 밖에 탐색에서 찾은, 자료를 읽는 방식에 따라 답이 갈리는 곳')
         outside='입고 이력과 실측 납기(다음 실습), 공급사 선정·점수화, 그래프 DB 적재와 조회'
         outputs='`결과/schema.json`, `결과/graph.json`, `결과/요구사항.md`, `결과/자료_검토.md`, 공급 정보를 만든 코드'
         command='python check.py'
     else:
-        title='부품별 사용 설비와 공급 조건 조회하기' if practical else '모델을 그래프에 적재하고 질문으로 검증하기'
+        title='부품의 사용 설비와 공급 정보를 조회하는 그래프 구현하기' if practical else '설계한 온톨로지를 그래프 DB에 구현하고 검증하기'
         goal=('앞 단계 완성 모델(설비·부품·공급)을 별도 랩 DB에 적재하고, 부품별 사용 설비와 공급 조건을 반환하는 조회를 만듭니다. 수정본 반영과 반복 적재에서 중복이 생기지 않는지 확인합니다.' if practical else
               '앞 단계 완성 모델을 별도 랩 DB에 적재하고, 질문마다 조회를 만들어 원자료와 대조합니다. 수정본을 반영하고 다시 적재해도 같은 ID가 유지되고 중복이 생기지 않는지 확인합니다.')
-        start='`입력/schema.json`·`graph.json`은 앞 단계 완성 모델이고, `입력/자료/`는 그 원자료, `입력/자료_변경분/`은 기준일 뒤 들어온 수정본입니다. 이전 개인 결과 없이 시작할 수 있습니다. 개인 모델을 쓰려면 제공 입력을 보존하고 별도 폴더에 복사하세요.'
+        start='`입력/schema.json`·`graph.json`은 앞 단계 완성 모델이고, `입력/자료/`는 그 원자료, `입력/자료_변경분/`은 기준일 뒤 들어온 수정본입니다. 이전 개인 결과 없이 시작할 수 있습니다. 개인 모델을 쓰려면 제공 입력을 보존하고 작업 사본에 옮기세요. 모델을 만든 시점과 질문, 파일 형식 및 ID가 이번 입력과 맞는지 보고, 관계 이름이나 방향이 다르면 개인 모델의 정의로 조회하세요.'
         work=('적재(모델 → DB)와 조회를 작성합니다. 같은 입력을 두 번 적재해도 대상과 관계가 늘지 않아야 하고, 이름이 바뀌어도 같은 ID의 대상은 유지되어야 합니다. 전체 삭제문은 쓰지 않고, 수정본은 필요한 대상만 고쳐 반영합니다.'
-              ' P-PMP-SEAL을 확인 사례로 사용 설비와 공급 조건을 원자료와 대조하고, 다른 품번·없는 품번도 조회합니다. 비승인 공급사는 승인 상태와 함께 구별해 보여 줍니다. 실측 납기는 `입력/자료/입고_이력.csv`에서 계산합니다.' if practical else
-              '적재(모델 → DB)와 조회를 작성합니다. 같은 입력을 두 번 적재해도 대상과 관계가 늘지 않아야 하고, 이름이 바뀌어도 같은 ID의 대상은 유지되어야 합니다. 전체 삭제문은 쓰지 않고, 수정본은 필요한 대상만 고쳐 반영합니다. 공용 부품의 사용 설비를 원자료와 대조하고, 다른 품번과 원자료에 없는 품번도 조회해 결과를 구별합니다.')
+              ' 세 설비가 함께 쓰는 펌프 축 씰 키트의 품번을 원자료에서 찾아 사용 설비와 공급 조건 세 행을 조회하고, 다른 품번·없는 품번도 조회합니다. 비승인 공급사는 승인 상태와 함께 구별해 보여 줍니다. 실측 납기는 `입력/자료/입고_이력.csv`에서 계산합니다.' if practical else
+              '적재(모델 → DB)와 조회를 작성합니다. 같은 입력을 두 번 적재해도 대상과 관계가 늘지 않아야 하고, 이름이 바뀌어도 같은 ID의 대상은 유지되어야 합니다. 전체 삭제문은 쓰지 않고, 수정본은 필요한 대상만 고쳐 반영합니다. 포털 지식 지도에서 설비 → 쿨러 → 센서를 따라가고, 자기 모델에서 같은 역할을 하는 대상의 ID와 관계의 시작·끝을 검증 기록에 나란히 적습니다. 공용 부품의 사용 설비를 원자료와 대조하고, 다른 품번과 원자료에 없는 품번도 조회해 결과를 구별합니다.')
         cases=('공용 부품 / 비슷한 이름의 다른 품번 / 예전 품번·다른 표기 / 원자료에 없는 품번 / 비승인·조건이 붙은 공급사 / 나눠 들어온 입고 / 수정본의 이름 변경·상태 변경·값 보완 / 같은 적재 두 번' if practical else
                '설비별 구성 요소·센서 개수 / 태그 이름이 달라도 같은 물리량 / 한계 방향과 한계 없음 / 공용 부품과 전용 부품 / 다른 표기·없는 품번 / 수정본의 이름 변경·상태 변경·값 보완 / 같은 적재 두 번')
         cases+=' / 공급사 이름 표기(견적표·승인 목록·입고 이력)' if practical else ''
         outputs='`결과/load.cypher`(또는 적재 코드), `결과/query.cypher`, `결과/검증_기록.md`'
-        command='python lab_db.py\nNeo4j Browser에서 적재 → 개수 확인 → 같은 적재 다시 실행 → 개수 비교 → 조회 → 수정본 반영 → 조회 다시 실행'
+        command='python lab_db.py'
         decide=('- 수정본에서 상태가 바뀐 설비를 그래프에 어떻게 반영하고, 질문의 답(지금 가동하는 설비 기준)에 어떻게 드러낼지\n'
                 +('- 나눠 들어온 발주의 실측 납기를 어느 입고로 셀지\n' if practical else '')
                 +'- 그 밖에 탐색에서 찾은, 자료를 읽는 방식에 따라 답이 갈리는 곳')
         outside='공급사 선정·점수화' if practical else '공급 조건·입고 이력의 적재와 조회'
     rec='결과/요구사항.md' if number==3 else '결과/검증_기록.md'
-    fmt=(FORMAT+(SUPPLY_FORMAT if practical else '')) if number==3 else ''
+    fmt=FORMAT if number==3 else ''
     extra=''
     if decide:
         extra+=(f'## 학생이 정할 것\n\n원자료만으로 하나로 정해지지 않아 학생이 근거를 찾아 정하는 지점입니다. 어느 행이 해당하는지는 탐색에서 직접 찾고, 정한 내용·근거 줄·바뀌는 답을 `{rec}` 결정 표에 적습니다. AI는 이 지점을 정하기 전에 학생에게 묻습니다.\n\n{decide}\n\n')
     if outside:
         extra+=f'## 이번 범위 밖\n\n{outside}. 자료에 있어도 이번 결과에 만들지 않습니다.\n\n'
-    body=(f'# {title}\n\n> 자료는 {D.NOTICE}\n\n{goal}\n\n## 출발점\n\n{start}\n\n## 이번에 해결할 질문\n\n{qlist}\n\n## 작업\n\n{work}\n\n'
-          f'## 확인할 사례의 종류\n\n{cases}\n\n어느 행이 해당하는지는 원자료에서 직접 찾습니다.\n\n{extra}{fmt}\n{TOOLS[course][number]}\n{steps_text(rec)}\n'
-          f'## 저장할 결과\n\n{outputs}\n\n## 확인\n\n```\n{command}\n```\n\n'
+    browser_step = '열린 Neo4j Browser에서 적재문을 실행하고 노드와 관계의 개수를 확인하세요. 같은 적재문을 다시 실행해 개수를 비교하세요. 조회 결과를 기록한 뒤 수정본을 반영하고, 같은 조회에서 어떤 행이 달라졌는지 확인하세요.' if number == 4 else ''
+    folder_step = OPEN_DESIGN + '\n\n' if number == 3 else ''
+    check_step = OPEN_TERMINAL + '\n\n' if number == 3 else ''
+    handoff = ('결과/schema.json과 결과/graph.json을 한 쌍으로, 요구사항·자료 검토 기록과 함께 보관하세요. '
+               '사용한 원자료 기준일과 저장 시점을 기록하고 복사본을 다시 열어 같은 업무 질문을 확인하세요. '
+               '다음 구현 실습에서는 이 판본을 선택하거나 제공된 모델로 시작할 수 있습니다.'
+               if number == 3 else '적재·조회 파일과 검증 기록을 함께 보관하세요. 기록에는 반영한 자료의 기준일과 수정본 날짜를 적고, 복사본에서 같은 품번의 조회 결과를 다시 확인하세요.')
+    body=(f'# {title}\n\n{goal}\n\n## 출발점\n\n{folder_step}{start}\n\n## 이번에 해결할 질문\n\n{qlist}\n\n## 작업\n\n{work}\n\n'
+          f'## 확인할 사례의 종류\n\n{cases}\n\n어느 행이 해당하는지는 원자료에서 직접 찾습니다.\n\n{extra}{fmt}\n{steps_text(rec, number)}\n'
+          f'## 저장할 결과\n\n{outputs}\n\n## 확인\n\n{check_step}```\n{command}\n```\n\n'
+          + (browser_step+'\n\n' if browser_step else '') +
           '## 완료 판정\n\n형식 검사나 실행 성공만으로 완료하지 않습니다. 질문마다 원자료의 행과 실제 답을 대조하고, 내가 정한 결정에 따라 답이 어떻게 달라지는지 설명할 수 있어야 합니다. 수정한 점과 확인하지 못한 점을 짧게 남깁니다.\n\n'
-          '## 저장과 다음 실습\n\n결과 폴더를 저장하고 다시 열어 확인하세요. 재부팅 전에 보관할 결과는 USB 또는 개인 클라우드에 복사하세요. 다음 실습도 독립 시작본을 제공하므로 개인 결과는 선택 입력입니다.\n')
-    return title,goal,start,work,cases,outputs,command,body
+          f'## 저장과 다음 실습\n\n{handoff} 재부팅 전에 작업 폴더를 USB 또는 개인 클라우드에 복사하세요.\n')
+    return title,goal,start,work,cases,outputs,command,browser_step,body,handoff
 
 def pack(folder):
     archive=folder.with_suffix('.zip')
@@ -492,6 +460,34 @@ def pack(folder):
                 z.write(file,file.relative_to(folder.parents[2]))
     return archive
 
+GUIDE_HEADINGS = ('시작하기', '요구 정하기', 'AI와 만들기', '결과 확인하기', '저장하기')
+PICTURE_TYPES = {'.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg', '.avif', '.tif', '.tiff'}
+
+
+def student_photos(folder, provenance):
+    """이 랩의 학생 화면만 출처·판본과 맞춘다. 불일치 파일은 손대지 않는다."""
+    prefix = '산출물/' + folder.relative_to(OUT).as_posix() + '/images/'
+    photos = {}
+    for record in provenance:
+        target = record['target'].removeprefix('workspace/강의제작/')
+        if not target.startswith(prefix) or record.get('kind') != '학생 실습 화면':
+            continue
+        name = 'images/' + target[len(prefix):]
+        if (name in photos or record.get('section') not in GUIDE_HEADINGS or not record.get('caption')
+                or Path(name).suffix.lower() not in {'.png', '.jpg', '.jpeg', '.webp'}
+                or not record.get('source') or not re.fullmatch('[0-9a-f]{64}', record.get('source_sha256', ''))):
+            raise ValueError(f'{target}: 학생 화면의 출처·절·설명 또는 중복 항목을 확인하세요.')
+        photos[name] = record
+    actual = {p.relative_to(folder).as_posix() for p in folder.rglob('*')
+              if p.is_file() and (p.is_relative_to(folder/'images') or p.suffix.lower() in PICTURE_TYPES)}
+    if actual != set(photos):
+        raise ValueError(f'{folder}: 학생 화면 목록과 다른 파일 {sorted(actual ^ set(photos))}')
+    for name, record in photos.items():
+        if hashlib.sha256((folder/name).read_bytes()).hexdigest() != record['sha256']:
+            raise ValueError(f'{folder/name}: 학생 화면의 해시가 다릅니다.')
+    return photos
+
+
 def reset_generated(folder):
     """이 생성기가 만드는 자리만 새로 만든다. 결과/의 학생 파일은 건드리지 않는다."""
     for sub in ['자료','입력/자료','입력/자료_변경분']:
@@ -499,9 +495,11 @@ def reset_generated(folder):
         if p.is_dir() and p.resolve()!=D.SOURCE.resolve():shutil.rmtree(p)
     for old in ['검증_기록.md','설계_검토표.md']:   # 옛 판의 폴더 루트 빈 틀(결과/로 옮김)
         if (folder/old).is_file():(folder/old).unlink()
-    if (folder/'images').is_dir():shutil.rmtree(folder/'images')   # 옛 자료로 찍은 조회 결과 화면(새 자료와 다름)
 
 def main():
+    provenance = json.loads(Path(__file__).with_name('capture-provenance.json').read_text(encoding='utf-8'))
+    photos = {(course, name): student_photos(OUT/course/'실습/02회차/랩'/name, provenance)
+              for course, _ in COURSES for name in (LAB3, LAB4)}
     D.write_sources()
     for course,_ in COURSES:
         practical=course=='실전반'
@@ -521,14 +519,14 @@ def main():
             write(folder/'.github/copilot-instructions.md',RULES)
             write(folder/'CLAUDE.md',RULES)
             questions=QUESTIONS[course] if number==3 else lab4_questions(course)
-            title,goal,start,work,cases,outputs,command,body=start_text(course,number,questions)
+            title,goal,start,work,cases,outputs,command,browser_step,body,handoff=start_text(course,number,questions)
             if number==3:
                 if not (folder/'입력/관계그림.json').is_file():
                     raise FileNotFoundError('이전 단계 관계 그림 입력이 없습니다: '+str(folder))
                 if (folder/'자료').resolve()!=D.SOURCE.resolve():shutil.copytree(D.SOURCE,folder/'자료')
                 if practical:
                     dump(folder/'입력/schema.json',base_schema);dump(folder/'입력/graph.json',base_graph)
-                write(folder/'check.py',checker(practical))
+                write(folder/'check.py',CHECKER)
                 write(folder/'결과/요구사항.md','# 이번에 만들 결과\n\n> 제공 빈 틀입니다. 보관하지 말고 바로 채웁니다.\n\n## 목표와 질문\n\n## 사용할 자료와 범위\n\n## 지켜야 할 조건\n\n## 내가 정한 결정\n\n| 답이 갈리는 지점 | 정한 내용 | 근거(파일·행) | 바뀌는 답 |\n|---|---|---|---|\n| | | | |\n\n## 확인할 입력과 기대 결과\n')
                 write(folder/'결과/자료_검토.md','# 원자료 대조\n\n> 제공 빈 틀입니다. 보관하지 말고 바로 채웁니다.\n\n| 자료·행 | 확인한 문제 또는 근거 | 선택한 처리 | 결과 확인 |\n|---|---|---|---|\n')
                 write(folder/'결과/README.md','이번 과제의 모델(schema.json, graph.json)과 모델을 만든 코드, 요구사항.md, 자료_검토.md를 여기에 저장합니다.\n')
@@ -551,35 +549,46 @@ def main():
                 write(folder/'결과/검증_기록.md','# 실습 확인 기록\n\n> 제공 빈 틀입니다. 보관하지 말고 바로 채웁니다.\n\n- 확인 시각 / 사용한 랩 DB 주소(인증값 제외):\n- 작성한 파일:\n\n## 내가 정한 결정\n\n| 답이 갈리는 지점 | 정한 내용 | 근거(파일·행) | 바뀌는 답 |\n|---|---|---|---|\n| | | | |\n\n'
                      '## 질문별 대조\n\n| 질문·검사 | 원자료에서 먼저 찾은 기대 답 | 실제 조회 결과 | 수정과 재확인 |\n|---|---|---|---|\n| | | | |\n\n'
                      '## 적재·재적재·수정본\n\n| 단계 | 노드 수 | 관계 수 | 확인한 것 |\n|---|---|---|---|\n| 첫 적재 | | | |\n| 같은 적재 다시 | | | |\n| 수정본 반영 | | | |\n\n## 확인하지 못한 점\n')
-            write(folder/'START.md',body);write(folder/'준비_안내.md',body)
+            write(folder/'START.md',body)
+            write(folder/'준비_안내.md','# 실습 준비\n\nVS Code에서 이 파일이 들어 있는 폴더를 연 뒤 [START.md](START.md)의 출발점과 질문을 확인하세요.\n')
             qs=''.join(f'<li>{html.escape(q)}</li>' for q in questions)
             principle='<li>질문마다 원자료에서 먼저 찾은 기대 답과 실제 결과를 나란히 적습니다.</li><li>자료를 읽는 방식에 따라 답이 갈리는 지점은 내가 정한 결정과 근거 행을 함께 남깁니다.</li><li>값이 없음·미확인·0을 구별합니다.</li>'
             if number==4:principle+='<li>같은 입력을 다시 적재해도 노드·관계 수가 늘지 않습니다. 수정본 반영 뒤의 개수 변화는 수정본의 행으로 설명할 수 있어야 합니다.</li><li>수정본의 「삭제」 줄을 반영한 뒤에는 그 설비의 센서 수를 원자료의 행과 다시 세어, 실제로 있는 센서가 사라지지 않았는지 확인합니다.</li><li>상태가 바뀐 설비가 질문의 답에 어떻게 나오는지(빠지는지, 상태와 함께 나오는지)를 결정 표의 결정과 대조합니다.</li>'
             if number==3 and not practical:principle+='<li>붙은곳 이름이 대장 이름과 다른 설비 하나를 골라, 구성요소마다 붙은 센서를 원자료 행과 하나씩 대조합니다. <code>python check.py</code>가 끝에 보여 주는 「관계마다 어느 종류에서 어느 종류로」 개수도 원자료의 붙은곳과 견줍니다.</li><li>같은 규격으로 등록된 다른 사내 품번이 있으면, 그 규격으로 물었을 때 나와야 할 결과를 먼저 정하고 근거 줄과 함께 결정 표에 적습니다.</li>'
-            if number==3 and practical:principle+='<li>공급사·부품 쌍마다 기준일에 유효한 조건 하나와 <code>approved</code>(참/거짓)를 정했는지, 그 근거 행(견적표·승인 공급사 목록)을 자료_검토.md에 적었는지 확인합니다. 모든 견적을 남기고 표시만 붙이면 질문 2의 답이 하나로 정해지지 않습니다.</li>'
+            if number==3 and practical:principle+='<li>한 품번의 조회 결과에서 비용·납기·승인 상태가 어느 자료의 어느 날에 나온 값인지 찾아보세요. 다른 품번이나 다른 날짜로 물었을 때 무엇이 달라져야 할지 먼저 적고 확인하세요.</li>'
             if practical:principle+='<li>가격·납기로 공급사를 자동 선정하지 않습니다.</li>'
             next_link='../'+(LAB4 if number==3 else LAB3)+'/guide.html'
             tree='입력/   앞 단계 결과·완성 모델\n'+('자료/   현장 원자료(CSV 8개·현장 메모)\n' if number==3 else '입력/자료/   원자료 · 입력/자료_변경분/   수정본\n')+'결과/   이번에 만들 결과\nAGENTS.md   AI 작업 규칙'
-            sections=[('시작하기',f'<p>{html.escape(goal)}</p><p>{html.escape(start.replace("`",""))}</p><p>VS Code에서 <a href="START.md">START.md</a>를 열고 이번 요구를 확인하세요.</p><pre>{html.escape(tree)}</pre>'),
+            open_step = OPEN_DESIGN if number == 3 else '열린 구현 실습 폴더의 START.md와 입력/graph.json을 확인하세요.'
+            ai_step = OPEN_AI + ' ' + REVIEW_EDIT if number == 3 else 'AI 채팅에서 이번 입력과 적재·조회 계획을 확인한 뒤, 질문 하나씩 요청하고 바뀐 파일을 엽니다.'
+            terminal_step = OPEN_TERMINAL if number == 3 else '앞에서 연결한 이 폴더 전용 랩 DB의 주소를 다시 확인하세요.'
+            sections=[('시작하기',f'<p>{html.escape(goal)}</p><p>{html.escape(start.replace("`",""))}</p><p>{open_step} <a href="START.md">이번 실습의 질문과 완료 조건</a>을 확인하세요. AI 계정 없이 결과를 확인하려면 실습 폴더와 별도로 제공되는 학생용 완성본 ZIP을 받으세요.</p><pre>{html.escape(tree)}</pre>'),
                       ('요구 정하기',f'<ol>{qs}</ol><p>자료에서 답의 근거를 찾고, AI에 전달할 목표·제약·내가 정한 결정을 정리하세요. 확인할 사례의 종류: {html.escape(cases)}.</p>'),
-                      ('AI와 만들기',f'<p>{html.escape(work)}</p><p>먼저 파일을 바꾸지 말고 자료를 읽게 하고, 계획을 받아 검토한 뒤 확인할 수 있는 단위로 나눠 맡기세요. 완료 보고에는 실행 출력 원문을 붙여 달라고 요청합니다. 파일 이름은 백틱(`)으로 감싸 입력하세요.</p><details><summary>요청을 정리할 때 볼 항목</summary><p>만들 결과 / 참고할 자료 / 내가 정한 결정 / 바꾸지 않을 범위 / 성공을 확인할 사례</p></details>'),
-                      ('결과 확인하기',f'<pre>{html.escape(command)}</pre><ul>{principle}</ul><p class="check">원자료와 실제 결과를 대조하세요. AI의 완료 메시지는 실행 결과를 대신하지 않습니다.</p>'),
-                      ('저장하기',f'<p>{html.escape(outputs.replace("`",""))}</p><p>저장한 파일을 다시 열어 내용을 확인하고, 보관할 결과를 USB 또는 개인 클라우드에 복사하세요.</p><p>다음 실습은 시작 도구에서 새로 선택합니다. 개인 결과를 가져오지 않아도 시작할 수 있습니다.</p>')]
-            if number==3:
-                sections[2]=(sections[2][0],sections[2][1]+'<p class="check">Codex 채팅 창 위쪽 탭이 Codex인지 확인하고 입력합니다(Chat 탭은 GitHub Copilot). AI가 파일을 고치려 하면 「Allow ChatGPT to edit the following file?」 창이 뜹니다. 경로가 결과/ 아래이면 「Allow once」, 입력/·자료/이거나 요청하지 않은 파일이면 「Deny」를 누릅니다. START.md 「학생이 정할 것」 지점에서는 AI가 질문 카드로 묻습니다. 「(권장)」은 AI의 추천일 뿐이니 원자료의 근거 줄을 열어 확인하고 고르거나 직접 적습니다.</p>')
+                      ('AI와 만들기',f'<p>{html.escape(work)}</p><p>{ai_step} 완료 보고에는 실행 출력 원문을 붙여 달라고 요청합니다. 파일 이름은 백틱(`)으로 감싸 입력하세요.</p><p>AI에게 요청할 때에는 누가 쓸 결과인지, 어떤 자료와 결정을 따를지, 어느 사례로 확인할지 자기 말로 전하세요.</p>'),
+                      ('결과 확인하기',f'<p>{terminal_step}</p>'+ (f'<p>{html.escape(browser_step)}</p>' if browser_step else f'<pre>{html.escape(command)}</pre>') +f'<ul>{principle}</ul><p class="check">원자료와 실제 결과를 대조하세요. AI의 완료 메시지는 실행 결과를 대신하지 않습니다.</p>'),
+                      ('저장하기',f'<p>{html.escape(outputs.replace("`",""))}</p><p>{html.escape(handoff)} 재부팅 전에 작업 폴더를 USB 또는 개인 클라우드에 복사하세요.</p>')]
             if number==4:
                 sections[0]=(sections[0][0],sections[0][1]+'<p>터미널에서 아래 명령을 실행하세요. Docker가 실행 중이어야 합니다.</p><pre>python lab_db.py</pre><p>「랩 DB 준비 완료」가 나오면 열린 Browser의 Protocol에서 bolt://를 선택하고 Connection URL에는 출력 주소의 127.0.0.1:포트 부분만 넣으세요. Database user는 neo4j, Password는 비워 두고 Connect를 누릅니다. 연결 정보는 랩_연결.json에도 저장됩니다.</p>')
                 sections[3]=(sections[3][0],sections[3][1]+'<p>개수 확인 예: <code>MATCH (n) RETURN labels(n)[0] AS 종류, count(*) ORDER BY 종류</code>. 조회 결과는 Browser의 Table 보기로 원자료의 행과 대조합니다.</p>')
-            write(folder/'guide.html',page(title,html.escape(goal),sections))
-            write(folder/'안내.html',page(title,html.escape(goal),sections))
+            headings = [heading for heading, _ in sections]
+            for picture, record in photos[course, name].items():
+                index = headings.index(record['section'])
+                heading, content = sections[index]
+                caption = html.escape(record['caption'])
+                src = html.escape(picture, quote=True)
+                sections[index] = (heading, content + f'<figure><img src="{src}" alt="{caption}"><figcaption>{caption}</figcaption></figure>')
+            guide = page(title,html.escape(goal),sections)
+            write(folder/'guide.html',guide)
+            write(folder/'안내.html',guide)
             archive=pack(folder)
             relative=archive.relative_to(ROOT).as_posix()
             catalog.append({'id':f'{slug}-02-'+('ontology' if number==3 else 'graph'),'course':course,'session':'온라인 02회차','title':title,'version':VERSION,'folder':f'02회차/랩/{name}','path':relative,'sha256':hashlib.sha256(archive.read_bytes()).hexdigest()})
-    dump(ROOT/'workspace/강의제작/제작도구/실습시작/package-index.json',{'labs':catalog})
-    # 오프라인1은 두 과정 공통이며 실전 온라인2 공급 확장을 요구하지 않는다.
-    for course,_ in COURSES:
-        sections=[('관계 그림 만들기','<p>쿨러에서 센서·고장·원인·조치로 관련 대상을 묶어 확장합니다. 각 화살표를 문장으로 읽고 JSON을 저장하세요.</p><p><a class="button" href="랩/01일차_실습4_관계그림/가이드.html">ARROWS 단계별 사진 가이드</a></p>'),('최소 모델 만들기','<p>설비 목록과 관계 그림을 대조해 개별 대상을 구분하고 종류·속성·관계의 정의와 예시 데이터를 만드세요.</p><p><a href="../../../../통합반/실습/02회차/랩/02일차_실습3_온톨로지설계/guide.html">공통 모델 작업 안내</a></p><p class="check">설비가 다른 같은 이름의 센서가 합쳐지지 않았는지, 부품의 품번과 연결 방향이 맞는지 확인합니다.</p>'),('랩 그래프에서 확인하기','<p>강사가 준비한 별도 랩 DB에서 제공 적재 절차를 실행하고, 설비·센서·부품 질문의 결과를 원자료와 대조합니다.</p><p>연결 주소와 제공 적재 절차는 리허설 후 이 위치에 연결합니다.</p>'),('기준 지도와 비교하기','<p>학교 PC에 준비된 HYD 포털의 지식 지도를 열고 설비를 선택하세요. 구성요소와 센서의 연결을 개인 모델과 비교합니다.</p><p class="check">같은 의미를 어떤 종류·속성·방향으로 표현했는지 설명할 수 있으면 됩니다. 개인 모델은 포털에 자동 반영되지 않습니다.</p>'),('모델과 질문 보완하기','<p>질문에 답하지 못한 관계·속성을 원자료에서 찾아 보완하세요. 영향을 받은 질문과 기존 질문을 다시 실행하고 결과를 저장하세요.</p>'),('저장하고 이어가기','<p>관계도 JSON, schema.json, graph.json, 질의와 확인 결과를 한 작업 폴더에 보관하세요. 재부팅 전에 USB 또는 개인 클라우드로 복사하고 복사본을 다시 열어 확인하세요.</p><p>다음 실습은 제공 시작본으로도 시작할 수 있습니다.</p>')]
-        write(OUT/course/'실습/01회차/오프라인_가이드.html',page('설비 정보를 관계와 모델로 표현하기','관계 그림을 만들고 모델로 정리한 뒤, 질문의 답을 원자료와 비교합니다.',sections))
-    print('두 과정 설계·구현 시작본 4개, ZIP 4개, 오프라인1 가이드 초안 생성')
+    index = ROOT/'workspace/강의제작/제작도구/실습시작/package-index.json'
+    manifest = json.loads(index.read_text(encoding='utf-8')) if index.exists() else {'labs': []}
+    updates = {item['id']: item for item in catalog}
+    manifest['labs'] = [updates.pop(item['id'], item) for item in manifest['labs']]
+    manifest['labs'].extend(updates.values())
+    dump(index, manifest)
+    print('두 과정 설계·구현 시작본 4개, ZIP 4개 생성')
 
 if __name__=='__main__':main()

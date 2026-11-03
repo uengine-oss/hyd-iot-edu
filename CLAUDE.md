@@ -26,7 +26,7 @@
 ## 2. 브랜치와 동기화
 
 - 브랜치는 main · workspace 둘뿐이다(다른 브랜치 · 태그를 만들지 않는다). main은 `.gitignore`로 `workspace/` · `작업/` · 루트 작업 파일을 무시한다. workspace는 main과 이력을 공유하지 않고 병합하지 않는다.
-- 동기화는 `PYTHONUTF8=1 .venv314/Scripts/python.exe workspace/동기화.py` 하나로 한다 — `commit "메시지" [main 경로 …] [--만 workspace 경로 …]`(workspace = 그 시점 모습 그대로, 다른 작업 폴더가 열려 있으면 `--만`으로 그 경로만, main = 준 경로만) → `push`(origin에 없는 두 브랜치 커밋 하나하나의 키 검사 0일 때만, 강제 push 없음). 커밋은 그 일을 맡은 세션이 한다. 시작과 커밋 직전에 `status`로 실제 HEAD · 원격 · 미커밋을 보고 다른 세션의 미커밋은 보존한다. push · 지우기는 기본으로 먼저 묻고, 사용자가 "알아서 해"로 맡긴 작업이면 묻지 않는다(헌법 4절). 받기는 `pull`이고 rebase · reset · stash는 하지 않는다. 사용법 전부는 그 파일 머리에 있다.
+- 동기화는 `PYTHONUTF8=1 .venv314/Scripts/python.exe workspace/동기화.py` 하나로 한다(클라우드 세션은 7절) — `commit "메시지" [main 경로 …] [--만 workspace 경로 …]`(workspace = 그 시점 모습 그대로, 다른 작업 폴더가 열려 있으면 `--만`으로 그 경로만, main = 준 경로만) → `push`(origin에 없는 두 브랜치 커밋 하나하나의 키 검사 0일 때만, 강제 push 없음). 커밋은 그 일을 맡은 세션이 한다. 시작과 커밋 직전에 `status`로 실제 HEAD · 원격 · 미커밋을 보고 다른 세션의 미커밋은 보존한다. push · 지우기는 기본으로 먼저 묻고, 사용자가 "알아서 해"로 맡긴 작업이면 묻지 않는다(헌법 4절). 받기는 `pull`이고 rebase · reset · stash는 하지 않는다. 사용법 전부는 그 파일 머리에 있다.
 - 노션 · 학생 링크는 커밋 고정 주소라 이력을 다시 쓰거나 브랜치를 지우지 않는다. 공개 저장소다 — 키 · 개인 정보 · 실물 매뉴얼 PDF를 어느 브랜치에도 올리지 않는다.
 
 ## 3. 기록
@@ -74,3 +74,17 @@
 | compose 값 바꾸기 | 이 PC에서만(배속 · 호스트 워커 주소 · 포털 화면 바로 보기 등) 저장소 루트 `compose.override.yaml`(git 무시 — compose가 저절로 합친다). 쓰는 법은 RUNBOOK. `.env`에 수업 값을 적어도 compose가 읽지 않고 시작이 그 줄을 끈다 |
 | Docker | Docker Desktop(메모리 4 GB 이상). 꺼져 있으면 직접 켜고 `docker info` 응답을 기다린다 |
 | 렌더 · 영상 도구 | PATH에 없다. `ffmpeg` · `ffprobe`는 `%LOCALAPPDATA%/Microsoft/WinGet/Packages/Gyan.FFmpeg_*/ffmpeg-*/bin`, `pdftoppm`은 `.../oschwartz10612.Poppler_*/poppler-*/Library/bin`, `soffice`는 `C:/Program Files/LibreOffice/program`. 명령 앞에서 그 폴더를 PATH에 더한다. Git Bash에서는 `$(cygpath -u "$LOCALAPPDATA")`로 경로를 잡는다(역슬래시 경로는 따옴표 없이 쓰면 글로브가 안 먹고, PATH에 넣으면 `C:`의 콜론에서 갈라진다) |
+
+## 7. 클라우드 세션 (`CLAUDE_CODE_REMOTE=true`)
+
+문서 · 코드 작업은 클라우드 세션에서 할 수 있다. 클라우드는 GitHub에 올라간 것만 받는다. 위 절의 `.venv314` 명령은 `python3`로 읽는다.
+
+| | 클라우드 |
+|---|---|
+| 시작 브랜치 | `workspace` — 이 문서 · 스킬 · 훅이 세션 시작 때 읽힌다. `main`으로 시작했으면 `git fetch origin workspace:workspace` → `git switch workspace` → 이 문서를 읽고 `bash .claude/hooks/cloud-bootstrap.sh`를 돌린다. 훅은 시작 때만 걸리므로 그 세션에는 읽기 강제가 없다 — hyd-task 2절을 스스로 지킨다 |
+| 공용 헌법 · 스킬 | SessionStart 훅이 `~/.claude-skills`로 받는다. 「부트스트랩 실패」가 보이면 먼저 사용자에게 알린다 |
+| 시스템 코드 | `workspace` 체크아웃에 없다. `git fetch origin main:main` 뒤 읽기는 `git show main:<경로>`, 실행은 `git worktree add ../main main` |
+| 커밋 · push | `동기화.py`는 main 체크아웃 전용이라 멈춘다. `git add <경로>`(`git add .` 금지) → `git commit` → `python3 workspace/secret_scan.py HEAD --올릴것` 걸린 곳 0 → `git push origin HEAD:workspace`. 밀렸으면 `git pull --no-rebase origin workspace` 뒤 다시, 겹치면 멈추고 보고한다. 새 브랜치 · 태그 · 강제 push는 하지 않는다 |
+| 작업 폴더 | `작업/`은 이 PC 전용이라 없다. VM 안에 만들어 쓸 수 있으나 VM이 회수되면 대화만 남고 파일은 사라진다 — 확정분은 그때그때 push하고, 진행 상태는 세션 대화가 갖는다. `작업/`을 커밋하지 않는다. 이 PC로 돌아오면 `동기화.py pull` |
+| 도구 | `pip install -r workspace/requirements-dev.txt`, 렌더 · 영상은 `apt-get install libreoffice poppler-utils ffmpeg`. 덱 렌더는 맑은 고딕이 있어야 한다 — 글꼴은 사용자에게 받고 커밋하지 않는다. 받지 못했으면 렌더는 이 PC에서 한다 |
+| 여기서 못 하는 것 | ego 브라우저 · 네이티브 VS Code · 데스크톱 캡처 · 학생 Codex 로그인 — 촬영 · 가이드 사진 · 학생 경로 리허설은 이 PC에서 한다 |

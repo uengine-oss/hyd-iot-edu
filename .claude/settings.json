@@ -11,11 +11,20 @@
   "hooks": {
     "SessionStart": [
       {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/cloud-bootstrap.sh\"",
+            "timeout": 120
+          }
+        ]
+      },
+      {
         "matcher": "compact",
         "hooks": [
           {
             "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR/.venv314/Scripts/python.exe\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/guide_gate.py\" compact",
+            "command": "PY=\"$CLAUDE_PROJECT_DIR/.venv314/Scripts/python.exe\"; [ -x \"$PY\" ] || PY=python3; \"$PY\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/guide_gate.py\" compact",
             "timeout": 30
           }
         ]
@@ -27,7 +36,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR/.venv314/Scripts/python.exe\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/guide_gate.py\" read",
+            "command": "PY=\"$CLAUDE_PROJECT_DIR/.venv314/Scripts/python.exe\"; [ -x \"$PY\" ] || PY=python3; \"$PY\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/guide_gate.py\" read",
             "timeout": 10
           }
         ]
@@ -39,7 +48,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR/.venv314/Scripts/python.exe\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/guide_gate.py\" gate",
+            "command": "PY=\"$CLAUDE_PROJECT_DIR/.venv314/Scripts/python.exe\"; [ -x \"$PY\" ] || PY=python3; \"$PY\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/guide_gate.py\" gate",
             "timeout": 10
           }
         ]

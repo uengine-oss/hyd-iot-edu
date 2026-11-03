@@ -7,16 +7,16 @@
 ## 생성
 
 ```powershell
-python workspace/강의제작/제작도구/실습시작/build.py
+python workspace/강의제작/제작도구/실습시작/build_launcher.py
 python workspace/강의제작/제작도구/실습시작/verify_packages.py
 python workspace/강의제작/제작도구/실습시작/test_launcher.py
 ```
 
-기본 주소는 로컬 검증 서버 `http://127.0.0.1:8765`다. 공개 배포 시 패키지를 먼저 게시하고, 해당 커밋의 raw URL을 `build_launcher.py --base-url`에 넣어 시작 도구를 묶는다. `catalog.json`은 SHA-256으로 ZIP 판본을 확인한다. 주소만 바꾸고 검증 없이 게시 완료로 표시하지 않는다.
+기본 주소는 로컬 검증 서버 `http://127.0.0.1:8765`다. 공개 배포 시 패키지를 먼저 게시하고, 해당 커밋에서 `산출물/`이 바로 아래에 있는 디렉터리의 raw URL을 `build_launcher.py --base-url`에 넣어 시작 도구를 묶는다. `catalog.json`은 SHA-256으로 ZIP 판본을 확인한다. 주소만 바꾸고 검증 없이 게시 완료로 표시하지 않는다.
 
 오프라인1 전체 가이드는 각 과정 `01회차/오프라인1_가이드.zip`이다. 압축을 풀고 `가이드열기.html`을 열면 된다. 정본 HTML과 실제 참조 이미지·자료·시작 도구를 함께 묶고 내부 링크를 확인한다. 시작 도구를 새로 묶은 뒤에는 `build_guide_bundle.py`도 실행한다. ZIP을 다시 생성하면 컨텐츠가 같아도 ZIP 메타데이터 해시가 바뀔 수 있으므로 게시 커밋과 해시는 항상 함께 고정한다.
 
-`build_labs.py` → `build_offline.py` → `build_conditions.py` → `build_launcher.py` 순서다. 앞 생성기만 실행하면 뒤 단계 목록을 다시 생성해야 한다. `build.py`가 순서를 묶는다. 실제 캡처는 정본 `images/`에 보존하며 캡처를 재생성하지 않는다.
+2회차 설계·구현 랩을 갱신할 때는 `build_labs.py`가 네 랩의 ZIP과 패키지 목록을 갱신한다. 이어서 `build_launcher.py`로 다운로드 목록과 시작 도구 ZIP을 함께 만든다. 오프라인 1회차는 04·06 가이드 검수 중이므로 `build_offline.py`와 `build_guide_bundle.py`에 같은 `--draft 작업/<작업>/오프라인1_제공물검수`를 지정한다. 이 기간에는 일괄 생성기 `build.py`가 자식 생성기를 실행하기 전에 중단한다. 2회차 설계·구현의 학생 사진은 해당 랩의 `images/`에 보존한다. 감독이 확인한 사진을 `capture-provenance.json`에 `kind: 학생 실습 화면`, 가이드의 절 이름(`section`), 설명(`caption`), 대상·원본 경로와 SHA-256, 잘라 쓴 경우 좌표로 등록한다. 빌드는 해당 절에 사진을 넣고 ZIP과 대조한다. 출처가 없거나 해시가 다른 사진은 그대로 보존하고 빌드를 중단한다.
 
 ## 제공 범위
 

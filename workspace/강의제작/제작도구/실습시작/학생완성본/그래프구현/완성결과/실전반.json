@@ -1,0 +1,355 @@
+{
+  "sensor_change_check": [
+    {
+      "line": 2,
+      "change": "수정",
+      "observed": {
+        "id": "HYD-03:VS1",
+        "unit": "mm/s",
+        "normal": 0.6
+      }
+    },
+    {
+      "line": 3,
+      "change": "수정",
+      "observed": {
+        "id": "HYD-06:I_MOTOR",
+        "unit": "A",
+        "normal": 18.5
+      }
+    },
+    {
+      "line": 4,
+      "change": "삭제",
+      "observed": {
+        "id": "HYD-01:TS1",
+        "unit": "℃",
+        "normal": 48.0
+      }
+    }
+  ],
+  "baseline": [
+    [
+      {
+        "nodes": 212
+      }
+    ],
+    [
+      {
+        "relationships": 326
+      }
+    ],
+    [
+      {
+        "id": "HYD-01",
+        "name": "HYD-01 유압 파워팩",
+        "status": "가동"
+      },
+      {
+        "id": "HYD-02",
+        "name": "HYD-02 유압 파워팩",
+        "status": "가동"
+      },
+      {
+        "id": "HYD-03",
+        "name": "HYD-03 유압 파워팩",
+        "status": "가동"
+      },
+      {
+        "id": "HYD-04",
+        "name": "HYD-04 유압 파워팩",
+        "status": "가동"
+      },
+      {
+        "id": "HYD-05",
+        "name": "3라인 프레스 파워유닛 1호",
+        "status": "가동"
+      },
+      {
+        "id": "HYD-06",
+        "name": "3라인 프레스 파워유닛 2호",
+        "status": "가동"
+      },
+      {
+        "id": "HYD-07",
+        "name": "이동식 예비 파워팩",
+        "status": "예비(보관)"
+      }
+    ]
+  ],
+  "revised": [
+    [
+      {
+        "nodes": 212
+      }
+    ],
+    [
+      {
+        "relationships": 326
+      }
+    ],
+    [
+      {
+        "id": "HYD-01",
+        "name": "HYD-01 유압 파워팩",
+        "status": "가동"
+      },
+      {
+        "id": "HYD-02",
+        "name": "HYD-02 2라인 2호 파워팩",
+        "status": "가동"
+      },
+      {
+        "id": "HYD-03",
+        "name": "HYD-03 유압 파워팩",
+        "status": "가동"
+      },
+      {
+        "id": "HYD-04",
+        "name": "HYD-04 유압 파워팩",
+        "status": "가동"
+      },
+      {
+        "id": "HYD-05",
+        "name": "3라인 프레스 파워유닛 1호",
+        "status": "가동"
+      },
+      {
+        "id": "HYD-06",
+        "name": "3라인 프레스 파워유닛 2호",
+        "status": "가동"
+      },
+      {
+        "id": "HYD-07",
+        "name": "이동식 예비 파워팩",
+        "status": "불용(매각 예정)"
+      }
+    ]
+  ],
+  "baseline_part_assets": [
+    {
+      "part": "P-PMP-SEAL",
+      "asset": "HYD-01",
+      "component": "HYD-01:pump-a",
+      "component_name": "주 펌프 (A)"
+    },
+    {
+      "part": "P-PMP-SEAL",
+      "asset": "HYD-02",
+      "component": "HYD-02:pump-a",
+      "component_name": "주 펌프 (A)"
+    },
+    {
+      "part": "P-PMP-SEAL",
+      "asset": "HYD-03",
+      "component": "HYD-03:pump-a",
+      "component_name": "주 펌프 (A)"
+    }
+  ],
+  "revised_part_assets": {
+    "P-PMP-SEAL": [
+      {
+        "part": "P-PMP-SEAL",
+        "asset": "HYD-01",
+        "component": "HYD-01:pump-a",
+        "component_name": "주 펌프 (A)"
+      },
+      {
+        "part": "P-PMP-SEAL",
+        "asset": "HYD-02",
+        "component": "HYD-02:pump-a",
+        "component_name": "주 펌프 (A)"
+      },
+      {
+        "part": "P-PMP-SEAL",
+        "asset": "HYD-03",
+        "component": "HYD-03:pump-a",
+        "component_name": "주 펌프 (A)"
+      }
+    ],
+    "PS-4510": [
+      {
+        "part": "P-PMP-SEAL",
+        "asset": "HYD-01",
+        "component": "HYD-01:pump-a",
+        "component_name": "주 펌프 (A)"
+      },
+      {
+        "part": "P-PMP-SEAL",
+        "asset": "HYD-02",
+        "component": "HYD-02:pump-a",
+        "component_name": "주 펌프 (A)"
+      },
+      {
+        "part": "P-PMP-SEAL",
+        "asset": "HYD-03",
+        "component": "HYD-03:pump-a",
+        "component_name": "주 펌프 (A)"
+      }
+    ],
+    "P-PMP-SEAL-HT": [
+      {
+        "part": "P-PMP-SEAL-HT",
+        "asset": "HYD-04",
+        "component": "HYD-04:pump-a",
+        "component_name": "주 펌프 (A)"
+      }
+    ],
+    "미등록-품번": []
+  },
+  "repeat_load": "기준/수정 각 2회 동일",
+  "supply_terms": [
+    {
+      "part": "P-PMP-SEAL",
+      "supplier": "supplier:A정밀",
+      "name": "A정밀 (저가)",
+      "supplier_part_no": "AJ-S4510",
+      "approved": true,
+      "approval_status": "승인",
+      "price_manwon": 35.0,
+      "defect_rate": 0.12,
+      "quoted_days": 2,
+      "quoted_on": "2026-10-02",
+      "quote_until": "2026-12-31",
+      "quote_evidence": {
+        "file": "자료/공급_조건.csv",
+        "line": 2,
+        "quote_date": "2026-10-02",
+        "price_manwon": 35.0,
+        "defect_rate": 0.12,
+        "lead_days": 2
+      },
+      "approval_evidence": {
+        "file": "자료/승인공급사_목록.csv",
+        "line": 2,
+        "approval_status": "승인",
+        "approved_on": "2025-01-10",
+        "condition": null,
+        "valid_until": "2027-01-09"
+      }
+    },
+    {
+      "part": "P-PMP-SEAL",
+      "supplier": "supplier:B-OEM",
+      "name": "B-OEM (순정)",
+      "supplier_part_no": "HI-SK-45A",
+      "approved": true,
+      "approval_status": "승인",
+      "price_manwon": 55.0,
+      "defect_rate": 0.02,
+      "quoted_days": 5,
+      "quoted_on": "2026-10-02",
+      "quote_until": "2026-12-31",
+      "quote_evidence": {
+        "file": "자료/공급_조건.csv",
+        "line": 3,
+        "quote_date": "2026-10-02",
+        "price_manwon": 55.0,
+        "defect_rate": 0.02,
+        "lead_days": 5
+      },
+      "approval_evidence": {
+        "file": "자료/승인공급사_목록.csv",
+        "line": 3,
+        "approval_status": "승인",
+        "approved_on": "2024-03-02",
+        "condition": null,
+        "valid_until": "2027-03-01"
+      }
+    },
+    {
+      "part": "P-PMP-SEAL",
+      "supplier": "supplier:C트레이딩",
+      "name": "C트레이딩 (최저가)",
+      "supplier_part_no": "CT-PS-0045",
+      "approved": false,
+      "approval_status": "비승인",
+      "price_manwon": 20.0,
+      "defect_rate": 0.3,
+      "quoted_days": 1,
+      "quoted_on": "2026-10-02",
+      "quote_until": "2026-11-30",
+      "quote_evidence": {
+        "file": "자료/공급_조건.csv",
+        "line": 4,
+        "quote_date": "2026-10-02",
+        "price_manwon": 20.0,
+        "defect_rate": 0.3,
+        "lead_days": 1
+      },
+      "approval_evidence": {
+        "file": "자료/승인공급사_목록.csv",
+        "line": 4,
+        "approval_status": "비승인",
+        "approved_on": null,
+        "condition": null,
+        "valid_until": null
+      }
+    }
+  ],
+  "delivery_comparison": [
+    {
+      "supplier": "supplier:A정밀",
+      "quote_days": 2,
+      "mean_completion_days": 4.0,
+      "mean_minus_quote_days": 2.0,
+      "completed_orders": [
+        {
+          "order": "PO-2312-0041",
+          "observed_days": 4,
+          "receipt_csv_line": 2
+        },
+        {
+          "order": "PO-2405-0102",
+          "observed_days": 4,
+          "receipt_csv_line": 4
+        },
+        {
+          "order": "PO-2502-0031",
+          "observed_days": 3,
+          "receipt_csv_line": 9
+        },
+        {
+          "order": "PO-2609-0140",
+          "observed_days": 5,
+          "receipt_csv_line": 30
+        }
+      ]
+    },
+    {
+      "supplier": "supplier:B-OEM",
+      "quote_days": 5,
+      "mean_completion_days": 7.0,
+      "mean_minus_quote_days": 2.0,
+      "completed_orders": [
+        {
+          "order": "PO-2402-0017",
+          "observed_days": 6,
+          "receipt_csv_line": 3
+        },
+        {
+          "order": "PO-2409-0066",
+          "observed_days": 10,
+          "receipt_csv_line": 6
+        },
+        {
+          "order": "PO-2506-0088",
+          "observed_days": 4,
+          "receipt_csv_line": 13
+        },
+        {
+          "order": "PO-2603-0012",
+          "observed_days": 8,
+          "receipt_csv_line": 21
+        }
+      ]
+    },
+    {
+      "supplier": "supplier:C트레이딩",
+      "quote_days": 1,
+      "mean_completion_days": null,
+      "mean_minus_quote_days": null,
+      "completed_orders": []
+    }
+  ]
+}

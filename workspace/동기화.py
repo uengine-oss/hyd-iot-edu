@@ -416,6 +416,8 @@ def pull():
 
 if __name__ == "__main__":
     cmd, args = sys.argv[1:2], sys.argv[2:]
+    if cmd and cmd[0] in ("status", "commit", "push", "pull") and git("rev-parse", "--abbrev-ref", "HEAD").strip() == BRANCH:
+        sys.exit(f"{BRANCH} 브랜치 체크아웃에서는 {cmd[0]}을 쓰지 않는다 — 이 도구는 main 체크아웃에 {BRANCH}를 겹쳐 쓰는 PC 전용이다. 클라우드 세션은 CLAUDE.md 7절의 일반 git으로 한다")
     if cmd == ["시작"] and args: start(" ".join(args))
     elif cmd == ["status"]: status()
     elif cmd == ["commit"] and args: commit(args[0], args[1:])
