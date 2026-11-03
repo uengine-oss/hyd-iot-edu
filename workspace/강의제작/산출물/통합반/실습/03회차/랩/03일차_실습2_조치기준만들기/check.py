@@ -1,183 +1,169 @@
-"""결과/sop.json·rules.csv의 구조 검사와 기록 칸 확인. 의미 정답은 판정하지 않는다.
-단계별로 상태를 나눠 출력한다(예: sop.json 통과 / rules.csv 아직 없음)."""
+"""결과/sop.json · 조건표.csv의 구조 검사와 요구사항.md 기록 칸 확인. 생성 · 수정 · 네트워크 접속을 하지 않는다.
+의미(조건 · 경계 · 출처가 원문과 맞는지, 사건의 판정)는 판정하지 않는다 — 원자료와 따로 대조한다.
+모델 ID는 결과/내_입력/graph.json이 있으면 그것으로, 없으면 입력/graph.json으로 본다(어느 쪽을 봤는지 첫 줄에 찍는다).
+사용: python check.py
+"""
 from pathlib import Path
-import csv, json, sys
+import csv, json, re, sys
 root = Path(__file__).resolve().parent
-import re
-HEADER = ['rule_id','action','condition_index','logic','input','operator','value','unit','boundary_included','result','penalty_만원','reason','source_section']
+HEADER = ['rule_id','action','condition_index','logic','input','operator','value','unit','boundary_included','result','penalty_manwon','reason','source_section']
 OPS = {'>=':'예','<=':'예','>':'아니오','<':'아니오','==':'해당없음','!=':'해당없음','has_other_than':'해당없음'}
 NUMERIC = {'forecast_ts1','forecast_ps1','fan100_hours'}
+TEXT = {'plc_mode': {'REMOTE_AUTO','REMOTE_MANUAL','LOCAL'}, 'plc_state': {'RUN','TRIP','STOP'}, 'skill_kind': {'control','work_order'}}
 LIST_INPUTS = {'skill_code'}
-INPUTS = NUMERIC | {'plc_mode','plc_state','skill_kind'} | LIST_INPUTS
-def check_rules(path, sop_ids):
-    """(상태, 오류 목록, 묶음 수). 상태: 없음·빈 틀·통과·확인 필요."""
-    if not path.is_file(): return '없음', [], 0
+INPUTS = NUMERIC | set(TEXT) | LIST_INPUTS
+def read_csv(path):
     with path.open(encoding='utf-8-sig', newline='') as f:
-        reader = csv.DictReader(f); header = reader.fieldnames; table = list(reader)
+        reader = csv.DictReader(f)
+        return reader.fieldnames, list(reader)
+def check_table(path, sop_ids):
+    """(상태, 오류 목록, 규칙 묶음 수, rule_id 집합). 상태: 없음 · 빈 틀 · 통과 · 확인 필요."""
+    if not path.is_file(): return '없음', [], 0, set()
+    header, table = read_csv(path)
+    if header != HEADER: return '확인 필요', ['열 이름 · 순서가 계약과 다릅니다: ' + ','.join(header or [])], 0, set()
+    if not table: return '빈 틀', [], 0, set()
     errs, groups = [], {}
-    if header != HEADER: return '확인 필요', ['열 이름·순서가 계약과 다릅니다: '+','.join(header or [])], 0
-    if not table: return '빈 틀', [], 0
     for line, r in enumerate(table, 2):
         at = f'{path.name}:{line}'
         if r['action'] not in sop_ids: errs.append(f'{at} targets.csv에 없는 action {r["action"]}')
-        if r['logic'] != 'AND': errs.append(f'{at} logic은 AND')
+        if r['logic'] != 'AND': errs.append(f'{at} logic은 AND입니다(OR는 다른 rule_id로 나눕니다).')
         if r['input'] not in INPUTS: errs.append(f'{at} 계약에 없는 input {r["input"]}')
         if r['operator'] not in OPS: errs.append(f'{at} 계약에 없는 operator {r["operator"]}')
         elif OPS[r['operator']] != r['boundary_included']: errs.append(f'{at} boundary_included({r["boundary_included"]})가 operator {r["operator"]}와 맞지 않습니다.')
-        if r['input'] in LIST_INPUTS and r['operator'] != 'has_other_than': errs.append(f'{at} 목록 입력 {r["input"]}에는 has_other_than만 씁니다(목록과 글자를 {r["operator"]}로 비교하지 않음).')
-        if r['operator'] == 'has_other_than' and r['input'] not in LIST_INPUTS: errs.append(f'{at} has_other_than은 목록 입력({", ".join(sorted(LIST_INPUTS))})에만 씁니다.')
-        if r['result'] not in {'WARN','PENALTY','EXCLUDE'}: errs.append(f'{at} result는 WARN·PENALTY·EXCLUDE')
+        if r['input'] in LIST_INPUTS and r['operator'] != 'has_other_than': errs.append(f'{at} 목록 입력 {r["input"]}에는 has_other_than만 씁니다.')
+        if r['operator'] == 'has_other_than' and r['input'] not in LIST_INPUTS: errs.append(f'{at} has_other_than은 목록 입력에만 씁니다.')
+        if r['input'] in TEXT and r['operator'] in ('==', '!=') and r['value'] not in TEXT[r['input']]: errs.append(f'{at} {r["input"]}의 값 {r["value"]}은 계약에 없는 값입니다.')
         if r['input'] in NUMERIC:
             try: float(r['value'])
             except ValueError: errs.append(f'{at} 숫자 입력의 기준값이 숫자가 아닙니다.')
             if not r['unit']: errs.append(f'{at} 숫자 입력의 unit이 비었습니다.')
+        if r['result'] not in {'WARN','PENALTY','EXCLUDE'}: errs.append(f'{at} result는 WARN · PENALTY · EXCLUDE 가운데 하나입니다.')
         if r['result'] == 'PENALTY':
-            try: float(r['penalty_만원'])
-            except ValueError: errs.append(f'{at} PENALTY에 penalty_만원이 없습니다.')
-        elif r['penalty_만원']: errs.append(f'{at} PENALTY가 아닌 행에 penalty_만원이 있습니다.')
-        if not r['reason'] or not r['source_section']: errs.append(f'{at} reason·source_section이 필요합니다.')
-        key = (r['rule_id'], r['action']); head = (r['result'], r['penalty_만원'], r['reason'], r['source_section'])
+            try: float(r['penalty_manwon'])
+            except ValueError: errs.append(f'{at} PENALTY 행에 penalty_manwon이 없습니다.')
+        elif r['penalty_manwon']: errs.append(f'{at} PENALTY가 아닌 행에 penalty_manwon이 있습니다.')
+        if not r['reason'] or not r['source_section']: errs.append(f'{at} reason · source_section이 필요합니다.')
+        key = (r['rule_id'], r['action']); head = (r['result'], r['penalty_manwon'], r['reason'], r['source_section'])
         g = groups.setdefault(key, {'head': head, 'index': []})
-        if g['head'] != head: errs.append(f'{at} 같은 묶음 {key}의 result·penalty·reason·source가 다릅니다.')
+        if g['head'] != head: errs.append(f'{at} 같은 묶음 {key}의 result · penalty · reason · source가 다릅니다.')
         try: g['index'].append(int(r['condition_index']))
         except ValueError: errs.append(f'{at} condition_index가 정수가 아닙니다.')
     for key, g in groups.items():
-        if sorted(g['index']) != list(range(1, len(g['index'])+1)): errs.append(f'{path.name} 묶음 {key}: condition_index가 1부터 연속이 아닙니다: {g["index"]}')
-    return ('확인 필요' if errs else '통과'), errs, len(groups)
-def empty_rows(path, column):
-    """마크다운 표에서 column 칸이 빈 데이터 행 수와 데이터 행 수."""
-    if not path.is_file(): return None, 0
-    head, empty, total = None, 0, 0
+        if sorted(g['index']) != list(range(1, len(g['index']) + 1)): errs.append(f'{path.name} 묶음 {key}: condition_index가 1부터 차례가 아닙니다: {g["index"]}')
+    return ('확인 필요' if errs else '통과'), errs, len(groups), {k[0] for k in groups}
+def table_rows(path, column):
+    """마크다운 표에서 column으로 시작하는 칸이 있는 표의 (데이터 행 수, 그 칸이 빈 행 수)."""
+    if not path.is_file(): return None
+    head, total, empty = None, 0, 0
     for line in path.read_text(encoding='utf-8-sig').splitlines():
         if not line.startswith('|'): head = None; continue
         cells = [c.strip() for c in line.strip().strip('|').split('|')]
         if head is None: head = cells; continue
         if set(''.join(cells)) <= set('-: '): continue
         idx = [k for k, h in enumerate(head) if h.startswith(column)]
-        if not idx: continue
-        if not any(cells): continue
+        if not idx or not any(cells): continue
         total += 1
-        i = idx[0]
-        if i >= len(cells) or not cells[i]: empty += 1
-    return empty, total
-def excerpt_rules(path):
-    """규칙 발췌(규칙_원문.txt)에 실린 규칙 ID."""
-    return re.findall(r"^\s*\['(rule:[A-Za-z0-9_-]+)'", path.read_text(encoding='utf-8-sig'), re.M) if path.is_file() else []
-def section_text(path, word):
-    """마크다운에서 제목에 word가 들어 있는 절의 본문."""
-    if not path.is_file(): return ''
-    out, on = [], False
-    for line in path.read_text(encoding='utf-8-sig').splitlines():
-        if line.startswith('#'): on = word in line; continue
-        if on: out.append(line)
-    return '\n'.join(out)
-def mentioned(rid, text):
-    return re.search(re.escape(rid) + r'(?![A-Za-z0-9_-])', text) is not None
-def unused_rules(rules_path, excerpt_path, record_path, word):
-    """규칙 발췌의 규칙 중 조건표 source_section에도, 기록의 결정 절에도 이름이 없는 것. 옳고 그름은 판정하지 않는다."""
-    if not rules_path.is_file(): return []
-    with rules_path.open(encoding='utf-8-sig', newline='') as f: used = ' '.join(r.get('source_section') or '' for r in csv.DictReader(f))
-    if not used.strip(): return []
-    note = section_text(record_path, word)
-    return [rid for rid in excerpt_rules(excerpt_path) if not mentioned(rid, used) and not mentioned(rid, note)]
-def missing_kinds(path, column, kinds):
-    """kinds: [(종류 이름, [찾을 말…])]. 표의 column 칸 어디에서도 찾을 말이 없는 종류 이름. 표에 행이 없으면 빈 목록."""
-    if not path.is_file(): return []
-    head, seen = None, []
-    for line in path.read_text(encoding='utf-8-sig').splitlines():
-        if not line.startswith('|'): head = None; continue
-        cells = [c.strip() for c in line.strip().strip('|').split('|')]
-        if head is None: head = cells; continue
-        if set(''.join(cells)) <= set('-: '): continue
-        idx = [k for k, h in enumerate(head) if h.startswith(column)]
-        if idx and idx[0] < len(cells) and any(cells): seen.append(cells[idx[0]])
-    text = ' '.join(seen)
-    if not text.strip(): return []
-    return [name for name, words in kinds if not any(w in text for w in words)]
-def expect_time(path):
-    """기대결과.md 머리의 「기대 칸을 쓴 시각」과 「실행 시각」 정보."""
-    if not path.is_file(): return []
-    text = path.read_text(encoding='utf-8-sig')
-    def when(label):
-        m = re.search(r'^- ' + label + r'[^:\n]*:[ \t]*(.*)$', text, re.M)
-        if not m or not m.group(1).strip(): return None, False
-        x = re.search(r'(\d{4}-\d{2}-\d{2})[ T](\d{1,2}):(\d{2})', m.group(1))
-        return (f'{x.group(1)} {int(x.group(2)):02d}:{x.group(3)}' if x else None), True
-    e, e_filled = when('기대 칸을 쓴 시각'); r, _ = when('실행 시각')
-    if not e_filled: return ['기대결과.md 「기대 칸을 쓴 시각」이 비어 있습니다. 실행 전에 기대 칸을 쓰고 그 시각을 적으세요.']
-    if e and r and e > r: return [f'기대결과.md 기대 칸을 쓴 시각({e})이 실행 시각({r})보다 뒤입니다. 실행 출력을 보고 기대를 쓰지 않았는지 확인하세요.']
-    return []
-def notes(lines):
-    for line in lines: print('참고: ' + line)
+        if idx[0] >= len(cells) or not cells[idx[0]]: empty += 1
+    return total, empty
 def report(parts):
-    """parts: [(이름, 상태, 오류, 설명)]. 단계별 상태를 나눠 출력하고, 필수 단계가 모두 통과면 0."""
     ok = True
     for name, state, errs, note, required in parts:
         print(f'- {name}: {state}' + (f' — {note}' if note else ''))
         for e in errs: print('    ' + e)
         if required and state != '통과': ok = False
     return ok
+def record_part(path, column, label):
+    got = table_rows(path, column)
+    if got is None: return (f'{path.name} {label}', '없음', [], '', False)
+    total, empty = got
+    if total == 0 or empty == total: return (f'{path.name} {label}', '아직 비어 있음', [], f'「{column}」 칸을 채웁니다', False)
+    return (f'{path.name} {label}', '작성 중' if empty else '작성됨', [], f'행 {total}개 중 빈 칸 {empty}개' if empty else f'행 {total}개', False)
+def pick(name):
+    # 검사의 기준 입력: 결과/내_입력/에 같은 이름 파일이 있으면 그것, 없으면 제공 입력/. 고른 파일을 찍는다(조용히 바꾸지 않는다).
+    mine = root/'결과/내_입력'/name
+    if mine.is_file():
+        print(f'기준 입력: 결과/내_입력/{name} (내 입력)')
+        return mine
+    if (root/'결과/내_입력').is_dir():
+        print(f'기준 입력: 입력/{name} — 결과/내_입력/에 {name}이 없어 제공 입력으로 봅니다')
+    else:
+        print(f'기준 입력: 입력/{name}')
+    return root/'입력'/name
 
-CASE_KINDS = [('정상', ['정상']), ('경계', ['경계']), ('복수 조건', ['복수']), ('모두 제외·유지 후보 없음', ['모두 제외', '유지 후보 없음', '추천 없음']),
-              ('값 없음', ['값 없음', '누락', '미확인']), ('적용 대상 밖', ['대상 밖']), ('결정에 따라 바뀌는 사례', ['결정', '갈래', '갈림'])]
-def rows(path):
-    with path.open(encoding='utf-8-sig', newline='') as f: return list(csv.DictReader(f))
-sop_ids = [t['sop_id'] for t in rows(root/'자료/targets.csv')]
-graph = json.loads((root/'입력/graph.json').read_text(encoding='utf-8-sig'))
-model_ids = {n['props']['id'] for n in graph['nodes']}
-def refs(value):
-    if isinstance(value, str): yield value
-    elif isinstance(value, list):
-        for v in value: yield from refs(v)
-    elif isinstance(value, dict):
-        for k, v in value.items():
-            if k != '미기재': yield from refs(v)
-def check_sop(path):
+sop_ids = [r['sop_id'] for r in read_csv(root/'자료/targets.csv')[1]]
+fm_ids = {r['failure_mode_id'] for r in read_csv(root/'자료/failuremodes.csv')[1]}
+graph = json.loads(pick('graph.json').read_text(encoding='utf-8-sig'))
+kind_of = {n['props']['id']: n['labels'][0] for n in graph['nodes']}
+SLOT = {'assets': 'Asset', 'components': 'Component', 'sensors': 'Sensor'}
+RELATIONS = {'MITIGATED_BY': ('failure_modes', 'sops'), 'REMEDIED_BY': ('failure_modes', 'sops'), 'ADDRESSES': ('sops', 'causes')}
+def items(value, key):
+    v = value.get(key)
+    return v if isinstance(v, list) else None
+def check_sop(path, rule_ids):
     if not path.is_file(): return '없음', [], ''
     try: sop = json.loads(path.read_text(encoding='utf-8-sig'))
     except ValueError as e: return '확인 필요', [f'JSON 읽기 실패: {e}'], ''
-    items = sop.get('SOP') or []
-    if not items: return '빈 틀', [], ''
+    if not isinstance(sop, dict) or not sop.get('sops'): return '빈 틀', [], ''
     errs = []
-    fm_ids = {f.get('id') for f in sop.get('고장유형', [])}
-    found = [s.get('id') for s in items]
+    fms = [f.get('id') for f in sop.get('failure_modes') or [] if isinstance(f, dict)]
+    causes = [c.get('id') for c in sop.get('causes') or [] if isinstance(c, dict)]
+    for f in fms:
+        if f not in fm_ids: errs.append(f'failure_modes {f}: failuremodes.csv에 없는 고장 유형 ID입니다.')
+    for c in causes:
+        if not isinstance(c, str) or not re.fullmatch(r'cause:[a-z0-9]+(-[a-z0-9]+)*', c): errs.append(f'causes {c}: 원인 ID는 cause:로 시작하는 영어 소문자 · 하이픈 이름입니다.')
+    for name, ids in [('failure_modes', fms), ('causes', causes)]:
+        for x in set(ids):
+            if ids.count(x) > 1: errs.append(f'{name} {x}가 {ids.count(x)}번 있습니다.')
+    found = [s.get('id') for s in sop['sops'] if isinstance(s, dict)]
     for sid in sop_ids:
-        if found.count(sid) != 1: errs.append(f'{sid}가 {found.count(sid)}번 있습니다(1번이어야 함).')
-    for s in items:
+        if found.count(sid) != 1: errs.append(f'{sid}가 {found.count(sid)}번 있습니다(1번이어야 합니다).')
+    for s in sop['sops']:
+        if not isinstance(s, dict): errs.append('sops의 항목이 객체가 아닙니다.'); continue
         sid = s.get('id')
         if sid not in sop_ids: errs.append(f'targets.csv에 없는 SOP {sid}')
-        if not s.get('출처'): errs.append(f'{sid}: 출처 없음')
-        for key in ['적용_조건','금지_조건','수행_단계','완료_기준']:
-            value = s.get(key)
-            if not isinstance(value, list): errs.append(f'{sid}: {key}는 목록이어야 합니다.'); continue
+        if not s.get('source'): errs.append(f'{sid}: 출처(source)가 없습니다.')
+        if s.get('failure_mode') not in fms: errs.append(f'{sid}: 고장 유형 {s.get("failure_mode")}을 sop.json failure_modes에서 찾을 수 없습니다.')
+        for key in ['apply_conditions', 'prohibitions', 'steps', 'completion']:
+            value = items(s, key)
+            if value is None: errs.append(f'{sid}: {key}는 목록이어야 합니다.'); continue
             for i, item in enumerate(value, 1):
-                if not isinstance(item, dict) or not item.get('내용') or not item.get('출처'): errs.append(f'{sid}.{key}[{i}]: 내용·출처가 필요합니다.')
-        steps = [x.get('순서') for x in s.get('수행_단계') or [] if isinstance(x, dict)]
-        if not steps or steps != list(range(1, len(steps)+1)): errs.append(f'{sid}: 수행_단계 순서가 1부터 연속이 아닙니다: {steps}')
-        approval = s.get('승인')
-        if not isinstance(approval, dict) or not approval.get('역할') or not approval.get('출처'): errs.append(f'{sid}: 승인(역할·출처)이 필요합니다.')
-        if s.get('고장유형') not in fm_ids: errs.append(f'{sid}: 고장유형 {s.get("고장유형")}을 sop.json 고장유형에서 찾을 수 없습니다.')
-        got = list(refs(s.get('모델_참조', {})))
-        for ref in got:
-            if ref not in model_ids: errs.append(f'{sid}: 모델에 없는 ID {ref} (새 ID를 만들지 말고 미기재로 남기세요)')
-        if not got: errs.append(f'{sid}: 모델_참조가 비어 있습니다.')
-    for f in sop.get('고장유형', []):
-        for ref in refs(f.get('모델_참조', {})):
-            if ref not in model_ids: errs.append(f'고장유형 {f.get("id")}: 모델에 없는 ID {ref}')
-    return ('확인 필요' if errs else '통과'), errs, f'SOP {len(items)}개'
-s_state, s_errs, s_note = check_sop(root/'결과/sop.json')
-r_state, r_errs, n = check_rules(root/'결과/rules.csv', sop_ids)
-parts = [('sop.json', s_state, s_errs, s_note, True), ('rules.csv', r_state, r_errs, f'규칙 묶음 {n}개' if n else '', True)]
-for name, column in [('사례대조.md', '판정'), ('요구사항.md', '정한 내용')]:
-    empty, total = empty_rows(root/'결과'/name, column)
-    if empty is None: parts.append((name, '없음', [], '', False))
-    elif total == 0 or empty == total: parts.append((name, '아직 비어 있음', [], f'「{column}」 칸을 채우세요', False))
-    else: parts.append((name, '작성 중' if empty else '작성됨', [], f'행 {total}개 중 「{column}」 빈 칸 {empty}개' if empty else f'행 {total}개', False))
+                if not isinstance(item, dict) or not item.get('text') or not item.get('source'): errs.append(f'{sid}.{key}[{i}]: 내용(text) · 출처(source)가 필요합니다.'); continue
+                for rid in item.get('rules') or []:
+                    if rule_ids and rid not in rule_ids: errs.append(f'{sid}.{key}[{i}]: 조건표에 없는 규칙 {rid}')
+        steps = [x.get('order') for x in items(s, 'steps') or [] if isinstance(x, dict)]
+        if not steps or steps != list(range(1, len(steps) + 1)): errs.append(f'{sid}: 수행 단계(steps)의 순서가 1부터 차례가 아닙니다: {steps}')
+        approval = s.get('approval')
+        if not isinstance(approval, dict) or not approval.get('role') or not approval.get('source'): errs.append(f'{sid}: 승인(approval — role · source)이 필요합니다.')
+        ref = s.get('model_refs')
+        if not isinstance(ref, dict): errs.append(f'{sid}: 모델 참조(model_refs)는 객체여야 합니다.'); continue
+        used = 0
+        for slot, want in SLOT.items():
+            for x in ref.get(slot) or []:
+                used += 1
+                if x not in kind_of: errs.append(f'{sid}: 모델에 없는 ID {x} (새 ID를 만들지 말고 not_linked에 까닭을 적습니다)')
+                elif kind_of[x] != want: errs.append(f'{sid}: {slot} 자리에 {kind_of[x]} ID {x}가 있습니다.')
+        if not used and not ref.get('not_linked'): errs.append(f'{sid}: 모델 참조(model_refs)가 비어 있습니다(걸 대상이 없으면 not_linked에 까닭을 적습니다).')
+    ends = {'failure_modes': set(fms), 'sops': set(found), 'causes': set(causes)}
+    rels = sop.get('relations')
+    if not isinstance(rels, list) or not rels: errs.append('관계 목록(relations)이 비어 있습니다.')
+    else:
+        for i, r in enumerate(rels, 1):
+            t = r.get('type') if isinstance(r, dict) else None
+            if t not in RELATIONS: errs.append(f'relations[{i}]: type {t}은 계약의 셋(MITIGATED_BY · REMEDIED_BY · ADDRESSES) 가운데 하나가 아닙니다.'); continue
+            a, b = RELATIONS[t]
+            if r.get('from') not in ends[a]: errs.append(f'relations[{i}] {t}: 시작 {r.get("from")}이 sop.json {a}에 없습니다.')
+            if r.get('to') not in ends[b]: errs.append(f'relations[{i}] {t}: 끝 {r.get("to")}이 sop.json {b}에 없습니다.')
+            if not r.get('source'): errs.append(f'relations[{i}]: source가 필요합니다.')
+    return ('확인 필요' if errs else '통과'), errs, f'SOP {len(found)}개 · 관계 {len(rels) if isinstance(rels, list) else 0}개'
+t_state, t_errs, n, rule_ids = check_table(root/'결과/조건표.csv', sop_ids)
+s_state, s_errs, s_note = check_sop(root/'결과/sop.json', rule_ids)
+missing = [p for p in ('sop.json', '조건표.csv') if not (root/'결과'/p).is_file()]
+if len(missing) == 2:
+    print('아직 검사할 결과가 없습니다: 결과/sop.json · 결과/조건표.csv')
 print('구조 검사 결과')
-ok = report(parts)
-left = unused_rules(root/'결과/rules.csv', root/'자료/규칙_원문.txt', root/'결과/요구사항.md', '정한 결정')
-if left: notes([f'규칙 발췌의 규칙 중 rules.csv source_section에도, 요구사항.md 결정 표에도 이름이 없는 것: {", ".join(left)}. 옮기지 않기로 정했다면 그 이유를 결정 표에 적습니다.'])
-kinds = missing_kinds(root/'결과/사례대조.md', '사례 종류', CASE_KINDS)
-if kinds: notes([f'START.md 사례 종류 중 사례대조.md 「사례 종류」 칸에서 찾지 못한 것: {", ".join(kinds)} (다른 말로 적었다면 그대로 두어도 됩니다).'])
-print('구조 검사는 형식만 봅니다. 경계 포함 여부·적용 대상·출처가 원문과 맞는지는 결과/사례대조.md에서 원문·원자료와 별도로 대조하세요.')
+ok = report([('sop.json', s_state, s_errs, s_note, True), ('조건표.csv', t_state, t_errs, f'규칙 묶음 {n}개' if n else '', True),
+             record_part(root/'결과/요구사항.md', '고른 것', '정한 것'), record_part(root/'결과/요구사항.md', '처리', '판단 시스템 결정표 대조'),
+             record_part(root/'결과/요구사항.md', '맞은 규칙', '사건 · 확인 사례 대입')])
+print('구조 검사 통과' if ok else '구조 확인 필요 — 위 줄마다 결과 파일의 어느 항목인지 찾아 고친 뒤 다시 실행합니다.')
+print('이 검사는 모양만 봅니다. 의미와 질문별 답(조건 · 경계 · 출처가 원문과 맞는지, 사건의 판정)은 원자료와 따로 대조합니다.')
 sys.exit(0 if ok else 1)

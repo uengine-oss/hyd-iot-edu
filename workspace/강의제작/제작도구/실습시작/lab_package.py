@@ -2,8 +2,9 @@
 
 같은 폴더 내용이면 언제 다시 묶어도 ZIP 바이트가 같다: 항목 시각을 STAMP로 고정하고, 경로는 소문자 조각 순서
 (Windows 탐색 순서와 같다)로 넣는다. 압축은 zlib가 하므로 zlib 판이 다른 PC에서는 바이트가 다를 수 있다 —
-내용 대조는 verify_packages.py가 한다. 생성기(build_labs · build_common · build_conditions · build_session3_* ·
-start_guides/build.py)는 이 파일의 pack · register를 쓴다.
+내용 대조는 verify_packages.py가 한다. 생성기(build_labs · build_common · build_judgement_labs · build_session3_* ·
+start_guides/build.py)는 이 파일의 pack · register를 쓴다. 시스템 코드(main 브랜치의 ot/ · common/ · it/)를 읽는 생성기는
+system_root() 한 곳으로 그 위치를 찾는다.
 
 폴더만 고친 랩 하나를 다시 묶는다(생성기의 다른 변경이 딸려 오지 않는다):
     python lab_package.py <랩 폴더> [--version <새 판>]
@@ -27,6 +28,18 @@ ALWAYS_SKIP = frozenset({'__pycache__', '.pytest_cache'})    # 실행 찌꺼기 
 PRIVATE = frozenset({'.env', '랩_연결.json'})                 # 이 PC의 키 · 랩 DB 연결 — 기본으로 뺀다
 
 GUIDE_CSS = '''*{box-sizing:border-box}body{margin:0;background:#f4f6f3;color:#20342f;font:17px/1.8 "Malgun Gothic",sans-serif}main{max-width:1000px;margin:auto;padding:52px 28px}h1{font-size:36px;line-height:1.35}h2{font-size:25px;line-height:1.45;margin:0 0 18px}h3{font-size:20px;margin:22px 0 8px}section{background:white;border:1px solid #dce5df;border-radius:16px;padding:30px;margin:24px 0}a{color:#176554;text-underline-offset:4px}nav{display:flex;gap:14px;flex-wrap:wrap}nav a,.button{display:inline-block;background:#e2eee7;padding:8px 16px;border-radius:8px}p{margin:12px 0}li{margin:8px 0}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#edf2ef;padding:18px;border-radius:8px;font-size:15px}code{font-family:Consolas,monospace}table{border-collapse:collapse;width:100%}td,th{padding:12px;border-bottom:1px solid #dce5df;text-align:left;vertical-align:top}img{max-width:100%;height:auto}small{color:#607269}.check{border-left:4px solid #32886a;padding:12px 18px;background:#edf6ef}details{border-top:1px solid #dce5df;margin-top:18px;padding-top:12px}summary{cursor:pointer}'''
+
+
+def system_root():
+    """시스템 코드(main 브랜치)가 있는 저장소 루트. 환경 변수 HYD_MAIN_ROOT가 있으면 그것, 없으면 이 저장소 루트.
+    이 PC는 main 체크아웃 안에 workspace/가 있어 저장소 루트에 ot/ · common/ · it/가 있다. workspace만 받은 곳(클라우드 세션)은
+    git worktree add ../main main 뒤 HYD_MAIN_ROOT=../main으로 돌린다."""
+    root = Path(os.environ.get('HYD_MAIN_ROOT') or ROOT).resolve()
+    if not (root/'ot/plant-sim').is_dir() or not (root/'common/hydcommon').is_dir():
+        raise SystemExit(f'{root}: 시스템 코드(ot/plant-sim · common/hydcommon)가 없습니다. '
+                         'workspace만 받은 곳이면 `git fetch origin main:main` → `git worktree add ../main main` 뒤 '
+                         '`HYD_MAIN_ROOT=../main`으로 다시 실행합니다.')
+    return root
 
 
 def student_files(folder, exclude_names=PRIVATE):

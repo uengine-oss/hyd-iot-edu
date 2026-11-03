@@ -1,5 +1,8 @@
-sop_id,reference_skill_id,name,kind,codes,source_section
-SOP-COOL-11,skill:fan-max,팬 최대 운전,control,FAN_SET,HM-8.5
-SOP-COOL-12,,팬 최대 운전과 부하 80 %,control,FAN_SET;LOAD_SET,HM-8.5
-SOP-COOL-13,,부하 70 %와 야간 핀 세척,control,LOAD_SET;WO_CREATE,HM-8.5
-SOP-COOL-14,,쿨러 핀 세척,workorder,WO_CREATE,HM-8.7
+sop_id,name,source_section
+SOP-FAN-11,쿨러 팬 점검 절차,HM-8.1
+SOP-FAN-12,벨트 교체 절차,HM-8.2
+SOP-COOL-11,팬 최대 운전,HM-8.5
+SOP-COOL-12,팬 최대 운전과 부하 80 %,HM-8.5
+SOP-COOL-13,부하 70 %와 야간 핀 세척,HM-8.5
+SOP-COOL-14,쿨러 핀 세척,HM-8.7
+SOP-COOL-15,캐비닛 환기 보강,HM-8.7

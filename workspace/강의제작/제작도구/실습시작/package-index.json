@@ -55,11 +55,11 @@
       "id": "practical-02-conditions",
       "course": "실전반",
       "session": "온라인 02회차",
-      "title": "조치 조건과 판단 근거 정리하기",
-      "version": "2026-10-28-conditions-v5-rh3",
+      "title": "작업 기준의 복합 조건과 예외를 조치 조건표로 표현하기",
+      "version": "2026-11-03-s3-v5",
       "folder": "02회차/랩/02일차_실습5_조치조건표",
       "path": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습5_조치조건표.zip",
-      "sha256": "ce613009fe55ccea0ff416e03279931901e33e4ac68365acf85e01b5d9f4a60d"
+      "sha256": "8460db44593b5d4627f1875527052c8906581cc23ee89d0361d01047e718766a"
     },
     {
       "id": "practical-03-whatif",
@@ -75,11 +75,11 @@
       "id": "practical-03-review",
       "course": "실전반",
       "session": "온라인 03회차",
-      "title": "후보별 조치 검토 결과 만들기",
-      "version": "2026-10-28-s3-v4-rh3",
+      "title": "판정·성과 비교를 조치 검토 결과로 완성하기",
+      "version": "2026-11-03-s3-v5",
       "folder": "03회차/랩/03일차_실습2_판단기능만들기",
       "path": "workspace/강의제작/산출물/실전반/실습/03회차/랩/03일차_실습2_판단기능만들기.zip",
-      "sha256": "cd77365843b8c086ec2abb4b43c7c2188ed5e1912de5fd0a668bae36105c6f7a"
+      "sha256": "d0c4d38c34430eea1b36a0eaee16ad626761d19466072d6245869fc4245d0696"
     },
     {
       "id": "practical-03-manual",
@@ -176,21 +176,21 @@
       "id": "integrated-03-criteria",
       "course": "통합반",
       "session": "온라인 03회차",
-      "title": "SOP 구조와 조치 결정표 만들기",
-      "version": "2026-10-28-s3-v4-rh3",
+      "title": "작업 절차와 판단 조건을 연결해 조치 기준 만들기",
+      "version": "2026-11-03-s3-v5",
       "folder": "03회차/랩/03일차_실습2_조치기준만들기",
       "path": "workspace/강의제작/산출물/통합반/실습/03회차/랩/03일차_실습2_조치기준만들기.zip",
-      "sha256": "ffd1c4585c7a28f2f71c7f8ed822b8120c98a75c540dba2f3ffd5fe036a6aca2"
+      "sha256": "b0b4a7fa8805f9d0c280c2e1b386e2f7b9bf8398594b47acc479effc3fbfcbc4"
     },
     {
       "id": "integrated-03-judge",
       "course": "통합반",
       "session": "온라인 03회차",
-      "title": "조건표를 읽는 조치 판정·비교 기능 만들기",
-      "version": "2026-10-28-s3-v4-rh3",
+      "title": "설비 조건별 최적의 조치를 비교하는 판단 기능 만들기",
+      "version": "2026-11-03-s3-v5",
       "folder": "03회차/랩/03일차_실습3_판단기능만들기",
       "path": "workspace/강의제작/산출물/통합반/실습/03회차/랩/03일차_실습3_판단기능만들기.zip",
-      "sha256": "c0d88ab74979c2e5084a17db88bf912bc5f4305f33d78322a4cfd1fa78131bf2"
+      "sha256": "1355d4bb4780a65cb4ba51bdcb6c8a325ddfd8fc1effaaf0d0b2b74b9552ab97"
     }
   ]
 }

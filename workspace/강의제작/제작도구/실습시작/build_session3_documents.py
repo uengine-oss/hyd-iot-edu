@@ -18,7 +18,7 @@ import data_documents as data
 
 HERE = Path(__file__).resolve().parent
 REF = HERE / 'reference/session3_docs'
-BUNDLE = ROOT / 'common/hydcommon/course_extractions.json'
+BUNDLE_PATH = 'it/process/procsvc/course_extractions.json'   # 포털 승인 추출 묶음(main). 위치는 lab_package.system_root() 한 곳에서 푼다
 MODEL_DATA = OUT / '통합반/실습/02회차/랩/02일차_실습3_온톨로지설계/자료'
 LABS = OUT / '실전반/실습/03회차/랩'
 VERSION = '2026-10-28-s3-v4-rh3'
@@ -844,6 +844,8 @@ def build_extract():
                         '후보 파일 원본은 남기고 검토 결과는 별도 파일로 만든다.'])
     write(folder / '입력/출력_계약.md', CONTRACT)
     write(folder / 'check_candidates.py', CHECKER)
+    from lab_package import system_root
+    BUNDLE = system_root() / BUNDLE_PATH
     bundle = json.loads(BUNDLE.read_text(encoding='utf-8'))['payload']
     hm8 = sha(folder / '자료/원문/HM-8_cooler-fan-manual.md')
     entry = bundle['documents'].get(hm8)

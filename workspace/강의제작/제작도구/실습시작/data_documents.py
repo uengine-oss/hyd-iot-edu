@@ -1,4 +1,4 @@
-"""실전반 온라인3 문서 지식화 랩(실습3·4·5)의 현업형 자료 묶음 생성 — 교육용 가상 자료.
+"""실전반 온라인3 문서 지식화 랩(실습3·4·5)과 냉각 경보 조치 판단 묶음(data_conditions.py)이 함께 쓰는 문서 · 기록 생성 — 가상 사례.
 
 근거: workspace/강의제작/제작도구/실습시작/근거/2026-10-28_현업데이터_현실성_조사.md §4.4·4.5(문제 유형 E1·E2·E3·E6·E8·B1~B5·D3·D6).
 승인 원문(HM-8 1.1·PM-02·PR-07·HI-01)은 바꾸지 않고 복사만 한다. 이 파일이 만드는 것:
@@ -17,11 +17,11 @@ import io
 import random
 import sys
 
-ROOT = Path(__file__).resolve().parents[4]
-SRC = ROOT / 'it/portal/www/samples'
+from lab_package import system_root
+
 SEED = 20261028
 BASE = dt.date(2026, 10, 28)          # 수업일. 작업지시·재고 내보내기의 기준일
-EDU = '교육용 가상 자료(공개 현업 문제 유형을 따라 생성). 실제 회사·제조사·설비의 기록이 아니다.'
+EDU = '교육용 가상 자료(공개 현업 문제 유형을 따라 생성). 실제 회사·제조사·설비의 기록이 아니다.'   # 문서 지식 묶음의 검토본 원문 해시가 이 글자에 묶여 있다 — 그 묶음을 다시 만들 때 함께 바꾼다(냉각 경보 묶음은 data_conditions.py가 사본에서 바꿔 쓴다)
 
 HM8_OLD_FILE = 'HM-8_rev1.0_cooler-fan-manual.md'
 OEM_FILE = 'OEM-HPP45A-MM_maintenance-excerpt.md'
@@ -235,7 +235,7 @@ def doc_text(name):
         return HM8_OLD.encode('utf-8')
     if name == OEM_FILE:
         return OEM.encode('utf-8')
-    path = SRC / name
+    path = system_root() / 'it/portal/www/samples' / name
     if not path.is_file():
         raise FileNotFoundError(f'승인 원문이 없습니다: {path}')
     return path.read_bytes()
@@ -349,6 +349,14 @@ def events(r):
     return ev
 
 
+# 냉각 경보 조치 판단 묶음의 사건 전날 운전 기록(data_conditions.py 궤적과 같은 날짜 · 설비 · 조치 — 그 설계 조건 검사가 대조한다).
+# 아래 이력 뒤에 이어 번호를 붙이고 값을 정해 둔다 — 난수를 쓰지 않아 앞 이력의 번호 · 값이 바뀌지 않는다.
+INCIDENT_EVE = [
+    dict(days=2, asset='HYD-02', typ='운전', text='원격 팬 100 % (SOP-COOL-11) 15분 재관측 미회복, 경보 계속', crew='운전 C조'),
+    dict(days=2, asset='HYD-02', typ='운전', text='주간 계획 부하 80 %로 경보 해제. 팬 100 % 유지, 핀 세척 일정 미정', crew='운전 A조'),
+]
+
+
 def work_orders():
     r = random.Random(SEED)
     rows = []
@@ -365,19 +373,28 @@ def work_orders():
         broke = e['broke'] if e['broke'] else r.choice(['', '', '', 'N'])
         out.append([f'WO-{requested.year}-{4100 + n:05d}', alias, requested.isoformat(), planned, finished, e['typ'], broke,
                     e['status'], e['text'], e['parts'], e['hours'], e['record'], e['crew']])
+    for n, e in enumerate(INCIDENT_EVE, len(rows) + 1):   # 운전원이 그날 남긴 기록 — 요청일 · 완료일 = 사건 날
+        day = d(e['days']).isoformat()
+        out.append([f'WO-{d(e["days"]).year}-{4100 + n:05d}', e['asset'], day, '', day, e['typ'], '', '완료', e['text'], '', '', '', e['crew']])
     return out
 
 
-def write_work_orders(path):
+def work_order_text():
+    """CMMS 작업지시 내보내기 CSV 글(문서 지식화 랩 · 냉각 경보 조치 판단 랩이 함께 쓰는 한 벌)."""
     buf = io.StringIO()
     w = csv.writer(buf, lineterminator='\n')
     w.writerow([f'# CMMS 작업지시 내보내기 {BASE.isoformat()} 07:30 — {EDU}'])
     w.writerow(['작업지시', '설비', '요청일', '예정일', '완료일', '작업유형', '고장', '상태', '작업 내용', '사용 부품', '운전시간(h)', '측정·시운전 기록', '작업자'])
     rows = work_orders()
     w.writerows(rows)
+    return buf.getvalue(), len(rows)
+
+
+def write_work_orders(path):
+    text, n = work_order_text()
     Path(path).parent.mkdir(parents=True, exist_ok=True)
-    Path(path).write_text(buf.getvalue(), encoding='utf-8')
-    return len(rows)
+    Path(path).write_text(text, encoding='utf-8')
+    return n
 
 
 STOCK = [

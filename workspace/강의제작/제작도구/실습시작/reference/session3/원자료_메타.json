@@ -1,0 +1,2893 @@
+{
+ "seed": 20261028,
+ "end": "2026-10-27T02:01:20+09:00",
+ "incident": "ALT-hyd02-0172-54a5",
+ "cases": [
+  {
+   "id": "ALT-hyd03-0280-beaf",
+   "asset": "HYD-03",
+   "judge": "2026-09-28T12:25:20+09:00",
+   "categories": [
+    "MPa"
+   ],
+   "action_taken": "SOP-COOL-11",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 9,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 46.2,
+     "SOP-COOL-12": 42.8,
+     "SOP-COOL-13": 46.8,
+     "SOP-COOL-14": 55.1
+    },
+    "ps1": {
+     "SOP-COOL-11": 167.3,
+     "SOP-COOL-12": 164.3,
+     "SOP-COOL-13": 161.3,
+     "SOP-COOL-14": 167.3
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-03",
+     "2026-09-28T00:00:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": {
+    "due_h": 43.0,
+    "remain": 6280,
+    "hot": 10
+   }
+  },
+  {
+   "id": "ALT-hyd02-0153-06b1",
+   "asset": "HYD-02",
+   "judge": "2026-09-29T10:53:02+09:00",
+   "categories": [
+    "정상"
+   ],
+   "action_taken": "SOP-COOL-11",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 5,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 46.0,
+     "SOP-COOL-12": 42.5,
+     "SOP-COOL-13": 46.6,
+     "SOP-COOL-14": 55.1
+    },
+    "ps1": {
+     "SOP-COOL-11": 182.0,
+     "SOP-COOL-12": 179.0,
+     "SOP-COOL-13": 176.0,
+     "SOP-COOL-14": 182.0
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-02",
+     "2026-09-28T00:00:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": {
+    "due_h": 12.2,
+    "remain": 771,
+    "hot": 10
+   }
+  },
+  {
+   "id": "ALT-hyd03-0281-8e39",
+   "asset": "HYD-03",
+   "judge": "2026-09-29T13:08:55+09:00",
+   "categories": [
+    "MPa",
+    "PLC bad",
+    "전달 실패"
+   ],
+   "action_taken": "SOP-COOL-11",
+   "inputs": {
+    "mode": null,
+    "state": null,
+    "plc_age": 4,
+    "plc_quality": "bad",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 46.3,
+     "SOP-COOL-12": 42.9,
+     "SOP-COOL-13": 46.9,
+     "SOP-COOL-14": null
+    },
+    "ps1": {
+     "SOP-COOL-11": 167.1,
+     "SOP-COOL-12": 164.1,
+     "SOP-COOL-13": 161.1,
+     "SOP-COOL-14": null
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": "예측 결과 행 없음"
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-03",
+     "2026-09-29T12:15:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": {
+    "due_h": 19.9,
+    "remain": 1970,
+    "hot": 10
+   }
+  },
+  {
+   "id": "ALT-hyd02-0154-9312",
+   "asset": "HYD-02",
+   "judge": "2026-10-01T09:57:02+09:00",
+   "categories": [
+    "정상"
+   ],
+   "action_taken": "SOP-COOL-11",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 5,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 46.0,
+     "SOP-COOL-12": 42.4,
+     "SOP-COOL-13": 46.6,
+     "SOP-COOL-14": 55.1
+    },
+    "ps1": {
+     "SOP-COOL-11": 182.0,
+     "SOP-COOL-12": 179.0,
+     "SOP-COOL-13": 176.0,
+     "SOP-COOL-14": 182.0
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-02",
+     "2026-09-30T10:44:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": {
+    "due_h": 40.9,
+    "remain": 6485,
+    "hot": 20
+   }
+  },
+  {
+   "id": "ALT-hyd03-0282-df83",
+   "asset": "HYD-03",
+   "judge": "2026-10-01T11:24:14+09:00",
+   "categories": [
+    "MPa",
+    "모드 수동"
+   ],
+   "action_taken": null,
+   "inputs": {
+    "mode": "REMOTE_MANUAL",
+    "state": "RUN",
+    "plc_age": 3,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.7666666666666667,
+    "ts1": {
+     "SOP-COOL-11": 45.9,
+     "SOP-COOL-12": 42.4,
+     "SOP-COOL-13": 39.3,
+     "SOP-COOL-14": 45.9
+    },
+    "ps1": {
+     "SOP-COOL-11": 166.8,
+     "SOP-COOL-12": 163.8,
+     "SOP-COOL-13": 160.8,
+     "SOP-COOL-14": 166.8
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_MANUAL",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-03",
+     "2026-10-01T11:23:28+09:00",
+     0,
+     "시작"
+    ]
+   },
+   "order": {
+    "due_h": 33.5,
+    "remain": 5095,
+    "hot": 10
+   }
+  },
+  {
+   "id": "ALT-hyd02-0155-a384",
+   "asset": "HYD-02",
+   "judge": "2026-10-02T10:28:48+09:00",
+   "categories": [
+    "정상"
+   ],
+   "action_taken": "SOP-COOL-11",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 1,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 46.4,
+     "SOP-COOL-12": 42.8,
+     "SOP-COOL-13": 47.0,
+     "SOP-COOL-14": 55.5
+    },
+    "ps1": {
+     "SOP-COOL-11": 182.0,
+     "SOP-COOL-12": 179.0,
+     "SOP-COOL-13": 176.0,
+     "SOP-COOL-14": 182.0
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-02",
+     "2026-10-02T09:47:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": {
+    "due_h": 31.9,
+    "remain": 4430,
+    "hot": 10
+   }
+  },
+  {
+   "id": "ALT-hyd03-0283-ef15",
+   "asset": "HYD-03",
+   "judge": "2026-10-02T11:40:14+09:00",
+   "categories": [
+    "MPa"
+   ],
+   "action_taken": "SOP-COOL-11",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 3,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 47.3,
+     "SOP-COOL-12": 43.7,
+     "SOP-COOL-13": 47.7,
+     "SOP-COOL-14": 56.2
+    },
+    "ps1": {
+     "SOP-COOL-11": 166.7,
+     "SOP-COOL-12": 163.7,
+     "SOP-COOL-13": 160.7,
+     "SOP-COOL-14": 166.7
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-03",
+     "2026-10-02T11:12:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": {
+    "due_h": 27.1,
+    "remain": 4315,
+    "hot": 10
+   }
+  },
+  {
+   "id": "ALT-hyd02-0156-f23e",
+   "asset": "HYD-02",
+   "judge": "2026-10-03T10:46:32+09:00",
+   "categories": [
+    "정상"
+   ],
+   "action_taken": "SOP-COOL-12",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 5,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 47.3,
+     "SOP-COOL-12": 43.6,
+     "SOP-COOL-13": 47.7,
+     "SOP-COOL-14": 56.3
+    },
+    "ps1": {
+     "SOP-COOL-11": 182.0,
+     "SOP-COOL-12": 179.0,
+     "SOP-COOL-13": 176.0,
+     "SOP-COOL-14": 182.0
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-02",
+     "2026-10-03T10:19:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": {
+    "due_h": 20.2,
+    "remain": 1740,
+    "hot": 10
+   }
+  },
+  {
+   "id": "ALT-hyd03-0284-7ab6",
+   "asset": "HYD-03",
+   "judge": "2026-10-03T12:25:43+09:00",
+   "categories": [
+    "MPa"
+   ],
+   "action_taken": "SOP-COOL-11",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 2,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 47.9,
+     "SOP-COOL-12": 44.3,
+     "SOP-COOL-13": 48.5,
+     "SOP-COOL-14": 57.0
+    },
+    "ps1": {
+     "SOP-COOL-11": 166.6,
+     "SOP-COOL-12": 163.6,
+     "SOP-COOL-13": 160.6,
+     "SOP-COOL-14": 166.6
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-03",
+     "2026-10-03T11:31:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": {
+    "due_h": 19.9,
+    "remain": 3195,
+    "hot": 150
+   }
+  },
+  {
+   "id": "ALT-hyd02-0157-c2a8",
+   "asset": "HYD-02",
+   "judge": "2026-10-04T11:02:17+09:00",
+   "categories": [
+    "정상"
+   ],
+   "action_taken": "SOP-COOL-11",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 0,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 47.9,
+     "SOP-COOL-12": 44.3,
+     "SOP-COOL-13": 48.3,
+     "SOP-COOL-14": 57.0
+    },
+    "ps1": {
+     "SOP-COOL-11": 182.0,
+     "SOP-COOL-12": 179.0,
+     "SOP-COOL-13": 176.0,
+     "SOP-COOL-14": 182.0
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-02",
+     "2026-10-04T10:37:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": {
+    "due_h": 13.7,
+    "remain": 370,
+    "hot": 20
+   }
+  },
+  {
+   "id": "ALT-hyd03-0285-4a20",
+   "asset": "HYD-03",
+   "judge": "2026-10-04T12:41:59+09:00",
+   "categories": [
+    "MPa"
+   ],
+   "action_taken": "SOP-COOL-11",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 8,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 47.8,
+     "SOP-COOL-12": 44.2,
+     "SOP-COOL-13": 48.2,
+     "SOP-COOL-14": 56.8
+    },
+    "ps1": {
+     "SOP-COOL-11": 166.4,
+     "SOP-COOL-12": 163.4,
+     "SOP-COOL-13": 160.4,
+     "SOP-COOL-14": 166.4
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-03",
+     "2026-10-04T12:16:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": {
+    "due_h": 40.9,
+    "remain": 6115,
+    "hot": 20
+   }
+  },
+  {
+   "id": "ALT-hyd02-0158-df39",
+   "asset": "HYD-02",
+   "judge": "2026-10-05T11:19:06+09:00",
+   "categories": [
+    "정상"
+   ],
+   "action_taken": "SOP-COOL-11",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 9,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 47.5,
+     "SOP-COOL-12": 43.8,
+     "SOP-COOL-13": 47.9,
+     "SOP-COOL-14": 56.6
+    },
+    "ps1": {
+     "SOP-COOL-11": 182.0,
+     "SOP-COOL-12": 179.0,
+     "SOP-COOL-13": 176.0,
+     "SOP-COOL-14": 182.0
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-02",
+     "2026-10-05T10:51:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": {
+    "due_h": 18.1,
+    "remain": 1185,
+    "hot": 20
+   }
+  },
+  {
+   "id": "ALT-hyd01-0191-5241",
+   "asset": "HYD-01",
+   "judge": "2026-10-05T11:28:32+09:00",
+   "categories": [
+    "경계 55",
+    "120초 지남"
+   ],
+   "action_taken": "SOP-COOL-11",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 9,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": null,
+     "SOP-COOL-12": null,
+     "SOP-COOL-13": null,
+     "SOP-COOL-14": null
+    },
+    "ps1": {
+     "SOP-COOL-11": null,
+     "SOP-COOL-12": null,
+     "SOP-COOL-13": null,
+     "SOP-COOL-14": null
+    },
+    "why": {
+     "SOP-COOL-11": "기준 관측이 판정 요청 840초 전",
+     "SOP-COOL-12": "기준 관측이 판정 요청 840초 전",
+     "SOP-COOL-13": "기준 관측이 판정 요청 840초 전",
+     "SOP-COOL-14": "기준 관측이 판정 요청 840초 전"
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-01",
+     "2026-09-28T00:00:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": {
+    "due_h": 19.0,
+    "remain": 915,
+    "hot": 20
+   }
+  },
+  {
+   "id": "ALT-hyd03-0286-1b9a",
+   "asset": "HYD-03",
+   "judge": "2026-10-05T12:59:28+09:00",
+   "categories": [
+    "MPa"
+   ],
+   "action_taken": "SOP-COOL-11",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 7,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 47.2,
+     "SOP-COOL-12": 43.6,
+     "SOP-COOL-13": 47.6,
+     "SOP-COOL-14": 56.2
+    },
+    "ps1": {
+     "SOP-COOL-11": 166.3,
+     "SOP-COOL-12": 163.3,
+     "SOP-COOL-13": 160.3,
+     "SOP-COOL-14": 166.3
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-03",
+     "2026-10-05T12:31:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": {
+    "due_h": 19.2,
+    "remain": 1625,
+    "hot": 10
+   }
+  },
+  {
+   "id": "ALT-hyd02-0159-efaf",
+   "asset": "HYD-02",
+   "judge": "2026-10-06T11:33:31+09:00",
+   "categories": [
+    "정상"
+   ],
+   "action_taken": "SOP-COOL-12",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 4,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 48.1,
+     "SOP-COOL-12": 44.4,
+     "SOP-COOL-13": 48.4,
+     "SOP-COOL-14": 57.2
+    },
+    "ps1": {
+     "SOP-COOL-11": 182.0,
+     "SOP-COOL-12": 179.0,
+     "SOP-COOL-13": 176.0,
+     "SOP-COOL-14": 182.0
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-02",
+     "2026-10-06T11:09:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": {
+    "due_h": 12.2,
+    "remain": 1515,
+    "hot": 20
+   }
+  },
+  {
+   "id": "ALT-hyd01-0192-03fb",
+   "asset": "HYD-01",
+   "judge": "2026-10-07T07:06:48+09:00",
+   "categories": [
+    "전달 실패"
+   ],
+   "action_taken": "SOP-COOL-11",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 5,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 46.0,
+     "SOP-COOL-12": null,
+     "SOP-COOL-13": 46.5,
+     "SOP-COOL-14": 55.2
+    },
+    "ps1": {
+     "SOP-COOL-11": 182.0,
+     "SOP-COOL-12": null,
+     "SOP-COOL-13": 176.0,
+     "SOP-COOL-14": 182.0
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "예측 결과 행 없음",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-01",
+     "2026-10-07T06:05:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": {
+    "due_h": 18.6,
+    "remain": 2626,
+    "hot": 10
+   }
+  },
+  {
+   "id": "ALT-hyd03-0287-2b0c",
+   "asset": "HYD-03",
+   "judge": "2026-10-07T09:09:59+09:00",
+   "categories": [
+    "MPa",
+    "전달 실패"
+   ],
+   "action_taken": "SOP-COOL-11",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 8,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 45.8,
+     "SOP-COOL-12": 42.2,
+     "SOP-COOL-13": 46.4,
+     "SOP-COOL-14": null
+    },
+    "ps1": {
+     "SOP-COOL-11": 166.0,
+     "SOP-COOL-12": 163.0,
+     "SOP-COOL-13": 160.0,
+     "SOP-COOL-14": null
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": "예측 결과 행 없음"
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-03",
+     "2026-10-06T12:49:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": {
+    "due_h": 22.7,
+    "remain": 1511,
+    "hot": 10
+   }
+  },
+  {
+   "id": "ALT-hyd02-0160-04c8",
+   "asset": "HYD-02",
+   "judge": "2026-10-07T11:45:25+09:00",
+   "categories": [
+    "모드 수동"
+   ],
+   "action_taken": null,
+   "inputs": {
+    "mode": "REMOTE_MANUAL",
+    "state": "RUN",
+    "plc_age": 8,
+    "plc_quality": "good",
+    "fan_elapsed_min": 1.15,
+    "ts1": {
+     "SOP-COOL-11": 47.9,
+     "SOP-COOL-12": 44.1,
+     "SOP-COOL-13": 40.8,
+     "SOP-COOL-14": 47.9
+    },
+    "ps1": {
+     "SOP-COOL-11": 182.0,
+     "SOP-COOL-12": 179.0,
+     "SOP-COOL-13": 176.0,
+     "SOP-COOL-14": 182.0
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_MANUAL",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-02",
+     "2026-10-07T11:44:16+09:00",
+     0,
+     "시작"
+    ]
+   },
+   "order": {
+    "due_h": 23.2,
+    "remain": 1140,
+    "hot": 10
+   }
+  },
+  {
+   "id": "ALT-hyd03-0288-369d",
+   "asset": "HYD-03",
+   "judge": "2026-10-08T09:33:57+09:00",
+   "categories": [
+    "MPa",
+    "오더 실패"
+   ],
+   "action_taken": "SOP-COOL-12",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 6,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 46.7,
+     "SOP-COOL-12": 43.0,
+     "SOP-COOL-13": 47.2,
+     "SOP-COOL-14": 55.9
+    },
+    "ps1": {
+     "SOP-COOL-11": 165.9,
+     "SOP-COOL-12": 162.9,
+     "SOP-COOL-13": 159.9,
+     "SOP-COOL-14": 165.9
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-03",
+     "2026-10-08T09:01:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": null
+  },
+  {
+   "id": "ALT-hyd03-0289-060b",
+   "asset": "HYD-03",
+   "judge": "2026-10-10T10:45:31+09:00",
+   "categories": [
+    "정상"
+   ],
+   "action_taken": "SOP-COOL-12",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 0,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 47.3,
+     "SOP-COOL-12": 47.3,
+     "SOP-COOL-13": 50.7,
+     "SOP-COOL-14": 55.1
+    },
+    "ps1": {
+     "SOP-COOL-11": 162.6,
+     "SOP-COOL-12": 162.6,
+     "SOP-COOL-13": 159.6,
+     "SOP-COOL-14": 162.6
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-03",
+     "2026-10-08T14:00:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": {
+    "due_h": 19.2,
+    "remain": 2083,
+    "hot": 10
+   }
+  },
+  {
+   "id": "ALT-hyd03-0290-8fee",
+   "asset": "HYD-03",
+   "judge": "2026-10-11T10:48:09+09:00",
+   "categories": [
+    "모드 수동"
+   ],
+   "action_taken": null,
+   "inputs": {
+    "mode": "REMOTE_MANUAL",
+    "state": "RUN",
+    "plc_age": 8,
+    "plc_quality": "good",
+    "fan_elapsed_min": 1.3,
+    "ts1": {
+     "SOP-COOL-11": 51.1,
+     "SOP-COOL-12": 46.9,
+     "SOP-COOL-13": 43.3,
+     "SOP-COOL-14": 51.1
+    },
+    "ps1": {
+     "SOP-COOL-11": 165.4,
+     "SOP-COOL-12": 162.4,
+     "SOP-COOL-13": 159.4,
+     "SOP-COOL-14": 165.4
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_MANUAL",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-03",
+     "2026-10-11T10:46:51+09:00",
+     0,
+     "시작"
+    ]
+   },
+   "order": {
+    "due_h": 15.4,
+    "remain": 2480,
+    "hot": 20
+   }
+  },
+  {
+   "id": "ALT-hyd03-0291-bf78",
+   "asset": "HYD-03",
+   "judge": "2026-10-12T23:12:30+09:00",
+   "categories": [
+    "정상"
+   ],
+   "action_taken": "SOP-COOL-12",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 9,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 51.4,
+     "SOP-COOL-12": 47.1,
+     "SOP-COOL-13": 50.7,
+     "SOP-COOL-14": 60.4
+    },
+    "ps1": {
+     "SOP-COOL-11": 165.2,
+     "SOP-COOL-12": 162.2,
+     "SOP-COOL-13": 159.2,
+     "SOP-COOL-14": 165.2
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-03",
+     "2026-10-12T23:03:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": {
+    "due_h": 30.2,
+    "remain": 5060,
+    "hot": 10
+   }
+  },
+  {
+   "id": "ALT-hyd01-0193-336d",
+   "asset": "HYD-01",
+   "judge": "2026-10-13T11:08:36+09:00",
+   "categories": [
+    "정상"
+   ],
+   "action_taken": "SOP-COOL-11",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 3,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 46.0,
+     "SOP-COOL-12": 42.5,
+     "SOP-COOL-13": 46.6,
+     "SOP-COOL-14": 55.1
+    },
+    "ps1": {
+     "SOP-COOL-11": 182.0,
+     "SOP-COOL-12": 179.0,
+     "SOP-COOL-13": 176.0,
+     "SOP-COOL-14": 182.0
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-01",
+     "2026-10-07T10:00:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": {
+    "due_h": 23.0,
+    "remain": 2095,
+    "hot": 20
+   }
+  },
+  {
+   "id": "ALT-hyd03-0292-eec2",
+   "asset": "HYD-03",
+   "judge": "2026-10-14T08:42:09+09:00",
+   "categories": [
+    "경계 165 bar",
+    "재경보"
+   ],
+   "action_taken": "SOP-COOL-12",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 8,
+    "plc_quality": "good",
+    "fan_elapsed_min": 2008.5333333333333,
+    "ts1": {
+     "SOP-COOL-11": 55.1,
+     "SOP-COOL-12": 50.5,
+     "SOP-COOL-13": 46.5,
+     "SOP-COOL-14": 55.1
+    },
+    "ps1": {
+     "SOP-COOL-11": 165.0,
+     "SOP-COOL-12": 162.0,
+     "SOP-COOL-13": 159.0,
+     "SOP-COOL-14": 165.0
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-03",
+     "2026-10-14T08:33:37+09:00",
+     2000,
+     "주기"
+    ]
+   },
+   "order": {
+    "due_h": 24.0,
+    "remain": 1440,
+    "hot": 20
+   }
+  },
+  {
+   "id": "ALT-hyd03-0293-de54",
+   "asset": "HYD-03",
+   "judge": "2026-10-14T09:19:32+09:00",
+   "categories": [
+    "모드 수동"
+   ],
+   "action_taken": null,
+   "inputs": {
+    "mode": "REMOTE_MANUAL",
+    "state": "RUN",
+    "plc_age": 1,
+    "plc_quality": "good",
+    "fan_elapsed_min": 1.1166666666666667,
+    "ts1": {
+     "SOP-COOL-11": 50.8,
+     "SOP-COOL-12": 50.8,
+     "SOP-COOL-13": 46.8,
+     "SOP-COOL-14": 50.8
+    },
+    "ps1": {
+     "SOP-COOL-11": 162.0,
+     "SOP-COOL-12": 162.0,
+     "SOP-COOL-13": 159.0,
+     "SOP-COOL-14": 162.0
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_MANUAL",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-03",
+     "2026-10-14T09:18:25+09:00",
+     0,
+     "시작"
+    ]
+   },
+   "order": {
+    "due_h": 23.4,
+    "remain": 1275,
+    "hot": 40
+   }
+  },
+  {
+   "id": "ALT-hyd01-0194-a6ce",
+   "asset": "HYD-01",
+   "judge": "2026-10-14T11:43:18+09:00",
+   "categories": [
+    "정상"
+   ],
+   "action_taken": "SOP-COOL-11",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 5,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 46.3,
+     "SOP-COOL-12": 42.6,
+     "SOP-COOL-13": 46.8,
+     "SOP-COOL-14": 55.4
+    },
+    "ps1": {
+     "SOP-COOL-11": 182.0,
+     "SOP-COOL-12": 179.0,
+     "SOP-COOL-13": 176.0,
+     "SOP-COOL-14": 182.0
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-01",
+     "2026-10-14T10:59:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": {
+    "due_h": 17.0,
+    "remain": 1520,
+    "hot": 10
+   }
+  },
+  {
+   "id": "ALT-hyd01-0195-9658",
+   "asset": "HYD-01",
+   "judge": "2026-10-15T12:04:48+09:00",
+   "categories": [
+    "오더 실패"
+   ],
+   "action_taken": "SOP-COOL-11",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 5,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 46.8,
+     "SOP-COOL-12": 43.1,
+     "SOP-COOL-13": 47.3,
+     "SOP-COOL-14": 56.0
+    },
+    "ps1": {
+     "SOP-COOL-11": 182.0,
+     "SOP-COOL-12": 179.0,
+     "SOP-COOL-13": 176.0,
+     "SOP-COOL-14": 182.0
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-01",
+     "2026-10-15T11:33:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": null
+  },
+  {
+   "id": "ALT-hyd03-0294-4bf7",
+   "asset": "HYD-03",
+   "judge": "2026-10-16T00:24:15+09:00",
+   "categories": [
+    "정상"
+   ],
+   "action_taken": "SOP-COOL-12",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 4,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 53.6,
+     "SOP-COOL-12": 53.6,
+     "SOP-COOL-13": 56.5,
+     "SOP-COOL-14": 61.4
+    },
+    "ps1": {
+     "SOP-COOL-11": 161.8,
+     "SOP-COOL-12": 161.8,
+     "SOP-COOL-13": 158.8,
+     "SOP-COOL-14": 161.8
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-03",
+     "2026-10-15T23:54:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": {
+    "due_h": 14.0,
+    "remain": 758,
+    "hot": 90
+   }
+  },
+  {
+   "id": "ALT-hyd02-0161-345e",
+   "asset": "HYD-02",
+   "judge": "2026-10-16T10:27:31+09:00",
+   "categories": [
+    "모드 수동"
+   ],
+   "action_taken": null,
+   "inputs": {
+    "mode": "REMOTE_MANUAL",
+    "state": "RUN",
+    "plc_age": 4,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.3,
+    "ts1": {
+     "SOP-COOL-11": 46.0,
+     "SOP-COOL-12": 42.4,
+     "SOP-COOL-13": 46.6,
+     "SOP-COOL-14": 55.1
+    },
+    "ps1": {
+     "SOP-COOL-11": 182.0,
+     "SOP-COOL-12": 179.0,
+     "SOP-COOL-13": 176.0,
+     "SOP-COOL-14": 182.0
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_MANUAL",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-02",
+     "2026-10-16T10:27:13+09:00",
+     0,
+     "시작"
+    ]
+   },
+   "order": {
+    "due_h": 29.9,
+    "remain": 2880,
+    "hot": 10
+   }
+  },
+  {
+   "id": "ALT-hyd01-0196-c7e2",
+   "asset": "HYD-01",
+   "judge": "2026-10-16T12:19:02+09:00",
+   "categories": [
+    "PLC 끊김"
+   ],
+   "action_taken": "SOP-COOL-11",
+   "inputs": {
+    "mode": null,
+    "state": null,
+    "plc_age": 179,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 47.6,
+     "SOP-COOL-12": 43.8,
+     "SOP-COOL-13": 47.8,
+     "SOP-COOL-14": 56.7
+    },
+    "ps1": {
+     "SOP-COOL-11": 182.0,
+     "SOP-COOL-12": 179.0,
+     "SOP-COOL-13": 176.0,
+     "SOP-COOL-14": 182.0
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-01",
+     "2026-10-16T11:54:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": {
+    "due_h": 27.3,
+    "remain": 2740,
+    "hot": 10
+   }
+  },
+  {
+   "id": "ALT-hyd02-0162-65e4",
+   "asset": "HYD-02",
+   "judge": "2026-10-17T10:45:37+09:00",
+   "categories": [
+    "정상"
+   ],
+   "action_taken": "SOP-COOL-11",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 0,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 47.3,
+     "SOP-COOL-12": 43.6,
+     "SOP-COOL-13": 47.7,
+     "SOP-COOL-14": 56.5
+    },
+    "ps1": {
+     "SOP-COOL-11": 182.0,
+     "SOP-COOL-12": 179.0,
+     "SOP-COOL-13": 176.0,
+     "SOP-COOL-14": 182.0
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-02",
+     "2026-10-17T10:16:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": {
+    "due_h": 39.2,
+    "remain": 5590,
+    "hot": 20
+   }
+  },
+  {
+   "id": "ALT-hyd01-0197-f774",
+   "asset": "HYD-01",
+   "judge": "2026-10-17T12:24:35+09:00",
+   "categories": [
+    "정상"
+   ],
+   "action_taken": "SOP-COOL-11",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 2,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 49.6,
+     "SOP-COOL-12": 45.8,
+     "SOP-COOL-13": 49.7,
+     "SOP-COOL-14": 58.6
+    },
+    "ps1": {
+     "SOP-COOL-11": 182.0,
+     "SOP-COOL-12": 179.0,
+     "SOP-COOL-13": 176.0,
+     "SOP-COOL-14": 182.0
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-01",
+     "2026-10-17T12:08:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": {
+    "due_h": 22.2,
+    "remain": 2320,
+    "hot": 20
+   }
+  },
+  {
+   "id": "ALT-hyd01-0198-eae5",
+   "asset": "HYD-01",
+   "judge": "2026-10-18T12:30:00+09:00",
+   "categories": [
+    "오더 실패"
+   ],
+   "action_taken": "SOP-COOL-11",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 7,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 50.6,
+     "SOP-COOL-12": 46.6,
+     "SOP-COOL-13": 50.5,
+     "SOP-COOL-14": 59.7
+    },
+    "ps1": {
+     "SOP-COOL-11": 182.0,
+     "SOP-COOL-12": 179.0,
+     "SOP-COOL-13": 176.0,
+     "SOP-COOL-14": 182.0
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-01",
+     "2026-10-18T12:14:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": null
+  },
+  {
+   "id": "ALT-hyd03-0295-7b61",
+   "asset": "HYD-03",
+   "judge": "2026-10-18T14:54:15+09:00",
+   "categories": [
+    "전달 실패",
+    "재경보",
+    "카운터 끊김"
+   ],
+   "action_taken": "SOP-COOL-13",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 4,
+    "plc_quality": "good",
+    "fan_elapsed_min": 3748.0666666666666,
+    "ts1": {
+     "SOP-COOL-11": 55.2,
+     "SOP-COOL-12": null,
+     "SOP-COOL-13": 50.8,
+     "SOP-COOL-14": 55.2
+    },
+    "ps1": {
+     "SOP-COOL-11": 161.4,
+     "SOP-COOL-12": null,
+     "SOP-COOL-13": 158.4,
+     "SOP-COOL-14": 161.4
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "예측 결과 행 없음",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-03",
+     "2026-10-18T14:46:11+09:00",
+     3740,
+     "주기"
+    ]
+   },
+   "order": {
+    "due_h": 25.6,
+    "remain": 2603,
+    "hot": 280
+   }
+  },
+  {
+   "id": "ALT-hyd03-0296-2adb",
+   "asset": "HYD-03",
+   "judge": "2026-10-18T16:34:12+09:00",
+   "categories": [
+    "정상"
+   ],
+   "action_taken": "SOP-COOL-11",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 1,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 51.8,
+     "SOP-COOL-12": 56.2,
+     "SOP-COOL-13": 58.1,
+     "SOP-COOL-14": 58.1
+    },
+    "ps1": {
+     "SOP-COOL-11": 158.4,
+     "SOP-COOL-12": 161.4,
+     "SOP-COOL-13": 158.4,
+     "SOP-COOL-14": 158.4
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-03",
+     "2026-10-18T15:17:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": {
+    "due_h": 23.9,
+    "remain": 2213,
+    "hot": 510
+   }
+  },
+  {
+   "id": "ALT-hyd02-0163-5572",
+   "asset": "HYD-02",
+   "judge": "2026-10-18T22:18:55+09:00",
+   "categories": [
+    "정상"
+   ],
+   "action_taken": "SOP-COOL-11",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 8,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 47.6,
+     "SOP-COOL-12": 43.7,
+     "SOP-COOL-13": 47.9,
+     "SOP-COOL-14": 56.9
+    },
+    "ps1": {
+     "SOP-COOL-11": 182.0,
+     "SOP-COOL-12": 179.0,
+     "SOP-COOL-13": 176.0,
+     "SOP-COOL-14": 182.0
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-02",
+     "2026-10-18T10:36:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": {
+    "due_h": 17.5,
+    "remain": 1759,
+    "hot": 20
+   }
+  },
+  {
+   "id": "ALT-hyd03-0297-1a4d",
+   "asset": "HYD-03",
+   "judge": "2026-10-19T17:51:19+09:00",
+   "categories": [
+    "정상"
+   ],
+   "action_taken": "SOP-COOL-11",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 8,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 51.8,
+     "SOP-COOL-12": 56.2,
+     "SOP-COOL-13": 58.1,
+     "SOP-COOL-14": 58.1
+    },
+    "ps1": {
+     "SOP-COOL-11": 158.2,
+     "SOP-COOL-12": 161.2,
+     "SOP-COOL-13": 158.2,
+     "SOP-COOL-14": 158.2
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-03",
+     "2026-10-19T16:24:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": {
+    "due_h": 29.6,
+    "remain": 5417,
+    "hot": 250
+   }
+  },
+  {
+   "id": "ALT-hyd01-0199-da73",
+   "asset": "HYD-01",
+   "judge": "2026-10-19T20:21:40+09:00",
+   "categories": [
+    "정상"
+   ],
+   "action_taken": "SOP-COOL-11",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 7,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 51.3,
+     "SOP-COOL-12": 47.1,
+     "SOP-COOL-13": 50.7,
+     "SOP-COOL-14": 60.1
+    },
+    "ps1": {
+     "SOP-COOL-11": 182.0,
+     "SOP-COOL-12": 179.0,
+     "SOP-COOL-13": 176.0,
+     "SOP-COOL-14": 182.0
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-01",
+     "2026-10-19T20:12:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": {
+    "due_h": 20.6,
+    "remain": 2135,
+    "hot": 10
+   }
+  },
+  {
+   "id": "ALT-hyd02-0164-c0d1",
+   "asset": "HYD-02",
+   "judge": "2026-10-19T22:30:37+09:00",
+   "categories": [
+    "정상"
+   ],
+   "action_taken": "SOP-COOL-11",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 0,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 48.8,
+     "SOP-COOL-12": 44.7,
+     "SOP-COOL-13": 48.9,
+     "SOP-COOL-14": 58.1
+    },
+    "ps1": {
+     "SOP-COOL-11": 182.0,
+     "SOP-COOL-12": 179.0,
+     "SOP-COOL-13": 176.0,
+     "SOP-COOL-14": 182.0
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-02",
+     "2026-10-19T22:09:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": {
+    "due_h": 31.6,
+    "remain": 5400,
+    "hot": 20
+   }
+  },
+  {
+   "id": "ALT-hyd03-0298-07dc",
+   "asset": "HYD-03",
+   "judge": "2026-10-20T18:11:16+09:00",
+   "categories": [
+    "전달 실패"
+   ],
+   "action_taken": "SOP-COOL-11",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 5,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 50.6,
+     "SOP-COOL-12": null,
+     "SOP-COOL-13": 56.6,
+     "SOP-COOL-14": 56.6
+    },
+    "ps1": {
+     "SOP-COOL-11": 158.1,
+     "SOP-COOL-12": null,
+     "SOP-COOL-13": 158.1,
+     "SOP-COOL-14": 158.1
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "예측 결과 행 없음",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-03",
+     "2026-10-20T17:42:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": {
+    "due_h": 24.2,
+    "remain": 3340,
+    "hot": 10
+   }
+  },
+  {
+   "id": "ALT-hyd01-0200-67c7",
+   "asset": "HYD-01",
+   "judge": "2026-10-20T22:10:07+09:00",
+   "categories": [
+    "모드 수동",
+    "전달 실패",
+    "수동 + 누락",
+    "오더 실패"
+   ],
+   "action_taken": null,
+   "inputs": {
+    "mode": "REMOTE_MANUAL",
+    "state": "RUN",
+    "plc_age": 4,
+    "plc_quality": "good",
+    "fan_elapsed_min": 1.4666666666666666,
+    "ts1": {
+     "SOP-COOL-11": 51.4,
+     "SOP-COOL-12": 47.1,
+     "SOP-COOL-13": null,
+     "SOP-COOL-14": 51.4
+    },
+    "ps1": {
+     "SOP-COOL-11": 182.0,
+     "SOP-COOL-12": 179.0,
+     "SOP-COOL-13": null,
+     "SOP-COOL-14": 182.0
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "예측 결과 행 없음",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_MANUAL",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-01",
+     "2026-10-20T22:08:39+09:00",
+     0,
+     "시작"
+    ]
+   },
+   "order": null
+  },
+  {
+   "id": "ALT-hyd02-0165-f047",
+   "asset": "HYD-02",
+   "judge": "2026-10-20T22:53:32+09:00",
+   "categories": [
+    "모드 수동",
+    "120초 지남",
+    "수동 + 누락"
+   ],
+   "action_taken": null,
+   "inputs": {
+    "mode": "REMOTE_MANUAL",
+    "state": "RUN",
+    "plc_age": 5,
+    "plc_quality": "good",
+    "fan_elapsed_min": 16.633333333333333,
+    "ts1": {
+     "SOP-COOL-11": null,
+     "SOP-COOL-12": null,
+     "SOP-COOL-13": null,
+     "SOP-COOL-14": null
+    },
+    "ps1": {
+     "SOP-COOL-11": null,
+     "SOP-COOL-12": null,
+     "SOP-COOL-13": null,
+     "SOP-COOL-14": null
+    },
+    "why": {
+     "SOP-COOL-11": "기준 관측이 판정 요청 228초 전",
+     "SOP-COOL-12": "기준 관측이 판정 요청 228초 전",
+     "SOP-COOL-13": "기준 관측이 판정 요청 228초 전",
+     "SOP-COOL-14": "기준 관측이 판정 요청 228초 전"
+    },
+    "true_mode": "REMOTE_MANUAL",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-02",
+     "2026-10-20T22:46:54+09:00",
+     10,
+     "주기"
+    ]
+   },
+   "order": {
+    "due_h": 24.6,
+    "remain": 3820,
+    "hot": 30
+   }
+  },
+  {
+   "id": "ALT-hyd03-0299-374a",
+   "asset": "HYD-03",
+   "judge": "2026-10-21T07:42:56+09:00",
+   "categories": [
+    "재경보"
+   ],
+   "action_taken": "SOP-COOL-13",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 5,
+    "plc_quality": "good",
+    "fan_elapsed_min": 809.7166666666667,
+    "ts1": {
+     "SOP-COOL-11": 56.9,
+     "SOP-COOL-12": 56.9,
+     "SOP-COOL-13": 52.3,
+     "SOP-COOL-14": 56.9
+    },
+    "ps1": {
+     "SOP-COOL-11": 161.0,
+     "SOP-COOL-12": 161.0,
+     "SOP-COOL-13": 158.0,
+     "SOP-COOL-14": 161.0
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-03",
+     "2026-10-21T07:33:13+09:00",
+     800,
+     "주기"
+    ]
+   },
+   "order": {
+    "due_h": 10.7,
+    "remain": 130,
+    "hot": 330
+   }
+  },
+  {
+   "id": "ALT-hyd01-0201-5751",
+   "asset": "HYD-01",
+   "judge": "2026-10-21T12:53:04+09:00",
+   "categories": [
+    "재경보"
+   ],
+   "action_taken": "SOP-COOL-12",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 1,
+    "plc_quality": "good",
+    "fan_elapsed_min": 884.4166666666666,
+    "ts1": {
+     "SOP-COOL-11": 55.1,
+     "SOP-COOL-12": 50.6,
+     "SOP-COOL-13": 46.6,
+     "SOP-COOL-14": 55.1
+    },
+    "ps1": {
+     "SOP-COOL-11": 182.0,
+     "SOP-COOL-12": 179.0,
+     "SOP-COOL-13": 176.0,
+     "SOP-COOL-14": 182.0
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-01",
+     "2026-10-21T12:48:39+09:00",
+     880,
+     "주기"
+    ]
+   },
+   "order": {
+    "due_h": 13.3,
+    "remain": 1075,
+    "hot": 50
+   }
+  },
+  {
+   "id": "ALT-hyd03-0300-5e90",
+   "asset": "HYD-03",
+   "judge": "2026-10-21T21:02:22+09:00",
+   "categories": [
+    "모드 수동"
+   ],
+   "action_taken": null,
+   "inputs": {
+    "mode": "REMOTE_MANUAL",
+    "state": "RUN",
+    "plc_age": 1,
+    "plc_quality": "good",
+    "fan_elapsed_min": 2.6333333333333333,
+    "ts1": {
+     "SOP-COOL-11": 51.9,
+     "SOP-COOL-12": 56.6,
+     "SOP-COOL-13": 51.9,
+     "SOP-COOL-14": 51.9
+    },
+    "ps1": {
+     "SOP-COOL-11": 157.9,
+     "SOP-COOL-12": 160.9,
+     "SOP-COOL-13": 157.9,
+     "SOP-COOL-14": 157.9
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_MANUAL",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-03",
+     "2026-10-21T20:59:44+09:00",
+     0,
+     "시작"
+    ]
+   },
+   "order": {
+    "due_h": 16.5,
+    "remain": 2618,
+    "hot": 350
+   }
+  },
+  {
+   "id": "ALT-hyd01-0202-06eb",
+   "asset": "HYD-01",
+   "judge": "2026-10-21T22:25:06+09:00",
+   "categories": [
+    "정상"
+   ],
+   "action_taken": "SOP-COOL-11",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 3,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 49.5,
+     "SOP-COOL-12": 49.5,
+     "SOP-COOL-13": 52.6,
+     "SOP-COOL-14": 57.2
+    },
+    "ps1": {
+     "SOP-COOL-11": 179.0,
+     "SOP-COOL-12": 179.0,
+     "SOP-COOL-13": 176.0,
+     "SOP-COOL-14": 179.0
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-01",
+     "2026-10-21T21:57:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": {
+    "due_h": 26.6,
+    "remain": 3734,
+    "hot": 50
+   }
+  },
+  {
+   "id": "ALT-hyd03-0301-6e06",
+   "asset": "HYD-03",
+   "judge": "2026-10-21T22:34:36+09:00",
+   "categories": [
+    "트립",
+    "예측 거부",
+    "재경보",
+    "모두 제외"
+   ],
+   "action_taken": null,
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "TRIP",
+    "plc_age": 5,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": null,
+     "SOP-COOL-12": null,
+     "SOP-COOL-13": null,
+     "SOP-COOL-14": null
+    },
+    "ps1": {
+     "SOP-COOL-11": null,
+     "SOP-COOL-12": null,
+     "SOP-COOL-13": null,
+     "SOP-COOL-14": null
+    },
+    "why": {
+     "SOP-COOL-11": "예측할 수 없습니다: 지금 바뀌는 중인 외란(주입 · 열화 진행)이 있어 입력을 고정한 예측이 맞지 않습니다",
+     "SOP-COOL-12": "예측할 수 없습니다: 지금 바뀌는 중인 외란(주입 · 열화 진행)이 있어 입력을 고정한 예측이 맞지 않습니다",
+     "SOP-COOL-13": "예측할 수 없습니다: 지금 바뀌는 중인 외란(주입 · 열화 진행)이 있어 입력을 고정한 예측이 맞지 않습니다",
+     "SOP-COOL-14": "예측할 수 없습니다: 지금 바뀌는 중인 외란(주입 · 열화 진행)이 있어 입력을 고정한 예측이 맞지 않습니다"
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "TRIP",
+    "counter": [
+     "HYD-03",
+     "2026-10-21T22:25:16+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": {
+    "due_h": 15.0,
+    "remain": 2266,
+    "hot": 450
+   }
+  },
+  {
+   "id": "ALT-hyd02-0166-a1fd",
+   "asset": "HYD-02",
+   "judge": "2026-10-21T22:39:02+09:00",
+   "categories": [
+    "정상"
+   ],
+   "action_taken": "SOP-COOL-11",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 5,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 51.1,
+     "SOP-COOL-12": 46.9,
+     "SOP-COOL-13": 50.7,
+     "SOP-COOL-14": 60.2
+    },
+    "ps1": {
+     "SOP-COOL-11": 182.0,
+     "SOP-COOL-12": 179.0,
+     "SOP-COOL-13": 176.0,
+     "SOP-COOL-14": 182.0
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-02",
+     "2026-10-21T22:25:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": {
+    "due_h": 11.6,
+    "remain": 228,
+    "hot": 20
+   }
+  },
+  {
+   "id": "ALT-hyd03-0302-3fbc",
+   "asset": "HYD-03",
+   "judge": "2026-10-21T23:02:59+09:00",
+   "categories": [
+    "예측 거부",
+    "재경보"
+   ],
+   "action_taken": "SOP-COOL-13",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 8,
+    "plc_quality": "good",
+    "fan_elapsed_min": 12.45,
+    "ts1": {
+     "SOP-COOL-11": null,
+     "SOP-COOL-12": null,
+     "SOP-COOL-13": null,
+     "SOP-COOL-14": null
+    },
+    "ps1": {
+     "SOP-COOL-11": null,
+     "SOP-COOL-12": null,
+     "SOP-COOL-13": null,
+     "SOP-COOL-14": null
+    },
+    "why": {
+     "SOP-COOL-11": "예측할 수 없습니다: 지금 바뀌는 중인 외란(주입 · 열화 진행)이 있어 입력을 고정한 예측이 맞지 않습니다",
+     "SOP-COOL-12": "예측할 수 없습니다: 지금 바뀌는 중인 외란(주입 · 열화 진행)이 있어 입력을 고정한 예측이 맞지 않습니다",
+     "SOP-COOL-13": "예측할 수 없습니다: 지금 바뀌는 중인 외란(주입 · 열화 진행)이 있어 입력을 고정한 예측이 맞지 않습니다",
+     "SOP-COOL-14": "예측할 수 없습니다: 지금 바뀌는 중인 외란(주입 · 열화 진행)이 있어 입력을 고정한 예측이 맞지 않습니다"
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-03",
+     "2026-10-21T23:00:32+09:00",
+     10,
+     "주기"
+    ]
+   },
+   "order": {
+    "due_h": 14.5,
+    "remain": 2215,
+    "hot": 460
+   }
+  },
+  {
+   "id": "ALT-hyd02-0167-916b",
+   "asset": "HYD-02",
+   "judge": "2026-10-22T23:02:48+09:00",
+   "categories": [
+    "정상"
+   ],
+   "action_taken": "SOP-COOL-11",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 1,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 51.8,
+     "SOP-COOL-12": 47.4,
+     "SOP-COOL-13": 51.1,
+     "SOP-COOL-14": 60.8
+    },
+    "ps1": {
+     "SOP-COOL-11": 182.0,
+     "SOP-COOL-12": 179.0,
+     "SOP-COOL-13": 176.0,
+     "SOP-COOL-14": 182.0
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-02",
+     "2026-10-22T22:51:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": {
+    "due_h": 18.9,
+    "remain": 2315,
+    "hot": 20
+   }
+  },
+  {
+   "id": "ALT-hyd01-0203-367d",
+   "asset": "HYD-01",
+   "judge": "2026-10-23T06:31:15+09:00",
+   "categories": [
+    "정상"
+   ],
+   "action_taken": "SOP-COOL-12",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 2,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 50.3,
+     "SOP-COOL-12": 50.3,
+     "SOP-COOL-13": 53.0,
+     "SOP-COOL-14": 57.8
+    },
+    "ps1": {
+     "SOP-COOL-11": 179.0,
+     "SOP-COOL-12": 179.0,
+     "SOP-COOL-13": 176.0,
+     "SOP-COOL-14": 179.0
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-01",
+     "2026-10-23T06:15:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": {
+    "due_h": 13.2,
+    "remain": 112,
+    "hot": 10
+   }
+  },
+  {
+   "id": "ALT-hyd01-0204-a3de",
+   "asset": "HYD-01",
+   "judge": "2026-10-23T23:16:48+09:00",
+   "categories": [
+    "재경보",
+    "카운터 끊김"
+   ],
+   "action_taken": "SOP-COOL-12",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 5,
+    "plc_quality": "good",
+    "fan_elapsed_min": 1003.05,
+    "ts1": {
+     "SOP-COOL-11": 58.4,
+     "SOP-COOL-12": 53.5,
+     "SOP-COOL-13": 49.2,
+     "SOP-COOL-14": 58.4
+    },
+    "ps1": {
+     "SOP-COOL-11": 182.0,
+     "SOP-COOL-12": 179.0,
+     "SOP-COOL-13": 176.0,
+     "SOP-COOL-14": 182.0
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-01",
+     "2026-10-23T22:33:45+09:00",
+     960,
+     "주기"
+    ]
+   },
+   "order": {
+    "due_h": 19.4,
+    "remain": 1007,
+    "hot": 350
+   }
+  },
+  {
+   "id": "ALT-hyd02-0168-8cfa",
+   "asset": "HYD-02",
+   "judge": "2026-10-24T11:36:22+09:00",
+   "categories": [
+    "전달 실패",
+    "재경보",
+    "카운터 끊김"
+   ],
+   "action_taken": "SOP-COOL-12",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 5,
+    "plc_quality": "good",
+    "fan_elapsed_min": 2191.366666666667,
+    "ts1": {
+     "SOP-COOL-11": 55.1,
+     "SOP-COOL-12": null,
+     "SOP-COOL-13": 46.6,
+     "SOP-COOL-14": 55.1
+    },
+    "ps1": {
+     "SOP-COOL-11": 182.0,
+     "SOP-COOL-12": null,
+     "SOP-COOL-13": 176.0,
+     "SOP-COOL-14": 182.0
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "예측 결과 행 없음",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-02",
+     "2026-10-24T11:35:00+09:00",
+     2190,
+     "주기"
+    ]
+   },
+   "order": {
+    "due_h": 20.3,
+    "remain": 2945,
+    "hot": 20
+   }
+  },
+  {
+   "id": "ALT-hyd02-0169-bc6c",
+   "asset": "HYD-02",
+   "judge": "2026-10-24T12:16:35+09:00",
+   "categories": [
+    "PLC 끊김"
+   ],
+   "action_taken": "SOP-COOL-11",
+   "inputs": {
+    "mode": null,
+    "state": null,
+    "plc_age": 58,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 51.2,
+     "SOP-COOL-12": 51.2,
+     "SOP-COOL-13": 54.0,
+     "SOP-COOL-14": 58.7
+    },
+    "ps1": {
+     "SOP-COOL-11": 179.0,
+     "SOP-COOL-12": 179.0,
+     "SOP-COOL-13": 176.0,
+     "SOP-COOL-14": 179.0
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-02",
+     "2026-10-24T11:59:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": {
+    "due_h": 19.6,
+    "remain": 2767,
+    "hot": 50
+   }
+  },
+  {
+   "id": "ALT-hyd01-0205-9348",
+   "asset": "HYD-01",
+   "judge": "2026-10-24T15:03:20+09:00",
+   "categories": [
+    "경계 55",
+    "재경보",
+    "카운터 끊김"
+   ],
+   "action_taken": "SOP-COOL-13",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 7,
+    "plc_quality": "good",
+    "fan_elapsed_min": 1949.5833333333333,
+    "ts1": {
+     "SOP-COOL-11": 55.0,
+     "SOP-COOL-12": 55.0,
+     "SOP-COOL-13": 50.7,
+     "SOP-COOL-14": 55.0
+    },
+    "ps1": {
+     "SOP-COOL-11": 179.0,
+     "SOP-COOL-12": 179.0,
+     "SOP-COOL-13": 176.0,
+     "SOP-COOL-14": 179.0
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-01",
+     "2026-10-24T14:53:45+09:00",
+     1940,
+     "주기"
+    ]
+   },
+   "order": {
+    "due_h": 17.4,
+    "remain": 1201,
+    "hot": 390
+   }
+  },
+  {
+   "id": "ALT-hyd01-0206-c2f2",
+   "asset": "HYD-01",
+   "judge": "2026-10-24T15:49:20+09:00",
+   "categories": [
+    "정상"
+   ],
+   "action_taken": "SOP-COOL-11",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 7,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 50.8,
+     "SOP-COOL-12": 55.2,
+     "SOP-COOL-13": 56.7,
+     "SOP-COOL-14": 56.7
+    },
+    "ps1": {
+     "SOP-COOL-11": 176.0,
+     "SOP-COOL-12": 179.0,
+     "SOP-COOL-13": 176.0,
+     "SOP-COOL-14": 176.0
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-01",
+     "2026-10-24T15:24:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": {
+    "due_h": 16.7,
+    "remain": 1021,
+    "hot": 410
+   }
+  },
+  {
+   "id": "ALT-hyd01-0207-f264",
+   "asset": "HYD-01",
+   "judge": "2026-10-25T16:04:15+09:00",
+   "categories": [
+    "전달 실패"
+   ],
+   "action_taken": "SOP-COOL-11",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 2,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 51.8,
+     "SOP-COOL-12": 56.3,
+     "SOP-COOL-13": null,
+     "SOP-COOL-14": 57.5
+    },
+    "ps1": {
+     "SOP-COOL-11": 176.0,
+     "SOP-COOL-12": 179.0,
+     "SOP-COOL-13": null,
+     "SOP-COOL-14": 176.0
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "예측 결과 행 없음",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-01",
+     "2026-10-25T15:39:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": {
+    "due_h": 17.0,
+    "remain": 665,
+    "hot": 20
+   }
+  },
+  {
+   "id": "ALT-hyd02-0170-3589",
+   "asset": "HYD-02",
+   "judge": "2026-10-25T21:33:37+09:00",
+   "categories": [
+    "정상"
+   ],
+   "action_taken": "SOP-COOL-12",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 0,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 53.8,
+     "SOP-COOL-12": 53.8,
+     "SOP-COOL-13": 57.1,
+     "SOP-COOL-14": 61.9
+    },
+    "ps1": {
+     "SOP-COOL-11": 179.0,
+     "SOP-COOL-12": 179.0,
+     "SOP-COOL-13": 176.0,
+     "SOP-COOL-14": 179.0
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-02",
+     "2026-10-25T20:25:00+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": {
+    "due_h": 22.1,
+    "remain": 2496,
+    "hot": 250
+   }
+  },
+  {
+   "id": "ALT-hyd02-0171-051f",
+   "asset": "HYD-02",
+   "judge": "2026-10-26T01:58:11+09:00",
+   "categories": [
+    "경계 55",
+    "운전 중 예측 65 이상"
+   ],
+   "action_taken": "SOP-COOL-11",
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 4,
+    "plc_quality": "good",
+    "fan_elapsed_min": 0.0,
+    "ts1": {
+     "SOP-COOL-11": 56.9,
+     "SOP-COOL-12": 52.1,
+     "SOP-COOL-13": 55.0,
+     "SOP-COOL-14": 65.3
+    },
+    "ps1": {
+     "SOP-COOL-11": 182.0,
+     "SOP-COOL-12": 179.0,
+     "SOP-COOL-13": 176.0,
+     "SOP-COOL-14": 182.0
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-02",
+     "2026-10-26T01:44:10+09:00",
+     0,
+     "종료"
+    ]
+   },
+   "order": {
+    "due_h": 17.7,
+    "remain": 1314,
+    "hot": 330
+   }
+  },
+  {
+   "id": "ALT-hyd02-0172-54a5",
+   "asset": "HYD-02",
+   "judge": "2026-10-27T02:01:00+09:00",
+   "categories": [
+    "팬 1,440분 경계",
+    "전달 실패",
+    "재경보",
+    "카운터 끊김",
+    "사건"
+   ],
+   "action_taken": null,
+   "inputs": {
+    "mode": "REMOTE_AUTO",
+    "state": "RUN",
+    "plc_age": 3,
+    "plc_quality": "good",
+    "fan_elapsed_min": 1440.7833333333333,
+    "ts1": {
+     "SOP-COOL-11": 57.5,
+     "SOP-COOL-12": null,
+     "SOP-COOL-13": 48.3,
+     "SOP-COOL-14": 57.5
+    },
+    "ps1": {
+     "SOP-COOL-11": 182.0,
+     "SOP-COOL-12": null,
+     "SOP-COOL-13": 176.0,
+     "SOP-COOL-14": 182.0
+    },
+    "why": {
+     "SOP-COOL-11": "",
+     "SOP-COOL-12": "예측 결과 행 없음",
+     "SOP-COOL-13": "",
+     "SOP-COOL-14": ""
+    },
+    "true_mode": "REMOTE_AUTO",
+    "true_state": "RUN",
+    "counter": [
+     "HYD-02",
+     "2026-10-27T01:50:13+09:00",
+     1430,
+     "주기"
+    ]
+   },
+   "order": {
+    "due_h": 20.2,
+    "remain": 4472,
+    "hot": 1230
+   }
+  }
+ ],
+ "check_cases": [
+  "ALT-hyd02-0153-06b1",
+  "ALT-hyd03-0282-df83",
+  "ALT-hyd03-0292-eec2",
+  "ALT-hyd01-0200-67c7",
+  "ALT-hyd03-0301-6e06",
+  "ALT-hyd03-0302-3fbc",
+  "ALT-hyd01-0205-9348",
+  "ALT-hyd02-0171-051f",
+  "ALT-hyd02-0172-54a5"
+ ],
+ "incident_totals": {
+  "SOP-COOL-11": {
+   "비용": 12.99,
+   "생산": 0.0,
+   "품질": 150.0,
+   "에너지": 1.82,
+   "위약금": 0.0,
+   "감점": 20.0,
+   "합계": 184.8,
+   "아는_값_합계": 184.8
+  },
+  "SOP-COOL-12": {
+   "비용": 12.99,
+   "생산": 112.22,
+   "품질": null,
+   "에너지": 1.82,
+   "위약금": 0.0,
+   "감점": 20.0,
+   "합계": null,
+   "아는_값_합계": 147.03
+  },
+  "SOP-COOL-13": {
+   "비용": 40.0,
+   "생산": 610.33,
+   "품질": 0.0,
+   "에너지": 0.0,
+   "위약금": 235.89,
+   "감점": 0.0,
+   "합계": 650.33,
+   "아는_값_합계": 650.33
+  },
+  "SOP-COOL-14": {
+   "비용": 40.0,
+   "생산": 150.0,
+   "품질": 150.0,
+   "에너지": 0.0,
+   "위약금": 0.0,
+   "감점": 0.0,
+   "합계": 340.0,
+   "아는_값_합계": 340.0
+  }
+ },
+ "incident_sop12_recomputed": 52.62
+}
