@@ -63,7 +63,7 @@ def extend_model():
         a_line, registration = approval.get((supplier, item), (None, {}))
         status = registration.get('승인상태', '미등록')
         if registration.get('승인일', '') > DATE or (registration.get('유효기한') and registration['유효기한'] < DATE):
-            status = '유효기간 밖'
+            status = '유효기한 경과'
         rate = quote['불량률']
         lead = quote['납기(일)']
         props = {
@@ -76,6 +76,11 @@ def extend_model():
         }
         if registration.get('조건'):
             props['condition'] = registration['조건']
+        # 단위를 맞춰 바꾼 값은 원래 표기를 남긴다(8% → 0.08, 2주 → 14일).
+        if not re.fullmatch(r'\d+(\.\d+)?', rate):
+            props['defect_rate_original'] = rate
+        if not lead.isdigit():
+            props['lead_days_original'] = lead
         if props['approved'] and round(props['defect_rate'], 6) > threshold:
             props.update(inspection='입고 전수 검사', compare_extra_manwon=extra_cost, rule_source=rule_line)
         graph['rels'].append({'type':'SUPPLIES','a':'supplier:'+supplier,'b':item,'props':props})

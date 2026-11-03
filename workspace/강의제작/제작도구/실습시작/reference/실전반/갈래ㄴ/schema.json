@@ -119,7 +119,9 @@
         "condition": "string",
         "price_manwon": "number",
         "defect_rate": "number",
+        "defect_rate_original": "string",
         "lead_days": "integer",
+        "lead_days_original": "string",
         "min_order_qty": "integer",
         "supplier_part_no": "string",
         "quote_date": "string",
@@ -143,7 +145,8 @@
     "승인 여부는 승인공급사_목록(SCM 등록)과 기준일로 정한다",
     "만료 견적은 SUPPLIES로 쓰지 않는다",
     "공급사 이름은 승인공급사_목록의 이름이다(견적표의 공급사 칸은 그 이름으로 시작한다)",
+    "단가는 만원, 불량률은 0~1 비율, 납기는 일로 맞추고, 바꾼 불량률 · 납기는 원래 표기를 defect_rate_original · lead_days_original로 남긴다",
     "값마다 출처를 남긴다: quote_source = 쓴 견적의 공급_조건.csv 줄, approval_source = 승인공급사_목록.csv의 등록 줄, as_of = 기준일",
-    "구매 기준서 PR-07 7.4에 걸리는 승인 공급사 쌍(불량률 10 % 초과)은 입고 검사 조건 · 비교 가산 비용 · 근거 절을 함께 남긴다"
+    "inspection · compare_extra_manwon · rule_source는 구매 기준서 PR-07 7.4 문장(rule_source 줄)에서 온 값이고, 그 절에 걸리는 승인 공급사 쌍(불량률 10 % 초과)에만 있다"
   ]
 }

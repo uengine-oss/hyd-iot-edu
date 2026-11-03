@@ -160,7 +160,8 @@ def answers_from_graph(course, branch, graph):
 
 
 def source_rows(graph, folder):
-    """출처 줄을 실제 파일에서 다시 읽는다: 견적 줄의 공급사 · 품번 · 단가 · 불량률 · 납기 · 견적일, 승인 등록 줄의 공급사 · 품번이 그 관계와 같은지."""
+    """출처 줄을 실제 파일에서 다시 읽는다: 견적 줄의 공급사 · 품번 · 단가 · 불량률 · 납기 · 견적일, 승인 등록 줄의 공급사 · 품번이 그 관계와 같은지.
+    단위를 바꾼 불량률 · 납기(숫자만이 아닌 칸)는 원래 표기가 *_original에 그대로 있는지, 바꾸지 않은 칸에는 *_original이 없는지도 본다(실습3 8단계)."""
     def numbered(name):
         with (folder/name).open(encoding='utf-8-sig', newline='') as f:
             return {D.line_ref(name, i): r for i, r in enumerate(csv.DictReader(f), 2)}
@@ -178,6 +179,10 @@ def source_rows(graph, folder):
                 or (int(lead[:-1]) * 7 if lead.endswith('주') else int(lead)) != p['lead_days']
                 or (q['품번'] != part and q['품번'] not in {x[1] for x in D.PARTS if x[0] == part})):
             bad.append(f'{sup}→{part}: 견적 출처 {p.get("quote_source")}')
+        for col, key in [('불량률', 'defect_rate_original'), ('납기(일)', 'lead_days_original')]:
+            raw = (q or {}).get(col, '')
+            if p.get(key) != (None if re.fullmatch(r'\d+(\.\d+)?', raw) else raw):
+                bad.append(f'{sup}→{part}: {col} 원래 표기 {raw!r} ≠ {key} {p.get(key)!r}')
         a = avl.get(p.get('approval_source'))
         if a is None or a['공급사'] != sup or a['품번'] != part:
             bad.append(f'{sup}→{part}: 승인 출처 {p.get("approval_source")}')
@@ -384,7 +389,7 @@ def neo4j_run(report):
                         db_probes[code] = None if not found else (found[0] if len(found) == 1 else {'candidates': found})
                     out['실습4'][g] = {'input_branch': input_branch, 'expected_key': key, 'first': first, 'second': second,
                                       'probe_mismatch': diff(exp['probes'], db_probes), 'P-PMP-SEAL': db_probes['P-PMP-SEAL']}
-                # 질문 1 「각 값은 어느 파일 · 어느 날짜 자료에서 왔는가」 — 조회만으로(원자료를 다시 읽지 않고) 출처가 나오는지
+                # 질문 1 「각 값은 어느 파일 · 어느 줄에서 왔는가」 — 조회만으로(원자료를 다시 읽지 않고) 출처 줄과 기준일이 나오는지
                 sources = lab.run('MATCH (s:Supplier)-[r:SUPPLIES]->(p:Part {id:"P-PMP-SEAL"}) '
                                   'RETURN substring(s.id,9) AS sup, s.name, r.quote_source, r.quote_date, r.approval_source, r.as_of ORDER BY sup')
                 exp_sources = expected(course, B.LAB4_INPUT_BRANCH[course])['supply_sources']

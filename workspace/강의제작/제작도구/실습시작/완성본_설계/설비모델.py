@@ -46,6 +46,13 @@ def number(text):
     m=re.match(r'\s*(-?\d+(?:\.\d+)?)',text or '')
     return float(m.group(1)) if m else None
 
+def blank_unit(s,sensors,models):
+    """단위 칸이 빈 줄: 같은 모델 · 같은 태그로 단위가 적힌 줄 가운데 정상값 · 한계 · 한계구분까지 같은 줄의 단위. 근거가 없거나 갈리면 짐작하지 않고 멈춘다."""
+    units={r['단위'] for r in sensors if r['단위'] and r['태그']==s['태그'] and models.get(r['설비코드'])==models[s['설비코드']]
+           and (r['정상값'],r['한계'],r['한계구분'])==(s['정상값'],s['한계'],s['한계구분'])}
+    if len(units)!=1:raise ValueError(f"{s['설비코드']}:{s['태그']} 단위 칸이 비었고 근거 줄이 없거나 단위가 갈립니다: {sorted(units)}")
+    return units.pop()
+
 def base_graph():
     nodes=[];rels=[];index={}
     def node(label,id,**props):
@@ -85,13 +92,13 @@ def base_graph():
         rel('HAS_COMPONENT',aid,cid)
         pid=resolve_part(c['교체부품'],model,key,parts,cross)
         if pid:rel('USES_PART',cid,pid,source_text=c['교체부품'] or '(빈칸: 같은 모델 공용 근거)')
-    seen=set()
-    for s in rows('센서_목록.csv'):
+    seen=set();sensors=rows('센서_목록.csv')
+    for s in sensors:
         aid=s['설비코드'];sid=aid+':'+s['태그']
         if sid in seen:continue                 # 점검표에서 다시 옮겨 적은 같은 센서
         seen.add(sid);model=models[aid]
         q='quantity:'+WHAT_ALIAS[s['재는것']];qunit=QUANTITIES[q][1]
-        raw=s['단위'];unit,factor=UNIT.get(raw,(raw or qunit,1))
+        raw=s['단위'] or blank_unit(s,sensors,models);unit,factor=UNIT.get(raw,(raw,1))
         if unit!=qunit:raise ValueError(f'{sid} 단위 {raw} → 물리량 {q} {qunit}')
         normal=number(s['정상값']);limit=number(s['한계'])
         kind='derived' if '계기 없음' in s['비고'] else ('setpoint' if '설정값' in s['수집방식'] else 'measured')

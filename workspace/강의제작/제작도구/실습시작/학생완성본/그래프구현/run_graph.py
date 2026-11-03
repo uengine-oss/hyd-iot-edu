@@ -71,12 +71,15 @@ def main():
     for label in sorted({identifier(t) for n in base['nodes'] for t in n['labels']}):run([statement(f'CREATE CONSTRAINT lab_{label} IF NOT EXISTS FOR (n:{label}) REQUIRE n.id IS UNIQUE')])
     run(batches(base));before=snapshot();run(batches(base));assert before==snapshot(),'기준 재적재 결과가 달라졌습니다.'
     same_as(before,base)
-    probes=list(dict.fromkeys([a.part,'P-PMP-SEAL','PS-4510','P-PMP-SEAL-HT','미등록-품번']))
+    # 없는 품번은 0줄이 아니라 「원자료에 없는 품번」 한 줄 — 쓰는 설비 · 공급 조건이 없는 부품의 결과와 같은 모양이 되지 않게 한다.
+    probes=list(dict.fromkeys([a.part,'P-PMP-SEAL','PS-4510','PMP-SEAL','P-PMP-SEAL-HT','미등록-품번']+(['P-CLR-PLT'] if supply else ['P-RTN-FLT','P-PMP-SEAL-22'])))
+    def missing(rows_):return [r['note'] for r in rows_]==['원자료에 없는 품번'] and rows_[0]['part'] is None
     if supply:
         variants={p:question('part_usage',part=p) for p in probes}
-        assert variants['P-PMP-SEAL']==variants['PS-4510'] and not variants['미등록-품번']
+        assert variants['P-PMP-SEAL']==variants['PS-4510']==variants['PMP-SEAL'] and missing(variants['미등록-품번'])
         actual={'baseline':before,'part_usage':variants,'repeat_load':'기준 2회 동일'}
-        actual['supply_terms']=question('supply_terms',part=a.part)   # 값의 출처는 모델의 속성 — 조회만으로 돌려받는다
+        actual['supply_terms']={p:question('supply_terms',part=p) for p in probes}   # 값의 출처는 모델의 속성 — 조회만으로 돌려받는다
+        assert missing(actual['supply_terms']['미등록-품번']) and [r['note'] for r in actual['supply_terms']['P-CLR-PLT']]==['기준일에 쓸 공급 조건 없음']
     else:
         actual={'baseline':before,'baseline_part_assets':question('part_assets',part=a.part)}
         if change:
@@ -92,7 +95,8 @@ def main():
                 sensor_checks.append({'line':line, 'change':row['변경'], 'observed':observed})
             actual.update(sensor_change_check=sensor_checks,revised=after,repeat_load='기준/수정 각 2회 동일')
         variants={p:question('part_assets',part=p) for p in probes}
-        assert variants['P-PMP-SEAL']==variants['PS-4510'] and not variants['미등록-품번']
+        assert variants['P-PMP-SEAL']==variants['PS-4510']==variants['PMP-SEAL'] and missing(variants['미등록-품번'])
+        assert [r['note'] for r in variants['P-PMP-SEAL-22']]==['지금 가동하는 설비에서는 쓰지 않음'] and variants['P-PMP-SEAL-22'][0]['not_running'], variants['P-PMP-SEAL-22']
         actual['revised_part_assets' if change else 'part_assets']=variants
         actual['asset_counts']=question('asset_counts')
         actual['sensors']=question('asset_sensors',asset=a.asset);actual['asset_parts']=question('asset_parts',asset=a.asset)
