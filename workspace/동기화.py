@@ -1,4 +1,4 @@
-"""main · workspace 두 브랜치와 작업 폴더를 다룬다. 체크아웃 · 색인을 건드리지 않고 브랜치를 바꾸지 않는다.
+"""main · workspace 두 브랜치와 작업 폴더를 다룬다. 체크아웃 · 그 색인을 건드리지 않고(바뀐 파일만 다시 해시하는 이 PC 전용 색인을 .git/hyd-workspace.index에 따로 둔다) 브랜치를 바꾸지 않는다.
 실행은 CLAUDE.md 2절의 한 줄 — `PYTHONUTF8=1 .venv314/Scripts/python.exe workspace/동기화.py <명령>`(아래 <py>):
 
     <py> 시작 "제목"                     # 작업/<오늘>_<제목>/ 에 스펙.md · 기록.md 틀을 만든다
@@ -15,7 +15,8 @@
   작업/_로컬/ 은 공개하면 안 되는 개인 자료 자리다(강사 실명 배정본 등) — 정리하지 않는다.
 - workspace 브랜치 = 아래 PATHS의 지금 모습 그대로다(덧붙이기가 아니다 — 로컬에서 지운 파일은 다음 커밋에서 빠진다).
   경로는 저장소 루트 기준 그대로라 받으면 같은 자리에 풀린다. 브랜치 맨 앞 README.md만 이 도구가 만든다.
-- 늘 빼는 것: `.env` 전부(`.env.example`은 넣음), 캐시, 엑셀 옆 `.inspect.ndjson`.
+- 늘 빼는 것: `.env` 전부(`.env.example`은 넣음), main이 추적하는 파일, 캐시(`__pycache__` · `.pytest_cache` · `.pyc`) · `node_modules` · `worktrees`,
+  다시 만드는 장 그림 · 장 조각(`슬라이드/` · `조각_저장/` — 덱 · 영상 도구가 다시 만든다), 이 PC 설정 `.claude/settings.local.json`, 엑셀 옆 `.inspect.ndjson`.
 - main은 이 자리들을 `.gitignore`로 무시한다. main 쪽은 준 경로만 커밋한다(같은 체크아웃의 다른 작업이 섞이지 않게).
 - commit 때 산출물에 같은 것의 이전 판(이름 끝 v1 · 날짜 · 사본)이 보이면 경고한다 — 최신 하나만 둔다.
 - 노션 영상 링크가 workspace 커밋을 가리키므로 커밋은 늘 앞 커밋 위에 쌓는다(이력을 다시 쓰지 않음, 강제 push 없음).
@@ -26,7 +27,7 @@
   지운 파일은, 로컬 파일이 로컬 끝의 판 그대로일 때만 바꾸거나 지운다 — 로컬에서 고친 파일과 겹치면 아무것도 쓰지 않고 목록을 내고 멈춘다.
   원격이 안 바꾼 파일은 로컬에서 고치거나 지웠어도 그대로 둔다(다른 세션의 미커밋을 보존한다). 처음 받는 PC(로컬 끝 없음)는 없는 파일만 쓰고 다른 파일이 있으면 멈춘다.
 """
-import datetime, os, re, shutil, subprocess, sys, tempfile
+import contextlib, datetime, os, re, shutil, subprocess, sys, tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -45,9 +46,10 @@ BRANCH = "workspace"
 SCAN = ROOT / "workspace" / "secret_scan.py"
 WORK = ROOT / "작업"
 PATHS = ["workspace", ".claude", ".codex/hooks.json", "CLAUDE.md", "AGENTS.md"]
-SKIP_DIRS = {"__pycache__", ".pytest_cache", "node_modules", "worktrees", "슬라이드"}   # 슬라이드 = 덱에서 다시 만드는 장 그림(V-135)
+SKIP_DIRS = {"__pycache__", ".pytest_cache", "node_modules", "worktrees", "슬라이드", "조각_저장"}   # 슬라이드 = 덱에서 다시 만드는 장 그림(V-135), 조각_저장 = 이론 영상 장 조각 보관함(다시 만들 수 있음)
 SKIP_FILES = {".claude/settings.local.json"}
 GITHUB_FILE_LIMIT, GITHUB_FILE_WARN = 100 * 1024 ** 2, 50 * 1024 ** 2
+INDEX_CFG = ("-c", "core.autocrlf=false", "-c", "core.splitIndex=false", "-c", "core.fsmonitor=false")   # 따로 색인은 이 PC 설정과 상관없이 늘 이 값으로
 OLD_VERSION = re.compile(r"(?:[_-]v\d+|[_-]\d{8}|[_ -]?사본\d*| \(\d+\))$", re.I)
 README = """# workspace — 작업 자료 브랜치
 
@@ -104,7 +106,7 @@ def is_env(name):
     return base == ".env" or (base.startswith(".env.") and base != ".env.example")
 
 
-def local_files():
+def local_files(need=True):
     main = set(git("ls-files").splitlines())
     files = []
     for top in PATHS:
@@ -120,7 +122,7 @@ def local_files():
             if rel in main or rel in SKIP_FILES or is_env(rel) or rel.endswith((".pyc", ".inspect.ndjson")):
                 continue
             files.append(rel)
-    if not any(f.startswith("workspace/") for f in files):
+    if need and not any(f.startswith("workspace/") for f in files):
         sys.exit(f"{ROOT / 'workspace'}: 작업 자료가 없다 — 먼저 `python workspace/동기화.py pull`")
     return sorted(files)
 
@@ -176,16 +178,51 @@ def check_sizes(old_tree, new_tree):
                  + "\n  ".join(big))
 
 
+def synced_index(files, d):
+    """files + 이 도구가 만드는 README.md를 담은 색인을 임시 폴더 d에 두고 그 환경을 돌려준다(commit · status · pull이 같이 쓴다).
+    이 PC 전용 사본(.git/hyd-workspace.index)에서 시작해 stat이 바뀐 파일만 다시 해시한다 — 줄끝은 늘 core.autocrlf=false + .gitattributes,
+    .gitattributes가 사본보다 새로우면 처음부터. 사본은 복사해 쓰고 끝나면 갈아 끼우므로 여러 세션이 함께 돌아도 lock이 부딪치지 않고,
+    늦게 쓴 쪽이 이겨도 남는 것은 캐시뿐이다(내용 판정은 git의 stat 비교가 지킨다)."""
+    keep = ROOT / git("rev-parse", "--git-path", "hyd-workspace.index").strip()
+    index, attrs = Path(d) / "index", ROOT / ".gitattributes"
+    env = dict(os.environ, GIT_INDEX_FILE=str(index))
+    with contextlib.suppress(OSError):                 # 사본이 없으면 빈 색인에서(mtime을 지켜야 git이 같은 초에 고친 파일을 다시 본다)
+        if not attrs.exists() or keep.stat().st_mtime > attrs.stat().st_mtime:
+            shutil.copy2(keep, index)
+    have = subprocess.run(["git", *INDEX_CFG, "ls-files", "-z"], cwd=ROOT, env=env, capture_output=True)
+    if have.returncode:                                # 깨진 사본은 버린다
+        index.unlink(missing_ok=True)
+        old = set()
+    else:
+        old = set(filter(None, have.stdout.decode("utf-8", "replace").split("\0")))
+    gone = sorted(old - set(files) - {"README.md"})    # 로컬에서 지웠거나 빼는 자리가 된 파일
+    if gone:
+        git(*INDEX_CFG, "update-index", "--force-remove", "-z", "--stdin", env=env, inp="".join(p + "\0" for p in gone).encode("utf-8"))
+    if files:
+        git(*INDEX_CFG, "update-index", "--add", "-z", "--stdin", env=env, inp="".join(p + "\0" for p in files).encode("utf-8"))
+    readme = git("hash-object", "-w", "--stdin", inp=README.encode("utf-8")).strip()
+    git("update-index", "--add", "--cacheinfo", f"100644,{readme},README.md", env=env)
+    part = keep.with_name(f"{keep.name}.{os.getpid()}")
+    with contextlib.suppress(OSError):                 # 못 갈아 끼우면(다른 세션이 읽는 중인 Windows 등) 다음에 다시 해시할 뿐이다
+        shutil.copy2(index, part)
+        os.replace(part, keep)
+    with contextlib.suppress(OSError):
+        part.unlink(missing_ok=True)
+    return env
+
+
+def index_blobs(env):
+    """{경로: 블롭} — synced_index가 만든 색인의 판."""
+    out = {}
+    for e in filter(None, git("ls-files", "-s", "-z", env=env).split("\0")):
+        meta, n = e.split("\t", 1)
+        out[n] = meta.split()[1]
+    return out
+
+
 def build_tree(files):
     with tempfile.TemporaryDirectory() as d:
-        env = dict(os.environ, GIT_INDEX_FILE=str(Path(d) / "index"))
-        git("read-tree", "--empty", env=env)
-        listfile = Path(d) / "list"
-        listfile.write_text("\n".join(files) + "\n", encoding="utf-8")
-        git("-c", "core.autocrlf=false", "add", "-f", f"--pathspec-from-file={listfile}", env=env)
-        readme = git("hash-object", "-w", "--stdin", inp=README.encode("utf-8")).strip()
-        git("update-index", "--add", "--cacheinfo", f"100644,{readme},README.md", env=env)
-        return git("write-tree", env=env).strip()
+        return git("write-tree", env=synced_index(files, d)).strip()
 
 
 def scan(*args):
@@ -221,24 +258,22 @@ def status():
         print(f"작업 {t.name} · 상태 {state(t)}")
     t = tip()
     remote = set(git("ls-tree", "-r", "--name-only", t).splitlines()) - {"README.md"}
-    local = set(local_files())
-    changed = changed_files(t, local & remote)
+    files = local_files()
+    local = set(files)
+    changed = changed_files(t, local & remote, files)
     print(f"workspace {t[:8]} · 로컬 {len(local)}개 · workspace {len(remote)}개 · 로컬에만 {len(local - remote)} · workspace에만 {len(remote - local)} · 내용 다름 {len(changed)}")
     for f in sorted(local - remote)[:20]: print(f"  로컬에만      {f}")
     for f in sorted(remote - local)[:20]: print(f"  workspace에만 {f}")
     for f in changed[:20]: print(f"  내용 다름     {f}")
 
 
-def changed_files(t, names):
-    """브랜치 끝과 내용이 다른 로컬 파일. 커밋과 같은 줄끝 규칙으로 해시만 내고 저장소에는 쓰지 않는다."""
-    tree = {}
-    for line in git("ls-tree", "-r", "-z", t).split("\0"):
-        if line:
-            meta, path = line.split("\t", 1)
-            tree[path] = meta.split()[2]
-    names = sorted(names)
-    out = git("-c", "core.autocrlf=false", "hash-object", "--stdin-paths", inp=("\n".join(names) + "\n").encode("utf-8")).split()
-    return [f for f, h in zip(names, out) if h != tree[f]]
+def changed_files(t, names, files):
+    """names 가운데 브랜치 끝과 내용(블롭)이 다른 로컬 파일. 커밋과 같은 색인(synced_index)으로 견주므로 바뀐 파일만 다시 해시하고,
+    그 판은 .git에 쓰인다(다음 commit이 다시 쓰지 않는다)."""
+    tree = tree_blobs(t)
+    with tempfile.TemporaryDirectory() as d:
+        now = index_blobs(synced_index(files, d))
+    return [f for f in sorted(names) if now[f] != tree.get(f)]
 
 
 def split_only(args):
@@ -383,9 +418,12 @@ def pull():
         sys.exit(f"로컬 workspace({local[:8]})와 origin({remote[:8]})이 갈라졌다 — 다른 PC가 올린 판과 이 PC의 올리지 않은 커밋이 함께 있다. "
                  f"합치지 않는다(이력을 다시 쓰지 않음): 이 PC의 바뀐 파일을 옮겨 둔 뒤 새로 받거나, 다른 PC의 변경을 이 PC에서 다시 만든다")
     theirs, base = tree_blobs(remote), (tree_blobs(local) if local else {})
-    now = worktree_blobs(sorted(set(theirs) | set(base)))
+    names = sorted(set(theirs) | set(base))
+    with tempfile.TemporaryDirectory() as d:          # 작업 자료는 커밋과 같은 색인의 판, 그 밖(빼는 자리 · main 파일)은 바로 해시
+        known = index_blobs(synced_index(local_files(need=False), d))
+    now = {n: known[n] for n in names if n in known} | worktree_blobs([n for n in names if n not in known])
     write, delete, clash = [], [], []
-    for n in sorted(set(theirs) | set(base)):
+    for n in names:
         cur, old, new = now.get(n), base.get(n), theirs.get(n)
         if cur == new or new == old:
             continue                                   # 이미 원격 판이거나 원격이 안 바꿈 — 이 PC에서 고치거나 지웠어도 그대로 둔다

@@ -14,6 +14,8 @@ from PIL import Image
 from pptx import Presentation
 
 ROOT = Path(__file__).resolve().parents[5]
+sys.path.insert(0, str(ROOT / '.claude/skills/hyd-course-deck/scripts'))
+from deck2pptx import save_stable  # noqa: E402  같은 원고면 같은 바이트로 저장(빌더와 같은 저장)
 
 
 def look(blob):
@@ -109,7 +111,7 @@ def main():
             for x in sorted(set(c) - set(a)):
                 print('   새:', x[0][:120], x[1:])
     if fixed:
-        prs.save(pptx)
+        save_stable(prs, pptx)
     print('대조 결과: 다른 장', bad, '· 위치를 옮긴 장', fixed)
     sys.exit(1 if bad else 0)
 

@@ -1,6 +1,6 @@
 """통합반 10일차 삽화(SVG)를 만든다. 글자는 넣지 않는다(라벨은 덱 MD의 요소로 얹는다).
 
-화풍(선 굵기 · 색 · 그림 조각)은 `삽화_기본.py`(1일차의 것을 복사)에서 가져오고,
+화풍(선 굵기 · 색 · 그림 조각)은 공용 `온라인/tools/deck/삽화_기본.py`에서 가져오고,
 BPMN 도형과 승인 블록의 자리는 9일차의 `만들기_삽화.py`와 같게 그린다: 이벤트는 원(시작은 가는 테두리,
 끝은 굵은 테두리, 경계는 겹테두리), 작업은 모서리가 둥근 사각형, 게이트웨이는 마름모, 시퀀스 흐름은 실선 화살표.
 사용: python 만들기_삽화.py            → 이 폴더에 SVG를 쓴다
@@ -8,11 +8,13 @@ BPMN 도형과 승인 블록의 자리는 9일차의 `만들기_삽화.py`와 �
 from __future__ import annotations
 
 import math
+import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[4] / "tools" / "deck"))   # 공용 삽화_기본.py
 from 삽화_기본 import (BLUE, GREY, LIGHT, NAVY, NORM, OFF, ON, PALE, SKY, WHITE, St, agent_icon, approve_icon, arrow,
                     bell, book_icon, calendar_icon, circle, cylinder_db, equip_mini, g, gauge, graph_icon, line, path,
-                    poly, rect, server, svg)
+                    poly, rect, server, svg, 점선_펴기)
 
 HERE = Path(__file__).resolve().parent
 
@@ -450,10 +452,11 @@ def three_ends() -> str:
 def main():
     out = {"세시작.svg": three_starts(), "운전시간.svg": pm_due(), "재고.svg": stock(), "세흐름_나란히.svg": three_rows(),
            "승인블록_자리.svg": approval_slots(), "흐름_정기점검.svg": flow("pm"), "흐름_재고보충.svg": flow("spare"),
-           "병목.svg": bottleneck(), "다섯자리.svg": five_places(), "세층연결.svg": three_layers(), "요소_복습.svg": symbols(),
+           "병목.svg": bottleneck(), "다섯자리.svg": five_places(), "세층연결.svg": three_layers(),
            "주고받는것.svg": handoff(), "세종료.svg": three_ends()}
     for name, text in out.items():
         assert "<text" not in text
+        text = 점선_펴기(text)   # 빌더(PyMuPDF)는 stroke-dasharray를 실선으로 그린다
         (HERE / name).write_text(text, encoding="utf-8")
         print("wrote", name)
 

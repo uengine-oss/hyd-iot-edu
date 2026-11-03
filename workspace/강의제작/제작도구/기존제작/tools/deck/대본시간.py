@@ -2,7 +2,7 @@
 
     python workspace/강의제작/제작도구/기존제작/tools/deck/대본시간.py <대본.md> [<대본.md> ...]
 
-- 장 시간 = scale·(장 본문의 말 길이) + per_slide. 말 길이와 장 계수는 workspace/강의제작/제작도구/촬영/시간계산.py가 맞춘다
+- 장 시간 = scale·(장 본문의 말 길이) + per_slide(계산은 workspace/강의제작/제작도구/촬영/시간계산.py script_seconds 하나 — 구성표.py도 같은 함수). 말 길이와 장 계수도 시간계산.py가 맞춘다
   (calibrate: 문장 음성, calibrate-lecture: 이론 영상의 장별 음성 시간). 새 음성이 생기면 다시 맞춘다.
 - `## [SLIDE NN] 제목` 아래 본문만 센다. 인용 줄(>) · 굵게 표시 · 제목 줄은 빼고, `English(한글 발음)`은 한글 발음만 센다.
 - 낭독 추정이며 조작 · AI 응답 대기 · 학습 대기는 들어 있지 않다.
@@ -11,7 +11,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / '촬영'))
-from 시간계산 import load_coef, script_slides, slide_seconds  # noqa: E402
+from 시간계산 import load_coef, script_seconds  # noqa: E402
 
 
 def main() -> None:
@@ -20,11 +20,10 @@ def main() -> None:
     k = load_coef()
     grand = 0.0
     for path in sys.argv[1:]:
-        slides = script_slides(Path(path).read_text(encoding='utf-8'))
+        slides = script_seconds(Path(path).read_text(encoding='utf-8'), k)
         total = 0.0
         print(f"\n{path}\n| 장 | 초 | 제목 |\n|---|---|---|")
-        for n, (text, share, title) in sorted(slides.items()):
-            sec = slide_seconds(text, k) / share if share > 1 else slide_seconds(text, k)
+        for n, (sec, title) in sorted(slides.items()):
             total += sec
             print(f"| {n} | {sec:.0f} | {title} |")
         grand += total

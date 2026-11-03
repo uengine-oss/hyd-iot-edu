@@ -1,11 +1,26 @@
-"""촬영도구 공통 설정: config.json의 근거 폴더 · 음성 폴더, ffmpeg 위치. 값이 없으면 어디가 비었는지 알리고 멈춘다."""
+"""촬영도구 공통 설정: config.json의 근거 폴더 · 음성 폴더, ffmpeg 위치. 값이 없으면 어디가 비었는지 알리고 멈춘다.
+tool(<이름>)은 다른 도구(vscode · notion · arrows)의 config를 그 도구 촬영도구 폴더 기준으로 푼다 — 이 폴더의 합성기 · 실측이 --도구로 쓴다.
+음성(voice.py)과 옛 합성 · 실측 사본은 아직 도구마다 있다."""
 import json, os, shutil
 from pathlib import Path
+from types import SimpleNamespace
 
 HERE = Path(__file__).resolve().parent
 CFG = json.loads((HERE / 'config.json').read_text(encoding='utf-8'))
 WORK = (HERE / CFG['work']).resolve()
 AUDIO = (HERE / CFG['audio']).resolve()
+TOOLS = HERE.parent.parent   # 촬영/ — 도구마다 <도구>/촬영도구/config.json, 합성기록은 <도구>/합성기록/
+
+
+def tool(name='포털', root=TOOLS):
+    """도구 하나의 값: cfg, work(녹화 원본), audio(음성 캐시), record(합성기록 폴더, 커밋함)."""
+    d = Path(root) / name / '촬영도구'
+    f = d / 'config.json'
+    if not f.is_file():
+        raise SystemExit(f'도구 {name}: {f} 없음 (촬영도구/common.py tool)')
+    cfg = json.loads(f.read_text(encoding='utf-8'))
+    return SimpleNamespace(name=name, dir=d, cfg=cfg, work=(d / cfg['work']).resolve(),
+                           audio=(d / cfg['audio']).resolve() if cfg.get('audio') else None, record=Path(root) / name / '합성기록')
 
 
 def ffmpeg():

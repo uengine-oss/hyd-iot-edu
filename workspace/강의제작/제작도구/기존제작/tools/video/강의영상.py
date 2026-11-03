@@ -6,13 +6,14 @@
   `>`로 시작하는 줄(제작 표시), `---`, 표 줄, `**`는 낭독하지 않는다
 - 슬라이드: 대본 폴더 위의 <과정>_NN일차.pptx를 LibreOffice로 PDF, pdftoppm으로 그림으로 바꾼다. 장 번호가 PPTX 장 수를 넘으면 멈춘다
 - 음성: ElevenLabs API(글자별 시간 포함). 장마다 따로 뽑아 저장해 두고, 글·음성·모델·속도가 같으면 다시 뽑지 않는다. --voice는 기본값이 없어 --dry 밖에서는 꼭 준다(영상.md V맥-12)
+- 장 조각: 장마다 만든 영상 조각을 `조각_저장/합성/`에 보관하고(이름 = 쉼을 넣은 소리 · 장 그림 · 넘김 시각 · 인코딩 설정의 해시), 다시 돌리면 바뀐 장만 인코딩해 잇는다
 - 시간: 장의 음성 길이만큼 그 장의 그림을 보여 준다. `SLIDE NN~MM`(실습 간지와 설명 장 두 장)은 첫 문장과 그 뒤 쉼까지 간지를, 둘째 문장부터 설명 장을 보여 준다.
   목표 초(--target)를 주지 않으면 쉼의 길이를 늘이거나 줄이지 않는다(기준 51번)
 - 호흡(--breath): 어디서 얼마나 쉴지는 쉼_저장/ 에 장마다 적어 둔 단계를 읽는다. 적히지 않은 장이 있으면 빈 자리를 만들어 두고 멈춘다. 이 도구는 OpenAI를 부르지 않는다
 - --dry: 파일마다 장 범위·글자 수와 첫 문장 점검(기준 49번)만 찍는다. 음성을 부르지 않으니 돈이 들지 않는다
 - 키: ELEVENLABS_API_KEY 환경변수, 없으면 --env 파일에서 읽는다. 키는 출력하지 않는다
 """
-import argparse, base64, hashlib, json, os, re, subprocess, sys, urllib.request, urllib.error, zipfile
+import argparse, base64, hashlib, json, os, re, shutil, subprocess, sys, urllib.request, urllib.error, zipfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -31,6 +32,8 @@ a = ap.parse_args() if __name__ == "__main__" else ap.parse_args(["_", "_"])   #
 V4 = bool(re.match(r"eleven_v[34]", a.model))   # 빠르기 설정이 없는 모델. 읽은 그대로 두는 것이 기본이다
 if V4 and not a.breath: a.natural = True
 CACHE = HERE / "음성_저장"
+PIECES = HERE / "조각_저장" / "합성"   # 장 조각 보관함 — 저장소에 올리지 않는다(동기화.py SKIP_DIRS). 지워도 다시 만들어진다
+PIECE_VER = "장조각-1"   # 조각을 만드는 방법이 바뀌면 올린다
 BAD_START = ("그럼", "그러면", "그래서", "자 ", "자,", "이제", "이어서")   # 기준 49번: 영상은 따로 재생되므로 앞 영상을 받는 말로 시작하지 않는다
 
 
@@ -277,10 +280,11 @@ def make(S, pptx, name, study_waits=None):
         wav.unlink(); return len(out) / fr, marks
 
     # 4) 장별 영상과 자막
-    segs, srt, clock, k = [], [], 0.0, 0
+    segs, srt, clock, k, made = [], [], 0.0, 0, 0
+    PIECES.mkdir(parents=True, exist_ok=True)
     def ts(x): return f"{int(x//3600):02d}:{int(x%3600//60):02d}:{int(x%60):02d},{int(x*1000%1000):03d}"
     for r in rows:
-        seg = OUT / f"seg_{r['first']:03d}.mp4"; wavp = OUT / f"seg_{r['first']:03d}.wav"
+        wavp = OUT / f"seg_{r['first']:03d}.wav"
         d, marks = build(r, wavp); r["d2"] = d
         shown = imgs[r["first"] - 1:r["last"]]
         if len(shown) == 1: spans = [d]
@@ -291,8 +295,16 @@ def make(S, pptx, name, study_waits=None):
         ins = [x for img, t in zip(shown, spans) for x in ("-loop", "1", "-t", f"{t:.3f}", "-i", str(img))]
         fit = "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,format=yuv420p,fps=10"
         vf = ";".join(f"[{n}:v]{fit}[v{n}]" for n in range(len(shown))) + ";" + "".join(f"[v{n}]" for n in range(len(shown))) + f"concat=n={len(shown)}:v=1:a=0[v]"
-        run("ffmpeg", "-v", "error", "-y", *ins, "-i", str(wavp), "-filter_complex", vf, "-map", "[v]", "-map", f"{len(shown)}:a", "-t", f"{d:.3f}",
-            "-r", "10", "-c:v", "libx264", "-preset", "veryfast", "-tune", "stillimage", "-c:a", "aac", "-b:a", "160k", str(seg))
+        enc = ["-r", "10", "-c:v", "libx264", "-preset", "veryfast", "-tune", "stillimage", "-c:a", "aac", "-b:a", "160k"]
+        # 장 조각 보관함: 쉼을 넣은 소리 · 보이는 장 그림 · 넘김 시각 · 인코딩 설정이 같으면 전에 만든 조각을 그대로 쓴다(바뀐 장만 인코딩)
+        key = hashlib.sha1(json.dumps([PIECE_VER, hashlib.sha256(wavp.read_bytes()).hexdigest(), [hashlib.sha256(x.read_bytes()).hexdigest() for x in shown],
+                                       [round(t, 3) for t in spans], round(d, 3), vf, enc]).encode()).hexdigest()[:20]
+        seg = PIECES / f"{key}.mp4"
+        if not seg.exists():
+            tmpseg = OUT / f"seg_{r['first']:03d}.mp4"
+            run("ffmpeg", "-v", "error", "-y", *ins, "-i", str(wavp), "-filter_complex", vf, "-map", "[v]", "-map", f"{len(shown)}:a", "-t", f"{d:.3f}",
+                *enc, str(tmpseg))
+            shutil.move(str(tmpseg), seg); made += 1
         wavp.unlink(); segs.append(seg)
         def sh(t): return t + max([m[1] for m in marks if m[0] <= t] or [0.0])
         ch, st, en = r["al"].get("characters") or [], r["al"].get("character_start_times_seconds") or [], r["al"].get("character_end_times_seconds") or []
@@ -308,9 +320,9 @@ def make(S, pptx, name, study_waits=None):
                 k += 1; srt.append(f"{k}\n{ts(clock + start)} --> {ts(clock + end)}\n{buf.strip()}\n"); buf, b0 = "", None
         r["start"] = clock; clock += dur(seg)   # 인코딩된 구획은 계산한 길이 d보다 조금 길다. 그 차이가 쌓여 자막과 시간표가 영상보다 앞서지 않게 실제 길이로 센다
     gap = a.gap * scale
-    (OUT / "list.txt").write_text("".join(f"file '{s.name}'\n" for s in segs))
+    (OUT / "list.txt").write_text("".join(f"file '{s.as_posix()}'\n" for s in segs))
     run("ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(OUT / "list.txt"), "-c", "copy", str(OUT / f"{name}.mp4"))
-    for s in segs: s.unlink()
+    print(f"장 조각 {len(segs)}개(새로 만든 것 {made}, 보관함 재사용 {len(segs) - made})")
     (OUT / "list.txt").unlink()
     SIDE = OUT.parent / "_작업" / "영상_자막_기록"; SIDE.mkdir(parents=True, exist_ok=True)   # 영상 폴더에는 영상만 둔다. 자막과 길이 기록은 옆의 _작업 폴더로
     (SIDE / f"{name}.srt").write_text("\n".join(srt), encoding="utf-8")

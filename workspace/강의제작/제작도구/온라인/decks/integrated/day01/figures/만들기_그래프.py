@@ -2,7 +2,8 @@
 
 데이터: 그래프_데이터_tag_1s.csv — TimescaleDB 표 tag_1s를 SELECT로 읽은 것(시각은 한국 시간).
 사건 시각: alerts 표(raised_at · cleared_at), actions 표(issued_at), 처리 기록(A-7-record-text.txt)의 주입 · 승인 시각.
-사용: uv run --no-project --with matplotlib python 만들기_그래프.py
+사용: python workspace/강의제작/제작도구/기존제작/tools/deck/그래프글자분리.py <이 파일> 그래프_쿨러열화_곡선.png 그래프_쿨러열화_라벨.json
+      (덱은 글자 없는 곡선 PNG와 라벨 JSON을 쓴다 — 이 파일은 그림을 저장하지 않는다)
 맑은 고딕이 없는 검토 환경: --font NanumGothic (최종 글자 폭 확인에는 쓰지 않는다)
 """
 import argparse
@@ -79,5 +80,4 @@ a2.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
 a2.set_xlim(t0, t1)
 a2.set_xlabel("2026-10-10 시각", color=MUTED, fontsize=11)
 fig.subplots_adjust(left=0.09, right=0.985, top=0.93, bottom=0.11)
-fig.savefig(HERE / "그래프_쿨러열화_TS1_CE.png", facecolor="white")
 print("TS1", len(ts), "CE", len(ce), "peak", pk, "CE min/max", min(v for _, v in ce), max(v for _, v in ce), "CE end", ce[-1])

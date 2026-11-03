@@ -5,7 +5,7 @@
   실습 큐 시간 = 말 길이 + 말 끝 뒤에 넘치는 조작(최소 0.25초 간격)
   넘치는 조작 = e·입력 글자 + f·클릭 + g·끌기 + h·키 + i                    ← 실제 녹화의 '말 끝 → 다음 말 시작'으로 맞춤
   이론 장 시간 = s·(장 본문의 말 길이) + p                                  ← 강사 복제 음성 이론 영상의 장별 음성 시간으로 맞춤(쉼 · 장 넘김 포함)
-말하는 동안 하는 조작은 겹치므로 따로 더하지 않는다(합집합 계산). 이론 대본의 장별 시간은 대본시간.py가 이 계수로 낸다.
+말하는 동안 하는 조작은 겹치므로 따로 더하지 않는다(합집합 계산). 이론 대본의 장별 시간은 script_seconds 하나가 내고 대본시간.py · 구성표.py가 그것을 부른다.
 
 큐 형식(JSON): {"cues":[{"id","segment","text","ops":[[op, ...인자], ...]}]}
   op 분류: type(인자 글자 수) · key · 끌기(grow/connect/move/drag, layout은 원 수만큼) · 가리키기(point/at, 시간 없음) · 그 밖은 클릭.
@@ -14,7 +14,7 @@
   python 시간계산.py estimate <cues.json> [--target 분]       # 촬영 전 실습 큐 예상
   python 시간계산.py calibrate <근거폴더> [<근거폴더> ...]       # 말 길이 · 조작 계수 다시 맞추기
         근거폴더의 audio/*.json · *.json 중 {"text","duration_ms"}가 있는 문장 음성, 있으면 cues.json + <구간>/timing.json
-  python 시간계산.py calibrate-lecture                          # 이론 장 계수 다시 맞추기(로컬 영상 시간표 × 현재 산출물 대본)
+  python 시간계산.py calibrate-lecture                          # 이론 장 계수 다시 맞추기(workspace의 영상 시간표 × 현재 산출물 대본)
   python 시간계산.py check <근거폴더> <구간[:자른ms]> ...        # 찍은 구간과 예상 비교
 """
 import json, re, subprocess, sys
@@ -61,6 +61,12 @@ def script_slides(body):
         for n in nums:
             out[n] = (parts[i + 2], len(nums), parts[i + 1].strip())
     return out
+
+
+def script_seconds(body, k=None):
+    """이론 분할 대본 본문 → {장 번호: (예상 초, 제목)}. 범위 장은 그 장 묶음 시간을 장 수로 나눈 몫이다."""
+    k = k or load_coef()
+    return {n: (slide_seconds(text, k) / share, title) for n, (text, share, title) in script_slides(body).items()}
 
 
 def op_features(ops):
@@ -178,13 +184,13 @@ TIMETABLE_DIR = 'workspace/강의제작/산출물/영상/_작업/영상_자막_�
 
 
 def calibrate_lecture():
-    """강사 복제 음성 이론 영상의 장별 음성 시간(로컬 영상 시간표 — git이 무시하는 자리)과 현재 산출물 대본의 말 길이로 장 계수를 맞춘다."""
+    """강사 복제 음성 이론 영상의 장별 음성 시간(`산출물/영상/_작업/영상_자막_기록/*_시간표.md` — workspace 브랜치)과 현재 산출물 대본의 말 길이로 장 계수를 맞춘다."""
     k = load_coef()
     root = HERE.parents[3]
     tdir = root / TIMETABLE_DIR
     names = sorted(f.name for f in tdir.glob('*_시간표.md')) if tdir.is_dir() else []
     if not names:
-        raise SystemExit(f'{tdir}에 시간표가 없다 — 영상을 만든 로컬 영상 폴더가 필요하다')
+        raise SystemExit(f'{tdir}에 시간표가 없다 — workspace를 받는다(동기화.py pull)')
     px, py, used, skipped = [], [], [], []
     for n in names:
         m = re.match(r'(통합반|실전반)_(\d+)회차_(.+)_시간표\.md$', n)
@@ -233,7 +239,7 @@ def check(d, specs):
 
 
 if __name__ == '__main__':
-    cmd, *rest = sys.argv[1:]
+    cmd, *rest = sys.argv[1:] or ['']
     if cmd == 'estimate':
         tgt = float(rest[rest.index('--target') + 1]) if '--target' in rest else None
         estimate(rest[0], tgt)

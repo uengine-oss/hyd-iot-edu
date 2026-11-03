@@ -1,17 +1,14 @@
-"""통합반 1일차 v3 샘플 삽화(SVG)를 만든다. 글자는 넣지 않는다(라벨은 덱 MD의 요소로 얹는다).
+"""2회차 이후 생성기(decks/integrated/dayNN/figures/만들기_삽화.py)가 가져다 쓰는 공용 그림 조각 · 색 · 선 굵기. 직접 실행하지 않는다.
 
-사용: python 만들기_삽화.py            → 이 폴더에 SVG를 쓴다
-색은 덱 색만, 선 그림(끝 둥글게), 그라디언트 · 그림자 · 필터 · <text> 없음.
+색은 덱 색만, 선 그림(끝 둥글게), 그라디언트 · 그림자 · 필터 · <text> 없음. 글자는 넣지 않는다(라벨은 덱 MD의 요소로 얹는다).
 """
 from __future__ import annotations
 
 import math
-from pathlib import Path
 
 NAVY, SKY, BLUE, PALE, GREY, LIGHT, WHITE = "#13294B", "#5CB8F2", "#1A6FC4", "#E7F3FD", "#D3D9E1", "#F3F6F9", "#FFFFFF"
 W, H = 1200, 520
 SW = 3.5
-HERE = Path(__file__).resolve().parent
 
 
 class St:
@@ -74,6 +71,66 @@ def arrow(pts, color=NAVY, sw=4, size=13):
 def svg(body: list[str]) -> str:
     return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}">\n'
             + "\n".join(body) + "\n</svg>\n")
+
+
+def 점선_펴기(svg_text: str) -> str:
+    """stroke-dasharray 점선을 짧은 선분 경로로 바꾼다 — 빌더의 SVG 변환(PyMuPDF)은 dasharray를 그리지 않아 점선이 실선으로 나온다.
+    circle · rect(rx · ry) · line · path(M · L만)와 두 값 dasharray만 다룬다. 점선을 쓰는 생성기가 파일을 쓰기 직전에 부른다."""
+    def convert(m):
+        tag, attrs = m.groups()
+        a = dict(re.findall(r'([\w-]+)="([^"]*)"', attrs))
+        dash = list(map(float, a["stroke-dasharray"].split()))
+        assert len(dash) == 2
+        parts = []
+        if tag == "circle":
+            cx, cy, r = (float(a[k]) for k in ("cx", "cy", "r"))
+            length = 2 * math.pi * r
+            point = lambda t: (cx + r * math.cos(t / r), cy + r * math.sin(t / r))
+            if a.get("fill", "none") != "none":
+                parts.append(f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="{a["fill"]}" stroke="none"/>')
+        else:
+            if tag == "rect":
+                x, y, w, h = (float(a[k]) for k in ("x", "y", "width", "height"))
+                rx = float(a.get("rx", 0))
+                ry = float(a.get("ry", rx))
+                pts = []
+                for cx, cy, start in [(x + w - rx, y + ry, -90), (x + w - rx, y + h - ry, 0), (x + rx, y + h - ry, 90), (x + rx, y + ry, 180)]:
+                    for i in range(17):
+                        ang = math.radians(start + i * 90 / 16)
+                        pts.append((cx + rx * math.cos(ang), cy + ry * math.sin(ang)))
+                pts.append(pts[0])
+                if a.get("fill", "none") != "none":
+                    parts.append("<rect " + " ".join(f'{k}="{a[k]}"' for k in ("x", "y", "width", "height", "rx", "ry", "fill") if k in a)
+                                 + ' stroke="none"/>')
+            elif tag == "line":
+                pts = [(float(a["x1"]), float(a["y1"])), (float(a["x2"]), float(a["y2"]))]
+            else:
+                assert tag == "path" and not re.search(r"[A-KN-Za-kn-z]", a["d"]), a
+                nums = list(map(float, re.findall(r"-?\d+(?:\.\d+)?", a["d"])))
+                pts = list(zip(nums[::2], nums[1::2]))
+            lengths = [math.dist(p, q) for p, q in zip(pts, pts[1:])]
+            length = sum(lengths)
+
+            def point(t):
+                for (x, y), (xx, yy), d in zip(pts, pts[1:], lengths):
+                    if d and t <= d:
+                        return x + (xx - x) * t / d, y + (yy - y) * t / d
+                    t -= d
+                return pts[-1]
+        segments, t = [], 0
+        while t < length:
+            end = min(t + dash[0], length)
+            steps = max(1, math.ceil(end - t))
+            xy = [point(t + (end - t) * i / steps) for i in range(steps + 1)]
+            segments.append("M " + " L ".join(f"{x:.3f},{y:.3f}" for x, y in xy))
+            t += sum(dash)
+        style = " ".join(f'{k}="{v}"' for k, v in a.items() if k in ["stroke", "stroke-width", "stroke-linecap", "stroke-linejoin"])
+        parts.append('<path d="' + " ".join(segments) + '" fill="none" ' + style + "/>")
+        return "\n".join(parts)
+
+    out = re.sub(r'<(circle|path|rect|line)\b([^>]*stroke-dasharray="[^"]+"[^>]*)/>', convert, svg_text)
+    assert "stroke-dasharray" not in out
+    return out
 
 
 # ───────────────────────── 작은 그림 조각 ─────────────────────────
@@ -684,19 +741,3 @@ def connect() -> str:
     o += g(*N["doc"], 0.52, book_icon(0, 0, ON))
     return svg(o)
 
-
-def main():
-    out = {"설비_유압파워팩.svg": hyd_unit(), "리니지_0_전체.svg": lineage(0), "리니지_1_MQTT.svg": lineage(1),
-           "리니지_2_DMZ.svg": lineage(2), "리니지_3_저장감지.svg": lineage(3), "원인후보.svg": causes(), "관계.svg": relation(),
-           "계층_0_전체.svg": layers("all"), "계층_1_L7-9.svg": layers("79"), "노션_데이터베이스.svg": notion_db(),
-           "노션_보기.svg": notion_views(), "흩어진정보.svg": scattered(), "노드관계.svg": node_rel(),
-           "경로_1.svg": walk(1), "경로_2.svg": walk(2), "경로_3.svg": walk(3),
-           "계층_L1-6.svg": layer_rows([6, 5, 4, 3, 2, 1]), "계층_L7-9.svg": layer_rows([9, 8, 7], hot=(9, 8, 7)), "연결.svg": connect()}
-    for name, text in out.items():
-        assert "<text" not in text
-        (HERE / name).write_text(text, encoding="utf-8")
-        print("wrote", name)
-
-
-if __name__ == "__main__":
-    main()

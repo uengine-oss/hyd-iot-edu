@@ -10,27 +10,22 @@ python3 workspace/강의제작/제작도구/오프라인/decks/시간.py workspa
 import re, sys, glob, statistics
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / '촬영'))
-from 시간계산 import load_coef, speech_seconds
+from 시간계산 import load_coef, script_slides, speech_seconds
 COEF = load_coef()
 if 'lecture' not in COEF:
     raise SystemExit('시간계수.json에 이론 장 계수(lecture)가 없다. 시간계산.py calibrate-lecture를 먼저 실행한다.')
 A, B = COEF['lecture']['per_slide'], COEF['lecture']['scale']
-def 말길이(text):  # 초
-    return speech_seconds(text, COEF)
 cache = {}
 def script(course, day):
     if (course, day) not in cache:
         d = {}
         for f in sorted(glob.glob(f'workspace/강의제작/산출물/{course}/이론/{day:02d}회차/대본/*.md')):
-            body = re.split(r"^# (여기까지 작성|촬영 본문 끝)|^## 제작 확인용", open(f, encoding='utf8').read(), flags=re.M)[0]
-            p = re.split(r"^## \[SLIDE ([0-9~]+)\](.*)$", body, flags=re.M)
-            for i in range(1, len(p), 3):
-                a = p[i].split('~'); r = range(int(a[0]), int(a[-1]) + 1)
-                for n in r: d[n] = d.get(n, 0) + 말길이(p[i + 2]) / len(r)
+            for n, (text, share, _) in script_slides(open(f, encoding='utf8').read()).items():
+                d[n] = d.get(n, 0) + speech_seconds(text, COEF) / share
         cache[(course, day)] = d
     return cache[(course, day)]
 def note(b):
-    m = re.search(r'^- 노트: (.*)$', b, re.M); return 말길이(m.group(1)) if m else 0
+    m = re.search(r'^- 노트: (.*)$', b, re.M); return speech_seconds(m.group(1), COEF) if m else 0
 def slides(md):
     out = []
     for b in re.split(r'(?=^## SLIDE )', open(md, encoding='utf8').read(), flags=re.M)[1:]:

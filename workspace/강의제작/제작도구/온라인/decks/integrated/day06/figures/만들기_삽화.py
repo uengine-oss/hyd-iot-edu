@@ -1,13 +1,15 @@
 """통합반 6일차 삽화(SVG)를 만든다. 글자는 넣지 않는다(라벨은 덱 MD의 요소로 얹는다).
 
-화풍(선 굵기 · 색 · 그림 조각)은 1일차의 `만들기_삽화.py`를 복사한 `삽화_기본.py`에서 가져온다.
+화풍(선 굵기 · 색 · 그림 조각)은 공용 `온라인/tools/deck/삽화_기본.py`에서 가져온다.
 사용: python 만들기_삽화.py            → 이 폴더에 SVG를 쓴다
 """
 from __future__ import annotations
 
 import math
+import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[4] / "tools" / "deck"))   # 공용 삽화_기본.py
 from 삽화_기본 import (BLUE, GREY, LIGHT, NAVY, NORM, OFF, ON, PALE, SKY, WHITE, St, agent_icon, approve_icon, arrow, bell,
                     circle, cylinder_db, fan, g, graph_icon, head, line, path, poly, rect, server, svg)
 
@@ -308,7 +310,7 @@ def gates() -> str:
 def main():
     out = {"고리_1.svg": loop(True), "스킬문서.svg": skilldoc(),
            "두절차.svg": twoproc(), "재사용.svg": reuse(), "연결의수.svg": nm(), "MCP구성.svg": mcp_parts(),
-           "목록호출.svg": listcall(), "연결방식.svg": transports(), "세겹.svg": gates()}
+           "연결방식.svg": transports(), "세겹.svg": gates()}
     for name, text in out.items():
         assert "<text" not in text
         (HERE / name).write_text(text, encoding="utf-8")

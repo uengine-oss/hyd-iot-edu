@@ -1,6 +1,6 @@
 """통합반 9일차 삽화(SVG)를 만든다. 글자는 넣지 않는다(라벨은 덱 MD의 요소로 얹는다).
 
-화풍(선 굵기 · 색 · 그림 조각)은 1일차의 `만들기_삽화.py`를 복사한 `삽화_기본.py`에서 가져온다.
+화풍(선 굵기 · 색 · 그림 조각)은 공용 `온라인/tools/deck/삽화_기본.py`에서 가져온다.
 BPMN 도형은 표준 기호 모양을 따른다: 이벤트는 원(시작은 가는 테두리, 끝은 굵은 테두리, 경계는 겹테두리),
 작업은 모서리가 둥근 사각형, 게이트웨이는 마름모, 시퀀스 흐름은 실선 화살표, 메시지 흐름은 점선 화살표.
 사용: python 만들기_삽화.py            → 이 폴더에 SVG를 쓴다
@@ -8,10 +8,12 @@ BPMN 도형은 표준 기호 모양을 따른다: 이벤트는 원(시작은 가
 from __future__ import annotations
 
 import math
+import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[4] / "tools" / "deck"))   # 공용 삽화_기본.py
 from 삽화_기본 import (BLUE, GREY, LIGHT, NAVY, NORM, OFF, ON, PALE, SKY, WHITE, St, agent_icon, approve_icon, arrow,
-                    bell, circle, gauge, g, line, monitor, path, plc, poly, rect, server, svg)
+                    bell, circle, gauge, g, line, monitor, path, plc, poly, rect, server, svg, 점선_펴기)
 
 HERE = Path(__file__).resolve().parent
 
@@ -513,6 +515,7 @@ def main():
            "병렬과하위.svg": parallel_sub(), "정의와인스턴스.svg": def_inst(), "현재와목표.svg": asis_tobe()}
     for name, text in out.items():
         assert "<text" not in text
+        text = 점선_펴기(text)   # 빌더(PyMuPDF)는 stroke-dasharray를 실선으로 그린다
         (HERE / name).write_text(text, encoding="utf-8")
         print("wrote", name)
 

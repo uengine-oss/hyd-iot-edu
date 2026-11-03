@@ -2,6 +2,7 @@
 
 형식: ../references/덱MD-PPTX형식.md
 사용: python deck2pptx.py <덱.md> <출력.pptx> [--render <PNG 폴더>]
+      python deck2pptx.py <덱.pptx> --render <PNG 폴더>   # 렌더만(빌드 · 검사 없이, PPTX는 건드리지 않는다)
       python deck2pptx.py --check <덱.md | -> [--base <덱 폴더>]   # 파일을 하나도 쓰지 않고 검사만(읽기 전용 환경용, - 는 표준 입력)
 규칙 위반(모르는 유형·없는 칸·요소 수·그림 없음·아이콘 수·넘침 추정)은 장 번호와 칸 이름을 찍고 실패한다.
 
@@ -23,6 +24,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -976,7 +978,6 @@ def picture_file(base: Path, rel: str) -> Path:
     if src.suffix.lower() != ".svg":
         return src
     return svg_to_png(src.read_bytes(), 3, "illust")
-    return out
 
 
 def render_illust(sl, s, page, base: Path):
@@ -1307,6 +1308,25 @@ class StdinDeck:
         return self.text
 
 
+def save_stable(prs, out: Path) -> bool:
+    """PPTX를 zip 항목 날짜 · 만든 체계를 고정해 저장한다 — 같은 원고면 같은 바이트(sha · git 변경이 원고 판을 가리킨다).
+    이미 같은 바이트면 파일을 쓰지 않는다(mtime도 그대로). 썼으면 True."""
+    buf = io.BytesIO()
+    prs.save(buf)
+    fixed = io.BytesIO()
+    with zipfile.ZipFile(buf) as src, zipfile.ZipFile(fixed, "w") as dst:
+        for info in src.infolist():
+            zi = zipfile.ZipInfo(info.filename, date_time=(1980, 1, 1, 0, 0, 0))
+            zi.compress_type, zi.external_attr, zi.create_system = info.compress_type, info.external_attr, 0
+            dst.writestr(zi, src.read(info.filename))
+    data = fixed.getvalue()
+    if out.is_file() and out.read_bytes() == data:
+        print(f"[같음] {out} — 파일을 바꾸지 않았다")
+        return False
+    out.write_bytes(data)
+    return True
+
+
 def build(md_path, out) -> list[Slide]:
     slides = parse(md_path)
     validate(slides, md_path)
@@ -1345,7 +1365,9 @@ def build(md_path, out) -> list[Slide]:
         raise DeckError("글자 넘침 추정(문구를 줄이거나 장을 나눈다):\n  " + "\n  ".join(FIT.errs))
     if isinstance(out, Path):
         out.parent.mkdir(parents=True, exist_ok=True)
-    prs.save(out)
+        save_stable(prs, out)
+    else:
+        prs.save(out)
     return slides
 
 
@@ -1443,7 +1465,7 @@ def render_png(pptx_path: Path, out_dir: Path) -> None:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("deck", help="덱 MD. --check와 함께 - 를 주면 표준 입력에서 읽는다")
+    ap.add_argument("deck", help="덱 MD(--render만 줄 때는 렌더할 PPTX). --check와 함께 - 를 주면 표준 입력에서 읽는다")
     ap.add_argument("out", nargs="?")
     ap.add_argument("--render", help="PNG를 낼 폴더(LibreOffice + pdftoppm)")
     ap.add_argument("--check", action="store_true", help="파일을 하나도 쓰지 않고 규칙 · 넘침 · 라벨 간격 · 저장본 검사만 한다")
@@ -1465,8 +1487,15 @@ def main() -> int:
             return 1
         print(f"[검사 통과] {md.name} — {len(slides)}장, 파일은 쓰지 않았다")
         return 0
+    if a.deck.lower().endswith(".pptx") and a.render and not a.out:   # 이미 있는 PPTX(확정본 · 대조로 고친 것)를 렌더만
+        try:
+            render_png(Path(a.deck), Path(a.render))
+        except DeckError as e:
+            print(f"[실패] {e}", file=sys.stderr)
+            return 1
+        return 0
     if not a.out:
-        ap.error("출력 PPTX 경로가 필요하다(검사만 하려면 --check)")
+        ap.error("출력 PPTX 경로가 필요하다(검사만 하려면 --check, 렌더만 하려면 <덱.pptx> --render <폴더>)")
     md, out = Path(a.deck), Path(a.out)
     if out.exists() and out.resolve() == md.resolve():
         print("입력과 출력이 같음", file=sys.stderr)

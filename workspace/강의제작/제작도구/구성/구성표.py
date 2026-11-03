@@ -2,7 +2,7 @@
 
 python workspace/강의제작/제작도구/구성/구성표.py workspace/강의제작/제작도구/구성/<과정>/<NN>회차/구성.json
 
-- 낭독 추정은 실제 강사 복제 음성으로 맞춘 계수(workspace/강의제작/제작도구/촬영/시간계수.json)로 잰다(대본시간.py와 같은 계산).
+- 낭독 추정은 실제 강사 복제 음성으로 맞춘 계수(workspace/강의제작/제작도구/촬영/시간계수.json)로 잰다(시간계산.py script_seconds — 대본시간.py와 같은 함수).
 - 학습 대기는 대본의 `> [대기 N초]`를 따로 센다. 실습 대본(kind practice)은 실습 큐로 재므로(시간계산.py estimate) 여기서 재지 않는다.
 - 구성.json의 `rows`(실라버스 행: kind · title · minutes · slides)가 있으면 행별 배정과 낭독을 나란히 낸다.
 - pptx_sha256은 지금 PPTX의 해시로 다시 적는다.
@@ -13,7 +13,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(ROOT / 'workspace/강의제작/제작도구/촬영'))
-from 시간계산 import load_coef, script_slides, slide_seconds  # noqa: E402
+from 시간계산 import load_coef, script_seconds  # noqa: E402
 
 COURSES = ('통합반', '실전반')
 
@@ -48,10 +48,9 @@ def main() -> None:
             unit_rows.append(f"| [{f.name}]({rel}) | {label} | 실습 큐로 잼 | — |")
             continue
         body = f.read_text('utf8')
-        slides = script_slides(body)
+        slides = script_seconds(body, k)
         total = 0.0
-        for n, (text, share, _) in slides.items():
-            s = slide_seconds(text, k) / share if share > 1 else slide_seconds(text, k)
+        for n, (s, _) in slides.items():
             sec[n] = s
             total += s
         wait = sum(int(x) for x in re.findall(r'^> \[대기 (\d+)초\]', body, re.M))

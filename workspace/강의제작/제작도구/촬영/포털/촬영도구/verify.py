@@ -1,6 +1,6 @@
 """완성 영상 검증 — 게시 전에 한 번 돌린다. 사용: python3 verify.py <영상.mp4> <자막.srt> [<결과 폴더>]
 사람이 귀로 듣는 확인을 대신하지 않는다(발음 · 억양은 사용자 재생 확인). 기계로 잴 수 있는 것만 잰다.
-  1. 길이: 영상 · 음성 길이 차이 0.2초 이내, 마지막 자막이 영상 안에서 끝남
+  1. 길이: 영상 · 음성 길이 차이 0.1초 이내(V-184, 합성기와 같은 기준), 마지막 자막이 영상 안에서 끝남
   2. 자막: 시간이 거꾸로 가거나 겹치지 않음
   3. 소리: 통합 크기(LUFS) · 최고점, 자막이 있는 구간이 무음이 아님(말 잘림 · 빠진 음성), 자막 사이 무음이 너무 길지 않음(기본 8초)
   4. 화면: 검은 화면 0.5초 이상 없음, 문장마다 한 장면(문장 3/4 지점)을 뽑아 모음 그림으로 남김 — 화면 · 화살표 · 말이 맞는지는 이 그림을 눈으로 대조한다
@@ -36,7 +36,7 @@ for b in srt.read_text(encoding='utf-8-sig').strip().split('\n\n'):
     l = b.strip().split('\n'); a, z = l[1].split(' --> '); cues.append((ms(a), ms(z), ' '.join(l[2:])))
 v, a = probe('v:0'), probe('a:0')
 fails, report = [], {'video': str(mp4), 'subtitles': len(cues), 'video_s': round(v, 3), 'audio_s': round(a, 3)}
-if abs(v - a) > 0.2: fails.append(f'영상 {v:.2f}s · 음성 {a:.2f}s 차이')
+if abs(v - a) > 0.1: fails.append(f'영상 {v:.2f}s · 음성 {a:.2f}s 차이')
 if cues[-1][1] > v + 0.05: fails.append(f'마지막 자막 {cues[-1][1]:.2f}s가 영상 {v:.2f}s 뒤에서 끝남')
 for i in range(1, len(cues)):
     if cues[i][0] < cues[i - 1][1] - 0.02: fails.append(f'자막 {i}·{i+1} 겹침({cues[i-1][1]:.2f} > {cues[i][0]:.2f})')

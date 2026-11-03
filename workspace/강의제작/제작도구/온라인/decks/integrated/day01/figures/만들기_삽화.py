@@ -1135,17 +1135,11 @@ NEW_ONLY: set = {"경로2_1.svg", "경로2_2.svg", "데이터_명령_두경로.s
 
 
 def main():
-    out = {"데이터_명령_두경로.svg": data_command_routes(), "설비_유압파워팩.svg": hyd_unit(), "리니지_0_전체.svg": lineage(0), "리니지_1_MQTT.svg": lineage_mqtt(),
-           "리니지_2_DMZ.svg": lineage(2), "리니지_3_저장감지.svg": lineage(3), "원인후보.svg": causes(), "관계.svg": relation(),
-           "계층_0_전체.svg": layers("all"), "계층_1_L7-9.svg": layers("79"),
+    out = {"데이터_명령_두경로.svg": data_command_routes(), "설비_유압파워팩.svg": hyd_unit(), "리니지_1_MQTT.svg": lineage_mqtt(),
+           "계층_0_전체.svg": layers("all"),
            "흩어진정보.svg": scattered(), "노드관계.svg": node_rel(),
-           "경로_1.svg": walk(1), "경로_2.svg": walk(2), "경로_3.svg": walk(3), "경로2_1.svg": walk2(1), "경로2_2.svg": walk2(2),
-           "계층_L1-6.svg": layer_rows([6, 5, 4, 3, 2, 1]), "계층_L7-9.svg": layer_rows([9, 8, 7], hot=(9, 8, 7)), "연결.svg": connect(),
-           "설비_1_순환.svg": hyd_unit_f("tank suction press pump load ret out"), "설비_2_냉각.svg": hyd_unit_f("ret cooler fan out"),
-           "설비_3_TS1.svg": hyd_unit_f("ret cooler ts1"), "리니지_OT.svg": lineage_zone("OT"), "리니지_IT.svg": lineage_zone("IT"),
-           "원인후보_1.svg": causes_f(0), "원인후보_2.svg": causes_f(1), "원인후보_3.svg": causes_f(2),
-           "관계_만남.svg": relation_f("meet"), "관계_조치.svg": relation_f("act"), "연결_설비쪽.svg": connect_f("asset"),
-           "연결_진단쪽.svg": connect_f("diag"), "지식그래프_지도.svg": kg_map(), "흩어진정보_값.svg": scattered_f("val"), "흩어진정보_MES.svg": scattered_f("mes"),
+           "경로2_1.svg": walk2(1), "경로2_2.svg": walk2(2),
+           "지식그래프_지도.svg": kg_map(),
            "기록_되짚기.svg": record_trail(), "읽기위치_전후.svg": offset_rows(), "리니지_좁히기.svg": lineage_narrow(),
            "종류_네칸.svg": kinds_columns(), "속성_눈금.svg": property_scale(), "관계_이름.svg": relation_named(),
            "채우기_정의변경.svg": fill_or_redefine(), "저장_그림_옳음.svg": stored_not_true(), "증거_세결과.svg": evidence_outcomes()}

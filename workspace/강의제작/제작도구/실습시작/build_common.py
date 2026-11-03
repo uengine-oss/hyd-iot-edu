@@ -1,16 +1,15 @@
 """온라인2 과정별 조회 안내와 포털 탐색의 시작본을 연결."""
-from build_labs import ROOT,OUT,COURSES,page,write,dump,pack
+from build_labs import ROOT,OUT,COURSES,page,write,pack
+from lab_package import entry,register
 from pathlib import Path
-import json,hashlib,shutil,html,argparse
+import json,shutil,argparse
 HERE=Path(__file__).resolve().parent
 parser=argparse.ArgumentParser()
 parser.add_argument('--course',choices=[name for name,_ in COURSES])
 parser.add_argument('--lab',choices=['relations','map'],help='변경한 실습만 재생성한다. 생략하면 기존처럼 두 실습을 만든다.')
 args=parser.parse_args()
 active_courses=[item for item in COURSES if args.course is None or item[0]==args.course]
-catalog=json.loads((HERE/'package-index.json').read_text(encoding='utf-8'))
-ids={f'{slug}-02-{kind}' for _,slug in active_courses for kind in ['relations','map'] if args.lab is None or args.lab==kind}
-catalog['labs']=[x for x in catalog['labs'] if x['id'] not in ids]
+built=[]
 for course,slug in active_courses:
     for number,name,kind in [(1,'02일차_실습1_관계조회','relations'),(2,'02일차_실습2_지식지도탐색','map')]:
         if args.lab is not None and args.lab!=kind:continue
@@ -80,9 +79,8 @@ for course,slug in active_courses:
             write(folder/'준비_안내.md', '포털을 열고 [가이드](guide.html)의 화면 순서대로 진행하세요.\n')
             (folder/'START.md').unlink(missing_ok=True)
         for file in ['guide.html','안내.html']:write(folder/file,page(title,'연결된 대상을 확인하고, 결과의 근거를 원자료와 대조합니다.',sections))
-        archive=pack(folder)
-        catalog['labs'].append({'id':f'{slug}-02-{kind}','course':course,'session':'온라인 02회차','title':title,'version':'2026-11-02-browser-only' if number==1 else '2026-11-02-map-v5-portal','folder':'02회차/랩/'+name,'path':archive.relative_to(ROOT).as_posix(),'sha256':hashlib.sha256(archive.read_bytes()).hexdigest()})
-        catalog['labs'][-1]['entry']='guide' if kind=='map' else 'neo4j'
-catalog['labs'].sort(key=lambda x:(x['course'],x['session'],x['folder']))
-dump(HERE/'package-index.json',catalog)
+        pack(folder)
+        built.append(entry(f'{slug}-02-{kind}',course,'온라인 02회차',title,'2026-11-02-browser-only' if number==1 else '2026-11-02-map-v5-portal',folder,
+                           entry='guide' if kind=='map' else 'neo4j'))
+register(built)
 print('두 과정 조회 가이드·독립 시작본과 포털 탐색 연결')

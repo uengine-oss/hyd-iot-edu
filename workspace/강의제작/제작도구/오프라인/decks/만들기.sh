@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 오프라인 이론 덱 하나를 조립 → 빌드 → 원 PPTX 대조(위치 옮김 포함) → 노트 점검 → 렌더 → 글겹침까지 돌린다.
+# 오프라인 이론 덱 하나를 조립 → 빌드 → 원 PPTX 대조(위치 옮김 포함) → 노트 점검 → 빌더 렌더 → 글겹침까지 돌린다.
 # bash workspace/강의제작/제작도구/오프라인/decks/만들기.sh integrated 01 [렌더 폴더]
 set -euo pipefail
 cd "$(dirname "$0")/../../../../.."
@@ -13,12 +13,10 @@ pptx=workspace/강의제작/산출물/$name/이론_오프라인/${n}회차/${nam
 mkdir -p "$(dirname "$pptx")"
 "$py" workspace/강의제작/제작도구/오프라인/decks/조립.py "$dir"
 "$py" .claude/skills/hyd-course-deck/scripts/deck2pptx.py "$md" "$pptx" | tail -1
-"$py" workspace/강의제작/제작도구/오프라인/decks/대조.py "$md" "$pptx" --fix | tail -3
-"$py" workspace/강의제작/제작도구/오프라인/decks/대조.py "$md" "$pptx" | tail -1
+"$py" workspace/강의제작/제작도구/오프라인/decks/대조.py "$md" "$pptx" --fix
 "$py" workspace/강의제작/제작도구/오프라인/decks/노트점검.py "$md" "$pptx"
 if [ -n "$out" ]; then
-  rm -rf "$out"; mkdir -p "$out"
-  timeout 300 soffice --headless --convert-to pdf --outdir "$out" "$pptx" >/dev/null 2>&1
-  pdftoppm -r 50 -png "$out/$(basename "${pptx%.pptx}").pdf" "$out/p"
+  rm -rf "$out"
+  "$py" .claude/skills/hyd-course-deck/scripts/deck2pptx.py "$pptx" --render "$out"
   "$py" workspace/강의제작/제작도구/기존제작/tools/deck/글겹침.py "$out/$(basename "${pptx%.pptx}").pdf" | tail -3
 fi

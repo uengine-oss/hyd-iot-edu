@@ -29,7 +29,7 @@ def separate(source,png,labels):
   scope={'__file__':str(source),'__name__':'__chart_layer__'};exec(compile(code,str(source),'exec'),scope)
  finally:Figure.savefig=saved;sys.argv=old_argv
  original_targets={Path(target).resolve() for fig,target in captured if isinstance(target,(str,Path))}
- if original_targets & {png,labels,png.with_suffix('.svg')}:raise ValueError('원 생성기의 그림 경로를 출력으로 사용할 수 없음')
+ if original_targets & {png,labels}:raise ValueError('원 생성기의 그림 경로를 출력으로 사용할 수 없음')
  fig=scope.get('fig') or captured[-1][0];fig.canvas.draw();renderer=fig.canvas.get_renderer();w,h=map(float,fig.get_size_inches());dpi=fig.dpi;items=[]
  tick_labels=set();drawn_tick_labels=set()
  for ax in fig.axes:
@@ -41,7 +41,7 @@ def separate(source,png,labels):
   if id(artist) in tick_labels and id(artist) not in drawn_tick_labels:continue
   bb=artist.get_window_extent(renderer);rot=float(artist.get_rotation());color=matplotlib.colors.to_hex(artist.get_color());items.append({'text':artist.get_text(),'center_x_in':(bb.x0+bb.x1)/2/dpi,'center_y_in':h-(bb.y0+bb.y1)/2/dpi,'bbox_w_in':bb.width/dpi,'bbox_h_in':bb.height/dpi,'font_pt':float(artist.get_fontsize()),'font_weight':str(artist.get_fontweight()),'color':color,'rotation_ccw':rot})
  for artist in fig.findobj(match=Text):artist.set_visible(False)
- png.parent.mkdir(parents=True,exist_ok=True);fig.savefig(png,facecolor='white');fig.savefig(png.with_suffix('.svg'),facecolor='white')
+ png.parent.mkdir(parents=True,exist_ok=True);fig.savefig(png,facecolor='white')
  source_name=str(source.relative_to(Path.cwd())) if source.is_relative_to(Path.cwd()) else source.name
  csv_inputs={(str(p.relative_to(Path.cwd())) if p.is_relative_to(Path.cwd()) else p.name):hashlib.sha256(p.read_bytes()).hexdigest() for p in source.parent.glob('*.csv')}
  data={'source':source_name,'source_sha256':hashlib.sha256(source.read_bytes()).hexdigest(),'csv_inputs':csv_inputs,'width_in':w,'height_in':h,'dpi':dpi,'labels':items,'method':'같은 Figure의 Text만 숨김;Line2D·Path·데이터·축lim·spine·눈금선·위치 불변','background_sha256':hashlib.sha256(png.read_bytes()).hexdigest()};labels.write_text(json.dumps(data,ensure_ascii=False,indent=2),'utf8');plt.close(fig);return data

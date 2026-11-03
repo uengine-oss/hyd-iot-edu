@@ -7,12 +7,15 @@
   · pull: 로컬 끝이 원격의 조상일 때만 앞으로. 원격이 고치거나 지운 파일은 로컬이 로컬 끝 판 그대로일 때만 바꾸거나 지우고,
     로컬에서 고친 파일과 겹치면 아무것도 쓰지 않고 멈춘다. 원격이 안 바꾼 파일은 로컬에서 고치거나 지웠어도 그대로 둔다.
   · commit: 원격이 로컬 끝보다 앞서 있으면 커밋하지 않고 pull 을 먼저 하라고 멈춘다.
+  · 이 PC 전용 색인(.git/hyd-workspace.index)은 바뀐 파일만 다시 해시할 뿐 결과는 색인이 없을 때와 같다 — 지운 파일은 빠지고,
+    크기 · 시각이 같게 고친 판도 들어가고, 빼는 자리지만 브랜치에 있는 파일은 pull 이 지금 파일로 견준다.
 실제 git 으로 임시 원격(bare) 하나와 PC 두 대(clone)를 만든다. 이 저장소는 건드리지 않는다. 도구는 그 PC의 workspace/ 에 복사한 것을 그대로 부른다.
 """
 import os
 import shutil
 import subprocess
 import sys
+import time
 
 import pytest
 
@@ -90,6 +93,18 @@ def second_pc(tmp_path, remote):
     return b
 
 
+def branch_put(repo, path, text, msg):
+    """동기화.py가 올리지 않는 자리의 파일을 git으로 직접 workspace 브랜치에 넣어 올린다(빼는 목록이 다른 PC · 옛 판이 올린 브랜치와 같은 모양)."""
+    env = os.environ | {'GIT_INDEX_FILE': str(repo / '.git' / 'test-index')}
+    run = lambda *a, inp=None: subprocess.run(['git', *a], cwd=repo, env=env, check=True, capture_output=True, text=True,
+                                              encoding='utf-8', input=inp).stdout.strip()
+    tip = run('rev-parse', 'refs/heads/workspace')
+    run('read-tree', tip)
+    run('update-index', '--add', '--cacheinfo', f"100644,{run('hash-object', '-w', '--stdin', inp=text)},{path}")
+    run('update-ref', 'refs/heads/workspace', run('commit-tree', run('write-tree'), '-p', tip, '-m', msg), tip)
+    run('push', '-q', 'origin', 'workspace')
+
+
 def modes(repo, ref='HEAD'):
     return {line.split('\t')[1]: line.split()[0] for line in git(repo, 'ls-tree', '-r', ref).splitlines()}
 
@@ -139,14 +154,41 @@ def test_만으로_준_경로가_로컬에서_지워졌으면_브랜치에서도
     assert 'workspace/doc.txt' not in git(a, 'ls-tree', '-r', '--name-only', 'refs/heads/workspace').splitlines()
 
 
-def test_장_그림_폴더와_캐시는_전체_커밋에도_올리지_않는다(origin):
+def test_다시_만드는_장_그림_장_조각_폴더와_캐시는_전체_커밋에도_올리지_않는다(origin):
     _, a = origin
-    for rel in ('슬라이드/덱/s-01.png', '__pycache__/x.pyc', 'keep.txt'):
+    for rel in ('슬라이드/덱/s-01.png', 'tools/video/조각_저장/합성/x.mp4', '__pycache__/x.pyc', 'keep.txt'):
         (a / 'workspace' / rel).parent.mkdir(parents=True, exist_ok=True)
         (a / 'workspace' / rel).write_text('x', encoding='utf-8')
     assert sync(a, 'commit', '전체').returncode == 0
     names = git(a, 'ls-tree', '-r', '--name-only', 'refs/heads/workspace').splitlines()
-    assert 'workspace/keep.txt' in names and not [n for n in names if '슬라이드' in n or '__pycache__' in n]
+    assert 'workspace/keep.txt' in names and not [n for n in names if '슬라이드' in n or '조각_저장' in n or '__pycache__' in n]
+
+
+def test_이_PC_전용_색인을_지워도_있어도_전체_commit은_브랜치_끝과_같은_트리를_만든다(origin):
+    _, a = origin
+    cache = a / '.git' / 'hyd-workspace.index'
+    cache.unlink()                                                      # 처음 받은 PC · 색인을 잃은 PC
+    assert '바뀐 것이 없다' in sync(a, 'commit', '색인 없이').stdout
+    assert cache.is_file() and '바뀐 것이 없다' in sync(a, 'commit', '색인으로').stdout
+
+
+def test_크기도_시각도_같게_곧바로_고친_판도_커밋에_들어간다(origin):
+    _, a = origin
+    git(a, 'config', 'core.checkStat', 'minimal'); git(a, 'config', 'core.trustctime', 'false')   # stat 으로는 못 가르는 가장 거친 설정
+    doc, stamp = a / 'workspace' / 'doc.txt', time.time_ns() + 3600 * 10 ** 9   # 색인보다 늦은 시각 = git 이 stat 을 믿지 않고 내용을 다시 보는 자리
+    doc.write_text('가나\n', encoding='utf-8'); os.utime(doc, ns=(stamp, stamp))
+    assert sync(a, 'status').returncode == 0                            # 이 판이 이 PC 전용 색인에 들어간다
+    doc.write_text('다라\n', encoding='utf-8'); os.utime(doc, ns=(stamp, stamp))
+    assert sync(a, 'commit', '같은 크기').returncode == 0
+    assert git(a, 'show', 'refs/heads/workspace:workspace/doc.txt') == '다라'
+
+
+def test_이_PC_전용_색인에_있던_파일을_로컬에서_지우면_전체_commit에서_빠진다(origin):
+    _, a = origin
+    assert sync(a, 'status').returncode == 0                            # note.txt 가 색인에 있다
+    (a / 'workspace' / 'note.txt').unlink()
+    assert sync(a, 'commit', '지움').returncode == 0
+    assert 'workspace/note.txt' not in git(a, 'ls-tree', '-r', '--name-only', 'refs/heads/workspace').splitlines()
 
 
 def test_만의_경로가_어디에도_없으면_커밋하지_않고_경로를_알린다(origin):
@@ -294,6 +336,18 @@ def test_이_PC에만_있는_파일과_같은_이름을_원격이_다른_내용�
     assert (b / 'workspace' / 'video.mp4').read_text(encoding='utf-8') == '이 PC의 옛 판\n' and git(b, 'rev-parse', 'workspace') == before
     (b / 'workspace' / 'video.mp4').unlink()                           # 안내대로 치우면 받아진다
     assert sync(b, 'pull').returncode == 0 and (b / 'workspace' / 'video.mp4').read_text(encoding='utf-8') == '원격의 새 판\n'
+
+
+def test_빼는_자리지만_브랜치에_있는_파일은_pull이_지금_파일로_견주어_원격_판을_받는다(origin, tmp_path):
+    remote, a = origin
+    branch_put(a, 'workspace/슬라이드/s-01.png', '하나', '빼는 자리 첫 판')
+    b = second_pc(tmp_path, remote)
+    png = b / 'workspace' / '슬라이드' / 's-01.png'
+    assert png.read_text(encoding='utf-8') == '하나'
+    branch_put(a, 'workspace/슬라이드/s-01.png', '둘', '빼는 자리 고친 판')
+    out = sync(b, 'pull')
+    assert out.returncode == 0, out.stderr                             # 「이 PC에서 지웠다」로 잘못 멈추지 않는다
+    assert png.read_text(encoding='utf-8') == '둘'
 
 
 def test_이_PC에서_지운_파일은_되살리지_않는다(origin, tmp_path):

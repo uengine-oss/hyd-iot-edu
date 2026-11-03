@@ -1,7 +1,7 @@
 """통합반 2일차 v3 삽화(SVG)를 만든다. 글자는 넣지 않는다(라벨은 덱 MD의 요소로 얹는다).
 
 사용: python 만들기_삽화.py            → 이 폴더에 SVG를 쓴다
-화풍(색 · 선 굵기 · 그림 조각)은 1일차의 만들기_삽화.py를 복사한 삽화_기본.py에서 가져온다.
+화풍(색 · 선 굵기 · 그림 조각)은 공용 `온라인/tools/deck/삽화_기본.py`에서 가져온다.
 같은 그림을 여러 장에 걸쳐 쓰며 한 번에 한 부분만 밝히는 그림은 stage 인자로 단계별 파일을 낸다.
 """
 from __future__ import annotations
@@ -11,7 +11,7 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(Path(__file__).resolve().parents[4] / "tools" / "deck"))   # 공용 삽화_기본.py
 
 from 삽화_기본 import (  # noqa: E402
     BLUE, GREY, LIGHT, NAVY, NORM, OFF, ON, PALE, SKY, WHITE,
@@ -682,22 +682,8 @@ def main():
         "관계유형.svg": rel_chain(), "들고나는관계.svg": in_out(), "설비모델.svg": model5(),
         "역방향탐색.svg": reverse_walk(), "조인_그래프.svg": join_kg(),
         "속성그래프_대각.svg": prop_graph_kg(), "표기_그래프.svg": notation_kg(),
-        "유형과대상_0.svg": mixed(0), "유형과대상_1.svg": mixed(1), "유형과대상_2.svg": mixed(2),
-        "클래스인스턴스_1.svg": class_inst(1), "클래스인스턴스_2.svg": class_inst(2), "클래스인스턴스_3.svg": class_inst(3),
-        **{f"설비클래스_{i}.svg": gallery(i) for i in range(6)},
-        "속성_1.svg": props(1), "속성_2.svg": props(2), "속성_3.svg": props(3),
-        "설비세대.svg": asset3(), "한계값.svg": limits(),
-        "상속_상위.svg": inherit("parent"), "상속_하위.svg": inherit("child"),
-        "두층_1.svg": two_layers(1), "두층_2.svg": two_layers(2), "두층_3.svg": two_layers(3),
-        "카디널리티.svg": cardinality(), "일대다.svg": card_1n(), "다대다.svg": card_nm(),
-        "공급조건.svg": supplier(), "실수_값노드.svg": mistake_value(),
-        "여러노드.svg": dup(), "공통식별자_1.svg": shared_id(1), "공통식별자_2.svg": shared_id(2),
-        "연결조건_1.svg": endpoint(1), "연결조건_2.svg": endpoint(2),
-        **{f"설계_{i}.svg": classdiagram(i) for i in (1, 2, 3, 4)},
-        "속성그래프_1.svg": prop_graph(1), "속성그래프_2.svg": prop_graph(2), "속성그래프_3.svg": prop_graph(3),
-        "조인_1.svg": join(1), "조인_2.svg": join(2), "결과읽기.svg": result(),
-        "표기_1.svg": notation(1), "표기_2.svg": notation(2), "표기_3.svg": notation(3),
-        "경로질의_1.svg": path_query(1), "경로질의_2.svg": path_query(2), "예시인스턴스.svg": instances5(),
+        "카디널리티.svg": cardinality(),
+        "공통식별자_2.svg": shared_id(2),
     }
     for name, text in out.items():
         assert "<text" not in text

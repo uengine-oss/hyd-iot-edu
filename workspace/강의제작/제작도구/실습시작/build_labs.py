@@ -12,9 +12,9 @@ import html
 import json
 import re
 import shutil
-import zipfile
 
 import data_session2 as D
+from lab_package import GUIDE_CSS as CSS, entry, pack, register   # pack은 build_common · build_conditions · build_session3_*도 여기서 가져간다
 
 ROOT = Path(__file__).resolve().parents[4]
 OUT = ROOT/'workspace/강의제작/산출물'
@@ -27,7 +27,7 @@ VERSION = '2026-11-03-lab-v8'
 
 def write(path, text):
     path.parent.mkdir(parents=True,exist_ok=True)
-    path.write_text(text,encoding='utf-8')
+    path.write_text(text,encoding='utf-8',newline='\n')
 
 def dump(path, value):
     write(path,json.dumps(value,ensure_ascii=False,indent=2)+'\n')
@@ -223,8 +223,6 @@ def reference_model(supply=False,branch='A'):
     nodes,rels=base_graph('A' if supply else branch)
     if supply:supply_part(nodes,rels,branch)
     return schema_for(supply,branch),{'nodes':nodes,'rels':rels}
-
-CSS='''*{box-sizing:border-box}body{margin:0;background:#f4f6f3;color:#20342f;font:17px/1.8 "Malgun Gothic",sans-serif}main{max-width:1000px;margin:auto;padding:52px 28px}h1{font-size:36px;line-height:1.35}h2{font-size:25px;line-height:1.45;margin:0 0 18px}section{background:white;border:1px solid #dce5df;border-radius:16px;padding:30px;margin:24px 0}a{color:#176554;text-underline-offset:4px}nav{display:flex;gap:14px;flex-wrap:wrap}nav a,.button{display:inline-block;background:#e2eee7;padding:8px 16px;border-radius:8px}p{margin:12px 0}li{margin:8px 0}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#edf2ef;padding:18px;border-radius:8px;font-size:15px}code{font-family:Consolas,monospace}table{border-collapse:collapse;width:100%}td,th{padding:12px;border-bottom:1px solid #dce5df;text-align:left;vertical-align:top}img{max-width:100%;height:auto}small{color:#607269}.check{border-left:4px solid #32886a;padding:12px 18px;background:#edf6ef}details{border-top:1px solid #dce5df;margin-top:18px;padding-top:12px}summary{cursor:pointer}'''
 
 def page(title,intro,sections):
     nav=''.join(f'<a href="#s{i}">{i:02d} {html.escape(t)}</a>' for i,(t,_) in enumerate(sections,1))
@@ -477,14 +475,6 @@ TOOLS_GRAPH = {
     ]}
 
 
-def pack(folder):
-    archive=folder.with_suffix('.zip')
-    with zipfile.ZipFile(archive,'w',zipfile.ZIP_DEFLATED) as z:
-        for file in sorted(folder.rglob('*')):
-            if file.is_file() and '__pycache__' not in file.parts and file.name!='.env':
-                z.write(file,file.relative_to(folder.parents[2]))
-    return archive
-
 PICTURE_TYPES = {'.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg', '.avif', '.tif', '.tiff'}
 
 
@@ -517,8 +507,6 @@ def reset_generated(folder):
     for sub in ['자료','입력/자료','입력/자료_변경분']:
         p=folder/sub
         if p.is_dir() and p.resolve()!=D.SOURCE.resolve():shutil.rmtree(p)
-    for old in ['검증_기록.md','설계_검토표.md']:   # 옛 판의 폴더 루트 빈 틀(결과/로 옮김)
-        if (folder/old).is_file():(folder/old).unlink()
 
 
 # ───────────── 단계 랩 — 단계 하나가 START.md 「진행 단계」 한 줄과 guide.html 한 절이 된다 ─────────────
@@ -1200,16 +1188,9 @@ def main():
                 D.write_sources(folder/'입력/자료', practical)
                 D.write_changes(folder/'입력/자료_변경분'/f'{D.CHANGE_DATE}_수정본', practical)
             build_lab(folder, L, photos)
-            archive = pack(folder)
-            relative = archive.relative_to(ROOT).as_posix()
-            catalog.append({'id': f'{slug}-02-' + ('ontology' if number == 3 else 'graph'), 'course': course, 'session': '온라인 02회차', 'title': L['title'],
-                            'version': VERSION, 'folder': f'02회차/랩/{name}', 'path': relative, 'sha256': hashlib.sha256(archive.read_bytes()).hexdigest()})
-    index = TOOLS/'package-index.json'
-    manifest = json.loads(index.read_text(encoding='utf-8')) if index.exists() else {'labs': []}
-    updates = {item['id']: item for item in catalog}
-    manifest['labs'] = [updates.pop(item['id'], item) for item in manifest['labs']]
-    manifest['labs'].extend(updates.values())
-    dump(index, manifest)
+            pack(folder)
+            catalog.append(entry(f'{slug}-02-' + ('ontology' if number == 3 else 'graph'), course, '온라인 02회차', L['title'], VERSION, folder))
+    register(catalog)
     print('두 과정 설계·구현 시작본 4개, ZIP 4개 생성')
 
 

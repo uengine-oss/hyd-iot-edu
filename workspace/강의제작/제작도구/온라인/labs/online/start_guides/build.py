@@ -9,17 +9,19 @@ ZIP에는 랩 폴더만 넣는다. 강사 대본(../../대본)은 넣지 않는�
 검사(실패하면 좌표를 찍고 종료 코드 1):
 - START.md와 생성한 안내.html의 상대 링크가 랩 폴더 안의 실제 파일을 가리키는가
 - 학생 파일에 제작 지시 문구(「제작 참고용」「낭독하지 않음」「강사 대본」)가 없는가
-- ZIP을 새 폴더에 풀었을 때 START.md·안내.html이 있고 안내.html의 링크가 풀린 폴더 안에서 통하는가
+- ZIP이 랩 폴더와 경로 · 내용이 같고, 풀었을 때 START.md·안내.html이 있고 그 링크가 ZIP 안에서 통하는가
+ZIP 쓰기는 실습시작/lab_package.py, 검사는 실습시작/verify_packages.py(check_zip · forbidden_hits · link_errors) 한 곳을 부른다.
 """
 from __future__ import annotations
 
 import html
 import re
 import sys
-import tempfile
-import zipfile
 from pathlib import Path
-from urllib.parse import unquote
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[4] / "실습시작"))
+import lab_package  # noqa: E402
+from verify_packages import check_zip, forbidden_hits, link_errors  # noqa: E402
 
 CSS = (
     "*{box-sizing:border-box}body{margin:0;background:#f4f6f3;color:#20342f;"
@@ -35,9 +37,7 @@ CSS = (
     "small{color:#607269}details{border-top:1px solid #dce5df;margin-top:18px;padding-top:12px}"
     "summary{cursor:pointer}"
 )
-FORBIDDEN = ("제작 참고용", "낭독하지 않음", "강사 대본", "비낭독")
-SKIP_PARTS = {"__pycache__", ".pytest_cache"}
-STUDENT_TEXT = {".md", ".txt", ".html", ".json", ".csv", ".py", ".bpmn"}
+KEEP_ALL = frozenset()  # .env 틀도 넣는다(실전반 04-2 코드/.env — verify_packages.TEMPLATES)
 
 
 class BuildError(Exception):
@@ -166,12 +166,7 @@ def render(md: str) -> tuple[str, str, list[tuple[str, str]]]:
 
 
 def student_files(lab: Path) -> list[Path]:
-    files = []
-    for p in sorted(lab.rglob("*")):
-        if p.is_dir() or SKIP_PARTS & set(p.parts) or p.suffix == ".pyc":
-            continue
-        files.append(p)
-    return files
+    return lab_package.student_files(lab, KEEP_ALL)
 
 
 def tree(lab: Path) -> str:
@@ -182,22 +177,6 @@ def tree(lab: Path) -> str:
             continue
         items.append(f'<li><a href="{html.escape(rel)}">{html.escape(rel)}</a></li>')
     return "<details><summary>받은 폴더의 파일</summary><ul>" + "".join(items) + "</ul></details>"
-
-
-def links_of(text: str) -> list[str]:
-    found = re.findall(r'href="([^"]+)"', text) + re.findall(r"\]\(([^)\s]+)\)", text)
-    return [h for h in found if not re.match(r"^(https?:|mailto:|#)", h)]
-
-
-def check_links(base: Path, doc: Path, text: str, root: Path) -> list[str]:
-    errors = []
-    for href in links_of(text):
-        target = (doc.parent / unquote(html.unescape(href)).split("#")[0]).resolve()
-        if root.resolve() not in target.parents and target != root.resolve():
-            errors.append(f"{doc.relative_to(base)}: 랩 폴더 밖 링크 {href}")
-        elif not target.exists():
-            errors.append(f"{doc.relative_to(base)}: 없는 파일 링크 {href}")
-    return errors
 
 
 def build_guide(lab: Path) -> str:
@@ -217,51 +196,6 @@ def build_guide(lab: Path) -> str:
     )
 
 
-def forbidden_hits(lab: Path) -> list[str]:
-    hits = []
-    for p in student_files(lab):
-        if p.suffix not in STUDENT_TEXT:
-            continue
-        text = p.read_text(encoding="utf-8", errors="replace")
-        for word in FORBIDDEN:
-            for n, line in enumerate(text.splitlines(), 1):
-                if word in line:
-                    hits.append(f"{p.relative_to(lab.parent)}:{n}: 제작 지시 문구 「{word}」")
-    return hits
-
-
-def zip_lab(lab: Path) -> Path:
-    session = lab.parent.parent.name  # NN회차
-    out = lab.parent / f"{lab.name}.zip"
-    with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as zf:
-        for p in student_files(lab):
-            zf.write(p, f"{session}/랩/{lab.name}/{p.relative_to(lab).as_posix()}")
-    return out
-
-
-def verify_zip(zpath: Path, lab: Path) -> list[str]:
-    errors = []
-    with tempfile.TemporaryDirectory() as tmp:
-        with zipfile.ZipFile(zpath) as zf:
-            names = zf.namelist()
-            if any("/대본/" in n for n in names):
-                errors.append(f"{zpath.name}: 강사 대본이 들어 있음")
-            zf.extractall(tmp)
-        root = Path(tmp) / lab.parent.parent.name / "랩" / lab.name
-        for need in ("START.md", "안내.html"):
-            if not (root / need).exists():
-                errors.append(f"{zpath.name}: 풀었을 때 {need} 없음")
-        guide = root / "안내.html"
-        if guide.exists():
-            errors += [f"{zpath.name} 안: {e}" for e in check_links(root, guide, guide.read_text(encoding="utf-8"), root)]
-        start = root / "START.md"
-        if start.exists():
-            errors += [f"{zpath.name} 안: {e}" for e in check_links(root, start, start.read_text(encoding="utf-8"), root)]
-        if len(names) != len(student_files(lab)):
-            errors.append(f"{zpath.name}: 파일 수 {len(names)} ≠ 랩 폴더 {len(student_files(lab))}")
-    return errors
-
-
 def main(argv: list[str]) -> int:
     check_only = "--check" in argv
     labs = [Path(a) for a in argv if a != "--check"]
@@ -278,19 +212,25 @@ def main(argv: list[str]) -> int:
         except BuildError as exc:
             errors.append(f"{lab}: {exc}")
             continue
-        start = lab / "START.md"
-        errors += check_links(lab, start, start.read_text(encoding="utf-8"), lab)
         if not check_only:
-            (lab / "안내.html").write_text(guide, encoding="utf-8")
+            (lab / "안내.html").write_text(guide, encoding="utf-8", newline="\n")
         elif (lab / "안내.html").read_text(encoding="utf-8") != guide:
             errors.append(f"{lab}/안내.html: START.md와 다름(다시 생성 필요)")
-        errors += check_links(lab, lab / "안내.html", guide, lab)
-        errors += forbidden_hits(lab)
+        files = {p.relative_to(lab).as_posix(): p.read_bytes() for p in student_files(lab)}
+        files["안내.html"] = guide.encode("utf-8")
+        errors += [f"{lab.name}/{e}" for e in link_errors(files, docs={"START.md", "안내.html"})]
+        errors += forbidden_hits((f"{lab.name}/{name}", data) for name, data in files.items())
         zpath = lab.parent / f"{lab.name}.zip"
         if not check_only:
-            zpath = zip_lab(lab)
+            try:
+                zpath = lab_package.pack(lab, KEEP_ALL)
+            except ValueError as exc:
+                errors.append(str(exc))
         if zpath.exists():
-            errors += verify_zip(zpath, lab)
+            zip_errors, notes = check_zip(zpath, lab, need=("START.md", "안내.html"), exclude_names=KEEP_ALL)
+            errors += zip_errors
+            for note in notes:
+                print("참고:", note)
         else:
             errors.append(f"{zpath}: ZIP 없음(다시 생성 필요)")
         print(f"{'검사' if check_only else '생성'}: {lab} ({len(student_files(lab))}개 파일)")

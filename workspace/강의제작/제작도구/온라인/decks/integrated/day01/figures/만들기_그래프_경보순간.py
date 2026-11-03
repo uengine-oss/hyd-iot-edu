@@ -1,4 +1,8 @@
-"""경보가 나는 순간의 유온 TS1(실제 기록). 데이터는 그래프_데이터_tag_1s.csv(TimescaleDB tag_1s를 SELECT로 읽은 것)."""
+"""경보가 나는 순간의 유온 TS1(실제 기록). 데이터는 그래프_데이터_tag_1s.csv(TimescaleDB tag_1s를 SELECT로 읽은 것).
+
+사용: python workspace/강의제작/제작도구/기존제작/tools/deck/그래프글자분리.py <이 파일> 그래프_경보순간_곡선.png 그래프_경보순간_라벨.json
+      (덱은 글자 없는 곡선 PNG와 라벨 JSON을 쓴다 — 이 파일은 그림을 저장하지 않는다)
+"""
 import csv
 from datetime import datetime
 from pathlib import Path
@@ -47,5 +51,4 @@ ax.xaxis.set_major_locator(mdates.SecondLocator(bysecond=[0, 10, 20, 30, 40, 50]
 ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M:%S"))
 ax.set_xlabel("2026-10-10 실제 시각", color=MUTED, fontsize=11)
 fig.subplots_adjust(left=0.1, right=0.95, top=0.92, bottom=0.12)
-fig.savefig(HERE / "그래프_경보순간_TS1.png", facecolor="white")
 print("cross", cross, "alert", alert, "sec", (alert - cross).total_seconds())

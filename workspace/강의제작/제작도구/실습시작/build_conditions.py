@@ -3,21 +3,16 @@
 원자료는 data_conditions.py가 만든다(3회차 판정 랩과 같은 묶음). 강사 완성 조건표는 reference/session3/rules.csv이며
 다음 회차 실전 실습2의 입력/rules.csv로 그대로 들어간다. 계약에는 형식·뜻만 적는다.
 """
-from build_labs import ROOT, OUT, page, write, dump, pack, RULES
+from build_labs import OUT, page, write, pack, RULES
 from build_session3_judgement import TABLE_CONTRACT, RULES_CHECK, STEP_TIPS, DATA_INTRO, force_template
 from data_conditions import build as build_data
-from pathlib import Path
-import hashlib
-import json
+from lab_package import entry, register
 import shutil
 
-HERE = Path(__file__).resolve().parent
 VERSION = '2026-10-28-conditions-v5-rh3'
 folder = OUT/'실전반/실습/02회차/랩/02일차_실습5_조치조건표'
 DOCS = ['HM-8_매뉴얼.md', '규칙_원문.txt', '작업기준.md', 'HI-01_보충매뉴얼.md', '수집_설명.md', 'targets.csv']
 RAW = ['경보_목록.csv', 'PLC_상태_수신.csv', '팬_운전_카운터.csv', '예측_결과.csv']
-# 옛 판(폴더 맨 위에 원자료·입력틀)의 파일. 새 판은 자료/·결과/로 옮겼다.
-OBSOLETE = ['HM-8_매뉴얼.md', '규칙_원문.txt', '사례_입력.csv', '작업기준.md', '조건표_입력틀.csv', '판단기록_입력틀.md']
 
 CHECK = r'''"""결과/조건표.csv의 구조 검사와 판단기록.md 기록 칸 확인. 의미 정답은 판정하지 않는다."""
 from pathlib import Path
@@ -154,9 +149,6 @@ RECORD = '''# 판단 기록
 
 def main():
     data, _ = build_data()
-    for name in OBSOLETE:
-        if (folder/name).exists():
-            (folder/name).unlink()
     if (folder/'자료').is_dir():
         shutil.rmtree(folder/'자료')
     for name in DOCS + RAW:
@@ -181,11 +173,8 @@ def main():
         ('저장하고 다시 읽기', '<p>조건표의 각 행에서 원문 절을 찾을 수 있는지 확인하세요. 조건표.csv와 판단기록.md를 저장하고 다시 엽니다.</p><p>후보 유지는 실행 승인이 아닙니다. 이번 실습에서는 표와 기록만 작성합니다.</p><p>보관할 결과는 USB 또는 개인 클라우드에 복사하세요.</p><p>다음 회차에는 완성된 조건표로 경보 사례 전체의 조치 검토 결과를 만들고 매뉴얼 근거를 연결합니다.</p>')]
     for filename in ['guide.html', '안내.html']:
         write(folder/filename, page('조치 조건과 판단 근거 정리하기', '원문 조건을 조치 조건표로 옮기고, 경보 사례의 원자료로 경계값·겹치는 조건·값 없음을 확인합니다.', sections))
-    archive = pack(folder)
-    catalog = json.loads((HERE/'package-index.json').read_text(encoding='utf-8'))
-    catalog['labs'] = [x for x in catalog['labs'] if x['id'] != 'practical-02-conditions']
-    catalog['labs'].append({'id': 'practical-02-conditions', 'course': '실전반', 'session': '온라인 02회차', 'title': '조치 조건과 판단 근거 정리하기', 'version': VERSION, 'folder': '02회차/랩/'+folder.name, 'path': archive.relative_to(ROOT).as_posix(), 'sha256': hashlib.sha256(archive.read_bytes()).hexdigest()})
-    dump(HERE/'package-index.json', catalog)
+    pack(folder)
+    register([entry('practical-02-conditions', '실전반', '온라인 02회차', '조치 조건과 판단 근거 정리하기', VERSION, folder)])
     print('실전반 조건표 가이드·독립 ZIP·목록 동기화')
 
 
