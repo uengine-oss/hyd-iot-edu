@@ -4,7 +4,7 @@
 
 스킬 `hyd-task`의 순서를 밟는다: **작업 폴더 → 읽을 문서(많아야 2개) → 만들기 · 검사 → 제자리에 넣기(최신 하나만) → 두 브랜치 동기화 → 작업 폴더 정리.** 열린 작업 폴더(`작업/<날짜>_<제목>/`)가 있으면 그 `스펙.md` · `기록.md`부터 읽고 잇는다. 대화 요약 뒤의 원문 완독은 hyd-task 2절이다(Claude는 `.claude/hooks/guide_gate.py`가 읽기 전 편집을 막고, Codex는 `.codex/hooks.json`이 안내한다).
 
-- 기존 대화의 확정 결정 · 완료 증거 · 실패 원인을 이어받고, 끝낸 일은 반복하지 않는다. 첫 조회는 git · 실행 상태와 작업 폴더 기록의 차이만 본다.
+- 기존 대화의 확정 결정 · 완료 증거 · 실패 원인을 이어받고, 끝낸 일은 반복하지 않는다.
 - 완료 조건에 직접 기여하는 묶음 하나를 끝낸 뒤 다음으로 간다. 유료 실행은 목적 · 성공 기준 · 상한을 정하고, 실패한 같은 조건을 재실행하지 않는다.
 - 딱 봤을 때 정말 필요한가로 본다 — 분명히 필요 없는 것(지금 수업 · 개발에 쓰이지 않거나 최신 판이 따로 있는 것)과 판단이 서지 않는 것을 나눠, 「이건 이런 건데 필요합니까」로 묻는다("알아서 해"로 맡겼으면 분명한 것은 지우고 애매한 것만 묻는다, 지운 것은 git 이력에 있다). 같은 사실은 한 곳에만 쓰고 나머지는 가리킨다.
 
@@ -26,13 +26,13 @@
 ## 2. 브랜치와 동기화
 
 - 브랜치는 main · workspace 둘뿐이다(다른 브랜치 · 태그를 만들지 않는다). main은 `.gitignore`로 `workspace/` · `작업/` · 루트 작업 파일을 무시한다. workspace는 main과 이력을 공유하지 않고 병합하지 않는다.
-- 동기화는 `PYTHONUTF8=1 .venv314/Scripts/python.exe workspace/동기화.py` 하나로 한다 — `commit "메시지" [main 경로 …] [--만 workspace 경로 …]`(workspace = 그 시점 모습 그대로, 다른 작업 폴더가 열려 있으면 `--만`으로 그 경로만, main = 준 경로만) → `push`(origin에 없는 두 브랜치 커밋 하나하나의 키 검사 0일 때만, 강제 push 없음). push · 지우기는 기본으로 먼저 묻고, 사용자가 "알아서 해"로 맡긴 작업이면 묻지 않는다(헌법 4절). 받기는 `pull`. 사용법 전부는 그 파일 머리에 있다.
+- 동기화는 `PYTHONUTF8=1 .venv314/Scripts/python.exe workspace/동기화.py` 하나로 한다 — `commit "메시지" [main 경로 …] [--만 workspace 경로 …]`(workspace = 그 시점 모습 그대로, 다른 작업 폴더가 열려 있으면 `--만`으로 그 경로만, main = 준 경로만) → `push`(origin에 없는 두 브랜치 커밋 하나하나의 키 검사 0일 때만, 강제 push 없음). 커밋은 그 일을 맡은 세션이 한다. 시작과 커밋 직전에 `status`로 실제 HEAD · 원격 · 미커밋을 보고 다른 세션의 미커밋은 보존한다. push · 지우기는 기본으로 먼저 묻고, 사용자가 "알아서 해"로 맡긴 작업이면 묻지 않는다(헌법 4절). 받기는 `pull`이고 rebase · reset · stash는 하지 않는다. 사용법 전부는 그 파일 머리에 있다.
 - 노션 · 학생 링크는 커밋 고정 주소라 이력을 다시 쓰거나 브랜치를 지우지 않는다. 공개 저장소다 — 키 · 개인 정보 · 실물 매뉴얼 PDF를 어느 브랜치에도 올리지 않는다.
 
 ## 3. 기록
 
 - 진행 · 결정 · 남은 일은 그 작업 폴더의 `기록.md` 하나에 지금 상태만 고쳐 쓴다(덧붙여 쌓지 않는다). 확정되면 최종본은 산출물로 바꿔 끼우고, 재료는 제작도구로 옮기고, 동기화한 뒤 `동기화.py 정리 --실행`으로 폴더째 지운다.
-- 정해진 규칙은 그 규칙이 들어간 산출물 문서마다 그 자리를 다시 써서 합친다 — 덧붙이기 · 문서 안 중복 · 문서 사이 충돌 · 찌꺼기 0. 고친 뒤 `workspace/강의제작/제작도구/검사/재편검사.py` 오류 0.
+- 정해진 규칙은 그 규칙이 들어간 산출물 문서마다 그 자리를 다시 써서 합친다 — 덧붙이기 · 문서 안 중복 · 문서 사이 충돌 · 찌꺼기 0. 여섯 문서가 함께 따르는 절차는 한 곳에 두고 가리키기만 한다 — 재독 · 검토 · 승인 범위 · 보고 꼴은 `hyd-task` 2 · 3절, 브랜치 · 커밋은 이 문서 2절. 고친 뒤 `workspace/강의제작/제작도구/검사/재편검사.py` 오류 0.
 - 실패는 파일:줄로 적는다. 실행한 것만 「됐다」고 쓰고, 안 잰 것은 미검증으로 남긴다.
 
 ## 4. 시스템 규칙
@@ -73,4 +73,4 @@
 | 워커 | 개발용 호스트 워커 `bash workspace/개발/scripts/run_worker_host.sh`(먼저 컨테이너 워커를 멈춘다 — 스크립트가 검사). 멈출 때는 `workspace/개발/scripts/stop_worker_host.ps1` 또는 PowerShell `Get-CimInstance Win32_Process \| ? CommandLine -like '*worker.main*'` → `taskkill //PID //F`, 포트 8097이 내려갔는지 확인. 워커 1개가 python 2개로 보인다 |
 | compose 값 바꾸기 | 이 PC에서만(배속 · 호스트 워커 주소 · 포털 화면 바로 보기 등) 저장소 루트 `compose.override.yaml`(git 무시 — compose가 저절로 합친다). 쓰는 법은 RUNBOOK. `.env`에 수업 값을 적어도 compose가 읽지 않고 시작이 그 줄을 끈다 |
 | Docker | Docker Desktop(메모리 4 GB 이상). 꺼져 있으면 직접 켜고 `docker info` 응답을 기다린다 |
-| 렌더 · 영상 도구 | PATH에 없다. `ffmpeg` · `ffprobe`는 `%LOCALAPPDATA%/Microsoft/WinGet/Packages/Gyan.FFmpeg_*/ffmpeg-*/bin`, `pdftoppm`은 `.../oschwartz10612.Poppler_*/poppler-*/Library/bin`, `soffice`는 `C:/Program Files/LibreOffice/program`. 명령 앞에서 그 폴더를 PATH에 더한다 |
+| 렌더 · 영상 도구 | PATH에 없다. `ffmpeg` · `ffprobe`는 `%LOCALAPPDATA%/Microsoft/WinGet/Packages/Gyan.FFmpeg_*/ffmpeg-*/bin`, `pdftoppm`은 `.../oschwartz10612.Poppler_*/poppler-*/Library/bin`, `soffice`는 `C:/Program Files/LibreOffice/program`. 명령 앞에서 그 폴더를 PATH에 더한다. Git Bash에서는 `$(cygpath -u "$LOCALAPPDATA")`로 경로를 잡는다(역슬래시 경로는 따옴표 없이 쓰면 글로브가 안 먹고, PATH에 넣으면 `C:`의 콜론에서 갈라진다) |

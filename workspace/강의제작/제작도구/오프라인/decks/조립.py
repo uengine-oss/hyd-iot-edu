@@ -74,15 +74,12 @@ def main():
         def fig(m):
             p = (md.parent / m.group(2)).resolve()
             assert p.is_file(), f'{src} {it["n"]}장 {m.group(1)} 파일 없음: {p}'
-            return f"- {m.group(1)}: {os.path.relpath(p, folder)}"
+            return f"- {m.group(1)}: {Path(os.path.relpath(p, folder)).as_posix()}"
         screen = re.sub(r'^- (그림|라벨(?=: .+\.json$)): (.+)$', fig, screen, flags=re.M)
         for old, rep in it.get('note_edits', []):
             assert screen.count(old) == 1, f'{src} {it["n"]}장 노트 고칠 곳이 한 번이 아님: {old}'
             screen = screen.replace(old, rep)
-        edits = '; '.join(f'「{o}」→「{r}」' for o, r in it.get('note_edits', []))
-        basis = f"[출처] 온라인 {COURSE[course]} {int(day[3:])}회차 {it['n']}장. 화면은 원 장 그대로" + \
-                (f", 노트 고침: {edits}" if edits else ", 노트는 원 장 그대로") + \
-                (f", [다음]은 새 순서의 구절 「{it['next']}」" if 'next' in it else '') + '.'
+        basis = f"[출처] 온라인 {COURSE[course]} {int(day[3:])}회차 {it['n']}장과 그 장의 제작 기준."
         items.append(dict(title=title_of(b), screen=screen, layout=section(b, '화면 구성'), basis=basis, it=it,
                           src=(src, it['n'])))
     assert not new, f'새장.md에 쓰이지 않은 장: {list(new)}'
@@ -98,7 +95,6 @@ def main():
             assert x['title'] == '정답과 판단 기준', f"마지막 장이 정답과 판단 기준이 아님: {x['title']}"
             assert spec.get('note_end'), '구성.json에 note_end(실습 · 다음 회차 연결)가 없음'
             nxt = ' / '.join([f'· {t}' for t in spec['note_end']] + [nxt])
-            x['basis'] += ' 노트 끝에 실습과 다음 회차로 잇는 말(구성.json note_end)을 덧붙였다.'
         if not re.search(r'^- 노트: ', screen, re.M):
             raise SystemExit(f"{i + 1}장 「{x['title']}」 노트 없음")
         screen = re.sub(r'^(- 노트: .*?)(?: / )?\[다음\][^\n]*$', lambda m: f"{m.group(1)} / {nxt}", screen, flags=re.M) \

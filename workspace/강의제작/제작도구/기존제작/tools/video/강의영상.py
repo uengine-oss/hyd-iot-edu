@@ -27,7 +27,7 @@ ap.add_argument("--breath", action="store_true", help="쉴 자리를 쉼_저장/
 ap.add_argument("--natural", action="store_true", help="장 안에는 쉼을 넣지 않고 음성 모델이 읽은 그대로 둔다(장 넘김에만 쉼)")
 ap.add_argument("--pause-short", dest="pause_short", type=float, default=0.35); ap.add_argument("--pause-mid", dest="pause_mid", type=float, default=0.8); ap.add_argument("--pause-long", dest="pause_long", type=float, default=1.3)
 ap.add_argument("--pause-sentence", dest="pause_sentence", type=float, default=0.25); ap.add_argument("--pause-question", dest="pause_question", type=float, default=0.6); ap.add_argument("--pause-para", dest="pause_para", type=float, default=0.9)
-a = ap.parse_args()
+a = ap.parse_args() if __name__ == "__main__" else ap.parse_args(["_", "_"])   # 음성견적.py가 이 파일의 함수 · 기본값을 불러 쓴다
 V4 = bool(re.match(r"eleven_v[34]", a.model))   # 빠르기 설정이 없는 모델. 읽은 그대로 두는 것이 기본이다
 if V4 and not a.breath: a.natural = True
 CACHE = HERE / "음성_저장"
@@ -79,8 +79,13 @@ def slides_text(script, study_waits=None):
     return out
 
 
+def cache_key(text, voice, model, speed):
+    """음성 캐시의 파일 이름. 글 · 목소리 · 모델 · 빠르기가 같으면 같은 음성이다."""
+    return hashlib.sha1(json.dumps([text, voice, model, speed], ensure_ascii=False).encode()).hexdigest()[:16]
+
+
 def tts(text, prev, nxt):
-    h = hashlib.sha1(json.dumps([text, a.voice, a.model, a.speed], ensure_ascii=False).encode()).hexdigest()[:16]
+    h = cache_key(text, a.voice, a.model, a.speed)
     mp3, js = CACHE / f"{h}.mp3", CACHE / f"{h}.json"
     if mp3.exists() and js.exists(): return mp3, json.loads(js.read_text()), 0
     body = {"text": text, "model_id": a.model, "previous_text": prev[-400:], "next_text": nxt[:400],
@@ -327,16 +332,17 @@ def make(S, pptx, name, study_waits=None):
     print("\n".join(rep[2:6]))
 
 
-OUT = Path(a.out)
-jobs, total, bad = [], 0, 0
-for sc in a.scripts:
-    study_waits = {}
-    S, pptx, name, probs = check(sc, study_waits)
-    chars = sum(len(t) for _, _, t in S); total += chars; bad += bool(probs)
-    print(f"{name} · SLIDE {S[0][0]}~{S[-1][1]} · 구획 {len(S)}개 · {chars}자" + "".join(f"\n  ! {p}" for p in probs))
-    jobs.append((S, pptx, name, study_waits))
-print(f"합계 {len(jobs)}편 · {total}자")
-if bad: sys.exit(f"점검에 걸린 파일이 {bad}개 있다. 고친 뒤 다시 돌린다")
-if a.dry: sys.exit()
-OUT.mkdir(parents=True, exist_ok=True); CACHE.mkdir(exist_ok=True)
-for job in jobs: make(*job)
+if __name__ == "__main__":
+    OUT = Path(a.out)
+    jobs, total, bad = [], 0, 0
+    for sc in a.scripts:
+        study_waits = {}
+        S, pptx, name, probs = check(sc, study_waits)
+        chars = sum(len(t) for _, _, t in S); total += chars; bad += bool(probs)
+        print(f"{name} · SLIDE {S[0][0]}~{S[-1][1]} · 구획 {len(S)}개 · {chars}자" + "".join(f"\n  ! {p}" for p in probs))
+        jobs.append((S, pptx, name, study_waits))
+    print(f"합계 {len(jobs)}편 · {total}자")
+    if bad: sys.exit(f"점검에 걸린 파일이 {bad}개 있다. 고친 뒤 다시 돌린다")
+    if a.dry: sys.exit()
+    OUT.mkdir(parents=True, exist_ok=True); CACHE.mkdir(exist_ok=True)
+    for job in jobs: make(*job)
