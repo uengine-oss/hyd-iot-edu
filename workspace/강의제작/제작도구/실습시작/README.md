@@ -23,7 +23,7 @@ python workspace/강의제작/제작도구/실습시작/test_launcher.py
 
 | 학생 ZIP(두 과정 합) | 생성기(`제작도구/` 기준, 이름만 있으면 이 폴더) | 지금 |
 |---|---|---|
-| 02회차 실습3 온톨로지설계 · 실습4 그래프구현과검증 (4) | `build_labs.py` | 생성기(`VERSION` v7)가 배포본(v6-rh4)보다 앞서 있어 돌리면 네 랩이 함께 바뀐다 — 배포 판을 정하기 전에는 `lab_package.py` |
+| 02회차 실습3 온톨로지설계 · 실습4 그래프구현과검증 (4) | `build_labs.py` | 같다 — 생성기 `VERSION` · `package-index.json` · `catalog.json` · ZIP이 모두 v9. 돌리면 네 랩이 함께 다시 묶인다 |
 | 02회차 실습1 관계조회 · 실습2 지식지도탐색 (4) | `build_common.py [--course 과정] [--lab relations\|map]` | 같다 — 돌리면 관계조회는 Neo4j로 바로 열리는 판이 되고 두 랩의 START.md가 지워진다 |
 | 실전반 02회차 실습5 조치조건표 (1) | `build_conditions.py` | 실행 불가 — `data_conditions.py:150`이 main에 없는 `plantsim.thermal.equilibrium_ts1`을 부른다 |
 | 03회차 실습1 조치결과비교 (2) | `build_session3_whatif.py` | |
@@ -45,7 +45,7 @@ python workspace/강의제작/제작도구/실습시작/test_launcher.py
 - 온라인2 그래프: 앞 단계 완성 모델 + `lab_db.py` 환경 준비. 이번 적재·조회 로직은 제공하지 않는다.
 - 오프라인1 적재: 승인 편성의 제공 절차에 따라 `offline_load.py`와 질문을 제공한다. 온라인 구현 ZIP에 넣지 않는다. 설비 3대 작은 모델(노드 44 · 관계 57, 커밋 160f846a의 `reference/통합반`에서 고정, 온라인 2회차 모델 `data_session2.py`와 별개)의 정본은 두 과정 `01일차_오프라인_모델과질문/입력/`의 `graph.json` · `schema.json`이다.
 - 실전반 조건표: 기존 원문·사례·입력틀, 학생용 START·가이드. 결과 조건표와 판단 기록은 학생이 작성한다.
-- `reference/`와 `verify_reference.py`는 강사 제작용이며 학생 ZIP 밖에 둔다.
+- `reference/`와 `verify_reference.py`는 강사 제작용이며 학생 ZIP 밖에 둔다. 학생 ZIP 하나로 장난감 시험(코딩랩.md K요-14)을 돌리는 도구는 `reference/ai_toy_test.py`다(쓰는 법은 그 파일 머리).
 
 ## 실행과 촬영의 구분
 
