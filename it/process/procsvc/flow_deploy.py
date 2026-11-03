@@ -126,7 +126,7 @@ def deploy_reset(rt, by: str, reason: str | None = None, include_class: bool = F
             defn = rt.definition_for({'proc_def_id': head['id'], 'tenant_id': rt.tenant_id, 'proc_def_version': head['prod_version']})
             kept.append({'definition': head['id'], 'name': defn.name, 'version': head['prod_version'], 'patterns': alert_patterns(defn.raw),
                          'deployed_at': head.get('deployed_at'), 'deployed_by': head.get('deployed_by'),
-                         'text': f'{defn.name}({head["id"]}@{head["prod_version"]}) — 강사가 배포한 수업 흐름이라 남김'})
+                         'text': f'{defn.name}({head["id"]}@{head["prod_version"]}) — 수업 흐름이라 남김'})
             continue
         row = rt.repo.clear_deployment(head['id'], rt.tenant_id, actor=by, reason=reason)
         rt.hooks.audit('-', by, 'DEFINITION_WITHDRAWN', {'definition': head['id'], 'previous_version': head['prod_version'], 'reason': reason,
@@ -148,7 +148,7 @@ def deploy_reset(rt, by: str, reason: str | None = None, include_class: bool = F
     else:
         message = '이미 기준 흐름입니다'
     if kept:
-        message += f' · 강사가 배포한 수업 흐름 {len(kept)}개({names})는 경보 경로에 그대로 남겼습니다'
+        message += f' · 수업 흐름 {len(kept)}개({names})는 경보 경로에 그대로 남겼습니다'
     return {'changes': changes, 'kept': kept, 'include_class': bool(include_class), 'already_reference': not changes and not kept,
             'message': message, 'routes': routes(rt)}
 
@@ -198,7 +198,7 @@ def compare_with_reference(rt, def_id: str, version: str | None = None) -> dict:
     target = compare_base(rt, def_id, row['definition'])
     if target is None:
         raise NoComparisonBase(f"「{row['definition'].get('processDefinitionName') or def_id}」에는 견줄 기준 흐름이 없습니다 — 경보로 시작하는 학생 흐름만 "
-                               '「그 경보를 원래 여는 흐름」과 견줍니다(강사가 설치한 수업 흐름은 그 자체가 기준입니다)')
+                               '「그 경보를 원래 여는 흐름」과 견줍니다(수업 흐름은 그 자체가 기준입니다)')
     base = rt.repo.get_proc_def(target['definition'], rt.tenant_id, version=target['version'])
     if not base or not base.get('definition'):
         raise LookupError(f"기준 판본 원문이 없습니다: {target['definition']}@{target['version']}")

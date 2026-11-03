@@ -170,6 +170,20 @@ SKILL_PATH = re.compile(r"(?:\.claude|\.agents)[/\\]+skills[/\\]+(?P<name>[a-z0-
 SKILL_TOOLS = frozenset({"Skill"})
 
 
+def skill_files(tool: str | None, tool_input) -> list[tuple[str, str]]:
+    """도구 호출 하나가 연 스킬 파일 (스킬 이름, 파일) — Skill 도구는 SKILL.md, 다른 도구는 입력 속 스킬 폴더 경로."""
+    found: list[tuple[str, str]] = []
+    if (tool or "") in SKILL_TOOLS:
+        data = tool_input if isinstance(tool_input, dict) else {}
+        name = str(data.get("skill") or data.get("command") or data.get("name") or "").strip().lstrip("/")
+        if name:
+            found.append((name, "SKILL.md"))
+    text = tool_input if isinstance(tool_input, str) else json.dumps(tool_input, ensure_ascii=False, default=str)
+    for m in SKILL_PATH.finditer(text or ""):
+        found.append((m.group("name"), re.sub(r"[\\/]+", "/", m.group("file")).rstrip("/")))
+    return found
+
+
 def skill_entry(skill: dict, *, text: str, path: str, source: str) -> dict:
     """One provided skill as the run had it: the hash is of the SKILL.md written into the workspace, so the record says which
     text the run saw even after the skill row is edited (tenant_skills keeps no versions)."""
@@ -217,23 +231,13 @@ class SkillReads:
         self._seen: set[tuple[str, str]] = set()
 
     def on_tool_start(self, event: ExecEvent) -> list[UiEvent]:
-        found: list[tuple[str, str]] = []
-        if (event.tool or "") in SKILL_TOOLS:
-            data = event.tool_input if isinstance(event.tool_input, dict) else {}
-            name = str(data.get("skill") or data.get("command") or data.get("name") or "").strip().lstrip("/")
-            if name:
-                found.append((name, "SKILL.md"))
-        text = event.tool_input if isinstance(event.tool_input, str) else json.dumps(event.tool_input, ensure_ascii=False, default=str)
-        for m in SKILL_PATH.finditer(text or ""):
-            found.append((m.group("name"), re.sub(r"[\\/]+", "/", m.group("file")).rstrip("/")))
         out = []
-        for name, file in found:
+        for name, file in skill_files(event.tool, event.tool_input):
             if (name, file) in self._seen:
                 continue
             self._seen.add((name, file))
             known = self._by_name.get(name)
-            who = "강사가 저장한 답의 실행이 " if self._recorded else ""
-            data = {"content": f"{who}스킬 \u2018{name}\u2019의 {file} 파일 읽기를 요청했습니다", "skill": name, "file": file, "via": event.tool or "tool",
+            data = {"content": f"스킬 \u2018{name}\u2019의 {file} 파일 읽기를 요청했습니다", "skill": name, "file": file, "via": event.tool or "tool",
                     "tool_use_id": event.tool_use_id, "known": None if self._recorded else known is not None}
             if self._recorded:
                 data["recorded"] = True

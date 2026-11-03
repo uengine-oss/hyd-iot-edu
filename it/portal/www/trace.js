@@ -227,7 +227,7 @@
           }
           if (d.type === 'skill_used') {
             rows.push({key:'w:' + e.id, kind:'system', status:'idle', t0:e.timestamp, title:'스킬 파일 읽기 요청',
-              text:`${d.recorded ? `강사가 저장한 답의 실행 · 스킬 ${d.skill}` : UI.skillLabel(d,true).label} · ${window.hydWords ? hydWords.toolName(d.via) : UI.toolName(d.via || '') || '도구'} · 읽기 성공 여부는 이 기록만으로 확인할 수 없습니다`, raw:d});
+              text:`${d.recorded ? `스킬 ${d.skill}` : UI.skillLabel(d,true).label} · ${window.hydWords ? hydWords.toolName(d.via) : UI.toolName(d.via || '') || '도구'} · 읽기 성공 여부는 이 기록만으로 확인할 수 없습니다`, raw:d});
             break;
           }
           if (e.job_id === 'MCP_RESULT_VALUES') {

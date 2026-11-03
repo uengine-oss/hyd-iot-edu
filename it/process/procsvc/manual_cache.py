@@ -27,9 +27,9 @@ def source_fingerprint(source):
 
 def identity(tenant, source, catalog, *, scope, profile, feedback=None):
     if not isinstance(scope, str) or not scope.strip():
-        raise ValueError('강사 서버의 승인 범위 판본이 필요합니다')
+        raise ValueError('추출 승인 범위 판본이 필요합니다')
     if not isinstance(profile, dict) or not profile.get('model') or not profile.get('revision'):
-        raise ValueError('강사 서버의 추출 모델·설정 판본이 필요합니다')
+        raise ValueError('추출 모델·설정 판본이 필요합니다')
     return _digest(dict(contract='hyd-extraction-cache-v1', tenant=tenant, scope=scope,
                         source=source['sha256'], extractor=source.get('extractor'),
                         media_type=source.get('media_type'), pages=source['pages'],

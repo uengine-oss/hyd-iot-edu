@@ -114,7 +114,7 @@ def register(app, *, runtime_factory, audit=lambda *a, **k: None, base_loader=de
         if store.is_protected(def_id):
             return {"allowed": False, "reason": f"'{def_id}'은(는) 기준 흐름 id 입니다 — 기준은 바꾸지 않습니다"}
         if def_id in class_flow_ids:
-            return {"allowed": False, "reason": f"「{class_flow_ids[def_id]}」은(는) 강사가 설치한 수업 흐름이라 읽기만 합니다 — 내 판본은 "
+            return {"allowed": False, "reason": f"「{class_flow_ids[def_id]}」은(는) 수업 흐름이라 읽기만 할 수 있습니다 — 내 판본은 "
                                                 "[흐름 가져오기]에서 다른 흐름 id(예: my_cooling)로 가져와 등록하세요"}
         try:
             app.state.course.register_flow(def_id, draft['bpmn'], mapping)
@@ -157,7 +157,7 @@ def register(app, *, runtime_factory, audit=lambda *a, **k: None, base_loader=de
             raise HTTPException(409, {"reason": f"'{def_id}'은(는) 기준 흐름 id 입니다 — 기준은 바꾸지 않습니다"})
         classes = class_flows(rt)
         if def_id in classes:
-            raise HTTPException(409, {"reason": f"「{classes[def_id]}」은(는) 강사가 설치한 수업 흐름이라 읽기만 합니다 — 매핑을 고쳐 보려면 "
+            raise HTTPException(409, {"reason": f"「{classes[def_id]}」은(는) 수업 흐름이라 읽기만 할 수 있습니다 — 매핑을 고쳐 보려면 "
                                                 "[흐름 가져오기]에서 같은 그림을 다른 흐름 id(예: my_cooling)로 가져오세요"})
 
     def mapping_of(req: MappingReq, draft) -> dict:
@@ -192,7 +192,7 @@ def register(app, *, runtime_factory, audit=lambda *a, **k: None, base_loader=de
             # 2026-10-25 학생 행위 점검: 수업 흐름 id 로 가져오면 강사 초안을 덮고, 등록 · 배포하면 수업 흐름 표시가 없는 판본이
             # 경보를 가져가 [기준 흐름으로 되돌리기]가 그 흐름을 내렸다(B · C 버튼 멈춤). 판정은 지금 배포의 수업 흐름 표시로 한다.
             if not req.class_flow and def_id in class_flows(rt):
-                raise HTTPException(409, {"reason": f"'{def_id}'은(는) 강사가 설치한 수업 흐름 id 입니다 — 내 흐름 id 를 따로 쓰세요(예: my_{def_id.split('_')[-1]})"})
+                raise HTTPException(409, {"reason": f"'{def_id}'은(는) 수업 흐름 id 입니다 — 내 흐름 id 를 따로 쓰세요(예: my_{def_id.split('_')[-1]})"})
             cat = catalog_of(rt)
             old = store.get_draft(def_id)
             mapping, report = bpmn_import.merge_mapping(parsed, (old or {}).get("mapping"), cat)
@@ -249,7 +249,7 @@ def register(app, *, runtime_factory, audit=lambda *a, **k: None, base_loader=de
                 raise HTTPException(403, {"reason": "수업 기준 흐름은 삭제할 수 없습니다"})
             classes = class_flows(rt)
             if def_id in classes:
-                raise HTTPException(409, {"reason": f"「{classes[def_id]}」은(는) 강사가 설치한 수업 흐름이라 지울 수 없습니다(수업 버튼 · 경보가 이 흐름을 씁니다)"})
+                raise HTTPException(409, {"reason": f"「{classes[def_id]}」은(는) 수업 흐름이라 지울 수 없습니다(수업 버튼 · 경보가 이 흐름을 씁니다)"})
             if not store.get_draft(def_id) and not store.versions(def_id):
                 raise HTTPException(404, {"reason": "삭제할 학생 흐름이 없습니다"})
             # [기준으로 되돌리기](flows_reset)의 keep 과 같은 기준: 경보 경로에 배포된 흐름은 지우지 않는다.
@@ -319,7 +319,7 @@ def register(app, *, runtime_factory, audit=lambda *a, **k: None, base_loader=de
             # 2026-10-25 수업 한 바퀴: 수업 흐름(강사 배포)의 [매핑 열기] → [판본 등록]이 통과해 강사 흐름에 학생 판본이 쌓였다(배포만 막혔다)
             classes = class_flows(rt)
             if not req.class_flow and def_id in classes:
-                raise HTTPException(409, {"reason": f"「{classes[def_id]}」은(는) 강사가 설치한 수업 흐름입니다 — 내 판본은 [흐름 가져오기]에서 "
+                raise HTTPException(409, {"reason": f"「{classes[def_id]}」은(는) 수업 흐름입니다 — 내 판본은 [흐름 가져오기]에서 "
                                                     "다른 흐름 id(예: my_cooling)로 가져와 등록하세요"})
             if not req.class_flow:
                 course(lambda policy: policy.register_flow(def_id, draft['bpmn'], mapping))

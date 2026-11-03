@@ -548,7 +548,7 @@
       ${manualValidationHtml(r.validation,r,{...H.catalog,...H.manualCatalog})}
       ${manualExecutionHtml(r.validation,r,{...H.catalog,...H.manualCatalog})}
       <p class="row-wrap"><a href="${API.process}/api/kg/manuals/sources/${encodeURIComponent(r.source_id)}/original">보관한 원본 내려받기</a> <button class="btn small" id="manualFullSource">추출 원문 전체 보기</button></p><div id="manualSourceText"></div>
-      <p class="row-wrap"><button class="btn small" id="manualAgentExtract" ${r.status === 'READY' ? '' : 'disabled'}>추출 제안 준비</button> <button class="btn small" id="manualAgentResult">추출 진행 · 결과 확인</button> <span id="manualAgentStatus" role="status" class="muted">${r.extraction ? (r.extraction.cache?.origin ? '강사가 검토 · 서명한 추출본입니다(제공 문서라 AI를 부르지 않았습니다). 원문을 대조하고 검토 후 적재하세요.' : '추출 제안입니다. 원문을 대조하고 검토 후 적재하세요.') : '현재 결과는 구조화된 줄 파서입니다. 원문에 근거한 추출 제안을 준비할 수 있습니다.'}</span></p>
+      <p class="row-wrap"><button class="btn small" id="manualAgentExtract" ${r.status === 'READY' ? '' : 'disabled'}>추출 제안 준비</button> <button class="btn small" id="manualAgentResult">추출 진행 · 결과 확인</button> <span id="manualAgentStatus" role="status" class="muted">${r.extraction ? '추출 제안입니다. 원문을 대조하고 검토 후 적재하세요.' : '현재 결과는 구조화된 줄 파서입니다. 원문에 근거한 추출 제안을 준비할 수 있습니다.'}</span></p>
       <div class="form-grid">${UI.field({ label: '이 문서의 추출 작업', input: `<select id="manualExtractionRuns"><option value="">${esc(UI.t('loading'))}</option></select>` })}</div><button class="btn small" id="manualExtractionMore" style="display:none">이전 추출 작업 더 보기</button>
       ${r.page_reviews ? UI.fold('페이지별 추출 검토 기록', r.page_reviews.map(p => `<p>${esc(p.page)}쪽: ${esc(p.note)}</p>`).join(''), { cls: 'small' }) : ''}
       <div class="mcols"><div><h3>매뉴얼 절</h3>${r.sections.map(s => `<div class="msec"><b>${esc(s.ref)}</b> ${esc(s.title)}${UI.fold('절 본문 전체', `<div class="muted" style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(s.excerpt)}</div>`, { cls: 'small' })}${citation(s.anchor)}</div>`).join('') || `<div class="muted">${esc(UI.t('skill.none'))}</div>`}</div>
@@ -607,7 +607,7 @@
         const created = await postJ(extractionUrl, { request_id: state.request_id });
         sessionStorage.setItem(extractionKey, JSON.stringify({ ...state, instance: created.instance }));
         await loadExtractions();
-        if (H.preview === r) $('#manualAgentStatus').textContent = created.cache?.origin ? '제공 문서라 강사가 검토 · 서명한 추출본을 냅니다(AI를 부르지 않습니다). 진행 · 결과 확인을 누르세요.' : '추출 요청을 접수했습니다. 진행 · 결과 확인을 누르세요.';
+        if (H.preview === r) $('#manualAgentStatus').textContent = '추출 요청을 접수했습니다. 진행 · 결과 확인을 누르세요.';
       } catch (e) { if (H.preview === r) $('#manualAgentStatus').textContent = '접수 확인 실패: ' + e.message + ' 같은 요청으로 다시 확인할 수 있습니다.'; }
       finally { if (H.preview === r) button.disabled = false; }
     });
@@ -765,7 +765,8 @@
     } catch (e) { if ($('#manualFile').files[0] === f) $('#manualResult').innerHTML = `<div class="neg">미리보기 실패: ${esc(e.message)}</div>`; }
     finally { b.disabled = false; b.textContent = UI.t('kn.preview'); }
   });
-  // 수업 경계(서버 GET /api/course-access): 수업 단계에서는 제공 문서만 등록된다 — 고르기 전에 안내하고, 골든 질문 평가 단추는 서버 까닭으로 끈다
+  // 수업 경계(서버 GET /api/course-access): 수업 단계에서는 제공 문서만 등록된다 — 미리 안내하지 않고 다른 문서를 올리면 서버 거절 까닭을
+  // 미리보기 실패로 보인다(안내는 벗어난 행동에서만). 골든 질문 평가 단추는 서버 까닭으로 끈다
   function courseScope() {
     // 제공 문서 받기 링크: 서버 수업 경계가 가진 제공 문서 목록(course-access provided_documents = 강사 서명 추출 묶음) 하나에서 그린다(W2-21)
     const docs = $('#providedDocs');
@@ -773,10 +774,6 @@
       const list = hydCourseAccess.access?.provided_documents;
       docs.innerHTML = Array.isArray(list) ? list.map(f => `<a href="samples/${encodeURIComponent(f)}" download>${esc(f)}</a>`).join(' · ')
         : hydCourseAccess.error ? `<span class="neg">수업 단계 정보를 읽지 못해 목록이 없습니다</span>` : esc(UI.t('loading'));
-    }
-    const box = $('#manualScope'); if (box) {
-      box.hidden = !hydCourseAccess.documentsProvidedOnly;
-      box.textContent = hydCourseAccess.documentsProvidedOnly ? hydCourseAccess.reason('document') : '';   // 까닭 문장은 서버 수업 경계 한 곳(P2-05 · W2-08)
     }
     hydCourseAccess.apply($('#manualHistory'));
   }

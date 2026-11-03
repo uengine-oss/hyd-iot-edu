@@ -115,8 +115,6 @@
     get error() { return C.error; },
     // 수업 모델(두 단계 모두 하나 — 서버 값). 아직 모르면 null
     get model() { return C.access ? C.access.model : null; },
-    // 수업 단계에서는 제공 문서만 받는다(서버 값 'provided'), PBL 이면 null — 안내 문장은 reason('document')
-    get documentsProvidedOnly() { return !!(C.access && C.access.documents === 'provided'); },
     // 질문 길이 한도(서버 값 — 질문 계약 한 곳). 아직 모르면 null
     get questionMaxChars() { return C.access ? C.access.question_max_chars : null; },
     // 수업 단계 교대 등록에서 바꿀 수 있는 칸 {flow_name, agent_tasks} — PBL 이면 null

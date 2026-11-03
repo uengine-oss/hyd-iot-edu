@@ -95,7 +95,7 @@
     if (A.statusErr) return `<p class="neg" role="status">질문 기능 상태를 읽지 못했습니다: ${esc(A.statusErr)}</p>`;
     const s = A.status;
     if (!s) return '<p class="muted">상태를 확인하는 중…</p>';
-    if (s.ready) return replay() ? UI.chipText('강사가 저장한 답 재생', 'neutral') : `<span class="live-conn on">답할 AI 일꾼 연결됨</span>`;
+    if (s.ready) return `<span class="live-conn on">답할 AI 일꾼 연결됨</span>`;
     return `<div class="ask-warn" role="status">${UI.chipText('지금은 답할 AI 일꾼이 없습니다', 'warning')} <span>${esc(s.reason || '')}</span></div>`;
   }
   function agentOptions() {
@@ -108,8 +108,7 @@
     const serverLabel = t => hydWords.serverName(t);
     const tools = a.servers.length ? a.servers.map(t => UI.chipText(serverLabel(t), 'neutral')).join(' ') : UI.chipText('질문에 쓸 도구 서버 없음', 'warning');
     const out = a.left_out.length ? `<p class="field-hint">질문에는 쓰지 않는 도구 서버(질문용 조회 도구가 없음): ${a.left_out.map(t => esc(serverLabel(t))).join(', ')}</p>` : '';
-    const recorded = replay() ? '<p class="field-hint">이 PC는 키가 없어, 고른 에이전트 · 붙인 스킬과 관계없이 강사가 저장한 답을 보여 줍니다.</p>' : '';
-    return `<p class="field-hint">${esc(a.goal || a.role || '')}</p><div class="row-wrap ask-tools">${tools}${a.skills.length ? ' ' + a.skills.map(x => UI.chipText(x, 'accent')).join(' ') : ''}</div>${out}${recorded}`;
+    return `<p class="field-hint">${esc(a.goal || a.role || '')}</p><div class="row-wrap ask-tools">${tools}${a.skills.length ? ' ' + a.skills.map(x => UI.chipText(x, 'accent')).join(' ') : ''}</div>${out}`;
   }
   function resultHtml(v) {
     const r = v.result;
@@ -160,8 +159,8 @@
   }
   function threadHtml(staticCalls) {
     const v = A.cur;
-    if (!v) return replay() ? UI.empty('강의에서 다룬 질문을 골라 보내세요', '이 PC는 강의 때 강사가 저장한 답을 보여 줍니다. 위의 질문 단추를 누르면 질문 칸에 들어갑니다.')
-      : UI.empty('질문을 적고 보내세요', '예: 완제품 재고가 가장 적은 설비와 그 수량은? · HYD-01 팬 진동 최근 최대값은? · 어떤 규칙이 지금 성립하나?');
+    if (!v) return UI.empty('질문을 적고 보내세요', replay() ? '위의 질문 단추를 누르면 질문 칸에 들어갑니다.'
+      : '예: 완제품 재고가 가장 적은 설비와 그 수량은? · HYD-01 팬 진동 최근 최대값은? · 어떤 규칙이 지금 성립하나?');
     const [label, tone] = STATE[v.state] || [v.state, 'neutral'];
     const live = LIVE.has(v.state);
     const calls = v.tool_calls || [];
@@ -187,8 +186,7 @@
   function formHtml() {
     return `<header class="card-head"><div class="card-title"><h3>에이전트에게 질문하기</h3></div><div class="card-actions">${readyHtml()}</div></header>
         <div class="form-grid">${UI.field({ label: '답할 에이전트', input: `<select id="askAgent">${agentOptions()}</select>` })}</div>${agentLine()}
-        <div class="ask-input">${UI.field({ label: '질문', hint: replay() ? '이 PC는 강의에서 다룬 질문에만 강사가 저장한 답으로 답합니다. 아래 질문을 눌러 넣고 보내세요.'
-          : 'Enter 보내기 · Shift+Enter 줄바꿈. 에이전트는 자기 도구로 실제 조회한 결과만으로 답합니다.', input: `<textarea id="askText" rows="3" maxlength="${esc(window.hydCourseAccess.questionMaxChars || '')}"></textarea>` })}${replay() ? picks() : ''}</div>
+        <div class="ask-input">${UI.field({ label: '질문', hint: 'Enter 보내기 · Shift+Enter 줄바꿈. 에이전트는 자기 도구로 실제 조회한 결과만으로 답합니다.', input: `<textarea id="askText" rows="3" maxlength="${esc(window.hydCourseAccess.questionMaxChars || '')}"></textarea>` })}${replay() ? picks() : ''}</div>
         <div class="form-actions"><button class="btn primary" id="askSend" ${A.sending || !A.draft.trim() ? 'disabled' : ''}>${A.sending ? '보내는 중…' : '보내기'}</button></div>`;
   }
   const layout = (form, err, thread, hist) => `<div class="ask-layout"><div class="ask-main"><section class="card ask-compose" data-ask-form>${form}</section><div data-ask-err>${err}</div><div data-ask-thread>${thread}</div></div>

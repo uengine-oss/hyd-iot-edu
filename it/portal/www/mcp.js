@@ -216,7 +216,7 @@
         `<tr><td><code>${esc(f.key)}</code>${f.required ? ' <i class="req">*</i>' : ''}</td><td>${esc(typeName(f))}</td><td>${esc(f.description || '–')}</td></tr>`).join('')}</tbody></table>` : '<p class="muted">입력 없음</p>');
       const open = S.trying === t.name;
       // G2 ②: 표시(readOnlyHint)만 없는 도구는 강사가 읽기로 확인할 수 있다 — 확인한 도구는 에이전트 도구 · 써 보기에 들어간다
-      const chip = t.callable ? UI.chipText('읽기 전용', 'success') : usable ? UI.chipText('강사 확인 읽기', 'success') : UI.chipText('써 보기 불가', 'warning');
+      const chip = t.callable ? UI.chipText('읽기 전용', 'success') : usable ? UI.chipText('읽기로 확인함', 'success') : UI.chipText('써 보기 불가', 'warning');
       const confirmBtn = !s.editable || t.callable ? '' : usable ? `<button class="btn small" data-unconfirm="${esc(t.name)}"${reg()}>확인 취소</button>`
         : t.confirmable ? `<button class="btn small" data-confirm="${esc(t.name)}"${reg()}>읽기로 확인</button>` : '';
       return `<li class="mcp-tool${open ? ' open' : ''}" data-tool="${esc(t.name)}"><div class="mcp-tool-head"><div><b>${esc(toolLabel(s.name, t.name))}</b> ` + chip +
@@ -233,7 +233,7 @@
   }
 
   function confirmForm(s, t) {
-    return `<div class="form mcp-confirm">${UI.section('', UI.field({ label: '확인한 사람', required: true, input: '<input id="mcpConfirmBy" placeholder="강사 이름">' }) +
+    return `<div class="form mcp-confirm">${UI.section('', UI.field({ label: '확인한 사람', required: true, input: '<input id="mcpConfirmBy" placeholder="이름">' }) +
       UI.field({ label: '읽기라고 본 이유', required: true, input: '<input id="mcpConfirmReason" placeholder="예: 서버 문서상 검색 결과만 돌려주고 아무것도 바꾸지 않는다">',
         hint: `서버가 ‘${toolLabel(s.name, t.name)}’에 읽기 전용 표시를 붙이지 않았습니다. 확인하면 에이전트 도구로 붙고 써 보기도 됩니다. 쓰기로 표시했거나 이름이 쓰기인 도구는 확인할 수 없습니다` }))}` +
       `${UI.actions(`<button class="btn primary" id="mcpConfirmSave"${reg()}>읽기로 확인</button>`)}</div>`;
@@ -412,7 +412,7 @@
     return `<p class="kv-line">${UI.chipText('연결 검사 통과', 'success')} 도구 <b>${c.tools.length}</b>개 · ${esc(c.elapsed_ms)} ms</p>` +
       `<ul class="mcp-tools">${c.tools.map(t => `<li class="mcp-tool"><b>${esc(t.title && /[가-힣]/.test(t.title) ? t.title : t.name)}</b> ` +
         (t.read_only ? UI.chipText('에이전트에 붙일 수 있음', 'success') : UI.chipText('붙일 수 없음', 'warning')) +
-        `<span class="mcp-desc">${UI.fold('에이전트가 읽는 설명 원문', `<p>${esc(t.description || '설명 없음')}</p>`, { cls: 'small' })}</span>${t.read_only ? '' : `<span class="mcp-why">${esc(t.reason || '')}${t.confirmable ? ' — 등록 뒤 강사가 "읽기로 확인"할 수 있습니다' : ''}</span>`}</li>`).join('')}</ul>`;
+        `<span class="mcp-desc">${UI.fold('에이전트가 읽는 설명 원문', `<p>${esc(t.description || '설명 없음')}</p>`, { cls: 'small' })}</span>${t.read_only ? '' : `<span class="mcp-why">${esc(t.reason || '')}${t.confirmable ? ' — 등록 뒤 "읽기로 확인"할 수 있습니다' : ''}</span>`}</li>`).join('')}</ul>`;
   }
 
   async function submitForm(dry) {

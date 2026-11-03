@@ -368,7 +368,7 @@
   // 매핑 아래 행동: 수업 흐름(강사 설치)은 읽기만, 서버가 지금 등록할 수 없다고 하면(register.allowed=false — 수업 경계 · 기준 id) [판본 등록] 대신 그 까닭(W3-08)
   function actionsHtml() {
     const v = S.view || {};
-    if (v.class_flow) return '<p class="field-hint">강사가 설치한 수업 흐름이라 매핑을 읽기만 합니다 — 저장 · 등록하지 않습니다.</p>';
+    if (v.class_flow) return '<p class="field-hint">수업 흐름이라 매핑은 읽기만 할 수 있습니다(저장 · 등록 없음).</p>';
     const reg = v.register || null;
     return `<span class="form-msg" id="flowMsg" role="status"></span><button class="btn" id="flowCheck">저장 · 검사</button>` +
       (reg && reg.allowed === false ? `<span class="field-hint" data-register-why>${h(reg.reason || '지금은 판본으로 등록할 수 없습니다')}</span>` : '<button class="btn primary" id="flowRegister">판본 등록</button>');
@@ -448,7 +448,7 @@
         ${alertStart ? '<span class="muted">경보가 들어오면 시작</span>' : `<button class="btn small" data-start="${h(id)}" data-version="${h(v.version)}"${hydCourseAccess.startBlocked(id) ? ' disabled' : ''}>직접 시작</button>${hydCourseAccess.startBlocked(id) ? `<span class="field-hint">${h(hydCourseAccess.startBlocked(id))}</span>` : ''}<div data-startbox="${h(id + '@' + v.version)}"></div>`}</li>`).join('');
       // 강사가 설치한 수업 흐름(서버 class_flow): 매핑은 열어 읽기만 하고(실라버스 [매핑 열기]) 지우기 단추를 달지 않는다(W3-04)
       const classFlow = !!(d?.class_flow || vs.some(v => v.class_flow));
-      return UI.card({ title: h(name), chips: classFlow ? UI.chipText('수업 흐름(강사 설치) · 읽기만', 'neutral') : '', sub: d ? (classFlow ? '매핑 있음' : '매핑 초안 있음') : '', body: (rows ? `<ul class="flow-versions">${rows}</ul>` : '<p class="muted">등록한 판본 없음</p>') + UI.metaFold([['흐름 식별자', h(id)]]),
+      return UI.card({ title: h(name), chips: classFlow ? UI.chipText('수업 흐름 · 읽기만', 'neutral') : '', sub: d ? (classFlow ? '매핑 있음' : '매핑 초안 있음') : '', body: (rows ? `<ul class="flow-versions">${rows}</ul>` : '<p class="muted">등록한 판본 없음</p>') + UI.metaFold([['흐름 식별자', h(id)]]),
         actions: (d ? `<button class="btn small" data-open="${h(id)}">매핑 열기</button>` : '') + (classFlow ? '' : `<button class="btn small danger" data-delete-flow="${h(id)}">이 흐름 지우기</button><div data-delete-box="${h(id)}"></div>`) });
     }).join('');
     box.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => openDraft(b.dataset.open)));

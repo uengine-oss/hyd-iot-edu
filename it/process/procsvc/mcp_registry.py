@@ -322,7 +322,7 @@ def selectable(store, tenant_id: str) -> dict:
                 picks.append({"server": name, "tool": t["name"], "tool_id": f"mcp__{name}__{t['name']}"})
         if not reason and origin != "seed" and not any(t["selectable"] for t in tools):
             reason = ("읽기 전용(readOnlyHint=true)으로 표시한 도구가 없습니다 — 에이전트에 붙일 도구가 없습니다"
-                      + (" (표시만 없는 도구는 강사가 '읽기로 확인'하면 붙일 수 있습니다)" if any(t["confirmable"] for t in tools) else ""))
+                      + (" (표시만 없는 도구는 '읽기로 확인'하면 붙일 수 있습니다)" if any(t["confirmable"] for t in tools) else ""))
         out.append({"name": name, "origin": origin, "origin_text": ORIGIN_WORDS[origin], "mine": origin != "seed", "editable": origin != "seed",
                     "transport": spec.get("transport"), "check": state, "selectable": reason is None, "reason": reason, "agent_value": name,
                     "description": entry.get("description") if isinstance(entry, dict) else None,
@@ -330,7 +330,7 @@ def selectable(store, tenant_id: str) -> dict:
                     "secrets": mcp_secrets.references(entry), "tools": tools})  # G2 ①: 이 서버가 쓰는 비밀 이름(값 아님)
     return {"tenant": tenant_id, "servers": out, "selectable_tools": picks,
             "rule": "연결 검사를 통과했고 그 뒤 설정이 바뀌지 않은 서버의, 서버가 읽기 전용(readOnlyHint=true)으로 표시한 도구(또는 표시가 없어 "
-                    "강사가 읽기로 확인한 도구)만 고를 수 있습니다. 에이전트에는 서버 이름을 적고, 실행 때 워커가 읽기 전용 도구만 허용합니다."}
+                    "읽기로 확인한 도구)만 고를 수 있습니다. 에이전트에는 서버 이름을 적고, 실행 때 워커가 읽기 전용 도구만 허용합니다."}
 
 
 def refuse_reasons(store, tenant_id: str, server_names) -> list[str]:

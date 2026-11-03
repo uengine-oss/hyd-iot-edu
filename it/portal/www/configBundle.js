@@ -24,7 +24,7 @@
     el.innerHTML = '<div id="studentCasesView"></div>' +
       UI.card({ title: '출발본 내보내기', sub: '지금 내가 만든 구성만 파일 하나로 받습니다. 기준 구성과 비밀값은 들어가지 않습니다.',
         body: `<div class="form-actions"><span class="form-msg" id="cfgExportMsg" role="status"></span><button type="button" class="btn primary" id="cfgExport">파일 받기</button></div>` }) +
-      UI.card({ title: '출발본 불러오기', sub: '강사가 준 출발본 파일을 올리면 지금 구성을 기준으로 되돌린 뒤 파일 내용으로 다시 세웁니다. 망쳐도 다시 불러오면 됩니다.',
+      UI.card({ title: '출발본 불러오기', sub: '받은 출발본 파일을 올리면 지금 구성을 기준으로 되돌린 뒤 파일 내용으로 다시 세웁니다. 망쳐도 다시 불러오면 됩니다.',
         body: `<div class="form-grid"><div class="field wide"><label for="cfgFile">출발본 파일(.json)</label><input type="file" id="cfgFile" accept=".json,application/json"></div></div>
           <div id="cfgSecrets"></div>
           <p class="field-hint" id="cfgImportWhy"></p>

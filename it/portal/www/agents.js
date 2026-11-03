@@ -17,7 +17,7 @@
   const course = () => window.hydCourseAccess;
   const skillName = (name, labels=[]) => UI.skillLabel(labels.find(s=>(s.name || s.skill_name) === name) || (st.skills || []).find(s=>s.skill_name === name) || {name}).label;
   // 모델은 두 단계 모두 강사가 정한 수업 모델 하나다(서버 GET /api/course-access 의 model) — 비어 있거나 그 값이면 「수업 모델」
-  const modelText = m => !m || m === course().model ? '수업 모델(강사 지정)' : m;
+  const modelText = m => !m || m === course().model ? '수업 모델' : m;
   const api = path => API.process + path;
   const del = url => requestJ(url, { method: 'DELETE' });
   const mineChip = o => o === 'user' ? UI.chipText('내가 만든', 'success') : UI.chipText('기본', 'neutral');
@@ -237,7 +237,7 @@
           UI.field({ label: '역할', input: `<input data-f="role" maxlength="200" value="${esc(d.role)}" placeholder="예: 쿨러 열화를 먼저 본다">` }) +
           UI.field({ label: '목표', required: true, input: `<textarea data-f="goal" maxlength="500">${esc(d.goal)}</textarea>`, hint: '이 에이전트가 무엇을 해내야 하는지 한 문장' }) +
           UI.field({ label: '성격 · 말투', input: `<textarea data-f="persona" maxlength="2000">${esc(d.persona)}</textarea>` }) +
-          UI.readonly('모델', esc(modelText('')), '두 단계(수업 · PBL) 모두 강사가 지정한 수업 모델 하나를 씁니다')) +
+          UI.readonly('모델', esc(modelText('')), '두 단계(수업 · PBL) 모두 수업 모델 하나를 씁니다')) +
         UI.section('쓸 도구 (등록된 MCP 서버)', `<div>${tools}<p class="field-hint">하나도 고르지 않으면 등록된 서버를 모두 씁니다.</p></div>`) +
         UI.section('스킬', `<div>${skills}</div>`) +
         UI.section('업무 규칙', UI.field({ label: '적용할 업무 규칙', input: `<select data-f="work_rules"><option value="">공통 안전 규칙만 적용</option>${d.work_rules && !(o.work_rules || []).some(r => r.key === d.work_rules) ? `<option value="${esc(d.work_rules)}" selected>등록되지 않은 업무 규칙 — 다시 선택하세요</option>` : ''}${(o.work_rules || []).map(r => `<option value="${esc(r.key)}" ${d.work_rules === r.key ? 'selected' : ''}>${esc(r.label)}</option>`).join('')}</select>` }) +

@@ -45,6 +45,7 @@ from procsvc import mcp_check
 from .bridge import MCP_CONFIG_FILENAME
 from .course_access import Stop
 from .diagnostics import REDACTED, hide
+from .events import skill_files
 from .workspace import RESULT_FILE
 
 log = logging.getLogger("worker.ai_replay")
@@ -64,8 +65,11 @@ WRITE_CALL_TIMEOUT_S = 60.0
 
 
 class NotRecorded(Stop):
-    """녹화(저장)에 없는 실행 — 문장은 학생이 할 일까지 쓴다."""
-    title = "강의 녹화에 없는 AI 단계"
+    """녹화(저장)에 없는 실행 — 문장은 학생이 할 일까지 쓴다(「강사」 · 「녹화」라는 말 없이, 재생 모드가 지원하지 않는 행동으로)."""
+    title = "재생 모드에서 지원하지 않는 AI 단계"
+
+
+REPLAY = "AI 키가 없을 때 쓰는 재생 모드에서는"   # 벗어난 행동의 안내 첫머리 — 화면에 재생 모드를 밝히는 곳은 이 안내뿐이다
 
 
 # ---------------------------------------------------------------- 열쇠
@@ -311,8 +315,8 @@ class _Swaps:
             return
         if key in FIELD_NAMES:
             label = FIELD_NAMES[key]
-            raise NotRecorded(f"강의 녹화의 「{step}」은 {label} {old or '(빈 값)'} 처리 건으로 만들었습니다(지금은 {new or '(빈 값)'}). "
-                              f"키 없는 PC는 녹화와 같은 {label}로만 재생합니다 — {label}을(를) {old or '(빈 값)'}(으)로 해서 다시 시작하세요.")
+            raise NotRecorded(f"{REPLAY} 「{step}」을 {label} {old or '(빈 값)'}인 처리 건으로만 진행할 수 있습니다(지금은 {new or '(빈 값)'}). "
+                              f"{label}을(를) {old or '(빈 값)'}(으)로 바꿔 다시 시작해 주세요.")
         if isinstance(old, str) and isinstance(new, str) and old and new:
             # 처리 건마다 달라지는 값(경보 · 사건 id · 시각)과 데이터를 고르지 않는 값(누른 사람 · 보완 요청 글)은 녹화 글 속의 그 값만
             # 이 처리 건의 값으로 바꾼다(글 속 부분 바꾸기는 id 모양 값만 — _Swaps.text)
@@ -398,22 +402,22 @@ class _Tools:
 
     def writes(self, server: str, tool: str) -> bool:
         if server not in self.servers:
-            raise NotRecorded(f"강의 녹화의 「{self.step}」은 도구 서버 「{server}」을(를) 썼는데 지금 이 단계의 에이전트에는 그 서버가 없습니다. "
-                              f"[에이전트] 화면에서 이 에이전트의 도구에 「{server}」을(를) 다시 고르고 실행하세요.")
+            raise NotRecorded(f"{REPLAY} 「{self.step}」을 진행하려면 이 단계 에이전트의 도구에 「{server}」이(가) 있어야 합니다. "
+                              f"[에이전트] 화면에서 이 에이전트의 도구에 「{server}」을(를) 다시 고른 뒤 실행해 주세요.")
         if self.servers[server].get("command"):  # 워커 자신의 조회 창구(질문 · 결과 검사) — 쓰기 도구가 없다
             return False
         try:
             spec = mcp_check.normalize(self.servers[server])
         except ValueError as e:
-            raise NotRecorded(f"도구 서버 「{server}」의 설정이 올바르지 않아 「{self.step}」을 재생하지 못했습니다: {e}") from None
+            raise NotRecorded(f"도구 서버 「{server}」의 설정이 올바르지 않아 「{self.step}」을 진행하지 못했습니다: {e}") from None
         if server not in self.listed:
             out = mcp_check.check(spec)
             if out["status"] != "ok":
-                raise NotRecorded(f"도구 서버 {server}에 닿지 않아 「{self.step}」을 재생하지 못했습니다. 시작.bat을 다시 실행한 뒤 다시 하세요.")
+                raise NotRecorded(f"도구 서버 {server}에 닿지 않아 「{self.step}」을 진행하지 못했습니다. 시작.bat을 다시 실행한 뒤 다시 하세요.")
             self.listed[server] = {t["name"]: t for t in out["tools"]}
         meta = self.listed[server].get(tool)
         if meta is None:
-            raise NotRecorded(f"강의 녹화의 「{self.step}」이 쓴 도구 {server}/{tool}이(가) 지금 서버에 없어 재생하지 못했습니다. 강사에게 알려 주세요.")
+            raise NotRecorded(f"「{self.step}」에 필요한 도구 {server}/{tool}이(가) 지금 서버에 없어 진행하지 못했습니다. README 「새 판 받기」대로 새 판을 받은 뒤 시작.bat을 다시 실행하세요.")
         return not meta["callable"]
 
     def call(self, server: str, tool: str, arguments: dict) -> dict:
@@ -445,7 +449,8 @@ def play(library: Library, key: str, doc: dict, i: int, request, check_stop, las
     tools = _Tools(request.workdir, step)
     session = library.session(key, i)
     last.update(step=step, recorded_at=doc.get("recorded_at"), rerun=[], kept_errors=0, attempt=_attempt_label(_attempt(saved)),
-                library=library.prefix)
+                library=library.prefix, skills=sorted({name for d in saved["events"] if d["kind"] == ExecEventKind.TOOL_START.value
+                                                       for name, _ in skill_files(d.get("tool"), d.get("tool_input"))}))
     events = [d for d in saved["events"] if not partial_chunk(d)]
     if not any(d["kind"] == ExecEventKind.RUN_START.value for d in events):    # 녹화에 실행 시작 줄이 있으면 그것 하나만(G1-08)
         yield ExecEvent(kind=ExecEventKind.RUN_START, session_id=session)
@@ -472,11 +477,11 @@ def play(library: Library, key: str, doc: dict, i: int, request, check_stop, las
             live[d.get("tool_use_id")] = result
             last["rerun"].append(f"{target[0]}/{target[1]}")
             if _failed(result["text"], result["is_error"]):
-                raise NotRecorded(f"「{step}」에서 녹화된 AI가 부른 {target[0]}/{target[1]}이(가) 이 PC에서 거절됐습니다: {result['text'][:300]}")
+                raise NotRecorded(f"「{step}」에서 AI가 부른 {target[0]}/{target[1]}이(가) 이 PC에서 거절됐습니다: {result['text'][:300]}")
             old, new = _as_json(old), _as_json(result["text"])
             if old is None and new is not None:
                 made = (_created(new) or {}).get("id")
-                raise NotRecorded(f"「{step}」의 녹화된 쓰기 결과를 읽을 수 없어 새로 만든 id 를 바꿔 끼우지 못했습니다. 강사에게 알려 주세요"
+                raise NotRecorded(f"「{step}」의 준비된 쓰기 결과를 읽을 수 없어 새로 만든 id 를 바꿔 끼우지 못했습니다. README 「새 판 받기」대로 새 판을 받으세요"
                                   + (f"(이 PC에는 이미 등록됐습니다 — id {made}, 승인 대기 목록에서 확인하세요)." if made else "."))
             swaps.pair_created(old, new)
             done[d["tool_use_id"]] = result["text"]
@@ -506,23 +511,21 @@ def korea_time(recorded_at: str | None) -> str:
 
 
 def notice(last: dict | None, skills: list[str] | None = None) -> str | None:
-    """처리 과정에 남길 한 줄. 포털 처리 과정은 긴 줄 끝을 「…」로 자르므로 핵심(새 추론 아님)을 앞에 둔다.
-    skills: 이번 실행에 붙인 스킬 — 다시 낸 응답에는 반영되지 않는다(키 없는 PC에서 스킬을 붙이고 뗀 차이를 보려는 실습이 같은 답을 보고
-    「스킬이 아무 일도 하지 않는다」로 배우지 않게, 실라버스 포털 실습 3번)."""
+    """처리 과정에 남길 한 줄. 재생 모드의 평소 실행에는 남기지 않는다 — 화면은 실제 AI 실행과 같고, 안내는 재생 모드가 지원하지 않는
+    행동에서만 한다. skills: 이번 실행에 붙인 스킬 — 저장된 실행이 연 스킬(last["skills"])과 다를 때만 같은 답임을 말한다(스킬을 붙이고
+    뗀 차이를 보려는 실습이 같은 답을 보고 「스킬이 아무 일도 하지 않는다」로 배우지 않게, 실라버스 포털 실습 3번). 수업 기본 스킬
+    그대로면 저장된 실행과 같은 구성이라 말하지 않는다."""
     if not last:
         return None
-    rerun = f" 쓰기 도구({', '.join(dict.fromkeys(last['rerun']))})는 이 PC에서 다시 실행했습니다." if last.get("rerun") else ""
-    kept = (f" 저장 때 오류였던 쓰기 호출 {last['kept_errors']}건은 다시 부르지 않고 그 오류를 그대로 보였습니다." if last.get("kept_errors") else "")
-    when = korea_time(last.get("recorded_at"))
     if last.get("library") == REUSE:
-        return (f"같은 설정 · 같은 입력의 앞선 실행 결과를 다시 썼습니다(새로 추론하지 않음 — {when} 실행).{rerun}{kept} "
+        rerun = f" 쓰기 도구({', '.join(dict.fromkeys(last['rerun']))})는 이 PC에서 다시 실행했습니다." if last.get("rerun") else ""
+        kept = (f" 저장 때 오류였던 쓰기 호출 {last['kept_errors']}건은 다시 부르지 않고 그 오류를 그대로 보였습니다." if last.get("kept_errors") else "")
+        return (f"같은 설정 · 같은 입력의 앞선 실행 결과를 다시 썼습니다(새로 추론하지 않음 — {korea_time(last.get('recorded_at'))} 실행).{rerun}{kept} "
                 "새로 추론하게 하려면 입력이나 에이전트 설정을 바꿔 실행하세요.")
-    attempt = f" · {last['attempt']}" if last.get("attempt") else ""
-    unused = (f" 이번 실행에 붙인 스킬({', '.join(skills)})은 이 답에 반영되지 않았습니다 — 스킬을 붙이고 뗀 차이는 키가 있는 PC에서 실제 AI로 봅니다."
-              if skills else "")
-    return (f"AI 응답 재생 — 강사가 미리 실행해 둔 응답이며 지금 AI가 새로 추론한 것이 아닙니다(「{last['step']}」{attempt}, {when} 저장)."
-            f"{rerun}{kept}{unused} 같은 단계면 같은 응답을 쓰므로 지금의 경보 세기 · 사람의 답 · 에이전트 설정이 녹화 때와 달라도 응답은 그대로입니다. "
-            "응답 속 작업지시 · 발주 번호와 수치 · 시각은 강사 PC에서 저장할 때의 것이라 이 PC의 업무 데이터와 다를 수 있습니다.")
+    if skills is not None and set(skills) != set(last.get("skills") or ()):
+        return (f"{REPLAY} 스킬을 붙이거나 떼어도 같은 답을 냅니다(이번 실행의 스킬: {', '.join(skills) or '없음'}). "
+                "스킬을 붙이고 뗀 차이는 실제 AI로 실행할 때 확인할 수 있습니다.")
+    return None
 
 
 # ---------------------------------------------------------------- 점유 하나의 AI 응답
@@ -634,27 +637,27 @@ class Claim:
         if (request.resume_session or "").startswith(REUSE):
             return (f"앞선 실행 결과를 다시 쓰던 「{step}」에 이어지는 응답이 없어 멈췄습니다. 이 단계를 다시 실행하면 실제 AI로 새로 실행합니다.")
         if request.resume_session:
-            return (f"강의 녹화에는 「{step}」의 이어지는 응답(결과를 고쳐 다시 낸 응답 · 사람 답 뒤 이어 한 응답)이 없습니다. "
-                    "키 없는 PC는 녹화된 응답까지만 재생합니다 — 이 처리 건은 닫고 새로 시작하세요.")
+            return (f"{REPLAY} 「{step}」에 이어지는 응답(결과를 고쳐 다시 낸 응답 · 사람 답 뒤 이어 한 응답)을 지원하지 않습니다. "
+                    "이 처리 건은 닫고 새로 시작해 주세요.")
         if not self.slot:
-            return (f"「{step}」은 강의 녹화가 있는 수업 AI 단계가 아니라 키 없는 PC에서는 AI가 하지 않습니다. "
-                    "수업에서 준비한 흐름(냉각 · 정기 정비 · 예비품 구매 · 교대 인수인계)과 질문으로 실습하세요.")
+            return (f"{REPLAY} 「{step}」을 지원하지 않습니다. "
+                    "수업에서 준비한 흐름(냉각 · 정기 정비 · 예비품 구매 · 교대 인수인계)과 질문으로 실습해 주세요.")
         if self.slot == "question":
             asked = library.questions()
-            return ("이 PC는 키 없이 강의에서 다룬 질문에만 답합니다. 다룬 질문: " + (" / ".join(f"「{q}」" for q in asked) if asked else "없음")
-                    + ". 질문 칸 아래의 질문 단추를 눌러 넣고 보내세요.")
+            return (f"{REPLAY} 수업에서 다룬 질문에만 답합니다. 다룬 질문: " + (" / ".join(f"「{q}」" for q in asked) if asked else "없음")
+                    + ". 질문 칸 아래의 질문 단추를 눌러 넣고 보내 주세요.")
         g, n = self.attempt
         if doc is not None and n:
-            return (f"강의 녹화에는 「{step}」을 보류 뒤 다시 평가한 응답이 없습니다(첫 평가까지만 녹화돼 있습니다). "
-                    "키 없는 PC에서는 재평가 대신 보류 사유를 확인하고 사람이 처리하세요.")
+            return (f"{REPLAY} 「{step}」을 보류 뒤 다시 평가하는 것을 지원하지 않습니다(첫 평가까지 지원합니다). "
+                    "보류 사유를 확인하고 사람이 처리해 주세요.")
         if doc is not None and g:
-            return (f"강의 녹화에는 「{step}」을 재작업으로 다시 한 응답이 없습니다(첫 작업까지만 녹화돼 있습니다). "
-                    "키 없는 PC에서는 재작업 대신 새 처리 건으로 다시 시작하세요.")
+            return (f"{REPLAY} 「{step}」을 재작업으로 다시 하는 것을 지원하지 않습니다(첫 작업까지 지원합니다). "
+                    "새 처리 건으로 다시 시작해 주세요.")
         if self.slot.startswith("handover/draft-"):
             drafts = sorted({d["slot"] for _, d in library.docs() if str(d.get("slot") or "").startswith("handover/draft-")})
-            return (f"강의 녹화에는 「{step}」의 응답이 없습니다(교대 인계안은 보완 요청 {max(0, len(drafts) - 1)}번까지 녹화돼 있습니다). "
-                    "키 없는 PC에서는 그 뒤로 보완 요청 대신 [확인]으로 넘기세요.")
-        return (f"강의 녹화에는 이 종류의 처리 건에 대한 「{step}」 응답이 없습니다. 키 없는 PC에서는 수업에서 다룬 경보로 실습하세요.")
+            return (f"{REPLAY} 「{step}」을 지원하지 않습니다 — 교대 인계안의 보완 요청은 {max(0, len(drafts) - 1)}번까지 지원합니다. "
+                    "그 뒤로는 보완 요청 대신 [확인]으로 넘겨 주세요.")
+        return f"{REPLAY} 이 종류의 처리 건에서는 「{step}」을 지원하지 않습니다. 수업에서 다룬 경보로 실습해 주세요."
 
     def notice(self) -> str | None:
         if self.dropped and not self.last:
@@ -770,7 +773,7 @@ def main(argv: list[str] | None = None) -> int:
     for slot in unrecorded:
         print(f"  [녹화하지 않는 자리] {slot} — 키 없는 PC에서는 학생이 알아듣는 안내로 멈춥니다(정한 것)")
     for slot in missing:
-        print(f"  [녹화 없음] {slot} — 녹화해야 하는 자리입니다. 키 없는 PC에서 이 단계는 「강의 녹화에 없는 AI 단계」로 멈춥니다")
+        print(f"  [녹화 없음] {slot} — 녹화해야 하는 자리입니다. 키 없는 PC에서 이 단계는 「{NotRecorded.title}」로 멈춥니다")
     return 1 if missing else 0
 
 

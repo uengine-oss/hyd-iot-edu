@@ -118,7 +118,7 @@ def load_phase(path=PHASE_FILE, keys=PHASE_KEYS, now=None) -> Phase:
         except Exception:  # noqa: BLE001 — 다음 공개 키로; 모두 실패하면 아래에서 거절
             continue
     else:
-        raise PhaseError(f'{path.name}: 강사 서명을 확인할 수 없습니다 — 단계 선언은 강사만 바꿀 수 있습니다(저장소의 원래 파일로 되돌리세요)')
+        raise PhaseError(f'{path.name}: 단계 선언의 서명을 확인할 수 없습니다 — 이 파일은 고칠 수 없습니다(저장소의 원래 파일로 되돌리세요)')
     if payload.get('contract') != PHASE_CONTRACT or payload.get('phase') not in PHASES:
         raise PhaseError(f'{path.name}: 단계 선언의 계약 · 단계 이름이 다릅니다')
     expires = payload.get('expires')
@@ -199,7 +199,7 @@ class Policy:
     # 값마다 갈리는 판정의 까닭(수업 단계) — 거절 응답과 화면(view 의 reasons)이 같은 문장을 쓴다
     REASONS = {
         'ai_slot': ('수업에서는 준비된 흐름(냉각 · 정기 정비 · 예비품 구매 · 교대 인수인계)의 AI 단계와 질문만 실행합니다. '
-                    '다른 흐름의 AI 단계는 강사가 PBL 단계를 열면 실행됩니다.'),
+                    '다른 흐름의 AI 단계는 PBL 단계에서 실행됩니다.'),
         'assign': '수업에서는 교대 인수인계 단계에만 내 에이전트를 배정합니다(다른 단계는 PBL 단계에서 엽니다).',
         'start': '수업에서는 준비된 흐름(냉각 · 정기 정비 · 예비품 구매 · 교대 인수인계)만 시작합니다(다른 흐름은 PBL 단계에서 엽니다).',
         'import_flow': ('수업에서 가져오는 흐름은 제공한 교대 인수인계 BPMN 하나입니다(파일 안의 흐름 식별 이름 ShiftHandover는 바꾸지 마세요). '
@@ -207,7 +207,7 @@ class Policy:
         'edit_flow': '수업에서 연결(매핑)을 고치고 검사 · 등록하는 흐름은 제공한 교대 인수인계 하나입니다(다른 흐름은 PBL 단계에서 엽니다).',
         'deploy_flow': '수업에서 배포하거나 되돌리는 정의는 준비된 교대 인수인계 흐름뿐입니다(다른 정의는 PBL 단계에서 엽니다).',
         'define_flow': '수업에서는 정의 JSON 을 직접 등록하지 않습니다 — 교대 인수인계는 흐름 가져오기로 등록하고, 정의 등록은 PBL 단계에서 엽니다.',
-        'document': '수업에서는 강사가 제공한 수업 문서(내용을 고치지 않은 원문)만 등록합니다. 다른 문서는 PBL 단계에서 엽니다.',
+        'document': '수업에서는 제공된 수업 문서(내용을 고치지 않은 원문)만 등록합니다. 다른 문서는 PBL 단계에서 등록합니다.',
     }
 
     def __init__(self, phase: Phase, clock=None):
@@ -235,7 +235,7 @@ class Policy:
     @staticmethod
     def agent_model_error(model):
         if model not in (None, '', COURSE_MODEL):
-            return '에이전트 모델은 강사가 지정한 수업 모델 하나만 씁니다 — 다른 모델 이름은 받지 않습니다(비워 두면 수업 모델).'
+            return '에이전트 모델은 수업 모델 하나만 씁니다 — 다른 모델 이름은 받지 않습니다(비워 두면 수업 모델).'
         return None
 
     def assign(self, definition_id):
