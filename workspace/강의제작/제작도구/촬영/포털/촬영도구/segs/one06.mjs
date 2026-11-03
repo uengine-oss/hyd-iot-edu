@@ -48,7 +48,9 @@ export async function op(ctx,c,o){
   case 'step':{const q=await ctx.serial(()=>ctx.p.evaluate(stepInPage,a));if(q.error)throw Error(q.error);
     const head={css:`section.tr-step[data-key="${q.key}"] [data-tr-head]`,anchor:'left'};
     if(!q.expanded)await c.click(head);
-    return c.click({css:`section.tr-step[data-key="${q.key}"] [data-td-open="${q.key}"]`,anchor:'left'});}
+    // 펼친 직후에는 「단계 자세히」가 아직 그려지지 않았을 수 있다(06-r71 C042) — 나타날 때까지 기다린다.
+    const open={css:`section.tr-step[data-key="${q.key}"] [data-td-open="${q.key}"]`,anchor:'left'};
+    await c.appear(open,15000);return c.click(open);}
   case 'stepmark':{const q=await ctx.serial(()=>ctx.p.evaluate(stepInPage,a));if(q.error)throw Error(q.error);return c.point({css:`section.tr-step[data-key="${q.key}"] [data-tr-head]`,anchor:'after'});}
   case 'wait':case 'waittext':case 'waitjs':{const t0=Date.now(),limit=(kind==='wait'?b:(b??180))*1000||30000;
     if(kind==='wait')await c.appear(T(a),limit);
@@ -74,8 +76,9 @@ export async function seg(ctx,n){
  if(!cues.length)throw Error('구간 '+n+' 큐 없음');
  const c=await portal(ctx);
  if(n===1&&!ctx.resuming){const p=ctx.p;
+  // 학생처럼 꼬리 없는 첫 주소로 연다 — 새로 고침은 주소 끝(#/instances/…)의 지난 처리 건을 다시 열어 「이 처리 건은 열 수 없습니다」를 띄웠다(06-t7 C038).
   if(!(await p.url()).startsWith('http://127.0.0.1:8088/'))await p.goto('http://127.0.0.1:8088/',{waitUntil:'domcontentloaded'});
-  await p.evaluate(()=>{localStorage.removeItem('hyd.me');sessionStorage.clear();});await p.reload({waitUntil:'domcontentloaded'});await ctx.sleep(2000);
+  await p.evaluate(()=>{localStorage.removeItem('hyd.me');sessionStorage.clear();});await p.goto('about:blank');await p.goto('http://127.0.0.1:8088/',{waitUntil:'domcontentloaded'});await ctx.sleep(2000);
   await p.evaluate(()=>{document.querySelector('.rail nav button[data-tab="main"]').click();for(const e of document.querySelectorAll('.rail,main#content'))e.scrollTop=0;});
   await ctx.sleep(2500);await ctx.installPointer({x:760,y:430});}
  await ctx.begin();

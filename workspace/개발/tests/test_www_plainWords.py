@@ -57,3 +57,26 @@ def test_그래프에_있는_시스템_구동기_이름은_이름_사전_한_곳
               {'names': names, 'ids': ids})
     assert ids and all(sys_name == who == names[i] for i, sys_name, who in got['each']), got['each']
     assert got['detector'] == names['sys:cep']
+
+
+def _recorded_tool_output(slot, tool):
+    """저장된 AI 응답 재생 기록(it/agent-worker/replay)에서 그 도구가 실제로 돌려준 응답 — 판단 시스템의 지금 응답 꼴이다."""
+    import gzip, json
+    from www_node import WWW
+    for f in (WWW.parents[1] / 'agent-worker' / 'replay').glob('*.json.gz'):
+        rec = json.load(gzip.open(f))
+        if rec['slot'] == slot:
+            return next(e['tool_output'] for e in rec['runs'][0]['events'] if e['kind'] == 'tool_end' and e.get('tool') == tool)
+    raise AssertionError(f'재생 기록에 {slot}이 없다')
+
+
+def test_대안_평가_줄은_판단_시스템이_실제로_돌려준_꼴에서_대안_수와_추천을_읽는다():
+    """06 촬영 검토(2026-11-03): 응답은 맨 위에 options · recommended 인데 화면은 result.options 를 찾아 늘 「형식을 확인할 수 없습니다」였다."""
+    got = run(FILES, "out(hydWords.got('mcp__hyd-dmn__evaluate_cards', DATA))", _recorded_tool_output('c3_cooling/T_agent', 'mcp__hyd-dmn__evaluate_cards'))
+    assert got.startswith('대안 비교 완료 · 대안 4개'), got
+    assert '당시 추천 ‘' in got and '형식을 확인할 수 없습니다' not in got
+
+
+def test_파일_읽기_결과는_읽은_글자_수만_말한다():
+    got = run(FILES, "out(hydWords.got('Read', DATA))", _recorded_tool_output('c3_cooling/T_agent', 'Read'))
+    assert got.startswith('반환 본문 ') and got.endswith('자'), got

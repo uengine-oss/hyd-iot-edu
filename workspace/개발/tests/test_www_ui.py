@@ -94,3 +94,12 @@ def test_경보_패턴_이름은_그래프_목록에서_읽고_화면_사본이_
 def test_담당자_칸은_나만_받고_자유_글_칸을_그리지_않는다(me, html_has, html_not):
     got = run(FILES, "window.hydInbox = { me: () => DATA }; out(UI.actorInput('data-x', 'OP-17'))", me)
     assert all(h in got for h in html_has) and not any(n in got for n in html_not), got
+
+
+@pytest.mark.parametrize('skill, expected', [
+    ({'skill': 'cooling-emergency-response'}, 'cooling-emergency-response'),            # 한국어 이름 · 설명이 없는 기록: 등록 이름 그대로
+    ({'name': 'pm-plan', 'description': '정기 정비 계획 스킬'}, '정기 정비 계획 스킬'),  # 한국어 설명이 있으면 그것
+])
+def test_스킬_이름은_한국어_이름이_없으면_등록된_이름을_그대로_보인다(skill, expected):
+    """06 촬영 검토(2026-11-03): 처리 과정에 「스킬의 한국어 표시 이름 기록 없음」이 학생 화면에 보였다."""
+    assert run(FILES, "out(UI.skillLabel(DATA).label)", skill) == expected

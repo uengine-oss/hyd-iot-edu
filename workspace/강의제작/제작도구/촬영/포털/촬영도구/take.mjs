@@ -105,7 +105,7 @@ export async function take(opts){
   // 녹화는 전체에서 한 번만 시작한다. 구간 모듈이 begin을 몇 번 불러도 다시 시작하지 않는다.
   begin:async()=>{if(start!==null)return;
    await fs.writeFile(out+'/recording-start.json','{}');
-   await serial(()=>p.evaluate(()=>{window.__takeClicks=[];document.addEventListener('mousedown',e=>window.__takeClicks.push({x:e.clientX,y:e.clientY}),true);}));
+   await serial(()=>p.evaluate(()=>{window.__takeClicks=[];if(!window.__takeClickHook){window.__takeClickHook=true;document.addEventListener('mousedown',e=>window.__takeClicks.push({x:e.clientX,y:e.clientY}),true);}}));
    if(rehearsal){start=Date.now();recording=true;return;}
    await metrics();recording=true;captures++;
    await serial(()=>p.cdp('Page.startScreencast',{format:'jpeg',quality:85,maxWidth:1920,maxHeight:1080,everyNthFrame:1}));
