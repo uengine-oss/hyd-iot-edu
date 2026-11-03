@@ -1,5 +1,5 @@
-// 끊지 않는 한 번 녹화(로컬 ego). 구간 여러 개를 녹화 한 번으로 찍어 이음새가 생기지 않는다. encode.py가 그대로 합성한다.
-// 실행: ego-browser nodejs -e "const {take}=await import('file:///<이 파일>');await take({...})"(take.sh가 부른다)
+// 끊지 않는 한 번 녹화(로컬 ego · 클라우드 Playwright). 구간 여러 개를 녹화 한 번으로 찍어 이음새가 생기지 않는다. encode.py가 그대로 합성한다.
+// 실행: take.sh가 부른다 — ego는 ego-browser nodejs -e "…await take({...})", 리눅스는 node <실행 파일>(먼저 run.sh up). 브라우저 연결은 아래 openPage 한 곳.
 //   mode:'rehearse'  소리 길이 0 · 녹화 없음으로 같은 조작을 한다. 통과한 큐마다 조작 표시를 rehearsal-<이름 앞부분>.json에 남긴다. 이어서 돌린 리허설도 합친다.
 //   mode:'record'    모든 큐가 지금 조작 그대로 통과했을 때만 녹화한다. 큐 하나를 고치면 그 큐만 다시 리허설한다(대사만 바꾼 큐는 다시 돌지 않는다).
 // 커서: 페이지에 그리지 않고 이동을 기록해 합성 때 그린다(ui.mjs virtualPointer). 클릭은 도착 뒤 대상을 다시 찾고 맨 위 요소인지 확인한 뒤 누른다.
@@ -38,6 +38,22 @@ async function resumePoint({prev,fromCue}){
  return{cut,pointer:m?{x:m.x,y:m.y}:{x:ps.x,y:ps.y}};
 }
 
+// 브라우저 연결만 둘로 갈린다. 아래 코드는 ego 페이지 모양(cdp · events · waitForFileChooser · mouse · evaluate)만 쓴다. 둘 다 CSS 1280x720 · 프레임 1920x1080이라 encode.py가 같은 값으로 화살표를 그린다.
+//   ego(로컬 Windows, taskSpace가 있을 때): 작업 공간의 페이지. ego 150 %라 1920x1080 dsf1 → CSS 1280x720.
+//   Playwright(클라우드 리눅스): browser.mjs가 띄워 둔 헤드리스 Chromium에 CDP로 붙는다 — 녹화가 실패해도 페이지가 남아 그 큐부터 이어 찍는다. config.json viewport(CSS 1280x720 × 1.5).
+async function openPage(opts){
+ if(typeof taskSpace==='function'){const p=(await taskSpace(opts.space)).page('p1');return{p,view:{width:1920,height:1080,deviceScaleFactor:1},close:async()=>{}};}
+ const {createRequire}=await import('node:module');
+ const {chromium}=createRequire(import.meta.url)(process.env.PLAYWRIGHT_MODULE||'/opt/node22/lib/node_modules/playwright');
+ const browser=await chromium.connectOverCDP(`http://127.0.0.1:${CFG.cdp}`);
+ const p=browser.contexts()[0]?.pages()[0];if(!p)throw Error('녹화 브라우저 페이지 없음(run.sh up 먼저)');
+ const s=await p.context().newCDPSession(p),got=[];s.on('Page.screencastFrame',params=>got.push({method:'Page.screencastFrame',params}));
+ const url=p.url.bind(p);
+ Object.assign(p,{cdp:(m,a)=>s.send(m,a),events:()=>got.splice(0),waitForFileChooser:o=>p.waitForEvent('filechooser',o),url:async()=>url()});
+ const v=CFG.viewport;
+ return{p,view:{width:v.width,height:v.height,deviceScaleFactor:v.deviceScaleFactor},close:async()=>{await s.detach().catch(()=>{});await browser.close().catch(()=>{});}};
+}
+
 // opts: {mode, name, cueFile, module(segs/ 기준), segments:[구간 번호…], space, silent, resume:{prev,fromCue}, failAt(복구 시험용: 그 큐에서 일부러 실패)}
 export async function take(opts){
  const rehearsal=opts.mode==='rehearse',out=WORK+'/'+opts.name;
@@ -55,9 +71,8 @@ export async function take(opts){
   if(!real&&!opts.silent&&!rehearsal)throw Error('음성 없음 또는 대사 변경: '+c.id+' — voice.py로 만든 뒤 촬영한다');
   const ms=rehearsal?0:(real?real.duration_ms:Math.round(c.text.replace(/\s/g,'').length/SPEECH_RATE));
   await fs.writeFile(audio+'/'+c.id+'.json',JSON.stringify({text:c.text,duration_ms:ms}));}
- const task=await taskSpace(opts.space);const p=task.page('p1');
- // ego 150 %에서 1920x1080 dsf1 → CSS 1280x720 · 프레임 1920x1080(config.json viewport와 같아야 encode.py가 화살표를 맞게 그린다).
- const metrics=()=>p.cdp('Emulation.setDeviceMetricsOverride',{width:1920,height:1080,deviceScaleFactor:1,mobile:false});
+ const {p,view,close}=await openPage(opts);
+ const metrics=()=>p.cdp('Emulation.setDeviceMetricsOverride',{...view,mobile:false});
  await metrics();
  let queue=Promise.resolve();const serial=fn=>{const r=queue.then(fn);queue=r.catch(()=>{});return r;};
  const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -118,7 +133,8 @@ export async function take(opts){
  recording=false;done=true;await capture;
  const duration=start===null?0:Date.now()-start;await writeQueue;
  if(!rehearsal)await p.cdp('Page.stopScreencast').catch(()=>{});
- await p.evaluate(()=>localStorage.removeItem('hyd.me')).catch(()=>{});
+ // 「나」는 끝까지 찍었을 때만 비운다. 실패한 take는 페이지를 그대로 두어야 그 큐부터 같은 화면으로 이어 찍는다.
+ if(!error)await p.evaluate(()=>localStorage.removeItem('hyd.me')).catch(()=>{});
  // 페이지가 실제로 받은 클릭 좌표를 기록에 잇는다(ui.mjs가 보낸 값이 아니라 받은 값으로 검사하려고).
  const received=await p.evaluate(()=>window.__takeClicks||[]).catch(()=>[]);
  clicks.forEach((c,i)=>{if(received[i])Object.assign(c,{page_x:received[i].x,page_y:received[i].y});});
@@ -127,6 +143,7 @@ export async function take(opts){
  await fs.writeFile(out+'/timing.json',JSON.stringify({start,frames,actions,motions,clicks,retargets,waits,captures,duration,error,result},null,2));
  // 실패했으면 마지막 큐만 빼고 통과로 친다. 고친 뒤 그 큐부터 이어 돌리면 된다.
  if(rehearsal){const ok=new Set(actions.slice(0,error?-1:undefined).map(a=>a.id));for(const c of allCues)if(ok.has(c.id))passed[c.id]=opsMark(c);await fs.writeFile(proof,JSON.stringify(passed,null,1));}
+ await close();
  const r={mode:opts.mode,duration,frames:frames.length,captures,cues:actions.length,motions:motions.length,clicks:clicks.length,retargets:retargets.length,error};
  console.log(JSON.stringify(r));return r;
 }

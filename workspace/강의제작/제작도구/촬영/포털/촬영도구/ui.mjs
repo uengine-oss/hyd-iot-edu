@@ -101,7 +101,10 @@ export async function portal(ctx){
     // sc: 대상을 담은 스크롤 영역. 화살표 아래 입력칸 · 원문 칸이 먼저 굴러가 본문이 안 움직이는 일을 막는다.
     for(;a&&a!==document.documentElement;a=a.parentElement){const s=getComputedStyle(a),b=a.getBoundingClientRect();if(/(auto|scroll)/.test(s.overflowY)&&a.scrollHeight>a.clientHeight+1&&(!sc||(Math.abs(b.top-sc.top)<2&&Math.abs(b.left-sc.left)<2))&&(sc||(dy>0?a.scrollTop+a.clientHeight<a.scrollHeight-1:a.scrollTop>0)))break;}
     if(!a||a===document.documentElement)return false;
-    const from=a.scrollTop,t0=performance.now(),step=now=>{const u=Math.min(1,(now-t0)/ms);a.scrollTop=from+dy*(u*u*(3-2*u));if(u<1)requestAnimationFrame(step);};requestAnimationFrame(step);return true;},{x:lastPos.x,y:lastPos.y,dy,ms,sc:sc||null}));
+    // 실제 휠처럼 화살표 아래 요소에 휠 이벤트를 알린다(굴리기는 아래 애니메이션이 한다). 포털 처리 과정은 진행 중이면 새 줄로 화면을 저절로 끌어내리고
+    // 휠이 오면 6초 멈춘다(it/portal/www/trace.js followNewest). 알리지 않으면 재관측 중 위 단계로 굴리는 조작과 맞서 「Cannot bring into view」(2026-11-03 06 C045).
+    const tell=()=>document.elementFromPoint(x,y)?.dispatchEvent(new WheelEvent('wheel',{bubbles:true,cancelable:true,deltaY:dy,clientX:x,clientY:y}));tell();
+    const from=a.scrollTop,t0=performance.now(),step=now=>{const u=Math.min(1,(now-t0)/ms);a.scrollTop=from+dy*(u*u*(3-2*u));if(u<1)requestAnimationFrame(step);else tell();};requestAnimationFrame(step);return true;},{x:lastPos.x,y:lastPos.y,dy,ms,sc:sc||null}));
    if(!ok)throw Error(`굴릴 영역 없음: 화살표 (${Math.round(lastPos.x)},${Math.round(lastPos.y)}) 아래, ${dy}px`);
    await sleep(ms+150);return;}
   const n=Math.max(4,Math.round(Math.abs(dy)/30));let done=0;const t0=Date.now();
