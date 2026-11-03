@@ -202,13 +202,16 @@ def test_실행_도중_멈추면_누가_왜_멈췄는지를_작업_행대로_적
 
 
 # ---------------------------------------------------------------- 키 없는 PC(재생)
-def test_키_없는_PC의_교대_초안은_녹화를_재생해_제출하고_재생임을_알린다(course, worker, relay):
+def test_키_없는_PC의_교대_초안은_녹화를_재생해_제출하고_스킬_구성이_다를_때만_재생을_알린다(course, worker, relay):
+    """재생 화면은 실제 AI 실행과 같다 — 처리 과정의 재생 안내는 재생이 지원하지 않는 행동에서만(CLAUDE.md 5절). 여기서는 기본 교대
+    에이전트의 스킬(shift-handover-review)이 저장된 실행이 연 스킬(my-shift-handover-review)과 달라 그 한 줄만 남는다."""
     inst = start_handover(course.rt)
     worker('replay').poll_once()
     task = task_of(course.rt, inst['proc_inst_id'], DRAFT)
     assert task['status'] == 'SUBMITTED', friendly(course.rt, task['id'])
-    notes = [e['data'].get('content') for e in events_of(course.rt, task['id'], 'task_working')]
-    assert any(str(n).startswith('AI 응답 재생') for n in notes)
+    notes = [str(e['data'].get('content')) for e in events_of(course.rt, task['id'], 'task_working')]
+    said = [n for n in notes if '재생' in n or '강사' in n]
+    assert len(said) == 1 and '같은 답을 냅니다' in said[0] and 'shift-handover-review' in said[0] and '강사' not in said[0], said
     assert relay.requests == [] and ledger_runs(course.dsn) == []        # 재생은 관문 · 중계를 부르지 않는다
 
 
@@ -249,7 +252,7 @@ def test_녹화와_다른_설비로_시작한_교대는_바꿔_끼우지_않고_
     task = task_of(course.rt, inst['proc_inst_id'], DRAFT)
     error = friendly(course.rt, task['id'])
     assert task['draft_status'] == 'FAILED' and task.get('output') is None
-    assert error['name'] == '강의 녹화에 없는 AI 단계'
+    assert error['name'] == '재생 모드에서 지원하지 않는 AI 단계'
     assert 'HYD-01' in error['friendly'] and 'HYD-02' in error['friendly']
 
 
@@ -267,7 +270,7 @@ def test_키_없는_PC의_질문은_강의에서_다룬_질문에만_답한다(c
         assert after['state'] in ('submitted', 'done'), after['message']
     else:
         assert after['state'] == 'failed'
-        assert '강의에서 다룬 질문' in after['message'] and 'RuntimeError' not in after['message']
+        assert '수업에서 다룬 질문' in after['message'] and 'RuntimeError' not in after['message']
 
 
 def test_워커가_다시_켜지면_끊긴_재생_실행을_처음부터_다시_낸다(course, worker):
