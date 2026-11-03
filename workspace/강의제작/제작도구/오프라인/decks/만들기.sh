@@ -19,6 +19,6 @@ mkdir -p "$(dirname "$pptx")"
 if [ -n "$out" ]; then
   rm -rf "$out"; mkdir -p "$out"
   timeout 300 soffice --headless --convert-to pdf --outdir "$out" "$pptx" >/dev/null 2>&1
-  "$py" workspace/강의제작/제작도구/기존제작/tools/deck/글겹침.py "$out/$(basename "${pptx%.pptx}").pdf" | tail -3 || true
   pdftoppm -r 50 -png "$out/$(basename "${pptx%.pptx}").pdf" "$out/p"
+  "$py" workspace/강의제작/제작도구/기존제작/tools/deck/글겹침.py "$out/$(basename "${pptx%.pptx}").pdf" | tail -3
 fi

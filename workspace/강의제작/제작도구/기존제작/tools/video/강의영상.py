@@ -1,11 +1,11 @@
 """이론 대본 파일 하나를 영상 하나로 만든다(덱의 장 그림 + 장별 음성 + 자막). 대본 파일 하나가 촬영 구간 하나다.
 
-    python3 workspace/강의제작/제작도구/기존제작/tools/video/강의영상.py <출력 폴더> <대본 파일 …> [--breath] [--dry] [--voice ID] [--model ID]
+    python3 workspace/강의제작/제작도구/기존제작/tools/video/강의영상.py <출력 폴더> <대본 파일 …> [--breath] (--dry | --voice ID) [--model ID]
 
 - 대본: workspace/강의제작/산출물/<과정>/이론/NN회차/대본/*.md. `## [SLIDE NN]` 또는 `## [SLIDE NN~MM]` 구획만 읽고, 다른 `#`·`##` 제목에서 그 구획을 끝낸다.
   `>`로 시작하는 줄(제작 표시), `---`, 표 줄, `**`는 낭독하지 않는다
 - 슬라이드: 대본 폴더 위의 <과정>_NN일차.pptx를 LibreOffice로 PDF, pdftoppm으로 그림으로 바꾼다. 장 번호가 PPTX 장 수를 넘으면 멈춘다
-- 음성: ElevenLabs API(글자별 시간 포함). 장마다 따로 뽑아 저장해 두고, 글·음성·모델·속도가 같으면 다시 뽑지 않는다
+- 음성: ElevenLabs API(글자별 시간 포함). 장마다 따로 뽑아 저장해 두고, 글·음성·모델·속도가 같으면 다시 뽑지 않는다. --voice는 기본값이 없어 --dry 밖에서는 꼭 준다(영상.md V맥-12)
 - 시간: 장의 음성 길이만큼 그 장의 그림을 보여 준다. `SLIDE NN~MM`(실습 간지와 설명 장 두 장)은 첫 문장과 그 뒤 쉼까지 간지를, 둘째 문장부터 설명 장을 보여 준다.
   목표 초(--target)를 주지 않으면 쉼의 길이를 늘이거나 줄이지 않는다(기준 51번)
 - 호흡(--breath): 어디서 얼마나 쉴지는 쉼_저장/ 에 장마다 적어 둔 단계를 읽는다. 적히지 않은 장이 있으면 빈 자리를 만들어 두고 멈춘다. 이 도구는 OpenAI를 부르지 않는다
@@ -19,7 +19,7 @@ HERE = Path(__file__).resolve().parent
 ap = argparse.ArgumentParser()
 ap.add_argument("out"); ap.add_argument("scripts", nargs="+")
 ap.add_argument("--target", type=float, default=0.0)
-ap.add_argument("--voice", default="nncZBoy1F7bDlybjMjgZ"); ap.add_argument("--model", default="eleven_v4")
+ap.add_argument("--voice", default=None); ap.add_argument("--model", default="eleven_v4")
 ap.add_argument("--speed", type=float, default=0.80); ap.add_argument("--env", default="")
 ap.add_argument("--audio-ledger", help="이 제작에서 음성을 먼저 생성한 경우 실제 구획별 음성 지출 기록")
 ap.add_argument("--gap", type=float, default=1.6); ap.add_argument("--dry", action="store_true")
@@ -344,5 +344,6 @@ if __name__ == "__main__":
     print(f"합계 {len(jobs)}편 · {total}자")
     if bad: sys.exit(f"점검에 걸린 파일이 {bad}개 있다. 고친 뒤 다시 돌린다")
     if a.dry: sys.exit()
+    if not a.voice: sys.exit("--voice가 없어 합성 전에 멈춘다. 음성 캐시 이름에 음성 ID가 들어가 ID가 다르면 캐시를 못 쓰고 전부 새로 사므로, 계정에서 확인한 강사 복제 음성 ID를 준다(영상.md V맥-12)")
     OUT.mkdir(parents=True, exist_ok=True); CACHE.mkdir(exist_ok=True)
     for job in jobs: make(*job)
