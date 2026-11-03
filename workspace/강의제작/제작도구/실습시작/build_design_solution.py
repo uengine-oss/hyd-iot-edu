@@ -46,15 +46,17 @@ def bundle(course, workspace):
     shutil.copytree(source,folder)
     out = folder/'결과'
     shutil.copyfile(TOOLS/'모델실행.py',out/'모델실행.py')
-    schema = labs.schema_for(is_supply,'A')
-    schema.pop('branch',None)
+    branch = labs.LAB4_INPUT_BRANCH[course]     # 실전반 완성본 = 갈래 ㄴ(다음 실습 입력/ 모델과 같은 결정)
+    schema = labs.student_schema(labs.schema_for(is_supply,branch))
     if is_supply:
+        base_constraints = labs.schema_for(False,'A')['constraints']
         schema = {'classes':{'Supplier':schema['classes']['Supplier']}, 'relations':{'SUPPLIES':schema['relations']['SUPPLIES']},
-                  'constraints':schema['constraints'][-2:]}
+                  'constraints':[c for c in schema['constraints'] if c not in base_constraints]}
         schema['relations']['SUPPLIES']['properties'].update({'quote_source':'string','approval_source':'string','as_of':'string'})
         shutil.copyfile(TOOLS/'공급조건.py',out/'공급조건.py')
-        purpose='부품을 쓰는 설비·구성 요소를 찾고, 기준일의 유효 견적과 SCM 승인 상태를 따로 확인합니다.'
-        decision='공급 조건은 2026-10-15 기준으로 공급사·사내 품번별 가장 최근 유효 견적 한 건을 씁니다. SCM 등록 상태를 기준으로 승인과 조건부 승인을 포함하고 조건·기한을 함께 보존합니다. 비승인 상태도 견적과 구별해 남깁니다.'
+        purpose='부품을 쓰는 설비·구성 요소를 찾고, 기준일의 유효 견적과 SCM 승인 상태, 구매 기준서 7.4의 입고 검사 정보를 함께 확인합니다.'
+        decision=(f'공급 조건은 {labs.D.REF_DATE} 기준으로 공급사·사내 품번별 가장 최근 유효 견적 한 건을 씁니다. SCM 등록 상태를 기준으로 승인과 조건부 승인을 포함하고 조건·기한을 함께 보존합니다. 비승인 상태도 견적과 구별해 남깁니다. '
+                  f'구매 기준서 PR-07 7.4(불량률이 {labs.D.PR74_RATE_PCT} %를 넘는 승인 공급사는 발주 때 입고 전수 검사, 비교 비용 +{labs.D.PR74_EXTRA_MANWON}만 원)는 승인 여부를 바꾸지 않고, 걸리는 쌍에 입고 검사 · 비교 가산 비용 · 근거 줄로 붙입니다.')
     else:
         shutil.copyfile(TOOLS/'설비모델.py',out/'설비모델.py')
         dump(out/'표기_기준.json',{'구성요소_별칭':labs.NAME_ALIAS,'구성요소_이름':labs.CANON_NAME,
@@ -96,7 +98,8 @@ def bundle(course, workspace):
     lines=['# 원자료에서 확인한 내용', '',decision,'']
     if is_supply:
         for row in result['부품별 사용처']['P-PMP-SEAL']['공급 조건']:
-            lines.append(f"- {row['공급사']}: {row['quote_source']}의 견적, {row['approval_source']}의 {row['approval_status']}. 단가 {row['price_manwon']}만원, 불량률 {row['defect_rate']:g}(비율), 납기 {row['lead_days']}일.")
+            extra=f" {row['rule_source']}에 따라 {row['inspection']}, 비교 비용 +{row['compare_extra_manwon']:g}만원." if row.get('inspection') else ''
+            lines.append(f"- {row['공급사']}: {row['quote_source']}의 견적, {row['approval_source']}의 {row['approval_status']}. 단가 {row['price_manwon']}만원, 불량률 {row['defect_rate']:g}(비율), 납기 {row['lead_days']}일.{extra}")
         lines.extend(['','기간이 지난 견적과 같은 쌍의 이전 견적은 결과/견적_제외근거.json에서 확인합니다.'])
     else:
         lines.extend(['- 이관 코드와 현재 실물은 기능위치·일련번호로 대조했습니다. '+', '.join(relevant('설비_대장.csv',lambda x:x['상태']=='코드 통합')),

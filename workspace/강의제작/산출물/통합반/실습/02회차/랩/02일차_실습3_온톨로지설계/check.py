@@ -7,6 +7,11 @@ import json,sys
 root=Path(__file__).resolve().parent
 base=Path(sys.argv[1]) if len(sys.argv)>1 else root/'결과'
 errors=[];warnings=[];nodes=[];rels=[];labels_by_id={}
+missing=[n for n in ('schema.json','graph.json') if not (base/n).is_file()]
+if missing:
+    print('아직 검사할 결과가 없습니다: '+', '.join(base.name+'/'+n for n in missing))
+    print('START.md 「결과 형식」의 모양으로 만든 뒤 다시 실행하세요. 이 검사는 구조만 보고, 질문의 답은 원자료와 따로 대조합니다.')
+    sys.exit(1)
 BOOL_WORDS={'예','아니오','true','false','True','False','Y','N','yes','no','승인','비승인'}
 def kind_of(v):
     return 'boolean' if isinstance(v,bool) else 'integer' if isinstance(v,int) else 'number' if isinstance(v,float) else 'string' if isinstance(v,str) else 'list' if isinstance(v,list) else type(v).__name__

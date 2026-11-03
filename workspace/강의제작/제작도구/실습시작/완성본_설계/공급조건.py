@@ -1,6 +1,11 @@
-"""앞 단계의 그래프에 기준일 현재의 견적과 승인 근거를 추가한다."""
+"""앞 단계의 그래프에 기준일 현재의 견적과 승인 근거를 추가한다.
+
+승인 여부는 SCM 등록(승인공급사_목록.csv)대로 두고, 구매 기준서 7.4(불량률 기준을 넘는 승인 공급사의 입고 전수 검사와
+비교 가산 비용)에 걸리는 쌍에는 그 정보를 근거 줄과 함께 붙인다. 기준값은 구매 기준서 발췌의 7.4 문장에서 읽는다.
+"""
 import csv
 import json
+import re
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -13,10 +18,21 @@ def records(name):
         return [(line, row) for line, row in enumerate(csv.DictReader(stream), 2)]
 
 
+def inspection_rule():
+    """구매 기준서 발췌에서 7.4의 전수 검사 문장을 찾아 (기준 비율, 가산 비용, 근거 줄)을 돌려준다."""
+    name = '구매기준서_PR-07_발췌.md'
+    for line, text in enumerate((ROOT / '자료' / name).read_text(encoding='utf-8').splitlines(), 1):
+        found = re.search(r'불량률이 (\d+(?:\.\d+)?) %를 넘는 승인 공급사.*전수 검사 비용 (\d+(?:\.\d+)?)만 원', text)
+        if found:
+            return float(found.group(1)) / 100, float(found.group(2)), f'{name} {line}행(7.4)'
+    raise ValueError(f'{name}에서 7.4의 전수 검사 문장을 찾지 못했습니다.')
+
+
 def extend_model():
     graph = json.loads((ROOT / '입력/graph.json').read_text(encoding='utf-8'))
     parts = {node['props']['id']: node['props'] for node in graph['nodes'] if 'Part' in node['labels']}
     approval = {(row['공급사'], row['품번']): (ln, row) for ln, row in records('승인공급사_목록.csv')}
+    threshold, extra_cost, rule_line = inspection_rule()
     latest = {}
     ignored = []
     for line, quote in records('공급_조건.csv'):
@@ -60,6 +76,8 @@ def extend_model():
         }
         if registration.get('조건'):
             props['condition'] = registration['조건']
+        if props['approved'] and round(props['defect_rate'], 6) > threshold:
+            props.update(inspection='입고 전수 검사', compare_extra_manwon=extra_cost, rule_source=rule_line)
         graph['rels'].append({'type':'SUPPLIES','a':'supplier:'+supplier,'b':item,'props':props})
     return graph, ignored
 

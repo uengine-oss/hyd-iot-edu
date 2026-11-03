@@ -4783,7 +4783,10 @@
         "min_order_qty": 1,
         "supplier_part_no": "AJ-C4500",
         "quote_date": "2026-10-02",
-        "valid_until": "2026-12-31"
+        "valid_until": "2026-12-31",
+        "inspection": "입고 전수 검사",
+        "compare_extra_manwon": 20.0,
+        "rule_source": "구매기준서_PR-07_발췌.md 7.4"
       }
     },
     {
@@ -4831,7 +4834,10 @@
         "min_order_qty": 1,
         "supplier_part_no": "AJ-S4510",
         "quote_date": "2026-10-02",
-        "valid_until": "2026-12-31"
+        "valid_until": "2026-12-31",
+        "inspection": "입고 전수 검사",
+        "compare_extra_manwon": 20.0,
+        "rule_source": "구매기준서_PR-07_발췌.md 7.4"
       }
     },
     {

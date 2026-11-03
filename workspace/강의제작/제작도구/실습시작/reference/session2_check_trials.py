@@ -1,4 +1,4 @@
-"""2회차 실습3(두 반) 학생 검사기(check.py) 고의 손상 시험. 강사 참조 영역이며 학생 ZIP에 넣지 않는다.
+"""2회차 실습3(두 반) 학생 검사기(check.py) 고의 손상 시험. 실전반은 「공급 조건 형식」 계약과 갈래 A · B · ㄴ · ㄷ 원본을 함께 본다. 강사 참조 영역이며 학생 ZIP에 넣지 않는다.
 
 학생 시작본 폴더를 임시로 복사하고, 강사 참조 모델(갈래 A·B)과 그 모델을 일부러 망가뜨린 입력을 결과/에 넣어
 실제 check.py를 실행한다. 원본은 건드리지 않는다. 기대대로가 아니면 좌표(시험 이름·출력)와 함께 exit 1.
@@ -19,14 +19,21 @@ LABS = {'통합반': ROOT/'workspace/강의제작/산출물/통합반/실습/02�
 OUT = HERE/'session2_검사기_고의손상.json'
 
 
+BRANCH_DIRS = {'A': '', 'B': '갈래B', 'ㄴ': '갈래ㄴ', 'ㄷ': '갈래ㄷ'}   # build_labs.BRANCH_DIRS와 같은 자리
+
+
 def load(course, branch='A'):
-    d = HERE/course/('갈래B' if branch == 'B' else '')
+    d = HERE/course/BRANCH_DIRS[branch]
     return json.loads((d/'schema.json').read_text(encoding='utf-8')), json.loads((d/'graph.json').read_text(encoding='utf-8'))
 
 
 def run(folder, schema, graph):
-    (folder/'결과/schema.json').write_text(json.dumps(schema, ensure_ascii=False), encoding='utf-8')
-    (folder/'결과/graph.json').write_text(json.dumps(graph, ensure_ascii=False), encoding='utf-8')
+    for name, value in [('schema.json', schema), ('graph.json', graph)]:
+        path = folder/'결과'/name
+        if value is None:
+            path.unlink(missing_ok=True)       # 결과를 아직 만들지 않은 상태
+        else:
+            path.write_text(json.dumps(value, ensure_ascii=False), encoding='utf-8')
     p = subprocess.run([sys.executable, 'check.py'], cwd=folder, capture_output=True, text=True, encoding='utf-8', env={'PYTHONUTF8': '1', 'SYSTEMROOT': 'C:\\Windows'})
     return p.returncode, (p.stdout + p.stderr).strip()
 
@@ -50,6 +57,8 @@ def trials():
     add('통합반', '원본 B(SAME_ITEM_AS)', noop, True, ['구조 검사 통과', 'SAME_ITEM_AS: Part → Part 1개'], branch='B')
     add('실전반', '원본 A', noop, True, ['구조 검사 통과', 'SUPPLIES: Supplier → Part 21개'])
     add('실전반', '원본 B(조건부 승인=비승인)', noop, True, ['구조 검사 통과'], branch='B')
+    add('실전반', '원본 ㄴ(PR-07 7.4 정보 표시)', noop, True, ['구조 검사 통과', 'SUPPLIES: Supplier → Part 21개'], branch='ㄴ')
+    add('실전반', '원본 ㄷ(PR-07 7.4 미결 표시)', noop, True, ['구조 검사 통과', 'SUPPLIES: Supplier → Part 21개'], branch='ㄷ')
     # 공통 구조(이전 12종을 다시 실행할 수 있게 옮김)
     add('통합반', '1 중복 id', lambda s, g: g['nodes'].append(copy.deepcopy(node(g, 'P-PMP-SEAL'))), False, ['중복 id: P-PMP-SEAL'])
     add('통합반', '2 없는 끝점', lambda s, g: g['rels'].append({'type': 'USES_PART', 'a': 'HYD-01:pump-a', 'b': 'P-PMP-SEAL-X', 'props': {}}), False, ['없는 관계 끝점'])
@@ -82,37 +91,39 @@ def trials():
                 r.update(type='ATTACHED_TO', a=r['b'], b=r['a'])
     add('통합반', '21 방향 반대(Sensor → Asset/Component)에서도 설비 직결 센서가 드러남', reverse_fallback, True, ['구조 검사 통과', 'Component를 거치지 않고 Asset에 바로 붙은 Sensor', '(ATTACHED_TO)'], ['바로 붙은 Sensor 4개('])
 
-    # 업무 답의 적합성은 학생이 원자료로 입증한다. 구조 검사는 스키마와 그래프의 일관성을 본다.
+    # 결과를 아직 만들지 않은 상태: 검사는 오류 추적 대신 결과 형식을 안내하고 실패로 끝난다
+    add('통합반', '20 결과 없음', lambda s, g: None, False, ['아직 검사할 결과가 없습니다'], ['Traceback'])
+    add('실전반', '20 결과 없음', lambda s, g: None, False, ['아직 검사할 결과가 없습니다'], ['Traceback'])
+
+    # 실전반 「공급 조건 형식」(다음 실습의 조회가 읽는 계약): SUPPLIES 하나 = 공급사 · 부품 쌍의 기준일 조건 하나와 다섯 속성
     def rename_relation(schema, graph):
         schema['relations']['QUOTED'] = schema['relations'].pop('SUPPLIES')
         for relation in graph['rels']:
             if relation['type'] == 'SUPPLIES':
                 relation['type'] = 'QUOTED'
 
-    def use_offer_nodes(schema, graph):
-        supply = schema['relations'].pop('SUPPLIES')
-        schema['classes']['Offer'] = {'meaning': '공급 조건', 'required': {'id': 'string', 'approved': 'boolean'}}
-        schema['relations']['MADE_OFFER'] = {'from': supply['from'], 'to': 'Offer', 'cardinality': '1:N'}
-        schema['relations']['FOR_PART'] = {'from': 'Offer', 'to': supply['to'], 'cardinality': 'N:1'}
-        edges = []
+    def second_quote(schema, graph):
+        extra = copy.deepcopy(rel(graph, 'SUPPLIES', 'supplier:B-OEM', 'P-PMP-SEAL'))
+        extra['props'].update(id='old-quote', price_manwon=58.0, quote_date='2026-04-03')
+        graph['rels'].append(extra)
+
+    def status_only(schema, graph):
+        schema['relations']['SUPPLIES']['properties'].pop('approved')
         for relation in graph['rels']:
-            if relation['type'] != 'SUPPLIES':
-                edges.append(relation)
-                continue
-            key = 'offer:' + relation['a'] + ':' + relation['b']
-            graph['nodes'].append({'labels': ['Offer'], 'props': {**relation['props'], 'id': key}})
-            edges.extend([{'type': 'MADE_OFFER', 'a': relation['a'], 'b': key},
-                          {'type': 'FOR_PART', 'a': key, 'b': relation['b']}])
-        graph['rels'] = edges
+            if relation['type'] == 'SUPPLIES':
+                relation['props'].pop('approved')
 
     def missing_declared_field(schema, graph):
         schema['relations']['SUPPLIES']['required'] = ['quote_date']
         rel(graph, 'SUPPLIES')['props'].pop('quote_date')
 
-    add('실전반', '다른 관계 이름', rename_relation, True, ['QUOTED: Supplier → Part'])
-    add('실전반', '견적을 독립 대상으로 모델링', use_offer_nodes, True, ['MADE_OFFER: Supplier → Offer', 'FOR_PART: Offer → Part'])
-    add('실전반', '내 스키마에서 필수로 선언한 근거 날짜 누락', missing_declared_field, False, ['필수 속성 quote_date 없음'])
-    add('실전반', '내 스키마 자료형과 실제 승인 값 불일치', lambda s, g: s['relations']['SUPPLIES']['properties'].update(approved='string'), False, ['string 이어야 함'])
+    add('실전반', '14 같은 쌍에 SUPPLIES 둘(재견적 둘 다 보존)', second_quote, False, ['supplier:B-OEM→P-PMP-SEAL가 2개'])
+    add('실전반', '15 approved 없음(결정 누락)', lambda s, g: rel(g, 'SUPPLIES', 'supplier:A정밀', 'P-PMP-SEAL')['props'].pop('approved'), False, ['supplier:A정밀→P-PMP-SEAL: approved 없음'])
+    add('실전반', '16 schema의 approved를 글자로 정의', lambda s, g: s['relations']['SUPPLIES']['properties'].update(approved='string'), False, ["SUPPLIES.properties.approved는 'boolean'"])
+    add('실전반', '17 SUPPLIES 관계 이름 다름', rename_relation, False, ['공급 조건 관계 SUPPLIES가 없습니다'])
+    add('실전반', '18 불량률 % 숫자', lambda s, g: rel(g, 'SUPPLIES', 'supplier:A정밀', 'P-PMP-SEAL')['props'].update(defect_rate=12.0), False, ['defect_rate=12.0는 0~1 범위 밖'])
+    add('실전반', '19 승인 상태를 글자로만 둠(approved 대신 status)', status_only, False, ['approved 없음'])
+    add('실전반', '22 내 스키마에서 필수로 선언한 근거 날짜 누락', missing_declared_field, False, ['필수 속성 quote_date 없음'])
     return T
 
 
@@ -125,6 +136,8 @@ def main():
         for course, name, branch, fn, ok, want, absent in trials():
             schema, graph = load(course, branch)
             fn(schema, graph)
+            if name.endswith('결과 없음'):
+                schema = graph = None
             code, out = run(tmp/course, schema, graph)
             good = (code == 0) == ok and all(w in out for w in want) and not any(a in out for a in absent)
             records.append({'반': course, '시험': name, '갈래': branch, 'exit': code, '통과_기대': ok, '기대대로': good, '출력': out.splitlines()[-12:]})

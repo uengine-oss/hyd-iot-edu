@@ -46,7 +46,7 @@
   "통과_기대": true,
   "기대대로": true,
   "출력": [
-   "참고: 공급 조건 SUPPLIES 쌍 21개, 관계 21개(approved=true 18개, false 3개). 쌍마다 고른 견적·승인 근거는 자료_검토.md에서 원자료와 대조하세요.",
+   "참고: SUPPLIES 쌍 21개(approved=true 18개, false 3개). 쌍마다 고른 견적과 승인 근거는 원자료 줄과 따로 대조하세요.",
    "참고: 관계마다 어느 종류에서 어느 종류로 이어졌는지(원자료의 행 수·붙은 곳과 대조하세요)",
    "  HAS_COMPONENT: Asset → Component 68개",
    "  MONITORED_BY: Asset → Sensor 4개",
@@ -67,7 +67,49 @@
   "통과_기대": true,
   "기대대로": true,
   "출력": [
-   "참고: 공급 조건 SUPPLIES 쌍 21개, 관계 21개(approved=true 17개, false 4개). 쌍마다 고른 견적·승인 근거는 자료_검토.md에서 원자료와 대조하세요.",
+   "참고: SUPPLIES 쌍 21개(approved=true 17개, false 4개). 쌍마다 고른 견적과 승인 근거는 원자료 줄과 따로 대조하세요.",
+   "참고: 관계마다 어느 종류에서 어느 종류로 이어졌는지(원자료의 행 수·붙은 곳과 대조하세요)",
+   "  HAS_COMPONENT: Asset → Component 68개",
+   "  MONITORED_BY: Asset → Sensor 4개",
+   "  MONITORED_BY: Component → Sensor 90개",
+   "  OBSERVES: Sensor → Quantity 94개",
+   "  SUPPLIES: Supplier → Part 21개",
+   "  USES_PART: Component → Part 49개",
+   "참고: Component를 거치지 않고 Asset에 바로 붙은 Sensor 4개(MONITORED_BY). 원자료의 붙은곳이 정말 Asset 전체인 행인지 대조하세요.",
+   "  HYD-01 1개, HYD-02 1개, HYD-03 1개, HYD-04 1개",
+   "구조 검사 통과: 노드 212개, 관계 326개. 원자료의 의미·단위·질문별 답은 별도로 대조하세요."
+  ]
+ },
+ {
+  "반": "실전반",
+  "시험": "원본 ㄴ(PR-07 7.4 정보 표시)",
+  "갈래": "ㄴ",
+  "exit": 0,
+  "통과_기대": true,
+  "기대대로": true,
+  "출력": [
+   "참고: SUPPLIES 쌍 21개(approved=true 18개, false 3개). 쌍마다 고른 견적과 승인 근거는 원자료 줄과 따로 대조하세요.",
+   "참고: 관계마다 어느 종류에서 어느 종류로 이어졌는지(원자료의 행 수·붙은 곳과 대조하세요)",
+   "  HAS_COMPONENT: Asset → Component 68개",
+   "  MONITORED_BY: Asset → Sensor 4개",
+   "  MONITORED_BY: Component → Sensor 90개",
+   "  OBSERVES: Sensor → Quantity 94개",
+   "  SUPPLIES: Supplier → Part 21개",
+   "  USES_PART: Component → Part 49개",
+   "참고: Component를 거치지 않고 Asset에 바로 붙은 Sensor 4개(MONITORED_BY). 원자료의 붙은곳이 정말 Asset 전체인 행인지 대조하세요.",
+   "  HYD-01 1개, HYD-02 1개, HYD-03 1개, HYD-04 1개",
+   "구조 검사 통과: 노드 212개, 관계 326개. 원자료의 의미·단위·질문별 답은 별도로 대조하세요."
+  ]
+ },
+ {
+  "반": "실전반",
+  "시험": "원본 ㄷ(PR-07 7.4 미결 표시)",
+  "갈래": "ㄷ",
+  "exit": 0,
+  "통과_기대": true,
+  "기대대로": true,
+  "출력": [
+   "참고: SUPPLIES 쌍 21개(approved=true 18개, false 3개). 쌍마다 고른 견적과 승인 근거는 원자료 줄과 따로 대조하세요.",
    "참고: 관계마다 어느 종류에서 어느 종류로 이어졌는지(원자료의 행 수·붙은 곳과 대조하세요)",
    "  HAS_COMPONENT: Asset → Component 68개",
    "  MONITORED_BY: Asset → Sensor 4개",
@@ -148,7 +190,7 @@
   "통과_기대": false,
   "기대대로": true,
   "출력": [
-   "참고: 공급 조건 SUPPLIES 쌍 21개, 관계 21개(approved=true 18개, false 2개). 쌍마다 고른 견적·승인 근거는 자료_검토.md에서 원자료와 대조하세요.",
+   "참고: SUPPLIES 쌍 21개(approved=true 18개, false 2개). 쌍마다 고른 견적과 승인 근거는 원자료 줄과 따로 대조하세요.",
    "참고: 관계마다 어느 종류에서 어느 종류로 이어졌는지(원자료의 행 수·붙은 곳과 대조하세요)",
    "  HAS_COMPONENT: Asset → Component 68개",
    "  MONITORED_BY: Asset → Sensor 4개",
@@ -272,7 +314,7 @@
   "통과_기대": false,
   "기대대로": true,
   "출력": [
-   "참고: 공급 조건 SUPPLIES 쌍 21개, 관계 21개(approved=true 18개, false 3개). 쌍마다 고른 견적·승인 근거는 자료_검토.md에서 원자료와 대조하세요.",
+   "참고: SUPPLIES 쌍 21개(approved=true 18개, false 3개). 쌍마다 고른 견적과 승인 근거는 원자료 줄과 따로 대조하세요.",
    "참고: 관계마다 어느 종류에서 어느 종류로 이어졌는지(원자료의 행 수·붙은 곳과 대조하세요)",
    "  HAS_COMPONENT: Asset → Component 68개",
    "  MONITORED_BY: Asset → Sensor 4개",
@@ -359,6 +401,30 @@
   ]
  },
  {
+  "반": "통합반",
+  "시험": "20 결과 없음",
+  "갈래": "A",
+  "exit": 1,
+  "통과_기대": false,
+  "기대대로": true,
+  "출력": [
+   "아직 검사할 결과가 없습니다: 결과/schema.json, 결과/graph.json",
+   "START.md 「결과 형식」의 모양으로 만든 뒤 다시 실행하세요. 이 검사는 구조만 보고, 질문의 답은 원자료와 따로 대조합니다."
+  ]
+ },
+ {
+  "반": "실전반",
+  "시험": "20 결과 없음",
+  "갈래": "A",
+  "exit": 1,
+  "통과_기대": false,
+  "기대대로": true,
+  "출력": [
+   "아직 검사할 결과가 없습니다: 결과/schema.json, 결과/graph.json",
+   "START.md 「결과 형식」의 모양으로 만든 뒤 다시 실행하세요. 이 검사는 구조만 보고, 질문의 답은 원자료와 따로 대조합니다."
+  ]
+ },
+ {
   "반": "실전반",
   "시험": "14 같은 쌍에 SUPPLIES 둘(재견적 둘 다 보존)",
   "갈래": "A",
@@ -366,7 +432,7 @@
   "통과_기대": false,
   "기대대로": true,
   "출력": [
-   "참고: 공급 조건 SUPPLIES 쌍 21개, 관계 22개(approved=true 19개, false 3개). 쌍마다 고른 견적·승인 근거는 자료_검토.md에서 원자료와 대조하세요.",
+   "참고: SUPPLIES 쌍 21개(approved=true 19개, false 3개). 쌍마다 고른 견적과 승인 근거는 원자료 줄과 따로 대조하세요.",
    "참고: 관계마다 어느 종류에서 어느 종류로 이어졌는지(원자료의 행 수·붙은 곳과 대조하세요)",
    "  HAS_COMPONENT: Asset → Component 68개",
    "  MONITORED_BY: Asset → Sensor 4개",
@@ -377,7 +443,7 @@
    "참고: Component를 거치지 않고 Asset에 바로 붙은 Sensor 4개(MONITORED_BY). 원자료의 붙은곳이 정말 Asset 전체인 행인지 대조하세요.",
    "  HYD-01 1개, HYD-02 1개, HYD-03 1개, HYD-04 1개",
    "구조 확인 필요 1건",
-   "SUPPLIES supplier:A정밀→P-FAN-BRG가 2개: 공급사·부품 쌍마다 기준일 조건 하나만 둡니다. 견적 이력은 다른 종류·관계로 두세요."
+   "SUPPLIES supplier:B-OEM→P-PMP-SEAL가 2개: 공급사 · 부품 쌍마다 하나만 둡니다(START.md 「공급 조건 형식」)."
   ]
  },
  {
@@ -388,7 +454,7 @@
   "통과_기대": false,
   "기대대로": true,
   "출력": [
-   "참고: 공급 조건 SUPPLIES 쌍 21개, 관계 21개(approved=true 17개, false 3개). 쌍마다 고른 견적·승인 근거는 자료_검토.md에서 원자료와 대조하세요.",
+   "참고: SUPPLIES 쌍 21개(approved=true 17개, false 3개). 쌍마다 고른 견적과 승인 근거는 원자료 줄과 따로 대조하세요.",
    "참고: 관계마다 어느 종류에서 어느 종류로 이어졌는지(원자료의 행 수·붙은 곳과 대조하세요)",
    "  HAS_COMPONENT: Asset → Component 68개",
    "  MONITORED_BY: Asset → Sensor 4개",
@@ -399,7 +465,7 @@
    "참고: Component를 거치지 않고 Asset에 바로 붙은 Sensor 4개(MONITORED_BY). 원자료의 붙은곳이 정말 Asset 전체인 행인지 대조하세요.",
    "  HYD-01 1개, HYD-02 1개, HYD-03 1개, HYD-04 1개",
    "구조 확인 필요 1건",
-   "SUPPLIES supplier:A정밀→P-CLR-CORE: approved 없음 — 이 쌍의 기준일 조건이 정해지지 않았습니다."
+   "SUPPLIES supplier:A정밀→P-PMP-SEAL: approved 없음"
   ]
  },
  {
@@ -442,7 +508,7 @@
    "참고: Component를 거치지 않고 Asset에 바로 붙은 Sensor 4개(MONITORED_BY). 원자료의 붙은곳이 정말 Asset 전체인 행인지 대조하세요.",
    "  HYD-01 1개, HYD-02 1개, HYD-03 1개, HYD-04 1개",
    "구조 확인 필요 2건",
-   "schema.json relations에 공급 조건 관계 SUPPLIES가 없습니다(START.md 공급 조건 형식).",
+   "schema.json relations에 공급 조건 관계 SUPPLIES가 없습니다(START.md 「공급 조건 형식」).",
    "graph.json에 SUPPLIES 관계가 없습니다."
   ]
  },
@@ -454,7 +520,7 @@
   "통과_기대": false,
   "기대대로": true,
   "출력": [
-   "참고: 공급 조건 SUPPLIES 쌍 21개, 관계 21개(approved=true 18개, false 3개). 쌍마다 고른 견적·승인 근거는 자료_검토.md에서 원자료와 대조하세요.",
+   "참고: SUPPLIES 쌍 21개(approved=true 18개, false 3개). 쌍마다 고른 견적과 승인 근거는 원자료 줄과 따로 대조하세요.",
    "참고: 관계마다 어느 종류에서 어느 종류로 이어졌는지(원자료의 행 수·붙은 곳과 대조하세요)",
    "  HAS_COMPONENT: Asset → Component 68개",
    "  MONITORED_BY: Asset → Sensor 4개",
@@ -465,7 +531,7 @@
    "참고: Component를 거치지 않고 Asset에 바로 붙은 Sensor 4개(MONITORED_BY). 원자료의 붙은곳이 정말 Asset 전체인 행인지 대조하세요.",
    "  HYD-01 1개, HYD-02 1개, HYD-03 1개, HYD-04 1개",
    "구조 확인 필요 1건",
-   "SUPPLIES supplier:C트레이딩→P-RTN-FLT: defect_rate=8는 0~1 비율이어야 합니다(% 표기 환산 확인)."
+   "SUPPLIES supplier:A정밀→P-PMP-SEAL: defect_rate=12.0는 0~1 범위 밖입니다."
   ]
  },
  {
@@ -476,26 +542,26 @@
   "통과_기대": false,
   "기대대로": true,
   "출력": [
-   "SUPPLIES supplier:B-OEM→P-FAN-BRG: approved 없음 — 이 쌍의 기준일 조건이 정해지지 않았습니다.",
-   "SUPPLIES supplier:B-OEM→P-PMP-SEAL: approved 없음 — 이 쌍의 기준일 조건이 정해지지 않았습니다.",
-   "SUPPLIES supplier:B-OEM→P-PMP-SEAL-HT: approved 없음 — 이 쌍의 기준일 조건이 정해지지 않았습니다.",
-   "SUPPLIES supplier:B-OEM→P-RTN-FLT: approved 없음 — 이 쌍의 기준일 조건이 정해지지 않았습니다.",
-   "SUPPLIES supplier:B-OEM→P-VLV-COIL: approved 없음 — 이 쌍의 기준일 조건이 정해지지 않았습니다.",
-   "SUPPLIES supplier:C트레이딩→P-CLR-CORE: approved 없음 — 이 쌍의 기준일 조건이 정해지지 않았습니다.",
-   "SUPPLIES supplier:C트레이딩→P-PMP-SEAL: approved 없음 — 이 쌍의 기준일 조건이 정해지지 않았습니다.",
-   "SUPPLIES supplier:C트레이딩→P-RTN-FLT: approved 없음 — 이 쌍의 기준일 조건이 정해지지 않았습니다.",
-   "SUPPLIES supplier:대원하이드로→P-DPU-FLT: approved 없음 — 이 쌍의 기준일 조건이 정해지지 않았습니다.",
-   "SUPPLIES supplier:대원하이드로→P-DPU-SEAL: approved 없음 — 이 쌍의 기준일 조건이 정해지지 않았습니다.",
-   "SUPPLIES supplier:대한베어링→P-BRG-6205: approved 없음 — 이 쌍의 기준일 조건이 정해지지 않았습니다.",
-   "SUPPLIES supplier:정유상사→P-HYD-OIL: approved 없음 — 이 쌍의 기준일 조건이 정해지지 않았습니다."
+   "SUPPLIES supplier:B-OEM→P-FAN-BRG: approved 없음",
+   "SUPPLIES supplier:B-OEM→P-PMP-SEAL: approved 없음",
+   "SUPPLIES supplier:B-OEM→P-PMP-SEAL-HT: approved 없음",
+   "SUPPLIES supplier:B-OEM→P-RTN-FLT: approved 없음",
+   "SUPPLIES supplier:B-OEM→P-VLV-COIL: approved 없음",
+   "SUPPLIES supplier:C트레이딩→P-CLR-CORE: approved 없음",
+   "SUPPLIES supplier:C트레이딩→P-PMP-SEAL: approved 없음",
+   "SUPPLIES supplier:C트레이딩→P-RTN-FLT: approved 없음",
+   "SUPPLIES supplier:대원하이드로→P-DPU-FLT: approved 없음",
+   "SUPPLIES supplier:대원하이드로→P-DPU-SEAL: approved 없음",
+   "SUPPLIES supplier:대한베어링→P-BRG-6205: approved 없음",
+   "SUPPLIES supplier:정유상사→P-HYD-OIL: approved 없음"
   ]
  },
  {
-  "반": "통합반",
-  "시험": "20 통합반 검사기에는 공급 계약 검사가 없음",
+  "반": "실전반",
+  "시험": "22 내 스키마에서 필수로 선언한 근거 날짜 누락",
   "갈래": "A",
-  "exit": 0,
-  "통과_기대": true,
+  "exit": 1,
+  "통과_기대": false,
   "기대대로": true,
   "출력": [
    "참고: 관계마다 어느 종류에서 어느 종류로 이어졌는지(원자료의 행 수·붙은 곳과 대조하세요)",
@@ -503,10 +569,13 @@
    "  MONITORED_BY: Asset → Sensor 4개",
    "  MONITORED_BY: Component → Sensor 90개",
    "  OBSERVES: Sensor → Quantity 94개",
+   "  SUPPLIES: Supplier → Part 21개",
    "  USES_PART: Component → Part 49개",
    "참고: Component를 거치지 않고 Asset에 바로 붙은 Sensor 4개(MONITORED_BY). 원자료의 붙은곳이 정말 Asset 전체인 행인지 대조하세요.",
    "  HYD-01 1개, HYD-02 1개, HYD-03 1개, HYD-04 1개",
-   "구조 검사 통과: 노드 206개, 관계 305개. 원자료의 의미·단위·질문별 답은 별도로 대조하세요."
+   "구조 확인 필요 2건",
+   "SUPPLIES supplier:A정밀→P-ACC-BLD: 필수 속성 quote_date 없음",
+   "SUPPLIES supplier:A정밀→P-ACC-BLD: quote_date 없음"
   ]
  }
 ]

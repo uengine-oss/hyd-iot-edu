@@ -123,18 +123,21 @@
         "min_order_qty": "integer",
         "supplier_part_no": "string",
         "quote_date": "string",
-        "valid_until": "string"
+        "valid_until": "string",
+        "inspection": "string",
+        "compare_extra_manwon": "number",
+        "rule_source": "string"
       }
     }
   },
   "identity": "id는 전체 그래프에서 고유.",
-  "branch": "A",
   "constraints": [
     "id는 전체 그래프에서 고유. 구성요소·센서는 설비코드:이름, 부품은 사내 품번",
     "이관 기록(코드 통합)·철거 실물·점검표 중복 행은 대상을 새로 만들지 않는다",
     "limit 생략은 0과 다르다. normal 생략은 미확인",
     "단위는 Quantity 기준 단위로 맞추고 바꾼 경우 source_unit을 남긴다",
     "승인 여부는 승인공급사_목록(SCM 등록)과 기준일로 정한다",
-    "만료 견적은 SUPPLIES로 쓰지 않는다"
+    "만료 견적은 SUPPLIES로 쓰지 않는다",
+    "구매 기준서 PR-07 7.4에 걸리는 승인 공급사 쌍(불량률 10 % 초과)은 입고 검사 조건 · 비교 가산 비용 · 근거 절을 함께 남긴다"
   ]
 }

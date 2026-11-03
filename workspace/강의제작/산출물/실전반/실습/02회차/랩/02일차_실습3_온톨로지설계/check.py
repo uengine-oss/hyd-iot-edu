@@ -7,6 +7,11 @@ import json,sys
 root=Path(__file__).resolve().parent
 base=Path(sys.argv[1]) if len(sys.argv)>1 else root/'결과'
 errors=[];warnings=[];nodes=[];rels=[];labels_by_id={}
+missing=[n for n in ('schema.json','graph.json') if not (base/n).is_file()]
+if missing:
+    print('아직 검사할 결과가 없습니다: '+', '.join(base.name+'/'+n for n in missing))
+    print('START.md 「결과 형식」의 모양으로 만든 뒤 다시 실행하세요. 이 검사는 구조만 보고, 질문의 답은 원자료와 따로 대조합니다.')
+    sys.exit(1)
 BOOL_WORDS={'예','아니오','true','false','True','False','Y','N','yes','no','승인','비승인'}
 def kind_of(v):
     return 'boolean' if isinstance(v,bool) else 'integer' if isinstance(v,int) else 'number' if isinstance(v,float) else 'string' if isinstance(v,str) else 'list' if isinstance(v,list) else type(v).__name__
@@ -75,7 +80,7 @@ try:
             elif k!='id':warnings.append(f'{t}에 정의되지 않은 속성 {k}')
     NEED={'approved':'boolean','price_manwon':'number','defect_rate':'number','lead_days':'integer','quote_date':'string'}
     sspec=relations.get('SUPPLIES')
-    if not isinstance(sspec,dict):errors.append('schema.json relations에 공급 조건 관계 SUPPLIES가 없습니다(START.md 공급 조건 형식).')
+    if not isinstance(sspec,dict):errors.append('schema.json relations에 공급 조건 관계 SUPPLIES가 없습니다(START.md 「공급 조건 형식」).')
     else:
         declared=sspec.get('properties',{}) or {}
         for k,t in NEED.items():
@@ -85,15 +90,15 @@ try:
         if r.get('type')!='SUPPLIES':continue
         a,b=r.get('a'),r.get('b');p=r.get('props') or {};pairs.setdefault((a,b),[]).append(p)
         for k in NEED:
-            if p.get(k) is None:errors.append(f'SUPPLIES {a}→{b}: {k} 없음 — 이 쌍의 기준일 조건이 정해지지 않았습니다.')
+            if p.get(k) is None:errors.append(f'SUPPLIES {a}→{b}: {k} 없음')
         d=p.get('defect_rate')
-        if isinstance(d,(int,float)) and not isinstance(d,bool) and not 0<=d<=1:errors.append(f'SUPPLIES {a}→{b}: defect_rate={d}는 0~1 비율이어야 합니다(% 표기 환산 확인).')
+        if isinstance(d,(int,float)) and not isinstance(d,bool) and not 0<=d<=1:errors.append(f'SUPPLIES {a}→{b}: defect_rate={d}는 0~1 범위 밖입니다.')
     for (a,b),ps in sorted(pairs.items(),key=str):
-        if len(ps)>1:errors.append(f'SUPPLIES {a}→{b}가 {len(ps)}개: 공급사·부품 쌍마다 기준일 조건 하나만 둡니다. 견적 이력은 다른 종류·관계로 두세요.')
+        if len(ps)>1:errors.append(f'SUPPLIES {a}→{b}가 {len(ps)}개: 공급사 · 부품 쌍마다 하나만 둡니다(START.md 「공급 조건 형식」).')
     if not pairs:errors.append('graph.json에 SUPPLIES 관계가 없습니다.')
     else:
         yes=sum(1 for ps in pairs.values() for p in ps if p.get('approved') is True);no=sum(1 for ps in pairs.values() for p in ps if p.get('approved') is False)
-        print(f'참고: 공급 조건 SUPPLIES 쌍 {len(pairs)}개, 관계 {sum(len(ps) for ps in pairs.values())}개(approved=true {yes}개, false {no}개). 쌍마다 고른 견적·승인 근거는 자료_검토.md에서 원자료와 대조하세요.')
+        print(f'참고: SUPPLIES 쌍 {len(pairs)}개(approved=true {yes}개, false {no}개). 쌍마다 고른 견적과 승인 근거는 원자료 줄과 따로 대조하세요.')
 except (OSError,ValueError,TypeError,AttributeError) as e:
     errors.append(str(e))
 if warnings:

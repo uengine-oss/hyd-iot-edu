@@ -3,8 +3,8 @@ from pathlib import Path
 from html.parser import HTMLParser
 from collections import Counter
 from urllib.parse import unquote,urlsplit
-import hashlib,json,zipfile
-from build_labs import GUIDE_HEADINGS, PICTURE_TYPES, student_photos
+import hashlib,html,json,re,zipfile
+from build_labs import PICTURE_TYPES, student_photos
 ROOT=Path(__file__).resolve().parents[4]
 HERE=Path(__file__).resolve().parent
 class Links(HTMLParser):
@@ -47,13 +47,17 @@ def verify_lab(item):
             assert any(x.startswith(base+'입력/자료_변경분/') for x in names),(item['id'],'수정본 없음')
         if item['id'].startswith(('integrated-02-','practical-02-')) and item['id'].endswith(('-ontology','-graph')):
             assert not any(Path(x).name in ('기대답.json','session2_검증.json') or '/갈래B/' in x for x in names),(item['id'],'강사 기대 답 포함')
-            photos = student_photos(archive.with_suffix(''), json.loads((HERE/'capture-provenance.json').read_text(encoding='utf-8')))
-            assert {n[len(base):] for n in names if n.startswith(base+'images/') or Path(n).suffix.lower() in PICTURE_TYPES} == set(photos), item['id']
-            photo_links=Links()
             guide=z.read(base+'guide.html')
             assert z.read(base+'안내.html') == guide, (item['id'],'가이드 판본 불일치')
-            photo_links.feed(guide.decode('utf-8'))
-            expected=Counter((f's{GUIDE_HEADINGS.index(record["section"])+1}',name) for name,record in photos.items())
+            rules={z.read(base+n) for n in ('AGENTS.md','CLAUDE.md','.github/copilot-instructions.md')}
+            assert len(rules)==1, (item['id'],'작업 규칙 세 파일이 다름')
+            text=guide.decode('utf-8')
+            headings=[html.unescape(h) for h in re.findall(r'<section id="s\d+"><h2>\d+ (.*?)</h2>', text)]   # 가이드의 단계 이름
+            photos = student_photos(archive.with_suffix(''), json.loads((HERE/'capture-provenance.json').read_text(encoding='utf-8')), headings)
+            assert {n[len(base):] for n in names if n.startswith(base+'images/') or Path(n).suffix.lower() in PICTURE_TYPES} == set(photos), item['id']
+            photo_links=Links()
+            photo_links.feed(text)
+            expected=Counter((f's{headings.index(record["section"])+1}',name) for name,record in photos.items())
             assert Counter(photo_links.images)==expected, (item['id'],'절별 사진 목록 불일치')
             for name, record in photos.items():
                 assert hashlib.sha256(z.read(base+name)).hexdigest()==record['sha256'], (item['id'],name)
