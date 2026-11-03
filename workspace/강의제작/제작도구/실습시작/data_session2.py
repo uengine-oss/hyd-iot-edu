@@ -1,6 +1,6 @@
 """온라인 2회차 실습3·4(두 반) 원자료 생성기 — 교육용 가상 사례(실제 HYD 시스템 구조 기반).
 
-근거: 문서/교재/근거/2026-10-28_현업데이터_현실성_조사.md §2·§4.1·§4.2.
+근거: workspace/강의제작/제작도구/실습시작/근거/2026-10-28_현업데이터_현실성_조사.md §2·§4.1·§4.2.
 - 태그·정상값·표본 주기·수집 방식: ot/plant-sim/plantsim/plant.py tags(), thermal.py UnitState, hydcommon/daq_contract.py
 - 품번·공급·재고 기준값: it/enterprise-sim/entsim/data.py (_PART_QUOTES·_SUPPLIERS·SPARE_BASE), PR-07
 - 실라버스 고정 대상: P-PMP-SEAL → HYD-01·02·03, 유효 공급 조건 3행(A정밀 35/0.12/2, B-OEM 55/0.02/5, C트레이딩 비승인 20/0.30/1)
