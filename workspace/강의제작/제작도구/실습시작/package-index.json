@@ -36,20 +36,20 @@
       "course": "실전반",
       "session": "온라인 02회차",
       "title": "설비·부품·공급 정보를 연결하는 온톨로지 설계하기",
-      "version": "2026-11-03-lab-v10",
+      "version": "2026-11-03-lab-v11",
       "folder": "02회차/랩/02일차_실습3_온톨로지설계",
       "path": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습3_온톨로지설계.zip",
-      "sha256": "a5bcb1d4e5c17bb75cc41f2bcdcad680655be5a79f96587beb20652dcde309ef"
+      "sha256": "29ab3e8f619a8ebfb44fb9776d8913cadde13485a9c6adb4605686d9791c55f2"
     },
     {
       "id": "practical-02-graph",
       "course": "실전반",
       "session": "온라인 02회차",
       "title": "부품의 사용 설비와 공급 정보를 조회하는 그래프 구현하기",
-      "version": "2026-11-03-lab-v10",
+      "version": "2026-11-03-lab-v11",
       "folder": "02회차/랩/02일차_실습4_그래프구현과검증",
       "path": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습4_그래프구현과검증.zip",
-      "sha256": "caf0e58d5b5e3ba838eb87904e71eaa3b9bea2d8729998fa09f0708a03d25f10"
+      "sha256": "4f00fe93ea18cf813534f7db64c0966d83fa28fb1c6222ed5fe00426813ca3fa"
     },
     {
       "id": "practical-02-conditions",
@@ -147,20 +147,20 @@
       "course": "통합반",
       "session": "온라인 02회차",
       "title": "현장 정보를 체계화하는 온톨로지 직접 설계하기",
-      "version": "2026-11-03-lab-v10",
+      "version": "2026-11-03-lab-v11",
       "folder": "02회차/랩/02일차_실습3_온톨로지설계",
       "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습3_온톨로지설계.zip",
-      "sha256": "cc6297692b386efb99b9a5830c4417a3eb1106aae8ec6bde5255a9d7b156977a"
+      "sha256": "e0bfe0bd8075451f5d2006ffd46d13aa2677a5b825febc697fce31a0386cb25a"
     },
     {
       "id": "integrated-02-graph",
       "course": "통합반",
       "session": "온라인 02회차",
       "title": "설계한 온톨로지를 그래프 DB에 구현하고 검증하기",
-      "version": "2026-11-03-lab-v10",
+      "version": "2026-11-03-lab-v11",
       "folder": "02회차/랩/02일차_실습4_그래프구현과검증",
       "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습4_그래프구현과검증.zip",
-      "sha256": "11ed5c81b664d99aa9444ff0f1e67307432a28a6e13593f58f0558173bf730be"
+      "sha256": "42418b9bf1891125cc762b245057a67ca1502d6e5a7641977d8123421b836344"
     },
     {
       "id": "integrated-03-whatif",

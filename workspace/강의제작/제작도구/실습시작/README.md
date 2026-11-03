@@ -23,7 +23,7 @@ python workspace/강의제작/제작도구/실습시작/test_launcher.py
 
 | 학생 ZIP(두 과정 합) | 생성기(`제작도구/` 기준, 이름만 있으면 이 폴더) | 지금 |
 |---|---|---|
-| 02회차 실습3 온톨로지설계 · 실습4 그래프구현과검증 (4) | `build_labs.py` | 같다 — 생성기 `VERSION` · `package-index.json` · `catalog.json` · ZIP이 모두 v10. 돌리면 네 랩이 함께 다시 묶인다 |
+| 02회차 실습3 온톨로지설계 · 실습4 그래프구현과검증 (4) | `build_labs.py` | 같다 — 생성기 `VERSION` · `package-index.json` · `catalog.json` · ZIP이 모두 v11. 돌리면 네 랩이 함께 다시 묶인다 |
 | 02회차 실습1 관계조회 · 실습2 지식지도탐색 (4) | `build_common.py [--course 과정] [--lab relations\|map]` | 같다 — 돌리면 관계조회는 Neo4j로 바로 열리는 판이 되고 두 랩의 START.md가 지워진다 |
 | 실전반 02회차 실습5 조치조건표 (1) | `build_conditions.py` | 실행 불가 — `data_conditions.py:150`이 main에 없는 `plantsim.thermal.equilibrium_ts1`을 부른다 |
 | 03회차 실습1 조치결과비교 (2) | `build_session3_whatif.py` | |
