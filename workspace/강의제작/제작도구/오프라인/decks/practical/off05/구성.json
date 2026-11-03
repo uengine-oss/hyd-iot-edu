@@ -1,132 +1,163 @@
 {
- "title": "스킬 · 도구 조합 · 변경 근거 이해하기",
- "intro": "실전반 오프라인 5회차 이론(50분) 덱. 실라버스 「실전반 오프라인 정규 9회」 38행의 범위로 온라인 실전반 4회차 덱의 스킬 · MCP 장을 다시 묶었다. 온라인 장의 화면은 그대로 쓰고 노트는 [다음]과 표시한 연결 말만 새 순서에 맞췄다. 실습(39~41행)은 핸즈온 가이드가 맡는다. 조립: `bash workspace/강의제작/제작도구/오프라인/decks/만들기.sh practical 05`.",
- "md": "실전반_오프라인_05회차.md",
- "slides": [
-  {
-   "new": "cover"
-  },
-  {
-   "new": "goals"
-  },
-  {
-   "new": "toc"
-  },
-  {
-   "new": "s1"
-  },
-  {
-   "src": "practical/day04",
-   "n": 37
-  },
-  {
-   "src": "practical/day04",
-   "n": 38
-  },
-  {
-   "src": "practical/day04",
-   "n": 39
-  },
-  {
-   "src": "practical/day04",
-   "n": 40
-  },
-  {
-   "src": "practical/day04",
-   "n": 43,
-   "note_edits": [
-    [
-     "→ 다음 단원의 MCP",
-     "→ 뒤 단원의 MCP"
-    ]
-   ]
-  },
-  {
-   "src": "practical/day04",
-   "n": 45
-  },
-  {
-   "new": "s2"
-  },
-  {
-   "src": "practical/day04",
-   "n": 41
-  },
-  {
-   "src": "practical/day04",
-   "n": 46
-  },
-  {
-   "new": "s3"
-  },
-  {
-   "src": "practical/day04",
-   "n": 50
-  },
-  {
-   "src": "practical/day04",
-   "n": 51
-  },
-  {
-   "src": "practical/day04",
-   "n": 52
-  },
-  {
-   "src": "practical/day04",
-   "n": 54
-  },
-  {
-   "new": "s4"
-  },
-  {
-   "src": "practical/day04",
-   "n": 57
-  },
-  {
-   "src": "practical/day04",
-   "n": 58
-  },
-  {
-   "src": "practical/day04",
-   "n": 59
-  },
-  {
-   "src": "practical/day04",
-   "n": 61,
-   "note_edits": [
-    [
-     "· 결정할 질문: 회의 스킬의 미결 + Notion 기록 → 회의록 절 · 페이지",
-     "· 결정할 질문: 회의 스킬의 미결 + 회의록(현장에서 연결되면 자기 Notion 기록) → 회의록 절 · 페이지"
-    ]
-   ]
-  },
-  {
-   "new": "review"
-  },
-  {
-   "new": "terms"
-  },
-  {
-   "src": "practical/day04",
-   "n": 66
-  },
-  {
-   "new": "q1"
-  },
-  {
-   "src": "practical/day04",
-   "n": 68
-  },
-  {
-   "new": "q3"
-  },
-  {
-   "new": "answer"
-  }
- ],
- "note_end": [
-  "이어지는 실습: 파일 · Git · 시간 MCP를 필요한 범위만 열어 연결하고, 회의록 두 건 · 점검 메모에서 결정 · 담당 · 기한 · 근거를 뽑는 스킬(없으면 미정)을 만든 뒤, 점검 메모 조회 함수를 구현해 조회 실패와 자료 없음을 가른다",
-  "이를 엮어 결정할 질문 · 확인된 사실 · 남은 확인 · 파일 근거의 다음 협의 안건을 만들고 이전 결과와 대조한다. 기본은 Notion 없이 — 진행은 핸즈온 가이드",
-  "다음 회차: 점검 요청의 변경 요구를 명세하고 검증한다"
- ]
+  "title": "재사용 스킬과 외부 도구 연결의 원리",
+  "intro": "실전반 오프라인 5회 이론. 실라버스 「실전반 오프라인 정규 9회」 38행.",
+  "md": "실전반_오프라인_05회차.md",
+  "slides": [
+    {
+      "new": "cover",
+      "next": "오늘 할 수 있게 될 일을 확인해 봅시다."
+    },
+    {
+      "new": "goals",
+      "next": "세 단원을 차례로 보겠습니다."
+    },
+    {
+      "new": "toc",
+      "next": "반복 업무를 위한 지침 설계"
+    },
+    {
+      "new": "s1"
+    },
+    {
+      "src": "practical/day04",
+      "n": 30
+    },
+    {
+      "src": "practical/day04",
+      "n": 31
+    },
+    {
+      "src": "practical/day04",
+      "n": 32
+    },
+    {
+      "src": "practical/day04",
+      "n": 33,
+      "next": "반복 지침에 담는 설계 판단"
+    },
+    {
+      "src": "practical/day04",
+      "n": 35,
+      "next": "현장 작업 절차와 에이전트 지침"
+    },
+    {
+      "src": "practical/day04",
+      "n": 38,
+      "next": "결정과 조건부 작업의 구분"
+    },
+    {
+      "src": "practical/day04",
+      "n": 40,
+      "next": "두 회의에 적용하는 같은 지침"
+    },
+    {
+      "src": "practical/day04",
+      "n": 42
+    },
+    {
+      "src": "practical/day04",
+      "n": 43,
+      "next": "채운 칸을 원문으로 되짚는 검증"
+    },
+    {
+      "src": "practical/day04",
+      "n": 45
+    },
+    {
+      "src": "practical/day04",
+      "n": 46,
+      "next": "외부 도구의 연결과 권한"
+    },
+    {
+      "new": "s2"
+    },
+    {
+      "src": "practical/day04",
+      "n": 52
+    },
+    {
+      "src": "practical/day04",
+      "n": 53
+    },
+    {
+      "src": "practical/day04",
+      "n": 54
+    },
+    {
+      "src": "practical/day04",
+      "n": 55,
+      "next": "도구 목록과 실제 호출"
+    },
+    {
+      "src": "practical/day04",
+      "n": 57,
+      "next": "표준 입출력과 HTTP 전송"
+    },
+    {
+      "src": "practical/day04",
+      "n": 62,
+      "next": "읽기·쓰기 권한과 접근 범위"
+    },
+    {
+      "src": "practical/day04",
+      "n": 64,
+      "next": "결과 없음과 조회 실패"
+    },
+    {
+      "src": "practical/day04",
+      "n": 66,
+      "next": "포털의 도구와 로컬 연결"
+    },
+    {
+      "src": "practical/day04",
+      "n": 68,
+      "next": "회의 기록과 변경 이력으로 만드는 협의 안건"
+    },
+    {
+      "new": "s3"
+    },
+    {
+      "src": "practical/day04",
+      "n": 69
+    },
+    {
+      "src": "practical/day04",
+      "n": 70,
+      "next": "변경 이력과 기준 시각으로 상태가 바뀐 곳을 찾아봅시다."
+    },
+    {
+      "new": "history"
+    },
+    {
+      "new": "review"
+    },
+    {
+      "new": "terms"
+    },
+    {
+      "src": "practical/day04",
+      "n": 77,
+      "next": "Quiz 1. 커밋하지 않은 추가 줄"
+    },
+    {
+      "new": "q1"
+    },
+    {
+      "src": "practical/day04",
+      "n": 79,
+      "next": "지침과 권한의 경계도 판단해 봅시다."
+    },
+    {
+      "new": "q3"
+    },
+    {
+      "new": "answer"
+    }
+  ],
+  "note_end": [
+    "이론 시간에는 반복 업무의 방법을 스킬로 남기는 기준과, 외부 도구를 권한에 맞게 연결하고 회의 기록 · 변경 이력 · 시각으로 상태를 읽는 기준을 배웠습니다. 이번에는 포털에서 나의 스킬을 에이전트에 붙여 같은 쿨러 질문의 답이 어떻게 달라지는지 직접 확인해 보겠습니다.",
+    "이어 VS Code에서 회의록 두 건의 결정 · 조건부 작업 · 담당 미정을 가르는 스킬을 만듭니다. 포털 도구를 직접 불러 반환값을 확인한 뒤, 학습노트 · 파일 · Git · 시간 MCP와 점검 메모 조회 도구를 연결합니다.",
+    "끝으로 그 스킬과 도구로 다음 협의 안건을 만들고 다른 회의와 대조해 다시 검증합니다.",
+    "다음에는 점검 요청에 들어온 새 요구를 반영하고 기존 기능이 그대로인지 확인합니다."
+  ]
 }
