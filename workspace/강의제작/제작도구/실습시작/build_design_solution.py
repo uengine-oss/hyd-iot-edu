@@ -52,7 +52,6 @@ def bundle(course, workspace):
         base_constraints = labs.schema_for(False,'A')['constraints']
         schema = {'classes':{'Supplier':schema['classes']['Supplier']}, 'relations':{'SUPPLIES':schema['relations']['SUPPLIES']},
                   'constraints':[c for c in schema['constraints'] if c not in base_constraints]}
-        schema['relations']['SUPPLIES']['properties'].update({'quote_source':'string','approval_source':'string','as_of':'string'})
         shutil.copyfile(TOOLS/'공급조건.py',out/'공급조건.py')
         purpose='부품을 쓰는 설비·구성 요소를 찾고, 기준일의 유효 견적과 SCM 승인 상태, 구매 기준서 7.4의 입고 검사 정보를 함께 확인합니다.'
         decision=(f'공급 조건은 {labs.D.REF_DATE} 기준으로 공급사·사내 품번별 가장 최근 유효 견적 한 건을 씁니다. SCM 등록 상태를 기준으로 승인과 조건부 승인을 포함하고 조건·기한을 함께 보존합니다. 비승인 상태도 견적과 구별해 남깁니다. '

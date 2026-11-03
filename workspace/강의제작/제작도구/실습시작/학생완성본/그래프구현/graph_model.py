@@ -1,4 +1,4 @@
-"""실습 폴더의 입력 모델과 수정본을 읽어 갱신할 대상을 만든다."""
+"""실습 폴더의 입력 모델과(통합반이면) 수정본을 읽어 갱신할 대상을 만든다."""
 import csv
 import json
 from pathlib import Path
@@ -7,10 +7,6 @@ from pathlib import Path
 def rows(path):
     with path.open(encoding='utf-8-sig', newline='') as stream:
         return list(csv.DictReader(stream))
-
-
-def supplier_id(name):
-    return 'supplier:' + name.split('(')[0].strip()
 
 
 def validate_schema(graph, schema):
@@ -59,14 +55,4 @@ def load_model(source, revised=False):
         if part not in nodes:
             raise ValueError('알 수 없는 품번: ' + part)
         edges[component,'USES_PART',part] = dict(a=component,b=part,type='USES_PART',props={'source_text':part})
-    if (changes / '공급_조건_변경.csv').exists():
-        for row in rows(changes / '공급_조건_변경.csv'):
-            sid,part = supplier_id(row['공급사']),row['품번']
-            edge = edges.get((sid,'SUPPLIES',part))
-            if edge is None:
-                raise ValueError('신규 공급 연결은 승인 목록과 먼저 대조하세요: '+part)
-            edge['props'].update(price_manwon=float(row['단가(만원)']),defect_rate=float(row['불량률']),lead_days=int(row['납기(일)']),min_order_qty=int(row['최소주문수량']),supplier_part_no=row['공급사품번'],quote_date=row['견적일'],valid_until=row['유효기한'])
-        for row in rows(changes / '승인공급사_변경.csv'):
-            k=(supplier_id(row['공급사']),'SUPPLIES',row['품번'])
-            edges[k]['props'].update(approved=row['승인상태']=='승인',approval_status=row['승인상태'],approval_date=row['승인일'],approval_until=row['유효기한'])
     return {'nodes':list(nodes.values()),'rels':list(edges.values())}

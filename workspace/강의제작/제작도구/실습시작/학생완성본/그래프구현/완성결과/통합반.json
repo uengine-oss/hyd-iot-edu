@@ -1,33 +1,4 @@
 {
-  "sensor_change_check": [
-    {
-      "line": 2,
-      "change": "수정",
-      "observed": {
-        "id": "HYD-03:VS1",
-        "unit": "mm/s",
-        "normal": 0.6
-      }
-    },
-    {
-      "line": 3,
-      "change": "수정",
-      "observed": {
-        "id": "HYD-06:I_MOTOR",
-        "unit": "A",
-        "normal": 18.5
-      }
-    },
-    {
-      "line": 4,
-      "change": "삭제",
-      "observed": {
-        "id": "HYD-01:TS1",
-        "unit": "℃",
-        "normal": 48.0
-      }
-    }
-  ],
   "baseline": [
     [
       {
@@ -76,6 +47,55 @@
         "status": "예비(보관)"
       }
     ]
+  ],
+  "baseline_part_assets": [
+    {
+      "part": "P-PMP-SEAL",
+      "asset": "HYD-01",
+      "component": "HYD-01:pump-a",
+      "component_name": "주 펌프 (A)"
+    },
+    {
+      "part": "P-PMP-SEAL",
+      "asset": "HYD-02",
+      "component": "HYD-02:pump-a",
+      "component_name": "주 펌프 (A)"
+    },
+    {
+      "part": "P-PMP-SEAL",
+      "asset": "HYD-03",
+      "component": "HYD-03:pump-a",
+      "component_name": "주 펌프 (A)"
+    }
+  ],
+  "sensor_change_check": [
+    {
+      "line": 2,
+      "change": "수정",
+      "observed": {
+        "id": "HYD-03:VS1",
+        "unit": "mm/s",
+        "normal": 0.6
+      }
+    },
+    {
+      "line": 3,
+      "change": "수정",
+      "observed": {
+        "id": "HYD-06:I_MOTOR",
+        "unit": "A",
+        "normal": 18.5
+      }
+    },
+    {
+      "line": 4,
+      "change": "삭제",
+      "observed": {
+        "id": "HYD-01:TS1",
+        "unit": "℃",
+        "normal": 48.0
+      }
+    }
   ],
   "revised": [
     [
@@ -126,26 +146,7 @@
       }
     ]
   ],
-  "baseline_part_assets": [
-    {
-      "part": "P-PMP-SEAL",
-      "asset": "HYD-01",
-      "component": "HYD-01:pump-a",
-      "component_name": "주 펌프 (A)"
-    },
-    {
-      "part": "P-PMP-SEAL",
-      "asset": "HYD-02",
-      "component": "HYD-02:pump-a",
-      "component_name": "주 펌프 (A)"
-    },
-    {
-      "part": "P-PMP-SEAL",
-      "asset": "HYD-03",
-      "component": "HYD-03:pump-a",
-      "component_name": "주 펌프 (A)"
-    }
-  ],
+  "repeat_load": "기준/수정 각 2회 동일",
   "revised_part_assets": {
     "P-PMP-SEAL": [
       {
@@ -197,7 +198,6 @@
     ],
     "미등록-품번": []
   },
-  "repeat_load": "기준/수정 각 2회 동일",
   "asset_counts": [
     {
       "asset": "HYD-01",
@@ -238,7 +238,19 @@
   "sensors": [
     {
       "asset": "HYD-01",
-      "component": "HYD-01:cabinet",
+      "attached_to": "(설비 전체)",
+      "sensor": "HYD-01:SE",
+      "tag": "SE",
+      "kind": "derived",
+      "quantity": "시스템 효율",
+      "unit": "%",
+      "normal": 60.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-01",
+      "attached_to": "HYD-01:cabinet",
       "sensor": "HYD-01:TS4",
       "tag": "TS4",
       "kind": "measured",
@@ -250,7 +262,7 @@
     },
     {
       "asset": "HYD-01",
-      "component": "HYD-01:cooler",
+      "attached_to": "HYD-01:cooler",
       "sensor": "HYD-01:CE",
       "tag": "CE",
       "kind": "derived",
@@ -262,7 +274,7 @@
     },
     {
       "asset": "HYD-01",
-      "component": "HYD-01:cooler",
+      "attached_to": "HYD-01:cooler",
       "sensor": "HYD-01:CP",
       "tag": "CP",
       "kind": "derived",
@@ -274,7 +286,7 @@
     },
     {
       "asset": "HYD-01",
-      "component": "HYD-01:cooler",
+      "attached_to": "HYD-01:cooler",
       "sensor": "HYD-01:FS2",
       "tag": "FS2",
       "kind": "measured",
@@ -286,7 +298,7 @@
     },
     {
       "asset": "HYD-01",
-      "component": "HYD-01:cooler",
+      "attached_to": "HYD-01:cooler",
       "sensor": "HYD-01:TS1",
       "tag": "TS1",
       "kind": "measured",
@@ -298,7 +310,7 @@
     },
     {
       "asset": "HYD-01",
-      "component": "HYD-01:cooler",
+      "attached_to": "HYD-01:cooler",
       "sensor": "HYD-01:TS2",
       "tag": "TS2",
       "kind": "measured",
@@ -310,7 +322,7 @@
     },
     {
       "asset": "HYD-01",
-      "component": "HYD-01:fan",
+      "attached_to": "HYD-01:fan",
       "sensor": "HYD-01:FanSpeedSP",
       "tag": "FanSpeedSP",
       "kind": "setpoint",
@@ -322,7 +334,7 @@
     },
     {
       "asset": "HYD-01",
-      "component": "HYD-01:fan",
+      "attached_to": "HYD-01:fan",
       "sensor": "HYD-01:VS1",
       "tag": "VS1",
       "kind": "measured",
@@ -334,7 +346,7 @@
     },
     {
       "asset": "HYD-01",
-      "component": "HYD-01:motor",
+      "attached_to": "HYD-01:motor",
       "sensor": "HYD-01:EPS1",
       "tag": "EPS1",
       "kind": "measured",
@@ -346,7 +358,7 @@
     },
     {
       "asset": "HYD-01",
-      "component": "HYD-01:pump-a",
+      "attached_to": "HYD-01:pump-a",
       "sensor": "HYD-01:FS1",
       "tag": "FS1",
       "kind": "measured",
@@ -358,7 +370,7 @@
     },
     {
       "asset": "HYD-01",
-      "component": "HYD-01:pump-a",
+      "attached_to": "HYD-01:pump-a",
       "sensor": "HYD-01:LoadSP",
       "tag": "LoadSP",
       "kind": "setpoint",
@@ -370,7 +382,7 @@
     },
     {
       "asset": "HYD-01",
-      "component": "HYD-01:pump-a",
+      "attached_to": "HYD-01:pump-a",
       "sensor": "HYD-01:PS1",
       "tag": "PS1",
       "kind": "measured",
@@ -382,7 +394,7 @@
     },
     {
       "asset": "HYD-01",
-      "component": "HYD-01:rtn-filter",
+      "attached_to": "HYD-01:rtn-filter",
       "sensor": "HYD-01:PS3",
       "tag": "PS3",
       "kind": "measured",
@@ -394,7 +406,7 @@
     },
     {
       "asset": "HYD-01",
-      "component": "HYD-01:rtn-filter",
+      "attached_to": "HYD-01:rtn-filter",
       "sensor": "HYD-01:PS4",
       "tag": "PS4",
       "kind": "measured",
@@ -406,7 +418,7 @@
     },
     {
       "asset": "HYD-01",
-      "component": "HYD-01:tank",
+      "attached_to": "HYD-01:tank",
       "sensor": "HYD-01:TS3",
       "tag": "TS3",
       "kind": "measured",
@@ -418,7 +430,7 @@
     },
     {
       "asset": "HYD-01",
-      "component": "HYD-01:valve",
+      "attached_to": "HYD-01:valve",
       "sensor": "HYD-01:PS2",
       "tag": "PS2",
       "kind": "measured",
@@ -430,7 +442,7 @@
     },
     {
       "asset": "HYD-01",
-      "component": "HYD-01:valve",
+      "attached_to": "HYD-01:valve",
       "sensor": "HYD-01:PS5",
       "tag": "PS5",
       "kind": "measured",
@@ -442,7 +454,7 @@
     },
     {
       "asset": "HYD-01",
-      "component": "HYD-01:valve",
+      "attached_to": "HYD-01:valve",
       "sensor": "HYD-01:PS6",
       "tag": "PS6",
       "kind": "measured",
@@ -454,7 +466,19 @@
     },
     {
       "asset": "HYD-02",
-      "component": "HYD-02:cabinet",
+      "attached_to": "(설비 전체)",
+      "sensor": "HYD-02:SE",
+      "tag": "SE",
+      "kind": "derived",
+      "quantity": "시스템 효율",
+      "unit": "%",
+      "normal": 60.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-02",
+      "attached_to": "HYD-02:cabinet",
       "sensor": "HYD-02:TS4",
       "tag": "TS4",
       "kind": "measured",
@@ -466,7 +490,7 @@
     },
     {
       "asset": "HYD-02",
-      "component": "HYD-02:cooler",
+      "attached_to": "HYD-02:cooler",
       "sensor": "HYD-02:CE",
       "tag": "CE",
       "kind": "derived",
@@ -478,7 +502,7 @@
     },
     {
       "asset": "HYD-02",
-      "component": "HYD-02:cooler",
+      "attached_to": "HYD-02:cooler",
       "sensor": "HYD-02:CP",
       "tag": "CP",
       "kind": "derived",
@@ -490,7 +514,7 @@
     },
     {
       "asset": "HYD-02",
-      "component": "HYD-02:cooler",
+      "attached_to": "HYD-02:cooler",
       "sensor": "HYD-02:FS2",
       "tag": "FS2",
       "kind": "measured",
@@ -502,7 +526,7 @@
     },
     {
       "asset": "HYD-02",
-      "component": "HYD-02:cooler",
+      "attached_to": "HYD-02:cooler",
       "sensor": "HYD-02:TS1",
       "tag": "TS1",
       "kind": "measured",
@@ -514,7 +538,7 @@
     },
     {
       "asset": "HYD-02",
-      "component": "HYD-02:cooler",
+      "attached_to": "HYD-02:cooler",
       "sensor": "HYD-02:TS2",
       "tag": "TS2",
       "kind": "measured",
@@ -526,7 +550,7 @@
     },
     {
       "asset": "HYD-02",
-      "component": "HYD-02:fan",
+      "attached_to": "HYD-02:fan",
       "sensor": "HYD-02:FanSpeedSP",
       "tag": "FanSpeedSP",
       "kind": "setpoint",
@@ -538,7 +562,7 @@
     },
     {
       "asset": "HYD-02",
-      "component": "HYD-02:fan",
+      "attached_to": "HYD-02:fan",
       "sensor": "HYD-02:VS1",
       "tag": "VS1",
       "kind": "measured",
@@ -550,7 +574,7 @@
     },
     {
       "asset": "HYD-02",
-      "component": "HYD-02:motor",
+      "attached_to": "HYD-02:motor",
       "sensor": "HYD-02:EPS1",
       "tag": "EPS1",
       "kind": "measured",
@@ -562,7 +586,7 @@
     },
     {
       "asset": "HYD-02",
-      "component": "HYD-02:pump-a",
+      "attached_to": "HYD-02:pump-a",
       "sensor": "HYD-02:FS1",
       "tag": "FS1",
       "kind": "measured",
@@ -574,7 +598,7 @@
     },
     {
       "asset": "HYD-02",
-      "component": "HYD-02:pump-a",
+      "attached_to": "HYD-02:pump-a",
       "sensor": "HYD-02:LoadSP",
       "tag": "LoadSP",
       "kind": "setpoint",
@@ -586,7 +610,7 @@
     },
     {
       "asset": "HYD-02",
-      "component": "HYD-02:pump-a",
+      "attached_to": "HYD-02:pump-a",
       "sensor": "HYD-02:PS1",
       "tag": "PS1",
       "kind": "measured",
@@ -598,7 +622,7 @@
     },
     {
       "asset": "HYD-02",
-      "component": "HYD-02:rtn-filter",
+      "attached_to": "HYD-02:rtn-filter",
       "sensor": "HYD-02:PS3",
       "tag": "PS3",
       "kind": "measured",
@@ -610,7 +634,7 @@
     },
     {
       "asset": "HYD-02",
-      "component": "HYD-02:rtn-filter",
+      "attached_to": "HYD-02:rtn-filter",
       "sensor": "HYD-02:PS4",
       "tag": "PS4",
       "kind": "measured",
@@ -622,7 +646,7 @@
     },
     {
       "asset": "HYD-02",
-      "component": "HYD-02:tank",
+      "attached_to": "HYD-02:tank",
       "sensor": "HYD-02:TS3",
       "tag": "TS3",
       "kind": "measured",
@@ -634,7 +658,7 @@
     },
     {
       "asset": "HYD-02",
-      "component": "HYD-02:valve",
+      "attached_to": "HYD-02:valve",
       "sensor": "HYD-02:PS2",
       "tag": "PS2",
       "kind": "measured",
@@ -646,7 +670,7 @@
     },
     {
       "asset": "HYD-02",
-      "component": "HYD-02:valve",
+      "attached_to": "HYD-02:valve",
       "sensor": "HYD-02:PS5",
       "tag": "PS5",
       "kind": "measured",
@@ -658,7 +682,7 @@
     },
     {
       "asset": "HYD-02",
-      "component": "HYD-02:valve",
+      "attached_to": "HYD-02:valve",
       "sensor": "HYD-02:PS6",
       "tag": "PS6",
       "kind": "measured",
@@ -670,7 +694,19 @@
     },
     {
       "asset": "HYD-03",
-      "component": "HYD-03:cabinet",
+      "attached_to": "(설비 전체)",
+      "sensor": "HYD-03:SE",
+      "tag": "SE",
+      "kind": "derived",
+      "quantity": "시스템 효율",
+      "unit": "%",
+      "normal": 60.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-03",
+      "attached_to": "HYD-03:cabinet",
       "sensor": "HYD-03:TS4",
       "tag": "TS4",
       "kind": "measured",
@@ -682,7 +718,7 @@
     },
     {
       "asset": "HYD-03",
-      "component": "HYD-03:cooler",
+      "attached_to": "HYD-03:cooler",
       "sensor": "HYD-03:CE",
       "tag": "CE",
       "kind": "derived",
@@ -694,7 +730,7 @@
     },
     {
       "asset": "HYD-03",
-      "component": "HYD-03:cooler",
+      "attached_to": "HYD-03:cooler",
       "sensor": "HYD-03:CP",
       "tag": "CP",
       "kind": "derived",
@@ -706,7 +742,7 @@
     },
     {
       "asset": "HYD-03",
-      "component": "HYD-03:cooler",
+      "attached_to": "HYD-03:cooler",
       "sensor": "HYD-03:FS2",
       "tag": "FS2",
       "kind": "measured",
@@ -718,7 +754,7 @@
     },
     {
       "asset": "HYD-03",
-      "component": "HYD-03:cooler",
+      "attached_to": "HYD-03:cooler",
       "sensor": "HYD-03:TS1",
       "tag": "TS1",
       "kind": "measured",
@@ -730,7 +766,7 @@
     },
     {
       "asset": "HYD-03",
-      "component": "HYD-03:cooler",
+      "attached_to": "HYD-03:cooler",
       "sensor": "HYD-03:TS2",
       "tag": "TS2",
       "kind": "measured",
@@ -742,7 +778,7 @@
     },
     {
       "asset": "HYD-03",
-      "component": "HYD-03:fan",
+      "attached_to": "HYD-03:fan",
       "sensor": "HYD-03:FanSpeedSP",
       "tag": "FanSpeedSP",
       "kind": "setpoint",
@@ -754,7 +790,7 @@
     },
     {
       "asset": "HYD-03",
-      "component": "HYD-03:fan",
+      "attached_to": "HYD-03:fan",
       "sensor": "HYD-03:VS1",
       "tag": "VS1",
       "kind": "measured",
@@ -766,7 +802,7 @@
     },
     {
       "asset": "HYD-03",
-      "component": "HYD-03:motor",
+      "attached_to": "HYD-03:motor",
       "sensor": "HYD-03:EPS1",
       "tag": "EPS1",
       "kind": "measured",
@@ -778,7 +814,7 @@
     },
     {
       "asset": "HYD-03",
-      "component": "HYD-03:pump-a",
+      "attached_to": "HYD-03:pump-a",
       "sensor": "HYD-03:FS1",
       "tag": "FS1",
       "kind": "measured",
@@ -790,7 +826,7 @@
     },
     {
       "asset": "HYD-03",
-      "component": "HYD-03:pump-a",
+      "attached_to": "HYD-03:pump-a",
       "sensor": "HYD-03:LoadSP",
       "tag": "LoadSP",
       "kind": "setpoint",
@@ -802,7 +838,7 @@
     },
     {
       "asset": "HYD-03",
-      "component": "HYD-03:pump-a",
+      "attached_to": "HYD-03:pump-a",
       "sensor": "HYD-03:PS1",
       "tag": "PS1",
       "kind": "measured",
@@ -814,7 +850,7 @@
     },
     {
       "asset": "HYD-03",
-      "component": "HYD-03:rtn-filter",
+      "attached_to": "HYD-03:rtn-filter",
       "sensor": "HYD-03:PS3",
       "tag": "PS3",
       "kind": "measured",
@@ -826,7 +862,7 @@
     },
     {
       "asset": "HYD-03",
-      "component": "HYD-03:rtn-filter",
+      "attached_to": "HYD-03:rtn-filter",
       "sensor": "HYD-03:PS4",
       "tag": "PS4",
       "kind": "measured",
@@ -838,7 +874,7 @@
     },
     {
       "asset": "HYD-03",
-      "component": "HYD-03:tank",
+      "attached_to": "HYD-03:tank",
       "sensor": "HYD-03:TS3",
       "tag": "TS3",
       "kind": "measured",
@@ -850,7 +886,7 @@
     },
     {
       "asset": "HYD-03",
-      "component": "HYD-03:valve",
+      "attached_to": "HYD-03:valve",
       "sensor": "HYD-03:PS2",
       "tag": "PS2",
       "kind": "measured",
@@ -862,7 +898,7 @@
     },
     {
       "asset": "HYD-03",
-      "component": "HYD-03:valve",
+      "attached_to": "HYD-03:valve",
       "sensor": "HYD-03:PS5",
       "tag": "PS5",
       "kind": "measured",
@@ -874,7 +910,7 @@
     },
     {
       "asset": "HYD-03",
-      "component": "HYD-03:valve",
+      "attached_to": "HYD-03:valve",
       "sensor": "HYD-03:PS6",
       "tag": "PS6",
       "kind": "measured",
@@ -886,7 +922,19 @@
     },
     {
       "asset": "HYD-04",
-      "component": "HYD-04:cabinet",
+      "attached_to": "(설비 전체)",
+      "sensor": "HYD-04:SE",
+      "tag": "SE",
+      "kind": "derived",
+      "quantity": "시스템 효율",
+      "unit": "%",
+      "normal": 60.0,
+      "limit": null,
+      "direction": null
+    },
+    {
+      "asset": "HYD-04",
+      "attached_to": "HYD-04:cabinet",
       "sensor": "HYD-04:TS4",
       "tag": "TS4",
       "kind": "measured",
@@ -898,7 +946,7 @@
     },
     {
       "asset": "HYD-04",
-      "component": "HYD-04:cooler",
+      "attached_to": "HYD-04:cooler",
       "sensor": "HYD-04:CE",
       "tag": "CE",
       "kind": "derived",
@@ -910,7 +958,7 @@
     },
     {
       "asset": "HYD-04",
-      "component": "HYD-04:cooler",
+      "attached_to": "HYD-04:cooler",
       "sensor": "HYD-04:CP",
       "tag": "CP",
       "kind": "derived",
@@ -922,7 +970,7 @@
     },
     {
       "asset": "HYD-04",
-      "component": "HYD-04:cooler",
+      "attached_to": "HYD-04:cooler",
       "sensor": "HYD-04:FS2",
       "tag": "FS2",
       "kind": "measured",
@@ -934,7 +982,7 @@
     },
     {
       "asset": "HYD-04",
-      "component": "HYD-04:cooler",
+      "attached_to": "HYD-04:cooler",
       "sensor": "HYD-04:TS1",
       "tag": "TS1",
       "kind": "measured",
@@ -946,7 +994,7 @@
     },
     {
       "asset": "HYD-04",
-      "component": "HYD-04:cooler",
+      "attached_to": "HYD-04:cooler",
       "sensor": "HYD-04:TS2",
       "tag": "TS2",
       "kind": "measured",
@@ -958,7 +1006,7 @@
     },
     {
       "asset": "HYD-04",
-      "component": "HYD-04:motor",
+      "attached_to": "HYD-04:motor",
       "sensor": "HYD-04:EPS1",
       "tag": "EPS1",
       "kind": "measured",
@@ -970,7 +1018,7 @@
     },
     {
       "asset": "HYD-04",
-      "component": "HYD-04:pump-a",
+      "attached_to": "HYD-04:pump-a",
       "sensor": "HYD-04:FS1",
       "tag": "FS1",
       "kind": "measured",
@@ -982,7 +1030,7 @@
     },
     {
       "asset": "HYD-04",
-      "component": "HYD-04:pump-a",
+      "attached_to": "HYD-04:pump-a",
       "sensor": "HYD-04:LoadSP",
       "tag": "LoadSP",
       "kind": "setpoint",
@@ -994,7 +1042,7 @@
     },
     {
       "asset": "HYD-04",
-      "component": "HYD-04:pump-a",
+      "attached_to": "HYD-04:pump-a",
       "sensor": "HYD-04:PS1",
       "tag": "PS1",
       "kind": "measured",
@@ -1006,7 +1054,7 @@
     },
     {
       "asset": "HYD-04",
-      "component": "HYD-04:rtn-filter",
+      "attached_to": "HYD-04:rtn-filter",
       "sensor": "HYD-04:PS3",
       "tag": "PS3",
       "kind": "measured",
@@ -1018,7 +1066,7 @@
     },
     {
       "asset": "HYD-04",
-      "component": "HYD-04:rtn-filter",
+      "attached_to": "HYD-04:rtn-filter",
       "sensor": "HYD-04:PS4",
       "tag": "PS4",
       "kind": "measured",
@@ -1030,7 +1078,7 @@
     },
     {
       "asset": "HYD-04",
-      "component": "HYD-04:tank",
+      "attached_to": "HYD-04:tank",
       "sensor": "HYD-04:TS3",
       "tag": "TS3",
       "kind": "measured",
@@ -1042,7 +1090,7 @@
     },
     {
       "asset": "HYD-04",
-      "component": "HYD-04:valve",
+      "attached_to": "HYD-04:valve",
       "sensor": "HYD-04:PS2",
       "tag": "PS2",
       "kind": "measured",
@@ -1054,7 +1102,7 @@
     },
     {
       "asset": "HYD-04",
-      "component": "HYD-04:valve",
+      "attached_to": "HYD-04:valve",
       "sensor": "HYD-04:PS5",
       "tag": "PS5",
       "kind": "measured",
@@ -1066,7 +1114,7 @@
     },
     {
       "asset": "HYD-04",
-      "component": "HYD-04:valve",
+      "attached_to": "HYD-04:valve",
       "sensor": "HYD-04:PS6",
       "tag": "PS6",
       "kind": "measured",
@@ -1078,7 +1126,7 @@
     },
     {
       "asset": "HYD-05",
-      "component": "HYD-05:cooler",
+      "attached_to": "HYD-05:cooler",
       "sensor": "HYD-05:T_OIL",
       "tag": "T_OIL",
       "kind": "measured",
@@ -1090,7 +1138,7 @@
     },
     {
       "asset": "HYD-05",
-      "component": "HYD-05:fan",
+      "attached_to": "HYD-05:fan",
       "sensor": "HYD-05:V_FAN",
       "tag": "V_FAN",
       "kind": "measured",
@@ -1102,7 +1150,7 @@
     },
     {
       "asset": "HYD-05",
-      "component": "HYD-05:motor",
+      "attached_to": "HYD-05:motor",
       "sensor": "HYD-05:I_MOTOR",
       "tag": "I_MOTOR",
       "kind": "measured",
@@ -1114,7 +1162,7 @@
     },
     {
       "asset": "HYD-05",
-      "component": "HYD-05:pump",
+      "attached_to": "HYD-05:pump",
       "sensor": "HYD-05:P_MAIN",
       "tag": "P_MAIN",
       "kind": "measured",
@@ -1126,7 +1174,7 @@
     },
     {
       "asset": "HYD-05",
-      "component": "HYD-05:pump",
+      "attached_to": "HYD-05:pump",
       "sensor": "HYD-05:Q_MAIN",
       "tag": "Q_MAIN",
       "kind": "measured",
@@ -1138,7 +1186,7 @@
     },
     {
       "asset": "HYD-05",
-      "component": "HYD-05:rtn-filter",
+      "attached_to": "HYD-05:rtn-filter",
       "sensor": "HYD-05:DP_FILTER",
       "tag": "DP_FILTER",
       "kind": "measured",
@@ -1150,7 +1198,7 @@
     },
     {
       "asset": "HYD-05",
-      "component": "HYD-05:tank",
+      "attached_to": "HYD-05:tank",
       "sensor": "HYD-05:LVL_TANK",
       "tag": "LVL_TANK",
       "kind": "measured",
@@ -1162,7 +1210,7 @@
     },
     {
       "asset": "HYD-05",
-      "component": "HYD-05:tank",
+      "attached_to": "HYD-05:tank",
       "sensor": "HYD-05:T_TANK",
       "tag": "T_TANK",
       "kind": "measured",
@@ -1174,7 +1222,7 @@
     },
     {
       "asset": "HYD-05",
-      "component": "HYD-05:valve",
+      "attached_to": "HYD-05:valve",
       "sensor": "HYD-05:P_PILOT",
       "tag": "P_PILOT",
       "kind": "measured",
@@ -1186,7 +1234,7 @@
     },
     {
       "asset": "HYD-06",
-      "component": "HYD-06:cooler",
+      "attached_to": "HYD-06:cooler",
       "sensor": "HYD-06:T_OIL",
       "tag": "T_OIL",
       "kind": "measured",
@@ -1198,7 +1246,7 @@
     },
     {
       "asset": "HYD-06",
-      "component": "HYD-06:fan",
+      "attached_to": "HYD-06:fan",
       "sensor": "HYD-06:V_FAN",
       "tag": "V_FAN",
       "kind": "measured",
@@ -1210,7 +1258,7 @@
     },
     {
       "asset": "HYD-06",
-      "component": "HYD-06:motor",
+      "attached_to": "HYD-06:motor",
       "sensor": "HYD-06:I_MOTOR",
       "tag": "I_MOTOR",
       "kind": "measured",
@@ -1222,7 +1270,7 @@
     },
     {
       "asset": "HYD-06",
-      "component": "HYD-06:pump",
+      "attached_to": "HYD-06:pump",
       "sensor": "HYD-06:P_MAIN",
       "tag": "P_MAIN",
       "kind": "measured",
@@ -1234,7 +1282,7 @@
     },
     {
       "asset": "HYD-06",
-      "component": "HYD-06:pump",
+      "attached_to": "HYD-06:pump",
       "sensor": "HYD-06:Q_MAIN",
       "tag": "Q_MAIN",
       "kind": "measured",
@@ -1246,7 +1294,7 @@
     },
     {
       "asset": "HYD-06",
-      "component": "HYD-06:rtn-filter",
+      "attached_to": "HYD-06:rtn-filter",
       "sensor": "HYD-06:DP_FILTER",
       "tag": "DP_FILTER",
       "kind": "measured",
@@ -1258,7 +1306,7 @@
     },
     {
       "asset": "HYD-06",
-      "component": "HYD-06:tank",
+      "attached_to": "HYD-06:tank",
       "sensor": "HYD-06:LVL_TANK",
       "tag": "LVL_TANK",
       "kind": "measured",
@@ -1270,7 +1318,7 @@
     },
     {
       "asset": "HYD-06",
-      "component": "HYD-06:tank",
+      "attached_to": "HYD-06:tank",
       "sensor": "HYD-06:T_TANK",
       "tag": "T_TANK",
       "kind": "measured",
@@ -1282,7 +1330,7 @@
     },
     {
       "asset": "HYD-06",
-      "component": "HYD-06:valve",
+      "attached_to": "HYD-06:valve",
       "sensor": "HYD-06:P_PILOT",
       "tag": "P_PILOT",
       "kind": "measured",
@@ -1294,7 +1342,7 @@
     },
     {
       "asset": "HYD-07",
-      "component": "HYD-07:pump",
+      "attached_to": "HYD-07:pump",
       "sensor": "HYD-07:PI-1",
       "tag": "PI-1",
       "kind": "measured",
@@ -1306,7 +1354,7 @@
     },
     {
       "asset": "HYD-07",
-      "component": "HYD-07:tank",
+      "attached_to": "HYD-07:tank",
       "sensor": "HYD-07:TI-1",
       "tag": "TI-1",
       "kind": "measured",
@@ -1317,90 +1365,482 @@
       "direction": null
     }
   ],
-  "shared_quantity": [
+  "asset_parts": [
+    {
+      "asset": "HYD-01",
+      "component": "HYD-01:accumulator",
+      "component_name": "어큐뮬레이터",
+      "part": "P-ACC-BLD",
+      "part_name": "어큐뮬레이터 블래더 4L"
+    },
+    {
+      "asset": "HYD-01",
+      "component": "HYD-01:cabinet",
+      "component_name": "제어반",
+      "part": null,
+      "part_name": null
+    },
     {
       "asset": "HYD-01",
       "component": "HYD-01:cooler",
-      "sensor": "HYD-01:TS1",
-      "tag": "TS1",
-      "kind": "measured",
-      "quantity": "유온",
-      "unit": "℃",
-      "normal": 48.0,
-      "limit": 65.0,
-      "direction": "upper"
+      "component_name": "오일 쿨러",
+      "part": "P-CLR-CORE",
+      "part_name": "쿨러 코어"
+    },
+    {
+      "asset": "HYD-01",
+      "component": "HYD-01:coupling",
+      "component_name": "커플링",
+      "part": "P-CPL-ELM",
+      "part_name": "커플링 탄성체"
+    },
+    {
+      "asset": "HYD-01",
+      "component": "HYD-01:fan",
+      "component_name": "쿨러 팬",
+      "part": "P-FAN-BRG",
+      "part_name": "팬 베어링"
+    },
+    {
+      "asset": "HYD-01",
+      "component": "HYD-01:motor",
+      "component_name": "구동 모터",
+      "part": null,
+      "part_name": null
+    },
+    {
+      "asset": "HYD-01",
+      "component": "HYD-01:pump-a",
+      "component_name": "주 펌프 (A)",
+      "part": "P-PMP-SEAL",
+      "part_name": "펌프 축 씰 키트"
+    },
+    {
+      "asset": "HYD-01",
+      "component": "HYD-01:pump-b",
+      "component_name": "예비 펌프 (B)",
+      "part": null,
+      "part_name": null
+    },
+    {
+      "asset": "HYD-01",
+      "component": "HYD-01:rtn-filter",
+      "component_name": "리턴 필터",
+      "part": "P-RTN-FLT",
+      "part_name": "리턴 필터 엘리먼트 10µm"
+    },
+    {
+      "asset": "HYD-01",
+      "component": "HYD-01:strainer",
+      "component_name": "흡입 스트레이너",
+      "part": "P-SUC-STR",
+      "part_name": "흡입 스트레이너"
+    },
+    {
+      "asset": "HYD-01",
+      "component": "HYD-01:tank",
+      "component_name": "작동유 탱크",
+      "part": "P-HYD-OIL",
+      "part_name": "작동유 ISO VG46 (20 L)"
+    },
+    {
+      "asset": "HYD-01",
+      "component": "HYD-01:valve",
+      "component_name": "전환 밸브",
+      "part": "P-VLV-COIL",
+      "part_name": "솔레노이드 코일 24VDC"
+    },
+    {
+      "asset": "HYD-02",
+      "component": "HYD-02:accumulator",
+      "component_name": "어큐뮬레이터",
+      "part": "P-ACC-BLD",
+      "part_name": "어큐뮬레이터 블래더 4L"
+    },
+    {
+      "asset": "HYD-02",
+      "component": "HYD-02:cabinet",
+      "component_name": "제어반",
+      "part": null,
+      "part_name": null
     },
     {
       "asset": "HYD-02",
       "component": "HYD-02:cooler",
-      "sensor": "HYD-02:TS1",
-      "tag": "TS1",
-      "kind": "measured",
-      "quantity": "유온",
-      "unit": "℃",
-      "normal": 48.0,
-      "limit": 65.0,
-      "direction": "upper"
+      "component_name": "오일 쿨러",
+      "part": "P-CLR-CORE",
+      "part_name": "쿨러 코어"
+    },
+    {
+      "asset": "HYD-02",
+      "component": "HYD-02:coupling",
+      "component_name": "커플링",
+      "part": "P-CPL-ELM",
+      "part_name": "커플링 탄성체"
+    },
+    {
+      "asset": "HYD-02",
+      "component": "HYD-02:fan",
+      "component_name": "쿨러 팬",
+      "part": "P-FAN-BRG",
+      "part_name": "팬 베어링"
+    },
+    {
+      "asset": "HYD-02",
+      "component": "HYD-02:motor",
+      "component_name": "구동 모터",
+      "part": null,
+      "part_name": null
+    },
+    {
+      "asset": "HYD-02",
+      "component": "HYD-02:pump-a",
+      "component_name": "주 펌프 (A)",
+      "part": "P-PMP-SEAL",
+      "part_name": "펌프 축 씰 키트"
+    },
+    {
+      "asset": "HYD-02",
+      "component": "HYD-02:pump-b",
+      "component_name": "예비 펌프 (B)",
+      "part": null,
+      "part_name": null
+    },
+    {
+      "asset": "HYD-02",
+      "component": "HYD-02:rtn-filter",
+      "component_name": "리턴 필터",
+      "part": "P-RTN-FLT",
+      "part_name": "리턴 필터 엘리먼트 10µm"
+    },
+    {
+      "asset": "HYD-02",
+      "component": "HYD-02:strainer",
+      "component_name": "흡입 스트레이너",
+      "part": "P-SUC-STR",
+      "part_name": "흡입 스트레이너"
+    },
+    {
+      "asset": "HYD-02",
+      "component": "HYD-02:tank",
+      "component_name": "작동유 탱크",
+      "part": "P-HYD-OIL",
+      "part_name": "작동유 ISO VG46 (20 L)"
+    },
+    {
+      "asset": "HYD-02",
+      "component": "HYD-02:valve",
+      "component_name": "전환 밸브",
+      "part": "P-VLV-COIL",
+      "part_name": "솔레노이드 코일 24VDC"
+    },
+    {
+      "asset": "HYD-03",
+      "component": "HYD-03:accumulator",
+      "component_name": "어큐뮬레이터",
+      "part": "P-ACC-BLD",
+      "part_name": "어큐뮬레이터 블래더 4L"
+    },
+    {
+      "asset": "HYD-03",
+      "component": "HYD-03:cabinet",
+      "component_name": "제어반",
+      "part": null,
+      "part_name": null
     },
     {
       "asset": "HYD-03",
       "component": "HYD-03:cooler",
-      "sensor": "HYD-03:TS1",
-      "tag": "TS1",
-      "kind": "measured",
-      "quantity": "유온",
-      "unit": "℃",
-      "normal": 48.0,
-      "limit": 65.0,
-      "direction": "upper"
+      "component_name": "오일 쿨러",
+      "part": "P-CLR-CORE",
+      "part_name": "쿨러 코어"
+    },
+    {
+      "asset": "HYD-03",
+      "component": "HYD-03:coupling",
+      "component_name": "커플링",
+      "part": "P-CPL-ELM",
+      "part_name": "커플링 탄성체"
+    },
+    {
+      "asset": "HYD-03",
+      "component": "HYD-03:fan",
+      "component_name": "쿨러 팬",
+      "part": "P-FAN-BRG",
+      "part_name": "팬 베어링"
+    },
+    {
+      "asset": "HYD-03",
+      "component": "HYD-03:motor",
+      "component_name": "구동 모터",
+      "part": null,
+      "part_name": null
+    },
+    {
+      "asset": "HYD-03",
+      "component": "HYD-03:pump-a",
+      "component_name": "주 펌프 (A)",
+      "part": "P-PMP-SEAL",
+      "part_name": "펌프 축 씰 키트"
+    },
+    {
+      "asset": "HYD-03",
+      "component": "HYD-03:pump-b",
+      "component_name": "예비 펌프 (B)",
+      "part": null,
+      "part_name": null
+    },
+    {
+      "asset": "HYD-03",
+      "component": "HYD-03:rtn-filter",
+      "component_name": "리턴 필터",
+      "part": "P-RTN-FLT",
+      "part_name": "리턴 필터 엘리먼트 10µm"
+    },
+    {
+      "asset": "HYD-03",
+      "component": "HYD-03:strainer",
+      "component_name": "흡입 스트레이너",
+      "part": "P-SUC-STR",
+      "part_name": "흡입 스트레이너"
+    },
+    {
+      "asset": "HYD-03",
+      "component": "HYD-03:tank",
+      "component_name": "작동유 탱크",
+      "part": "P-HYD-OIL",
+      "part_name": "작동유 ISO VG46 (20 L)"
+    },
+    {
+      "asset": "HYD-03",
+      "component": "HYD-03:valve",
+      "component_name": "전환 밸브",
+      "part": "P-VLV-COIL",
+      "part_name": "솔레노이드 코일 24VDC"
+    },
+    {
+      "asset": "HYD-04",
+      "component": "HYD-04:accumulator",
+      "component_name": "어큐뮬레이터",
+      "part": "P-ACC-BLD",
+      "part_name": "어큐뮬레이터 블래더 4L"
+    },
+    {
+      "asset": "HYD-04",
+      "component": "HYD-04:cabinet",
+      "component_name": "제어반",
+      "part": null,
+      "part_name": null
     },
     {
       "asset": "HYD-04",
       "component": "HYD-04:cooler",
-      "sensor": "HYD-04:TS1",
-      "tag": "TS1",
-      "kind": "measured",
-      "quantity": "유온",
-      "unit": "℃",
-      "normal": 46.0,
-      "limit": 65.0,
-      "direction": "upper"
+      "component_name": "수냉 열교환기",
+      "part": "P-CLR-PLT",
+      "part_name": "수냉 열교환기 플레이트 팩"
+    },
+    {
+      "asset": "HYD-04",
+      "component": "HYD-04:coupling",
+      "component_name": "커플링",
+      "part": "P-CPL-ELM",
+      "part_name": "커플링 탄성체"
+    },
+    {
+      "asset": "HYD-04",
+      "component": "HYD-04:motor",
+      "component_name": "구동 모터",
+      "part": null,
+      "part_name": null
+    },
+    {
+      "asset": "HYD-04",
+      "component": "HYD-04:pump-a",
+      "component_name": "주 펌프 (A)",
+      "part": "P-PMP-SEAL-HT",
+      "part_name": "펌프 축 씰 키트(고온형 FKM)"
+    },
+    {
+      "asset": "HYD-04",
+      "component": "HYD-04:pump-b",
+      "component_name": "예비 펌프 (B)",
+      "part": null,
+      "part_name": null
+    },
+    {
+      "asset": "HYD-04",
+      "component": "HYD-04:rtn-filter",
+      "component_name": "리턴 필터",
+      "part": "P-RTN-FLT",
+      "part_name": "리턴 필터 엘리먼트 10µm"
+    },
+    {
+      "asset": "HYD-04",
+      "component": "HYD-04:strainer",
+      "component_name": "흡입 스트레이너",
+      "part": "P-SUC-STR",
+      "part_name": "흡입 스트레이너"
+    },
+    {
+      "asset": "HYD-04",
+      "component": "HYD-04:tank",
+      "component_name": "작동유 탱크",
+      "part": "P-HYD-OIL",
+      "part_name": "작동유 ISO VG46 (20 L)"
+    },
+    {
+      "asset": "HYD-04",
+      "component": "HYD-04:valve",
+      "component_name": "전환 밸브",
+      "part": "P-VLV-COIL",
+      "part_name": "솔레노이드 코일 24VDC"
+    },
+    {
+      "asset": "HYD-05",
+      "component": "HYD-05:cabinet",
+      "component_name": "제어반",
+      "part": null,
+      "part_name": null
     },
     {
       "asset": "HYD-05",
       "component": "HYD-05:cooler",
-      "sensor": "HYD-05:T_OIL",
-      "tag": "T_OIL",
-      "kind": "measured",
-      "quantity": "유온",
-      "unit": "℃",
-      "normal": 50.0,
-      "limit": 70.0,
-      "direction": "upper"
+      "component_name": "오일 쿨러",
+      "part": null,
+      "part_name": null
+    },
+    {
+      "asset": "HYD-05",
+      "component": "HYD-05:fan",
+      "component_name": "쿨러 팬",
+      "part": "P-BRG-6205",
+      "part_name": "볼 베어링 6205-2RS"
+    },
+    {
+      "asset": "HYD-05",
+      "component": "HYD-05:motor",
+      "component_name": "구동 모터",
+      "part": null,
+      "part_name": null
+    },
+    {
+      "asset": "HYD-05",
+      "component": "HYD-05:pump",
+      "component_name": "메인 펌프",
+      "part": "P-DPU-SEAL",
+      "part_name": "펌프 씰 키트(DPU)"
+    },
+    {
+      "asset": "HYD-05",
+      "component": "HYD-05:rtn-filter",
+      "component_name": "리턴 필터",
+      "part": "P-DPU-FLT",
+      "part_name": "리턴 필터 엘리먼트(DPU)"
+    },
+    {
+      "asset": "HYD-05",
+      "component": "HYD-05:tank",
+      "component_name": "작동유 탱크",
+      "part": "P-HYD-OIL",
+      "part_name": "작동유 ISO VG46 (20 L)"
+    },
+    {
+      "asset": "HYD-05",
+      "component": "HYD-05:valve",
+      "component_name": "전환 밸브",
+      "part": "P-VLV-COIL",
+      "part_name": "솔레노이드 코일 24VDC"
+    },
+    {
+      "asset": "HYD-06",
+      "component": "HYD-06:cabinet",
+      "component_name": "제어반",
+      "part": null,
+      "part_name": null
     },
     {
       "asset": "HYD-06",
       "component": "HYD-06:cooler",
-      "sensor": "HYD-06:T_OIL",
-      "tag": "T_OIL",
-      "kind": "measured",
-      "quantity": "유온",
-      "unit": "℃",
-      "normal": 50.0,
-      "limit": 70.0,
-      "direction": "upper"
+      "component_name": "오일 쿨러",
+      "part": null,
+      "part_name": null
+    },
+    {
+      "asset": "HYD-06",
+      "component": "HYD-06:fan",
+      "component_name": "쿨러 팬",
+      "part": "P-BRG-6205",
+      "part_name": "볼 베어링 6205-2RS"
+    },
+    {
+      "asset": "HYD-06",
+      "component": "HYD-06:motor",
+      "component_name": "구동 모터",
+      "part": null,
+      "part_name": null
+    },
+    {
+      "asset": "HYD-06",
+      "component": "HYD-06:pump",
+      "component_name": "메인 펌프",
+      "part": "P-DPU-SEAL",
+      "part_name": "펌프 씰 키트(DPU)"
+    },
+    {
+      "asset": "HYD-06",
+      "component": "HYD-06:rtn-filter",
+      "component_name": "리턴 필터",
+      "part": "P-DPU-FLT",
+      "part_name": "리턴 필터 엘리먼트(DPU)"
+    },
+    {
+      "asset": "HYD-06",
+      "component": "HYD-06:tank",
+      "component_name": "작동유 탱크",
+      "part": "P-HYD-OIL",
+      "part_name": "작동유 ISO VG46 (20 L)"
+    },
+    {
+      "asset": "HYD-06",
+      "component": "HYD-06:valve",
+      "component_name": "전환 밸브",
+      "part": "P-VLV-COIL",
+      "part_name": "솔레노이드 코일 24VDC"
+    },
+    {
+      "asset": "HYD-07",
+      "component": "HYD-07:coupling",
+      "component_name": "커플링",
+      "part": "P-CPL-ELM",
+      "part_name": "커플링 탄성체"
+    },
+    {
+      "asset": "HYD-07",
+      "component": "HYD-07:motor",
+      "component_name": "구동 모터",
+      "part": null,
+      "part_name": null
+    },
+    {
+      "asset": "HYD-07",
+      "component": "HYD-07:pump",
+      "component_name": "메인 펌프",
+      "part": "P-PMP-SEAL-22",
+      "part_name": "기어 펌프 씰 키트"
+    },
+    {
+      "asset": "HYD-07",
+      "component": "HYD-07:rtn-filter",
+      "component_name": "리턴 필터",
+      "part": "P-RTN-FLT",
+      "part_name": "리턴 필터 엘리먼트 10µm"
     },
     {
       "asset": "HYD-07",
       "component": "HYD-07:tank",
-      "sensor": "HYD-07:TI-1",
-      "tag": "TI-1",
-      "kind": "measured",
-      "quantity": "유온",
-      "unit": "℃",
-      "normal": 45.0,
-      "limit": null,
-      "direction": null
+      "component_name": "작동유 탱크",
+      "part": "P-HYD-OIL",
+      "part_name": "작동유 ISO VG46 (20 L)"
     }
   ]
 }

@@ -1250,6 +1250,90 @@
      }
     ]
    }
+  },
+  "parts_by_asset": {
+   "HYD-01": {
+    "accumulator": "P-ACC-BLD",
+    "cabinet": null,
+    "cooler": "P-CLR-CORE",
+    "coupling": "P-CPL-ELM",
+    "fan": "P-FAN-BRG",
+    "motor": null,
+    "pump-a": "P-PMP-SEAL",
+    "pump-b": null,
+    "rtn-filter": "P-RTN-FLT",
+    "strainer": "P-SUC-STR",
+    "tank": "P-HYD-OIL",
+    "valve": "P-VLV-COIL"
+   },
+   "HYD-02": {
+    "accumulator": "P-ACC-BLD",
+    "cabinet": null,
+    "cooler": "P-CLR-CORE",
+    "coupling": "P-CPL-ELM",
+    "fan": "P-FAN-BRG",
+    "motor": null,
+    "pump-a": "P-PMP-SEAL",
+    "pump-b": null,
+    "rtn-filter": "P-RTN-FLT",
+    "strainer": "P-SUC-STR",
+    "tank": "P-HYD-OIL",
+    "valve": "P-VLV-COIL"
+   },
+   "HYD-03": {
+    "accumulator": "P-ACC-BLD",
+    "cabinet": null,
+    "cooler": "P-CLR-CORE",
+    "coupling": "P-CPL-ELM",
+    "fan": "P-FAN-BRG",
+    "motor": null,
+    "pump-a": "P-PMP-SEAL",
+    "pump-b": null,
+    "rtn-filter": "P-RTN-FLT",
+    "strainer": "P-SUC-STR",
+    "tank": "P-HYD-OIL",
+    "valve": "P-VLV-COIL"
+   },
+   "HYD-04": {
+    "accumulator": "P-ACC-BLD",
+    "cabinet": null,
+    "cooler": "P-CLR-PLT",
+    "coupling": "P-CPL-ELM",
+    "motor": null,
+    "pump-a": "P-PMP-SEAL-HT",
+    "pump-b": null,
+    "rtn-filter": "P-RTN-FLT",
+    "strainer": "P-SUC-STR",
+    "tank": "P-HYD-OIL",
+    "valve": "P-VLV-COIL"
+   },
+   "HYD-05": {
+    "cabinet": null,
+    "cooler": null,
+    "fan": "P-BRG-6205",
+    "motor": null,
+    "pump": "P-DPU-SEAL",
+    "rtn-filter": "P-DPU-FLT",
+    "tank": "P-HYD-OIL",
+    "valve": "P-VLV-COIL"
+   },
+   "HYD-06": {
+    "cabinet": null,
+    "cooler": null,
+    "fan": "P-BRG-6205",
+    "motor": null,
+    "pump": "P-DPU-SEAL",
+    "rtn-filter": "P-DPU-FLT",
+    "tank": "P-HYD-OIL",
+    "valve": "P-VLV-COIL"
+   },
+   "HYD-07": {
+    "coupling": "P-CPL-ELM",
+    "motor": null,
+    "pump": "P-PMP-SEAL-22",
+    "rtn-filter": "P-RTN-FLT",
+    "tank": "P-HYD-OIL"
+   }
   }
  },
  "B": {
@@ -2522,6 +2606,90 @@
       ]
      }
     ]
+   }
+  },
+  "parts_by_asset": {
+   "HYD-01": {
+    "accumulator": "P-ACC-BLD",
+    "cabinet": null,
+    "cooler": "P-CLR-CORE",
+    "coupling": "P-CPL-ELM",
+    "fan": "P-FAN-BRG",
+    "motor": null,
+    "pump-a": "P-PMP-SEAL",
+    "pump-b": null,
+    "rtn-filter": "P-RTN-FLT",
+    "strainer": "P-SUC-STR",
+    "tank": "P-HYD-OIL",
+    "valve": "P-VLV-COIL"
+   },
+   "HYD-02": {
+    "accumulator": "P-ACC-BLD",
+    "cabinet": null,
+    "cooler": "P-CLR-CORE",
+    "coupling": "P-CPL-ELM",
+    "fan": "P-FAN-BRG",
+    "motor": null,
+    "pump-a": "P-PMP-SEAL",
+    "pump-b": null,
+    "rtn-filter": "P-RTN-FLT",
+    "strainer": "P-SUC-STR",
+    "tank": "P-HYD-OIL",
+    "valve": "P-VLV-COIL"
+   },
+   "HYD-03": {
+    "accumulator": "P-ACC-BLD",
+    "cabinet": null,
+    "cooler": "P-CLR-CORE",
+    "coupling": "P-CPL-ELM",
+    "fan": "P-FAN-BRG",
+    "motor": null,
+    "pump-a": "P-PMP-SEAL",
+    "pump-b": null,
+    "rtn-filter": "P-RTN-FLT",
+    "strainer": "P-SUC-STR",
+    "tank": "P-HYD-OIL",
+    "valve": "P-VLV-COIL"
+   },
+   "HYD-04": {
+    "accumulator": "P-ACC-BLD",
+    "cabinet": null,
+    "cooler": "P-CLR-PLT",
+    "coupling": "P-CPL-ELM",
+    "motor": null,
+    "pump-a": "P-PMP-SEAL-HT",
+    "pump-b": null,
+    "rtn-filter": "P-RTN-FLT",
+    "strainer": "P-SUC-STR",
+    "tank": "P-HYD-OIL",
+    "valve": "P-VLV-COIL"
+   },
+   "HYD-05": {
+    "cabinet": null,
+    "cooler": null,
+    "fan": "P-BRG-6205",
+    "motor": null,
+    "pump": "P-DPU-SEAL",
+    "rtn-filter": "P-DPU-FLT",
+    "tank": "P-HYD-OIL",
+    "valve": "P-VLV-COIL"
+   },
+   "HYD-06": {
+    "cabinet": null,
+    "cooler": null,
+    "fan": "P-BRG-6205",
+    "motor": null,
+    "pump": "P-DPU-SEAL",
+    "rtn-filter": "P-DPU-FLT",
+    "tank": "P-HYD-OIL",
+    "valve": "P-VLV-COIL"
+   },
+   "HYD-07": {
+    "coupling": "P-CPL-ELM",
+    "motor": null,
+    "pump": "P-PMP-SEAL-22",
+    "rtn-filter": "P-RTN-FLT",
+    "tank": "P-HYD-OIL"
    }
   }
  }

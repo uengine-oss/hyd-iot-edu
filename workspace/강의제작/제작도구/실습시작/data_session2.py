@@ -242,7 +242,15 @@ AVL = [  # 공급사, 품번, 승인상태, 승인일, 유효기한, 조건, 비
     ('정유상사', 'P-HYD-OIL', '승인', '2023-05-01', '2027-04-30', '', ''),
 ]
 AVL_COLS = ['공급사', '품번', '승인상태', '승인일', '유효기한', '조건', '비고']
-SUPPLIERS = {'A정밀': 'A정밀 (저가)', 'B-OEM': 'B-OEM (순정)', 'C트레이딩': 'C트레이딩 (최저가)', '대한베어링': '대한베어링', '대원하이드로': '대원하이드로', '정유상사': '정유상사'}
+# 공급사 이름 = 승인공급사_목록(SCM 등록)에 적힌 이름. 견적표의 공급사 칸(「A정밀 (저가)」 「B-OEM(순정)」 등)은 이 이름으로 시작한다.
+SUPPLIERS = ('A정밀', 'B-OEM', 'C트레이딩', '대한베어링', '대원하이드로', '정유상사')
+QUOTE_FILE = '공급_조건.csv'
+AVL_FILE = '승인공급사_목록.csv'
+
+
+def line_ref(name, line):
+    """값의 출처 표기 — 원자료 파일 이름과 편집기에 보이는 줄 번호(머리줄이 1행)."""
+    return f'{name} {line}행'
 RECEIPT_COLS = ['발주번호', '품번', '공급사', '발주일', '약속납기일', '입고일', '발주수량', '입고수량', '로트', '입고검사', '비고']
 
 
@@ -488,8 +496,8 @@ def write_sources(dest=SOURCE, practical=False):
         '센서_목록.csv': _csv(SENSOR_COLS, sensor_rows()),
         '예비품_목록.csv': _csv(PART_COLS, part_rows()),
         '품번_교차표.csv': _csv(CROSS_COLS, CROSS),
-        '공급_조건.csv': _csv(QUOTE_COLS, QUOTES),
-        '승인공급사_목록.csv': _csv(AVL_COLS, AVL),
+        QUOTE_FILE: _csv(QUOTE_COLS, QUOTES),
+        AVL_FILE: _csv(AVL_COLS, AVL),
         '입고_이력.csv': _csv(RECEIPT_COLS, receipts()),
         '현장_메모.md': memo(practical),
     }
@@ -502,12 +510,11 @@ def write_sources(dest=SOURCE, practical=False):
     return {name: text.count('\n') - (1 if name.endswith('.csv') else 0) for name, text in files.items()}
 
 
-# ───────────── 변경분(실습4: 재적재·부분 수정) ─────────────
-CHANGE_COLS = {'설비_대장_변경.csv': ['변경', *ASSET_COLS], '구성요소_변경.csv': ['변경', *COMP_COLS],
-               '센서_변경.csv': ['변경', *SENSOR_COLS], '공급_조건_변경.csv': ['변경', *QUOTE_COLS], '승인공급사_변경.csv': ['변경', *AVL_COLS]}
+# ───────────── 변경분(통합반 실습4: 재적재·부분 수정 — 실전반 실습4 행에는 수정본 반영이 없다) ─────────────
+CHANGE_COLS = {'설비_대장_변경.csv': ['변경', *ASSET_COLS], '구성요소_변경.csv': ['변경', *COMP_COLS], '센서_변경.csv': ['변경', *SENSOR_COLS]}
 
 
-def changes(supply):
+def changes():
     """기준일 뒤 들어온 수정본. 원 행 전체를 다시 적고 맨 앞에 변경 종류를 적는다."""
     a = {r[0]: list(r) for r in ASSETS}
     hyd02 = a['HYD-02'][:]; hyd02[1] = 'HYD-02 2라인 2호 파워팩'; hyd02[9] = '설비명 표준화(2026-10-20)'
@@ -517,15 +524,12 @@ def changes(supply):
            '센서_변경.csv': [['수정', 'HYD-03', 'VS1', 'VT-231', '팬 진동 센서', '송풍기', '팬 진동', 'mm/s', '1 Hz', '매초 전송', '0.6', '2.0', '상한', '단위 보완'],
                             ['수정', 'HYD-06', 'I_MOTOR', 'IT-321', '모터 전류', '구동 모터', '모터 전류', 'A', '', '5초 주기(3라인 게이트웨이)', '18.5', '25', '상한', '시운전 기록 확인'],
                             ['삭제', 'HYD-01', 'TS1', 'TT-211', 'TS1 오일 온도', '쿨러', '작동유 온도', '℃', '', '', '48', '65', '', '중복 행 정리']]}
-    if supply:
-        out['공급_조건_변경.csv'] = [['추가', 'P-FAN-BRG', 'A정밀 (저가)', 'AJ-B6205', '예', '19', '0.10', '1', '1', '2026-10-18', '2027-01-31', '재견적']]
-        out['승인공급사_변경.csv'] = [['수정', 'A정밀', 'P-ACC-BLD', '승인', '2026-10-17', '2028-10-16', '', '재승인']]
     return out
 
 
-def write_changes(dest, supply):
+def write_changes(dest):
     dest.mkdir(parents=True, exist_ok=True)
-    for name, rows in changes(supply).items():
+    for name, rows in changes().items():
         (dest/name).write_text(_csv(CHANGE_COLS[name], rows), encoding='utf-8', newline='')
     (dest/'README.md').write_text(f'''# {CHANGE_DATE} 수정본
 
@@ -564,7 +568,8 @@ def truth():
                        'PI-1': dict(component='pump', quantity='quantity:PS1', unit='bar', normal=140.0, limit=None, direction=None, kind='measured')}
         t['assets'][code] = {'model': model, 'components': comps, 'sensors': sensors}
     valid = {}
-    for part, sup, _, _, price, fail, lead, *_rest in QUOTES:
+    # 줄 번호는 _csv가 쓰는 순서 그대로(머리줄이 1행) — 참조 모델이 CSV를 다시 읽어 남긴 출처 줄을 이것과 견준다.
+    for line, (part, sup, _, _, price, fail, lead, *_rest) in enumerate(QUOTES, 2):
         quote_date, until = _rest[1], _rest[2]
         pid = part if part.startswith('P-') else next(p[0] for p in PARTS if p[1] == part)
         sid = next(k for k in SUPPLIERS if sup.startswith(k))
@@ -574,9 +579,10 @@ def truth():
         d = int(lead[:-1]) * 7 if lead.endswith('주') else int(lead)
         prev = valid.get((sid, pid))
         if prev is None or quote_date > prev['quote_date']:
-            valid[(sid, pid)] = dict(price_manwon=float(price), defect_rate=f, lead_days=d, quote_date=quote_date, valid_until=until)
-    for sup, pid, status, _, until, cond, _ in AVL:
+            valid[(sid, pid)] = dict(price_manwon=float(price), defect_rate=f, lead_days=d, quote_date=quote_date, valid_until=until, quote_line=line)
+    for line, (sup, pid, status, _, until, cond, _) in enumerate(AVL, 2):
         if (sup, pid) in valid:
+            valid[(sup, pid)]['avl_line'] = line
             ok = status in ('승인', '조건부 승인') and until >= REF_DATE
             valid[(sup, pid)].update(avl_status=status if (not until or until >= REF_DATE) else '유효기한 경과', approved_A=ok,
                                      approved_B=(status == '승인' and until >= REF_DATE), condition=cond)

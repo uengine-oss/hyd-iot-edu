@@ -2775,7 +2775,7 @@
       ],
       "props": {
         "id": "supplier:A정밀",
-        "name": "A정밀 (저가)"
+        "name": "A정밀"
       }
     },
     {
@@ -2784,7 +2784,7 @@
       ],
       "props": {
         "id": "supplier:B-OEM",
-        "name": "B-OEM (순정)"
+        "name": "B-OEM"
       }
     },
     {
@@ -2793,7 +2793,7 @@
       ],
       "props": {
         "id": "supplier:C트레이딩",
-        "name": "C트레이딩 (최저가)"
+        "name": "C트레이딩"
       }
     },
     {
@@ -4766,7 +4766,10 @@
         "min_order_qty": 1,
         "supplier_part_no": "AJ-AB04",
         "quote_date": "2026-09-01",
-        "valid_until": "2026-12-31"
+        "valid_until": "2026-12-31",
+        "quote_source": "공급_조건.csv 20행",
+        "approval_source": "승인공급사_목록.csv 17행",
+        "as_of": "2026-10-15"
       }
     },
     {
@@ -4783,7 +4786,10 @@
         "min_order_qty": 1,
         "supplier_part_no": "AJ-C4500",
         "quote_date": "2026-10-02",
-        "valid_until": "2026-12-31"
+        "valid_until": "2026-12-31",
+        "quote_source": "공급_조건.csv 12행",
+        "approval_source": "승인공급사_목록.csv 10행",
+        "as_of": "2026-10-15"
       }
     },
     {
@@ -4799,7 +4805,10 @@
         "min_order_qty": 2,
         "supplier_part_no": "ROTEX-24-98A",
         "quote_date": "2026-10-02",
-        "valid_until": "2026-12-31"
+        "valid_until": "2026-12-31",
+        "quote_source": "공급_조건.csv 23행",
+        "approval_source": "승인공급사_목록.csv 21행",
+        "as_of": "2026-10-15"
       }
     },
     {
@@ -4815,7 +4824,10 @@
         "min_order_qty": 1,
         "supplier_part_no": "AJ-B6205",
         "quote_date": "2026-10-02",
-        "valid_until": "2026-12-31"
+        "valid_until": "2026-12-31",
+        "quote_source": "공급_조건.csv 9행",
+        "approval_source": "승인공급사_목록.csv 7행",
+        "as_of": "2026-10-15"
       }
     },
     {
@@ -4831,7 +4843,10 @@
         "min_order_qty": 1,
         "supplier_part_no": "AJ-S4510",
         "quote_date": "2026-10-02",
-        "valid_until": "2026-12-31"
+        "valid_until": "2026-12-31",
+        "quote_source": "공급_조건.csv 2행",
+        "approval_source": "승인공급사_목록.csv 2행",
+        "as_of": "2026-10-15"
       }
     },
     {
@@ -4847,7 +4862,10 @@
         "min_order_qty": 2,
         "supplier_part_no": "AJ-S4520",
         "quote_date": "2026-09-15",
-        "valid_until": "2026-12-31"
+        "valid_until": "2026-12-31",
+        "quote_source": "공급_조건.csv 7행",
+        "approval_source": "승인공급사_목록.csv 5행",
+        "as_of": "2026-10-15"
       }
     },
     {
@@ -4863,7 +4881,10 @@
         "min_order_qty": 4,
         "supplier_part_no": "AJ-RF10",
         "quote_date": "2026-10-02",
-        "valid_until": "2026-12-31"
+        "valid_until": "2026-12-31",
+        "quote_source": "공급_조건.csv 16행",
+        "approval_source": "승인공급사_목록.csv 14행",
+        "as_of": "2026-10-15"
       }
     },
     {
@@ -4879,7 +4900,10 @@
         "min_order_qty": 1,
         "supplier_part_no": "HI-AB-04",
         "quote_date": "2026-09-01",
-        "valid_until": "2026-12-31"
+        "valid_until": "2026-12-31",
+        "quote_source": "공급_조건.csv 19행",
+        "approval_source": "승인공급사_목록.csv 18행",
+        "as_of": "2026-10-15"
       }
     },
     {
@@ -4895,7 +4919,10 @@
         "min_order_qty": 1,
         "supplier_part_no": "HI-CC-45A",
         "quote_date": "2026-10-02",
-        "valid_until": "2026-12-31"
+        "valid_until": "2026-12-31",
+        "quote_source": "공급_조건.csv 13행",
+        "approval_source": "승인공급사_목록.csv 11행",
+        "as_of": "2026-10-15"
       }
     },
     {
@@ -4911,7 +4938,10 @@
         "min_order_qty": 1,
         "supplier_part_no": "6205-2RS",
         "quote_date": "2026-10-02",
-        "valid_until": "2026-12-31"
+        "valid_until": "2026-12-31",
+        "quote_source": "공급_조건.csv 10행",
+        "approval_source": "승인공급사_목록.csv 8행",
+        "as_of": "2026-10-15"
       }
     },
     {
@@ -4927,7 +4957,10 @@
         "min_order_qty": 1,
         "supplier_part_no": "HI-SK-45A",
         "quote_date": "2026-10-02",
-        "valid_until": "2026-12-31"
+        "valid_until": "2026-12-31",
+        "quote_source": "공급_조건.csv 3행",
+        "approval_source": "승인공급사_목록.csv 3행",
+        "as_of": "2026-10-15"
       }
     },
     {
@@ -4943,7 +4976,10 @@
         "min_order_qty": 1,
         "supplier_part_no": "HI-SK-45B",
         "quote_date": "2026-09-15",
-        "valid_until": "2026-12-31"
+        "valid_until": "2026-12-31",
+        "quote_source": "공급_조건.csv 6행",
+        "approval_source": "승인공급사_목록.csv 6행",
+        "as_of": "2026-10-15"
       }
     },
     {
@@ -4959,7 +4995,10 @@
         "min_order_qty": 1,
         "supplier_part_no": "HI-RF-10",
         "quote_date": "2026-10-02",
-        "valid_until": "2026-12-31"
+        "valid_until": "2026-12-31",
+        "quote_source": "공급_조건.csv 17행",
+        "approval_source": "승인공급사_목록.csv 15행",
+        "as_of": "2026-10-15"
       }
     },
     {
@@ -4975,7 +5014,10 @@
         "min_order_qty": 1,
         "supplier_part_no": "D03-24VDC",
         "quote_date": "2026-10-02",
-        "valid_until": "2026-12-31"
+        "valid_until": "2026-12-31",
+        "quote_source": "공급_조건.csv 24행",
+        "approval_source": "승인공급사_목록.csv 22행",
+        "as_of": "2026-10-15"
       }
     },
     {
@@ -4991,7 +5033,10 @@
         "min_order_qty": 1,
         "supplier_part_no": "CT-CC-450",
         "quote_date": "2026-10-05",
-        "valid_until": "2026-11-30"
+        "valid_until": "2026-11-30",
+        "quote_source": "공급_조건.csv 14행",
+        "approval_source": "승인공급사_목록.csv 12행",
+        "as_of": "2026-10-15"
       }
     },
     {
@@ -5007,7 +5052,10 @@
         "min_order_qty": 5,
         "supplier_part_no": "CT-PS-0045",
         "quote_date": "2026-10-02",
-        "valid_until": "2026-11-30"
+        "valid_until": "2026-11-30",
+        "quote_source": "공급_조건.csv 4행",
+        "approval_source": "승인공급사_목록.csv 4행",
+        "as_of": "2026-10-15"
       }
     },
     {
@@ -5023,7 +5071,10 @@
         "min_order_qty": 10,
         "supplier_part_no": "CT-RF-10",
         "quote_date": "2026-09-20",
-        "valid_until": "2026-12-31"
+        "valid_until": "2026-12-31",
+        "quote_source": "공급_조건.csv 18행",
+        "approval_source": "승인공급사_목록.csv 16행",
+        "as_of": "2026-10-15"
       }
     },
     {
@@ -5039,7 +5090,10 @@
         "min_order_qty": 2,
         "supplier_part_no": "DW-RF-30",
         "quote_date": "2026-08-25",
-        "valid_until": "2027-02-24"
+        "valid_until": "2027-02-24",
+        "quote_source": "공급_조건.csv 22행",
+        "approval_source": "승인공급사_목록.csv 20행",
+        "as_of": "2026-10-15"
       }
     },
     {
@@ -5055,7 +5109,10 @@
         "min_order_qty": 1,
         "supplier_part_no": "DW-PS-30",
         "quote_date": "2026-08-25",
-        "valid_until": "2027-02-24"
+        "valid_until": "2027-02-24",
+        "quote_source": "공급_조건.csv 21행",
+        "approval_source": "승인공급사_목록.csv 19행",
+        "as_of": "2026-10-15"
       }
     },
     {
@@ -5071,7 +5128,10 @@
         "min_order_qty": 10,
         "supplier_part_no": "DB-6205-2RS",
         "quote_date": "2026-08-10",
-        "valid_until": "2027-02-28"
+        "valid_until": "2027-02-28",
+        "quote_source": "공급_조건.csv 11행",
+        "approval_source": "승인공급사_목록.csv 9행",
+        "as_of": "2026-10-15"
       }
     },
     {
@@ -5087,7 +5147,10 @@
         "min_order_qty": 4,
         "supplier_part_no": "VG46-20L",
         "quote_date": "2026-09-28",
-        "valid_until": "2026-12-31"
+        "valid_until": "2026-12-31",
+        "quote_source": "공급_조건.csv 25행",
+        "approval_source": "승인공급사_목록.csv 23행",
+        "as_of": "2026-10-15"
       }
     }
   ]
