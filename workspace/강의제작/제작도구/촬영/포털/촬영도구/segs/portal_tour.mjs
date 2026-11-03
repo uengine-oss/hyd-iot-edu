@@ -42,6 +42,8 @@ export function target(name){
 // 조작 하나. dry(녹화 없음 · 대상 확인)에서도 같은 함수를 쓴다.
 export async function op(c,o){
  const [kind,name]=o;const t=target(name);
+ // 메뉴를 누른 직후의 화면(지식 지도 등)은 늦게 그려진다 — 대상이 나타날 때까지 기다린다(04-r1 pt502).
+ if(kind==='point'||kind==='click')await c.appear(t,15000);
  if(kind==='point')return c.point(t);
  if(kind==='click')return c.click(t);
  if(kind==='scroll')return c.scrollTop(t,t.top??96);
@@ -55,13 +57,11 @@ export async function seg(ctx,n){
  // 녹화 전(화면에 남지 않음): 구간 1은 포털 홈 맨 위에서 시작한다. 다른 구간은 앞 구간 끝 화면 그대로.
  // 「나」는 브라우저(localStorage hyd.me)에 남으므로 지우고 새로 열어 「나 고르기」 상태로 시작한다.
  if(n===1&&!ctx.resuming){if(!(await ctx.p.url()).startsWith('http://127.0.0.1:8088/'))await ctx.p.goto('http://127.0.0.1:8088/',{waitUntil:'domcontentloaded'});
-  await ctx.p.evaluate(()=>localStorage.removeItem('hyd.me'));await ctx.p.reload({waitUntil:'domcontentloaded'});await ctx.sleep(2000);
+  await ctx.p.evaluate(()=>{localStorage.removeItem('hyd.me');sessionStorage.clear();});await ctx.p.goto('about:blank');await ctx.p.goto('http://127.0.0.1:8088/',{waitUntil:'domcontentloaded'});await ctx.sleep(2000);   // 꼬리 없는 첫 주소(새로 고침은 #/instances/… 지난 처리 건을 다시 연다)
+  // 실시간 모니터링 그래프(Grafana)는 처음 열 때 8초쯤 걸린다 — 녹화 전에 한 번 열어 둔다(한 번에 이어 찍으면 3구간 시작이 녹화 안이라 여기로 옮김).
+  await ctx.p.evaluate(()=>document.querySelector('.rail nav button[data-tab="trends"]').click());await ctx.sleep(10000);
   await ctx.p.evaluate(()=>{document.querySelector('.rail nav button[data-tab="main"]').click();for(const e of document.querySelectorAll('.rail,main#content'))e.scrollTop=0;});
   await ctx.sleep(2500);await ctx.installPointer({x:760,y:430});}
- // 구간 3: 실시간 모니터링 그래프(Grafana)는 처음 열 때 8초쯤 걸린다. 녹화 전에 한 번 열어 두고 앞 구간 끝 메뉴로 돌아온다.
- if(n===3){const back=await ctx.p.evaluate(()=>document.querySelector('.rail nav button.active')?.dataset.tab);
-  await ctx.p.evaluate(()=>document.querySelector('.rail nav button[data-tab="trends"]').click());await ctx.sleep(10000);
-  await ctx.p.evaluate(b=>document.querySelector(`.rail nav button[data-tab="${b}"]`).click(),back);await ctx.sleep(1500);}
  await ctx.begin();
  for(const q of cues){
   const dur=JSON.parse(await fs.readFile(ctx.audio+'/'+q.id+'.json','utf8')).duration_ms;
