@@ -21,27 +21,32 @@
     },
     {
       "src": "practical/day03",
-      "n": 5
+      "n": 5,
+      "next": "한 조치를 네 관점에서 읽는 법"
     },
     {
       "src": "practical/day03",
-      "n": 6
-    },
-    {
-      "src": "practical/day03",
-      "n": 7
-    },
-    {
-      "src": "practical/day03",
-      "n": 8
-    },
-    {
-      "src": "practical/day03",
-      "n": 9
+      "n": 7,
+      "next": "목표만 바꿨을 때 움직이는 기준선"
     },
     {
       "src": "practical/day03",
       "n": 10,
+      "next": "추가 전력을 같은 기간의 비용으로 바꾸기"
+    },
+    {
+      "src": "practical/day03",
+      "n": 12,
+      "next": "한 후보의 순위와 손실 금액"
+    },
+    {
+      "src": "practical/day03",
+      "n": 14,
+      "next": "납기 가정을 바꾼 비교 시험"
+    },
+    {
+      "src": "practical/day03",
+      "n": 16,
       "next": "문장에서 검토된 지식으로"
     },
     {
@@ -54,35 +59,47 @@
     },
     {
       "src": "practical/day03",
-      "n": 17
+      "n": 26
     },
     {
       "src": "practical/day03",
-      "n": 18
+      "n": 27
     },
     {
       "src": "practical/day03",
-      "n": 19
+      "n": 28,
+      "next": "문서 이름 변경과 원문 개정의 구분"
     },
     {
       "src": "practical/day03",
-      "n": 20
+      "n": 31
     },
     {
       "src": "practical/day03",
-      "n": 21
+      "n": 32,
+      "next": "같은 대상을 연결하는 매핑"
     },
     {
       "src": "practical/day03",
-      "n": 22
+      "n": 35,
+      "next": "원문 대조에서 되찾는 부정과 단위"
     },
     {
       "src": "practical/day03",
-      "n": 23
+      "n": 37
     },
     {
       "src": "practical/day03",
-      "n": 24,
+      "n": 38
+    },
+    {
+      "src": "practical/day03",
+      "n": 39,
+      "next": "승인 묶음의 반영과 충돌 시 전체 취소"
+    },
+    {
+      "src": "practical/day03",
+      "n": 41,
       "next": "질문에서 출처까지의 검증"
     },
     {
@@ -91,38 +108,32 @@
     },
     {
       "src": "practical/day03",
-      "n": 25
+      "n": 42,
+      "next": "개정된 한 절에서 영향 범위 찾기"
     },
     {
       "src": "practical/day03",
-      "n": 26,
-      "next": "스키마·인스턴스·관측의 경계"
+      "n": 46,
+      "next": "그래프에서 원인별 확인 근거 찾기"
     },
     {
       "src": "practical/day03",
-      "n": 35
+      "n": 58,
+      "next": "예측·승인·결과를 확인하는 세 시점"
     },
     {
       "src": "practical/day03",
-      "n": 36
+      "n": 63,
+      "next": "빠진 진동 관측을 점검 요청으로 바꾸기"
     },
     {
       "src": "practical/day03",
-      "n": 37
+      "n": 67
     },
     {
       "src": "practical/day03",
-      "n": 38,
-      "next": "기준은 있지만 관측이 부족한 입력"
-    },
-    {
-      "src": "practical/day03",
-      "n": 40
-    },
-    {
-      "src": "practical/day03",
-      "n": 41,
-      "next": "이제 사건을 처음부터 다시 판단해 봅시다."
+      "n": 68,
+      "next": "다른 사람이 점검 요청을 이어받을 때"
     },
     {
       "new": "review",
@@ -130,12 +141,12 @@
     },
     {
       "src": "practical/day03",
-      "n": 43
+      "n": 71
     },
     {
       "src": "practical/day03",
-      "n": 44,
-      "next": "각 문항에서 근거가 되는 조건을 찾아보세요."
+      "n": 72,
+      "next": "Quiz 1. 금지 조건과 예상 손익"
     },
     {
       "new": "q1",
