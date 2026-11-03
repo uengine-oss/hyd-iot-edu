@@ -1,4 +1,4 @@
-"""완성된 이론 영상에 강조 표시(손으로 그린 동그라미 · 글씨)를 얹는다. 음성은 그대로 복사하므로 음성 비용이 들지 않는다.
+"""완성된 이론 영상에 강조 표시(손으로 그린 동그라미 · 띠 · 밑줄 · 네모 · 화살표 · 글씨)를 얹는다. 음성은 그대로 복사하므로 음성 비용이 들지 않는다.
 
     python 강조표시.py <영상.mp4> <강조.json> <출력.mp4> [--구간 시작초 끝초] [--확인 폴더]
 
@@ -7,6 +7,10 @@
     {"장": 18, "문장": "자막 문장 그대로", "낱말": "문장 안에서 그리기 시작할 말", "끝문장": "지울 때 시작되는 문장(생략하면 그 장의 말이 끝날 때)",
      "모양": "동그라미", "중심": [x, y], "반지름": [rx, ry]}
     {"장": …, "문장": …, "낱말": …, "모양": "글씨", "글": "포함", "중심": [x, y], "크기": 40}
+    {"장": …, …, "모양": "띠" | "밑줄" | "네모", "상자": [x1, y1, x2, y2]}   # 띠 = 반투명 노란 형광펜(글 위에 덮어도 읽힌다), 밑줄 = 상자 아래 변 바로 밑, 네모 = 상자 둘레
+    {"장": …, …, "모양": "화살표", "시작": [x, y], "끝": [x, y]}            # 끝이 가리키는 곳(촉)
+  어느 모양을 쓰는지: 둘레가 비어 있는 대상 하나 → 동그라미, 줄 간격이 촘촘한 글 한 줄 · 표의 한 행 → 띠나 밑줄,
+  칸 · 상자 하나 → 네모, 대상 둘레를 감쌀 자리가 없고 옆이 비어 있으면 → 화살표, 화면에 없는 말을 짧게 더할 때 → 글씨.
   좌표는 1920x1080 영상 프레임 기준이다. 본보기: 강조표시_본보기/.
 - 찾지 못한 문장 · 낱말, 화면 밖 좌표, 뜻이 둘인 문장은 표시 위치를 적고 멈춘다.
 - 글씨 글꼴: 환경변수 `EMPH_FONT`(맑은 고딕 굵게 TTF 경로), 없으면 `C:/Windows/Fonts/malgunbd.ttf`.
@@ -89,13 +93,21 @@ def plan(cfg, subs, slides):
     marks = []
     for i, m in enumerate(cfg["표시"], 1):
         where = f"표시 {i}"
-        for f in ("장", "문장", "낱말", "모양", "중심"):
+        for f in ("장", "문장", "낱말", "모양"):
             if f not in m: stop(f"{where}: 「{f}」 없음")
-        need = {"동그라미": "반지름", "글씨": "글"}.get(m["모양"])
-        if not need: stop(f"{where}: 모르는 모양 「{m['모양']}」")
-        if not m.get(need): stop(f"{where}: 「{need}」 없음")
-        x, y = m["중심"]
-        if not (0 <= x <= W and 0 <= y <= H): stop(f"{where}: 중심 {m['중심']}이 화면 밖")
+        need = SHAPES.get(m["모양"])
+        if not need: stop(f"{where}: 모르는 모양 「{m['모양']}」(쓸 수 있는 것: {' · '.join(SHAPES)})")
+        for f in need:
+            if not m.get(f): stop(f"{where}: {m['모양']}에 「{f}」 없음")
+        pts = [m[f] for f in ("중심", "시작", "끝") if f in need]
+        if "상자" in need:
+            x1, y1, x2, y2 = m["상자"]
+            if not (x1 < x2 and y1 < y2): stop(f"{where}: 상자 {m['상자']}는 [왼, 위, 오른, 아래]여야 함")
+            pts += [(x1, y1), (x2, y2 + (14 if m["모양"] == "밑줄" else 0))]
+        if m["모양"] == "동그라미":
+            pts += [(m["중심"][0] - m["반지름"][0], m["중심"][1] - m["반지름"][1]), (m["중심"][0] + m["반지름"][0], m["중심"][1] + m["반지름"][1])]
+        for x, y in pts:
+            if not (0 <= x <= W and 0 <= y <= H): stop(f"{where}: {m['모양']}의 점 ({x}, {y})이 화면 밖")
         hit, hi = find_sentence(where, subs, slides, m["장"], m["문장"])
         start = hit[0] + word_offset(where, m["문장"], hit[1] - hit[0], m["낱말"])
         if m.get("끝문장"):
@@ -105,6 +117,35 @@ def plan(cfg, subs, slides):
         if end <= start: stop(f"{where}: 지우는 시각이 그리는 시각보다 앞섬")
         marks.append(dict(m, start=start, end=end, seed=i))
     return marks
+
+
+SHAPES = {"동그라미": ("중심", "반지름"), "글씨": ("중심", "글"), "띠": ("상자",), "밑줄": ("상자",), "네모": ("상자",), "화살표": ("시작", "끝")}
+YELLOW = (255, 214, 0)
+
+
+def line_pts(a, b, rnd, n=40, wob=2.5):
+    """a에서 b로 조금 휘며 가는 손 선."""
+    (x1, y1), (x2, y2) = a, b; L = math.hypot(x2 - x1, y2 - y1) or 1
+    nx, ny = -(y2 - y1) / L, (x2 - x1) / L; k = rnd.uniform(-1, 1) * min(wob, L * 0.02); p = rnd.uniform(0, 6.28)
+    return [((x1 + (x2 - x1) * u + nx * (k * math.sin(math.pi * u) + 0.8 * math.sin(7 * u + p))) * SS,
+             (y1 + (y2 - y1) * u + ny * (k * math.sin(math.pi * u) + 0.8 * math.sin(7 * u + p))) * SS) for u in (i / n for i in range(n + 1))]
+
+
+def path(m):
+    """그려 나갈 선(띠는 선이 아니라 면이라 없음)."""
+    rnd = random.Random(m["seed"])
+    if m["모양"] == "동그라미": return stroke(m)
+    if m["모양"] == "밑줄":
+        x1, _, x2, y2 = m["상자"]; y = y2 + 7
+        return line_pts((x1 - 4, y + rnd.uniform(-1.5, 1.5)), (x2 + 6, y + rnd.uniform(-2, 2)), rnd)
+    if m["모양"] == "네모":   # 왼쪽 위에서 시작해 시계 방향으로 돌고 시작 모서리를 조금 지나친다
+        x1, y1, x2, y2 = m["상자"]; c = [(x1, y1), (x2, y1), (x2, y2), (x1, y2), (x1, y1)]
+        out = []
+        for a, b in zip(c, c[1:]): out += line_pts(a, b, rnd, n=30, wob=2)[1:]
+        return out + line_pts((x1, y1), (x1 + min(30, (x2 - x1) * 0.15), y1 + rnd.uniform(-2, 2)), rnd, n=6)[1:]
+    if m["모양"] == "화살표":
+        return line_pts(m["시작"], m["끝"], rnd, wob=10)
+    return None
 
 
 def stroke(m, n=120):
@@ -120,9 +161,18 @@ def stroke(m, n=120):
 
 
 def draw_mark(img, m, e, alpha):
-    if m["모양"] == "동그라미":
-        p = m["_path"]
-        ImageDraw.Draw(img).line(p[:max(2, int(e * len(p)))], fill=RED + (alpha,), width=5 * SS, joint="curve")
+    if m["모양"] == "띠":   # 형광펜: 왼쪽에서 오른쪽으로 긋는 반투명 노란 띠(글 위에 덮어도 글이 읽힌다)
+        x1, y1, x2, y2 = m["상자"]; xe = x1 + (x2 - x1) * e
+        layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
+        ImageDraw.Draw(layer).rounded_rectangle([x1 * SS, y1 * SS, xe * SS, y2 * SS], radius=4 * SS, fill=YELLOW + (int(alpha * 0.42),))
+        img.alpha_composite(layer)
+    elif m["모양"] in ("동그라미", "밑줄", "네모", "화살표"):
+        p = m["_path"]; d = ImageDraw.Draw(img)
+        d.line(p[:max(2, int(e * len(p)))], fill=RED + (alpha,), width=5 * SS, joint="curve")
+        if m["모양"] == "화살표" and e > 0.8:   # 촉: 선이 다 닿을 무렵 나타난다
+            (sx, sy), (ex, ey) = m["시작"], m["끝"]; a = math.atan2(ey - sy, ex - sx); L = 26 * min(1, (e - 0.8) / 0.2)
+            for da in (2.6, -2.6):
+                d.line([(ex * SS, ey * SS), ((ex + L * math.cos(a + da)) * SS, (ey + L * math.sin(a + da)) * SS)], fill=RED + (alpha,), width=5 * SS)
     else:   # 글씨 — 왼쪽부터 써 나가듯 드러낸다
         font = ImageFont.truetype(str(FONT), m.get("크기", 40) * SS)
         cx, cy = m["중심"][0] * SS, m["중심"][1] * SS
@@ -204,7 +254,7 @@ def main():
     cfg = json.loads(Path(a.config).read_text(encoding="utf-8"))
     marks = plan(cfg, subs, slides)
     for m in marks:
-        if m["모양"] == "동그라미": m["_path"] = stroke(m)
+        m["_path"] = path(m)
         print(f"표시 {m['seed']}: {m['장']}장 {m['start']:.2f}~{m['end']:.2f}초 {m['모양']} {m.get('글', '')}")
     probe = probe_of(a.ffmpeg)
     total = duration(a.ffmpeg, video)
@@ -231,7 +281,7 @@ def main():
                 st = state_at(marks, f / FPS)
                 if runs and st == last: runs[-1][1] += 1
                 else: runs.append([st, 1]); last = st
-            sig = [[c, [[marks[i]["모양"], marks[i]["중심"], marks[i].get("반지름"), marks[i].get("글"), marks[i].get("크기"), marks[i]["seed"], e, al]
+            sig = [[c, [[marks[i]["모양"], marks[i].get("중심"), marks[i].get("상자"), marks[i].get("시작"), marks[i].get("끝"), marks[i].get("반지름"), marks[i].get("글"), marks[i].get("크기"), marks[i]["seed"], e, al]
                         for i, e, al in st]] for st, c in runs]
             key = hashlib.sha1(json.dumps([VERSION, sha(src), n, enc, FPS, font, sig], ensure_ascii=False).encode()).hexdigest()[:20]
             piece = PIECES / f"{key}.mp4"
