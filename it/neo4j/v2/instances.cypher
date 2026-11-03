@@ -184,10 +184,10 @@ WITH n, r MATCH (c:Component {id: r[3]}) MERGE (c)-[:USES_PART]->(n);
 // 처리 엔진이 그래프로 옮긴다(procsvc/scm_sync: 시작 뒤 60초마다, 수업 지식 적재 전 한 번 — scripts/class_knowledge.py가 POST /api/kg/scm-sync).
 
 // 회사가 정한 기준 문서(교육용 예시). 수업 문서(HM-8 · PM-02 · PR-07)의 출처는 적재가 만든다.
-UNWIND [['ks:sr-04','설비안전규정 SR-04 (교육용 예시)','regulation','SR-04'],
+UNWIND [['ks:sr-04','설비안전규정 SR-04','regulation','SR-04'],
         ['ks:strategy-map','경남유압 BSC 전략맵','strategy','BSC-2026'],
-        ['ks:pm-plan','정기 정비 계획 기준 (회사 설정, 교육용 예시)','policy','PM-PLAN'],
-        ['ks:monitoring-standard','감시 임계값 회사 설정값 (수업 문서에 없음, 교육용 예시)','policy','MON-SET'],
+        ['ks:pm-plan','정기 정비 계획 기준 (회사 설정)','policy','PM-PLAN'],
+        ['ks:monitoring-standard','감시 임계값 회사 설정값','policy','MON-SET'],
         // 수업 문서에 있는 감지 기준은 그 문서의 절 번호(ref)로 가리킨다. 적재가 만드는 절 노드에 바로 잇지 못하는 까닭: 절 · 문서 노드 id 가
         // PC 마다 다르고(manual:<테넌트 해시>:<적재 uuid>:…), 적재 때 서명 묶음 밖의 관계를 더하면 강사 서명 지식이 아니게 된다(재서명 = 사용자 결정, RUNBOOK §7).
         ['ks:monitoring-hm-8','쿨러 감시 기준 — 수업 문서 HM-8 「HM-8.3 냉각 성능 판정 기준」의 값 (경보 55 ℃ · 냉각 효율 70 % · 정상 52 ℃ · 인터록 65 ℃)','policy','HM-8.3'],

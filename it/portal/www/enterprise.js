@@ -315,7 +315,7 @@ function forecastContextHtml(c) {
   const val = k => Number.isFinite(c.values?.[k]) ? Number(c.values[k]).toFixed(1) : '미확인';
   const inputLabels = { ts1: '현재 유온 ℃', t_amb: '주변 온도 ℃', fan_pct: '팬 %', load_pct: '부하 %', cooler_health: '냉각 성능 비율', leak: '누설 비율', bearing_wear: '베어링 마모', state: '설비 상태', pump: '운전 펌프' };
   return `<p>${esc(c.horizon_s)}초 뒤 유온 ${val('ts1')} ℃ · 압력 ${val('ps1')} bar · 진동 ${val('vs1')} mm/s · 구간 최대 유온 ${val('ts1_peak')} ℃</p>
-    <p class="muted">교육용 시뮬레이터 모델입니다. 현재 열화와 주변 온도가 유지된다는 조건의 계산이며 현장 설비의 검증된 예측이 아닙니다. 모델 ${esc(c.model_id)} · 판본 ${esc(c.model_revision)} · 입력 시점 ${esc(UI.dateTime(c.source_t))}</p>
+    <p class="muted">설비 예측 모델의 계산입니다. 지금의 열화와 주변 온도가 그대로 유지된다는 조건이며, 조치 뒤 다시 잰 값이 아닙니다. 모델 ${esc(c.model_id)} · 판본 ${esc(c.model_revision)} · 입력 시점 ${esc(UI.dateTime(c.source_t))}</p>
     <p class="muted">${Object.entries(inputLabels).map(([k, label]) => `${label} ${esc(c.inputs?.[k] ?? '미확인')}`).join(' · ')}</p>`;
 }
 function cardHtml(o, opt = {}) {

@@ -543,7 +543,7 @@ def explain(options: list[dict], rec: dict | None, facts: dict, fired: list[str]
     if out:
         parts.append("제외: " + "; ".join(f"'{o['name']}' — {_clause(o['violations'][0]['annotation'])}" for o in out) + ".")
     if rec["precedent"]:
-        parts.append(f"같은 고장 유형에서 사람이 이 안을 고른 선례 {rec['precedent']['n']}건 ({int(rec['precedent']['share'] * 100)} %, 미리 넣은 교육용 예시 — 승인해도 늘지 않음).")
+        parts.append(f"같은 고장 유형에서 사람이 이 안을 고른 선례 {rec['precedent']['n']}건 ({int(rec['precedent']['share'] * 100)} %, 미리 넣은 사례 기준 — 승인해도 늘지 않음).")
     delivery = rec['scoreParts'].get('delivery', 0)
     if delivery:
         tier = f"{facts['order_customer_tier']} " if facts.get("order_customer_tier") else ""
