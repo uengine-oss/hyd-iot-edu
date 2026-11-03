@@ -20,6 +20,7 @@ it/supabase/.branches/
 # 작업 자료는 workspace/ 폴더 하나 = workspace 브랜치(workspace/동기화.py로 올림). Claude · Codex 규칙 파일도 그쪽에 백업한다.
 /workspace/
 /.claude/
+/.codex/hooks.json
 /CLAUDE.md
 /AGENTS.md
 # 진행 중 작업 자리(이 PC 전용 — 작업 스펙 · 녹화 원본 · 임시 출력, 확정되면 지운다). 어느 브랜치에도 올리지 않는다.
