@@ -105,7 +105,7 @@ def test_흐름_목록은_강사가_설치한_수업_흐름을_따로_표시한�
 
 def test_수업_흐름은_지우지_않고_까닭을_말한다(world):
     status, out = world.api('DELETE', f'/api/flows/c3_cooling?by={ME}')
-    assert status == 409 and '강사가 설치한 수업 흐름이라 지울 수 없습니다' in out['detail']['reason']
+    assert status == 409 and '수업 흐름이라 지울 수 없습니다' in out['detail']['reason']
     assert 'c3_cooling' in {h['id'] for h in world.rt.repo.deployed_heads('hyd')}
 
 

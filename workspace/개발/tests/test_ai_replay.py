@@ -96,20 +96,24 @@ def test_쓰기_자리는_녹화의_쓰기_도구를_이_PC_서버로_다시_불
     assert scope['instance'] == pid and scope['workitem'] == world.row(pid, 'T_agent')['id']
 
 
-@pytest.mark.parametrize('skills, said', [(['cooler-check'], True), ([], False)], ids=['스킬 붙임', '스킬 없음'])
-def test_스킬을_붙여도_재생한_답에는_반영되지_않았다고_말한다(tmp_path, tool_servers, skills, said):
-    """실라버스 포털 실습 3번(스킬을 붙이고 같은 질문 → 떼고 같은 질문): 키 없는 PC 에서는 같은 녹화가 나와 「스킬이 아무 일도 안 한다」로
-    배우지 않게, 처리 과정 한 줄에 붙인 스킬이 이 답에 반영되지 않았음을 적는다."""
-    doc = next(d for key, d in docs().items() if key.startswith('question|'))
+@pytest.mark.parametrize('slot, skills, said', [
+    ('question', ['cooler-check'], True), ('question', [], False),
+    ('handover/draft-1', ['my-shift-handover-review'], False), ('handover/draft-1', [], True),
+], ids=['스킬 붙임', '스킬 없음 그대로', '저장된 실행과 같은 스킬', '저장된 실행의 스킬을 뗌'])
+def test_스킬_구성이_저장된_실행과_다를_때만_같은_답이라고_말한다(tmp_path, tool_servers, slot, skills, said):
+    """실라버스 포털 실습 3번(스킬을 붙이고 같은 질문 → 떼고 같은 질문): 재생은 같은 답을 내므로 「스킬이 아무 일도 안 한다」로 배우지
+    않게, 스킬 구성이 저장된 실행(그 실행이 연 스킬)과 다를 때만 처리 과정 한 줄로 말한다. 수업 기본 구성 그대로인 평소 실행에는
+    재생 안내를 남기지 않는다(화면은 실제 AI 실행과 같다, CLAUDE.md 5절)."""
+    doc = next(d for key, d in docs().items() if key.startswith(slot + '|'))
     wd, _ = workdir_for(tmp_path, doc['runs'][0], tool_servers)
-    c = Responses('replay', course=COURSE_LIB).claim(cli=None, slot='question', case=doc['case'], attempt=(0, 0), request_key=None,
+    c = Responses('replay', course=COURSE_LIB).claim(cli=None, slot=slot, case=doc['case'], attempt=(0, 0), request_key=None,
                                                     step=doc['step'], provider='claude-code', source={}, accepted=lambda s: True, skills=skills)
     play(c, wd)
     text = c.notice()
-    assert text.startswith('AI 응답 재생 — 강사가 미리 실행해 둔 응답이며')
-    assert ('cooler-check' in text and '반영되지 않았습니다' in text) is said
-    # 한바퀴 무키 최종: 재생한 교대 인계안의 작업지시 번호가 녹화 때 것이라 이 PC 의 열린 작업지시와 달랐다 — 학생이 제 PC 것으로 읽지 않게 말한다
-    assert '강사 PC에서 저장할 때의 것' in text and '이 PC의 업무 데이터와 다를 수 있습니다' in text
+    if said:
+        assert '같은 답을 냅니다' in text and (', '.join(skills) or '없음') in text and '강사' not in text
+    else:
+        assert text is None
 
 
 def test_녹화_열쇠는_흐름_id_와_작업_이름이_아니라_수업_자리다():
@@ -121,12 +125,12 @@ def test_녹화_열쇠는_흐름_id_와_작업_이름이_아니라_수업_자리
 
 # ---------------------------------------------------------------- 녹화 밖 행동 = 쉬운 말 실패
 @pytest.mark.parametrize('slot, case, attempt, has', [
-    ('handover/draft-3', '', (0, 0), '보완 요청 1번까지'),
+    ('handover/draft-3', '', (0, 0), '보완 요청은 1번까지'),
     ('c3_cooling/T_agent', 'COOLER_DEGRADATION', (1, 0), '재작업'),
     ('c3_cooling/T_agent', 'COOLER_DEGRADATION', (0, 1), '다시 평가'),
     ('c3_cooling/T_agent', 'PUMP_LEAK', (0, 0), '이 종류의 처리 건'),
-    (None, '', (0, 0), '수업 AI 단계가 아니라'),
-    ('question', ai_replay.question_case('다른 질문'), (0, 0), '강의에서 다룬 질문에만'),
+    (None, '', (0, 0), '수업에서 준비한 흐름'),
+    ('question', ai_replay.question_case('다른 질문'), (0, 0), '수업에서 다룬 질문에만'),
 ], ids=['교대 보완 2', '재작업 세대 1', '보류 뒤 재평가', '녹화 없는 경보 종류', 'PBL 단계의 수업 밖 단계', '다루지 않은 질문'])
 def test_녹화에_없는_행동은_무엇이_없고_무엇을_하면_되는지_말하고_멈춘다(tmp_path, slot, case, attempt, has):
     """#9 · #23: 「API 키를 넣으면」(키 없는 학생이 할 수 없는 안내) · 경보 코드 · 「시스템 오류」 없이."""

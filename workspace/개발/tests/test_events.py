@@ -35,4 +35,5 @@ def test_스킬_파일_읽기는_이번_실행에_준_스킬과_견주고_재생
     [read] = reads(provided, recorded=recorded)
     assert read['skill'] == RECORDED_SKILL and read['file'] == 'SKILL.md'
     assert {k: read.get(k) for k in expect} == expect
-    assert read['content'].startswith('강사가 저장한 답의 실행이 ') == recorded
+    [live] = reads([], recorded=False)
+    assert read['content'] == live['content']                                                   # 재생도 화면 문장은 실제 실행과 같다
