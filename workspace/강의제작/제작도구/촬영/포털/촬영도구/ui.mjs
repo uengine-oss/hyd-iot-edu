@@ -22,7 +22,7 @@ export function installPointerInPage(pos){
 }
 
 // 대상 하나를 화면 좌표로(페이지 안에서 실행). 여러 개면 오류 — 고정 좌표로 누르지 않는다.
-function findInPage(t){
+export function findInPage(t){
   const vis=e=>{const b=e.getBoundingClientRect();return b.width>0&&b.height>0&&e.checkVisibility({checkVisibilityCSS:true});};
   let es;
   if(t.tab)es=[...document.querySelectorAll(`.rail nav button[data-tab="${t.tab}"]`)];
@@ -53,16 +53,23 @@ function findInPage(t){
   for(;a&&a!==document.body&&a!==document.documentElement;a=a.parentElement){const cs=getComputedStyle(a);if(/(auto|scroll)/.test(cs.overflowY)&&a.scrollHeight>a.clientHeight+2){const r=a.getBoundingClientRect();sc={top:r.top,bottom:r.bottom,left:r.left,right:r.right};break;}}
   // 문서 전체가 굴러가지 않는 화면(포털)에서 스크롤 영역 밖 요소(위 막대)는 늘 보인다.
   if(!sc&&document.scrollingElement.scrollHeight<=innerHeight+2)fixed=true;
-  return{x,y,top:b.top,bottom:b.bottom,left:b.left,right:b.right,h:innerHeight,w:innerWidth,tag:es[0].tagName,fixed,sc};
+  // hit: 누를 지점의 맨 위 요소가 이 대상이거나 그 안쪽인가(다른 요소에 가려졌으면 false).
+  const top=document.elementFromPoint(x+(t.dx||0),y+(t.dy||0));const hit=!!top&&(top===es[0]||es[0].contains(top));
+  return{x,y,top:b.top,bottom:b.bottom,left:b.left,right:b.right,h:innerHeight,w:innerWidth,tag:es[0].tagName,fixed,sc,hit};
 }
 
 export async function portal(ctx){
  const raw=ctx.p,sleep=ctx.sleep,q1=fn=>ctx.serial(fn);
- const gs={lastMoveEnd:0};let lastPos=null;
+ // ctx.virtualPointer(take.mjs): 페이지에 화살표를 움직이지 않는다. 경로만 기록해 합성 때 그리고, 실제 입력은 도착 시각에 목표로 한 번 보낸다 — 입력 지연이 화살표를 끌지 못한다.
+ const virtual=ctx.virtualPointer||null;
+ const gs={lastMoveEnd:0};let lastPos=virtual;
  const gate=async()=>{const until=Math.max(ctx.commitAt||0,gs.lastMoveEnd+150);const w=until-Date.now();if(w>0)await sleep(w);ctx.committed??=Date.now();};
  const pointerPos=()=>raw.evaluate(()=>{const r=document.getElementById('recording-pointer')?.getBoundingClientRect();if(!r)throw Error('Recording pointer missing');return{x:r.x,y:r.y};});
  // 이동: RPC 하나마다 직렬 큐를 잠깐 쓰고 놓는다. 실제 입력 8단계, 마지막 단계는 정확히 목표 좌표. 애니메이션 끝까지 hold 뒤 해제.
  async function moveCore(x,y){
+  if(virtual){const a=lastPos,dist=Math.hypot(x-a.x,y-a.y);if(dist<1){gs.lastMoveEnd=Date.now();return;}
+   const ms=Math.round(Math.max(260,Math.min(620,200+dist*0.4))),t0=Date.now();ctx.recordMotion({start:t0,end:t0+ms,x,y,from:a,planned_ms:ms,glide:t0});
+   if(!ctx.rehearsal)await sleep(ms);await q1(()=>raw.mouse.move(x,y,{steps:1}));gs.lastMoveEnd=Date.now();lastPos=ctx.virtualPointer={x,y};return;}
   const a=await q1(pointerPos);const dist=Math.hypot(x-a.x,y-a.y);if(dist<1){gs.lastMoveEnd=Date.now();lastPos={x,y};return;}
   const ms=Math.round(Math.max(260,Math.min(620,200+dist*0.4)));const t0=Date.now();
   const g0=Date.now();await q1(()=>raw.evaluate(({ax,ay,x,y,ms})=>window.__startGlide(ax,ay,x,y,ms),{ax:a.x,ay:a.y,x,y,ms}));const glideAt=Math.round((g0+Date.now())/2);
@@ -76,10 +83,10 @@ export async function portal(ctx){
  async function inView(t){
   // 가리킬 지점이 그 스크롤 영역 안(위 20 · 아래 20px 여백, 창 전체가 영역이면 위 60 · 아래 40px)에 있으면 그대로 쓴다. 고정된 위 막대는 굴려도 자리가 같다.
   // 밖이면 화살표를 먼저 그 영역 위로 옮긴 뒤 굴린다(휠은 화살표 아래 영역을 굴린다 — 메뉴 칸 위에서 굴려야 메뉴가 움직인다).
-  for(let i=0;i<12;i++){const r=await find(t);const y=r.y+(t.dy||0);if(r.fixed)return r;
+  for(let i=0;i<12;i++){const r=await find(t);const y=r.y+(t.dy||0);ctx.lastView={i,y:Math.round(y),top:Math.round(r.top),sc:r.sc,pos:lastPos};if(r.fixed)return r;
    const lo=r.sc?r.sc.top+20:60,hi=r.sc?r.sc.bottom-20:r.h-40;if(y>=lo&&y<=hi&&r.top>=-r.h)return r;
-   await over(r);const dy=y<lo?y-lo-140:y-hi+140;await wheel(Math.max(-420,Math.min(420,dy)));}
-  throw Error('Cannot bring into view: '+JSON.stringify(t));
+   await over(r);const dy=y<lo?y-lo-140:y-hi+140;await wheel(virtual?dy:Math.max(-420,Math.min(420,dy)),r.sc);}
+  throw Error('Cannot bring into view: '+JSON.stringify(t)+' '+JSON.stringify(ctx.lastView||null));
  }
  async function over(r){if(!r.sc)return;const p=lastPos||await q1(pointerPos);const s=r.sc;
   if(p.x>=s.left+10&&p.x<=s.right-10&&p.y>=s.top+10&&p.y<=s.bottom-10)return;
@@ -87,7 +94,17 @@ export async function portal(ctx){
  async function settled(t){let q=await inView(t);for(let k=0;k<10;k++){await sleep(150);const q2=await find(t);if(Math.hypot(q2.x-q.x,q2.y-q.y)<=1)return q2;q=q2;}throw Error('Target layout did not settle: '+JSON.stringify(t));}
  // 휠: 헤드리스에서는 휠 한 번이 부드럽게 굴러가지 않고 그 거리만큼 바로 뛴다(120px씩 나누니 520px가 프레임 6장 · 공백 191ms, 2026-10-23 test-click-1).
  // 그래서 약 30px씩 프레임 간격(30ms)에 맞춰 굴린다. 처음과 끝은 작게(가속 · 감속). 화살표는 움직이지 않는다.
- async function wheel(dy){const n=Math.max(4,Math.round(Math.abs(dy)/30));let done=0;const t0=Date.now();
+ // virtual(ego): 휠 호출 하나가 긴 화면에서 수백 ms라 나눠 보내면 찔끔찔끔 움직인다(2026-11-03 06 리허설 한 번 이동 50초). 화살표 아래 스크롤 영역을 페이지 안 애니메이션으로 한 번에 굴린다.
+ async function wheel(dy,sc){
+  if(virtual){const ms=Math.round(Math.max(350,Math.min(1400,220+Math.abs(dy)*0.55)));
+   const ok=await q1(()=>raw.evaluate(({x,y,dy,ms,sc})=>{let a=document.elementFromPoint(x,y);
+    // sc: 대상을 담은 스크롤 영역. 화살표 아래 입력칸 · 원문 칸이 먼저 굴러가 본문이 안 움직이는 일을 막는다.
+    for(;a&&a!==document.documentElement;a=a.parentElement){const s=getComputedStyle(a),b=a.getBoundingClientRect();if(/(auto|scroll)/.test(s.overflowY)&&a.scrollHeight>a.clientHeight+1&&(!sc||(Math.abs(b.top-sc.top)<2&&Math.abs(b.left-sc.left)<2))&&(sc||(dy>0?a.scrollTop+a.clientHeight<a.scrollHeight-1:a.scrollTop>0)))break;}
+    if(!a||a===document.documentElement)return false;
+    const from=a.scrollTop,t0=performance.now(),step=now=>{const u=Math.min(1,(now-t0)/ms);a.scrollTop=from+dy*(u*u*(3-2*u));if(u<1)requestAnimationFrame(step);};requestAnimationFrame(step);return true;},{x:lastPos.x,y:lastPos.y,dy,ms,sc:sc||null}));
+   if(!ok)throw Error(`굴릴 영역 없음: 화살표 (${Math.round(lastPos.x)},${Math.round(lastPos.y)}) 아래, ${dy}px`);
+   await sleep(ms+150);return;}
+  const n=Math.max(4,Math.round(Math.abs(dy)/30));let done=0;const t0=Date.now();
   for(let i=1;i<=n;i++){const u=(1-Math.cos(Math.PI*i/n))/2;const step=Math.round(dy*u)-done;done+=step;if(step)await q1(()=>raw.mouse.wheel(0,step));const w=t0+i*30-Date.now();if(w>0)await sleep(w);}
   await sleep(250);}
  const c={raw,gate,sleep,serial:ctx.serial};
@@ -96,8 +113,15 @@ export async function portal(ctx){
  c.click=async t=>{
   for(let i=0;i<4;i++){
    const q=await settled(t);const x=q.x+(t.dx||0),y=q.y+(t.dy||0);await moveCore(x,y);await gate();
-   const now=await find(t);if(Math.hypot(now.x-q.x,now.y-q.y)>2)continue;
-   await q1(()=>raw.mouse.click(x,y));await sleep(150);return now;
+   const now=await find(t);
+   // virtual: 화살표는 나중에 그리므로, 이동 중 대상이 밀렸으면 기록된 도착점을 고쳐 한 번에 간 것으로 그린다(휘청임이 생기지 않는다).
+   if(virtual&&Math.hypot(now.x-q.x,now.y-q.y)>2){const nx=now.x+(t.dx||0),ny=now.y+(t.dy||0);ctx.retarget?.({target:t,by:[Math.round(now.x-q.x),Math.round(now.y-q.y)],hit:now.hit});
+    // 많이 밀려 화면 밖으로 나갔거나 가려졌으면 처음부터 다시 찾아 간다(화면이 다시 그려진 경우).
+    if(!now.hit)continue;
+    ctx.amendMotion(nx,ny);await q1(()=>raw.mouse.move(nx,ny,{steps:1}));lastPos=ctx.virtualPointer={x:nx,y:ny};await q1(()=>raw.mouse.click(nx,ny));ctx.recordClick?.({x:nx,y:ny,target:t});await sleep(150);return now;}
+   if(Math.hypot(now.x-q.x,now.y-q.y)>2){ctx.retarget?.(t);continue;}
+   if(virtual&&!now.hit)throw Error('Target covered at click point: '+JSON.stringify(t));
+   await q1(()=>raw.mouse.click(x,y));ctx.recordClick?.({x,y,target:t});await sleep(150);return now;
   }
   throw Error('Target kept moving: '+JSON.stringify(t));
  };
@@ -105,13 +129,14 @@ export async function portal(ctx){
  c.scroll=async(dy,over)=>{if(over)await c.point(over);await gate();await wheel(dy);};
  c.scrollTo=async t=>{await gate();await inView(t);};
  // 그 대상(제목 등)이 화면 위 top px 자리에 오도록 굴린다. 시점은 부르는 쪽이 정한다(gate 없음).
- c.scrollTop=async(t,top=96)=>{const r=await find(t);const dy=Math.round(r.top-top);if(Math.abs(dy)>4){await over(r);await wheel(dy);}};
+ c.scrollTop=async(t,top=96)=>{const r=await find(t);const dy=Math.round(r.top-top);if(Math.abs(dy)>4){await over(r);await wheel(dy,r.sc);}};
  // 입력: 입력칸이 포커스인지 확인하고, 화살표를 칸 아래 여백으로 비킨 뒤 한 글자씩 넣는다(한글은 완성형 글자 단위, IME 조합 시연 아님).
  c.aside=async()=>{const q=await q1(()=>raw.evaluate(()=>{const a=document.activeElement;if(!a?.matches('input,textarea,select,[contenteditable=true]'))return null;const r=a.getBoundingClientRect();return{x:Math.min(innerWidth-30,r.x+24),y:Math.min(innerHeight-30,r.bottom+22)};}));if(!q)throw Error('No focused input for aside');await moveCore(q.x,q.y);};
  c.type=async text=>{await c.aside();await gate();let i=0;for(const ch of text){await q1(()=>raw.keyboard.insertText(ch));await sleep([105,125,95,135,110][i++%5]);}};
  c.key=async k=>{await gate();await q1(()=>raw.keyboard.press(k));await sleep(200);};
  // 고르기 칸: 헤드리스 화면 녹화에는 운영체제 목록 창이 찍히지 않으므로, 칸을 누른 뒤 값을 고르고 change를 보낸다(고른 결과는 칸에 보인다).
- c.select=async(t,label)=>{await c.click(t);await gate();
+ // virtual(화면 있는 ego)은 실제로 누르면 운영체제 목록 창이 열려 녹화에 안 찍히고 입력을 붙잡으므로, 칸을 가리킨 뒤 값을 고른다.
+ c.select=async(t,label)=>{if(virtual)await c.point(t);else await c.click(t);await gate();
   const ok=await q1(()=>raw.evaluate(({t,label})=>{const es=[...document.querySelectorAll(t.css||'select')].filter(e=>e.checkVisibility());const s=es[t.nth||0];if(!s)return false;const o=[...s.options].find(o=>o.textContent.trim()===label||o.value===label);if(!o)return false;s.value=o.value;s.dispatchEvent(new Event('change',{bubbles:true}));s.blur();return true;},{t,label}));
   if(!ok)throw Error('Select option missing: '+label);await sleep(200);};
  c.waitFor=(fn,arg,timeout)=>ctx.waitFor(fn,arg,timeout);

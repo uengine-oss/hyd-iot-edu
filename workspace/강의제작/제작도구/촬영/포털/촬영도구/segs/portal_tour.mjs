@@ -50,11 +50,11 @@ export async function op(c,o){
 }
 const frac=o=>o[0]==='select'?o[3]:o[2];
 export async function seg(ctx,n){
- const cues=JSON.parse(await fs.readFile(CUES,'utf8')).cues.filter(c=>c.segment===n);
+ const cues=JSON.parse(await fs.readFile(ctx.cueFile||CUES,'utf8')).cues.filter(c=>c.segment===n);
  const c=await portal(ctx);
  // 녹화 전(화면에 남지 않음): 구간 1은 포털 홈 맨 위에서 시작한다. 다른 구간은 앞 구간 끝 화면 그대로.
  // 「나」는 브라우저(localStorage hyd.me)에 남으므로 지우고 새로 열어 「나 고르기」 상태로 시작한다.
- if(n===1){if(!ctx.p.url().startsWith('http://127.0.0.1:8088/'))await ctx.p.goto('http://127.0.0.1:8088/',{waitUntil:'domcontentloaded'});
+ if(n===1&&!ctx.resuming){if(!(await ctx.p.url()).startsWith('http://127.0.0.1:8088/'))await ctx.p.goto('http://127.0.0.1:8088/',{waitUntil:'domcontentloaded'});
   await ctx.p.evaluate(()=>localStorage.removeItem('hyd.me'));await ctx.p.reload({waitUntil:'domcontentloaded'});await ctx.sleep(2000);
   await ctx.p.evaluate(()=>{document.querySelector('.rail nav button[data-tab="main"]').click();for(const e of document.querySelectorAll('.rail,main#content'))e.scrollTop=0;});
   await ctx.sleep(2500);await ctx.installPointer({x:760,y:430});}
