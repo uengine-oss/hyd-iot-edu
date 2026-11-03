@@ -62,8 +62,10 @@ export async function op(ctx,c,o){
  }
  throw Error('unknown op '+kind);
 }
-// 시점: 대사 속 구절이면 그 구절 앞까지의 글자 비율.
+// 시점: 대사 속 구절이면 그 구절 앞까지의 글자 비율. wait · waittext · waitjs의 셋째 값은 기다릴 초라 시점이 아니다 — 앞 조작이 끝나면 바로 기다린다.
+// (셋째 값을 시점으로 읽어 C003이 대사 길이 × 30 = 약 504초를 멈췄다, 2026-11-03 06-t1. 리허설은 대사 길이가 0이라 드러나지 않았다.)
 function fracOf(q,o){const v=o.at(-1);
+ if(['wait','waittext','waitjs'].includes(o[0])&&o.length<4)return null;
  if(typeof v==='number')return v;
  if(v&&typeof v==='object'&&v.at){const i=q.text.indexOf(v.at);if(i<0)throw Error(`${q.id}: 대사에 없는 구절 — ${v.at}`);return i/q.text.length;}
  return null;}

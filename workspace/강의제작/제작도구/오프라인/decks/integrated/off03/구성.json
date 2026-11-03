@@ -26,19 +26,8 @@
     },
     {
       "src": "integrated/day03",
-      "n": 7
-    },
-    {
-      "src": "integrated/day03",
-      "n": 8
-    },
-    {
-      "src": "integrated/day03",
-      "n": 9
-    },
-    {
-      "src": "integrated/day03",
-      "n": 10
+      "n": 8,
+      "next": "작업 준비와 위험 에너지의 격리"
     },
     {
       "src": "integrated/day03",
@@ -47,6 +36,20 @@
     {
       "src": "integrated/day03",
       "n": 12,
+      "next": "운전 모드와 조치의 허용 범위"
+    },
+    {
+      "src": "integrated/day03",
+      "n": 14,
+      "next": "고장 유형에서 근거 절까지의 경로"
+    },
+    {
+      "src": "integrated/day03",
+      "n": 16
+    },
+    {
+      "src": "integrated/day03",
+      "n": 17,
       "next": "경보가 해제된 뒤 남는 작업"
     },
     {
@@ -59,42 +62,13 @@
     },
     {
       "src": "integrated/day03",
-      "n": 15
-    },
-    {
-      "src": "integrated/day03",
-      "n": 16,
+      "n": 22,
       "next": "경계값을 포함하는 조건과 제외하는 조건"
     },
     {
       "src": "integrated/day03",
-      "n": 18
-    },
-    {
-      "src": "integrated/day03",
-      "n": 19,
-      "next": "두 행이 맞은 한 후보"
-    },
-    {
-      "src": "integrated/day03",
-      "n": 21
-    },
-    {
-      "src": "integrated/day03",
-      "n": 22
-    },
-    {
-      "src": "integrated/day03",
-      "n": 23
-    },
-    {
-      "src": "integrated/day03",
-      "n": 24,
-      "next": "허용된 후보의 성과 비교"
-    },
-    {
-      "new": "s3",
-      "next": "균형 성과표의 네 관점"
+      "n": 25,
+      "next": "한 온도값에 적용하는 하한과 상한"
     },
     {
       "src": "integrated/day03",
@@ -107,24 +81,69 @@
     {
       "src": "integrated/day03",
       "n": 29,
-      "next": "감산이 냉각과 납기에 미치는 영향"
+      "next": "표의 목적에 맞는 일치 처리 정책"
     },
     {
       "src": "integrated/day03",
-      "n": 33
+      "n": 33,
+      "next": "결정표의 빈 구간과 겹친 구간"
     },
     {
       "src": "integrated/day03",
-      "n": 34
+      "n": 35,
+      "next": "조건이 거짓인 경우와 확인할 수 없는 경우"
     },
     {
       "src": "integrated/day03",
-      "n": 35
+      "n": 37,
+      "next": "같은 감점이 사라지는 두 가지 이유"
     },
     {
       "src": "integrated/day03",
-      "n": 36,
-      "next": "이제 사건을 처음부터 다시 판단해 봅시다."
+      "n": 40,
+      "next": "허용된 후보의 성과 비교"
+    },
+    {
+      "new": "s3",
+      "next": "균형 성과표의 네 관점"
+    },
+    {
+      "src": "integrated/day03",
+      "n": 42,
+      "next": "보호 한계와 목표 여유의 간격"
+    },
+    {
+      "src": "integrated/day03",
+      "n": 47,
+      "next": "전략맵에서 목표 사이의 연결"
+    },
+    {
+      "src": "integrated/day03",
+      "n": 49,
+      "next": "대응할 때와 결과가 드러날 때"
+    },
+    {
+      "src": "integrated/day03",
+      "n": 51,
+      "next": "감산 뒤 주문 완료 시점과 납기"
+    },
+    {
+      "src": "integrated/day03",
+      "n": 54
+    },
+    {
+      "src": "integrated/day03",
+      "n": 55
+    },
+    {
+      "src": "integrated/day03",
+      "n": 56,
+      "next": "가정 하나를 바꾸는 What-if 분석"
+    },
+    {
+      "src": "integrated/day03",
+      "n": 58,
+      "next": "쿨러 사건의 조치 선택과 확인"
     },
     {
       "new": "review",
@@ -132,12 +151,12 @@
     },
     {
       "src": "integrated/day03",
-      "n": 45
+      "n": 68
     },
     {
       "src": "integrated/day03",
-      "n": 46,
-      "next": "각 문항에서 근거가 되는 조건을 찾아보세요."
+      "n": 69,
+      "next": "Quiz 1. 세척을 시작할 수 있는 시점"
     },
     {
       "new": "q1",

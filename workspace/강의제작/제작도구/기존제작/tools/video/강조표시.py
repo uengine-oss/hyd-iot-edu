@@ -40,7 +40,7 @@ def read_srt(p):
 
 def read_slides(p):
     """시간표에서 장 번호 → 시작 초(시간표는 초 단위로 반올림해 적는다)."""
-    rows = re.findall(r"^\| (\d+)(?:~\d+)? \| (\d+):(\d+)(?::(\d+))? \|", p.read_text(encoding="utf-8"), flags=re.M)
+    rows = re.findall(r"^\| (\d+)(?:~\d+)? \| (\d+):(\d+)(?::(\d+))?(?: \(SLIDE[^)]*\))? \|", p.read_text(encoding="utf-8"), flags=re.M)
     table = {}
     for n, a, b, c in rows:
         table[int(n)] = int(a) * 3600 + int(b) * 60 + int(c) if c else int(a) * 60 + int(b)
@@ -56,14 +56,18 @@ def alignments():
 
 
 def word_offset(where, sentence, duration, word):
-    """문장 첫 글자에서 낱말까지의 초. 같은 문장이 든 캐시가 여럿이면 자막의 문장 길이가 같은 것을 쓴다."""
+    """문장 첫 글자에서 낱말까지의 초. 같은 문장이 든 캐시가 여럿이면 자막의 문장 길이가 가장 가까운 것을 쓴다.
+    학습 대기 바로 앞 문장은 자막 끝이 대기 시작에서 잘린다. 대기 자리는 말 끝 0.1초 전부터 고르므로 자막이 그만큼 짧을 수 있다."""
     k0 = sentence.find(word)
     if k0 < 0: stop(f"{where}: 낱말 「{word}」이 문장 「{sentence}」에 없음")
+    best = None
     for j, full, d in ALIGN:
         i = full.find(sentence)
         if i < 0: continue
         st, en = d["character_start_times_seconds"], d["character_end_times_seconds"]
-        if abs((en[i + len(sentence) - 1] - st[i]) - duration) < 0.02: return st[i + k0] - st[i]
+        gap = abs((en[i + len(sentence) - 1] - st[i]) - duration)
+        if gap < 0.12 and (best is None or gap < best[0]): best = (gap, st[i + k0] - st[i])
+    if best: return best[1]
     stop(f"{where}: 문장 「{sentence}」의 글자 정렬을 음성_저장에서 찾지 못함")
 
 
@@ -180,15 +184,17 @@ def main():
             j = i
             while j < len(rows) and bool(rows[j][0]) == bool(rows[i][0]): j += 1
             n = sum(r[1] for r in rows[i:j]); part = tmp / f"part{len(parts):04d}.mp4"
-            cut = ["-ss", f"{t0 + frame / FPS:.5f}", "-t", f"{n / FPS:.5f}", "-i", str(video)]
+            # 원본은 10fps라 조각 길이가 원본 프레임 경계로 반올림된다. 그대로 이으면 조각 수만큼 쌓여 음성과 벌어지므로, 넉넉히 읽어 조각마다 프레임 수를 정확히 자른다
+            cut = ["-ss", f"{t0 + frame / FPS:.5f}", "-t", f"{n / FPS + 0.2:.5f}", "-i", str(video)]
+            base, exact = f"fps={FPS},tpad=stop=-1:stop_mode=clone", ["-frames:v", str(n)]
             if rows[i][0]:
                 lst = tmp / f"list{len(parts):04d}.txt"
                 body = "".join(f"file '{p.as_posix()}'\nduration {k / FPS:.5f}\n" for p, k in rows[i:j])
                 lst.write_text(body + f"file '{rows[j - 1][0].as_posix()}'\n", encoding="utf-8")
                 subprocess.run([a.ffmpeg, "-v", "error", "-y", *cut, "-f", "concat", "-safe", "0", "-i", str(lst), "-filter_complex",
-                                f"[0:v]fps={FPS}[b];[1:v]fps={FPS},format=rgba[o];[b][o]overlay=eof_action=pass,format=yuv420p[v]", "-map", "[v]", *enc, str(part)], check=True)
+                                f"[0:v]{base}[b];[1:v]fps={FPS},format=rgba[o];[b][o]overlay=eof_action=pass,format=yuv420p[v]", "-map", "[v]", *exact, *enc, str(part)], check=True)
             else:
-                subprocess.run([a.ffmpeg, "-v", "error", "-y", *cut, "-vf", f"fps={FPS},format=yuv420p", *enc, str(part)], check=True)
+                subprocess.run([a.ffmpeg, "-v", "error", "-y", *cut, "-vf", f"{base},format=yuv420p", *exact, *enc, str(part)], check=True)
             parts.append(part); frame += n; i = j
         joined = tmp / "joined.mp4"; lst = tmp / "parts.txt"
         lst.write_text("".join(f"file '{p.as_posix()}'\n" for p in parts), encoding="utf-8")

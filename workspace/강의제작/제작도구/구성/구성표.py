@@ -6,6 +6,7 @@ python workspace/강의제작/제작도구/구성/구성표.py workspace/강의�
 - 학습 대기는 대본의 `> [대기 N초]`를 따로 센다. 실습 대본(kind practice)은 실습 큐로 재므로(시간계산.py estimate) 여기서 재지 않는다.
 - 구성.json의 `rows`(실라버스 행: kind · title · minutes · slides)가 있으면 행별 배정과 낭독을 나란히 낸다.
 - pptx_sha256은 지금 PPTX의 해시로 다시 적는다.
+- 머리 제목은 구성.json 경로의 <과정>/<NN>회차에서 만든다(`통합반 5회차`). 경로가 그 꼴이 아니면 멈춘다.
 """
 import hashlib, json, re, sys
 from pathlib import Path
@@ -14,11 +15,22 @@ ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(ROOT / 'workspace/강의제작/제작도구/촬영'))
 from 시간계산 import load_coef, script_slides, slide_seconds  # noqa: E402
 
+COURSES = ('통합반', '실전반')
+
+
+def heading(cfg_path: Path) -> str:
+    course, session = cfg_path.parent.parent.name, cfg_path.parent.name
+    m = re.fullmatch(r'(\d{2})회차', session)
+    if course not in COURSES or not m:
+        raise SystemExit(f"{cfg_path}: 경로가 <과정>/<NN>회차/구성.json 꼴이 아니다 — 과정 「{course}」(허용 {' · '.join(COURSES)}), 회차 폴더 「{session}」")
+    return f'{course} {int(m[1])}회차'
+
 
 def main() -> None:
     if len(sys.argv) != 2:
         raise SystemExit(__doc__)
     cfg_path = Path(sys.argv[1]).resolve()
+    title = heading(cfg_path)
     cfg = json.loads(cfg_path.read_text('utf8'))
     base = cfg_path.parent
     k = load_coef()
@@ -30,7 +42,10 @@ def main() -> None:
         f = (base / u['file']).resolve()
         rel = Path(u['file']).as_posix()
         if u['kind'] != 'pptx':
-            unit_rows.append(f"| [{f.name}]({rel}) | 실습 대본 · {u.get('status', '')} | 실습 큐로 잼 | — |")
+            label = '실습 대본'
+            if u.get('status'):
+                label += f" · {u['status']}"
+            unit_rows.append(f"| [{f.name}]({rel}) | {label} | 실습 큐로 잼 | — |")
             continue
         body = f.read_text('utf8')
         slides = script_slides(body)
@@ -47,7 +62,7 @@ def main() -> None:
         unit_rows.append(f"| [{f.name}]({rel}) | {a}~{b} | {total / 60:.1f}분 | {wait}초 |")
     if sorted(sec) != list(range(1, cfg['slide_count'] + 1)):
         raise SystemExit(f'{cfg_path}: 대본이 덮는 장이 1~{cfg["slide_count"]}장이 아니다')
-    out = [f"# {cfg['title']} — 구성표", '',
+    out = [f"# {title} — 구성표", '',
            '`workspace/강의제작/제작도구/구성/구성표.py`가 구성.json에서 만든다. 손으로 고치지 않는다. 분할 대본이 수정 원본이고 제목 · 제작 표시는 낭독하지 않는다.', '',
            '| 단위 파일 | PPTX 장 / 상태 | 낭독 추정 | 학습 대기 |', '|---|---|---:|---:|', *unit_rows, '',
            f"진행 순서: {cfg['playback']}", '']

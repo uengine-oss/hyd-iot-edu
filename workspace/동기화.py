@@ -5,6 +5,7 @@
     <py> status                       # 작업 폴더 · 로컬 작업 자료와 workspace 끝의 차이
     <py> commit "메시지" [main 경로 ...] [--만 workspace 경로 ...]  # workspace에 지금 모습을 커밋 + (경로를 주면) main에 그 경로만 커밋. 메시지는 준 그대로(공동 저자 줄도 부르는 쪽이)
                                       # 다른 작업이 열려 있으면 --만: workspace에서도 준 경로만 바꾸고 나머지는 브랜치 끝 그대로 둔다
+                                      # origin이 앞서 있으면 커밋하지 않고 멈춘다 — 여러 세션이 함께 올리므로 순서는 pull → commit → 바로 push
     <py> push                         # 두 브랜치에서 origin 에 아직 없는 커밋 전부 키 검사 0 확인 뒤 git push origin main workspace
     <py> 정리 [--실행]                  # 스펙.md에 「상태: 확정」인 작업 폴더를 지운다(--실행 없으면 목록만)
     <py> pull                         # origin/workspace를 받아 제자리에 푼다 — 아래 「받기」
@@ -23,7 +24,7 @@
 - GitHub 는 100 MiB 넘는 파일이 든 push 를 거절하고(50 MiB부터 경고) 이력은 다시 쓰지 않으므로, 그런 파일이 든 커밋은 만들지 않는다.
 - 받기(pull): 로컬 workspace 끝이 origin 의 조상일 때만 앞으로 옮긴다(아직 올리지 않은 로컬 커밋이 있으면 멈춤). 로컬 끝 이후 원격이 바꾸거나
   지운 파일은, 로컬 파일이 로컬 끝의 판 그대로일 때만 바꾸거나 지운다 — 로컬에서 고친 파일과 겹치면 아무것도 쓰지 않고 목록을 내고 멈춘다.
-  로컬에서 지운 파일은 되살리지 않는다. 처음 받는 PC(로컬 끝 없음)는 없는 파일만 쓰고 다른 파일이 있으면 멈춘다.
+  원격이 안 바꾼 파일은 로컬에서 고치거나 지웠어도 그대로 둔다(다른 세션의 미커밋을 보존한다). 처음 받는 PC(로컬 끝 없음)는 없는 파일만 쓰고 다른 파일이 있으면 멈춘다.
 """
 import datetime, os, re, shutil, subprocess, sys, tempfile
 from pathlib import Path
@@ -149,6 +150,12 @@ def is_ancestor(a, b):
     return subprocess.run(["git", "merge-base", "--is-ancestor", a, b], cwd=ROOT).returncode == 0
 
 
+def fetch_origin():
+    """origin의 workspace 끝 커밋. 이 저장소의 fetch 설정은 main만 받으므로 이름으로 받아 온다."""
+    git("fetch", "-q", "origin", f"+refs/heads/{BRANCH}:refs/remotes/origin/{BRANCH}")
+    return rev(f"refs/remotes/origin/{BRANCH}")
+
+
 def check_sizes(old_tree, new_tree):
     """새 트리가 넣는 파일 판의 크기 — GitHub 한도를 넘으면 커밋 전에 이름과 크기로 멈춘다."""
     blobs = {}
@@ -267,6 +274,8 @@ def build_tree_only(t, paths, files):
 
 def commit(msg, args):
     main_paths, only = split_only(args)
+    if not is_ancestor(fetch_origin(), tip()):
+        sys.exit(f"origin의 {BRANCH}가 이 PC보다 앞서 있다(다른 세션이 올렸다) — 커밋하지 않았다. 먼저 pull 한 뒤 다시")
     files = local_files()
     for g in old_versions(files):
         print("경고 — 이전 판이 함께 있다(최신 하나만 둔다): " + " · ".join(g))
@@ -362,8 +371,7 @@ def worktree_blobs(paths):
 
 
 def pull():
-    git("fetch", "-q", "origin", f"+refs/heads/{BRANCH}:refs/remotes/origin/{BRANCH}")
-    remote, local = rev(f"refs/remotes/origin/{BRANCH}"), rev(f"refs/heads/{BRANCH}")
+    remote, local = fetch_origin(), rev(f"refs/heads/{BRANCH}")
     if not remote:
         sys.exit(f"origin 에 {BRANCH} 브랜치가 없다")
     if local == remote:
@@ -379,25 +387,25 @@ def pull():
     write, delete, clash = [], [], []
     for n in sorted(set(theirs) | set(base)):
         cur, old, new = now.get(n), base.get(n), theirs.get(n)
-        if cur == new:
-            continue                                   # 이미 원격 판
+        if cur == new or new == old:
+            continue                                   # 이미 원격 판이거나 원격이 안 바꿈 — 이 PC에서 고치거나 지웠어도 그대로 둔다
         if new is None:                                # 원격에서 지움
             if cur == old:
                 delete.append(n)
-            elif cur is not None:
+            else:
                 clash.append(f"{n} — 원격에서 지웠는데 이 PC에서 고쳤다")
         elif cur is None:
             if old is None:
                 write.append(n)                        # 원격에 새로 생김(새 PC는 전부 여기)
-            elif old != new:
+            else:
                 clash.append(f"{n} — 이 PC에서 지웠는데 원격에서 고쳤다")
-            # old == new: 이 PC에서 지운 파일 — 되살리지 않는다(다음 commit 에서 빠진다)
         elif cur == old and local:
             write.append(n)                            # 이 PC는 그대로, 원격이 고침
         else:
             clash.append(f"{n} — 이 PC에서 고친 판이 원격 판과 다르다")
     if clash:
-        sys.exit("겹치는 파일이 있어 아무것도 쓰지 않았다(이 PC의 판을 commit · push 하거나 그 파일을 옮겨 둔 뒤 다시):\n  " + "\n  ".join(clash[:50]))
+        sys.exit(f"겹치는 파일이 있어 아무것도 쓰지 않았다. 이 PC의 판을 작업 폴더에 복사해 두고, 브랜치에 있던 파일은 `git show {local[:8]}:<경로>` 판으로 되돌리고 "
+                 f"이 PC에만 있던 파일은 치운 뒤 다시 받아 두 판을 합친다:\n  " + "\n  ".join(clash[:50]))
     # Windows tar는 한글 경로를 못 푼다 — cat-file --batch로 파일을 직접 꺼낸다
     cat = subprocess.Popen(["git", "cat-file", "--batch"], cwd=ROOT, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
     for n in write:
