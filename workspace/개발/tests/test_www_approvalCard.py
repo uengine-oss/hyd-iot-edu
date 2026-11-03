@@ -41,4 +41,4 @@ def test_판단_엔진이_고른_1순위는_AI_추천이_아니라_판단_엔진
     got = run(FILES, r"out(hydApprove.html(DATA, null).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' '))", d)
     assert '판단 엔진 1순위' in got and '판단 엔진 설명 전문 (규칙 문장)' in got, got
     assert 'AI 에이전트 추천' not in got and '에이전트 설명 전문' not in got.replace('판단 엔진 설명 전문', ''), got
-    assert '과거 같은 선택 2건(미리 넣은 예시만 반영(교육용 고정))' in got, got
+    assert '과거 같은 선택 2건(미리 넣은 사례 기준)' in got, got
