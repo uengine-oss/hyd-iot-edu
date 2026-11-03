@@ -35,7 +35,7 @@ const UI = {
     const raw = k.name || k.skill_name || k.skill || '';
     if (k.title && k.title !== raw && /[가-힣]/.test(k.title)) return {label:k.title, note:'', raw};
     if (k.description && /[가-힣]/.test(k.description)) return {label:k.description, note:historical ? '당시 설명' : '등록 설명', raw};
-    return {label:'스킬의 한국어 표시 이름 기록 없음', note:'', raw};
+    return {label:raw || '이름 없는 스킬', note:'', raw};   // 한국어 이름 · 설명이 없으면 등록된 스킬 이름 그대로
   },
   ruleLabel(r) { return this.idText(r.annotation || this.names[r.rule || r.id] || '규칙 표시 이름 미등록'); },
   toolKey(t) {

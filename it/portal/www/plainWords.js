@@ -375,7 +375,7 @@
     const v=doc(purchaseRecord(output)), rows=rowsGot(output);
     if (rows) return rows;
     if (v==null) return '반환값 없음 · 조회 결과 건수 미확인';
-    if (typeof v==='string') return v.length ? `반환 본문 ${v.length}자 · 결과 의미 기록 없음 · 원문 확인` : '반환 본문 없음 · 조회 결과 건수 미확인';
+    if (typeof v==='string') return v.length ? `반환 본문 ${v.length}자` : '반환 본문 없음 · 조회 결과 건수 미확인';
     if (typeof v==='number') return `반환값 ${W.num(v)}`;
     if (typeof v==='boolean') return `반환값 ${v ? '참' : '거짓'}`;
     const known=factsLine(v?.facts || v);
@@ -408,8 +408,8 @@
     'mcp__hyd-dmn__dmn_rules': { name: '판단 규칙표 보기', sys: '판단 시스템', ask: i => nm(i.decision || ''),
       got: o => { const d = doc(parse(o)); return Array.isArray(d) && d[0] ? `‘${d[0].decisionName || nm(d[0].decision)}’ 규칙 ${(d[0].rules || []).length || d.length}개` : ''; } },
     'mcp__hyd-dmn__evaluate_cards': { name: '대안 평가 (후보 · 규정 · 득실 · 순위)', sys: '판단 시스템', ask: i => [i.asset, nm(i.failure_mode || ''), nm(i.cause || '')].filter(Boolean).join(' · '),
-      got:o=>{const d=doc(parse(o)), options=d?.result?.options; if(!d || !Array.isArray(options)) return '대안 평가 결과 형식을 확인할 수 없습니다 · 원문 확인';
-        const chosen=options.find(x=>x.id===(d.result.recommended ?? d.recommended));
+      got:o=>{const d=doc(parse(o)), options=d?.options; if(!d || !Array.isArray(options)) return '대안 평가 결과 형식을 확인할 수 없습니다 · 원문 확인';   // 판단 시스템 read_outcome 꼴: 맨 위 options · recommended
+        const chosen=options.find(x=>x.id===d.recommended);
         return [d.status==='NO_FEASIBLE_OPTION' ? '추천 가능한 대안 없음' : d.status==='EVALUATED' ? '대안 비교 완료' : '평가 상태 기록 확인 필요',`대안 ${options.length}개`,options.some(x=>x.feasible===false) ? `제외 ${options.filter(x=>x.feasible===false).length}개` : '',chosen?.name ? `당시 추천 ‘${chosen.name}’` : '', '조회 · 계산 결과이며 판단 등록 · 승인 · 실행 아님'].filter(Boolean).join(' · '); } },
     'mcp__hyd-dmn__gather_facts': { name: '판단 사실 모으기', sys: '판단 시스템', ask: i => [i.asset, nm(i.failure_mode || '')].filter(Boolean).join(' · '),
       got: o => factsLine((doc(parse(o)) || {}).facts) },
