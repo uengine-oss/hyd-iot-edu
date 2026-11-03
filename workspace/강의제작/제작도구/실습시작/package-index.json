@@ -5,20 +5,20 @@
       "course": "실전반",
       "session": "오프라인 01회차",
       "title": "랩 그래프 적재와 질문",
-      "version": "2026-10-26-offline-v1-connection2",
+      "version": "2026-11-03-offline-v1-connection2-labdb",
       "folder": "01회차/랩/01일차_오프라인_모델과질문",
       "path": "workspace/강의제작/산출물/실전반/실습/01회차/랩/01일차_오프라인_모델과질문.zip",
-      "sha256": "3fb8b77ba136bd854989a22c6035a22adf8ebd988014a2db2a4ae69d21cba9d2"
+      "sha256": "36f39895d70c9cfc853db9cfd2b6c88d28d2a307dce8255cd62adc1cd0cfc5b5"
     },
     {
       "id": "practical-02-relations",
       "course": "실전반",
       "session": "온라인 02회차",
       "title": "Cypher로 그래프를 다루고 설비 조회 결과 해석하기",
-      "version": "2026-10-27-common-graph-v8",
+      "version": "2026-11-03-common-graph-v8-labdb",
       "folder": "02회차/랩/02일차_실습1_관계조회",
       "path": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회.zip",
-      "sha256": "6095bc85a781ff7419a911c521b420647f89a1884585099374ed8ee54b4cceef"
+      "sha256": "9a59f4f84f0cb207e206b0eb34980041b4a7b5852b3030285322c725b83385bd"
     },
     {
       "id": "practical-02-map",
@@ -36,20 +36,20 @@
       "course": "실전반",
       "session": "온라인 02회차",
       "title": "설비·부품·공급 정보를 연결하는 온톨로지 설계하기",
-      "version": "2026-11-03-lab-v11",
+      "version": "2026-11-03-lab-v13",
       "folder": "02회차/랩/02일차_실습3_온톨로지설계",
       "path": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습3_온톨로지설계.zip",
-      "sha256": "29ab3e8f619a8ebfb44fb9776d8913cadde13485a9c6adb4605686d9791c55f2"
+      "sha256": "c74504a2c7f5cd24a57520cd0f93c165d80b7cd668d705ccd30b5fedd17e84d5"
     },
     {
       "id": "practical-02-graph",
       "course": "실전반",
       "session": "온라인 02회차",
       "title": "부품의 사용 설비와 공급 정보를 조회하는 그래프 구현하기",
-      "version": "2026-11-03-lab-v11",
+      "version": "2026-11-03-lab-v13",
       "folder": "02회차/랩/02일차_실습4_그래프구현과검증",
       "path": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습4_그래프구현과검증.zip",
-      "sha256": "4f00fe93ea18cf813534f7db64c0966d83fa28fb1c6222ed5fe00426813ca3fa"
+      "sha256": "e096c8e93d956a05723e3646515e65e8c26557e8de74cf800c5e7f89827dcd66"
     },
     {
       "id": "practical-02-conditions",
@@ -116,20 +116,20 @@
       "course": "통합반",
       "session": "오프라인 01회차",
       "title": "랩 그래프 적재와 질문",
-      "version": "2026-10-26-offline-v1-connection2",
+      "version": "2026-11-03-offline-v1-connection2-labdb",
       "folder": "01회차/랩/01일차_오프라인_모델과질문",
       "path": "workspace/강의제작/산출물/통합반/실습/01회차/랩/01일차_오프라인_모델과질문.zip",
-      "sha256": "3fb8b77ba136bd854989a22c6035a22adf8ebd988014a2db2a4ae69d21cba9d2"
+      "sha256": "36f39895d70c9cfc853db9cfd2b6c88d28d2a307dce8255cd62adc1cd0cfc5b5"
     },
     {
       "id": "integrated-02-relations",
       "course": "통합반",
       "session": "온라인 02회차",
       "title": "Cypher로 그래프를 생성·조회·수정·삭제하고 설비 관계 탐색하기",
-      "version": "2026-10-27-common-graph-v8",
+      "version": "2026-11-03-common-graph-v8-labdb",
       "folder": "02회차/랩/02일차_실습1_관계조회",
       "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회.zip",
-      "sha256": "f354cb22ba5870a2cb05dcf34be27b100757c675962cf4e78c1a8d40f363481c"
+      "sha256": "44098b3fba6d72e15851f345a7278d9a526fd65a0c1eb6d2b13a5c5ae1058d1c"
     },
     {
       "id": "integrated-02-map",
@@ -147,20 +147,20 @@
       "course": "통합반",
       "session": "온라인 02회차",
       "title": "현장 정보를 체계화하는 온톨로지 직접 설계하기",
-      "version": "2026-11-03-lab-v11",
+      "version": "2026-11-03-lab-v13",
       "folder": "02회차/랩/02일차_실습3_온톨로지설계",
       "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습3_온톨로지설계.zip",
-      "sha256": "e0bfe0bd8075451f5d2006ffd46d13aa2677a5b825febc697fce31a0386cb25a"
+      "sha256": "d62d4ac888034f8e1fc2938ea2941856a12c6f807e21b7a5736b57f6041ba2f3"
     },
     {
       "id": "integrated-02-graph",
       "course": "통합반",
       "session": "온라인 02회차",
       "title": "설계한 온톨로지를 그래프 DB에 구현하고 검증하기",
-      "version": "2026-11-03-lab-v11",
+      "version": "2026-11-03-lab-v13",
       "folder": "02회차/랩/02일차_실습4_그래프구현과검증",
       "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습4_그래프구현과검증.zip",
-      "sha256": "42418b9bf1891125cc762b245057a67ca1502d6e5a7641977d8123421b836344"
+      "sha256": "624adef8331544ab80d20c13d07827717173982c0f73e2de60771dc4b26c18ee"
     },
     {
       "id": "integrated-03-whatif",

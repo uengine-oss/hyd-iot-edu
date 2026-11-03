@@ -149,7 +149,7 @@ def verify_lab(item):
         if '-02-' in item['id']:
             for file in ['결과/schema.json','결과/graph.json','결과/load.cypher','offline_load.py']:assert base+file not in names,(item['id'],file)
         if item['id'].endswith('-graph'):assert base+'입력/graph.json' in names
-        if item['id'] in ('integrated-02-graph','practical-02-graph'):
+        if item['id']=='integrated-02-graph':   # 수정본 반영은 통합반 실습4 행에만 있다(실전반 23행에는 없다)
             assert any(x.startswith(base+'입력/자료_변경분/') for x in names),(item['id'],'수정본 없음')
         if item['id'].startswith(('integrated-02-','practical-02-')) and item['id'].endswith(('-ontology','-graph')):
             assert not any(Path(x).name in ('기대답.json','session2_검증.json') or '/갈래B/' in x for x in names),(item['id'],'강사 기대 답 포함')

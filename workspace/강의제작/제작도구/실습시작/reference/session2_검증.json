@@ -34,7 +34,892 @@
     "nodes": 212,
     "rels": 326,
     "mismatch": []
+   },
+   "실습4": {
+    "ㄱ": {
+     "input_branch": "ㄴ",
+     "expected_key": "A",
+     "mismatch": []
+    },
+    "ㄴ": {
+     "input_branch": "ㄴ",
+     "expected_key": "ㄴ",
+     "mismatch": []
+    },
+    "출처 줄": {
+     "folder": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습4_그래프구현과검증/입력/자료",
+     "mismatch": []
+    }
    }
   }
- }
+ },
+ "neo4j": {
+  "통합반": {
+   "실습3": {
+    "A": {
+     "first": [
+      206,
+      305
+     ],
+     "second": [
+      206,
+      305
+     ],
+     "probe_mismatch": [],
+     "sensors_per_asset_via_component": [
+      [
+       "HYD-01",
+       18
+      ],
+      [
+       "HYD-02",
+       18
+      ],
+      [
+       "HYD-03",
+       18
+      ],
+      [
+       "HYD-04",
+       16
+      ],
+      [
+       "HYD-05",
+       9
+      ],
+      [
+       "HYD-06",
+       9
+      ],
+      [
+       "HYD-07",
+       2
+      ]
+     ],
+     "asset_level_sensors": [
+      [
+       "HYD-01",
+       [
+        "SE"
+       ]
+      ],
+      [
+       "HYD-02",
+       [
+        "SE"
+       ]
+      ],
+      [
+       "HYD-03",
+       [
+        "SE"
+       ]
+      ],
+      [
+       "HYD-04",
+       [
+        "SE"
+       ]
+      ]
+     ],
+     "quantity_TS1_members_match": true
+    },
+    "B": {
+     "first": [
+      206,
+      306
+     ],
+     "second": [
+      206,
+      306
+     ],
+     "probe_mismatch": [],
+     "sensors_per_asset_via_component": [
+      [
+       "HYD-01",
+       18
+      ],
+      [
+       "HYD-02",
+       18
+      ],
+      [
+       "HYD-03",
+       18
+      ],
+      [
+       "HYD-04",
+       16
+      ],
+      [
+       "HYD-05",
+       9
+      ],
+      [
+       "HYD-06",
+       9
+      ],
+      [
+       "HYD-07",
+       2
+      ]
+     ],
+     "asset_level_sensors": [
+      [
+       "HYD-01",
+       [
+        "SE"
+       ]
+      ],
+      [
+       "HYD-02",
+       [
+        "SE"
+       ]
+      ],
+      [
+       "HYD-03",
+       [
+        "SE"
+       ]
+      ],
+      [
+       "HYD-04",
+       [
+        "SE"
+       ]
+      ]
+     ],
+     "quantity_TS1_members_match": true
+    }
+   },
+   "실습4": {
+    "설비별 교체 부품": {
+     "input_branch": "A",
+     "mismatch": [],
+     "HYD-01": {
+      "accumulator": "P-ACC-BLD",
+      "cabinet": null,
+      "cooler": "P-CLR-CORE",
+      "coupling": "P-CPL-ELM",
+      "fan": "P-FAN-BRG",
+      "motor": null,
+      "pump-a": "P-PMP-SEAL",
+      "pump-b": null,
+      "rtn-filter": "P-RTN-FLT",
+      "strainer": "P-SUC-STR",
+      "tank": "P-HYD-OIL",
+      "valve": "P-VLV-COIL"
+     }
+    },
+    "부품의 사용 설비(상태) 수정본 전": {
+     "P-RTN-FLT 사용 설비(상태)": [
+      [
+       "HYD-01",
+       "가동"
+      ],
+      [
+       "HYD-02",
+       "가동"
+      ],
+      [
+       "HYD-03",
+       "가동"
+      ],
+      [
+       "HYD-04",
+       "가동"
+      ],
+      [
+       "HYD-07",
+       "예비(보관)"
+      ]
+     ],
+     "P-RTN-FLT 지금 가동 설비": [
+      "HYD-01",
+      "HYD-02",
+      "HYD-03",
+      "HYD-04"
+     ]
+    },
+    "남김": {
+     "input_branch": "A",
+     "first": [
+      206,
+      305
+     ],
+     "changes_applied": [
+      "HYD-02 이름·상태 수정",
+      "HYD-07 이름·상태 수정",
+      "HYD-03:pump-a 교체부품 확인",
+      "HYD-03:VS1 값 보완",
+      "HYD-06:I_MOTOR 값 보완",
+      "HYD-01:TS1 중복 행 삭제(같은 센서의 다른 행이 남아 대상 유지)"
+     ],
+     "after_changes": [
+      206,
+      305
+     ],
+     "after_changes_again": [
+      206,
+      305
+     ],
+     "change_checks": {
+      "HYD-02 name": "HYD-02 2라인 2호 파워팩",
+      "HYD-07": [
+       [
+        "불용(매각 예정)"
+       ]
+      ],
+      "HYD-01:TS1 남음": 1,
+      "HYD-06:I_MOTOR normal": 18.5,
+      "P-RTN-FLT 사용 설비(상태)": [
+       [
+        "HYD-01",
+        "가동"
+       ],
+       [
+        "HYD-02",
+        "가동"
+       ],
+       [
+        "HYD-03",
+        "가동"
+       ],
+       [
+        "HYD-04",
+        "가동"
+       ],
+       [
+        "HYD-07",
+        "불용(매각 예정)"
+       ]
+      ],
+      "P-RTN-FLT 지금 가동 설비": [
+       "HYD-01",
+       "HYD-02",
+       "HYD-03",
+       "HYD-04"
+      ]
+     }
+    },
+    "삭제": {
+     "input_branch": "A",
+     "first": [
+      206,
+      305
+     ],
+     "changes_applied": [
+      "HYD-02 이름·상태 수정",
+      "HYD-07 하위 대상과 삭제",
+      "HYD-03:pump-a 교체부품 확인",
+      "HYD-03:VS1 값 보완",
+      "HYD-06:I_MOTOR 값 보완",
+      "HYD-01:TS1 중복 행 삭제(같은 센서의 다른 행이 남아 대상 유지)"
+     ],
+     "after_changes": [
+      198,
+      292
+     ],
+     "after_changes_again": [
+      198,
+      292
+     ],
+     "change_checks": {
+      "HYD-02 name": "HYD-02 2라인 2호 파워팩",
+      "HYD-07": [],
+      "HYD-01:TS1 남음": 1,
+      "HYD-06:I_MOTOR normal": 18.5,
+      "P-RTN-FLT 사용 설비(상태)": [
+       [
+        "HYD-01",
+        "가동"
+       ],
+       [
+        "HYD-02",
+        "가동"
+       ],
+       [
+        "HYD-03",
+        "가동"
+       ],
+       [
+        "HYD-04",
+        "가동"
+       ]
+      ],
+      "P-RTN-FLT 지금 가동 설비": [
+       "HYD-01",
+       "HYD-02",
+       "HYD-03",
+       "HYD-04"
+      ]
+     }
+    }
+   }
+  },
+  "실전반": {
+   "실습3": {
+    "A": {
+     "first": [
+      212,
+      326
+     ],
+     "second": [
+      212,
+      326
+     ],
+     "probe_mismatch": [],
+     "sensors_per_asset_via_component": [
+      [
+       "HYD-01",
+       18
+      ],
+      [
+       "HYD-02",
+       18
+      ],
+      [
+       "HYD-03",
+       18
+      ],
+      [
+       "HYD-04",
+       16
+      ],
+      [
+       "HYD-05",
+       9
+      ],
+      [
+       "HYD-06",
+       9
+      ],
+      [
+       "HYD-07",
+       2
+      ]
+     ],
+     "asset_level_sensors": [
+      [
+       "HYD-01",
+       [
+        "SE"
+       ]
+      ],
+      [
+       "HYD-02",
+       [
+        "SE"
+       ]
+      ],
+      [
+       "HYD-03",
+       [
+        "SE"
+       ]
+      ],
+      [
+       "HYD-04",
+       [
+        "SE"
+       ]
+      ]
+     ],
+     "quantity_TS1_members_match": true,
+     "P-PMP-SEAL": {
+      "part": "P-PMP-SEAL",
+      "assets": [
+       "HYD-01",
+       "HYD-02",
+       "HYD-03"
+      ],
+      "components": [
+       "HYD-01:pump-a",
+       "HYD-02:pump-a",
+       "HYD-03:pump-a"
+      ],
+      "supply": [
+       [
+        "A정밀",
+        true,
+        35.0,
+        0.12,
+        2
+       ],
+       [
+        "B-OEM",
+        true,
+        55.0,
+        0.02,
+        5
+       ],
+       [
+        "C트레이딩",
+        false,
+        20.0,
+        0.3,
+        1
+       ]
+      ]
+     },
+     "source_mismatch": []
+    },
+    "B": {
+     "first": [
+      212,
+      326
+     ],
+     "second": [
+      212,
+      326
+     ],
+     "probe_mismatch": [],
+     "sensors_per_asset_via_component": [
+      [
+       "HYD-01",
+       18
+      ],
+      [
+       "HYD-02",
+       18
+      ],
+      [
+       "HYD-03",
+       18
+      ],
+      [
+       "HYD-04",
+       16
+      ],
+      [
+       "HYD-05",
+       9
+      ],
+      [
+       "HYD-06",
+       9
+      ],
+      [
+       "HYD-07",
+       2
+      ]
+     ],
+     "asset_level_sensors": [
+      [
+       "HYD-01",
+       [
+        "SE"
+       ]
+      ],
+      [
+       "HYD-02",
+       [
+        "SE"
+       ]
+      ],
+      [
+       "HYD-03",
+       [
+        "SE"
+       ]
+      ],
+      [
+       "HYD-04",
+       [
+        "SE"
+       ]
+      ]
+     ],
+     "quantity_TS1_members_match": true,
+     "P-PMP-SEAL": {
+      "part": "P-PMP-SEAL",
+      "assets": [
+       "HYD-01",
+       "HYD-02",
+       "HYD-03"
+      ],
+      "components": [
+       "HYD-01:pump-a",
+       "HYD-02:pump-a",
+       "HYD-03:pump-a"
+      ],
+      "supply": [
+       [
+        "A정밀",
+        true,
+        35.0,
+        0.12,
+        2
+       ],
+       [
+        "B-OEM",
+        true,
+        55.0,
+        0.02,
+        5
+       ],
+       [
+        "C트레이딩",
+        false,
+        20.0,
+        0.3,
+        1
+       ]
+      ]
+     },
+     "source_mismatch": []
+    },
+    "ㄴ": {
+     "first": [
+      212,
+      326
+     ],
+     "second": [
+      212,
+      326
+     ],
+     "probe_mismatch": [],
+     "sensors_per_asset_via_component": [
+      [
+       "HYD-01",
+       18
+      ],
+      [
+       "HYD-02",
+       18
+      ],
+      [
+       "HYD-03",
+       18
+      ],
+      [
+       "HYD-04",
+       16
+      ],
+      [
+       "HYD-05",
+       9
+      ],
+      [
+       "HYD-06",
+       9
+      ],
+      [
+       "HYD-07",
+       2
+      ]
+     ],
+     "asset_level_sensors": [
+      [
+       "HYD-01",
+       [
+        "SE"
+       ]
+      ],
+      [
+       "HYD-02",
+       [
+        "SE"
+       ]
+      ],
+      [
+       "HYD-03",
+       [
+        "SE"
+       ]
+      ],
+      [
+       "HYD-04",
+       [
+        "SE"
+       ]
+      ]
+     ],
+     "quantity_TS1_members_match": true,
+     "P-PMP-SEAL": {
+      "part": "P-PMP-SEAL",
+      "assets": [
+       "HYD-01",
+       "HYD-02",
+       "HYD-03"
+      ],
+      "components": [
+       "HYD-01:pump-a",
+       "HYD-02:pump-a",
+       "HYD-03:pump-a"
+      ],
+      "supply": [
+       [
+        "A정밀",
+        true,
+        35.0,
+        0.12,
+        2,
+        20.0
+       ],
+       [
+        "B-OEM",
+        true,
+        55.0,
+        0.02,
+        5,
+        null
+       ],
+       [
+        "C트레이딩",
+        false,
+        20.0,
+        0.3,
+        1,
+        null
+       ]
+      ]
+     },
+     "source_mismatch": []
+    },
+    "ㄷ": {
+     "first": [
+      212,
+      326
+     ],
+     "second": [
+      212,
+      326
+     ],
+     "probe_mismatch": [],
+     "sensors_per_asset_via_component": [
+      [
+       "HYD-01",
+       18
+      ],
+      [
+       "HYD-02",
+       18
+      ],
+      [
+       "HYD-03",
+       18
+      ],
+      [
+       "HYD-04",
+       16
+      ],
+      [
+       "HYD-05",
+       9
+      ],
+      [
+       "HYD-06",
+       9
+      ],
+      [
+       "HYD-07",
+       2
+      ]
+     ],
+     "asset_level_sensors": [
+      [
+       "HYD-01",
+       [
+        "SE"
+       ]
+      ],
+      [
+       "HYD-02",
+       [
+        "SE"
+       ]
+      ],
+      [
+       "HYD-03",
+       [
+        "SE"
+       ]
+      ],
+      [
+       "HYD-04",
+       [
+        "SE"
+       ]
+      ]
+     ],
+     "quantity_TS1_members_match": true,
+     "P-PMP-SEAL": {
+      "part": "P-PMP-SEAL",
+      "assets": [
+       "HYD-01",
+       "HYD-02",
+       "HYD-03"
+      ],
+      "components": [
+       "HYD-01:pump-a",
+       "HYD-02:pump-a",
+       "HYD-03:pump-a"
+      ],
+      "supply": [
+       [
+        "A정밀",
+        true,
+        35.0,
+        0.12,
+        2,
+        true
+       ],
+       [
+        "B-OEM",
+        true,
+        55.0,
+        0.02,
+        5,
+        false
+       ],
+       [
+        "C트레이딩",
+        false,
+        20.0,
+        0.3,
+        1,
+        false
+       ]
+      ]
+     },
+     "source_mismatch": []
+    }
+   },
+   "실습4": {
+    "ㄱ": {
+     "input_branch": "ㄴ",
+     "expected_key": "A",
+     "first": [
+      212,
+      326
+     ],
+     "second": [
+      212,
+      326
+     ],
+     "probe_mismatch": [],
+     "P-PMP-SEAL": {
+      "part": "P-PMP-SEAL",
+      "assets": [
+       "HYD-01",
+       "HYD-02",
+       "HYD-03"
+      ],
+      "components": [
+       "HYD-01:pump-a",
+       "HYD-02:pump-a",
+       "HYD-03:pump-a"
+      ],
+      "supply": [
+       [
+        "A정밀",
+        true,
+        35.0,
+        0.12,
+        2
+       ],
+       [
+        "B-OEM",
+        true,
+        55.0,
+        0.02,
+        5
+       ],
+       [
+        "C트레이딩",
+        false,
+        20.0,
+        0.3,
+        1
+       ]
+      ]
+     }
+    },
+    "ㄴ": {
+     "input_branch": "ㄴ",
+     "expected_key": "ㄴ",
+     "first": [
+      212,
+      326
+     ],
+     "second": [
+      212,
+      326
+     ],
+     "probe_mismatch": [],
+     "P-PMP-SEAL": {
+      "part": "P-PMP-SEAL",
+      "assets": [
+       "HYD-01",
+       "HYD-02",
+       "HYD-03"
+      ],
+      "components": [
+       "HYD-01:pump-a",
+       "HYD-02:pump-a",
+       "HYD-03:pump-a"
+      ],
+      "supply": [
+       [
+        "A정밀",
+        true,
+        35.0,
+        0.12,
+        2,
+        20.0
+       ],
+       [
+        "B-OEM",
+        true,
+        55.0,
+        0.02,
+        5,
+        null
+       ],
+       [
+        "C트레이딩",
+        false,
+        20.0,
+        0.3,
+        1,
+        null
+       ]
+      ]
+     }
+    },
+    "출처 조회": {
+     "P-PMP-SEAL": [
+      [
+       "A정밀",
+       "A정밀",
+       "공급_조건.csv 2행",
+       "2026-10-02",
+       "승인공급사_목록.csv 2행",
+       "2026-10-15"
+      ],
+      [
+       "B-OEM",
+       "B-OEM",
+       "공급_조건.csv 3행",
+       "2026-10-02",
+       "승인공급사_목록.csv 3행",
+       "2026-10-15"
+      ],
+      [
+       "C트레이딩",
+       "C트레이딩",
+       "공급_조건.csv 4행",
+       "2026-10-02",
+       "승인공급사_목록.csv 4행",
+       "2026-10-15"
+      ]
+     ],
+     "mismatch": []
+    }
+   }
+  }
+ },
+ "neo4j_container_removed": true
 }
