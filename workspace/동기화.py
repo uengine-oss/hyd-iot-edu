@@ -3,7 +3,8 @@
 
     <py> 시작 "제목"                     # 작업/<오늘>_<제목>/ 에 스펙.md · 기록.md 틀을 만든다
     <py> status                       # 작업 폴더 · 로컬 작업 자료와 workspace 끝의 차이
-    <py> commit "메시지" [main 경로 ...]  # workspace에 지금 모습을 커밋 + (경로를 주면) main에 그 경로만 커밋. 메시지는 준 그대로(공동 저자 줄도 부르는 쪽이)
+    <py> commit "메시지" [main 경로 ...] [--만 workspace 경로 ...]  # workspace에 지금 모습을 커밋 + (경로를 주면) main에 그 경로만 커밋. 메시지는 준 그대로(공동 저자 줄도 부르는 쪽이)
+                                      # 다른 작업이 열려 있으면 --만: workspace에서도 준 경로만 바꾸고 나머지는 브랜치 끝 그대로 둔다
     <py> push                         # 두 브랜치에서 origin 에 아직 없는 커밋 전부 키 검사 0 확인 뒤 git push origin main workspace
     <py> 정리 [--실행]                  # 스펙.md에 「상태: 확정」인 작업 폴더를 지운다(--실행 없으면 목록만)
     <py> pull                         # origin/workspace를 받아 제자리에 푼다 — 아래 「받기」
@@ -42,8 +43,8 @@ ROOT = _toplevel()
 BRANCH = "workspace"
 SCAN = ROOT / "workspace" / "secret_scan.py"
 WORK = ROOT / "작업"
-PATHS = ["workspace", ".claude", "CLAUDE.md", "AGENTS.md"]
-SKIP_DIRS = {"__pycache__", ".pytest_cache", "node_modules", "worktrees"}
+PATHS = ["workspace", ".claude", ".codex/hooks.json", "CLAUDE.md", "AGENTS.md"]
+SKIP_DIRS = {"__pycache__", ".pytest_cache", "node_modules", "worktrees", "슬라이드"}   # 슬라이드 = 덱에서 다시 만드는 장 그림(V-135)
 SKIP_FILES = {".claude/settings.local.json"}
 GITHUB_FILE_LIMIT, GITHUB_FILE_WARN = 100 * 1024 ** 2, 50 * 1024 ** 2
 OLD_VERSION = re.compile(r"(?:[_-]v\d+|[_-]\d{8}|[_ -]?사본\d*| \(\d+\))$", re.I)
@@ -214,17 +215,63 @@ def status():
     t = tip()
     remote = set(git("ls-tree", "-r", "--name-only", t).splitlines()) - {"README.md"}
     local = set(local_files())
-    print(f"workspace {t[:8]} · 로컬 {len(local)}개 · workspace {len(remote)}개 · 로컬에만 {len(local - remote)} · workspace에만 {len(remote - local)}")
+    changed = changed_files(t, local & remote)
+    print(f"workspace {t[:8]} · 로컬 {len(local)}개 · workspace {len(remote)}개 · 로컬에만 {len(local - remote)} · workspace에만 {len(remote - local)} · 내용 다름 {len(changed)}")
     for f in sorted(local - remote)[:20]: print(f"  로컬에만      {f}")
     for f in sorted(remote - local)[:20]: print(f"  workspace에만 {f}")
+    for f in changed[:20]: print(f"  내용 다름     {f}")
 
 
-def commit(msg, main_paths):
+def changed_files(t, names):
+    """브랜치 끝과 내용이 다른 로컬 파일. 커밋과 같은 줄끝 규칙으로 해시만 내고 저장소에는 쓰지 않는다."""
+    tree = {}
+    for line in git("ls-tree", "-r", "-z", t).split("\0"):
+        if line:
+            meta, path = line.split("\t", 1)
+            tree[path] = meta.split()[2]
+    names = sorted(names)
+    out = git("-c", "core.autocrlf=false", "hash-object", "--stdin-paths", inp=("\n".join(names) + "\n").encode("utf-8")).split()
+    return [f for f, h in zip(names, out) if h != tree[f]]
+
+
+def split_only(args):
+    """commit 인자를 (main 경로, --만 뒤의 workspace 경로 또는 None)으로 나눈다."""
+    if "--만" not in args:
+        return args, None
+    i = args.index("--만")
+    if not args[i + 1:]:
+        sys.exit("--만 뒤에 올릴 workspace 경로가 없다")
+    return args[:i], [a.replace("\\", "/").rstrip("/") for a in args[i + 1:]]
+
+
+def build_tree_only(t, paths, files):
+    """브랜치 끝의 트리에서 준 경로만 지금 모습으로 바꾼다. 준 경로가 어느 쪽에도 없으면 멈춘다."""
+    inside = lambda f, p: f == p or f.startswith(p + "/")
+    remote = git("ls-tree", "-r", "--name-only", "-z", t).split("\0")
+    add = []
+    for p in paths:
+        here = [f for f in files if inside(f, p)]
+        if not here and not any(inside(f, p) for f in remote):
+            sys.exit(f"--만 {p}: 로컬에도 workspace 브랜치에도 없다")
+        add += here
+    with tempfile.TemporaryDirectory() as d:
+        env = dict(os.environ, GIT_INDEX_FILE=str(Path(d) / "index"))
+        git("read-tree", t, env=env)
+        git("rm", "-r", "-q", "-f", "--cached", "--ignore-unmatch", "--", *paths, env=env)
+        if add:
+            listfile = Path(d) / "list"
+            listfile.write_text("\n".join(add) + "\n", encoding="utf-8")
+            git("-c", "core.autocrlf=false", "add", "-f", f"--pathspec-from-file={listfile}", env=env)
+        return git("write-tree", env=env).strip()
+
+
+def commit(msg, args):
+    main_paths, only = split_only(args)
     files = local_files()
     for g in old_versions(files):
         print("경고 — 이전 판이 함께 있다(최신 하나만 둔다): " + " · ".join(g))
     t = tip()
-    tree = build_tree(files)
+    tree = build_tree_only(t, only, files) if only else build_tree(files)
     if tree == git("rev-parse", f"{t}^{{tree}}").strip():
         print("workspace: 바뀐 것이 없다 — 커밋하지 않는다")
     else:

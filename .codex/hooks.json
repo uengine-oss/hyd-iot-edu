@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "^compact$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo Before continuing read AGENTS.md and follow section 2 of .claude/skills/hyd-task/SKILL.md for the current task and deliverable.",
+            "statusMessage": "현재 산출물의 지침 다시 읽기"
+          }
+        ]
+      }
+    ]
+  }
+}

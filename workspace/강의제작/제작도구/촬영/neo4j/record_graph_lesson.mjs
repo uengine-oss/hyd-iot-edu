@@ -57,7 +57,8 @@ async function move(target){
  pos={x:target.x,y:target.y};motions.push({start:t0-start,end:Date.now()-start,from:a,...pos,planned_ms:ms});
 }
 const actions=[];
-const spec=JSON.parse(await fs.readFile(cfg.cues||cfg.repo+'/제작용/촬영/neo4j/통합반_그래프탐색_큐.json','utf8'));
+if(!cfg.cues)throw Error('config.cues: 큐 파일 경로가 없다');
+const spec=JSON.parse(await fs.readFile(cfg.cues,'utf8'));
 let savedDownload=null;
 try{
  const waitStart=Date.now();while(start===null){if(error)throw Error(error);if(Date.now()-waitStart>10000)throw Error('No recording frames');await sleep(20);}

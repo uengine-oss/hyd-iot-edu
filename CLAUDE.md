@@ -2,7 +2,7 @@
 
 ## 0. 무엇이든 시키면
 
-스킬 `hyd-task`의 순서를 밟는다: **작업 폴더 → 읽을 문서 하나 → 만들기 · 검사 → 제자리에 넣기(최신 하나만) → 두 브랜치 동기화 → 작업 폴더 정리.** 열린 작업 폴더(`작업/<날짜>_<제목>/`)가 있으면 그 `스펙.md` · `기록.md`부터 읽고 잇는다. 대화가 요약되면 훅(`.claude/hooks/compact-reread.sh`)이 그 폴더와 문서를 다시 읽게 한다.
+스킬 `hyd-task`의 순서를 밟는다: **작업 폴더 → 읽을 문서(많아야 2개) → 만들기 · 검사 → 제자리에 넣기(최신 하나만) → 두 브랜치 동기화 → 작업 폴더 정리.** 열린 작업 폴더(`작업/<날짜>_<제목>/`)가 있으면 그 `스펙.md` · `기록.md`부터 읽고 잇는다. 대화 요약 뒤의 원문 완독은 hyd-task 2절이다(Claude는 `.claude/hooks/guide_gate.py`가 읽기 전 편집을 막고, Codex는 `.codex/hooks.json`이 안내한다).
 
 - 기존 대화의 확정 결정 · 완료 증거 · 실패 원인을 이어받고, 끝낸 일은 반복하지 않는다. 첫 조회는 git · 실행 상태와 작업 폴더 기록의 차이만 본다.
 - 완료 조건에 직접 기여하는 묶음 하나를 끝낸 뒤 다음으로 간다. 유료 실행은 목적 · 성공 기준 · 상한을 정하고, 실패한 같은 조건을 재실행하지 않는다.
@@ -26,7 +26,7 @@
 ## 2. 브랜치와 동기화
 
 - 브랜치는 main · workspace 둘뿐이다(다른 브랜치 · 태그를 만들지 않는다). main은 `.gitignore`로 `workspace/` · `작업/` · 루트 작업 파일을 무시한다. workspace는 main과 이력을 공유하지 않고 병합하지 않는다.
-- 동기화는 `PYTHONUTF8=1 .venv314/Scripts/python.exe workspace/동기화.py` 하나로 한다 — `commit "메시지" [main 경로 …]`(workspace = 그 시점 모습 그대로, main = 준 경로만) → `push`(origin에 없는 두 브랜치 커밋 하나하나의 키 검사 0일 때만, 강제 push 없음). push · 지우기는 기본으로 먼저 묻고, 사용자가 "알아서 해"로 맡긴 작업이면 묻지 않는다(헌법 4절). 받기는 `pull`. 사용법 전부는 그 파일 머리에 있다.
+- 동기화는 `PYTHONUTF8=1 .venv314/Scripts/python.exe workspace/동기화.py` 하나로 한다 — `commit "메시지" [main 경로 …] [--만 workspace 경로 …]`(workspace = 그 시점 모습 그대로, 다른 작업 폴더가 열려 있으면 `--만`으로 그 경로만, main = 준 경로만) → `push`(origin에 없는 두 브랜치 커밋 하나하나의 키 검사 0일 때만, 강제 push 없음). push · 지우기는 기본으로 먼저 묻고, 사용자가 "알아서 해"로 맡긴 작업이면 묻지 않는다(헌법 4절). 받기는 `pull`. 사용법 전부는 그 파일 머리에 있다.
 - 노션 · 학생 링크는 커밋 고정 주소라 이력을 다시 쓰거나 브랜치를 지우지 않는다. 공개 저장소다 — 키 · 개인 정보 · 실물 매뉴얼 PDF를 어느 브랜치에도 올리지 않는다.
 
 ## 3. 기록
@@ -38,7 +38,7 @@
 ## 4. 시스템 규칙
 
 - **유지보수가 1순위다.** 지금 로직을 살려 근본 원인을 고치고, 방법이 여럿이면 관리할 곳(파일 · 설정 · 도구 · 규칙 사본)이 줄어드는 쪽, 새 장치보다 지우기를 먼저 고른다. 시험은 한 기능을 한 곳에서 실제로 판정한다 — 가짜는 시스템 밖만, 호출 횟수 · 문자열 존재 · 현재 값 고정 같은 장난감 금지. 설계가 갈리면 uengine-oss ProcessGPT 계열 레포를 참고한다.
-- **fable 모델을 쓰지 않는다**(사용자 지시 2026-10-10). 메인 세션 · 서브에이전트 · 워커 모두. 서브에이전트는 `opus`.
+- **fable 모델을 쓰지 않는다**(사용자 지시 2026-10-10). 메인 세션 · 서브에이전트 · 워커 모두. 작업자·감독·독립 검토자의 역할과 도구 선택은 `hyd-task` 3절을 따른다.
 - **시간은 세 갈래다(값은 compose.yaml 한 곳 — `.env`가 덮지 않는다, 바꾸는 법은 `workspace/개발/문서/RUNBOOK.md`).** 가상 설비 · 감지기 · 재관측은 배속 20배(`TIME_SCALE`). 시간 대기 · 입고(부품 대기)는 배속 × 수업 압축 `PROCESS_WAIT_COMPRESSION` 60 = 1200배(납기 5일이 6분). **사람이 읽고 고르는 시간(승인 시한 · 승인 카드 신선도 · 승인 지연 알림)은 벽시계다**(2026-10-30 — 20배속이면 학생이 카드를 읽기 전에 시한이 지났다). 경계 타이머는 그 타이머가 감싼 일의 시계다 — 사람 · 에이전트 · IT 시스템 단계는 벽시계, 재관측 · 시운전은 배속, 기다리는 부품은 배속 × 압축(정본 `it/process/procsvc/engine.py` 머리말 「시간 규칙」). "1~2배속 권장" 문구를 쓰지 않는다. 20배속에서 흔들리는 코드는 배속 기준으로 고친다.
 - **떠 있는 스택을 쓰는 테스트 · 도구(화면 순회 `test_portal_ui.py`, `class_round.py`)가 도는 동안 `docker compose build/up/restart` 금지.** 의존 서비스가 바뀌면 process가 재시작돼 `RemoteDisconnected`로 끊긴다. 배포는 그 전에 끝내고 `docker inspect $(docker compose ps -q process) --format '{{.State.StartedAt}} {{.RestartCount}}'`로 안정을 확인한다(컨테이너 이름은 PC마다 다르다 — 이 PC는 `.hyd-runtime/project.json`의 이름). 에러 없이 조용히 재시작했으면 커널 OOM을 의심한다(`wsl -d docker-desktop -e sh -c "dmesg | grep -i oom"`). 호스트 워커를 쓰는 개발 중에는 컨테이너 워커를 멈춘다(`docker compose stop agent-worker` — 워커는 늘 하나).
 - 완주 · E2E 검증은 학생 대역 1명 · 인스턴스 1건 · 1회. 학생 수만큼 동시에 돌리지 않는다.
@@ -73,3 +73,4 @@
 | 워커 | 개발용 호스트 워커 `bash workspace/개발/scripts/run_worker_host.sh`(먼저 컨테이너 워커를 멈춘다 — 스크립트가 검사). 멈출 때는 `workspace/개발/scripts/stop_worker_host.ps1` 또는 PowerShell `Get-CimInstance Win32_Process \| ? CommandLine -like '*worker.main*'` → `taskkill //PID //F`, 포트 8097이 내려갔는지 확인. 워커 1개가 python 2개로 보인다 |
 | compose 값 바꾸기 | 이 PC에서만(배속 · 호스트 워커 주소 · 포털 화면 바로 보기 등) 저장소 루트 `compose.override.yaml`(git 무시 — compose가 저절로 합친다). 쓰는 법은 RUNBOOK. `.env`에 수업 값을 적어도 compose가 읽지 않고 시작이 그 줄을 끈다 |
 | Docker | Docker Desktop(메모리 4 GB 이상). 꺼져 있으면 직접 켜고 `docker info` 응답을 기다린다 |
+| 렌더 · 영상 도구 | PATH에 없다. `ffmpeg` · `ffprobe`는 `%LOCALAPPDATA%/Microsoft/WinGet/Packages/Gyan.FFmpeg_*/ffmpeg-*/bin`, `pdftoppm`은 `.../oschwartz10612.Poppler_*/poppler-*/Library/bin`, `soffice`는 `C:/Program Files/LibreOffice/program`. 명령 앞에서 그 폴더를 PATH에 더한다 |

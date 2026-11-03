@@ -112,6 +112,51 @@ def test_main에는_준_경로만_작업_트리_모습으로_커밋하고_새_�
     assert git(a, 'status', '--porcelain').splitlines() == ['A  other.txt']
 
 
+def test_만을_주면_workspace에서도_준_경로만_바꾸고_다른_작업은_브랜치_끝_그대로_둔다(origin):
+    _, a = origin
+    before = git(a, 'show', 'refs/heads/workspace:workspace/note.txt')
+    (a / 'workspace' / 'doc.txt').write_text('고침\n', encoding='utf-8')
+    (a / 'workspace' / 'note.txt').write_text('다른 작업의 미완성\n', encoding='utf-8')
+    (a / 'workspace' / 'new').mkdir()
+    (a / 'workspace' / 'new' / 'a.txt').write_text('새 파일\n', encoding='utf-8')
+    (a / 'workspace' / 'wip.txt').write_text('다른 작업의 새 파일\n', encoding='utf-8')
+    out = sync(a, 'commit', '한정 커밋', '--만', 'workspace/doc.txt', 'workspace/new/')
+    assert out.returncode == 0, out.stderr
+    names = git(a, 'ls-tree', '-r', '--name-only', 'refs/heads/workspace').splitlines()
+    assert git(a, 'show', 'refs/heads/workspace:workspace/doc.txt') == '고침'
+    assert git(a, 'show', 'refs/heads/workspace:workspace/new/a.txt') == '새 파일'
+    assert git(a, 'show', 'refs/heads/workspace:workspace/note.txt') == before
+    assert 'workspace/wip.txt' not in names and 'README.md' in names and 'workspace/동기화.py' in names
+    assert '내용 다름 1' in sync(a, 'status').stdout                      # note.txt 내용이 다른 것을 상태가 알린다
+
+
+def test_만으로_준_경로가_로컬에서_지워졌으면_브랜치에서도_뺀다(origin):
+    _, a = origin
+    (a / 'workspace' / 'doc.txt').unlink()
+    out = sync(a, 'commit', '지움', '--만', 'workspace/doc.txt')
+    assert out.returncode == 0, out.stderr
+    assert 'workspace/doc.txt' not in git(a, 'ls-tree', '-r', '--name-only', 'refs/heads/workspace').splitlines()
+
+
+def test_장_그림_폴더와_캐시는_전체_커밋에도_올리지_않는다(origin):
+    _, a = origin
+    for rel in ('슬라이드/덱/s-01.png', '__pycache__/x.pyc', 'keep.txt'):
+        (a / 'workspace' / rel).parent.mkdir(parents=True, exist_ok=True)
+        (a / 'workspace' / rel).write_text('x', encoding='utf-8')
+    assert sync(a, 'commit', '전체').returncode == 0
+    names = git(a, 'ls-tree', '-r', '--name-only', 'refs/heads/workspace').splitlines()
+    assert 'workspace/keep.txt' in names and not [n for n in names if '슬라이드' in n or '__pycache__' in n]
+
+
+def test_만의_경로가_어디에도_없으면_커밋하지_않고_경로를_알린다(origin):
+    _, a = origin
+    tip = git(a, 'rev-parse', 'refs/heads/workspace')
+    out = sync(a, 'commit', '오타', '--만', 'workspace/없는파일.txt')
+    assert out.returncode != 0 and 'workspace/없는파일.txt' in out.stderr
+    assert git(a, 'rev-parse', 'refs/heads/workspace') == tip
+    assert sync(a, 'commit', '빈 목록', '--만').returncode != 0
+
+
 def test_준_경로에도_작업_자료에도_바뀐_것이_없으면_커밋하지_않는다(origin):
     _, a = origin
     heads = git(a, 'rev-parse', 'main', 'workspace')
