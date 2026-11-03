@@ -27,7 +27,8 @@
   function summary() {
     const cards = (S.sources || []).map(s => `<section class="card${s.ok ? '' : ' hot'}"><span>${esc(s.label)} · ${esc(s.engine)}</span>` +
       `<b>${s.ok ? '연결됨' : '연결 실패'}</b><small>${s.ok ? `표 ${s.tables.length}개 · 읽기 전용 ${s.read_only ? '확인' : '아님'}` : esc(s.reason)}</small></section>`);
-    if (!S.sources) cards.push(`<section class="card hot"><span>원천</span><b>확인 실패</b><small>${esc(S.errors.sources || '읽는 중…')}</small></section>`);
+    // 응답 전에는 읽는 중(옆 카드와 같은 꼴), 실제로 못 읽었을 때만 확인 실패 — 화면을 열 때마다 0.1초씩 실패 카드가 보였다(1회차 04 촬영 검토)
+    if (!S.sources) cards.push(S.errors.sources ? `<section class="card hot"><span>원천</span><b>확인 실패</b><small>${esc(S.errors.sources)}</small></section>` : '<section class="card"><span>원천</span><b>–</b><small>읽는 중…</small></section>');
     const cls = S.links ? S.links.classes : [];
     const ok = cls.filter(c => c.state === 'OK').length;
     const unbound = S.links ? S.links.inputs.filter(i => i.state === 'UNBOUND').length : 0;
