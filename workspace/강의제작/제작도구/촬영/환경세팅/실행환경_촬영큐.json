@@ -1,0 +1,693 @@
+{
+ "title": "1회차 실습 2 — 실습 환경을 시작하고 HYD 포털 둘러보기",
+ "scope": "통합반·실전반 공통",
+ "voice_id": "1PdAOcPlPTz12RwMyFVp",
+ "model_id": "eleven_v4",
+ "cues": [
+  {
+   "id": "C001",
+   "segment": "README와 실행 환경",
+   "text": "앞서 설비의 관측값이 사람의 판단과 조치로 이어지는 흐름을 봤죠. 이제 그 흐름을 내 컴퓨터에서 열어 보겠습니다.",
+   "action_observation": "GitHub 저장소 첫 화면에서 README로 내려간다."
+  },
+  {
+   "id": "C002",
+   "segment": "README와 실행 환경",
+   "text": "README의 소개 문단부터 보겠습니다. 이 프로젝트에서는 설비에 이상이 생겼을 때 어떤 일이 이어질까요?",
+   "action_observation": "README 소개 문단을 화면에 놓는다."
+  },
+  {
+   "id": "C005",
+   "segment": "README와 실행 환경",
+   "text": "설비가 보낸 값은 저장되고, 이상이 생기면 근거를 찾아 조치를 추천합니다. 그 조치를 승인하고 결과를 확인하는 곳까지 한 시스템에 연결돼 있어요.",
+   "action_observation": "소개와 프로젝트 구성 표를 따라 내려간다."
+  },
+  {
+   "id": "C004",
+   "segment": "README와 실행 환경",
+   "text": "준비가 됐는지는 설치 창을 닫았다는 것만으로 판단하지 않아요. 필요한 도구가 실행되는지, 시스템의 시작 결과에 문제가 없는지 확인하고, 출력된 주소로 포털이 열리는 것까지 보겠습니다.",
+   "action_observation": "프로젝트 구성 아래의 실행 환경 항목으로 내려간다."
+  },
+  {
+   "id": "C003",
+   "segment": "README와 실행 환경",
+   "text": "이제 실행 환경 표를 보세요. 도구를 준비하고 저장소를 받은 뒤, 시작 명령 한 번으로 포털을 열겠습니다.",
+   "action_observation": "실행 환경 표의 프로그램·버전·설치 파일 열을 본다."
+  },
+  {
+   "id": "C018",
+   "segment": "Python",
+   "text": "먼저 파이썬을 설치할게요.",
+   "action_observation": "README의 Python 행을 본다."
+  },
+  {
+   "id": "C019",
+   "segment": "Python",
+   "text": "리드미의 윈도우용 링크에서 설치 파일을 내려받아 실행합니다.",
+   "action_observation": "Windows 설치 파일 링크를 실행한다."
+  },
+  {
+   "id": "C020",
+   "segment": "Python",
+   "text": "아래쪽의 패스 추가 항목을 체크하고, 인스톨 나우를 누릅니다.",
+   "action_observation": "Add python.exe to PATH를 선택하고 Install Now를 누른다."
+  },
+  {
+   "id": "C017",
+   "segment": "Python",
+   "text": "PATH에 추가하면 터미널이 프로그램을 찾을 수 있습니다. 설치 전에 열어 둔 창에는 바뀐 경로가 아직 반영되지 않을 수 있어요.",
+   "action_observation": "Python 설치 진행 막대가 바뀌는 동안 PATH가 쓰이는 곳을 짚는다."
+  },
+  {
+   "id": "C009",
+   "segment": "Python",
+   "text": "Python은 프로그램을 실행하는 언어입니다. 이 프로젝트의 준비 작업에도 쓰여요.",
+   "action_observation": "진행 중 설치되는 구성요소를 확인한다."
+  },
+  {
+   "id": "C016",
+   "segment": "Python",
+   "text": "설치 파일은 README에 연결된 공식 페이지에서 받으세요. Windows용 파일도 x64와 ARM용이 나뉠 수 있으니 자기 컴퓨터에 맞는 것을 고르면 됩니다.",
+   "action_observation": "설치 진행 중 공식 설치 파일 선택 기준을 설명한다."
+  },
+  {
+   "id": "C008",
+   "segment": "Python",
+   "text": "Windows에서는 여섯 가지 도구를 준비합니다. 이미 설치한 도구는 README의 버전 기준을 확인하고, 필요한 것부터 따라오세요.",
+   "action_observation": "설치 진행과 버전 확인 기준을 짚는다."
+  },
+  {
+   "id": "C024",
+   "segment": "Python",
+   "text": "버전 확인은 일반 PowerShell에서도 됩니다. 관리자 권한으로 여는 방법은 나중에 설치가 권한을 요구할 때 쓸 수 있어요.",
+   "action_observation": "설치 완료를 기다리며 확인 명령에 필요한 창을 설명한다."
+  },
+  {
+   "id": "C022",
+   "segment": "Python",
+   "text": "설치가 끝났습니다.",
+   "action_observation": "Python 설치 성공 문구를 확인한다."
+  },
+  {
+   "id": "C023",
+   "segment": "Python",
+   "text": "창을 닫고 파워셸을 새로 열어 볼게요.",
+   "action_observation": "Close 뒤 Windows 검색에서 PowerShell을 찾는다."
+  },
+  {
+   "id": "C025",
+   "segment": "Python",
+   "text": "새 PowerShell에서 python --version을 입력하면 지금 이 창이 찾은 파이썬 버전을 볼 수 있습니다.",
+   "action_observation": "PowerShell을 열고 버전 확인 명령을 입력한다."
+  },
+  {
+   "id": "C026",
+   "segment": "Python",
+   "text": "여기에는 Python 3.14.7이 나왔습니다.",
+   "action_observation": "명령 아래 Python 버전 출력을 읽는다."
+  },
+  {
+   "id": "C027",
+   "segment": "Node.js",
+   "text": "이어서 노드 제이에스를 준비하겠습니다.",
+   "action_observation": "README의 Node.js 행으로 이동한다."
+  },
+  {
+   "id": "C028",
+   "segment": "Node.js",
+   "text": "노드 제이에스도 리드미에 있는 윈도우용 설치 파일을 실행합니다.",
+   "action_observation": "Windows MSI 파일을 내려받아 실행한다."
+  },
+  {
+   "id": "C029",
+   "segment": "Node.js",
+   "text": "사용권에 동의하고 다음으로 넘어갈게요.",
+   "action_observation": "라이선스를 확인하고 동의한 뒤 Next로 진행한다."
+  },
+  {
+   "id": "C030",
+   "segment": "Node.js",
+   "text": "설치 경로와 구성은 기본값으로 둡니다.",
+   "action_observation": "설치 위치와 기본 구성 화면을 넘긴다."
+  },
+  {
+   "id": "C031",
+   "segment": "Node.js",
+   "text": "추가 도구를 자동으로 설치하는 항목은 체크하지 않고, 다음으로 넘어가 설치를 시작할게요.",
+   "action_observation": "추가 도구 자동 설치가 선택되지 않은 것을 확인하고 설치한다."
+  },
+  {
+   "id": "C010",
+   "segment": "Node.js",
+   "text": "Node.js는 여기서 업무 데이터베이스를 준비하는 데 쓰는 도구를 실행합니다.",
+   "action_observation": "설치가 진행되는 동안 Node.js가 쓰이는 곳을 설명한다."
+  },
+  {
+   "id": "C032",
+   "segment": "Node.js",
+   "text": "설치가 끝나면 피니시를 눌러 창을 닫습니다.",
+   "action_observation": "완료 창의 Finish를 누른다."
+  },
+  {
+   "id": "C033",
+   "segment": "Node.js",
+   "text": "설치할 때 열려 있던 터미널에서는 node 명령을 아직 찾지 못할 수 있어요. 설치에 실패했다고 보고 다시 설치하기 전에 새 창으로 확인해 보세요.",
+   "action_observation": "기존 터미널에 입력한 버전 명령의 오류를 확인한다. 현장 수습, 다시 할 때는 없음."
+  },
+  {
+   "id": "C034",
+   "segment": "Node.js",
+   "text": "터미널을 새로 열고 node --version을 실행합니다. 새 터미널에는 방금 설치한 프로그램의 경로가 반영됩니다.",
+   "action_observation": "시작 메뉴에서 PowerShell을 찾아 새 창을 열고 같은 명령을 입력한다."
+  },
+  {
+   "id": "C035",
+   "segment": "Node.js",
+   "text": "이번 화면에 나온 버전은 v24.22.1입니다.",
+   "action_observation": "새 PowerShell에서 Node.js v24.22.1을 확인한다."
+  },
+  {
+   "id": "C054",
+   "segment": "Git",
+   "text": "다음은 깃을 설치할게요.",
+   "action_observation": "README에서 Git으로 옮긴다."
+  },
+  {
+   "id": "C012",
+   "segment": "Git",
+   "text": "Git은 파일의 변경 이력을 관리하고, 인터넷 저장소를 내 컴퓨터로 가져오는 도구입니다.",
+   "action_observation": "Windows용 Git 다운로드와 설치, Git Bash를 어떤 때 쓰는지 확인한다."
+  },
+  {
+   "id": "C055",
+   "segment": "Git",
+   "text": "리드미에서 공식 다운로드 페이지로 이동해, 윈도우용 설치 파일을 내려받아 실행합니다.",
+   "action_observation": "공식 설치 페이지에서 Windows 설치 파일을 실행한다."
+  },
+  {
+   "id": "C056",
+   "segment": "Git",
+   "text": "Git은 선택 화면이 여러 번 나옵니다. 여기서는 권장 옵션을 유지하고 Next로 진행하세요.",
+   "action_observation": "마법사의 Next를 누르고 권장 PATH 옵션을 확인한다."
+  },
+  {
+   "id": "C056_2",
+   "segment": "Git",
+   "text": "Adjusting your PATH 화면에서는 Recommended 표시가 붙은 가운데 항목을 그대로 둡니다.",
+   "action_observation": "Adjusting your PATH 화면에서 Recommended 항목을 그대로 두고 Next를 누른다."
+  },
+  {
+   "id": "C057",
+   "segment": "Git",
+   "text": "이 선택이 필요한 이유는 잠시 뒤 VS Code에서 저장소를 내려받을 때 그 안의 터미널도 git 명령을 찾아야 하기 때문입니다.",
+   "action_observation": "권장 옵션을 그대로 두고 설치를 진행한다."
+  },
+  {
+   "id": "C012_2",
+   "segment": "Git",
+   "text": "저장소를 복사해 오는 일을 clone이라고 해요.",
+   "action_observation": "Windows용 Git 다운로드와 설치, Git Bash를 어떤 때 쓰는지 확인한다."
+  },
+  {
+   "id": "C012_3",
+   "segment": "Git",
+   "text": "Windows에 함께 설치되는 Git Bash는 프로젝트를 시작할 명령을 입력할 창으로 쓰겠습니다.",
+   "action_observation": "Windows용 Git 다운로드와 설치, Git Bash를 어떤 때 쓰는지 확인한다."
+  },
+  {
+   "id": "C058",
+   "segment": "Git",
+   "text": "설치를 마친 뒤 Git Bash를 열고 git --version을 실행해 버전을 확인합니다.",
+   "action_observation": "완료 창에서 Launch Git Bash를 선택하고 Finish. 열린 Git Bash에 버전 명령을 입력하고 README로 돌아온다."
+  },
+  {
+   "id": "N049",
+   "segment": "Git",
+   "text": "2.56이 나왔습니다. README 기준 2.54 이상이니 됐습니다.",
+   "action_observation": "Git Bash에 나온 git 버전을 읽고 창을 닫는다."
+  },
+  {
+   "id": "C011",
+   "segment": "VS Code",
+   "text": "이제 작업할 편집기인 VS Code를 설치하겠습니다.",
+   "action_observation": "VS Code와 그 안의 터미널·AI 패널이 하는 일을 짚는다."
+  },
+  {
+   "id": "C039",
+   "segment": "VS Code",
+   "text": "리드미에서 윈도우용 설치 파일을 내려받겠습니다.",
+   "action_observation": "README Windows용 링크에서 VS Code 설치 파일을 받는다."
+  },
+  {
+   "id": "C040",
+   "segment": "VS Code",
+   "text": "받은 설치 파일을 열고 사용권에 동의합니다.",
+   "action_observation": "설치 파일을 열어 사용권을 확인한다."
+  },
+  {
+   "id": "C041",
+   "segment": "VS Code",
+   "text": "설치 위치는 기본값으로 진행할게요.",
+   "action_observation": "기본 설치 위치로 진행한다."
+  },
+  {
+   "id": "C042",
+   "segment": "VS Code",
+   "text": "여기서는 패스에 추가하는 항목을 확인합니다.",
+   "action_observation": "추가 작업의 PATH 항목 선택을 확인한다."
+  },
+  {
+   "id": "C043",
+   "segment": "VS Code",
+   "text": "나머지는 기본 설정으로 다음 화면에 넘어가 설치를 시작할게요.",
+   "action_observation": "설치를 시작하고 진행 막대가 움직이는지 본다."
+  },
+  {
+   "id": "C011_2",
+   "segment": "VS Code",
+   "text": "VS Code는 파일을 열고 고치고 실행하는 작업 공간이에요.",
+   "action_observation": "VS Code와 그 안의 터미널·AI 패널이 하는 일을 짚는다."
+  },
+  {
+   "id": "C011_3",
+   "segment": "VS Code",
+   "text": "안쪽의 터미널은 글자로 명령을 입력하는 창입니다.",
+   "action_observation": "VS Code와 그 안의 터미널·AI 패널이 하는 일을 짚는다."
+  },
+  {
+   "id": "C044",
+   "segment": "VS Code",
+   "text": "설치가 끝나면 편집기 안에서 파일과 터미널을 함께 쓸 수 있습니다.",
+   "action_observation": "설치 완료를 확인하고 WSL 준비로 이동한다."
+  },
+  {
+   "id": "C044_2",
+   "segment": "VS Code",
+   "text": "확장은 잠시 뒤에 열고, 먼저 Docker가 쓸 실행 환경을 준비할게요.",
+   "action_observation": "설치 완료를 확인하고 WSL 준비로 이동한다."
+  },
+  {
+   "id": "C063",
+   "segment": "WSL",
+   "text": "이제 도커가 사용할 더블유에스엘을 준비할게요.",
+   "action_observation": "README의 WSL 항목과 공식 안내 페이지를 연다."
+  },
+  {
+   "id": "C064",
+   "segment": "WSL",
+   "text": "Windows에서 WSL을 준비할 때는 PowerShell을 사용합니다. 설치 도중 권한을 요구하면 관리자 권한으로 다시 열 수 있어요.",
+   "action_observation": "Windows 검색에서 PowerShell을 연다."
+  },
+  {
+   "id": "C065",
+   "segment": "WSL",
+   "text": "wsl --version을 입력합니다.",
+   "action_observation": "WSL 버전 확인 명령을 입력한다."
+  },
+  {
+   "id": "C066",
+   "segment": "WSL",
+   "text": "아무 키나 누르라는 안내가 나오면 Enter를 누릅니다. 60초 안에 누르세요. 버전이 바로 나왔다면 이미 설치된 것이니 이 단계는 넘어갑니다.",
+   "action_observation": "설치 안내와 진행 출력을 확인한다."
+  },
+  {
+   "id": "C013",
+   "segment": "WSL",
+   "text": "WSL은 Windows에서 Linux 프로그램을 실행할 수 있게 해 주는 기반이에요. 여기서는 Docker가 쓸 WSL 2를 준비합니다. Ubuntu는 따로 설치하지 않아요. 그래서 문서의 설치 명령은 그대로 쓰지 않고, macOS에서는 WSL이 필요 없습니다.",
+   "action_observation": "WSL 준비를 기다리는 동안 Windows와 Linux 실행 환경의 관계를 설명한다."
+  },
+  {
+   "id": "C068",
+   "segment": "WSL",
+   "text": "프로젝트 명령은 윈도우의 깃 배시에서 실행하고, 도커에 필요한 리눅스 환경은 더블유에스엘 투를 통해 사용합니다.",
+   "action_observation": "설치 진행 중 Windows에서 프로젝트 명령을 실행할 위치를 구별한다."
+  },
+  {
+   "id": "C069",
+   "segment": "WSL",
+   "text": "설치 뒤 다시 확인한 화면에 WSL 3.0.3.0이 나왔습니다. 이 숫자는 WSL 도구의 버전이에요.",
+   "action_observation": "다시 확인한 WSL 도구 버전 출력을 읽는다."
+  },
+  {
+   "id": "C070",
+   "segment": "Docker",
+   "text": "이제 마지막으로 도커를 설치할게요.",
+   "action_observation": "README의 마지막 도구 Docker를 찾는다."
+  },
+  {
+   "id": "C072",
+   "segment": "Docker",
+   "text": "리드미에서 공식 페이지를 열고 윈도우용 설치 파일을 실행할게요.",
+   "action_observation": "공식 Windows 설치 페이지에서 파일을 받는다."
+  },
+  {
+   "id": "C014",
+   "segment": "Docker",
+   "text": "Docker는 여러 서비스를 각자 설치하고 연결해야 하는 부담을 줄여 줍니다. 실행에 필요한 파일을 묶은 것이 이미지이고, 그 이미지를 이용해 실제로 돌아가는 실행 환경이 컨테이너예요.",
+   "action_observation": "파일을 받는 동안 Docker 이미지와 컨테이너의 역할을 설명한다."
+  },
+  {
+   "id": "C073",
+   "segment": "Docker",
+   "text": "공식 설치 창을 따라 진행하세요. WSL 2 사용 항목이 표시되면 선택을 유지합니다. 설치 방식이나 화면이 조금 달라도 여기서 필요한 것은 Linux 컨테이너를 실행할 기반입니다.",
+   "action_observation": "설치 창에서 WSL 2 관련 선택을 확인하고 진행한다."
+  },
+  {
+   "id": "C014_2",
+   "segment": "Docker",
+   "text": "프로젝트에 정해 둔 구성으로 함께 시작합니다.",
+   "action_observation": "파일을 받는 동안 Docker 이미지와 컨테이너의 역할을 설명한다."
+  },
+  {
+   "id": "C077",
+   "segment": "Docker",
+   "text": "나중에 시작 명령을 실행하면 첫 단계에서 Docker를 확인합니다.",
+   "action_observation": "설치 진행 중 뒤의 시작 스크립트가 Docker를 확인한다는 점을 짚는다."
+  },
+  {
+   "id": "C074",
+   "segment": "Docker",
+   "text": "설치를 마친 시점과 서비스를 띄울 수 있는 시점 사이에 시간이 걸릴 수 있습니다.",
+   "action_observation": "Docker 설치가 끝나면 엔진 시작까지 기다려야 한다고 안내하고 성공 창을 닫는다."
+  },
+  {
+   "id": "C086",
+   "segment": "저장소 주소와 VS Code 확장",
+   "text": "프로젝트의 GitHub 페이지에서 저장소 주소를 확인합니다.",
+   "action_observation": "프로젝트 저장소의 Code 메뉴에서 복사할 저장소가 맞는지 확인한다."
+  },
+  {
+   "id": "O087",
+   "segment": "저장소 주소와 VS Code 확장",
+   "text": "코드 버튼을 누르고, 에이치티티피에스 주소 옆의 복사 버튼을 누릅니다.",
+   "action_observation": "Code 메뉴의 HTTPS 주소 옆 복사 버튼을 누른다."
+  },
+  {
+   "id": "C086_2",
+   "segment": "저장소 주소와 VS Code 확장",
+   "text": "Git이 가져올 대상은 README 한 파일이 아니라 이 저장소 전체입니다.",
+   "action_observation": "프로젝트 저장소의 Code 메뉴에서 복사할 저장소가 맞는지 확인한다."
+  },
+  {
+   "id": "O044",
+   "segment": "저장소 주소와 VS Code 확장",
+   "text": "설치가 끝나면 VS Code를 실행합니다.",
+   "action_observation": "설치 창에서 VS Code를 실행한다."
+  },
+  {
+   "id": "N085b",
+   "segment": "저장소 주소와 VS Code 확장",
+   "text": "처음 뜨는 로그인 창은 Continue without Signing In으로, 테마 창은 Get Started로 넘어갑니다.",
+   "action_observation": "로그인 창은 Continue without Signing In, 테마 창은 Get Started를 누른다."
+  },
+  {
+   "id": "N085c",
+   "segment": "저장소 주소와 VS Code 확장",
+   "text": "왼쪽의 확장 메뉴를 엽니다.",
+   "action_observation": "왼쪽 확장 아이콘을 누른다."
+  },
+  {
+   "id": "C045",
+   "segment": "저장소 주소와 VS Code 확장",
+   "text": "VS Code의 확장에서 한국어 언어 팩을 찾으세요. 게시자가 Microsoft인지 확인합니다.",
+   "action_observation": "확장 검색에서 Microsoft 한국어 팩을 확인하고 명령 팔레트의 표시 언어 목록에서 한국어를 선택한다."
+  },
+  {
+   "id": "N087",
+   "segment": "저장소 주소와 VS Code 확장",
+   "text": "저는 Python 확장도 함께 설치했는데, 이 수업에 꼭 필요한 것은 아니에요.",
+   "action_observation": "언어 팩 설치 뒤 Python 확장을 설치한다. 뒤 실습에 쓰지 않는다."
+  },
+  {
+   "id": "C046",
+   "segment": "저장소 주소와 VS Code 확장",
+   "text": "이번에는 확장에서 Codex를 찾아 게시자가 OpenAI인지 보고 설치합니다.",
+   "action_observation": "확장에서 OpenAI가 게시한 Codex를 찾아 설치한다."
+  },
+  {
+   "id": "C011_4",
+   "segment": "저장소 주소와 VS Code 확장",
+   "text": "여기에 Codex를 연결하면, 필요한 일을 말로 요청하고 답변을 살피면서 작업할 수 있어요.",
+   "action_observation": "VS Code와 그 안의 터미널·AI 패널이 하는 일을 짚는다."
+  },
+  {
+   "id": "C046_2",
+   "segment": "저장소 주소와 VS Code 확장",
+   "text": "설치 중이라는 표시가 사라질 때까지 기다리세요.",
+   "action_observation": "설치 중 표시가 사라지는지 본다."
+  },
+  {
+   "id": "C045_2",
+   "segment": "저장소 주소와 VS Code 확장",
+   "text": "오른쪽 아래 언어 변경 안내를 이용하거나, 명령 팔레트에서 Configure Display Language를 열어 한국어를 고를 수 있어요.",
+   "action_observation": "확장 검색에서 Microsoft 한국어 팩을 확인하고 명령 팔레트의 표시 언어 목록에서 한국어를 선택한다."
+  },
+  {
+   "id": "O-REUSE-45",
+   "segment": "저장소 주소와 VS Code 확장",
+   "text": "확장 메뉴에서 한국어 언어 팩을 적용하고 다시 시작하면, 이렇게 메뉴가 한국어로 바뀝니다.",
+   "action_observation": "Change Language 다시 시작 창에서 Restart를 누르고 한국어 화면을 확인한다."
+  },
+  {
+   "id": "C081",
+   "segment": "작업 폴더와 프로젝트 받기",
+   "text": "이제 VS Code에서 프로젝트 파일을 받을 작업 폴더를 열겠습니다.",
+   "action_observation": "한국어 메뉴로 바뀐 편집기에서 폴더 열기로 이동한다."
+  },
+  {
+   "id": "C082",
+   "segment": "작업 폴더와 프로젝트 받기",
+   "text": "시작 화면의 폴더 열기나 파일 메뉴의 폴더 열기를 사용하세요. 나중에 프로젝트만 따로 열 때도 같은 메뉴를 쓰면 됩니다.",
+   "action_observation": "시작 화면 또는 파일 메뉴의 폴더 열기를 누른다."
+  },
+  {
+   "id": "O083",
+   "segment": "작업 폴더와 프로젝트 받기",
+   "text": "C 드라이브에 스터디 폴더를 만들고 선택하겠습니다.",
+   "action_observation": "폴더 선택 창에서 study 폴더를 만들고 폴더 이름과 선택 버튼을 확인한다."
+  },
+  {
+   "id": "C083",
+   "segment": "작업 폴더와 프로젝트 받기",
+   "text": "폴더 이름이나 드라이브 문자는 화면과 달라도 됩니다.",
+   "action_observation": "자신이 사용하는 작업 폴더 위치를 확인한다."
+  },
+  {
+   "id": "C085",
+   "segment": "작업 폴더와 프로젝트 받기",
+   "text": "직접 선택한 폴더인지 확인하고 터미널을 여세요. 신뢰 확인이 뜨면 폴더 위치를 먼저 확인합니다.",
+   "action_observation": "선택한 폴더를 열고 통합 터미널을 표시한다. 신뢰 창은 조건부 안내다."
+  },
+  {
+   "id": "C093",
+   "segment": "작업 폴더와 프로젝트 받기",
+   "text": "이 프로젝트를 실행할 때는 Windows의 Git Bash에서 시작 명령을 사용합니다. VS Code의 터미널에서 Git Bash를 선택할 수도 있어요.",
+   "action_observation": "새 터미널 옆 목록에서 Git Bash를 선택한다."
+  },
+  {
+   "id": "C088",
+   "segment": "작업 폴더와 프로젝트 받기",
+   "text": "README에 적힌 clone 명령을 터미널에 붙여 넣고 Enter를 누릅니다.",
+   "action_observation": "git clone 뒤에 복사한 주소를 붙여넣어 실행한다."
+  },
+  {
+   "id": "N101b",
+   "segment": "작업 폴더와 프로젝트 받기",
+   "text": "README의 명령은 지금 판만 받아서 화면보다 빨리 끝납니다.",
+   "action_observation": "화면의 명령은 전체를 받아 1.85 GiB까지 받는다. README 명령은 지금 판만 받는다."
+  },
+  {
+   "id": "C089",
+   "segment": "작업 폴더와 프로젝트 받기",
+   "text": "프로젝트 파일을 내려받는 동안 아래쪽 수신 진행률을 확인하세요.",
+   "action_observation": "아래쪽 객체 수신 진행률이 바뀌는지 본다."
+  },
+  {
+   "id": "C047",
+   "segment": "작업 폴더와 프로젝트 받기",
+   "text": "옆의 채팅 탭은 GitHub Copilot입니다. README대로 본인 GitHub 계정을 연결하면 실습에서 함께 쓸 수 있어요.",
+   "action_observation": "프로젝트 수신 중 채팅 탭과 Codex 탭을 짚는다."
+  },
+  {
+   "id": "N104a",
+   "segment": "작업 폴더와 프로젝트 받기",
+   "text": "저는 자동 저장을 켜 두겠습니다. 저장을 잊는 일을 줄여 주고, 필수는 아닙니다.",
+   "action_observation": "설정에서 Files: Auto Save를 afterDelay로 바꾼다. 수업 필수 조건은 아니다."
+  },
+  {
+   "id": "C047_2",
+   "segment": "작업 폴더와 프로젝트 받기",
+   "text": "안내 화면은 다음으로, 모델 안내는 현재 모델로 계속 진행을 누른 뒤 ChatGPT 계정으로 연결하세요.",
+   "action_observation": "Codex 안내 화면의 다음 → 현재 모델로 계속 진행 → ChatGPT 로그인."
+  },
+  {
+   "id": "C048",
+   "segment": "작업 폴더와 프로젝트 받기",
+   "text": "전화번호 확인이 나타나면 본인 화면에서 인증을 마치고 편집기로 돌아옵니다. 계정 정보는 터미널이나 채팅에 붙여넣지 마세요.",
+   "action_observation": "본인 계정에서 인증하라고 안내한다. 인증 화면을 제외한다."
+  },
+  {
+   "id": "C052",
+   "segment": "작업 폴더와 프로젝트 받기",
+   "text": "코덱스 패널에서 입력창이 열리는지 확인합니다.",
+   "action_observation": "인증 뒤 편집기로 돌아온 상태에서 Codex 입력창을 확인한다."
+  },
+  {
+   "id": "O052",
+   "segment": "작업 폴더와 프로젝트 받기",
+   "text": "답변이 돌아왔네요.",
+   "action_observation": "오른쪽 Codex 패널에서 보낸 인사와 돌아온 응답을 확인한다."
+  },
+  {
+   "id": "C090",
+   "segment": "작업 폴더와 프로젝트 받기",
+   "text": "수신이 100퍼센트까지 끝났습니다. 프로젝트 파일을 가져온 단계입니다. 아직 포털이 실행된 것은 아니에요.",
+   "action_observation": "수신 완료와 프로젝트 폴더 생성을 확인한다."
+  },
+  {
+   "id": "C092",
+   "segment": "프로젝트 시작",
+   "text": "README의 직접 실행하기 표에서 켜기 명령을 복사합니다.",
+   "action_observation": "프로젝트 시작 안내와 터미널 위치를 확인한다."
+  },
+  {
+   "id": "O093",
+   "segment": "프로젝트 시작",
+   "text": "먼저 도커가 실행 중인지 확인할게요.",
+   "action_observation": "Docker Desktop 바로 가기를 찾아 연다."
+  },
+  {
+   "id": "C074_2",
+   "segment": "프로젝트 시작",
+   "text": "Docker Desktop 설치 뒤에는 앱을 열고 엔진이 준비될 때까지 기다리세요.",
+   "action_observation": "Docker 설치가 끝나면 엔진 시작까지 기다려야 한다고 안내하고 성공 창을 닫는다."
+  },
+  {
+   "id": "O076",
+   "segment": "프로젝트 시작",
+   "text": "처음 실행할 때 나오는 사용 조건을 확인하고 동의합니다.",
+   "action_observation": "Docker Desktop 첫 실행 약관의 Accept를 누른다."
+  },
+  {
+   "id": "O077",
+   "segment": "프로젝트 시작",
+   "text": "엔진이 준비될 때까지 잠시 기다릴게요.",
+   "action_observation": "선택 로그인 화면에서 Skip을 눌러 엔진 시작을 기다린다."
+  },
+  {
+   "id": "C077_2",
+   "segment": "프로젝트 시작",
+   "text": "그 단계가 진행되지 않으면 Docker Desktop이 실행 중인지, 엔진이 준비됐는지부터 보세요.",
+   "action_observation": "설치 진행 중 뒤의 시작 스크립트가 Docker를 확인한다는 점을 짚는다."
+  },
+  {
+   "id": "O078",
+   "segment": "프로젝트 시작",
+   "text": "엔진 러닝이 표시됐네요.",
+   "action_observation": "왼쪽 아래 Engine running을 확인한다."
+  },
+  {
+   "id": "O080",
+   "segment": "프로젝트 시작",
+   "text": "설정에서도 더블유에스엘 투를 사용하는 것을 확인할 수 있습니다.",
+   "action_observation": "Settings의 General에서 가상 머신 선택이 WSL 2인지 읽는다."
+  },
+  {
+   "id": "O096",
+   "segment": "프로젝트 시작",
+   "text": "먼저 프로젝트 폴더로 이동합니다.",
+   "action_observation": "VS Code 터미널로 돌아가 프로젝트 루트로 이동한다."
+  },
+  {
+   "id": "O099",
+   "segment": "프로젝트 시작",
+   "text": "이제 bash scripts/start_all.sh를 입력해 실행하겠습니다.",
+   "action_observation": "Git Bash에서 시작 명령을 한 번 실행한다."
+  },
+  {
+   "id": "C095",
+   "segment": "프로젝트 시작",
+   "text": "처음 시작할 때는 여러 서비스를 내려받고 준비해서 시간이 걸립니다. 터미널을 열어 둔 채 출력이 이어지는지 보세요. 같은 명령을 다시 입력할 필요는 없습니다. 먼저 Docker와 사용할 접속 번호를 확인합니다.",
+   "action_observation": "Docker 확인, PC 설정, 접속 번호의 진행 신호를 읽는다."
+  },
+  {
+   "id": "C096",
+   "segment": "프로젝트 시작",
+   "text": "그다음에는 업무 기록을 담는 데이터베이스와 프로젝트의 서비스들을 준비합니다. 처음 실행하는 컴퓨터에서는 이미지 파일을 내려받거나 실행 환경을 만드는 과정이 더 걸릴 수 있어요. 현재 어떤 작업을 하고 있는지 출력의 진행 상태를 보겠습니다.",
+   "action_observation": "업무 DB와 서비스 실행 준비에서 이미지 수신 상태를 읽는다."
+  },
+  {
+   "id": "C006",
+   "segment": "프로젝트 시작",
+   "text": "여러 서비스가 차례로 준비되는 건 맡은 일이 다르기 때문이에요. 설비에서 값을 받아 전달하는 일, 그 값을 보관하는 일, 사람이 확인할 화면을 제공하는 일을 나눠 맡습니다.",
+   "action_observation": "업무 DB 준비·컨테이너 실행 출력을 보며 여러 서비스를 함께 준비하는 이유를 설명한다."
+  },
+  {
+   "id": "C007",
+   "segment": "프로젝트 시작",
+   "text": "계속 달라지는 센서 값과 업무 처리 기록은 각 저장소에 남기고, 설비와 부품처럼 서로 어떤 관계인지 찾는 지식은 그래프로 관리합니다. 포털은 이 내용을 사람에게 보여 주고 필요한 일을 선택하게 하는 화면이에요.",
+   "action_observation": "진행 중 저장소와 그래프, 포털 화면의 역할을 구별한다."
+  },
+  {
+   "id": "C015",
+   "segment": "프로젝트 시작",
+   "text": "프로그램을 실행하는 공간과 데이터를 보관하는 공간도 구별해 두세요. 컨테이너가 실행을 맡고, 남겨야 하는 데이터는 별도의 보관 공간에 유지합니다. 그래서 실행 창을 닫는 것과 저장한 데이터를 지우는 것은 다른 일입니다.",
+   "action_observation": "이미지 내려받기와 컨테이너 시작을 보며 데이터를 어디에 보관하는지 짚는다."
+  },
+  {
+   "id": "O104",
+   "segment": "프로젝트 시작",
+   "text": "지금은 필요한 이미지를 내려받고 있습니다.",
+   "action_observation": "디스크에 받아 둔 이미지와 처음 받을 이미지의 차이를 확인한다."
+  },
+  {
+   "id": "O106",
+   "segment": "프로젝트 시작",
+   "text": "이미 받아 둔 것은 다시 사용하고, 없는 것만 받으니까 컴퓨터마다 걸리는 시간은 조금 다를 수 있어요.",
+   "action_observation": "이미지와 컨테이너의 역할을 실습 준비와 연결한다."
+  },
+  {
+   "id": "C094",
+   "segment": "프로젝트 시작",
+   "text": "한 단계가 끝나면 다음 단계가 이어지니 마지막에 포털 주소가 나올 때까지 이 터미널을 열어 두세요.",
+   "action_observation": "README의 시작 명령과 Git Bash에서의 실제 입력을 보여 주고 완료까지 같은 창에서 출력이 이어짐을 확인한다."
+  },
+  {
+   "id": "O113",
+   "segment": "프로젝트 시작",
+   "text": "내려받기가 끝나면 이 컴퓨터에서 직접 만들 이미지를 준비합니다. 이 작업을 빌드라고 부릅니다.",
+   "action_observation": "상태가 변하는 동안 터미널을 열어 둔다."
+  },
+  {
+   "id": "C097",
+   "segment": "프로젝트 시작",
+   "text": "컨테이너가 시작됐다는 표시와, 서비스가 응답할 준비까지 됐다는 표시는 구별해서 봐야 해요. 글이 많이 지나갔다고 끝난 것이 아닙니다. 마지막 점검까지 진행되는지 확인하겠습니다.",
+   "action_observation": "기동과 응답 점검의 차이를 확인한다."
+  },
+  {
+   "id": "O116",
+   "segment": "프로젝트 시작",
+   "text": "이미지가 준비되면 프로그램들이 하나씩 실행됩니다.",
+   "action_observation": "서비스 준비와 최종 점검의 진행을 본다."
+  },
+  {
+   "id": "C098",
+   "segment": "프로젝트 시작",
+   "text": "이 시작 과정에는 업무 흐름과 기본 지식을 준비하는 단계도 있습니다. 그래서 포털을 처음 열 때에도 이미 들어 있는 지식을 볼 수 있어요. 마지막으로 AI 단계를 확인합니다. 키가 없으면 저장된 응답이 있는지 봅니다.",
+   "action_observation": "서비스·업무 흐름·지식 준비와 마지막 AI 연결 확인으로 이어진다."
+  },
+  {
+   "id": "C099",
+   "segment": "프로젝트 시작",
+   "text": "아래에 완료 안내와 포털 주소가 보이네요.",
+   "action_observation": "8/8 아래 완료 줄의 루프백 주소를 확인한다."
+  },
+  {
+   "id": "C100",
+   "segment": "터미널 주소에서 포털 열기",
+   "text": "주소는 컴퓨터마다 다를 수 있으니, 자기 화면의 주소 위에 마우스를 놓고 Ctrl을 누른 채 클릭합니다.",
+   "action_observation": "완료 줄의 주소에 커서를 놓아 링크 안내를 확인한다. 실제 누른 순간은 촬영본에 없고, 다음 화면이 포털 홈이다."
+  }
+ ],
+ "portal_cues": "../포털/포털소개_큐.json"
+}

@@ -207,9 +207,9 @@ CUES = [
  (12, '새 그림에 처음부터 있던 빈 원이 하나 남아 있네요. 이 원을 눌러 선택하고 Delete 키로 지우겠습니다.', [['click', 'node:'], ['key', 'Delete']]),
  (12, '원 열일곱 개와 화살표 스물한 개, 조건과 절차 번호까지 그대로 돌아왔네요.', [['verify'], ['at', 0.3], ['point', 'look:쿨러 핀 오염'], ['at', 0.6], ['point', 'look:팬 구동 불량']]),
  (13, '마지막으로, 이 그림은 데이터베이스에 넣는 명령으로도 바꿀 수 있어요. 위쪽 Download / Export를 누르고 Cypher 탭을 누르겠습니다.', [['click', 'export'], ['click', 'tab:Cypher']]),
- (13, 'CREATE로 시작하는 문장이 보이죠. 원과 관계, 조건이 Neo4j에 바로 넣을 수 있는 명령으로 바뀌었어요. 이 형태는 다음 실습에서 직접 다뤄 보겠습니다.', [['at', 0.15], ['point', 'cypherText']]),
+ (13, 'CREATE로 시작하는 문장이 보이죠. 원과 관계, 조건이 Neo4j에 바로 넣을 수 있는 명령으로 바뀌었어요.', [['at', 0.15], ['point', 'cypherText']]),
  (13, 'Done을 눌러 그림으로 돌아갈게요.', [['click', 'done']]),
- (13, '이 그림은 다음 실습에서 대상과 관계를 더 구체적으로 정리할 때 그대로 이어 쓰겠습니다.', []),
+ (13, '이제 증상에서 원인과 조치, 근거 문서까지 이 그림 한 장으로 따라갈 수 있습니다.', []),
 ]
 
 def cues():
@@ -304,7 +304,7 @@ def manuscript():
 
 
 def write_all():
-    import hashlib, html, re, shutil, zipfile
+    import hashlib, re, shutil
     final = json.loads((EVID / 'saved' / '쿨러_지식그래프_최종.json').read_text(encoding='utf-8'))
     by = {n['id']: n['caption'] for n in final['nodes']}
     ver = json.loads((VIDEO / 'verification.json').read_text(encoding='utf-8'))
@@ -323,7 +323,7 @@ def write_all():
 영상 안에는 원 끌어내기를 헛잡고 다시 잡는 장면이 그대로 있다. 사용자가 영상을 재생해 확인하고 이 판으로 확정했다(2026-10-23).
 '''
     (ROOT / '예상시간.md').write_text(timing, encoding='utf-8')
-    nodes_md = '# 쿨러 지식 그래프 — 그릴 대상과 관계\n\n교재 SLIDE 67의 클래스로 오일 쿨러 사례를 그린다. 아래는 촬영에서 실제로 만들어 내려받은 완성본(`완성_쿨러_지식그래프.json`)의 내용이다. 직접 만든 결과와 구별하는 참조본이다.\n\n| 이름(Caption) | 종류(Label) | 조건(Property) |\n|---|---|---|\n'
+    nodes_md = '# 쿨러 지식 그래프 — 그릴 대상과 관계\n\n교재 75장의 클래스로 오일 쿨러 사례를 그립니다. 아래는 강사 화면에서 완성한 그림(`완성_쿨러_지식그래프.json`)의 내용입니다. 직접 만든 결과와 비교할 때 참고합니다.\n\n| 이름(Caption) | 종류(Label) | 조건(Property) |\n|---|---|---|\n'
     for n in final['nodes']:
         props = ' / '.join(f'{k}: {v}' for k, v in n.get('properties', {}).items())
         nodes_md += f"| {n['caption']} | {', '.join(n['labels'])} | {props or '—'} |\n"
@@ -332,7 +332,7 @@ def write_all():
              'CAUSES': '를 일으킨다', 'MITIGATED_BY': '로 완화된다', 'REMEDIED_BY': '로 근본 해결된다', 'ADDRESSES': '를 해결 대상으로 한다', 'REFERS_TO': '의 근거로 이어진다'}
     for r in final['relationships']:
         nodes_md += f"| {by[r['fromId']]} | {r['type']} | {by[r['toId']]} | {reads.get(r['type'], '')} |\n"
-    nodes_md += '\n출처: 클래스 · 관계 `workspace/개발/문서/ontology/schema-v2.md`, 이름 `it/neo4j/v2/instances.cypher`, 조건 `매뉴얼_발췌.md` HM-8.4, 조치 근거 HM-8.1 · 8.5 · 8.7.\n'
+    nodes_md += '\n근거: 조건은 `매뉴얼_발췌.md` HM-8.4, 조치는 HM-8.1 · 8.5 · 8.7입니다.\n'
     review = '''# 관계 검토표 — 쿨러 지식 그래프
 
 | 출발 | 관계 이름 | 도착 | 문장으로 읽은 뜻 | 원문 근거 | 고칠 부분 |
@@ -361,63 +361,18 @@ def write_all():
 | 구간 | 보여 준 것 | 확인한 결과 |
 |---|---|---|
 ''' + ''.join(f'| {k} | {v} | 실제 화면 |\n' for k, v in SEGMENT_TITLE.items())
-    record = '''# 실습 기록 — 쿨러 지식 그래프
-
-- 그린 원 · 관계 수:
-- 두 원인의 판별 조건과 근거 절:
-- 완화 조치와 근본 조치의 구별:
-- 팬 진동 ≥ 0.9일 때 따라간 경로:
-- 자료가 없을 때 보류한 이유:
-- 저장한 JSON · PNG 파일 이름과 다시 연 결과:
-'''
     (ROOT / '촬영화면.md').write_text(screens, encoding='utf-8')
+    sys.path.insert(0, str(REPO / 'workspace/강의제작/제작도구/실습시작'))
+    from lab_package import pack
     for course in ['실전반', '통합반']:
         day = REPO / 'workspace/강의제작/산출물' / course / '실습/01회차'
         lab = day / '랩/01일차_실습4_관계그림'
         (day / '대본/08_실습_관계그림.md').write_text(script.replace('(예상시간.md)', '(../../../../../제작도구/촬영/arrows/예상시간.md)'), encoding='utf-8')
-        for name, content in [('대상_목록.md', nodes_md), ('관계_검토표.md', review), ('실습_기록.md', record)]:
+        for name, content in [('대상_목록.md', nodes_md), ('관계_검토표.md', review)]:
             (lab / name).write_text(content, encoding='utf-8')
         shutil.copyfile(EVID / 'saved' / '쿨러_지식그래프_최종.json', lab / '완성_쿨러_지식그래프.json')
         shutil.copyfile(EVID / 'saved' / '쿨러_지식그래프_최종.png', lab / '완성_쿨러_지식그래프.png')
-        body = []
-        for line in script.split('# 촬영 본문 끝')[0].split('## 진행 메모 — 낭독하지 않음')[0].splitlines()[2:]:
-            body.append(line)
-        steps = ''
-        seg = 0
-        for c in cues():
-            if not re.fullmatch(r'o\d{3}', c['id']):
-                continue
-            if c['segment'] != seg:
-                if seg:
-                    steps += '</tbody></table>'
-                seg = c['segment']
-                steps += f'<h2>{seg}. {html.escape(SEGMENT_TITLE[seg])}</h2><table><tbody>'
-            acts = [x for x in (act(o) for o in c['ops']) if x]
-            steps += f"<tr><td>{html.escape(c['text'])}</td><td>{html.escape(' → '.join(acts) if acts else '—')}</td></tr>"
-        steps += '</tbody></table>'
-        guide = f'''<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>ARROWS — 쿨러 고장의 지식 그래프</title><style>body{{font:17px/1.8 "Malgun Gothic",sans-serif;max-width:1120px;margin:36px auto;padding:0 24px;color:#22303e}}table{{width:100%;border-collapse:collapse;table-layout:fixed;margin:16px 0}}td{{border:1px solid #cbd5e1;padding:10px;vertical-align:top;overflow-wrap:anywhere}}td:last-child{{color:#475569;font-size:15px}}h2{{margin-top:36px}}img{{max-width:100%;border:1px solid #cbd5e1}}a{{color:#145ca4}}aside{{background:#f0f4f7;padding:12px}}</style></head><body>
-<h1>쿨러 고장의 지식 그래프 그리기</h1><p>교재의 지식 그래프 지도(설비 · 구성 요소 · 센서 · 증상 · 고장 유형 · 원인 · 조치 방법 · 매뉴얼 절)를 오일 쿨러 사례로 arrows.app에 직접 그립니다. 핀 오염 가지를 그린 뒤 팬 구동 불량과 주변 온도 상승 가지를 더하고, 팬 베어링 열화처럼 고장이 다른 고장으로 이어지는 관계와 화살표의 절차 번호까지 적습니다. 원을 정리해 종류별로 색을 칠하고, 완성 그림으로 실제 값을 판단해 본 뒤 저장 · 다시 열기와 Cypher 내보내기로 마칩니다.</p>
-<nav><a href="대상_목록.md">대상 · 관계</a> · <a href="매뉴얼_발췌.md">판별 기준 · 조치 근거(HM-8)</a> · <a href="관계_검토표.md">검토표</a> · <a href="실습_기록.md">기록</a> · <a href="완성_쿨러_지식그래프.json">완성 참조 JSON</a></nav>
-<h2>완성 그림(참조)</h2><p><img src="완성_쿨러_지식그래프.png" alt="완성된 쿨러 지식 그래프"></p><aside>촬영 중 arrows.app에서 실제로 내려받은 완성본입니다. 직접 그린 결과와 대조하는 참조본이며, 처음부터 열어 쓰는 시작 파일이 아닙니다.</aside>
-<p>왼쪽은 강사가 하는 말, 오른쪽은 그때 하는 조작입니다.</p>{steps}
-</body></html>'''
-        (lab / '가이드.html').write_text(guide, encoding='utf-8')
-        zip_path = lab.with_suffix('.zip')
-        with zipfile.ZipFile(zip_path) as old:
-            first = old.namelist()[0]
-            prefix = first.split(lab.name + '/')[0] + lab.name + '/'
-        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as z:
-            for f in sorted(lab.rglob('*')):
-                if f.is_file():
-                    z.write(f, prefix + f.relative_to(lab).as_posix())
-        with zipfile.ZipFile(zip_path) as z:
-            names = set(z.namelist())
-            for f in lab.rglob('*'):
-                if f.is_file():
-                    assert z.read(prefix + f.relative_to(lab).as_posix()) == f.read_bytes(), f
-            assert len(names) == sum(1 for f in lab.rglob('*') if f.is_file()), zip_path
-        for href in re.findall(r'(?:href|src)="([^"]+)"', guide):
-            assert (lab / href).is_file(), href
+        pack(lab)   # 가이드.html은 build_student_guide.py가 쓴다 — 여기서 덮지 않는다
     files = [ROOT / '수업원고.md', ROOT / '예상시간.md', ROOT / '촬영화면.md'] + [REPO / 'workspace/강의제작/산출물' / c / '실습/01회차' / x for c in ['실전반', '통합반'] for x in
              ['대본/08_실습_관계그림.md', '랩/01일차_실습4_관계그림/가이드.html', '랩/01일차_실습4_관계그림/대상_목록.md', '랩/01일차_실습4_관계그림.zip']]
     (ROOT / '동기화판본.json').write_text(json.dumps({f.relative_to(REPO).as_posix(): hashlib.sha256(f.read_bytes()).hexdigest() for f in files}, ensure_ascii=False, indent=1), encoding='utf-8')

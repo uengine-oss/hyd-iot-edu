@@ -1,6 +1,7 @@
 """Notion 실습을 실제 촬영판(사용자 확정 영상)의 발화 · 조작 시각으로 두 과정 대본 · 가이드 · 시간 · ZIP에 반영한다.
 장면 제목 · 준비 문단 · 입력값은 준비 원고(수업원고.md · 행동목록.json)에서, 말한 문장과 시각은 영상 verification.json과 음성 캐시에서 온다.
-앱/학생 코드는 실행하지 않는다. 사용: python build.py"""
+앱/학생 코드는 실행하지 않는다. 학생 가이드는 build_student_guide.py의 검수 출력으로만 반영한다.
+사용: python build.py --student-draft <검수출력> --student-backup <작업폴더/새백업>"""
 from pathlib import Path
 import html
 import json
@@ -9,6 +10,8 @@ import sys
 import zipfile
 import hashlib
 import shutil
+import argparse
+from apply_student_guide import preflight, preflight_targets, apply_course
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[4]
@@ -74,6 +77,17 @@ def shot_rows():
     return ver, rows, starts
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--student-draft", type=Path, required=True)
+    parser.add_argument("--student-backup", type=Path, required=True)
+    args = parser.parse_args()
+    preflight(args.student_draft)
+    assert args.student_backup.resolve().is_relative_to((ROOT / "작업").resolve())
+    assert all(not (args.student_backup / course).exists() for course in ["통합반", "실전반"]), "기존 학생가이드 백업을 덮지 않습니다"
+    preflight_targets(args.student_backup)
+    for course in ("통합반", "실전반"):
+        cfg = json.loads((ROOT / "workspace/강의제작/제작도구/구성" / course / "01회차/구성.json").read_text(encoding="utf-8-sig"))
+        assert any(u["file"].endswith("02_실습_학습노트.md") for u in cfg["units"]), "실습 구성 단위 누락"
     source = SOURCE.read_text(encoding='utf-8')
     prepare = re.search(r'^> 준비: .+$', source, re.M).group(0)
     titles = SEGMENTS
@@ -89,7 +103,7 @@ def main():
     script = ['# {{과정}} 1회차 실습 1 — Notion 주제 갤러리 만들기', '',
               f'> 제작용·비낭독: {CONFIRMED} 촬영판(영상 {mmss(total)}, 사용자 재생 확정)에서 실제로 말한 문장이다. 「조작」 표시는 그 문장을 말하는 동안 화면에서 한 조작과 영상 시각이며 읽지 않는다. 다시 찍을 때도 대상을 먼저 짚고 설명하며 조작하고, 결과는 나타난 뒤 말한다.', '',
               prepare, '',
-              f'> 시간: 실측 {mmss(total)}(말 {mmss(spoken)}, 큐 {len(rows)}개). 구간별 길이는 [예상시간](../랩/01일차_실습1_학습노트/예상시간.md).', '']
+              f'> 시간: 실측 {mmss(total)}(말 {mmss(spoken)}, 큐 {len(rows)}개). 구간별 길이는 [예상시간](../../../../../제작도구/촬영/notion/예상시간.md).', '']
     for s in order:
         script += [f'## {number[s]}. {titles[s]}', '']
         for r in rows:
@@ -112,12 +126,6 @@ def main():
     timing = '\n'.join(timing) + '\n'
     (HERE / '예상시간.md').write_text(timing, encoding='utf-8', newline='\n')
 
-    capture = ['# 학습노트 — 화면', '',
-               f'상태: 영상 촬영 완료({CONFIRMED}, {mmss(total)}). 구간별 정지 사진은 아직 뽑지 않았다. 사진이 필요하면 아래 영상 시각에서 같은 판본으로 뽑는다.', '',
-               '| 구간 | 영상 시각 | 보여 준 것 |', '|---|---|---|']
-    capture += [f'| {number[s]} | {mmss(span[s][0])} ~ {mmss(span[s][1])} | {titles[s]} |' for s in order]
-    capture = '\n'.join(capture) + '\n'
-
     manifest = {'source_video': VIDEO.relative_to(ROOT).as_posix(), 'video_seconds': total, 'cues': len(rows), 'sections': len(order),
                 'titles_from': str(SOURCE.relative_to(ROOT).as_posix()), 'courses': []}
     for course in ['통합반', '실전반']:
@@ -125,70 +133,16 @@ def main():
         script_path = base / '대본/02_실습_학습노트.md'
         lab = base / '랩/01일차_실습1_학습노트'
         archive = lab.with_suffix('.zip')
-        file_names = [n for n in zipfile.ZipFile(archive).namelist() if not n.endswith('/')]
-        prefix = '01회차/랩/' + lab.name + '/'
-        script_entry = '01회차/대본/' + script_path.name
-        assert set(file_names) == {prefix + f.relative_to(lab).as_posix() for f in lab.rglob('*') if f.is_file()} | {script_entry}, '기존 ZIP 구조가 예상과 다릅니다'
         text = script.replace('{{과정}}', course)
         script_path.write_text(text, encoding='utf-8', newline='\n')
-        (lab / '학습노트_입력틀.md').write_text((HERE / '입력자료.md').read_text(encoding='utf-8'), encoding='utf-8', newline='\n')
-        (lab / '예상시간.md').write_text(timing, encoding='utf-8', newline='\n')
-        shutil.copyfile(HERE / '행동목록.json', lab / '행동목록.json')
-        (lab / '이미지').mkdir(exist_ok=True)
-        (lab / '예시').mkdir(exist_ok=True)
-        for asset in (HERE / 'design').glob('*.png'):
-            shutil.copyfile(asset, lab / '이미지' / asset.name)
-        for example in (HERE / '카드본문').glob('*.md'):
-            body = example.read_text(encoding='utf-8')
-            # 개인 원래 기록은 Notion과 제작 원본에 보존하되 수업 예시에 중복 배포하지 않는다.
-            body = re.sub(r'<toggle>\s*기존 작성 내용[\s\S]*?</toggle>', '', body)
-            (lab / '예시' / example.name).write_text(body.rstrip()+'\n', encoding='utf-8', newline='\n')
-        (lab / '채울_화면.md').write_text(capture, encoding='utf-8', newline='\n')
-        links = '<nav><a href="학습노트_입력틀.md">입력 문구</a> · <a href="참고_교재_발췌.md">교재 발췌</a> · <a href="채울_화면.md">구간별 영상 시각</a> · <a href="예상시간.md">실측 시간</a> · <a href="행동목록.json">준비 원고의 안내·행동 목록</a></nav>'
-        links += '<nav>카드 그림: ' + ' · '.join('<a href="이미지/' + f.name + '">' + f.stem + '</a>' for f in sorted((lab / '이미지').glob('*.png'))) + '</nav>'
-        links += '<nav>본문 예시: ' + ' · '.join('<a href="예시/' + f.name + '">' + f.stem.replace('_', ' ') + '</a>' for f in sorted((lab / '예시').glob('*.md'))) + '</nav>'
-        steps = ''
-        for s in order:
-            steps += f'<h2>{number[s]}. {html.escape(titles[s])} <small>{mmss(span[s][0])}</small></h2><table><tbody>'
-            for r in rows:
-                if r['scene'] != s:
-                    continue
-                act = ''
-                if r['action']:
-                    act = r['action'][0][:-2] + (' · 입력: ' + ' / '.join(html.escape(str(x)) for x in r['inputs']) if r['inputs'] else '')
-                steps += f'<tr><td>{html.escape(r["text"])}</td><td>{act or "—"}</td></tr>'
-            steps += '</tbody></table>'
-        guide = ('<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>학습노트 — Notion 주제 갤러리</title>'
-                 '<style>body{font:17px/1.8 "Malgun Gothic",sans-serif;max-width:1120px;margin:36px auto;padding:0 24px;color:#22303e}h1{font-size:30px}h2{font-size:23px;margin-top:36px}h2 small{color:#64748b;font-size:15px;font-weight:normal}'
-                 'table{width:100%;border-collapse:collapse;table-layout:fixed;margin:12px 0}td{border:1px solid #cbd5e1;padding:9px;vertical-align:top;overflow-wrap:anywhere}td:last-child{width:26%;color:#475569;font-size:15px}nav{padding:14px;background:#edf6f3;margin:6px 0}a{color:#245a86}</style></head><body>'
-                 f'<h1>{course} 1회차 실습 1 — Notion 주제 갤러리 만들기</h1><p>배운 내용을 주제 카드로 쌓아 두는 학습노트를 Notion에서 직접 만듭니다. 글 정리 · 하위 페이지 · 링크 · 갤러리 · 템플릿을 거쳐 공유 · 게시 · 내보내기 위치까지 봅니다. 왼쪽은 영상에서 강사가 하는 말, 오른쪽은 그때 하는 조작의 영상 시각과 입력값입니다(영상 {mmss(total)}).</p>'
-                 + links + steps + '</body></html>\n')
-        (lab / '가이드.html').write_text(guide, encoding='utf-8', newline='\n')
-        when = (2026, 10, 23, 0, 0, 0)
-        with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED) as z:
-            for f in sorted(lab.rglob('*')):
-                if f.is_file():
-                    info = zipfile.ZipInfo(prefix + f.relative_to(lab).as_posix(), when)
-                    info.compress_type = zipfile.ZIP_DEFLATED
-                    z.writestr(info, f.read_bytes())
-            info = zipfile.ZipInfo(script_entry, when)
-            info.compress_type = zipfile.ZIP_DEFLATED
-            z.writestr(info, script_path.read_bytes())
-        with zipfile.ZipFile(archive) as z:
-            expected = {prefix + f.relative_to(lab).as_posix(): f.read_bytes() for f in lab.rglob('*') if f.is_file()}
-            expected[script_entry] = script_path.read_bytes()
-            assert set(z.namelist()) == set(expected)
-            assert all(z.read(n) == b for n, b in expected.items())
-        for target in re.findall(r'href="([^"]+)"', guide):
-            assert (lab / target).is_file(), target
-        assert guide.count('<h2>') == len(order)
+        course_result = apply_course(args.student_draft, args.student_backup, course)
         cfg_path = ROOT / 'workspace/강의제작/제작도구/구성' / course / '01회차/구성.json'
         cfg = json.loads(cfg_path.read_text(encoding='utf-8-sig'))
         for unit in cfg['units']:
             if unit['file'].endswith('02_실습_학습노트.md'):
                 unit['status'] = f'{CONFIRMED} 촬영판 실제 발화 동기화 · 영상 {mmss(total)} · 큐 {len(rows)}개 · 사용자 재생 확정'
         cfg_path.write_text(json.dumps(cfg, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
-        manifest['courses'].append({'course': course, 'zip_prefix': prefix, 'zip_files': len(expected), 'script_sha256': hashlib.sha256(script_path.read_bytes()).hexdigest(), 'zip_sha256': hashlib.sha256(archive.read_bytes()).hexdigest(), 'zip_bytes_match': True, 'local_links_exist': True})
+        manifest['courses'].append({**course_result, 'script_sha256': hashlib.sha256(script_path.read_bytes()).hexdigest()})
     (HERE / '정적검사.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
     print(json.dumps(manifest, ensure_ascii=False, indent=2))
 
