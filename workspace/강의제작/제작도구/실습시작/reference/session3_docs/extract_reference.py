@@ -40,7 +40,9 @@ NAME_AFTER = re.compile(r'^\s*(?:패키지|정기 점검|부품)')   # 「2,000 
 
 PROHIBITION = re.compile(r'않는다|않고|않는 것|말 것|금지|이내로 한다|안 된다|쓰지 않는다|\bNever\b|\bDo not\b|not valid|must not')
 COMPLETION = re.compile(r'성공한 것이다|정상이다|정상이면|완료로 본다|돌아왔는지|내려왔는지|회복 판정|시운전 확인|시운전 뒤|미달로 적'
-                        r'|미만이어야 한다|안에 있어야 한다|누유가 없는지|must be below|must be within|no leaks|작으면 안 된다')
+                        r'|미만이어야 한다|안에 있어야 한다|누유가 없는지|must be below|must be within|no leaks|작으면 안 된다'
+                        r'|must not be less than|must not be lower than')
+LOWER_BOUND = re.compile(r'must not be (?:less|lower) than|작으면 안 된다')   # 끝난 뒤 값의 하한 — 완료 기준의 말
 PRECONDITION = re.compile(r'때만|경우에만|전에는|뒤에만|기 전에|인지 확인한다|을 확인한다|를 확인한다|려면|여야 한다'
                           r'|(?:이|하|으|되|가|보이|오르|넘으|떨어지|졌으|었으|았으|미만이|이르)면[\s,]|^승인[:은]|승인은|확인한 뒤|따른다'
                           r'|\bBefore\b|\buntil\b|\bonly\b|\bIf\b|must read|confirm that the gauge')
@@ -60,8 +62,25 @@ def number(text):
     return int(value) if value.is_integer() else value
 
 
+ABBREV = re.compile(r'(?:^|[\s(])(?:no|nos|rev|e\.g|i\.e|approx|fig|figs|vol|ref|sec|cf|vs|max|min|p|pp)\.$', re.I)
+
+
 def sentences(line):
-    return [s for s in re.split(r'(?<=[^\d]\.)\s+', line.strip()) if s.strip()]
+    """줄 하나를 문장으로 — 마침표 뒤 띄어쓰기에서 끊되, 숫자 바로 뒤(번호 「1.」), 줄임말(part no. · Rev. · e.g. · approx. · Fig.) 뒤,
+    괄호 안에서는 끊지 않는다(옛 판은 「(part no. HI-RF-10)」을 「(part no.」에서 잘라 조각 후보를 만들었다)."""
+    s = line.strip()
+    out, depth, start = [], 0, 0
+    for i, ch in enumerate(s):
+        if ch in '([':
+            depth += 1
+        elif ch in ')]':
+            depth = max(0, depth - 1)
+        elif ch == '.' and depth == 0 and i + 1 < len(s) and s[i + 1].isspace() and i > 0 and not s[i - 1].isdigit() \
+                and not ABBREV.search(s[start:i + 1]):
+            out.append(s[start:i + 1].strip())
+            start = i + 1
+    out.append(s[start:].strip())
+    return [x for x in out if x]
 
 
 def read_register(folder):
@@ -179,6 +198,9 @@ def extract(folder, row, lang='en'):
         return found
 
     def add(kind, body, quote, n, **extra):
+        if any(o['kind'] == kind and o['text'] == body and o.get('value_text') == extra.get('value_text') and n in range(o['line_start'], o['line_end'] + 1)
+               for o in out):
+            return            # 같은 줄 · 같은 종류 · 같은 내용을 한 번 더 만들지 않는다(같은 인용 중복)
         located = doc.locate(n, n, quote)
         item = {'id': f'{row["문서 식별자"]}-{len(out) + len(unlocated) + 1:03d}', 'section': state['section'], 'procedure': state['procedure'],
                 'kind': kind, 'text': body}
@@ -199,7 +221,7 @@ def extract(folder, row, lang='en'):
             add('completion', sentence, sentence, n)
         elif PRECONDITION.search(sentence):
             add('precondition', sentence, sentence, n)
-        if PROHIBITION.search(sentence):
+        if PROHIBITION.search(LOWER_BOUND.sub('', sentence)):   # 「must not be less than」 · 「작으면 안 된다」는 완료 기준의 하한이지 금지가 아니다
             add('prohibition', sentence, sentence, n)
         if state['section'] != '머리말':
             for v in values(sentence, scanned):

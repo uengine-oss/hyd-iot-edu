@@ -1,0 +1,93 @@
+{
+  "doc_id": "SR-04",
+  "rev": "2024",
+  "doc_status": "현행",
+  "source_file": "SR-04_설비안전규정_발췌.txt",
+  "source_sha256": "d0545f8fe6008ba23c928749ee7de9039dcbe66caf09ab7b505728e6b3ecb49d",
+  "encoding": "cp949",
+  "extractor": "python 결과/extract_candidates.py(요청 글 결과/prompt.md · 절 머리에서 끊은 1,000자 조각)",
+  "generated_at": "2026-11-04T06:50:10+00:00",
+  "model_run": [
+    {
+      "record": "결과/응답_기록/07654fb6df7e.json",
+      "request_hash": "07654fb6df7e",
+      "model": "coding",
+      "method": "모델 서버",
+      "reused_from": null
+    }
+  ],
+  "candidates": [
+    {
+      "id": "SR-04-M001",
+      "section": "제4조",
+      "procedure": null,
+      "kind": "prohibition",
+      "text": "운전 중에는 인터록 한계에 다가가는 조치를 하지 않는다.",
+      "quote": "② 운전 중에는 인터록 한계에 다가가는 조치를 하지 않는다.",
+      "refs": [],
+      "quote_match": "exact",
+      "line_start": 11,
+      "line_end": 11,
+      "status": "pending"
+    },
+    {
+      "id": "SR-04-M002",
+      "section": "제4조",
+      "procedure": null,
+      "kind": "completion",
+      "text": "인터록으로 정지한 설비의 복귀는 종합 정비 매뉴얼 HM-9.4를 따른다.",
+      "quote": "③ 인터록으로 정지한 설비의 복귀는 종합 정비 매뉴얼 HM-9.4를 따른다.",
+      "refs": [
+        "HM-9.4"
+      ],
+      "quote_match": "exact",
+      "line_start": 12,
+      "line_end": 12,
+      "status": "pending"
+    },
+    {
+      "id": "SR-04-M003",
+      "section": "제5조",
+      "procedure": null,
+      "kind": "precondition",
+      "text": "유압 회로를 여는 정비는 모터 전원을 잠그고(LOTO) 잔압이 0인지 압력계로 확인한 뒤 시작한다.",
+      "quote": "① 유압 회로를 여는 정비는 모터 전원을 잠그고(LOTO) 잔압이 0인지 압력계로 확인한 뒤 시작한다.",
+      "refs": [],
+      "quote_match": "exact",
+      "line_start": 15,
+      "line_end": 15,
+      "status": "pending"
+    },
+    {
+      "id": "SR-04-M004",
+      "section": "제5조",
+      "procedure": null,
+      "kind": "precondition",
+      "text": "잠금은 정비를 맡은 사람이 걸고 그 사람이 푼다.",
+      "quote": "② 잠금은 정비를 맡은 사람이 걸고 그 사람이 푼다.",
+      "refs": [],
+      "quote_match": "exact",
+      "line_start": 16,
+      "line_end": 16,
+      "status": "pending"
+    },
+    {
+      "id": "SR-04-M005",
+      "section": "제5조",
+      "procedure": null,
+      "kind": "completion",
+      "text": "정비를 마치면 공구와 사람이 설비 밖에 있는지 확인한 뒤 잠금을 푼다.",
+      "quote": "③ 정비를 마치면 공구와 사람이 설비 밖에 있는지 확인한 뒤 잠금을 푼다.",
+      "refs": [],
+      "quote_match": "exact",
+      "line_start": 17,
+      "line_end": 17,
+      "status": "pending"
+    }
+  ],
+  "unlocated": [],
+  "warnings": [
+    "결과/응답_기록/07654fb6df7e.json: 계약 꼴에 맞지 않아 후보에 넣지 않음(value가 숫자가 아님) — 「인터록 한계(65 ℃)」",
+    "결과/응답_기록/07654fb6df7e.json: 계약 꼴에 맞지 않아 후보에 넣지 않음(value가 숫자가 아님) — 「잔압이 0인지 압력계로 확인한 뒤 시작한다.」"
+  ]
+}

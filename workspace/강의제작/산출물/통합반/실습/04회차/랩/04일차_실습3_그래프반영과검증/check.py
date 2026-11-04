@@ -8,7 +8,7 @@ import csv, io, json, re, sys, urllib.request, urllib.error
 HERE = Path(__file__).resolve().parent
 RESULT = HERE / '결과'
 PRACTICAL = False
-HEADINGS = ['대상 작업', '준비 조건', '금지 · 제한', '작업 순서', '완료 기준', '작업 직전 확인할 현재 값', '부품 준비', '지난 시행 기록', '승인', '남은 질문']
+HEADINGS = ['대상 작업', '준비 조건', '금지 · 제한', '작업 순서', '완료 기준', '작업 직전 확인할 현재 값', '승인', '남은 질문']
 END = '의미와 질문별 답은 원자료와 따로 대조합니다.'
 WIPE = re.compile(r'MATCH\s*\(\s*\w*\s*\)\s*(DETACH\s+)?DELETE', re.I)
 DELETE = re.compile(r'\bDELETE\b', re.I)
@@ -58,6 +58,16 @@ def reviews():
         data = json.loads(read(f))
         for c in data.get('candidates', []):
             out.append((str(data.get('doc_id')), str(data.get('rev') or ''), c['id'], c.get('status'), c.get('quote')))
+    return out
+
+
+def approved_values():
+    """승인(approved) 후보가 가진 글 값 전부(인용 · 내용 · 값 글 · 절 · 절차) — 같은 글이 다른 문서의 승인하지 않은 후보 인용과 겹쳐도 승인한 지식의 값이다."""
+    out = set()
+    for f in sorted(basis('검토결과').glob('*_검토.json')):
+        for c in json.loads(read(f)).get('candidates', []):
+            if c.get('status') == 'approved':
+                out |= {v for v in c.values() if isinstance(v, str)}
     return out
 
 
@@ -147,8 +157,8 @@ def check_db(todo, known, cands):
         todo.append('랩 DB를 아직 준비하지 않았습니다.')
         return
     try:
-        ok_quotes = {c[4] for c in cands if c[3] == 'approved'}
-        bad_quotes = {c[4] for c in cands if c[3] != 'approved' and c[4] and c[4] not in ok_quotes}
+        ok_values = approved_values()
+        bad_quotes = {c[4] for c in cands if c[3] != 'approved' and c[4] and c[4] not in ok_values}
         ids = sorted(known)
         res = run([('MATCH (n) WHERE n.id IS NULL OR NOT n.id IN $ids RETURN count(n)', {'ids': ids}),
                    ('MATCH (m)-[r]-(k) WHERE m.id IN $ids AND (k.id IS NULL OR NOT k.id IN $ids) RETURN labels(m)[0], type(r), count(DISTINCT r) ORDER BY 1, 2', {'ids': ids}),
@@ -269,7 +279,7 @@ def card_sources():
     return out
 
 
-def check_card(path, docs, orders, parts):
+def check_card(path, docs, parts):
     errors, notes = [], []
     md = read(path)
     secs, cur = {}, None
@@ -296,32 +306,28 @@ def check_card(path, docs, orders, parts):
     for q in quotes:
         if not any(q in text for _, text in docs):
             errors.append(f'자료/ 어디에도 그대로 없는 인용: 「{q[:50]}」')
-    for wo in sorted(set(re.findall(r'WO-\d{4}-\d{5}', md))):
-        if wo not in orders:
-            errors.append(f'작업지시_이력.csv에 없는 작업지시 {wo}')
     for p in sorted(set(re.findall(r'\bP-[A-Z0-9]+(?:-[A-Z0-9]+)*', md))):
         if p not in parts:
-            errors.append(f'재고_현황.csv · 설비 모델에 없는 품번 {p}')
+            errors.append(f'설비 모델에 없는 품번 {p}')
     notes.append(f'인용 {len(quotes)}개')
     return errors, notes
 
 
 def check_cards(todo):
     docs = card_sources()
-    orders = {r['작업지시'] for r in csv_rows(HERE / '자료/작업지시_이력.csv')}
     graph = json.loads(read(basis('모델/graph.json')))
-    parts = {r['품번'] for r in csv_rows(HERE / '자료/재고_현황.csv') if r.get('품번')} | {n['props']['id'] for n in graph['nodes'] if n['labels'][0] == 'Part'}
+    parts = {n['props']['id'] for n in graph['nodes'] if n['labels'][0] == 'Part'}
     cards = sorted(RESULT.glob('작업확인카드_*.md'))
     print(f'[6] 작업 확인 카드 {len(cards)}개')
     for c in cards:
-        errors, notes = check_card(c, docs, orders, parts)
+        errors, notes = check_card(c, docs, parts)
         print(f'    {c.name}: {"형식 통과" if not errors else f"확인 필요 {len(errors)}건"} · ' + ' · '.join(notes))
         for e in errors[:20]:
             print('      - ' + e)
         if errors:
             todo.append(f'{c.name} 형식 확인 필요.')
     if len(cards) < 2:
-        todo.append('고른 작업과 다른 작업 하나 이상의 카드가 필요합니다.')
+        todo.append('이 사건의 작업과 다른 작업 하나 이상의 카드가 필요합니다.')
 
 
 def main():

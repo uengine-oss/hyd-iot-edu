@@ -31,9 +31,9 @@
       "line_end": 10,
       "page": "9-1",
       "refs": [],
-      "status": "approved",
-      "decision": "채택",
-      "reason": "사내 기준과 같은 항목 — 출처를 하나 더한다 — HM-8.3",
+      "status": "pending",
+      "decision": "보류",
+      "reason": "사내 기준과 같은 항목 — 출처를 하나 더한다 — HM-8.3 — 이 후보의 종류 · 값은 기대 항목에 없어 원문과 대조하지 않았다(적재하지 않는다)",
       "origin": "extractor"
     },
     {
@@ -50,7 +50,7 @@
       "refs": [],
       "status": "approved",
       "decision": "채택",
-      "reason": "사내 기준과 같은 항목 — 출처를 하나 더한다 — HM-8.5 · HM-8.8(펌프 부하 60 %)",
+      "reason": "HM-9.1 금지 · 제한 — 사내 기준과 같은 항목 — 출처를 하나 더한다 — HM-8.5 · HM-8.8(펌프 부하 60 %) · 원문 24줄과 절 · 종류가 기대 항목과 같다",
       "origin": "extractor"
     },
     {
@@ -71,7 +71,7 @@
       "comparator": "<",
       "value_text": "6 0 % 아래",
       "decision": "채택",
-      "reason": "사내 기준과 같은 항목 — 출처를 하나 더한다 — HM-8.5 · HM-8.8(펌프 부하 60 %)",
+      "reason": "HM-9.1 기준값 — 사내 기준과 같은 항목 — 출처를 하나 더한다 — HM-8.5 · HM-8.8(펌프 부하 60 %) · 원문 24줄과 절 · 종류 · 값 · 단위 · 비교가 기대 항목과 같다",
       "origin": "extractor"
     },
     {
@@ -86,13 +86,13 @@
       "line_end": 25,
       "page": "9-2",
       "refs": [],
-      "status": "approved",
+      "status": "pending",
       "value": 60,
       "unit": "%",
       "comparator": null,
       "value_text": "6 0 %",
-      "decision": "채택",
-      "reason": "사내 기준과 같은 항목 — 출처를 하나 더한다 — HM-8.5(최소 부하 인터록)",
+      "decision": "보류",
+      "reason": "사내 기준과 같은 항목 — 출처를 하나 더한다 — HM-8.5(최소 부하 인터록) — 이 후보의 종류 · 값은 기대 항목에 없어 원문과 대조하지 않았다(적재하지 않는다)",
       "origin": "extractor"
     },
     {
@@ -107,9 +107,9 @@
       "line_end": 25,
       "page": "9-2",
       "refs": [],
-      "status": "approved",
-      "decision": "채택",
-      "reason": "사내 기준과 같은 항목 — 출처를 하나 더한다 — HM-8.5(최소 부하 인터록)",
+      "status": "pending",
+      "decision": "보류",
+      "reason": "사내 기준과 같은 항목 — 출처를 하나 더한다 — HM-8.5(최소 부하 인터록) — 이 후보의 종류 · 값은 기대 항목에 없어 원문과 대조하지 않았다(적재하지 않는다)",
       "origin": "extractor"
     },
     {
@@ -219,7 +219,7 @@
       "refs": [],
       "status": "approved",
       "decision": "채택",
-      "reason": "사내 기준과 다르게 정하지 않은 운전 한계 — 2회차 설비 모델 센서 한계와 같음",
+      "reason": "HM-9.3 시작 조건 · 승인 — 사내 기준과 다르게 정하지 않은 운전 한계 — 2회차 설비 모델 센서 한계와 같음 · 원문 50줄과 절 · 종류가 기대 항목과 같다",
       "origin": "extractor"
     },
     {
@@ -236,7 +236,7 @@
       "refs": [],
       "status": "approved",
       "decision": "채택",
-      "reason": "사내 기준과 다르게 정하지 않은 운전 한계 — 2회차 설비 모델 센서 한계와 같음",
+      "reason": "HM-9.3 금지 · 제한 — 사내 기준과 다르게 정하지 않은 운전 한계 — 2회차 설비 모델 센서 한계와 같음 · 원문 50줄과 절 · 종류가 기대 항목과 같다",
       "origin": "extractor"
     },
     {
@@ -257,7 +257,7 @@
       "comparator": ">",
       "value_text": "6 5 ℃ 초과",
       "decision": "채택",
-      "reason": "사내 기준과 다르게 정하지 않은 운전 한계 — HYD-01~03 TS1 한계 65 ℃(경계 낱말 「초과」는 원문대로)",
+      "reason": "HM-9.3 기준값 — 사내 기준과 다르게 정하지 않은 운전 한계 — HYD-01~03 TS1 한계 65 ℃(경계 낱말 「초과」는 원문대로) · 원문 52줄과 절 · 종류 · 값 · 단위 · 비교가 기대 항목과 같다",
       "origin": "extractor"
     },
     {
@@ -278,7 +278,7 @@
       "comparator": "<",
       "value_text": "130 bar 미만",
       "decision": "채택",
-      "reason": "사내 기준과 다르게 정하지 않은 운전 한계 — HYD-01~03 PS1 한계 130 bar",
+      "reason": "HM-9.3 기준값 — 사내 기준과 다르게 정하지 않은 운전 한계 — HYD-01~03 PS1 한계 130 bar · 원문 59줄과 절 · 종류 · 값 · 단위 · 비교가 기대 항목과 같다",
       "origin": "extractor"
     },
     {
@@ -299,7 +299,7 @@
       "comparator": ">=",
       "value_text": "2.0 mm/s 이상",
       "decision": "채택",
-      "reason": "사내 기준과 다르게 정하지 않은 운전 한계 — HYD-01~03 VS1 한계 2.0 mm/s",
+      "reason": "HM-9.3 기준값 — 사내 기준과 다르게 정하지 않은 운전 한계 — HYD-01~03 VS1 한계 2.0 mm/s · 원문 60줄과 절 · 종류 · 값 · 단위 · 비교가 기대 항목과 같다",
       "origin": "extractor"
     },
     {
@@ -314,9 +314,9 @@
       "line_end": 61,
       "page": "9-6",
       "refs": [],
-      "status": "approved",
-      "decision": "채택",
-      "reason": "사내 기준과 같은 항목 — 출처를 하나 더한다 — HM-8.3",
+      "status": "pending",
+      "decision": "보류",
+      "reason": "사내 기준과 같은 항목 — 출처를 하나 더한다 — HM-8.3 — 이 후보의 종류 · 값은 기대 항목에 없어 원문과 대조하지 않았다(적재하지 않는다)",
       "origin": "extractor"
     },
     {
@@ -331,9 +331,9 @@
       "line_end": 69,
       "page": "9-8",
       "refs": [],
-      "status": "approved",
-      "decision": "채택",
-      "reason": "사내 기준과 다르게 정하지 않은 운전 기록",
+      "status": "excluded",
+      "decision": "제외",
+      "reason": "문자 인식이 「·」을 「.」로 읽어 문장 가운데서 끊긴 조각이다 — 69줄은 「정지 시각 · 정지 원인 표시 · 그때의 유온 · 압력 · 진동 값을 적고 알린다」 한 문장",
       "origin": "extractor"
     }
   ],

@@ -2,15 +2,20 @@
 
 사용: HYD_MAIN_ROOT=<main 체크아웃> python run_reference.py [--model-candidates <결과/후보 폴더> ...] [--no-neo4j]
 학생 폴더는 임시 사본에서만 실행하고 원본 결과/를 건드리지 않는다.
-1. 사슬(바이트): 추출 랩 입력 = 3회차 판정 랩 입력 · 강사 판 결과, 그래프 랩 입력 = 2회차 실습4 입력 · 3회차 판 · 이 실행의 강사 판 검토 결과, 두 랩의 자료 = 한 벌.
+1. 사슬(바이트): 추출 랩 입력 = 3회차 판정 랩 입력 · 강사 판 결과, 그래프 랩 입력 = 2회차 실습4 입력 · 3회차 판 · 강사 추출 실행 run1의 강사 판 검토 결과
+   (추출 학생용 완성본의 결과/검토와 같은 판), 두 랩의 자료 = 한 벌.
 2. 기대 항목(expected_items.py — 원문에서 손으로)과 두 번째 구현(extract_reference.py — 규칙 기반)의 겹침: 문서마다 누락 · 값이 글과 다른 후보 · 기대 절 안의 기대 밖 후보.
-   --model-candidates를 주면 강사 추출 실행(instructor_extract.py — 수업 모델)의 후보도 같은 기준으로 센다(모델 출력이 매번 달라도 서는 기준).
+   강사 추출 실행(instructor_extract.py — 수업 모델)의 후보도 같은 기준으로 센다(모델 출력이 매번 달라도 서는 기준). 실행은 --model-candidates <실행 폴더>/결과/후보
+   (여러 번), 주지 않으면 고정한 강사_추출/run*/결과/후보. 실행마다 3의 갈래 검토를 그 후보에 걸어 학생 검사기를 그 실행의 실제 응답 기록과 짝지어 돌리고,
+   갈래마다 rule_links · 판정 변화가 두 번째 구현 후보의 갈래와 같은지, 실전 선택 작업 조건이 갈래마다 갈리는지 본다. 두 실행이면 문서마다 · 조각마다 차이를 센다.
 3. 추출 갈래 — 판정 랩 입력(3회차 지점2 가)에서 지점5(가 · 나 · 다) × 지점6(가 · 나) = 6, 내 입력이 3회차 지점2 나 · 다이면 지점5만 각 3 — 두 반마다.
    갈래마다 검토 결과 · rule_links · 선택 작업 조건(실전) · 판정이 달라지는 지난 경보를 쓰고, 학생 검사기를 사본에서 실제 실행한다(계약 통과 · 단계 남은 것 0).
 4. 그래프 갈래 — 입력 = 지점5 나 · 지점6 가, 지점7(가 · 나) × 두 반 = 4. 실제 Neo4j(학생 도구 lab_db.py · lab_cypher.py)로 앞 단계 판 적재 → 적재 → 세기 →
    같은 적재 → 세기 같음 → (통합) 다른 문서 추가 → 기존 ID · 속성 그대로 → 질문 다섯 · 보류 · 미제공 조회 → (실전) 카드 둘 → 내보내기 → 학생 검사기. 끝나면 그 컨테이너와 볼륨을 지운다.
 5. 검사기 고의 손상: 추출 검사기(두 반) · 그래프 검사기(두 반, 랩 DB 포함)에 일부러 망가뜨린 입력을 넣어 잡는지 본다 → 검사기_확인.json.
-6. 장난감 시험 통과 기준(toy_criteria.py)의 자기 시험 — 손대지 않은 사본은 통과, 일부러 어긴 사본은 그 기준에서 걸린다.
+6. 장난감 시험 통과 기준(toy_criteria.py)의 자기 시험 — 손대지 않은 사본은 통과, 일부러 어긴 사본은 그 기준에서 걸린다. ②의 답 글 비교는 같은 규칙 기반 후보에
+   관계없는 답 · 스스로 써 넣은(채팅으로 받음) 답 · 키 없이 보낸 기록 · 실제 호출보다 많은 모델 서버 기록을 짝지으면 걸리고, 실제 호출 수를 주지 않으면 판정하지 않으며,
+   그 후보를 담은 모델 답(실제 호출과 같은 수)이면 통과하는지 본다.
 산출: 갈래/, expected_results.json, 사건_갈래표.md, 검사기_확인.json. 어긋나면 「불일치」 줄을 찍고 종료 코드 1 — 결과를 맞추지 말고 원인을 고친다(코딩랩.md K요-11).
 """
 from __future__ import annotations
@@ -39,6 +44,7 @@ import branches as BR  # noqa: E402
 import graph_reference as G  # noqa: E402
 import toy_criteria as T  # noqa: E402
 import instructor_extract as IE  # noqa: E402
+S = IE.student_code()                                  # 학생 추출 코드(완성본에 들어가는 그 코드) — 조각 · 답 → 후보
 
 OUTDIR = HERE/'갈래'
 COURSES = {'통합반': ('integrated-04-extract', 'integrated-04-graph'), '실전반': ('practical-03-extract', 'practical-03-card')}
@@ -56,6 +62,9 @@ def module(path, name):
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
+
+
+LLM = module(TOOLS/'lab_llm.py', 'lab_llm_limits')       # 학생 폴더 llm_client.py의 원본 — 상한 값 한 곳
 
 
 def copy_lab(folder, tmp):
@@ -85,7 +94,8 @@ def chain():
 
 # ───────────── 2 · 3. 추출 — 점수 · 갈래 · 학생 검사기 ─────────────
 def fixture(lab_tmp, cands):
-    """사본에 「채팅으로 받음」 응답 기록을 만들어 후보 파일마다 model_run을 붙인다 — 검사기 시험용(수업 모델 호출 아님, 기록도 그렇게 남는다)."""
+    """사본에 「채팅으로 받음」 응답 기록을 만들어 후보 파일마다 model_run을 붙인다 — 검사기 시험용(수업 모델 호출 아님, 기록도 그렇게 남는다).
+    붙여 넣는 답 글은 그 후보들을 담은 JSON이라, 후보 인용이 짝지은 답 글에 있는지 보는 검사(toy_criteria.quote_in_replies와 같은 비교)도 통과한다."""
     client = module(lab_tmp/'llm_client.py', 'llm_client_fixture')
     out = {}
     for fname, data in cands.items():
@@ -94,7 +104,8 @@ def fixture(lab_tmp, cands):
         if not (lab_tmp/'결과/응답_기록'/f'{digest}.json').is_file():
             client.write_request(digest, msgs)
             stdin = sys.stdin
-            sys.stdin = io.StringIO('검사기 시험용 — 두 번째 구현의 후보')
+            body = [{k: c[k] for k in ('section', 'procedure', 'kind', 'text', 'quote') if k in c} for c in data['candidates']]
+            sys.stdin = io.StringIO(json.dumps({'candidates': body}, ensure_ascii=False))   # 후보를 만든 답 글 — 인용이 답 글에 있다
             try:
                 with contextlib.redirect_stdout(io.StringIO()):
                     client.paste(digest, '채팅(모델 이름 모름)')
@@ -116,36 +127,35 @@ def record_md(course, p5, p6, own, reviews, scores, changes, selected):
         rows_rev.append(f'| {rv["doc_id"]} {rv["rev"]} | {rv["doc_status"]} | {use} | 자료/DC-01_문서관리기준.md 17~23줄(상태의 뜻) |')
     p5_text = {'가': 'SR-04 제4조 ①②를 R4 전체(네 후보)의 근거로', '나': 'SR-04 제4조 ①②는 운전 중 제어 후보의 근거로만 — 작업지시 후보의 R4는 근거 없음', '다': 'SR-04 제4조 해석을 안전관리 담당에게 받기 전까지 보류'}[p5]
     p6_text = {'가': '사내 기준이 정하지 않은 제조사 항목(코어 상태 확인 · 코어 교체 · 유온 차)은 보류', '나': '사내 기준이 정하지 않은 제조사 항목을 까닭을 적고 채택'}[p6]
-    ch = changes['changed']
+    changed = {'가': 'R4 일치 — 조건표 출처 칸 고침 요청', '나': 'R4 불일치 — 조건표 변경 요청(SOP-COOL-14 빼기)', '다': 'R4 보류 — 안전관리 담당 해석 요청'}[p5]
     lines = ['# 문서 지식 검토 기록', '', '> 강사 참조 — 두 번째 구현(규칙 기반)의 후보를 갈래 규칙으로 검토한 판이다.', '', '## 목표와 질문', '',
              '핀 세척(SOP-COOL-14) 작업지시 전에 작업 조건과 판정에 쓴 조건의 원문 근거를 확인하고, 같은 기능이 다른 문서에서 빠뜨리거나 지어내지 않는지 센다.', '',
              '## 이 답을 쓰는 사람과 쓰는 곳', '', '설비보전팀장(작업지시 승인)' + (' · 보전 야간조(작업 준비)' if practical else '') + '.', '']
     if practical:
-        lines += ['## 고른 작업', '', f'- 고른 작업: SOP-COOL-14 쿨러 핀 세척', f'- 근거(파일 · 줄): {selected["basis"] if selected else "자료/HM-8_매뉴얼.md 73~79줄"}', '']
+        lines += ['## 이 사건의 작업', '', f'- 작업: SOP-COOL-14 쿨러 핀 세척', f'- 근거(파일 · 줄): {selected["basis"] if selected else "자료/HM-8_매뉴얼.md 73~79줄"}', '']
     lines += ['## 판 기준 — 어느 문서 · 판을 무엇에 쓰는가', '', '| 문서 · 판 | 상태 | 이번 검토에서 쓰는 곳 | 근거(파일 · 줄) |', '|---|---|---|---|', *rows_rev, '',
               '## 정한 것', '', '| 지점(종류) | 고른 것 | 근거(파일 · 줄) | 이 선택으로 바뀌는 답 |', '|---|---|---|---|',
-              f'| 조건의 근거 | {p5_text} | 자료/SR-04_설비안전규정_발췌.txt 10 · 11줄 | 판정이 달라지는 지난 경보 {ch}건 |',
+              f'| 조건의 근거 | {p5_text} | 자료/SR-04_설비안전규정_발췌.txt 10 · 11줄 | {changed} |',
               f'| 사내 문서와 제조사 지침 | {p6_text} | 자료/OEM-HPP45A_정비지침_영한.md 107 · 114 · 116줄, 7줄(머리말) | 핀 세척의 준비 · 완료 항목 수 |', '',
               '## 기대 항목 — 실행 전에 원문에서', '', '- 기대 칸을 쓴 시각: 2026-10-28 08:30', '',
               '| 문서 · 판 · 절 · 줄 | 종류 | 원문(그대로) | 실제 후보 | 차이 종류 · 고친 점 |', '|---|---|---|---|---|']
     for name, sc in sorted(scores.items()):
         lines.append(f'| {name} | 기대 {sc["expected"]}개 | 문서별 기대 항목(강사 참조 기대 항목) | 맞은 {sc["matched"]}개 | 누락 {len(sc["missing"])}개 — 검토에서 원문 문장으로 더함 |')
-    lines += ['', '## 조건 근거 대조', '', '| 조건(rule_id) | 근거를 찾은 문서 · 판 · 절 · 줄 | match | 까닭 | 판정이 달라지는 지난 경보 수 | 요청할 것 |', '|---|---|---|---|---|---|']
+    lines += ['', '## 조건 근거 대조', '', '| 조건(rule_id) | 근거를 찾은 문서 · 판 · 절 · 줄 | match | 까닭 | 요청할 것 |', '|---|---|---|---|---|']
     for stem, rv in sorted(reviews.items()):
         for link in rv.get('rule_links', []):
             req = '조건표 변경 요청' if link['match'] == '불일치' else ('원본 확인 요청' if link['match'] == '원문 없음' else ('안전관리 담당 해석 요청' if link['match'] == '보류' else '출처 칸 고침'))
-            n = ch if link['rule_id'] in ('R4', 'rule:ts1-hard') else 0
-            lines.append(f'| {link["rule_id"]} | {rv["doc_id"]} {rv["rev"]} (후보 {", ".join(link["candidates"]) or "없음"}) | {link["match"]} | {link["note"][:60]} | {n} | {req} |')
+            lines.append(f'| {link["rule_id"]} | {rv["doc_id"]} {rv["rev"]} (후보 {", ".join(link["candidates"]) or "없음"}) | {link["match"]} | {link["note"][:60]} | {req} |')
     lines += ['', '## 다른 문서에 적용', '', '| 문서 · 판 | 후보 수 | 누락 | 근거 없는 생성 | 고친 점 | 고친 뒤 다시 센 수 |', '|---|---|---|---|---|---|']
     for name, sc in sorted(scores.items()):
         lines.append(f'| {name} | {sc["candidates"]} | {len(sc["missing"])} | {len(sc["value_differs_from_text"])} | 값이 글과 다른 후보는 수정 · 빠진 것은 더함 | 누락 0 |')
     lines += ['', '## 같은 요청을 한 번 더 보낸 결과', '', '| 조각 | 첫 응답 기록 | 다시 보낸 응답 기록 | 다른 점 |', '|---|---|---|---|',
-              '| 해당 없음 | 이 판은 모델 응답이 아니라 규칙 실행 | 강사 추출 두 번(instructor_extract.py)으로 잰다 | 미확인 |', '']
+              '| 해당 없음 | 이 판은 모델 응답이 아니라 규칙 실행 | 강사 추출 두 번(강사_추출/run1 · run2)의 차이는 사건_갈래표.md 「강사 추출 실행」 | 규칙 실행이라 해당 없음 |', '']
     if practical:
         lines += ['## 검사가 잡는지 확인', '', '| 일부러 바꾼 곳(사본에서) | check.py가 짚은 줄 | 되돌린 뒤 출력 |', '|---|---|---|',
                   '| 인용 한 글자 | 검사기_확인.json 「extract」 01 | 계약 검사 통과 |', '']
     lines += ['## 남은 질문', '', '- 트립 뒤 복귀(R5 출처 HM-9.4) — 9장 스캔본에 9-7쪽이 없어 원본 확인 요청.', '', '## 저장 기록', '',
-              '- 기준일: 2026-10-28', '- 저장 시점: 2026-10-28 11:00', '- 확인하지 못한 점: 수업 모델 응답(강사 추출 실행)으로 같은 결정을 다시 거는 일']
+              '- 기준일: 2026-10-28', '- 저장 시점: 2026-10-28 11:00', '- 확인하지 못한 점: 학생 실행(장난감 시험 · 리허설)의 후보에 같은 결정을 건 결과 — 수업 모델 답의 후보에 건 결과는 사건_갈래표.md 「강사 추출 실행」']
     return '\n'.join(lines) + '\n'
 
 
@@ -172,6 +182,96 @@ def student_check(course, lab, cands, judged, p5, p6, own, record):
         rc1, o1 = run_py(t, 'check.py', *files)
         rc2, o2 = run_py(t, 'check.py')
     return {'contract_rc': rc1, 'stage_rc': rc2, 'stage_tail': o2.strip().splitlines()[-3:], 'contract_errors': [l for l in o1.splitlines() if l.startswith('  - ')][:10]}
+
+
+def student_check_model(course, lab, run, out, record):
+    """수업 모델 실행의 후보로 만든 갈래 — 사본에 그 실행의 응답 기록 · 폴더 표지를 그대로 두고 학생 검사기를 돌린다(fixture 아님)."""
+    with tempfile.TemporaryDirectory() as tmp:
+        t = copy_lab(lab, tmp)
+        for p in sorted((run/'결과/응답_기록').glob('*.json')) + [run/'결과/폴더_표지.txt']:
+            (t/p.relative_to(run)).parent.mkdir(parents=True, exist_ok=True)
+            (t/p.relative_to(run)).write_bytes(p.read_bytes())
+        for rel, data in out.items():
+            if rel.startswith(('후보/', '검토/')) or rel == '선택작업_조건.json':
+                (t/'결과'/rel).parent.mkdir(parents=True, exist_ok=True)
+                (t/'결과'/rel).write_bytes(data)
+        (t/'결과/prompt.md').write_text(PROMPT, encoding='utf-8')
+        (t/'결과/검토_기록.md').write_text(record, encoding='utf-8')
+        files = sorted(str(p.relative_to(t)) for p in (t/'결과/후보').glob('*.json')) + sorted(str(p.relative_to(t)) for p in (t/'결과/검토').glob('*.json'))
+        rc1, o1 = run_py(t, 'check.py', *files)
+        rc2, o2 = run_py(t, 'check.py')
+    return {'contract_rc': rc1, 'stage_rc': rc2, 'stage_tail': o2.strip().splitlines()[-3:], 'contract_errors': [l for l in o1.splitlines() if l.startswith('  - ')][:10]}
+
+
+def model_runs(model_dirs, oracle):
+    """강사 추출 실행마다 — 점수, 갈래(판정 랩 입력의 6갈래)별 결정 수 · rule_links · 판정 변화 · 선택 작업 조건 수 · 학생 검사기, 두 번째 구현 갈래와의 대조. 두 실행 사이의 차이."""
+    out, runs = {}, []
+    for d in model_dirs:
+        d = Path(d).resolve()
+        run = d.parents[1]
+        name = IE_label(run)
+        cands = {p.name: json.loads(p.read_text(encoding='utf-8')) for p in sorted(d.glob('*.json'))}
+        recs = [json.loads(p.read_text(encoding='utf-8')) for p in sorted((run/'결과/응답_기록').glob('*.json'))]
+        sent = [r for r in recs if r.get('method') == '모델 서버']
+        tokens = {k: sum((r.get('usage') or {}).get(k) or 0 for r in sent) for k in ('prompt_tokens', 'completion_tokens', 'total_tokens')}
+        when = max(c['generated_at'] for c in cands.values())
+        entry = {'records': len(recs), 'sent': len(sent), 'unusable': sum(1 for r in recs if r.get('usable') is False), 'models': sorted({r['model'] for r in sent}),
+                 'response_models': sorted({str(r.get('response_model')) for r in sent}), 'tokens': tokens,
+                 'finish_length': sum(1 for r in sent if r.get('finish_reason') == 'length'),
+                 'candidates': {k: len(v['candidates']) for k, v in cands.items()}, 'unlocated': {k: len(v['unlocated']) for k, v in cands.items()},
+                 'warnings': {k: len(v['warnings']) for k, v in cands.items()}, 'branches': {}}
+        lab = BD.LABS['integrated-04-extract']
+        sc = BR.score({c['source_file']: c for c in cands.values()}, BR.expected(lab))
+        entry['score'] = {n: {k: (len(v) if isinstance(v, list) else v) for k, v in x.items()} for n, x in sc.items()}
+        for course, (ek, _) in COURSES.items():
+            lab = BD.LABS[ek]
+            judged = json.loads((lab/'입력'/BD.JUDGED[ek]).read_text(encoding='utf-8'))
+            sizes = {}
+            for p5 in BR.P5:
+                for p6 in BR.P6:
+                    bname = f'추출_{course}_{p5}-{p6}'
+                    built, reviews = BR.build(lab, cands, judged, p5, p6, course, reviewed_at=when)
+                    selected = json.loads(built['선택작업_조건.json']) if '선택작업_조건.json' in built else None
+                    record = record_md(course, p5, p6, None, reviews, sc, json.loads(built['판정_변화.json']), selected)
+                    chk = student_check_model(course, lab, run, built, record)
+                    dec = {}
+                    for rv in reviews.values():
+                        for c in rv['candidates']:
+                            dec[c['decision']] = dec.get(c['decision'], 0) + 1
+                    links = {l['rule_id']: l['match'] for rv in reviews.values() for l in rv.get('rule_links', [])}
+                    changes = json.loads(built['판정_변화.json'])
+                    sizes[bname] = {k: len(v) for k, v in selected.items() if isinstance(v, list)} if selected else None
+                    same = oracle[bname]
+                    entry['branches'][bname] = {'decisions': dec, 'rule_links': links, 'judge_changes': changes['changed'], 'selected': sizes[bname],
+                                                'reviewer_added': sum(1 for rv in reviews.values() for c in rv['candidates'] if c['origin'] == 'reviewer'),
+                                                'checker': {'contract': '통과' if chk['contract_rc'] == 0 else '실패', 'stage': '남은 것 0' if chk['stage_rc'] == 0 else '남은 것 있음'},
+                                                'same_as_rules': {'rule_links': links == same['rule_links'], 'judge_changes': changes == same['judge_changes']}}
+                    if chk['contract_rc'] or chk['stage_rc']:
+                        fail(f'강사 추출 {name} {bname}: 학생 검사기 — 계약 rc {chk["contract_rc"]} · 단계 rc {chk["stage_rc"]} {chk["contract_errors"]} {chk["stage_tail"]}')
+                    if links != same['rule_links'] or changes != same['judge_changes']:
+                        fail(f'강사 추출 {name} {bname}: 갈래 판정이 두 번째 구현 후보의 갈래와 다름 — rule_links {links} / {same["rule_links"]} · 판정 변화 {changes["changed"]} / {same["judge_changes"]["changed"]}')
+            if course == '실전반' and len({json.dumps(v, sort_keys=True) for v in sizes.values()}) < 3:
+                fail(f'강사 추출 {name} {course}: 갈래마다 선택 작업 조건이 충분히 갈리지 않음 {sizes}')
+        out[name] = entry
+        runs.append((name, run, cands))
+    diff = {}
+    if len(runs) >= 2:
+        (n1, r1, c1), (n2, r2, c2) = runs[:2]
+        per_doc = {}
+        for f in sorted(set(c1) | set(c2)):
+            q1 = {X.squash(c['quote']) for c in c1.get(f, {}).get('candidates', [])}
+            q2 = {X.squash(c['quote']) for c in c2.get(f, {}).get('candidates', [])}
+            per_doc[f] = {'n1': len(c1.get(f, {}).get('candidates', [])), 'n2': len(c2.get(f, {}).get('candidates', [])), 'both': len(q1 & q2), 'only1': len(q1 - q2), 'only2': len(q2 - q1)}
+        chunks = IE.compare_runs(BD.LABS['integrated-04-extract'], r1, r2)
+        if chunks['all']['chunks'] != chunks['chunks_first'] or not chunks['task']:
+            fail(f'두 강사 추출 실행 {n1} · {n2}: 짝지은 조각 {chunks["all"]["chunks"]} · 첫 실행 조각 {chunks["chunks_first"]}')
+        diff = {'runs': [n1, n2], 'per_doc': per_doc, 'chunks': chunks}
+    return out, diff
+
+
+def IE_label(path):
+    path = Path(path).resolve()
+    return path.relative_to(HERE).as_posix() if path.is_relative_to(HERE) else path.name
 
 
 def extraction(model_dirs):
@@ -217,11 +317,7 @@ def extraction(model_dirs):
         base = results['branches'][f'추출_{course}_나-가']['judge_changes']
         if [c['event'] for c in base['cases']] != ['ALT-hyd02-0171-051f']:
             fail(f'{course}: R4 하나로 SOP-COOL-14가 빠진 사례가 0171-051f 하나가 아님 — {base}')
-    for d in model_dirs:
-        cands = {p.name: json.loads(p.read_text(encoding='utf-8')) for p in sorted(Path(d).glob('*.json'))}
-        lab = BD.LABS['integrated-04-extract']
-        sc = BR.score({c['source_file']: c for c in cands.values()}, BR.expected(lab))
-        results['model_candidates'][str(d)] = {name: {k: (len(v) if isinstance(v, list) else v) for k, v in s.items()} for name, s in sc.items()}
+    results['model_candidates'], results['model_runs_diff'] = model_runs(model_dirs, results['branches'])
     return results
 
 
@@ -237,13 +333,14 @@ def instructor_path():
         body = {'candidates': [{k: c[k] for k in c if k in ('section', 'procedure', 'kind', 'text', 'quote', 'refs', 'order', 'value', 'value_max', 'unit', 'comparator', 'value_text')}
                                for c in orc['candidates']] + [{'section': '머리말', 'procedure': None, 'kind': 'precondition', 'text': '지어낸 문장', 'quote': '원문에 없는 문장입니다', 'refs': []}]}
         reply = {'file': '결과/응답_기록/시험.json', 'request_hash': '시험', 'model': '(모델 없음 — 경로 시험)', 'method': '경로 시험', 'response_text': json.dumps(body, ensure_ascii=False)}
-        c, u, w, r = IE.to_candidates(row, text, [reply])
+        c, u, w, r = S.to_candidates(row, text, [reply])
         out[row['파일']] = {'located': len(c), 'unlocated': len(u), 'oracle': len(orc['candidates'])}
         if len(c) != len(orc['candidates']) or len(u) != 1:
             fail(f'강사 추출 경로 {row["파일"]}: 찾은 인용 {len(c)} · 못 찾음 {len(u)} (기대 {len(orc["candidates"])} · 1)')
-    out['chunks'] = sum(len(IE.chunks(X.decode((lab/'자료'/r['파일']).read_bytes())[0])) for r in X.read_register(lab) if r['파일'] in BR.TARGETS)
-    if out['chunks'] > 60:
-        fail(f'강사 추출 조각 {out["chunks"]}개 — 폴더 상한 60번을 넘음')
+    out['chunks'] = sum(len(S.split_chunks(X.decode((lab/'자료'/r['파일']).read_bytes())[0])) for r in X.read_register(lab) if r['파일'] in BR.TARGETS)
+    out['folder_limit'] = LLM.MAX_SENT
+    if out['chunks'] * 2 + 1 > LLM.MAX_SENT:     # 연결 확인 한 번 + 조각 전부를 한 번 고쳐 다시 보내도 상한 안
+        fail(f'강사 추출 조각 {out["chunks"]}개 — 고쳐 한 번 더 보내면 {out["chunks"] * 2 + 1}번으로 llm_client 안내용 상한 {LLM.MAX_SENT}개를 넘음')
     return out
 
 
@@ -294,8 +391,9 @@ def graph_record(course, p7, counts, reviews, answers, qrows, invariance):
     if practical:
         L.append(f'| 다른 작업 카드 | query.cypher CARD($sop=SOP-COOL-11) | {answers.get("OTHER", "")} | 입력/조치검토결과.json review.top |')
     L += ['', '## 답할 수 있는 것과 없는 것', '', '| 질문 | ' + ('그래프로 답함 · 현재 값 필요 · 승인 필요 · 공급 정보 · 원문에 없음' if practical else '그래프로 답함 · 현재 값 필요 · 추가 자료 필요 · 원문에 없음') + ' | 근거(원천 이름 · 파일) |', '|---|---|---|']
-    L += (['| 준비 · 금지 · 순서 · 완료 · 승인 | 그래프로 답함 | 입력/검토결과 · sop.json |', '| 작업 직전 CE · TS1 · PLC 모드 | 현재 값 필요 | 시계열 |',
-           '| 부품 재고 | 현재 값 필요 | ERP 재고 내보내기 |', '| 작업지시 승인 | 승인 필요 | 설비보전팀장 |', '| 트립 뒤 복귀 조건 | 원문에 없음 | 9장 9-7쪽 없음 |'] if practical else
+    L += (['| 준비 · 금지 · 순서 · 완료 · 승인 역할 | 그래프로 답함 | 입력/검토결과 · sop.json |', '| 부품 공급 조건(공급사 · 부품) | 공급 정보 | 입력/모델/graph.json 공급 관계 |',
+           '| 작업 직전 CE · TS1 · PLC 모드 | 현재 값 필요 | 시계열 |', '| 그날의 부품 재고 | 현재 값 필요 | ERP(전사 자원 관리 시스템) |', '| 작업지시 승인 | 승인 필요 | 설비보전팀장 |',
+           '| 트립 뒤 복귀 조건 | 원문에 없음 | 9장 9-7쪽 없음 |'] if practical else
           ['| 질문 1 · 2 · 4 | 그래프로 답함 | 입력/검토결과 · sop.json · 조건표 |', '| 질문 3 | 현재 값 필요 | 시계열(CE · TS1)' + (' · MES 계획' if p7 == '가' else '') + ' |',
            '| 질문 5 | 원문에 없음 | 문서 목록 HPP-45B 행 · 9장 9-7쪽 없음 |'])
     L += ['', '## 남은 질문', '', '- 남은_질문.json 참고.', '', '## 저장 기록', '', '- 랩 DB 주소(인증값 제외): 127.0.0.1(이 폴더 전용)', '- 기준일: 2026-10-28', '- 저장 시점: 2026-10-28 15:00',
@@ -396,7 +494,8 @@ def graph_run(course, p7, trials=False):
             q2 = {}
             for r in res['Q2']:
                 q2.setdefault(r[0], set()).add(r[2])
-            if q2.get('R4') != {'불일치'} or q2.get('R5') != {None} or not all(q2.get(x) == {'일치'} for x in ('R1', 'R2', 'R3')):
+            r123 = {None} if practical else {'일치'}      # 실전반은 이 작업(SOP-COOL-14)에 걸린 R4 · R5만 대조한다(R1~R3 근거 대조 없음)
+            if q2.get('R4') != {'불일치'} or q2.get('R5') != {None} or not all(q2.get(x) == r123 for x in ('R1', 'R2', 'R3')):
                 fail(f'{course} 지점7 {p7}: 규칙 근거 대조가 기대와 다름 {q2}')
             sensors = sorted(r[1] for r in res['Q3'] if r[0] == 'sensor')
             plan = [r for r in res['Q3'] if r[0] == 'plan']
@@ -416,13 +515,12 @@ def graph_run(course, p7, trials=False):
                 sel = json.loads((t/'입력/검토결과/선택작업_조건.json').read_text(encoding='utf-8'))
                 questions += [q for q in sel['remaining_questions'] if q['kind'] == '보류']
                 row14 = LC.cypher([(G.QUERIES['CARD'], {'sop': 'SOP-COOL-14'})])[0]['data'][0]['row']
-                row11 = LC.cypher([(G.QUERIES['CARD'], {'sop': G.CARD_PARTS and 'SOP-COOL-11'})])[0]['data'][0]['row']
-                (t/'결과/작업확인카드_SOP-COOL-14.md').write_text(G.card(row14, t, 'SOP-COOL-14', '가', p7, questions[:2] + questions[2:5]), encoding='utf-8')
-                (t/'결과/작업확인카드_SOP-COOL-11.md').write_text(G.card(row11, t, 'SOP-COOL-11', '가', p7, questions[:1]), encoding='utf-8')
-                hist = G.history(t, 'SOP-COOL-14')
+                row11 = LC.cypher([(G.QUERIES['CARD'], {'sop': 'SOP-COOL-11'})])[0]['data'][0]['row']
+                (t/'결과/작업확인카드_SOP-COOL-14.md').write_text(G.card(row14, t, p7, questions[:2] + questions[2:5]), encoding='utf-8')
+                (t/'결과/작업확인카드_SOP-COOL-11.md').write_text(G.card(row11, t, p7, questions[:1]), encoding='utf-8')
                 ans['OTHER'] = 'SOP-COOL-11 카드 형식 통과'
                 for k, v in [('준비 조건', 'HM-8 1.1 HM-8.7 · 제조사 지침 7' + (' · PM-02 PM-2.4' if p7 == '가' else '')), ('금지 · 제한', 'HM-8 1.1 「고압수는 쓰지 않는다」 · 제조사 「Do not use a high-pressure washer」'),
-                             ('완료 기준', 'HM-8 1.1 CE 80 %'), ('지난 시행 기록', ' · '.join(r['작업지시'] for r in hist)), ('승인', '설비보전팀장(HM-8.7)')]:
+                             ('완료 기준', 'HM-8 1.1 CE 80 %'), ('작업 직전 확인할 현재 값', 'CE · TS1 · PLC 모드(시계열)' + (' · 생산 오더 없는 시간(MES)' if p7 == '가' else '')), ('승인', '설비보전팀장(HM-8.7)')]:
                     qrows.append((k, v))
                     ans[k] = '카드에 있음'
             else:
@@ -547,10 +645,9 @@ def graph_trials(t, LC, course):
         for no, name, fn, needle in [
                 ('24', '카드 제목 없음', lambda s: s.replace('## 완료 기준\n', '## 끝 기준\n'), '제목 「## 완료 기준」 없음'),
                 ('25', '카드 인용 변경', lambda s: s.replace('고압수는 쓰지 않는다', '고압수는 쓰지 말 것', 1), '그대로 없는 인용'),
-                ('26', '없는 작업지시', lambda s: s.replace('WO-2026-04173', 'WO-2026-09999', 1), '없는 작업지시'),
                 ('27', '인용 없는 항목', lambda s: s.replace('## 금지 · 제한\n\n', '## 금지 · 제한\n\n- 장갑을 낀다\n', 1), '「원문 인용」이 없음'),
                 ('28', '빈 절', lambda s: re.sub(r'## 승인\n\n[^\n]+\n', '## 승인\n\n', s), '아래가 비어 있음'),
-                ('42', '없는 품번', lambda s: s.replace('## 부품 준비\n\n', '## 부품 준비\n\n- P-CLR-CORE2 쿨러 코어 — 필요 1개\n', 1), '없는 품번')]:
+                ('42', '없는 품번', lambda s: s.replace('## 남은 질문\n\n', '## 남은 질문\n\n- P-CLR-CORE2 쿨러 코어를 미리 준비할지\n', 1), '없는 품번')]:
             a, u = edit('작업확인카드_SOP-COOL-14.md', fn)
             trial(no, name, a, u, needle)
         _ = card, base
@@ -658,7 +755,32 @@ def extraction_trials(course):
             r = json.loads(rec_bytes)
             r['folder_mark'] = 'ffffffffffffffff'
             (t/rec).write_text(json.dumps(r, ensure_ascii=False), encoding='utf-8')
-        trial('30', '다른 폴더 기록 · reused_from 없음', H11, other_folder, 'reused_from', undo=lambda: (t/rec).write_bytes(rec_bytes))
+        trial('30', '다른 폴더의 응답 기록으로 만든 후보(폴더 표지가 다름)', H11, other_folder, '다른 폴더의 응답 기록입니다', undo=lambda: (t/rec).write_bytes(rec_bytes))
+        trial('40', 'model_run에 reused_from을 적은 후보(다른 폴더 기록을 옮겨 씀)', H11,
+              cand_mut(H11, lambda d: d['model_run'][0].update(reused_from='ffffffffffffffff')), '다른 폴더의 응답 기록으로는 후보를 만들지 않습니다')
+        def reply_text(text):
+            def go():
+                r = json.loads(rec_bytes)
+                r['response_text'] = text
+                (t/rec).write_text(json.dumps(r, ensure_ascii=False), encoding='utf-8')
+            return go
+        trial('36', '관계없는 답 글과 짝지은 후보(규칙으로 만든 후보)', H11, reply_text('네, 연결되었습니다.'), '답 글에 없음', undo=lambda: (t/rec).write_bytes(rec_bytes))
+        def unusable():
+            r = json.loads(rec_bytes)
+            r.update(usable=False, note='끝난 까닭 content_filter, 답 글이 비어 있음', response_text='')
+            (t/rec).write_text(json.dumps(r, ensure_ascii=False), encoding='utf-8')
+        trial('37', '쓸 내용이 없는 답의 기록과 짝지음', H11, unusable, 'usable false', undo=lambda: (t/rec).write_bytes(rec_bytes))
+        # 38 · 39: origin reviewer로 꾸민 후보 — 후보 파일(검토 전)에서는 origin을 보지 않고 답 글과 견주고, 검토 결과에서는 reviewer 후보마다 missing(added: true)이 있어야 한다
+        said = ' '.join(c['quote'] for c in jload(H11)['candidates'])
+        spare = next((n, l) for n, l in enumerate(lines11, 1) if l.strip() and not l.startswith('#') and l not in said and X.squash(l) not in X.squash(said)
+                     and '\n'.join(lines11).count(l) == 1 and '|' not in l)
+        def fake_reviewer(d):
+            n, l = spare
+            d['candidates'].append({'id': 'fake-r1', 'section': first(d)['section'], 'procedure': None, 'kind': 'precondition', 'text': l, 'quote': l, 'quote_match': 'exact',
+                                    'line_start': n, 'line_end': n, 'refs': [], 'status': 'pending', 'origin': 'reviewer'})
+        trial('38', '답 글에 없는 원문 줄을 origin reviewer로 꾸민 후보(검토 전 후보 파일)', H11, cand_mut(H11, fake_reviewer), '답 글에 없음')
+        trial('39', '검토 결과에서 모델 후보를 origin reviewer로 바꿈(missing 항목 없음)', R11,
+              cand_mut(R11, lambda d: first(d, pred=lambda c: c['origin'] == 'extractor').update(origin='reviewer')), 'missing 항목(added: true)이 없음')
         RSR = '결과/검토/SR-04_2024_검토.json'
         trial('31', '조건표에 없는 규칙 id', RSR, cand_mut(RSR, lambda d: d['rule_links'][0].update(rule_id='R9')), '규칙 id가 아님')
         trial('32', '집합 밖 match 값', RSR, cand_mut(RSR, lambda d: d['rule_links'][0].update(match='범위 다름')), 'match는')
@@ -695,6 +817,42 @@ def toy_selftest():
             out[key] = {'clean_pass': clean['pass'], 'broken': {k: broken[k]['pass'] for k in '①②③④'}}
             if not clean['pass'] or any(broken[k]['pass'] for k in '①②③④'):
                 fail(f'장난감 기준 자기 시험 {key}: 손대지 않은 사본 {clean["pass"]} · 어긴 사본 {out[key]["broken"]}')
+            if key == ek:
+                out[key]['reply_compare'] = toy_reply_cases(folder, archive, key)
+    return out
+
+
+def toy_reply_cases(folder, archive, key):
+    """② 「후보는 모델의 답에서 만든다」 — 같은 규칙 기반 후보 파일에 짝지은 응답 기록만 바꿔 판정을 본다.
+    가: 관계없는 답(연결 확인 답)을 모델 서버 기록으로 → 모델 답에 없는 후보로 걸림. 나: 그 후보 인용을 담은 답을 「채팅으로 받음」으로(학생 AI가 --paste로 써 넣음)
+    → 스스로 써 넣은 답으로 걸림. 다: 같은 답을 모델 서버 기록으로(키 있는 시험, 실제 호출 1번) → 통과. 라: 다를 --no-key로 → 키 없이 모델 서버 기록이 있어 걸림.
+    마: 다와 같은데 실제 호출 0번(학생 AI가 응답 기록 JSON을 직접 써 넣음) → 실제 호출보다 많은 기록으로 걸림. 바: 다와 같은데 실제 호출 수를 주지 않음 → 판정하지 않음(통과 아님)."""
+    row = next(r for r in X.read_register(folder) if r['파일'] == 'HM-8_매뉴얼.md')
+    cands = X.extract(folder, row)
+    body = json.dumps({'candidates': [{k: c[k] for k in ('section', 'procedure', 'kind', 'text', 'quote') if k in c} for c in cands['candidates']]}, ensure_ascii=False)
+    cases = {'가': ('모델 서버', '네, 연결되었습니다.', False, 1), '나': ('채팅으로 받음', body, False, 0), '다': ('모델 서버', body, False, 1), '라': ('모델 서버', body, True, None),
+             '마': ('모델 서버', body, False, 0), '바': ('모델 서버', body, False, None)}
+    want = {'가': ('fail', 'not_in_model_reply_count'), '나': ('fail', 'pasted_by_ai'), '다': ('pass', None), '라': ('fail', 'records_without_key'),
+            '마': ('fail', 'records_beyond_server_calls'), '바': ('fail', 'server_calls_unverified')}
+    out = {}
+    for name, (method, text, no_key, calls) in cases.items():
+        with tempfile.TemporaryDirectory() as tmp:
+            t = copy_lab(folder, tmp)
+            (t/'결과/응답_기록').mkdir(parents=True, exist_ok=True)
+            rec = {'request_hash': 'toy000000000', 'model': 'coding', 'method': method, 'received_at': '2026-11-04T10:00:00+09:00', 'folder_mark': 'toy', 'response_text': text}
+            (t/'결과/응답_기록/toy000000000.json').write_text(json.dumps(rec, ensure_ascii=False), encoding='utf-8')
+            d = copy.deepcopy(cands)
+            d['model_run'] = [{'record': '결과/응답_기록/toy000000000.json', 'request_hash': 'toy000000000', 'model': 'coding', 'method': method, 'reused_from': None}]
+            (t/'결과/후보').mkdir(parents=True, exist_ok=True)
+            (t/'결과/후보/HM-8_1.1.json').write_text(json.dumps(d, ensure_ascii=False), encoding='utf-8')
+            r = T.judge(archive, t, no_key, calls)['②']
+        got = 'pass' if r['pass'] else 'fail'
+        out[name] = {'method': method, 'no_key': no_key, 'server_calls': calls, 'result': got, 'not_in_model_reply': r['not_in_model_reply_count'], 'pasted_by_ai': len(r['pasted_by_ai']),
+                     'records_without_key': len(r['records_without_key']), 'records_beyond_server_calls': len(r['records_beyond_server_calls']),
+                     'server_calls_unverified': r['server_calls_unverified'], 'candidates': len(cands['candidates'])}
+        expect, field = want[name]
+        if got != expect or (field == 'not_in_model_reply_count' and r[field] != len(cands['candidates'])) or (field and field != 'not_in_model_reply_count' and not r[field]):
+            fail(f'장난감 기준 ② 답 글 비교 {key} {name}: 기대 {expect}({field}) — 실제 {out[name]}')
     return out
 
 
@@ -707,8 +865,28 @@ def table_md(ext, graphs):
         case = '; '.join(f'{c["event"][-9:]} {c["sop"]} {c["after"]}' for c in b['judge_changes']['cases']) or '해당 없음'
         L.append(f'| {name} | {b["decisions"]} | {r4} | {case} | {b["selected"] or "—"} | {b["checker"]["contract"]} · {b["checker"]["stage"]} |')
     L += ['', '손익으로 지는 대안은 구성안 4절 그대로다 — 가: 실측 · 운전 중 원문을 예측 · 작업지시 규칙의 근거로 굳힘(감사 때 범위 문제) / 나: 예측 65.3 ℃ 작업지시 단독 후보가 비교에 들어옴 / 다: 회신까지 출처 미확인.',
-          '지점6 가: 공기 세척으로 회복하지 않으면 미달로 끝나고 코어 상태를 보지 않음 / 나: 사내 승인 없는 기준으로 정지 시간 · 코어 비용이 늘고 완료 판단이 두 갈래.', '',
-          '## 지점7 다른 문서의 조건(그래프 랩)', '', '| 반 · 갈래 | 적재 수(앞 단계 → 첫 → 다시' + ' → 추가' + ') | 핀 세척 준비에 PM-2.4 | 질문 3 현재 값 | 내보내기 | 검사기 · 컨테이너 |', '|---|---|---|---|---|---|']
+          '지점6 가: 공기 세척으로 회복하지 않으면 미달로 끝나고 코어 상태를 보지 않음 / 나: 사내 승인 없는 기준으로 정지 시간 · 코어 비용이 늘고 완료 판단이 두 갈래.', '']
+    if ext.get('model_candidates'):
+        L += ['## 강사 추출 실행(수업 모델) — 같은 요청을 두 폴더에서', '', '같은 갈래 검토를 수업 모델 답의 후보에 걸었다. 갈래 판정 = rule_links · 판정이 달라지는 지난 경보가 위 표(문장 규칙 후보)와 같은가.', '',
+              '| 실행 | 모델 · 보낸 요청 | 토큰(입력 / 출력) | 후보 · 찾지 못한 인용 | 기대 항목 맞음 / 기대 | 통합 나-가 결정 수 · 검토자가 더한 후보 | 갈래 판정 같음 | 검사기(12갈래) |', '|---|---|---|---|---|---|---|---|']
+        for name, m in ext['model_candidates'].items():
+            matched = sum(v['matched'] for v in m['score'].values())
+            expect = sum(v['expected'] for v in m['score'].values())
+            base = m['branches']['추출_통합반_나-가']
+            same = sum(1 for b in m['branches'].values() if all(b['same_as_rules'].values()))
+            ok = sum(1 for b in m['branches'].values() if b['checker']['contract'] == '통과' and b['checker']['stage'] == '남은 것 0')
+            L.append(f'| {name} | {", ".join(m["models"])} · {m["sent"]}번 | {m["tokens"]["prompt_tokens"]} / {m["tokens"]["completion_tokens"]} | '
+                     f'{sum(m["candidates"].values())} · {sum(m["unlocated"].values())} | {matched} / {expect} | {base["decisions"]} · {base["reviewer_added"]} | '
+                     f'{same}/{len(m["branches"])} | {ok}/{len(m["branches"])} |')
+        d = ext.get('model_runs_diff')
+        if d:
+            a = d['chunks']['all']
+            L += ['', f'두 실행의 차이(요청 해시가 같은 조각 {a["chunks"]}개): 답 글이 글자까지 같은 조각 {a["same_text"]}개 · 후보 {a["n1"]} / {a["n2"]}개 · '
+                  f'두 답에 함께 있는 인용 {a["both"]}개 · 첫 실행에만 {a["only1"]}개 · 둘째 실행에만 {a["only2"]}개.', '',
+                  '| 후보 파일 | 첫 실행 후보 | 둘째 실행 후보 | 함께 있는 인용 | 첫 실행에만 | 둘째 실행에만 |', '|---|---|---|---|---|---|']
+            L += [f'| {f} | {v["n1"]} | {v["n2"]} | {v["both"]} | {v["only1"]} | {v["only2"]} |' for f, v in d['per_doc'].items()]
+        L.append('')
+    L += ['## 지점7 다른 문서의 조건(그래프 랩)', '', '| 반 · 갈래 | 적재 수(앞 단계 → 첫 → 다시' + ' → 추가' + ') | 핀 세척 준비에 PM-2.4 | 질문 3 현재 값 | 내보내기 | 검사기 · 컨테이너 |', '|---|---|---|---|---|---|']
     for name, g in graphs.items():
         cs = ' → '.join(f'{v[0]}/{v[1]}' for v in g.get('counts', {}).values())
         L.append(f'| {name} | {cs} | {"있음" if g.get("pm24_in_preparation") else "없음"} | {g.get("q3")} | 노드 {g.get("export", {}).get("nodes")} · 관계 {g.get("export", {}).get("rels")} | '
@@ -719,24 +897,27 @@ def table_md(ext, graphs):
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument('--model-candidates', action='append', default=[])
+    ap.add_argument('--model-candidates', action='append', default=[], help='강사 추출 실행의 결과/후보 폴더(여러 번) — 주지 않으면 강사_추출/run*/결과/후보')
     ap.add_argument('--no-neo4j', action='store_true')
     a = ap.parse_args(argv)
     OUTDIR.mkdir(exist_ok=True)
     results = {'chain': chain()}
     print('1 사슬:', results['chain'])
-    ext = extraction(a.model_candidates)
+    ext = extraction(a.model_candidates or sorted(str(p) for p in IE.KEPT.glob('run*/결과/후보') if p.is_dir()))
     results['extraction'] = ext
     print('2 · 3 추출 갈래', len(ext['branches']), '개')
     results['instructor_path'] = instructor_path()
-    # 그래프 입력 = 이 실행의 강사 판 갈래(나-가) 검토 결과
+    # 그래프 입력 = 강사 추출 실행 run1의 후보를 강사 판 갈래(나-가)로 검토한 결과 — 추출 학생용 완성본의 결과/검토와 같은 판(코딩랩.md K-48)
+    base, when = BR.base_candidates()
     for course, (ek, gk) in COURSES.items():
-        mine = {p.name: p.read_bytes() for p in (OUTDIR/f'추출_{course}_나-가/검토').glob('*.json')}
+        lab_e = BD.LABS[ek]
+        built, _ = BR.build(lab_e, base, json.loads((lab_e/'입력'/BD.JUDGED[ek]).read_text(encoding='utf-8')), *BR.BASE, course, reviewed_at=when)
+        mine = {rel.split('/', 1)[1]: data for rel, data in built.items() if rel.startswith('검토/')}
         if course == '실전반':
-            mine['선택작업_조건.json'] = (OUTDIR/f'추출_{course}_나-가/선택작업_조건.json').read_bytes()
+            mine['선택작업_조건.json'] = built['선택작업_조건.json']
         lab = {p.name: p.read_bytes() for p in (BD.GLABS[gk]/'입력/검토결과').iterdir()}
         if mine != lab:
-            fail(f'{course}: 그래프 랩 입력/검토결과가 강사 판 갈래(나-가)와 다름')
+            fail(f'{course}: 그래프 랩 입력/검토결과가 강사 추출 실행 run1의 강사 판 갈래(나-가) 검토와 다름')
     trials = {'extract': {c: extraction_trials(c) for c in COURSES}}
     graphs = {}
     if not a.no_neo4j:

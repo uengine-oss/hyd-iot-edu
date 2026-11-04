@@ -1,0 +1,77 @@
+{
+  "request_hash": "81a7807682a6",
+  "model": "coding",
+  "response_model": "coding",
+  "system_fingerprint": null,
+  "finish_reason": "stop",
+  "method": "모델 서버",
+  "attempt": 1,
+  "received_at": "2026-11-04T06:41:53+00:00",
+  "folder_mark": "0296bcba6c5b4c32",
+  "request": {
+    "model": "coding",
+    "messages": [
+      {
+        "role": "user",
+        "content": "연결 확인입니다. 한 문장으로 답해 주세요."
+      }
+    ],
+    "max_completion_tokens": 4000
+  },
+  "response_text": "연결이 정상적으로 확인되었습니다.",
+  "usable": true,
+  "response_raw": {
+    "id": "chatcmpl-EgOyuxMMCV7DbTx0Cp01IGhSM4DoT",
+    "created": 1793774512,
+    "model": "coding",
+    "object": "chat.completion",
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "message": {
+          "content": "연결이 정상적으로 확인되었습니다.",
+          "role": "assistant",
+          "provider_specific_fields": {
+            "refusal": null
+          },
+          "annotations": []
+        },
+        "provider_specific_fields": {}
+      }
+    ],
+    "usage": {
+      "completion_tokens": 11,
+      "prompt_tokens": 19,
+      "total_tokens": 30,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 0,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0,
+        "cache_write_tokens": 0
+      }
+    },
+    "service_tier": "default"
+  },
+  "usage": {
+    "completion_tokens": 11,
+    "prompt_tokens": 19,
+    "total_tokens": 30,
+    "completion_tokens_details": {
+      "accepted_prediction_tokens": 0,
+      "audio_tokens": 0,
+      "reasoning_tokens": 0,
+      "rejected_prediction_tokens": 0
+    },
+    "prompt_tokens_details": {
+      "audio_tokens": 0,
+      "cached_tokens": 0,
+      "cache_write_tokens": 0
+    }
+  }
+}

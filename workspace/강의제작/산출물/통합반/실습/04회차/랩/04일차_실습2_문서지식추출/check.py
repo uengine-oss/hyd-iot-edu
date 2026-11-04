@@ -1,4 +1,5 @@
 """결과/의 후보 파일 · 검토 결과 · 응답 기록 짝과 검토_기록.md 칸의 구조 검사. 생성 · 수정 · 네트워크 접속을 하지 않는다.
+후보의 인용이 짝지은 응답 기록의 답 글에 있는지(글자 · 숫자만 남겨 소문자로 비교)도 본다 — 답 글에 있다고 원문과 뜻이 맞는 것은 아니다.
 어떤 후보가 맞는지, 빠진 지식, 어느 원문을 근거로 둘지는 판정하지 않는다 — 의미와 질문별 답은 원자료와 따로 대조한다.
 사용:
   python check.py                                   단계별 상태(무엇이 있고 무엇이 비었는지)
@@ -11,6 +12,9 @@ HERE = Path(__file__).resolve().parent
 RESULT = HERE / '결과'
 JUDGED = 'result.json'
 PRACTICAL = False
+TASK = 'SOP-COOL-14' if PRACTICAL else None          # 실전반: 이 사건의 작업 — 조건 근거 대조는 이 작업에 걸린 조건만 본다
+SENT = '모델 서버'
+PASTED = '채팅으로 받음'
 KINDS = {'step', 'precondition', 'prohibition', 'completion', 'unit_value'}
 COMPARATORS = {None, '>=', '>', '<=', '<', '=', 'range', '±'}
 STATUS = {'채택': 'approved', '수정': 'approved', '제외': 'excluded', '보류': 'pending'}
@@ -24,7 +28,34 @@ END = '의미와 질문별 답은 원자료와 따로 대조합니다.'
 
 def squash(text):
     """글자 · 숫자만 남기고 소문자로 — 계약 「인용」의 normalized 비교."""
-    return ''.join(c for c in text.lower() if c.isalnum())
+    return ''.join(c for c in str(text).lower() if c.isalnum())
+
+
+def reply_strings(record):
+    """응답 기록의 답 글에서 비교할 글들 — 답 글 그대로와, 답 글 안 JSON(처음 { 부터 끝 } 까지)을 풀어 낸 글 값 전부."""
+    raw = str(record.get('response_text') or '')
+    out = [raw]
+    start, end = raw.find('{'), raw.rfind('}')
+    if 0 <= start < end:
+        try:
+            stack = [json.loads(raw[start:end + 1])]
+        except ValueError:
+            stack = []
+        while stack:
+            x = stack.pop()
+            if isinstance(x, str):
+                out.append(x)
+            elif isinstance(x, dict):
+                stack += list(x.values())
+            elif isinstance(x, list):
+                stack += x
+    return out
+
+
+def in_replies(quote, records):
+    """인용 전체(여러 줄이면 모든 줄)가 응답 기록들의 답 글 한 곳에 있는가 — 글자 · 숫자만 남겨 소문자로 비교한다."""
+    key = squash(quote)
+    return bool(key) and any(key in squash(s) for r in records for s in reply_strings(r))
 
 
 def sha(path):
@@ -102,22 +133,33 @@ def check(path):
     runs = data['model_run'] if isinstance(data['model_run'], list) else []
     if not runs:
         errors.append('model_run이 비어 있습니다 — 후보 파일은 응답 기록에서 만듭니다.')
+    paired = []
     for run in runs:
         rec_path = HERE / str(run.get('record', ''))
         if not run.get('record') or not rec_path.is_file():
             errors.append(f'model_run의 응답 기록이 없습니다: {run.get("record")!r}')
             continue
         rec = json.loads(rec_path.read_text(encoding='utf-8'))
+        if rec.get('usable') is False:
+            errors.append(f'{run.get("record")}: 쓸 내용이 없는 답의 기록입니다(usable false — {rec.get("note")}) — 이 기록으로 후보를 만들지 않습니다.')
+        else:
+            paired.append(rec)
         for key in ['request_hash', 'model', 'method']:
             if run.get(key) != rec.get(key):
                 errors.append(f'model_run {run.get("record")}: {key} {run.get(key)!r}가 응답 기록의 {rec.get(key)!r}와 다릅니다.')
         if not rec.get('model') or not rec.get('received_at'):
             errors.append(f'{run.get("record")}: 응답 기록에 model · 받은 시각이 없습니다.')
-        if rec.get('folder_mark') != here and run.get('reused_from') != rec.get('folder_mark'):
-            errors.append(f'{run.get("record")}: 다른 폴더의 응답 기록인데 reused_from에 그 폴더 표지가 없습니다.')
-        if rec.get('method') == '채팅으로 받음':
+        if here is not None and rec.get('folder_mark') != here:
+            errors.append(f'{run.get("record")}: 다른 폴더의 응답 기록입니다(기록의 폴더 표지 {rec.get("folder_mark")!r}, 이 폴더 {here!r}) — '
+                          '후보는 이 폴더에서 수업 모델을 불러 받은 답으로 만듭니다.')
+        if run.get('reused_from') is not None:
+            errors.append(f'model_run {run.get("record")}: reused_from {run.get("reused_from")!r} — 다른 폴더의 응답 기록으로는 후보를 만들지 않습니다.')
+        if rec.get('method') == PASTED:
             notes.append(f'{run.get("record")}: 채팅으로 받은 답 — 수업 모델을 부른 기록으로 세지 않습니다.')
+    if here is None and len({str(r.get('folder_mark')) for r in paired}) > 1:
+        errors.append('결과/폴더_표지.txt가 없는데 짝지은 응답 기록의 폴더 표지가 여럿입니다 — 여러 폴더의 응답 기록을 섞었습니다.')
     reviewed = 'review' in data
+    added = {(m.get('kind'), str(m.get('quote')), m.get('line_start')) for m in data.get('missing', []) if isinstance(m, dict) and m.get('added') is True} if reviewed else set()
     seen, dup, cands = set(), set(), {}
     for i, c in enumerate(data['candidates'] if isinstance(data['candidates'], list) else []):
         where = c.get('id', f'#{i}') if isinstance(c, dict) else f'#{i}'
@@ -166,6 +208,13 @@ def check(path):
                 errors.append(f'{where}: quote가 글자 · 숫자 비교로 원문 {near}곳에 맞음 — 찾지 못한 것으로 둔다')
         else:
             errors.append(f'{where}: quote_match는 exact 또는 normalized')
+        if reviewed and c.get('origin') == 'reviewer':
+            if (c['kind'], quote, ls) not in added:
+                errors.append(f'{where}: origin reviewer인데 같은 종류 · 인용 · 줄의 missing 항목(added: true)이 없음 — 검토자가 더한 후보는 missing에 함께 적습니다')
+        elif paired:
+            said = str((c.get('before') or {}).get('quote', quote)) if reviewed else quote    # 검토에서 인용을 고쳤으면(수정) 고치기 전 인용으로 본다
+            if said.strip() and not in_replies(said, paired):
+                errors.append(f'{where}: 인용이 짝지은 응답 기록의 답 글에 없음 — 후보는 모델의 답에서 만듭니다' + ('(검토에서 고친 인용은 before.quote로 봄)' if reviewed else ''))
         if bilingual:
             said = {m.group(1) for x in lines[ls - 1:le] for m in [LANG.match(x)] if m}
             if c.get('lang') not in ('ko', 'en'):
@@ -257,6 +306,23 @@ def check(path):
     return errors, notes
 
 
+def seen_list(path):
+    """통과 줄이 말할 「본 것」 — 그 파일에서 실제로 본 검사만."""
+    try:
+        data = json.loads(Path(path).read_text(encoding='utf-8-sig'))
+    except (OSError, ValueError):
+        return ['필드']
+    if not isinstance(data, dict) or 'candidates' not in data:
+        return ['필드']
+    out = ['필드', '인용이 선언한 줄에 있는지']
+    if data.get('model_run'):
+        out += ['응답 기록 짝(모델 · 받은 시각 · ' + ('이 폴더의 기록인지)' if mark() else '기록끼리 한 폴더의 것인지 — 이 폴더의 표지가 없어 이 폴더의 기록인지는 보지 못함)'),
+                '모델 답에서 온 후보의 인용이 짝지은 답 글에 있는지']
+    if 'review' in data:
+        out += ['결정 · 상태 · 이유', '검토자가 더한 후보마다 missing 항목이 있는지', '조건 근거 대조의 꼴']
+    return out
+
+
 def run(path):
     try:
         return check(path)
@@ -271,6 +337,8 @@ def check_selected(path):
     for key in ['task', 'basis', 'preparation', 'prohibitions', 'completion', 'remaining_questions']:
         if key not in data:
             errors.append(f'필드 없음: {key}')
+    if 'task' in data and data['task'] != TASK:
+        errors.append(f'task {data["task"]!r}가 이 사건의 작업 {TASK}와 다름')
     for part in ['preparation', 'prohibitions', 'completion']:
         for item in data.get(part, []):
             ref = str(item.get('candidate', ''))
@@ -332,10 +400,11 @@ def stages():
             recs.append(json.loads(p.read_text(encoding='utf-8')))
         except (OSError, ValueError):
             todo.append(f'응답_기록/{p.name}을 읽지 못했습니다.')
-    sent = sum(1 for r in recs if r.get('method') == '강의 중계' and r.get('folder_mark') == here)
-    chat = sum(1 for r in recs if r.get('method') == '채팅으로 받음')
+    sent = sum(1 for r in recs if r.get('method') == SENT and r.get('folder_mark') == here)
+    empty = sum(1 for r in recs if r.get('usable') is False)
+    chat = sum(1 for r in recs if r.get('method') == PASTED)
     other = sum(1 for r in recs if r.get('folder_mark') != here)
-    print(f'[1] 응답 기록 {len(recs)}개(이 폴더에서 보낸 요청 {sent} · 채팅으로 받음 {chat} · 다른 폴더 기록 {other})')
+    print(f'[1] 응답 기록 {len(recs)}개(이 폴더에서 모델 서버로 보낸 요청 {sent} · 쓸 내용이 없던 답 {empty} · 채팅으로 받음 {chat} · 다른 폴더 기록 {other})')
     prompt = RESULT / 'prompt.md'
     print(f'[2] 요청 글 결과/prompt.md: {"있음" if prompt.is_file() and prompt.read_text(encoding="utf-8-sig").strip() else "없음"}')
     if not (prompt.is_file() and prompt.read_text(encoding='utf-8-sig').strip()):
@@ -345,7 +414,7 @@ def stages():
     first = []
     for f in files:
         errors, notes = run(f)
-        print(f'    {f.name}: {"계약 통과" if not errors else f"계약 확인 필요 {len(errors)}건"} · ' + ' · '.join(notes))
+        print(f'    {f.name}: {"구조 검사 통과" if not errors else f"계약 확인 필요 {len(errors)}건"} · ' + ' · '.join(notes))
         if errors:
             todo.append(f'{f.name} 계약 오류(파일 이름을 인자로 주고 실행하면 목록이 나옵니다).')
         try:
@@ -359,7 +428,7 @@ def stages():
     linked = set()
     for f in reviews:
         errors, notes = run(f)
-        print(f'    {f.name}: {"계약 통과" if not errors else f"계약 확인 필요 {len(errors)}건"} · ' + ' · '.join(notes))
+        print(f'    {f.name}: {"구조 검사 통과" if not errors else f"계약 확인 필요 {len(errors)}건"} · ' + ' · '.join(notes))
         if errors:
             todo.append(f'{f.name} 계약 오류.')
         try:
@@ -374,11 +443,12 @@ def stages():
             print(f'    참고: {f.name}는 모든 후보가 「채택」이고 누락 기록이 0개입니다 — 원문과 줄마다 대조했는지 검토 기록에 남깁니다.')
     if not reviews:
         todo.append('검토 결과가 없습니다.')
-    table = {r.get('rule_id') for r in csv_rows(basis('조건표.csv'))} - {None, ''}
+    table = {r.get('rule_id') for r in csv_rows(basis('조건표.csv')) if TASK is None or r.get('action') == TASK} - {None, ''}
     rest = sorted(table - linked)
-    print(f'[5] 조건 근거 대조: 조건표의 조건 {len(table)}개 가운데 rule_links가 있는 것 {len(table & linked)}개' + (f' — 없는 것 {", ".join(rest)}' if rest else ''))
+    scope = f'이 작업({TASK})에 걸린 조건' if TASK else '조건표의 조건'
+    print(f'[5] 조건 근거 대조: {scope} {len(table)}개 가운데 rule_links가 있는 것 {len(table & linked)}개' + (f' — 없는 것 {", ".join(rest)}' if rest else ''))
     if rest:
-        todo.append('조건표의 조건마다 검토 결과의 rule_links가 필요합니다: ' + ', '.join(rest))
+        todo.append(f'{scope}마다 검토 결과의 rule_links가 필요합니다: ' + ', '.join(rest))
     if PRACTICAL:
         sel = RESULT / '선택작업_조건.json'
         if not sel.is_file():
@@ -389,7 +459,7 @@ def stages():
                 errs = check_selected(sel)
             except (OSError, ValueError, AttributeError) as e:
                 errs = [f'읽기 실패: {e}']
-            print(f'[6] 선택작업_조건.json: {"계약 통과" if not errs else f"계약 확인 필요 {len(errs)}건"}')
+            print(f'[6] 선택작업_조건.json: {"구조 검사 통과" if not errs else f"계약 확인 필요 {len(errs)}건"}')
             for e in errs:
                 print('    - ' + e)
             if errs:
@@ -441,6 +511,6 @@ if __name__ == '__main__':
             if len(errors) > 40:
                 print(f'  … 외 {len(errors) - 40}건')
         else:
-            print('  계약 검사 통과: 인용이 선언한 줄에 있고 응답 기록과 짝이 맞습니다.')
+            print('  구조 검사 통과 — 본 것: ' + ' · '.join(seen_list(arg)) + '.')
     print(END)
     sys.exit(1 if failed else 0)

@@ -19,15 +19,15 @@
       "decision": "채택"
     },
     {
-      "candidate": "결과/검토/OEM-HPP45A-MM_C_검토.json#OEM-HPP45A-MM-062",
-      "doc_id": "OEM-HPP45A-MM",
-      "rev": "C",
-      "section": "7",
-      "quote": "Stop the pump, lock out the motor supply, and wait until the fan has stopped.",
+      "candidate": "결과/검토/HM-8_1.1_검토.json#HM-8-R01",
+      "doc_id": "HM-8",
+      "rev": "1.1",
+      "section": "HM-8.7",
+      "quote": "원인에 맞는 근본 조치를 CMMS 작업지시로 발행한다.",
       "decision": "채택"
     },
     {
-      "candidate": "결과/검토/OEM-HPP45A-MM_C_검토.json#OEM-HPP45A-MM-063",
+      "candidate": "결과/검토/OEM-HPP45A-MM_C_검토.json#OEM-HPP45A-MM-062",
       "doc_id": "OEM-HPP45A-MM",
       "rev": "C",
       "section": "7",
@@ -39,7 +39,7 @@
       "doc_id": "OEM-HPP45A-MM",
       "rev": "C",
       "section": "7",
-      "quote": "If blocked areas or bent fins remain after cleaning, replace the core (part no.",
+      "quote": "If blocked areas or bent fins remain after cleaning, replace the core (part no. HI-CC-45A).",
       "decision": "채택"
     },
     {
@@ -67,14 +67,6 @@
       "section": "7",
       "quote": "Do not use a high-pressure washer.",
       "decision": "채택"
-    },
-    {
-      "candidate": "결과/검토/OEM-HPP45A-MM_C_검토.json#OEM-HPP45A-MM-073",
-      "doc_id": "OEM-HPP45A-MM",
-      "rev": "C",
-      "section": "7",
-      "quote": "The difference must not be less than the value in the commissioning record.",
-      "decision": "채택"
     }
   ],
   "completion": [
@@ -87,7 +79,7 @@
       "decision": "채택"
     },
     {
-      "candidate": "결과/검토/OEM-HPP45A-MM_C_검토.json#OEM-HPP45A-MM-R03",
+      "candidate": "결과/검토/OEM-HPP45A-MM_C_검토.json#OEM-HPP45A-MM-073",
       "doc_id": "OEM-HPP45A-MM",
       "rev": "C",
       "section": "7",

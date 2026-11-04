@@ -1,12 +1,38 @@
 {
  "추출_통합반": {
   "경로": "통합반/실습/04회차/완성본/04일차_실습2_문서지식추출_학생용완성본.zip",
-  "파일수": 47,
-  "sha256": "53854ed1b195a01b8a4a759e7c4564168ad651934946d7db2c530be1fe59e175",
+  "파일수": 81,
+  "sha256": "87a43c7856dfd297df07bab9801c3f011fe2f218f64ccc46a4f7c1c22a4c6515",
   "명령": "python check.py",
-  "후보 출처": "문장 규칙(임시판 — 강사 추출 실행 뒤 --model-run으로 다시)",
-  "검사기 끝줄": "의미와 질문별 답은 원자료와 따로 대조합니다.",
-  "종료 코드": 1
+  "후보 출처": "수업 모델 응답 기록(강사_추출/run1 — 보낸 요청 33번 · 모델 ['coding'])",
+  "같은 요청을 다시 보낸 실행": {
+   "실행": "강사_추출/run2",
+   "task": {
+    "chunks": 1,
+    "same_text": 0,
+    "n1": 15,
+    "n2": 13,
+    "both": 11,
+    "only1": 4,
+    "only2": 2,
+    "hash": "d53c9dc246b0",
+    "lines": "73~89줄"
+   },
+   "all": {
+    "chunks": 32,
+    "same_text": 0,
+    "n1": 374,
+    "n2": 377,
+    "both": 236,
+    "only1": 122,
+    "only2": 108
+   },
+   "chunks_first": 32
+  },
+  "검사기 끝줄": "구조상 빠진 단계는 없습니다. 의미와 질문별 답은 원자료와 따로 대조합니다.",
+  "종료 코드": 0,
+  "추출 코드 --list 끝줄": "요청 32개(서로 다른 것 32개) 가운데 이 폴더의 응답 기록이 없어 보낼 것 32개 · 이 폴더의 안내용 상한 100개까지 남은 수 67개",
+  "새 폴더에서 추출 코드 실행(.env에 모델 이름만)": "다시 쓴 응답 기록 0개 · rc 2 · 키가 없어 요청을 보내지 않았습니다. 보낼 글을 결과/요청/6fb6275c921b.md에 남겼습니다."
  },
  "그래프_통합반": {
   "명령": "python lab_db.py · python lab_cypher.py model · python lab_cypher.py run 결과/load.cypher · python lab_cypher.py run 결과/load_more.cypher · python lab_cypher.py count · python lab_cypher.py export 결과/지식_내보내기.json · python check.py",
@@ -15,23 +41,49 @@
    "python lab_db.py → Username: neo4j / Password: 비워 둠",
    "python lab_cypher.py model → 관계별: ACTS_ON 27, ADDRESSES 4, CHECKS 45, HAS_COMPONENT 68, HAS_STEP 25, MITIGATED_BY 3, MONITORED_BY 94, OBSERVES 94, OUTPUTS 16, REMEDIED_BY 3, USES_PART 49",
    "python lab_cypher.py run 결과/load.cypher → 변경: {'contains_updates': True, 'properties_set': 2, 'relationships_created': 1}",
-   "python lab_cypher.py run 결과/load_more.cypher → 변경: {'contains_updates': True, 'relationships_created': 1}",
-   "python lab_cypher.py count → 관계별: ACTS_ON 27, ADDRESSES 4, APPLIES_TO 69, CHECKS 45, CONDITION_OF 116, DESCRIBES 25, EVIDENCE_FOR 23, HAS_COMPONENT 68, HAS_REVISION 10, HAS_SECTION 41, HAS_STEP 25, MITIGATED_BY 3, MONITORED_BY 94, OBSERVES 94, OUTPUTS 16, REFERS_TO 25, REMEDIED_BY 3, REPLACES 1, STATED_IN 331, SUPPORTS 7, USES_PART 49",
-   "python lab_cypher.py export 결과/지식_내보내기.json → 결과/지식_내보내기.json: 노드 637개 · 관계 1076개 · 남은 질문 3개를 내보냈습니다.",
+   "python lab_cypher.py run 결과/load_more.cypher → 변경: {'contains_updates': True, 'nodes_created': 1, 'properties_set': 10, 'relationships_created': 1, 'labels_added': 1}",
+   "python lab_cypher.py count → 관계별: ACTS_ON 27, ADDRESSES 4, APPLIES_TO 50, CHECKS 45, CONDITION_OF 90, DESCRIBES 22, EVIDENCE_FOR 23, HAS_COMPONENT 68, HAS_REVISION 10, HAS_SECTION 29, HAS_STEP 25, MITIGATED_BY 3, MONITORED_BY 94, OBSERVES 94, OUTPUTS 16, REFERS_TO 25, REMEDIED_BY 3, REPLACES 1, STATED_IN 144, SUPPORTS 6, USES_PART 49",
+   "python lab_cypher.py export 결과/지식_내보내기.json → 결과/지식_내보내기.json: 노드 438개 · 관계 828개 · 남은 질문 3개를 내보냈습니다.",
    "python check.py → 구조상 빠진 단계는 없습니다. 의미와 질문별 답은 원자료와 따로 대조합니다."
   ],
   "경로": "통합반/실습/04회차/완성본/04일차_실습3_그래프반영과검증_학생용완성본.zip",
   "파일수": 44,
-  "sha256": "8c42959a27547c21ae3b778f0890345059cd21d5e560bc1d3344933b4b3cd536"
+  "sha256": "5c6f8606a4b370d037e6c3e22f77d77d74799f4a17715224537d189fde9f2b6a"
  },
  "추출_실전반": {
   "경로": "실전반/실습/03회차/완성본/03일차_실습4_지식추출_학생용완성본.zip",
-  "파일수": 48,
-  "sha256": "fdc1c91c2625f1acd4314556885ad9acc2adcd9770781a026d87de7d03e6fbd7",
+  "파일수": 82,
+  "sha256": "fb359f684f07bff3eb61c7fc7fa349b9c2ee063e877d4fc00f97870700427a6e",
   "명령": "python check.py",
-  "후보 출처": "문장 규칙(임시판 — 강사 추출 실행 뒤 --model-run으로 다시)",
-  "검사기 끝줄": "의미와 질문별 답은 원자료와 따로 대조합니다.",
-  "종료 코드": 1
+  "후보 출처": "수업 모델 응답 기록(강사_추출/run1 — 보낸 요청 33번 · 모델 ['coding'])",
+  "같은 요청을 다시 보낸 실행": {
+   "실행": "강사_추출/run2",
+   "task": {
+    "chunks": 1,
+    "same_text": 0,
+    "n1": 15,
+    "n2": 13,
+    "both": 11,
+    "only1": 4,
+    "only2": 2,
+    "hash": "d53c9dc246b0",
+    "lines": "73~89줄"
+   },
+   "all": {
+    "chunks": 32,
+    "same_text": 0,
+    "n1": 374,
+    "n2": 377,
+    "both": 236,
+    "only1": 122,
+    "only2": 108
+   },
+   "chunks_first": 32
+  },
+  "검사기 끝줄": "구조상 빠진 단계는 없습니다. 의미와 질문별 답은 원자료와 따로 대조합니다.",
+  "종료 코드": 0,
+  "추출 코드 --list 끝줄": "요청 32개(서로 다른 것 32개) 가운데 이 폴더의 응답 기록이 없어 보낼 것 32개 · 이 폴더의 안내용 상한 100개까지 남은 수 67개",
+  "새 폴더에서 추출 코드 실행(.env에 모델 이름만)": "다시 쓴 응답 기록 0개 · rc 2 · 키가 없어 요청을 보내지 않았습니다. 보낼 글을 결과/요청/6fb6275c921b.md에 남겼습니다."
  },
  "그래프_실전반": {
   "명령": "python lab_db.py · python lab_cypher.py model · python lab_cypher.py run 결과/load.cypher · python lab_cypher.py count · python lab_cypher.py export 결과/지식_내보내기.json · python check.py",
@@ -40,12 +92,12 @@
    "python lab_db.py → Username: neo4j / Password: 비워 둠",
    "python lab_cypher.py model → 관계별: ACTS_ON 27, ADDRESSES 4, CHECKS 45, HAS_COMPONENT 68, HAS_STEP 25, MITIGATED_BY 3, MONITORED_BY 94, OBSERVES 94, OUTPUTS 16, REMEDIED_BY 3, SUPPLIES 21, USES_PART 49",
    "python lab_cypher.py run 결과/load.cypher → 변경: {'contains_updates': True, 'properties_set': 2, 'relationships_created': 1}",
-   "python lab_cypher.py count → 관계별: ACTS_ON 27, ADDRESSES 4, APPLIES_TO 69, CHECKS 45, CONDITION_OF 116, DESCRIBES 25, EVIDENCE_FOR 23, HAS_COMPONENT 68, HAS_REVISION 10, HAS_SECTION 41, HAS_STEP 25, MITIGATED_BY 3, MONITORED_BY 94, OBSERVES 94, OUTPUTS 16, REFERS_TO 25, REMEDIED_BY 3, REPLACES 1, STATED_IN 331, SUPPLIES 21, SUPPORTS 7, USES_PART 49",
-   "python lab_cypher.py export 결과/지식_내보내기.json → 결과/지식_내보내기.json: 노드 643개 · 관계 1097개 · 남은 질문 10개를 내보냈습니다.",
+   "python lab_cypher.py count → 관계별: ACTS_ON 27, ADDRESSES 4, APPLIES_TO 50, CHECKS 45, CONDITION_OF 90, DESCRIBES 22, EVIDENCE_FOR 23, HAS_COMPONENT 68, HAS_REVISION 10, HAS_SECTION 29, HAS_STEP 25, MITIGATED_BY 3, MONITORED_BY 94, OBSERVES 94, OUTPUTS 16, REFERS_TO 25, REMEDIED_BY 3, REPLACES 1, STATED_IN 144, SUPPLIES 21, SUPPORTS 2, USES_PART 49",
+   "python lab_cypher.py export 결과/지식_내보내기.json → 결과/지식_내보내기.json: 노드 444개 · 관계 845개 · 남은 질문 5개를 내보냈습니다.",
    "python check.py → 구조상 빠진 단계는 없습니다. 의미와 질문별 답은 원자료와 따로 대조합니다."
   ],
   "경로": "실전반/실습/03회차/완성본/03일차_실습5_그래프반영_학생용완성본.zip",
-  "파일수": 49,
-  "sha256": "93a4953093b8bcb5275ef7339ad370f49f4860607b66b85add8f75cd66451541"
+  "파일수": 47,
+  "sha256": "c1e37dd7eda35d5b01ea9864c37dd78da494c78cf4f19e1003e01d528a17af49"
  }
 }

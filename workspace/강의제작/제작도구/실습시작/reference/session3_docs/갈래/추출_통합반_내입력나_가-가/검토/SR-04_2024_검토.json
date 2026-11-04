@@ -33,7 +33,7 @@
       "refs": [],
       "status": "approved",
       "decision": "채택",
-      "reason": "R4의 원문 후보 — 실측 유온의 인터록 정지",
+      "reason": "제4조 ① 실측 유온 인터록 정지(10줄) — R4의 원문 후보 — 실측 유온의 인터록 정지 · 원문 10줄과 절 · 종류가 기대 항목과 같다",
       "origin": "extractor"
     },
     {
@@ -50,11 +50,14 @@
       "status": "approved",
       "value": 65,
       "unit": "℃",
-      "comparator": null,
+      "comparator": ">",
       "value_text": "65 ℃",
-      "decision": "채택",
-      "reason": "R4의 원문 후보 — 실측 유온의 인터록 정지",
-      "origin": "extractor"
+      "decision": "수정",
+      "reason": "인터록 한계 65 ℃ 초과(10줄 「넘으면」) — R4의 원문 후보 — 실측 유온의 인터록 정지 · 원문 10줄과 절 · 종류 · 값 · 단위가 기대 항목과 같다 — 비교는 원문 「65 ℃」의 문맥대로 초과(>)라 None를 고침",
+      "origin": "extractor",
+      "before": {
+        "comparator": null
+      }
     },
     {
       "id": "SR-04-003",
@@ -69,7 +72,7 @@
       "refs": [],
       "status": "approved",
       "decision": "채택",
-      "reason": "R4의 원문 후보 — 실측 유온의 인터록 정지",
+      "reason": "제4조 ① 인터록 한계의 출처는 설비 매뉴얼(10줄) — R4의 원문 후보 — 실측 유온의 인터록 정지 · 원문 10줄과 절 · 종류가 기대 항목과 같다",
       "origin": "extractor"
     },
     {
@@ -85,7 +88,7 @@
       "refs": [],
       "status": "approved",
       "decision": "채택",
-      "reason": "R4의 원문 후보 — 운전 중 조치",
+      "reason": "제4조 ② 운전 중 조치 금지(11줄) — R4의 원문 후보 — 운전 중 조치 · 원문 11줄과 절 · 종류가 기대 항목과 같다",
       "origin": "extractor"
     },
     {
@@ -103,7 +106,7 @@
       ],
       "status": "approved",
       "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "reason": "제4조 ③ 복귀는 HM-9.4로(12줄) — 원문 12줄과 절 · 종류가 기대 항목과 같다 · 현행 판이라 작업 근거다(DC-01 DC-3)",
       "origin": "extractor"
     },
     {
@@ -119,7 +122,7 @@
       "refs": [],
       "status": "approved",
       "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "reason": "제5조 ① 회로를 여는 정비 전 잠금 · 잔압 0(15줄) — 원문 15줄과 절 · 종류가 기대 항목과 같다 · 현행 판이라 작업 근거다(DC-01 DC-3)",
       "origin": "extractor"
     },
     {
@@ -135,7 +138,7 @@
       "refs": [],
       "status": "approved",
       "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "reason": "제5조 ③ 잠금을 푸는 조건(17줄) — 원문 17줄과 절 · 종류가 기대 항목과 같다 · 현행 판이라 작업 근거다(DC-01 DC-3)",
       "origin": "extractor"
     },
     {
@@ -151,7 +154,7 @@
       "refs": [],
       "status": "approved",
       "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3)) — 원문에 있는데 후보에 없어 검토자가 원문 문장으로 더함",
+      "reason": "제5조 ② 잠금을 거는 사람과 푸는 사람(16줄) — 원문 16줄과 절 · 종류가 기대 항목과 같다 · 현행 판이라 작업 근거다(DC-01 DC-3) — 이 항목을 담은 후보가 없어(까닭은 missing의 note) 검토자가 원문 문장으로 더함",
       "origin": "reviewer"
     }
   ],
