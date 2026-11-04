@@ -65,12 +65,23 @@ def decisions_errors(value):
     if not isinstance(value, list) or not value or any(not (isinstance(d, dict) and d.get('item') and d.get('decision') and d.get('basis')) for d in value):
         return ['decisions(item · decision · basis — 판단 입력을 만든 방법 · 견주는 후보 등 정한 것)가 필요합니다.']
     return []
+def expect_time(path):
+    if not path.is_file(): return []
+    m = re.search(r'기대 칸을 쓴 시각[^:]*:[ \t]*(\S.*)?$', path.read_text(encoding='utf-8-sig'), re.M)
+    return [] if m and m.group(1) else ['기대결과.md 「기대 칸을 쓴 시각」이 비어 있습니다 — 실행 전에 기대를 먼저 적었는지 남깁니다.']
+def md_cells(line):
+    # 마크다운 표 한 줄의 칸 목록 — 칸 안의 글자 |는 \| 로 쓴다
+    s = line.strip()
+    s = s[1:] if s.startswith('|') else s
+    s = s[:-1] if s.endswith('|') and not s.endswith('\\|') else s
+    return [c.strip() for c in re.split(r'(?<!\\)\|', s)]
 def table_rows(path, column):
+    # 마크다운 표에서 column으로 시작하는 칸이 있는 표의 (데이터 행 수, 그 칸이 빈 행 수)
     if not path.is_file(): return None
     head, total, empty = None, 0, 0
     for line in path.read_text(encoding='utf-8-sig').splitlines():
         if not line.startswith('|'): head = None; continue
-        cells = [c.strip() for c in line.strip().strip('|').split('|')]
+        cells = md_cells(line)
         if head is None: head = cells; continue
         if set(''.join(cells)) <= set('-: '): continue
         idx = [k for k, h in enumerate(head) if h.startswith(column)]
@@ -84,10 +95,17 @@ def record_part(path, column, label):
     total, empty = got
     if total == 0 or empty == total: return (f'{path.name} {label}', '아직 비어 있음', [], f'「{column}」 칸을 채웁니다', False)
     return (f'{path.name} {label}', '작성 중' if empty else '작성됨', [], f'행 {total}개 중 빈 칸 {empty}개' if empty else f'행 {total}개', False)
-def expect_time(path):
-    if not path.is_file(): return []
-    m = re.search(r'기대 칸을 쓴 시각[^:]*:[ \t]*(\S.*)?$', path.read_text(encoding='utf-8-sig'), re.M)
-    return [] if m and m.group(1) else ['기대결과.md 「기대 칸을 쓴 시각」이 비어 있습니다 — 실행 전에 기대를 먼저 적었는지 남깁니다.']
+def shape_part(path):
+    # 표마다 머리 줄과 칸 수가 다른 줄 — 칸이 밀리면 뒤 칸의 값이 다른 칸에 들어가 대조가 어긋난다
+    name = f'{path.name} 표 칸 수'
+    if not path.is_file(): return (name, '없음', [], '', False)
+    errs, head = [], None
+    for no, line in enumerate(path.read_text(encoding='utf-8-sig').splitlines(), 1):
+        if not line.startswith('|'): head = None; continue
+        n = len(md_cells(line))
+        if head is None: head = n; continue
+        if n != head: errs.append(f'{path.name}:{no} 칸 {n}개 — 이 표의 머리 줄은 {head}칸입니다. 칸이 밀렸는지 보고, 칸 안의 글자 |는 \\| 로 씁니다.')
+    return (name, '확인 필요' if errs else '통과', errs, '', True)
 def report(parts):
     ok = True
     for name, state, errs, note, required in parts:
@@ -157,7 +175,8 @@ state, errs, note = check_review(root/'결과/조치검토결과.json', root/'�
 if state == '없음': print('아직 검사할 결과가 없습니다: 결과/조치검토결과.json')
 print('구조 검사 결과')
 ok = report([('조치검토결과.json · .md', state, errs, note, True), record_part(root/'결과/기대결과.md', '고른 것', '정한 것'),
-             record_part(root/'결과/기대결과.md', '실제 결과', '사례 대조'), record_part(root/'결과/기대결과.md', '프로그램', '손계산 대조')])
+             record_part(root/'결과/기대결과.md', '실제 결과', '사례 대조'), record_part(root/'결과/기대결과.md', '프로그램', '손계산 대조'),
+             shape_part(root/'결과/기대결과.md')])
 for line in expect_time(root/'결과/기대결과.md'): print('참고: ' + line)
 print('구조 검사 통과' if ok else '구조 확인 필요 — 위 줄마다 결과의 어느 사례 · 후보인지 찾아 고친 뒤 다시 실행합니다.')
 print('이 검사는 모양과 계약만 봅니다. 의미와 질문별 답(판정 · 이유 · 출처가 원문과 맞는지, 금액, 어느 후보가 1위인지)은 원자료와 따로 대조합니다.')

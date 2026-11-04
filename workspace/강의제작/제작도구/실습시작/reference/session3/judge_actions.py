@@ -7,13 +7,14 @@ targets · metrics/)다. 사용: python judge_actions.py <실습 폴더> <결과
 판단 입력 만들기(근거: 수집_설명.md · 작업기준.md 3 · 4절 · HI-01 SOP-HI-01 3단계):
 - 판단 시각 = 경보_목록 RAISE 행의 판정_요청_시각(UTC). 현장 기록(+09:00)과 시각을 맞춰 견주고, 그 시각 뒤 기록은 쓰지 않는다.
 - PLC 모드 · 상태: 판단 시각까지의 마지막 수신. 품질 bad면 값 없음(앞 수신으로 대신하지 않음), 하트비트 10초 + 유예 2초를 넘게 수신이 없으면 값 없음.
-- 팬 연속 시간: 마지막 카운터 기록이 종료면 0, 시작 · 주기면 기록값 + 기록 뒤 판단 시각까지 경과(분 ÷ 60 = h).
-  주기(10분)를 넘게 기록이 없으면(기록 끊김) 정한 것 「빈 값의 뜻」(--gap)대로 한다.
+- 팬 연속 시간: 마지막 카운터 기록이 종료면 0, 시작 · 주기면 기록값 + 기록 뒤 판단 시각까지 경과(분 ÷ 60 = h) — 카운터는 행 사이에도 센다(수집_설명.md).
+  주기(10분)를 넘게 기록이 없으면(끊긴 구간) 정한 것 「빈 값의 뜻」(--gap)대로 한다.
 - 예측: 행 없음 · 거부 · 기준 관측 뒤 120초 지남은 값 없음(이유가 다르다). MPa는 ×10 bar.
 - skill_kind · skill_code는 targets.csv의 kind · codes.
 정한 것(기본값은 결과 기록 파일 「정한 것」 표의 선택):
- --gap     빈 값의 뜻(판단 입력) — carry = 기록이 끊긴 구간 뒤에도 PLC 팬 설정이 100 %면 이어진 것으로 보고 마지막 기록에 경과를 더한다 /
-                                  unknown = 기록이 끊긴 구간이 있으면 연속을 확인할 수 없으므로 값 없음으로 둔다.
+ --gap     빈 값의 뜻(판단 입력, 끊긴 구간을 이을지) — carry = 판정 요청 때 PLC 팬 설정이 100 %면 끊긴 구간을 잇고 마지막 기록에 경과를 더한다 /
+                                  unknown = 끊긴 구간을 잇지 않고 값 없음으로 둔다.
+금액은 소수 둘째 자리로 사사오입한다(ROUND_HALF_UP — 입출력_계약 「결과」).
  --warned  쓰는 사람에 따라 갈리는 답(허용 후보 비교) — compare = 경고가 붙은 후보도 비교 합계로 견주어 순위에 둔다 /
                                   skip = 경고가 붙은 후보는 견주지 않고 경고 없는 후보끼리 순위를 낸다.
 결과 파일의 키는 영어 snake_case다. 값의 낱말(유지 · 제외 · 보류, 사유 문장)은 한국어.
@@ -21,6 +22,7 @@ targets · metrics/)다. 사용: python judge_actions.py <실습 폴더> <결과
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
 import argparse
 import csv
@@ -39,8 +41,8 @@ LOSSES = ['cost', 'production', 'quality', 'energy']
 LOSS_NAME = {'cost': '비용', 'production': '생산', 'quality': '품질', 'energy': '에너지'}
 BASIS = ('비교값은 지표_정의.md의 네 손실(비용 · 생산 · 품질 · 에너지)과 조건표 감점의 합계(만원, 작을수록 유리)로 후보를 견주는 계산이다. '
          '포털 성과 지표의 정책 점수(성과 득실 · 예측 여유 · 선례 · 납기 긴급도 · 품질 위험을 더한 점수)와 다른 값이며, 순위는 실행 승인이 아니다.')
-GAP_TEXT = {'carry': '기록이 끊긴 구간 뒤에도 PLC 팬 설정이 100 %면 이어진 것으로 보고 마지막 기록에 경과를 더한다',
-            'unknown': '기록이 끊긴 구간이 있으면 연속을 확인할 수 없으므로 값 없음으로 둔다'}
+GAP_TEXT = {'carry': '끊긴 구간을 잇는다 — 판정 요청 때 PLC 팬 설정이 100 %면 그 사이 100 % 운전이 이어졌다고 보고 마지막 기록에 경과를 더한다',
+            'unknown': '끊긴 구간을 잇지 않는다 — 그 사이 연속 운전을 확인할 수 없으므로 값 없음으로 둔다'}
 WARN_TEXT = {'compare': '경고가 붙은 후보도 비교 합계로 견주어 순위에 둔다', 'skip': '경고가 붙은 후보는 견주지 않고 경고 없는 후보끼리 순위를 낸다'}
 BASE_POLICY = ('carry', 'compare')          # (--gap, --warned)
 
@@ -270,7 +272,8 @@ def components(ts1, setting, values, works, order):
 
 
 def r2(v):
-    return round(v + 0.0, 2)
+    """금액을 소수 둘째 자리로 사사오입(ROUND_HALF_UP — 입출력_계약). 부동소수 원값의 이진 오차(11.25 + 1.575가 12.8249…로 저장됨)는 소수 아홉째 자리에서 먼저 걷어 낸다."""
+    return float(Decimal(f'{v:.9f}').quantize(Decimal('0.01'), ROUND_HALF_UP)) + 0.0
 
 
 def rank(cands):

@@ -51,13 +51,19 @@ def check_table(path, sop_ids):
     for key, g in groups.items():
         if sorted(g['index']) != list(range(1, len(g['index']) + 1)): errs.append(f'{path.name} 묶음 {key}: condition_index가 1부터 차례가 아닙니다: {g["index"]}')
     return ('확인 필요' if errs else '통과'), errs, len(groups), {k[0] for k in groups}
+def md_cells(line):
+    # 마크다운 표 한 줄의 칸 목록 — 칸 안의 글자 |는 \| 로 쓴다
+    s = line.strip()
+    s = s[1:] if s.startswith('|') else s
+    s = s[:-1] if s.endswith('|') and not s.endswith('\\|') else s
+    return [c.strip() for c in re.split(r'(?<!\\)\|', s)]
 def table_rows(path, column):
-    """마크다운 표에서 column으로 시작하는 칸이 있는 표의 (데이터 행 수, 그 칸이 빈 행 수)."""
+    # 마크다운 표에서 column으로 시작하는 칸이 있는 표의 (데이터 행 수, 그 칸이 빈 행 수)
     if not path.is_file(): return None
     head, total, empty = None, 0, 0
     for line in path.read_text(encoding='utf-8-sig').splitlines():
         if not line.startswith('|'): head = None; continue
-        cells = [c.strip() for c in line.strip().strip('|').split('|')]
+        cells = md_cells(line)
         if head is None: head = cells; continue
         if set(''.join(cells)) <= set('-: '): continue
         idx = [k for k, h in enumerate(head) if h.startswith(column)]
@@ -65,19 +71,31 @@ def table_rows(path, column):
         total += 1
         if idx[0] >= len(cells) or not cells[idx[0]]: empty += 1
     return total, empty
-def report(parts):
-    ok = True
-    for name, state, errs, note, required in parts:
-        print(f'- {name}: {state}' + (f' — {note}' if note else ''))
-        for e in errs: print('    ' + e)
-        if required and state != '통과': ok = False
-    return ok
 def record_part(path, column, label):
     got = table_rows(path, column)
     if got is None: return (f'{path.name} {label}', '없음', [], '', False)
     total, empty = got
     if total == 0 or empty == total: return (f'{path.name} {label}', '아직 비어 있음', [], f'「{column}」 칸을 채웁니다', False)
     return (f'{path.name} {label}', '작성 중' if empty else '작성됨', [], f'행 {total}개 중 빈 칸 {empty}개' if empty else f'행 {total}개', False)
+def shape_part(path):
+    # 표마다 머리 줄과 칸 수가 다른 줄 — 칸이 밀리면 뒤 칸의 값이 다른 칸에 들어가 대조가 어긋난다
+    name = f'{path.name} 표 칸 수'
+    if not path.is_file(): return (name, '없음', [], '', False)
+    errs, head = [], None
+    for no, line in enumerate(path.read_text(encoding='utf-8-sig').splitlines(), 1):
+        if not line.startswith('|'): head = None; continue
+        n = len(md_cells(line))
+        if head is None: head = n; continue
+        if n != head: errs.append(f'{path.name}:{no} 칸 {n}개 — 이 표의 머리 줄은 {head}칸입니다. 칸이 밀렸는지 보고, 칸 안의 글자 |는 \\| 로 씁니다.')
+    return (name, '확인 필요' if errs else '통과', errs, '', True)
+def report(parts):
+    ok = True
+    for name, state, errs, note, required in parts:
+        print(f'- {name}: {state}' + (f' — {note}' if note else ''))
+        for e in errs[:40]: print('    ' + e)
+        if len(errs) > 40: print(f'    … 외 {len(errs) - 40}건')
+        if required and state != '통과': ok = False
+    return ok
 def pick(name):
     # 검사의 기준 입력: 결과/내_입력/에 같은 이름 파일이 있으면 그것, 없으면 제공 입력/. 고른 파일을 찍는다(조용히 바꾸지 않는다).
     mine = root/'결과/내_입력'/name
@@ -104,7 +122,7 @@ def check_sop(path, rule_ids):
     try: sop = json.loads(path.read_text(encoding='utf-8-sig'))
     except ValueError as e: return '확인 필요', [f'JSON 읽기 실패: {e}'], ''
     if not isinstance(sop, dict) or not sop.get('sops'): return '빈 틀', [], ''
-    errs = []
+    errs, unconfirmed = [], []
     fms = [f.get('id') for f in sop.get('failure_modes') or [] if isinstance(f, dict)]
     causes = [c.get('id') for c in sop.get('causes') or [] if isinstance(c, dict)]
     for f in fms:
@@ -133,7 +151,8 @@ def check_sop(path, rule_ids):
         steps = [x.get('order') for x in items(s, 'steps') or [] if isinstance(x, dict)]
         if not steps or steps != list(range(1, len(steps) + 1)): errs.append(f'{sid}: 수행 단계(steps)의 순서가 1부터 차례가 아닙니다: {steps}')
         approval = s.get('approval')
-        if not isinstance(approval, dict) or not approval.get('role') or not approval.get('source'): errs.append(f'{sid}: 승인(approval — role · source)이 필요합니다.')
+        if not isinstance(approval, dict) or not approval.get('role') or not approval.get('source'): errs.append(f'{sid}: 승인(approval — role · source)이 필요합니다. 원문에서 승인을 찾지 못했으면 role을 「미확인」으로 시작하고 source에 찾아본 절을 적습니다.')
+        elif str(approval['role']).startswith('미확인'): unconfirmed.append(sid)
         ref = s.get('model_refs')
         if not isinstance(ref, dict): errs.append(f'{sid}: 모델 참조(model_refs)는 객체여야 합니다.'); continue
         used = 0
@@ -154,7 +173,7 @@ def check_sop(path, rule_ids):
             if r.get('from') not in ends[a]: errs.append(f'relations[{i}] {t}: 시작 {r.get("from")}이 sop.json {a}에 없습니다.')
             if r.get('to') not in ends[b]: errs.append(f'relations[{i}] {t}: 끝 {r.get("to")}이 sop.json {b}에 없습니다.')
             if not r.get('source'): errs.append(f'relations[{i}]: source가 필요합니다.')
-    return ('확인 필요' if errs else '통과'), errs, f'SOP {len(found)}개 · 관계 {len(rels) if isinstance(rels, list) else 0}개'
+    return ('확인 필요' if errs else '통과'), errs, f'SOP {len(found)}개 · 관계 {len(rels) if isinstance(rels, list) else 0}개' + (f' · 승인 미확인 {", ".join(unconfirmed)}' if unconfirmed else '')
 t_state, t_errs, n, rule_ids = check_table(root/'결과/조건표.csv', sop_ids)
 s_state, s_errs, s_note = check_sop(root/'결과/sop.json', rule_ids)
 missing = [p for p in ('sop.json', '조건표.csv') if not (root/'결과'/p).is_file()]
@@ -163,7 +182,7 @@ if len(missing) == 2:
 print('구조 검사 결과')
 ok = report([('sop.json', s_state, s_errs, s_note, True), ('조건표.csv', t_state, t_errs, f'규칙 묶음 {n}개' if n else '', True),
              record_part(root/'결과/요구사항.md', '고른 것', '정한 것'), record_part(root/'결과/요구사항.md', '처리', '판단 시스템 결정표 대조'),
-             record_part(root/'결과/요구사항.md', '맞은 규칙', '사건 · 확인 사례 대입')])
+             record_part(root/'결과/요구사항.md', '맞은 규칙', '사건 · 확인 사례 대입'), shape_part(root/'결과/요구사항.md')])
 print('구조 검사 통과' if ok else '구조 확인 필요 — 위 줄마다 결과 파일의 어느 항목인지 찾아 고친 뒤 다시 실행합니다.')
 print('이 검사는 모양만 봅니다. 의미와 질문별 답(조건 · 경계 · 출처가 원문과 맞는지, 사건의 판정)은 원자료와 따로 대조합니다.')
 sys.exit(0 if ok else 1)

@@ -3,7 +3,7 @@
 사용: python check.py
 """
 from pathlib import Path
-import csv, sys
+import csv, re, sys
 root = Path(__file__).resolve().parent
 HEADER = ['rule_id','action','condition_index','logic','input','operator','value','unit','boundary_included','result','penalty_manwon','reason','source_section']
 OPS = {'>=':'예','<=':'예','>':'아니오','<':'아니오','==':'해당없음','!=':'해당없음','has_other_than':'해당없음'}
@@ -50,13 +50,19 @@ def check_table(path, sop_ids):
     for key, g in groups.items():
         if sorted(g['index']) != list(range(1, len(g['index']) + 1)): errs.append(f'{path.name} 묶음 {key}: condition_index가 1부터 차례가 아닙니다: {g["index"]}')
     return ('확인 필요' if errs else '통과'), errs, len(groups), {k[0] for k in groups}
+def md_cells(line):
+    # 마크다운 표 한 줄의 칸 목록 — 칸 안의 글자 |는 \| 로 쓴다
+    s = line.strip()
+    s = s[1:] if s.startswith('|') else s
+    s = s[:-1] if s.endswith('|') and not s.endswith('\\|') else s
+    return [c.strip() for c in re.split(r'(?<!\\)\|', s)]
 def table_rows(path, column):
-    """마크다운 표에서 column으로 시작하는 칸이 있는 표의 (데이터 행 수, 그 칸이 빈 행 수)."""
+    # 마크다운 표에서 column으로 시작하는 칸이 있는 표의 (데이터 행 수, 그 칸이 빈 행 수)
     if not path.is_file(): return None
     head, total, empty = None, 0, 0
     for line in path.read_text(encoding='utf-8-sig').splitlines():
         if not line.startswith('|'): head = None; continue
-        cells = [c.strip() for c in line.strip().strip('|').split('|')]
+        cells = md_cells(line)
         if head is None: head = cells; continue
         if set(''.join(cells)) <= set('-: '): continue
         idx = [k for k, h in enumerate(head) if h.startswith(column)]
@@ -64,19 +70,31 @@ def table_rows(path, column):
         total += 1
         if idx[0] >= len(cells) or not cells[idx[0]]: empty += 1
     return total, empty
-def report(parts):
-    ok = True
-    for name, state, errs, note, required in parts:
-        print(f'- {name}: {state}' + (f' — {note}' if note else ''))
-        for e in errs: print('    ' + e)
-        if required and state != '통과': ok = False
-    return ok
 def record_part(path, column, label):
     got = table_rows(path, column)
     if got is None: return (f'{path.name} {label}', '없음', [], '', False)
     total, empty = got
     if total == 0 or empty == total: return (f'{path.name} {label}', '아직 비어 있음', [], f'「{column}」 칸을 채웁니다', False)
     return (f'{path.name} {label}', '작성 중' if empty else '작성됨', [], f'행 {total}개 중 빈 칸 {empty}개' if empty else f'행 {total}개', False)
+def shape_part(path):
+    # 표마다 머리 줄과 칸 수가 다른 줄 — 칸이 밀리면 뒤 칸의 값이 다른 칸에 들어가 대조가 어긋난다
+    name = f'{path.name} 표 칸 수'
+    if not path.is_file(): return (name, '없음', [], '', False)
+    errs, head = [], None
+    for no, line in enumerate(path.read_text(encoding='utf-8-sig').splitlines(), 1):
+        if not line.startswith('|'): head = None; continue
+        n = len(md_cells(line))
+        if head is None: head = n; continue
+        if n != head: errs.append(f'{path.name}:{no} 칸 {n}개 — 이 표의 머리 줄은 {head}칸입니다. 칸이 밀렸는지 보고, 칸 안의 글자 |는 \\| 로 씁니다.')
+    return (name, '확인 필요' if errs else '통과', errs, '', True)
+def report(parts):
+    ok = True
+    for name, state, errs, note, required in parts:
+        print(f'- {name}: {state}' + (f' — {note}' if note else ''))
+        for e in errs[:40]: print('    ' + e)
+        if len(errs) > 40: print(f'    … 외 {len(errs) - 40}건')
+        if required and state != '통과': ok = False
+    return ok
 
 sop_ids = [r['sop_id'] for r in read_csv(root/'자료/targets.csv')[1]]
 state, errs, n, _ = check_table(root/'결과/조건표.csv', sop_ids)
@@ -85,7 +103,7 @@ if state == '없음':
 print('구조 검사 결과')
 ok = report([('조건표.csv', state, errs, f'규칙 묶음 {n}개' if n else '', True),
              record_part(root/'결과/판단기록.md', '고른 것', '정한 것'), record_part(root/'결과/판단기록.md', '맞은 규칙', '사례 대조'),
-             record_part(root/'결과/판단기록.md', '승인 역할', '남은 후보와 실행 승인')])
-print('구조 검사 통과' if ok else '구조 확인 필요 — 위 줄마다 조건표의 어느 행인지 찾아 고친 뒤 다시 실행합니다.')
+             record_part(root/'결과/판단기록.md', '승인 역할', '남은 후보와 실행 승인'), shape_part(root/'결과/판단기록.md')])
+print('구조 검사 통과' if ok else '구조 확인 필요 — 위 줄마다 결과 파일의 어느 항목인지 찾아 고친 뒤 다시 실행합니다.')
 print('이 검사는 모양만 봅니다. 의미와 질문별 답(조건 · 경계 · 출처가 원문과 맞는지, 사례의 판정)은 원자료와 따로 대조합니다.')
 sys.exit(0 if ok else 1)
