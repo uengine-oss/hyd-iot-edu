@@ -156,8 +156,8 @@ def make(S, pptx, name, study_waits=None):
     PS, PQ, PP = a.pause_sentence, a.pause_question, a.pause_para
     QUIET_MAX = 300   # 문장 사이로 고른 곳의 최대 세기(16비트). 01편 실측 108곳 4~59, 말소리는 수천
     def decimal(ch, i):
-        """1.1처럼 숫자 사이의 점은 문장 끝이 아니다. 여기서 끊으면 숫자 가운데에 쉼과 자막 줄바꿈이 들어간다."""
-        return ch[i] == "." and 0 < i < len(ch) - 1 and ch[i - 1].isdigit() and ch[i + 1].isdigit()
+        """1.1 · SKILL.md처럼 영숫자 사이에 붙은 점은 문장 끝이 아니다. 여기서 끊으면 숫자 · 파일 이름 가운데에 쉼과 자막 줄바꿈이 들어간다."""
+        return ch[i] == "." and 0 < i < len(ch) - 1 and all(c.isascii() and c.isalnum() for c in (ch[i - 1], ch[i + 1]))
     def sentence_mark(ch, i):
         """인용 뒤 조사·인용 서술이 이어지면 한 문장, 독립 문장은 닫는 따옴표까지다."""
         mark = i - 1 if ch[i] in "’”』」" and i else i
@@ -250,17 +250,21 @@ def make(S, pptx, name, study_waits=None):
         with wave.open(str(wav)) as w: fr = w.getframerate(); data = array.array("h", w.readframes(w.getnframes()))
         def quiet(win):
             """문장 사이에서 소리가 가장 작은 곳의 초. 받은 글자 시각은 실제 말머리보다 늦을 수 있어, 한가운데에 넣으면 다음 말의 첫소리가 잘린다.
-            앞 글자 끝 0.1초 전부터 다음 글자 시작까지 10ms마다 세기를 재고, 가장 조용한 구간들 가운데 가장 긴 구간의 가운데를 고른다."""
-            a0, b0 = max(0.0, win[0] - 0.1), max(win[0], win[1]); h = int(fr * 0.01)
-            fs = [(a0 + x * 0.01, max(abs(v) for v in data[int((a0 + x * 0.01) * fr):int((a0 + x * 0.01) * fr) + h] or [0])) for x in range(max(1, int((b0 - a0) / 0.01)))]
-            lim = max(min(e for _, e in fs) * 2, 60); best, run = [], []
-            for t0, e in fs:
-                run = run + [t0] if e <= lim else []
-                if len(run) > len(best): best = run
-            peak = max(e for t0, e in fs if best[0] <= t0 <= best[-1])
-            if peak > QUIET_MAX:   # 문장 사이에 조용한 곳이 없다. 쉼을 넣으면 말이 잘린다
-                sys.exit(f"{name} SLIDE {r['first']}: {win[0]:.2f}~{win[1]:.2f}초 문장 사이에 조용한 곳이 없다(가장 작은 세기 {peak}). 쉼을 넣으면 말이 잘린다. 이 장의 음성이나 쉼 자리를 확인한다")
-            return (best[0] + best[-1]) / 2 + 0.005
+            앞 글자 끝 0.1초 전부터 다음 글자 시작까지 10ms마다 세기를 재고, 가장 조용한 구간들 가운데 가장 긴 구간의 가운데를 고른다.
+            거기에 조용한 곳이 없으면 앞 글자 끝 0.4초 전부터 다시 잰다 — 글자 시각이 0.1초보다 더 늦게 찍혀 문장 사이 침묵이 창 앞에 있는 일이 있다
+            (실측: 실전반 5회차 04편 32장 「…이거였죠.」 끝 글자 시각 72.08초, 실제 침묵 71.60~71.95초). 앞 창에서 찾은 곳은 그대로라 이미 만든 영상은 바뀌지 않는다."""
+            h = int(fr * 0.01)
+            for back in (0.1, 0.4):
+                a0, b0 = max(0.0, win[0] - back), max(win[0], win[1])
+                fs = [(a0 + x * 0.01, max(abs(v) for v in data[int((a0 + x * 0.01) * fr):int((a0 + x * 0.01) * fr) + h] or [0])) for x in range(max(1, int((b0 - a0) / 0.01)))]
+                lim = max(min(e for _, e in fs) * 2, 60); best, run = [], []
+                for t0, e in fs:
+                    run = run + [t0] if e <= lim else []
+                    if len(run) > len(best): best = run
+                peak = max(e for t0, e in fs if best[0] <= t0 <= best[-1])
+                if peak <= QUIET_MAX: return (best[0] + best[-1]) / 2 + 0.005
+            # 문장 사이에 조용한 곳이 없다. 쉼을 넣으면 말이 잘린다
+            sys.exit(f"{name} SLIDE {r['first']}: {win[0]:.2f}~{win[1]:.2f}초 문장 사이에 조용한 곳이 없다(가장 작은 세기 {peak}). 쉼을 넣으면 말이 잘린다. 이 장의 음성이나 쉼 자리를 확인한다")
         # 0초 쉼은 소리를 끊지 않으므로 조용한 곳을 찾지 않는다(쉼 자리 0이 말이 붙은 문장 사이를 잇는 방법이다)
         extra = [r.get("study_at", {}).get(t, 0) for t, _ in r["cuts"]]
         r["cuts"] = [((quiet(t) if plen(k) * scale > 0 or wait else t[0]), k) for (t, k), wait in zip(r["cuts"], extra)]
