@@ -1,0 +1,10 @@
+41:    "subProcess": "하위 프로세스는 아직 실행하지 않습니다 — 펼쳐서 한 흐름으로 그리세요",
+42:    "adHocSubProcess": "임의 하위 프로세스는 실행하지 않습니다",
+43:    "transaction": "트랜잭션 하위 프로세스는 실행하지 않습니다",
+48:    "intermediateCatchEvent": "중간 이벤트는 실행하지 않습니다 — 기다림은 task 의 경계 타이머로 그리세요",
+49:    "intermediateThrowEvent": "중간 이벤트는 실행하지 않습니다",
+151:        raise BpmnError(f"풀(참가자)이 {len(with_nodes)}개입니다 ({listed}) — 한 풀 안에 칸(레인)으로 나눠 그리세요")
+838:                    problems.append(problem(where, "condition", f"분기 {_label(gw)}에서 나가는 선의 조건이 없습니다 (값 · 비교 · 기준을 고르거나 '그 밖의 경우')"))
+923:                                                   "승인 없이 설비 · 업무에 효과를 내는 흐름은 등록하지 않습니다"))
+1097:        problems.append(problem(t, "role", "담당 역할을 고르세요 (칸 이름이 역할 이름과 다르면 직접 고릅니다)"))
+1138:            problems.append(problem(item, "flow", f"분기 없이 {len(out)}갈래로 나뉩니다 — 배타(X) 또는 병렬(+) 분기를 거쳐 나누세요"))

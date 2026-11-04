@@ -1,0 +1,104 @@
+$ git rev-parse --short HEAD
+2d534cb9
+$ grep -c "^@mcp.tool" it/dmn-mcp/dmn_mcp/server.py; READ/WRITE 개수
+17
+15
+def submit_decision(asset: Asset, pattern: Pattern, cause: Cause, failure_mode: FailureMode,
+def submit_purchase(asset: Asset, part_no: Annotated[str, Field(description='실제 ERP 부족부품 번호')],
+$ grep -c "^@mcp.tool" it/enterprise-mcp/enterprise_mcp/server.py
+14
+29:TOOLSETS = {
+30-    "maintenance": ("pm_status", "maintenance_windows", "cmms_history", "mes_orders"),
+31-    "purchasing": ("spare_stock", "part_quotes", "scm_suppliers"),
+32-}
+$ seed.sql tenants.mcp
+-- ============================================================================
+insert into public.tenants (id, name, owner, mcp) values ('hyd', '유압설비 교육 공장', 'role:prod-mgr', '{
+  "mcpServers": {
+    "neo4j":      {"type": "url", "url": "http://dmn-mcp:8198/neo4j/mcp", "transport": "streamable_http"},
+    "enterprise": {"type": "url", "url": "http://enterprise-mcp:8199/mcp", "transport": "streamable_http"},
+    "hyd-dmn":    {"type": "url", "url": "http://dmn-mcp:8198/mcp", "transport": "streamable_http"},
+    "enterprise-maint":    {"type": "url", "url": "http://enterprise-mcp-maint:8196/mcp", "transport": "streamable_http"},
+    "enterprise-purchase": {"type": "url", "url": "http://enterprise-mcp-purchase:8195/mcp", "transport": "streamable_http"}
+  }}'::jsonb)
+on conflict (id) do update set name = excluded.name, owner = excluded.owner, mcp = excluded.mcp;
+$ neo4j_mcp.py 머리말
+"""Education adapter for the mcp-neo4j-cypher read/schema tool contract.
+
+0.4.1 silently drops lists >=128 and cuts JSON tokens without a marker. This adapter
+keeps small results compatible, bounds large results explicitly, and checks Neo4j's
+compiled query type before executing. It never exposes a write tool.
+Served over HTTP by dmn-mcp at /neo4j/mcp (it/dmn-mcp/dmn_mcp/server.py, driver from hydcommon.graphdb) — the class
+neo4j tool server; there is no stdio entry point any more (decision 3: a Python process per list/call cost 1.8~3.6 s).
+$ settings.py DEFAULT_ALLOWED_TOOLS · BLOCKED_SHELL_TOOLS
+DEFAULT_ALLOWED_TOOLS = ("mcp__neo4j__get_neo4j_schema,mcp__neo4j__read_neo4j_cypher,mcp__enterprise__*,mcp__hyd-dmn__*,"
+                         "mcp__enterprise-maint__*,mcp__enterprise-purchase__*,Read,Write,Edit,Skill")   # Skill = the assigned skills
+MODES = ("live", "record", "replay")
+
+BLOCKED_SHELL_TOOLS = ('Bash', 'PowerShell')
+$ mcp_check.py STDIO_REFUSED · error kinds
+STDIO_REFUSED = ("명령형(stdio) 서버는 포털에 등록하지 않습니다 — 서버를 HTTP(Streamable HTTP)로 띄워 그 주소를 등록하세요 "
+                 "(내 PC 의 도구에서 명령으로 띄워 쓰는 서버는 그 PC 의 설정에 둡니다)")
+452:CheckError("auth"
+621:CheckError("busy"
+465:CheckError("closed"
+109:CheckError("config"
+455:CheckError("not_mcp"
+242:CheckError("protocol"
+460:CheckError("refused"
+251:CheckError("server"
+310:CheckError("timeout"
+440:CheckError("too_large"
+463:CheckError("unreachable"
+$ course_policy.py tool_servers.register
+        'tool_servers.register': ('외부 도구 서버 등록 · 비밀값 · 쓰기 도구를 읽기로 확인하기는 PBL 단계에서 엽니다. '
+                                  '수업에서는 준비된 도구 서버를 그대로 씁니다.'),
+$ env_guard.py 머리말
+"""A095 (process-gpt-deepagents docker_sandbox env whitelist, R13 1조): the CLI agent is a child process and the pinned
+cliagents provider always starts its environment from `os.environ` (`exec_env`: dict(os.environ) + overrides), so any secret
+the worker process carries — the Postgres DSN it claims tasks with, graph passwords — would be readable by the agent's own
+shell/tools, bypassing the MCP boundary. The worker reads its settings first, then removes those keys from its own
+environment; nothing it spawns afterwards can inherit them. The CLI has no login of its own here: it authenticates only with
+the per-run gateway token the runner hands it (course_access.permit), so personal CLI keys (ANTHROPIC_API_KEY · CLAUDE_CODE_OAUTH_TOKEN …)
+are removed like every other credential — a key left in the worker's environment cannot route a run around the course gateway."""
+$ bridge.py stdio 창구
+결정 3: 수업 서버 다섯과 학생이 등록하는 서버는 모두 HTTP 다 — process 는 명령형 서버를 받지 않는다, procsvc/mcp_check.STDIO_REFUSED).
+Claude Code reads the run's `.mcp.json` (--mcp-config --strict-mcp-config), so one run's tools stay in one run's workspace; HTTP
+servers are written in Claude Code's native `{type: "http", url, headers}` form. The only command (stdio) entries a run gets are
+the worker's own windows — the question window (worker/question_tools) and the result-check window (worker/result_check).
+$ HM-8 SOP-COOL-11
+### SOP-COOL-11 팬 최대 운전
+1. PLC 운전 모드가 REMOTE_AUTO인지 확인한다.
+2. 팬 속도를 100 %로 올린다. 100 % 연속 운전은 24시간 이내로 한다.
+3. 15분 재관측으로 HM-8.6 회복 판정을 한다.
+
+승인: 운전원. 생산은 그대로 유지된다.
+$ 덤프 skill:sop-cool-11 관계
+"case:DEC-1102-mcp-002-5a10ef000097", "CHOSE", "skill:sop-cool-11", {}
+"case:DEC-1102-mcp-002-ba05a9925c7b", "CHOSE", "skill:sop-cool-11", {}
+"fm:cooler-cooling-loss", "MITIGATED_BY", "skill:sop-cool-11", {_manual_document: "4010c16
+"rule:cooler-forecast-temperature-warning", "APPLIES_TO", "skill:sop-cool-11", {}
+"rule:hm-8-5-cooler-mitigations", "OUTPUTS", "skill:sop-cool-11", {}
+"rule:hm-8-8-fan-life-penalty", "APPLIES_TO", "skill:sop-cool-11", {}
+"rule:hm-8-8-remote-auto-only", "APPLIES_TO", "skill:sop-cool-11", {}
+"skill:sop-cool-11", "AFFECTS", "sv:fan-speed", {sign: 1, _manual_document: "4010c166b291e
+"skill:sop-cool-11", "APPROVED_BY", "role:operator", {_manual_document: "4010c166b291e5801
+"skill:sop-cool-11", "CONSISTS_OF", "action:set-fan", {value: 100, seq: 1}
+"skill:sop-cool-11", "HAS_STEP", "skill:sop-cool-11:1", {_manual_document: "4010c166b291e5
+"skill:sop-cool-11", "HAS_STEP", "skill:sop-cool-11:2", {_manual_document: "4010c166b291e5
+"skill:sop-cool-11", "HAS_STEP", "skill:sop-cool-11:3", {_manual_document: "4010c166b291e5
+"sys:scada", "HAS_SKILL", "skill:sop-cool-11", {_manual_document: "4010c166b291e580108f81f
+$ 덤프 fm:cooler-cooling-loss
+67:["FailureMode"], "fm:cooler-cooling-loss", "쿨러 냉각 성능 상실", NULL, {name: "쿨러 냉각 성능 상실",
+$ agents_store SKILL_NAME_RE
+27:SKILL_NAME_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
+$ tools.py read_outcome no_candidates · no_feasible_option
+103:        outcome, notice = 'no_candidates', '조치 후보 0개 — ' + str(rec.get('explanation') or '후보 선택 규칙이 맞지 않음')
+105:        outcome, notice = 'no_feasible_option', '후보 ' + str(len(options)) + '장 모두 규정상 제외됐습니다'
+$ mcp_api.py 시간
+22:LIST_TIMEOUT = (0.5, 6.0, 4.0)                  # (최소, 최대, 기본) 초 — 포털 GET 8초 제한 안
+23:CALL_TIMEOUT = (0.5, 25.0, 15.0)                # 포털 POST 30초 제한 안
+263:                cur.execute("set local statement_timeout = '5000ms'")
+$ work_rules.py
+_WORKSPACE = "- 작업 디렉터리 밖의 파일을 읽거나 수정하지 마세요. 홈 디렉터리(`~/.claude` 등)를 찾아보지 마세요."
+_NO_INVENTION = "- 확실하지 않은 값을 지어내지 말고, 모르면 모른다고 결과에 적으세요. 조회 실패와 값 없음을 구분합니다."
