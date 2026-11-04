@@ -14,7 +14,8 @@
 
 시스템 코드 위치는 lab_package.system_root()(클라우드: HYD_MAIN_ROOT=../main).
 사용: from data_conditions import build; files, meta = build()   files = {자료 경로: 텍스트}, meta = 강사용(reference/ 밖으로 내보내지 않는다)
-      python data_conditions.py --check   두 번 생성해 바이트가 같은지, 경보 패턴 · 옛 결정표 상수가 main과 같은지 확인
+      python data_conditions.py --check   두 번 생성해 바이트가 같은지, 경보 패턴이 main과, 옛 결정표 상수가 main 04efb988^ 판과,
+                                          대응표(CURRENT_ID)를 거친 규칙이 main 지금 판 규칙과 같은지 확인
 """
 from __future__ import annotations
 
@@ -112,7 +113,7 @@ FAULTS = dict(outage=(18.0, (14, 240)), bad=(30.0, (15, 90)), counter_gap=(1.0, 
 PORTAL_ALARM = ('HYD-01', kst(2026, 10, 10, 11, 13, 8))   # 포털 대표 경보 — 같은 설비 · 시각에 경보가 나면 멈춘다(K-121)
 
 # 판단 시스템 결정표(2025년 도입 판, HM-8 1.0판으로 작성) — main 04efb988 앞 판의 행을 그대로 고정한다(main이 바뀌어도 랩의 옛 판은 그대로).
-# 내보내기 파일에 쓸 때만 제작 흔적 한 곳(rule:cand-trip 설명의 「(A098: …)」 괄호)을 뺀다. --check가 그 판과 견준다.
+# 내보내기 파일에 쓸 때만 규칙 ID를 대응표(CURRENT_ID)로 바꾸고 제작 흔적 한 곳(rule:cand-trip 설명의 「(A098: …)」 괄호)을 뺀다. --check가 그 판과 견준다.
 OLD_RULES = [   # [id, 표, 순서, 조건식, 결과, 감점, 설명, 대상, 감점 지표, 출처, 검사[[입력, 연산자, 값, 단위]]] — 04efb988^:it/neo4j/v2/instances.cypher 줄 436, 438, 440, 456, 458, 460, 462, 464, 466, 468, 470, 472, 474, 476, 478, 480, 482, 484
     ['rule:ts1-hard', 'dt:compliance', 2, 'forecast_ts1 >= 65', 'EXCLUDE', None, '예측 유온이 인터록 한계 이상이면 제외 (모든 제어 후보에 예측값으로 적용)', [], None, ['ks:sr-04'], [['in:forecast-ts1', '>=', 65, '℃']]],
     ['rule:avl', 'dt:compliance', 7, 'supplier_avl == false', 'EXCLUDE', None, '핵심 부품은 승인 공급사에서만 구매', ['skill:wo-pump-seal'], None, ['ks:pr-07'], [['in:supplier-avl', '==', False, None]]],
@@ -133,6 +134,19 @@ OLD_RULES = [   # [id, 표, 순서, 조건식, 결과, 감점, 설명, 대상, �
     ['rule:fan-24h', 'dt:compliance', 6, 'fan100_hours > 24', 'PENALTY', 20, '팬 100 % 연속 24시간 초과 시 수명 감점', ['skill:fan-max', 'skill:fan-max-derate'], 'msr:mtbf', ['HM-7.3'], [['in:fan100-hours', '>', 24, 'h']]],
     ['rule:trip-reset-only', 'dt:compliance', 8, "plc_state == 'TRIP' and skill_code != 'RESET'", 'EXCLUDE', None, '트립 중에는 PLC가 리셋 외 제어 명령을 거부한다 (냉각 후 리셋만)', [], None, ['HM-9.4'], [['in:plc-state', '==', 'TRIP', None], ['in:skill-code', '!=', 'RESET', None]]],
 ]
+# 옛 규칙 ID → 지금 시스템 ID(대응표). 학생이 이론 영상 · 포털에서 보는 이름으로 내보낸다 — 행의 다른 칸(조건식 · 대상 · 감점 지표 · 출처)은 옛 판 값 그대로.
+# 바꾸는 것은 main 지금 판 규칙(course_extractions.json 문서 적재 규칙 · instances.cypher 시드 규칙)과 결정표 · 결과 · 감점 · 검사 · 고르는 대상이 같은 행뿐이다.
+# 나머지 열둘은 옛 이름 그대로 — rule:ts1-hard · rule:rank-value는 지금도 같은 ID, 그 밖 열은 지금 시스템에 같은 뜻의 규칙이 없다. --check가 main 지금 판과 견준다.
+CURRENT_ID = {
+    'rule:avl': 'rule:pr07-approved-supplier-only',               # PR-7.3. 옛 rule:avl은 main이 지웠다(instances.cypher 「지운 시드 정리」). 대상: 옛 skill:wo-pump-seal, 지금 SOP-PUR-11~13
+    'rule:dx-cooler': 'rule:hm-8-4-fouling-diagnosis',            # HM-8.4
+    'rule:dx-pump': 'rule:pm-pump-leakage-seal-wear-first',       # PM-2.10. 고르는 원인 ID는 OUTPUT_ALIAS
+    'rule:auto-mode': 'rule:hm-8-8-remote-auto-only',             # HM-8.8. 옛 판의 skill_kind 검사(DROPPED_TESTS) 대신 대상(SOP-COOL-11~13)으로 원격 조치를 정한다
+    'rule:ts1-warn': 'rule:cooler-forecast-temperature-warning',  # HM-8.6. 대상: 옛 팬 최대 · 팬 40 %, 지금 SOP-COOL-11~13
+    'rule:fan-24h': 'rule:hm-8-8-fan-life-penalty',               # HM-8.8. 감점 지표: 옛 msr:mtbf, 지금 msr:maint-cost(원문에 지표가 없어 검토용으로 이음)
+}
+DROPPED_TESTS = {'rule:auto-mode': [['in:skill-kind', '==', 'control', None]]}   # 지금 규칙에는 없는 옛 검사
+OUTPUT_ALIAS = {'cause:pump-seal-wear': 'cause:pump-shaft-seal-wear'}           # 옛 원인 ID → 지금 ID(이름이 같다 — --check가 04efb988^ 판과 지금 names.json으로 확인)
 OLD_SKILLS = [  # [id, 이름, 절차 번호, 종류, 설명, 승인, 실행 시스템, [[동작, 값]], 단계[[문장, 절]]] — 같은 파일 줄 281, 283, 285, 287, 289, 291, 293, 295, 297, 299, 301, 303, 305, 307
     ['skill:fan-max', '팬 최대', 'SOP-COOL-01', 'control', '팬만 100 %로 올린다. 생산은 그대로 유지한다.', 'role:operator', 'sys:scada', [['action:set-fan', 100]], [['PLC 운전 모드가 REMOTE_AUTO인지 확인한다.', 'HM-3.2'], ['팬 속도를 100 %로 올린다 (연속 24시간 이내).', 'HM-7.3'], ['15분 재관측: TS1 55 ℃ 미만이고 경보 해제면 완화 성공.', 'HM-7.5']]],
     ['skill:fan-max-derate', '팬 최대 + 부하 80 %', 'SOP-COOL-02', 'control', '팬 100 %와 부하 80 %로 유온을 확실히 내린다.', 'role:prod-mgr', 'sys:scada', [['action:set-fan', 100], ['action:set-load', 80]], [['PLC 운전 모드가 REMOTE_AUTO인지 확인한다.', 'HM-3.2'], ['팬 속도를 100 %로 올린다.', 'HM-7.3'], ['펌프 부하를 80 %로 낮춘다 (최소 60 %).', 'HM-9.1'], ['15분 재관측: TS1 55 ℃ 미만이고 경보 해제면 완화 성공.', 'HM-7.5']]],
@@ -545,12 +559,13 @@ def decision_export():
              '# 시스템: 설비 이상 조치 판단 시스템 / 결정표 판: 2025-03-17 도입 때 등록(HM-8 1.0판 기준) / 내보낸 시각: 2026-10-27 08:10 (+09:00)',
              '# ' + NOTICE,
              '# 형식: 「## 」로 시작하는 절마다 머리 줄 하나와 행들이 있다. 칸은 「 | 」로 나누고, 한 칸 안의 여러 값은 「; 」로 나눈다.',
+             '# 규칙 id: 내보낸 시각의 시스템 이름으로 나온다. 시스템이 id를 바꿔도 행의 다른 칸(출처 포함)은 등록 때 값 그대로다.',
              '', '## 결정표', 'id | 이름 | 질문 | 여러 규칙이 맞을 때 | 입력']
     lines += [' | '.join(cell(x) for x in d) for d in OLD_DECISIONS]
     lines += ['', '## 규칙', 'id | 결정표 | 순서 | 조건식 | 결과 | 감점(만원) | 설명 | 대상 | 감점 지표 | 출처 | 검사']
     for r in OLD_RULES:
         rid, dt, order, when, effect, penalty, note, targets, measure, sources, ts = r
-        lines.append(' | '.join([rid, dt, str(order), when, effect, cell(penalty), note.replace(EXPORT_TRACE, ''), cell(targets),
+        lines.append(' | '.join([CURRENT_ID.get(rid, rid), dt, str(order), when, effect, cell(penalty), note.replace(EXPORT_TRACE, ''), cell(targets),
                                  cell(measure), cell(sources), tests(ts)]))
     lines += ['', '## 스킬', 'id | 이름 | 절차 번호 | 종류 | 설명 | 승인 | 실행 시스템 | 동작 | 단계']
     for sid, name, sop, kind, desc, approver, system, acts, steps in OLD_SKILLS:
@@ -1415,8 +1430,68 @@ def build():
     return files, meta
 
 
+def cypher_value(v):
+    """상수 값을 instances.cypher에 적힌 꼴로(65 · false · null · 'TRIP')."""
+    if v is None:
+        return 'null'
+    if isinstance(v, bool):
+        return str(v).lower()
+    if isinstance(v, (int, float)):
+        return format(v, 'g')
+    return f"'{v}'"
+
+
+def test_key(inp, op, value, unit):
+    """검사 한 칸을 견줄 꼴로 — 값의 꼴(65 · 65.0 · False · 'false')과 빈 단위를 맞춘다."""
+    value = value.strip("'") if isinstance(value, str) else cypher_value(value)
+    return (inp, op, value, unit or None)
+
+
+def current_rules(cy):
+    """main 지금 판의 규칙 {id: (결정표, 결과, 감점, 검사 집합, 고르는 대상)} — 문서 적재 규칙(course_extractions.json)과 시드 규칙(instances.cypher)."""
+    out = {}
+    bundle = json.loads((SYS/'it/process/procsvc/course_extractions.json').read_text(encoding='utf-8'))
+    for doc in bundle['payload']['documents'].values():
+        for r in (doc['proposal'].get('knowledge') or {}).get('rules', []):
+            out[r['id']] = (r['table'], r['effect'], r.get('penalty'),
+                            {test_key(t['input'], t['operator'], t['value'], t.get('unit')) for t in r['tests']}, set(r.get('outputs') or []))
+    for m in re.finditer(r"\['(rule:[a-z0-9-]+)','(dt:[a-z-]+)',\d+,'([A-Z]+)'", cy):
+        end = min(i for i in (cy.find("['rule:", m.end()), cy.find('] AS r', m.end())) if i >= 0)
+        tests = {test_key(t[0], t[1], t[2] if t[2].startswith("'") or t[2] in ('true', 'false') else float(t[2]), None if t[3] == 'null' else t[3].strip("'"))
+                 for t in re.findall(r"\['(in:[a-z0-9-]+)','([^']+)',('[^']*'|true|false|[-\d.]+),('[^']*'|null)\]", cy[m.end():end])}
+        out[m.group(1)] = (m.group(2), m.group(3), None, tests, set())
+    return out
+
+
+def check_mapping(now):
+    """대응표를 거친 옛 규칙이 main 지금 판 규칙과 같은 뜻인지 — 결정표 · 결과 · 감점 · 검사(DROPPED_TESTS를 뺀 것) · 고르는 대상(OUTPUT_ALIAS를 거친 것).
+    옛 이름 그대로 둔 규칙은 지금 판에 같은 결정표 · 결과 · 검사의 규칙이 생기지 않았는지 본다(생겼으면 대응표를 다시 본다)."""
+    errs = []
+    for rid, dt, _, _, effect, penalty, _, targets, _, _, tests in OLD_RULES:
+        new = CURRENT_ID.get(rid, rid)
+        old_tests = {test_key(*t) for t in tests}
+        if new not in now:
+            if new != rid:
+                errs.append(f'대응표 {rid} → {new}: main 지금 판 규칙에 없습니다.')
+            twins = sorted(k for k, v in now.items() if (v[0], v[1], v[3]) == (dt, effect, old_tests))
+            if twins:
+                errs.append(f'옛 이름으로 둔 {rid}와 결정표 · 결과 · 검사가 같은 지금 판 규칙이 있습니다({", ".join(twins)}) — 대응표를 다시 봅니다.')
+            continue
+        table, eff, pen, now_tests, outs = now[new]
+        diff = [f'결정표 {dt} ≠ {table}'] if table != dt else []
+        diff += [f'결과 {effect} ≠ {eff}'] if eff != effect else []
+        diff += [f'감점 {penalty} ≠ {pen}'] if (penalty or None) != (pen or None) else []
+        want_tests = old_tests - {test_key(*t) for t in DROPPED_TESTS.get(rid, [])}
+        diff += [f'검사 {sorted(want_tests)} ≠ {sorted(now_tests)}'] if want_tests != now_tests else []
+        if effect == 'SELECT' and {OUTPUT_ALIAS.get(t, t) for t in targets} != outs:
+            diff.append(f'고르는 대상 {targets} ≠ {sorted(outs)}')
+        if diff:
+            errs.append(f'대응표 {rid} → {new}: ' + '; '.join(diff))
+    return errs
+
+
 def check_main():
-    """경보 패턴 · 옛 결정표 상수가 main 판과 같은지."""
+    """경보 패턴이 main과, 옛 결정표 상수가 main 04efb988^ 판과, 대응표를 거친 규칙 · 결정표 ID가 main 지금 판과 같은지."""
     errs = []
     cy = (SYS/'it/neo4j/v2/instances.cypher').read_text(encoding='utf-8')
     i = cy.find("['pattern:cooler-degradation'")
@@ -1425,11 +1500,23 @@ def check_main():
             "['in:ts1-slope','slope(TS1)','>',0,", f"['TS1 < {CLEAR_TS1:g} and slope(TS1) <= 0',{CLEAR_HOLD_S},{SLOPE_WINDOW_S},"]
     if not row or any(w not in row for w in want):
         errs.append('main 경보 패턴(pattern:cooler-degradation)이 생성기 상수와 다릅니다.')
+    for d in OLD_DECISIONS:   # 결정표 ID · 여러 규칙이 맞을 때는 지금 판에도 같다(옛 이름 그대로)
+        if f"'{d[0]}','{d[3]}'" not in cy:
+            errs.append(f'결정표 {d[0]}({d[3]})가 main 지금 판에 없습니다 — 대응표에 결정표 ID를 더합니다.')
+    errs += check_mapping(current_rules(cy))
     try:
         old = subprocess.run(['git', 'show', '04efb988^:it/neo4j/v2/instances.cypher'], cwd=SYS, capture_output=True, text=True, check=True).stdout
         for r in OLD_RULES:
-            if f"['{r[0]}','{r[1]}',{r[2]}," not in old:
+            at = old.find(f"['{r[0]}','{r[1]}',{r[2]},")
+            end = old.find("\n  ['rule:", at + 1)
+            tests = '[' + ','.join('[' + ','.join(cypher_value(x) for x in t) + ']' for t in r[10]) + ']'
+            if at < 0 or tests not in old[at:end if end > 0 else None]:
                 errs.append(f'옛 결정표 {r[0]} 행이 04efb988^ 판과 다릅니다.')
+        names = json.loads((SYS/'it/portal/www/names.json').read_text(encoding='utf-8'))
+        for was, now_id in OUTPUT_ALIAS.items():
+            m = re.search(rf"\['{was}','([^']+)'", old)
+            if not m or m.group(1) != names.get(now_id):
+                errs.append(f'원인 {was}(04efb988^)와 {now_id}(지금 names.json)의 이름이 다릅니다.')
     except (OSError, subprocess.CalledProcessError):
         print('참고: git으로 04efb988^ 판을 읽지 못해 옛 결정표 대조를 건너뜁니다.')
     return errs

@@ -121,6 +121,13 @@ def same_bytes(files):
     for no, needle in HM8_LINES:
         if needle not in hm8[no - 1]:
             fail(f'HM-8_매뉴얼.md {no}줄에 「{needle}」이 없음 — run_reference.HM8_LINES와 완성본 · 갈래표의 줄 번호를 원문에 맞춘다')
+    # 결정표 대조 표(criteria.export_treatment)가 내보내기의 규칙 행을 같은 ID · 줄 번호 · 순서로 빠짐없이 가리키는가(대응표 data_conditions.CURRENT_ID를 거친 ID)
+    rule_lines = [(no, line.split(' | ')[0]) for no, line in enumerate(files['판단시스템_결정표_내보내기.txt'].splitlines(), 1) if line.startswith('rule:')]
+    for p2 in CR.P2:
+        told = [(int(re.match(r'내보내기 (\d+)행', r[3]).group(1)), r[0]) for r in CR.export_treatment(p2)]
+        if told != rule_lines:
+            fail(f'criteria.export_treatment(지점2 {p2})의 규칙 ID · 행 번호가 판단시스템_결정표_내보내기.txt와 다름: '
+                 + '; '.join(f'{a} / {b}' for a, b in zip(told, rule_lines) if a != b))
     for key, table, sop in [('integrated-03-judge', '가', CR.sop_json(*CR.BASE)), ('practical-03-review', '가', CR.sop_json(*CR.BASE))]:
         if (LAB[key]/'입력/조건표.csv').read_text(encoding='utf-8') != CR.table_csv(table):
             fail(f'{LAB[key].name}/입력/조건표.csv가 강사 검증 판(지점2 {table})과 다름')
@@ -279,7 +286,7 @@ def criteria_record(p1, p2, incident):
                   '설비_대장.csv HYD-04 비고 「HPP-45A 후속형. 수냉식 열교환기」; graph.json HYD-04 구성 요소 · 센서; 작업지시_이력.csv HYD-04 냉각수측 스케일; HM-8에 적용 범위 문장 없음',
                   'sop.json 모델_참조의 HYD-04 ID · 미기재'],
                  ['출처가 확인되지 않는 기준', {'가': '옛 시스템 그대로 네 후보에 제외', '나': '설명 문장대로 제어 후보 11~13에만', '다': '옮기지 않음'}[p2],
-                  '판단시스템_결정표_내보내기.txt 15 · 32행(출처 ks:sr-04 · HM-9.4) — HM-8 1.1 · 1.0에 같은 문장 없음; HM-8.3 인터록 65 ℃ 이상',
+                  '판단시스템_결정표_내보내기.txt 16 · 33행(출처 ks:sr-04 · HM-9.4) — HM-8 1.1 · 1.0에 같은 문장 없음; HM-8.3 인터록 65 ℃ 이상',
                   '트립 · 예측 65 이상 사례의 판정(사건은 바뀌지 않음)']]),
              '', '## 설비마다 걸었음 · 뺐음', '', CR.md_table(['설비', '걸었음 · 뺐음', '까닭(모델 · 대장 줄)'], CR.asset_scope(p1)),
              '', '## 판단 시스템 결정표 대조', '', CR.md_table(['내보내기 행', '처리', '까닭', '근거'], CR.export_treatment(p2)),
@@ -595,7 +602,7 @@ TABLE_DAMAGES = [
 
 
 SHIFT_FROM = '|---|---|---|---|\n| | | | |'          # 기록 빈 틀의 「정한 것」 표 첫 줄(네 칸)
-SHIFT_TO = '|---|---|---|---|\n| 출처가 확인되지 않는 기준 | 넣지 않음 | 내보내기 15행 | | 트립 사례 |'   # 한 칸이 더 들어가 뒤 칸이 밀린 줄(리허설의 칸 밀림)
+SHIFT_TO = '|---|---|---|---|\n| 출처가 확인되지 않는 기준 | 넣지 않음 | 내보내기 16행 | | 트립 사례 |'   # 한 칸이 더 들어가 뒤 칸이 밀린 줄(리허설의 칸 밀림)
 
 
 def shifted(key, name):
@@ -833,14 +840,14 @@ def criteria_requirements(memo, checks):
             ['적용 범위', 'HYD-01 ~ 03에만 건다(HYD-04는 뺌)', '설비_대장.csv HYD-04 비고 「HPP-45A 후속형. 수냉식 열교환기」; graph.json HYD-04 구성 요소 · 센서; 작업지시_이력.csv HYD-04 냉각수측 스케일; HM-8에 적용 범위 문장 없음',
              'sop.json의 모델 참조(model_refs) — HYD-04 ID 없음, not_linked에 까닭'],
             ['출처가 확인되지 않는 기준(rule:ts1-hard · rule:trip-reset-only — 두 규칙 모두)', '옛 시스템이 건 그대로 네 후보에 제외로 옮기고, 이유 칸에 작업지시 후보와의 어긋남을 밝힘',
-             '판단시스템_결정표_내보내기.txt 15행 rule:ts1-hard(출처 ks:sr-04) · 32행 rule:trip-reset-only(출처 HM-9.4) — HM-8 1.1 · 1.0에 같은 문장 없음; HM-8.3 인터록 65 ℃ 이상(HM-8_매뉴얼.md 30줄)',
+             '판단시스템_결정표_내보내기.txt 16행 rule:ts1-hard(출처 ks:sr-04) · 33행 rule:trip-reset-only(출처 HM-9.4) — HM-8 1.1 · 1.0에 같은 문장 없음; HM-8.3 인터록 65 ℃ 이상(HM-8_매뉴얼.md 30줄)',
              '확인 사례의 트립 · 예측 65 ℃ 이상 사례(아래 대입) — 사건은 바뀌지 않음'],
             ps1_decision(checks, '1.1 · 1.0')])),
         ('기대 답과 실제 결과', md_rows(['질문 · 물은 대상', '원자료에서 먼저 찾은 기대 답(파일 · 줄)', '실제 결과', '고친 점 · 다시 확인'], [
             ['1 SOP-COOL-11의 다섯 칸', 'HM-8_매뉴얼.md HM-8.5 SOP-COOL-11 단계 1 ~ 3(48 ~ 50줄), 승인 운전원(52줄), HM-8.6 회복 판정(71줄), HM-8.8 금지와 제한(87 · 88줄)',
              'sop.json의 SOP-COOL-11과 같음', '—'],
             ['2 조건 하나 — 팬 100 % 연속 운전의 감점', 'fan100_hours > 24 h(「넘으면」 — 기준값은 들어가지 않음), 결과 PENALTY 20만원, 팬을 최대로 올리는 SOP-COOL-11 · 12, 출처 HM-8.8(HM-8_매뉴얼.md 88줄). '
-             '판단 시스템 결정표 rule:fan-24h(내보내기 31행)는 같은 식 · 금액 · 대상이고 출처만 옛 판 절(HM-7.3)', '조건표.csv R2의 두 묶음과 같음', '—'],
+             '판단 시스템 결정표 rule:hm-8-8-fan-life-penalty(내보내기 32행)는 같은 식 · 금액 · 대상이고 출처만 옛 판 절(HM-7.3)', '조건표.csv R2의 두 묶음과 같음', '—'],
             ['3 사건 네 후보', '11 경고 R3 · 감점 R2, 12 감점 R2 · 예측 없음, 13 · 14 맞은 규칙 없음', '아래 「사건 · 확인 사례 대입」과 같음', '—']])),
         ('설비마다 걸었음 · 뺐음', md_rows(['설비', '걸었음 · 뺐음', '까닭(모델 · 대장 줄)'], CR.asset_scope('가'))),
         ('판단 시스템 결정표 대조', md_rows(['내보내기 행', '처리', '까닭', '근거(파일 · 줄)'], CR.export_treatment('가'))),
@@ -859,7 +866,7 @@ def low_ps1(checks):
 def ps1_decision(checks, versions):
     """두 조건 랩 완성본 「정한 것」의 rule:ps1-warn 행 — versions는 그 랩이 받은 HM-8 판(통합 03-2 1.1 · 1.0, 실전 02-5 1.1)."""
     return ['출처가 확인되지 않는 기준(rule:ps1-warn)', '옮기지 않음 — 예측 토출 압력 조건(출처 HM-5.2 펌프 장)이라 네 냉각 조치의 조건표에 걸 근거가 없음',
-            f'판단시스템_결정표_내보내기.txt 30행 rule:ps1-warn(대상 빈칸, 출처 HM-5.2) — HM-8 {versions}에 토출 압력 기준 없음; 작업기준 2절',
+            f'판단시스템_결정표_내보내기.txt 31행 rule:ps1-warn(대상 빈칸, 출처 HM-5.2) — HM-8 {versions}에 토출 압력 기준 없음; 작업기준 2절',
             '예측 토출 압력이 165 bar 미만인 사례 후보(' + (', '.join(f'{c} {s[-2:]}' for c, s in low_ps1(checks)) or '없음') + ')에 경고가 붙지 않음']
 
 
@@ -892,7 +899,7 @@ def conditions_record_completed(checks):
         ('지킬 조건', '- 조건표의 행마다 원문 출처를 단다.\n- 사례에 대는 기능은 규칙을 코드에 다시 적지 않고 `결과/조건표.csv`에서 읽는다.\n- 남은 후보를 실행 승인처럼 적지 않는다.'),
         ('정한 것', md_rows(['지점(종류)', '고른 것', '근거(파일 · 줄)', '이 선택으로 바뀌는 답'], [
             ['출처가 확인되지 않는 기준(rule:ts1-hard · rule:trip-reset-only — 두 규칙 모두)', '옛 시스템이 건 그대로 네 후보에 제외로 옮기고, 이유 칸에 작업지시 후보와의 어긋남을 밝힘',
-             '판단시스템_결정표_내보내기.txt 15행 rule:ts1-hard(출처 ks:sr-04) · 32행 rule:trip-reset-only(출처 HM-9.4) — HM-8 1.1에 같은 문장 없음',
+             '판단시스템_결정표_내보내기.txt 16행 rule:ts1-hard(출처 ks:sr-04) · 33행 rule:trip-reset-only(출처 HM-9.4) — HM-8 1.1에 같은 문장 없음',
              f'트립 사례 {TRIP_CASE} — 네 후보 모두 제외, 예측 65 ℃ 이상 사례 {HOT_CASE} — SOP-COOL-14 제외'],
             ps1_decision(checks, '1.1')])),
         ('기대 답과 실제 결과', md_rows(['질문 · 물은 대상', '원자료에서 먼저 찾은 기대 답(파일 · 줄)', '실제 결과', '고친 점 · 다시 확인'], [
@@ -1156,7 +1163,7 @@ def incident_table(judged, hand_rows, recomputed, chain_rec, mixed, expected):
               CR.md_table(['섞인 선택의 예(run_reference.py가 확인 사례에 실제로 돌림)', '지점2 가와 달라진 확인 사례 후보'], mixed), '',
               '- HM-8.3 인터록 줄(HM-8_매뉴얼.md 30 · 33줄, 「65 ℃ 이상 (설비 정지)」)을 rule:ts1-hard의 근거로 삼는 학생이 있다 — 기준값 65 ℃ · 「이상」은 원문에 있지만 「후보를 뺀다」는 문장은 없다. '
               '작업기준 2절(원문에 없는 기준값 · 단계를 만들지 않음)에 비추어 근거가 약하다는 것을 짚되, 학생이 그 해석을 「정한 것」에 적었으면 그 근거로 판정한다.',
-              '- rule:ps1-warn(내보내기 30행, 예측 토출 압력 165 bar 미만 경고, 출처 HM-5.2)도 제공 원문에 근거가 없는 규칙이지만 토출 압력 · 펌프 계통 조건이라 강사 참조는 어느 갈래에도 넣지 않는다 '
+              '- rule:ps1-warn(내보내기 31행, 예측 토출 압력 165 bar 미만 경고, 출처 HM-5.2)도 제공 원문에 근거가 없는 규칙이지만 토출 압력 · 펌프 계통 조건이라 강사 참조는 어느 갈래에도 넣지 않는다 '
               '(넣었을 때는 위 표 둘째 줄). 학생이 「출처 미확인」으로 빼도 결과는 같다.', '',
               '## 승인과 관계 — 원문이 하나로 정하지 않는 곳', '',
               '- SOP-FAN-11 · 12: HM-8.1 · 8.2 절에 승인 줄이 없다 — 강사 참조의 승인은 「미확인」이다. 74줄 「승인은 설비보전팀장이 한다」는 HM-8.7 근본 조치 절(SOP-COOL-14 · 15)의 문장이라 이 두 절차의 근거가 아니다.',
