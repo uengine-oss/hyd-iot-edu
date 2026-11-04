@@ -3,12 +3,15 @@
 
 쓰는 법
   python3 ai_toy_test.py <학생 ZIP> --tool codex|claude --scenario two_turn|one_turn --out <새 출력 폴더>
-          [--env-file <.env 꼴 파일>] [--codex-bin <경로>] [--claude-bin <경로>] [--timeout 초] [--dry-run]
+          [--env-file <.env 꼴 파일>] [--lab-env <.env 꼴 파일>] [--codex-bin <경로>] [--claude-bin <경로>] [--timeout 초] [--dry-run]
   python3 ai_toy_test.py --extract <turnN.log|turnN.jsonl> --tool codex|claude     # AI 없이 원본 기록에서 행동 · 답 · 토큰만 뽑는다
 
   two_turn = 「START.md대로 다 해 줘」 → 「권장안대로 다 해 줘」(1턴이 실패 · 시간 초과면 2턴을 보내지 않는다)
   one_turn = 「묻지 말고 그냥 다 만들어 줘」
   --dry-run = ZIP 풀기 · 해시 · 도구 설정까지만 하고 AI를 부르지 않는다(키도 읽지 않는다).
+  --lab-env = 랩 코드가 모델을 부르는 랩(문서 추출 등)을 학생처럼 키가 있는 상태로 시험한다 — 풀어 둔 실습 폴더에
+              그 파일의 세 줄(OPENAI_BASE_URL · LLM_API_KEY · LLM_MODEL)로 `.env`를 쓴다. `.env`는 바뀐 파일 계산에서 빼고,
+              키는 원본 기록에서 가린다. 주지 않으면 키 없는 폴더 시험이다.
 
 두 도구
   codex  = 학생 AI. Codex CLI + 강의 중계 LiteLLM의 `coding` 모델(사용자 provider). 키 LLM_API_KEY와 주소 OPENAI_BASE_URL을
@@ -50,6 +53,7 @@ SPARE = Path.home()/'.hyd-toy-test'
 SCENARIOS = {'two_turn': ['START.md대로 다 해 줘', '권장안대로 다 해 줘'],   # 코딩랩.md K요-14
              'one_turn': ['묻지 말고 그냥 다 만들어 줘']}
 RELAY = ('LLM_API_KEY', 'OPENAI_BASE_URL')
+LAB_ENV = ('OPENAI_BASE_URL', 'LLM_API_KEY', 'LLM_MODEL')   # 학생이 .env에 붙여 넣는 세 줄(코딩랩.md K-102)
 RULE_FILES = ('AGENTS.md', 'AGENTS.override.md', 'CLAUDE.md', '.git')
 CODEX_CONFIG = '''model = "coding"
 model_provider = "litellm"
@@ -211,8 +215,9 @@ def unpack(zip_path, lab):
 
 
 def snapshot(folder):
+    """파일별 SHA-256. 시험 도구가 쓴 `.env`(--lab-env)는 학생 AI가 바꾼 파일이 아니라 뺀다."""
     return {p.relative_to(folder).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
-            for p in sorted(folder.rglob('*')) if p.is_file()}
+            for p in sorted(folder.rglob('*')) if p.is_file() and p.relative_to(folder).as_posix() != '.env'}
 
 
 def write_snapshot(path, snap):
@@ -263,6 +268,19 @@ def relay_settings(env_file):
     return found
 
 
+def lab_env_lines(env_file):
+    """--lab-env 파일에서 학생이 붙여 넣는 세 줄만 고른다. 하나라도 없으면 멈춘다."""
+    found = {}
+    for line in Path(env_file).read_text(encoding='utf-8-sig').splitlines():
+        name, sep, value = line.strip().partition('=')
+        if sep and name.strip() in LAB_ENV and value.strip():
+            found[name.strip()] = value.strip()
+    missing = [name for name in LAB_ENV if name not in found]
+    if missing:
+        raise SystemExit(f'{env_file}: 실습 폴더 .env에 넣을 줄이 없습니다: ' + ', '.join(missing))
+    return found
+
+
 def commands(tool, binary, prompts):
     if tool == 'codex':
         first = [binary, 'exec', '--skip-git-repo-check', '-s', 'workspace-write']
@@ -278,8 +296,8 @@ def environment(tool, home, key):
     return {name: os.environ[name] for name in CLAUDE_ENV if name in os.environ} | {'HOME': str(home)}
 
 
-def run_turn(cmd, lab, env, raw, err, timeout, key):
-    """한 턴을 돌려 원본 기록을 raw에 쓴다(키는 가림). 종료 코드 또는 '시간 초과'를 돌려준다.
+def run_turn(cmd, lab, env, raw, err, timeout, keys):
+    """한 턴을 돌려 원본 기록을 raw에 쓴다(keys의 값은 가림). 종료 코드 또는 '시간 초과'를 돌려준다.
     시간 초과면 도구가 띄운 하위 프로세스(codex는 node → 본체)까지 함께 끈다."""
     p = subprocess.Popen(cmd, cwd=lab, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE if err else subprocess.STDOUT, start_new_session=os.name != 'nt')
@@ -294,7 +312,7 @@ def run_turn(cmd, lab, env, raw, err, timeout, key):
     for path, data in [(raw, out_b), (err, err_b)]:
         if path is None:
             continue
-        if key:
+        for key in keys:
             data = data.replace(key.encode(), b'[LLM_API_KEY]')
         path.write_bytes(data)
     return status
@@ -315,7 +333,7 @@ def record(out, meta, turns, total):
     md = ['# 장난감 시험 기록', '',
           f"- 학생 ZIP: `{meta['zip']}` (SHA-256 {meta['zip_sha256']}, 판 {meta['version'] or '목록에 없음'}, 안의 실습 폴더 `{meta['base']}`, 파일 {meta['files']}개)",
           f"- 도구: {meta['tool']} · 모델 {meta.get('model') or '미확인'} · 도구 판 {meta.get('tool_version') or '미확인'}",
-          f"- 시나리오: {meta['scenario']}",
+          f"- 시나리오: {meta['scenario']} · 실습 폴더 `.env`: {'있음(--lab-env, 세 줄)' if meta.get('lab_env') else '없음(키 없는 폴더)'}",
           f"- 시각(UTC): {meta['when']}",
           f"- 실습 폴더: `{meta['lab']}`",
           '- 판정은 이 기록을 보고 따로 한다: 결과를 강사 참조와 견주고(코딩랩.md K-28), 돌려보낸 답이 K-47 ⑩의 꼴인지 본다.', '']
@@ -346,6 +364,7 @@ def main():
     ap.add_argument('--scenario', choices=sorted(SCENARIOS))
     ap.add_argument('--out', type=Path, help='새 출력 폴더(저장소 밖, 또는 저장소의 작업/검사/ 아래)')
     ap.add_argument('--env-file', type=Path, help='LLM_API_KEY · OPENAI_BASE_URL을 읽을 .env 꼴 파일(codex만)')
+    ap.add_argument('--lab-env', type=Path, help='실습 폴더에 학생처럼 .env 세 줄을 쓸 .env 꼴 파일(모델을 부르는 랩의 키 있는 시험)')
     ap.add_argument('--codex-bin', default='codex')
     ap.add_argument('--claude-bin', default='claude')
     ap.add_argument('--timeout', type=int, default=1500, help='한 턴의 시간 상한(초)')
@@ -368,11 +387,17 @@ def main():
     if not binary and not a.dry_run:
         raise SystemExit(f'{a.tool} 실행 파일을 찾지 못했습니다 — --{a.tool}-bin으로 주세요.')
     settings = {'LLM_API_KEY': '', 'OPENAI_BASE_URL': '<OPENAI_BASE_URL>'} if a.dry_run or a.tool == 'claude' else relay_settings(a.env_file)
+    lab_env = lab_env_lines(a.lab_env) if a.lab_env and not a.dry_run else None
+    keys = sorted({settings['LLM_API_KEY'], (lab_env or {}).get('LLM_API_KEY', '')} - {''})
 
     out.mkdir(parents=True, exist_ok=True)
     lab.mkdir(parents=True)
     home.mkdir(parents=True)
     base = unpack(zip_path, lab)
+    if lab_env:
+        if (lab/'.env').exists():
+            raise SystemExit(f'{zip_path}: ZIP 안에 .env가 있습니다 — 학생 폴더에는 .env.example만 둡니다(코딩랩.md K-60).')
+        (lab/'.env').write_text(''.join(f'{name}={lab_env[name]}\n' for name in LAB_ENV), encoding='utf-8')
     if a.tool == 'codex':
         (home/'config.toml').write_text(CODEX_CONFIG.format(base_url=json.dumps(settings['OPENAI_BASE_URL'])), encoding='utf-8')
     before = snapshot(lab)
@@ -381,14 +406,15 @@ def main():
     meta = {'zip': (zip_path.relative_to(ROOT).as_posix() if within(zip_path, ROOT) else str(zip_path)),
             'zip_sha256': hashlib.sha256(zip_path.read_bytes()).hexdigest(), 'version': package_version(zip_path),
             'base': base, 'files': len(before), 'tool': a.tool, 'scenario': a.scenario, 'lab': str(lab), 'prompts': prompts,
-            'when': datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d %H:%M'), 'dry_run': a.dry_run}
+            'when': datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d %H:%M'), 'dry_run': a.dry_run,
+            'lab_env': bool(lab_env)}
     turns, last = [], before
     if not a.dry_run:
         env = environment(a.tool, home, settings['LLM_API_KEY'])
         for n, cmd in enumerate(commands(a.tool, binary, prompts), 1):
             raw = out/(f'turn{n}.log' if a.tool == 'codex' else f'turn{n}.jsonl')
             err = out/f'turn{n}.err' if a.tool == 'claude' else None
-            status = run_turn(cmd, lab, env, raw, err, a.timeout, settings['LLM_API_KEY'])
+            status = run_turn(cmd, lab, env, raw, err, a.timeout, keys)
             now = snapshot(lab)
             write_snapshot(out/f'after{n}.sha256', now)
             t = EXTRACT[a.tool](raw.read_text(encoding='utf-8', errors='replace'))
