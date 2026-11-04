@@ -1,12 +1,12 @@
 {
   "summary": {
     "extract": {
-      "통합반": "34/34",
-      "실전반": "35/35"
+      "통합반": "39/39",
+      "실전반": "40/40"
     },
     "graph": {
       "통합반": "11/11",
-      "실전반": "17/17"
+      "실전반": "16/16"
     }
   },
   "trials": {
@@ -178,7 +178,7 @@
           "file": "결과/후보/OEM-HPP45A-MM_C.json",
           "caught": true,
           "restored_pass": true,
-          "line": "- OEM-HPP45A-MM-068: lang 'en'가 인용한 줄(KO)과 다름"
+          "line": "- OEM-HPP45A-MM-068: 인용이 짝지은 응답 기록의 답 글에 없음 — 후보는 모델의 답에서 만듭니다"
         },
         {
           "no": "22",
@@ -246,11 +246,51 @@
         },
         {
           "no": "30",
-          "trial": "다른 폴더 기록 · reused_from 없음",
+          "trial": "다른 폴더의 응답 기록으로 만든 후보(폴더 표지가 다름)",
           "file": "결과/후보/HM-8_1.1.json",
           "caught": true,
           "restored_pass": true,
-          "line": "- 결과/응답_기록/1db9fc7561de.json: 다른 폴더의 응답 기록인데 reused_from에 그 폴더 표지가 없습니다."
+          "line": "- 결과/응답_기록/1db9fc7561de.json: 다른 폴더의 응답 기록입니다(기록의 폴더 표지 'ffffffffffffffff', 이 폴더 '376d6809f69d41ab') — 후보는 이 폴더에서 수업 모델을 불러 받은 답으로 만듭니다."
+        },
+        {
+          "no": "40",
+          "trial": "model_run에 reused_from을 적은 후보(다른 폴더 기록을 옮겨 씀)",
+          "file": "결과/후보/HM-8_1.1.json",
+          "caught": true,
+          "restored_pass": true,
+          "line": "- model_run 결과/응답_기록/1db9fc7561de.json: reused_from 'ffffffffffffffff' — 다른 폴더의 응답 기록으로는 후보를 만들지 않습니다."
+        },
+        {
+          "no": "36",
+          "trial": "관계없는 답 글과 짝지은 후보(규칙으로 만든 후보)",
+          "file": "결과/후보/HM-8_1.1.json",
+          "caught": true,
+          "restored_pass": true,
+          "line": "- HM-8-001: 인용이 짝지은 응답 기록의 답 글에 없음 — 후보는 모델의 답에서 만듭니다"
+        },
+        {
+          "no": "37",
+          "trial": "쓸 내용이 없는 답의 기록과 짝지음",
+          "file": "결과/후보/HM-8_1.1.json",
+          "caught": true,
+          "restored_pass": true,
+          "line": "- 결과/응답_기록/1db9fc7561de.json: 쓸 내용이 없는 답의 기록입니다(usable false — 끝난 까닭 content_filter, 답 글이 비어 있음) — 이 기록으로 후보를 만들지 않습니다."
+        },
+        {
+          "no": "38",
+          "trial": "답 글에 없는 원문 줄을 origin reviewer로 꾸민 후보(검토 전 후보 파일)",
+          "file": "결과/후보/HM-8_1.1.json",
+          "caught": true,
+          "restored_pass": true,
+          "line": "- fake-r1: 인용이 짝지은 응답 기록의 답 글에 없음 — 후보는 모델의 답에서 만듭니다"
+        },
+        {
+          "no": "39",
+          "trial": "검토 결과에서 모델 후보를 origin reviewer로 바꿈(missing 항목 없음)",
+          "file": "결과/검토/HM-8_1.1_검토.json",
+          "caught": true,
+          "restored_pass": true,
+          "line": "- HM-8-001: origin reviewer인데 같은 종류 · 인용 · 줄의 missing 항목(added: true)이 없음 — 검토자가 더한 후보는 missing에 함께 적습니다"
         },
         {
           "no": "31",
@@ -452,7 +492,7 @@
           "file": "결과/후보/OEM-HPP45A-MM_C.json",
           "caught": true,
           "restored_pass": true,
-          "line": "- OEM-HPP45A-MM-068: lang 'en'가 인용한 줄(KO)과 다름"
+          "line": "- OEM-HPP45A-MM-068: 인용이 짝지은 응답 기록의 답 글에 없음 — 후보는 모델의 답에서 만듭니다"
         },
         {
           "no": "22",
@@ -520,11 +560,51 @@
         },
         {
           "no": "30",
-          "trial": "다른 폴더 기록 · reused_from 없음",
+          "trial": "다른 폴더의 응답 기록으로 만든 후보(폴더 표지가 다름)",
           "file": "결과/후보/HM-8_1.1.json",
           "caught": true,
           "restored_pass": true,
-          "line": "- 결과/응답_기록/1db9fc7561de.json: 다른 폴더의 응답 기록인데 reused_from에 그 폴더 표지가 없습니다."
+          "line": "- 결과/응답_기록/1db9fc7561de.json: 다른 폴더의 응답 기록입니다(기록의 폴더 표지 'ffffffffffffffff', 이 폴더 'bc11d6d18d9a4eb0') — 후보는 이 폴더에서 수업 모델을 불러 받은 답으로 만듭니다."
+        },
+        {
+          "no": "40",
+          "trial": "model_run에 reused_from을 적은 후보(다른 폴더 기록을 옮겨 씀)",
+          "file": "결과/후보/HM-8_1.1.json",
+          "caught": true,
+          "restored_pass": true,
+          "line": "- model_run 결과/응답_기록/1db9fc7561de.json: reused_from 'ffffffffffffffff' — 다른 폴더의 응답 기록으로는 후보를 만들지 않습니다."
+        },
+        {
+          "no": "36",
+          "trial": "관계없는 답 글과 짝지은 후보(규칙으로 만든 후보)",
+          "file": "결과/후보/HM-8_1.1.json",
+          "caught": true,
+          "restored_pass": true,
+          "line": "- HM-8-001: 인용이 짝지은 응답 기록의 답 글에 없음 — 후보는 모델의 답에서 만듭니다"
+        },
+        {
+          "no": "37",
+          "trial": "쓸 내용이 없는 답의 기록과 짝지음",
+          "file": "결과/후보/HM-8_1.1.json",
+          "caught": true,
+          "restored_pass": true,
+          "line": "- 결과/응답_기록/1db9fc7561de.json: 쓸 내용이 없는 답의 기록입니다(usable false — 끝난 까닭 content_filter, 답 글이 비어 있음) — 이 기록으로 후보를 만들지 않습니다."
+        },
+        {
+          "no": "38",
+          "trial": "답 글에 없는 원문 줄을 origin reviewer로 꾸민 후보(검토 전 후보 파일)",
+          "file": "결과/후보/HM-8_1.1.json",
+          "caught": true,
+          "restored_pass": true,
+          "line": "- fake-r1: 인용이 짝지은 응답 기록의 답 글에 없음 — 후보는 모델의 답에서 만듭니다"
+        },
+        {
+          "no": "39",
+          "trial": "검토 결과에서 모델 후보를 origin reviewer로 바꿈(missing 항목 없음)",
+          "file": "결과/검토/HM-8_1.1_검토.json",
+          "caught": true,
+          "restored_pass": true,
+          "line": "- HM-8-001: origin reviewer인데 같은 종류 · 인용 · 줄의 missing 항목(added: true)이 없음 — 검토자가 더한 후보는 missing에 함께 적습니다"
         },
         {
           "no": "31",
@@ -589,7 +669,7 @@
           "trial": "보류 후보 적재(적재 파일)",
           "caught": true,
           "restored_pass": true,
-          "line": "- extra_load.cypher: 승인(approved)이 아닌 후보 id를 가리킵니다 — OEM-HPP45A-MM@C:OEM-HPP45A-MM-001"
+          "line": "- extra_load.cypher: 승인(approved)이 아닌 후보 id를 가리킵니다 — HI-01@1.0:HI-01-M001"
         },
         {
           "no": "35",
@@ -645,7 +725,7 @@
           "trial": "기존 ID 연결 없음",
           "caught": true,
           "restored_pass": true,
-          "line": "- 적재한 노드 390개가 기존 ID와 하나도 이어지지 않았습니다."
+          "line": "- 적재한 노드 191개가 기존 ID와 하나도 이어지지 않았습니다."
         }
       ],
       "실전반": [
@@ -668,7 +748,7 @@
           "trial": "보류 후보 적재(적재 파일)",
           "caught": true,
           "restored_pass": true,
-          "line": "- extra_load.cypher: 승인(approved)이 아닌 후보 id를 가리킵니다 — OEM-HPP45A-MM@C:OEM-HPP45A-MM-001"
+          "line": "- extra_load.cypher: 승인(approved)이 아닌 후보 id를 가리킵니다 — HI-01@1.0:HI-01-M001"
         },
         {
           "no": "35",
@@ -724,7 +804,7 @@
           "trial": "기존 ID 연결 없음",
           "caught": true,
           "restored_pass": true,
-          "line": "- 적재한 노드 390개가 기존 ID와 하나도 이어지지 않았습니다."
+          "line": "- 적재한 노드 191개가 기존 ID와 하나도 이어지지 않았습니다."
         },
         {
           "no": "24",
@@ -739,13 +819,6 @@
           "caught": true,
           "restored_pass": true,
           "line": "- 자료/ 어디에도 그대로 없는 인용: 「고압수는 쓰지 말 것.」"
-        },
-        {
-          "no": "26",
-          "trial": "없는 작업지시",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- 작업지시_이력.csv에 없는 작업지시 WO-2026-09999"
         },
         {
           "no": "27",
@@ -766,7 +839,7 @@
           "trial": "없는 품번",
           "caught": true,
           "restored_pass": true,
-          "line": "- 재고_현황.csv · 설비 모델에 없는 품번 P-CLR-CORE2"
+          "line": "- 설비 모델에 없는 품번 P-CLR-CORE2"
         }
       ]
     }

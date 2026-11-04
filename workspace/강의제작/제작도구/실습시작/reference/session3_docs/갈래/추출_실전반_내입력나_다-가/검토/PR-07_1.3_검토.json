@@ -32,7 +32,7 @@
       "refs": [],
       "status": "approved",
       "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "reason": "재고 기준 이탈 경보의 조건(21줄) — 원문 21줄과 절 · 종류가 기대 항목과 같다 · 현행 판이라 작업 근거다(DC-01 DC-3)",
       "origin": "extractor"
     },
     {
@@ -46,13 +46,13 @@
       "line_start": 22,
       "line_end": 22,
       "refs": [],
-      "status": "approved",
+      "status": "pending",
       "value": 1,
       "unit": "회",
       "comparator": null,
       "value_text": "1회",
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "decision": "보류",
+      "reason": "이 줄에는 검토자가 원문에서 적은 기대 항목이 없어, 사람이 이 후보를 원문과 대조해 결정하지 않았다 — 적재하지 않고 다음 검토로 남긴다",
       "origin": "extractor"
     },
     {
@@ -66,13 +66,13 @@
       "line_start": 26,
       "line_end": 26,
       "refs": [],
-      "status": "approved",
+      "status": "pending",
       "value": 2,
       "unit": "개",
       "comparator": null,
       "value_text": "2개",
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "decision": "보류",
+      "reason": "이 줄에는 검토자가 원문에서 적은 기대 항목이 없어, 사람이 이 후보를 원문과 대조해 결정하지 않았다 — 적재하지 않고 다음 검토로 남긴다",
       "origin": "extractor"
     },
     {
@@ -86,13 +86,13 @@
       "line_start": 26,
       "line_end": 26,
       "refs": [],
-      "status": "approved",
+      "status": "pending",
       "value": 7,
       "unit": "개",
       "comparator": null,
       "value_text": "7개",
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "decision": "보류",
+      "reason": "이 줄에는 검토자가 원문에서 적은 기대 항목이 없어, 사람이 이 후보를 원문과 대조해 결정하지 않았다 — 적재하지 않고 다음 검토로 남긴다",
       "origin": "extractor"
     },
     {
@@ -106,13 +106,13 @@
       "line_start": 27,
       "line_end": 27,
       "refs": [],
-      "status": "approved",
+      "status": "pending",
       "value": 2,
       "unit": "개",
       "comparator": null,
       "value_text": "2개",
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "decision": "보류",
+      "reason": "이 줄에는 검토자가 원문에서 적은 기대 항목이 없어, 사람이 이 후보를 원문과 대조해 결정하지 않았다 — 적재하지 않고 다음 검토로 남긴다",
       "origin": "extractor"
     },
     {
@@ -126,13 +126,13 @@
       "line_start": 27,
       "line_end": 27,
       "refs": [],
-      "status": "approved",
+      "status": "pending",
       "value": 4,
       "unit": "개",
       "comparator": null,
       "value_text": "4개",
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "decision": "보류",
+      "reason": "이 줄에는 검토자가 원문에서 적은 기대 항목이 없어, 사람이 이 후보를 원문과 대조해 결정하지 않았다 — 적재하지 않고 다음 검토로 남긴다",
       "origin": "extractor"
     },
     {
@@ -152,7 +152,7 @@
       "comparator": null,
       "value_text": "1개",
       "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "reason": "쿨러 코어 재주문점 1개(28줄 표) — 원문 28줄과 절 · 종류 · 값 · 단위 · 비교가 기대 항목과 같다 · 현행 판이라 작업 근거다(DC-01 DC-3)",
       "origin": "extractor"
     },
     {
@@ -166,13 +166,13 @@
       "line_start": 28,
       "line_end": 28,
       "refs": [],
-      "status": "approved",
+      "status": "pending",
       "value": 2,
       "unit": "개",
       "comparator": null,
       "value_text": "2개",
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "decision": "보류",
+      "reason": "원문 28줄에서 검토자가 적은 기준값은 1 개이고, 이 후보의 값 · 단위(2 개)는 그 가운데 없어 원문과 대조하지 않았다 — 적재하지 않는다",
       "origin": "extractor"
     },
     {
@@ -188,7 +188,7 @@
       "refs": [],
       "status": "approved",
       "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "reason": "승인 공급사 밖 발주 금지(31줄) — 원문 31줄과 절 · 종류가 기대 항목과 같다 · 현행 판이라 작업 근거다(DC-01 DC-3)",
       "origin": "extractor"
     },
     {
@@ -202,9 +202,9 @@
       "line_start": 31,
       "line_end": 31,
       "refs": [],
-      "status": "approved",
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "status": "pending",
+      "decision": "보류",
+      "reason": "원문 31줄에서 검토자가 적은 항목은 금지 · 제한(승인 공급사 밖 발주 금지(31줄))이고, 이 후보의 인용은 그 어느 것과도 맞지 않아 원문과 대조하지 않았다 — 적재하지 않는다",
       "origin": "extractor"
     },
     {
@@ -218,9 +218,9 @@
       "line_start": 34,
       "line_end": 34,
       "refs": [],
-      "status": "approved",
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "status": "pending",
+      "decision": "보류",
+      "reason": "원문 34줄에서 검토자가 적은 항목은 기준값(불량 1건 손실 250만 원(34줄))이고, 이 후보의 인용은 그 어느 것과도 맞지 않아 원문과 대조하지 않았다 — 적재하지 않는다",
       "origin": "extractor"
     },
     {
@@ -234,13 +234,13 @@
       "line_start": 34,
       "line_end": 34,
       "refs": [],
-      "status": "approved",
+      "status": "pending",
       "value": 1,
       "unit": "건",
       "comparator": null,
       "value_text": "1건",
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "decision": "보류",
+      "reason": "원문 34줄에서 검토자가 적은 기준값은 250 만 원이고, 이 후보의 값 · 단위(1 건)는 그 가운데 없어 원문과 대조하지 않았다 — 적재하지 않는다",
       "origin": "extractor"
     },
     {
@@ -260,7 +260,7 @@
       "comparator": null,
       "value_text": "250만 원",
       "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "reason": "불량 1건 손실 250만 원(34줄) — 원문 34줄과 절 · 종류 · 값 · 단위 · 비교가 기대 항목과 같다 · 현행 판이라 작업 근거다(DC-01 DC-3)",
       "origin": "extractor"
     },
     {
@@ -274,13 +274,13 @@
       "line_start": 37,
       "line_end": 37,
       "refs": [],
-      "status": "approved",
+      "status": "pending",
       "value": 10,
       "unit": "%",
       "comparator": ">",
       "value_text": "10 %를 넘",
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "decision": "보류",
+      "reason": "이 줄에는 검토자가 원문에서 적은 기대 항목이 없어, 사람이 이 후보를 원문과 대조해 결정하지 않았다 — 적재하지 않고 다음 검토로 남긴다",
       "origin": "extractor"
     },
     {
@@ -294,13 +294,13 @@
       "line_start": 37,
       "line_end": 37,
       "refs": [],
-      "status": "approved",
+      "status": "pending",
       "value": 20,
       "unit": "만 원",
       "comparator": null,
       "value_text": "20만 원",
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "decision": "보류",
+      "reason": "이 줄에는 검토자가 원문에서 적은 기대 항목이 없어, 사람이 이 후보를 원문과 대조해 결정하지 않았다 — 적재하지 않고 다음 검토로 남긴다",
       "origin": "extractor"
     },
     {
@@ -314,13 +314,13 @@
       "line_start": 40,
       "line_end": 40,
       "refs": [],
-      "status": "approved",
+      "status": "pending",
       "value": 300,
       "unit": "만 원",
       "comparator": "<=",
       "value_text": "300만 원 이하",
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "decision": "보류",
+      "reason": "이 줄에는 검토자가 원문에서 적은 기대 항목이 없어, 사람이 이 후보를 원문과 대조해 결정하지 않았다 — 적재하지 않고 다음 검토로 남긴다",
       "origin": "extractor"
     },
     {
@@ -334,9 +334,9 @@
       "line_start": 41,
       "line_end": 41,
       "refs": [],
-      "status": "approved",
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "status": "pending",
+      "decision": "보류",
+      "reason": "이 줄에는 검토자가 원문에서 적은 기대 항목이 없어, 사람이 이 후보를 원문과 대조해 결정하지 않았다 — 적재하지 않고 다음 검토로 남긴다",
       "origin": "extractor"
     },
     {
@@ -350,13 +350,13 @@
       "line_start": 41,
       "line_end": 41,
       "refs": [],
-      "status": "approved",
+      "status": "pending",
       "value": 300,
       "unit": "만 원",
       "comparator": ">",
       "value_text": "300만 원을 넘",
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "decision": "보류",
+      "reason": "이 줄에는 검토자가 원문에서 적은 기대 항목이 없어, 사람이 이 후보를 원문과 대조해 결정하지 않았다 — 적재하지 않고 다음 검토로 남긴다",
       "origin": "extractor"
     },
     {
@@ -370,9 +370,9 @@
       "line_start": 41,
       "line_end": 41,
       "refs": [],
-      "status": "approved",
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "status": "pending",
+      "decision": "보류",
+      "reason": "이 줄에는 검토자가 원문에서 적은 기대 항목이 없어, 사람이 이 후보를 원문과 대조해 결정하지 않았다 — 적재하지 않고 다음 검토로 남긴다",
       "origin": "extractor"
     },
     {
@@ -388,7 +388,7 @@
       "refs": [],
       "status": "approved",
       "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "reason": "나눠 발주 금지(42줄) — 원문 42줄과 절 · 종류가 기대 항목과 같다 · 현행 판이라 작업 근거다(DC-01 DC-3)",
       "origin": "extractor"
     },
     {
@@ -404,7 +404,7 @@
       "refs": [],
       "status": "approved",
       "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "reason": "설비 경보 처리 건에서 발주 절차 금지(45줄) — 원문 45줄과 절 · 종류가 기대 항목과 같다 · 현행 판이라 작업 근거다(DC-01 DC-3)",
       "origin": "extractor"
     },
     {
@@ -418,10 +418,10 @@
       "line_start": 48,
       "line_end": 48,
       "refs": [],
-      "status": "approved",
+      "status": "pending",
       "order": 1,
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "decision": "보류",
+      "reason": "이 줄에는 검토자가 원문에서 적은 기대 항목이 없어, 사람이 이 후보를 원문과 대조해 결정하지 않았다 — 적재하지 않고 다음 검토로 남긴다",
       "origin": "extractor"
     },
     {
@@ -435,10 +435,10 @@
       "line_start": 49,
       "line_end": 49,
       "refs": [],
-      "status": "approved",
+      "status": "pending",
       "order": 2,
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "decision": "보류",
+      "reason": "이 줄에는 검토자가 원문에서 적은 기대 항목이 없어, 사람이 이 후보를 원문과 대조해 결정하지 않았다 — 적재하지 않고 다음 검토로 남긴다",
       "origin": "extractor"
     },
     {
@@ -452,9 +452,9 @@
       "line_start": 49,
       "line_end": 49,
       "refs": [],
-      "status": "approved",
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "status": "pending",
+      "decision": "보류",
+      "reason": "이 줄에는 검토자가 원문에서 적은 기대 항목이 없어, 사람이 이 후보를 원문과 대조해 결정하지 않았다 — 적재하지 않고 다음 검토로 남긴다",
       "origin": "extractor"
     },
     {
@@ -468,10 +468,10 @@
       "line_start": 49,
       "line_end": 50,
       "refs": [],
-      "status": "approved",
+      "status": "excluded",
       "order": 3,
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "decision": "제외",
+      "reason": "인용이 49~50줄의 서로 다른 줄 2개(빈 줄 · 절 머리 빼고)에 걸쳐 있어, 이 후보 하나가 다른 단계 · 줄의 글까지 근거로 삼는다 — 한 줄 근거로 적재할 수 없어 뺀다",
       "origin": "extractor"
     },
     {
@@ -485,9 +485,9 @@
       "line_start": 49,
       "line_end": 50,
       "refs": [],
-      "status": "approved",
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "status": "excluded",
+      "decision": "제외",
+      "reason": "인용이 49~50줄의 서로 다른 줄 2개(빈 줄 · 절 머리 빼고)에 걸쳐 있어, 이 후보 하나가 다른 단계 · 줄의 글까지 근거로 삼는다 — 한 줄 근거로 적재할 수 없어 뺀다",
       "origin": "extractor"
     },
     {
@@ -501,13 +501,13 @@
       "line_start": 49,
       "line_end": 50,
       "refs": [],
-      "status": "approved",
+      "status": "excluded",
       "value": 300,
       "unit": "만 원",
       "comparator": ">",
       "value_text": "300만 원을 넘",
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "decision": "제외",
+      "reason": "인용이 49~50줄의 서로 다른 줄 2개(빈 줄 · 절 머리 빼고)에 걸쳐 있어, 이 후보 하나가 다른 단계 · 줄의 글까지 근거로 삼는다 — 한 줄 근거로 적재할 수 없어 뺀다",
       "origin": "extractor"
     },
     {
@@ -521,10 +521,10 @@
       "line_start": 51,
       "line_end": 51,
       "refs": [],
-      "status": "approved",
+      "status": "pending",
       "order": 4,
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "decision": "보류",
+      "reason": "이 줄에는 검토자가 원문에서 적은 기대 항목이 없어, 사람이 이 후보를 원문과 대조해 결정하지 않았다 — 적재하지 않고 다음 검토로 남긴다",
       "origin": "extractor"
     },
     {
@@ -538,10 +538,10 @@
       "line_start": 51,
       "line_end": 52,
       "refs": [],
-      "status": "approved",
+      "status": "excluded",
       "order": 5,
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "decision": "제외",
+      "reason": "인용이 51~52줄의 서로 다른 줄 2개(빈 줄 · 절 머리 빼고)에 걸쳐 있어, 이 후보 하나가 다른 단계 · 줄의 글까지 근거로 삼는다 — 한 줄 근거로 적재할 수 없어 뺀다",
       "origin": "extractor"
     },
     {
@@ -555,9 +555,9 @@
       "line_start": 51,
       "line_end": 52,
       "refs": [],
-      "status": "approved",
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "status": "excluded",
+      "decision": "제외",
+      "reason": "인용이 51~52줄의 서로 다른 줄 2개(빈 줄 · 절 머리 빼고)에 걸쳐 있어, 이 후보 하나가 다른 단계 · 줄의 글까지 근거로 삼는다 — 한 줄 근거로 적재할 수 없어 뺀다",
       "origin": "extractor"
     },
     {
@@ -571,9 +571,9 @@
       "line_start": 51,
       "line_end": 54,
       "refs": [],
-      "status": "approved",
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "status": "excluded",
+      "decision": "제외",
+      "reason": "인용이 51~54줄의 서로 다른 줄 3개(빈 줄 · 절 머리 빼고)에 걸쳐 있어, 이 후보 하나가 다른 단계 · 줄의 글까지 근거로 삼는다 — 한 줄 근거로 적재할 수 없어 뺀다",
       "origin": "extractor"
     },
     {
@@ -587,10 +587,10 @@
       "line_start": 57,
       "line_end": 57,
       "refs": [],
-      "status": "approved",
+      "status": "pending",
       "order": 1,
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "decision": "보류",
+      "reason": "이 줄에는 검토자가 원문에서 적은 기대 항목이 없어, 사람이 이 후보를 원문과 대조해 결정하지 않았다 — 적재하지 않고 다음 검토로 남긴다",
       "origin": "extractor"
     },
     {
@@ -604,10 +604,10 @@
       "line_start": 58,
       "line_end": 58,
       "refs": [],
-      "status": "approved",
+      "status": "pending",
       "order": 2,
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "decision": "보류",
+      "reason": "이 줄에는 검토자가 원문에서 적은 기대 항목이 없어, 사람이 이 후보를 원문과 대조해 결정하지 않았다 — 적재하지 않고 다음 검토로 남긴다",
       "origin": "extractor"
     },
     {
@@ -621,9 +621,9 @@
       "line_start": 58,
       "line_end": 58,
       "refs": [],
-      "status": "approved",
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "status": "pending",
+      "decision": "보류",
+      "reason": "이 줄에는 검토자가 원문에서 적은 기대 항목이 없어, 사람이 이 후보를 원문과 대조해 결정하지 않았다 — 적재하지 않고 다음 검토로 남긴다",
       "origin": "extractor"
     },
     {
@@ -637,10 +637,10 @@
       "line_start": 58,
       "line_end": 59,
       "refs": [],
-      "status": "approved",
+      "status": "excluded",
       "order": 3,
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "decision": "제외",
+      "reason": "인용이 58~59줄의 서로 다른 줄 2개(빈 줄 · 절 머리 빼고)에 걸쳐 있어, 이 후보 하나가 다른 단계 · 줄의 글까지 근거로 삼는다 — 한 줄 근거로 적재할 수 없어 뺀다",
       "origin": "extractor"
     },
     {
@@ -654,9 +654,9 @@
       "line_start": 58,
       "line_end": 59,
       "refs": [],
-      "status": "approved",
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "status": "excluded",
+      "decision": "제외",
+      "reason": "인용이 58~59줄의 서로 다른 줄 2개(빈 줄 · 절 머리 빼고)에 걸쳐 있어, 이 후보 하나가 다른 단계 · 줄의 글까지 근거로 삼는다 — 한 줄 근거로 적재할 수 없어 뺀다",
       "origin": "extractor"
     },
     {
@@ -670,13 +670,13 @@
       "line_start": 58,
       "line_end": 59,
       "refs": [],
-      "status": "approved",
+      "status": "excluded",
       "value": 300,
       "unit": "만 원",
       "comparator": ">",
       "value_text": "300만 원을 넘",
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "decision": "제외",
+      "reason": "인용이 58~59줄의 서로 다른 줄 2개(빈 줄 · 절 머리 빼고)에 걸쳐 있어, 이 후보 하나가 다른 단계 · 줄의 글까지 근거로 삼는다 — 한 줄 근거로 적재할 수 없어 뺀다",
       "origin": "extractor"
     },
     {
@@ -690,10 +690,10 @@
       "line_start": 60,
       "line_end": 60,
       "refs": [],
-      "status": "approved",
+      "status": "pending",
       "order": 4,
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "decision": "보류",
+      "reason": "이 줄에는 검토자가 원문에서 적은 기대 항목이 없어, 사람이 이 후보를 원문과 대조해 결정하지 않았다 — 적재하지 않고 다음 검토로 남긴다",
       "origin": "extractor"
     },
     {
@@ -707,10 +707,10 @@
       "line_start": 61,
       "line_end": 61,
       "refs": [],
-      "status": "approved",
+      "status": "pending",
       "order": 5,
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "decision": "보류",
+      "reason": "이 줄에는 검토자가 원문에서 적은 기대 항목이 없어, 사람이 이 후보를 원문과 대조해 결정하지 않았다 — 적재하지 않고 다음 검토로 남긴다",
       "origin": "extractor"
     },
     {
@@ -724,9 +724,9 @@
       "line_start": 61,
       "line_end": 61,
       "refs": [],
-      "status": "approved",
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "status": "pending",
+      "decision": "보류",
+      "reason": "이 줄에는 검토자가 원문에서 적은 기대 항목이 없어, 사람이 이 후보를 원문과 대조해 결정하지 않았다 — 적재하지 않고 다음 검토로 남긴다",
       "origin": "extractor"
     },
     {
@@ -740,9 +740,9 @@
       "line_start": 61,
       "line_end": 63,
       "refs": [],
-      "status": "approved",
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "status": "excluded",
+      "decision": "제외",
+      "reason": "인용이 61~63줄의 서로 다른 줄 2개(빈 줄 · 절 머리 빼고)에 걸쳐 있어, 이 후보 하나가 다른 단계 · 줄의 글까지 근거로 삼는다 — 한 줄 근거로 적재할 수 없어 뺀다",
       "origin": "extractor"
     },
     {
@@ -756,10 +756,10 @@
       "line_start": 66,
       "line_end": 66,
       "refs": [],
-      "status": "approved",
+      "status": "pending",
       "order": 1,
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "decision": "보류",
+      "reason": "이 줄에는 검토자가 원문에서 적은 기대 항목이 없어, 사람이 이 후보를 원문과 대조해 결정하지 않았다 — 적재하지 않고 다음 검토로 남긴다",
       "origin": "extractor"
     },
     {
@@ -773,10 +773,10 @@
       "line_start": 67,
       "line_end": 67,
       "refs": [],
-      "status": "approved",
+      "status": "pending",
       "order": 2,
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "decision": "보류",
+      "reason": "이 줄에는 검토자가 원문에서 적은 기대 항목이 없어, 사람이 이 후보를 원문과 대조해 결정하지 않았다 — 적재하지 않고 다음 검토로 남긴다",
       "origin": "extractor"
     },
     {
@@ -790,9 +790,9 @@
       "line_start": 67,
       "line_end": 67,
       "refs": [],
-      "status": "approved",
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "status": "pending",
+      "decision": "보류",
+      "reason": "이 줄에는 검토자가 원문에서 적은 기대 항목이 없어, 사람이 이 후보를 원문과 대조해 결정하지 않았다 — 적재하지 않고 다음 검토로 남긴다",
       "origin": "extractor"
     },
     {
@@ -806,9 +806,9 @@
       "line_start": 67,
       "line_end": 67,
       "refs": [],
-      "status": "approved",
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "status": "pending",
+      "decision": "보류",
+      "reason": "이 줄에는 검토자가 원문에서 적은 기대 항목이 없어, 사람이 이 후보를 원문과 대조해 결정하지 않았다 — 적재하지 않고 다음 검토로 남긴다",
       "origin": "extractor"
     },
     {
@@ -822,10 +822,10 @@
       "line_start": 67,
       "line_end": 68,
       "refs": [],
-      "status": "approved",
+      "status": "excluded",
       "order": 3,
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "decision": "제외",
+      "reason": "인용이 67~68줄의 서로 다른 줄 2개(빈 줄 · 절 머리 빼고)에 걸쳐 있어, 이 후보 하나가 다른 단계 · 줄의 글까지 근거로 삼는다 — 한 줄 근거로 적재할 수 없어 뺀다",
       "origin": "extractor"
     },
     {
@@ -839,9 +839,9 @@
       "line_start": 67,
       "line_end": 68,
       "refs": [],
-      "status": "approved",
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "status": "excluded",
+      "decision": "제외",
+      "reason": "인용이 67~68줄의 서로 다른 줄 2개(빈 줄 · 절 머리 빼고)에 걸쳐 있어, 이 후보 하나가 다른 단계 · 줄의 글까지 근거로 삼는다 — 한 줄 근거로 적재할 수 없어 뺀다",
       "origin": "extractor"
     },
     {
@@ -855,10 +855,10 @@
       "line_start": 69,
       "line_end": 69,
       "refs": [],
-      "status": "approved",
+      "status": "pending",
       "order": 4,
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "decision": "보류",
+      "reason": "이 줄에는 검토자가 원문에서 적은 기대 항목이 없어, 사람이 이 후보를 원문과 대조해 결정하지 않았다 — 적재하지 않고 다음 검토로 남긴다",
       "origin": "extractor"
     },
     {
@@ -872,10 +872,10 @@
       "line_start": 69,
       "line_end": 70,
       "refs": [],
-      "status": "approved",
+      "status": "excluded",
       "order": 5,
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "decision": "제외",
+      "reason": "인용이 69~70줄의 서로 다른 줄 2개(빈 줄 · 절 머리 빼고)에 걸쳐 있어, 이 후보 하나가 다른 단계 · 줄의 글까지 근거로 삼는다 — 한 줄 근거로 적재할 수 없어 뺀다",
       "origin": "extractor"
     },
     {
@@ -889,9 +889,9 @@
       "line_start": 69,
       "line_end": 70,
       "refs": [],
-      "status": "approved",
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "status": "excluded",
+      "decision": "제외",
+      "reason": "인용이 69~70줄의 서로 다른 줄 2개(빈 줄 · 절 머리 빼고)에 걸쳐 있어, 이 후보 하나가 다른 단계 · 줄의 글까지 근거로 삼는다 — 한 줄 근거로 적재할 수 없어 뺀다",
       "origin": "extractor"
     },
     {
@@ -905,9 +905,9 @@
       "line_start": 69,
       "line_end": 72,
       "refs": [],
-      "status": "approved",
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "status": "excluded",
+      "decision": "제외",
+      "reason": "인용이 69~72줄의 서로 다른 줄 3개(빈 줄 · 절 머리 빼고)에 걸쳐 있어, 이 후보 하나가 다른 단계 · 줄의 글까지 근거로 삼는다 — 한 줄 근거로 적재할 수 없어 뺀다",
       "origin": "extractor"
     },
     {
@@ -921,9 +921,9 @@
       "line_start": 75,
       "line_end": 75,
       "refs": [],
-      "status": "approved",
-      "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3))",
+      "status": "pending",
+      "decision": "보류",
+      "reason": "이 줄에는 검토자가 원문에서 적은 기대 항목이 없어, 사람이 이 후보를 원문과 대조해 결정하지 않았다 — 적재하지 않고 다음 검토로 남긴다",
       "origin": "extractor"
     },
     {
@@ -939,7 +939,7 @@
       "refs": [],
       "status": "approved",
       "decision": "채택",
-      "reason": "인용을 원문 그 줄에서 찾음 · 문서 상태 현행(작업 근거(DC-01 DC-3)) — 원문에 있는데 후보에 없어 검토자가 원문 문장으로 더함",
+      "reason": "예비품을 같이 쓰는 설비(10줄) — 원문 10줄과 절 · 종류가 기대 항목과 같다 · 현행 판이라 작업 근거다(DC-01 DC-3) — 이 항목을 담은 후보가 없어(까닭은 missing의 note) 검토자가 원문 문장으로 더함",
       "origin": "reviewer"
     }
   ],

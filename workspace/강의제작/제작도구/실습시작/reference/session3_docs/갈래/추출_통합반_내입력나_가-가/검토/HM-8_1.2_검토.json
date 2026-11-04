@@ -1986,7 +1986,23 @@
       "refs": [],
       "status": "excluded",
       "decision": "제외",
-      "reason": "문서 상태 개정 요청(미승인) — DC-01 DC-3 「승인 전에는 작업 근거가 아니다」 — 원문에 있는데 후보에 없어 검토자가 원문 문장으로 더함",
+      "reason": "문서 상태 개정 요청(미승인) — DC-01 DC-3 「승인 전에는 작업 근거가 아니다」 — 이 항목을 담은 후보가 없어(까닭은 missing의 note) 검토자가 원문 문장으로 더함",
+      "origin": "reviewer"
+    },
+    {
+      "id": "HM-8-R02",
+      "section": "HM-8.7",
+      "procedure": null,
+      "kind": "precondition",
+      "text": "원인에 맞는 근본 조치를 CMMS 작업지시로 발행한다. 승인은 설비보전팀장이 한다.",
+      "quote": "원인에 맞는 근본 조치를 CMMS 작업지시로 발행한다. 승인은 설비보전팀장이 한다.",
+      "quote_match": "exact",
+      "line_start": 81,
+      "line_end": 81,
+      "refs": [],
+      "status": "excluded",
+      "decision": "제외",
+      "reason": "문서 상태 개정 요청(미승인) — DC-01 DC-3 「승인 전에는 작업 근거가 아니다」 — 이 항목을 담은 후보가 없어(까닭은 missing의 note) 검토자가 원문 문장으로 더함",
       "origin": "reviewer"
     }
   ],
@@ -2001,6 +2017,16 @@
       "line_start": 9,
       "line_end": 9,
       "note": "원문에 있는데 후보가 없음",
+      "added": true
+    },
+    {
+      "section": "HM-8.7",
+      "procedure": null,
+      "kind": "precondition",
+      "quote": "원인에 맞는 근본 조치를 CMMS 작업지시로 발행한다. 승인은 설비보전팀장이 한다.",
+      "line_start": 81,
+      "line_end": 81,
+      "note": "후보 HM-8-086가 이 문장을 다른 문장과 한 인용에 담아(그 후보는 제외) 이 문장 하나를 담은 후보가 없음",
       "added": true
     }
   ],

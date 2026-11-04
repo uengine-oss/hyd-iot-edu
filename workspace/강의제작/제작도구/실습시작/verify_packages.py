@@ -84,17 +84,22 @@ def same_content(a,b):
     if a==b:return True
     return text_of(a) is not None and text_of(b) is not None and a.replace(b'\r\n',b'\n')==b.replace(b'\r\n',b'\n')
 
-def env_template_errors(name,data):
-    """학생이 등호 뒤를 채우는 빈 틀(.env.example · TEMPLATES의 .env)에서 값이 든 줄. 값은 학생 코드(llm_client)가 읽는 대로
+ENV_NAMES=('OPENAI_BASE_URL','LLM_API_KEY','LLM_MODEL')   # 코딩랩.md K-102 — 학생이 받는 접속 세 줄의 이름(.env.example에 셋 다, 값은 빈 채)
+
+def env_template_errors(name,data,need=()):
+    """학생이 등호 뒤를 채우는 빈 틀(.env.example · TEMPLATES의 .env)에서 값이 든 줄과, need의 이름 가운데 빠진 것. 값은 학생 코드(llm_client)가 읽는 대로
     앞뒤 공백 · 따옴표를 걷어 본다. 값 자체는 찍지 않는다(키 · 주소일 수 있다)."""
     text=text_of(data)
     if text is None:return [f'{name}: 빈 틀이 글이 아님']
-    errors=[]
+    errors=[];seen=set()
     for n,line in enumerate(text.splitlines(),1):
         line=line.strip()
         if not line or line.startswith('#') or '=' not in line:continue
         key,value=line.split('=',1)
+        seen.add(key.strip())
         if value.strip().strip('"\''):errors.append(f'{name}:{n}: 빈 틀에 값이 들어 있음 {key.strip()}=…(키 · 주소가 섞였을 수 있음 — 값을 비운다)')
+    missing=[k for k in need if k not in seen]
+    if missing:errors.append(f'{name}: 접속 세 줄의 이름이 빠짐 {", ".join(missing)}(코딩랩.md K-102)')
     return errors
 
 def check_zip(zpath,folder,need=(),exclude_names=PRIVATE):
@@ -124,7 +129,7 @@ def check_zip(zpath,folder,need=(),exclude_names=PRIVATE):
         if parts[-1]=='.env':
             errors+=[f'{zpath.name}: {e}' for e in env_template_errors(name,data)] if name in templates else [f'{zpath.name}: .env가 들어 있음 {name}']
         elif parts[-1]=='.env.example':
-            errors+=[f'{zpath.name}: {e}' for e in env_template_errors(name,data)]
+            errors+=[f'{zpath.name}: {e}' for e in env_template_errors(name,data,ENV_NAMES)]
     for name in sorted(templates-set(packed)):
         errors.append(f'{zpath.name}: 학생에게 줄 틀이 빠짐 {name}(이 PC 체크아웃에는 .env가 없다 — 틀이 있는 PC에서 묶는다)')
     only_zip=sorted(n for n in set(packed)-set(present)-templates if PurePosixPath(n).name!='.env')   # .env는 위에서 따로 찍었다

@@ -12,7 +12,7 @@
     "reviewer": "설비보전팀 검토",
     "reviewed_at": "2026-10-28T10:30:00+09:00",
     "candidates_file": "결과/후보/OEM-HPP45A-MM_C.json",
-    "candidates_sha256": "7b879e52ee78efd84ecc78fc1a47529ff6c33a870a0a112de10cf80bee251af6",
+    "candidates_sha256": "08b7c8a0fc45ded704b55b85bfa9cfd51284724d8f6d0938f636325d33f7b125",
     "selected_task": null,
     "decisions": [
       "판 기준: 문서 목록의 상태와 DC-01 DC-3의 뜻대로 — 현행은 작업 근거, 폐기는 지난 기록 해석에만, 개정 요청(미승인)은 작업 근거가 아님, 보충은 대체 아님, 참고(제조사 · 스캔본)는 사내 기준과 다르게 정한 항목이면 사내 기준을 따름.",
@@ -34,7 +34,7 @@
       "refs": [],
       "status": "pending",
       "decision": "보류",
-      "reason": "사내 기준이 정하지 않은 제조사 항목 — 적용할지 소유 부서에 묻는다",
+      "reason": "이 줄에는 검토자가 원문에서 적은 기대 항목이 없어, 사람이 이 후보를 원문과 대조해 결정하지 않았다 — 적재하지 않고 다음 검토로 남긴다",
       "origin": "extractor"
     },
     {
@@ -51,7 +51,7 @@
       "refs": [],
       "status": "pending",
       "decision": "보류",
-      "reason": "사내 기준이 정하지 않은 제조사 항목 — 적용할지 소유 부서에 묻는다",
+      "reason": "이 줄에는 검토자가 원문에서 적은 기대 항목이 없어, 사람이 이 후보를 원문과 대조해 결정하지 않았다 — 적재하지 않고 다음 검토로 남긴다",
       "origin": "extractor"
     },
     {
@@ -68,7 +68,7 @@
       "refs": [],
       "status": "approved",
       "decision": "채택",
-      "reason": "사내 기준과 같은 항목 — 출처를 하나 더한다 — PM-02 PM-2.6 · SOP-PM-21 1~2단계(정지 · 잠금 · 잔압 배출)",
+      "reason": "배관 · 필터 하우징을 열기 전 정지 · 잠금 · 방압(11줄) — 사내 기준과 같은 항목 — 출처를 하나 더한다 — PM-02 PM-2.6 · SOP-PM-21 1~2단계(정지 · 잠금 · 잔압 배출) · 원문 11줄과 절 · 종류가 기대 항목과 같다",
       "origin": "extractor"
     },
     {
@@ -83,9 +83,9 @@
       "line_end": 13,
       "lang": "en",
       "refs": [],
-      "status": "approved",
-      "decision": "채택",
-      "reason": "사내 기준과 같은 항목 — 출처를 하나 더한다 — PM-02 SOP-PM-21 3단계(PS1 0 bar 확인 뒤 배관을 연다)",
+      "status": "excluded",
+      "decision": "제외",
+      "reason": "같은 원문 줄(13줄)을 시작 조건 · 승인으로 뽑았다 — 검토자가 읽은 원문 문맥은 금지 · 제한(압력계 0 psi 전에는 회로를 열지 않음(13줄)) · 기준값(압력계 0 psi(13줄 「reads 0 psi」 — 같음))",
       "origin": "extractor"
     },
     {
@@ -102,7 +102,7 @@
       "refs": [],
       "status": "approved",
       "decision": "채택",
-      "reason": "사내 기준과 같은 항목 — 출처를 하나 더한다 — PM-02 SOP-PM-21 3단계(PS1 0 bar 확인 뒤 배관을 연다)",
+      "reason": "압력계 0 psi 전에는 회로를 열지 않음(13줄) — 사내 기준과 같은 항목 — 출처를 하나 더한다 — PM-02 SOP-PM-21 3단계(PS1 0 bar 확인 뒤 배관을 연다) · 원문 13줄과 절 · 종류가 기대 항목과 같다",
       "origin": "extractor"
     },
     {
@@ -120,11 +120,14 @@
       "status": "approved",
       "value": 0,
       "unit": "psi",
-      "comparator": null,
+      "comparator": "=",
       "value_text": "0 psi",
-      "decision": "채택",
-      "reason": "사내 기준과 같은 항목 — 출처를 하나 더한다 — PM-02 SOP-PM-21 3단계(PS1 0 bar 확인 뒤 배관을 연다)",
-      "origin": "extractor"
+      "decision": "수정",
+      "reason": "압력계 0 psi(13줄 「reads 0 psi」 — 같음) — 사내 기준과 같은 항목 — 출처를 하나 더한다 — PM-02 SOP-PM-21 3단계(PS1 0 bar 확인 뒤 배관을 연다) · 원문 13줄과 절 · 종류 · 값 · 단위가 기대 항목과 같다 — 비교는 원문 「0 psi」의 문맥대로 같음(=)라 None를 고침",
+      "origin": "extractor",
+      "before": {
+        "comparator": null
+      }
     },
     {
       "id": "OEM-HPP45A-MM-007",
@@ -268,7 +271,7 @@
       "comparator": null,
       "value_text": "2,000 h",
       "decision": "채택",
-      "reason": "사내 기준과 같은 항목 — 출처를 하나 더한다 — PM-02 PM-2.2 2,000 h 패키지의 주 펌프 축 씰 키트 교체",
+      "reason": "펌프 축 씰 교체 주기 2,000 h(31줄 표) — 사내 기준과 같은 항목 — 출처를 하나 더한다 — PM-02 PM-2.2 2,000 h 패키지의 주 펌프 축 씰 키트 교체 · 원문 31줄과 절 · 종류 · 값 · 단위 · 비교가 기대 항목과 같다",
       "origin": "extractor"
     },
     {
@@ -331,7 +334,7 @@
       "comparator": null,
       "value_text": "8,000 h",
       "decision": "채택",
-      "reason": "사내 기준과 같은 항목 — 출처를 하나 더한다 — PM-02 PM-2.2 8,000 h 패키지의 작동유 교환",
+      "reason": "작동유 교환 주기 8,000 h(33줄 표) — 사내 기준과 같은 항목 — 출처를 하나 더한다 — PM-02 PM-2.2 8,000 h 패키지의 작동유 교환 · 원문 33줄과 절 · 종류 · 값 · 단위 · 비교가 기대 항목과 같다",
       "origin": "extractor"
     },
     {
@@ -410,7 +413,7 @@
       "status": "approved",
       "order": 1,
       "decision": "채택",
-      "reason": "사내 기준과 같은 항목 — 출처를 하나 더한다 — PM-02 SOP-PM-21 1~3단계",
+      "reason": "리턴 필터 교체 1단계 — 1절 안전 조치와 0 psi 확인(42줄) — 사내 기준과 같은 항목 — 출처를 하나 더한다 — PM-02 SOP-PM-21 1~3단계 · 원문 42줄과 절 · 종류가 기대 항목과 같다",
       "origin": "extractor"
     },
     {
@@ -429,7 +432,7 @@
       ],
       "status": "approved",
       "decision": "채택",
-      "reason": "사내 기준과 같은 항목 — 출처를 하나 더한다 — PM-02 SOP-PM-21 1~3단계",
+      "reason": "리턴 필터 교체 전 0 psi 확인(42줄) — 사내 기준과 같은 항목 — 출처를 하나 더한다 — PM-02 SOP-PM-21 1~3단계 · 원문 42줄과 절 · 종류가 기대 항목과 같다",
       "origin": "extractor"
     },
     {
@@ -449,11 +452,14 @@
       "status": "approved",
       "value": 0,
       "unit": "psi",
-      "comparator": null,
+      "comparator": "=",
       "value_text": "0 psi",
-      "decision": "채택",
-      "reason": "사내 기준과 같은 항목 — 출처를 하나 더한다 — PM-02 SOP-PM-21 1~3단계",
-      "origin": "extractor"
+      "decision": "수정",
+      "reason": "압력계 0 psi(42줄 「reads 0 psi」 — 같음) — 사내 기준과 같은 항목 — 출처를 하나 더한다 — PM-02 SOP-PM-21 1~3단계 · 원문 42줄과 절 · 종류 · 값 · 단위가 기대 항목과 같다 — 비교는 원문 「0 psi」의 문맥대로 같음(=)라 None를 고침",
+      "origin": "extractor",
+      "before": {
+        "comparator": null
+      }
     },
     {
       "id": "OEM-HPP45A-MM-023",
@@ -548,8 +554,8 @@
       "section": "3",
       "procedure": "T-3.1",
       "kind": "unit_value",
-      "text": "Fit a new 10 µm element (part no.",
-      "quote": "Fit a new 10 µm element (part no.",
+      "text": "Fit a new 10 µm element (part no. HI-RF-10) with a new O-ring and tighten the bowl to 35 N·m.",
+      "quote": "Fit a new 10 µm element (part no. HI-RF-10) with a new O-ring and tighten the bowl to 35 N·m.",
       "quote_match": "exact",
       "line_start": 48,
       "line_end": 48,
@@ -569,8 +575,8 @@
       "section": "3",
       "procedure": "T-3.1",
       "kind": "unit_value",
-      "text": "HI-RF-10) with a new O-ring and tighten the bowl to 35 N·m.",
-      "quote": "HI-RF-10) with a new O-ring and tighten the bowl to 35 N·m.",
+      "text": "Fit a new 10 µm element (part no. HI-RF-10) with a new O-ring and tighten the bowl to 35 N·m.",
+      "quote": "Fit a new 10 µm element (part no. HI-RF-10) with a new O-ring and tighten the bowl to 35 N·m.",
       "quote_match": "exact",
       "line_start": 48,
       "line_end": 48,
@@ -600,7 +606,7 @@
       "status": "approved",
       "order": 5,
       "decision": "채택",
-      "reason": "사내 기준과 같은 항목 — 출처를 하나 더한다 — PM-02 SOP-PM-21 5 · 6단계(지시기 초기화 · 누유 점검)",
+      "reason": "리턴 필터 교체 5단계 — 지시기 초기화 · 10분 운전 · 누유 확인(50줄) — 사내 기준과 같은 항목 — 출처를 하나 더한다 — PM-02 SOP-PM-21 5 · 6단계(지시기 초기화 · 누유 점검) · 원문 50줄과 절 · 종류가 기대 항목과 같다",
       "origin": "extractor"
     },
     {
@@ -621,7 +627,7 @@
       "comparator": null,
       "value_text": "10 minutes",
       "decision": "채택",
-      "reason": "사내 기준과 같은 항목 — 출처를 하나 더한다 — PM-02 SOP-PM-21 5 · 6단계(지시기 초기화 · 누유 점검)",
+      "reason": "교체 뒤 운전 10분(50줄) — 사내 기준과 같은 항목 — 출처를 하나 더한다 — PM-02 SOP-PM-21 5 · 6단계(지시기 초기화 · 누유 점검) · 원문 50줄과 절 · 종류 · 값 · 단위 · 비교가 기대 항목과 같다",
       "origin": "extractor"
     },
     {
@@ -937,7 +943,7 @@
       "status": "approved",
       "order": 1,
       "decision": "채택",
-      "reason": "사내 기준과 같은 항목 — 출처를 하나 더한다 — PM-02 SOP-PM-21 3단계",
+      "reason": "프리차지 점검 1단계 — 1절 안전 조치와 유압 쪽 0 psi(68줄) — 사내 기준과 같은 항목 — 출처를 하나 더한다 — PM-02 SOP-PM-21 3단계 · 원문 68줄과 절 · 종류가 기대 항목과 같다",
       "origin": "extractor"
     },
     {
@@ -956,7 +962,7 @@
       ],
       "status": "approved",
       "decision": "채택",
-      "reason": "사내 기준과 같은 항목 — 출처를 하나 더한다 — PM-02 SOP-PM-21 3단계",
+      "reason": "충전 키트 연결 전 유압 쪽 0 psi(68줄) — 사내 기준과 같은 항목 — 출처를 하나 더한다 — PM-02 SOP-PM-21 3단계 · 원문 68줄과 절 · 종류가 기대 항목과 같다",
       "origin": "extractor"
     },
     {
@@ -976,11 +982,14 @@
       "status": "approved",
       "value": 0,
       "unit": "psi",
-      "comparator": null,
+      "comparator": "=",
       "value_text": "0 psi",
-      "decision": "채택",
-      "reason": "사내 기준과 같은 항목 — 출처를 하나 더한다 — PM-02 SOP-PM-21 3단계",
-      "origin": "extractor"
+      "decision": "수정",
+      "reason": "유압 쪽 0 psi(68줄 「must read 0 psi」 — 같음) — 사내 기준과 같은 항목 — 출처를 하나 더한다 — PM-02 SOP-PM-21 3단계 · 원문 68줄과 절 · 종류 · 값 · 단위가 기대 항목과 같다 — 비교는 원문 「0 psi」의 문맥대로 같음(=)라 None를 고침",
+      "origin": "extractor",
+      "before": {
+        "comparator": null
+      }
     },
     {
       "id": "OEM-HPP45A-MM-050",
@@ -1225,7 +1234,7 @@
       "status": "approved",
       "order": 1,
       "decision": "채택",
-      "reason": "사내 기준과 같은 항목 — 출처를 하나 더한다 — HM-8 1.1 SOP-COOL-14 1단계(정지 · LOCAL · 잠금)",
+      "reason": "코어 세척 1단계 — 정지 · 잠금 · 팬 정지(105줄) — 사내 기준과 같은 항목 — 출처를 하나 더한다 — HM-8 1.1 SOP-COOL-14 1단계(정지 · LOCAL · 잠금) · 원문 105줄과 절 · 종류가 기대 항목과 같다",
       "origin": "extractor"
     },
     {
@@ -1240,9 +1249,9 @@
       "line_end": 105,
       "lang": "en",
       "refs": [],
-      "status": "approved",
-      "decision": "채택",
-      "reason": "사내 기준과 같은 항목 — 출처를 하나 더한다 — HM-8 1.1 SOP-COOL-14 1단계(정지 · LOCAL · 잠금)",
+      "status": "excluded",
+      "decision": "제외",
+      "reason": "같은 원문 줄(105줄)을 시작 조건 · 승인으로 뽑았다 — 검토자가 읽은 원문 문맥은 단계(코어 세척 1단계 — 정지 · 잠금 · 팬 정지(105줄))",
       "origin": "extractor"
     },
     {
@@ -1317,7 +1326,7 @@
       "status": "approved",
       "order": 4,
       "decision": "채택",
-      "reason": "사내 기준과 같은 항목 — 출처를 하나 더한다 — HM-8 1.1 SOP-COOL-14 2단계(고압수는 쓰지 않는다)",
+      "reason": "코어 세척 4단계 — 고압 세척기 금지(112줄) — 사내 기준과 같은 항목 — 출처를 하나 더한다 — HM-8 1.1 SOP-COOL-14 2단계(고압수는 쓰지 않는다) · 원문 112줄과 절 · 종류가 기대 항목과 같다",
       "origin": "extractor"
     },
     {
@@ -1334,7 +1343,7 @@
       "refs": [],
       "status": "approved",
       "decision": "채택",
-      "reason": "사내 기준과 같은 항목 — 출처를 하나 더한다 — HM-8 1.1 SOP-COOL-14 2단계(고압수는 쓰지 않는다)",
+      "reason": "고압 세척기 금지(112줄) — 사내 기준과 같은 항목 — 출처를 하나 더한다 — HM-8 1.1 SOP-COOL-14 2단계(고압수는 쓰지 않는다) · 원문 112줄과 절 · 종류가 기대 항목과 같다",
       "origin": "extractor"
     },
     {
@@ -1360,8 +1369,8 @@
       "section": "7",
       "procedure": "T-7.1",
       "kind": "precondition",
-      "text": "If blocked areas or bent fins remain after cleaning, replace the core (part no.",
-      "quote": "If blocked areas or bent fins remain after cleaning, replace the core (part no.",
+      "text": "If blocked areas or bent fins remain after cleaning, replace the core (part no. HI-CC-45A).",
+      "quote": "If blocked areas or bent fins remain after cleaning, replace the core (part no. HI-CC-45A).",
       "quote_match": "exact",
       "line_start": 114,
       "line_end": 114,
@@ -1415,7 +1424,7 @@
       "id": "OEM-HPP45A-MM-073",
       "section": "7",
       "procedure": "T-7.1",
-      "kind": "prohibition",
+      "kind": "completion",
       "text": "The difference must not be less than the value in the commissioning record.",
       "quote": "The difference must not be less than the value in the commissioning record.",
       "quote_match": "exact",
@@ -1442,7 +1451,7 @@
       "refs": [],
       "status": "excluded",
       "decision": "제외",
-      "reason": "사내 기준과 다르게 정한 항목은 사내 기준을 따른다(제조사 지침 머리말 7줄 · DC-01 DC-3) — 세척할 때는 HM-8.4 판정(핀 오염) · HM-8.7 근본 조치가 정한다 — 원문에 있는데 후보에 없어 검토자가 원문 문장으로 더함",
+      "reason": "사내 기준과 다르게 정한 항목은 사내 기준을 따른다(제조사 지침 머리말 7줄 · DC-01 DC-3) — 세척할 때는 HM-8.4 판정(핀 오염) · HM-8.7 근본 조치가 정한다 — 이 항목을 담은 후보가 없어(까닭은 missing의 note) 검토자가 원문 문장으로 더함",
       "origin": "reviewer"
     },
     {
@@ -1459,24 +1468,7 @@
       "refs": [],
       "status": "pending",
       "decision": "보류",
-      "reason": "사내 기준이 정하지 않은 제조사 항목 — 세척 전 코어 막힘 · 휨 확인(HM-8 · PM-02에 없음) — 적용할지 HM-8 소유 부서(설비보전팀)에 묻는다 — 원문에 있는데 후보에 없어 검토자가 원문 문장으로 더함",
-      "origin": "reviewer"
-    },
-    {
-      "id": "OEM-HPP45A-MM-R03",
-      "section": "7",
-      "procedure": "T-7.1",
-      "kind": "completion",
-      "text": "The difference must not be less than the value in the commissioning record.",
-      "quote": "The difference must not be less than the value in the commissioning record.",
-      "quote_match": "exact",
-      "line_start": 116,
-      "line_end": 116,
-      "lang": "en",
-      "refs": [],
-      "status": "pending",
-      "decision": "보류",
-      "reason": "사내 기준이 정하지 않은 제조사 항목 — 부하 운전 뒤 쿨러 입구 · 출구 유온 차 확인(HM-8의 완료 기준은 CE 80 %) — 적용할지 HM-8 소유 부서(설비보전팀)에 묻는다 — 원문에 있는데 후보에 없어 검토자가 원문 문장으로 더함",
+      "reason": "사내 기준이 정하지 않은 제조사 항목 — 세척 전 코어 막힘 · 휨 확인(HM-8 · PM-02에 없음) — 적용할지 HM-8 소유 부서(설비보전팀)에 묻는다 — 이 항목을 담은 후보가 없어(까닭은 missing의 note) 검토자가 원문 문장으로 더함",
       "origin": "reviewer"
     }
   ],
@@ -1500,17 +1492,7 @@
       "quote": "Inspect the core before cleaning. Record blocked areas and bent or damaged fins.",
       "line_start": 107,
       "line_end": 107,
-      "note": "원문에 있는데 후보가 없음",
-      "added": true
-    },
-    {
-      "section": "7",
-      "procedure": "T-7.1",
-      "kind": "completion",
-      "quote": "The difference must not be less than the value in the commissioning record.",
-      "line_start": 116,
-      "line_end": 116,
-      "note": "원문에 있는데 후보가 없음",
+      "note": "후보 OEM-HPP45A-MM-064가 같은 원문을 단계 종류로 뽑았고 시작 조건 · 승인 종류로 뽑은 후보는 없음",
       "added": true
     }
   ],

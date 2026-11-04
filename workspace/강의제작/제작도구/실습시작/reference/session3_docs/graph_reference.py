@@ -1,6 +1,6 @@
 """강사 참조 — 문서 지식 묶음 그래프 랩(통합 04-3 · 실전 03-5)의 적재 · 조회 · 카드. 학생 폴더 · ZIP에 넣지 않는다.
 
-입력 = 추출 랩 강사 판(지점5 나 · 지점6 가)의 검토 결과(학생 폴더 입력/검토결과/와 같은 바이트). 정할 것은 지점7 —
+입력 = 추출 랩 강사 판(강사 추출 실행 run1의 후보 · 지점5 나 · 지점6 가)의 검토 결과(학생 폴더 입력/검토결과/ · 추출 학생용 완성본의 결과/검토와 같은 바이트). 정할 것은 지점7 —
 다른 문서(PM-02 PM-2.4 「예정된 정비 시간은 생산 오더가 없는 시간 … 낮에 생산 중인 설비는 세우지 않는 것이 원칙」)의 조건을 핀 세척(SOP-COOL-14)에 이을지:
 가 = 준비 조건으로 잇는다(근거: HM-8 1.1 SOP-COOL-13 4단계가 같은 말을 빌림) / 나 = 잇지 않는다(PM-02의 범위는 정기 정비 — PM-2.1).
 적재는 학생 도구(lab_cypher.py run)로 한다 — 이 파일은 검토 결과에서 적재 파일(.cypher)을 만들고, 조회문 · 카드 · 구축 기록을 쓴다.
@@ -18,7 +18,7 @@ import re
 
 P7 = ('가', '나')
 BASE_P7 = '가'                      # 학생용 완성본 갈래(구성안 12절)
-PHASE2 = {'OEM-HPP45A-MM', 'PR-07'}   # 통합 04-3 10단계에서 더하는 문서
+PHASE2 = {'OEM-HPP45A-MM', 'PR-07'}   # 통합 04-3 「다른 문서 추가 반영」 단계에서 더하는 문서
 REMOTE = ['SOP-COOL-11', 'SOP-COOL-12', 'SOP-COOL-13']
 HPP45A = ['HYD-01', 'HYD-02', 'HYD-03']
 ROLE = {'precondition': 'preparation', 'prohibition': 'prohibition', 'completion': 'completion', 'step': 'step', 'unit_value': 'value'}
@@ -246,30 +246,9 @@ def query_file():
     return '// 강사 참조 조회문 — Neo4j Browser에서는 :param 줄부터, run_reference.py는 같은 매개변수로 HTTP 실행\n' + params + '\n'.join(v + ';' for v in QUERIES.values()) + '\n'
 
 
-# ───────────── 작업 확인 카드(실전 03-5) ─────────────
-def csv_rows(path):
-    lines = [x for x in read(path).splitlines() if x.strip() and not x.startswith('#')]
-    return list(csv.DictReader(io.StringIO('\n'.join(lines))))
-
-
-WO_WORDS = {'SOP-COOL-14': re.compile(r'SOP-COOL-14|SOP-COOL-04|핀 ?세척|핀 ?청소|핀 막힘|fin|HM-7\.6'), 'SOP-COOL-11': re.compile(r'SOP-COOL-11|팬 100|SOP-COOL-01')}
-CARD_PARTS = {'SOP-COOL-14': [], 'SOP-COOL-11': []}       # 이 작업에 품번이 붙은 부품이 없다(압축공기 세척) — 코어 교체는 지점6 나에서만
-ALIAS = {'1호기': 'HYD-01', '2호기': 'HYD-02', '3호기': 'HYD-03', 'HPU-L2-01': 'HYD-01', 'HPU-L2-02': 'HYD-02', 'HPU-L2-03': 'HYD-03',
-         '#1 파워팩': 'HYD-01', '#2 파워팩': 'HYD-02', '#3 파워팩': 'HYD-03', 'HYD01': 'HYD-01', 'HYD02': 'HYD-02', 'HYD03': 'HYD-03'}
-
-
-def history(folder, sop):
-    rows = csv_rows(Path(folder)/'자료/작업지시_이력.csv')
-    out = []
-    for r in rows:
-        asset = ALIAS.get(r['설비'], r['설비'])
-        if asset in HPP45A and WO_WORDS[sop].search(r['작업 내용']) and r['작업유형'] != '운전':
-            out.append(dict(r, asset=asset))
-    return out
-
-
-def card(card_row, folder, sop, p6='가', p7='가', remaining=()):
-    """조회 결과(QUERIES['CARD']의 한 행)와 원천 기록으로 카드 글을 쓴다."""
+# ───────────── 작업 확인 카드(실전 03-5) — 실전 R37: 준비 · 금지 · 완료 조건과 원문 출처(현재 값 · 승인은 읽을 곳만) ─────────────
+def card(card_row, folder, p7='가', remaining=()):
+    """조회 결과(QUERIES['CARD']의 한 행)로 카드 글을 쓴다. 지난 시행 · 부품 재고는 카드에 두지 않는다(실라버스 행 밖 — 현재 값은 원천 이름만)."""
     sop_id, name, source, approval, apply_, ban, done, steps, ev = card_row
     ev = [e for e in ev if e.get('quote')]
     def quoted(role):
@@ -303,26 +282,6 @@ def card(card_row, folder, sop, p6='가', p7='가', remaining=()):
             '- PLC 운전 모드 · 상태 — 그래프에 없는 현재 값. PLC 상태 수신(시계열)에서 읽는다.']
     if p7 == '가' and sop_id == 'SOP-COOL-14':
         out.append('- 오늘 밤 생산 오더가 없는 시간 — 그래프에 없는 현재 값. MES 생산 계획에서 읽는다(준비 조건 PM-02 PM-2.4).')
-    out += ['', '## 부품 준비', '']
-    stock = csv_rows(Path(folder)/'자료/재고_현황.csv')
-    stamp = read(Path(folder)/'자료/재고_현황.csv').splitlines()[0]
-    parts = CARD_PARTS[sop_id] + (['P-CLR-CORE'] if (p6 == '나' and sop_id == 'SOP-COOL-14') else [])
-    if parts:
-        for p in parts:
-            r = next(x for x in stock if x['품번'] == p)
-            out.append(f'- {p} {r["품명"]} — 필요 1{r["단위"]}(코어 교체로 바꿀 때) · 원천 기록: 현재고 {r["현재고(on_hand)"]} · 예약 {r["예약(reserved)"]} · 입고 예정 {r["입고 예정(on_order)"] or 0}({stamp.split(" — ")[0].lstrip("# ")})')
-    else:
-        out.append(f'- 없음 — 이 작업의 단계 · 조건에 품번이 붙은 부품이 없다(재고 기준: {stamp.split(" — ")[0].lstrip("# ")})')
-    out += ['', '## 지난 시행 기록', '']
-    rows = history(folder, sop_id)
-    for r in rows:
-        done_ = f'완료 {r["완료일"]}' if r['완료일'] else '완료일 없음 — 확인 필요(HI-01 SOP-HI-02)'
-        record = r['측정·시운전 기록'] or '기록 없음 — 완료 기준(CE 80 %)을 보여 주지 않음'
-        note = ' · 고압 세척 — 현행 금지(HM-8 1.1 SOP-COOL-14 2단계)와 맞지 않는 시행' if '고압' in r['작업 내용'] else ''
-        old_rev = ' · 옛 판 번호(HM-8 1.0 SOP-COOL-04)로 적힌 시행' if re.search(r'SOP-COOL-04|HM-7\.6', r['작업 내용']) else ''
-        out.append(f'- {r["작업지시"]} {r["설비"]}({r["asset"]}) · {r["상태"]} · {done_} · 기록 그대로: 「{r["작업 내용"]}」 · 측정: {record}{note}{old_rev}')
-    if not rows:
-        out.append('- 없음 — 작업지시 이력에 이 작업의 시행이 없다')
     out += ['', '## 승인', '', f'- {approval} — 원문(HM-8 1.1 {source}). 카드는 승인을 대신하지 않는다.', '', '## 남은 질문', '']
     out += [f'- {x["item"]} — {x["kind"]} · {x["source"]} · {x["note"]}' for x in remaining] or ['- 없음']
     return '\n'.join(out) + '\n'
