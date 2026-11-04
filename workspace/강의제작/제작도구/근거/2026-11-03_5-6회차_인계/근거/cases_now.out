@@ -1,9 +1,0 @@
-규칙 행 [('rule:ts1-hard', 'EXCLUDE', 'forecast_ts1 >= 65', []), ('rule:hm-8-8-remote-auto-only', 'EXCLUDE', "plc_mode != 'REMOTE_AUTO'", ['skill:sop-cool-12', 'skill:sop-cool-13', 'skill:sop-cool-11']), ('rule:hm-8-8-fan-life-penalty', 'PENALTY', 'fan100_hours > 24', ['skill:sop-cool-11', 'skill:sop-cool-12']), ('rule:cooler-forecast-temperature-warning', 'WARN', 'forecast_ts1 >= 55', ['skill:sop-cool-11', 'skill:sop-cool-12', 'skill:sop-cool-13'])]
-=== 32장 원격 자동 · 연속 30 h · 예측 56 ℃ | skill:sop-cool-11 | {'제외': [], '감점': ['rule:hm-8-8-fan-life-penalty'], '경고': ['rule:cooler-forecast-temperature-warning'], '미확인으로 보류': []} | 적용 안 됨 []
-=== 72장 원격 자동 · 정확히 24 h · 예측 55 ℃ | skill:sop-cool-11 | {'제외': [], '감점': [], '경고': ['rule:cooler-forecast-temperature-warning'], '미확인으로 보류': []} | 적용 안 됨 []
-=== 37장 첫 줄 원격 제어 · 운전 모드 없음 | skill:sop-cool-11 | {'제외': [], '감점': [], '경고': [], '미확인으로 보류': [('rule:hm-8-8-remote-auto-only', 'EXCLUDE')]} | 적용 안 됨 []
-=== 37장 둘째 줄 정비 요청 · 운전 모드 없음 | skill:sop-cool-14 | {'제외': [], '감점': [], '경고': [], '미확인으로 보류': []} | 적용 안 됨 ['rule:hm-8-8-remote-auto-only', 'rule:hm-8-8-fan-life-penalty', 'rule:cooler-forecast-temperature-warning']
-=== 37장 셋째 줄 팬 이력 없음 | skill:sop-cool-11 | {'제외': [], '감점': [], '경고': [], '미확인으로 보류': [('rule:hm-8-8-fan-life-penalty', 'PENALTY')]} | 적용 안 됨 []
-=== 38 · 40장 측정한 0시간 | skill:sop-cool-11 | {'제외': [], '감점': [], '경고': [], '미확인으로 보류': []} | 적용 안 됨 []
-=== 40장 부하 감축 · 연속 30 h | skill:sop-cool-13 | {'제외': [], '감점': [], '경고': [], '미확인으로 보류': []} | 적용 안 됨 ['rule:hm-8-8-fan-life-penalty']
-=== 37장 넷째 줄 모든 후보 제외 | 쿨러 냉각 성능 상실 — 후보 1장 모두 규정상 제외됐다: SOP-COOL-11 팬 최대 운전 (원격 자동 아님).

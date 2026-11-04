@@ -1,6 +1,0 @@
-# 폴더 근거: workspace/강의제작/산출물/실전반/이론/06회차
-30b99aef033c5e02f0e507da1d22a8ec926b9c81425b762a872c6203bcd0d00d  README.md
-69e02cf028e093278b68bc9371eba1fc63f61e013cb56b7720a8fd180d182205  대본/01_이론_비즈니스프로세스.md
-74060f73b36cd7ddff172cb515e8d0049884bc709456002bf940f44bbbba39fc  대본/02_이론_BPMN표현.md
-87cf9ae594d265ea733f388bd92bd1d4416127ee3b516218aa98b67d86408939  대본/03_이론_프로세스오케스트레이션.md
-b4ab00d847afb8da1b93023078cc9a77bcd4e0bc58b2f06ba5faf14ab91a66d3  실전반_06일차.pptx

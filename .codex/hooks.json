@@ -6,8 +6,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo Before continuing read AGENTS.md and follow section 2 of .claude/skills/hyd-task/SKILL.md for the current task and deliverable.",
-            "statusMessage": "현재 산출물의 지침 다시 읽기"
+            "command": "echo 요약 직후: 이어 가기 전에 작업 폴더 스펙.md · 기록.md, workspace/강의제작/지침/공통.md와 그 일 문서(촬영이면 촬영/README.md와 그 도구 촬영준비.md)를 처음부터 끝까지 다시 읽는다.",
+            "statusMessage": "지침 다시 읽기"
           }
         ]
       }

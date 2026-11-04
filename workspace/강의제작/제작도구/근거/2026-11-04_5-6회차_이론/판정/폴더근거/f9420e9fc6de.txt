@@ -1,4 +1,0 @@
-# 폴더 근거: workspace/강의제작/제작도구/오프라인/decks/integrated/off06
-a4afc380f6dd1028fda0110b50cb52835a1ba859b8448aa1e4a097985236f334  구성.json
-ba10e7a3757dc827dd53a08014d37b30e79364fd4d8914b3ed78ca3de6ab7f48  새장.md
-32d18f80f6db47f44afc703aad327019356565eeed7413aabca0364ffd111835  통합반_오프라인_06회차.md

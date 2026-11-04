@@ -5,12 +5,12 @@
 - 대본: workspace/강의제작/산출물/<과정>/이론/NN회차/대본/*.md. `## [SLIDE NN]` 또는 `## [SLIDE NN~MM]` 구획만 읽고, 다른 `#`·`##` 제목에서 그 구획을 끝낸다.
   `>`로 시작하는 줄(제작 표시), `---`, 표 줄, `**`는 낭독하지 않는다
 - 슬라이드: 대본 폴더 위의 <과정>_NN일차.pptx를 LibreOffice로 PDF, pdftoppm으로 그림으로 바꾼다. 장 번호가 PPTX 장 수를 넘으면 멈춘다
-- 음성: ElevenLabs API(글자별 시간 포함). 장마다 따로 뽑아 저장해 두고, 글·음성·모델·속도가 같으면 다시 뽑지 않는다. --voice는 기본값이 없어 --dry 밖에서는 꼭 준다(영상.md V맥-12)
+- 음성: ElevenLabs API(글자별 시간 포함). 장마다 따로 뽑아 저장해 두고, 글·음성·모델·속도가 같으면 다시 뽑지 않는다. --voice는 기본값이 없어 --dry 밖에서는 꼭 준다(영상.md V-4)
 - 장 조각: 장마다 만든 영상 조각을 `조각_저장/합성/`에 보관하고(이름 = 쉼을 넣은 소리 · 장 그림 · 넘김 시각 · 인코딩 설정의 해시), 다시 돌리면 바뀐 장만 인코딩해 잇는다
 - 시간: 장의 음성 길이만큼 그 장의 그림을 보여 준다. `SLIDE NN~MM`(실습 간지와 설명 장 두 장)은 첫 문장과 그 뒤 쉼까지 간지를, 둘째 문장부터 설명 장을 보여 준다.
-  목표 초(--target)를 주지 않으면 쉼의 길이를 늘이거나 줄이지 않는다(기준 51번)
+  목표 초(--target)를 주지 않으면 쉼의 길이를 늘이거나 줄이지 않는다(영상.md 길 8)
 - 호흡(--breath): 어디서 얼마나 쉴지는 쉼_저장/ 에 장마다 적어 둔 단계를 읽는다. 적히지 않은 장이 있으면 빈 자리를 만들어 두고 멈춘다. 이 도구는 OpenAI를 부르지 않는다
-- --dry: 파일마다 장 범위·글자 수와 첫 문장 점검(기준 49번)만 찍는다. 음성을 부르지 않으니 돈이 들지 않는다
+- --dry: 파일마다 장 범위·글자 수와 첫 문장 점검(영상.md V-9)만 찍는다. 음성을 부르지 않으니 돈이 들지 않는다
 - 키: ELEVENLABS_API_KEY 환경변수, 없으면 --env 파일에서 읽는다. 키는 출력하지 않는다
 """
 import argparse, base64, hashlib, json, os, re, shutil, subprocess, sys, urllib.request, urllib.error, zipfile
@@ -34,7 +34,7 @@ if V4 and not a.breath: a.natural = True
 CACHE = HERE / "음성_저장"
 PIECES = HERE / "조각_저장" / "합성"   # 장 조각 보관함 — 저장소에 올리지 않는다(동기화.py SKIP_DIRS). 지워도 다시 만들어진다
 PIECE_VER = "장조각-1"   # 조각을 만드는 방법이 바뀌면 올린다
-BAD_START = ("그럼", "그러면", "그래서", "자 ", "자,", "이제", "이어서")   # 기준 49번: 영상은 따로 재생되므로 앞 영상을 받는 말로 시작하지 않는다
+BAD_START = ("그럼", "그러면", "그래서", "자 ", "자,", "이제", "이어서")   # 영상.md V-9: 영상은 따로 재생되므로 앞 영상을 받는 말로 시작하지 않는다
 
 
 def run(*c): return subprocess.run(c, check=True, capture_output=True, text=True).stdout
@@ -121,16 +121,82 @@ def check(script, study_waits=None):
     return S, pptx, name, probs
 
 
+def decimal(ch, i):
+    """1.1 · SKILL.md처럼 영숫자 사이에 붙은 점은 문장 끝이 아니다. 여기서 끊으면 숫자 · 파일 이름 가운데에 쉼과 자막 줄바꿈이 들어간다."""
+    return ch[i] == "." and 0 < i < len(ch) - 1 and all(c.isascii() and c.isalnum() for c in (ch[i - 1], ch[i + 1]))
+
+
+def sentence_mark(ch, i):
+    """인용 뒤 조사·인용 서술이 이어지면 한 문장, 독립 문장은 닫는 따옴표까지다."""
+    mark = i - 1 if ch[i] in "’”』」" and i else i
+    if ch[mark] not in ".?!" or decimal(ch, mark):
+        return ""
+    if mark == i:
+        return "" if i+1 < len(ch) and ch[i+1] in "’”』」" else ch[mark]
+    tail = "".join(ch[i+1:i+12])
+    if tail and (not tail[0].isspace() or re.match(r"\s+(?:하고|라고|하며|라며|라는|라는지)(?:\s|$)",tail)):
+        return ""
+    return ch[mark]
+
+
+def cuts(r):
+    """((앞 문장 끝 글자의 끝, 다음 글자의 시작), 종류, 그 자리 앞의 문장) 목록과 마지막 문장. 넣을 자리는 build가 소리를 보고 정한다."""
+    ch, st, en = r["al"].get("characters") or [], r["al"].get("character_start_times_seconds") or [], r["al"].get("character_end_times_seconds") or []
+    out, i, b = [], 0, 0
+    while i < len(ch):
+        mark = sentence_mark(ch, i)
+        if mark:
+            j = i + 1; para = False
+            while j < len(ch) and ch[j] in " \n\"'」)":
+                para = para or ch[j] == "\n"; j += 1
+            if j < len(ch):
+                out.append(((en[i], st[j]), "para" if para else ("q" if mark == "?" else "s"), "".join(ch[b:j]).strip())); b = j
+            i = j
+        else: i += 1
+    return out, "".join(ch[b:]).strip()
+
+
+def breath_key(sents):
+    """쉼_저장/ 파일 이름. 문장 목록이 같으면 같은 쉼이다."""
+    return hashlib.sha1(json.dumps(sents, ensure_ascii=False).encode()).hexdigest()[:16]
+
+
+QUIET_MAX = 300   # 문장 사이로 고른 곳의 최대 세기(16비트). 01편 실측 108곳 4~59, 말소리는 수천
+
+
+def quiet_point(data, fr, win):
+    """문장 사이에서 소리가 가장 작은 곳의 (초, 그 구간의 최대 세기). 받은 글자 시각은 실제 말머리보다 늦을 수 있어, 한가운데에 넣으면 다음 말의 첫소리가 잘린다.
+    앞 글자 끝 0.1초 전부터 다음 글자 시작까지 10ms마다 세기를 재고, 가장 조용한 구간들 가운데 가장 긴 구간의 가운데를 고른다.
+    거기에 조용한 곳이 없으면 앞 글자 끝 0.4초 전부터 다시 잰다 — 글자 시각이 0.1초보다 더 늦게 찍혀 문장 사이 침묵이 창 앞에 있는 일이 있다
+    (실측: 실전반 5회차 04편 32장 「…이거였죠.」 끝 글자 시각 72.08초, 실제 침묵 71.60~71.95초). 앞 창에서 찾은 곳은 그대로라 이미 만든 영상은 바뀌지 않는다."""
+    h = int(fr * 0.01)
+    for back in (0.1, 0.4):
+        a0, b0 = max(0.0, win[0] - back), max(win[0], win[1])
+        fs = [(a0 + x * 0.01, max(abs(v) for v in data[int((a0 + x * 0.01) * fr):int((a0 + x * 0.01) * fr) + h] or [0])) for x in range(max(1, int((b0 - a0) / 0.01)))]
+        lim = max(min(e for _, e in fs) * 2, 60); best, run = [], []
+        for t0, e in fs:
+            run = run + [t0] if e <= lim else []
+            if len(run) > len(best): best = run
+        peak = max(e for t0, e in fs if best[0] <= t0 <= best[-1])
+        if peak <= QUIET_MAX:
+            break
+    return (best[0] + best[-1]) / 2 + 0.005, peak
+
+
 def make(S, pptx, name, study_waits=None):
 
     # 1) 슬라이드 그림
     img_dir = HERE / "슬라이드" / pptx.stem; img_dir.mkdir(parents=True, exist_ok=True)
     stamp = img_dir / "stamp"
-    if not stamp.exists() or stamp.read_text() != str(pptx.stat().st_mtime):
+    pptx_sha = hashlib.sha256(pptx.read_bytes()).hexdigest()   # 내용이 같으면 파일 시각이 달라져도 다시 그리지 않는다
+    if not stamp.exists() or stamp.read_text() != pptx_sha:
+        for tool in ("soffice", "pdftoppm"):
+            if not shutil.which(tool):
+                sys.exit(f"{pptx.name}: 장 그림을 다시 그려야 하는데(stamp가 없거나 PPTX 내용이 바뀜) {tool}이 PATH에 없다 — CLAUDE.md 6절 「렌더 · 영상 도구」의 폴더를 PATH에 더한다")
         for f in img_dir.glob("s-*.png"): f.unlink()
         run("soffice", "--headless", "--convert-to", "pdf", "--outdir", str(img_dir), str(pptx))
         run("pdftoppm", "-r", "150", "-png", str(img_dir / pptx.with_suffix(".pdf").name), str(img_dir / "s"))
-        stamp.write_text(str(pptx.stat().st_mtime))
+        stamp.write_text(pptx_sha)
     imgs = sorted(img_dir.glob("s-*.png"), key=lambda p: int(p.stem.split("-")[1]))
 
     # 2) 장별 음성
@@ -154,37 +220,6 @@ def make(S, pptx, name, study_waits=None):
     #    말의 빠르기는 건드리지 않고, 쉼의 길이만 늘이거나 줄여 목표 시간에 맞춘다.
     import wave, array
     PS, PQ, PP = a.pause_sentence, a.pause_question, a.pause_para
-    QUIET_MAX = 300   # 문장 사이로 고른 곳의 최대 세기(16비트). 01편 실측 108곳 4~59, 말소리는 수천
-    def decimal(ch, i):
-        """1.1 · SKILL.md처럼 영숫자 사이에 붙은 점은 문장 끝이 아니다. 여기서 끊으면 숫자 · 파일 이름 가운데에 쉼과 자막 줄바꿈이 들어간다."""
-        return ch[i] == "." and 0 < i < len(ch) - 1 and all(c.isascii() and c.isalnum() for c in (ch[i - 1], ch[i + 1]))
-    def sentence_mark(ch, i):
-        """인용 뒤 조사·인용 서술이 이어지면 한 문장, 독립 문장은 닫는 따옴표까지다."""
-        mark = i - 1 if ch[i] in "’”』」" and i else i
-        if ch[mark] not in ".?!" or decimal(ch, mark):
-            return ""
-        if mark == i:
-            return "" if i+1 < len(ch) and ch[i+1] in "’”』」" else ch[mark]
-        tail = "".join(ch[i+1:i+12])
-        if tail and (not tail[0].isspace() or re.match(r"\s+(?:하고|라고|하며|라며|라는|라는지)(?:\s|$)",tail)):
-            return ""
-        return ch[mark]
-    def cuts(r):
-        """((앞 문장 끝 글자의 끝, 다음 글자의 시작), 종류, 그 자리 앞의 문장) 목록과 마지막 문장. 넣을 자리는 build가 소리를 보고 정한다."""
-        ch, st, en = r["al"].get("characters") or [], r["al"].get("character_start_times_seconds") or [], r["al"].get("character_end_times_seconds") or []
-        out, i, b = [], 0, 0
-        while i < len(ch):
-            mark = sentence_mark(ch, i)
-            if mark:
-                j = i + 1; para = False
-                while j < len(ch) and ch[j] in " \n\"'」)":
-                    para = para or ch[j] == "\n"; j += 1
-                if j < len(ch):
-                    out.append(((en[i], st[j]), "para" if para else ("q" if mark == "?" else "s"), "".join(ch[b:j]).strip())); b = j
-                i = j
-            else: i += 1
-        return out, "".join(ch[b:]).strip()
-
 
     # 쉼의 단계(문장 사이 자리마다 하나)
     # 0 = 잇는다. 쉬지 않고 바로 다음 문장으로 넘어간다(앞 문장을 받아 바로 풀어 주는 말, 나열의 중간).
@@ -198,8 +233,7 @@ def make(S, pptx, name, study_waits=None):
     def breath(sents):
         """문장 목록을 받아 쉼_저장/ 에 적힌 단계(사이 자리마다 0~3)를 돌려준다. 아직 적히지 않았으면 빈 자리를 만들어 두고 None."""
         if len(sents) < 2: return []
-        h = hashlib.sha1(json.dumps(sents, ensure_ascii=False).encode()).hexdigest()[:16]
-        f = BDIR / f"{h}.json"
+        f = BDIR / f"{breath_key(sents)}.json"
         if f.exists():
             v = json.loads(f.read_text()).get("쉼")
             if isinstance(v, list) and len(v) == len(sents) - 1 and all(x in (0, 1, 2, 3) for x in v): return v
@@ -249,22 +283,10 @@ def make(S, pptx, name, study_waits=None):
         run("ffmpeg", "-v", "error", "-y", "-i", str(r["mp3"]), "-ac", "1", "-ar", "44100", "-c:a", "pcm_s16le", str(wav))
         with wave.open(str(wav)) as w: fr = w.getframerate(); data = array.array("h", w.readframes(w.getnframes()))
         def quiet(win):
-            """문장 사이에서 소리가 가장 작은 곳의 초. 받은 글자 시각은 실제 말머리보다 늦을 수 있어, 한가운데에 넣으면 다음 말의 첫소리가 잘린다.
-            앞 글자 끝 0.1초 전부터 다음 글자 시작까지 10ms마다 세기를 재고, 가장 조용한 구간들 가운데 가장 긴 구간의 가운데를 고른다.
-            거기에 조용한 곳이 없으면 앞 글자 끝 0.4초 전부터 다시 잰다 — 글자 시각이 0.1초보다 더 늦게 찍혀 문장 사이 침묵이 창 앞에 있는 일이 있다
-            (실측: 실전반 5회차 04편 32장 「…이거였죠.」 끝 글자 시각 72.08초, 실제 침묵 71.60~71.95초). 앞 창에서 찾은 곳은 그대로라 이미 만든 영상은 바뀌지 않는다."""
-            h = int(fr * 0.01)
-            for back in (0.1, 0.4):
-                a0, b0 = max(0.0, win[0] - back), max(win[0], win[1])
-                fs = [(a0 + x * 0.01, max(abs(v) for v in data[int((a0 + x * 0.01) * fr):int((a0 + x * 0.01) * fr) + h] or [0])) for x in range(max(1, int((b0 - a0) / 0.01)))]
-                lim = max(min(e for _, e in fs) * 2, 60); best, run = [], []
-                for t0, e in fs:
-                    run = run + [t0] if e <= lim else []
-                    if len(run) > len(best): best = run
-                peak = max(e for t0, e in fs if best[0] <= t0 <= best[-1])
-                if peak <= QUIET_MAX: return (best[0] + best[-1]) / 2 + 0.005
-            # 문장 사이에 조용한 곳이 없다. 쉼을 넣으면 말이 잘린다
-            sys.exit(f"{name} SLIDE {r['first']}: {win[0]:.2f}~{win[1]:.2f}초 문장 사이에 조용한 곳이 없다(가장 작은 세기 {peak}). 쉼을 넣으면 말이 잘린다. 이 장의 음성이나 쉼 자리를 확인한다")
+            at, peak = quiet_point(data, fr, win)
+            if peak > QUIET_MAX:   # 문장 사이에 조용한 곳이 없다. 쉼을 넣으면 말이 잘린다
+                sys.exit(f"{name} SLIDE {r['first']}: {win[0]:.2f}~{win[1]:.2f}초 문장 사이에 조용한 곳이 없다(가장 작은 세기 {peak}). 쉼을 넣으면 말이 잘린다. 이 장의 음성이나 쉼 자리를 확인한다")
+            return at
         # 0초 쉼은 소리를 끊지 않으므로 조용한 곳을 찾지 않는다(쉼 자리 0이 말이 붙은 문장 사이를 잇는 방법이다)
         extra = [r.get("study_at", {}).get(t, 0) for t, _ in r["cuts"]]
         r["cuts"] = [((quiet(t) if plen(k) * scale > 0 or wait else t[0]), k) for (t, k), wait in zip(r["cuts"], extra)]
@@ -360,6 +382,6 @@ if __name__ == "__main__":
     print(f"합계 {len(jobs)}편 · {total}자")
     if bad: sys.exit(f"점검에 걸린 파일이 {bad}개 있다. 고친 뒤 다시 돌린다")
     if a.dry: sys.exit()
-    if not a.voice: sys.exit("--voice가 없어 합성 전에 멈춘다. 음성 캐시 이름에 음성 ID가 들어가 ID가 다르면 캐시를 못 쓰고 전부 새로 사므로, 계정에서 확인한 강사 복제 음성 ID를 준다(영상.md V맥-12)")
+    if not a.voice: sys.exit("--voice가 없어 합성 전에 멈춘다. 음성 캐시 이름에 음성 ID가 들어가 ID가 다르면 캐시를 못 쓰고 전부 새로 사므로, 계정에서 확인한 강사 복제 음성 ID를 준다(영상.md V-4)")
     OUT.mkdir(parents=True, exist_ok=True); CACHE.mkdir(exist_ok=True)
     for job in jobs: make(*job)

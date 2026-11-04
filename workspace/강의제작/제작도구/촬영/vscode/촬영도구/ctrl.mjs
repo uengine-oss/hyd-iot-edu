@@ -18,7 +18,8 @@ function plan(c){
 
 // opts: {name, module(segs/ 기준 파일명), pointer:{x,y}|null(앞 구간 끝 포인터)}
 export async function run(opts){
- const out=WORK+'/'+opts.name;
+ const work=opts.work||WORK,audio=opts.audio||AUDIO;
+ const out=work+'/'+opts.name;
  await fs.mkdir(out+'/frames',{recursive:true});
  if((await fs.readdir(out+'/frames')).length)throw Error('Output folder already has frames: '+out);
  // opts.space·opts.viewport: VS Code 밖 화면(포털)을 다른 작업 공간에서 찍을 때. 포털은 1536x864 dsf1.5(→2304x1296 렌더 → 1920x1080 프레임).
@@ -44,7 +45,7 @@ export async function run(opts){
  async function cue(ctx,c,fn,opt={}){
   if(error)throw Error(error);
   if(!recording||start===null)throw Error('Cue '+c.id+' before recording began (call c.begin() first)');
-  if(await fs.stat(WORK+'/STOP').then(()=>true).catch(()=>false))throw Error('Stop requested');
+  if(await fs.stat(work+'/STOP').then(()=>true).catch(()=>false))throw Error('Stop requested');
   if(!opt.overlap&&pending){await pending;pending=null;}
   const w=Math.max(speechFree,opt.overlap?0:actionFree)+(opt.gap??250)-Date.now();if(w>0)await sleep(w);
   const t0=Date.now();const a={id:c.id,text:c.text,time:t0-start,duration:c.duration_ms};actions.push(a);
@@ -61,21 +62,21 @@ export async function run(opts){
  }
  let result=null;
  try{
-  const ctx={p,serial,sleep,fs,out,cueFile:HERE+'source-cues.json',protect:CFG.protect,page:CFG.page,
+  const ctx={p,serial,sleep,fs,out,audio,cueFile:HERE+'source-cues.json',protect:CFG.protect,page:CFG.page,
    recordMotion:m=>motions.push({...m,start:m.start-start,end:m.end-start}),
    waitFor:async(fn,timeout=12000)=>{const a=Date.now();while(!(await serial(()=>p.evaluate(fn)))){if(Date.now()-a>timeout)throw Error('Expected page state did not appear');await sleep(100);}},
    snapshot:async()=>serial(()=>p.snapshot()),
    begin:async()=>{await serial(()=>p.evaluate(()=>{window.__ptrStat={held:0,heldAfterFinish:0,applied:0};}));recording=true;await serial(()=>p.cdp('Page.startScreencast',{format:'jpeg',quality:85,maxWidth:1920,maxHeight:1080,everyNthFrame:1}));const t=Date.now();while(!frames.length){if(error)throw Error(error);if(Date.now()-t>12000)throw Error('Initial recording frame missing');await sleep(30);}await fs.writeFile(out+'/recording-start.json',JSON.stringify({start,url:await serial(()=>p.url())}));},
   };
-  ctx.say=async(id,fn,opt)=>{const f=AUDIO+'/'+id+'.json';const c=JSON.parse(await fs.readFile(f,'utf8').catch(()=>{throw Error('Voice cue missing: '+f+' (생성 후 촬영)');}));await cue(ctx,c,fn,opt);};
+  ctx.say=async(id,fn,opt)=>{const f=audio+'/'+id+'.json';const c=JSON.parse(await fs.readFile(f,'utf8').catch(()=>{throw Error('Voice cue missing: '+f+' (생성 후 촬영)');}));await cue(ctx,c,fn,opt);};
   // 이어 찍기: 앞 구간 끝 포인터 위치에 표시·실제 포인터를 둔다(녹화 전, 화면에 남지 않음).
   // 이어 찍기: 앞 구간이 끝난 페이지가 아니면 녹화 전에 그 페이지를 연다(화면에 남지 않음).
   // 이어 찍기: 앞 구간 끝 URL과 다르면 녹화 전에 그 주소를 연다(화면에 남지 않음). 토큰은 환경변수 HYD_VSCODE_TOKEN_FILE이 가리키는 파일에서 읽어 붙인다(없으면 멈춘다).
-  if(opts.resumeUrl){if(!(await serial(()=>p.url())).startsWith(opts.resumeUrl.split('?')[0])){const tf=process.env.HYD_VSCODE_TOKEN_FILE;if(!tf)throw Error('HYD_VSCODE_TOKEN_FILE 없음: 이 PC의 serve-web 접속 토큰 파일 경로를 환경변수 HYD_VSCODE_TOKEN_FILE에 넣는다 (촬영도구/ctrl.mjs, 설정 예는 촬영준비.md 3절)');const tkn=(await fs.readFile(tf,'utf8').catch(()=>{throw Error('HYD_VSCODE_TOKEN_FILE이 가리키는 파일 없음: '+tf+' (촬영도구/ctrl.mjs)');})).trim();await serial(()=>p.goto(opts.resumeUrl.replace('tkn=REDACTED','tkn='+tkn)));await serial(()=>p.waitForSelector('.monaco-workbench',{state:'visible',timeout:60000}));await sleep(4000);}}
+  if(opts.resumeUrl){if(!(await serial(()=>p.url())).startsWith(opts.resumeUrl.split('?')[0])){const tf=process.env.HYD_VSCODE_TOKEN_FILE;if(!tf)throw Error('HYD_VSCODE_TOKEN_FILE 없음: 이 PC의 serve-web 접속 토큰 파일 경로를 환경변수 HYD_VSCODE_TOKEN_FILE에 넣는다 (촬영도구/ctrl.mjs, 설정 예는 촬영준비.md 「자료」의 접속 파일)');const tkn=(await fs.readFile(tf,'utf8').catch(()=>{throw Error('HYD_VSCODE_TOKEN_FILE이 가리키는 파일 없음: '+tf+' (촬영도구/ctrl.mjs)');})).trim();await serial(()=>p.goto(opts.resumeUrl.replace('tkn=REDACTED','tkn='+tkn)));await serial(()=>p.waitForSelector('.monaco-workbench',{state:'visible',timeout:60000}));await sleep(4000);}}
   // 페이지를 새로 열었으면 화살표가 없으므로 ui.mjs의 설치 함수로 그 자리에 다시 그린다.
   if(opts.pointer){const q=opts.pointer;const {installPointerInPage}=await import('file:///'+HERE+'ui.mjs?'+Date.now());
    await serial(()=>p.evaluate(installPointerInPage,q));await serial(()=>p.evaluate(q=>{const e=document.getElementById('recording-pointer');if(window.__glide?.cancel)window.__glide.cancel();window.__glide=null;e.style.transform=`translate(${q.x}px,${q.y}px)`;},q));await serial(()=>p.mouse.move(q.x,q.y,{steps:1}));}
-  const mod=await import('file:///'+HERE+'segs/'+opts.module+'?'+Date.now());
+  const mod=await import((opts.moduleUrl||'file:///'+HERE+'segs/'+opts.module)+'?'+Date.now());
   result=await mod.default(ctx);
   if(pending)await pending;
   const tail=speechFree-Date.now();if(tail>0)await sleep(tail+400);

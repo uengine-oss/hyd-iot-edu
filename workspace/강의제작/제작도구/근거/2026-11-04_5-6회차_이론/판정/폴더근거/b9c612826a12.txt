@@ -1,5 +1,0 @@
-# 폴더 근거: workspace/강의제작/산출물/통합반/이론/05회차
-b85652987c58a7dc99140cedcc8e2d9616a621abc9c0f6ca661f778da8d2e5e9  README.md
-6e7bc5c51be5ecf5a7f800dc62274947dd6988c010747a8777219b319926212a  대본/01_이론_질문하는AI와일하는AI.md
-4add5ef90985ecaeb0862ed0d325bb7878d8583cae6178a8f63c96ecff9cefa7  대본/02_이론_정보와도구를쓰는원리.md
-9c14b21b5d4bc63ea266d7b33f0c20a844ff134135728c7e57107fc6c462b2bc  통합반_05일차.pptx

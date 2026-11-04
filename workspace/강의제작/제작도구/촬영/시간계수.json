@@ -19,7 +19,7 @@
  "speech_error_pct": -0.07,
  "speech_sources": [
   "workspace/강의제작/제작도구/촬영/vscode/음성",
-  "workspace/강의제작/제작도구/촬영/시간계수_자료/relations-audio"
+  "작업/_보관/시간계수_자료/relations-audio(이 PC만)"
  ],
  "lecture": {
   "scale": 1.0514,

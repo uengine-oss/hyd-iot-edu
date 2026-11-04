@@ -5,4 +5,4 @@ description: "HYD 제조 AI 교육과정 코딩 랩(VS Code에서 GitHub Copilot
 
 # 코딩랩 — 입구
 
-이 산출물의 목적 · 가치 · 배경, 작업 컨텍스트, 작업 요령, 인수 조건은 `workspace/강의제작/지침/공통.md`의 그 일 절과 `workspace/강의제작/지침/코딩랩.md` 두 곳에 있다(Codex도 같은 문서를 읽는다). 순서와 보고는 `hyd-task` 「3. 만들기 · 검사」의 「강의 산출물」이다(입구 여섯이 같은 순서).
+`workspace/강의제작/지침/공통.md`와 `workspace/강의제작/지침/코딩랩.md` 두 문서만 읽고 그 「길」대로 한다(Codex도 같은 문서). 작업 폴더 · 커밋 순서는 `hyd-task`.

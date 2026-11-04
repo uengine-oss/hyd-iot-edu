@@ -1,14 +1,14 @@
 # 온톨로지 스키마 v2 — BSC · 프로세스 · 리소스 · 스킬
 
-2026-10-01 회의의 지시에 따라 L7 온톨로지를 처음부터 다시 설계했다. 이 문서는 스키마(클래스와 관계의 틀)를 설명한다. 인스턴스는 스키마에 맞춰 따로 만든다.
+L7 온톨로지의 설계 문서다. 이 문서는 스키마(클래스와 관계의 틀)를 설명한다. 인스턴스는 스키마에 맞춰 따로 만든다.
 
-지금 판은 `schema.json`의 `version` 2.7.0이다(클래스 · 관계 수는 [class-table.md](class-table.md)). 2026-10-30에 쓰는 곳이 없는 요소를 판 번호를 올리지 않고 지웠다: 조치별 예측 클래스 Forecast(FORECASTS · ASSUMES · GIVEN), 손으로 옮겨 적은 업무 흐름이 쓰던 관계(READS · PRODUCES · INVOKES · PERFORMED_BY · CORRELATES · ATTACHED_TO), 실행 투영의 MAPS_TO. 시드도 한 벌이다(구조판 · 전체판 두 판을 없앴다).
+지금 판은 `schema.json`의 `version` 2.7.0이다(클래스 · 관계 수는 [class-table.md](class-table.md)). 쓰는 곳이 없어 지운 요소(판 번호는 그대로): 조치별 예측 클래스 Forecast(FORECASTS · ASSUMES · GIVEN), 손으로 옮겨 적은 업무 흐름이 쓰던 관계(READS · PRODUCES · INVOKES · PERFORMED_BY · CORRELATES · ATTACHED_TO), 실행 투영의 MAPS_TO. 시드도 한 벌이다(구조판 · 전체판 두 판을 없앴다).
 
-v2.6(2026-10-09)은 관계 하나만 더했다: `(:FailureMode)-[:PREVENTED_BY]->(:Skill)` 예방 조치(정기 정비). 기존 클래스 · 관계는 이름도 뜻도 그대로다(아래 "조치 방법" 절).
+v2.6은 관계 하나만 더했다: `(:FailureMode)-[:PREVENTED_BY]->(:Skill)` 예방 조치(정기 정비). 기존 클래스 · 관계는 이름도 뜻도 그대로다(아래 "조치 방법" 절).
 
-v2.7(2026-10-12)은 기존 Skill에 명시 업무 범위 `scope=purchase`와 실행 후보 여부 `executable`을 더했다. 클래스는 그대로이며 INVOLVES_PART의 기존 Cause→Part에 Skill→Part 끝점을 가산했다. 구매 SOP는 검증된 보관 원문·단계·Part 범위와 ERP 수행 관계가 필요하다. 참고 보관(false)과 PR_CREATE 실행 후보(true)를 구분하며 실행 후보는 구매 승인 역할·공급사/부품 공급 관계를 추가 검사한다. 고장 유형을 지어내지 않고, 기존 scope 없는 고장 조치의 FM 필수 조건은 유지한다. 검사는 `validate`(구매 범위 — `hydcommon.skill_scope.purchase_graph_issues`)가 한다.
+v2.7은 기존 Skill에 명시 업무 범위 `scope=purchase`와 실행 후보 여부 `executable`을 더했다. 클래스는 그대로이며 INVOLVES_PART의 기존 Cause→Part에 Skill→Part 끝점을 가산했다. 구매 SOP는 검증된 보관 원문·단계·Part 범위와 ERP 수행 관계가 필요하다. 참고 보관(false)과 PR_CREATE 실행 후보(true)를 구분하며 실행 후보는 구매 승인 역할·공급사/부품 공급 관계를 추가 검사한다. 고장 유형을 지어내지 않고, 기존 scope 없는 고장 조치의 FM 필수 조건은 유지한다. 검사는 `validate`(구매 범위 — `hydcommon.skill_scope.purchase_graph_issues`)가 한다.
 
-v2.1(2026-10-02)은 세 표준(BPMN · DMN · BSC)을 시나리오가 쓰는 만큼의 미니멀 셋으로 다듬었다(3절의 미니멀 셋 표).
+v2.1은 세 표준(BPMN · DMN · BSC)을 시나리오가 쓰는 만큼의 미니멀 셋으로 다듬었다(3절의 미니멀 셋 표).
 
 ## 1. 왜 다시 만들었나
 
@@ -168,10 +168,16 @@ flowchart TB
 
 - **SOP를 직접 갖는다:** 스킬은 `sopId`와 단계(`HAS_STEP → Step → REFERS_TO → ManualSection`)를 직접 갖는다. 별도 절차 클래스는 없다.
 - **고장 유형에 매칭된다:** `(:FailureMode)-[:MITIGATED_BY]->(:Skill)`은 즉시 완화, `(:FailureMode)-[:REMEDIED_BY]->(:Skill)`은 근본 조치, `(:FailureMode)-[:PREVENTED_BY]->(:Skill)`은 예방 조치다.
-- **예방 조치(v2.6 추가, 2026-10-09 확정):** 정기 정비는 생긴 고장을 없애는 일이 아니라 고장을 미리 막는 일이다(준용 EN 13306 preventive maintenance · ISO 14224 PM). 그래서 근본 조치(REMEDIED_BY)와 따로 둔다. 같은 양식(N:M, `_manual_document`)이고 필수 조건 "스킬은 고장 유형에 매칭"을 `MITIGATED_BY|REMEDIED_BY|PREVENTED_BY`로 넓혔을 뿐 기존 것은 바꾸지 않았다. 경보(고장) 대응 후보(t2 템플릿 · 자동 후보 연결)는 즉시 완화 · 근본 조치만 따라가고, 정기 정비 도래(PM_DUE) 후보는 문서가 낸 후보 규칙이 예방 조치 스킬을 고른다. 예: 주 펌프 체적 효율 저하 -PREVENTED_BY-> SOP-PM-21(2,000 h 정기 점검).
+- **예방 조치(v2.6 추가):** 정기 정비는 생긴 고장을 없애는 일이 아니라 고장을 미리 막는 일이다(준용 EN 13306 preventive maintenance · ISO 14224 PM). 그래서 근본 조치(REMEDIED_BY)와 따로 둔다. 같은 양식(N:M, `_manual_document`)이고 필수 조건 "스킬은 고장 유형에 매칭"을 `MITIGATED_BY|REMEDIED_BY|PREVENTED_BY`로 넓혔을 뿐 기존 것은 바꾸지 않았다. 경보(고장) 대응 후보(t2 템플릿 · 자동 후보 연결)는 즉시 완화 · 근본 조치만 따라가고, 정기 정비 도래(PM_DUE) 후보는 문서가 낸 후보 규칙이 예방 조치 스킬을 고른다. 예: 주 펌프 체적 효율 저하 -PREVENTED_BY-> SOP-PM-21(2,000 h 정기 점검).
 - **원인 한정:** 근본 조치가 고장 유형의 특정 원인에만 맞으면 `(:Skill)-[:ADDRESSES]->(:Cause)`를 단다. 같은 "쿨러 냉각 성능 상실"이라도 핀 오염이면 핀 세척(SOP-COOL-14), 주변 온도 상승이면 캐비닛 환기 보강(SOP-COOL-15)이다.
 - **스키마가 강제한다:** 단계가 없거나 고장 유형에 매칭되지 않은 스킬은 `validate`에서 위반으로 잡힌다(구매 SOP는 Part 범위 · ERP 수행, 참고 보관은 실행 · 후보 관계 없음으로 따로 잰다).
 - **어느 SOP가 어느 고장 유형에 붙는가:** 시드에 없다 — 수업 문서(HM-8 · PM-02 · PR-07)의 강사 서명 추출 묶음 `it/process/procsvc/course_extractions.json`을 시작이 적재해 만든다(`scripts/class_knowledge.py`). 지금 그래프의 목록은 질의 `q2b-failure-mode-skills`(고장 유형 · 종류 · SOP · 단계 수 · 원인 한정)로 본다 — 이 문서에 사본을 두지 않는다.
+
+### 원문 참고와 정확한 기존 SOP 재참조
+
+`kind=reference`와 `executable=false`를 명시한 매뉴얼 절차는 원문 보관만 한다. FM·승인 역할이 미상이어도 Section·Step·실제 인용을 보존하지만 실행 시스템·Action·후보 Rule 연결은 만들지 않는다. 기존 fault 실행의 FM 요구와 purchase의 Part/ERP/승인/공급 계약은 유지한다.
+
+`Step-[:DOCUMENTS]->Skill`은 새 문서의 원문 단계가 기존 Skill을 정확히 재참조하는 출처 관계다. SOP 번호와 전체 단계가 같아야 하며 검토한 기존 승인·Action·시스템·현재 Step/Section 계약의 지문(hash)을 고정해 둔다. 기존 `HAS_STEP`에는 새 원문을 섞지 않고 기존 소유권·실행 내용도 바꾸지 않는다. 개정 · 되돌리기는 적재 기록 · 인용 · 지금 그래프 · 고정한 지문이 맞는 출처만 따로 보존하고, 바깥에서 바뀐 관계는 「달라짐」으로 거절한다. 실행 이력과 원문 출처는 같은 뜻으로 다루지 않는다.
 
 ### 임계값 규칙 (DMN)
 
@@ -311,7 +317,7 @@ Neo4j Browser는 http://127.0.0.1:7474 (neo4j / hydpass123 — 이 PC의 바깥 
 
 ## 11. 서비스가 v2를 쓰는 방식
 
-서비스는 v2 그래프만 쓴다. kg-seed가 v2를 적재한다(v1 시드 · 템플릿은 2026-10-30에 지웠다 — git 이력에 있다). 읽기 질의는 `it/neo4j/templates/`의 허용 템플릿뿐이고, 부르는 곳은 `it/agent/agentsvc/tools/mcp_kg.py`(KnowledgeGraph) 한 곳이다 — 에이전트와 판단 엔진 도구 서버(dmn-mcp)가 이것을 쓴다.
+서비스는 v2 그래프만 쓴다. kg-seed가 v2를 적재한다(v1 시드 · 템플릿은 지웠다 — git 이력에 있다). 읽기 질의는 `it/neo4j/templates/`의 허용 템플릿뿐이고, 부르는 곳은 `it/agent/agentsvc/tools/mcp_kg.py`(KnowledgeGraph) 한 곳이다 — 에이전트와 판단 엔진 도구 서버(dmn-mcp)가 이것을 쓴다.
 
 | 서비스 | v2에서 하는 일 | 쓰는 템플릿 |
 |---|---|---|
@@ -322,12 +328,6 @@ Neo4j Browser는 http://127.0.0.1:7474 (neo4j / hydpass123 — 이 PC의 바깥 
 판단 엔진은 LLM 없이 결정론적이다. 순위는 온톨로지 `rule:rank-value`의 `rankingPolicy`(JSON)를 판단 엔진이 실행해 정한다 — 같은 규칙의 `annotation`은 사람이 읽는 설명이다.
 
 ## 12. 남은 일
-
-### 2026-10-12 원문 참고와 정확한 기존 SOP 재참조
-
-`kind=reference`와 `executable=false`를 명시한 매뉴얼 절차는 원문 보관만 한다. FM·승인 역할이 미상이어도 Section·Step·실제 인용을 보존하지만 실행 시스템·Action·후보 Rule 연결은 만들지 않는다. 기존 fault 실행의 FM 요구와 purchase의 Part/ERP/승인/공급 계약은 유지한다.
-
-`Step-[:DOCUMENTS]->Skill`은 새 문서의 원문 단계가 기존 Skill을 정확히 재참조하는 출처 관계다. SOP 번호와 전체 단계가 같아야 하며 검토한 기존 승인·Action·시스템·현재 Step/Section 계약의 지문(hash)을 고정해 둔다. 기존 `HAS_STEP`에는 새 원문을 섞지 않고 기존 소유권·실행 내용도 바꾸지 않는다. 개정 · 되돌리기는 적재 기록 · 인용 · 지금 그래프 · 고정한 지문이 맞는 출처만 따로 보존하고, 바깥에서 바뀐 관계는 「달라짐」으로 거절한다. 실행 이력과 원문 출처는 같은 뜻으로 다루지 않는다.
 
 - 펌프 누설과 팬 진동은 설비 시뮬레이터(`ot/plant-sim`) · 감지기(`it/detector`)에도 있다(확인: 수업 한 바퀴 `class_round.py` 실습 93, PBL 단계). 수업 단계에서는 이 두 경보 처리 건의 AI 단계가 수업 AI 자리 밖이라 실행되지 않는다(`it/process/procsvc/course_policy.py` — 강사가 PBL 단계를 열면 실행).
 - 기존 전사 판단 시나리오 4개(납기, 구매, 품질 보류, 피크 전력)는 v2에서 빠졌다. 구매 시나리오의 상충은 q8의 부품가 경로로 들어 있다.

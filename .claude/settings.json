@@ -20,6 +20,16 @@
         ]
       },
       {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "PY=\"$CLAUDE_PROJECT_DIR/.venv314/Scripts/python.exe\"; [ -x \"$PY\" ] || PY=python3; \"$PY\" \"$CLAUDE_PROJECT_DIR/workspace/동기화.py\" 세션",
+            "timeout": 60
+          }
+        ]
+      },
+      {
         "matcher": "compact",
         "hooks": [
           {
