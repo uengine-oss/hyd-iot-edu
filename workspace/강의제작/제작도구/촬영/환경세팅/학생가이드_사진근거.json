@@ -1,0 +1,2242 @@
+{
+  "photos": {
+    "readme-tools": {
+      "required_scene": "현재 README의 실행 환경 표",
+      "check": "여섯 도구와 현재 설치 기준·공식 링크가 읽힘",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/readme-tools.png",
+      "verified": true,
+      "source": "작업/2026-11-02_1회차-학생가이드-현행화/04_사용자설치원본검수/설치_검증컷_편집/README_VSCode_복귀_검수후보.mp4",
+      "source_sha256": "1dbcf9043a99b1f78652db13766042abb9d703e199db2c1a9b10f73a4e106f57",
+      "seconds": 1.5,
+      "crop": [
+        0,
+        0,
+        1280,
+        820
+      ],
+      "rectangles": [
+        [
+          48,
+          164,
+          1265,
+          800
+        ]
+      ],
+      "caption": "README 실행 환경 표에서 여섯 도구의 준비 기준과 공식 설치 링크를 확인합니다.",
+      "sha256": "bcd37ae962beb1833b92788e14078719464342508bbbacf8e42d6effba65974e",
+      "raw_frame_sha256": "d56e52d029157dca8951bc79c82c61981b0526429da623fa0cfbfff47a9a07bf"
+    },
+    "python-install": {
+      "required_scene": "Python 설치 창의 PATH와 Install Now",
+      "check": "PATH 선택과 설치 버튼이 보임",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/python-install.png",
+      "verified": true,
+      "source": "작업/촬영/환경세팅/환경세팅 설치.mp4",
+      "source_sha256": "b55a64d718f91958ea2819ce01d5ba71dabd68ec3d761158a29654125d5b677f",
+      "seconds": 62,
+      "crop": [
+        770,
+        464,
+        1335,
+        751
+      ],
+      "rectangles": [
+        [
+          779,
+          717,
+          1014,
+          749
+        ],
+        [
+          816,
+          469,
+          969,
+          501
+        ]
+      ],
+      "caption": "Add python.exe to PATH를 선택한 뒤 Install Now를 누릅니다.",
+      "redactions": [
+        {
+          "box": [
+            785,
+            500,
+            1335,
+            535
+          ],
+          "label": "내 설치 폴더"
+        }
+      ],
+      "sha256": "86cb3474de03520f0f674f026b5a7c9e883dfac24305e30f7fe06d268759408d",
+      "raw_frame_sha256": "0e4a267af94ecdd1130d7ce3eda766b35983fb2dabe8bcbace946dfee27cb581"
+    },
+    "python-version": {
+      "required_scene": "PowerShell의 python --version 결과",
+      "check": "버전과 명령이 함께 보임",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/python-version.png",
+      "verified": true,
+      "source": "작업/촬영/환경세팅/환경세팅 설치.mp4",
+      "source_sha256": "b55a64d718f91958ea2819ce01d5ba71dabd68ec3d761158a29654125d5b677f",
+      "seconds": 130,
+      "crop": [
+        164,
+        252,
+        592,
+        299
+      ],
+      "rectangles": [
+        [
+          406,
+          253,
+          580,
+          279
+        ],
+        [
+          166,
+          277,
+          307,
+          299
+        ]
+      ],
+      "caption": "PowerShell에서 python --version을 실행한 결과는 Python 3.14.7입니다.",
+      "sha256": "aa7b7efdc63ab9115a69356bc5cefc47f30843fda3b67fa8d839a1e6ff263785",
+      "raw_frame_sha256": "51841abf45e6418304e1ccda4e1396cfec301e0f6b4e965965acb252d4c3160c",
+      "redactions": [
+        {
+          "box": [
+            164,
+            251,
+            406,
+            279
+          ],
+          "label": "내 사용자 폴더"
+        }
+      ]
+    },
+    "node-install": {
+      "required_scene": "Node.js 추가 도구 선택 화면",
+      "check": "자동 추가 도구 항목과 다음 버튼이 보임",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/node-install.png",
+      "verified": true,
+      "source": "작업/촬영/환경세팅/환경세팅 설치.mp4",
+      "source_sha256": "b55a64d718f91958ea2819ce01d5ba71dabd68ec3d761158a29654125d5b677f",
+      "seconds": 150,
+      "crop": [
+        653,
+        297,
+        1260,
+        750
+      ],
+      "rectangles": [
+        [
+          680,
+          477,
+          1243,
+          519
+        ],
+        [
+          1044,
+          701,
+          1143,
+          740
+        ]
+      ],
+      "caption": "추가 도구 자동 설치 항목을 비워 두고 Next를 누릅니다.",
+      "redactions": [],
+      "sha256": "fe849cabcda336f3c148c6b1694ba06a6c8cd32f3d8fbda9cf78125b16f6a50a",
+      "raw_frame_sha256": "7062b130d24379642addb940967ad732e41918b9835e4d0518c0e1e0680fb9ca"
+    },
+    "node-version": {
+      "required_scene": "PowerShell의 node --version 결과",
+      "check": "현재 README 기준 이상 버전 확인",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/node-version.png",
+      "verified": true,
+      "source": "작업/촬영/환경세팅/환경세팅 설치.mp4",
+      "source_sha256": "b55a64d718f91958ea2819ce01d5ba71dabd68ec3d761158a29654125d5b677f",
+      "seconds": 195,
+      "crop": [
+        98,
+        221,
+        575,
+        271
+      ],
+      "rectangles": [
+        [
+          392,
+          222,
+          567,
+          248
+        ],
+        [
+          101,
+          247,
+          209,
+          270
+        ]
+      ],
+      "caption": "node --version의 출력 v24.22.1을 README의 준비 기준과 비교합니다.",
+      "redactions": [
+        {
+          "box": [
+            98,
+            220,
+            392,
+            248
+          ],
+          "label": "내 사용자 폴더"
+        }
+      ],
+      "sha256": "abae540f4740781e491138182e90ec42f842217fbe20e198214ef13b2f7262b0",
+      "raw_frame_sha256": "c6845895aec8a1a31c1665bc6f3dfcf010f9481a396b017ba23b9f803c4b6dc2"
+    },
+    "vscode-install": {
+      "required_scene": "VS Code 설치의 추가 작업",
+      "check": "PATH 선택과 다음 버튼 확인",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/vscode-install.png",
+      "verified": true,
+      "source": "작업/촬영/환경세팅/환경세팅 설치.mp4",
+      "source_sha256": "b55a64d718f91958ea2819ce01d5ba71dabd68ec3d761158a29654125d5b677f",
+      "seconds": 335,
+      "crop": [
+        615,
+        256,
+        1308,
+        787
+      ],
+      "rectangles": [
+        [
+          656,
+          540,
+          929,
+          577
+        ],
+        [
+          1104,
+          746,
+          1203,
+          783
+        ]
+      ],
+      "caption": "추가 작업에서 PATH에 추가를 확인하고 다음을 누릅니다.",
+      "redactions": [],
+      "sha256": "28779d34df533c2790bffb357308c0dc1c71c7acfe6ee2628bb377459a23d390",
+      "raw_frame_sha256": "f877d16e6cfe3fc85ea0a8ad7a49cf5a0aef0001183a745874ef1ea7be9a0fcc"
+    },
+    "vscode-language": {
+      "required_scene": "VS Code 한국어 언어 팩",
+      "check": "Microsoft 게시자·설치 상태와 한국어 메뉴 확인",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/vscode-language.png",
+      "verified": true,
+      "source": "작업/촬영/환경세팅/환경세팅 설치.mp4",
+      "source_sha256": "b55a64d718f91958ea2819ce01d5ba71dabd68ec3d761158a29654125d5b677f",
+      "seconds": 615,
+      "crop": [
+        468,
+        97,
+        1394,
+        283
+      ],
+      "rectangles": [
+        [
+          681,
+          107,
+          1377,
+          153
+        ],
+        [
+          683,
+          152,
+          929,
+          185
+        ]
+      ],
+      "caption": "한국어 언어 팩 이름과 게시자 Microsoft를 확인합니다. 이미 설치했다면 Uninstall이 표시됩니다.",
+      "redactions": [],
+      "sha256": "536028a6ebd93d1d32f4a8b9d18a8f2f6522d11e29bad74c86cf017c1d6b7ee3",
+      "raw_frame_sha256": "fcec8a0673c1eb720a787c81859f336039fa6c8c9edd4e1fb1490022f873456c"
+    },
+    "codex-connect": {
+      "required_scene": "VS Code의 Codex 확장·연결 화면",
+      "check": "OpenAI 게시자·연결 선택 확인, 개인 계정 정보 제외",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/codex-connect.png",
+      "verified": true,
+      "source": "작업/촬영/환경세팅/환경세팅 설치.mp4",
+      "source_sha256": "b55a64d718f91958ea2819ce01d5ba71dabd68ec3d761158a29654125d5b677f",
+      "seconds": 663,
+      "crop": [
+        82,
+        264,
+        436,
+        341
+      ],
+      "rectangles": [
+        [
+          146,
+          264,
+          419,
+          294
+        ],
+        [
+          146,
+          317,
+          225,
+          340
+        ]
+      ],
+      "caption": "Codex 확장 이름과 게시자 OpenAI를 확인합니다. 여기서는 확장을 설치하는 중입니다.",
+      "redactions": [],
+      "sha256": "fdbd627481b711394ef8677e71f3ede4750e03b66fe88a48116e642de76b470e",
+      "raw_frame_sha256": "162d43e21e0216c9788bf08bc17e35db1fb35e29fdcabffde45776e0e3041a0a"
+    },
+    "codex-response": {
+      "required_scene": "Codex 패널에 보낸 인사와 돌아온 답이 함께 보입니다. 답의 문구는 달라질 수 있습니다.",
+      "check": "Codex 패널에 보낸 인사와 돌아온 답이 함께 보입니다. 답의 문구는 달라질 수 있습니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/codex-response.png",
+      "verified": true,
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 846.8,
+      "crop": [
+        1330,
+        41,
+        1917,
+        319
+      ],
+      "rectangles": [
+        [
+          1813,
+          118,
+          1909,
+          176
+        ],
+        [
+          1349,
+          208,
+          1638,
+          262
+        ]
+      ],
+      "redactions": [],
+      "caption": "Codex 패널에 보낸 인사와 돌아온 답이 함께 보입니다. 답의 문구는 달라질 수 있습니다.",
+      "sha256": "36ba4936956c6d4d1e6e35f047d5e0fffa6112a5781161fc2f78b4f914814377",
+      "raw_frame_sha256": "4e8b62ef75cf9ae36a59eba819de64328df53c5837113688509a300109d1b363",
+      "source_install_seconds": 861.166667
+    },
+    "git-install": {
+      "required_scene": "Git 설치 PATH 옵션",
+      "check": "권장 PATH 항목이 선택되어 있고 Next 버튼이 보임",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/git-install.png",
+      "verified": true,
+      "source": "작업/촬영/환경세팅/환경세팅 설치.mp4",
+      "source_sha256": "b55a64d718f91958ea2819ce01d5ba71dabd68ec3d761158a29654125d5b677f",
+      "seconds": 228.25,
+      "crop": [
+        551,
+        234,
+        1324,
+        804
+      ],
+      "rectangles": [
+        [
+          614,
+          428,
+          1193,
+          469
+        ],
+        [
+          1128,
+          763,
+          1237,
+          798
+        ]
+      ],
+      "caption": "다른 터미널에서도 Git을 쓸 수 있는 권장 옵션을 유지하고 Next를 누릅니다.",
+      "redactions": [],
+      "sha256": "775d0969091b9f409dc6abde6864907c9ff7184a4fc3a63da38f17ceeae57c3b",
+      "raw_frame_sha256": "bb8bef2bee8a56ead509fef7fd7fef248396addba5de08b7fba87e6be8c2c6b1"
+    },
+    "wsl-version": {
+      "required_scene": "WSL 설치 안내와 버전 확인",
+      "check": "실제 설치 완료 신호·현재 기준 이상 버전 확인",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/wsl-version.png",
+      "verified": true,
+      "source": "작업/촬영/환경세팅/환경세팅 설치.mp4",
+      "source_sha256": "b55a64d718f91958ea2819ce01d5ba71dabd68ec3d761158a29654125d5b677f",
+      "seconds": 487,
+      "crop": [
+        231,
+        541,
+        889,
+        603
+      ],
+      "rectangles": [
+        [
+          231,
+          560,
+          422,
+          584
+        ]
+      ],
+      "caption": "설치 완료 메시지 아래의 WSL 버전은 3.0.3.0입니다.",
+      "sha256": "3391731c83b041c74f8a5eac1ac294a4a8b500579687b333ae9cb5a3ca26096c",
+      "raw_frame_sha256": "01fc0fb1cc9f023cc50c7884e9e92f5191b1a7e98893d3f909cfec330992f862",
+      "redactions": []
+    },
+    "docker-install": {
+      "required_scene": "Docker Desktop 설치의 WSL 2 선택",
+      "check": "WSL 2 선택과 OK 버튼이 보임",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/docker-install.png",
+      "verified": true,
+      "source": "작업/촬영/환경세팅/환경세팅 설치.mp4",
+      "source_sha256": "b55a64d718f91958ea2819ce01d5ba71dabd68ec3d761158a29654125d5b677f",
+      "seconds": 527,
+      "crop": [
+        626,
+        266,
+        1296,
+        756
+      ],
+      "rectangles": [
+        [
+          691,
+          501,
+          777,
+          535
+        ],
+        [
+          1164,
+          692,
+          1286,
+          740
+        ]
+      ],
+      "caption": "WSL 2 선택을 확인하고 OK를 누릅니다.",
+      "raw_frame_sha256": "34bafc324bb340dad6596416d768fc354056bd634d7f45c6312a7a1304dd949d",
+      "sha256": "273027c3b05215fc5ad878043ae647b1604b48527f3823cebb499a3fa8f56028"
+    },
+    "docker-terms": {
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/docker-terms.png",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 875.63333,
+      "crop": [
+        458,
+        445,
+        1460,
+        823
+      ],
+      "rectangles": [
+        [
+          483,
+          456,
+          1030,
+          516
+        ],
+        [
+          1194,
+          740,
+          1321,
+          812
+        ]
+      ],
+      "redactions": [],
+      "caption": "사용 조건을 읽습니다. 계속하려면 오른쪽 아래 Accept를 누릅니다.",
+      "required_scene": "사용 조건을 읽습니다. 계속하려면 오른쪽 아래 Accept를 누릅니다.",
+      "check": "사용 조건을 읽습니다. 계속하려면 오른쪽 아래 Accept를 누릅니다.",
+      "source_install_seconds": 890,
+      "video_seconds": 875.63333,
+      "verified": true,
+      "raw_frame_sha256": "7a89279e0efc48b42ee57c9114e35fabb55234071c93806029d1c202e4bf3478",
+      "sha256": "ee82d8dd8e064fba6fcee3546d3602fe4d6f2901a1ba4d28f36e3eed0d54cc44"
+    },
+    "docker-wsl": {
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/docker-wsl.png",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 912.63333,
+      "crop": [
+        531,
+        568,
+        1441,
+        687
+      ],
+      "rectangles": [
+        [
+          542,
+          583,
+          920,
+          654
+        ],
+        [
+          1187,
+          582,
+          1438,
+          659
+        ]
+      ],
+      "redactions": [],
+      "caption": "General 화면의 Choose Virtual Machine Manager (VMM)에서 WSL 2가 선택돼 있습니다.",
+      "required_scene": "General 화면의 Choose Virtual Machine Manager (VMM)에서 WSL 2가 선택돼 있습니다.",
+      "check": "General 화면의 Choose Virtual Machine Manager (VMM)에서 WSL 2가 선택돼 있습니다.",
+      "source_install_seconds": 927,
+      "video_seconds": 912.63333,
+      "verified": true,
+      "raw_frame_sha256": "fef591d55bf65cfa472cd9b25bd794c30fb11c2c83e296bc93b21823151a4766",
+      "sha256": "2f8c44936eb269e462f49f07e831c07c60e4bc4b067184991f325641f7713724"
+    },
+    "docker-engine": {
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/docker-engine.png",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 906.23333,
+      "crop": [
+        185,
+        877,
+        716,
+        962
+      ],
+      "rectangles": [
+        [
+          186,
+          911,
+          346,
+          952
+        ]
+      ],
+      "redactions": [],
+      "caption": "Docker Desktop 왼쪽 아래의 Engine running이 엔진을 사용할 수 있다는 표시입니다.",
+      "required_scene": "Docker Desktop 왼쪽 아래의 Engine running이 엔진을 사용할 수 있다는 표시입니다.",
+      "check": "Docker Desktop 왼쪽 아래의 Engine running이 엔진을 사용할 수 있다는 표시입니다.",
+      "source_install_seconds": 920.6,
+      "video_seconds": 906.23333,
+      "verified": true,
+      "raw_frame_sha256": "a9c6ed1cb5a90df9ce78ce8e09f7112eb052c814eded68a41c4d096ddd5a22af",
+      "sha256": "61a0a2d2f970632306917a429d50034016c773a37de8ea12876c8dac313098e9"
+    },
+    "project-workfolder": {
+      "required_scene": "만든 작업 폴더를 고르고 폴더 선택을 누릅니다.",
+      "check": "만든 작업 폴더를 고르고 폴더 선택을 누릅니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/project-workfolder.png",
+      "verified": true,
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 713.8,
+      "crop": [
+        0,
+        0,
+        1400,
+        960
+      ],
+      "rectangles": [
+        [
+          228,
+          805,
+          1170,
+          842
+        ],
+        [
+          1119,
+          890,
+          1242,
+          932
+        ]
+      ],
+      "redactions": [],
+      "caption": "만든 작업 폴더를 고르고 폴더 선택을 누릅니다.",
+      "sha256": "65686e7ad5717a0c8f0f918a47ac2328eee9be305f0dd3d0ef036fec3d41c0dc",
+      "raw_frame_sha256": "a3852a9ad38c6c9e7b9cdcc039ad2e51be2dea032f11d081c2416c4d01656939"
+    },
+    "project-address": {
+      "required_scene": "Code 메뉴의 HTTPS 주소 오른쪽에 있는 복사 버튼을 누릅니다.",
+      "check": "Code 메뉴의 HTTPS 주소 오른쪽에 있는 복사 버튼을 누릅니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/project-address.png",
+      "verified": true,
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 564.75,
+      "crop": [
+        735,
+        430,
+        1372,
+        849
+      ],
+      "rectangles": [
+        [
+          1194,
+          446,
+          1368,
+          511
+        ],
+        [
+          759,
+          713,
+          1345,
+          782
+        ]
+      ],
+      "redactions": [],
+      "caption": "Code 메뉴의 HTTPS 주소 오른쪽에 있는 복사 버튼을 누릅니다.",
+      "sha256": "765a79a6ab803dc54d0bee99080eadeb29fd7d42fc3dab616cda72e6531f22d8",
+      "raw_frame_sha256": "0e20177f90d80ab1342ef7cccf35131eed4e06d2e6e95980d892670873d04cb2",
+      "source_install_seconds": 571.516667
+    },
+    "project-clone": {
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/project-clone.png",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 771.23333,
+      "crop": [
+        448,
+        743,
+        1110,
+        915
+      ],
+      "rectangles": [
+        [
+          458,
+          745,
+          1027,
+          780
+        ],
+        [
+          458,
+          854,
+          1050,
+          894
+        ]
+      ],
+      "redactions": [],
+      "caption": "터미널에서 git clone을 실행하면 Receiving objects의 수신 비율이 올라갑니다.",
+      "required_scene": "터미널에서 git clone을 실행하면 Receiving objects의 수신 비율이 올라갑니다.",
+      "check": "터미널에서 git clone을 실행하면 Receiving objects의 수신 비율이 올라갑니다.",
+      "source_install_seconds": 778,
+      "video_seconds": 771.23333,
+      "verified": true,
+      "raw_frame_sha256": "0944d16fb45a8d464afd4465ac63a44163b09e380d33f72a0c50f3e80293995e",
+      "sha256": "f2bcc71e6ec0e85c8720348799021b939f3f6e7adb55238b78c4ca64258ce930"
+    },
+    "project-root": {
+      "required_scene": "터미널에서 Receiving objects와 Resolving deltas가 모두 100%로 끝난 줄을 확인합니다.",
+      "check": "터미널에서 Receiving objects와 Resolving deltas가 모두 100%로 끝난 줄을 확인합니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/project-root.png",
+      "verified": true,
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 846.8,
+      "crop": [
+        440,
+        682,
+        1170,
+        904
+      ],
+      "rectangles": [
+        [
+          459,
+          833,
+          1112,
+          894
+        ]
+      ],
+      "redactions": [],
+      "caption": "터미널에서 Receiving objects와 Resolving deltas가 모두 100%로 끝난 줄을 확인합니다.",
+      "sha256": "a83306aa2847ceab395c73dd7fc1e97f9d302e1614a90d0047405b3e546b725d",
+      "raw_frame_sha256": "4e8b62ef75cf9ae36a59eba819de64328df53c5837113688509a300109d1b363",
+      "source_install_seconds": 861.166667
+    },
+    "project-terminal": {
+      "required_scene": "VS Code 터미널의 Git Bash 선택·폴더 이동",
+      "check": "새 터미널 옆 화살표·Git Bash·프로젝트 루트 확인",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/project-terminal.png",
+      "verified": true,
+      "source": "작업/촬영/환경세팅/환경세팅 설치.mp4",
+      "source_sha256": "b55a64d718f91958ea2819ce01d5ba71dabd68ec3d761158a29654125d5b677f",
+      "seconds": 737.5,
+      "crop": [
+        890,
+        330,
+        1540,
+        980
+      ],
+      "rectangles": [
+        [
+          1270,
+          366,
+          1367,
+          391
+        ],
+        [
+          1236,
+          662,
+          1270,
+          695
+        ]
+      ],
+      "caption": "새 터미널 옆 화살표를 열어 Git Bash를 선택합니다.",
+      "sha256": "59dd2e124f8499dfd0968bf96f0c3b35ca49a93722bd88d43b6ea01a009ea553",
+      "raw_frame_sha256": "d45788ff238100ad0cd511ffc9beeae21b85e9b28a9d89b770c7e2c017c1201c",
+      "review_status": "본 촬영 실제 장면에서 확인; 현재 영상과 장면 순서는 별도 판정."
+    },
+    "system-start": {
+      "required_scene": "프로젝트 폴더의 Git Bash에 시작 명령을 넣고 Enter를 누릅니다.",
+      "check": "프로젝트 폴더의 Git Bash에 시작 명령을 넣고 Enter를 누릅니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/system-start.png",
+      "verified": true,
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 927.63,
+      "crop": [
+        456,
+        924,
+        755,
+        967
+      ],
+      "rectangles": [
+        [
+          461,
+          927,
+          726,
+          956
+        ]
+      ],
+      "redactions": [],
+      "caption": "프로젝트 폴더의 Git Bash에 시작 명령을 넣고 Enter를 누릅니다.",
+      "sha256": "ac9ec2a08a742edcbb3bd0cf52313710dfb3086f9f544b989a44d75d3e704482",
+      "raw_frame_sha256": "f1cf181d40be84a876573942e63022b89a44b168d29c964ff17589dacc1de118",
+      "source_install_seconds": 941.996667
+    },
+    "system-ready": {
+      "required_scene": "VS Code 터미널의 완료 줄에서 포털 주소 위에 마우스를 놓습니다. 링크 안내가 뜨면 Ctrl을 누른 채 클릭합니다.",
+      "check": "VS Code 터미널의 완료 줄에서 포털 주소 위에 마우스를 놓습니다. 링크 안내가 뜨면 Ctrl을 누른 채 클릭합니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/system-ready.png",
+      "verified": true,
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 1136.0,
+      "crop": [
+        450,
+        792,
+        1177,
+        908
+      ],
+      "rectangles": [
+        [
+          452,
+          861,
+          560,
+          900
+        ],
+        [
+          557,
+          838,
+          784,
+          906
+        ]
+      ],
+      "redactions": [],
+      "caption": "VS Code 터미널의 완료 줄에서 포털 주소 위에 마우스를 놓습니다. 링크 안내가 뜨면 Ctrl을 누른 채 클릭합니다.",
+      "sha256": "4d164a7e2aa5b97c4e2ac471874c45b34c3fe31100e25a0ffb206a81e0c88b34",
+      "raw_frame_sha256": "0c2c09ddbf377ef102608d8d5bb18407befae236f6348a9b1aa91819146724bb"
+    },
+    "portal-home": {
+      "required_scene": "위쪽 네 칸의 전체 상태와 아래 설비 · 데이터 · AI 연결 그림을 읽습니다.",
+      "check": "위쪽 네 칸의 전체 상태와 아래 설비 · 데이터 · AI 연결 그림을 읽습니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-home.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 1201.768,
+      "portal_segment_seconds": 60,
+      "crop": [
+        0,
+        60,
+        1900,
+        1040
+      ],
+      "rectangles": [
+        [
+          415,
+          190,
+          1855,
+          335
+        ],
+        [
+          415,
+          430,
+          1855,
+          1000
+        ]
+      ],
+      "redactions": [],
+      "caption": "위쪽 네 칸의 전체 상태와 아래 설비 · 데이터 · AI 연결 그림을 읽습니다.",
+      "sha256": "ca073129137da472f9e97a42bff3a34040ca4716af86b0c75fd68ae984fa1332",
+      "raw_frame_sha256": "013835a30677869789809b0142859b53224bcf400d30d1e5ccb123e06e0174ed"
+    },
+    "portal-work": {
+      "required_scene": "내 작업함을 열면 먼저 나를 고르라고 나옵니다.",
+      "check": "내 작업함을 열면 먼저 나를 고르라고 나옵니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-work.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 1271.268,
+      "portal_segment_seconds": 129.5,
+      "crop": [
+        0,
+        60,
+        1900,
+        500
+      ],
+      "rectangles": [
+        [
+          15,
+          142,
+          354,
+          186
+        ],
+        [
+          415,
+          238,
+          1850,
+          275
+        ]
+      ],
+      "redactions": [],
+      "caption": "내 작업함을 열면 먼저 나를 고르라고 나옵니다.",
+      "sha256": "f908cc86d6bbdbc32ff4e8ad7e39046617b139be50867afb98489bc8427ca845",
+      "raw_frame_sha256": "8f075b87413e67ce3af2c5545187570c13ee7f8d7a67a6e611db7449f15e851a"
+    },
+    "portal-inbox-tabs": {
+      "required_scene": "최운전 · 운전원을 고르면 오른쪽 위 이름이 바뀌고 내 작업 · 알림 탭이 나타납니다.",
+      "check": "최운전 · 운전원을 고르면 오른쪽 위 이름이 바뀌고 내 작업 · 알림 탭이 나타납니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-inbox-tabs.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 1291.768,
+      "portal_segment_seconds": 150,
+      "crop": [
+        0,
+        10,
+        1900,
+        560
+      ],
+      "rectangles": [
+        [
+          1655,
+          22,
+          1860,
+          60
+        ],
+        [
+          415,
+          238,
+          1850,
+          275
+        ],
+        [
+          415,
+          345,
+          680,
+          385
+        ]
+      ],
+      "redactions": [],
+      "caption": "최운전 · 운전원을 고르면 오른쪽 위 이름이 바뀌고 내 작업 · 알림 탭이 나타납니다.",
+      "sha256": "9e5c8257491efa449d80edd25cefb0d8ea98f7f4d10a855b05477127fdda8b69",
+      "raw_frame_sha256": "3ad44b54676dbac668112d856f285af3c294bb35e6720a411db72cad73842c8d"
+    },
+    "portal-instances": {
+      "required_scene": "처리 건의 위쪽 현황과 아래 목록 · 상세 자리를 찾습니다.",
+      "check": "처리 건의 위쪽 현황과 아래 목록 · 상세 자리를 찾습니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-instances.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 1322.768,
+      "portal_segment_seconds": 181,
+      "crop": [
+        0,
+        60,
+        1900,
+        1040
+      ],
+      "rectangles": [
+        [
+          15,
+          194,
+          354,
+          238
+        ],
+        [
+          415,
+          165,
+          1855,
+          305
+        ],
+        [
+          415,
+          550,
+          1855,
+          730
+        ]
+      ],
+      "redactions": [],
+      "caption": "처리 건의 위쪽 현황과 아래 목록 · 상세 자리를 찾습니다.",
+      "sha256": "07900050cd0d6b78d7205613e7d870b5fda3c8d74f18877b5a98be4f580c3b10",
+      "raw_frame_sha256": "e02e2f524dbc6e82961783d903960edd712bfa50c22ca45510fb5b7e28bcf67b"
+    },
+    "portal-equipment": {
+      "required_scene": "결함 시뮬레이션의 HYD-01 카드에서 유온과 값들을, 다른 두 카드에서 업무 알림을 봅니다.",
+      "check": "결함 시뮬레이션의 HYD-01 카드에서 유온과 값들을, 다른 두 카드에서 업무 알림을 봅니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-equipment.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 1371.268,
+      "portal_segment_seconds": 229.5,
+      "crop": [
+        0,
+        60,
+        1900,
+        1040
+      ],
+      "rectangles": [
+        [
+          15,
+          298,
+          354,
+          342
+        ],
+        [
+          420,
+          196,
+          885,
+          985
+        ],
+        [
+          1065,
+          232,
+          1225,
+          265
+        ],
+        [
+          1535,
+          232,
+          1695,
+          265
+        ]
+      ],
+      "redactions": [],
+      "caption": "결함 시뮬레이션의 HYD-01 카드에서 유온과 값들을, 다른 두 카드에서 업무 알림을 봅니다.",
+      "sha256": "bf90194b353d1af4d2ff558f1d2c543c799817212db1802c46ac266d1a6f6889",
+      "raw_frame_sha256": "3484ef1051b3a63ab2e24e2f3988085724e7ea1fe63e3aebc2794d687b85d6e7"
+    },
+    "portal-oil": {
+      "required_scene": "오일 분석 입력은 검사 결과를 사람이 넣는 화면입니다.",
+      "check": "오일 분석 입력은 검사 결과를 사람이 넣는 화면입니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-oil.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 1406.168,
+      "portal_segment_seconds": 264.4,
+      "crop": [
+        0,
+        60,
+        1900,
+        1040
+      ],
+      "rectangles": [
+        [
+          15,
+          350,
+          354,
+          394
+        ],
+        [
+          415,
+          196,
+          1855,
+          680
+        ]
+      ],
+      "redactions": [],
+      "caption": "오일 분석 입력은 검사 결과를 사람이 넣는 화면입니다.",
+      "sha256": "25764b4a8b4ed3706190f199f550e5b36f52b02e793472632e5444d4de073921",
+      "raw_frame_sha256": "0d0427b9d53c074914d660c6581b3bc92d3d48a116bac25883f2474787cb7db7"
+    },
+    "portal-operation": {
+      "required_scene": "이상 확인 · 조치는 설비 상태 그림과 아래 사건 자리를 보여 줍니다.",
+      "check": "이상 확인 · 조치는 설비 상태 그림과 아래 사건 자리를 보여 줍니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-operation.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 1421.068,
+      "portal_segment_seconds": 279.3,
+      "crop": [
+        0,
+        60,
+        1900,
+        1040
+      ],
+      "rectangles": [
+        [
+          15,
+          402,
+          354,
+          446
+        ],
+        [
+          420,
+          196,
+          1850,
+          660
+        ],
+        [
+          420,
+          690,
+          1850,
+          940
+        ]
+      ],
+      "redactions": [],
+      "caption": "이상 확인 · 조치는 설비 상태 그림과 아래 사건 자리를 보여 줍니다.",
+      "sha256": "1239604a1a85cd8e439e5eb75b4d5a6da746d79a0fe5ec23ae3e0549667e7207",
+      "raw_frame_sha256": "915932c50879e91dcf504a56955d33bce89d91c2e7a32fbd817af4e0db4eb0a2"
+    },
+    "portal-monitoring": {
+      "required_scene": "실시간 모니터링의 유온 그래프에서 위쪽 빨간 기준선과 현재 값의 선을 구별합니다.",
+      "check": "실시간 모니터링의 유온 그래프에서 위쪽 빨간 기준선과 현재 값의 선을 구별합니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-monitoring.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 1441.568,
+      "portal_segment_seconds": 299.8,
+      "crop": [
+        0,
+        60,
+        1900,
+        1040
+      ],
+      "rectangles": [
+        [
+          15,
+          454,
+          354,
+          498
+        ],
+        [
+          415,
+          196,
+          1860,
+          700
+        ]
+      ],
+      "redactions": [],
+      "caption": "실시간 모니터링의 유온 그래프에서 위쪽 빨간 기준선과 현재 값의 선을 구별합니다.",
+      "sha256": "3396d2022512e8cde534f6ab87f517669e7ec8376076fbbc502894d4b91e9b0f",
+      "raw_frame_sha256": "d4240885e51175068a0e58a27409e3dc4c1bd8ce43175f0e886f8e4bb5dc92bd"
+    },
+    "portal-rules": {
+      "required_scene": "조치 판단 규칙의 판단 조건과 판단 실행 위치입니다.",
+      "check": "조치 판단 규칙의 판단 조건과 판단 실행 위치입니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-rules.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 1467.468,
+      "portal_segment_seconds": 325.7,
+      "crop": [
+        0,
+        60,
+        1900,
+        1040
+      ],
+      "rectangles": [
+        [
+          15,
+          558,
+          354,
+          602
+        ],
+        [
+          415,
+          200,
+          1855,
+          470
+        ],
+        [
+          1695,
+          482,
+          1835,
+          520
+        ]
+      ],
+      "redactions": [],
+      "caption": "조치 판단 규칙의 판단 조건과 판단 실행 위치입니다.",
+      "sha256": "6a47e13ec56f060502272d5f4080c896b9ee04b09d30c3f4184d4888f3ad53c0",
+      "raw_frame_sha256": "4d99634788148a538111308f5486d2cb3b98a7ec615053363a6bb06e5cc85d09"
+    },
+    "portal-tradeoff": {
+      "required_scene": "조건별 손익에서 시험 기준을 불러오는 칸입니다.",
+      "check": "조건별 손익에서 시험 기준을 불러오는 칸입니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-tradeoff.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 1480.268,
+      "portal_segment_seconds": 338.5,
+      "crop": [
+        0,
+        60,
+        1900,
+        1040
+      ],
+      "rectangles": [
+        [
+          15,
+          610,
+          354,
+          654
+        ],
+        [
+          415,
+          188,
+          1855,
+          372
+        ]
+      ],
+      "redactions": [],
+      "caption": "조건별 손익에서 시험 기준을 불러오는 칸입니다.",
+      "sha256": "e7ca4ab7bc9cb0bbab4407f82fa352ff4950bfd17445af4ccef09049ba820e93",
+      "raw_frame_sha256": "d645d30b458f2049d961342a25fa62abfb5c4c3db5363758f24d7dfa75b79e7b"
+    },
+    "portal-flow": {
+      "required_scene": "승인과 실행의 판단 결과 목록과 상세 자리입니다.",
+      "check": "승인과 실행의 판단 결과 목록과 상세 자리입니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-flow.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 1491.968,
+      "portal_segment_seconds": 350.2,
+      "crop": [
+        0,
+        60,
+        1900,
+        1040
+      ],
+      "rectangles": [
+        [
+          15,
+          662,
+          354,
+          706
+        ],
+        [
+          415,
+          405,
+          1855,
+          632
+        ]
+      ],
+      "redactions": [],
+      "caption": "승인과 실행의 판단 결과 목록과 상세 자리입니다.",
+      "sha256": "38f1a47c476c3a755ca1d147135a0d6e3d71c15d3e02347a6b09a03fea00c21f",
+      "raw_frame_sha256": "c8175755ef63c7417879e566ae781309b4f333e7ec3483be2de00067b63b03e0"
+    },
+    "portal-import": {
+      "required_scene": "흐름 가져오기의 위치와 등록 칸입니다.",
+      "check": "흐름 가져오기의 위치와 등록 칸입니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-import.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 1530.368,
+      "portal_segment_seconds": 388.6,
+      "crop": [
+        0,
+        60,
+        1900,
+        1040
+      ],
+      "rectangles": [
+        [
+          15,
+          710,
+          354,
+          754
+        ],
+        [
+          415,
+          188,
+          1850,
+          590
+        ]
+      ],
+      "redactions": [],
+      "caption": "흐름 가져오기의 위치와 등록 칸입니다.",
+      "sha256": "6916c71ea75dae7e6be6574d0b67435e7e6f73f82d02a9a9ad7b6446a32a0ea8",
+      "raw_frame_sha256": "68a52360497306d161f09db65db23f2cfe8b729375a346dd3df54545b8c795a2"
+    },
+    "portal-ontology": {
+      "required_scene": "지식 지도 위쪽의 항목 · 연결 수와 설비 진단 칸을 찾습니다.",
+      "check": "지식 지도 위쪽의 항목 · 연결 수와 설비 진단 칸을 찾습니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-ontology.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 1566.668,
+      "portal_segment_seconds": 424.9,
+      "crop": [
+        0,
+        60,
+        1900,
+        1040
+      ],
+      "rectangles": [
+        [
+          15,
+          818,
+          354,
+          862
+        ],
+        [
+          430,
+          392,
+          1300,
+          425
+        ],
+        [
+          1300,
+          452,
+          1570,
+          1015
+        ]
+      ],
+      "redactions": [],
+      "caption": "지식 지도 위쪽의 항목 · 연결 수와 설비 진단 칸을 찾습니다.",
+      "sha256": "5b313954662970f3d7a203141ab724869c7ca151a84a1ffb911b5e6b8899cdc7",
+      "raw_frame_sha256": "a67c99b0a674370b90630f89b4718533c53a63cd00810858029026295412de17"
+    },
+    "portal-knowledge": {
+      "required_scene": "지식 관리의 매뉴얼 등록 자리입니다.",
+      "check": "지식 관리의 매뉴얼 등록 자리입니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-knowledge.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 1600.168,
+      "portal_segment_seconds": 458.4,
+      "crop": [
+        0,
+        60,
+        1900,
+        1040
+      ],
+      "rectangles": [
+        [
+          15,
+          922,
+          354,
+          966
+        ],
+        [
+          415,
+          250,
+          1850,
+          655
+        ]
+      ],
+      "redactions": [],
+      "caption": "지식 관리의 매뉴얼 등록 자리입니다.",
+      "sha256": "ce73c2784d8ce4d0f7213d1c32f07ffad23f1f83a2f4fc20f7ccbfe18cebb26c",
+      "raw_frame_sha256": "288d1cda7c90a1abff91c4d7bc06b6d572cad86ef0bea286f5e8262ed11b3343"
+    },
+    "portal-sops": {
+      "required_scene": "조치 방법 목록에 설비 제어와 정비 요청이 함께 있습니다.",
+      "check": "조치 방법 목록에 설비 제어와 정비 요청이 함께 있습니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-sops.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 1588.168,
+      "portal_segment_seconds": 446.4,
+      "crop": [
+        0,
+        60,
+        1900,
+        1040
+      ],
+      "rectangles": [
+        [
+          15,
+          870,
+          354,
+          914
+        ],
+        [
+          415,
+          250,
+          870,
+          995
+        ]
+      ],
+      "redactions": [],
+      "caption": "조치 방법 목록에 설비 제어와 정비 요청이 함께 있습니다.",
+      "sha256": "273ca5e17df1d0b0788067f4a43ed22522dac376d980e9475cfb9d18b615091d",
+      "raw_frame_sha256": "b197bf004e5292eb234ef246ade89e34b87a6f1ea7ee7897aa2e9db9e490de68"
+    },
+    "portal-data": {
+      "required_scene": "데이터 연결에서 연결 상태를 봅니다.",
+      "check": "데이터 연결에서 연결 상태를 봅니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-data.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 1612.768,
+      "portal_segment_seconds": 471,
+      "crop": [
+        0,
+        60,
+        1900,
+        1040
+      ],
+      "rectangles": [
+        [
+          15,
+          970,
+          354,
+          1014
+        ],
+        [
+          415,
+          190,
+          1855,
+          370
+        ]
+      ],
+      "redactions": [],
+      "caption": "데이터 연결에서 연결 상태를 봅니다.",
+      "sha256": "d85811799b281ca46d8d69ca1510d78d90e8e954f062d9e296cbf32c0570065b",
+      "raw_frame_sha256": "9cf5d1284b75f0ab6471dd1ecd767f52d6ae786fae9bfbcb96a8d51cda523b12"
+    },
+    "portal-agents": {
+      "required_scene": "에이전트 목록에서 맡은 일이 다른 에이전트들을 봅니다.",
+      "check": "에이전트 목록에서 맡은 일이 다른 에이전트들을 봅니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-agents.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 1653.368,
+      "portal_segment_seconds": 511.6,
+      "crop": [
+        0,
+        60,
+        1900,
+        1040
+      ],
+      "rectangles": [
+        [
+          15,
+          866,
+          354,
+          910
+        ],
+        [
+          415,
+          320,
+          870,
+          1005
+        ]
+      ],
+      "redactions": [],
+      "caption": "에이전트 목록에서 맡은 일이 다른 에이전트들을 봅니다.",
+      "sha256": "bd15452a15db5ec531be0e249123677709da55e92b2e8b00b38d75fbc5343439",
+      "raw_frame_sha256": "3f7fc827ea109c2aecb2e8568cf955d28330983c5acb21c5aa5fbe702832aa49"
+    },
+    "portal-chat": {
+      "required_scene": "에이전트에게 질문의 질문 단추 위치입니다.",
+      "check": "에이전트에게 질문의 질문 단추 위치입니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-chat.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 1636.768,
+      "portal_segment_seconds": 495,
+      "crop": [
+        0,
+        60,
+        1900,
+        1040
+      ],
+      "rectangles": [
+        [
+          15,
+          814,
+          354,
+          858
+        ],
+        [
+          430,
+          660,
+          1290,
+          800
+        ]
+      ],
+      "redactions": [],
+      "caption": "에이전트에게 질문의 질문 단추 위치입니다.",
+      "sha256": "26e8609704a6e8a049e2efca2392273438eba1b462f2deac40f1ea8388057c1a",
+      "raw_frame_sha256": "fad91b526c7f3f01cbd83e379c73c6746b2fcd96dc3e747fba0a6336ff868491"
+    },
+    "portal-tools": {
+      "required_scene": "도구 연결에서 에이전트가 쓰는 도구 묶음을 봅니다.",
+      "check": "도구 연결에서 에이전트가 쓰는 도구 묶음을 봅니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-tools.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 1662.768,
+      "portal_segment_seconds": 521,
+      "crop": [
+        0,
+        60,
+        1900,
+        1040
+      ],
+      "rectangles": [
+        [
+          15,
+          918,
+          354,
+          962
+        ],
+        [
+          415,
+          335,
+          1850,
+          1005
+        ]
+      ],
+      "redactions": [],
+      "caption": "도구 연결에서 에이전트가 쓰는 도구 묶음을 봅니다.",
+      "sha256": "3d36021fb87b6ce09c9595efb700b200c014af3cce0c2d741aafae7d608d6f9c",
+      "raw_frame_sha256": "bed0c3f446ffa3f4729218d579a628d934c7ea1bbdfe31fb2132de4dfb13384b"
+    },
+    "portal-compare": {
+      "required_scene": "시험 비교의 시험 조건 칸입니다.",
+      "check": "시험 비교의 시험 조건 칸입니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-compare.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 1668.768,
+      "portal_segment_seconds": 527,
+      "crop": [
+        0,
+        60,
+        1900,
+        1040
+      ],
+      "rectangles": [
+        [
+          15,
+          970,
+          354,
+          1014
+        ],
+        [
+          415,
+          196,
+          1855,
+          520
+        ]
+      ],
+      "redactions": [],
+      "caption": "시험 비교의 시험 조건 칸입니다.",
+      "sha256": "c37985b23a04ab02b2fcbc8f271e3e3ab134d8d1a4f76740d2dcb6a290b447f3",
+      "raw_frame_sha256": "bf6dbece1914cbf51497696057a948f07e80ec02300b1103aff1f116c3480fc1"
+    },
+    "portal-evaluation": {
+      "required_scene": "판단 채점의 현황 칸입니다.",
+      "check": "판단 채점의 현황 칸입니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-evaluation.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 1679.768,
+      "portal_segment_seconds": 538,
+      "crop": [
+        0,
+        60,
+        1900,
+        1075
+      ],
+      "rectangles": [
+        [
+          15,
+          1018,
+          354,
+          1062
+        ],
+        [
+          420,
+          296,
+          1850,
+          420
+        ]
+      ],
+      "redactions": [],
+      "caption": "판단 채점의 현황 칸입니다.",
+      "sha256": "5948ea8cdeba6ead16f040c7293ae738644665ceecb7393cc7fda87fb3ffe3aa",
+      "raw_frame_sha256": "57d6e9ea4371f914aef965577d69ed3b934e3fb8b0a37455e3fd09c633035bf3"
+    },
+    "portal-performance": {
+      "required_scene": "성과 지표의 숫자들을 봅니다.",
+      "check": "성과 지표의 숫자들을 봅니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-performance.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 1695.368,
+      "portal_segment_seconds": 553.6,
+      "crop": [
+        0,
+        60,
+        1900,
+        1040
+      ],
+      "rectangles": [
+        [
+          15,
+          814,
+          354,
+          858
+        ],
+        [
+          415,
+          262,
+          1860,
+          420
+        ]
+      ],
+      "redactions": [],
+      "caption": "성과 지표의 숫자들을 봅니다.",
+      "sha256": "b608b99409a3ae63ebb63048e63703321b51691f5225cc9fbc780c884c9db22f",
+      "raw_frame_sha256": "f37be63c0b1891884318f85f5fa6838e88c8fe1cd55f55bc43036ca941d69c5b"
+    },
+    "portal-system": {
+      "required_scene": "시스템 구성의 프로그램 목록입니다.",
+      "check": "시스템 구성의 프로그램 목록입니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-system.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 1701.768,
+      "portal_segment_seconds": 560,
+      "crop": [
+        0,
+        60,
+        1900,
+        1040
+      ],
+      "rectangles": [
+        [
+          15,
+          974,
+          354,
+          1018
+        ],
+        [
+          415,
+          196,
+          1850,
+          1020
+        ]
+      ],
+      "redactions": [],
+      "caption": "시스템 구성의 프로그램 목록입니다.",
+      "sha256": "e8694b47323d096e0c28217c7cedff7c1628e7352a3b732f838e3e5f018f0807",
+      "raw_frame_sha256": "f61d020eae5d145af057bf51a36a83e3ff6b575a1328b50546caa51135e19894"
+    },
+    "portal-admin": {
+      "required_scene": "관리 화면의 항목들입니다.",
+      "check": "관리 화면의 항목들입니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-admin.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 1712.168,
+      "portal_segment_seconds": 570.4,
+      "crop": [
+        0,
+        60,
+        1900,
+        1075
+      ],
+      "rectangles": [
+        [
+          15,
+          1026,
+          354,
+          1070
+        ],
+        [
+          415,
+          188,
+          1855,
+          552
+        ]
+      ],
+      "redactions": [],
+      "caption": "관리 화면의 항목들입니다.",
+      "sha256": "ac6721a1f577e25c2aa98dff36664faf45ab5b3bb141bc5bc6b152b59dd1cec0",
+      "raw_frame_sha256": "d099b900b15a6f88392cc78341dc2e9cfd334d7f1fd09a6bdc2d7afd485a738c"
+    },
+    "docker-install-complete": {
+      "required_scene": "Docker Desktop 설치 완료",
+      "check": "Installation succeeded와 Close 버튼이 보임",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/docker-install-complete.png",
+      "source": "작업/촬영/환경세팅/환경세팅 설치.mp4",
+      "source_sha256": "b55a64d718f91958ea2819ce01d5ba71dabd68ec3d761158a29654125d5b677f",
+      "seconds": 560,
+      "crop": [
+        104,
+        154,
+        984,
+        704
+      ],
+      "rectangles": [
+        [
+          144,
+          234,
+          394,
+          266
+        ],
+        [
+          444,
+          419,
+          646,
+          471
+        ]
+      ],
+      "caption": "Installation succeeded를 확인하고 Close를 누릅니다.",
+      "raw_frame_sha256": "1731c1bc606d57ee9cccb0947b622badc6a5de2d749bef22d7525ad46ca8d57a",
+      "sha256": "8f5b6231762cc5f371f63f51b644768deaf52781c39d54923b6eebdbc9842d01",
+      "verified": true
+    },
+    "project-terminal-root": {
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/project-terminal-root.png",
+      "verified": true,
+      "source": "작업/2026-11-02_1회차-학생가이드-현행화/04_사용자설치원본검수/설치_검증컷_편집/clone_C092_경로_검수후보.mp4",
+      "source_sha256": "c1ae77903cfd3d248c1fdfc1f3ec3b76c2be8fff901871d15055fe6cb775689c",
+      "seconds": 0.8,
+      "crop": [
+        0,
+        510,
+        700,
+        650
+      ],
+      "rectangles": [
+        [
+          0,
+          539,
+          199,
+          571
+        ],
+        [
+          343,
+          585,
+          520,
+          613
+        ]
+      ],
+      "caption": "프로젝트 폴더로 이동한 뒤 터미널의 현재 위치를 확인합니다.",
+      "sha256": "aec7a88a4f713b80a0f0caef342e7987ca6119c1b93feda3581a801746cda874",
+      "raw_frame_sha256": "7e32072539f788a0179cba59218e45492e866e92a2cfdbe5f6e3e22677485cd2",
+      "review_status": "본 촬영 실제 장면에서 확인; 현재 영상과 장면 순서는 별도 판정.",
+      "redactions": [
+        {
+          "box": [
+            0,
+            510,
+            201,
+            535
+          ],
+          "label": "본인 계정·PC"
+        },
+        {
+          "box": [
+            255,
+            510,
+            344,
+            535
+          ],
+          "label": "작업 경로"
+        },
+        {
+          "box": [
+            0,
+            575,
+            201,
+            600
+          ],
+          "label": "본인 계정·PC"
+        },
+        {
+          "box": [
+            255,
+            575,
+            344,
+            600
+          ],
+          "label": "작업 경로"
+        }
+      ]
+    },
+    "git-version": {
+      "required_scene": "새 터미널의 Git 버전 확인",
+      "check": "git --version 입력과 버전 출력 확인",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/git-version.png",
+      "verified": true,
+      "source": "작업/촬영/환경세팅/환경세팅 설치.mp4",
+      "source_sha256": "b55a64d718f91958ea2819ce01d5ba71dabd68ec3d761158a29654125d5b677f",
+      "seconds": 302,
+      "crop": [
+        100,
+        164,
+        650,
+        212
+      ],
+      "rectangles": [
+        [
+          102,
+          165,
+          430,
+          207
+        ]
+      ],
+      "caption": "Git Bash에서 git --version을 실행하고 버전을 확인합니다.",
+      "sha256": "8c01641ecddcc8949304f2d435c16f310a3c3d494d32d1a78931c6693e186691",
+      "raw_frame_sha256": "14bfdd1717629f27e50101001775d8cbdf1ced9f924f658d3967b3b30f20c6d9",
+      "review_status": "본 촬영의 실제 명령과 출력 확인; 개인 프롬프트는 크롭 밖. 현 유성 후보 포함 여부는 별도 확인."
+    },
+    "git-finish": {
+      "required_scene": "Git 설치 완료와 Git Bash 실행 선택",
+      "check": "Launch Git Bash와 Finish 확인",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/git-finish.png",
+      "verified": true,
+      "source": "작업/촬영/환경세팅/환경세팅 설치.mp4",
+      "source_sha256": "b55a64d718f91958ea2819ce01d5ba71dabd68ec3d761158a29654125d5b677f",
+      "seconds": 294.5,
+      "crop": [
+        560,
+        200,
+        1360,
+        812
+      ],
+      "rectangles": [
+        [
+          847,
+          422,
+          992,
+          455
+        ],
+        [
+          1128,
+          766,
+          1238,
+          804
+        ]
+      ],
+      "caption": "설치 완료 창에서 Launch Git Bash를 선택하고 Finish를 누릅니다.",
+      "sha256": "d17aad3895e1afae1c4bb8310ba639fa274e2b9bb0c54fd21c787bbda5f9cce6",
+      "raw_frame_sha256": "a5b92b7a8880f3dcefef59b405d367e5973c633725ae17a3b007636235ed95ae",
+      "review_status": "본 촬영 실제 설치 완료 창 확인."
+    },
+    "node-shell": {
+      "required_scene": "Windows 검색 결과에서 Windows PowerShell을 눌러 새 창을 엽니다.",
+      "check": "Windows 검색 결과에서 Windows PowerShell을 눌러 새 창을 엽니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/node-shell.png",
+      "verified": true,
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 182.3,
+      "crop": [
+        715,
+        177,
+        1155,
+        332
+      ],
+      "rectangles": [
+        [
+          745,
+          231,
+          1145,
+          319
+        ]
+      ],
+      "redactions": [],
+      "caption": "Windows 검색 결과에서 Windows PowerShell을 눌러 새 창을 엽니다.",
+      "sha256": "a33ff836825c2ac74bb65c60c09805d9242602c46a975c6598b6369bc13301c4",
+      "raw_frame_sha256": "184d957018e6ddc818eb566cc7513bc0f94df3e8032b24a7fef3784d7b0a015d",
+      "source_install_seconds": 186.0
+    },
+    "system-progress": {
+      "required_scene": "4/8 단계의 Pulling 표시와 받은 양이 달라지면 이미지를 받고 있는 중입니다.",
+      "check": "4/8 단계의 Pulling 표시와 받은 양이 달라지면 이미지를 받고 있는 중입니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/system-progress.png",
+      "verified": true,
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 1043.3,
+      "crop": [
+        452,
+        725,
+        1755,
+        958
+      ],
+      "rectangles": [
+        [
+          459,
+          732,
+          1311,
+          763
+        ],
+        [
+          1199,
+          777,
+          1306,
+          941
+        ]
+      ],
+      "redactions": [],
+      "caption": "4/8 단계의 Pulling 표시와 받은 양이 달라지면 이미지를 받고 있는 중입니다.",
+      "sha256": "14163b1714a548483704ab84520f2d9b80fea8f0d7d1531be2517b4b917d4a06",
+      "raw_frame_sha256": "42994ba21bd2f92dbe8161232571543a2ff5600a2f9cfc01fff789f523ecda49",
+      "source_install_seconds": 1057.666667
+    },
+    "portal-arrival": {
+      "required_scene": "열린 포털 홈에서 제목과 왼쪽 작업 메뉴를 확인합니다. 상태 카드의 숫자는 실행 중인 환경에 따라 다릅니다.",
+      "check": "열린 포털 홈에서 제목과 왼쪽 작업 메뉴를 확인합니다. 상태 카드의 숫자는 실행 중인 환경에 따라 다릅니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-arrival.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 1147.768,
+      "portal_segment_seconds": 6,
+      "crop": [
+        0,
+        60,
+        1900,
+        480
+      ],
+      "rectangles": [
+        [
+          415,
+          118,
+          490,
+          165
+        ],
+        [
+          15,
+          130,
+          354,
+          235
+        ]
+      ],
+      "redactions": [],
+      "caption": "열린 포털 홈에서 제목과 왼쪽 작업 메뉴를 확인합니다. 상태 카드의 숫자는 실행 중인 환경에 따라 다릅니다.",
+      "sha256": "2ce2f395f5196d3348b43b9bcaefa24062c8767eda5c309a79f64b3e8aeb678f",
+      "raw_frame_sha256": "862fe70efb55ebf9a9bcf7216ed06400e024694856dbfa8e89eb29c92d26c6ab"
+    },
+    "docker-skip": {
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/docker-skip.png",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 880.13333,
+      "crop": [
+        617,
+        303,
+        1306,
+        408
+      ],
+      "rectangles": [
+        [
+          645,
+          327,
+          938,
+          383
+        ],
+        [
+          1214,
+          314,
+          1290,
+          369
+        ]
+      ],
+      "redactions": [],
+      "caption": "Welcome to Docker의 오른쪽 위 Skip을 누르면 계정 입력 단계를 지나갑니다.",
+      "required_scene": "Welcome to Docker의 오른쪽 위 Skip을 누르면 계정 입력 단계를 지나갑니다.",
+      "check": "Welcome to Docker의 오른쪽 위 Skip을 누르면 계정 입력 단계를 지나갑니다.",
+      "source_install_seconds": 894.5,
+      "video_seconds": 880.13333,
+      "verified": true,
+      "raw_frame_sha256": "9b807176e8d6c9f986b8a2062230f5066d71485b816f4e9b4371d01f50a091e2",
+      "sha256": "382649fd58b3ac1e05fb9aacd25d005c7b478fc095408081694edf42d694c6bb"
+    },
+    "portal-topbar": {
+      "required_scene": "위쪽 줄의 진행 중 사건, 서비스 수, 나 표시를 찾습니다.",
+      "check": "위쪽 줄의 진행 중 사건, 서비스 수, 나 표시를 찾습니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-topbar.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 1233.768,
+      "portal_segment_seconds": 92,
+      "crop": [
+        400,
+        10,
+        1900,
+        300
+      ],
+      "rectangles": [
+        [
+          970,
+          22,
+          1130,
+          60
+        ],
+        [
+          1345,
+          22,
+          1490,
+          60
+        ],
+        [
+          1655,
+          22,
+          1860,
+          60
+        ]
+      ],
+      "redactions": [],
+      "caption": "위쪽 줄의 진행 중 사건, 서비스 수, 나 표시를 찾습니다.",
+      "sha256": "a22ce5d5ecb0342ca73fdb5a05befde709fb490efbeb954b92c893b55ea9c336",
+      "raw_frame_sha256": "c23abac0d253714cc378d697163d4372535729c31aa6c5de6476f116e3b6d7af"
+    },
+    "portal-button": {
+      "required_scene": "카드 아래쪽 결함 실험의 쿨러 열화 주입 위치입니다. 지금은 누르지 않습니다.",
+      "check": "카드 아래쪽 결함 실험의 쿨러 열화 주입 위치입니다. 지금은 누르지 않습니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-button.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 1391.768,
+      "portal_segment_seconds": 250,
+      "crop": [
+        0,
+        60,
+        1900,
+        800
+      ],
+      "rectangles": [
+        [
+          15,
+          298,
+          354,
+          342
+        ],
+        [
+          455,
+          455,
+          640,
+          492
+        ]
+      ],
+      "redactions": [],
+      "caption": "카드 아래쪽 결함 실험의 쿨러 열화 주입 위치입니다. 지금은 누르지 않습니다.",
+      "sha256": "123556ce6422779bdc689d1c82546744ff193cc5c39249696f785cf24b5e4811",
+      "raw_frame_sha256": "044887144a65b470b0d7db6003e0ca8e943b7c391a39e4c5f2a0ed75057c2370"
+    },
+    "portal-enterprise": {
+      "required_scene": "기업 시스템 현황에서 생산 오더의 납기를 봅니다.",
+      "check": "기업 시스템 현황에서 생산 오더의 납기를 봅니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-enterprise.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 1511.668,
+      "portal_segment_seconds": 369.9,
+      "crop": [
+        0,
+        60,
+        1900,
+        1040
+      ],
+      "rectangles": [
+        [
+          415,
+          665,
+          1855,
+          1010
+        ]
+      ],
+      "redactions": [],
+      "caption": "기업 시스템 현황에서 생산 오더의 납기를 봅니다.",
+      "sha256": "7057e7e3ceba393e49e0ddc26ca7925d42b9bee49db69207d372aff2cf90970a",
+      "raw_frame_sha256": "3d749cb1c4dec202e565025f8370dc463c86364ff0adf21b7fd1e9aea6a9230c"
+    },
+    "wsl-enter": {
+      "required_scene": "아무 키나 누르라는 안내가 나오면 60초 안에 Enter를 누릅니다.",
+      "check": "아무 키나 누르라는 안내가 나오면 60초 안에 Enter를 누릅니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/wsl-enter.png",
+      "verified": true,
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 433.5,
+      "crop": [
+        200,
+        230,
+        1460,
+        620
+      ],
+      "rectangles": [
+        [
+          238,
+          420,
+          1140,
+          490
+        ]
+      ],
+      "redactions": [],
+      "caption": "아무 키나 누르라는 안내가 나오면 60초 안에 Enter를 누릅니다.",
+      "sha256": "e9c989ae9d720812ecfb66ff6559b85ca135d9c507808740e86e193f57d03fbc",
+      "raw_frame_sha256": "8b53c0b17f4b44e7a015dc0c257dc0bf5655e188d687e2acaf485d2f4a84462e"
+    },
+    "vscode-first-login": {
+      "required_scene": "처음 뜨는 로그인 창에서 Continue without Signing In을 누릅니다.",
+      "check": "처음 뜨는 로그인 창에서 Continue without Signing In을 누릅니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/vscode-first-login.png",
+      "verified": true,
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 584,
+      "crop": [
+        340,
+        130,
+        1580,
+        880
+      ],
+      "rectangles": [
+        [
+          1280,
+          795,
+          1520,
+          850
+        ]
+      ],
+      "redactions": [],
+      "caption": "처음 뜨는 로그인 창에서 Continue without Signing In을 누릅니다.",
+      "sha256": "4de13e31c7dce2712bc3c0d9ee637d55fde0edc9d2a6d058a106fb5a50d9c72c",
+      "raw_frame_sha256": "f2a112373d10e7dbe8520c99b0190563ba6b3717aeb1a53fe698eeda43903599"
+    },
+    "vscode-first-theme": {
+      "required_scene": "테마 창에서 Get Started를 누릅니다.",
+      "check": "테마 창에서 Get Started를 누릅니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/vscode-first-theme.png",
+      "verified": true,
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 588,
+      "crop": [
+        340,
+        130,
+        1580,
+        880
+      ],
+      "rectangles": [
+        [
+          1400,
+          800,
+          1525,
+          845
+        ]
+      ],
+      "redactions": [],
+      "caption": "테마 창에서 Get Started를 누릅니다.",
+      "sha256": "4103679abc7634037b83641957947312ba9a2c95e8e510bd5e838dbe9f2d731e",
+      "raw_frame_sha256": "32add380c8656d28b09990e668a4821d94dbbc1be268f89d72176752398ec73d"
+    },
+    "vscode-language-restart": {
+      "required_scene": "표시 언어를 바꾸려면 Restart를 누릅니다.",
+      "check": "표시 언어를 바꾸려면 Restart를 누릅니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/vscode-language-restart.png",
+      "verified": true,
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 687,
+      "crop": [
+        600,
+        340,
+        1300,
+        600
+      ],
+      "rectangles": [
+        [
+          1068,
+          515,
+          1158,
+          555
+        ]
+      ],
+      "redactions": [],
+      "caption": "표시 언어를 바꾸려면 Restart를 누릅니다.",
+      "sha256": "0bc7e43517b899bdfdc9adfdd3180b14c2e2269877804040d77b9d2e58324a94",
+      "raw_frame_sha256": "baa94ee77220bf554807f3bb0f7833a4c01a7fefe1b32a4459f2470c5dc813fa"
+    },
+    "project-open-folder": {
+      "required_scene": "파일 메뉴에서 폴더 열기를 누릅니다.",
+      "check": "파일 메뉴에서 폴더 열기를 누릅니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/project-open-folder.png",
+      "verified": true,
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 705,
+      "crop": [
+        0,
+        0,
+        660,
+        720
+      ],
+      "rectangles": [
+        [
+          70,
+          205,
+          430,
+          240
+        ]
+      ],
+      "redactions": [],
+      "caption": "파일 메뉴에서 폴더 열기를 누릅니다.",
+      "sha256": "f467b47201fa4566c5608274cc058f2c36f20e26a2690bde51076d167190bbce",
+      "raw_frame_sha256": "72c751ee4d4d3686e6a6244140ca044d1c90f816a6422b835fe87622efa30d12"
+    },
+    "project-new-terminal": {
+      "required_scene": "터미널 메뉴에서 새 터미널을 누릅니다.",
+      "check": "터미널 메뉴에서 새 터미널을 누릅니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/project-new-terminal.png",
+      "verified": true,
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 721.5,
+      "crop": [
+        380,
+        0,
+        1200,
+        420
+      ],
+      "rectangles": [
+        [
+          450,
+          68,
+          705,
+          106
+        ],
+        [
+          725,
+          68,
+          1125,
+          106
+        ]
+      ],
+      "redactions": [],
+      "caption": "터미널 메뉴에서 새 터미널을 누릅니다.",
+      "sha256": "ce6ce151205a0fc14a7a4998e76f288c88e51b9b1c6d4b76adde467f3a6db160",
+      "raw_frame_sha256": "3b93075737f8b2b23c55b7882aaa7f25f514521900fbadf433f1ec592718ae62"
+    },
+    "codex-next": {
+      "required_scene": "Codex 탭의 안내 화면에서 다음을 누릅니다.",
+      "check": "Codex 탭의 안내 화면에서 다음을 누릅니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/codex-next.png",
+      "verified": true,
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 823.5,
+      "crop": [
+        1250,
+        640,
+        1920,
+        980
+      ],
+      "rectangles": [
+        [
+          1788,
+          880,
+          1878,
+          924
+        ]
+      ],
+      "redactions": [],
+      "caption": "Codex 탭의 안내 화면에서 다음을 누릅니다.",
+      "sha256": "ebdba1970dda4ed466d0dab057fd40d187b71f185ce944bd7a42b157a6b44fdc",
+      "raw_frame_sha256": "2be71f45de3b7925d05af5fee86dfd5e75b9433b68e2999593812868cdac56ed"
+    },
+    "codex-model": {
+      "required_scene": "모델 안내에서 현재 모델로 계속 진행을 누릅니다.",
+      "check": "모델 안내에서 현재 모델로 계속 진행을 누릅니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/codex-model.png",
+      "verified": true,
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
+      "seconds": 826,
+      "crop": [
+        1320,
+        180,
+        1920,
+        800
+      ],
+      "rectangles": [
+        [
+          1521,
+          672,
+          1731,
+          720
+        ]
+      ],
+      "redactions": [],
+      "caption": "모델 안내에서 현재 모델로 계속 진행을 누릅니다.",
+      "sha256": "530a075e0bb6680564442c38e1c9d1c30bc54a60edb4b88924625913e986c63d",
+      "raw_frame_sha256": "992680e05172c4fc32b549df875fd74b33c30025d966ac760b35d2c7a379098a"
+    }
+  }
+}

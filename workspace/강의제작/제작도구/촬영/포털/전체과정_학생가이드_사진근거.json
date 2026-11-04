@@ -1,0 +1,1670 @@
+{
+  "photos": {
+    "06-연결그림": {
+      "required_scene": "홈의 설비 · 데이터 · AI 연결 그림에서 승인된 조치가 설비로 돌아가는 위쪽 화살표를 찾으세요.",
+      "check": "홈의 설비 · 데이터 · AI 연결 그림에서 승인된 조치가 설비로 돌아가는 위쪽 화살표를 찾으세요.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-연결그림.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 20,
+      "crop": [
+        400,
+        400,
+        1860,
+        1020
+      ],
+      "rectangles": [
+        [
+          1225,
+          462,
+          1545,
+          510
+        ]
+      ],
+      "redactions": [],
+      "caption": "홈의 설비 · 데이터 · AI 연결 그림에서 승인된 조치가 설비로 돌아가는 위쪽 화살표를 찾으세요.",
+      "sha256": "fdde253577fb57cdd4a2c458701eb111f5a1ba4b9b72d3a27d29d70d5876ed97",
+      "raw_frame_sha256": "2e6b82033d3bca183ecd3d22ea10b88ad36d4ce1d18bfeae2186b7aca6ff305b"
+    },
+    "06-지식관리진입": {
+      "required_scene": "왼쪽 지식 관리를 누르면 오른쪽에 매뉴얼 등록이 열립니다.",
+      "check": "왼쪽 지식 관리를 누르면 오른쪽에 매뉴얼 등록이 열립니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-지식관리진입.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 48,
+      "crop": [
+        0,
+        60,
+        1300,
+        1040
+      ],
+      "rectangles": [
+        [
+          15,
+          918,
+          354,
+          966
+        ],
+        [
+          415,
+          190,
+          560,
+          232
+        ]
+      ],
+      "redactions": [],
+      "caption": "왼쪽 지식 관리를 누르면 오른쪽에 매뉴얼 등록이 열립니다.",
+      "sha256": "41d14eb1d41cf06f9717b567e9d76dfa2289e29e1ff857cd12645d17cf2b1805",
+      "raw_frame_sha256": "11096fcaaf35dfd4c1013402742039942bd070e1b9e478d8ffdf24042c146bd0"
+    },
+    "06-문서받기": {
+      "required_scene": "제공 문서(받기)의 첫 번째 링크 HM-8_cooler-fan-manual.md를 눌러 받습니다.",
+      "check": "제공 문서(받기)의 첫 번째 링크 HM-8_cooler-fan-manual.md를 눌러 받습니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-문서받기.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 62,
+      "crop": [
+        420,
+        240,
+        1300,
+        640
+      ],
+      "rectangles": [
+        [
+          500,
+          385,
+          755,
+          416
+        ]
+      ],
+      "redactions": [],
+      "caption": "제공 문서(받기)의 첫 번째 링크 HM-8_cooler-fan-manual.md를 눌러 받습니다.",
+      "sha256": "35f51d317933a38654d5cd51e161fe9df2165c45d7c4c0f7a81fc1f9cdbc4005",
+      "raw_frame_sha256": "e9344d4f20c00b0b549f6b405b1dd4764952611e15248b10f5c620e224544e3e"
+    },
+    "06-파일선택": {
+      "required_scene": "파일 선택으로 받은 파일을 넣으면 버튼 옆에 같은 파일 이름이 보입니다.",
+      "check": "파일 선택으로 받은 파일을 넣으면 버튼 옆에 같은 파일 이름이 보입니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-파일선택.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 71,
+      "crop": [
+        420,
+        240,
+        1300,
+        640
+      ],
+      "rectangles": [
+        [
+          440,
+          316,
+          840,
+          346
+        ]
+      ],
+      "redactions": [],
+      "caption": "파일 선택으로 받은 파일을 넣으면 버튼 옆에 같은 파일 이름이 보입니다.",
+      "sha256": "cea120ed29e0f25a1a4d0957861755ee5a9c171e8a7a9446520f3d45375d0370",
+      "raw_frame_sha256": "3c716833be2214e25b886ea3ea7a343e20050fbc563e5b13a5f15ef33eff60c6"
+    },
+    "06-문서선택": {
+      "required_scene": "파일 이름과 같은 이름 옆에 문서 개정이 적힌 항목을 등록할 문서에서 고릅니다.",
+      "check": "파일 이름과 같은 이름 옆에 문서 개정이 적힌 항목을 등록할 문서에서 고릅니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-문서선택.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 81,
+      "crop": [
+        420,
+        240,
+        1860,
+        520
+      ],
+      "rectangles": [
+        [
+          440,
+          316,
+          840,
+          346
+        ],
+        [
+          1375,
+          312,
+          1825,
+          350
+        ]
+      ],
+      "redactions": [],
+      "caption": "파일 이름과 같은 이름 옆에 문서 개정이 적힌 항목을 등록할 문서에서 고릅니다.",
+      "sha256": "f4deac6dfee1600e859bb3386e440312ccf9baac706e40b4668e59a5100d34f9",
+      "raw_frame_sha256": "d4efd1177ba074fd7b75c3cead8232e997a0a47c39fff1e555c179a1512caaa6"
+    },
+    "06-미리보기": {
+      "required_scene": "담당자가 지식 관리자인지 보고 오른쪽 아래 미리보기를 누릅니다.",
+      "check": "담당자가 지식 관리자인지 보고 오른쪽 아래 미리보기를 누릅니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-미리보기.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 93.5,
+      "crop": [
+        420,
+        240,
+        1860,
+        640
+      ],
+      "rectangles": [
+        [
+          920,
+          312,
+          1360,
+          350
+        ],
+        [
+          1700,
+          530,
+          1835,
+          568
+        ]
+      ],
+      "redactions": [],
+      "caption": "담당자가 지식 관리자인지 보고 오른쪽 아래 미리보기를 누릅니다.",
+      "sha256": "b14186df99abc4aa05d54c2ceaec1c82de6cbcb6c94afdb260029397435b7056",
+      "raw_frame_sha256": "c92b1ec356cd4409e066c6983db3226ffd23cab9e59dfaa17e9724da61fc754b"
+    },
+    "06-미리보기요약": {
+      "required_scene": "파일 이름 옆의 글자 수 · 절 · 절차 수와 현재 지식 기준 검사의 수정할 항목 있음 표시를 읽습니다.",
+      "check": "파일 이름 옆의 글자 수 · 절 · 절차 수와 현재 지식 기준 검사의 수정할 항목 있음 표시를 읽습니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-미리보기요약.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 110,
+      "crop": [
+        420,
+        585,
+        1860,
+        1040
+      ],
+      "rectangles": [
+        [
+          440,
+          600,
+          970,
+          632
+        ],
+        [
+          660,
+          655,
+          895,
+          685
+        ]
+      ],
+      "redactions": [],
+      "caption": "파일 이름 옆의 글자 수 · 절 · 절차 수와 현재 지식 기준 검사의 수정할 항목 있음 표시를 읽습니다.",
+      "sha256": "4f2a42876ff1a68bd970beac7e86dfe4a7cf8f876e1e4e05fbfe67e04047e750",
+      "raw_frame_sha256": "74feb98472af983fae28fff691b717c1b61e39768cfe0522351ad9119f53e934"
+    },
+    "06-원문펼치기": {
+      "required_scene": "추출 원문 전체 보기를 누른 뒤 나타난 1쪽 전체를 펼칩니다.",
+      "check": "추출 원문 전체 보기를 누른 뒤 나타난 1쪽 전체를 펼칩니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-원문펼치기.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 117.1,
+      "crop": [
+        420,
+        640,
+        1860,
+        1040
+      ],
+      "rectangles": [
+        [
+          668,
+          742,
+          880,
+          776
+        ],
+        [
+          450,
+          808,
+          620,
+          842
+        ]
+      ],
+      "redactions": [],
+      "caption": "추출 원문 전체 보기를 누른 뒤 나타난 1쪽 전체를 펼칩니다.",
+      "sha256": "e380bfe2c6ece649e3d93b014159f4f69fbbca2722b6421fda4fd25664b22d52",
+      "raw_frame_sha256": "3604d59195f56f7d185e11b752e85d1b757c07715b98967a518f9ffed3c10040"
+    },
+    "06-벨트원문": {
+      "required_scene": "HM-8.2와 벨트 교체 절차. 벨트 상태를 확인하는 일과 교체하는 일이 나뉘어 있습니다.",
+      "check": "HM-8.2와 벨트 교체 절차. 벨트 상태를 확인하는 일과 교체하는 일이 나뉘어 있습니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-벨트원문.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 138,
+      "crop": [
+        440,
+        180,
+        1500,
+        690
+      ],
+      "rectangles": [
+        [
+          450,
+          475,
+          1490,
+          680
+        ]
+      ],
+      "redactions": [],
+      "caption": "HM-8.2와 벨트 교체 절차. 벨트 상태를 확인하는 일과 교체하는 일이 나뉘어 있습니다.",
+      "sha256": "b22185593ea487a20eec30d2f9abce950a9321794989fb0b5703d4b62d6b227c",
+      "raw_frame_sha256": "1df07061becb7b713a9dbe71c2f757197e4f7bbc3fa8c67a1b1138bbebc6ea55"
+    },
+    "06-판정기준": {
+      "required_scene": "HM-8.3 냉각 성능 판정 기준. 유온 하나가 아니라 냉각 효율과 함께 봅니다.",
+      "check": "HM-8.3 냉각 성능 판정 기준. 유온 하나가 아니라 냉각 효율과 함께 봅니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-판정기준.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 153,
+      "crop": [
+        440,
+        195,
+        1500,
+        640
+      ],
+      "rectangles": [
+        [
+          450,
+          262,
+          1330,
+          432
+        ]
+      ],
+      "redactions": [],
+      "caption": "HM-8.3 냉각 성능 판정 기준. 유온 하나가 아니라 냉각 효율과 함께 봅니다.",
+      "sha256": "7964658322ff3c7974ccc4e70dc03a09bbdf2b1f3b0b85518498b635b8b15d29",
+      "raw_frame_sha256": "80202662101b06d9f7486a62f5d50475924ba225e9120c342d4719acfc73cf9a"
+    },
+    "06-원인증거": {
+      "required_scene": "HM-8.4 핀 오염 항목. 최근 30초 냉각 효율 평균과 최근 2분 팬 진동 평균이 적혀 있습니다.",
+      "check": "HM-8.4 핀 오염 항목. 최근 30초 냉각 효율 평균과 최근 2분 팬 진동 평균이 적혀 있습니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-원인증거.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 190,
+      "crop": [
+        440,
+        170,
+        1860,
+        640
+      ],
+      "rectangles": [
+        [
+          450,
+          210,
+          1800,
+          272
+        ]
+      ],
+      "redactions": [],
+      "caption": "HM-8.4 핀 오염 항목. 최근 30초 냉각 효율 평균과 최근 2분 팬 진동 평균이 적혀 있습니다.",
+      "sha256": "9564af75386abeb2bb8f46b343d2ff27cc8bc7ec519cff60c65df832a1f884f0",
+      "raw_frame_sha256": "958cab0d604fe0b09d23e4554437ef0b3b5d3e386efdf5841d578199652401ac"
+    },
+    "06-회복기준": {
+      "required_scene": "HM-8.6 회복 판정. 조치 뒤 15분 동안 유온과 경보 상태가 유지되는지 봅니다.",
+      "check": "HM-8.6 회복 판정. 조치 뒤 15분 동안 유온과 경보 상태가 유지되는지 봅니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-회복기준.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 228,
+      "crop": [
+        440,
+        170,
+        1860,
+        640
+      ],
+      "rectangles": [
+        [
+          450,
+          205,
+          1830,
+          315
+        ]
+      ],
+      "redactions": [],
+      "caption": "HM-8.6 회복 판정. 조치 뒤 15분 동안 유온과 경보 상태가 유지되는지 봅니다.",
+      "sha256": "d2e875e4b449600071c36975453ccc4572163c1b7023e9d1e245b72b4aab8075",
+      "raw_frame_sha256": "3b5348f8353f6bf9155d777d724f012768b1ac9350f06f6a98a4c15067a18f25"
+    },
+    "06-금지제한": {
+      "required_scene": "HM-8.8 금지와 제한. 원격 조치를 할 수 있는 운전 모드와 팬 연속 운전 제한이 있습니다.",
+      "check": "HM-8.8 금지와 제한. 원격 조치를 할 수 있는 운전 모드와 팬 연속 운전 제한이 있습니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-금지제한.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 263,
+      "crop": [
+        440,
+        170,
+        1860,
+        640
+      ],
+      "rectangles": [
+        [
+          450,
+          478,
+          1800,
+          632
+        ]
+      ],
+      "redactions": [],
+      "caption": "HM-8.8 금지와 제한. 원격 조치를 할 수 있는 운전 모드와 팬 연속 운전 제한이 있습니다.",
+      "sha256": "9512a6bbbad3de17dfac3a3056c8f69e982c6f3e7ecd73ca7b9e51bc25b47d25",
+      "raw_frame_sha256": "bf4fdc7fd217395b2dc977675cfc52fe51104548146f720f36f90aff80194416"
+    },
+    "06-추출요청": {
+      "required_scene": "추출 제안 준비를 누른 뒤 추출 진행 · 결과 확인을 누르면 이 문서의 추출 작업에 상태가 표시됩니다.",
+      "check": "추출 제안 준비를 누른 뒤 추출 진행 · 결과 확인을 누르면 이 문서의 추출 작업에 상태가 표시됩니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-추출요청.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 278,
+      "crop": [
+        420,
+        640,
+        1860,
+        1040
+      ],
+      "rectangles": [
+        [
+          445,
+          680,
+          595,
+          724
+        ],
+        [
+          600,
+          680,
+          820,
+          724
+        ],
+        [
+          445,
+          790,
+          1830,
+          825
+        ]
+      ],
+      "redactions": [],
+      "caption": "추출 제안 준비를 누른 뒤 추출 진행 · 결과 확인을 누르면 이 문서의 추출 작업에 상태가 표시됩니다.",
+      "sha256": "4b9f90d35f95bd2f737305423381a44c9f5f26e5aa5b7732564c9be913d5279d",
+      "raw_frame_sha256": "973c5e427bd8d5f9b9410074ebbaebd540f6454e17a20682423e889a7c75601d"
+    },
+    "06-조치방법": {
+      "required_scene": "강사 화면의 예입니다. 왼쪽은 매뉴얼 절, 오른쪽 등록할 조치 방법이 검토할 제안입니다.",
+      "check": "강사 화면의 예입니다. 왼쪽은 매뉴얼 절, 오른쪽 등록할 조치 방법이 검토할 제안입니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-조치방법.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 292,
+      "crop": [
+        420,
+        70,
+        1860,
+        700
+      ],
+      "rectangles": [
+        [
+          1050,
+          305,
+          1230,
+          340
+        ]
+      ],
+      "redactions": [],
+      "caption": "강사 화면의 예입니다. 왼쪽은 매뉴얼 절, 오른쪽 등록할 조치 방법이 검토할 제안입니다.",
+      "sha256": "a6f139b69f66a9146cb7c1f0bed359a49c795e93bad628045c596d4c0f4837c1",
+      "raw_frame_sha256": "b41713a36f5112508b1675f9771ab5647937f2b517e56bf60139892d81f22296"
+    },
+    "06-원문인용": {
+      "required_scene": "강사 화면의 예입니다. 팬 최대 운전의 원문 인용을 펼쳐 첫 단계가 원문과 같은지 비교합니다.",
+      "check": "강사 화면의 예입니다. 팬 최대 운전의 원문 인용을 펼쳐 첫 단계가 원문과 같은지 비교합니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-원문인용.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 322.6,
+      "crop": [
+        1000,
+        130,
+        1860,
+        1040
+      ],
+      "rectangles": [
+        [
+          1080,
+          624,
+          1815,
+          774
+        ],
+        [
+          1080,
+          843,
+          1455,
+          948
+        ]
+      ],
+      "redactions": [],
+      "caption": "강사 화면의 예입니다. 팬 최대 운전의 원문 인용을 펼쳐 첫 단계가 원문과 같은지 비교합니다.",
+      "sha256": "de6f349a3fe3c43dd26ed61be771d9e39f82eef0cac092e30edb4b924b8f6825",
+      "raw_frame_sha256": "77baf8ce8c26718e8dff87db320f774afd91729a864f649e2ac80f7821655bd7"
+    },
+    "06-관계종류": {
+      "required_scene": "강사 화면의 예입니다. 관계는 이 조치가 고장에 대해 하는 역할, 종류는 실행 방식입니다.",
+      "check": "강사 화면의 예입니다. 관계는 이 조치가 고장에 대해 하는 역할, 종류는 실행 방식입니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-관계종류.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 339,
+      "crop": [
+        1000,
+        130,
+        1860,
+        700
+      ],
+      "rectangles": [
+        [
+          1070,
+          372,
+          1440,
+          442
+        ],
+        [
+          1446,
+          372,
+          1812,
+          442
+        ]
+      ],
+      "redactions": [],
+      "caption": "강사 화면의 예입니다. 관계는 이 조치가 고장에 대해 하는 역할, 종류는 실행 방식입니다.",
+      "sha256": "b562205c0206fbf4391ed107719995f94a24466eae056dd915dd4384e279de27",
+      "raw_frame_sha256": "af8742cbad3c8191740ceb8a79ae2ef717d2cf77db0a3647d5f0b3a9a15af7af"
+    },
+    "06-핀세척": {
+      "required_scene": "강사 화면의 예입니다. 쿨러 핀 세척은 근본 조치이고 종류는 정비 요청입니다.",
+      "check": "강사 화면의 예입니다. 쿨러 핀 세척은 근본 조치이고 종류는 정비 요청입니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-핀세척.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 383.8,
+      "crop": [
+        1000,
+        130,
+        1860,
+        1040
+      ],
+      "rectangles": [
+        [
+          1450,
+          200,
+          1815,
+          256
+        ],
+        [
+          1075,
+          495,
+          1436,
+          562
+        ],
+        [
+          1450,
+          495,
+          1815,
+          562
+        ]
+      ],
+      "redactions": [],
+      "caption": "강사 화면의 예입니다. 쿨러 핀 세척은 근본 조치이고 종류는 정비 요청입니다.",
+      "sha256": "b47e9c80466cb5bb2ca3ca958de9a8a51372a37278d26de5d45a5e3b5dda8cac",
+      "raw_frame_sha256": "cae10182c40239559f67eb2da5ee9a701d03e9a333f402449b024476f3a9e7b3"
+    },
+    "06-원인후보": {
+      "required_scene": "강사 화면의 예입니다. 원인 후보 셋을 어떤 관측으로 구분하는지 원문 인용과 맞춥니다.",
+      "check": "강사 화면의 예입니다. 원인 후보 셋을 어떤 관측으로 구분하는지 원문 인용과 맞춥니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-원인후보.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 481.9,
+      "crop": [
+        420,
+        130,
+        1300,
+        1040
+      ],
+      "rectangles": [
+        [
+          444,
+          147,
+          1290,
+          702
+        ]
+      ],
+      "redactions": [],
+      "caption": "강사 화면의 예입니다. 원인 후보 셋을 어떤 관측으로 구분하는지 원문 인용과 맞춥니다.",
+      "sha256": "5be51c61b5b23837fcbda928ad5295ed867ecafedf80997ed09b9b4692280d79",
+      "raw_frame_sha256": "8dd59e3f6ba74c30d48044bc485598b78867b30d37b3c58ef4be94da4840cc2c"
+    },
+    "06-확인증거": {
+      "required_scene": "강사 화면의 예입니다. 팬 진동의 평균 시간과 비교 방향이 원인별로 원문과 같은지 봅니다.",
+      "check": "강사 화면의 예입니다. 팬 진동의 평균 시간과 비교 방향이 원인별로 원문과 같은지 봅니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-확인증거.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 518.3,
+      "crop": [
+        420,
+        75,
+        1300,
+        800
+      ],
+      "rectangles": [
+        [
+          450,
+          222,
+          1290,
+          342
+        ],
+        [
+          450,
+          567,
+          1290,
+          696
+        ]
+      ],
+      "redactions": [],
+      "caption": "강사 화면의 예입니다. 팬 진동의 평균 시간과 비교 방향이 원인별로 원문과 같은지 봅니다.",
+      "sha256": "40ad2a2d641d9ad878d76a16ce0c7000b3cb30f62c9bc11613fbf7f35c3995bf",
+      "raw_frame_sha256": "72fa84d7e6d40f6291d7bb1f182889f79a91abaa02a76f490e40c46212986420"
+    },
+    "06-제한경고": {
+      "required_scene": "강사 화면의 예입니다. 후보를 막는 조건, 비용을 감점하는 조건, 다른 대안과 비교하라는 경고를 나누어 읽습니다.",
+      "check": "강사 화면의 예입니다. 후보를 막는 조건, 비용을 감점하는 조건, 다른 대안과 비교하라는 경고를 나누어 읽습니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-제한경고.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 537,
+      "crop": [
+        420,
+        75,
+        1860,
+        1040
+      ],
+      "rectangles": [
+        [
+          450,
+          132,
+          1800,
+          267
+        ],
+        [
+          450,
+          306,
+          1800,
+          477
+        ],
+        [
+          450,
+          687,
+          1800,
+          822
+        ]
+      ],
+      "redactions": [],
+      "caption": "강사 화면의 예입니다. 후보를 막는 조건, 비용을 감점하는 조건, 다른 대안과 비교하라는 경고를 나누어 읽습니다.",
+      "sha256": "52b0f3d346f498f058ed3993466c6b5597d1bb332123a369799cf25734d0c7b5",
+      "raw_frame_sha256": "e47d7de906d3df21016b6b2960c6f8619d342f19f90a8598cc4180c243d3b4eb"
+    },
+    "06-경고": {
+      "required_scene": "강사 화면의 예입니다. 추출 경고 원문의 두 번째 경고에서 벨트 교체에 필요한 현장 점검 조건을 찾습니다.",
+      "check": "강사 화면의 예입니다. 추출 경고 원문의 두 번째 경고에서 벨트 교체에 필요한 현장 점검 조건을 찾습니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-경고.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 551.6,
+      "crop": [
+        420,
+        240,
+        1860,
+        760
+      ],
+      "rectangles": [
+        [
+          450,
+          304,
+          980,
+          344
+        ],
+        [
+          475,
+          468,
+          1810,
+          530
+        ]
+      ],
+      "redactions": [],
+      "caption": "강사 화면의 예입니다. 추출 경고 원문의 두 번째 경고에서 벨트 교체에 필요한 현장 점검 조건을 찾습니다.",
+      "sha256": "52c51ad2e02f30f399563989039815b34625e23344fe8239f2485790424047f7",
+      "raw_frame_sha256": "e75d62db666e36ecc5c821b0d3ec2dfda8a057ace335c51e01b4e073c6778734"
+    },
+    "06-적재확인": {
+      "required_scene": "검토 확인란에 체크한 뒤 오른쪽 아래 검토한 내용 적재를 누릅니다.",
+      "check": "검토 확인란에 체크한 뒤 오른쪽 아래 검토한 내용 적재를 누릅니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-적재확인.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 560,
+      "crop": [
+        420,
+        440,
+        1860,
+        1040
+      ],
+      "rectangles": [
+        [
+          440,
+          745,
+          940,
+          775
+        ],
+        [
+          1630,
+          786,
+          1830,
+          840
+        ]
+      ],
+      "redactions": [],
+      "caption": "검토 확인란에 체크한 뒤 오른쪽 아래 검토한 내용 적재를 누릅니다.",
+      "sha256": "081e7baf3c9191eaa742967fb5334acb24f6dfaa611edb721bc09190606c9181",
+      "raw_frame_sha256": "c87072d9001dbc47c43e3856031d913bdc47f8eeb2f8623016aa11631f1258b1"
+    },
+    "06-적재결과": {
+      "required_scene": "버튼 아래 안내에서 반영된 절 · 조치 방법 · 단계 수와 후보 규칙에 연결된 고장을 읽습니다.",
+      "check": "버튼 아래 안내에서 반영된 절 · 조치 방법 · 단계 수와 후보 규칙에 연결된 고장을 읽습니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-적재결과.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 578.2,
+      "crop": [
+        420,
+        440,
+        1860,
+        1040
+      ],
+      "rectangles": [
+        [
+          440,
+          835,
+          1400,
+          865
+        ]
+      ],
+      "redactions": [],
+      "caption": "버튼 아래 안내에서 반영된 절 · 조치 방법 · 단계 수와 후보 규칙에 연결된 고장을 읽습니다.",
+      "sha256": "071615630a5e0852107bb98d864c192b6f94c4e92f29009d75da71dc85eb1579",
+      "raw_frame_sha256": "b25d167923559b9e1ea34c4f84cec6dec3ca713082c30043d9fecee781910985"
+    },
+    "06-지도검색": {
+      "required_scene": "왼쪽 지식 지도를 열고 이름 검색에 쿨러를 넣으면 이름에 쿨러가 든 항목이 노랗게 표시됩니다.",
+      "check": "왼쪽 지식 지도를 열고 이름 검색에 쿨러를 넣으면 이름에 쿨러가 든 항목이 노랗게 표시됩니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-지도검색.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 593,
+      "crop": [
+        0,
+        60,
+        1300,
+        1040
+      ],
+      "rectangles": [
+        [
+          15,
+          818,
+          354,
+          866
+        ],
+        [
+          415,
+          270,
+          725,
+          302
+        ]
+      ],
+      "redactions": [],
+      "caption": "왼쪽 지식 지도를 열고 이름 검색에 쿨러를 넣으면 이름에 쿨러가 든 항목이 노랗게 표시됩니다.",
+      "sha256": "6d3e12355e7ff470dbe43ddb5b509d9b6cdd14a031cd9909cdc5a16f7bc92d4c",
+      "raw_frame_sha256": "d8c30877bdd439e7fa92868f95d9a0a84190a6cb210135baf8245247ac43fcdb"
+    },
+    "06-지도관계": {
+      "required_scene": "고장 유형 쿨러 냉각 성능 상실의 나가는 관계에서 즉시 완화와 근본 조치를 찾습니다.",
+      "check": "고장 유형 쿨러 냉각 성능 상실의 나가는 관계에서 즉시 완화와 근본 조치를 찾습니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-지도관계.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 611.7,
+      "crop": [
+        420,
+        480,
+        1860,
+        1040
+      ],
+      "rectangles": [
+        [
+          444,
+          528,
+          690,
+          579
+        ],
+        [
+          1140,
+          564,
+          1530,
+          819
+        ]
+      ],
+      "redactions": [],
+      "caption": "고장 유형 쿨러 냉각 성능 상실의 나가는 관계에서 즉시 완화와 근본 조치를 찾습니다.",
+      "sha256": "d3490c5ab41d0f1198af82a06a97b8e90666445aa163daa069efb10c834ee4d8",
+      "raw_frame_sha256": "0d32034130446258272c2feb3929abbd3665e8f98819198aceb29347622566f1"
+    },
+    "06-운전원": {
+      "required_scene": "나 목록에서 최운전 · 운전원을 고르면 오른쪽 위에도 같은 이름이 보입니다.",
+      "check": "나 목록에서 최운전 · 운전원을 고르면 오른쪽 위에도 같은 이름이 보입니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-운전원.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 625.6,
+      "crop": [
+        400,
+        20,
+        1860,
+        420
+      ],
+      "rectangles": [
+        [
+          1655,
+          30,
+          1810,
+          60
+        ],
+        [
+          415,
+          237,
+          1850,
+          272
+        ]
+      ],
+      "redactions": [],
+      "caption": "나 목록에서 최운전 · 운전원을 고르면 오른쪽 위에도 같은 이름이 보입니다.",
+      "sha256": "f2fa2aabdaa06bc70dbc4716506932e82827c4eaa25e37a76ec61a5b73032ba0",
+      "raw_frame_sha256": "1259b0113117b78822f7a6237c95abf6e6f9a76131169de4c9fb389db619ef3a"
+    },
+    "06-설비시작": {
+      "required_scene": "결함 시뮬레이션의 HYD-01 카드에서 운전 모드와 유온, 냉각 효율을 먼저 읽습니다.",
+      "check": "결함 시뮬레이션의 HYD-01 카드에서 운전 모드와 유온, 냉각 효율을 먼저 읽습니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-설비시작.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 640.8,
+      "crop": [
+        0,
+        60,
+        1300,
+        1040
+      ],
+      "rectangles": [
+        [
+          15,
+          303,
+          354,
+          348
+        ],
+        [
+          755,
+          235,
+          880,
+          265
+        ],
+        [
+          440,
+          305,
+          620,
+          388
+        ],
+        [
+          445,
+          480,
+          870,
+          522
+        ]
+      ],
+      "redactions": [],
+      "caption": "결함 시뮬레이션의 HYD-01 카드에서 운전 모드와 유온, 냉각 효율을 먼저 읽습니다.",
+      "sha256": "433eb5aeef3676174ba3496c0cb0bb5c622f7b316222936e9abba0ed186cac1b",
+      "raw_frame_sha256": "929011efc47ab43106425e41ec67d7e8012cc5fe4e2cfa57f3bfc449cf91d052"
+    },
+    "06-열화주입전": {
+      "required_scene": "운전 모드가 원격 자동인지 보고 HYD-01의 쿨러 열화 주입을 한 번 누릅니다.",
+      "check": "운전 모드가 원격 자동인지 보고 HYD-01의 쿨러 열화 주입을 한 번 누릅니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-열화주입전.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 644,
+      "crop": [
+        420,
+        70,
+        1300,
+        1040
+      ],
+      "rectangles": [
+        [
+          450,
+          732,
+          636,
+          789
+        ],
+        [
+          450,
+          862,
+          590,
+          896
+        ]
+      ],
+      "redactions": [],
+      "caption": "운전 모드가 원격 자동인지 보고 HYD-01의 쿨러 열화 주입을 한 번 누릅니다.",
+      "sha256": "a188bba3c60c381ac4c4c7bf1fba105239c0efa1fa1685e33b8cb3c79b068abe",
+      "raw_frame_sha256": "c3db9903d7c4271fdc15881d87881ed21db92494cd197076ecd260cd15942f1c"
+    },
+    "06-열화주입": {
+      "required_scene": "주입 뒤 쿨러 성능 비율이 떨어집니다. 경보 칸은 아직 감시 중입니다.",
+      "check": "주입 뒤 쿨러 성능 비율이 떨어집니다. 경보 칸은 아직 감시 중입니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-열화주입.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 668,
+      "crop": [
+        420,
+        75,
+        1300,
+        1040
+      ],
+      "rectangles": [
+        [
+          445,
+          295,
+          870,
+          325
+        ],
+        [
+          455,
+          605,
+          820,
+          632
+        ]
+      ],
+      "redactions": [],
+      "caption": "주입 뒤 쿨러 성능 비율이 떨어집니다. 경보 칸은 아직 감시 중입니다.",
+      "sha256": "6505ad195684c3824bd3e9220ac9d6acb68e96a7da6ce4ed9997464b9b97264e",
+      "raw_frame_sha256": "86869ccbd810c362ba2fc708659e14ceddbf773043f5fd073ce2d1177843ccb0"
+    },
+    "06-경보발생": {
+      "required_scene": "경보 칸이 경보 발생으로 바뀝니다. 주입 표시와 실제 경보는 다른 단계입니다.",
+      "check": "경보 칸이 경보 발생으로 바뀝니다. 주입 표시와 실제 경보는 다른 단계입니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-경보발생.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 688.5,
+      "crop": [
+        420,
+        75,
+        1300,
+        1040
+      ],
+      "rectangles": [
+        [
+          680,
+          335,
+          850,
+          400
+        ]
+      ],
+      "redactions": [],
+      "caption": "경보 칸이 경보 발생으로 바뀝니다. 주입 표시와 실제 경보는 다른 단계입니다.",
+      "sha256": "11d9495eb3ee26a3bfe525b05beb9b503420bf4d8e88ec656aa673b0d72ba27e",
+      "raw_frame_sha256": "5664228817a109f1737f60af164d46a9f27b73e9ef150035e531eb335400e997"
+    },
+    "06-새처리건": {
+      "required_scene": "처리 건 목록에 새로 생긴 냉각 긴급 대응 HYD-01을 누릅니다.",
+      "check": "처리 건 목록에 새로 생긴 냉각 긴급 대응 HYD-01을 누릅니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-새처리건.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 698.8,
+      "crop": [
+        400,
+        130,
+        1860,
+        1040
+      ],
+      "rectangles": [
+        [
+          425,
+          188,
+          880,
+          335
+        ]
+      ],
+      "redactions": [],
+      "caption": "처리 건 목록에 새로 생긴 냉각 긴급 대응 HYD-01을 누릅니다.",
+      "sha256": "0460ee95a5949db3826b8b84db798eb1bb81ab44cf252d055ab835391040354b",
+      "raw_frame_sha256": "d044c235628decc0eb8a0d4b3d5affbe0950ace20d7984e3ef4d055e367997a9"
+    },
+    "06-진행상황": {
+      "required_scene": "진행 상황 탭에서 끝난 단계와 진행 중인 단계를 구별합니다.",
+      "check": "진행 상황 탭에서 끝난 단계와 진행 중인 단계를 구별합니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-진행상황.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 705,
+      "crop": [
+        400,
+        130,
+        1860,
+        1040
+      ],
+      "rectangles": [
+        [
+          965,
+          150,
+          1110,
+          186
+        ],
+        [
+          965,
+          300,
+          1790,
+          700
+        ]
+      ],
+      "redactions": [],
+      "caption": "진행 상황 탭에서 끝난 단계와 진행 중인 단계를 구별합니다.",
+      "sha256": "bba07284660b8feaea3826420f4ace2a2fd4703e99ec8a2f1063e59a936cd119",
+      "raw_frame_sha256": "06b0c806ee884905c95a02448792a603337330a7b0002dbd6d26704b19c9cbee"
+    },
+    "06-작업요청": {
+      "required_scene": "내 작업에 운전원 승인 요청이 설비 · 기한과 함께 나타납니다. 이 요청을 누릅니다.",
+      "check": "내 작업에 운전원 승인 요청이 설비 · 기한과 함께 나타납니다. 이 요청을 누릅니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-작업요청.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 722,
+      "crop": [
+        400,
+        70,
+        1860,
+        620
+      ],
+      "rectangles": [
+        [
+          425,
+          430,
+          1840,
+          525
+        ]
+      ],
+      "redactions": [],
+      "caption": "내 작업에 운전원 승인 요청이 설비 · 기한과 함께 나타납니다. 이 요청을 누릅니다.",
+      "sha256": "3adb4d992308a21328b4727f70ca225e334771289abccd3ad04df24f6cdf96dd",
+      "raw_frame_sha256": "14e73925abc610c4239e5def7c854cb71ccfb3c5ecd2fa54a204891d3e5366c7"
+    },
+    "06-승인근거": {
+      "required_scene": "강사 화면의 예입니다. 받은 입력의 조치 카드 묶음에서 추천안과 대안의 순위 · 이유를 읽습니다.",
+      "check": "강사 화면의 예입니다. 받은 입력의 조치 카드 묶음에서 추천안과 대안의 순위 · 이유를 읽습니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-승인근거.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 725.5,
+      "crop": [
+        960,
+        70,
+        1860,
+        1040
+      ],
+      "rectangles": [
+        [
+          1005,
+          330,
+          1440,
+          1040
+        ]
+      ],
+      "redactions": [],
+      "caption": "강사 화면의 예입니다. 받은 입력의 조치 카드 묶음에서 추천안과 대안의 순위 · 이유를 읽습니다.",
+      "sha256": "ec7ca7dd2ef39149b010545a223212a5e3001ce0b75206c4104676791b28e733",
+      "raw_frame_sha256": "e796c20f1bc60e0b1af958aec3d8ebca5acc0d4b392e71c405764118e4623841"
+    },
+    "06-승인카드": {
+      "required_scene": "강사 화면의 예입니다. 승인하면 어떤 명령이 나가는지와 근거, 자기 역할을 확인합니다.",
+      "check": "강사 화면의 예입니다. 승인하면 어떤 명령이 나가는지와 근거, 자기 역할을 확인합니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-승인카드.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 727,
+      "crop": [
+        420,
+        70,
+        1860,
+        900
+      ],
+      "rectangles": [
+        [
+          465,
+          115,
+          1800,
+          365
+        ],
+        [
+          905,
+          745,
+          1360,
+          810
+        ]
+      ],
+      "redactions": [],
+      "caption": "강사 화면의 예입니다. 승인하면 어떤 명령이 나가는지와 근거, 자기 역할을 확인합니다.",
+      "sha256": "57aba47df76025cdb720520b5f3fb6e7bd6b60b9677d1c39036a03744b4454b6",
+      "raw_frame_sha256": "fb4e4b7e3f8ce8243610c13846d50bc83312cab2c710b0f207cf3a2b365f417a"
+    },
+    "06-승인선택": {
+      "required_scene": "역할이 운전원인지 보고 승인을 누릅니다. 거절할 때는 위 사유 칸에 까닭을 적습니다.",
+      "check": "역할이 운전원인지 보고 승인을 누릅니다. 거절할 때는 위 사유 칸에 까닭을 적습니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-승인선택.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 729.7,
+      "crop": [
+        400,
+        130,
+        1860,
+        900
+      ],
+      "rectangles": [
+        [
+          905,
+          340,
+          1360,
+          390
+        ],
+        [
+          1640,
+          738,
+          1732,
+          782
+        ],
+        [
+          1736,
+          738,
+          1825,
+          782
+        ]
+      ],
+      "redactions": [],
+      "caption": "역할이 운전원인지 보고 승인을 누릅니다. 거절할 때는 위 사유 칸에 까닭을 적습니다.",
+      "sha256": "526b018ceecc4dddb7bc19432abcf8b65b78b747d28512aeb45e67090df6d159",
+      "raw_frame_sha256": "3aad8938f129d2e67f4ae04c02582dc1164f7b21f66e290872af6dc1ad9cdd9b"
+    },
+    "06-단계자세히": {
+      "required_scene": "진행 상황에서 운전원 승인을 펼치고 아래 단계 자세히를 누릅니다.",
+      "check": "진행 상황에서 운전원 승인을 펼치고 아래 단계 자세히를 누릅니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-단계자세히.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 740.5,
+      "crop": [
+        960,
+        70,
+        1860,
+        1040
+      ],
+      "rectangles": [
+        [
+          1000,
+          640,
+          1820,
+          672
+        ],
+        [
+          1130,
+          950,
+          1255,
+          982
+        ]
+      ],
+      "redactions": [],
+      "caption": "진행 상황에서 운전원 승인을 펼치고 아래 단계 자세히를 누릅니다.",
+      "sha256": "e499e1f6b2971a4b81f31128d9e380956f5c59354a56104b274fa5789898f83e",
+      "raw_frame_sha256": "a3349ab994e8a3a7d4a22fd50c80b6461e4e32cfd1ae8e248c501ff523a17020"
+    },
+    "06-승인판단": {
+      "required_scene": "강사 화면의 예입니다. 판단 · 출력에서 권고와 고른 조치, 승인자를 구별합니다.",
+      "check": "강사 화면의 예입니다. 판단 · 출력에서 권고와 고른 조치, 승인자를 구별합니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-승인판단.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 759.5,
+      "crop": [
+        960,
+        70,
+        1860,
+        1040
+      ],
+      "rectangles": [
+        [
+          995,
+          303,
+          1776,
+          672
+        ]
+      ],
+      "redactions": [],
+      "caption": "강사 화면의 예입니다. 판단 · 출력에서 권고와 고른 조치, 승인자를 구별합니다.",
+      "sha256": "c363604c098b88997d56288364d7a74a854ef153b074f60be7746b553b72d9ff",
+      "raw_frame_sha256": "b2e1d1c7c11dec9973eeb37a13d8261f3a5e7a5694b6e11981ae439be3fdefd7"
+    },
+    "06-승인전달": {
+      "required_scene": "강사 화면의 예입니다. 다음 단계로 넘긴 값의 고른 조치가 방금 승인한 내용과 같은지 봅니다.",
+      "check": "강사 화면의 예입니다. 다음 단계로 넘긴 값의 고른 조치가 방금 승인한 내용과 같은지 봅니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-승인전달.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 773.3,
+      "crop": [
+        960,
+        70,
+        1860,
+        1040
+      ],
+      "rectangles": [
+        [
+          995,
+          738,
+          1785,
+          993
+        ]
+      ],
+      "redactions": [],
+      "caption": "강사 화면의 예입니다. 다음 단계로 넘긴 값의 고른 조치가 방금 승인한 내용과 같은지 봅니다.",
+      "sha256": "1bd41a395d37bb4b07938af137bdea46ac902ce4a44644b5d49f2a353debd943",
+      "raw_frame_sha256": "5497f9cf2fa6c6556dd92a9254897c6157f19ced5443c896ab77d73654f11054"
+    },
+    "06-원인입력": {
+      "required_scene": "강사 화면의 예입니다. 원인 진단 단계의 받은 입력에서 설비와 경보, 관측 정보를 읽습니다.",
+      "check": "강사 화면의 예입니다. 원인 진단 단계의 받은 입력에서 설비와 경보, 관측 정보를 읽습니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-원인입력.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 789.2,
+      "crop": [
+        960,
+        70,
+        1860,
+        1040
+      ],
+      "rectangles": [
+        [
+          996,
+          348,
+          1800,
+          993
+        ]
+      ],
+      "redactions": [],
+      "caption": "강사 화면의 예입니다. 원인 진단 단계의 받은 입력에서 설비와 경보, 관측 정보를 읽습니다.",
+      "sha256": "b644467fa720dee5befae748348e294c2fa8ddf3b35fe6a11cd95aea3962c42a",
+      "raw_frame_sha256": "8d97a23d0360abb2408987e5535368332c85048d3bc46bc7fca930226997c6ff"
+    },
+    "06-원인판단": {
+      "required_scene": "강사 화면의 예입니다. 판단 · 출력의 원인을 읽습니다.",
+      "check": "강사 화면의 예입니다. 판단 · 출력의 원인을 읽습니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-원인판단.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 795,
+      "crop": [
+        960,
+        70,
+        1860,
+        1040
+      ],
+      "rectangles": [
+        [
+          992,
+          745,
+          1210,
+          885
+        ]
+      ],
+      "redactions": [],
+      "caption": "강사 화면의 예입니다. 판단 · 출력의 원인을 읽습니다.",
+      "sha256": "f08cb0cdbafaa1c3f05b06a2bc743717dbec01efa75f5ff2dabd7e7bd5b4bfc5",
+      "raw_frame_sha256": "811a1ec7d06640779a7bef5a4d3a3124ea0c71f56d71431667e3ccbd00df263e"
+    },
+    "06-처리과정": {
+      "required_scene": "강사 화면의 예입니다. 처리 과정에서 AI가 무엇을 찾아 확인했는지 읽습니다.",
+      "check": "강사 화면의 예입니다. 처리 과정에서 AI가 무엇을 찾아 확인했는지 읽습니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-처리과정.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 817.3,
+      "crop": [
+        960,
+        70,
+        1860,
+        1040
+      ],
+      "rectangles": [
+        [
+          1005,
+          300,
+          1800,
+          342
+        ],
+        [
+          1050,
+          696,
+          1800,
+          867
+        ]
+      ],
+      "redactions": [],
+      "caption": "강사 화면의 예입니다. 처리 과정에서 AI가 무엇을 찾아 확인했는지 읽습니다.",
+      "sha256": "9614b56e92d38e640c3ad57eee598317cf0d42d4ef5bd06302aba2cc68eeb5c0",
+      "raw_frame_sha256": "674a41ea21490b6fb7e8619cf6d2ecc2cfde7b7603e8308fbaa905a71d8f2df4"
+    },
+    "06-추천판단": {
+      "required_scene": "강사 화면의 예입니다. 판단 근거와 추천을 앞에서 읽은 원문 조건에 대조합니다.",
+      "check": "강사 화면의 예입니다. 판단 근거와 추천을 앞에서 읽은 원문 조건에 대조합니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-추천판단.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 852.4,
+      "crop": [
+        960,
+        70,
+        1860,
+        1040
+      ],
+      "rectangles": [
+        [
+          1395,
+          576,
+          1806,
+          966
+        ]
+      ],
+      "redactions": [],
+      "caption": "강사 화면의 예입니다. 판단 근거와 추천을 앞에서 읽은 원문 조건에 대조합니다.",
+      "sha256": "a0b08fa7c36429cfe7c3db838875b3159f2d8128d9f7b9d29fd4bf85e0dd92cf",
+      "raw_frame_sha256": "12d0552a852a229587b59243e3dae270faaf0d4438c01a6a4bd62bfe3896f3b3"
+    },
+    "06-기록탭": {
+      "required_scene": "처리 기록 탭을 누르면 경보부터 결과까지의 처리 순서가 위에 보입니다.",
+      "check": "처리 기록 탭을 누르면 경보부터 결과까지의 처리 순서가 위에 보입니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-기록탭.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 860.6,
+      "crop": [
+        960,
+        70,
+        1860,
+        1040
+      ],
+      "rectangles": [
+        [
+          1080,
+          302,
+          1210,
+          340
+        ],
+        [
+          965,
+          500,
+          1700,
+          580
+        ]
+      ],
+      "redactions": [],
+      "caption": "처리 기록 탭을 누르면 경보부터 결과까지의 처리 순서가 위에 보입니다.",
+      "sha256": "189c9f9f8e05537b8a2f7b0d5e2dae701d2f6754ca79ac9902fd7d1ee45ce161",
+      "raw_frame_sha256": "c52b8589dd5cfec1199b1ac51611b3a1da74f35798331d65f1a1032efd47fc87"
+    },
+    "06-대안비교": {
+      "required_scene": "강사 화면의 예입니다. 비교한 대안의 예측 평형 유온은 예상값입니다.",
+      "check": "강사 화면의 예입니다. 비교한 대안의 예측 평형 유온은 예상값입니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-대안비교.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 883.4,
+      "crop": [
+        960,
+        70,
+        1860,
+        1040
+      ],
+      "rectangles": [
+        [
+          1095,
+          690,
+          1275,
+          726
+        ],
+        [
+          1086,
+          744,
+          1800,
+          864
+        ]
+      ],
+      "redactions": [],
+      "caption": "강사 화면의 예입니다. 비교한 대안의 예측 평형 유온은 예상값입니다.",
+      "sha256": "c4e00ef2bd77f371b89efb99f107d563d68b0e4490b0978a3db2a0faa0165caf",
+      "raw_frame_sha256": "d527499a657ae3e48b35fb82a47914b56e2dd016a98a3c3367fe01c1071d002c"
+    },
+    "06-처리기록": {
+      "required_scene": "냉각 명령에서 전달된 명령과 설비의 실행 완료 응답을 짝지어 봅니다.",
+      "check": "냉각 명령에서 전달된 명령과 설비의 실행 완료 응답을 짝지어 봅니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-처리기록.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 911.6,
+      "crop": [
+        960,
+        70,
+        1860,
+        1040
+      ],
+      "rectangles": [
+        [
+          1086,
+          132,
+          1800,
+          303
+        ]
+      ],
+      "redactions": [],
+      "caption": "냉각 명령에서 전달된 명령과 설비의 실행 완료 응답을 짝지어 봅니다.",
+      "sha256": "dd6fd02f88d1bb4cb095cc374cf824967a51d22bf15aeacb0b8a636fcd4e1104",
+      "raw_frame_sha256": "df82bc20028377e9f8d803abe4400931ed171ac21725bd6d6acdbb283e5b9a8f"
+    },
+    "06-회복결과": {
+      "required_scene": "재관측에서 명령 뒤 다시 잰 유온의 변화와 기준 안에 있던 시간의 비율을 읽습니다.",
+      "check": "재관측에서 명령 뒤 다시 잰 유온의 변화와 기준 안에 있던 시간의 비율을 읽습니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-회복결과.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 929,
+      "crop": [
+        960,
+        70,
+        1860,
+        1040
+      ],
+      "rectangles": [
+        [
+          1089,
+          132,
+          1800,
+          306
+        ]
+      ],
+      "redactions": [],
+      "caption": "재관측에서 명령 뒤 다시 잰 유온의 변화와 기준 안에 있던 시간의 비율을 읽습니다.",
+      "sha256": "b1eacf44f0f86af67173e74107223099b68b8536bf2babaf8487d24db4050ad9",
+      "raw_frame_sha256": "4a87006ea76f2ab445c74c254e535a1e92a9673549ecea7bf05b14d389029e5f"
+    },
+    "06-결과탭": {
+      "required_scene": "결과 탭에서 유온과 경보 해제를 읽고 아래 처리 기록 보기를 누릅니다.",
+      "check": "결과 탭에서 유온과 경보 해제를 읽고 아래 처리 기록 보기를 누릅니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-결과탭.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 958,
+      "crop": [
+        960,
+        70,
+        1860,
+        1040
+      ],
+      "rectangles": [
+        [
+          1205,
+          305,
+          1270,
+          338
+        ],
+        [
+          990,
+          490,
+          1440,
+          615
+        ],
+        [
+          990,
+          865,
+          1135,
+          895
+        ]
+      ],
+      "redactions": [],
+      "caption": "결과 탭에서 유온과 경보 해제를 읽고 아래 처리 기록 보기를 누릅니다.",
+      "sha256": "769b6733995308077f9b2637e83c2f69629d359ce1902a973aac6135940d6ba0",
+      "raw_frame_sha256": "1a0b69a3b7d7838f534a1976592db2c5d2768046cf57093e162204927fa6178e"
+    },
+    "06-후속정비": {
+      "required_scene": "작업지시 등록에서 정비 오더와 등록한 내용을 확인합니다. 작업이 끝났다는 뜻은 아닙니다.",
+      "check": "작업지시 등록에서 정비 오더와 등록한 내용을 확인합니다. 작업이 끝났다는 뜻은 아닙니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-후속정비.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 986,
+      "crop": [
+        960,
+        70,
+        1860,
+        1040
+      ],
+      "rectangles": [
+        [
+          1080,
+          117,
+          1815,
+          387
+        ]
+      ],
+      "redactions": [],
+      "caption": "작업지시 등록에서 정비 오더와 등록한 내용을 확인합니다. 작업이 끝났다는 뜻은 아닙니다.",
+      "sha256": "95bf2a09ba10841322c5bcf50bd678e581b91b4a461755fdb8438756dfb72265",
+      "raw_frame_sha256": "04cc5b1969f535c8cbfb120da82560bdc33fd7b0c2ae11a30046740f90162982"
+    },
+    "06-처음경보": {
+      "required_scene": "처리 순서의 센서 경보로 시작에서 대상 설비와 시각, 그때 들어온 값을 봅니다.",
+      "check": "처리 순서의 센서 경보로 시작에서 대상 설비와 시각, 그때 들어온 값을 봅니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-처음경보.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 1001.2,
+      "crop": [
+        960,
+        70,
+        1860,
+        1040
+      ],
+      "rectangles": [
+        [
+          1035,
+          111,
+          1830,
+          306
+        ]
+      ],
+      "redactions": [],
+      "caption": "처리 순서의 센서 경보로 시작에서 대상 설비와 시각, 그때 들어온 값을 봅니다.",
+      "sha256": "9c15b33e3b1a81169adb5162f97c8c47637569dabab160845bd17d4e7d9fc73a",
+      "raw_frame_sha256": "4e6b96e0e24b02357ccbb12e75d99c4d9e2ac963da79c36bc484b126a7c78b15"
+    },
+    "06-끝기록": {
+      "required_scene": "재관측 결과와 남은 정비 요청을 각각 짚으며 마칩니다.",
+      "check": "재관측 결과와 남은 정비 요청을 각각 짚으며 마칩니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-끝기록.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 1047.8,
+      "crop": [
+        960,
+        70,
+        1860,
+        1040
+      ],
+      "rectangles": [
+        [
+          1035,
+          132,
+          1830,
+          306
+        ],
+        [
+          1035,
+          342,
+          1815,
+          462
+        ]
+      ],
+      "redactions": [],
+      "caption": "재관측 결과와 남은 정비 요청을 각각 짚으며 마칩니다.",
+      "sha256": "b3e912b0dfc20d74e293d2829bf6310911bcee110d185af01a404249b0e19be4",
+      "raw_frame_sha256": "57a6be6058827576ccf2647f92573062fac2cafa935ac56be3d764d16dbd19dc"
+    }
+  }
+}
