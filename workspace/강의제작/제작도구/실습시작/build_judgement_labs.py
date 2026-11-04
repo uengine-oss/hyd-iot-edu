@@ -6,10 +6,10 @@
 판정 랩의 입력/(조건표 · SOP 구조)은 조건 랩의 강사 검증 판(reference/session3/criteria.py, 지점1 가 · 지점2 가)이다 — 강사 참조 · 검사기 고의 손상 · 랩 사슬 확인은 reference/session3/run_reference.py.
 
 이름: 판단 규칙의 표는 두 반 모두 「조건표」(`결과/조건표.csv`)다. 처음 나오는 자리에서 DMN의 결정표라고 한 번 푼다(두 반 조건 랩).
-결과 JSON의 키는 영어 snake_case(코딩랩.md K-55)이고 계약에는 형식과 뜻만 둔다(K-43 — 판정 절차는 원문 · 작업기준이 가진다).
+결과 JSON의 키는 영어 snake_case(코딩랩.md K-7)이고 계약에는 형식과 뜻만 둔다(K-7 — 판정 절차는 원문 · 작업기준이 가진다).
 판정 랩의 「학생이 정할 것」은 실라버스 행 안의 기능에 있다 — 판단 입력의 정보 부족 처리(끊긴 기록)와 허용 후보 비교(경고 후보).
 가이드(guide.html, 회차 안내가 가리키는 같은 바이트의 안내.html)는 build_labs.step_guide 틀로 만든다 — 2회차 랩과 같은 절 구조 · 블록 · 도구 첫 사용 안내(B.TOOL).
-「막히면」은 이 랩의 check.py · python을 새 폴더에서 실제로 돌려 본 출력만 쓴다(가이드.md P-167).
+「막히면」은 이 랩의 check.py · python을 새 폴더에서 실제로 돌려 본 출력만 쓴다(가이드.md P-6).
 
 사용: HYD_MAIN_ROOT=<main 체크아웃> python build_judgement_labs.py [--lab integrated-03-criteria|integrated-03-judge|practical-02-conditions|practical-03-review] [--check]
   --check   두 번 만들어 랩 폴더 바이트가 같은지만 본다(폴더는 다시 쓴다).
@@ -40,13 +40,13 @@ LABS = {
     'practical-02-conditions': OUT/'실전반/실습/02회차/랩/02일차_실습5_조치조건표',
     'practical-03-review': OUT/'실전반/실습/03회차/랩/03일차_실습2_판단기능만들기',
 }
-TITLES = {   # 랩 제목 = 실라버스 행 제목. 다음 실습을 이름으로 가리킬 때도 여기서 읽는다(K-144)
+TITLES = {   # 랩 제목 = 실라버스 행 제목. 다음 실습을 이름으로 가리킬 때도 여기서 읽는다(K-2)
     'integrated-03-criteria': '작업 절차와 판단 조건을 연결해 조치 기준 만들기',
     'integrated-03-judge': '설비 조건별 최적의 조치를 비교하는 판단 기능 만들기',
     'practical-02-conditions': '작업 기준의 복합 조건과 예외를 조치 조건표로 표현하기',
     'practical-03-review': '판정·성과 비교를 조치 검토 결과로 완성하기',
 }
-MINE = {   # 내 앞 결과를 쓰는 길(선택 — 가이드.md P-83 · 코딩랩.md K-63). START 「출발점」과 가이드 첫 화면이 같은 문장을 쓴다
+MINE = {   # 내 앞 결과를 쓰는 길(선택 — 가이드.md P-4 · 코딩랩.md K-9). START 「출발점」과 가이드 첫 화면이 같은 문장을 쓴다
     'integrated-03-criteria': ('내 모델을 쓸 때: 제공 입력은 그대로 두고 내 `schema.json` · `graph.json`을 `결과/내_입력/`에 복사해, 형식과 ID 짓는 법이 제공 모델과 같은지 먼저 견준 뒤 씁니다. '
                                '구조 검사는 `결과/내_입력/graph.json`이 있으면 그 모델의 ID로 보고, 어느 모델을 봤는지 첫 줄에 찍습니다. 내 모델이 없어도 제공된 모델로 끝까지 할 수 있습니다.'),
     'integrated-03-judge': ('내 조치 기준을 쓸 때: 제공 입력은 그대로 두고 내 `조건표.csv` · `sop.json`을 `결과/내_입력/`에 복사해, 열 이름 · ID가 `입출력_계약.md`와 같은지 먼저 견준 뒤 씁니다. '
@@ -59,7 +59,7 @@ RULES_LINE = '`AGENTS.md` · `.github/copilot-instructions.md` · `CLAUDE.md` �
 TABLE_HEADER = 'rule_id,action,condition_index,logic,input,operator,value,unit,boundary_included,result,penalty_manwon,reason,source_section\n'
 
 
-# ───────────── 계약(형식과 뜻만 — K-43) ─────────────
+# ───────────── 계약(형식과 뜻만 — K-7) ─────────────
 CODES_FROM_TARGETS = '`targets.csv`의 `kind` · `codes`'
 CODES_FROM_EXPORT = '판단 시스템 결정표 내보내기의 「스킬」 절 — 종류 칸과, 동작 칸을 「코드 이름」 절의 괄호 안 코드로 바꾼 것'
 TABLE_CONTRACT = '''## 조건표 (`결과/조건표.csv`)
@@ -122,7 +122,7 @@ SOP_CONTRACT = '''## SOP 구조 (`결과/sop.json`)
 '''
 
 
-# ───────────── 검사기(구조만 — 의미 정답은 판정하지 않는다, C-51) ─────────────
+# ───────────── 검사기(구조만 — 의미 정답은 판정하지 않는다, K-7) ─────────────
 # 기록 파일(요구사항 · 판단기록 · 기대결과.md)의 표는 한 곳에서 본다 — 칸이 채워졌는지와, 줄마다 칸 수가 머리 줄과 같은지
 # (리허설: 36줄 대조 표에서 한 줄의 칸이 밀렸는데 「작성됨」으로 통과했다).
 RECORD_CHECK = r'''def md_cells(line):
@@ -358,7 +358,7 @@ WHY_SOURCE = ('판단 시스템의 결정표는 만들 때의 판으로 적혀 �
 WHY_UNKNOWN = ('조건이 거짓인 것과, 입력이 없어 참인지 거짓인지 확인할 수 없는 것은 다릅니다. 확인할 수 없는 조건을 거짓으로 치면 쓰면 안 되는 조치가 남을 수 있고, '
                '반대로 이미 확인된 제외 사유가 있으면 다른 입력이 빠져도 그 사유는 그대로입니다.')
 
-# 가이드의 「막히면」 — 새로 받은 랩 폴더에서 check.py · python을 돌려 본 출력 그대로(가이드.md P-167 · P-168). step_guide의 guide_after에 HTML 조각으로 넣는다.
+# 가이드의 「막히면」 — 새로 받은 랩 폴더에서 check.py · python을 돌려 본 출력 그대로(가이드.md P-6). step_guide의 guide_after에 HTML 조각으로 넣는다.
 def stuck(text):
     return f'<p>{B.inline("**막히면** " + text)}</p>'
 STUCK_PATH = stuck('「can\'t open file」 · 「No such file or directory」가 나오면 터미널이 이 실습 폴더가 아닌 곳에서 열렸거나 명령의 파일 이름이 실제 파일과 다른 것입니다. '
@@ -1511,7 +1511,7 @@ def review_lab(files):
         })
 
 
-# 랩마다 넣는 원자료(구성안 3.2 「쓰는 랩」 — 대조에 쓰는 파일만, K-24). (자료 안 경로, 코어의 이름)
+# 랩마다 넣는 원자료(구성안 3.2 「쓰는 랩」 — 대조에 쓰는 파일만, K-3). (자료 안 경로, 코어의 이름)
 DATA = {
     'integrated-03-criteria': [('HM-8_매뉴얼.md',) * 2, ('HM-8_1.0판_매뉴얼.md',) * 2, ('HI-01_보충매뉴얼.md',) * 2, ('작업기준.md',) * 2,
                                ('판단시스템_결정표_내보내기.txt',) * 2, ('작업지시_이력.csv',) * 2, ('사건_기록_HYD-02_1027.md',) * 2,
@@ -1550,7 +1550,7 @@ def judge_inputs(folder):
 
 
 def write_guide(folder, L, photos):
-    """guide.html과 같은 바이트의 안내.html(회차 안내 · 노션이 가리키는 이름 — C-52). 틀 · 블록 · 도구 안내는 2회차와 같은 build_labs.step_guide."""
+    """guide.html과 같은 바이트의 안내.html(회차 안내 · 노션이 가리키는 이름 — 가이드.md P-13). 틀 · 블록 · 도구 안내는 2회차와 같은 build_labs.step_guide."""
     guide = B.step_guide(L, photos)
     write(folder/'guide.html', guide)
     write(folder/'안내.html', guide)
@@ -1603,7 +1603,7 @@ def main(argv=None):
     files, meta = DC.build()
     ref = B.TEACHER/'session3'
     ref.mkdir(parents=True, exist_ok=True)
-    (ref/'원자료_메타.json').write_text(json.dumps(meta, ensure_ascii=False, indent=1) + '\n', encoding='utf-8')
+    (ref/'원자료_메타.json').write_text(json.dumps(meta, ensure_ascii=False, indent=1) + '\n', encoding='utf-8', newline='\n')
     for key in keys:
         folder, L = build(key, files)
         first = digest(folder)

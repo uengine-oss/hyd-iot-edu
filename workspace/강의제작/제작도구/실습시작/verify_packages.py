@@ -84,7 +84,7 @@ def same_content(a,b):
     if a==b:return True
     return text_of(a) is not None and text_of(b) is not None and a.replace(b'\r\n',b'\n')==b.replace(b'\r\n',b'\n')
 
-ENV_NAMES=('OPENAI_BASE_URL','LLM_API_KEY','LLM_MODEL')   # 코딩랩.md K-102 — 학생이 받는 접속 세 줄의 이름(.env.example에 셋 다, 값은 빈 채)
+ENV_NAMES=('OPENAI_BASE_URL','LLM_API_KEY','LLM_MODEL')   # 코딩랩.md K-7 — 학생이 받는 접속 세 줄의 이름(.env.example에 셋 다, 값은 빈 채)
 
 def env_template_errors(name,data,need=()):
     """학생이 등호 뒤를 채우는 빈 틀(.env.example · TEMPLATES의 .env)에서 값이 든 줄과, need의 이름 가운데 빠진 것. 값은 학생 코드(llm_client)가 읽는 대로
@@ -99,7 +99,7 @@ def env_template_errors(name,data,need=()):
         seen.add(key.strip())
         if value.strip().strip('"\''):errors.append(f'{name}:{n}: 빈 틀에 값이 들어 있음 {key.strip()}=…(키 · 주소가 섞였을 수 있음 — 값을 비운다)')
     missing=[k for k in need if k not in seen]
-    if missing:errors.append(f'{name}: 접속 세 줄의 이름이 빠짐 {", ".join(missing)}(코딩랩.md K-102)')
+    if missing:errors.append(f'{name}: 접속 세 줄의 이름이 빠짐 {", ".join(missing)}(코딩랩.md K-7)')
     return errors
 
 def check_zip(zpath,folder,need=(),exclude_names=PRIVATE):

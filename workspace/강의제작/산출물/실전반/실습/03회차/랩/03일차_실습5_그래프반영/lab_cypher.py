@@ -146,7 +146,7 @@ def export(path):
     questions = HERE / '결과/남은_질문.json'
     out = {'nodes': nodes, 'rels': rels, 'remaining_questions': json.loads(questions.read_text(encoding='utf-8')) if questions.is_file() else []}
     Path(path).parent.mkdir(parents=True, exist_ok=True)
-    Path(path).write_text(json.dumps(out, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    Path(path).write_text(json.dumps(out, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
     print(f'{path}: 노드 {len(nodes)}개 · 관계 {len(rels)}개 · 남은 질문 {len(out["remaining_questions"])}개를 내보냈습니다.')
 
 

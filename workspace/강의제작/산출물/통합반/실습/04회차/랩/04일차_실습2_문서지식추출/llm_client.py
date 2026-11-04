@@ -75,7 +75,7 @@ def folder_mark(create=True):
         if not create:
             return None
         RESULT.mkdir(exist_ok=True)
-        MARK.write_text(uuid.uuid4().hex[:16] + '\n', encoding='utf-8')
+        MARK.write_text(uuid.uuid4().hex[:16] + '\n', encoding='utf-8', newline='\n')
     return MARK.read_text(encoding='utf-8').strip()
 
 
@@ -176,7 +176,7 @@ def send(body, conf):
 def write_request(digest, messages):
     REQUESTS.mkdir(parents=True, exist_ok=True)
     path = REQUESTS / f'{digest}.md'
-    path.write_text(''.join(f'## {m["role"]}\n\n{m["content"]}\n\n' for m in messages), encoding='utf-8')
+    path.write_text(''.join(f'## {m["role"]}\n\n{m["content"]}\n\n' for m in messages), encoding='utf-8', newline='\n')
     return path
 
 
@@ -184,7 +184,7 @@ def ask(request, again=False):
     """요청을 보내고 받은 답(응답 기록 하나)을 돌려준다. 같은 요청의 쓸 수 있는 기록이 있으면 보내지 않고 그 기록을 돌려준다."""
     messages = as_messages(request)
     conf = settings()
-    mark = folder_mark()
+    mark = folder_mark(create=False)      # 표지는 실제로 보낼 때만 만든다 — 보내지 않고 멈춘 실행이 폴더에 흔적을 남기지 않게
     body = body_of(messages, conf['LLM_MODEL'])
     digest = request_hash(body)
     found = records(digest)
@@ -215,6 +215,7 @@ def ask(request, again=False):
                    '같은 요청을 되풀이하는 코드가 있는지, 조각을 더 크게 묶을 수 있는지 봅니다.')
     print(f'수업 모델에 요청을 보냅니다(요청 해시 {digest}, 이 폴더 기록 {count + 1}번째 · 안내용 상한 {MAX_SENT}개) — 첫 요청은 1분쯤 걸릴 수 있습니다.')
     raw = send(body, conf)
+    mark = mark or folder_mark()
     choice = (raw.get('choices') or [{}])[0]
     message = choice.get('message') or {}
     text = message.get('content') or ''
@@ -229,12 +230,13 @@ def ask(request, again=False):
         data['note'] = f'서버가 거절함: {refusal}' if refusal else f'끝난 까닭 {finish}' + (', 답 글이 비어 있음' if not text.strip() else '')
     RECORDS.mkdir(parents=True, exist_ok=True)
     path = record_path(digest)
-    path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
     if not ok:
         print(f'경고: 받은 답에 쓸 내용이 없습니다({data["note"]}). 기록은 {path.relative_to(HERE).as_posix()}에 남기되 다시 쓰지 않습니다. '
               f'같은 요청을 다시 실행하면 한 번 더 보내고(같은 요청은 {MAX_SAME}번까지), 그래도 같으면 요청 글이나 조각을 바꿉니다.')
     elif finish == 'length':
-        print(f'응답이 길이 상한({MAX_TOKENS}토큰)에서 잘렸습니다 — 조각을 더 작게 나눠 다시 보냅니다.')
+        print(f'경고: 요청 해시 {digest}의 답이 길이 상한({MAX_TOKENS}토큰)에서 잘려 끝까지 오지 않았습니다. 이 도구는 다시 보내지 않습니다 — '
+              '이 조각을 더 작게(예: 절차마다) 나눠 새 요청으로 보내세요(새 요청은 안내용 상한에 셉니다).')
     return answer(path, data, '응답 기록을 남겼습니다', sent=True)
 
 
@@ -276,7 +278,7 @@ def paste(digest, model):
             'response_raw': None, 'usage': None}
     RECORDS.mkdir(parents=True, exist_ok=True)
     path = record_path(digest)
-    path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
     print(f'채팅으로 받은 답을 {path.relative_to(HERE).as_posix()}에 남겼습니다. 이 기록은 내가 붙여 넣은 것이라 수업 모델을 부른 기록으로 세지 않습니다. 같은 코드를 다시 실행하면 이 기록을 씁니다.')
 
 

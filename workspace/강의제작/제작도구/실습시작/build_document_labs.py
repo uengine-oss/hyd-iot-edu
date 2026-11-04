@@ -17,7 +17,7 @@
 
 사용: HYD_MAIN_ROOT=<main 체크아웃> python build_document_labs.py [--lab integrated-04-extract|practical-03-extract|integrated-04-graph|practical-03-card] [--check]
 guide.html(회차 안내가 가리키는 같은 바이트 안내.html)은 build_labs.step_guide 틀로 만든다 — 2 · 3회차와 같은 절 구조 · 블록 · 도구 첫 사용 안내(B.TOOL).
-가이드의 「막히면」 · 「기다릴 때」는 새로 받은 랩 폴더에서 llm_client.py · check.py · lab_cypher.py를 돌려 본 출력 그대로다(가이드.md P-167 · P-168).
+가이드의 「막히면」 · 「기다릴 때」는 새로 받은 랩 폴더에서 llm_client.py · check.py · lab_cypher.py를 돌려 본 출력 그대로다(가이드.md P-6).
 설계 조건 2는 가이드 글에도 건다(LEAKS · GLEAKS · GUIDE_WORDS). package-index · catalog 등록은 하지 않는다 — ZIP만 묶는다.
 """
 from pathlib import Path
@@ -66,7 +66,7 @@ def incident():
     return m.group()
 
 
-# ───────────── 입출력 계약(형식과 뜻만 — K-43) ─────────────
+# ───────────── 입출력 계약(형식과 뜻만 — K-7) ─────────────
 INPUT_TABLE = ('- `입력/조건표.csv` — 조건표. 열 `rule_id,action,condition_index,logic,input,operator,value,unit,boundary_included,result,penalty_manwon,reason,source_section`. '
                '비교 하나가 한 행이고, 같은 `rule_id` · `action`의 행이 한 규칙 묶음이다. `action`은 그 규칙이 걸리는 조치(SOP ID), `input` · `operator` · `value` · `unit`은 비교, '
                '`result`는 `WARN`(경고) · `PENALTY`(감점) · `EXCLUDE`(제외), `reason`은 규칙의 이유, `source_section`은 그 규칙을 가져온 곳이다.\n')
@@ -125,7 +125,7 @@ __INPUTS__- `자료/문서_목록.csv` — 첫 줄은 내보내기 머리, 둘�
 | `kind` | 예 | `step` · `precondition` · `prohibition` · `completion` · `unit_value` 중 하나 |
 | `text` | 예 | 후보의 내용을 사람이 읽을 수 있게 적은 것 |
 | `quote` | 예 | 근거가 되는 원문 문자열. 원문 글자를 고치거나 옮겨 쓰지 않은 연속 문자열이다 |
-| `quote_match` | 예 | 인용을 찾은 방법 — `exact`(그 줄에 글자 그대로 있음) · `normalized`(글자 · 숫자만 남겨 소문자로 비교하면 그 줄에 있음). 원문 여러 곳에 맞는 인용은 찾지 못한 것으로 본다 |
+| `quote_match` | 예 | 인용을 찾은 방법 — `exact`(그 줄에 글자 그대로 있음) · `normalized`(글자 · 숫자만 남겨 소문자로 비교하면 그 줄에 있음). 코드가 찾은 인용이 원문 여러 곳에 맞으면 찾지 못한 것으로 본다 — 같은 문장 가운데 어느 줄인지는 검토자가 골라 더한다(5절 `missing`) |
 | `line_start` · `line_end` | 예 | 인용이 있는 원문 파일의 줄 번호(1부터, `encoding`으로 읽은 줄) |
 | `page` | 문서 목록 상태가 참고(스캔본)이면 예 | 인용이 있는 쪽 — 그 쪽 꼬리의 쪽 번호 표기 그대로 |
 | `lang` | 영문 원본과 번역이 함께 있는 문서면 예 | 인용한 줄의 말 — `en` · `ko` |
@@ -169,7 +169,8 @@ __INPUTS__- `자료/문서_목록.csv` — 첫 줄은 내보내기 머리, 둘�
 | `before` | `수정`일 때 바꾸기 전 필드 값 |
 | `origin` | 모델 답에서 온 후보는 `extractor`, 검토자가 원문 문장으로 더한 후보는 `reviewer` |
 
-- `missing`은 원문에 있는데 후보가 없는 것이다. 검토자가 근거 문장으로 후보를 더했으면 `added: true`로 두고 그 후보의 `origin`을 `reviewer`로 둔다.
+- `missing`은 원문에 있는데 후보가 없는 것이다. 검토자가 근거 문장으로 후보를 더했으면 `added: true`로 두고 그 후보의 `origin`을 `reviewer`로 둔다. 원문 여러 곳에 같은 문장이 있어 `unlocated`로 간 인용은 검토자가 그 절차의 줄을 골라 이렇게 더하고, `note`에 그 줄을 고른 까닭을 적는다.
+- 검토의 결정은 후보의 절 · 종류 · 인용으로도 알아볼 수 있게 `reason`에 적는다 — 후보 파일을 다시 만들면 `candidates_sha256`이 바뀌어 검토 결과를 새 후보 파일로 다시 만들어야 하기 때문이다.
 - `rule_links`는 조건표의 조건__RULE_SCOPE__과 이 문서 후보의 근거 대조다. `rule_id`는 기준 조건표의 `rule_id`(기준 조건표에 없는 규칙이면 그 규칙을 가져온 곳에 적힌 규칙 id), `candidates`는 근거로 본 이 파일의 후보 id, `match`는 원문과 조건이 맞는 정도, `note`는 그렇게 본 까닭(원문이 말하는 대상 · 때와 조건이 거는 대상 · 때)이다. 근거 원문을 찾지 못하면 `match`를 `원문 없음`으로 두고 `candidates`를 비운다.
 - 다음 단계에는 `approved` 후보만 쓴다.
 __SELECTED__'''
@@ -181,12 +182,15 @@ SELECTED = '''
   "task": "이 사건의 작업 SOP ID",
   "basis": "이 사건의 작업인 근거 — 파일 · 줄",
   "preparation": [ {항목} ], "prohibitions": [ {항목} ], "completion": [ {항목} ],
-  "remaining_questions": [ {"item": "…", "kind": "보류 | 원문 미확인 | 제공되지 않은 절", "source": "…", "note": "…"} ]
+  "remaining_questions": [ {"item": "…", "kind": "보류 | 원문 미확인 | 제공되지 않은 절", "source": "…", "note": "…"} ],
+  "sop_diff": [ {"item": "…", "where": "카드에만 | SOP 구조에만", "note": "…"} ]
 }
 ```
 
 - 항목: `{"candidate": "결과/검토/…_검토.json#후보 id", "doc_id": "…", "rev": "…", "section": "…", "quote": "…", "decision": "…"}` — 검토 결과의 `approved` 후보를 가리키고, `doc_id` · `rev` · `section` · `quote`는 그 후보의 값이다.
 - 승인 후보가 아닌 것(보류 · 원문을 확인하지 못한 것 · 제공되지 않은 절)은 `remaining_questions`에 둔다.
+- 방법 단계는 넣지 않는다 — 단계 순서는 받은 SOP 구조와 원문 절차가 가진다. 첫 단계가 작업 전에 하는 확인 · 조치이면 준비로 둔다.
+- `sop_diff`는 받은 SOP 구조(`입력/sop.json`)의 이 작업 항목과 견주어 다른 곳이다: 모은 항목 가운데 SOP 구조에 없는 것은 `카드에만`(`note`에 어느 문서 · 절에서 왔는지), SOP 구조의 문장 가운데 모은 항목에 없는 것은 `SOP 구조에만`(`note`에 그 필드와 까닭). 다른 곳이 없으면 `[]`.
 '''
 
 
@@ -235,7 +239,7 @@ def input_readme(key, n_events):
             f'- `{judged}` — 사건 경보를 포함한 지난 30일(2026-09-28 ~ 10-27) 경보 {n_events}건을 위 조건표로 {what}.\n')
 
 
-# ───────────── 랩 문장(START · 단계) — 결정 지점의 답 · 함정의 처리법은 쓰지 않는다(K-28 · K-149) ─────────────
+# ───────────── 랩 문장(START · 단계) — 결정 지점의 답 · 함정의 처리법은 쓰지 않는다(K-4) ─────────────
 def decide_points(key):
     """「학생이 정할 것」 두 지점 — 실전반은 이 작업(SOP-COOL-14)에 걸린 조건만 대조한다(실전 R36 「선택한 작업의 준비 · 금지 · 완료」)."""
     rules = '이 작업에 걸린 조건표의 조건마다' if key == 'practical-03-extract' else '받은 조건표의 조건마다'
@@ -256,7 +260,7 @@ TOOLS_LINE = ['`python llm_client.py` — 수업 모델에 짧은 질문 하나�
               '코드에서 보내기 전에 몇 개를 보낼지는 `count_to_send(요청 목록)`으로 셉니다.',
               '키가 없으면 `llm_client.py`는 요청을 보내지 않고, 보낼 글을 `결과/요청/`에 남긴 뒤 무엇을 했는지 알리고 멈춥니다.']
 
-# ───────────── 가이드(guide.html) 조각 — 「막히면」 · 「기다릴 때」는 새 랩 폴더 사본에서 돌려 본 출력 그대로(P-167), 통합반은 막히기 쉬운 곳을 더 푼다(P-104) ─────────────
+# ───────────── 가이드(guide.html) 조각 — 「막히면」 · 「기다릴 때」는 새 랩 폴더 사본에서 돌려 본 출력 그대로(P-6), 통합반은 막히기 쉬운 곳을 더 푼다(P-9) ─────────────
 def para(text):
     return f'<p>{B.inline(text)}</p>'
 stuck = BJ.stuck
@@ -296,10 +300,10 @@ def guide_bits(N):
                 f'`결과/응답_기록/`에 모델 서버로 보낸 기록이 {LLM.MAX_SENT}개가 되면 더 보내지 않습니다 — 비용을 지키는 이 폴더의 안내용 상한입니다. 보내기 전에 코드에서 `count_to_send(요청 목록)`으로 '
                 f'실제로 보낼 수와 남은 수를 보고({N["split"]}단계 출력의 조각 수와 견줍니다), 지금까지 보낸 수는 `python llm_client.py --count`로 봅니다.')
     return key_line, fields, stages, many
-# 설계 조건 2를 가이드 글에도: 결정 지점 · 함정의 답(LEAKS · GLEAKS)과 함께, 가이드에 두지 않는 말(가이드.md P-39 · P-70 · P-71 · P-217 · P-27)과 운영 말(코딩랩.md K-126)
+# 설계 조건 2를 가이드 글에도: 결정 지점 · 함정의 답(LEAKS · GLEAKS)과 함께, 가이드에 두지 않는 말(가이드.md P-6 · P-9 · P-3 · 공통.md C-3)과 운영 말(공통.md C-3)
 GUIDE_WORDS = ['SDD', 'Spec Kit', '명세', '정답', '강사 참조', 'reference', '재생', '캐시', '저장된 응답', '시작본', '잠금', '해제', '이미 있는 추출 결과', '앞 실습에서', '앞 이론', '방금 실습에서',
                '랩 그래프', '교육용', '강의용', '수업용', '(가정)', '(예시)', '실제와 다르', '제작 참고', '낭독']
-OPS_WORDS = ['중계', '깨어나', '60번', '고른 작업', '작업 고르기']   # 운영 말 · 옛 판 단정(K-126 · lab_llm.py 상한 문구) · 사건이 정한 작업을 고르게 하는 말 — 학생 문장 · 가이드 모두
+OPS_WORDS = ['중계', '깨어나', '60번', '고른 작업', '작업 고르기']   # 운영 말 · 옛 판 단정(공통.md C-3 · lab_llm.py 상한 문구) · 사건이 정한 작업을 고르게 하는 말 — 학생 문장 · 가이드 모두
 
 
 
@@ -321,7 +325,7 @@ def guide_checks(folder, L, leaks):
     if [(int(a), html_unescape(c)) for a, _, c in heads] != [(int(a), b) for a, b in start] or len(heads) != len(L['steps']):
         bad.append(f'가이드 절({len(heads)}) ≠ START 진행 단계({len(start)}) — 번호 · 이름이 같아야 함')
     text = guide_text(guide.decode('utf-8'))
-    for word in [w for w in leaks if w != '(권장)'] + GUIDE_WORDS + OPS_WORDS:   # 「(권장)」은 질문 카드 대처(B.TOOL card — 가이드.md P-56)가 그 낱말을 짚어야 한다
+    for word in [w for w in leaks if w != '(권장)'] + GUIDE_WORDS + OPS_WORDS:   # 「(권장)」은 질문 카드 대처(B.TOOL card — 가이드.md P-4)가 그 낱말을 짚어야 한다
         for n, line in enumerate(text.splitlines(), 1):
             if word in line:
                 bad.append(f'guide.html 글 {n}줄: 「{word}」')
@@ -334,7 +338,7 @@ def html_unescape(s):
 
 
 def step_order(key):
-    """단계 열쇠의 차례 — 한 단계에 일 하나(코딩랩.md K-52). 단계 번호는 이 차례에서 센다(문장 속 「N단계」도 여기서)."""
+    """단계 열쇠의 차례 — 한 단계에 일 하나(가이드.md P-4). 단계 번호는 이 차례에서 센다(문장 속 「N단계」도 여기서)."""
     practical = key == 'practical-03-extract'
     return (['start', 'incident', 'look', 'connect', 'expect', 'plan', 'read', 'split', 'prompt', 'one', 'cand', 'locate', 'main', 'again', 'rev1', 'rev2', 'other']
             + (['collect', 'trial'] if practical else []) + ['check', 'save'])
@@ -418,11 +422,11 @@ def common_steps(key, N):
           why='언어 모델의 구조화 출력은 답의 모양만 맞춰 줍니다 — 그 안의 사실이 원문과 같은지는 따로 확인해야 합니다. 그래서 모델 부르기와 인용 위치 찾기 · 검토를 다른 기능으로 나눕니다.',
           differ=B.DIFFER_PLAN),
         S('구현 ① 문서 읽기', '④ ~ ⑥ 구현 · 대조 · 고침',
-          '문서 목록의 그 판을 글로 여는 기능을 만들고 실행합니다 — 문서마다 목록의 판 · SHA-256과 같은 파일인지 확인하고, 문서 · 판 · 상태 · 글자 방식 · 줄 수 또는 읽지 못한 까닭을 출력합니다.',
+          '문서 목록의 그 판을 글로 여는 기능을 만들고 실행합니다 — 문서마다 목록의 판 · SHA-256과 같은 파일인지 확인하고, 문서 · 판 · 상태 · 글자 방식 · 줄 수 · 첫 줄 또는 읽지 못한 까닭을 출력합니다.',
           '읽히지 않거나 글자가 깨지는 문서를 어떻게 다룰지 정합니다.',
           '모든 문서가 읽혔거나 읽지 못한 까닭이 출력에 있고, 두세 문서의 첫 줄이 원문과 같습니다.',
           H('문서마다 목록의 판과 같은 파일인지 확인하고 글로 읽는다', '`자료/문서_목록.csv`, `자료/`의 문서', '원문을 바꾸지 않는다. 읽지 못한 문서를 내용 없음으로 두지 않는다',
-            '문서 · 판 · 상태 · 글자 방식 · 줄 수 또는 실패 까닭의 출력', '두세 문서의 첫 줄을 원문과 견준다'),
+            '문서 · 판 · 상태 · 글자 방식 · 줄 수 · 첫 줄 또는 실패 까닭의 출력', '두세 문서의 첫 줄을 원문과 견준다'),
           'python 결과/<만든 코드 이름>.py', why=WHY_READ,
           differ='읽지 못한 문서가 있으면 그 파일 이름과 오류 전문을 AI에게 보내 원인부터 설명하게 하고, 내가 정한 대로 다시 읽습니다.'),
         S('구현 ② 문서 나누기', '④ ~ ⑥ 구현 · 대조 · 고침',
@@ -442,13 +446,14 @@ def common_steps(key, N):
           why=WHY_PROMPT,
           differ='되짚기에서 빠진 것이 나오면 `결과/prompt.md`를 고치고 다시 되짚게 합니다.'),
         S('구현 ④ 한 조각 보내 보기', '④ ~ ⑥ 구현 · 대조 · 고침',
-          f'{sop_doc}에서 핀 세척 절 한 조각을 `결과/prompt.md`와 함께 `llm_client.ask`로 보내는 기능을 더해 실행하고, 받은 답을 받은 SOP 구조의 같은 작업 항목과 줄마다 견줍니다.',
+          f'{sop_doc}에서 핀 세척 절 한 조각을 `결과/prompt.md`와 함께 `llm_client.ask`로 보내는 기능을 더하고, 받은 답을 받은 SOP 구조의 같은 작업 항목과 줄마다 견줍니다. 코드는 AI에게 만들게 하고, 모델을 부르는 명령은 내가 VS Code 터미널에서 실행합니다.',
           '받은 답이 받은 SOP 구조와 다른 곳이 요청 글 때문인지 모델 응답 때문인지 묻습니다.',
           '`결과/응답_기록/`에 기록이 생겼고, 받은 답과 받은 SOP 구조의 차이를 원문 줄로 말할 수 있습니다.',
           H('요청 글로 한 조각을 보내 받은 답을 이미 검토된 구조와 견준다', f'`결과/prompt.md`, {sop_doc}의 핀 세척 절, `입력/sop.json`', '응답 기록을 고치지 않는다. 받은 답을 손으로 고쳐 맞추지 않는다',
             '그 조각의 응답 기록과 차이 목록', '받은 답을 받은 SOP 구조의 같은 작업 항목과 줄마다 견준다'),
           'python 결과/<만든 코드 이름>.py', why=WHY_ONE,
-          differ=(('키가 없어 멈췄으면 출력의 안내대로 한 조각만 채팅으로 받아 `--paste`로 남기거나, ' if key == 'practical-03-extract' else '키가 없어 멈췄고 채팅으로도 받지 않으면, ')
+          differ=('Codex 채팅이 대신 실행하면 그 실행 환경은 바깥 연결이 막혀 있어 「모델 서버에 닿지 못했습니다([Errno 1] Operation not permitted)」로 멈춥니다 — 같은 명령을 내 터미널에서 실행합니다. '
+                  + ('키가 없어 멈췄으면 출력의 안내대로 한 조각만 채팅으로 받아 `--paste`로 남기거나, ' if key == 'practical-03-extract' else '키가 없어 멈췄고 채팅으로도 받지 않으면, ')
                   + '여기부터는 실습 폴더와 따로 받는 학생용 완성본 묶음으로 결과를 봅니다. 받은 답이 다르면 ' + B.FIX_LOOP)),
         S('구현 ⑤ 응답을 후보로', '④ ~ ⑥ 구현 · 대조 · 고침',
           '응답 기록을 계약 꼴 후보 파일 `결과/후보/<문서 식별자>_<판>.json`으로 바꾸는 기능을 더하고 실행합니다.',
@@ -466,7 +471,8 @@ def common_steps(key, N):
           H('후보의 인용이 원문 그 줄에 있는지 찾는다', '후보 파일, 원문, `입출력_계약.md` 「후보 하나」의 인용 칸', '인용을 고쳐 맞추지 않는다',
             '후보의 `line_start` · `line_end` · `quote_match`와 `unlocated`', '`python check.py`로 보고, 인용 몇 개는 원문 줄을 직접 연다'),
           'python 결과/<만든 코드 이름>.py\npython check.py 결과/후보/<파일 이름>.json',
-          why='인용은 원문의 그 쪽 · 문단을 가리켜야 다른 사람이 다시 찾을 수 있습니다. 모델은 원문을 조금씩 바꿔 옮기기도 하므로, 그대로 찾히는지와 어떻게 찾았는지를 함께 남깁니다.',
+          why='인용은 원문의 그 쪽 · 문단을 가리켜야 다른 사람이 다시 찾을 수 있습니다. 모델은 원문을 조금씩 바꿔 옮기기도 하므로, 그대로 찾히는지와 어떻게 찾았는지를 함께 남깁니다. '
+              '같은 문장이 여러 절차에 되풀이되면(설비 정지 · 운전 모드 확인처럼) 코드는 어느 줄인지 정하지 못하므로 `unlocated`로 둡니다 — 그 단계는 검토에서 내가 그 절차의 줄을 골라 더합니다.',
           differ=DIFFER_CHECK),
         S('주 대상 문서에 실행하고 기대와 대조', '⑤ 대조',
           f'{N["expect"]}단계에서 적은 문서 — {task}의 원문을 가진 문서와 {rules}의 근거를 찾을 문서({sop_doc}는 {N["other"]}단계에서) — 에 {N["read"]} ~ {N["locate"]}단계 기능을 실행해 후보 파일을 만들고, '
@@ -477,7 +483,8 @@ def common_steps(key, N):
             f'`{REC}` 기대 항목의 실제 후보 · 차이 종류 칸', '차이마다 원문 줄을 연다'),
           'python 결과/<만든 코드 이름>.py',
           why='한 조각에서 맞은 요청 글도 문서 전체에서는 빠뜨리거나 다른 절에 잇는 것이 생깁니다. 실행 전에 원문에서 적은 기대와 줄마다 견주어야 차이가 기능의 문제인지 모델 응답의 문제인지 나눌 수 있습니다.',
-          differ=B.FIX_LOOP),
+          differ=f'터미널에 「경고: 요청 해시 …의 답이 길이 상한({LLM.MAX_TOKENS}토큰)에서 잘려 끝까지 오지 않았습니다.」가 나온 조각은 답을 끝까지 받지 못해 후보를 만들 수 없습니다 — '
+                 '그 조각을 절차마다 더 작게 나눠 새 요청으로 보냅니다(새 요청은 안내용 상한에 셉니다). ' + B.FIX_LOOP),
         S('같은 요청 한 번 더 보내기', '⑤ 대조',
           f'{N["main"]}단계에서 보낸 조각 하나를 `ask(요청, again=True)`로 한 번 더 보내, 두 응답 기록의 답을 견줍니다.',
           '두 답이 다른 곳이 있으면 어느 응답 기록을 검토에 쓸지와 그 까닭을 정합니다.',
@@ -486,7 +493,8 @@ def common_steps(key, N):
             f'`{REC}` 「같은 요청을 한 번 더 보낸 결과」 표', '두 기록의 답 글을 나란히 놓는다'),
           'python 결과/<만든 코드 이름>.py',
           why='같은 요청에도 모델의 답은 매번 다를 수 있습니다. 어느 응답을 검토했는지 응답 기록 파일로 남겨야 나중에 같은 결과를 다시 볼 수 있습니다.',
-          differ=f'두 답이 다르면 다른 줄을 원문과 견주어, 검토에 쓸 응답 기록 파일 이름을 `{REC}`에 적습니다.'),
+          differ=f'두 답이 다르면 다른 줄을 원문과 견주어, 검토에 쓸 응답 기록 파일 이름을 `{REC}`에 적습니다. `ask`는 같은 요청의 마지막 기록을 돌려주므로, 앞 기록을 쓰기로 했으면 '
+                 '코드가 그 기록 파일을 골라 읽게 고치고 후보 파일을 다시 만듭니다.'),
     ]
 
 
@@ -494,7 +502,9 @@ def review_steps(key, N):
     practical = key == 'practical-03-extract'
     first = S('검토 ① 핀 세척 작업 후보의 결정', '⑤ 대조',
               '후보 파일을 복사한 검토 결과 `결과/검토/<문서 식별자>_<판>_검토.json`에 핀 세척 작업의 ' + ('준비 · 방법 · 금지 · 완료 · 승인 ' if practical else '')
-              + '후보마다 원문과 대조한 결정(채택 · 수정 · 제외 · 보류)과 근거를 적습니다. 원문과 대조하지 않은 후보는 보류로 두고 그 까닭을 적습니다. 후보 파일 원본은 그대로 둡니다.',
+              + '후보마다 원문과 대조한 결정(채택 · 수정 · 제외 · 보류)과 근거를 적습니다. 원문과 대조하지 않은 후보는 보류로 두고 그 까닭을 적습니다. 후보 파일 원본은 그대로 둡니다. '
+              f'결정의 이유에는 후보의 절 · 종류 · 인용을 함께 적습니다 — {N["other"]}단계에서 후보 파일을 문서 전체로 다시 만들면 이 결정을 새 후보 파일에 다시 겁니다. '
+              '여러 곳에 같은 문장이 있어 `unlocated`로 간 단계는 그 절차의 줄을 골라 검토자가 더한 후보로 넣습니다.',
               f'「학생이 정할 것」의 사내 문서와 제조사 지침 지점을 {N["expect"]}단계에서 정한 대로 적용했는지 확인합니다.',
               '구조 검사가 통과하고, 채택 · 수정 · 제외한 결정마다 원문 근거가 있습니다. 원문과 대조하지 않은 후보는 보류입니다.',
               H('핀 세척 작업 후보마다 결정과 근거를 남긴다', '후보 파일, 원문, `자료/문서_목록.csv`, 문서 관리 기준, 「정한 것」',
@@ -516,7 +526,9 @@ def review_steps(key, N):
                why='허용 · 제외 조건은 출처로 돌아갈 수 있어야 고칠 수 있습니다. 원문이 말하는 대상 · 때와 조건이 거는 대상 · 때가 같은지 견주어야, 그 원문이 그 조건의 근거인지 말할 수 있습니다.',
                differ=DIFFER_STAGES)
     other = S('다른 문서에 다시 적용', '⑤ 대조',
-              '같은 기능을 받은 SOP 구조가 이미 구조로 옮긴 문서 전체와 정기 점검표 · 예비품 기준 · 보충 매뉴얼에 실행하고, 문서마다 누락 · 근거 없는 생성을 셉니다(SOP 구조가 옮긴 문서는 코드로 견주고, 나머지는 절 두세 개를 손으로).',
+              '같은 기능을 받은 SOP 구조가 이미 구조로 옮긴 문서 전체와 정기 점검표 · 예비품 기준 · 보충 매뉴얼에 실행하고, 문서마다 누락 · 근거 없는 생성을 셉니다(SOP 구조가 옮긴 문서는 코드로 견주고, 나머지는 절 두세 개를 손으로). '
+              'SOP 구조의 한 칸은 여러 절을 합쳐 적은 것이 있어 글자 비교로는 짝이 나지 않으므로, 코드가 낸 누락은 원문 줄을 열어 실제 누락만 셉니다. '
+              'SOP 구조가 옮긴 문서의 후보 파일은 이 실행으로 문서 전체로 다시 쓰이므로, 그 문서의 검토 결과는 새 후보 파일로 다시 만듭니다.',
               '한 문서에 맞춘 처리가 다른 문서에서 놓치거나 지어내는 것이 무엇인지 묻습니다.',
               f'문서마다 후보 수 · 누락 · 근거 없는 생성이 `{REC}` 「다른 문서에 적용」 표에 있습니다.',
               H('같은 기능을 다른 문서에 적용해 누락 · 근거 없는 생성을 센다', '그 문서들의 원문, 만든 기능, `입력/sop.json`', '원문에 맞추려고 원문을 바꾸지 않는다. 이 단계에서는 세기만 하고 고치지 않는다',
@@ -533,9 +545,9 @@ def tail_steps(key, N):
     if practical:
         out.append(S('구현 ⑦ 이 작업의 준비 · 금지 · 완료 모으기', '④ ~ ⑥ 구현 · 대조 · 고침',
                      f'검토 결과에서 핀 세척의 준비 · 금지 · 완료 조건을 문서를 가리지 않고 모아 `결과/선택작업_조건.json`에 쓰는 기능을 더하고 실행합니다(`basis`에는 {N["incident"]}단계에서 확인한 줄). '
-                     '받은 SOP 구조의 같은 작업 항목과 견주어 다른 곳을 표시합니다.',
+                     '방법 단계는 넣지 않고(첫 단계가 작업 전 확인이면 준비로), 받은 SOP 구조의 같은 작업 항목과 견주어 다른 곳을 `sop_diff`에 적습니다.',
                      '절차 밖 절 · 다른 절차 · 다른 문서의 조건 가운데 이 작업에 걸리는 것과 그 근거를 묻습니다.',
-                     '준비 · 금지 · 완료가 각각 원문 인용과 함께 있고, 받은 SOP 구조와 다른 곳이 표시되어 있습니다.',
+                     '준비 · 금지 · 완료가 각각 원문 인용과 함께 있고, 받은 SOP 구조와 다른 곳이 `sop_diff`에 카드에만 · SOP 구조에만으로 나뉘어 있습니다.',
                      H('작업 확인 카드에 들어갈 조건을 검토 결과에서 모은다', '검토 결과, `입력/sop.json`', '승인한 후보만 항목으로 넣는다. 승인하지 않은 것은 남은 질문으로 둔다',
                        '`결과/선택작업_조건.json`(계약 「선택한 작업의 조건」)', '항목 두세 개를 원문 줄로 보고, 받은 SOP 구조의 같은 작업 항목과 견준다'),
                      'python 결과/<만든 코드 이름>.py\npython check.py',
@@ -662,14 +674,14 @@ def lab(key, files):
               '후보마다 채택 · 수정 · 제외 · 보류와 근거를 기록하고, 같은 기능을 다른 문서에 적용해 빠뜨리거나 지어낸 것을 셉니다.'),
         need=f'VS Code와 Python, 로그인해 둔 Codex 또는 GitHub Copilot, 강의에서 받은 수업 모델 접속 세 줄(없으면 {N["connect"]}단계의 안내).',
         terms=TERMS_EXTRACT, first_more=[mine, key_line],
-        # 도구를 처음 쓰는 단계에 그 안내 — AI 채팅 · 편집 승인은 사건 확인(처음 AI에게 묻는 단계), 터미널 · .env는 연결 확인. 통합반만 막히기 쉬운 곳의 「막히면」을 더 둔다(P-104).
+        # 도구를 처음 쓰는 단계에 그 안내 — AI 채팅 · 편집 승인은 사건 확인(처음 AI에게 묻는 단계), 터미널 · .env는 연결 확인. 통합반만 막히기 쉬운 곳의 「막히면」을 더 둔다(P-9).
         guide_extra={ix['incident']: ['ai', 'review'], ix['connect']: [para(ENV_HOWTO[course]), 'terminal'], ix['one']: [ASK_HOWTO]},
         guide_after={ix['connect']: [WAIT_FIRST] + ([] if practical else [BJ.STUCK_PATH, STUCK_ENV]), ix['read']: [STUCK_DECODE], ix['one']: [] if practical else [STUCK_NOKEY],
                      ix['cand']: [] if practical else [stuck_fields], ix['main']: [wait_many], ix['rev2']: [] if practical else [stuck_stages]},
         files={})
 
 
-# ───────────── 검사기(구조만 — 의미 정답은 판정하지 않는다, K-51) ─────────────
+# ───────────── 검사기(구조만 — 의미 정답은 판정하지 않는다, K-7) ─────────────
 CHECKER = r'''"""결과/의 후보 파일 · 검토 결과 · 응답 기록 짝과 검토_기록.md 칸의 구조 검사. 생성 · 수정 · 네트워크 접속을 하지 않는다.
 후보의 인용이 짝지은 응답 기록의 답 글에 있는지(글자 · 숫자만 남겨 소문자로 비교)도 본다 — 답 글에 있다고 원문과 뜻이 맞는 것은 아니다.
 어떤 후보가 맞는지, 빠진 지식, 어느 원문을 근거로 둘지는 판정하지 않는다 — 의미와 질문별 답은 원자료와 따로 대조한다.
@@ -864,20 +876,21 @@ def check(path):
             continue
         segment = '\n'.join(lines[ls - 1:le])
         exact, near = locate(text, quote)
+        by_reviewer = reviewed and c.get('origin') == 'reviewer'    # 같은 문장이 여러 곳이면 코드는 줄을 정하지 못한다 — 검토자가 고른 줄은 받는다
         if not quote.strip():
             errors.append(f'{where}: quote가 비어 있음')
         elif c['quote_match'] == 'exact':
             if quote not in segment:
                 errors.append(f'{where}: quote가 {ls}~{le}줄에 글자 그대로 없음' + ('(파일의 다른 줄에 있음)' if exact else ''))
-            elif exact > 1:
-                errors.append(f'{where}: quote가 원문 {exact}곳에 맞음 — 여러 곳에 맞는 인용은 찾지 못한 것으로 둔다')
+            elif exact > 1 and not by_reviewer:
+                errors.append(f'{where}: quote가 원문 {exact}곳에 맞음 — 코드가 찾은 인용이 여러 곳에 맞으면 찾지 못한 것(unlocated)으로 두고, 그 줄은 검토자가 골라 더한다')
         elif c['quote_match'] == 'normalized':
             if quote in segment:
                 errors.append(f'{where}: 글자 그대로 찾히는 인용은 quote_match가 exact')
             elif squash(quote) not in squash(segment):
                 errors.append(f'{where}: quote가 {ls}~{le}줄에서 글자 · 숫자 비교로도 찾히지 않음')
-            elif near > 1:
-                errors.append(f'{where}: quote가 글자 · 숫자 비교로 원문 {near}곳에 맞음 — 찾지 못한 것으로 둔다')
+            elif near > 1 and not by_reviewer:
+                errors.append(f'{where}: quote가 글자 · 숫자 비교로 원문 {near}곳에 맞음 — 코드가 찾은 인용이면 찾지 못한 것(unlocated)으로 두고, 그 줄은 검토자가 골라 더한다')
         else:
             errors.append(f'{where}: quote_match는 exact 또는 normalized')
         if reviewed and c.get('origin') == 'reviewer':
@@ -1006,7 +1019,7 @@ def check_selected(path):
     """결과/선택작업_조건.json — 항목마다 검토 결과의 승인 후보를 가리키는지."""
     errors = []
     data = json.loads(Path(path).read_text(encoding='utf-8-sig'))
-    for key in ['task', 'basis', 'preparation', 'prohibitions', 'completion', 'remaining_questions']:
+    for key in ['task', 'basis', 'preparation', 'prohibitions', 'completion', 'remaining_questions', 'sop_diff']:
         if key not in data:
             errors.append(f'필드 없음: {key}')
     if 'task' in data and data['task'] != TASK:
@@ -1035,6 +1048,9 @@ def check_selected(path):
     for q in data.get('remaining_questions', []):
         if not isinstance(q, dict) or not q.get('item') or not q.get('note'):
             errors.append('remaining_questions의 항목마다 item과 note가 필요')
+    for d in data.get('sop_diff', []):
+        if not isinstance(d, dict) or not d.get('item') or not d.get('note') or d.get('where') not in ('카드에만', 'SOP 구조에만'):
+            errors.append('sop_diff의 항목마다 item · note와 where(카드에만 · SOP 구조에만)가 필요')
     return errors
 
 
@@ -1243,7 +1259,7 @@ def design_checks(key, folder, L=None):
         for word in NAME_LEAKS:
             if word in name:
                 bad.append(f'이름 「{name}」에 「{word}」')
-    # 학생 폴더에 강사가 넣은 응답 기록 · 재생 파일이 없다(코딩랩.md K-87)
+    # 학생 폴더에 강사가 넣은 응답 기록 · 재생 파일이 없다(코딩랩.md K-8)
     if (folder/'결과/응답_기록').exists() or any('recorded' in n or 'replay' in n for n in names):
         bad.append('학생 폴더에 응답 기록 · 재생 파일이 있음')
     env = (folder/'.env.example').read_text(encoding='utf-8')
@@ -1354,7 +1370,7 @@ def branches_module():
 
 def instructor_reviews(key):
     """{입력/검토결과/ 안 이름: 바이트} — 강사 추출 실행(수업 모델 답)의 후보를 강사 판 갈래(지점5 나 · 지점6 가)로 검토한 결과.
-    추출 랩 학생용 완성본(completed.py)의 결과/검토와 같은 바이트다 — 앞 단계 완성 상태 그대로를 다음 실습이 받는다(코딩랩.md K-48)."""
+    추출 랩 학생용 완성본(completed.py)의 결과/검토와 같은 바이트다 — 앞 단계 완성 상태 그대로를 다음 실습이 받는다(코딩랩.md K-7)."""
     BR = branches_module()
     course = GCOURSE[key]
     lab_folder = LABS[GEXTRACT[key]]
@@ -1581,7 +1597,7 @@ def export(path):
     questions = HERE / '결과/남은_질문.json'
     out = {'nodes': nodes, 'rels': rels, 'remaining_questions': json.loads(questions.read_text(encoding='utf-8')) if questions.is_file() else []}
     Path(path).parent.mkdir(parents=True, exist_ok=True)
-    Path(path).write_text(json.dumps(out, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    Path(path).write_text(json.dumps(out, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
     print(f'{path}: 노드 {len(nodes)}개 · 관계 {len(rels)}개 · 남은 질문 {len(out["remaining_questions"])}개를 내보냈습니다.')
 
 
@@ -2104,7 +2120,7 @@ def graph_common(key, N):
 
 
 def gstep_order(key):
-    """그래프 랩 단계 열쇠의 차례 — 한 단계에 일 하나(K-52). 실전반 카드는 실전 R37대로 준비 · 금지 · 완료와 원문 출처만 모은다."""
+    """그래프 랩 단계 열쇠의 차례 — 한 단계에 일 하나(가이드.md P-4). 실전반 카드는 실전 R37대로 준비 · 금지 · 완료와 원문 출처만 모은다."""
     if key == 'practical-03-card':
         return ['start', 'look', 'expect', 'plan', 'db', 'docs', 'link', 'again', 'query', 'card', 'other', 'missing', 'scope', 'remain', 'export', 'check', 'save']
     return ['start', 'look', 'expect', 'plan', 'db', 'docs', 'link', 'again', 'q1', 'q2', 'q3', 'more', 'q4', 'hold', 'q5', 'scope', 'remain', 'export', 'check', 'save']
@@ -2406,7 +2422,7 @@ def gdesign_checks(key, folder, L):
                 bad.append('입력/조치검토결과.json이 3회차 학생용 완성본의 결과와 다름')
     ext = LABS[GEXTRACT[key]]/'자료'
     if sorted(f.name for f in (folder/'자료').iterdir()) != sorted(f.name for f in ext.iterdir()):
-        bad.append('자료/의 파일이 추출 랩 자료와 다름(카드 대조에 쓰지 않는 자료를 두지 않는다 — 코딩랩.md K-24)')
+        bad.append('자료/의 파일이 추출 랩 자료와 다름(카드 대조에 쓰지 않는 자료를 두지 않는다 — 코딩랩.md K-3)')
     for f in ext.iterdir():
         if (folder/'자료'/f.name).read_bytes() != f.read_bytes():
             bad.append(f'자료/{f.name}이 추출 랩 자료와 다름')

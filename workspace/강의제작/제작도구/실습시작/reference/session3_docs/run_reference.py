@@ -16,7 +16,7 @@
 6. 장난감 시험 통과 기준(toy_criteria.py)의 자기 시험 — 손대지 않은 사본은 통과, 일부러 어긴 사본은 그 기준에서 걸린다. ②의 답 글 비교는 같은 규칙 기반 후보에
    관계없는 답 · 스스로 써 넣은(채팅으로 받음) 답 · 키 없이 보낸 기록 · 실제 호출보다 많은 모델 서버 기록을 짝지으면 걸리고, 실제 호출 수를 주지 않으면 판정하지 않으며,
    그 후보를 담은 모델 답(실제 호출과 같은 수)이면 통과하는지 본다.
-산출: 갈래/, expected_results.json, 사건_갈래표.md, 검사기_확인.json. 어긋나면 「불일치」 줄을 찍고 종료 코드 1 — 결과를 맞추지 말고 원인을 고친다(코딩랩.md K요-11).
+산출: 갈래/, expected_results.json, 사건_갈래표.md, 검사기_확인.json. 어긋나면 「불일치」 줄을 찍고 종료 코드 1 — 결과를 맞추지 말고 원인을 고친다(코딩랩.md 「학생용 완성본과 강사 참조를 돌린다」).
 """
 from __future__ import annotations
 
@@ -168,16 +168,16 @@ def student_check(course, lab, cands, judged, p5, p6, own, record):
         if own:
             table, sop = BR.own_table(own)
             (t/'결과/내_입력').mkdir(parents=True, exist_ok=True)
-            (t/'결과/내_입력/조건표.csv').write_text(table, encoding='utf-8')
-            (t/'결과/내_입력/sop.json').write_text(sop, encoding='utf-8')
+            (t/'결과/내_입력/조건표.csv').write_text(table, encoding='utf-8', newline='\n')
+            (t/'결과/내_입력/sop.json').write_text(sop, encoding='utf-8', newline='\n')
             (t/'결과/내_입력'/BD.JUDGED[ek]).write_bytes((lab/'입력'/BD.JUDGED[ek]).read_bytes())
         out, _ = BR.build(t, fx, judged, p5, p6, course, own)
         for rel, data in out.items():
             if rel.startswith(('후보/', '검토/')) or rel == '선택작업_조건.json':
                 (t/'결과'/rel).parent.mkdir(parents=True, exist_ok=True)
                 (t/'결과'/rel).write_bytes(data)
-        (t/'결과/prompt.md').write_text(PROMPT, encoding='utf-8')
-        (t/'결과/검토_기록.md').write_text(record, encoding='utf-8')
+        (t/'결과/prompt.md').write_text(PROMPT, encoding='utf-8', newline='\n')
+        (t/'결과/검토_기록.md').write_text(record, encoding='utf-8', newline='\n')
         files = sorted(str(p.relative_to(t)) for p in (t/'결과/후보').glob('*.json')) + sorted(str(p.relative_to(t)) for p in (t/'결과/검토').glob('*.json'))
         rc1, o1 = run_py(t, 'check.py', *files)
         rc2, o2 = run_py(t, 'check.py')
@@ -195,8 +195,8 @@ def student_check_model(course, lab, run, out, record):
             if rel.startswith(('후보/', '검토/')) or rel == '선택작업_조건.json':
                 (t/'결과'/rel).parent.mkdir(parents=True, exist_ok=True)
                 (t/'결과'/rel).write_bytes(data)
-        (t/'결과/prompt.md').write_text(PROMPT, encoding='utf-8')
-        (t/'결과/검토_기록.md').write_text(record, encoding='utf-8')
+        (t/'결과/prompt.md').write_text(PROMPT, encoding='utf-8', newline='\n')
+        (t/'결과/검토_기록.md').write_text(record, encoding='utf-8', newline='\n')
         files = sorted(str(p.relative_to(t)) for p in (t/'결과/후보').glob('*.json')) + sorted(str(p.relative_to(t)) for p in (t/'결과/검토').glob('*.json'))
         rc1, o1 = run_py(t, 'check.py', *files)
         rc2, o2 = run_py(t, 'check.py')
@@ -297,7 +297,7 @@ def extraction(model_dirs):
             changes = json.loads(out['판정_변화.json'])
             selected = json.loads(out['선택작업_조건.json']) if '선택작업_조건.json' in out else None
             record = record_md(course, p5, p6, own, reviews, scores, changes, selected)
-            (dest/'검토_기록.md').write_text(record, encoding='utf-8')
+            (dest/'검토_기록.md').write_text(record, encoding='utf-8', newline='\n')
             chk = student_check(course, lab, cands, judged, p5, p6, own, record)
             if chk['contract_rc'] != 0 or chk['stage_rc'] != 0:
                 fail(f'{name}: 학생 검사기 — 계약 rc {chk["contract_rc"]} · 단계 rc {chk["stage_rc"]} {chk["contract_errors"]} {chk["stage_tail"]}')
@@ -439,11 +439,11 @@ def graph_run(course, p7, trials=False):
             reviews = [(f.name, json.loads(f.read_text(encoding='utf-8'))) for f in sorted((t/'입력/검토결과').glob('*_검토.json'))]
             phase1 = [(n, d) for n, d in reviews if practical or d['doc_id'] not in G.PHASE2]
             phase2 = [] if practical else [(n, d) for n, d in reviews if d['doc_id'] in G.PHASE2]
-            (t/'결과/schema_ext.json').write_text(json.dumps(G.SCHEMA_EXT, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
-            (t/'결과/load.cypher').write_text(G.load_cypher(t, phase1, sop, '나', p7), encoding='utf-8')
+            (t/'결과/schema_ext.json').write_text(json.dumps(G.SCHEMA_EXT, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
+            (t/'결과/load.cypher').write_text(G.load_cypher(t, phase1, sop, '나', p7), encoding='utf-8', newline='\n')
             if phase2:
-                (t/'결과/load_more.cypher').write_text(G.load_cypher(t, phase2, sop, '나', p7, with_register=False), encoding='utf-8')
-            (t/'결과/query.cypher').write_text(G.query_file(), encoding='utf-8')
+                (t/'결과/load_more.cypher').write_text(G.load_cypher(t, phase2, sop, '나', p7, with_register=False), encoding='utf-8', newline='\n')
+            (t/'결과/query.cypher').write_text(G.query_file(), encoding='utf-8', newline='\n')
             rc, out = run_py(t, 'lab_cypher.py', 'run', '결과/load.cypher')
             if rc:
                 fail(f'{course} 지점7 {p7}: 적재 실패 {out[-400:]}')
@@ -516,8 +516,8 @@ def graph_run(course, p7, trials=False):
                 questions += [q for q in sel['remaining_questions'] if q['kind'] == '보류']
                 row14 = LC.cypher([(G.QUERIES['CARD'], {'sop': 'SOP-COOL-14'})])[0]['data'][0]['row']
                 row11 = LC.cypher([(G.QUERIES['CARD'], {'sop': 'SOP-COOL-11'})])[0]['data'][0]['row']
-                (t/'결과/작업확인카드_SOP-COOL-14.md').write_text(G.card(row14, t, p7, questions[:2] + questions[2:5]), encoding='utf-8')
-                (t/'결과/작업확인카드_SOP-COOL-11.md').write_text(G.card(row11, t, p7, questions[:1]), encoding='utf-8')
+                (t/'결과/작업확인카드_SOP-COOL-14.md').write_text(G.card(row14, t, p7, questions[:2] + questions[2:5]), encoding='utf-8', newline='\n')
+                (t/'결과/작업확인카드_SOP-COOL-11.md').write_text(G.card(row11, t, p7, questions[:1]), encoding='utf-8', newline='\n')
                 ans['OTHER'] = 'SOP-COOL-11 카드 형식 통과'
                 for k, v in [('준비 조건', 'HM-8 1.1 HM-8.7 · 제조사 지침 7' + (' · PM-02 PM-2.4' if p7 == '가' else '')), ('금지 · 제한', 'HM-8 1.1 「고압수는 쓰지 않는다」 · 제조사 「Do not use a high-pressure washer」'),
                              ('완료 기준', 'HM-8 1.1 CE 80 %'), ('작업 직전 확인할 현재 값', 'CE · TS1 · PLC 모드(시계열)' + (' · 생산 오더 없는 시간(MES)' if p7 == '가' else '')), ('승인', '설비보전팀장(HM-8.7)')]:
@@ -532,10 +532,10 @@ def graph_run(course, p7, trials=False):
                                 ('질문 4', 'HYD-01~03 리턴 필터 · 어큐뮬레이터 · 펌프 축 씰 · 작동유', f'{len(res["Q4"])}행'), ('질문 5', '결과 없음 · 원문 절 미제공', '결과 없음')]:
                     qrows.append((k, v))
                     ans[k] = a
-            (t/'결과/남은_질문.json').write_text(json.dumps(questions, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+            (t/'결과/남은_질문.json').write_text(json.dumps(questions, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
             rc, out = run_py(t, 'lab_cypher.py', 'export', '결과/지식_내보내기.json')
             exported = json.loads((t/'결과/지식_내보내기.json').read_text(encoding='utf-8'))
-            (t/'결과/구축_기록.md').write_text(graph_record(course, p7, counts, reviews, ans, qrows, invariance), encoding='utf-8')
+            (t/'결과/구축_기록.md').write_text(graph_record(course, p7, counts, reviews, ans, qrows, invariance), encoding='utf-8', newline='\n')
             rc, out = run_py(t, 'check.py')
             result.update(counts={k: list(v) for k, v in counts.items()}, knowledge=kn, export={'nodes': len(exported['nodes']), 'rels': len(exported['rels']),
                           'labels': sorted({l for n in exported['nodes'] for l in n['labels']}), 'remaining_questions': len(exported['remaining_questions'])},
@@ -593,11 +593,11 @@ def graph_trials(t, LC, course):
     def edit(rel, fn):
         p = t/'결과'/rel
         old = p.read_bytes()
-        return (lambda: p.write_text(fn(old.decode('utf-8')), encoding='utf-8')), (lambda: p.write_bytes(old))
+        return (lambda: p.write_text(fn(old.decode('utf-8')), encoding='utf-8', newline='\n')), (lambda: p.write_bytes(old))
 
     def add_file(rel, text):
         p = t/'결과'/rel
-        return (lambda: p.write_text(text, encoding='utf-8')), (lambda: p.unlink())
+        return (lambda: p.write_text(text, encoding='utf-8', newline='\n')), (lambda: p.unlink())
 
     def db_add(stmt, undo_stmt):
         return (lambda: LC.cypher([(stmt, {})])), (lambda: LC.cypher([(undo_stmt, {})]))
@@ -696,7 +696,7 @@ def extraction_trials(course):
             def go():
                 d = jload(rel)
                 fn(d)
-                (t/rel).write_text(json.dumps(d, ensure_ascii=False, indent=2), encoding='utf-8')
+                (t/rel).write_text(json.dumps(d, ensure_ascii=False, indent=2), encoding='utf-8', newline='\n')
             return go
 
         def first(d, kind=None, pred=None):
@@ -725,11 +725,11 @@ def extraction_trials(course):
         trial('18', '문서 식별자 불일치', H11, cand_mut(H11, lambda d: d.update(doc_id='HM-9')), 'doc_id')
 
         def unregistered():
-            (t/'자료/메모.md').write_text('# 메모\n\n설비를 정지한다.\n', encoding='utf-8')
+            (t/'자료/메모.md').write_text('# 메모\n\n설비를 정지한다.\n', encoding='utf-8', newline='\n')
             d = jload(H11)
             raw = (t/'자료/메모.md').read_bytes()
             d.update(source_file='메모.md', source_sha256=hashlib.sha256(raw).hexdigest(), candidates=[], unlocated=[])
-            (t/H11).write_text(json.dumps(d, ensure_ascii=False), encoding='utf-8')
+            (t/H11).write_text(json.dumps(d, ensure_ascii=False), encoding='utf-8', newline='\n')
         trial('19', '문서 목록에 없는 파일', H11, unregistered, '문서_목록.csv에 없는 파일', undo=lambda: (t/'자료/메모.md').unlink(missing_ok=True))
         trial('20', 'OEM 없는 절차', OEMF, cand_mut(OEMF, lambda d: first(d, 'step').update(procedure='T-9.9')), '원문에 없는 절차 표기')
         oem_lines = (t/'자료/OEM-HPP45A_정비지침_영한.md').read_text(encoding='utf-8').splitlines()
@@ -754,21 +754,26 @@ def extraction_trials(course):
         def other_folder():
             r = json.loads(rec_bytes)
             r['folder_mark'] = 'ffffffffffffffff'
-            (t/rec).write_text(json.dumps(r, ensure_ascii=False), encoding='utf-8')
+            (t/rec).write_text(json.dumps(r, ensure_ascii=False), encoding='utf-8', newline='\n')
         trial('30', '다른 폴더의 응답 기록으로 만든 후보(폴더 표지가 다름)', H11, other_folder, '다른 폴더의 응답 기록입니다', undo=lambda: (t/rec).write_bytes(rec_bytes))
         trial('40', 'model_run에 reused_from을 적은 후보(다른 폴더 기록을 옮겨 씀)', H11,
               cand_mut(H11, lambda d: d['model_run'][0].update(reused_from='ffffffffffffffff')), '다른 폴더의 응답 기록으로는 후보를 만들지 않습니다')
+        twice = next((n, l.strip()) for n, l in enumerate(lines11, 1)
+                     if re.match(r'^\d+\.\s', l.strip()) and '\n'.join(lines11).count(re.sub(r'^\d+\.\s+', '', l.strip())) > 1)
+        said = re.sub(r'^\d+\.\s+', '', twice[1])
+        trial('41', '코드가 찾은 인용이 원문 여러 곳에 맞음(같은 단계 문장이 여러 절차에)', H11, cand_mut(H11, lambda d: first(d, 'step').update(
+            quote=said, quote_match='exact', line_start=twice[0], line_end=twice[0])), '곳에 맞음')
         def reply_text(text):
             def go():
                 r = json.loads(rec_bytes)
                 r['response_text'] = text
-                (t/rec).write_text(json.dumps(r, ensure_ascii=False), encoding='utf-8')
+                (t/rec).write_text(json.dumps(r, ensure_ascii=False), encoding='utf-8', newline='\n')
             return go
         trial('36', '관계없는 답 글과 짝지은 후보(규칙으로 만든 후보)', H11, reply_text('네, 연결되었습니다.'), '답 글에 없음', undo=lambda: (t/rec).write_bytes(rec_bytes))
         def unusable():
             r = json.loads(rec_bytes)
             r.update(usable=False, note='끝난 까닭 content_filter, 답 글이 비어 있음', response_text='')
-            (t/rec).write_text(json.dumps(r, ensure_ascii=False), encoding='utf-8')
+            (t/rec).write_text(json.dumps(r, ensure_ascii=False), encoding='utf-8', newline='\n')
         trial('37', '쓸 내용이 없는 답의 기록과 짝지음', H11, unusable, 'usable false', undo=lambda: (t/rec).write_bytes(rec_bytes))
         # 38 · 39: origin reviewer로 꾸민 후보 — 후보 파일(검토 전)에서는 origin을 보지 않고 답 글과 견주고, 검토 결과에서는 reviewer 후보마다 missing(added: true)이 있어야 한다
         said = ' '.join(c['quote'] for c in jload(H11)['candidates'])
@@ -793,7 +798,7 @@ def extraction_trials(course):
                 rv = jload('결과/검토/OEM-HPP45A-MM_C_검토.json')
                 c = next(x for x in rv['candidates'] if x['status'] == 'pending')
                 d['preparation'].append({'candidate': f'결과/검토/OEM-HPP45A-MM_C_검토.json#{c["id"]}', 'doc_id': 'OEM-HPP45A-MM', 'rev': 'C', 'section': c['section'], 'quote': c['quote'], 'decision': '보류'})
-                (t/SEL).write_text(json.dumps(d, ensure_ascii=False), encoding='utf-8')
+                (t/SEL).write_text(json.dumps(d, ensure_ascii=False), encoding='utf-8', newline='\n')
             trial('35', '보류 후보를 선택 작업 조건에', SEL, held, '승인(approved) 후보가 아님', stage=True)
     return out
 
@@ -807,9 +812,9 @@ def toy_selftest():
             with tempfile.TemporaryDirectory() as tmp:
                 t = copy_lab(folder, tmp)
                 clean = T.judge(archive, t)
-                (t/'입력/README.md').write_text('바꿈\n', encoding='utf-8')
+                (t/'입력/README.md').write_text('바꿈\n', encoding='utf-8', newline='\n')
                 (t/'결과/후보').mkdir(parents=True, exist_ok=True)
-                (t/'결과/후보/HM-8_1.1.json').write_text(json.dumps({'model_run': [], 'candidates': []}), encoding='utf-8')
+                (t/'결과/후보/HM-8_1.1.json').write_text(json.dumps({'model_run': [], 'candidates': []}), encoding='utf-8', newline='\n')
                 (t/'결과/검토').mkdir(parents=True, exist_ok=True)
                 (t/'결과/검토/HM-8_1.1_검토.json').write_text(json.dumps({'candidates': [{'id': 'x', 'decision': '보류', 'reason': ''}],
                                                                        'rule_links': [{'rule_id': 'R4', 'match': '보류', 'note': '근거 확인 중'}]}, ensure_ascii=False), encoding='utf-8')
@@ -840,11 +845,11 @@ def toy_reply_cases(folder, archive, key):
             t = copy_lab(folder, tmp)
             (t/'결과/응답_기록').mkdir(parents=True, exist_ok=True)
             rec = {'request_hash': 'toy000000000', 'model': 'coding', 'method': method, 'received_at': '2026-11-04T10:00:00+09:00', 'folder_mark': 'toy', 'response_text': text}
-            (t/'결과/응답_기록/toy000000000.json').write_text(json.dumps(rec, ensure_ascii=False), encoding='utf-8')
+            (t/'결과/응답_기록/toy000000000.json').write_text(json.dumps(rec, ensure_ascii=False), encoding='utf-8', newline='\n')
             d = copy.deepcopy(cands)
             d['model_run'] = [{'record': '결과/응답_기록/toy000000000.json', 'request_hash': 'toy000000000', 'model': 'coding', 'method': method, 'reused_from': None}]
             (t/'결과/후보').mkdir(parents=True, exist_ok=True)
-            (t/'결과/후보/HM-8_1.1.json').write_text(json.dumps(d, ensure_ascii=False), encoding='utf-8')
+            (t/'결과/후보/HM-8_1.1.json').write_text(json.dumps(d, ensure_ascii=False), encoding='utf-8', newline='\n')
             r = T.judge(archive, t, no_key, calls)['②']
         got = 'pass' if r['pass'] else 'fail'
         out[name] = {'method': method, 'no_key': no_key, 'server_calls': calls, 'result': got, 'not_in_model_reply': r['not_in_model_reply_count'], 'pasted_by_ai': len(r['pasted_by_ai']),
@@ -857,7 +862,7 @@ def toy_reply_cases(folder, archive, key):
 
 
 def table_md(ext, graphs):
-    """사건 갈래표 — 대본 · 가이드가 넘겨받을 「판단이 갈리는 지점과 확인할 사례」(코딩랩.md K맥-10)."""
+    """사건 갈래표 — 대본 · 가이드가 넘겨받을 「판단이 갈리는 지점과 확인할 사례」(코딩랩.md 「뒤가 가져가는 것」)."""
     L = ['# 사건 갈래표 — 문서 지식 묶음(강사 참조)', '', '사건: 10월 27일 01:59 HYD-02 쿨러 성능 저하 경보의 판정 뒤에 남은 근본 조치 — 쿨러 핀 세척(SOP-COOL-14) 작업지시 전.', '',
          '## 지점5 조건의 근거 · 지점6 사내 문서와 제조사 지침(추출 랩)', '', '| 갈래 | 결정 수 | R4 맞는 정도 | 0171-051f(10월 26일 01:58 HYD-02)의 SOP-COOL-14 | 선택 작업 조건(실전) | 검사기 |', '|---|---|---|---|---|---|']
     for name, b in ext['branches'].items():
@@ -865,7 +870,11 @@ def table_md(ext, graphs):
         case = '; '.join(f'{c["event"][-9:]} {c["sop"]} {c["after"]}' for c in b['judge_changes']['cases']) or '해당 없음'
         L.append(f'| {name} | {b["decisions"]} | {r4} | {case} | {b["selected"] or "—"} | {b["checker"]["contract"]} · {b["checker"]["stage"]} |')
     L += ['', '손익으로 지는 대안은 구성안 4절 그대로다 — 가: 실측 · 운전 중 원문을 예측 · 작업지시 규칙의 근거로 굳힘(감사 때 범위 문제) / 나: 예측 65.3 ℃ 작업지시 단독 후보가 비교에 들어옴 / 다: 회신까지 출처 미확인.',
-          '지점6 가: 공기 세척으로 회복하지 않으면 미달로 끝나고 코어 상태를 보지 않음 / 나: 사내 승인 없는 기준으로 정지 시간 · 코어 비용이 늘고 완료 판단이 두 갈래.', '']
+          '지점6 가: 공기 세척으로 회복하지 않으면 미달로 끝나고 코어 상태를 보지 않음 / 나: 사내 승인 없는 기준으로 정지 시간 · 코어 비용이 늘고 완료 판단이 두 갈래.', '',
+          '지점6에서 원문만으로 정해지지 않는 읽기 하나: OEM 116줄(부하 운전 뒤 쿨러 입구 · 출구 유온 차)은 측정 하나를 「항목」으로 보면 사내 기준이 정하지 않은 항목(나에서 채택)이고, '
+          '「완료 기준」을 항목으로 보면 HM-8 1.1 SOP-COOL-14 3단계(CE 80 %)가 이미 정한 항목이라 머리말 「사내 기준과 다르게 정한 항목은 사내 기준」으로 뺀다. '
+          '이 표의 나는 앞의 읽기다. 뒤의 읽기(107 · 114줄은 채택, 116줄은 제외 — 실전 03-4 리허설의 학생 선택)는 가 · 나 사이 갈래로, 코어 상태는 보고 완료 판단은 CE 80 % 하나로 남는 대신 유온 차 확인이 빠진다. '
+          '어느 읽기든 고른 까닭이 원문 줄로 적혀 있으면 받는다.', '']
     if ext.get('model_candidates'):
         L += ['## 강사 추출 실행(수업 모델) — 같은 요청을 두 폴더에서', '', '같은 갈래 검토를 수업 모델 답의 후보에 걸었다. 갈래 판정 = rule_links · 판정이 달라지는 지난 경보가 위 표(문장 규칙 후보)와 같은가.', '',
               '| 실행 | 모델 · 보낸 요청 | 토큰(입력 / 출력) | 후보 · 찾지 못한 인용 | 기대 항목 맞음 / 기대 | 통합 나-가 결정 수 · 검토자가 더한 후보 | 갈래 판정 같음 | 검사기(12갈래) |', '|---|---|---|---|---|---|---|---|']
@@ -907,7 +916,7 @@ def main(argv=None):
     results['extraction'] = ext
     print('2 · 3 추출 갈래', len(ext['branches']), '개')
     results['instructor_path'] = instructor_path()
-    # 그래프 입력 = 강사 추출 실행 run1의 후보를 강사 판 갈래(나-가)로 검토한 결과 — 추출 학생용 완성본의 결과/검토와 같은 판(코딩랩.md K-48)
+    # 그래프 입력 = 강사 추출 실행 run1의 후보를 강사 판 갈래(나-가)로 검토한 결과 — 추출 학생용 완성본의 결과/검토와 같은 판(코딩랩.md K-7)
     base, when = BR.base_candidates()
     for course, (ek, gk) in COURSES.items():
         lab_e = BD.LABS[ek]
@@ -931,10 +940,10 @@ def main(argv=None):
     results['graph'] = graphs
     results['toy_criteria_selftest'] = toy_selftest()
     summary = {k: {c: f'{sum(1 for x in v if x["caught"])}/{len(v)}' for c, v in d.items()} for k, d in trials.items()}
-    (HERE/'검사기_확인.json').write_text(json.dumps({'summary': summary, 'trials': trials}, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
-    (HERE/'사건_갈래표.md').write_text(table_md(ext, graphs), encoding='utf-8')
+    (HERE/'검사기_확인.json').write_text(json.dumps({'summary': summary, 'trials': trials}, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
+    (HERE/'사건_갈래표.md').write_text(table_md(ext, graphs), encoding='utf-8', newline='\n')
     results['failures'] = failures
-    (HERE/'expected_results.json').write_text(json.dumps(results, ensure_ascii=False, indent=2, default=str) + '\n', encoding='utf-8')
+    (HERE/'expected_results.json').write_text(json.dumps(results, ensure_ascii=False, indent=2, default=str) + '\n', encoding='utf-8', newline='\n')
     print('검사기 고의 손상:', summary)
     print(f'불일치 {len(failures)}건')
     return 1 if failures else 0

@@ -2,7 +2,7 @@
 
 문서 자료는 data_documents.py(문서 지식 묶음과 같은 한 벌)가 만들고, 이 실습에는 HM-8의 판들만 넣는다.
 같은 회차의 코딩 랩(실습4 지식 추출 · 실습5 그래프 반영)은 build_document_labs.py가 만든다.
-이 실습을 실라버스 R35(올리기 · 추출 · 대조 · 적재)와 맞추는 일과 START · AGENTS를 빼는 일(코딩랩.md K-84)은 가이드 산출물 몫으로 넘겼다 —
+이 실습을 실라버스 R35(올리기 · 추출 · 대조 · 적재)와 맞추는 일과 START · AGENTS를 빼는 일(가이드.md P-2)은 가이드 산출물 몫으로 넘겼다 —
 그 전까지 이 생성기를 돌리면 문서 자료만 새 판으로 바뀐다. package-index · catalog 등록은 하지 않는다 — ZIP만 묶는다.
 """
 from build_labs import OUT, page, write, pack, RULES

@@ -1,7 +1,7 @@
 """강사 참조 — 문서 지식 묶음 장난감 시험(구성안 9.3)의 통과 기준 다섯 가운데 파일로 판정할 수 있는 ①~④를 기계로 본다. 학생 폴더 · ZIP에 넣지 않는다.
 
 모델 출력은 매번 달라 「강사 참조와 같지 않음」은 늘 참이라 기준으로 쓰지 않는다. 대신 학생 답 없이 결정이 채워졌는지, 모델 호출 없이 후보가 생겼는지,
-근거 없이 보류 · 원문 없음이 채워졌는지, 결과/ 밖이 바뀌었는지를 시험 뒤 폴더에서 센다. ⑤(학생 AI의 돌려보낸 답이 K-47 ⑩ 꼴)는 답 글을 사람이 본다.
+근거 없이 보류 · 원문 없음이 채워졌는지, 결과/ 밖이 바뀌었는지를 시험 뒤 폴더에서 센다. ⑤(학생 AI의 돌려보낸 답이 K-6 ⑩ 꼴)는 답 글을 사람이 본다.
 ②는 짝만 보지 않고 「후보는 모델의 답에서 만든다」를 판정한다 — 후보마다 인용(정규화)이 그 후보 파일이 짝지은 응답 기록의 답 글에 있는지
 (quote_in_replies), 그리고 응답 기록의 보낸 방법을 본다. 장난감 시험에는 채팅에서 답을 받아 붙여 넣는 사람이 없으므로 「채팅으로 받음」 기록은
 학생 AI가 스스로 써 넣은 답이다(키가 있든 없든). 「모델 서버」 기록은 시험 밖에서 센 실제 호출 수(중계 장부 · 프록시 기록)와 견준다 — 기록이 실제 호출보다 많으면
@@ -139,7 +139,7 @@ def judge(original, after, no_key=False, server_calls=None):
     before, now = files(original), files(after)
     changed = sorted(k for k in set(before) | set(now) if not k.startswith('결과/') and before.get(k) != now.get(k))
     out['④'] = {'pass': not changed, 'changed_outside_result': changed}
-    out['⑤'] = {'pass': None, 'note': '학생 AI(Codex + 강의 중계 coding)의 돌려보낸 답이 K-47 ⑩ 꼴인지 사람이 답 글로 판정한다'}
+    out['⑤'] = {'pass': None, 'note': '학생 AI(Codex + 강의 중계 coding)의 돌려보낸 답이 K-6 ⑩ 꼴인지 사람이 답 글로 판정한다'}
     out['pass'] = all(v['pass'] for k, v in out.items() if k in '①②③④')
     return out
 

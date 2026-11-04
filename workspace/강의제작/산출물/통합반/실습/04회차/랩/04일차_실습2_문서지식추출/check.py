@@ -192,20 +192,21 @@ def check(path):
             continue
         segment = '\n'.join(lines[ls - 1:le])
         exact, near = locate(text, quote)
+        by_reviewer = reviewed and c.get('origin') == 'reviewer'    # 같은 문장이 여러 곳이면 코드는 줄을 정하지 못한다 — 검토자가 고른 줄은 받는다
         if not quote.strip():
             errors.append(f'{where}: quote가 비어 있음')
         elif c['quote_match'] == 'exact':
             if quote not in segment:
                 errors.append(f'{where}: quote가 {ls}~{le}줄에 글자 그대로 없음' + ('(파일의 다른 줄에 있음)' if exact else ''))
-            elif exact > 1:
-                errors.append(f'{where}: quote가 원문 {exact}곳에 맞음 — 여러 곳에 맞는 인용은 찾지 못한 것으로 둔다')
+            elif exact > 1 and not by_reviewer:
+                errors.append(f'{where}: quote가 원문 {exact}곳에 맞음 — 코드가 찾은 인용이 여러 곳에 맞으면 찾지 못한 것(unlocated)으로 두고, 그 줄은 검토자가 골라 더한다')
         elif c['quote_match'] == 'normalized':
             if quote in segment:
                 errors.append(f'{where}: 글자 그대로 찾히는 인용은 quote_match가 exact')
             elif squash(quote) not in squash(segment):
                 errors.append(f'{where}: quote가 {ls}~{le}줄에서 글자 · 숫자 비교로도 찾히지 않음')
-            elif near > 1:
-                errors.append(f'{where}: quote가 글자 · 숫자 비교로 원문 {near}곳에 맞음 — 찾지 못한 것으로 둔다')
+            elif near > 1 and not by_reviewer:
+                errors.append(f'{where}: quote가 글자 · 숫자 비교로 원문 {near}곳에 맞음 — 코드가 찾은 인용이면 찾지 못한 것(unlocated)으로 두고, 그 줄은 검토자가 골라 더한다')
         else:
             errors.append(f'{where}: quote_match는 exact 또는 normalized')
         if reviewed and c.get('origin') == 'reviewer':
@@ -334,7 +335,7 @@ def check_selected(path):
     """결과/선택작업_조건.json — 항목마다 검토 결과의 승인 후보를 가리키는지."""
     errors = []
     data = json.loads(Path(path).read_text(encoding='utf-8-sig'))
-    for key in ['task', 'basis', 'preparation', 'prohibitions', 'completion', 'remaining_questions']:
+    for key in ['task', 'basis', 'preparation', 'prohibitions', 'completion', 'remaining_questions', 'sop_diff']:
         if key not in data:
             errors.append(f'필드 없음: {key}')
     if 'task' in data and data['task'] != TASK:
@@ -363,6 +364,9 @@ def check_selected(path):
     for q in data.get('remaining_questions', []):
         if not isinstance(q, dict) or not q.get('item') or not q.get('note'):
             errors.append('remaining_questions의 항목마다 item과 note가 필요')
+    for d in data.get('sop_diff', []):
+        if not isinstance(d, dict) or not d.get('item') or not d.get('note') or d.get('where') not in ('카드에만', 'SOP 구조에만'):
+            errors.append('sop_diff의 항목마다 item · note와 where(카드에만 · SOP 구조에만)가 필요')
     return errors
 
 

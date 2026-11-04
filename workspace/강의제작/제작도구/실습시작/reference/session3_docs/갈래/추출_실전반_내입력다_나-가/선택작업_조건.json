@@ -88,5 +88,27 @@
       "source": "자료/HM-9장_스캔본.txt 목차 HM-9.4(9-7쪽)",
       "note": "스캔에 9-7쪽이 없다 — 원본 확인을 요청한다"
     }
+  ],
+  "sop_diff": [
+    {
+      "item": "Stop the pump, lock out the motor supply, and wait until the fan has stopped.",
+      "where": "카드에만",
+      "note": "준비 — OEM-HPP45A-MM C 7에서 옴, 받은 SOP 구조의 이 작업에는 없음"
+    },
+    {
+      "item": "Do not use a high-pressure washer.",
+      "where": "카드에만",
+      "note": "금지 — OEM-HPP45A-MM C 7에서 옴, 받은 SOP 구조의 이 작업에는 없음"
+    },
+    {
+      "item": "조치 후 예측 유온이 65 ℃ 이상이면 이 후보를 쓰지 않는다.",
+      "where": "SOP 구조에만",
+      "note": "금지 — 입력/sop.json SOP-COOL-14 prohibitions, 승인한 원문 후보가 없음"
+    },
+    {
+      "item": "PLC가 트립 상태이면 리셋 외 명령을 내리지 않는다.",
+      "where": "SOP 구조에만",
+      "note": "금지 — 입력/sop.json SOP-COOL-14 prohibitions, 승인한 원문 후보가 없음"
+    }
   ]
 }

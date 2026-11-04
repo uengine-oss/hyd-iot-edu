@@ -247,7 +247,7 @@ def schema_for(supply,branch):
                             '공급사 이름은 승인공급사_목록의 이름이다(견적표의 공급사 칸은 그 이름으로 시작한다)',
                             '단가는 만원, 불량률은 0~1 비율, 납기는 일로 맞추고, 바꾼 불량률 · 납기는 원래 표기를 defect_rate_original · lead_days_original로 남긴다',
                             f'값마다 출처를 남긴다: quote_source = 쓴 견적의 {D.QUOTE_FILE} 줄, approval_source = {D.AVL_FILE}의 등록 줄, as_of = 기준일']
-    # 실습4 입력 모델(갈래 ㄴ)의 schema가 학생에게 간다 — 「함께 남긴다」처럼 실습4 결정(돌려줄지)을 미리 정하는 말 없이, 값이 어디서 왔는지만 적는다(코딩랩.md K-28).
+    # 실습4 입력 모델(갈래 ㄴ)의 schema가 학생에게 간다 — 「함께 남긴다」처럼 실습4 결정(돌려줄지)을 미리 정하는 말 없이, 값이 어디서 왔는지만 적는다(코딩랩.md K-4).
     if supply and branch=='ㄴ':constraints.append(f'inspection · compare_extra_manwon · rule_source는 구매 기준서 PR-07 7.4 문장(rule_source 줄)에서 온 값이고, 그 절에 걸리는 승인 공급사 쌍(불량률 {D.PR74_RATE_PCT} % 초과)에만 있다')
     if supply and branch=='ㄷ':constraints.append('SCM 등록에 조건이 없는데 구매 기준서 PR-07 7.4에 걸리는 승인 공급사 쌍은 pending_check로 확인 필요를 남긴다(approved는 SCM 등록대로)')
     return {'classes':definitions,'relations':relation_defs,'identity':'id는 전체 그래프에서 고유.','branch':branch,'constraints':constraints}
@@ -279,7 +279,7 @@ RULES='''# 실습 작업 규칙
 '''
 
 # RULES는 아직 단계 랩 틀로 바뀌지 않은 3회차 랩(build_session3_documents · build_session3_whatif)이 import해 줄 단위로 고쳐 쓴다. 그 랩들이 단계 틀로 바뀌면 STEP_RULES로 옮기고 지운다.
-# STEP_RULES = 공통.md C-50의 열 항목(⑧은 C-50 문장 그대로, ⑩은 같은 뜻을 학생 말로 — 「C-55 다섯 요소」는 다섯 이름으로 풀고, 단계가 무엇인지는 아래 줄에 적었다). 두 과정 실습3 · 4가 함께 쓰므로 과제 해결 방법은 적지 않는다.
+# STEP_RULES = 코딩랩.md K-6의 열 줄(⑧ · ⑩은 같은 뜻을 학생 말로 — ⑩의 힌트 요소는 K-5의 다섯 이름으로 풀고, 단계가 무엇인지는 아래 줄에 적었다). 두 과정 실습3 · 4가 함께 쓰므로 과제 해결 방법은 적지 않는다.
 STEP_RULES='''# 실습 작업 규칙
 
 이 폴더에서 일하는 AI(Codex · GitHub Copilot)가 지키는 규칙입니다. 학생도 함께 읽습니다.
@@ -468,7 +468,7 @@ def graph_format(change):
             + '- `결과/query.cypher`: 질문마다 조회문 하나. 조회문 위에 어느 질문의 조회인지 주석(`// 질문 1`)으로 적습니다.\n'
             '- `결과/검증_기록.md`: 「제공 빈 틀」의 칸대로 채웁니다.\n')
 
-# 가이드에서 도구를 처음 쓰는 자리의 안내(가이드.md P-24 · P-164 · P-166 · P-168). 실전반은 핵심 위치만 짧게, 통합반은 막히기 쉬운 곳의 대처까지(P-101 · C-46).
+# 가이드에서 도구를 처음 쓰는 자리의 안내(가이드.md P-9 · P-6 · P-7). 실전반은 핵심 위치만 짧게, 통합반은 막히기 쉬운 곳의 대처까지(P-9).
 # 화면 글자는 실제 화면 · 코드에서 나온 것만 쓴다: 시작 도구 단추 = launcher.py, 신뢰 창 영어 = VS Code 공식 문서, 편집 승인 창 · Codex/Chat 탭 = START 「처음 쓰는 도구」(리허설 화면),
 # Neo4j 연결 창 = 실습1 관계조회 가이드(촬영 프레임), 오류 줄 = lab_db.py · check.py 출력(클라우드에서 재현).
 COUNT_QUERY = 'MATCH (n) RETURN labels(n)[0] AS 종류, count(*) AS 개수 ORDER BY 종류'
@@ -525,7 +525,7 @@ TOOL = {
         check_stop='**막히면** 「아직 검사할 결과가 없습니다」는 오류가 아니라 결과 두 파일이 아직 그 자리에 없다는 뜻입니다.'),
 }
 
-# 복사 블록(P-130 ~ P-134): 종류를 색과 글자로 함께 보이고, 복사는 본문만, 완료 · 실패 글은 붙여 넣을 곳에 맞춘다.
+# 복사 블록(P-7): 종류를 색과 글자로 함께 보이고, 복사는 본문만, 완료 · 실패 글은 붙여 넣을 곳에 맞춘다.
 BLOCK_KIND = {
     'term': ('터미널 명령 · PowerShell · 이 실습 폴더에서', 'VS Code 아래쪽 터미널', '붙여 넣고 Enter를 누르세요'),
     'term_tpl': ('터미널 명령 · PowerShell · 이 실습 폴더에서 — <…> 자리는 내가 만든 파일 이름 · 물을 값으로 바꿔 씀', 'VS Code 아래쪽 터미널', '붙여 넣은 뒤 <…> 자리를 바꾸고 Enter를 누르세요'),
@@ -621,15 +621,15 @@ def reset_generated(folder):
 
 
 # ───────────── 단계 랩 — 단계 하나가 START.md 「진행 단계」 한 줄과 guide.html 한 절이 된다 ─────────────
-# 코딩랩.md K-46 · K-149, 공통.md C-50 · C-52 · C-55. 단계 · 힌트에는 값과 판단 지점의 답을 쓰지 않는다(K-28).
+# 코딩랩.md K-5 · K-4 · K-6, 가이드.md P-4. 단계 · 힌트에는 값과 판단 지점의 답을 쓰지 않는다(K-4).
 
 def H(목적, 입력, 지킬것, 꼴, 확인):
     return {'목적': 목적, '입력': 입력, '지킬 것': 지킬것, '결과의 꼴': 꼴, '확인 방법': 확인}
 
 def S(name, stage, do, ask, evidence, hint=None, cmd='', why='', differ='', run=''):
     """단계 하나. START.md 「진행 단계」는 name · do만 쓰고, 나머지는 가이드의 그 절에 쓴다.
-    why = 이 단계가 필요한 까닭과 그 자리에서 다시 풀 이론(P-163 · P-216, 판단 지점의 답은 쓰지 않는다 — K-28),
-    differ = 결과가 다를 때 할 일(P-137), run = 터미널 밖에서 실행하는 곳(Neo4j Browser 등), cmd = 터미널 명령."""
+    why = 이 단계가 필요한 까닭과 그 자리에서 다시 풀 이론(P-9 · P-3, 판단 지점의 답은 쓰지 않는다 — K-4),
+    differ = 결과가 다를 때 할 일(P-6), run = 터미널 밖에서 실행하는 곳(Neo4j Browser 등), cmd = 터미널 명령."""
     return dict(name=name, stage=stage, do=do, ask=ask, hint=hint, cmd=cmd, evidence=evidence, why=why, differ=differ, run=run)
 
 STAGE_LINE = '과정은 온톨로지 → 에이전트 → 프로세스 순서로 올라갑니다. 이 실습은 첫 단계인 온톨로지의 {what}를 맡습니다.'
@@ -656,7 +656,7 @@ def review_steps(steps):
     steps[0]['ask'] += ' 코드가 실행할 때마다 `결과/자료_검토.md`를 새로 쓰는지도 묻고, 새로 쓴다면 줄을 손으로 보태지 말고 코드가 쓰게 해 달라고 합니다.'
 USB = '재부팅 전에 이 실습 폴더를 USB 또는 개인 클라우드에 복사합니다. 자동으로 되살려 주지 않습니다.'
 
-# 가이드 각 절의 「왜 하는가」(그 단계가 필요한 까닭 · 그 자리에서 다시 풀 이론)와 「다를 때」. 원리만 쓰고 판단 지점의 답 · 함정의 처리 방법은 쓰지 않는다(K-28).
+# 가이드 각 절의 「왜 하는가」(그 단계가 필요한 까닭 · 그 자리에서 다시 풀 이론)와 「다를 때」. 원리만 쓰고 판단 지점의 답 · 함정의 처리 방법은 쓰지 않는다(K-4).
 WHY_START = '만들기 전에 무엇이 주어졌고 무엇을 만들어야 하는지 알아야 AI에게도 같은 출발점을 말할 수 있습니다. 이 답을 누가 어디에 쓰는지에 따라 무엇을 하나로 보고 무엇을 따로 둘지가 달라지므로, 쓰는 사람도 여기서 확인합니다.'
 DIFFER_START = '보여야 할 자리 가운데 없는 것이 있으면 다른 실습을 받았거나 압축이 덜 풀린 것입니다. 「실습 시작」 도구에서 이 실습을 다시 받습니다.'
 DIFFER_LOOK = '짚은 줄을 열었는데 그 내용이 없거나 다르면 그 줄은 근거로 쓰지 않고, 같은 파일에서 다시 찾아 달라고 합니다. 편집 승인 창이 떴다면 **Deny**를 누르고, 이 단계는 파일을 바꾸지 않는 단계라고 다시 알립니다.'
@@ -780,10 +780,10 @@ def step_guide(L, photos):
              + f'<p><b>받기</b> {inline(T["get"])}</p><p><b>필요한 것</b> {inline(L["need"])}</p>'
              + '<p><b>받은 폴더</b> VS Code 왼쪽 탐색기에 이렇게 보입니다.</p>' + block('tree', L['tree'])
              + f'<p>{inline(T["trust"])}</p><p>{inline(T["explorer"])}</p><p>{inline(COMPLETED_NOTE)}</p>')
-    # 「아래 질문의 답은 …」(user)은 그 질문 목록 바로 앞에 둔다 — START.md 「해결할 질문」과 같은 순서(P-29).
+    # 「아래 질문의 답은 …」(user)은 그 질문 목록 바로 앞에 둔다 — START.md 「해결할 질문」과 같은 순서(가이드.md 「길」 7).
     first += f'<p><b>해결할 질문</b> {inline(L["user"])}</p><ol>' + ''.join(f'<li>{inline(q)}</li>' for q in L['questions']) + '</ol>'
     first += f'<p><b>말 풀이</b> {inline(L["terms"])}</p>' + ''.join(f'<p>{inline(x)}</p>' for x in L.get('first_more', []))
-    # 「학생이 정할 것」 아래에는 질문 카드 대처를 두고, 정할 때의 행동은 그 단계의 「정하거나 물을 것」(ASK_DECIDE) 한 곳에 둔다(P-29).
+    # 「학생이 정할 것」 아래에는 질문 카드 대처를 두고, 정할 때의 행동은 그 단계의 「정하거나 물을 것」(ASK_DECIDE) 한 곳에 둔다(가이드.md 「길」 7).
     decide = ('<p><b>학생이 정할 것 — 지점의 종류</b> ' + inline(DECIDE_INTRO.format(rec=rec)) + '</p><ul>'
               + ''.join(f'<li><b>{html.escape(k)}</b> — {inline(v)}</li>' for k, v in L['decide']) + f'</ul><p>{inline(T["card"])}</p>')
     # guide_extra = {단계 번호(0부터): [TOOL의 키 또는 HTML 조각 …]} — 도구를 처음 쓰는 그 단계에 그 안내를 둔다.
@@ -1186,7 +1186,7 @@ def design_practical():
 
 # ───────────── 실습4(그래프 구현과 검증) — 두 과정 ─────────────
 # 통합 실습4 12단계의 입력 = 포털 실습 「설비 지식의 구조와 연결 관계 탐색하기」에서 펼쳐 본 기준 지도(설비 HYD-01 → 오일 쿨러 → 센서 → 상태 변수).
-# 랩은 포털 없이 돈다(코딩랩.md K-14) — 포털이 실제로 적재하는 main 시드와 포털 화면의 관계 이름에서 뽑아 가이드 그 단계에 표로 싣는다. 사진은 본 촬영 때 더한다.
+# 랩은 포털 없이 돈다(코딩랩.md K-2) — 포털이 실제로 적재하는 main 시드와 포털 화면의 관계 이름에서 뽑아 가이드 그 단계에 표로 싣는다. 사진은 본 촬영 때 더한다.
 PORTAL_SEED = 'it/neo4j/v2/instances.cypher'
 PORTAL_LABELS = 'it/portal/www/enterprise.js'     # 화면의 관계 이름(RELATION_KO)
 PORTAL_ASSET, PORTAL_COMPONENT = 'asset:hyd-01', 'comp:cooler'
@@ -1271,7 +1271,7 @@ def provided_basis(practical):
                for sid, b in blank_unit_basis().items()],
              '- 부품: 교체부품 칸의 품명 · 표기 변형 · 제조사 품번은 품번 교차표와 예비품 목록의 적용 모델 · 쓰는곳으로 사내 품번에 이었습니다. 같은 규격의 다른 사내 품번은 따로 두었습니다.']
     if practical:
-        # 7.4를 「붙였다」고 풀어 쓰면 실습4 결정 지점(조회에 함께 돌려줄지)이 한쪽으로 기운다(리허설 — 코딩랩.md K-28). 값이 어디서 왔는지만 적는다.
+        # 7.4를 「붙였다」고 풀어 쓰면 실습4 결정 지점(조회에 함께 돌려줄지)이 한쪽으로 기운다(리허설 — 코딩랩.md K-4). 값이 어디서 왔는지만 적는다.
         lines.append('- 공급: 공급사 · 품번마다 기준일에 유효한 최신 견적 하나를 SUPPLIES로 두었습니다. 공급사 이름은 승인공급사_목록(SCM 등록)의 이름입니다(견적표의 공급사 칸은 그 이름으로 시작합니다). '
                      '승인 여부는 승인공급사_목록과 기준일로 정했습니다(조건부 승인은 approved=true, 조건은 condition). '
                      '단가는 만원, 불량률은 0~1 비율, 납기는 일로 맞추고, 바꾼 불량률 · 납기는 원래 표기를 defect_rate_original · lead_days_original로 남겼습니다.')
@@ -1452,7 +1452,7 @@ def graph_lab(course):
                       '지우기 전에는 그 대상에 걸린 다른 대상을 먼저 조회해야, 실제로 있는 대상까지 함께 사라지지 않습니다.'),
                  differ=('개수 변화를 수정본의 줄로 설명할 수 없거나 실제로 있는 대상이 사라졌으면, 바뀐 대상 목록과 수정본 줄을 함께 전해 고칩니다. '
                          '사라진 대상은 전체를 다시 넣지 말고 그 대상만 되살린 뒤 같은 확인을 다시 합니다.'))
-    # 실라버스 23행 끝 문장 「직접 만든 모델을 포털의 기준 지도와 비교」 — 랩은 포털 없이 돈다(코딩랩.md K-14). 포털 실습에서 본 기준 지도는 가이드의 이 단계 화면으로 보고, 포털 DB에는 닿지 않는다.
+    # 실라버스 23행 끝 문장 「직접 만든 모델을 포털의 기준 지도와 비교」 — 랩은 포털 없이 돈다(코딩랩.md K-2). 포털 실습에서 본 기준 지도는 가이드의 이 단계 화면으로 보고, 포털 DB에는 닿지 않는다.
     s_portal = S('포털 기준 지도와 비교', '⑤ 대조',
                  ('포털 실습 「설비 지식의 구조와 연결 관계 탐색하기」에서 펼쳐 본 기준 지도의 설비 → 쿨러 → 센서와, 랩 DB에서 같은 역할을 하는 대상의 식별자와 관계의 시작 · 끝을 '
                   '`결과/검증_기록.md`에 나란히 적습니다. 포털은 다시 열지 않고 가이드(`guide.html`) 이 단계에 실린 포털 기준 지도 표로 봅니다.'),
@@ -1589,7 +1589,7 @@ def main():
                     D.write_sources(folder/'자료', practical=True)
                     # 제공된 설비 · 부품 모델. 갈래 표시는 제작용이라 학생 입력에 두지 않는다
                     dump(folder/'입력/schema.json', student_schema(base_schema)); dump(folder/'입력/graph.json', base_graph)
-                    (folder/'입력/관계그림.json').unlink(missing_ok=True)   # START가 쓰지 않는 파일(K-24)
+                    (folder/'입력/관계그림.json').unlink(missing_ok=True)   # START가 쓰지 않는 파일(K-3)
                 elif not (folder/'입력/관계그림.json').is_file():
                     raise FileNotFoundError('1회차 관계 그림 입력이 없습니다: ' + str(folder))
             else:

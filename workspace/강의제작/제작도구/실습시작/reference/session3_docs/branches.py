@@ -660,8 +660,41 @@ def judge_changes(judged, p5, own):
     return {'cases': [{'event': a, 'sop': b, 'forecast_ts1': f, 'after': d} for a, b, f, d in rows], 'changed': len(changed)}
 
 
-def selected(reviews, lines, p5, p6):
-    """실전 03-4 결과/선택작업_조건.json — 승인 후보를 문서를 가리지 않고 모으고, 승인하지 않은 것은 남은 질문으로.
+def sop_diff(sop, prep, ban, done):
+    """받은 SOP 구조(입력/sop.json의 이 작업)와 모은 조건을 견준 것 — 카드에만 있는 항목(어느 문서 · 절에서 왔는지)과
+    SOP 구조에만 있는 문장(그 필드 · 출처). 두 문장은 글자 · 숫자만 남겨 짧은 쪽의 80 % 이상이 같은 순서로 겹치면 같은 것으로 본다(조사 · 어미 차이는 넘김).
+    카드 쪽은 SOP 구조의 모든 문장(단계 · 승인 역할 포함)과 견주고, SOP 구조 쪽은 카드에 넣는 준비(첫 단계 포함) · 금지 · 완료만 견준다 — 방법 단계는 카드에 넣지 않는다."""
+    import difflib
+
+    def same(a, b):
+        a, b = X.squash(a), X.squash(b)
+        short = min(len(a), len(b))
+        if short < 6:
+            return False
+        if a in b or b in a:
+            return True
+        return sum(m.size for m in difflib.SequenceMatcher(None, a, b, autojunk=False).get_matching_blocks()) >= 0.8 * short
+    task = next(x for x in sop['sops'] if x['id'] == TASK)
+
+    def parts(rows):
+        return [part for row in rows for part in X.sentences(re.sub(r'\([^)]*\)$', '', row['text']).strip())]
+    cardside = [(name, field, part) for name, field, rows in [('준비', 'apply_conditions', task['apply_conditions']), ('준비', 'steps', [st for st in task['steps'] if st['order'] == 1]),
+                                                           ('금지', 'prohibitions', task['prohibitions']), ('완료', 'completion', task['completion'])] for part in parts([*rows])]
+    every = parts(task['apply_conditions'] + task['steps'] + task['prohibitions'] + task['completion'])
+    role = (task.get('approval') or {}).get('role') or ''
+    out = []
+    for name, rows in [('준비', prep), ('금지', ban), ('완료', done)]:
+        for r in rows:
+            if not (any(same(r['quote'], part) for part in every) or (role and role in r['quote'] and '승인' in r['quote'])):
+                out.append({'item': r['quote'], 'where': '카드에만', 'note': f'{name} — {r["doc_id"]} {r["rev"]} {r["section"]}에서 옴, 받은 SOP 구조의 이 작업에는 없음'})
+    for name, field, part in cardside:
+        if not any(same(r['quote'], part) for rows in (prep, ban, done) for r in rows):
+            out.append({'item': part, 'where': 'SOP 구조에만', 'note': f'{name} — 입력/sop.json {TASK} {field}, 승인한 원문 후보가 없음'})
+    return out
+
+
+def selected(reviews, lines, p5, p6, sop):
+    """실전 03-4 결과/선택작업_조건.json — 승인 후보를 문서를 가리지 않고 모으고, 승인하지 않은 것은 남은 질문으로, 받은 SOP 구조와 다른 곳은 sop_diff로.
     같은 문서 · 판의 같은 인용은 한 번만 둔다(단계와 시작 조건이 같은 줄이면 한 항목)."""
     prep, ban, done, rest = [], [], [], []
 
@@ -701,7 +734,7 @@ def selected(reviews, lines, p5, p6):
                      'note': '안전관리 담당의 해석을 받기 전까지 보류'})
     sop_line = line_of(lines.text(HM11), '## HM-8.7 근본 조치', HM11)
     return {'task': TASK, 'basis': f'입력/조치검토결과.json 경보 {INCIDENT}의 검토 의견(즉시 완화 뒤에도 원인이 남음) · 자료/HM-8_매뉴얼.md {sop_line}~{sop_line + 6}줄(HM-8.7 근본 조치 · SOP-COOL-14)',
-            'preparation': prep, 'prohibitions': ban, 'completion': done, 'remaining_questions': rest}
+            'preparation': prep, 'prohibitions': ban, 'completion': done, 'remaining_questions': rest, 'sop_diff': sop_diff(sop, prep, ban, done)}
 
 
 def base_candidates(run=BASE_RUN):
@@ -736,6 +769,6 @@ def build(folder, cands, judged, p5, p6, course, own=None, reviewed_at=REVIEWED_
         reviews[stem_of(data)] = rv
         out[f'검토/{stem_of(data)}_검토.json'] = X.dump(rv).encode('utf-8')
     if course == '실전반':
-        out['선택작업_조건.json'] = X.dump(selected(reviews, lines, p5, p6)).encode('utf-8')
+        out['선택작업_조건.json'] = X.dump(selected(reviews, lines, p5, p6, json.loads((Path(folder)/'입력/sop.json').read_text(encoding='utf-8')))).encode('utf-8')
     out['판정_변화.json'] = X.dump(judge_changes(judged, p5, own)).encode('utf-8')
     return out, reviews

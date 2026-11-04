@@ -57,14 +57,15 @@
         },
         "OEM-HPP45A_정비지침_영한.md": {
           "expected": 26,
-          "matched": 24,
+          "matched": 23,
           "missing": [
             "7 precondition 「Clean the core when the fins are visibly」",
-            "7 T-7.1 precondition 「Inspect the core before cleaning. Record」"
+            "7 T-7.1 precondition 「Inspect the core before cleaning. Record」",
+            "7 T-7.1 completion 「If blocked areas or bent fins remain aft」"
           ],
           "candidates": 73,
           "value_differs_from_text": [],
-          "outside_expected_in_same_section": 27
+          "outside_expected_in_same_section": 28
         },
         "PM-02_정기점검표.md": {
           "expected": 14,
@@ -149,14 +150,15 @@
         },
         "OEM-HPP45A_정비지침_영한.md": {
           "expected": 26,
-          "matched": 24,
+          "matched": 23,
           "missing": [
             "7 precondition 「Clean the core when the fins are visibly」",
-            "7 T-7.1 precondition 「Inspect the core before cleaning. Record」"
+            "7 T-7.1 precondition 「Inspect the core before cleaning. Record」",
+            "7 T-7.1 completion 「If blocked areas or bent fins remain aft」"
           ],
           "candidates": 73,
           "value_differs_from_text": [],
-          "outside_expected_in_same_section": 27
+          "outside_expected_in_same_section": 28
         },
         "PM-02_정기점검표.md": {
           "expected": 14,
@@ -195,7 +197,7 @@
         "decisions": {
           "보류": 165,
           "채택": 132,
-          "제외": 287,
+          "제외": 288,
           "수정": 10
         },
         "rule_links": {
@@ -226,7 +228,7 @@
         "decisions": {
           "보류": 158,
           "채택": 139,
-          "제외": 287,
+          "제외": 288,
           "수정": 10
         },
         "rule_links": {
@@ -257,7 +259,7 @@
         "decisions": {
           "보류": 165,
           "채택": 132,
-          "제외": 287,
+          "제외": 288,
           "수정": 10
         },
         "rule_links": {
@@ -288,7 +290,7 @@
         "decisions": {
           "보류": 158,
           "채택": 139,
-          "제외": 287,
+          "제외": 288,
           "수정": 10
         },
         "rule_links": {
@@ -319,7 +321,7 @@
         "decisions": {
           "보류": 169,
           "채택": 129,
-          "제외": 287,
+          "제외": 288,
           "수정": 9
         },
         "rule_links": {
@@ -350,7 +352,7 @@
         "decisions": {
           "보류": 162,
           "채택": 136,
-          "제외": 287,
+          "제외": 288,
           "수정": 9
         },
         "rule_links": {
@@ -381,7 +383,7 @@
         "decisions": {
           "보류": 165,
           "채택": 132,
-          "제외": 287,
+          "제외": 288,
           "수정": 10
         },
         "rule_links": {
@@ -412,7 +414,7 @@
         "decisions": {
           "보류": 165,
           "채택": 132,
-          "제외": 287,
+          "제외": 288,
           "수정": 10
         },
         "rule_links": {
@@ -443,7 +445,7 @@
         "decisions": {
           "보류": 169,
           "채택": 129,
-          "제외": 287,
+          "제외": 288,
           "수정": 9
         },
         "rule_links": {
@@ -474,7 +476,7 @@
         "decisions": {
           "보류": 165,
           "채택": 132,
-          "제외": 287,
+          "제외": 288,
           "수정": 10
         },
         "rule_links": {
@@ -505,7 +507,7 @@
         "decisions": {
           "보류": 165,
           "채택": 132,
-          "제외": 287,
+          "제외": 288,
           "수정": 10
         },
         "rule_links": {
@@ -529,7 +531,7 @@
         "decisions": {
           "보류": 169,
           "채택": 129,
-          "제외": 287,
+          "제외": 288,
           "수정": 9
         },
         "rule_links": {
@@ -553,7 +555,7 @@
         "decisions": {
           "보류": 165,
           "채택": 132,
-          "제외": 287,
+          "제외": 288,
           "수정": 10
         },
         "rule_links": {
@@ -575,7 +577,8 @@
           "preparation": 4,
           "prohibitions": 3,
           "completion": 1,
-          "remaining_questions": 4
+          "remaining_questions": 4,
+          "sop_diff": 5
         },
         "checker": {
           "contract": "통과",
@@ -586,7 +589,7 @@
         "decisions": {
           "보류": 158,
           "채택": 139,
-          "제외": 287,
+          "제외": 288,
           "수정": 10
         },
         "rule_links": {
@@ -605,10 +608,11 @@
           "changed": 0
         },
         "selected": {
-          "preparation": 6,
+          "preparation": 5,
           "prohibitions": 3,
-          "completion": 2,
-          "remaining_questions": 1
+          "completion": 3,
+          "remaining_questions": 1,
+          "sop_diff": 8
         },
         "checker": {
           "contract": "통과",
@@ -619,7 +623,7 @@
         "decisions": {
           "보류": 165,
           "채택": 132,
-          "제외": 287,
+          "제외": 288,
           "수정": 10
         },
         "rule_links": {
@@ -641,7 +645,8 @@
           "preparation": 4,
           "prohibitions": 2,
           "completion": 1,
-          "remaining_questions": 4
+          "remaining_questions": 4,
+          "sop_diff": 4
         },
         "checker": {
           "contract": "통과",
@@ -652,7 +657,7 @@
         "decisions": {
           "보류": 158,
           "채택": 139,
-          "제외": 287,
+          "제외": 288,
           "수정": 10
         },
         "rule_links": {
@@ -671,10 +676,11 @@
           "changed": 1
         },
         "selected": {
-          "preparation": 6,
+          "preparation": 5,
           "prohibitions": 2,
-          "completion": 2,
-          "remaining_questions": 1
+          "completion": 3,
+          "remaining_questions": 1,
+          "sop_diff": 7
         },
         "checker": {
           "contract": "통과",
@@ -685,7 +691,7 @@
         "decisions": {
           "보류": 169,
           "채택": 129,
-          "제외": 287,
+          "제외": 288,
           "수정": 9
         },
         "rule_links": {
@@ -707,7 +713,8 @@
           "preparation": 4,
           "prohibitions": 2,
           "completion": 1,
-          "remaining_questions": 6
+          "remaining_questions": 6,
+          "sop_diff": 4
         },
         "checker": {
           "contract": "통과",
@@ -718,7 +725,7 @@
         "decisions": {
           "보류": 162,
           "채택": 136,
-          "제외": 287,
+          "제외": 288,
           "수정": 9
         },
         "rule_links": {
@@ -737,10 +744,11 @@
           "changed": 0
         },
         "selected": {
-          "preparation": 6,
+          "preparation": 5,
           "prohibitions": 2,
-          "completion": 2,
-          "remaining_questions": 3
+          "completion": 3,
+          "remaining_questions": 3,
+          "sop_diff": 7
         },
         "checker": {
           "contract": "통과",
@@ -751,7 +759,7 @@
         "decisions": {
           "보류": 165,
           "채택": 132,
-          "제외": 287,
+          "제외": 288,
           "수정": 10
         },
         "rule_links": {
@@ -773,7 +781,8 @@
           "preparation": 4,
           "prohibitions": 3,
           "completion": 1,
-          "remaining_questions": 4
+          "remaining_questions": 4,
+          "sop_diff": 5
         },
         "checker": {
           "contract": "통과",
@@ -784,7 +793,7 @@
         "decisions": {
           "보류": 165,
           "채택": 132,
-          "제외": 287,
+          "제외": 288,
           "수정": 10
         },
         "rule_links": {
@@ -806,7 +815,8 @@
           "preparation": 4,
           "prohibitions": 2,
           "completion": 1,
-          "remaining_questions": 4
+          "remaining_questions": 4,
+          "sop_diff": 4
         },
         "checker": {
           "contract": "통과",
@@ -817,7 +827,7 @@
         "decisions": {
           "보류": 169,
           "채택": 129,
-          "제외": 287,
+          "제외": 288,
           "수정": 9
         },
         "rule_links": {
@@ -839,7 +849,8 @@
           "preparation": 4,
           "prohibitions": 2,
           "completion": 1,
-          "remaining_questions": 6
+          "remaining_questions": 6,
+          "sop_diff": 4
         },
         "checker": {
           "contract": "통과",
@@ -850,7 +861,7 @@
         "decisions": {
           "보류": 165,
           "채택": 132,
-          "제외": 287,
+          "제외": 288,
           "수정": 10
         },
         "rule_links": {
@@ -872,7 +883,8 @@
           "preparation": 4,
           "prohibitions": 3,
           "completion": 1,
-          "remaining_questions": 4
+          "remaining_questions": 4,
+          "sop_diff": 5
         },
         "checker": {
           "contract": "통과",
@@ -883,7 +895,7 @@
         "decisions": {
           "보류": 165,
           "채택": 132,
-          "제외": 287,
+          "제외": 288,
           "수정": 10
         },
         "rule_links": {
@@ -898,7 +910,8 @@
           "preparation": 4,
           "prohibitions": 2,
           "completion": 1,
-          "remaining_questions": 4
+          "remaining_questions": 4,
+          "sop_diff": 4
         },
         "checker": {
           "contract": "통과",
@@ -909,7 +922,7 @@
         "decisions": {
           "보류": 169,
           "채택": 129,
-          "제외": 287,
+          "제외": 288,
           "수정": 9
         },
         "rule_links": {
@@ -924,7 +937,8 @@
           "preparation": 4,
           "prohibitions": 2,
           "completion": 1,
-          "remaining_questions": 6
+          "remaining_questions": 6,
+          "sop_diff": 4
         },
         "checker": {
           "contract": "통과",
@@ -1155,7 +1169,8 @@
               "preparation": 4,
               "prohibitions": 3,
               "completion": 1,
-              "remaining_questions": 4
+              "remaining_questions": 4,
+              "sop_diff": 5
             },
             "reviewer_added": 65,
             "checker": {
@@ -1180,10 +1195,11 @@
             },
             "judge_changes": 0,
             "selected": {
-              "preparation": 6,
+              "preparation": 5,
               "prohibitions": 3,
-              "completion": 2,
-              "remaining_questions": 1
+              "completion": 3,
+              "remaining_questions": 1,
+              "sop_diff": 8
             },
             "reviewer_added": 65,
             "checker": {
@@ -1211,7 +1227,8 @@
               "preparation": 4,
               "prohibitions": 2,
               "completion": 1,
-              "remaining_questions": 4
+              "remaining_questions": 4,
+              "sop_diff": 4
             },
             "reviewer_added": 65,
             "checker": {
@@ -1236,10 +1253,11 @@
             },
             "judge_changes": 1,
             "selected": {
-              "preparation": 6,
+              "preparation": 5,
               "prohibitions": 2,
-              "completion": 2,
-              "remaining_questions": 1
+              "completion": 3,
+              "remaining_questions": 1,
+              "sop_diff": 7
             },
             "reviewer_added": 65,
             "checker": {
@@ -1267,7 +1285,8 @@
               "preparation": 4,
               "prohibitions": 2,
               "completion": 1,
-              "remaining_questions": 6
+              "remaining_questions": 6,
+              "sop_diff": 4
             },
             "reviewer_added": 65,
             "checker": {
@@ -1292,10 +1311,11 @@
             },
             "judge_changes": 0,
             "selected": {
-              "preparation": 6,
+              "preparation": 5,
               "prohibitions": 2,
-              "completion": 2,
-              "remaining_questions": 3
+              "completion": 3,
+              "remaining_questions": 3,
+              "sop_diff": 7
             },
             "reviewer_added": 65,
             "checker": {
@@ -1605,7 +1625,8 @@
               "preparation": 4,
               "prohibitions": 3,
               "completion": 1,
-              "remaining_questions": 4
+              "remaining_questions": 4,
+              "sop_diff": 5
             },
             "reviewer_added": 66,
             "checker": {
@@ -1630,10 +1651,11 @@
             },
             "judge_changes": 0,
             "selected": {
-              "preparation": 6,
+              "preparation": 5,
               "prohibitions": 3,
-              "completion": 2,
-              "remaining_questions": 1
+              "completion": 3,
+              "remaining_questions": 1,
+              "sop_diff": 8
             },
             "reviewer_added": 66,
             "checker": {
@@ -1661,7 +1683,8 @@
               "preparation": 4,
               "prohibitions": 2,
               "completion": 1,
-              "remaining_questions": 4
+              "remaining_questions": 4,
+              "sop_diff": 4
             },
             "reviewer_added": 66,
             "checker": {
@@ -1686,10 +1709,11 @@
             },
             "judge_changes": 1,
             "selected": {
-              "preparation": 6,
+              "preparation": 5,
               "prohibitions": 2,
-              "completion": 2,
-              "remaining_questions": 1
+              "completion": 3,
+              "remaining_questions": 1,
+              "sop_diff": 7
             },
             "reviewer_added": 66,
             "checker": {
@@ -1717,7 +1741,8 @@
               "preparation": 4,
               "prohibitions": 2,
               "completion": 1,
-              "remaining_questions": 6
+              "remaining_questions": 6,
+              "sop_diff": 4
             },
             "reviewer_added": 66,
             "checker": {
@@ -1742,10 +1767,11 @@
             },
             "judge_changes": 0,
             "selected": {
-              "preparation": 6,
+              "preparation": 5,
               "prohibitions": 2,
-              "completion": 2,
-              "remaining_questions": 3
+              "completion": 3,
+              "remaining_questions": 3,
+              "sop_diff": 7
             },
             "reviewer_added": 66,
             "checker": {

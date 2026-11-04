@@ -1308,7 +1308,7 @@
       "id": "OEM-HPP45A-MM-R08",
       "section": "7",
       "procedure": "T-7.1",
-      "kind": "precondition",
+      "kind": "completion",
       "text": "If blocked areas or bent fins remain after cleaning, replace the core (part no. HI-CC-45A).",
       "quote": "If blocked areas or bent fins remain after cleaning, replace the core (part no. HI-CC-45A).",
       "quote_match": "exact",
@@ -1446,11 +1446,11 @@
     {
       "section": "7",
       "procedure": "T-7.1",
-      "kind": "precondition",
+      "kind": "completion",
       "quote": "If blocked areas or bent fins remain after cleaning, replace the core (part no. HI-CC-45A).",
       "line_start": 114,
       "line_end": 114,
-      "note": "후보 OEM-HPP45A-MM-M054가 같은 원문을 단계 종류로 뽑았고 시작 조건 · 승인 종류로 뽑은 후보는 없음",
+      "note": "후보 OEM-HPP45A-MM-M054가 같은 원문을 단계 종류로 뽑았고 완료 기준 종류로 뽑은 후보는 없음",
       "added": true
     },
     {

@@ -14,7 +14,7 @@
 7. 학생 폴더에 강사 참조 파일 · 그 랩의 결정 답 문장 · 사건 비교 합계가 없는지 본다.
 8. 학생용 완성본 넷(기본 갈래 — 조건 랩 지점1 가 · 지점2 가, 판정 랩 지점3 가 · 지점4 가)을 실습 폴더와 따로 받는 ZIP으로 묶고(산출물/<과정>/실습/NN회차/완성본/),
    새 폴더에 풀어 안내의 명령을 실행해 동봉한 결과와 같은지, 학생 검사기가 통과하는지 본다.
-산출: 갈래/, expected_results.json, 사건_갈래표.md, 검사기_확인.json, 완성본 ZIP 넷. 어긋나면 「불일치」 줄(파일 · 사례 · 후보)을 찍고 종료 코드 1 — 결과를 맞추지 말고 원인을 고친다(코딩랩.md K요-11).
+산출: 갈래/, expected_results.json, 사건_갈래표.md, 검사기_확인.json, 완성본 ZIP 넷. 어긋나면 「불일치」 줄(파일 · 사례 · 후보)을 찍고 종료 코드 1 — 결과를 맞추지 말고 원인을 고친다(코딩랩.md 「학생용 완성본과 강사 참조를 돌린다」).
 """
 from __future__ import annotations
 
@@ -227,7 +227,7 @@ def condition_branches(files, tmp, expected):
         if (BRANCHES/f'조치기준_가-{p2}'/'조건표.csv').read_bytes() != (d/'조건표.csv').read_bytes():
             fail(f'지점2 {p2}: 통합 03-2와 실전 02-5의 조건표 바이트가 다름(같은 13열 · 같은 규칙이어야 한다)')
         exp_cond[p2] = {'확인_사례': cases, '검사기': f'exit {code}'}
-    # 판정 랩 입력 = 강사 검증 판(K-48)
+    # 판정 랩 입력 = 강사 검증 판(K-7)
     if (BRANCHES/'조치기준_가-가'/'조건표.csv').read_bytes() != (LAB['integrated-03-judge']/'입력/조건표.csv').read_bytes():
         fail('통합 03-3 입력/조건표.csv가 갈래 가-가와 다름')
     if (BRANCHES/'조치기준_가-가'/'sop.json').read_bytes() != (LAB['integrated-03-judge']/'입력/sop.json').read_bytes():
@@ -749,7 +749,7 @@ def meta_incident():
 
 # ───────────── 7. 학생 폴더 경계 ─────────────
 TRAPS = ['팬을 최대로 올리는 두 조치', '1,440분은', 'HM-8.6을 단계', '지금 설정이 이어질', '지금 상태가 이어질', '끊긴 것으로 본다', '재전송이다', '몇천 배']   # 함정의 답 문장
-LAB_ANSWERS = {   # 그 랩이 정할 지점의 답 문장 · 사건 비교 합계(학생 폴더 어디에도 없어야 한다, K-28 · K-149)
+LAB_ANSWERS = {   # 그 랩이 정할 지점의 답 문장 · 사건 비교 합계(학생 폴더 어디에도 없어야 한다, K-4)
     'integrated-03-criteria': ['원문 미확인', 'HYD-04는 뺐', '수냉식이라 핀 세척 대상 아님', '설명 문장대로', '옛 판단 시스템이 대상 빈칸', CR.NO_APPROVAL, CR.APPROVAL['SOP-COOL-13'][0]] + TRAPS,
     'practical-02-conditions': ['원문 미확인', '설명 문장대로', '옛 판단 시스템이 대상 빈칸', CR.APPROVAL['SOP-COOL-13'][0]] + TRAPS,
     'integrated-03-judge': [*J.GAP_TEXT.values(), *J.WARN_TEXT.values(), '경고는 사유로 보존', '이어진 것으로 본다', '경고 없는 후보끼리', '쓸 수 있지만'] + TRAPS,
@@ -771,7 +771,7 @@ def boundary(totals):
             text = p.read_text(encoding='utf-8')
             rel = p.relative_to(folder).as_posix()
             if rel.startswith('입력/'):
-                continue            # 앞 단계 강사 검증 판(K-48)
+                continue            # 앞 단계 강사 검증 판(K-7)
             for w in LAB_ANSWERS[key]:
                 if w in text:
                     fail(f'{folder.name}/{rel}: 이 랩이 정할 지점의 답 문장 「{w}」')
@@ -1046,7 +1046,7 @@ def build_completed(tmp, judged, checks, memo, expected):
         files = {p.relative_to(folder).as_posix(): p.read_bytes() for p in sorted(folder.rglob('*')) if p.is_file() and '__pycache__' not in p.parts}
         for at, label, got in branch_marks(files):
             fail(f'완성본 {name}/{at}: 강사 갈래 표기({label}) 「{got}」 — 학생이 고른 문장으로 쓴다')
-        # 새 폴더에서 안내의 명령을 다시 실행 — 동봉한 결과와 같은 바이트, 학생 검사기 통과(K-58)
+        # 새 폴더에서 안내의 명령을 다시 실행 — 동봉한 결과와 같은 바이트, 학생 검사기 통과(K-12)
         fresh = Path(tmp)/'completed_run'/name
         for rel, data in files.items():
             (fresh/rel).parent.mkdir(parents=True, exist_ok=True)
@@ -1111,7 +1111,7 @@ def plc_gap_cases(judged):
 def incident_table(judged, hand_rows, recomputed, chain_rec, mixed, expected):
     inc = DC_META['incident']
     lines = ['# 사건 갈래표 — 10월 27일 HYD-02 쿨러 성능 저하 경보', '',
-             f'run_reference.py가 실제로 돌린 값이다(경보 {inc}). 대본 · 가이드가 넘겨받는 「판단이 갈리는 지점과 확인할 사례」(코딩랩.md K맥-10). 학생 폴더에 넣지 않는다.', '',
+             f'run_reference.py가 실제로 돌린 값이다(경보 {inc}). 대본 · 가이드가 넘겨받는 「판단이 갈리는 지점과 확인할 사례」(코딩랩.md 「뒤가 가져가는 것」). 학생 폴더에 넣지 않는다.', '',
              '## 판정 랩(통합 03-3 · 실전 03-2) — 지점3 × 지점4, 입력 = 지점1 가 · 지점2 가', '',
              f'- 지점3(빈 값의 뜻 · 판단 입력의 정보 부족 처리): 가 = {J.GAP_TEXT[GAP["가"]]} / 나 = {J.GAP_TEXT[GAP["나"]]}',
              f'- 지점4(쓰는 사람에 따라 갈리는 답 · 허용 후보 비교): 가 = {J.WARN_TEXT[WARN["가"]]} / 나 = {J.WARN_TEXT[WARN["나"]]}',

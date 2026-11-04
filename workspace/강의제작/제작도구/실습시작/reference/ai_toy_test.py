@@ -1,4 +1,4 @@
-"""학생 ZIP 하나로 장난감 시험(코딩랩.md K요-14, 판정은 K-28 · 공통.md C-50 ⑩)을 돌려 요청 · AI 행동 · 답 · 바뀐 파일 · 토큰을 `기록.md` 한 파일로 남긴다.
+"""학생 ZIP 하나로 장난감 시험(코딩랩.md 「길」 6, 판정은 K-3 · K-6 ⑩)을 돌려 요청 · AI 행동 · 답 · 바뀐 파일 · 토큰을 `기록.md` 한 파일로 남긴다.
 강사 제작용이며 학생 ZIP에 넣지 않는다. 실제 AI를 부르므로 비용이 든다 — 같은 판본 · 같은 조건은 다시 돌리지 않는다. 이 도구는 판정하지 않는다.
 
 쓰는 법
@@ -50,10 +50,10 @@ ROOT = HERE.parents[4]
 CHECK_DIR = ROOT/'작업'/'검사'
 SPARE = Path.home()/'.hyd-toy-test'
 
-SCENARIOS = {'two_turn': ['START.md대로 다 해 줘', '권장안대로 다 해 줘'],   # 코딩랩.md K요-14
+SCENARIOS = {'two_turn': ['START.md대로 다 해 줘', '권장안대로 다 해 줘'],   # 코딩랩.md 「검사하고 리허설한다」
              'one_turn': ['묻지 말고 그냥 다 만들어 줘']}
 RELAY = ('LLM_API_KEY', 'OPENAI_BASE_URL')
-LAB_ENV = ('OPENAI_BASE_URL', 'LLM_API_KEY', 'LLM_MODEL')   # 학생이 .env에 붙여 넣는 세 줄(코딩랩.md K-102)
+LAB_ENV = ('OPENAI_BASE_URL', 'LLM_API_KEY', 'LLM_MODEL')   # 학생이 .env에 붙여 넣는 세 줄(코딩랩.md K-7)
 RULE_FILES = ('AGENTS.md', 'AGENTS.override.md', 'CLAUDE.md', '.git')
 CODEX_CONFIG = '''model = "coding"
 model_provider = "litellm"
@@ -336,7 +336,7 @@ def record(out, meta, turns, total):
           f"- 시나리오: {meta['scenario']} · 실습 폴더 `.env`: {'있음(--lab-env, 세 줄)' if meta.get('lab_env') else '없음(키 없는 폴더)'}",
           f"- 시각(UTC): {meta['when']}",
           f"- 실습 폴더: `{meta['lab']}`",
-          '- 판정은 이 기록을 보고 따로 한다: 결과를 강사 참조와 견주고(코딩랩.md K-28), 돌려보낸 답이 공통.md C-50 ⑩의 꼴인지 본다.', '']
+          '- 판정은 이 기록을 보고 따로 한다: 결과를 강사 참조와 견주고(코딩랩.md K-3), 돌려보낸 답이 코딩랩.md K-6 ⑩의 꼴인지 본다.', '']
     if meta.get('dry_run'):
         md += ['## 보낼 요청(--dry-run — AI를 부르지 않았다)', ''] + [f'{n}. {p}' for n, p in enumerate(meta['prompts'], 1)] + ['']
     for n, t in enumerate(turns, 1):
@@ -358,7 +358,7 @@ def record(out, meta, turns, total):
 
 
 def main():
-    ap = argparse.ArgumentParser(description='학생 ZIP 장난감 시험(코딩랩.md K요-14). 자세한 쓰는 법은 이 파일 머리.')
+    ap = argparse.ArgumentParser(description='학생 ZIP 장난감 시험(코딩랩.md 「검사하고 리허설한다」). 자세한 쓰는 법은 이 파일 머리.')
     ap.add_argument('zip', nargs='?', type=Path, help='학생 ZIP')
     ap.add_argument('--tool', choices=['codex', 'claude'], required=True)
     ap.add_argument('--scenario', choices=sorted(SCENARIOS))
@@ -396,7 +396,7 @@ def main():
     base = unpack(zip_path, lab)
     if lab_env:
         if (lab/'.env').exists():
-            raise SystemExit(f'{zip_path}: ZIP 안에 .env가 있습니다 — 학생 폴더에는 .env.example만 둡니다(코딩랩.md K-60).')
+            raise SystemExit(f'{zip_path}: ZIP 안에 .env가 있습니다 — 학생 폴더에는 .env.example만 둡니다(코딩랩.md K-7).')
         (lab/'.env').write_text(''.join(f'{name}={lab_env[name]}\n' for name in LAB_ENV), encoding='utf-8')
     if a.tool == 'codex':
         (home/'config.toml').write_text(CODEX_CONFIG.format(base_url=json.dumps(settings['OPENAI_BASE_URL'])), encoding='utf-8')

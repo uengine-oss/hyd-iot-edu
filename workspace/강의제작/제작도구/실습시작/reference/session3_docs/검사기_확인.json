@@ -1,8 +1,8 @@
 {
   "summary": {
     "extract": {
-      "통합반": "39/39",
-      "실전반": "40/40"
+      "통합반": "40/40",
+      "실전반": "41/41"
     },
     "graph": {
       "통합반": "11/11",
@@ -250,7 +250,7 @@
           "file": "결과/후보/HM-8_1.1.json",
           "caught": true,
           "restored_pass": true,
-          "line": "- 결과/응답_기록/1db9fc7561de.json: 다른 폴더의 응답 기록입니다(기록의 폴더 표지 'ffffffffffffffff', 이 폴더 '376d6809f69d41ab') — 후보는 이 폴더에서 수업 모델을 불러 받은 답으로 만듭니다."
+          "line": "- 결과/응답_기록/1db9fc7561de.json: 다른 폴더의 응답 기록입니다(기록의 폴더 표지 'ffffffffffffffff', 이 폴더 'dea80605a4e94de2') — 후보는 이 폴더에서 수업 모델을 불러 받은 답으로 만듭니다."
         },
         {
           "no": "40",
@@ -259,6 +259,14 @@
           "caught": true,
           "restored_pass": true,
           "line": "- model_run 결과/응답_기록/1db9fc7561de.json: reused_from 'ffffffffffffffff' — 다른 폴더의 응답 기록으로는 후보를 만들지 않습니다."
+        },
+        {
+          "no": "41",
+          "trial": "코드가 찾은 인용이 원문 여러 곳에 맞음(같은 단계 문장이 여러 절차에)",
+          "file": "결과/후보/HM-8_1.1.json",
+          "caught": true,
+          "restored_pass": true,
+          "line": "- HM-8-003: quote가 원문 3곳에 맞음 — 코드가 찾은 인용이 여러 곳에 맞으면 찾지 못한 것(unlocated)으로 두고, 그 줄은 검토자가 골라 더한다"
         },
         {
           "no": "36",
@@ -564,7 +572,7 @@
           "file": "결과/후보/HM-8_1.1.json",
           "caught": true,
           "restored_pass": true,
-          "line": "- 결과/응답_기록/1db9fc7561de.json: 다른 폴더의 응답 기록입니다(기록의 폴더 표지 'ffffffffffffffff', 이 폴더 'bc11d6d18d9a4eb0') — 후보는 이 폴더에서 수업 모델을 불러 받은 답으로 만듭니다."
+          "line": "- 결과/응답_기록/1db9fc7561de.json: 다른 폴더의 응답 기록입니다(기록의 폴더 표지 'ffffffffffffffff', 이 폴더 '6f9520da6a0246ae') — 후보는 이 폴더에서 수업 모델을 불러 받은 답으로 만듭니다."
         },
         {
           "no": "40",
@@ -573,6 +581,14 @@
           "caught": true,
           "restored_pass": true,
           "line": "- model_run 결과/응답_기록/1db9fc7561de.json: reused_from 'ffffffffffffffff' — 다른 폴더의 응답 기록으로는 후보를 만들지 않습니다."
+        },
+        {
+          "no": "41",
+          "trial": "코드가 찾은 인용이 원문 여러 곳에 맞음(같은 단계 문장이 여러 절차에)",
+          "file": "결과/후보/HM-8_1.1.json",
+          "caught": true,
+          "restored_pass": true,
+          "line": "- HM-8-003: quote가 원문 3곳에 맞음 — 코드가 찾은 인용이 여러 곳에 맞으면 찾지 못한 것(unlocated)으로 두고, 그 줄은 검토자가 골라 더한다"
         },
         {
           "no": "36",

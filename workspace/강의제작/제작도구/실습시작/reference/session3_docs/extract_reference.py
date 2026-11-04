@@ -340,7 +340,7 @@ if __name__ == '__main__':
     dest = Path(a.out)
     dest.mkdir(parents=True, exist_ok=True)
     for name, data in extract_all(a.lab).items():
-        (dest/name).write_text(dump(data), encoding='utf-8')
+        (dest/name).write_text(dump(data), encoding='utf-8', newline='\n')
         kinds = {}
         for c in data['candidates']:
             kinds[c['kind']] = kinds.get(c['kind'], 0) + 1

@@ -1376,9 +1376,9 @@
       "line_end": 114,
       "lang": "en",
       "refs": [],
-      "status": "pending",
-      "decision": "보류",
-      "reason": "사내 기준이 정하지 않은 제조사 항목 — 세척 뒤 막힘 · 휨이 남으면 코어 교체(HM-8 · PM-02에 없음) — 적용할지 HM-8 소유 부서(설비보전팀)에 묻는다",
+      "status": "excluded",
+      "decision": "제외",
+      "reason": "같은 원문 줄(114줄)을 시작 조건 · 승인으로 뽑았다 — 검토자가 읽은 원문 문맥은 단계(코어 세척 5단계 — 남으면 코어 교체(114줄)) · 완료 기준(세척으로 끝나지 않았을 때의 처리 — 남으면 코어 교체(114줄, 계약 「종류의 뜻」 completion))",
       "origin": "extractor"
     },
     {
@@ -1470,6 +1470,23 @@
       "decision": "보류",
       "reason": "사내 기준이 정하지 않은 제조사 항목 — 세척 전 코어 막힘 · 휨 확인(HM-8 · PM-02에 없음) — 적용할지 HM-8 소유 부서(설비보전팀)에 묻는다 — 이 항목을 담은 후보가 없어(까닭은 missing의 note) 검토자가 원문 문장으로 더함",
       "origin": "reviewer"
+    },
+    {
+      "id": "OEM-HPP45A-MM-R03",
+      "section": "7",
+      "procedure": "T-7.1",
+      "kind": "completion",
+      "text": "If blocked areas or bent fins remain after cleaning, replace the core (part no. HI-CC-45A).",
+      "quote": "If blocked areas or bent fins remain after cleaning, replace the core (part no. HI-CC-45A).",
+      "quote_match": "exact",
+      "line_start": 114,
+      "line_end": 114,
+      "lang": "en",
+      "refs": [],
+      "status": "pending",
+      "decision": "보류",
+      "reason": "사내 기준이 정하지 않은 제조사 항목 — 세척 뒤 막힘 · 휨이 남으면 코어 교체(HM-8 · PM-02에 없음) — 적용할지 HM-8 소유 부서(설비보전팀)에 묻는다 — 이 항목을 담은 후보가 없어(까닭은 missing의 note) 검토자가 원문 문장으로 더함",
+      "origin": "reviewer"
     }
   ],
   "unlocated": [],
@@ -1493,6 +1510,16 @@
       "line_start": 107,
       "line_end": 107,
       "note": "후보 OEM-HPP45A-MM-064가 같은 원문을 단계 종류로 뽑았고 시작 조건 · 승인 종류로 뽑은 후보는 없음",
+      "added": true
+    },
+    {
+      "section": "7",
+      "procedure": "T-7.1",
+      "kind": "completion",
+      "quote": "If blocked areas or bent fins remain after cleaning, replace the core (part no. HI-CC-45A).",
+      "line_start": 114,
+      "line_end": 114,
+      "note": "후보 OEM-HPP45A-MM-069, OEM-HPP45A-MM-070가 같은 원문을 단계 · 시작 조건 · 승인 종류로 뽑았고 완료 기준 종류로 뽑은 후보는 없음",
       "added": true
     }
   ],

@@ -1,9 +1,9 @@
-"""학생용 완성본 넷 — 문서 지식 묶음 네 랩을 실습 폴더와 따로 받는 ZIP으로 묶는다(코딩랩.md K-58 · K요-11, 가이드.md P-81). 학생 폴더 · package-index 밖.
+"""학생용 완성본 넷 — 문서 지식 묶음 네 랩을 실습 폴더와 따로 받는 ZIP으로 묶는다(코딩랩.md K-4 · K-12 · 「길」 5, 가이드.md P-3). 학생 폴더 · package-index 밖.
 
 추출 둘(통합 04-2 · 실전 03-4): 다음 랩 입력과 같은 판(조건의 근거 = 운전 중 제어 후보에만 · 사내 기준이 정하지 않은 제조사 항목은 보류 — run_reference 3의 나-가)의
   검토를 강사 추출 실행(instructor_extract.py — 수업 모델)의 후보에 걸어, 학생이 만들 추출 코드(completed/extract_candidates.py — 그 실행을 한 코드) · 요청 글 ·
   응답 기록 · 후보 · 검토 결과 · 검토 기록을 결과/에 넣는다. 폴더 표지(결과/폴더_표지.txt)는 넣지 않는다 — 그래서 완성본 폴더나 내 실습 폴더에서 코드를 실행해도
-  llm_client.py는 이 응답 기록을 「다른 폴더의 기록」으로 보고 다시 쓰지 않는다(강사가 받은 답을 재생하지 않음 — 코딩랩.md K-87). 실행은 --model-run <폴더>(기본 강사_추출/run1), 같은 요청을 새 폴더에서 한 번 더 보낸
+  llm_client.py는 이 응답 기록을 「다른 폴더의 기록」으로 보고 다시 쓰지 않는다(강사가 받은 답을 재생하지 않음 — 코딩랩.md K-8). 실행은 --model-run <폴더>(기본 강사_추출/run1), 같은 요청을 새 폴더에서 한 번 더 보낸
   실행은 --again-run <폴더>(기본 강사_추출/run2 — 검토 기록 「같은 요청을 한 번 더 보낸 결과」의 다른 점을 센다, 그 기록은 완성본에 넣지 않는다).
   안내에 「모델의 답이라 다시 부르면 달라질 수 있다 · 이 응답 기록은 다시 쓰지 않는다」를 학생 말로 적는다.
   고정한 실행이 없으면 두 번째 구현(extract_reference.py — 문장 규칙)의 후보로 만든 임시판이다 — 응답 기록이 없어 check.py가 후보 파일마다 「model_run이 비어 있습니다」를 내고,
@@ -234,7 +234,8 @@ def extraction_guide(title, model_mode, practical):
         made = ('후보 파일은 `결과/extract_candidates.py`가 문서를 절 머리에서 끊은 조각마다 `결과/prompt.md`와 함께 수업 모델에 보내 받은 답으로 만든 것이고 '
                 '(답의 인용이 원문 어느 줄에 있는지는 코드로 찾았습니다), 그 요청과 답이 `결과/응답_기록/`에 있습니다. 같은 요청을 다시 보내면 답이 달라질 수 있어서, '
                 '내 실습의 후보와 수 · 문장이 다를 수 있습니다. 이 응답 기록은 결과를 보는 데만 씁니다 — 이 폴더나 내 실습 폴더에서 코드를 실행해도 `llm_client.py`는 '
-                '이 기록을 다시 쓰지 않고, 내 실습의 후보는 내 폴더에서 수업 모델을 불러 받은 답으로 만듭니다.')
+                '이 기록을 다시 쓰지 않고, 내 실습의 후보는 내 폴더에서 수업 모델을 불러 받은 답으로 만듭니다. 키를 넣고 이 폴더에서 추출 코드를 실행하면 새로 받은 답으로 '
+                '후보 파일이 바뀌어 이 묶음의 검토 결과와 맞지 않게 되므로, 추출 코드는 내 실습 폴더에서 실행합니다.')
         run = ('`python check.py`는 마지막에 「구조상 빠진 단계는 없습니다」를 냅니다. `python 결과/extract_candidates.py --list`는 요청을 보내지 않고 '
                '문서마다 읽은 결과와 조각 목록을 보입니다.')
     else:
@@ -326,7 +327,7 @@ def extraction(course, model_run, again_run, tmp):
         result['추출 코드 --list 끝줄'] = ltext.strip().splitlines()[-1]
         if (fresh/'결과/폴더_표지.txt').exists():
             fail(f'완성본 {name}: 추출 코드 --list가 폴더 표지를 만들었다')
-        # 응답 기록을 재생하지 않는다(K-87): 새 폴더에 .env의 모델 이름만 두고 코드를 실행하면 기록을 다시 쓰지 않고, 키가 없어 보내지 않고 멈춘다
+        # 응답 기록을 재생하지 않는다(K-8): 새 폴더에 .env의 모델 이름만 두고 코드를 실행하면 기록을 다시 쓰지 않고, 키가 없어 보내지 않고 멈춘다
         replay = Path(tmp)/'ext_replay'/name
         for rel, data in files.items():
             write(replay/rel, data)
@@ -338,6 +339,11 @@ def extraction(course, model_run, again_run, tmp):
             fail(f'완성본 {name}: 새 폴더에서 추출 코드를 실행했을 때 응답 기록을 다시 씀 {reused}번 · rc {rcode}\n{rtext[-600:]}')
         result['새 폴더에서 추출 코드 실행(.env에 모델 이름만)'] = f'다시 쓴 응답 기록 {reused}개 · rc {rcode} · ' + next(
             (x for x in rtext.splitlines() if x.startswith('키가 없어')), '')
+        # 보내지 않고 멈춘 실행 뒤에도 완성본이 그대로 통과한다(폴더 표지를 만들지 않음)
+        ccode, ctext = run_py(replay, 'check.py')
+        if (replay/'결과/폴더_표지.txt').exists() or ccode or '구조상 빠진 단계는 없습니다' not in ctext:
+            fail(f'완성본 {name}: 키 없이 추출 코드를 실행한 뒤 학생 검사기가 통과시키지 않음(표지 {(replay/"결과/폴더_표지.txt").exists()})\n{ctext[-800:]}')
+        result['키 없이 실행한 뒤 check.py'] = ctext.strip().splitlines()[-1]
     else:
         # 임시판: 단계별 상태의 남은 것은 후보 · 검토 파일의 「계약 오류」뿐이고, 파일마다 계약 검사의 문제는 model_run 한 줄뿐이어야 한다
         other = [t for t in todo if '계약 오류' not in t]
@@ -449,7 +455,7 @@ def main(argv=None):
         for course in R.COURSES:
             report[f'추출_{course}'] = extraction(course, model_run, again_run, tmp)
             report[f'그래프_{course}'] = graph(course, tmp, not a.no_neo4j)
-    (HERE/'completed.json').write_text(json.dumps(report, ensure_ascii=False, indent=1) + '\n', encoding='utf-8')
+    (HERE/'completed.json').write_text(json.dumps(report, ensure_ascii=False, indent=1) + '\n', encoding='utf-8', newline='\n')
     for k, v in report.items():
         print(f'{k}: {v["경로"]} 파일 {v["파일수"]}개 sha256 {v["sha256"][:12]} · ' + (v.get('실행 확인') or v.get('후보 출처')))
     print(f'불일치 {len(failures)}건')

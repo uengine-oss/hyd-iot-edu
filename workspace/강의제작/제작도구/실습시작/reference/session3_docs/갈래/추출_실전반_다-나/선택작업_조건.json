@@ -35,14 +35,6 @@
       "decision": "채택"
     },
     {
-      "candidate": "결과/검토/OEM-HPP45A-MM_C_검토.json#OEM-HPP45A-MM-070",
-      "doc_id": "OEM-HPP45A-MM",
-      "rev": "C",
-      "section": "7",
-      "quote": "If blocked areas or bent fins remain after cleaning, replace the core (part no. HI-CC-45A).",
-      "decision": "채택"
-    },
-    {
       "candidate": "결과/검토/OEM-HPP45A-MM_C_검토.json#OEM-HPP45A-MM-R02",
       "doc_id": "OEM-HPP45A-MM",
       "rev": "C",
@@ -85,6 +77,14 @@
       "section": "7",
       "quote": "The difference must not be less than the value in the commissioning record.",
       "decision": "채택"
+    },
+    {
+      "candidate": "결과/검토/OEM-HPP45A-MM_C_검토.json#OEM-HPP45A-MM-R03",
+      "doc_id": "OEM-HPP45A-MM",
+      "rev": "C",
+      "section": "7",
+      "quote": "If blocked areas or bent fins remain after cleaning, replace the core (part no. HI-CC-45A).",
+      "decision": "채택"
     }
   ],
   "remaining_questions": [
@@ -105,6 +105,43 @@
       "kind": "원문 미확인",
       "source": "자료/SR-04_설비안전규정_발췌.txt 제4조",
       "note": "안전관리 담당의 해석을 받기 전까지 보류"
+    }
+  ],
+  "sop_diff": [
+    {
+      "item": "Stop the pump, lock out the motor supply, and wait until the fan has stopped.",
+      "where": "카드에만",
+      "note": "준비 — OEM-HPP45A-MM C 7에서 옴, 받은 SOP 구조의 이 작업에는 없음"
+    },
+    {
+      "item": "Inspect the core before cleaning. Record blocked areas and bent or damaged fins.",
+      "where": "카드에만",
+      "note": "준비 — OEM-HPP45A-MM C 7에서 옴, 받은 SOP 구조의 이 작업에는 없음"
+    },
+    {
+      "item": "Do not use a high-pressure washer.",
+      "where": "카드에만",
+      "note": "금지 — OEM-HPP45A-MM C 7에서 옴, 받은 SOP 구조의 이 작업에는 없음"
+    },
+    {
+      "item": "The difference must not be less than the value in the commissioning record.",
+      "where": "카드에만",
+      "note": "완료 — OEM-HPP45A-MM C 7에서 옴, 받은 SOP 구조의 이 작업에는 없음"
+    },
+    {
+      "item": "If blocked areas or bent fins remain after cleaning, replace the core (part no. HI-CC-45A).",
+      "where": "카드에만",
+      "note": "완료 — OEM-HPP45A-MM C 7에서 옴, 받은 SOP 구조의 이 작업에는 없음"
+    },
+    {
+      "item": "조치 후 예측 유온이 65 ℃ 이상이면 이 후보를 쓰지 않는다.",
+      "where": "SOP 구조에만",
+      "note": "금지 — 입력/sop.json SOP-COOL-14 prohibitions, 승인한 원문 후보가 없음"
+    },
+    {
+      "item": "PLC가 트립 상태이면 리셋 외 명령을 내리지 않는다.",
+      "where": "SOP 구조에만",
+      "note": "금지 — 입력/sop.json SOP-COOL-14 prohibitions, 승인한 원문 후보가 없음"
     }
   ]
 }

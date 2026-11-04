@@ -155,7 +155,7 @@ ITEMS = [
     (OEM, '7', 'T-7.1', 'step', 'Do not use a high-pressure washer. High-pressure water bends the fins.', None, '코어 세척 4단계 — 고압 세척기 금지(112줄)'),
     (OEM, '7', 'T-7.1', 'prohibition', 'Do not use a high-pressure washer.', None, '고압 세척기 금지(112줄)'),
     (OEM, '7', 'T-7.1', 'step', 'If blocked areas or bent fins remain after cleaning, replace the core (part no. HI-CC-45A).', None, '코어 세척 5단계 — 남으면 코어 교체(114줄)'),
-    (OEM, '7', 'T-7.1', 'precondition', 'If blocked areas or bent fins remain after cleaning, replace the core (part no. HI-CC-45A).', None, '코어 교체 조건(114줄)'),
+    (OEM, '7', 'T-7.1', 'completion', 'If blocked areas or bent fins remain after cleaning, replace the core (part no. HI-CC-45A).', None, '세척으로 끝나지 않았을 때의 처리 — 남으면 코어 교체(114줄, 계약 「종류의 뜻」 completion)'),
     (OEM, '7', 'T-7.1', 'step', 'After cleaning or replacement, run the unit at working load for 30 minutes and record the fluid temperature at the cooler inlet and outlet. '
      'The difference must not be less than the value in the commissioning record.', None, '코어 세척 6단계 — 부하 운전 뒤 입구 · 출구 유온 기록(116줄)'),
     (OEM, '7', 'T-7.1', 'unit_value', 'After cleaning or replacement, run the unit at working load for 30 minutes and record the fluid temperature at the cooler inlet and outlet.',
