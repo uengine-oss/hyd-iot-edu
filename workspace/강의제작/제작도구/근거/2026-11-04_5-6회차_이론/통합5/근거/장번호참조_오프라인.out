@@ -1,0 +1,7 @@
+## off05 구성
+구성.json
+새장.md
+통합반_오프라인_05회차.md
+{'title': '에이전트의 근거 · 도구 · 종료 조건 이해하기', 'intro': '통합반 오프라인 5회차 이론(50분) 덱. 실라버스 「통합반 오프라인 정규 10회」 38행의 범위로 온라인 통합반 5회차 덱의 장을 다시 묶었다. 온라인 장의 화면은 그대로 쓰고 노트는 [다음]과 표시한 연결 말만 새 순서에 맞췄다. 실습(39~41행)은 핸즈온 가이드가 맡는다. 조립: `bash workspace/강의제작/제작도구/오프라인/decks/만들기.sh integrated 05`.', 'md': '통합반_오프라인_05회차.md', 'slides': 36, 'note_end': 3}
+[(None, None), (None, None), (None, None), (None, None), ('integrated/day05', 5), ('integrated/day05', 11), ('integrated/day05', 12), ('integrated/day05', 13), ('integrated/day05', 29), (None, None), ('integrated/day05', 17), ('integrated/day05', 18), ('integrated/day05', 20), ('integrated/day05', 21), ('integrated/day05', 22), ('integrated/day05', 27), (None, None), ('integrated/day05', 32), ('integrated/day05', 33), ('integrated/day05', 38), ('integrated/day05', 40), (None, None), ('integrated/day05', 42), ('integrated/day05', 43), ('integrated/day05', 44), ('integrated/day05', 45), ('integrated/day05', 46), ('integrated/day05', 48), ('integrated/day05', 56), (None, None), (None, None), ('integrated/day05', 67), ('integrated/day05', 68), ('integrated/day05', 69), ('integrated/day05', 70), ('integrated/day05', 71)]
+## 통합 5회차 장 참조(다른 통합 덱 · 대본 · 실전 짝)

@@ -1,0 +1,4430 @@
+{
+ "reviewer": "검토-온5통합",
+ "artifacts": {
+  "통합반-온라인-05-덱": [
+   {
+    "id": "D-1",
+    "row_sha256": "14041160ab8f8458ccb361c923a9433323d157c3370a3c7ab65137d44bc91ce7",
+    "status": "통과",
+    "reason": "48행 네 문장(원인·점검에서 여섯 활용 비교 29장, LLM·RAG·Agent 7~14장, 요청 해석→종료 15~23장, 코드/에이전트 판단 30장, 도구·자료·권한·검증 31장)과 49행 세 문장(네 정보원 32~39장, 지식/현재값 40~43장, 멈춤 조건 44~52장, 구조화 출력·실행 기록 53~60장)이 장으로 있고 실습 50~54행은 간지+설명 61~70장으로 이어진다",
+    "evidence": [
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/실라버스_행.md",
+      "locator": "48~54행"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 4~70"
+     },
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/통합5/대조표.md",
+      "locator": "행별 문장 표"
+     }
+    ]
+   },
+   {
+    "id": "D-2",
+    "row_sha256": "4749994aee66541e6f5abb5d5af3d98cffc614e12c03be7acb953ee7f979a804",
+    "status": "통과",
+    "reason": "행 문장의 순서(요청 해석→계획→도구 호출→관찰→종료), 부정 조건(정해진 코드로 충분한 일, 지어내지 않음, 상관관계로 단정하지 않음)이 그대로다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 17 · 30 · 60 · 62 · 70"
+     },
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/실라버스_행.md",
+      "locator": "48~54행"
+     }
+    ]
+   },
+   {
+    "id": "D-3",
+    "row_sha256": "1942fde2541f73e1279d309f8cc547721373c9f6bdb86e1ad71a2e00017ef770",
+    "status": "통과",
+    "reason": "본문 50장: 5~14, 16~23, 25~31, 33~39, 41~43, 45~52, 54~60(표지 1 · 학습목표 2 · 목차 3 · 간지 4·15·24·32·40·44·53 · 실습 61~70 · 복습 71 · 용어 72 · 퀴즈 73~76 · 정답 77 제외). 모든 본문 장이 48 · 49행에 대응하고 수를 채운 중복 장 없음",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/구성/통합반/05회차/구성.json",
+      "locator": "rows"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "장 유형 열"
+     }
+    ]
+   },
+   {
+    "id": "D-4",
+    "row_sha256": "8b51e92bbfd16dfbeba793c89df77e388a15e9f8663388dc41382113c77e21e4",
+    "status": "통과",
+    "reason": "구성.json rows.title · 대조표 행 제목 · 실습 간지 61·63·65·67·69 제목이 엑셀 48~54행 제목과 글자가 같다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/구성/통합반/05회차/구성.json",
+      "locator": "rows"
+     },
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/실라버스_행.md",
+      "locator": "48~54행"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 61 · 63 · 65 · 67 · 69"
+     }
+    ]
+   },
+   {
+    "id": "D-5",
+    "row_sha256": "5b52558996d3c78a89bb1142009a677ed480d1ce8030fe4560ba987c53b9b039",
+    "status": "통과",
+    "reason": "51행 실습 자료가 없음(실습 소개만), 쿨러 사건 실행에서 업무 값 조회가 대안 평가 안에서 채워진 점을 20장이 실제대로 설명하고 작업자 기록에 있다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 20 · 63 제작 기준"
+     },
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/통합5/실습어긋남.md",
+      "locator": "1행"
+     }
+    ]
+   },
+   {
+    "id": "D-6",
+    "row_sha256": "eef632766a507b5a8b1af79e194bda295fd895ba7a311f30f460666cf5a13bc0",
+    "status": "통과",
+    "reason": "구성.json rows의 행 · 구분 · 배정 · 순서가 엑셀과 같다. 표지 큰 제목이 회차 주제와 다른 까닭이 표지 제작 기준에 있다(과정 칸 축약은 기록만)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/구성/통합반/05회차/구성.json",
+      "locator": "rows"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 1 제작 기준"
+     }
+    ]
+   },
+   {
+    "id": "D-8",
+    "row_sha256": "41612f62567d0eb6c8ee21792fafff4042d322baa2c7ed78050e2e2a48579f64",
+    "status": "해당 없음",
+    "reason": "영상 README에 통합반 5회차 실습 · 이론 영상 행이 없다(영상 없음)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/영상/README.md",
+      "locator": "5회차 검색 0"
+     }
+    ]
+   },
+   {
+    "id": "D-9",
+    "row_sha256": "c1a44563606cf259f06f4448658fa890f2434c74c56fff3632f8ce37f360a2d6",
+    "status": "통과",
+    "reason": "본문 50장, 장마다 새 내용이 있고 시간용 장 없음",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "본문 50장"
+     }
+    ]
+   },
+   {
+    "id": "D-10",
+    "row_sha256": "39030f343d785499b353333bc5807c924130c353671964221f15a9a3c8407086",
+    "status": "해당 없음",
+    "reason": "배정보다 긴 이론 행 없음(48행 39.4분, 49행 39.5분 — 재측정)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": "대본시간.py 4~31장 2365초"
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": "32~60장 2368초"
+     }
+    ]
+   },
+   {
+    "id": "D-11",
+    "row_sha256": "2057195cd0c298e1b9770545d481d8f93ffbb4743859757b3389a67947a9bad4",
+    "status": "통과",
+    "reason": "48행 배정 40 − 39.4 = 0.6분, 49행 40 − 39.5 = 0.5분으로 −10분 안. 짧은 까닭과 보강 내용이 기록에 있다. 다음 회차를 당겨 온 장 없음",
+    "evidence": [
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/통합5/변경기록.md",
+      "locator": "51~59행"
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": "대본시간.py 재측정"
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": "대본시간.py 재측정"
+     }
+    ]
+   },
+   {
+    "id": "D-12",
+    "row_sha256": "a2fc3bbf1b85772bac545fd528f66d8a595cc77114799194a9b59c90ab7b2776",
+    "status": "통과",
+    "reason": "대본시간.py(시간계수.json)로 다시 잰 값 39.4 · 39.5 · 합 91.0분이 구성표와 같다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/구성/통합반/05회차/구성표.md",
+      "locator": "행별 표"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/촬영/시간계수.json",
+      "locator": "계수"
+     }
+    ]
+   },
+   {
+    "id": "D-13",
+    "row_sha256": "9a55500767424d747c97e3b70d1a2406b627a75c11ec0766f668f6d80ea219c3",
+    "status": "통과",
+    "reason": "행 문장마다 정의 · 필요성 · 예 · 판단 근거가 장에 있다(대조표와 장을 견줌)",
+    "evidence": [
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/통합5/대조표.md",
+      "locator": "문장 표"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 7~60"
+     }
+    ]
+   },
+   {
+    "id": "D-14",
+    "row_sha256": "0b717967971a9a39f9e75091405df9541407dedee8a832d80dcecabc1b0d4c74",
+    "status": "통과",
+    "reason": "제목 · 메시지가 원리 · 역할을 말하고 HYD 구현 주어 문장 없음. 25 · 28장은 「이 포털의 · 이 쿨러 업무에서는」으로 설정임을 밝힘",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 25 · 28 메시지"
+     }
+    ]
+   },
+   {
+    "id": "D-15",
+    "row_sha256": "462fbf759ab6bf0b5660adbc84fdf23cee29915e8e2ce764d43df140664fe337",
+    "status": "통과",
+    "reason": "값 · 식별자가 예 칸 · 코드 상자에만 있고 카드 머리에 정답처럼 박힌 값 없음(43장 60초는 노트에서 「이 시스템 설정」)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 36 · 39 · 43 · 51"
+     }
+    ]
+   },
+   {
+    "id": "D-16",
+    "row_sha256": "bde367ce81f60da4629376e396b9e2fbbdd2f91af2cefdd327b27a8002d93f8b",
+    "status": "통과",
+    "reason": "화면 · 노트에 꼬리표 · 면책 · 가상 강조 0(「결함 시뮬레이션」은 포털 화면 이름)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "노트 SLIDE 64 · 화면 전체 검색"
+     }
+    ]
+   },
+   {
+    "id": "D-165",
+    "row_sha256": "61997d43cc991485c021f50911830f2a9a847da069aa60272eba51025c9dc775",
+    "status": "통과",
+    "reason": "구현이 한 일 · 하지 않은 일 알림 · 정답 단정 말투 없음(20장 「업무 값 조회를 따로 부르지 않았다」는 실제 실행 기록의 서술)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 20 요소 4"
+     }
+    ]
+   },
+   {
+    "id": "D-17",
+    "row_sha256": "ca4e99d9a397e950a293a14c65a641c6c2cd1cacd12fddfde4ae73229d339db3",
+    "status": "통과",
+    "reason": "주장마다 코드 · 사실표 근거가 제작 기준에 있다(52장 「목록 밖 → 권한 요청」의 일반화는 기록만)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 39 · 43 · 48 · 49 · 51 · 52 · 55 제작 기준"
+     },
+     {
+      "path": "it/agent-worker/worker/settings.py",
+      "locator": "DEFAULT_ALLOWED_TOOLS · allowed_for_run"
+     }
+    ]
+   },
+   {
+    "id": "D-18",
+    "row_sha256": "ba580e8bd05483e243601616019d5bf425d6b722de4dde7087a6e03c46be2bbf",
+    "status": "통과",
+    "reason": "단원 뼈대가 필요 → 구성 → 역할이고 제품 소개 뼈대 없음",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "단원 01~07"
+     }
+    ]
+   },
+   {
+    "id": "D-19",
+    "row_sha256": "115bf1df712912378d783567c6caa43510c9620bee33c4e3018ad6501d8e933a",
+    "status": "통과",
+    "reason": "제목 · 메시지 · 큰 이름표에 제품 · 서비스 이름 주인공 0(Neo4j · MCP 서버 이름은 역할 이름으로)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 13 · 42 화면"
+     }
+    ]
+   },
+   {
+    "id": "D-20",
+    "row_sha256": "1b61d1764ae357b593c912e2c371fb42be60b2d04f39c9af918c76442aa22540",
+    "status": "통과",
+    "reason": "쿨러 사건 한 건으로 전개하고 다른 처리 건은 밝혀 씀",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 23 · 26 · 37"
+     }
+    ]
+   },
+   {
+    "id": "D-21",
+    "row_sha256": "e62b8c9ba4f05b541ecd63e8b531bcb20a9dfac3b475d7a9cfe9c804e2f7afad",
+    "status": "해당 없음",
+    "reason": "계층 이름 · 역할을 다루는 장 없음",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "전체"
+     }
+    ]
+   },
+   {
+    "id": "D-22",
+    "row_sha256": "a8be90662a614a94a044927f1e4d000e28e786b8c0888f4ec1a051d5cb948a03",
+    "status": "통과",
+    "reason": "칸마다 까닭을 붙인 장 없음",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 8 · 34 · 42"
+     }
+    ]
+   },
+   {
+    "id": "D-23",
+    "row_sha256": "7aba79db3e11f2749ad77eaa4b588dacc0a778dcc9fbe5e542a469412aef5ac8",
+    "status": "통과",
+    "reason": "학습목표 · 목차 · 노트 1장이 에이전트 단계(지식을 도구로 읽는 AI)로 연다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 1 · 2 노트 · 제작 기준"
+     }
+    ]
+   },
+   {
+    "id": "D-24",
+    "row_sha256": "68f68b3ffcdf49aae859e524d320fbecc227d6716eba6ea56be8df9114467f3a",
+    "status": "통과",
+    "reason": "단원 01은 경보 108초 장면, 02는 94초의 순서, 04는 추천안의 정보 출처, 06은 멈추지 않는 에이전트의 결과에서 출발",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 5 · 16 · 33 · 45"
+     }
+    ]
+   },
+   {
+    "id": "D-25",
+    "row_sha256": "f8e073d290db25409eac7f54b878900cb06db9b73b2ac4ecccd00c2e68e2e72f",
+    "status": "통과",
+    "reason": "SDD · BDD · 명세 문서 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "검색 0"
+     }
+    ]
+   },
+   {
+    "id": "D-26",
+    "row_sha256": "47359e8b1f7f850841a7bcadb20b95a72e43d48d0c4314ce8134c6b1a9de0cae",
+    "status": "해당 없음",
+    "reason": "통합반 덱(실전 응용 장 판정 대상 아님)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "과정"
+     }
+    ]
+   },
+   {
+    "id": "D-27",
+    "row_sha256": "6ef4b588bdaad4ae32829e63a7b5f5bae95014c074e45026488fa11f2f682473",
+    "status": "통과",
+    "reason": "실습 설명 장에 코드 과제 · 운영 말 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 62 · 64 · 66 · 68 · 70"
+     }
+    ]
+   },
+   {
+    "id": "D-174",
+    "row_sha256": "4493eee09582f9f469f4dab69f8c55c2891479833ce71b0befa572c1cec5b58f",
+    "status": "통과",
+    "reason": "도구 실습 소개(62 · 64)에 파일 · VS Code 장면 없음",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 61~64"
+     }
+    ]
+   },
+   {
+    "id": "D-28",
+    "row_sha256": "1901ebe9c2d0ceab949018115450dcabf971436c35efc2fabedf87ac72ce0232",
+    "status": "통과",
+    "reason": "단원마다 첫 장 물음과 닫는 장 답이 짝지어 있다(01: 4→14, 02: 15→23, 03: 24→28, 04: 32→39, 05: 40→43, 06: 44→52, 07: 53→60)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "간지 · 닫는 장 제작 기준"
+     }
+    ]
+   },
+   {
+    "id": "D-29",
+    "row_sha256": "1d073e1fe6698e5f95c7f9c44a703ccdf3eb46ce71a90e2ef9be51fdc2d2dbc1",
+    "status": "통과",
+    "reason": "쿨러 사건을 경보 → 에이전트 → 추천안 → 승인 → 명령 순으로 따라가고 전체 지도로 시작하지 않음",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 5 · 14 · 18~22 · 27 · 28"
+     }
+    ]
+   },
+   {
+    "id": "D-30",
+    "row_sha256": "2bd9abb7fb3100d2dac5b69e8d497f8b19b3182aa5bc6ddd744da4dee801430c",
+    "status": "통과",
+    "reason": "D-35로 판정 — 통과",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "D-35"
+     }
+    ]
+   },
+   {
+    "id": "D-168",
+    "row_sha256": "70fd65e664df8e4cca07d8ff7e042cdc427a88890857780eef92c219c9259a16",
+    "status": "통과",
+    "reason": "주제 전환 자리(14→15, 23→24, 31→32, 39→40, 43→44, 52→53)의 노트 [다음]과 간지 노트가 앞 결과를 받는다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "노트 SLIDE 14 · 15 · 23 · 24 · 31 · 32 · 39 · 40 · 43 · 44 · 52 · 53"
+     }
+    ]
+   },
+   {
+    "id": "D-31",
+    "row_sha256": "be7f1819c527e37143bc156917a7e8da9af608fe965d22c987e689506b8f67ed",
+    "status": "통과",
+    "reason": "노트 [다음]이 다음 할 일 한 줄이고 화면 번호 · 꼬리 질문 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "노트 전체"
+     }
+    ]
+   },
+   {
+    "id": "D-32",
+    "row_sha256": "5405748f3ae2af7ee3c3ec2be374e92043232ed5dbcb10f4ce9d126c23342792",
+    "status": "통과",
+    "reason": "4회차(지식 검토 · 질문 검증)를 받아 열고 77장이 목적이 다른 일에 에이전트를 돌리는 기준으로 닫는다. 뒤 회차 주제(스킬 형식 · MCP)는 이름만",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 1 노트 · 77 노트 · 머리말"
+     }
+    ]
+   },
+   {
+    "id": "D-33",
+    "row_sha256": "68a02528f17b5e5a1a0e91af651fb50ea3e30b40c066a5581be426c77cc6bb35",
+    "status": "통과",
+    "reason": "노트 · 화면에 「이번 회차 · 지난 · N회차」 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "노트 검색"
+     }
+    ]
+   },
+   {
+    "id": "D-34",
+    "row_sha256": "3fa8166289ce460578d99e1db50d5e8780aa9faeb0873658c4aedee375f001f1",
+    "status": "통과",
+    "reason": "감탄 · 구호 0, 물음은 단원 여는 물음",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "노트 · 화면"
+     }
+    ]
+   },
+   {
+    "id": "D-35",
+    "row_sha256": "99c79753564900a71dccf26f4e6002ceb09990559bcb39a60cfa7aad3a5f761e",
+    "status": "통과",
+    "reason": "새 용어(에이전트 · 도구 · 실행 고리 · 워크플로 · 신선도 · 실행 기록 등)가 첫 장에서 풀린다. 사전 확률은 35장에서 세우고 45장에서 쓴다. 스킬 파일은 「뒤에서 직접 다룬다」",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 10 · 12 · 30 · 35 · 43 · 56 제작 기준"
+     }
+    ]
+   },
+   {
+    "id": "D-36",
+    "row_sha256": "e3dad8de260b894258a244f7fe8511b8ab30d059b97ece227930cc08595bea55",
+    "status": "통과",
+    "reason": "용어마다 그 장에 상황 · 판단의 까닭 문장이 있다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 10 · 17 · 43 · 47"
+     }
+    ]
+   },
+   {
+    "id": "D-37",
+    "row_sha256": "fd25a45f4360887e529b83ef9fbf54dd30e0e0465ca94a5a5be42f4a8a758400",
+    "status": "통과",
+    "reason": "장마다 낯선 구분 하나",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "본문"
+     }
+    ]
+   },
+   {
+    "id": "D-38",
+    "row_sha256": "246828a8bd45702e3da962f8dfb743aea22df1ce8a4b0b674a082bd7f56567af",
+    "status": "통과",
+    "reason": "정의 장(10 · 12 · 17 · 30 · 43 · 47 · 54 · 56)마다 메시지에 쓸모 · 까닭",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "메시지 열"
+     }
+    ]
+   },
+   {
+    "id": "D-39",
+    "row_sha256": "e3016a2f19b9945d462ca149b297e03157887c8fbe485ad72f41bedda3c0b486",
+    "status": "통과",
+    "reason": "조작 · 옵션 장 없음",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "본문"
+     }
+    ]
+   },
+   {
+    "id": "D-40",
+    "row_sha256": "58f63353c976cc5a7329cf0c0d7cb593ce196faeee4dab987203b185d9c40d63",
+    "status": "통과",
+    "reason": "지식과 값, 형식과 내용, 함께 변함과 원인을 섞지 않는다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 41 · 55 · 60"
+     }
+    ]
+   },
+   {
+    "id": "D-41",
+    "row_sha256": "b187f125bd4b2aa25ccee21b23a38e3d226b6d1612e7d24410540f1406e75194",
+    "status": "통과",
+    "reason": "복습 71 · 용어 72 · 퀴즈 74~76 · 정답 77이 있다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 71~77"
+     }
+    ]
+   },
+   {
+    "id": "D-42",
+    "row_sha256": "7e36b8e97322359392ad06abebcbf5b4b74e47219cc15911627f74d29c817cb1",
+    "status": "통과",
+    "reason": "화면 · 노트에 제작 흔적 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "노트 통독"
+     }
+    ]
+   },
+   {
+    "id": "D-43",
+    "row_sha256": "73a88f46d33a3c5e313fad2c86ef51510d44146781ffa3b95e6794bbcebfd9b8",
+    "status": "통과",
+    "reason": "표지 → 학습목표 → 목차 → 간지/본문 → 실습 → 복습 → 용어 → 퀴즈 간지 → 퀴즈 3 → 정답, 끝맺음 장 없음",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "장 유형 열"
+     }
+    ]
+   },
+   {
+    "id": "D-44",
+    "row_sha256": "845622999eeae54d35be19c49ed991f1b6ed8d883f3ecccb1fcdb4c7a4bda29f",
+    "status": "통과",
+    "reason": "마무리 네 자리가 각자 한 가지",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 71 · 72 · 74~76 · 77"
+     }
+    ]
+   },
+   {
+    "id": "D-45",
+    "row_sha256": "96a22fe87c019f2fa7c59e7060dc4584894b037de561d15d38b7678d0839d9ef",
+    "status": "통과",
+    "reason": "기관 · 과정(회차 · 주제) · 큰 제목 · 부제 · 아이콘 3, 연도 0. 과정 칸 주제 축약(「활용해」→「으로」)은 기록만",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 1"
+     },
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/렌더/미리보기_noto/온5통합/s-01.png",
+      "locator": "표지"
+     }
+    ]
+   },
+   {
+    "id": "D-46",
+    "row_sha256": "a0fffd8a3b9c308932205682e371f5a9471795a58017f994e914efb35ee9861c",
+    "status": "통과",
+    "reason": "제목 「학습목표」, 카드 4장, 단원 순서(구분 → 순서 · 산출물 → 정보와 멈춤 → 실습)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 2"
+     },
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/렌더/미리보기_noto/온5통합/s-02.png",
+      "locator": "카드 넷"
+     }
+    ]
+   },
+   {
+    "id": "D-47",
+    "row_sha256": "88b115dae6403c17ad19f15125bd117947b51d7e285760e0d49e67b97fe5ba92",
+    "status": "통과",
+    "reason": "목차 한 장, 간지 번호 · 단원명 · 구분(이론/실습), 시간 표기 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 3 · 간지"
+     }
+    ]
+   },
+   {
+    "id": "D-48",
+    "row_sha256": "9711aab254d129f3adf8a0241f19d872bfdd89ea07a3b864e4b0765aff81aa9c",
+    "status": "통과",
+    "reason": "복습 한 장(71)이 다섯 장면을 사건에 대어 헷갈리는 짝을 가른다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 71"
+     }
+    ]
+   },
+   {
+    "id": "D-49",
+    "row_sha256": "80912c2afcc95abb2c2596eab0e1dcae176c0c1546fc8888ec0e386ec410a451",
+    "status": "통과",
+    "reason": "제목 · 머리 「용어 | 정식 명칭 · 풀이」 · 두 단, HYD 열 없음",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 72"
+     },
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/렌더/미리보기_noto/온5통합/s-72.png",
+      "locator": "표"
+     }
+    ]
+   },
+   {
+    "id": "D-50",
+    "row_sha256": "1d26056268fc8a8826e0a7b7de7ae60395a68dd00d1f88dfbdb9a38986bfac03",
+    "status": "통과",
+    "reason": "퀴즈 간지 제목 · 부제 고정 문구 그대로",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 73"
+     }
+    ]
+   },
+   {
+    "id": "D-51",
+    "row_sha256": "0ec9c0aec77c7d8803a87dbedd2199a1ab0994546817a4b9371efb0334be1868",
+    "status": "불통과",
+    "reason": "Quiz 1이 본문 20장과 같은 장면(원인 진단 → 식별자를 넣은 대안 평가)을 그대로 다시 묻고, 보기 2의 덧붙임 「앞의 결과가 다음 입력을 정했다」가 물음의 장면을 되풀이해 정답이 화면에 드러난다. 정답 번호 2 · 4 · 3, 정답 장 하나, 세 종류는 맞다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 74 메시지 · 요소 2, SLIDE 20"
+     },
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/렌더/미리보기_noto/온5통합/s-74.png",
+      "locator": "보기 2"
+     }
+    ]
+   },
+   {
+    "id": "D-52",
+    "row_sha256": "33d8220f4ae61b7355a8ccc0d38d635ac11b4a9e3136cf89363b0c6fd89b47ca",
+    "status": "통과",
+    "reason": "메뉴 이름 · 조작 순서는 제작 기준에만",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 62 · 64 제작 기준"
+     }
+    ]
+   },
+   {
+    "id": "D-53",
+    "row_sha256": "df1770ab2eb74fdfc17fb476fdabb6339e261fd511cff700179f12cada3f948b",
+    "status": "통과",
+    "reason": "실습 행마다 간지 + 설명 2장(61~70)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/구성/통합반/05회차/구성.json",
+      "locator": "rows 50~54"
+     }
+    ]
+   },
+   {
+    "id": "D-54",
+    "row_sha256": "bb26253d7a012a2fb35e4e23062923a175c602437820df1bc8dc34c916ceaaae",
+    "status": "통과",
+    "reason": "설명 장이 활동과 물음을 보이고 자료 · 순서 · 성공 조건 약속 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 62 · 64 · 66 · 68 · 70"
+     }
+    ]
+   },
+   {
+    "id": "D-55",
+    "row_sha256": "5904ab28c1bd1c130dc675503fbebcddd5eba1385a5243e671f6ea89b92770a7",
+    "status": "통과",
+    "reason": "소개 활동이 실라버스 50~54행 문장에 근거하고 실습 자료와 다른 곳은 작업자 기록에 위치와 함께 있다",
+    "evidence": [
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/실라버스_행.md",
+      "locator": "50~54행"
+     },
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/통합5/실습어긋남.md",
+      "locator": "1~7행"
+     }
+    ]
+   },
+   {
+    "id": "D-56",
+    "row_sha256": "1348591ab9ee6171b6e9166ca2a20b5c34c3a1a59c32265d128f98b69aa7b8c3",
+    "status": "통과",
+    "reason": "설명 장 메시지가 같은 틀로 이어지지 않는다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 62 · 64 · 66 · 68 · 70 메시지"
+     }
+    ]
+   },
+   {
+    "id": "D-57",
+    "row_sha256": "9a51f7ee27d4b195ff2b063ea304239b1cf11a342c87357cc5c18f07531250f7",
+    "status": "통과",
+    "reason": "이론 → 포털 실습(50 · 51) → 코딩 랩(52~54) 순서, 간지 앞에 받는 이론(59 · 43 · 60)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 60~70"
+     }
+    ]
+   },
+   {
+    "id": "D-59",
+    "row_sha256": "2c9521775ed2f529ae1353ad5919dad8075d3ae34b81e53a31faf496c3629111",
+    "status": "통과",
+    "reason": "「받은 자료 · 원자료」 류 0(68장 「원자료와 대조」는 실라버스 53행 문장)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 68"
+     }
+    ]
+   },
+   {
+    "id": "D-60",
+    "row_sha256": "35b3b090e3c0e9bde09a3cc2f413fb4ed4bb513de2b6c6860267678c20cd3270",
+    "status": "불통과",
+    "reason": "50장 화면은 「일치하는 기록 없음」 · 「실패」 두 칸뿐이고, 제목 · 메시지가 함께 가르는 「수량 0」(재고 행을 찾았고 그 수량이 0)의 정의는 대본 · 노트에만 있다 — 화면에 없는 정의를 대본만 말함",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 50 요소"
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": "[SLIDE 50] 셋째 문단"
+     },
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/렌더/미리보기_noto/온5통합/s-50.png",
+      "locator": "두 칸"
+     }
+    ]
+   },
+   {
+    "id": "D-61",
+    "row_sha256": "145c7cb3e06ec954c717ece448a5b580d2c7e7060651d7308673eefc6275dc2a",
+    "status": "통과",
+    "reason": "노트 [짚을 곳] 순서와 대본 순서, 화면 배치가 같다(33장 네 귀퉁이 순서 포함)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "노트"
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "D-62",
+    "row_sha256": "c900a39c6ec6b5b8f6b71140626cb6c2f3b94017f6f3b5777483a78b63c55b0a",
+    "status": "통과",
+    "reason": "렌더만 보고 장마다 핵심을 한 줄로 적을 수 있다",
+    "evidence": [
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/렌더/미리보기_noto/온5통합",
+      "locator": "s-01~s-77"
+     }
+    ]
+   },
+   {
+    "id": "D-161",
+    "row_sha256": "0ad2758556a3bddebc632fcc19f387b235f98ef67cbcf35d82c29eff7e1e3f41",
+    "status": "통과",
+    "reason": "화면에는 정의 · 실제 값 · 그림, 풀이는 대본. 전후를 말하는 장(16 · 41 · 45 · 60)은 두 칸을 함께 보인다(50장은 D-60)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 16 · 41 · 45 · 60"
+     }
+    ]
+   },
+   {
+    "id": "D-162",
+    "row_sha256": "db28685caff548964dc062cf2325fb215379b71a968f7bf2c7c3b1eaf70ba5f3",
+    "status": "통과",
+    "reason": "뒤 단원(06 · 07)도 코드 · 그림 · 비교로 앞 단원과 같은 밀도",
+    "evidence": [
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/렌더/미리보기_noto/온5통합",
+      "locator": "s-45~s-60"
+     }
+    ]
+   },
+   {
+    "id": "D-63",
+    "row_sha256": "f23b9a4a160e77a2a9fb1b15bd2d834eba389c0b215a65bfe57e421f466b09c1",
+    "status": "통과",
+    "reason": "한 장 한 주제, 비슷한 장 반복 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "본문"
+     }
+    ]
+   },
+   {
+    "id": "D-163",
+    "row_sha256": "681bf51940570c7c19398057c799e9cb963b72e05d61474fa411522877283ca5",
+    "status": "통과",
+    "reason": "장마다 새 용어 1~3",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "제작 기준 「새 용어」"
+     }
+    ]
+   },
+   {
+    "id": "D-164",
+    "row_sha256": "9e9e68de2e53b0d8e9eb6c0b3820bb3fd13b874ae770f88fa5e42f591a413b0e",
+    "status": "통과",
+    "reason": "같은 그림을 다시 쓰는 연속 장 없음(그림 8개 모두 한 장씩)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "그림: 칸"
+     }
+    ]
+   },
+   {
+    "id": "D-64",
+    "row_sha256": "c1b6426bdf7f512ba4a41af8b9f67e042da8120d463e7f515bd49f95f1e2e0b1",
+    "status": "통과",
+    "reason": "새 장이 기술적 제목 · 한 문장 메시지 · 괄호 정식 용어 · 맞선 칸 · 제작 기준 근거",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 14 · 30 · 52"
+     }
+    ]
+   },
+   {
+    "id": "D-65",
+    "row_sha256": "6a14c748b7d5954755bf5b51d39fe29f9e284eace43074c89be0740e430bb2c9",
+    "status": "미확인",
+    "reason": "마침표 · 두 줄 제목 0(원고). 47장 제목이 Noto 미리보기에서 두 줄로 꺾여 메시지와 겹친다 — 맑은 고딕 렌더 대기",
+    "evidence": [
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/렌더/미리보기_noto/온5통합/s-47.png",
+      "locator": "제목"
+     }
+    ]
+   },
+   {
+    "id": "D-66",
+    "row_sha256": "6d9335d1d954ae27ac85db3b77ceccea4199cab3e4ded74fc6fc4662c7f03a08",
+    "status": "통과",
+    "reason": "본문 장 모두 한 문장 메시지, 물음표 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "메시지 열"
+     }
+    ]
+   },
+   {
+    "id": "D-67",
+    "row_sha256": "c53de7973fb64de6a51913940c2220c7b8d60ad6be8e4557d6ac5f7dd41d24e9",
+    "status": "통과",
+    "reason": "의인화 · 「중요하다」 0, 메시지 이어 읽기 이야기 됨",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "메시지 열"
+     }
+    ]
+   },
+   {
+    "id": "D-68",
+    "row_sha256": "03926ec937beb18407b0eaccdccd707701dc8e2dba9b9c9e1d2be1d338ed9bd9",
+    "status": "통과",
+    "reason": "새 용어마다 화면에 영문 정식 명칭(AI Agent · Tool · Agent Loop · Workflow · Freshness · Tool Call · Allowlist 등)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 10 · 12 · 14 · 30 · 52 · 72"
+     }
+    ]
+   },
+   {
+    "id": "D-69",
+    "row_sha256": "ddc99ea1b1ce1910f91bd5567b8e3490983f713c8adac7b447392e68302fd7ff",
+    "status": "통과",
+    "reason": "약어 LLM · RAG · SOP · MES 풀이. 「냉각 성능 상실」(35장)과 「쿨러 냉각 성능 상실」 축약은 제작 기준에 까닭(기록만). 도구 이름 「생산오더 조회」는 D-95",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 7 · 9 · 35 제작 기준"
+     }
+    ]
+   },
+   {
+    "id": "D-70",
+    "row_sha256": "6c766fa09ed80ff21f9ad99952791e5162fb6734b70612a779198ca562131960",
+    "status": "통과",
+    "reason": "비유 칸 없음, 노트에 정의로 쓴 비유 없음",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "전체"
+     }
+    ]
+   },
+   {
+    "id": "D-71",
+    "row_sha256": "92449b88610848425c4abe2e62c5ae031faf62f26c3a2e2df3df5c2f6a41d7c2",
+    "status": "통과",
+    "reason": "화면 글이 문어체, 물음은 실습 설명 장의 활동 물음과 퀴즈뿐",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 62~70"
+     }
+    ]
+   },
+   {
+    "id": "D-72",
+    "row_sha256": "06e1f05956c59cd25cf80ba3a9e648f06ef07415d760bb1ff653c2236aaf8408",
+    "status": "통과",
+    "reason": "「덱 · 다음 장에서 · 현업에서는」 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "검색"
+     }
+    ]
+   },
+   {
+    "id": "D-73",
+    "row_sha256": "5ad5b7ab8c86b8660c0e90da459e611466e1e168e10d6525e8d334e63743c5a6",
+    "status": "통과",
+    "reason": "접속사 관계 맞음",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "노트"
+     }
+    ]
+   },
+   {
+    "id": "D-75",
+    "row_sha256": "7661e71f13a8246736214d5f582e424b40f18472e5486ead923641ceb75e2eba",
+    "status": "통과",
+    "reason": "그림 8개가 생성기 figures/만들기_삽화.py에서 나오고 확정 그림체(선 · 색 · 아이콘)와 같다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/figures/만들기_삽화.py",
+      "locator": ""
+     },
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/렌더/미리보기_noto/온5통합",
+      "locator": "s-05 · 12 · 17 · 33 · 39 · 43 · 46 · 56"
+     }
+    ]
+   },
+   {
+    "id": "D-76",
+    "row_sha256": "3a143a8a63a4b22a0065b728420595339c46309cb6a046b413dd9de66f9d8bc0",
+    "status": "통과",
+    "reason": "SVG의 <text> 0, 라벨은 덱 MD 요소",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/figures/",
+      "locator": "*.svg grep <text 0"
+     }
+    ]
+   },
+   {
+    "id": "D-77",
+    "row_sha256": "f5f7a83438e079b0885849b2f8d3b9f1dc1d7348a3209243ee314a2aae74c79a",
+    "status": "통과",
+    "reason": "과정은 흐름 · 단계 · 삽화, 관계는 관계도, 실제 형식은 코드. 같은 형태 4장 연속 0(코드 36~38 세 장)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "장 유형 열"
+     }
+    ]
+   },
+   {
+    "id": "D-78",
+    "row_sha256": "5789a36499962a9b95b1d25fbffdac76d8a6d7dd1a8f3d88d77d56786a631025",
+    "status": "통과",
+    "reason": "표는 같은 기준 대조(11 · 27 · 29 · 31 · 71), 비교는 두 대안. 장식 삽화 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "표 · 비교 장"
+     }
+    ]
+   },
+   {
+    "id": "D-79",
+    "row_sha256": "98cf184d97d45eee43d2ce82c245dce6d9c8c8d48fa53be8ba75b8798d79916c",
+    "status": "통과",
+    "reason": "실제 기록 · 값(호출 물음 JSON, 46.2, 5.98, 응답 형식)이 화면에 있다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 14 · 20 · 36 · 37 · 49 · 54"
+     }
+    ]
+   },
+   {
+    "id": "D-80",
+    "row_sha256": "e17309f00dd8ddf9a7a399a5a0aaaf55e9e32fcaa375ebe7e0af8e245781f384",
+    "status": "통과",
+    "reason": "삽화 요소마다 이름 라벨(5 · 12 · 17 · 33 · 39 · 43 · 46 · 56). 라벨 겹침은 D-86(글꼴 대기)",
+    "evidence": [
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/렌더/미리보기_noto/온5통합",
+      "locator": "삽화 장"
+     }
+    ]
+   },
+   {
+    "id": "D-81",
+    "row_sha256": "a5528d7ffd8c68008eac21f982930c0221c5f36efe0707382ac5bf92733ba813",
+    "status": "통과",
+    "reason": "35장 관계도: 원 노드 · 영어 관계 이름 · 고장 유형 진하게, 개수 표기 0",
+    "evidence": [
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/렌더/미리보기_noto/온5통합/s-35.png",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "D-82",
+    "row_sha256": "5a80c95597f107fa0348e9aa482df4c7ee22b524ad0fee7eae7710ccb3b066b0",
+    "status": "미확인",
+    "reason": "크게 빈 상자 0(미리보기). 29 · 71장 셋째 칸의 빽빽함은 글자 폭에 달려 맑은 고딕 렌더 대기",
+    "evidence": [
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/렌더/미리보기_noto/온5통합/s-29.png",
+      "locator": ""
+     },
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/렌더/미리보기_noto/온5통합/s-71.png",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "D-83",
+    "row_sha256": "2c004c18c265f15d30b14db126ac98c1a3e3026e7575484d0ba82109037047ed",
+    "status": "해당 없음",
+    "reason": "구조 유형 장 없음",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "장 유형 열"
+     }
+    ]
+   },
+   {
+    "id": "D-84",
+    "row_sha256": "a0acf0e00eda837e39608d1165dc8a09ca60df6c1d6d0dd633988e2a1f5a82fa",
+    "status": "통과",
+    "reason": "파이프라인 7 · 28장이 한 방향 경로",
+    "evidence": [
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/렌더/미리보기_noto/온5통합/s-07.png",
+      "locator": ""
+     },
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/렌더/미리보기_noto/온5통합/s-28.png",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "D-85",
+    "row_sha256": "cec6b762ec19813feb5188ffc867dd2b538a49d1f2753c7c157103169388decf",
+    "status": "통과",
+    "reason": "35장 화살표가 원인 → 고장 유형(CAUSES), 고장 유형 → 조치(MITIGATED_BY)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 35 연결"
+     },
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/렌더/미리보기_noto/온5통합/s-35.png",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "D-86",
+    "row_sha256": "a9d2271a0fbd1c6fe3cb172168bb5ac328247aab8f6cc4b860f4f3357b386755",
+    "status": "미확인",
+    "reason": "Noto 미리보기라 넘침 · 줄바꿈 · 글겹침 판정 불가 — 맑은 고딕 렌더 · 글겹침.py 대기(47장 두 줄 제목, 29장 셋째 칸, 49장 코드 아랫단 주의)",
+    "evidence": [
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/렌더/미리보기_noto/온5통합",
+      "locator": "s-29 · s-47 · s-49"
+     }
+    ]
+   },
+   {
+    "id": "D-87",
+    "row_sha256": "516d1e83a3184a16d2ed63708f94a5cf3398abc7d18a27296c8adf8e67f09218",
+    "status": "통과",
+    "reason": "77장 모두 세 머리",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "머리 77 · 77 · 77"
+     }
+    ]
+   },
+   {
+    "id": "D-88",
+    "row_sha256": "a49b0f6fbd33070712376b8e9779ae64825663a651d0cf677431a34c853fea44",
+    "status": "통과",
+    "reason": "날짜 · 경위 · 옛 번호 0(근거 폴더 이름의 날짜는 경로). 61 · 63장 제작 기준이 작업 폴더 실습어긋남.md를 가리키는 것은 기록만",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "검색"
+     }
+    ]
+   },
+   {
+    "id": "D-173",
+    "row_sha256": "bf7100955537131108be8dd98e9065968dfd5bd43e8ad25f7a260b08b7529fdd",
+    "status": "통과",
+    "reason": "인용한 실라버스 문장이 실라버스_행.md 48~54행 원문과 같다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 62 · 64 · 66 · 68 · 70 제작 기준"
+     },
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/실라버스_행.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "D-90",
+    "row_sha256": "e07e402e21dc698aff15a5fb8cb474c9bbdbe413a8cc3022ba16286d2da76124",
+    "status": "통과",
+    "reason": "deck2pptx.py --check 「검사 통과 · 77장」 종료 0(검토자 실행)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "--check"
+     }
+    ]
+   },
+   {
+    "id": "D-91",
+    "row_sha256": "08c11d2128d5b171e02bb66af137626b4527af122837dab41393772f44cd484a",
+    "status": "통과",
+    "reason": "PPTX 77장 노트 = 덱 MD 노트(차이 0, 검토자 python-pptx 대조), sha256 a88a3d36… = 구성.json pptx_sha256",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/통합반_05일차.pptx",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/제작도구/구성/통합반/05회차/구성.json",
+      "locator": "pptx_sha256"
+     }
+    ]
+   },
+   {
+    "id": "D-92",
+    "row_sha256": "0cc68e099944561ee9ab95248c95a93e8666fb5dfd3312c815e067502dcd88cc",
+    "status": "해당 없음",
+    "reason": "확정 덱이 아니다(장확정 0)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/구성/통합반/05회차/구성.json",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "D-93",
+    "row_sha256": "0775c3e05a312973e9e48133ebccd5ee0d66d651508274a55e8d5e86f17d890d",
+    "status": "통과",
+    "reason": "PPTX가 산출물/통합반/이론/05회차/에 있다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/통합반_05일차.pptx",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "D-94",
+    "row_sha256": "216a5058e5c371df2404725d29d47854d9be71f2ccfd399f3b65d02e89ca90c6",
+    "status": "미확인",
+    "reason": "커밋 전 — 커밋 뒤 git show --stat로 감독이 본다",
+    "evidence": []
+   },
+   {
+    "id": "D-95",
+    "row_sha256": "5e5651263680a0417f13e7b7e49194088501cd29382edcb515ca607ccfe6399c",
+    "status": "불통과",
+    "reason": "① 18장 코드가 2026-10-10 처리 기록의 옛 화면 문구 「배정된 스킬 1개 (…): cooling-emergency-response」 「스킬 읽음 · SKILL.md」를 싣는데, 지금 포털은 「파일 전달 1개」 · 「스킬 파일 읽기 요청 …」으로 보인다(읽기 요청은 읽었다는 증거가 아니라고 코드 주석에 명시). ② 10 · 23 · 37장의 도구 이름 「생산오더 조회」가 포털 처리 기록의 이름 「생산 주문 조회」와 다르다",
+    "evidence": [
+     {
+      "path": "it/portal/www/caseRecord.js",
+      "locator": "74~76행 skills_provided · 72행 주석 · 767행 「스킬 파일 읽기 요청」"
+     },
+     {
+      "path": "it/portal/www/ui.js",
+      "locator": "54~58행 skillDeliverySummary"
+     },
+     {
+      "path": "it/portal/www/plainWords.js",
+      "locator": "425행 mes_orders 「생산 주문 조회」 · 438행 qms_lots"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 18 코드 · 요소 2, SLIDE 10 요소 2, SLIDE 23 코드 5줄, SLIDE 37 코드 첫 줄"
+     }
+    ]
+   },
+   {
+    "id": "D-96",
+    "row_sha256": "9611c26001971c92e367e73e3ec020882056302d6d913ce989661b78aa2adac0",
+    "status": "통과",
+    "reason": "온톨로지는 관계(설비 · 증상 · 원인 · 조치)로만",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 34 · 35"
+     }
+    ]
+   },
+   {
+    "id": "D-97",
+    "row_sha256": "47b1b6bbbd64e0eaf0eb9c1024b0cdc8314575f8ba68431a7e3d7502e1ef91e7",
+    "status": "통과",
+    "reason": "화면 수치마다 제작 기준에 근거(seed.sql · prompt.py · settings.py · work_rules.py · ask.js · cards_now.out · 그래프 덤프 — 검토자가 열어 확인)",
+    "evidence": [
+     {
+      "path": "it/agent-worker/worker/settings.py",
+      "locator": "run_timeout_s 1800 · max_format_corrections 2"
+     },
+     {
+      "path": "common/hydcommon/sql_read.py",
+      "locator": "MAX_ROWS 200"
+     },
+     {
+      "path": "it/agent/agentsvc/tools/mcp_prom.py",
+      "locator": "MAX_AGE_S 60"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/근거/2026-11-03_5-6회차_인계/근거/cards_now.out",
+      "locator": "4~10행"
+     }
+    ]
+   },
+   {
+    "id": "D-170",
+    "row_sha256": "7679b50b09bc743caa9f2a756d3587b465670a793df9c85f442d17eaaf331af4",
+    "status": "통과",
+    "reason": "구현 선택을 일반 원리로 만든 곳 0(60초 · 200행 · 30분은 「이 시스템 설정」)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 39 · 43 · 51 노트"
+     }
+    ]
+   },
+   {
+    "id": "D-98",
+    "row_sha256": "672434f4f0272e450af96229465690c260c9c9b36af23b131b8636f3005ddb96",
+    "status": "통과",
+    "reason": "설정값 · 관측값 · 예측값 구분, 퀴즈 3분은 문제의 전제, 41장 예문은 지은 예문",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 41 · 75 제작 기준"
+     }
+    ]
+   },
+   {
+    "id": "D-99",
+    "row_sha256": "248e107a921b4c3f73b887c59508a0bcf31a0c406c4e2b96a98927a00f477ed9",
+    "status": "통과",
+    "reason": "실행 장면 값이 기록 ① · ②와 cards_now.out 실측에 있다(27장 점수 · 20장 고장 유형 id를 지금 값으로 바꾼 것은 사실장부 결정 — 기록만)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/지침/사실표/통합반_05-08일차_기술사실표.md",
+      "locator": "5.1.2"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/근거/2026-11-03_5-6회차_인계/근거/cards_now.out",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "D-100",
+    "row_sha256": "b27b13823fbece3e298f074bc993349d5403da3403604e3c0c09722cbee7e6e6",
+    "status": "해당 없음",
+    "reason": "인제스천 품질 · 규모 주장 없음",
+    "evidence": []
+   },
+   {
+    "id": "D-102",
+    "row_sha256": "88f42391492f0cefe0a1e3d8436361c5b3055de7191a486fb3b0cf0dba780138",
+    "status": "통과",
+    "reason": "제작 기준의 「읽었다」 주장 없음",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "제작 기준"
+     }
+    ]
+   },
+   {
+    "id": "D-103",
+    "row_sha256": "76fe515662a9b080c8f8a5806467d8f567c2124f39011972e6cf7413e629262f",
+    "status": "통과",
+    "reason": "에이전트가 내는 것을 「추천안」으로 부르고 「조치 카드」 서술 0(「품질 대응 카드」는 실라버스 고유 이름)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 27 · 29 · 67"
+     }
+    ]
+   },
+   {
+    "id": "D-104",
+    "row_sha256": "6224b704f0ff3694d3ea9fcbce4f5e5a3563d0f90b5e88fdb13d6adcaa3d7dee",
+    "status": "통과",
+    "reason": "승인 · 운전원 표기 일치, 「반려」 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 28"
+     }
+    ]
+   },
+   {
+    "id": "D-105",
+    "row_sha256": "bbbe5f492356fd3c5da7092bf50adcf9bd80d5ba29c81d38cd6da5eaef550a9e",
+    "status": "통과",
+    "reason": "「쿨러 성능 저하 경보」 · 「쿨러 사건」",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 1 · 5 노트"
+     }
+    ]
+   },
+   {
+    "id": "D-106",
+    "row_sha256": "c0e442217e0e27313bfff90837be914aafb864616bad0633cd97fc084ac34e95",
+    "status": "통과",
+    "reason": "SOP-COOL-11 「팬 최대 운전」, 대안 평가, 공동 순위 없음(지금 값)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 27"
+     },
+     {
+      "path": "workspace/강의제작/지침/사실표/통합반_01일차_기술사실표.md",
+      "locator": "같은 말 표 그 밖 행"
+     }
+    ]
+   },
+   {
+    "id": "D-107",
+    "row_sha256": "38ccfc29604f7e1b411b646e54a7b9d81f710ac54eb72cd3f06ade66a443941d",
+    "status": "해당 없음",
+    "reason": "「기준 흐름」 · anomaly_response 언급 없음",
+    "evidence": []
+   },
+   {
+    "id": "D-108",
+    "row_sha256": "1969b67d261d6060895d715dd49cc5acadc519da67dce37775b3ca6184fe0d73",
+    "status": "통과",
+    "reason": "55.71 ℃ · 46.2 % · 11:13:08 · 11:14:56 · 65 ℃가 대표 값 행과 같다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/지침/사실표/통합반_01일차_기술사실표.md",
+      "locator": "같은 말 표 대표 값 행"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 5 · 36 · 41"
+     }
+    ]
+   },
+   {
+    "id": "D-109",
+    "row_sha256": "be6312d29cac12f8ef6a9d7ad2b0a1e62baf7918fa9af8c33a67e68bf4452685",
+    "status": "통과",
+    "reason": "ALT-hyd01-0014-e0a1 · DEC-1010-002-408b · WO-1010-C058 · 51.5 ℃가 사건의 기록 행과 같다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/지침/사실표/통합반_01일차_기술사실표.md",
+      "locator": "사건의 기록 행"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 14 · 22 · 28"
+     }
+    ]
+   },
+   {
+    "id": "D-166",
+    "row_sha256": "9446edc994026188bfc80ca32ec44c7e34cc7305b6358afe8eeae3157e48fc9d",
+    "status": "통과",
+    "reason": "다른 처리 건(23 · 37 기록 ②, 26 질문 건)을 화면 · 노트에 「다른 실행」으로 밝힌다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 23 · 26 · 37"
+     }
+    ]
+   },
+   {
+    "id": "D-110",
+    "row_sha256": "00825652d4fe8e567cff2edbdd36050c8013377d9af8d6e72a3dec3ed8dfb2bc",
+    "status": "해당 없음",
+    "reason": "승인 지연 · 무응답 언급 없음",
+    "evidence": []
+   },
+   {
+    "id": "D-111",
+    "row_sha256": "f51fd024e9671919b198c87de5f8a2cf419dc17344bd5920d8e7d30d710eab79",
+    "status": "통과",
+    "reason": "34장 「지식 쪽엔 값을 읽을 자리」가 두 설계 원칙 행과 같다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 34 노트 · 제작 기준"
+     }
+    ]
+   },
+   {
+    "id": "D-112",
+    "row_sha256": "2583a30575043ca1a8f198249ba6991f22763c88ef32ce91ec1d29ebfc443c75",
+    "status": "미확인",
+    "reason": "이 덱 안은 같은 말. 쿨러 사건 순위를 지금 값(+3.05 · +2.57 · +2.18)으로 바꾼 것이 1회차 사실표 5.2(543행) · 09-11 사실표의 기록 값(2.75 · 2.75 · −1.58)과 다르다 — 사실장부가 정한 정리 범위라 다른 회차 덱 판정은 감독 몫",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/지침/사실표/통합반_01일차_기술사실표.md",
+      "locator": "543행"
+     },
+     {
+      "path": "workspace/강의제작/지침/사실표/통합반_09-11일차_기술사실표.md",
+      "locator": "309 · 514행"
+     }
+    ]
+   },
+   {
+    "id": "D-113",
+    "row_sha256": "93dd2a97bb1ce547206f7b4ece7be4064e8019c2cd95c8c10700cc75868eb011",
+    "status": "통과",
+    "reason": "77장 모두 그 장만의 노트",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/통합반_05일차.pptx",
+      "locator": "노트 77"
+     }
+    ]
+   },
+   {
+    "id": "D-114",
+    "row_sha256": "b2aa4d91bd80e56f770bf717194cad0b5ab10ba8f37c2aa6efdc3b9ef7baa628",
+    "status": "불통과",
+    "reason": "23장 노트의 괄호 안 「(팬 100 % / 팬 100 % + 부하 80 % / 부하 70 %의 15분 뒤 유온)」의 ` / `가 PPTX 노트에서 줄을 끊어 「·」로 시작하지 않는 줄 둘이 생겼다(검토자 python-pptx 확인). 나머지 76장은 꼴 맞음",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 23 노트"
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/통합반_05일차.pptx",
+      "locator": "23장 노트 4 · 5줄"
+     }
+    ]
+   },
+   {
+    "id": "D-115",
+    "row_sha256": "5ca4300051f1f0eef86d44cffc52c0c98b459a9f4cef2dcc1ff1607fea3c6dc7",
+    "status": "통과",
+    "reason": "라벨 · 제삼자 호칭 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "노트"
+     }
+    ]
+   },
+   {
+    "id": "D-116",
+    "row_sha256": "97d997ad484d590bfff89839ba2ed54e47b7ba0a19a897d1eb6c45d3944e918a",
+    "status": "통과",
+    "reason": "노트와 대본 구간의 내용 · 순서 · 값이 같다(71장 대본 한 문장의 어긋남은 S-42로)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "노트"
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "D-117",
+    "row_sha256": "aedbc0cdfdcb63881490b958e6882c2b2b4d3f3f8f4287938a3c49f310861643",
+    "status": "통과",
+    "reason": "노트에 단원 밖 예고 0(실습 간지 노트 [다음]은 그 실습 묶음 안)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "노트 61~70"
+     }
+    ]
+   },
+   {
+    "id": "D-118",
+    "row_sha256": "a3d97e81b3ea010bfa9e1705b73549623dcef043bab747adc3d1e9de9a07091d",
+    "status": "통과",
+    "reason": "메모 꼴 구어, 「보이죠」 반복 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "노트"
+     }
+    ]
+   },
+   {
+    "id": "D-119",
+    "row_sha256": "a7a4ebc8b614e5db59d505b249cbadb36e061c53f18a617eb54ee5dd2bad0acf",
+    "status": "통과",
+    "reason": "제작 말투 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "노트 검색"
+     }
+    ]
+   },
+   {
+    "id": "D-120",
+    "row_sha256": "eb79531544bf08518cc819de63c62f05e7b970c59dfdac953831f7eb9ea56737",
+    "status": "통과",
+    "reason": "추임새 · 억지 문답 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "노트"
+     }
+    ]
+   },
+   {
+    "id": "D-121",
+    "row_sha256": "0d35a29cb39adc99505ac372ca88b9e32a569f6d678c322f2d05d8835ac48701",
+    "status": "불통과",
+    "reason": "노트가 영문 상수를 그대로 읽힌다: 36장 「판정 PASS」, 47장 「SUPPORTED(근거 지지)…」, 49장 「INVALID = … UNKNOWN = …」 — 예외 셋(문법 키워드 · 언어 이름 · 학생 입력값)에 들지 않음",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 36 · 47 · 49 노트"
+     }
+    ]
+   },
+   {
+    "id": "D-122",
+    "row_sha256": "c19db8cdcf2fd52afbd75b02056917c28f5688063605c4e8e40141ee257b5a73",
+    "status": "통과",
+    "reason": "우리말 · 영어 나란히 읽기 0, 장 번호 의존 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "노트"
+     }
+    ]
+   },
+   {
+    "id": "D-123",
+    "row_sha256": "62f5f6534b344217a5bf5ed24fb5ff14df3bd115d1ded75f0d6e743dd5e9d778",
+    "status": "통과",
+    "reason": "판단을 가르는 경계(70 % 미만 · 60초 · 0.9 · 35 ℃)만 정확한 수치",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "노트 36 · 43 · 60"
+     }
+    ]
+   },
+   {
+    "id": "D-124",
+    "row_sha256": "56ea5da920e21994b3587f076ca667fedcbc8da64c5786702bc5e4a88fea1112",
+    "status": "통과",
+    "reason": "명령 토큰 낭독 0, UI 이름은 제작 기준에만",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "노트"
+     }
+    ]
+   },
+   {
+    "id": "D-125",
+    "row_sha256": "9c77439f81223d50179f14f9eab90bac706b32cd7e7124af0a3aa0b69002387e",
+    "status": "해당 없음",
+    "reason": "실전반 덱 항목 — 이 산출물은 통합반 5회차",
+    "evidence": []
+   },
+   {
+    "id": "D-126",
+    "row_sha256": "acd80f7086b42645a743a46368b6a898db3936fdb586b23634ceed0c376c68c5",
+    "status": "해당 없음",
+    "reason": "실전반 덱 항목 — 이 산출물은 통합반 5회차",
+    "evidence": []
+   },
+   {
+    "id": "D-127",
+    "row_sha256": "7a956e2ba8393f86810dc97ca36d7c50cca4e7bfd4565efe900566dc3e8fd139",
+    "status": "해당 없음",
+    "reason": "실전반 덱 항목 — 이 산출물은 통합반 5회차",
+    "evidence": []
+   },
+   {
+    "id": "D-128",
+    "row_sha256": "cfeef7edfdb2d2d42c0f0794b5ed4fe2d05b0a19a5bf563a8f86625c8b7adc3d",
+    "status": "해당 없음",
+    "reason": "실전반 덱 항목 — 이 산출물은 통합반 5회차",
+    "evidence": []
+   },
+   {
+    "id": "D-129",
+    "row_sha256": "f1ff7a1008d0ef83276953028e5c81890ed1932b405b54ba93cc48e84f66a1a5",
+    "status": "해당 없음",
+    "reason": "실전반 덱 항목 — 이 산출물은 통합반 5회차",
+    "evidence": []
+   },
+   {
+    "id": "D-130",
+    "row_sha256": "ca484d9f6ea0f18fc342ac389165679ca5db1f106018235a67778240d13a83e8",
+    "status": "해당 없음",
+    "reason": "실전반 덱 항목 — 이 산출물은 통합반 5회차",
+    "evidence": []
+   },
+   {
+    "id": "D-131",
+    "row_sha256": "e78305c96a12514482a42310b4ec3fab08ddba7a8584cefa30c169f37ae639d3",
+    "status": "해당 없음",
+    "reason": "실전반 덱 항목 — 이 산출물은 통합반 5회차",
+    "evidence": []
+   },
+   {
+    "id": "D-132",
+    "row_sha256": "9ef40d40a280bf6ff0644498317c2d1181e66ca40da31067d3ff15e06d14c642",
+    "status": "해당 없음",
+    "reason": "실전반 덱 항목 — 이 산출물은 통합반 5회차",
+    "evidence": []
+   },
+   {
+    "id": "D-133",
+    "row_sha256": "128da1124a1d524b5a588bf799dbe97a9a36f34c6eee6524b1fb19b2f7ab4704",
+    "status": "해당 없음",
+    "reason": "실전반 덱 항목 — 이 산출물은 통합반 5회차",
+    "evidence": []
+   },
+   {
+    "id": "D-135",
+    "row_sha256": "60756867c16609b46da6c6cc2715a360e3f06a4e6c1565832e3f9b191f5a2025",
+    "status": "해당 없음",
+    "reason": "오프라인 덱 항목 — 이 산출물은 온라인 덱(오프라인 5회 덱은 오5통합 검토자)",
+    "evidence": []
+   },
+   {
+    "id": "D-136",
+    "row_sha256": "169678cd18d157d1de88044bee1bffb1aa72ce190c1144227dc7c9d2a5af1656",
+    "status": "해당 없음",
+    "reason": "오프라인 덱 항목 — 이 산출물은 온라인 덱(오프라인 5회 덱은 오5통합 검토자)",
+    "evidence": []
+   },
+   {
+    "id": "D-137",
+    "row_sha256": "28d6a4463323188e245c86c999eb50e8da61bb8f5aa71112ea5b4a190f824671",
+    "status": "해당 없음",
+    "reason": "오프라인 덱 항목 — 이 산출물은 온라인 덱(오프라인 5회 덱은 오5통합 검토자)",
+    "evidence": []
+   },
+   {
+    "id": "D-169",
+    "row_sha256": "0545d84d405547fbab5faa6ee777d965c5a160d16a47c38ca3f40ca315982810",
+    "status": "해당 없음",
+    "reason": "오프라인 덱 항목 — 이 산출물은 온라인 덱(오프라인 5회 덱은 오5통합 검토자)",
+    "evidence": []
+   },
+   {
+    "id": "D-171",
+    "row_sha256": "2a226d7fbd8e2c402704de3d4dabe9b3e8ec2e31eee83d1f7f3999dd532dc923",
+    "status": "해당 없음",
+    "reason": "오프라인 덱 항목 — 이 산출물은 온라인 덱(오프라인 5회 덱은 오5통합 검토자)",
+    "evidence": []
+   },
+   {
+    "id": "D-172",
+    "row_sha256": "01944d654b187a164a3a78a7dc7d741e56dc91ad30fcf684b29b83c11dc8c363",
+    "status": "해당 없음",
+    "reason": "오프라인 덱 항목 — 이 산출물은 온라인 덱(오프라인 5회 덱은 오5통합 검토자)",
+    "evidence": []
+   },
+   {
+    "id": "D-138",
+    "row_sha256": "9afdeec544c7adb7b928c0ffef50b5076aedcc9682475ac09790893d5048fed8",
+    "status": "해당 없음",
+    "reason": "오프라인 덱 항목 — 이 산출물은 온라인 덱(오프라인 5회 덱은 오5통합 검토자)",
+    "evidence": []
+   },
+   {
+    "id": "D-139",
+    "row_sha256": "41d8426a92819843dd42f8112c8c297a8624e2dd29f6bdf758b2a8ca4d4fd87e",
+    "status": "해당 없음",
+    "reason": "오프라인 덱 항목 — 이 산출물은 온라인 덱(오프라인 5회 덱은 오5통합 검토자)",
+    "evidence": []
+   },
+   {
+    "id": "D-140",
+    "row_sha256": "2d7072f0fa8b2080a239bb9cbede2042c597a1ea10fb049aaa424ecfaabad655",
+    "status": "해당 없음",
+    "reason": "오프라인 덱 항목 — 이 산출물은 온라인 덱(오프라인 5회 덱은 오5통합 검토자)",
+    "evidence": []
+   },
+   {
+    "id": "D-141",
+    "row_sha256": "13d4f08c831f31b88ac1ea5987459b54da89e17f7c03de636c718defed680e8e",
+    "status": "해당 없음",
+    "reason": "오프라인 덱 항목 — 이 산출물은 온라인 덱(오프라인 5회 덱은 오5통합 검토자)",
+    "evidence": []
+   },
+   {
+    "id": "D-142",
+    "row_sha256": "da598b72e8991332ae944db870ce7bfbe40071696b0c7dba5bdce334a28a928e",
+    "status": "해당 없음",
+    "reason": "오프라인 덱 항목 — 이 산출물은 온라인 덱(오프라인 5회 덱은 오5통합 검토자)",
+    "evidence": []
+   },
+   {
+    "id": "D-143",
+    "row_sha256": "b3574dcc1fad5a7764da4e1bb75a6c0d0826c8089ded7478e09c888fb92c7e57",
+    "status": "해당 없음",
+    "reason": "오프라인 덱 항목 — 이 산출물은 온라인 덱(오프라인 5회 덱은 오5통합 검토자)",
+    "evidence": []
+   },
+   {
+    "id": "D-144",
+    "row_sha256": "2af95d953277a53abf379dbb00bfbff45cc05987da3d212697ac1f47596a6438",
+    "status": "해당 없음",
+    "reason": "오프라인 덱 항목 — 이 산출물은 온라인 덱(오프라인 5회 덱은 오5통합 검토자)",
+    "evidence": []
+   },
+   {
+    "id": "D-145",
+    "row_sha256": "b26d107ee71d9457b5bffddc9cbb29ae23849e40d5ed51ed3e4388ffb565da96",
+    "status": "해당 없음",
+    "reason": "오프라인 덱 항목 — 이 산출물은 온라인 덱(오프라인 5회 덱은 오5통합 검토자)",
+    "evidence": []
+   },
+   {
+    "id": "D-7",
+    "row_sha256": "aa7eacda6141a7dd6db7589a8c34bd9d96f124f52fc2cf48c30a08163c5e6a9d",
+    "status": "해당 없음",
+    "reason": "이번 작업에서 실라버스를 고치지 않았다",
+    "evidence": [
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/실라버스_행.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "D-58",
+    "row_sha256": "ad9e41ee549fffefe2c58ca55ffc62cd573231f5edd534bf9db3e6242316b1fd",
+    "status": "통과",
+    "reason": "소개한 목적 · 활동이 실라버스 50~54행과 같다. 실습 자료(대본 · 랩)와의 차이는 작업자 기록에 파일:줄로 있다",
+    "evidence": [
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/실라버스_행.md",
+      "locator": "50~54행"
+     },
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/통합5/실습어긋남.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "D-101",
+    "row_sha256": "1aa77c89d9ba77ec7900df789fa1867c585185779581d781a0a8331033ea2e06",
+    "status": "미확인",
+    "reason": "D-112와 같음",
+    "evidence": []
+   },
+   {
+    "id": "D-134",
+    "row_sha256": "7cba7d3291ff8e61a94ee778023972a9436cdda4c432fa96c0c76e149bd11917",
+    "status": "미확인",
+    "reason": "공통 사실(순위 · fm id)의 실전반 짝(실전 4회차) 반영은 온5실전 검토자 몫",
+    "evidence": []
+   },
+   {
+    "id": "D-160",
+    "row_sha256": "5db1d19d924ebf39751a4bf3e025e4d132e25daa50fbed0ff40954e38e3da71b",
+    "status": "통과",
+    "reason": "바뀐 그림을 쓰는 실전반 장 없음(실전반 덱 MD에서 day05 그림 참조 검색 0)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/",
+      "locator": "grep day05 figures 0"
+     }
+    ]
+   },
+   {
+    "id": "D-146",
+    "row_sha256": "3df38e1a31023fde81b8446ca2fd0b95a4b54b060160d7aa94a810f441c2f769",
+    "status": "미확인",
+    "reason": "오프라인 5회 재조립 · 대조는 오5통합 검토자 몫",
+    "evidence": []
+   },
+   {
+    "id": "D-147",
+    "row_sha256": "9e24892f5b0bc680b2421fdf2767243e90cf16f65c9e67b29e7bd935cc1e6777",
+    "status": "통과",
+    "reason": "대본 [SLIDE] 1~77이 한 번씩, 구성.json units 1~31 · 32~77",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": "[SLIDE 01~31]"
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": "[SLIDE 32~77]"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/구성/통합반/05회차/구성.json",
+      "locator": "units"
+     }
+    ]
+   },
+   {
+    "id": "D-148",
+    "row_sha256": "0bb77d00a46a1d8f7667bdbc26bf3cfe18726dfed8e2f1f27075034fa3215954",
+    "status": "통과",
+    "reason": "구성표 값(행별 배정 · 낭독 · 대기)이 구성.json과 재측정과 같다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/구성/통합반/05회차/구성표.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/제작도구/구성/통합반/05회차/구성.json",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "D-149",
+    "row_sha256": "5d942aa47746246350d5fc6a44e736e42ea9dc792b732a521f896371f1212389",
+    "status": "통과",
+    "reason": "노트 = 대본 판(D-116)",
+    "evidence": []
+   },
+   {
+    "id": "D-150",
+    "row_sha256": "aadac49375d4d6495880e5770e303b5296c78416c5f0a256f210a63097b44887",
+    "status": "불통과",
+    "reason": "50장은 「수량 0」의 판단 근거가 화면에 없어 세 경우의 비교를 말로만 따라간다(D-60과 같은 원인). 그 밖 긴 장(23 · 77 · 18 · 51 · 13 · 20 · 35)은 화면에서 근거를 짚을 수 있다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 50"
+     },
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/렌더/미리보기_noto/온5통합/s-50.png",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "D-151",
+    "row_sha256": "18783bd3d85a021924ae4e00ad891a3c2dcee22315edd7718a3ed009793e5a2a",
+    "status": "해당 없음",
+    "reason": "확정 덱의 승인 문구 변경이 아니다",
+    "evidence": []
+   },
+   {
+    "id": "D-152",
+    "row_sha256": "04a9912b0ffd727339fc06bf10b8c604da178f3f288c50ed3742a6242f08dc8a",
+    "status": "통과",
+    "reason": "README · 구성.json에 진행 기록 · 상태 문장 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/README.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/제작도구/구성/통합반/05회차/구성.json",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "D-153",
+    "row_sha256": "ec0e9b99b5954307906a50ceaf50e7e48d370d16da6921d5ca03f04978baeafc",
+    "status": "통과",
+    "reason": "사람 이름 · 키 · 개인 경로 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "검색"
+     }
+    ]
+   },
+   {
+    "id": "D-154",
+    "row_sha256": "92e2c7717cf4277020366df6625378c1212b88c25d3f14ff746b1ad42a0822aa",
+    "status": "통과",
+    "reason": "지운 원문 없음(작업자 변경전/ 보관)",
+    "evidence": [
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/통합5/변경전/",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "D-155",
+    "row_sha256": "62f2a4355c7e02d0340712c86fef93cda2d296808a20b2d0562c2790d1232afd",
+    "status": "미확인",
+    "reason": "마감 보고 항목 — 감독의 마감 보고 뒤 판정(검토 시점에 마감 보고 없음). 행별 배정 · 재측정 값은 판정 파일 행별시간",
+    "evidence": []
+   },
+   {
+    "id": "D-156",
+    "row_sha256": "5e25cadcfd79a522d9253f6c4e638001781a5eb5ba733ab68b8481eecf748202",
+    "status": "미확인",
+    "reason": "마감 보고 항목 — 감독의 마감 보고 뒤 판정(검토 시점에 마감 보고 없음). 행별 배정 · 재측정 값은 판정 파일 행별시간",
+    "evidence": []
+   },
+   {
+    "id": "D-157",
+    "row_sha256": "c415237f427bb1755ae5e3c7e0b948b57748fb6a35e7efcc300d93a6521b5657",
+    "status": "미확인",
+    "reason": "마감 보고 항목 — 감독의 마감 보고 뒤 판정(검토 시점에 마감 보고 없음). 행별 배정 · 재측정 값은 판정 파일 행별시간",
+    "evidence": []
+   },
+   {
+    "id": "D-158",
+    "row_sha256": "0b24869393e77986f8b101a0fe12fc86291b55c2c57f868af6221df8602063d9",
+    "status": "미확인",
+    "reason": "마감 보고 항목 — 감독의 마감 보고 뒤 판정(검토 시점에 마감 보고 없음). 행별 배정 · 재측정 값은 판정 파일 행별시간",
+    "evidence": []
+   },
+   {
+    "id": "D-167",
+    "row_sha256": "67c80c0aeaedac80fa612561efaf6a3a5d1992358916b99f57643e89d106ed54",
+    "status": "미확인",
+    "reason": "마감 보고 항목 — 감독의 마감 보고 뒤 판정(검토 시점에 마감 보고 없음). 행별 배정 · 재측정 값은 판정 파일 행별시간",
+    "evidence": []
+   },
+   {
+    "id": "D-159",
+    "row_sha256": "a8e3846cf7bacef47a7a8ba1e380b935d2727603307310a8151db1f0976433c1",
+    "status": "미확인",
+    "reason": "마감 보고 항목 — 감독의 마감 보고 뒤 판정(검토 시점에 마감 보고 없음). 행별 배정 · 재측정 값은 판정 파일 행별시간",
+    "evidence": []
+   }
+  ],
+  "통합반-온라인-05-대본노트": [
+   {
+    "id": "S-1",
+    "row_sha256": "b86472cbab27d5eff8c2524c657f1964f19afb89097f2ab3bec34d2898d6acb1",
+    "status": "통과",
+    "reason": "48 · 49행 문장을 대본이 빠짐없이 말하고 실습 50~54행은 해 볼 일을 소개",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     },
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/실라버스_행.md",
+      "locator": "48~54행"
+     }
+    ]
+   },
+   {
+    "id": "S-2",
+    "row_sha256": "a5c48c4a4324e8427c14eef7bb995560e7209c5aa8aacfb34550d7ff93a248b0",
+    "status": "통과",
+    "reason": "대조표가 문장마다 장 · 설명 · 근거 · 분을 갖는다",
+    "evidence": [
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/통합5/대조표.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-3",
+    "row_sha256": "a2b14d3d1916ff0ace6ae71385c03adf8d5e621cd4b6c4d65105b329e64fcb3b",
+    "status": "통과",
+    "reason": "# [이론] · # [실습] 행 제목 줄이 엑셀 제목과 같다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": "61행"
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": "9 · 521~569행"
+     }
+    ]
+   },
+   {
+    "id": "S-4",
+    "row_sha256": "b6477d749de6fb5020da9c5ec7e4a925845faa17a14ac3ed92efb9ecdd6126d0",
+    "status": "통과",
+    "reason": "51행 실습 자료 없음이 제작 확인용 · 작업자 기록에 있다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": "698행"
+     }
+    ]
+   },
+   {
+    "id": "S-5",
+    "row_sha256": "a0999a164d5b2f723f406969974952ca7b162864590eb71c06a637eede4aa093",
+    "status": "통과",
+    "reason": "rows · 행 제목 순서 · 분이 실라버스와 같다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/구성/통합반/05회차/구성.json",
+      "locator": "rows"
+     }
+    ]
+   },
+   {
+    "id": "S-6",
+    "row_sha256": "10c9feaa083dcd0a8c1d95840267eb0279115d3b047dd08df57c160b3b81e99a",
+    "status": "해당 없음",
+    "reason": "실라버스를 바꾸지 않음",
+    "evidence": []
+   },
+   {
+    "id": "S-8",
+    "row_sha256": "c71a131c4e92b221f6955504dc97ad919a74d5dbd5c335a2e3cb98e004749ad2",
+    "status": "통과",
+    "reason": "kind 이론 · 실습이 구분 칸과 같다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/구성/통합반/05회차/구성.json",
+      "locator": "rows.kind"
+     }
+    ]
+   },
+   {
+    "id": "S-9",
+    "row_sha256": "ea24e8337e4de45e5ff886e16ff1d03ea4e8fa73056bf69565b48ff2245f26b8",
+    "status": "통과",
+    "reason": "SDD · BDD 0",
+    "evidence": []
+   },
+   {
+    "id": "S-10",
+    "row_sha256": "f729f3f71e39d2936afb10df2b9e604b92ffa7322538919f43933b8268aa26a6",
+    "status": "통과",
+    "reason": "짧은 포털 확인 · 코드 과제 덧붙임 0",
+    "evidence": []
+   },
+   {
+    "id": "S-11",
+    "row_sha256": "680cce4742e80429463db37d98bc220835b6426b936efdbcb9d3b9b58622f389",
+    "status": "통과",
+    "reason": "스킬 형식 · MCP는 이름만(13장 「뒤에서 직접 다룹니다」)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": "[SLIDE 13]"
+     }
+    ]
+   },
+   {
+    "id": "S-12",
+    "row_sha256": "1c73044f90dbad2f14a2b22dad45fb4b4af00efb14aae6d4cf16850f6c2b4e59",
+    "status": "통과",
+    "reason": "구성표에 이론 행 배정 · 낭독 칸",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/구성/통합반/05회차/구성표.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-13",
+    "row_sha256": "af563e49d5e2b8478bb8061395ccf16070b8b047ba5306669fccc184f8da1500",
+    "status": "해당 없음",
+    "reason": "배정보다 긴 행 없음",
+    "evidence": []
+   },
+   {
+    "id": "S-14",
+    "row_sha256": "abc7ee88e75bf95dacee9dc1413104928ef176ab1daff1878c9fb8a239d39317",
+    "status": "통과",
+    "reason": "48행 −0.6분, 49행 −0.5분, 까닭 기록 있음",
+    "evidence": [
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/통합5/변경기록.md",
+      "locator": "51~59행"
+     }
+    ]
+   },
+   {
+    "id": "S-15",
+    "row_sha256": "deaef775563d280bb8f933e2c2fe8df3d1f5a7180d696e007e54b491f6e17e5c",
+    "status": "통과",
+    "reason": "보강한 장이 앞뒤와 이어지고 다음 회차 당겨 오기 0",
+    "evidence": []
+   },
+   {
+    "id": "S-16",
+    "row_sha256": "157d4c56e0887db308452555abac22da95a4da17040b8943d02a002918b00e6e",
+    "status": "통과",
+    "reason": "필수 판단 · 확인 생략 0",
+    "evidence": []
+   },
+   {
+    "id": "S-17",
+    "row_sha256": "f859d211be3dc6fb69566f8f4a3dda480be115abdddc787972607cf078d327a0",
+    "status": "통과",
+    "reason": "행 문장마다 정의 · 필요성 · 예 · 판단 근거",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-18",
+    "row_sha256": "e52c2897e208e27d2e877a94d621cc2e30bef4b5db1a89252fc2d8747b7756fe",
+    "status": "통과",
+    "reason": "검토자 재측정 39.4 · 39.5 · 합 91.0분이 구성표와 같고 전후 값이 변경기록에 있다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/구성/통합반/05회차/구성표.md",
+      "locator": ""
+     },
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/통합5/근거/대본시간_전.out",
+      "locator": ""
+     },
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/통합5/근거/대본시간_후.out",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-19",
+    "row_sha256": "8ac002132e5762fabdef66156bb7ab93c8e225afaaaa3b92da2dcffe360a3751",
+    "status": "통과",
+    "reason": "낭독 추정과 실습 진행 시간을 구분해 적음",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/구성/통합반/05회차/구성표.md",
+      "locator": "끝 문단"
+     }
+    ]
+   },
+   {
+    "id": "S-20",
+    "row_sha256": "135d76c511398134af03ca8b80d1c2a248530cb61ca09a5831f43f19a6b68e49",
+    "status": "통과",
+    "reason": "시간만을 이유로 한 증감 0",
+    "evidence": []
+   },
+   {
+    "id": "S-22",
+    "row_sha256": "474007bb119843d3b2b98789e35c2de734d29c37a226c642cdb1edee656bddaa",
+    "status": "통과",
+    "reason": "통독 — 원리 먼저, 설정은 「이 설비에서는 · 이 시스템의」, 구현 주어 · 꼬리표 · 제품 주인공 · 서비스 이름 낭독 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-23",
+    "row_sha256": "ea6a909f7d6cbc4dbc08e347e340d2468395a4501f94bad9d0f3df1ea3c2efaa",
+    "status": "통과",
+    "reason": "통독 — 원리 먼저, 설정은 「이 설비에서는 · 이 시스템의」, 구현 주어 · 꼬리표 · 제품 주인공 · 서비스 이름 낭독 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-24",
+    "row_sha256": "39e640c4fedb966954c1f997ab2492905c2de3a614f6a6eed7f0b9c993959237",
+    "status": "통과",
+    "reason": "통독 — 원리 먼저, 설정은 「이 설비에서는 · 이 시스템의」, 구현 주어 · 꼬리표 · 제품 주인공 · 서비스 이름 낭독 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-25",
+    "row_sha256": "fd39f637c352744aa6cc468aa8fa9493a4a906b6a6e9ec86c9405aa670a444e7",
+    "status": "통과",
+    "reason": "통독 — 원리 먼저, 설정은 「이 설비에서는 · 이 시스템의」, 구현 주어 · 꼬리표 · 제품 주인공 · 서비스 이름 낭독 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-26",
+    "row_sha256": "e9371722cdfaa55335765cf5342c001deabdd7da6c76f4cc9047749a0fa21c99",
+    "status": "통과",
+    "reason": "통독 — 원리 먼저, 설정은 「이 설비에서는 · 이 시스템의」, 구현 주어 · 꼬리표 · 제품 주인공 · 서비스 이름 낭독 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-27",
+    "row_sha256": "fb74bf035e093652aef26c4772291d0e01b145a0a67f2d6d3c3a10c944044c1f",
+    "status": "통과",
+    "reason": "통독 — 원리 먼저, 설정은 「이 설비에서는 · 이 시스템의」, 구현 주어 · 꼬리표 · 제품 주인공 · 서비스 이름 낭독 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-28",
+    "row_sha256": "0d2d86e9e8b5574d7300c5832421b989151597930b43323d5106333123336601",
+    "status": "통과",
+    "reason": "통독 — 원리 먼저, 설정은 「이 설비에서는 · 이 시스템의」, 구현 주어 · 꼬리표 · 제품 주인공 · 서비스 이름 낭독 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-29",
+    "row_sha256": "b91bf9fc11dd1e5f978abcb57ee470f1b8df76291b9795d8b47ba2e79466ac98",
+    "status": "통과",
+    "reason": "통독 — 원리 먼저, 설정은 「이 설비에서는 · 이 시스템의」, 구현 주어 · 꼬리표 · 제품 주인공 · 서비스 이름 낭독 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-30",
+    "row_sha256": "90acd21eef8906fc942293786e0a3612b7f0dcf79498aa35c0b0311dc433edb3",
+    "status": "통과",
+    "reason": "통독 — 원리 먼저, 설정은 「이 설비에서는 · 이 시스템의」, 구현 주어 · 꼬리표 · 제품 주인공 · 서비스 이름 낭독 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-31",
+    "row_sha256": "cc8cafb5d01f9197391e19ee4a8c02475449668e80684de1cd8fb5080b6f5b20",
+    "status": "해당 없음",
+    "reason": "통합반 대본",
+    "evidence": []
+   },
+   {
+    "id": "S-32",
+    "row_sha256": "359ee1d129bca5e932c2a13931ef1110975a439cc9364a93e5574f47196292c5",
+    "status": "통과",
+    "reason": "단원이 쿨러 사건의 장면에서 연다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": "[SLIDE 04] · [SLIDE 15]"
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": "[SLIDE 32]"
+     }
+    ]
+   },
+   {
+    "id": "S-146",
+    "row_sha256": "905361fb53ebc5e102f8a231f68dce32d1abadc766fed613bbbacc9c4de7b4f8",
+    "status": "통과",
+    "reason": "S-25로 판정 — 통과",
+    "evidence": []
+   },
+   {
+    "id": "S-147",
+    "row_sha256": "2321965d013b84aed17edec82bfbf6fbee645b88572836625046db11ee64426e",
+    "status": "통과",
+    "reason": "「다루지 않는다」 알림 0",
+    "evidence": []
+   },
+   {
+    "id": "S-148",
+    "row_sha256": "f4d3ca70b3346857695f0a57a7128683b111025a97a21fdf174b2b09d954a674",
+    "status": "통과",
+    "reason": "S-25로 판정 — 통과",
+    "evidence": []
+   },
+   {
+    "id": "S-149",
+    "row_sha256": "0fe5b5c36ace144bf9aa75cb474f395e5c00d27a440f7f948cf6940d4ebe0b97",
+    "status": "통과",
+    "reason": "값의 성격 머리말 0",
+    "evidence": []
+   },
+   {
+    "id": "S-33",
+    "row_sha256": "d839faf4f616663ea0c69eb0ca19b98d783c75483185c84d42274c263cf7529c",
+    "status": "통과",
+    "reason": "통독 — 단원 여는 물음과 닫는 답(14 · 23 · 28 · 39 · 43 · 52 · 60장), 장 경계 이음, 재요약 · 「다음 장에서」 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-34",
+    "row_sha256": "a2794769d8759f677c1c9e06cf984c3598259d47bb260a4e58af9fc754b29a92",
+    "status": "통과",
+    "reason": "통독 — 단원 여는 물음과 닫는 답(14 · 23 · 28 · 39 · 43 · 52 · 60장), 장 경계 이음, 재요약 · 「다음 장에서」 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-35",
+    "row_sha256": "426927e1b296fe5049b2a75da02f31efb23e06e6b4d8b3e6c965e2ac1b8e1759",
+    "status": "통과",
+    "reason": "통독 — 단원 여는 물음과 닫는 답(14 · 23 · 28 · 39 · 43 · 52 · 60장), 장 경계 이음, 재요약 · 「다음 장에서」 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-36",
+    "row_sha256": "c37957753a770163a32d4ed124f37191e76f78297d3f7d78a4dc945a6216d60c",
+    "status": "통과",
+    "reason": "통독 — 단원 여는 물음과 닫는 답(14 · 23 · 28 · 39 · 43 · 52 · 60장), 장 경계 이음, 재요약 · 「다음 장에서」 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-37",
+    "row_sha256": "21f8088283e7a027159559363717b5ed7ed0a6cfb8ae0aebf9a8ca123aaf8eed",
+    "status": "통과",
+    "reason": "통독 — 단원 여는 물음과 닫는 답(14 · 23 · 28 · 39 · 43 · 52 · 60장), 장 경계 이음, 재요약 · 「다음 장에서」 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-38",
+    "row_sha256": "847ad53cc78a4613c7447e8b4ce761cb8f36070a8d2e671b6412387197a2d88d",
+    "status": "통과",
+    "reason": "01편 첫머리가 앞 회차(지식 검토 · 질문 검증)를 받아 열고 02편 77장이 「목적이 다른 일에도 에이전트를 마음대로 돌려 볼 수 있다」로 닫는다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": "29행"
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": "688행"
+     }
+    ]
+   },
+   {
+    "id": "S-39",
+    "row_sha256": "079b82d5f4a25eceb8ed8497315f6f3071ee0440bdfa24c84bd6daee061559b3",
+    "status": "통과",
+    "reason": "01편 첫 구간이 지식을 도구로 읽어 업무에 쓰는 에이전트 단계로 연다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": "29행"
+     }
+    ]
+   },
+   {
+    "id": "S-40",
+    "row_sha256": "295011dba09e39d99b127fc39adb1d82d4b01a8f6de750162f576b76888c16bc",
+    "status": "통과",
+    "reason": "61~62 「이론 시간에는…포털에서 직접」, 65~66 「포털에서 이렇게 돌아가는…직접」",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": "527 · 551행"
+     }
+    ]
+   },
+   {
+    "id": "S-41",
+    "row_sha256": "54df5f62b19973e16825bc4e8ec7d9c2e75726c32e1bb84e3a102387e3aba27c",
+    "status": "통과",
+    "reason": "과장 · 구호 0",
+    "evidence": []
+   },
+   {
+    "id": "S-42",
+    "row_sha256": "09b3f529ee1ff36c7cce10974f69cc38ecdb0e3684f080dc17f008ed7a395bc8",
+    "status": "불통과",
+    "reason": "71장 대본 「둘째 줄의 70퍼센트와 약 46퍼센트는 둘 다 지금의 값이 아니에요」가 화면 답(70은 지식의 기준, 46.2는 그때 읽은 값)과 42장의 구분(센서 값은 「지금의 값」)과 어긋나 46.2까지 지금의 값이 아니라고 들린다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": "595행"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 71 요소 2 · SLIDE 42 요소 2"
+     }
+    ]
+   },
+   {
+    "id": "S-43",
+    "row_sha256": "5788e1631d611ddb26de810082ccc6dc210fda464b0e1ea68f1b927e97376858",
+    "status": "통과",
+    "reason": "통독 — 용어마다 정의 · 까닭, 덱 장의 칸 모두 말함, 섞임 · 곁가지 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-44",
+    "row_sha256": "cebe95cd251a4fa2dd2e01705fbf31d934dbdd818a67998336b32f1b24d585fe",
+    "status": "통과",
+    "reason": "통독 — 용어마다 정의 · 까닭, 덱 장의 칸 모두 말함, 섞임 · 곁가지 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-45",
+    "row_sha256": "929b849287a05b496cd181d1a27c8217b5867863c0c37d38caaea51a6d15d15d",
+    "status": "통과",
+    "reason": "통독 — 용어마다 정의 · 까닭, 덱 장의 칸 모두 말함, 섞임 · 곁가지 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-46",
+    "row_sha256": "aefd0a02891d595b3b117f5a93e0c22077ef8f0c42539a175a57894641b41ef1",
+    "status": "통과",
+    "reason": "통독 — 용어마다 정의 · 까닭, 덱 장의 칸 모두 말함, 섞임 · 곁가지 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-47",
+    "row_sha256": "d3732342b1f6067e65b306302e87dcd0954bd2f6144b0a36105acd9d704d6496",
+    "status": "통과",
+    "reason": "통독 — 용어마다 정의 · 까닭, 덱 장의 칸 모두 말함, 섞임 · 곁가지 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-48",
+    "row_sha256": "15fb3928379295cb8b40e606e6990ba4fa9aaf502ea779ec812915d9c5689a1e",
+    "status": "통과",
+    "reason": "통독 — 용어마다 정의 · 까닭, 덱 장의 칸 모두 말함, 섞임 · 곁가지 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-49",
+    "row_sha256": "91766d38520ba8b90717e6ecaa8197b864ed24f78b52a47642de7de6af37d870",
+    "status": "통과",
+    "reason": "통독 — 용어마다 정의 · 까닭, 덱 장의 칸 모두 말함, 섞임 · 곁가지 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-50",
+    "row_sha256": "5dfea7920bb12dfb1b713b4cd9ab3316574f92cb9bb391539d5d1f797babf7fb",
+    "status": "통과",
+    "reason": "통독 — 용어마다 정의 · 까닭, 덱 장의 칸 모두 말함, 섞임 · 곁가지 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-51",
+    "row_sha256": "d565c4ccfbd6b00c4815fa85dbb273b690fbfaa04d1677d056f14d91b941fdfa",
+    "status": "통과",
+    "reason": "통독 — 용어마다 정의 · 까닭, 덱 장의 칸 모두 말함, 섞임 · 곁가지 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-52",
+    "row_sha256": "06b179f6b6b88b742e3a7848efce32e9b3a1ede981ed931f718246be7744ba72",
+    "status": "통과",
+    "reason": "통독 — 용어마다 정의 · 까닭, 덱 장의 칸 모두 말함, 섞임 · 곁가지 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-53",
+    "row_sha256": "2448be6503bc5348663fb2b40289ddee6e50eb2874aa49e569211c11c50d3988",
+    "status": "통과",
+    "reason": "통독 — 용어마다 정의 · 까닭, 덱 장의 칸 모두 말함, 섞임 · 곁가지 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-54",
+    "row_sha256": "8ec7b5d007692d7df2b421d861e212fcc584996aae51815809ff44412afd18a3",
+    "status": "해당 없음",
+    "reason": "1회차 아님",
+    "evidence": []
+   },
+   {
+    "id": "S-150",
+    "row_sha256": "0890077b9d03efb7ff31752992ccb9a67edb799a68a5b3d9907d17da27b66704",
+    "status": "통과",
+    "reason": "통독 — 약어 첫 풀이 한 번, 「항상 · 유일한」 근거 있음",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-151",
+    "row_sha256": "d85a88b8dbf2529de02c8eb2613c29e719bc2d20af0ad83010b70ea5b5e82c95",
+    "status": "통과",
+    "reason": "통독 — 약어 첫 풀이 한 번, 「항상 · 유일한」 근거 있음",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-152",
+    "row_sha256": "2703e8c042f38656d7dc1ba2333163919f26c873a948f1188fa49a4647ec67b9",
+    "status": "통과",
+    "reason": "통독 — 약어 첫 풀이 한 번, 「항상 · 유일한」 근거 있음",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-167",
+    "row_sha256": "56feffd15d27c7ed65abd3b0d70edb0cf58b3a7e5f324474b10ff9c7942096ff",
+    "status": "통과",
+    "reason": "통독 — 약어 첫 풀이 한 번, 「항상 · 유일한」 근거 있음",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-168",
+    "row_sha256": "fd30d923d3d5e4c5f1f3726903ed30e0cabeb0f201c168fcec6724c794aec8ca",
+    "status": "통과",
+    "reason": "통독 — 약어 첫 풀이 한 번, 「항상 · 유일한」 근거 있음",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-169",
+    "row_sha256": "8952b6716b773bc7b061bda9a561fe24efc054150468760139011b64ced4c36b",
+    "status": "통과",
+    "reason": "통독 — 약어 첫 풀이 한 번, 「항상 · 유일한」 근거 있음",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-55",
+    "row_sha256": "774346badf59069803492843bfa24093bbc863c21e49fd95d331702e28c9c3aa",
+    "status": "불통과",
+    "reason": "18장 대본 「셋째 줄의 스킬 읽음이 그 장면입니다 … 스킬을 읽고 … 파악한 거죠」 「둘째 줄은 … 배정된 스킬이 하나라는 기록」이 지금 포털 처리 기록(「파일 전달 1개」, 「스킬 파일 읽기 요청」)과 다른 옛 화면 문구를 읽는다. 10 · 23장의 「생산오더 조회」도 포털 이름 「생산 주문 조회」와 다르다(D-95와 같은 원인)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": "[SLIDE 18] 307 · 315행, [SLIDE 10] 171행, [SLIDE 23] 407행"
+     },
+     {
+      "path": "it/portal/www/caseRecord.js",
+      "locator": "72 · 74~76 · 767행"
+     },
+     {
+      "path": "it/portal/www/plainWords.js",
+      "locator": "425행"
+     }
+    ]
+   },
+   {
+    "id": "S-56",
+    "row_sha256": "8b9bf0a4a1c247b2c6bc3d24e62ec2859a45833f5726aedf052a70a7ef78857c",
+    "status": "통과",
+    "reason": "값 · 이름이 사실표 · 코드와 같다(대표 값 · 사건 기록 · 추천안 · 쿨러 성능 저하 경보 · 다른 처리 건 밝힘)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/지침/사실표/통합반_01일차_기술사실표.md",
+      "locator": "같은 말 표"
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-57",
+    "row_sha256": "7bbe71b04c67e971af8c3eb27bd6eddbe826d9ac58b15097252dff3e041c8e2c",
+    "status": "통과",
+    "reason": "값 · 이름이 사실표 · 코드와 같다(대표 값 · 사건 기록 · 추천안 · 쿨러 성능 저하 경보 · 다른 처리 건 밝힘)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/지침/사실표/통합반_01일차_기술사실표.md",
+      "locator": "같은 말 표"
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-58",
+    "row_sha256": "32a4afdb5b3755b83ebcf9fae80388c7016242dfad80626444ee46653650c19d",
+    "status": "통과",
+    "reason": "값 · 이름이 사실표 · 코드와 같다(대표 값 · 사건 기록 · 추천안 · 쿨러 성능 저하 경보 · 다른 처리 건 밝힘)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/지침/사실표/통합반_01일차_기술사실표.md",
+      "locator": "같은 말 표"
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-59",
+    "row_sha256": "96f014686cdb1b9a7f6e9701d363e5f48975f65d5e38dc53703ba45881bdf579",
+    "status": "통과",
+    "reason": "값 · 이름이 사실표 · 코드와 같다(대표 값 · 사건 기록 · 추천안 · 쿨러 성능 저하 경보 · 다른 처리 건 밝힘)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/지침/사실표/통합반_01일차_기술사실표.md",
+      "locator": "같은 말 표"
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-60",
+    "row_sha256": "b740fcc8d0f733f2ec9d8eed7845823ca0c0919ec20e2f6d8baf1ed59abcbd0a",
+    "status": "통과",
+    "reason": "값 · 이름이 사실표 · 코드와 같다(대표 값 · 사건 기록 · 추천안 · 쿨러 성능 저하 경보 · 다른 처리 건 밝힘)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/지침/사실표/통합반_01일차_기술사실표.md",
+      "locator": "같은 말 표"
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-61",
+    "row_sha256": "f22668e3539e2f8c062190cd1a3486c3ceae83e6bab31c0b5996568561eae77f",
+    "status": "통과",
+    "reason": "값 · 이름이 사실표 · 코드와 같다(대표 값 · 사건 기록 · 추천안 · 쿨러 성능 저하 경보 · 다른 처리 건 밝힘)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/지침/사실표/통합반_01일차_기술사실표.md",
+      "locator": "같은 말 표"
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-62",
+    "row_sha256": "c62ee875d765b681c19d13c655ba7958bb2f803e9d3c6f819774df2d7d4e9bc6",
+    "status": "해당 없음",
+    "reason": "승인 지연 언급 없음",
+    "evidence": []
+   },
+   {
+    "id": "S-63",
+    "row_sha256": "8ffe9edfa35079c81324bf5f91f79ad988402e7409f206879f654d41fab289cc",
+    "status": "통과",
+    "reason": "값 · 이름이 사실표 · 코드와 같다(대표 값 · 사건 기록 · 추천안 · 쿨러 성능 저하 경보 · 다른 처리 건 밝힘)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/지침/사실표/통합반_01일차_기술사실표.md",
+      "locator": "같은 말 표"
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-64",
+    "row_sha256": "fe3d9b489e839436a3e74b34d27e90a9ec5becdbde49b002be2aba91ef045afb",
+    "status": "통과",
+    "reason": "값 · 이름이 사실표 · 코드와 같다(대표 값 · 사건 기록 · 추천안 · 쿨러 성능 저하 경보 · 다른 처리 건 밝힘)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/지침/사실표/통합반_01일차_기술사실표.md",
+      "locator": "같은 말 표"
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-65",
+    "row_sha256": "64bf223a91f7e3049d006dbb8033284e9d8d332436258aacc72842897e7e0d7c",
+    "status": "통과",
+    "reason": "값 · 이름이 사실표 · 코드와 같다(대표 값 · 사건 기록 · 추천안 · 쿨러 성능 저하 경보 · 다른 처리 건 밝힘)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/지침/사실표/통합반_01일차_기술사실표.md",
+      "locator": "같은 말 표"
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-66",
+    "row_sha256": "b686d79f11f2163873c2db264a49fefef34afcf3c1ed4326aceeaf0f8e4cc16e",
+    "status": "통과",
+    "reason": "값 · 이름이 사실표 · 코드와 같다(대표 값 · 사건 기록 · 추천안 · 쿨러 성능 저하 경보 · 다른 처리 건 밝힘)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/지침/사실표/통합반_01일차_기술사실표.md",
+      "locator": "같은 말 표"
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-67",
+    "row_sha256": "acb41b2fd376f8fdaf03ba24f1a13d7cc3710ec617aa84f770427525ef80fe66",
+    "status": "통과",
+    "reason": "값 · 이름이 사실표 · 코드와 같다(대표 값 · 사건 기록 · 추천안 · 쿨러 성능 저하 경보 · 다른 처리 건 밝힘)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/지침/사실표/통합반_01일차_기술사실표.md",
+      "locator": "같은 말 표"
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-68",
+    "row_sha256": "7a91458c72cb9f989a788c3791fc6747812a17ce4eabe08dde7a4b5a70dca71c",
+    "status": "해당 없음",
+    "reason": "「기준 흐름」 언급 없음",
+    "evidence": []
+   },
+   {
+    "id": "S-69",
+    "row_sha256": "14eb026f36e3a3283f0161f64878c6bbc9c7fd79326e52aeae26e484cbf281f4",
+    "status": "미확인",
+    "reason": "D-112와 같음 — 다른 회차의 옛 순위 정리는 감독 몫",
+    "evidence": []
+   },
+   {
+    "id": "S-70",
+    "row_sha256": "7475b3adc75202f833c152e026f6271060733e3dfa344a2bb11ebf2c67d4e272",
+    "status": "해당 없음",
+    "reason": "인제스천 품질 · 규모 주장 없음",
+    "evidence": []
+   },
+   {
+    "id": "S-71",
+    "row_sha256": "ef9fca2397163164e282b6e3e6281f50561befe394af13dfa7da4ecbe04d622f",
+    "status": "통과",
+    "reason": "실습 소개가 활동의 물음과 실제 결과를 구별",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": "527~575행"
+     }
+    ]
+   },
+   {
+    "id": "S-72",
+    "row_sha256": "97d940111e38f2ce61ca574054b671ecc6f4a9f8b5c8baeac83d1ad3c0c595ec",
+    "status": "통과",
+    "reason": "실행 사실의 근거가 덱 제작 기준에 있다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "제작 기준"
+     }
+    ]
+   },
+   {
+    "id": "S-73",
+    "row_sha256": "31aa1518edf0575e61f9cf9d6471cd3b9cea1f876067744c2ff2ba4e30606e47",
+    "status": "통과",
+    "reason": "본문 장마다 첫 문단 또는 그 바로 뒤 문단에서 화면의 대상 · 위치를 짚는다(16 · 43장은 위치어 앞에 서너 문장 — 기록만)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-74",
+    "row_sha256": "c42523338c1ea19b6892dc0bca2f53d48a56aa9557b414f4a6dbb853f6b03f08",
+    "status": "불통과",
+    "reason": "39장 대본 「위쪽 점선처럼 에이전트가 데이터베이스에 곧장 연결하는 길에는 가위표가 있습니다」 — 렌더의 직접 접속 선은 실선이다(생성기가 stroke-dasharray로 그려 빌더 SVG 변환이 실선으로 그림, 글꼴과 무관). 그 밖 장의 위치 · 모양은 렌더에 있다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": "143행"
+     },
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/렌더/미리보기_noto/온5통합/s-39.png",
+      "locator": "위쪽 회색 선"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/figures/만들기_삽화.py",
+      "locator": "236행 stroke_dasharray"
+     }
+    ]
+   },
+   {
+    "id": "S-75",
+    "row_sha256": "6eb7836f5cf3bb3eb433a624200b8bab889885b1e524fe50ebc90f5ddb35431d",
+    "status": "통과",
+    "reason": "칸을 가려 푼다",
+    "evidence": []
+   },
+   {
+    "id": "S-76",
+    "row_sha256": "96e94dd4cb44b3f81cd79557211e2fb63afd85ffca58c13325a84158d6a3fbfc",
+    "status": "통과",
+    "reason": "노트 순서 · 메시지와 대본 순서 · 핵심 문장이 같다",
+    "evidence": []
+   },
+   {
+    "id": "S-77",
+    "row_sha256": "74fd40c363a2973558cc987769c0a50c280b68ba8741c8856a396df1ce6fdbc7",
+    "status": "불통과",
+    "reason": "50장 대본이 「제목 끝의 수량 0은 또 다릅니다. 재고 행을 찾았고, 그 행의 수량이 0인 경우」로 셋째 경우를 가르지만 화면에 그 근거 칸이 없다(D-60 · D-150과 같은 원인). 그 밖 긴 장은 화면 근거를 같은 순서로 따라갈 수 있다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": "327행"
+     },
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/렌더/미리보기_noto/온5통합/s-50.png",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-78",
+    "row_sha256": "e10268dce9f5366bf0b0094f4a63de5fead5933326c99e05b77a910d6842665c",
+    "status": "통과",
+    "reason": "실습 소개가 활동 · 물음까지, 실습 발화 0, 실습 자료 차이는 기록에",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": "521~577행"
+     },
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/통합5/실습어긋남.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-79",
+    "row_sha256": "af4ba4ddc6cb1f56d80a276f03d4dee0726535447559ddec9e5da044b741275c",
+    "status": "통과",
+    "reason": "실습 소개가 활동 · 물음까지, 실습 발화 0, 실습 자료 차이는 기록에",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": "521~577행"
+     },
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/통합5/실습어긋남.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-80",
+    "row_sha256": "f308be273413ccd8e52e5d81dd48fc929c1706ba9004ebefb725700626409df9",
+    "status": "통과",
+    "reason": "실습 소개가 활동 · 물음까지, 실습 발화 0, 실습 자료 차이는 기록에",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": "521~577행"
+     },
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/통합5/실습어긋남.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-81",
+    "row_sha256": "a020f7d9e76a0e2c829ddc10e8edf01581bb65df651a0ac1f14abaf9da805188",
+    "status": "통과",
+    "reason": "실습 소개가 활동 · 물음까지, 실습 발화 0, 실습 자료 차이는 기록에",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": "521~577행"
+     },
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/통합5/실습어긋남.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-170",
+    "row_sha256": "c8f71bc1e93ef87197ed1d0e1ee14e00d1ecf87eea4041960e9e2d82fbefce2e",
+    "status": "통과",
+    "reason": "실습 소개가 활동 · 물음까지, 실습 발화 0, 실습 자료 차이는 기록에",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": "521~577행"
+     },
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/통합5/실습어긋남.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-82",
+    "row_sha256": "89a79301b60ed2152f15a6d55809b12d3d6429775eecac7b45ca88570a42bf39",
+    "status": "통과",
+    "reason": "통독 — 강사의 말, 차분한 구어체, 어미 일괄 치환 0, 제작 말투 · 운영 말 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-83",
+    "row_sha256": "75a7bd396596b12bff532c5ca287b87e498c515831189fb05b1dc52f2cfae25c",
+    "status": "통과",
+    "reason": "통독 — 강사의 말, 차분한 구어체, 어미 일괄 치환 0, 제작 말투 · 운영 말 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-84",
+    "row_sha256": "a080b0633d238348e422f0da875876f78049a16849016daf13b699fae6d91c1d",
+    "status": "통과",
+    "reason": "통독 — 강사의 말, 차분한 구어체, 어미 일괄 치환 0, 제작 말투 · 운영 말 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-85",
+    "row_sha256": "715bb272d7c9bd6fc0ea7ae3ee6af3ce9fe89d5f9605fd4a6391f46e22e64fc5",
+    "status": "통과",
+    "reason": "통독 — 강사의 말, 차분한 구어체, 어미 일괄 치환 0, 제작 말투 · 운영 말 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-86",
+    "row_sha256": "519cdacc1c025022d9f1a09533e648bb355b1c4cb786c07a80590f6901150af1",
+    "status": "통과",
+    "reason": "통독 — 강사의 말, 차분한 구어체, 어미 일괄 치환 0, 제작 말투 · 운영 말 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-87",
+    "row_sha256": "c8c550cc7cf20f1a800714a8e8959ef3b1b2ef7d55f6abde71a935b26033bc3f",
+    "status": "통과",
+    "reason": "통독 — 강사의 말, 차분한 구어체, 어미 일괄 치환 0, 제작 말투 · 운영 말 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-88",
+    "row_sha256": "24af4e179b04c1c982fdf1dc2e742503a0eb49a6b714fabf7530cd28df0b1a7c",
+    "status": "통과",
+    "reason": "S-89로 판정 — 통과",
+    "evidence": []
+   },
+   {
+    "id": "S-89",
+    "row_sha256": "65ae0c336a06996c7c6eba53b8049a3469ad8df8fdf353fe783eb47c4cf7d06b",
+    "status": "통과",
+    "reason": "물음 01편 8 · 02편 14개 — 모두 단원 여는 물음 · 실습 활동 물음 · 퀴즈(39장 「자유롭게 열어 주어야 할까요?」만 곧바로 답하는 꼴, 설계 판단을 여는 물음으로 봄)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": "grep 8"
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": "grep 14"
+     }
+    ]
+   },
+   {
+    "id": "S-90",
+    "row_sha256": "93e3ae4a7aa70997c3dd86a31f2cadc857a8af94c3a9cb70ac8a98d800ea10bf",
+    "status": "불통과",
+    "reason": "02편이 영문 상수를 그대로 낭독한다: 36장 「판정 줄의 PASS가 그 뜻이에요」, 49장 「첫 칸이 ok이고 … error로 바뀌고」 「INVALID는 … UNKNOWN은 …」",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": "95 · 309 · 311행"
+     }
+    ]
+   },
+   {
+    "id": "S-91",
+    "row_sha256": "1b25886781492b86885108554f1ccb5b399ce5aeeeed53038e117b3793b73f15",
+    "status": "불통과",
+    "reason": "S-90의 낭독(PASS · ok · error · INVALID · UNKNOWN)이 예외 셋에 들지 않는다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": "95 · 309 · 311행"
+     }
+    ]
+   },
+   {
+    "id": "S-92",
+    "row_sha256": "77ac371581f8c7962d3b50b3eb53382c6388d39dc598163165e479acaeb81fb1",
+    "status": "통과",
+    "reason": "통독 · 검색 — 나란히 읽기 · 장 번호 의존 · 토큰 낭독 0, 수치는 경계만 정확히, 퀴즈 정답은 77장에서",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-93",
+    "row_sha256": "cb9be097a7d50bd9b7c4e3f099d805bf45e8a13c9db15e74f9d81bce710f3582",
+    "status": "통과",
+    "reason": "통독 · 검색 — 나란히 읽기 · 장 번호 의존 · 토큰 낭독 0, 수치는 경계만 정확히, 퀴즈 정답은 77장에서",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-94",
+    "row_sha256": "f5cd3c31a4f737b3b18627280c774dfe70b2e86d4b3a7a2dcfc75f402215b14a",
+    "status": "통과",
+    "reason": "통독 · 검색 — 나란히 읽기 · 장 번호 의존 · 토큰 낭독 0, 수치는 경계만 정확히, 퀴즈 정답은 77장에서",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-95",
+    "row_sha256": "ba13b86fa78253b60ff10b14fce1d3a1a6098ed63993e54eb49c423561d986f4",
+    "status": "통과",
+    "reason": "통독 · 검색 — 나란히 읽기 · 장 번호 의존 · 토큰 낭독 0, 수치는 경계만 정확히, 퀴즈 정답은 77장에서",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-96",
+    "row_sha256": "7d865825069fe30c3bab971518b27fe81b976e87d67a6d15c2a2711962bedc7f",
+    "status": "통과",
+    "reason": "통독 · 검색 — 나란히 읽기 · 장 번호 의존 · 토큰 낭독 0, 수치는 경계만 정확히, 퀴즈 정답은 77장에서",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-97",
+    "row_sha256": "8d9c790ae47225083bdaf234f8fc874360683b19c1c1b3b2a87a905d8f198320",
+    "status": "통과",
+    "reason": "통독 · 검색 — 나란히 읽기 · 장 번호 의존 · 토큰 낭독 0, 수치는 경계만 정확히, 퀴즈 정답은 77장에서",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-98",
+    "row_sha256": "d09ef074abb51eb0c9b7f16e9526e3085d473e1a2c4db7f2ffa6c9e571f1fa83",
+    "status": "통과",
+    "reason": "통독 · 검색 — 나란히 읽기 · 장 번호 의존 · 토큰 낭독 0, 수치는 경계만 정확히, 퀴즈 정답은 77장에서",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-99",
+    "row_sha256": "b5f0c02bfd2b722b1f1ea5c5e3628206f1b5cfaebd31a04f15c77b9e90a25c0e",
+    "status": "통과",
+    "reason": "통독 · 검색 — 나란히 읽기 · 장 번호 의존 · 토큰 낭독 0, 수치는 경계만 정확히, 퀴즈 정답은 77장에서",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-100",
+    "row_sha256": "093465ca46f6b6ef1d61b8b0b3c7bf30c316a1f9514198a37bbcda599f4efcad",
+    "status": "통과",
+    "reason": "통독 · 검색 — 나란히 읽기 · 장 번호 의존 · 토큰 낭독 0, 수치는 경계만 정확히, 퀴즈 정답은 77장에서",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-101",
+    "row_sha256": "07e1bc257e31e0e7877a6e03c7231557e46858fa7ec5986371e45daacd61bab2",
+    "status": "통과",
+    "reason": "01편 「이번 시간에는」으로 열고 「다음 시간에는」으로 잇는다, 02편 「이번 시간에는」으로 연다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": "29 · 557행"
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": "15행"
+     }
+    ]
+   },
+   {
+    "id": "S-102",
+    "row_sha256": "ad0fe34931f105098338fd6744c8cc600cd8529e758fb5b55e73f7d43977d1f2",
+    "status": "통과",
+    "reason": "강의영상.py --dry(검토자 실행) — 첫 문장 이음말 경고 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": "--dry"
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": "--dry"
+     }
+    ]
+   },
+   {
+    "id": "S-103",
+    "row_sha256": "f316bb1953061f673cb11774a74cea75b67c9bb7cfcc8574609203400ba6a73c",
+    "status": "통과",
+    "reason": "「영상」 낭독 0",
+    "evidence": []
+   },
+   {
+    "id": "S-104",
+    "row_sha256": "93ebc88d34cba672d710017b7437e9434f9b7d7896e5ee4599abcfea6a0aeaee",
+    "status": "통과",
+    "reason": "강사 소개 없음(1회차 아님)",
+    "evidence": []
+   },
+   {
+    "id": "S-105",
+    "row_sha256": "d5c0c7772b6558825af565bd25463db288e43ab4938d3b9493a45f0508184d3d",
+    "status": "통과",
+    "reason": "01편 끝은 다음 구간 예고, 02편 끝은 짧은 맺음 · 다음 회차 · 끝인사",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": "688~690행"
+     }
+    ]
+   },
+   {
+    "id": "S-106",
+    "row_sha256": "ba4e9a51a6e8bc509a96aa9f7e315c9394b5f90b1d66cd39e61bbadf77ee33a4",
+    "status": "통과",
+    "reason": "노트에 회차를 잇는 말 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "노트"
+     }
+    ]
+   },
+   {
+    "id": "S-107",
+    "row_sha256": "8aeeb6060c0074c4da15e5d5dd9357ca427d877b1c3c08827677f39ba4aedda3",
+    "status": "통과",
+    "reason": "자리 장(2 · 3 · 간지 · 71~77)이 자리를 한 번 말하고 바로 물음 · 할 일",
+    "evidence": []
+   },
+   {
+    "id": "S-108",
+    "row_sha256": "a2a9d41bca3511baaecf0baacb1dfd5473b0f5256925e5b71498b8c06177c53d",
+    "status": "통과",
+    "reason": "보통 장 시작 · 종료 선언 0",
+    "evidence": []
+   },
+   {
+    "id": "S-109",
+    "row_sha256": "4a7038465f545915dc8b7c7bee2e0f02e843c319966e1011f1c897d4acab3bae",
+    "status": "통과",
+    "reason": "복습이 다섯 짝을 사건에 대어 가른다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": "[SLIDE 71]"
+     }
+    ]
+   },
+   {
+    "id": "S-110",
+    "row_sha256": "1a9f2f3e4bef92505d05fce14ba305918435cecc95bf42d39d5039c0ba937563",
+    "status": "통과",
+    "reason": "정답 장이 문항마다 까닭과 오답 혼동",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": "[SLIDE 77]"
+     }
+    ]
+   },
+   {
+    "id": "S-111",
+    "row_sha256": "74ce6e18c6b4e506840ef1839848458641f0aa4fbd605b6caba7d04ec20541ce",
+    "status": "통과",
+    "reason": "네 자리가 한 가지씩",
+    "evidence": []
+   },
+   {
+    "id": "S-112",
+    "row_sha256": "9a211cf0a9f57e8f5d802ae1fd2b740a152e319fdd5ed8c249a7552629fb356c",
+    "status": "통과",
+    "reason": "대기는 11 · 71 · 74~76장 판단 자리에만",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": "185행"
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": "589 · 640 · 655 · 670행"
+     }
+    ]
+   },
+   {
+    "id": "S-113",
+    "row_sha256": "1745f5dbe53566fae36a3e490507f59df42648977920a921e039804c7cc204a6",
+    "status": "통과",
+    "reason": "파일 둘 = 이론 행 둘, 실습 뒤 복습은 02편에서 잇는다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/구성/통합반/05회차/구성.json",
+      "locator": "units"
+     }
+    ]
+   },
+   {
+    "id": "S-114",
+    "row_sha256": "0474ae3d6c75f238bb29410d12b514d82d53fb4fbe142177bb536f213365e45f",
+    "status": "통과",
+    "reason": "머리 · 행 제목 줄 · 끝 표시 · 장 꼴 · 실습 묶음 [SLIDE NN~MM] 맞음",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-115",
+    "row_sha256": "970730b43bda3fb7df7a2731181f0064a36c9c43017f757e962dd52fc27841c7",
+    "status": "통과",
+    "reason": "01편 「이 회차의 구성」 표가 구성표.md 값과 같다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": "11~21행"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/구성/통합반/05회차/구성표.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-116",
+    "row_sha256": "053d90b7400ad783ee4d2df51f096a58433c250740ba8bf6276598996b6400c1",
+    "status": "통과",
+    "reason": "머리 · 행 제목 줄 · 끝 표시 · 장 꼴 · 실습 묶음 [SLIDE NN~MM] 맞음",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-117",
+    "row_sha256": "115b012d94afb848559322f8654d9a8a6a8065db957f19deb0e195ee298c39ce",
+    "status": "통과",
+    "reason": "머리 · 행 제목 줄 · 끝 표시 · 장 꼴 · 실습 묶음 [SLIDE NN~MM] 맞음",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-118",
+    "row_sha256": "b5bc5dd1fe100de7c70d19522ba3a189037266b21def4455610768d7928e74b9",
+    "status": "통과",
+    "reason": "적힌 대기 장(11 · 71 · 74 · 75 · 76)과 실습 삽입(70장 뒤)이 본문 실물과 같다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": "566행"
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": "699~700행"
+     }
+    ]
+   },
+   {
+    "id": "S-119",
+    "row_sha256": "063d6cdfede7df61207fa5946294c687a818e4c0dd7b35e5d6a7875cf508e7e1",
+    "status": "통과",
+    "reason": "[SLIDE] 1~77 한 번씩",
+    "evidence": []
+   },
+   {
+    "id": "S-120",
+    "row_sha256": "6b6a18f5b2aff4077cd109711ac2696a68dc88371a9c46ac4bb4a98a31a92514",
+    "status": "통과",
+    "reason": "낭독 줄에 제작 표시 0",
+    "evidence": []
+   },
+   {
+    "id": "S-121",
+    "row_sha256": "e3b96ddcf19c4c97816578e000c30401d645b8f4a0a70380d15ba98d892746d2",
+    "status": "통과",
+    "reason": "대본 · 구성 · README 진행 기록 0",
+    "evidence": []
+   },
+   {
+    "id": "S-153",
+    "row_sha256": "b13c7f64cca786ece7382ba21ce15f66f9fbd33ddebd695391580ab973b7e63a",
+    "status": "통과",
+    "reason": "머리 · 행 제목 줄 · 끝 표시 · 장 꼴 · 실습 묶음 [SLIDE NN~MM] 맞음",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-154",
+    "row_sha256": "c3dcb9d11cd113656edef5c9251d0e84121ebfee1334aefc4ca7e3daeac6777a",
+    "status": "통과",
+    "reason": "머리 · 행 제목 줄 · 끝 표시 · 장 꼴 · 실습 묶음 [SLIDE NN~MM] 맞음",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-122",
+    "row_sha256": "cfff25461191d38deda0a29d3729dce52c4e9b72eff71816010a8d2dcc74a8de",
+    "status": "통과",
+    "reason": "77장 모두 그 장만의 노트",
+    "evidence": []
+   },
+   {
+    "id": "S-123",
+    "row_sha256": "6604551766e6abb010d76edd3deffa9a51e125dfefbaddc089e19e7dc935e2de",
+    "status": "불통과",
+    "reason": "23장 노트 괄호 안 ` / `로 「·」 없이 시작하는 줄 둘(D-114와 같은 원인)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "SLIDE 23 노트"
+     }
+    ]
+   },
+   {
+    "id": "S-124",
+    "row_sha256": "04b6c4c80d06d518fc34b34d962652e5257385e76c402ca89283f5f4df30a87f",
+    "status": "통과",
+    "reason": "PPTX 노트 = MD 노트(차이 0)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/통합반_05일차.pptx",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-125",
+    "row_sha256": "9eb83c79cf7e221d97e8c68812c08c0c4874051630d56c8520b9aae154cb9675",
+    "status": "통과",
+    "reason": "라벨 0",
+    "evidence": []
+   },
+   {
+    "id": "S-126",
+    "row_sha256": "1a4c667f4583bc96940254343c8ecde0e2a3477a54a29db945761d309a9d22b6",
+    "status": "통과",
+    "reason": "노트 ↔ 대본 같은 내용 · 순서 · 값",
+    "evidence": []
+   },
+   {
+    "id": "S-127",
+    "row_sha256": "945b6e0d2c98ffa009215c1a13239c183a3367be33e7f9492307f05244aa635c",
+    "status": "통과",
+    "reason": "단원 밖 예고 0",
+    "evidence": []
+   },
+   {
+    "id": "S-128",
+    "row_sha256": "0b2296a30c6a78183a715b418140ce8329bcce371b2c2e954999655bb7c9a432",
+    "status": "통과",
+    "reason": "S-64로 판정 — 통과",
+    "evidence": []
+   },
+   {
+    "id": "S-129",
+    "row_sha256": "7033615a422b4a10d3b5032a6f41f4e6f2e218718e03629d5e89bed0080d0feb",
+    "status": "해당 없음",
+    "reason": "확정 PPTX 노트 수정 아님",
+    "evidence": []
+   },
+   {
+    "id": "S-130",
+    "row_sha256": "38e00727c76111048e502c425257f54dff9db8f195dec5496b9e3826696ab62c",
+    "status": "통과",
+    "reason": "대본과 노트가 같은 판",
+    "evidence": []
+   },
+   {
+    "id": "S-131",
+    "row_sha256": "c31cba850720732027d3cab8978de383295b927f476fe8b184e925774e58caa3",
+    "status": "통과",
+    "reason": "구성표 낭독 값 = 검토자 재측정(3.1 · 39.4 · 39.5 · 0.5 · 0.4 · 0.4 · 0.3 · 0.4 · 7.0, 대기 15 · 80초)",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/구성/통합반/05회차/구성표.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-132",
+    "row_sha256": "8a00d98f7c61df51e14832c0710e2fa2b9a11413ebafa9dab052545c94b56c12",
+    "status": "미확인",
+    "reason": "S-69와 같음",
+    "evidence": []
+   },
+   {
+    "id": "S-133",
+    "row_sha256": "dc3fed8108f08ad0d2b627826954a28709da9d58cbfd240efa574e12cb35db44",
+    "status": "미확인",
+    "reason": "공통 사실의 실전반 짝 반영은 온5실전 검토자 몫",
+    "evidence": []
+   },
+   {
+    "id": "S-134",
+    "row_sha256": "457d1cb019339e33d1e11bfa20ad75eb5a8e74b5e74c05e2349dddc1eff4bfe0",
+    "status": "해당 없음",
+    "reason": "실전반 대본 아님",
+    "evidence": []
+   },
+   {
+    "id": "S-135",
+    "row_sha256": "2a7e199adbacf4c8f1118992778c1cba203ba44cb3489cb3968029e9cb6c83b3",
+    "status": "해당 없음",
+    "reason": "확정 회차 아님",
+    "evidence": []
+   },
+   {
+    "id": "S-136",
+    "row_sha256": "63787ce2449cd9dddbcca271b71077926e37845e7961e244ac2af21699a433ce",
+    "status": "미확인",
+    "reason": "영상으로 넘기기 전 — 맑은 고딕 렌더로 화면 대조 대기",
+    "evidence": []
+   },
+   {
+    "id": "S-137",
+    "row_sha256": "c59f135c630555a03002a7ef1f02fe96b4c5ba297bbe7540be6fe9f869c24dce",
+    "status": "통과",
+    "reason": "뒤 장도 정의 · 까닭 · 예",
+    "evidence": []
+   },
+   {
+    "id": "S-155",
+    "row_sha256": "9676122d18756e78763538475fc983f34fdda3185ee727f191636d31d4f4360d",
+    "status": "통과",
+    "reason": "장 번호 · 순서가 [SLIDE] · 노트 · 구성.json · 구성표와 같고 이론 영상은 아직 없다",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/구성/통합반/05회차/구성.json",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-156",
+    "row_sha256": "87029e2f232b782278a96696ce19733ae33eafcecef0cc5d9454181dcbe80977",
+    "status": "미확인",
+    "reason": "오프라인 5회 재조립 · 대조는 오5통합 검토자 몫",
+    "evidence": []
+   },
+   {
+    "id": "S-157",
+    "row_sha256": "e96f45f48da79c7f81ad38aa9c4de53003c8e31545709bb8d29ce43627e65769",
+    "status": "해당 없음",
+    "reason": "같은 덱을 쓰는 다른 과정 대본 없음",
+    "evidence": []
+   },
+   {
+    "id": "S-138",
+    "row_sha256": "cdc284931c08f61dade9f32d2b3b5909e5fc19f27ed1580d44adc2ba020a0936",
+    "status": "미확인",
+    "reason": "마감 보고 항목 — 감독 마감 보고 뒤 판정",
+    "evidence": []
+   },
+   {
+    "id": "S-139",
+    "row_sha256": "10245be970d75cd2b50935ecc3b765cb89e0c04c1529f9ff029ec01887747725",
+    "status": "미확인",
+    "reason": "마감 보고 항목 — 감독 마감 보고 뒤 판정",
+    "evidence": []
+   },
+   {
+    "id": "S-140",
+    "row_sha256": "8d53fbe28a5c7022a2d204d67483ff78c362fb0688e3e9972cc7ca6604415415",
+    "status": "미확인",
+    "reason": "마감 보고 항목 — 감독 마감 보고 뒤 판정",
+    "evidence": []
+   },
+   {
+    "id": "S-141",
+    "row_sha256": "fa756f0189947339c493ed79b3d9eecdea0614782af33bf0bf85bcfaca8686e3",
+    "status": "미확인",
+    "reason": "마감 보고 항목 — 감독 마감 보고 뒤 판정",
+    "evidence": []
+   },
+   {
+    "id": "S-142",
+    "row_sha256": "51a1371286da43f482f2fa803a763d743f5f9578b482e0a9a508d2f58bcb9671",
+    "status": "통과",
+    "reason": "키 · 사람 이름 · 개인 경로 0",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/01_이론_질문하는AI와일하는AI.md",
+      "locator": ""
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본/02_이론_정보와도구를쓰는원리.md",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-143",
+    "row_sha256": "0038376302be30e0c287133674e1ae81561b3d65ca26bcc2b9efa9219a0c814e",
+    "status": "미확인",
+    "reason": "커밋 전",
+    "evidence": []
+   },
+   {
+    "id": "S-144",
+    "row_sha256": "4fd93bde22f9743b273950370efd2808a1945075d017ce28e8f9b6b97e54bb87",
+    "status": "통과",
+    "reason": "산출물 폴더에 대본 작업 PDF 없음",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-145",
+    "row_sha256": "aa044a2bc25d330975d060ad7b4a41abaddaf47ae597594583a4be529737feb5",
+    "status": "통과",
+    "reason": "오프라인 대본 없음",
+    "evidence": []
+   },
+   {
+    "id": "S-158",
+    "row_sha256": "61774a43fae7e11cc39d17ca3f76912e38bc4ad00d3e990045e7c977941e37d5",
+    "status": "미확인",
+    "reason": "마감 보고 항목 — 감독 마감 보고 뒤 판정",
+    "evidence": []
+   },
+   {
+    "id": "S-159",
+    "row_sha256": "edb46ae764e0a4139642c3b09d006f0be967639eef21aa4d858470558953d164",
+    "status": "미확인",
+    "reason": "마감 보고 항목 — 감독 마감 보고 뒤 판정",
+    "evidence": []
+   },
+   {
+    "id": "S-160",
+    "row_sha256": "b710ca1610fb49686dc8c0f931a359ce5dad99bcdba96e78c904668753a3ddbe",
+    "status": "미확인",
+    "reason": "마감 보고 항목 — 감독 마감 보고 뒤 판정",
+    "evidence": []
+   },
+   {
+    "id": "S-161",
+    "row_sha256": "2d241cf49a2ca075f852577ba9b2946e16eef83d0798326b77594ad1a6145e33",
+    "status": "미확인",
+    "reason": "마감 보고 항목 — 감독 마감 보고 뒤 판정",
+    "evidence": []
+   },
+   {
+    "id": "S-162",
+    "row_sha256": "744da42d158cb4657b99e5dc59dbd7674645d7d7eced9d7d4c9570cc1f3db8ef",
+    "status": "미확인",
+    "reason": "마감 보고 항목 — 감독 마감 보고 뒤 판정",
+    "evidence": []
+   },
+   {
+    "id": "S-163",
+    "row_sha256": "eb096ab9308ad9ae0573ed8c66fe1223f1d5935786013acbd48b5273ca7ae5a5",
+    "status": "미확인",
+    "reason": "마감 보고 항목 — 감독 마감 보고 뒤 판정",
+    "evidence": []
+   },
+   {
+    "id": "S-164",
+    "row_sha256": "173e15de0ebbad59ca27ba9b244a1101a4f557f21c03f659686d57a779065e9f",
+    "status": "미확인",
+    "reason": "커밋 전",
+    "evidence": []
+   },
+   {
+    "id": "S-165",
+    "row_sha256": "3a39ca8fdc7c018a3abf1c536fa5418488352fd2c39ee0e15471bbd68dedd1a2",
+    "status": "통과",
+    "reason": "원문 삭제 없음(변경전/ 보관)",
+    "evidence": [
+     {
+      "path": "작업/2026-11-04_5-6회차-이론/통합5/변경전/",
+      "locator": ""
+     }
+    ]
+   },
+   {
+    "id": "S-166",
+    "row_sha256": "9bd62e6b99754ba662b86b88eb11f913a0a12b31c96965d52039a0fdde0829ed",
+    "status": "통과",
+    "reason": "구성표가 구성.json에서 만들어진 값",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/구성/통합반/05회차/구성표.md",
+      "locator": ""
+     }
+    ]
+   }
+  ]
+ },
+ "고칠목록": [
+  {
+   "등급": "중",
+   "장": [
+    18
+   ],
+   "위치": "화면",
+   "문장": "코드 「11:13:09 배정된 스킬 1개 (…): / cooling-emergency-response」 「11:13:14 스킬 읽음 · SKILL.md」, 요소 2 「**스킬 읽음** | 업무 지침인 에이전트 스킬을 읽어 무엇을 어떤 순서로 할지 파악했다.」(노트 · 대본 01편 [SLIDE 18] 「둘째 줄은 … 배정된 스킬이 하나라는 기록」 「셋째 줄의 스킬 읽음이 그 장면입니다. … 스킬을 읽고 … 파악한 거죠」)",
+   "실물": "지금 포털 처리 기록은 스킬 전달 줄을 「파일 전달 1개」(ui.js:54-58 skillDeliverySummary, caseRecord.js:74-76), 스킬 줄을 「스킬 파일 읽기 요청 <스킬> (파일 읽기)」(caseRecord.js:767)로 보이고, 이 줄은 「읽기 요청이지 성공적으로 읽고 썼다는 증거가 아니다」(caseRecord.js:72 주석). 덱의 두 줄은 2026-10-10 기록 화면의 옛 문구(사실표 05-08 5.1.2 기록 ① 11:13:09 · 11:13:14 행)이고, 「스킬 읽음 … 파악했다」는 같은 장 노트의 「실제로 지침을 읽었는지는 호출 기록과 함께 확인」과도 어긋난다",
+   "제안": "코드: 「11:13:09  파일 전달 1개 / (cooling-emergency-response) / 11:13:14  스킬 파일 읽기 요청 / cooling-emergency-response (파일 읽기)」. 요소 2: 「**스킬 파일 읽기 요청** | 업무 지침인 에이전트 스킬 파일을 읽으려 한 기록이다. 무엇을 할지는 이어지는 호출에서 확인한다.」 대본 · 노트의 「스킬 읽음」 「배정된 스킬이 하나라는 기록」을 「스킬 파일 읽기 요청」 「스킬 하나를 작업 폴더에 파일로 전달했다는 기록」으로. 제작 기준의 「화면 문구」 인용을 지금 포털 문구와 코드 위치로",
+   "인수조건": [
+    "D-95",
+    "S-55",
+    "④"
+   ]
+  },
+  {
+   "등급": "중",
+   "장": [
+    50
+   ],
+   "위치": "화면",
+   "문장": "비교 두 칸 「일치하는 기록 없음」 · 「실패」뿐인데 제목 · 메시지 · 대본이 「수량 0」(「제목 끝의 수량 0은 또 다릅니다. 재고 행을 찾았고, 그 행의 수량이 0인 경우」)까지 셋을 가른다",
+   "실물": "렌더 s-50.png에 수량 0의 근거 칸이 없다 — 셋째 경우의 정의가 대본(02편 327행) · 노트에만 있음(D-60 · D-150 · S-77)",
+   "제안": "유형을 카드 셋으로: ① 일치하는 기록 없음 | 조회는 성공했고 결과가 0행이다 / 실제 재고 0으로 단정하지 않는다 | 조회 범위 안의 결과 ② 수량 0 | 재고 행을 찾았고 그 수량이 0이다 / 기록상 재고가 없다는 답이다 | 기록된 값 ③ **실패** | 조회 자체가 되지 않았다 / 작업 규칙: 「실패를 0이나 빈 값으로 바꿔 성공처럼 제출하지 않습니다.」 | 답이 없다. 대본의 「제목 끝의 수량 0」을 「가운데 카드, 수량 0은」으로, 노트 [짚을 곳]을 카드 셋 순서로",
+   "인수조건": [
+    "D-60",
+    "D-150",
+    "S-77"
+   ]
+  },
+  {
+   "등급": "중",
+   "장": [
+    71
+   ],
+   "위치": "대본",
+   "문장": "「둘째 줄의 70퍼센트와 약 46퍼센트는 둘 다 지금의 값이 아니에요. 70은 지식 그래프에 적힌 기준이고, 약 46퍼센트가 그때 읽은 값입니다.」(02편 595행)",
+   "실물": "화면 답 「70은 지식의 기준, / 46.2는 그때 읽은 값」과 42장(센서 값은 「지금의 값」 — 그때 읽는다), 노트 71장(「70은 지식 그래프의 기준, 46.2는 그때 읽은 값」)은 「둘 중 하나만 값」이라는 답인데, 대본은 「둘 다 아니다」로 46.2까지 지금의 값이 아니라고 말한다",
+   "제안": "「둘째 줄의 70퍼센트와 약 46퍼센트가 둘 다 지금의 값인 건 아니에요. 70은 지식 그래프에 적힌 기준이고, 약 46퍼센트가 그때 읽은 값입니다.」",
+   "인수조건": [
+    "S-42",
+    "S-76"
+   ]
+  },
+  {
+   "등급": "하",
+   "장": [
+    74,
+    77
+   ],
+   "위치": "화면",
+   "문장": "Quiz 1 메시지 「에이전트가 원인 진단을 부른 뒤, 그 결과에 든 원인과 고장 유형의 식별자를 넣어 대안 평가를 불렀다.」와 보기 2 「결과 관찰에 이은 다음 호출 — 앞의 결과가 다음 입력을 정했다」",
+   "실물": "본문 20장과 같은 장면 · 같은 도구 짝을 그대로 다시 묻고(제작 기준 「본문 20장」), 보기 2의 덧붙임이 물음의 장면을 되풀이해 정답이 드러난다 — D-51 「본문 값을 그대로 다시 묻지 않는다 · 퀴즈 화면에 정답이 미리 드러난 곳 0」",
+   "제안": "다른 실제 기록으로 같은 판단을 묻는다: 메시지 「질문을 받은 에이전트가 표의 목록을 먼저 확인한 뒤, 거기서 찾은 완제품 재고 표 이름으로 조회문을 실행했다.」(사실표 05-08 5.1.3 실제 예, 26장의 다른 처리 건) — 정답 2번 유지. 보기의 덧붙임은 정답을 풀지 않는 말로(예: ② 「결과 관찰에 이은 다음 호출」만, 다른 보기도 덧붙임 없이 같은 꼴). 77장 판단 기준 Quiz 1 줄과 노트 · 대본 74 · 77장 해설을 같은 장면으로",
+   "인수조건": [
+    "D-51"
+   ]
+  },
+  {
+   "등급": "하",
+   "장": [
+    23
+   ],
+   "위치": "노트",
+   "문장": "「…조치 효과 예측 세 번(팬 100 % / 팬 100 % + 부하 80 % / 부하 70 %의 15분 뒤 유온) — …」",
+   "실물": "노트의 ` / `는 PPTX 노트 줄바꿈이라 괄호 안이 세 줄로 끊겨 「·」 없이 시작하는 줄 둘이 생긴다(PPTX 23장 노트 4 · 5줄, 검토자 python-pptx 확인)",
+   "제안": "「(팬 100 %, 팬 100 % + 부하 80 %, 부하 70 %의 15분 뒤 유온)」",
+   "인수조건": [
+    "D-114",
+    "S-123"
+   ]
+  },
+  {
+   "등급": "하",
+   "장": [
+    39
+   ],
+   "위치": "대본",
+   "문장": "「위쪽 점선처럼 에이전트가 데이터베이스에 곧장 연결하는 길에는 가위표가 있습니다.」(02편 143행)",
+   "실물": "렌더 s-39.png의 직접 접속 선은 실선이다. 생성기 figures/만들기_삽화.py:236이 stroke_dasharray로 그려 빌더의 SVG 변환이 점선을 그리지 않는다(덱.md D요-15, 글꼴과 무관해 맑은 고딕 렌더에서도 같다)",
+   "제안": "그림을 고친다: 만들기_삽화.py:236의 회색 직접 접속 선을 짧은 선분(1회차 dash_line 꼴 또는 43장 신선도처럼 점)으로 그려 점선이 보이게. 그림을 고치지 않으면 대본을 「위쪽 회색 선처럼」으로",
+   "인수조건": [
+    "S-74"
+   ]
+  },
+  {
+   "등급": "하",
+   "장": [
+    36,
+    47,
+    49
+   ],
+   "위치": "대본",
+   "문장": "36장 「판정 줄의 PASS가 그 뜻이에요」(02편 95행), 49장 「맨 위 성공 응답은 첫 칸이 ok이고 … 첫 칸이 error로 바뀌고」 「INVALID는 넣은 입력이 잘못됐다는 뜻이라 … UNKNOWN은 엔진이나 그래프, 연결 쪽 문제예요」(309 · 311행). 노트 36 「(PASS)」, 47 「SUPPORTED(근거 지지) … UNKNOWN(확인 못 함) … UNSUPPORTED(맞는 근거 없음)」, 49 「INVALID = … UNKNOWN = …」",
+   "실물": "S-90 · S-91 · D-121: 식별자 · 영문 상수는 뜻으로 말하고 영어 낭독 예외는 셋(문법 키워드 · 배우는 언어 이름 · 학생 입력값)뿐 — 응답 상수 · 판정 값은 그 셋에 들지 않는다(47장 대본은 이미 뜻으로만 말함)",
+   "제안": "36장 「판정 줄은 이 조건을 만족했다는 표시예요」. 49장 「맨 위 성공 응답은 첫 칸이 성공 표시이고 … 실패하면 그 칸이 실패 표시로 바뀌고」 「실패의 종류는 둘이에요. 하나는 넣은 입력이 잘못됐다는 뜻이라 … 다른 하나는 엔진이나 그래프, 연결 쪽 문제예요」. 노트도 뜻으로(「· 첫째 종류 = 넣은 입력이 잘못됨 …」, 47 「왼쪽 근거 지지 → 가운데 확인 못 함 → 오른쪽 맞는 근거 없음」)",
+   "인수조건": [
+    "S-90",
+    "S-91",
+    "D-121"
+   ]
+  },
+  {
+   "등급": "하",
+   "장": [
+    10,
+    23,
+    37
+   ],
+   "위치": "화면",
+   "문장": "10장 요소 2 「예: 원인 진단, 생산오더 조회, 판단 제출」, 23장 코드 「5  생산오더 · 출하 대기 로트 조회」, 37장 코드 「# 다른 실행의 생산오더 조회 물음」(대본 01편 171행 · 02편 111행 「생산오더 조회」)",
+   "실물": "포털 처리 기록의 도구 이름은 mes_orders = 「생산 주문 조회」, qms_lots = 「품질 로트 조회」(it/portal/www/plainWords.js:425 · 438). 같은 화면에 원인 진단 · 대안 평가 · 판단 제출 · 조치 효과 예측은 포털 이름과 같다",
+   "제안": "「생산 주문 조회」로(23장은 「5  생산 주문 · 품질 로트 조회」), 대본 · 노트의 「생산오더 조회」도 같게. 값 이름 「생산오더」(MO-…)는 그대로 둘 수 있다",
+   "인수조건": [
+    "D-95",
+    "S-55"
+   ]
+  }
+ ],
+ "기록만": [
+  {
+   "장": [
+    27,
+    37
+   ],
+   "내용": "27장 순위 · 점수(+3.05 · +2.57 · +2.18)는 쿨러 사건과 같은 입력을 지금 코드로 다시 잰 값(cards_now.out)이고 판단 번호 DEC-1010-002-408b는 2026-10-10 기록이라, 그 판단 기록 자체의 점수(2.75 · 2.75 · −1.58, 1회차 사실표 543행 · 09-11 사실표 309 · 514행)와 다르다. 사실장부 · 사실표 변경기록 24행이 정한 정리라 고칠 목록에 올리지 않음 — 다른 회차 사실표 · 덱의 옛 순위 정리는 감독 판단"
+  },
+  {
+   "장": [
+    20,
+    54,
+    58
+   ],
+   "내용": "20장 대안 평가 「물음」의 failure_mode를 기록 당시 fm:cooler-performance-loss에서 지금 id fm:cooler-cooling-loss로 바꿔 실었다 — 제작 기준에 밝혔고 사실장부 실전4 결정"
+  },
+  {
+   "장": [
+    14,
+    56
+   ],
+   "내용": "14 · 56장의 「물음」은 원문 JSON(포털에서는 접힌 「물은 원문」), 「받음 원문 13,763자 (JSON)」은 원문 길이다. 지금 포털 줄은 물음 「HYD-01 ‘쿨러 성능 저하’ 경보의 원인」, 받음 「가장 유력한 원인 ‘쿨러 핀 오염’ (점수 …)」(plainWords.js:399-400) — 원문을 보이는 장이라 결함으로 세지 않음"
+  },
+  {
+   "장": [
+    1
+   ],
+   "내용": "과정 칸 「현장 지식으로 …」은 회차 주제 「현장 지식을 활용해 …」를 넘침 추정 때문에 줄였다(제작 기준). Noto 미리보기에서는 여유가 커 맑은 고딕 렌더 뒤 원문 그대로 들어가는지 감독이 볼 것"
+  },
+  {
+   "장": [
+    52
+   ],
+   "내용": "「목록 밖의 호출 → 권한 요청 → 사람에게 질문」은 허용 목록 밖 일반 도구의 동작(settings.py allowed_for_run 주석)이고, Bash · PowerShell과 연결 검사에서 쓰기로 찍힌 도구는 --disallowedTools로 요청조차 되지 않는다(settings.py run_disallowed_tools). 화면 수준에서는 맞는 일반화로 봄"
+  },
+  {
+   "장": [
+    35
+   ],
+   "내용": "관계도 노드 「냉각 성능 상실」은 20 · 54 · 58장의 「쿨러 냉각 성능 상실」 축약(제작 기준에 까닭, 3회차와 같음)"
+  },
+  {
+   "장": [
+    16,
+    43
+   ],
+   "내용": "대본 첫 위치어 앞에 서너 문장(16장 「화면 왼쪽은」, 43장 「화면의 굵은 세로선은」) — S-73 통과로 봤으나 음성 전 화면 대조 때 감독이 볼 것"
+  },
+  {
+   "장": [
+    61,
+    63
+   ],
+   "내용": "제작 기준이 작업 폴더 「실습어긋남.md」를 가리킨다 — 작업 폴더를 지우면 끊기는 참조(근거 폴더로 옮길 때 경로를 맞출 것)"
+  },
+  {
+   "장": [
+    17
+   ],
+   "내용": "실행고리.svg의 되돌아가는 곡선(만들기_삽화.py:205)과 신선도.svg 세로선(:285)도 stroke_dasharray라 실선으로 렌더된다. 대본이 점선이라 말하지 않아 결함 아님"
+  },
+  {
+   "장": [],
+   "내용": "실습 자료 쪽 차이(51행 실습 자료 없음, 50행 실습 대본의 VS Code 장면 · 「기본 제공 에이전트」 · 지식 밖 질문 장면 없음, 52~54행 랩에 START.md 없음 — 코드/README.md만)는 작업자 실습어긋남.md 1~7행에 있고 이 덱의 불통과가 아님"
+  }
+ ],
+ "확정장": "1-9,11-17,19-22,24-35,38,40-46,48,51-70,72-73,75-76",
+ "못 본 장": [],
+ "행별시간": {
+  "48": {
+   "배정": 40,
+   "낭독": 39.4
+  },
+  "49": {
+   "배정": 40,
+   "낭독": 39.5
+  },
+  "도입(1~3)": {
+   "배정": null,
+   "낭독": 3.0
+  },
+  "마무리(71~77)": {
+   "배정": null,
+   "낭독": 7.0
+  },
+  "실습 소개(61~70)": {
+   "배정": null,
+   "낭독": 2.0
+  },
+  "전체": {
+   "낭독": 91.0,
+   "학습 대기 초": 95
+  }
+ },
+ "본문장": {
+  "수": 50,
+  "번호": "5-14,16-23,25-31,33-39,41-43,45-52,54-60",
+  "판단 문제 장": "해당 없음(통합반 — 실전 응용 장 셈 대상 아님)"
+ },
+ "렌더": "Noto 미리보기 77장 전부(9장 묶음 시트_온5통합_1~9 + s-39 · s-43 원본) — 줄바꿈 · 넘침 · 글겹침은 맑은 고딕 렌더 대기"
+}

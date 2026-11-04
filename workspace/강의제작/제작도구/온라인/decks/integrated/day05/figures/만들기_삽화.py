@@ -118,6 +118,18 @@ def tsdb(cx, cy, st: St):
     return cylinder_db(cx, cy, st)
 
 
+def dash_line(x1, y1, x2, y2, color=NAVY, sw=4, on=10, off=8):
+    """점선을 짧은 선분으로 그린다. 빌더가 SVG를 PNG로 바꿀 때(PyMuPDF) stroke-dasharray를 그리지 않는다(1회차 생성기와 같은 방법)."""
+    n = math.hypot(x2 - x1, y2 - y1)
+    ux, uy = (x2 - x1) / n, (y2 - y1) / n
+    o, t = [], 0.0
+    while t < n - 1:
+        e = min(t + on, n)
+        o.append(line(round(x1 + ux * t, 1), round(y1 + uy * t, 1), round(x1 + ux * e, 1), round(y1 + uy * e, 1), stroke=color, sw=sw))
+        t = e + off
+    return o
+
+
 def cross(cx, cy, color=NAVY, s=12, sw=5):
     return [line(cx - s, cy - s, cx + s, cy + s, stroke=color, sw=sw), line(cx - s, cy + s, cx + s, cy - s, stroke=color, sw=sw)]
 
@@ -233,7 +245,8 @@ def via_tool() -> str:
     o: list[str] = []
     y = 285
     # 직접 접속하는 길(없음): 회색 점선과 가위표
-    o.append(path("M 170,200 L 170,60 L 990,60 L 990,128", stroke=GREY, sw=4, stroke_dasharray="10 10"))
+    for (x1, y1), (x2, y2) in (((170, 200), (170, 60)), ((170, 60), (990, 60)), ((990, 60), (990, 128))):
+        o += dash_line(x1, y1, x2, y2, GREY, sw=4, on=10, off=10)
     o += cross(580, 60, NAVY, s=13, sw=5)
     o += g(170, y, 1.3, agent_icon(0, 0, ON))
     o.append(rect(480, y - 78, 200, 156, 16, fill=PALE, stroke=NAVY))

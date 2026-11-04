@@ -1,0 +1,28 @@
+## grep -rnE '(덱|SLIDE|장)[^가-힣]{0,3}[0-9]{1,2}(장|~)' 산출물/실전반/실습/05회차 (md·html)
+## ZIP 안
+## 영상 README
+## 다른 편 대본 · 오프라인 덱의 실전5 장 참조
+./제작도구/오프라인/decks/practical/off06/구성.json:19:   "src": "practical/day05",
+./제작도구/오프라인/decks/practical/off06/구성.json:23:   "src": "practical/day05",
+./제작도구/오프라인/decks/practical/off06/구성.json:27:   "src": "practical/day05",
+./제작도구/오프라인/decks/practical/off06/구성.json:31:   "src": "practical/day05",
+./제작도구/오프라인/decks/practical/off06/구성.json:35:   "src": "practical/day05",
+./제작도구/오프라인/decks/practical/off06/구성.json:42:   "src": "practical/day05",
+./제작도구/오프라인/decks/practical/off06/구성.json:46:   "src": "practical/day05",
+./제작도구/오프라인/decks/practical/off06/구성.json:50:   "src": "practical/day05",
+./제작도구/오프라인/decks/practical/off06/구성.json:60:   "src": "practical/day05",
+./제작도구/오프라인/decks/practical/off06/구성.json:64:   "src": "practical/day05",
+./제작도구/오프라인/decks/practical/off06/구성.json:68:   "src": "practical/day05",
+./제작도구/오프라인/decks/practical/off06/구성.json:72:   "src": "practical/day05",
+./제작도구/오프라인/decks/practical/off06/구성.json:85:   "src": "practical/day05",
+./제작도구/오프라인/decks/practical/off06/구성.json:89:   "src": "practical/day05",
+./제작도구/오프라인/decks/practical/off06/구성.json:93:   "src": "practical/day05",
+./제작도구/오프라인/decks/practical/off06/구성.json:97:   "src": "practical/day05",
+./제작도구/오프라인/decks/practical/off06/구성.json:110:   "src": "practical/day05",
+./제작도구/오프라인/decks/practical/off06/구성.json:114:   "src": "practical/day05",
+./제작도구/오프라인/decks/practical/off06/구성.json:118:   "src": "practical/day05",
+./제작도구/오프라인/decks/practical/off06/구성.json:122:   "src": "practical/day05",
+
+## off06 구성.json 의 practical/day05 장(옛 번호) — python json 읽기
+[6, 7, 9, 10, 11, 21, 22, 24, 25, 29, 31, 35, 41, 42, 43, 44, 47, 48, 49, 51, 70, 71, 73]
+→ 새 번호 [6, 7, 9, 10, 11, 21, 22, 25, 26, 30, 32, 36, 42, 43, 44, 45, 47, 48, 49, 51, 74, 75, 77]

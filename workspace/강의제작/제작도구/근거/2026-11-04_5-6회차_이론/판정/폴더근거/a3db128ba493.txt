@@ -1,0 +1,6 @@
+# 폴더 근거: workspace/강의제작/제작도구/온라인/decks/practical/day06/figures
+960e8dfbadc9ed7ce36d404da737190f992e1aac8fc5cf22d5b30d989e8d2e52  냉각흐름.svg
+b53da75569085caef00bd7fd11cdfcdb7ef70a31e006df474711dfc598476cbc  냉각흐름_승인대기.svg
+cd17990a28820b21426c65ea874bf46e7641d507d7c2fc8ec5ee5bd0c701d8b5  냉각흐름_조치종류.svg
+e64117f49aed1e1a51cc32469462fb920bbd02b53ff1ab0dcd6920f4079ef925  만들기_삽화.py
+d7c73ae27025e861b652f90c780901d0ef913bf6bd848d015240e434093a5f23  조치종류갈림.svg
