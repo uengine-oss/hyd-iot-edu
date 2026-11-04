@@ -20,6 +20,7 @@ from __future__ import annotations
 
 from bisect import bisect_right
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal, ROUND_HALF_UP
 import csv
 import heapq
 import io
@@ -176,6 +177,12 @@ def table(header, rows):
 
 def r1(v):
     return f'{round(v + 0.0, 1):.1f}'
+
+
+def money(v):
+    """금액(만원)을 소수 둘째 자리로 사사오입(ROUND_HALF_UP — 입출력_계약 「결과」의 반올림 규칙). 부동소수 원값의 이진 오차
+    (11.25 + 1.575가 12.8249…로 저장됨)는 소수 아홉째 자리에서 먼저 걷어 낸다. 판정 엔진(judge_actions.r2)과 따로 쓴 같은 규칙이다."""
+    return float(Decimal(f'{v:.9f}').quantize(Decimal('0.01'), ROUND_HALF_UP))
 
 
 def ce_of(health, fan):
@@ -892,17 +899,17 @@ BUSINESS = {
     ],
     '표준_작업': [{'작업': '쿨러 핀 세척', '절차': 'SOP-COOL-14', '정지_시간_h': 3, '작업비_만원': 40, '필요_부품': '없음', '시스템': 'CMMS'}],
 }
-CANDIDATE_SETTINGS = [   # 후보_설정.csv — 후보, 이름, 팬, 부하, 작업지시, 근본 조치, 승인(HM-8 1.1 원문)
-    ['SOP-COOL-11', '팬 최대 운전', '100', '', '', '아니오', '운전원'],
-    ['SOP-COOL-12', '팬 최대 운전과 부하 80 %', '100', '80', '', '아니오', '운전원'],
-    ['SOP-COOL-13', '부하 70 %와 야간 핀 세척', '', '70', '쿨러 핀 세척', '예', '운전원'],
-    ['SOP-COOL-14', '쿨러 핀 세척', '', '', '쿨러 핀 세척', '예', '설비보전팀장'],
+CANDIDATE_SETTINGS = [   # 후보_설정.csv — 후보, 이름, 팬, 부하, 작업지시, 근본 조치(식에 쓰는 값만 — 승인은 SOP 원문 한 곳이 가진다)
+    ['SOP-COOL-11', '팬 최대 운전', '100', '', '', '아니오'],
+    ['SOP-COOL-12', '팬 최대 운전과 부하 80 %', '100', '80', '', '아니오'],
+    ['SOP-COOL-13', '부하 70 %와 야간 핀 세척', '', '70', '쿨러 핀 세척', '예'],
+    ['SOP-COOL-14', '쿨러 핀 세척', '', '', '쿨러 핀 세척', '예'],
 ]
 
 
 def losses(sop, period, remain, lot, ts1):
     """지표_정의.md의 네 손실(만원). ts1이 None이면 품질은 None(정해지지 않음)."""
-    _, _, fan, load, wo, root, _ = next(r for r in CANDIDATE_SETTINGS if r[0] == sop)
+    _, _, fan, load, wo, root = next(r for r in CANDIDATE_SETTINGS if r[0] == sop)
     fan = float(fan or 60)
     load = float(load or 90)
     stop, work = (3.0, 40.0) if wo else (0.0, 0.0)
@@ -991,7 +998,7 @@ WORK_STANDARD = f'''# 냉각 경보 조치 판단 — 작업 기준
 
 맞는 경고 · 감점 · 제외를 모두 모은다. 제외가 있으면 후보에서 빼고, 없으면 후보를 유지하되 경고 · 감점과 수행 조건을 함께 남긴다. 같은 규칙의 감점은 한 번만 반영한다.
 
-입력이 빠져 참 · 거짓을 알 수 없는 규칙은 미확인으로 표시한다. 알려진 제외 사유가 있으면 제외하면서 미확인도 남기고, 제외가 없더라도 필요한 입력이 빠졌으면 최종 허용 판단은 보류한다.
+그 후보에 걸린 규칙의 입력이 빠져 참 · 거짓을 알 수 없으면 그 규칙을 미확인으로 표시한다. 알려진 제외 사유가 있으면 제외하면서 미확인도 남기고, 제외가 없더라도 미확인 규칙이 있으면 최종 허용 판단은 보류한다.
 
 ## 5. 후보 유지와 실행
 
@@ -1025,6 +1032,7 @@ def collection_doc(rec):
 ## 팬_운전_카운터.csv — PLC 팬 100 % 연속 운전 카운터
 
 - 팬이 100 %로 돌기 시작하면 「시작」(0분), 100 %로 도는 동안 {COUNTER_PERIOD_MIN}분마다 「주기」(시작 뒤 누적 분, 분 단위 정수), 100 %에서 내려오거나 설비가 서면 「종료」(0분)를 남긴다. 이 세 경우에만 행이 생긴다.
+- 카운터는 행을 남기지 않는 동안에도 100 % 운전 시간을 센다. 행의 누적 분은 그 행을 남긴 시각의 값이므로, 그 뒤 어느 시각의 연속 운전 시간은 그 사이 100 % 운전이 이어졌을 때 그 행의 누적 분에 그 시각까지 지난 시간을 더한 값이다.
 - 내보내기 첫 행(2026-09-28 00:00)은 그때의 카운터 상태다.
 
 ## 예측_결과.csv — 조치 후 예측
@@ -1162,8 +1170,17 @@ def metric_doc(rec, cats):
     late_text = (f'완료까지 걸리는 시간은 0 + {remain:g} ÷ (300 × 80/90) = {finish:.4f}시간이고 기간 {period:g}시간보다 '
                  + ('짧아서 납기 지연 위약금이 0이다.' if late == 0 else f'{late:.4f}시간 길어서 위약금이 120 × {late:.4f} = {120 * late:.2f}이다. 금액은 끝에서만 반올림한다.'))
     return METRIC_DOC.format(notice=NOTICE, eid=c['id'], period=f'{period:g}', remain=f'{remain:g}', lot=f'{lot:g}', ts1=f'{ts1:.1f}',
-                             cost=f'{L["비용"]:.2f}', prod=f'{L["생산"]:.2f}', qual=f'{L["품질"]:.2f}', energy=f'{L["에너지"]:.2f}',
-                             q_text=q_text, late_text=late_text, late_term=f'120 × {late:.4f}' if late else '120 × 0')
+                             cost=f'{money(L["비용"]):.2f}', prod=f'{money(L["생산"]):.2f}', qual=f'{money(L["품질"]):.2f}', energy=f'{money(L["에너지"]):.2f}',
+                             q_text=q_text, late_text=late_text, late_term=f'120 × {late:.4f}' if late else '120 × 0', rank_rule=portal_rank_rule())
+
+
+def portal_rank_rule():
+    """포털 판단 화면이 후보 순위를 매기는 점수 — main 판단 규칙 rule:rank-value의 설명 그대로(지표_정의.md 「포털의 성과 지표 점수」)."""
+    cy = (SYS/'it/neo4j/v2/instances.cypher').read_text(encoding='utf-8')
+    m = re.search(r"\['rule:rank-value','dt:rank-actions',\d+,'RANK','([^']+)'", cy)
+    if not m:
+        raise RuntimeError('main instances.cypher에서 rule:rank-value 행을 찾지 못했습니다 — 지표_정의.md의 포털 순위 점수 문장을 다시 맞춥니다.')
+    return m.group(1)
 
 
 METRIC_DOC = '''# 조치 후보를 견주는 네 지표 — 정의와 식
@@ -1182,6 +1199,12 @@ METRIC_DOC = '''# 조치 후보를 견주는 네 지표 — 정의와 식
 | 생산 | 부하를 낮추거나 설비를 세워 줄어든 생산과, 그 때문에 늦어진 납기 | 생산량 (설비 가용성 확보), 납기 준수율 (납기 신뢰) |
 | 품질 | 유온이 높은 채로 만든 제품에서 나올 수 있는 클레임 | 품질 클레임 (품질 신뢰) |
 | 에너지 | 팬을 더 세게 돌리는 데 드는 전력 | 전력 사용량 (에너지 효율) |
+
+## 포털의 성과 지표 점수
+
+포털 판단 화면은 후보의 순위를 판단 규칙 `rule:rank-value`의 점수(성과 지표 점수)로 매기고, 점수가 높을수록 앞에 둔다. 그 규칙의 설명은 다음과 같다.
+
+> {rank_rule}
 
 ## 값이 오는 곳
 
@@ -1377,7 +1400,7 @@ def build():
         '오더_현황.csv': rec.order_file(),
         'metrics/지표_정의.md': metric_doc(rec, cats),
         'metrics/업무_값.json': json.dumps(BUSINESS, ensure_ascii=False, indent=2) + '\n',
-        'metrics/후보_설정.csv': table(['후보', '이름', '팬_설정_퍼센트', '부하_설정_퍼센트', '작업지시', '근본_조치', '승인'], CANDIDATE_SETTINGS),
+        'metrics/후보_설정.csv': table(['후보', '이름', '팬_설정_퍼센트', '부하_설정_퍼센트', '작업지시', '근본_조치'], CANDIDATE_SETTINGS),
     }
     meta = dict(
         seed=SEED, end=iso_kst(rec.end), incident=rec.incident['id'],
@@ -1386,7 +1409,7 @@ def build():
                     order=None if c['order'] is None else dict(due_h=round(c['order']['due_h'], 1), remain=c['order']['remain'], hot=c['order']['hot']))
                for c in rec.cases],
         check_cases=[c['id'] for c in chosen],
-        incident_totals={s: {k: (None if v is None else round(v, 2)) for k, v in d.items()} for s, d in tot.items()},
+        incident_totals={s: {k: (None if v is None else money(v)) for k, v in d.items()} for s, d in tot.items()},
         incident_sop12_recomputed=round(rec.predict(units[INCIDENT['asset']], next(x for x in rec.cases if x['incident'])['base'], 'SOP-COOL-12')[0]['values']['ts1'], 2),
     )
     return files, meta

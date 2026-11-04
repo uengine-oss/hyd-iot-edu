@@ -13,7 +13,7 @@
   },
   {
    "item": "팬 100 % 연속 시간",
-   "decision": "마지막 카운터 기록이 종료면 0, 시작 · 주기면 기록값 + 판단 시각까지 경과(분 ÷ 60). 주기(10분)를 넘게 기록이 없으면 — 기록이 끊긴 구간 뒤에도 PLC 팬 설정이 100 %면 이어진 것으로 보고 마지막 기록에 경과를 더한다",
+   "decision": "마지막 카운터 기록이 종료면 0, 시작 · 주기면 기록값 + 판단 시각까지 경과(분 ÷ 60). 주기(10분)를 넘게 기록이 없으면 — 끊긴 구간을 잇는다 — 판정 요청 때 PLC 팬 설정이 100 %면 그 사이 100 % 운전이 이어졌다고 보고 마지막 기록에 경과를 더한다",
    "basis": "수집_설명.md 팬_운전_카운터; HM-8.8 「이미 24시간을 넘겼다면」; 작업기준.md 3절"
   },
   {
@@ -144,8 +144,8 @@
      },
      "rank": 4,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -312,8 +312,8 @@
      },
      "rank": 3,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -569,8 +569,8 @@
      "comparison": null,
      "rank": null,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -774,8 +774,8 @@
      },
      "rank": 4,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -948,8 +948,8 @@
      "comparison": null,
      "rank": null,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -1116,8 +1116,8 @@
      },
      "rank": 4,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -1284,8 +1284,8 @@
      },
      "rank": 4,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -1452,8 +1452,8 @@
      },
      "rank": 4,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -1620,8 +1620,8 @@
      },
      "rank": 4,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -1788,8 +1788,8 @@
      },
      "rank": 4,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -1956,8 +1956,8 @@
      },
      "rank": 4,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -2124,8 +2124,8 @@
      },
      "rank": 4,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -2364,8 +2364,8 @@
      "comparison": null,
      "rank": null,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -2545,8 +2545,8 @@
      },
      "rank": 4,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -2713,8 +2713,8 @@
      },
      "rank": 3,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -2905,8 +2905,8 @@
      },
      "rank": 3,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -3075,8 +3075,8 @@
      },
      "rank": 3,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -3261,8 +3261,8 @@
      "comparison": null,
      "rank": null,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -3426,8 +3426,8 @@
      ],
      "rank": null,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -3591,8 +3591,8 @@
      },
      "rank": 4,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -3765,8 +3765,8 @@
      "comparison": null,
      "rank": null,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -3933,8 +3933,8 @@
      },
      "rank": 4,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -4101,8 +4101,8 @@
      },
      "rank": 4,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -4301,8 +4301,8 @@
      },
      "rank": 4,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -4475,8 +4475,8 @@
      "comparison": null,
      "rank": null,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -4643,8 +4643,8 @@
      },
      "rank": 4,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -4808,8 +4808,8 @@
      ],
      "rank": null,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -4984,8 +4984,8 @@
      },
      "rank": 4,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -5158,8 +5158,8 @@
      "comparison": null,
      "rank": null,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -5415,8 +5415,8 @@
      "comparison": null,
      "rank": null,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -5602,8 +5602,8 @@
      },
      "rank": 4,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -5770,8 +5770,8 @@
      },
      "rank": 4,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -5935,8 +5935,8 @@
      ],
      "rank": null,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -6155,8 +6155,8 @@
      },
      "rank": 3,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -6348,8 +6348,8 @@
      },
      "rank": 4,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -6432,9 +6432,9 @@
       "cost": 11.25,
       "production": 0.0,
       "quality": 0.0,
-      "energy": 1.57,
+      "energy": 1.58,
       "penalty": 0.0,
-      "total": 12.82
+      "total": 12.83
      },
      "rank": 1,
      "approval": {
@@ -6471,7 +6471,7 @@
       "cost": 11.25,
       "production": 97.22,
       "quality": 0.0,
-      "energy": 1.57,
+      "energy": 1.58,
       "penalty": 0.0,
       "total": 110.05
      },
@@ -6516,8 +6516,8 @@
      },
      "rank": 4,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -6564,7 +6564,7 @@
     "top": [
      "SOP-COOL-11"
     ],
-    "reason": "견준 후보 가운데 비교 합계가 가장 작은 후보(12.82만원)",
+    "reason": "견준 후보 가운데 비교 합계가 가장 작은 후보(12.83만원)",
     "checks": []
    }
   },
@@ -6706,8 +6706,8 @@
      },
      "rank": 4,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -6874,8 +6874,8 @@
      },
      "rank": 4,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -7042,8 +7042,8 @@
      },
      "rank": 4,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -7245,8 +7245,8 @@
      },
      "rank": 3,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -7454,8 +7454,8 @@
      "comparison": null,
      "rank": null,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -7724,8 +7724,8 @@
      "comparison": null,
      "rank": null,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -7924,8 +7924,8 @@
      },
      "rank": 3,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -8105,8 +8105,8 @@
      },
      "rank": 3,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -8289,8 +8289,8 @@
      "comparison": null,
      "rank": null,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -8570,8 +8570,8 @@
      "comparison": null,
      "rank": null,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -8759,8 +8759,8 @@
      },
      "rank": 4,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -8927,8 +8927,8 @@
      },
      "rank": 3,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -9167,8 +9167,8 @@
      "comparison": null,
      "rank": null,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -9348,8 +9348,8 @@
      },
      "rank": 4,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -9516,8 +9516,8 @@
      },
      "rank": 3,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -9695,8 +9695,8 @@
      },
      "rank": 4,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -9918,8 +9918,8 @@
      },
      "rank": 3,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -10178,8 +10178,8 @@
      "comparison": null,
      "rank": null,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -10407,8 +10407,8 @@
      },
      "rank": 4,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -10599,8 +10599,8 @@
      },
      "rank": 4,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -10802,8 +10802,8 @@
      "comparison": null,
      "rank": null,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -10983,8 +10983,8 @@
      },
      "rank": 4,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -11173,8 +11173,8 @@
      },
      "rank": 3,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },
@@ -11397,8 +11397,8 @@
      },
      "rank": 3,
      "approval": {
-      "role": "운전원",
-      "source": "HM-8.5 SOP-COOL-13 승인",
+      "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+      "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7",
       "note": "비교 순위는 승인 요청을 검토할 순서일 뿐 실행 승인이 아니다. 실행은 이 역할이 한 번 승인한 뒤에 한다."
      }
     },

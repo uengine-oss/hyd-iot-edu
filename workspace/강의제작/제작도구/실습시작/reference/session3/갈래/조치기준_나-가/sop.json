@@ -92,8 +92,8 @@
         }
       ],
       "approval": {
-        "role": "설비보전팀장",
-        "source": "HM-8.7"
+        "role": "미확인 — HM-8.1 SOP-FAN-11 절에 승인 줄이 없음(설비보전팀장 승인 문장은 HM-8.7 근본 조치 절의 것)",
+        "source": "HM-8.1"
       }
     },
     {
@@ -169,8 +169,8 @@
         }
       ],
       "approval": {
-        "role": "설비보전팀장",
-        "source": "HM-8.7"
+        "role": "미확인 — HM-8.2 SOP-FAN-12 절에 승인 줄이 없음(설비보전팀장 승인 문장은 HM-8.7 근본 조치 절의 것)",
+        "source": "HM-8.2"
       }
     },
     {
@@ -532,8 +532,8 @@
         }
       ],
       "approval": {
-        "role": "운전원",
-        "source": "HM-8.5 SOP-COOL-13 승인"
+        "role": "운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)",
+        "source": "HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7"
       }
     },
     {
@@ -725,12 +725,6 @@
     {
       "type": "REMEDIED_BY",
       "from": "fm:cooler-cooling-loss",
-      "to": "SOP-FAN-11",
-      "source": "HM-8.4; HM-8.1"
-    },
-    {
-      "type": "REMEDIED_BY",
-      "from": "fm:cooler-cooling-loss",
       "to": "SOP-FAN-12",
       "source": "HM-8.4; HM-8.2"
     },
@@ -750,13 +744,13 @@
       "type": "ADDRESSES",
       "from": "SOP-FAN-11",
       "to": "cause:fan-drive-fault",
-      "source": "HM-8.4; HM-8.7"
+      "source": "HM-8.4; HM-8.1"
     },
     {
       "type": "ADDRESSES",
       "from": "SOP-FAN-12",
       "to": "cause:fan-drive-fault",
-      "source": "HM-8.4; HM-8.7"
+      "source": "HM-8.4; HM-8.2"
     }
   ]
 }

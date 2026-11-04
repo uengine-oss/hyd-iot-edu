@@ -12,6 +12,8 @@ sop.json의 키는 영어 snake_case다(코딩랩.md K-55) — 값(원문 문장
 규칙 ID와 뜻(run_reference.py의 두 번째 구현이 이 뜻으로만 견준다 — 조건표 파일을 읽지 않는다):
 R1 auto(원격 자동 아님 제외) · R2 fan24(팬 24시간 초과 감점 20) · R3 warn55(예측 55 이상 경고) · R4 hard65(예측 65 이상 제외) · R5 trip(트립 중 리셋 외 제외).
 옮기지 않는 원문 조건: 펌프 부하 60 % 미만 금지(후보 설정이 모두 70 % 이상이고 계약 입력에 부하가 없다), 팬 100 % 연속 24시간 이내(SOP-COOL-11 단계 2 — 제한, 넘긴 경우의 처리는 R2).
+승인은 원문 줄 그대로(APPROVAL): 승인 줄이 없는 SOP-FAN-11 · 12는 미확인, SOP-COOL-13은 SOP 승인 줄(운전원)과 4단계가 거는 작업지시의 승인(HM-8.7 설비보전팀장)을 함께 적는다.
+고장 유형 → 근본 조치(REMEDIED_BY)는 원인을 없애는 절차만 — 점검만 하는 SOP-FAN-11은 원인(팬 구동 불량)을 확인하는 ADDRESSES로만 잇는다.
 """
 from __future__ import annotations
 
@@ -110,10 +112,30 @@ CAUSES = [
 ]
 RELATIONS = ([{'type': 'MITIGATED_BY', 'from': 'fm:cooler-cooling-loss', 'to': s, 'source': 'HM-8.5'} for s in REMOTE]
              + [{'type': 'REMEDIED_BY', 'from': 'fm:cooler-cooling-loss', 'to': s, 'source': src} for s, src in
-                [('SOP-COOL-14', 'HM-8.7'), ('SOP-COOL-15', 'HM-8.7'), ('SOP-FAN-11', 'HM-8.4; HM-8.1'), ('SOP-FAN-12', 'HM-8.4; HM-8.2')]]
-             + [{'type': 'ADDRESSES', 'from': s, 'to': c, 'source': 'HM-8.4; HM-8.7'} for s, c in
-                [('SOP-COOL-14', 'cause:cooler-fin-fouling'), ('SOP-COOL-15', 'cause:ambient-temperature-rise'),
-                 ('SOP-FAN-11', 'cause:fan-drive-fault'), ('SOP-FAN-12', 'cause:fan-drive-fault')]])
+                [('SOP-COOL-14', 'HM-8.7'), ('SOP-COOL-15', 'HM-8.7'), ('SOP-FAN-12', 'HM-8.4; HM-8.2')]]
+             + [{'type': 'ADDRESSES', 'from': s, 'to': c, 'source': src} for s, c, src in
+                [('SOP-COOL-14', 'cause:cooler-fin-fouling', 'HM-8.4; HM-8.7'), ('SOP-COOL-15', 'cause:ambient-temperature-rise', 'HM-8.4; HM-8.7'),
+                 ('SOP-FAN-11', 'cause:fan-drive-fault', 'HM-8.4; HM-8.1'), ('SOP-FAN-12', 'cause:fan-drive-fault', 'HM-8.4; HM-8.2')]])
+# 승인 — 원문 줄 그대로. (역할, sop.json 출처(절 · 단계), 원문 줄[(자료/HM-8_매뉴얼.md 줄 번호, 그 줄에 있어야 할 글)]) — 줄은 run_reference.py 1절이 확인한다.
+NO_APPROVAL = '절에 승인 줄이 없음(설비보전팀장 승인 문장은 HM-8.7 근본 조치 절의 것)'
+APPROVAL = {
+    'SOP-FAN-11': ('미확인 — HM-8.1 SOP-FAN-11 ' + NO_APPROVAL, 'HM-8.1', []),
+    'SOP-FAN-12': ('미확인 — HM-8.2 SOP-FAN-12 ' + NO_APPROVAL, 'HM-8.2', []),
+    'SOP-COOL-11': ('운전원', 'HM-8.5 SOP-COOL-11 승인', [(52, '승인: 운전원')]),
+    'SOP-COOL-12': ('운전원', 'HM-8.5 SOP-COOL-12 승인', [(60, '승인: 운전원')]),
+    'SOP-COOL-13': ('운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)', 'HM-8.5 SOP-COOL-13 승인; HM-8.5 SOP-COOL-13 단계 4; HM-8.7',
+                    [(68, '승인: 운전원'), (66, 'SOP-COOL-14 핀 세척 작업지시'), (74, '승인은 설비보전팀장')]),
+    'SOP-COOL-14': ('설비보전팀장', 'HM-8.7', [(74, '승인은 설비보전팀장')]),
+    'SOP-COOL-15': ('설비보전팀장', 'HM-8.7', [(74, '승인은 설비보전팀장')]),
+}
+
+
+def approval_cite(sid):
+    """승인 근거(파일 · 줄) — 판단 기록의 「승인 근거」 칸."""
+    role, section, lines = APPROVAL[sid]
+    if not lines:
+        return f'`자료/HM-8_매뉴얼.md` {section} — 승인 줄 없음'
+    return '`자료/HM-8_매뉴얼.md` ' + ' · '.join(str(n) for n, _ in lines) + '줄'
 # 설비 모델 ID(입력/graph.json). 지점1 가 = HYD-01~03, 나 = HYD-04를 SOP-COOL-13 · 15에 더 건다.
 MODEL = {   # SOP → (구성 요소 꼬리, 센서 꼬리)
     'SOP-FAN-11': (['fan'], ['VS1']), 'SOP-FAN-12': (['fan'], ['CE', 'VS1']),
@@ -179,7 +201,7 @@ def sop_doc(p1, p2):
             apply_.append(item('벨트 처짐이 기준을 벗어나거나 균열이 보일 때.', 'HM-8.2'))
             forbid.append(item('LOCAL 전환과 잠금(LOTO)을 확인한 뒤 작업한다.', 'HM-8.2 SOP-FAN-12 단계 1', [], '제한'))
             done.append(item('30분 시운전 뒤 냉각 효율 CE가 80 % 이상이다.', 'HM-8.2 SOP-FAN-12 단계 4'))
-        approval = ({'role': '운전원', 'source': f'HM-8.5 {sid} 승인'} if sid in REMOTE else {'role': '설비보전팀장', 'source': 'HM-8.7'})
+        approval = {'role': APPROVAL[sid][0], 'source': APPROVAL[sid][1]}
         out.append({'id': sid, 'name': name, 'kind': kind, 'codes': codes, 'source': section, 'failure_mode': 'fm:cooler-cooling-loss',
                     'model_refs': model_ref(sid, p1), 'apply_conditions': apply_, 'prohibitions': forbid,
                     'steps': [{'order': i, 'text': t, 'source': f'{section} {sid} 단계 {i}'} for i, t in enumerate(steps, 1)],

@@ -74,7 +74,7 @@ TABLE_CONTRACT = '''## 조건표 (`결과/조건표.csv`)
 - `operator`: `>=` · `>` · `<=` · `<` · `==` · `!=` · `has_other_than`(목록 입력에 기준값이 아닌 항목이 하나라도 있음). `boundary_included`: 기준값 자체가 조건에 들어가면 `예`, 들어가지 않으면 `아니오`, 글자 · 목록 비교는 `해당없음`.
 - `input`과 단위: `forecast_ts1`(조치 후 예측 유온, ℃) · `forecast_ps1`(조치 후 예측 토출 압력, bar) · `fan100_hours`(팬 100 % 연속 운전 시간, h) · `plc_mode`(`REMOTE_AUTO` · `REMOTE_MANUAL` · `LOCAL`) · `plc_state`(`RUN` · `TRIP` · `STOP`) · `skill_kind`(조치 종류 `control` · `work_order`) · `skill_code`(실행 코드 목록). `skill_kind` · `skill_code` 값이 오는 곳: {codes_from}. 숫자 입력은 `unit`을 적는다.
 - 목록 입력(`skill_code`)에는 `has_other_than`만 쓴다.
-- `source_section`: 이 행의 근거를 다른 사람이 다시 찾을 수 있게 적는다(문서와 절, 여러 개면 `;`로 나눈다).
+- `source_section`: 이 행의 근거를 다른 사람이 다시 찾을 수 있게 원문의 문서와 절을 적는다(여러 개면 `;`로 나눈다). 원문에서 근거 문장을 찾지 못한 행이면 그렇다는 것과, 그 행을 가져온 곳(파일과 그 안의 규칙 ID)을 적는다.
 
 모양을 보이는 한 줄(이 과제의 규칙이 아니다):
 
@@ -117,11 +117,60 @@ SOP_CONTRACT = '''## SOP 구조 (`결과/sop.json`)
 - `causes`의 `id`는 `cause:`로 시작하는 영어 소문자 · 하이픈 이름이다.
 - `relations`의 `type`: `MITIGATED_BY`(고장 유형 → 즉시 완화 SOP) · `REMEDIED_BY`(고장 유형 → 근본 조치 SOP) · `ADDRESSES`(SOP → 그 SOP가 맞는 원인). 양 끝은 이 파일의 `failure_modes` · `causes` · `sops`에 있는 ID다.
 - 각 항목의 `source`는 문서 절과 SOP 단계(예: `HM-8.5 SOP-COOL-11 단계 2`)다.
+- `approval`은 원문 승인 줄의 역할과 출처다. 원문에서 그 절차의 승인을 찾지 못하면 역할을 만들지 않고 `role`을 `미확인`으로 시작해 찾아본 결과를 적으며, `source`에는 찾아본 절을 적는다.
 - 조건과 조건표의 연결은 `rules`에 조건표의 `rule_id`로 적는다. 조건표로 옮기지 않은 조건은 빈 목록이다.
 '''
 
 
 # ───────────── 검사기(구조만 — 의미 정답은 판정하지 않는다, K-51) ─────────────
+# 기록 파일(요구사항 · 판단기록 · 기대결과.md)의 표는 한 곳에서 본다 — 칸이 채워졌는지와, 줄마다 칸 수가 머리 줄과 같은지
+# (리허설: 36줄 대조 표에서 한 줄의 칸이 밀렸는데 「작성됨」으로 통과했다).
+RECORD_CHECK = r'''def md_cells(line):
+    # 마크다운 표 한 줄의 칸 목록 — 칸 안의 글자 |는 \| 로 쓴다
+    s = line.strip()
+    s = s[1:] if s.startswith('|') else s
+    s = s[:-1] if s.endswith('|') and not s.endswith('\\|') else s
+    return [c.strip() for c in re.split(r'(?<!\\)\|', s)]
+def table_rows(path, column):
+    # 마크다운 표에서 column으로 시작하는 칸이 있는 표의 (데이터 행 수, 그 칸이 빈 행 수)
+    if not path.is_file(): return None
+    head, total, empty = None, 0, 0
+    for line in path.read_text(encoding='utf-8-sig').splitlines():
+        if not line.startswith('|'): head = None; continue
+        cells = md_cells(line)
+        if head is None: head = cells; continue
+        if set(''.join(cells)) <= set('-: '): continue
+        idx = [k for k, h in enumerate(head) if h.startswith(column)]
+        if not idx or not any(cells): continue
+        total += 1
+        if idx[0] >= len(cells) or not cells[idx[0]]: empty += 1
+    return total, empty
+def record_part(path, column, label):
+    got = table_rows(path, column)
+    if got is None: return (f'{path.name} {label}', '없음', [], '', False)
+    total, empty = got
+    if total == 0 or empty == total: return (f'{path.name} {label}', '아직 비어 있음', [], f'「{column}」 칸을 채웁니다', False)
+    return (f'{path.name} {label}', '작성 중' if empty else '작성됨', [], f'행 {total}개 중 빈 칸 {empty}개' if empty else f'행 {total}개', False)
+def shape_part(path):
+    # 표마다 머리 줄과 칸 수가 다른 줄 — 칸이 밀리면 뒤 칸의 값이 다른 칸에 들어가 대조가 어긋난다
+    name = f'{path.name} 표 칸 수'
+    if not path.is_file(): return (name, '없음', [], '', False)
+    errs, head = [], None
+    for no, line in enumerate(path.read_text(encoding='utf-8-sig').splitlines(), 1):
+        if not line.startswith('|'): head = None; continue
+        n = len(md_cells(line))
+        if head is None: head = n; continue
+        if n != head: errs.append(f'{path.name}:{no} 칸 {n}개 — 이 표의 머리 줄은 {head}칸입니다. 칸이 밀렸는지 보고, 칸 안의 글자 |는 \\| 로 씁니다.')
+    return (name, '확인 필요' if errs else '통과', errs, '', True)
+def report(parts):
+    ok = True
+    for name, state, errs, note, required in parts:
+        print(f'- {name}: {state}' + (f' — {note}' if note else ''))
+        for e in errs[:40]: print('    ' + e)
+        if len(errs) > 40: print(f'    … 외 {len(errs) - 40}건')
+        if required and state != '통과': ok = False
+    return ok
+'''
 TABLE_CHECK = r'''HEADER = ['rule_id','action','condition_index','logic','input','operator','value','unit','boundary_included','result','penalty_manwon','reason','source_section']
 OPS = {'>=':'예','<=':'예','>':'아니오','<':'아니오','==':'해당없음','!=':'해당없음','has_other_than':'해당없음'}
 NUMERIC = {'forecast_ts1','forecast_ps1','fan100_hours'}
@@ -167,34 +216,7 @@ def check_table(path, sop_ids):
     for key, g in groups.items():
         if sorted(g['index']) != list(range(1, len(g['index']) + 1)): errs.append(f'{path.name} 묶음 {key}: condition_index가 1부터 차례가 아닙니다: {g["index"]}')
     return ('확인 필요' if errs else '통과'), errs, len(groups), {k[0] for k in groups}
-def table_rows(path, column):
-    """마크다운 표에서 column으로 시작하는 칸이 있는 표의 (데이터 행 수, 그 칸이 빈 행 수)."""
-    if not path.is_file(): return None
-    head, total, empty = None, 0, 0
-    for line in path.read_text(encoding='utf-8-sig').splitlines():
-        if not line.startswith('|'): head = None; continue
-        cells = [c.strip() for c in line.strip().strip('|').split('|')]
-        if head is None: head = cells; continue
-        if set(''.join(cells)) <= set('-: '): continue
-        idx = [k for k, h in enumerate(head) if h.startswith(column)]
-        if not idx or not any(cells): continue
-        total += 1
-        if idx[0] >= len(cells) or not cells[idx[0]]: empty += 1
-    return total, empty
-def report(parts):
-    ok = True
-    for name, state, errs, note, required in parts:
-        print(f'- {name}: {state}' + (f' — {note}' if note else ''))
-        for e in errs: print('    ' + e)
-        if required and state != '통과': ok = False
-    return ok
-def record_part(path, column, label):
-    got = table_rows(path, column)
-    if got is None: return (f'{path.name} {label}', '없음', [], '', False)
-    total, empty = got
-    if total == 0 or empty == total: return (f'{path.name} {label}', '아직 비어 있음', [], f'「{column}」 칸을 채웁니다', False)
-    return (f'{path.name} {label}', '작성 중' if empty else '작성됨', [], f'행 {total}개 중 빈 칸 {empty}개' if empty else f'행 {total}개', False)
-'''
+''' + RECORD_CHECK
 
 PICK = r'''def pick(name):
     # 검사의 기준 입력: 결과/내_입력/에 같은 이름 파일이 있으면 그것, 없으면 제공 입력/. 고른 파일을 찍는다(조용히 바꾸지 않는다).
@@ -231,7 +253,7 @@ def check_sop(path, rule_ids):
     try: sop = json.loads(path.read_text(encoding='utf-8-sig'))
     except ValueError as e: return '확인 필요', [f'JSON 읽기 실패: {e}'], ''
     if not isinstance(sop, dict) or not sop.get('sops'): return '빈 틀', [], ''
-    errs = []
+    errs, unconfirmed = [], []
     fms = [f.get('id') for f in sop.get('failure_modes') or [] if isinstance(f, dict)]
     causes = [c.get('id') for c in sop.get('causes') or [] if isinstance(c, dict)]
     for f in fms:
@@ -260,7 +282,8 @@ def check_sop(path, rule_ids):
         steps = [x.get('order') for x in items(s, 'steps') or [] if isinstance(x, dict)]
         if not steps or steps != list(range(1, len(steps) + 1)): errs.append(f'{sid}: 수행 단계(steps)의 순서가 1부터 차례가 아닙니다: {steps}')
         approval = s.get('approval')
-        if not isinstance(approval, dict) or not approval.get('role') or not approval.get('source'): errs.append(f'{sid}: 승인(approval — role · source)이 필요합니다.')
+        if not isinstance(approval, dict) or not approval.get('role') or not approval.get('source'): errs.append(f'{sid}: 승인(approval — role · source)이 필요합니다. 원문에서 승인을 찾지 못했으면 role을 「미확인」으로 시작하고 source에 찾아본 절을 적습니다.')
+        elif str(approval['role']).startswith('미확인'): unconfirmed.append(sid)
         ref = s.get('model_refs')
         if not isinstance(ref, dict): errs.append(f'{sid}: 모델 참조(model_refs)는 객체여야 합니다.'); continue
         used = 0
@@ -281,7 +304,7 @@ def check_sop(path, rule_ids):
             if r.get('from') not in ends[a]: errs.append(f'relations[{i}] {t}: 시작 {r.get("from")}이 sop.json {a}에 없습니다.')
             if r.get('to') not in ends[b]: errs.append(f'relations[{i}] {t}: 끝 {r.get("to")}이 sop.json {b}에 없습니다.')
             if not r.get('source'): errs.append(f'relations[{i}]: source가 필요합니다.')
-    return ('확인 필요' if errs else '통과'), errs, f'SOP {len(found)}개 · 관계 {len(rels) if isinstance(rels, list) else 0}개'
+    return ('확인 필요' if errs else '통과'), errs, f'SOP {len(found)}개 · 관계 {len(rels) if isinstance(rels, list) else 0}개' + (f' · 승인 미확인 {", ".join(unconfirmed)}' if unconfirmed else '')
 t_state, t_errs, n, rule_ids = check_table(root/'결과/조건표.csv', sop_ids)
 s_state, s_errs, s_note = check_sop(root/'결과/sop.json', rule_ids)
 missing = [p for p in ('sop.json', '조건표.csv') if not (root/'결과'/p).is_file()]
@@ -290,7 +313,7 @@ if len(missing) == 2:
 print('구조 검사 결과')
 ok = report([('sop.json', s_state, s_errs, s_note, True), ('조건표.csv', t_state, t_errs, f'규칙 묶음 {n}개' if n else '', True),
              record_part(root/'결과/요구사항.md', '고른 것', '정한 것'), record_part(root/'결과/요구사항.md', '처리', '판단 시스템 결정표 대조'),
-             record_part(root/'결과/요구사항.md', '맞은 규칙', '사건 · 확인 사례 대입')])
+             record_part(root/'결과/요구사항.md', '맞은 규칙', '사건 · 확인 사례 대입'), shape_part(root/'결과/요구사항.md')])
 print('구조 검사 통과' if ok else '구조 확인 필요 — 위 줄마다 결과 파일의 어느 항목인지 찾아 고친 뒤 다시 실행합니다.')
 print('이 검사는 모양만 봅니다. 의미와 질문별 답(조건 · 경계 · 출처가 원문과 맞는지, 사건의 판정)은 원자료와 따로 대조합니다.')
 sys.exit(0 if ok else 1)
@@ -301,7 +324,7 @@ CONDITIONS_CHECK = r'''"""결과/조건표.csv의 구조 검사와 판단기록.
 사용: python check.py
 """
 from pathlib import Path
-import csv, sys
+import csv, re, sys
 root = Path(__file__).resolve().parent
 ''' + TABLE_CHECK + r'''
 sop_ids = [r['sop_id'] for r in read_csv(root/'자료/targets.csv')[1]]
@@ -311,8 +334,8 @@ if state == '없음':
 print('구조 검사 결과')
 ok = report([('조건표.csv', state, errs, f'규칙 묶음 {n}개' if n else '', True),
              record_part(root/'결과/판단기록.md', '고른 것', '정한 것'), record_part(root/'결과/판단기록.md', '맞은 규칙', '사례 대조'),
-             record_part(root/'결과/판단기록.md', '승인 역할', '남은 후보와 실행 승인')])
-print('구조 검사 통과' if ok else '구조 확인 필요 — 위 줄마다 조건표의 어느 행인지 찾아 고친 뒤 다시 실행합니다.')
+             record_part(root/'결과/판단기록.md', '승인 역할', '남은 후보와 실행 승인'), shape_part(root/'결과/판단기록.md')])
+print('구조 검사 통과' if ok else '구조 확인 필요 — 위 줄마다 결과 파일의 어느 항목인지 찾아 고친 뒤 다시 실행합니다.')
 print('이 검사는 모양만 봅니다. 의미와 질문별 답(조건 · 경계 · 출처가 원문과 맞는지, 사례의 판정)은 원자료와 따로 대조합니다.')
 sys.exit(0 if ok else 1)
 '''
@@ -341,14 +364,20 @@ def stuck(text):
 STUCK_PATH = stuck('「can\'t open file」 · 「No such file or directory」가 나오면 터미널이 이 실습 폴더가 아닌 곳에서 열렸거나 명령의 파일 이름이 실제 파일과 다른 것입니다. '
                    '터미널 맨 앞 경로가 이 실습 폴더인지, 명령의 파일 이름이 탐색기에 보이는 이름과 같은지 확인한 뒤 다시 실행합니다.')
 STUCK_FIRST_SOP = stuck('이 단계에서는 SOP 하나만 만들었으므로 구조 검사가 「구조 확인 필요」로 끝납니다. 아직 만들지 않은 것을 짚는 줄 — 다른 SOP의 「0번 있습니다」, '
-                        '「모델 참조(model_refs)가 비어 있습니다」, 「관계 목록(relations)이 비어 있습니다」, 조건표의 「빈 틀」, 기록 칸의 「아직 비어 있음」 — 은 뒤 단계에서 채울 자리라 지금 고칠 문제가 아닙니다. '
-                        '그 밖에 방금 만든 SOP의 ID로 시작하는 줄이 있으면 그 줄을 고칩니다.')
+                        '그 SOP의 모델 참조(model_refs)를 짚는 줄, 「관계 목록(relations)이 비어 있습니다」, 조건표의 「빈 틀」, 기록 칸의 「아직 비어 있음」 — 이 나올 수 있고, 뒤 단계에서 채울 자리라 지금 고칠 문제가 아닙니다. '
+                        '그 밖에 방금 만든 SOP의 칸 · 출처 · 단계 순서 · 승인을 짚는 줄이 있으면 그 줄을 고칩니다.')
 STUCK_FIRST_TABLE = stuck('「판단기록.md … 아직 비어 있음」 줄은 뒤 단계에서 채울 기록 칸을 짚는 것입니다. 조건표 줄이 「통과」로 나오면 이 단계에서 고칠 것은 없습니다.')
 def stuck_no_result(name):
     return stuck(f'「아직 검사할 결과가 없습니다: 결과/{name}」이 나오면 오류가 아니라 만든 코드가 결과를 그 이름 · 그 자리에 쓰지 않았다는 뜻입니다. '
                  '탐색기에서 `결과/`의 파일 이름을 보고, 만든 코드가 결과를 어디에 쓰는지 AI에게 짚게 한 뒤 코드를 다시 실행하고 검사합니다. '
                  '「기대 칸을 쓴 시각」이 비어 있다는 참고 줄은 `기대결과.md`에 실행 전에 기대를 적은 시각을 남기라는 뜻입니다.')
 
+
+# 리허설: 「제 생각은 …」처럼 의견으로 말한 선택을 AI가 결정으로 받지 않아 한 턴이 더 들었다(작업 규칙 8번대로 다시 물음).
+DECIDE_FIRM = ' 고른 것은 의견처럼 말하지 않고, 무엇으로 정했는지와 그 근거 줄을 단정해서 말합니다 — 의견으로 말하면 AI가 결정으로 받지 않고 다시 묻습니다.'
+DECIDE_FIRM_AGAIN = ' 내 결정은 3단계처럼 단정해서 전합니다.'
+# 리허설: AI가 만든 코드가 학생이 손으로 쓰는 기대결과.md의 「정한 것」 표를 읽어, 표 모양이 바뀌면 실행이 멈출 수 있었다.
+DECIDE_INPUT = '「정한 것」의 결정(요청 문장으로 전한다 — 코드가 내가 쓰는 `결과/기대결과.md`를 읽지 않게)'
 
 RESULT_KINDS = '**경고**는 그 조치에 주의할 점이 있다는 사유, **감점**은 비교할 때 금액으로 깎는 사유, **제외**는 그 조치를 쓸 수 없는 사유입니다.'
 CONTRACT_TERM = '**계약**은 결과 파일의 모양(열 · 키와 그 뜻)을 정해 둔 `입출력_계약.md`입니다 — 다음 실습의 기능이 이 모양 그대로 읽습니다.'
@@ -394,19 +423,17 @@ def criteria_lab(files):
                '이 단계에서 파일을 바꾸지 않는 것은 무엇을 담을지 합의하기 전에 AI가 결과를 만들기 시작하지 않게 하려는 것입니다.'),
           differ=B.DIFFER_LOOK),
         S('요구와 기대 답 정하기', '② 요구',
-          '목표 · 이 답을 쓰는 사람 · 쓸 판본 · 지킬 조건과, SOP 하나를 골라 그 다섯 칸(적용 조건 · 금지 조건 · 수행 단계 · 완료 기준 · 승인)과 사건 네 후보의 기대 판단을 원문에서 직접 찾아 `결과/요구사항.md`에 내 말로 적습니다. 「학생이 정할 것」의 지점마다 고른 것과 근거 줄을 적습니다.',
-          B.ASK_DECIDE,
-          '기대 답마다 파일 · 줄이 붙어 있습니다. 「정한 것」 표의 지점마다 고른 것 · 근거 · 바뀌는 답이 채워져 있거나 미결로 적혀 있습니다. AI의 되짚기가 내 요구와 같습니다.',
-          H('내가 정한 요구를 AI가 같은 뜻으로 이해하게 한다',
-            '2단계에서 연 근거 줄, `결과/요구사항.md`(제공 빈 틀)',
-            '기대 답은 내가 원문에서 찾은 값으로 적는다(AI의 답을 옮기지 않는다). 「학생이 정할 것」은 내가 고른다.',
-            '`요구사항.md`의 칸 — 목표와 질문, 이 답을 쓰는 사람, 자료와 기준일, 지킬 조건, 「정한 것」 표, 「기대 답과 실제 결과」 표',
-            'AI에게 `요구사항.md`를 자기 말로 되짚게 하고, 내 뜻과 다른 곳을 고친다'),
+          '목표 · 이 답을 쓰는 사람 · 쓸 판본 · 지킬 조건과 질문마다 기대 답 — 질문 1은 SOP 하나를 골라 그 다섯 칸(적용 조건 · 금지 조건 · 수행 단계 · 완료 기준 · 승인), '
+          '질문 2는 판단 조건 하나의 입력 · 단위 · 연산자 · 경계 · 결과 · 출처와 판단 시스템 결정표에서 같은 조건이 어떻게 적혀 있는지, 질문 3은 사건 네 후보의 기대 판단 — 을 '
+          '원문에서 직접 찾아 `결과/요구사항.md`에 편집기에서 내 말로 적습니다. 「학생이 정할 것」의 지점마다 고른 것과 근거 줄을 적습니다.' + B.REQ_AFTER,
+          B.ASK_DECIDE + DECIDE_FIRM,
+          B.REQ_EVIDENCE,
+          B.req_hint(rec, 2, '목표와 질문 · 이 답을 쓰는 사람 · 자료와 기준일 · 지킬 조건 · 「정한 것」 · 질문 1 ~ 3마다 「기대 답과 실제 결과」'),
           why=B.WHY_REQ + ' SOP 하나는 적용 조건(이 조치를 써도 되는 때) · 금지 조건(쓰면 안 되는 때와 지킬 제한) · 수행 단계 · 완료 기준(끝났다고 볼 때) · 승인(누가 허락하는가)으로 나눕니다.',
           differ=B.DIFFER_REQ.format(rec=rec)),
         S('계획 검토', '③ 계획',
           'SOP 구조와 조건표에 무엇을 나눠 담을지와 5 ~ 13단계의 구현 순서를 AI의 계획으로 받아 검토하고 동의합니다. 아직 파일을 만들지 않습니다.',
-          '같은 원문 문장이 SOP의 단계와 조건표의 행 둘 다에 걸리는 곳을 어떻게 이을지 정합니다.',
+          '같은 원문 문장이 SOP의 단계와 조건표의 행 둘 다에 걸리는 곳을 어떻게 이을지 정합니다.' + DECIDE_FIRM_AGAIN,
           '질문 1 ~ 3마다 계획의 어느 칸 · 행으로 답하는지 짚을 수 있습니다. 계획에 「이번 범위 밖」의 기능 — 원문에서 조건을 자동으로 뽑아내는 프로그램(인제스천, 뒤에서 직접 다룹니다)이나 조건표를 읽어 판정하는 프로그램 — 이 없습니다. 계획에 내가 동의했습니다.',
           H('만들기 전에 두 결과의 몫과 순서를 합의한다',
             '`입출력_계약.md`, `결과/요구사항.md`',
@@ -417,12 +444,12 @@ def criteria_lab(files):
                '「~일 때만 한다」 같은 문장은 절차의 확인 단계이면서 판단 조건이 되기도 하므로, 어느 쪽에 무엇을 두고 둘을 어떻게 이을지 먼저 정해야 같은 조건이 두 곳에 다르게 적히지 않습니다.'),
           differ=B.DIFFER_PLAN),
         S('구현 ① SOP 하나 구조화', '④ ~ ⑥ 구현 · 대조 · 고침',
-          '3단계에서 기대 답을 적은 SOP 하나를 AI와 함께 `결과/sop.json`에 계약 모양으로 만들고 구조 검사를 실행합니다.',
+          '3단계에서 기대 답을 적은 SOP 하나를 AI와 함께 `결과/sop.json`에 계약 모양으로 만들고 구조 검사를 실행합니다.' + B.OWN_RUN,
           '「~일 때만」 「~하지 않는다」 문장을 적용 조건과 금지 조건 가운데 어디에 둘지와 그 근거를 묻습니다.',
           '만든 SOP의 칸마다 3단계 기대 답과 같습니다. 구조 검사에서 그 SOP의 칸 · 출처 · 단계 순서 · 승인을 짚는 줄이 없습니다(모델 참조는 8단계에서 채웁니다).',
           H('고른 SOP 하나를 계약 모양으로 옮긴다',
             '매뉴얼의 그 절, `입출력_계약.md` 「SOP 구조」',
-            '원문에 없는 단계 · 값을 만들지 않는다. 항목마다 출처를 단다.',
+            '원문에 없는 단계 · 값을 만들지 않는다. 항목마다 출처를 단다. 모델 참조(`model_refs`)는 8단계에서 채우므로 비워 두고 임시 글을 넣지 않는다.',
             '`결과/sop.json`의 SOP 하나',
             '3단계 기대 답과 칸마다 견주고 구조 검사를 실행한다'),
           'python check.py',
@@ -431,7 +458,7 @@ def criteria_lab(files):
           differ=B.FIX_LOOP),
         S('구현 ② 나머지 SOP 구조화', '④ ~ ⑥ 구현 · 대조 · 고침',
           '같은 모양으로 남은 SOP를 모두 `결과/sop.json`에 더하고, SOP마다 단계 수 · 승인 · 참조한 절을 원문과 나란히 보여 달라고 합니다.',
-          '다른 절이나 다른 SOP를 가리키는 단계를 무엇으로 이을지 묻습니다.',
+          '다른 절이나 다른 SOP를 가리키는 단계를 무엇으로 이을지, SOP마다 승인 줄이 원문 어디에 있고 승인 줄을 찾지 못한 SOP는 무엇으로 적을지 묻습니다.',
           '`targets.csv`의 SOP가 한 번씩 있고(구조 검사에 「0번 있습니다」 줄이 없음), SOP마다 단계 순서와 승인이 원문과 같습니다.',
           H('남은 SOP를 같은 모양으로 옮긴다',
             '매뉴얼, `자료/targets.csv`, 5단계 결과',
@@ -442,27 +469,27 @@ def criteria_lab(files):
           why='한 SOP의 단계가 다른 절의 판정이나 다른 SOP를 가리키면, 그 연결을 남겨야 한쪽이 바뀔 때 함께 고칠 곳을 찾을 수 있습니다.',
           differ=B.FIX_LOOP),
         S('구현 ③ 고장 유형 · 원인 · 조치 잇기', '④ ~ ⑥ 구현 · 대조 · 고침',
-          '고장 유형에서 즉시 완화 조치 · 근본 조치로, 근본 조치에서 그 조치가 맞는 원인으로 가는 관계를 `결과/sop.json`의 관계 목록(`relations`)에 만듭니다.',
-          '근본 조치가 특정 원인에만 맞는지와 그 근거 줄을 묻습니다.',
-          '구조 검사에 관계 목록(`relations`)을 짚는 줄이 없고(관계의 양 끝이 모두 `sop.json`에 있는 ID), 원인마다 이어진 근본 조치를 원문 줄과 나란히 보일 수 있습니다.',
+          '고장 유형에서 즉시 완화 조치 · 근본 조치로, 조치에서 그 조치가 맞는 원인으로 가는 관계를 `결과/sop.json`의 관계 목록(`relations`)에 만듭니다.',
+          '조치가 특정 원인에만 맞는지와 그 근거 줄, 점검 · 확인만 하는 절차를 근본 조치로 이을 수 있는지를 묻습니다.',
+          '구조 검사에 관계 목록(`relations`)을 짚는 줄이 없고(관계의 양 끝이 모두 `sop.json`에 있는 ID), 원인마다 이어진 조치를 원문 줄과 나란히 보일 수 있습니다.',
           H('고장 유형 · 원인 · 조치를 관계로 잇는다',
             '매뉴얼의 원인 절, `자료/failuremodes.csv`, `결과/sop.json`',
             '관계 이름은 계약의 셋만 쓴다. 원문에 없는 연결을 만들지 않는다.',
             '관계 목록(`relations`)과 원인 목록(`causes`)',
-            '원인마다 이어진 근본 조치를 원문 줄과 나란히 출력하게 한다'),
+            '원인마다 이어진 조치를 원문 줄과 나란히 출력하게 한다'),
           'python check.py',
           why=('즉시 완화는 지금 증상을 누그러뜨리는 조치이고, 근본 조치는 원인을 없애는 조치입니다. 같은 고장 유형이라도 원인에 따라 맞는 근본 조치가 다르므로, '
                '조치와 원인 사이의 관계가 있어야 판단이 원인에 맞지 않는 근본 조치를 고르지 않습니다.'),
           differ=B.FIX_LOOP),
         S('구현 ④ 설비 모델 ID 잇기', '④ ~ ⑥ 구현 · 대조 · 고침',
           '`입력/graph.json`에서 SOP가 걸리는 설비 · 구성 요소 · 센서의 ID를 찾아 모델 참조(`model_refs`)를 채우는 코드를 `결과/`에 만들고 실행합니다. 설비마다 걸었음 · 뺐음과 그 까닭을 `요구사항.md`에 적습니다.',
-          '이 단계의 결과는 내 결정에 따라 달라집니다. 「정한 것」의 적용 범위 결정대로 됐는지, 모델에서 이 조치를 할 수 없는 설비를 무엇으로 알아냈는지 묻습니다. AI가 결정을 대신 정하려 하면 돌려보내고 내 선택과 근거를 다시 말합니다.',
+          '이 단계의 결과는 내 결정에 따라 달라집니다. SOP마다 어느 구성 요소 · 센서를 걸지 그 기준(무엇을 보고 고르는지)을 정해 요청에 담고, 「정한 것」의 적용 범위 결정대로 됐는지, 모델에서 이 조치를 할 수 없는 설비를 무엇으로 알아냈는지 묻습니다. AI가 결정을 대신 정하려 하면 돌려보내고 내 선택과 근거를 다시 말합니다.',
           '구조 검사에 모델 참조(`model_refs`)를 짚는 줄(모델에 없는 ID · 다른 종류의 ID · 비어 있음)이 없습니다. 설비마다 걸었음 · 뺐음과 그 까닭을 모델 · 대장 줄로 말할 수 있습니다.',
           H('SOP가 걸리는 설비 · 구성 요소 · 센서 ID를 모델에서 찾는다',
             '`입력/graph.json` · `입력/schema.json` · `입력/자료/설비_대장.csv`, 「정한 것」 표',
-            '모델에 없는 ID를 만들지 않는다. 걸 대상을 찾지 못하면 걸지 않은 대상(`not_linked`)과 그 까닭을 남긴다.',
+            '모델에 없는 ID를 만들지 않는다. 걸 대상을 찾지 못하면 걸지 않은 대상(`not_linked`)과 그 까닭을 남긴다. 구성 요소 · 센서는 요청에 적은 내 기준대로 고른다.',
             'SOP마다 ID 목록, 설비마다 걸었음 · 뺐음 · 까닭',
-            '설비 몇 대를 골라 모델 파일에서 관계를 직접 따라가 본다'),
+            'SOP마다 그 SOP 문장에 나온 장치 · 태그와 걸린 ID를 나란히 출력하게 하고, 설비 몇 대는 모델 파일에서 관계를 직접 따라가 본다'),
           'python 결과/<만든 코드 이름>.py\npython check.py',
           why=('2회차에 만든 설비 모델의 ID를 그대로 써야 조치 기준이 모델과 이어집니다. 새 ID를 지으면 같은 설비가 두 이름으로 갈라져 판단이 설비를 찾지 못합니다. '
                '조치에 필요한 장치 · 센서가 그 설비에 실제로 있는지는 모델의 관계를 따라가 확인합니다.'),
@@ -502,7 +529,7 @@ def criteria_lab(files):
           why=WHY_SOURCE, differ=B.FIX_LOOP),
         S('사건과 확인 사례에 손으로 대어 보기', '⑤ 대조',
           '`자료/사건_기록_HYD-02_1027.md`의 값과, `자료/확인_사례.csv`에서 「정한 것」의 결정에 따라 결과가 달라지는 사례를 골라 그 값을 조건표에 손으로 대어, 후보마다 맞은 규칙 · 결과 · 확인할 수 없는 조건을 `요구사항.md`에 적고 3단계 기대와 견줍니다.',
-          '사건 기록의 값 가운데 조건표 입력으로 그대로 쓸 수 없는 값과 그 까닭, 내 결정이 바꾸는 사례가 어느 것인지 정합니다.',
+          '사건 기록의 값 가운데 조건표 입력으로 그대로 쓸 수 없는 값과 그 까닭, 빠진 입력이 어느 후보의 어느 규칙에 걸리는지, 내 결정이 바꾸는 사례가 어느 것인지 정합니다.',
           '사건 네 후보의 결과가 3단계 기대와 같거나 다른 까닭이 `요구사항.md`에 있고, 내 결정이 바꾸는 확인 사례에서 그 결정으로 달라지는 후보를 원자료 줄로 말할 수 있습니다.',
           H('조건표가 사건과 결정이 걸린 사례에 무엇을 내는지 본다',
             '사건 기록, `자료/확인_사례.csv`, `결과/조건표.csv`, 「정한 것」 표',
@@ -574,7 +601,7 @@ def criteria_lab(files):
                    '판단 규칙으로 옮길 조건의 입력 · 단위 · 연산자 · 경계 · 결과 · 출처는 무엇인가? 판단 시스템에 등록된 결정표 · 옛 판 매뉴얼 · 작업 이력과 무엇이 같고 무엇이 다른가?',
                    '사건 한 건의 판단 요청 때 값을 조건표에 대면 네 후보가 각각 어떻게 되는가?'],
         decide=[('적용 범위', '원문에 적용 범위 문장이 없을 때 이 조치 기준을 설비 모델의 어느 설비에 걸지'),
-                ('출처가 확인되지 않는 기준', '판단 시스템 결정표에 있는데 지금 매뉴얼에서 근거 문장을 찾을 수 없는 규칙을 어떻게 둘지')],
+                ('출처가 확인되지 않는 기준', '판단 시스템 결정표에 있는데 지금 매뉴얼에서 근거 문장을 찾을 수 없는 규칙을 어떻게 둘지 — 그런 규칙이 여럿이면 규칙마다 정하고 근거를 적습니다')],
         outside=['원문에서 조건을 자동으로 뽑아내는 일(인제스천 — 뒤에서 직접 다룹니다)',
                  '조건표를 읽어 후보를 판정하고 견주는 프로그램(다음 실습)',
                  '설비 모델(schema · graph)을 고치거나 그래프 DB에 적재하는 일',
@@ -638,19 +665,15 @@ def conditions_lab(files):
                '이 단계에서 파일을 바꾸지 않는 것은 무엇을 옮길지 합의하기 전에 AI가 조건표를 만들기 시작하지 않게 하려는 것입니다.'),
           differ=B.DIFFER_LOOK),
         S('요구와 기대 판단 정하기', '② 요구',
-          '`결과/판단기록.md` 첫머리에 목표 · 쓰는 사람 · 지킬 조건을 적고, 사건과 확인 사례 두세 개의 네 후보가 남는지 · 빠지는지 · 무엇이 아직 모르는 값인지를 원문에서 먼저 찾아 기대 판단으로 적습니다. 「학생이 정할 것」의 지점에 고른 것과 근거 줄을 적습니다.',
-          B.ASK_DECIDE,
-          '기대 판단마다 근거 줄이 있습니다. 「정한 것」 표가 채워져 있거나 미결로 적혀 있습니다. AI의 되짚기가 내 요구와 같습니다.',
-          H('내 요구와 기대 판단을 내 말로 정한다',
-            '2단계 근거 줄, 사건 기록, `결과/판단기록.md`(제공 빈 틀)',
-            '기대는 내가 원문에서 찾은 것으로 적는다. 「학생이 정할 것」은 내가 고른다.',
-            '`판단기록.md`의 칸',
-            'AI에게 `판단기록.md`를 자기 말로 되짚게 하고, 내 뜻과 다른 곳을 고친다'),
+          '`결과/판단기록.md` 첫머리에 목표 · 쓰는 사람 · 지킬 조건을 적고, 사건과 확인 사례 두세 개의 네 후보가 남는지 · 빠지는지 · 무엇이 아직 모르는 값인지를 원문에서 먼저 찾아 기대 판단으로 편집기에서 적습니다. 「학생이 정할 것」의 지점에 고른 것과 근거 줄을 적습니다.' + B.REQ_AFTER,
+          B.ASK_DECIDE + DECIDE_FIRM,
+          B.REQ_EVIDENCE,
+          B.req_hint(rec, 2, '목표와 질문 · 이 답을 쓰는 사람 · 자료와 기준일 · 지킬 조건 · 「정한 것」 · 「기대 답과 실제 결과」'),
           why=B.WHY_REQ + ' 기대 판단을 경고 · 감점 · 제외로 나눠 적어 두어야 뒤에서 조건표 행의 결과 칸과 하나씩 견줄 수 있습니다.',
           differ=B.DIFFER_REQ.format(rec=rec)),
         S('계획 검토', '③ 계획',
           '조건표에 넣을 규칙과 옮길 순서를 AI의 계획으로 받아 검토하고 동의합니다. 아직 파일을 만들지 않습니다.',
-          '조건표에 옮기지 않을 원문 조건과 그 까닭을 정합니다.',
+          '조건표에 옮기지 않을 원문 조건과 그 까닭을 정합니다.' + DECIDE_FIRM_AGAIN,
           '사건의 네 후보에 걸릴 규칙을 계획에서 짚을 수 있습니다. 계획에 원문에 없는 기준값 · 조건이 없습니다. 계획에 내가 동의했습니다.',
           H('조건표에 들어갈 규칙과 순서를 합의한다',
             '`입출력_계약.md`, `결과/판단기록.md`',
@@ -660,7 +683,7 @@ def conditions_lab(files):
           why='한 문장에 조건 여러 개와 예외가 섞인 원문을 바로 표로 옮기면 빠지거나 겹치는 행이 생깁니다. 무엇을 몇 행으로 옮길지 먼저 합의해야 행마다 원문으로 돌아갈 수 있습니다.',
           differ=B.DIFFER_PLAN),
         S('구현 ① 복합 조건 한 묶음', '④ ~ ⑥ 구현 · 대조 · 고침',
-          '여러 조건이 함께 맞아야 하는 조건 하나를 골라 `결과/조건표.csv`에 계약 모양으로 옮기고 구조 검사를 실행합니다.',
+          '여러 조건이 함께 맞아야 하는 조건 하나를 골라 `결과/조건표.csv`에 계약 모양으로 옮기고 구조 검사를 실행합니다.' + B.OWN_RUN,
           '여러 조건을 한 묶음(AND)으로 둘지 나눌지와, 기준값을 포함하는지를 원문 낱말로 정합니다.',
           '구조 검사의 조건표 줄이 「통과」이고, 원문 줄과 행을 나란히 놓았을 때 입력 · 연산자 · 기준값 · 경계 · 결과가 같습니다.',
           H('규칙 하나를 계약 모양으로 옮긴다', '그 원문 줄, `입출력_계약.md`', '경계는 원문 낱말대로 옮긴다', '`결과/조건표.csv`의 한 묶음', '구조 검사를 실행하고, 원문 줄과 행을 나란히 보여 달라고 한다'),
@@ -674,8 +697,9 @@ def conditions_lab(files):
           'python check.py',
           why=WHY_HIT, differ=B.FIX_LOOP),
         S('구현 ③ 판단 시스템 결정표와 출처 견주기', '⑤ 대조',
-          '조건표의 행마다 `자료/판단시스템_결정표_내보내기.txt`에서 같은 내용의 행을 찾아 출처 칸을 확정하고, 「정한 것」의 결정대로 됐는지 봅니다.',
-          '「정한 것」의 결정대로인지 묻습니다. AI가 결정을 대신 정하려 하면 돌려보내고 내 선택과 근거를 다시 말합니다.',
+          '조건표의 행마다 `자료/판단시스템_결정표_내보내기.txt`에서 같은 내용의 행을 찾아 견주고, 출처 칸(`source_section`)에는 그 행의 근거인 원문 자리를 적습니다 — '
+          '원문에서 근거를 찾지 못한 행이면 그렇다는 것과 그 행을 가져온 곳을 적습니다. 결정표와 다르게 옮긴 점은 `판단기록.md` 「정한 것」에 적고, 「정한 것」의 결정대로 됐는지 봅니다.',
+          '「정한 것」의 결정대로인지, 같은 내용의 결정표 행과 무엇이 다른지 묻습니다. AI가 결정을 대신 정하려 하면 돌려보내고 내 선택과 근거를 다시 말합니다.',
           '조건표의 행마다 출처 칸이 원문으로 돌아가거나, 원문에서 찾지 못한 근거는 찾지 못했다고 적혀 있습니다.',
           H('조건표 행의 출처를 확정한다',
             '`자료/판단시스템_결정표_내보내기.txt`, `결과/조건표.csv`, 매뉴얼',
@@ -685,31 +709,32 @@ def conditions_lab(files):
           'python check.py',
           why=WHY_SOURCE, differ=B.FIX_LOOP),
         S('구현 ④ 확인 사례에 대는 기능', '④ ~ ⑥ 구현 · 대조 · 고침',
-          '조건표를 `자료/확인_사례.csv`의 사례마다 대어 후보마다 맞은 규칙(경고 · 감점 · 제외)과 입력이 없어 맞는지 알 수 없는 규칙을 내는 기능을 `결과/`에 만들고 실행해, 3단계에서 손으로 적은 사건과 사례의 기대와 견주고 `판단기록.md`의 대조 표에 적습니다.',
-          '결과가 기대와 다르면 조건표가 틀렸는지, 만든 기능이 틀렸는지, 기대가 틀렸는지 묻습니다.',
+          '조건표를 `자료/확인_사례.csv`의 사례마다 대어 후보마다 맞은 규칙(경고 · 감점 · 제외)과 입력이 없어 맞는지 알 수 없는 규칙을 내는 기능을 `결과/`에 만들고 실행합니다. '
+          '출력은 AI에게 `판단기록.md`의 대조 표로 옮기게 하고, 3단계에서 손으로 적은 사건과 사례의 기대와는 내가 견줍니다.',
+          '결과가 기대와 다르면 조건표가 틀렸는지, 만든 기능이 틀렸는지, 기대가 틀렸는지 묻습니다. 대조 표의 「남는가 · 빠지는가」 칸은 기능이 내지 않으므로, 맞은 규칙 · 알 수 없는 규칙에 `자료/작업기준.md` 4절의 뜻을 대어 내가 적습니다.',
           '사례마다 후보의 맞은 규칙과 알 수 없는 규칙이 나오고, 손으로 구한 사건 · 사례와 같거나 다른 까닭이 `판단기록.md`에 있습니다. 입력이 빠졌는데 확인된 제외 사유도 있는 사례에서 제외와 미확인이 함께 나옵니다.',
           H('사례마다 조건표를 대어 맞은 규칙과 알 수 없는 규칙을 낸다',
             '`자료/확인_사례.csv`, `결과/조건표.csv`',
-            '규칙은 조건표에서 읽는다(코드에 다시 적지 않는다). 빈 값을 0이나 앞의 값으로 채우지 않는다. 맞은 규칙은 모두 모은다.',
-            '사례 · 후보마다 맞은 규칙 · 알 수 없는 규칙과 그 입력을 보이는 표(화면 출력)',
+            '규칙은 조건표에서 읽는다(코드에 다시 적지 않는다). 빈 값을 0이나 앞의 값으로 채우지 않는다. 맞은 규칙은 모두 모은다. 대조 표는 출력에서 옮기고 칸을 더하거나 빼지 않는다.',
+            '사례 · 후보마다 맞은 규칙 · 알 수 없는 규칙과 그 입력을 보이는 화면 출력, 그 출력을 옮긴 `판단기록.md` 「확인 사례 대조」 표',
             '3단계에서 손으로 구한 사건과 사례 두세 개를 출력과 견주고, 다른 줄은 원문 줄까지 따라간다'),
           'python 결과/<만든 코드 이름>.py',
           why=WHY_UNKNOWN + ' 사례가 많아 손으로 다 댈 수 없으므로 작은 기능으로 대고, 손으로 먼저 구한 몇 사례와 견주어 조건표와 기능을 함께 확인합니다.',
           differ='기대와 다른 사례가 있으면 그 사례의 입력 · 맞은 규칙 · 원문 줄을 나란히 놓고 조건표 · 기능 · 기대 가운데 어느 쪽이 원문과 다른지 찾아 고친 뒤 같은 기능을 다시 실행합니다.'),
         S('남은 후보와 실행 승인 나눠 적기', '⑤ 대조',
-          '8단계 출력으로 사건과 사례마다 남은 후보와, 그 후보를 실행하려면 누가 승인하는지와 그 원문 출처를 `판단기록.md`에 따로 적습니다.',
-          '남은 후보마다 누가 승인하고 그 근거가 원문 어디에 있는지 묻습니다.',
-          '「남은 후보」와 「승인 역할 · 근거」가 따로 적혀 있고, 승인은 원문 출처로 돌아갑니다.',
+          '8단계 출력으로 사건과 사례마다 남은 후보와, 그 후보를 실행하려면 누가 승인하는지와 그 원문 출처(파일 · 줄)를 `판단기록.md`에 따로 적습니다. 판단을 보류한 후보도 남은 후보로 적되 보류와 빠진 입력을 함께 적습니다.',
+          '남은 후보마다 누가 승인하고 그 근거가 원문 어디(파일 · 줄)에 있는지, 원문의 승인 줄이 하나로 읽히지 않는 후보가 있는지 묻습니다.',
+          '「남은 후보」와 「승인 역할 · 근거」가 따로 적혀 있고, 승인은 원문의 파일 · 줄로 돌아갑니다. 보류한 후보에는 보류와 빠진 입력이 붙어 있습니다.',
           H('후보가 남는 것과 실행 승인을 따로 적는다',
             '8단계 표, 매뉴얼의 승인 줄',
             '남은 것이나 순서를 승인처럼 쓰지 않는다',
-            '「남은 후보」 · 「승인 역할 · 근거」 두 칸',
+            '「남은 후보」(보류한 후보는 보류와 빠진 입력을 붙여) · 「승인 역할 · 근거(파일 · 줄)」 두 칸',
             '사건의 후보마다 승인 줄을 원문에서 직접 연다'),
           why='판단 규칙이 후보를 남겼다는 것은 쓸 수 있다는 뜻일 뿐 실행해도 된다는 허락이 아닙니다. 실행은 정해진 사람이 한 번 승인한 뒤에 하므로, 누가 승인하는지를 원문에서 따로 확인합니다.',
           differ=B.FIX_LOOP),
         S('구조 검사와 고치기', '⑤ ⑥ 대조 · 고침',
           '터미널에서 구조 검사를 실행하고, 짚은 문제를 고친 뒤 8단계 기능을 다시 실행해 사례 대조를 다시 합니다.',
-          '검사가 짚은 문제가 조건표의 어느 행인지 묻습니다.',
+          '검사가 짚은 문제가 결과 파일의 어느 항목 · 행인지 묻습니다.',
           '「구조 검사 통과」 줄이 나오고, 고친 뒤에도 8단계 사례 대조가 같습니다.',
           H('구조 문제를 고친다', '`python check.py`의 출력', '검사 기준과 원자료를 바꾸지 않는다', '고친 파일 목록과 다시 실행한 출력', '고친 뒤 8단계 기능을 다시 실행해 사례 대조를 다시 본다'),
           'python check.py',
@@ -751,12 +776,12 @@ def conditions_lab(files):
         questions=['네 조치의 경고 · 감점 · 제외 조건(입력 · 단위 · 연산자 · 경계 · 결과 · 출처)은 무엇인가?',
                    '사건과 확인 사례에서 각 후보는 남는가, 빠지는가, 무엇이 아직 모르는 값인가?',
                    '남은 후보와 실행 승인은 어떻게 다른가 — 남은 후보마다 누가 승인하는가?'],
-        decide=[('출처가 확인되지 않는 기준', '판단 시스템 결정표에 있는데 제공 SOP에서 근거 문장을 찾을 수 없는 규칙을 조건표에 어떻게 둘지')],
+        decide=[('출처가 확인되지 않는 기준', '판단 시스템 결정표에 있는데 제공 SOP에서 근거 문장을 찾을 수 없는 규칙을 조건표에 어떻게 둘지 — 그런 규칙이 여럿이면 규칙마다 정하고 근거를 적습니다')],
         outside=['원천 기록에서 판단 입력을 만드는 일과, 후보를 유지 · 제외 · 보류로 판정해 견주고 검토 결과로 내는 프로그램(다음 실습)',
                  'SOP 구조(적용 · 금지 · 단계 · 완료 · 승인 전체)를 만드는 일',
                  '실제 설비 · 포털 · 업무 시스템을 부르는 일'],
         formats=formats, steps=steps,
-        cases=['기준값과 같은 값, 바로 위 · 아래 값(경계)',
+        cases=['조건표의 숫자 기준값마다 그 값과 같은 값, 그 값의 바로 위 · 아래에서 가장 가까운 값(경계)',
                '경고 · 감점 · 제외가 한 후보에 함께 맞는 경우(복수 사유)',
                '입력이 빠졌는데 이미 확인된 제외 사유가 있는 경우',
                '값이 비어 있어도 그 후보에는 해당 규칙이 걸리지 않는 경우(적용 대상 밖)',
@@ -844,6 +869,7 @@ COMMON_RESULT_NOTES = '''- 키의 뜻: `comparison_basis` 비교 기준 문장, 
 - `status`는 `유지` · `제외` · `보류` 가운데 하나이고, 세 말의 뜻은 `자료/작업기준.md` 4절의 말이다.
 - `comparison`이 있는 후보는 `유지` 후보다. 비교값이 없는 유지 후보는 `no_comparison_reason`에 그 까닭을 적는다.
 - 금액은 `지표_정의.md` 식의 원값을 소수 둘째 자리로 반올림해 적고, `total`은 네 손실과 감점의 원값을 더한 뒤 반올림한다.
+  반올림은 사사오입이다 — 셋째 자리가 5 이상이면 올린다(0.125는 0.13). 부동소수 계산의 작은 오차로 끝자리 5가 4999…가 되어 내려가지 않게 한다.
 - 순위는 비교값이 있는 후보마다 하나이고 `total`이 작은 순서다. 같은 `total`은 같은 순위다(1, 1, 3).
 '''
 
@@ -959,38 +985,11 @@ def decisions_errors(value):
     if not isinstance(value, list) or not value or any(not (isinstance(d, dict) and d.get('item') and d.get('decision') and d.get('basis')) for d in value):
         return ['decisions(item · decision · basis — 판단 입력을 만든 방법 · 견주는 후보 등 정한 것)가 필요합니다.']
     return []
-def table_rows(path, column):
-    if not path.is_file(): return None
-    head, total, empty = None, 0, 0
-    for line in path.read_text(encoding='utf-8-sig').splitlines():
-        if not line.startswith('|'): head = None; continue
-        cells = [c.strip() for c in line.strip().strip('|').split('|')]
-        if head is None: head = cells; continue
-        if set(''.join(cells)) <= set('-: '): continue
-        idx = [k for k, h in enumerate(head) if h.startswith(column)]
-        if not idx or not any(cells): continue
-        total += 1
-        if idx[0] >= len(cells) or not cells[idx[0]]: empty += 1
-    return total, empty
-def record_part(path, column, label):
-    got = table_rows(path, column)
-    if got is None: return (f'{path.name} {label}', '없음', [], '', False)
-    total, empty = got
-    if total == 0 or empty == total: return (f'{path.name} {label}', '아직 비어 있음', [], f'「{column}」 칸을 채웁니다', False)
-    return (f'{path.name} {label}', '작성 중' if empty else '작성됨', [], f'행 {total}개 중 빈 칸 {empty}개' if empty else f'행 {total}개', False)
 def expect_time(path):
     if not path.is_file(): return []
     m = re.search(r'기대 칸을 쓴 시각[^:]*:[ \t]*(\S.*)?$', path.read_text(encoding='utf-8-sig'), re.M)
     return [] if m and m.group(1) else ['기대결과.md 「기대 칸을 쓴 시각」이 비어 있습니다 — 실행 전에 기대를 먼저 적었는지 남깁니다.']
-def report(parts):
-    ok = True
-    for name, state, errs, note, required in parts:
-        print(f'- {name}: {state}' + (f' — {note}' if note else ''))
-        for e in errs[:40]: print('    ' + e)
-        if len(errs) > 40: print(f'    … 외 {len(errs) - 40}건')
-        if required and state != '통과': ok = False
-    return ok
-'''
+''' + RECORD_CHECK
 
 JUDGE_CHECK = r'''"""결과/result.json의 구조와 계약 검사, 기대결과.md 기록 칸 확인. 생성 · 수정 · 네트워크 접속을 하지 않는다.
 어떤 규칙이 맞아야 하는지, 금액이 맞는지, 어느 후보가 1위여야 하는지는 판정하지 않는다 — 원천 · 원문 · 지표_정의.md 손계산과 따로 대조한다.
@@ -1054,7 +1053,8 @@ state, errs, note = check_result(root/'결과/result.json')
 if state == '없음': print('아직 검사할 결과가 없습니다: 결과/result.json')
 print('구조 검사 결과')
 ok = report([('result.json', state, errs, note, True), record_part(root/'결과/기대결과.md', '고른 것', '정한 것'),
-             record_part(root/'결과/기대결과.md', '실제 결과', '사례 대조'), record_part(root/'결과/기대결과.md', '프로그램', '손계산 대조')])
+             record_part(root/'결과/기대결과.md', '실제 결과', '사례 대조'), record_part(root/'결과/기대결과.md', '프로그램', '손계산 대조'),
+             shape_part(root/'결과/기대결과.md')])
 for line in expect_time(root/'결과/기대결과.md'): print('참고: ' + line)
 print('구조 검사 통과' if ok else '구조 확인 필요 — 위 줄마다 결과의 어느 사례 · 후보인지 찾아 고친 뒤 다시 실행합니다.')
 print('이 검사는 모양과 계약만 봅니다. 의미와 질문별 답(어떤 규칙이 맞아야 하는지, 금액, 어느 후보가 1위인지)은 원자료와 따로 대조합니다.')
@@ -1127,7 +1127,8 @@ state, errs, note = check_review(root/'결과/조치검토결과.json', root/'�
 if state == '없음': print('아직 검사할 결과가 없습니다: 결과/조치검토결과.json')
 print('구조 검사 결과')
 ok = report([('조치검토결과.json · .md', state, errs, note, True), record_part(root/'결과/기대결과.md', '고른 것', '정한 것'),
-             record_part(root/'결과/기대결과.md', '실제 결과', '사례 대조'), record_part(root/'결과/기대결과.md', '프로그램', '손계산 대조')])
+             record_part(root/'결과/기대결과.md', '실제 결과', '사례 대조'), record_part(root/'결과/기대결과.md', '프로그램', '손계산 대조'),
+             shape_part(root/'결과/기대결과.md')])
 for line in expect_time(root/'결과/기대결과.md'): print('참고: ' + line)
 print('구조 검사 통과' if ok else '구조 확인 필요 — 위 줄마다 결과의 어느 사례 · 후보인지 찾아 고친 뒤 다시 실행합니다.')
 print('이 검사는 모양과 계약만 봅니다. 의미와 질문별 답(판정 · 이유 · 출처가 원문과 맞는지, 금액, 어느 후보가 1위인지)은 원자료와 따로 대조합니다.')
@@ -1139,7 +1140,7 @@ def expect_template(extra=''):
     """판정 랩 결과/기대결과.md — 기대 칸을 실행 전에 원천 · 조건표 · 원문으로 적는 기록(전면 기법: 판정)."""
     return ('# 기대 결과와 실제 대조\n\n> 제공 빈 틀입니다. 보관하지 말고 바로 채웁니다.\n\n'
             '기대 칸은 프로그램을 실행하기 전에 원천 기록 · 조건표 · 원문으로 손으로 구해 적습니다. 실제 칸은 실행한 뒤에 적습니다. 실행 결과를 옮겨 기대 칸을 채우지 않습니다.\n\n'
-            '- 기대 칸을 쓴 시각(실행 전):\n- 실행한 명령과 실행 시각:\n\n'
+            '- 기대 칸을 쓴 시각(실행 전, 내 PC 시계 그대로):\n- 실행한 명령과 실행 시각(내 PC 시계 그대로):\n\n'
             '## 목표와 질문\n\n## 이 답을 쓰는 사람과 쓰는 곳\n\n## 사용할 자료와 기준일\n\n## 지킬 조건\n\n'
             '## 정한 것\n\n| 지점(종류) | 고른 것 | 근거(파일 · 줄) | 이 선택으로 바뀌는 답 |\n|---|---|---|---|\n| | | | |\n\n'
             '## 판단 입력을 만든 방법\n\n| 입력 | 원천과 만든 방법 | 근거(파일 · 절) |\n|---|---|---|\n| | | |\n\n'
@@ -1149,7 +1150,8 @@ def expect_template(extra=''):
             + extra + '## 저장 기록\n\n- 기준일:\n- 저장 시점:\n- 확인하지 못한 점:\n')
 
 
-JUDGE_DECIDE = [('빈 값의 뜻', '정해진 주기로 남아야 할 기록이 빠진 구간이 있을 때, 그 구간을 사이에 둔 값을 판단 입력으로 쓸지 — 그런 기록이 어느 경보에 있는지는 원천에서 찾습니다'),
+JUDGE_DECIDE = [('빈 값의 뜻', '정해진 주기로 남아야 할 기록이 빠져 판정을 요청한 때의 값을 기록에서 바로 읽을 수 없을 때, 끊긴 구간을 이어 판단 입력을 만들지 — '
+                                '어느 원천의 어느 경보에 그런 구간이 있는지, 이을 근거가 원천에 있는지는 원천에서 찾습니다'),
                 ('쓰는 사람에 따라 갈리는 답', '경고가 붙은 후보를 비교 산식으로 견주는 후보에 넣을지')]
 WHY_SOURCE_INPUT = ('규칙은 판단 입력이 정해져야 판정할 수 있습니다. 판단 입력은 원천마다 기록 주기 · 단위 · 시각 표기가 다르고, 값이 비는 까닭도 원천마다 다릅니다. '
                     '판단할 때(판정을 요청한 시각)를 기준으로 그때까지의 기록만 써야 결과를 다시 만들 수 있고, 값이 없는 입력은 0이나 앞 값으로 채우지 않고 없는 까닭과 함께 남겨야 정보 부족을 가려낼 수 있습니다. '
@@ -1170,8 +1172,8 @@ WHY_HISTORY = ('사건 한 건이 맞아도 다른 경보에서 틀릴 수 있�
                '기능을 다른 경보에도 쓸 수 있습니다. 결과에 맞추려고 기대를 바꾸면 대조가 아니게 됩니다.')
 
 
-def judge_steps():
-    """두 판정 랩의 앞 일곱 단계(같은 일 — 랩마다 결과 파일 이름만 다르다)."""
+def judge_steps(review=False):
+    """두 판정 랩의 앞 일곱 단계(같은 일 — 랩마다 결과 파일 이름만 다르다). review = 실전반(비교 기준 문장을 비교 단계의 결과로 — 통합반은 8단계)."""
     return [
         S('폴더와 출발점 확인', '시작',
           'VS Code 탐색기에서 이 폴더의 `입력/` · `자료/` · `결과/` · START.md를 열어 각 자리의 역할과 이번 질문을 확인합니다.',
@@ -1181,27 +1183,31 @@ def judge_steps():
           differ=B.DIFFER_START),
         S('파일을 바꾸지 않고 자료 파악', '① 파악',
           'AI에게 파일을 바꾸지 말고, 원천 네 개(경보 · PLC 상태 · 팬 카운터 · 예측)와 조건표 · 계약이 각각 무엇을 어떤 모양으로 담는지 파일 · 줄로 짚어 달라고 합니다. 짚은 줄을 직접 엽니다.',
-          '원천마다 값이 비는 까닭이 몇 가지인지, 원천마다 시각이 어떻게 적혔는지, 조건표가 규칙을 거는 조치와 함께 맞아야 하는 조건 묶음을 어떻게 적었는지 묻습니다.',
-          B.EVIDENCE_LOOK + ' 원천마다 기록 주기 · 단위 · 시각 표기 · 값이 비는 까닭을 내 말로 말할 수 있습니다.',
+          '원천마다 값이 비는 까닭이 몇 가지인지 묻습니다 — 칸이 빈 것뿐 아니라, 정해진 주기로 와야 할 기록이 오지 않은 곳(마지막 기록에서 판정 요청까지도)과 유효 시간이 지나 쓸 수 없는 값까지. '
+          '원천마다 시각이 어떻게 적혔는지, 조건표가 규칙을 거는 조치와 함께 맞아야 하는 조건 묶음을 어떻게 적었는지도 묻습니다.',
+          B.EVIDENCE_LOOK + ' 원천마다 기록 주기 · 단위 · 시각 표기 · 값이 비는 까닭을 내 말로 말할 수 있고, 판정 요청 직전 기록이 그 원천의 주기보다 오래된 경보 하나를 직접 열어 보았습니다.',
           H('판단 입력이 어디서 어떤 모양으로 오는지 파악한다. 아직 아무것도 만들지 않는다.',
             '`입력/` · `자료/` · `입출력_계약.md`',
             '파일을 바꾸지 않는다. 해석보다 파일 · 줄 번호를 먼저 받는다.',
-            '원천마다 기록 주기 · 단위 · 시각 표기 · 값이 비는 까닭 표와 조건표 요약',
+            '원천마다 기록 주기 · 단위 · 시각 표기 · 값이 비는 까닭 표(칸이 빔, 와야 할 기록이 오지 않음, 유효 시간이 지남을 나눠)와 조건표 요약',
             '원천마다 두세 줄을 내가 직접 열어 같은 내용인지 본다'),
           why=WHY_SOURCE_INPUT, differ=B.DIFFER_LOOK),
         S('기대 결과 먼저 적기', '② 요구',
-          '`결과/기대결과.md`에 목표 · 쓰는 사람 · 지킬 조건과, 사건의 네 후보와 「확인」의 사례 종류마다 하나 이상을 원천 줄 · 조건표 · 원문으로 손으로 구한 기대 판정과 근거로 먼저 적습니다. 「학생이 정할 것」의 지점마다 고른 것과 근거를 적고, 다 쓰면 「기대 칸을 쓴 시각」을 적습니다.',
-          B.ASK_DECIDE,
-          '사례 종류마다 기대 판정과 근거 줄이 있고, 「정한 것」 표의 지점마다 고른 것 · 근거 · 바뀌는 답이 채워져 있거나 미결로 적혀 있습니다. 「기대 칸을 쓴 시각」이 실행보다 앞입니다.',
-          H('실행하기 전에 기대를 원천과 원문에서 정한다',
-            '2단계에서 연 원천 줄, `입력/조건표.csv`, 원문, `결과/기대결과.md`(제공 빈 틀)',
-            'AI의 출력을 기대로 옮기지 않는다. 「학생이 정할 것」은 내가 고른다.',
-            '`기대결과.md`의 「정한 것」 · 「사례 대조」의 기대 칸',
-            'AI에게 `기대결과.md`를 자기 말로 되짚게 하고, 내 뜻과 다른 곳을 고친다'),
+          '`결과/기대결과.md`에 목표 · 쓰는 사람 · 지킬 조건과, 사건의 네 후보와 「확인」의 사례 종류마다 하나 이상을 원천 줄 · 조건표 · 원문으로 손으로 구한 기대 판정과 근거로 편집기에서 먼저 적습니다. '
+          '사례 종류에 맞는 경보는 AI에게 판정 · 순위를 빼고 위치와 사실(파일 · 줄)만 뽑게 해 고르고, 기대 판정은 그 줄을 열어 내가 구합니다. '
+          '「학생이 정할 것」의 지점마다 고른 것과 근거를 적고, 다 쓰면 「기대 칸을 쓴 시각」을 적습니다.' + B.REQ_AFTER,
+          B.ASK_DECIDE + DECIDE_FIRM,
+          '사례 종류마다 기대 판정과 근거 줄이 있고, 「정한 것」 표의 지점마다 고른 것 · 근거 · 바뀌는 답이 채워져 있거나 미결로 적혀 있습니다. 「기대 칸을 쓴 시각」이 실행보다 앞입니다. '
+          'AI의 되짚기가 내 요구와 같고, 편집 승인 창이 뜨지 않았으며 AI의 답에 바꾼 파일이 없습니다.',
+          H('사례를 고를 사실을 찾게 하고, 내가 적은 기대를 AI가 같은 뜻으로 이해했는지 되짚게 한다',
+            '2단계에서 연 원천 줄, `입력/조건표.csv`, 원문, 내가 채운 `결과/기대결과.md`',
+            '파일을 바꾸지 않는다 — `기대결과.md`는 내가 편집기에서 채운다. AI에게는 사례의 위치 · 사실(파일 · 줄)만 찾게 하고 판정 · 순위는 묻지 않는다. AI의 출력을 기대로 옮기지 않는다. 「학생이 정할 것」은 내가 고른다.',
+            '사례 종류마다 해당하는 경보의 위치 · 사실 목록과, 내가 채운 「정한 것」 · 「사례 대조」 기대 칸을 AI가 자기 말로 다시 말한 것',
+            '고른 경보의 줄을 내가 직접 열어 보고, 되짚기가 내 뜻과 다른 곳을 내가 편집기에서 고친다'),
           why=WHY_EXPECT, differ=B.DIFFER_REQ.format(rec='결과/기대결과.md')),
         S('계획 검토', '③ 계획',
           '판단 입력 만들기 · 판정 · 비교와 그 뒤의 결과 쓰기를 어떤 순서의 기능으로 나눠 만들지 AI의 계획으로 받아 검토하고 동의합니다. 아직 파일을 만들지 않습니다.',
-          '판정에서 정보 부족(보류)을 어떤 경우에 내는지가 내 기대와 같은지 묻습니다.',
+          '판정에서 정보 부족(보류)을 어떤 경우에 내는지가 내 기대와 같은지 묻습니다.' + DECIDE_FIRM_AGAIN,
           '사건 한 건을 계획에 대어 어느 기능이 무엇을 내는지 짚을 수 있습니다. 계획에 규칙을 코드에 다시 적는 부분과 「이번 범위 밖」의 일이 없습니다. 계획에 내가 동의했습니다.',
           H('구현 순서와 기능의 경계를 합의한다',
             '`입출력_계약.md`, `결과/기대결과.md`',
@@ -1211,13 +1217,13 @@ def judge_steps():
           why='판단 입력 · 판정 · 비교를 한 번에 만들면 결과가 다를 때 어느 부분이 틀렸는지 찾기 어렵습니다. 기능을 나눠 하나씩 만들고 확인해야 다른 줄의 원인을 한 곳으로 좁힐 수 있습니다.',
           differ=B.DIFFER_PLAN),
         S('구현 ① 판단 입력 만들기', '④ ~ ⑥ 구현 · 대조 · 고침',
-          '사례 · 후보마다 계약의 판단 입력 일곱 개와 값이 없는 까닭을 원천에서 만드는 기능을 `결과/`에 만들고 실행해, 사건과 사례 몇 개의 입력을 원천 줄과 직접 견줍니다.',
+          '사례 · 후보마다 계약의 판단 입력 일곱 개와 값이 없는 까닭을 원천에서 만드는 기능을 `결과/`에 만들고 실행해, 사건과 사례 몇 개의 입력을 원천 줄과 직접 견줍니다.' + B.OWN_RUN,
           '원천을 읽는 방법이 내 기대와 다를 때 어느 쪽이 원천의 기록 방식(`자료/수집_설명.md`)과 맞는지 근거를 묻습니다. 「정한 것」의 빈 값 지점이 걸린 입력이 내 결정대로 만들어졌는지 묻습니다. ' + DECISION_STEP,
-          '사건 네 후보의 입력이 기대와 같고, 값이 없는 입력마다 까닭이 원천의 사정과 맞습니다. 「정한 것」의 빈 값 지점이 걸린 사례에서 그 입력이 내 결정대로입니다.',
+          '사건 네 후보의 입력이 기대와 같고, 값이 없는 입력마다 까닭이 원천의 사정과 맞습니다. 「정한 것」의 빈 값 지점이 걸린 사례에서 그 입력이 내 결정대로입니다. 바뀐 파일이 `결과/` 아래뿐입니다' + B.PYCACHE + '.',
           H('사례 · 후보마다 판단 입력과 값이 없는 까닭을 만든다',
-            '원천 네 개, `자료/수집_설명.md`, `자료/targets.csv`',
+            '원천 네 개, `자료/수집_설명.md`, `자료/targets.csv`, ' + DECIDE_INPUT,
             '판정을 요청한 시각 뒤의 기록은 쓰지 않는다. 시각과 단위를 맞춘 원값으로 견준다. 빈 값을 0이나 앞 값으로 채우지 않는다. 「정한 것」의 빈 값 지점은 내 결정대로 만든다.',
-            '사례 · 후보마다 입력 일곱 개와 값이 없는 까닭(계약의 판단 입력 `inputs` · 값이 없는 까닭 `missing_reasons` 꼴)',
+            '사례 · 후보마다 입력 일곱 개와 값이 없는 까닭(계약의 판단 입력 `inputs` · 값이 없는 까닭 `missing_reasons` 꼴), 판단 입력을 만든 방법과 「정한 것」을 적는 정한 것(`decisions`)',
             '사건과 사례 두세 개의 입력을 원천 줄과 직접 견준다'),
           'python 결과/<만든 코드 이름>.py',
           why=WHY_INPUT,
@@ -1238,9 +1244,11 @@ def judge_steps():
           '「정한 것」의 경고 후보 지점대로 견줄 후보가 정해지는지, 견줄 수 없는 후보를 무엇으로 남길지 묻습니다. ' + DECISION_STEP,
           '`지표_정의.md` 손계산 예의 네 손실이 프로그램 값과 같습니다. 순위에는 비교값이 있는 후보만 있고, 견주지 않은 유지 후보마다 까닭이 있습니다.',
           H('견줄 후보의 비교 합계와 순위를 낸다',
-            '`자료/metrics/` 세 파일, `자료/오더_현황.csv`, 예측 입력, 6단계 판정, 「정한 것」 표',
-            '산식을 바꾸지 않는다. 반올림은 끝에서만 한다.',
-            '비교값(`comparison`) · 순위(`ranking`) · 비교값이 없는 까닭(`no_comparison_reason`) — 계약 꼴',
+            '`자료/metrics/` 세 파일, `자료/오더_현황.csv`, 예측 입력, 6단계 판정, ' + DECIDE_INPUT,
+            '산식을 바꾸지 않는다. 반올림은 끝에서만, 계약의 반올림 규칙대로 한다.',
+            ('비교값(`comparison`) · 순위(`ranking`) · 비교값이 없는 까닭(`no_comparison_reason`)과 비교 기준 문장(`comparison_basis` — 이 합계가 무엇을 견주는지, '
+             '`지표_정의.md`의 포털 성과 지표 점수와 어떻게 다른지) — 계약 꼴' if review else
+             '비교값(`comparison`) · 순위(`ranking`) · 비교값이 없는 까닭(`no_comparison_reason`) — 계약 꼴'),
             '손계산 예와 같은지 보고, 사건의 한 후보를 손으로 다시 계산해 견준다'),
           'python 결과/<만든 코드 이름>.py',
           why=WHY_COMPARE, differ=B.FIX_LOOP),
@@ -1261,7 +1269,7 @@ def judge_lab(files):
           '사건의 선택 이유가 판정 · 비교 결과와 「정한 것」에서 나오는지, 추가로 확인할 사항이 빠진 입력 · 경고에서 나오는지 묻습니다.',
           '사건의 선택 이유가 순위 · 견주지 않은 후보 · 보류 후보와 맞습니다. 비교 기준 문장(`comparison_basis`)에 비교 합계와 포털 성과 지표 점수의 차이가 적혀 있습니다.',
           H('사례마다 선택 이유와 추가로 확인할 사항을 남긴다',
-            '판정 · 비교 결과, 「정한 것」 표',
+            '판정 · 비교 결과, ' + DECIDE_INPUT + ', `자료/metrics/지표_정의.md` 「포털의 성과 지표 점수」',
             '1위를 실행 승인처럼 쓰지 않는다',
             '계약의 선택 이유(`selection` — `reason` · `checks`)와 비교 기준 문장(`comparison_basis`)',
             '사건의 선택 이유를 순위와 원천 줄로 내 말로 따라가 본다'),
@@ -1299,7 +1307,8 @@ def judge_lab(files):
                '## 지킬 조건\n\n'
                '- `입력/`은 읽기만 합니다.\n'
                '- 규칙은 코드에 다시 적지 않고 `입력/조건표.csv`에서 읽습니다.\n'
-               '- 비교 순위와 선택 이유를 실행 승인처럼 적지 않습니다.\n']
+               '- 비교 순위와 선택 이유를 실행 승인처럼 적지 않습니다.\n'
+               '- 만든 코드는 내가 손으로 쓰는 `결과/기대결과.md`를 읽지 않습니다 — 「정한 것」은 요청에서 전합니다.\n']
     return dict(
         title=title, rec=rec, readonly='`입력/` · `자료/`가', decide_step=2, course='통합반',
         goal=[f'포털에서 운전 모드와 설비 상태를 바꿔 판단을 다시 돌리고, 조건별 손익에서 순위가 바뀌는 것을 봤습니다. 포털은 사실을 자동으로 모아 한 건씩 판단했습니다. '
@@ -1327,7 +1336,7 @@ def judge_lab(files):
                  '비교 산식을 바꾸는 일', '실제 설비 조작과 실행 승인'],
         formats=formats, steps=steps,
         cases=['규칙이 하나도 맞지 않는 후보(정상)',
-               '예측 유온 · 팬 연속 시간이 기준값과 같거나 바로 위 · 아래인 후보(경계 — 단위가 다른 원천 포함)',
+               '조건표의 숫자 기준값마다(예측 유온 · 팬 연속 시간 등) 그 값과 같은 후보와, 그 값의 바로 위 · 아래에서 가장 가까운 후보(경계 — 단위가 다른 원천 포함)',
                '경고 · 감점 · 제외가 한 후보에 함께 맞는 경우(복수 조건 — 감점이 규칙마다 한 번인지)',
                '모든 후보가 제외된 경보',
                '원천에서 값이 비는 까닭이 서로 다른 경보(필수값 누락 — 그 값이 필요한 규칙에만 영향이 가는지)',
@@ -1364,7 +1373,7 @@ def review_lab(files):
     n = sum(1 for r in csv.DictReader(io.StringIO(files['경보_목록.csv'])) if r['구분'] == 'RAISE' and r['판정_요청_시각'])
     save = ('`결과/조치검토결과.json` · `결과/조치검토결과.md` · `결과/기대결과.md`와 만든 코드를 함께 보관합니다. 다음 실습에 넘길 것은 이 검토 결과와, 받은 그대로의 `입력/조건표.csv` · `입력/sop.json`입니다. '
             '다음 실습은 「문서에서 작업 조건과 근거를 추출하는 기능 만들기」입니다. ' + USB)
-    steps = judge_steps() + [
+    steps = judge_steps(review=True) + [
         S('구현 ④ 후보별 추가로 확인할 값', '④ ~ ⑥ 구현 · 대조 · 고침',
           '후보마다 담당자가 먼저 확인할 값 — 판정을 막은 빠진 입력과 그 원천 — 을 추가로 확인할 값(`checks`)에 쓰는 기능을 더하고 실행합니다.',
           '알 수 없는 규칙마다 어떤 입력을 어디서 다시 받아야 하는지 묻습니다.',
@@ -1382,7 +1391,7 @@ def review_lab(files):
           '사건의 검토 의견이 판정 · 비교 결과에서 나오는지, 먼저 확인할 값이 보류 후보의 빠진 입력과 같은지 묻습니다.',
           '사건의 검토 의견과 까닭이 순위 · 견주지 않은 후보 · 보류 후보와 맞고, 먼저 확인할 값이 보류 후보의 빠진 입력과 같습니다.',
           H('사례마다 검토 의견을 남긴다',
-            '비교 · 추가 확인 결과, 「정한 것」 표',
+            '비교 · 추가 확인 결과, ' + DECIDE_INPUT,
             '순위를 실행 승인처럼 쓰지 않는다',
             '계약의 검토 의견(`review` — `top` · `reason` · `checks`)',
             '사건의 검토 의견을 순위와 원천 줄로 내 말로 따라가 본다'),
@@ -1406,7 +1415,7 @@ def review_lab(files):
           '사건의 절만 읽고 후보마다 판정 · 까닭 · 원문 출처 · 승인 역할과, 먼저 확인할 값을 말할 수 있습니다.',
           H('담당자가 읽고 결정할 수 있게 쓴다',
             '`결과/조치검토결과.json`',
-            'JSON에 없는 내용을 더하지 않는다',
+            'JSON에 없는 내용을 더하지 않는다. 빈 목록 · null 같은 JSON 표기는 「없음」처럼 사람이 읽는 말로 바꿔 쓴다.',
             '`결과/조치검토결과.md`(사례마다 절, 절 제목에 경보 ID — 후보마다 판정 · 까닭 · 원문 출처 · 추가로 확인할 값 · 승인 역할)',
             '사건의 절만 읽고 다음 행동과 먼저 확인할 값을 말해 본다'),
           'python 결과/<만든 코드 이름>.py',
@@ -1445,7 +1454,8 @@ def review_lab(files):
                '## 지킬 조건\n\n'
                '- `입력/`은 읽기만 합니다.\n'
                '- 규칙은 코드에 다시 적지 않고 `입력/조건표.csv`에서 읽습니다.\n'
-               '- 비교 순위와 검토 의견을 실행 승인처럼 적지 않습니다. 승인 역할은 `입력/sop.json`의 원문 출처로 적습니다.\n']
+               '- 비교 순위와 검토 의견을 실행 승인처럼 적지 않습니다. 승인 역할은 `입력/sop.json`의 원문 출처로 적습니다.\n'
+               '- 만든 코드는 내가 손으로 쓰는 `결과/기대결과.md`를 읽지 않습니다 — 「정한 것」은 요청에서 전합니다.\n']
     return dict(
         title=title, rec=rec, readonly='`입력/` · `자료/`가', decide_step=2, course='실전반',
         goal=[f'포털에서 순위가 높아도 금지 조건에 걸리면 고를 수 없는 이유를 결과에서 찾았습니다. 이번에는 조치 조건표로 사건과 지난 30일 경보를 원천 기록에서 직접 판정하고, '
@@ -1472,7 +1482,7 @@ def review_lab(files):
         outside=['조건표 · SOP 구조를 고치는 일(입력은 읽기만 합니다)', '원문에서 작업 조건을 뽑는 일(다음 실습)',
                  '비교 산식을 바꾸는 일', '실제 설비 조작과 실행 승인'],
         formats=formats, steps=steps,
-        cases=['예측 유온 · 팬 연속 시간이 기준값과 같거나 바로 위 · 아래인 후보(경계값 — 단위가 다른 원천 포함)',
+        cases=['조건표의 숫자 기준값마다(예측 유온 · 팬 연속 시간 등) 그 값과 같은 후보와, 그 값의 바로 위 · 아래에서 가장 가까운 후보(경계값 — 단위가 다른 원천 포함)',
                '확인된 제외 사유와 입력 누락이 한 후보에 겹친 경우',
                '모든 후보가 제외된 경보',
                '원천에서 값이 비는 까닭이 서로 다른 경보(그 값이 필요한 규칙에만 영향이 가는지)',
