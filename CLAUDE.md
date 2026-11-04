@@ -83,7 +83,7 @@
 
 **준비는 두 가지다.**
 1. 환경의 설정 스크립트 칸에 이 한 줄을 넣는다(도구 설치만 한다): `git clone -q --depth 1 --filter=blob:none --no-checkout -b workspace https://github.com/uengine-oss/hyd-iot-edu.git /tmp/hydws && git -C /tmp/hydws show HEAD:workspace/개발/scripts/cloud_setup.sh | bash`. 설정 스크립트는 저장소 밖에서 돌 수 있고 결과가 캐시되므로, 저장소 위치에 기대는 일은 넣지 않는다.
-2. **세션은 workspace 브랜치로 시작한다**(claude.ai/code에서 저장소 옆 브랜치 선택). main에는 `.claude`가 없어서, main으로 시작하면 훅(공용 헌법 받기, 읽기 문지기)이 돌지 않는다. 훅이 돌았는지는 세션 시작 안내 「[세션 시작] 작업 순서는 스킬 hyd-task…」와 공용 헌법이 컨텍스트에 있는지로 본다. 저장소 밖(빈 폴더)에서 시작된 세션은 훅이 하나도 돌지 않으니 사용자에게 알리고, 저장소를 받은 뒤 `CLAUDE_CODE_REMOTE=true bash .claude/hooks/cloud-bootstrap.sh`로 공용 헌법을 받으며, 읽기 문지기가 없으므로 일 문서를 스스로 끝까지 읽고 시작한다.
+2. **세션은 workspace 브랜치로 시작한다**(claude.ai/code에서 저장소 옆 브랜치 선택). main에는 `.claude`가 없어서, main으로 시작하면 훅(공용 헌법 받기, 읽기 문지기)이 돌지 않는다. 훅이 돌았는지는 세션 시작 안내 「[세션 시작] 작업 순서는 스킬 hyd-task…」와 공용 헌법이 컨텍스트에 있는지로 본다. 저장소 밖의 빈 폴더에서 시작된 세션은 훅이 하나도 돌지 않으므로 사용자에게 알린다. 그다음 저장소를 받아 `CLAUDE_CODE_REMOTE=true bash .claude/hooks/cloud-bootstrap.sh`로 공용 헌법을 받고, 읽기 문지기가 없으니 일 문서를 스스로 끝까지 읽고 시작한다.
 
 「셋업 실패」나 「부트스트랩 실패」 알림이 보이면 먼저 사용자에게 알린다. 위 절의 `.venv314` 명령은 클라우드에서 `python3`로 바꿔 읽는다. 클라우드는 GitHub에 올라간 것만 받는다. 시스템 코드(main)는 `git fetch -q origin main:main` 뒤 읽기는 `git show main:<경로>`, 실행이 필요하면 `git worktree add ../main main`으로 옆에 꺼낸다.
 
@@ -93,6 +93,6 @@
 | 작업 폴더 | VM이 회수되면 파일이 사라지므로 hyd-task가 정한 커밋 때마다 바로 push한다. `작업/`은 커밋하지 않는다. 이어받을 사람이 있을 때만 인계 자료를 `workspace/강의제작/제작도구/근거/<날짜>_<제목>/`에 두고, 그 일이 끝나면 지운다. 렌더 그림, 영상 출력, 중간 파일은 남기지 않는다. 이어받을 스펙과 기록은 요청문에 담는다 |
 | 덱 렌더 | 맑은 고딕 글꼴이 있어야 한다. 글꼴 파일은 사용자에게 파일 첨부로 받고(메시지에 `@C:\Windows\Fonts\…` 경로를 적어서는 파일이 오지 않는다) 커밋하지 않는다. `sudo bash workspace/강의제작/제작도구/기존제작/tools/deck/렌더환경_클라우드.sh <맑은 고딕 폴더>`를 돌린 뒤(VM이 다시 켜지면 다시 돌린다) `PATH=/usr/local/lo268/bin:$PATH`로 `deck2pptx.py --render`를 돌린다. apt로 설치한 LibreOffice와 Noto 글꼴로 렌더하면 줄바꿈이 달라서, 그 결과는 넘침 판정에 쓰지 않는다. 글꼴이 없으면 이 PC에서 렌더한 PDF를 받아 `pdftoppm -r 150`으로 `tools/video/슬라이드/<덱>/s-NN.png`에 넣고, `stamp`에 PPTX SHA256을 적는다(그러면 `강의영상.py`가 장을 다시 그리지 않는다). 강조 글씨의 글꼴은 `EMPH_FONT`로 정한다 |
 | 사실 대조 그래프 | `dockerd`를 띄운 뒤 `AI_MODE=replay CMD_FINGERPRINT_KEY=x PROCESS_CALLER_TOKEN=x docker compose up -d neo4j kg-seed`를 돌린다. 이것은 기본 시드만 올린다. 수업 문서 적재분은 이 PC의 `작업/_보관/근거/2026-11-03_5-6회차_인계/실측/` 덤프에만 있고 클라우드에는 없다 |
-| 음성 키 | 환경 변수로 들어온다(지금 환경의 이름은 `eleven_lab_key`). 도구는 `ELEVENLABS_API_KEY`를 읽으므로 `ELEVENLABS_API_KEY="$eleven_lab_key"`로 넘긴다(값은 출력하지 않는다). `api.elevenlabs.io`가 네트워크 허용 목록에 있어야 한다 |
+| 음성 키 | 키는 환경 변수로 들어오고, 지금 환경의 이름은 `eleven_lab_key`다. 도구는 `ELEVENLABS_API_KEY`를 읽으므로 `ELEVENLABS_API_KEY="$eleven_lab_key"`로 넘기고, 값은 출력하지 않는다. `api.elevenlabs.io`가 네트워크 허용 목록에 있어야 한다 |
 | 속도 | 4코어 VM에서는 이론 영상 굽기가 한 편에 22~30분, 강조 첫 실행이 15~35분(3편 동시) 걸리므로 시작 전에 알린다. 이 PC는 굽기 127초, 강조 306초(1편)이므로 렌더 뒤의 일은 이 PC에서 하는 쪽을 먼저 고른다. 도는 작업 수는 `ps -eo args \| grep -cE "^python3 .*tools/video/.*\.py "`로 센다(`pgrep -f`는 한글을 ?로 보여 줘서 0으로 센다). 오래 도는 일은 `setsid nohup`으로 띄운다 |
 | 못 하는 것 | 클라우드에서는 ego 브라우저, 네이티브 VS Code, 데스크톱 캡처, 학생 Codex 로그인을 쓸 수 없다. 그래서 ARROWS, Notion, Neo4j, 웹 VS Code 촬영과 가이드 사진, 학생 경로 리허설은 이 PC에서 한다. 포털 촬영은 클라우드 Playwright가 정본이다(포털 촬영준비 「길」의 클라우드 항목) |
