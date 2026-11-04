@@ -122,7 +122,7 @@ SOP_CONTRACT = '''## SOP 구조 (`결과/sop.json`)
 '''
 
 
-# ───────────── 검사기(구조만 — 의미 정답은 판정하지 않는다, K-51) ─────────────
+# ───────────── 검사기(구조만 — 의미 정답은 판정하지 않는다, C-51) ─────────────
 # 기록 파일(요구사항 · 판단기록 · 기대결과.md)의 표는 한 곳에서 본다 — 칸이 채워졌는지와, 줄마다 칸 수가 머리 줄과 같은지
 # (리허설: 36줄 대조 표에서 한 줄의 칸이 밀렸는데 「작성됨」으로 통과했다).
 RECORD_CHECK = r'''def md_cells(line):
@@ -1550,7 +1550,7 @@ def judge_inputs(folder):
 
 
 def write_guide(folder, L, photos):
-    """guide.html과 같은 바이트의 안내.html(회차 안내 · 노션이 가리키는 이름 — K-52). 틀 · 블록 · 도구 안내는 2회차와 같은 build_labs.step_guide."""
+    """guide.html과 같은 바이트의 안내.html(회차 안내 · 노션이 가리키는 이름 — C-52). 틀 · 블록 · 도구 안내는 2회차와 같은 build_labs.step_guide."""
     guide = B.step_guide(L, photos)
     write(folder/'guide.html', guide)
     write(folder/'안내.html', guide)

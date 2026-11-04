@@ -1,6 +1,6 @@
 """관계 조회 실습의 제공 예제만 적재한다. 학생이 작성할 조회문은 만들지 않는다."""
 from pathlib import Path
-import json,urllib.request
+import json,sys,urllib.request
 from lab_db import prepare
 HERE=Path(__file__).resolve().parent
 
@@ -24,4 +24,7 @@ def main():
     marker.write_text(json.dumps({'id':state['id'], **counts},indent=2),encoding='utf-8')
     print('예제 준비 완료: 노드 20개 · 관계 19개.')
 
-if __name__=='__main__':main()
+if __name__=='__main__':
+    try:main()
+    except (OSError,ValueError,KeyError,RuntimeError) as e:
+        print('예제 준비 확인 필요: '+str(e)+' — Docker Desktop이 켜져 있는지 보고 다시 실행하세요.');sys.exit(1)

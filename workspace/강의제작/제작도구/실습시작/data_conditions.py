@@ -110,7 +110,7 @@ OPS = dict(field=0.18, busy=0.18, busy_night=0.3, busy_s=(900, 4200))   # 현장
 # 수집 결함 · 외란의 빈도(하루 평균 횟수, 지속 초). 사례 종류가 모자라면 이 값 · 시드를 바꾸고 사례를 손으로 심지 않는다.
 FAULTS = dict(outage=(18.0, (14, 240)), bad=(30.0, (15, 90)), counter_gap=(1.0, (1200, 3600)), daq_delay=(5.0, (200, 900)),
               dust=(0.25, (3600, 9000)), dust_drop=(0.02, 0.05), forecast_drop=0.04, order_fail=0.035)
-PORTAL_ALARM = ('HYD-01', kst(2026, 10, 10, 11, 13, 8))   # 포털 대표 경보 — 같은 설비 · 시각에 경보가 나면 멈춘다(K-121)
+PORTAL_ALARM = ('HYD-01', kst(2026, 10, 10, 11, 13, 8))   # 포털 대표 경보 — 같은 설비 · 시각에 경보가 나면 멈춘다(C-31)
 
 # 판단 시스템 결정표(2025년 도입 판, HM-8 1.0판으로 작성) — main 04efb988 앞 판의 행을 그대로 고정한다(main이 바뀌어도 랩의 옛 판은 그대로).
 # 내보내기 파일에 쓸 때만 규칙 ID를 대응표(CURRENT_ID)로 바꾸고 제작 흔적 한 곳(rule:cand-trip 설명의 「(A098: …)」 괄호)을 뺀다. --check가 그 판과 견준다.
@@ -1343,7 +1343,7 @@ def design_checks(rec, cats, chosen):
             ok = any(at(sec(s)).date() == e['day'] for s, _ in SCENARIO[e['asset']]['cleanings'])
             if not ok:
                 bad.append(f'같은 사실: {e["asset"]} {e["day"]} 세척(작업 이력)이 궤적에 없음')
-    # 5. 포털 대표 경보와 섞지 않음(K-121)
+    # 5. 포털 대표 경보와 섞지 않음(C-31)
     for a in rec.units[PORTAL_ALARM[0]].alarms:
         if abs(a['raise_s'] - sec(PORTAL_ALARM[1])) < 3600:
             bad.append('포털 대표 경보와 같은 설비 · 시각에 경보가 남')
