@@ -1,0 +1,1374 @@
+{
+  "chain": {
+    "통합반": "설계 조건 검사 통과(같은 바이트 · 학생 문장 답 0 · 응답 기록 0 · .env 틀)",
+    "실전반": "설계 조건 검사 통과(같은 바이트 · 학생 문장 답 0 · 응답 기록 0 · .env 틀)"
+  },
+  "extraction": {
+    "score": {
+      "통합반": {
+        "HI-01_보충매뉴얼.md": {
+          "expected": 6,
+          "matched": 5,
+          "missing": [
+            "HI-1.2 SOP-HI-02 prohibition 「정비 이력을 임의로 닫지 말고 다음 근무자가 담당자에게 확인할 작업지시 」"
+          ],
+          "candidates": 28,
+          "value_differs_from_text": [],
+          "outside_expected_in_same_section": 15
+        },
+        "HM-8_1.0판_매뉴얼.md": {
+          "expected": 11,
+          "matched": 10,
+          "missing": [
+            "HM-3.1 precondition 「현장 작업은 설비를 정지하고 현장 패널에서 LOCAL로 전환한 뒤 한다.」"
+          ],
+          "candidates": 91,
+          "value_differs_from_text": [],
+          "outside_expected_in_same_section": 15
+        },
+        "HM-8_1.2판_개정요청.md": {
+          "expected": 10,
+          "matched": 9,
+          "missing": [
+            "HM-8.0 precondition 「이 매뉴얼은 설비 대장에 모델 HPP-45A로 등록된 공랭식 오일 쿨러 」"
+          ],
+          "candidates": 106,
+          "value_differs_from_text": [],
+          "outside_expected_in_same_section": 5
+        },
+        "HM-8_매뉴얼.md": {
+          "expected": 22,
+          "matched": 21,
+          "missing": [
+            "HM-8.5 completion 「조치 후 예측 유온이 55 ℃ 이상이면 경보 해제에 실패할 수 있으므로 」"
+          ],
+          "candidates": 105,
+          "value_differs_from_text": [],
+          "outside_expected_in_same_section": 40
+        },
+        "HM-9장_스캔본.txt": {
+          "expected": 8,
+          "matched": 8,
+          "missing": [],
+          "candidates": 17,
+          "value_differs_from_text": [],
+          "outside_expected_in_same_section": 7
+        },
+        "OEM-HPP45A_정비지침_영한.md": {
+          "expected": 9,
+          "matched": 6,
+          "missing": [
+            "7 precondition 「Clean the core when the fins are visibly」",
+            "7 T-7.1 precondition 「Inspect the core before cleaning. Record」",
+            "7 T-7.1 completion 「The difference must not be less than the」"
+          ],
+          "candidates": 73,
+          "value_differs_from_text": [],
+          "outside_expected_in_same_section": 6
+        },
+        "PM-02_정기점검표.md": {
+          "expected": 13,
+          "matched": 12,
+          "missing": [
+            "PM-2.4 precondition 「예정된 정비 시간은 생산 오더가 없는 시간(주로 야간)이며 MES 생산 」"
+          ],
+          "candidates": 104,
+          "value_differs_from_text": [],
+          "outside_expected_in_same_section": 5
+        },
+        "PR-07_예비품기준.md": {
+          "expected": 7,
+          "matched": 6,
+          "missing": [
+            "PR-7.1 precondition 「유압 파워팩 HYD-01~03은 같은 모델이라 예비품을 함께 쓴다.」"
+          ],
+          "candidates": 52,
+          "value_differs_from_text": [],
+          "outside_expected_in_same_section": 15
+        },
+        "SR-04_설비안전규정_발췌.txt": {
+          "expected": 7,
+          "matched": 6,
+          "missing": [
+            "제5조 precondition 「잠금은 정비를 맡은 사람이 걸고 그 사람이 푼다.」"
+          ],
+          "candidates": 7,
+          "value_differs_from_text": [],
+          "outside_expected_in_same_section": 1
+        }
+      },
+      "실전반": {
+        "HI-01_보충매뉴얼.md": {
+          "expected": 6,
+          "matched": 5,
+          "missing": [
+            "HI-1.2 SOP-HI-02 prohibition 「정비 이력을 임의로 닫지 말고 다음 근무자가 담당자에게 확인할 작업지시 」"
+          ],
+          "candidates": 28,
+          "value_differs_from_text": [],
+          "outside_expected_in_same_section": 15
+        },
+        "HM-8_1.0판_매뉴얼.md": {
+          "expected": 11,
+          "matched": 10,
+          "missing": [
+            "HM-3.1 precondition 「현장 작업은 설비를 정지하고 현장 패널에서 LOCAL로 전환한 뒤 한다.」"
+          ],
+          "candidates": 91,
+          "value_differs_from_text": [],
+          "outside_expected_in_same_section": 15
+        },
+        "HM-8_1.2판_개정요청.md": {
+          "expected": 10,
+          "matched": 9,
+          "missing": [
+            "HM-8.0 precondition 「이 매뉴얼은 설비 대장에 모델 HPP-45A로 등록된 공랭식 오일 쿨러 」"
+          ],
+          "candidates": 106,
+          "value_differs_from_text": [],
+          "outside_expected_in_same_section": 5
+        },
+        "HM-8_매뉴얼.md": {
+          "expected": 22,
+          "matched": 21,
+          "missing": [
+            "HM-8.5 completion 「조치 후 예측 유온이 55 ℃ 이상이면 경보 해제에 실패할 수 있으므로 」"
+          ],
+          "candidates": 105,
+          "value_differs_from_text": [],
+          "outside_expected_in_same_section": 40
+        },
+        "HM-9장_스캔본.txt": {
+          "expected": 8,
+          "matched": 8,
+          "missing": [],
+          "candidates": 17,
+          "value_differs_from_text": [],
+          "outside_expected_in_same_section": 7
+        },
+        "OEM-HPP45A_정비지침_영한.md": {
+          "expected": 9,
+          "matched": 6,
+          "missing": [
+            "7 precondition 「Clean the core when the fins are visibly」",
+            "7 T-7.1 precondition 「Inspect the core before cleaning. Record」",
+            "7 T-7.1 completion 「The difference must not be less than the」"
+          ],
+          "candidates": 73,
+          "value_differs_from_text": [],
+          "outside_expected_in_same_section": 6
+        },
+        "PM-02_정기점검표.md": {
+          "expected": 13,
+          "matched": 12,
+          "missing": [
+            "PM-2.4 precondition 「예정된 정비 시간은 생산 오더가 없는 시간(주로 야간)이며 MES 생산 」"
+          ],
+          "candidates": 104,
+          "value_differs_from_text": [],
+          "outside_expected_in_same_section": 5
+        },
+        "PR-07_예비품기준.md": {
+          "expected": 7,
+          "matched": 6,
+          "missing": [
+            "PR-7.1 precondition 「유압 파워팩 HYD-01~03은 같은 모델이라 예비품을 함께 쓴다.」"
+          ],
+          "candidates": 52,
+          "value_differs_from_text": [],
+          "outside_expected_in_same_section": 15
+        },
+        "SR-04_설비안전규정_발췌.txt": {
+          "expected": 7,
+          "matched": 6,
+          "missing": [
+            "제5조 precondition 「잠금은 정비를 맡은 사람이 걸고 그 사람이 푼다.」"
+          ],
+          "candidates": 7,
+          "value_differs_from_text": [],
+          "outside_expected_in_same_section": 1
+        }
+      }
+    },
+    "branches": {
+      "추출_통합반_가-가": {
+        "decisions": {
+          "채택": 331,
+          "제외": 223,
+          "보류": 39
+        },
+        "rule_links": {
+          "R1": "일치",
+          "R2": "일치",
+          "R3": "일치",
+          "R5": "원문 없음",
+          "R4": "일치"
+        },
+        "judge_changes": {
+          "cases": [
+            {
+              "event": "ALT-hyd02-0171-051f",
+              "sop": "SOP-COOL-14",
+              "forecast_ts1": 65.3,
+              "after": "제외 그대로"
+            }
+          ],
+          "changed": 0
+        },
+        "selected": null,
+        "checker": {
+          "contract": "통과",
+          "stage": "남은 것 0"
+        }
+      },
+      "추출_통합반_가-나": {
+        "decisions": {
+          "채택": 370,
+          "제외": 223
+        },
+        "rule_links": {
+          "R1": "일치",
+          "R2": "일치",
+          "R3": "일치",
+          "R5": "원문 없음",
+          "R4": "일치"
+        },
+        "judge_changes": {
+          "cases": [
+            {
+              "event": "ALT-hyd02-0171-051f",
+              "sop": "SOP-COOL-14",
+              "forecast_ts1": 65.3,
+              "after": "제외 그대로"
+            }
+          ],
+          "changed": 0
+        },
+        "selected": null,
+        "checker": {
+          "contract": "통과",
+          "stage": "남은 것 0"
+        }
+      },
+      "추출_통합반_나-가": {
+        "decisions": {
+          "채택": 331,
+          "제외": 223,
+          "보류": 39
+        },
+        "rule_links": {
+          "R1": "일치",
+          "R2": "일치",
+          "R3": "일치",
+          "R5": "원문 없음",
+          "R4": "불일치"
+        },
+        "judge_changes": {
+          "cases": [
+            {
+              "event": "ALT-hyd02-0171-051f",
+              "sop": "SOP-COOL-14",
+              "forecast_ts1": 65.3,
+              "after": "유지 — 비교에 들어옴"
+            }
+          ],
+          "changed": 1
+        },
+        "selected": null,
+        "checker": {
+          "contract": "통과",
+          "stage": "남은 것 0"
+        }
+      },
+      "추출_통합반_나-나": {
+        "decisions": {
+          "채택": 370,
+          "제외": 223
+        },
+        "rule_links": {
+          "R1": "일치",
+          "R2": "일치",
+          "R3": "일치",
+          "R5": "원문 없음",
+          "R4": "불일치"
+        },
+        "judge_changes": {
+          "cases": [
+            {
+              "event": "ALT-hyd02-0171-051f",
+              "sop": "SOP-COOL-14",
+              "forecast_ts1": 65.3,
+              "after": "유지 — 비교에 들어옴"
+            }
+          ],
+          "changed": 1
+        },
+        "selected": null,
+        "checker": {
+          "contract": "통과",
+          "stage": "남은 것 0"
+        }
+      },
+      "추출_통합반_다-가": {
+        "decisions": {
+          "채택": 327,
+          "제외": 223,
+          "보류": 43
+        },
+        "rule_links": {
+          "R1": "일치",
+          "R2": "일치",
+          "R3": "일치",
+          "R5": "원문 없음",
+          "R4": "보류"
+        },
+        "judge_changes": {
+          "cases": [
+            {
+              "event": "ALT-hyd02-0171-051f",
+              "sop": "SOP-COOL-14",
+              "forecast_ts1": 65.3,
+              "after": "제외 그대로(근거 확인 중)"
+            }
+          ],
+          "changed": 0
+        },
+        "selected": null,
+        "checker": {
+          "contract": "통과",
+          "stage": "남은 것 0"
+        }
+      },
+      "추출_통합반_다-나": {
+        "decisions": {
+          "채택": 366,
+          "제외": 223,
+          "보류": 4
+        },
+        "rule_links": {
+          "R1": "일치",
+          "R2": "일치",
+          "R3": "일치",
+          "R5": "원문 없음",
+          "R4": "보류"
+        },
+        "judge_changes": {
+          "cases": [
+            {
+              "event": "ALT-hyd02-0171-051f",
+              "sop": "SOP-COOL-14",
+              "forecast_ts1": 65.3,
+              "after": "제외 그대로(근거 확인 중)"
+            }
+          ],
+          "changed": 0
+        },
+        "selected": null,
+        "checker": {
+          "contract": "통과",
+          "stage": "남은 것 0"
+        }
+      },
+      "추출_통합반_내입력나_가-가": {
+        "decisions": {
+          "채택": 331,
+          "제외": 223,
+          "보류": 39
+        },
+        "rule_links": {
+          "R1": "일치",
+          "R2": "일치",
+          "R3": "일치",
+          "R5": "원문 없음",
+          "R4": "불일치"
+        },
+        "judge_changes": {
+          "cases": [
+            {
+              "event": "ALT-hyd02-0171-051f",
+              "sop": "SOP-COOL-14",
+              "forecast_ts1": 65.3,
+              "after": "제외 — R4를 더하면"
+            }
+          ],
+          "changed": 1
+        },
+        "selected": null,
+        "checker": {
+          "contract": "통과",
+          "stage": "남은 것 0"
+        }
+      },
+      "추출_통합반_내입력나_나-가": {
+        "decisions": {
+          "채택": 331,
+          "제외": 223,
+          "보류": 39
+        },
+        "rule_links": {
+          "R1": "일치",
+          "R2": "일치",
+          "R3": "일치",
+          "R5": "원문 없음",
+          "R4": "일치"
+        },
+        "judge_changes": {
+          "cases": [
+            {
+              "event": "ALT-hyd02-0171-051f",
+              "sop": "SOP-COOL-14",
+              "forecast_ts1": 65.3,
+              "after": "유지 그대로"
+            }
+          ],
+          "changed": 0
+        },
+        "selected": null,
+        "checker": {
+          "contract": "통과",
+          "stage": "남은 것 0"
+        }
+      },
+      "추출_통합반_내입력나_다-가": {
+        "decisions": {
+          "채택": 327,
+          "제외": 223,
+          "보류": 43
+        },
+        "rule_links": {
+          "R1": "일치",
+          "R2": "일치",
+          "R3": "일치",
+          "R5": "원문 없음",
+          "R4": "보류"
+        },
+        "judge_changes": {
+          "cases": [
+            {
+              "event": "ALT-hyd02-0171-051f",
+              "sop": "SOP-COOL-14",
+              "forecast_ts1": 65.3,
+              "after": "유지 그대로(근거 확인 중)"
+            }
+          ],
+          "changed": 0
+        },
+        "selected": null,
+        "checker": {
+          "contract": "통과",
+          "stage": "남은 것 0"
+        }
+      },
+      "추출_통합반_내입력다_가-가": {
+        "decisions": {
+          "채택": 331,
+          "제외": 223,
+          "보류": 39
+        },
+        "rule_links": {
+          "R1": "일치",
+          "R2": "일치",
+          "R3": "일치",
+          "rule:trip-reset-only": "원문 없음",
+          "rule:ts1-hard": "일치"
+        },
+        "judge_changes": {
+          "cases": [
+            {
+              "event": "ALT-hyd02-0171-051f",
+              "sop": "SOP-COOL-14",
+              "forecast_ts1": 65.3,
+              "after": "제외 — 다시 넣으면"
+            }
+          ],
+          "changed": 1
+        },
+        "selected": null,
+        "checker": {
+          "contract": "통과",
+          "stage": "남은 것 0"
+        }
+      },
+      "추출_통합반_내입력다_나-가": {
+        "decisions": {
+          "채택": 331,
+          "제외": 223,
+          "보류": 39
+        },
+        "rule_links": {
+          "R1": "일치",
+          "R2": "일치",
+          "R3": "일치",
+          "rule:trip-reset-only": "원문 없음",
+          "rule:ts1-hard": "일치"
+        },
+        "judge_changes": {
+          "cases": [],
+          "changed": 0
+        },
+        "selected": null,
+        "checker": {
+          "contract": "통과",
+          "stage": "남은 것 0"
+        }
+      },
+      "추출_통합반_내입력다_다-가": {
+        "decisions": {
+          "채택": 327,
+          "제외": 223,
+          "보류": 43
+        },
+        "rule_links": {
+          "R1": "일치",
+          "R2": "일치",
+          "R3": "일치",
+          "rule:trip-reset-only": "원문 없음",
+          "rule:ts1-hard": "보류"
+        },
+        "judge_changes": {
+          "cases": [],
+          "changed": 0
+        },
+        "selected": null,
+        "checker": {
+          "contract": "통과",
+          "stage": "남은 것 0"
+        }
+      },
+      "추출_실전반_가-가": {
+        "decisions": {
+          "채택": 331,
+          "제외": 223,
+          "보류": 39
+        },
+        "rule_links": {
+          "R1": "일치",
+          "R2": "일치",
+          "R3": "일치",
+          "R5": "원문 없음",
+          "R4": "일치"
+        },
+        "judge_changes": {
+          "cases": [
+            {
+              "event": "ALT-hyd02-0171-051f",
+              "sop": "SOP-COOL-14",
+              "forecast_ts1": 65.3,
+              "after": "제외 그대로"
+            }
+          ],
+          "changed": 0
+        },
+        "selected": {
+          "preparation": 4,
+          "prohibitions": 3,
+          "completion": 1,
+          "remaining_questions": 9
+        },
+        "checker": {
+          "contract": "통과",
+          "stage": "남은 것 0"
+        }
+      },
+      "추출_실전반_가-나": {
+        "decisions": {
+          "채택": 370,
+          "제외": 223
+        },
+        "rule_links": {
+          "R1": "일치",
+          "R2": "일치",
+          "R3": "일치",
+          "R5": "원문 없음",
+          "R4": "일치"
+        },
+        "judge_changes": {
+          "cases": [
+            {
+              "event": "ALT-hyd02-0171-051f",
+              "sop": "SOP-COOL-14",
+              "forecast_ts1": 65.3,
+              "after": "제외 그대로"
+            }
+          ],
+          "changed": 0
+        },
+        "selected": {
+          "preparation": 6,
+          "prohibitions": 4,
+          "completion": 2,
+          "remaining_questions": 1
+        },
+        "checker": {
+          "contract": "통과",
+          "stage": "남은 것 0"
+        }
+      },
+      "추출_실전반_나-가": {
+        "decisions": {
+          "채택": 331,
+          "제외": 223,
+          "보류": 39
+        },
+        "rule_links": {
+          "R1": "일치",
+          "R2": "일치",
+          "R3": "일치",
+          "R5": "원문 없음",
+          "R4": "불일치"
+        },
+        "judge_changes": {
+          "cases": [
+            {
+              "event": "ALT-hyd02-0171-051f",
+              "sop": "SOP-COOL-14",
+              "forecast_ts1": 65.3,
+              "after": "유지 — 비교에 들어옴"
+            }
+          ],
+          "changed": 1
+        },
+        "selected": {
+          "preparation": 4,
+          "prohibitions": 2,
+          "completion": 1,
+          "remaining_questions": 9
+        },
+        "checker": {
+          "contract": "통과",
+          "stage": "남은 것 0"
+        }
+      },
+      "추출_실전반_나-나": {
+        "decisions": {
+          "채택": 370,
+          "제외": 223
+        },
+        "rule_links": {
+          "R1": "일치",
+          "R2": "일치",
+          "R3": "일치",
+          "R5": "원문 없음",
+          "R4": "불일치"
+        },
+        "judge_changes": {
+          "cases": [
+            {
+              "event": "ALT-hyd02-0171-051f",
+              "sop": "SOP-COOL-14",
+              "forecast_ts1": 65.3,
+              "after": "유지 — 비교에 들어옴"
+            }
+          ],
+          "changed": 1
+        },
+        "selected": {
+          "preparation": 6,
+          "prohibitions": 3,
+          "completion": 2,
+          "remaining_questions": 1
+        },
+        "checker": {
+          "contract": "통과",
+          "stage": "남은 것 0"
+        }
+      },
+      "추출_실전반_다-가": {
+        "decisions": {
+          "채택": 327,
+          "제외": 223,
+          "보류": 43
+        },
+        "rule_links": {
+          "R1": "일치",
+          "R2": "일치",
+          "R3": "일치",
+          "R5": "원문 없음",
+          "R4": "보류"
+        },
+        "judge_changes": {
+          "cases": [
+            {
+              "event": "ALT-hyd02-0171-051f",
+              "sop": "SOP-COOL-14",
+              "forecast_ts1": 65.3,
+              "after": "제외 그대로(근거 확인 중)"
+            }
+          ],
+          "changed": 0
+        },
+        "selected": {
+          "preparation": 4,
+          "prohibitions": 2,
+          "completion": 1,
+          "remaining_questions": 11
+        },
+        "checker": {
+          "contract": "통과",
+          "stage": "남은 것 0"
+        }
+      },
+      "추출_실전반_다-나": {
+        "decisions": {
+          "채택": 366,
+          "제외": 223,
+          "보류": 4
+        },
+        "rule_links": {
+          "R1": "일치",
+          "R2": "일치",
+          "R3": "일치",
+          "R5": "원문 없음",
+          "R4": "보류"
+        },
+        "judge_changes": {
+          "cases": [
+            {
+              "event": "ALT-hyd02-0171-051f",
+              "sop": "SOP-COOL-14",
+              "forecast_ts1": 65.3,
+              "after": "제외 그대로(근거 확인 중)"
+            }
+          ],
+          "changed": 0
+        },
+        "selected": {
+          "preparation": 6,
+          "prohibitions": 3,
+          "completion": 2,
+          "remaining_questions": 3
+        },
+        "checker": {
+          "contract": "통과",
+          "stage": "남은 것 0"
+        }
+      },
+      "추출_실전반_내입력나_가-가": {
+        "decisions": {
+          "채택": 331,
+          "제외": 223,
+          "보류": 39
+        },
+        "rule_links": {
+          "R1": "일치",
+          "R2": "일치",
+          "R3": "일치",
+          "R5": "원문 없음",
+          "R4": "불일치"
+        },
+        "judge_changes": {
+          "cases": [
+            {
+              "event": "ALT-hyd02-0171-051f",
+              "sop": "SOP-COOL-14",
+              "forecast_ts1": 65.3,
+              "after": "제외 — R4를 더하면"
+            }
+          ],
+          "changed": 1
+        },
+        "selected": {
+          "preparation": 4,
+          "prohibitions": 3,
+          "completion": 1,
+          "remaining_questions": 9
+        },
+        "checker": {
+          "contract": "통과",
+          "stage": "남은 것 0"
+        }
+      },
+      "추출_실전반_내입력나_나-가": {
+        "decisions": {
+          "채택": 331,
+          "제외": 223,
+          "보류": 39
+        },
+        "rule_links": {
+          "R1": "일치",
+          "R2": "일치",
+          "R3": "일치",
+          "R5": "원문 없음",
+          "R4": "일치"
+        },
+        "judge_changes": {
+          "cases": [
+            {
+              "event": "ALT-hyd02-0171-051f",
+              "sop": "SOP-COOL-14",
+              "forecast_ts1": 65.3,
+              "after": "유지 그대로"
+            }
+          ],
+          "changed": 0
+        },
+        "selected": {
+          "preparation": 4,
+          "prohibitions": 2,
+          "completion": 1,
+          "remaining_questions": 9
+        },
+        "checker": {
+          "contract": "통과",
+          "stage": "남은 것 0"
+        }
+      },
+      "추출_실전반_내입력나_다-가": {
+        "decisions": {
+          "채택": 327,
+          "제외": 223,
+          "보류": 43
+        },
+        "rule_links": {
+          "R1": "일치",
+          "R2": "일치",
+          "R3": "일치",
+          "R5": "원문 없음",
+          "R4": "보류"
+        },
+        "judge_changes": {
+          "cases": [
+            {
+              "event": "ALT-hyd02-0171-051f",
+              "sop": "SOP-COOL-14",
+              "forecast_ts1": 65.3,
+              "after": "유지 그대로(근거 확인 중)"
+            }
+          ],
+          "changed": 0
+        },
+        "selected": {
+          "preparation": 4,
+          "prohibitions": 2,
+          "completion": 1,
+          "remaining_questions": 11
+        },
+        "checker": {
+          "contract": "통과",
+          "stage": "남은 것 0"
+        }
+      },
+      "추출_실전반_내입력다_가-가": {
+        "decisions": {
+          "채택": 331,
+          "제외": 223,
+          "보류": 39
+        },
+        "rule_links": {
+          "R1": "일치",
+          "R2": "일치",
+          "R3": "일치",
+          "rule:trip-reset-only": "원문 없음",
+          "rule:ts1-hard": "일치"
+        },
+        "judge_changes": {
+          "cases": [
+            {
+              "event": "ALT-hyd02-0171-051f",
+              "sop": "SOP-COOL-14",
+              "forecast_ts1": 65.3,
+              "after": "제외 — 다시 넣으면"
+            }
+          ],
+          "changed": 1
+        },
+        "selected": {
+          "preparation": 4,
+          "prohibitions": 3,
+          "completion": 1,
+          "remaining_questions": 9
+        },
+        "checker": {
+          "contract": "통과",
+          "stage": "남은 것 0"
+        }
+      },
+      "추출_실전반_내입력다_나-가": {
+        "decisions": {
+          "채택": 331,
+          "제외": 223,
+          "보류": 39
+        },
+        "rule_links": {
+          "R1": "일치",
+          "R2": "일치",
+          "R3": "일치",
+          "rule:trip-reset-only": "원문 없음",
+          "rule:ts1-hard": "일치"
+        },
+        "judge_changes": {
+          "cases": [],
+          "changed": 0
+        },
+        "selected": {
+          "preparation": 4,
+          "prohibitions": 2,
+          "completion": 1,
+          "remaining_questions": 9
+        },
+        "checker": {
+          "contract": "통과",
+          "stage": "남은 것 0"
+        }
+      },
+      "추출_실전반_내입력다_다-가": {
+        "decisions": {
+          "채택": 327,
+          "제외": 223,
+          "보류": 43
+        },
+        "rule_links": {
+          "R1": "일치",
+          "R2": "일치",
+          "R3": "일치",
+          "rule:trip-reset-only": "원문 없음",
+          "rule:ts1-hard": "보류"
+        },
+        "judge_changes": {
+          "cases": [],
+          "changed": 0
+        },
+        "selected": {
+          "preparation": 4,
+          "prohibitions": 2,
+          "completion": 1,
+          "remaining_questions": 11
+        },
+        "checker": {
+          "contract": "통과",
+          "stage": "남은 것 0"
+        }
+      }
+    },
+    "model_candidates": {}
+  },
+  "instructor_path": {
+    "HM-8_1.0판_매뉴얼.md": {
+      "located": 91,
+      "unlocated": 1,
+      "oracle": 91
+    },
+    "HM-8_매뉴얼.md": {
+      "located": 105,
+      "unlocated": 1,
+      "oracle": 105
+    },
+    "HM-8_1.2판_개정요청.md": {
+      "located": 106,
+      "unlocated": 1,
+      "oracle": 106
+    },
+    "HM-9장_스캔본.txt": {
+      "located": 17,
+      "unlocated": 1,
+      "oracle": 17
+    },
+    "SR-04_설비안전규정_발췌.txt": {
+      "located": 7,
+      "unlocated": 1,
+      "oracle": 7
+    },
+    "PM-02_정기점검표.md": {
+      "located": 104,
+      "unlocated": 1,
+      "oracle": 104
+    },
+    "PR-07_예비품기준.md": {
+      "located": 52,
+      "unlocated": 1,
+      "oracle": 52
+    },
+    "HI-01_보충매뉴얼.md": {
+      "located": 28,
+      "unlocated": 1,
+      "oracle": 28
+    },
+    "OEM-HPP45A_정비지침_영한.md": {
+      "located": 73,
+      "unlocated": 1,
+      "oracle": 73
+    },
+    "chunks": 32
+  },
+  "graph": {
+    "통합반 지점7 가": {
+      "p7": "가",
+      "added_knowledge": 71,
+      "counts": {
+        "설비 모델 · 조치 기준 적재 뒤": [
+          247,
+          428
+        ],
+        "첫 적재 뒤": [
+          554,
+          942
+        ],
+        "같은 적재 다시": [
+          554,
+          942
+        ],
+        "다른 문서 추가 뒤": [
+          637,
+          1076
+        ]
+      },
+      "knowledge": 331,
+      "export": {
+        "nodes": 637,
+        "rels": 1076,
+        "labels": [
+          "Asset",
+          "Cause",
+          "Component",
+          "Document",
+          "FailureMode",
+          "Knowledge",
+          "Part",
+          "Quantity",
+          "Revision",
+          "Rule",
+          "Section",
+          "Sensor",
+          "Skill",
+          "Step"
+        ],
+        "remaining_questions": 3,
+        "evidence_windows": [
+          "1 분",
+          "15 분",
+          "2 분",
+          "30 분",
+          "30 초"
+        ]
+      },
+      "checker_rc": 0,
+      "checker_tail": [
+        "",
+        "구조상 빠진 단계는 없습니다. 의미와 질문별 답은 원자료와 따로 대조합니다."
+      ],
+      "q2": {
+        "R1": [
+          "일치"
+        ],
+        "R2": [
+          "일치"
+        ],
+        "R3": [
+          "일치"
+        ],
+        "R4": [
+          "불일치"
+        ],
+        "R5": [
+          "None"
+        ]
+      },
+      "q3": [
+        [
+          "sensor",
+          "HYD-02:CE",
+          "%",
+          "시계열(관측값)"
+        ],
+        [
+          "plan",
+          "PM-02@2.0:PM-02-R01",
+          null,
+          "MES 생산 계획"
+        ]
+      ],
+      "pm24_in_preparation": true,
+      "oem_rows": 4,
+      "container_removed": true
+    },
+    "통합반 지점7 나": {
+      "p7": "나",
+      "added_knowledge": 71,
+      "counts": {
+        "설비 모델 · 조치 기준 적재 뒤": [
+          247,
+          428
+        ],
+        "첫 적재 뒤": [
+          554,
+          940
+        ],
+        "같은 적재 다시": [
+          554,
+          940
+        ],
+        "다른 문서 추가 뒤": [
+          637,
+          1074
+        ]
+      },
+      "knowledge": 331,
+      "export": {
+        "nodes": 637,
+        "rels": 1074,
+        "labels": [
+          "Asset",
+          "Cause",
+          "Component",
+          "Document",
+          "FailureMode",
+          "Knowledge",
+          "Part",
+          "Quantity",
+          "Revision",
+          "Rule",
+          "Section",
+          "Sensor",
+          "Skill",
+          "Step"
+        ],
+        "remaining_questions": 3,
+        "evidence_windows": [
+          "1 분",
+          "15 분",
+          "2 분",
+          "30 분",
+          "30 초"
+        ]
+      },
+      "checker_rc": 0,
+      "checker_tail": [
+        "",
+        "구조상 빠진 단계는 없습니다. 의미와 질문별 답은 원자료와 따로 대조합니다."
+      ],
+      "q2": {
+        "R1": [
+          "일치"
+        ],
+        "R2": [
+          "일치"
+        ],
+        "R3": [
+          "일치"
+        ],
+        "R4": [
+          "불일치"
+        ],
+        "R5": [
+          "None"
+        ]
+      },
+      "q3": [
+        [
+          "sensor",
+          "HYD-02:CE",
+          "%",
+          "시계열(관측값)"
+        ]
+      ],
+      "pm24_in_preparation": false,
+      "oem_rows": 4,
+      "container_removed": true
+    },
+    "실전반 지점7 가": {
+      "p7": "가",
+      "counts": {
+        "설비 모델 · 조치 기준 적재 뒤": [
+          253,
+          449
+        ],
+        "첫 적재 뒤": [
+          643,
+          1097
+        ],
+        "같은 적재 다시": [
+          643,
+          1097
+        ]
+      },
+      "knowledge": 331,
+      "export": {
+        "nodes": 643,
+        "rels": 1097,
+        "labels": [
+          "Asset",
+          "Cause",
+          "Component",
+          "Document",
+          "FailureMode",
+          "Knowledge",
+          "Part",
+          "Quantity",
+          "Revision",
+          "Rule",
+          "Section",
+          "Sensor",
+          "Skill",
+          "Step",
+          "Supplier"
+        ],
+        "remaining_questions": 10,
+        "evidence_windows": [
+          "1 분",
+          "15 분",
+          "2 분",
+          "30 분",
+          "30 초"
+        ]
+      },
+      "checker_rc": 0,
+      "checker_tail": [
+        "",
+        "구조상 빠진 단계는 없습니다. 의미와 질문별 답은 원자료와 따로 대조합니다."
+      ],
+      "q2": {
+        "R1": [
+          "일치"
+        ],
+        "R2": [
+          "일치"
+        ],
+        "R3": [
+          "일치"
+        ],
+        "R4": [
+          "불일치"
+        ],
+        "R5": [
+          "None"
+        ]
+      },
+      "q3": [
+        [
+          "sensor",
+          "HYD-02:CE",
+          "%",
+          "시계열(관측값)"
+        ],
+        [
+          "plan",
+          "PM-02@2.0:PM-02-R01",
+          null,
+          "MES 생산 계획"
+        ]
+      ],
+      "pm24_in_preparation": true,
+      "oem_rows": 4,
+      "container_removed": true
+    },
+    "실전반 지점7 나": {
+      "p7": "나",
+      "counts": {
+        "설비 모델 · 조치 기준 적재 뒤": [
+          253,
+          449
+        ],
+        "첫 적재 뒤": [
+          643,
+          1095
+        ],
+        "같은 적재 다시": [
+          643,
+          1095
+        ]
+      },
+      "knowledge": 331,
+      "export": {
+        "nodes": 643,
+        "rels": 1095,
+        "labels": [
+          "Asset",
+          "Cause",
+          "Component",
+          "Document",
+          "FailureMode",
+          "Knowledge",
+          "Part",
+          "Quantity",
+          "Revision",
+          "Rule",
+          "Section",
+          "Sensor",
+          "Skill",
+          "Step",
+          "Supplier"
+        ],
+        "remaining_questions": 10,
+        "evidence_windows": [
+          "1 분",
+          "15 분",
+          "2 분",
+          "30 분",
+          "30 초"
+        ]
+      },
+      "checker_rc": 0,
+      "checker_tail": [
+        "",
+        "구조상 빠진 단계는 없습니다. 의미와 질문별 답은 원자료와 따로 대조합니다."
+      ],
+      "q2": {
+        "R1": [
+          "일치"
+        ],
+        "R2": [
+          "일치"
+        ],
+        "R3": [
+          "일치"
+        ],
+        "R4": [
+          "불일치"
+        ],
+        "R5": [
+          "None"
+        ]
+      },
+      "q3": [
+        [
+          "sensor",
+          "HYD-02:CE",
+          "%",
+          "시계열(관측값)"
+        ]
+      ],
+      "pm24_in_preparation": false,
+      "oem_rows": 4,
+      "container_removed": true
+    }
+  },
+  "toy_criteria_selftest": {
+    "integrated-04-extract": {
+      "clean_pass": true,
+      "broken": {
+        "①": false,
+        "②": false,
+        "③": false,
+        "④": false
+      }
+    },
+    "integrated-04-graph": {
+      "clean_pass": true,
+      "broken": {
+        "①": false,
+        "②": false,
+        "③": false,
+        "④": false
+      }
+    },
+    "practical-03-extract": {
+      "clean_pass": true,
+      "broken": {
+        "①": false,
+        "②": false,
+        "③": false,
+        "④": false
+      }
+    },
+    "practical-03-card": {
+      "clean_pass": true,
+      "broken": {
+        "①": false,
+        "②": false,
+        "③": false,
+        "④": false
+      }
+    }
+  },
+  "failures": []
+}

@@ -1,0 +1,24 @@
+rule_id,action,condition_index,logic,input,operator,value,unit,boundary_included,result,penalty_manwon,reason,source_section
+R1,SOP-COOL-11,1,AND,skill_kind,==,control,,해당없음,EXCLUDE,,원격 조치는 PLC 운전 모드가 REMOTE_AUTO일 때만 한다,HM-8.5; HM-8.8
+R1,SOP-COOL-11,2,AND,plc_mode,!=,REMOTE_AUTO,,해당없음,EXCLUDE,,원격 조치는 PLC 운전 모드가 REMOTE_AUTO일 때만 한다,HM-8.5; HM-8.8
+R1,SOP-COOL-12,1,AND,skill_kind,==,control,,해당없음,EXCLUDE,,원격 조치는 PLC 운전 모드가 REMOTE_AUTO일 때만 한다,HM-8.5; HM-8.8
+R1,SOP-COOL-12,2,AND,plc_mode,!=,REMOTE_AUTO,,해당없음,EXCLUDE,,원격 조치는 PLC 운전 모드가 REMOTE_AUTO일 때만 한다,HM-8.5; HM-8.8
+R1,SOP-COOL-13,1,AND,skill_kind,==,control,,해당없음,EXCLUDE,,원격 조치는 PLC 운전 모드가 REMOTE_AUTO일 때만 한다,HM-8.5; HM-8.8
+R1,SOP-COOL-13,2,AND,plc_mode,!=,REMOTE_AUTO,,해당없음,EXCLUDE,,원격 조치는 PLC 운전 모드가 REMOTE_AUTO일 때만 한다,HM-8.5; HM-8.8
+R2,SOP-COOL-11,1,AND,fan100_hours,>,24,h,아니오,PENALTY,20,팬 100 % 연속 운전이 24시간을 넘었으면 팬 수명 손실로 감점해 비교한다,HM-8.8
+R2,SOP-COOL-12,1,AND,fan100_hours,>,24,h,아니오,PENALTY,20,팬 100 % 연속 운전이 24시간을 넘었으면 팬 수명 손실로 감점해 비교한다,HM-8.8
+R3,SOP-COOL-11,1,AND,forecast_ts1,>=,55,℃,예,WARN,,조치 후 예측 유온이 55 ℃ 이상이면 경보 해제에 실패할 수 있어 다른 조치와 비교한다,HM-8.6; HM-8.5 SOP-COOL-11 단계 3
+R3,SOP-COOL-12,1,AND,forecast_ts1,>=,55,℃,예,WARN,,조치 후 예측 유온이 55 ℃ 이상이면 경보 해제에 실패할 수 있어 다른 조치와 비교한다,HM-8.6; HM-8.5 SOP-COOL-12 단계 4
+R3,SOP-COOL-13,1,AND,forecast_ts1,>=,55,℃,예,WARN,,조치 후 예측 유온이 55 ℃ 이상이면 경보 해제에 실패할 수 있어 다른 조치와 비교한다,HM-8.6; HM-8.5 SOP-COOL-13 단계 3
+R4,SOP-COOL-11,1,AND,forecast_ts1,>=,65,℃,예,EXCLUDE,,예측 유온이 인터록 한계 이상이면 제외 — 옛 판단 시스템이 대상 빈칸(모든 후보)으로 건 그대로,판단 시스템 결정표 rule:ts1-hard; 출처 ks:sr-04(설비안전규정 SR-04) 원문 미확인
+R4,SOP-COOL-12,1,AND,forecast_ts1,>=,65,℃,예,EXCLUDE,,예측 유온이 인터록 한계 이상이면 제외 — 옛 판단 시스템이 대상 빈칸(모든 후보)으로 건 그대로,판단 시스템 결정표 rule:ts1-hard; 출처 ks:sr-04(설비안전규정 SR-04) 원문 미확인
+R4,SOP-COOL-13,1,AND,forecast_ts1,>=,65,℃,예,EXCLUDE,,예측 유온이 인터록 한계 이상이면 제외 — 옛 판단 시스템이 대상 빈칸(모든 후보)으로 건 그대로,판단 시스템 결정표 rule:ts1-hard; 출처 ks:sr-04(설비안전규정 SR-04) 원문 미확인
+R4,SOP-COOL-14,1,AND,forecast_ts1,>=,65,℃,예,EXCLUDE,,예측 유온이 인터록 한계 이상이면 제외 — 옛 판단 시스템이 대상 빈칸(모든 후보)으로 건 그대로 작업지시 후보에도 건다. 옛 설명 문장은 제어 후보만 말하므로 작업지시 후보에는 맞지 않는다,판단 시스템 결정표 rule:ts1-hard; 출처 ks:sr-04(설비안전규정 SR-04) 원문 미확인
+R5,SOP-COOL-11,1,AND,plc_state,==,TRIP,,해당없음,EXCLUDE,,트립 중에는 PLC가 리셋 외 제어 명령을 거부한다 — 옛 판단 시스템이 대상 빈칸(모든 후보)으로 건 그대로,판단 시스템 결정표 rule:trip-reset-only; 출처 HM-9.4 원문 미확인(1.0판 · 1.1판에 없음)
+R5,SOP-COOL-11,2,AND,skill_code,has_other_than,RESET,,해당없음,EXCLUDE,,트립 중에는 PLC가 리셋 외 제어 명령을 거부한다 — 옛 판단 시스템이 대상 빈칸(모든 후보)으로 건 그대로,판단 시스템 결정표 rule:trip-reset-only; 출처 HM-9.4 원문 미확인(1.0판 · 1.1판에 없음)
+R5,SOP-COOL-12,1,AND,plc_state,==,TRIP,,해당없음,EXCLUDE,,트립 중에는 PLC가 리셋 외 제어 명령을 거부한다 — 옛 판단 시스템이 대상 빈칸(모든 후보)으로 건 그대로,판단 시스템 결정표 rule:trip-reset-only; 출처 HM-9.4 원문 미확인(1.0판 · 1.1판에 없음)
+R5,SOP-COOL-12,2,AND,skill_code,has_other_than,RESET,,해당없음,EXCLUDE,,트립 중에는 PLC가 리셋 외 제어 명령을 거부한다 — 옛 판단 시스템이 대상 빈칸(모든 후보)으로 건 그대로,판단 시스템 결정표 rule:trip-reset-only; 출처 HM-9.4 원문 미확인(1.0판 · 1.1판에 없음)
+R5,SOP-COOL-13,1,AND,plc_state,==,TRIP,,해당없음,EXCLUDE,,트립 중에는 PLC가 리셋 외 제어 명령을 거부한다 — 옛 판단 시스템이 대상 빈칸(모든 후보)으로 건 그대로,판단 시스템 결정표 rule:trip-reset-only; 출처 HM-9.4 원문 미확인(1.0판 · 1.1판에 없음)
+R5,SOP-COOL-13,2,AND,skill_code,has_other_than,RESET,,해당없음,EXCLUDE,,트립 중에는 PLC가 리셋 외 제어 명령을 거부한다 — 옛 판단 시스템이 대상 빈칸(모든 후보)으로 건 그대로,판단 시스템 결정표 rule:trip-reset-only; 출처 HM-9.4 원문 미확인(1.0판 · 1.1판에 없음)
+R5,SOP-COOL-14,1,AND,plc_state,==,TRIP,,해당없음,EXCLUDE,,트립 중에는 PLC가 리셋 외 제어 명령을 거부한다 — 옛 판단 시스템이 대상 빈칸(모든 후보)으로 건 그대로 작업지시 후보에도 건다. 작업지시는 PLC 제어 명령이 아니어서 이 이유와 맞지 않는다,판단 시스템 결정표 rule:trip-reset-only; 출처 HM-9.4 원문 미확인(1.0판 · 1.1판에 없음)
+R5,SOP-COOL-14,2,AND,skill_code,has_other_than,RESET,,해당없음,EXCLUDE,,트립 중에는 PLC가 리셋 외 제어 명령을 거부한다 — 옛 판단 시스템이 대상 빈칸(모든 후보)으로 건 그대로 작업지시 후보에도 건다. 작업지시는 PLC 제어 명령이 아니어서 이 이유와 맞지 않는다,판단 시스템 결정표 rule:trip-reset-only; 출처 HM-9.4 원문 미확인(1.0판 · 1.1판에 없음)

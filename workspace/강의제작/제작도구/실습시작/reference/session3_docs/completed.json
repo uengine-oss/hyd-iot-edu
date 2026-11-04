@@ -1,0 +1,51 @@
+{
+ "추출_통합반": {
+  "경로": "통합반/실습/04회차/완성본/04일차_실습2_문서지식추출_학생용완성본.zip",
+  "파일수": 47,
+  "sha256": "53854ed1b195a01b8a4a759e7c4564168ad651934946d7db2c530be1fe59e175",
+  "명령": "python check.py",
+  "후보 출처": "문장 규칙(임시판 — 강사 추출 실행 뒤 --model-run으로 다시)",
+  "검사기 끝줄": "의미와 질문별 답은 원자료와 따로 대조합니다.",
+  "종료 코드": 1
+ },
+ "그래프_통합반": {
+  "명령": "python lab_db.py · python lab_cypher.py model · python lab_cypher.py run 결과/load.cypher · python lab_cypher.py run 결과/load_more.cypher · python lab_cypher.py count · python lab_cypher.py export 결과/지식_내보내기.json · python check.py",
+  "실행 확인": "확인됨(새 폴더 · 실제 Neo4j)",
+  "출력 끝줄": [
+   "python lab_db.py → Username: neo4j / Password: 비워 둠",
+   "python lab_cypher.py model → 관계별: ACTS_ON 27, ADDRESSES 4, CHECKS 45, HAS_COMPONENT 68, HAS_STEP 25, MITIGATED_BY 3, MONITORED_BY 94, OBSERVES 94, OUTPUTS 16, REMEDIED_BY 3, USES_PART 49",
+   "python lab_cypher.py run 결과/load.cypher → 변경: {'contains_updates': True, 'properties_set': 2, 'relationships_created': 1}",
+   "python lab_cypher.py run 결과/load_more.cypher → 변경: {'contains_updates': True, 'relationships_created': 1}",
+   "python lab_cypher.py count → 관계별: ACTS_ON 27, ADDRESSES 4, APPLIES_TO 69, CHECKS 45, CONDITION_OF 116, DESCRIBES 25, EVIDENCE_FOR 23, HAS_COMPONENT 68, HAS_REVISION 10, HAS_SECTION 41, HAS_STEP 25, MITIGATED_BY 3, MONITORED_BY 94, OBSERVES 94, OUTPUTS 16, REFERS_TO 25, REMEDIED_BY 3, REPLACES 1, STATED_IN 331, SUPPORTS 7, USES_PART 49",
+   "python lab_cypher.py export 결과/지식_내보내기.json → 결과/지식_내보내기.json: 노드 637개 · 관계 1076개 · 남은 질문 3개를 내보냈습니다.",
+   "python check.py → 구조상 빠진 단계는 없습니다. 의미와 질문별 답은 원자료와 따로 대조합니다."
+  ],
+  "경로": "통합반/실습/04회차/완성본/04일차_실습3_그래프반영과검증_학생용완성본.zip",
+  "파일수": 44,
+  "sha256": "8c42959a27547c21ae3b778f0890345059cd21d5e560bc1d3344933b4b3cd536"
+ },
+ "추출_실전반": {
+  "경로": "실전반/실습/03회차/완성본/03일차_실습4_지식추출_학생용완성본.zip",
+  "파일수": 48,
+  "sha256": "fdc1c91c2625f1acd4314556885ad9acc2adcd9770781a026d87de7d03e6fbd7",
+  "명령": "python check.py",
+  "후보 출처": "문장 규칙(임시판 — 강사 추출 실행 뒤 --model-run으로 다시)",
+  "검사기 끝줄": "의미와 질문별 답은 원자료와 따로 대조합니다.",
+  "종료 코드": 1
+ },
+ "그래프_실전반": {
+  "명령": "python lab_db.py · python lab_cypher.py model · python lab_cypher.py run 결과/load.cypher · python lab_cypher.py count · python lab_cypher.py export 결과/지식_내보내기.json · python check.py",
+  "실행 확인": "확인됨(새 폴더 · 실제 Neo4j)",
+  "출력 끝줄": [
+   "python lab_db.py → Username: neo4j / Password: 비워 둠",
+   "python lab_cypher.py model → 관계별: ACTS_ON 27, ADDRESSES 4, CHECKS 45, HAS_COMPONENT 68, HAS_STEP 25, MITIGATED_BY 3, MONITORED_BY 94, OBSERVES 94, OUTPUTS 16, REMEDIED_BY 3, SUPPLIES 21, USES_PART 49",
+   "python lab_cypher.py run 결과/load.cypher → 변경: {'contains_updates': True, 'properties_set': 2, 'relationships_created': 1}",
+   "python lab_cypher.py count → 관계별: ACTS_ON 27, ADDRESSES 4, APPLIES_TO 69, CHECKS 45, CONDITION_OF 116, DESCRIBES 25, EVIDENCE_FOR 23, HAS_COMPONENT 68, HAS_REVISION 10, HAS_SECTION 41, HAS_STEP 25, MITIGATED_BY 3, MONITORED_BY 94, OBSERVES 94, OUTPUTS 16, REFERS_TO 25, REMEDIED_BY 3, REPLACES 1, STATED_IN 331, SUPPLIES 21, SUPPORTS 7, USES_PART 49",
+   "python lab_cypher.py export 결과/지식_내보내기.json → 결과/지식_내보내기.json: 노드 643개 · 관계 1097개 · 남은 질문 10개를 내보냈습니다.",
+   "python check.py → 구조상 빠진 단계는 없습니다. 의미와 질문별 답은 원자료와 따로 대조합니다."
+  ],
+  "경로": "실전반/실습/03회차/완성본/03일차_실습5_그래프반영_학생용완성본.zip",
+  "파일수": 49,
+  "sha256": "93a4953093b8bcb5275ef7339ad370f49f4860607b66b85add8f75cd66451541"
+ }
+}

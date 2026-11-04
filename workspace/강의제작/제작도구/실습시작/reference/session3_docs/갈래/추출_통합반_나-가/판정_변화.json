@@ -1,0 +1,11 @@
+{
+  "cases": [
+    {
+      "event": "ALT-hyd02-0171-051f",
+      "sop": "SOP-COOL-14",
+      "forecast_ts1": 65.3,
+      "after": "유지 — 비교에 들어옴"
+    }
+  ],
+  "changed": 1
+}

@@ -938,34 +938,7 @@ def losses(sop, period, remain, lot, ts1):
 
 
 # ───────────── 문서 ─────────────
-_HM8 = {r[2]: r for r in DD.REGISTER if r[0] == 'HM-8'}     # 상태 → (문서, 판, 상태, 시행일, 파일, 제목, 비고) — 문서 목록 한 곳
-DOC_NOTICE = '가상 사례: 공개된 현업 문제 유형을 따라 만든 자료이며 실제 회사·제조사·설비의 기록이 아니다.'   # 문서(매뉴얼 · 이력) 사본의 첫머리 표시
-# main 원문 사본의 머리 — 원문 제목 아래에 가상 사례 표시와 출처(포털 수업 문서 · 문서 목록의 판)를 덧붙인 두 문단. 본문은 꼬리표 문장만 뺀 원문 그대로.
-HM8_TAGS = [('# 유압 파워유닛 쿨러 팬 정비 매뉴얼 (HM-8, 교육용 예시)\n',
-             f'# 유압 파워유닛 쿨러 팬 정비 매뉴얼 (HM-8)\n\n{DOC_NOTICE}\n\n출처: 포털 수업 문서 HM-8 원문의 사본이다. 원문 머리에 판 · 시행일이 없어 회사 문서 목록의 값을 적는다 — '
-             f'판 {_HM8["현행"][1]}, 시행 {_HM8["현행"][3]}, {_HM8["현행"][2]}. {_HM8["폐기"][1]}판(시행 {_HM8["폐기"][3]})을 대체한다.\n'),
-            ('아래 값은 교육용 가상 설비의 축소 기준이다(일반 산업 설비의 경보는 보통 80 ℃ 안팎이다). ', '')]
-HI01_TAGS = [('판본: 1.0 / 수업용 가상 HYD 유압 파워팩 / 2026-10-27',
-              f'{DOC_NOTICE}\n\n출처: 포털 수업 문서 HI-01 원문의 사본이다.\n\n판본: 1.0 / HYD 유압 파워팩 / 2026-10-27')]
-
-
-OLD_DOC_TAGS = [('# 유압 파워유닛 쿨러 팬 정비 매뉴얼 (HM-8, 교육용 예시)\n', '# 유압 파워유닛 쿨러 팬 정비 매뉴얼 (HM-8)\n'),
-                (DD.EDU, DOC_NOTICE)]
-# 1.0판 매뉴얼과 작업지시 이력은 data_documents.py가 문서 지식 묶음과 함께 쓰는 한 벌이다. 그 묶음의 검토본 해시가 원래 글자에 묶여 있어,
-# 이 묶음의 사본에서만 꼬리표를 바꾼다(그 묶음을 다시 만들며 data_documents.py에서 바꾸면 이 표는 「뺄 문장이 없습니다」로 멈춘다 — 그때 지운다).
-
-
-def tagged(name, text, tags):
-    for old, new in tags:
-        if old not in text:
-            raise RuntimeError(f'{name}: 바꿀 문장이 없습니다 — 원본이 바뀌었는지 보고 표를 고칩니다: {old!r}')
-        text = text.replace(old, new)
-    return text
-
-
-def sample(name, tags):
-    """main 원문 사본. 「교육용 · 수업용」 꼬리표 문장만 빼고, 판 · 시행일이 없는 머리에는 문서 목록의 값을 적는다(main 원문 정리는 시스템 작업)."""
-    return tagged(name, (SYS/'it/portal/www/samples'/name).read_text(encoding='utf-8-sig'), tags)
+# 문서 사본(HM-8 1.1 · 1.0판 · HI-01)과 작업지시 이력은 data_documents.py 한 곳이 만든다 — 문서 지식 묶음(4회차)과 같은 바이트.
 
 
 def sop_register(hm8):
@@ -1393,12 +1366,12 @@ def build():
     cats = {c['id']: rec.categories(c) for c in rec.cases}
     chosen = pick_check_cases(rec, cats)
     tot = design_checks(rec, cats, chosen)
-    hm8 = sample('HM-8_cooler-fan-manual.md', HM8_TAGS)
-    work_orders = tagged('작업지시_이력.csv', DD.work_order_text()[0], OLD_DOC_TAGS[1:])
+    hm8 = DD.hm8_copy()
+    work_orders = DD.work_order_text()[0]
     files = {
         'HM-8_매뉴얼.md': hm8,
-        'HM-8_1.0판_매뉴얼.md': tagged('HM-8_1.0판_매뉴얼.md', DD.HM8_OLD, OLD_DOC_TAGS),
-        'HI-01_보충매뉴얼.md': sample('HI-01_shift-inspection-supplement.md', HI01_TAGS),
+        'HM-8_1.0판_매뉴얼.md': DD.HM8_OLD,
+        'HI-01_보충매뉴얼.md': DD.hi01_copy(),
         '작업기준.md': WORK_STANDARD,
         '판단시스템_결정표_내보내기.txt': decision_export(),
         '작업지시_이력.csv': work_orders,

@@ -1,0 +1,62 @@
+[
+  {
+    "item": "트립 뒤 복귀 조건(R5 출처 HM-9.4)",
+    "kind": "제공되지 않은 절",
+    "source": "자료/HM-9장_스캔본.txt 15줄",
+    "note": "9-7쪽 없음 — 원본 확인 요청"
+  },
+  {
+    "item": "HPP-45B(HYD-04) 정비 지침",
+    "kind": "제공되지 않은 문서",
+    "source": "자료/문서_목록.csv",
+    "note": "제조사에 요청 중 — 파일 없음"
+  },
+  {
+    "item": "Inspect the core before cleaning. Record blocked areas and bent or damaged fins.",
+    "kind": "보류",
+    "source": "OEM-HPP45A-MM C 7 107줄",
+    "note": "사내 기준이 정하지 않은 제조사 항목 — 세척 전 코어 막힘 · 휨 확인(HM-8 · PM-02에 없음) — 적용할지 HM-8 소유 부서(설비보전팀)에 묻는다"
+  },
+  {
+    "item": "If blocked areas or bent fins remain after cleaning, replace the core (part no. HI-CC-45A).",
+    "kind": "보류",
+    "source": "OEM-HPP45A-MM C 7 114줄",
+    "note": "사내 기준이 정하지 않은 제조사 항목 — 세척 뒤 막힘 · 휨이 남으면 코어 교체(HM-8 · PM-02에 없음) — 적용할지 HM-8 소유 부서(설비보전팀)에 묻는다"
+  },
+  {
+    "item": "If blocked areas or bent fins remain after cleaning, replace the core (part no.",
+    "kind": "보류",
+    "source": "OEM-HPP45A-MM C 7 114줄",
+    "note": "사내 기준이 정하지 않은 제조사 항목 — 세척 뒤 막힘 · 휨이 남으면 코어 교체(HM-8 · PM-02에 없음) — 적용할지 HM-8 소유 부서(설비보전팀)에 묻는다"
+  },
+  {
+    "item": "After cleaning or replacement, run the unit at working load for 30 minutes and record the fluid temperature at the cooler inlet and outlet. The difference must not be less than the value in the commissioning record.",
+    "kind": "보류",
+    "source": "OEM-HPP45A-MM C 7 116줄",
+    "note": "사내 기준이 정하지 않은 제조사 항목 — 부하 운전 뒤 쿨러 입구 · 출구 유온 차 확인(HM-8의 완료 기준은 CE 80 %) — 적용할지 HM-8 소유 부서(설비보전팀)에 묻는다"
+  },
+  {
+    "item": "After cleaning or replacement, run the unit at working load for 30 minutes and record the fluid temperature at the cooler inlet and outlet.",
+    "kind": "보류",
+    "source": "OEM-HPP45A-MM C 7 116줄",
+    "note": "사내 기준이 정하지 않은 제조사 항목 — 부하 운전 뒤 쿨러 입구 · 출구 유온 차 확인(HM-8의 완료 기준은 CE 80 %) — 적용할지 HM-8 소유 부서(설비보전팀)에 묻는다"
+  },
+  {
+    "item": "The difference must not be less than the value in the commissioning record.",
+    "kind": "보류",
+    "source": "OEM-HPP45A-MM C 7 116줄",
+    "note": "사내 기준이 정하지 않은 제조사 항목 — 부하 운전 뒤 쿨러 입구 · 출구 유온 차 확인(HM-8의 완료 기준은 CE 80 %) — 적용할지 HM-8 소유 부서(설비보전팀)에 묻는다"
+  },
+  {
+    "item": "Inspect the core before cleaning. Record blocked areas and bent or damaged fins.",
+    "kind": "보류",
+    "source": "OEM-HPP45A-MM C 7 107줄",
+    "note": "사내 기준이 정하지 않은 제조사 항목 — 세척 전 코어 막힘 · 휨 확인(HM-8 · PM-02에 없음) — 적용할지 HM-8 소유 부서(설비보전팀)에 묻는다 — 원문에 있는데 후보에 없어 검토자가 원문 문장으로 더함"
+  },
+  {
+    "item": "The difference must not be less than the value in the commissioning record.",
+    "kind": "보류",
+    "source": "OEM-HPP45A-MM C 7 116줄",
+    "note": "사내 기준이 정하지 않은 제조사 항목 — 부하 운전 뒤 쿨러 입구 · 출구 유온 차 확인(HM-8의 완료 기준은 CE 80 %) — 적용할지 HM-8 소유 부서(설비보전팀)에 묻는다 — 원문에 있는데 후보에 없어 검토자가 원문 문장으로 더함"
+  }
+]
