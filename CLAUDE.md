@@ -28,6 +28,7 @@
 - 브랜치는 main · workspace 둘뿐이다(다른 브랜치 · 태그를 만들지 않는다). main은 `.gitignore`로 `workspace/` · `작업/` · 루트 작업 파일을 무시한다. workspace는 main과 이력을 공유하지 않고 병합하지 않는다.
 - 동기화는 `PYTHONUTF8=1 .venv314/Scripts/python.exe workspace/동기화.py` 하나로 한다(클라우드 세션은 7절) — 여러 세션이 함께 올리므로 `pull` → `commit "메시지" [main 경로 …] [--만 workspace 경로 …]`(workspace = 그 시점 모습 그대로, 다른 작업 폴더가 열려 있으면 `--만`으로 그 경로만, main = 준 경로만) → 바로 `push`(origin에 없는 두 브랜치 커밋 하나하나의 키 검사 0일 때만, 강제 push 없음) 순서다. `commit`은 origin이 앞서 있으면 멈추고, `pull`은 원격이 바꾼 파일이 이 PC의 판과 겹칠 때만 멈춘다 — 멈추면 그 안내대로 하고, 우회하지 않는다. 커밋은 그 일을 맡은 세션이 한다. 시작과 커밋 직전에 `status`로 실제 HEAD · 미커밋을 보고 다른 세션의 미커밋은 보존한다. push · 지우기는 기본으로 먼저 묻고, 사용자가 "알아서 해"로 맡긴 작업이면 묻지 않는다(헌법 4절). rebase · reset · stash는 하지 않는다. 사용법 전부는 그 파일 머리에 있다.
 - 노션 · 학생 링크는 커밋 고정 주소라 이력을 다시 쓰거나 브랜치를 지우지 않는다. 공개 저장소다 — 키 · 개인 정보 · 실물 매뉴얼 PDF를 어느 브랜치에도 올리지 않는다.
+- 이력은 줄지 않는다(2026-11-04 3.47GB 중 mp4 · mp3 3.43GB, 글자 파일 14MB). 글자 파일은 마음껏 올리되, 영상은 사용자가 들어 본 뒤 고칠 곳을 모아 한 번만 다시 올리고, 세션 사이 전달용으로 영상 · 음성 · 원본을 올리지 않는다(필요한 일은 이 PC 몫으로 `workspace/강의제작/남은일.md`에 남긴다). `git rev-list --disk-usage --objects origin/workspace`가 7GB를 넘으면(GitHub 권장 상한 10GB) 새 영상을 Release로 옮길지 사용자에게 묻는다.
 
 ## 3. 기록
 
@@ -81,10 +82,10 @@
 
 | | 클라우드 |
 |---|---|
-| 시작 브랜치 | `workspace` — 이 문서 · 스킬 · 훅이 세션 시작 때 읽힌다. `main`으로 시작했으면 `git fetch origin workspace:workspace` → `git switch workspace` → 이 문서를 읽고 `bash .claude/hooks/cloud-bootstrap.sh`를 돌린다. 훅은 시작 때만 걸리므로 그 세션에는 읽기 강제가 없다 — hyd-task 2절을 스스로 지킨다 |
+| 시작 꼴 | 일에 맞춰 고른다. **시스템 코드도 읽거나 돌리는 일(사실 대조 · 촬영)** = `main`에 workspace를 푼 꼴(3 · 4회차가 이 길로 끝냈다): `git fetch origin workspace` → `git show origin/workspace:workspace/동기화.py > 동기화.py` → `python3 동기화.py pull` → `rm 동기화.py`. **글 · 문서만** = `workspace` 체크아웃: `git fetch origin workspace:workspace` → `git switch workspace`. `workspace`로 시작하지 않았으면 세션 시작 훅이 안 돌았으니 옮긴 뒤 이 문서를 읽고 `bash .claude/hooks/cloud-bootstrap.sh`를 돌린다. 읽기 강제 훅은 풀린 설정 파일이 읽혀 걸린다(3 · 4회차 실측) |
 | 공용 헌법 · 스킬 | SessionStart 훅이 `~/.claude-skills`로 받는다. 「부트스트랩 실패」가 보이면 먼저 사용자에게 알린다 |
 | 시스템 코드 | `workspace` 체크아웃에 없다. `git fetch origin main:main` 뒤 읽기는 `git show main:<경로>`, 실행은 `git worktree add ../main main` |
-| 커밋 · push | `동기화.py`는 main 체크아웃 전용이라 멈춘다. `git add <경로>`(`git add .` 금지) → `git commit` → `python3 workspace/secret_scan.py HEAD --올릴것` 걸린 곳 0 → `git push origin HEAD:workspace`. 밀렸으면 `git pull --no-rebase origin workspace` 뒤 다시, 겹치면 멈추고 보고한다. 새 브랜치 · 태그 · 강제 push는 하지 않는다 |
-| 작업 폴더 | `작업/`은 이 PC 전용이라 없다. VM 안에 만들어 쓸 수 있으나 VM이 회수되면 대화만 남고 파일은 사라진다 — 확정분은 그때그때 push하고, 진행 상태는 세션 대화가 갖는다. `작업/`을 커밋하지 않는다. 이 PC로 돌아오면 `동기화.py pull` |
-| 도구 | `pip install -r workspace/requirements-dev.txt`, 렌더 · 영상은 `apt-get install libreoffice poppler-utils ffmpeg`. 덱 렌더는 맑은 고딕이 있어야 한다 — 글꼴은 사용자에게 받고 커밋하지 않는다. 받지 못했으면 렌더는 이 PC에서 한다 |
+| 커밋 · push | 먼저 `git rev-parse --abbrev-ref HEAD`. **main 체크아웃 + workspace를 푼 꼴(로컬과 같은 구조)이면** 2절의 `동기화.py pull · commit --만 · push`를 그대로 쓴다 — 영상이 든 저장소라 pull · commit이 해시에 5~10분 걸리니 백그라운드로 돌리고, push가 main도 올리므로 main이 origin보다 뒤면(main 미커밋 0일 때) `git merge --ff-only origin/main` 뒤 push, 여러 세션이 함께 올려 밀리면 pull → commit → push를 바로 다시. README처럼 함께 쓰는 파일이 pull에서 겹치면 내 판을 옮겨 두고 `git show <로컬 끝>:<경로>`로 되돌려 받은 뒤 내 행만 다시 얹는다. **workspace 체크아웃이면** `동기화.py`가 멈춘다 — `git add <경로>`(`git add .` 금지) → `git commit` → `python3 workspace/secret_scan.py HEAD --올릴것` 걸린 곳 0 → `git push origin HEAD:workspace`, 밀렸으면 `git pull --no-rebase origin workspace` 뒤 다시, 겹치면 멈추고 보고한다. 새 브랜치 · 태그 · 강제 push는 하지 않는다 |
+| 작업 폴더 | `작업/`은 이 PC 전용이라 없다. VM 안에 만들어 쓸 수 있으나 VM이 회수되면 대화만 남고 파일은 사라진다 — 확정분은 그때그때 push하고, 진행 상태는 세션 대화가 갖는다. `작업/`을 커밋하지 않는다. 남은 일은 `workspace/강의제작/남은일.md`, 이어받을 스펙 · 기록은 요청문에 담아 준다. 이 PC로 돌아오면 `동기화.py pull` |
+| 도구 | 환경의 셋업 스크립트(`workspace/개발/scripts/cloud_setup.sh`)가 깔아 둔다 — 없으면 그 파일을 `bash`로 한 번 돌린다. 덱 렌더는 맑은 고딕이 있어야 한다 — 글꼴은 사용자에게 받고 커밋하지 않는다. 받지 못했으면 렌더는 이 PC에서 한다. apt의 LibreOffice는 이 PC와 판이 달라 줄바꿈이 바뀐다 — 이론 영상 장 그림은 이 PC 판 렌더 PDF를 받아 `pdftoppm -r 150`으로 `tools/video/슬라이드/<덱>/s-NN.png`에 넣고 `stamp`에 PPTX mtime을 적으면 `강의영상.py`가 다시 렌더하지 않는다. VM에서 직접 렌더한 길은 LibreOffice 26.8 chroot다(`workspace/강의제작/제작도구/근거/2026-11-03_3-4회차_이론영상/기록.md` 첫머리, 스크립트 자체는 저장소에 없다). 음성 키는 환경 변수 이름이 `ElevenLabs_API_KEY`로 들어오면 `ELEVENLABS_API_KEY="$ElevenLabs_API_KEY"`로 넘기고(값은 찍지 않음), `api.elevenlabs.io`는 환경의 네트워크 허용 목록에 있어야 한다. 4코어 VM 실측: 이론 영상 굽기 한 편 22~30분 · 강조 첫 실행 15~35분(동시 3편) — 시작 전에 알리고, 같은 출력 폴더에서 두 편을 동시에 굽지 않는다(임시 조각 · `list.txt`가 겹친다). 오래 도는 일은 `setsid nohup`으로 띄워 VM 도구 시간 제한에 끊기지 않게 한다 |
 | 여기서 못 하는 것 | ego 브라우저 · 네이티브 VS Code · 데스크톱 캡처 · 학생 Codex 로그인 — 촬영 · 가이드 사진 · 학생 경로 리허설은 이 PC에서 한다 |

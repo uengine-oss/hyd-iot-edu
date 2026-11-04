@@ -1,0 +1,72 @@
+money values {'mes.due_in_h': 5.61, 'mes.remaining_qty': 1500.0, 'mes.rate_per_h': 300.0, 'mes.hour_value': 50.0, 'erp.penalty_per_h': 120.0, 'erp.failure_cost': 900.0, 'cmms.mtbf_h': 1400.0, 'qms.auto_qty': 800.0, 'qms.auto_claim': 3000.0, 'qms.auto_defect_p': 0.05, 'ems.fan_boost_kw': 6.0, 'ems.energy_rate': 0.015}
+tasks {'SOP-COOL-14': {'sop': 'SOP-COOL-14', 'name': '쿨러 핀 세척', 'stop_h': 3.0, 'labor_cost': 40.0, 'part_no': None, 'part_qty': 0, 'table': 'maintenance_profiles', 'path': '/cmms/tasks?asset=HYD-01'}, 'SOP-COOL-15': {'sop': 'SOP-COOL-15', 'name': '캐비닛 환기 보강', 'stop_h': 0.0, 'labor_cost': 30.0, 'part_no': None, 'part_qty': 0, 'table': 'task_standards', 'path': '/cmms/tasks?asset=HYD-01'}}
+pm facts {'asset': 'HYD-01', 'cycle': 1, 'pm_due': False, 'kit_qty': 1, 'package': '2,000 h 정기 점검 (축 씰 · 리턴 필터 교체, 잔압 해제, 시운전)', 'plan_id': 'PM-HYD-01-2000', 'pm_alert': False, 'pm_cycle': 1, 'due_since': None, 'pm_since_h': 1500, 'pm_total_h': 9500, 'updated_at': '2026-11-03T05:37:57.274077+00:00', 'bundle_peer': 'HYD-02', 'kit_part_no': 'P-PMP-SEAL', 'pm_due_in_h': 500, 'pm_notice_h': 50, 'last_done_at': None, 'pm_interval_h': 2000, 'pm_limit_in_h': 700.0, 'pm_over_limit': False, 'pm_planned_at': None, 'pm_planned_wo': None, 'bundle_crew_ok': False, 'hours_since_pm': 1500, 'pm_window_open': False, 'night_crew_size': 2, 'night_window_at': '2026-11-03T14:37:59.286704+00:00', 'night_window_id': 'MW-HYD-01-N-202611031437', 'spare_available': 1, 'pm_tolerance_pct': 10, 'selected_service': None, 'service_position': None, 'existing_pm_order': None, 'night_window_in_h': 8.61, 'package_semantics': 'base_interval_configuration', 'pm_crew_available': 2, 'pm_planned_window': None, 'night_within_limit': True, 'spare_gap_after_pm': -2, 'bundle_peer_since_h': 1950, 'following_window_at': '2026-11-14T21:37:59.286704+00:00', 'following_window_id': 'MW-HYD-01-M-202611142137', 'monthly_window_in_h': 279.61, 'weekend_window_in_h': 104.61, 'hours_at_next_window': 1508.61, 'monthly_within_limit': True, 'weekend_within_limit': True, 'bundle_peer_limit_in_h': 250.0, 'spare_gap_after_bundle': -3, 'configured_base_package': '2,000 h 정기 점검 (축 씰 · 리턴 필터 교체, 잔압 해제, 시운전)', 'hours_at_following_window': 1779.61}
+windows {'hours_at_next_window': {'id': 'MW-HYD-01-N-202611031437', 'starts_at': '2026-11-03T14:37:59.286704+00:00', 'name': '이번 예정된 정비 시간'}, 'hours_at_following_window': {'id': 'MW-HYD-01-M-202611142137', 'starts_at': '2026-11-14T21:37:59.286704+00:00', 'name': '그다음 예정된 정비 시간'}}
+=== 기준 납기 5.98 h top {'decision': 'skill:sop-cool-11', 'money': 'skill:sop-cool-11'}
+SOP-COOL-11 팬 최대 운전 rank 1 score 3.38 parts {'bsc': 0.52, 'delivery': 1.12, 'forecast': 1.74} money rank 1 total -43825 missing []
+     production 0 시간당 생산 가치 50만원 × (부하 90/90 운전 5.98 h의 감산 + 작업 정지 0 h) — 기간 5.98 h(납기까지)
+     delay 0 위약금 120만원/h × 지연 0.00 h (잔량 1500 ÷ (300 × 90/90) ea/h = 5.00 h, 납기 5.98 h)
+     quality 0 예측 유온 49.772 ℃ < 55 ℃ 또는 출하 대기 로트 800 ea → 0
+     failure -38443 고장 비용 900만원 × 원인이 남는 5.98 h ÷ MTBF 1400 h
+     work 0 작업지시 없음 → 0
+     parts 0 필요 부품 없음 → 0
+     energy -5382 팬 +40 %p × 6 kW ÷ 40 %p × 5.98 h × 0.015만원/kWh
+SOP-COOL-13 부하 70 %와 야간 핀 세척 rank 2 score 3.05 parts {'bsc': 0.6, 'delivery': 0.45, 'forecast': 2.0} money rank 3 total -1641173 missing []
+     production -664444 시간당 생산 가치 50만원 × (부하 70/90 운전 5.98 h의 감산 + 작업 정지 0 h) — 기간 5.98 h(납기까지)
+     delay -538286 위약금 120만원/h × 지연 0.45 h (잔량 1500 ÷ (300 × 70/90) ea/h = 6.43 h — 작업 시작 전에 끝남, 납기 5.98 h)
+     quality 0 예측 유온 47.665 ℃ < 55 ℃ 또는 출하 대기 로트 800 ea → 0
+     failure -38443 고장 비용 900만원 × 원인이 남는 5.98 h ÷ MTBF 1400 h (근본 조치는 8.60647 h 뒤 시작)
+     work -400000 쿨러 핀 세척 40만원
+     parts 0 필요 부품 없음 → 0
+     energy 0 팬 명령 없음 → 0
+SOP-COOL-12 팬 최대 운전과 부하 80 % rank 3 score 2.57 parts {'bsc': 0.12, 'delivery': 0.45, 'forecast': 2.0} money rank 2 total -376047 missing []
+     production -332222 시간당 생산 가치 50만원 × (부하 80/90 운전 5.98 h의 감산 + 작업 정지 0 h) — 기간 5.98 h(납기까지)
+     delay 0 위약금 120만원/h × 지연 0.00 h (잔량 1500 ÷ (300 × 80/90) ea/h = 5.63 h, 납기 5.98 h)
+     quality 0 예측 유온 44.573 ℃ < 55 ℃ 또는 출하 대기 로트 800 ea → 0
+     failure -38443 고장 비용 900만원 × 원인이 남는 5.98 h ÷ MTBF 1400 h
+     work 0 작업지시 없음 → 0
+     parts 0 필요 부품 없음 → 0
+     energy -5382 팬 +40 %p × 6 kW ÷ 40 %p × 5.98 h × 0.015만원/kWh
+SOP-COOL-14 쿨러 핀 세척 rank 4 score 2.18 parts {'bsc': 1.3, 'delivery': -1.12, 'forecast': 2.0} money rank 4 total -4324000 missing []
+     production -1500000 시간당 생산 가치 50만원 × (부하 90/90 운전 0 h의 감산 + 작업 정지 3 h) — 기간 5.98 h(납기까지)
+     delay -2424000 위약금 120만원/h × 지연 2.02 h (작업 전 0 h 생산 + 정지 3 h + 남은 1500 ÷ (300 × 90/90) ea/h = 8.00 h, 납기 5.98 h)
+     quality 0 예측 유온 25 ℃ < 55 ℃ 또는 출하 대기 로트 800 ea → 0
+     failure 0 지금 근본 조치하는 카드 — 원인을 없애므로 고장 위험을 더하지 않음
+     work -400000 쿨러 핀 세척 40만원
+     parts 0 필요 부품 없음 → 0
+     energy 0 팬 명령 없음 → 0
+=== 시험 납기 48 h top {'decision': 'skill:sop-cool-14', 'money': 'skill:sop-cool-11'}
+SOP-COOL-14 쿨러 핀 세척 rank 1 score 3.3 parts {'bsc': 1.3, 'forecast': 2.0} money rank 2 total -1900000 missing []
+     production -1500000 시간당 생산 가치 50만원 × (부하 90/90 운전 0 h의 감산 + 작업 정지 3 h) — 기간 48 h(납기까지)
+     delay 0 위약금 120만원/h × 지연 0.00 h (작업 전 0 h 생산 + 정지 3 h + 남은 1500 ÷ (300 × 90/90) ea/h = 8.00 h, 납기 48 h)
+     quality 0 예측 유온 25 ℃ < 55 ℃ 또는 출하 대기 로트 800 ea → 0
+     failure 0 지금 근본 조치하는 카드 — 원인을 없애므로 고장 위험을 더하지 않음
+     work -400000 쿨러 핀 세척 40만원
+     parts 0 필요 부품 없음 → 0
+     energy 0 팬 명령 없음 → 0
+SOP-COOL-13 부하 70 %와 야간 핀 세척 rank 2 score 2.6 parts {'bsc': 0.6, 'forecast': 2.0} money rank 3 total -2911601 missing []
+     production -2456274 시간당 생산 가치 50만원 × (부하 70/90 운전 8.60647 h의 감산 + 작업 정지 3 h) — 기간 48 h(납기까지)
+     delay 0 위약금 120만원/h × 지연 0.00 h (잔량 1500 ÷ (300 × 70/90) ea/h = 6.43 h — 작업 시작 전에 끝남, 납기 48 h)
+     quality 0 예측 유온 47.665 ℃ < 55 ℃ 또는 출하 대기 로트 800 ea → 0
+     failure -55327 고장 비용 900만원 × 원인이 남는 8.60647 h ÷ MTBF 1400 h (근본 조치는 8.60647 h 뒤 시작)
+     work -400000 쿨러 핀 세척 40만원
+     parts 0 필요 부품 없음 → 0
+     energy 0 팬 명령 없음 → 0
+SOP-COOL-11 팬 최대 운전 rank 3 score 2.26 parts {'bsc': 0.52, 'forecast': 1.74} money rank 1 total -351771 missing []
+     production 0 시간당 생산 가치 50만원 × (부하 90/90 운전 48 h의 감산 + 작업 정지 0 h) — 기간 48 h(납기까지)
+     delay 0 위약금 120만원/h × 지연 0.00 h (잔량 1500 ÷ (300 × 90/90) ea/h = 5.00 h, 납기 48 h)
+     quality 0 예측 유온 49.772 ℃ < 55 ℃ 또는 출하 대기 로트 800 ea → 0
+     failure -308571 고장 비용 900만원 × 원인이 남는 48 h ÷ MTBF 1400 h
+     work 0 작업지시 없음 → 0
+     parts 0 필요 부품 없음 → 0
+     energy -43200 팬 +40 %p × 6 kW ÷ 40 %p × 48 h × 0.015만원/kWh
+SOP-COOL-12 팬 최대 운전과 부하 80 % rank 4 score 2.12 parts {'bsc': 0.12, 'forecast': 2.0} money rank 4 total -3018438 missing []
+     production -2666667 시간당 생산 가치 50만원 × (부하 80/90 운전 48 h의 감산 + 작업 정지 0 h) — 기간 48 h(납기까지)
+     delay 0 위약금 120만원/h × 지연 0.00 h (잔량 1500 ÷ (300 × 80/90) ea/h = 5.63 h, 납기 48 h)
+     quality 0 예측 유온 44.573 ℃ < 55 ℃ 또는 출하 대기 로트 800 ea → 0
+     failure -308571 고장 비용 900만원 × 원인이 남는 48 h ÷ MTBF 1400 h
+     work 0 작업지시 없음 → 0
+     parts 0 필요 부품 없음 → 0
+     energy -43200 팬 +40 %p × 6 kW ÷ 40 %p × 48 h × 0.015만원/kWh
+{"graph_rule_pm": [{"input": "in:pattern", "unit": null, "variable": "pattern", "value": "PM_DUE", "operator": "=="}]}
+[('rule:ts1-hard', 'forecast_ts1 >= 65', 'EXCLUDE'), ('rule:pr07-approved-supplier-only', 'supplier_avl == false', 'EXCLUDE'), ('rule:pm-next-window-over-hours-limit', 'hours_at_next_window > 2200', 'EXCLUDE'), ('rule:pr07-lead-time-warning', 'lead_slack_days < 0', 'WARN'), ('rule:pm-following-window-over-hours-limit', 'hours_at_following_window > 2200', 'EXCLUDE'), ('rule:pr07-high-fail-rate-inspection', 'supplier_fail_rate > 0.1', 'WARN'), ('rule:pm-immediate-stop-order-loss', 'production_running == true and order_due_h <= 24', 'PENALTY'), ('rule:pr07-over-delegation-threshold', 'po_amount > 300', 'WARN'), ('rule:pm-bundled-crew-shortage-cost', 'pm_crew_available < 4', 'PENALTY'), ('rule:pm-no-seal-kit-excludes-execution', 'spare_available == 0', 'EXCLUDE'), ('rule:hm-8-8-remote-auto-only', "plc_mode != 'REMOTE_AUTO'", 'EXCLUDE'), ('rule:pm-bundled-seal-kit-shortage', 'spare_available < 2', 'EXCLUDE'), ('rule:hm-8-8-fan-life-penalty', 'fan100_hours > 24', 'PENALTY'), ('rule:pm-seal-kit-reorder-warning', 'spare_available < 3', 'WARN'), ('rule:cooler-forecast-temperature-warning', 'forecast_ts1 >= 55', 'WARN')]

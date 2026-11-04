@@ -1,0 +1,4923 @@
+{
+ "reviewer": "검토-실전4",
+ "artifacts": {
+  "실전반-온라인-4-덱": [
+   {
+    "id": "D-1",
+    "status": "통과",
+    "reason": "43 · 46 · 49행 문장을 장에 대응했다: 활용 범위 16 · 18, LLM·RAG·Agent 8 · 10 · 14, 입력 · 검증 14~20, 권한 · 종료 23 · 24 / SKILL.md 33 · 35, SOP 차이 38 · 39, 재사용 30 · 31 · 42~46 / Host·Client·Server·Tool 55, stdio·HTTP 62 · 63, 입력 스키마·출력 57~61, 권한·실패 64~67, 포털·로컬 68. 실습 행 44 · 45 · 47 · 48 · 50 · 51은 25~28 · 47~50 · 71~74가 소개한다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실라버스/피지컬AI_실라버스_최종본.xlsx",
+      "locator": "실전반 온라인 32H 43~51행"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "D-2",
+    "status": "통과",
+    "reason": "행 문장에 숫자는 없고, 부정 조건 「무엇이든 자동 수행한다고 가정하지 않고」는 23 · 24로, 활용 범위 순서(분석·시각화 → 회의 후속 → 자기 자료 → 작성·검토)는 16 · 18로 보존됐다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실라버스/피지컬AI_실라버스_최종본.xlsx",
+      "locator": "43행"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 16 · 18 · 23 · 24"
+     }
+    ]
+   },
+   {
+    "id": "D-3",
+    "status": "통과",
+    "reason": "이론 본문 56장: 5~24, 30~46, 52~70. 간지 · 실습 설명 · 복습 · 용어 · 퀴즈 · 정답을 뺐다. 수를 채우려 반복한 장은 없다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     },
+     {
+      "path": "작업/2026-11-03_3-4회차-이론영상-갱신/렌더/검토전/온4실전",
+      "locator": "s-01~s-81.png 전 장"
+     }
+    ]
+   },
+   {
+    "id": "D-4",
+    "status": "통과",
+    "reason": "구성.json rows.title · 구성표 · 실습 간지 25 · 27 · 47 · 49 · 71 · 73의 제목이 엑셀 행 제목과 글자까지 같다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/구성/실전반/04회차/구성.json",
+      "locator": "rows"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/구성/실전반/04회차/구성표.md",
+      "locator": "행 표"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실라버스/피지컬AI_실라버스_최종본.xlsx",
+      "locator": "실전반 온라인 32H 43~51행"
+     }
+    ]
+   },
+   {
+    "id": "D-5",
+    "status": "통과",
+    "reason": "구현과 다른 곳을 실제대로 쓴다: RAG는 일반 개념으로만 말하고(8장 제작 기준), 도구 정의는 지금 코드 글(54장)이다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 8 · 54 제작 기준"
+     },
+     {
+      "path": "it/enterprise-mcp/enterprise_mcp/server.py",
+      "locator": ":105-111"
+     },
+     {
+      "path": "workspace/강의제작/지침/사실표/통합반_05-08일차_기술사실표.md",
+      "locator": "§5.1.1"
+     }
+    ]
+   },
+   {
+    "id": "D-6",
+    "status": "통과",
+    "reason": "rows 순서 · 분이 엑셀과 같다. 표지 큰 제목이 회차 주제와 다른 사유는 1장 제작 기준에 있다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/구성/실전반/04회차/구성.json",
+      "locator": "rows"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실라버스/피지컬AI_실라버스_최종본.xlsx",
+      "locator": "실전반 온라인 32H 43~51행"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1 제작 기준"
+     }
+    ]
+   },
+   {
+    "id": "D-8",
+    "status": "해당 없음",
+    "reason": "실전반 4회차 실습 영상이 없다. 영상/실전반 폴더의 04회차 파일은 이론 3편뿐이다.",
+    "evidence": []
+   },
+   {
+    "id": "D-9",
+    "status": "통과",
+    "reason": "장마다 새로 아는 것이 있다. 시간용 장 없음. 새 45장은 44장 대본에만 있던 검증 네 가지를 화면으로 옮긴 것이다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     },
+     {
+      "path": "작업/2026-11-03_3-4회차-이론영상-갱신/실전4/변경기록.md",
+      "locator": "고친 곳 표"
+     }
+    ]
+   },
+   {
+    "id": "D-10",
+    "status": "해당 없음",
+    "reason": "배정보다 긴 이론 행이 없다(24.8 · 22.2 · 24.0분, 배정 각 25분).",
+    "evidence": []
+   },
+   {
+    "id": "D-11",
+    "status": "미확인",
+    "reason": "−10분보다 짧은 행은 0이다. 대본시간.py로 다시 재면 43행 24.8분 · 46행 22.2분 · 49행 24.0분(배정 25분, −0.2 · −2.8 · −1.0분)으로 구성표와 같다. 보강한 내용(45 새 장, 6 · 8 · 62 · 66 · 70 그림, 23 · 39 · 57 · 63 대본)은 변경기록 「고친 곳」에 있으나 「더 설명할 거리 · 자료가 없다」는 까닭 문장은 변경기록 · 대본 제작 확인용 · 기록.md 어디에도 없다. 마감 보고에 까닭 필요.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/구성/실전반/04회차/구성표.md",
+      "locator": "행 표"
+     },
+     {
+      "path": "작업/2026-11-03_3-4회차-이론영상-갱신/실전4/변경기록.md",
+      "locator": "13행 · 「고친 곳」"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "제작 확인용"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "제작 확인용"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "제작 확인용"
+     }
+    ]
+   },
+   {
+    "id": "D-12",
+    "status": "통과",
+    "reason": "대본시간.py를 다시 돌려 전체 78.4분, 구성표와 같다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/구성/실전반/04회차/구성표.md",
+      "locator": "끝 줄"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "D-13",
+    "status": "통과",
+    "reason": "시간 때문에 뺀 필수 내용이 없다. 정의 · 필요 · 예 · 판단 근거가 각 행의 장에 있다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "D-14",
+    "status": "통과",
+    "reason": "렌더 전 장과 원고 · 대본을 이어 읽었다. HYD 구현이 주어인 문장이 없고 재료를 바꿔도 원리 문장이 성립한다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "D-15",
+    "status": "통과",
+    "reason": "값은 예 칸 · 표에 그 상황의 값으로 있다. 카드 머리의 시각(12장)은 기록의 시각이지 기준값이 아니다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 6 · 12 · 21 · 60"
+     }
+    ]
+   },
+   {
+    "id": "D-16",
+    "status": "통과",
+    "reason": "교육용 · 예시 · 가상 · 시뮬레이 · (가정) 등 화면 · 노트 검색 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "D-165",
+    "status": "통과",
+    "reason": "렌더 전 장과 원고 · 대본을 이어 읽었다. 구현이 한 일을 알리는 문장, 없다는 사실의 알림이 없다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "D-17",
+    "status": "통과",
+    "reason": "시스템이 하지 않는 일을 한다고 쓴 곳이 없다. 읽기 전용 · 도구 범위는 코드와 같다.",
+    "evidence": [
+     {
+      "path": "it/enterprise-mcp/enterprise_mcp/server.py",
+      "locator": ":10 · :29-32 · :41"
+     },
+     {
+      "path": "it/dmn-mcp/dmn_mcp/server.py",
+      "locator": ":4 · :64-105"
+     },
+     {
+      "path": "it/process/procsvc/course_policy.py",
+      "locator": ":301-303"
+     }
+    ]
+   },
+   {
+    "id": "D-18",
+    "status": "통과",
+    "reason": "단원 뼈대가 물음 → 구분 → 역할이고 재료 소개 뼈대가 아니다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "D-19",
+    "status": "통과",
+    "reason": "제목 · 메시지에 제품 이름이 없다. MCP · HTTP · stdio는 배우는 표준 이름이다. 서비스 이름 넷 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "D-20",
+    "status": "통과",
+    "reason": "쿨러 사례와 회의록 두 건으로 끌고 가고 설비 세부 나열이 없다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "D-21",
+    "status": "해당 없음",
+    "reason": "계층 이름 · 역할을 설명하는 장이 없다.",
+    "evidence": []
+   },
+   {
+    "id": "D-22",
+    "status": "통과",
+    "reason": "칸마다 까닭이 붙은 장이 없고 까닭 문장은 메시지 하나씩이다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "D-23",
+    "status": "통과",
+    "reason": "표지 · 학습목표 · 간지가 에이전트 단계(근거를 읽는 에이전트, 지침, 도구)를 채운다고 말한다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1 · 2 · 4 · 29 · 51"
+     }
+    ]
+   },
+   {
+    "id": "D-24",
+    "status": "통과",
+    "reason": "단원 01은 5장 세척 문장의 함정, 04는 30장 담당 복사, 07은 52장 발주 상태와 발주에서 출발한다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 5 · 30 · 52"
+     }
+    ]
+   },
+   {
+    "id": "D-25",
+    "status": "통과",
+    "reason": "명세 · SDD · BDD · 행동 주도 검색 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "D-26",
+    "status": "통과",
+    "reason": "응용 장 21 · 22 · 44 · 46 · 69 · 70의 입력이 회의록 · 사실표 · 매뉴얼에 있고 「현업에서는」 단정이 없다. 44장 반례는 제작 기준이 가정이라고 적는다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 21 · 22 · 44 · 46 · 69 · 70 제작 기준"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/실습/04회차/랩/04일차_실습3_회의록스킬작성/코드/source/회의록_1.txt",
+      "locator": "2 · 3번"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/실습/04회차/랩/04일차_실습3_회의록스킬작성/코드/source/회의록_2.txt",
+      "locator": "화요일 정기 회의에서 넘어온 것"
+     },
+     {
+      "path": "it/portal/www/samples/HM-8_cooler-fan-manual.md",
+      "locator": ":34-36"
+     }
+    ]
+   },
+   {
+    "id": "D-27",
+    "status": "통과",
+    "reason": "운영 말 검색 0. 「잠금」 적중 38 · 39장은 설비 잠금(LOTO)이라 대상이 아니다. 도구 실습 설명에 코드 과제 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 26 · 38 · 39 · 48 · 72"
+     },
+     {
+      "path": "it/portal/www/samples/HM-8_cooler-fan-manual.md",
+      "locator": ":72-73"
+     }
+    ]
+   },
+   {
+    "id": "D-174",
+    "status": "통과",
+    "reason": "도구 실습 소개 26 · 48 · 72에 파일 · VS Code 장면이 없다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 26 · 48 · 72"
+     }
+    ]
+   },
+   {
+    "id": "D-28",
+    "status": "통과",
+    "reason": "단원마다 첫 장의 물음에 끝 장이 답한다: 5 → 23 · 24, 30 → 46, 52 → 69 · 70.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "D-29",
+    "status": "통과",
+    "reason": "쿨러 경보를 12 · 21장에서 값으로 따라가고 전체 지도를 앞에 놓지 않는다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 6 · 12 · 21"
+     }
+    ]
+   },
+   {
+    "id": "D-30",
+    "status": "통과",
+    "reason": "D-35와 같은 판정이다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "D-168",
+    "status": "통과",
+    "reason": "전환 자리 24 → 29 → 30, 46 → 51 → 52의 노트 [다음]과 대본을 이어 읽었다. 앞 결과를 받는다. 새 45장 앞뒤(44 [다음] · 45 [다음])도 이어진다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 24 · 29 · 44 · 45 · 46 · 51"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "44~46장"
+     }
+    ]
+   },
+   {
+    "id": "D-31",
+    "status": "통과",
+    "reason": "[다음]이 다음 할 일 한 번이다. 화면 번호 · 재요약 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "D-32",
+    "status": "통과",
+    "reason": "1장 대본이 앞 회차의 작업 비교를 받아 열고 81장이 「이제 설명할 수 있습니다」로 닫는다. 뒤 회차 주제는 한 문장 예고뿐이다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "81장"
+     }
+    ]
+   },
+   {
+    "id": "D-33",
+    "status": "통과",
+    "reason": "편성 말 검색 결과 화면은 표지 「4회차」(허용)뿐이고 노트 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "D-34",
+    "status": "통과",
+    "reason": "느낌표 0. 물음은 화면 인용과 실습 질문뿐이다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "D-35",
+    "status": "통과",
+    "reason": "용어는 풀이 자리에서 세운다: LLM · RAG 8, 에이전트 10, 스킬 33, SOP 38, MCP 53, Host·Client 55, 입력 스키마 57. 약어 SCM만 D-69로 올린다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 8 · 10 · 33 · 38 · 53 · 55 · 57"
+     }
+    ]
+   },
+   {
+    "id": "D-36",
+    "status": "통과",
+    "reason": "새 용어마다 상황과 판단의 까닭을 말하는 문장이 있다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 8 · 10 · 33 · 53 · 55 · 57"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "D-37",
+    "status": "통과",
+    "reason": "장마다 새 구분이 하나씩이고 여러 겹 풀이가 없다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "D-38",
+    "status": "통과",
+    "reason": "정의 장 8 · 10 · 33 · 38 · 53에 까닭 메시지가 있다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 8 · 10 · 33 · 38 · 53"
+     }
+    ]
+   },
+   {
+    "id": "D-39",
+    "status": "통과",
+    "reason": "조작 · 옵션 장 0. 품질 주제의 층 반복 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "D-40",
+    "status": "통과",
+    "reason": "해당 짝을 섞은 문장이 없다. 원인 추론과 관측 구분은 6 · 7 · 21에서 지킨다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 6 · 7 · 21"
+     }
+    ]
+   },
+   {
+    "id": "D-41",
+    "status": "통과",
+    "reason": "복습 · 용어 · 퀴즈 · 정답이 있다. 압축 대응은 이전 판 판정의 이유를 빌렸고 이번 변경은 내용을 빼지 않았다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 75~81"
+     },
+     {
+      "path": "작업/2026-11-03_4회차-이론/인수전표.json",
+      "locator": "실전반-온라인-4-덱 D-128"
+     },
+     {
+      "path": "작업/2026-11-03_3-4회차-이론영상-갱신/실전4/변경기록.md",
+      "locator": "고친 곳 표"
+     }
+    ]
+   },
+   {
+    "id": "D-42",
+    "status": "통과",
+    "reason": "렌더 전 장과 원고 · 대본을 이어 읽었다. 제작 흔적 · 번역투 없음.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "D-43",
+    "status": "통과",
+    "reason": "유형 열 순서가 표지 → 학습목표 → 목차 → 단원 → 복습 → 용어 → 퀴즈 간지 → 문답 3 → 정답이다. 끝맺음 장 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "D-44",
+    "status": "통과",
+    "reason": "75~81을 이어 읽었다. 네 자리가 겹치지 않는다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 75~81"
+     }
+    ]
+   },
+   {
+    "id": "D-45",
+    "status": "통과",
+    "reason": "표지 기관 · 과정 · 큰 제목 · 부제 · 아이콘 3 · 연도 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1"
+     },
+     {
+      "path": "작업/2026-11-03_3-4회차-이론영상-갱신/렌더/검토전/온4실전",
+      "locator": "s-01.png"
+     }
+    ]
+   },
+   {
+    "id": "D-46",
+    "status": "통과",
+    "reason": "카드 3장, 단원 순서대로 할 수 있는 일이다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 2"
+     },
+     {
+      "path": "작업/2026-11-03_3-4회차-이론영상-갱신/렌더/검토전/온4실전",
+      "locator": "s-02.png"
+     }
+    ]
+   },
+   {
+    "id": "D-47",
+    "status": "통과",
+    "reason": "목차 한 장, 간지 구분은 이론 · 실습뿐이고 시간 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 3 · 4 · 25 · 27 · 29 · 47 · 49 · 51 · 71 · 73"
+     }
+    ]
+   },
+   {
+    "id": "D-48",
+    "status": "통과",
+    "reason": "복습 한 장이 사건에 적용하고 짝을 가른다. 본문의 흐름 되짚기 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 75"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "75장"
+     }
+    ]
+   },
+   {
+    "id": "D-49",
+    "status": "통과",
+    "reason": "제목 · 머리 고정 문구와 같고 둘째 칸이 정식 명칭 + 뜻이다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 76"
+     },
+     {
+      "path": "작업/2026-11-03_3-4회차-이론영상-갱신/렌더/검토전/온4실전",
+      "locator": "s-76.png"
+     }
+    ]
+   },
+   {
+    "id": "D-50",
+    "status": "통과",
+    "reason": "제목 · 부제 글자가 같다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 77"
+     }
+    ]
+   },
+   {
+    "id": "D-51",
+    "status": "통과",
+    "reason": "3문항, 제목 꼴 일치, 정답 ① ② ③ 분산, 정답 장 하나, 퀴즈 화면에 정답 노출 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 78~81"
+     }
+    ]
+   },
+   {
+    "id": "D-52",
+    "status": "통과",
+    "reason": "메뉴 이름 · 조작 순서 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "D-53",
+    "status": "통과",
+    "reason": "실습 행마다 간지 + 설명 2장이다(25~28, 47~50, 71~74).",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/구성/실전반/04회차/구성.json",
+      "locator": "rows"
+     }
+    ]
+   },
+   {
+    "id": "D-54",
+    "status": "통과",
+    "reason": "설명 장이 물음 하나와 활동만 보이고 결과 · 조작을 약속하지 않는다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 26 · 28 · 48 · 50 · 72 · 74"
+     }
+    ]
+   },
+   {
+    "id": "D-55",
+    "status": "통과",
+    "reason": "소개한 활동이 실라버스 44 · 45 · 47 · 48 · 50 · 51행과 같다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실라버스/피지컬AI_실라버스_최종본.xlsx",
+      "locator": "44 · 45 · 47 · 48 · 50 · 51행"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 26 · 28 · 48 · 50 · 72 · 74"
+     }
+    ]
+   },
+   {
+    "id": "D-56",
+    "status": "통과",
+    "reason": "설명 장 메시지가 한 틀로 이어지지 않는다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 26 · 28 · 48 · 50 · 72 · 74"
+     }
+    ]
+   },
+   {
+    "id": "D-57",
+    "status": "통과",
+    "reason": "이론 → 포털 → 코딩 랩 순서가 행 순서와 같다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/구성/실전반/04회차/구성.json",
+      "locator": "rows"
+     }
+    ]
+   },
+   {
+    "id": "D-59",
+    "status": "통과",
+    "reason": "16장 「원자료」를 판단했다. 그래프가 그려진 원래 관측이라는 일반 낱말이고 학생이 받은 실습 자료를 전제하지 않는다(의심 분류: 오해). 고치지 않는다. 다른 적중 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 16"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "16장"
+     }
+    ]
+   },
+   {
+    "id": "D-60",
+    "status": "통과",
+    "reason": "화면과 대본을 나란히 읽었다. 전문 옮김 0, 건너뛴 정의 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "D-61",
+    "status": "통과",
+    "reason": "노트 [짚을 곳] 순서와 대본 · 배치가 같다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "D-62",
+    "status": "통과",
+    "reason": "렌더만 보고 전 장의 핵심을 한 줄로 적을 수 있었다.",
+    "evidence": [
+     {
+      "path": "작업/2026-11-03_3-4회차-이론영상-갱신/렌더/검토전/온4실전",
+      "locator": "s-01~s-81.png 전 장"
+     }
+    ]
+   },
+   {
+    "id": "D-161",
+    "status": "통과",
+    "reason": "화면은 정의 · 값 · 그림과 까닭 한 문장이고 풀이는 대본에 있다. 변화 장 44 · 66 · 70은 전후가 보인다.",
+    "evidence": [
+     {
+      "path": "작업/2026-11-03_3-4회차-이론영상-갱신/렌더/검토전/온4실전",
+      "locator": "s-44 · s-66 · s-70.png"
+     }
+    ]
+   },
+   {
+    "id": "D-162",
+    "status": "통과",
+    "reason": "뒤 단원의 장이 앞 단원보다 빈약하지 않다. 66 · 70은 그림으로 보강됐다.",
+    "evidence": [
+     {
+      "path": "작업/2026-11-03_3-4회차-이론영상-갱신/렌더/검토전/온4실전",
+      "locator": "s-01~s-81.png 전 장"
+     }
+    ]
+   },
+   {
+    "id": "D-63",
+    "status": "통과",
+    "reason": "장마다 대상이 한 주제이고 앞 장과 같은 장이 없다. 69 · 70은 같은 안건이나 출처별 근거와 행동 사슬로 묻는 것이 다르다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 69 · 70"
+     }
+    ]
+   },
+   {
+    "id": "D-163",
+    "status": "통과",
+    "reason": "새 용어 4개 이상인 장 0. 55장 넷은 한 구조의 요소다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 55"
+     }
+    ]
+   },
+   {
+    "id": "D-164",
+    "status": "통과",
+    "reason": "같은 그림을 연속으로 쓰는 장이 없다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "D-64",
+    "status": "통과",
+    "reason": "새 45장이 제목 · 한 문장 메시지 · 맞선 칸 · 제작 기준을 갖췄다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 45"
+     },
+     {
+      "path": "작업/2026-11-03_3-4회차-이론영상-갱신/렌더/검토전/온4실전",
+      "locator": "s-45.png"
+     }
+    ]
+   },
+   {
+    "id": "D-65",
+    "status": "통과",
+    "reason": "제목 마침표 0, 두 줄 제목은 표지 · 간지뿐이다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "D-66",
+    "status": "통과",
+    "reason": "메시지 물음표 0, 두 문장 0, 본문 유형에 모두 있다. 문답 장은 상황 칸이다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "D-67",
+    "status": "통과",
+    "reason": "메시지를 단원별로 이어 읽어 이야기가 된다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "D-68",
+    "status": "통과",
+    "reason": "새 용어의 영문이 화면에 있다: LLM · RAG 8, Agent 10, Agent Skill 33, SOP 38, MCP 53, Host · Client · Server · Tool 55, Input Schema 57, stdio · HTTP 62.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 8 · 10 · 33 · 38 · 53 · 55 · 57 · 62"
+     }
+    ]
+   },
+   {
+    "id": "D-69",
+    "status": "통과",
+    "reason": "고친 뒤 다시 봤다. 54장 오른쪽 「도구 설명」 칸 첫 줄이 「공급망 관리(SCM, Supply Chain Management)」로 SCM의 풀네임을 화면에 둔다(원고 876행, PPTX slide53.xml 같은 글, 고친 뒤 렌더 s-54.png에서 칸 안). 코드 상자의 SCM은 server.py part_quotes 설명 그대로다. 대본 · 노트는 SCM을 말하지 않는다. 실전 4회차에 SCM이 나오는 곳은 54장뿐이다. MES는 실전 1회차에 풀네임이 있어 대상이 아니다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 54 · 876행"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/실전반_04일차.pptx",
+      "locator": "장 54(ppt/slides/slide53.xml)"
+     },
+     {
+      "path": "작업/2026-11-03_3-4회차-이론영상-갱신/렌더/고친뒤2/온4실전",
+      "locator": "s-54.png"
+     },
+     {
+      "path": "it/enterprise-mcp/enterprise_mcp/server.py",
+      "locator": "part_quotes 설명"
+     }
+    ]
+   },
+   {
+    "id": "D-70",
+    "status": "해당 없음",
+    "reason": "화면 비유 칸이 없고 노트에도 비유가 없다.",
+    "evidence": []
+   },
+   {
+    "id": "D-71",
+    "status": "통과",
+    "reason": "화면 글이 문어체다. 물음은 인용 52 · 실습 설명 · 퀴즈뿐이다. 퀴즈 간지 고정 문구는 D-50 몫이다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "D-72",
+    "status": "통과",
+    "reason": "쓰지 않는 말 검색 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "D-73",
+    "status": "통과",
+    "reason": "화면 · 노트의 접속 관계가 맞다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "D-75",
+    "status": "통과",
+    "reason": "새 그림의 선 · 색 · 조각이 같은 덱의 기존 그림(10 · 42 · 55)과 같아 보이고 생성 스크립트가 figures/에 있다. sample/ 렌더와의 직접 대조는 하지 않았다.",
+    "evidence": [
+     {
+      "path": "작업/2026-11-03_3-4회차-이론영상-갱신/렌더/검토전/온4실전",
+      "locator": "s-06 · s-08 · s-10 · s-42 · s-55 · s-66 · s-70.png"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/figures",
+      "locator": "만들기_삽화.py"
+     }
+    ]
+   },
+   {
+    "id": "D-76",
+    "status": "통과",
+    "reason": "바뀐 그림 다섯의 <text> 수 0(점검요청_출발점 · 모델과_근거검색 · 호출결과_네갈래 · 예비품_상태사슬 · 연결방식).",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/figures",
+      "locator": "*.svg"
+     }
+    ]
+   },
+   {
+    "id": "D-77",
+    "status": "통과",
+    "reason": "유형 연속 최대 3장(63~65 표). 6 · 8 · 66 · 70은 대상과 경로가 그림에서 보인다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     },
+     {
+      "path": "작업/2026-11-03_3-4회차-이론영상-갱신/렌더/검토전/온4실전",
+      "locator": "s-06 · s-08 · s-66 · s-70.png"
+     }
+    ]
+   },
+   {
+    "id": "D-78",
+    "status": "통과",
+    "reason": "표는 공통 기준 대조, 비교는 두 대안이고 과정은 삽화로 옮겨졌다. 장식 삽화 0.",
+    "evidence": [
+     {
+      "path": "작업/2026-11-03_3-4회차-이론영상-갱신/렌더/검토전/온4실전",
+      "locator": "s-01~s-81.png 전 장"
+     }
+    ]
+   },
+   {
+    "id": "D-79",
+    "status": "통과",
+    "reason": "실제 값 · 문장이 화면에 있다: 12 · 17 · 21 · 45 · 54 · 58 · 60.",
+    "evidence": [
+     {
+      "path": "작업/2026-11-03_3-4회차-이론영상-갱신/렌더/검토전/온4실전",
+      "locator": "s-12 · s-17 · s-21 · s-45 · s-54 · s-58 · s-60.png"
+     }
+    ]
+   },
+   {
+    "id": "D-80",
+    "status": "통과",
+    "reason": "삽화 라벨이 요소 이름 + 실제 대상이고 겹침이 없다. 70장 끊어진 선은 렌더에서 점선으로 보인다.",
+    "evidence": [
+     {
+      "path": "작업/2026-11-03_3-4회차-이론영상-갱신/렌더/검토전/온4실전",
+      "locator": "s-06 · s-08 · s-10 · s-17 · s-42 · s-55 · s-62 · s-66 · s-70.png"
+     }
+    ]
+   },
+   {
+    "id": "D-81",
+    "status": "해당 없음",
+    "reason": "지식 그래프 그림 장이 없다.",
+    "evidence": []
+   },
+   {
+    "id": "D-82",
+    "status": "통과",
+    "reason": "크게 빈 상자는 없다. 35 · 54 코드 상자 아래 약 3할 여백은 불통과 예(절반 이상)에 못 미쳐 기록만에 적었다. 강조 장은 그 유형의 꼴이다.",
+    "evidence": [
+     {
+      "path": "작업/2026-11-03_3-4회차-이론영상-갱신/렌더/검토전/온4실전",
+      "locator": "s-35 · s-54.png"
+     }
+    ]
+   },
+   {
+    "id": "D-83",
+    "status": "해당 없음",
+    "reason": "구조 유형 장이 없다.",
+    "evidence": []
+   },
+   {
+    "id": "D-84",
+    "status": "해당 없음",
+    "reason": "파이프라인 유형 장이 없다.",
+    "evidence": []
+   },
+   {
+    "id": "D-85",
+    "status": "해당 없음",
+    "reason": "관계도 유형 장이 없다.",
+    "evidence": []
+   },
+   {
+    "id": "D-86",
+    "status": "통과",
+    "reason": "렌더 PNG 81장을 모두 열었다. 넘침 · 겹침 · 잘림 0. 글겹침.py를 따로 돌려 겹침 0곳, 종료 코드 0.",
+    "evidence": [
+     {
+      "path": "작업/2026-11-03_3-4회차-이론영상-갱신/렌더/검토전/온4실전",
+      "locator": "s-01~s-81.png 전 장"
+     },
+     {
+      "path": "작업/2026-11-03_3-4회차-이론영상-갱신/렌더/검토전/온4실전",
+      "locator": "실전반_04일차.pdf"
+     }
+    ]
+   },
+   {
+    "id": "D-87",
+    "status": "통과",
+    "reason": "81장 모두 세 머리가 있다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "D-88",
+    "status": "통과",
+    "reason": "경위 · 날짜 말 0. 검색 적중 「일차」는 실제 파일 이름, 62장 「2025-06-18」은 명세 URL이라 대상이 아니다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "제작 기준 칸"
+     }
+    ]
+   },
+   {
+    "id": "D-173",
+    "status": "통과",
+    "reason": "인용한 행 번호 43~51과 행 제목이 엑셀과 같다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실라버스/피지컬AI_실라버스_최종본.xlsx",
+      "locator": "실전반 온라인 32H 43~51행"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "제작 기준 칸"
+     }
+    ]
+   },
+   {
+    "id": "D-90",
+    "status": "통과",
+    "reason": "deck2pptx.py --check 통과, 81장, 종료 코드 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "전체"
+     }
+    ]
+   },
+   {
+    "id": "D-91",
+    "status": "통과",
+    "reason": "81장 노트가 원고와 정규화 비교 차이 0. PPTX sha256 0bc697d46ae9…가 구성.json과 같다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/실전반_04일차.pptx",
+      "locator": "노트 81장"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/구성/실전반/04회차/구성.json",
+      "locator": "pptx_sha256"
+     }
+    ]
+   },
+   {
+    "id": "D-92",
+    "status": "해당 없음",
+    "reason": "실전 4회차는 확정 회차가 아니다(D맥-7). 다만 변경 전 사본과 글을 대조해 화면 글이 바뀐 장이 2 · 5 · 6 · 8 · 15 · 31 · 41 · 54 · 62 · 66 · 68 · 70 · 76과 새 45장뿐임을 확인했다.",
+    "evidence": []
+   },
+   {
+    "id": "D-93",
+    "status": "통과",
+    "reason": "정본 위치에 있고 원고와 화면 글이 대응한다. PPTX는 요청문대로 장 XML 국소 수정이다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/실전반_04일차.pptx",
+      "locator": "경로"
+     },
+     {
+      "path": "작업/2026-11-03_3-4회차-이론영상-갱신/실전4/변경기록.md",
+      "locator": "실행한 검사와 결과"
+     }
+    ]
+   },
+   {
+    "id": "D-94",
+    "status": "미확인",
+    "reason": "마감 보고 · 커밋 뒤에 볼 항목이다. 지금은 보고와 커밋이 없다. 감독이 그 단계 뒤에 채운다. git show --stat가 남았다.",
+    "evidence": []
+   },
+   {
+    "id": "D-95",
+    "status": "통과",
+    "reason": "값 · 이름을 대조했다: 0.9 mm/s · 30초 · 2분 HM-8.4, 11:13:18 · 11:13:23 사실표 §5.1.2, 40 · 42 · 45 · 빈칸 · 49 CSV, 품번 PR-7.1, part_quotes 코드, 회의 문장 회의록. 표기 차이는 D-112에서 다룬다.",
+    "evidence": [
+     {
+      "path": "it/portal/www/samples/HM-8_cooler-fan-manual.md",
+      "locator": ":34-36 · :72-74"
+     },
+     {
+      "path": "workspace/강의제작/지침/사실표/통합반_05-08일차_기술사실표.md",
+      "locator": "§5.1.2 · §6.2.2"
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/실습/05회차/랩/05일차_실습4_센서이상시각화/코드/source/sensor_training.csv",
+      "locator": ":2-11"
+     },
+     {
+      "path": "it/portal/www/samples/PR-07_spare-parts-standard.md",
+      "locator": ":10-12"
+     },
+     {
+      "path": "it/enterprise-mcp/enterprise_mcp/server.py",
+      "locator": ":105-111"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/실습/04회차/랩/04일차_실습3_회의록스킬작성/코드/source/회의록_1.txt",
+      "locator": "1 · 2 · 3 · 5 · 8번"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/실습/04회차/랩/04일차_실습3_회의록스킬작성/코드/source/회의록_2.txt",
+      "locator": "체크리스트 · 불량 · 넘어온 것"
+     }
+    ]
+   },
+   {
+    "id": "D-96",
+    "status": "통과",
+    "reason": "온톨로지는 6장 대본에서 지식 구조로만 쓰고 프로세스 설명이 아니다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "6장"
+     }
+    ]
+   },
+   {
+    "id": "D-97",
+    "status": "통과",
+    "reason": "화면 사실의 근거가 제작 기준 칸에 있고 위 D-95에서 열어 보았다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "제작 기준 칸"
+     }
+    ]
+   },
+   {
+    "id": "D-170",
+    "status": "통과",
+    "reason": "일반화한 곳이 없다. RAG · MCP는 일반 개념으로 쓴다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 8 · 53"
+     }
+    ]
+   },
+   {
+    "id": "D-98",
+    "status": "통과",
+    "reason": "값의 성격이 구분된다: 21 한 시점 값, 17 별도 설비, 60 기록, 44 「두 상태가 바뀐다면」 가정.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 17 · 21 · 44 · 60"
+     }
+    ]
+   },
+   {
+    "id": "D-99",
+    "status": "통과",
+    "reason": "실행 사실 12 · 60은 사실표 기록과 같다. 44 · 41 등은 비교용 문장이고 실행 결과로 쓰지 않았다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/지침/사실표/통합반_05-08일차_기술사실표.md",
+      "locator": "§5.1.2 · §6.2.2"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 12 · 60"
+     }
+    ]
+   },
+   {
+    "id": "D-100",
+    "status": "해당 없음",
+    "reason": "인제스천 품질 · 규모 주장이 없다.",
+    "evidence": []
+   },
+   {
+    "id": "D-102",
+    "status": "통과",
+    "reason": "제작 기준과 변경기록의 진술이 근거와 맞고 변경기록은 포털을 열지 않았다고 밝힌다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "제작 기준 칸"
+     },
+     {
+      "path": "작업/2026-11-03_3-4회차-이론영상-갱신/실전4/변경기록.md",
+      "locator": "못 본 것 · 미확인"
+     }
+    ]
+   },
+   {
+    "id": "D-103",
+    "status": "해당 없음",
+    "reason": "추천안을 다루는 장이 없다. 「카드」는 유형 칸 이름뿐이다.",
+    "evidence": []
+   },
+   {
+    "id": "D-104",
+    "status": "통과",
+    "reason": "「반려」 검색 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "D-105",
+    "status": "통과",
+    "reason": "「쿨러 과열」 검색 0. 12장은 「성능 저하 경보」다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 12"
+     }
+    ]
+   },
+   {
+    "id": "D-106",
+    "status": "통과",
+    "reason": "SOP 번호 · 동점 검색 0. evaluate_cards는 「대안 평가」로 사실표와 같다. 품번 표기는 58장뿐이다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 12"
+     },
+     {
+      "path": "workspace/강의제작/지침/사실표/통합반_05-08일차_기술사실표.md",
+      "locator": "§5.1.2"
+     }
+    ]
+   },
+   {
+    "id": "D-107",
+    "status": "해당 없음",
+    "reason": "「기준 흐름」 · anomaly_response 검색 0.",
+    "evidence": []
+   },
+   {
+    "id": "D-108",
+    "status": "통과",
+    "reason": "이 덱의 대표 값은 46.2 %, 11:13:08이고 사실표와 같다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 21"
+     },
+     {
+      "path": "workspace/강의제작/지침/사실표/통합반_05-08일차_기술사실표.md",
+      "locator": "§5.1.2"
+     }
+    ]
+   },
+   {
+    "id": "D-109",
+    "status": "해당 없음",
+    "reason": "기록 번호(경보 · 판단 · 명령 · 작업지시) · 재관측 값이 나오지 않는다.",
+    "evidence": []
+   },
+   {
+    "id": "D-166",
+    "status": "통과",
+    "reason": "다른 기록을 밝힌다: 17 「별도 설비의 유온」, 60 · 61 「별도의 생산 오더」.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 17 · 60 · 61"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "17장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "60장"
+     }
+    ]
+   },
+   {
+    "id": "D-110",
+    "status": "해당 없음",
+    "reason": "승인 지연 · 무응답이 나오지 않는다.",
+    "evidence": []
+   },
+   {
+    "id": "D-111",
+    "status": "통과",
+    "reason": "어긋나는 문장 없음: 6장 관측은 지식에 없다, 75장 실행은 책임자가 결정한다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "6장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "75장"
+     }
+    ]
+   },
+   {
+    "id": "D-112",
+    "status": "통과",
+    "reason": "고친 뒤 다시 봤다. 38장 대본(02편 115행) 「현장 제어로 전환해」 · 노트(원고 630행, PPTX notesSlide38) 「현장 제어 전환·잠금」이 포털 이름(app.js 237행 LOCAL 버튼 · ui.js 318행 LOCAL: \"현장 제어\")과 짝 덱(practical/day03 77 · 347행, integrated/day04 279행)과 같다. 「현장 조작 상태」 · 「현장 전환」은 실전 4회차 원고 · 대본에 0. 차이가 있어도 유지: 68장 「업무 자료 · 판단 시스템」은 포털 표시 이름(plainWords.js SERVERS)이고 실라버스 44 · 50행은 「업무 DB · 판단 도구」다. 다른 회차 옛 값(fm id · stdio 설명)은 변경기록의 파일:줄 몫이라 이 덱을 막지 않는다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "38장 · 115행"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 38 노트 · 630행"
+     },
+     {
+      "path": "it/portal/www/app.js",
+      "locator": "LOCAL 버튼 「현장 제어」"
+     },
+     {
+      "path": "it/portal/www/ui.js",
+      "locator": "LOCAL: \"현장 제어\""
+     },
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day03/실전반_03일차.md",
+      "locator": "77 · 347행"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day04/통합반_04일차.md",
+      "locator": "279행"
+     },
+     {
+      "path": "it/portal/www/plainWords.js",
+      "locator": "SERVERS"
+     }
+    ]
+   },
+   {
+    "id": "D-113",
+    "status": "통과",
+    "reason": "81장 모두 그 장만의 노트가 있다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "D-114",
+    "status": "통과",
+    "reason": "노트 꼴 검사 어긋남 0, 한 줄이다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "D-115",
+    "status": "통과",
+    "reason": "라벨 · 제작물 설명 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "D-116",
+    "status": "통과",
+    "reason": "노트와 대본의 내용 · 순서 · 값을 견줬다. 노트에만 있는 핵심 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "D-117",
+    "status": "통과",
+    "reason": "단원 밖 예고 0. 실습 설명 장 노트의 활동 소개는 자기 장이다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "D-118",
+    "status": "통과",
+    "reason": "어미가 고르고 「보이죠」 반복 없음.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "D-119",
+    "status": "통과",
+    "reason": "제작 말투 검색 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "D-120",
+    "status": "통과",
+    "reason": "노트 물음 표시 0. 추임새 없음.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "D-121",
+    "status": "통과",
+    "reason": "노트 식별자 검색 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "D-122",
+    "status": "통과",
+    "reason": "나란히 읽기 · 장 번호 말 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "D-123",
+    "status": "통과",
+    "reason": "수치 문장이 무엇의 값인지 먼저 말한다(6 · 21 · 60).",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 6 · 21 · 60 노트"
+     }
+    ]
+   },
+   {
+    "id": "D-124",
+    "status": "통과",
+    "reason": "명령 토큰 낭독 · 조작 메모 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "D-125",
+    "status": "해당 없음",
+    "reason": "1회차 전용 기준이다.",
+    "evidence": []
+   },
+   {
+    "id": "D-126",
+    "status": "통과",
+    "reason": "실전반 별도 원고이고 형식 · 용어가 같다. 그림체 대조는 D-75 범위다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "전체"
+     }
+    ]
+   },
+   {
+    "id": "D-127",
+    "status": "통과",
+    "reason": "차이를 숙제 · 기능 수로 만든 곳이 없다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "D-128",
+    "status": "통과",
+    "reason": "압축 구조는 이번에 바뀌지 않았고 이전 판 판정의 이유를 빌렸다. 닮음 결과도 같은 방향이다.",
+    "evidence": [
+     {
+      "path": "작업/2026-11-03_4회차-이론/인수전표.json",
+      "locator": "실전반-온라인-4-덱 D-128"
+     },
+     {
+      "path": "작업/2026-11-03_3-4회차-이론영상-갱신/실전4/변경기록.md",
+      "locator": "고친 곳 표"
+     }
+    ]
+   },
+   {
+    "id": "D-129",
+    "status": "통과",
+    "reason": "내가 다시 셌다: 단원 01 21 · 22, 단원 04 44 · 46, 단원 07 69 · 70, 각 2장. 새 45장은 응용 장면이 아니라 결과를 검증하는 기준이라 세지 않는다. 원고에 응용 표시가 없는 것은 기록만에 적었다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 21 · 22 · 44 · 45 · 46 · 69 · 70"
+     }
+    ]
+   },
+   {
+    "id": "D-130",
+    "status": "통과",
+    "reason": "닮음.py를 통합 5 · 6회차 대비로 돌렸다. 0.8 이상은 77장(1.00, D-50 고정 문구 예외)뿐이고 다음은 62장 0.67이다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "전체"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 77 · 62"
+     }
+    ]
+   },
+   {
+    "id": "D-131",
+    "status": "통과",
+    "reason": "기초 뒤 3장 이상 이어진 깊은 내용이 없다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "D-132",
+    "status": "통과",
+    "reason": "44 끝 문단은 45로 옮겨 중복이 사라졌다. 69 · 70은 묻는 것이 달라 같은 장면의 반복으로 보지 않는다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "44 · 45장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "69 · 70장"
+     }
+    ]
+   },
+   {
+    "id": "D-133",
+    "status": "통과",
+    "reason": "통합반 짝 원본(day05 · day06 원고, 산출물 통합반/이론/05 · 06회차 PPTX · 대본)은 workspace 끝 9bf8d152와 바이트가 같고(동기화.py의 changed_files로 낸 다른 파일 41개에 없음), git 이력의 마지막 변경이 2026-10-30 9d5fa180(구조 정리)이라 이번 작업 커밋 8e447e11도 손대지 않았다. 실전4가 쓰는 통합 6회차 그림(figures/연결방식.svg)과 그림 조각(삽화_기본.py)도 같은 폴더라 바뀌지 않았다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "workspace 끝 9bf8d152와 같음"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day06/통합반_06일차.md",
+      "locator": "workspace 끝 9bf8d152와 같음"
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차",
+      "locator": "PPTX · 대본, 9bf8d152와 같음"
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/06회차",
+      "locator": "PPTX · 대본, 9bf8d152와 같음"
+     }
+    ]
+   },
+   {
+    "id": "D-135",
+    "status": "해당 없음",
+    "reason": "오프라인 덱에만 쓰는 기준이다. 이 판정은 온라인 덱이고 오프라인 재조립은 다음 단계다.",
+    "evidence": []
+   },
+   {
+    "id": "D-136",
+    "status": "해당 없음",
+    "reason": "오프라인 덱에만 쓰는 기준이다. 이 판정은 온라인 덱이고 오프라인 재조립은 다음 단계다.",
+    "evidence": []
+   },
+   {
+    "id": "D-137",
+    "status": "해당 없음",
+    "reason": "오프라인 덱에만 쓰는 기준이다. 이 판정은 온라인 덱이고 오프라인 재조립은 다음 단계다.",
+    "evidence": []
+   },
+   {
+    "id": "D-169",
+    "status": "해당 없음",
+    "reason": "오프라인 덱에만 쓰는 기준이다. 이 판정은 온라인 덱이고 오프라인 재조립은 다음 단계다.",
+    "evidence": []
+   },
+   {
+    "id": "D-171",
+    "status": "해당 없음",
+    "reason": "오프라인 덱에만 쓰는 기준이다. 이 판정은 온라인 덱이고 오프라인 재조립은 다음 단계다.",
+    "evidence": []
+   },
+   {
+    "id": "D-172",
+    "status": "해당 없음",
+    "reason": "오프라인 덱에만 쓰는 기준이다. 이 판정은 온라인 덱이고 오프라인 재조립은 다음 단계다.",
+    "evidence": []
+   },
+   {
+    "id": "D-138",
+    "status": "해당 없음",
+    "reason": "오프라인 덱에만 쓰는 기준이다. 이 판정은 온라인 덱이고 오프라인 재조립은 다음 단계다.",
+    "evidence": []
+   },
+   {
+    "id": "D-139",
+    "status": "해당 없음",
+    "reason": "오프라인 덱에만 쓰는 기준이다. 이 판정은 온라인 덱이고 오프라인 재조립은 다음 단계다.",
+    "evidence": []
+   },
+   {
+    "id": "D-140",
+    "status": "해당 없음",
+    "reason": "오프라인 덱에만 쓰는 기준이다. 이 판정은 온라인 덱이고 오프라인 재조립은 다음 단계다.",
+    "evidence": []
+   },
+   {
+    "id": "D-141",
+    "status": "해당 없음",
+    "reason": "오프라인 덱에만 쓰는 기준이다. 이 판정은 온라인 덱이고 오프라인 재조립은 다음 단계다.",
+    "evidence": []
+   },
+   {
+    "id": "D-142",
+    "status": "해당 없음",
+    "reason": "오프라인 덱에만 쓰는 기준이다. 이 판정은 온라인 덱이고 오프라인 재조립은 다음 단계다.",
+    "evidence": []
+   },
+   {
+    "id": "D-143",
+    "status": "해당 없음",
+    "reason": "오프라인 덱에만 쓰는 기준이다. 이 판정은 온라인 덱이고 오프라인 재조립은 다음 단계다.",
+    "evidence": []
+   },
+   {
+    "id": "D-144",
+    "status": "해당 없음",
+    "reason": "오프라인 덱에만 쓰는 기준이다. 이 판정은 온라인 덱이고 오프라인 재조립은 다음 단계다.",
+    "evidence": []
+   },
+   {
+    "id": "D-145",
+    "status": "해당 없음",
+    "reason": "오프라인 덱에만 쓰는 기준이다. 이 판정은 온라인 덱이고 오프라인 재조립은 다음 단계다.",
+    "evidence": []
+   },
+   {
+    "id": "D-7",
+    "status": "해당 없음",
+    "reason": "이 작업은 실라버스를 고치지 않았다.",
+    "evidence": []
+   },
+   {
+    "id": "D-58",
+    "status": "통과",
+    "reason": "실습 자료가 있는 넷은 소개가 자료 첫머리와 맞다: 25~26 ↔ 실습1 안내.html 첫 화면 · START.md(에이전트를 구성하고 답의 근거를 호출의 입력 · 결과 · 관측 시각과 대조), 27~28 ↔ 실습2 START(원인 후보 · 근거 · 추가 확인을 점검 요청 초안으로), 49~50 ↔ 실습3 START(회의록 두 건의 결정 · 후속 스킬), 73~74 ↔ 실습4 START(외부 자료 · 점검 메모로 다음 협의 안건). 47 · 71 포털 실습은 저장소에 가이드 · START · 실습 대본 · 영상이 없다(실습 04회차 README는 실습1~4만, 실습 대본 04~07, 촬영/포털에 실전 04 구성안 없음, 영상 README에 실전 04회차 행 없음). 그래서 미확정 실습이고, 47~48 · 71~72는 실라버스 47행(스킬을 써서 나의 에이전트에 붙이고 같은 질문의 전후 답 · 근거 비교) · 50행(도구를 직접 불러 반환값을 보고 호출 기록의 근거와 대조)의 큰 활동만 소개한다(D요-16). 다른 활동을 예고한 곳 0. 이 두 실습의 가이드가 생기면 그 첫 화면과의 대조는 가이드 작업이 한다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실라버스/피지컬AI_실라버스_최종본.xlsx",
+      "locator": "실전반 온라인 32H 44 · 45 · 47 · 48 · 50 · 51행"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 25~28 · 47~50 · 71~74"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/실습/04회차/README.md",
+      "locator": "실습1~4 목록"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/실습/04회차/랩/04일차_실습1_업무에이전트구성/안내.html",
+      "locator": "첫 화면"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/실습/04회차/랩/04일차_실습1_업무에이전트구성/START.md",
+      "locator": "머리 · 이번에 할 것"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/실습/04회차/랩/04일차_실습2_원인추론과점검계획/START.md",
+      "locator": "머리"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/실습/04회차/랩/04일차_실습3_회의록스킬작성/START.md",
+      "locator": "머리"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/실습/04회차/랩/04일차_실습4_MCP도구연결/START.md",
+      "locator": "머리"
+     },
+     {
+      "path": "workspace/강의제작/산출물/영상/README.md",
+      "locator": "지금 있는 영상 표"
+     }
+    ]
+   },
+   {
+    "id": "D-101",
+    "status": "통과",
+    "reason": "D-112와 같은 판정이다. 고친 사실(38장 「현장 제어」)로 다시 봤고 다른 표기가 남은 곳 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "38장 · 115행"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 38 노트"
+     },
+     {
+      "path": "it/portal/www/app.js",
+      "locator": "LOCAL 버튼 「현장 제어」"
+     }
+    ]
+   },
+   {
+    "id": "D-134",
+    "status": "통과",
+    "reason": "이 덱이 고친 공통 사실이 짝 덱과 맞는다: 54장 part_quotes 설명은 통합 6회차 34장 코드(「SCM 부품별 견적: …단가(만원) · 불량률 · 납기(일) · 승인 여부(avl)」, I6 592행)와 지금 server.py가 같다. 38장 「현장 제어」는 앞 회차 짝(practical/day03 · integrated/day04)과 같고 통합 5 · 6회차에는 그 대목이 없다. 76장 「입력 스키마」는 통합 6회차(506 · 543 · 556행)와 같다. 68장 포털 표시 이름은 plainWords.js와 같다. 짝 덱에 남은 지금 코드와 다른 표기(fm:cooler-performance-loss day05 317 · 793 · 867행, day06 234 · 244행 / 지식 그래프 서버 stdio day06 705 · 710 · 714행, 통합 06회차 대본 02편 279 · 285행)는 이 덱이 바꾼 사실이 아니라 시스템이 바뀌며 남은 옛 표기이고, 변경기록 「다른 회차 옛 표기」에 파일:줄로 있다(요청문 DoD 26 — 고치지 않고 보고). 실전4는 fm id나 지식 그래프 서버의 stdio를 말하지 않는다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 38 · 54 · 68 · 76"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day06/통합반_06일차.md",
+      "locator": "34장 · 592행, 506 · 543 · 556행, 705~714행"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "317 · 793 · 867행"
+     },
+     {
+      "path": "작업/2026-11-03_3-4회차-이론영상-갱신/실전4/변경기록.md",
+      "locator": "「다른 회차 옛 표기(고치지 않음)」"
+     },
+     {
+      "path": "it/enterprise-mcp/enterprise_mcp/server.py",
+      "locator": "part_quotes 설명"
+     },
+     {
+      "path": "it/supabase/seed.sql",
+      "locator": "다섯 서버 transport streamable_http"
+     }
+    ]
+   },
+   {
+    "id": "D-160",
+    "status": "통과",
+    "reason": "기존 그림을 고치지 않았다. 새 그림 넷과 재사용 연결방식.svg를 쓰는 장을 렌더로 봤다.",
+    "evidence": [
+     {
+      "path": "작업/2026-11-03_3-4회차-이론영상-갱신/렌더/검토전/온4실전",
+      "locator": "s-06 · s-08 · s-62 · s-66 · s-70.png"
+     }
+    ]
+   },
+   {
+    "id": "D-146",
+    "status": "미확인",
+    "reason": "오프라인 재조립 뒤에 볼 항목이다. off04 · off05는 아직 재조립하지 않았다.",
+    "evidence": [
+     {
+      "path": "작업/2026-11-03_3-4회차-이론영상-갱신/실전4/변경기록.md",
+      "locator": "못 본 것 · 미확인"
+     }
+    ]
+   },
+   {
+    "id": "D-147",
+    "status": "통과",
+    "reason": "[SLIDE]가 1~81을 한 번씩 덮는다. 편 머리의 장 범위 · 구성.json · 구성표가 같은 판이다. 오프라인은 D-146 몫이다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/구성/실전반/04회차/구성.json",
+      "locator": "units"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "D-148",
+    "status": "통과",
+    "reason": "구성표.py를 쓰기 없이 돌린 결과가 구성표.md · 구성.json과 같다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/구성/실전반/04회차/구성표.md",
+      "locator": "전체"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/구성/실전반/04회차/구성.json",
+      "locator": "전체"
+     }
+    ]
+   },
+   {
+    "id": "D-149",
+    "status": "통과",
+    "reason": "노트가 원고 · PPTX와 같고 대본과 맞다. 38장은 고칠 목록에서 함께 고친다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/실전반_04일차.pptx",
+      "locator": "노트 81장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "D-150",
+    "status": "통과",
+    "reason": "2분 넘는 12 · 35 · 40 · 42 · 64부터 전 장을 렌더와 대조했다. 비교 · 계산 · 분기의 근거가 화면에 있고 6 · 8 · 45 · 62 · 66 · 70은 보강이 실제로 렌더에 있다.",
+    "evidence": [
+     {
+      "path": "작업/2026-11-03_3-4회차-이론영상-갱신/렌더/검토전/온4실전",
+      "locator": "s-01~s-81.png 전 장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "D-151",
+    "status": "해당 없음",
+    "reason": "실전 4회차 랩에 참고_교재_발췌.md가 없다(검색 0). 1회차 승인 문구 기준이다.",
+    "evidence": []
+   },
+   {
+    "id": "D-152",
+    "status": "통과",
+    "reason": "이론 04회차 README는 PPTX 한 줄과 대본 세 줄의 파일 목록뿐이다. 덱 MD 머리말은 제목 한 줄이고 판 이력이 없다. 구성.json에는 status 칸이 없고 경위 문장이 없다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/README.md",
+      "locator": "전체"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "1행"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/구성/실전반/04회차/구성.json",
+      "locator": "전체"
+     }
+    ]
+   },
+   {
+    "id": "D-153",
+    "status": "통과",
+    "reason": "화면 · 노트 · 제작 기준에 사람 이름이 없다. 45장은 역할로 적는다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 45"
+     }
+    ]
+   },
+   {
+    "id": "D-154",
+    "status": "미확인",
+    "reason": "마감 보고 · 커밋 뒤에 볼 항목이다. 지금은 보고와 커밋이 없다. 감독이 그 단계 뒤에 채운다.",
+    "evidence": []
+   },
+   {
+    "id": "D-155",
+    "status": "미확인",
+    "reason": "마감 보고 · 커밋 뒤에 볼 항목이다. 지금은 보고와 커밋이 없다. 감독이 그 단계 뒤에 채운다.",
+    "evidence": []
+   },
+   {
+    "id": "D-156",
+    "status": "미확인",
+    "reason": "마감 보고 · 커밋 뒤에 볼 항목이다. 지금은 보고와 커밋이 없다. 감독이 그 단계 뒤에 채운다.",
+    "evidence": []
+   },
+   {
+    "id": "D-157",
+    "status": "미확인",
+    "reason": "마감 보고 · 커밋 뒤에 볼 항목이다. 지금은 보고와 커밋이 없다. 감독이 그 단계 뒤에 채운다.",
+    "evidence": []
+   },
+   {
+    "id": "D-158",
+    "status": "미확인",
+    "reason": "마감 보고 · 커밋 뒤에 볼 항목이다. 지금은 보고와 커밋이 없다. 감독이 그 단계 뒤에 채운다.",
+    "evidence": []
+   },
+   {
+    "id": "D-167",
+    "status": "미확인",
+    "reason": "마감 보고 · 커밋 뒤에 볼 항목이다. 지금은 보고와 커밋이 없다. 감독이 그 단계 뒤에 채운다.",
+    "evidence": []
+   },
+   {
+    "id": "D-159",
+    "status": "미확인",
+    "reason": "마감 보고 · 커밋 뒤에 볼 항목이다. 지금은 보고와 커밋이 없다. 감독이 그 단계 뒤에 채운다.",
+    "evidence": []
+   }
+  ],
+  "실전반-온라인-4-대본노트": [
+   {
+    "id": "S-1",
+    "status": "통과",
+    "reason": "43 · 46 · 49행 문장을 발화와 대조했다. 실습 행은 간지 묶음이 해 볼 일을 소개한다. 빠진 문장 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실라버스/피지컬AI_실라버스_최종본.xlsx",
+      "locator": "실전반 온라인 32H 43~51행"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-2",
+    "status": "미확인",
+    "reason": "원본대응.json을 열었다: 실전 장 범위 아홉 묶음 ↔ 통합 5 · 6회차 원본 장과 압축 까닭(D요-6의 압축 대응)이고, 장 범위는 81장 판(38~46에 새 45장 포함)과 맞다. 그러나 S-2가 보는 칸 — 실라버스 43 · 46 · 49행 문장마다의 장 · 대본 구간 · 설명과 화면 · 확인 방법 · 예상 분 — 은 이 파일에도 구성.json(행 ↔ 장 범위 · 배정 분만)에도 없다. 이 저장소에서 실전 4회차 대조표 파일을 찾지 못했다(find로 대조표 · 대응표 이름 검색). 행 문장 ↔ 발화 직접 대조(숫자 · 부정 · 순서 바뀜 0)는 S-1 · D-1에서 했다. 남은 것: 로컬 PC 작업 폴더(작업/2026-11-03_4회차-이론/)의 대조표를 열어 빈 칸 0을 보거나, 없으면 마감 보고에 적을 것.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/구성/실전반/04회차/원본대응.json",
+      "locator": "이론본문 9묶음"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/구성/실전반/04회차/구성.json",
+      "locator": "rows"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실라버스/피지컬AI_실라버스_최종본.xlsx",
+      "locator": "실전반 온라인 32H 43~51행"
+     }
+    ]
+   },
+   {
+    "id": "S-3",
+    "status": "통과",
+    "reason": "행 제목 줄 · rows.title이 엑셀과 글자까지 같다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/구성/실전반/04회차/구성.json",
+      "locator": "rows"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실라버스/피지컬AI_실라버스_최종본.xlsx",
+      "locator": "실전반 온라인 32H 43~51행"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-4",
+    "status": "통과",
+    "reason": "구현과 다른 곳을 실제대로 말하고 조용히 뺀 항목이 없다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실라버스/피지컬AI_실라버스_최종본.xlsx",
+      "locator": "실전반 온라인 32H 43~51행"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-5",
+    "status": "통과",
+    "reason": "행 순서 · 분이 실라버스와 같다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/구성/실전반/04회차/구성.json",
+      "locator": "rows"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실라버스/피지컬AI_실라버스_최종본.xlsx",
+      "locator": "실전반 온라인 32H 43~51행"
+     }
+    ]
+   },
+   {
+    "id": "S-6",
+    "status": "해당 없음",
+    "reason": "실라버스 행을 바꾸지 않았다.",
+    "evidence": []
+   },
+   {
+    "id": "S-8",
+    "status": "통과",
+    "reason": "rows.kind와 행 제목 줄이 구분 칸과 같다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/구성/실전반/04회차/구성.json",
+      "locator": "rows"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실라버스/피지컬AI_실라버스_최종본.xlsx",
+      "locator": "실전반 온라인 32H 43~51행"
+     }
+    ]
+   },
+   {
+    "id": "S-9",
+    "status": "통과",
+    "reason": "명세 · SDD · BDD 검색 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-10",
+    "status": "통과",
+    "reason": "늘어난 포털 확인 · 코드 과제 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-11",
+    "status": "통과",
+    "reason": "다음 회차 주제는 81장 한 문장 예고뿐이다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "81장"
+     }
+    ]
+   },
+   {
+    "id": "S-12",
+    "status": "통과",
+    "reason": "이론 행 셋에 배정 · 낭독 칸이 있다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/구성/실전반/04회차/구성표.md",
+      "locator": "행 표"
+     }
+    ]
+   },
+   {
+    "id": "S-13",
+    "status": "해당 없음",
+    "reason": "배정보다 긴 행이 없다.",
+    "evidence": []
+   },
+   {
+    "id": "S-14",
+    "status": "미확인",
+    "reason": "차이는 −10분 안이다(대본시간.py 재측정 24.8 · 22.2 · 24.0분, 배정 25분 → −0.2 · −2.8 · −1.0분). 보강 내용은 변경기록 「고친 곳」에 있으나 「더 설명할 거리 · 자료가 없다」는 까닭 문장이 변경기록 · 대본 제작 확인용 · 기록.md에 없다. 마감 보고에 까닭 필요.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/구성/실전반/04회차/구성표.md",
+      "locator": "행 표"
+     },
+     {
+      "path": "작업/2026-11-03_3-4회차-이론영상-갱신/실전4/변경기록.md",
+      "locator": "13행 · 「고친 곳」"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "제작 확인용"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "제작 확인용"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "제작 확인용"
+     }
+    ]
+   },
+   {
+    "id": "S-15",
+    "status": "통과",
+    "reason": "보강한 45장과 앞뒤가 이어지고 다음 회차를 당기지 않았다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "44~46장"
+     }
+    ]
+   },
+   {
+    "id": "S-16",
+    "status": "통과",
+    "reason": "판단 · 확인을 뺀 곳이 없다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-17",
+    "status": "통과",
+    "reason": "행 문장마다 정의 · 필요 · 예 · 판단 근거가 있다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-18",
+    "status": "통과",
+    "reason": "대본시간.py 재측정 78.4분, 대기 45초 별도, 전후 값은 변경기록에 있다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/구성/실전반/04회차/구성표.md",
+      "locator": "끝 줄"
+     },
+     {
+      "path": "작업/2026-11-03_3-4회차-이론영상-갱신/실전4/변경기록.md",
+      "locator": "13행"
+     }
+    ]
+   },
+   {
+    "id": "S-19",
+    "status": "통과",
+    "reason": "구성표가 낭독 추정임을 밝히고 영상 길이로 적지 않는다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/구성/실전반/04회차/구성표.md",
+      "locator": "끝 줄"
+     }
+    ]
+   },
+   {
+    "id": "S-20",
+    "status": "통과",
+    "reason": "시간만을 이유로 한 증감이 없다.",
+    "evidence": [
+     {
+      "path": "작업/2026-11-03_3-4회차-이론영상-갱신/실전4/변경기록.md",
+      "locator": "고친 곳 표"
+     }
+    ]
+   },
+   {
+    "id": "S-22",
+    "status": "통과",
+    "reason": "렌더 전 장과 원고 · 대본을 이어 읽었다. 원리를 먼저 말하고 값은 그 상황의 설정으로 얹는다(6 「이 설비 매뉴얼은」).",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "6 · 21장"
+     }
+    ]
+   },
+   {
+    "id": "S-23",
+    "status": "통과",
+    "reason": "재료를 바꿔도 원리 문장이 성립한다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-24",
+    "status": "통과",
+    "reason": "과거형 적중을 읽었다. 학생 학습 · 회의 기록 · 그림 설명이고 구현 알림이 아니다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-25",
+    "status": "통과",
+    "reason": "꼬리표 · 가상 · 시뮬레이 검색 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-26",
+    "status": "통과",
+    "reason": "코드 · 사실표와 대조해 없는 일을 말한 곳 0.",
+    "evidence": [
+     {
+      "path": "it/enterprise-mcp/enterprise_mcp/server.py",
+      "locator": ":41"
+     },
+     {
+      "path": "it/dmn-mcp/dmn_mcp/server.py",
+      "locator": ":4"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-27",
+    "status": "통과",
+    "reason": "제품 소개 뼈대가 없다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-28",
+    "status": "통과",
+    "reason": "서비스 이름 · 제품 이름 낭독 검색 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-29",
+    "status": "통과",
+    "reason": "실습 소개가 조작이 아니라 판단 물음이다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "25~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "47~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "71~74장"
+     }
+    ]
+   },
+   {
+    "id": "S-30",
+    "status": "통과",
+    "reason": "사례가 쿨러와 회의록이고 다른 건은 밝혔다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-31",
+    "status": "통과",
+    "reason": "응용 말의 근거가 회의록 · 매뉴얼에 있고 단정 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/실습/04회차/랩/04일차_실습3_회의록스킬작성/코드/source/회의록_1.txt",
+      "locator": "2 · 3번"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/실습/04회차/랩/04일차_실습3_회의록스킬작성/코드/source/회의록_2.txt",
+      "locator": "넘어온 것"
+     },
+     {
+      "path": "it/portal/www/samples/HM-8_cooler-fan-manual.md",
+      "locator": ":34-36"
+     }
+    ]
+   },
+   {
+    "id": "S-32",
+    "status": "통과",
+    "reason": "단원 첫 장면이 실제 문제다(5 · 30 · 52).",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "5장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "30장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "52장"
+     }
+    ]
+   },
+   {
+    "id": "S-146",
+    "status": "통과",
+    "reason": "S-25와 같은 판정이다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-147",
+    "status": "통과",
+    "reason": "「다루지 않는」류 검색 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-148",
+    "status": "통과",
+    "reason": "S-25와 같은 판정이다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-149",
+    "status": "통과",
+    "reason": "값의 성격을 알리는 머리말이 없다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-33",
+    "status": "통과",
+    "reason": "단원의 여는 물음과 닫는 답을 찾았다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-34",
+    "status": "통과",
+    "reason": "쿨러 사건을 따라가고 다른 건은 밝혔다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "12 · 17 · 21장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "60장"
+     }
+    ]
+   },
+   {
+    "id": "S-35",
+    "status": "통과",
+    "reason": "장 경계를 이어 읽었다. 새 45장 앞뒤도 이어진다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "44~46장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-36",
+    "status": "통과",
+    "reason": "접속 관계가 맞다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-37",
+    "status": "통과",
+    "reason": "같은 예고 · 재요약 잇기 0. 「다음 장에서」 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-38",
+    "status": "통과",
+    "reason": "첫 구간이 앞 회차를 받아 열고 끝이 「설명할 수 있습니다」로 닫는다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "81장"
+     }
+    ]
+   },
+   {
+    "id": "S-39",
+    "status": "통과",
+    "reason": "1장이 에이전트에게 맡기는 회차임을 말한다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1장"
+     }
+    ]
+   },
+   {
+    "id": "S-40",
+    "status": "통과",
+    "reason": "실습 소개가 앞 이론의 물음을 받는다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "25~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "47~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "71~74장"
+     }
+    ]
+   },
+   {
+    "id": "S-41",
+    "status": "통과",
+    "reason": "과장 · 감탄 · 느낌표 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-42",
+    "status": "통과",
+    "reason": "본문만 처음부터 끝까지 이어 읽었다. 걸린 곳 없음.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-43",
+    "status": "통과",
+    "reason": "용어마다 정의 · 까닭 · 쓰임이 있다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-44",
+    "status": "통과",
+    "reason": "덱 장에 없는 낯선 구분을 더 세운 곳이 없다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-45",
+    "status": "통과",
+    "reason": "정의 뒤에 까닭이 있다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "8 · 10장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "33 · 38장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "53 · 55장"
+     }
+    ]
+   },
+   {
+    "id": "S-46",
+    "status": "통과",
+    "reason": "곁가지 설명 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-47",
+    "status": "통과",
+    "reason": "해당 짝을 섞은 문장 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-48",
+    "status": "통과",
+    "reason": "칸을 말하지 않는 장을 찾았으나 종류가 빠진 장은 없다. 23 · 57 · 63도 이번에 말한다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "23장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "57 · 63장"
+     }
+    ]
+   },
+   {
+    "id": "S-49",
+    "status": "통과",
+    "reason": "까닭을 골라 넣었고 근거는 덱 제작 기준 · 제작 확인용에 있다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "제작 기준 칸"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-50",
+    "status": "통과",
+    "reason": "용어의 첫 등장과 풀이 자리가 같다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-51",
+    "status": "통과",
+    "reason": "정식 용어를 가리지 않는다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-52",
+    "status": "통과",
+    "reason": "비유로 정의한 곳이 없다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-53",
+    "status": "통과",
+    "reason": "처음 듣는 전제로 정의 · 필요를 푼다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-54",
+    "status": "해당 없음",
+    "reason": "1회차 전용 기준이다.",
+    "evidence": []
+   },
+   {
+    "id": "S-150",
+    "status": "통과",
+    "reason": "대본의 약어 LLM · RAG · SOP · MCP가 첫 자리에서 풀린다. 화면의 SCM은 D-69 몫이다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "8장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "38장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "53장"
+     }
+    ]
+   },
+   {
+    "id": "S-151",
+    "status": "통과",
+    "reason": "억지 영어 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-152",
+    "status": "통과",
+    "reason": "항상 · 언제나 · 반드시 적중 8 · 60 · 61 · 65를 읽었다. 인용이거나 부정이다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "8장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "60 · 61 · 65장"
+     }
+    ]
+   },
+   {
+    "id": "S-167",
+    "status": "통과",
+    "reason": "입력 스키마 · 호출 결과 패턴과 실패 갈래를 설명한다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "57 · 66장"
+     }
+    ]
+   },
+   {
+    "id": "S-168",
+    "status": "통과",
+    "reason": "품질 주제 반복 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-169",
+    "status": "통과",
+    "reason": "세부 장비 나열 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-55",
+    "status": "통과",
+    "reason": "값 · 이름을 D-95의 근거로 대조했다.",
+    "evidence": [
+     {
+      "path": "it/portal/www/samples/HM-8_cooler-fan-manual.md",
+      "locator": ":34-36"
+     },
+     {
+      "path": "workspace/강의제작/지침/사실표/통합반_05-08일차_기술사실표.md",
+      "locator": "§5.1.2"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/실습/04회차/랩/04일차_실습3_회의록스킬작성/코드/source/회의록_1.txt",
+      "locator": "해당 안건"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/실습/04회차/랩/04일차_실습3_회의록스킬작성/코드/source/회의록_2.txt",
+      "locator": "해당 안건"
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/실습/05회차/랩/05일차_실습4_센서이상시각화/코드/source/sensor_training.csv",
+      "locator": ":2-11"
+     }
+    ]
+   },
+   {
+    "id": "S-56",
+    "status": "통과",
+    "reason": "설명이 설비 실제와 맞고 온톨로지를 프로세스로 부르지 않는다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "6장"
+     },
+     {
+      "path": "it/portal/www/samples/HM-8_cooler-fan-manual.md",
+      "locator": ":72-74"
+     }
+    ]
+   },
+   {
+    "id": "S-57",
+    "status": "통과",
+    "reason": "일반 사실의 출처가 덱 제작 기준에 있다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 8 · 53 · 62 제작 기준"
+     }
+    ]
+   },
+   {
+    "id": "S-58",
+    "status": "통과",
+    "reason": "값의 성격을 문장 안에서 구분한다(21 한 시점, 44 가정, 60 기록).",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "21장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "44장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "60장"
+     }
+    ]
+   },
+   {
+    "id": "S-59",
+    "status": "통과",
+    "reason": "이 대본의 대표 값 46.2퍼센트 · 11시 13분 8초가 같다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "21장"
+     },
+     {
+      "path": "workspace/강의제작/지침/사실표/통합반_05-08일차_기술사실표.md",
+      "locator": "§5.1.2"
+     }
+    ]
+   },
+   {
+    "id": "S-60",
+    "status": "해당 없음",
+    "reason": "사건 기록 번호를 말하지 않는다.",
+    "evidence": []
+   },
+   {
+    "id": "S-61",
+    "status": "통과",
+    "reason": "다른 기록을 밝힌다(17 별도 설비, 60 별도 조회).",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "17장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "60장"
+     }
+    ]
+   },
+   {
+    "id": "S-62",
+    "status": "해당 없음",
+    "reason": "승인 지연 · 무응답이 나오지 않는다.",
+    "evidence": []
+   },
+   {
+    "id": "S-63",
+    "status": "통과",
+    "reason": "어긋나는 문장 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-64",
+    "status": "해당 없음",
+    "reason": "추천안을 말하지 않는다. 「카드」는 2장의 화면 칸이다.",
+    "evidence": []
+   },
+   {
+    "id": "S-65",
+    "status": "통과",
+    "reason": "「반려」 검색 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-66",
+    "status": "통과",
+    "reason": "「쿨러 과열」 검색 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-67",
+    "status": "통과",
+    "reason": "동점 · SOP 번호 낭독 0, 「대안 평가」로 같다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "12장"
+     },
+     {
+      "path": "workspace/강의제작/지침/사실표/통합반_05-08일차_기술사실표.md",
+      "locator": "§5.1.2"
+     }
+    ]
+   },
+   {
+    "id": "S-68",
+    "status": "해당 없음",
+    "reason": "「기준 흐름」이 나오지 않는다.",
+    "evidence": []
+   },
+   {
+    "id": "S-69",
+    "status": "통과",
+    "reason": "고친 뒤 다시 봤다. 38장 대본 「현장 제어로 전환해」 · 노트 「현장 제어 전환·잠금」이 포털 · 짝 덱의 「현장 제어」와 같다. 그 밖의 차이와 까닭은 D-112에 적었다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "38장 · 115행"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 38 노트 · 630행"
+     },
+     {
+      "path": "it/portal/www/app.js",
+      "locator": "LOCAL 버튼 「현장 제어」"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day03/실전반_03일차.md",
+      "locator": "77 · 347행"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day04/통합반_04일차.md",
+      "locator": "279행"
+     }
+    ]
+   },
+   {
+    "id": "S-70",
+    "status": "해당 없음",
+    "reason": "인제스천 품질 · 규모 주장이 없다.",
+    "evidence": []
+   },
+   {
+    "id": "S-71",
+    "status": "통과",
+    "reason": "실습 결과를 본 것처럼 말하지 않는다. 실행 사실은 기록이다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "12장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "60장"
+     }
+    ]
+   },
+   {
+    "id": "S-72",
+    "status": "통과",
+    "reason": "실행 사실의 근거가 제작 기준 · 제작 확인용에 있다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 12 · 60 제작 기준"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "제작 확인용"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "제작 확인용"
+     }
+    ]
+   },
+   {
+    "id": "S-73",
+    "status": "통과",
+    "reason": "장마다 첫 문단에 위치어가 있다.",
+    "evidence": [
+     {
+      "path": "작업/2026-11-03_3-4회차-이론영상-갱신/렌더/검토전/온4실전",
+      "locator": "s-01~s-81.png 전 장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-74",
+    "status": "통과",
+    "reason": "위치어 · 모양이 렌더에 있다: 돋보기 10, 돌아오는 화살표 10, 큰 테두리 55, 갈래 66, 비어 있는 칸 70, 빈 자리 17. 11장 「표 아래의」는 줄 이름으로 찾을 수 있어 기록만에 적었다.",
+    "evidence": [
+     {
+      "path": "작업/2026-11-03_3-4회차-이론영상-갱신/렌더/검토전/온4실전",
+      "locator": "s-10 · s-11 · s-17 · s-55 · s-66 · s-70.png"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-75",
+    "status": "통과",
+    "reason": "칸을 가려 풀고 모든 글자를 읽지 않는다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-76",
+    "status": "통과",
+    "reason": "[짚을 곳] 순서와 메시지의 뜻이 대본과 같다. 39장도 표 순서로 간다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "39장"
+     }
+    ]
+   },
+   {
+    "id": "S-77",
+    "status": "통과",
+    "reason": "12 · 35 · 40 · 42 · 64부터 전 대본을 렌더와 견줬다. 비교 · 계산 · 분기의 근거를 따라갈 수 있다. 값 · 순서 차이 0. 따옴표 안 말의 작은 차이(15 · 19)는 기록만이다.",
+    "evidence": [
+     {
+      "path": "작업/2026-11-03_3-4회차-이론영상-갱신/렌더/검토전/온4실전",
+      "locator": "s-01~s-81.png 전 장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-78",
+    "status": "통과",
+    "reason": "묶음 발화가 활동과 물음만 말한다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "25~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "47~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "71~74장"
+     }
+    ]
+   },
+   {
+    "id": "S-79",
+    "status": "통과",
+    "reason": "이론 대본에 실습 발화가 없다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "25~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/실습/04회차/대본/04_실습_업무에이전트구성.md",
+      "locator": "머리"
+     }
+    ]
+   },
+   {
+    "id": "S-80",
+    "status": "통과",
+    "reason": "16장 「원자료」는 일반 낱말이다(D-59).",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "16장"
+     }
+    ]
+   },
+   {
+    "id": "S-81",
+    "status": "통과",
+    "reason": "실전 4회차 실습 영상은 산출물에 없다(영상 README에 실전 04회차 행 없음, 영상/실전반 폴더에 04회차 파일 없음). 그래서 실습 자료와 대조했다: 25 · 27 · 49 · 73 소개는 실습1 안내.html · START와 실습2~4 START 첫머리와 같은 활동이다. 47 · 71은 실습 자료가 아직 없는 미확정 실습이고, 소개가 실라버스 47 · 50행의 목적과 큰 흐름(스킬을 붙인 전후 답 비교, 도구 반환값을 답의 근거와 대조)만 말한다. 다른 일 · 다른 결과 0. 세부는 D-58.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "[SLIDE 47~48]"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "[SLIDE 71~72]"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "[SLIDE 25~26] · [SLIDE 27~28]"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실라버스/피지컬AI_실라버스_최종본.xlsx",
+      "locator": "실전반 온라인 32H 47 · 50행"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/실습/04회차/README.md",
+      "locator": "실습1~4 목록"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/실습/04회차/랩/04일차_실습1_업무에이전트구성/안내.html",
+      "locator": "첫 화면"
+     },
+     {
+      "path": "workspace/강의제작/산출물/영상/README.md",
+      "locator": "지금 있는 영상 표"
+     }
+    ]
+   },
+   {
+    "id": "S-170",
+    "status": "통과",
+    "reason": "설명 없이 넘어간 핵심 칸 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-82",
+    "status": "통과",
+    "reason": "강사의 말 그대로이고 해설 · 제3자 호칭 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-83",
+    "status": "통과",
+    "reason": "차분한 구어체다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-84",
+    "status": "통과",
+    "reason": "어미 일괄 흔적 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-85",
+    "status": "통과",
+    "reason": "고친 뒤 다시 봤다. 38장 대본이 LOCAL의 UI 이름을 「현장 제어」 그대로 말한다(app.js · ui.js와 같음). 39장 「정지·전환·잠금」은 앞 장을 받는 말이다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "38장 · 115행"
+     },
+     {
+      "path": "it/portal/www/app.js",
+      "locator": "LOCAL 버튼 「현장 제어」"
+     },
+     {
+      "path": "it/portal/www/ui.js",
+      "locator": "LOCAL: \"현장 제어\""
+     }
+    ]
+   },
+   {
+    "id": "S-86",
+    "status": "통과",
+    "reason": "제작 말투 검색 0. 「대조」 5곳은 화면 · 실라버스의 말을 받는 일반 동사이고 남발이 아니다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "8 · 18장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "43장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "57장"
+     }
+    ]
+   },
+   {
+    "id": "S-87",
+    "status": "통과",
+    "reason": "운영 말 검색 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-88",
+    "status": "통과",
+    "reason": "S-89와 같은 판정이다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-89",
+    "status": "통과",
+    "reason": "「?」 물음 01편 1 · 02편 2 · 03편 2개로 본보기 수준이고 실습 소개의 판단 물음이다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-90",
+    "status": "통과",
+    "reason": "식별자 낭독 검색 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-91",
+    "status": "통과",
+    "reason": "영어 낭독은 표준 · 약어 이름(AI · LLM · RAG · SOP · MCP · stdio · HTTP · PC)이다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "8장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "53 · 62장"
+     }
+    ]
+   },
+   {
+    "id": "S-92",
+    "status": "통과",
+    "reason": "약어를 세우는 자리 한 번 외 나란히 읽기 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "8장"
+     }
+    ]
+   },
+   {
+    "id": "S-93",
+    "status": "통과",
+    "reason": "장 번호 · 쪽 말 0. 45장 날짜는 원문 값을 가르는 내용이다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "45장"
+     }
+    ]
+   },
+   {
+    "id": "S-94",
+    "status": "통과",
+    "reason": "수치가 무엇의 값인지 먼저 말한다. 0.9 경계만 정확히 읽는다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "6 · 21장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "60장"
+     }
+    ]
+   },
+   {
+    "id": "S-95",
+    "status": "통과",
+    "reason": "명령 토큰 낭독 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-96",
+    "status": "통과",
+    "reason": "영어를 한글 발음으로 바꾼 곳 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-97",
+    "status": "통과",
+    "reason": "제목에 기대는 문장 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-98",
+    "status": "통과",
+    "reason": "제작 흔적 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-99",
+    "status": "통과",
+    "reason": "단정의 출처가 제작 기준 · 제작 확인용에 있다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "제작 기준 칸"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "제작 확인용"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "제작 확인용"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "제작 확인용"
+     }
+    ]
+   },
+   {
+    "id": "S-100",
+    "status": "통과",
+    "reason": "퀴즈 78~80에서 정답을 말하지 않고 81장에서 푼다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "78~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-101",
+    "status": "통과",
+    "reason": "세 편 모두 「이번 시간에는」으로 열고 앞 두 편은 「다음 시간에는」으로 잇는다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1 · 27~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29 · 49~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51장"
+     }
+    ]
+   },
+   {
+    "id": "S-102",
+    "status": "통과",
+    "reason": "세 편 첫 문장을 읽었다. 이음말로 시작하지 않는다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51장"
+     }
+    ]
+   },
+   {
+    "id": "S-103",
+    "status": "통과",
+    "reason": "「영상」 낭독 검색 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-104",
+    "status": "해당 없음",
+    "reason": "1회차 첫 구간 전용 기준이다.",
+    "evidence": []
+   },
+   {
+    "id": "S-105",
+    "status": "통과",
+    "reason": "마지막 편이 짧은 맺음 · 다음 회차 · 끝인사다. 중간 편 끝인사 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "81장"
+     }
+    ]
+   },
+   {
+    "id": "S-106",
+    "status": "통과",
+    "reason": "노트 검색 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "S-107",
+    "status": "통과",
+    "reason": "자리 장이 자리를 한 번 말한다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "2 · 3 · 4장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51 · 75~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-108",
+    "status": "통과",
+    "reason": "보통 장의 시작 · 종료 선언 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-109",
+    "status": "통과",
+    "reason": "복습이 쿨러 사건에 적용하고 짝을 가른다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "75장"
+     }
+    ]
+   },
+   {
+    "id": "S-110",
+    "status": "통과",
+    "reason": "정답 장이 까닭과 오답의 혼동을 푼다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "81장"
+     }
+    ]
+   },
+   {
+    "id": "S-111",
+    "status": "통과",
+    "reason": "네 자리가 겹치지 않는다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "75~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-112",
+    "status": "통과",
+    "reason": "대기는 78 · 79 · 80장 각 15초, 판단 자리뿐이다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "78~80장"
+     }
+    ]
+   },
+   {
+    "id": "S-113",
+    "status": "통과",
+    "reason": "파일 셋이 units와 같고 경계가 행과 맞는다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/구성/실전반/04회차/구성.json",
+      "locator": "units"
+     }
+    ]
+   },
+   {
+    "id": "S-114",
+    "status": "통과",
+    "reason": "세 편 머리 요소가 있다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-115",
+    "status": "통과",
+    "reason": "01편 표와 구성표 값이 같고 구성표는 쓰기 없이 다시 만들어 같았다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "이 회차의 구성"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/구성/실전반/04회차/구성표.md",
+      "locator": "행 표"
+     }
+    ]
+   },
+   {
+    "id": "S-116",
+    "status": "통과",
+    "reason": "행마다 제목 줄이 꼴대로 있다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-117",
+    "status": "통과",
+    "reason": "세 편 끝 표시가 있다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-118",
+    "status": "통과",
+    "reason": "머리의 장 범위와 대기 목록이 본문과 같다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "머리"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "머리"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "머리 · 제작 확인용"
+     }
+    ]
+   },
+   {
+    "id": "S-119",
+    "status": "통과",
+    "reason": "[SLIDE]가 1~81을 한 번씩 덮는다(스크립트 확인).",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-120",
+    "status": "통과",
+    "reason": "제작 표시는 > 줄 안에 있다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-121",
+    "status": "통과",
+    "reason": "대본 세 편 · 구성.json · 이론 04회차 README에 판 이력 · 날짜 경위 · 「지적 · 완료 · 옛 NN」 진행 기록이 없다. 검색에 걸린 01편 169행 「지적」, 229 · 245행 「검토자」, 02편 189행 「옛 답」은 수업 내용 문장이다. README는 파일 목록뿐이다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/README.md",
+      "locator": "전체"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/구성/실전반/04회차/구성.json",
+      "locator": "전체"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "169 · 229 · 245행"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "189행"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "전체"
+     }
+    ]
+   },
+   {
+    "id": "S-153",
+    "status": "통과",
+    "reason": "장 줄 꼴과 --- 경계가 맞다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-154",
+    "status": "통과",
+    "reason": "실습은 [SLIDE NN~MM] 묶음이다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "25~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "47~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "71~74장"
+     }
+    ]
+   },
+   {
+    "id": "S-122",
+    "status": "통과",
+    "reason": "81장 모두 그 장만의 노트다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "S-123",
+    "status": "통과",
+    "reason": "꼴 검사 어긋남 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "S-124",
+    "status": "통과",
+    "reason": "한 줄이고 PPTX 노트와 차이 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/실전반_04일차.pptx",
+      "locator": "노트 81장"
+     }
+    ]
+   },
+   {
+    "id": "S-125",
+    "status": "통과",
+    "reason": "구어체이고 라벨 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "S-126",
+    "status": "통과",
+    "reason": "장마다 노트와 대본을 견줬다. 값은 같고 노트에만 있는 핵심 0.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-127",
+    "status": "통과",
+    "reason": "단원 밖 예고 검색 · 통독 0. 실습 설명 장은 자기 활동이다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 1~81"
+     }
+    ]
+   },
+   {
+    "id": "S-128",
+    "status": "해당 없음",
+    "reason": "S-64와 같다. 추천안이 나오지 않는다.",
+    "evidence": []
+   },
+   {
+    "id": "S-129",
+    "status": "해당 없음",
+    "reason": "확정 회차가 아니고 화면도 고친 판이다.",
+    "evidence": []
+   },
+   {
+    "id": "S-130",
+    "status": "통과",
+    "reason": "바뀐 장의 노트가 같은 판이다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/practical/day04/실전반_04일차.md",
+      "locator": "장 6 · 8 · 31 · 41 · 44 · 45 · 62 · 66 · 68 · 70 · 76"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/실전반_04일차.pptx",
+      "locator": "노트"
+     }
+    ]
+   },
+   {
+    "id": "S-131",
+    "status": "통과",
+    "reason": "구성표 재생성 diff 0, 재측정 78.4분.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/구성/실전반/04회차/구성표.md",
+      "locator": "전체"
+     }
+    ]
+   },
+   {
+    "id": "S-132",
+    "status": "통과",
+    "reason": "S-69와 같은 판정이다. 고친 사실(38장 「현장 제어」)로 다시 봤다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "38장 · 115행"
+     },
+     {
+      "path": "it/portal/www/app.js",
+      "locator": "LOCAL 버튼 「현장 제어」"
+     }
+    ]
+   },
+   {
+    "id": "S-133",
+    "status": "통과",
+    "reason": "D-134와 같은 근거다. 이 회차가 고친 공통 사실(part_quotes 설명 · 현장 제어 · 입력 스키마 · 포털 표시 이름)은 통합 5 · 6회차 덱 · 대본과 어긋나지 않는다. 통합 06회차 대본 02편 279 · 285행의 지식 그래프 서버 stdio 설명은 이 덱이 바꾼 사실이 아니라 남은 옛 표기이고 변경기록 「다른 회차 옛 표기」에 파일:줄로 있다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/06회차/대본/02_이론_외부도구연결원리.md",
+      "locator": "279 · 285행"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day06/통합반_06일차.md",
+      "locator": "34장 · 592행"
+     },
+     {
+      "path": "작업/2026-11-03_3-4회차-이론영상-갱신/실전4/변경기록.md",
+      "locator": "「다른 회차 옛 표기(고치지 않음)」"
+     }
+    ]
+   },
+   {
+    "id": "S-134",
+    "status": "통과",
+    "reason": "실전반 대본 [SLIDE]가 1~81장을 한 번씩 덮고(빠짐 · 겹침 0) 81장 덱 · 구성.json units(1~28 · 29~50 · 51~81)와 맞다. 통합반 짝 원본(day05 · day06 원고, 산출물 통합반/이론/05 · 06회차 PPTX · 대본)은 workspace 끝 9bf8d152와 바이트가 같고(동기화.py의 changed_files로 낸 다른 파일 41개에 없음), git 이력의 마지막 변경이 2026-10-30 9d5fa180(구조 정리)이라 이번 작업 커밋 8e447e11도 손대지 않았다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/구성/실전반/04회차/구성.json",
+      "locator": "units · slide_count 81"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day05/통합반_05일차.md",
+      "locator": "9bf8d152와 같음"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/온라인/decks/integrated/day06/통합반_06일차.md",
+      "locator": "9bf8d152와 같음"
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/05회차/대본",
+      "locator": "9bf8d152와 같음"
+     },
+     {
+      "path": "workspace/강의제작/산출물/통합반/이론/06회차/대본",
+      "locator": "9bf8d152와 같음"
+     }
+    ]
+   },
+   {
+    "id": "S-135",
+    "status": "해당 없음",
+    "reason": "확정 회차 대본이 아니다.",
+    "evidence": []
+   },
+   {
+    "id": "S-136",
+    "status": "통과",
+    "reason": "이 판정이 렌더 전 장과의 화면 대조다. 고칠 목록 1번의 38장은 고친 문장으로 음성을 뽑는다.",
+    "evidence": [
+     {
+      "path": "작업/2026-11-03_3-4회차-이론영상-갱신/렌더/검토전/온4실전",
+      "locator": "s-01~s-81.png 전 장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "1~28장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "29~50장"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~81장"
+     }
+    ]
+   },
+   {
+    "id": "S-137",
+    "status": "통과",
+    "reason": "뒤 단원의 장도 정의 · 까닭 · 예가 있다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "51~70장"
+     }
+    ]
+   },
+   {
+    "id": "S-155",
+    "status": "미확인",
+    "reason": "영상 밖 부분은 맞다: 대본 [SLIDE] 1~81 한 번씩, PPTX 노트 = 원고 노트 81장(차이 0), PPTX sha256 490dce80… = 구성.json pptx_sha256, 구성.json units 1~28 · 29~50 · 51~81 = 편 머리 「대응 덱」 장 범위와 「02편은 29장 · 03편은 51장 · 75장부터 복습」 참조 문장, 구성표 낭독 값 = 대본시간.py 재측정(27.3 · 22.7 · 28.5분, 합 78.4분). 남은 것: 실전 04회차 이론 영상은 산출물에 없고(영상 README에 행 없음) 다시 만드는 단계 뒤에 본다. 고칠 목록 반영으로 02편 38 구획이 다시 살 구획에 더해졌는데 변경기록 「음성」의 견적(13구획 7,237자)은 반영 전 값이라 음성 단계에서 최종 대본으로 다시 잰다(기록.md 남은 일 4).",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/제작도구/구성/실전반/04회차/구성.json",
+      "locator": "units · pptx_sha256"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/01_이론_에이전트와근거.md",
+      "locator": "머리 · 이 회차의 구성"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "머리"
+     },
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/03_이론_도구연결과전체정리.md",
+      "locator": "머리"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/구성/실전반/04회차/구성표.md",
+      "locator": "단위 표"
+     },
+     {
+      "path": "작업/2026-11-03_3-4회차-이론영상-갱신/실전4/변경기록.md",
+      "locator": "「음성」 · 끝 절 「영향」"
+     }
+    ]
+   },
+   {
+    "id": "S-156",
+    "status": "미확인",
+    "reason": "오프라인 재조립 뒤에 볼 항목이다.",
+    "evidence": [
+     {
+      "path": "작업/2026-11-03_3-4회차-이론영상-갱신/실전4/변경기록.md",
+      "locator": "못 본 것 · 미확인"
+     }
+    ]
+   },
+   {
+    "id": "S-157",
+    "status": "해당 없음",
+    "reason": "이 덱을 쓰는 다른 과정 대본이 없다.",
+    "evidence": []
+   },
+   {
+    "id": "S-138",
+    "status": "미확인",
+    "reason": "마감 보고 · 커밋 뒤에 볼 항목이다. 지금은 보고와 커밋이 없다. 감독이 그 단계 뒤에 채운다.",
+    "evidence": []
+   },
+   {
+    "id": "S-139",
+    "status": "미확인",
+    "reason": "마감 보고 · 커밋 뒤에 볼 항목이다. 지금은 보고와 커밋이 없다. 감독이 그 단계 뒤에 채운다.",
+    "evidence": []
+   },
+   {
+    "id": "S-140",
+    "status": "미확인",
+    "reason": "마감 보고 · 커밋 뒤에 볼 항목이다. 지금은 보고와 커밋이 없다. 감독이 그 단계 뒤에 채운다.",
+    "evidence": []
+   },
+   {
+    "id": "S-141",
+    "status": "미확인",
+    "reason": "마감 보고 · 커밋 뒤에 볼 항목이다. 지금은 보고와 커밋이 없다. 감독이 그 단계 뒤에 채운다.",
+    "evidence": []
+   },
+   {
+    "id": "S-142",
+    "status": "통과",
+    "reason": "대본 · 노트 · 구성에 키 · 사람 이름 · 절대 경로를 보지 못했다. 45장은 역할로 말한다. 커밋 범위는 S-143 몫이다.",
+    "evidence": [
+     {
+      "path": "workspace/강의제작/산출물/실전반/이론/04회차/대본/02_이론_재사용가능한업무지침.md",
+      "locator": "45장"
+     },
+     {
+      "path": "workspace/강의제작/제작도구/구성/실전반/04회차/구성.json",
+      "locator": "전체"
+     }
+    ]
+   },
+   {
+    "id": "S-143",
+    "status": "미확인",
+    "reason": "마감 보고 · 커밋 뒤에 볼 항목이다. 지금은 보고와 커밋이 없다. 감독이 그 단계 뒤에 채운다.",
+    "evidence": []
+   },
+   {
+    "id": "S-144",
+    "status": "미확인",
+    "reason": "마감 보고 · 커밋 뒤에 볼 항목이다. 지금은 보고와 커밋이 없다. 감독이 그 단계 뒤에 채운다.",
+    "evidence": []
+   },
+   {
+    "id": "S-145",
+    "status": "미확인",
+    "reason": "마감 보고 · 커밋 뒤에 볼 항목이다. 지금은 보고와 커밋이 없다. 감독이 그 단계 뒤에 채운다.",
+    "evidence": []
+   },
+   {
+    "id": "S-158",
+    "status": "미확인",
+    "reason": "마감 보고 · 커밋 뒤에 볼 항목이다. 지금은 보고와 커밋이 없다. 감독이 그 단계 뒤에 채운다.",
+    "evidence": []
+   },
+   {
+    "id": "S-159",
+    "status": "미확인",
+    "reason": "마감 보고 · 커밋 뒤에 볼 항목이다. 지금은 보고와 커밋이 없다. 감독이 그 단계 뒤에 채운다.",
+    "evidence": []
+   },
+   {
+    "id": "S-160",
+    "status": "미확인",
+    "reason": "마감 보고 · 커밋 뒤에 볼 항목이다. 지금은 보고와 커밋이 없다. 감독이 그 단계 뒤에 채운다.",
+    "evidence": []
+   },
+   {
+    "id": "S-161",
+    "status": "미확인",
+    "reason": "마감 보고 · 커밋 뒤에 볼 항목이다. 지금은 보고와 커밋이 없다. 감독이 그 단계 뒤에 채운다.",
+    "evidence": []
+   },
+   {
+    "id": "S-162",
+    "status": "미확인",
+    "reason": "마감 보고 · 커밋 뒤에 볼 항목이다. 지금은 보고와 커밋이 없다. 감독이 그 단계 뒤에 채운다.",
+    "evidence": []
+   },
+   {
+    "id": "S-163",
+    "status": "미확인",
+    "reason": "마감 보고 · 커밋 뒤에 볼 항목이다. 지금은 보고와 커밋이 없다. 감독이 그 단계 뒤에 채운다.",
+    "evidence": []
+   },
+   {
+    "id": "S-164",
+    "status": "미확인",
+    "reason": "마감 보고 · 커밋 뒤에 볼 항목이다. 지금은 보고와 커밋이 없다. 감독이 그 단계 뒤에 채운다.",
+    "evidence": []
+   },
+   {
+    "id": "S-165",
+    "status": "미확인",
+    "reason": "마감 보고 · 커밋 뒤에 볼 항목이다. 지금은 보고와 커밋이 없다. 감독이 그 단계 뒤에 채운다.",
+    "evidence": []
+   },
+   {
+    "id": "S-166",
+    "status": "미확인",
+    "reason": "마감 보고 · 커밋 뒤에 볼 항목이다. 지금은 보고와 커밋이 없다. 감독이 그 단계 뒤에 채운다.",
+    "evidence": []
+   }
+  ]
+ },
+ "고칠목록": [
+  {
+   "등급": "하",
+   "장": [
+    38
+   ],
+   "위치": "대본 · 노트",
+   "문장": "대본 「설비를 정지하고 현장 조작 상태로 전환해 잠금을 확인한 뒤 핀을 세척합니다.」, 노트 「담당자가 정지와 현장 전환·잠금을 확인하고」",
+   "실물": "LOCAL의 화면 이름은 「현장 제어」다: it/portal/www/app.js:237, ui.js:318. 같은 사실을 practical/day03 md:77 · 347, integrated/day04 md:279가 「현장 제어」로 쓰고, 사실장부.md 21행이 「현장 전환」을 옛 표기로 적었다. 원문은 HM-8.7 「현장 패널에서 LOCAL로 전환」.",
+   "제안": "대본 「설비를 정지하고 현장 제어로 전환해 잠금을 확인한 뒤 핀을 세척합니다.」, 노트 「담당자가 정지와 현장 제어 전환·잠금을 확인하고」. 39장 「정지·전환·잠금」은 앞 장을 받는 말이라 둔다. 38장 구획은 다시 산다.",
+   "인수조건": [
+    "D-112",
+    "D-101",
+    "S-69",
+    "S-132",
+    "S-85"
+   ],
+   "고침확인": {
+    "결과": "고쳐짐",
+    "근거": "대본 02_이론_재사용가능한업무지침.md 115행 「설비를 정지하고 현장 제어로 전환해 잠금을 확인한 뒤 핀을 세척합니다.」, 원고 630행 노트 「담당자가 정지와 현장 제어 전환·잠금을 확인하고」 — 제안 글과 같다. PPTX는 notesSlide38.xml만 바뀌었고(변경전_고칠목록 사본과 zip 항목 바이트 비교, 바뀐 항목은 이것과 장 54의 slide53.xml 둘뿐) 노트 글이 원고와 같다. 38장 화면은 그대로(렌더 고친뒤2 s-38.png). 「현장 조작 상태」 · 「현장 전환」은 실전 4회차 원고 · 대본에 0. 39장 「정지·전환·잠금」은 제안대로 두었다. 포털 근거 app.js 237행 · ui.js 318행 「현장 제어」를 다시 확인했다. 38장 구획 음성은 음성 단계 몫."
+   }
+  },
+  {
+   "등급": "하",
+   "장": [
+    54
+   ],
+   "위치": "화면",
+   "문장": "코드 상자 「SCM 부품별 견적」(SCM 풀이 없음)",
+   "실물": "실전반 1~3회차 화면에 SCM이 없고(practical/day03 md:1149 제작 기준뿐) 54장 대본 · 노트도 풀지 않는다. 같은 상자의 avl은 「승인 여부」로 풀려 있다. 글은 it/enterprise-mcp/enterprise_mcp/server.py:106의 지금 정의다.",
+   "제안": "상자 글은 두고 오른쪽 「도구 설명」 칸을 「공급망 관리(SCM, Supply Chain Management)의 부품별 공급사 견적을 조회한다. 입고 완료나 개별 발주를 확인하는 기능이 아니다.」로. 낭독 불변. 칸 넘침은 렌더로 본다.",
+   "인수조건": [
+    "D-69"
+   ],
+   "고침확인": {
+    "결과": "고쳐짐",
+    "근거": "원고 876행 「도구 설명 | 공급망 관리(SCM, Supply Chain Management) / 부품별 공급사 견적을 조회한다. 입고 완료나 개별 발주를 확인하는 기능이 아니다.」, PPTX 장 54(ppt/slides/slide53.xml)에 같은 두 문단, 고친 뒤 렌더 s-54.png에서 풀네임 줄이 칸 안에 들고 글겹침.py 0곳(종료 코드 0), deck2pptx.py --check 통과. 제안과 다른 곳(이름 줄을 ` / `로 나눔, 「…Management)의 부품별…」 대신 두 줄)은 SCM의 풀네임을 화면 첫 등장 자리 옆에 둔다는 목적(D-69 · D-68 괄호 정식 용어)을 채운다. 글 뜻은 제안과 같고 낭독 불변."
+   }
+  }
+ ],
+ "기록만": [
+  {
+   "장": [
+    16
+   ],
+   "내용": "「원자료」: 변경기록의 의심을 판단했다. 그래프의 원래 관측을 뜻하는 일반 낱말이라 D-59 · S-80의 금지 대상(실습 자료 전제)이 아니다. 고치지 않는다."
+  },
+  {
+   "장": [
+    21,
+    22,
+    44,
+    45,
+    46,
+    69,
+    70
+   ],
+   "내용": "D-129: 21 · 22 / 44 · 46 / 69 · 70으로 셌고 45는 검증 기준 장이라 세지 않았다. 원고에 응용 표시가 없어 셀 때마다 판단에 기댄다. 제작 기준 칸에 적어 두면 다음 판정이 쉽다."
+  },
+  {
+   "장": [
+    15,
+    19
+   ],
+   "내용": "따옴표 안 요청 말의 작은 차이: 15 화면 「경보 원인을 한 문장으로」 ↔ 대본 「분석해서 한 문장으로」, 19 화면 「센서를 본다」 ↔ 대본 「센서를 확인한다」. 뜻이 같아 음성을 막지 않는다."
+  },
+  {
+   "장": [
+    11
+   ],
+   "내용": "대본 「표 아래의 접근 거부」: 표 밖 칸이 아니라 셋째 행이다. 이름으로 찾을 수 있어 막지 않는다."
+  },
+  {
+   "장": [
+    35,
+    54
+   ],
+   "내용": "코드 상자 아래 약 3할이 빈다. 불통과 예(절반 이상)에 못 미친다."
+  },
+  {
+   "장": [
+    58
+   ],
+   "내용": "제목 「두 부품 번호」에 표는 세 줄이다. 대본이 두 줄과 맨 아래를 나눠 말한다."
+  },
+  {
+   "장": [
+    8,
+    9,
+    62
+   ],
+   "내용": "제작 기준의 「일차」는 사실표 파일 이름, 62장 날짜는 명세 URL이다. D-88 대상이 아니다."
+  },
+  {
+   "장": [],
+   "내용": "검토 도중 Docker 응답이 끊겨 포털 GET · DB 읽기를 하지 못했다. 도구 정의 · 서버 목록은 코드(server.py · plainWords.js · seed.sql)로 대조했고 실행 대조는 미검증이다."
+  },
+  {
+   "장": [],
+   "내용": "강조 계획(요청문 DoD 11 · 13)을 강조계획.json 원문으로 판정했다(고침 확인 단계): 표시 125개 · 47장, 문장 · 낱말 · 끝문장이 모두 그 장 대본 구획에 있다(직접 대조 어긋남 0, 고칠 목록 반영 뒤 강조계획.json은 변경전 사본과 같다). 대본시간.py 재측정으로 2분 넘는 장은 12 · 35 · 40 · 42 · 64이고 모두 강조 4~5개(표의 각 줄 · 상자의 각 줄 · 그림의 각 가지)가 있다. 비교 값과 갈림길(6장 두 갈래 진동 기준, 66장 네 갈래, 17장 빈 자리, 45장 원문 넷, 42장 두 상태)에 강조가 있다. 강조 없는 34장은 자리 장 · 실습 간지 · 강조 문장 한 줄 · 퀴즈(답 노출 방지) · 큰 칸 두세 개를 「왼쪽 · 가운데 · 오른쪽」과 칸 머리 이름으로 부르는 장이고, 장별점검.md(실전4 절 = 실전4/점검.md)에 장마다 구체적 까닭이 있다. 「복잡해서 못 넣음」으로 남은 장 0. 좌표 · 시각(DoD 12)은 영상 단계 몫이라 판정하지 않았다(참고: 54장 「오른쪽 결과 범위」 어림 원은 고친 렌더에서도 결과 범위 글을 덮는다)."
+  },
+  {
+   "장": [
+    47,
+    48,
+    71,
+    72
+   ],
+   "내용": "실전 4회차 포털 실습 47행 · 50행에는 가이드 · START · 실습 대본 · 영상이 저장소에 아직 없다(실습 04회차 README는 실습1~4만). 덱 소개는 실라버스 큰 활동만 말해 막지 않는다. 가이드를 만들 때 이 소개와 맞춘다."
+  },
+  {
+   "장": [
+    25
+   ],
+   "내용": "실습1 START.md · 안내.html 제목 「…답의 도구·근거 확인하기」가 실라버스 44행 · 덱 25장 간지 「…질문의 도구·근거 확인하기」와 한 낱말 다르다. 실습 자료 쪽 표기라 이 덱을 막지 않는다."
+  },
+  {
+   "장": [
+    38
+   ],
+   "내용": "장별점검.md · 실전4/점검.md의 38장 낭독은 118초로 적혔고, 고칠 목록 반영 뒤 대본시간.py 재측정은 117초다. 음성 전 어림 칸이라 영상 뒤 실측으로 고쳐 쓸 때 맞춘다."
+  }
+ ],
+ "확정장": "1-81",
+ "못 본 장": [],
+ "고칠목록2": []
+}
