@@ -77,7 +77,7 @@
 </code></pre>
 <figure><a href="images/python-version.png"><img src="images/python-version.png" alt="PowerShell에서 python --version을 실행한 결과는 Python 3.14.7입니다." width="428" height="47" loading="lazy" style="width:auto;max-width:100%;height:auto"></a><figcaption>PowerShell에서 python --version을 실행한 결과는 Python 3.14.7입니다.</figcaption></figure>
 <p><strong>확인:</strong> Python 버전이 표시되고 README의 설치 기준 이상입니다. 명령을 찾지 못하면 설치 때 PATH 추가를 선택했는지 확인하고 터미널을 새로 여세요.</p>
-</section><section id="step3"><div class="step-head"><span class="number">03</span><h2>Node.js 설치하고 실행 확인하기</h2></div><p>README의 Node.js 공식 설치 링크에서 Windows 설치 파일을 받습니다. 설치 위치와 구성은 기본값으로 진행합니다. <strong>Tools for Native Modules</strong>의 추가 도구 자동 설치 항목은 선택하지 않고 설치를 마칩니다.</p>
+</section><section id="step3"><div class="step-head"><span class="number">03</span><h2>Node.js 설치하고 실행 확인하기</h2></div><p>README의 Node.js 공식 설치 링크에서 Windows 설치 파일을 받습니다. 설치 위치와 구성은 기본값으로 진행합니다. <strong>Tools for Native Modules</strong>의 추가 도구 자동 설치 항목은 선택하지 않고 <strong>Install</strong>을 누릅니다. Windows가 권한을 묻는 창을 띄우면 <strong>예</strong>를 누르세요. 이 창은 화면 녹화에 찍히지 않아 사진과 영상에 나오지 않습니다. 뒤의 설치와 관리자 PowerShell에서도 같은 창이 나오면 <strong>예</strong>를 누릅니다.</p>
 <figure><a href="images/node-install.png"><img src="images/node-install.png" alt="추가 도구 자동 설치 항목을 비워 두고 Next를 누릅니다." width="607" height="453" loading="lazy" style="width:auto;max-width:100%;height:auto"></a><figcaption>추가 도구 자동 설치 항목을 비워 두고 Next를 누릅니다.</figcaption></figure>
 <p>Windows <strong>시작</strong>을 누르고 PowerShell을 검색해 <strong>Windows PowerShell</strong>을 엽니다. 이미 열려 있던 창에서 명령을 찾지 못할 때도 새 창에서 다시 확인하세요. 새 창은 설치하며 추가된 경로를 읽습니다. 어느 폴더에서든 다음 명령을 실행할 수 있습니다.</p>
 <figure><a href="images/node-shell.png"><img src="images/node-shell.png" alt="Windows 검색 결과에서 Windows PowerShell을 눌러 새 창을 엽니다." width="440" height="155" loading="lazy" style="width:auto;max-width:100%;height:auto"></a><figcaption>Windows 검색 결과에서 Windows PowerShell을 눌러 새 창을 엽니다.</figcaption></figure>
@@ -145,7 +145,13 @@
 <figure><a href="images/codex-next.png"><img src="images/codex-next.png" alt="Codex 탭의 안내 화면에서 다음을 누릅니다." width="670" height="340" loading="lazy" style="width:auto;max-width:100%;height:auto"></a><figcaption>Codex 탭의 안내 화면에서 다음을 누릅니다.</figcaption></figure>
 <p>모델 안내는 <strong>현재 모델로 계속 진행</strong>을 누르세요.</p>
 <figure><a href="images/codex-model.png"><img src="images/codex-model.png" alt="모델 안내에서 현재 모델로 계속 진행을 누릅니다." width="600" height="620" loading="lazy" style="width:auto;max-width:100%;height:auto"></a><figcaption>모델 안내에서 현재 모델로 계속 진행을 누릅니다.</figcaption></figure>
-<p><strong>ChatGPT로 로그인</strong>을 눌러 브라우저에서 본인 계정으로 인증합니다. 전화번호 확인이 나타나면 본인 화면에서 마치고, 작업 폴더가 열린 VS Code로 돌아옵니다. 계정 정보는 터미널이나 채팅에 붙여넣지 마세요. 옆의 <strong>채팅</strong> 탭은 GitHub Copilot입니다. README대로 본인 GitHub 계정을 연결하면 실습에서 함께 쓸 수 있습니다.</p>
+<p><strong>ChatGPT로 로그인</strong>을 누르면 브라우저가 열립니다. 사진처럼 <strong>Welcome back</strong> 화면이 나오면 본인 계정을 누르세요. 처음 로그인하는 브라우저라면 본인 계정 정보를 넣는 화면이 먼저 나옵니다.</p>
+<figure><a href="images/codex-login-account.png"><img src="images/codex-login-account.png" alt="브라우저의 Welcome back 화면에서 본인 계정을 누릅니다." width="720" height="490" loading="lazy" style="width:auto;max-width:100%;height:auto"></a><figcaption>브라우저의 Welcome back 화면에서 본인 계정을 누릅니다.</figcaption></figure>
+<p><strong>Select a workspace</strong>에서 <strong>Continue</strong>를 누릅니다.</p>
+<figure><a href="images/codex-login-workspace.png"><img src="images/codex-login-workspace.png" alt="Select a workspace에서 Continue를 누릅니다." width="720" height="520" loading="lazy" style="width:auto;max-width:100%;height:auto"></a><figcaption>Select a workspace에서 Continue를 누릅니다.</figcaption></figure>
+<p><strong>Signed in to Codex</strong>가 보이면 로그인이 끝난 것입니다. 전화번호 확인이 나타나면 본인 화면에서 마치고, 작업 폴더가 열린 VS Code로 돌아옵니다. 계정 정보는 터미널이나 채팅에 붙여넣지 마세요.</p>
+<figure><a href="images/codex-signed-in.png"><img src="images/codex-signed-in.png" alt="Signed in to Codex가 보이면 로그인이 끝난 것입니다." width="1120" height="500" loading="lazy" style="width:auto;max-width:100%;height:auto"></a><figcaption>Signed in to Codex가 보이면 로그인이 끝난 것입니다.</figcaption></figure>
+<p>옆의 <strong>채팅</strong> 탭은 GitHub Copilot입니다. README대로 본인 GitHub 계정을 연결하면 실습에서 함께 쓸 수 있습니다.</p>
 <p>오른쪽 Codex 입력칸에 다음 인사를 넣고 전송하세요.</p>
 <pre><code class="language-text">안녕
 </code></pre>
@@ -163,12 +169,12 @@
 <p>VS Code로 돌아와 작업 폴더의 Git Bash에서 프로젝트 폴더로 이동합니다.</p>
 <pre><code class="language-bash">cd hyd-iot-edu
 </code></pre>
-<figure><a href="images/project-terminal-root.png"><img src="images/project-terminal-root.png" alt="프로젝트 폴더로 이동한 뒤 터미널의 현재 위치를 확인합니다." width="700" height="140" loading="lazy" style="width:auto;max-width:100%;height:auto"></a><figcaption>프로젝트 폴더로 이동한 뒤 터미널의 현재 위치를 확인합니다.</figcaption></figure>
+<figure><a href="images/project-terminal-root.png"><img src="images/project-terminal-root.png" alt="프로젝트 폴더로 이동한 뒤 터미널의 현재 위치를 확인합니다." width="550" height="110" loading="lazy" style="width:auto;max-width:100%;height:auto"></a><figcaption>프로젝트 폴더로 이동한 뒤 터미널의 현재 위치를 확인합니다.</figcaption></figure>
 <p>현재 위치가 프로젝트 루트인지 확인한 뒤 실행하세요.</p>
 <pre><code class="language-bash">bash scripts/start_all.sh
 </code></pre>
 <figure><a href="images/system-start.png"><img src="images/system-start.png" alt="프로젝트 폴더의 Git Bash에 시작 명령을 넣고 Enter를 누릅니다." width="299" height="43" loading="lazy" style="width:auto;max-width:100%;height:auto"></a><figcaption>프로젝트 폴더의 Git Bash에 시작 명령을 넣고 Enter를 누릅니다.</figcaption></figure>
-<p>처음에는 서비스마다 필요한 이미지를 받아 파일을 풀고 컨테이너를 시작합니다. <strong>Pulling</strong> 또는 <strong>Downloading</strong> 옆의 받은 양이 변하거나 다음 단계 번호가 나타나면 그대로 기다리세요. 명령을 다시 입력할 필요가 없습니다. <strong>Started</strong>는 컨테이너를 시작했다는 표시입니다. 마지막 점검을 지나 완료 줄까지 나오는지 확인하세요.</p>
+<p>처음에는 서비스마다 필요한 이미지를 받아 파일을 풀고 컨테이너를 시작합니다. <strong>Pulling</strong> 또는 <strong>Downloading</strong> 옆의 받은 양이 변하거나 다음 단계 번호가 나타나면 그대로 기다리세요. 명령을 다시 입력할 필요가 없습니다. <strong>Started</strong>는 컨테이너를 시작했다는 표시입니다. 3/8 단계에서 <code>WARN: config section [inbucket] is deprecated</code>처럼 빨간 줄이 보여도 멈춘 것이 아니니 그대로 기다리세요. 마지막 점검을 지나 완료 줄까지 나오는지 확인하세요.</p>
 <figure><a href="images/system-progress.png"><img src="images/system-progress.png" alt="4/8 단계의 Pulling 표시와 받은 양이 달라지면 이미지를 받고 있는 중입니다." width="1303" height="233" loading="lazy" style="width:auto;max-width:100%;height:auto"></a><figcaption>4/8 단계의 Pulling 표시와 받은 양이 달라지면 이미지를 받고 있는 중입니다.</figcaption></figure>
 <p>VS Code 터미널의 <strong>완료. 포털</strong> 줄에서 이번 실행의 주소를 찾습니다. 주소 위에 마우스를 놓고 <strong>Ctrl</strong>을 누른 채 주소를 클릭하세요. 기본 포트가 다른 프로그램과 겹쳤다면 출력된 포트 번호를 사용합니다.</p>
 <figure><a href="images/system-ready.png"><img src="images/system-ready.png" alt="VS Code 터미널의 완료 줄에서 포털 주소 위에 마우스를 놓습니다. 링크 안내가 뜨면 Ctrl을 누른 채 클릭합니다." width="727" height="116" loading="lazy" style="width:auto;max-width:100%;height:auto"></a><figcaption>VS Code 터미널의 완료 줄에서 포털 주소 위에 마우스를 놓습니다. 링크 안내가 뜨면 Ctrl을 누른 채 클릭합니다.</figcaption></figure>

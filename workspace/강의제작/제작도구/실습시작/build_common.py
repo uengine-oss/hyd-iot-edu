@@ -21,11 +21,16 @@ for course,slug in active_courses:
             for filename in ('lab_db.py', 'prepare_example.py'):
                 shutil.copy2(HERE/filename, folder/filename)
             shared=json.loads((ROOT/'workspace/강의제작/제작도구/촬영/neo4j/공통_Cypher_큐.json').read_text(encoding='utf-8'))
-            prepare=('실습 DB에 연결하기', '<p>Docker가 실행 중인 PC에서 시작 도구의 관계 조회 실습을 고르고 「새로 시작」을 누르세요. '
-                     '이미 이 가이드와 Neo4j Browser가 열렸다면 Browser의 연결 창을 보세요. '
-                     '시작 도구에 표시된 실습용 주소와 Connection URL의 주소가 맞는지 확인합니다. '
-                     'Protocol은 bolt://를 고르고, Database user에 neo4j를 넣고 Password는 비워 둔 채 Connect를 누르세요. '
-                     '연결 뒤 첫 사용 안내 「Work in tabs」가 입력칸을 가리면 Dismiss를 눌러 닫으세요.</p>'
+            caption='python lab_db.py가 연 연결 창. 주소는 자신의 터미널 출력과 대조하세요.'
+            prepare=('예제 준비하고 연결하기', '<p>먼저 Docker Desktop을 실행합니다. 이 실습의 데이터베이스가 Docker에서 돌아갑니다.</p>'
+                     '<p>「실습 시작」 도구를 쓴다면 관계 조회 실습을 고르고 「새로 시작」을 누르세요. 예제가 준비되고 이 가이드와 Neo4j Browser가 열리니 아래 연결 창으로 갑니다.</p>'
+                     '<p>ZIP으로 받았다면 풀린 <code>02회차/랩/02일차_실습1_관계조회</code> 폴더를 VS Code의 파일 → 폴더 열기로 엽니다. 터미널 → 새 터미널에서 다음을 실행하세요.</p>'
+                     '<pre>python prepare_example.py</pre><p class="check">예제 준비 완료: 노드 20개 · 관계 19개가 표시됩니다. 이 예제는 HYD-01 한 대의 설비 구성입니다.</p>'
+                     '<pre>python lab_db.py</pre>'
+                     '<p>열린 연결 창의 Protocol이 bolt://이고 Connection URL이 터미널의 주소와 같은지 확인하세요. 주소가 비어 있다면 터미널의 127.0.0.1:포트 값을 넣습니다. '
+                     'Database user에 neo4j를 넣고 Password는 비워 둔 채 Connect를 누르세요.</p>'
+                     f'<figure><a href="images/00-connect.jpg" target="_blank"><img src="images/00-connect.jpg" alt="{caption}"></a><figcaption>{caption} · 누르면 크게 보기</figcaption></figure>'
+                     '<p>연결 뒤 첫 사용 안내(보라색 창)가 뜨면 Dismiss를 누르고, 마지막 창은 OK, got it을 눌러 닫으세요. 왼쪽 패널이 열려 있어도 입력은 같습니다.</p>'
                      '<p>이 주소는 지금 연 실습 전용 데이터베이스입니다. 아래에서 만든 노드와 관계는 여기에 저장됩니다. '
                      '포털 지식 지도는 별도의 기준 데이터베이스에서 읽습니다.</p>')
             sections=graph_sections(shared,prepare)

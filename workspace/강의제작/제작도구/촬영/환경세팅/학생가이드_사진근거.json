@@ -55,18 +55,8 @@
         ]
       ],
       "caption": "Add python.exe to PATH를 선택한 뒤 Install Now를 누릅니다.",
-      "redactions": [
-        {
-          "box": [
-            785,
-            500,
-            1335,
-            535
-          ],
-          "label": "내 설치 폴더"
-        }
-      ],
-      "sha256": "86cb3474de03520f0f674f026b5a7c9e883dfac24305e30f7fe06d268759408d",
+      "redactions": [],
+      "sha256": "eea456c7ac51ae73e50d574edc6355824da6da812d02d43befa426e8a93d4deb",
       "raw_frame_sha256": "0e4a267af94ecdd1130d7ce3eda766b35983fb2dabe8bcbace946dfee27cb581"
     },
     "python-version": {
@@ -98,19 +88,9 @@
         ]
       ],
       "caption": "PowerShell에서 python --version을 실행한 결과는 Python 3.14.7입니다.",
-      "sha256": "aa7b7efdc63ab9115a69356bc5cefc47f30843fda3b67fa8d839a1e6ff263785",
+      "sha256": "5bdd6c6a209a202a011afffcf2b5307494391af8c548011561e5331f7068eb70",
       "raw_frame_sha256": "51841abf45e6418304e1ccda4e1396cfec301e0f6b4e965965acb252d4c3160c",
-      "redactions": [
-        {
-          "box": [
-            164,
-            251,
-            406,
-            279
-          ],
-          "label": "내 사용자 폴더"
-        }
-      ]
+      "redactions": []
     },
     "node-install": {
       "required_scene": "Node.js 추가 도구 선택 화면",
@@ -174,18 +154,8 @@
         ]
       ],
       "caption": "node --version의 출력 v24.22.1을 README의 준비 기준과 비교합니다.",
-      "redactions": [
-        {
-          "box": [
-            98,
-            220,
-            392,
-            248
-          ],
-          "label": "내 사용자 폴더"
-        }
-      ],
-      "sha256": "abae540f4740781e491138182e90ec42f842217fbe20e198214ef13b2f7262b0",
+      "redactions": [],
+      "sha256": "cb135d92e4e6bbf2289fbb4c0225d1cc1a1d868d585faea6d9bf2dae5a2a8b2b",
       "raw_frame_sha256": "c6845895aec8a1a31c1665bc6f3dfcf010f9481a396b017ba23b9f803c4b6dc2"
     },
     "vscode-install": {
@@ -293,8 +263,8 @@
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/codex-response.png",
       "verified": true,
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 846.8,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 854.587,
       "crop": [
         1330,
         41,
@@ -317,9 +287,8 @@
       ],
       "redactions": [],
       "caption": "Codex 패널에 보낸 인사와 돌아온 답이 함께 보입니다. 답의 문구는 달라질 수 있습니다.",
-      "sha256": "36ba4936956c6d4d1e6e35f047d5e0fffa6112a5781161fc2f78b4f914814377",
-      "raw_frame_sha256": "4e8b62ef75cf9ae36a59eba819de64328df53c5837113688509a300109d1b363",
-      "source_install_seconds": 861.166667
+      "sha256": "cbcbfe0127e111c9237091588a30b9ea8ba40cc98d65500eaa9825bb45b3baba",
+      "raw_frame_sha256": "f6617ca92f4e46621dea8674408a7332ab0f8f02a9293639ecb906afd208d591"
     },
     "git-install": {
       "required_scene": "Git 설치 PATH 옵션",
@@ -416,8 +385,8 @@
     "docker-terms": {
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/docker-terms.png",
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 875.63333,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 883.42,
       "crop": [
         458,
         445,
@@ -442,17 +411,16 @@
       "caption": "사용 조건을 읽습니다. 계속하려면 오른쪽 아래 Accept를 누릅니다.",
       "required_scene": "사용 조건을 읽습니다. 계속하려면 오른쪽 아래 Accept를 누릅니다.",
       "check": "사용 조건을 읽습니다. 계속하려면 오른쪽 아래 Accept를 누릅니다.",
-      "source_install_seconds": 890,
       "video_seconds": 875.63333,
       "verified": true,
-      "raw_frame_sha256": "7a89279e0efc48b42ee57c9114e35fabb55234071c93806029d1c202e4bf3478",
-      "sha256": "ee82d8dd8e064fba6fcee3546d3602fe4d6f2901a1ba4d28f36e3eed0d54cc44"
+      "raw_frame_sha256": "b1384225bf2e89a97b78ca9c34030f3f8ca2365e3a3f5f84f8482285f7f2c79a",
+      "sha256": "a2d3d51b1b2e73a4bf8ea795226997f31e1b710e17b15683c6365b34831dfd20"
     },
     "docker-wsl": {
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/docker-wsl.png",
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 912.63333,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 920.42,
       "crop": [
         531,
         568,
@@ -477,17 +445,16 @@
       "caption": "General 화면의 Choose Virtual Machine Manager (VMM)에서 WSL 2가 선택돼 있습니다.",
       "required_scene": "General 화면의 Choose Virtual Machine Manager (VMM)에서 WSL 2가 선택돼 있습니다.",
       "check": "General 화면의 Choose Virtual Machine Manager (VMM)에서 WSL 2가 선택돼 있습니다.",
-      "source_install_seconds": 927,
       "video_seconds": 912.63333,
       "verified": true,
-      "raw_frame_sha256": "fef591d55bf65cfa472cd9b25bd794c30fb11c2c83e296bc93b21823151a4766",
-      "sha256": "2f8c44936eb269e462f49f07e831c07c60e4bc4b067184991f325641f7713724"
+      "raw_frame_sha256": "f49c93cf011fa54385d1a10f74aa15783ce8d6a65b050a1cc8f8a2f3f8ff377d",
+      "sha256": "743a29e4ea76e6407323d2fd8bdf84104dd87d096b6b35b6428b747ebc146edd"
     },
     "docker-engine": {
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/docker-engine.png",
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 906.23333,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 914.02,
       "crop": [
         185,
         877,
@@ -506,11 +473,10 @@
       "caption": "Docker Desktop 왼쪽 아래의 Engine running이 엔진을 사용할 수 있다는 표시입니다.",
       "required_scene": "Docker Desktop 왼쪽 아래의 Engine running이 엔진을 사용할 수 있다는 표시입니다.",
       "check": "Docker Desktop 왼쪽 아래의 Engine running이 엔진을 사용할 수 있다는 표시입니다.",
-      "source_install_seconds": 920.6,
       "video_seconds": 906.23333,
       "verified": true,
-      "raw_frame_sha256": "a9c6ed1cb5a90df9ce78ce8e09f7112eb052c814eded68a41c4d096ddd5a22af",
-      "sha256": "61a0a2d2f970632306917a429d50034016c773a37de8ea12876c8dac313098e9"
+      "raw_frame_sha256": "d450b415d9a8470cdc8048713606ce59a42733638c2fdd05fdb80f36dccb9195",
+      "sha256": "abb969736d937c3dadbddace8db55fdfce04e554f654433eb59f1b55e890bcb1"
     },
     "project-workfolder": {
       "required_scene": "만든 작업 폴더를 고르고 폴더 선택을 누릅니다.",
@@ -518,8 +484,8 @@
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/project-workfolder.png",
       "verified": true,
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 713.8,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 713.987,
       "crop": [
         0,
         0,
@@ -542,8 +508,8 @@
       ],
       "redactions": [],
       "caption": "만든 작업 폴더를 고르고 폴더 선택을 누릅니다.",
-      "sha256": "65686e7ad5717a0c8f0f918a47ac2328eee9be305f0dd3d0ef036fec3d41c0dc",
-      "raw_frame_sha256": "a3852a9ad38c6c9e7b9cdcc039ad2e51be2dea032f11d081c2416c4d01656939"
+      "sha256": "009c97b21f911f46ad4daba955651d3b55e532658fac58937559ffcc7bd8a390",
+      "raw_frame_sha256": "4625ade680def2b9f354cff2c86c30f3daf7d0d24bce488661525c340fae5fd1"
     },
     "project-address": {
       "required_scene": "Code 메뉴의 HTTPS 주소 오른쪽에 있는 복사 버튼을 누릅니다.",
@@ -551,8 +517,8 @@
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/project-address.png",
       "verified": true,
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 564.75,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 564.937,
       "crop": [
         735,
         430,
@@ -575,15 +541,14 @@
       ],
       "redactions": [],
       "caption": "Code 메뉴의 HTTPS 주소 오른쪽에 있는 복사 버튼을 누릅니다.",
-      "sha256": "765a79a6ab803dc54d0bee99080eadeb29fd7d42fc3dab616cda72e6531f22d8",
-      "raw_frame_sha256": "0e20177f90d80ab1342ef7cccf35131eed4e06d2e6e95980d892670873d04cb2",
-      "source_install_seconds": 571.516667
+      "sha256": "3354d2eb2b1067cb0802e1f4d163bf54bdf674ec9e1202cf944ba878ee5c8f6f",
+      "raw_frame_sha256": "6a41ef389d2273076afa791bb478ae86113eab687d2a25d821c47dcb34ecf942"
     },
     "project-clone": {
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/project-clone.png",
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 771.23333,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 771.42,
       "crop": [
         448,
         743,
@@ -608,11 +573,10 @@
       "caption": "터미널에서 git clone을 실행하면 Receiving objects의 수신 비율이 올라갑니다.",
       "required_scene": "터미널에서 git clone을 실행하면 Receiving objects의 수신 비율이 올라갑니다.",
       "check": "터미널에서 git clone을 실행하면 Receiving objects의 수신 비율이 올라갑니다.",
-      "source_install_seconds": 778,
       "video_seconds": 771.23333,
       "verified": true,
-      "raw_frame_sha256": "0944d16fb45a8d464afd4465ac63a44163b09e380d33f72a0c50f3e80293995e",
-      "sha256": "f2bcc71e6ec0e85c8720348799021b939f3f6e7adb55238b78c4ca64258ce930"
+      "raw_frame_sha256": "ce146f6476906002fb8a1051e26db5a90eabc3a51cd878f5b550906a8794a6eb",
+      "sha256": "7ea29e0160ea21bf4e96fdebc18470d3c8088cbff764805e1b1cc68c228628d4"
     },
     "project-root": {
       "required_scene": "터미널에서 Receiving objects와 Resolving deltas가 모두 100%로 끝난 줄을 확인합니다.",
@@ -620,8 +584,8 @@
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/project-root.png",
       "verified": true,
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 846.8,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 854.587,
       "crop": [
         440,
         682,
@@ -638,9 +602,8 @@
       ],
       "redactions": [],
       "caption": "터미널에서 Receiving objects와 Resolving deltas가 모두 100%로 끝난 줄을 확인합니다.",
-      "sha256": "a83306aa2847ceab395c73dd7fc1e97f9d302e1614a90d0047405b3e546b725d",
-      "raw_frame_sha256": "4e8b62ef75cf9ae36a59eba819de64328df53c5837113688509a300109d1b363",
-      "source_install_seconds": 861.166667
+      "sha256": "b04de11cecf0b3822300febe3e8084ba491d2f427fefdbef072dac2a35394706",
+      "raw_frame_sha256": "f6617ca92f4e46621dea8674408a7332ab0f8f02a9293639ecb906afd208d591"
     },
     "project-terminal": {
       "required_scene": "VS Code 터미널의 Git Bash 선택·폴더 이동",
@@ -681,8 +644,8 @@
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/system-start.png",
       "verified": true,
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 927.63,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 935.417,
       "crop": [
         456,
         924,
@@ -699,9 +662,8 @@
       ],
       "redactions": [],
       "caption": "프로젝트 폴더의 Git Bash에 시작 명령을 넣고 Enter를 누릅니다.",
-      "sha256": "ac9ec2a08a742edcbb3bd0cf52313710dfb3086f9f544b989a44d75d3e704482",
-      "raw_frame_sha256": "f1cf181d40be84a876573942e63022b89a44b168d29c964ff17589dacc1de118",
-      "source_install_seconds": 941.996667
+      "sha256": "c2936379a0f266d396cc3fa8420014ec193f242b3613e9108595314d9e8f42e9",
+      "raw_frame_sha256": "fef5b575f0b6080652063e4ff93ceeeba049f2f5a9fe1dbfb39eabd810d96ad8"
     },
     "system-ready": {
       "required_scene": "VS Code 터미널의 완료 줄에서 포털 주소 위에 마우스를 놓습니다. 링크 안내가 뜨면 Ctrl을 누른 채 클릭합니다.",
@@ -709,8 +671,8 @@
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/system-ready.png",
       "verified": true,
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 1136.0,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 1140.62,
       "crop": [
         450,
         792,
@@ -733,8 +695,8 @@
       ],
       "redactions": [],
       "caption": "VS Code 터미널의 완료 줄에서 포털 주소 위에 마우스를 놓습니다. 링크 안내가 뜨면 Ctrl을 누른 채 클릭합니다.",
-      "sha256": "4d164a7e2aa5b97c4e2ac471874c45b34c3fe31100e25a0ffb206a81e0c88b34",
-      "raw_frame_sha256": "0c2c09ddbf377ef102608d8d5bb18407befae236f6348a9b1aa91819146724bb"
+      "sha256": "021c5133d03cf05eeab42b261b30902a734b393d1f520a61bfcb2ca080e192a8",
+      "raw_frame_sha256": "0e686482c25e10146bc5a92085f6745d8bde11ac24efd436e590f8f0687b445e"
     },
     "portal-home": {
       "required_scene": "위쪽 네 칸의 전체 상태와 아래 설비 · 데이터 · AI 연결 그림을 읽습니다.",
@@ -743,8 +705,8 @@
       "verified": true,
       "source_type": "video",
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 1201.768,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 1201.533,
       "portal_segment_seconds": 60,
       "crop": [
         0,
@@ -768,8 +730,8 @@
       ],
       "redactions": [],
       "caption": "위쪽 네 칸의 전체 상태와 아래 설비 · 데이터 · AI 연결 그림을 읽습니다.",
-      "sha256": "ca073129137da472f9e97a42bff3a34040ca4716af86b0c75fd68ae984fa1332",
-      "raw_frame_sha256": "013835a30677869789809b0142859b53224bcf400d30d1e5ccb123e06e0174ed"
+      "sha256": "48098c9b6a539fa71fdca265dfd316cec46fc6381055ce512ddb71ccd6419a19",
+      "raw_frame_sha256": "2e4c5e2034278d6bd6f693a6b89cf9be8675dff02988d6029611d1a9e06bcdb7"
     },
     "portal-work": {
       "required_scene": "내 작업함을 열면 먼저 나를 고르라고 나옵니다.",
@@ -778,8 +740,8 @@
       "verified": true,
       "source_type": "video",
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 1271.268,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 1271.033,
       "portal_segment_seconds": 129.5,
       "crop": [
         0,
@@ -803,8 +765,8 @@
       ],
       "redactions": [],
       "caption": "내 작업함을 열면 먼저 나를 고르라고 나옵니다.",
-      "sha256": "f908cc86d6bbdbc32ff4e8ad7e39046617b139be50867afb98489bc8427ca845",
-      "raw_frame_sha256": "8f075b87413e67ce3af2c5545187570c13ee7f8d7a67a6e611db7449f15e851a"
+      "sha256": "33b75c4458c82dff6aacaa4771fe9e829ebe9b2f277088e39dc3c4761ca08ca7",
+      "raw_frame_sha256": "886269dd46b7ea60a67194fc1787a5846adb8a7898713ddb9d5191f35e09fcb2"
     },
     "portal-inbox-tabs": {
       "required_scene": "최운전 · 운전원을 고르면 오른쪽 위 이름이 바뀌고 내 작업 · 알림 탭이 나타납니다.",
@@ -813,8 +775,8 @@
       "verified": true,
       "source_type": "video",
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 1291.768,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 1291.533,
       "portal_segment_seconds": 150,
       "crop": [
         0,
@@ -844,8 +806,8 @@
       ],
       "redactions": [],
       "caption": "최운전 · 운전원을 고르면 오른쪽 위 이름이 바뀌고 내 작업 · 알림 탭이 나타납니다.",
-      "sha256": "9e5c8257491efa449d80edd25cefb0d8ea98f7f4d10a855b05477127fdda8b69",
-      "raw_frame_sha256": "3ad44b54676dbac668112d856f285af3c294bb35e6720a411db72cad73842c8d"
+      "sha256": "4a7ce76c82d0c2800b123d08c989ed12f9b579541eed47f68cb409edeabbff47",
+      "raw_frame_sha256": "9371611b7e08aab560fb27c4b4a4a02598c54c9ae1537617f7ceea8c93fad95a"
     },
     "portal-instances": {
       "required_scene": "처리 건의 위쪽 현황과 아래 목록 · 상세 자리를 찾습니다.",
@@ -854,8 +816,8 @@
       "verified": true,
       "source_type": "video",
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 1322.768,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 1322.533,
       "portal_segment_seconds": 181,
       "crop": [
         0,
@@ -885,8 +847,8 @@
       ],
       "redactions": [],
       "caption": "처리 건의 위쪽 현황과 아래 목록 · 상세 자리를 찾습니다.",
-      "sha256": "07900050cd0d6b78d7205613e7d870b5fda3c8d74f18877b5a98be4f580c3b10",
-      "raw_frame_sha256": "e02e2f524dbc6e82961783d903960edd712bfa50c22ca45510fb5b7e28bcf67b"
+      "sha256": "554d3a383b0f0ec8f0a861f1232f3455bc770daf5e522a987c977a6b0038bf3d",
+      "raw_frame_sha256": "789c0aee933076cb4f8346165b4c740c5551a389ea205dcb892a66d73fdad8e1"
     },
     "portal-equipment": {
       "required_scene": "결함 시뮬레이션의 HYD-01 카드에서 유온과 값들을, 다른 두 카드에서 업무 알림을 봅니다.",
@@ -895,8 +857,8 @@
       "verified": true,
       "source_type": "video",
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 1371.268,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 1371.033,
       "portal_segment_seconds": 229.5,
       "crop": [
         0,
@@ -932,8 +894,8 @@
       ],
       "redactions": [],
       "caption": "결함 시뮬레이션의 HYD-01 카드에서 유온과 값들을, 다른 두 카드에서 업무 알림을 봅니다.",
-      "sha256": "bf90194b353d1af4d2ff558f1d2c543c799817212db1802c46ac266d1a6f6889",
-      "raw_frame_sha256": "3484ef1051b3a63ab2e24e2f3988085724e7ea1fe63e3aebc2794d687b85d6e7"
+      "sha256": "f3f42efe6b2a03768b8842cb086e734f0edf32e527e3a0c3b9e71673426bdee5",
+      "raw_frame_sha256": "e432a5aaca36fc506583af2c3a0c89dd400133e159083abb9504dc81b3199da0"
     },
     "portal-oil": {
       "required_scene": "오일 분석 입력은 검사 결과를 사람이 넣는 화면입니다.",
@@ -942,8 +904,8 @@
       "verified": true,
       "source_type": "video",
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 1406.168,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 1405.933,
       "portal_segment_seconds": 264.4,
       "crop": [
         0,
@@ -967,8 +929,8 @@
       ],
       "redactions": [],
       "caption": "오일 분석 입력은 검사 결과를 사람이 넣는 화면입니다.",
-      "sha256": "25764b4a8b4ed3706190f199f550e5b36f52b02e793472632e5444d4de073921",
-      "raw_frame_sha256": "0d0427b9d53c074914d660c6581b3bc92d3d48a116bac25883f2474787cb7db7"
+      "sha256": "fbded9124f6ebfb9e27fd9ec0fd388538bd58a818d92f9bdc8f3ad8e71ec607e",
+      "raw_frame_sha256": "bd2cb9cbbe3b8d81af6b49d6ffe8fd4a599bcdb963114a835fbf088748895829"
     },
     "portal-operation": {
       "required_scene": "이상 확인 · 조치는 설비 상태 그림과 아래 사건 자리를 보여 줍니다.",
@@ -977,8 +939,8 @@
       "verified": true,
       "source_type": "video",
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 1421.068,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 1420.833,
       "portal_segment_seconds": 279.3,
       "crop": [
         0,
@@ -1008,8 +970,8 @@
       ],
       "redactions": [],
       "caption": "이상 확인 · 조치는 설비 상태 그림과 아래 사건 자리를 보여 줍니다.",
-      "sha256": "1239604a1a85cd8e439e5eb75b4d5a6da746d79a0fe5ec23ae3e0549667e7207",
-      "raw_frame_sha256": "915932c50879e91dcf504a56955d33bce89d91c2e7a32fbd817af4e0db4eb0a2"
+      "sha256": "02f2196ea24767cae4cb094c690cfe5fa37ad2a217c90719bc21ee7efd7f6d91",
+      "raw_frame_sha256": "a9941c2aa97e51150bcd81a3531b0209eeba94c3fe8897b6c50bc21f2df8ccac"
     },
     "portal-monitoring": {
       "required_scene": "실시간 모니터링의 유온 그래프에서 위쪽 빨간 기준선과 현재 값의 선을 구별합니다.",
@@ -1018,8 +980,8 @@
       "verified": true,
       "source_type": "video",
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 1441.568,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 1441.333,
       "portal_segment_seconds": 299.8,
       "crop": [
         0,
@@ -1043,8 +1005,8 @@
       ],
       "redactions": [],
       "caption": "실시간 모니터링의 유온 그래프에서 위쪽 빨간 기준선과 현재 값의 선을 구별합니다.",
-      "sha256": "3396d2022512e8cde534f6ab87f517669e7ec8376076fbbc502894d4b91e9b0f",
-      "raw_frame_sha256": "d4240885e51175068a0e58a27409e3dc4c1bd8ce43175f0e886f8e4bb5dc92bd"
+      "sha256": "3f4ec1f851783d4f454435f5a096b5171b15812f41d5d0045b3ca5e75bbe30d9",
+      "raw_frame_sha256": "e85c8ea187a3497b30d6a04a5db03b9eb93fafa4a73406b322e7c99a477bafbe"
     },
     "portal-rules": {
       "required_scene": "조치 판단 규칙의 판단 조건과 판단 실행 위치입니다.",
@@ -1053,8 +1015,8 @@
       "verified": true,
       "source_type": "video",
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 1467.468,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 1467.233,
       "portal_segment_seconds": 325.7,
       "crop": [
         0,
@@ -1084,8 +1046,8 @@
       ],
       "redactions": [],
       "caption": "조치 판단 규칙의 판단 조건과 판단 실행 위치입니다.",
-      "sha256": "6a47e13ec56f060502272d5f4080c896b9ee04b09d30c3f4184d4888f3ad53c0",
-      "raw_frame_sha256": "4d99634788148a538111308f5486d2cb3b98a7ec615053363a6bb06e5cc85d09"
+      "sha256": "7b4176c5a5e95f879623e0fe7f19008b4544c3c1410801092498ec72245ae3e5",
+      "raw_frame_sha256": "d44620d4193f22068783152546fabc5ad4354131e736969eb2fd3749b313c675"
     },
     "portal-tradeoff": {
       "required_scene": "조건별 손익에서 시험 기준을 불러오는 칸입니다.",
@@ -1094,8 +1056,8 @@
       "verified": true,
       "source_type": "video",
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 1480.268,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 1480.033,
       "portal_segment_seconds": 338.5,
       "crop": [
         0,
@@ -1119,8 +1081,8 @@
       ],
       "redactions": [],
       "caption": "조건별 손익에서 시험 기준을 불러오는 칸입니다.",
-      "sha256": "e7ca4ab7bc9cb0bbab4407f82fa352ff4950bfd17445af4ccef09049ba820e93",
-      "raw_frame_sha256": "d645d30b458f2049d961342a25fa62abfb5c4c3db5363758f24d7dfa75b79e7b"
+      "sha256": "bba0b939fca6f58280ced55ba4272c3ca78b0c2834ec027482a86bc75e0894a2",
+      "raw_frame_sha256": "3f1c190299984e032862dbe4ab0c997475d6a27ee4c0f730f77202cbe9d105bf"
     },
     "portal-flow": {
       "required_scene": "승인과 실행의 판단 결과 목록과 상세 자리입니다.",
@@ -1129,8 +1091,8 @@
       "verified": true,
       "source_type": "video",
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 1491.968,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 1491.733,
       "portal_segment_seconds": 350.2,
       "crop": [
         0,
@@ -1155,7 +1117,7 @@
       "redactions": [],
       "caption": "승인과 실행의 판단 결과 목록과 상세 자리입니다.",
       "sha256": "38f1a47c476c3a755ca1d147135a0d6e3d71c15d3e02347a6b09a03fea00c21f",
-      "raw_frame_sha256": "c8175755ef63c7417879e566ae781309b4f333e7ec3483be2de00067b63b03e0"
+      "raw_frame_sha256": "422be1b0124d226ead18d979fc834471b87f84d25accfd29ffb2dae24aa940e8"
     },
     "portal-import": {
       "required_scene": "흐름 가져오기의 위치와 등록 칸입니다.",
@@ -1164,8 +1126,8 @@
       "verified": true,
       "source_type": "video",
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 1530.368,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 1530.133,
       "portal_segment_seconds": 388.6,
       "crop": [
         0,
@@ -1189,8 +1151,8 @@
       ],
       "redactions": [],
       "caption": "흐름 가져오기의 위치와 등록 칸입니다.",
-      "sha256": "6916c71ea75dae7e6be6574d0b67435e7e6f73f82d02a9a9ad7b6446a32a0ea8",
-      "raw_frame_sha256": "68a52360497306d161f09db65db23f2cfe8b729375a346dd3df54545b8c795a2"
+      "sha256": "b044294f29af9dd576dcd2eae0d93a78a1b82e0d1bb8bdcdb7b8233f16819437",
+      "raw_frame_sha256": "28f81c94cc05af95041c752e598c88c34419bc907a1955a35e6002903c3d965c"
     },
     "portal-ontology": {
       "required_scene": "지식 지도 위쪽의 항목 · 연결 수와 설비 진단 칸을 찾습니다.",
@@ -1199,8 +1161,8 @@
       "verified": true,
       "source_type": "video",
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 1566.668,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 1566.433,
       "portal_segment_seconds": 424.9,
       "crop": [
         0,
@@ -1230,8 +1192,8 @@
       ],
       "redactions": [],
       "caption": "지식 지도 위쪽의 항목 · 연결 수와 설비 진단 칸을 찾습니다.",
-      "sha256": "5b313954662970f3d7a203141ab724869c7ca151a84a1ffb911b5e6b8899cdc7",
-      "raw_frame_sha256": "a67c99b0a674370b90630f89b4718533c53a63cd00810858029026295412de17"
+      "sha256": "f26d2ab9dfe8ef04dc6024fb2caf09efbbc1782d8660042dc26b84845215f8bc",
+      "raw_frame_sha256": "50085b948eb8d42d8f973cddc2e3429dac22fa89f1ad38a955ff2e561fdd2abd"
     },
     "portal-knowledge": {
       "required_scene": "지식 관리의 매뉴얼 등록 자리입니다.",
@@ -1240,8 +1202,8 @@
       "verified": true,
       "source_type": "video",
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 1600.168,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 1599.933,
       "portal_segment_seconds": 458.4,
       "crop": [
         0,
@@ -1265,8 +1227,8 @@
       ],
       "redactions": [],
       "caption": "지식 관리의 매뉴얼 등록 자리입니다.",
-      "sha256": "ce73c2784d8ce4d0f7213d1c32f07ffad23f1f83a2f4fc20f7ccbfe18cebb26c",
-      "raw_frame_sha256": "288d1cda7c90a1abff91c4d7bc06b6d572cad86ef0bea286f5e8262ed11b3343"
+      "sha256": "7711289a6096a9f0ed68e6237c37d236f11a68e27ab49e251b5067eb1d7e9e51",
+      "raw_frame_sha256": "bb26d3fffe018ebea02b4265e988385b34c93227e3171d5e0e2513b01a593a6c"
     },
     "portal-sops": {
       "required_scene": "조치 방법 목록에 설비 제어와 정비 요청이 함께 있습니다.",
@@ -1275,8 +1237,8 @@
       "verified": true,
       "source_type": "video",
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 1588.168,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 1587.933,
       "portal_segment_seconds": 446.4,
       "crop": [
         0,
@@ -1300,8 +1262,8 @@
       ],
       "redactions": [],
       "caption": "조치 방법 목록에 설비 제어와 정비 요청이 함께 있습니다.",
-      "sha256": "273ca5e17df1d0b0788067f4a43ed22522dac376d980e9475cfb9d18b615091d",
-      "raw_frame_sha256": "b197bf004e5292eb234ef246ade89e34b87a6f1ea7ee7897aa2e9db9e490de68"
+      "sha256": "df810836eb4298d853796a036e0905f2fa8bf20ff5b42c307d85f4cc5d3fe838",
+      "raw_frame_sha256": "471eb1ab8d2a96cd6a98c38734b3d36bc01e78233b692fd0f423c5c7ff81921d"
     },
     "portal-data": {
       "required_scene": "데이터 연결에서 연결 상태를 봅니다.",
@@ -1310,8 +1272,8 @@
       "verified": true,
       "source_type": "video",
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 1612.768,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 1612.533,
       "portal_segment_seconds": 471,
       "crop": [
         0,
@@ -1335,8 +1297,8 @@
       ],
       "redactions": [],
       "caption": "데이터 연결에서 연결 상태를 봅니다.",
-      "sha256": "d85811799b281ca46d8d69ca1510d78d90e8e954f062d9e296cbf32c0570065b",
-      "raw_frame_sha256": "9cf5d1284b75f0ab6471dd1ecd767f52d6ae786fae9bfbcb96a8d51cda523b12"
+      "sha256": "ff203bf75ef7a08649d7f024df6fe1dee6cb7ca25dc6fa9e451f4019ee5cfbaf",
+      "raw_frame_sha256": "606e306d0bcb1639a63e774db87cc92d915db844718220ffe13e0b7e9bfe98b3"
     },
     "portal-agents": {
       "required_scene": "에이전트 목록에서 맡은 일이 다른 에이전트들을 봅니다.",
@@ -1345,8 +1307,8 @@
       "verified": true,
       "source_type": "video",
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 1653.368,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 1653.133,
       "portal_segment_seconds": 511.6,
       "crop": [
         0,
@@ -1370,8 +1332,8 @@
       ],
       "redactions": [],
       "caption": "에이전트 목록에서 맡은 일이 다른 에이전트들을 봅니다.",
-      "sha256": "bd15452a15db5ec531be0e249123677709da55e92b2e8b00b38d75fbc5343439",
-      "raw_frame_sha256": "3f7fc827ea109c2aecb2e8568cf955d28330983c5acb21c5aa5fbe702832aa49"
+      "sha256": "cbbf9ca4d7cd2de41e6c3aa4472fd4862665b2f44612f1d8b275e1f1dc83fc75",
+      "raw_frame_sha256": "8f437c1fa8ce9103f51316189b28b56f47aee40d8f6a29a8aa3a22ee54d19720"
     },
     "portal-chat": {
       "required_scene": "에이전트에게 질문의 질문 단추 위치입니다.",
@@ -1380,8 +1342,8 @@
       "verified": true,
       "source_type": "video",
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 1636.768,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 1636.533,
       "portal_segment_seconds": 495,
       "crop": [
         0,
@@ -1406,7 +1368,7 @@
       "redactions": [],
       "caption": "에이전트에게 질문의 질문 단추 위치입니다.",
       "sha256": "26e8609704a6e8a049e2efca2392273438eba1b462f2deac40f1ea8388057c1a",
-      "raw_frame_sha256": "fad91b526c7f3f01cbd83e379c73c6746b2fcd96dc3e747fba0a6336ff868491"
+      "raw_frame_sha256": "ef68a59dc477bd7fb0383819fe7fd9d415a3866fe4cb99ccf3f77f7579a70f71"
     },
     "portal-tools": {
       "required_scene": "도구 연결에서 에이전트가 쓰는 도구 묶음을 봅니다.",
@@ -1415,8 +1377,8 @@
       "verified": true,
       "source_type": "video",
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 1662.768,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 1662.533,
       "portal_segment_seconds": 521,
       "crop": [
         0,
@@ -1440,8 +1402,8 @@
       ],
       "redactions": [],
       "caption": "도구 연결에서 에이전트가 쓰는 도구 묶음을 봅니다.",
-      "sha256": "3d36021fb87b6ce09c9595efb700b200c014af3cce0c2d741aafae7d608d6f9c",
-      "raw_frame_sha256": "bed0c3f446ffa3f4729218d579a628d934c7ea1bbdfe31fb2132de4dfb13384b"
+      "sha256": "404c2c2f629e6a2ede11ae64c32d66d01528b06c74006178c5f2fa4e23c99f63",
+      "raw_frame_sha256": "46ee0c85a0775d25bdc2bf47f53b8da2d330c278fb7a169baa3adfeedf8cf4db"
     },
     "portal-compare": {
       "required_scene": "시험 비교의 시험 조건 칸입니다.",
@@ -1450,8 +1412,8 @@
       "verified": true,
       "source_type": "video",
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 1668.768,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 1668.533,
       "portal_segment_seconds": 527,
       "crop": [
         0,
@@ -1475,8 +1437,8 @@
       ],
       "redactions": [],
       "caption": "시험 비교의 시험 조건 칸입니다.",
-      "sha256": "c37985b23a04ab02b2fcbc8f271e3e3ab134d8d1a4f76740d2dcb6a290b447f3",
-      "raw_frame_sha256": "bf6dbece1914cbf51497696057a948f07e80ec02300b1103aff1f116c3480fc1"
+      "sha256": "135347529ffc66e26b47cbfe616adf128eedb63b3c93cd3e262b4d2e603faa42",
+      "raw_frame_sha256": "c434a2c138b38cf71f54f5321567f5c21d7bd6a92ffe0d0f278de3625c2cbbc9"
     },
     "portal-evaluation": {
       "required_scene": "판단 채점의 현황 칸입니다.",
@@ -1485,8 +1447,8 @@
       "verified": true,
       "source_type": "video",
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 1679.768,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 1679.533,
       "portal_segment_seconds": 538,
       "crop": [
         0,
@@ -1510,8 +1472,8 @@
       ],
       "redactions": [],
       "caption": "판단 채점의 현황 칸입니다.",
-      "sha256": "5948ea8cdeba6ead16f040c7293ae738644665ceecb7393cc7fda87fb3ffe3aa",
-      "raw_frame_sha256": "57d6e9ea4371f914aef965577d69ed3b934e3fb8b0a37455e3fd09c633035bf3"
+      "sha256": "8242ad305f5c77293817a86d201d47f7f80e2859391b9c9a40935100a972addf",
+      "raw_frame_sha256": "e776e4957399e5f539add7a37ff7fa1a984b00fa9211a6c93c92c420600daaf3"
     },
     "portal-performance": {
       "required_scene": "성과 지표의 숫자들을 봅니다.",
@@ -1520,8 +1482,8 @@
       "verified": true,
       "source_type": "video",
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 1695.368,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 1695.133,
       "portal_segment_seconds": 553.6,
       "crop": [
         0,
@@ -1555,8 +1517,8 @@
       "verified": true,
       "source_type": "video",
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 1701.768,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 1701.533,
       "portal_segment_seconds": 560,
       "crop": [
         0,
@@ -1580,8 +1542,8 @@
       ],
       "redactions": [],
       "caption": "시스템 구성의 프로그램 목록입니다.",
-      "sha256": "e8694b47323d096e0c28217c7cedff7c1628e7352a3b732f838e3e5f018f0807",
-      "raw_frame_sha256": "f61d020eae5d145af057bf51a36a83e3ff6b575a1328b50546caa51135e19894"
+      "sha256": "52edd0d50c15e7d2bedfd9663fa176879f6398ef75952090a46532bb4bc4b6c2",
+      "raw_frame_sha256": "8c53f32ff9ec12df1ba052c1fca055fffb6214691e32f975b05340e74e4b739e"
     },
     "portal-admin": {
       "required_scene": "관리 화면의 항목들입니다.",
@@ -1590,8 +1552,8 @@
       "verified": true,
       "source_type": "video",
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 1712.168,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 1711.933,
       "portal_segment_seconds": 570.4,
       "crop": [
         0,
@@ -1615,8 +1577,8 @@
       ],
       "redactions": [],
       "caption": "관리 화면의 항목들입니다.",
-      "sha256": "ac6721a1f577e25c2aa98dff36664faf45ab5b3bb141bc5bc6b152b59dd1cec0",
-      "raw_frame_sha256": "d099b900b15a6f88392cc78341dc2e9cfd334d7f1fd09a6bdc2d7afd485a738c"
+      "sha256": "308d5e48c5faa415574e2353251d536e46734e4f7fe3b66e6d3bf4a3d8813d9c",
+      "raw_frame_sha256": "4b30f70ef93f409d635625b800d3405c6638dc28a985972e32895206a5ba5338"
     },
     "docker-install-complete": {
       "required_scene": "Docker Desktop 설치 완료",
@@ -1653,71 +1615,33 @@
     "project-terminal-root": {
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/project-terminal-root.png",
       "verified": true,
-      "source": "작업/2026-11-02_1회차-학생가이드-현행화/04_사용자설치원본검수/설치_검증컷_편집/clone_C092_경로_검수후보.mp4",
-      "source_sha256": "c1ae77903cfd3d248c1fdfc1f3ec3b76c2be8fff901871d15055fe6cb775689c",
-      "seconds": 0.8,
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 934.42,
       "crop": [
-        0,
-        510,
-        700,
-        650
+        450,
+        850,
+        1000,
+        960
       ],
       "rectangles": [
         [
-          0,
-          539,
-          199,
-          571
+          462,
+          866,
+          640,
+          892
         ],
         [
-          343,
-          585,
-          520,
-          613
+          462,
+          908,
+          975,
+          934
         ]
       ],
       "caption": "프로젝트 폴더로 이동한 뒤 터미널의 현재 위치를 확인합니다.",
-      "sha256": "aec7a88a4f713b80a0f0caef342e7987ca6119c1b93feda3581a801746cda874",
-      "raw_frame_sha256": "7e32072539f788a0179cba59218e45492e866e92a2cfdbe5f6e3e22677485cd2",
-      "review_status": "본 촬영 실제 장면에서 확인; 현재 영상과 장면 순서는 별도 판정.",
-      "redactions": [
-        {
-          "box": [
-            0,
-            510,
-            201,
-            535
-          ],
-          "label": "본인 계정·PC"
-        },
-        {
-          "box": [
-            255,
-            510,
-            344,
-            535
-          ],
-          "label": "작업 경로"
-        },
-        {
-          "box": [
-            0,
-            575,
-            201,
-            600
-          ],
-          "label": "본인 계정·PC"
-        },
-        {
-          "box": [
-            255,
-            575,
-            344,
-            600
-          ],
-          "label": "작업 경로"
-        }
-      ]
+      "sha256": "83d9c138ce47746115e22d9c57c806dcdc1d2abc29b4b76a73f828eb0d9781ec",
+      "raw_frame_sha256": "cc72b0d0a5e77f38cd6e23bab3e1f9754add719e25aa352008bfcd167804c50c",
+      "redactions": []
     },
     "git-version": {
       "required_scene": "새 터미널의 Git 버전 확인",
@@ -1785,8 +1709,8 @@
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/node-shell.png",
       "verified": true,
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 182.3,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 182.41,
       "crop": [
         715,
         177,
@@ -1803,9 +1727,8 @@
       ],
       "redactions": [],
       "caption": "Windows 검색 결과에서 Windows PowerShell을 눌러 새 창을 엽니다.",
-      "sha256": "a33ff836825c2ac74bb65c60c09805d9242602c46a975c6598b6369bc13301c4",
-      "raw_frame_sha256": "184d957018e6ddc818eb566cc7513bc0f94df3e8032b24a7fef3784d7b0a015d",
-      "source_install_seconds": 186.0
+      "sha256": "7b4369cd9ead307262067a92d0311ecdccf51c5a0e075a4e18e0f91e51c4df68",
+      "raw_frame_sha256": "33c283828384738c491b3e5c1e12efe37c299ac7d8552280df870be95298b301"
     },
     "system-progress": {
       "required_scene": "4/8 단계의 Pulling 표시와 받은 양이 달라지면 이미지를 받고 있는 중입니다.",
@@ -1813,8 +1736,8 @@
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/system-progress.png",
       "verified": true,
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 1043.3,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 1051.087,
       "crop": [
         452,
         725,
@@ -1837,9 +1760,8 @@
       ],
       "redactions": [],
       "caption": "4/8 단계의 Pulling 표시와 받은 양이 달라지면 이미지를 받고 있는 중입니다.",
-      "sha256": "14163b1714a548483704ab84520f2d9b80fea8f0d7d1531be2517b4b917d4a06",
-      "raw_frame_sha256": "42994ba21bd2f92dbe8161232571543a2ff5600a2f9cfc01fff789f523ecda49",
-      "source_install_seconds": 1057.666667
+      "sha256": "00f26ce05b1367fc7345913afd4b6beca0b7f15ba05cd0b9b6fe30df9b878ed0",
+      "raw_frame_sha256": "3f62ad4d3dab806765d7afa56a908be705fe5190f8b25c28c592d4f4e303de0f"
     },
     "portal-arrival": {
       "required_scene": "열린 포털 홈에서 제목과 왼쪽 작업 메뉴를 확인합니다. 상태 카드의 숫자는 실행 중인 환경에 따라 다릅니다.",
@@ -1848,8 +1770,8 @@
       "verified": true,
       "source_type": "video",
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 1147.768,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 1147.533,
       "portal_segment_seconds": 6,
       "crop": [
         0,
@@ -1873,14 +1795,14 @@
       ],
       "redactions": [],
       "caption": "열린 포털 홈에서 제목과 왼쪽 작업 메뉴를 확인합니다. 상태 카드의 숫자는 실행 중인 환경에 따라 다릅니다.",
-      "sha256": "2ce2f395f5196d3348b43b9bcaefa24062c8767eda5c309a79f64b3e8aeb678f",
-      "raw_frame_sha256": "862fe70efb55ebf9a9bcf7216ed06400e024694856dbfa8e89eb29c92d26c6ab"
+      "sha256": "4cefb040bec01000bf0d801b73fc1e1716577686e67a7ecf7504da9132d3850b",
+      "raw_frame_sha256": "b53daeafa2f254f16925aef1b9c54c5db6446a24ff3b0bc2d732473584c3a71b"
     },
     "docker-skip": {
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/docker-skip.png",
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 880.13333,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 887.92,
       "crop": [
         617,
         303,
@@ -1905,11 +1827,10 @@
       "caption": "Welcome to Docker의 오른쪽 위 Skip을 누르면 계정 입력 단계를 지나갑니다.",
       "required_scene": "Welcome to Docker의 오른쪽 위 Skip을 누르면 계정 입력 단계를 지나갑니다.",
       "check": "Welcome to Docker의 오른쪽 위 Skip을 누르면 계정 입력 단계를 지나갑니다.",
-      "source_install_seconds": 894.5,
       "video_seconds": 880.13333,
       "verified": true,
-      "raw_frame_sha256": "9b807176e8d6c9f986b8a2062230f5066d71485b816f4e9b4371d01f50a091e2",
-      "sha256": "382649fd58b3ac1e05fb9aacd25d005c7b478fc095408081694edf42d694c6bb"
+      "raw_frame_sha256": "d669590e16333ef77683ba4e9c9d318499736a4313a7f0381e0b3ca26ef9da3e",
+      "sha256": "dbc8bdfb2246308df1fc26771e8c352005af9d05d419dfa9078fc377e6e168df"
     },
     "portal-topbar": {
       "required_scene": "위쪽 줄의 진행 중 사건, 서비스 수, 나 표시를 찾습니다.",
@@ -1918,8 +1839,8 @@
       "verified": true,
       "source_type": "video",
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 1233.768,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 1233.533,
       "portal_segment_seconds": 92,
       "crop": [
         400,
@@ -1949,8 +1870,8 @@
       ],
       "redactions": [],
       "caption": "위쪽 줄의 진행 중 사건, 서비스 수, 나 표시를 찾습니다.",
-      "sha256": "a22ce5d5ecb0342ca73fdb5a05befde709fb490efbeb954b92c893b55ea9c336",
-      "raw_frame_sha256": "c23abac0d253714cc378d697163d4372535729c31aa6c5de6476f116e3b6d7af"
+      "sha256": "b3e3918595b13e2a137952deb0df6599200eac4766170975494b78d7a3315886",
+      "raw_frame_sha256": "b9c7be7807baa961cb6a5c04bcc28c1a65e2554fb27a59ddcf9d31657077c3f3"
     },
     "portal-button": {
       "required_scene": "카드 아래쪽 결함 실험의 쿨러 열화 주입 위치입니다. 지금은 누르지 않습니다.",
@@ -1959,8 +1880,8 @@
       "verified": true,
       "source_type": "video",
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 1391.768,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 1391.533,
       "portal_segment_seconds": 250,
       "crop": [
         0,
@@ -1984,8 +1905,8 @@
       ],
       "redactions": [],
       "caption": "카드 아래쪽 결함 실험의 쿨러 열화 주입 위치입니다. 지금은 누르지 않습니다.",
-      "sha256": "123556ce6422779bdc689d1c82546744ff193cc5c39249696f785cf24b5e4811",
-      "raw_frame_sha256": "044887144a65b470b0d7db6003e0ca8e943b7c391a39e4c5f2a0ed75057c2370"
+      "sha256": "ae4e90d8f23da03d93db2a6cc761c6a84881996057f208e8653408971f0ffbd0",
+      "raw_frame_sha256": "3d697ab9a3cc763ae40075a7b01458277c84b677d4a1f40818b7db5fbe2d0805"
     },
     "portal-enterprise": {
       "required_scene": "기업 시스템 현황에서 생산 오더의 납기를 봅니다.",
@@ -1994,8 +1915,8 @@
       "verified": true,
       "source_type": "video",
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 1511.668,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 1511.433,
       "portal_segment_seconds": 369.9,
       "crop": [
         0,
@@ -2013,8 +1934,8 @@
       ],
       "redactions": [],
       "caption": "기업 시스템 현황에서 생산 오더의 납기를 봅니다.",
-      "sha256": "7057e7e3ceba393e49e0ddc26ca7925d42b9bee49db69207d372aff2cf90970a",
-      "raw_frame_sha256": "3d749cb1c4dec202e565025f8370dc463c86364ff0adf21b7fd1e9aea6a9230c"
+      "sha256": "86deb850a82da7593fb43946b986b93e5faceb63f560a6d344a39bc41f1d802e",
+      "raw_frame_sha256": "e30676373e74ff679e9c4c6911ea4d4c90dedcea3d207d215151ad969ff9faac"
     },
     "wsl-enter": {
       "required_scene": "아무 키나 누르라는 안내가 나오면 60초 안에 Enter를 누릅니다.",
@@ -2022,8 +1943,8 @@
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/wsl-enter.png",
       "verified": true,
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 433.5,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 433.687,
       "crop": [
         200,
         230,
@@ -2040,8 +1961,8 @@
       ],
       "redactions": [],
       "caption": "아무 키나 누르라는 안내가 나오면 60초 안에 Enter를 누릅니다.",
-      "sha256": "e9c989ae9d720812ecfb66ff6559b85ca135d9c507808740e86e193f57d03fbc",
-      "raw_frame_sha256": "8b53c0b17f4b44e7a015dc0c257dc0bf5655e188d687e2acaf485d2f4a84462e"
+      "sha256": "72c08f408fa39564c544aec4f7b87474e38d622fea24a94e6bc173287d6d0a1c",
+      "raw_frame_sha256": "30295ae94a45b5be62448b9c368ca12aaaaf829076dc46de863c7e2c149e34b1"
     },
     "vscode-first-login": {
       "required_scene": "처음 뜨는 로그인 창에서 Continue without Signing In을 누릅니다.",
@@ -2049,8 +1970,8 @@
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/vscode-first-login.png",
       "verified": true,
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 584,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 584.187,
       "crop": [
         340,
         130,
@@ -2067,8 +1988,8 @@
       ],
       "redactions": [],
       "caption": "처음 뜨는 로그인 창에서 Continue without Signing In을 누릅니다.",
-      "sha256": "4de13e31c7dce2712bc3c0d9ee637d55fde0edc9d2a6d058a106fb5a50d9c72c",
-      "raw_frame_sha256": "f2a112373d10e7dbe8520c99b0190563ba6b3717aeb1a53fe698eeda43903599"
+      "sha256": "c9487d6fa563d3e7436515b7b1ec4c0fabf51629f1d6f72b13460ee11a2a58ff",
+      "raw_frame_sha256": "62447c5bb9a024d3dcde7ef55a1463a1346f3a77def98889b06eeae23bc51f48"
     },
     "vscode-first-theme": {
       "required_scene": "테마 창에서 Get Started를 누릅니다.",
@@ -2076,8 +1997,8 @@
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/vscode-first-theme.png",
       "verified": true,
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 588,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 588.187,
       "crop": [
         340,
         130,
@@ -2094,8 +2015,8 @@
       ],
       "redactions": [],
       "caption": "테마 창에서 Get Started를 누릅니다.",
-      "sha256": "4103679abc7634037b83641957947312ba9a2c95e8e510bd5e838dbe9f2d731e",
-      "raw_frame_sha256": "32add380c8656d28b09990e668a4821d94dbbc1be268f89d72176752398ec73d"
+      "sha256": "4f8e07cfea0a62fa80616e022da55c9f46daa18d6525b99a0e0e31e54cc19cb5",
+      "raw_frame_sha256": "19e0f795eecb81830039f16f05548976b399913bef596106e1519202ce9b7cd9"
     },
     "vscode-language-restart": {
       "required_scene": "표시 언어를 바꾸려면 Restart를 누릅니다.",
@@ -2103,8 +2024,8 @@
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/vscode-language-restart.png",
       "verified": true,
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 687,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 687.187,
       "crop": [
         600,
         340,
@@ -2121,8 +2042,8 @@
       ],
       "redactions": [],
       "caption": "표시 언어를 바꾸려면 Restart를 누릅니다.",
-      "sha256": "0bc7e43517b899bdfdc9adfdd3180b14c2e2269877804040d77b9d2e58324a94",
-      "raw_frame_sha256": "baa94ee77220bf554807f3bb0f7833a4c01a7fefe1b32a4459f2470c5dc813fa"
+      "sha256": "88233dbce21028a1cb5bd8b9f8e1e6483b12a595dd6fbd7ecda742addc073fb3",
+      "raw_frame_sha256": "8d86ff847b40736777537bf64165a2b25baf32dd3c15c47461713da0b8d2aa13"
     },
     "project-open-folder": {
       "required_scene": "파일 메뉴에서 폴더 열기를 누릅니다.",
@@ -2130,8 +2051,8 @@
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/project-open-folder.png",
       "verified": true,
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 705,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 705.187,
       "crop": [
         0,
         0,
@@ -2148,8 +2069,8 @@
       ],
       "redactions": [],
       "caption": "파일 메뉴에서 폴더 열기를 누릅니다.",
-      "sha256": "f467b47201fa4566c5608274cc058f2c36f20e26a2690bde51076d167190bbce",
-      "raw_frame_sha256": "72c751ee4d4d3686e6a6244140ca044d1c90f816a6422b835fe87622efa30d12"
+      "sha256": "b7760b7a8957ff95c76bf04ba33e3693e64a201bb7d760149180b67ec4ee9695",
+      "raw_frame_sha256": "04bcd5334077a08fa055ca74d735b4c6d490d0c27b9bbbb5a352a735a4ac98fc"
     },
     "project-new-terminal": {
       "required_scene": "터미널 메뉴에서 새 터미널을 누릅니다.",
@@ -2157,8 +2078,8 @@
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/project-new-terminal.png",
       "verified": true,
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 721.5,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 721.687,
       "crop": [
         380,
         0,
@@ -2181,8 +2102,8 @@
       ],
       "redactions": [],
       "caption": "터미널 메뉴에서 새 터미널을 누릅니다.",
-      "sha256": "ce6ce151205a0fc14a7a4998e76f288c88e51b9b1c6d4b76adde467f3a6db160",
-      "raw_frame_sha256": "3b93075737f8b2b23c55b7882aaa7f25f514521900fbadf433f1ec592718ae62"
+      "sha256": "d405e95fc3e51a5b996734e7e4a3eaa1cc5e2f38bf2ad78140c1182379180c68",
+      "raw_frame_sha256": "e965424bbce26308efd4a63b7225ceb5a89921dbe2f718658905ad5f65f6df2e"
     },
     "codex-next": {
       "required_scene": "Codex 탭의 안내 화면에서 다음을 누릅니다.",
@@ -2190,8 +2111,8 @@
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/codex-next.png",
       "verified": true,
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 823.5,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 823.687,
       "crop": [
         1250,
         640,
@@ -2208,8 +2129,8 @@
       ],
       "redactions": [],
       "caption": "Codex 탭의 안내 화면에서 다음을 누릅니다.",
-      "sha256": "ebdba1970dda4ed466d0dab057fd40d187b71f185ce944bd7a42b157a6b44fdc",
-      "raw_frame_sha256": "2be71f45de3b7925d05af5fee86dfd5e75b9433b68e2999593812868cdac56ed"
+      "sha256": "9fd3d9221b9839d40489d3ab4af2818c05167c574d7d65ffbd54296e9ed2784a",
+      "raw_frame_sha256": "edc220d03a409728931dc6eceb28902fbdccf18c92829c3c0263bc296f7e5ead"
     },
     "codex-model": {
       "required_scene": "모델 안내에서 현재 모델로 계속 진행을 누릅니다.",
@@ -2217,8 +2138,8 @@
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/codex-model.png",
       "verified": true,
       "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
-      "source_sha256": "ed0b5a544eae6c812b9530dbd178be5f576cfdd8e8a967a3f8e1198f99dea554",
-      "seconds": 826,
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 826.187,
       "crop": [
         1320,
         180,
@@ -2235,8 +2156,89 @@
       ],
       "redactions": [],
       "caption": "모델 안내에서 현재 모델로 계속 진행을 누릅니다.",
-      "sha256": "530a075e0bb6680564442c38e1c9d1c30bc54a60edb4b88924625913e986c63d",
-      "raw_frame_sha256": "992680e05172c4fc32b549df875fd74b33c30025d966ac760b35d2c7a379098a"
+      "sha256": "c3b41ed70d205a0156d1aa9b3e61e6de1d76689806c4822fba08d047cde17214",
+      "raw_frame_sha256": "0cf65b525ae9b1f2e9010d0c65996325c5e0bfa18e278b9e014b6a062eef3dbd"
+    },
+    "codex-login-account": {
+      "required_scene": "브라우저의 Welcome back 화면에서 본인 계정을 누릅니다.",
+      "check": "브라우저의 Welcome back 화면에서 본인 계정을 누릅니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/codex-login-account.png",
+      "verified": true,
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 831.42,
+      "crop": [
+        600,
+        270,
+        1320,
+        760
+      ],
+      "rectangles": [
+        [
+          748,
+          420,
+          1172,
+          505
+        ]
+      ],
+      "redactions": [],
+      "caption": "브라우저의 Welcome back 화면에서 본인 계정을 누릅니다.",
+      "sha256": "6b0ef104579e91becae1dcea597541f2524c4f52146ff1daf6394a3cd81c06a6",
+      "raw_frame_sha256": "65490c1717d25f76f0361976096c3625dafe3a8282ab1c11c88e035aab315932"
+    },
+    "codex-login-workspace": {
+      "required_scene": "Select a workspace에서 Continue를 누릅니다.",
+      "check": "Select a workspace에서 Continue를 누릅니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/codex-login-workspace.png",
+      "verified": true,
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 833.72,
+      "crop": [
+        600,
+        240,
+        1320,
+        760
+      ],
+      "rectangles": [
+        [
+          960,
+          468,
+          1214,
+          540
+        ]
+      ],
+      "redactions": [],
+      "caption": "Select a workspace에서 Continue를 누릅니다.",
+      "sha256": "82d13ee59aeeddf797dd1ba53c8d3ab40c62433d215191635bc47303f32e1341",
+      "raw_frame_sha256": "a0238cc361d5c5781a5b6bb219a03cc3366971373d4ecf5c4fe5b3cda0637ef7"
+    },
+    "codex-signed-in": {
+      "required_scene": "Signed in to Codex가 보이면 로그인이 끝난 것입니다.",
+      "check": "Signed in to Codex가 보이면 로그인이 끝난 것입니다.",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/codex-signed-in.png",
+      "verified": true,
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
+      "seconds": 837.92,
+      "crop": [
+        400,
+        140,
+        1520,
+        640
+      ],
+      "rectangles": [
+        [
+          750,
+          418,
+          1170,
+          462
+        ]
+      ],
+      "redactions": [],
+      "caption": "Signed in to Codex가 보이면 로그인이 끝난 것입니다.",
+      "sha256": "b312b82d3344666f18489657b0fab42a8afdc16346c8b1c8b72f6c9c7f53d8fe",
+      "raw_frame_sha256": "5e65186d25899c8b62039d5a541387fb79bd88f367bec921495202ac50067b1e"
     }
   }
 }

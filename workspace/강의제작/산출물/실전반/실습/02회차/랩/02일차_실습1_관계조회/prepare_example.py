@@ -1,11 +1,15 @@
 """관계 조회 실습의 제공 예제만 적재한다. 학생이 작성할 조회문은 만들지 않는다."""
 from pathlib import Path
-import json,urllib.request
+import json,sys,urllib.request
 from lab_db import prepare
 HERE=Path(__file__).resolve().parent
 
 def main():
     state=prepare()
+    marker=HERE/'예제_준비.json'
+    if marker.exists() and json.loads(marker.read_text(encoding='utf-8')).get('id')==state['id']:
+        print('기존 실습 DB를 엽니다.')
+        return
     def run(statement):
         req=urllib.request.Request(state['http']+'/db/neo4j/tx/commit',json.dumps({'statements':[{'statement':statement}]}).encode(),{'Content-Type':'application/json'})
         with urllib.request.urlopen(req,timeout=30) as response:data=json.load(response)
@@ -17,8 +21,10 @@ def main():
         if statement.strip():run(statement)
     counts={'nodes':run('MATCH (n) RETURN count(n)')[0][0],'relationships':run('MATCH ()-[r]->() RETURN count(r)')[0][0]}
     if counts!={'nodes':20,'relationships':19}:raise RuntimeError('예제 수량 확인 필요: '+str(counts))
-    (HERE/'결과').mkdir(exist_ok=True)
-    (HERE/'결과/예제_준비.json').write_text(json.dumps(counts,ensure_ascii=False,indent=2),encoding='utf-8')
-    print('예제 준비 완료: 노드 20개 · 관계 19개. 조회_작성.cypher에서 질문을 작성하세요.')
+    marker.write_text(json.dumps({'id':state['id'], **counts},indent=2),encoding='utf-8')
+    print('예제 준비 완료: 노드 20개 · 관계 19개.')
 
-if __name__=='__main__':main()
+if __name__=='__main__':
+    try:main()
+    except (OSError,ValueError,KeyError,RuntimeError) as e:
+        print('예제 준비 확인 필요: '+str(e)+' — Docker Desktop이 켜져 있는지 보고 다시 실행하세요.');sys.exit(1)
