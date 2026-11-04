@@ -211,6 +211,39 @@ def synced_index(files, d):
     return env
 
 
+def raw_blobs(paths):
+    """{경로: 파일 바이트 그대로의 블롭}(--no-filters, 객체를 쓰지 않음). 없는 파일은 뺀다."""
+    have = [p for p in paths if (ROOT / p).is_file()]
+    if not have:
+        return {}
+    return dict(zip(have, git("hash-object", "--no-filters", "--stdin-paths", inp=("\n".join(have) + "\n").encode("utf-8")).split()))
+
+
+def branch_bytes(now, *branches):
+    """now {경로: 블롭} 가운데 어느 브랜치 판과도 다른 것을 파일 바이트 그대로 다시 해시해, 한 판과 같으면 그 판의 블롭으로 바꾼 사본.
+    브랜치에 정규화 전 바이트(CRLF 등)로 들어간 파일은 .gitattributes(text=auto eol=lf)로 해시하면 블롭이 달라진다 — 이 PC가 고친 것이 아니므로
+    status는 「내용 다름」으로, pull은 「이 PC에서 고침」으로, commit은 줄끝만 바꾼 판으로 다루지 않는다."""
+    odd = [n for n, b in now.items() if any(n in br for br in branches) and not any(br.get(n) == b for br in branches)]
+    out = dict(now)
+    for n, b in raw_blobs(odd).items():
+        if any(br.get(n) == b for br in branches):
+            out[n] = b
+    return out
+
+
+def keep_branch_bytes(env, branch, names):
+    """색인에서 branch_bytes가 브랜치 판으로 본 이름을 그 블롭으로 되돌린다(커밋 트리가 줄끝만 바꾼 판을 담지 않게)."""
+    now = {n: b for n, b in index_blobs(env).items() if n in set(names)}
+    fix = {n: b for n, b in branch_bytes(now, branch).items() if b != now[n]}
+    if fix:
+        modes = {}
+        for e in filter(None, git("ls-files", "-s", "-z", "--", *fix, env=env).split("\0")):
+            meta, n = e.split("\t", 1)
+            modes[n] = meta.split()[0]
+        git(*INDEX_CFG, "update-index", "--index-info", env=env, inp="".join(f"{modes[n]} {b}\t{n}\n" for n, b in fix.items()).encode("utf-8"))
+    return env
+
+
 def index_blobs(env):
     """{경로: 블롭} — synced_index가 만든 색인의 판."""
     out = {}
@@ -220,9 +253,9 @@ def index_blobs(env):
     return out
 
 
-def build_tree(files):
+def build_tree(files, t):
     with tempfile.TemporaryDirectory() as d:
-        return git("write-tree", env=synced_index(files, d)).strip()
+        return git("write-tree", env=keep_branch_bytes(synced_index(files, d), tree_blobs(t), files)).strip()
 
 
 def scan(*args):
@@ -272,7 +305,7 @@ def changed_files(t, names, files):
     그 판은 .git에 쓰인다(다음 commit이 다시 쓰지 않는다)."""
     tree = tree_blobs(t)
     with tempfile.TemporaryDirectory() as d:
-        now = index_blobs(synced_index(files, d))
+        now = index_blobs(keep_branch_bytes(synced_index(files, d), tree, names))
     return [f for f in sorted(names) if now[f] != tree.get(f)]
 
 
@@ -304,6 +337,7 @@ def build_tree_only(t, paths, files):
             listfile = Path(d) / "list"
             listfile.write_text("\n".join(add) + "\n", encoding="utf-8")
             git("-c", "core.autocrlf=false", "add", "-f", f"--pathspec-from-file={listfile}", env=env)
+            keep_branch_bytes(env, tree_blobs(t), add)
         return git("write-tree", env=env).strip()
 
 
@@ -315,7 +349,7 @@ def commit(msg, args):
     for g in old_versions(files):
         print("경고 — 이전 판이 함께 있다(최신 하나만 둔다): " + " · ".join(g))
     t = tip()
-    tree = build_tree_only(t, only, files) if only else build_tree(files)
+    tree = build_tree_only(t, only, files) if only else build_tree(files, t)
     if tree == git("rev-parse", f"{t}^{{tree}}").strip():
         print("workspace: 바뀐 것이 없다 — 커밋하지 않는다")
     else:
@@ -421,7 +455,7 @@ def pull():
     names = sorted(set(theirs) | set(base))
     with tempfile.TemporaryDirectory() as d:          # 작업 자료는 커밋과 같은 색인의 판, 그 밖(빼는 자리 · main 파일)은 바로 해시
         known = index_blobs(synced_index(local_files(need=False), d))
-    now = {n: known[n] for n in names if n in known} | worktree_blobs([n for n in names if n not in known])
+    now = branch_bytes({n: known[n] for n in names if n in known} | worktree_blobs([n for n in names if n not in known]), base, theirs)
     write, delete, clash = [], [], []
     for n in names:
         cur, old, new = now.get(n), base.get(n), theirs.get(n)
