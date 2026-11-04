@@ -9,7 +9,7 @@ description: "HYD 교육과정 저장소에서 사용자가 무엇이든 하나�
 
 ## 1. 작업 폴더
 
-- 열린 작업이 있으면(`PYTHONUTF8=1 .venv314/Scripts/python.exe workspace/동기화.py status`) 사용자 범위와 일치하는 폴더의 `스펙.md`·`기록.md`부터 읽고 잇는다. 병행 작업은 범위와 담당 경로를 구분해 다른 세션의 현재 상태를 덮어쓰지 않는다.
+- 열린 작업이 있으면(`PYTHONUTF8=1 .venv314/Scripts/python.exe workspace/동기화.py status`) 사용자 범위와 일치하는 폴더의 `스펙.md`·`기록.md`부터 읽고 잇는다. 병행 작업은 범위와 담당 경로를 구분해 다른 세션의 현재 상태를 덮어쓰지 않는다. 남은 일의 정본은 `workspace/강의제작/남은일.md` — 끝낸 줄은 지운다.
 - 새 일이면 `PYTHONUTF8=1 .venv314/Scripts/python.exe workspace/동기화.py 시작 "짧은 제목"` → `작업/<오늘>_<제목>/`. `스펙.md`에 의도 · 범위 · 읽을 문서 · 인수 조건을 채운다.
 - 녹화 원본 · 시험 출력 · 임시 파일은 그 작업 폴더나 `작업/촬영/<도구>/`에만 둔다. 저장소 다른 자리에 흩지 않는다.
 

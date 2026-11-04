@@ -286,10 +286,19 @@ def start(title):
     print(f"만듦 {d.relative_to(ROOT).as_posix()}/스펙.md · 기록.md")
 
 
+def behind_note(local, origin):
+    """로컬 끝이 origin보다 뒤면 경고 한 줄. 클라우드 세션이 함께 올리므로 아래 차이가 옛 기준일 수 있다."""
+    n = int(git("rev-list", "--count", f"{local}..{origin}").strip())
+    return f"⚠ origin이 {n}커밋 앞선다({local[:8]} → {origin[:8]}) — 아래 차이는 옛 기준이다. 먼저 pull" if n else ""
+
+
 def status():
     for t in tasks():
         print(f"작업 {t.name} · 상태 {state(t)}")
     t = tip()
+    note = behind_note(t, fetch_origin())
+    if note:
+        print(note)
     remote = set(git("ls-tree", "-r", "--name-only", t).splitlines()) - {"README.md"}
     files = local_files()
     local = set(files)
