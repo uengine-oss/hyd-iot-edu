@@ -1,9 +1,9 @@
 """이미 고친 대본 · 원고를 기준 커밋으로 되돌린 뒤, 사용자가 고른 항목만 점검적용.py로 다시 얹는다. 첫 판정은 판정_전체/에 보관한다.
-언제: 점검 항목을 다 고친 뒤 사용자가 「이것만」으로 범위를 줄였을 때 — 사람이 파일을 하나씩 되돌리지 않으려고 쓴다. 음성을 사기 전에 돌린다.
-명령: <py> workspace/강의제작/제작도구/검사/재적용.py <작업 폴더> --기준 <커밋> --덱 통합반:01 실전반:02 … [--오프라인 통합반:01 …] [--고른것 가림/심각.json] [--공통 실전반:01=통합반:01] [--루트 폴더]
+언제: 점검 항목을 다 고친 뒤 사용자가 「이것만」으로 범위를 줄였을 때(공통 C-5 승인) — 사람이 파일을 하나씩 되돌리지 않으려고 쓴다.
+명령: <py> workspace/강의제작/제작도구/검사/재적용.py <작업 폴더> --기준 <커밋> --덱 통합반:01 실전반:02 … [--오프라인 통합반:01 …] --고른것 <파일> [--공통 실전반:01=통합반:01] [--루트 폴더]
 
 - 되돌리는 것: 덱마다 대본 · 덱 원고 · PPTX · 구성.json · 구성표.md, --오프라인 덱의 원고 · PPTX(기준 커밋에 있는 판 그대로). 다른 세션의 미커밋을 덮을 수 있으니 먼저 `동기화.py status`로 본다.
-- 남길 항목: --고른것 파일({"<과정>_<NN>": {"<항목 번호>": "까닭"}}) 또는, 없으면 점검 목록의 심각도가 「심각」인 항목. 나머지는 판정을 「보류」로 바꾼다. 노트추가는 남은 항목의 장만 둔다.
+- 남길 항목: --고른것 파일({"<과정>_<NN>": {"<항목 번호>": "까닭"}}, 꼭 준다 — 사용자가 고른 것만). 나머지는 판정을 「보류」로 바꾼다. 노트추가는 남은 항목의 장만 둔다.
 - --공통 실전반:01=통합반:01: 같은 판정을 그 대본에 대본만 적용하고, 그 덱 폴더에 조립.py가 있으면 돌린다(1회차처럼 두 과정이 함께 쓰는 덱).
 - --루트: 저장소 루트 대신 빈 폴더를 주면 그 안에 커밋본을 풀어 시험한다(작업 트리를 건드리지 않는다).
 """
@@ -63,12 +63,12 @@ def main():
     ap.add_argument("--기준", dest="base", required=True)
     ap.add_argument("--덱", dest="decks", nargs="+", required=True)
     ap.add_argument("--오프라인", dest="offs", nargs="*", default=[])
-    ap.add_argument("--고른것", dest="chosen")
+    ap.add_argument("--고른것", dest="chosen", required=True)
     ap.add_argument("--공통", dest="shared", nargs="*", default=[])
     ap.add_argument("--루트", dest="root", default=str(REPO))
     a = ap.parse_args()
     W, root = Path(a.work).resolve(), Path(a.root).resolve()
-    chosen = json.loads(Path(a.chosen).read_text("utf8")) if a.chosen else None
+    chosen = json.loads(Path(a.chosen).read_text("utf8"))
     decks = [d.split(":") for d in a.decks]
     shared = [tuple(x.split(":") for x in s.split("=")) for s in a.shared]
     ct = 0
@@ -89,7 +89,7 @@ def main():
             shutil.copy(W / "판정" / f"{name}.json", keep)
         jd = json.loads(keep.read_text("utf8"))
         items = {x["번호"]: x for x in json.loads((W / "점검" / f"{name}.json").read_text("utf8"))["고칠것"]}
-        pick = set(chosen.get(name, {})) if chosen is not None else {k for k, x in items.items() if x.get("심각도") == "심각"}
+        pick = set(chosen.get(name, {}))
         unknown = pick - set(items)
         if unknown:
             sys.exit(f"{name}: 고른 항목 {sorted(unknown)}이 점검 목록에 없다")
