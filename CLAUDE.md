@@ -81,11 +81,15 @@
 
 ## 7. 클라우드 세션 (`CLAUDE_CODE_REMOTE=true`)
 
-**준비는 한 길이다: 사용자가 환경의 셋업 스크립트 칸에 `git fetch -q --depth 1 origin workspace && git show FETCH_HEAD:workspace/개발/scripts/cloud_setup.sh | bash`를 넣으면 새 세션이 도구 설치와 workspace 풀기를 자동으로 마친다.** 「셋업 실패」나 「부트스트랩 실패」 알림이 보이면 먼저 사용자에게 알린다. 위 절의 `.venv314` 명령은 클라우드에서 `python3`로 바꿔 읽는다. 클라우드는 GitHub에 올라간 것만 받는다.
+**준비는 두 가지다.**
+1. 환경의 설정 스크립트 칸에 이 한 줄을 넣는다(도구 설치만 한다): `git clone -q --depth 1 --filter=blob:none --no-checkout -b workspace https://github.com/uengine-oss/hyd-iot-edu.git /tmp/hydws && git -C /tmp/hydws show HEAD:workspace/개발/scripts/cloud_setup.sh | bash`. 설정 스크립트는 저장소 밖에서 돌 수 있고 결과가 캐시되므로, 저장소 위치에 기대는 일은 넣지 않는다.
+2. **세션은 workspace 브랜치로 시작한다**(claude.ai/code에서 저장소 옆 브랜치 선택). main에는 `.claude`가 없어서, main으로 시작하면 훅(공용 헌법 받기, 읽기 문지기)이 돌지 않는다. 훅이 돌았는지는 세션 시작 안내 「[세션 시작] 작업 순서는 스킬 hyd-task…」와 공용 헌법이 컨텍스트에 있는지로 본다.
+
+「셋업 실패」나 「부트스트랩 실패」 알림이 보이면 먼저 사용자에게 알린다. 위 절의 `.venv314` 명령은 클라우드에서 `python3`로 바꿔 읽는다. 클라우드는 GitHub에 올라간 것만 받는다. 시스템 코드(main)는 `git fetch -q origin main:main` 뒤 읽기는 `git show main:<경로>`, 실행이 필요하면 `git worktree add ../main main`으로 옆에 꺼낸다.
 
 | | 클라우드 |
 |---|---|
-| 커밋 · push | 2절과 같다. pull과 commit은 해시 계산에 5~10분 걸리니 백그라운드로 돌린다. 그 사이 origin이 앞서 밀리면 pull → commit → push를 바로 다시 한다. main이 origin보다 뒤처졌으면, main에 미커밋 변경이 없을 때 `git merge --ff-only origin/main`을 한 뒤 push한다 |
+| 커밋 · push | workspace 브랜치 체크아웃에서는 `동기화.py`의 pull · commit · push가 멈춘다(main 체크아웃 전용). 일반 git으로 한다: `git add <이 일의 경로>`(`git add .` 금지) → `git commit` → `python3 workspace/secret_scan.py workspace --올릴것`에서 걸린 곳이 없어야 한다 → `git push origin HEAD:workspace`. 밀렸으면 `git pull --no-rebase origin workspace` 뒤 다시 하고, 다른 세션 변경과 겹치면 멈추고 보고한다. 규칙 문서를 고쳤으면 커밋 전에 `python3 workspace/강의제작/제작도구/검사/재편검사.py` 오류가 없어야 한다 |
 | 작업 폴더 | VM이 회수되면 파일이 사라지므로 확정분은 그때그때 push한다. `작업/`은 커밋하지 않는다. 이어받을 사람이 있을 때만 인계 자료를 `workspace/강의제작/제작도구/근거/<날짜>_<제목>/`에 두고, 그 일이 확정되면 지운다. 렌더 그림, 영상 출력, 중간 파일은 남기지 않는다. 이어받을 스펙과 기록은 요청문에 담는다 |
 | 덱 렌더 | 맑은 고딕 글꼴이 있어야 한다. 글꼴 파일은 사용자에게 파일 첨부로 받고(메시지에 `@C:\Windows\Fonts\…` 경로를 적어서는 파일이 오지 않는다) 커밋하지 않는다. `sudo bash workspace/강의제작/제작도구/기존제작/tools/deck/렌더환경_클라우드.sh <맑은 고딕 폴더>`를 돌린 뒤(VM이 다시 켜지면 다시 돌린다) `PATH=/usr/local/lo268/bin:$PATH`로 `deck2pptx.py --render`를 돌린다. apt로 설치한 LibreOffice와 Noto 글꼴로 렌더하면 줄바꿈이 달라서, 그 결과는 넘침 판정에 쓰지 않는다. 글꼴이 없으면 이 PC에서 렌더한 PDF를 받아 `pdftoppm -r 150`으로 `tools/video/슬라이드/<덱>/s-NN.png`에 넣고, `stamp`에 PPTX SHA256을 적는다(그러면 `강의영상.py`가 장을 다시 그리지 않는다). 강조 글씨의 글꼴은 `EMPH_FONT`로 정한다 |
 | 사실 대조 그래프 | `dockerd`를 띄운 뒤 `AI_MODE=replay CMD_FINGERPRINT_KEY=x PROCESS_CALLER_TOKEN=x docker compose up -d neo4j kg-seed`를 돌린다. 이것은 기본 시드만 올린다. 수업 문서 적재분은 이 PC의 `작업/_보관/근거/2026-11-03_5-6회차_인계/실측/` 덤프에만 있고 클라우드에는 없다 |
