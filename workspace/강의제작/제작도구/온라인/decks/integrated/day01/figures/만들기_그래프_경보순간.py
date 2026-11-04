@@ -49,6 +49,6 @@ ax.text(alert, 59.15, " 경보 발생", ha="left", va="bottom", fontsize=12, col
 ax.text(cross + (alert - cross) / 2, 49.6, "조건이\n이어진 시간", ha="center", va="bottom", fontsize=11, color=BLUE, fontweight="bold")
 ax.xaxis.set_major_locator(mdates.SecondLocator(bysecond=[0, 10, 20, 30, 40, 50]))
 ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M:%S"))
-ax.set_xlabel("2026-10-10 실제 시각", color=MUTED, fontsize=11)
+ax.set_xlabel("실제 시각", color=MUTED, fontsize=11)
 fig.subplots_adjust(left=0.1, right=0.95, top=0.92, bottom=0.12)
 print("cross", cross, "alert", alert, "sec", (alert - cross).total_seconds())
