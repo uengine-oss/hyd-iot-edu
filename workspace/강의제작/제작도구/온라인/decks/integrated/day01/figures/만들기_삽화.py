@@ -171,6 +171,10 @@ def monitor(cx, cy, st: St, kind="hmi"):
               rect(cx + 8, cy - 6, 12, 22, 3, fill=st.accent, stroke=st.line, sw=2.5),
               rect(cx + 30, cy - 32, 12, 48, 3, fill=st.fill, stroke=st.line, sw=2.5),
               rect(cx + 30, cy - 20, 12, 36, 3, fill=st.accent, stroke=st.line, sw=2.5)]
+    elif kind == "graph":   # 화면 속 관계 그림: 원 둘과 이름 붙은 화살표
+        o += [circle(cx - 28, cy - 8, 13, fill=st.accent, stroke=st.line, sw=3),
+              circle(cx + 28, cy - 8, 13, fill=st.fill, stroke=st.line, sw=3),
+              arrow([(cx - 13, cy - 8), (cx + 13, cy - 8)], BLUE if st is ON else st.line, sw=3, size=9)]
     else:
         o += [path(f"M {cx - 44},{cy - 34} L {cx - 44},{cy + 16} L {cx + 46},{cy + 16}", stroke=st.line, sw=2.5),
               path(f"M {cx - 38},{cy + 6} L {cx - 20},{cy + 2} L {cx - 4},{cy - 18} L {cx + 10},{cy - 26} "
@@ -220,6 +224,11 @@ def cylinder_db(cx, cy, st: St):
          circle(cx + 36, cy + 34, 17, fill=st.fill, stroke=st.line),
          path(f"M {cx + 36},{cy + 24} L {cx + 36},{cy + 34} L {cx + 44},{cy + 38}", stroke=st.line, sw=3)]
     return o
+
+
+def graph_db(cx, cy, st: St):
+    """그래프 DB: 시계열 저장소의 시계 대신 노드와 연결선 표시를 붙인 저장소."""
+    return cylinder_db(cx, cy, st)[:4] + [circle(cx + 38, cy + 34, 26, fill=WHITE, stroke=st.line)] + g(cx + 38, cy + 34, 0.5, graph_icon(0, 0, st))
 
 
 def pipe(d, inner=PALE, outer=NAVY):
@@ -1103,7 +1112,7 @@ def stored_not_true() -> str:
     o += pair(70, 260, 265, 260, 58)
     o += [path("M 330,235 L 390,130", stroke=NAVY, sw=3.5), arrow([(390, 130), (440, 130)], NAVY, sw=3.5),
           path("M 330,285 L 390,390", stroke=NAVY, sw=3.5), arrow([(390, 390), (440, 390)], NAVY, sw=3.5)]
-    o += g(510, 130, 0.95, cylinder_db(0, 0, ON)) + monitor(510, 390, ON, "chart")
+    o += g(510, 130, 0.95, graph_db(0, 0, ON)) + monitor(510, 390, ON, "graph")
     o += [arrow([(585, 130), (640, 130)], NAVY, sw=3.5), arrow([(585, 390), (640, 390)], NAVY, sw=3.5)]
     o += pair(695, 130, 880, 130, 58) + pair(695, 335, 880, 445, 58)
     o += [rect(965, 40, 225, 440, 14, fill=PALE, stroke=BLUE, sw=3)]
