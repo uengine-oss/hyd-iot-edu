@@ -83,7 +83,7 @@ wsl --update
 
 실습 폴더는 **Git으로 한 번 받고, 새 판도 같은 폴더에서 받는다.** 실습 기록(처리 건 · 적재한 지식 · 업무 데이터)은 폴더 하나에 묶여 있어서, 새 판을 다른 폴더에 받으면 빈 시스템이 하나 더 생긴다(시작 파일이 「다른 폴더의 시스템이 있습니다」라고 알려 준다).
 
-- **처음 받기**: 위 「실행 환경」의 Git을 설치한 뒤, 터미널에서 실습 폴더를 둘 곳(공용 PC는 `C:\`, 개인 PC는 문서 폴더 등)으로 이동해 `git clone https://github.com/uengine-oss/hyd-iot-edu.git` 을 실행한다. 만들어진 `hyd-iot-edu` 폴더(공용 PC면 `C:\hyd-iot-edu` — `README.md`, `compose.yaml`, `scripts`, `setup`이 함께 있는 폴더)가 프로젝트 루트다.
+- **처음 받기**: 위 「실행 환경」의 Git을 설치한 뒤, 터미널에서 실습 폴더를 둘 곳(공용 PC는 `C:\`, 개인 PC는 문서 폴더 등)으로 이동해 `git clone --depth 1 https://github.com/uengine-oss/hyd-iot-edu.git` 을 실행한다(`--depth 1`은 지난 기록 없이 수업에 쓰는 지금 판만 받는 옵션이다. 강사용 영상 자료까지 받지 않아 몇 초면 끝난다). 만들어진 `hyd-iot-edu` 폴더(공용 PC면 `C:\hyd-iot-edu` — `README.md`, `compose.yaml`, `scripts`, `setup`이 함께 있는 폴더)가 프로젝트 루트다.
 - **새 판 받기**: 시작 파일이나 점검 파일이 「새 판을 받으세요」라고 하면, 수업 시스템을 끈 뒤(`끄기.bat` · Mac `끄기.command`) 프로젝트 루트에서 `git pull` 을 실행하고 시작 파일을 다시 실행한다. `git pull`이 `it/supabase/config.toml` 때문에 멈추면(2026년 10월 20~29일 판 시작이 그 파일에 이 PC 값을 써 넣었다) `git checkout -- it/supabase/config.toml` 뒤 다시 `git pull` 한다 — 그 파일의 이 PC 값은 시작 파일이 `.hyd-runtime`의 기록에서 다시 만든다.
 - Git이 아직 없어 자동 설치 파일로 프로그램부터 준비하려면, [ZIP 다운로드](https://github.com/uengine-oss/hyd-iot-edu/archive/refs/heads/main.zip)로 받은 폴더에서 아래 「자동 설치 파일」만 실행하고, 설치가 끝나면 위처럼 `git clone`으로 실습 폴더를 받는다(ZIP 폴더는 설치용이라 지워도 된다).
 
