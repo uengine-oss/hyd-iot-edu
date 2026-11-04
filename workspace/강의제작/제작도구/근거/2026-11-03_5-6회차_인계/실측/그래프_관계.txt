@@ -1,0 +1,926 @@
+a, t, b, p
+"0e712f67-3bb1-441d-9c13-6db84b1895ab", "ASSIGNED_TO", "execution-actor:hyd:agent%3Acooling", {kind: "single"}
+"0e712f67-3bb1-441d-9c13-6db84b1895ab", "EXECUTES", "flow:hyd:c3_cooling:1:T_agent", {}
+"0e712f67-3bb1-441d-9c13-6db84b1895ab", "IN_INSTANCE", "c3_cooling.df0b244a-9559-4148-a546-809d964650ef", {}
+"18602fad-1ec1-43e3-ac9d-98bce1e27b19", "ASSIGNED_TO", "sys:process", {kind: "single"}
+"18602fad-1ec1-43e3-ac9d-98bce1e27b19", "EXECUTES", "flow:hyd:c3_cooling:1:B_overdue", {}
+"18602fad-1ec1-43e3-ac9d-98bce1e27b19", "IN_INSTANCE", "c3_cooling.e8ff2f60-1d61-41ea-a456-9d31f924c341", {}
+"21e5a024-8943-49f0-8c87-cf26cffc72cc", "ASSIGNED_TO", "sys:process", {kind: "single"}
+"21e5a024-8943-49f0-8c87-cf26cffc72cc", "EXECUTES", "flow:hyd:c3_cooling:1:T_reobs", {}
+"21e5a024-8943-49f0-8c87-cf26cffc72cc", "IN_INSTANCE", "c3_cooling.e8ff2f60-1d61-41ea-a456-9d31f924c341", {}
+"3065a593-a12f-46f1-99f9-72061884b3d5", "ASSIGNED_TO", "sys:cmms", {kind: "single"}
+"3065a593-a12f-46f1-99f9-72061884b3d5", "EXECUTES", "flow:hyd:c3_cooling:1:T_wo", {}
+"3065a593-a12f-46f1-99f9-72061884b3d5", "IN_INSTANCE", "c3_cooling.df0b244a-9559-4148-a546-809d964650ef", {}
+"33082150-8033-4ffc-8fad-7e0787492243", "ASSIGNED_TO", "sys:process", {kind: "single"}
+"33082150-8033-4ffc-8fad-7e0787492243", "EXECUTES", "flow:hyd:c3_cooling:1:R_ok", {}
+"33082150-8033-4ffc-8fad-7e0787492243", "IN_INSTANCE", "c3_cooling.df0b244a-9559-4148-a546-809d964650ef", {}
+"35cf63f5-f2b1-4440-8fa1-75992f489804", "ASSIGNED_TO", "sys:process", {kind: "single"}
+"35cf63f5-f2b1-4440-8fa1-75992f489804", "EXECUTES", "flow:hyd:c3_cooling:1:R_fail", {}
+"35cf63f5-f2b1-4440-8fa1-75992f489804", "IN_INSTANCE", "c3_cooling.df0b244a-9559-4148-a546-809d964650ef", {}
+"3e6a5937-b68c-4afc-a7e3-2bcbe08cedf6", "ASSIGNED_TO", "sys:cmms", {kind: "single"}
+"3e6a5937-b68c-4afc-a7e3-2bcbe08cedf6", "EXECUTES", "flow:hyd:c3_cooling:1:T_wo_only", {}
+"3e6a5937-b68c-4afc-a7e3-2bcbe08cedf6", "IN_INSTANCE", "c3_cooling.e8ff2f60-1d61-41ea-a456-9d31f924c341", {}
+"44872ef3-019c-41b0-b3aa-ac6c26998351", "ASSIGNED_TO", "execution-actor:hyd:agent%3Acooling", {kind: "single"}
+"44872ef3-019c-41b0-b3aa-ac6c26998351", "EXECUTES", "flow:hyd:c3_cooling:1:T_agent", {}
+"44872ef3-019c-41b0-b3aa-ac6c26998351", "IN_INSTANCE", "c3_cooling.e8ff2f60-1d61-41ea-a456-9d31f924c341", {}
+"60170443-07e3-4666-adb4-83d0264316de", "ASSIGNED_TO", "sys:process", {kind: "single"}
+"60170443-07e3-4666-adb4-83d0264316de", "EXECUTES", "flow:hyd:c3_cooling:1:R_kind", {}
+"60170443-07e3-4666-adb4-83d0264316de", "IN_INSTANCE", "c3_cooling.e8ff2f60-1d61-41ea-a456-9d31f924c341", {}
+"66ed1611-6d26-490c-88ad-4c36a068102f", "ASSIGNED_TO", "sys:process", {kind: "single"}
+"66ed1611-6d26-490c-88ad-4c36a068102f", "EXECUTES", "flow:hyd:c3_cooling:1:R_rejected", {}
+"66ed1611-6d26-490c-88ad-4c36a068102f", "IN_INSTANCE", "c3_cooling.e8ff2f60-1d61-41ea-a456-9d31f924c341", {}
+"6bdd760e-210a-4802-b135-d2f85cf88886", "ASSIGNED_TO", "sys:process", {kind: "single"}
+"6bdd760e-210a-4802-b135-d2f85cf88886", "EXECUTES", "flow:hyd:c3_cooling:1:R_wo_only", {}
+"6bdd760e-210a-4802-b135-d2f85cf88886", "IN_INSTANCE", "c3_cooling.e8ff2f60-1d61-41ea-a456-9d31f924c341", {}
+"6c1d3368-b271-4521-b0c1-c1ace920a177", "ASSIGNED_TO", "sys:scada", {kind: "single"}
+"6c1d3368-b271-4521-b0c1-c1ace920a177", "EXECUTES", "flow:hyd:c3_cooling:1:T_cmd", {}
+"6c1d3368-b271-4521-b0c1-c1ace920a177", "IN_INSTANCE", "c3_cooling.df0b244a-9559-4148-a546-809d964650ef", {}
+"77123451-3e69-404a-9b13-cd98f1600ca0", "ASSIGNED_TO", "sys:scada", {kind: "single"}
+"77123451-3e69-404a-9b13-cd98f1600ca0", "EXECUTES", "flow:hyd:c3_cooling:1:T_cmd", {}
+"77123451-3e69-404a-9b13-cd98f1600ca0", "IN_INSTANCE", "c3_cooling.e8ff2f60-1d61-41ea-a456-9d31f924c341", {}
+"7f5ae97f-fab7-4b2e-b85a-fa5995840a43", "ASSIGNED_TO", "sys:process", {kind: "single"}
+"7f5ae97f-fab7-4b2e-b85a-fa5995840a43", "EXECUTES", "flow:hyd:c3_cooling:1:B_overdue", {}
+"7f5ae97f-fab7-4b2e-b85a-fa5995840a43", "IN_INSTANCE", "c3_cooling.df0b244a-9559-4148-a546-809d964650ef", {}
+"8459c2a8-8a42-456f-a4d0-65148a49f468", "ASSIGNED_TO", "sys:process", {kind: "single"}
+"8459c2a8-8a42-456f-a4d0-65148a49f468", "EXECUTES", "flow:hyd:c3_cooling:1:T_reobs_wo", {}
+"8459c2a8-8a42-456f-a4d0-65148a49f468", "IN_INSTANCE", "c3_cooling.df0b244a-9559-4148-a546-809d964650ef", {}
+"8afb3786-802b-4276-b80c-26147286539c", "ASSIGNED_TO", "role:operator", {kind: "single"}
+"8afb3786-802b-4276-b80c-26147286539c", "EXECUTES", "flow:hyd:c3_cooling:1:T_approve", {}
+"8afb3786-802b-4276-b80c-26147286539c", "IN_INSTANCE", "c3_cooling.df0b244a-9559-4148-a546-809d964650ef", {}
+"8b4a396e-08ae-4010-9e4d-e0798d98946a", "ASSIGNED_TO", "sys:cmms", {kind: "single"}
+"8b4a396e-08ae-4010-9e4d-e0798d98946a", "EXECUTES", "flow:hyd:c3_cooling:1:T_wo_only", {}
+"8b4a396e-08ae-4010-9e4d-e0798d98946a", "IN_INSTANCE", "c3_cooling.df0b244a-9559-4148-a546-809d964650ef", {}
+"8c0f60a9-c41f-4ff7-9bd0-67a4b996eacf", "ASSIGNED_TO", "execution-actor:hyd:sys%3Aagent", {kind: "single"}
+"8c0f60a9-c41f-4ff7-9bd0-67a4b996eacf", "EXECUTES", "flow:hyd:manual_source_extraction:2.18:task%3Aextract-manual", {}
+"8c0f60a9-c41f-4ff7-9bd0-67a4b996eacf", "IN_INSTANCE", "manual_source_extraction.b08111ea-33a1-411a-bd65-35f88de3005d", {}
+"8e9d12ea-0bc8-4c06-b909-655b50e92379", "ASSIGNED_TO", "sys:process", {kind: "single"}
+"8e9d12ea-0bc8-4c06-b909-655b50e92379", "EXECUTES", "flow:hyd:c3_cooling:1:T_reobs", {}
+"8e9d12ea-0bc8-4c06-b909-655b50e92379", "IN_INSTANCE", "c3_cooling.df0b244a-9559-4148-a546-809d964650ef", {}
+"9df619ea-5fb0-42c6-91f7-942946258b19", "ASSIGNED_TO", "sys:process", {kind: "single"}
+"9df619ea-5fb0-42c6-91f7-942946258b19", "EXECUTES", "flow:hyd:c3_cooling:1:R_rejected", {}
+"9df619ea-5fb0-42c6-91f7-942946258b19", "IN_INSTANCE", "c3_cooling.df0b244a-9559-4148-a546-809d964650ef", {}
+"INC-1102-01-9ae1", "DIAGNOSED_AS", "cause:cooler-fin-fouling", {}
+"INC-1102-01-9ae1", "ON_ASSET", "asset:hyd-01", {}
+"INC-1102-01-9ae1", "RAISED_BY", "pattern:cooler-degradation", {}
+"INC-1102-01-d42b", "DIAGNOSED_AS", "cause:cooler-fin-fouling", {}
+"INC-1102-01-d42b", "ON_ASSET", "asset:hyd-01", {}
+"INC-1102-01-d42b", "RAISED_BY", "pattern:cooler-degradation", {}
+"action:controlled-stop", "TARGETS", "actr:pump-drive", {}
+"action:purchase-request", "TARGETS", "sys:erp", {}
+"action:raise-pressure", "TARGETS", "actr:pump-drive", {}
+"action:reschedule-work-order", "TARGETS", "sys:cmms", {}
+"action:reset", "TARGETS", "actr:pump-drive", {}
+"action:select-pump", "TARGETS", "actr:pump-selector", {}
+"action:set-fan", "TARGETS", "actr:fan-drive", {}
+"action:set-load", "TARGETS", "actr:pump-drive", {}
+"action:work-order", "TARGETS", "sys:cmms", {}
+"actr:fan-drive", "MANIPULATES", "sv:fan-speed", {}
+"actr:pump-drive", "MANIPULATES", "sv:load", {}
+"actr:pump-selector", "MANIPULATES", "sv:pump-select", {}
+"ae37a12e-2553-435f-991e-ad151279d4ad", "ASSIGNED_TO", "sys:process", {kind: "single"}
+"ae37a12e-2553-435f-991e-ad151279d4ad", "EXECUTES", "flow:hyd:c3_cooling:1:T_fix", {}
+"ae37a12e-2553-435f-991e-ad151279d4ad", "IN_INSTANCE", "c3_cooling.df0b244a-9559-4148-a546-809d964650ef", {}
+"af6ae3f0-ad14-4d0e-b150-a999b641c01b", "ASSIGNED_TO", "sys:process", {kind: "single"}
+"af6ae3f0-ad14-4d0e-b150-a999b641c01b", "EXECUTES", "flow:hyd:c3_cooling:1:R_wo_only", {}
+"af6ae3f0-ad14-4d0e-b150-a999b641c01b", "IN_INSTANCE", "c3_cooling.df0b244a-9559-4148-a546-809d964650ef", {}
+"asset:hyd-01", "HAS_COMPONENT", "comp:cooler", {}
+"asset:hyd-01", "HAS_COMPONENT", "comp:fan", {}
+"asset:hyd-01", "HAS_COMPONENT", "comp:motor", {}
+"asset:hyd-01", "HAS_COMPONENT", "comp:pump-a", {}
+"asset:hyd-01", "HAS_COMPONENT", "comp:pump-b", {}
+"asset:hyd-01", "HAS_COMPONENT", "comp:tank", {}
+"asset:hyd-02", "HAS_COMPONENT", "comp:cooler", {}
+"asset:hyd-02", "HAS_COMPONENT", "comp:fan", {}
+"asset:hyd-02", "HAS_COMPONENT", "comp:motor", {}
+"asset:hyd-02", "HAS_COMPONENT", "comp:pump-a", {}
+"asset:hyd-02", "HAS_COMPONENT", "comp:pump-b", {}
+"asset:hyd-02", "HAS_COMPONENT", "comp:tank", {}
+"asset:hyd-03", "HAS_COMPONENT", "comp:cooler", {}
+"asset:hyd-03", "HAS_COMPONENT", "comp:fan", {}
+"asset:hyd-03", "HAS_COMPONENT", "comp:motor", {}
+"asset:hyd-03", "HAS_COMPONENT", "comp:pump-a", {}
+"asset:hyd-03", "HAS_COMPONENT", "comp:pump-b", {}
+"asset:hyd-03", "HAS_COMPONENT", "comp:tank", {}
+"b06de21f-720d-4225-a09f-d3025f16748e", "ASSIGNED_TO", "sys:cmms", {kind: "single"}
+"b06de21f-720d-4225-a09f-d3025f16748e", "EXECUTES", "flow:hyd:c3_cooling:1:T_wo", {}
+"b06de21f-720d-4225-a09f-d3025f16748e", "IN_INSTANCE", "c3_cooling.e8ff2f60-1d61-41ea-a456-9d31f924c341", {}
+"bc6373fa-8c2d-4af7-80bd-76b0f395fb0b", "ASSIGNED_TO", "sys:process", {kind: "single"}
+"bc6373fa-8c2d-4af7-80bd-76b0f395fb0b", "EXECUTES", "flow:hyd:c3_cooling:1:R_ok", {}
+"bc6373fa-8c2d-4af7-80bd-76b0f395fb0b", "IN_INSTANCE", "c3_cooling.e8ff2f60-1d61-41ea-a456-9d31f924c341", {}
+"c209f48f-39cf-4443-bafa-62dbb5afb16a", "ASSIGNED_TO", "execution-actor:hyd:sys%3Aagent", {kind: "single"}
+"c209f48f-39cf-4443-bafa-62dbb5afb16a", "EXECUTES", "flow:hyd:manual_source_extraction:2.18:task%3Aextract-manual", {}
+"c209f48f-39cf-4443-bafa-62dbb5afb16a", "IN_INSTANCE", "manual_source_extraction.f09e643c-4361-42d5-9e73-a3c485758007", {}
+"c3_cooling.df0b244a-9559-4148-a546-809d964650ef", "HANDLES", "INC-1102-01-9ae1", {}
+"c3_cooling.df0b244a-9559-4148-a546-809d964650ef", "ON_ASSET", "asset:hyd-01", {}
+"c3_cooling.df0b244a-9559-4148-a546-809d964650ef", "ROLE_BOUND", "execution-actor:hyd:sys%3Aagent", {role_name: "AI 에이전트"}
+"c3_cooling.df0b244a-9559-4148-a546-809d964650ef", "ROLE_BOUND", "role:operator", {role_name: "운전원"}
+"c3_cooling.df0b244a-9559-4148-a546-809d964650ef", "ROLE_BOUND", "sys:cmms", {role_name: "CMMS"}
+"c3_cooling.df0b244a-9559-4148-a546-809d964650ef", "ROLE_BOUND", "sys:process", {role_name: "프로세스"}
+"c3_cooling.df0b244a-9559-4148-a546-809d964650ef", "ROLE_BOUND", "sys:scada", {role_name: "SCADA"}
+"c3_cooling.df0b244a-9559-4148-a546-809d964650ef", "USES_VERSION", "proc-version:hyd:c3_cooling:1", {}
+"c3_cooling.e8ff2f60-1d61-41ea-a456-9d31f924c341", "HANDLES", "INC-1102-01-d42b", {}
+"c3_cooling.e8ff2f60-1d61-41ea-a456-9d31f924c341", "ON_ASSET", "asset:hyd-01", {}
+"c3_cooling.e8ff2f60-1d61-41ea-a456-9d31f924c341", "ROLE_BOUND", "execution-actor:hyd:sys%3Aagent", {role_name: "AI 에이전트"}
+"c3_cooling.e8ff2f60-1d61-41ea-a456-9d31f924c341", "ROLE_BOUND", "role:operator", {role_name: "운전원"}
+"c3_cooling.e8ff2f60-1d61-41ea-a456-9d31f924c341", "ROLE_BOUND", "sys:cmms", {role_name: "CMMS"}
+"c3_cooling.e8ff2f60-1d61-41ea-a456-9d31f924c341", "ROLE_BOUND", "sys:process", {role_name: "프로세스"}
+"c3_cooling.e8ff2f60-1d61-41ea-a456-9d31f924c341", "ROLE_BOUND", "sys:scada", {role_name: "SCADA"}
+"c3_cooling.e8ff2f60-1d61-41ea-a456-9d31f924c341", "USES_VERSION", "proc-version:hyd:c3_cooling:1", {}
+"case:DEC-1102-mcp-002-5a10ef000097", "CHOSE", "skill:sop-cool-11", {}
+"case:DEC-1102-mcp-002-5a10ef000097", "DECIDED_BY", "role:operator", {}
+"case:DEC-1102-mcp-002-5a10ef000097", "FOR_INCIDENT", "INC-1102-01-d42b", {}
+"case:DEC-1102-mcp-002-5a10ef000097", "INSTANCE_OF", "dec:rank-actions", {}
+"case:DEC-1102-mcp-002-ba05a9925c7b", "CHOSE", "skill:sop-cool-11", {}
+"case:DEC-1102-mcp-002-ba05a9925c7b", "DECIDED_BY", "role:operator", {}
+"case:DEC-1102-mcp-002-ba05a9925c7b", "FOR_INCIDENT", "INC-1102-01-9ae1", {}
+"case:DEC-1102-mcp-002-ba05a9925c7b", "INSTANCE_OF", "dec:rank-actions", {}
+"cause:ambient-temperature-rise", "CAUSES", "fm:cooler-cooling-loss", {}
+"cause:ambient-temperature-rise", "EVIDENCED_BY", "evd:ambient-temperature-high", {}
+"cause:cooler-fin-fouling", "CAUSES", "fm:cooler-cooling-loss", {}
+"cause:cooler-fin-fouling", "DISTURBS", "sv:fouling", {sign: 1}
+"cause:cooler-fin-fouling", "EVIDENCED_BY", "evd:cooler-fouling-ce-low", {}
+"cause:cooler-fin-fouling", "EVIDENCED_BY", "evd:cooler-fouling-vs1-normal", {}
+"cause:cooler-fin-fouling", "INVOLVES_PART", "part:cooler-core", {}
+"cause:fan-drive-fault", "CAUSES", "fm:cooler-cooling-loss", {}
+"cause:fan-drive-fault", "DISTURBS", "sv:vs1", {sign: 1}
+"cause:fan-drive-fault", "EVIDENCED_BY", "evd:fan-drive-vibration-high", {}
+"cause:hydraulic-oil-contamination", "CAUSES", "fm:pump-volumetric-efficiency-loss", {}
+"cause:hydraulic-oil-contamination", "EVIDENCED_BY", "evd:pm-oil-contamination-fs1-low", {}
+"cause:hydraulic-oil-contamination", "INVOLVES_PART", "part:return-filter", {}
+"cause:pump-shaft-seal-wear", "CAUSES", "fm:pump-volumetric-efficiency-loss", {}
+"cause:pump-shaft-seal-wear", "EVIDENCED_BY", "evd:pm-seal-wear-ps1-low", {}
+"cause:pump-shaft-seal-wear", "INVOLVES_PART", "part:pump-seal", {}
+"comp:cooler", "MONITORED_BY", "sen:ce", {}
+"comp:cooler", "MONITORED_BY", "sen:ts1", {}
+"comp:cooler", "USES_PART", "part:cooler-core", {}
+"comp:fan", "ACTUATED_BY", "actr:fan-drive", {}
+"comp:fan", "MONITORED_BY", "sen:vs1", {}
+"comp:fan", "USES_PART", "part:fan-bearing", {}
+"comp:motor", "ACTUATED_BY", "actr:pump-drive", {}
+"comp:pump-a", "ACTUATED_BY", "actr:pump-selector", {}
+"comp:pump-a", "MONITORED_BY", "sen:fs1", {}
+"comp:pump-a", "MONITORED_BY", "sen:ps1", {}
+"comp:pump-a", "USES_PART", "part:pump-seal", {}
+"comp:pump-b", "ACTUATED_BY", "actr:pump-selector", {}
+"comp:tank", "USES_PART", "part:return-filter", {}
+"d00cae8c-094c-48f5-a4c3-a83fd4dd3085", "ASSIGNED_TO", "sys:process", {kind: "single"}
+"d00cae8c-094c-48f5-a4c3-a83fd4dd3085", "EXECUTES", "flow:hyd:c3_cooling:1:T_reobs_wo", {}
+"d00cae8c-094c-48f5-a4c3-a83fd4dd3085", "IN_INSTANCE", "c3_cooling.e8ff2f60-1d61-41ea-a456-9d31f924c341", {}
+"d118c776-f627-4d8c-9791-c52dd04058ba", "ASSIGNED_TO", "role:operator", {kind: "single"}
+"d118c776-f627-4d8c-9791-c52dd04058ba", "EXECUTES", "flow:hyd:c3_cooling:1:T_approve", {}
+"d118c776-f627-4d8c-9791-c52dd04058ba", "IN_INSTANCE", "c3_cooling.e8ff2f60-1d61-41ea-a456-9d31f924c341", {}
+"d334ebd5-3754-44bb-85f4-64e285bb8fe9", "ASSIGNED_TO", "sys:process", {kind: "single"}
+"d334ebd5-3754-44bb-85f4-64e285bb8fe9", "EXECUTES", "flow:hyd:c3_cooling:1:R_fail", {}
+"d334ebd5-3754-44bb-85f4-64e285bb8fe9", "IN_INSTANCE", "c3_cooling.e8ff2f60-1d61-41ea-a456-9d31f924c341", {}
+"dec:action-candidates", "IMPLEMENTED_BY", "dt:action-candidates", {}
+"dec:action-candidates", "REQUIRES_DECISION", "dec:diagnose-cause", {}
+"dec:action-candidates", "REQUIRES_INPUT", "in:cause", {}
+"dec:action-candidates", "REQUIRES_INPUT", "in:failure-mode", {}
+"dec:action-candidates", "REQUIRES_INPUT", "in:hours-since-pm", {}
+"dec:action-candidates", "REQUIRES_INPUT", "in:pattern", {}
+"dec:action-candidates", "REQUIRES_INPUT", "in:plc-state", {}
+"dec:compliance", "GOVERNED_BY", "ks:sr-04", {}
+"dec:compliance", "IMPLEMENTED_BY", "dt:compliance", {}
+"dec:compliance", "REQUIRES_DECISION", "dec:action-candidates", {}
+"dec:compliance", "REQUIRES_INPUT", "in:failure-mode", {}
+"dec:compliance", "REQUIRES_INPUT", "in:fan100-hours", {}
+"dec:compliance", "REQUIRES_INPUT", "in:forecast-ps1", {}
+"dec:compliance", "REQUIRES_INPUT", "in:forecast-ts1", {}
+"dec:compliance", "REQUIRES_INPUT", "in:hours-if-deferred", {}
+"dec:compliance", "REQUIRES_INPUT", "in:lead-slack-days", {}
+"dec:compliance", "REQUIRES_INPUT", "in:next-scheduled-time", {}
+"dec:compliance", "REQUIRES_INPUT", "in:order-due", {}
+"dec:compliance", "REQUIRES_INPUT", "in:pattern", {}
+"dec:compliance", "REQUIRES_INPUT", "in:plc-mode", {}
+"dec:compliance", "REQUIRES_INPUT", "in:plc-state", {}
+"dec:compliance", "REQUIRES_INPUT", "in:pm-crew", {}
+"dec:compliance", "REQUIRES_INPUT", "in:po-amount", {}
+"dec:compliance", "REQUIRES_INPUT", "in:production-running", {}
+"dec:compliance", "REQUIRES_INPUT", "in:skill-code", {}
+"dec:compliance", "REQUIRES_INPUT", "in:skill-kind", {}
+"dec:compliance", "REQUIRES_INPUT", "in:spare-available", {}
+"dec:compliance", "REQUIRES_INPUT", "in:standby-ready", {}
+"dec:compliance", "REQUIRES_INPUT", "in:supplier-avl", {}
+"dec:compliance", "REQUIRES_INPUT", "in:supplier-fail-rate", {}
+"dec:diagnose-cause", "IMPLEMENTED_BY", "dt:diagnose-cause", {}
+"dec:diagnose-cause", "REQUIRES_INPUT", "in:ce", {}
+"dec:diagnose-cause", "REQUIRES_INPUT", "in:pattern", {}
+"dec:diagnose-cause", "REQUIRES_INPUT", "in:ps1", {}
+"dec:diagnose-cause", "REQUIRES_INPUT", "in:ts1", {}
+"dec:rank-actions", "GOVERNED_BY", "ks:strategy-map", {}
+"dec:rank-actions", "IMPLEMENTED_BY", "dt:rank-actions", {}
+"dec:rank-actions", "REQUIRES_DECISION", "dec:compliance", {}
+"dec:rank-actions", "REQUIRES_INPUT", "in:forecast-ts1", {}
+"dec:rank-actions", "REQUIRES_INPUT", "in:hot-lot-claim", {}
+"dec:rank-actions", "REQUIRES_INPUT", "in:hot-lot-qty", {}
+"dec:rank-actions", "REQUIRES_INPUT", "in:order-due", {}
+"dec:rank-actions", "REQUIRES_INPUT", "in:order-penalty", {}
+"dec:rank-actions", "REQUIRES_INPUT", "in:order-tier", {}
+"dt:action-candidates", "HAS_RULE", "rule:hm-8-4-fan-drive-inspection", {}
+"dt:action-candidates", "HAS_RULE", "rule:hm-8-4-fan-inspection", {}
+"dt:action-candidates", "HAS_RULE", "rule:hm-8-5-cooler-mitigations", {}
+"dt:action-candidates", "HAS_RULE", "rule:hm-8-7-cabinet-ventilation", {}
+"dt:action-candidates", "HAS_RULE", "rule:hm-8-7-fin-cleaning", {}
+"dt:action-candidates", "HAS_RULE", "rule:pm-02-pm-due-candidates", {}
+"dt:action-candidates", "HAS_RULE", "rule:pr07-spare-below-min-purchase", {}
+"dt:compliance", "HAS_RULE", "rule:cooler-forecast-temperature-warning", {}
+"dt:compliance", "HAS_RULE", "rule:hm-8-8-fan-life-penalty", {}
+"dt:compliance", "HAS_RULE", "rule:hm-8-8-remote-auto-only", {}
+"dt:compliance", "HAS_RULE", "rule:pm-bundled-crew-shortage-cost", {}
+"dt:compliance", "HAS_RULE", "rule:pm-bundled-seal-kit-shortage", {}
+"dt:compliance", "HAS_RULE", "rule:pm-following-window-over-hours-limit", {}
+"dt:compliance", "HAS_RULE", "rule:pm-immediate-stop-order-loss", {}
+"dt:compliance", "HAS_RULE", "rule:pm-next-window-over-hours-limit", {}
+"dt:compliance", "HAS_RULE", "rule:pm-no-seal-kit-excludes-execution", {}
+"dt:compliance", "HAS_RULE", "rule:pm-seal-kit-reorder-warning", {}
+"dt:compliance", "HAS_RULE", "rule:pr07-approved-supplier-only", {}
+"dt:compliance", "HAS_RULE", "rule:pr07-high-fail-rate-inspection", {}
+"dt:compliance", "HAS_RULE", "rule:pr07-lead-time-warning", {}
+"dt:compliance", "HAS_RULE", "rule:pr07-over-delegation-threshold", {}
+"dt:compliance", "HAS_RULE", "rule:ts1-hard", {}
+"dt:diagnose-cause", "HAS_RULE", "rule:hm-8-4-fouling-diagnosis", {}
+"dt:diagnose-cause", "HAS_RULE", "rule:pm-pump-leakage-seal-wear-first", {}
+"dt:rank-actions", "HAS_RULE", "rule:rank-value", {}
+"e1b861a9-5427-4e22-b089-4bf38780b29e", "ASSIGNED_TO", "sys:process", {kind: "single"}
+"e1b861a9-5427-4e22-b089-4bf38780b29e", "EXECUTES", "flow:hyd:c3_cooling:1:R_kind", {}
+"e1b861a9-5427-4e22-b089-4bf38780b29e", "IN_INSTANCE", "c3_cooling.df0b244a-9559-4148-a546-809d964650ef", {}
+"ext:ambient", "INFLUENCES", "sv:ts1", {strength: "medium", sign: 1, note: "외기가 더우면 냉각 여유가 준다"}
+"ext:demand", "INFLUENCES", "msr:inventory", {strength: "medium", sign: -1, note: "수요가 늘면 재고가 빠진다"}
+"ext:demand", "INFLUENCES", "msr:revenue", {strength: "high", sign: 1}
+"ext:fx", "INFLUENCES", "msr:inventory", {sign: 1, note: "팔리지 않은 재고가 쌓인다", condition: "가격 정책 PP-01: 판가를 올려 판매가 줄 때", strength: "low"}
+"ext:fx", "INFLUENCES", "msr:part-price", {strength: "high", sign: 1, note: "수입 부품 원가가 오른다"}
+"ext:fx", "INFLUENCES", "msr:revenue", {sign: -1, note: "원가가 올라 판가를 못 올리면 매출 이익이 준다", condition: "가격 정책 PP-01: 원가 상승분을 판가에 반영하지 않을 때", strength: "medium"}
+"ext:power-tariff", "INFLUENCES", "msr:energy-cost", {strength: "high", sign: 1}
+"f5ca17e3-f14d-4e41-b8b7-6225b229237e", "ASSIGNED_TO", "sys:process", {kind: "single"}
+"f5ca17e3-f14d-4e41-b8b7-6225b229237e", "EXECUTES", "flow:hyd:c3_cooling:1:T_fix", {}
+"f5ca17e3-f14d-4e41-b8b7-6225b229237e", "IN_INSTANCE", "c3_cooling.e8ff2f60-1d61-41ea-a456-9d31f924c341", {}
+"flow:hyd:c3_cooling:1:B_overdue", "SEQUENCE_FLOW", "flow:hyd:c3_cooling:1:T_notice", {isDefault: FALSE, id: "F_overdue"}
+"flow:hyd:c3_cooling:1:G_action", "SEQUENCE_FLOW", "flow:hyd:c3_cooling:1:R_kind", {isDefault: TRUE, id: "F_other"}
+"flow:hyd:c3_cooling:1:G_action", "SEQUENCE_FLOW", "flow:hyd:c3_cooling:1:T_cmd", {isDefault: FALSE, condition: "chosen_skill_kind == 'control'", id: "F_control"}
+"flow:hyd:c3_cooling:1:G_action", "SEQUENCE_FLOW", "flow:hyd:c3_cooling:1:T_wo_only", {isDefault: FALSE, condition: "chosen_skill_kind == 'work_order'", id: "F_work_order"}
+"flow:hyd:c3_cooling:1:G_approved", "SEQUENCE_FLOW", "flow:hyd:c3_cooling:1:G_action", {isDefault: FALSE, condition: "approval == '승인'", id: "F_approved"}
+"flow:hyd:c3_cooling:1:G_approved", "SEQUENCE_FLOW", "flow:hyd:c3_cooling:1:R_rejected", {isDefault: TRUE, id: "F_rejected"}
+"flow:hyd:c3_cooling:1:G_ok", "SEQUENCE_FLOW", "flow:hyd:c3_cooling:1:R_fail", {isDefault: TRUE, id: "F_no"}
+"flow:hyd:c3_cooling:1:G_ok", "SEQUENCE_FLOW", "flow:hyd:c3_cooling:1:T_wo", {condition: "recovered == True", isDefault: FALSE, id: "F_yes"}
+"flow:hyd:c3_cooling:1:G_wo_ok", "SEQUENCE_FLOW", "flow:hyd:c3_cooling:1:R_fail", {isDefault: TRUE, id: "F_wo_no"}
+"flow:hyd:c3_cooling:1:G_wo_ok", "SEQUENCE_FLOW", "flow:hyd:c3_cooling:1:R_wo_only", {condition: "recovered == True", isDefault: FALSE, id: "F_wo_yes"}
+"flow:hyd:c3_cooling:1:R_fail", "SEQUENCE_FLOW", "flow:hyd:c3_cooling:1:E_end", {isDefault: FALSE, id: "F8"}
+"flow:hyd:c3_cooling:1:R_kind", "SEQUENCE_FLOW", "flow:hyd:c3_cooling:1:E_kind", {isDefault: FALSE, id: "F_kind_end"}
+"flow:hyd:c3_cooling:1:R_ok", "SEQUENCE_FLOW", "flow:hyd:c3_cooling:1:E_end", {isDefault: FALSE, id: "F7"}
+"flow:hyd:c3_cooling:1:R_rejected", "SEQUENCE_FLOW", "flow:hyd:c3_cooling:1:E_rejected", {isDefault: FALSE, id: "F_rej_end"}
+"flow:hyd:c3_cooling:1:R_wo_only", "SEQUENCE_FLOW", "flow:hyd:c3_cooling:1:E_end", {isDefault: FALSE, id: "F_wo_only_end"}
+"flow:hyd:c3_cooling:1:Start", "SEQUENCE_FLOW", "flow:hyd:c3_cooling:1:T_agent", {isDefault: FALSE, id: "F1"}
+"flow:hyd:c3_cooling:1:T_agent", "SEQUENCE_FLOW", "flow:hyd:c3_cooling:1:T_approve", {isDefault: FALSE, id: "F2"}
+"flow:hyd:c3_cooling:1:T_approve", "SEQUENCE_FLOW", "flow:hyd:c3_cooling:1:G_approved", {isDefault: FALSE, id: "F3"}
+"flow:hyd:c3_cooling:1:T_cmd", "SEQUENCE_FLOW", "flow:hyd:c3_cooling:1:T_reobs", {isDefault: FALSE, id: "F4"}
+"flow:hyd:c3_cooling:1:T_fix", "SEQUENCE_FLOW", "flow:hyd:c3_cooling:1:T_reobs_wo", {isDefault: FALSE, id: "F_fix"}
+"flow:hyd:c3_cooling:1:T_notice", "SEQUENCE_FLOW", "flow:hyd:c3_cooling:1:E_notice", {isDefault: FALSE, id: "F_notice_end"}
+"flow:hyd:c3_cooling:1:T_reobs", "SEQUENCE_FLOW", "flow:hyd:c3_cooling:1:G_ok", {isDefault: FALSE, id: "F5"}
+"flow:hyd:c3_cooling:1:T_reobs_wo", "SEQUENCE_FLOW", "flow:hyd:c3_cooling:1:G_wo_ok", {isDefault: FALSE, id: "F_reobs_wo"}
+"flow:hyd:c3_cooling:1:T_wo", "SEQUENCE_FLOW", "flow:hyd:c3_cooling:1:R_ok", {isDefault: FALSE, id: "F6"}
+"flow:hyd:c3_cooling:1:T_wo_only", "SEQUENCE_FLOW", "flow:hyd:c3_cooling:1:T_fix", {isDefault: FALSE, id: "F_wo_only"}
+"flow:hyd:manual_source_extraction:2.18:start", "SEQUENCE_FLOW", "flow:hyd:manual_source_extraction:2.18:task%3Aextract-manual", {isDefault: FALSE, id: "s1"}
+"flow:hyd:manual_source_extraction:2.18:task%3Aextract-manual", "SEQUENCE_FLOW", "flow:hyd:manual_source_extraction:2.18:end", {isDefault: FALSE, id: "s2"}
+"fm:cooler-cooling-loss", "MITIGATED_BY", "skill:sop-cool-11", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"fm:cooler-cooling-loss", "MITIGATED_BY", "skill:sop-cool-12", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"fm:cooler-cooling-loss", "MITIGATED_BY", "skill:sop-cool-13", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"fm:cooler-cooling-loss", "OCCURS_IN", "comp:cooler", {}
+"fm:cooler-cooling-loss", "REMEDIED_BY", "skill:sop-cool-14", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"fm:cooler-cooling-loss", "REMEDIED_BY", "skill:sop-cool-15", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"fm:cooler-cooling-loss", "REMEDIED_BY", "skill:sop-fan-11", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"fm:cooler-cooling-loss", "REMEDIED_BY", "skill:sop-fan-12", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"fm:pump-volumetric-efficiency-loss", "OCCURS_IN", "comp:pump-a", {}
+"fm:pump-volumetric-efficiency-loss", "PREVENTED_BY", "skill:sop-pm-11", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"fm:pump-volumetric-efficiency-loss", "PREVENTED_BY", "skill:sop-pm-12", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"fm:pump-volumetric-efficiency-loss", "PREVENTED_BY", "skill:sop-pm-13", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"fm:pump-volumetric-efficiency-loss", "PREVENTED_BY", "skill:sop-pm-14", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"fm:pump-volumetric-efficiency-loss", "PREVENTED_BY", "skill:sop-pm-21", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"fm:pump-volumetric-efficiency-loss", "PREVENTED_BY", "skill:sop-pm-22", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"fm:pump-volumetric-efficiency-loss", "PREVENTED_BY", "skill:sop-pm-23", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"in:cause", "SOURCED_FROM", "sys:agent", {}
+"in:ce", "REPRESENTS", "sv:ce", {}
+"in:ce", "SOURCED_FROM", "sen:ce", {}
+"in:failure-mode", "SOURCED_FROM", "sys:agent", {}
+"in:fan100-hours", "REPRESENTS", "sv:fan-speed", {}
+"in:fan100-hours", "SOURCED_FROM", "sys:historian", {}
+"in:forecast-ps1", "REPRESENTS", "sv:ps1", {}
+"in:forecast-ps1", "SOURCED_FROM", "sys:agent", {}
+"in:forecast-ts1", "REPRESENTS", "sv:ts1", {}
+"in:forecast-ts1", "SOURCED_FROM", "sys:agent", {}
+"in:fs1", "REPRESENTS", "sv:fs1", {}
+"in:fs1", "SOURCED_FROM", "sen:fs1", {}
+"in:hot-lot-claim", "REPRESENTS", "msr:quality-claim", {}
+"in:hot-lot-claim", "SOURCED_FROM", "sys:qms", {}
+"in:hot-lot-qty", "SOURCED_FROM", "sys:qms", {}
+"in:hours-if-deferred", "SOURCED_FROM", "sys:cmms", {}
+"in:hours-since-pm", "SOURCED_FROM", "sys:cmms", {}
+"in:lead-slack-days", "SOURCED_FROM", "sys:agent", {}
+"in:load", "REPRESENTS", "sv:load", {}
+"in:load", "SOURCED_FROM", "sys:scada", {}
+"in:next-scheduled-time", "SOURCED_FROM", "sys:cmms", {}
+"in:oil-analysis", "SOURCED_FROM", "sys:cmms", {}
+"in:order-due", "REPRESENTS", "msr:otd", {}
+"in:order-due", "SOURCED_FROM", "sys:mes", {}
+"in:order-penalty", "REPRESENTS", "msr:penalty", {}
+"in:order-penalty", "SOURCED_FROM", "sys:erp", {}
+"in:order-tier", "SOURCED_FROM", "sys:erp", {}
+"in:pattern", "SOURCED_FROM", "sys:cep", {}
+"in:plc-mode", "SOURCED_FROM", "sys:scada", {}
+"in:plc-state", "SOURCED_FROM", "sys:scada", {}
+"in:pm-crew", "SOURCED_FROM", "sys:cmms", {}
+"in:po-amount", "REPRESENTS", "msr:part-cost", {}
+"in:po-amount", "SOURCED_FROM", "sys:agent", {}
+"in:production-running", "SOURCED_FROM", "sys:mes", {}
+"in:ps1", "REPRESENTS", "sv:ps1", {}
+"in:ps1", "SOURCED_FROM", "sen:ps1", {}
+"in:skill-code", "SOURCED_FROM", "sys:agent", {}
+"in:skill-kind", "SOURCED_FROM", "sys:agent", {}
+"in:spare-available", "SOURCED_FROM", "sys:cmms", {}
+"in:spare-gap", "SOURCED_FROM", "sys:erp", {}
+"in:standby-ready", "SOURCED_FROM", "sys:cmms", {}
+"in:supplier-avl", "SOURCED_FROM", "sys:scm", {}
+"in:supplier-fail-rate", "REPRESENTS", "msr:part-quality", {}
+"in:supplier-fail-rate", "SOURCED_FROM", "sys:scm", {}
+"in:ts1", "REPRESENTS", "sv:ts1", {}
+"in:ts1", "SOURCED_FROM", "sen:ts1", {}
+"in:ts1-slope", "REPRESENTS", "sv:ts1", {}
+"in:ts1-slope", "SOURCED_FROM", "sys:cep", {}
+"in:vs1", "REPRESENTS", "sv:vs1", {}
+"in:vs1", "SOURCED_FROM", "sen:vs1", {}
+"in:vs1-slope", "REPRESENTS", "sv:vs1", {}
+"in:vs1-slope", "SOURCED_FROM", "sys:cep", {}
+"manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:reference:0e198b6a22cda70d2eca141b696a3caa0edc0da05478bbdb6296cc17952dc664:1", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:313cd9c0fa7e7c384068346ef05419a20e5db6b12c534ad1b9200a2563de78ce", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:reference:0e198b6a22cda70d2eca141b696a3caa0edc0da05478bbdb6296cc17952dc664:2", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:313cd9c0fa7e7c384068346ef05419a20e5db6b12c534ad1b9200a2563de78ce", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:reference:0e198b6a22cda70d2eca141b696a3caa0edc0da05478bbdb6296cc17952dc664:3", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:313cd9c0fa7e7c384068346ef05419a20e5db6b12c534ad1b9200a2563de78ce", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:2cac365627840f2cc4155bd55286b3240a85afd679f83255e4d0ee1f661a0d8e", "PART_OF", "ks:manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:313cd9c0fa7e7c384068346ef05419a20e5db6b12c534ad1b9200a2563de78ce", "PART_OF", "ks:manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:7978b44cf1b87265866dae9aab354c79ac15e351d64acc79ba4731f3aca7af9d", "PART_OF", "ks:manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:94b21636a3141345720d2b11812835912a9cf94e9b31338001a2f63184fa5c64", "PART_OF", "ks:manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:9e748e8f9c145701ec346b9df25bebca20059392291affd3c37059c9426edb0a", "PART_OF", "ks:manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:d857e05bdc864fd8b294e833fa91edb1af90e0321129477c3f910a7a967af55d", "PART_OF", "ks:manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:dcd658e091cf6729ed75584c1933430fa51c40cbde482ab656312aa9c53634e8", "PART_OF", "ks:manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:ded1387f8ca9ce770284e3f5eb101ba036a07c1008209731415c077917cf24ca", "PART_OF", "ks:manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:e92a7526ea5f208cb90b4f38cc8a97788d2bf96e4b89352b8865c327cc1e2a24", "PART_OF", "ks:manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:e9ecc786cac29d364e6997dd5378e12d00d4c86d1224e8ce90718c8058c2d281", "PART_OF", "ks:manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:19fad1e8e03e49e89e8e35095cb3d9eb88d942833714fe8a427ab7f9ae3c2da4", "PART_OF", "ks:manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:24bd37c3f25c95c4737318dfaba9436383511901bcbf65ccb9232800878d5343", "PART_OF", "ks:manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:2fe033a5ed717a8ff1f2aa08d0e88f9cc91f3eaa86cd6487ac9bb50e4613d5ae", "PART_OF", "ks:manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:3af350a6407ec9718ad1108a7e561e3cadb9a037fb0723483f9f3eb539ac487b", "PART_OF", "ks:manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:7346ec29893377398ee8f852b946236c7d33c1cda36badb6994802942eb21a3b", "PART_OF", "ks:manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:a68cdfcf47d397bbb9d0153e91b39923958dc397097e1f38816c2115af45c43b", "PART_OF", "ks:manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:b083a9d379bdd6ab7f7b495f359afdd935d62c7626654f0347e56404c6a7a958", "PART_OF", "ks:manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:e41243895b2b7e6632da4b664dd56a1fa8c9b13156fa361bd1a2480c34a62c98", "PART_OF", "ks:manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:00f29d891288117fd5b6a4c490472151b1b5e90dea8116f494fbd8e8864959bf", "PART_OF", "ks:manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:805c0a15577d0dc0c3e345c310d049f454209ce22660260c198ee9a6e1eacd8c", "PART_OF", "ks:manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:9fd5d0f7ebd0a19cc41d63ebaa2aa07e7356636fd0e052b7e34d30c8e9f24d11", "PART_OF", "ks:manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:a9b0abeda4c17e718d7741530aaf32dc84fe791f6ee908fc7fda6dbcd6110f77", "PART_OF", "ks:manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:ac1fc5c859eb77d33dec4a6208ec361c2a9bcde75bffe37ab80dad6af2bef840", "PART_OF", "ks:manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:bc6769773946e3e3dbb2ba332e7df942d945c5277d52fed9234fdb44553b96aa", "PART_OF", "ks:manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:e8fa33aaffeca00d856961490e95572edec9f6f167118e362626d7b6beae81a6", "PART_OF", "ks:manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"manual_source_extraction.b08111ea-33a1-411a-bd65-35f88de3005d", "ROLE_BOUND", "execution-actor:hyd:sys%3Aagent", {role_name: "AI 에이전트"}
+"manual_source_extraction.b08111ea-33a1-411a-bd65-35f88de3005d", "USES_VERSION", "proc-version:hyd:manual_source_extraction:2.18", {}
+"manual_source_extraction.f09e643c-4361-42d5-9e73-a3c485758007", "ROLE_BOUND", "execution-actor:hyd:sys%3Aagent", {role_name: "AI 에이전트"}
+"manual_source_extraction.f09e643c-4361-42d5-9e73-a3c485758007", "USES_VERSION", "proc-version:hyd:manual_source_extraction:2.18", {}
+"msr:availability", "INFLUENCES", "msr:throughput", {strength: "high", sign: 1, note: "멈추면 못 만든다"}
+"msr:availability", "MEASURES", "obj:availability", {}
+"msr:availability", "OWNED_BY", "dept:production", {}
+"msr:brand", "INFLUENCES", "msr:revenue", {strength: "medium", sign: 1, note: "브랜드가 떨어지면 수주가 준다"}
+"msr:brand", "MEASURES", "obj:quality", {}
+"msr:brand", "OWNED_BY", "dept:sales", {}
+"msr:cost", "INFLUENCES", "msr:op-profit", {strength: "high", sign: -1, note: "매출에서 비용을 뺀 것이 이익"}
+"msr:cost", "MEASURES", "obj:cost", {}
+"msr:cost", "OWNED_BY", "dept:plant", {}
+"msr:energy-cost", "INFLUENCES", "msr:cost", {strength: "medium", sign: 1}
+"msr:energy-cost", "MEASURES", "obj:cost", {}
+"msr:energy-cost", "OWNED_BY", "dept:energy", {}
+"msr:energy-use", "INFLUENCES", "msr:energy-cost", {strength: "high", sign: 1}
+"msr:energy-use", "MEASURES", "obj:energy", {}
+"msr:energy-use", "OWNED_BY", "dept:energy", {}
+"msr:inventory", "INFLUENCES", "msr:inventory-cost", {strength: "medium", sign: 1, note: "재고가 쌓이면 보관 비용이 오른다. 재고량과 매출은 직접 관계가 없어 선을 긋지 않는다"}
+"msr:inventory", "MEASURES", "obj:cost", {}
+"msr:inventory", "OWNED_BY", "dept:production", {}
+"msr:inventory-cost", "INFLUENCES", "msr:cost", {strength: "low", sign: 1}
+"msr:inventory-cost", "MEASURES", "obj:cost", {}
+"msr:inventory-cost", "OWNED_BY", "dept:production", {}
+"msr:maint-cost", "INFLUENCES", "msr:cost", {strength: "medium", sign: 1}
+"msr:maint-cost", "MEASURES", "obj:cost", {}
+"msr:maint-cost", "OWNED_BY", "dept:maintenance", {}
+"msr:mtbf", "INFLUENCES", "msr:availability", {strength: "medium", sign: 1}
+"msr:mtbf", "INFLUENCES", "msr:maint-cost", {strength: "medium", sign: -1, note: "고장이 적으면 보전비가 준다"}
+"msr:mtbf", "MEASURES", "obj:availability", {}
+"msr:mtbf", "OWNED_BY", "dept:maintenance", {}
+"msr:oil-life", "INFLUENCES", "msr:maint-cost", {strength: "low", sign: -1, note: "작동유 교환 비용"}
+"msr:oil-life", "INFLUENCES", "msr:mtbf", {strength: "low", sign: 1, note: "작동유가 열화하면 펌프 · 밸브 마모가 빨라진다"}
+"msr:oil-life", "MEASURES", "obj:availability", {}
+"msr:oil-life", "OWNED_BY", "dept:maintenance", {}
+"msr:op-profit", "MEASURES", "obj:profit", {}
+"msr:op-profit", "OWNED_BY", "dept:plant", {}
+"msr:otd", "INFLUENCES", "msr:brand", {strength: "medium", sign: 1}
+"msr:otd", "INFLUENCES", "msr:penalty", {strength: "high", sign: -1, note: "납기를 지키면 지체상금이 없다"}
+"msr:otd", "MEASURES", "obj:delivery", {}
+"msr:otd", "OWNED_BY", "dept:sales", {}
+"msr:part-cost", "INFLUENCES", "msr:cost", {strength: "medium", sign: 1}
+"msr:part-cost", "MEASURES", "obj:cost", {}
+"msr:part-cost", "OWNED_BY", "dept:purchasing", {}
+"msr:part-price", "INFLUENCES", "msr:part-cost", {strength: "high", sign: 1, note: "단가가 오르면 구매비가 오른다"}
+"msr:part-price", "INFLUENCES", "msr:part-quality", {sign: 1, note: "싼 부품(비승인 · 저가)은 품질이 낮은 경향", condition: "공급사를 바꿔 단가를 낮출 때 (같은 부품의 시세 변동에는 해당 없음)", strength: "medium"}
+"msr:part-price", "MEASURES", "obj:cost", {}
+"msr:part-price", "OWNED_BY", "dept:purchasing", {}
+"msr:part-quality", "INFLUENCES", "msr:mtbf", {strength: "medium", sign: 1, note: "부품 고장률이 낮으면 고장 간격이 길다"}
+"msr:part-quality", "INFLUENCES", "msr:quality-claim", {strength: "medium", sign: -1}
+"msr:part-quality", "MEASURES", "obj:quality", {}
+"msr:part-quality", "OWNED_BY", "dept:purchasing", {}
+"msr:penalty", "INFLUENCES", "msr:cost", {strength: "high", sign: 1}
+"msr:penalty", "MEASURES", "obj:cost", {}
+"msr:penalty", "OWNED_BY", "dept:sales", {}
+"msr:precedent", "INFLUENCES", "msr:availability", {strength: "low", sign: 1, note: "현장 판단 지식이 쌓이면 대응이 빨라진다"}
+"msr:precedent", "MEASURES", "obj:knowledge", {}
+"msr:precedent", "OWNED_BY", "dept:plant", {}
+"msr:quality-claim", "INFLUENCES", "msr:brand", {strength: "high", sign: -1}
+"msr:quality-claim", "INFLUENCES", "msr:cost", {strength: "medium", sign: 1, note: "클레임 처리 비용"}
+"msr:quality-claim", "MEASURES", "obj:quality", {}
+"msr:quality-claim", "OWNED_BY", "dept:quality", {}
+"msr:revenue", "INFLUENCES", "msr:op-profit", {strength: "high", sign: 1, note: "매출에서 비용을 뺀 것이 이익"}
+"msr:revenue", "MEASURES", "obj:profit", {}
+"msr:revenue", "OWNED_BY", "dept:sales", {}
+"msr:safety-margin", "INFLUENCES", "msr:availability", {strength: "high", sign: 1, note: "여유가 0이 되면 인터록 트립으로 정지"}
+"msr:safety-margin", "MEASURES", "obj:safety", {}
+"msr:safety-margin", "OWNED_BY", "dept:production", {}
+"msr:throughput", "INFLUENCES", "msr:otd", {strength: "high", sign: 1}
+"msr:throughput", "INFLUENCES", "msr:revenue", {strength: "medium", sign: 1, note: "팔 물건을 만든다"}
+"msr:throughput", "MEASURES", "obj:availability", {}
+"msr:throughput", "OWNED_BY", "dept:production", {}
+"obj:availability", "IN_PERSPECTIVE", "persp:internal", {}
+"obj:availability", "SUPPORTS", "obj:delivery", {}
+"obj:cost", "IN_PERSPECTIVE", "persp:financial", {}
+"obj:cost", "SUPPORTS", "obj:profit", {}
+"obj:delivery", "IN_PERSPECTIVE", "persp:customer", {}
+"obj:delivery", "SUPPORTS", "obj:profit", {}
+"obj:energy", "IN_PERSPECTIVE", "persp:internal", {}
+"obj:energy", "SUPPORTS", "obj:cost", {}
+"obj:knowledge", "IN_PERSPECTIVE", "persp:learning", {}
+"obj:knowledge", "SUPPORTS", "obj:availability", {}
+"obj:profit", "IN_PERSPECTIVE", "persp:financial", {}
+"obj:quality", "IN_PERSPECTIVE", "persp:customer", {}
+"obj:quality", "SUPPORTS", "obj:profit", {}
+"obj:safety", "IN_PERSPECTIVE", "persp:internal", {}
+"obj:safety", "SUPPORTS", "obj:availability", {}
+"part:cooler-core", "SUPPLIED_BY", "sup:a", {leadDays: 3, price: 180.0, failRate: 0.12}
+"part:cooler-core", "SUPPLIED_BY", "sup:b", {leadDays: 5, price: 260.0, failRate: 0.02}
+"part:cooler-core", "SUPPLIED_BY", "sup:c", {leadDays: 2, price: 120.0, failRate: 0.2}
+"part:fan-bearing", "SUPPLIED_BY", "sup:a", {leadDays: 1, price: 18.0, failRate: 0.1}
+"part:fan-bearing", "SUPPLIED_BY", "sup:b", {leadDays: 3, price: 28.0, failRate: 0.03}
+"part:pump-seal", "SUPPLIED_BY", "sup:a", {leadDays: 2, price: 35.0, failRate: 0.12}
+"part:pump-seal", "SUPPLIED_BY", "sup:b", {leadDays: 5, price: 55.0, failRate: 0.02}
+"part:pump-seal", "SUPPLIED_BY", "sup:c", {leadDays: 1, price: 20.0, failRate: 0.3}
+"pattern:cooler-degradation", "DERIVED_FROM", "ks:monitoring-hm-8", {}
+"pattern:cooler-degradation", "DETECTS", "sym:ce-drop", {}
+"pattern:cooler-degradation", "DETECTS", "sym:ts1-rise", {}
+"pattern:cooler-degradation", "TESTS", "in:ce", {value: 70, unit: "%", operator: "<"}
+"pattern:cooler-degradation", "TESTS", "in:ts1", {value: 55, unit: "℃", operator: ">"}
+"pattern:cooler-degradation", "TESTS", "in:ts1-slope", {value: 0, unit: "℃/s", operator: ">"}
+"pattern:fan-vibration", "DERIVED_FROM", "ks:monitoring-pm-02-fan", {}
+"pattern:fan-vibration", "DERIVED_FROM", "ks:monitoring-standard", {}
+"pattern:fan-vibration", "DETECTS", "sym:vs1-rise", {}
+"pattern:fan-vibration", "TESTS", "in:vs1", {value: 1.2, unit: "mm/s", operator: ">"}
+"pattern:fan-vibration", "TESTS", "in:vs1-slope", {value: 0, unit: "mm/s²", operator: ">"}
+"pattern:high-vibration-trip", "DERIVED_FROM", "ks:monitoring-standard", {}
+"pattern:high-vibration-trip", "DETECTS", "sym:vs1-rise", {}
+"pattern:high-vibration-trip", "TESTS", "in:plc-state", {value: "TRIP", operator: "=="}
+"pattern:low-pressure-trip", "DERIVED_FROM", "ks:monitoring-standard", {}
+"pattern:low-pressure-trip", "DETECTS", "sym:ps1-drop", {}
+"pattern:low-pressure-trip", "TESTS", "in:plc-state", {value: "TRIP", operator: "=="}
+"pattern:oil-analysis", "DERIVED_FROM", "ks:monitoring-standard", {}
+"pattern:oil-analysis", "DETECTS", "sym:oil-analysis-out-of-spec", {}
+"pattern:oil-analysis", "TESTS", "in:oil-analysis", {value: TRUE, operator: "=="}
+"pattern:overheat-trip", "DERIVED_FROM", "ks:monitoring-hm-8", {}
+"pattern:overheat-trip", "DETECTS", "sym:ts1-rise", {}
+"pattern:overheat-trip", "TESTS", "in:plc-state", {value: "TRIP", operator: "=="}
+"pattern:pm-due", "DERIVED_FROM", "ks:pm-plan", {}
+"pattern:pm-due", "TESTS", "in:hours-since-pm", {value: 1950, unit: "h", operator: ">="}
+"pattern:pump-leakage", "DERIVED_FROM", "ks:monitoring-pm-02", {}
+"pattern:pump-leakage", "DERIVED_FROM", "ks:monitoring-standard", {}
+"pattern:pump-leakage", "DETECTS", "sym:fs1-drop", {}
+"pattern:pump-leakage", "DETECTS", "sym:ps1-drop", {}
+"pattern:pump-leakage", "TESTS", "in:fs1", {value: 8.0, unit: "l/min", operator: "<"}
+"pattern:pump-leakage", "TESTS", "in:load", {value: 80, unit: "%", operator: ">="}
+"pattern:pump-leakage", "TESTS", "in:plc-state", {value: "RUN", operator: "=="}
+"pattern:pump-leakage", "TESTS", "in:ps1", {value: 165, unit: "bar", operator: "<"}
+"pattern:spare-below-min", "DERIVED_FROM", "ks:monitoring-pr-07", {}
+"pattern:spare-below-min", "TESTS", "in:spare-gap", {value: 0, unit: "개", operator: "<"}
+"proc-version:hyd:c3_cooling:1", "HAS_NODE", "flow:hyd:c3_cooling:1:B_overdue", {}
+"proc-version:hyd:c3_cooling:1", "HAS_NODE", "flow:hyd:c3_cooling:1:E_end", {}
+"proc-version:hyd:c3_cooling:1", "HAS_NODE", "flow:hyd:c3_cooling:1:E_kind", {}
+"proc-version:hyd:c3_cooling:1", "HAS_NODE", "flow:hyd:c3_cooling:1:E_notice", {}
+"proc-version:hyd:c3_cooling:1", "HAS_NODE", "flow:hyd:c3_cooling:1:E_rejected", {}
+"proc-version:hyd:c3_cooling:1", "HAS_NODE", "flow:hyd:c3_cooling:1:G_action", {}
+"proc-version:hyd:c3_cooling:1", "HAS_NODE", "flow:hyd:c3_cooling:1:G_approved", {}
+"proc-version:hyd:c3_cooling:1", "HAS_NODE", "flow:hyd:c3_cooling:1:G_ok", {}
+"proc-version:hyd:c3_cooling:1", "HAS_NODE", "flow:hyd:c3_cooling:1:G_wo_ok", {}
+"proc-version:hyd:c3_cooling:1", "HAS_NODE", "flow:hyd:c3_cooling:1:R_fail", {}
+"proc-version:hyd:c3_cooling:1", "HAS_NODE", "flow:hyd:c3_cooling:1:R_kind", {}
+"proc-version:hyd:c3_cooling:1", "HAS_NODE", "flow:hyd:c3_cooling:1:R_ok", {}
+"proc-version:hyd:c3_cooling:1", "HAS_NODE", "flow:hyd:c3_cooling:1:R_rejected", {}
+"proc-version:hyd:c3_cooling:1", "HAS_NODE", "flow:hyd:c3_cooling:1:R_wo_only", {}
+"proc-version:hyd:c3_cooling:1", "HAS_NODE", "flow:hyd:c3_cooling:1:Start", {}
+"proc-version:hyd:c3_cooling:1", "HAS_NODE", "flow:hyd:c3_cooling:1:T_agent", {}
+"proc-version:hyd:c3_cooling:1", "HAS_NODE", "flow:hyd:c3_cooling:1:T_approve", {}
+"proc-version:hyd:c3_cooling:1", "HAS_NODE", "flow:hyd:c3_cooling:1:T_cmd", {}
+"proc-version:hyd:c3_cooling:1", "HAS_NODE", "flow:hyd:c3_cooling:1:T_fix", {}
+"proc-version:hyd:c3_cooling:1", "HAS_NODE", "flow:hyd:c3_cooling:1:T_notice", {}
+"proc-version:hyd:c3_cooling:1", "HAS_NODE", "flow:hyd:c3_cooling:1:T_reobs", {}
+"proc-version:hyd:c3_cooling:1", "HAS_NODE", "flow:hyd:c3_cooling:1:T_reobs_wo", {}
+"proc-version:hyd:c3_cooling:1", "HAS_NODE", "flow:hyd:c3_cooling:1:T_wo", {}
+"proc-version:hyd:c3_cooling:1", "HAS_NODE", "flow:hyd:c3_cooling:1:T_wo_only", {}
+"proc-version:hyd:manual_source_extraction:2.18", "HAS_NODE", "flow:hyd:manual_source_extraction:2.18:end", {}
+"proc-version:hyd:manual_source_extraction:2.18", "HAS_NODE", "flow:hyd:manual_source_extraction:2.18:start", {}
+"proc-version:hyd:manual_source_extraction:2.18", "HAS_NODE", "flow:hyd:manual_source_extraction:2.18:task%3Aextract-manual", {}
+"proc:alert-triage", "ACHIEVES", "obj:safety", {}
+"proc:alert-triage", "ACTS_ON", "asset:hyd-01", {}
+"proc:alert-triage", "ACTS_ON", "asset:hyd-02", {}
+"proc:alert-triage", "ACTS_ON", "asset:hyd-03", {}
+"proc:anomaly-response", "ACHIEVES", "obj:availability", {}
+"proc:anomaly-response", "ACHIEVES", "obj:delivery", {}
+"proc:anomaly-response", "ACHIEVES", "obj:safety", {}
+"proc:anomaly-response", "ACTS_ON", "asset:hyd-01", {}
+"proc:anomaly-response", "ACTS_ON", "asset:hyd-02", {}
+"proc:anomaly-response", "ACTS_ON", "asset:hyd-03", {}
+"proc:maintenance-wo", "ACHIEVES", "obj:availability", {}
+"proc:maintenance-wo", "ACHIEVES", "obj:cost", {}
+"proc:maintenance-wo", "ACTS_ON", "asset:hyd-01", {}
+"proc:maintenance-wo", "ACTS_ON", "asset:hyd-02", {}
+"proc:maintenance-wo", "ACTS_ON", "asset:hyd-03", {}
+"role:maint-mgr", "MEMBER_OF", "dept:maintenance", {}
+"role:operator", "MEMBER_OF", "dept:production", {}
+"role:plant-mgr", "MEMBER_OF", "dept:plant", {}
+"role:prod-mgr", "MEMBER_OF", "dept:production", {}
+"role:purchasing", "MEMBER_OF", "dept:purchasing", {}
+"role:purchasing-mgr", "MEMBER_OF", "dept:purchasing", {}
+"role:quality-mgr", "MEMBER_OF", "dept:quality", {}
+"rule:cooler-forecast-temperature-warning", "APPLIES_TO", "skill:sop-cool-11", {}
+"rule:cooler-forecast-temperature-warning", "APPLIES_TO", "skill:sop-cool-12", {}
+"rule:cooler-forecast-temperature-warning", "APPLIES_TO", "skill:sop-cool-13", {}
+"rule:cooler-forecast-temperature-warning", "DERIVED_FROM", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:e41243895b2b7e6632da4b664dd56a1fa8c9b13156fa361bd1a2480c34a62c98", {}
+"rule:cooler-forecast-temperature-warning", "TESTS", "in:forecast-ts1", {value: 55, unit: "℃", operator: ">="}
+"rule:hm-8-4-fan-drive-inspection", "DERIVED_FROM", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:19fad1e8e03e49e89e8e35095cb3d9eb88d942833714fe8a427ab7f9ae3c2da4", {}
+"rule:hm-8-4-fan-drive-inspection", "OUTPUTS", "skill:sop-fan-11", {}
+"rule:hm-8-4-fan-drive-inspection", "TESTS", "in:cause", {value: "cause:fan-drive-fault", operator: "=="}
+"rule:hm-8-4-fan-inspection", "DERIVED_FROM", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:19fad1e8e03e49e89e8e35095cb3d9eb88d942833714fe8a427ab7f9ae3c2da4", {}
+"rule:hm-8-4-fan-inspection", "OUTPUTS", "skill:sop-fan-11", {}
+"rule:hm-8-4-fan-inspection", "TESTS", "in:pattern", {value: "FAN_VIBRATION", operator: "=="}
+"rule:hm-8-4-fouling-diagnosis", "DERIVED_FROM", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:19fad1e8e03e49e89e8e35095cb3d9eb88d942833714fe8a427ab7f9ae3c2da4", {}
+"rule:hm-8-4-fouling-diagnosis", "OUTPUTS", "cause:cooler-fin-fouling", {}
+"rule:hm-8-4-fouling-diagnosis", "TESTS", "in:ce", {value: 70, unit: "%", operator: "<"}
+"rule:hm-8-4-fouling-diagnosis", "TESTS", "in:pattern", {value: "COOLER_DEGRADATION", operator: "=="}
+"rule:hm-8-5-cooler-mitigations", "DERIVED_FROM", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:3af350a6407ec9718ad1108a7e561e3cadb9a037fb0723483f9f3eb539ac487b", {}
+"rule:hm-8-5-cooler-mitigations", "OUTPUTS", "skill:sop-cool-11", {}
+"rule:hm-8-5-cooler-mitigations", "OUTPUTS", "skill:sop-cool-12", {}
+"rule:hm-8-5-cooler-mitigations", "OUTPUTS", "skill:sop-cool-13", {}
+"rule:hm-8-5-cooler-mitigations", "TESTS", "in:pattern", {value: "COOLER_DEGRADATION", operator: "=="}
+"rule:hm-8-7-cabinet-ventilation", "DERIVED_FROM", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:2fe033a5ed717a8ff1f2aa08d0e88f9cc91f3eaa86cd6487ac9bb50e4613d5ae", {}
+"rule:hm-8-7-cabinet-ventilation", "OUTPUTS", "skill:sop-cool-15", {}
+"rule:hm-8-7-cabinet-ventilation", "TESTS", "in:cause", {value: "cause:ambient-temperature-rise", operator: "=="}
+"rule:hm-8-7-fin-cleaning", "DERIVED_FROM", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:2fe033a5ed717a8ff1f2aa08d0e88f9cc91f3eaa86cd6487ac9bb50e4613d5ae", {}
+"rule:hm-8-7-fin-cleaning", "OUTPUTS", "skill:sop-cool-14", {}
+"rule:hm-8-7-fin-cleaning", "TESTS", "in:cause", {value: "cause:cooler-fin-fouling", operator: "=="}
+"rule:hm-8-8-fan-life-penalty", "APPLIES_TO", "skill:sop-cool-11", {}
+"rule:hm-8-8-fan-life-penalty", "APPLIES_TO", "skill:sop-cool-12", {}
+"rule:hm-8-8-fan-life-penalty", "DERIVED_FROM", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:24bd37c3f25c95c4737318dfaba9436383511901bcbf65ccb9232800878d5343", {}
+"rule:hm-8-8-fan-life-penalty", "PENALIZES", "msr:maint-cost", {}
+"rule:hm-8-8-fan-life-penalty", "TESTS", "in:fan100-hours", {value: 24, unit: "h", operator: ">"}
+"rule:hm-8-8-remote-auto-only", "APPLIES_TO", "skill:sop-cool-11", {}
+"rule:hm-8-8-remote-auto-only", "APPLIES_TO", "skill:sop-cool-12", {}
+"rule:hm-8-8-remote-auto-only", "APPLIES_TO", "skill:sop-cool-13", {}
+"rule:hm-8-8-remote-auto-only", "DERIVED_FROM", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:24bd37c3f25c95c4737318dfaba9436383511901bcbf65ccb9232800878d5343", {}
+"rule:hm-8-8-remote-auto-only", "TESTS", "in:plc-mode", {value: "REMOTE_AUTO", operator: "!="}
+"rule:pm-02-pm-due-candidates", "DERIVED_FROM", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:e92a7526ea5f208cb90b4f38cc8a97788d2bf96e4b89352b8865c327cc1e2a24", {}
+"rule:pm-02-pm-due-candidates", "OUTPUTS", "skill:sop-pm-11", {}
+"rule:pm-02-pm-due-candidates", "OUTPUTS", "skill:sop-pm-12", {}
+"rule:pm-02-pm-due-candidates", "OUTPUTS", "skill:sop-pm-13", {}
+"rule:pm-02-pm-due-candidates", "OUTPUTS", "skill:sop-pm-14", {}
+"rule:pm-02-pm-due-candidates", "TESTS", "in:pattern", {value: "PM_DUE", operator: "=="}
+"rule:pm-bundled-crew-shortage-cost", "APPLIES_TO", "skill:sop-pm-14", {}
+"rule:pm-bundled-crew-shortage-cost", "DERIVED_FROM", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:e92a7526ea5f208cb90b4f38cc8a97788d2bf96e4b89352b8865c327cc1e2a24", {}
+"rule:pm-bundled-crew-shortage-cost", "PENALIZES", "msr:maint-cost", {}
+"rule:pm-bundled-crew-shortage-cost", "TESTS", "in:pm-crew", {value: 4, unit: "명", operator: "<"}
+"rule:pm-bundled-seal-kit-shortage", "APPLIES_TO", "skill:sop-pm-14", {}
+"rule:pm-bundled-seal-kit-shortage", "DERIVED_FROM", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:e92a7526ea5f208cb90b4f38cc8a97788d2bf96e4b89352b8865c327cc1e2a24", {}
+"rule:pm-bundled-seal-kit-shortage", "TESTS", "in:spare-available", {value: 2, unit: "개", operator: "<"}
+"rule:pm-following-window-over-hours-limit", "APPLIES_TO", "skill:sop-pm-13", {}
+"rule:pm-following-window-over-hours-limit", "DERIVED_FROM", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:e92a7526ea5f208cb90b4f38cc8a97788d2bf96e4b89352b8865c327cc1e2a24", {}
+"rule:pm-following-window-over-hours-limit", "TESTS", "in:hours-if-deferred", {value: 2200, unit: "h", operator: ">"}
+"rule:pm-immediate-stop-order-loss", "APPLIES_TO", "skill:sop-pm-12", {}
+"rule:pm-immediate-stop-order-loss", "DERIVED_FROM", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:e92a7526ea5f208cb90b4f38cc8a97788d2bf96e4b89352b8865c327cc1e2a24", {}
+"rule:pm-immediate-stop-order-loss", "PENALIZES", "msr:op-profit", {}
+"rule:pm-immediate-stop-order-loss", "TESTS", "in:order-due", {value: 24, unit: "h", operator: "<="}
+"rule:pm-immediate-stop-order-loss", "TESTS", "in:production-running", {value: TRUE, operator: "=="}
+"rule:pm-next-window-over-hours-limit", "APPLIES_TO", "skill:sop-pm-11", {}
+"rule:pm-next-window-over-hours-limit", "APPLIES_TO", "skill:sop-pm-14", {}
+"rule:pm-next-window-over-hours-limit", "DERIVED_FROM", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:e92a7526ea5f208cb90b4f38cc8a97788d2bf96e4b89352b8865c327cc1e2a24", {}
+"rule:pm-next-window-over-hours-limit", "TESTS", "in:next-scheduled-time", {value: 2200, unit: "h", operator: ">"}
+"rule:pm-no-seal-kit-excludes-execution", "APPLIES_TO", "skill:sop-pm-21", {}
+"rule:pm-no-seal-kit-excludes-execution", "APPLIES_TO", "skill:sop-pm-22", {}
+"rule:pm-no-seal-kit-excludes-execution", "APPLIES_TO", "skill:sop-pm-23", {}
+"rule:pm-no-seal-kit-excludes-execution", "DERIVED_FROM", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:e92a7526ea5f208cb90b4f38cc8a97788d2bf96e4b89352b8865c327cc1e2a24", {}
+"rule:pm-no-seal-kit-excludes-execution", "TESTS", "in:spare-available", {value: 0, unit: "개", operator: "=="}
+"rule:pm-pump-leakage-seal-wear-first", "DERIVED_FROM", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:dcd658e091cf6729ed75584c1933430fa51c40cbde482ab656312aa9c53634e8", {}
+"rule:pm-pump-leakage-seal-wear-first", "OUTPUTS", "cause:pump-shaft-seal-wear", {}
+"rule:pm-pump-leakage-seal-wear-first", "TESTS", "in:pattern", {value: "PUMP_LEAKAGE", operator: "=="}
+"rule:pm-pump-leakage-seal-wear-first", "TESTS", "in:ps1", {value: 165, unit: "bar", operator: "<"}
+"rule:pm-seal-kit-reorder-warning", "APPLIES_TO", "skill:sop-pm-11", {}
+"rule:pm-seal-kit-reorder-warning", "APPLIES_TO", "skill:sop-pm-12", {}
+"rule:pm-seal-kit-reorder-warning", "APPLIES_TO", "skill:sop-pm-13", {}
+"rule:pm-seal-kit-reorder-warning", "APPLIES_TO", "skill:sop-pm-14", {}
+"rule:pm-seal-kit-reorder-warning", "APPLIES_TO", "skill:sop-pm-21", {}
+"rule:pm-seal-kit-reorder-warning", "APPLIES_TO", "skill:sop-pm-22", {}
+"rule:pm-seal-kit-reorder-warning", "APPLIES_TO", "skill:sop-pm-23", {}
+"rule:pm-seal-kit-reorder-warning", "DERIVED_FROM", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:e92a7526ea5f208cb90b4f38cc8a97788d2bf96e4b89352b8865c327cc1e2a24", {}
+"rule:pm-seal-kit-reorder-warning", "TESTS", "in:spare-available", {value: 3, unit: "개", operator: "<"}
+"rule:pr07-approved-supplier-only", "APPLIES_TO", "skill:sop-pur-11", {}
+"rule:pr07-approved-supplier-only", "APPLIES_TO", "skill:sop-pur-12", {}
+"rule:pr07-approved-supplier-only", "APPLIES_TO", "skill:sop-pur-13", {}
+"rule:pr07-approved-supplier-only", "DERIVED_FROM", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:00f29d891288117fd5b6a4c490472151b1b5e90dea8116f494fbd8e8864959bf", {}
+"rule:pr07-approved-supplier-only", "TESTS", "in:supplier-avl", {value: FALSE, operator: "=="}
+"rule:pr07-high-fail-rate-inspection", "APPLIES_TO", "skill:sop-pur-11", {}
+"rule:pr07-high-fail-rate-inspection", "APPLIES_TO", "skill:sop-pur-12", {}
+"rule:pr07-high-fail-rate-inspection", "APPLIES_TO", "skill:sop-pur-13", {}
+"rule:pr07-high-fail-rate-inspection", "DERIVED_FROM", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:ac1fc5c859eb77d33dec4a6208ec361c2a9bcde75bffe37ab80dad6af2bef840", {}
+"rule:pr07-high-fail-rate-inspection", "TESTS", "in:supplier-fail-rate", {value: 0.1, operator: ">"}
+"rule:pr07-lead-time-warning", "APPLIES_TO", "skill:sop-pur-11", {}
+"rule:pr07-lead-time-warning", "APPLIES_TO", "skill:sop-pur-12", {}
+"rule:pr07-lead-time-warning", "APPLIES_TO", "skill:sop-pur-13", {}
+"rule:pr07-lead-time-warning", "DERIVED_FROM", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:ac1fc5c859eb77d33dec4a6208ec361c2a9bcde75bffe37ab80dad6af2bef840", {}
+"rule:pr07-lead-time-warning", "TESTS", "in:lead-slack-days", {value: 0, unit: "일", operator: "<"}
+"rule:pr07-over-delegation-threshold", "APPLIES_TO", "skill:sop-pur-11", {}
+"rule:pr07-over-delegation-threshold", "APPLIES_TO", "skill:sop-pur-12", {}
+"rule:pr07-over-delegation-threshold", "APPLIES_TO", "skill:sop-pur-13", {}
+"rule:pr07-over-delegation-threshold", "DERIVED_FROM", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:e8fa33aaffeca00d856961490e95572edec9f6f167118e362626d7b6beae81a6", {}
+"rule:pr07-over-delegation-threshold", "TESTS", "in:po-amount", {value: 300, unit: "만원", operator: ">"}
+"rule:pr07-spare-below-min-purchase", "DERIVED_FROM", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:bc6769773946e3e3dbb2ba332e7df942d945c5277d52fed9234fdb44553b96aa", {}
+"rule:pr07-spare-below-min-purchase", "OUTPUTS", "skill:sop-pur-11", {}
+"rule:pr07-spare-below-min-purchase", "OUTPUTS", "skill:sop-pur-12", {}
+"rule:pr07-spare-below-min-purchase", "OUTPUTS", "skill:sop-pur-13", {}
+"rule:pr07-spare-below-min-purchase", "TESTS", "in:pattern", {value: "SPARE_BELOW_MIN", operator: "=="}
+"rule:rank-value", "DERIVED_FROM", "ks:strategy-map", {}
+"rule:ts1-hard", "DERIVED_FROM", "ks:sr-04", {}
+"rule:ts1-hard", "TESTS", "in:forecast-ts1", {value: 65, unit: "℃", operator: ">="}
+"sen:ce", "OBSERVES", "sv:ce", {}
+"sen:fs1", "OBSERVES", "sv:fs1", {}
+"sen:ps1", "OBSERVES", "sv:ps1", {}
+"sen:ts1", "OBSERVES", "sv:ts1", {}
+"sen:vs1", "OBSERVES", "sv:vs1", {}
+"skill:sop-cool-11", "AFFECTS", "sv:fan-speed", {sign: 1, _manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-11", "APPROVED_BY", "role:operator", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-11", "CONSISTS_OF", "action:set-fan", {value: 100, seq: 1}
+"skill:sop-cool-11", "HAS_STEP", "skill:sop-cool-11:1", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-11", "HAS_STEP", "skill:sop-cool-11:2", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-11", "HAS_STEP", "skill:sop-cool-11:3", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-11:1", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:3af350a6407ec9718ad1108a7e561e3cadb9a037fb0723483f9f3eb539ac487b", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-11:2", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:3af350a6407ec9718ad1108a7e561e3cadb9a037fb0723483f9f3eb539ac487b", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-11:3", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:3af350a6407ec9718ad1108a7e561e3cadb9a037fb0723483f9f3eb539ac487b", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-12", "AFFECTS", "sv:fan-speed", {sign: 1, _manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-12", "AFFECTS", "sv:load", {sign: -1, _manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-12", "APPROVED_BY", "role:operator", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-12", "CONSISTS_OF", "action:set-fan", {value: 100, seq: 1}
+"skill:sop-cool-12", "CONSISTS_OF", "action:set-load", {value: 80, seq: 2}
+"skill:sop-cool-12", "HAS_STEP", "skill:sop-cool-12:1", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-12", "HAS_STEP", "skill:sop-cool-12:2", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-12", "HAS_STEP", "skill:sop-cool-12:3", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-12", "HAS_STEP", "skill:sop-cool-12:4", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-12:1", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:3af350a6407ec9718ad1108a7e561e3cadb9a037fb0723483f9f3eb539ac487b", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-12:2", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:3af350a6407ec9718ad1108a7e561e3cadb9a037fb0723483f9f3eb539ac487b", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-12:3", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:3af350a6407ec9718ad1108a7e561e3cadb9a037fb0723483f9f3eb539ac487b", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-12:4", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:3af350a6407ec9718ad1108a7e561e3cadb9a037fb0723483f9f3eb539ac487b", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-13", "AFFECTS", "sv:load", {sign: -1, _manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-13", "APPROVED_BY", "role:operator", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-13", "CONSISTS_OF", "action:set-load", {value: 70, seq: 1}
+"skill:sop-cool-13", "CONSISTS_OF", "action:work-order", {value: "SOP-COOL-14", seq: 2}
+"skill:sop-cool-13", "HAS_STEP", "skill:sop-cool-13:1", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-13", "HAS_STEP", "skill:sop-cool-13:2", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-13", "HAS_STEP", "skill:sop-cool-13:3", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-13", "HAS_STEP", "skill:sop-cool-13:4", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-13:1", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:3af350a6407ec9718ad1108a7e561e3cadb9a037fb0723483f9f3eb539ac487b", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-13:2", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:3af350a6407ec9718ad1108a7e561e3cadb9a037fb0723483f9f3eb539ac487b", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-13:3", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:3af350a6407ec9718ad1108a7e561e3cadb9a037fb0723483f9f3eb539ac487b", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-13:4", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:3af350a6407ec9718ad1108a7e561e3cadb9a037fb0723483f9f3eb539ac487b", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-14", "ADDRESSES", "cause:cooler-fin-fouling", {}
+"skill:sop-cool-14", "AFFECTS", "sv:fouling", {sign: -1, _manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-14", "APPROVED_BY", "role:maint-mgr", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-14", "CONSISTS_OF", "action:work-order", {value: "SOP-COOL-14", seq: 1}
+"skill:sop-cool-14", "HAS_STEP", "skill:sop-cool-14:1", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-14", "HAS_STEP", "skill:sop-cool-14:2", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-14", "HAS_STEP", "skill:sop-cool-14:3", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-14:1", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:2fe033a5ed717a8ff1f2aa08d0e88f9cc91f3eaa86cd6487ac9bb50e4613d5ae", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-14:2", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:2fe033a5ed717a8ff1f2aa08d0e88f9cc91f3eaa86cd6487ac9bb50e4613d5ae", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-14:3", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:2fe033a5ed717a8ff1f2aa08d0e88f9cc91f3eaa86cd6487ac9bb50e4613d5ae", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-15", "ADDRESSES", "cause:ambient-temperature-rise", {}
+"skill:sop-cool-15", "APPROVED_BY", "role:maint-mgr", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-15", "CONSISTS_OF", "action:work-order", {value: "SOP-COOL-15", seq: 1}
+"skill:sop-cool-15", "HAS_STEP", "skill:sop-cool-15:1", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-15", "HAS_STEP", "skill:sop-cool-15:2", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-15", "HAS_STEP", "skill:sop-cool-15:3", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-15:1", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:2fe033a5ed717a8ff1f2aa08d0e88f9cc91f3eaa86cd6487ac9bb50e4613d5ae", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-15:2", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:2fe033a5ed717a8ff1f2aa08d0e88f9cc91f3eaa86cd6487ac9bb50e4613d5ae", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-cool-15:3", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:2fe033a5ed717a8ff1f2aa08d0e88f9cc91f3eaa86cd6487ac9bb50e4613d5ae", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-fan-11", "ADDRESSES", "cause:fan-drive-fault", {}
+"skill:sop-fan-11", "APPROVED_BY", "role:maint-mgr", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-fan-11", "CONSISTS_OF", "action:work-order", {value: "SOP-FAN-11", seq: 1}
+"skill:sop-fan-11", "HAS_STEP", "skill:sop-fan-11:1", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-fan-11", "HAS_STEP", "skill:sop-fan-11:2", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-fan-11", "HAS_STEP", "skill:sop-fan-11:3", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-fan-11", "HAS_STEP", "skill:sop-fan-11:4", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-fan-11:1", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:a68cdfcf47d397bbb9d0153e91b39923958dc397097e1f38816c2115af45c43b", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-fan-11:2", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:a68cdfcf47d397bbb9d0153e91b39923958dc397097e1f38816c2115af45c43b", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-fan-11:3", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:a68cdfcf47d397bbb9d0153e91b39923958dc397097e1f38816c2115af45c43b", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-fan-11:4", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:a68cdfcf47d397bbb9d0153e91b39923958dc397097e1f38816c2115af45c43b", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-fan-12", "ADDRESSES", "cause:fan-drive-fault", {}
+"skill:sop-fan-12", "APPROVED_BY", "role:maint-mgr", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-fan-12", "CONSISTS_OF", "action:work-order", {value: "SOP-FAN-12", seq: 1}
+"skill:sop-fan-12", "HAS_STEP", "skill:sop-fan-12:1", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-fan-12", "HAS_STEP", "skill:sop-fan-12:2", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-fan-12", "HAS_STEP", "skill:sop-fan-12:3", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-fan-12", "HAS_STEP", "skill:sop-fan-12:4", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-fan-12:1", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:7346ec29893377398ee8f852b946236c7d33c1cda36badb6994802942eb21a3b", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-fan-12:2", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:7346ec29893377398ee8f852b946236c7d33c1cda36badb6994802942eb21a3b", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-fan-12:3", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:7346ec29893377398ee8f852b946236c7d33c1cda36badb6994802942eb21a3b", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-fan-12:4", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256:section:7346ec29893377398ee8f852b946236c7d33c1cda36badb6994802942eb21a3b", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"skill:sop-pm-11", "APPROVED_BY", "role:maint-mgr", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-11", "CONSISTS_OF", "action:work-order", {value: "SOP-PM-11", seq: 1}
+"skill:sop-pm-11", "HAS_STEP", "skill:sop-pm-11:1", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-11", "HAS_STEP", "skill:sop-pm-11:2", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-11", "HAS_STEP", "skill:sop-pm-11:3", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-11", "HAS_STEP", "skill:sop-pm-11:4", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-11:1", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:e92a7526ea5f208cb90b4f38cc8a97788d2bf96e4b89352b8865c327cc1e2a24", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-11:2", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:e92a7526ea5f208cb90b4f38cc8a97788d2bf96e4b89352b8865c327cc1e2a24", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-11:3", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:e92a7526ea5f208cb90b4f38cc8a97788d2bf96e4b89352b8865c327cc1e2a24", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-11:4", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:e92a7526ea5f208cb90b4f38cc8a97788d2bf96e4b89352b8865c327cc1e2a24", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-12", "APPROVED_BY", "role:maint-mgr", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-12", "CONSISTS_OF", "action:work-order", {value: "SOP-PM-12", seq: 1}
+"skill:sop-pm-12", "HAS_STEP", "skill:sop-pm-12:1", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-12", "HAS_STEP", "skill:sop-pm-12:2", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-12", "HAS_STEP", "skill:sop-pm-12:3", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-12", "HAS_STEP", "skill:sop-pm-12:4", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-12:1", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:e92a7526ea5f208cb90b4f38cc8a97788d2bf96e4b89352b8865c327cc1e2a24", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-12:2", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:e92a7526ea5f208cb90b4f38cc8a97788d2bf96e4b89352b8865c327cc1e2a24", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-12:3", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:e92a7526ea5f208cb90b4f38cc8a97788d2bf96e4b89352b8865c327cc1e2a24", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-12:4", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:e92a7526ea5f208cb90b4f38cc8a97788d2bf96e4b89352b8865c327cc1e2a24", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-13", "APPROVED_BY", "role:maint-mgr", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-13", "CONSISTS_OF", "action:reschedule-work-order", {value: "SOP-PM-13", seq: 1}
+"skill:sop-pm-13", "HAS_STEP", "skill:sop-pm-13:1", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-13", "HAS_STEP", "skill:sop-pm-13:2", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-13", "HAS_STEP", "skill:sop-pm-13:3", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-13:1", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:e92a7526ea5f208cb90b4f38cc8a97788d2bf96e4b89352b8865c327cc1e2a24", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-13:2", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:e92a7526ea5f208cb90b4f38cc8a97788d2bf96e4b89352b8865c327cc1e2a24", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-13:3", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:e92a7526ea5f208cb90b4f38cc8a97788d2bf96e4b89352b8865c327cc1e2a24", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-14", "APPROVED_BY", "role:maint-mgr", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-14", "CONSISTS_OF", "action:work-order", {value: "SOP-PM-14", seq: 1}
+"skill:sop-pm-14", "HAS_STEP", "skill:sop-pm-14:1", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-14", "HAS_STEP", "skill:sop-pm-14:2", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-14", "HAS_STEP", "skill:sop-pm-14:3", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-14", "HAS_STEP", "skill:sop-pm-14:4", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-14:1", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:e92a7526ea5f208cb90b4f38cc8a97788d2bf96e4b89352b8865c327cc1e2a24", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-14:2", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:e92a7526ea5f208cb90b4f38cc8a97788d2bf96e4b89352b8865c327cc1e2a24", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-14:3", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:e92a7526ea5f208cb90b4f38cc8a97788d2bf96e4b89352b8865c327cc1e2a24", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-14:4", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:e92a7526ea5f208cb90b4f38cc8a97788d2bf96e4b89352b8865c327cc1e2a24", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-2-9", "HAS_STEP", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:reference:0e198b6a22cda70d2eca141b696a3caa0edc0da05478bbdb6296cc17952dc664:1", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-2-9", "HAS_STEP", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:reference:0e198b6a22cda70d2eca141b696a3caa0edc0da05478bbdb6296cc17952dc664:2", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-2-9", "HAS_STEP", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:reference:0e198b6a22cda70d2eca141b696a3caa0edc0da05478bbdb6296cc17952dc664:3", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-21", "ADDRESSES", "cause:hydraulic-oil-contamination", {}
+"skill:sop-pm-21", "ADDRESSES", "cause:pump-shaft-seal-wear", {}
+"skill:sop-pm-21", "APPROVED_BY", "role:maint-mgr", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-21", "CONSISTS_OF", "action:work-order", {value: "SOP-PM-21", seq: 1}
+"skill:sop-pm-21", "HAS_STEP", "skill:sop-pm-21:1", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-21", "HAS_STEP", "skill:sop-pm-21:2", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-21", "HAS_STEP", "skill:sop-pm-21:3", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-21", "HAS_STEP", "skill:sop-pm-21:4", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-21", "HAS_STEP", "skill:sop-pm-21:5", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-21", "HAS_STEP", "skill:sop-pm-21:6", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-21", "HAS_STEP", "skill:sop-pm-21:7", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-21:1", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:ded1387f8ca9ce770284e3f5eb101ba036a07c1008209731415c077917cf24ca", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-21:2", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:ded1387f8ca9ce770284e3f5eb101ba036a07c1008209731415c077917cf24ca", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-21:3", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:ded1387f8ca9ce770284e3f5eb101ba036a07c1008209731415c077917cf24ca", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-21:4", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:ded1387f8ca9ce770284e3f5eb101ba036a07c1008209731415c077917cf24ca", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-21:5", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:ded1387f8ca9ce770284e3f5eb101ba036a07c1008209731415c077917cf24ca", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-21:6", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:ded1387f8ca9ce770284e3f5eb101ba036a07c1008209731415c077917cf24ca", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-21:7", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:ded1387f8ca9ce770284e3f5eb101ba036a07c1008209731415c077917cf24ca", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-22", "ADDRESSES", "cause:hydraulic-oil-contamination", {}
+"skill:sop-pm-22", "ADDRESSES", "cause:pump-shaft-seal-wear", {}
+"skill:sop-pm-22", "APPROVED_BY", "role:maint-mgr", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-22", "CONSISTS_OF", "action:work-order", {value: "SOP-PM-22", seq: 1}
+"skill:sop-pm-22", "HAS_STEP", "skill:sop-pm-22:1", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-22", "HAS_STEP", "skill:sop-pm-22:2", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-22", "HAS_STEP", "skill:sop-pm-22:3", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-22", "HAS_STEP", "skill:sop-pm-22:4", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-22:1", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:9e748e8f9c145701ec346b9df25bebca20059392291affd3c37059c9426edb0a", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-22:2", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:9e748e8f9c145701ec346b9df25bebca20059392291affd3c37059c9426edb0a", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-22:3", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:9e748e8f9c145701ec346b9df25bebca20059392291affd3c37059c9426edb0a", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-22:4", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:9e748e8f9c145701ec346b9df25bebca20059392291affd3c37059c9426edb0a", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-23", "ADDRESSES", "cause:hydraulic-oil-contamination", {}
+"skill:sop-pm-23", "ADDRESSES", "cause:pump-shaft-seal-wear", {}
+"skill:sop-pm-23", "APPROVED_BY", "role:maint-mgr", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-23", "CONSISTS_OF", "action:work-order", {value: "SOP-PM-23", seq: 1}
+"skill:sop-pm-23", "HAS_STEP", "skill:sop-pm-23:1", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-23", "HAS_STEP", "skill:sop-pm-23:2", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-23", "HAS_STEP", "skill:sop-pm-23:3", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-23", "HAS_STEP", "skill:sop-pm-23:4", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-23:1", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:7978b44cf1b87265866dae9aab354c79ac15e351d64acc79ba4731f3aca7af9d", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-23:2", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:7978b44cf1b87265866dae9aab354c79ac15e351d64acc79ba4731f3aca7af9d", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-23:3", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:7978b44cf1b87265866dae9aab354c79ac15e351d64acc79ba4731f3aca7af9d", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pm-23:4", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a:section:7978b44cf1b87265866dae9aab354c79ac15e351d64acc79ba4731f3aca7af9d", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"skill:sop-pr7-7", "HAS_STEP", "skill:sop-pr7-7:1", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"skill:sop-pr7-7", "INVOLVES_PART", "part:cooler-core", {}
+"skill:sop-pr7-7", "INVOLVES_PART", "part:fan-bearing", {}
+"skill:sop-pr7-7", "INVOLVES_PART", "part:pump-seal", {}
+"skill:sop-pr7-7:1", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:9fd5d0f7ebd0a19cc41d63ebaa2aa07e7356636fd0e052b7e34d30c8e9f24d11", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"skill:sop-pur-11", "APPROVED_BY", "role:purchasing", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"skill:sop-pur-11", "CONSISTS_OF", "action:purchase-request", {seq: 1}
+"skill:sop-pur-11", "HAS_STEP", "skill:sop-pur-11:1", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"skill:sop-pur-11", "HAS_STEP", "skill:sop-pur-11:2", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"skill:sop-pur-11", "HAS_STEP", "skill:sop-pur-11:3", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"skill:sop-pur-11", "HAS_STEP", "skill:sop-pur-11:4", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"skill:sop-pur-11", "HAS_STEP", "skill:sop-pur-11:5", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"skill:sop-pur-11", "INVOLVES_PART", "part:cooler-core", {}
+"skill:sop-pur-11", "INVOLVES_PART", "part:fan-bearing", {}
+"skill:sop-pur-11", "INVOLVES_PART", "part:pump-seal", {}
+"skill:sop-pur-11:1", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:bc6769773946e3e3dbb2ba332e7df942d945c5277d52fed9234fdb44553b96aa", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"skill:sop-pur-11:2", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:bc6769773946e3e3dbb2ba332e7df942d945c5277d52fed9234fdb44553b96aa", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"skill:sop-pur-11:3", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:bc6769773946e3e3dbb2ba332e7df942d945c5277d52fed9234fdb44553b96aa", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"skill:sop-pur-11:4", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:bc6769773946e3e3dbb2ba332e7df942d945c5277d52fed9234fdb44553b96aa", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"skill:sop-pur-11:5", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:bc6769773946e3e3dbb2ba332e7df942d945c5277d52fed9234fdb44553b96aa", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"skill:sop-pur-12", "APPROVED_BY", "role:purchasing", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"skill:sop-pur-12", "CONSISTS_OF", "action:purchase-request", {seq: 1}
+"skill:sop-pur-12", "HAS_STEP", "skill:sop-pur-12:1", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"skill:sop-pur-12", "HAS_STEP", "skill:sop-pur-12:2", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"skill:sop-pur-12", "HAS_STEP", "skill:sop-pur-12:3", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"skill:sop-pur-12", "HAS_STEP", "skill:sop-pur-12:4", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"skill:sop-pur-12", "HAS_STEP", "skill:sop-pur-12:5", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"skill:sop-pur-12", "INVOLVES_PART", "part:cooler-core", {}
+"skill:sop-pur-12", "INVOLVES_PART", "part:fan-bearing", {}
+"skill:sop-pur-12", "INVOLVES_PART", "part:pump-seal", {}
+"skill:sop-pur-12:1", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:bc6769773946e3e3dbb2ba332e7df942d945c5277d52fed9234fdb44553b96aa", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"skill:sop-pur-12:2", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:bc6769773946e3e3dbb2ba332e7df942d945c5277d52fed9234fdb44553b96aa", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"skill:sop-pur-12:3", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:bc6769773946e3e3dbb2ba332e7df942d945c5277d52fed9234fdb44553b96aa", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"skill:sop-pur-12:4", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:bc6769773946e3e3dbb2ba332e7df942d945c5277d52fed9234fdb44553b96aa", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"skill:sop-pur-12:5", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:bc6769773946e3e3dbb2ba332e7df942d945c5277d52fed9234fdb44553b96aa", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"skill:sop-pur-13", "APPROVED_BY", "role:purchasing", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"skill:sop-pur-13", "CONSISTS_OF", "action:purchase-request", {seq: 1}
+"skill:sop-pur-13", "HAS_STEP", "skill:sop-pur-13:1", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"skill:sop-pur-13", "HAS_STEP", "skill:sop-pur-13:2", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"skill:sop-pur-13", "HAS_STEP", "skill:sop-pur-13:3", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"skill:sop-pur-13", "HAS_STEP", "skill:sop-pur-13:4", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"skill:sop-pur-13", "HAS_STEP", "skill:sop-pur-13:5", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"skill:sop-pur-13", "INVOLVES_PART", "part:cooler-core", {}
+"skill:sop-pur-13", "INVOLVES_PART", "part:fan-bearing", {}
+"skill:sop-pur-13", "INVOLVES_PART", "part:pump-seal", {}
+"skill:sop-pur-13:1", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:bc6769773946e3e3dbb2ba332e7df942d945c5277d52fed9234fdb44553b96aa", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"skill:sop-pur-13:2", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:bc6769773946e3e3dbb2ba332e7df942d945c5277d52fed9234fdb44553b96aa", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"skill:sop-pur-13:3", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:bc6769773946e3e3dbb2ba332e7df942d945c5277d52fed9234fdb44553b96aa", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"skill:sop-pur-13:4", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:bc6769773946e3e3dbb2ba332e7df942d945c5277d52fed9234fdb44553b96aa", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"skill:sop-pur-13:5", "REFERS_TO", "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:bc6769773946e3e3dbb2ba332e7df942d945c5277d52fed9234fdb44553b96aa", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"sv:bearing-wear", "INFLUENCES", "sv:vs1", {strength: "high", sign: 1}
+"sv:ce", "INFLUENCES", "sv:ts1", {strength: "high", sign: -1}
+"sv:fan-speed", "INFLUENCES", "msr:energy-use", {strength: "low", sign: 1, note: "팬 전력"}
+"sv:fan-speed", "INFLUENCES", "sv:ts1", {strength: "high", sign: -1, note: "팬을 올리면 냉각이 늘어 유온이 내려간다"}
+"sv:fan-speed", "INFLUENCES", "sv:vs1", {sign: 1, note: "팬이 빠를수록 진동이 크다", condition: "베어링 마모 시 크게", strength: "medium"}
+"sv:fouling", "INFLUENCES", "sv:ce", {strength: "high", sign: -1, note: "핀이 막히면 냉각 효율이 떨어진다"}
+"sv:fs1", "INFLUENCES", "msr:throughput", {strength: "medium", sign: 1, condition: "FS1 < 8.0 l/min에서 사이클 지연(유량 → 액추에이터 속도)"}
+"sv:leak", "INFLUENCES", "sv:fs1", {strength: "high", sign: -1}
+"sv:leak", "INFLUENCES", "sv:ps1", {strength: "high", sign: -1, note: "내부 누설만큼 토출 압력이 떨어진다"}
+"sv:leak", "INFLUENCES", "sv:ts1", {strength: "low", sign: 1, note: "누설 유량이 열이 된다"}
+"sv:load", "INFLUENCES", "msr:energy-use", {strength: "medium", sign: 1}
+"sv:load", "INFLUENCES", "msr:throughput", {strength: "high", sign: 1, note: "부하가 곧 생산 속도"}
+"sv:load", "INFLUENCES", "sv:ps1", {strength: "medium", sign: 1}
+"sv:load", "INFLUENCES", "sv:ts1", {strength: "high", sign: 1, note: "부하의 제곱에 비례해 발열"}
+"sv:ps1", "INFLUENCES", "msr:availability", {strength: "high", sign: 1, condition: "PS1 < 130 bar 저압 인터록"}
+"sv:ps1", "INFLUENCES", "msr:throughput", {strength: "medium", sign: 1, condition: "PS1 < 165 bar에서 사이클 지연"}
+"sv:ts1", "INFLUENCES", "msr:oil-life", {sign: -1, note: "고온 운전은 작동유를 열화시킨다", condition: "유온 60 ℃ 이상에서 크게", strength: "medium"}
+"sv:ts1", "INFLUENCES", "msr:safety-margin", {strength: "high", sign: -1, note: "인터록 65 ℃까지의 여유"}
+"sv:vs1", "INFLUENCES", "msr:availability", {strength: "high", sign: -1, condition: "VS1 ≥ 2.0 mm/s 진동 인터록"}
+"sv:vs1", "INFLUENCES", "msr:mtbf", {strength: "medium", sign: -1}
+"sym:ce-drop", "INDICATES", "fm:cooler-cooling-loss", {}
+"sym:ce-drop", "OBSERVED_BY", "sen:ce", {}
+"sym:fs1-drop", "INDICATES", "fm:pump-volumetric-efficiency-loss", {}
+"sym:fs1-drop", "OBSERVED_BY", "sen:fs1", {}
+"sym:ps1-drop", "INDICATES", "fm:pump-volumetric-efficiency-loss", {}
+"sym:ps1-drop", "OBSERVED_BY", "sen:ps1", {}
+"sym:ts1-rise", "INDICATES", "fm:cooler-cooling-loss", {}
+"sym:ts1-rise", "OBSERVED_BY", "sen:ts1", {}
+"sym:vs1-rise", "OBSERVED_BY", "sen:vs1", {}
+"sys:cmms", "HAS_SKILL", "skill:sop-cool-14", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"sys:cmms", "HAS_SKILL", "skill:sop-cool-15", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"sys:cmms", "HAS_SKILL", "skill:sop-fan-11", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"sys:cmms", "HAS_SKILL", "skill:sop-fan-12", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"sys:cmms", "HAS_SKILL", "skill:sop-pm-11", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"sys:cmms", "HAS_SKILL", "skill:sop-pm-12", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"sys:cmms", "HAS_SKILL", "skill:sop-pm-13", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"sys:cmms", "HAS_SKILL", "skill:sop-pm-14", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"sys:cmms", "HAS_SKILL", "skill:sop-pm-21", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"sys:cmms", "HAS_SKILL", "skill:sop-pm-22", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"sys:cmms", "HAS_SKILL", "skill:sop-pm-23", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:1543d387-e73a-46d2-a6dd-82dc73c3aad9"}
+"sys:erp", "HAS_SKILL", "skill:sop-pr7-7", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"sys:erp", "HAS_SKILL", "skill:sop-pur-11", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"sys:erp", "HAS_SKILL", "skill:sop-pur-12", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"sys:erp", "HAS_SKILL", "skill:sop-pur-13", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:696eea09-9d46-4df8-81d4-f6a49e504291"}
+"sys:scada", "HAS_SKILL", "skill:sop-cool-11", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"sys:scada", "HAS_SKILL", "skill:sop-cool-12", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}
+"sys:scada", "HAS_SKILL", "skill:sop-cool-13", {_manual_document: "4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:34decc5e-0cbd-4e82-b0c0-b4ac25366fdd"}

@@ -32,7 +32,10 @@ mkdir -p "$HOME/.claude"
 cat > "$HOME/.claude/CLAUDE.md" <<'EOF'
 # 이 환경 공통(셋업 스크립트가 쓴다)
 
-저장소가 uengine-oss/hyd-iot-edu이고 지금 브랜치가 main이면, 규칙 · 스킬 · 작업 자료는 workspace 브랜치에 있다. 일을 시작하기 전에 `git fetch origin workspace:workspace` → `git switch workspace` → `CLAUDE.md`를 읽고 `bash .claude/hooks/cloud-bootstrap.sh`를 돌린다. 남은 일은 `workspace/강의제작/남은일.md`. 도구(ffmpeg · poppler · LibreOffice · 제작용 파이썬 패키지)는 이미 깔려 있다.
+저장소가 uengine-oss/hyd-iot-edu이고 지금 브랜치가 main이면, 규칙 · 스킬 · 작업 자료는 workspace 브랜치에 있어 아직 안 읽혔다. 일을 시작하기 전에 둘 중 하나로 받는다.
+- 시스템 코드도 읽거나 돌리는 일(덱 · 대본 사실 대조, 촬영): main 그대로 `git fetch origin workspace` → `git show origin/workspace:workspace/동기화.py > 동기화.py` → `python3 동기화.py pull` → `rm 동기화.py`.
+- 글 · 문서만 고치는 일: `git fetch origin workspace:workspace` → `git switch workspace`.
+그 뒤 `CLAUDE.md`를 읽고 `bash .claude/hooks/cloud-bootstrap.sh`를 돌린다. 남은 일은 `workspace/강의제작/남은일.md`. 도구(ffmpeg · poppler · LibreOffice · 제작용 파이썬 패키지)는 이미 깔려 있다.
 EOF
 if [ -n "$fail" ]; then
   { echo; echo "## 셋업 실패 — 사용자에게 먼저 알린다"; echo "$fail"; } >> "$HOME/.claude/CLAUDE.md"
