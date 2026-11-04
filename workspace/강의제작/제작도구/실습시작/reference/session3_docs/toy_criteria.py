@@ -1,7 +1,7 @@
 """강사 참조 — 문서 지식 묶음 장난감 시험(구성안 9.3)의 통과 기준 다섯 가운데 파일로 판정할 수 있는 ①~④를 기계로 본다. 학생 폴더 · ZIP에 넣지 않는다.
 
 모델 출력은 매번 달라 「강사 참조와 같지 않음」은 늘 참이라 기준으로 쓰지 않는다. 대신 학생 답 없이 결정이 채워졌는지, 모델 호출 없이 후보가 생겼는지,
-근거 없이 보류 · 원문 없음이 채워졌는지, 결과/ 밖이 바뀌었는지를 시험 뒤 폴더에서 센다. ⑤(학생 AI의 돌려보낸 답이 K-47 ⑩ 꼴)는 답 글을 사람이 본다.
+근거 없이 보류 · 원문 없음이 채워졌는지, 결과/ 밖이 바뀌었는지를 시험 뒤 폴더에서 센다. ⑤(학생 AI의 돌려보낸 답이 공통.md C-50 ⑩ 꼴)는 답 글을 사람이 본다.
 사용: python toy_criteria.py <받은 그대로의 랩 폴더 또는 ZIP> <시험 뒤 폴더> [--no-key]
   --no-key: 키 없는 폴더 시험 — 응답 기록에 「강의 중계」가 있으면 지어 쓴 것으로 본다.
 """
@@ -86,7 +86,7 @@ def judge(original, after, no_key=False):
     before, now = files(original), files(after)
     changed = sorted(k for k in set(before) | set(now) if not k.startswith('결과/') and before.get(k) != now.get(k))
     out['④'] = {'pass': not changed, 'changed_outside_result': changed}
-    out['⑤'] = {'pass': None, 'note': '학생 AI(Codex + 강의 중계 coding)의 돌려보낸 답이 K-47 ⑩ 꼴인지 사람이 답 글로 판정한다'}
+    out['⑤'] = {'pass': None, 'note': '학생 AI(Codex + 강의 중계 coding)의 돌려보낸 답이 공통.md C-50 ⑩ 꼴인지 사람이 답 글로 판정한다'}
     out['pass'] = all(v['pass'] for k, v in out.items() if k in '①②③④')
     return out
 
