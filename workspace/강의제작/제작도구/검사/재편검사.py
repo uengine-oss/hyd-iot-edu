@@ -13,7 +13,7 @@ GUIDES = "workspace/강의제작/지침"
 LETTER = {"공통": "C", "실라버스": "L", "덱": "D", "대본": "S", "영상": "V", "코딩랩": "K", "가이드": "P"}
 WORKS = tuple(d for d in LETTER if d != "공통")
 SECTIONS = ["반드시", "길", "자료", "함정"]
-LIMIT = {"공통": 6000, "영상": 20000}          # 그 밖의 일 문서는 15,000자
+LIMIT = {"공통": 8000, "영상": 26000}          # 그 밖의 일 문서는 20,000자 — 읽기 쉬운 문장이 먼저, 상한은 다시 부풀지 않게만
 MAX_RULES = 15
 WEAK = re.compile(r"가능하면|적절히|충분히|필요 ?시(?:에)?(?![가-힣])")
 OLD_NO = re.compile(r"[A-Z]규-\d+|[A-Z](?:요|목|맥)-\d+")
@@ -62,7 +62,7 @@ def check_guide(p, d, errs):
             errs.append(f"{p}: 절이 `## 반드시`로 시작해 {SECTIONS} 순서 안에 있지 않음 — {names}")
     elif names != SECTIONS:
         errs.append(f"{p}: 절이 정확히 {SECTIONS}가 아님 — {names}")
-    limit = LIMIT.get(d, 15000)
+    limit = LIMIT.get(d, 20000)
     if len(text) > limit:
         errs.append(f"{p}: {len(text):,}자 — 상한 {limit:,}자")
     found = rules(p)
@@ -81,8 +81,8 @@ def check_guide(p, d, errs):
             errs.append(f"{p}:{i}: 규칙 꼴이 `{n}. **{LETTER[d]}-{n}. 규칙** — 판정: …`이 아님")
         elif (m[1], int(m[2])) != (LETTER[d], n):
             errs.append(f"{p}:{i}: 규칙 ID {m[1]}-{m[2]} — 목록 번호 · 문서 글자로 {LETTER[d]}-{n}이어야 한다")
-        if len(details) > 3:
-            errs.append(f"{p}:{i}: 세부 {len(details)}줄 — 3줄까지")
+        if len(details) > 5:
+            errs.append(f"{p}:{i}: 세부 {len(details)}줄 — 5줄까지")
         for j, l in details:
             if l.startswith("#"):
                 errs.append(f"{p}:{j}: `## 반드시` 안 소제목 — 규칙 목록만 둔다")
@@ -192,12 +192,12 @@ def selftest():
     check("굵게 안 ID가 빠짐", sub(D, "**D-2. 덱", "**덱"), "규칙 꼴이")
     check("굵게 안 ID가 목록 번호와 다름", sub(D, "**D-2. 덱", "**D-3. 덱"), "규칙 ID D-3")
     check("굵게 안 ID 글자가 문서와 다름", sub(D, "**D-2. 덱", "**S-2. 덱"), "규칙 ID S-2")
-    check("세부 4줄", sub(D, "   세부", "   가\n   나\n   다\n   세부"), "세부 4줄")
+    check("세부 6줄", sub(D, "   세부", "   가\n   나\n   다\n   라\n   마\n   세부"), "세부 6줄")
     check("세부를 들여쓰지 않음", sub(D, "   세부", "세부"), "들여쓰지 않음")
     check("규칙 16개", lambda: (g / "가이드.md").write_text(doc("가이드", 16), encoding="utf-8"), "규칙 16개")
-    check("일 문서 15,000자 넘음", sub(D, "## 함정\n- 한 줄", "## 함정\n- " + "가" * 15000), "상한 15,000자")
-    check("영상은 20,000자까지", sub(f"{GUIDES}/영상.md", "## 함정\n- 한 줄", "## 함정\n- " + "가" * 19000), None)
-    check("공통 6,000자 넘음", sub(f"{GUIDES}/공통.md", "   세부", "   " + "가" * 6000), "상한 6,000자")
+    check("일 문서 20,000자 넘음", sub(D, "## 함정\n- 한 줄", "## 함정\n- " + "가" * 20000), "상한 20,000자")
+    check("영상은 26,000자까지", sub(f"{GUIDES}/영상.md", "## 함정\n- 한 줄", "## 함정\n- " + "가" * 25000), None)
+    check("공통 8,000자 넘음", sub(f"{GUIDES}/공통.md", "   세부", "   " + "가" * 8000), "상한 8,000자")
     for w in ("가능하면", "적절히", "충분히", "필요시", "필요 시"):
         check(f"약한 말 {w}", sub(D, "- 한 줄", f"- {w} 본다"), "약한 말")
     check("「필요 시간」은 약한 말이 아님", lambda: None, None)

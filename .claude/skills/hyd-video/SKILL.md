@@ -5,4 +5,4 @@ description: "HYD 제조 AI 교육과정의 모든 강의 영상 — 이론 강�
 
 # 영상
 
-`workspace/강의제작/지침/공통.md`와 `workspace/강의제작/지침/영상.md`를 끝까지 읽고 영상.md 「길」대로 한다. 실습 촬영이면 `workspace/강의제작/제작도구/촬영/README.md`와 그 도구 `촬영/<도구>/촬영준비.md`도 읽는다. 작업 폴더 · 동기화는 `hyd-task`.
+`workspace/강의제작/지침/공통.md`와 `workspace/강의제작/지침/영상.md`를 끝까지 읽고, 영상.md의 「길」대로 한다. 실습 영상을 찍을 때는 `workspace/강의제작/제작도구/촬영/README.md`와 그 도구의 `촬영/<도구>/촬영준비.md`도 읽는다. 작업 폴더와 동기화는 `hyd-task`를 따른다.

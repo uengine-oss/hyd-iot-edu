@@ -5,4 +5,4 @@ description: "HYD 제조 AI 교육과정 실라버스(정본 엑셀 네 시트 �
 
 # 실라버스 — 입구
 
-`workspace/강의제작/지침/공통.md`와 `workspace/강의제작/지침/실라버스.md`를 끝까지 읽고 실라버스.md의 「길」대로 한다(Codex도 같은 문서). 작업 순서는 `hyd-task`.
+`workspace/강의제작/지침/공통.md`와 `workspace/강의제작/지침/실라버스.md`를 끝까지 읽고, 실라버스.md의 「길」대로 한다. Codex도 같은 문서를 따른다. 작업 순서는 스킬 `hyd-task`가 정한다.

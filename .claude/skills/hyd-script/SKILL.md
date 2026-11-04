@@ -5,4 +5,4 @@ description: "HYD 제조 AI 교육과정 이론 대본(분할 대본 파일 · [
 
 # 대본 — 입구
 
-읽는다: `workspace/강의제작/지침/공통.md` + `workspace/강의제작/지침/대본.md`(반드시 · 길 · 자료 · 함정). 작업 순서는 `hyd-task`.
+먼저 `workspace/강의제작/지침/공통.md`와 `workspace/강의제작/지침/대본.md`를 끝까지 읽는다(대본.md는 반드시, 길, 자료, 함정의 네 절이다). 작업 순서는 스킬 `hyd-task`를 따른다.

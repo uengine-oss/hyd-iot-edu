@@ -5,4 +5,4 @@ description: "HYD 제조 AI 교육과정 이론 덱(덱 MD · PPTX — 통합반
 
 # 덱 — 입구
 
-읽는다: `workspace/강의제작/지침/공통.md` + `workspace/강의제작/지침/덱.md`(반드시 · 길 · 자료 · 함정). 덱 MD 문법과 빌더 동작은 `references/덱MD-PPTX형식.md`, 빌더 · 아이콘 찾기는 `scripts/deck2pptx.py` · `scripts/find_icon.py`. 작업 순서는 `hyd-task`.
+먼저 `workspace/강의제작/지침/공통.md`와 `workspace/강의제작/지침/덱.md`를 끝까지 읽는다(덱.md는 반드시, 길, 자료, 함정의 네 절이다). 덱 MD 문법과 빌더 동작은 `references/덱MD-PPTX형식.md`에 있다. 빌더는 `scripts/deck2pptx.py`, 아이콘 찾기는 `scripts/find_icon.py`다. 작업 순서는 스킬 `hyd-task`를 따른다.

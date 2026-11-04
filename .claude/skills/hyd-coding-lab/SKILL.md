@@ -5,4 +5,4 @@ description: "HYD 제조 AI 교육과정 코딩 랩(VS Code에서 GitHub Copilot
 
 # 코딩랩 — 입구
 
-`workspace/강의제작/지침/공통.md`와 `workspace/강의제작/지침/코딩랩.md` 두 문서만 읽고 그 「길」대로 한다(Codex도 같은 문서). 작업 폴더 · 커밋 순서는 `hyd-task`.
+`workspace/강의제작/지침/공통.md`와 `workspace/강의제작/지침/코딩랩.md` 두 문서만 끝까지 읽고, `코딩랩.md`의 「길」대로 한다(Codex도 같은 문서를 읽는다). 작업 폴더를 다루는 법과 커밋 순서는 `hyd-task` 스킬을 따른다.
