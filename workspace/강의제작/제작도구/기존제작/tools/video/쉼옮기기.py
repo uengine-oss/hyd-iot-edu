@@ -5,7 +5,7 @@
 
 - 문장 나누기 · 저장 이름은 강의영상.py의 cuts · breath_key를 그대로 쓴다(사본 없음). 음성 없이 대본 글로도 같은 문장이 나온다.
 - 찾는 순서: ① --옛판 커밋의 같은 대본 파일이 쓴 쉼 ② 쉼_저장/ 전체. 앞에서 값이 하나로 정해지면 옮긴다. 값이 둘 이상이면 정하지 않고 「값여럿」으로, 어디에도 없으면 「새자리」로 낸다.
-- 저장 쓰기는 --쓰기 · --채움 때만이고, 자리가 다 찬 구획만 쓴다. 이미 값이 있는 파일은 덮지 않는다(값이 다르면 멈춘다). 한 구획에 크게(3)가 셋 이상이면 사람이 읽어 가를 후보(「크게셋이상」)로 내고 쓰지 않는다(영상.md V-12).
+- 저장 쓰기는 --쓰기 · --채움 때만이고, 자리가 다 찬 구획만 쓴다. 이미 값이 있는 파일은 덮지 않는다(값이 다르면 멈춘다). 한 구획에 크게(3)가 셋 이상이면 --쓰기는 사람이 읽어 가를 후보(「크게셋이상」)로 내고 쓰지 않으며, --채움은 사람이 읽고 정한 값이므로 쓰고 경고 줄만 낸다(영상.md V-12).
 - --파형: 음성 캐시가 있는 구획에서 쉼을 넣을 자리에 조용한 곳이 없는 곳을 굽기 전에 찾아 목록에 적는다(굽기가 거기서 멈춘다). ffmpeg가 PATH에 있어야 한다. 값 0이면 그 자리는 자르지 않는다.
 """
 import argparse
@@ -171,7 +171,7 @@ def run(a):
 def fill(a):
     bdir = Path(a.store) if a.store else tool.HERE / "쉼_저장"
     d = json.loads(Path(a.fill).read_text(encoding="utf-8"))
-    errs, todo = [], []
+    errs, todo, warns = [], [], []
     for sec in d["구획"]:
         levels = list(sec["쉼"])
         for seat in sec["자리"]:
@@ -180,7 +180,7 @@ def fill(a):
                 errs.append(f"{sec['파일']} 장 {sec['장']} 자리 {seat['번호']}: 값이 0~3이 아니다({v!r}) — 「{seat['앞'][-20:]}」 → 「{seat['뒤'][:20]}」")
             levels[seat["번호"] - 1] = v
         if levels.count(3) > 2:
-            errs.append(f"{sec['파일']} 장 {sec['장']}: 크게(3)가 {levels.count(3)}곳이다 — 한 구획에 둘까지")
+            warns.append(f"경고: {sec['파일']} 장 {sec['장']}: 크게(3)가 {levels.count(3)}곳이다 — 화제가 바뀌는 자리만인지 읽었는가(영상.md V-12)")
         if tool.breath_key(sec["문장"]) != sec["키"]:
             errs.append(f"{sec['파일']} 장 {sec['장']}: 문장과 키가 맞지 않는다(목록을 손으로 고쳤는가)")
         f = bdir / f"{sec['키']}.json"
@@ -193,6 +193,8 @@ def fill(a):
         todo.append((f, sec["문장"], levels))
     if errs:
         sys.exit("쓰지 않았다 —\n  " + "\n  ".join(errs))
+    for w in warns:
+        print(w)
     for f, ss, levels in todo:
         write(f, ss, levels)
     print(f"썼다 {len(todo)}구획 → {bdir}")

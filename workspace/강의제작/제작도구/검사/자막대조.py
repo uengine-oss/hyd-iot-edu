@@ -1,4 +1,4 @@
-"""이론 영상의 자막(.srt)이 대본의 낭독 문장과 같은지 재고, 쉼_저장에 크게(3)가 셋 이상인 구획을 사람이 읽어 가를 후보로 찍는다(영상.md V-12). 읽기만 한다.
+"""이론 영상의 자막(.srt)이 대본의 낭독 문장과 같은지 재고, 쉼_저장에 크게(3)가 셋 이상인 구획을 사람이 읽어 가를 후보로 따로 찍는다(영상.md V-12, 종료 코드에 넣지 않는다). 읽기만 한다.
 언제: 영상을 구운 뒤 검토자가 볼 때 · 입고 전. 검토자마다 대조 스크립트를 다시 짜지 않으려고 쓴다.
 명령: <py> workspace/강의제작/제작도구/검사/자막대조.py <자막 폴더> <대본 …>   # 어긋남 0이면 종료 0
 
@@ -46,10 +46,12 @@ def main():
             f = breath.tool.HERE / "쉼_저장" / f"{tool.breath_key(ss)}.json"
             if len(ss) >= 2 and f.exists() and breath.valid(breath.load(f)) and breath.load(f)["쉼"].count(3) > 2:
                 big.append(first)
-        print(f"{name}: 대본 문장 {len(a)} · 자막 {len(b)} · 어긋남 {len(ops)} · 크게 셋 이상 구획 {big}")
+        print(f"{name}: 대본 문장 {len(a)} · 자막 {len(b)} · 어긋남 {len(ops)}")
+        if big:
+            print(f"  후보(크게 셋 이상, 읽어 가른다): 장 {big}")
         for tag, i1, i2, j1, j2 in ops[:10]:
             print(f"  대본 {i1 + 1}번째: {' / '.join(want[i1:i2])[:70]!r} ↔ 자막 {j1 + 1}번째: {' / '.join(got[j1:j2])[:70]!r}")
-        bad += len(ops) + len(big)
+        bad += len(ops)
     print("어긋남 0" if not bad else f"어긋남 {bad}")
     sys.exit(0 if not bad else 1)
 

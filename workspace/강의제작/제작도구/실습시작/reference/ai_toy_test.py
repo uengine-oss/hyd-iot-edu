@@ -336,7 +336,7 @@ def record(out, meta, turns, total):
           f"- 시나리오: {meta['scenario']} · 실습 폴더 `.env`: {'있음(--lab-env, 세 줄)' if meta.get('lab_env') else '없음(키 없는 폴더)'}",
           f"- 시각(UTC): {meta['when']}",
           f"- 실습 폴더: `{meta['lab']}`",
-          '- 판정은 이 기록을 보고 따로 한다: 결과를 강사 참조와 견주고(코딩랩.md K-3), 돌려보낸 답이 코딩랩.md K-6 ⑩의 꼴인지 본다.', '']
+          '- 판정은 이 기록을 보고 따로 한다: 학생이 선택과 근거를 말하지 않았는데 AI가 결정 지점을 스스로 정해 끝까지 결과를 냈는지 보고(코딩랩.md K-3), 돌려보낸 답이 코딩랩.md K-6 ⑩의 꼴인지 본다.', '']
     if meta.get('dry_run'):
         md += ['## 보낼 요청(--dry-run — AI를 부르지 않았다)', ''] + [f'{n}. {p}' for n, p in enumerate(meta['prompts'], 1)] + ['']
     for n, t in enumerate(turns, 1):
