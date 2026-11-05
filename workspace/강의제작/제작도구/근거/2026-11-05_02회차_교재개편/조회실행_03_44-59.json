@@ -1,0 +1,310 @@
+{
+  "engine": [
+    {
+      "name": "Neo4j Kernel",
+      "versions": [
+        "5.26.0"
+      ],
+      "edition": "community"
+    }
+  ],
+  "46": {
+    "query": "MATCH (s:Sensor {tag:'TS1'})-[r:OBSERVES]->(v:StateVariable) RETURN s.id, s.name, type(r), v.id, v.name, v.limit, v.unit",
+    "rows": [
+      {
+        "s.id": "sen:ts1",
+        "s.name": "유온 센서",
+        "type(r)": "OBSERVES",
+        "v.id": "sv:ts1",
+        "v.name": "유온",
+        "v.limit": 65,
+        "v.unit": "℃"
+      }
+    ]
+  },
+  "47": {
+    "query": "SHOW CONSTRAINTS YIELD name,type,labelsOrTypes,properties WHERE labelsOrTypes=['Sensor'] RETURN name,type,properties",
+    "rows": [
+      {
+        "name": "v2_sensor_id",
+        "type": "UNIQUENESS",
+        "properties": [
+          "id"
+        ]
+      }
+    ]
+  },
+  "50": {
+    "query": "MATCH (c:Component {name:'오일 쿨러'})-[:MONITORED_BY]->(s:Sensor) RETURN c.name, s.tag ORDER BY s.tag",
+    "rows": [
+      {
+        "c.name": "오일 쿨러",
+        "s.tag": "CE"
+      },
+      {
+        "c.name": "오일 쿨러",
+        "s.tag": "TS1"
+      }
+    ]
+  },
+  "51": {
+    "query": "MATCH (c:Component {name:'오일 쿨러'})-[r:MONITORED_BY]->(s:Sensor) RETURN c.id AS c, type(r) AS relation, s.id AS s ORDER BY s.id",
+    "rows": [
+      {
+        "c": "comp:cooler",
+        "relation": "MONITORED_BY",
+        "s": "sen:ce"
+      },
+      {
+        "c": "comp:cooler",
+        "relation": "MONITORED_BY",
+        "s": "sen:ts1"
+      }
+    ]
+  },
+  "52a": {
+    "query": "MATCH (c:Component {name:'오일 쿨러'})-[:MONITORED_BY]->(s:Sensor) RETURN DISTINCT c.name",
+    "rows": [
+      {
+        "c.name": "오일 쿨러"
+      }
+    ]
+  },
+  "52b": {
+    "query": "MATCH (c:Component {name:'오일 쿨러'})-[:MONITORED_BY]->(s:Sensor) RETURN DISTINCT c.name,s.tag ORDER BY s.tag",
+    "rows": [
+      {
+        "c.name": "오일 쿨러",
+        "s.tag": "CE"
+      },
+      {
+        "c.name": "오일 쿨러",
+        "s.tag": "TS1"
+      }
+    ]
+  },
+  "53": {
+    "query": "MATCH (c:Component {name:'오일 쿨러'})-[:MONITORED_BY]->(s:Sensor) RETURN count(*) AS rows, count(DISTINCT c) AS components, count(DISTINCT s) AS channels",
+    "rows": [
+      {
+        "rows": 2,
+        "components": 1,
+        "channels": 2
+      }
+    ]
+  },
+  "54": {
+    "query": "MATCH (a:Asset)-[:HAS_COMPONENT]->(c:Component)-[:MONITORED_BY]->(s:Sensor {tag:'TS1'}) RETURN count(s) AS paths, count(DISTINCT s) AS nodes,collect(DISTINCT a.code) AS assets",
+    "rows": [
+      {
+        "paths": 3,
+        "nodes": 1,
+        "assets": [
+          "HYD-03",
+          "HYD-02",
+          "HYD-01"
+        ]
+      }
+    ]
+  },
+  "55": {
+    "query": "MATCH (a:Asset {code: 'HYD-01'})-[:HAS_COMPONENT]->(c:Component)-[:MONITORED_BY]->(s:Sensor)-[:OBSERVES]->(v:StateVariable) RETURN c.name,s.tag,v.name,v.unit,v.limit ORDER BY s.tag",
+    "rows": [
+      {
+        "c.name": "오일 쿨러",
+        "s.tag": "CE",
+        "v.name": "냉각 효율",
+        "v.unit": "%",
+        "v.limit": null
+      },
+      {
+        "c.name": "주 펌프 (A)",
+        "s.tag": "FS1",
+        "v.name": "유량",
+        "v.unit": "l/min",
+        "v.limit": null
+      },
+      {
+        "c.name": "주 펌프 (A)",
+        "s.tag": "PS1",
+        "v.name": "토출 압력",
+        "v.unit": "bar",
+        "v.limit": 130
+      },
+      {
+        "c.name": "오일 쿨러",
+        "s.tag": "TS1",
+        "v.name": "유온",
+        "v.unit": "℃",
+        "v.limit": 65
+      },
+      {
+        "c.name": "쿨러 팬",
+        "s.tag": "VS1",
+        "v.name": "팬 진동",
+        "v.unit": "mm/s",
+        "v.limit": 2.0
+      }
+    ]
+  },
+  "56": {
+    "query": "MATCH (s:Sensor)-[:OBSERVES]->(v:StateVariable) WHERE v.limit IS NOT NULL RETURN s.tag,v.name,v.limit,v.unit ORDER BY s.tag",
+    "rows": [
+      {
+        "s.tag": "PS1",
+        "v.name": "토출 압력",
+        "v.limit": 130,
+        "v.unit": "bar"
+      },
+      {
+        "s.tag": "TS1",
+        "v.name": "유온",
+        "v.limit": 65,
+        "v.unit": "℃"
+      },
+      {
+        "s.tag": "VS1",
+        "v.name": "팬 진동",
+        "v.limit": 2.0,
+        "v.unit": "mm/s"
+      }
+    ]
+  },
+  "57a": {
+    "query": "MATCH (c:Component)-[:MONITORED_BY]->(s:Sensor)-[:OBSERVES]->(v:StateVariable) WHERE (c.name='오일 쿨러' OR c.name='쿨러 팬') AND v.limit IS NOT NULL RETURN s.tag ORDER BY s.tag",
+    "rows": [
+      {
+        "s.tag": "TS1"
+      },
+      {
+        "s.tag": "VS1"
+      }
+    ]
+  },
+  "57b": {
+    "query": "MATCH (c:Component)-[:MONITORED_BY]->(s:Sensor)-[:OBSERVES]->(v:StateVariable) WHERE c.name='오일 쿨러' OR c.name='쿨러 팬' AND v.limit IS NOT NULL RETURN s.tag ORDER BY s.tag",
+    "rows": [
+      {
+        "s.tag": "CE"
+      },
+      {
+        "s.tag": "TS1"
+      },
+      {
+        "s.tag": "VS1"
+      }
+    ]
+  },
+  "58": {
+    "query": "MATCH (a:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)-[:MONITORED_BY]->(s:Sensor) RETURN c.id AS componentId,c.name AS component,count(DISTINCT s) AS channels ORDER BY channels DESC,componentId",
+    "rows": [
+      {
+        "componentId": "comp:cooler",
+        "component": "오일 쿨러",
+        "channels": 2
+      },
+      {
+        "componentId": "comp:pump-a",
+        "component": "주 펌프 (A)",
+        "channels": 2
+      },
+      {
+        "componentId": "comp:fan",
+        "component": "쿨러 팬",
+        "channels": 1
+      }
+    ]
+  },
+  "59a": {
+    "query": "MATCH (fm:FailureMode)<-[:CAUSES]-(c:Cause) RETURN fm.name,c.name ORDER BY fm.name,c.name",
+    "rows": [
+      {
+        "fm.name": "쿨러 냉각 성능 상실",
+        "c.name": "주변 온도 상승"
+      },
+      {
+        "fm.name": "쿨러 냉각 성능 상실",
+        "c.name": "쿨러 핀 오염"
+      },
+      {
+        "fm.name": "쿨러 냉각 성능 상실",
+        "c.name": "팬 구동 불량"
+      }
+    ]
+  },
+  "59b": {
+    "query": "MATCH (fm:FailureMode)-[:CAUSES]->(c:Cause) RETURN count(*) AS reversed",
+    "rows": [
+      {
+        "reversed": 0
+      }
+    ]
+  },
+  "59c": {
+    "query": "MATCH (p:AnomalyPattern)-[:DETECTS]->(s:Symptom)-[:INDICATES]->(fm:FailureMode)<-[:CAUSES]-(c:Cause) RETURN DISTINCT p.code, fm.name, c.name ORDER BY p.code,c.name",
+    "rows": [
+      {
+        "p.code": "COOLER_DEGRADATION",
+        "fm.name": "쿨러 냉각 성능 상실",
+        "c.name": "주변 온도 상승"
+      },
+      {
+        "p.code": "COOLER_DEGRADATION",
+        "fm.name": "쿨러 냉각 성능 상실",
+        "c.name": "쿨러 핀 오염"
+      },
+      {
+        "p.code": "COOLER_DEGRADATION",
+        "fm.name": "쿨러 냉각 성능 상실",
+        "c.name": "팬 구동 불량"
+      },
+      {
+        "p.code": "OVERHEAT_TRIP",
+        "fm.name": "쿨러 냉각 성능 상실",
+        "c.name": "주변 온도 상승"
+      },
+      {
+        "p.code": "OVERHEAT_TRIP",
+        "fm.name": "쿨러 냉각 성능 상실",
+        "c.name": "쿨러 핀 오염"
+      },
+      {
+        "p.code": "OVERHEAT_TRIP",
+        "fm.name": "쿨러 냉각 성능 상실",
+        "c.name": "팬 구동 불량"
+      }
+    ]
+  },
+  "45graph": {
+    "query": "MATCH (p:Part {partNo:'P-CLR-CORE'})-[q:SUPPLIED_BY]->(s:Supplier) RETURN s.id,s.avl ORDER BY s.id",
+    "rows": []
+  },
+  "45_구매자료_동기화": {
+    "source": "workspace main 2d534cb9 ent.suppliers/ent.parts initial seed rows. SQLite in-memory JOIN for seed-equivalent tables. Ran actual graph writer Cypher in rollback transaction, no ERP service started.",
+    "query": "MATCH (p:Part {partNo:'P-CLR-CORE'})-[r:SUPPLIED_BY]->(s:Supplier) WHERE s.avl = true RETURN p.partNo AS part_no,s.id AS id ORDER BY id",
+    "sql_join_result": [
+      {
+        "part_no": "P-CLR-CORE",
+        "id": "sup:a"
+      },
+      {
+        "part_no": "P-CLR-CORE",
+        "id": "sup:b"
+      }
+    ],
+    "all_suppliers": 3,
+    "approved_suppliers": 2,
+    "graph_result": [
+      {
+        "part_no": "P-CLR-CORE",
+        "id": "sup:a"
+      },
+      {
+        "part_no": "P-CLR-CORE",
+        "id": "sup:b"
+      }
+    ],
+    "post_rollback_result": []
+  },
+  "50_대조범위": "실행 기록은 검산용 ORDER BY s.tag를 붙여 두 채널을 정렬했다. 화면의 쿼리는 정렬을 지정하지 않으므로 두 행의 집합을 대조한다."
+}
