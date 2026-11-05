@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" width="1200" height="520">
-<line x1="170" y1="185" x2="1080" y2="185" stroke="#D3D9E1" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="170" y1="360" x2="1080" y2="360" stroke="#D3D9E1" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<rect x="171" y="167" width="517" height="36" rx="10" ry="10" fill="#5CB8F2" stroke="#1A6FC4" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="171" y1="185" x2="1080" y2="185" stroke="#D3D9E1" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="171" y1="360" x2="1080" y2="360" stroke="#D3D9E1" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="171" y="167" width="585.6" height="36" rx="10" ry="10" fill="#5CB8F2" stroke="#1A6FC4" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
 <rect x="171" y="342" width="622" height="36" rx="10" ry="10" fill="#5CB8F2" stroke="#1A6FC4" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-<rect x="793" y="342" width="184" height="36" rx="8" ry="8" fill="#13294B" stroke="#13294B" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="793" y="342" width="46.81" height="36" rx="8" ry="8" fill="#13294B" stroke="#13294B" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
 <line x1="793" y1="98" x2="793" y2="425" stroke="#13294B" stroke-width="4" fill="none" stroke-dasharray="6 10" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="689" cy="185" r="10" fill="#FFFFFF" stroke="#1A6FC4" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="977" cy="360" r="10" fill="#FFFFFF" stroke="#13294B" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="756.6" cy="185" r="10" fill="#FFFFFF" stroke="#1A6FC4" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="839.81" cy="360" r="10" fill="#FFFFFF" stroke="#13294B" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

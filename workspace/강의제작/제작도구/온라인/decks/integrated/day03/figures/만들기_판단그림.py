@@ -1,5 +1,8 @@
 """3회차 판단 그림. 글과 값은 각 덱의 고칠 수 있는 라벨이고, 여기에는 형상만 둔다."""
 from pathlib import Path
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[4] / "tools" / "deck"))
 from 삽화_기본 import BLUE, GREY, LIGHT, NAVY, PALE, SKY, WHITE, ON, NORM, arrow, circle, line, path, rect, svg
 
 HERE=Path(__file__).resolve().parent
@@ -27,11 +30,14 @@ def window_gap():
             line(x(0),y-13,x(0),y+14,NAVY,3)]
 
 def deadlines():
-    x=793
-    return [line(170,185,1080,185,GREY,4),line(170,360,1080,360,GREY,4),
-            rect(171,167,517,36,10,SKY,BLUE),rect(171,342,622,36,10,SKY,BLUE),
-            rect(793,342,184,36,8,NAVY,NAVY),line(x,98,x,425,NAVY,4,stroke_dasharray='6 10'),
-            circle(689,185,10,WHITE,BLUE),circle(977,360,10,WHITE,NAVY)]
+    start, due = 171, 793
+    pixels_per_hour = (due - start) / 5.98
+    fast = round(start + 5.63 * pixels_per_hour, 2)
+    slow = round(start + 6.43 * pixels_per_hour, 2)
+    return [line(start,185,1080,185,GREY,4),line(start,360,1080,360,GREY,4),
+            rect(start,167,round(fast-start, 2),36,10,SKY,BLUE),rect(start,342,due-start,36,10,SKY,BLUE),
+            rect(due,342,round(slow-due, 2),36,8,NAVY,NAVY),line(due,98,due,425,NAVY,4,stroke_dasharray='6 10'),
+            circle(fast,185,10,WHITE,BLUE),circle(slow,360,10,WHITE,NAVY)]
 
 def isolation():
     # 압력계의 두 바늘은 잔압이 남았을 때와 확인 뒤의 낮은 압력을 대비한다.
