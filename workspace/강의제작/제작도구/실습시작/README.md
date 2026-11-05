@@ -35,9 +35,9 @@ python workspace/강의제작/제작도구/실습시작/test_launcher.py
 | 통합반 05~08회차 (16) | 없음 — START.md를 쓴 뒤 `start_guides/build.py` | ZIP에 강사 대본(`NN회차/대본/*_실습_*.md`)과 제작 안내가 들어 있다(검사 실패) |
 | shift-handover — 통합반 11회차 · 실전반 08회차 (2) | `기존제작/labs/build_handover_package.py`(`안내.html`도 이것이 만든다) | ZIP 루트가 `shift-handover/`(다른 ZIP은 `NN회차/랩/<랩>/`)이고 ZIP 안 README.md가 폴더보다 옛 판이다 — 루트 형식을 정한 뒤 묶는다(`lab_package`는 다른 루트를 만나면 멈춘다) |
 | 01회차 오프라인_모델과질문 (2) | 없음 — `lab_package.py` | |
-| 01회차 실습1 학습노트 (2) | `촬영/notion/build.py` | 보관 — 다시 묶지 않음 |
-| 01회차 실습2 실행환경 · 실습3 전체과정관찰 (4) | 없음 | 보관 — 다시 묶지 않음 |
-| 01회차 실습4 관계그림 (2) | `촬영/arrows/build_ontology.py` · `build_student_guide.py`, `pack_arrows.py` | 보관 — 다시 묶지 않음. `pack_arrows.py:11-14`는 폴더의 `채울_화면.md` · `예상시간.md` 때문에 늘 멈춘다 |
+| 01회차 실습1 학습노트 (2) | `촬영/notion/build.py` | 보관 — 생성기로 다시 만들지 않는다. 폴더를 고쳤으면 `lab_package.py`로 그 ZIP만 다시 묶는다(가이드.md 「함정」) |
+| 01회차 실습2 실행환경 · 실습3 전체과정관찰 (4) | 없음 | 보관 — 생성기로 다시 만들지 않는다. 폴더를 고쳤으면 `lab_package.py`로 그 ZIP만 다시 묶는다(가이드.md 「함정」) |
+| 01회차 실습4 관계그림 (2) | `촬영/arrows/build_ontology.py` · `build_student_guide.py`, `pack_arrows.py` | 보관 — 생성기로 다시 만들지 않는다. 폴더를 고쳤으면 `lab_package.py`로 그 ZIP만 다시 묶는다(가이드.md 「함정」) |
 | 02회차 완성본 실습3 (2) · 실습4 (2) | `build_design_solution.py --course 과정 --work <작업 폴더>` · `학생완성본/그래프구현/build_package.py <과정>` | 랩 ZIP과 따로 받는다(package-index 밖). 실습4 완성본의 `완성결과/<과정>.json`은 새 폴더에서 `run_graph.py --prepare` → `run_graph.py`를 Docker로 실제로 돌린 `결과/run_result.json`이다 — 조회문 · 입력 모델이 바뀌면 다시 돌려 바꿔 끼운 뒤 묶는다 |
 | 냉각 경보 조치 판단 완성본 (4) — 통합반 03회차 실습2 · 3, 실전반 02회차 실습5 · 03회차 실습2 | `reference/session3/run_reference.py` 8절(기본 갈래, 코드는 `reference/session3/completed/` · `judge_actions.py`) | 랩 ZIP과 따로 받는다(package-index 밖). 새 폴더에서 안내의 명령을 다시 돌려 동봉 결과와 같은 바이트 · 학생 검사기 통과를 확인한다 |
 | 문서 지식 완성본 (4) — 통합반 04회차 실습2 · 3, 실전반 03회차 실습4 · 5 | `reference/session3_docs/completed.py [--model-run <폴더>] [--again-run <폴더>] [--no-neo4j]` | 랩 ZIP과 따로 받는다(package-index 밖). 추출 둘은 고정한 강사 추출 실행 `reference/session3_docs/강사_추출/run1`(instructor_extract.py `--keep` — 학생 추출 코드 `completed/extract_candidates.py` · 요청 글 · 응답 기록 · 후보)에 검토를 걸어 만들고, 같은 요청을 새 폴더에서 한 번 더 보낸 `run2`와의 차이를 검토 기록에 적는다. 폴더 표지(`결과/폴더_표지.txt`)는 넣지 않아, 완성본 폴더 · 학생 폴더에서 코드를 실행해도 `llm_client.py`가 그 응답 기록을 다시 쓰지 않는다. 고정한 실행이 없으면 문장 규칙 후보로 만든 임시판이다(`check.py`가 후보 파일마다 model_run 줄을 냄). 그래프 둘은 `run_reference.py` 4의 기본 판 산출을 넣고 새 폴더에서 안내의 명령을 실제 Neo4j로 다시 돌려 내보내기 바이트 · 학생 검사기 통과를 확인한다 |

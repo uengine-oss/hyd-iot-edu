@@ -4,7 +4,7 @@
 
 스킬 `hyd-task`의 길을 밟는다. 무슨 일이든 hyd-task 0절 「늘 지키는 것」(조각 단위, 무차별 병렬 금지, 한 번에 확실하게, 시작 전에 필요한 것 다 받기, 확정 · 닫힘 · 끝남은 다시 열지 않기, 전진만 · 후진 금지)이 먼저다. 그 길은 작업 폴더 → 그 일 문서(`공통.md` + 일 문서 하나) 끝까지 읽기 → 그 회차 맥락만 뽑기 → 만들기 → 자동 검사 → 독립 검토 1회 → 목록만 고침 → 제자리 · 동기화 · 정리 순서다. 열린 작업 폴더(`작업/<날짜>_<제목>/`)가 있으면 그 폴더의 `스펙.md`와 `기록.md`부터 읽고 이어서 한다. Claude에서는 `.claude/hooks/guide_gate.py`가 읽기 전의 편집을 막고, Codex에서는 `.codex/hooks.json`이 다시 읽으라고 안내한다.
 
-- 유료 실행은 목적, 성공 기준, 상한을 먼저 정한다. 실패한 실행을 같은 조건으로 다시 돌리지 않는다.
+- 유료 실행은 목적, 성공 기준, 상한을 먼저 정한다. 실패한 실행을 다시 돌릴지는 hyd-task 0-6이 정한다.
 - 지울 것은 「이건 이런 건데 필요합니까」로 묻는다. 사용자가 "알아서 해"로 맡겼으면, 분명히 필요 없는 것(지금 수업이나 개발에 쓰이지 않거나 최신 판이 따로 있는 것)은 지우고 애매한 것만 묻는다. 지운 것은 git 이력에 남는다.
 - 같은 사실은 한 곳에만 쓰고, 나머지 자리는 그곳을 가리킨다.
 
@@ -20,7 +20,7 @@
 | `workspace/개발/` | 시스템 개발용 문서, 테스트, 생성기, 확인 도구. 목록은 `workspace/README.md`의 「폴더」 표에 있다 | workspace |
 | `workspace/동기화.py` · `secret_scan.py` · `requirements-dev.txt` | 두 브랜치 동기화와 작업 폴더 시작 · 정리(`동기화.py`), 키 검사(`secret_scan.py`), 개발 의존성(`requirements-dev.txt`) | workspace |
 | `.claude/` · `CLAUDE.md` · `AGENTS.md` | Claude와 Codex가 저장소 루트에서 읽는 규칙, 스킬, 훅 | workspace |
-| `작업/<YYYY-MM-DD>_<제목>/` | 진행 중인 작업 하나의 폴더(`스펙.md`, `기록.md`, 원본, 임시 출력). 녹화 원본은 `작업/촬영/<도구>/`에, 공개하면 안 되는 개인 자료는 `작업/_로컬/`에 둔다. 저장소 밖에 사본 clone이나 결과 폴더를 만들지 않는다(학생 경로 시험 폴더 `D:/HYD-Practice` · `~/.hyd-toy-test`는 예외 — 학생 AI가 저장소 규칙 파일을 읽지 않게) | 어디에도 올리지 않는다 |
+| `작업/<YYYY-MM-DD>_<제목>/` | 진행 중인 작업 하나의 폴더(`스펙.md`, `기록.md`, 원본, 임시 출력). 녹화 원본은 `작업/촬영/<도구>/`에, 공개하면 안 되는 개인 자료는 `작업/_로컬/`에 둔다. 저장소 밖에 사본 clone이나 결과 폴더를 만들지 않는다. 예외는 학생 AI가 저장소 규칙 파일을 읽지 않게 하는 학생 경로 시험 폴더 `D:/HYD-Practice` · `~/.hyd-toy-test`와, 클라우드에서 main을 꺼내는 `../main` worktree와 설정 스크립트의 `/tmp/hydws`(7절)다 | 어디에도 올리지 않는다 |
 | `.env` · `.venv314/` | 이 PC 전용 | 어디에도 올리지 않는다 |
 
 ## 2. 브랜치와 동기화
@@ -28,7 +28,7 @@
 - 브랜치는 main과 workspace 둘뿐이고, 다른 브랜치와 태그는 없어야 한다. main은 `.gitignore`로 `workspace/`와 `작업/`을 무시한다. workspace는 main과 이력을 공유하지 않으며, 둘을 병합하지 않는다.
 - 동기화는 `PYTHONUTF8=1 .venv314/Scripts/python.exe workspace/동기화.py` 하나로 한다. 순서는 `pull` → `commit "메시지" [main 경로 …] [--만 workspace 경로 …]` → 바로 `push`다. `push`는 origin에 없는 커밋마다 키 검사에서 걸린 수가 0일 때만 올리고, 강제 push는 하지 않는다. `commit`은 origin이 앞서 있으면 멈추고, `pull`은 원격 변경이 이 PC의 판과 겹치면 멈춘다. 멈추면 그 안내대로 하고 우회하지 않는다. 규칙 문서가 바뀐 커밋은 재편검사 오류가 0일 때만 만들어진다. 작업을 시작할 때와 커밋 직전에 `status`로 HEAD와 미커밋 변경을 보고, 다른 세션의 미커밋 변경은 보존한다. rebase, reset, stash는 쓰지 않는다. 사용법은 그 파일의 머리말에 있다.
 - 노션과 학생 링크가 커밋에 고정된 주소를 쓰므로, 이력을 다시 쓰거나 브랜치를 지우지 않는다. 공개 저장소이므로 키, 개인 정보, 실물 매뉴얼 PDF를 어느 브랜치에도 올리지 않는다.
-- 이력은 줄어들지 않으며 그 대부분이 mp4와 mp3다. 영상은 hyd-task가 정한 때에만 올리고, 사용자가 들어 본 뒤 고칠 곳은 모아 한 번만 다시 올린다. 그 밖의 영상, 음성, 원본은 세션 사이에 넘겨주려고 올리지 않고, 이 PC에서 할 몫은 `workspace/강의제작/남은일.md`에 적는다(음성 캐시 `음성_저장/` · `쉼_저장/`은 재구매를 막는 재료라 올린다 — 영상 V-12). `git rev-list --disk-usage --objects origin/workspace`가 7GB를 넘으면 새 영상을 Release로 옮길지 사용자에게 묻는다.
+- 이력은 줄어들지 않으며 그 대부분이 mp4와 mp3다. 영상은 hyd-task가 정한 때에만 올리고, 사용자가 들어 본 뒤 고칠 곳은 그 청취 한 차례의 지적을 모아 한 번에 다시 올린다. 그 밖의 영상, 음성, 원본은 세션 사이에 넘겨주려고 올리지 않고, 이 PC에서 할 몫은 `workspace/강의제작/남은일.md`에 적는다(음성 캐시 `음성_저장/` · `쉼_저장/`은 재구매를 막는 재료라 올린다 — 영상 V-12). `git rev-list --disk-usage --objects origin/workspace`가 7GB를 넘으면 새 영상을 Release로 옮길지 사용자에게 묻는다.
 
 ## 3. 기록
 
@@ -47,7 +47,7 @@
   - "1~2배속 권장" 같은 문구가 없어야 한다. 20배속에서 흔들리는 코드는 배속을 기준으로 고친다.
 - **떠 있는 스택을 쓰는 테스트와 도구(`test_portal_ui.py`, `class_round.py`)가 도는 동안에는 `docker compose build/up/restart`를 하지 않는다.** process가 재시작되어 `RemoteDisconnected`로 끊기기 때문이다. 배포를 먼저 끝내고 `docker inspect $(docker compose ps -q process) --format '{{.State.StartedAt}} {{.RestartCount}}'`로 안정됐는지 본다(이 PC의 컨테이너 이름은 `.hyd-runtime/project.json`에 있다). 에러 없이 재시작했으면 커널 OOM을 의심한다(`wsl -d docker-desktop -e sh -c "dmesg | grep -i oom"`).
 - 워커는 늘 하나만 띄운다. 호스트 워커(`workspace/개발/scripts/run_worker_host.sh`, 개발용)를 쓰려면 먼저 `docker compose stop agent-worker`를 한다.
-- 완주 검증과 E2E 검증은 학생 대역 1명, 인스턴스 1건으로 1회만 돌린다. 학생 수만큼 동시에 돌리지 않는다.
+- 완주 검증과 E2E 검증은 학생 대역 1명, 인스턴스 1건으로 돌리고, 같은 판에서는 1회만 돌린다. 결함을 고친 새 판은 1회 더 돌린다. 학생 수만큼 동시에 돌리지 않는다.
 - AI 워커(`agent-worker`)와 에이전트용 MCP(enterprise-mcp · -maint · -purchase · dmn-mcp)는 기본 서비스다. 선택 프로필은 `monitor`와 `tools`뿐이다. 시스템 안의 모든 AI는 강의 중계 LiteLLM(GCP Cloud Run)으로 간다. 이 중계는 키마다 비용 한도를 두고 가장 싼 모델을 쓰며, 첫 요청은 콜드스타트로 느리다(의도한 동작이다). 워커 CLI는 키를 받지 않고 process의 로컬 중계 관문(`procsvc/course_model.py`)을 거친다. 이 관문은 작업에 묶인 토큰과 PC당 호출 상한을 쓰고, 장부는 `procsvc/course_ledger.py`다. process는 `.env`의 `LLM_API_KEY`와 compose의 `LLM_RELAY_URL`로 중계를 부른다. 학생의 바이브 코딩은 학생 각자의 Codex 계정으로 하므로 시스템과 별개다.
 - 키가 없으면 AI 자리는 강사 녹화를 재생한다. 시작.bat이 `LLM_API_KEY`가 있는지에 따라 `AI_MODE`(live 또는 replay)를 적는다. 동작과 녹화 방법은 `workspace/개발/문서/재생모드.md`에 있다.
 - Supabase 로컬은 시작 스크립트가 `npx -y supabase@2.119.0 start`로 켠다(PostgreSQL 15). 이 PC의 project_id와 포트는 git 밖의 `it/supabase/.env`와 `.hyd-runtime/`에 있다(업무 DB 포트는 64322). `config.toml`은 커밋된 값 그대로 둔다. `supabase stop --no-backup`은 볼륨을 지운다.
@@ -63,7 +63,7 @@
 - 온톨로지나 스키마 결과를 사용자에게 보고할 때는 전문 용어에 비유 한 줄을 붙이고, "사용자가 스스로 판정할 체크 질문"을 함께 준다.
 - 참고 레포와 다른 곳은 두 가지만 묻는다: ① 실제 결함인가 ② 회의나 계약의 요구를 채우지 못하는가. 둘 다 아니면 "차이 있음, 유지"로 기록한다.
 - 포털 UI는 새로 추가한 것만 `workspace/개발/문서/UIUX_PLAN.md`를 기준으로 다듬는다.
-- 강의 작업에서는 포털 로직, DB, 서비스를 바꾸지 않는다. 교재 규칙은 `workspace/강의제작/지침/공통.md`와 그 일 문서가 정한다.
+- 강의 작업에서는 포털 로직, DB, 서비스를 바꾸지 않는다. 포털 결함이 촬영 같은 강의 작업을 막으면, 그 결함을 시스템 일의 작업 폴더와 커밋으로 따로 넘기고 사용자에게 알린다. 교재 규칙은 `workspace/강의제작/지침/공통.md`와 그 일 문서가 정한다.
 
 ## 6. 환경 (로컬 Windows)
 
@@ -90,7 +90,7 @@
 | | 클라우드 |
 |---|---|
 | 커밋 · push | workspace 브랜치 체크아웃에서는 `동기화.py`의 pull · commit · push가 멈춘다(main 체크아웃 전용). 일반 git으로 한다: `git add <이 일의 경로>`(`git add .` 금지) → `git commit` → `python3 workspace/secret_scan.py workspace --올릴것`에서 걸린 곳이 없어야 한다 → `git push origin HEAD:workspace`. 밀렸으면 `git pull --no-rebase origin workspace` 뒤 다시 하고, 다른 세션 변경과 겹치면 멈추고 보고한다. 규칙 문서를 고쳤으면 커밋 전에 `python3 workspace/강의제작/제작도구/검사/재편검사.py` 오류가 없어야 한다 |
-| 작업 폴더 | VM이 회수되면 파일이 사라지므로 hyd-task가 정한 커밋 때마다 바로 push한다. `작업/`은 커밋하지 않는다. 이어받을 사람이 있을 때만 인계 자료를 `workspace/강의제작/제작도구/근거/<날짜>_<제목>/`에 두고, 그 일이 끝나면 지운다. 렌더 그림, 영상 출력, 중간 파일은 남기지 않는다. 이어받을 스펙과 기록은 요청문에 담는다 |
+| 작업 폴더 | VM이 회수되면 파일이 사라지므로 hyd-task가 정한 커밋 때마다 바로 push한다. `작업/`은 커밋하지 않는다. 이어받을 사람이 있을 때만 인계 자료를 `workspace/강의제작/제작도구/근거/<날짜>_<제목>/`에 두고, 그 일이 끝나면 지운다. 렌더 그림, 영상 출력, 중간 파일은 남기지 않는다. 회수되면 다시 구워야 하므로 영상 굽기는 속도 행대로 이 PC에서 하는 쪽을 먼저 고른다. 이어받을 스펙과 기록은 요청문에 담는다 |
 | 덱 렌더 | 맑은 고딕 글꼴이 있어야 한다. 글꼴 파일은 사용자에게 파일 첨부로 받고(메시지에 `@C:\Windows\Fonts\…` 경로를 적어서는 파일이 오지 않는다) 커밋하지 않는다. `sudo bash workspace/강의제작/제작도구/기존제작/tools/deck/렌더환경_클라우드.sh <맑은 고딕 폴더>`를 돌린 뒤(VM이 다시 켜지면 다시 돌린다) `PATH=/usr/local/lo268/bin:$PATH`로 `deck2pptx.py --render`를 돌린다. apt로 설치한 LibreOffice와 Noto 글꼴로 렌더하면 줄바꿈이 달라서, 그 결과는 넘침 판정에 쓰지 않는다. 글꼴이 없으면 이 PC에서 렌더한 PDF를 받아 `pdftoppm -r 150`으로 `tools/video/슬라이드/<덱>/s-NN.png`에 넣고, `stamp`에 PPTX SHA256을 적는다(그러면 `강의영상.py`가 장을 다시 그리지 않는다). 강조 글씨의 글꼴은 `EMPH_FONT`로 정한다 |
 | 사실 대조 그래프 | `dockerd`를 띄운 뒤 `AI_MODE=replay CMD_FINGERPRINT_KEY=x PROCESS_CALLER_TOKEN=x docker compose up -d neo4j kg-seed`를 돌린다. 이것은 기본 시드만 올린다. 수업 문서 적재분은 이 PC의 `작업/_보관/근거/2026-11-03_5-6회차_인계/실측/` 덤프에만 있고 클라우드에는 없다 |
 | 음성 키 | 키는 환경 변수로 들어오고, 지금 환경의 이름은 `eleven_lab_key`다. 도구는 `ELEVENLABS_API_KEY`를 읽으므로 `ELEVENLABS_API_KEY="$eleven_lab_key"`로 넘기고, 값은 출력하지 않는다. `api.elevenlabs.io`가 네트워크 허용 목록에 있어야 한다 |
