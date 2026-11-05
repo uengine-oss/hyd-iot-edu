@@ -1,0 +1,24 @@
+{
+  "검토범위": "현장 39~45장 및 37·38→39, 45→46 경계",
+  "온라인원본": "012880ee 55·56·57·59·60·61장",
+  "PPTX_SHA256": "cb5887091b9a1b9da84aa58cde44f5f72c9d71c228804407c6e138adbeca6a60",
+  "PDF_SHA256": "97a7d6f3a91f51fb560ddfb0c59b68bab72aec78380fdf44c03997d6c9697caa",
+  "계획분": 8,
+  "고칠목록": [
+    {
+      "장": [
+        40,
+        41
+      ],
+      "위치": "발표자 노트",
+      "규칙": [
+        "D-6",
+        "D-11"
+      ],
+      "지적": "40장에서는 표에 없는 입력·지침 경로까지 찾게 하고, 41장에서는 화면 오른쪽에 없는 실제 사용 시점이라는 항목을 가리켰다.",
+      "고침": "40장은 세 행의 작업 폴더·탐색 금지인 홈·지정 결과 경로를 찾게 했다. 41장은 자리표시자와 가려진 헤더, 누락과 토큰 교체라는 항목에 근거해 누락된 값과 새 토큰 권한을 판단한다."
+    }
+  ],
+  "원본및측정": "main 2d534cb9의 worker/workspace.py RESULT_FILE·procsvc/work_rules.py _WORKSPACE, mcp_secrets.py resolve·missing_reason, mcp_registry.py run_check·fingerprint, env_guard.py scrub·bridge.py cleanup, mcp_check.py normalize·masked·shape_result — 폴더 지시와 OS 권한, 이름·값·누락·가림·검사 도장, 실행 뒤 정리와 잘림·시간 초과를 소스와 비교했다. 사실표 05-08 §5.1.2의 11:13:18·218ms·13,763자는 처리 기록이며 업무 값의 원천·조건·관측 시각과 구별된다.",
+  "못본장": []
+}
