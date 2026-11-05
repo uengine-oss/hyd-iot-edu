@@ -1,0 +1,1216 @@
+diff --git a/workspace/강의제작/산출물/통합반/이론/04회차/대본/01_이론_문서에서검증된지식으로.md b/workspace/강의제작/산출물/통합반/이론/04회차/대본/01_이론_문서에서검증된지식으로.md
+index b152ccdb1cc4f5067a11b782cec05cd12756b366..6a8a77d011a0574158b0919bc2b5b02e8dc1fca5 100644
+--- a/workspace/강의제작/산출물/통합반/이론/04회차/대본/01_이론_문서에서검증된지식으로.md
++++ b/workspace/강의제작/산출물/통합반/이론/04회차/대본/01_이론_문서에서검증된지식으로.md
+@@ -11,7 +11,7 @@
+ | 구분 | 실라버스 제목 | 원래 배정 | 해당 SLIDE | 낭독 추정 | 학습 대기 |
+ |---|---|---:|---|---:|---:|
+ | 도입 | 표지 · 학습목표 · 목차 | — | 1~3 | 2.7분 | 0초 |
+-| 이론 | 현장 자료를 온톨로지 지식으로 전환하는 과정 이해하기 | 40분 | 4~38 | 35.2분 | 8초 |
++| 이론 | 현장 자료를 온톨로지 지식으로 전환하는 과정 이해하기 | 40분 | 4~38 | 33.1분 | 8초 |
+ | 실습(포털) | 현장 매뉴얼에서 판단 근거를 추출하고 검증된 지식으로 등록하기 | 70분 | 39~40 | 0.3분 | 0초 |
+ | 실습(포털) | 업무 DB 구조를 지식에 연결하고 현재값과 구분하기 | 10분 | 41~42 | 0.2분 | 0초 |
+ | 실습(VS Code) | 문서에서 근거 있는 지식을 추출하는 기능 만들기 | 40분 | 43~44 | 0.3분 | 0초 |
+@@ -153,13 +153,13 @@
+ 
+ > [핵심]
+ 
+-그림 왼쪽 위 문서에서 출발해 위쪽 화살표를 따라갑니다. 원천을 확보하고 보관한 다음 문서 내용을 분석합니다. 보관이 ‘어느 판을 읽었느냐’에 답한다면, 분석은 ‘그 판에서 어느 제목과 문장이 한 덩어리냐’에 답합니다. 문서에 나온 팬 운전 조건을 예로 들어 볼게요. 팬이라는 단어가 나온 줄만 모으지 않고, 그 줄이 속한 작업 제목과 공통 전제, 번호가 붙은 단계까지 구분합니다.
++그림 왼쪽 위에서 아까 고른 현행 매뉴얼을 보세요. 그 판을 보관해 두면 나중에도 같은 문장을 찾아갈 수 있습니다. 바로 옆에서는 그 문장이 어느 절에 있고 어느 작업 제목 아래에 놓였는지 읽습니다. 팬 속도를 올리는 단계에 적힌 조건을 한 줄 꺼내더라도, 어디서 떼어 왔는지는 남겨야겠죠.
+ 
+ > [풀이]
+ 
+-파란 테두리 안 첫 자리가 지식 후보 추출입니다. 작업 이름, 팬을 언제 어떤 상태로 운전할 수 있는지, 그 말을 어디서 가져왔는지를 항목으로 꺼냅니다. 옆의 매핑은 그 항목이 이미 정한 종류 중 어디에 속하고 어떤 대상을 가리키는지 맞추는 일이에요. 같은 단어가 나온다고 같은 부품이 되는 건 아니기 때문에 이 두 일을 나눕니다. 후보의 이름이 그럴듯해도 어느 설비와 연결할지 아직 확실하지 않을 수 있고, 종류를 맞춰도 원문에 없는 조건을 잘못 뽑았을 수 있습니다.
++파란 테두리 안의 두 칸은 서로 다른 질문에 답합니다. 첫 칸에서는 원문에서 무엇을 뽑았는지 봅니다. 여기서는 팬 운전 조건이에요. 옆 칸에서는 팬 최대 운전의 작업 식별자를 찾아 그 조건이 어느 작업에 붙는지 맞춥니다. 문서에서 뽑은 항목이 정해 둔 종류와 대상 가운데 어디에 해당하는지 짝짓는 일을 매핑이라고 해요.
+ 
+-긴 선을 따라 아래 왼쪽으로 내려와 보세요. 사람이 원문과 대조할 때는 바로 그 두 가지, 문장의 뜻과 연결할 대상을 함께 확인합니다. 맞는다고 확인한 후보만 다음의 적재로 넘깁니다. 적재는 검토를 거친 내용을 그래프에 반영해서 나중에 같은 관계로 찾을 수 있게 하는 일이에요. 오른쪽 마지막 자리는 저장을 마쳤다는 안내가 아니라 질문으로 다시 찾아가는 자리입니다. 팬 최대 운전에서 출발해 어떤 단계로 이어지고 그 단계의 근거가 어느 절인지 조회해 보는 거예요. 그래야 처음 보관했던 원문과 마지막으로 쓰는 지식이 같은 뜻으로 이어지는지 알 수 있습니다.
++아랫줄 왼쪽의 대조와 사람 검토를 보세요. 시스템은 인용한 글이 원문에 있는지 찾아 위치를 확인합니다. 인용이 정확해도 다른 작업에 붙이면 뜻이 달라져요. 그래서 사람이 그 조건과 작업을 함께 확인합니다. 승인한 내용을 그래프에 반영하는 일이 가운데의 적재입니다. 오른쪽 끝에서 팬 최대 운전을 조회하고 근거 절을 따라가면, 처음에 읽은 판의 어느 문장에서 온 조건인지 다시 확인할 수 있어요. 그 문장이 작업 제목보다 위에 있는 경우부터 살펴보죠.
+ 
+ ---
+ 
+@@ -167,15 +167,13 @@
+ 
+ > [핵심]
+ 
+-왼쪽 남색 상자에서 번호가 시작되는 곳보다 위를 먼저 봐 주세요. 즉시 완화 조치 절의 첫 문장은 원격 조치를 해도 되는 운전 모드를 정합니다. 번호가 없어서 눈에 덜 띄지만, 바로 이 문장이 아래에 오는 원격 조치의 범위를 정해요. 이 한 줄을 빼고 팬 최대 운전의 단계만 옮겨 놓으면 팬 속도를 바꾸는 절차는 맞아 보여도 언제 그 절차를 쓰면 안 되는지가 사라집니다. 오른쪽 맨 위 ‘절의 범위’가 그 부분입니다.
++왼쪽 원문에서 작업 번호가 시작되기 전, 즉시 완화 조치라는 절 제목 아래 첫 문장을 보세요. 원격 조치는 원격 자동 모드에서만 할 수 있습니다. 오른쪽 첫 칸처럼 이 전제는 이 절에 속한 원격 조치에 함께 걸려요. 팬 최대 운전의 첫 단계에는 같은 모드가 다시 나오죠. 이번에는 작업자가 모드를 확인하라는 행동입니다. 절의 조건과 작업의 행동을 각각 남겨야 둘 중 하나가 빠지지 않습니다.
+ 
+ > [풀이]
+ 
+-남색 상자의 작업 제목 아래로 내려오면 세 단계가 보입니다. 모드를 확인하고 팬 속도를 최대로 올린 다음 재관측해서 회복 여부를 살핍니다. 첫 단계에 모드 확인이 다시 나오는 까닭은 공통 전제를 실제 작업에서 확인해야 하기 때문이에요. 같은 문구가 두 번 나왔다는 이유로 아무 것이나 하나 지우면, 공통으로 적용되는 원칙이 빠지거나 작업자가 해야 하는 확인 절차가 빠집니다. 어느 수준에 적힌 정보인지가 다릅니다.
++팬 최대 운전의 둘째 단계를 따라가 볼게요. 백 퍼센트는 설정할 팬 속도이고, 그 아래 스물네 시간은 그 속도로 계속 돌릴 수 있는 한도입니다. 바로 뒤 셋째 단계의 십오 분은 다른 질문에 답합니다. 속도를 바꾼 뒤 냉각이 회복되는지 살피는 시간이에요. 두 시간을 각각 어느 단계에 붙일지가 오른쪽 둘째 칸의 판단입니다.
+ 
+-두 번째 단계 아래로 들어가 있는 문장을 보세요. 이 작업에서 팬 속도를 백 퍼센트로 두는 연속 운전은 스물네 시간 이내로 제한됩니다. 백은 팬 속도의 값이고 스물넷은 연속 운전시간의 상한입니다. 이 제한을 매뉴얼의 모든 작업에 붙인다거나 세 번째 단계의 재관측 시간에 붙이면 같은 숫자라도 전혀 다른 뜻이 됩니다. 재관측은 조치 뒤 십오 분 동안 유온과 경보 상태를 살펴 회복 기준이 유지되는지 확인하는 일입니다.
+-
+-마지막 줄에는 승인 역할이 따로 있습니다. 이 작업을 승인하는 사람이 운전원이라는 사실은 네 번째 수행 단계가 아닙니다. 세 단계의 순서를 기록하는 일과 이 일을 승인할 역할을 기록하는 일은 다른 관계로 남겨야 합니다. 한 절을 분석한다는 말에는 이렇게 문장 사이의 층위와 순서를 보존한다는 뜻도 들어 있습니다.
++맨 아래 ‘승인’ 줄에는 운전원이 나옵니다. 번호가 붙은 세 단계를 전부 옮겨도 이 줄을 빼면 누가 승인할지가 비어 있어요. 승인 역할까지 원문에 맞게 붙였다면, 이제 실제로 속도를 올린 것과 냉각이 회복된 것을 나누어 볼 수 있습니다.
+ 
+ ---
+ 
+@@ -183,7 +181,9 @@
+ 
+ > [핵심]
+ 
+-왼쪽은 승인을 거쳐 팬 속도를 최대로 올리는 수행 단계입니다. 팬 속도가 바뀌었다는 사실만으로 오른쪽의 회복까지 확인할 수 있을까요? 오른쪽은 이 매뉴얼이 두 가지를 함께 보라고 정한 자리입니다. 조치 뒤 십오 분 동안 유온이 오십오 도 미만이고 경보가 해제된 상태가 유지되는지 살펴야 합니다. 한 번 낮게 관측한 값이나 속도 조정 완료만으로 그 구간의 회복을 대신할 수 없습니다.
++왼쪽에는 팬 속도를 백 퍼센트로 올리는 작업이 보입니다. 속도를 바꾼 기록이 있으면 이 단계의 수행은 확인할 수 있어요. 오른쪽 회복 판정 절은 그 뒤에 무엇을 관측해야 하는지 정합니다. 조치 뒤 십오 분 동안 유온이 오십오 도 미만이어야 하고, 경보도 풀린 상태로 유지돼야 합니다.
++
++한 번 측정한 유온이 기준보다 낮아도 그 값으로 십오 분 전체를 채울 수는 없죠. 팬 속도를 바꿨다는 기록만 받은 사람이라면 수행은 확인하고 회복 판정은 열어 두는 게 맞습니다. 수행 단계로 돌아가서, 팬을 얼마나 오래 돌려도 되는지 원문에서 뽑아 보겠습니다.
+ 
+ ---
+ 
+@@ -191,13 +191,13 @@
+ 
+ > [핵심]
+ 
+-왼쪽 원문 문장에서 오른쪽 구조화 출력까지 파란 화살표를 따라가 보겠습니다. 출발점은 팬 최대 운전의 연속 운전 한도가 적힌 문장입니다. 이 글에서 조건을 찾으려면 먼저 무엇의 한도인지 알아야 해요. ‘스물네 시간 이내’만 따로 읽으면 설비의 총가동시간일 수도 있고, 정비를 끝내야 하는 기한일 수도 있습니다. 팬 최대 운전이라는 제목과 앞뒤 단계를 함께 읽어야 그 시간이 가리키는 대상을 정할 수 있죠.
++왼쪽의 팬 최대 운전 둘째 단계에는 ‘백 퍼센트 연속 운전은 스물네 시간 이내로 한다’고 적혀 있습니다. 이 문장만 떼어 주면 무엇을 백 퍼센트로 운전하는지가 빠집니다. 그래서 작업 제목과 그 아래 문장을 함께 건넵니다.
+ 
+ > [풀이]
+ 
+-가운데에서 이 문맥을 받는 것이 대규모 언어 모델, LLM입니다. 많은 언어 자료에서 배운 표현의 패턴을 바탕으로 주어진 문맥과 요청에 맞는 출력을 만드는 모델이에요. 여기서 맡길 일은 새 운전 기준을 고안하는 게 아닙니다. 문장이 이미 말하고 있는 작업과 조건을 읽어 같은 자리에 같은 종류의 정보가 오도록 옮기는 일이죠. 어떤 작업인지, 무엇을 재는지, 단위와 상한이 무엇인지, 근거로 어떤 구절을 읽었는지를 나누어 달라고 하면 항목마다 값을 제안할 수 있습니다.
++가운데 있는 대규모 언어 모델은 많은 언어 자료에서 배운 표현을 바탕으로 문맥과 요청에 맞는 출력을 만드는 모델입니다. 여기서는 주어진 문장에서 작업 조건을 찾아 정해 둔 칸에 맞춰 제안하게 합니다.
+ 
+-오른쪽에 적힌 후보는 팬 최대 운전의 연속 스물네 시간 이내라는 조건입니다. 작업 이름·시간 범위·단위·상한으로 나누면 다른 문장에서 뽑은 조건과 같은 자리에서 비교할 수 있어요. 이런 형태를 구조화 출력이라고 합니다. 아래의 사람 검토에서는 원문의 ‘연속’과 ‘이내’를 후보의 대응 항목에서 확인합니다. 형식을 갖추고도 원문과 다른 후보가 나올 수 있기 때문이에요.
++오른쪽의 구조화 출력은 이렇게 항목별로 값을 담은 결과예요. 시간 범위 칸에는 ‘연속 운전’, 상한 칸에는 ‘스물네 시간 이내’가 들어갔습니다. 아래 사람 검토에서는 그 두 칸을 원문의 ‘연속’과 ‘이내’에 하나씩 대어 봅니다. 숫자와 단위가 같아도 범위가 달라지면 어떻게 되는지, 자정을 지나 계속 돌아간 팬으로 확인해 보죠.
+ 
+ ---
+ 
+@@ -205,23 +205,23 @@
+ 
+ > [핵심]
+ 
+-왼쪽과 오른쪽에서 작업 이름과 숫자, 단위를 맞춰 보세요. 두 후보 모두 팬 최대 운전이고 스물네 시간 이내라고 적혀 있습니다. 차이는 시간을 모으는 범위예요. 왼쪽의 연속은 한 번 이어진 운전을 가리키는데 오른쪽의 하루 누계는 중간에 멈춘 여러 운전을 합칠 수 있죠. 오른쪽 출력도 형식은 온전합니다. 사람이 원문과 대조해 수정할 대상은 바로 ‘하루 누계’라고 적힌 칸입니다.
++위에 적힌 첫날 아침 여덟 시에 팬을 켜서 이튿날 아침 아홉 시까지 한 번도 멈추지 않았다고 해 보죠. 왼쪽 후보는 한번 켠 팬이 연속으로 돌아간 시간을 셉니다. 이튿날 여덟 시가 되면 스물네 시간이고, 한 시간을 더 돌렸으니 스물다섯 시간입니다. 연속 운전 한도를 넘겼어요.
++
++오른쪽은 같은 기록을 자정에서 끊습니다. 첫날은 열여섯 시간, 이튿날은 아홉 시간이라 두 날 모두 하루의 상한 이내입니다. 이 후보대로라면 실제로 팬을 한 번도 멈추지 않았는데도 한도를 넘긴 사실을 놓치죠. 원문의 ‘연속 운전’과 대조해 수정할 곳은 숫자가 아니라 오른쪽 후보가 시간을 묶는 범위입니다. 이미 한도를 넘긴 경우에는 작업 후보의 손익도 달라집니다.
+ 
+ ---
+ 
+-## [SLIDE 17] 언어 모델이 제안한 조건의 구조
++## [SLIDE 17] 팬 수명 손실 감점의 조건과 근거
+ 
+ > [핵심]
+ 
+-왼쪽 남색 상자에는 쿨러 팬 매뉴얼에서 뽑은 후보 한 건이 항목별로 나뉘어 있습니다. 연속 운전 한도를 넘겼을 때의 감점 규칙이에요. 적용 작업은 팬을 최대로 돌리는 두 절차입니다. 그 아래 읽을 입력의 백 퍼센트와 비교 칸의 스물넷을 구분해 읽어 보세요. 앞의 수는 팬의 속도 설정을 가리킵니다. 뒤의 수는 그 속도로 이어진 운전시간의 경계예요. 숫자를 한 열에 나란히 적는 것만으로는 무엇을 조절할 수 있고 무엇을 넘어서는 안 되는지 구별할 수 없습니다.
++왼쪽의 감점 규칙에서 적용 작업 두 개를 보세요. 하나는 팬 최대 운전이고, 다른 하나는 팬을 최대로 돌리면서 펌프 부하를 팔십 퍼센트로 낮추는 작업입니다. 두 작업 모두 팬을 백 퍼센트로 돌리기 때문에 팬 수명 손실을 비교할 대상이 됩니다. 바로 아래의 입력은 팬 속도가 아니라 그 속도로 이어진 운전시간이에요. 비교 기호와 단위를 함께 읽으면 ‘연속 운전시간이 스물네 시간을 넘는다’는 조건이 됩니다.
+ 
+ > [풀이]
+ 
+-오른쪽 위의 ‘대상과 수치’에 맞춰 후보를 문장으로 되돌려 볼 수 있습니다. ‘팬을 최대로 돌린 채 이어진 운전시간이 스물네 시간을 넘으면 이 작업을 감점한다.’ 이렇게 읽혀야 합니다. 만약 같은 숫자인데 단위가 분으로 되어 있다면 형식상으로는 멀쩡합니다. 단위 칸에 쓸 수 있는 말이고 비교 칸에도 수가 있으니까요. 하지만 그 말대로면 감점이 시작되는 시간이 완전히 달라집니다. 단위가 맞더라도 읽을 입력이 ‘하루 총운전시간’이면 중간에 멈췄다가 다시 시작한 운전까지 하나로 합칠 수 있어요.
+-
+-그 문제를 확인해 주는 곳이 왼쪽 아래의 근거 절과 인용입니다. 이 문장이 팬 최대 운전을 말하는지, 원문에 ‘연속 운전’과 ‘넘으면’이 실제로 있는지 읽습니다. 다른 작업의 문장을 그대로 인용했다면 글자는 같아도 후보를 뒷받침하지 못합니다. 오른쪽 가운데에서 단위와 범위를 맞춰 보는 데서 멈추지 말고, 위쪽 적용 작업 칸으로 돌아와 둘 사이의 관계도 확인하는 겁니다.
++아래 인용의 첫 문장에서 ‘넘으면’을 찾아보세요. 오른쪽 가운데처럼 정확히 스물네 시간일 때에는 이 감점을 적용하지 않습니다. 조금 전에 계산한 스물다섯 시간이라면 경계를 넘었죠. 그때 어떻게 비교하는지는 인용의 둘째 문장에 있습니다. 해당 작업의 손익에서 팬 수명 손실 이십만 원을 감점해 다른 후보와 비교합니다. 감점만으로 그 작업이 제외된다고 결론 내리면 원문보다 더 강한 규칙이 돼요.
+ 
+-오른쪽 아래는 검토 전 상태예요. 자료가 비어 있으면 빈칸이 눈에 띄지만, 잘못된 값으로 다 채워져 있으면 오히려 그대로 받아들이기 쉽습니다. 화면의 칸이 채워졌다는 건 사람이 무엇을 확인해야 할지 분리됐다는 뜻입니다. 문서에 이런 조건이 있다고 인정하는 일은 그 확인을 마친 뒤에 이루어져요.
++작업 이름, 검사할 조건, 비교 결과를 이렇게 하나씩 대야 후보가 원문의 뜻을 보존했는지 판단할 수 있습니다. 원인 설명을 읽을 때도 무엇을 관측했고 어디를 점검해야 하는지를 구별해 보죠.
+ 
+ ---
+ 
+@@ -503,7 +503,7 @@
+ 
+ ## 제작 확인용 — 낭독하지 않음
+ 
+-- 노트 밖 풀이와 근거: 5~38장의 허용 조건·원문 및 개정·산출 관계는 대응 덱 각 장의 제작 기준과 쿨러 팬 매뉴얼 즉시 완화·근본 조치·회복 판정 절을 따른다. 단위 환산 및 경계 비교는 원문 조건의 의미를 풀었다. 17장의 후보는 제안 묶음의 팬 수명 손실 감점 규칙이고 단위 · 범위를 바꾼 경우는 설명을 위한 가정이다.
++- 노트 밖 풀이와 근거: 5~38장의 허용 조건·원문 및 개정·산출 관계는 대응 덱 각 장의 제작 기준과 쿨러 팬 매뉴얼 즉시 완화·근본 조치·회복 판정 절을 따른다. 단위 환산 및 경계 비교는 원문 조건의 의미를 풀었다. 16장의 첫날 08시~이튿날 09시는 두 후보의 시간 범위를 비교하는 입력이다. 17장의 감점 대상·금액·비교식은 제안 묶음의 팬 수명 손실 규칙과 HM-8.8의 두 문장을 대조했다.
+ - 뜻을 확인하지 못한 값: 발화에 포함하지 않았다.
+ - 화면 대조: 표지부터 46장까지 화면판의 읽는 순서를 따른다. 40·42·44·46장은 각 간지의 첫 문장 뒤에 나온다.
+ - 학습 대기: 10장에서 두 원문의 판본·상태를 들어 답할 8초.
+diff --git a/workspace/강의제작/산출물/통합반/이론/04회차/통합반_04일차.pptx b/workspace/강의제작/산출물/통합반/이론/04회차/통합반_04일차.pptx
+index 57376c2ae34d603c4b185155e983f13cd45040e3..0aaddde8ee16d6cb652ac8555728cf1869700f33 100644
+GIT binary patch
+delta 19728
+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
+
+delta 19578
+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
+QhD*!*b*o!KnFSBge=$e^Pyhe`
+
+diff --git a/workspace/강의제작/제작도구/구성/통합반/04회차/구성.json b/workspace/강의제작/제작도구/구성/통합반/04회차/구성.json
+index 70a486adc3a79799be7798d03e95d2623ba13154..2602cdead84f63ebd4b64c6505072c6403158b1d 100644
+--- a/workspace/강의제작/제작도구/구성/통합반/04회차/구성.json
++++ b/workspace/강의제작/제작도구/구성/통합반/04회차/구성.json
+@@ -103,6 +103,6 @@
+   ],
+   "playback": "표지 · 학습목표 · 목차 · 현장 자료를 온톨로지 지식으로 전환하는 과정 이해하기 · 현장 매뉴얼에서 판단 근거를 추출하고 검증된 지식으로 등록하기 · 업무 DB 구조를 지식에 연결하고 현재값과 구분하기 · 문서에서 근거 있는 지식을 추출하는 기능 만들기 · 검토한 문서 지식을 그래프 DB에 반영하고 관계 확인하기 · 온톨로지 설계부터 지식 활용까지의 전체 과정 정리하기 · 복습 · 용어 정리 · 퀴즈",
+   "pptx": "../../../../산출물/통합반/이론/04회차/통합반_04일차.pptx",
+-  "pptx_sha256": "2704bd8e953f69571b41f4718069b2257fdac8c2fe4f2ebfb45c33ce769d7d18",
++  "pptx_sha256": "a04945eb2408a793252632a7ac1c6bfc9bc0066249a3a5d5a06361218edc99c4",
+   "deck": "../../../온라인/decks/integrated/day04/통합반_04일차.md"
+ }
+diff --git a/workspace/강의제작/제작도구/구성/통합반/04회차/구성표.md b/workspace/강의제작/제작도구/구성/통합반/04회차/구성표.md
+index d731ce7a26929afb4f86cf136bafc59e2b49df8d..49dd9aec48184c7350f2233d2ee32d50487e7b5d 100644
+--- a/workspace/강의제작/제작도구/구성/통합반/04회차/구성표.md
++++ b/workspace/강의제작/제작도구/구성/통합반/04회차/구성표.md
+@@ -4,7 +4,7 @@
+ 
+ | 단위 파일 | PPTX 장 / 상태 | 낭독 추정 | 학습 대기 |
+ |---|---|---:|---:|
+-| [01_이론_문서에서검증된지식으로.md](../../../../산출물/통합반/이론/04회차/대본/01_이론_문서에서검증된지식으로.md) | 1~46 | 39.0분 | 8초 |
++| [01_이론_문서에서검증된지식으로.md](../../../../산출물/통합반/이론/04회차/대본/01_이론_문서에서검증된지식으로.md) | 1~46 | 36.9분 | 8초 |
+ | [02_이론_온톨로지에서판단근거까지.md](../../../../산출물/통합반/이론/04회차/대본/02_이론_온톨로지에서판단근거까지.md) | 47~73 | 26.7분 | 45초 |
+ 
+ 진행 순서: 표지 · 학습목표 · 목차 · 현장 자료를 온톨로지 지식으로 전환하는 과정 이해하기 · 현장 매뉴얼에서 판단 근거를 추출하고 검증된 지식으로 등록하기 · 업무 DB 구조를 지식에 연결하고 현재값과 구분하기 · 문서에서 근거 있는 지식을 추출하는 기능 만들기 · 검토한 문서 지식을 그래프 DB에 반영하고 관계 확인하기 · 온톨로지 설계부터 지식 활용까지의 전체 과정 정리하기 · 복습 · 용어 정리 · 퀴즈
+@@ -12,7 +12,7 @@
+ | 구분 | 실라버스 행 | 배정 | 장 | 행 전체 낭독 추정 |
+ |---|---|---:|---|---:|
+ | 도입 | 표지 · 학습목표 · 목차 | — | 1~3 | 2.7분 |
+-| 이론 | 현장 자료를 온톨로지 지식으로 전환하는 과정 이해하기 | 40분 | 4~38 | 35.2분 |
++| 이론 | 현장 자료를 온톨로지 지식으로 전환하는 과정 이해하기 | 40분 | 4~38 | 33.1분 |
+ | 실습(포털) | 현장 매뉴얼에서 판단 근거를 추출하고 검증된 지식으로 등록하기 | 70분 | 39~40 | 0.3분 |
+ | 실습(포털) | 업무 DB 구조를 지식에 연결하고 현재값과 구분하기 | 10분 | 41~42 | 0.2분 |
+ | 실습(VS Code) | 문서에서 근거 있는 지식을 추출하는 기능 만들기 | 40분 | 43~44 | 0.3분 |
+@@ -20,4 +20,4 @@
+ | 이론 | 온톨로지 설계부터 지식 활용까지의 전체 과정 정리하기 | 30분 | 47~66 | 22.3분 |
+ | 마무리 | 복습 · 용어 정리 · 퀴즈 | — | 67~73 | 4.4분 |
+ 
+-PPTX 73장. 이론 대본 낭독 추정 합 65.7분, 학습 대기 53초 별도. 계수는 강사 복제 음성 이론 영상 303장으로 맞춘 값(장 시간 = 1.0514×말 길이 + 1.26초)이고, 낭독 추정이지 조작 · AI 대기 · 실습 진행 시간이 아니다. 실습 행은 간지와 소개 장의 낭독만 센다. 행 전체 낭독에는 간지 등 본문 밖 장도 들어간다. 이론 본문 시간 하한은 덱측정.py로 확인한다.
++PPTX 73장. 이론 대본 낭독 추정 합 63.6분, 학습 대기 53초 별도. 계수는 강사 복제 음성 이론 영상 303장으로 맞춘 값(장 시간 = 1.0514×말 길이 + 1.26초)이고, 낭독 추정이지 조작 · AI 대기 · 실습 진행 시간이 아니다. 실습 행은 간지와 소개 장의 낭독만 센다. 행 전체 낭독에는 간지 등 본문 밖 장도 들어간다. 이론 본문 시간 하한은 덱측정.py로 확인한다.
+diff --git a/workspace/강의제작/제작도구/기존제작/tools/video/쉼_저장/34570bbc6d302c8c.json b/workspace/강의제작/제작도구/기존제작/tools/video/쉼_저장/34570bbc6d302c8c.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..6bec0473234981f4962e8ec6f10587dfd593a619
+--- /dev/null
++++ b/workspace/강의제작/제작도구/기존제작/tools/video/쉼_저장/34570bbc6d302c8c.json
+@@ -0,0 +1,31 @@
++{
++ "문장": [
++  "왼쪽의 감점 규칙에서 적용 작업 두 개를 보세요.",
++  "하나는 팬 최대 운전이고, 다른 하나는 팬을 최대로 돌리면서 펌프 부하를 팔십 퍼센트로 낮추는 작업입니다.",
++  "두 작업 모두 팬을 백 퍼센트로 돌리기 때문에 팬 수명 손실을 비교할 대상이 됩니다.",
++  "바로 아래의 입력은 팬 속도가 아니라 그 속도로 이어진 운전시간이에요.",
++  "비교 기호와 단위를 함께 읽으면 ‘연속 운전시간이 스물네 시간을 넘는다’는 조건이 됩니다.",
++  "아래 인용의 첫 문장에서 ‘넘으면’을 찾아보세요.",
++  "오른쪽 가운데처럼 정확히 스물네 시간일 때에는 이 감점을 적용하지 않습니다.",
++  "조금 전에 계산한 스물다섯 시간이라면 경계를 넘었죠.",
++  "그때 어떻게 비교하는지는 인용의 둘째 문장에 있습니다.",
++  "해당 작업의 손익에서 팬 수명 손실 이십만 원을 감점해 다른 후보와 비교합니다.",
++  "감점만으로 그 작업이 제외된다고 결론 내리면 원문보다 더 강한 규칙이 돼요.",
++  "작업 이름, 검사할 조건, 비교 결과를 이렇게 하나씩 대야 후보가 원문의 뜻을 보존했는지 판단할 수 있습니다.",
++  "원인 설명을 읽을 때도 무엇을 관측했고 어디를 점검해야 하는지를 구별해 보죠."
++ ],
++ "쉼": [
++  1,
++  1,
++  2,
++  1,
++  2,
++  1,
++  1,
++  1,
++  0,
++  1,
++  2,
++  2
++ ]
++}
+diff --git a/workspace/강의제작/제작도구/기존제작/tools/video/쉼_저장/6f55743a63ab0f05.json b/workspace/강의제작/제작도구/기존제작/tools/video/쉼_저장/6f55743a63ab0f05.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..e5c2154d004cc0aff0322176cec4ea27bb1966af
+--- /dev/null
++++ b/workspace/강의제작/제작도구/기존제작/tools/video/쉼_저장/6f55743a63ab0f05.json
+@@ -0,0 +1,23 @@
++{
++ "문장": [
++  "위에 적힌 첫날 아침 여덟 시에 팬을 켜서 이튿날 아침 아홉 시까지 한 번도 멈추지 않았다고 해 보죠.",
++  "왼쪽 후보는 한번 켠 팬이 연속으로 돌아간 시간을 셉니다.",
++  "이튿날 여덟 시가 되면 스물네 시간이고, 한 시간을 더 돌렸으니 스물다섯 시간입니다.",
++  "연속 운전 한도를 넘겼어요.",
++  "오른쪽은 같은 기록을 자정에서 끊습니다.",
++  "첫날은 열여섯 시간, 이튿날은 아홉 시간이라 두 날 모두 하루의 상한 이내입니다.",
++  "이 후보대로라면 실제로 팬을 한 번도 멈추지 않았는데도 한도를 넘긴 사실을 놓치죠.",
++  "원문의 ‘연속 운전’과 대조해 수정할 곳은 숫자가 아니라 오른쪽 후보가 시간을 묶는 범위입니다.",
++  "이미 한도를 넘긴 경우에는 작업 후보의 손익도 달라집니다."
++ ],
++ "쉼": [
++  1,
++  1,
++  0,
++  2,
++  1,
++  1,
++  1,
++  2
++ ]
++}
+diff --git a/workspace/강의제작/제작도구/기존제작/tools/video/쉼_저장/86a3635c5d1fb791.json b/workspace/강의제작/제작도구/기존제작/tools/video/쉼_저장/86a3635c5d1fb791.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..9b2bd9fd69e63a14627c4c8dcbd16ed5319ecf82
+--- /dev/null
++++ b/workspace/강의제작/제작도구/기존제작/tools/video/쉼_저장/86a3635c5d1fb791.json
+@@ -0,0 +1,19 @@
++{
++ "문장": [
++  "왼쪽에는 팬 속도를 백 퍼센트로 올리는 작업이 보입니다.",
++  "속도를 바꾼 기록이 있으면 이 단계의 수행은 확인할 수 있어요.",
++  "오른쪽 회복 판정 절은 그 뒤에 무엇을 관측해야 하는지 정합니다.",
++  "조치 뒤 십오 분 동안 유온이 오십오 도 미만이어야 하고, 경보도 풀린 상태로 유지돼야 합니다.",
++  "한 번 측정한 유온이 기준보다 낮아도 그 값으로 십오 분 전체를 채울 수는 없죠.",
++  "팬 속도를 바꿨다는 기록만 받은 사람이라면 수행은 확인하고 회복 판정은 열어 두는 게 맞습니다.",
++  "수행 단계로 돌아가서, 팬을 얼마나 오래 돌려도 되는지 원문에서 뽑아 보겠습니다."
++ ],
++ "쉼": [
++  1,
++  2,
++  1,
++  2,
++  1,
++  2
++ ]
++}
+diff --git a/workspace/강의제작/제작도구/기존제작/tools/video/쉼_저장/9789292b3d42cd0d.json b/workspace/강의제작/제작도구/기존제작/tools/video/쉼_저장/9789292b3d42cd0d.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..fa21019fac1bb8a660983899933e1a945178ebed
+--- /dev/null
++++ b/workspace/강의제작/제작도구/기존제작/tools/video/쉼_저장/9789292b3d42cd0d.json
+@@ -0,0 +1,33 @@
++{
++ "문장": [
++  "왼쪽 원문에서 작업 번호가 시작되기 전, 즉시 완화 조치라는 절 제목 아래 첫 문장을 보세요.",
++  "원격 조치는 원격 자동 모드에서만 할 수 있습니다.",
++  "오른쪽 첫 칸처럼 이 전제는 이 절에 속한 원격 조치에 함께 걸려요.",
++  "팬 최대 운전의 첫 단계에는 같은 모드가 다시 나오죠.",
++  "이번에는 작업자가 모드를 확인하라는 행동입니다.",
++  "절의 조건과 작업의 행동을 각각 남겨야 둘 중 하나가 빠지지 않습니다.",
++  "팬 최대 운전의 둘째 단계를 따라가 볼게요.",
++  "백 퍼센트는 설정할 팬 속도이고, 그 아래 스물네 시간은 그 속도로 계속 돌릴 수 있는 한도입니다.",
++  "바로 뒤 셋째 단계의 십오 분은 다른 질문에 답합니다.",
++  "속도를 바꾼 뒤 냉각이 회복되는지 살피는 시간이에요.",
++  "두 시간을 각각 어느 단계에 붙일지가 오른쪽 둘째 칸의 판단입니다.",
++  "맨 아래 ‘승인’ 줄에는 운전원이 나옵니다.",
++  "번호가 붙은 세 단계를 전부 옮겨도 이 줄을 빼면 누가 승인할지가 비어 있어요.",
++  "승인 역할까지 원문에 맞게 붙였다면, 이제 실제로 속도를 올린 것과 냉각이 회복된 것을 나누어 볼 수 있습니다."
++ ],
++ "쉼": [
++  1,
++  1,
++  1,
++  0,
++  1,
++  2,
++  1,
++  1,
++  0,
++  1,
++  2,
++  1,
++  2
++ ]
++}
+diff --git a/workspace/강의제작/제작도구/기존제작/tools/video/쉼_저장/c61bfe20b253a71f.json b/workspace/강의제작/제작도구/기존제작/tools/video/쉼_저장/c61bfe20b253a71f.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..b7db7b71dff59fc17d4797cf384fafef42458c0d
+--- /dev/null
++++ b/workspace/강의제작/제작도구/기존제작/tools/video/쉼_저장/c61bfe20b253a71f.json
+@@ -0,0 +1,23 @@
++{
++ "문장": [
++  "왼쪽의 팬 최대 운전 둘째 단계에는 ‘백 퍼센트 연속 운전은 스물네 시간 이내로 한다’고 적혀 있습니다.",
++  "이 문장만 떼어 주면 무엇을 백 퍼센트로 운전하는지가 빠집니다.",
++  "그래서 작업 제목과 그 아래 문장을 함께 건넵니다.",
++  "가운데 있는 대규모 언어 모델은 많은 언어 자료에서 배운 표현을 바탕으로 문맥과 요청에 맞는 출력을 만드는 모델입니다.",
++  "여기서는 주어진 문장에서 작업 조건을 찾아 정해 둔 칸에 맞춰 제안하게 합니다.",
++  "오른쪽의 구조화 출력은 이렇게 항목별로 값을 담은 결과예요.",
++  "시간 범위 칸에는 ‘연속 운전’, 상한 칸에는 ‘스물네 시간 이내’가 들어갔습니다.",
++  "아래 사람 검토에서는 그 두 칸을 원문의 ‘연속’과 ‘이내’에 하나씩 대어 봅니다.",
++  "숫자와 단위가 같아도 범위가 달라지면 어떻게 되는지, 자정을 지나 계속 돌아간 팬으로 확인해 보죠."
++ ],
++ "쉼": [
++  1,
++  0,
++  2,
++  1,
++  2,
++  1,
++  1,
++  2
++ ]
++}
+diff --git a/workspace/강의제작/제작도구/기존제작/tools/video/쉼_저장/dee0aa4043222966.json b/workspace/강의제작/제작도구/기존제작/tools/video/쉼_저장/dee0aa4043222966.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..5310a8d8b12daded5a7a937ebe3ae749762fed66
+--- /dev/null
++++ b/workspace/강의제작/제작도구/기존제작/tools/video/쉼_저장/dee0aa4043222966.json
+@@ -0,0 +1,37 @@
++{
++ "문장": [
++  "그림 왼쪽 위에서 아까 고른 현행 매뉴얼을 보세요.",
++  "그 판을 보관해 두면 나중에도 같은 문장을 찾아갈 수 있습니다.",
++  "바로 옆에서는 그 문장이 어느 절에 있고 어느 작업 제목 아래에 놓였는지 읽습니다.",
++  "팬 속도를 올리는 단계에 적힌 조건을 한 줄 꺼내더라도, 어디서 떼어 왔는지는 남겨야겠죠.",
++  "파란 테두리 안의 두 칸은 서로 다른 질문에 답합니다.",
++  "첫 칸에서는 원문에서 무엇을 뽑았는지 봅니다.",
++  "여기서는 팬 운전 조건이에요.",
++  "옆 칸에서는 팬 최대 운전의 작업 식별자를 찾아 그 조건이 어느 작업에 붙는지 맞춥니다.",
++  "문서에서 뽑은 항목이 정해 둔 종류와 대상 가운데 어디에 해당하는지 짝짓는 일을 매핑이라고 해요.",
++  "아랫줄 왼쪽의 대조와 사람 검토를 보세요.",
++  "시스템은 인용한 글이 원문에 있는지 찾아 위치를 확인합니다.",
++  "인용이 정확해도 다른 작업에 붙이면 뜻이 달라져요.",
++  "그래서 사람이 그 조건과 작업을 함께 확인합니다.",
++  "승인한 내용을 그래프에 반영하는 일이 가운데의 적재입니다.",
++  "오른쪽 끝에서 팬 최대 운전을 조회하고 근거 절을 따라가면, 처음에 읽은 판의 어느 문장에서 온 조건인지 다시 확인할 수 있어요.",
++  "그 문장이 작업 제목보다 위에 있는 경우부터 살펴보죠."
++ ],
++ "쉼": [
++  1,
++  1,
++  1,
++  2,
++  1,
++  0,
++  1,
++  1,
++  2,
++  1,
++  1,
++  0,
++  2,
++  1,
++  2
++ ]
++}
+diff --git a/workspace/강의제작/제작도구/온라인/decks/integrated/day04/통합반_04일차.md b/workspace/강의제작/제작도구/온라인/decks/integrated/day04/통합반_04일차.md
+index bda2b97ef284258d35e3b4997057727a1faaa24f..93c380a27548da7fdaad396efe0a6278035e6bb5 100644
+--- a/workspace/강의제작/제작도구/온라인/decks/integrated/day04/통합반_04일차.md
++++ b/workspace/강의제작/제작도구/온라인/decks/integrated/day04/통합반_04일차.md
+@@ -182,23 +182,23 @@
+ ### 화면 내용
+ - 유형: 삽화
+ - 라벨: 큰
+-- 메시지: 원천 자료는 보관 · 분석 · 추출 · 매핑 · 대조와 검토 · 적재를 거친 뒤에야 조회할 수 있는 지식이 된다.
++- 메시지: 한 작업 조건의 출처를 끝까지 따라가면, 누구나 조회한 지식을 같은 판의 원문과 대조할 수 있다.
+ - 그림: figures/인제스천_전체.svg
+ - 요소:
+-  1. 1. 원천 확보와 보관 | 매뉴얼 판본 | 13,27.5,22
+-  2. 2. 문서 내용 분석 | 제목·단락 | 37.7,27.5,22
++  1. 1. 원천 확보와 보관 | 현행 매뉴얼 1.1판 | 13,27.5,22
++  2. 2. 문서 내용 분석 | 절·작업 제목·단계 | 37.7,27.5,22
+   3. **3. 지식 후보 추출** | 팬 운전 조건 | 62.3,27.5,22
+   4. **4. 스키마 · 식별자 매핑** | 작업 식별자 | 87,27.5,22
+-  5. 5. 대조와 사람 검토 | 원문과 후보 | 13,76,22
++  5. 5. 대조와 사람 검토 | 인용 위치·조건의 뜻 | 13,76,22
+   6. 6. 승인된 지식 적재 | 승인한 조건 | 37.7,76,22
+-  7. 7. 관계 · 출처 조회 | 근거 절 | 62.3,76,22
+-- 노트: [짚을 곳] 윗줄 왼쪽 → 파란 테두리의 두 단계 → 긴 선 → 아랫줄 왼쪽부터 / · 원천을 보관하고 제목·문단·단계를 분석합니다. 작업과 조건을 후보로 뽑고, 기존 종류와 식별자에 매핑해요. / · 아래에서는 사람이 원문의 뜻과 연결할 대상을 확인합니다. 승인한 지식을 적재한 뒤 작업에서 근거 절로 돌아가 봐야 하죠. / [다음] 번호가 붙은 단계 바깥에도 중요한 문장이 있습니다.
++  7. 7. 관계 · 출처 조회 | 작업에서 근거 절로 | 62.3,76,22
++- 노트: [짚을 곳] 위 왼쪽 현행판·절과 단계 → 위 오른쪽 후보와 매핑 → 아래 왼쪽 인용 대조·적재 → 아래 오른쪽 근거 절 / · 현행판을 보관해야 같은 문장으로 다시 갈 수 있어요. 작업 제목 아래서 뽑은 팬 운전 조건을 그 작업에 연결합니다. / · 인용이 원문에 있는지는 시스템이 대조하고, 그 조건이 그 작업에 맞는지는 사람이 확인해요. 승인해 적재하면 작업에서 출발해 근거 절을 조회할 수 있습니다. / [다음] 작업 제목 위에도 그 작업이 따라야 하는 조건이 있습니다.
+ 
+ ### 화면 구성
+ 도형과 이름을 짝지어 표시한다.
+ 
+ ### 제작 기준
+-실라버스 「통합반 온라인 44H」 38행. 사실표/통합반_02-04일차_기술사실표.md 695~702, 740~805, 857~873행.
++실라버스 「통합반 온라인 44H」 38행. 사실표 §4.1. 문서 식별자와 현행판은 실습2 자료/문서_목록.csv. 보관·분석·대조·검토·적재는 it/process/procsvc/manual_sources.py, manual_review.py, manual_extraction.py(validate_proposal), manual_graph.py. 스키마와 식별자 매핑은 manual_knowledge.py. 이 그림은 인용 대조와 사람 검토를 5단계의 한 칸으로 묶는다.
+ 
+ ## SLIDE 13 — 절의 조건과 개별 작업의 단계
+ ### 화면 내용
+@@ -206,81 +206,81 @@
+ - 코드: HM-8.5  즉시 완화 조치 / 원격 조치는 PLC 운전 모드가 REMOTE_AUTO일 때만 한다. / … / SOP-COOL-11  팬 최대 운전 / 1. PLC 운전 모드가 REMOTE_AUTO인지 확인한다. / 2. 팬 속도를 100 %로 올린다. /    100 % 연속 운전은 24시간 이내로 한다. / 3. 15분 재관측으로 HM-8.6 회복 판정을 한다. / 승인: 운전원.
+ - 메시지: 번호 붙은 단계만 뽑는 추출은 번호 밖 문장이 정한 공통 전제와 승인 역할을 놓친다.
+ - 요소:
+-  1. 절의 범위 | 이 절의 원격 조치는 자동 모드에서만 가능하다.
++  1. 절의 범위 | 원격 자동 모드에서만 원격 조치를 한다.
+   2. 작업의 범위 | 연속 운전 한도는 팬 최대 운전 단계에 붙는다.
+   3. 승인 역할 | 운전원이 승인한다는 문장은 단계 번호 밖에 있다.
+-- 노트: [짚을 곳] 왼쪽 절 첫 문장 → 작업의 단계와 들여쓴 한도 → 승인 역할 / · 원격 자동 모드라는 전제는 이 절의 원격 조치에 붙습니다. 팬 최대 운전의 첫 단계에서 그 모드를 실제로 확인해요. / · 팬 속도 백 퍼센트에서 연속 운전 한도는 스물네 시간 이내입니다. 조치 뒤 십오 분 동안 유온과 경보 상태를 살피며 회복 기준이 유지되는지 확인합니다. / · 마지막 줄의 운전원은 승인 역할이에요. 수행 순서와 분리해서 작업 문맥을 읽어야 합니다. / [다음] 수행이 끝난 것과 회복한 것을 나누어 보겠습니다.
++- 노트: [짚을 곳] 왼쪽 절 첫 문장과 오른쪽 첫 칸 → 팬 최대 운전의 세 단계와 둘째 칸 → 승인 줄과 마지막 칸 / · 절 첫 문장은 원격 자동 모드에서만 원격 조치를 할 수 있다는 공통 전제이고, 작업 첫 단계는 모드를 확인하는 행동입니다. / · 팬 속도 100 %와 연속 24시간 이내는 팬 운전 단계, 15분 재관측은 회복 판정에 붙습니다. 번호 밖의 운전원은 이 작업의 승인 역할이에요. / [다음] 속도를 올렸다는 기록으로 냉각 회복까지 판정할 수 있는지 봅니다.
+ 
+ ### 화면 구성
+ 왼쪽 원문과 오른쪽 해설을 차례로 본다.
+ 
+ ### 제작 기준
+-실라버스 「통합반 온라인 44H」 38행. it/portal/www/samples/HM-8_cooler-fan-manual.md §§ HM-8.4~8.8.
++실라버스 「통합반 온라인 44H」 38행. it/portal/www/samples/HM-8_cooler-fan-manual.md의 HM-8.5 절 첫 문단, SOP-COOL-11의 1~3단계와 승인 줄. 들여쓴 운전 한도는 원문 2단계 둘째 문장이다.
+ 
+ ## SLIDE 14 — 작업 완료와 냉각 회복의 구별
+ ### 화면 내용
+ - 유형: 비교
+ - 메시지: 팬 속도 조정과 냉각 회복은 서로 다른 관측으로 확인한다.
+ - 요소:
+-  1. 작업을 수행했는가 | 팬 속도를 100 %로 올린다. / 속도 조정은 수행 단계다. | 즉시 완화 조치 절
+-  2. 냉각이 회복됐는가 | 조치 뒤 15분 동안 유온 55 ℃ 미만, / 경보 해제 상태가 유지돼야 한다. | 회복 판정 절
+-- 노트: [짚을 곳] 작업을 수행했는가 → 냉각이 회복됐는가 / · 팬 속도를 올린 뒤 십오 분 동안 유온이 오십오 도 미만이고 경보가 해제된 상태가 유지돼야 이 매뉴얼의 회복 기준에 맞습니다. / · 팬 속도를 바꾼 뒤에도 회복 판정에 필요한 관측이 남아 있어요. / [다음] 원문에서 무엇을 한 항목으로 뽑을지 보겠습니다.
++  1. 작업을 수행했는가 | 팬 속도를 100 %로 올린다. / 확인할 것: 속도 조정 수행 | 즉시 완화 조치 절
++  2. 냉각이 회복됐는가 | 조치 뒤 15분 동안 유온(TS1) 55 ℃ 미만 / 같은 15분 내내 경보 해제 상태 | 회복 판정 절
++- 노트: [짚을 곳] 왼쪽 속도 조정 → 오른쪽 15분 동안의 유온과 경보 상태 / · 팬 속도를 백 퍼센트로 올렸으면 수행은 확인할 수 있어요. 회복은 같은 십오 분 내내 유온이 오십오 도 미만이고 경보가 해제된 상태여야 합니다. / · 속도 기록만 있거나 유온을 한 번 확인했으면 회복 여부는 아직 열려 있어요. / [다음] 팬을 계속 돌려도 되는 시간은 어느 문장에서 추출할 수 있을까요?
+ 
+ ### 화면 구성
+ 작업을 수행했는가 → 냉각이 회복됐는가
+ 
+ ### 제작 기준
+-실라버스 「통합반 온라인 44H」 38행. it/portal/www/samples/HM-8_cooler-fan-manual.md §§ HM-8.4~8.8. it/portal/www/samples/HM-8_cooler-fan-manual.md §§ HM-8.2~8.8.
++실라버스 「통합반 온라인 44H」 38행. it/portal/www/samples/HM-8_cooler-fan-manual.md의 HM-8.5 SOP-COOL-11 2단계와 HM-8.6. 한쪽 조건만 확인한 경우는 회복을 판정하기에 부족하다.
+ 
+ ## SLIDE 15 — 원문 조건이 지식 후보로 바뀌는 과정
+ ### 화면 내용
+ - 유형: 카드
+ - 메시지: 대규모 언어 모델은 작업 문맥을 받아 항목을 채우고 사람은 후보의 뜻을 원문과 대조한다.
+ - 요소:
+-  1. 원문 문장 | 팬 최대 운전의 / 연속 운전 한도 | 24시간 이내
+-  2. 언어 모델(LLM) | Large Language Model / 작업과 조건을 추출 | 문맥과 지시
+-  3. 구조화 출력 | Structured Output / 팬 최대 운전 / 연속 24시간 이내 | 검토할 후보
++  1. 원문 문장 | “100 % 연속 운전은 / 24시간 이내로 한다.” | 팬 최대 운전 · 2단계
++  2. 대규모 언어 모델(LLM) | Large Language Model / 작업과 조건을 추출 | 문맥과 지시
++  3. 구조화 출력 | Structured Output / 범위: 연속 운전 / 상한: 24시간 이내 | 검토할 후보
+   4. 사람 검토 | 원문의 ‘연속’과 ‘이내’를 후보와 맞춘다. | 원문 대조
+-- 노트: [짚을 곳] 왼쪽 연속 운전 한도 → 가운데 언어 모델 → 오른쪽 후보 → 아래 사람 검토 / · 대규모 언어 모델은 문맥을 받아 언어를 생성합니다. 팬 최대 운전이라는 작업 제목과 조건을 함께 주고 항목별로 제안하게 해요. / · 적용 작업·시간 범위·단위·상한·인용을 나눠도 뜻이 자동으로 맞지는 않습니다. 원문의 ‘연속’과 스물네 시간 ‘이내’가 후보에 남았는지 사람이 확인해요. / [다음] 같은 칸을 다 채운 두 후보를 대조하겠습니다.
++- 노트: [짚을 곳] 왼쪽 작업 단계와 인용 → 가운데 대규모 언어 모델 → 오른쪽 범위·상한 → 아래 원문 대조 / · 대규모 언어 모델은 작업 제목과 문장을 함께 읽고 요청받은 칸에 맞춰 후보를 제안해요. / · 구조화 출력은 정해 둔 항목에 값을 담은 결과입니다. 시간 범위에 ‘연속 운전’, 상한에 ‘24시간 이내’가 남았는지 원문에서 확인합니다. / [다음] 팬이 자정을 지나 계속 돌 때 두 후보가 같은 판정을 내리는지 보죠.
+ 
+ ### 화면 구성
+ 레이아웃: 제안검토
+ 근거가 이동하는 화살표를 따라가며 해당 입력과 결론을 대조한다.
+ 
+ ### 제작 기준
+-실라버스 「통합반 온라인 44H」 38행. 사실표/통합반_02-04일차_기술사실표.md 695~702, 740~805, 857~873행. 대규모 언어 모델(LLM)의 구조화 출력은 형식을 제한하며 사실성은 별도 검토한다.
++실라버스 「통합반 온라인 44H」 38행. HM-8_cooler-fan-manual.md의 HM-8.5 SOP-COOL-11 제2단계. 사실표 §4.1~4.2, it/process/procsvc/manual_extraction.py(INSTRUCTION, validate_result). 화면은 약속한 항목에 값을 담는 원리를 보이며, 제공 문서를 열 때 새로 모델을 호출한다는 뜻이 아니다.
+ 
+ ## SLIDE 16 — 원문 한 구절에서 나온 두 출력
+ ### 화면 내용
+ - 유형: 비교
+-- 메시지: 같은 칸이 채워진 두 후보라도 시간을 재는 범위가 달라지면 한쪽만 원문의 뜻을 보존한다.
++- 메시지: 첫날 08시부터 이튿날 09시까지 팬을 멈추지 않으면, 시간을 묶는 방법에 따라 판정이 달라진다.
+ - 요소:
+-  1. 원문에 맞는 후보 | 작업은 팬 최대 운전 / ‘연속 운전’ 24시간 이내 | 연속 구간 확인
+-  2. 범위가 바뀐 후보 | 작업은 팬 최대 운전 / ‘하루 누계’ 24시간 이내 | 원문대로 수정
+-- 노트: [짚을 곳] 원문에 맞는 후보 → 범위가 바뀐 후보 / · 두 후보 모두 스물네 시간 이내예요. 원문에는 한 번에 이어진 운전시간이라고 되어 있으니 하루 누계를 쓴 후보의 시간 범위를 수정합니다. / · 같은 숫자가 들어가도 시간을 모으는 범위에 따라 판단이 달라집니다. / [다음] 이번에는 후보 한 건의 항목을 직접 읽어 보죠.
++  1. 연속 운전 24시간 이내 | 한 번에 이어진 운전: 25시간 / 연속 운전 한도 초과 | 원문과 일치
++  2. 하루 누계 24시간 이내 | 첫날 16시간 · 이튿날 9시간 / 두 날 모두 24시간 이내 | 시간 범위 수정
++- 노트: [짚을 곳] 위 첫날 08시와 이튿날 09시 → 왼쪽 연속 25시간 → 오른쪽 첫날 16시간과 이튿날 9시간 / · 같은 운전 기록이에요. 팬을 멈추지 않아 연속으로는 스물다섯 시간입니다. 날짜로 끊으면 열여섯 시간과 아홉 시간이라 어느 날도 상한을 넘지 않아요. / · 매뉴얼에는 연속 운전이라고 적혀 있으니 하루 누계 후보의 시간 범위를 수정합니다. / [다음] 이미 연속 운전 한도를 넘었다면 작업 후보를 비교하는 근거도 달라집니다.
+ 
+ ### 화면 구성
+-원문에 맞는 후보 → 범위가 바뀐 후보
++첫날 08시부터 이튿날 09시까지의 같은 구간을 연속으로 센 값과 날짜별로 센 값으로 비교한다.
+ 
+ ### 제작 기준
+-실라버스 「통합반 온라인 44H」 38행. 사실표/통합반_02-04일차_기술사실표.md 695~702, 740~805, 857~873행. 대규모 언어 모델(LLM)의 구조화 출력은 형식을 제한하며 사실성은 별도 검토한다. it/portal/www/samples/HM-8_cooler-fan-manual.md §§ HM-8.2~8.8.
++실라버스 「통합반 온라인 44H」 38행. it/portal/www/samples/HM-8_cooler-fan-manual.md의 HM-8.5 SOP-COOL-11 제2단계. 08시부터 이튿날 09시까지의 중단 없는 운전은 두 해석을 시험하기 위한 입력이다. 첫날 16시간과 이튿날 9시간의 합은 25시간이다.
+ 
+-## SLIDE 17 — 언어 모델이 제안한 조건의 구조
++## SLIDE 17 — 팬 수명 손실 감점의 조건과 근거
+ ### 화면 내용
+ - 유형: 코드
+-- 코드: 규칙 후보   팬 수명 손실 감점 / 적용 작업   팬 최대 운전 · 팬 최대 운전과 부하 80 % / 읽을 입력   팬 100 % 연속 운전 시간 / 비교         > 24 / 단위         h / 감점         20만 원 / 근거 절     금지와 제한 / 인용         “팬 100 % 연속 운전이 24시간을 넘으면 /                팬 수명이 줄어든다.”
+-- 메시지: 대규모 언어 모델(LLM)의 출력 형식을 정해도 어느 작업에 속한 조건인지는 원문과 맞춰야 한다.
++- 코드: 규칙 후보   팬 수명 손실 감점 / 적용 작업   팬 최대 운전 · 팬 최대 운전과 부하 80 % / 읽을 입력   팬 100 % 연속 운전 시간 / 비교         > 24 h / 감점         20만 원 / 근거 절     HM-8.8 금지와 제한 / “팬 100 % 연속 운전이 24시간을 넘으면 팬 수명이 줄어든다. / 이미 24시간을 넘겼다면 팬 최대 운전 조치는 / 팬 수명 손실로 20만 원을 감점해서 비교한다.”
++- 메시지: 연속 운전시간이 상한을 넘으면 얼마를 감점하는지 후보의 조건과 원문을 짝지어 확인한다.
+ - 요소:
+-  1. 대상과 수치 | 팬 속도 100 %와 운전시간 24를 따로 본다.
+-  2. 근거 구간 | 24분·하루 누계로 바꾸면 원문과 다르다.
+-  3. 검토 전 상태 | 칸이 다 차도 승인이 필요하다.
+-- 노트: [짚을 곳] 왼쪽 적용 작업 → 읽을 입력·비교·단위 → 근거 절·인용 → 오른쪽 검토 상태 / · 연속 운전 한도를 넘겼을 때의 감점 규칙이에요. 백 퍼센트는 팬 속도이고 스물넷은 그 속도로 이어진 운전시간의 경계입니다. 분으로 옮기거나 하루 누계를 쓰면 조건이 달라집니다. / · 근거 절의 작업 이름과 인용을 함께 봐야 합니다. 모든 칸이 채워져도 검토자가 그 내용이 맞는지 확인하기 전에는 후보입니다. / [다음] 같은 문장에서 나오는 말의 역할도 다릅니다.
++  1. 어느 작업인가 | 두 작업 모두 팬을 100 %로 올린다.
++  2. 언제 적용하는가 | 정확히 24시간이면 미적용, 넘으면 적용.
++  3. 어떻게 비교하는가 | 해당 작업의 손익에서 20만 원 감점.
++- 노트: [짚을 곳] 왼쪽 후보의 두 작업·입력·비교·감점 → 아래 원문 두 문장 → 오른쪽 적용 작업·경계·비교 결과 / · 팬을 백 퍼센트로 돌리는 두 작업에 걸리는 규칙이에요. 수명 손실의 조건은 팬 속도가 아니라 그 속도에서 이어진 운전시간으로 검사합니다. / · 원문의 ‘넘으면’에 따라 정확히 스물네 시간이면 이 감점을 적용하지 않아요. 그 시간을 넘으면 해당 작업의 손익에서 이십만 원을 감점해 다른 후보와 비교합니다. / [다음] 조건 하나를 뽑을 때 작업과 값을 구별했듯, 원인 설명에서도 무엇을 관측했고 어디를 점검할지 구별합니다.
+ 
+ ### 화면 구성
+ 왼쪽 원문과 오른쪽 해설을 차례로 본다.
+ 
+ ### 제작 기준
+-실라버스 「통합반 온라인 44H」 38행. 후보 한 건은 it/process/procsvc/course_extractions.json HM-8 knowledge.rules의 rule:hm-8-8-fan-life-penalty다: effect PENALTY · penalty 20(만 원) · tests in:fan100-hours > 24 h · applies_to SOP-COOL-11 · SOP-COOL-12 · section HM-8.8 · anchor.quote. 입력 이름은 그래프 in:fan100-hours의 이름. 칸 이름은 그 값을 우리말로 옮긴 것이고 화면은 인용의 첫 문장만 싣는다. 단위 · 범위를 바꾼 경우는 설명을 위한 가정이다. LLM = Large Language Model.
++실라버스 「통합반 온라인 44H」 38행. it/process/procsvc/course_extractions.json의 HM-8 knowledge.rules 중 rule:hm-8-8-fan-life-penalty: in:fan100-hours > 24 h, PENALTY 20만 원, applies_to SOP-COOL-11·12, anchor.quote. it/portal/www/samples/HM-8_cooler-fan-manual.md의 HM-8.5 두 작업 제2단계와 HM-8.8 금지와 제한의 팬 수명 손실 두 문장. 정확히 24시간은 엄격한 초과 조건을 만족하지 않는다.
+ 
+ ## SLIDE 18 — 후보의 종류와 관계
+ ### 화면 내용
