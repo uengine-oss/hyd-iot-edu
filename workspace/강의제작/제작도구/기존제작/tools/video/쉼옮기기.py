@@ -1,6 +1,6 @@
 """대본을 고친 뒤 쉼_저장/의 쉼을 같은 (앞 문장, 뒤 문장) 자리에서 옮겨 오고, 사람이 정할 자리만 목록(JSON)으로 낸다. 유료 호출 없음.
-언제: 대본을 고치고 음성을 산 뒤, `강의영상.py --breath`로 굽기 전. 쉼을 자리마다 처음부터 정하지 않으려고 쓴다.
-명령: <py> workspace/강의제작/제작도구/기존제작/tools/video/쉼옮기기.py <대본 …> --출력 목록.json [--옛판 커밋] [--쓰기] [--파형 --voice ID] [--저장 폴더]
+언제: 덱과 낭독을 확정하고, `강의영상.py --breath`로 굽기 전. 쉼을 자리마다 처음부터 정하지 않으려고 쓴다.
+명령: <py> workspace/강의제작/제작도구/기존제작/tools/video/쉼옮기기.py <대본 …> --출력 목록.json [--장 1-8] [--옛판 커밋] [--쓰기] [--파형 --voice ID] [--저장 폴더]
       <py> …/쉼옮기기.py --채움 목록.json [--저장 폴더]     # 목록의 "값" 칸을 사람이 채운 뒤 저장한다
 
 - 문장 나누기 · 저장 이름은 강의영상.py의 cuts · breath_key를 그대로 쓴다(사본 없음). 음성 없이 대본 글로도 같은 문장이 나온다.
@@ -13,6 +13,7 @@ import array
 import collections
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -105,6 +106,19 @@ def wave_check(block, levels, voice, ffmpeg_ok):
     return bad
 
 
+def piece_blocks(blocks, spec):
+    """한 편의 연속된 장 구간을 고른다. 한 음성 구획을 반으로 자르지 않는다."""
+    match = re.fullmatch(r"(\d+)(?:-(\d+))?", spec)
+    if not match:
+        sys.exit("--장: 한 단원의 범위를 1-8 또는 3처럼 준다")
+    first, last = int(match[1]), int(match[2] or match[1])
+    selected = [block for block in blocks if first <= block[0] <= block[1] <= last]
+    covered = [n for a, b, _ in selected for n in range(a, b + 1)]
+    if first < 1 or last < first or not selected or covered != list(range(first, last + 1)):
+        sys.exit("--장: 한 편 안에서 음성 구획을 온전히 덮는 연속된 장 범위를 준다")
+    return selected
+
+
 def run(a):
     bdir = Path(a.store) if a.store else tool.HERE / "쉼_저장"
     if not bdir.is_dir():
@@ -117,6 +131,8 @@ def run(a):
     for script in a.scripts:
         olds = old_pairs(Path(script).resolve().relative_to(root).as_posix(), a.old, bdir, root, warn) if a.old else {}
         blocks = tool.slides_text(script)
+        if a.piece:
+            blocks = piece_blocks(blocks, a.piece)
         for block in blocks:
             first, last, text = block
             ss = sentences(text)
@@ -204,6 +220,7 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("scripts", nargs="*")
     ap.add_argument("--출력", dest="out")
+    ap.add_argument("--장", dest="piece", metavar="처음-끝", help="한 편에서 이번 단원의 쉼만 처리한다")
     ap.add_argument("--옛판", dest="old", help="고치기 전 대본이 있는 커밋")
     ap.add_argument("--쓰기", dest="write", action="store_true", help="자리가 다 찬 구획을 저장에 쓴다")
     ap.add_argument("--채움", dest="fill", help="사람이 값을 채운 목록을 저장에 쓴다")
@@ -211,6 +228,8 @@ if __name__ == "__main__":
     ap.add_argument("--파형", dest="wave", action="store_true")
     ap.add_argument("--voice", help="--파형이 음성 캐시를 찾을 음성 ID")
     a = ap.parse_args()
+    if a.piece and (a.fill or len(a.scripts) != 1):
+        ap.error("--장은 대본 한 편과 함께 준다. --채움은 이미 고른 목록을 쓴다")
     if a.fill:
         fill(a)
     else:

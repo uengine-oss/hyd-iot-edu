@@ -89,25 +89,51 @@ def find_sentence(where, subs, slides, n, sentence):
     return hits[0], hi
 
 
+def shape_problem(mark):
+    """정지 검토와 영상 제작에서 같은 좌표·모양 조건을 적용한다."""
+    shape = mark.get("모양")
+    if not isinstance(shape, str) or shape not in SHAPES:
+        return f"모르는 모양 「{shape}」(쓸 수 있는 것: {' · '.join(SHAPES)})"
+    for field in SHAPES[shape]:
+        value = mark.get(field)
+        if field == "글":
+            if not isinstance(value, str) or not value.strip():
+                return "글씨에 표시할 글이 없음"
+            if not FONT.is_file():
+                return "글씨를 그릴 맑은 고딕 굵게 파일 없음(EMPH_FONT 확인)"
+            continue
+        size = 4 if field == "상자" else 2
+        if (not isinstance(value, (list, tuple)) or len(value) != size
+                or not all(type(x) in (int, float) and math.isfinite(x) for x in value)):
+            return f"{shape}의 「{field}」에는 좌표 값 {size}개가 필요함"
+    if shape == "동그라미":
+        x, y = mark["중심"]
+        rx, ry = mark["반지름"]
+        if rx <= 0 or ry <= 0:
+            return "동그라미 반지름은 양수여야 함"
+        points = [(x - rx, y - ry), (x + rx, y + ry)]
+    elif "상자" in SHAPES[shape]:
+        x1, y1, x2, y2 = mark["상자"]
+        if x1 >= x2 or y1 >= y2:
+            return f"상자 {mark['상자']}는 [왼, 위, 오른, 아래]여야 함"
+        points = [(x1, y1), (x2, y2 + (14 if shape == "밑줄" else 0))]
+    else:
+        points = [mark[f] for f in ("중심", "시작", "끝") if f in SHAPES[shape]]
+    for x, y in points:
+        if not (0 <= x <= W and 0 <= y <= H):
+            return f"{shape}의 점 ({x}, {y})이 화면 밖"
+    return None
+
+
 def plan(cfg, subs, slides):
     marks = []
     for i, m in enumerate(cfg["표시"], 1):
         where = f"표시 {i}"
         for f in ("장", "문장", "낱말", "모양"):
             if f not in m: stop(f"{where}: 「{f}」 없음")
-        need = SHAPES.get(m["모양"])
-        if not need: stop(f"{where}: 모르는 모양 「{m['모양']}」(쓸 수 있는 것: {' · '.join(SHAPES)})")
-        for f in need:
-            if not m.get(f): stop(f"{where}: {m['모양']}에 「{f}」 없음")
-        pts = [m[f] for f in ("중심", "시작", "끝") if f in need]
-        if "상자" in need:
-            x1, y1, x2, y2 = m["상자"]
-            if not (x1 < x2 and y1 < y2): stop(f"{where}: 상자 {m['상자']}는 [왼, 위, 오른, 아래]여야 함")
-            pts += [(x1, y1), (x2, y2 + (14 if m["모양"] == "밑줄" else 0))]
-        if m["모양"] == "동그라미":
-            pts += [(m["중심"][0] - m["반지름"][0], m["중심"][1] - m["반지름"][1]), (m["중심"][0] + m["반지름"][0], m["중심"][1] + m["반지름"][1])]
-        for x, y in pts:
-            if not (0 <= x <= W and 0 <= y <= H): stop(f"{where}: {m['모양']}의 점 ({x}, {y})이 화면 밖")
+        problem = shape_problem(m)
+        if problem:
+            stop(f"{where}: {problem}")
         hit, hi = find_sentence(where, subs, slides, m["장"], m["문장"])
         start = hit[0] + word_offset(where, m["문장"], hit[1] - hit[0], m["낱말"])
         if m.get("끝문장"):
