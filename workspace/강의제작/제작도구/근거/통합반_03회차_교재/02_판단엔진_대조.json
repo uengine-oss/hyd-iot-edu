@@ -1,0 +1,145 @@
+{
+  "대상": "통합반 3회차 온라인 02편 21~41장",
+  "코드판": "2d534cb9e8aa9386414b0336019d10868ea3046a",
+  "원문과 코드": [
+    {
+      "파일": "it/portal/www/samples/HM-8_cooler-fan-manual.md",
+      "줄": "45·67·83~84",
+      "git_blob_sha1": "550a0ab8c732349304a6173c448880c725d3729a",
+      "근거": "팬 최대 연속 운전 지침, 예측 유온 경고, 원격 제어 허용 모드, 24시간 초과 수명 감점의 원문."
+    },
+    {
+      "파일": "it/process/procsvc/course_extractions.json",
+      "줄": "697~719·751~776·803~857·886~912",
+      "git_blob_sha1": "73fa12aee87ba8d8bb7f0cdada46252b33d64571",
+      "근거": "서명 검토본의 선택·적용 SOP와 비교부호."
+    },
+    {
+      "파일": "it/agent/agentsvc/tools/mcp_tsdb.py",
+      "줄": "130~150",
+      "git_blob_sha1": "ce7ad1b58dda4d3bc0189ad837a5fe94dd9afa5e",
+      "근거": "fan100_hours는 최근 48시간 FanSpeedSP의 99% 미만 관측으로 연속 구간을 끊는다. 최신 값 없음은 None, 최신 값 99% 미만은 0.0. 끊긴 뒤 경과시간에 설비 시간 배율을 곱해 시간 단위로 소수 둘째 자리까지 반환한다. 이 파일은 소스 대조로 확인했다."
+    },
+    {
+      "파일": "it/agent/agentsvc/cards.py",
+      "줄": "51~90·215~229·237~245·327~351·388~402·418·466~475",
+      "git_blob_sha1": "baacbeec227995791877cfe09346b01c4ffe0a33",
+      "근거": "후보 선택·규정 일치는 COLLECT. 제외된 후보도 options에 사유와 함께 남는다. 추천은 feasible 후보 중에서 고른다. 순위 정책은 일치 규칙이 정확히 하나여야 한다."
+    },
+    {
+      "파일": "it/neo4j/v2/instances.cypher",
+      "줄": "306~314·325~328·344",
+      "git_blob_sha1": "a50d01b1e34f7cf5f7e2a9e2d1207d19efba4a71",
+      "근거": "표별 정책, 예측 유온 65 ℃ 이상 제외, 순위식의 감점 환산."
+    },
+    {
+      "파일": "it/neo4j/templates/t3_dmn.cypher",
+      "줄": "1~12",
+      "git_blob_sha1": "a3ba963c3279c3d5ba0d6381d8f97dbaeee0a122",
+      "근거": "실제 그래프의 테스트·출력·적용 SOP·정책 조회."
+    },
+    {
+      "파일": "it/neo4j/templates/t3_skills.cypher",
+      "줄": "1~24",
+      "git_blob_sha1": "b2933785227d57f311135e39e4524fd59a124b16",
+      "근거": "실제 그래프에서 후보의 SOP·종류·동작·관계 조회."
+    }
+  ],
+  "검증 조건": {
+    "엔진": "Neo4j Community 5.26.0, 표준 시드와 서명된 HM-8의 재현 그래프",
+    "판단": "agentsvc.cards.evaluate(evaluation_mode=rule_analysis). 수업용 입력을 고정해 실행한 결과다. 설비 운전 이력 실측·물리 예측·승인·작업 실행은 이 검사 범위 밖이다.",
+    "원문_sha256": "6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256",
+    "공통 입력": "COOLER_DEGRADATION, cause:cooler-fin-fouling. 4개 SOP 각각에 같은 시험 예측을 넣고 이력·모드·예측값을 바꿨다.",
+    "표별 정책": {
+      "dec:action-candidates": "COLLECT",
+      "dec:compliance": "COLLECT",
+      "dec:diagnose-cause": "PRIORITY",
+      "dec:rank-actions": "UNIQUE"
+    },
+    "대상 SOP": {
+      "11": "팬 최대 운전",
+      "12": "팬 최대 운전과 부하 80 %",
+      "13": "부하 70 %와 야간 핀 세척",
+      "14": "쿨러 핀 세척"
+    }
+  },
+  "결과": [
+    {
+      "운전 모드": "REMOTE_AUTO",
+      "팬 최대 연속 시간(h)": 23.98333333,
+      "예측 유온(℃)": 54.9,
+      "SOP별 관찰": {
+        "11,12,13,14": "추천 가능"
+      }
+    },
+    {
+      "운전 모드": "REMOTE_AUTO",
+      "팬 최대 연속 시간(h)": 24.0,
+      "예측 유온(℃)": 55.0,
+      "SOP별 관찰": {
+        "11,12,13": "추천 가능 · 경고 rule:cooler-forecast-temperature-warning",
+        "14": "추천 가능"
+      }
+    },
+    {
+      "운전 모드": "REMOTE_AUTO",
+      "팬 최대 연속 시간(h)": 24.01666667,
+      "예측 유온(℃)": 55.1,
+      "SOP별 관찰": {
+        "11,12": "추천 가능 · 감점 20만 원 · 경고 rule:cooler-forecast-temperature-warning",
+        "13": "추천 가능 · 경고 rule:cooler-forecast-temperature-warning",
+        "14": "추천 가능"
+      }
+    },
+    {
+      "운전 모드": "REMOTE_AUTO",
+      "팬 최대 연속 시간(h)": 30.0,
+      "예측 유온(℃)": 56.0,
+      "SOP별 관찰": {
+        "11,12": "추천 가능 · 감점 20만 원 · 경고 rule:cooler-forecast-temperature-warning",
+        "13": "추천 가능 · 경고 rule:cooler-forecast-temperature-warning",
+        "14": "추천 가능"
+      }
+    },
+    {
+      "운전 모드": "REMOTE_MANUAL",
+      "팬 최대 연속 시간(h)": 30.0,
+      "예측 유온(℃)": 56.0,
+      "SOP별 관찰": {
+        "11,12": "추천 제외 · 제외 사유 rule:hm-8-8-remote-auto-only · 감점 20만 원 · 경고 rule:cooler-forecast-temperature-warning",
+        "13": "추천 제외 · 제외 사유 rule:hm-8-8-remote-auto-only · 경고 rule:cooler-forecast-temperature-warning",
+        "14": "추천 가능"
+      }
+    },
+    {
+      "운전 모드": null,
+      "팬 최대 연속 시간(h)": 30.0,
+      "예측 유온(℃)": 56.0,
+      "SOP별 관찰": {
+        "11,12": "추천 제외 · 제외 사유 rule:hm-8-8-remote-auto-only (plc_mode 미확인) · 감점 20만 원 · 경고 rule:cooler-forecast-temperature-warning",
+        "13": "추천 제외 · 제외 사유 rule:hm-8-8-remote-auto-only (plc_mode 미확인) · 경고 rule:cooler-forecast-temperature-warning",
+        "14": "추천 가능"
+      }
+    },
+    {
+      "운전 모드": "REMOTE_AUTO",
+      "팬 최대 연속 시간(h)": null,
+      "예측 유온(℃)": 56.0,
+      "SOP별 관찰": {
+        "11,12": "추천 제외 · 제외 사유 rule:hm-8-8-fan-life-penalty (fan100_hours 미확인) · 경고 rule:cooler-forecast-temperature-warning",
+        "13": "추천 가능 · 경고 rule:cooler-forecast-temperature-warning",
+        "14": "추천 가능"
+      }
+    },
+    {
+      "운전 모드": "REMOTE_AUTO",
+      "팬 최대 연속 시간(h)": 30.0,
+      "예측 유온(℃)": null,
+      "SOP별 관찰": {
+        "11,12": "추천 제외 · 제외 사유 rule:ts1-hard (forecast_ts1 미확인) · 감점 20만 원 · 경고 rule:cooler-forecast-temperature-warning (forecast_ts1 미확인)",
+        "13": "추천 제외 · 제외 사유 rule:ts1-hard (forecast_ts1 미확인) · 경고 rule:cooler-forecast-temperature-warning (forecast_ts1 미확인)",
+        "14": "추천 제외 · 제외 사유 rule:ts1-hard (forecast_ts1 미확인)"
+      }
+    }
+  ]
+}
