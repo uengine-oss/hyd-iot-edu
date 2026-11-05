@@ -1,10 +1,10 @@
-"""회차 구성표(구성표.md)를 구성.json에서 만든다(대본.md S-115 · S-131). 손으로 고치지 않는다.
+"""회차 구성표(구성표.md)를 구성.json에서 만든다(대본 S-13). 손으로 고치지 않는다.
 
 python workspace/강의제작/제작도구/구성/구성표.py workspace/강의제작/제작도구/구성/<과정>/<NN>회차/구성.json
 
 - 낭독 추정은 실제 강사 복제 음성으로 맞춘 계수(workspace/강의제작/제작도구/촬영/시간계수.json)로 잰다(시간계산.py script_seconds — 대본시간.py와 같은 함수).
 - 학습 대기는 대본의 `> [대기 N초]`를 따로 센다. 실습 대본(kind practice)은 실습 큐로 재므로(시간계산.py estimate) 여기서 재지 않는다.
-- 구성.json의 `rows`(실라버스 행: kind · title · minutes · slides)가 있으면 행별 배정과 낭독을 나란히 낸다.
+- 구성.json의 `rows`(실라버스 행: kind · title · minutes · slides)가 있으면 행별 배정과 범위 전체의 낭독을 나란히 낸다. 본문만의 하한은 덱측정.py에서 확인한다.
 - pptx_sha256은 지금 PPTX의 해시로 다시 적는다.
 - 머리 제목은 구성.json 경로의 <과정>/<NN>회차에서 만든다(`통합반 5회차`). 경로가 그 꼴이 아니면 멈춘다.
 """
@@ -66,7 +66,7 @@ def main() -> None:
            '| 단위 파일 | PPTX 장 / 상태 | 낭독 추정 | 학습 대기 |', '|---|---|---:|---:|', *unit_rows, '',
            f"진행 순서: {cfg['playback']}", '']
     if cfg.get('rows'):
-        out += ['| 구분 | 실라버스 행 | 배정 | 장 | 낭독 추정 |', '|---|---|---:|---|---:|']
+        out += ['| 구분 | 실라버스 행 | 배정 | 장 | 행 전체 낭독 추정 |', '|---|---|---:|---|---:|']
         for r in cfg['rows']:
             a, b = r['slides']
             s = sum(sec[n] for n in range(a, b + 1))
@@ -76,7 +76,7 @@ def main() -> None:
     lc = k['lecture']
     out += [f"PPTX {cfg['slide_count']}장. 이론 대본 낭독 추정 합 {sum(sec.values()) / 60:.1f}분, 학습 대기 {wait_total}초 별도. "
             f"계수는 강사 복제 음성 이론 영상 {lc['slides']}장으로 맞춘 값(장 시간 = {lc['scale']}×말 길이 + {lc['per_slide']}초)이고, "
-            '낭독 추정이지 조작 · AI 대기 · 실습 진행 시간이 아니다. 실습 행의 장은 이론 대본 안의 간지 · 설명 장 낭독만 센다.', '']
+            '낭독 추정이지 조작 · AI 대기 · 실습 진행 시간이 아니다. 실습 행은 간지와 소개 장의 낭독만 센다. 행 전체 낭독에는 간지 등 본문 밖 장도 들어간다. 이론 본문 시간 하한은 덱측정.py로 확인한다.', '']
     (base / '구성표.md').write_text('\n'.join(out), encoding='utf8', newline='\n')
     cfg_path.write_text(json.dumps(cfg, ensure_ascii=False, indent=2) + '\n', encoding='utf8', newline='\n')
     print(f"{base / '구성표.md'}: 낭독 {sum(sec.values()) / 60:.1f}분, 대기 {wait_total}초")
