@@ -338,7 +338,9 @@ def build_tree_only(t, paths, files):
     with tempfile.TemporaryDirectory() as d:
         env = dict(os.environ, GIT_INDEX_FILE=str(Path(d) / "index"))
         git("read-tree", t, env=env)
-        git("rm", "-r", "-q", "-f", "--cached", "--ignore-unmatch", "--", *paths, env=env)
+        gonelist = Path(d) / "paths"          # 경로가 많으면 명령 줄 길이(Windows 32k)를 넘으므로 목록 파일로 넘긴다
+        gonelist.write_text("\n".join(paths) + "\n", encoding="utf-8")
+        git("rm", "-r", "-q", "-f", "--cached", "--ignore-unmatch", f"--pathspec-from-file={gonelist}", env=env)
         if add:
             listfile = Path(d) / "list"
             listfile.write_text("\n".join(add) + "\n", encoding="utf-8")

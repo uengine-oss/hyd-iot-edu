@@ -5,182 +5,148 @@
   "source_file": "SR-04_설비안전규정_발췌.txt",
   "source_sha256": "d0545f8fe6008ba23c928749ee7de9039dcbe66caf09ab7b505728e6b3ecb49d",
   "encoding": "cp949",
-  "extractor": "문서 구조 · 문장 규칙으로 후보를 만든 실행(모델 응답 기록 없음)",
-  "generated_at": "2026-10-28T09:00:00+09:00",
-  "model_run": [],
-  "review": {
-    "reviewer": "설비보전팀 검토",
-    "reviewed_at": "2026-10-28T10:30:00+09:00",
-    "candidates_file": "결과/후보/SR-04_2024.json",
-    "candidates_sha256": "10bce133a9b16cd699ae71c6c276e7926278c087d3e618335e0d5cf1b6f0cf15",
-    "selected_task": "SOP-COOL-14",
-    "decisions": [
-      "판 기준: 문서 목록의 상태와 DC-01 DC-3의 뜻대로 — 현행은 작업 근거, 폐기는 지난 기록 해석에만, 개정 요청(미승인)은 작업 근거가 아님, 보충은 대체 아님, 참고(제조사 · 스캔본)는 사내 기준과 다르게 정한 항목이면 사내 기준을 따름.",
-      "조건의 근거: 제4조 ①②는 실측 유온의 정지와 운전 중 조치를 말하므로 운전 중 제어 후보의 근거로만 둔다 — 작업지시 후보의 예측 유온 제외는 근거 원문을 찾지 못했다(조건표 변경 요청)."
-    ]
-  },
+  "extractor": "show_result.py — 나누기 단위 절 · 글자 상한 1000 · 요청 글 sha256 2c995b324782",
+  "generated_at": "2026-11-05T16:32:50+09:00",
+  "model_run": [
+    {
+      "record": "결과/응답_기록/07654fb6df7e.json",
+      "request_hash": "07654fb6df7e",
+      "model": "coding",
+      "method": "모델 서버",
+      "reused_from": null
+    }
+  ],
   "candidates": [
     {
-      "id": "SR-04-001",
-      "section": "제4조",
-      "procedure": null,
-      "kind": "precondition",
-      "text": "유압 설비의 실측 유온이 인터록 한계(65 ℃)를 넘으면 설비가 정지한다.",
-      "quote": "유압 설비의 실측 유온이 인터록 한계(65 ℃)를 넘으면 설비가 정지한다.",
-      "quote_match": "exact",
-      "line_start": 10,
-      "line_end": 10,
-      "refs": [],
-      "status": "approved",
-      "decision": "채택",
-      "reason": "제4조 ① 실측 유온 인터록 정지(10줄) — R4의 원문 후보 — 실측 유온의 인터록 정지 · 원문 10줄과 절 · 종류가 기대 항목과 같다",
-      "origin": "extractor"
-    },
-    {
-      "id": "SR-04-002",
+      "id": "SR-04-M001",
       "section": "제4조",
       "procedure": null,
       "kind": "unit_value",
-      "text": "유압 설비의 실측 유온이 인터록 한계(65 ℃)를 넘으면 설비가 정지한다.",
-      "quote": "유압 설비의 실측 유온이 인터록 한계(65 ℃)를 넘으면 설비가 정지한다.",
+      "text": "유압 설비의 인터록 한계는 65 ℃를 따른다.",
+      "quote": "인터록 한계(65 ℃)",
+      "refs": [],
       "quote_match": "exact",
       "line_start": 10,
       "line_end": 10,
-      "refs": [],
-      "status": "approved",
+      "status": "pending",
       "value": 65,
       "unit": "℃",
-      "comparator": ">",
-      "value_text": "65 ℃",
-      "decision": "수정",
-      "reason": "인터록 한계 65 ℃ 초과(10줄 「넘으면」) — R4의 원문 후보 — 실측 유온의 인터록 정지 · 원문 10줄과 절 · 종류 · 값 · 단위가 기대 항목과 같다 — 비교는 원문 「65 ℃」의 문맥대로 초과(>)라 None를 고침",
-      "origin": "extractor",
-      "before": {
-        "comparator": null
-      }
-    },
-    {
-      "id": "SR-04-003",
-      "section": "제4조",
-      "procedure": null,
-      "kind": "precondition",
-      "text": "인터록 한계는 설비 매뉴얼의 운전 한계를 따른다.",
-      "quote": "인터록 한계는 설비 매뉴얼의 운전 한계를 따른다.",
-      "quote_match": "exact",
-      "line_start": 10,
-      "line_end": 10,
-      "refs": [],
-      "status": "approved",
-      "decision": "채택",
-      "reason": "제4조 ① 인터록 한계의 출처는 설비 매뉴얼(10줄) — R4의 원문 후보 — 실측 유온의 인터록 정지 · 원문 10줄과 절 · 종류가 기대 항목과 같다",
+      "comparator": null,
+      "value_text": "인터록 한계(65 ℃)",
+      "decision": "보류",
+      "reason": "검토자가 이 후보를 원문과 대조하지 않음(결정 표에 그 줄 · 종류가 없음)",
       "origin": "extractor"
     },
     {
-      "id": "SR-04-004",
+      "id": "SR-04-M002",
       "section": "제4조",
       "procedure": null,
       "kind": "prohibition",
       "text": "운전 중에는 인터록 한계에 다가가는 조치를 하지 않는다.",
-      "quote": "운전 중에는 인터록 한계에 다가가는 조치를 하지 않는다.",
+      "quote": "② 운전 중에는 인터록 한계에 다가가는 조치를 하지 않는다.",
+      "refs": [],
       "quote_match": "exact",
       "line_start": 11,
       "line_end": 11,
-      "refs": [],
-      "status": "approved",
-      "decision": "채택",
-      "reason": "제4조 ② 운전 중 조치 금지(11줄) — R4의 원문 후보 — 운전 중 조치 · 원문 11줄과 절 · 종류가 기대 항목과 같다",
+      "status": "pending",
+      "decision": "보류",
+      "reason": "검토자가 이 후보를 원문과 대조하지 않음(결정 표에 그 줄 · 종류가 없음)",
       "origin": "extractor"
     },
     {
-      "id": "SR-04-005",
+      "id": "SR-04-M003",
       "section": "제4조",
       "procedure": null,
-      "kind": "precondition",
+      "kind": "completion",
       "text": "인터록으로 정지한 설비의 복귀는 종합 정비 매뉴얼 HM-9.4를 따른다.",
-      "quote": "인터록으로 정지한 설비의 복귀는 종합 정비 매뉴얼 HM-9.4를 따른다.",
-      "quote_match": "exact",
-      "line_start": 12,
-      "line_end": 12,
+      "quote": "③ 인터록으로 정지한 설비의 복귀는 종합 정비 매뉴얼 HM-9.4를 따른다.",
       "refs": [
         "HM-9.4"
       ],
-      "status": "approved",
-      "decision": "채택",
-      "reason": "제4조 ③ 복귀는 HM-9.4로(12줄) — 원문 12줄과 절 · 종류가 기대 항목과 같다 · 현행 판이라 작업 근거다(DC-01 DC-3)",
+      "quote_match": "exact",
+      "line_start": 12,
+      "line_end": 12,
+      "status": "pending",
+      "decision": "보류",
+      "reason": "검토자가 이 후보를 원문과 대조하지 않음(결정 표에 그 줄 · 종류가 없음)",
       "origin": "extractor"
     },
     {
-      "id": "SR-04-006",
+      "id": "SR-04-M004",
       "section": "제5조",
       "procedure": null,
       "kind": "precondition",
       "text": "유압 회로를 여는 정비는 모터 전원을 잠그고(LOTO) 잔압이 0인지 압력계로 확인한 뒤 시작한다.",
-      "quote": "유압 회로를 여는 정비는 모터 전원을 잠그고(LOTO) 잔압이 0인지 압력계로 확인한 뒤 시작한다.",
+      "quote": "① 유압 회로를 여는 정비는 모터 전원을 잠그고(LOTO) 잔압이 0인지 압력계로 확인한 뒤 시작한다.",
+      "refs": [],
       "quote_match": "exact",
       "line_start": 15,
       "line_end": 15,
-      "refs": [],
-      "status": "approved",
-      "decision": "채택",
-      "reason": "제5조 ① 회로를 여는 정비 전 잠금 · 잔압 0(15줄) — 원문 15줄과 절 · 종류가 기대 항목과 같다 · 현행 판이라 작업 근거다(DC-01 DC-3)",
+      "status": "pending",
+      "decision": "보류",
+      "reason": "검토자가 이 후보를 원문과 대조하지 않음(결정 표에 그 줄 · 종류가 없음)",
       "origin": "extractor"
     },
     {
-      "id": "SR-04-007",
-      "section": "제5조",
-      "procedure": null,
-      "kind": "precondition",
-      "text": "정비를 마치면 공구와 사람이 설비 밖에 있는지 확인한 뒤 잠금을 푼다.",
-      "quote": "정비를 마치면 공구와 사람이 설비 밖에 있는지 확인한 뒤 잠금을 푼다.",
-      "quote_match": "exact",
-      "line_start": 17,
-      "line_end": 17,
-      "refs": [],
-      "status": "approved",
-      "decision": "채택",
-      "reason": "제5조 ③ 잠금을 푸는 조건(17줄) — 원문 17줄과 절 · 종류가 기대 항목과 같다 · 현행 판이라 작업 근거다(DC-01 DC-3)",
-      "origin": "extractor"
-    },
-    {
-      "id": "SR-04-R01",
+      "id": "SR-04-M005",
       "section": "제5조",
       "procedure": null,
       "kind": "precondition",
       "text": "잠금은 정비를 맡은 사람이 걸고 그 사람이 푼다.",
-      "quote": "잠금은 정비를 맡은 사람이 걸고 그 사람이 푼다.",
+      "quote": "② 잠금은 정비를 맡은 사람이 걸고 그 사람이 푼다.",
+      "refs": [],
       "quote_match": "exact",
       "line_start": 16,
       "line_end": 16,
+      "status": "pending",
+      "decision": "보류",
+      "reason": "검토자가 이 후보를 원문과 대조하지 않음(결정 표에 그 줄 · 종류가 없음)",
+      "origin": "extractor"
+    },
+    {
+      "id": "SR-04-M006",
+      "section": "제5조",
+      "procedure": null,
+      "kind": "completion",
+      "text": "정비를 마친 뒤 공구와 사람이 설비 밖에 있는지 확인하고 잠금을 푼다.",
+      "quote": "③ 정비를 마치면 공구와 사람이 설비 밖에 있는지 확인한 뒤 잠금을 푼다.",
       "refs": [],
-      "status": "approved",
-      "decision": "채택",
-      "reason": "제5조 ② 잠금을 거는 사람과 푸는 사람(16줄) — 원문 16줄과 절 · 종류가 기대 항목과 같다 · 현행 판이라 작업 근거다(DC-01 DC-3) — 이 항목을 담은 후보가 없어(까닭은 missing의 note) 검토자가 원문 문장으로 더함",
-      "origin": "reviewer"
+      "quote_match": "exact",
+      "line_start": 17,
+      "line_end": 17,
+      "status": "pending",
+      "decision": "보류",
+      "reason": "검토자가 이 후보를 원문과 대조하지 않음(결정 표에 그 줄 · 종류가 없음)",
+      "origin": "extractor"
     }
   ],
   "unlocated": [],
-  "warnings": [],
-  "missing": [
-    {
-      "section": "제5조",
-      "procedure": null,
-      "kind": "precondition",
-      "quote": "잠금은 정비를 맡은 사람이 걸고 그 사람이 푼다.",
-      "line_start": 16,
-      "line_end": 16,
-      "note": "원문에 있는데 후보가 없음",
-      "added": true
-    }
+  "warnings": [
+    "결과/응답_기록/07654fb6df7e.json: 계약 꼴에 맞지 않아 후보에 넣지 않음(unit이 없음) — 「잔압이 0인지 압력계로 확인한 뒤 시작한다.」"
   ],
+  "review": {
+    "reviewer": "이 폴더의 검토자",
+    "reviewed_at": "2026-11-05T16:32:51+09:00",
+    "candidates_file": "결과/후보/SR-04_2024.json",
+    "candidates_sha256": "c6cd831bd82cd23732a4a9b10bb20f57aa3e9c669db0485c798a27c39a850d9b",
+    "selected_task": "SOP-COOL-14",
+    "decisions": [
+      "조건의 근거: R4 불일치(SOP-COOL-14) — 근거 SR-04_설비안전규정_발췌.txt:10 · SR-04_설비안전규정_발췌.txt:11 · HM-8_매뉴얼.md:77",
+      "사내 문서와 제조사 지침: 사내 기준이 정하지 않은 제조사 항목은 채택 — 근거 OEM-HPP45A_정비지침_영한.md:7 · DC-01_문서관리기준.md:23",
+      "나누는 단위: 절 머리에서 끊고 1,000자 안에서 묶음 — 근거 HM-8_매뉴얼.md:73 · SR-04_설비안전규정_발췌.txt:9 · HM-9장_스캔본.txt:15",
+      "요청 글: 다섯 종류 · 원문 그대로 · 판단할 것은 경고로 — 근거 입출력_계약.md:41"
+    ]
+  },
+  "missing": [],
   "rule_links": [
     {
       "rule_id": "R4",
       "candidates": [
-        "SR-04-001",
-        "SR-04-004"
+        "SR-04-M001",
+        "SR-04-M002"
       ],
       "match": "불일치",
-      "note": "원문은 실측 유온이 인터록 한계를 넘으면 설비가 정지한다는 것과 운전 중에 한계에 다가가는 조치를 하지 않는다는 것을 말한다 — 예측 유온 · 작업지시는 말하지 않는다. 운전 중 제어 후보(SOP-COOL-11~13)의 근거로는 맞지만, 작업지시 후보(SOP-COOL-14)에 거는 근거는 없다(조건표에서 SOP-COOL-14 빼기 요청)."
+      "note": "원문은 운전 중 설비의 실측 유온 · 운전 중 조치, R4는 설비를 세우고 하는 작업지시(SOP-COOL-14)에 예측 유온을 건다 — 대상 · 때가 다름"
     }
   ]
 }

@@ -1,3 +1,44 @@
+"""제공 파일 · 기록 · 결과 구조 검사. 생성 · 수정 · DB 접속을 하지 않는다. 답이 맞는지는 보지 않는다 — 결과 화면에서 기대 답과 견준다."""
+from pathlib import Path
+import sys
+import hashlib as _h
+_PROVIDED = {
+ "lab_steps.py": "5bd3a5357f98dd594499cc6241d8493c2aff283578dd4626844166a41f6aba1b",
+ "model_tool.py": "ad1b0b6215574858e20e60c17afebe51b6e6cb51d519433f674d278ab9125a6b",
+ "show_result.py": "1d7bb59ff9b3a5c3e7bd94af2838eafb891b312a1c34e43877dd700d17fd7c9d"
+}
+def provided_errors(root):
+    out = []
+    for name, digest in _PROVIDED.items():
+        p = root / name
+        if not p.is_file():
+            out.append(f'제공 파일이 없습니다: {name} — 받은 ZIP의 것으로 되돌리세요.')
+        elif _h.sha256(p.read_bytes()).hexdigest() != digest:
+            out.append(f'제공 파일이 바뀌었습니다: {name} — 받은 ZIP의 것으로 되돌리세요.')
+    return out
+def chosen_errors(root):
+    """결과/정한_것.csv — 빈 칸 · 근거 꼴(파일:줄)만 본다. 고른 것이 맞는지는 보지 않는다."""
+    import csv, io, re
+    p = root / '결과' / '정한_것.csv'
+    if not p.is_file():
+        return ['결과/정한_것.csv가 없습니다 — 받은 ZIP의 빈 틀을 지우지 않습니다.']
+    lines = [x for x in p.read_text(encoding='utf-8-sig').splitlines() if x.strip() and not x.lstrip().startswith('#')]
+    rows = list(csv.DictReader(io.StringIO('\n'.join(lines))))
+    need = ['지점', '고른_것', '근거', '바뀌는_답']
+    if not lines or [c.strip() for c in csv.reader([lines[0]]).__next__()] != need:
+        return ['결과/정한_것.csv: 열 이름이 ' + ','.join(need) + '이어야 합니다.']
+    out = []
+    for n, r in enumerate(rows, 1):
+        empty = [c for c in need if not (r.get(c) or '').strip()]
+        if empty:
+            out.append(f'결과/정한_것.csv {n}번째 행: 빈 칸 ' + ', '.join(empty) + '(못 정했으면 고른_것에 「미결」).')
+        elif not re.search(r'[^\s:]+:\d+', r['근거']):
+            out.append(f'결과/정한_것.csv {n}번째 행: 근거에 파일:줄이 없습니다.')
+    return out
+_root = Path(__file__).resolve().parent
+_pre = provided_errors(_root) + chosen_errors(_root)
+for _e in _pre:
+    print('확인 필요: ' + _e)
 """학생 결과의 구조·자료형 검사. 생성·수정·DB 접속을 하지 않는다.
 사용: python check.py            (결과/schema.json·graph.json)
       python check.py 폴더        (다른 폴더의 schema.json·graph.json)
@@ -9,6 +50,7 @@ base=Path(sys.argv[1]) if len(sys.argv)>1 else root/'결과'
 errors=[];warnings=[];nodes=[];rels=[];labels_by_id={}
 missing=[n for n in ('schema.json','graph.json') if not (base/n).is_file()]
 if missing:
+    if _pre:sys.exit(1)
     print('아직 검사할 결과가 없습니다: '+', '.join(base.name+'/'+n for n in missing))
     print('START.md 「결과 형식」의 모양으로 만든 뒤 다시 실행하세요. 이 검사는 구조만 보고, 질문의 답은 원자료와 따로 대조합니다.')
     sys.exit(1)
@@ -108,6 +150,7 @@ if spread:
     for (t,top,s,mids),per in sorted(direct.items()):
         print(f'참고: {mids}를 거치지 않고 {top}에 바로 붙은 {s} {sum(len(v) for v in per.values())}개({t}). 원자료의 붙은곳이 정말 {top} 전체인 행인지 대조하세요.')
         print('  '+', '.join(f'{a} {len(v)}개' for a,v in sorted(per.items())[:12])+(' …' if len(per)>12 else ''))
+errors=_pre+errors
 if errors:
     print(f'구조 확인 필요 {len(errors)}건');print('\n'.join(errors[:40])+('\n…' if len(errors)>40 else ''));sys.exit(1)
 print(f'구조 검사 통과: 노드 {len(nodes)}개, 관계 {len(rels)}개. 원자료의 의미·단위·질문별 답은 별도로 대조하세요.')

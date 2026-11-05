@@ -1,0 +1,11 @@
+type,from,to,이름,원문
+MITIGATED_BY,fm:cooler-cooling-loss,SOP-COOL-11,,44
+MITIGATED_BY,fm:cooler-cooling-loss,SOP-COOL-12,,44
+MITIGATED_BY,fm:cooler-cooling-loss,SOP-COOL-13,,44
+REMEDIED_BY,fm:cooler-cooling-loss,SOP-COOL-14,,73
+REMEDIED_BY,fm:cooler-cooling-loss,SOP-COOL-15,,73
+REMEDIED_BY,fm:cooler-cooling-loss,SOP-FAN-12,,40;16
+ADDRESSES,SOP-COOL-14,cause:cooler-fin-fouling,쿨러 핀 오염,38;73
+ADDRESSES,SOP-COOL-15,cause:ambient-temperature-rise,주변 온도 상승,39;73
+ADDRESSES,SOP-FAN-11,cause:fan-drive-fault,팬 구동 불량,40;7
+ADDRESSES,SOP-FAN-12,cause:fan-drive-fault,팬 구동 불량,40;16

@@ -1,0 +1,99 @@
+{
+  "classes": {
+    "Document": {
+      "meaning": "회사 문서 하나(문서 목록의 문서 식별자)",
+      "required": {
+        "id": "string",
+        "doc_id": "string"
+      }
+    },
+    "Section": {
+      "meaning": "판 안의 절 — 그 문서의 절 표기 그대로",
+      "required": {
+        "id": "string",
+        "ref": "string"
+      }
+    },
+    "Knowledge": {
+      "meaning": "검토에서 승인한 후보 하나 — 원문 인용 · 줄과 검토 결정",
+      "required": {
+        "id": "string",
+        "kind": "string",
+        "quote": "string",
+        "line_start": "number",
+        "line_end": "number",
+        "decision": "string"
+      }
+    },
+    "Revision": {
+      "meaning": "문서의 한 판(문서 목록의 한 행) — 상태는 목록 그대로",
+      "required": {
+        "id": "string",
+        "doc_id": "string",
+        "rev": "string",
+        "status": "string"
+      }
+    }
+  },
+  "relations": {
+    "HAS_SECTION": {
+      "from": "Revision",
+      "to": "Section",
+      "meaning": "판 → 그 판의 절"
+    },
+    "STATED_IN": {
+      "from": "Knowledge",
+      "to": "Section",
+      "meaning": "지식 → 원문 절"
+    },
+    "SUPPORTS": {
+      "from": "Knowledge",
+      "to": "Rule",
+      "meaning": "지식 → 조건표 규칙(검토의 맞는 정도 · 까닭)",
+      "properties": {
+        "match": "string",
+        "note": "string"
+      }
+    },
+    "HAS_REVISION": {
+      "from": "Document",
+      "to": "Revision",
+      "meaning": "문서 → 그 판"
+    },
+    "REPLACES": {
+      "from": "Revision",
+      "to": "Revision",
+      "meaning": "새 판 → 대체한 옛 판(문서 목록의 대체 관계)"
+    },
+    "CONDITION_OF": {
+      "from": "Knowledge",
+      "to": "기존 ID",
+      "meaning": "절차 안의 조건은 그 절차(조치)의 조건",
+      "properties": {
+        "role": "string"
+      }
+    },
+    "EVIDENCE_FOR": {
+      "from": "Knowledge",
+      "to": "기존 ID",
+      "meaning": "냉각 성능 상실의 판정 근거",
+      "properties": {
+        "role": "string"
+      }
+    },
+    "APPLIES_TO": {
+      "from": "Knowledge",
+      "to": "기존 ID",
+      "meaning": "정기 점검표 — 본문의 설비 · 부품 이름으로",
+      "properties": {
+        "role": "string"
+      }
+    }
+  },
+  "constraints": [
+    "새 대상 ID — 문서 = {문서}",
+    "새 대상 ID — 판 = {문서}@{판}",
+    "새 대상 ID — 절 = {문서}@{판}#{절}",
+    "새 대상 ID — 지식 = {문서}@{판}:{후보}"
+  ]
+}

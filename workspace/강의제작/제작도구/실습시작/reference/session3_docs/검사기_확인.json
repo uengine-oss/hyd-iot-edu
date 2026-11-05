@@ -1,863 +1,137 @@
-{
-  "summary": {
-    "extract": {
-      "통합반": "40/40",
-      "실전반": "41/41"
-    },
-    "graph": {
-      "통합반": "11/11",
-      "실전반": "16/16"
-    }
-  },
-  "trials": {
-    "extract": {
-      "통합반": [
-        {
-          "no": "01",
-          "trial": "인용 한 글자 변경",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-003: quote가 11~11줄에 글자 그대로 없음"
-        },
-        {
-          "no": "02",
-          "trial": "다른 절 인용",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-003: quote가 11~11줄에 글자 그대로 없음(파일의 다른 줄에 있음)"
-        },
-        {
-          "no": "03",
-          "trial": "원문 없는 인용",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-003: quote가 11~11줄에 글자 그대로 없음"
-        },
-        {
-          "no": "04",
-          "trial": "해시 지어냄",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- source_sha256이 자료/의 파일과 다릅니다(다른 파일을 읽었거나 해시를 지어냈음)."
-        },
-        {
-          "no": "05",
-          "trial": "종류 오류",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-001: 알 수 없는 kind 'warning'"
-        },
-        {
-          "no": "06",
-          "trial": "값 글 없음",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-002: value_text가 quote 안에 그대로 없음"
-        },
-        {
-          "no": "07",
-          "trial": "비교 기호 오류",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-002: comparator가 계약 값이 아님 '≥'"
-        },
-        {
-          "no": "08",
-          "trial": "범위 최대값 없음",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-005: range에는 value_max가 필요"
-        },
-        {
-          "no": "09",
-          "trial": "없는 절차",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-003: 원문에 없는 절차 표기 — procedure 'SOP-COOL-99'"
-        },
-        {
-          "no": "10",
-          "trial": "중복 후보",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- dup-1: 같은 종류 · 절 · 내용 · 인용 · 값의 후보가 이미 있음"
-        },
-        {
-          "no": "11",
-          "trial": "단계 번호 없음",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-003: step에는 1 이상의 정수 order가 필요"
-        },
-        {
-          "no": "12",
-          "trial": "추출 직후 승인",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-001: 추출 직후 status는 pending"
-        },
-        {
-          "no": "13",
-          "trial": "검토 상태 불일치",
-          "file": "결과/검토/HM-8_1.1_검토.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-001: 제외이면 status는 excluded"
-        },
-        {
-          "no": "14",
-          "trial": "수정 전 값 없음",
-          "file": "결과/검토/HM-8_1.1_검토.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-001: 수정에는 바꾸기 전 값(before)이 필요"
-        },
-        {
-          "no": "15",
-          "trial": "이유 없음",
-          "file": "결과/검토/HM-8_1.1_검토.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-001: 결정 이유(reason)가 없음"
-        },
-        {
-          "no": "16",
-          "trial": "누락 인용 지어냄",
-          "file": "결과/검토/HM-8_1.1_검토.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- missing HM-8.9: quote가 원문에 없음"
-        },
-        {
-          "no": "17",
-          "trial": "필드 없음",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-001: 필수 필드 없음 ['section']"
-        },
-        {
-          "no": "18",
-          "trial": "문서 식별자 불일치",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- doc_id 'HM-9'가 문서 목록의 문서 식별자 'HM-8'와 다릅니다."
-        },
-        {
-          "no": "19",
-          "trial": "문서 목록에 없는 파일",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- 자료/문서_목록.csv에 없는 파일입니다."
-        },
-        {
-          "no": "20",
-          "trial": "OEM 없는 절차",
-          "file": "결과/후보/OEM-HPP45A-MM_C.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- OEM-HPP45A-MM-020: 원문에 없는 절차 표기 — procedure 'T-9.9'"
-        },
-        {
-          "no": "21",
-          "trial": "번역 줄을 다른 절 · 언어로",
-          "file": "결과/후보/OEM-HPP45A-MM_C.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- OEM-HPP45A-MM-068: 인용이 짝지은 응답 기록의 답 글에 없음 — 후보는 모델의 답에서 만듭니다"
-        },
-        {
-          "no": "22",
-          "trial": "order가 참거짓",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-003: step에는 1 이상의 정수 order가 필요"
-        },
-        {
-          "no": "23",
-          "trial": "줄 범위 밖 인용",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-001: line_start · line_end가 원문 줄 범위(1~89) 안의 정수가 아님"
-        },
-        {
-          "no": "24",
-          "trial": "글자 방식을 잘못 적은 SR-04 인용",
-          "file": "결과/후보/SR-04_2024.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- encoding 'utf-8'로 원문을 읽지 못했습니다(UnicodeDecodeError)."
-        },
-        {
-          "no": "25",
-          "trial": "단위를 바꾼 OEM 인용",
-          "file": "결과/후보/OEM-HPP45A-MM_C.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- OEM-HPP45A-MM-006: value_text가 quote 안에 그대로 없음"
-        },
-        {
-          "no": "26",
-          "trial": "고친 글로 쓴 스캔본 인용",
-          "file": "결과/후보/HM-9_1.0.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-9-007: quote가 34~34줄에서 글자 · 숫자 비교로도 찾히지 않음"
-        },
-        {
-          "no": "27",
-          "trial": "1.2 초안 문장을 1.1 파일로",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-088: quote가 78~78줄에 글자 그대로 없음"
-        },
-        {
-          "no": "28",
-          "trial": "검토 뒤 고친 후보 원본",
-          "file": "결과/검토/HM-8_1.1_검토.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- 후보 파일 원본의 SHA-256이 review.candidates_sha256과 다릅니다(검토 뒤 후보 원본이 바뀜)."
-        },
-        {
-          "no": "29",
-          "trial": "응답 기록 없는 후보 파일",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- model_run이 비어 있습니다 — 후보 파일은 응답 기록에서 만듭니다."
-        },
-        {
-          "no": "30",
-          "trial": "다른 폴더의 응답 기록으로 만든 후보(폴더 표지가 다름)",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- 결과/응답_기록/1db9fc7561de.json: 다른 폴더의 응답 기록입니다(기록의 폴더 표지 'ffffffffffffffff', 이 폴더 'dea80605a4e94de2') — 후보는 이 폴더에서 수업 모델을 불러 받은 답으로 만듭니다."
-        },
-        {
-          "no": "40",
-          "trial": "model_run에 reused_from을 적은 후보(다른 폴더 기록을 옮겨 씀)",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- model_run 결과/응답_기록/1db9fc7561de.json: reused_from 'ffffffffffffffff' — 다른 폴더의 응답 기록으로는 후보를 만들지 않습니다."
-        },
-        {
-          "no": "41",
-          "trial": "코드가 찾은 인용이 원문 여러 곳에 맞음(같은 단계 문장이 여러 절차에)",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-003: quote가 원문 3곳에 맞음 — 코드가 찾은 인용이 여러 곳에 맞으면 찾지 못한 것(unlocated)으로 두고, 그 줄은 검토자가 골라 더한다"
-        },
-        {
-          "no": "36",
-          "trial": "관계없는 답 글과 짝지은 후보(규칙으로 만든 후보)",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-001: 인용이 짝지은 응답 기록의 답 글에 없음 — 후보는 모델의 답에서 만듭니다"
-        },
-        {
-          "no": "37",
-          "trial": "쓸 내용이 없는 답의 기록과 짝지음",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- 결과/응답_기록/1db9fc7561de.json: 쓸 내용이 없는 답의 기록입니다(usable false — 끝난 까닭 content_filter, 답 글이 비어 있음) — 이 기록으로 후보를 만들지 않습니다."
-        },
-        {
-          "no": "38",
-          "trial": "답 글에 없는 원문 줄을 origin reviewer로 꾸민 후보(검토 전 후보 파일)",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- fake-r1: 인용이 짝지은 응답 기록의 답 글에 없음 — 후보는 모델의 답에서 만듭니다"
-        },
-        {
-          "no": "39",
-          "trial": "검토 결과에서 모델 후보를 origin reviewer로 바꿈(missing 항목 없음)",
-          "file": "결과/검토/HM-8_1.1_검토.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-001: origin reviewer인데 같은 종류 · 인용 · 줄의 missing 항목(added: true)이 없음 — 검토자가 더한 후보는 missing에 함께 적습니다"
-        },
-        {
-          "no": "31",
-          "trial": "조건표에 없는 규칙 id",
-          "file": "결과/검토/SR-04_2024_검토.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- rule_links 'R9': 기준 조건표의 rule_id나 그 출처 칸의 규칙 id가 아님"
-        },
-        {
-          "no": "32",
-          "trial": "집합 밖 match 값",
-          "file": "결과/검토/SR-04_2024_검토.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- rule_links R4: match는 일치 · 불일치 · 원문 없음 · 보류 중 하나"
-        },
-        {
-          "no": "33",
-          "trial": "스캔본 쪽 틀림",
-          "file": "결과/후보/HM-9_1.0.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-9-001: page '9-5'가 그 줄이 있는 쪽 꼬리(9-1)와 다름"
-        },
-        {
-          "no": "34",
-          "trial": "1.2 초안 파일 인용을 1.1 줄 번호로",
-          "file": "결과/후보/HM-8_1.2.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-003: quote가 1~1줄에 글자 그대로 없음(파일의 다른 줄에 있음)"
-        }
-      ],
-      "실전반": [
-        {
-          "no": "01",
-          "trial": "인용 한 글자 변경",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-003: quote가 11~11줄에 글자 그대로 없음"
-        },
-        {
-          "no": "02",
-          "trial": "다른 절 인용",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-003: quote가 11~11줄에 글자 그대로 없음(파일의 다른 줄에 있음)"
-        },
-        {
-          "no": "03",
-          "trial": "원문 없는 인용",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-003: quote가 11~11줄에 글자 그대로 없음"
-        },
-        {
-          "no": "04",
-          "trial": "해시 지어냄",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- source_sha256이 자료/의 파일과 다릅니다(다른 파일을 읽었거나 해시를 지어냈음)."
-        },
-        {
-          "no": "05",
-          "trial": "종류 오류",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-001: 알 수 없는 kind 'warning'"
-        },
-        {
-          "no": "06",
-          "trial": "값 글 없음",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-002: value_text가 quote 안에 그대로 없음"
-        },
-        {
-          "no": "07",
-          "trial": "비교 기호 오류",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-002: comparator가 계약 값이 아님 '≥'"
-        },
-        {
-          "no": "08",
-          "trial": "범위 최대값 없음",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-005: range에는 value_max가 필요"
-        },
-        {
-          "no": "09",
-          "trial": "없는 절차",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-003: 원문에 없는 절차 표기 — procedure 'SOP-COOL-99'"
-        },
-        {
-          "no": "10",
-          "trial": "중복 후보",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- dup-1: 같은 종류 · 절 · 내용 · 인용 · 값의 후보가 이미 있음"
-        },
-        {
-          "no": "11",
-          "trial": "단계 번호 없음",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-003: step에는 1 이상의 정수 order가 필요"
-        },
-        {
-          "no": "12",
-          "trial": "추출 직후 승인",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-001: 추출 직후 status는 pending"
-        },
-        {
-          "no": "13",
-          "trial": "검토 상태 불일치",
-          "file": "결과/검토/HM-8_1.1_검토.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-001: 제외이면 status는 excluded"
-        },
-        {
-          "no": "14",
-          "trial": "수정 전 값 없음",
-          "file": "결과/검토/HM-8_1.1_검토.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-001: 수정에는 바꾸기 전 값(before)이 필요"
-        },
-        {
-          "no": "15",
-          "trial": "이유 없음",
-          "file": "결과/검토/HM-8_1.1_검토.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-001: 결정 이유(reason)가 없음"
-        },
-        {
-          "no": "16",
-          "trial": "누락 인용 지어냄",
-          "file": "결과/검토/HM-8_1.1_검토.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- missing HM-8.9: quote가 원문에 없음"
-        },
-        {
-          "no": "17",
-          "trial": "필드 없음",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-001: 필수 필드 없음 ['section']"
-        },
-        {
-          "no": "18",
-          "trial": "문서 식별자 불일치",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- doc_id 'HM-9'가 문서 목록의 문서 식별자 'HM-8'와 다릅니다."
-        },
-        {
-          "no": "19",
-          "trial": "문서 목록에 없는 파일",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- 자료/문서_목록.csv에 없는 파일입니다."
-        },
-        {
-          "no": "20",
-          "trial": "OEM 없는 절차",
-          "file": "결과/후보/OEM-HPP45A-MM_C.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- OEM-HPP45A-MM-020: 원문에 없는 절차 표기 — procedure 'T-9.9'"
-        },
-        {
-          "no": "21",
-          "trial": "번역 줄을 다른 절 · 언어로",
-          "file": "결과/후보/OEM-HPP45A-MM_C.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- OEM-HPP45A-MM-068: 인용이 짝지은 응답 기록의 답 글에 없음 — 후보는 모델의 답에서 만듭니다"
-        },
-        {
-          "no": "22",
-          "trial": "order가 참거짓",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-003: step에는 1 이상의 정수 order가 필요"
-        },
-        {
-          "no": "23",
-          "trial": "줄 범위 밖 인용",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-001: line_start · line_end가 원문 줄 범위(1~89) 안의 정수가 아님"
-        },
-        {
-          "no": "24",
-          "trial": "글자 방식을 잘못 적은 SR-04 인용",
-          "file": "결과/후보/SR-04_2024.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- encoding 'utf-8'로 원문을 읽지 못했습니다(UnicodeDecodeError)."
-        },
-        {
-          "no": "25",
-          "trial": "단위를 바꾼 OEM 인용",
-          "file": "결과/후보/OEM-HPP45A-MM_C.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- OEM-HPP45A-MM-006: value_text가 quote 안에 그대로 없음"
-        },
-        {
-          "no": "26",
-          "trial": "고친 글로 쓴 스캔본 인용",
-          "file": "결과/후보/HM-9_1.0.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-9-007: quote가 34~34줄에서 글자 · 숫자 비교로도 찾히지 않음"
-        },
-        {
-          "no": "27",
-          "trial": "1.2 초안 문장을 1.1 파일로",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-088: quote가 78~78줄에 글자 그대로 없음"
-        },
-        {
-          "no": "28",
-          "trial": "검토 뒤 고친 후보 원본",
-          "file": "결과/검토/HM-8_1.1_검토.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- 후보 파일 원본의 SHA-256이 review.candidates_sha256과 다릅니다(검토 뒤 후보 원본이 바뀜)."
-        },
-        {
-          "no": "29",
-          "trial": "응답 기록 없는 후보 파일",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- model_run이 비어 있습니다 — 후보 파일은 응답 기록에서 만듭니다."
-        },
-        {
-          "no": "30",
-          "trial": "다른 폴더의 응답 기록으로 만든 후보(폴더 표지가 다름)",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- 결과/응답_기록/1db9fc7561de.json: 다른 폴더의 응답 기록입니다(기록의 폴더 표지 'ffffffffffffffff', 이 폴더 '6f9520da6a0246ae') — 후보는 이 폴더에서 수업 모델을 불러 받은 답으로 만듭니다."
-        },
-        {
-          "no": "40",
-          "trial": "model_run에 reused_from을 적은 후보(다른 폴더 기록을 옮겨 씀)",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- model_run 결과/응답_기록/1db9fc7561de.json: reused_from 'ffffffffffffffff' — 다른 폴더의 응답 기록으로는 후보를 만들지 않습니다."
-        },
-        {
-          "no": "41",
-          "trial": "코드가 찾은 인용이 원문 여러 곳에 맞음(같은 단계 문장이 여러 절차에)",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-003: quote가 원문 3곳에 맞음 — 코드가 찾은 인용이 여러 곳에 맞으면 찾지 못한 것(unlocated)으로 두고, 그 줄은 검토자가 골라 더한다"
-        },
-        {
-          "no": "36",
-          "trial": "관계없는 답 글과 짝지은 후보(규칙으로 만든 후보)",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-001: 인용이 짝지은 응답 기록의 답 글에 없음 — 후보는 모델의 답에서 만듭니다"
-        },
-        {
-          "no": "37",
-          "trial": "쓸 내용이 없는 답의 기록과 짝지음",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- 결과/응답_기록/1db9fc7561de.json: 쓸 내용이 없는 답의 기록입니다(usable false — 끝난 까닭 content_filter, 답 글이 비어 있음) — 이 기록으로 후보를 만들지 않습니다."
-        },
-        {
-          "no": "38",
-          "trial": "답 글에 없는 원문 줄을 origin reviewer로 꾸민 후보(검토 전 후보 파일)",
-          "file": "결과/후보/HM-8_1.1.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- fake-r1: 인용이 짝지은 응답 기록의 답 글에 없음 — 후보는 모델의 답에서 만듭니다"
-        },
-        {
-          "no": "39",
-          "trial": "검토 결과에서 모델 후보를 origin reviewer로 바꿈(missing 항목 없음)",
-          "file": "결과/검토/HM-8_1.1_검토.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-001: origin reviewer인데 같은 종류 · 인용 · 줄의 missing 항목(added: true)이 없음 — 검토자가 더한 후보는 missing에 함께 적습니다"
-        },
-        {
-          "no": "31",
-          "trial": "조건표에 없는 규칙 id",
-          "file": "결과/검토/SR-04_2024_검토.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- rule_links 'R9': 기준 조건표의 rule_id나 그 출처 칸의 규칙 id가 아님"
-        },
-        {
-          "no": "32",
-          "trial": "집합 밖 match 값",
-          "file": "결과/검토/SR-04_2024_검토.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- rule_links R4: match는 일치 · 불일치 · 원문 없음 · 보류 중 하나"
-        },
-        {
-          "no": "33",
-          "trial": "스캔본 쪽 틀림",
-          "file": "결과/후보/HM-9_1.0.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-9-001: page '9-5'가 그 줄이 있는 쪽 꼬리(9-1)와 다름"
-        },
-        {
-          "no": "34",
-          "trial": "1.2 초안 파일 인용을 1.1 줄 번호로",
-          "file": "결과/후보/HM-8_1.2.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- HM-8-003: quote가 1~1줄에 글자 그대로 없음(파일의 다른 줄에 있음)"
-        },
-        {
-          "no": "35",
-          "trial": "보류 후보를 선택 작업 조건에",
-          "file": "결과/선택작업_조건.json",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- preparation: '결과/검토/OEM-HPP45A-MM_C_검토.json#OEM-HPP45A-MM-001'는 승인(approved) 후보가 아님 — 보류 · 원문 미확인은 remaining_questions에"
-        }
-      ]
-    },
-    "graph": {
-      "통합반": [
-        {
-          "no": "29",
-          "trial": "전체 삭제",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- extra_load.cypher: 전체를 지우는 문장이 있습니다."
-        },
-        {
-          "no": "32",
-          "trial": "적재문 부분 삭제",
-          "caught": true,
-          "restored_pass": true,
-          "line": "참고: extra_load.cypher 1줄에 DELETE — 적재문은 만들고 고치는 문장만 두어 다시 실행해도 같은 결과가 나오게 합니다."
-        },
-        {
-          "no": "34",
-          "trial": "보류 후보 적재(적재 파일)",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- extra_load.cypher: 승인(approved)이 아닌 후보 id를 가리킵니다 — HI-01@1.0:HI-01-M001"
-        },
-        {
-          "no": "35",
-          "trial": "없는 기존 ID",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- extra_load.cypher: 기존 ID 꼴인데 설비 모델 · SOP 구조 · 조건표에 없는 ID — HYD-09:cooler"
-        },
-        {
-          "no": "36",
-          "trial": "미제공 절을 노드로",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- 랩 DB 노드 HM-9@1.0#HM-9.4: 원문에 절 머리가 없는 절 표기(HM-9.4) — 제공되지 않은 절은 노드로 만들지 않고 남은 질문으로 둡니다."
-        },
-        {
-          "no": "37",
-          "trial": "받은 파일이 없는 문서를 노드로",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- 랩 DB 노드 OEM-HPP45B-MM: 받은 파일이 없는 문서(OEM-HPP45B-MM) — 제공되지 않은 문서는 노드로 만들지 않고 남은 질문으로 둡니다."
-        },
-        {
-          "no": "38",
-          "trial": "현재 재고 수를 그래프 속성으로",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- 랩 DB에 현재 값(재고 · 예약 · 입고) 속성이 있습니다 — on_hand. 현재 값은 그래프에 두지 않고 읽을 원천을 가리킵니다."
-        },
-        {
-          "no": "39",
-          "trial": "보류 후보를 랩 DB에(속성)",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- 랩 DB 노드 K-hold의 candidate: 승인(approved)이 아닌 후보의 id · 인용입니다."
-        },
-        {
-          "no": "40",
-          "trial": "내보내기 끝점 없음",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- 지식_내보내기.json에 끝점이 없는 관계 1개 — 예: X 없는-노드 → HYD-02"
-        },
-        {
-          "no": "41",
-          "trial": "조회문에 DELETE",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- query.cypher 40줄: 조회문은 읽기만 합니다(DELETE)."
-        },
-        {
-          "no": "33",
-          "trial": "기존 ID 연결 없음",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- 적재한 노드 191개가 기존 ID와 하나도 이어지지 않았습니다."
-        }
-      ],
-      "실전반": [
-        {
-          "no": "29",
-          "trial": "전체 삭제",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- extra_load.cypher: 전체를 지우는 문장이 있습니다."
-        },
-        {
-          "no": "32",
-          "trial": "적재문 부분 삭제",
-          "caught": true,
-          "restored_pass": true,
-          "line": "참고: extra_load.cypher 1줄에 DELETE — 적재문은 만들고 고치는 문장만 두어 다시 실행해도 같은 결과가 나오게 합니다."
-        },
-        {
-          "no": "34",
-          "trial": "보류 후보 적재(적재 파일)",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- extra_load.cypher: 승인(approved)이 아닌 후보 id를 가리킵니다 — HI-01@1.0:HI-01-M001"
-        },
-        {
-          "no": "35",
-          "trial": "없는 기존 ID",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- extra_load.cypher: 기존 ID 꼴인데 설비 모델 · SOP 구조 · 조건표에 없는 ID — HYD-09:cooler"
-        },
-        {
-          "no": "36",
-          "trial": "미제공 절을 노드로",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- 랩 DB 노드 HM-9@1.0#HM-9.4: 원문에 절 머리가 없는 절 표기(HM-9.4) — 제공되지 않은 절은 노드로 만들지 않고 남은 질문으로 둡니다."
-        },
-        {
-          "no": "37",
-          "trial": "받은 파일이 없는 문서를 노드로",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- 랩 DB 노드 OEM-HPP45B-MM: 받은 파일이 없는 문서(OEM-HPP45B-MM) — 제공되지 않은 문서는 노드로 만들지 않고 남은 질문으로 둡니다."
-        },
-        {
-          "no": "38",
-          "trial": "현재 재고 수를 그래프 속성으로",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- 랩 DB에 현재 값(재고 · 예약 · 입고) 속성이 있습니다 — on_hand. 현재 값은 그래프에 두지 않고 읽을 원천을 가리킵니다."
-        },
-        {
-          "no": "39",
-          "trial": "보류 후보를 랩 DB에(속성)",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- 랩 DB 노드 K-hold의 candidate: 승인(approved)이 아닌 후보의 id · 인용입니다."
-        },
-        {
-          "no": "40",
-          "trial": "내보내기 끝점 없음",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- 지식_내보내기.json에 끝점이 없는 관계 1개 — 예: X 없는-노드 → HYD-02"
-        },
-        {
-          "no": "41",
-          "trial": "조회문에 DELETE",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- query.cypher 40줄: 조회문은 읽기만 합니다(DELETE)."
-        },
-        {
-          "no": "33",
-          "trial": "기존 ID 연결 없음",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- 적재한 노드 191개가 기존 ID와 하나도 이어지지 않았습니다."
-        },
-        {
-          "no": "24",
-          "trial": "카드 제목 없음",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- 제목 「## 완료 기준」 없음"
-        },
-        {
-          "no": "25",
-          "trial": "카드 인용 변경",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- 자료/ 어디에도 그대로 없는 인용: 「고압수는 쓰지 말 것.」"
-        },
-        {
-          "no": "27",
-          "trial": "인용 없는 항목",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- 「금지 · 제한」 항목에 「원문 인용」이 없음: - 장갑을 낀다"
-        },
-        {
-          "no": "28",
-          "trial": "빈 절",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- 「승인」 아래가 비어 있음(없으면 「없음」과 까닭)"
-        },
-        {
-          "no": "42",
-          "trial": "없는 품번",
-          "caught": true,
-          "restored_pass": true,
-          "line": "- 설비 모델에 없는 품번 P-CLR-CORE2"
-        }
-      ]
-    }
-  }
-}
+[
+ {
+  "lab": "integrated-04-extract",
+  "damage": "정한_것 근거가 파일:줄이 아님",
+  "caught": true
+ },
+ {
+  "lab": "integrated-04-extract",
+  "damage": "제공 코드를 고침",
+  "caught": true
+ },
+ {
+  "lab": "integrated-04-extract",
+  "damage": "결정 표에 없는 결정 말",
+  "caught": true
+ },
+ {
+  "lab": "integrated-04-extract",
+  "damage": "조건 대조의 맞는 정도가 계약 값이 아님",
+  "caught": true
+ },
+ {
+  "lab": "integrated-04-extract",
+  "damage": "검토 결과의 인용 한 글자",
+  "caught": true
+ },
+ {
+  "lab": "integrated-04-extract",
+  "damage": "검토 결과의 결정과 상태가 어긋남",
+  "caught": true
+ },
+ {
+  "lab": "practical-03-extract",
+  "damage": "정한_것 근거가 파일:줄이 아님",
+  "caught": true
+ },
+ {
+  "lab": "practical-03-extract",
+  "damage": "제공 코드를 고침",
+  "caught": true
+ },
+ {
+  "lab": "practical-03-extract",
+  "damage": "결정 표에 없는 결정 말",
+  "caught": true
+ },
+ {
+  "lab": "practical-03-extract",
+  "damage": "조건 대조의 맞는 정도가 계약 값이 아님",
+  "caught": true
+ },
+ {
+  "lab": "practical-03-extract",
+  "damage": "검토 결과의 인용 한 글자",
+  "caught": true
+ },
+ {
+  "lab": "practical-03-extract",
+  "damage": "검토 결과의 결정과 상태가 어긋남",
+  "caught": true
+ },
+ {
+  "lab": "integrated-04-graph",
+  "damage": "연결 규칙에 모델에 없는 ID",
+  "caught": true
+ },
+ {
+  "lab": "integrated-04-graph",
+  "damage": "제공 결과 화면을 고침",
+  "caught": true
+ },
+ {
+  "lab": "integrated-04-graph",
+  "damage": "내보내기에 끝점 없는 관계",
+  "caught": true
+ },
+ {
+  "lab": "integrated-04-graph",
+  "damage": "고른 것 빈 칸",
+  "caught": true
+ },
+ {
+  "lab": "integrated-04-graph",
+  "damage": "내보내기에 같은 id의 노드 둘",
+  "caught": true
+ },
+ {
+  "lab": "integrated-04-graph",
+  "damage": "적재 파일에 전체 삭제",
+  "caught": true
+ },
+ {
+  "lab": "integrated-04-graph",
+  "damage": "적재 파일에 보류 후보",
+  "caught": true
+ },
+ {
+  "lab": "practical-03-card",
+  "damage": "연결 규칙에 모델에 없는 ID",
+  "caught": true
+ },
+ {
+  "lab": "practical-03-card",
+  "damage": "제공 결과 화면을 고침",
+  "caught": true
+ },
+ {
+  "lab": "practical-03-card",
+  "damage": "내보내기에 끝점 없는 관계",
+  "caught": true
+ },
+ {
+  "lab": "practical-03-card",
+  "damage": "고른 것 빈 칸",
+  "caught": true
+ },
+ {
+  "lab": "practical-03-card",
+  "damage": "내보내기에 같은 id의 노드 둘",
+  "caught": true
+ },
+ {
+  "lab": "practical-03-card",
+  "damage": "적재 파일에 전체 삭제",
+  "caught": true
+ },
+ {
+  "lab": "practical-03-card",
+  "damage": "적재 파일에 보류 후보",
+  "caught": true
+ },
+ {
+  "lab": "practical-03-card",
+  "damage": "카드 제목 하나 없음",
+  "caught": true
+ }
+]

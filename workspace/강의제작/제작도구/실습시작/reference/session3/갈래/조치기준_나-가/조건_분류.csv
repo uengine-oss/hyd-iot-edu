@@ -1,0 +1,34 @@
+sop_id,칸,원문,글,규칙
+SOP-FAN-11;SOP-FAN-12;SOP-COOL-11;SOP-COOL-12;SOP-COOL-13;SOP-COOL-14;SOP-COOL-15,고장 유형,33;36,fm:cooler-cooling-loss,
+SOP-FAN-11;SOP-FAN-12,종류·코드,판단시스템_결정표_내보내기.txt:35,없음,
+SOP-FAN-11,적용,8;40,,
+SOP-FAN-11,완료,14,,
+SOP-FAN-11,승인,10,미확인 — HM-8.1 SOP-FAN-11 절에 승인 줄이 없음(설비보전팀장 승인 문장은 HM-8.7 근본 조치 절의 것),
+SOP-FAN-12,적용,17,,
+SOP-FAN-12,제한,20,,
+SOP-FAN-12,완료,23,,
+SOP-FAN-12,승인,19,미확인 — HM-8.2 SOP-FAN-12 절에 승인 줄이 없음(설비보전팀장 승인 문장은 HM-8.7 근본 조치 절의 것),
+SOP-COOL-11,종류·코드,판단시스템_결정표_내보내기.txt:37;판단시스템_결정표_내보내기.txt:60;판단시스템_결정표_내보내기.txt:61;판단시스템_결정표_내보내기.txt:66,control:FAN_SET,
+SOP-COOL-11;SOP-COOL-12;SOP-COOL-13,적용,45.1,,R1
+SOP-COOL-11;SOP-COOL-12;SOP-COOL-13,금지,87;45.2,,R1
+SOP-COOL-11;SOP-COOL-12;SOP-COOL-13,제한,89,,
+SOP-COOL-11;SOP-COOL-12;SOP-COOL-13,완료,71.1;71.2,,R3
+SOP-COOL-11,제한,49.2,,
+SOP-COOL-11;SOP-COOL-12,제한,88.2,,R2
+SOP-COOL-11;SOP-COOL-12;SOP-COOL-13,금지,판단시스템_결정표_내보내기.txt:16,조치 후 예측 유온이 65 ℃ 이상이면 이 후보를 쓰지 않는다.,R4
+SOP-COOL-11;SOP-COOL-12;SOP-COOL-13,금지,판단시스템_결정표_내보내기.txt:33,PLC가 트립 상태이면 리셋 외 명령을 내리지 않는다.,R5
+SOP-COOL-11,승인,52,운전원,
+SOP-COOL-12,종류·코드,판단시스템_결정표_내보내기.txt:38;판단시스템_결정표_내보내기.txt:60;판단시스템_결정표_내보내기.txt:61;판단시스템_결정표_내보내기.txt:66,control:FAN_SET;LOAD_SET,
+SOP-COOL-12,승인,60,운전원,
+SOP-COOL-13,종류·코드,판단시스템_결정표_내보내기.txt:39;판단시스템_결정표_내보내기.txt:60;판단시스템_결정표_내보내기.txt:61;판단시스템_결정표_내보내기.txt:66,control:LOAD_SET;WO_CREATE,
+SOP-COOL-13,승인,68;66;74,운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시),
+SOP-COOL-14,종류·코드,판단시스템_결정표_내보내기.txt:40;판단시스템_결정표_내보내기.txt:60;판단시스템_결정표_내보내기.txt:61;판단시스템_결정표_내보내기.txt:66,work_order:WO_CREATE,
+SOP-COOL-14,금지,판단시스템_결정표_내보내기.txt:16,조치 후 예측 유온이 65 ℃ 이상이면 이 후보를 쓰지 않는다.(옛 판단 시스템이 대상 빈칸으로 건 그대로 — 작업지시는 제어 명령이 아님),R4
+SOP-COOL-14,금지,판단시스템_결정표_내보내기.txt:33,PLC가 트립 상태이면 리셋 외 명령을 내리지 않는다.(옛 판단 시스템이 대상 빈칸으로 건 그대로 — 작업지시는 제어 명령이 아님),R5
+SOP-COOL-14,적용,74.1;74.2;38,,
+SOP-COOL-14,제한,78.2,,
+SOP-COOL-14,완료,79,,
+SOP-COOL-14;SOP-COOL-15,승인,74,설비보전팀장,
+SOP-COOL-15,종류·코드,판단시스템_결정표_내보내기.txt:41;판단시스템_결정표_내보내기.txt:60;판단시스템_결정표_내보내기.txt:61;판단시스템_결정표_내보내기.txt:66,work_order:WO_CREATE,
+SOP-COOL-15,적용,74.2;39,,
+SOP-COOL-15,완료,84,,

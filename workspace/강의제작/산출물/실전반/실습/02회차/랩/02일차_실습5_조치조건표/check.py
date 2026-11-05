@@ -1,28 +1,96 @@
-"""결과/조건표.csv의 구조 검사와 판단기록.md 기록 칸 확인. 생성 · 수정 · 네트워크 접속을 하지 않는다.
+"""결과/조건표.csv · 승인.csv의 구조 검사와 정한 것 · 기대 판정 · 제공 파일 확인. 생성 · 수정 · 네트워크 접속을 하지 않는다.
 의미(조건 · 경계 · 출처가 원문과 맞는지, 사례의 판정)는 판정하지 않는다 — 원자료와 따로 대조한다.
 사용: python check.py
 """
 from pathlib import Path
-import csv, re, sys
+import csv, io, json, re, sys
 root = Path(__file__).resolve().parent
+def csv_rows(path):
+    """(열 이름, 행, 첫머리 # 줄 수) — 「제공 빈 틀」 표시 줄은 데이터가 아니다."""
+    lines = path.read_text(encoding='utf-8-sig').splitlines(keepends=True)
+    skip = 0
+    while skip < len(lines) and lines[skip].lstrip().startswith('#'):
+        skip += 1
+    reader = csv.DictReader(io.StringIO(''.join(lines[skip:]), newline=''))
+    return reader.fieldnames, list(reader), skip
+def read_csv(path):
+    head, rows, _ = csv_rows(path)
+    return head, rows
+def report(parts):
+    ok = True
+    for name, state, errs, note, required in parts:
+        print(f'- {name}: {state}' + (f' — {note}' if note else ''))
+        for e in errs[:40]: print('    ' + e)
+        if len(errs) > 40: print(f'    … 외 {len(errs) - 40}건')
+        if required and state not in ('통과', '아직 비어 있음'): ok = False
+    return ok
+def expect_part(root):
+    p = root/'결과/기대_판정.csv'
+    if not p.is_file(): return ('기대_판정.csv', '없음 — 받은 ZIP의 빈 틀을 지우지 않습니다', [], '', True)
+    head, rows, skip = csv_rows(p)
+    if head != ['사례', '후보', '기대_판정', '근거']: return ('기대_판정.csv', '확인 필요', ['열 이름이 사례,후보,기대_판정,근거가 아닙니다.'], '', True)
+    if not rows: return ('기대_판정.csv', '아직 비어 있음', [], '실행 전에 기대 판정을 적습니다', False)
+    errs = []
+    for n, r in enumerate(rows, skip + 2):
+        if (r.get('기대_판정') or '').strip() not in ('유지', '제외', '보류'): errs.append(f'기대_판정.csv:{n} 기대_판정은 유지 · 제외 · 보류 가운데 하나입니다.')
+        if not re.search(r'[^\s:]+:\d+', r.get('근거') or ''): errs.append(f'기대_판정.csv:{n} 근거에 파일:줄이 없습니다.')
+    return ('기대_판정.csv', '확인 필요' if errs else '통과', errs, f'행 {len(rows)}개', True)
+def chosen_part(root):
+    errs = chosen_errors(root)
+    p = root/'결과/정한_것.csv'
+    if not errs and p.is_file() and not csv_rows(p)[1]: return ('정한_것.csv', '아직 비어 있음', [], '지점마다 고른 것 · 근거를 적습니다', False)
+    return ('정한_것.csv', '확인 필요' if errs else '통과', errs, '', True)
+def provided_part(root):
+    errs = provided_errors(root)
+    return ('제공 파일', '확인 필요' if errs else '통과', errs, '', True)
+def chosen_errors(root):
+    """결과/정한_것.csv — 빈 칸 · 근거 꼴(파일:줄)만 본다. 고른 것이 맞는지는 보지 않는다."""
+    import csv, io, re
+    p = root / '결과' / '정한_것.csv'
+    if not p.is_file():
+        return ['결과/정한_것.csv가 없습니다 — 받은 ZIP의 빈 틀을 지우지 않습니다.']
+    lines = [x for x in p.read_text(encoding='utf-8-sig').splitlines() if x.strip() and not x.lstrip().startswith('#')]
+    rows = list(csv.DictReader(io.StringIO('\n'.join(lines))))
+    need = ['지점', '고른_것', '근거', '바뀌는_답']
+    if not lines or [c.strip() for c in csv.reader([lines[0]]).__next__()] != need:
+        return ['결과/정한_것.csv: 열 이름이 ' + ','.join(need) + '이어야 합니다.']
+    out = []
+    for n, r in enumerate(rows, 1):
+        empty = [c for c in need if not (r.get(c) or '').strip()]
+        if empty:
+            out.append(f'결과/정한_것.csv {n}번째 행: 빈 칸 ' + ', '.join(empty) + '(못 정했으면 고른_것에 「미결」).')
+        elif not re.search(r'[^\s:]+:\d+', r['근거']):
+            out.append(f'결과/정한_것.csv {n}번째 행: 근거에 파일:줄이 없습니다.')
+    return out
+import hashlib as _h
+_PROVIDED = {
+ "condition_tools.py": "262da16424c0af6ba6a7ebb2efbb144d34812d20309afd2dc8c6a6b6d0d3085a",
+ "lab_steps.py": "1de7e5056276d1aeedb5ad396ff68a1c7a5aaea7eda21d542886fce8d2fabbf0",
+ "show_result.py": "1d7bb59ff9b3a5c3e7bd94af2838eafb891b312a1c34e43877dd700d17fd7c9d"
+}
+def provided_errors(root):
+    out = []
+    for name, digest in _PROVIDED.items():
+        p = root / name
+        if not p.is_file():
+            out.append(f'제공 파일이 없습니다: {name} — 받은 ZIP의 것으로 되돌리세요.')
+        elif _h.sha256(p.read_bytes()).hexdigest() != digest:
+            out.append(f'제공 파일이 바뀌었습니다: {name} — 받은 ZIP의 것으로 되돌리세요.')
+    return out
 HEADER = ['rule_id','action','condition_index','logic','input','operator','value','unit','boundary_included','result','penalty_manwon','reason','source_section']
 OPS = {'>=':'예','<=':'예','>':'아니오','<':'아니오','==':'해당없음','!=':'해당없음','has_other_than':'해당없음'}
 NUMERIC = {'forecast_ts1','forecast_ps1','fan100_hours'}
 TEXT = {'plc_mode': {'REMOTE_AUTO','REMOTE_MANUAL','LOCAL'}, 'plc_state': {'RUN','TRIP','STOP'}, 'skill_kind': {'control','work_order'}}
 LIST_INPUTS = {'skill_code'}
 INPUTS = NUMERIC | set(TEXT) | LIST_INPUTS
-def read_csv(path):
-    with path.open(encoding='utf-8-sig', newline='') as f:
-        reader = csv.DictReader(f)
-        return reader.fieldnames, list(reader)
 def check_table(path, sop_ids):
-    """(상태, 오류 목록, 규칙 묶음 수, rule_id 집합). 상태: 없음 · 빈 틀 · 통과 · 확인 필요."""
+    """(상태, 오류 목록, 규칙 묶음 수, rule_id 집합). 상태: 없음 · 아직 비어 있음 · 통과 · 확인 필요."""
     if not path.is_file(): return '없음', [], 0, set()
-    header, table = read_csv(path)
-    if header != HEADER: return '확인 필요', ['열 이름 · 순서가 계약과 다릅니다: ' + ','.join(header or [])], 0, set()
-    if not table: return '빈 틀', [], 0, set()
+    header, table, skip = csv_rows(path)
+    if header != HEADER: return '확인 필요', [f'{path.name}:{skip + 1} 열 이름 · 순서가 계약과 다릅니다: ' + ','.join(header or [])], 0, set()
+    if not table: return '아직 비어 있음', [], 0, set()
     errs, groups = [], {}
-    for line, r in enumerate(table, 2):
+    for line, r in enumerate(table, skip + 2):
         at = f'{path.name}:{line}'
         if r['action'] not in sop_ids: errs.append(f'{at} targets.csv에 없는 action {r["action"]}')
         if r['logic'] != 'AND': errs.append(f'{at} logic은 AND입니다(OR는 다른 rule_id로 나눕니다).')
@@ -50,60 +118,26 @@ def check_table(path, sop_ids):
     for key, g in groups.items():
         if sorted(g['index']) != list(range(1, len(g['index']) + 1)): errs.append(f'{path.name} 묶음 {key}: condition_index가 1부터 차례가 아닙니다: {g["index"]}')
     return ('확인 필요' if errs else '통과'), errs, len(groups), {k[0] for k in groups}
-def md_cells(line):
-    # 마크다운 표 한 줄의 칸 목록 — 칸 안의 글자 |는 \| 로 쓴다
-    s = line.strip()
-    s = s[1:] if s.startswith('|') else s
-    s = s[:-1] if s.endswith('|') and not s.endswith('\\|') else s
-    return [c.strip() for c in re.split(r'(?<!\\)\|', s)]
-def table_rows(path, column):
-    # 마크다운 표에서 column으로 시작하는 칸이 있는 표의 (데이터 행 수, 그 칸이 빈 행 수)
-    if not path.is_file(): return None
-    head, total, empty = None, 0, 0
-    for line in path.read_text(encoding='utf-8-sig').splitlines():
-        if not line.startswith('|'): head = None; continue
-        cells = md_cells(line)
-        if head is None: head = cells; continue
-        if set(''.join(cells)) <= set('-: '): continue
-        idx = [k for k, h in enumerate(head) if h.startswith(column)]
-        if not idx or not any(cells): continue
-        total += 1
-        if idx[0] >= len(cells) or not cells[idx[0]]: empty += 1
-    return total, empty
-def record_part(path, column, label):
-    got = table_rows(path, column)
-    if got is None: return (f'{path.name} {label}', '없음', [], '', False)
-    total, empty = got
-    if total == 0 or empty == total: return (f'{path.name} {label}', '아직 비어 있음', [], f'「{column}」 칸을 채웁니다', False)
-    return (f'{path.name} {label}', '작성 중' if empty else '작성됨', [], f'행 {total}개 중 빈 칸 {empty}개' if empty else f'행 {total}개', False)
-def shape_part(path):
-    # 표마다 머리 줄과 칸 수가 다른 줄 — 칸이 밀리면 뒤 칸의 값이 다른 칸에 들어가 대조가 어긋난다
-    name = f'{path.name} 표 칸 수'
-    if not path.is_file(): return (name, '없음', [], '', False)
-    errs, head = [], None
-    for no, line in enumerate(path.read_text(encoding='utf-8-sig').splitlines(), 1):
-        if not line.startswith('|'): head = None; continue
-        n = len(md_cells(line))
-        if head is None: head = n; continue
-        if n != head: errs.append(f'{path.name}:{no} 칸 {n}개 — 이 표의 머리 줄은 {head}칸입니다. 칸이 밀렸는지 보고, 칸 안의 글자 |는 \\| 로 씁니다.')
-    return (name, '확인 필요' if errs else '통과', errs, '', True)
-def report(parts):
-    ok = True
-    for name, state, errs, note, required in parts:
-        print(f'- {name}: {state}' + (f' — {note}' if note else ''))
-        for e in errs[:40]: print('    ' + e)
-        if len(errs) > 40: print(f'    … 외 {len(errs) - 40}건')
-        if required and state != '통과': ok = False
-    return ok
 
 sop_ids = [r['sop_id'] for r in read_csv(root/'자료/targets.csv')[1]]
+def approval_part():
+    p = root/'결과/승인.csv'
+    if not p.is_file(): return ('승인.csv', '없음 — 받은 ZIP의 빈 틀을 지우지 않습니다', [], '', True)
+    head, rows, skip = csv_rows(p)
+    if head != ['sop_id', '승인_역할', '원문']: return ('승인.csv', '확인 필요', ['열 이름이 sop_id,승인_역할,원문이 아닙니다.'], '', True)
+    if not rows: return ('승인.csv', '아직 비어 있음', [], '', False)
+    errs = []
+    for n, r in enumerate(rows, skip + 2):
+        if r['sop_id'] not in sop_ids: errs.append(f'승인.csv:{n} targets.csv에 없는 SOP {r["sop_id"]}')
+        if not r['승인_역할'].strip(): errs.append(f'승인.csv:{n} 승인_역할이 비었습니다(찾지 못했으면 「미확인」으로 시작).')
+        if not re.fullmatch(r'\s*(자료/HM-8_매뉴얼\.md:)?\d+(\s*;\s*(자료/HM-8_매뉴얼\.md:)?\d+)*\s*', r['원문'] or ''): errs.append(f'승인.csv:{n} 원문은 자료/HM-8_매뉴얼.md의 줄 번호(45 또는 자료/HM-8_매뉴얼.md:45, ;로 나눔)입니다.')
+    for s in sop_ids:
+        if [r['sop_id'] for r in rows].count(s) > 1: errs.append(f'승인.csv: {s}가 두 줄 이상입니다.')
+    return ('승인.csv', '확인 필요' if errs else '통과', errs, f'행 {len(rows)}개', True)
 state, errs, n, _ = check_table(root/'결과/조건표.csv', sop_ids)
-if state == '없음':
-    print('아직 검사할 결과가 없습니다: 결과/조건표.csv')
 print('구조 검사 결과')
-ok = report([('조건표.csv', state, errs, f'규칙 묶음 {n}개' if n else '', True),
-             record_part(root/'결과/판단기록.md', '고른 것', '정한 것'), record_part(root/'결과/판단기록.md', '맞은 규칙', '사례 대조'),
-             record_part(root/'결과/판단기록.md', '승인 역할', '남은 후보와 실행 승인'), shape_part(root/'결과/판단기록.md')])
+ok = report([('조건표.csv', state, errs, f'규칙 묶음 {n}개' if n else '', True), approval_part(), chosen_part(root), expect_part(root), provided_part(root)])
+ok = ok and state == '통과'
 print('구조 검사 통과' if ok else '구조 확인 필요 — 위 줄마다 결과 파일의 어느 항목인지 찾아 고친 뒤 다시 실행합니다.')
 print('이 검사는 모양만 봅니다. 의미와 질문별 답(조건 · 경계 · 출처가 원문과 맞는지, 사례의 판정)은 원자료와 따로 대조합니다.')
 sys.exit(0 if ok else 1)

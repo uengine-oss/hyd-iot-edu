@@ -9,7 +9,7 @@
    를 실습3 갈래마다, 실습4 입력 모델(통합 A · 실전 ㄴ) 위에서 통합반은 설비별 교체 부품 조회와 수정본 반영 → 재반영을 수정본 갈래마다,
    실전반은 조회 갈래마다 실제로 하고 개수·답·출처를 확인한다. 통합반은 수정본 전에도 부품의 사용 설비를 설비 상태와 함께 조회한다
    (10단계 「지금 가동하는 설비」). 끝나면 그 컨테이너와 이름 없는 볼륨만 지운다.
-갈래: 실습3 통합반 A · B, 실전반 A · B · ㄴ · ㄷ(build_labs.REFERENCE_BRANCHES, 대응은 reference/실전반/README.md).
+갈래: 실습3 통합반 A · B · C, 실전반 A · B · ㄴ · ㄷ(build_labs.REFERENCE_BRANCHES, 대응은 reference/실전반/README.md).
       실습4 통합반 수정본 갈래 남김 · 삭제(build_labs.LAB4_CHANGE_BRANCHES — 불용 설비를 상태로 남김 · 전용 하위 대상과 함께 지움),
       실전반 조회 갈래 ㄱ · ㄴ(build_labs.LAB4_QUERY_BRANCHES — PR-07 7.4 정보를 빼고 · 함께 돌려줌).
 사용: python verify_reference.py [--offline]
@@ -48,6 +48,17 @@ def supply_row(branch, supplier, approved, price, defect, lead, extra, pending):
     return row
 
 
+def written_code(aid, key):
+    """그 구성 요소의 교체부품 칸(생성 정답 D.PART_TEXT)이 품번을 말하는가 — 괄호 속 품번 · 사내 품번 · 교차표에 하나로 적힌 표기.
+    통합반 갈래 C(빈 칸 · 품명만 적힌 칸은 잇지 않음)의 기대 답에 쓴다. 교체로 다시 적은 HYD-02 주 펌프 줄은 사내 품번(P-PMP-SEAL)이다."""
+    if (aid, key) == D.REMOVED_PUMP[:2]:
+        return True
+    text = D.PART_TEXT[aid].get(key, '')
+    if re.search(r'\((P-[A-Z0-9-]+)\)', text) or text in D.TRUTH['parts']:
+        return True
+    return len({c[0] for c in D.CROSS if c[1] == text}) == 1
+
+
 def code_to_parts(code):
     """조회 표기 → 사내 품번 후보(정렬). 없으면 빈 목록, 같은 표기를 가진 품번이 여럿이면 여럿."""
     if code in D.TRUTH['parts']:
@@ -69,7 +80,7 @@ def expected(course, branch):
             sensor_props[f'{aid}:{tag}'] = [s['quantity'], s['unit'], s['normal'], s['limit'], s['direction'], s['kind']]
         sensors_by_asset[aid] = {k: sorted(v) for k, v in sorted(per.items())}
         for key, part in a['components'].items():
-            if part:
+            if part and not (course == '통합반' and branch == 'C' and not written_code(aid, key)):
                 usage[part]['assets'].add(aid)
                 usage[part]['components'].add(f'{aid}:{key}')
     same = {}
@@ -98,7 +109,8 @@ def expected(course, branch):
     out = {'sensors_by_asset': sensors_by_asset, 'quantity_members': {k: sorted(v) for k, v in sorted(quantity_members.items())},
            'sensor_props': dict(sorted(sensor_props.items())), 'probes': probes}
     if course == '통합반':   # 실습4 「설비별 교체 부품 조회」: 설비 → 구성 요소 → 교체 부품(없으면 None)
-        out['parts_by_asset'] = {aid: dict(sorted(a['components'].items())) for aid, a in sorted(t['assets'].items())}
+        out['parts_by_asset'] = {aid: {k: (v if not (branch == 'C' and not written_code(aid, k)) else None) for k, v in sorted(a['components'].items())}
+                                 for aid, a in sorted(t['assets'].items())}
     else:                    # 실습3 「값마다 출처 남기기」: 생성 순서에서 센 줄(CSV를 다시 읽지 않음)
         out['supply_sources'] = {f'{s}→{p}': [D.line_ref(D.QUOTE_FILE, v['quote_line']), D.line_ref(D.AVL_FILE, v['avl_line']) if 'avl_line' in v else None, D.REF_DATE]
                                  for (s, p), v in sorted(t['supply'].items())}
@@ -217,7 +229,7 @@ def offline():
             d = diff(exp, got)
             report[course][branch] = {'nodes': len(graph['nodes']), 'rels': len(graph['rels']), 'mismatch': d}
             answers[branch] = exp
-        EXPECT[course].write_text(json.dumps(answers, ensure_ascii=False, indent=1), encoding='utf-8')
+        EXPECT[course].write_text(json.dumps(answers, ensure_ascii=False, indent=1), encoding='utf-8', newline='\n')
     # 실전반 실습4 조회 갈래: 실습4 입력 모델(갈래 ㄴ) 하나에서 갈래마다 돌려줄 열만 달리해 같은 기대 답이 나오는지(ㄱ = 기대 답 A의 공급 조건 열, ㄴ = 기대 답 ㄴ)
     graph = B.reference_model(True, B.LAB4_INPUT_BRANCH['실전반'])[1]
     report['실전반']['실습4'] = {g: {'input_branch': B.LAB4_INPUT_BRANCH['실전반'], 'expected_key': key,
@@ -455,9 +467,9 @@ if __name__ == '__main__':
                if v['probe_mismatch'] or v.get('source_mismatch')}
         bad |= {f'{c}/실습4/{g}': v.get('probe_mismatch') or v.get('mismatch') for c, x in report['neo4j'].items() for g, v in x['실습4'].items() if v.get('probe_mismatch') or v.get('mismatch')}
         if bad:
-            REPORT.write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding='utf-8')
+            REPORT.write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding='utf-8', newline='\n')
             print(json.dumps(bad, ensure_ascii=False, indent=1)); sys.exit('Neo4j 조회 불일치')
-    REPORT.write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding='utf-8')
+    REPORT.write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding='utf-8', newline='\n')
     brief = {c: {'실습3': {b: {k: e[k] for k in ['first', 'second', 'probe_mismatch']} for b, e in x['실습3'].items()},
                  '실습4': {g: {k: e[k] for k in ['input_branch', 'first', 'second', 'after_changes', 'after_changes_again', 'probe_mismatch', 'mismatch'] if k in e} for g, e in x['실습4'].items()}}
              for c, x in report.get('neo4j', {}).items()}

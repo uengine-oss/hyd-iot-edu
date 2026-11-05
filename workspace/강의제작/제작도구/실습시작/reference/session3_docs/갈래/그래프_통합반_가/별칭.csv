@@ -1,0 +1,14 @@
+원문_이름,기존_ID,근거
+핀 오염,cause:cooler-fin-fouling,HM-8_매뉴얼.md:38
+주변 온도,cause:ambient-temperature-rise,HM-8_매뉴얼.md:39
+팬 구동 불량,cause:fan-drive-fault,HM-8_매뉴얼.md:40
+HPP-45A,HYD-01 HYD-02 HYD-03,OEM-HPP45A_정비지침_영한.md:8
+"HYD-01, HYD-02, HYD-03",HYD-01 HYD-02 HYD-03,HI-01_보충매뉴얼.md:10
+HYD-01~03,HYD-01 HYD-02 HYD-03,PR-07_예비품기준.md:10
+축 씰,P-PMP-SEAL,PM-02_정기점검표.md:17
+리턴 필터,P-RTN-FLT,PM-02_정기점검표.md:20
+팬 베어링,P-FAN-BRG,PR-07_예비품기준.md:15
+쿨러 코어,P-CLR-CORE,PR-07_예비품기준.md:16
+P-PMP-SEAL,P-PMP-SEAL,PR-07_예비품기준.md:14
+P-FAN-BRG,P-FAN-BRG,PR-07_예비품기준.md:15
+P-CLR-CORE,P-CLR-CORE,PR-07_예비품기준.md:16

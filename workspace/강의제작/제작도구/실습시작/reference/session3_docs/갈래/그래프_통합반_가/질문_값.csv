@@ -1,0 +1,8 @@
+질문,이름,값
+q1,asset,HYD-02
+q3,sop,SOP-COOL-14
+q3,asset,HYD-02
+q4,doc,OEM-HPP45A-MM
+q5_target,target,HYD-04:cooler
+q5_section,section,HM-9.4
+hold,ids,HM-9_1.0_검토.json#HM-9-M008 OEM-HPP45A-MM_C_검토.json#OEM-HPP45A-MM-M054

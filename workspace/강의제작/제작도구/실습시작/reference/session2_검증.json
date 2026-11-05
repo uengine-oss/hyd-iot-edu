@@ -12,6 +12,11 @@
     "nodes": 206,
     "rels": 306,
     "mismatch": []
+   },
+   "C": {
+    "nodes": 206,
+    "rels": 294,
+    "mismatch": []
    }
   },
   "실전반": {
@@ -132,6 +137,74 @@
      "second": [
       206,
       306
+     ],
+     "probe_mismatch": [],
+     "sensors_per_asset_via_component": [
+      [
+       "HYD-01",
+       18
+      ],
+      [
+       "HYD-02",
+       18
+      ],
+      [
+       "HYD-03",
+       18
+      ],
+      [
+       "HYD-04",
+       16
+      ],
+      [
+       "HYD-05",
+       9
+      ],
+      [
+       "HYD-06",
+       9
+      ],
+      [
+       "HYD-07",
+       2
+      ]
+     ],
+     "asset_level_sensors": [
+      [
+       "HYD-01",
+       [
+        "SE"
+       ]
+      ],
+      [
+       "HYD-02",
+       [
+        "SE"
+       ]
+      ],
+      [
+       "HYD-03",
+       [
+        "SE"
+       ]
+      ],
+      [
+       "HYD-04",
+       [
+        "SE"
+       ]
+      ]
+     ],
+     "quantity_TS1_members_match": true
+    },
+    "C": {
+     "first": [
+      206,
+      294
+     ],
+     "second": [
+      206,
+      294
      ],
      "probe_mismatch": [],
      "sensors_per_asset_via_component": [

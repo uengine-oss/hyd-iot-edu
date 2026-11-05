@@ -102,6 +102,13 @@ def judge(original, after, no_key=False, server_calls=None):
         p = after/'결과'/rec
         if p.is_file() and filled_rows(p.read_text(encoding='utf-8'), '정한 것'):
             decided.append(f'{rec} 「정한 것」')
+    for name in ['정한_것.csv', '검토_결정.csv', '조건_대조.csv', '역할.csv', '연결_규칙.csv', '다른문서_조건.csv']:   # 정할 자리(줄인 판) — 열 이름 줄 밖에 행이 있으면 채운 것
+        p = after/'결과'/name
+        if p.is_file() and len([x for x in p.read_text(encoding='utf-8-sig').splitlines() if x.strip() and not x.startswith('#')]) > 1:
+            decided.append(name)
+    p = after/'결과/그래프_모양.json'
+    if p.is_file() and re.search(r'"판을_따로_둠":\s*(true|false)', p.read_text(encoding='utf-8')):
+        decided.append('그래프_모양.json')
     for p in sorted(after.glob('결과/*.cypher')):
         if re.search(r'PM-2\.4|예정된 정비 시간', p.read_text(encoding='utf-8')):
             decided.append(f'{p.name}(다른 문서 조건 연결)')

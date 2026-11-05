@@ -15,6 +15,9 @@ data=json.loads((here/'package-index.json').read_text(encoding='utf-8'))
 for lab in data['labs']:
     relative = Path(lab.pop('path')).relative_to('workspace/강의제작').as_posix()
     lab['url']=args.base_url.rstrip('/')+'/'+quote(relative)
+    if 'guide_file' in lab:   # 코딩 랩 가이드(랩 폴더 밖) — 시작 도구가 받아 실습 폴더 옆에 둔다
+        guide=lab['guide_file']
+        guide['url']=args.base_url.rstrip('/')+'/'+quote(Path(guide.pop('path')).relative_to('workspace/강의제작').as_posix())
 (here/'catalog.json').write_text(json.dumps(data,ensure_ascii=False,indent=2),encoding='utf-8',newline='\n')
 write_zip(here/'실습시작.zip',[('실습시작/'+name,(here/name).read_bytes()) for name in ['launcher.py','실습시작.cmd','catalog.json','settings.json']])
 print(f"실습 시작 묶음: D:/HYD-Practice, 두 과정 {len(data['labs'])}개 항목, {args.base_url}")

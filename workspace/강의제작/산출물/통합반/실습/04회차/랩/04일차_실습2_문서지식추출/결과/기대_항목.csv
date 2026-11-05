@@ -1,0 +1,3 @@
+# 제공 빈 틀 — 실행 전에 원문에서 찾은 항목
+# 파일 = 자료/ 안의 파일 이름 · 줄 = 그 파일의 줄 번호 · 종류 = step · precondition · prohibition · completion · unit_value 가운데 하나(한 줄에 두 종류면 두 행)
+파일,줄,종류

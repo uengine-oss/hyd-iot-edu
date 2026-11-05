@@ -394,6 +394,20 @@ def empty_tables(md):
     return out
 
 
+def slot_errors():
+    """정할 자리의 꼴 — 제공 코드(doc_extract.py)의 검사로 본다. 비어 있는 자리는 결과 화면의 단계 띠에서 짚으므로 여기서는 꼴만."""
+    import doc_extract as X
+    out = []
+    for fn in (X.settings, X.expected_rows, X.decision_rows, lambda: X.rule_rows(TASK), (X.role_rows if PRACTICAL else (lambda: None))):
+        try:
+            fn()
+        except X.Problem as e:
+            out.append(f'정할 자리: {e}')
+        except OSError as e:
+            out.append(f'정할 자리 파일을 읽지 못함: {e}')
+    return out
+
+
 def stages():
     todo = []
     print(f'기준 입력: {basis("조건표.csv").relative_to(HERE).as_posix()} · {basis(JUDGED).relative_to(HERE).as_posix()}')
@@ -409,10 +423,14 @@ def stages():
     chat = sum(1 for r in recs if r.get('method') == PASTED)
     other = sum(1 for r in recs if r.get('folder_mark') != here)
     print(f'[1] 응답 기록 {len(recs)}개(이 폴더에서 모델 서버로 보낸 요청 {sent} · 쓸 내용이 없던 답 {empty} · 채팅으로 받음 {chat} · 다른 폴더 기록 {other})')
-    prompt = RESULT / 'prompt.md'
-    print(f'[2] 요청 글 결과/prompt.md: {"있음" if prompt.is_file() and prompt.read_text(encoding="utf-8-sig").strip() else "없음"}')
-    if not (prompt.is_file() and prompt.read_text(encoding='utf-8-sig').strip()):
-        todo.append('요청 글 결과/prompt.md가 없습니다.')
+    import doc_extract as _X
+    try:
+        has_prompt = bool(_X.prompt_text())
+    except _X.Problem:
+        has_prompt = False
+    print(f'[2] 요청 글 결과/prompt.md: {"있음" if has_prompt else "없음(빈 틀)"}')
+    if not has_prompt:
+        todo.append('요청 글 결과/prompt.md가 아직 빈 틀입니다.')
     files = sorted((RESULT / '후보').glob('*.json'))
     print(f'[3] 후보 파일 {len(files)}개')
     first = []
@@ -487,6 +505,7 @@ def stages():
         stamp = lambda x: x.replace('T', ' ')[:16]
         if when and first and stamp(min(first)) < stamp(when.group(1).strip()):
             todo.append(f'검토_기록.md의 기대 칸을 쓴 시각({when.group(1).strip()})이 첫 후보 파일({min(first)})보다 뒤입니다.')
+    todo += slot_errors() + chosen_errors(HERE) + provided_errors(HERE)
     print()
     if todo:
         print('완료 아님 — 남은 것:')
@@ -497,6 +516,43 @@ def stages():
     print('구조상 빠진 단계는 없습니다. ' + END)
     return 0
 
+
+def chosen_errors(root):
+    """결과/정한_것.csv — 빈 칸 · 근거 꼴(파일:줄)만 본다. 고른 것이 맞는지는 보지 않는다."""
+    import csv, io, re
+    p = root / '결과' / '정한_것.csv'
+    if not p.is_file():
+        return ['결과/정한_것.csv가 없습니다 — 받은 ZIP의 빈 틀을 지우지 않습니다.']
+    lines = [x for x in p.read_text(encoding='utf-8-sig').splitlines() if x.strip() and not x.lstrip().startswith('#')]
+    rows = list(csv.DictReader(io.StringIO('\n'.join(lines))))
+    need = ['지점', '고른_것', '근거', '바뀌는_답']
+    if not lines or [c.strip() for c in csv.reader([lines[0]]).__next__()] != need:
+        return ['결과/정한_것.csv: 열 이름이 ' + ','.join(need) + '이어야 합니다.']
+    out = []
+    for n, r in enumerate(rows, 1):
+        empty = [c for c in need if not (r.get(c) or '').strip()]
+        if empty:
+            out.append(f'결과/정한_것.csv {n}번째 행: 빈 칸 ' + ', '.join(empty) + '(못 정했으면 고른_것에 「미결」).')
+        elif not re.search(r'[^\s:]+:\d+', r['근거']):
+            out.append(f'결과/정한_것.csv {n}번째 행: 근거에 파일:줄이 없습니다.')
+    return out
+
+import hashlib as _h
+_PROVIDED = {
+ "doc_extract.py": "a9de8558ffa417ef5b39d4a20f5979fa700cf03a54db4ab85a0f99d6520bf10f",
+ "lab_steps.py": "2a811000584cd955b9386e60a183ec94be56711f512f23b629aa248313fe09c3",
+ "llm_client.py": "a82e6a70a247c30dfb51ffff5aea0b234db24ab14a1ebdfe6d1904e1ca849d24",
+ "show_result.py": "1d7bb59ff9b3a5c3e7bd94af2838eafb891b312a1c34e43877dd700d17fd7c9d"
+}
+def provided_errors(root):
+    out = []
+    for name, digest in _PROVIDED.items():
+        p = root / name
+        if not p.is_file():
+            out.append(f'제공 파일이 없습니다: {name} — 받은 ZIP의 것으로 되돌리세요.')
+        elif _h.sha256(p.read_bytes()).hexdigest() != digest:
+            out.append(f'제공 파일이 바뀌었습니다: {name} — 받은 ZIP의 것으로 되돌리세요.')
+    return out
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:

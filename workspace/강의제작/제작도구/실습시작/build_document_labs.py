@@ -1,29 +1,26 @@
 """문서 지식 묶음 네 랩 — 추출 둘(통합반 04회차 실습2 문서지식추출 · 실전반 03회차 실습4 지식추출)과 그래프 반영 둘(통합반 04회차 실습3 그래프반영과검증 ·
-실전반 03회차 실습5 그래프반영 — 작업 확인 카드)의 학생 폴더 · ZIP을 만든다.
+실전반 03회차 실습5 그래프반영 — 작업 확인 카드)의 학생 폴더 · ZIP · 폴더 밖 가이드를 만든다.
 
-설계 정본: 작업 폴더 구성안_문서지식.md(5 · 6 · 7절). 문서 자료는 data_documents.py 한 벌(네 랩 같은 바이트)이다.
-추출 랩 입력/ = 3회차 판정 랩의 입력과 강사 판 결과(reference/session3/갈래/판정_가-가 = 3회차 학생용 완성본의 결과).
-그래프 랩 입력/ = 2회차 실습4 입력과 같은 바이트의 설비 모델 + 3회차 판(조건표 · SOP 구조, 실전은 + 조치 검토 결과) + 추출 랩의 강사 판 검토 결과
-(reference/session3_docs/branches.py — 지점5 나 · 지점6 가, 후보는 강사 추출 실행 강사_추출/run1의 수업 모델 답). 그래서 추출 랩을 먼저 만든다.
-단계 랩 틀(START.md 「진행 단계」 한 줄 = guide.html 한 절)과 작업 규칙 정본(STEP_RULES)은 build_labs.py에서 가져온다 — 문구 사본을 두지 않는다.
-수업 모델 연결 도구는 lab_llm.py 한 곳이고 학생 폴더에는 llm_client.py로 넣는다(4 · 5회차 공용). 랩 DB는 lab_db.py 그대로, 그래프 도구는 LAB_CYPHER(lab_cypher.py).
+설계 정본: 작업 폴더 구성안50_문서지식.md · 공용틀_계약.md. 학생은 방향이 갈리는 판단만 결과/의 정할 자리(빈 틀)에 AI와 채우고,
+일반 로직(읽기 · 글자 방식 · 조각 · 보내기 · 후보화 · 인용 줄 · 검토 결과 쓰기 · 적재 · 조회 · 내보내기 · 카드 글)은 제공 코드(doc_extract.py · doc_graph.py)가 한다.
+학생 명령은 `python show_result.py` 하나 — 채운 정할 자리까지 lab_steps.py의 단계를 돌려 결과/보기.html을 다시 쓴다(공용 틀 lab_frame · show_result).
+문서 자료는 data_documents.py 한 벌(네 랩 같은 바이트). 추출 랩 입력/ = 3회차 판정 랩 입력 · 강사 판 결과, 그래프 랩 입력/ = 2회차 실습4 입력 + 3회차 판 +
+추출 랩의 강사 검토 판(reference/session3_docs/branches.py — 지점5 나 · 지점6 가, 후보는 강사 추출 실행 run1). 그래서 추출 랩을 먼저 만든다.
+정답 보기 토글의 내용은 reference/session3_docs/fills.py 한 곳(기본 갈래)이다 — 같은 판을 학생용 완성본과 강사 참조 갈래 실행이 쓴다.
 
 설계 조건 검사(하나라도 어긋나면 쓰지 않고 멈춤):
-  1. 같은 바이트 — 추출 랩: 자료/의 HM-8 1.1 · 1.0 · HI-01 = 3회차 랩 자료, 입력/ 조건표 · SOP 구조 = 3회차 판정 랩 입력, 판정 결과 = 3회차 학생용 완성본의 결과,
-     SR-04 · 9장 9.3의 한계 = 2회차 모델 센서의 한계(HYD-01~03 TS1 · PS1 · VS1). 그래프 랩: 모델 = 2회차 실습4 입력, 조건표 · SOP 구조 = 3회차 판정 랩 입력,
-     조치 검토 결과 = 3회차 완성본 결과, 자료/ = 추출 랩 자료(그 밖의 자료 없음), lab_db.py = 실습시작 원본.
-  2. 학생 문장(START · README · 계약 · 결과 틀 · 작업 규칙 · 검사기 · 도구)과 파일 · 열 이름에 결정 지점 · 함정의 답 0(LEAKS · GLEAKS · NAME_LEAKS).
+  1. 같은 바이트 — 추출 랩 자료 · 입력 = 3회차 랩, 그래프 랩 모델 = 2회차 실습4 입력, lab_db.py · lab_cypher.py · show_result.py = 실습시작 원본.
+  2. 학생 문장(START · README · 계약 · 결과 틀 · 작업 규칙 · 검사기 · 제공 코드)과 파일 · 열 이름, 가이드의 정답 토글 밖 본문에 결정 지점 · 함정의 답 0.
   3. 두 번 만들어 바이트가 같다(--check).
 
 사용: HYD_MAIN_ROOT=<main 체크아웃> python build_document_labs.py [--lab integrated-04-extract|practical-03-extract|integrated-04-graph|practical-03-card] [--check]
-guide.html(회차 안내가 가리키는 같은 바이트 안내.html)은 build_labs.step_guide 틀로 만든다 — 2 · 3회차와 같은 절 구조 · 블록 · 도구 첫 사용 안내(B.TOOL).
-가이드의 「막히면」 · 「기다릴 때」는 새로 받은 랩 폴더에서 llm_client.py · check.py · lab_cypher.py를 돌려 본 출력 그대로다(가이드.md P-6).
-설계 조건 2는 가이드 글에도 건다(LEAKS · GLEAKS · GUIDE_WORDS). package-index · catalog 등록은 하지 않는다 — ZIP만 묶는다.
+package-index · catalog 등록은 하지 않는다 — ZIP만 묶는다(등록은 메인).
 """
 from pathlib import Path
 import argparse
 import csv
 import hashlib
+import html as _html
 import io
 import json
 import re
@@ -31,15 +28,20 @@ import shutil
 import sys
 import zipfile
 
+import lab_frame as F
 import build_labs as B
-from build_labs import H, S, STEP_RULES, step_start, tree, write
 import build_judgement_labs as BJ
 import data_documents as DD
 import lab_llm as LLM                                # 학생 폴더 llm_client.py의 원본 — 안내용 상한 값 한 곳(LLM.MAX_SENT)
 from lab_package import pack
 
-OUT = B.OUT
-TOOLS = B.TOOLS
+OUT = F.OUT
+TOOLS = F.HERE
+REF = TOOLS/'reference/session3_docs'
+sys.path.insert(0, str(REF))
+import fills as FL                                   # noqa: E402 — 정답 보기 · 학생용 완성본 · 갈래 실행이 같이 쓰는 정할 자리 판
+
+write = F.write
 LABS = {'integrated-04-extract': OUT/'통합반/실습/04회차/랩/04일차_실습2_문서지식추출',
         'practical-03-extract': OUT/'실전반/실습/03회차/랩/03일차_실습4_지식추출'}
 TITLES = {'integrated-04-extract': '문서에서 근거 있는 지식을 추출하는 기능 만들기',
@@ -50,20 +52,34 @@ JUDGED = {'integrated-04-extract': 'result.json', 'practical-03-extract': '조�
 S3_JUDGE = {'integrated-04-extract': 'integrated-03-judge', 'practical-03-extract': 'practical-03-review'}
 COMPLETED = {'integrated-04-extract': OUT/'통합반/실습/03회차/완성본/03일차_실습3_판단기능만들기_학생용완성본.zip',
              'practical-03-extract': OUT/'실전반/실습/03회차/완성본/03일차_실습2_판단기능만들기_학생용완성본.zip'}
-BASE_JUDGED = B.TEACHER/'session3/갈래/판정_가-가'   # 3회차 강사 판(지점3 가 · 지점4 가) — 3회차 학생용 완성본과 같은 바이트
+BASE_JUDGED = B.TEACHER/'session3/갈래/판정_가-가'   # 3회차 강사 판 — 3회차 학생용 완성본과 같은 바이트
 REC = '결과/검토_기록.md'
-TASK = 'SOP-COOL-14'                                  # 이 사건의 작업(판정 뒤에 남은 근본 조치 — 쿨러 핀 세척). 학생이 고르는 것이 아니라 사건이 정한다
-RULES_LINE = BJ.RULES_LINE
-USB = B.USB
+TASK = 'SOP-COOL-14'                                  # 이 사건의 작업(판정 뒤에 남은 근본 조치 — 쿨러 핀 세척). 사건이 정한다
+ASSET = 'HYD-02'
+EVENT_UTC = '2026-10-26T16:59:00Z'                    # 사건 경보 10월 27일 01:59(한국) — START의 사건 시각
+OTHER_DOCS = ['PM-02_정기점검표.md', 'PR-07_예비품기준.md', 'HI-01_보충매뉴얼.md']   # 행 「제공 정기 점검표 · 예비품 기준 같은 다른 문서」
+USB = F.USB
+PROVIDED_EXTRACT = ['show_result.py', 'lab_steps.py', 'doc_extract.py', 'llm_client.py', 'check.py']
+PROVIDED_GRAPH = ['show_result.py', 'lab_steps.py', 'doc_graph.py', 'lab_cypher.py', 'lab_db.py', 'check.py']
 
 
 def incident():
-    """사건 이름 · 시각 — 3회차 판정 랩 START의 글자 그대로(구성안 12절 의존 2)."""
-    text = (BJ.LABS['integrated-03-judge']/'START.md').read_text(encoding='utf-8')
-    m = re.search(r'10월 27일 \d\d:\d\d HYD-02 쿨러 성능 저하 경보', text)
+    """사건 이름 · 시각 — 3회차 판정 랩 START의 글자 그대로."""
+    text = (BJ.LABS['integrated-03-judge']/'START.md').read_text(encoding='utf-8-sig')
+    m = re.search(r'10월 27일 \d\d:\d\d(?:\(한국 시각\))? HYD-02 쿨러 성능 저하 경보', text)
     if not m:
         raise RuntimeError('3회차 판정 랩 START.md에서 사건 이름 · 시각을 찾지 못했습니다 — 3회차 판을 먼저 맞춥니다.')
     return m.group()
+
+
+def csv_body(text):
+    """fills의 CSV 글에서 머리 줄을 뺀 행들(정답 보기에 붙여 넣는 줄)."""
+    return ''.join(text.splitlines(keepends=True)[1:])
+
+
+def chosen_upto(rows):
+    """결과/정한_것.csv — 빈 틀 머리(「제공 빈 틀」 줄 · 열 이름) + 지금까지 정한 행."""
+    return F.CHOSEN_TEMPLATE + ''.join(rows)
 
 
 # ───────────── 입출력 계약(형식과 뜻만 — K-7) ─────────────
@@ -180,7 +196,7 @@ SELECTED = '''
 ```json
 {
   "task": "이 사건의 작업 SOP ID",
-  "basis": "이 사건의 작업인 근거 — 파일 · 줄",
+  "basis": "이 사건의 작업인 근거 — 사건 경보가 든 판정 결과의 파일:줄",
   "preparation": [ {항목} ], "prohibitions": [ {항목} ], "completion": [ {항목} ],
   "remaining_questions": [ {"item": "…", "kind": "보류 | 원문 미확인 | 제공되지 않은 절", "source": "…", "note": "…"} ],
   "sop_diff": [ {"item": "…", "where": "카드에만 | SOP 구조에만", "note": "…"} ]
@@ -188,32 +204,94 @@ SELECTED = '''
 ```
 
 - 항목: `{"candidate": "결과/검토/…_검토.json#후보 id", "doc_id": "…", "rev": "…", "section": "…", "quote": "…", "decision": "…"}` — 검토 결과의 `approved` 후보를 가리키고, `doc_id` · `rev` · `section` · `quote`는 그 후보의 값이다.
-- 승인 후보가 아닌 것(보류 · 원문을 확인하지 못한 것 · 제공되지 않은 절)은 `remaining_questions`에 둔다.
+- 아직 정하지 못한 것(보류 · 원문을 확인하지 못한 것 · 제공되지 않은 절)은 `remaining_questions`에 둔다. 원문과 대조해 제외한 후보는 넣지 않는다(결정 · 까닭은 검토 결과에 있다).
 - 방법 단계는 넣지 않는다 — 단계 순서는 받은 SOP 구조와 원문 절차가 가진다. 첫 단계가 작업 전에 하는 확인 · 조치이면 준비로 둔다.
-- `sop_diff`는 받은 SOP 구조(`입력/sop.json`)의 이 작업 항목과 견주어 다른 곳이다: 모은 항목 가운데 SOP 구조에 없는 것은 `카드에만`(`note`에 어느 문서 · 절에서 왔는지), SOP 구조의 문장 가운데 모은 항목에 없는 것은 `SOP 구조에만`(`note`에 그 필드와 까닭). 다른 곳이 없으면 `[]`.
+- `sop_diff`는 받은 SOP 구조(`입력/sop.json`)의 이 작업 항목과 견주어 다른 곳이다: 모은 항목 가운데 SOP 구조의 어느 문장(단계 · 승인 역할 포함)과도 같지 않은 것은 `카드에만`(`note`에 어느 문서 · 절에서 왔는지), SOP 구조의 준비(첫 단계 포함) · 금지 · 완료 문장 가운데 모은 항목에 없는 것은 `SOP 구조에만`(`note`에 그 필드). 문장은 글자 · 숫자만 남겨 짧은 쪽의 80 % 이상이 같은 순서로 겹치면 같은 것으로 본다. 다른 곳이 없으면 `[]`.
 '''
 
 
-def contract(key):
-    inputs = INPUT_TABLE + INPUT_SOP + INPUT_JUDGED[key]
+# ───────────── 정할 자리 빈 틀(답 0 — 열 이름과 칸 이름만) ─────────────
+SPLIT_BLANK = json.dumps({'제공 빈 틀 — 보관 없이 바로 채웁니다. 칸의 뜻은 입출력_계약.md 「정할 자리」': '', '단위': '', '글자_상한': None, '시험_조각': '',
+                          '보낼_문서': [], '다시_보낼_문서': [], '쓸_기록': {}}, ensure_ascii=False, indent=2) + '\n'
+PROMPT_BLANK = ('> 제공 빈 틀 — 수업 모델에 보낼 요청 글을 내 말로 씁니다. 이 줄은 모델에 보내지 않습니다.\n\n# 뽑을 것\n\n# 지킬 것\n\n# 하지 말 것\n\n# 모르면\n\n# 답의 꼴\n')
+
+
+XBASIS = '근거 = 원문 파일 이름:줄(여럿이면 「 · 」로 잇기)'
+XCOLS = {   # 추출 랩 정할 자리 표의 칸 뜻 — 빈 틀 둘째 줄 · 그 단계 힌트 「지킬 것」 · 정답 보기 머리가 같은 글(값은 넣지 않는다)
+    '기대_항목.csv': '파일 = 자료/ 안의 파일 이름 · 줄 = 그 파일의 줄 번호 · 종류 = step · precondition · prohibition · completion · unit_value 가운데 하나(한 줄에 두 종류면 두 행)',
+    '검토_결정.csv': ('파일 · 줄 · 종류 = 기대 항목의 그 줄(줄을 비운 행은 판단 규칙 — 그 파일의 기대 줄 가운데 따로 적은 행이 없는 줄 전부, 종류를 적으면 그 종류만) · '
+                   '결정 = 채택 · 수정 · 제외 · 보류 · ' + XBASIS + ' · 까닭 = 원문 근거를 든 이유 한 줄 · 고친_인용 = 수정일 때만 그 줄의 원문 문장 그대로'),
+    '조건_대조.csv': 'rule_id = 조건표의 rule_id · ' + XBASIS + '(원문 없음이면 비움) · match = 일치 · 불일치 · 원문 없음 · 보류 · 까닭 = 원문의 대상 · 때와 조건의 대상 · 때 · 요청할_것 = 없으면 「없음」',
+    '역할.csv': ('종류 = 후보의 종류 · 인용에_든_글자 = 이 글자가 든 후보만(비우면 그 종류 전부, 위 행이 먼저) · 항목 = 준비 · 금지 · 완료 · 순서 · 승인 · 넣지 않음 가운데 하나 · '
+              '근거 = 원문 파일:줄 또는 입출력_계약.md 절 — 행이 없는 종류는 계약 6절의 기본(precondition 준비 · prohibition 금지 · completion 완료 · unit_value 완료 · step 넣지 않음)'),
+}
+
+
+XCOLS_P = {   # 실전(한 칸의 첫 랩 — 같은 뜻, 짧게)
+    '기대_항목.csv': '파일 = 자료/ 안의 파일 이름 · 줄 · 종류(step · precondition · prohibition · completion · unit_value, 한 줄에 둘이면 두 행)',
+    '검토_결정.csv': '파일 · 줄 · 종류 = 기대 항목의 그 줄(줄을 비운 행은 판단 규칙 — 그 파일의 남은 기대 줄 전부) · 결정 = 채택 · 수정 · 제외 · 보류 · 근거 = 파일:줄(여럿이면 「 · 」) · 까닭 · 고친_인용 = 수정일 때 원문 그대로',
+    '조건_대조.csv': 'rule_id · 근거 = 파일:줄(원문 없음이면 비움) · match = 일치 · 불일치 · 원문 없음 · 보류 · 까닭 = 원문과 조건의 대상 · 때 · 요청할_것(없으면 「없음」)',
+    '역할.csv': '종류 · 인용에_든_글자(비우면 그 종류 전부, 위 행이 먼저) · 항목 = 준비 · 금지 · 완료 · 순서 · 승인 · 넣지 않음 · 근거 — 행이 없는 종류는 계약 6절의 기본',
+}
+
+
+def xcol(name, practical):
+    return XCOLS_P.get(name, XCOLS[name]) if practical else XCOLS[name]
+
+
+def xblank(name, columns, explain, practical=False):
+    head, cols = F.blank_csv(columns, explain).split('\n', 1)
+    return f'{head}\n# {xcol(name, practical)}\n{cols}'
+
+
+def extract_blanks(key):
     practical = key == 'practical-03-extract'
-    return (CONTRACT.replace('__INPUTS__', inputs).replace('__SELECTED__', SELECTED if practical else '')
-            .replace('__RULE_SCOPE__', f'(이 작업 `{TASK}`에 걸린 조건 — `action`이 이 작업인 행)' if practical else ''))
+    out = {'결과/나누기.json': SPLIT_BLANK, '결과/prompt.md': PROMPT_BLANK,
+           '결과/기대_항목.csv': xblank('기대_항목.csv', ['파일', '줄', '종류'], '실행 전에 원문에서 찾은 항목', practical),
+           '결과/검토_결정.csv': xblank('검토_결정.csv', ['파일', '줄', '종류', '결정', '근거', '까닭', '고친_인용'], '원문과 대조한 결정', practical),
+           '결과/조건_대조.csv': xblank('조건_대조.csv', ['rule_id', '근거', 'match', '까닭', '요청할_것'], '조건표의 조건마다 근거 원문 · 맞는 정도 · 까닭 · 요청할 것', practical),
+           F.CHOSEN_FILE: F.CHOSEN_TEMPLATE}
+    if practical:
+        out['결과/역할.csv'] = xblank('역할.csv', ['종류', '인용에_든_글자', '항목', '근거'], '승인 후보의 종류를 이 작업의 준비 · 금지 · 완료 가운데 어디에 둘지(계약 기본과 다르게 둘 것만)', practical)
+    return out
 
 
-# ───────────── 결과 틀 · README ─────────────
+SLOT_CONTRACT = '''
+## __N__. 정할 자리 (`결과/` — 내가 AI와 채우는 빈 틀)
+
+첫머리에 「제공 빈 틀」 표시가 있는 파일이다. `python show_result.py`가 채운 자리까지 제공 코드(`doc_extract.py`)를 돌려 위 결과 파일을 쓰고 `결과/보기.html`에 보인다. 빈 칸이나 꼴이 틀린 칸이 있으면 그 파일 · 칸과 함께 멈춘다.
+
+- `결과/나누기.json` — `단위`: 문서를 요청에 보낼 조각으로 끊는 단위 — `절`(절 머리 「## 」 · 「제N조(」 · 「절 표기 제목」 줄) · `절차`(절 머리와 「### 」 줄) · `쪽`(쪽 꼬리 「- N -」 줄 — 꼬리가 없는 문서는 문서 하나가 한 단위) · `글자`(줄 하나씩). `글자_상한`: 이어진 단위를 묶을 조각 하나의 글자 수 상한(0이면 묶지 않음, 단위가 `글자`면 1 이상). `시험_조각`: 먼저 보내 볼 조각 — 「자료 파일 이름:줄 번호」(그 줄이 든 조각). `보낼_문서`: 문서 전체를 보낼 자료 파일 이름 목록. `다시_보낼_문서`: 후보 파일이 이미 있는 문서 가운데 지금 요청 글 · 나누기로 다시 보낼 것(적지 않은 문서는 그 후보 파일을 만든 판 그대로 둔다 — 결과 화면 표에 문서마다 어느 판인지 보인다). `쓸_기록`: 같은 요청의 응답 기록이 둘 이상일 때 검토에 쓸 기록 — `{"요청 해시": "응답 기록 파일 이름"}`.
+- `결과/prompt.md` — 수업 모델에 보낼 요청 글. 첫 줄의 「제공 빈 틀」 표시 줄은 보내지 않는다. 답은 JSON 하나로 받아 4절의 필드로 읽는다(`candidates` 목록 · `warnings` 목록).
+- `결과/기대_항목.csv` — 열 `파일,줄,종류`. 실행 전에 원문에서 찾은 항목 — `파일`은 `자료/` 안의 파일 이름, `줄`은 그 파일의 줄 번호, `종류`는 4절의 다섯 종류 가운데 하나.
+- `결과/검토_결정.csv` — 열 `파일,줄,종류,결정,근거,까닭,고친_인용`. 줄 · 종류가 같은 후보에 결정을 건다(같은 줄 · 종류의 후보가 여럿이면 앞의 것에 걸고 나머지는 중복으로 뺀다). `결정`은 `채택` · `수정` · `제외` · `보류`, `근거`는 「파일:줄」(여럿이면 「 · 」로), `까닭`은 원문 근거를 든 결정 이유, `고친_인용`은 `수정`일 때 그 줄의 원문 문장 그대로. `줄`을 비운 행은 판단 규칙이다 — 그 파일(`종류`를 적으면 그 종류)의 기대 항목 줄 가운데 따로 적은 행이 없는 줄 전부에 같은 결정을 둔다(수정은 줄을 적은 행에서만). 결정 표에 없는 후보는 보류(원문과 대조하지 않음)로 둔다. 그 줄 · 종류의 후보가 없고 코드가 줄을 정하지 못한 인용(`unlocated`)이 그 줄에 맞으면 검토자가 더한 후보로, 그것도 없으면 `missing`으로 적는다.
+- `결과/조건_대조.csv` — 열 `rule_id,근거,match,까닭,요청할_것`. __RULES__ `근거`는 「파일:줄」(여럿이면 「 · 」로 — 그 줄의 후보가 `rule_links.candidates`가 된다), `match`는 `일치` · `불일치` · `원문 없음` · `보류`(원문 없음이면 근거를 비운다).
+__ROLE__- `결과/정한_것.csv` — 열 `지점,고른_것,근거,바뀌는_답`. 「학생이 정할 것」의 지점과 작업 중 정한 것(나누는 단위 · 요청 글 등)마다 한 줄. 근거는 「파일:줄」.
+'''
+ROLE_CONTRACT = ('- `결과/역할.csv` — 열 `종류,인용에_든_글자,항목,근거`. 승인 후보를 6절의 준비 · 금지 · 완료 가운데 어디에 둘지 — 종류가 같고 인용에 그 글자가 든 첫 행을 쓴다(글자 칸이 비면 그 종류 전부). '
+                 '`항목`은 `준비` · `금지` · `완료` · `순서` · `승인` · `넣지 않음`(6절에는 준비 · 금지 · 완료만 들어간다). 맞는 행이 없는 종류는 기본 — precondition 준비 · prohibition 금지 · completion 완료 · unit_value 완료(이 작업의 기준값은 완료 확인의 값) · step 넣지 않음(방법 단계). 이 작업의 원문 줄은 `결과/기대_항목.csv`의 줄이다.\n')
+
+
+def contract(key):
+    practical = key == 'practical-03-extract'
+    inputs = INPUT_TABLE + INPUT_SOP + INPUT_JUDGED[key]
+    rules = (f'행은 조건표에서 이 작업(`{TASK}`)에 걸린 조건(`action`이 이 작업인 `rule_id`)마다 하나.' if practical else '행은 조건표의 조건(`rule_id`)마다 하나.')
+    slot = SLOT_CONTRACT.replace('__N__', '7' if practical else '6').replace('__RULES__', rules).replace('__ROLE__', ROLE_CONTRACT if practical else '')
+    return (CONTRACT.replace('__INPUTS__', inputs).replace('__SELECTED__', (SELECTED if practical else '') + slot)
+            .replace('__RULE_SCOPE__', f'(이 작업 `{TASK}`에 걸린 조건 — `action`이 이 작업인 행)' if practical else '')
+            .replace('`extractor` | 이 결과를 만든 실행(코드 파일과 옵션)', '`extractor` | 이 결과를 만든 실행(제공 코드와 정할 자리 설정)'))
+
+
 def record_template(key):
     practical = key == 'practical-03-extract'
-    chosen = '## 이 사건의 작업\n\n- 작업:\n- 근거(파일 · 줄):\n\n' if practical else ''
-    trial = ('## 검사가 잡는지 확인\n\n| 일부러 바꾼 곳(사본에서) | check.py가 짚은 줄 | 되돌린 뒤 출력 |\n|---|---|---|\n| | | |\n\n' if practical else '')
-    return ('# 문서 지식 검토 기록\n\n> 제공 빈 틀입니다. 보관하지 말고 바로 채웁니다.\n\n## 목표와 질문\n\n## 이 답을 쓰는 사람과 쓰는 곳\n\n' + chosen +
-            '## 판 기준 — 어느 문서 · 판을 무엇에 쓰는가\n\n| 문서 · 판 | 상태 | 이번 검토에서 쓰는 곳 | 근거(파일 · 줄) |\n|---|---|---|---|\n| | | | |\n\n'
-            '## 정한 것\n\n| 지점(종류) | 고른 것 | 근거(파일 · 줄) | 이 선택으로 바뀌는 답 |\n|---|---|---|---|\n| | | | |\n\n'
-            '## 기대 항목 — 실행 전에 원문에서\n\n- 기대 칸을 쓴 시각:\n\n| 문서 · 판 · 절 · 줄 | 종류 | 원문(그대로) | 실제 후보 | 차이 종류 · 고친 점 |\n|---|---|---|---|---|\n| | | | | |\n\n'
-            '## 조건 근거 대조\n\n| 조건(rule_id) | 근거를 찾은 문서 · 판 · 절 · 줄 | match | 까닭 | 요청할 것 |\n|---|---|---|---|---|\n| | | | | |\n\n'
-            '## 다른 문서에 적용\n\n| 문서 · 판 | 후보 수 | 누락 | 근거 없는 생성 | 고친 점 | 고친 뒤 다시 센 수 |\n|---|---|---|---|---|---|\n| | | | | | |\n\n'
-            '## 같은 요청을 한 번 더 보낸 결과\n\n| 조각 | 첫 응답 기록 | 다시 보낸 응답 기록 | 다른 점 |\n|---|---|---|---|\n| | | | |\n\n'
-            + trial + '## 남은 질문\n\n## 저장 기록\n\n- 기준일:\n- 저장 시점:\n- 확인하지 못한 점:\n')
+    task = '## 이 사건의 작업\n\n- 작업:\n- 근거(파일:줄):\n\n' if practical else ''
+    return ('# 문서 지식 검토 기록\n\n> 제공 빈 틀입니다. 보관하지 말고 바로 채웁니다.\n\n## 목표와 질문\n\n## 이 답을 쓰는 사람과 쓰는 곳\n\n' + task +
+            f'## 정한 것\n\n고른 것 · 근거(파일:줄) · 바뀌는 답은 `{F.CHOSEN_FILE}`에 적습니다.\n\n'
+            '## 기대 항목\n\n기대 항목은 `결과/기대_항목.csv`에 적습니다.\n\n- 기대 칸을 쓴 시각:\n\n'
+            '## 기대와 다른 줄\n\n| 문서 · 줄 · 종류 | 결과 화면의 표시 | 차이 종류 | 까닭(원문 줄) |\n|---|---|---|---|\n| | | | |\n\n'
+            '## 같은 요청을 한 번 더 보낸 결과\n\n| 첫 응답 기록 | 다시 보낸 응답 기록 | 다른 점 | 검토에 쓸 기록과 까닭 |\n|---|---|---|---|\n| | | | |\n\n'
+            '## 다른 문서에 적용\n\n| 문서 · 판 | 후보 수 | 실제 누락 | 근거 없는 생성 | 고친 점 | 고친 뒤 다시 센 수 |\n|---|---|---|---|---|---|\n| | | | | | |\n\n'
+            '## 남은 질문\n\n## 저장 기록\n\n- 기준일:\n- 저장 시점:\n- 확인하지 못한 점:\n')
 
 
 ENV_EXAMPLE = '''# 이 파일을 복사해 이름을 .env로 바꾸고, 아래 세 줄을 강의에서 받은 접속 세 줄로 바꿔 붙여 넣은 뒤 저장합니다.
@@ -225,7 +303,8 @@ LLM_MODEL=
 
 def result_readme(key):
     extra = ' · `선택작업_조건.json`' if key == 'practical-03-extract' else ''
-    return ('이번 과제의 요청 글(`prompt.md`) · 후보(`후보/`) · 검토 결과(`검토/`)' + extra + ' · `검토_기록.md`와 만든 코드를 여기에 저장합니다.\n'
+    return ('이번 과제의 정할 자리(「제공 빈 틀」 파일)를 여기서 채웁니다. `python show_result.py`가 채운 자리까지 제공 코드를 돌려 후보(`후보/`) · 검토 결과(`검토/`)' + extra +
+            ' · 시험 조각 결과를 쓰고 `보기.html`에 보입니다.\n'
             '`응답_기록/` · `요청/` · `폴더_표지.txt`는 `llm_client.py`가 쓰므로 고치지 않습니다.\n'
             '다시 열 때는 `검토_기록.md`의 기준일 · 저장 시점과 `python check.py`의 출력을 함께 봅니다.\n')
 
@@ -239,446 +318,541 @@ def input_readme(key, n_events):
             f'- `{judged}` — 사건 경보를 포함한 지난 30일(2026-09-28 ~ 10-27) 경보 {n_events}건을 위 조건표로 {what}.\n')
 
 
-# ───────────── 랩 문장(START · 단계) — 결정 지점의 답 · 함정의 처리법은 쓰지 않는다(K-4) ─────────────
-def decide_points(key):
-    """「학생이 정할 것」 두 지점 — 실전반은 이 작업(SOP-COOL-14)에 걸린 조건만 대조한다(실전 R36 「선택한 작업의 준비 · 금지 · 완료」)."""
-    rules = '이 작업에 걸린 조건표의 조건마다' if key == 'practical-03-extract' else '받은 조건표의 조건마다'
-    return [('조건의 근거', f'{rules} 무엇을 근거 원문으로 두고, 그 근거에 따라 조건을 어떻게 둘지'),
-            ('사내 문서와 제조사 지침', '핀 세척 작업에 대해 제조사 지침이 말하는 것을 작업 조건에 어떻게 둘지')]
-STAGE = '과정은 온톨로지 → 에이전트 → 프로세스 순서로 올라갑니다. 이 실습은 첫 단계인 온톨로지의 문서 지식 — 원문에서 근거 있는 후보를 뽑아 사람이 검토하는 일 — 을 맡습니다.'
-WHY_READ = ('파일 이름이 같아도 판이 다르면 다른 문서이므로, 목록의 SHA-256(파일 내용으로 계산한 지문 같은 값이라 한 글자만 달라도 바뀝니다)으로 그 판인지 확인합니다. 컴퓨터는 글을 글자 방식(인코딩)에 따라 바이트로 저장합니다 — '
-            '읽을 때 다른 방식을 쓰면 오류가 나거나 글자가 깨지고, 깨진 글을 그대로 넘기면 뒤의 기능이 모두 틀린 글을 다룹니다.')
-WHY_PROMPT = ('요청 글은 모델에게 주는 작업 지시입니다. 무엇을 뽑을지 · 답의 꼴 · 원문을 그대로 옮길 것 · 하지 말 것 · 모르면 경고를 적어야 답을 계약 꼴로 읽을 수 있습니다. '
-              '요청 글은 코드와 따로 파일로 두어야 고친 판과 그 판으로 받은 답을 짝지어 볼 수 있습니다.')
-WHY_ONE = ('금지 · 단위가 바뀐 후보나 관계를 잘못 읽은 후보는 겉보기에 그럴듯해서, 이미 검토된 구조와 줄마다 견주면 드러납니다. 문서 전체에 보내기 전에 한 조각으로 보아야 '
-           '요청 글을 고칠 곳을 적은 비용으로 찾습니다.')
-DIFFER_CHECK = '「계약 확인 필요」 아래 줄마다 문제가 하나씩 적혀 있습니다. 줄마다 어느 파일 · 후보인지 AI에게 짚게 해 고친 뒤 다시 실행합니다.'
-DIFFER_STAGES = '「완료 아님 — 남은 것:」 아래 줄마다 남은 일이 하나씩 적혀 있습니다. 줄마다 어느 파일 · 후보인지 AI에게 짚게 해 고친 뒤 다시 실행합니다.'
-TOOLS_LINE = ['`python llm_client.py` — 수업 모델에 짧은 질문 하나를 보내 연결을 확인합니다. 코드에서는 `from llm_client import ask`로 부르고, `ask(요청)`은 받은 답과 그 응답 기록을 돌려줍니다. '
-              '같은 요청은 다시 보내지 않고 남은 응답 기록을 돌려주며, 일부러 한 번 더 보낼 때만 `ask(요청, again=True)`를 씁니다.',
-              f'`python llm_client.py --count` — 보내지 않고 `결과/응답_기록/`의 기록 수와, 비용을 지키는 이 폴더의 안내용 상한 {LLM.MAX_SENT}개까지 남은 수를 보입니다. '
-              '코드에서 보내기 전에 몇 개를 보낼지는 `count_to_send(요청 목록)`으로 셉니다.',
-              '키가 없으면 `llm_client.py`는 요청을 보내지 않고, 보낼 글을 `결과/요청/`에 남긴 뒤 무엇을 했는지 알리고 멈춥니다.']
+# ───────────── 결과 화면의 단계(lab_steps.py — 제공 파일, 답 0) ─────────────
+EXTRACT_STEPS = r'''"""__TITLE__ — 결과 화면의 단계(START.md 「진행 단계」와 같은 번호 · 이름). 제공 파일 — 고치지 않는다.
+단계마다 정할 자리(결과/의 「제공 빈 틀」 파일)를 채웠으면 제공 코드(doc_extract.py)를 돌려 그 결과를 결과/보기.html에 보인다."""
+from pathlib import Path
+import json
+import show_result as R
+import doc_extract as X
 
-# ───────────── 가이드(guide.html) 조각 — 「막히면」 · 「기다릴 때」는 새 랩 폴더 사본에서 돌려 본 출력 그대로(P-6), 통합반은 막히기 쉬운 곳을 더 푼다(P-9) ─────────────
-def para(text):
-    return f'<p>{B.inline(text)}</p>'
-stuck = BJ.stuck
-TERMS_EXTRACT = ('**수업 모델**은 강의에서 쓰는 언어 모델이고, 이 폴더의 `llm_client.py`가 `.env`의 접속 세 줄(접속 주소 · 키 · 모델 이름)로 모델 서버에 요청을 보내 부릅니다. '
-                 '**요청 글**(프롬프트)은 모델에게 보내는 작업 지시입니다. **후보**는 모델의 답에서 뽑아 계약 꼴로 적은 조건 · 단계 하나이고, 사람이 원문과 대조해 결정하기 전에는 지식으로 쓰지 않습니다. '
-                 '**인용**은 후보의 근거가 되는 원문 부분을 글자 그대로 옮긴 것, **응답 기록**은 보낸 요청과 받은 답을 `결과/응답_기록/`에 남긴 파일입니다. '
-                 '**조건표**는 조치마다 어떤 입력이 어떤 값일 때 경고 · 감점 · 제외하는지 적은 판단 조건의 표, **SOP 구조**는 조치의 작업 절차를 구조로 옮긴 것, '
-                 '**판정 결과**는 그 조건표로 지난 경보마다 조치 후보를 판정한 결과입니다. ' + BJ.CONTRACT_TERM)
-ENV_HOWTO = {
-    '통합반': ('**`.env` 만들기** 왼쪽 탐색기에서 `.env.example`을 오른쪽 클릭해 **복사**(Copy)를 누르고, 탐색기의 빈 곳을 오른쪽 클릭해 **붙여넣기**(Paste)를 누릅니다. '
-              '새로 생긴 사본을 오른쪽 클릭해 **이름 바꾸기**(Rename)로 이름을 `.env`로 바꿉니다. `.env`를 열어 등호(=) 뒤가 비어 있는 세 줄을 지우고, 그 자리에 강의에서 받은 세 줄을 그대로 붙여 넣은 뒤 '
-              '**Ctrl+S**로 저장합니다. 세 줄은 주소 · 키 · 모델 이름이고, 내가 손으로 정하거나 고칠 값은 없습니다.'),
-    '실전반': '**`.env` 만들기** 탐색기에서 `.env.example`을 **복사**(Copy) · **붙여넣기**(Paste)한 사본의 이름을 **이름 바꾸기**(Rename)로 `.env`로 바꾸고, 빈 세 줄 자리에 받은 세 줄을 그대로 붙여 넣어 **Ctrl+S**로 저장합니다.'}
-WAIT_FIRST = para(f'**기다릴 때** 터미널에 「수업 모델에 요청을 보냅니다(요청 해시 …, 이 폴더 기록 1번째 · 안내용 상한 {LLM.MAX_SENT}개) — 첫 요청은 1분쯤 걸릴 수 있습니다.」 줄이 나온 뒤 답이 바로 오지 않아도 기다립니다. '
-                  f'한 요청은 {LLM.TIMEOUT_S}초까지 기다리고, 그 안에 답이 없으면 「모델 서버에 닿지 못했습니다(timed out).」로 시작하는 줄을 내고 멈춥니다 — 그때는 1분쯤 뒤 같은 명령을 다시 실행합니다.')
-STUCK_ENV = stuck('출력의 첫 줄로 고칠 곳을 찾습니다. 「키가 없어 연결을 확인하지 않았습니다(.env가 없거나 LLM_API_KEY가 비어 있음).」이면 파일 이름이 `.env`가 아니거나 붙여 넣은 뒤 저장하지 않은 것이니, '
-                  '탐색기에서 이름을 보고 탭 이름 옆 점(●)이 없는지 확인합니다. 「.env의 OPENAI_BASE_URL, LLM_MODEL 값이 비어 있습니다.」처럼 이름이 찍히면 받은 세 줄 가운데 그 줄이 빠진 것이니 세 줄을 다시 붙여 넣습니다. '
-                  '「모델 서버에 닿지 못했습니다(…)」로 시작하면 인터넷에 연결돼 있는지 보고 1분쯤 뒤 다시 실행합니다.')
-STUCK_DECODE = stuck('「UnicodeDecodeError: … codec can\'t decode byte …」로 멈추면 그 파일을 코드가 가정한 글자 방식으로 읽지 못했다는 뜻이지, 파일이 비었다는 뜻이 아닙니다. '
-                     '어느 파일에서 멈췄는지 출력에서 확인합니다.')
-STUCK_NOKEY = (stuck('키 없이 실행하면 「키가 없어 요청을 보내지 않았습니다. 보낼 글을 결과/요청/<요청 해시>.md에 남겼습니다.」로 멈춥니다 — 오류가 아니라 보내지 않고 멈춘 것입니다. '
-                     '한 조각만 받아 보려면 그 파일의 글을 이 폴더를 읽지 못하는 채팅(브라우저에서 여는 AI 채팅)에 붙여 보내고, 채팅 화면에 보인 모델 이름과 함께 받은 답을 아래 명령으로 터미널에 붙여 넣은 뒤 '
-                     '새 줄에서 Ctrl+Z를 누르고 Enter를 누릅니다. 그다음 같은 코드를 다시 실행하면 그 답을 씁니다. 이렇게 남긴 기록은 「채팅으로 받음」으로 적혀 수업 모델을 부른 기록으로 세지 않습니다.')
-               + B.command_block('python llm_client.py --paste <요청 해시> --model <채팅 화면의 모델 이름>'))
-ASK_HOWTO = para('**코드에서 수업 모델 부르기** 만든 코드에서는 `from llm_client import ask`로 불러 `ask(요청)`을 씁니다. 받은 답과 그 응답 기록을 돌려주고, 같은 요청은 다시 보내지 않고 남은 응답 기록을 돌려줍니다. '
-                 f'같은 요청을 일부러 한 번 더 보낼 때만 `ask(요청, again=True)`를 씁니다(같은 요청은 {LLM.MAX_SAME}번까지 보냅니다).')
+HERE = Path(__file__).resolve().parent
+TITLE = '__TITLE__'
+PRACTICAL = __PRACTICAL__
+TASK, ASSET, EVENT_UTC, JUDGED = '__TASK__', '__ASSET__', '__EVENT__', '__JUDGED__'
+OTHER_DOCS = __OTHER__
 
 
-def guide_bits(N):
-    """단계 번호가 들어가는 가이드 조각 — N = {단계 열쇠: 단계 번호(1부터)}."""
-    key_line = f'수업 모델 접속 세 줄이 없을 때도 같은 학생용 완성본 묶음으로 결과를 확인할 수 있고, 키 없이 한 조각만 채팅으로 받아 보는 길은 {N["connect"]}단계와 {N["one"]}단계에 있습니다.'
-    fields = stuck(f'「필수 필드 없음 [\'quote_match\', \'line_start\', \'line_end\']」 줄은 {N["locate"]}단계에서 채울 인용 위치 칸을 짚는 것이라 지금 고칠 문제가 아닙니다. 그 밖의 줄이 이 단계에서 고칠 곳입니다.')
-    stages = stuck('「완료 아님 — 남은 것:」에 「다른 문서에 다시 실행한 후보 파일이 아직 없습니다」나 검토_기록.md의 빈 항목처럼 뒤 단계에서 채울 자리를 짚는 줄은 지금 고칠 문제가 아닙니다. '
-                   '「조건표의 조건마다 검토 결과의 rule_links가 필요합니다:」 뒤에 이름이 남은 조건이 이 단계에서 채울 곳입니다.')
-    many = para('**기다릴 때** 이 단계는 조각마다 요청을 하나씩 보내므로 조각 수만큼 기다립니다. 조각마다 「수업 모델에 요청을 보냅니다(요청 해시 …, 이 폴더 기록 N번째 · 안내용 상한 '
-                f'{LLM.MAX_SENT}개)」 줄이 나오는지 보고, 한 요청은 {LLM.TIMEOUT_S}초까지 기다립니다. 같은 요청은 다시 보내지 않으므로, 중간에 멈춰 다시 실행해도 이미 받은 조각은 「같은 요청의 응답 기록을 씁니다」로 지나갑니다. '
-                f'`결과/응답_기록/`에 모델 서버로 보낸 기록이 {LLM.MAX_SENT}개가 되면 더 보내지 않습니다 — 비용을 지키는 이 폴더의 안내용 상한입니다. 보내기 전에 코드에서 `count_to_send(요청 목록)`으로 '
-                f'실제로 보낼 수와 남은 수를 보고({N["split"]}단계 출력의 조각 수와 견줍니다), 지금까지 보낸 수는 `python llm_client.py --count`로 봅니다.')
-    return key_line, fields, stages, many
-# 설계 조건 2를 가이드 글에도: 결정 지점 · 함정의 답(LEAKS · GLEAKS)과 함께, 가이드에 두지 않는 말(가이드.md P-6 · P-9 · P-3 · 공통.md C-3)과 운영 말(공통.md C-3)
-GUIDE_WORDS = ['SDD', 'Spec Kit', '명세', '정답', '강사 참조', 'reference', '재생', '캐시', '저장된 응답', '시작본', '잠금', '해제', '이미 있는 추출 결과', '앞 실습에서', '앞 이론', '방금 실습에서',
-               '랩 그래프', '교육용', '강의용', '수업용', '(가정)', '(예시)', '실제와 다르', '제작 참고', '낭독']
-OPS_WORDS = ['중계', '깨어나', '60번', '고른 작업', '작업 고르기']   # 운영 말 · 옛 판 단정(공통.md C-3 · lab_llm.py 상한 문구) · 사건이 정한 작업을 고르게 하는 말 — 학생 문장 · 가이드 모두
+def owner(where):
+    """그 파일을 정할 자리로 가진 단계 — 「N단계 「이름」의 정할 자리」(STEPS는 이 파일 끝에서 정한다)."""
+    rel = str(where).split(':')[0].split(' ')[0]
+    hit = next((x for x in STEPS if rel in x['slots']), None)
+    return f' — {hit["no"]}단계 「{hit["name"]}」의 정할 자리' if hit else ''
 
 
-
-def guide_text(html_text):
-    """guide.html의 글(태그 · 스타일 · 스크립트를 뺀 것) — 설계 조건 검사용."""
-    import html as _html
-    t = re.sub(r'<(style|script)>.*?</\1>', '', html_text, flags=re.S)
-    return _html.unescape(re.sub(r'<[^>]+>', '\n', t))
-
-
-def guide_checks(folder, L, leaks):
-    """가이드의 설계 조건: guide.html = 안내.html, 절 = START 「진행 단계」(번호 · 이름 · 개수), 가이드에 두지 않는 말 0."""
-    bad = []
-    guide = (folder/'guide.html').read_bytes()
-    if guide != (folder/'안내.html').read_bytes():
-        bad.append('guide.html과 안내.html이 다름')
-    heads = re.findall(r'<section id="s(\d+)"><h2>(\d\d) ([^<]+)</h2>', guide.decode('utf-8'))
-    start = re.findall(r'^(\d+)\. \*\*([^*]+)\*\*', (folder/'START.md').read_text(encoding='utf-8'), re.M)
-    if [(int(a), html_unescape(c)) for a, _, c in heads] != [(int(a), b) for a, b in start] or len(heads) != len(L['steps']):
-        bad.append(f'가이드 절({len(heads)}) ≠ START 진행 단계({len(start)}) — 번호 · 이름이 같아야 함')
-    text = guide_text(guide.decode('utf-8'))
-    for word in [w for w in leaks if w != '(권장)'] + GUIDE_WORDS + OPS_WORDS:   # 「(권장)」은 질문 카드 대처(B.TOOL card — 가이드.md P-4)가 그 낱말을 짚어야 한다
-        for n, line in enumerate(text.splitlines(), 1):
-            if word in line:
-                bad.append(f'guide.html 글 {n}줄: 「{word}」')
-    return bad
+def guard(fn):
+    """제공 코드의 꼴 문제(Problem) · 수업 모델 멈춤(llm_client Stop)을 결과 화면의 빨간 칸으로."""
+    def run(previous):
+        try:
+            return fn(previous)
+        except X.Problem as e:
+            raise R.Stop(str(e) + owner(e.where))
+        except SystemExit:
+            raise R.Stop('수업 모델에 보내지 못하고 멈췄습니다 — 터미널에 찍힌 까닭을 봅니다(키가 없으면 보낼 글이 결과/요청/에 남습니다).')
+    return run
 
 
-def html_unescape(s):
-    import html as _html
-    return _html.unescape(s)
+def settings():
+    cfg = X.settings()
+    if cfg is None:
+        raise R.Blank('결과/나누기.json 「단위」가 비어 있습니다.')
+    return cfg
 
 
-def step_order(key):
-    """단계 열쇠의 차례 — 한 단계에 일 하나(가이드.md P-4). 단계 번호는 이 차례에서 센다(문장 속 「N단계」도 여기서)."""
-    practical = key == 'practical-03-extract'
-    return (['start', 'incident', 'look', 'connect', 'expect', 'plan', 'read', 'split', 'prompt', 'one', 'cand', 'locate', 'main', 'again', 'rev1', 'rev2', 'other']
-            + (['collect', 'trial'] if practical else []) + ['check', 'save'])
+def prompt():
+    p = X.prompt_text()
+    if not p:
+        raise R.Blank('결과/prompt.md에 요청 글이 아직 없습니다.')
+    return p
 
 
-def numbers(key):
-    return {k: i for i, k in enumerate(step_order(key), 1)}
+def event():
+    data = json.loads((X.basis(JUDGED)).read_text(encoding='utf-8'))
+    near = [e for e in data['events'] if e['asset'] == ASSET]
+    gap = lambda e: abs(int(e['decision_time'][8:10]) * 1440 + int(e['decision_time'][11:13]) * 60 + int(e['decision_time'][14:16])
+                       - (int(EVENT_UTC[8:10]) * 1440 + int(EVENT_UTC[11:13]) * 60 + int(EVENT_UTC[14:16])))
+    return min(near, key=gap), data
 
 
-def start_steps(key, N):
-    """1 · 2단계 — 폴더와 출발점, 사건 경보와 이 작업(사건이 정한 작업이라 고르지 않는다)."""
-    practical = key == 'practical-03-extract'
-    judged, event = JUDGED[key], incident()
-    start = S('폴더와 출발점 확인', '① 파악',
-              '탐색기에서 `입력/` · `자료/` · `결과/` · `START.md` · `.env.example`을 찾고, START.md에서 이 답을 쓰는 사람과 해결할 질문을 읽습니다.',
-              '이 답을 누가 언제 쓰는지와 해결할 질문이 무엇인지 확인합니다.',
-              '다섯 자리를 찾았고, 이 답을 쓰는 사람과 질문을 내 말로 말할 수 있습니다.',
-              H('폴더의 자리와 이번 과제를 확인한다', '탐색기의 `입력/` · `자료/` · `결과/` · `.env.example`, `START.md`', '파일을 바꾸지 않는다. 짚을 때는 파일 · 줄을 먼저 댄다',
-                '자리마다 역할 한 줄과, 이 답을 쓰는 사람 · 해결할 질문을 내 말로 적은 것', '짚은 START.md 줄을 내가 직접 연다'),
-              why=B.WHY_START + ('' if practical else ' 문서가 지식이 되기까지는 등록에서 적재와 확인까지 여러 단계를 거치고, 이 실습은 그 가운데 원문에서 후보를 뽑고 사람이 검토하는 단계를 직접 만듭니다.'),
-              differ=B.DIFFER_START)
-    write_down = f' 확인한 작업과 그 줄을 `{REC}` 「이 사건의 작업」에 적습니다.' if practical else ''
-    case = S('사건 경보와 이 작업 확인', '① 파악',
-             f'AI에게 파일을 바꾸지 말고 `입력/{judged}`에서 사건 경보({event})를 찾아 달라고 해, 그 경보의 1위 조치와 함께 순위에 오른 핀 세척(`{TASK}`)을 보고, '
-             f'핀 세척이 즉시 완화가 아니라 원인을 없애는 근본 조치라는 것을 `입력/sop.json`과 원문 줄로 확인합니다.' + write_down,
-             '사건 경보가 판정 결과의 어느 경보이고, 핀 세척이 근본 조치라는 근거가 어느 파일의 어느 줄인지 묻습니다.',
-             f'`입력/{judged}`의 사건 경보 줄과 원문 줄로 1위 조치와 남은 근본 조치를 말할 수 있습니다. 편집 승인 창이 뜨지 않았고 AI의 답에 바꾼 파일이 없습니다.'
-             + (f' `{REC}` 「이 사건의 작업」에 작업과 근거 줄이 있습니다.' if practical else ''),
-             H('사건 경보의 판정과 남은 근본 조치를 판정 결과 · SOP 구조 · 원문에서 확인한다', f'`입력/{judged}`, `입력/sop.json`, `자료/`의 원문, START.md 「목표」의 사건 시각',
-               '파일을 바꾸지 않는다. 경보 id와 파일 · 줄 번호를 먼저 댄다', '사건 경보 id · 1위 조치 · 핀 세척이 근본 조치라는 줄', '짚은 줄을 내가 직접 연다'),
-             why='판정은 지금 바로 할 조치를 고르지만, 원인을 없애는 근본 조치는 따로 남습니다. 어느 경보의 어느 판정 뒤에 무엇이 남았는지 알아야 문서 묶음에서 어느 작업의 조건을 찾을지 정해집니다. '
-                 '판정 결과의 시각은 UTC라 한국 시각보다 9시간 이릅니다.',
-             differ='사건 경보를 찾지 못하면 START.md 「목표」의 설비와 시각을 UTC로 바꿔 `events`의 `asset` · `decision_time`으로 다시 찾게 합니다. '
-                    '짚은 줄을 열었는데 그 내용이 없거나 다르면 그 줄은 근거로 쓰지 않고 같은 파일에서 다시 찾아 달라고 합니다. AI가 파일을 고치려 하면 **Deny**를 누릅니다'
-                    + (' — 기록은 내가 적습니다.' if practical else '.'))
-    return [start, case]
+@guard
+def look(previous):
+    e, _ = event()
+    ranks = {r['sop']: r['rank'] for r in e.get('ranking', [])}
+    rows = [[c['sop'], c['status'], c.get('rank', ranks.get(c['sop'], ''))] for c in e['candidates']]
+    sop = json.loads(X.basis('sop.json').read_text(encoding='utf-8'))
+    rel = [[r['type'], r['from'], r['to'], r.get('source', '')] for r in sop['relations'] if TASK in (r['from'], r['to'])]
+    docs = [[row['문서 식별자'], row['판'], row['상태'], row['파일'] or '(받은 파일 없음)', enc or '', len(text.splitlines()) if text else '',
+             len(X.section_heads(text)) if text else '', (text.splitlines()[0][:60] if text else why)] for row, text, enc, raw, why in X.documents()]
+    rules = sorted({r['rule_id'] for r in X.csv_rows(X.basis('조건표.csv')) if not PRACTICAL or r.get('action') == TASK})
+    return [R.table(f'사건 경보 {e["id"]}(판정 요청 {e["decision_time"]} UTC)의 조치 후보', ['조치', '판정', '순위'], rows),
+            R.table(f'받은 SOP 구조에서 {TASK}가 걸린 관계', ['관계', '시작', '끝', '출처'], rel),
+            R.table('문서 묶음 — 목록의 판 · 상태와 읽은 결과(SHA-256이 목록과 같은 파일만 읽음)', ['문서', '판', '상태', '파일', '글자 방식', '줄 수', '절 머리 수', '첫 줄 또는 읽지 못한 까닭'], docs),
+            R.note(('이 작업에 걸린 조건' if PRACTICAL else '조건표의 조건') + ': ' + ', '.join(rules))]
 
 
-def common_steps(key, N):
-    """두 반이 같은 일을 하는 단계 — 자료 파악부터 같은 요청 한 번 더까지(실전반은 분만 압축 — 구성안 7.2)."""
-    sop_doc = '받은 SOP 구조가 이미 구조로 옮긴 문서'
-    task = '핀 세척 작업'
-    rules = '이 작업에 걸린 조건' if key == 'practical-03-extract' else '조건표 조건'
-    return [
-        S('파일을 바꾸지 않고 자료 파악', '① 파악',
-          'AI에게 파일을 바꾸지 말고 문서 묶음 · 문서 목록 · 입력을 읽어 달라고 해, 문서마다 판 · 상태 · 언어 · 단위 · 형식이 어떻게 다른지와 조건표의 출처 칸이 가리키는 곳이 묶음에 있는지를 표로 받습니다. 열리지 않거나 글자가 깨진 문서가 있으면 따로 적게 합니다.',
-          '문서마다 판 · 상태 · 언어 · 단위 · 형식이 어떻게 다른지, 조건표 출처 칸이 가리키는 곳이 묶음에 있는지 묻습니다.',
-          B.EVIDENCE_LOOK,
-          H('문서 묶음의 모양과 조건의 출처 위치를 파악한다', '`자료/` · `자료/문서_목록.csv` · `입력/` · `입출력_계약.md`', '파일을 바꾸지 않는다. 짚을 때는 줄 번호를 먼저 댄다',
-            '문서별 판 · 상태 · 언어 · 형식 표, 열리지 않거나 깨진 문서 목록, 조건마다 「찾을 곳」 표', '짚은 줄 몇 개를 내가 직접 연다'),
-          why='같은 이름의 문서라도 판 · 상태 · 언어 · 형식이 다르면 읽는 법과 쓰는 곳이 달라집니다. 무엇이 있는지 먼저 알아야 어느 문서에서 무엇을 뽑을지 정할 수 있고, 파일을 바꾸지 않아야 뒤에서 원문과 대조할 기준이 남습니다.',
-          differ=B.DIFFER_LOOK),
-        S('수업 모델 연결 확인', '① 파악',
-          '`.env.example`을 복사해 이름을 `.env`로 바꾸고, 강의에서 받은 접속 세 줄을 그대로 붙여 넣어 저장합니다. 터미널에서 `python llm_client.py`를 실행해 연결을 확인합니다. '
-          '키가 없으면 출력의 안내를 읽고, 실습 폴더와 따로 받는 학생용 완성본 묶음으로 결과를 볼지 한 조각만 채팅으로 받아 볼지 정합니다.',
-          '키가 없으면 어느 길로 갈지 정합니다.',
-          '「연결됨」 줄과 모델 이름 · 짧은 답이 나오거나, 키가 없어 확인하지 않았다는 안내가 나옵니다. 키를 채팅 · 다른 파일 · 기록에 붙이지 않았습니다.',
-          H('수업 모델에 연결되는지 확인한다', '`.env.example`, 강의에서 받은 접속 세 줄', '키를 채팅 · 다른 파일 · 기록에 붙이지 않는다. `.env`는 내가 편집기에서 만든다',
-            '`python llm_client.py`의 출력', '출력의 첫 줄과 모델 이름을 본다'),
-          cmd='python llm_client.py',
-          why='키는 이 폴더의 `.env`에만 둡니다 — 키가 새면 다른 사람이 내 한도로 모델을 부를 수 있고, 학생 AI는 폴더의 글을 읽어 답에 옮길 수 있습니다. 첫 요청은 모델 서버가 준비되느라 1분쯤 걸릴 수 있어서, 여기서 미리 한 번 보내 둡니다.',
-          differ='「요청을 보내지 못했습니다」 뒤의 문장이 고칠 곳입니다. 받은 세 줄을 그대로 다시 붙여 넣고 저장한 뒤 다시 실행합니다.'),
-        S('기대 결과 먼저', '② 요구',
-          f'`{REC}`에 목표 · 쓰는 사람 · 판 기준을 내 말로 적고, {task}(준비 · 방법 · 금지 · 완료 · 승인)이 문서마다 어디에 있는지와 {rules}마다 근거를 찾을 곳을 원문 줄로 적습니다. '
-          '「학생이 정할 것」 두 지점의 선택 · 근거 · 바뀌는 답(못 정하면 미결)과 기대 칸을 쓴 시각도 적습니다.' + B.REQ_AFTER,
-          B.ASK_DECIDE,
-          '기대 항목마다 문서 · 판 · 절 · 줄이 붙어 있고 기대 칸을 쓴 시각이 있습니다. 「정한 것」 표의 지점마다 고른 것 · 근거 · 바뀌는 답이 채워져 있거나 미결로 적혀 있습니다. '
-          'AI의 되짚기가 내 요구와 같고, 편집 승인 창이 뜨지 않았으며 AI의 답에 바꾼 파일이 없습니다.',
-          H('실행 전에 기대를 원문에서 적는다', f'{N["look"]}단계 표, 그때까지 읽은 원문, `{REC}` 빈 틀',
-            f'AI 출력을 기대로 옮기지 않는다. 아직 읽지 못한 문서는 「못 읽음」으로 두고 {N["read"]}단계 뒤에 채운다. 「학생이 정할 것」은 내가 고른다',
-            f'`{REC}`의 판 기준 · 정한 것 · 기대 항목 칸', 'AI가 파일을 바꾸지 않고 되짚게 해, 뜻이 다른 곳을 내가 고친다'),
-          why='판정 기법은 기대 결과를 원문에서 먼저 적고 실행 결과와 견주는 것입니다. 모델의 답을 본 뒤에 기대를 적으면 빠진 것과 지어낸 것이 기대에 섞여 보이지 않습니다.',
-          differ=B.DIFFER_REQ.format(rec=REC)),
-        S('계획 검토', '③ 계획',
-          'AI에게 파일을 바꾸지 말고 기능 목록과 순서를 제안하게 합니다 — 문서 읽기 → 나누기 → 요청 글 → 모델 부르기 → 응답을 후보로 → 인용 위치 → 후보 파일, 검토는 따로. '
-          '핀 세척 절 하나를 계획에 대어 기능마다 무엇이 나오는지 말하게 하고, 내가 동의하면 다음 단계로 갑니다.',
-          '문서를 어떤 단위(절 · 쪽 · 문서)로 나눌지와 그 까닭을 정합니다.',
-          '계획에 그래프 적재 · 포털 호출이 없고 기능마다 입력 · 출력이 있으며, 내가 동의했습니다.',
-          H('기능 경계와 순서를 합의한다', f'`입출력_계약.md`, `{REC}`', '그래프 적재 · 포털 호출처럼 범위 밖의 일을 넣지 않는다. 나누는 단위와 결정은 내가 정한다',
-            '기능 목록과 순서, 기능마다 입력 · 출력', '핀 세척 절 하나를 계획에 대어 기능마다 무엇이 나오는지 말하게 한다'),
-          why='언어 모델의 구조화 출력은 답의 모양만 맞춰 줍니다 — 그 안의 사실이 원문과 같은지는 따로 확인해야 합니다. 그래서 모델 부르기와 인용 위치 찾기 · 검토를 다른 기능으로 나눕니다.',
-          differ=B.DIFFER_PLAN),
-        S('구현 ① 문서 읽기', '④ ~ ⑥ 구현 · 대조 · 고침',
-          '문서 목록의 그 판을 글로 여는 기능을 만들고 실행합니다 — 문서마다 목록의 판 · SHA-256과 같은 파일인지 확인하고, 문서 · 판 · 상태 · 글자 방식 · 줄 수 · 첫 줄 또는 읽지 못한 까닭을 출력합니다.',
-          '읽히지 않거나 글자가 깨지는 문서를 어떻게 다룰지 정합니다.',
-          '모든 문서가 읽혔거나 읽지 못한 까닭이 출력에 있고, 두세 문서의 첫 줄이 원문과 같습니다.',
-          H('문서마다 목록의 판과 같은 파일인지 확인하고 글로 읽는다', '`자료/문서_목록.csv`, `자료/`의 문서', '원문을 바꾸지 않는다. 읽지 못한 문서를 내용 없음으로 두지 않는다',
-            '문서 · 판 · 상태 · 글자 방식 · 줄 수 · 첫 줄 또는 실패 까닭의 출력', '두세 문서의 첫 줄을 원문과 견준다'),
-          'python 결과/<만든 코드 이름>.py', why=WHY_READ,
-          differ='읽지 못한 문서가 있으면 그 파일 이름과 오류 전문을 AI에게 보내 원인부터 설명하게 하고, 내가 정한 대로 다시 읽습니다.'),
-        S('구현 ② 문서 나누기', '④ ~ ⑥ 구현 · 대조 · 고침',
-          '읽은 글을 요청에 보낼 조각으로 나누는 기능을 더하고, 문서 · 조각 · 줄 범위 목록을 출력합니다.',
-          f'{N["plan"]}단계에서 정한 단위대로 나뉘었는지 확인합니다.',
-          '조각마다 줄 범위가 원문과 맞습니다.',
-          H('읽은 글을 요청에 보낼 조각으로 나눈다', f'{N["read"]}단계 출력', '조각 경계에서 문장을 자르지 않는다. 원문 줄 번호를 잃지 않는다', '문서 · 조각 · 줄 범위 목록', '두세 조각의 줄 범위를 원문 줄과 견준다'),
-          'python 결과/<만든 코드 이름>.py',
-          why='한 번에 보내는 글이 길면 답이 잘리거나 빠뜨리는 것이 늘고, 너무 짧게 자르면 조건과 그 대상이 다른 조각으로 갈라집니다. 원문의 보관 단위(절 · 쪽)를 알아야 끊을 자리를 정할 수 있습니다.',
-          differ=B.FIX_LOOP),
-        S('구현 ③ 요청 글 짜기', '④ ~ ⑥ 구현 · 대조 · 고침',
-          '`결과/prompt.md`에 수업 모델에 보낼 추출 요청 글을 짭니다 — 무엇을 뽑을지, 답의 꼴(`입출력_계약.md` 「후보 하나」의 필드), 원문을 그대로 옮길 것, 하지 말 것, 모르면 경고로 적을 것.',
-          '요청 글에 무엇을 지키게 할지(원문 보존 · 부정 · 단위 · 순서 · 모르면 경고) 정합니다.',
-          '`결과/prompt.md`에 뽑을 것 · 답의 꼴 · 원문 보존 · 하지 말 것 · 모르면 경고가 내 말로 들어 있고, AI에게 파일을 바꾸지 말고 되짚게 했을 때 빠진 것이 없습니다.',
-          H('한 조각에서 계약 꼴 후보를 받아 낼 요청 글을 짠다', '`입출력_계약.md` 「후보 하나」 · 「종류의 뜻」', '원문에 없는 것을 만들지 않게, 원문을 번역하거나 고쳐 쓰지 않게 한다',
-            '`결과/prompt.md`', 'AI가 파일을 바꾸지 않고 요청 글을 되짚게 해, 다섯 가지 가운데 빠진 것을 내가 채운다'),
-          why=WHY_PROMPT,
-          differ='되짚기에서 빠진 것이 나오면 `결과/prompt.md`를 고치고 다시 되짚게 합니다.'),
-        S('구현 ④ 한 조각 보내 보기', '④ ~ ⑥ 구현 · 대조 · 고침',
-          f'{sop_doc}에서 핀 세척 절 한 조각을 `결과/prompt.md`와 함께 `llm_client.ask`로 보내는 기능을 더하고, 받은 답을 받은 SOP 구조의 같은 작업 항목과 줄마다 견줍니다. 코드는 AI에게 만들게 하고, 모델을 부르는 명령은 내가 VS Code 터미널에서 실행합니다.',
-          '받은 답이 받은 SOP 구조와 다른 곳이 요청 글 때문인지 모델 응답 때문인지 묻습니다.',
-          '`결과/응답_기록/`에 기록이 생겼고, 받은 답과 받은 SOP 구조의 차이를 원문 줄로 말할 수 있습니다.',
-          H('요청 글로 한 조각을 보내 받은 답을 이미 검토된 구조와 견준다', f'`결과/prompt.md`, {sop_doc}의 핀 세척 절, `입력/sop.json`', '응답 기록을 고치지 않는다. 받은 답을 손으로 고쳐 맞추지 않는다',
-            '그 조각의 응답 기록과 차이 목록', '받은 답을 받은 SOP 구조의 같은 작업 항목과 줄마다 견준다'),
-          'python 결과/<만든 코드 이름>.py', why=WHY_ONE,
-          differ=('Codex 채팅이 대신 실행하면 그 실행 환경은 바깥 연결이 막혀 있어 「모델 서버에 닿지 못했습니다([Errno 1] Operation not permitted)」로 멈춥니다 — 같은 명령을 내 터미널에서 실행합니다. '
-                  + ('키가 없어 멈췄으면 출력의 안내대로 한 조각만 채팅으로 받아 `--paste`로 남기거나, ' if key == 'practical-03-extract' else '키가 없어 멈췄고 채팅으로도 받지 않으면, ')
-                  + '여기부터는 실습 폴더와 따로 받는 학생용 완성본 묶음으로 결과를 봅니다. 받은 답이 다르면 ' + B.FIX_LOOP)),
-        S('구현 ⑤ 응답을 후보로', '④ ~ ⑥ 구현 · 대조 · 고침',
-          '응답 기록을 계약 꼴 후보 파일 `결과/후보/<문서 식별자>_<판>.json`으로 바꾸는 기능을 더하고 실행합니다.',
-          '필드가 빠지거나 종류가 틀린 답을 어떻게 다룰지 정합니다.',
-          f'계약 검사에서 인용 위치 칸(`line_start` · `line_end` · `quote_match` — {N["locate"]}단계에서 채움) 밖의 문제가 없거나, 고칠 필드가 줄마다 나옵니다.',
-          H('응답 기록을 계약 꼴 후보 파일로 바꾼다', '응답 기록, `입출력_계약.md` 「후보 파일」 · 「후보 하나」', '답에 없는 값을 채우지 않는다. 응답 기록을 고치지 않는다',
-            '`결과/후보/<문서 식별자>_<판>.json`', '`python check.py 결과/후보/<파일 이름>.json`'),
-          'python 결과/<만든 코드 이름>.py\npython check.py 결과/후보/<파일 이름>.json',
-          why='원문 조건이 후보가 될 때 종류(단계 · 시작 조건 · 금지 · 완료 · 기준값)가 정해집니다. 계약 꼴로 바꿔 두어야 검사기와 다음 실습이 같은 모양으로 읽습니다. 후보의 인용은 응답 기록의 답 글에 있는 글이라야 모델의 답에서 만든 후보입니다.',
-          differ=DIFFER_CHECK),
-        S('구현 ⑥ 인용 위치 찾기', '④ ~ ⑥ 구현 · 대조 · 고침',
-          '후보의 인용이 원문 어느 줄에 있는지 코드로 찾아 줄 범위(`line_start` · `line_end`)와 찾은 방법(`quote_match`)을 적고, 찾지 못한 인용은 후보에서 빼 `unlocated`에 둡니다.',
-          '계약이 정한 것(찾은 방법 표시 · 여러 곳에 맞으면 찾지 못한 것 · `unlocated`)대로인지 확인합니다.',
-          '구조 검사가 통과하고, 찾지 못한 인용은 `unlocated`에 따로 있습니다.',
-          H('후보의 인용이 원문 그 줄에 있는지 찾는다', '후보 파일, 원문, `입출력_계약.md` 「후보 하나」의 인용 칸', '인용을 고쳐 맞추지 않는다',
-            '후보의 `line_start` · `line_end` · `quote_match`와 `unlocated`', '`python check.py`로 보고, 인용 몇 개는 원문 줄을 직접 연다'),
-          'python 결과/<만든 코드 이름>.py\npython check.py 결과/후보/<파일 이름>.json',
-          why='인용은 원문의 그 쪽 · 문단을 가리켜야 다른 사람이 다시 찾을 수 있습니다. 모델은 원문을 조금씩 바꿔 옮기기도 하므로, 그대로 찾히는지와 어떻게 찾았는지를 함께 남깁니다. '
-              '같은 문장이 여러 절차에 되풀이되면(설비 정지 · 운전 모드 확인처럼) 코드는 어느 줄인지 정하지 못하므로 `unlocated`로 둡니다 — 그 단계는 검토에서 내가 그 절차의 줄을 골라 더합니다.',
-          differ=DIFFER_CHECK),
-        S('주 대상 문서에 실행하고 기대와 대조', '⑤ 대조',
-          f'{N["expect"]}단계에서 적은 문서 — {task}의 원문을 가진 문서와 {rules}의 근거를 찾을 문서({sop_doc}는 {N["other"]}단계에서) — 에 {N["read"]} ~ {N["locate"]}단계 기능을 실행해 후보 파일을 만들고, '
-          f'{N["expect"]}단계 기대와 견주어 차이를 종류(누락 · 부정 빠짐 · 단위 · 수치 오류 · 다른 절 연결 · 근거 없는 생성)로 나눕니다.',
-          '기대와 다른 줄이 기능의 문제인지 모델 응답의 문제인지 묻습니다.',
-          '차이 종류마다 한 건 이상을 원문 줄로 설명할 수 있고, 기대 항목마다 실제 후보 · 차이 종류 칸이 채워져 있습니다.',
-          H(f'주 대상 문서의 후보를 {N["expect"]}단계 기대와 견준다', f'후보 파일, `{REC}` 기대 항목', '기대를 결과에 맞춰 고치지 않는다',
-            f'`{REC}` 기대 항목의 실제 후보 · 차이 종류 칸', '차이마다 원문 줄을 연다'),
-          'python 결과/<만든 코드 이름>.py',
-          why='한 조각에서 맞은 요청 글도 문서 전체에서는 빠뜨리거나 다른 절에 잇는 것이 생깁니다. 실행 전에 원문에서 적은 기대와 줄마다 견주어야 차이가 기능의 문제인지 모델 응답의 문제인지 나눌 수 있습니다.',
-          differ=f'터미널에 「경고: 요청 해시 …의 답이 길이 상한({LLM.MAX_TOKENS}토큰)에서 잘려 끝까지 오지 않았습니다.」가 나온 조각은 답을 끝까지 받지 못해 후보를 만들 수 없습니다 — '
-                 '그 조각을 절차마다 더 작게 나눠 새 요청으로 보냅니다(새 요청은 안내용 상한에 셉니다). ' + B.FIX_LOOP),
-        S('같은 요청 한 번 더 보내기', '⑤ 대조',
-          f'{N["main"]}단계에서 보낸 조각 하나를 `ask(요청, again=True)`로 한 번 더 보내, 두 응답 기록의 답을 견줍니다.',
-          '두 답이 다른 곳이 있으면 어느 응답 기록을 검토에 쓸지와 그 까닭을 정합니다.',
-          f'`{REC}` 「같은 요청을 한 번 더 보낸 결과」에 두 응답 기록 파일 이름과 다른 점(같으면 같다고)이 있습니다.',
-          H('같은 요청에 모델의 답이 달라지는지 본다', f'{N["main"]}단계에서 보낸 조각 하나와 그 응답 기록', '같은 요청은 두 번까지만 보낸다. 응답 기록을 고치지 않는다',
-            f'`{REC}` 「같은 요청을 한 번 더 보낸 결과」 표', '두 기록의 답 글을 나란히 놓는다'),
-          'python 결과/<만든 코드 이름>.py',
-          why='같은 요청에도 모델의 답은 매번 다를 수 있습니다. 어느 응답을 검토했는지 응답 기록 파일로 남겨야 나중에 같은 결과를 다시 볼 수 있습니다.',
-          differ=f'두 답이 다르면 다른 줄을 원문과 견주어, 검토에 쓸 응답 기록 파일 이름을 `{REC}`에 적습니다. `ask`는 같은 요청의 마지막 기록을 돌려주므로, 앞 기록을 쓰기로 했으면 '
-                 '코드가 그 기록 파일을 골라 읽게 고치고 후보 파일을 다시 만듭니다.'),
-    ]
+def connect(previous):
+    import llm_client as L
+    conf = L.settings()
+    have = [n for n in L.NAMES if conf[n]]
+    return [R.counts('수업 모델 연결 값과 응답 기록(값은 보이지 않음)', [('.env에 채운 줄', f'{len(have)} / 3'), ('응답 기록 수', len(L.records())),
+                                                         ('이 폴더의 안내용 상한까지 남은 수', L.MAX_SENT - L.sent_count())]),
+            R.note('연결 확인은 터미널에서 `python llm_client.py`로 합니다 — 결과 화면은 모델을 부르지 않습니다.')]
 
 
-def review_steps(key, N):
-    practical = key == 'practical-03-extract'
-    first = S('검토 ① 핀 세척 작업 후보의 결정', '⑤ 대조',
-              '후보 파일을 복사한 검토 결과 `결과/검토/<문서 식별자>_<판>_검토.json`에 핀 세척 작업의 ' + ('준비 · 방법 · 금지 · 완료 · 승인 ' if practical else '')
-              + '후보마다 원문과 대조한 결정(채택 · 수정 · 제외 · 보류)과 근거를 적습니다. 원문과 대조하지 않은 후보는 보류로 두고 그 까닭을 적습니다. 후보 파일 원본은 그대로 둡니다. '
-              f'결정의 이유에는 후보의 절 · 종류 · 인용을 함께 적습니다 — {N["other"]}단계에서 후보 파일을 문서 전체로 다시 만들면 이 결정을 새 후보 파일에 다시 겁니다. '
-              '여러 곳에 같은 문장이 있어 `unlocated`로 간 단계는 그 절차의 줄을 골라 검토자가 더한 후보로 넣습니다.',
-              f'「학생이 정할 것」의 사내 문서와 제조사 지침 지점을 {N["expect"]}단계에서 정한 대로 적용했는지 확인합니다.',
-              '구조 검사가 통과하고, 채택 · 수정 · 제외한 결정마다 원문 근거가 있습니다. 원문과 대조하지 않은 후보는 보류입니다.',
-              H('핀 세척 작업 후보마다 결정과 근거를 남긴다', '후보 파일, 원문, `자료/문서_목록.csv`, 문서 관리 기준, 「정한 것」',
-                '후보 파일 원본은 두고 검토는 별도 파일에 쓴다. 원문과 대조하지 않은 후보를 채택하지 않는다',
-                '`결과/검토/<문서 식별자>_<판>_검토.json`', '`python check.py 결과/검토/<파일 이름>.json`, 결정 몇 개를 원문 줄로'),
-              'python check.py 결과/검토/<파일 이름>.json',
-              why='사람 검토의 네 결정은 채택 · 수정 · 제외 · 보류입니다. 수정한 후보는 바꾸기 전 값을 남겨 다시 검토할 수 있게 하고, 보류는 근거가 더 필요하다는 기록이지 버린 것이 아닙니다. '
-                  '사람이 원문과 대조하지 않은 후보를 승인하지 않아야, 다음 실습이 검토한 지식만 그래프에 넣습니다.',
-              differ=DIFFER_CHECK)
-    rules = f'조건표에서 이 작업(`{TASK}`)에 걸린 조건(`action`이 이 작업인 `rule_id`)' if practical else '조건표의 조건(`rule_id`)'
-    second = S('검토 ② 이 작업에 걸린 조건의 근거' if practical else '검토 ② 조건 근거 대조', '⑤ 대조',
-               f'{rules}마다 근거 원문 후보와 맞는 정도(`match`) · 까닭(`note`)을 검토 결과의 `rule_links`에 적습니다. 조건표 · 판정 결과는 고치지 않고, 바꿀 것은 `{REC}` 「조건 근거 대조」의 요청할 것 칸에 남깁니다.',
-               f'「학생이 정할 것」의 조건의 근거 지점을 {N["expect"]}단계에서 정한 대로 적용했는지 확인합니다.',
-               ('이 작업에 걸린 조건마다' if practical else '조건표의 조건마다') + ' `rule_links`가 있고, `python check.py`의 조건 근거 대조 줄에 빠진 조건이 없습니다.',
-               H(('이 작업에 걸린 조건마다' if practical else '조건표 조건마다') + ' 근거 원문을 잇고 맞는 정도와 까닭을 적는다', '`입력/조건표.csv`, 검토 결과, 「정한 것」',
-                 '조건표 · 판정 결과를 바꾸지 않는다 — 바꿀 것은 요청으로 남긴다', f'검토 결과의 `rule_links`, `{REC}` 「조건 근거 대조」 표',
-                 '`python check.py`, 근거 후보 몇 개를 원문 줄로 연다'),
-               'python check.py',
-               why='허용 · 제외 조건은 출처로 돌아갈 수 있어야 고칠 수 있습니다. 원문이 말하는 대상 · 때와 조건이 거는 대상 · 때가 같은지 견주어야, 그 원문이 그 조건의 근거인지 말할 수 있습니다.',
-               differ=DIFFER_STAGES)
-    other = S('다른 문서에 다시 적용', '⑤ 대조',
-              '같은 기능을 받은 SOP 구조가 이미 구조로 옮긴 문서 전체와 정기 점검표 · 예비품 기준 · 보충 매뉴얼에 실행하고, 문서마다 누락 · 근거 없는 생성을 셉니다(SOP 구조가 옮긴 문서는 코드로 견주고, 나머지는 절 두세 개를 손으로). '
-              'SOP 구조의 한 칸은 여러 절을 합쳐 적은 것이 있어 글자 비교로는 짝이 나지 않으므로, 코드가 낸 누락은 원문 줄을 열어 실제 누락만 셉니다. '
-              'SOP 구조가 옮긴 문서의 후보 파일은 이 실행으로 문서 전체로 다시 쓰이므로, 그 문서의 검토 결과는 새 후보 파일로 다시 만듭니다.',
-              '한 문서에 맞춘 처리가 다른 문서에서 놓치거나 지어내는 것이 무엇인지 묻습니다.',
-              f'문서마다 후보 수 · 누락 · 근거 없는 생성이 `{REC}` 「다른 문서에 적용」 표에 있습니다.',
-              H('같은 기능을 다른 문서에 적용해 누락 · 근거 없는 생성을 센다', '그 문서들의 원문, 만든 기능, `입력/sop.json`', '원문에 맞추려고 원문을 바꾸지 않는다. 이 단계에서는 세기만 하고 고치지 않는다',
-                f'`{REC}` 「다른 문서에 적용」 표의 후보 수 · 누락 · 근거 없는 생성 칸', 'SOP 구조가 옮긴 문서는 코드로, 나머지는 절 두세 개를 손으로 견준다'),
-              'python 결과/<만든 코드 이름>.py',
-              why='누락은 원문에 있는데 후보에 없는 것, 근거 없는 생성은 후보에 있는데 원문에 없는 것입니다. 한 문서에서 맞은 요청 글이 형식이 다른 문서에서도 맞는지는 실제로 돌려 세어 봐야 압니다.',
-              differ=f'센 수가 원문과 맞지 않아 보이면 어느 문서 · 절에서 다른지 AI에게 짚게 해 `{REC}`에 적어 둡니다. 고치는 일은 구조 검사 단계에서 합니다.')
-    return [first, second, other]
-
-
-def tail_steps(key, N):
-    practical = key == 'practical-03-extract'
-    out = []
-    if practical:
-        out.append(S('구현 ⑦ 이 작업의 준비 · 금지 · 완료 모으기', '④ ~ ⑥ 구현 · 대조 · 고침',
-                     f'검토 결과에서 핀 세척의 준비 · 금지 · 완료 조건을 문서를 가리지 않고 모아 `결과/선택작업_조건.json`에 쓰는 기능을 더하고 실행합니다(`basis`에는 {N["incident"]}단계에서 확인한 줄). '
-                     '방법 단계는 넣지 않고(첫 단계가 작업 전 확인이면 준비로), 받은 SOP 구조의 같은 작업 항목과 견주어 다른 곳을 `sop_diff`에 적습니다.',
-                     '절차 밖 절 · 다른 절차 · 다른 문서의 조건 가운데 이 작업에 걸리는 것과 그 근거를 묻습니다.',
-                     '준비 · 금지 · 완료가 각각 원문 인용과 함께 있고, 받은 SOP 구조와 다른 곳이 `sop_diff`에 카드에만 · SOP 구조에만으로 나뉘어 있습니다.',
-                     H('작업 확인 카드에 들어갈 조건을 검토 결과에서 모은다', '검토 결과, `입력/sop.json`', '승인한 후보만 항목으로 넣는다. 승인하지 않은 것은 남은 질문으로 둔다',
-                       '`결과/선택작업_조건.json`(계약 「선택한 작업의 조건」)', '항목 두세 개를 원문 줄로 보고, 받은 SOP 구조의 같은 작업 항목과 견준다'),
-                     'python 결과/<만든 코드 이름>.py\npython check.py',
-                     why='작업 전에 확인할 조건은 그 작업의 절차 안에만 있지 않습니다 — 시작 전 조건 · 금지 방법 · 완료 확인이 다른 절이나 다른 문서에 있을 수 있어, 모아 두어야 작업자가 한 번에 되짚습니다.',
-                     differ=DIFFER_CHECK))
-        out.append(S('검사가 잡는지 확인', '⑤ 대조',
-                     f'후보 파일 하나를 `결과/` 아래에 사본으로 복사해 그 사본의 인용 한 글자를 일부러 바꾸고, `python check.py <사본>`이 그 후보를 짚는지 봅니다. 확인한 뒤 사본을 지우고 `{REC}` 「검사가 잡는지 확인」에 적습니다.',
-                     '검사가 짚은 줄이 바꾼 후보를 가리키는지 확인합니다.',
-                     f'일부러 바꾼 사본의 그 후보를 검사가 짚었고, 사본을 지운 뒤에는 그 줄이 나오지 않습니다. `{REC}` 「검사가 잡는지 확인」 표가 채워져 있습니다.',
-                     H('검사가 망가진 입력을 실제로 잡는지 본다', '후보 파일 하나의 사본', '원본 후보 파일 · 응답 기록을 바꾸지 않는다. 사본은 확인한 뒤 지운다',
-                       f'`{REC}` 「검사가 잡는지 확인」 표', '바꾼 사본의 출력과 사본을 지운 뒤의 출력을 견준다'),
-                     'python check.py 결과/<사본 이름>.json\npython check.py',
-                     why='검사가 통과를 냈다고 결과가 맞는 것은 아닙니다. 일부러 망가뜨린 입력을 잡는지 보아야 그 검사가 실제로 무엇을 보는지 압니다.',
-                     differ='짚지 않으면 바꾼 곳이 인용이었는지, 명령에 사본 파일 이름을 주었는지 보고 다시 실행합니다.'))
-    out.append(S('구조 검사와 고치기', '⑥ 고침',
-                 f'터미널에서 `python check.py`를 실행해 단계별 상태를 보고, 짚은 문제와 {N["other"]}단계에서 적어 둔 누락 · 근거 없는 생성을 고친 뒤 {N["main"]} · {N["other"]}단계 수를 다시 세어 '
-                 f'`{REC}` 「다른 문서에 적용」의 고친 점 · 다시 센 수 칸에 적습니다.',
-                 '검사가 짚은 문제가 어느 파일 · 후보인지 묻습니다.',
-                 f'「구조상 빠진 단계는 없습니다」 줄이 나오거나, 남은 줄이 `{REC}` 「저장 기록」의 빈 항목뿐입니다(마지막 단계에서 채웁니다). 「다른 문서에 적용」의 고친 점 · 다시 센 수 칸이 채워져 있습니다.',
-                 H('구조 문제와 앞서 센 누락 · 근거 없는 생성을 고친다', f'`python check.py`의 출력, `{REC}` 「다른 문서에 적용」 표', '검사 기준 · 원자료 · 응답 기록을 바꾸지 않는다',
-                   f'고친 파일 목록, 다시 실행한 출력, `{REC}`의 고친 점 · 다시 센 수 칸', f'고친 뒤 {N["main"]} · {N["other"]}단계 수를 다시 센다'),
-                 'python check.py',
-                 why='구조 검사는 필드 · 인용의 줄 · 응답 기록 짝 · 인용이 답 글에 있는지 · 결정과 상태의 짝처럼 모양만 봅니다. 어느 후보를 채택해야 하는지, 무엇이 빠졌는지는 검사가 모르므로 원문 대조로 판단합니다.',
-                 differ=DIFFER_STAGES))
-    out.append(S('저장하고 다시 열기', '⑦ 저장 · 다시 열기',
-                 f'결과 파일을 모두 저장하고 VS Code에서 폴더를 닫았다 다시 연 뒤 `python check.py`를 다시 실행합니다. `{REC}` 끝에 기준일 · 저장 시점 · 확인하지 못한 점을 적습니다.',
-                 '확인하지 못한 점으로 무엇을 남길지 정합니다.',
-                 '다시 연 뒤에도 같은 출력이 나옵니다. `결과/`에 요청 글 · 응답 기록 · 후보 · 검토 결과' + (' · 선택작업 조건' if practical else '') + f' · `{Path(REC).name}`와 만든 코드가 있습니다.',
-                 H('결과를 저장하고 다시 열어 같은지 본다', f'`결과/`의 파일, `{REC}` 「저장 기록」', '결과를 다시 만들지 않는다. 확인하지 못한 것은 확인하지 못했다고 적는다',
-                   f'`{REC}`의 기준일 · 저장 시점 · 확인하지 못한 점', '다시 연 뒤 `python check.py` 출력을 앞의 출력과 견준다'),
-                 cmd='python check.py', why=B.WHY_SAVE, differ=B.DIFFER_SAVE))
+@guard
+def expect(previous):
+    rows = X.expected_rows()
+    if not rows:
+        raise R.Blank('결과/기대_항목.csv에 행이 없습니다.')
+    out = [R.table('기대 항목 — 내가 적은 줄의 원문', ['파일', '줄', '종류', '원문'], [[f, n, k, X.source_line(f, n)] for f, n, k in rows])]
+    for name in dict.fromkeys(f for f, _, _ in rows):
+        lines = [n for f, n, _ in rows if f == name]
+        out.append(R.source_lines(HERE / '자료' / name, min(lines), max(lines)))
     return out
 
 
-def lab(key, files):
-    practical = key == 'practical-03-extract'
-    course = '실전반' if practical else '통합반'
-    title, judged, event = TITLES[key], JUDGED[key], incident()
-    N = numbers(key)
-    if practical:
-        user = '이 답은 보전 야간조가 핀 세척 전에 준비 · 금지 · 완료를 원문으로 되짚고, 설비보전팀장이 작업지시를 승인할 때 씁니다.'
-        questions = ['핀 세척 작업의 원문을 가진 문서들에서 기능이 뽑은 준비 · 방법 · 금지 · 완료 · 승인 후보는 무엇인가? 원문과 대조한 결정(채택 · 수정 · 제외 · 보류)과 근거(문서 · 판 · 절 · 인용)는?',
-                     '핀 세척 작업의 준비 · 금지 · 완료 조건과 근거는? 이 작업에 걸린 조건표의 조건마다 근거 원문은 무엇이고, 그 근거에 따라 조건을 어떻게 두나?',
-                     '같은 기능을 검토된 기준선 문서(받은 SOP 구조가 구조로 옮긴 문서)와 다른 문서(정기 점검표 · 예비품 기준 · 보충 매뉴얼)에 적용하면 누락 · 근거 없는 생성은 몇 건이고, 무엇을 고쳐 다시 실행했나?']
-        goal = [f'포털에서 매뉴얼을 올려 추출 · 대조 · 적재하고, 지식 지도에서 팬 운전과 핀 세척의 조건이 어느 원문 절에 이어졌는지 찾았습니다. 이번에는 같은 일을 직접 만듭니다. '
-                f'포털에서 본 경보와 같은 종류의 다른 경보 한 건인 {event}의 판정 뒤에 남은 근본 조치는 쿨러 핀 세척(`{TASK}`)입니다. 이 작업의 준비 · 금지 · 완료 조건을 문서 묶음 전체에서 모읍니다.']
-        save = (f'`결과/검토/` · `결과/선택작업_조건.json` · `{REC}`와 만든 코드 · 요청 글 · 응답 기록을 함께 보관합니다. '
-                f'다음 실습 「{NEXT[key]}」는 이 검토 결과와 모은 조건으로 핀 세척 카드를 만듭니다. 제공된 검토 결과로도 시작할 수 있습니다. ' + USB)
-        make = ('만들 것: 수업 모델에 보낼 요청 글 `결과/prompt.md`, 문서를 읽고 나누어 모델을 부르고 응답을 후보로 바꾸고 인용 위치를 찾는 코드, 문서별 후보 파일(`결과/후보/`), '
-                f'검토 결과(`결과/검토/`), 핀 세척의 준비 · 금지 · 완료를 모은 `결과/선택작업_조건.json`, `{REC}`.')
+@guard
+def split(previous):
+    cfg = settings()
+    docs = X.by_file()
+    rows = []
+    for name, (row, text, enc, raw) in docs.items():
+        for no, (first, body) in enumerate(X.split_chunks(text, cfg['단위'], cfg['글자_상한']), 1):
+            a, b = X.chunk_range(first, body)
+            rows.append([name, no, f'{a}~{b}', len(body), body.splitlines()[0][:50]])
+    per = {}
+    for r in rows:
+        per[r[0]] = per.get(r[0], 0) + 1
+    out = [R.counts('문서마다 조각 수', sorted(per.items()) + [('전체 조각', len(rows))]),
+           R.table('조각 목록', ['파일', '조각', '줄 범위', '글자 수', '첫 줄'], rows)]
+    try:
+        need, left = X.to_send(cfg, X.prompt_text() or '(요청 글 없음)', cfg['보낼_문서'])
+        out.append(R.counts('보낼 문서의 요청 수(보내지 않고 셈)', [('보낼 요청', need), ('이 폴더의 안내용 상한까지 남은 수', left)]))
+    except X.Problem as e:
+        out.append(R.note(f'보낼 수를 세지 못함 — {e}'))
+    return out
+
+
+@guard
+def trial(previous):
+    cfg = settings()
+    p = prompt()
+    if not cfg['시험_조각']:
+        raise R.Blank('결과/나누기.json 「시험_조각」이 비어 있습니다 — 먼저 보내 볼 조각의 「파일:줄」을 적습니다.')
+    got = X.trial(cfg, p)
+    out = [R.note(f'시험 조각: {got["source_file"]} {got["chunk"][0]}~{got["chunk"][1]}줄 · 요청 해시 {got["request_hash"]}')]
+    sop = json.loads(X.basis('sop.json').read_text(encoding='utf-8'))
+    for a in got['answers']:
+        out.append(R.table(f'{a["record"]}의 후보(끝난 까닭 {a["finish_reason"]})', ['id', '종류', '절', '절차', '줄', '찾은 방법', '인용'],
+                           [[c['id'], c['kind'], c['section'], c['procedure'] or '', f'{c["line_start"]}~{c["line_end"]}', c['quote_match'], c['quote']] for c in a['candidates']]
+                           + [[u['id'], u['kind'], u['section'], u['procedure'] or '', '', '찾지 못함', u['quote']] for u in a['unlocated']],
+                           note=' · '.join(a['warnings'][:5])))
+    if len(got['answers']) == 2:
+        q = [{X.squash(c['quote']) for c in a['candidates']} for a in got['answers']]
+        out.append(R.counts('같은 요청 두 답', [('두 답에 함께 있는 인용', len(q[0] & q[1])), ('첫 답에만', len(q[0] - q[1])), ('다시 보낸 답에만', len(q[1] - q[0]))]))
+    procs = {c['procedure'] for a in got['answers'] for c in a['candidates'] if c['procedure']}
+    rows = []
+    for s in sop['sops']:
+        if s['id'] in procs:
+            for f in ('apply_conditions', 'prohibitions', 'steps', 'completion'):
+                for x in s.get(f, []):
+                    t = x.get('text') if isinstance(x, dict) else str(x)
+                    hit = [c['id'] for c in got['answers'][0]['candidates'] if X.squash(c['quote']) and (X.squash(c['quote']) in X.squash(t) or X.squash(t) in X.squash(c['quote']))]
+                    rows.append([s['id'], f, t, ' · '.join(hit) or '짝 없음'])
+    if rows:
+        out.append(R.table('받은 SOP 구조의 같은 작업 항목 ↔ 첫 답의 후보(글자 짝 — 뜻이 같은지는 원문 줄로 본다)', ['조치', '칸', '받은 SOP 구조의 글', '짝지은 후보'], rows))
+    return out
+
+
+@guard
+def split_trial(previous):
+    return split(previous) + trial(previous)
+
+
+@guard
+def main_run(previous):
+    cfg = settings()
+    p = prompt()
+    if not cfg['보낼_문서']:
+        raise R.Blank('결과/나누기.json 「보낼_문서」가 비어 있습니다.')
+    done = X.extract(cfg, p, cfg['보낼_문서'])
+    rows = []
+    for name, what in done:
+        data = X.load_candidates(name)
+        cut = sum(1 for w in data['warnings'] if '길이 상한' in w)
+        empty, loose = X.coverage(cfg, name)
+        rows.append([name, len(data['candidates']), len(data['unlocated']), cut, ' · '.join(empty) or '없음', len(loose), X.made_with(data), what])
+    out = [R.table('보낸 문서 — 후보 파일(「찾지 못한 인용」은 누락이 아님 — 누락은 후보 0개 조각 · 후보가 걸리지 않은 내용 줄을 원문으로 열어 판단한다)',
+                   ['파일', '후보', '찾지 못한 인용', '길이 상한에서 잘린 답', '후보 0개 조각(줄)', '후보가 걸리지 않은 내용 줄', '후보를 만든 판', '이번 실행'], rows)]
+    exp, extra = X.compare_expected()
+    out.append(R.table('기대 항목 ↔ 후보(줄 · 종류로 짝 — 뜻이 같은지는 원문 줄로 본다)', ['파일', '줄', '종류', '원문', '표시', '후보'], [list(r) for r in exp]))
+    if extra:
+        out.append(R.table('기대 줄 사이에 있는데 기대에 없는 후보', ['파일', '줄', '종류', '후보', '인용'], [list(r) for r in extra]))
+    return out
+
+
+@guard
+def review(previous):
+    if not X.decision_rows():
+        raise R.Blank('결과/검토_결정.csv에 행이 없습니다.')
+    written = X.apply_review(TASK if PRACTICAL else None)
+    rows, task_rows = [], []
+    exp = {(f, n) for f, n, _ in X.expected_rows()}
+    for path in written:
+        d = json.loads(path.read_text(encoding='utf-8'))
+        count = {}
+        for c in d['candidates']:
+            count[c['decision']] = count.get(c['decision'], 0) + 1
+            if any(f == d['source_file'] and c['line_start'] <= n <= c['line_end'] for f, n in exp):
+                task_rows.append([d['doc_id'], d['rev'], c['line_start'], c['kind'], c['decision'], c['quote'][:80]])
+        rows.append([path.name, count.get('채택', 0), count.get('수정', 0), count.get('제외', 0), count.get('보류', 0), len(d['missing']),
+                     sum(1 for m in d['missing'] if m.get('added'))])
+    return [R.table('검토 결과 파일', ['파일', '채택', '수정', '제외', '보류', '누락 기록', '검토자가 더한 후보'], rows),
+            R.table('기대 항목 줄의 결정(이 작업의 조건이 될 것)', ['문서', '판', '줄', '종류', '결정', '인용'], task_rows)]
+
+
+@guard
+def rules(previous):
+    linked, known = X.rule_rows(TASK if PRACTICAL else None)
+    if not linked:
+        raise R.Blank('결과/조건_대조.csv에 행이 없습니다.')
+    X.apply_review(TASK if PRACTICAL else None)
+    _, data = event()
+    out = []
+    rows = []
+    for r in linked:
+        hit = []
+        for e in data['events']:
+            for c in e['candidates']:
+                excluded_by = {x.get('rule_id') for x in c.get('exclusions', [])} | {x.get('rule_id') for x in c.get('reasons', []) if x.get('result') == 'EXCLUDE'}
+                if c['sop'] == TASK and c['status'] == '제외' and r['rule_id'] in excluded_by:
+                    hit.append(e['id'])
+        rows.append([r['rule_id'], r['match'], r['근거'] or '(근거 없음)', r['까닭'], r['요청할_것'], ', '.join(hit) or '없음'])
+        for f, n in r['refs']:
+            out.append(R.source_lines(HERE / '자료' / f, n))
+    missing = [x for x in known if x not in {r['rule_id'] for r in linked}]
+    head = [R.table(f'조건마다 근거 대조 — 「바뀌는 답」 칸은 그 조건이 {TASK}를 제외한 지난 판정', ['rule_id', 'match', '근거', '까닭', '요청할 것', f'{TASK}를 제외한 지난 판정'], rows)]
+    if missing:
+        head.append(R.note('아직 근거 대조가 없는 조건: ' + ', '.join(missing)))
+    return head + out
+
+
+@guard
+def other(previous):
+    cfg = settings()
+    if not set(cfg['보낼_문서']) & set(OTHER_DOCS):
+        raise R.Blank('결과/나누기.json 「보낼_문서」에 다른 문서(' + ' · '.join(OTHER_DOCS) + ')가 아직 없습니다.')
+    X.extract(cfg, prompt(), cfg['보낼_문서'])
+    rows = []
+    for name in cfg['보낼_문서']:
+        d = X.load_candidates(name)
+        empty, loose = X.coverage(cfg, name)
+        rows.append([name, len(d['candidates']), len(d['unlocated']), sum(1 for w in d['warnings'] if '계약 꼴' in w), ' · '.join(empty) or '없음', len(loose), ' '.join(map(str, loose[:40])), X.made_with(d)])
+    name, data, pairs = X.compare_baseline()
+    out = [R.table('문서마다 후보와 누락을 가를 재료 — 후보 0개 조각은 그 조각의 답이 비었다는 뜻(원문 문장을 모델이 지시로 읽었는지 요청 글로 본다)',
+                   ['파일', '후보', '찾지 못한 인용', '계약 꼴 아님', '후보 0개 조각(줄)', '후보가 걸리지 않은 내용 줄', '그 줄 번호(앞 40개)', '후보를 만든 판'], rows)]
+    if data is None:
+        out.append(R.note(f'받은 SOP 구조가 옮긴 문서({name})의 후보 파일이 아직 없습니다 — 보낼_문서에 넣습니다.'))
     else:
-        user = '이 답은 설비보전팀장이 HYD-02 핀 세척 작업지시를 내기 전에, 이 작업의 조건과 판정에 쓴 조건이 문서 어디에서 왔는지 원문 인용으로 확인할 때 씁니다.'
-        questions = ['핀 세척 작업의 원문을 가진 문서들에서 기능이 뽑은 준비 · 방법 · 금지 · 완료 · 승인 후보는 무엇인가? 원문과 대조한 결정(채택 · 수정 · 제외 · 보류)과 근거(문서 · 판 · 절 · 인용)는?',
-                     '받은 조건표의 조건마다 근거 원문은 어느 문서 · 절 · 인용에 있고, 그 근거에 따라 조건을 어떻게 두나?',
-                     '같은 기능을 검토된 기준선 문서(받은 SOP 구조가 구조로 옮긴 문서)와 다른 문서(정기 점검표 · 예비품 기준 · 보충 매뉴얼)에 적용하면 누락 · 근거 없는 생성은 몇 건이고, 무엇을 고쳐 다시 실행했나?']
-        goal = ['포털 지식 관리에서 매뉴얼을 올려 추출을 요청하고, 후보를 원문과 나란히 놓고 고쳐 적재하는 것을 봤습니다. 이번에는 그 일을 직접 합니다 — 수업 모델에 보낼 요청 글을 내가 짜고, '
-                f'받은 후보가 원문 어디에 있는지 코드로 찾고, 판정에 쓴 조건이 어느 문서의 어느 문장에서 왔는지 확인합니다. 사건은 포털에서 본 경보와 같은 종류의 다른 경보 한 건인 {event}이고, '
-                f'그 판정 뒤에 남은 근본 조치 — 쿨러 핀 세척(`{TASK}`) — 의 작업지시를 내기 전입니다.']
-        save = (f'`결과/검토/` · `{REC}`와 만든 코드 · 요청 글 · 응답 기록을 함께 보관합니다. 다음 실습 「{NEXT[key]}」는 이 검토 결과의 승인 후보를 그래프에 잇습니다. '
-                '그 실습도 제공된 검토 결과로 시작할 수 있습니다. ' + USB)
-        make = ('만들 것: 수업 모델에 보낼 요청 글 `결과/prompt.md`, 문서를 읽고 나누어 모델을 부르고 응답을 후보로 바꾸고 인용 위치를 찾는 코드, 문서별 후보 파일(`결과/후보/`), '
-                f'검토 결과(`결과/검토/`), `{REC}`.')
-    n_docs = sum(1 for r in DD.REGISTER if r[7])
-    goal += [f'문서 묶음은 {n_docs}개입니다 — 같은 매뉴얼의 판이 여럿이고, 판 · 상태 · 언어 · 형식이 문서마다 다릅니다. 모델의 답은 같은 요청에도 매번 다를 수 있어서, 받은 후보를 원문 줄과 코드로 대조해야 업무에 쓸 수 있습니다.',
-             STAGE]
-    steps = start_steps(key, N) + common_steps(key, N) + review_steps(key, N) + tail_steps(key, N)
+        out.append(R.table(f'받은 SOP 구조 ↔ {name} 후보(글자 짝 없음 = 원문 줄을 열어 실제 누락인지 내가 본다)', ['조치', '칸', '글', '짝지은 후보'], [list(p) for p in pairs]))
+    return out
+
+
+@guard
+def collect(previous):
+    if not X.role_rows():
+        raise R.Blank('결과/역할.csv에 행이 없습니다.')
+    e, _ = event()
+    src = X.basis(JUDGED)
+    n = next((i for i, x in enumerate(src.read_text(encoding='utf-8').splitlines(), 1) if f'"{e["id"]}"' in x), 0)
+    got = X.collect_task(TASK, f'{src.relative_to(HERE).as_posix()}:{n}')
+    out = [R.counts('이 작업의 조건', [(k, len(got[k])) for k in ('preparation', 'prohibitions', 'completion', 'remaining_questions', 'sop_diff')])]
+    for k in ('preparation', 'prohibitions', 'completion'):
+        out.append(R.table(k, ['검토 후보', '문서', '판', '절', '인용'], [[i['candidate'], i['doc_id'], i['rev'], i['section'], i['quote']] for i in got[k]]))
+    out.append(R.table('sop_diff', ['where', 'item', 'note'], [[d['where'], d['item'], d['note']] for d in got['sop_diff']]))
+    return out
+
+
+@guard
+def main_other(previous):
+    out = main_run(previous)
+    try:
+        out += other(previous)
+    except R.Blank as e:
+        out.append(R.note(str(e)))
+    return out
+
+
+def save(previous):
+    import subprocess, sys
+    run = subprocess.run([sys.executable, str(HERE / 'check.py')], capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=HERE)
+    tail = run.stdout.strip().splitlines()[-12:]
+    return [R.note('python check.py 출력(끝 12줄, 종료 코드 ' + str(run.returncode) + ')\n' + '\n'.join(tail))]
+
+
+__STEPS__
+'''
+
+
+def extract_steps_source(key, L):
+    practical = key == 'practical-03-extract'
+    runs = {'start': 'look', 'connect': 'connect', 'expect': 'expect', 'split': 'split', 'prompt': 'split_trial' if practical else 'trial',
+            'main': 'main_other' if practical else 'main_run', 'rev1': 'review', 'rev2': 'rules', 'other': 'other', 'collect': 'collect', 'save': 'save'}
+    slots = {'expect': ['결과/기대_항목.csv'], 'split': ['결과/나누기.json'], 'prompt': (['결과/나누기.json'] if practical else []) + ['결과/prompt.md'], 'rev1': ['결과/검토_결정.csv'],
+             'rev2': ['결과/조건_대조.csv'], 'collect': ['결과/역할.csv']}
+    lines = ['STEPS = [']
+    for no, (k, s) in enumerate(zip(step_order(key), L['steps']), 1):
+        lines.append(f'    dict(no={no}, name={s["name"]!r}, slots={slots.get(k, [])!r}, run={runs[k]}),')
+    lines.append(']')
+    return (EXTRACT_STEPS.replace('__TITLE__', L['title']).replace('__PRACTICAL__', str(practical)).replace('__TASK__', TASK).replace('__ASSET__', ASSET)
+            .replace('__EVENT__', EVENT_UTC).replace('__JUDGED__', JUDGED[key]).replace('__OTHER__', repr(OTHER_DOCS)).replace('__STEPS__', '\n'.join(lines) + '\n'))
+
+
+# ───────────── 단계(한 단계 = 판단 하나 또는 일곱 단계의 한 몫) ─────────────
+H, S, A = F.H, F.S, F.A
+SHOW = F.SHOW_CMD
+WHY_SPLIT = ('한 번에 보내는 글이 길면 답이 길이 상한에서 잘리거나 빠뜨리는 것이 늘고, 너무 짧게 자르면 조건과 그 대상이 다른 조각으로 갈라집니다. '
+             '문서마다 보관 단위(절 · 절차 · 쪽)가 달라 어디서 끊을지가 결과를 가르고, 조각 수만큼 요청을 보냅니다.')
+WHY_PROMPT = ('요청 글은 모델에게 주는 작업 지시이고, 구조화 출력은 답의 모양만 맞춰 줄 뿐 그 안의 사실이 원문과 같은지는 따로 확인해야 합니다. '
+              '같은 요청에도 답은 매번 다를 수 있어, 문서 전체에 보내기 전에 한 조각을 두 번 보내 검토된 구조와 견주고 요청 글을 굳힙니다.')
+WHY_MAIN = ('한 조각에서 맞은 요청 글도 문서 전체에서는 빠뜨리거나 다른 절에 잇는 것이 생깁니다. 실행 전에 원문에서 적은 기대와 줄마다 견주어야 차이가 나눈 단위 · 요청 글 때문인지 모델 응답 때문인지 나눌 수 있습니다.')
+WHY_REV1 = ('사람 검토의 네 결정은 채택 · 수정 · 제외 · 보류이고, 보류는 근거가 더 필요하다는 기록이지 버린 것이 아니며 원문과 대조하지 않은 후보는 승인하지 않습니다. '
+            '같은 작업을 사내 문서와 제조사 지침이 함께 말하면 어느 쪽을 작업 조건으로 둘지 문서의 머리말 · 문서 관리 기준을 읽고 정합니다.')
+WHY_REV2 = '허용 · 제외 조건은 출처로 돌아갈 수 있어야 고칠 수 있습니다. 원문이 말하는 대상 · 때와 조건이 거는 대상 · 때가 같은지 견주어야, 그 원문이 그 조건의 근거인지 말할 수 있습니다.'
+WHY_OTHER = ('누락은 원문에 있는데 후보에 없는 것, 근거 없는 생성은 후보에 있는데 원문에 없는 것이고, 한 문서에서 맞은 요청 글이 형식이 다른 문서에서도 맞는지는 돌려 세어 봐야 압니다. '
+             '받은 SOP 구조의 한 칸은 여러 절을 합쳐 적은 것이 있어, 코드가 낸 「짝 없음」은 원문 줄을 열어 실제 누락만 셉니다.')
+
+
+def PX(N, judged, xcols):
+    """실전 추출 랩 단계 글(한 칸에 두 랩 — 실전반 지침 P-9: 기본 조작은 한두 문장, 결과 해석과 선택 이유). 남기는 것: 판단 · 원문 근거 · 결과 확인 · 실제로 막혔던 자리의 「다를 때」."""
+    C = F.CHOSEN_FILE
+    return {
+        'start': dict(why=F.WHY_START,
+                      do=f'`{SHOW}`로 결과 화면을 열어 사건 경보의 조치 후보 · 핀 세척이 걸린 관계 · 문서 표를 보고, AI에게 파일을 바꾸지 말고 핀 세척 원문의 절 · 줄을 물어 직접 연 뒤 `{REC}` 「이 사건의 작업」에 적습니다.',
+                      ask='핀 세척이 근본 조치라는 근거 줄을 묻습니다.', evidence=f'1단계 표가 보이고, {F.EVIDENCE_LOOK}',
+                      hint=H('핀 세척 원문의 자리를 찾는다', f'결과 화면 1단계, `입력/{judged}` · `입력/sop.json`, `자료/`', '파일을 바꾸지 않는다. 파일:줄을 먼저 댄다', '문서마다 절 · 줄 목록', '짚은 줄을 직접 연다')),
+        'connect': dict(why='첫 요청은 1분쯤 걸려 여기서 미리 한 번 보냅니다.',
+                        do='`.env.example`을 `.env`로 복사해 받은 세 줄을 붙여 넣고 저장한 뒤 `python llm_client.py`를 실행합니다.',
+                        ask='키가 없으면 학생용 완성본으로 결과를 볼지 정합니다.', evidence='「연결됨」과 모델 이름이 나옵니다.',
+                        hint=H('수업 모델 연결을 확인한다', '`.env.example`, 받은 세 줄', '키를 채팅 · 파일 · 기록에 붙이지 않는다', '`python llm_client.py` 출력', '첫 줄과 모델 이름'),
+                        differ='「요청을 보내지 못했습니다」 뒤의 문장이 고칠 곳입니다.'),
+        'expect': dict(why='모델의 답을 본 뒤에 기대를 적으면 빠진 것과 지어낸 것이 기대에 섞여 보이지 않습니다.',
+                       do=f'`결과/기대_항목.csv`에 핀 세척 작업의 원문 줄을 파일 · 줄 · 종류로, `{REC}`에 목표 · 쓰는 사람 · 기대 칸을 쓴 시각을 적고 `{SHOW}`로 그 줄의 원문을 봅니다.' + F.REQ_AFTER,
+                       ask='줄마다 종류를 내 말로 정합니다.', evidence=f'{N["expect"]}단계에 적은 줄의 원문과 종류가 보이고, 기대 칸을 쓴 시각이 있습니다.',
+                       hint=H('실행 전에 기대를 원문에서 적는다', '1단계에서 찾은 줄, `입출력_계약.md` 4절 「종류의 뜻」', 'AI 출력을 기대로 옮기지 않는다.' + xcols('기대_항목.csv'),
+                              '`결과/기대_항목.csv`의 행', f'{N["expect"]}단계 원문 줄'),
+                       differ='되짚기가 내 뜻과 다르면 고쳐 다시 되짚게 합니다.'),
+        'prompt': dict(why='글이 길면 답이 잘리고 짧으면 조건과 대상이 갈라지며, 구조화 출력은 모양만 맞추므로 한 조각을 두 번 보내 검토된 구조와 견줘 요청 글을 굳힙니다.',
+                       do=f'`결과/나누기.json`에 단위 · 글자 상한 · 「시험_조각」(핀 세척 줄 「파일:줄」)을, `결과/prompt.md`에 요청 글을 쓰고 단위의 까닭을 `{C}`에 적은 뒤 `{SHOW}`를 실행합니다.',
+                       ask='어디서 끊을지와 무엇을 뽑게 할지 · 원문 그대로 · 하지 말 것 · 모르면 경고 · 답의 꼴을 정하고, 두 답이 SOP 구조와 다른 까닭을 묻습니다.',
+                       evidence=f'{N["prompt"]}단계에 핀 세척 절차가 한 조각 안이고 보낼 요청 수가 남은 수 안이며, 두 답과 SOP 구조의 짝 표가 보입니다.',
+                       hint=H('조각 단위와 요청 글을 정한다', '1단계 절 머리 수, 원문, 계약 「정할 자리」 · 「후보 하나」, `입력/sop.json`',
+                              '조건과 대상이 갈라지지 않게, 원문에 없거나 번역한 것을 만들지 않게 한다. 모델을 부르는 명령은 내 터미널에서. 인용이 원문 여러 곳에 맞으면 줄을 정하지 못해 「찾지 못한 인용」이 된다', '`결과/나누기.json` · `결과/prompt.md` · 정한 것 한 줄', f'{N["prompt"]}단계 짝 표'),
+                       differ='AI 채팅이 대신 실행하면 「[Errno 1] Operation not permitted」로 멈춥니다 — 내 터미널에서 실행합니다. 후보 표가 비면 요청 글에 답의 필드 이름을 직접 적었는지 봅니다. 「같은 요청은 2번까지」면 요청 글을 고칩니다.'),
+        'main': dict(why='한 조각에서 맞은 요청 글도 다른 절 · 다른 문서에서는 빠뜨리거나 지어냅니다.',
+                     do=f'「보낼_문서」에 핀 세척 · 조건 근거 문서와 다른 문서(정기 점검표 · 예비품 기준 · 보충 매뉴얼)를 적고 `{SHOW}`를 실행해, 기대와 다른 줄의 차이 종류와 다른 문서의 실제 누락 · 근거 없는 생성 수를 `{REC}`에 적습니다.',
+                     ask='차이가 단위 · 요청 글 때문인지 모델 응답 때문인지 묻습니다.',
+                     evidence=f'{N["main"]}단계에 문서마다 후보 · 잘린 답 · 후보 0개 조각 · 후보가 걸리지 않은 내용 줄, 기대 항목마다 맞음 · 누락이 보이고, 그 줄을 원문으로 가른 수가 기록에 있습니다.',
+                     hint=H('후보를 기대와, 다른 문서 결과를 원문과 견준다', f'{N["main"]}단계, `결과/기대_항목.csv`, 원문', '기대를 결과에 맞추지 않는다. 글자 짝이 없다고 누락으로 세지 않는다. 같은 요청의 기록이 둘이면 두 답을 원문 줄과 견줘(빠진 줄 · 잘린 답 · 근거 없는 후보) 고르고 그 까닭을 기록에 적는다', '기록 두 표', '다른 줄 · 짝 없는 칸을 원문 줄로 연다'),
+                     differ='「같은 요청의 기록이 … 개」면 「쓸_기록」에 고른 기록을 적습니다. 「길이 상한에서 잘린 답」이 핀 세척 조각이면 단위 · 상한을 줄여 다시 실행합니다(새 요청이라 상한에 셈).'),
+        'rev1': dict(why='원문과 대조하지 않은 후보는 승인하지 않고, 사내 문서와 제조사 지침이 함께 말하면 머리말 · 문서 관리 기준으로 어느 쪽을 둘지 정합니다.',
+                     do=f'`결과/검토_결정.csv`에 기대 줄의 결정 · 근거 · 까닭을(같은 결정은 줄 칸을 비운 규칙 한 행으로), 제조사 항목을 어떻게 둘지 `{C}`에 적고 `{SHOW}`로 봅니다.',
+                     ask='제조사 지침이 사내 기준과 다르게 정한 것과 정하지 않은 것을 각각 어떻게 둘지 원문으로 정합니다.',
+                     evidence=f'{N["rev1"]}단계에 결정 수와 기대 줄의 결정이 보이고, 채택 · 수정 · 제외마다 근거가 있습니다.',
+                     hint=H('후보마다 결정과 근거를 남긴다', f'결과 화면 {N["main"]} · {N["rev1"]}단계, 원문, 문서 관리 기준', '원문과 대조하지 않은 후보를 채택하지 않는다.' + xcols('검토_결정.csv'), '결정 표 · 정한 것 한 줄', f'{N["rev1"]}단계 표'),
+                     differ='같은 문장이 여러 곳이라 줄을 정하지 못한 인용은 결정 표에 그 줄을 적으면 검토자가 더한 후보가 됩니다.'),
+        'rev2': dict(why='원문이 말하는 대상 · 때와 조건이 거는 대상 · 때가 같아야 그 원문이 그 조건의 근거입니다.',
+                     do=f'`결과/조건_대조.csv`에 이 작업에 걸린 조건마다 근거 · 맞는 정도 · 까닭 · 요청할 것을 적고 고른 것을 `{C}`에 적은 뒤 `{SHOW}`로 봅니다. 조건표는 고치지 않습니다.',
+                     ask='맞는 정도와, 근거를 못 찾은 조건에 무엇을 요청할지 정합니다.',
+                     evidence=f'{N["rev2"]}단계에 조건마다 근거 원문 줄 · 맞는 정도 · 그 조건이 핀 세척을 제외한 지난 판정이 보입니다.',
+                     hint=H('조건마다 근거를 잇고 맞는 정도를 정한다', '`입력/조건표.csv`, 결과 화면, 원문', '조건표 · 판정 결과를 바꾸지 않는다.' + xcols('조건_대조.csv'), '조건 대조 행 · 정한 것 한 줄', f'{N["rev2"]}단계 원문 줄'),
+                     differ='「그 줄에 후보가 없음」이면 그 줄을 결정 표에 넣고 다시 실행합니다.'),
+        'collect': dict(why='준비 · 금지 · 완료는 절차 밖 절이나 다른 문서에도 있어 모아 둡니다.',
+                        do=f'`결과/역할.csv`에 계약 기본과 다르게 둘 종류 · 글자만 적고 `{SHOW}`로 `결과/선택작업_조건.json`의 항목과 sop_diff를 원문 줄로 확인합니다.',
+                        ask='작업 전 확인 단계와 끝나지 않았을 때의 처리를 어느 항목에 둘지 정합니다.',
+                        evidence=f'{N.get("collect")}단계에 준비 · 금지 · 완료 · 남은 질문 · sop_diff 수와 항목마다 인용이 보입니다.',
+                        hint=H('카드에 넣을 조건을 모을 규칙을 정한다', '검토 결과, `입출력_계약.md` 6 · 7절', '승인한 후보만 넣는다.' + xcols('역할.csv'), '`결과/역할.csv`의 행', f'{N.get("collect")}단계 표'),
+                        differ='「어느 행에도 맞지 않는 승인 후보」면 그 종류의 행을 더합니다.'),
+        'save': dict(why=F.WHY_SAVE,
+                     do=f'적어 둔 누락 하나를 판단 자리에서 고쳐 그 문서를 「다시_보낼_문서」에 적고 다시 실행해 센 수를 `{REC}`에 적고, 저장 뒤 폴더를 닫았다 다시 열어 `{SHOW}`를 실행하고 끝에 기준일 · 저장 시점 · 확인하지 못한 점을 적습니다.',
+                     ask='확인하지 못한 점으로 무엇을 남길지 정합니다.', evidence='다시 연 뒤에도 단계가 같고, 결과 화면 마지막 단계의 check.py 출력에 「구조상 빠진 단계는 없습니다」가 있습니다.', cmd=SHOW,
+                     hint=H('고친 판을 다시 세고 다시 열어 본다', f'결과 화면, `{REC}`', '원자료 · 응답 기록을 바꾸지 않는다. 이미 후보가 있는 문서는 그 판 그대로 두고, 고친 요청 글로 다시 보낼 문서만 「다시_보낼_문서」에 적는다(결과 화면 「후보를 만든 판」 칸으로 문서마다 본다)', '기록의 고친 점 · 다시 센 수 · 저장 기록', '다시 연 뒤 마지막 단계의 check.py 출력'),
+                     differ='「완료 아님 — 남은 것:」 줄마다 남은 일을 채웁니다.'),
+    }
+
+
+def step_order(key):
+    """단계 열쇠의 차례 — START 「진행 단계」 · 가이드 절 · lab_steps.STEPS가 같은 차례를 쓴다."""
+    if key == 'practical-03-extract':
+        return ['start', 'connect', 'expect', 'prompt', 'main', 'rev1', 'rev2', 'collect', 'save']
+    return ['start', 'connect', 'expect', 'split', 'prompt', 'main', 'rev1', 'rev2', 'other', 'save']
+
+
+def extract_steps(key):
+    practical = key == 'practical-03-extract'
+    N = {k: i for i, k in enumerate(step_order(key), 1)}
+    judged, event = JUDGED[key], incident()
+    base = FL.extract_files('나', '가', practical)
+    chosen = FL.chosen('나', '가')
+    xb = extract_blanks(key)
+    def tog(name, text):
+        return ghead(xb['결과/' + name], text)
+    def cols(name):
+        return ' 칸 — ' + xcol(name, practical)
+    split0 = json.dumps({**json.loads(base['나누기.json']), '시험_조각': '', '보낼_문서': []}, ensure_ascii=False, indent=2) + '\n'
+    split1 = json.dumps({**json.loads(base['나누기.json']), '보낼_문서': []}, ensure_ascii=False, indent=2) + '\n'
+
+    def chosen_csv(idx):
+        return chosen_upto(csv_body(FL.csv_text(F.CHOSEN_COLUMNS, [chosen[i] for i in idx])))
+    rules_scope = '이 작업에 걸린 조건' if practical else '조건표의 조건'
+    task_note = f' 확인한 작업과 그 줄을 `{REC}` 「이 사건의 작업」에 적습니다.' if practical else ''
+    steps = [
+        S('폴더 · 사건 · 문서 묶음 파악', '① 파악',
+          f'터미널에서 `{SHOW}`를 실행해 결과 화면을 엽니다. 사건 경보({event})의 조치 후보와 핀 세척(`{TASK}`)이 걸린 관계, 문서 묶음의 판 · 상태 · 글자 방식을 보고, '
+          'AI에게 파일을 바꾸지 말고 핀 세척 작업의 원문이 문서마다 어느 절 · 줄에 있는지 물어 그 줄을 직접 엽니다.' + task_note,
+          '이 답을 쓰는 사람과 해결할 질문, 핀 세척이 즉시 완화가 아니라 근본 조치라는 근거 줄을 묻습니다.',
+          '결과 화면 1단계에 사건 경보의 조치 후보 · 핀 세척이 걸린 관계 · 문서 표가 보입니다. ' + F.EVIDENCE_LOOK,
+          H('사건과 문서 묶음의 모양을 파악하고 핀 세척 원문의 자리를 찾는다', f'결과 화면 1단계, `입력/{judged}` · `입력/sop.json`, `자료/`의 원문, START.md 「목표」',
+            '파일을 바꾸지 않는다. 짚을 때는 파일:줄을 먼저 댄다', '문서마다 핀 세척 작업의 절 · 줄 목록', '짚은 줄을 내가 직접 연다'),
+          cmd=SHOW, why=F.WHY_START + ' 판정 결과의 시각은 UTC라 한국 시각보다 9시간 이릅니다.',
+          differ=F.DIFFER_LOOK),
+        S('수업 모델 연결 확인', '① 파악',
+          '`.env.example`을 복사해 이름을 `.env`로 바꾸고, 강의에서 받은 접속 세 줄을 그대로 붙여 넣어 저장합니다. 터미널에서 `python llm_client.py`를 실행해 연결을 확인합니다.',
+          '키가 없으면 실습 폴더와 따로 받는 학생용 완성본 묶음으로 결과를 볼지 정합니다.',
+          '「연결됨」 줄과 모델 이름 · 짧은 답이 나옵니다. 키를 채팅 · 다른 파일 · 기록에 붙이지 않았습니다.',
+          H('수업 모델에 연결되는지 확인한다', '`.env.example`, 강의에서 받은 접속 세 줄', '키를 채팅 · 다른 파일 · 기록에 붙이지 않는다. `.env`는 내가 편집기에서 만든다',
+            '`python llm_client.py`의 출력', '출력의 첫 줄과 모델 이름을 본다'),
+          cmd='python llm_client.py',
+          why='키는 이 폴더의 `.env`에만 둡니다 — 키가 새면 다른 사람이 내 한도로 모델을 부를 수 있고, 학생 AI는 폴더의 글을 읽어 답에 옮길 수 있습니다. 첫 요청은 모델 서버가 준비되느라 1분쯤 걸릴 수 있어 여기서 미리 한 번 보냅니다.',
+          differ='「요청을 보내지 못했습니다」 뒤의 문장이 고칠 곳입니다. 받은 세 줄을 그대로 다시 붙여 넣고 저장한 뒤 다시 실행합니다.'),
+        S('기대 항목 먼저', '② 요구',
+          f'`결과/기대_항목.csv`에 핀 세척 작업(준비 · 방법 · 금지 · 완료 · 승인)의 원문 줄을 파일 · 줄 · 종류로 적고, `{REC}`에 목표 · 쓰는 사람 · 기대 칸을 쓴 시각을 적은 뒤 `{SHOW}`로 그 줄의 원문을 봅니다.' + F.REQ_AFTER,
+          '줄마다 어느 종류(단계 · 시작 조건 · 금지 · 완료 · 기준값)인지 내 말로 정합니다.',
+          f'결과 화면 {N["expect"]}단계에 내가 적은 줄의 원문이 보이고, 줄마다 종류가 있습니다. 기대 칸을 쓴 시각이 있습니다. AI의 되짚기가 내 뜻과 같고 바뀐 파일이 없습니다.',
+          H('실행 전에 기대를 원문에서 적는다', f'1단계에서 찾은 핀 세척 줄, `입출력_계약.md` 4절 「종류의 뜻」', 'AI 출력을 기대로 옮기지 않는다.' + cols('기대_항목.csv'),
+            '`결과/기대_항목.csv`의 행(파일 · 줄 · 종류)', f'`{SHOW}` — {N["expect"]}단계의 원문 줄을 읽는다'),
+          cmd=SHOW, why='판정 기법은 기대 결과를 원문에서 먼저 적고 실행 결과와 견주는 것입니다. 모델의 답을 본 뒤에 기대를 적으면 빠진 것과 지어낸 것이 기대에 섞여 보이지 않습니다.',
+          differ=F.DIFFER_REQ.format(rec='결과/기대_항목.csv'),
+          answer=A('핀 세척 두 절 — 사내 현행 매뉴얼 HM-8.7의 근본 조치 문장 · SOP-COOL-14 세 단계와, 제조사 지침 T-7.1 여섯 단계의 줄입니다.',
+                   F.paste('결과/기대_항목.csv', tog('기대_항목.csv', base['기대_항목.csv'])))),
+        S('판단① 문서를 나누는 단위', '③ 계획 · 판단',
+          f'`결과/나누기.json`에 단위 · 글자 상한을 정하고 그 까닭을 `{F.CHOSEN_FILE}`에 한 줄 적은 뒤 `{SHOW}`로 조각 목록과 보낼 요청 수를 봅니다.',
+          '문서를 어떤 단위(절 · 절차 · 쪽 · 글자)로 나눌지와 그 까닭을 정합니다. AI에게는 단위마다 핀 세척 절이 몇 조각에 걸치는지, 요청 수가 몇이 되는지 묻습니다.',
+          '결과 화면 4단계에 문서마다 조각 수와 조각 목록(줄 범위)이 보이고, 핀 세척 절차가 한 조각 안에 있는지 말할 수 있습니다. 보낼 요청 수가 남은 수 안입니다.',
+          H('문서를 요청에 보낼 조각으로 끊을 단위를 정한다', '결과 화면 1단계의 절 머리 수, 원문의 절 · 절차 · 쪽 머리, `입출력_계약.md` 「정할 자리」', '조각 경계에서 조건과 그 대상이 갈라지지 않게 한다. 정하는 것은 내가 하고 AI는 단위마다 결과를 설명한다',
+            '`결과/나누기.json`의 단위 · 글자 상한, `결과/정한_것.csv` 한 줄', f'`{SHOW}` — 4단계의 핀 세척 조각 줄 범위'),
+          cmd=SHOW, why=WHY_SPLIT, differ='핀 세척 절차가 두 조각으로 갈라지거나 보낼 요청 수가 남은 수보다 많으면 단위나 상한을 바꿔 다시 봅니다.',
+          answer=A('강사 판은 절 머리에서 끊고 1,000자 안에서 이어진 절을 묶는 단위입니다(조각 33개, 핀 세척 절차가 한 조각 안).',
+                   F.paste('결과/나누기.json', split0), F.paste(F.CHOSEN_FILE, chosen_csv([2]))),
+          ),
+        S('판단② 요청 글과 한 조각', '④ 구현 · 판단',
+          f'`결과/prompt.md`에 수업 모델에 보낼 요청 글을 쓰고, `결과/나누기.json` 「시험_조각」에 먼저 보내 볼 핀 세척 줄(「파일:줄」)을 적은 뒤 `{SHOW}`를 실행합니다 — 그 조각을 보내고 같은 요청을 한 번 더 보내, '
+          '두 답의 후보를 받은 SOP 구조의 같은 작업 항목과 견줍니다. 다르면 요청 글을 고쳐 다시 실행합니다.',
+          '무엇을 뽑게 할지 · 원문 그대로 · 하지 말 것 · 모르면 경고 · 답의 꼴을 내 말로 정하고, 받은 답이 SOP 구조와 다른 곳이 요청 글 때문인지 모델 응답 때문인지 묻습니다.',
+          '결과 화면 5단계에 두 답의 후보 표(종류 · 절 · 줄 · 찾은 방법 · 인용)와 받은 SOP 구조 항목과의 짝이 보이고, 다른 곳을 원문 줄로 말할 수 있습니다. 요청 글을 굳혔습니다.',
+          H('한 조각에서 계약 꼴 후보를 받아 낼 요청 글을 짠다', '`입출력_계약.md` 「후보 하나」 · 「종류의 뜻」, 핀 세척 조각, `입력/sop.json`', '원문에 없는 것을 만들지 않게, 원문을 번역하거나 고쳐 쓰지 않게 한다. 모델을 부르는 명령은 내 터미널에서 실행한다. 인용이 원문 여러 곳에 맞으면 줄을 정하지 못해 「찾지 못한 인용」이 된다',
+            '`결과/prompt.md`, 나누기.json 「시험_조각」', f'`{SHOW}` — 5단계의 두 답과 SOP 구조 짝 표'),
+          cmd=SHOW, why=WHY_PROMPT,
+          differ=('결과 화면의 후보 표가 비고 「종류를 알 수 없는 후보」 · 「확인할 수 없어」 같은 경고 줄만 있으면, 모델은 이 폴더의 파일(계약 등)을 읽지 못하므로 요청 글에 답의 필드 이름과 값을 직접 적었는지 봅니다. 터미널에 「모델 서버에 닿지 못했습니다」가 나오면 인터넷 연결을 보고 1분쯤 뒤 다시 실행합니다. AI 채팅이 대신 실행했다면 그 실행 환경은 바깥 연결이 막혀 「[Errno 1] Operation not permitted」로 멈춥니다 — 같은 명령을 내 터미널에서 실행합니다. '
+                  '「같은 요청은 2번까지」가 나오면 이미 두 번 받은 것이니 요청 글을 고쳐야 새 요청이 됩니다. ' + F.FIX_LOOP),
+          answer=A('강사 판 요청 글 — 다섯 종류의 뜻, 원문 그대로 · 번역하지 않음, 같은 문장이 여러 곳이면 앞뒤를 붙여 한 곳만, 판단할 것은 경고로, 답의 꼴(JSON 하나)을 적습니다. 시험 조각은 사내 현행 매뉴얼의 핀 세척 1단계 줄입니다.',
+                   F.paste('결과/prompt.md', base['prompt.md']), F.paste('결과/나누기.json', split1), apply={'결과/prompt.md': base['prompt.md'], '결과/나누기.json': split1, F.CHOSEN_FILE: chosen_csv([2, 3])})),
+        S('주 대상 문서에 실행하고 기대와 대조', '⑤ 대조',
+          f'`결과/나누기.json` 「보낼_문서」에 핀 세척 원문과 {rules_scope}의 근거를 가진 문서를 적고 `{SHOW}`를 실행해 후보 파일을 만든 뒤, 기대 항목과 다른 줄 두세 개의 차이 종류(누락 · 부정 빠짐 · 단위 · 수치 오류 · 다른 절 연결 · 근거 없는 생성)를 `{REC}` 「기대와 다른 줄」에 적습니다.',
+          '기대와 다른 줄이 나눈 단위 · 요청 글의 문제인지 모델 응답의 문제인지 묻습니다.',
+          '결과 화면 6단계에 문서마다 후보 · 찾지 못한 인용 · 잘린 답 수와, 기대 항목마다 맞음 · 종류 다름 · 줄 못 정함 · 누락이 보입니다. 다른 줄의 차이 종류가 기록에 있습니다.',
+          H('주 대상 문서의 후보를 기대와 견준다', '결과 화면 6단계, `결과/기대_항목.csv`, 원문', '기대를 결과에 맞춰 고치지 않는다. 모델을 부르는 명령은 내 터미널에서 실행한다. 같은 요청의 기록이 둘이면 두 답을 원문 줄과 견줘(빠진 줄 · 잘린 답 · 근거 없는 후보) 고르고 그 까닭을 기록에 적는다',
+            f'`{REC}` 「기대와 다른 줄」 표', '다른 줄마다 원문 줄을 연다'),
+          cmd=SHOW, why=WHY_MAIN,
+          differ=(f'「같은 요청의 기록이 … 개 — 검토에 쓸 기록 파일 이름을 적습니다」로 멈추면 5단계에서 같은 조각을 두 번 받은 것이니, 두 답을 견준 결과로 `결과/나누기.json` 「쓸_기록」에 고른 기록을 적습니다. 「후보 0」인 문서가 있으면 경고 칸의 글로 까닭을 봅니다. 「길이 상한에서 잘린 답」 칸이 0이 아니면 그 조각의 뒷부분 후보는 없습니다 — 핀 세척 조각이면 단위나 글자 상한을 줄여(새 요청이 되어 상한에 셉니다) 다시 실행하고, 아니면 「확인하지 못한 점」에 적습니다. '
+                  f'「보낼 요청 …개가 … 남은 …개보다 많습니다」로 멈추면 보낼 문서를 줄이거나 조각을 크게 묶습니다.'),
+          answer=A('주 대상은 사내 현행 · 옛 판 · 개정 요청 매뉴얼, 스캔본, 설비안전규정, 제조사 지침입니다(나머지 다른 문서는 다른 문서 단계에서).',
+                   F.paste('결과/나누기.json', json.dumps({**json.loads(base['나누기.json']), '보낼_문서': FL.MAIN_DOCS}, ensure_ascii=False, indent=2) + '\n'))),
+        S('판단③ 검토 — 사내 문서와 제조사 지침', '④ 판단',
+          f'`결과/검토_결정.csv`에 기대 항목의 줄마다 결정(채택 · 수정 · 제외 · 보류) · 근거 · 까닭을 적고(같은 결정이 이어지는 줄은 줄 칸을 비운 판단 규칙 한 행으로), 제조사 지침이 사내 기준과 다르게 정하거나 정하지 않은 줄을 어떻게 둘지 `{F.CHOSEN_FILE}`에 적은 뒤 `{SHOW}`로 검토 결과를 봅니다.',
+          '제조사 지침의 항목 가운데 사내 기준이 정하지 않은 것과 다르게 정한 것을 각각 어떻게 둘지 정합니다. AI가 고를 것을 내놓거나 「권장」을 붙여도 원문 머리말 · 문서 관리 기준 줄을 열어 내 말로 정합니다.',
+          f'결과 화면 {N["rev1"]}단계에 검토 결과 파일마다 결정 수와, 기대 항목 줄의 결정이 보입니다. 채택 · 수정 · 제외마다 원문 근거가 있고, 원문과 대조하지 않은 후보는 보류입니다.',
+          H('핀 세척 작업 후보마다 결정과 근거를 남긴다', f'결과 화면 {N["main"]} · {N["rev1"]}단계, 원문, `자료/문서_목록.csv`, 문서 관리 기준', '원문과 대조하지 않은 후보를 채택하지 않는다.' + cols('검토_결정.csv'),
+            '`결과/검토_결정.csv`의 행, `결과/정한_것.csv` 한 줄', f'`{SHOW}` — {N["rev1"]}단계 표, 결정 몇 개를 원문 줄로'),
+          cmd=SHOW, why=WHY_REV1, differ='빨간 칸에 결정 표의 행 번호와 까닭이 나오면 그 행을 고칩니다. 같은 문장이 여러 곳에 있어 코드가 줄을 정하지 못한 인용은 결정 표에 그 줄을 적으면 검토자가 더한 후보가 됩니다.',
+          answer=A('갈래 가(사내 기준이 정하지 않은 제조사 항목은 보류 — 소유 부서에 묻는다) · 나(까닭을 적고 채택) 가운데 하나를 고르고 근거를 적습니다. 사내와 다르게 정한 항목(저압수)은 두 갈래 모두 사내 기준을 따라 뺍니다.',
+                   F.paste('결과/검토_결정.csv', tog('검토_결정.csv', FL.csv_text(['파일', '줄', '종류', '결정', '근거', '까닭', '고친_인용'], FL.decisions('가', True)))),
+                   F.paste('결과/검토_결정.csv', tog('검토_결정.csv', FL.csv_text(['파일', '줄', '종류', '결정', '근거', '까닭', '고친_인용'], FL.decisions('나', True)))),
+                   apply={'결과/검토_결정.csv': tog('검토_결정.csv', base['검토_결정.csv']), F.CHOSEN_FILE: chosen_csv([2, 3, 1])})),
+        S(f'판단④ {rules_scope}의 근거', '④ 판단',
+          f'`결과/조건_대조.csv`에 {rules_scope}(`rule_id`)마다 근거 원문(파일:줄) · 맞는 정도 · 까닭 · 요청할 것을 적고 고른 것을 `{F.CHOSEN_FILE}`에 적은 뒤 `{SHOW}`로 근거 원문과 그 조건이 걸었던 지난 판정을 봅니다. 조건표 · 판정 결과는 고치지 않습니다.',
+          '원문이 말하는 대상 · 때와 조건이 거는 대상 · 때가 같은지 견주어 맞는 정도를 정하고, 근거 원문을 찾지 못한 조건은 무엇을 요청할지 정합니다.',
+          f'결과 화면 {N["rev2"]}단계에 조건마다 근거 원문 줄 · match · 그 조건이 `{TASK}`를 제외한 지난 판정이 보이고, 아직 근거 대조가 없는 조건이 남지 않았습니다.',
+          H(f'{rules_scope}마다 근거 원문을 잇고 맞는 정도와 까닭을 적는다', f'`입력/조건표.csv`(rule_id · reason · source_section), 결과 화면 1 · {N["rev2"]}단계, 원문', '조건표 · 판정 결과를 바꾸지 않는다 — 바꿀 것은 요청할 것 칸에.' + cols('조건_대조.csv'),
+            '`결과/조건_대조.csv`의 행, `결과/정한_것.csv` 한 줄', f'`{SHOW}` — {N["rev2"]}단계의 원문 줄'),
+          cmd=SHOW, why=WHY_REV2, differ='「그 줄에 후보가 없음」이 나오면 그 줄을 검토_결정.csv에 넣어 검토 결과에 후보를 둔 뒤 다시 실행합니다.',
+          answer=A('갈래 가(그 조항을 R4 전체의 근거로 일치) · 나(원문 범위가 운전 중 조치라 핀 세척의 R4는 불일치) · 다(해석 받을 때까지 보류) 가운데 하나를 고르고 근거를 적습니다. 원문이 없는 조건은 원문 없음과 원본 요청입니다.',
+                   *[F.paste('결과/조건_대조.csv', tog('조건_대조.csv', FL.csv_text(['rule_id', '근거', 'match', '까닭', '요청할_것'], FL.rules(p5, practical)))) for p5 in ('가', '나', '다')],
+                   apply={'결과/조건_대조.csv': tog('조건_대조.csv', base['조건_대조.csv']), F.CHOSEN_FILE: chosen_csv([2, 3, 1, 0])})),
+        S('다른 문서에 다시 적용', '⑤ 대조',
+          f'`결과/나누기.json` 「보낼_문서」에 정기 점검표 · 예비품 기준 · 보충 매뉴얼을 더하고 `{SHOW}`를 실행해, 문서마다 후보 수와 받은 SOP 구조 ↔ 사내 현행 매뉴얼 후보의 짝 표를 봅니다. 짝이 없는 칸 두세 개는 원문 줄을 열어 실제 누락인지 보고 `{REC}` 「다른 문서에 적용」에 적습니다.',
+          '한 문서에 맞춘 단위 · 요청 글이 다른 문서에서 놓치거나 지어내는 것이 무엇인지 묻습니다.',
+          f'결과 화면 9단계에 문서마다 후보 · 찾지 못한 인용 수와 짝 표가 보이고, `{REC}` 「다른 문서에 적용」에 실제 누락 · 근거 없는 생성 수가 있습니다.',
+          H('같은 단위 · 요청 글을 다른 문서에 적용해 누락 · 근거 없는 생성을 센다', '결과 화면 9단계, 원문, `입력/sop.json`', '원문에 맞추려고 원문을 바꾸지 않는다. 글자 짝이 없다고 누락으로 세지 않는다 — 원문 줄로 본다',
+            f'`{REC}` 「다른 문서에 적용」 표', '짝 없는 칸 두세 개를 원문 줄로 연다'),
+          cmd=SHOW, why=WHY_OTHER,
+          differ='센 수가 원문과 맞지 않아 보이면 어느 문서 · 절에서 다른지 AI에게 짚게 해 기록에 적습니다. 고치는 일은 마지막 단계에서 합니다.',
+          answer=A('보낼 문서에 나머지 셋을 더하면 문서 관리 기준을 뺀 아홉 문서가 됩니다.', F.paste('결과/나누기.json', base['나누기.json']))),
+    ]
+    if practical:
+        steps.append(S('판단⑤ 이 작업의 준비 · 금지 · 완료 모으기', '④ 판단',
+                       f'`결과/역할.csv`에 승인 후보의 종류(와 인용에 든 글자)를 이 작업의 준비 · 금지 · 완료 가운데 어디에 둘지 적고 `{SHOW}`로 `결과/선택작업_조건.json`을 봅니다. 항목 두세 개를 원문 줄로 열고, 받은 SOP 구조와 다른 곳(sop_diff)을 확인합니다.',
+                       '절차의 단계 · 절차 밖 절 · 다른 문서의 조건 가운데 이 작업의 준비 · 금지 · 완료로 둘 것을 정합니다(방법 단계는 넣지 않고, 첫 단계가 작업 전 확인이면 준비로).',
+                       f'결과 화면 {N.get("collect")}단계에 준비 · 금지 · 완료 · 남은 질문 · sop_diff 수와 항목 표가 보이고, 항목마다 원문 인용이 있습니다.',
+                       H('작업 확인 카드에 들어갈 조건을 검토 결과에서 모을 규칙을 정한다', f'검토 결과(결과 화면 {N["rev1"]}단계), `입출력_계약.md` 6 · 7절, `입력/sop.json`', '승인한 후보만 항목으로 넣는다. 승인하지 않은 것은 남은 질문으로 둔다.' + (cols('역할.csv') if practical else ''),
+                         '`결과/역할.csv`의 행', f'`{SHOW}` — {N.get("collect")}단계 표, 항목 두세 개를 원문 줄로'),
+                       cmd=SHOW, why='작업 전에 확인할 조건은 그 작업의 절차 안에만 있지 않습니다 — 시작 전 조건 · 금지 방법 · 완료 확인이 다른 절이나 다른 문서에 있을 수 있어, 모아 두어야 작업자가 한 번에 되짚습니다.',
+                       differ='「어느 행에도 맞지 않는 승인 후보」가 나오면 그 종류의 행을 더합니다.',
+                       answer=A('종류마다 한 행, 작업 전 정지 · 잠금 · 대기 · 점검 단계는 준비, 막힘이 남을 때의 교체는 완료로 두는 행을 앞에 둡니다.', F.paste('결과/역할.csv', tog('역할.csv', base['역할.csv'])))))
+    steps.append(S('고침 · 저장하고 다시 열기', '⑥ 고침 · ⑦ 저장 · 다시 열기',
+                   f'앞에서 적어 둔 누락 · 근거 없는 생성 가운데 하나를 판단 자리(나누는 단위 · 요청 글 · 결정 표)에서 고쳐, 그 문서를 `결과/나누기.json` 「다시_보낼_문서」에 적고 다시 실행해 다시 센 수를 `{REC}`에 적습니다. 파일을 모두 저장하고 VS Code에서 폴더를 닫았다 다시 연 뒤 `{SHOW}`를 다시 실행하고, `{REC}` 끝에 기준일 · 저장 시점 · 확인하지 못한 점을 적습니다.',
+                   '무엇을 고쳤고, 확인하지 못한 점으로 무엇을 남길지 정합니다.',
+                   f'다시 연 뒤에도 결과 화면의 단계가 같고, 마지막 단계의 `python check.py` 출력에 「구조상 빠진 단계는 없습니다」가 있습니다. `{REC}`의 고친 점 · 다시 센 수 · 저장 기록이 채워져 있습니다.',
+                   H('고친 판을 다시 세고, 저장해 다시 열어 같은지 본다', f'결과 화면, `{REC}`', '검사 기준 · 원자료 · 응답 기록을 바꾸지 않는다. 확인하지 못한 것은 확인하지 못했다고 적는다. 이미 후보가 있는 문서는 그 판 그대로 두고, 고친 요청 글로 다시 보낼 문서만 「다시_보낼_문서」에 적는다(결과 화면 「후보를 만든 판」 칸으로 문서마다 본다)',
+                     f'`{REC}`의 고친 점 · 다시 센 수 · 저장 기록', '다시 연 뒤 결과 화면과 check.py 출력을 앞과 견준다'),
+                   cmd=f'{SHOW}\npython check.py', why=F.WHY_SAVE + ' 구조 검사는 모양만 보고, 무엇을 채택할지는 원문 대조로 판단합니다.',
+                   differ='「완료 아님 — 남은 것:」 아래 줄마다 남은 일이 하나씩 적혀 있습니다. 줄마다 어느 파일인지 보고 채운 뒤 다시 실행합니다.'))
+    if practical:
+        D = dict(zip(['start', 'connect', 'expect', 'split', 'prompt', 'main', 'rev1', 'rev2', 'other', 'collect', 'save'], steps))
+        D['prompt'] = S('판단① 나누는 단위와 요청 글 — 한 조각으로 시험', '③ 계획 · ④ 구현 · 판단',
+          f'`결과/나누기.json`에 단위 · 글자 상한과 「시험_조각」(먼저 보내 볼 핀 세척 줄 「파일:줄」)을, `결과/prompt.md`에 수업 모델에 보낼 요청 글을 쓰고 단위의 까닭을 `{F.CHOSEN_FILE}`에 적은 뒤 '
+          f'`{SHOW}`를 실행합니다 — 조각 목록 · 보낼 요청 수와, 시험 조각을 두 번 보낸 두 답의 후보 ↔ 받은 SOP 구조의 같은 작업 항목이 보입니다. 다르면 요청 글을 고쳐 다시 실행합니다.',
+          '어디서 끊을지(절 · 절차 · 쪽 · 글자)와 무엇을 뽑게 할지 · 원문 그대로 · 하지 말 것 · 모르면 경고 · 답의 꼴을 내 말로 정하고, 두 답이 SOP 구조와 다른 곳이 요청 글 때문인지 모델 응답 때문인지 묻습니다.',
+          f'결과 화면 {N["prompt"]}단계에 핀 세척 절차가 한 조각 안에 있고 보낼 요청 수가 남은 수 안이며, 두 답의 후보 표와 SOP 구조 짝 표가 보입니다. 다른 곳을 원문 줄로 말할 수 있고, 요청 글을 굳혔습니다.',
+          H('조각 단위를 정하고 한 조각에서 계약 꼴 후보를 받아 낼 요청 글을 짠다', '결과 화면 1단계의 절 머리 수, 원문, `입출력_계약.md` 「정할 자리」 · 「후보 하나」 · 「종류의 뜻」, `입력/sop.json`',
+            '조각 경계에서 조건과 그 대상이 갈라지지 않게, 원문에 없는 것을 만들거나 번역하지 않게 한다. 모델을 부르는 명령은 내 터미널에서 실행한다',
+            '`결과/나누기.json` · `결과/prompt.md`, `결과/정한_것.csv` 한 줄', f'`{SHOW}` — {N["prompt"]}단계의 조각 줄 범위 · 두 답 짝 표'),
+          cmd=SHOW, why=WHY_SPLIT.split('. ')[0] + '. ' + WHY_PROMPT.split('. ')[1],
+          differ=('후보 표가 비고 경고 줄만 있으면 모델은 이 폴더의 파일을 읽지 못하므로 요청 글에 답의 필드 이름과 값을 직접 적었는지 봅니다. '
+                  'AI 채팅이 대신 실행하면 「[Errno 1] Operation not permitted」로 멈춥니다 — 같은 명령을 내 터미널에서 실행합니다. 「같은 요청은 2번까지」가 나오면 요청 글을 고쳐야 새 요청이 됩니다. '
+                  '핀 세척 절차가 두 조각으로 갈라지면 단위나 상한을 바꿉니다.'),
+          answer=A('강사 판은 절 머리에서 끊고 1,000자 안에서 이어진 절을 묶는 단위(조각 33개)와, 다섯 종류의 뜻 · 원문 그대로 · 판단할 것은 경고로 · 답의 꼴(JSON 하나)을 적은 요청 글입니다. 시험 조각은 사내 현행 매뉴얼의 핀 세척 1단계 줄입니다.',
+                   F.paste('결과/나누기.json', split1), F.paste('결과/prompt.md', base['prompt.md']),
+                   apply={'결과/prompt.md': base['prompt.md'], '결과/나누기.json': split1, F.CHOSEN_FILE: chosen_csv([2, 3])}))
+        D['main'] = S('문서 묶음에 실행하고 기대 · 다른 문서와 대조', '⑤ 대조',
+          f'`결과/나누기.json` 「보낼_문서」에 핀 세척 원문 · 이 작업에 걸린 조건의 근거를 가진 문서와 다른 문서(정기 점검표 · 예비품 기준 · 보충 매뉴얼)를 적고 `{SHOW}`를 실행합니다. '
+          f'기대 항목과 다른 줄 두세 개의 차이 종류(누락 · 부정 빠짐 · 단위 · 수치 오류 · 다른 절 연결 · 근거 없는 생성)를 `{REC}` 「기대와 다른 줄」에, '
+          f'받은 SOP 구조 ↔ 사내 현행 매뉴얼 후보의 짝 없는 칸 두세 개를 원문 줄로 열어 본 실제 누락 · 근거 없는 생성 수를 「다른 문서에 적용」에 적습니다.',
+          '기대와 다른 줄이 나눈 단위 · 요청 글의 문제인지 모델 응답의 문제인지, 다른 문서에서 놓치거나 지어낸 것이 무엇인지 묻습니다.',
+          f'결과 화면 {N["main"]}단계에 문서마다 후보 · 찾지 못한 인용 · 잘린 답 수, 기대 항목마다 맞음 · 종류 다름 · 줄 못 정함 · 누락, 짝 표가 보이고, 기록 두 표가 있습니다.',
+          H('문서 묶음의 후보를 기대와, 다른 문서의 결과를 원문과 견준다', f'결과 화면 {N["main"]}단계, `결과/기대_항목.csv`, 원문, `입력/sop.json`',
+            '기대를 결과에 맞춰 고치지 않는다. 글자 짝이 없다고 누락으로 세지 않는다 — 원문 줄로 본다. 모델을 부르는 명령은 내 터미널에서 실행한다',
+            f'`{REC}` 「기대와 다른 줄」 · 「다른 문서에 적용」 표', '다른 줄 · 짝 없는 칸마다 원문 줄을 연다'),
+          cmd=SHOW, why=WHY_MAIN.split('. ')[0] + '. ' + WHY_OTHER.split('. ')[1],
+          differ=(f'「같은 요청의 기록이 … 개」로 멈추면 시험 조각을 두 번 받은 것이니 두 답을 견준 결과로 `결과/나누기.json` 「쓸_기록」에 고른 기록을 적습니다. '
+                  '「길이 상한에서 잘린 답」이 0이 아니면 그 조각의 뒷부분 후보는 없습니다 — 핀 세척 조각이면 단위나 글자 상한을 줄여(새 요청이라 상한에 셈) 다시 실행하고, 아니면 「확인하지 못한 점」에 적습니다. '
+                  '「보낼 요청 …개가 … 남은 …개보다 많습니다」로 멈추면 조각을 크게 묶습니다.'),
+          answer=A('보낼 문서는 문서 관리 기준을 뺀 아홉 문서입니다.', F.paste('결과/나누기.json', base['나누기.json'])))
+        steps = [D[k] for k in step_order(key)]
+        steps = [dict(s_, **PX(N, judged, xcols=lambda n: ' 칸 — ' + xcol(n, True)).get(k, {})) for k, s_ in zip(step_order(key), steps)]
     if len(steps) != len(N):
         raise RuntimeError(f'단계 {len(steps)}개 ≠ 단계 차례 {len(N)}개')
-    mine = (f'내 앞 결과를 쓸 때: 제공 입력은 그대로 두고 내 `조건표.csv` · `sop.json` · `{judged}`을 `결과/내_입력/`에 복사해, 열 이름 · 키가 `입출력_계약.md` 「입력」과 같은지 먼저 견준 뒤 씁니다. '
-            '구조 검사는 `결과/내_입력/`에 있는 파일을 기준으로 보고, 어느 파일을 봤는지 첫 줄에 찍습니다. 내 결과가 없어도 제공된 입력으로 끝까지 할 수 있습니다.')
-    sel = ('- `결과/선택작업_조건.json` — 핀 세척의 준비 · 금지 · 완료 조건(계약 「선택한 작업의 조건」).\n' if practical else '')
-    formats = ['## 결과 형식\n\n파일의 모양은 `입출력_계약.md`에 있습니다. 어떤 문장을 어떤 후보로 만들지, 문서를 어떤 단위로 나눌지는 원문을 읽고 직접 정합니다.\n\n'
-               '- `결과/prompt.md` — 수업 모델에 보낼 요청 글.\n'
-               '- `결과/응답_기록/` — `llm_client.py`가 남기는 보낸 요청과 받은 답(고치지 않습니다).\n'
-               '- `결과/후보/<문서 식별자>_<판>.json` — 문서마다 후보 파일(계약 「후보 파일」). 검토는 이 파일을 고치지 않고 별도 파일에 씁니다.\n'
-               '- `결과/검토/<문서 식별자>_<판>_검토.json` — 후보마다 결정과 근거, 조건표 조건의 근거 대조(계약 「검토 결과 파일」).\n'
-               + sel + f'- `{REC}` — 「제공 빈 틀」의 칸대로 채웁니다.\n'
-               '- 만든 코드는 `결과/` 아래에 두고, 이름은 하는 일로 짓습니다.\n\n'
-               '## 지킬 조건\n\n'
-               '- `입력/` · `자료/`는 읽기만 합니다.\n'
-               '- 후보는 모델의 답에서 만듭니다 — `입력/`의 SOP 구조 · 조건표를 후보로 옮기지 않습니다.\n'
-               '- 후보 파일 원본은 남기고, 검토는 별도 파일에 씁니다. 원문과 대조하지 않은 후보는 보류로 둡니다.\n'
-               '- 조건표 · 판정 결과는 바꾸지 않고, 바꿀 것은 요청으로 남깁니다.\n'
-               '- 키 · 접속 값을 채팅 · 파일 · 기록에 붙이지 않습니다.\n']
-    cases = ['판이 다른 같은 문서에서 같은 작업의 조건이 달라지는 곳',
-             '같은 작업을 사내 문서와 제조사 지침이 함께 말하는 곳',
-             '영문 원본과 번역이 함께 있는 줄',
-             '부정 조건(「~하지 않는다」)과 범위 참조(「~부터 ~까지」)',
-             '경계 낱말(초과 · 이상 · 미만 · 이내)이 문서마다 다른 곳',
-             '글자 그대로는 찾히지 않는 인용과 원문 여러 곳에 맞는 인용',
-             ('이 작업에 걸린 조건표 조건마다' if practical else '조건표 조건마다') + ' 근거 원문 — 원문이 말하는 대상 · 때가 조건과 같은 곳, 다른 곳, 근거 원문을 찾지 못하는 조건',
-             '같은 요청을 한 번 더 보낸 응답',
-             '받은 SOP 구조가 이미 구조로 옮긴 문서에 같은 기능을 적용한 결과',
-             '정기 점검표 · 예비품 기준 · 보충 매뉴얼에 같은 기능을 적용한 결과'] + (['이 작업의 조건이 절차 밖 절 · 다른 문서에 있는 곳'] if practical else [])
-    key_line, stuck_fields, stuck_stages, wait_many = guide_bits(N)
-    ix = {k: n - 1 for k, n in N.items()}      # 가이드 조각의 자리(0부터)
-    return dict(
-        title=title, rec=REC, readonly='`입력/` · `자료/`가', decide_step=ix['expect'], course=course,
-        goal=goal, make=make,
-        start=[f'`입력/조건표.csv` · `입력/sop.json` · `입력/{judged}` — 냉각 계통 조치의 조건표 · SOP 구조와, 그 조건표로 지난 30일 경보를 판정한 결과. 조치를 판정하는 실습의 결과와 같은 꼴로 검증해 제공하는 판입니다.',
-               mine,
-               f'`자료/` — 문서 {n_docs}개와 `자료/문서_목록.csv`(문서마다 판 · 상태 · 시행일 · 소유 부서 · 파일 · SHA-256 — 파일 내용으로 계산한 지문 같은 값이라 한 글자만 달라도 바뀝니다). 문서 목록은 10월 28일 07:30에 내보낸 것입니다.',
-               '`.env.example` · `llm_client.py` — 수업 모델 연결 값의 틀과 연결 도구. 보낸 요청과 받은 답은 `결과/응답_기록/`에 남습니다.',
-               '`입출력_계약.md` — 입력과 결과 파일의 형식. `check.py` — 결과의 구조 검사.',
-               f'`결과/` — 이번에 만든 것을 두는 자리. 「제공 빈 틀」 `{Path(REC).name}`가 있습니다.',
-               RULES_LINE],
-        tools=TOOLS_LINE,
-        user=user, questions=questions, decide=decide_points(key),
-        outside=['그래프 DB에 적재하는 일(다음 실습)', '조건표 · SOP 구조 · 판정 결과를 고치는 일 — 바꿀 것은 요청으로 남깁니다', '포털에 문서를 올리거나 포털의 추출 기능을 부르는 일',
-                 '문서를 고쳐 쓰거나 번역하는 일'],
-        formats=formats, steps=steps, cases=cases,
-        commands='python llm_client.py\npython llm_client.py --count\npython 결과/<만든 코드 이름>.py\npython check.py\npython check.py 결과/후보/<파일 이름>.json',
-        done=('형식 검사나 실행 성공만으로 완료하지 않습니다. 실행 전에 원문에서 적은 기대 항목과 실제 후보를 줄마다 견준 기록이 있고, '
-              + ('핀 세척의 준비 · 금지 · 완료 후보의 결정과 이 작업에 걸린 조건마다의 근거 대조가 ' if practical else '핀 세척 작업 후보의 결정과 조건표 조건마다의 근거 대조가 ')
-              + '원문 줄로 설명되며, 다른 문서의 누락 · 근거 없는 생성 수와 고친 뒤 다시 센 수가 있고, 「정한 것」의 근거와 그 선택으로 바뀌는 답을 설명할 수 있으면 완료입니다. '
-              '키가 없어 모델을 부르지 못한 단계는 그렇다고 적습니다.'),
-        save=save, reopen=f'`python check.py`의 출력, `{Path(REC).name}`의 기대 항목 · 조건 근거 대조 · 다른 문서 표와 기준일 · 저장 시점 · 확인하지 못한 점',
-        tree=tree(LABS[key].name, [('.github/', 'Copilot 작업 규칙'), ('결과/', f'이번에 만들 것({Path(REC).name} 빈 틀)'), ('입력/', '조건표 · SOP 구조 · 판정 결과(읽기만)'),
-                                    ('자료/', '문서 묶음과 문서 목록(읽기만)'), ('.env.example', '수업 모델 연결 값의 틀'), ('AGENTS.md', 'Codex 작업 규칙'), ('check.py', '구조 검사'),
-                                    ('CLAUDE.md', '작업 규칙(같은 내용)'), ('guide.html', '이 가이드'), ('llm_client.py', '수업 모델 연결'), ('START.md', '이번 과제와 진행 단계'),
-                                    ('안내.html', '이 가이드와 같은 파일'), ('입출력_계약.md', '입력과 결과 파일의 형식')]),
-        lead=('수업 모델에 보낼 요청 글을 내가 짜서 문서에서 작업 조건 후보를 근거와 함께 받아 내고, 원문과 대조해 결정을 기록합니다. 그다음 이 사건의 작업인 핀 세척의 준비 · 금지 · 완료 조건을 문서를 가리지 않고 모아 다음 실습의 작업 확인 카드에 넘깁니다.'
-              if practical else '수업 모델에 보낼 요청 글을 내가 짜서 문서에서 작업 순서 · 조건 · 단위 · 금지 후보를 문서 · 판 · 절 · 인용과 함께 받아 냅니다. 인용이 원문 어디에 있는지 코드로 찾은 뒤, '
-              '후보마다 채택 · 수정 · 제외 · 보류와 근거를 기록하고, 같은 기능을 다른 문서에 적용해 빠뜨리거나 지어낸 것을 셉니다.'),
-        need=f'VS Code와 Python, 로그인해 둔 Codex 또는 GitHub Copilot, 강의에서 받은 수업 모델 접속 세 줄(없으면 {N["connect"]}단계의 안내).',
-        terms=TERMS_EXTRACT, first_more=[mine, key_line],
-        # 도구를 처음 쓰는 단계에 그 안내 — AI 채팅 · 편집 승인은 사건 확인(처음 AI에게 묻는 단계), 터미널 · .env는 연결 확인. 통합반만 막히기 쉬운 곳의 「막히면」을 더 둔다(P-9).
-        guide_extra={ix['incident']: ['ai', 'review'], ix['connect']: [para(ENV_HOWTO[course]), 'terminal'], ix['one']: [ASK_HOWTO]},
-        guide_after={ix['connect']: [WAIT_FIRST] + ([] if practical else [BJ.STUCK_PATH, STUCK_ENV]), ix['read']: [STUCK_DECODE], ix['one']: [] if practical else [STUCK_NOKEY],
-                     ix['cand']: [] if practical else [stuck_fields], ix['main']: [wait_many], ix['rev2']: [] if practical else [stuck_stages]},
-        files={})
+    return steps, N
 
 
 # ───────────── 검사기(구조만 — 의미 정답은 판정하지 않는다, K-7) ─────────────
@@ -1078,6 +1252,20 @@ def empty_tables(md):
     return out
 
 
+def slot_errors():
+    """정할 자리의 꼴 — 제공 코드(doc_extract.py)의 검사로 본다. 비어 있는 자리는 결과 화면의 단계 띠에서 짚으므로 여기서는 꼴만."""
+    import doc_extract as X
+    out = []
+    for fn in (X.settings, X.expected_rows, X.decision_rows, lambda: X.rule_rows(TASK), (X.role_rows if PRACTICAL else (lambda: None))):
+        try:
+            fn()
+        except X.Problem as e:
+            out.append(f'정할 자리: {e}')
+        except OSError as e:
+            out.append(f'정할 자리 파일을 읽지 못함: {e}')
+    return out
+
+
 def stages():
     todo = []
     print(f'기준 입력: {basis("조건표.csv").relative_to(HERE).as_posix()} · {basis(JUDGED).relative_to(HERE).as_posix()}')
@@ -1093,10 +1281,14 @@ def stages():
     chat = sum(1 for r in recs if r.get('method') == PASTED)
     other = sum(1 for r in recs if r.get('folder_mark') != here)
     print(f'[1] 응답 기록 {len(recs)}개(이 폴더에서 모델 서버로 보낸 요청 {sent} · 쓸 내용이 없던 답 {empty} · 채팅으로 받음 {chat} · 다른 폴더 기록 {other})')
-    prompt = RESULT / 'prompt.md'
-    print(f'[2] 요청 글 결과/prompt.md: {"있음" if prompt.is_file() and prompt.read_text(encoding="utf-8-sig").strip() else "없음"}')
-    if not (prompt.is_file() and prompt.read_text(encoding='utf-8-sig').strip()):
-        todo.append('요청 글 결과/prompt.md가 없습니다.')
+    import doc_extract as _X
+    try:
+        has_prompt = bool(_X.prompt_text())
+    except _X.Problem:
+        has_prompt = False
+    print(f'[2] 요청 글 결과/prompt.md: {"있음" if has_prompt else "없음(빈 틀)"}')
+    if not has_prompt:
+        todo.append('요청 글 결과/prompt.md가 아직 빈 틀입니다.')
     files = sorted((RESULT / '후보').glob('*.json'))
     print(f'[3] 후보 파일 {len(files)}개')
     first = []
@@ -1171,6 +1363,7 @@ def stages():
         stamp = lambda x: x.replace('T', ' ')[:16]
         if when and first and stamp(min(first)) < stamp(when.group(1).strip()):
             todo.append(f'검토_기록.md의 기대 칸을 쓴 시각({when.group(1).strip()})이 첫 후보 파일({min(first)})보다 뒤입니다.')
+    todo += slot_errors() + chosen_errors(HERE) + provided_errors(HERE)
     print()
     if todo:
         print('완료 아님 — 남은 것:')
@@ -1209,139 +1402,7 @@ def checker(key):
     return CHECKER.replace('__JUDGED__', JUDGED[key]).replace('__PRACTICAL__', str(key == 'practical-03-extract')).replace('__TASK__', TASK)
 
 
-# ───────────── 설계 조건 검사 ─────────────
-# 학생 문장(START · README · 계약 · 결과 틀 · 작업 규칙 · 검사기 · 연결 도구)에 두지 않는 말 — 결정 지점 · 함정의 답과 그 실마리(구성안 7.1 「쓰면 안 되는 문장」)
-LEAKS = ['SR-04', '설비안전규정', 'HM-9.4', '9-7', '9-6', '9-8', '쪽이 빠', '빠진 쪽', 'cp949', 'CP949', 'euc-kr', 'EUC-KR', '인식 오류', '문자 인식', 'OCR', '번역 메모', 'REM0TE', '판독',
-         '저압수', '고압수', '코어 교체', '유온 차', '입구와 출구', 'T-7.1', '작업 근거가 아니', '승인 전', '미승인', '0171', '051f', '10월 26일', '다가가', '실측',
-         '규칙 기반', '비교용', '(권장)', '외부 모델 호출', 'SOP-PM-21', 'SOP-PM-22', 'T-3.1', 'T-4.1', 'R4', 'R5', 'ts1-hard', 'trip-reset', '인터록 한계', 'PM-2.4']
-NAME_LEAKS = ['근거', '빠진', '깨진', '오류', '미확인', 'cp949', '0171', '교체', '저압', '스캔오류', '인터록']   # 파일 · 폴더 · 열 이름
-STUDENT_TEXT = ['START.md', 'AGENTS.md', 'CLAUDE.md', '.github/copilot-instructions.md', '입출력_계약.md', '입력/README.md', '결과/README.md', REC, 'check.py', 'llm_client.py', '.env.example']
-
-
-def design_checks(key, folder, L=None):
-    bad = guide_checks(folder, L or lab(key, DD.bundle()), LEAKS)
-    # 1. 같은 바이트 — 3회차 랩 자료 · 입력 · 강사 판 결과, 2회차 모델 센서 한계
-    s3 = BJ.LABS['integrated-03-criteria']/'자료'
-    for name in ['HM-8_매뉴얼.md', 'HM-8_1.0판_매뉴얼.md', 'HI-01_보충매뉴얼.md']:
-        if (folder/'자료'/name).read_bytes() != (s3/name).read_bytes():
-            bad.append(f'자료/{name}이 3회차 조치 기준 랩의 자료와 다름 — 3회차 랩을 다시 만든 뒤 만듭니다')
-    for name in ['조건표.csv', 'sop.json']:
-        if (folder/'입력'/name).read_bytes() != (BJ.LABS[S3_JUDGE[key]]/'입력'/name).read_bytes():
-            bad.append(f'입력/{name}이 3회차 판정 랩 입력과 다름')
-    with zipfile.ZipFile(COMPLETED[key]) as z:
-        inner = next(n for n in z.namelist() if n.endswith('/결과/' + JUDGED[key]))
-        if z.read(inner) != (folder/'입력'/JUDGED[key]).read_bytes():
-            bad.append(f'입력/{JUDGED[key]}이 3회차 학생용 완성본의 결과와 다름')
-    _, graph = B.reference_model(False, B.LAB4_INPUT_BRANCH['통합반'])
-    sensors = {n['props']['id']: n['props'] for n in graph['nodes'] if n['labels'][0] == 'Sensor'}
-    for name, tag, value, unit, word, cause in DD.plant()[0]:
-        for asset in ['HYD-01', 'HYD-02', 'HYD-03']:
-            s = sensors.get(f'{asset}:{tag}', {})
-            side = 'lower' if word == '미만' else 'upper'
-            if s.get('limit') != value or s.get('limit_direction') != side:
-                bad.append(f'{asset}:{tag} 2회차 모델 한계({s.get("limit")} {s.get("limit_direction")})가 9장 · SR-04 값({value} {side})과 다름')
-    # 1b. 범위가 다른 원문 — SR-04는 예측값 · 작업지시를 말하지 않는다(구성안 3.2)
-    sr = (folder/'자료/SR-04_설비안전규정_발췌.txt').read_bytes().decode('cp949')
-    for word in ['예측', '작업지시', '후보', 'rule:', 'R4']:
-        if word in sr:
-            bad.append(f'SR-04 발췌에 「{word}」')
-    # 2. 학생 문장 · 이름에 답 0
-    for rel in STUDENT_TEXT:
-        text = (folder/rel).read_text(encoding='utf-8')
-        for word in LEAKS + OPS_WORDS:
-            for n, line in enumerate(text.splitlines(), 1):
-                if word in line:
-                    bad.append(f'{rel}:{n}: 「{word}」')
-    names = [p.relative_to(folder).as_posix() for p in folder.rglob('*')]
-    names += next(csv.reader(io.StringIO((folder/'입력/조건표.csv').read_text(encoding='utf-8'))))
-    names += [x for x in (folder/'자료/문서_목록.csv').read_text(encoding='utf-8').splitlines()[1].split(',')]
-    for name in names:
-        for word in NAME_LEAKS:
-            if word in name:
-                bad.append(f'이름 「{name}」에 「{word}」')
-    # 학생 폴더에 강사가 넣은 응답 기록 · 재생 파일이 없다(코딩랩.md K-8)
-    if (folder/'결과/응답_기록').exists() or any('recorded' in n or 'replay' in n for n in names):
-        bad.append('학생 폴더에 응답 기록 · 재생 파일이 있음')
-    env = (folder/'.env.example').read_text(encoding='utf-8')
-    if any(line.split('=', 1)[1].strip() for line in env.splitlines() if '=' in line and not line.startswith('#')) or \
-            [line.split('=')[0] for line in env.splitlines() if '=' in line and not line.startswith('#')] != ['OPENAI_BASE_URL', 'LLM_API_KEY', 'LLM_MODEL']:
-        bad.append('.env.example이 세 이름 · 빈 값이 아님')
-    if bad:
-        raise RuntimeError(f'{folder.name} 설계 조건 검사 실패:\n- ' + '\n- '.join(bad))
-
-
-# ───────────── 쓰기 ─────────────
-def build(key):
-    folder = LABS[key]
-    files = DD.bundle()
-    L = lab(key, files)
-    keep = {p.relative_to(folder).as_posix(): p.read_bytes() for p in (folder/'images').rglob('*') if p.is_file()} if (folder/'images').is_dir() else {}
-    if folder.exists():
-        shutil.rmtree(folder)                     # 임시판(코드/ · 강사 대본 안내.html 등)이 남지 않게 통째로 다시 쓴다(실제 화면 사진만 보존)
-    folder.mkdir(parents=True)
-    for rel, data in keep.items():
-        (folder/rel).parent.mkdir(parents=True, exist_ok=True)
-        (folder/rel).write_bytes(data)
-    for path in [folder/'AGENTS.md', folder/'.github/copilot-instructions.md', folder/'CLAUDE.md']:
-        write(path, STEP_RULES)
-    (folder/'자료').mkdir()
-    for name, data in files.items():
-        (folder/'자료'/name).write_bytes(data)
-    BJ.judge_inputs(folder)                       # 3회차 판정 랩 입력과 같은 조건표 · SOP 구조(criteria.py 강사 검증 판)
-    judged = (BASE_JUDGED/JUDGED[key]).read_bytes()
-    (folder/'입력'/JUDGED[key]).write_bytes(judged)
-    n_events = len(json.loads(judged)['events'])
-    for name, text in {'check.py': checker(key), '입출력_계약.md': contract(key), REC: record_template(key), '결과/README.md': result_readme(key),
-                       '입력/README.md': input_readme(key, n_events), '.env.example': ENV_EXAMPLE}.items():
-        write(folder/name, text)
-    (folder/'llm_client.py').write_bytes((TOOLS/'lab_llm.py').read_bytes())
-    write(folder/'START.md', step_start(L).replace('`결과/schema.json`처럼', '`결과/prompt.md`처럼'))
-    write_guide(folder, L)
-    return folder, L
-
-
-def write_guide(folder, L):
-    """guide.html과 같은 바이트의 안내.html. 본 촬영 사진은 capture-provenance.json에 출처가 있는 것만 그 절에 싣는다(2 · 3회차와 같은 확인 — 없으면 사진 없이)."""
-    provenance = json.loads((TOOLS/'capture-provenance.json').read_text(encoding='utf-8'))
-    BJ.write_guide(folder, L, B.student_photos(folder, provenance, [s['name'] for s in L['steps']]))
-
-
-def digest(folder):
-    h = hashlib.sha256()
-    for p in sorted(folder.rglob('*')):
-        if p.is_file() and '__pycache__' not in p.parts:
-            h.update(p.relative_to(folder).as_posix().encode() + b'\0' + p.read_bytes())
-    return h.hexdigest()
-
-
-def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
-    parser.add_argument('--lab', choices=sorted(LABS) + sorted(GLABS), action='append')
-    parser.add_argument('--check', action='store_true')
-    args = parser.parse_args(argv)
-    chosen = args.lab or sorted(LABS) + sorted(GLABS)
-    order = [k for k in sorted(LABS) if k in chosen] + [k for k in sorted(GLABS) if k in chosen]   # 그래프 랩 입력은 추출 랩 폴더에서 만든다
-    for key in order:
-        graph = key in GLABS
-        folder, L = (gbuild if graph else build)(key)
-        (gdesign_checks(key, folder, L) if graph else design_checks(key, folder, L))
-        first = digest(folder)
-        if args.check:
-            (gbuild if graph else build)(key)
-            second = digest(folder)
-            print(f'{folder.name}: 두 번 생성 {"같음" if first == second else "다름"} ({first[:12]})')
-            if first != second:
-                return 1
-        archive = pack(folder)
-        print(f'{folder.name}: 단계 {len(L["steps"])}, 파일 {sum(1 for p in folder.rglob("*") if p.is_file())}개, ZIP {archive.name} {hashlib.sha256(archive.read_bytes()).hexdigest()[:12]}')
-    print('package-index · catalog 등록은 하지 않았습니다(lab_package.register · build_launcher.py로 따로).')
-    return 0
-
-
-# ═════════════ 그래프 반영 랩 둘 — 통합반 04회차 실습3 그래프반영과검증 · 실전반 03회차 실습5 그래프반영(작업 확인 카드) ═════════════
-# 구성안 6 · 7.3 · 7.4절. 입력/ = 2회차 실습4 입력과 같은 바이트의 설비 모델 + 3회차 판(조건표 · SOP 구조, 실전은 + 조치 검토 결과) +
-# 추출 랩의 강사 검토 판(reference/session3_docs/branches.py — 강사 추출 실행 run1의 후보를 지점5 나 · 지점6 가로 검토, 추출 학생용 완성본과 같은 바이트).
-# 결정 지점은 지점7(다른 문서의 조건을 이 작업에 이을지).
+# ═════════════ 그래프 반영 랩 둘 — 통합반 04회차 실습3 · 실전반 03회차 실습5(작업 확인 카드) ═════════════
 import importlib.util as _ilu
 
 GLABS = {'integrated-04-graph': OUT/'통합반/실습/04회차/랩/04일차_실습3_그래프반영과검증',
@@ -1355,22 +1416,20 @@ GEXTRACT = {'integrated-04-graph': 'integrated-04-extract', 'practical-03-card':
 GREC = '결과/구축_기록.md'
 LAB2_INPUT = {'통합반': OUT/'통합반/실습/02회차/랩/02일차_실습4_그래프구현과검증/입력',
               '실전반': OUT/'실전반/실습/02회차/랩/02일차_실습4_그래프구현과검증/입력'}
-CARD_HEADINGS = ['대상 작업', '준비 조건', '금지 · 제한', '작업 순서', '완료 기준', '작업 직전 확인할 현재 값', '승인', '남은 질문']   # 실전 R37 — 준비 · 금지 · 완료 조건과 원문 출처(현재 값 · 승인은 읽을 곳만)
+CARD_HEADINGS = ['대상 작업', '준비 조건', '금지 · 제한', '작업 순서', '완료 기준', '작업 직전 확인할 현재 값', '승인', '남은 질문']
+LATER_DOCS = ['OEM-HPP45A-MM', 'PR-07']        # 통합 04-3 행 「다른 문서의 추가 반영」 — 연결 규칙을 그 단계에서 채우는 문서
 
 
 def branches_module():
     """강사 검토 갈래(reference/session3_docs/branches.py) — 다음 실습 입력을 그 판으로 만든다(같은 사실 한 곳)."""
-    folder = B.TEACHER/'session3_docs'
-    sys.path.insert(0, str(folder))
-    spec = _ilu.spec_from_file_location('branches', folder/'branches.py')
+    spec = _ilu.spec_from_file_location('branches', REF/'branches.py')
     mod = _ilu.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
 
 
 def instructor_reviews(key):
-    """{입력/검토결과/ 안 이름: 바이트} — 강사 추출 실행(수업 모델 답)의 후보를 강사 판 갈래(지점5 나 · 지점6 가)로 검토한 결과.
-    추출 랩 학생용 완성본(completed.py)의 결과/검토와 같은 바이트다 — 앞 단계 완성 상태 그대로를 다음 실습이 받는다(코딩랩.md K-7)."""
+    """{입력/검토결과/ 안 이름: 바이트} — 강사 추출 실행 run1의 후보를 강사 판 갈래(지점5 나 · 지점6 가)로 검토한 결과."""
     BR = branches_module()
     course = GCOURSE[key]
     lab_folder = LABS[GEXTRACT[key]]
@@ -1381,6 +1440,415 @@ def instructor_reviews(key):
     if course == '실전반':
         files['선택작업_조건.json'] = out['선택작업_조건.json']
     return files
+
+
+SHAPE_BLANK = json.dumps({'제공 빈 틀 — 보관 없이 바로 채웁니다. 칸의 뜻은 입출력_계약.md 「정할 자리」': '',
+                          '이름': {k: '' for k in ('문서', '판', '절', '지식', '문서의_판', '판의_절', '지식의_출처', '판의_대체', '규칙의_근거')},
+                          '뜻': {k: '' for k in ('문서', '판', '절', '지식', '문서의_판', '판의_절', '지식의_출처', '판의_대체', '규칙의_근거')},
+                          '판을_따로_둠': None, 'ID': {k: '' for k in ('문서', '판', '절', '지식')}}, ensure_ascii=False, indent=2) + '\n'
+
+
+BASIS_COL = '근거 = 원문 파일:줄(꼴: 자료/파일.md:12 또는 파일 이름:12, 여럿이면 「 · 」로 잇기)'
+BASIS_SHORT = '근거 = 원문 파일 이름:줄(여럿이면 「 · 」로 잇기)'   # 실전 카드 랩(한 칸의 둘째 랩 — 꼴은 앞 랩에서 봄)
+GCOLS = {   # 정할 자리 표의 칸 뜻 — 빈 틀 둘째 줄과 그 단계 힌트 「지킬 것」이 같은 글을 쓴다(값은 넣지 않는다)
+    '기대_답.csv': ('질문 = 「질문 1」 ~ 「질문 5」로 시작(한 질문을 여러 줄로 나누면 뒤에 무엇인지 짧게) · 기대_답 = 조회 전에 원문에서 찾은 답 한 줄(문서 · 판 · 절과 내용, 여럿이면 「 · 」, 없으면 「없음」) · ' + BASIS_COL),
+    '기대_답.csv실전': ('질문 = 카드 항목 이름 하나(「준비 조건」 「금지 · 제한」 「작업 순서」 「완료 기준」 「작업 직전 확인할 현재 값」 「승인」 「남은 질문」 「대상 작업」) · '
+                   '기대_답 = 그 항목의 내용 한 줄(여럿이면 「 · 」, 없으면 「없음」) · ' + BASIS_COL),
+    '다른문서_조건.csv실전': '문서 · 판 · 절 = 그 조건의 doc_id · rev · 절 표기 · 인용에_든_글자 · 작업 = 조치 ID · 잇는다 = 예 · 아니오(아니오도 행으로) · 관계 = 예일 때 영문 이름 · 근거',
+    '연결_규칙.csv': ('문서 · 판 = 검토 결과의 doc_id · rev 그대로 · 절 = 그 문서의 절 표기(비우면 그 문서 전체) · 잇는_방법 = 절차 표기와 같은 조치 · 정한 대상 · 별칭 · 잇지 않음 가운데 하나 · '
+                   '관계 = 영문 관계 이름(잇지 않음이면 비움) · 대상 = 정한 대상일 때 기존 ID(여럿이면 빈칸으로) · 까닭 = 한 줄 · ' + BASIS_COL),
+    '별칭.csv': '원문_이름 = 원문에 적힌 이름 · 품번 그대로(그 글자가 인용에 든 후보가 이어짐) · 기존_ID = 설비 모델 · SOP 구조 · 조건표의 ID(여럿이면 빈칸으로) · ' + BASIS_COL,
+    '역할.csv': ('종류 = step · precondition · prohibition · completion · unit_value 가운데 하나 · 인용에_든_글자 = 이 글자가 인용에 든 후보만(비우면 그 종류 전부, 위 행이 먼저) · '
+              '항목 = 준비 · 금지 · 순서 · 완료 · 승인 · 넣지 않음 가운데 하나(넣지 않음 = 잇기는 연결 규칙대로 하되 어느 항목에도 두지 않음) · 근거 = 원문 파일:줄 또는 입출력_계약.md 절'),
+    '다른문서_조건.csv': ('문서 · 판 · 절 = 그 조건이 있는 검토 결과의 doc_id · rev · 절 표기 · 인용에_든_글자 = 그 후보 인용에 든 글자 · 작업 = 이을 조치 ID · 잇는다 = 예 또는 아니오(아니오도 행으로 남김) · '
+                    '관계 = 예일 때 영문 관계 이름 · ' + BASIS_COL),
+    '질문_값.csv': '질문 · 이름 = 입출력_계약.md 「정할 자리」의 짝 그대로(q1 asset 같은 꼴) · 값 = 그 자리에 넣을 ID(hold ids는 검토 결과 파일 이름#후보 id, 여럿이면 빈칸으로)',
+    '질문_값.csv실전': '질문 · 이름 = 계약 「정할 자리」의 짝(card sop 카드 작업 · card_other sop 다른 작업 · hold ids 보류 후보 · q5_target · q5_section 제공되지 않은 것) · 값 = 그 자리의 ID(여럿이면 빈칸으로)',
+    '연결_규칙.csv실전': '문서 · 판 = 검토 결과의 doc_id · rev · 절 = 절 표기(비우면 문서 전체) · 잇는_방법 = 절차 표기와 같은 조치 · 정한 대상 · 별칭 · 잇지 않음 · 관계 = 영문 이름 · 대상 = 정한 대상의 기존 ID(여럿이면 빈칸) · 까닭 · 근거',
+    '별칭.csv실전': '원문_이름 = 원문의 이름 · 품번 그대로 · 기존_ID = 설비 모델의 ID · 근거',
+    '역할.csv실전': '종류 = 후보의 종류 · 인용에_든_글자 = 이 글자가 든 후보만(비우면 그 종류 전부) · 항목 = 준비 · 금지 · 순서 · 완료 · 승인 · 넣지 않음 · 근거 — 행이 없는 종류는 기본(precondition 준비 · prohibition 금지 · completion 완료 · unit_value 완료 · step 순서)',
+    '현재값_원천.csv': '작업 = 조치 ID · 확인할_값 = 작업 직전에 볼 값의 이름(값은 적지 않음) · 읽을_원천 = 그 값을 읽는 시스템 이름 · ' + BASIS_COL,
+}
+
+
+def gcols(name, practical=False):
+    text = GCOLS[name + '실전'] if practical and name + '실전' in GCOLS else GCOLS[name]
+    return text.replace(BASIS_COL, BASIS_SHORT) if practical else text
+
+
+def gblank(name, columns, explain, practical=False):
+    """빈 틀: 첫 줄 「제공 빈 틀 — 설명」, 둘째 줄 칸 뜻(# 줄), 셋째 줄 열 이름."""
+    head, cols = F.blank_csv(columns, explain).split('\n', 1)
+    return f'{head}\n# {gcols(name, practical)}\n{cols}'
+
+
+def ghead(blank, filled):
+    """정답 보기에 붙여 넣는 표 — 빈 틀의 # 줄들 + fills의 열 이름 · 행(빈 틀 첫 줄 · 정답 첫 줄 · 힌트 「지킬 것」이 같은 칸 뜻)."""
+    return ''.join(x for x in blank.splitlines(keepends=True) if x.startswith('#')) + filled
+
+
+def graph_blanks(key):
+    practical = key == 'practical-03-card'
+    return {'결과/기대_답.csv': gblank('기대_답.csv', ['질문', '기대_답', '근거'], ('카드 항목' if practical else '질문') + '마다 조회 전에 원문 · 검토 결과에서 찾은 기대 답과 근거', practical),
+            '결과/그래프_모양.json': SHAPE_BLANK,
+            '결과/연결_규칙.csv': gblank('연결_규칙.csv', ['문서', '판', '절', '잇는_방법', '관계', '대상', '까닭', '근거'], '검토 결과의 문서(와 절)마다 승인 후보를 어느 기존 ID에 어떤 관계로 이을지', practical),
+            '결과/별칭.csv': gblank('별칭.csv', ['원문_이름', '기존_ID', '근거'], '원문에 적힌 이름 · 품번이 가리키는 설비 모델의 기존 ID', practical),
+            '결과/다른문서_조건.csv': gblank('다른문서_조건.csv', ['문서', '판', '절', '인용에_든_글자', '작업', '잇는다', '관계', '근거'], '다른 문서가 정한 조건 · 시간 · 승인을 이 작업에 이을지', practical),
+            '결과/역할.csv': gblank('역할.csv', ['종류', '인용에_든_글자', '항목', '근거'], '조치에 잇는 지식의 종류를 준비 · 금지 · 순서 · 완료 · 승인 가운데 어디에 둘지', practical),
+            '결과/질문_값.csv': gblank('질문_값.csv', ['질문', '이름', '값'], '조회에 넣을 값', practical),
+            '결과/현재값_원천.csv': gblank('현재값_원천.csv', ['작업', '확인할_값', '읽을_원천', '근거'], '작업 직전에 확인할 현재 값과 그 값을 읽을 원천(시스템 이름) — 값 자체는 적지 않음', practical),
+            F.CHOSEN_FILE: F.CHOSEN_TEMPLATE}
+
+
+GSLOT_CONTRACT = '''
+## __N__. 정할 자리 (`결과/` — 내가 AI와 채우는 빈 틀)
+
+첫머리에 「제공 빈 틀」 표시가 있는 파일이다. `python show_result.py`가 채운 자리까지 제공 코드(`doc_graph.py` · `lab_cypher.py`)를 돌려 3절의 결과 파일을 쓰고 랩 DB에 적재 · 조회해 `결과/보기.html`에 보인다. 적재 문장은 모두 MERGE · SET이라 다시 실행해도 늘지 않는다. 빈 칸이나 꼴이 틀린 칸이 있으면 그 파일 · 칸과 함께 멈춘다.
+
+- `결과/기대_답.csv` — 열 `질문,기대_답,근거`. 조회 전에 원문 · 검토 결과에서 찾은 기대 답과 근거(파일:줄).
+- `결과/그래프_모양.json` — `이름`: 새 종류(`문서` · `판` · `절` · `지식`)와 새 관계(`문서의_판` · `판의_절` · `지식의_출처` · `판의_대체` · `규칙의_근거`)의 영문 이름(설비 모델 · 조치 기준이 쓰는 종류 이름은 쓰지 않는다). `뜻`: 같은 열쇠마다 뜻. `판을_따로_둠`: `true`면 판마다 노드를 두고 `false`면 절을 문서에 바로 잇는다(그때 판 · 문서의_판 · 판의_대체는 비워 둔다). `ID`: 새 대상의 ID를 짓는 꼴 — `{문서}` · `{판}` · `{절}` · `{후보}`(검토 결과의 후보 id) 자리로 쓴다. 지식 노드는 속성 `doc_id` · `rev` · `section` · `candidate`(검토 결과 파일 이름#후보 id) · 인용 · 줄 · 결정을 가진다.
+- `결과/연결_규칙.csv` — 열 `문서,판,절,잇는_방법,관계,대상,까닭,근거`. 검토 결과의 문서 · 판(과 절 — 비우면 그 문서 전체, 절을 적은 행이 먼저. 다만 절차 안의 후보는 그 절차 표기가 조치 ID이고 그 문서(그 절)에 `절차 표기와 같은 조치` 행이 있으면 그 행을 따른다)마다 승인 후보를 잇는 방법: `절차 표기와 같은 조치`(후보의 절차 표기가 조치 ID면 그 조치에, 단계면 그 단계에) · `정한 대상`(`대상` 칸의 기존 ID, 여럿이면 빈칸으로) · `별칭`(`결과/별칭.csv`의 원문 이름이 인용에 들면 그 기존 ID에) · `잇지 않음`(출처 절에만). `관계`는 영문 관계 이름. 잇는 방법을 정한 문서만 적재한다.
+- `결과/별칭.csv` — 열 `원문_이름,기존_ID,근거`. 원문에 적힌 이름 · 품번 · 모델이 가리키는 기존 ID(여럿이면 빈칸으로).
+- `결과/다른문서_조건.csv` — 열 `문서,판,절,인용에_든_글자,작업,잇는다,관계,근거`. 다른 문서가 정한 조건을 이 작업(조치 ID)에 이을지 — `잇는다`는 `예` · `아니오`(아니오도 고른 것이라 행으로 남긴다), 예면 `관계` 이름.
+- `결과/역할.csv` — 열 `종류,인용에_든_글자,항목,근거`. 조치에 잇는 지식의 관계 속성 `role` — 종류가 같고 인용에 그 글자가 든 첫 행(글자 칸이 비면 그 종류 전부). `항목`은 `준비` · `금지` · `순서` · `완료` · `승인` · `넣지 않음`(잇는지는 연결 규칙이 정하고, `넣지 않음`은 이어진 지식을 어느 항목에도 두지 않는다 — 질문 1의 항목 칸이 「넣지 않음」).
+- `결과/질문_값.csv` — 열 `질문,이름,값`. 조회에 넣는 값(짝마다 무엇을 묻는지): __QPAIRS__.
+- `결과/현재값_원천.csv` — 열 `작업,확인할_값,읽을_원천,근거`. 작업 직전에 확인할 현재 값과 그 값을 읽을 원천(시스템 이름). 값 자체는 적지 않는다 — 남은 질문(`현재 값 필요`)과 질문 3__CARDN__에 쓴다.
+- `결과/정한_것.csv` — 열 `지점,고른_것,근거,바뀌는_답`. 「학생이 정할 것」의 지점과 작업 중 정한 것(그래프 모양 · 연결 규칙 등)마다 한 줄.
+'''
+
+
+QPAIRS_HOLD = '`hold ids` = 그래프에 없어야 할 보류 후보(검토 결과 파일 이름#후보 id, 여럿이면 빈칸으로) · `q5_target target` = 제공되지 않은 작업 · 대상의 ID · `q5_section section` = 제공되지 않은 절 표기'
+QPAIRS = ('`q1 asset` = 그 설비에 걸린 조치마다 이은 지식(질문 1) · `q3 sop` · `q3 asset` = 그 작업이 그 설비에서 확인하는 센서(질문 3) · '
+          '`q4 doc` = 더한 문서의 지식이 걸리는 대상(질문 4) · ' + QPAIRS_HOLD)
+QPAIRS_CARD = '`card sop` = 카드를 만들 작업 · `card_other sop` = 같은 방법을 대 볼 다른 작업 · ' + QPAIRS_HOLD
+
+
+def graph_contract(key):
+    practical = key == 'practical-03-card'
+    judge = (INPUT_TABLE.replace('`입력/조건표.csv` — 조건표.', '`입력/조건표.csv` — 냉각 계통 조치의 조건표.') + INPUT_SOP
+             + (INPUT_JUDGED['practical-03-extract'] if practical else ''))
+    selected = ('- `입력/검토결과/선택작업_조건.json` — 이 사건의 작업(`task`)의 준비 · 금지 · 완료 항목(`preparation` · `prohibitions` · `completion` — 항목마다 검토 결과의 승인 후보 `candidate` · `doc_id` · `rev` · `section` · `quote` · `decision`)과 '
+                '`remaining_questions`(승인하지 않은 것 · 원문을 확인하지 못한 것 · 제공되지 않은 절).\n' if practical else '')
+    slot = (GSLOT_CONTRACT.replace('__N__', '5' if practical else '4')
+            .replace('__QPAIRS__', QPAIRS_CARD if practical else QPAIRS)
+            .replace('__CARDN__', ' · 카드 「작업 직전 확인할 현재 값」' if practical else ''))
+    text = (GRAPH_CONTRACT.replace('__INPUT_JUDGE__', judge).replace('__INPUT_SELECTED__', selected)
+            .replace('__CARD__', (CARD_CONTRACT if practical else '') + slot))
+    return (text.replace('(`python lab_cypher.py model`이 랩 DB에 올리는 것)', '(`python show_result.py`가 랩 DB에 올리는 것 — 공용 `lab_cypher.py`의 model)')
+            .replace('있으면 `lab_cypher.py model`과 `check.py`는 그 파일을 쓴다.', '있으면 제공 코드와 `check.py`는 그 파일을 쓴다.')
+            .replace('`python lab_cypher.py export 결과/지식_내보내기.json`이 쓴다.', '`python show_result.py`의 마지막 단계가 쓴다.'))
+
+
+def graph_record(key):
+    practical = key == 'practical-03-card'
+    head = '카드 항목' if practical else '질문'
+    later = '' if practical else '## 다른 문서 추가 뒤 기존 연결\n\n| 확인한 것 | 추가 전 | 추가 뒤 | 같음 · 다름 |\n|---|---|---|---|\n| | | | |\n\n'
+    other = ('## 다른 작업 · 제공되지 않은 것\n\n| 물은 것 | 결과 | 원문 · 목록 근거 |\n|---|---|---|\n| | | |\n\n' if practical else
+             '## 보류 후보 · 제공되지 않은 것 조회\n\n| 물은 것 | 결과 | 원문 · 목록 근거 |\n|---|---|---|\n| | | |\n\n')
+    scope = ('그래프로 답함 · 현재 값 필요 · 승인 필요 · 공급 정보 · 원문에 없음' if practical else '그래프로 답함 · 현재 값 필요 · 추가 자료 필요 · 원문에 없음')
+    return ('# 온톨로지 구축 기록\n\n> 제공 빈 틀입니다. 보관하지 말고 바로 채웁니다.\n\n## 목표와 질문\n\n## 이 답을 쓰는 사람과 쓰는 곳\n\n'
+            f'## 정한 것\n\n고른 것 · 근거(파일:줄) · 바뀌는 답은 `{F.CHOSEN_FILE}`에 적습니다.\n\n'
+            f'## {head}별 기대와 실제\n\n기대 답은 `결과/기대_답.csv`에 적습니다.\n\n- 기대 칸을 쓴 시각:\n\n| {head} | 실제 결과(결과 화면) | 같음 · 다름과 까닭 |\n|---|---|---|\n| | | |\n\n'
+            '## 적재 수\n\n| 시점 | 노드 수 | 관계 수 | 확인한 것 |\n|---|---|---|---|\n| 설비 모델 · 조치 기준 적재 뒤 | | | |\n| 첫 적재 뒤 | | | |\n| 같은 적재 다시 | | | |\n'
+            + ('' if practical else '| 다른 문서 추가 뒤 | | | |\n') + '\n' + later + other +
+            f'## 답할 수 있는 것과 없는 것\n\n| 질문 | {scope} | 근거(원천 이름 · 파일) |\n|---|---|---|\n| | | |\n\n'
+            '## 남은 질문\n\n## 저장 기록\n\n- 랩 DB 주소(인증값 제외):\n- 기준일:\n- 저장 시점:\n- 확인하지 못한 점:\n')
+
+
+def graph_result_readme(key):
+    card = ' · 작업 확인 카드(`작업확인카드_<SOP ID>.md`)' if key == 'practical-03-card' else ''
+    return ('이번 과제의 정할 자리(「제공 빈 틀」 파일)를 여기서 채웁니다. `python show_result.py`가 채운 자리까지 적재 · 조회를 돌려 스키마 확장(`schema_ext.json`) · 적재 파일(`load.cypher`) · '
+            f'조회문(`query.cypher`) · 남은 질문(`남은_질문.json`) · 내보내기(`지식_내보내기.json`){card}를 쓰고 `보기.html`에 보입니다.\n'
+            '내 앞 결과를 쓰면 `내_입력/`에 `입력/`과 같은 이름 · 같은 자리로 복사해 둡니다.\n'
+            '다시 열 때는 `python lab_db.py`로 랩 DB를 다시 켜고 `python show_result.py`를 실행해, `구축_기록.md`의 적재 수와 결과 화면을 함께 봅니다.\n')
+
+
+def graph_input_readme(key, files, n_events):
+    practical = key == 'practical-03-card'
+    names = sorted(n[:-len('_검토.json')] for n in files if n.endswith('_검토.json'))
+    return ('# 입력 — 읽기만 합니다\n\n조치를 판정하는 실습과 문서에서 지식을 추출 · 검토하는 실습을 하지 않았거나 PC가 초기화돼도 시작할 수 있게, 그 실습들의 결과와 같은 꼴로 검증해 제공하는 판입니다. '
+            '형식과 키의 뜻은 `입출력_계약.md` 「입력」에 있습니다.\n\n'
+            '- `모델/schema.json` · `모델/graph.json` — 설비 · 구성 요소 · 센서 · 물리량 · 부품' + (' · 공급사' if practical else '') + ' 모델(원자료 기준일 2026-10-15). 그 뒤 들어온 수정본은 냉각 계통의 ID를 바꾸지 않아 이 판을 그대로 씁니다.\n'
+            '- `조건표.csv` · `sop.json` — 냉각 계통 조치의 조건표와 SOP 구조.\n'
+            + (f'- `조치검토결과.json` — 지난 30일(2026-09-28 ~ 10-27) 경보 {n_events}건을 위 조건표로 판정 · 비교한 조치 검토 결과.\n' if practical else '')
+            + f'- `검토결과/` — 문서 {len(names)}개({", ".join(names)})에서 뽑은 후보를 원문과 대조해 결정을 적은 검토 결과' + (' · 이 사건의 작업의 조건(`선택작업_조건.json`)' if practical else '') + '.\n')
+
+
+GRAPH_STEPS = r'''"""__TITLE__ — 결과 화면의 단계(START.md 「진행 단계」와 같은 번호 · 이름). 제공 파일 — 고치지 않는다.
+단계마다 정할 자리(결과/의 「제공 빈 틀」 파일)를 채웠으면 제공 코드(doc_graph.py · lab_cypher.py)를 돌려 랩 DB에 적재 · 조회하고 결과/보기.html에 보인다."""
+from pathlib import Path
+import json
+import show_result as R
+import doc_graph as G
+
+HERE = Path(__file__).resolve().parent
+TITLE = '__TITLE__'
+PRACTICAL = __PRACTICAL__
+TASK = '__TASK__'
+LATER_DOCS = __LATER__
+ITEMS = __ITEMS__                     # 기대_답.csv 질문 칸이 받는 카드 항목 이름(통합반은 None — 「질문 N」)
+if PRACTICAL:                         # 실전 카드 랩: 종류마다 계약의 기본 항목, 역할.csv는 다르게 둘 것만
+    G.ROLE_DEFAULT.update({'precondition': '준비', 'prohibition': '금지', 'completion': '완료', 'unit_value': '완료', 'step': '순서'})
+
+
+def guard(fn):
+    def run(previous):
+        try:
+            return fn(previous)
+        except G.Problem as e:
+            raise R.Stop(str(e))
+    return run
+
+
+def known():
+    return G.model_ids()[0]
+
+
+def shape():
+    sh = G.shape()
+    if sh is None:
+        raise R.Blank('결과/그래프_모양.json이 아직 비어 있습니다.')
+    return sh
+
+
+def table_of(name, values, title):
+    got = G.ask(name, values)
+    if got is None:
+        return R.note(f'{title} — 결과/질문_값.csv에 {name}의 값을 아직 적지 않았습니다.')
+    return R.table(title, got[0], got[1])
+
+
+@guard
+def look(previous):
+    rows, ok = [], []
+    for fname, data in G.reviews():
+        n = {}
+        for c in data['candidates']:
+            n[c['status']] = n.get(c['status'], 0) + 1
+            if c['status'] == 'approved':
+                ok.append([fname, c['id'], c['section'], c.get('procedure') or '', c['kind'], c['line_start'], c['quote']])
+        rows.append([fname, data['doc_id'], data.get('rev'), n.get('approved', 0), n.get('pending', 0), n.get('excluded', 0),
+                     ', '.join(f'{x["rule_id"]} {x["match"]}' for x in data.get('rule_links', []))])
+    ids, _, sop = G.model_ids()
+    kinds = {}
+    for v in ids.values():
+        kinds[v] = kinds.get(v, 0) + 1
+    return [R.table('검토 결과 — 문서마다 승인 · 보류 · 제외 수와 조건 근거 대조', ['파일', '문서', '판', '승인', '보류', '제외', '조건 근거'], rows),
+            R.counts('기존 ID(설비 모델 · SOP 구조 · 조건표)', sorted(kinds.items())),
+            R.table('승인 후보 찾아보기(적재할 것)', ['검토 파일', '후보', '절', '절차', '종류', '줄', '인용'], ok)]
+
+
+def look_db(previous):
+    return look(previous) + db(previous)
+
+
+@guard
+def expect(previous):
+    rows = G.expect_rows(ITEMS)
+    if not rows:
+        raise R.Blank('결과/기대_답.csv에 행이 없습니다.')
+    out = [R.table('조회 전에 적은 기대', ['질문', '기대 답', '근거'], [[r['질문'], r['기대_답'], r['근거']] for r in rows])]
+    for r in rows:                                   # 근거마다 첫 줄을 원문 그대로(글자 방식은 저절로 — 내가 적은 줄이 그 내용인지 본다)
+        for f, n in G.basis_lines(r['근거'])[:1]:
+            if (HERE / '자료' / f).is_file():
+                out.append(R.source_lines(HERE / '자료' / f, n))
+    return out
+
+
+@guard
+def db(previous):
+    import lab_cypher
+    lab_cypher.model()
+    c = G.counts()
+    return [R.counts('랩 DB — 설비 모델과 조치 기준 적재 뒤', [('노드', c['nodes']), ('관계', c['rels'])] + sorted(c['labels'].items()))]
+
+
+@guard
+def plan(previous):
+    sh = shape()
+    p = G.preview(sh)
+    out = [R.counts('승인 후보 전부를 이 모양으로 지으면(적재하지 않고 셈)', [('승인 후보', p['approved'])] + sorted(p['merges'].items())),
+           R.counts('적재하지 않는 후보', sorted((k, v) for k, v in p['statuses'].items() if k != 'approved'))]
+    if p['clash']:
+        out.append(R.error('같은 ID에 서로 다른 대상이 겹침 — ID 짓는 꼴을 고칩니다', '\n'.join(f'{i}: {", ".join(w)}' for i, w in p['clash'][:20])))
+    return out
+
+
+@guard
+def link(previous):
+    sh = shape()
+    rules = G.link_rows(known())
+    if not rules:
+        raise R.Blank('결과/연결_규칙.csv에 잇는 방법을 정한 행이 없습니다.')
+    if not G.role_rows():
+        raise R.Blank('결과/역할.csv에 행이 없습니다.')
+    st = G.load_all()
+    out = [R.counts('적재 전후', [('노드', st['after']['nodes']), ('관계', st['after']['rels']), ('적재한 지식', st['knowledge']), ('기존 ID에 이은 지식', st['linked'])]),
+           R.table('적재한 문서', ['문서', '판'], st['docs'])]
+    if st['clash']:
+        out.append(R.error('같은 ID에 서로 다른 대상이 겹침', '\n'.join(f'{i}: {", ".join(w)}' for i, w in st['clash'][:20])))
+    if st['notes']:
+        out.append(R.note('\n'.join(st['notes'][:20])))
+    cols, rows = G.linked_to(sh, TASK)
+    out.append(R.table(f'핀 세척({TASK})과 그 단계에 이은 지식 — 원문 줄로 확인', ['이은 대상', '관계', '항목', '문서', '판', '절', '줄', '인용'], rows))
+    for r in rules[:12]:
+        for f, n in G.basis_lines(r['근거'])[:1]:
+            if (HERE / '자료' / f).is_file():
+                out.append(R.source_lines(HERE / '자료' / f, n))
+    return out
+
+
+@guard
+def other(previous):
+    shape()
+    rows = G.other_rows(known())
+    if not rows:
+        raise R.Blank('결과/다른문서_조건.csv에 행이 없습니다 — 잇지 않기로 했어도 그 행을 「아니오」로 남깁니다.')
+    st = G.load_all()
+    vals = G.ask_values()
+    out = [R.counts('다시 적재한 뒤(직전 실행과 같으면 늘지 않은 것)', [('노드', st['after']['nodes']), ('관계', st['after']['rels'])]),
+           R.table('다른 문서의 조건', ['문서', '판', '절', '글자', '작업', '잇는다', '관계', '근거'], [[r['문서'], r['판'], r['절'], r['인용에_든_글자'], r['작업'], r['잇는다'], r.get('관계', ''), r['근거']] for r in rows])]
+    for r in rows:
+        for f, n in G.basis_lines(r['근거'])[:1]:
+            if (HERE / '자료' / f).is_file():
+                out.append(R.source_lines(HERE / '자료' / f, n))
+    return out
+
+
+@guard
+def ask123(previous):
+    sh = shape()
+    vals = G.ask_values()
+    if not vals:
+        raise R.Blank('결과/질문_값.csv에 값이 없습니다.')
+    G.write(HERE / '결과/query.cypher', G.query_file(sh, vals))
+    exp = G.expect_rows(ITEMS)
+    state = json.loads((HERE / '랩_연결.json').read_text(encoding='utf-8')) if (HERE / '랩_연결.json').is_file() else {}
+    return [R.table('내 기대', ['질문', '기대 답', '근거'], [[r['질문'], r['기대_답'], r['근거']] for r in exp]),
+            table_of('q1', vals, '질문 1 — 조치마다 단계 · 준비 · 금지 · 완료 · 승인과 근거'),
+            table_of('q2', vals, '질문 2 — 규칙마다 근거 원문과 맞는 정도'),
+            table_of('q3', vals, '질문 3 — 이 작업이 확인하는 센서(값은 그래프 밖)'),
+            table_of('hold', vals, '보류 후보가 그래프에 있는가'),
+            R.note('Neo4j Browser로 모양을 볼 때: ' + (state.get('browser') or '랩_연결.json의 Browser 주소') + ' — 결과/query.cypher에서 그 질문의 「// Browser:」 줄의 :param부터 붙여 넣습니다. 터미널로는 「// 터미널:」 줄의 명령을 실행합니다.')]
+
+
+@guard
+def more(previous):
+    rules = G.link_rows(known())
+    have = {r['문서'] for r in rules}
+    if not set(LATER_DOCS) <= have:
+        raise R.Blank('결과/연결_규칙.csv에 다른 문서(' + ' · '.join(LATER_DOCS) + ')의 행이 아직 없습니다.')
+    st = G.load_all()
+    vals = G.ask_values()
+    c = st['compare']
+    out = [R.counts('다른 문서 추가 전후', [('노드', st['after']['nodes']), ('관계', st['after']['rels'])])]
+    if c is None:
+        out.append(R.note('추가 전 내보내기가 없습니다 — 다른 문서의 행을 처음부터 함께 채워 적재했습니다(추가 전후를 견줄 기준이 없음).'))
+    else:
+        out.append(R.counts('추가 전 그래프와 비교', [('늘어난 노드', c['added_nodes']), ('늘어난 관계', c['added_rels']), ('속성이 바뀐 기존 노드', len(c['changed_nodes'])),
+                                                 ('사라진 노드', len(c['gone_nodes'])), ('사라진 관계', len(c['lost_rels'])), ('속성이 바뀐 기존 관계', len(c['changed_rels']))]))
+        if c['changed_nodes'] or c['gone_nodes'] or c['lost_rels']:
+            out.append(R.table('바뀌거나 사라진 기존 것', ['무엇', 'ID'], [['속성 바뀜', x] for x in c['changed_nodes']] + [['사라진 노드', x] for x in c['gone_nodes']]
+                               + [['사라진 관계', ' '.join(map(str, x))] for x in c['lost_rels']]))
+    out += [table_of('q1', vals, '질문 1 — 다시'), table_of('q4', vals, '질문 4 — 더한 문서의 지식이 걸리는 대상')]
+    return out
+
+
+@guard
+def card(previous):
+    sh = shape()
+    vals = G.ask_values()
+    if 'card' not in vals or not G.now_rows():
+        raise R.Blank('결과/질문_값.csv의 card sop와 결과/현재값_원천.csv를 채웁니다.')
+    G.write(HERE / '결과/query.cypher', G.query_file(sh, vals))
+    G.write(HERE / '결과/남은_질문.json', G.dump(G.remaining(vals)))
+    sop = vals['card']['sop']
+    text = G.card_text(sop)
+    if text is None:
+        return [R.note(f'{sop}: 그래프에 그 작업이 없습니다 — 결과 없음.')]
+    G.write(HERE / f'결과/작업확인카드_{sop}.md', text)
+    exp = G.expect_rows(ITEMS)
+    return [R.table('내 기대', ['카드 항목', '기대', '근거'], [[r['질문'], r['기대_답'], r['근거']] for r in exp]), R.note(text)]
+
+
+@guard
+def card_other(previous):
+    vals = G.ask_values()
+    if 'card_other' not in vals:
+        raise R.Blank('결과/질문_값.csv의 card_other sop를 채웁니다.')
+    sop = vals['card_other']['sop']
+    text = G.card_text(sop)
+    out = []
+    if text is None:
+        out.append(R.note(f'{sop}: 그래프에 그 작업이 없습니다 — 결과 없음.'))
+    else:
+        G.write(HERE / f'결과/작업확인카드_{sop}.md', text)
+        out.append(R.note(text))
+    out += [table_of('q5_target', vals, '제공되지 않은 작업 · 대상'), table_of('q5_section', vals, '제공되지 않은 절')]
+    return out
+
+
+@guard
+def other_scope(previous):
+    vals = G.ask_values()
+    extra = [table_of('q4', vals, '질문_값.csv의 q4 doc — 그 문서의 지식이 걸리는 대상')] if 'q4' in vals else []   # 계약 밖 짝이지만 적었으면 결과를 보인다
+    return card_other(previous) + [table_of('hold', vals, '보류 후보가 그래프에 있는가(찾은 수 0이어야 함)')] + extra + scope(previous)
+
+
+@guard
+def scope(previous):
+    rows = G.now_rows()
+    if not rows:
+        raise R.Blank('결과/현재값_원천.csv에 행이 없습니다.')
+    vals = G.ask_values()
+    rq = G.remaining(vals)
+    G.write(HERE / '결과/남은_질문.json', G.dump(rq))
+    kinds = {}
+    for x in rq:
+        kinds[x['kind']] = kinds.get(x['kind'], 0) + 1
+    out = [R.table('작업 직전 확인할 현재 값과 읽을 원천(그래프에 넣지 않음)', ['작업', '확인할 값', '읽을 원천', '근거'], [[r['작업'], r['확인할_값'], r['읽을_원천'], r['근거']] for r in rows]),
+           R.counts('남은 질문(결과/남은_질문.json)', sorted(kinds.items()))]
+    if not PRACTICAL:
+        out += [table_of('q3', vals, '질문 3 — 이 작업이 확인하는 센서'), table_of('q5_target', vals, '질문 5 — 제공되지 않은 작업 · 대상'), table_of('q5_section', vals, '질문 5 — 제공되지 않은 절')]
+    return out
+
+
+@guard
+def save(previous):
+    import lab_cypher, subprocess, sys
+    vals = G.ask_values()
+    G.write(HERE / '결과/남은_질문.json', G.dump(G.remaining(vals)))
+    graph = G.export_graph()
+    graph['remaining_questions'] = json.loads((HERE / '결과/남은_질문.json').read_text(encoding='utf-8'))
+    G.write(HERE / '결과/지식_내보내기.json', G.dump(graph))
+    c = G.counts()
+    run = subprocess.run([sys.executable, str(HERE / 'check.py')], capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=HERE)
+    return [R.counts('내보내기(결과/지식_내보내기.json)', [('노드', len(graph['nodes'])), ('관계', len(graph['rels'])), ('남은 질문', len(graph['remaining_questions'])),
+                                                     ('랩 DB 노드', c['nodes']), ('랩 DB 관계', c['rels'])]),
+            R.note('python check.py 출력(끝 12줄, 종료 코드 ' + str(run.returncode) + ')\n' + '\n'.join(run.stdout.strip().splitlines()[-12:]))]
+
+
+__STEPS__
+'''
+
+
+def gstep_order(key):
+    if key == 'practical-03-card':
+        return ['db', 'expect', 'plan', 'link', 'other', 'card', 'other_scope', 'save']
+    return ['look', 'expect', 'db', 'plan', 'link', 'other', 'ask123', 'more', 'scope', 'save']
+
+
+def graph_steps_source(key, L):
+    slots = {'expect': ['결과/기대_답.csv'], 'plan': ['결과/그래프_모양.json'], 'link': ['결과/연결_규칙.csv', '결과/역할.csv'], 'other': ['결과/다른문서_조건.csv'],
+             'ask123': ['결과/질문_값.csv'], 'card': ['결과/현재값_원천.csv'], 'scope': ['결과/현재값_원천.csv'], 'other_scope': ['결과/현재값_원천.csv']}
+    runs = {'db': 'look_db' if key == 'practical-03-card' else 'db', 'look': 'look', 'expect': 'expect', 'plan': 'plan', 'link': 'link', 'other': 'other', 'ask123': 'ask123', 'more': 'more', 'card': 'card',
+            'card_other': 'card_other', 'scope': 'scope', 'other_scope': 'other_scope', 'save': 'save'}
+    lines = ['STEPS = [']
+    for no, (k, s) in enumerate(zip(gstep_order(key), L['steps']), 1):
+        lines.append(f'    dict(no={no}, name={s["name"]!r}, slots={slots.get(k, [])!r}, run={runs[k]}),')
+    lines.append(']')
+    return (GRAPH_STEPS.replace('__TITLE__', L['title']).replace('__PRACTICAL__', str(key == 'practical-03-card')).replace('__TASK__', TASK)
+            .replace('__LATER__', repr(LATER_DOCS)).replace('__ITEMS__', repr(CARD_HEADINGS if key == 'practical-03-card' else None)).replace('__STEPS__', '\n'.join(lines) + '\n'))
 
 
 GRAPH_CONTRACT = '''# 입출력 계약
@@ -1421,7 +1889,7 @@ __INPUT_SELECTED__- `자료/` — 검토한 문서의 원문과 `자료/문서_�
 - `결과/` 아래 적재 파일(`.cypher`, 또는 적재 문장을 만드는 코드와 그 출력) — 같은 파일을 다시 실행해도 노드 · 관계 수가 늘지 않는다. 전체를 지우는 문장은 쓰지 않는다.
 - `결과/query.cypher` — 질문마다의 조회문(읽기만).
 - `결과/지식_내보내기.json` — `python lab_cypher.py export 결과/지식_내보내기.json`이 쓴다. 꼴은 `입력/모델/graph.json`과 같고(`nodes` · `rels`), `remaining_questions`가 더 있다. 다음 실습에 넘길 판본이다.
-- `결과/남은_질문.json` — 그래프에 넣지 않은 것 가운데 답하려면 더 알아야 하는 것. `[{"item": "…", "kind": "보류 | 원문 미확인 | 제공되지 않은 절 | 제공되지 않은 문서 | 현재 값 필요", "source": "…", "note": "…"}]`. 내보내기가 이 목록을 `remaining_questions`에 넣는다.
+- `결과/남은_질문.json` — 그래프에 넣지 않은 것 가운데 답하려면 더 알아야 하는 것. `[{"item": "…", "kind": "보류 | 원문 미확인 | 제공되지 않은 절 | 제공되지 않은 대상 | 제공되지 않은 문서 | 현재 값 필요", "source": "…", "note": "…"}]`. 내보내기가 이 목록을 `remaining_questions`에 넣는다.
 - `결과/구축_기록.md` — 「제공 빈 틀」의 칸대로 채운다.
 __CARD__'''
 CARD_CONTRACT = '''
@@ -1436,187 +1904,6 @@ CARD_CONTRACT = '''
 - `작업 직전 확인할 현재 값`은 문서의 기준값과 구별하고, 그 값을 읽을 원천(시스템 이름)을 적는다. 값 자체는 카드에 적지 않는다.
 - `승인`은 원문에 적힌 승인 역할이다. 카드는 승인을 대신하지 않는다.
 - `남은 질문`에는 원문이 정하지 않은 것, 적재하지 않은 후보 때문에 답하지 못하는 것, 원문 절 · 문서가 제공되지 않은 것을 적는다.
-'''
-
-
-def graph_contract(key):
-    practical = key == 'practical-03-card'
-    judge = (INPUT_TABLE.replace('`입력/조건표.csv` — 조건표.', '`입력/조건표.csv` — 냉각 계통 조치의 조건표.') + INPUT_SOP
-             + (INPUT_JUDGED['practical-03-extract'] if practical else ''))
-    selected = ('- `입력/검토결과/선택작업_조건.json` — 이 사건의 작업(`task`)의 준비 · 금지 · 완료 항목(`preparation` · `prohibitions` · `completion` — 항목마다 검토 결과의 승인 후보 `candidate` · `doc_id` · `rev` · `section` · `quote` · `decision`)과 '
-                '`remaining_questions`(승인하지 않은 것 · 원문을 확인하지 못한 것 · 제공되지 않은 절).\n' if practical else '')
-    return (GRAPH_CONTRACT.replace('__INPUT_JUDGE__', judge).replace('__INPUT_SELECTED__', selected)
-            .replace('__CARD__', CARD_CONTRACT if practical else ''))
-
-
-LAB_CYPHER = r'''"""이 폴더 전용 랩 DB(lab_db.py가 켠 컨테이너)에 Cypher를 실행하는 도구. 포털 DB에 접속하지 않는다.
-사용:
-  python lab_cypher.py model                       설비 모델과 조치 기준(SOP 구조 · 조건표) 적재(입출력_계약.md 2절)
-  python lab_cypher.py run 결과/<파일>.cypher        파일의 문장을 차례로 실행(문장은 줄 끝 ; 로 구분, 전체를 지우는 문장은 실행하지 않음)
-  python lab_cypher.py count                       전체 · 종류별 노드 수와 관계별 수
-  python lab_cypher.py export 결과/지식_내보내기.json  그래프를 설비 모델 graph.json과 같은 꼴로 내보냄(결과/남은_질문.json이 있으면 함께)
-결과/내_입력/에 입력/과 같은 이름의 파일이 있으면 model은 그 파일을 쓴다.
-"""
-from pathlib import Path
-import csv, io, json, re, sys, urllib.request, urllib.error
-
-HERE = Path(__file__).resolve().parent
-STATE = HERE / '랩_연결.json'
-WIPE = re.compile(r'MATCH\s*\(\s*\w*\s*\)\s*(DETACH\s+)?DELETE', re.I)
-
-
-def source(rel):
-    mine = HERE / '결과/내_입력' / rel
-    return mine if mine.is_file() else HERE / '입력' / rel
-
-
-def endpoint():
-    if not STATE.is_file():
-        raise RuntimeError('랩_연결.json이 없습니다. 먼저 python lab_db.py 를 실행하세요.')
-    return json.loads(STATE.read_text(encoding='utf-8'))['http'] + '/db/neo4j/tx/commit'
-
-
-def cypher(statements):
-    body = json.dumps({'statements': [{'statement': s, 'parameters': p, 'includeStats': True} for s, p in statements]}).encode()
-    req = urllib.request.Request(endpoint(), body, {'Content-Type': 'application/json', 'Accept': 'application/json'})
-    try:
-        with urllib.request.urlopen(req, timeout=60) as r:
-            data = json.loads(r.read())
-    except urllib.error.URLError as e:
-        raise RuntimeError(f'랩 DB에 연결하지 못했습니다({e}). python lab_db.py 로 DB를 다시 준비하세요.')
-    if data.get('errors'):
-        raise RuntimeError('; '.join(e.get('message', '') for e in data['errors']))
-    return data['results']
-
-
-def show(result):
-    cols = result['columns']
-    rows = [r['row'] for r in result['data']]
-    if cols:
-        print(' | '.join(cols))
-        for row in rows[:50]:
-            print(' | '.join(json.dumps(v, ensure_ascii=False) if not isinstance(v, str) else v for v in row))
-        if len(rows) > 50:
-            print(f'… 외 {len(rows) - 50}행')
-        print(f'({len(rows)}행)')
-    stats = {k: v for k, v in result.get('stats', {}).items() if isinstance(v, int) and v}
-    if stats:
-        print('변경:', stats)
-
-
-def table_rows():
-    lines = [x for x in source('조건표.csv').read_text(encoding='utf-8-sig').splitlines() if x.strip()]
-    return list(csv.DictReader(io.StringIO('\n'.join(lines))))
-
-
-def model():
-    graph = json.loads(source('모델/graph.json').read_text(encoding='utf-8'))
-    sop = json.loads(source('sop.json').read_text(encoding='utf-8'))
-    stmts = []
-    by_label = {}
-    for n in graph['nodes']:
-        by_label.setdefault(n['labels'][0], []).append(n['props'])
-    stmts += [(f'UNWIND $rows AS p MERGE (n:`{label}` {{id:p.id}}) SET n += p', {'rows': rows}) for label, rows in by_label.items()]
-    by_type = {}
-    for r in graph['rels']:
-        by_type.setdefault(r['type'], []).append({'a': r['a'], 'b': r['b'], 'props': r['props']})
-    stmts += [(f'UNWIND $rows AS r MATCH (a {{id:r.a}}), (b {{id:r.b}}) MERGE (a)-[x:`{t}`]->(b) SET x += r.props', {'rows': rows}) for t, rows in by_type.items()]
-    stmts.append(('UNWIND $rows AS p MERGE (n:FailureMode {id:p.id}) SET n += p', {'rows': sop['failure_modes']}))
-    stmts.append(('UNWIND $rows AS p MERGE (n:Cause {id:p.id}) SET n += p', {'rows': sop['causes']}))
-    skills, steps, acts, checks = [], [], [], []
-    for s in sop['sops']:
-        skills.append({'id': s['id'], 'name': s['name'], 'kind': s['kind'], 'codes': s['codes'], 'source': s['source'],
-                       'apply_conditions': [x['text'] for x in s['apply_conditions']], 'prohibitions': [x['text'] for x in s['prohibitions']],
-                       'completion': [x['text'] for x in s['completion']], 'approval_role': s['approval']['role'], 'approval_source': s['approval']['source']})
-        steps += [{'skill': s['id'], 'props': {'id': f'{s["id"]}:{st["order"]}', 'order': st['order'], 'text': st['text'], 'source': st['source']}} for st in s['steps']]
-        acts += [{'skill': s['id'], 'to': c} for c in s['model_refs'].get('components', [])]
-        checks += [{'skill': s['id'], 'to': c} for c in s['model_refs'].get('sensors', [])]
-    stmts.append(('UNWIND $rows AS p MERGE (n:Skill {id:p.id}) SET n += p', {'rows': [{k: v for k, v in x.items() if v is not None} for x in skills]}))
-    stmts.append(('UNWIND $rows AS r MATCH (s:Skill {id:r.skill}) MERGE (t:Step {id:r.props.id}) SET t += r.props MERGE (s)-[:HAS_STEP]->(t)', {'rows': steps}))
-    stmts.append(('UNWIND $rows AS r MATCH (s:Skill {id:r.skill}), (c {id:r.to}) MERGE (s)-[:ACTS_ON]->(c)', {'rows': acts}))
-    stmts.append(('UNWIND $rows AS r MATCH (s:Skill {id:r.skill}), (c {id:r.to}) MERGE (s)-[:CHECKS]->(c)', {'rows': checks}))
-    for t in sorted({r['type'] for r in sop['relations']}):
-        rows = [{'a': r['from'], 'b': r['to'], 'source': r.get('source')} for r in sop['relations'] if r['type'] == t]
-        stmts.append((f'UNWIND $rows AS r MATCH (a {{id:r.a}}), (b {{id:r.b}}) MERGE (a)-[x:`{t}`]->(b) SET x.source = r.source', {'rows': rows}))
-    rules, outputs = {}, {}
-    for r in table_rows():
-        rule = rules.setdefault(r['rule_id'], {'id': r['rule_id'], 'effect': r['result'], 'penalty_manwon': r['penalty_manwon'] or None, 'conditions': {}})
-        rule['conditions'].setdefault(r['condition_index'], f'{r["input"]} {r["operator"]} {r["value"]} {r["unit"]}'.strip())
-        outputs[(r['rule_id'], r['action'])] = {'rule': r['rule_id'], 'skill': r['action'], 'reason': r['reason'], 'source_section': r['source_section']}
-    rows = [{'id': x['id'], 'effect': x['effect'], 'when': ' AND '.join(x['conditions'][k] for k in sorted(x['conditions'])),
-             **({'penalty_manwon': float(x['penalty_manwon'])} if x['penalty_manwon'] else {})} for x in rules.values()]
-    stmts.append(('UNWIND $rows AS p MERGE (n:Rule {id:p.id}) SET n += p', {'rows': rows}))
-    stmts.append(('UNWIND $rows AS r MATCH (a:Rule {id:r.rule}), (b:Skill {id:r.skill}) MERGE (a)-[x:OUTPUTS]->(b) SET x.reason = r.reason, x.source_section = r.source_section',
-                  {'rows': list(outputs.values())}))
-    cypher(stmts)
-    print(f'설비 모델과 조치 기준 적재: 설비 모델 노드 {len(graph["nodes"])}개 · 관계 {len(graph["rels"])}개, SOP {len(skills)}개 · 단계 {len(steps)}개, 규칙 {len(rows)}개 입력(다시 실행해도 늘지 않음)')
-    count()
-
-
-def statements(text):
-    parts, buf = [], []
-    for line in text.splitlines():
-        if line.strip().startswith('//') and not buf:
-            continue
-        buf.append(line)
-        if line.rstrip().endswith(';'):
-            parts.append('\n'.join(buf).rstrip().rstrip(';'))
-            buf = []
-    if '\n'.join(buf).strip():
-        parts.append('\n'.join(buf))
-    return parts
-
-
-def run(path):
-    parts = statements(Path(path).read_text(encoding='utf-8-sig'))
-    for i, s in enumerate(parts, 1):
-        if WIPE.search(s):
-            raise RuntimeError(f'{i}번째 문장: 전체를 지우는 문장은 이 랩에서 실행하지 않습니다. 필요한 대상만 고치세요.')
-    for i, s in enumerate(parts, 1):
-        print(f'-- {i}/{len(parts)}')
-        try:
-            show(cypher([(s, {})])[0])
-        except RuntimeError as e:
-            raise RuntimeError(f'{path} {i}번째 문장 실패: {e}')
-
-
-def count():
-    res = cypher([('MATCH (n) RETURN count(n) AS nodes', {}), ('MATCH ()-[r]->() RETURN count(r) AS rels', {}),
-                  ('MATCH (n) UNWIND labels(n) AS label RETURN label, count(*) AS n ORDER BY label', {}),
-                  ('MATCH ()-[r]->() RETURN type(r) AS t, count(*) AS n ORDER BY t', {})])
-    print(f'전체 노드 {res[0]["data"][0]["row"][0]}개, 관계 {res[1]["data"][0]["row"][0]}개')
-    print('종류별:', ', '.join(f'{r["row"][0]} {r["row"][1]}' for r in res[2]['data']))
-    print('관계별:', ', '.join(f'{r["row"][0]} {r["row"][1]}' for r in res[3]['data']))
-
-
-def export(path):
-    res = cypher([('MATCH (n) RETURN labels(n) AS labels, properties(n) AS props', {}),
-                  ('MATCH (a)-[r]->(b) RETURN type(r) AS type, a.id AS a, b.id AS b, properties(r) AS props', {})])
-    nodes = sorted(({'labels': sorted(r['row'][0]), 'props': r['row'][1]} for r in res[0]['data']), key=lambda n: (n['labels'], str(n['props'].get('id'))))
-    rels = sorted(({'type': r['row'][0], 'a': r['row'][1], 'b': r['row'][2], 'props': r['row'][3]} for r in res[1]['data']), key=lambda r: (r['type'], str(r['a']), str(r['b'])))
-    questions = HERE / '결과/남은_질문.json'
-    out = {'nodes': nodes, 'rels': rels, 'remaining_questions': json.loads(questions.read_text(encoding='utf-8')) if questions.is_file() else []}
-    Path(path).parent.mkdir(parents=True, exist_ok=True)
-    Path(path).write_text(json.dumps(out, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
-    print(f'{path}: 노드 {len(nodes)}개 · 관계 {len(rels)}개 · 남은 질문 {len(out["remaining_questions"])}개를 내보냈습니다.')
-
-
-if __name__ == '__main__':
-    try:
-        if sys.argv[1:2] == ['model']:
-            model()
-        elif sys.argv[1:2] == ['run'] and len(sys.argv) == 3:
-            run(sys.argv[2])
-        elif sys.argv[1:2] == ['count']:
-            count()
-        elif sys.argv[1:2] == ['export'] and len(sys.argv) == 3:
-            export(sys.argv[2])
-        else:
-            print(__doc__)
-            sys.exit(2)
-    except (OSError, ValueError, KeyError, RuntimeError) as e:
-        print('실행 확인 필요: ' + str(e))
-        sys.exit(1)
 '''
 
 
@@ -1762,7 +2049,7 @@ def check_loads(todo, known, cands):
         elif dels:
             print(f'    참고: {p.name} {", ".join(map(str, dels))}줄에 DELETE — 적재문은 만들고 고치는 문장만 두어 다시 실행해도 같은 결과가 나오게 합니다.')
         tokens = set(re.findall(r'[\w:.@#-]+', body))
-        used = sorted(x for x in tokens if held(x, cands))
+        used = sorted(x for x in tokens if held(x, cands)) if p.name != 'query.cypher' else []   # 조회문은 보류 확인에서 보류 후보를 일부러 묻는다
         if used:
             todo.append(f'{p.name}: 승인(approved)이 아닌 후보 id를 가리킵니다 — {", ".join(used[:8])}')
         for lit in ID_LITERAL.findall(body):
@@ -1952,6 +2239,19 @@ def check_cards(todo):
         todo.append('이 사건의 작업과 다른 작업 하나 이상의 카드가 필요합니다.')
 
 
+def slot_errors():
+    """정할 자리의 꼴 — 제공 코드(doc_graph.py)의 검사로 본다."""
+    import doc_graph as G
+    out = []
+    known = G.model_ids()[0]
+    for fn in (G.shape, lambda: G.link_rows(known), lambda: G.alias_rows(known), lambda: G.other_rows(known), G.role_rows, G.now_rows):
+        try:
+            fn()
+        except G.Problem as e:
+            out.append(f'정할 자리: {e}')
+    return out
+
+
 def main():
     todo = []
     known = known_ids()
@@ -1973,6 +2273,7 @@ def main():
     check_record(todo, 5)
     if PRACTICAL:
         check_cards(todo)
+    todo += slot_errors() + chosen_errors(HERE) + provided_errors(HERE)
     print()
     if todo:
         print('완료 아님 — 남은 것:')
@@ -1999,338 +2300,234 @@ def graph_checker(key):
             .replace('__CARD_DOC__', ' · 작업 확인 카드' if practical else ''))
 
 
-# ───────────── 그래프 랩 결과 틀 · README ─────────────
-def graph_record(key):
+WHY_SHAPE = ('스키마의 종류(이론의 클래스)는 그래프의 레이블이 되고, 대상 하나(이론의 인스턴스)를 저장한 것이 노드입니다. '
+             'ID는 그래프 전체에서 하나여야 해서, ID를 어떻게 짓느냐에 따라 서로 다른 대상(문서가 다른 같은 번호의 절, 판이 다른 같은 문서)이 한 노드로 합쳐지거나 다시 적재할 때 늘어납니다.')
+WHY_LINK = ('문서 속 대상은 모델과 다른 이름(설비 모델명 · 제조사 품번)으로 적혀 있어, 어느 기존 ID를 가리키는지 정해야 새 대상을 지어내지 않고 기존 ID에 잇습니다. '
+            '승인한 것만 이어야 이 지식을 쓰는 쪽이 근거 있는 지식만 씁니다.')
+WHY_AGAIN = 'CREATE는 실행할 때마다 새로 만들고 MERGE는 같은 ID가 있으면 찾으므로, ID가 맞아야 다시 넣어도 늘지 않습니다.'
+
+
+def PG(N, rec, cols):
+    """실전 카드 랩 단계 글(실전반 지침 P-9 — 앞 실습과 같은 도구 · 기본 조작은 되풀이하지 않고 판단 · 근거 · 결과 확인만)."""
+    C = F.CHOSEN_FILE
+    return {
+        'db': dict(why='이 폴더 전용 랩 DB에서 하므로 포털에 영향이 없고, 먼저 수를 적어 두어야 뒤에서 늘어난 수를 셉니다.',
+                   do=f'`python lab_db.py`로 랩 DB를 켜고 `{SHOW}`를 실행해 설비 모델 · 조치 기준의 종류별 수를 `{rec}` 「적재 수」 첫 줄에 적습니다.',
+                   ask='주소가 `127.0.0.1`의 이 폴더 전용인지 봅니다.', evidence=f'「랩 DB 준비 완료」가 나오고 1단계 수를 적었습니다.',
+                   hint=H('랩 DB를 켜고 앞 판을 올려 센다', '`lab_db.py`, `입력/`', '포털 DB에 접속하지 않는다', '「적재 수」 첫 줄', '`입력/` 파일에서 센 수와 견준다'),
+                   differ=''),
+        'expect': dict(why='조회 결과를 본 뒤에 기대를 적으면 빠진 연결이 기대에 맞춰 사라집니다.',
+                       do=f'`결과/기대_답.csv`에 카드 항목마다 기대를 원문 · 검토 결과의 파일:줄로, `{rec}`에 목표 · 쓰는 사람 · 기대 칸을 쓴 시각을 적습니다.' + F.REQ_AFTER,
+                       ask='기대를 1단계 승인 후보와 원문 줄에서 찾습니다.', evidence=f'{N["expect"]}단계에 기대와 근거마다 원문 줄이 보입니다.',
+                       hint=H('조회 전에 카드 기대를 적는다', '결과 화면, `자료/` 원문, `입력/검토결과/선택작업_조건.json`', 'AI 출력을 기대로 옮기지 않는다.' + cols('기대_답.csv'), '`결과/기대_답.csv`의 행', f'{N["expect"]}단계 표'),
+                       differ='원문 글자가 깨져 보이면 VS Code 오른쪽 아래 **UTF-8** → **Reopen with Encoding → Korean (EUC-KR)**으로 엽니다.'),
+        'plan': dict(why='ID를 어떻게 짓느냐에 따라 다른 대상이 한 노드로 합쳐지거나 다시 적재할 때 늘어납니다.',
+                     do=f'`결과/그래프_모양.json`에 문서 · 판 · 절 · 지식과 관계의 이름 · 뜻 · ID 꼴을 정하고 까닭을 `{C}`에 적은 뒤 `{SHOW}`로 적재 없이 센 수를 봅니다.',
+                     ask='무엇으로 같은 대상을 알아볼지(ID) 정합니다.', evidence=f'{N["plan"]}단계에 지을 노드 수가 보이고 겹침이 없습니다.',
+                     hint=H('모양과 ID 꼴을 정한다', '`입력/모델/schema.json`, 계약 「정할 자리」', '기존 종류 이름을 다른 뜻으로 쓰지 않는다. 다시 적재해도 늘지 않게', '`결과/그래프_모양.json` · 정한 것 한 줄', f'{N["plan"]}단계 겹침 목록'),
+                     differ='「같은 ID에 서로 다른 대상이 겹침」이면 ID 꼴에 빠진 자리(문서 · 판)를 더합니다. 지식을 조치에 잇는 관계는 다음 단계 연결 규칙에서 정합니다.'),
+        'link': dict(why='승인한 것만 기존 ID에 이어야 카드가 근거 있는 지식만 씁니다.',
+                     do=f'`결과/연결_규칙.csv`에 카드에 닿는 문서(와 절)의 승인 후보를 어느 기존 ID에 이을지, 필요하면 `결과/별칭.csv` · `결과/역할.csv`를 적고 `{SHOW}`로 적재합니다.',
+                     ask='문서마다 잇는 방법과 그 근거를 정합니다.', evidence=f'{N["link"]}단계에 적재 전후 수와 「핀 세척과 그 단계에 이은 지식」 표가 보이고, 몇 행을 원문 줄로 확인했습니다.',
+                     hint=H('승인 후보를 기존 ID에 잇는 규칙을 정한다', '결과 화면, `입력/모델/graph.json` · `입력/sop.json`, 원문', '승인 후보만, 모델에 없는 ID를 지어내지 않는다.' + cols('연결_규칙.csv') + ' 별칭' + cols('별칭.csv') + ' 역할' + cols('역할.csv'),
+                            '세 표의 행', f'{N["link"]}단계 표'),
+                     differ='빨간 칸의 파일:줄을 고칩니다.'),
+        'other': dict(why='다른 문서의 조건은 그 문서의 적용 범위와 이 작업을 말하는 사내 문장이 어긋날 수 있어 사람이 정합니다.',
+                      do=f'핀 세척에 걸 다른 문서의 조건(시간 · 승인 · 준비)을 `결과/다른문서_조건.csv`에 잇는다 · 잇지 않는다로, 고른 것을 `{C}`에 적고 `{SHOW}`를 두 번 실행해 수가 늘지 않는지 봅니다.',
+                      ask='적용 범위 절과 이 작업을 말하는 사내 문장을 열어 정하고, 잇지 않는 문장도 「아니오」 행으로 남깁니다.',
+                      evidence=f'{N["other"]}단계에 고른 행 · 근거 원문 줄이 보이고 두 번째 수가 직전과 같습니다.',
+                      hint=H('다른 문서의 조건을 이을지 정한다', '원문, 결과 화면', '이 작업에 걸 조건만 정한다.' + cols('다른문서_조건.csv'), '`결과/다른문서_조건.csv` · 정한 것 한 줄', '두 번 실행 — 수가 같음'),
+                      differ='두 번째에 수가 늘면 ID 꼴을 고칩니다.'),
+        'card': dict(why='기준값은 문서에서, 작업 직전의 현재 값은 원천에서 오므로 섞지 않습니다.',
+                     do=f'`결과/질문_값.csv`에 물을 작업 · 절을, `결과/현재값_원천.csv`에 확인할 현재 값과 원천을 적고 `{SHOW}`로 `결과/작업확인카드_{TASK}.md`를 기대와 견줘 `{rec}`에 적습니다.',
+                     ask='작업 직전에 다시 볼 값과 그 원천을 정합니다(값은 적지 않음).', evidence=f'{N["card"]}단계 카드의 준비 · 금지 · 순서 · 완료마다 원문 인용이 있고, 현재 값 칸에는 원천 이름만 있습니다.',
+                     hint=H('카드를 만들고 현재 값은 읽을 곳만 적는다', '결과 화면, `결과/기대_답.csv`, 원문', '현재 값 · 승인을 추정으로 채우지 않는다. 질문 값' + cols('질문_값.csv') + ' 현재 값' + cols('현재값_원천.csv'),
+                            '두 표의 행', '카드 항목 몇 개를 원문 줄로 연다'),
+                     differ=F.FIX_LOOP),
+        'other_scope': dict(why='같은 방법이 다른 작업에도 통하고 없는 것에 「결과 없음」을 돌려줘야 기능입니다.',
+                            do=f'`{SHOW}`로 다른 작업의 카드 · 제공되지 않은 작업과 절 · 남은 질문을 보고 `{rec}` 「다른 작업 · 제공되지 않은 것」과 「답할 수 있는 것과 없는 것」에 적습니다.',
+                            ask='질문마다 그래프로 답함 · 현재 값 · 승인 · 공급 정보 · 원문에 없음 가운데 어느 쪽인지와 근거를 말합니다.',
+                            evidence=f'{N["other_scope"]}단계에 두 번째 카드 · 「찾은 수 0」 · 남은 질문 수가 보이고 두 표에 근거가 있습니다.',
+                            hint=H('다른 작업 · 없는 것에 대 보고 답할 범위를 나눈다', '`입력/조치검토결과.json`의 `review`, `자료/문서_목록.csv`', '원문에 없는 작업 · 절을 만들지 않는다', '기록 두 표', '문서 목록과 원문 목차를 직접 본다'),
+                            differ=F.FIX_LOOP),
+        'save': dict(why=F.WHY_SAVE,
+                     do=f'`{SHOW}`의 마지막 단계가 내보내기와 `python check.py`를 돌립니다. 저장 뒤 폴더를 닫았다 다시 열어 `python lab_db.py` · `{SHOW}`를 다시 실행하고 `{rec}` 끝에 기준일 · 저장 시점 · 확인하지 못한 점을 적습니다.',
+                     ask='확인하지 못한 점으로 무엇을 남길지 정합니다.', evidence='다시 연 뒤에도 수와 카드가 같고, 마지막 단계의 check.py 출력에 「구조상 빠진 단계는 없습니다」가 있습니다.', cmd=f'python lab_db.py\n{SHOW}',
+                     hint=H('내보내고 다시 열어 같은지 본다', '결과 화면, 「저장 기록」', '내보내기를 손으로 고치지 않는다', '저장 기록', '다시 연 뒤 수를 앞과 견준다'),
+                     differ='「이 PC의 Docker에 없습니다」면 새 빈 랩 DB이니 `python show_result.py`가 다시 적재합니다.'),
+    }
+
+
+def graph_steps(key):
     practical = key == 'practical-03-card'
-    expect = ('## 카드 항목별 기대 — 카드를 만들기 전에 원문 · 검토 결과 · 기록에서\n\n- 기대 칸을 쓴 시각:\n\n| 카드 항목 | 기대(근거 파일 · 줄 · 후보 id · 기록 번호) | 실제 카드 | 같음 · 다름과 까닭 |\n|---|---|---|---|\n| | | | |\n\n'
-              if practical else
-              '## 질문별 기대 답 — 조회 전에 원문 · 검토 결과에서\n\n- 기대 칸을 쓴 시각:\n\n| 질문 | 기대 답(근거 파일 · 줄 · 후보 id) | 실제 조회 결과 | 같음 · 다름과 까닭 |\n|---|---|---|---|\n| | | | |\n\n')
-    counts = ('## 적재 수\n\n| 시점 | 노드 수 | 관계 수 | 확인한 것 |\n|---|---|---|---|\n| 설비 모델 · 조치 기준 적재 뒤 | | | |\n| 첫 적재 뒤 | | | |\n| 같은 적재 다시 | | | |\n'
-              + ('' if practical else '| 다른 문서 추가 뒤 | | | |\n') + '\n')
-    added = ('' if practical else
-             '## 다른 문서 추가 뒤 기존 연결\n\n| 확인한 기존 ID · 관계 | 추가 전 | 추가 뒤 | 같음 · 다름 |\n|---|---|---|---|\n| | | | |\n\n')
-    other = ('## 다른 작업 · 제공되지 않은 것\n\n| 물은 것 | 조회문 · 명령 | 결과 | 원문 · 목록 근거 |\n|---|---|---|---|\n| | | | |\n\n' if practical else
-             '## 보류 후보 · 제공되지 않은 것 조회\n\n| 물은 것 | 조회문 | 결과 | 원문 · 목록 근거 |\n|---|---|---|---|\n| | | | |\n\n')
-    scope = ('## 답할 수 있는 것과 없는 것\n\n| 질문 | 그래프로 답함 · 현재 값 필요 · 승인 필요 · 공급 정보 · 원문에 없음 | 근거(원천 이름 · 파일) |\n|---|---|---|\n| | | |\n\n' if practical else
-             '## 답할 수 있는 것과 없는 것\n\n| 질문 | 그래프로 답함 · 현재 값 필요 · 추가 자료 필요 · 원문에 없음 | 근거(원천 이름 · 파일) |\n|---|---|---|\n| | | |\n\n')
-    return ('# 온톨로지 구축 기록\n\n> 제공 빈 틀입니다. 보관하지 말고 바로 채웁니다.\n\n## 목표와 질문\n\n## 이 답을 쓰는 사람과 쓰는 곳\n\n'
-            '## 정한 것\n\n| 지점(종류) | 고른 것 | 근거(파일 · 줄) | 이 선택으로 바뀌는 답 |\n|---|---|---|---|\n| | | | |\n\n'
-            + expect +
-            '## 스키마 확장\n\n| 새 종류 · 관계 | 뜻 | 잇는 기존 종류 | 근거 |\n|---|---|---|---|\n| | | | |\n\n'
-            '## 입력 문서와 검토 결과\n\n| 검토 결과 파일 | 문서 · 판 · 상태 | SHA-256 앞 12자리 | 적재한 승인 후보 수 | 적재하지 않은 후보 수(보류 · 제외) |\n|---|---|---|---|---|\n| | | | | |\n\n'
-            + counts + added + other + scope +
-            '## 남은 질문\n\n## 저장 기록\n\n- 랩 DB 주소(인증값 제외):\n- 기준일:\n- 저장 시점:\n- 확인하지 못한 점:\n')
-
-
-def graph_result_readme(key):
-    card = ' · 작업 확인 카드(`작업확인카드_<SOP ID>.md`)' if key == 'practical-03-card' else ''
-    return ('이번 과제의 스키마 확장(`schema_ext.json`) · 적재 파일 · 조회문(`query.cypher`) · 내보내기(`지식_내보내기.json`) · 남은 질문(`남은_질문.json`)' + card + ' · `구축_기록.md`와 만든 코드를 여기에 저장합니다.\n'
-            '내 앞 결과를 쓰면 `내_입력/`에 `입력/`과 같은 이름 · 같은 자리로 복사해 둡니다.\n'
-            '다시 열 때는 `python lab_db.py`로 랩 DB를 다시 켜고, `구축_기록.md`의 적재 수와 `python lab_cypher.py count` · 조회 결과를 함께 봅니다.\n')
-
-
-def graph_input_readme(key, files, n_events):
-    practical = key == 'practical-03-card'
-    stems = sorted(n[:-len('_검토.json')] for n in files if n.endswith('_검토.json'))
-    return ('# 입력 — 읽기만 합니다\n\n조치를 판정하는 실습과 문서에서 지식을 추출 · 검토하는 실습을 하지 않았거나 PC가 초기화돼도 시작할 수 있게, 그 실습들의 결과와 같은 꼴로 검증해 제공하는 판입니다. 형식과 키의 뜻은 `입출력_계약.md` 「입력」에 있습니다.\n\n'
-            '- `모델/schema.json` · `모델/graph.json` — 설비 · 구성 요소 · 센서 · 물리량 · 부품' + (' · 공급사' if practical else '') + ' 모델(원자료 기준일 2026-10-15). '
-            '그 뒤 들어온 수정본은 냉각 계통의 ID를 바꾸지 않아 이 판을 그대로 씁니다.\n'
-            '- `조건표.csv` · `sop.json` — 냉각 계통 조치의 조건표와 SOP 구조.\n'
-            + (f'- `조치검토결과.json` — 지난 30일(2026-09-28 ~ 10-27) 경보 {n_events}건을 위 조건표로 판정 · 비교한 조치 검토 결과.\n' if practical else '')
-            + f'- `검토결과/` — 문서 {len(stems)}개({", ".join(stems)})에서 뽑은 후보를 원문과 대조해 결정을 적은 검토 결과' + (' · 이 사건의 작업의 조건(`선택작업_조건.json`)' if practical else '') + '.\n')
-
-
-# ───────────── 그래프 랩 문장(START · 단계) — 지점7의 답 · 보류 후보 · 질문별 기대 답 · ID 짓는 법 · 제공되지 않은 것은 쓰지 않는다(구성안 7.3) ─────────────
-GDECIDE = [('다른 문서의 조건', '다른 문서가 정한 조건 · 시간 · 승인을 이 작업에 이을지 — 어느 문서의 어느 문장인지는 탐색에서 찾습니다')]
-GSTAGE = '과정은 온톨로지 → 에이전트 → 프로세스 순서로 올라갑니다. 이 실습은 온톨로지 단계의 마지막 — 검토한 문서 지식을 그래프에 잇고 질문으로 확인하는 일 — 을 맡습니다.'
-WHY_PHASE = ('ID는 그래프 전체에서 하나여야 합니다. 같은 판의 같은 절이라도 문서가 다르면 다른 대상이고, 같은 문서라도 판이 다르면 다른 대상입니다 — '
-             '무엇으로 같은 대상을 알아볼지 정해 두어야 다시 적재해도 늘지 않고 다른 문서를 더해도 겹치지 않습니다.')
-TERMS_GRAPH = ('**적재**는 대상 · 관계를 그래프 DB에 넣는 일이고, **스키마 확장**은 문서 근거를 담으려고 설비 모델에 더하는 새 종류 · 관계와 그 뜻입니다. '
-               '**승인 후보**는 검토 결과에서 결정이 채택 · 수정(상태 `approved`)인 후보이고, 보류 · 제외 후보는 적재하지 않습니다. '
-               '**현재 값**은 재고 · 작업지시 상태 · 센서 값처럼 계속 바뀌어 그 값이 기록되는 시스템(원천)에서 읽어야 하는 값입니다 — 센서 값은 시계열 DB, '
-               '정비 작업지시는 CMMS(설비 보전 관리 시스템), 재고는 ERP(전사 자원 관리 시스템), 생산 실행은 MES(생산 실행 시스템)에 기록됩니다. '
-               '**내보내기**는 그래프의 대상 · 관계를 다음 실습에 넘길 파일 하나로 쓰는 일입니다. ')
-TERMS_CARD = '**작업 확인 카드**는 작업자가 작업 전에 준비 · 금지 · 순서 · 완료와 그 원문 출처를 되짚는 표이고, 승인과 현재 상태 확인을 대신하지 않습니다. '
-STUCK_NODB = stuck('「실행 확인 필요: 랩_연결.json이 없습니다. 먼저 python lab_db.py 를 실행하세요.」가 나오면 `python lab_db.py`가 「랩 DB 준비 완료」까지 가지 않은 것이니, 그 명령의 출력부터 다시 봅니다.')
-STUCK_RUNFILE = stuck('「실행 확인 필요: [Errno 2] No such file or directory: \'결과/load.cypher\'」처럼 나오면 명령의 파일 이름이 `결과/`에 실제로 만든 적재 파일 이름과 다른 것입니다. '
-                      '탐색기에서 이름을 보고 명령의 <…> 자리를 그 이름으로 바꿔 다시 실행합니다.')
-GQUERY_FIRST = B.QUERY_RUN_FIRST.replace('물을 설비 코드나 품번', '물을 SOP ID나 설비 코드')   # 이 랩의 조회는 SOP ID · 설비 코드를 묻는다
-DB_RUN = '터미널에서 아래 명령을 차례로 실행합니다. 적재 파일은 `python lab_cypher.py run 결과/<파일>.cypher`로 실행하거나 Neo4j Browser 위쪽 입력 칸에 붙여 넣어 실행합니다.'
-
-
-def graph_common(key, N):
-    """두 반이 같은 일을 하는 단계 — 자료 파악 · 계획 · 랩 DB · 문서 · 판 · 절 · 승인 후보 적재 · 반복 적재."""
-    practical = key == 'practical-03-card'
-    later = '' if practical else f' 제조사 지침과 예비품 기준의 검토 결과는 {N["more"]}단계에서 더하므로, 여기서는 나머지 검토 결과만 적재합니다.'
-    look = S('파일을 바꾸지 않고 자료 파악', '① 파악',
-             'AI에게 파일을 바꾸지 말고 `입력/`과 `자료/문서_목록.csv`를 읽어 달라고 해, 검토 결과마다 결정(채택 · 수정 · 제외 · 보류) 수와 후보가 가리키는 대상이 설비 모델 · SOP 구조 · 조건표의 어느 ID인지 표로 받습니다. 짚은 ID를 모델 파일에서 직접 엽니다.',
-             '검토 결과의 결정 분포와, 후보가 가리키는 대상(설비 · 구성 요소 · 부품 · SOP · 단계 · 규칙)이 어느 기존 ID인지 묻습니다.',
-             B.EVIDENCE_LOOK + ' 짚은 ID가 `입력/모델/graph.json` · `입력/sop.json` · `입력/조건표.csv`에 실제로 있습니다.',
-             H('무엇을 어디에 이을지 파악한다', '`입력/` 전부, `자료/문서_목록.csv`', '파일을 바꾸지 않는다. 짚을 때는 파일 · 줄 번호를 먼저 댄다',
-               '검토 결과별 결정 수 표, 후보 대상 ↔ 기존 ID 표', '짚은 ID 몇 개를 모델 파일에서 직접 연다'),
-             why='문서 속 대상은 모델의 ID와 다른 이름 · 번호로 적혀 있을 수 있습니다. 어느 기존 ID를 가리키는지 먼저 짝지어 두어야 적재할 때 새 대상을 지어내지 않고 기존 ID에 잇습니다.',
-             differ=B.DIFFER_LOOK)
-    plan = S('스키마 확장과 계획 검토', '③ 계획',
-             'AI에게 파일을 바꾸지 말고 문서 · 판 · 절 · 인용 · 검토 결정을 담을 새 종류 · 관계와 적재 순서를 제안하게 합니다. 처음 정한 질문 하나를 계획에 대어 어느 노드 · 관계를 따라 답이 나오는지 짚게 하고, 내가 동의하면 `결과/schema_ext.json` 초안을 만들게 합니다.',
-             '문서 · 판 · 절 · 인용 · 검토 결정을 어떤 종류 · 관계로 담고, 기존 이름(종류 · 관계)은 어떻게 다시 쓸지 정합니다. 무엇으로 같은 대상을 알아볼지(새 대상의 ID)도 정합니다.',
-             '계획에 기존 ID를 바꾸는 것과 현재 값(재고 · 작업지시 상태 · 센서 값)을 그래프에 넣는 것이 없고, 질문마다 따라갈 노드 · 관계가 있으며, 내가 동의했습니다. `결과/schema_ext.json`이 생겼습니다.',
-             H('스키마 확장과 적재 순서를 합의한다', '`입력/모델/schema.json`, `입출력_계약.md` 2절(설비 모델과 조치 기준의 그래프) · 3절', '기존 ID를 바꾸지 않는다. 현재 값을 그래프에 넣지 않는다. 새 대상의 ID는 다시 적재해도 늘지 않게 짓는다',
-               '`결과/schema_ext.json` 초안과 기능 순서', '질문 하나를 계획에 대어 지나갈 노드 · 관계를 짚게 한다'),
-             why=('스키마의 종류(이론의 클래스)는 그래프의 레이블이 되고, 대상 하나(이론의 인스턴스)를 저장한 것이 노드입니다. 대상을 더하는 일과 종류를 더하는 일은 다릅니다 — '
-                  '문서 근거를 담으려면 문서 · 판 · 절 같은 새 종류가 필요하고, 그 뜻을 schema_ext.json에 적어 두어야 이 그래프를 다시 여는 사람이 같은 뜻으로 읽습니다. ' + WHY_PHASE),
-             differ=B.DIFFER_PLAN)
-    db = S('랩 DB 준비와 설비 모델 · 조치 기준 적재', '④ ~ ⑥ 구현 · 대조 · 고침',
-           '터미널에서 `python lab_db.py`로 이 폴더 전용 랩 DB를 켜고, `python lab_cypher.py model`로 설비 모델과 조치 기준(SOP 구조 · 조건표)을 올린 뒤 `python lab_cypher.py count`로 셉니다.',
-           '출력된 주소가 `127.0.0.1`의 이 폴더 전용 주소인지 확인합니다.',
-           '「랩 DB 준비 완료」와 주소가 나왔고, `count`의 종류별 수가 `입력/` 파일에서 센 수(설비 모델의 노드 · 관계, SOP · 단계 · 규칙)와 같습니다. 그 수를 `' + GREC + '` 「적재 수」 첫 줄에 적었습니다.',
-           H('이 폴더 전용 랩 DB를 켜고 앞 단계 판을 올려 센다', '`lab_db.py` · `lab_cypher.py`, `입력/모델/` · `입력/sop.json` · `입력/조건표.csv`', '포털 DB에 접속하지 않는다. 명령은 내가 터미널에서 실행한다',
-             f'`python lab_cypher.py count`의 출력과 `{GREC}` 「적재 수」 첫 줄', '`count`의 종류별 수를 `입력/` 파일에서 센 수와 견준다'),
-           cmd='python lab_db.py\npython lab_cypher.py model\npython lab_cypher.py count',
-           why='이 실습의 적재 · 조회는 이 폴더에만 딸린 그래프 DB(별도 랩 DB)에서 합니다. 포털 DB와 떨어져 있어 여러 번 넣어도 포털에 영향이 없고, 설비 모델과 조치 기준의 수를 먼저 적어 두어야 뒤에서 늘어난 수가 이번에 넣은 것임을 셀 수 있습니다.',
-           differ='수가 다르면 `입출력_계약.md` 2절의 종류 · 관계별로 다시 세어 어디서 다른지 찾습니다. 「랩 DB 준비 확인 필요」가 나오면 Docker Desktop이 켜져 있는지 봅니다.')
-    docs = S('구현 ① 문서 · 판 · 절 적재', '④ ~ ⑥ 구현 · 대조 · 고침',
-             '문서 목록과 검토 결과에서 문서 · 판 · 절을 노드로 만드는 적재 파일을 `결과/`에 만들고 실행합니다.' + later,
-             '같은 문서의 다른 판을 어떻게 구별해 둘지와, 판 상태 · 대체 관계를 무엇으로 남길지 정합니다.',
-             '`count` 전후로 늘어난 문서 · 판 · 절의 수가 문서 목록 · 검토 결과에서 센 수와 같고, 판 둘을 조회해 서로 다른 노드임을 확인했습니다.',
-             H('문서 · 판 · 절을 노드로 만든다', '`자료/문서_목록.csv`, `입력/검토결과/`, `결과/schema_ext.json`', '판 상태를 목록 그대로 둔다. 다시 실행해도 늘지 않게 한다. 받은 파일이 없는 문서 · 원문에 없는 절을 만들지 않는다',
-               '적재 파일 한 부분과 `count` 전후 출력', '`python lab_cypher.py run`으로 실행한 뒤 `count`, 판 둘을 조회한다'),
-             'python lab_cypher.py run 결과/<적재 파일>.cypher\npython lab_cypher.py count', run=DB_RUN,
-             why='파일 이름이 같아도 판이 다르면 다른 문서입니다. 판마다 따로 두고 상태(현행 · 폐기 · 개정 요청 · 참고)를 남겨야, 어느 판의 문장이 지금 작업의 근거인지 조회로 가려낼 수 있습니다.',
-             differ=B.FIX_LOOP)
-    link = S('구현 ② 승인 후보를 기존 ID에 이어 적재', '④ ~ ⑥ 구현 · 대조 · 고침',
-             '검토 결과의 승인(`approved`) 후보를 노드로 만들고, 출처 절과 기존 ID(설비 · 구성 요소 · 센서 · 부품 · SOP · 단계 · 규칙)에 잇는 적재를 더해 실행합니다.' + later,
-             f'「학생이 정할 것」의 지점을 {N["expect"]}단계에서 정한 대로 적용했는지, 기존 ID를 찾지 못한 후보를 무엇으로 남길지 정합니다.',
-             '늘어난 후보 노드 수가 적재한 검토 결과의 승인 후보 수와 같고, 핀 세척에 이어진 조건을 조회하면 원문 인용과 출처 절이 함께 나옵니다.',
-             H('승인 후보를 출처 절과 기존 ID에 잇는다', '`입력/검토결과/`, `입력/모델/` · `입력/sop.json` · `입력/조건표.csv`, 「정한 것」',
-               '승인 후보만 적재한다. 모델에 없는 기존 ID를 지어내지 않는다. 현재 값을 그래프에 넣지 않는다',
-               '적재 파일 나머지와 `count` 전후 출력', '`count` 전후를 견주고, 핀 세척에 이어진 조건을 조회해 원문 줄과 견준다'),
-             'python lab_cypher.py run 결과/<적재 파일>.cypher\npython lab_cypher.py count', run=DB_RUN,
-             why=('후보는 종류(단계 · 시작 조건 · 금지 · 완료 · 기준값)에 따라 SOP · 단계 · 규칙 · 설비 같은 기존 대상에 다른 관계로 이어집니다. 승인한 작업 조건만 넣고 다시 조회해 보아야, '
-                  '보류한 것이 섞이지 않았는지와 원문으로 돌아가는 길이 있는지 알 수 있습니다.'),
-             differ=B.FIX_LOOP)
-    again = S('반복 적재 확인', '⑤ 대조',
-              '지금까지의 적재 파일을 같은 순서로 한 번 더 실행하고 `count`를 앞의 수와 견줍니다.',
-              '늘어난 종류가 있으면 어느 종류의 무엇이 늘었는지 묻습니다.',
-              '두 번째 실행 뒤에도 종류별 노드 수 · 관계 수가 같고, `' + GREC + '` 「적재 수」에 두 줄이 있습니다.',
-              H('같은 적재를 다시 해도 수가 같은지 본다', '적재 파일, 앞의 `count` 출력', '지우는 문장으로 수를 맞추지 않는다', '「적재 수」 표의 두 줄', '두 번째 `count`를 첫 번째와 나란히 놓는다'),
-              'python lab_cypher.py run 결과/<적재 파일>.cypher\npython lab_cypher.py count', run=DB_RUN,
-              why='자료는 다시 넣을 일이 생깁니다. CREATE는 실행할 때마다 새로 만들고 MERGE는 같은 것이 있으면 찾습니다 — 무엇으로 같은 것을 알아보는지가 맞아야 다시 넣어도 늘지 않습니다.',
-              differ='수가 늘었으면 늘어난 종류의 노드를 조회해 무엇이 겹쳤는지 찾고, 적재 파일을 고친 뒤 랩 DB를 새로 준비해(폴더의 랩 DB 컨테이너를 지우고 `python lab_db.py`) 설비 모델과 조치 기준부터 다시 적재합니다.')
-    return look, plan, db, docs, link, again
-
-
-def gstep_order(key):
-    """그래프 랩 단계 열쇠의 차례 — 한 단계에 일 하나(가이드.md P-4). 실전반 카드는 실전 R37대로 준비 · 금지 · 완료와 원문 출처만 모은다."""
-    if key == 'practical-03-card':
-        return ['start', 'look', 'expect', 'plan', 'db', 'docs', 'link', 'again', 'query', 'card', 'other', 'missing', 'scope', 'remain', 'export', 'check', 'save']
-    return ['start', 'look', 'expect', 'plan', 'db', 'docs', 'link', 'again', 'q1', 'q2', 'q3', 'more', 'q4', 'hold', 'q5', 'scope', 'remain', 'export', 'check', 'save']
-
-
-WHY_SAVE_GRAPH = '학교 PC는 재부팅하면 초기화될 수 있습니다. 폴더를 닫았다 다시 연 뒤 랩 DB를 다시 켜도 같은 수와 조회 결과가 나와야 저장된 것입니다.'
-
-
-def graph_tail(key, N):
-    practical = key == 'practical-03-card'
-    remain = S('남은 질문 쓰기', '⑦ 저장 · 다시 열기',
-               '그래프에 넣지 않은 것 가운데 답하려면 더 알아야 하는 것을 `결과/남은_질문.json`에 씁니다(꼴은 `입출력_계약.md` 3절).',
-               '남은 질문으로 무엇을 남길지(보류 · 원문 미확인 · 제공되지 않은 절 · 제공되지 않은 문서 · 현재 값 필요) 정합니다.',
-               '`결과/남은_질문.json`의 항목마다 종류 · 출처 · 까닭이 있고, 앞 단계에서 확인한 보류와 「결과 없음」이 빠짐없이 들어 있습니다.',
-               H('그래프에 넣지 않은 남은 질문을 한 파일로 남긴다', '`입력/검토결과/`의 보류 후보, 앞 단계의 「결과 없음」 조회, `입출력_계약.md` 3절',
-                 '남은 질문을 그래프에 노드로 넣지 않는다. 원문에 없는 질문을 지어내지 않는다', '`결과/남은_질문.json`', '항목마다 출처 줄을 직접 연다'),
-               why='그래프에 넣지 않은 것도 다음 실습에 함께 넘겨야, 받는 쪽이 근거가 없는 것과 답이 없는 것을 구별합니다.',
-               differ=B.FIX_LOOP)
-    export = S('내보내기', '⑦ 저장 · 다시 열기',
-               '`python lab_cypher.py export 결과/지식_내보내기.json`으로 그래프와 남은 질문을 한 파일로 내보냅니다.',
-               '내보낸 뒤에 적재를 다시 했다면 다시 내보낼지 정합니다.',
-               '내보내기 출력의 노드 · 관계 수가 `python lab_cypher.py count`의 전체 수와 같고, 남은 질문 수가 `결과/남은_질문.json`의 항목 수와 같습니다.',
-               H('그래프를 다음 실습에 넘길 한 파일로 내보낸다', '랩 DB의 그래프, `결과/남은_질문.json`', '내보내기 파일을 손으로 고치지 않는다', '`결과/지식_내보내기.json`',
-                 '내보낸 노드 · 관계 수를 `count`와 견준다'),
-               'python lab_cypher.py export 결과/지식_내보내기.json\npython lab_cypher.py count',
-               why='내보내기 파일은 이 지식을 그래프 밖에서 다시 열고 다음 실습에 넘길 한 파일입니다.',
-               differ='수가 다르면 내보낸 뒤에 적재를 다시 했는지 보고, 마지막 적재 뒤에 다시 내보냅니다.')
-    check = S('구조 검사와 고치기', '⑥ 고침',
-              '터미널에서 `python check.py`를 실행해 단계별 상태를 보고, 짚은 문제를 고친 뒤 다시 실행합니다.',
-              '검사가 짚은 문제가 어느 파일 · 줄 · 노드인지 묻습니다.',
-              f'「구조상 빠진 단계는 없습니다」 줄이 나오거나, 남은 줄이 `{GREC}` 「저장 기록」의 빈 항목뿐입니다(마지막 단계에서 채웁니다).',
-              H('구조 문제를 고친다', '`python check.py`의 출력', '검사 기준 · 입력 · 원자료를 바꾸지 않는다', '고친 파일 목록과 다시 실행한 출력', '고친 뒤 `count`와 질문 조회를 다시 실행한다'),
-              'python check.py',
-              why='구조 검사는 승인하지 않은 후보 · 없는 기존 ID · 현재 값 속성 · 끝점 없는 관계처럼 모양만 봅니다. 무엇을 어디에 이어야 맞는지는 검사가 모르므로 원문과 질문으로 판단합니다.',
-              differ='「완료 아님」 아래 줄마다 문제가 하나씩 적혀 있습니다. 줄마다 어느 파일 · 노드인지 AI에게 짚게 해 고친 뒤 다시 실행합니다.')
-    save = S('저장하고 다시 열기', '⑦ 저장 · 다시 열기',
-             f'결과 파일을 모두 저장하고 VS Code에서 폴더를 닫았다 다시 연 뒤, `python lab_db.py`로 랩 DB를 다시 켜고 `count`와 질문 조회 · `python check.py`를 다시 실행합니다. `{GREC}` 끝에 기준일 · 저장 시점 · 확인하지 못한 점을 적습니다.',
-             '확인하지 못한 점으로 무엇을 남길지 정합니다.',
-             '다시 연 뒤에도 `count`와 조회 결과가 같고, `결과/`에 스키마 확장 · 적재 · 조회 · 내보내기 · 남은 질문' + (' · 카드' if practical else '') + ' · 구축 기록이 있습니다. `python check.py`가 같은 출력을 냅니다.',
-             H('결과를 저장하고 다시 열어 같은지 본다', f'`결과/`의 파일, `{GREC}` 「저장 기록」', '결과를 다시 만들지 않는다. 확인하지 못한 것은 확인하지 못했다고 적는다',
-               f'`{GREC}`의 기준일 · 저장 시점 · 확인하지 못한 점', '다시 연 뒤 `count` · 질문 조회 · `python check.py` 출력을 앞의 출력과 견준다'),
-             cmd='python lab_db.py\npython lab_cypher.py count\npython check.py',
-             why=WHY_SAVE_GRAPH,
-             differ=('조회 결과가 다르면 Browser가 `랩_연결.json`의 주소에 연결됐는지 봅니다. 「이 PC의 Docker에 없습니다」 줄이 나왔다면 새 빈 랩 DB를 만든 것이니, '
-                     '`python lab_cypher.py model`부터 저장한 적재 파일을 같은 순서로 다시 실행합니다.'))
-    return remain, export, check, save
+    base = FL.graph_files('가', practical)
+    order = gstep_order(key)
+    import collections
+    N = collections.defaultdict(str, {k: i for i, k in enumerate(order, 1)})   # 이 반에 없는 단계의 글은 쓰지 않는다
+    rec = GREC
+    links_all = base['연결_규칙.csv']
+    if practical:
+        links_first = links_all
+    else:
+        rows = list(csv.reader(io.StringIO(links_all)))
+        links_first = FL.csv_text(rows[0], [r for r in rows[1:] if r[0] not in LATER_DOCS])
+    blanks = graph_blanks(key)
+    def tog(name, text):
+        return ghead(blanks['결과/' + name], text)
+    def cols(name):
+        return ' 칸 — ' + gcols(name, practical)
+    links_first, links_all = tog('연결_규칙.csv', links_first), tog('연결_규칙.csv', links_all)
+    other_rows = [tog('다른문서_조건.csv', FL.csv_text(['문서', '판', '절', '인용에_든_글자', '작업', '잇는다', '관계', '근거'], FL.OTHER[p])) for p in ('가', '나')]
+    values = tog('질문_값.csv', base['질문_값.csv'])
+    T = {n: tog(n, base[n]) for n in ('별칭.csv', '역할.csv', '현재값_원천.csv')}
+    chosen = list(csv.reader(io.StringIO(base['정한_것.csv'])))[1:]
+    def chosen_csv(idx):
+        return chosen_upto(FL.csv_text(F.CHOSEN_COLUMNS, [chosen[i] for i in idx]).splitlines(keepends=True)[1:])
+    S_ = {}
+    S_['look'] = S('폴더 · 입력 파악', '① 파악',
+                   f'터미널에서 `{SHOW}`를 실행해 결과 화면을 엽니다. 검토 결과마다 승인 · 보류 · 제외 수와 조건 근거 대조, 기존 ID 수, 승인 후보 찾아보기 표를 보고, AI에게 파일을 바꾸지 말고 후보가 가리키는 대상이 설비 모델 · SOP 구조 · 조건표의 어느 ID인지 물어 짚은 ID를 모델 파일에서 직접 엽니다.',
+                   '이 답을 쓰는 사람과 해결할 질문, 후보가 가리키는 대상(설비 · 구성 요소 · 부품 · SOP · 단계 · 규칙)이 어느 기존 ID인지 묻습니다.',
+                   '결과 화면 1단계에 검토 결과 표 · 기존 ID 수 · 승인 후보 찾아보기가 보입니다. ' + F.EVIDENCE_LOOK,
+                   H('무엇을 어디에 이을지 파악한다', '결과 화면 1단계, `입력/` 전부, `자료/문서_목록.csv`', '파일을 바꾸지 않는다. 짚을 때는 파일:줄 또는 ID를 먼저 댄다',
+                     '후보 대상 ↔ 기존 ID 짝 몇 개', '짚은 ID를 `입력/모델/graph.json` · `입력/sop.json`에서 직접 연다'),
+                   cmd=SHOW, why=F.WHY_START + ' 문서 속 대상은 모델의 ID와 다른 이름 · 번호로 적혀 있을 수 있어, 어느 기존 ID를 가리키는지 먼저 봅니다.', differ=F.DIFFER_LOOK)
+    S_['expect'] = S('기대 카드 먼저' if practical else '질문과 기대 답 먼저', '② 요구',
+                     (f'`결과/기대_답.csv`에 핀 세척 카드의 항목(준비 · 금지 · 순서 · 완료 · 작업 직전 확인할 현재 값 · 승인 · 남은 질문)마다 기대를 원문 · 검토 결과의 파일:줄로 적고' if practical else
+                      f'`결과/기대_답.csv`에 질문 1 · 2의 기대 답을 문서 · 절로, 질문 3은 읽을 원천 이름으로 적고(근거는 파일:줄)') +
+                     f' `{rec}`에 목표 · 쓰는 사람 · 기대 칸을 쓴 시각을 적습니다.' + F.REQ_AFTER,
+                     '기대를 결과 화면 1단계의 승인 후보 찾아보기와 원문 줄에서 찾습니다. 「학생이 정할 것」은 내가 고릅니다.',
+                     '결과 화면 2단계에 내 기대와 근거마다 첫 원문 줄이 보이고, 그 줄이 내가 적은 내용입니다. 기대 칸을 쓴 시각이 있습니다. AI의 되짚기가 내 뜻과 같고 바뀐 파일이 없습니다.',
+                     H('조회 전에 기대를 원문 · 검토 결과에서 적는다', '결과 화면 1단계의 승인 후보 찾아보기, `자료/`의 원문' + (', `입력/검토결과/선택작업_조건.json`' if practical else ''),
+                       'AI 출력을 기대로 옮기지 않는다. 후보 id까지 적지 않아도 된다 — 문서 · 절 · 줄로 적는다.' + cols('기대_답.csv'), '`결과/기대_답.csv`의 행', f'`{SHOW}` — 2단계 표'),
+                     cmd=SHOW, why='질문이 모델의 범위를 정합니다. 조회 결과를 본 뒤에 기대를 적으면 빠진 연결이 기대에 맞춰 사라지므로, 원문과 검토 결과로 먼저 적어 둡니다.',
+                     differ=F.DIFFER_REQ.format(rec='결과/기대_답.csv') + ' 원문 글자가 깨져 보이면 VS Code 오른쪽 아래 **UTF-8**을 눌러 **Reopen with Encoding → Korean (EUC-KR)**으로 다시 엽니다.',
+                     answer=A('기대는 문서 · 절 수준으로 적습니다 — 핀 세척의 준비 · 금지 · 완료 · 승인은 사내 현행 매뉴얼 HM-8.7 · SOP-COOL-14와 그 줄, 규칙은 검토 결과의 조건 근거 대조에서 옵니다.',
+                              F.paste('결과/기대_답.csv', tog('기대_답.csv', FL.EXPECT_CARD if practical else FL.EXPECT_GRAPH))))
+    S_['db'] = S('랩 DB 준비와 설비 모델 · 조치 기준 적재' if not practical else '새 폴더 · 랩 DB 준비',
+                 '④ 구현' if False else '① 파악',
+                 ('VS Code로 이 실습 폴더를 엽니다. ' if practical else '') + f'터미널에서 `python lab_db.py`로 이 폴더 전용 랩 DB를 켜고 `{SHOW}`를 실행합니다 — 설비 모델과 조치 기준(SOP 구조 · 조건표)이 랩 DB에 올라가고 종류별 수가 보입니다.',
+                 '출력된 주소가 `127.0.0.1`의 이 폴더 전용 주소인지 확인합니다.',
+                 f'「랩 DB 준비 완료」와 주소가 나왔고, 결과 화면 {N["db"]}단계의 종류별 수를 `{rec}` 「적재 수」 첫 줄에 적었습니다.',
+                 H('이 폴더 전용 랩 DB를 켜고 앞 단계 판을 올려 센다', '`lab_db.py`, `입력/모델/` · `입력/sop.json` · `입력/조건표.csv`', '포털 DB에 접속하지 않는다. 명령은 내가 터미널에서 실행한다',
+                   f'결과 화면의 수와 `{rec}` 「적재 수」 첫 줄', '종류별 수를 `입력/` 파일에서 센 수와 견준다'),
+                 cmd=f'python lab_db.py\n{SHOW}',
+                 why='이 실습의 적재 · 조회는 이 폴더에만 딸린 그래프 DB(별도 랩 DB)에서 합니다. 포털 DB와 떨어져 있어 여러 번 넣어도 포털에 영향이 없고, 먼저 수를 적어 두어야 뒤에서 늘어난 수가 이번에 넣은 것임을 셀 수 있습니다.',
+                 differ='결과 화면에 「랩 DB 꺼짐」이 나오면 `python lab_db.py`가 「랩 DB 준비 완료」까지 갔는지 보고, Docker Desktop이 켜져 있는지 봅니다.')
+    S_['plan'] = S('판단① 그래프 모양 — 종류 · 관계 · ID', '③ 계획 · 판단',
+                   f'`결과/그래프_모양.json`에 문서 · 판 · 절 · 지식과 그 관계의 이름 · 뜻, 판을 따로 둘지, 새 대상의 ID를 짓는 꼴을 정하고 그 까닭을 `{F.CHOSEN_FILE}`에 적은 뒤 `{SHOW}`로 적재하지 않고 센 결과를 봅니다.',
+                   '문서 근거를 어떤 종류 · 관계로 담고, 무엇으로 같은 대상을 알아볼지(ID) 정합니다. AI에게는 처음 정한 질문 하나를 이 모양에 대어 어느 노드 · 관계를 따라 답이 나오는지 짚게 합니다.',
+                   f'결과 화면 {N["plan"]}단계에 지을 노드 수가 보이고 「같은 ID에 서로 다른 대상이 겹침」이 없습니다. 적재하지 않는 보류 · 제외 수가 보입니다.',
+                   H('문서 근거를 담을 모양과 ID 꼴을 정한다', '`입력/모델/schema.json`, `입출력_계약.md` 「정할 자리」, 결과 화면 1단계', '기존 종류 이름을 다른 뜻으로 쓰지 않는다. 현재 값을 그래프에 넣지 않는다. 다시 적재해도 늘지 않게 ID를 짓는다',
+                     '`결과/그래프_모양.json`, `결과/정한_것.csv` 한 줄', f'`{SHOW}` — {N["plan"]}단계의 겹침 목록'),
+                   cmd=SHOW, why=WHY_SHAPE, differ='「같은 ID에 서로 다른 대상이 겹침」이 나오면 그 ID들이 어느 문서 · 판 · 절인지 보고 ID 꼴에 빠진 자리를 더합니다. ' + F.DIFFER_PLAN,
+                   answer=A('강사 판은 문서 · 판 · 절 · 지식을 따로 두고 ID에 문서와 판을 넣습니다(절 = 문서@판#절, 지식 = 문서@판:후보) — 다른 문서의 같은 절 번호가 겹치지 않습니다.',
+                            F.paste('결과/그래프_모양.json', base['그래프_모양.json']), apply={'결과/그래프_모양.json': base['그래프_모양.json'], F.CHOSEN_FILE: chosen_csv([1])}))
+    S_['link'] = S('판단② 연결 규칙 · 별칭 · 역할', '④ 구현 · 판단',
+                   f'`결과/연결_규칙.csv`에 검토 결과의 문서마다(필요하면 절마다) 승인 후보를 어느 기존 ID에 어떤 관계로 이을지, `결과/별칭.csv`에 원문의 이름 · 품번이 가리키는 기존 ID, `결과/역할.csv`에 조치에 잇는 지식의 항목을 적고 `{SHOW}`로 적재합니다.'
+                   + ('' if practical else ' 제조사 지침과 예비품 기준의 행은 다른 문서 추가 단계에서 채웁니다.'),
+                   '문서마다 잇는 방법(절차 표기와 같은 조치 · 정한 대상 · 별칭 · 잇지 않음)과 그 근거를 정합니다. 기존 ID를 찾지 못한 대상은 무엇으로 남길지 정합니다.',
+                   f'결과 화면 {N["link"]}단계에 적재 전후 수와 기존 ID에 이은 지식 수가 보이고, 「모델에 없는 ID」 오류가 없습니다. 「핀 세척과 그 단계에 이은 지식」 표의 몇 행을 그 줄 번호로 원문에서 열어 확인했습니다.',
+                   H('승인 후보를 출처 절과 기존 ID에 잇는 규칙을 정한다', '결과 화면 1단계, `입력/모델/graph.json` · `입력/sop.json` · `입력/조건표.csv`, 원문', '승인 후보만 잇는다. 모델에 없는 ID를 지어내지 않는다. 현재 값을 넣지 않는다.' + cols('연결_규칙.csv') + ' 별칭' + cols('별칭.csv') + ' 역할' + cols('역할.csv'),
+                     '`결과/연결_규칙.csv` · `결과/별칭.csv` · `결과/역할.csv`의 행', f'`{SHOW}` — {N["link"]}단계 수, 이은 지식 몇 개를 원문 줄로'),
+                   cmd=SHOW, why=WHY_LINK, differ='빨간 칸의 파일 · 행 번호를 고칩니다. 「역할.csv에 맞는 행이 없어」가 나오면 그 종류의 행을 더합니다. ' + F.FIX_LOOP,
+                   answer=A('강사 판 — 사내 현행 매뉴얼은 절차 표기와 같은 조치에, 절차 밖 절은 원격 조치 셋 · 고장 유형에, 원인 절은 본문의 원인 이름으로, 스캔본 · 규정은 출처 절에만(규정은 조건 근거로), 다른 문서는 본문의 설비 · 부품 이름으로 잇습니다.',
+                            F.paste('결과/연결_규칙.csv', links_first), F.paste('결과/별칭.csv', T['별칭.csv']), F.paste('결과/역할.csv', T['역할.csv']),
+                            apply={'결과/연결_규칙.csv': links_first, '결과/별칭.csv': T['별칭.csv'], '결과/역할.csv': T['역할.csv'], F.CHOSEN_FILE: chosen_csv([1, 2])}))
+    S_['other'] = S('판단③ 다른 문서의 조건 · 반복 적재', '④ 판단',
+                    f'핀 세척(`{TASK}`)에 걸 다른 문서의 조건(시간 · 승인 · 준비)을 찾아 `결과/다른문서_조건.csv`에 잇는다 · 잇지 않는다와 근거를 적고 고른 것을 `{F.CHOSEN_FILE}`에 적은 뒤 `{SHOW}`를 두 번 실행해, 두 번째에도 수가 늘지 않는지 봅니다.',
+                    '다른 문서가 정한 조건을 이 작업에 이을지 — 그 문서의 적용 범위 절과, 이 작업을 말하는 사내 문장을 원문으로 열어 정합니다. 후보가 여러 문서에서 나오면 이 작업을 언제 · 누가 승인해 · 무엇을 갖추고 하는지 정하는 문장만 행으로 적고, 보고도 잇지 않기로 한 문장은 「아니오」 행으로 남깁니다.',
+                    f'결과 화면 {N["other"]}단계에 고른 행과 그 근거 원문 줄이 보이고, 두 번째 실행의 수가 직전 실행과 같습니다(같음 표시). `{rec}` 「적재 수」에 두 줄이 있습니다.',
+                    H('다른 문서의 조건을 이 작업에 이을지 정하고, 같은 적재를 다시 해도 수가 같은지 본다', '원문(다른 문서의 적용 범위 절 · 이 작업을 말하는 사내 문장), 결과 화면', '이 작업(핀 세척)에 걸 조건만 정한다. 지우는 문장으로 수를 맞추지 않는다.' + cols('다른문서_조건.csv'),
+                      '`결과/다른문서_조건.csv`의 행, `결과/정한_것.csv` 한 줄', f'`{SHOW}` 두 번 — 수가 같음'),
+                    cmd=SHOW, why=WHY_AGAIN + ' 다른 문서의 조건은 그 문서의 적용 범위와 이 작업을 말하는 사내 문장이 어긋날 수 있어 사람이 정합니다.',
+                    differ='두 번째에 수가 늘었으면 늘어난 종류를 보고 ID 꼴을 고칩니다(그래프 모양 단계). 랩 DB를 새로 준비하려면 그 폴더의 랩 DB 컨테이너를 지우고 `python lab_db.py`부터 다시 합니다.',
+                    answer=A('갈래 가(정기 점검표의 예정된 정비 시간 조건을 핀 세척 준비로 잇는다 — 사내 매뉴얼이 같은 말을 씀) · 나(잇지 않는다 — 그 문서의 범위는 정기 정비) 가운데 하나를 고르고 근거를 적습니다.',
+                             F.paste('결과/다른문서_조건.csv', other_rows[0]), F.paste('결과/다른문서_조건.csv', other_rows[1]),
+                             apply={'결과/다른문서_조건.csv': other_rows[0], F.CHOSEN_FILE: chosen_csv([1, 2, 0])}))
+    S_['ask123'] = S('판단④ 질문 1 ~ 3 조회와 보류 확인', '④ 구현 · 판단',
+                     f'`결과/질문_값.csv`에 질문 1 · 3에 넣을 설비 · 작업과 확인할 보류 후보 둘(검토 결과 파일#후보 id)을 적고 `{SHOW}`로 조회 결과를 봅니다. 기대와 같음 · 다름과 까닭을 `{rec}` 「질문별 기대와 실제」에 적고, Neo4j Browser로 한 번 모양을 봅니다.',
+                     '물을 값을 무엇으로 할지와, 결과가 기대와 다를 때 원인이 연결 규칙 · 그래프 모양 중 어디인지 묻습니다.',
+                     f'결과 화면 {N["ask123"]}단계에 질문 1 · 2 · 3 결과와 보류 조회(찾은 수 0)가 보이고, 기록에 같음 · 다름과 까닭이 있습니다. `결과/query.cypher`가 생겼습니다.',
+                     H('처음 정한 질문을 그래프로 답하고 기대와 견준다', '결과 화면, `결과/기대_답.csv`, `입력/검토결과/`(보류 후보)', '조회만 한다. 원자료를 다시 읽어 답을 만들지 않는다.' + cols('질문_값.csv'),
+                       '`결과/질문_값.csv`의 행, 기록의 같음 · 다름', '결과 항목 몇 개를 원문 인용으로 직접 연다'),
+                     cmd=f'{SHOW}\npython lab_cypher.py query 결과/query.cypher <번호> --param <이름>=<값>',
+                     run=('터미널로 한 질문만 다시 볼 때는 `결과/query.cypher`에서 그 질문(`// 질문 <번호>`) 아래 `// 터미널:` 줄의 명령을 복사해 실행합니다 — 꼴은 아래 블록 둘째 줄이고, '
+                          '값이 여럿(보류 후보)이면 빈칸으로 이어 `--param "ids=<파일#id> <파일#id>"`처럼 큰따옴표로 감쌉니다. 출력 「-- 질문 <번호> (결과/query.cypher:<줄>)」 아래 표가 결과 화면의 같은 질문 표와 같아야 합니다. '
+                          'Neo4j Browser로 볼 때는 그 질문의 `// Browser:` 줄에서 `:param …` 부분만 먼저 붙여 넣어 실행한 뒤 그 아래 조회문을 붙여 넣어 **Run**을 누릅니다.'),
+                     why='조회가 성공했다고 답이 맞는 것은 아니므로, 결과 항목을 원문 인용으로 돌아가 견줍니다. 보류는 버린 것이 아니라 근거가 더 필요하다는 기록이라 그래프에 없어야 합니다.',
+                     differ=F.FIX_LOOP,
+                     answer=A('설비는 HYD-02, 작업은 핀 세척, 보류 후보는 스캔본 · 제조사 지침의 보류 후보 하나씩입니다.', F.paste('결과/질문_값.csv', values)))
+    S_['more'] = S('다른 문서 추가 반영과 기존 연결 비교', '④ 구현 · 판단',
+                   f'`결과/연결_규칙.csv`에 제조사 지침과 예비품 기준의 행을, 필요하면 `결과/별칭.csv`에 설비 모델명 · 제조사 품번을 더하고 `{SHOW}`를 실행합니다. 추가 전 그래프와 견준 수(속성이 바뀐 기존 노드 · 사라진 관계)와 질문 1 · 4를 보고 `{rec}` 「다른 문서 추가 뒤 기존 연결」에 적습니다.',
+                   '설비 모델명 · 제조사 품번으로 적힌 대상이 어느 기존 ID인지, 추가로 바뀐 기존 연결이 있다면 왜인지 묻습니다.',
+                   f'결과 화면 {N["more"]}단계에 늘어난 수와 「속성이 바뀐 기존 노드 0 · 사라진 관계 0」(또는 그 목록)이 보이고, 질문 1에서 늘어난 행을 원문으로 설명할 수 있습니다.',
+                   H('다른 문서를 더하고 앞의 연결이 그대로인지 본다', '결과 화면, 더할 문서의 원문, `입력/모델/graph.json`', '기존 연결을 지우거나 덮지 않는다. 별칭은 원문 줄을 근거로 적는다',
+                     '`결과/연결_규칙.csv` · `결과/별칭.csv`에 더한 행, 기록 표', f'`{SHOW}` — 추가 전후 비교 수'),
+                   cmd=SHOW, why='여러 문서가 같은 대상을 말할 때, 뒤에 넣은 문서가 앞의 연결을 덮거나 같은 번호의 다른 절을 같은 대상으로 합치면 앞에서 맞던 답이 바뀝니다. 더한 뒤 기존 노드 · 관계를 견주어야 반영 범위를 압니다.',
+                   differ='「추가 전 내보내기가 없습니다」가 나오면 다른 문서의 행을 앞 단계에서 이미 채운 것입니다 — 그 경우 견줄 기준이 없다고 기록합니다. ' + F.FIX_LOOP,
+                   answer=A('제조사 지침은 모델명으로 세 설비에, 코어 세척 절은 핀 세척 조치에, 예비품 기준은 품번 · 부품 이름으로 잇습니다.', F.paste('결과/연결_규칙.csv', links_all)))
+    S_['card'] = S('판단④ 작업 확인 카드 — 현재 값을 읽을 원천', '④ 구현 · 판단',
+                   f'`결과/질문_값.csv`에 카드를 만들 작업(`card sop`)과 다른 작업 · 제공되지 않은 작업 · 절의 값을, `결과/현재값_원천.csv`에 작업 직전 확인할 현재 값과 읽을 원천을 적고 `{SHOW}`로 `결과/작업확인카드_{TASK}.md`를 봅니다. 기대와 같음 · 다름을 `{rec}`에 적습니다.',
+                   '작업 직전에 다시 볼 현재 값이 무엇이고 그 값을 어느 시스템에서 읽는지 정합니다(값은 적지 않습니다). 카드 항목마다 무엇을 근거로 넣었는지 말합니다.',
+                   f'결과 화면 {N["card"]}단계에 카드가 보이고 준비 · 금지 · 순서 · 완료 항목마다 원문 인용이 있습니다. 현재 값 칸에 원천 이름만 있고, 승인은 원문의 역할입니다.',
+                   H('조회 결과로 카드를 만들고 현재 값은 읽을 곳만 적는다', '결과 화면, `결과/기대_답.csv`, `입력/sop.json`의 센서 연결, 원문', '현재 값 · 승인을 추정으로 채우지 않는다. 카드는 승인을 대신하지 않는다. 질문 값' + cols('질문_값.csv') + ' 현재 값' + cols('현재값_원천.csv'),
+                     '`결과/질문_값.csv` · `결과/현재값_원천.csv`의 행', '카드 항목 몇 개를 원문 줄로 연다'),
+                   cmd=SHOW, why='카드의 기준값은 문서에서 오고, 작업 직전의 현재 값은 시계열 · CMMS · ERP · MES 같은 원천에서 옵니다. 카드에는 기준값과 그 값을 읽을 원천을 나란히 두되 섞지 않아야 작업자가 무엇을 지금 다시 봐야 하는지 압니다.',
+                   differ=F.FIX_LOOP,
+                   answer=A('현재 값은 냉각 효율 · 유온(시계열), PLC 운전 모드(PLC 상태 수신)이고, 다른 문서의 조건을 이었다면 생산 오더가 없는 시간(MES 생산 계획)도 더합니다.',
+                            F.paste('결과/질문_값.csv', values), F.paste('결과/현재값_원천.csv', T['현재값_원천.csv'])))
+    S_['card_other'] = S('다른 작업 카드 · 제공되지 않은 작업 · 절', '⑤ 대조',
+                         f'`{SHOW}`로 다른 작업(사건 경보의 검토 의견이 먼저 검토할 후보로 둔 작업)의 카드와, 제공되지 않은 작업 · 절의 조회를 보고 `{rec}` 「다른 작업 · 제공되지 않은 것」에 적습니다.',
+                         '다른 작업의 SOP ID가 `입력/조치검토결과.json`의 어느 값에서 왔는지, 제공되지 않은 것을 무엇으로 알아봤는지 말합니다.',
+                         f'결과 화면 {N["card_other"]}단계에 두 번째 카드와 「찾은 수 0」 조회가 보입니다. 같은 방법으로 다른 작업의 카드가 만들어졌습니다.',
+                         H('같은 방법을 다른 작업과 없는 것에 대어 본다', '`입력/조치검토결과.json`의 `review`, `자료/문서_목록.csv`, 원문 목차', '원문에 없는 작업 · 절을 만들지 않는다',
+                           f'`{rec}` 표', '문서 목록의 파일 칸과 원문 목차를 직접 본다'),
+                         cmd=SHOW, why='같은 방법이 다른 작업에도 통해야 기능입니다. 원문이 없는 것을 물었을 때 「결과 없음」과 「조회가 틀림」을 구별해 보여야 그 답을 믿고 쓸 수 있습니다.', differ=F.FIX_LOOP)
+    S_['scope'] = S('답할 수 있는 것과 현재 값 · 승인 · 공급 정보' if practical else '답할 수 있는 것과 현재 값 · 추가 자료가 필요한 것', '⑤ 대조',
+                    (f'`결과/현재값_원천.csv`를 다시 보고 `{SHOW}`로 남은 질문을 쓴 뒤, 질문마다 그래프로 답하는지, 현재 값 · 승인이 있어야 하는지, 공급 조건(설비 모델의 부품 · 공급사)과 그날의 재고를 어디까지 답하는지 `{rec}` 「답할 수 있는 것과 없는 것」에 적습니다.' if practical else
+                     f'`결과/현재값_원천.csv`에 핀 세척 전에 확인할 현재 값과 읽을 원천을 적고 `{SHOW}`로 질문 3 · 5와 남은 질문을 본 뒤, 질문마다 그래프로 답하는지 · 현재 값 · 추가 자료가 필요한지 · 원문에 없는지를 `{rec}` 「답할 수 있는 것과 없는 것」에 적습니다.'),
+                    '질문마다 어느 쪽인지와 그 근거(원천 이름 · 파일)를 말합니다.',
+                    f'결과 화면 {N["scope"]}단계에 현재 값 · 원천 표와 남은 질문 수가 보이고, 기록 표에 질문마다 분류와 근거가 있습니다.',
+                    H('질문마다 답할 수 있는 범위를 나눈다', '결과 화면, `입력/sop.json`의 센서 연결, `입력/모델/graph.json`', '현재 값을 추정으로 채우지 않는다.' + ('' if practical else cols('현재값_원천.csv')), f'`{rec}` 표' + ('' if practical else ', `결과/현재값_원천.csv`'), '원천 이름을 다시 본다'),
+                    cmd=SHOW, why='문서의 판단 기준은 그래프에 있지만, 작업 직전의 센서 값 · 작업지시 상태 · 재고는 시계열 · CMMS · ERP · MES에서 읽어야 합니다. 그래프가 무엇에 답하고 무엇에 답하지 못하는지 밝혀 두어야 이 지식을 쓰는 쪽이 읽을 곳을 압니다.',
+                    differ=F.FIX_LOOP, answer=None if practical else A('현재 값은 냉각 효율 · 유온(시계열), PLC 운전 모드, 생산 오더가 없는 시간(MES)입니다.', F.paste('결과/현재값_원천.csv', T['현재값_원천.csv'])))
+    S_['save'] = S('내보내기 · 저장하고 다시 열기', '⑥ 고침 · ⑦ 저장 · 다시 열기',
+                   f'`{SHOW}`의 마지막 단계가 `결과/지식_내보내기.json`을 쓰고 `python check.py`를 돌립니다. 짚은 문제를 고친 뒤, 파일을 모두 저장하고 VS Code에서 폴더를 닫았다 다시 열어 `python lab_db.py`와 `{SHOW}`를 다시 실행합니다. `{rec}` 끝에 기준일 · 저장 시점 · 확인하지 못한 점을 적습니다.',
+                   '확인하지 못한 점으로 무엇을 남길지 정합니다.',
+                   f'다시 연 뒤에도 수와 조회 결과가 같고, 마지막 단계의 check.py 출력에 「구조상 빠진 단계는 없습니다」가 있습니다. 내보내기의 노드 · 관계 수가 랩 DB 수와 같습니다.',
+                   H('다음 실습에 넘길 판을 내보내고 다시 열어 같은지 본다', f'결과 화면, `{rec}` 「저장 기록」', '내보내기 파일을 손으로 고치지 않는다. 확인하지 못한 것은 확인하지 못했다고 적는다',
+                     f'`{rec}`의 저장 기록', '다시 연 뒤 결과 화면의 수 · 조회 결과를 앞과 견준다'),
+                   cmd=f'python lab_db.py\n{SHOW}\npython check.py', why='학교 PC는 재부팅하면 초기화될 수 있습니다. 폴더를 닫았다 다시 연 뒤 랩 DB를 다시 켜도 같은 수와 조회 결과가 나와야 저장된 것입니다.',
+                   differ='「이 PC의 Docker에 없습니다」 줄이 나왔다면 새 빈 랩 DB를 만든 것입니다 — `python show_result.py`가 정할 자리대로 다시 적재합니다.')
+    S_['other_scope'] = S('다른 작업 카드와 답할 수 있는 범위', '⑤ 대조',
+                          f'`{SHOW}`로 다른 작업(사건 경보의 검토 의견이 먼저 검토할 후보로 둔 작업)의 카드, 제공되지 않은 작업 · 절의 조회, 남은 질문을 보고 `{rec}` 「다른 작업 · 제공되지 않은 것」과 '
+                          '「답할 수 있는 것과 없는 것」(그래프로 답함 · 현재 값 · 승인 · 공급 정보 · 원문에 없음)에 적습니다.',
+                          '다른 작업의 SOP ID가 `입력/조치검토결과.json`의 어느 값에서 왔는지, 질문마다 어느 쪽인지와 그 근거(원천 이름 · 파일)를 말합니다.',
+                          f'결과 화면 {N["other_scope"]}단계에 두 번째 카드 · 「찾은 수 0」 조회 · 남은 질문 수가 보이고, 기록 두 표에 근거가 있습니다.',
+                          H('같은 방법을 다른 작업과 없는 것에 대고, 답할 수 있는 범위를 나눈다', '`입력/조치검토결과.json`의 `review`, `자료/문서_목록.csv`, 원문 목차, 결과 화면',
+                            '원문에 없는 작업 · 절을 만들지 않는다. 현재 값 · 승인을 추정으로 채우지 않는다', f'`{rec}` 두 표', '문서 목록의 파일 칸과 원문 목차를 직접 본다'),
+                          cmd=SHOW, why='같은 방법이 다른 작업에도 통하고 없는 것에 「결과 없음」을 돌려줘야 기능입니다. 작업 직전의 센서 값 · 작업지시 상태 · 재고는 시계열 · CMMS · ERP · MES에서 읽어야 하므로, 그래프가 답하는 범위를 밝혀 둡니다.',
+                          differ=F.FIX_LOOP)
+    steps = [S_[k] for k in order]
+    if practical:
+        steps = [dict(s_, **PG(N, rec, cols).get(k, {})) for k, s_ in zip(order, steps)]
+    return steps, N
 
 
 def glab(key):
     practical = key == 'practical-03-card'
     course = GCOURSE[key]
-    N = {k: i for i, k in enumerate(gstep_order(key), 1)}
-    look, plan, db, docs, link, again = graph_common(key, N)
-    first = S('폴더와 출발점 확인', '① 파악',
-              '탐색기에서 `입력/` · `자료/` · `결과/` · `lab_db.py` · `lab_cypher.py` · `START.md`를 찾고, START.md에서 이 답을 쓰는 사람과 해결할 질문을 읽습니다.',
-              '이 답을 누가 언제 쓰는지와 해결할 질문이 무엇인지 확인합니다.',
-              '여섯 자리를 찾았고, 이 답을 쓰는 사람과 질문을 내 말로 말할 수 있습니다.',
-              H('폴더의 자리와 이번 과제를 확인한다', '탐색기의 `입력/` · `자료/` · `결과/` · `lab_db.py` · `lab_cypher.py`, `START.md`', '파일을 바꾸지 않는다. 짚을 때는 파일 · 줄을 먼저 댄다',
-                '자리마다 역할 한 줄과, 이 답을 쓰는 사람 · 해결할 질문을 내 말로 적은 것', '짚은 START.md 줄을 내가 직접 연다'),
-              why=B.WHY_START + ' 조치에서 근거 문서까지 관계를 따라가려면, 무엇이 주어졌고 무엇을 만들어야 하는지부터 알아야 합니다.', differ=B.DIFFER_START)
-    if practical:
-        expect = S('기대 카드 먼저', '② 요구',
-                   f'`{GREC}`에 목표 · 쓰는 사람을 내 말로 적고, 핀 세척 카드의 항목(준비 · 금지 · 순서 · 완료 · 작업 직전 확인할 현재 값 · 승인 · 남은 질문)마다 기대를 원문 · 검토 결과 줄로 적습니다. '
-                   '「학생이 정할 것」의 선택 · 근거 · 바뀌는 답(못 정하면 미결)과 기대 칸을 쓴 시각도 적습니다.' + B.REQ_AFTER,
-                   B.ASK_DECIDE,
-                   '카드 항목마다 기대와 근거(파일 · 줄 · 후보 id)가 있고 기대 칸을 쓴 시각이 있습니다. 「정한 것」이 채워져 있거나 미결로 적혀 있습니다. AI의 되짚기가 내 뜻과 같고 바뀐 파일이 없습니다.',
-                   H('카드를 만들기 전에 항목별 기대를 원문 · 검토 결과에서 적는다', '`입력/검토결과/` · `입력/검토결과/선택작업_조건.json`, `자료/`의 원문, `' + GREC + '` 빈 틀',
-                     'AI 출력을 기대로 옮기지 않는다. 「학생이 정할 것」은 내가 고른다', f'`{GREC}`의 정한 것 · 카드 항목별 기대 칸', 'AI가 파일을 바꾸지 않고 되짚게 해, 뜻이 다른 곳을 내가 고친다'),
-                   why='작업 확인 카드는 작업자가 작업 전에 되짚는 표이지 승인이 아닙니다. 카드를 조회 결과로 만들기 전에 항목마다 무엇이 들어가야 하는지 원문에서 먼저 적어 두어야, 빠진 조건과 지어낸 항목이 보입니다.',
-                   differ=B.DIFFER_REQ.format(rec=GREC))
-    else:
-        expect = S('질문과 기대 답 먼저', '② 요구',
-                   f'`{GREC}`에 목표 · 쓰는 사람을 내 말로 적고, 질문 다섯의 기대 답을 원문 · 검토 결과 줄과 후보 id로 적습니다. 「학생이 정할 것」의 선택 · 근거 · 바뀌는 답(못 정하면 미결)과 기대 칸을 쓴 시각도 적습니다.' + B.REQ_AFTER,
-                   B.ASK_DECIDE,
-                   '질문마다 기대 답과 근거(파일 · 줄 · 후보 id)가 있고 기대 칸을 쓴 시각이 있습니다. 「정한 것」이 채워져 있거나 미결로 적혀 있습니다. AI의 되짚기가 내 뜻과 같고 바뀐 파일이 없습니다.',
-                   H('조회 전에 질문별 기대 답을 원문 · 검토 결과에서 적는다', f'`입력/검토결과/`, `자료/`의 원문, `{GREC}` 빈 틀', 'AI 출력을 기대로 옮기지 않는다. 「학생이 정할 것」은 내가 고른다',
-                     f'`{GREC}`의 정한 것 · 질문별 기대 답 칸', 'AI가 파일을 바꾸지 않고 되짚게 해, 뜻이 다른 곳을 내가 고친다'),
-                   why='질문이 모델의 범위를 정합니다. 조회 결과를 본 뒤에 기대를 적으면 빠진 연결이 기대에 맞춰 사라지므로, 원문과 검토 결과로 먼저 적어 둡니다.',
-                   differ=B.DIFFER_REQ.format(rec=GREC))
-    remain, export, check, save = graph_tail(key, N)
-    if practical:
-        query = S('구현 ③ 작업 조건 조회', '④ ~ ⑥ 구현 · 대조 · 고침',
-                  'SOP ID 하나를 받아 그 작업의 준비 · 금지 · 순서 · 완료 · 승인과 원문 출처(문서 · 판 · 절 · 인용)를 돌려주는 조회문을 `결과/query.cypher`에 만들고 실행합니다. 절차 밖 절 · 다른 문서의 조건도 따라오는지 봅니다.',
-                  '절차 밖 절 · 다른 절차 · 다른 문서의 조건이 따라오는지, 따라오지 않으면 적재 · 연결 · 조회 중 어디가 원인인지 묻습니다.',
-                  '기대 카드의 준비 · 금지 · 완료 항목이 조회에 다 있거나, 없는 항목의 까닭이 기록에 있습니다.',
-                  H('작업 하나의 조건과 출처를 그래프에서 돌려준다', '랩 DB의 그래프, 기대 카드', '조회만 한다. 원자료를 다시 읽어 답을 만들지 않는다. 물을 SOP ID는 조회문 안 `$` 자리 하나로 받는다',
-                    '`결과/query.cypher`와 결과 표', '기대 카드와 줄마다 견준다'),
-                  run=GQUERY_FIRST,
-                  why='금지 조건은 절차의 단계가 아니라 다른 절이나 다른 문서에 있을 수 있습니다. 조회가 그 조건을 돌려주지 않으면 적재에서 빠졌는지, 연결이 없는지, 조회가 그 관계를 따라가지 않는지 차례로 찾습니다. ' + B.WHY_TABLE,
-                  differ=B.FIX_LOOP)
-        card = S('구현 ④ 카드 쓰기', '④ ~ ⑥ 구현 · 대조 · 고침',
-                 f'조회 결과로 `결과/작업확인카드_{TASK}.md`를 쓰는 기능을 더하고 실행합니다(제목 · 규칙은 `입출력_계약.md` 「작업 확인 카드」).',
-                 '카드 항목마다 무엇을 근거로 넣었는지 말합니다.',
-                 '`python check.py`가 카드 형식을 통과하고, 준비 · 금지 · 순서 · 완료 항목마다 원문 인용이 있습니다. 항목 몇 개를 원문 줄로 직접 확인했습니다.',
-                 H('조회 결과로 카드를 쓴다', '조회 결과, `입출력_계약.md` 「작업 확인 카드」', '현재 값 · 승인을 추정으로 채우지 않는다. 현재 값은 읽을 원천 이름만 적는다',
-                   f'`결과/작업확인카드_{TASK}.md`', '`python check.py`, 항목 몇 개를 원문 줄로 연다'),
-                 'python 결과/<만든 코드 이름>.py\npython check.py',
-                 why='카드의 기준값은 문서에서 오고, 작업 직전의 현재 값은 시계열 · CMMS · ERP · MES 같은 원천에서 옵니다. 카드에는 기준값과 그 값을 읽을 원천을 나란히 두되 섞지 않아야 작업자가 무엇을 지금 다시 봐야 하는지 압니다.',
-                 differ='「확인 필요」 아래 줄마다 카드의 문제가 하나씩 적혀 있습니다. 줄마다 어느 항목인지 AI에게 짚게 해 고친 뒤 다시 실행합니다.')
-        other = S('다른 작업 카드', '⑤ 대조',
-                  '사건 경보의 검토 의견(`입력/조치검토결과.json`의 `review`)이 승인 요청을 먼저 검토할 후보로 둔 작업의 카드를 같은 조회 · 카드 기능으로 하나 더 만듭니다.',
-                  '그 작업의 SOP ID가 어느 파일의 어느 값에서 왔는지 말합니다.',
-                  '다른 작업의 카드가 `python check.py`의 카드 형식을 통과하고, 그 작업의 SOP ID를 `입력/조치검토결과.json`의 줄로 말할 수 있습니다.',
-                  H('같은 방법으로 다른 작업의 카드를 만든다', '`입력/조치검토결과.json`, 조회 · 카드 기능', '원문에 없는 항목을 만들지 않는다. 기능을 그 작업에 맞춰 따로 고쳐 쓰지 않는다',
-                    '`결과/작업확인카드_<SOP ID>.md` 하나 더', '`python check.py`, 항목 몇 개를 원문 줄로 연다'),
-                  'python 결과/<만든 코드 이름>.py\npython check.py',
-                  why='같은 방법이 다른 작업에도 통해야 기능입니다. 작업마다 손으로 맞춘 카드라면 다음 작업에서 다시 만들어야 합니다.',
-                  differ=B.FIX_LOOP)
-        missing = S('제공되지 않은 작업 · 절', '⑤ 대조',
-                    f'제공되지 않은 작업과 절을 같은 조회로 물어 「결과 없음」으로 구별되는지 보고, `{GREC}` 「다른 작업 · 제공되지 않은 것」에 적습니다.',
-                    '제공되지 않은 작업 · 절을 무엇으로 알아봤는지(문서 목록 · 원문) 말합니다.',
-                    '제공되지 않은 작업 · 절은 지어낸 답 없이 「결과 없음 · 원문 절 미제공」으로 구별되고, 그 근거가 문서 목록 · 원문 줄로 적혀 있습니다.',
-                    H('제공되지 않은 작업 · 절은 결과 없음으로 구별한다', '조회문, `자료/문서_목록.csv`, 원문 목차', '원문에 없는 작업 · 절을 만들지 않는다',
-                      f'`{GREC}` 「다른 작업 · 제공되지 않은 것」 표', '문서 목록의 파일 칸과 원문 목차를 직접 본다'),
-                    run=B.QUERY_RUN,
-                    why='원문이 없는 것을 물었을 때 「결과 없음」과 「조회가 틀림」을 구별해 보여야 그 답을 믿고 쓸 수 있습니다.',
-                    differ=B.FIX_LOOP)
-        scope = S('답할 수 있는 것과 현재 값 · 승인 · 공급 정보', '⑤ 대조',
-                  f'질문마다 그래프로 답하는지, 현재 값 · 승인이 있어야 하는지, 공급 조건(설비 모델의 부품 · 공급사)과 그날의 재고를 어디까지 답하는지 `{GREC}` 「답할 수 있는 것과 없는 것」에 적습니다.',
-                  '공급 조건과 그날의 재고 · 승인을 어디까지 답하는지와 그 근거를 말합니다.',
-                  '질문마다 분류와 근거(원천 이름 · 파일)가 있고, 공급 조건으로 답한 것은 설비 모델의 그 노드 · 관계로 말할 수 있습니다.',
-                  H('질문별 답 범위를 가른다', '카드, `입력/모델/graph.json`의 부품 · 공급 관계, 원천 이름', '승인 · 현재 값을 추정하지 않는다', f'`{GREC}` 표', '공급 조건 항목을 설비 모델에서 다시 조회해 본다'),
-                  why='공급 조건은 설비 모델에 있지만 그날의 재고는 ERP, 승인 여부는 사람에게 있습니다. 카드는 승인과 현재 상태 확인을 대신하지 않으므로, 무엇을 지금 다시 봐야 하는지 질문마다 밝혀 둡니다.',
-                  differ=B.FIX_LOOP)
-        steps = [first, look, expect, plan, db, docs, link, again, query, card, other, missing, scope, remain, export, check, save]
-    else:
-        q1 = S('구현 ③ 질문 1 조회 — 조치마다 단계 · 조건 · 근거', '④ ~ ⑥ 구현 · 대조 · 고침',
-               f'질문 1(조치마다 수행 단계 · 준비 · 금지 · 완료 기준 · 승인과 근거)의 조회문을 `결과/query.cypher`에 만들고 실행해, 결과 항목을 {N["expect"]}단계 기대와 원문 인용으로 견줍니다.',
-               '조회 결과가 기대와 다를 때 원인이 적재 · 연결 · 조회 중 어디인지 묻습니다.',
-               f'질문 1의 기대와 실제가 `{GREC}`에 나란히 있고, 결과 항목 몇 개를 원문 줄로 직접 확인했습니다.',
-               H('질문 1을 그래프로 답한다', f'랩 DB의 그래프, {N["expect"]}단계 기대', '조회만 한다. 원자료를 다시 읽어 답을 만들지 않는다. 물을 값(설비 · SOP ID)은 조회문 안 `$` 자리 하나로 받는다',
-                 '`결과/query.cypher`의 질문 1 조회문과 결과 표', '결과 항목 몇 개를 원문 인용으로 직접 연다'),
-               run=GQUERY_FIRST,
-               why='같은 절을 찾고도 수행 근거를 놓칠 수 있습니다 — 조회가 성공했다고 답이 맞는 것은 아니므로, 결과 항목을 원문 인용으로 돌아가 견줍니다. ' + B.WHY_TABLE,
-               differ=B.FIX_LOOP)
-        q2 = S('구현 ④ 질문 2 조회 — 규칙의 근거 원문', '④ ~ ⑥ 구현 · 대조 · 고침',
-               f'질문 2(판정에 쓴 규칙마다 근거 원문과 조건과의 차이)의 조회문을 `결과/query.cypher`에 더하고 실행해, 규칙마다 결과를 {N["expect"]}단계 기대와 원문 인용으로 견줍니다.',
-               '근거 원문이 없거나 범위가 다른 규칙이 조회 결과에서 어떻게 보이는지 묻습니다.',
-               f'질문 2의 규칙마다 기대와 실제가 `{GREC}`에 나란히 있고, 근거 후보 몇 개를 원문 줄로 직접 확인했습니다.',
-               H('질문 2를 그래프로 답한다', f'랩 DB의 그래프, `입력/조건표.csv`, {N["expect"]}단계 기대', '조회만 한다. 원자료를 다시 읽어 답을 만들지 않는다',
-                 '`결과/query.cypher`의 질문 2 조회문과 결과 표', '근거 후보 몇 개를 원문 인용으로 직접 연다'),
-               run=B.QUERY_RUN,
-               why='규칙의 근거는 조건표가 가리킨 곳과 검토 결과의 근거 대조가 함께 있어야 고칠 수 있습니다. 근거가 없는 규칙도 「없음」으로 돌아와야 빠진 연결과 구별됩니다.',
-               differ=B.FIX_LOOP)
-        q3 = S('구현 ⑤ 질문 3 조회 — 현재 값을 읽을 원천', '④ ~ ⑥ 구현 · 대조 · 고침',
-               f'질문 3(핀 세척 전에 확인할 현재 값과 그 값을 읽는 곳)의 조회문을 `결과/query.cypher`에 더하고 실행해, 결과를 {N["expect"]}단계 기대와 견줍니다.',
-               '그래프가 값 자체가 아니라 읽을 원천을 돌려주는지 묻습니다.',
-               f'질문 3의 기대와 실제가 `{GREC}`에 나란히 있고, 결과의 현재 값마다 읽을 원천 이름이 있습니다.',
-               H('질문 3을 그래프로 답한다', f'랩 DB의 그래프, `입력/sop.json`의 센서 연결, {N["expect"]}단계 기대', '조회만 한다. 현재 값을 그래프에 넣거나 추정하지 않는다',
-                 '`결과/query.cypher`의 질문 3 조회문과 결과 표', '결과의 센서 · 원천 이름을 설비 모델에서 직접 찾는다'),
-               run=B.QUERY_RUN,
-               why='작업 직전의 센서 값은 그래프가 아니라 시계열에 있습니다. 그래프는 어떤 값을 어디서 읽을지를 돌려주고, 값은 그 원천에서 그때 읽어야 합니다.',
-               differ=B.FIX_LOOP)
-        more = S('다른 문서 추가 반영', '④ ~ ⑥ 구현 · 대조 · 고침',
-                 '아직 넣지 않은 검토 결과(제조사 지침 · 예비품 기준)를 같은 적재 방법으로 더하고, `count` 전후와 기존 ID별 연결 · 속성을 견준 뒤 질문 1을 다시 실행해 앞의 결과와 견줍니다.',
-                 '추가로 바뀐 기존 연결이 있다면 왜인지 묻습니다.',
-                 '기존 노드 · 관계의 수와 기존 ID의 속성이 그대로이고, 늘어난 수가 더한 승인 후보 수와 맞습니다. 질문 1의 결과에서 바뀐 곳을 원문으로 설명할 수 있습니다.',
-                 H('다른 문서의 검토 결과를 더하고 앞의 연결이 그대로인지 센다', '더할 검토 결과, 적재 기능, 앞의 `count` · 질문 1 조회 결과', '기존 연결을 지우거나 덮지 않는다',
-                   '`count` 전후와 기존 ID별 대조 표', '`count`를 전후로 견주고 질문 1을 다시 실행한다'),
-                 'python lab_cypher.py run 결과/<적재 파일>.cypher\npython lab_cypher.py count', run=DB_RUN,
-                 why='여러 문서가 같은 대상을 말할 때, 뒤에 넣은 문서가 앞의 연결을 덮거나 같은 번호의 다른 절을 같은 대상으로 합치면 앞에서 맞던 답이 바뀝니다. 더한 뒤 다시 세어 보아야 반영 범위를 압니다.',
-                 differ=B.FIX_LOOP)
-        q4 = S('구현 ⑥ 질문 4 조회 — 더한 문서의 작업이 걸리는 대상', '④ ~ ⑥ 구현 · 대조 · 고침',
-               f'질문 4(더한 문서의 작업이 어느 설비 · 구성 요소 · 부품에 걸리는지)의 조회문을 `결과/query.cypher`에 더하고 실행해, 결과를 {N["expect"]}단계 기대와 원문 인용으로 견줍니다.',
-               '결과에 기대하지 않은 대상이 있으면 어느 연결에서 왔는지 묻습니다.',
-               f'질문 4의 기대와 실제가 `{GREC}`에 나란히 있고, 결과 대상 몇 개를 원문 · 설비 모델 줄로 직접 확인했습니다.',
-               H('질문 4를 그래프로 답한다', f'랩 DB의 그래프, `입력/모델/graph.json`, {N["expect"]}단계 기대', '조회만 한다. 원자료를 다시 읽어 답을 만들지 않는다',
-                 '`결과/query.cypher`의 질문 4 조회문과 결과 표', '결과 대상 몇 개를 원문 인용과 설비 모델에서 직접 찾는다'),
-               run=B.QUERY_RUN,
-               why='문서의 작업이 어느 대상에 걸리는지는 문서가 말하는 설비 · 부품을 모델의 기존 ID로 이은 연결로만 답합니다. 연결이 넓거나 좁으면 다른 설비의 작업이 섞이거나 빠집니다.',
-               differ=B.FIX_LOOP)
-        hold = S('보류 후보 확인', '⑤ 대조',
-                 f'보류 후보 둘을 골라 그래프에 없는지 조회하고, 결과를 `{GREC}` 「보류 후보 · 제공되지 않은 것 조회」에 적습니다.',
-                 '보류 후보를 어느 검토 결과의 어느 후보로 골랐는지 말합니다.',
-                 '고른 보류 후보 둘이 그래프에 0건이고, 그 후보의 검토 결과 파일 · id가 기록에 있습니다.',
-                 H('보류 후보가 그래프에 없는지 본다', '`입력/검토결과/`, 그래프', '보류 후보를 적재하지 않는다', f'`{GREC}` 「보류 후보 · 제공되지 않은 것 조회」 표', '고른 보류 후보 둘을 id로 조회한다'),
-                 run=B.QUERY_RUN,
-                 why='보류는 버린 것이 아니라 근거가 더 필요하다는 기록입니다. 그래프에는 넣지 않고 남은 질문으로 두어야, 근거 없는 조건이 조회 답에 섞이지 않습니다.',
-                 differ=B.FIX_LOOP)
-        q5 = S('질문 5 조회 — 제공되지 않은 작업 · 절', '⑤ 대조',
-               f'질문 5(제공되지 않은 작업이나 절)를 조회해 「결과 없음」으로 구별되는지 보고, 결과를 `{GREC}` 「보류 후보 · 제공되지 않은 것 조회」에 적습니다.',
-               '제공되지 않은 작업 · 절을 무엇으로 알아봤는지(문서 목록 · 원문) 말합니다.',
-               '질문 5는 지어낸 답 없이 「결과 없음 · 원문 절 미제공」으로 구별되고, 그 근거가 문서 목록 · 원문 줄로 적혀 있습니다.',
-               H('제공되지 않은 작업 · 절은 결과 없음으로 구별한다', '조회문, `자료/문서_목록.csv`, 원문 목차', '원문에 없는 작업 · 절을 만들지 않는다',
-                 f'`{GREC}` 「보류 후보 · 제공되지 않은 것 조회」 표', '문서 목록의 파일 칸과 원문 목차를 직접 본다'),
-               run=B.QUERY_RUN,
-               why='원문이 없는 것을 물었을 때 「결과 없음」과 「조회가 틀림」을 구별해 보여야 그 답을 믿고 쓸 수 있습니다.',
-               differ=B.FIX_LOOP)
-        scope = S('답할 수 있는 것과 현재 값 · 추가 자료가 필요한 것', '⑤ 대조',
-                  f'질문마다 그래프로 답하는지, 현재 값이 필요한지, 추가 자료가 필요한지, 원문에 없는지를 `{GREC}` 「답할 수 있는 것과 없는 것」에 적고, 현재 값은 읽을 원천 이름을 적습니다.',
-                  '질문마다 어느 쪽인지와 그 근거를 말합니다.',
-                  '질문마다 분류 · 근거가 있고, 질문 3의 현재 값마다 원천 이름이 있습니다.',
-                  H('질문별 답 범위를 가른다', '조회 결과, `입력/sop.json`의 센서 연결, 원천 이름', '현재 값을 추정으로 채우지 않는다', f'`{GREC}` 표', '질문 3을 원천 이름으로 다시 본다'),
-                  why='문서의 판단 기준은 그래프에 있지만, 작업 직전의 센서 값 · 작업지시 상태 · 재고는 시계열 · CMMS · ERP · MES에서 읽어야 합니다. 그래프가 무엇에 답하고 무엇에 답하지 못하는지 밝혀 두어야 이 지식을 쓰는 쪽이 읽을 곳을 압니다.',
-                  differ=B.FIX_LOOP)
-        steps = [first, look, expect, plan, db, docs, link, again, q1, q2, q3, more, q4, hold, q5, scope, remain, export, check, save]
-    if len(steps) != len(N):
-        raise RuntimeError(f'그래프 랩 단계 {len(steps)}개 ≠ 단계 차례 {len(N)}개')
+    steps, N = graph_steps(key)
+    N = {k: n for k, n in N.items() if n != ''}
     event = incident()
     handoff = '`결과/지식_내보내기.json` · `결과/query.cypher` · `결과/구축_기록.md`' + (f' · `결과/작업확인카드_{TASK}.md`' if practical else '')
     if practical:
-        goal = ['포털 데이터 연결에서 현재 값을 문서의 기준값과 나란히 놓고 구분했습니다. 이번에는 검토한 지식을 별도 랩 DB의 설비 모델과 조치 기준에 잇고, 핀 세척을 하기 전 작업자가 원문으로 되짚을 수 있는 작업 확인 카드를 만듭니다. '
+        goal = ['포털 데이터 연결에서 현재 값을 문서의 기준값과 나란히 놓고 구분했습니다. 이번에는 검토한 문서 지식을 별도 랩 DB의 기존 ID에 잇고 핀 세척의 작업 확인 카드를 만듭니다. '
                 f'사건은 포털에서 본 경보와 같은 종류의 다른 경보 한 건인 {event}이고, 그 판정 뒤에 남은 근본 조치가 핀 세척(`{TASK}`)입니다.']
         user = '이 답은 보전 야간조가 핀 세척 전에 카드로 준비 · 금지 · 완료를 원문으로 되짚고, 설비보전팀장이 승인할 때 씁니다.'
-        questions = ['HYD-02 핀 세척 작업 확인 카드 — 준비 · 금지 · 순서 · 완료 · 작업 직전 확인할 현재 값 · 승인 · 남은 질문은 무엇이고, 원문 절 · 인용은 무엇인가?',
-                     '같은 방법으로 다른 작업의 카드도 만들어지는가? 원문이 없는 작업 · 절은 「결과 없음」으로 구별되는가?',
-                     '같은 적재를 다시 해도 수가 같은가? 공급 정보와 작업 조건을 어디까지 답하고, 현재 값 · 승인 없이 정할 수 없는 것은 무엇인가?']
-        make = ('만들 것: 스키마 확장 `결과/schema_ext.json`, 문서 · 판 · 절과 승인 지식을 기존 ID에 잇는 적재 파일, 조회문 `결과/query.cypher`, 조회 결과로 카드를 쓰는 코드, '
-                '작업 확인 카드 둘(`결과/작업확인카드_<SOP ID>.md`), 남은 질문 `결과/남은_질문.json`, 내보내기 `결과/지식_내보내기.json`, `' + GREC + '`.')
-        lead = '검토한 지식을 별도 랩 DB의 설비 모델과 조치 기준에 기존 ID로 잇고, 핀 세척을 하기 전 작업자가 원문으로 되짚을 수 있는 작업 확인 카드를 만듭니다. 그다음 다른 작업 · 제공되지 않은 절 · 반복 적재를 확인하고 온톨로지 구축 결과로 저장합니다.'
+        questions = ['HYD-02 핀 세척 카드의 항목마다 내용과 원문 절 · 인용은?', '다른 작업의 카드도 만들어지고, 원문이 없는 작업 · 절은 「결과 없음」으로 구별되는가?',
+                     '다시 적재해도 수가 같은가? 공급 정보 · 작업 조건을 어디까지 답하고, 현재 값 · 승인 없이 정할 수 없는 것은?']
+        lead = '검토한 지식을 랩 DB의 기존 ID에 이어 핀 세척 작업 확인 카드를 만들고, 다른 작업 · 제공되지 않은 절 · 반복 적재를 확인해 저장합니다.'
     else:
         goal = ['포털에서 검토를 마친 후보를 적재하고 지식 지도에서 조치 · 원인 · 근거 문서의 연결을 찾았습니다. 이번에는 검토한 문서 지식을 별도 랩 DB의 설비 모델과 조치 기준에 직접 잇고, 처음 정한 질문에 그 지식이 원문대로 답하는지 확인합니다. '
                 f'사건은 포털에서 본 경보와 같은 종류의 다른 경보 한 건인 {event}이고, 그 판정 뒤에 남은 근본 조치가 핀 세척(`{TASK}`)입니다.']
@@ -2340,112 +2537,354 @@ def glab(key):
                      '핀 세척 전에 확인할 현재 값은 무엇이고 어디서 읽는가(그래프로 답하지 않는 것)?',
                      '다른 문서를 더 반영하면 그 문서의 작업은 어느 설비 · 구성 요소 · 부품에 걸리고, 앞서 넣은 연결은 그대로인가?',
                      '제공되지 않은 작업이나 절을 물으면 그래프는 무엇을 돌려주는가?']
-        make = ('만들 것: 스키마 확장 `결과/schema_ext.json`, 문서 · 판 · 절과 승인 후보를 기존 ID에 잇는 적재 파일, 질문별 조회문 `결과/query.cypher`, 남은 질문 `결과/남은_질문.json`, '
-                '내보내기 `결과/지식_내보내기.json`, `' + GREC + '`.')
-        lead = ('검토를 마친 문서 지식을 별도 랩 DB의 설비 모델과 조치 기준에 기존 ID로 잇는 적재 · 조회 기능을 만듭니다. 처음 정한 질문에 그 지식이 원문대로 답하는지 확인하고, 보류 후보가 빠지는지, '
-                '다시 적재해도 늘지 않는지, 다른 문서를 더해도 앞의 연결이 그대로인지 확인한 뒤, 하나의 온톨로지 구축 결과로 저장합니다.')
-    save_txt = (f'`결과/`의 구축 기록 · 스키마 확장 · 적재 · 조회' + (' · 카드' if practical else '') + f' · 내보내기를 함께 보관합니다. '
-                f'다음 실습 「{GNEXT[key]}」에 넘길 판본은 {handoff}입니다. ' + USB)
-    goal += ['검토 결과에는 여러 문서 · 판의 후보와 결정이 섞여 있고, 문서 속 대상은 모델과 다른 이름으로 적혀 있습니다. 승인한 것만 기존 ID에 이어야 이 지식을 쓰는 쪽이 근거 있는 지식만 씁니다.', GSTAGE]
+        lead = ('검토를 마친 문서 지식을 별도 랩 DB의 설비 모델과 조치 기준에 기존 ID로 잇는 모양 · 규칙을 정해 적재 · 조회합니다. 처음 정한 질문에 그 지식이 원문대로 답하는지, 보류 후보가 빠지는지, '
+                '다시 적재해도 늘지 않는지, 다른 문서를 더해도 앞의 연결이 그대로인지 확인한 뒤 하나의 온톨로지 구축 결과로 저장합니다.')
+    make = ('만들 것: 정할 자리(그래프 모양 · 연결 규칙 · 별칭 · 다른 문서의 조건 · 역할 · 질문 값 · 현재 값 원천 · 기대 답 · 고른 것)와, 결과 화면이 그 자리로 만드는 스키마 확장 `결과/schema_ext.json` · 적재 파일 `결과/load.cypher` · 조회문 `결과/query.cypher`'
+            + (' · 작업 확인 카드 둘(`결과/작업확인카드_<SOP ID>.md`)' if practical else '') + f' · 남은 질문 `결과/남은_질문.json` · 내보내기 `결과/지식_내보내기.json`, `{GREC}`.')
+    save_txt = ((f'다음 실습 「{GNEXT[key]}」에 넘길 판본은 {handoff}입니다. ' + USB) if practical else
+                (f'`결과/`의 정할 자리 · 구축 기록 · 스키마 확장 · 적재 · 조회 · 내보내기를 함께 보관합니다. 다음 실습 「{GNEXT[key]}」에 넘길 판본은 {handoff}입니다. ' + USB))
+    goal += ['과정은 온톨로지 → 에이전트 → 프로세스 순서로 올라갑니다. 이 실습은 온톨로지 단계의 마지막 — 검토한 문서 지식을 그래프에 잇고 질문으로 확인하는 일 — 을 맡습니다.']
     mine = ('내 앞 결과를 쓸 때: 제공 입력은 그대로 두고 내 검토 결과 · 모델 등을 `결과/내_입력/`에 `입력/`과 같은 이름 · 같은 자리로 복사해, 형식이 `입출력_계약.md` 「입력」과 같은지 먼저 견준 뒤 씁니다. '
-            '`lab_cypher.py model`과 `check.py`는 `결과/내_입력/`에 있는 파일을 씁니다. 내 결과가 없어도 제공된 입력으로 끝까지 할 수 있습니다.')
-    card_line = '- `결과/작업확인카드_<SOP ID>.md` — 작업 확인 카드(계약 「작업 확인 카드」). 이 사건의 작업과 다른 작업 하나 이상.\n' if practical else ''
-    formats = ['## 결과 형식\n\n파일의 모양은 `입출력_계약.md`에 있습니다. 무엇을 어떤 종류 · 관계로 담을지, 새 대상의 ID를 어떻게 지을지는 직접 정합니다.\n\n'
-               '- `결과/schema_ext.json` — 문서 근거를 담으려고 더한 종류 · 관계.\n'
-               '- `결과/` 아래 적재 파일(`.cypher` 또는 적재 문장을 만드는 코드) — 다시 실행해도 수가 늘지 않게.\n'
-               '- `결과/query.cypher` — 질문마다의 조회문.\n' + card_line +
-               '- `결과/남은_질문.json` · `결과/지식_내보내기.json` — 그래프에 넣지 않은 남은 질문과 내보내기(다음 실습에 넘길 판본).\n'
-               f'- `{GREC}` — 「제공 빈 틀」의 칸대로 채웁니다.\n- 만든 코드는 `결과/` 아래에 두고, 이름은 하는 일로 짓습니다.\n\n'
-               '## 지킬 조건\n\n- `입력/` · `자료/`는 읽기만 합니다.\n- 승인(`approved`) 후보만 적재합니다.\n- 기존 ID를 바꾸지 않고, 모델에 없는 기존 ID를 지어내지 않습니다.\n'
-               '- 현재 값(재고 · 작업지시 상태 · 센서 값)은 그래프에 넣지 않고 읽을 원천을 가리킵니다.\n- 전체를 지우는 문장을 쓰지 않습니다.\n']
+            '제공 코드와 `check.py`는 `결과/내_입력/`에 있는 파일을 씁니다. 내 결과가 없어도 제공된 입력으로 끝까지 할 수 있습니다.')
+    formats = ['## 결과 형식\n\n파일의 모양은 `입출력_계약.md`에 있습니다. 무엇을 어떤 종류 · 관계로 담을지, 새 대상의 ID를 어떻게 지을지, 무엇을 어느 기존 ID에 이을지는 정할 자리에 내가 정합니다.\n\n'
+               f'- 정할 자리 — `결과/기대_답.csv` · `결과/그래프_모양.json` · `결과/연결_규칙.csv` · `결과/별칭.csv` · `결과/다른문서_조건.csv` · `결과/역할.csv` · `결과/질문_값.csv` · `결과/현재값_원천.csv` · `{F.CHOSEN_FILE}`(계약 「정할 자리」).\n'
+               '- 결과 화면이 쓰는 것 — `결과/schema_ext.json` · `결과/load.cypher` · `결과/query.cypher` · `결과/남은_질문.json` · `결과/지식_내보내기.json`' + (' · `결과/작업확인카드_<SOP ID>.md`' if practical else '') + ' · `결과/보기.html`.\n'
+               f'- `{GREC}` — 「제공 빈 틀」의 칸대로 채웁니다.\n\n'
+               '## 지킬 조건\n\n- `입력/` · `자료/`는 읽기만 합니다. 제공 파일(`show_result.py` · `lab_steps.py` · `doc_graph.py` · `lab_cypher.py` · `lab_db.py` · `check.py`)은 고치지 않습니다.\n- 승인(`approved`) 후보만 적재합니다.\n'
+               '- 기존 ID를 바꾸지 않고, 모델에 없는 기존 ID를 지어내지 않습니다.\n- 현재 값(재고 · 작업지시 상태 · 센서 값)은 그래프에 넣지 않고 읽을 원천을 가리킵니다.\n- 전체를 지우는 문장을 쓰지 않습니다.\n']
     cases = (['보류 · 제외 후보가 그래프와 카드에 들어가지 않았는지', '같은 적재를 두 번 했을 때의 수', '절차 밖 절 · 다른 절차 · 다른 문서에 있는 작업 조건',
               '설비 별칭 · 제조사 품번으로 적힌 대상', '다른 작업의 카드', '제공되지 않은 작업 · 절을 묻는 질문', '공급 조건(설비 모델)과 그날의 재고 · 승인의 경계'] if practical else
              ['보류 · 제외 후보가 그래프에 들어가지 않았는지', '같은 적재를 두 번 했을 때의 수', '다른 문서를 더한 뒤 기존 노드 · 관계의 수와 기존 ID의 속성', '같은 번호를 쓰는 다른 문서의 절',
               '설비 별칭 · 제조사 품번으로 적힌 대상', '근거 원문이 있는 규칙 · 범위가 다른 원문 · 원문이 없는 규칙', '판이 다른 같은 문서', '제공되지 않은 작업 · 절을 묻는 질문',
               '그래프로 답하지 않는 현재 값'])
-    files = sorted(instructor_reviews(key))
     ix = {k: n - 1 for k, n in N.items()}
+    first_tools = ['ai', 'review', 'terminal', 'result']
+    extra = ({ix['db']: ['docker']} if practical else
+             {ix['look']: first_tools, ix['db']: ['docker'], ix['link']: ['run_approve']})
     return dict(
-        title=GTITLES[key], rec=GREC, readonly='`입력/` · `자료/`가', decide_step=ix['expect'], course=course,
+        title=GTITLES[key], rec=GREC, readonly='`입력/` · `자료/`가', decide_step=ix['other'], course=course,
         goal=goal, make=make,
         start=['`입력/모델/` — 설비 모델(schema.json · graph.json). `입력/조건표.csv` · `입력/sop.json` — 냉각 계통 조치의 조건표와 SOP 구조.'
                + (' `입력/조치검토결과.json` — 그 조건표로 지난 30일 경보를 판정 · 비교한 조치 검토 결과.' if practical else ''),
                '`입력/검토결과/` — 문서마다 후보와 결정(채택 · 수정 · 제외 · 보류) · 근거를 적은 검토 결과' + (' · 이 사건의 작업의 조건(`선택작업_조건.json`)' if practical else '') + '. 문서에서 지식을 추출 · 검토하는 실습의 결과와 같은 꼴로 검증해 제공하는 판입니다.',
                mine,
                '`자료/` — 검토한 문서의 원문과 `자료/문서_목록.csv`(문서마다 판 · 상태 · 시행일 · 파일 · SHA-256).',
-               '`lab_db.py` — 이 폴더 전용 랩 DB(그래프 DB)를 켜는 도구. `lab_cypher.py` — 설비 모델 · 조치 기준 적재 · 적재 파일 실행 · 세기 · 내보내기 도구. `입출력_계약.md` — 입력과 결과 파일의 형식. `check.py` — 결과의 구조 검사.',
-               f'`결과/` — 이번에 만든 것을 두는 자리. 「제공 빈 틀」 `{Path(GREC).name}`가 있습니다.', RULES_LINE],
-        tools=['`python lab_cypher.py model` — 설비 모델과 조치 기준(SOP 구조 · 조건표)을 랩 DB에 올립니다. 무엇이 어떤 이름으로 올라가는지는 `입출력_계약.md` 2절에 있습니다.',
-               '`python lab_cypher.py run 결과/<파일>.cypher` — 적재 파일의 문장을 차례로 실행합니다. `count` — 종류 · 관계별 수. `export 결과/지식_내보내기.json` — 내보내기.'],
-        user=user, questions=questions, decide=GDECIDE,
+               f'`{SHOW}` · `lab_steps.py` — 결과 화면(`결과/보기.html`)을 쓰는 제공 파일. `doc_graph.py` — 정할 자리대로 적재 · 조회 · 카드 · 내보내기를 하는 제공 코드. `lab_db.py` — 이 폴더 전용 랩 DB(그래프 DB)를 켜는 도구. `lab_cypher.py` — 랩 DB에 Cypher를 실행하는 공용 도구.',
+               '`입출력_계약.md` — 입력 · 정할 자리 · 결과 파일의 형식. `check.py` — 결과의 구조 검사.',
+               f'`결과/` — 정할 자리(「제공 빈 틀」 파일)와 `{Path(GREC).name}`.', BJ.RULES_LINE],
+        tools=[f'`python lab_db.py` — 이 폴더 전용 랩 DB를 켭니다(Docker Desktop이 켜져 있어야 함).',
+               f'`{SHOW}` — 채운 정할 자리까지 적재 · 조회를 돌려 `결과/보기.html`을 다시 씁니다. 처음 한 번은 브라우저로 엽니다.'],
+        user=user, questions=questions, decide=([('다른 문서의 조건', f'다른 문서의 조건 · 시간 · 승인을 핀 세척(`{TASK}`)에 이을지'), ('그래프 모양과 연결', '어떤 종류 · 관계 · ID로 담고 어느 기존 ID에 이을지')] if practical else
+                                               [('다른 문서의 조건', f'다른 문서가 정한 조건 · 시간 · 승인을 핀 세척(`{TASK}`)에 이을지 — 어느 문서의 어느 문장인지는 탐색에서 찾습니다'),
+                                               ('그래프 모양과 연결', '문서 근거를 어떤 종류 · 관계 · ID로 담고, 승인 후보를 어느 기존 ID에 이을지')]),
         outside=['문서에서 후보를 다시 뽑거나 검토 결정을 바꾸는 일 — 바꿀 것은 남은 질문으로 남깁니다', '포털 DB에 접속하거나 포털 자료를 랩 DB에 넣는 일',
                  '현재 값(재고 · 작업지시 상태 · 센서 값)을 그래프에 넣는 일', '설비 모델의 기존 ID · 기존 종류 · 관계의 뜻을 바꾸는 일'],
         formats=formats, steps=steps, cases=cases,
-        commands=('python lab_db.py\npython lab_cypher.py model\npython lab_cypher.py run 결과/<적재 파일>.cypher\npython lab_cypher.py count\n'
-                  + ('python 결과/<만든 코드 이름>.py\n' if practical else '') + 'python lab_cypher.py export 결과/지식_내보내기.json\npython check.py'),
+        commands=f'python lab_db.py\n{SHOW}\npython check.py',
         done=('형식 검사나 실행 성공만으로 완료하지 않습니다. ' + ('카드 항목마다 먼저 적은 기대와 실제 카드가 원문 줄로 맞고, 다른 작업 카드와 「결과 없음」이 구별되며, ' if practical else
               '질문마다 먼저 적은 기대 답과 실제 조회 결과가 원문 인용으로 맞고, 다른 문서를 더해도 앞의 수 · 연결이 그대로이며, ')
-              + '같은 적재를 다시 해도 수가 같고, 「정한 것」의 근거와 그 선택으로 바뀌는 답을 설명할 수 있으면 완료입니다. 답하지 못한 것은 남은 질문으로 남깁니다.'),
-        save=save_txt, reopen=f'`python lab_cypher.py count` · 질문 조회 결과, `{Path(GREC).name}`의 적재 수 · 기준일 · 저장 시점 · 확인하지 못한 점',
-        tree=tree(GLABS[key].name, [('.github/', 'Copilot 작업 규칙'), ('결과/', f'이번에 만들 것({Path(GREC).name} 빈 틀)'), ('입력/', '모델 · 조건표 · SOP 구조 · 검토 결과(읽기만)'),
-                                     ('자료/', '원문과 문서 목록(읽기만)'), ('AGENTS.md', 'Codex 작업 규칙'), ('check.py', '구조 검사'),
-                                     ('CLAUDE.md', '작업 규칙(같은 내용)'), ('guide.html', '이 가이드'), ('lab_cypher.py', '적재 · 세기 · 내보내기 도구'), ('lab_db.py', '이 폴더 전용 랩 DB 켜기'),
-                                     ('START.md', '이번 과제와 진행 단계'), ('안내.html', '이 가이드와 같은 파일'), ('입출력_계약.md', '입력과 결과 파일의 형식')]),
+              + f'같은 적재를 다시 해도 수가 같고, `{F.CHOSEN_FILE}`의 근거와 그 선택으로 바뀌는 답을 설명할 수 있으면 완료입니다. 답하지 못한 것은 남은 질문으로 남깁니다.'),
+        save=save_txt, reopen=(f'`python lab_db.py` 뒤 결과 화면의 수 · 카드' if practical else f'`python lab_db.py` 뒤 `{SHOW}`의 수 · 조회 결과, `{Path(GREC).name}`의 적재 수 · 기준일 · 저장 시점 · 확인하지 못한 점'),
+        tree=F.tree(GLABS[key].name, short_tree(practical, [('.github/', 'Copilot 작업 규칙'), ('결과/', '정할 자리(빈 틀)와 구축 기록'), ('입력/', '모델 · 조건표 · SOP 구조 · 검토 결과(읽기만)'),
+                                       ('자료/', '원문과 문서 목록(읽기만)'), ('AGENTS.md', 'Codex 작업 규칙'), ('check.py', '구조 검사'), ('CLAUDE.md', '작업 규칙(같은 내용)'),
+                                       ('doc_graph.py', '적재 · 조회 · 카드 제공 코드'), ('lab_cypher.py', '랩 DB 실행 도구'), ('lab_db.py', '이 폴더 전용 랩 DB 켜기'),
+                                       ('lab_steps.py', '결과 화면의 단계'), ('show_result.py', '결과 화면 쓰기'), ('START.md', '이번 과제와 진행 단계'), ('입출력_계약.md', '입력 · 정할 자리 · 결과의 형식')])),
         lead=lead, need='VS Code와 Python, 로그인해 둔 Codex 또는 GitHub Copilot, 랩 DB를 켤 Docker Desktop.',
-        terms=TERMS_GRAPH + (TERMS_CARD if practical else '') + BJ.CONTRACT_TERM, first_more=[mine],
-        # 도구를 처음 쓰는 단계에 그 안내 — AI 채팅은 자료 파악, 터미널 · Docker · Browser는 랩 DB, AI의 랩 DB 명령 실행 허락은 첫 적재. 통합반만 「막히면」을 더 둔다.
-        guide_extra={ix['look']: ['ai', 'review'], ix['db']: ['terminal', 'docker'], ix['docs']: ['run_approve']},
-        guide_after={ix['db']: ['db'] + ([] if practical else [BJ.STUCK_PATH, STUCK_NODB]) + ['db_stuck'], ix['docs']: [] if practical else [STUCK_RUNFILE]},
-        files={}, review_files=files)
+        terms=(TERMS_GRAPH_PRACTICAL + TERMS_CARD) if practical else (TERMS_GRAPH + BJ.CONTRACT_TERM), first_more=[] if practical else [mine],
+        tools_from=TITLES['practical-03-extract'] if practical else None,
+        guide_extra=extra, guide_after={ix['db']: ['db_stuck'] if practical else ['db', 'db_stuck']})   # 실전 카드 랩은 Neo4j Browser를 쓰지 않는다
 
 
-# ───────────── 그래프 랩 설계 조건 검사 · 쓰기 ─────────────
-GLEAKS = ['HM-9.4', '9-7', 'HPP-45B', 'OEM-HPP45B', 'PM-2.4', '예정된 정비', '생산 오더', 'T-3.1', 'T-4.1', 'T-7.1', '코어 교체', '유온 차', '0171', '051f', 'HI-CC-45A', 'HI-RF-10',
-          '1~3호기', '주로 야간', '야간 예정', 'MES 계획', '규칙 기반', '두 번째 구현', 'reference', '강사 참조', '갈래']
-GSTUDENT_TEXT = ['START.md', 'AGENTS.md', 'CLAUDE.md', '.github/copilot-instructions.md', '입출력_계약.md', '입력/README.md', '결과/README.md', GREC, 'check.py', 'lab_cypher.py']
+def lab(key, files):
+    practical = key == 'practical-03-extract'
+    course = '실전반' if practical else '통합반'
+    title, judged, event = TITLES[key], JUDGED[key], incident()
+    steps, N = extract_steps(key)
+    if practical:
+        user = '이 답은 보전 야간조가 핀 세척 전에 준비 · 금지 · 완료를 원문으로 되짚고, 설비보전팀장이 작업지시를 승인할 때 씁니다.'
+        questions = ['핀 세척 후보의 결정(채택 · 수정 · 제외 · 보류)과 근거(문서 · 판 · 절 · 인용)는?',
+                     '핀 세척의 준비 · 금지 · 완료 조건과, 이 작업에 걸린 조건마다의 근거 원문은?',
+                     '같은 기능을 다른 문서에 적용하면 누락 · 근거 없는 생성은 몇 건이고, 무엇을 고쳐 다시 셌나?']
+        goal = [f'포털에서 매뉴얼을 추출 · 대조 · 적재해 본 일을 직접 만듭니다. 포털에서 본 경보와 같은 종류의 다른 경보 한 건인 {event}의 판정 뒤에 남은 근본 조치 쿨러 핀 세척(`{TASK}`)의 준비 · 금지 · 완료 조건을 문서 묶음 전체에서 모읍니다.']
+        save = (f'정할 자리 · 검토 결과 · `결과/선택작업_조건.json` · `{REC}` · 응답 기록을 함께 보관합니다. 다음 실습 「{NEXT[key]}」가 이 판으로 카드를 만듭니다(제공 판으로도 시작). ' + USB)
+    else:
+        user = '이 답은 설비보전팀장이 HYD-02 핀 세척 작업지시를 내기 전에, 이 작업의 조건과 판정에 쓴 조건이 문서 어디에서 왔는지 원문 인용으로 확인할 때 씁니다.'
+        questions = ['핀 세척 작업의 원문을 가진 문서들에서 기능이 뽑은 준비 · 방법 · 금지 · 완료 · 승인 후보는 무엇인가? 원문과 대조한 결정(채택 · 수정 · 제외 · 보류)과 근거(문서 · 판 · 절 · 인용)는?',
+                     '받은 조건표의 조건마다 근거 원문은 어느 문서 · 절 · 인용에 있고, 그 근거에 따라 조건을 어떻게 두나?',
+                     '같은 기능을 검토된 기준선 문서(받은 SOP 구조가 구조로 옮긴 문서)와 다른 문서(정기 점검표 · 예비품 기준 · 보충 매뉴얼)에 적용하면 누락 · 근거 없는 생성은 몇 건이고, 무엇을 고쳐 다시 실행했나?']
+        goal = ['포털 지식 관리에서 매뉴얼을 올려 추출을 요청하고, 후보를 원문과 나란히 놓고 고쳐 적재하는 것을 봤습니다. 이번에는 그 일을 직접 합니다 — 문서를 어떤 단위로 나눌지와 수업 모델에 보낼 요청 글을 내가 정하고, '
+                f'받은 후보를 원문과 대조해 결정하고, 판정에 쓴 조건이 어느 문서의 어느 문장에서 왔는지 확인합니다. 사건은 포털에서 본 경보와 같은 종류의 다른 경보 한 건인 {event}이고, '
+                f'그 판정 뒤에 남은 근본 조치 — 쿨러 핀 세척(`{TASK}`) — 의 작업지시를 내기 전입니다.']
+        save = (f'`결과/`의 정할 자리 · 검토 결과 · `{REC}`와 응답 기록을 함께 보관합니다. 다음 실습 「{NEXT[key]}」는 이 검토 결과의 승인 후보를 그래프에 잇습니다. '
+                '그 실습도 제공된 검토 결과로 시작할 수 있습니다. ' + USB)
+    n_docs = sum(1 for r in DD.REGISTER if r[7])
+    goal += [f'문서 {n_docs}개는 판 · 상태 · 언어 · 형식이 다르고, 모델의 답은 같은 요청에도 달라 원문 줄과 대조해야 씁니다.' if practical else
+             f'문서 묶음은 {n_docs}개입니다 — 같은 매뉴얼의 판이 여럿이고, 판 · 상태 · 언어 · 형식이 문서마다 다릅니다. 모델의 답은 같은 요청에도 매번 다를 수 있어서, 받은 후보를 원문 줄과 대조해야 업무에 쓸 수 있습니다.',
+             '과정은 온톨로지 → 에이전트 → 프로세스 순서로 올라갑니다. 이 실습은 첫 단계인 온톨로지의 문서 지식 — 원문에서 근거 있는 후보를 뽑아 사람이 검토하는 일 — 을 맡습니다.']
+    make = ('만들 것: 정할 자리(나누는 단위 `결과/나누기.json` · 요청 글 `결과/prompt.md` · 기대 항목 · 검토 결정 · 조건 근거' + (' · 역할' if practical else '') + f' · 고른 것)와, 결과 화면이 그 자리로 만드는 '
+            '후보 파일(`결과/후보/`) · 검토 결과(`결과/검토/`)' + (' · `결과/선택작업_조건.json`' if practical else '') + f', `{REC}`.')
+    mine = (f'내 앞 결과를 쓸 때: 제공 입력은 그대로 두고 내 `조건표.csv` · `sop.json` · `{judged}`을 `결과/내_입력/`에 복사해, 열 이름 · 키가 `입출력_계약.md` 「입력」과 같은지 먼저 견준 뒤 씁니다. '
+            '제공 코드와 구조 검사는 `결과/내_입력/`에 있는 파일을 기준으로 봅니다. 내 결과가 없어도 제공된 입력으로 끝까지 할 수 있습니다.')
+    slots = '`결과/나누기.json` · `결과/prompt.md` · `결과/기대_항목.csv` · `결과/검토_결정.csv` · `결과/조건_대조.csv`' + (' · `결과/역할.csv`' if practical else '') + f' · `{F.CHOSEN_FILE}`'
+    formats = ['## 결과 형식\n\n파일의 모양은 `입출력_계약.md`에 있습니다. 문서를 어떤 단위로 나눌지, 무엇을 뽑게 할지, 어떤 후보를 채택할지, 어느 원문을 조건의 근거로 둘지는 정할 자리에 내가 정합니다.\n\n'
+               f'- 정할 자리 — {slots}(계약 「정할 자리」).\n'
+               '- 결과 화면이 쓰는 것 — `결과/후보/<문서 식별자>_<판>.json` · `결과/검토/<문서 식별자>_<판>_검토.json`' + (' · `결과/선택작업_조건.json`' if practical else '') + ' · `결과/시험_조각.json` · `결과/보기.html`. `결과/응답_기록/`은 `llm_client.py`가 씁니다(고치지 않습니다).\n'
+               f'- `{REC}` — 「제공 빈 틀」의 칸대로 채웁니다.\n\n'
+               '## 지킬 조건\n\n- `입력/` · `자료/`는 읽기만 합니다. 제공 파일(`show_result.py` · `lab_steps.py` · `doc_extract.py` · `llm_client.py` · `check.py`)은 고치지 않습니다.\n'
+               '- 후보는 모델의 답에서 만듭니다 — `입력/`의 SOP 구조 · 조건표를 후보로 옮기지 않습니다.\n'
+               '- 후보 파일 원본은 남기고, 검토는 별도 파일에 씁니다. 원문과 대조하지 않은 후보는 보류로 둡니다.\n'
+               '- 조건표 · 판정 결과는 바꾸지 않고, 바꿀 것은 요청으로 남깁니다.\n'
+               '- 키 · 접속 값을 채팅 · 파일 · 기록에 붙이지 않습니다.\n']
+    cases = ['판이 다른 같은 문서에서 같은 작업의 조건이 달라지는 곳', '같은 작업을 사내 문서와 제조사 지침이 함께 말하는 곳', '영문 원본과 번역이 함께 있는 줄',
+             '부정 조건(「~하지 않는다」)과 범위 참조(「~부터 ~까지」)', '경계 낱말(초과 · 이상 · 미만 · 이내)이 문서마다 다른 곳', '글자 그대로는 찾히지 않는 인용과 원문 여러 곳에 맞는 인용',
+             ('이 작업에 걸린 조건표 조건마다' if practical else '조건표 조건마다') + ' 근거 원문 — 원문이 말하는 대상 · 때가 조건과 같은 곳, 다른 곳, 근거 원문을 찾지 못하는 조건',
+             '같은 요청을 한 번 더 보낸 응답', '받은 SOP 구조가 이미 구조로 옮긴 문서에 같은 기능을 적용한 결과', '정기 점검표 · 예비품 기준 · 보충 매뉴얼에 같은 기능을 적용한 결과'] + (['이 작업의 조건이 절차 밖 절 · 다른 문서에 있는 곳'] if practical else [])
+    ix = {k: n - 1 for k, n in N.items()}
+    return dict(
+        title=title, rec=REC, readonly='`입력/` · `자료/`가', decide_step=ix['rev1'], course=course, goal=goal, make=make,
+        start=[f'`입력/조건표.csv` · `입력/sop.json` · `입력/{judged}` — 냉각 계통 조치의 조건표 · SOP 구조와, 그 조건표로 지난 30일 경보를 판정한 결과. 조치를 판정하는 실습의 결과와 같은 꼴로 검증해 제공하는 판입니다.',
+               mine,
+               f'`자료/` — 문서 {n_docs}개와 `자료/문서_목록.csv`(문서마다 판 · 상태 · 시행일 · 소유 부서 · 파일 · SHA-256 — 파일 내용으로 계산한 지문 같은 값이라 한 글자만 달라도 바뀝니다). 문서 목록은 10월 28일 07:30에 내보낸 것입니다.',
+               f'`{SHOW}` · `lab_steps.py` — 결과 화면(`결과/보기.html`)을 쓰는 제공 파일. `doc_extract.py` — 정할 자리대로 문서를 읽고 나누어 모델에 보내고, 답을 후보로 바꾸고 인용 줄을 찾고, 검토 결과를 쓰는 제공 코드.',
+               '`.env.example` · `llm_client.py` — 수업 모델 연결 값의 틀과 연결 도구. 보낸 요청과 받은 답은 `결과/응답_기록/`에 남습니다.',
+               '`입출력_계약.md` — 입력 · 정할 자리 · 결과 파일의 형식. `check.py` — 결과의 구조 검사.',
+               f'`결과/` — 정할 자리(「제공 빈 틀」 파일)와 `{Path(REC).name}`.', BJ.RULES_LINE],
+        tools=['`python llm_client.py` — 수업 모델에 짧은 질문 하나를 보내 연결을 확인합니다. `--count`는 보내지 않고 응답 기록 수와 이 폴더의 안내용 상한까지 남은 수를 보입니다.',
+               f'`{SHOW}` — 채운 정할 자리까지 제공 코드를 돌려 `결과/보기.html`을 다시 씁니다(처음 한 번은 브라우저로 엽니다). 모델을 부르는 단계가 있으므로 이 명령은 내 터미널에서 실행합니다. 같은 요청은 다시 보내지 않고 남은 응답 기록을 씁니다.',
+               '키가 없으면 `llm_client.py`는 요청을 보내지 않고, 보낼 글을 `결과/요청/`에 남긴 뒤 무엇을 했는지 알리고 멈춥니다.'],
+        user=user, questions=questions,
+        decide=([('조건의 근거', '이 작업에 걸린 조건마다 근거 원문과 그에 따른 조건의 자리'), ('사내 문서와 제조사 지침', '제조사 지침이 말하는 것을 작업 조건에 어떻게 둘지'),
+                 ('나누는 단위와 요청 글', '어떤 단위로 나누고 무엇을 뽑게 할지')] if practical else
+                [('조건의 근거', '받은 조건표의 조건마다 무엇을 근거 원문으로 두고, 그 근거에 따라 조건을 어떻게 둘지'),
+                ('사내 문서와 제조사 지침', '핀 세척 작업에 대해 제조사 지침이 말하는 것을 작업 조건에 어떻게 둘지'),
+                ('나누는 단위와 요청 글', '문서를 어떤 단위로 나누어 보내고, 무엇을 뽑게 할지')]),
+        outside=['그래프 DB에 적재하는 일(다음 실습)', '조건표 · SOP 구조 · 판정 결과를 고치는 일 — 바꿀 것은 요청으로 남깁니다', '포털에 문서를 올리거나 포털의 추출 기능을 부르는 일',
+                 '문서를 고쳐 쓰거나 번역하는 일'],
+        formats=formats, steps=steps, cases=cases,
+        commands=f'python llm_client.py\npython llm_client.py --count\n{SHOW}\npython check.py\npython check.py 결과/후보/<파일 이름>.json',
+        done=('형식 검사나 실행 성공만으로 완료하지 않습니다. 실행 전에 원문에서 적은 기대 항목과 실제 후보를 줄마다 견준 기록이 있고, '
+              + ('핀 세척의 준비 · 금지 · 완료 후보의 결정과 이 작업에 걸린 조건마다의 근거 대조가 ' if practical else '핀 세척 작업 후보의 결정과 조건표 조건마다의 근거 대조가 ')
+              + f'원문 줄로 설명되며, 다른 문서의 누락 · 근거 없는 생성 수와 고친 뒤 다시 센 수가 있고, `{F.CHOSEN_FILE}`의 근거와 그 선택으로 바뀌는 답을 설명할 수 있으면 완료입니다. '
+              '키가 없어 모델을 부르지 못한 단계는 그렇다고 적습니다.'),
+        save=save, reopen=('결과 화면의 단계 띠와 마지막 단계의 check.py 출력' if practical else f'`{SHOW}`의 단계 띠와 `python check.py`의 출력, `{Path(REC).name}`의 기준일 · 저장 시점 · 확인하지 못한 점'),
+        tree=F.tree(LABS[key].name, short_tree(practical, [('.github/', 'Copilot 작업 규칙'), ('결과/', '정할 자리(빈 틀)와 검토 기록'), ('입력/', '조건표 · SOP 구조 · 판정 결과(읽기만)'),
+                                      ('자료/', '문서 묶음과 문서 목록(읽기만)'), ('.env.example', '수업 모델 연결 값의 틀'), ('AGENTS.md', 'Codex 작업 규칙'), ('check.py', '구조 검사'),
+                                      ('CLAUDE.md', '작업 규칙(같은 내용)'), ('doc_extract.py', '추출 · 검토 제공 코드'), ('lab_steps.py', '결과 화면의 단계'), ('llm_client.py', '수업 모델 연결'),
+                                      ('show_result.py', '결과 화면 쓰기'), ('START.md', '이번 과제와 진행 단계'), ('입출력_계약.md', '입력 · 정할 자리 · 결과의 형식')])),
+        lead=('나누는 단위와 요청 글을 정해 문서에서 근거 있는 후보를 받고, 원문과 대조해 결정한 뒤 핀 세척의 준비 · 금지 · 완료 조건을 모아 다음 실습에 넘깁니다.'
+              if practical else '문서를 나눌 단위와 수업 모델에 보낼 요청 글을 내가 정해 문서에서 작업 순서 · 조건 · 단위 · 금지 후보를 문서 · 판 · 절 · 인용과 함께 받아 냅니다. '
+              '후보마다 채택 · 수정 · 제외 · 보류와 근거를 정하고, 조건표의 조건마다 근거 원문을 대조한 뒤 같은 방법을 다른 문서에 적용해 빠뜨리거나 지어낸 것을 셉니다.'),
+        need=f'VS Code와 Python, 로그인해 둔 Codex 또는 GitHub Copilot, 강의에서 받은 수업 모델 접속 세 줄(없으면 학생용 완성본 묶음).',
+        terms=TERMS_EXTRACT_PRACTICAL if practical else TERMS_EXTRACT, first_more=[MINE_SHORT] if practical else [mine],
+        guide_extra={ix['start']: ['ai', 'review', 'terminal', 'result'], ix['connect']: [] if practical else [para(ENV_HOWTO[course])], ix['prompt']: [] if practical else ['run_approve']},
+        guide_after={ix['connect']: [STUCK_ENV_P] if practical else [WAIT_FIRST, STUCK_ENV], ix['main']: [WAIT_MANY_P if practical else WAIT_MANY]})
+
+
+def short_tree(practical, rows):
+    """실전(한 칸에 두 랩): 탐색기 모양의 설명은 학생이 손댈 자리 · 읽을 자리만 — 제공 파일 이름은 그대로 보인다."""
+    keep = {'결과/', '입력/', '자료/', 'START.md', '입출력_계약.md'}
+    return [(k, v if k in keep or not practical else '') for k, v in rows]
+
+
+def para(text):
+    return f'<p>{F.inline(text)}</p>'
+
+
+TERMS_EXTRACT = ('**수업 모델**은 강의에서 쓰는 언어 모델이고, 이 폴더의 `llm_client.py`가 `.env`의 접속 세 줄(접속 주소 · 키 · 모델 이름)로 모델 서버에 요청을 보내 부릅니다. '
+                 '**요청 글**(프롬프트)은 모델에게 보내는 작업 지시입니다. **후보**는 모델의 답에서 뽑아 계약 꼴로 적은 조건 · 단계 하나이고, 사람이 원문과 대조해 결정하기 전에는 지식으로 쓰지 않습니다. '
+                 '**인용**은 후보의 근거가 되는 원문 부분을 글자 그대로 옮긴 것, **응답 기록**은 보낸 요청과 받은 답을 `결과/응답_기록/`에 남긴 파일입니다. '
+                 '**정할 자리**는 결과/의 「제공 빈 틀」 파일 — 방향이 갈리는 판단을 내가 AI와 채우는 곳이고, 나머지 일은 제공 코드가 합니다. '
+                 '**조건표**는 조치마다 어떤 입력이 어떤 값일 때 경고 · 감점 · 제외하는지 적은 판단 조건의 표, **SOP 구조**는 조치의 작업 절차를 구조로 옮긴 것, '
+                 '**판정 결과**는 그 조건표로 지난 경보마다 조치 후보를 판정한 결과입니다. ' + BJ.CONTRACT_TERM)
+TERMS_EXTRACT_PRACTICAL = ('**후보**는 수업 모델의 답에서 뽑아 계약 꼴로 적은 조건 · 단계 하나(사람이 원문과 대조해 결정하기 전에는 지식이 아님), **인용**은 그 근거인 원문 부분 그대로입니다. '
+                           '**정할 자리**는 결과/의 「제공 빈 틀」 파일 — 방향이 갈리는 판단만 내가 채우고 나머지는 제공 코드가 합니다. **계약**은 그 파일들의 모양을 정한 `입출력_계약.md`입니다.')
+MINE_SHORT = '내 앞 결과를 쓸 때는 `결과/내_입력/`에 `입력/`과 같은 이름으로 복사해 계약 「입력」과 견준 뒤 씁니다 — 없어도 제공 입력으로 끝까지 합니다.'
+TERMS_GRAPH = ('**적재**는 대상 · 관계를 그래프 DB에 넣는 일이고, **스키마 확장**은 문서 근거를 담으려고 설비 모델에 더하는 새 종류 · 관계와 그 뜻입니다. '
+               '**정할 자리**는 결과/의 「제공 빈 틀」 파일 — 그래프의 모양과 무엇을 어디에 이을지를 내가 AI와 채우는 곳이고, 적재 · 조회 · 내보내기는 제공 코드가 합니다. '
+               '**기존 ID**는 설비 모델 · SOP 구조 · 조건표가 이미 가진 대상의 ID이고, **승인 후보**는 검토 결과에서 채택 · 수정으로 `approved`가 된 후보입니다. ')
+TERMS_GRAPH_PRACTICAL = ('**적재**는 대상 · 관계를 그래프 DB에 넣는 일이고, **기존 ID**는 설비 모델 · SOP 구조 · 조건표가 이미 가진 대상의 ID, **승인 후보**는 검토 결과에서 approved가 된 후보입니다. '
+                         '정할 자리 · 계약은 문서에서 작업 조건과 근거를 추출하는 실습과 같은 뜻입니다. ')
+TERMS_CARD = '**작업 확인 카드**는 작업자가 작업 전에 준비 · 금지 · 순서 · 완료와 그 원문 출처를 되짚는 표이고, 승인과 현재 상태 확인을 대신하지 않습니다. '
+ENV_HOWTO = {
+    '통합반': ('**`.env` 만들기** 왼쪽 탐색기에서 `.env.example`을 오른쪽 클릭해 **복사**(Copy)를 누르고, 탐색기의 빈 곳을 오른쪽 클릭해 **붙여넣기**(Paste)를 누릅니다. '
+              '새로 생긴 사본을 오른쪽 클릭해 **이름 바꾸기**(Rename)로 이름을 `.env`로 바꿉니다. `.env`를 열어 등호(=) 뒤가 비어 있는 세 줄을 지우고, 그 자리에 강의에서 받은 세 줄을 그대로 붙여 넣은 뒤 '
+              '**Ctrl+S**로 저장합니다. 세 줄은 주소 · 키 · 모델 이름이고, 내가 손으로 정하거나 고칠 값은 없습니다.'),
+    '실전반': '**`.env` 만들기** 탐색기에서 `.env.example`을 **복사**(Copy) · **붙여넣기**(Paste)한 사본의 이름을 **이름 바꾸기**(Rename)로 `.env`로 바꾸고, 빈 세 줄 자리에 받은 세 줄을 그대로 붙여 넣어 **Ctrl+S**로 저장합니다.'}
+WAIT_FIRST = para(f'**기다릴 때** 터미널에 「수업 모델에 요청을 보냅니다(요청 해시 …, 이 폴더 기록 1번째 · 안내용 상한 {LLM.MAX_SENT}개) — 첫 요청은 1분쯤 걸릴 수 있습니다.」 줄이 나온 뒤 답이 바로 오지 않아도 기다립니다. '
+                  f'한 요청은 {LLM.TIMEOUT_S}초까지 기다리고, 그 안에 답이 없으면 「모델 서버에 닿지 못했습니다(timed out).」로 시작하는 줄을 내고 멈춥니다 — 그때는 1분쯤 뒤 같은 명령을 다시 실행합니다.')
+STUCK_ENV = para('**막히면** 출력의 첫 줄로 고칠 곳을 찾습니다. 「키가 없어 연결을 확인하지 않았습니다(.env가 없거나 LLM_API_KEY가 비어 있음).」이면 파일 이름이 `.env`가 아니거나 붙여 넣은 뒤 저장하지 않은 것이니, '
+                 '탐색기에서 이름을 보고 탭 이름 옆 점(●)이 없는지 확인합니다. 「.env의 … 값이 비어 있습니다.」처럼 이름이 찍히면 받은 세 줄 가운데 그 줄이 빠진 것이니 세 줄을 다시 붙여 넣습니다.')
+WAIT_FIRST_P = para(f'**기다릴 때** 첫 요청은 1분쯤 걸릴 수 있습니다. {LLM.TIMEOUT_S}초 안에 답이 없으면 「모델 서버에 닿지 못했습니다(timed out).」로 멈추니 1분쯤 뒤 다시 실행합니다.')
+STUCK_ENV_P = para('**막히면** 「키가 없어 연결을 확인하지 않았습니다」는 파일 이름이 `.env`가 아니거나 저장하지 않은 것(탭 이름 옆 ●), 「.env의 … 값이 비어 있습니다」는 그 줄이 빠진 것이니 세 줄을 다시 붙여 넣습니다.')
+WAIT_MANY_P = para(f'**기다릴 때** 조각 수만큼 요청을 보내므로 그만큼 기다립니다. 받은 조각은 다시 보내지 않고, 보낸 기록이 {LLM.MAX_SENT}개가 되면 더 보내지 않습니다(이 폴더의 안내용 상한).')
+WAIT_MANY = para(f'**기다릴 때** 이 단계는 조각마다 요청을 하나씩 보내므로 조각 수만큼 기다립니다. 같은 요청은 다시 보내지 않으므로, 중간에 멈춰 다시 실행해도 이미 받은 조각은 다시 보내지 않습니다. '
+                 f'`결과/응답_기록/`에 모델 서버로 보낸 기록이 {LLM.MAX_SENT}개가 되면 더 보내지 않습니다 — 비용을 지키는 이 폴더의 안내용 상한입니다. 결과 화면 4단계의 「보낼 요청」 수를 먼저 봅니다.')
+
+
+# ───────────── 설계 조건 검사 ─────────────
+# 학생 문장 · 제공 코드 · 가이드의 정답 토글 밖 본문에 두지 않는 말 — 결정 지점 · 함정의 답과 그 실마리. 글자 방식은 제공 코드가 풀어 결과 화면에 보이므로 함정이 아니다.
+LEAKS = ['SR-04', '설비안전규정', 'HM-9.4', '9-7', '9-6', '9-8', '쪽이 빠', '빠진 쪽', '인식 오류', '문자 인식', 'OCR', '번역 메모', 'REM0TE', '판독',
+         '저압수', '고압수', '코어 교체', '유온 차', '입구와 출구', 'T-7.1', '작업 근거가 아니', '승인 전', '미승인', '0171', '051f', '10월 26일', '다가가', '실측',
+         '규칙 기반', '비교용', '(권장)', '외부 모델 호출', 'SOP-PM-21', 'SOP-PM-22', 'T-3.1', 'T-4.1', 'R4', 'R5', 'ts1-hard', 'trip-reset', '인터록 한계', 'PM-2.4']
+NAME_LEAKS = ['근거', '빠진', '깨진', '오류', '미확인', 'cp949', '0171', '교체', '저압', '스캔오류', '인터록']   # 파일 · 폴더 이름(열 이름은 정할 자리의 「근거」 칸을 받는다)
+STUDENT_TEXT = ['START.md', 'AGENTS.md', 'CLAUDE.md', '.github/copilot-instructions.md', '입출력_계약.md', '입력/README.md', '결과/README.md', REC, 'check.py', 'llm_client.py',
+                '.env.example', 'doc_extract.py', 'lab_steps.py']
+GUIDE_WORDS = ['SDD', 'Spec Kit', '명세', '강사 참조', 'reference', '재생', '캐시', '저장된 응답', '시작본', '이미 있는 추출 결과', '앞 실습에서', '앞 이론', '방금 실습에서',
+               '랩 그래프', '교육용', '강의용', '수업용', '(가정)', '(예시)', '실제와 다르', '제작 참고', '낭독']
+OPS_WORDS = ['중계', '깨어나', '60번', '고른 작업', '작업 고르기']
+
+
+def guide_text(html_text, answers=False):
+    """가이드 글(태그 · 스타일 · 스크립트를 뺀 것). answers=False면 「정답 보기」 토글 안은 뺀다(P-3 — 토글 밖 본문만 본다)."""
+    t = re.sub(r'<(style|script)>.*?</\1>', '', html_text, flags=re.S)
+    if not answers:
+        t = re.sub(r'<details class="answer">.*?</details>', '', t, flags=re.S)
+    return _html.unescape(re.sub(r'<[^>]+>', '\n', t))
+
+
+def guide_checks(folder, L, leaks):
+    """폴더 밖 가이드: 절 = START 「진행 단계」(번호 · 이름 · 개수), 구현 · 판단 단계마다 정답 토글, 토글 밖 본문에 두지 않는 말 0, 폴더 · ZIP 안 가이드 0."""
+    bad = []
+    path = F.guide_path(folder)
+    if any((folder/n).exists() for n in F.LEGACY_GUIDES):
+        bad.append('랩 폴더 안에 guide.html · 안내.html이 남음')
+    guide = path.read_text(encoding='utf-8')
+    heads = re.findall(r'<section id="s(\d+)"><h2>(\d\d) ([^<]+)</h2>', guide)
+    start = re.findall(r'^(\d+)\. \*\*([^*]+)\*\*', (folder/'START.md').read_text(encoding='utf-8-sig'), re.M)
+    if [(int(a), _html.unescape(c)) for a, _, c in heads] != [(int(a), b) for a, b in start] or len(heads) != len(L['steps']):
+        bad.append(f'가이드 절({len(heads)}) ≠ START 진행 단계({len(start)}) — 번호 · 이름이 같아야 함')
+    for i, s in enumerate(L['steps'], 1):
+        section = re.search(rf'<section id="s{i}">.*?</section>', guide, re.S).group()
+        if F.needs_answer(s) and '<details class="answer">' not in section:
+            bad.append(f'{i}단계 「{s["name"]}」에 정답 보기 토글 없음')
+    text = guide_text(guide)
+    for word in [w for w in leaks if w != '(권장)'] + GUIDE_WORDS + OPS_WORDS:
+        for n, line in enumerate(text.splitlines(), 1):
+            if word in line:
+                bad.append(f'가이드 토글 밖 글 {n}줄: 「{word}」')
+    return bad
+
+
+def text_leaks(folder, rels, leaks):
+    bad = []
+    for rel in rels:
+        text = (folder/rel).read_text(encoding='utf-8-sig')
+        for word in leaks + OPS_WORDS:
+            for n, line in enumerate(text.splitlines(), 1):
+                if word in line:
+                    bad.append(f'{rel}:{n}: 「{word}」')
+    return bad
+
+
+def blank_checks(folder):
+    """처음 폴더의 결과/: README와 「제공 빈 틀」 표시가 첫 3줄 안에 있는 파일뿐, 정할 자리는 비어 있다(K-7)."""
+    bad = []
+    for p in sorted((folder/'결과').rglob('*')):
+        if p.is_file() and p.name != 'README.md':
+            head = '\n'.join(p.read_text(encoding='utf-8-sig').splitlines()[:3])
+            if F.MARK not in head:
+                bad.append(f'결과/{p.relative_to(folder/"결과").as_posix()}: 첫 3줄에 「{F.MARK}」 없음')
+    return bad
+
+
+def design_checks(key, folder, L):
+    bad = guide_checks(folder, L, LEAKS) + blank_checks(folder)
+    s3 = BJ.LABS['integrated-03-criteria']/'자료'
+    for name in ['HM-8_매뉴얼.md', 'HM-8_1.0판_매뉴얼.md', 'HI-01_보충매뉴얼.md']:
+        if (folder/'자료'/name).read_bytes() != (s3/name).read_bytes():
+            bad.append(f'자료/{name}이 3회차 조치 기준 랩의 자료와 다름 — 3회차 랩을 다시 만든 뒤 만듭니다')
+    for name in ['조건표.csv', 'sop.json']:
+        if (folder/'입력'/name).read_bytes() != (BJ.LABS[S3_JUDGE[key]]/'입력'/name).read_bytes():
+            bad.append(f'입력/{name}이 3회차 판정 랩 입력과 다름')
+    with zipfile.ZipFile(COMPLETED[key]) as z:
+        inner = next(n for n in z.namelist() if n.endswith('/결과/' + JUDGED[key]))
+        if z.read(inner) != (folder/'입력'/JUDGED[key]).read_bytes():
+            bad.append(f'입력/{JUDGED[key]}이 3회차 학생용 완성본의 결과와 다름')
+    sr = (folder/'자료/SR-04_설비안전규정_발췌.txt').read_bytes().decode('cp949')
+    for word in ['예측', '작업지시', '후보', 'rule:', 'R4']:
+        if word in sr:
+            bad.append(f'SR-04 발췌에 「{word}」')
+    bad += text_leaks(folder, STUDENT_TEXT, LEAKS)
+    for p in folder.rglob('*'):
+        name = p.relative_to(folder).as_posix()
+        if any(w in name for w in NAME_LEAKS):
+            bad.append(f'이름 「{name}」에 두지 않는 말')
+    if (folder/'결과/응답_기록').exists():
+        bad.append('학생 폴더에 응답 기록이 있음')
+    for rel, src in {'llm_client.py': TOOLS/'lab_llm.py', 'show_result.py': TOOLS/'show_result.py', 'doc_extract.py': TOOLS/'doc_extract.py'}.items():
+        if (folder/rel).read_bytes() != src.read_bytes():
+            bad.append(f'{rel}이 실습시작 원본과 다름')
+    if bad:
+        raise RuntimeError(f'{folder.name} 설계 조건 검사 실패:\n- ' + '\n- '.join(bad))
 
 
 def gdesign_checks(key, folder, L):
-    bad = []
+    bad = guide_checks(folder, L, GLEAKS) + blank_checks(folder)
     course = GCOURSE[key]
-    practical = key == 'practical-03-card'
     for name in ['schema.json', 'graph.json']:
         if (folder/'입력/모델'/name).read_bytes() != (LAB2_INPUT[course]/name).read_bytes():
             bad.append(f'입력/모델/{name}이 2회차 실습4 입력과 다름')
     for name in ['조건표.csv', 'sop.json']:
         if (folder/'입력'/name).read_bytes() != (BJ.LABS[S3_JUDGE[GEXTRACT[key]]]/'입력'/name).read_bytes():
             bad.append(f'입력/{name}이 3회차 판정 랩 입력과 다름')
-    if practical:
-        with zipfile.ZipFile(COMPLETED[GEXTRACT[key]]) as z:
-            inner = next(n for n in z.namelist() if n.endswith('/결과/조치검토결과.json'))
-            if z.read(inner) != (folder/'입력/조치검토결과.json').read_bytes():
-                bad.append('입력/조치검토결과.json이 3회차 학생용 완성본의 결과와 다름')
     ext = LABS[GEXTRACT[key]]/'자료'
-    if sorted(f.name for f in (folder/'자료').iterdir()) != sorted(f.name for f in ext.iterdir()):
-        bad.append('자료/의 파일이 추출 랩 자료와 다름(카드 대조에 쓰지 않는 자료를 두지 않는다 — 코딩랩.md K-3)')
     for f in ext.iterdir():
         if (folder/'자료'/f.name).read_bytes() != f.read_bytes():
             bad.append(f'자료/{f.name}이 추출 랩 자료와 다름')
-    for rel in GSTUDENT_TEXT:
-        text = (folder/rel).read_text(encoding='utf-8')
-        for word in GLEAKS + OPS_WORDS:
-            for n, line in enumerate(text.splitlines(), 1):
-                if word in line:
-                    bad.append(f'{rel}:{n}: 「{word}」')
-    names = [p.relative_to(folder).as_posix() for p in folder.rglob('*')]
-    for name in names:
-        for word in NAME_LEAKS:
-            if word in name and not name.startswith('입력/검토결과/'):
-                bad.append(f'이름 「{name}」에 「{word}」')
-    if any(n.endswith('.env') or 'replay' in n or 'recorded' in n or '응답_기록' in n for n in names):
-        bad.append('학생 폴더에 .env · 응답 기록 · 재생 파일이 있음')
-    if (folder/'lab_db.py').read_bytes() != (TOOLS/'lab_db.py').read_bytes():
-        bad.append('lab_db.py가 실습시작 원본과 다름')
-    if len(L['steps']) != len(gstep_order(key)):
-        bad.append(f'단계 수 {len(L["steps"])} — 단계 차례는 {len(gstep_order(key))}')
-    bad += guide_checks(folder, L, GLEAKS)
+    bad += text_leaks(folder, GSTUDENT_TEXT, GLEAKS)
+    for p in folder.rglob('*'):
+        name = p.relative_to(folder).as_posix()
+        if any(w in name for w in NAME_LEAKS) and not name.startswith('입력/검토결과/'):
+            bad.append(f'이름 「{name}」에 두지 않는 말')
+    for rel, src in {'lab_db.py': TOOLS/'lab_db.py', 'lab_cypher.py': TOOLS/'lab_cypher.py', 'show_result.py': TOOLS/'show_result.py', 'doc_graph.py': TOOLS/'doc_graph.py'}.items():
+        if (folder/rel).read_bytes() != src.read_bytes():
+            bad.append(f'{rel}이 실습시작 원본과 다름')
     if bad:
         raise RuntimeError(f'{folder.name} 설계 조건 검사 실패:\n- ' + '\n- '.join(bad))
+
+
+GLEAKS = ['HM-9.4', '9-7', 'HPP-45B', 'OEM-HPP45B', 'PM-2.4', '예정된 정비', '생산 오더', 'T-3.1', 'T-4.1', 'T-7.1', '코어 교체', '유온 차', '0171', '051f', 'HI-CC-45A', 'HI-RF-10',
+          '1~3호기', '주로 야간', '야간 예정', 'MES 계획', '규칙 기반', '두 번째 구현', 'reference', '강사 참조', '갈래']
+GSTUDENT_TEXT = ['START.md', 'AGENTS.md', 'CLAUDE.md', '.github/copilot-instructions.md', '입출력_계약.md', '입력/README.md', '결과/README.md', GREC, 'check.py', 'lab_steps.py', 'doc_graph.py']
+
+
+# ───────────── 쓰기 ─────────────
+def fresh(folder):
+    """폴더를 통째로 다시 쓴다(옛 판 찌꺼기가 남지 않게)."""
+    if folder.exists():
+        shutil.rmtree(folder)
+    folder.mkdir(parents=True)
+
+
+def finish(folder, L, steps_source, check_source, provided):
+    """제공 결과 화면 두 파일 · 검사기(제공 파일 해시 대조를 넣어) · START · 폴더 밖 가이드."""
+    F.write_provided(folder, steps_source)
+    at = check_source.rindex("\nif __name__ == '__main__':")
+    write(folder/'check.py', check_source[:at] + '\n' + F.CHOSEN_CHECK + '\n' + F.provided_guard(folder, [p for p in provided if p != 'check.py']) + check_source[at:])
+    write(folder/'START.md', F.step_start(L).replace('`결과/schema.json`처럼', '`결과/prompt.md`처럼' if 'doc_extract.py' in provided else '`결과/연결_규칙.csv`처럼'))
+    F.write_guide(folder, F.step_guide(L))
+
+
+def build(key):
+    folder = LABS[key]
+    files = DD.bundle()
+    L = lab(key, files)
+    fresh(folder)
+    F.write_rules(folder)
+    (folder/'자료').mkdir()
+    for name, data in files.items():
+        (folder/'자료'/name).write_bytes(data)
+    BJ.judge_inputs(folder)
+    judged = (BASE_JUDGED/JUDGED[key]).read_bytes()
+    (folder/'입력'/JUDGED[key]).write_bytes(judged)
+    n_events = len(json.loads(judged)['events'])
+    for name, text in {'입출력_계약.md': contract(key), REC: record_template(key), '결과/README.md': result_readme(key),
+                       '입력/README.md': input_readme(key, n_events), '.env.example': ENV_EXAMPLE, **extract_blanks(key)}.items():
+        write(folder/name, text)
+    (folder/'llm_client.py').write_bytes((TOOLS/'lab_llm.py').read_bytes())
+    (folder/'doc_extract.py').write_bytes((TOOLS/'doc_extract.py').read_bytes())
+    finish(folder, L, extract_steps_source(key, L), checker(key), PROVIDED_EXTRACT)
+    return folder, L
 
 
 def gbuild(key):
@@ -2453,15 +2892,8 @@ def gbuild(key):
     course = GCOURSE[key]
     practical = key == 'practical-03-card'
     L = glab(key)
-    keep = {p.relative_to(folder).as_posix(): p.read_bytes() for p in (folder/'images').rglob('*') if p.is_file()} if (folder/'images').is_dir() else {}
-    if folder.exists():
-        shutil.rmtree(folder)                     # 임시판(코드/ · 강사 대본 안내.html · 옛 검사기 등)이 남지 않게 통째로 다시 쓴다(실제 화면 사진만 보존)
-    folder.mkdir(parents=True)
-    for rel, data in keep.items():
-        (folder/rel).parent.mkdir(parents=True, exist_ok=True)
-        (folder/rel).write_bytes(data)
-    for path in [folder/'AGENTS.md', folder/'.github/copilot-instructions.md', folder/'CLAUDE.md']:
-        write(path, STEP_RULES)
+    fresh(folder)
+    F.write_rules(folder)
     (folder/'자료').mkdir()
     for f in sorted((LABS[GEXTRACT[key]]/'자료').iterdir()):
         (folder/'자료'/f.name).write_bytes(f.read_bytes())
@@ -2478,13 +2910,48 @@ def gbuild(key):
     for name, data in reviews.items():
         (folder/'입력/검토결과'/name).parent.mkdir(parents=True, exist_ok=True)
         (folder/'입력/검토결과'/name).write_bytes(data)
-    (folder/'lab_db.py').write_bytes((TOOLS/'lab_db.py').read_bytes())
-    for name, text in {'lab_cypher.py': LAB_CYPHER, 'check.py': graph_checker(key), '입출력_계약.md': graph_contract(key), GREC: graph_record(key),
-                       '결과/README.md': graph_result_readme(key), '입력/README.md': graph_input_readme(key, reviews, n_events)}.items():
+    for name in ['lab_db.py', 'lab_cypher.py', 'doc_graph.py']:
+        (folder/name).write_bytes((TOOLS/name).read_bytes())
+    for name, text in {'입출력_계약.md': graph_contract(key), GREC: graph_record(key), '결과/README.md': graph_result_readme(key),
+                       '입력/README.md': graph_input_readme(key, reviews, n_events), **graph_blanks(key)}.items():
         write(folder/name, text)
-    write(folder/'START.md', step_start(L).replace('`결과/schema.json`처럼', '`결과/schema_ext.json`처럼'))
-    write_guide(folder, L)
+    finish(folder, L, graph_steps_source(key, L), graph_checker(key), PROVIDED_GRAPH)
     return folder, L
+
+
+def digest(folder):
+    h = hashlib.sha256()
+    for p in sorted(folder.rglob('*')):
+        if p.is_file() and '__pycache__' not in p.parts:
+            h.update(p.relative_to(folder).as_posix().encode() + b'\0' + p.read_bytes())
+    guide = F.guide_path(folder)
+    h.update(b'guide\0' + guide.read_bytes())
+    return h.hexdigest()
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
+    parser.add_argument('--lab', choices=sorted(LABS) + sorted(GLABS), action='append')
+    parser.add_argument('--check', action='store_true')
+    args = parser.parse_args(argv)
+    chosen = args.lab or sorted(LABS) + sorted(GLABS)
+    order = [k for k in sorted(LABS) if k in chosen] + [k for k in sorted(GLABS) if k in chosen]
+    for key in order:
+        graph = key in GLABS
+        folder, L = (gbuild if graph else build)(key)
+        (gdesign_checks if graph else design_checks)(key, folder, L)
+        first = digest(folder)
+        if args.check:
+            (gbuild if graph else build)(key)
+            second = digest(folder)
+            print(f'{folder.name}: 두 번 생성 {"같음" if first == second else "다름"} ({first[:12]})')
+            if first != second:
+                return 1
+        archive = pack(folder)
+        print(f'{folder.name}: 단계 {len(L["steps"])}, 파일 {sum(1 for p in folder.rglob("*") if p.is_file())}개, ZIP {archive.name} {hashlib.sha256(archive.read_bytes()).hexdigest()[:12]}, '
+              f'가이드 {F.guide_path(folder).name} {hashlib.sha256(F.guide_path(folder).read_bytes()).hexdigest()[:12]}')
+    print('package-index · catalog 등록은 하지 않았습니다(메인이 lab_package.register · build_launcher.py로).')
+    return 0
 
 
 if __name__ == '__main__':

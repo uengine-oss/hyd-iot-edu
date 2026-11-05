@@ -15,6 +15,7 @@ from urllib.parse import unquote,urlsplit
 import hashlib,html,json,posixpath,re,sys,zipfile
 from build_labs import PICTURE_TYPES, student_photos
 from lab_package import PRIVATE, student_files, zip_root
+from lab_frame import MARK, SHOW_RESULT
 ROOT=Path(__file__).resolve().parents[4]
 HERE=Path(__file__).resolve().parent
 OUT=ROOT/'workspace/강의제작/산출물'
@@ -118,6 +119,9 @@ def check_zip(zpath,folder,need=(),exclude_names=PRIVATE):
             if n in inside:continue
             errors.append(f'{zpath.name}: 강사 대본이 들어 있음 {n}' if '/대본/' in '/'+n else f'{zpath.name}: 랩 폴더 밖 항목 {n}')
         packed={n[len(root):]:z.read(n) for n in inside}
+        for info in z.infolist():
+            if not info.filename.isascii() and not info.flag_bits & 0x800:
+                errors.append(f'{zpath.name}: 한글 이름 항목에 UTF-8 표시(0x800)가 없음 {info.filename}')
     try:key=folder.resolve().relative_to(OUT.resolve()).as_posix()
     except ValueError:key=None
     templates={t[len(key)+1:] for t in TEMPLATES if key and t.startswith(key+'/')}
@@ -143,11 +147,53 @@ def check_zip(zpath,folder,need=(),exclude_names=PRIVATE):
         if name not in packed:errors.append(f'{zpath.name}: 풀었을 때 {name} 없음')
     return errors,notes
 
+START_STEP=re.compile(r'^\d+\. \*\*(.+?)\*\* — ',re.M)
+
+def verify_outside_guide(item,z,names,base):
+    """코딩 랩(guide_file 있음): 가이드는 ZIP 밖 한 파일(해시 · 단계 이름 = START 「진행 단계」 · 정답 토글 · 상대 링크 0),
+    ZIP 안에는 가이드가 없고 결과 화면 두 파일이 있으며 결과/는 README와 빈 틀뿐(공용틀_계약 2 · 3 · 4, K-7)."""
+    spec=item['guide_file'];guide=ROOT/spec['path']
+    assert hashlib.sha256(guide.read_bytes()).hexdigest()==spec['sha256'],(item['id'],'가이드 해시 불일치')
+    for n in names:
+        assert PurePosixPath(n).name not in ('guide.html','안내.html') and not n.endswith('_guide.html'),(item['id'],'ZIP 안에 가이드',n)
+    for file in ['START.md','결과/README.md','show_result.py','lab_steps.py']:
+        assert base+file in names,(item['id'],file)
+    assert z.read(base+'show_result.py')==SHOW_RESULT.encode('utf-8'),(item['id'],'show_result.py가 공용 원본과 다름')
+    for n in names:
+        if n.startswith(base+'결과/') and not n.endswith('/'):
+            rest=n[len(base):]
+            assert rest!='결과/보기.html' and not rest.startswith('결과/.보기_이전'),(item['id'],'처음 ZIP에 결과 화면',rest)
+            head=' '.join((text_of(z.read(n)) or '').splitlines()[:3])
+            assert rest=='결과/README.md' or MARK in head,(item['id'],'결과/에 빈 틀이 아닌 파일',rest)
+    text=guide.read_text(encoding='utf-8')
+    headings=[html.unescape(h) for h in re.findall(r'<section id="s\d+"><h2>\d+ (.*?)</h2>', text)]
+    steps=START_STEP.findall((text_of(z.read(base+'START.md')) or '').split('## 진행 단계',1)[-1].split('\n## ',1)[0])
+    assert headings==steps,(item['id'],'가이드 절과 START 진행 단계가 다름',headings,steps)
+    assert '<details class="answer">' in text,(item['id'],'정답 보기 토글 없음')
+    parser=Links();parser.feed(text)
+    for link in parser.targets:
+        parts=urlsplit(link)
+        assert parts.scheme or not parts.path,(item['id'],'폴더 밖 가이드의 상대 링크(폴더 이름이 바뀌어 풀리지 않음)',link)
+    assert not parser.images,(item['id'],'폴더 밖 가이드에 사진 — 싣는 길이 아직 없음')
+
 def verify_lab(item):
     archive=ROOT/item['path']
     assert hashlib.sha256(archive.read_bytes()).hexdigest()==item['sha256']
     with zipfile.ZipFile(archive) as z:
         names=z.namelist();base=item['folder']+'/'
+        if item.get('guide_file'):
+            verify_outside_guide(item,z,names,base)
+            assert not any(Path(x).name=='.env' or '__pycache__' in x for x in names)
+            if '-02-' in item['id']:
+                for file in ['결과/schema.json','결과/graph.json','offline_load.py']:assert base+file not in names,(item['id'],file)
+                assert not any(Path(x).name in ('기대답.json','session2_검증.json') or '/갈래B/' in x for x in names),(item['id'],'강사 기대 답 포함')
+            if item['id'].endswith('-02-graph'):assert base+'입력/graph.json' in names,(item['id'],'입력/graph.json')   # 2회차 실습4만 — 문서 지식 그래프 랩의 모델은 입력/모델/(생성기 설계 조건이 2회차 실습4 입력과 같은 바이트인지 본다)
+            if item['id']=='integrated-02-graph':
+                assert any(x.startswith(base+'입력/자료_변경분/') for x in names),(item['id'],'수정본 없음')
+            if item['id']=='practical-02-ontology':
+                previous=json.loads(z.read(base+'입력/graph.json'))
+                assert not any('Supplier' in n['labels'] for n in previous['nodes'])
+            return {'id':item['id'],'sha256':item['sha256'],'files':len(names),'guide':'outside','solution_boundary':'pass'}
         required = ['guide.html']
         if item.get('entry') == 'neo4j':
             required.extend(['prepare_example.py','lab_db.py','예제_적재.cypher'])

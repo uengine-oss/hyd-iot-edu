@@ -1,0 +1,15 @@
+문서,판,절,잇는_방법,관계,대상,까닭,근거
+HM-8,1.1,,절차 표기와 같은 조치,CONDITION_OF,,절차 안의 조건은 그 절차(조치)의 조건,HM-8_매뉴얼.md:76
+HM-8,1.1,HM-8.3,정한 대상,EVIDENCE_FOR,fm:cooler-cooling-loss,냉각 성능 상실의 판정 근거,HM-8_매뉴얼.md:25
+HM-8,1.1,HM-8.4,별칭,EVIDENCE_FOR,,원인 절 — 본문의 원인 이름으로,HM-8_매뉴얼.md:35
+HM-8,1.1,HM-8.5,정한 대상,CONDITION_OF,SOP-COOL-11 SOP-COOL-12 SOP-COOL-13,원격 조치의 공통 조건,HM-8_매뉴얼.md:45
+HM-8,1.1,HM-8.6,정한 대상,CONDITION_OF,SOP-COOL-11 SOP-COOL-12 SOP-COOL-13,원격 조치의 회복 판정,HM-8_매뉴얼.md:71
+HM-8,1.1,HM-8.8,정한 대상,CONDITION_OF,SOP-COOL-11 SOP-COOL-12 SOP-COOL-13,원격 조치의 금지와 제한,HM-8_매뉴얼.md:87
+HM-8,1.1,HM-8.7,정한 대상,CONDITION_OF,SOP-COOL-14 SOP-COOL-15,근본 조치의 공통 조건 — CMMS 작업지시 · 설비보전팀장 승인,HM-8_매뉴얼.md:74
+HM-9,1.0,,잇지 않음,,,옛 판 체계의 스캔본 — 같은 내용이 현행 HM-8에 있어 출처 절에만 둠,HM-9장_스캔본.txt:15
+SR-04,2024,,잇지 않음,,,규칙 근거(검토의 rule_links)로만 잇고 조치에는 직접 잇지 않음,SR-04_설비안전규정_발췌.txt:10
+PM-02,2.0,,별칭,APPLIES_TO,,정기 점검표 — 본문의 설비 · 부품 이름으로,PM-02_정기점검표.md:10
+HI-01,1.0,,별칭,APPLIES_TO,,보충 매뉴얼 — 본문의 설비 이름으로,HI-01_보충매뉴얼.md:10
+OEM-HPP45A-MM,C,,별칭,APPLIES_TO,,제조사 지침 — 모델 HPP-45A · 부품 이름으로,OEM-HPP45A_정비지침_영한.md:8
+OEM-HPP45A-MM,C,7,정한 대상,CONDITION_OF,SOP-COOL-14,제조사 코어 세척(T-7.1)은 핀 세척 작업의 조건,OEM-HPP45A_정비지침_영한.md:104
+PR-07,1.3,,별칭,APPLIES_TO,,예비품 기준 — 본문의 품번 · 부품 이름으로,PR-07_예비품기준.md:10

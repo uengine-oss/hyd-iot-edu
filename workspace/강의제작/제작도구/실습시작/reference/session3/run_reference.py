@@ -36,6 +36,9 @@ HERE = Path(__file__).resolve().parent
 TOOLS = HERE.parents[1]
 sys.path[:0] = [str(HERE), str(TOOLS)]
 import criteria as CR  # noqa: E402
+sys.path.insert(0, str(TOOLS/'judgement_tools'))
+import condition_tools as CT  # noqa: E402
+import sop_tools as SOP  # noqa: E402
 import judge_actions as J  # noqa: E402
 import build_judgement_labs as BJ  # noqa: E402
 import data_conditions as DC  # noqa: E402
@@ -92,7 +95,7 @@ def run_check(folder):
 
 def dump(path, value):
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, ensure_ascii=False, indent=1) + '\n', encoding='utf-8')
+    path.write_text(json.dumps(value, ensure_ascii=False, indent=1) + '\n', encoding='utf-8', newline='\n')
 
 
 def write(path, text):
@@ -601,16 +604,14 @@ TABLE_DAMAGES = [
 ]
 
 
-SHIFT_FROM = '|---|---|---|---|\n| | | | |'          # 기록 빈 틀의 「정한 것」 표 첫 줄(네 칸)
-SHIFT_TO = '|---|---|---|---|\n| 출처가 확인되지 않는 기준 | 넣지 않음 | 내보내기 16행 | | 트립 사례 |'   # 한 칸이 더 들어가 뒤 칸이 밀린 줄(리허설의 칸 밀림)
-
-
-def shifted(key, name):
-    """그 랩의 기록 빈 틀에 칸이 밀린 줄 하나를 넣은 글 — 기록 표의 칸 수 검사가 잡아야 한다."""
-    text = (LAB[key]/'결과'/name).read_text(encoding='utf-8')
-    if SHIFT_FROM not in text:
-        raise RuntimeError(f'{LAB[key].name}/결과/{name}에 「정한 것」 표 빈 줄이 없음 — 칸 밀림 시험을 다시 맞춘다')
-    return text.replace(SHIFT_FROM, SHIFT_TO, 1)
+def csv_damages(key):
+    """정할 자리 CSV · 제공 파일 고의 손상 — 정한 것의 근거에 파일:줄 없음, 기대 판정 낱말 틀림, 제공 코드를 고침."""
+    bad_choice = BJ.chosen_csv([['출처가 확인되지 않는 기준', '옮기지 않는다', '내보내기 16행', '트립 사례']])
+    bad_expect = BJ.expect_csv([['ALT-hyd02-0172-54a5', 'SOP-COOL-11', '남음', '자료/사건_기록_HYD-02_1027.md:31']], BJ.CASE_FROM_CASES)
+    tool = BJ.PROVIDED[key][0]
+    return [('정한 것의 근거에 파일:줄 없음', {'결과/정한_것.csv': bad_choice}, '근거에 파일:줄이 없습니다'),
+            ('기대 판정이 유지 · 제외 · 보류가 아님', {'결과/기대_판정.csv': bad_expect}, '기대_판정은 유지 · 제외 · 보류 가운데 하나'),
+            ('제공 코드를 고침', {tool: (LAB[key]/tool).read_text(encoding='utf-8') + '\n# 학생이 고친 줄\n'}, f'제공 파일이 바뀌었습니다: {tool}')]
 
 
 def renamed_ids(value):
@@ -644,7 +645,8 @@ def checker_trials(tmp, judged):
         trial(k, tmp, name, {'결과/sop.json': sop_damage(fn), '결과/조건표.csv': base_table}, False, needle)
     for name, fn, needle in TABLE_DAMAGES:
         trial(k, tmp, name, {'결과/sop.json': base_sop, '결과/조건표.csv': table_edit(base_table, fn)}, False, needle)
-    trial(k, tmp, '요구사항.md 표의 칸이 밀린 줄', {'결과/sop.json': base_sop, '결과/조건표.csv': base_table, '결과/요구사항.md': shifted(k, '요구사항.md')}, False, '칸이 밀렸는지')
+    for name, extra, needle in csv_damages(k):
+        trial(k, tmp, name, {'결과/sop.json': base_sop, '결과/조건표.csv': base_table, **extra}, False, needle)
     graph = json.loads((LAB[k]/'입력/graph.json').read_text(encoding='utf-8'))
     my_graph = {**graph, 'nodes': [n for n in graph['nodes'] if n['props']['id'] != 'HYD-03:fan'],
                 'rels': [r for r in graph['rels'] if 'HYD-03:fan' not in (r.get('a'), r.get('b'))]}
@@ -659,7 +661,8 @@ def checker_trials(tmp, judged):
     trial(k, tmp, '강사 참조(지점2 가)', {'결과/조건표.csv': base_table}, True)
     for name, fn, needle in TABLE_DAMAGES:
         trial(k, tmp, name, {'결과/조건표.csv': table_edit(base_table, fn)}, False, needle)
-    trial(k, tmp, '판단기록.md 표의 칸이 밀린 줄', {'결과/조건표.csv': base_table, '결과/판단기록.md': shifted(k, '판단기록.md')}, False, '칸이 밀렸는지')
+    for name, extra, needle in csv_damages(k):
+        trial(k, tmp, name, {'결과/조건표.csv': base_table, **extra}, False, needle)
     # 통합 03-3
     res, rv = judged[BASE_POLICY]
     sv = J.student_view(res)
@@ -698,7 +701,8 @@ def checker_trials(tmp, judged):
     ]
     for name, fn, needle in judge_cases:
         trial(k, tmp, name, jd(fn), False, needle)
-    trial(k, tmp, '기대결과.md 표의 칸이 밀린 줄', {'결과/result.json': sv, '결과/기대결과.md': shifted(k, '기대결과.md')}, False, '칸이 밀렸는지')
+    for name, extra, needle in csv_damages(k):
+        trial(k, tmp, name, {'결과/result.json': sv, **extra}, False, needle)
     trial(k, tmp, '내 조건표(결과/내_입력/조건표.csv, 규칙 ID C1 ~ C5)로 보고 통과', {'결과/result.json': renamed_ids(sv), '결과/내_입력/조건표.csv': my_table},
           True, must=['기준 입력: 결과/내_입력/조건표.csv'])
     trial(k, tmp, '내 조건표를 두고 제공 조건표의 규칙 ID로 낸 결과', {'결과/result.json': sv, '결과/내_입력/조건표.csv': my_table},
@@ -725,7 +729,8 @@ def checker_trials(tmp, judged):
     ]
     for name, fn, needle in review_cases:
         trial(k, tmp, name, rd(fn), False, needle)
-    trial(k, tmp, '기대결과.md 표의 칸이 밀린 줄', {'결과/조치검토결과.json': rv, '결과/조치검토결과.md': md, '결과/기대결과.md': shifted(k, '기대결과.md')}, False, '칸이 밀렸는지')
+    for name, extra, needle in csv_damages(k):
+        trial(k, tmp, name, {'결과/조치검토결과.json': rv, '결과/조치검토결과.md': md, **extra}, False, needle)
     cut = re.sub(rf'^## {re.escape(inc)} .*$', '## 사건 절', md, flags=re.M)
     trial(k, tmp, 'MD 절 빠짐', rd(lambda d: None, cut), False, f'조치검토결과.md에 {inc}의 절 제목이 없습니다')
     my_rv = renamed_ids(rv)
@@ -783,11 +788,14 @@ def boundary(totals):
                     fail(f'{folder.name}/{rel}: 강사 자리를 가리키는 말 「{word}」')
 
 
-# ───────────── 8. 학생용 완성본(실습 폴더와 따로 받는 묶음, 기본 갈래) ─────────────
-COMPLETED = HERE/'completed'
+# ───────────── 8. 학생용 완성본(실습 폴더와 따로 받는 묶음, 기본 갈래) · 9. 정답 토글 재생 ─────────────
 STAMP = (2026, 1, 1, 0, 0, 0)
+SNAPSHOT = '결과/.보기_이전.json'          # 결과 화면의 직전 실행 기록 — 묶음에 넣지 않는다(새 폴더 첫 실행과 같은 화면이 되게)
 GUIDE_HEAD = ('ZIP 전체를 실습 폴더와 다른 새 폴더에 풀고, 이 문서가 있는 폴더를 VS Code에서 연 뒤 터미널에서 아래 명령을 실행합니다. '
-              'Python 3 표준 라이브러리만 쓰고, AI 계정 · 인터넷 접속 없이 실행됩니다. `결과/`에 들어 있는 파일은 이 명령을 실행해 얻은 것과 같습니다.')
+              'Python 3 표준 라이브러리만 쓰고, AI 계정 · 인터넷 접속 없이 실행됩니다. `결과/`에 들어 있는 결과 파일과 `결과/보기.html`은 이 명령을 실행해 얻은 것과 같습니다.')
+OUTPUTS = {'integrated-03-criteria': ['결과/sop.json', '결과/보기.html'], 'practical-02-conditions': ['결과/보기.html'],
+           'integrated-03-judge': ['결과/result.json', '결과/보기.html'], 'practical-03-review': ['결과/조치검토결과.json', '결과/조치검토결과.md', '결과/보기.html']}
+RECORD = {'integrated-03-criteria': '요구사항.md', 'practical-02-conditions': '판단기록.md', 'integrated-03-judge': '기대결과.md', 'practical-03-review': '기대결과.md'}
 
 
 def completed_target(key):
@@ -795,177 +803,171 @@ def completed_target(key):
     return lab.parents[1]/'완성본'/f'{lab.name}_학생용완성본.zip', f'{lab.name}_학생용완성본'
 
 
-def md_rows(head, rows):
-    return CR.md_table(head, rows)
+def lab_definition(key, files):
+    """생성기의 랩 정의(단계 · 정답 토글) — 토글 내용은 이 강사 참조의 기본 갈래 채움이다."""
+    return BJ.BUILDERS[key](files, LAB[key])
 
 
-def fill_template(title, sections):
-    """build_labs.req_template의 절 이름 그대로, 칸을 채운 판(제공 빈 틀 표시 없이)."""
-    out = [f'# {title}', '']
-    for name, body in sections:
-        out += [f'## {name}', '', body, '']
-    return '\n'.join(out).rstrip() + '\n'
+def apply_answers(folder, L, upto=None):
+    """정답 토글의 apply를 단계 차례로 써 넣는다(뒤 단계가 같은 파일을 다시 쓰면 그 판이 남는다)."""
+    for i, s in enumerate(L['steps'], 1):
+        if upto is not None and i > upto:
+            break
+        for rel, text in ((s.get('answer') or {}).get('apply') or {}).items():
+            write(folder/rel, text)
 
 
-P2_CHOICE = {'나': '원격 제어 후보(SOP-COOL-11~13)에만 걸었다면', '다': '옮기지 않았다면'}   # 지점2 갈래 → 완성본 「다른 선택이었다면」 칸의 학생 선택 문장(갈래 이름은 강사 참조에만)
+def show(folder):
+    return run_py(folder, 'show_result.py', '--no-open')
 
 
-def criteria_requirements(memo, checks):
-    """통합 03-2 완성본의 결과/요구사항.md — 기본 갈래(지점1 가 · 지점2 가)."""
-    groups = {}
-    for p2 in CR.P2:
-        table = Path(tempfile.mkdtemp())/'t.csv'
-        table.write_text(CR.table_csv(p2), encoding='utf-8')
-        groups[p2] = J.load_table(table)
-    sub = []
-    picked = [TRIP_CASE, HOT_CASE]
-    for cid, x in [('사건', memo)] + [(c, checks[c]) for c in picked]:
-        for sop, v in x.items():
-            j = J.evaluate(sop, v, groups['가'])
-            other = {p2: J.evaluate(sop, v, groups[p2])['status'] for p2 in ('나', '다')}
-            hits = [h['rule_id'] for k in ('warnings', 'penalties', 'exclusions') for h in j[k]]
-            diff = [f'{P2_CHOICE[p2]} {st}' for p2, st in other.items() if st != j['status']]
-            sub.append([f'{cid} / {sop}', ' · '.join(hits) or '—',
-                        ' · '.join(f'{h["rule_id"]} {kind}' for kind, key in (('경고', 'warnings'), ('감점', 'penalties'), ('제외', 'exclusions')) for h in j[key]) or '없음',
-                        ' · '.join(f'{u["rule_id"]}({", ".join(u["missing"])})' for u in j['unknown']) or '—',
-                        ('3단계 기대와 같음' if cid == '사건' else f'{j["status"]}') + ('; 출처가 확인되지 않는 두 기준을 ' + ', '.join(diff) if diff else '')])
-    return fill_template('요구사항', [
-        ('목표와 질문', '현행 HM-8 1.1판의 냉각 계통 조치 일곱 개를 SOP 구조와 조건표로 정리해 고장 유형 · 원인과 2회차에 만든 설비 모델의 ID에 잇고, '
-                       '10월 27일 HYD-02 경보에서 야간 운전원이 할 수 있는 조치를 원문 근거로 답한다(START.md 「해결할 질문」 1 ~ 3).'),
-        ('이 답을 쓰는 사람과 쓰는 곳', '설비보전팀장 — 판단 시스템에 조치 기준을 올릴 때. 야간 운전원 — 사건에서 쓸 수 있는 조치를 볼 때.'),
-        ('사용할 자료와 기준일', '현행 원문 `자료/HM-8_매뉴얼.md`(1.1판, 2026-09-01 시행), 옛 판 `자료/HM-8_1.0판_매뉴얼.md`, `자료/판단시스템_결정표_내보내기.txt`, `자료/작업지시_이력.csv`, '
-                             '`입력/graph.json`(설비 모델), `자료/사건_기록_HYD-02_1027.md` · `자료/확인_사례.csv`. 기준일 2026-10-27(사건 날).'),
-        ('지킬 조건', '- 원문에 없는 기준값 · 단계를 만들지 않는다(작업기준 2절).\n- 모델에 없는 대상에는 새 ID를 만들지 않는다.\n- 항목마다 원문 출처를 단다.'),
-        ('정한 것', md_rows(['지점(종류)', '고른 것', '근거(파일 · 줄)', '이 선택으로 바뀌는 답'], [
-            ['적용 범위', 'HYD-01 ~ 03에만 건다(HYD-04는 뺌)', '설비_대장.csv HYD-04 비고 「HPP-45A 후속형. 수냉식 열교환기」; graph.json HYD-04 구성 요소 · 센서; 작업지시_이력.csv HYD-04 냉각수측 스케일; HM-8에 적용 범위 문장 없음',
-             'sop.json의 모델 참조(model_refs) — HYD-04 ID 없음, not_linked에 까닭'],
-            ['출처가 확인되지 않는 기준(rule:ts1-hard · rule:trip-reset-only — 두 규칙 모두)', '옛 시스템이 건 그대로 네 후보에 제외로 옮기고, 이유 칸에 작업지시 후보와의 어긋남을 밝힘',
-             '판단시스템_결정표_내보내기.txt 16행 rule:ts1-hard(출처 ks:sr-04) · 33행 rule:trip-reset-only(출처 HM-9.4) — HM-8 1.1 · 1.0에 같은 문장 없음; HM-8.3 인터록 65 ℃ 이상(HM-8_매뉴얼.md 30줄)',
-             '확인 사례의 트립 · 예측 65 ℃ 이상 사례(아래 대입) — 사건은 바뀌지 않음'],
-            ps1_decision(checks, '1.1 · 1.0')])),
-        ('기대 답과 실제 결과', md_rows(['질문 · 물은 대상', '원자료에서 먼저 찾은 기대 답(파일 · 줄)', '실제 결과', '고친 점 · 다시 확인'], [
-            ['1 SOP-COOL-11의 다섯 칸', 'HM-8_매뉴얼.md HM-8.5 SOP-COOL-11 단계 1 ~ 3(48 ~ 50줄), 승인 운전원(52줄), HM-8.6 회복 판정(71줄), HM-8.8 금지와 제한(87 · 88줄)',
-             'sop.json의 SOP-COOL-11과 같음', '—'],
-            ['2 조건 하나 — 팬 100 % 연속 운전의 감점', 'fan100_hours > 24 h(「넘으면」 — 기준값은 들어가지 않음), 결과 PENALTY 20만원, 팬을 최대로 올리는 SOP-COOL-11 · 12, 출처 HM-8.8(HM-8_매뉴얼.md 88줄). '
-             '판단 시스템 결정표 rule:hm-8-8-fan-life-penalty(내보내기 32행)는 같은 식 · 금액 · 대상이고 출처만 옛 판 절(HM-7.3)', '조건표.csv R2의 두 묶음과 같음', '—'],
-            ['3 사건 네 후보', '11 경고 R3 · 감점 R2, 12 감점 R2 · 예측 없음, 13 · 14 맞은 규칙 없음', '아래 「사건 · 확인 사례 대입」과 같음', '—']])),
-        ('설비마다 걸었음 · 뺐음', md_rows(['설비', '걸었음 · 뺐음', '까닭(모델 · 대장 줄)'], CR.asset_scope('가'))),
-        ('판단 시스템 결정표 대조', md_rows(['내보내기 행', '처리', '까닭', '근거(파일 · 줄)'], CR.export_treatment('가'))),
-        ('사건 · 확인 사례 대입', md_rows(['사례 / 후보', '맞은 규칙', '결과(경고 · 감점 · 제외)', '확인할 수 없는 조건과 까닭', '기대와 같은가 · 다른 선택이었다면'], sub)),
-        ('저장 기록', '- 기준일: 2026-10-27\n- 저장 시점: 2026-10-28(저장한 뒤 다시 열어 `python check.py` · `python 결과/trace_sources.py` 출력이 같음)\n'
-                     '- 확인하지 못한 점: 설비안전규정 SR-04 · HM-9.4 원문은 제공 자료에 없어 확인하지 못했다. HYD-04의 냉각 정비 지침은 제조사 자료가 필요하다. '
-                     'SOP-FAN-11 · 12는 원문에 승인 줄이 없어 승인을 미확인으로 두었다.'),
-    ])
+def record_text(key, L):
+    """완성본의 기록 md — 목표 · 쓰는 사람 · 자료 · 지킬 조건 · 저장 기록(고른 것 · 기대 판정은 CSV 두 개)."""
+    title = {'integrated-03-criteria': '요구사항', 'practical-02-conditions': '판단 기록'}.get(key, '기대 결과와 실제 대조')
+    body = [f'# {title}', '', '## 목표와 질문', '', ' '.join(L['questions']), '', '## 이 답을 쓰는 사람과 쓰는 곳', '', L['user'], '',
+            '## 사용할 자료와 기준일', '', '`자료/`와 `입력/`의 받은 판. 기준일 2026-10-27(사건 날).', '',
+            '## 지킬 조건', '', '- 원문에 없는 기준값 · 단계를 만들지 않는다(작업기준 2절).\n- 빈 값을 0이나 앞 값으로 채우지 않는다.\n- 후보가 남은 것 · 순위를 실행 승인처럼 쓰지 않는다.', '',
+            '## 정한 것 · 기대 판정', '', '고른 것 · 근거 · 바뀌는 답은 `결과/정한_것.csv`, 실행 전에 구한 기대 판정은 `결과/기대_판정.csv`에 있고, 결과 화면 `결과/보기.html`이 기대와 실제를 줄마다 견준다.', '']
+    if key in ('integrated-03-judge', 'practical-03-review'):
+        body += ['## 기대 칸을 쓴 시각', '', '- 기대 칸을 쓴 시각(실행 전, 내 PC 시계 그대로): 2026-10-28, 처음 실행 전\n- 처음 실행한 시각(내 PC 시계 그대로): 2026-10-28, 기대 칸을 쓴 뒤', '',
+                 '## 다른 줄과 원인', '', '결과 화면의 「기대 판정 ↔ 판정」에 다른 줄이 없다.', '']
+    body += ['## 저장 기록', '', '- 기준일: 2026-10-27\n- 저장 시점: 2026-10-28(저장한 뒤 다시 열어 `python show_result.py` · `python check.py` 출력이 같음)\n'
+             '- 확인하지 못한 점: 설비안전규정 SR-04 · HM-9.4 원문은 제공 자료에 없어 확인하지 못했다.']
+    return '\n'.join(body) + '\n'
 
 
-def low_ps1(checks):
-    """확인 사례에서 예측 토출 압력이 165 bar 미만인 (사례, 후보) — rule:ps1-warn을 넣었다면 경고가 붙을 곳."""
-    return [(cid, sop) for cid, cs in checks.items() for sop, x in cs.items() if x['forecast_ps1'] is not None and x['forecast_ps1'] < 165]
+def compare_marks(folder):
+    """결과 화면의 기대 ↔ 실제 대조에서 다른 줄 · 실제 없음 줄 수."""
+    html_text = (folder/'결과/보기.html').read_text(encoding='utf-8')
+    return html_text.count('data-st="다름"') + html_text.count('data-st="실제 없음"')
 
 
-def ps1_decision(checks, versions):
-    """두 조건 랩 완성본 「정한 것」의 rule:ps1-warn 행 — versions는 그 랩이 받은 HM-8 판(통합 03-2 1.1 · 1.0, 실전 02-5 1.1)."""
-    return ['출처가 확인되지 않는 기준(rule:ps1-warn)', '옮기지 않음 — 예측 토출 압력 조건(출처 HM-5.2 펌프 장)이라 네 냉각 조치의 조건표에 걸 근거가 없음',
-            f'판단시스템_결정표_내보내기.txt 31행 rule:ps1-warn(대상 빈칸, 출처 HM-5.2) — HM-8 {versions}에 토출 압력 기준 없음; 작업기준 2절',
-            '예측 토출 압력이 165 bar 미만인 사례 후보(' + (', '.join(f'{c} {s[-2:]}' for c, s in low_ps1(checks)) or '없음') + ')에 경고가 붙지 않음']
+def build_completed(tmp, files, expected):
+    report = {}
+    for key in LAB:
+        L = lab_definition(key, files)
+        target, name = completed_target(key)
+        folder = Path(tmp)/'completed'/name
+        shutil.copytree(LAB[key], folder)
+        apply_answers(folder, L)
+        write(folder/'결과'/RECORD[key], record_text(key, L))
+        code, out = show(folder)
+        if code != 0:
+            fail(f'완성본 {name}: python show_result.py 실패\n{out[:1500]}')
+        (folder/SNAPSHOT).unlink(missing_ok=True)
+        write(folder/'완성본_안내.md', f'# {BJ.TITLES[key]} — 학생용 완성본\n\n{GUIDE_HEAD}\n\n```text\npython show_result.py\npython check.py\n```\n\n'
+                                    '이 완성본이 따른 「정한 것」은 `결과/정한_것.csv`에 있습니다. 다른 선택을 하면 결과가 달라질 수 있으니, 내 실습에서는 원문을 열어 내 선택과 근거로 정합니다.\n')
+        start = (folder/'START.md').read_text(encoding='utf-8-sig')
+        head, rest = start.split('\n', 1)
+        write(folder/'START.md', head + '\n\n완성한 결과를 실행하려면 [완성본 안내](완성본_안내.md)를 여세요. 아래는 이 결과가 푸는 원래 과제입니다.\n' + rest)
+        files_ = {p.relative_to(folder).as_posix(): p.read_bytes() for p in sorted(folder.rglob('*')) if p.is_file() and '__pycache__' not in p.parts}
+        for at, label, got in branch_marks(files_):
+            fail(f'완성본 {name}/{at}: 강사 갈래 표기({label}) 「{got}」 — 학생이 고른 문장으로 쓴다')
+        fresh = Path(tmp)/'completed_run'/name
+        for rel, data in files_.items():
+            (fresh/rel).parent.mkdir(parents=True, exist_ok=True)
+            (fresh/rel).write_bytes(data)
+        code, out = show(fresh)
+        if code != 0:
+            fail(f'완성본 {name}: 새 폴더에서 python show_result.py 실패\n{out[:1500]}')
+        for rel in OUTPUTS[key]:
+            if (fresh/rel).read_bytes() != files_[rel]:
+                fail(f'완성본 {name}: 새 폴더에서 다시 실행한 {rel}이 동봉한 파일과 다름')
+        if compare_marks(fresh):
+            fail(f'완성본 {name}: 결과 화면의 기대 ↔ 실제 대조에 다른 줄 {compare_marks(fresh)}개')
+        code, chk = run_check(fresh)
+        if code != 0 or '구조 검사 통과' not in chk:
+            fail(f'완성본 {name}: 학생 검사기가 통과시키지 않음\n{chk[:1500]}')
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, 'w') as z:
+            for rel, data in files_.items():
+                info = zipfile.ZipInfo(f'{name}/{rel}', STAMP)
+                info.compress_type = zipfile.ZIP_DEFLATED
+                z.writestr(info, data)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(buf.getvalue())
+        report[name] = {'경로': target.relative_to(BJ.OUT).as_posix(), '파일수': len(files_), 'sha256': hashlib.sha256(buf.getvalue()).hexdigest(),
+                        '명령': 'python show_result.py · python check.py', '검사기': chk.splitlines()[-2] if chk else ''}
+    expected['학생용_완성본'] = report
+    return report
 
 
-def remaining(sop, j):
-    """「남은 후보」 칸 — 판단을 보류한 후보는 보류와 빠진 입력을 붙인다(작업기준 4절: 제외가 없으면 후보는 남고, 미확인이 있으면 최종 판단은 보류)."""
-    if j['status'] == '보류':
-        return f'{sop}(보류: ' + '; '.join(f'{u["rule_id"]} — {", ".join(u["missing"])} 빠짐' for u in j['unknown']) + ')'
-    return sop
+def toggle_replay(tmp, files, judged, expected):
+    """정답 토글을 받은 그대로의 새 사본에 단계 차례로 넣으며 python show_result.py를 돌린다 — 토글이 있는 단계마다 그 단계가 채움이고 오류가 없어야 하며,
+    끝 결과가 강사 참조 기본 갈래와 같아야 한다(DoD 11). 판정 랩은 결과 파일이 기본 갈래 출력과 같은 바이트, 조건 랩은 조건표 · sop.json 뜻."""
+    rec = {}
+    base_res, base_rv = judged[BASE_POLICY]
+    for key in LAB:
+        L = lab_definition(key, files)
+        folder = copy_lab(key, Path(tmp)/f'replay_{key}')
+        seen = []
+        for i, s in enumerate(L['steps'], 1):
+            if not (s.get('answer') or {}).get('apply'):
+                continue
+            apply_answers(folder, L, upto=i)
+            code, out = show(folder)
+            line = next((x for x in out.splitlines() if x.startswith(f'{i:02d} ')), '')
+            seen.append(f'{i:02d} {line.split(": ")[-1]}')
+            if code != 0 or not line.endswith(('채움', '볼 것 없음', '결과 보기')):
+                fail(f'토글 재생 {LAB[key].name} {i}단계: {line or "단계 줄 없음"} (exit {code})\n{out[:1500]}')
+        if compare_marks(folder):
+            fail(f'토글 재생 {LAB[key].name}: 기대 ↔ 실제 대조에 다른 줄 {compare_marks(folder)}개')
+        code, chk = run_check(folder)
+        if code != 0:
+            fail(f'토글 재생 {LAB[key].name}: 검사기 실패\n{chk[:1500]}')
+        if key in ('integrated-03-criteria', 'practical-02-conditions'):
+            if CT.read_csv(folder/'결과/조건표.csv') != CT.read_csv(BRANCHES/'조건표_가'/'조건표.csv'):
+                fail(f'토글 재생 {LAB[key].name}: 조건표가 지점2 가와 다름')
+        if key == 'integrated-03-criteria':
+            got, want = sop_meaning(json.loads((folder/'결과/sop.json').read_text(encoding='utf-8'))), sop_meaning(CR.sop_doc(*CR.BASE))
+            if got != want:
+                fail(f'토글 재생 통합 03-2: sop.json의 뜻이 지점1 가 · 지점2 가와 다름: {[k for k in want if got.get(k) != want[k]]}')
+        if key == 'integrated-03-judge' and (folder/'결과/result.json').read_text(encoding='utf-8') != json.dumps(J.student_view(base_res), ensure_ascii=False, indent=1) + '\n':
+            fail('토글 재생 통합 03-3: result.json이 기본 갈래 출력과 바이트가 다름')
+        if key == 'practical-03-review' and (folder/'결과/조치검토결과.json').read_text(encoding='utf-8') != json.dumps(base_rv, ensure_ascii=False, indent=1) + '\n':
+            fail('토글 재생 실전 03-2: 조치검토결과.json이 기본 갈래 출력과 바이트가 다름')
+        rec[LAB[key].name] = {'단계': seen, '검사기': f'exit {code}'}
+    expected['정답_토글_재생'] = rec
+    return rec
 
 
-def conditions_record_completed(checks):
-    """실전 02-5 완성본의 결과/판단기록.md — 기본 갈래(지점2 가)."""
-    table = Path(tempfile.mkdtemp())/'t.csv'
-    table.write_text(CR.table_csv('가'), encoding='utf-8')
-    groups = J.load_table(table)
-    sub, approve = [], []
-    for cid, cs in checks.items():
-        for sop, x in cs.items():
-            j = J.evaluate(sop, x, groups)
-            sub.append([cid, sop, ' · '.join(h['rule_id'] for k in ('warnings', 'penalties', 'exclusions') for h in j[k]) or '—',
-                        ' · '.join(h['rule_id'] for h in j['warnings']) or '—', ' · '.join(f'{h["penalty_manwon"]:g}' for h in j['penalties']) or '—',
-                        ' · '.join(h['rule_id'] for h in j['exclusions']) or '—', ' · '.join(f'{u["rule_id"]}({", ".join(u["missing"])})' for u in j['unknown']) or '—',
-                        {'제외': '빠짐', '보류': '판단 보류', '유지': '남음'}[j['status']], ' · '.join(sorted({h['source_section'] for k in ('warnings', 'penalties', 'exclusions') for h in j[k]})) or '—'])
-            if j['status'] != '제외':
-                approve.append([cid, remaining(sop, j), CR.APPROVAL[sop][0], CR.approval_cite(sop)])
-    return fill_template('판단 기록', [
-        ('목표와 질문', '제공 SOP(HM-8 1.1판)의 경고 · 감점 · 제외 조건을 조건표로 옮기고, 판단 시스템 결정표와 출처를 견주고, 사건과 확인 사례에서 각 후보가 남는지 · 빠지는지 · 무엇이 아직 모르는 값인지와 남은 후보의 승인 역할을 답한다.'),
-        ('이 답을 쓰는 사람과 쓰는 곳', '야간 운전원 — 경보가 났을 때 어느 조치가 남고 빠지는지, 남은 조치를 누가 승인하는지 볼 때.'),
-        ('사용할 자료와 기준일', '`자료/HM-8_매뉴얼.md`(1.1판, 2026-09-01 시행), `자료/작업기준.md`, `자료/판단시스템_결정표_내보내기.txt`, `자료/사건_기록_HYD-02_1027.md`, `자료/확인_사례.csv`. 기준일 2026-10-27(사건 날).'),
-        ('지킬 조건', '- 조건표의 행마다 원문 출처를 단다.\n- 사례에 대는 기능은 규칙을 코드에 다시 적지 않고 `결과/조건표.csv`에서 읽는다.\n- 남은 후보를 실행 승인처럼 적지 않는다.'),
-        ('정한 것', md_rows(['지점(종류)', '고른 것', '근거(파일 · 줄)', '이 선택으로 바뀌는 답'], [
-            ['출처가 확인되지 않는 기준(rule:ts1-hard · rule:trip-reset-only — 두 규칙 모두)', '옛 시스템이 건 그대로 네 후보에 제외로 옮기고, 이유 칸에 작업지시 후보와의 어긋남을 밝힘',
-             '판단시스템_결정표_내보내기.txt 16행 rule:ts1-hard(출처 ks:sr-04) · 33행 rule:trip-reset-only(출처 HM-9.4) — HM-8 1.1에 같은 문장 없음',
-             f'트립 사례 {TRIP_CASE} — 네 후보 모두 제외, 예측 65 ℃ 이상 사례 {HOT_CASE} — SOP-COOL-14 제외'],
-            ps1_decision(checks, '1.1')])),
-        ('기대 답과 실제 결과', md_rows(['질문 · 물은 대상', '원자료에서 먼저 찾은 기대 답(파일 · 줄)', '실제 결과', '고친 점 · 다시 확인'], [
-            ['2 사건 네 후보', '11 경고 R3 · 감점 R2 → 남음, 12 감점 R2 · R3 · R4 알 수 없음(예측 없음) → 판단 보류, 13 · 14 맞은 규칙 없음 → 남음', '사례 대조 표의 사건 줄과 같음', '—'],
-            [f'2 트립 사례 {TRIP_CASE}', '원격 셋 R5 제외, 14도 R5 제외(옛 규칙을 대상 빈칸 그대로) → 모두 빠짐', '사례 대조 표와 같음', '—']])),
-        ('확인 사례 대조', md_rows(['사례', '후보', '맞은 규칙', '경고', '감점(만원)', '제외 사유', '미확인과 까닭', '남는가 · 빠지는가', '원문 근거'], sub)),
-        ('남은 후보와 실행 승인', md_rows(['사례', '남은 후보', '승인 역할', '승인 근거(파일 · 줄)'], approve)),
-        ('저장 기록', '- 기준일: 2026-10-27\n- 저장 시점: 2026-10-28(저장한 뒤 다시 열어 `python check.py` · `python 결과/apply_conditions.py` 출력이 같음)\n'
-                     '- 확인하지 못한 점: 설비안전규정 SR-04 · HM-9.4 원문은 제공 자료에 없어 확인하지 못했다. SOP-COOL-13의 4단계 작업지시 승인은 SOP 절이 따로 적지 않아 HM-8.7 줄과 함께 적었다.'),
-    ])
+def sop_meaning(d):
+    """sop.json의 뜻(종류 · 코드 · 고장 유형 · 승인 · 모델 참조 · 칸별 규칙 · 단계 수 · 관계 · 원인) — 문장은 원문 인용이라 바이트로 견주지 않는다."""
+    o = {}
+    for s in d['sops']:
+        o[s['id']] = dict(kind=s['kind'], codes=s['codes'], fm=s['failure_mode'], role=s['approval']['role'], asrc=s['approval']['source'],
+                          mr={k: sorted(s['model_refs'][k]) for k in ('assets', 'components', 'sensors')}, nsteps=len(s['steps']),
+                          rules={k: sorted((it.get('type', ''), tuple(it['rules'])) for it in s[k]) for k in ('apply_conditions', 'prohibitions', 'completion')})
+    o['관계'] = sorted((r['type'], r['from'], r['to']) for r in d['relations'])
+    o['고장 유형'] = [f['id'] for f in d['failure_modes']]
+    o['원인'] = sorted((c['id'], c['name']) for c in d['causes'])
+    return o
 
 
-def judge_expectations(res, meta):
-    """판정 랩 완성본의 결과/기대결과.md — 기대 칸은 두 번째 구현(oracle_case)이 원천에서 따로 낸 값, 실제 칸은 판정 기능의 출력."""
-    cases = {c['id']: c for c in meta['cases']}
-    kinds = ['정상', '경계 55', '운전 중 예측 65 이상', '팬 1,440분 경계', '모드 수동', '트립', '모두 제외', 'PLC 끊김', 'PLC bad', '예측 거부', '전달 실패', '120초 지남', '오더 실패', '카운터 끊김', '사건']
-    rows_, done = [], set()
-    for kind in kinds:
-        e = next((x for x in res['events'] if kind in cases[x['id']]['categories'] and x['id'] not in done), None)
-        if e is None:
-            continue
-        done.add(e['id'])
-        out, ranks, top = oracle_case(cases[e['id']], '가', BASE_POLICY)
-        for c in e['candidates']:
-            o = out[c['sop']]
-            want = f'{o["status"]}' + (f' {o["total"]:.2f}' if o['total'] is not None else '') + (' ' + ' · '.join(f'{k} {",".join(v)}' for k, v in o['hits'].items() if v) if any(o['hits'].values()) else '') + (f' 미확인 {",".join(o["unknown"])}' if o['unknown'] else '')
-            got = f'{c["status"]}' + (f' {c["comparison"]["total"]:.2f}' if c['comparison'] else '')
-            src = ', '.join(sorted({h['source_section'] for k in ('warnings', 'penalties', 'exclusions') for h in c[k]} | {u['source_section'] for u in c['unknown']})) or '—'
-            same = o['status'] == c['status'] and (o['total'] is None) == (c['comparison'] is None) and (o['total'] is None or abs(o['total'] - c['comparison']['total']) < 0.005)
-            rows_.append([f'{e["id"]} / {c["sop"]}', kind, ', '.join(f'{k}={v}' for k, v in c['inputs'].items() if k in ('forecast_ts1', 'fan100_hours', 'plc_mode', 'plc_state')),
-                          want, src, got, '같음' if same else '다름'])
-            if not same:
-                fail(f'완성본 기대결과 {e["id"]} {c["sop"]}: 기대 {want} / 실제 {got}')
-    inc = next(x for x in res['events'] if x['id'] == meta['incident'])
-    # 손계산 대조: 지표_정의.md 「손으로 해 보는 예」(START 「완료 판정」의 손계산 예)와 사건 — 손계산 칸은 문서 · 식으로 구한 값, 프로그램 칸은 판정 기능의 출력
-    cid, vals = metric_example()
-    c12 = next(c for c in next(x for x in res['events'] if x['id'] == cid)['candidates'] if c['sop'] == 'SOP-COOL-12')
-    key = {v: k for k, v in J.LOSS_NAME.items()}
-    hand = [[f'{cid} / SOP-COOL-12(지표_정의.md 손계산 예)', k, v, f'{c12["comparison"][key[k]]:.2f}', '같음' if abs(c12['comparison'][key[k]] - float(v)) < 0.005 else '다름']
-            for k, v in vals.items()]
-    hand += [[f'{inc["id"]} / {c["sop"]}', J.LOSS_NAME[k] if k in J.LOSS_NAME else '감점', f'{c["comparison"][k]:.2f}', f'{c["comparison"][k]:.2f}', '같음']
-             for c in inc['candidates'] if c['comparison'] for k in ('cost', 'production', 'quality', 'energy', 'penalty')]
-    if any(r[-1] != '같음' for r in hand):
-        fail(f'완성본 손계산 대조에 다른 줄: {[r for r in hand if r[-1] != "같음"]}')
-    text = expect_doc_sections(res)
-    return text.replace('{CASES}', md_rows(['사례 / 후보', '사례 종류', '원천 행과 판단 입력', '기대 판정 · 이유(실행 전)', '근거(규칙 · 원문 절)', '실제 결과', '같음 / 다른 까닭과 고친 점'], rows_)) \
-               .replace('{HAND}', md_rows(['사례 / 후보', '지표', '손계산', '프로그램', '같은가'], hand))
-
-
-def expect_doc_sections(res):
-    dec = md_rows(['입력', '원천과 만든 방법', '근거(파일 · 절)'], [[d['item'], d['decision'], d['basis']] for d in res['decisions']])
-    return ('# 기대 결과와 실제 대조\n\n'
-            '기대 칸은 프로그램을 실행하기 전에 원천 기록 · 조건표 · 원문으로 구한 것이고, 실제 칸은 실행한 뒤에 적었다.\n\n'
-            '- 기대 칸을 쓴 시각(실행 전, 내 PC 시계 그대로): 2026-10-28, 프로그램을 실행하기 전 — 원천 기록 · 조건표 · 원문으로 구함\n'
-            '- 실행한 명령과 실행 시각(내 PC 시계 그대로): `python 결과/judge_actions.py . 결과` — 2026-10-28, 기대 칸을 쓴 뒤\n\n'
-            '## 목표와 질문\n\n경보마다 네 후보를 조건표로 판정하고 주어진 비교 산식으로 견주어, 사건과 지난 30일 경보의 판정 · 순위 · 선택 이유를 낸다.\n\n'
-            '## 이 답을 쓰는 사람과 쓰는 곳\n\n야간 운전원 · 설비보전팀장 — 경보 때 쓸 수 있는 후보와 1위, 먼저 확인할 값을 볼 때.\n\n'
-            '## 사용할 자료와 기준일\n\n`입력/조건표.csv` · `입력/sop.json`, `자료/`의 원천 네 개(2026-09-28 ~ 10-27)와 오더 현황 · 비교 산식. 기준일 2026-10-27(사건 날).\n\n'
-            '## 지킬 조건\n\n- 규칙은 조건표에서 읽는다.\n- 빈 값을 0이나 앞 값으로 채우지 않는다.\n- 비교 순위와 선택 이유를 실행 승인처럼 적지 않는다.\n\n'
-            '## 정한 것\n\n' + md_rows(['지점(종류)', '고른 것', '근거(파일 · 줄)', '이 선택으로 바뀌는 답'], [
-                ['빈 값의 뜻', J.GAP_TEXT[GAP[BASE_POLICY[0]]], '수집_설명.md 팬_운전_카운터(10분 주기 기록); PLC_상태_수신.csv 판정 요청 전 팬 설정 100 %', '사건 SOP-COOL-11 · 12의 팬 연속 시간과 감점 R2(값 없음이면 보류)'],
-                ['쓰는 사람에 따라 갈리는 답', J.WARN_TEXT[WARN[BASE_POLICY[1]]], 'HM-8.6 「다른 조치와 비교한다」; 지표_정의.md 품질 손실(예측 55 ℃ 이상)', '사건 순위의 SOP-COOL-11(경고 R3)']]) + '\n\n'
-            '## 판단 입력을 만든 방법\n\n' + dec + '\n\n'
-            '## 사례 대조\n\n{CASES}\n\n'
-            '## 손계산 대조\n\n{HAND}\n\n'
-            '## 저장 기록\n\n- 기준일: 2026-10-27\n- 저장 시점: 2026-10-28(저장한 뒤 다시 열어 같은 명령의 출력과 `python check.py` 출력이 같음)\n- 확인하지 못한 점: 사건의 SOP-COOL-12 예측은 판정 요청을 다시 해야 받을 수 있다.\n')
+def fill_branches(tmp, expected):
+    """통합 03-2 갈래 6개: 강사 참조 채움(판단 표 셋)을 제공 sop_tools.py로 조립한 sop.json이 criteria.sop_doc과 뜻이 같은가."""
+    rec = {}
+    for p1 in CR.P1:
+        for p2 in CR.P2:
+            lab = copy_lab('integrated-03-criteria', Path(tmp)/f'fill_{p1}{p2}')
+            write(lab/'결과/조건_분류.csv', CR.csv_text(CR.CLASS_HEADER, CR.classify_rows(p2)))
+            write(lab/'결과/관계.csv', CR.csv_text(CR.REL_HEADER, CR.relation_rows()))
+            write(lab/'결과/설비_연결_기준.csv', CR.csv_text(CR.LINK_HEADER, CR.link_rows(p1)))
+            write(lab/'결과/조건표.csv', CR.table_csv(p2))
+            doc, todo, missing = SOP.build(lab)
+            got, want = sop_meaning(doc), sop_meaning(CR.sop_doc(p1, p2))
+            diff = [k for k in want if got.get(k) != want[k]]
+            if diff or todo or missing:
+                fail(f'판단 표 채움 {p1}-{p2}: sop_tools 조립이 criteria.sop_doc과 다름 {diff} · 남은 곳 {todo} · 모델에 없는 ID {missing}')
+            code, out = run_check(lab)
+            if code != 0:
+                fail(f'판단 표 채움 {p1}-{p2}: 검사기 실패\n{out[:1500]}')
+            d = BRANCHES/f'조치기준_{p1}-{p2}'
+            for name in ('조건_분류.csv', '관계.csv', '설비_연결_기준.csv'):
+                shutil.copy(lab/'결과'/name, d/name)
+            rec[f'{p1}-{p2}'] = {'뜻 다름': diff, '검사기': f'exit {code}'}
+    expected['판단_표_채움'] = rec
+    return rec
 
 
 BRANCH_MARKS = [   # 강사 갈래 표기 — 갈래 이름 · 지점 번호는 강사 참조(사건_갈래표 · expected_results)에만, 완성본은 학생이 고른 문장으로 쓴다
@@ -983,101 +985,6 @@ def branch_marks(files):
         for label, rx in BRANCH_MARKS:
             hits += [(f'{rel}:{text.count(chr(10), 0, m.start()) + 1}', label, m.group(0)) for m in rx.finditer(text)]
     return hits
-
-
-def completed_guide(key, title, command, look):
-    return f'# {title} — 학생용 완성본\n\n{GUIDE_HEAD}\n\n```text\n{command}\npython check.py\n```\n\n{look}\n\n이 완성본이 따른 「정한 것」은 결과 기록 파일의 「정한 것」 표에 있습니다. 다른 선택을 하면 결과가 달라질 수 있으니, 내 실습에서는 원문을 열어 내 선택과 근거로 정합니다.\n'
-
-
-def build_completed(tmp, judged, checks, memo, expected):
-    res, rv = judged[BASE_POLICY]
-    cases_meta = DC_META
-    plans = {
-        'integrated-03-criteria': dict(
-            files={'결과/sop.json': CR.sop_json(*CR.BASE), '결과/조건표.csv': CR.table_csv('가'), '결과/요구사항.md': criteria_requirements(memo, checks),
-                   '결과/설비_연결_기준.json': json.dumps({'decision': '정한 것(적용 범위): HYD-01 ~ 03에만 건다', 'sops': {
-                       s: {'assets': CR.model_ref(s, '가')['assets'], 'components': CR.MODEL[s][0], 'sensors': CR.MODEL[s][1], 'not_linked': CR.model_ref(s, '가')['not_linked']}
-                       for s, *_ in CR.SOPS}}, ensure_ascii=False, indent=2) + '\n'},
-            code={'결과/link_model_ids.py': COMPLETED/'link_model_ids.py', '결과/trace_sources.py': COMPLETED/'trace_sources.py'},
-            commands=[['결과/link_model_ids.py'], ['결과/trace_sources.py']], outputs=['결과/sop.json', '결과/출처_대조.md'],
-            command='python 결과/link_model_ids.py\npython 결과/trace_sources.py',
-            look='`결과/sop.json`은 냉각 계통 조치 일곱 개의 SOP 구조 · 관계 · 설비 모델 참조, `결과/조건표.csv`는 판단 조건, `결과/요구사항.md`는 정한 것과 대조 기록입니다. '
-                 '`link_model_ids.py`는 설비 모델에서 절차마다 걸 ID를 찾아 모델 참조를 채우고, `trace_sources.py`는 항목마다 원문 줄을 찾아 `결과/출처_대조.md`에 나란히 적습니다(원문에서 찾지 못한 출처는 끝에 따로).'),
-        'practical-02-conditions': dict(
-            files={'결과/조건표.csv': CR.table_csv('가'), '결과/판단기록.md': conditions_record_completed(checks)},
-            code={'결과/apply_conditions.py': COMPLETED/'apply_conditions.py'},
-            commands=[['결과/apply_conditions.py']], outputs=['결과/사례_대조.md'],
-            command='python 결과/apply_conditions.py',
-            look='`결과/조건표.csv`는 경고 · 감점 · 제외 조건, `결과/판단기록.md`는 정한 것 · 확인 사례 대조 · 남은 후보와 실행 승인입니다. '
-                 '`apply_conditions.py`는 조건표를 확인 사례에 대어 후보마다 맞은 규칙과 알 수 없는 규칙을 `결과/사례_대조.md`에 적습니다.'),
-        'integrated-03-judge': dict(
-            files={'결과/result.json': json.dumps(J.student_view(res), ensure_ascii=False, indent=1) + '\n', '결과/기대결과.md': judge_expectations(res, cases_meta)},
-            code={'결과/judge_actions.py': HERE/'judge_actions.py'},
-            commands=[['결과/judge_actions.py', '.', '결과']], outputs=['결과/result.json'],
-            command='python 결과/judge_actions.py . 결과',
-            look='`judge_actions.py`는 원천 네 개에서 판단 입력을 만들고, `입력/조건표.csv`로 후보를 판정하고, `자료/metrics/지표_정의.md`의 식으로 견주어 `결과/result.json`을 씁니다. '
-                 '`결과/기대결과.md`의 기대 칸과 사건의 순위 · 선택 이유를 견주어 보세요.'),
-        'practical-03-review': dict(
-            files={'결과/조치검토결과.json': json.dumps(rv, ensure_ascii=False, indent=1) + '\n', '결과/조치검토결과.md': J.review_md(rv),
-                   '결과/기대결과.md': judge_expectations(res, cases_meta).replace('python 결과/judge_actions.py . 결과', 'python 결과/judge_actions.py . 결과 --review')},
-            code={'결과/judge_actions.py': HERE/'judge_actions.py'},
-            commands=[['결과/judge_actions.py', '.', '결과', '--review']], outputs=['결과/조치검토결과.json', '결과/조치검토결과.md'],
-            command='python 결과/judge_actions.py . 결과 --review',
-            look='`judge_actions.py`는 원천 네 개에서 판단 입력을 만들고, `입력/조건표.csv`로 판정 · 비교한 뒤 `입력/sop.json`의 승인 역할 · 실행 전 확인을 붙여 '
-                 '`결과/조치검토결과.json` · `.md`를 씁니다. `조치검토결과.md`의 사건 절만 읽고 후보마다 판정 · 까닭 · 승인 역할과 먼저 확인할 값을 말해 보세요.'),
-    }
-    report = {}
-    for key, plan in plans.items():
-        target, name = completed_target(key)
-        folder = Path(tmp)/'completed'/name
-        shutil.copytree(LAB[key], folder)
-        for rel, text in plan['files'].items():
-            write(folder/rel, text)
-        for rel, src in plan['code'].items():
-            write(folder/rel, Path(src).read_text(encoding='utf-8'))
-        if key == 'practical-02-conditions':      # 동봉 결과는 동봉 코드를 실행해 얻은 것
-            run_py(folder, *plan['commands'][0])
-        if key == 'integrated-03-criteria':
-            run_py(folder, *plan['commands'][1])
-        write(folder/'완성본_안내.md', completed_guide(key, BJ.TITLES[key], plan['command'], plan['look']))
-        start = (folder/'START.md').read_text(encoding='utf-8')
-        head, rest = start.split('\n', 1)
-        write(folder/'START.md', head + '\n\n완성한 결과를 실행하려면 [완성본 안내](완성본_안내.md)를 여세요. 아래는 이 결과가 푸는 원래 과제입니다.\n' + rest)
-        files = {p.relative_to(folder).as_posix(): p.read_bytes() for p in sorted(folder.rglob('*')) if p.is_file() and '__pycache__' not in p.parts}
-        for at, label, got in branch_marks(files):
-            fail(f'완성본 {name}/{at}: 강사 갈래 표기({label}) 「{got}」 — 학생이 고른 문장으로 쓴다')
-        # 새 폴더에서 안내의 명령을 다시 실행 — 동봉한 결과와 같은 바이트, 학생 검사기 통과(K-12)
-        fresh = Path(tmp)/'completed_run'/name
-        for rel, data in files.items():
-            (fresh/rel).parent.mkdir(parents=True, exist_ok=True)
-            (fresh/rel).write_bytes(data)
-        outs = []
-        for cmd in plan['commands']:
-            code, out = run_py(fresh, *cmd)
-            outs.append(out.splitlines()[-1] if out else '')
-            if code != 0:
-                fail(f'완성본 {name}: {" ".join(cmd)} 실패\n{out[:1500]}')
-        for rel in plan['outputs']:
-            if (fresh/rel).read_bytes() != files[rel]:
-                fail(f'완성본 {name}: 안내의 명령을 다시 실행한 {rel}이 동봉한 파일과 다름')
-        code, out = run_check(fresh)
-        if code != 0 or '구조 검사 통과' not in out:
-            fail(f'완성본 {name}: 학생 검사기가 통과시키지 않음\n{out[:1500]}')
-        buf = io.BytesIO()
-        with zipfile.ZipFile(buf, 'w') as z:
-            for rel, data in files.items():
-                info = zipfile.ZipInfo(f'{name}/{rel}', STAMP)
-                info.compress_type = zipfile.ZIP_DEFLATED
-                z.writestr(info, data)
-        with zipfile.ZipFile(io.BytesIO(buf.getvalue())) as z:
-            if {n.split('/', 1)[1]: z.read(n) for n in z.namelist()} != files:
-                fail(f'완성본 {name}: ZIP 안 경로 · 바이트가 묶은 폴더와 다름')
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_bytes(buf.getvalue())
-        report[name] = {'경로': target.relative_to(BJ.OUT).as_posix(), '파일수': len(files), 'sha256': hashlib.sha256(buf.getvalue()).hexdigest(),
-                        '명령': plan['command'], '실행_출력_끝': outs, '검사기': out.splitlines()[-2] if out else ''}
-    expected['학생용_완성본'] = report
-    return report
 
 
 # ───────────── 사건 갈래표 ─────────────
@@ -1158,7 +1065,7 @@ def incident_table(judged, hand_rows, recomputed, chain_rec, mixed, expected):
               '### 지점2는 규칙마다 정한다 — 섞인 선택은 학생 조건표로 사례를 다시 돌려 확인한다', '',
               '위 가 · 나 · 다는 rule:ts1-hard · rule:trip-reset-only를 같은 방법으로 둔 갈래다. 학생 폴더의 「정할 것」은 근거 문장이 없는 규칙마다 정하게 하므로 규칙마다 다른 선택(섞인 선택)이 나올 수 있고, '
               '그 결과는 이 표에 그대로 있지 않다. 그때는 학생의 조건표로 사례를 다시 돌려 결과와 근거를 견준다 — 실전 02-5 학생용 완성본을 새 폴더에 풀어 `결과/조건표.csv`를 학생 것으로 바꾸고 '
-              '`python 결과/apply_conditions.py`(확인 사례), 또는 판정 랩 사본에서 `python judge_actions.py <랩 폴더> <출력 폴더> --table <학생 조건표>`(30일 경보). '
+              '`python show_result.py`(사건 · 확인 사례 판정이 결과 화면에), 또는 판정 랩 사본에서 `python judge_actions.py <랩 폴더> <출력 폴더> --table <학생 조건표>`(30일 경보). '
               '판정 근거는 결과가 갈래표와 같은지가 아니라 「정한 것」의 근거 줄이 원문과 맞는지다.', '',
               CR.md_table(['섞인 선택의 예(run_reference.py가 확인 사례에 실제로 돌림)', '지점2 가와 달라진 확인 사례 후보'], mixed), '',
               '- HM-8.3 인터록 줄(HM-8_매뉴얼.md 30 · 33줄, 「65 ℃ 이상 (설비 정지)」)을 rule:ts1-hard의 근거로 삼는 학생이 있다 — 기준값 65 ℃ · 「이상」은 원문에 있지만 「후보를 뺀다」는 문장은 없다. '
@@ -1219,9 +1126,14 @@ def main():
         caught = sum(1 for t in TRIALS if not t['통과_기대'] and t['기대대로'])
         damaged = sum(1 for t in TRIALS if not t['통과_기대'])
         print(f'   손상 {damaged}건 중 {caught}건 잡음, 통과해야 할 입력(강사 참조 · 내 입력 폴더) {sum(1 for t in TRIALS if t["통과_기대"] and t["기대대로"])}/{sum(1 for t in TRIALS if t["통과_기대"])}')
+        print('   판단 표 채움(통합 03-2 갈래 6) → sop_tools 조립')
+        fill_branches(tmp, expected)
         print('8. 학생용 완성본(기본 갈래) 묶기 · 새 폴더에서 다시 실행')
-        for name, r in build_completed(tmp, judged, checks, memo_inputs(files['사건_기록_HYD-02_1027.md']), expected).items():
+        for name, r in build_completed(tmp, files, expected).items():
             print(f'   {r["경로"]} · 파일 {r["파일수"]}개 · {r["sha256"][:12]} · {r["검사기"]}')
+        print('9. 정답 토글 재생(받은 그대로의 사본에 단계 차례로)')
+        for name, r in toggle_replay(tmp, files, judged, expected).items():
+            print(f'   {name}: {" · ".join(r["단계"])} · 검사기 {r["검사기"]}')
     dump(HERE/'검사기_확인.json', TRIALS)
     print('7. 학생 폴더 경계')
     inc_tot = [v for s, v in ((s, d['합계'] if d['합계'] is not None else d['아는_값_합계']) for s, d in DC_META['incident_totals'].items())]

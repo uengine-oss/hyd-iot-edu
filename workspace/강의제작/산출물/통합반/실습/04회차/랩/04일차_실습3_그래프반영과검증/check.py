@@ -140,7 +140,7 @@ def check_loads(todo, known, cands):
         elif dels:
             print(f'    참고: {p.name} {", ".join(map(str, dels))}줄에 DELETE — 적재문은 만들고 고치는 문장만 두어 다시 실행해도 같은 결과가 나오게 합니다.')
         tokens = set(re.findall(r'[\w:.@#-]+', body))
-        used = sorted(x for x in tokens if held(x, cands))
+        used = sorted(x for x in tokens if held(x, cands)) if p.name != 'query.cypher' else []   # 조회문은 보류 확인에서 보류 후보를 일부러 묻는다
         if used:
             todo.append(f'{p.name}: 승인(approved)이 아닌 후보 id를 가리킵니다 — {", ".join(used[:8])}')
         for lit in ID_LITERAL.findall(body):
@@ -330,6 +330,19 @@ def check_cards(todo):
         todo.append('이 사건의 작업과 다른 작업 하나 이상의 카드가 필요합니다.')
 
 
+def slot_errors():
+    """정할 자리의 꼴 — 제공 코드(doc_graph.py)의 검사로 본다."""
+    import doc_graph as G
+    out = []
+    known = G.model_ids()[0]
+    for fn in (G.shape, lambda: G.link_rows(known), lambda: G.alias_rows(known), lambda: G.other_rows(known), G.role_rows, G.now_rows):
+        try:
+            fn()
+        except G.Problem as e:
+            out.append(f'정할 자리: {e}')
+    return out
+
+
 def main():
     todo = []
     known = known_ids()
@@ -351,6 +364,7 @@ def main():
     check_record(todo, 5)
     if PRACTICAL:
         check_cards(todo)
+    todo += slot_errors() + chosen_errors(HERE) + provided_errors(HERE)
     print()
     if todo:
         print('완료 아님 — 남은 것:')
@@ -361,6 +375,44 @@ def main():
     print('구조상 빠진 단계는 없습니다. ' + END)
     return 0
 
+
+def chosen_errors(root):
+    """결과/정한_것.csv — 빈 칸 · 근거 꼴(파일:줄)만 본다. 고른 것이 맞는지는 보지 않는다."""
+    import csv, io, re
+    p = root / '결과' / '정한_것.csv'
+    if not p.is_file():
+        return ['결과/정한_것.csv가 없습니다 — 받은 ZIP의 빈 틀을 지우지 않습니다.']
+    lines = [x for x in p.read_text(encoding='utf-8-sig').splitlines() if x.strip() and not x.lstrip().startswith('#')]
+    rows = list(csv.DictReader(io.StringIO('\n'.join(lines))))
+    need = ['지점', '고른_것', '근거', '바뀌는_답']
+    if not lines or [c.strip() for c in csv.reader([lines[0]]).__next__()] != need:
+        return ['결과/정한_것.csv: 열 이름이 ' + ','.join(need) + '이어야 합니다.']
+    out = []
+    for n, r in enumerate(rows, 1):
+        empty = [c for c in need if not (r.get(c) or '').strip()]
+        if empty:
+            out.append(f'결과/정한_것.csv {n}번째 행: 빈 칸 ' + ', '.join(empty) + '(못 정했으면 고른_것에 「미결」).')
+        elif not re.search(r'[^\s:]+:\d+', r['근거']):
+            out.append(f'결과/정한_것.csv {n}번째 행: 근거에 파일:줄이 없습니다.')
+    return out
+
+import hashlib as _h
+_PROVIDED = {
+ "doc_graph.py": "b81641078b1e185887118225ec0813142118c1da6490d055c12921f66a82d48b",
+ "lab_cypher.py": "97cb3929bb37cbc00fcb2de05eaa34ea041890c2185bb89e96c8e367fab59bf2",
+ "lab_db.py": "8328793ea21000f17b36da076b53a16791bf7247e08a7357e6c7320f6cde125a",
+ "lab_steps.py": "16888d78ff71913858c53798b02650d2d82bcce0b73263540536c5018be397a5",
+ "show_result.py": "1d7bb59ff9b3a5c3e7bd94af2838eafb891b312a1c34e43877dd700d17fd7c9d"
+}
+def provided_errors(root):
+    out = []
+    for name, digest in _PROVIDED.items():
+        p = root / name
+        if not p.is_file():
+            out.append(f'제공 파일이 없습니다: {name} — 받은 ZIP의 것으로 되돌리세요.')
+        elif _h.sha256(p.read_bytes()).hexdigest() != digest:
+            out.append(f'제공 파일이 바뀌었습니다: {name} — 받은 ZIP의 것으로 되돌리세요.')
+    return out
 
 if __name__ == '__main__':
     try:

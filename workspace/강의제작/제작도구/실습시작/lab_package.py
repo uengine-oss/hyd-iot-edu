@@ -75,6 +75,10 @@ def pack(folder, exclude_names=PRIVATE, archive=None):
     folder = Path(folder)
     root = zip_root(folder)
     existing = folder.parent/(folder.name + '.zip')
+    if outside_guide(folder):
+        inside = [n for n in ('guide.html', '안내.html') if (folder/n).exists()]
+        if inside:
+            raise ValueError(f'{folder.name}: 가이드는 폴더 밖({folder.name}_guide.html)에 있어야 하는데 폴더 안에 {inside}가 있다 — 생성기를 다시 돌린다.')
     if existing.exists():
         with zipfile.ZipFile(existing) as z:
             if not any(n.startswith(root + '/') for n in z.namelist()):
@@ -87,13 +91,24 @@ def sha256(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+def outside_guide(folder):
+    """코딩 랩 가이드(랩 폴더 밖 `<랩>_guide.html` — lab_frame.guide_path와 같은 자리). 없으면 None."""
+    folder = Path(folder)
+    path = folder.parent/(folder.name + '_guide.html')
+    return path if path.is_file() else None
+
+
 def entry(id, course, session, title, version, folder, **extra):
-    """package-index 항목 하나. folder 옆에 묶은 ZIP이 있어야 한다."""
+    """package-index 항목 하나. folder 옆에 묶은 ZIP이 있어야 한다. 폴더 옆 가이드가 있으면 guide_file(경로 · sha256)을 붙인다."""
     folder = Path(folder)
     archive = folder.parent/(folder.name + '.zip')
-    return {'id': id, 'course': course, 'session': session, 'title': title, 'version': version,
+    item = {'id': id, 'course': course, 'session': session, 'title': title, 'version': version,
             'folder': zip_root(folder), 'path': archive.resolve().relative_to(ROOT).as_posix(),
             'sha256': sha256(archive), **extra}
+    guide = outside_guide(folder)
+    if guide:
+        item['guide_file'] = {'path': guide.resolve().relative_to(ROOT).as_posix(), 'sha256': sha256(guide)}
+    return item
 
 
 def register(entries, index=INDEX):
@@ -149,7 +164,7 @@ def main(argv=None):
     if item is None:
         print(f'{archive.name}: 다시 묶음({new[:12]}). package-index 밖 랩이라 목록은 그대로다.')
         return 0
-    register([item | {'version': args.version, 'sha256': new}])
+    register([item | {'version': args.version, 'sha256': new} | ({'guide_file': entry(item['id'], item['course'], item['session'], item['title'], args.version, folder)['guide_file']} if outside_guide(folder) else {})])
     print(f'{archive.name}: 다시 묶음({new[:12]}), package-index {item["id"]} 판 {args.version}. 다음: build_launcher.py → verify_packages.py → test_launcher.py')
     return 0
 

@@ -1,7 +1,0 @@
-OPTIONAL MATCH (p:Part) WHERE p.id = $part OR $part IN coalesce(p.other_codes, [])
-OPTIONAL MATCH (s:Supplier)-[r:SUPPLIES]->(p)
-RETURN p.id AS part, CASE WHEN p IS NULL THEN '원자료에 없는 품번' WHEN s IS NULL THEN '기준일에 쓸 공급 조건 없음' END AS note,
-       s.id AS supplier, s.name AS name, r.supplier_part_no AS supplier_part_no, r.approved AS approved, r.approval_status AS approval_status, r.condition AS condition,
-       r.price_manwon AS price_manwon, r.defect_rate AS defect_rate, r.lead_days AS quoted_days, r.quote_date AS quoted_on, r.valid_until AS quote_until,
-       r.inspection AS inspection, r.compare_extra_manwon AS compare_extra_manwon, r.rule_source AS rule_source,
-       r.quote_source AS quote_source, r.approval_source AS approval_source, r.as_of AS as_of ORDER BY part, supplier

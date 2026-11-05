@@ -669,10 +669,10 @@ def sop_diff(sop, prep, ban, done):
     def same(a, b):
         a, b = X.squash(a), X.squash(b)
         short = min(len(a), len(b))
+        if short and (a in b or b in a):      # 짧은 기준값 인용(「80 % 이상」)도 그 글이 통째로 들어 있으면 같은 것
+            return True
         if short < 6:
             return False
-        if a in b or b in a:
-            return True
         return sum(m.size for m in difflib.SequenceMatcher(None, a, b, autojunk=False).get_matching_blocks()) >= 0.8 * short
     task = next(x for x in sop['sops'] if x['id'] == TASK)
 

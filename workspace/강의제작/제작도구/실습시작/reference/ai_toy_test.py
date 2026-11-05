@@ -14,8 +14,10 @@
               키는 원본 기록에서 가린다. 주지 않으면 키 없는 폴더 시험이다.
 
 두 도구
-  codex  = 학생 AI. Codex CLI + 강의 중계 LiteLLM의 `coding` 모델(사용자 provider). 키 LLM_API_KEY와 주소 OPENAI_BASE_URL을
-           환경 변수나 --env-file에서 읽는다. 키 값은 화면 · 파일 어디에도 쓰지 않는다(원본 기록에 섞이면 가린다).
+  codex  = 학생 AI. 학생처럼 ChatGPT 계정으로 로그인한 Codex(--codex-home <로그인해 둔 CODEX_HOME> — 그 폴더의 config.toml이
+           모델을 정한다, 이 PC는 `D:/HYD-Practice/_codex_luna` · gpt-6-luna). --codex-home이 없으면 강의 중계 LiteLLM의 `coding`
+           모델로 돌고, 키 LLM_API_KEY와 주소 OPENAI_BASE_URL을 환경 변수나 --env-file에서 읽는다. 키 값은 화면 · 파일 어디에도
+           쓰지 않는다(원본 기록에 섞이면 가린다).
   claude = 더 센 AI. Claude Code + Sonnet. env -i처럼 PATH · 새 HOME · 프록시 · 인증서 변수 · ANTHROPIC_BASE_URL만 넘긴다.
 
 알아낸 함정(코드에 반영)
@@ -24,7 +26,8 @@
     실습 폴더 · 도구 홈은 ~/.hyd-toy-test/<출력 폴더 이름>/에 만든다.
   - Codex는 CODEX_HOME이 /tmp 아래면 apply_patch 도우미를 못 만든다 — CODEX_HOME은 /tmp 밖에 둔다.
   - Codex 2턴은 `codex exec --skip-git-repo-check resume --last …`(옵션이 resume 앞)이어야 하고, resume은 sandbox가 read-only로
-    돌아가므로 -c sandbox_mode="workspace-write"를 준다.
+    돌아가므로 -c sandbox_mode="workspace-write"를 준다. Windows에서는 설정에 `[windows] sandbox = "unelevated"`가 없으면
+    read-only로 떠 명령이 `CreateProcess … Rejected`로 막힌다(2026-11-05 실전 02-5 시험 무효 두 번).
   - Claude는 새 HOME에서 돌려 이 PC의 사용자 설정 · 기억을 읽지 않게 하고, 2턴은 --continue로 잇는다.
 
 출력 폴더
@@ -64,6 +67,9 @@ name = "LiteLLM (course relay)"
 base_url = {base_url}
 env_key = "LLM_API_KEY"
 wire_api = "responses"
+
+[windows]
+sandbox = "unelevated"
 '''
 CLAUDE_ENV = ('PATH', 'HTTPS_PROXY', 'https_proxy', 'NO_PROXY', 'no_proxy', 'NODE_EXTRA_CA_CERTS', 'SSL_CERT_FILE', 'ANTHROPIC_BASE_URL')
 CLAUDE_TOOLS = ['Bash(python3:*)', 'Bash(python:*)', 'Bash(ls:*)', 'Bash(cat:*)', 'Bash(grep:*)',
@@ -365,6 +371,7 @@ def main():
     ap.add_argument('--out', type=Path, help='새 출력 폴더(저장소 밖, 또는 저장소의 작업/검사/ 아래)')
     ap.add_argument('--env-file', type=Path, help='LLM_API_KEY · OPENAI_BASE_URL을 읽을 .env 꼴 파일(codex만)')
     ap.add_argument('--lab-env', type=Path, help='실습 폴더에 학생처럼 .env 세 줄을 쓸 .env 꼴 파일(모델을 부르는 랩의 키 있는 시험)')
+    ap.add_argument('--codex-home', type=Path, help='학생 계정으로 로그인해 둔 CODEX_HOME(auth.json · config.toml이 있는 폴더). 주면 강의 중계 설정을 쓰지 않고 그 계정 · 모델로 돈다(codex만)')
     ap.add_argument('--codex-bin', default='codex')
     ap.add_argument('--claude-bin', default='claude')
     ap.add_argument('--timeout', type=int, default=1500, help='한 턴의 시간 상한(초)')
@@ -386,19 +393,28 @@ def main():
     binary = shutil.which(a.codex_bin if a.tool == 'codex' else a.claude_bin)
     if not binary and not a.dry_run:
         raise SystemExit(f'{a.tool} 실행 파일을 찾지 못했습니다 — --{a.tool}-bin으로 주세요.')
-    settings = {'LLM_API_KEY': '', 'OPENAI_BASE_URL': '<OPENAI_BASE_URL>'} if a.dry_run or a.tool == 'claude' else relay_settings(a.env_file)
+    if a.codex_home:
+        if a.tool != 'codex':
+            ap.error('--codex-home은 --tool codex에만 씁니다')
+        missing = [name for name in ('auth.json', 'config.toml') if not (a.codex_home/name).is_file()]
+        if missing:
+            raise SystemExit(f'{a.codex_home}: {missing}가 없습니다 — 그 폴더를 CODEX_HOME으로 두고 `codex login`을 먼저 합니다.')
+        home = a.codex_home.resolve()
+    use_relay = not (a.dry_run or a.tool == 'claude' or a.codex_home)
+    settings = relay_settings(a.env_file) if use_relay else {'LLM_API_KEY': '', 'OPENAI_BASE_URL': '<OPENAI_BASE_URL>'}
     lab_env = lab_env_lines(a.lab_env) if a.lab_env and not a.dry_run else None
     keys = sorted({settings['LLM_API_KEY'], (lab_env or {}).get('LLM_API_KEY', '')} - {''})
 
     out.mkdir(parents=True, exist_ok=True)
     lab.mkdir(parents=True)
-    home.mkdir(parents=True)
+    if not a.codex_home:
+        home.mkdir(parents=True)
     base = unpack(zip_path, lab)
     if lab_env:
         if (lab/'.env').exists():
             raise SystemExit(f'{zip_path}: ZIP 안에 .env가 있습니다 — 학생 폴더에는 .env.example만 둡니다(코딩랩.md K-7).')
         (lab/'.env').write_text(''.join(f'{name}={lab_env[name]}\n' for name in LAB_ENV), encoding='utf-8')
-    if a.tool == 'codex':
+    if a.tool == 'codex' and not a.codex_home:
         (home/'config.toml').write_text(CODEX_CONFIG.format(base_url=json.dumps(settings['OPENAI_BASE_URL'])), encoding='utf-8')
     before = snapshot(lab)
     write_snapshot(out/'before.sha256', before)

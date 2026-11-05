@@ -34,6 +34,27 @@ def download(url, target):
                 raise ValueError('자료 크기가 허용 범위를 넘었습니다.')
             out.write(block)
 
+def guide_of(folder):
+    """코딩 랩 가이드 자리 — 실습 폴더 옆(VS Code로 여는 폴더 밖). 정답 보기가 든 문서라 학생 AI가 읽는 폴더에 두지 않는다."""
+    folder = Path(folder)
+    return folder.parent/(folder.name + '_guide.html')
+
+
+def lab_ready(item, folder):
+    """받은 폴더가 이 항목의 꼴인가. 코딩 랩(guide_file 있음)은 START.md, 도구 실습은 폴더 안 guide.html."""
+    return (folder/'START.md').is_file() if item.get('guide_file') else (folder/'guide.html').is_file()
+
+
+def fetch_guide(item, temp, folder):
+    """가이드 HTML 하나를 받아 해시를 확인하고 folder 옆에 둔다."""
+    spec = item['guide_file']
+    part = Path(temp)/'guide.part'
+    download(spec['url'], part)
+    if hashlib.sha256(part.read_bytes()).hexdigest() != spec['sha256']:
+        raise ValueError('가이드 판본이 일치하지 않습니다. 재시도하거나 노션 「가이드문서」에서 여세요.')
+    shutil.move(str(part), str(guide_of(folder)))
+
+
 def acquire(item, root, reopen=False):
     root = Path(root).resolve()
     root.mkdir(parents=True, exist_ok=True)
@@ -41,8 +62,12 @@ def acquire(item, root, reopen=False):
     if reopen and index.exists():
         record = json.loads(index.read_text(encoding='utf-8'))
         folder = Path(record['folder']).resolve()
-        if not folder.is_relative_to(root) or not (folder/'guide.html').is_file():
+        if not folder.is_relative_to(root) or not lab_ready(item, folder):
             raise ValueError('기존 폴더를 찾을 수 없습니다. 새로 시작을 선택하세요.')
+        if item.get('guide_file') and not guide_of(folder).is_file():
+            # 가이드만 지워졌으면 가이드만 다시 받는다 — 학생 폴더는 건드리지 않는다.
+            with tempfile.TemporaryDirectory(prefix='.practice-', dir=root) as temp:
+                fetch_guide(item, Path(temp), folder)
         return folder
     # 쓰기 권한 확인 + 기존 학생 폴더와 절대로 겹치지 않는 새 위치.
     with tempfile.TemporaryDirectory(prefix='.practice-', dir=root) as temp:
@@ -64,9 +89,13 @@ def acquire(item, root, reopen=False):
                     raise ValueError('자료 경로 오류')
             z.extractall(extracted)
         folder = (extracted/item['folder']).resolve()
-        if not folder.is_relative_to(extracted) or not (folder/'guide.html').is_file():
-            raise ValueError('실습 가이드를 찾을 수 없습니다.')
+        if not folder.is_relative_to(extracted) or not lab_ready(item, folder):
+            raise ValueError('실습 가이드 또는 START.md를 찾을 수 없습니다.')
+        if item.get('guide_file') and any((folder/name).exists() for name in ('guide.html', '안내.html')):
+            raise ValueError('자료 판본이 일치하지 않습니다(실습 폴더 안에 가이드가 있음). 재시도하거나 수동 ZIP을 받으세요.')
         target = root/(item['id']+'-'+uuid.uuid4().hex[:8])
+        if item.get('guide_file'):
+            fetch_guide(item, temp, target)
         shutil.move(str(folder), str(target))
     pending = index.with_suffix('.tmp')
     pending.write_text(json.dumps({'folder':str(target),'version':item['version']},ensure_ascii=False),encoding='utf-8')
@@ -98,7 +127,8 @@ def open_lab(folder, *, guide_only=False):
     if not guide_only:
         exe = code_executable()
         subprocess.Popen([str(exe),'--new-window',str(folder),str(folder/'START.md')],shell=False)
-    open_document(folder/'guide.html')
+    outside = guide_of(folder)
+    open_document(outside if outside.is_file() else folder/'guide.html')
 
 def open_neo4j(folder):
     # 구판에서 이미 준비한 학생 DB는 연결만 복구한다. 학생의 변경을 다시 시드하지 않는다.

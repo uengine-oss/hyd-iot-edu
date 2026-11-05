@@ -1,133 +1,99 @@
 {
   "classes": {
     "Document": {
-      "meaning": "회사 문서 하나(문서 목록의 문서 식별자). 받은 파일이 없는 문서는 두지 않는다",
+      "meaning": "회사 문서 하나(문서 목록의 문서 식별자)",
       "required": {
         "id": "string",
-        "title": "string",
-        "owner": "string"
-      }
-    },
-    "Revision": {
-      "meaning": "문서의 한 판(문서 목록의 한 행). 상태는 목록 그대로",
-      "required": {
-        "id": "string",
-        "doc_id": "string",
-        "rev": "string",
-        "status": "string",
-        "file": "string",
-        "sha256": "string"
-      },
-      "optional": {
-        "effective": "string",
-        "replaces_note": "string"
+        "doc_id": "string"
       }
     },
     "Section": {
-      "meaning": "판 안의 절 — 그 문서의 절 표기 그대로. 원문에 절 머리가 없는 절은 두지 않는다",
+      "meaning": "판 안의 절 — 그 문서의 절 표기 그대로",
       "required": {
         "id": "string",
         "ref": "string"
       }
     },
     "Knowledge": {
-      "meaning": "검토에서 승인(approved)한 후보 하나 — 원문 인용 · 줄과 검토 결정을 함께 둔다",
+      "meaning": "검토에서 승인한 후보 하나 — 원문 인용 · 줄과 검토 결정",
       "required": {
         "id": "string",
         "kind": "string",
-        "text": "string",
         "quote": "string",
         "line_start": "number",
         "line_end": "number",
-        "decision": "string",
-        "review_file": "string"
-      },
-      "optional": {
-        "page": "string",
-        "lang": "string",
-        "value": "number",
-        "value_max": "number",
-        "unit": "string",
-        "comparator": "string",
-        "value_text": "string",
-        "reason": "string"
+        "decision": "string"
+      }
+    },
+    "Revision": {
+      "meaning": "문서의 한 판(문서 목록의 한 행) — 상태는 목록 그대로",
+      "required": {
+        "id": "string",
+        "doc_id": "string",
+        "rev": "string",
+        "status": "string"
       }
     }
   },
   "relations": {
-    "HAS_REVISION": {
-      "from": "Document",
-      "to": "Revision"
-    },
-    "REPLACES": {
-      "from": "Revision",
-      "to": "Revision",
-      "note": "문서 목록의 대체 관계"
-    },
     "HAS_SECTION": {
       "from": "Revision",
-      "to": "Section"
+      "to": "Section",
+      "meaning": "판 → 그 판의 절"
     },
     "STATED_IN": {
       "from": "Knowledge",
       "to": "Section",
-      "note": "출처"
-    },
-    "REFERS_TO": {
-      "from": "Step",
-      "to": "Section",
-      "note": "기존 단계의 근거 절(sop.json 단계의 source)"
-    },
-    "CONDITION_OF": {
-      "from": "Knowledge",
-      "to": "Skill",
-      "properties": {
-        "role": [
-          "preparation",
-          "prohibition",
-          "completion",
-          "step",
-          "value"
-        ]
-      }
-    },
-    "DESCRIBES": {
-      "from": "Knowledge",
-      "to": "Step",
-      "note": "같은 단계의 원문"
+      "meaning": "지식 → 원문 절"
     },
     "SUPPORTS": {
       "from": "Knowledge",
       "to": "Rule",
+      "meaning": "지식 → 조건표 규칙(검토의 맞는 정도 · 까닭)",
       "properties": {
-        "match": [
-          "일치",
-          "불일치",
-          "보류"
-        ],
+        "match": "string",
         "note": "string"
+      }
+    },
+    "HAS_REVISION": {
+      "from": "Document",
+      "to": "Revision",
+      "meaning": "문서 → 그 판"
+    },
+    "REPLACES": {
+      "from": "Revision",
+      "to": "Revision",
+      "meaning": "새 판 → 대체한 옛 판(문서 목록의 대체 관계)"
+    },
+    "CONDITION_OF": {
+      "from": "Knowledge",
+      "to": "기존 ID",
+      "meaning": "절차 안의 조건은 그 절차(조치)의 조건",
+      "properties": {
+        "role": "string"
       }
     },
     "EVIDENCE_FOR": {
       "from": "Knowledge",
-      "to": [
-        "Cause",
-        "FailureMode"
-      ]
+      "to": "기존 ID",
+      "meaning": "냉각 성능 상실의 판정 근거",
+      "properties": {
+        "role": "string"
+      }
     },
     "APPLIES_TO": {
       "from": "Knowledge",
-      "to": [
-        "Asset",
-        "Component",
-        "Sensor",
-        "Part"
-      ]
+      "to": "기존 ID",
+      "meaning": "정기 점검표 — 본문의 설비 · 부품 이름으로",
+      "properties": {
+        "role": "string"
+      }
     }
   },
   "constraints": [
-    "새 대상 ID — 문서 = 문서 식별자, 판 = <문서>@<판>, 절 = <문서>@<판>#<절 표기>, 지식 = <문서>@<판>:<후보 id>",
-    "승인(approved) 후보만 Knowledge로 둔다 — 보류 · 제외는 남은 질문 · 검토 결과에만",
-    "현재 값(재고 · 작업지시 상태 · 센서 값)은 두지 않는다"
+    "새 대상 ID — 문서 = {문서}",
+    "새 대상 ID — 판 = {문서}@{판}",
+    "새 대상 ID — 절 = {문서}@{판}#{절}",
+    "새 대상 ID — 지식 = {문서}@{판}:{후보}"
   ]
 }

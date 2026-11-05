@@ -215,6 +215,120 @@ def sop_json(p1, p2):
     return json.dumps(sop_doc(p1, p2), ensure_ascii=False, indent=2) + '\n'
 
 
+# ───────────── 정할 자리 채움(통합 03-2 판단 표 · 실전 02-5 승인 표) — 정답 토글 · 완성본 · 갈래 실행이 같은 글을 쓴다 ─────────────
+# 원문 칸: 자료/HM-8_매뉴얼.md의 줄(줄.문장), 매뉴얼 밖은 「파일:줄」. 제공 sop_tools.py가 이 표로 sop.json을 조립한다.
+SKILL_LINE = {'SOP-COOL-11': 37, 'SOP-COOL-12': 38, 'SOP-COOL-13': 39, 'SOP-COOL-14': 40, 'SOP-COOL-15': 41}   # 내보내기 「스킬」 절 줄
+EXPORT = '판단시스템_결정표_내보내기.txt'
+HARD_LINE = {'R4': 16, 'R5': 33}
+HARD_TEXT = {'R4': '조치 후 예측 유온이 65 ℃ 이상이면 이 후보를 쓰지 않는다.', 'R5': 'PLC가 트립 상태이면 리셋 외 명령을 내리지 않는다.'}
+APPROVAL_REFS = {'SOP-FAN-11': '10', 'SOP-FAN-12': '19', 'SOP-COOL-11': '52', 'SOP-COOL-12': '60', 'SOP-COOL-13': '68;66;74', 'SOP-COOL-14': '74', 'SOP-COOL-15': '74'}
+CLASS_HEADER = ['sop_id', '칸', '원문', '글', '규칙']
+
+
+def classify_rows(p2):
+    """결과/조건_분류.csv 행 — sop_doc의 항목과 같은 칸 · 규칙을 원문 줄로."""
+    hard, out = set(scope(p2)), []
+    for sid, name, kind, codes, section, steps in SOPS:
+        out.append([sid, '고장 유형', '33;36', 'fm:cooler-cooling-loss', ''])
+        out.append([sid, '종류·코드', f'{EXPORT}:{SKILL_LINE[sid]};{EXPORT}:60;{EXPORT}:61;{EXPORT}:66' if kind else f'{EXPORT}:35',
+                    f'{kind}:{";".join(codes)}' if kind else '없음', ''])
+        if sid in REMOTE:
+            out.append([sid, '적용', '45.1', '', 'R1'])
+            out.append([sid, '금지', '87;45.2', '', 'R1'])
+            out.append([sid, '제한', '89', '', ''])
+            out.append([sid, '완료', '71.1;71.2', '', 'R3'])
+        if sid == 'SOP-COOL-11':
+            out.append([sid, '제한', '49.2', '', ''])
+        if sid in ('SOP-COOL-11', 'SOP-COOL-12'):
+            out.append([sid, '제한', '88.2', '', 'R2'])
+        if sid in hard:
+            note = '(옛 판단 시스템이 대상 빈칸으로 건 그대로 — 작업지시는 제어 명령이 아님)' if sid in WORK_ORDER else ''
+            for rid in ('R4', 'R5'):
+                out.append([sid, '금지', f'{EXPORT}:{HARD_LINE[rid]}', HARD_TEXT[rid] + note, rid])
+        if sid == 'SOP-COOL-14':
+            out += [[sid, '적용', '74.1;74.2;38', '', ''], [sid, '제한', '78.2', '', ''], [sid, '완료', '79', '', '']]
+        if sid == 'SOP-COOL-15':
+            out += [[sid, '적용', '74.2;39', '', ''], [sid, '완료', '84', '', '']]
+        if sid == 'SOP-FAN-11':
+            out += [[sid, '적용', '8;40', '', ''], [sid, '완료', '14', '', '']]
+        if sid == 'SOP-FAN-12':
+            out += [[sid, '적용', '17', '', ''], [sid, '제한', '20', '', ''], [sid, '완료', '23', '', '']]
+        out.append([sid, '승인', APPROVAL_REFS[sid], APPROVAL[sid][0], ''])
+    return grouped(out)
+
+
+def grouped(rows):
+    """칸 · 원문 · 글 · 규칙이 같은 줄을 처음 나온 자리에 한 줄로 — sop_id를 ;로 잇는다(절차마다의 줄 차례는 그대로)."""
+    out, at = [], {}
+    for sid, *rest in rows:
+        key = tuple(rest)
+        if key in at:
+            out[at[key]][0] += ';' + sid
+        else:
+            at[key] = len(out)
+            out.append([sid, *rest])
+    return out
+
+
+REL_HEADER = ['type', 'from', 'to', '이름', '원문']
+REL_REFS = {('MITIGATED_BY', s): '44' for s in REMOTE} | {
+    ('REMEDIED_BY', 'SOP-COOL-14'): '73', ('REMEDIED_BY', 'SOP-COOL-15'): '73', ('REMEDIED_BY', 'SOP-FAN-12'): '40;16',
+    ('ADDRESSES', 'SOP-COOL-14'): '38;73', ('ADDRESSES', 'SOP-COOL-15'): '39;73', ('ADDRESSES', 'SOP-FAN-11'): '40;7', ('ADDRESSES', 'SOP-FAN-12'): '40;16'}
+
+
+def relation_rows():
+    names = {c['id']: c['name'] for c in CAUSES}
+    out = []
+    for r in RELATIONS:
+        key = (r['type'], r['from'] if r['type'] == 'ADDRESSES' else r['to'])
+        out.append([r['type'], r['from'], r['to'], names.get(r['to'], ''), REL_REFS[key]])
+    return out
+
+
+LINK_HEADER = ['sop_id', '설비', '구성_요소', '센서', '걸지_않은_까닭']
+
+
+def link_rows(p1):
+    """결과/설비_연결_기준.csv — 절차마다 걸 설비와 장치 · 센서 꼬리, 걸지 않은 대상과 까닭."""
+    return [[s, ';'.join(model_ref(s, p1)['assets']), ';'.join(MODEL[s][0]), ';'.join(MODEL[s][1]), model_ref(s, p1)['not_linked']] for s, *_ in SOPS]
+
+
+def csv_text(header, rows):
+    buf = io.StringIO()
+    w = csv.writer(buf, lineterminator='\n')
+    w.writerow(header)
+    w.writerows(rows)
+    return buf.getvalue()
+
+
+CHOICE_HEADER = ['지점', '고른_것', '근거', '바뀌는_답']
+P1_CHOICE = {'가': 'HYD-01 ~ 03에만 건다(HYD-04는 뺌)', '나': 'HYD-04에도 SOP-COOL-13 · 15와 냉각 성능 판정을 건다'}
+P2_CHOICE = {'가': '옛 시스템이 건 그대로(대상 빈칸 = 네 후보) 제외로 옮기고, 이유 칸에 작업지시 후보와의 어긋남을 밝힌다',
+             '나': '설명 문장(「모든 제어 후보」 · 「제어 명령」)대로 원격 제어 후보 SOP-COOL-11 ~ 13에만 건다', '다': '옮기지 않는다'}
+P2_BASIS = {'ts1-hard': f'자료/{EXPORT}:16(출처 ks:sr-04); 자료/HM-8_매뉴얼.md:30(인터록 65 ℃ — 후보 제외 문장은 없음); 자료/작업기준.md:14',
+            'trip-reset-only': f'자료/{EXPORT}:33(출처 HM-9.4); 자료/{EXPORT}:50(냉각 후 리셋 스킬도 HM-9.4 — 받은 원문 1.0 · 1.1판에 9장이 없음); 자료/작업기준.md:14'}
+
+
+def choice_rows_criteria(p1, p2, practical=False):
+    rows = [] if practical else [['적용 범위', P1_CHOICE[p1], '입력/자료/설비_대장.csv:6(HYD-04 비고 수냉식 열교환기); 입력/graph.json HYD-04 구성 요소에 fan 없음; 자료/HM-8_매뉴얼.md:5(범위 문장 없음)',
+                                  'sop.json model_refs의 HYD-04 · 설비마다 걸었음 · 뺐음']]
+    rows += [['출처가 확인되지 않는 기준 — rule:ts1-hard', P2_CHOICE[p2], P2_BASIS['ts1-hard'], '예측 65 ℃ 이상 사례의 판정(사건은 같음)'],
+             ['출처가 확인되지 않는 기준 — rule:trip-reset-only', P2_CHOICE[p2], P2_BASIS['trip-reset-only'], '트립 사례의 판정(사건은 같음)'],
+             ['출처가 확인되지 않는 기준 — rule:ps1-warn', '옮기지 않는다 — 예측 토출 압력 조건(출처 HM-5.2 펌프 장)', f'자료/{EXPORT}:31; 자료/작업기준.md:14', '예측 토출 압력 165 bar 미만 후보에 경고가 붙지 않음']]
+    if practical:
+        rows.append(['승인 역할 — SOP-COOL-13', APPROVAL['SOP-COOL-13'][0], '자료/HM-8_매뉴얼.md:68; 자료/HM-8_매뉴얼.md:66; 자료/HM-8_매뉴얼.md:74',
+                     '남은 후보 SOP-COOL-13의 승인 역할'])
+    return rows
+
+
+APPROVAL_HEADER = ['sop_id', '승인_역할', '원문']
+
+
+def approval_rows():
+    """실전 02-5 결과/승인.csv — 후보 넷의 승인 역할과 원문 줄."""
+    return [[s, APPROVAL[s][0], APPROVAL_REFS[s]] for s in FOUR]
+
+
 # ───────────── 판단 시스템 결정표 내보내기 행마다 처리(통합 03-2 요구사항의 대조 표) ─────────────
 def export_treatment(p2):
     hard = {'가': ('옮김', '옛 시스템이 대상 빈칸(모든 후보)으로 건 그대로 네 후보에 제외로, 출처는 옛 규칙 ID와 원문 미확인'),

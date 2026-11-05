@@ -1,0 +1,7 @@
+종류,인용에_든_글자,항목,근거
+precondition,승인,승인,HM-8_매뉴얼.md:74 — 승인 문장
+precondition,,준비,입출력_계약.md 1절 precondition
+prohibition,,금지,입출력_계약.md 1절 prohibition
+completion,,완료,입출력_계약.md 1절 completion
+step,,순서,입출력_계약.md 1절 step
+unit_value,,완료,HM-8_매뉴얼.md:79 — 조치의 기준값은 완료 확인의 값

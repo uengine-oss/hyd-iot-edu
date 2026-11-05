@@ -1,38 +1,44 @@
-// 강사 참조 조회문 — Neo4j Browser에서는 :param 줄부터, run_reference.py는 같은 매개변수로 HTTP 실행
-:param asset => 'HYD-02';
-:param sop => 'SOP-COOL-14';
-:param doc => 'OEM-HPP45A-MM';
-:param ref => 'HM-9.4';
-// 질문 1 — HYD-02 냉각 성능 상실의 조치마다 단계 · 조건과 근거 문서 · 판 · 절 · 인용
-MATCH (f:FailureMode {id: 'fm:cooler-cooling-loss'})-[m:MITIGATED_BY|REMEDIED_BY]->(s:Skill)-[:ACTS_ON]->(:Component)<-[:HAS_COMPONENT]-(:Asset {id: $asset})
-WITH DISTINCT f, m, s
-OPTIONAL MATCH (k:Knowledge)-[c:CONDITION_OF|DESCRIBES]->(t) WHERE t = s OR (s)-[:HAS_STEP]->(t)
-OPTIONAL MATCH (k)-[:STATED_IN]->(x:Section)<-[:HAS_SECTION]-(v:Revision)
-RETURN s.id AS sop, type(m) AS kind, s.approval_role AS approval, coalesce(c.role, 'step') AS role, v.doc_id AS doc, v.rev AS rev, x.ref AS section, k.quote AS quote
+// show_result.py가 그래프_모양.json · 질문_값.csv로 만든 조회문(읽기만). 질문마다 「터미널:」 줄을 복사해 실행하거나, Neo4j Browser에서는 「Browser:」 줄의 :param부터 붙여 넣는다.
+// 질문 1
+// 터미널: python lab_cypher.py query 결과/query.cypher 1 --param asset=HYD-02
+// Browser: :param asset => "HYD-02";
+MATCH (f:FailureMode)-[m:MITIGATED_BY|REMEDIED_BY]->(s:Skill)-[:ACTS_ON]->(:Component)<-[:HAS_COMPONENT]-(:Asset {id: $asset})
+WITH DISTINCT m, s
+OPTIONAL MATCH (k:`Knowledge`)-[c]->(t) WHERE (t = s OR (s)-[:HAS_STEP]->(t)) AND type(c) <> 'STATED_IN'
+RETURN s.id AS sop, type(m) AS kind, s.approval_role AS approval, c.role AS role, k.doc_id AS doc, k.rev AS rev, k.section AS section, k.quote AS quote
 ORDER BY sop, role, doc, quote;
-// 질문 2 — 판정 규칙마다 근거 원문과 맞는 정도
-MATCH (r:Rule) OPTIONAL MATCH (k:Knowledge)-[s:SUPPORTS]->(r) OPTIONAL MATCH (k)-[:STATED_IN]->(x:Section)<-[:HAS_SECTION]-(v:Revision)
-RETURN r.id AS rule, r.when AS condition, s.match AS match, v.doc_id AS doc, x.ref AS section, k.quote AS quote ORDER BY rule, doc, quote;
-// 질문 3 — 핀 세척 전에 확인할 현재 값(그래프 밖 원천)
+// 질문 2
+// 터미널: python lab_cypher.py query 결과/query.cypher 2
+MATCH (r:Rule) OPTIONAL MATCH (k:`Knowledge`)-[s:`SUPPORTS`]->(r)
+RETURN r.id AS rule, r.when AS condition, s.match AS match, k.doc_id AS doc, k.section AS section, k.quote AS quote ORDER BY rule, doc, quote;
+// 질문 3
+// 터미널: python lab_cypher.py query 결과/query.cypher 3 --param sop=SOP-COOL-14 --param asset=HYD-02
+// Browser: :param sop => "SOP-COOL-14";
+// Browser: :param asset => "HYD-02";
 MATCH (s:Skill {id: $sop})-[:CHECKS]->(n:Sensor)<-[:MONITORED_BY]-(:Component)<-[:HAS_COMPONENT]-(:Asset {id: $asset})
-RETURN 'sensor' AS what, n.id AS id, n.unit AS unit, '시계열(관측값)' AS read_from
-UNION
-MATCH (k:Knowledge)-[:CONDITION_OF {role: 'preparation'}]->(:Skill {id: $sop}) WHERE k.quote CONTAINS 'MES'
-RETURN 'plan' AS what, k.id AS id, null AS unit, 'MES 생산 계획' AS read_from;
-// 질문 4 — 더한 문서(제조사 지침)의 작업이 걸리는 설비 대상
-MATCH (k:Knowledge)-[:STATED_IN]->(:Section)<-[:HAS_SECTION]-(v:Revision {doc_id: $doc}) MATCH (k)-[r:APPLIES_TO|CONDITION_OF]->(t)
+RETURN n.id AS sensor, n.unit AS unit ORDER BY sensor;
+// 질문 4
+// 터미널: python lab_cypher.py query 결과/query.cypher 4 --param doc=OEM-HPP45A-MM
+// Browser: :param doc => "OEM-HPP45A-MM";
+MATCH (k:`Knowledge` {doc_id: $doc})-[r]->(t) WHERE type(r) <> 'STATED_IN'
 RETURN type(r) AS rel, labels(t)[0] AS label, t.id AS target, count(k) AS knowledge ORDER BY rel, target;
-// 질문 5 — 제공되지 않은 작업: HYD-04 냉각 정비의 원문
-MATCH (:Asset {id: 'HYD-04'})-[:HAS_COMPONENT]->(c:Component {id: 'HYD-04:cooler'}) OPTIONAL MATCH (k:Knowledge)-[:APPLIES_TO|CONDITION_OF]->(t) WHERE t = c OR (t:Skill AND (t)-[:ACTS_ON]->(c))
-RETURN c.id AS component, count(k) AS knowledge;
-// 질문 5 — 제공되지 않은 절: 트립 뒤 복귀의 원문 절
-OPTIONAL MATCH (x:Section) WHERE x.ref = $ref RETURN $ref AS section, count(x) AS found;
-// 보류 후보가 그래프에 없는가
-MATCH (k:Knowledge) WHERE k.id IN $ids RETURN count(k) AS found;
-// 카드 — 작업 하나의 준비 · 금지 · 순서 · 완료와 출처
+// 질문 5대상
+// 터미널: python lab_cypher.py query 결과/query.cypher 5대상 --param target=HYD-04:cooler
+// Browser: :param target => "HYD-04:cooler";
+OPTIONAL MATCH (t {id: $target}) OPTIONAL MATCH (k:`Knowledge`)-[r]->(t) WHERE type(r) <> 'STATED_IN'
+RETURN $target AS target, count(DISTINCT t) AS found, count(DISTINCT k) AS knowledge;
+// 질문 5절
+// 터미널: python lab_cypher.py query 결과/query.cypher 5절 --param section=HM-9.4
+// Browser: :param section => "HM-9.4";
+OPTIONAL MATCH (x:`Section`) WHERE x.ref = $section RETURN $section AS section, count(x) AS found;
+// 질문 보류
+// 터미널: python lab_cypher.py query 결과/query.cypher 보류 --param "ids=HM-9_1.0_검토.json#HM-9-M008 OEM-HPP45A-MM_C_검토.json#OEM-HPP45A-MM-M054"
+// Browser: :param ids => "HM-9_1.0_검토.json#HM-9-M008 OEM-HPP45A-MM_C_검토.json#OEM-HPP45A-MM-M054";
+OPTIONAL MATCH (k:`Knowledge`) WHERE k.candidate IN split($ids, ' ') RETURN size(split($ids, ' ')) AS asked, count(k) AS found;
+// 질문 카드
+// 아직 결과/질문_값.csv에 sop 값이 없음
 MATCH (s:Skill {id: $sop}) OPTIONAL MATCH (s)-[:HAS_STEP]->(st:Step)
 WITH s, collect(DISTINCT {order: st.order, text: st.text, source: st.source}) AS steps
-OPTIONAL MATCH (k:Knowledge)-[c:CONDITION_OF|DESCRIBES]->(t) WHERE t = s OR (s)-[:HAS_STEP]->(t)
-OPTIONAL MATCH (k)-[:STATED_IN]->(x:Section)<-[:HAS_SECTION]-(v:Revision)
-RETURN s.id AS sop, s.name AS name, s.source AS source, s.approval_role AS approval, s.apply_conditions AS apply, s.prohibitions AS prohibitions, s.completion AS completion, steps,
-       collect(DISTINCT {role: coalesce(c.role, 'step'), doc: v.doc_id, rev: v.rev, status: v.status, section: x.ref, quote: k.quote, id: k.id}) AS evidence;
+OPTIONAL MATCH (k:`Knowledge`)-[c]->(t) WHERE (t = s OR (s)-[:HAS_STEP]->(t)) AND type(c) <> 'STATED_IN'
+RETURN s.id AS sop, s.name AS name, s.source AS source, s.approval_role AS approval, steps,
+       collect(DISTINCT {role: c.role, doc: k.doc_id, rev: k.rev, status: k.doc_status, section: k.section, quote: k.quote, id: k.candidate, step: t.id}) AS evidence;
