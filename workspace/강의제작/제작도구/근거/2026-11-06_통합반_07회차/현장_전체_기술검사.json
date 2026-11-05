@@ -1,0 +1,446 @@
+{
+  "범위": "통합반 현장 7회차 이론 1~36장과 내장 발표자 노트",
+  "최종PPTX_SHA256": "06b5771c6e0c73e5507d64a28c6bb36bf49dd85c3d1853ffacec857a3d4927a4",
+  "최종PDF_SHA256": "3e15dd8be2678c6e954a0d4cd179d3830f8c2f8df6ae2a2517b574d7c57928b4",
+  "최종원고_SHA256": "dbb617c0d2b599d29772345274e0cec9c6fcf912521043e5fda886a12ede5567",
+  "확인장수": 36,
+  "노트검사": "노트 점검 문제 0 (36장)",
+  "계획분": 50.0,
+  "실제수업시간": "미측정",
+  "단원별시간": [
+    {
+      "장": [
+        1,
+        9
+      ],
+      "계획분": 11.0
+    },
+    {
+      "장": [
+        10,
+        17
+      ],
+      "계획분": 11.0
+    },
+    {
+      "장": [
+        18,
+        22
+      ],
+      "계획분": 8.0
+    },
+    {
+      "장": [
+        23,
+        31
+      ],
+      "계획분": 15.0
+    },
+    {
+      "장": [
+        32,
+        36
+      ],
+      "계획분": 5.0
+    }
+  ],
+  "수동확인": "각 단원에서 검토한 정지 화면·노트와 비교했다. 최종판의 각 장은 동일 번호·동일 XML·동일 노트·동일 미디어 지문이어야 한다. 전체 PDF의 문서별 글리프 배치에 차이가 생기면 전체 PPTX의 해당 프레임을 LibreOfficeKit paintTile로 직접 비교해 0픽셀을 요구했다.",
+  "단원공식PDF와다시대조한장": {
+    "1": {
+      "단원근거": "현장_01-09장_렌더검증.json",
+      "단원완료판_PPTX_SHA256": "477270a72620926a488b544076d77ea51008931a9d8291f0a491795f226135e5",
+      "이전장_SHA256": "2e9ca70c85a0080ef1a0c4d7b91bfd2ecd4c7dff0fd45339515fd9116cedc81f",
+      "최종장_SHA256": "2e9ca70c85a0080ef1a0c4d7b91bfd2ecd4c7dff0fd45339515fd9116cedc81f",
+      "공통화면_XML_SHA256": "abfe9dd1bcf4a2a2dbbc34bf5a316fde9bc80b541fb092e6da992cbaf0c7a5a9",
+      "공통노트_SHA256": "3f63033adf57dcd6cfe1097e0d4346bb3af274f28065bd78e6b350e264b86a74",
+      "단원_PDF_RGB_SHA256": "fa088c3cc0206171d747246da09a81cb58a960ad141bf9d9ab5f64025ee1278f",
+      "최종_PDF_RGB_SHA256": "fa088c3cc0206171d747246da09a81cb58a960ad141bf9d9ab5f64025ee1278f",
+      "PDF화면_차이픽셀": 0
+    },
+    "2": {
+      "단원근거": "현장_01-09장_렌더검증.json",
+      "단원완료판_PPTX_SHA256": "477270a72620926a488b544076d77ea51008931a9d8291f0a491795f226135e5",
+      "이전장_SHA256": "1393c5ebb4683129d670c52e78e809821465eb98f29fee326ae39514ad06422f",
+      "최종장_SHA256": "1393c5ebb4683129d670c52e78e809821465eb98f29fee326ae39514ad06422f",
+      "공통화면_XML_SHA256": "c30fdb8bbfd3bc5a530b733b0671a1b73d6da87586451eb004d37f931911ae3b",
+      "공통노트_SHA256": "da701cc419a205d03ea1b9bd2829bac60e23a74fd5529c4707a32d10f23e7e79",
+      "단원_PDF_RGB_SHA256": "ea53105ae713e5a8bcd0b491f34375c63a5eee81f305eef863f3e14715b6ad0d",
+      "최종_PDF_RGB_SHA256": "ea53105ae713e5a8bcd0b491f34375c63a5eee81f305eef863f3e14715b6ad0d",
+      "PDF화면_차이픽셀": 0
+    },
+    "3": {
+      "단원근거": "현장_01-09장_렌더검증.json",
+      "단원완료판_PPTX_SHA256": "477270a72620926a488b544076d77ea51008931a9d8291f0a491795f226135e5",
+      "이전장_SHA256": "e4af48b98ec7f619c1f8091b5c245af0a13777f35820c8452efb253110a8f748",
+      "최종장_SHA256": "e4af48b98ec7f619c1f8091b5c245af0a13777f35820c8452efb253110a8f748",
+      "공통화면_XML_SHA256": "3260cb72e2243ded8743f3a22906519a15b1e77778c73e976da2cb195e2d76e0",
+      "공통노트_SHA256": "44fb051cc8d17fafd5baac6f277f3b794f194a3bb718a3b78871f58394438ffa",
+      "단원_PDF_RGB_SHA256": "5eae37a07545422f4b1996762a7f5cd0bfff1a3640b46db8ce5738cadb36bd60",
+      "최종_PDF_RGB_SHA256": "5eae37a07545422f4b1996762a7f5cd0bfff1a3640b46db8ce5738cadb36bd60",
+      "PDF화면_차이픽셀": 0
+    },
+    "4": {
+      "단원근거": "현장_01-09장_렌더검증.json",
+      "단원완료판_PPTX_SHA256": "477270a72620926a488b544076d77ea51008931a9d8291f0a491795f226135e5",
+      "이전장_SHA256": "5c51bc1e09c01b219fe472b29878ee5a9068aa1fbc7b04b1a98ec0da2b40481e",
+      "최종장_SHA256": "5c51bc1e09c01b219fe472b29878ee5a9068aa1fbc7b04b1a98ec0da2b40481e",
+      "공통화면_XML_SHA256": "ad82eba4832329626785481e6e7de2f46311fa789c19e170ac536f5c8ee048ae",
+      "공통노트_SHA256": "0e69308fa526290ad1702f0fb1dba2db396c489a8c931f24328029795e3dfb9c",
+      "단원_PDF_RGB_SHA256": "1eedcb1076b0294420e57723e4d2b6df2993dc7fe731978d68c26a7a2b6ea598",
+      "최종_PDF_RGB_SHA256": "1eedcb1076b0294420e57723e4d2b6df2993dc7fe731978d68c26a7a2b6ea598",
+      "PDF화면_차이픽셀": 0
+    },
+    "5": {
+      "단원근거": "현장_01-09장_렌더검증.json",
+      "단원완료판_PPTX_SHA256": "477270a72620926a488b544076d77ea51008931a9d8291f0a491795f226135e5",
+      "이전장_SHA256": "0989dff371292fdde2a23faf1071e4f250db905f67a1309b6785bde7d9d22420",
+      "최종장_SHA256": "0989dff371292fdde2a23faf1071e4f250db905f67a1309b6785bde7d9d22420",
+      "공통화면_XML_SHA256": "1b3cab256a5719d634ddeada04085b8c7307a3455427791dd623f4866b6dfd0a",
+      "공통노트_SHA256": "8b992e0142008f1c0bb9b67d8e53cf0163c6c6ea998bd658d17f7bf02141ec12",
+      "단원_PDF_RGB_SHA256": "a7c5dc536071021b7312c7ee4a89ae11044567d3e208f0891dede36db574c380",
+      "최종_PDF_RGB_SHA256": "a7c5dc536071021b7312c7ee4a89ae11044567d3e208f0891dede36db574c380",
+      "PDF화면_차이픽셀": 0
+    },
+    "6": {
+      "단원근거": "현장_01-09장_렌더검증.json",
+      "단원완료판_PPTX_SHA256": "477270a72620926a488b544076d77ea51008931a9d8291f0a491795f226135e5",
+      "이전장_SHA256": "c1e98e3413090f7e11d388a6ecc821e3ef6d9d032067d80460e52a1fdda44c9c",
+      "최종장_SHA256": "c1e98e3413090f7e11d388a6ecc821e3ef6d9d032067d80460e52a1fdda44c9c",
+      "공통화면_XML_SHA256": "0006bbb2f8d27cfcb3baa4dc4371d5531142b1c7dedd816cc7e5f71d461647a5",
+      "공통노트_SHA256": "cbb7b8b7cda1d9931ca4a5f40ca9138d4d00e6886c7688cdf0dc847c4a4cabbb",
+      "단원_PDF_RGB_SHA256": "827c3eddaed6e3d6027991923f3a28f60da12f27cf4f6bc1eaa0a115da90a21d",
+      "최종_PDF_RGB_SHA256": "827c3eddaed6e3d6027991923f3a28f60da12f27cf4f6bc1eaa0a115da90a21d",
+      "PDF화면_차이픽셀": 0
+    },
+    "7": {
+      "단원근거": "현장_01-09장_렌더검증.json",
+      "단원완료판_PPTX_SHA256": "477270a72620926a488b544076d77ea51008931a9d8291f0a491795f226135e5",
+      "이전장_SHA256": "acc7558a736326ad0407368e5f28c46e625517a30fac338438b8845bd41f67f4",
+      "최종장_SHA256": "acc7558a736326ad0407368e5f28c46e625517a30fac338438b8845bd41f67f4",
+      "공통화면_XML_SHA256": "4ff4f27da8343a6215b6bf4555385b72cc8ee989f211deb2f9f107774c1eb335",
+      "공통노트_SHA256": "3658248aa139a50add31e9b84b6f310f05e591d02d4edeb121bf2536971a943e",
+      "단원_PDF_RGB_SHA256": "cc5eed2d7367ce3bb419b8bfb38d3cc4ac6fb78a1575032e91f6a90b06e3a048",
+      "최종_PDF_RGB_SHA256": "cc5eed2d7367ce3bb419b8bfb38d3cc4ac6fb78a1575032e91f6a90b06e3a048",
+      "PDF화면_차이픽셀": 0
+    },
+    "8": {
+      "단원근거": "현장_01-09장_렌더검증.json",
+      "단원완료판_PPTX_SHA256": "477270a72620926a488b544076d77ea51008931a9d8291f0a491795f226135e5",
+      "이전장_SHA256": "7f08c6d20b9fcdf526f1d69ae9a4b3d6a52b51543b08d305a6268143a7b72f5a",
+      "최종장_SHA256": "7f08c6d20b9fcdf526f1d69ae9a4b3d6a52b51543b08d305a6268143a7b72f5a",
+      "공통화면_XML_SHA256": "697823d8ee6ba08d23fb3ca6c2b8d03d7dd102b33988d13535c3da09a4139456",
+      "공통노트_SHA256": "b933d7ca6444e03a0a4eeaa7a17f5535f44640ecb3a7f8addba813d1f82f6e05",
+      "단원_PDF_RGB_SHA256": "f40dbcdf32b1e88f43e314dd7906cf23c15d5bd19a4147d416ec2b352b7473de",
+      "최종_PDF_RGB_SHA256": "f40dbcdf32b1e88f43e314dd7906cf23c15d5bd19a4147d416ec2b352b7473de",
+      "PDF화면_차이픽셀": 0
+    },
+    "9": {
+      "단원근거": "현장_01-09장_렌더검증.json",
+      "단원완료판_PPTX_SHA256": "477270a72620926a488b544076d77ea51008931a9d8291f0a491795f226135e5",
+      "이전장_SHA256": "7b890ad7774410067129e4c919d6bd65136001aba9a85b5cf7c51e93147e013e",
+      "최종장_SHA256": "7b890ad7774410067129e4c919d6bd65136001aba9a85b5cf7c51e93147e013e",
+      "공통화면_XML_SHA256": "47e824ed20f7644c83881666cb0c0a6a90cfb93b2f82af41b78a1c8abf981aa3",
+      "공통노트_SHA256": "466065c692187f3f05d9cfe7c0e8d66dfd0707b6944911f4dca699b166bbe990",
+      "단원_PDF_RGB_SHA256": "9990f9fcd620149db1673a128d7b7327574e1c2b543ebbea276aa810cee2c041",
+      "최종_PDF_RGB_SHA256": "9990f9fcd620149db1673a128d7b7327574e1c2b543ebbea276aa810cee2c041",
+      "PDF화면_차이픽셀": 0
+    },
+    "10": {
+      "단원근거": "현장_10-17장_렌더검증.json",
+      "단원완료판_PPTX_SHA256": "9690d48a7009df5e304d9e08378321bcc5dba4bf933bf13c22f6a1e5310f41c8",
+      "이전장_SHA256": "78042b276736b9d48f34340680ba0958f903ee48dc88dfb936399e81eb1e9895",
+      "최종장_SHA256": "78042b276736b9d48f34340680ba0958f903ee48dc88dfb936399e81eb1e9895",
+      "공통화면_XML_SHA256": "9fc6556f56e23779ce49d9ef225d53fb6ae1b7529eb31d142e923d289d9cfcd1",
+      "공통노트_SHA256": "f38872ee0b0bd814dc4c06741be4751c1a0075be5409d75304d04e19ada07b52",
+      "단원_PDF_RGB_SHA256": "dfdaceffe538cd573ba6da1d229dc4750b92c6d447d388852fac485b60b614ef",
+      "최종_PDF_RGB_SHA256": "dfdaceffe538cd573ba6da1d229dc4750b92c6d447d388852fac485b60b614ef",
+      "PDF화면_차이픽셀": 0
+    },
+    "11": {
+      "단원근거": "현장_10-17장_렌더검증.json",
+      "단원완료판_PPTX_SHA256": "9690d48a7009df5e304d9e08378321bcc5dba4bf933bf13c22f6a1e5310f41c8",
+      "이전장_SHA256": "a5e60151eef421ef16c4d69e0996e5636d9ec00b048116c37e84b05073e6b907",
+      "최종장_SHA256": "a5e60151eef421ef16c4d69e0996e5636d9ec00b048116c37e84b05073e6b907",
+      "공통화면_XML_SHA256": "04ea322fccf1a642e0f9ab2ff6a98d20b949bae21b355df0faa9c7ff46f21aa4",
+      "공통노트_SHA256": "1020638e28c07354b87552cad2327056c4defa20a0aa606372dd9311009e1d72",
+      "단원_PDF_RGB_SHA256": "35671545a9f663e41c9eaf60775574f8b1724c499cf731785a88b04880dbaa25",
+      "최종_PDF_RGB_SHA256": "35671545a9f663e41c9eaf60775574f8b1724c499cf731785a88b04880dbaa25",
+      "PDF화면_차이픽셀": 0
+    },
+    "12": {
+      "단원근거": "현장_10-17장_렌더검증.json",
+      "단원완료판_PPTX_SHA256": "9690d48a7009df5e304d9e08378321bcc5dba4bf933bf13c22f6a1e5310f41c8",
+      "이전장_SHA256": "95485ae67e0fa664f18a72b0e5573ac968561367cf9a80de9b6eeb20f75c5de8",
+      "최종장_SHA256": "95485ae67e0fa664f18a72b0e5573ac968561367cf9a80de9b6eeb20f75c5de8",
+      "공통화면_XML_SHA256": "3b050fc553b2485da60431af9d62f4d187754b2cff548669f053c57f952d4bd3",
+      "공통노트_SHA256": "d745772a08f362bf39e6a382493e5a5fc2f3003676e670843e5c08aef28edcc9",
+      "단원_PDF_RGB_SHA256": "33444e679b75bfa5fa3e95829b6722d727b66037385c00b70e2d2f0518f01a09",
+      "최종_PDF_RGB_SHA256": "33444e679b75bfa5fa3e95829b6722d727b66037385c00b70e2d2f0518f01a09",
+      "PDF화면_차이픽셀": 0
+    },
+    "13": {
+      "단원근거": "현장_10-17장_렌더검증.json",
+      "단원완료판_PPTX_SHA256": "9690d48a7009df5e304d9e08378321bcc5dba4bf933bf13c22f6a1e5310f41c8",
+      "이전장_SHA256": "dc52f839ec7114fc49e2bde535c0a5785062916fee4cf1faa001146b72995fe3",
+      "최종장_SHA256": "dc52f839ec7114fc49e2bde535c0a5785062916fee4cf1faa001146b72995fe3",
+      "공통화면_XML_SHA256": "1b7a22c1ec65f50c5386efe4d621cc0971d86a647afe9ac37c5f49ab5052ced9",
+      "공통노트_SHA256": "c786666a9decd466dd5e33f6b4fb47944ae3295ad8f6b3fcc1f727a9cabad997",
+      "단원_PDF_RGB_SHA256": "02959f088682f19c21ce5d1e4a4aaac85eed925fc5d92632c61af5f835138c47",
+      "최종_PDF_RGB_SHA256": "02959f088682f19c21ce5d1e4a4aaac85eed925fc5d92632c61af5f835138c47",
+      "PDF화면_차이픽셀": 0
+    },
+    "14": {
+      "단원근거": "현장_10-17장_렌더검증.json",
+      "단원완료판_PPTX_SHA256": "9690d48a7009df5e304d9e08378321bcc5dba4bf933bf13c22f6a1e5310f41c8",
+      "이전장_SHA256": "0938a656693a1a6a97b92b04492f1bebd81687769de849e2b71359679606899d",
+      "최종장_SHA256": "0938a656693a1a6a97b92b04492f1bebd81687769de849e2b71359679606899d",
+      "공통화면_XML_SHA256": "2394450c75c093ca5988d3f6c3c80cf49d72fbe0d4d2697e96b6ed44dcc0588b",
+      "공통노트_SHA256": "90a4982590728f316e872724359cb8d399b931c0a105737f35fcff7d321ad058",
+      "단원_PDF_RGB_SHA256": "5af06585899756c0f0737ce8c08eb251db90ebc8132b56b369e455a311c22cb9",
+      "최종_PDF_RGB_SHA256": "5af06585899756c0f0737ce8c08eb251db90ebc8132b56b369e455a311c22cb9",
+      "PDF화면_차이픽셀": 0
+    },
+    "15": {
+      "단원근거": "현장_10-17장_렌더검증.json",
+      "단원완료판_PPTX_SHA256": "9690d48a7009df5e304d9e08378321bcc5dba4bf933bf13c22f6a1e5310f41c8",
+      "이전장_SHA256": "70e9cbe8a6f79b65c609af4bd238805006b7ef6e0741d6cf4c64680b9018f41c",
+      "최종장_SHA256": "70e9cbe8a6f79b65c609af4bd238805006b7ef6e0741d6cf4c64680b9018f41c",
+      "공통화면_XML_SHA256": "8a0292a08bdd184105c3ce95063ce09baec28c0e67194ca63399438aad406119",
+      "공통노트_SHA256": "7873d1f23f68f9790f521f0e2e40bcad20b7b2e69df433b098ff56ba7219f7b0",
+      "단원_PDF_RGB_SHA256": "7770b15a19cc94d8beeec6e23fa1d59a483cb11c67748bec152dcb769eb3e8f5",
+      "최종_PDF_RGB_SHA256": "7770b15a19cc94d8beeec6e23fa1d59a483cb11c67748bec152dcb769eb3e8f5",
+      "PDF화면_차이픽셀": 0
+    },
+    "16": {
+      "단원근거": "현장_10-17장_렌더검증.json",
+      "단원완료판_PPTX_SHA256": "9690d48a7009df5e304d9e08378321bcc5dba4bf933bf13c22f6a1e5310f41c8",
+      "이전장_SHA256": "73aacc92609a8d8f37c7b6c9a3ed0dcda4b298ed7f0e4ce8a6241835c706b3fd",
+      "최종장_SHA256": "73aacc92609a8d8f37c7b6c9a3ed0dcda4b298ed7f0e4ce8a6241835c706b3fd",
+      "공통화면_XML_SHA256": "079f00d6cc013f1c4e5a5c491193fd0598ef209a67a9b6ffe63d9befd277215f",
+      "공통노트_SHA256": "8cb5270e310dad870001f6abf634faa3106166a607e370fa2d6402d8aef21ed3",
+      "단원_PDF_RGB_SHA256": "006c765387fed3a4442f3f89531392682a496d52a52a6ea5a758c8bd4e690500",
+      "최종_PDF_RGB_SHA256": "006c765387fed3a4442f3f89531392682a496d52a52a6ea5a758c8bd4e690500",
+      "PDF화면_차이픽셀": 0
+    },
+    "17": {
+      "단원근거": "현장_10-17장_렌더검증.json",
+      "단원완료판_PPTX_SHA256": "9690d48a7009df5e304d9e08378321bcc5dba4bf933bf13c22f6a1e5310f41c8",
+      "이전장_SHA256": "18c5501659c1be91c5da4df425521be7d1cff64f3afc3e643dcac5fae76fcba8",
+      "최종장_SHA256": "18c5501659c1be91c5da4df425521be7d1cff64f3afc3e643dcac5fae76fcba8",
+      "공통화면_XML_SHA256": "1eb093e441535d296e02589ee4b4a2b748db8af2799e5c3e3dd4e86f6c6acb3c",
+      "공통노트_SHA256": "f422d2d1218c43978c107805c60d46923edfd495449cad4d76259367d3fdf26a",
+      "단원_PDF_RGB_SHA256": "44232472b7bf52e59e76f3dfbcd5ec3673a70086c31b49bb69d91ba910e58f38",
+      "최종_PDF_RGB_SHA256": "44232472b7bf52e59e76f3dfbcd5ec3673a70086c31b49bb69d91ba910e58f38",
+      "PDF화면_차이픽셀": 0
+    },
+    "18": {
+      "단원근거": "현장_18-22장_렌더검증.json",
+      "단원완료판_PPTX_SHA256": "16749ac5c8d74c45684fe75ec9b139dcd2dad9fe4b20287865e2d67c21faa8df",
+      "이전장_SHA256": "505c9cbfd46cfc17c9b446f752c87c6a6d12cd4614b96b1fc4bf8e5dc56ec647",
+      "최종장_SHA256": "505c9cbfd46cfc17c9b446f752c87c6a6d12cd4614b96b1fc4bf8e5dc56ec647",
+      "공통화면_XML_SHA256": "a7404c489caba0810bdb5ba1c81a2bd4f59c5854bec4b7446f9825add2fb98fc",
+      "공통노트_SHA256": "e3da21c5875f69b6cd574237278b3f75b91648c44c3fbb4106805d6dc799b3a1",
+      "단원_PDF_RGB_SHA256": "f36cc87cfa66b05aea962e46552ac3e68bf25f67ff4c30a0793feed09a508a2a",
+      "최종_PDF_RGB_SHA256": "f36cc87cfa66b05aea962e46552ac3e68bf25f67ff4c30a0793feed09a508a2a",
+      "PDF화면_차이픽셀": 0
+    },
+    "19": {
+      "단원근거": "현장_18-22장_렌더검증.json",
+      "단원완료판_PPTX_SHA256": "16749ac5c8d74c45684fe75ec9b139dcd2dad9fe4b20287865e2d67c21faa8df",
+      "이전장_SHA256": "059d912d8bb3c809a62796635c16b04333bedcad960da2774434dd1a710c526f",
+      "최종장_SHA256": "059d912d8bb3c809a62796635c16b04333bedcad960da2774434dd1a710c526f",
+      "공통화면_XML_SHA256": "b0de3bacf27bfd082ec92be14b8532995ddcd12f30259d22cd8eef6379dd7535",
+      "공통노트_SHA256": "56e01d18470a1b85fc7e9bec49cf07cc3e8bdaccadb1625b8287a51d3be0ea91",
+      "단원_PDF_RGB_SHA256": "f6b02f7c791ad1d6d292668ce41c689c9afdb70cb2d4ced310e4324b376d67de",
+      "최종_PDF_RGB_SHA256": "f6b02f7c791ad1d6d292668ce41c689c9afdb70cb2d4ced310e4324b376d67de",
+      "PDF화면_차이픽셀": 0
+    },
+    "20": {
+      "단원근거": "현장_18-22장_렌더검증.json",
+      "단원완료판_PPTX_SHA256": "16749ac5c8d74c45684fe75ec9b139dcd2dad9fe4b20287865e2d67c21faa8df",
+      "이전장_SHA256": "f9a65ebfce746cb26e36e843f5afc80873b8ddc154ed9b05ae044dfcb9c85ca6",
+      "최종장_SHA256": "f9a65ebfce746cb26e36e843f5afc80873b8ddc154ed9b05ae044dfcb9c85ca6",
+      "공통화면_XML_SHA256": "742e699cfbbb974509d07d7dc21946191bf8fbd492c0694a93d3400fa5d9ab45",
+      "공통노트_SHA256": "c1742fe36777bdae95a9352c493af006114991dfab622351cf5fe4f5f61b7062",
+      "단원_PDF_RGB_SHA256": "c22e7347c096b4c2831908700ff45e37d56e41ad06f744d58f6d9ae936e3e154",
+      "최종_PDF_RGB_SHA256": "c22e7347c096b4c2831908700ff45e37d56e41ad06f744d58f6d9ae936e3e154",
+      "PDF화면_차이픽셀": 0
+    },
+    "21": {
+      "단원근거": "현장_18-22장_렌더검증.json",
+      "단원완료판_PPTX_SHA256": "16749ac5c8d74c45684fe75ec9b139dcd2dad9fe4b20287865e2d67c21faa8df",
+      "이전장_SHA256": "916f8a8570204e72a41188e67220734fe560e60df8b592f7081eb8e20579d853",
+      "최종장_SHA256": "916f8a8570204e72a41188e67220734fe560e60df8b592f7081eb8e20579d853",
+      "공통화면_XML_SHA256": "41d523e887a160dab8efaee679cae3fdf99997abd9c02a5bd51a702d3f1016f9",
+      "공통노트_SHA256": "1fa003d32be8c874b541f5544a8abe71a69a2bef36b9ff85a70f9303211325d0",
+      "단원_PDF_RGB_SHA256": "70d37af70ade179c7ca9137baaed1a62a6c7acbffde58625bc1dfb1f5ad7066a",
+      "최종_PDF_RGB_SHA256": "70d37af70ade179c7ca9137baaed1a62a6c7acbffde58625bc1dfb1f5ad7066a",
+      "PDF화면_차이픽셀": 0
+    },
+    "22": {
+      "단원근거": "현장_18-22장_렌더검증.json",
+      "단원완료판_PPTX_SHA256": "16749ac5c8d74c45684fe75ec9b139dcd2dad9fe4b20287865e2d67c21faa8df",
+      "이전장_SHA256": "087c9420ea9de0dcb0a12fa05b1da8dd77bb61bb669095ac69a24b2597c40967",
+      "최종장_SHA256": "087c9420ea9de0dcb0a12fa05b1da8dd77bb61bb669095ac69a24b2597c40967",
+      "공통화면_XML_SHA256": "94d6b244c2da2ad3805532728695ecb00745b69e319454231670acbb7df6fcfb",
+      "공통노트_SHA256": "00b5aba5895f58aaa9f9ae20ee9341bdb719d78acdb76e4de033b90c64d89360",
+      "단원_PDF_RGB_SHA256": "43750c853b25ddcaf540933bffaa73f5ec090ac6ee1ec5d2c776d79befd5b972",
+      "최종_PDF_RGB_SHA256": "43750c853b25ddcaf540933bffaa73f5ec090ac6ee1ec5d2c776d79befd5b972",
+      "PDF화면_차이픽셀": 0
+    },
+    "23": {
+      "단원근거": "현장_23-31장_렌더검증.json",
+      "단원완료판_PPTX_SHA256": "094e20f55c888391a85f1edce51276410109c7377ec9d1a9bcf8e21d438f2905",
+      "이전장_SHA256": "b089a7bb9988fb626a6943b2a3ae9d5bd93c46ff08d026d2628b9cec0c94d959",
+      "최종장_SHA256": "b089a7bb9988fb626a6943b2a3ae9d5bd93c46ff08d026d2628b9cec0c94d959",
+      "공통화면_XML_SHA256": "855fae679e7c8a77cc324c83a429db09ec2c0d2e41c5b2a18544d21783d9b908",
+      "공통노트_SHA256": "b55e64cc7baca6f36a9e74b00516af5152467b168a9b85b7fece6c86fdcac742",
+      "단원_PDF_RGB_SHA256": "96e3532b7a2343ca62192c7f58453c4752f39fa8400cd2553d676ba9ce99ed49",
+      "최종_PDF_RGB_SHA256": "96e3532b7a2343ca62192c7f58453c4752f39fa8400cd2553d676ba9ce99ed49",
+      "PDF화면_차이픽셀": 0
+    },
+    "24": {
+      "단원근거": "현장_23-31장_렌더검증.json",
+      "단원완료판_PPTX_SHA256": "094e20f55c888391a85f1edce51276410109c7377ec9d1a9bcf8e21d438f2905",
+      "이전장_SHA256": "87b804a224c14f9ac7d02679d3aa8cb409f3f438e590aa10024824024c2b2094",
+      "최종장_SHA256": "87b804a224c14f9ac7d02679d3aa8cb409f3f438e590aa10024824024c2b2094",
+      "공통화면_XML_SHA256": "1b43595ca542832e9a09e73a0d4caef69604ba67a79f43ea44f5feadc792d62a",
+      "공통노트_SHA256": "0c48d78a8ea009ccf68bbcd05dc9e652f8244dc47fadb6c2431a88db88d9ad01",
+      "단원_PDF_RGB_SHA256": "ddccc2f5a68a7b024029843c3e4f2f8a08348f225629918d9aed4b2718ef8392",
+      "최종_PDF_RGB_SHA256": "ddccc2f5a68a7b024029843c3e4f2f8a08348f225629918d9aed4b2718ef8392",
+      "PDF화면_차이픽셀": 0
+    },
+    "25": {
+      "단원근거": "현장_23-31장_렌더검증.json",
+      "단원완료판_PPTX_SHA256": "094e20f55c888391a85f1edce51276410109c7377ec9d1a9bcf8e21d438f2905",
+      "이전장_SHA256": "64de9064695d4731e85794f67a09693fcf6df4760c6893e5f90dcebef383b625",
+      "최종장_SHA256": "64de9064695d4731e85794f67a09693fcf6df4760c6893e5f90dcebef383b625",
+      "공통화면_XML_SHA256": "d4671cf424ffb6ac0daee77406b2a095058c0e2086afc29aaf0d35821a1cdece",
+      "공통노트_SHA256": "0bd9dfe9a24b4ce5f60dafb8510c87323d7c4510b4950923a0e4e9bb543e9d43",
+      "단원_PDF_RGB_SHA256": "76e9608c631b314676cabad382ab648900e7bd446dd3240dea0022956fa97e02",
+      "최종_PDF_RGB_SHA256": "76e9608c631b314676cabad382ab648900e7bd446dd3240dea0022956fa97e02",
+      "PDF화면_차이픽셀": 0
+    },
+    "26": {
+      "단원근거": "현장_23-31장_렌더검증.json",
+      "단원완료판_PPTX_SHA256": "094e20f55c888391a85f1edce51276410109c7377ec9d1a9bcf8e21d438f2905",
+      "이전장_SHA256": "92e16fc61f7f3be9428a1b6e722e2dc7109f952a6f179aa6377d4e98649711a0",
+      "최종장_SHA256": "92e16fc61f7f3be9428a1b6e722e2dc7109f952a6f179aa6377d4e98649711a0",
+      "공통화면_XML_SHA256": "2191ce53ef1ea45b91b9406a5864a83d40bba74aa90e1dde469fdcd0f3b01734",
+      "공통노트_SHA256": "caf7be12dac302f93e6c26d960b9a061800b7379a7abed7a6ca685cb5a7a94c0",
+      "단원_PDF_RGB_SHA256": "1d5a1db7cfba51c4243ee345ddb245e6a6decdd2848415f2279bbf4a69d183b9",
+      "최종_PDF_RGB_SHA256": "1d5a1db7cfba51c4243ee345ddb245e6a6decdd2848415f2279bbf4a69d183b9",
+      "PDF화면_차이픽셀": 0
+    },
+    "27": {
+      "단원근거": "현장_23-31장_렌더검증.json",
+      "단원완료판_PPTX_SHA256": "094e20f55c888391a85f1edce51276410109c7377ec9d1a9bcf8e21d438f2905",
+      "이전장_SHA256": "2c0d46fa14a659ca04e48ed65d48df62f8a82900d34dd86e06978e83d003a0fb",
+      "최종장_SHA256": "2c0d46fa14a659ca04e48ed65d48df62f8a82900d34dd86e06978e83d003a0fb",
+      "공통화면_XML_SHA256": "655412efc68f536b017a125bdef6f2cc49cbb9b9cc33928bec3161ccf7e8e6e9",
+      "공통노트_SHA256": "b412eada1f2ce39f9f30b922d1d95d461a11b51daf6d178e85fe408451e1f9f1",
+      "단원_PDF_RGB_SHA256": "985cbb74d7744b58f7f27375903b436b0aabacea1dd0719c0f78db976b8e8660",
+      "최종_PDF_RGB_SHA256": "985cbb74d7744b58f7f27375903b436b0aabacea1dd0719c0f78db976b8e8660",
+      "PDF화면_차이픽셀": 0
+    },
+    "28": {
+      "단원근거": "현장_23-31장_렌더검증.json",
+      "단원완료판_PPTX_SHA256": "094e20f55c888391a85f1edce51276410109c7377ec9d1a9bcf8e21d438f2905",
+      "이전장_SHA256": "c60ba9a0d475eb2651a3e40adf3aa8c34e574b41d42121dd6e6ab278f41a34b4",
+      "최종장_SHA256": "c60ba9a0d475eb2651a3e40adf3aa8c34e574b41d42121dd6e6ab278f41a34b4",
+      "공통화면_XML_SHA256": "25750351cbc333ed64b69c3aa0ec8007383e6549df9935b4bb6ec2ed6c85da5a",
+      "공통노트_SHA256": "289a644988b5b5d0456881077c248752ae81bb9239cc8882334954f92b4e48ca",
+      "단원_PDF_RGB_SHA256": "4c95ae6350e013bd02f2205ba352d66eafd4a9318779c2704a15004b0b7d3410",
+      "최종_PDF_RGB_SHA256": "4c95ae6350e013bd02f2205ba352d66eafd4a9318779c2704a15004b0b7d3410",
+      "PDF화면_차이픽셀": 0
+    },
+    "29": {
+      "단원근거": "현장_23-31장_렌더검증.json",
+      "단원완료판_PPTX_SHA256": "094e20f55c888391a85f1edce51276410109c7377ec9d1a9bcf8e21d438f2905",
+      "이전장_SHA256": "1fd07be76ec86b259f3421237d777606d35f20e2ed892472ae156ec3bc5d45a5",
+      "최종장_SHA256": "1fd07be76ec86b259f3421237d777606d35f20e2ed892472ae156ec3bc5d45a5",
+      "공통화면_XML_SHA256": "fa873fd3d6815336752b29c94fb8e0f673a3f7879f40e9405178370f4186596e",
+      "공통노트_SHA256": "09357622993732efc96afd1dac92795c365babed1bf95dd25d0b8307d8b7192c",
+      "단원_PDF_RGB_SHA256": "992200452d79c4c26202dfb16c0597e25ba7f8dede22709c66385a5eadc8c559",
+      "최종_PDF_RGB_SHA256": "992200452d79c4c26202dfb16c0597e25ba7f8dede22709c66385a5eadc8c559",
+      "PDF화면_차이픽셀": 0
+    },
+    "30": {
+      "단원근거": "현장_23-31장_렌더검증.json",
+      "단원완료판_PPTX_SHA256": "094e20f55c888391a85f1edce51276410109c7377ec9d1a9bcf8e21d438f2905",
+      "이전장_SHA256": "3d39ffb6f5501685aa9c23df98b91a64c28d1dc90b3851b8af8733dd8600cca5",
+      "최종장_SHA256": "3d39ffb6f5501685aa9c23df98b91a64c28d1dc90b3851b8af8733dd8600cca5",
+      "공통화면_XML_SHA256": "6cdd056ea07280b4b36231cf4c3b34c65dfc81f116641713da885c0cc2392d1c",
+      "공통노트_SHA256": "989cb25824d2b50bfe24367446930faae823a32676b5d9bb5ce6195b96544009",
+      "단원_PDF_RGB_SHA256": "66ccd2ecfd492bfc77dc7170efe39d7ddaefd64500038162418fc4a7f0a333ed",
+      "최종_PDF_RGB_SHA256": "66ccd2ecfd492bfc77dc7170efe39d7ddaefd64500038162418fc4a7f0a333ed",
+      "PDF화면_차이픽셀": 0
+    },
+    "31": {
+      "단원근거": "현장_23-31장_렌더검증.json",
+      "단원완료판_PPTX_SHA256": "094e20f55c888391a85f1edce51276410109c7377ec9d1a9bcf8e21d438f2905",
+      "이전장_SHA256": "4a004e8b7d2bc74f0ece9274547db09644996134ddc649f7171999ae2b944907",
+      "최종장_SHA256": "4a004e8b7d2bc74f0ece9274547db09644996134ddc649f7171999ae2b944907",
+      "공통화면_XML_SHA256": "ed7a993b038e087f5def29f52cc50780cc21f8bdf5058bc3a6d6827033b42064",
+      "공통노트_SHA256": "06416105e48f9d48c569bdb151fb9d5b9f30390a2565aa631e938cd4d161321b",
+      "단원_PDF_RGB_SHA256": "785d4f6a4fdf857002067acb154b126d12395bc02342e36c742b604937b85da1",
+      "최종_PDF_RGB_SHA256": "785d4f6a4fdf857002067acb154b126d12395bc02342e36c742b604937b85da1",
+      "PDF화면_차이픽셀": 0
+    },
+    "32": {
+      "단원근거": "현장_32-36장_렌더검증.json",
+      "단원완료판_PPTX_SHA256": "06b5771c6e0c73e5507d64a28c6bb36bf49dd85c3d1853ffacec857a3d4927a4",
+      "이전장_SHA256": "147563d289a779b3877019a68d189e9ecfc2897e6dedc5d9acb7f0fbf76705d1",
+      "최종장_SHA256": "147563d289a779b3877019a68d189e9ecfc2897e6dedc5d9acb7f0fbf76705d1",
+      "공통화면_XML_SHA256": "c66cc8c1baf4c696f60893c6af5835b2f4528b5bf359e47e8498e25a40e5474f",
+      "공통노트_SHA256": "b6205e25f3a6ea588788cbb4e42177515d9c52b1d9437be0fffe1217bf6a847d",
+      "단원_PDF_RGB_SHA256": "bea7830c02b92f12d96d4e2918115d46c3b29e3842628121c35e10f6848c2f0c",
+      "최종_PDF_RGB_SHA256": "bea7830c02b92f12d96d4e2918115d46c3b29e3842628121c35e10f6848c2f0c",
+      "PDF화면_차이픽셀": 0
+    },
+    "33": {
+      "단원근거": "현장_32-36장_렌더검증.json",
+      "단원완료판_PPTX_SHA256": "06b5771c6e0c73e5507d64a28c6bb36bf49dd85c3d1853ffacec857a3d4927a4",
+      "이전장_SHA256": "44a153d7fdf0fb866dbc298c511760e4816cf01ba58bed23c1603a15a6fc64a5",
+      "최종장_SHA256": "44a153d7fdf0fb866dbc298c511760e4816cf01ba58bed23c1603a15a6fc64a5",
+      "공통화면_XML_SHA256": "aba407c629b6f20e3cab323eaf3b1d0f87a00c9b49df340a72bfc48bb45a6375",
+      "공통노트_SHA256": "bfd06c672a5c51ce891305a29844fa43f294c14ed6b843d5dede51040aedeb7c",
+      "단원_PDF_RGB_SHA256": "56e99a2d82e59eec86fe38d339c0e4eb890d9b564433ae5c69e582f5b7c2670e",
+      "최종_PDF_RGB_SHA256": "56e99a2d82e59eec86fe38d339c0e4eb890d9b564433ae5c69e582f5b7c2670e",
+      "PDF화면_차이픽셀": 0
+    },
+    "34": {
+      "단원근거": "현장_32-36장_렌더검증.json",
+      "단원완료판_PPTX_SHA256": "06b5771c6e0c73e5507d64a28c6bb36bf49dd85c3d1853ffacec857a3d4927a4",
+      "이전장_SHA256": "8be158cf0efa4d4123978aa99c843f5204663792d86b12c80eab24df007b529d",
+      "최종장_SHA256": "8be158cf0efa4d4123978aa99c843f5204663792d86b12c80eab24df007b529d",
+      "공통화면_XML_SHA256": "00b712268fd587717465f941e722659ce5dc0606f996da5f2a47eb6220427e3b",
+      "공통노트_SHA256": "ae0f0553c1d0d436032093918cc261642f0c586a31984197752987c3ed750737",
+      "단원_PDF_RGB_SHA256": "163b04c25b891a236cb9bfd8d9fe3fd2304faf55f0272886d8add23e5b2184ab",
+      "최종_PDF_RGB_SHA256": "163b04c25b891a236cb9bfd8d9fe3fd2304faf55f0272886d8add23e5b2184ab",
+      "PDF화면_차이픽셀": 0
+    },
+    "35": {
+      "단원근거": "현장_32-36장_렌더검증.json",
+      "단원완료판_PPTX_SHA256": "06b5771c6e0c73e5507d64a28c6bb36bf49dd85c3d1853ffacec857a3d4927a4",
+      "이전장_SHA256": "245336a87fc6ae315ed0fcd0a9951872d78c9045489850c9119dffc9ac1bb045",
+      "최종장_SHA256": "245336a87fc6ae315ed0fcd0a9951872d78c9045489850c9119dffc9ac1bb045",
+      "공통화면_XML_SHA256": "89e46f46fc7557fce20de06d0f487e5ae2d186e330a6095eb39cd1c9da90510c",
+      "공통노트_SHA256": "6be9619120ad765bf6e11e3688e390d9be9864a9e55335d3433aae4976b1d46c",
+      "단원_PDF_RGB_SHA256": "69d921908739e439a9149ab1adb01b14be155ba983d56fbc867ba7a55def9189",
+      "최종_PDF_RGB_SHA256": "69d921908739e439a9149ab1adb01b14be155ba983d56fbc867ba7a55def9189",
+      "PDF화면_차이픽셀": 0
+    },
+    "36": {
+      "단원근거": "현장_32-36장_렌더검증.json",
+      "단원완료판_PPTX_SHA256": "06b5771c6e0c73e5507d64a28c6bb36bf49dd85c3d1853ffacec857a3d4927a4",
+      "이전장_SHA256": "97effea31f16f24a19a36ed1897c8bf4ed860411da8410d5d98513dd41462db6",
+      "최종장_SHA256": "97effea31f16f24a19a36ed1897c8bf4ed860411da8410d5d98513dd41462db6",
+      "공통화면_XML_SHA256": "7f425c7c5e65983e960ac1bac9fb0c7cc6b802411b6bff06730d31c60a274fc7",
+      "공통노트_SHA256": "1cc75905ece6a6d19e5d473f8e7e8b0d93909ff84c002760ec3bc9e7e5d4d0e1",
+      "단원_PDF_RGB_SHA256": "58ddbfceabf4f62cc93cf1b50ead4129df9b8d07d44e28a40d9cb7f6a5f59e36",
+      "최종_PDF_RGB_SHA256": "58ddbfceabf4f62cc93cf1b50ead4129df9b8d07d44e28a40d9cb7f6a5f59e36",
+      "PDF화면_차이픽셀": 0
+    }
+  }
+}

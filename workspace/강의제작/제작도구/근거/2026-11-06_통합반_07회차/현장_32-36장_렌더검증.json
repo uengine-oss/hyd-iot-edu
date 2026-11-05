@@ -1,0 +1,200 @@
+{
+  "현장장": [
+    32,
+    33,
+    34,
+    35,
+    36
+  ],
+  "입력PPTX_SHA256": "094e20f55c888391a85f1edce51276410109c7377ec9d1a9bcf8e21d438f2905",
+  "출력PPTX_SHA256": "06b5771c6e0c73e5507d64a28c6bb36bf49dd85c3d1853ffacec857a3d4927a4",
+  "직접차용": {
+    "32": [
+      "integrated/day07",
+      56
+    ],
+    "34": [
+      "integrated/day07",
+      58
+    ],
+    "35": [
+      "integrated/day07",
+      59
+    ]
+  },
+  "원본판본": {
+    "integrated/day07": {
+      "deck_sha256": "caf6baa4ec71460e54629bb89fa0dad170cdc9428f4f169d4db6066f58609c0a",
+      "markdown_sha256": "8cde9c5d185dd5395e0956ac7aa97df4d03afdee4b5f2413fef86b4bb52f92d1"
+    }
+  },
+  "전체PDF_픽셀대조": {
+    "32": {
+      "day": "07",
+      "source_slide": 56,
+      "outside_footer_changed_pixels": 0,
+      "mask_boxes": []
+    },
+    "34": {
+      "day": "07",
+      "source_slide": 58,
+      "outside_footer_changed_pixels": 3368,
+      "mask_boxes": [
+        [
+          1716,
+          1017,
+          1849,
+          1064
+        ],
+        [
+          1716,
+          1017,
+          1849,
+          1064
+        ]
+      ]
+    },
+    "35": {
+      "day": "07",
+      "source_slide": 59,
+      "outside_footer_changed_pixels": 0,
+      "mask_boxes": [
+        [
+          1716,
+          1017,
+          1849,
+          1064
+        ],
+        [
+          1716,
+          1017,
+          1849,
+          1064
+        ]
+      ]
+    }
+  },
+  "동일장구성_통제비교": {
+    "34": {
+      "same_content": true,
+      "same_y": true,
+      "max_x_pt": 0.430115,
+      "max_y_pt": 0.0,
+      "controlled_outside_footer_pixels": 0,
+      "raw_outside_footer_pixels": 3368,
+      "source_slide": 58,
+      "source_day": "07",
+      "raw_source_pptx_sha256": "caf6baa4ec71460e54629bb89fa0dad170cdc9428f4f169d4db6066f58609c0a",
+      "raw_field_pptx_sha256": "06b5771c6e0c73e5507d64a28c6bb36bf49dd85c3d1853ffacec857a3d4927a4",
+      "raw_source_pdf_sha256": "df97eaaad9492a0d7ae110ef9e469b63c99bb5bc44986457cbc8ccefff2e7f02",
+      "raw_field_pdf_sha256": "3e15dd8be2678c6e954a0d4cd179d3830f8c2f8df6ae2a2517b574d7c57928b4",
+      "controlled_source_pdf_sha256": "eee81b00ceab04f0e527545a175a0c42a0a38f9d5bbc53ccf1e51b09bf3c59a8",
+      "controlled_field_pdf_sha256": "b30384ef0d0e1d1fbd039f7fe8dd9ec5184cfd25e6e61723b7404068109795c9",
+      "controlled_source_png_sha256": "e23e258f1e8f48dd7daf69578a04b3c7f0f5a2a2b11ae3c9d46816c36e671e4a",
+      "controlled_field_png_sha256": "6b1032bbd82942e036df47e08de494d2b88ea3a6fae68a21f68158e6bb06079c",
+      "method": "원본과 현장의 이미지를 바꾸지 않고 각 PPTX presentation.xml에서 같은 순서의 해당 장 ID만 남겼다. 같은 맑은 고딕·LibreOffice 26.8로 PDF로 내보내 1920×1080에서 쪽번호 상자만 제외했다. 배포 원본과 현장의 공식 PDF 문자·서체·크기·색·각 글자 시작 좌표도 대조했다."
+    }
+  },
+  "공식PDF_SHA256": "3e15dd8be2678c6e954a0d4cd179d3830f8c2f8df6ae2a2517b574d7c57928b4",
+  "수정된기존XML": [
+    "ppt/notesSlides/notesSlide32.xml",
+    "ppt/notesSlides/notesSlide33.xml",
+    "ppt/notesSlides/notesSlide34.xml",
+    "ppt/notesSlides/notesSlide35.xml",
+    "ppt/notesSlides/notesSlide36.xml",
+    "ppt/slides/_rels/slide32.xml.rels",
+    "ppt/slides/_rels/slide33.xml.rels",
+    "ppt/slides/_rels/slide34.xml.rels",
+    "ppt/slides/_rels/slide35.xml.rels",
+    "ppt/slides/_rels/slide36.xml.rels",
+    "ppt/slides/slide33.xml",
+    "ppt/slides/slide34.xml",
+    "ppt/slides/slide35.xml",
+    "ppt/slides/slide36.xml"
+  ],
+  "추가미디어": [],
+  "기술검증": {
+    "동일구간통제": {
+      "34": {
+        "same_content": true,
+        "same_y": true,
+        "max_x_pt": 0.430115,
+        "max_y_pt": 0.0,
+        "controlled_outside_footer_pixels": 0,
+        "raw_outside_footer_pixels": 3368,
+        "source_slide": 58,
+        "source_day": "07",
+        "raw_source_pptx_sha256": "caf6baa4ec71460e54629bb89fa0dad170cdc9428f4f169d4db6066f58609c0a",
+        "raw_field_pptx_sha256": "06b5771c6e0c73e5507d64a28c6bb36bf49dd85c3d1853ffacec857a3d4927a4",
+        "raw_source_pdf_sha256": "df97eaaad9492a0d7ae110ef9e469b63c99bb5bc44986457cbc8ccefff2e7f02",
+        "raw_field_pdf_sha256": "3e15dd8be2678c6e954a0d4cd179d3830f8c2f8df6ae2a2517b574d7c57928b4",
+        "controlled_source_pdf_sha256": "eee81b00ceab04f0e527545a175a0c42a0a38f9d5bbc53ccf1e51b09bf3c59a8",
+        "controlled_field_pdf_sha256": "b30384ef0d0e1d1fbd039f7fe8dd9ec5184cfd25e6e61723b7404068109795c9",
+        "controlled_source_png_sha256": "e23e258f1e8f48dd7daf69578a04b3c7f0f5a2a2b11ae3c9d46816c36e671e4a",
+        "controlled_field_png_sha256": "6b1032bbd82942e036df47e08de494d2b88ea3a6fae68a21f68158e6bb06079c",
+        "method": "원본과 현장의 이미지를 바꾸지 않고 각 PPTX presentation.xml에서 같은 순서의 해당 장 ID만 남겼다. 같은 맑은 고딕·LibreOffice 26.8로 PDF로 내보내 1920×1080에서 쪽번호 상자만 제외했다. 배포 원본과 현장의 공식 PDF 문자·서체·크기·색·각 글자 시작 좌표도 대조했다."
+      }
+    },
+    "장": [
+      32,
+      36
+    ],
+    "PPTX_SHA256": "06b5771c6e0c73e5507d64a28c6bb36bf49dd85c3d1853ffacec857a3d4927a4",
+    "PDF_SHA256": "3e15dd8be2678c6e954a0d4cd179d3830f8c2f8df6ae2a2517b574d7c57928b4",
+    "노트검사": "노트 점검 문제 0 (36장)",
+    "기존XML변경수": 14,
+    "범위밖변경수": 0,
+    "추가미디어수": 0,
+    "쪽번호제외차용화면차이": {
+      "32": 0,
+      "34": 3368,
+      "35": 0
+    },
+    "노트대조": {
+      "32": {
+        "출처": "온라인 07회차 56장",
+        "온라인노트해시": "0b9f8c60d6a2b6df2566c2d9e42c838bff505980a16a6a1e8916799e2041a7f2",
+        "현장노트해시": "057c646c4758fb0ad5bf65eb032b6908d29498fcf3b2750a602efa0e53fbbce8",
+        "현장용개편": true
+      },
+      "34": {
+        "출처": "온라인 07회차 58장",
+        "온라인노트해시": "a58cb474c1139191accd4f5c8e25a8637123f3c07bb1be17eea0fa225eea73c2",
+        "현장노트해시": "94cd69ecda7ee54d8dc801a4917b17c09a056c8c7e63f39e3f5b8cc44f9ea177",
+        "현장용개편": true
+      },
+      "35": {
+        "출처": "온라인 07회차 59장",
+        "온라인노트해시": "b6aa3043db3569317235f29d253f6c953135acca4b998979340af0df09a287e3",
+        "현장노트해시": "df289784b4e6e93a95c0b03b3dcef97673b3928c5b8a42a7edf2fa7680202f46",
+        "현장용개편": true
+      }
+    },
+    "겹침": 0,
+    "잔줄후보": [],
+    "검사폰트": {
+      "32": [
+        "MalgunGothic",
+        "MalgunGothicBold"
+      ],
+      "33": [
+        "MalgunGothic",
+        "MalgunGothicBold"
+      ],
+      "34": [
+        "MalgunGothic",
+        "MalgunGothicBold"
+      ],
+      "35": [
+        "MalgunGothic",
+        "MalgunGothicBold"
+      ],
+      "36": [
+        "MalgunGothic",
+        "MalgunGothicBold"
+      ]
+    },
+    "시간구분": "진행 계획, 실제 수업 시간 미측정",
+    "계획분": 5.0
+  }
+}
