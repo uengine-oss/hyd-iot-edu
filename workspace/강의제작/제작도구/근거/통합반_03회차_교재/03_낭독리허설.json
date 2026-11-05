@@ -2,8 +2,8 @@
   "편": "03",
   "상태": "유료 생성 전의 혼합 음향 리허설 실측. 지정 음성 전체 길이와 최종 MP4의 정합은 미확정.",
   "대본": "workspace/강의제작/산출물/통합반/이론/03회차/대본/03_이론_성과평가와조치비교.md",
-  "대본_SHA256": "d3775d9fa93b5789c65f381daa35bf1cb270c7f895bb32945209375ea90becf2",
-  "장별검토당시_PPTX_SHA256": "fb2c5900cb55a26c90b5cefefaeaaab31b74107f5fd73655718a1c0e62601d5d",
+  "대본_SHA256": "9abdc2970abb19c8055fd1470e78b9183e83e4ef4db40248a8b8381981440f4e",
+  "장별검토당시_PPTX_SHA256": "6326a86c12f40d199bf3ae6808a608efe3b661fe8b7130a62f8bdb16ad5a5736",
   "강조설정": "workspace/강의제작/제작도구/구성/통합반/03회차/강조_통합반_03회차_03_이론_성과평가와조치비교.json",
   "강조_SHA256": "4a64d3f0e0274797dfa7c9cb7e23a4da488515682747314bc5b5bf93079f6141",
   "강사음성설정": {
@@ -62,22 +62,23 @@
     },
     "대체낭독_자리": {
       "장": [
-        42
+        42,
+        63
       ],
-      "원음초": 18.535,
-      "문장쉼포함_넘김제외초": 19.135
+      "원음초": 42.917,
+      "문장쉼포함_넘김제외초": 44.567
     }
   },
   "혼합리허설_본문초_문장쉼포함": 1910.6115,
-  "혼합리허설_자리초_문장쉼포함": 19.135,
-  "장넘김총초": 25.2,
-  "리허설_합계초": 1954.9465,
+  "혼합리허설_자리초_문장쉼포함": 44.567,
+  "장넘김총초": 26.4,
+  "리허설_합계초": 1981.5785,
   "학습대기총초": 0,
   "최종지정음성_본문실측초": null,
   "검증건수": {
-    "장": 21,
-    "렌더장": 21,
-    "문장사이": 308,
+    "장": 22,
+    "렌더장": 23,
+    "문장사이": 311,
     "강조": 66,
     "지정음성강조": 8,
     "대체낭독강조": 58
@@ -4232,6 +4233,75 @@
           "삽입검사_최대진폭": null
         }
       ]
+    },
+    {
+      "장": 63,
+      "끝장": 64,
+      "묶음_둘째화면_시작초": 6.3497,
+      "학습대기초": 0,
+      "유형": "자리",
+      "음원": "대체낭독",
+      "발화본문_SHA256": "e9f27c7a2bc4051b5c8a7f42efd9f1ce2fd09a12c87d4308f268a767649e0a3d",
+      "지정음성_캐시키": "c6c0eeb45972a269",
+      "쉼파일": "5a033497bf201a40.json",
+      "쉼_SHA256": "3fd0d1ee1d63281b1ccbbaaa20526bf52e82b8cc9ee5e9e3295a97e6a247aec8",
+      "첫문장": "같은 쿨러 경보에서 납기까지 남은 시간이 달라지면 어떤 조치를 먼저 권할까요?",
+      "끝문장": "같은 목표를 두고도 두 값이 같은 판단을 주는지 살펴보세요.",
+      "표본율_Hz": 22050,
+      "발화_PCM초_내장여백포함": 24.382,
+      "삽입문장쉼초": 1.0499,
+      "장내_실측초_넘김제외": 25.432,
+      "장넘김초": 1.2,
+      "편누적_장시작초": 1954.9465,
+      "첫소리초_10ms": 0.01,
+      "끝소리초_10ms": 25.1429,
+      "장내_PCM_SHA256_넘김제외": "120c58e1207022a88c41b649ef74397f2272cd405a5f770d85105628468e7428",
+      "문장별": [
+        {
+          "번호": 1,
+          "문장": "같은 쿨러 경보에서 납기까지 남은 시간이 달라지면 어떤 조치를 먼저 권할까요?",
+          "시작초": 0.01,
+          "끝초": 5.6172,
+          "쉼단계": 2,
+          "삽입점초": 5.8997,
+          "추가쉼초": 0.45,
+          "학습대기초": 0,
+          "삽입검사_최대진폭": 0
+        },
+        {
+          "번호": 2,
+          "문장": "왼쪽에서는 납기만 바꿔 정책 점수로 본 순위와 예상 손익으로 본 순위를 비교해 보세요.",
+          "시작초": 6.3497,
+          "끝초": 13.1043,
+          "쉼단계": 2,
+          "삽입점초": 13.3868,
+          "추가쉼초": 0.45,
+          "학습대기초": 0,
+          "삽입검사_최대진폭": 0
+        },
+        {
+          "번호": 3,
+          "문장": "오른쪽에서는 세 설비의 인터록 여유를 평균과 최솟값으로 각각 읽어 보겠습니다.",
+          "시작초": 13.8368,
+          "끝초": 20.1126,
+          "쉼단계": 1,
+          "삽입점초": 20.3976,
+          "추가쉼초": 0.15,
+          "학습대기초": 0,
+          "삽입검사_최대진폭": 0
+        },
+        {
+          "번호": 4,
+          "문장": "같은 목표를 두고도 두 값이 같은 판단을 주는지 살펴보세요.",
+          "시작초": 20.5575,
+          "끝초": 25.1471,
+          "쉼단계": null,
+          "삽입점초": null,
+          "추가쉼초": 0.0,
+          "학습대기초": 0,
+          "삽입검사_최대진폭": null
+        }
+      ]
     }
   ],
   "강조별": [
@@ -5622,10 +5692,10 @@
       "리허설_편누적끝초": 1917.3467
     }
   ],
-  "검토PDF_SHA256": "4efcaaa415175047fca1dc6275b94a1d04cb6ea2c3ef6d300eaaf8a401f49926",
+  "검토PDF_SHA256": "bc4ed992d97a1526044e40a1643bab74edf294a58557c27786cc59a6dcce96da",
   "검증_장범위": [
     42,
-    62
+    64
   ],
   "재현": {
     "필요도구": "Python 3.10+, ffmpeg, eSpeak NG 1.52.0의 한국어 데이터. 이 판은 espeakng-loader==0.2.4 manylinux x86_64 wheel의 libespeak-ng.so.1과 espeak-ng-data로 측정했다.",
@@ -5639,7 +5709,7 @@
     ],
     "검증코드": {
       "esmark.py": "import ctypes as C\nfrom xml.sax.saxutils import escape\nimport os\nclass Id(C.Union):\n    _fields_=[('number',C.c_int),('name',C.c_char_p),('phoneme',C.c_char*8)]\nclass Event(C.Structure):\n    _fields_=[('type',C.c_int),('id',C.c_uint),('position',C.c_int),('length',C.c_int),('ms',C.c_int),('sample',C.c_int),('data',C.c_void_p),('u',Id)]\nlib=C.CDLL('libespeak-ng.so.1')\nfr=lib.espeak_Initialize(2,0,(os.environ['ESPEAK_DATA_PATH'].encode() if 'ESPEAK_DATA_PATH' in os.environ else None),0)\nassert fr==22050,fr\nassert lib.espeak_SetVoiceByName(b'ko')==0\nassert lib.espeak_SetParameter(1,180,0)==0\nlib.espeak_Info.restype=C.c_char_p\nversion=lib.espeak_Info(None).decode()\nparts=[]; marks={}\n@C.CFUNCTYPE(C.c_int,C.c_void_p,C.c_int,C.POINTER(Event))\ndef receive(wav,count,events):\n    if wav and count: parts.append(C.string_at(wav,count*2))\n    j=0\n    while events[j].type:\n        ev=events[j]\n        if ev.type==3: marks[ev.u.name.decode()]=ev.ms\n        j+=1\n    return 0\nlib.espeak_SetSynthCallback(receive)\ndef say(s,anchors):\n    parts.clear(); marks.clear()\n    buf=[]; last=0\n    for pos,name in sorted(anchors):\n        buf.extend((escape(s[last:pos]),f'<mark name=\"{name}\"/><break time=\"1ms\"/>'));last=pos\n    text=('<speak>'+''.join(buf)+escape(s[last:])+'</speak>').encode()\n    assert lib.espeak_Synth(text,len(text)+1,0,1,0,1|0x10|0x1000,None,None)==0\n    return b''.join(parts),{k:v/1000 for k,v in marks.items()}\n",
-      "measure.py": "import array\nimport hashlib\nimport json\nimport subprocess\nimport sys\nimport tempfile\nimport wave\nfrom pathlib import Path\nfrom esmark import say, version\n\nroot=Path(sys.argv[1]).resolve()\nep=sys.argv[2]\ndest=Path(sys.argv[3])\nwork=Path(tempfile.mkdtemp(prefix='speech-rehearsal-',dir=sys.argv[4]))\ntools=root/'workspace/강의제작/제작도구'\nsys.path.insert(0,str(tools/'기존제작/tools/video'))\nimport 강의영상 as v\nimport 쉼옮기기 as br\ndef load(p): return json.loads(p.read_text(encoding='utf-8'))\ndef sha(data): return hashlib.sha256(data).hexdigest()\ndef sha_file(p): return sha(p.read_bytes())\ndef r(x): return round(x,4)\ndef bounds(pcm,fr):\n    # Find voiced-energy bounds using 10 ms blocks over the complete sentence/chunk.\n    w=fr//100\n    strong=[i for i in range(0,len(pcm),w) if any(abs(v)>300 for v in pcm[i:i+w])]\n    assert strong,'empty waveform'\n    return strong[0]/fr,min(len(pcm),strong[-1]+w)/fr\ndef wav(path,raw,fr):\n    with wave.open(str(path),'wb') as wh:\n        wh.setparams((1,2,fr,0,'NONE','not compressed'));wh.writeframes(raw)\n    with wave.open(str(path)) as wh:\n        return wh.getnframes()/wh.getframerate()\ncfg=load(Path(sys.argv[5]) if len(sys.argv)>5 else tools/'구성/통합반/03회차/제작입력.json')\npart=cfg['편'][ep]; spfile=root/part['대본']; ccfile=root/part['강조설정']\nassert sha_file(spfile)==part['대본_SHA256'] and sha_file(ccfile)==part['강조설정_SHA256']\nparams=cfg['도구']; pause=params['문장사이_초']; gap=pause['장넘김']\nseat_set={1,2,3,4,21,42} # 1편 1~4장·2편 21장은 자리 장.\nrows=[]; highlights=[]; cursor=0\nstudy={}\nS=v.slides_text(spfile,study)\nS=[entry for entry in S if part['검증_장범위'][0]<=entry[0]<=part['검증_장범위'][1]]\n\nC=[m for m in load(ccfile)['표시'] if part['검증_장범위'][0]<=m['장']<=part['검증_장범위'][1]]\nfor (a,b,text),q in zip(S,part['구획'],strict=True):\n    assert b in (a,a+1) and [a,b]==q['장']\n    sents=br.sentences(text); slotfile=tools/'기존제작/tools/video/쉼_저장'/q['쉼파일']\n    sl=load(slotfile); assert sl['문장']==sents\n    key=v.cache_key(text,params['목소리'],params['모델'],params['빠르기'])\n    mp3=v.CACHE/(key+'.mp3'); align=mp3.with_suffix('.json')\n    cached=mp3.is_file() and align.is_file()\n    trial='지정음성' if cached else '대체낭독'\n    assert cached==bool(q['기존음성'])\n    count=len(sents); events={}; sentence_rows=[]; raw=array.array('h')\n    local_marks=[(i+1,m) for i,m in enumerate(C) if m['장']==a]\n    al=load(align) if cached else dict(characters=list(text),character_start_times_seconds=list(range(len(text))),character_end_times_seconds=list(range(1,len(text)+1)))\n    chars=al['characters']; assert ''.join(chars)==text\n    st=al['character_start_times_seconds']; en=al['character_end_times_seconds']\n    cuts,tail=v.cuts({'al':al}); assert [c[2] for c in cuts]+[tail]==sents\n    levels=sl['쉼']\n    add=[max([0,pause['짧게'],pause['중간'],pause['길게']][lvl],{'para':pause['문단'],'q':pause['질문'],'s':0}[k]) for ((_,k,_),lvl) in zip(cuts,levels,strict=True)] + [0]\n    offsets={i:v for i,v in study.get(a,[])}\n    study_sec=[]; nchar=0\n    for sentence in sents:\n        nchar+=len(''.join(sentence.split()))\n        study_sec.append(offsets.pop(nchar,0))\n    assert not offsets,(a,offsets)\n    timed_add=[x+y for x,y in zip(add,study_sec)]\n    source_hash={}\n    if cached:\n        source_hash={'MP3_SHA256':sha_file(mp3),'글자정렬_SHA256':sha_file(align)}\n        fr=44100\n        buf=subprocess.check_output(['ffmpeg','-v','error','-i',str(mp3),'-ac','1','-ar',str(fr),'-f','s16le','-'])\n        orig=array.array('h',buf)\n        shift=[]; cutrows=[]; last=0\n        for (win,_,_),sec in zip(cuts,timed_add):\n            if sec: t,peak=v.quiet_point(orig,fr,win); assert peak<=v.QUIET_MAX,(a,win,peak)\n            else: t=win[0];peak=None\n            idx=min(len(orig),int(t*fr)); num=int(sec*fr)\n            assert idx>=last\n            raw.extend(orig[last:idx]);slot_start=len(raw)/fr;raw.extend(array.array('h',[0])*num);last=idx\n            shift.append((t,num/fr));cutrows.append((slot_start,peak))\n        raw.extend(orig[last:]); raw.extend(array.array('h',[0])*int(study_sec[-1]*fr))\n        def moved(t): return t+sum(x for k,x in shift if k<=t)\n        off=0\n    else: fr=22050\n    dry_frames=0\n    for ix,s in enumerate(sents):\n        assert all(s.count(m['낱말'])==1 for _,m in local_marks if m['문장']==s)\n        anchors=[(s.index(m['낱말']),str(i)) for i,m in local_marks if m['문장']==s]\n        if cached:\n            pos=text.index(s,off);off=pos+len(s)\n            start=moved(st[pos]);end=start+(en[off-1]-st[pos])  # production SRT formula\n            # Last syllable onset and end times from aligned, gap-adjusted waveform.\n            for at,name in anchors: events[name]=moved(st[pos+at])\n            ss,peak=cutrows[ix] if ix<count-1 else (None,None)\n        else:\n            buf,mark=say(s,anchors)\n            assert set(mark)=={name for _,name in anchors},(a,ix+1,s,anchors,mark)\n            samples=array.array('h',buf); dry_frames+=len(samples); origin=len(raw)/fr\n            h,t=bounds(samples,fr);start=origin+h;end=origin+t\n            raw.extend(samples); ss=len(raw)/fr if ix<count-1 else None; peak=0 if ix<count-1 and timed_add[ix] else None\n            events.update({name:origin+t for name,t in mark.items()})\n            raw.extend(array.array('h',[0])*int(timed_add[ix]*fr))\n        sentence_rows.append({'번호':ix+1,'문장':s,'시작초':r(start),'끝초':r(end),'쉼단계':levels[ix] if ix<count-1 else None,'삽입점초':r(ss) if ss is not None else None,'추가쉼초':r(int(add[ix]*fr)/fr),'학습대기초':study_sec[ix],'삽입검사_최대진폭':peak})\n    if cached: dry_frames=len(orig)\n    dry=dry_frames/fr; measured=len(raw)/fr\n    head,tail=bounds(raw,fr)\n    hs=[]\n    _,actual_tail=bounds(raw,fr)\n    for i,m in local_marks:\n        first=sents.index(m['문장']);assert sents.count(m['문장'])==1\n        e=m.get('끝문장'); endidx=sents.index(e) if e else count-1\n        assert not e or sents.count(e)==1\n        start=events[str(i)]; end=sentence_rows[endidx]['시작초' if e else '끝초']\n        assert end>start and 0<=start<measured and end<=measured+gap,(a,i,start,end,measured)\n        hs.append({'번호':i,'장':a,'음원':trial,'목표':m.get('대상'),'시작문장번호':first+1,'시작문장':m['문장'],'낱말':m['낱말'],'시작근거':'지정 캐시 글자 정렬' if cached else 'eSpeak SSML MARK 콜백','장내_시작초':r(start),'종료문장번호':endidx+1,'해제문장':sents[endidx],'끝기준':'지정한 다음 문장 시작' if e else '장 낭독 끝','해제문장_시작초':sentence_rows[endidx]['시작초'],'해제문장_끝초':sentence_rows[endidx]['끝초'],'장내_끝초':r(end),'장낭독끝_실제파형_초':None if e else r(actual_tail),'원음종료초과_장넘김구간초':r(max(0,end-measured)),'리허설_편누적시작초':r(cursor+start),'리허설_편누적끝초':r(cursor+end)})\n    highlights.extend(hs)\n    pcmhash=sha(raw.tobytes()); raw.extend(array.array('h',[0])*int(gap*fr)); dur=wav(work/f'{a:02}.wav',raw,fr)\n    assert abs(dur-measured-gap)<1/fr\n    label='본문' if 43<=a<=62 else '자리'\n    if b>a:\n        switch=sentence_rows[0]['삽입점초']+sentence_rows[0]['추가쉼초']+sentence_rows[0]['학습대기초']\n    else: switch=None\n    rows.append({'장':a,'끝장':b,'묶음_둘째화면_시작초':None if switch is None else r(switch),'학습대기초':sum(study_sec),'유형':label,'음원':trial,'발화본문_SHA256':sha(text.encode()),'지정음성_캐시키':key,**source_hash,'쉼파일':slotfile.name,'쉼_SHA256':sha_file(slotfile),'첫문장':sents[0],'끝문장':sents[-1],'표본율_Hz':fr,'발화_PCM초_내장여백포함':r(dry),'삽입문장쉼초':r(measured-dry-sum(study_sec)),'장내_실측초_넘김제외':r(measured),'장넘김초':gap,'편누적_장시작초':r(cursor),'첫소리초_10ms':r(head),'끝소리초_10ms':r(tail),'장내_PCM_SHA256_넘김제외':pcmhash,'문장별':sentence_rows}); cursor+=dur\n\nsummary={}\nfor source in ['지정음성','대체낭독']:\n    for cat in ['본문','자리']:\n        filtered=[x for x in rows if x['유형']==cat and x['음원']==source]\n        summary[source+'_'+cat]={'장':[x['장'] for x in filtered],'원음초':r(sum(x['발화_PCM초_내장여백포함'] for x in filtered)), '문장쉼포함_넘김제외초':r(sum(x['장내_실측초_넘김제외'] for x in filtered))}\nreport={'편':ep,'상태':'유료 생성 전의 혼합 음향 리허설 실측. 지정 음성 전체 길이와 최종 MP4의 정합은 미확정.','대본':part['대본'],'대본_SHA256':sha_file(spfile),'장별검토당시_PPTX_SHA256':part['검토시_덱_SHA256'],'강조설정':part['강조설정'],'강조_SHA256':sha_file(ccfile),'강사음성설정':{k:params[k] for k in ['목소리','모델','빠르기']},'쉼설정초':pause,'대체음성':f'eSpeak NG {version}, ko, 180 wpm, 22050 Hz, mono PCM','재생방법':'지정 캐시는 장 발화문·음성·모델·빠르기 키와 글자 배열을 확인하고 ffmpeg로 44100 Hz PCM 복호화. 강의영상.py의 quiet_point로 300 이하의 조용한 곳에 쉼을 삽입. 대체 낭독은 확정 문장별 합성 PCM에 단계별 무음을 삽입했다. 문장 자체의 여백은 유지했다. 원음 초는 내장 여백 포함. 유형별 장 실측은 삽입된 문장 쉼을 포함하고 장넘김은 제외한다.','시각기준':'초는 0부터. 지정 시작은 캐시 글자 정렬을 삽입된 쉼만큼 이동한 값, 대체 시작은 동일 PCM의 낱말 직전 SSML MARK 이벤트(ms)다. 한국어 연음에서 표지가 누락되지 않도록 각 표지 뒤에 1ms break를 넣었다. 이 방식은 표시 낱말 주변의 발음과 길이에 영향을 줄 수 있다. 대체 문장 시작·끝은 PCM 절대진폭 300 초과 10ms창에서 구했다. 끝문장이 있으면 그 문장 시작에 지우고 없으면 제작 도구의 마지막 자막 끝을 해제시각으로 기록했다. 이 경우 장낭독끝_실제파형_초도 기록하므로 캐시 정렬의 끝이 실제 장내 PCM 끝보다 늦은 사례를 구별할 수 있다. 편 누적은 1.2초 장넘김을 포함한 PCM 시계로, MP4 컨테이너 시계와 다를 수 있다. 대체 음성 음색·발화속도·숫자 발음은 지정 강사 음성 재현이 아니며 청취자 발음·수업 성립 판정은 포함하지 않는다.','소스별실측':summary,'혼합리허설_본문초_문장쉼포함':r(sum(x['장내_실측초_넘김제외'] for x in rows if x['유형']=='본문')),'혼합리허설_자리초_문장쉼포함':r(sum(x['장내_실측초_넘김제외'] for x in rows if x['유형']=='자리')),'장넘김총초':r(gap*len(rows)),'리허설_합계초':r(cursor),'학습대기총초':sum(x['학습대기초'] for x in rows),'최종지정음성_본문실측초':None,'검증건수':{'장':len(rows),'렌더장':sum(x['끝장']-x['장']+1 for x in rows),'문장사이':sum(len(s['문장별'])-1 for s in rows),'강조':len(highlights),'지정음성강조':sum(m['음원']=='지정음성' for m in highlights),'대체낭독강조':sum(m['음원']=='대체낭독' for m in highlights)},'장별':rows,'강조별':highlights}\nassert len(highlights)==len(C)\ndest.write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\\n',encoding='utf-8')\nprint(json.dumps({k:v for k,v in report.items() if k in ('소스별실측','혼합리허설_본문초_문장쉼포함','검증건수')},ensure_ascii=False))\n"
+      "measure.py": "import array\nimport hashlib\nimport json\nimport subprocess\nimport sys\nimport tempfile\nimport wave\nfrom pathlib import Path\nfrom esmark import say, version\n\nroot=Path(sys.argv[1]).resolve()\nep=sys.argv[2]\ndest=Path(sys.argv[3])\nwork=Path(tempfile.mkdtemp(prefix='speech-rehearsal-',dir=sys.argv[4]))\ntools=root/'workspace/강의제작/제작도구'\nsys.path.insert(0,str(tools/'기존제작/tools/video'))\nimport 강의영상 as v\nimport 쉼옮기기 as br\ndef load(p): return json.loads(p.read_text(encoding='utf-8'))\ndef sha(data): return hashlib.sha256(data).hexdigest()\ndef sha_file(p): return sha(p.read_bytes())\ndef r(x): return round(x,4)\ndef bounds(pcm,fr):\n    # Find voiced-energy bounds using 10 ms blocks over the complete sentence/chunk.\n    w=fr//100\n    strong=[i for i in range(0,len(pcm),w) if any(abs(v)>300 for v in pcm[i:i+w])]\n    assert strong,'empty waveform'\n    return strong[0]/fr,min(len(pcm),strong[-1]+w)/fr\ndef wav(path,raw,fr):\n    with wave.open(str(path),'wb') as wh:\n        wh.setparams((1,2,fr,0,'NONE','not compressed'));wh.writeframes(raw)\n    with wave.open(str(path)) as wh:\n        return wh.getnframes()/wh.getframerate()\ncfg=load(Path(sys.argv[5]) if len(sys.argv)>5 else tools/'구성/통합반/03회차/제작입력.json')\npart=cfg['편'][ep]; spfile=root/part['대본']; ccfile=root/part['강조설정']\nassert sha_file(spfile)==part['대본_SHA256'] and sha_file(ccfile)==part['강조설정_SHA256']\nparams=cfg['도구']; pause=params['문장사이_초']; gap=pause['장넘김']\nseat_set={1,2,3,4,21,42} # 1편 1~4장·2편 21장은 자리 장.\nrows=[]; highlights=[]; cursor=0\nstudy={}\nS=v.slides_text(spfile,study)\nS=[entry for entry in S if part['검증_장범위'][0]<=entry[0]<=part['검증_장범위'][1]]\n\nC=[m for m in load(ccfile)['표시'] if part['검증_장범위'][0]<=m['장']<=part['검증_장범위'][1]]\nfor (a,b,text),q in zip(S,part['구획'],strict=True):\n    assert b in (a,a+1) and [a,b]==q['장']\n    sents=br.sentences(text); slotfile=tools/'기존제작/tools/video/쉼_저장'/q['쉼파일']\n    sl=load(slotfile); assert sl['문장']==sents\n    key=v.cache_key(text,params['목소리'],params['모델'],params['빠르기'])\n    mp3=v.CACHE/(key+'.mp3'); align=mp3.with_suffix('.json')\n    cached=mp3.is_file() and align.is_file()\n    trial='지정음성' if cached else '대체낭독'\n    assert cached==bool(q['기존음성'])\n    count=len(sents); events={}; sentence_rows=[]; raw=array.array('h')\n    local_marks=[(i+1,m) for i,m in enumerate(C) if m['장']==a]\n    al=load(align) if cached else dict(characters=list(text),character_start_times_seconds=list(range(len(text))),character_end_times_seconds=list(range(1,len(text)+1)))\n    chars=al['characters']; assert ''.join(chars)==text\n    st=al['character_start_times_seconds']; en=al['character_end_times_seconds']\n    cuts,tail=v.cuts({'al':al}); assert [c[2] for c in cuts]+[tail]==sents\n    levels=sl['쉼']\n    add=[max([0,pause['짧게'],pause['중간'],pause['길게']][lvl],{'para':pause['문단'],'q':pause['질문'],'s':0}[k]) for ((_,k,_),lvl) in zip(cuts,levels,strict=True)] + [0]\n    offsets={i:v for i,v in study.get(a,[])}\n    study_sec=[]; nchar=0\n    for sentence in sents:\n        nchar+=len(''.join(sentence.split()))\n        study_sec.append(offsets.pop(nchar,0))\n    assert not offsets,(a,offsets)\n    timed_add=[x+y for x,y in zip(add,study_sec)]\n    source_hash={}\n    if cached:\n        source_hash={'MP3_SHA256':sha_file(mp3),'글자정렬_SHA256':sha_file(align)}\n        fr=44100\n        buf=subprocess.check_output(['ffmpeg','-v','error','-i',str(mp3),'-ac','1','-ar',str(fr),'-f','s16le','-'])\n        orig=array.array('h',buf)\n        shift=[]; cutrows=[]; last=0\n        for (win,_,_),sec in zip(cuts,timed_add):\n            if sec: t,peak=v.quiet_point(orig,fr,win); assert peak<=v.QUIET_MAX,(a,win,peak)\n            else: t=win[0];peak=None\n            idx=min(len(orig),int(t*fr)); num=int(sec*fr)\n            assert idx>=last\n            raw.extend(orig[last:idx]);slot_start=len(raw)/fr;raw.extend(array.array('h',[0])*num);last=idx\n            shift.append((t,num/fr));cutrows.append((slot_start,peak))\n        raw.extend(orig[last:]); raw.extend(array.array('h',[0])*int(study_sec[-1]*fr))\n        def moved(t): return t+sum(x for k,x in shift if k<=t)\n        off=0\n    else: fr=22050\n    dry_frames=0\n    for ix,s in enumerate(sents):\n        assert all(s.count(m['낱말'])==1 for _,m in local_marks if m['문장']==s)\n        anchors=[(s.index(m['낱말']),str(i)) for i,m in local_marks if m['문장']==s]\n        if cached:\n            pos=text.index(s,off);off=pos+len(s)\n            start=moved(st[pos]);end=start+(en[off-1]-st[pos])  # production SRT formula\n            # Last syllable onset and end times from aligned, gap-adjusted waveform.\n            for at,name in anchors: events[name]=moved(st[pos+at])\n            ss,peak=cutrows[ix] if ix<count-1 else (len(raw)/fr-study_sec[-1] if study_sec[-1] else None,None)\n            if study_sec[ix] and ss is not None and start < ss < end:\n                end=ss\n        else:\n            buf,mark=say(s,anchors)\n            assert set(mark)=={name for _,name in anchors},(a,ix+1,s,anchors,mark)\n            samples=array.array('h',buf); dry_frames+=len(samples); origin=len(raw)/fr\n            h,t=bounds(samples,fr);start=origin+h;end=origin+t\n            raw.extend(samples); ss=len(raw)/fr if ix<count-1 or study_sec[ix] else None; peak=0 if ix<count-1 and timed_add[ix] else None\n            events.update({name:origin+t for name,t in mark.items()})\n            raw.extend(array.array('h',[0])*int(timed_add[ix]*fr))\n        sentence_rows.append({'번호':ix+1,'문장':s,'시작초':r(start),'끝초':r(end),'쉼단계':levels[ix] if ix<count-1 else None,'삽입점초':r(ss) if ss is not None else None,'추가쉼초':r(int(add[ix]*fr)/fr),'학습대기초':study_sec[ix],'삽입검사_최대진폭':peak})\n    if cached: dry_frames=len(orig)\n    dry=dry_frames/fr; measured=len(raw)/fr\n    head,tail=bounds(raw,fr)\n    hs=[]\n    _,actual_tail=bounds(raw,fr)\n    for i,m in local_marks:\n        first=sents.index(m['문장']);assert sents.count(m['문장'])==1\n        e=m.get('끝문장'); endidx=sents.index(e) if e else count-1\n        assert not e or sents.count(e)==1\n        start=events[str(i)]; end=sentence_rows[endidx]['시작초' if e else '끝초']\n        assert end>start and 0<=start<measured and end<=measured+gap,(a,i,start,end,measured)\n        hs.append({'번호':i,'장':a,'음원':trial,'목표':m.get('대상'),'시작문장번호':first+1,'시작문장':m['문장'],'낱말':m['낱말'],'시작근거':'지정 캐시 글자 정렬' if cached else 'eSpeak SSML MARK 콜백','장내_시작초':r(start),'종료문장번호':endidx+1,'해제문장':sents[endidx],'끝기준':'지정한 다음 문장 시작' if e else '장 낭독 끝','해제문장_시작초':sentence_rows[endidx]['시작초'],'해제문장_끝초':sentence_rows[endidx]['끝초'],'장내_끝초':r(end),'장낭독끝_실제파형_초':None if e else r(actual_tail),'원음종료초과_장넘김구간초':r(max(0,end-measured)),'리허설_편누적시작초':r(cursor+start),'리허설_편누적끝초':r(cursor+end)})\n    highlights.extend(hs)\n    pcmhash=sha(raw.tobytes()); raw.extend(array.array('h',[0])*int(gap*fr)); dur=wav(work/f'{a:02}.wav',raw,fr)\n    assert abs(dur-measured-gap)<1/fr\n    label='본문' if 43<=a<=62 else '자리'\n    if b>a:\n        switch=sentence_rows[0]['삽입점초']+sentence_rows[0]['추가쉼초']+sentence_rows[0]['학습대기초']\n    else: switch=None\n    rows.append({'장':a,'끝장':b,'묶음_둘째화면_시작초':None if switch is None else r(switch),'학습대기초':sum(study_sec),'유형':label,'음원':trial,'발화본문_SHA256':sha(text.encode()),'지정음성_캐시키':key,**source_hash,'쉼파일':slotfile.name,'쉼_SHA256':sha_file(slotfile),'첫문장':sents[0],'끝문장':sents[-1],'표본율_Hz':fr,'발화_PCM초_내장여백포함':r(dry),'삽입문장쉼초':r(measured-dry-sum(study_sec)),'장내_실측초_넘김제외':r(measured),'장넘김초':gap,'편누적_장시작초':r(cursor),'첫소리초_10ms':r(head),'끝소리초_10ms':r(tail),'장내_PCM_SHA256_넘김제외':pcmhash,'문장별':sentence_rows}); cursor+=dur\n\nsummary={}\nfor source in ['지정음성','대체낭독']:\n    for cat in ['본문','자리']:\n        filtered=[x for x in rows if x['유형']==cat and x['음원']==source]\n        summary[source+'_'+cat]={'장':[x['장'] for x in filtered],'원음초':r(sum(x['발화_PCM초_내장여백포함'] for x in filtered)), '문장쉼포함_넘김제외초':r(sum(x['장내_실측초_넘김제외'] for x in filtered))}\nreport={'편':ep,'상태':'유료 생성 전의 혼합 음향 리허설 실측. 지정 음성 전체 길이와 최종 MP4의 정합은 미확정.','대본':part['대본'],'대본_SHA256':sha_file(spfile),'장별검토당시_PPTX_SHA256':part['검토시_덱_SHA256'],'강조설정':part['강조설정'],'강조_SHA256':sha_file(ccfile),'강사음성설정':{k:params[k] for k in ['목소리','모델','빠르기']},'쉼설정초':pause,'대체음성':f'eSpeak NG {version}, ko, 180 wpm, 22050 Hz, mono PCM','재생방법':'지정 캐시는 장 발화문·음성·모델·빠르기 키와 글자 배열을 확인하고 ffmpeg로 44100 Hz PCM 복호화. 강의영상.py의 quiet_point로 300 이하의 조용한 곳에 쉼을 삽입. 대체 낭독은 확정 문장별 합성 PCM에 단계별 무음을 삽입했다. 문장 자체의 여백은 유지했다. 원음 초는 내장 여백 포함. 유형별 장 실측은 삽입된 문장 쉼을 포함하고 장넘김은 제외한다.','시각기준':'초는 0부터. 지정 시작은 캐시 글자 정렬을 삽입된 쉼만큼 이동한 값, 대체 시작은 동일 PCM의 낱말 직전 SSML MARK 이벤트(ms)다. 한국어 연음에서 표지가 누락되지 않도록 각 표지 뒤에 1ms break를 넣었다. 이 방식은 표시 낱말 주변의 발음과 길이에 영향을 줄 수 있다. 대체 문장 시작·끝은 PCM 절대진폭 300 초과 10ms창에서 구했다. 끝문장이 있으면 그 문장 시작에 지우고 없으면 제작 도구의 마지막 자막 끝을 해제시각으로 기록했다. 이 경우 장낭독끝_실제파형_초도 기록하므로 캐시 정렬의 끝이 실제 장내 PCM 끝보다 늦은 사례를 구별할 수 있다. 편 누적은 1.2초 장넘김을 포함한 PCM 시계로, MP4 컨테이너 시계와 다를 수 있다. 대체 음성 음색·발화속도·숫자 발음은 지정 강사 음성 재현이 아니며 청취자 발음·수업 성립 판정은 포함하지 않는다.','소스별실측':summary,'혼합리허설_본문초_문장쉼포함':r(sum(x['장내_실측초_넘김제외'] for x in rows if x['유형']=='본문')),'혼합리허설_자리초_문장쉼포함':r(sum(x['장내_실측초_넘김제외'] for x in rows if x['유형']=='자리')),'장넘김총초':r(gap*len(rows)),'리허설_합계초':r(cursor),'학습대기총초':sum(x['학습대기초'] for x in rows),'최종지정음성_본문실측초':None,'검증건수':{'장':len(rows),'렌더장':sum(x['끝장']-x['장']+1 for x in rows),'문장사이':sum(len(s['문장별'])-1 for s in rows),'강조':len(highlights),'지정음성강조':sum(m['음원']=='지정음성' for m in highlights),'대체낭독강조':sum(m['음원']=='대체낭독' for m in highlights)},'장별':rows,'강조별':highlights}\nassert len(highlights)==len(C)\ndest.write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\\n',encoding='utf-8')\nprint(json.dumps({k:v for k,v in report.items() if k in ('소스별실측','혼합리허설_본문초_문장쉼포함','검증건수')},ensure_ascii=False))\n"
     }
   }
 }
