@@ -4,7 +4,7 @@
   "slide_count": 79,
   "source_commit": "f5c5e18a3c47d9c9855dd9416ed2aca4c7b7cddb",
   "source_script_sha256": "5c739e9c08f70eb75fea6c24d3a81953a00d1247c5549f4949a056cea2720c48",
-  "pptx_sha256": "02fc59da6028df9002c5181281ee5fb2e1f81925acf08b203127bdaf25b52910",
+  "pptx_sha256": "d44f2463207f61e85903511125aef89353bc78d770186bc4ecaf3d48d6e98ac4",
   "units": [
     {
       "file": "../../../../산출물/통합반/이론/02회차/대본/01_이론_클래스와인스턴스.md",
@@ -101,7 +101,7 @@
     {
       "kind": "실습(VS Code)",
       "title": "현장 정보를 체계화하는 온톨로지 직접 설계하기",
-      "minutes": 40,
+      "minutes": 45,
       "slides": [
         69,
         70
@@ -110,7 +110,7 @@
     {
       "kind": "실습(VS Code)",
       "title": "설계한 온톨로지를 그래프 DB에 구현하고 검증하기",
-      "minutes": 40,
+      "minutes": 35,
       "slides": [
         71,
         72
