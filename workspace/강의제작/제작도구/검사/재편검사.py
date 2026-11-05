@@ -44,10 +44,19 @@ def rules(p):
     return out
 
 
-def rule_ids(guide_dir, work):
-    """그 일의 판정 대상 규칙 번호: 그 일 문서의 규칙 + 공통 규칙(C-n). 일이 「공통」이면 공통만."""
+def rule_texts(guide_dir, work):
+    """판정 대상 번호와 그 줄·세부 줄의 글. 줄 번호나 줄바꿈만 바뀌면 같은 기준이다."""
     names = [work] + ([] if work == "공통" else ["공통"])
-    return [f"{LETTER[d]}-{n}" for d in names for n, *_ in rules(guide_dir / f"{d}.md") if n is not None]
+    return {
+        f"{LETTER[name]}-{number}": " ".join(" ".join([head, *(s for _, s in details)]).split())
+        for name in names
+        for number, _, head, details in rules(guide_dir / f"{name}.md")
+        if number is not None
+    }
+
+
+def rule_ids(guide_dir, work):
+    return list(rule_texts(guide_dir, work))
 
 
 def check_guide(p, d, errs):

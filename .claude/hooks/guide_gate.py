@@ -30,7 +30,8 @@ def norm(path, root):
 
 def work_guides(rel, root):
     """이 경로의 일이 읽을 문서(공통.md 빼고). 한 칸이 튜플이면 그중 하나. 해당 없으면 빈 목록."""
-    if rel.endswith("/README.md") or rel.startswith("workspace/강의제작/지침/"): return []
+    lab = re.match(r"(workspace/강의제작/산출물/(?:통합반|실전반)/실습/[^/]+/랩/[^/]+)/(.*)", rel)
+    if (rel.endswith("/README.md") and not lab) or rel.startswith("workspace/강의제작/지침/"): return []
     m = re.match(r"workspace/강의제작/제작도구/촬영/([^/]+)/(.*)", rel)
     if m:
         if GUIDE_TOOL.match(m[2]): return [GUIDE.format("가이드")]
@@ -44,8 +45,14 @@ def work_guides(rel, root):
         if m[2] == "이론_오프라인": return [GUIDE.format("덱")]
         if m[2] == "실습":
             if "/대본/" in rel: return [GUIDE.format("영상")]
-            if rel.endswith((".html", ".png", ".jpg", ".jpeg")): return [GUIDE.format("가이드")]
-            return [GUIDE.format("코딩랩")] if "/랩/" in rel and rel.endswith((".py", ".ipynb", ".js", ".mjs")) else []
+            if rel.endswith((".zip", ".html", ".png", ".jpg", ".jpeg")): return [GUIDE.format("가이드")]
+            if lab:
+                folder = Path(root) / lab[1]
+                if rel.endswith(("/입출력_계약.md", ".py", ".ipynb", ".js", ".mjs")) or any(
+                    (folder / name).is_file() for name in ("check.py", "입출력_계약.md", "코드/입출력_계약.md")
+                ): return [GUIDE.format("코딩랩")]
+                # START와 원자료는 포털·작도용 학생 묶음과 코딩 랩이 같은 자리에 둔다.
+                return [(GUIDE.format("가이드"), GUIDE.format("코딩랩"))]
     if re.match(r"workspace/강의제작/제작도구/구성/.*/강조_[^/]*\.json$", rel): return [GUIDE.format("영상")]
     if re.match(r"workspace/강의제작/제작도구/(구성|온라인/decks)/", rel): return [DECK_OR_SCRIPT]
     if rel.startswith(("workspace/강의제작/제작도구/오프라인/decks/", ".claude/skills/hyd-course-deck/")): return [GUIDE.format("덱")]
@@ -167,7 +174,10 @@ def selftest():
             if not all(h in msg for h in has) or any(h in msg for h in hasnt): bad.append(f"{name}: 막는 말이 다름 — {msg[:300]}")
 
         pptx = S + "이론/02회차/통합반_02일차.pptx"
-        QUE = "workspace/강의제작/제작도구/촬영/포털/큐.json"
+        QUE = "workspace/강의제작/제작도구/촬영/포털/전체과정관찰_큐.json"
+        graph = S + "실습/04회차/랩/04일차_실습3_그래프반영과검증"
+        (root / graph).mkdir(parents=True)
+        (root / graph / "입출력_계약.md").touch()
         call("gate", ed(pptx), 2, "안 읽고 덱 고치기")
         for rel in ("it/process/x.py", S + "이론/02회차/README.md", SHOOT_COMMON, "workspace/강의제작/제작도구/촬영/포털/README.md",
                     "workspace/강의제작/지침/사실표/통합반_01일차_기술사실표.md", COMMON, DECK):
@@ -212,9 +222,17 @@ def selftest():
         call("gate", ed(S + "실습/02회차/대본/05_실습.md"), 0, "실습 대본은 영상 문서")
         call("gate", ed("workspace/강의제작/제작도구/촬영/포털/학생가이드_원고.md"), 2, "가이드 재료는 가이드 문서")
         call("gate", ed(S + "실습/01회차/랩/x/images/n.png"), 2, "실습 사진은 가이드 문서")
+        for package in (graph + ".zip", S + "실습/01회차/오프라인1_가이드.zip"):
+            says(call("gate", ed(package), 2, "학생 ZIP"), [GD], [LAB_G], "배포 묶음은 가이드")
         call("read", rd(GD), 0, "가이드")
+        call("gate", ed(graph + ".zip"), 0, "가이드 읽고 학생 ZIP")
+        call("gate", ed(S + "실습/09회차/랩/09일차_실습1_승인절차작도/START.md"), 0, "도구 실습 START는 가이드로 가능")
+        for member in ("START.md", "입출력_계약.md", "입력/모델/graph.json", "결과/정한_것.csv", "입력/README.md"):
+            says(call("gate", ed(graph + "/" + member), 2, member), [LAB_G], [GD], "코딩 랩 시작본·자료")
         call("gate", ed(S + "실습/01회차/랩/x/images/n.png"), 0, "가이드 + 공통이면 사진 통과")
         call("gate", ed(S + "실습/03회차/랩/x/main.py"), 2, "랩 코드는 코딩랩 문서")
+        call("read", rd(LAB_G), 0, "코딩 랩")
+        call("gate", ed(graph + "/입력/모델/graph.json"), 0, "코딩랩 읽고 시작본의 모델 수정")
         call("read", rd("작업/2026-01-01_시험/스펙.md"), 0, "스펙")
         call("read", rd("작업/2026-01-01_정리됨/기록.md"), 0, "곧 지울 기록")
         out = call("compact", {"source": "compact"}, 0, "요약")

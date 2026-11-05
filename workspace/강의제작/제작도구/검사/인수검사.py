@@ -3,27 +3,36 @@
 명령: <py> workspace/강의제작/제작도구/검사/인수검사.py --틀 <일> [--대상 "통합반 3회차 덱"] > <작업 폴더>/판정/<이름>.json
       <py> workspace/강의제작/제작도구/검사/인수검사.py --완료 <판정.json …> · --자가시험
 일: 실라버스 · 덱 · 대본 · 영상 · 코딩랩 · 가이드. 판정 대상 = 그 일 문서 `## 반드시`의 규칙(D-n 등) + 공통.md 규칙(C-n).
-판정 파일: {"일": "덱", "대상": "…", "판정": {"D-1": {"상태": "통과|불통과|해당 없음|미확인", "근거": "파일:위치 — 까닭"}}}
+기준판은 틀이 자동으로 규칙별로 붙인다. 번호가 같아도 규칙 글이 달라지면 그 규칙을 알린다. 옛 틀은 현재 틀에서 같은 기준·자료로 확인한 근거만 이어 쓴다(hyd-task 0-5).
+통과 근거에는 위치와 관찰을 ` — `로 잇는다(파일·장, 화면 시각, 명령의 출력 위치 등을 쓴다).
+판정 파일: {"일": "덱", "대상": "…", "판정": {"D-1": {"기준판": "…", "상태": "통과|불통과|해당 없음|미확인", "근거": "파일:위치 — 까닭"}}}
 """
 import argparse
+import hashlib
 import json
 import shutil
 import sys
 import tempfile
 from pathlib import Path
 
-from 재편검사 import GUIDES, ROOT, WORKS, rule_ids
+from 재편검사 import GUIDES, ROOT, WORKS, rule_texts
 
 STATES = ("통과", "불통과", "해당 없음", "미확인")
+
+
+def rule_versions(guide_dir, work):
+    return {i: hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
+            for i, text in rule_texts(guide_dir, work).items()}
 
 
 def template(guide_dir, work, target=""):
     if work not in WORKS:
         raise ValueError(f"일 「{work}」 — {' · '.join(WORKS)} 중 하나")
-    ids = rule_ids(guide_dir, work)
-    if not any(i[0] != "C" for i in ids):
+    versions = rule_versions(guide_dir, work)
+    if not any(i[0] != "C" for i in versions):
         raise ValueError(f"{guide_dir / (work + '.md')}: `## 반드시`에 번호 규칙이 없음")
-    return {"일": work, "대상": target, "판정": {i: {"상태": "미확인", "근거": ""} for i in ids}}
+    rows = {i: {"기준판": version, "상태": "미확인", "근거": ""} for i, version in versions.items()}
+    return {"일": work, "대상": target, "판정": rows}
 
 
 def problems(guide_dir, path):
@@ -31,7 +40,7 @@ def problems(guide_dir, path):
     try:
         data = json.loads(Path(path).read_text(encoding="utf-8-sig"))
         work, rows = data["일"], data["판정"]
-        want = rule_ids(guide_dir, work) if work in WORKS else None
+        want = rule_versions(guide_dir, work) if work in WORKS else None
     except (OSError, ValueError, KeyError, TypeError) as e:
         return [f"{path}: 판정 파일을 읽지 못함 — {e}"]
     if want is None:
@@ -43,13 +52,22 @@ def problems(guide_dir, path):
     for i, row in rows.items():
         if i not in want:
             continue
+        if not isinstance(row, dict) or row.get("기준판") != want[i]:
+            out.append(f"{path}: {i} 기준판 다름 또는 없음 — 현재 규칙과 근거를 대조해 새 틀에 적는다")
         state = row.get("상태") if isinstance(row, dict) else None
         if state not in STATES:
             out.append(f"{path}: {i} 상태 「{state}」 — {' · '.join(STATES)}")
         elif state in ("불통과", "미확인"):
             out.append(f"{path}: {i} {state}")
-        if not (isinstance(row, dict) and str(row.get("근거", "")).strip()):
+        evidence = row.get("근거") if isinstance(row, dict) else None
+        if not isinstance(evidence, str) or not evidence.strip():
             out.append(f"{path}: {i} 근거 없음(통과는 파일:위치, 해당 없음은 까닭)")
+        elif state == "통과":
+            place, _, observation = evidence.partition(" — ")
+            if not place.strip() or not observation.strip():
+                out.append(f"{path}: {i} 통과 근거는 「위치 — 확인한 내용」으로 적는다")
+    if rows and all(isinstance(row, dict) and row.get("상태") == "해당 없음" for row in rows.values()):
+        out.append(f"{path}: 적용해 확인한 규칙이 없음")
     return out
 
 
@@ -89,12 +107,21 @@ def selftest():
         ("미확인", lambda d: d["판정"]["C-1"].update({"상태": "미확인"}), "C-1 미확인"),
         ("모르는 상태", lambda d: d["판정"]["C-1"].update({"상태": "대충"}), "상태 「대충」"),
         ("빈 근거", lambda d: d["판정"]["D-2"].update({"근거": " "}), "D-2 근거 없음"),
+        ("null 근거", lambda d: d["판정"]["D-2"].update({"근거": None}), "D-2 근거 없음"),
+        ("목록을 근거로 낸 경우", lambda d: d["판정"]["D-2"].update({"근거": []}), "D-2 근거 없음"),
+        ("위치 없는 통과 선언", lambda d: d["판정"]["D-1"].update({"근거": "확인했다"}), "D-1 통과 근거"),
+        ("다 해당 없음", lambda d: [r.update({"상태": "해당 없음", "근거": "범위 밖"}) for r in d["판정"].values()], "적용해 확인한 규칙이 없음"),
+        ("기준판 없는 옛 틀", lambda d: d["판정"]["D-2"].pop("기준판"), "D-2 기준판"),
         ("일 이름 오타", lambda d: d.update({"일": "덱스"}), "일 「덱스」"),
     ):
         got = judged(change)
         cases.append((f"완료: {name} → 실패", any(expect in x for x in got), got[:2]))
     (g / "덱.md").write_text((g / "덱.md").read_text(encoding="utf-8").replace("2. **D-2. 둘** — 판정: 본다\n", "2. **D-2. 둘** — 판정: 본다\n3. **D-3. 셋** — 판정: 본다\n"), encoding="utf-8")
     cases.append(("지침에 규칙이 늘면 옛 판정은 실패", any("D-3 판정 없음" in x for x in judged()), judged()[:2]))
+    deck = g / "덱.md"
+    deck.write_text(deck.read_text(encoding="utf-8").replace("D-2. 둘", "D-2. 바뀐 둘"), encoding="utf-8")
+    stale = [x for x in judged() if "기준판" in x]
+    cases.append(("번호가 같아도 글이 바뀐 규칙만 다시 확인", len(stale) == 1 and "D-2 " in stale[0], stale))
     shutil.rmtree(tmp)
     for name, ok, detail in cases:
         print(f"{'통과' if ok else '실패'}: {name}" + ("" if ok else f" — {detail}"))
