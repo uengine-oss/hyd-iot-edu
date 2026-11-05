@@ -142,8 +142,9 @@ return $v
 } @('--scope', 'machine')
 
 # 3. Node.js (+ supabase CLI: 없어도 시작.bat이 npx로 대신 받는다)
+#    장기 지원판(LTS) 줄을 깐다. OpenJS.NodeJS는 최신판(Current) 줄이다(2026-11-06 winget: Current 26.12.1 · LTS 26.13.0)
 Say "`n[3/4] Node.js"
-Ensure-Minimum 'Node.js' 'OpenJS.NodeJS' $V.NODE_MIN {
+Ensure-Minimum 'Node.js' 'OpenJS.NodeJS.LTS' $V.NODE_MIN {
 $v = Version-Of 'node' @('--version')
 if (-not $v) { $v = Installed-App 'Node.js*' }
 return $v
