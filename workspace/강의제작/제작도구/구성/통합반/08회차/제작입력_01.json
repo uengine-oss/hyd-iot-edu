@@ -2,15 +2,15 @@
  "편": "01",
  "PPTX": {
   "파일": "workspace/강의제작/산출물/통합반/이론/08회차/통합반_08일차.pptx",
-  "SHA256": "003b06a6761b680df21a2b58dd7fe4ceef57a23382c34cef7d3780526503fccf"
+  "SHA256": "b2f27c7517cbe4e41af57fbcdce344768c82a8b8d8ea8e17f45d74b8e514a1ee"
  },
  "온라인원고": {
   "파일": "workspace/강의제작/제작도구/온라인/decks/integrated/day08/통합반_08일차.md",
-  "SHA256": "506597a71357b766ff898e2abb24eba3ff8f3228d47b134ef8545c940a4ec35d"
+  "SHA256": "8e892a87fb5b84e5195fa12a08bfa6262feeea8bd43937ff1fac451f9bfabf48"
  },
  "대본": {
   "파일": "workspace/강의제작/산출물/통합반/이론/08회차/대본/01_이론_기대행동과반복검증.md",
-  "SHA256": "8dc756347b5eae0644071aede0382fdd710b20ff98412ba6f8d4565343d09b63"
+  "SHA256": "9643d9047c6854d44655c90772b65c314898a90e8d3d7a4c8ac34beec7b43eb6"
  },
  "강조": {
   "파일": "workspace/강의제작/제작도구/구성/통합반/08회차/강조_통합반_08회차_01_이론_기대행동과반복검증.json",
@@ -649,7 +649,7 @@
  "유료음성_실측": "미생성",
  "구운영상_실측": "미생성",
  "최종렌더": {
-  "PDF_SHA256": "2c4b7c38fbf8949709412dfea5dc79e2d21f4a1cf5c42044e74703999643ba44",
+  "PDF_SHA256": "9946149799b6b336571542e6d42dc51b95263ee5ae5523f84e2ce4bc52a0c715",
   "렌더러": "LibreOffice 26.8.1.1 (X86_64)",
   "판정": "단원 검토 당시 공식 렌더와 장별 RGB 샘플 대조",
   "샘플": "PyMuPDF 2배 행렬 1920×1080 RGB 8-bit, alpha=False",
