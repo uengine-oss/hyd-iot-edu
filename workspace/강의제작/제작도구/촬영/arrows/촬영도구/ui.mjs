@@ -22,6 +22,10 @@ export async function makeUI(ctx){
    window.__startGlide=(ax,ay,x,y,ms)=>{window.__glide?.cancel();const kf=[];for(let i=0;i<=20;i++){const t=i/20,u=t*t*(3-2*t);kf.push({transform:`translate(${ax+(x-ax)*u}px,${ay+(y-ay)*u}px)`,offset:t});}
     const a=e.animate(kf,{duration:ms,easing:'linear',fill:'forwards'});window.__glide=a;
     a.onfinish=()=>{e.style.transform=`translate(${x}px,${y}px)`;a.cancel();if(window.__glide===a)window.__glide=null;};};
+   // 다시 그리기: 창 크기 신호(resize)를 보내면 arrows가 그림 맞춤을 다시 해 화면이 한 번에 줄며 옮겨 간다(옛 08 10:32 · 10:40의 튐).
+   // 그래서 지금 보기 값(확대율 · 위치)을 그대로 다시 넣어 같은 화면으로 한 번 더 그리게 한다. 상태 저장소를 못 찾으면 멈춘다.
+   window.__redraw=()=>{let s=window.__arrowsStore;if(!s){const root=document.getElementById('root');const k=Object.keys(root||{}).find(x=>x.startsWith('__reactContainer'));const seen=new Set(),st=[root&&root[k]];while(st.length&&!s){const f=st.pop();if(!f||seen.has(f))continue;seen.add(f);if(f.memoizedProps?.store?.getState)s=f.memoizedProps.store;else st.push(f.child,f.sibling);}if(!s)throw Error('arrows store not found (ui.mjs __redraw)');window.__arrowsStore=s;}
+    const v=s.getState().viewTransformation;s.dispatch({type:'ADJUST_VIEWPORT',scale:v.scale,panX:v.offset.dx,panY:v.offset.dy});};
    // 캔버스 기록: 그린 원·글자의 화면 좌표와 시각. 원래 함수는 한 번만 보관하고 설치 때마다 새로 감싼다.
    const P=CanvasRenderingContext2D.prototype;P.__orig??={arc:P.arc,fillText:P.fillText};
    {const cv=document.querySelector('canvas');if(cv){cv.__arcs=[];cv.__texts=[];}}
@@ -50,7 +54,7 @@ export async function makeUI(ctx){
  }
  async function node1(caption){
   for(let i=0;i<10;i++){
-   const r=await q1(()=>raw.evaluate(cap=>new Promise(res=>{const c=document.querySelector('canvas');if(!(c.__arcs||[]).length)window.dispatchEvent(new Event('resize'));
+   const r=await q1(()=>raw.evaluate(cap=>new Promise(res=>{const c=document.querySelector('canvas');if(!(c.__arcs||[]).length)window.__redraw();
     requestAnimationFrame(()=>requestAnimationFrame(()=>{
      const A=(c.__arcs||[]).filter(a=>a.t>0),T=(c.__texts||[]).filter(t=>t.at>0),la=Math.max(0,...A.map(a=>a.t)),lt=Math.max(0,...T.map(t=>t.at));
      const arcs=A.filter(a=>a.t>=la-20&&a.r<160&&a.r>Math.max(8,0.75*Math.max(...A.filter(b=>b.t>=la-20&&b.r<160).map(b=>b.r)))),texts=T.filter(t=>t.at>=lt-20),want=cap.replace(/\s/g,'');
@@ -64,12 +68,12 @@ export async function makeUI(ctx){
     }));}),caption));
    if(!r.error)return r;
    if(i===9)throw Error('Node not found on canvas: '+r.error);
-   await q1(()=>raw.evaluate(()=>window.dispatchEvent(new Event('resize'))));await sleep(150);
+   await q1(()=>raw.evaluate(()=>window.__redraw()));await sleep(150);
   }
  }
  // 마지막 판의 원 목록(겹침 확인용).
  async function circles(){
-  for(let i=0;i<8;i++){const r=await circles0();if(r.list.length)return r;await q1(()=>raw.evaluate(()=>window.dispatchEvent(new Event('resize'))));await sleep(150);}
+  for(let i=0;i<8;i++){const r=await circles0();if(r.list.length)return r;await q1(()=>raw.evaluate(()=>window.__redraw()));await sleep(150);}
   throw Error('No circles on canvas');
  }
  async function circles0(){
@@ -230,7 +234,8 @@ export async function makeUI(ctx){
     if(busy.some(b=>Math.abs(Math.atan2(Math.sin(a-b),Math.cos(a-b)))<0.45))continue;
     if(nearSeg(s.x+r*1.09*Math.cos(a),s.y+r*1.09*Math.sin(a)))continue;
     if(texts.some(t=>Math.hypot(t.x-(s.x+r*1.09*Math.cos(a)),t.y-(s.y+r*1.09*Math.sin(a)))<22))continue;
-    if(x<box.l+r*0.7||x>box.r-r*0.7||y<box.t+r*0.7||y>box.b-r*0.7)continue;if(list.some(c=>Math.hypot(c.x-x,c.y-y)<c.r+r+40))continue;pick={a,x,y};break;}
+    // 새 원 전체(테두리 포함)가 그림 영역 안에 들어야 한다 — 끝에 걸치게 두면 원이 잘린 채 찍힌다(그림 맞춤으로 줄이면 화면이 튄다).
+    if(x<box.l+r*1.25||x>box.r-r*1.25||y<box.t+r*1.25||y>box.b-r*1.25)continue;if(list.some(c=>Math.hypot(c.x-x,c.y-y)<c.r+r+40))continue;pick={a,x,y};break;}
    if(!pick)throw Error('No free spot around '+source);
    const sx=s.x+r*1.09*Math.cos(pick.a),sy=s.y+r*1.09*Math.sin(pick.a);
    const n0=(await circles()).list.length;

@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[5]
 LAB = '01일차_실습4_관계그림'
 SHOTS = [('01-equipment', 162), ('02-symptom', 263), ('03-cause', 359),
          ('04-action', 506), ('05-fan', 630), ('06-air', 741),
-         ('07-bearing', 826), ('08-layout', 1018), ('09-export', 1187.53), ('10-import', 1235.31)]
+         ('07-bearing', 826), ('08-layout', 1018), ('09-export', 1167.7), ('10-import', 1213.86)]
 
 def table(headers, rows):
     return '<div class="table-wrap"><table><thead><tr>' + ''.join('<th>'+html.escape(x)+'</th>' for x in headers) + '</tr></thead><tbody>' + ''.join('<tr>'+''.join('<td>'+html.escape(x)+'</td>' for x in row)+'</tr>' for row in rows) + '</tbody></table></div>'
