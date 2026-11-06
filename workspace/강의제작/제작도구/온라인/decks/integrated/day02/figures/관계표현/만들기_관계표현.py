@@ -1,7 +1,7 @@
 """통합반 2회차 관계 표현 그림(SVG)을 만든다. 글자는 넣지 않는다(라벨은 덱 MD의 요소로 얹는다).
 
 사용: python 만들기_관계표현.py   → 이 폴더에 SVG를 쓴다
-원과 화살표는 카디널리티_선언대조.svg와 같은 꼴, 상속 그림은 ../만들기_삽화.py의 inherit()와 같은 꼴이다.
+원과 화살표는 카디널리티_선언대조.svg와 같은 꼴, 상속 그림의 빈 세모와 칸은 ../만들기_삽화.py의 inherit()와 같은 꼴이다.
 """
 from __future__ import annotations
 
@@ -114,20 +114,16 @@ extra = [f'<path d="M335,20 L335,490" fill="none" stroke="{LINE}" stroke-width="
 extra += check(935, 85) + check(935, 255) + cross(935, 425)
 write('승인공급사_모델.svg', drawing(nodes, [(1, 2, False), (1, 3, False), (1, 4, False)], extra=extra))
 
-# 상속과 포함 관계 · 인스턴스(SLIDE 20)
+# 상속과 관계의 구별(SLIDE 21) — 왼쪽은 상위 클래스 칸과 하위 클래스 칸, 오른쪽은 구성 요소에서 센서로 가는 관계 하나
 o = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" width="1200" height="520">']
 st = f'stroke="{NAVY}" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"'
-o.append(f'<path d="M 600,190 L 600,250 M 220,250 L 980,250" {st}/>')
-for x in (220, 600, 980):
-    o.append(f'<line x1="{x}" y1="250" x2="{x}" y2="318" {st}/>')
-o.append(f'<polygon points="600.0,162.0 582.0,192.0 618.0,192.0" fill="#FFFFFF" stroke="{NAVY}" stroke-width="4" stroke-linejoin="round"/>')
-o.append(f'<rect x="420" y="40" width="360" height="120" rx="14" ry="14" fill="{LIGHT}" stroke="{NAVY}" stroke-width="4"/>')
-for x, hot in ((220, False), (600, True), (980, False)):
-    o.append(f'<rect x="{x - 170}" y="320" width="340" height="130" rx="14" ry="14" fill="{PALE if hot else "#FFFFFF"}" stroke="{SKY if hot else NAVY}" stroke-width="4"/>')
-for x, y, r in ((62, 125, 50), (285, 125, 60), (925, 125, 60), (1140, 125, 56)):
-    o.append(f'<circle cx="{x}" cy="{y}" r="{r}" fill="{PALE}" stroke="{BLUE}" stroke-width="2"/>')
-o += arrow(112, 125, 225, 125)
-o.append(f'<path d="M1084,125 L1000,125" fill="none" stroke="{BLUE}" stroke-width="2.5"/>')
-o.append(f'<path d="M985,125 L1000,118 L1000,132 Z" fill="{BLUE}"/>')
+o.append(f'<line x1="360" y1="186" x2="360" y2="300" {st}/>')
+o.append(f'<polygon points="360.0,156.0 342.0,186.0 378.0,186.0" fill="#FFFFFF" stroke="{NAVY}" stroke-width="4" stroke-linejoin="round"/>')
+o.append(f'<rect x="150" y="14" width="420" height="140" rx="14" ry="14" fill="{LIGHT}" stroke="{NAVY}" stroke-width="4"/>')
+o.append(f'<rect x="150" y="302" width="420" height="140" rx="14" ry="14" fill="{PALE}" stroke="{SKY}" stroke-width="4"/>')
+o.append(f'<path d="M740,30 L740,490" fill="none" stroke="{LINE}" stroke-width="3"/>')
+for x in (860, 1080):
+    o.append(f'<circle cx="{x}" cy="300" r="62" fill="{PALE}" stroke="{BLUE}" stroke-width="2"/>')
+o += arrow(922, 300, 1018, 300)
 o.append('</svg>')
-write('상속과_포함.svg', ''.join(o))
+write('상속과_관계.svg', ''.join(o))
