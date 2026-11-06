@@ -173,11 +173,11 @@
       "course": "통합반",
       "session": "온라인 02회차",
       "title": "현장 정보를 체계화하는 온톨로지 직접 설계하기",
-      "version": "2026-11-05-lab-v17",
+      "version": "2026-11-06-lab-v18",
       "folder": "02회차/랩/02일차_실습3_온톨로지설계",
-      "sha256": "1c87c57d4beb17b8bc6a14c19d76349da001797d738dbbe4fbd47175bb6f5f0e",
+      "sha256": "5d4fef1e7819a83016f68cd723717d9bae24d13ffabc0e892569c02bc0ea101e",
       "guide_file": {
-        "sha256": "4ea063c6d6727f6ca7ccfe72ad8989e6e1dc832406a09550c341e3c2542d350a",
+        "sha256": "b78022ffa7eb77904f85d7f04543a44ef116564849e152c2e6f2cfa5c3611786",
         "url": "http://127.0.0.1:8765/%EC%82%B0%EC%B6%9C%EB%AC%BC/%ED%86%B5%ED%95%A9%EB%B0%98/%EC%8B%A4%EC%8A%B5/02%ED%9A%8C%EC%B0%A8/%EB%9E%A9/02%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B53_%EC%98%A8%ED%86%A8%EB%A1%9C%EC%A7%80%EC%84%A4%EA%B3%84_guide.html"
       },
       "url": "http://127.0.0.1:8765/%EC%82%B0%EC%B6%9C%EB%AC%BC/%ED%86%B5%ED%95%A9%EB%B0%98/%EC%8B%A4%EC%8A%B5/02%ED%9A%8C%EC%B0%A8/%EB%9E%A9/02%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B53_%EC%98%A8%ED%86%A8%EB%A1%9C%EC%A7%80%EC%84%A4%EA%B3%84.zip"
@@ -187,11 +187,11 @@
       "course": "통합반",
       "session": "온라인 02회차",
       "title": "설계한 온톨로지를 그래프 DB에 구현하고 검증하기",
-      "version": "2026-11-05-lab-v16",
+      "version": "2026-11-06-lab-v17-terms",
       "folder": "02회차/랩/02일차_실습4_그래프구현과검증",
-      "sha256": "7952d2ba9f0beb6e57c20f96d259634ba17386e18e82d1bd2c553305319e4dcb",
+      "sha256": "2bde8ae94d2bcc4cdfff22cee14645c59889a5ec522e99b33f57ebe5bd01fdad",
       "guide_file": {
-        "sha256": "f9f54cc3c6dfdea97fe31ecd9a54b1e1b1370566c50b623e0e21a024ff8dd5b9",
+        "sha256": "e01d0063e24c9f3eedba3726ae745f0b8728a0c521b333775870ade23142be7c",
         "url": "http://127.0.0.1:8765/%EC%82%B0%EC%B6%9C%EB%AC%BC/%ED%86%B5%ED%95%A9%EB%B0%98/%EC%8B%A4%EC%8A%B5/02%ED%9A%8C%EC%B0%A8/%EB%9E%A9/02%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B54_%EA%B7%B8%EB%9E%98%ED%94%84%EA%B5%AC%ED%98%84%EA%B3%BC%EA%B2%80%EC%A6%9D_guide.html"
       },
       "url": "http://127.0.0.1:8765/%EC%82%B0%EC%B6%9C%EB%AC%BC/%ED%86%B5%ED%95%A9%EB%B0%98/%EC%8B%A4%EC%8A%B5/02%ED%9A%8C%EC%B0%A8/%EB%9E%A9/02%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B54_%EA%B7%B8%EB%9E%98%ED%94%84%EA%B5%AC%ED%98%84%EA%B3%BC%EA%B2%80%EC%A6%9D.zip"

@@ -9,11 +9,12 @@
 - 화면: 바뀌지 않은 장은 기존 영상을 장 경계(장 조각 첫 프레임, IDR)에서 무손실로 잘라 쓴다. 기존 영상은 다음 장 그림이 장 경계 약 0.1초 앞에서 뜨므로
   (강조표시.py가 강조 전 영상을 무손실로 자를 때 다음 장 첫 프레임이 딸려 온다), 새 장은 그 넘김 프레임부터 덮는다. 넘김 프레임이 키프레임이 아니면
   앞 장의 마지막 키프레임부터 넘김 프레임 앞까지만 다시 인코딩한다.
-- 소리: 장마다 PCM으로 풀어 장 경계(30fps 프레임 하나 = 1470 표본)에 맞춰 잇고 AAC 160k로 한 번 인코딩한다. 기존 영상의 소리는 장 경계마다 타임스탬프 틈이 있어 통째로 풀면 밀린다.
+- 소리: 기존 소리를 PCM으로 풀어 구획 소리의 시작(구획 첫 자막의 시각 — 장 경계 프레임과 ±20ms 다르다)에서 자르고, 바뀐 구획 자리에 새 소리를 넣어
+  AAC 160k로 한 번 인코딩한다. 뒤 구획은 화면과 같은 프레임 수(1프레임 = 1470 표본)만큼 민다.
 - 출력(기존 파일은 덮지 않는다): `<출력>/강조/<영상 이름>.mp4`, `<출력>/_작업/영상_자막_기록/<영상 이름>.srt · _시간표.md`(뒤 장 시각을 길이 차이만큼 민다) — 검사 뒤 `입고.py <출력>`으로 바꿔 끼운다.
   `<출력>/이음새/`에 새 이음새마다 앞뒤 0.2초 프레임을 저장한다.
 - 검사(V-5 · V-12): 이음새 앞뒤 프레임 차이와 이음새 앞 0.2초의 소리 세기, 소리와 화면 길이, `자막대조.py`, `장넘김_싱크.py`, 바뀐 장 구간의 `말머리_잘림.py`.
-- --audio-ledger: 바뀐 장의 음성을 산 기록(음성사기.py). 그 장의 시간표 크레딧 칸을 채운다. 기록에 없는 장(캐시 재사용)은 0이다.
+- --audio-ledger: 바뀐 장의 음성을 산 기록(음성사기.py). 그 장의 시간표 크레딧 칸을 채운다. 기록에 없는 장(화면만 바뀐 장)은 기존 칸을 둔다.
 """
 import argparse, bisect, hashlib, json, re, subprocess, sys, tempfile, time
 from pathlib import Path
@@ -57,9 +58,14 @@ def pcm(src, n, ss=None):
 
 def gray(video, f, count):
     """프레임 f부터 count장을 작은 회색 그림(160×90 바이트열)으로."""
-    raw = ff("-ss", f"{max(0, f - 0.5) / FPS:.5f}", "-i", video, "-frames:v", count, "-vf", "scale=160:90", "-f", "rawvideo", "-pix_fmt", "gray", "-", out=True)
+    raw = ff("-ss", at(f), "-i", video, "-frames:v", count, "-vf", "scale=160:90", "-f", "rawvideo", "-pix_fmt", "gray", "-", out=True)
     n = 160 * 90
     return [raw[i * n:(i + 1) * n] for i in range(len(raw) // n)]
+
+
+def at(f):
+    """프레임 f를 첫 프레임으로 푸는 -ss 값. ffmpeg는 그 시각을 덮는 프레임부터 내므로 프레임 시작보다 조금 뒤를 준다(앞을 주면 한 프레임 앞부터 나온다)."""
+    return f"{(f + 0.25) / FPS:.5f}"
 
 
 def diff(x, y): return sum(abs(p - q) for p, q in zip(x, y)) / len(x)
@@ -137,11 +143,24 @@ def main():
         rows, spent, speech, scale, fixed_wait = tool.prepare(S, name, study_waits)
         if spent: stop("음성을 샀다 — 이 도구는 사지 않는다")   # 위에서 캐시를 확인했으므로 오지 않는다
         imgs = tool.slide_images(pptx)
+        # 기존 자막을 장 구획으로 나눈다. 구획의 소리는 장 경계 프레임이 아니라 강조 전 영상의 시계(장 조각 길이의 합)에서 시작하고,
+        # 음성의 첫 글자는 늘 0초에 찍히므로(음성_저장 1432개 실측) 구획 첫 자막의 시작이 그 구획 소리의 시작이다.
+        old_cues = []
+        for b in re.split(r"\n\n+", srt_old.read_text(encoding="utf-8").strip()):
+            l = b.split("\n"); s0, e0 = l[1].split(" --> ")
+            old_cues.append((bisect.bisect_right([f / FPS - 0.1 for f in F[:-1]], emph.seconds(s0)) - 1, s0, e0, "\n".join(l[2:])))
+        clock = [0.0] * n
+        for k in range(1, n):
+            mine = [emph.seconds(c[1]) for c in old_cues if c[0] == k]
+            if not mine: stop(f"{firsts[k]}장의 기존 자막을 찾지 못했다")
+            al = rows[k]["al"]; lead = next(s for c, s in zip(al["characters"], al["character_start_times_seconds"]) if c.strip())
+            clock[k] = min(mine) + 0.0005 - lead   # 자막 시각은 ms 아래를 버린 값이다
         Gf, segs, newsubs, made_a = [0], {}, {}, 0
         for i in range(n):
             if swap[i]:
-                seg, new, subs = tool.encode_row(rows[i], imgs, Gf[i] / FPS, scale, name)
-                made_a += new; segs[i] = seg; newsubs[i] = subs; rows[i]["start"] = Gf[i] / FPS
+                rows[i]["start"] = clock[i] + (Gf[i] - F[i]) / FPS
+                seg, new, subs = tool.encode_row(rows[i], imgs, rows[i]["start"], scale, name)
+                made_a += new; segs[i] = seg; newsubs[i] = subs
                 Gf.append(Gf[i] + round(tool.dur(seg) * FPS))
             else:
                 Gf.append(Gf[i] + F[i + 1] - F[i])
@@ -149,13 +168,10 @@ def main():
 
         # 2) 자막: 바뀌지 않은 장은 그대로 두고 뒤로 민다, 바뀐 장은 새로 만든 문장
         cues = []
-        for b in re.split(r"\n\n+", srt_old.read_text(encoding="utf-8").strip()):
-            l = b.split("\n")
-            s0, e0 = l[1].split(" --> ")
-            i = bisect.bisect_right([f / FPS - 0.05 for f in F[:-1]], emph.seconds(s0)) - 1
+        for i, s0, e0, t in old_cues:
             if swap[i]: continue
             if shift[i]: s0, e0 = tool.ts(emph.seconds(s0) + shift[i]), tool.ts(emph.seconds(e0) + shift[i])
-            cues.append((i, s0, e0, "\n".join(l[2:])))
+            cues.append((i, s0, e0, t))
         for i, subs in newsubs.items():
             cues += [(i, tool.ts(s), tool.ts(e), t) for s, e, t in subs]
         cues.sort(key=lambda c: (c[0], emph.seconds(c[1])))
@@ -174,7 +190,7 @@ def main():
             if not swap[i]: continue
             r = rows[i]; item = led["completed"].get(r["mp3"].stem)
             if item and item["sha"] != hashlib.sha256(r["mp3"].read_bytes()).hexdigest(): stop("음성 기록과 현재 MP3 해시가 서로 다르다")
-            if credit: credit[r["first"]] = int(item["credits"]) if item else 0
+            if credit and item: credit[r["first"]] = int(item["credits"])   # 기록에 없으면 음성이 그대로인 장이라 기존 칸을 둔다
             waits[r["first"]] = [(r["start"] + s, w) for s, w in r["study_intervals"]]
         def rng(r): return f"{r['first']}{'~' + str(r['last']) if r['last'] != r['first'] else ''}"
         table = []
@@ -214,8 +230,8 @@ def main():
                 src = tmp / f"src{i:03d}.mp4"; ff("-i", segs[i], "-an", "-c", "copy", src)
                 piece, new = emph.overlay("ffmpeg", src, Gf[i] - lead, Gf[i + 1], marks, font, tmp, i, lead)
                 made_e += new; plan.append(piece)
-                if i: seams.append((Gf[i] - lead, Gf[i], rows[i]["first"], "앞"))
-                if i + 1 < n and not swap[i + 1]: seams.append((Gf[i + 1], Gf[i + 1], rows[i]["first"], "뒤"))
+                if i: seams.append((Gf[i] - lead, i, rows[i]["first"], "앞"))
+                if i + 1 < n and not swap[i + 1]: seams.append((Gf[i + 1], i + 1, rows[i]["first"], "뒤"))
                 i += 1; continue
             j = i
             while j + 1 < n and not swap[j + 1]: j += 1
@@ -237,18 +253,27 @@ def main():
             if kind == "copy":
                 ff(*(["-ss", f"{fa / FPS + 0.001:.5f}"] if fa else []), "-i", video, "-frames:v", fb - fa, "-an", "-c", "copy", part)
             else:
-                ff("-ss", f"{(fa - 0.5) / FPS:.5f}", "-i", video, "-frames:v", fb - fa, *emph.ENC, part)
+                ff("-ss", at(fa), "-i", video, "-frames:v", fb - fa, *emph.ENC, part)
             if packets(part) != fb - fa: stop(f"기존 영상 {fa}~{fb} 프레임을 자른 조각의 프레임 수가 {packets(part)}다")
             files.append(part)
         lst = tmp / "parts.txt"; lst.write_text("".join(f"file '{p.as_posix()}'\n" for p in files), encoding="utf-8")
         vid = tmp / "video.mp4"; ff("-f", "concat", "-safe", "0", "-i", lst, "-c", "copy", vid)
         if packets(vid) != Gf[-1]: stop(f"이은 화면이 {packets(vid)}프레임이다(기대 {Gf[-1]})")
 
-        # 6) 소리: 장마다 풀어 장 경계에 맞춰 잇고 한 번 인코딩
+        # 6) 소리: 기존 소리를 타임스탬프 틈을 무음으로 채워 풀고(그냥 풀면 장 경계의 틈만큼 앞당겨진다), 구획 소리의 시작 표본에서 잘라
+        #    바뀐 구획 자리에 새 조각의 소리를 넣는다. 뒤 구획은 화면과 같은 프레임 수만큼 민다. 그다음 한 번 인코딩한다.
+        old = tmp / "old.raw"
+        ff("-i", video, "-vn", "-af", "aresample=async=1:min_hard_comp=0.0005:first_pts=0", "-ac", 1, "-ar", RATE, "-f", "s16le", old)
+        A = [round(c * RATE) for c in clock] + [old.stat().st_size // 2]
+        D = [(Gf[k] - F[k]) * SPF for k in range(n + 1)]
         raw = tmp / "audio.raw"
-        with open(raw, "wb") as w:
+        with open(raw, "wb") as w, open(old, "rb") as r:
             for i in range(n):
-                w.write(pcm(segs[i], (Gf[i + 1] - Gf[i]) * SPF) if swap[i] else pcm(video, (F[i + 1] - F[i]) * SPF, F[i] / FPS))
+                if swap[i]:
+                    w.write(pcm(segs[i], A[i + 1] + D[i + 1] - A[i] - D[i]))
+                else:
+                    r.seek(2 * A[i]); w.write(r.read(2 * (A[i + 1] - A[i])))
+            w.write(b"\0" * 2 * max(0, Gf[-1] * SPF - A[n] - D[n]))   # 끝을 화면 길이까지 무음으로 채운다(기존 영상은 소리가 수십 ms 짧다)
         aud = tmp / "audio.m4a"; ff("-f", "s16le", "-ar", RATE, "-ac", 1, "-i", raw, "-c:a", "aac", "-b:a", "160k", aud)
         ff("-i", vid, "-i", aud, "-map", "0:v", "-map", "1:a", "-c", "copy", result)
 
@@ -260,10 +285,10 @@ def main():
             fr = gray(result, s - 6, 13)
             dpre, dcut, dpost = diff(fr[0], fr[5]), diff(fr[5], fr[6]), diff(fr[6], fr[12])
             for off in (-6, -1, 0, 6):
-                ff("-ss", f"{(s + off - 0.5) / FPS:.5f}", "-i", result, "-frames:v", 1, seam_dir / f"{first}장_{where}_{off:+d}.png")
+                ff("-ss", at(s + off), "-i", result, "-frames:v", 1, seam_dir / f"{first}장_{where}_{off:+d}.png")
             msg = f"  {first}장 {where} {s / FPS:8.3f}초: 화면 {dpre:.2f} | {dcut:.2f} | {dpost:.2f}"
-            if sa is not None:
-                x = pcm(result, int(0.4 * RATE), sa / FPS - 0.2)
+            if sa is not None:   # 소리 이음새는 그 구획 소리의 시작 표본
+                x = pcm(result, int(0.4 * RATE), (A[sa] + D[sa]) / RATE - 0.2)
                 v = [int.from_bytes(x[q:q + 2], "little", signed=True) for q in range(0, len(x), 2)]
                 peak, jump = max(abs(t) for t in v[:len(v) // 2]), abs(v[len(v) // 2] - v[len(v) // 2 - 1])
                 msg += f" · 소리 {peak} · {jump}"
@@ -279,7 +304,7 @@ def main():
             if swap[i] and (i == 0 or not swap[i - 1]):
                 j = i
                 while j + 1 < n and swap[j + 1]: j += 1
-                wav = tmp / f"region{i}.wav"; ff("-ss", f"{max(0, Gf[i] / FPS - 0.3):.3f}", "-i", result, "-t", f"{(Gf[j + 1] - Gf[i]) / FPS + 0.3:.3f}", "-vn", wav)
+                wav = tmp / f"region{i}.wav"; ff("-ss", f"{max(0, (A[i] + D[i]) / RATE - 0.3):.3f}", "-i", result, "-t", f"{(A[j + 1] + D[j + 1] - A[i] - D[i]) / RATE + 0.3:.3f}", "-vn", wav)
                 chk.append(subprocess.run([sys.executable, str(HERE / "검사" / "말머리_잘림.py"), str(wav)], capture_output=True, text=True))
         for c in chk:
             print(c.stdout.strip()[-600:] + c.stderr.strip()[-300:])
