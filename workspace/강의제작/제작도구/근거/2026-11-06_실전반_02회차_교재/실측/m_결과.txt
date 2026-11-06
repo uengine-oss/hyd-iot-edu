@@ -1,0 +1,4 @@
+rows, assets, comps, sensors
+15, 3, 3, 5
+rows, assets, parts
+12, 3, 4
