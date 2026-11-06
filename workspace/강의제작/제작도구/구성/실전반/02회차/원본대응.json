@@ -447,6 +447,193 @@
    "origin": "응용 장",
    "source": [],
    "근거": "실전반 실습3 자료/설비_대장.csv HYD-04(HPP-45B 수냉식) · 예비품_목록.csv P-CLR-PLT, schema.json Asset(모델 속성 없음) · Component 설명, instances.cypher 설비 UNWIND"
+  },
+  {
+   "destination": 32,
+   "title": "그래프 DB 저장 구조와 Cypher 쿼리",
+   "origin": "합친 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 44
+    },
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 60
+    }
+   ]
+  },
+  {
+   "destination": 33,
+   "title": "테이블의 조인과 그래프의 노드 · 레이블 · 관계",
+   "origin": "합친 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 45
+    },
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 46
+    }
+   ]
+  },
+  {
+   "destination": 34,
+   "title": "Cypher 쿼리와 실행 화면의 역할",
+   "origin": "같은 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 48
+    }
+   ]
+  },
+  {
+   "destination": 35,
+   "title": "노드 · 관계 · 변수 · 속성 조건의 표기",
+   "origin": "같은 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 49
+    }
+   ]
+  },
+  {
+   "destination": 36,
+   "title": "MATCH · RETURN: 결과 행과 돌려받는 항목",
+   "origin": "합친 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 50
+    },
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 51
+    }
+   ]
+  },
+  {
+   "destination": 37,
+   "title": "행의 수와 대상의 수: DISTINCT · COUNT · 묶는 기준",
+   "origin": "합친 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 52
+    },
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 53
+    },
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 57
+    },
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 58
+    }
+   ]
+  },
+  {
+   "destination": 38,
+   "title": "여러 관계를 잇는 경로와 WHERE · AND · OR",
+   "origin": "합친 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 54
+    },
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 55
+    },
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 56
+    }
+   ]
+  },
+  {
+   "destination": 39,
+   "title": "Cypher에서 저장된 방향과 따라가는 방향",
+   "origin": "같은 장(노트 [다음]만)",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 59
+    }
+   ]
+  },
+  {
+   "destination": 40,
+   "title": "적재 쿼리: CREATE · MERGE · SET과 관계 잇기",
+   "origin": "합친 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 61
+    },
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 62
+    },
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 63
+    },
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 64
+    }
+   ]
+  },
+  {
+   "destination": 41,
+   "title": "DB 제약과 정의 · 적재 · 조회 · 검사",
+   "origin": "합친 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 47
+    },
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 65
+    }
+   ]
+  },
+  {
+   "destination": 42,
+   "title": "응용: 유온을 낮출 변수를 쿼리로 찾을 때",
+   "origin": "응용 장",
+   "source": [],
+   "근거": "instances.cypher INFLUENCES → sv:ts1(sign -1: fan-speed · ce) · actr:fan-drive MANIPULATES sv:fan-speed, 실측/u5_결과.txt"
   }
  ],
  "dropped": [
