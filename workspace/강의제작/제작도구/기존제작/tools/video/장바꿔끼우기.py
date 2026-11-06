@@ -49,9 +49,9 @@ def packets(p):
     return int(probe(p, "-select_streams", "v:0", "-count_packets", "-show_entries", "stream=nb_read_packets", "-of", "csv=p=0").strip())
 
 
-def pcm(src, n, ss=None):
+def pcm(src, n, ss=None, opts=()):
     """src의 소리를 단채널 16비트 PCM으로 풀어 표본 n개에 맞춘다(모자라면 무음으로 채운다 — 장 끝은 장 넘김 쉼이라 무음이다)."""
-    raw = ff(*(["-ss", f"{ss:.6f}"] if ss else []), "-i", src, *(["-t", f"{n / RATE:.6f}"] if ss is not None else []),
+    raw = ff(*opts, *(["-ss", f"{ss:.6f}"] if ss else []), "-i", src, *(["-t", f"{n / RATE:.6f}"] if ss is not None else []),
              "-vn", "-ac", 1, "-ar", RATE, "-f", "s16le", "-", out=True)
     return raw[:2 * n] + b"\0" * max(0, 2 * n - len(raw))
 
@@ -270,7 +270,8 @@ def main():
         with open(raw, "wb") as w, open(old, "rb") as r:
             for i in range(n):
                 if swap[i]:
-                    w.write(pcm(segs[i], A[i + 1] + D[i + 1] - A[i] - D[i]))
+                    # 강의영상.py가 장 조각을 이으면 조각마다 AAC 앞머리(1024표본)가 잘리지 않고 남는다. 같은 자리에 오도록 새 조각도 그대로 푼다
+                    w.write(pcm(segs[i], A[i + 1] + D[i + 1] - A[i] - D[i], opts=("-ignore_editlist", 1)))
                 else:
                     r.seek(2 * A[i]); w.write(r.read(2 * (A[i + 1] - A[i])))
             w.write(b"\0" * 2 * max(0, Gf[-1] * SPF - A[n] - D[n]))   # 끝을 화면 길이까지 무음으로 채운다(기존 영상은 소리가 수십 ms 짧다)
