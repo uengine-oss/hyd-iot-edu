@@ -68,10 +68,11 @@ def write(name, text):
     (HERE / name).write_text(text, encoding='utf8')
 
 
-# 선언과 어긋난 연결 · 공통 구성(SLIDE 16)
-nodes16 = [(140, 250, 75), (420, 140, 80), (420, 360, 80), (740, 110, 60), (740, 250, 60), (740, 390, 60), (1030, 250, 90)]
-edges16 = [(0, 1, False), (0, 2, True), (3, 6, False), (4, 6, False), (5, 6, False)]
-write('카디널리티_선언대조.svg', drawing(nodes16, edges16, [(20, 10, 550, 480, PANEL), (630, 10, 550, 480, PALE)]))
+# 조작 관계에 더한 연결과 양쪽에서 센 상대 수(SLIDE 16) — 오른쪽 칸의 두 줄 앞에 위반 표시
+nodes16 = [(150, 180, 82), (150, 390, 82), (520, 180, 82), (520, 390, 82)]
+edges16 = [(0, 2, False), (1, 3, False), (0, 3, True)]
+extra16 = [f'<path d="M700,40 L700,470" fill="none" stroke="{LINE}" stroke-width="2.5"/>'] + cross(730, 175) + cross(730, 365)
+write('카디널리티_선언대조.svg', drawing(nodes16, edges16, [(20, 10, 1160, 480, PANEL)], extra=extra16))
 
 # 공통 구성 노드와 설비별 노드(SLIDE 17)
 assets_l = [(130, 125, 50), (130, 245, 50), (130, 365, 50)]
