@@ -264,6 +264,52 @@ def sha(path):
     return h.hexdigest()
 
 
+# 키프레임 간격은 강조 전 영상과 같은 25초다(10fps × x264 기본 250) — 30fps 기본 간격(8초)이면 영상 부분이 두 배가 넘어 54분 편이 100 MiB를 넘었다
+ENC = ["-an", "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-tune", "stillimage", "-g", str(25 * FPS)]
+
+
+def font_sig(marks): return sha(FONT) if any(m["모양"] == "글씨" for m in marks) else ""
+
+
+def overlay(ffmpeg, src, f0, f1, marks, font, tmp, k, lead=0):
+    """강조 전 장 조각 하나(src, 소리 없음)에 표시를 얹은 조각을 보관함에서 찾거나 만든다. f0 · f1은 영상 전체의 30fps 프레임 번호(f0부터 f1 앞까지)다.
+    lead: 조각 앞에 첫 프레임을 그만큼 되풀이한다(장바꿔끼우기.py가 앞 장 끝의 넘김 프레임을 새 장으로 덮을 때). 돌려준다: (조각, 새로 만들었으면 1)."""
+    n = f1 - f0
+    runs, last = [], None
+    for f in range(f0, f1):
+        st = state_at(marks, f / FPS)
+        if runs and st == last: runs[-1][1] += 1
+        else: runs.append([st, 1]); last = st
+    sig = [[c, [[marks[i]["모양"], marks[i].get("중심"), marks[i].get("상자"), marks[i].get("시작"), marks[i].get("끝"), marks[i].get("반지름"), marks[i].get("글"), marks[i].get("크기"), marks[i]["seed"], e, al]
+                for i, e, al in st]] for st, c in runs]
+    key = hashlib.sha1(json.dumps([VERSION, sha(src), n, ENC, FPS, font, sig] + ([lead] if lead else []), ensure_ascii=False).encode()).hexdigest()[:20]
+    piece = PIECES / f"{key}.mp4"
+    if piece.exists(): return piece, 0
+    blank = tmp / "blank.png"
+    if not blank.exists(): Image.new("RGBA", (W, H), (0, 0, 0, 0)).save(blank)
+    base = f"fps={FPS}," + (f"tpad=start={lead}:start_mode=clone:" if lead else "tpad=") + "stop=-1:stop_mode=clone"
+    if any(st for st, _ in runs):
+        body = ""
+        for j, (st, c) in enumerate(runs):
+            png = blank
+            if st:
+                img = Image.new("RGBA", (W * SS, H * SS), (0, 0, 0, 0))
+                for i, e, al in st: draw_mark(img, marks[i], e, al)
+                png = tmp / f"o{k:03d}_{j:05d}.png"; img.resize((W, H), Image.LANCZOS).save(png)
+            body += f"file '{png.as_posix()}'\nduration {c / FPS:.5f}\n"
+            lastpng = png
+        lst = tmp / f"list{k:03d}.txt"; lst.write_text(body + f"file '{lastpng.as_posix()}'\n", encoding="utf-8")
+        cmd = [ffmpeg, "-v", "error", "-y", "-i", str(src), "-f", "concat", "-safe", "0", "-i", str(lst), "-filter_complex",
+               f"[0:v]{base}[b];[1:v]fps={FPS},format=rgba[o];[b][o]overlay=eof_action=pass,format=yuv420p[v]", "-map", "[v]"]
+    else:
+        cmd = [ffmpeg, "-v", "error", "-y", "-i", str(src), "-vf", f"{base},format=yuv420p"]
+    part = tmp / f"p{k:03d}.mp4"
+    PIECES.mkdir(parents=True, exist_ok=True)
+    subprocess.run([*cmd, "-frames:v", str(n), *ENC, str(part)], check=True)
+    shutil.move(str(part), piece)
+    return piece, 1
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("video"); ap.add_argument("config"); ap.add_argument("out")
@@ -289,49 +335,16 @@ def main():
         parts = [x for x in parts if x[2] > a.span[0] and x[1] < a.span[1]]
         if not parts: stop("--구간이 영상 밖이다")
     t0, t1 = parts[0][1], parts[-1][2]
-    font = sha(FONT) if any(m["모양"] == "글씨" for m in marks) else ""
-    # 키프레임 간격은 강조 전 영상과 같은 25초다(10fps × x264 기본 250) — 30fps 기본 간격(8초)이면 영상 부분이 두 배가 넘어 54분 편이 100 MiB를 넘었다
-    enc = ["-an", "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-tune", "stillimage", "-g", str(25 * FPS)]
-    PIECES.mkdir(parents=True, exist_ok=True)
+    font = font_sig(marks)
     made, files = 0, []
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
-        blank = tmp / "blank.png"; Image.new("RGBA", (W, H), (0, 0, 0, 0)).save(blank)
         for k, (first, b0, b1) in enumerate(parts):
-            f0, f1 = round(b0 * FPS), round(b1 * FPS); n = f1 - f0
             src = tmp / f"src{k:03d}.mp4"   # 그 장의 강조 전 영상(키프레임에서 무손실로 자름)
             subprocess.run([a.ffmpeg, "-v", "error", "-y", "-ss", f"{b0 + 0.001:.5f}", "-i", str(video), "-t", f"{b1 - b0 - 0.002:.5f}",
                             "-an", "-c", "copy", str(src)], check=True)
-            runs, last = [], None
-            for f in range(f0, f1):
-                st = state_at(marks, f / FPS)
-                if runs and st == last: runs[-1][1] += 1
-                else: runs.append([st, 1]); last = st
-            sig = [[c, [[marks[i]["모양"], marks[i].get("중심"), marks[i].get("상자"), marks[i].get("시작"), marks[i].get("끝"), marks[i].get("반지름"), marks[i].get("글"), marks[i].get("크기"), marks[i]["seed"], e, al]
-                        for i, e, al in st]] for st, c in runs]
-            key = hashlib.sha1(json.dumps([VERSION, sha(src), n, enc, FPS, font, sig], ensure_ascii=False).encode()).hexdigest()[:20]
-            piece = PIECES / f"{key}.mp4"
-            if not piece.exists():
-                base = f"fps={FPS},tpad=stop=-1:stop_mode=clone"
-                if any(st for st, _ in runs):
-                    body = ""
-                    for j, (st, c) in enumerate(runs):
-                        png = blank
-                        if st:
-                            img = Image.new("RGBA", (W * SS, H * SS), (0, 0, 0, 0))
-                            for i, e, al in st: draw_mark(img, marks[i], e, al)
-                            png = tmp / f"o{k:03d}_{j:05d}.png"; img.resize((W, H), Image.LANCZOS).save(png)
-                        body += f"file '{png.as_posix()}'\nduration {c / FPS:.5f}\n"
-                        lastpng = png
-                    lst = tmp / f"list{k:03d}.txt"; lst.write_text(body + f"file '{lastpng.as_posix()}'\n", encoding="utf-8")
-                    cmd = [a.ffmpeg, "-v", "error", "-y", "-i", str(src), "-f", "concat", "-safe", "0", "-i", str(lst), "-filter_complex",
-                           f"[0:v]{base}[b];[1:v]fps={FPS},format=rgba[o];[b][o]overlay=eof_action=pass,format=yuv420p[v]", "-map", "[v]"]
-                else:
-                    cmd = [a.ffmpeg, "-v", "error", "-y", "-i", str(src), "-vf", f"{base},format=yuv420p"]
-                part = tmp / f"p{k:03d}.mp4"
-                subprocess.run([*cmd, "-frames:v", str(n), *enc, str(part)], check=True)
-                shutil.move(str(part), piece); made += 1
-            files.append(piece)
+            piece, new = overlay(a.ffmpeg, src, round(b0 * FPS), round(b1 * FPS), marks, font, tmp, k)
+            made += new; files.append(piece)
         joined = tmp / "joined.mp4"; lst = tmp / "parts.txt"
         lst.write_text("".join(f"file '{p.as_posix()}'\n" for p in files), encoding="utf-8")
         subprocess.run([a.ffmpeg, "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(lst), "-c", "copy", str(joined)], check=True)
