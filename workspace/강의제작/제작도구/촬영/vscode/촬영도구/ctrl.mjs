@@ -16,10 +16,36 @@ function plan(c){
  return{pointFrac:k.a/total,commitFrac:k.b/total,sentence:k.x};
 }
 
+// 리허설(run.sh dry): 녹화 · 프레임 저장 · 음성 대기 없이 구간 모듈의 조작을 녹화와 같은 화면 크기로 실제로 해 본다.
+// 구간 모듈은 ctx.report에 조작마다 검사 결과(fail 포함)를 남긴다(segs/map-common.mjs). 결과 = <work>/<name>/dry.json.
+// 첫 실패 조작에서 멈추는 오류(대상 없음 · 화면 밖 · 화면 크기 다름)와 기준을 넘은 값(fail)을 모두 실패로 돌려준다.
+async function dryRun(opts,audio,out){
+ await fs.mkdir(out,{recursive:true});
+ const task=await taskSpace(opts.space||CFG.space);const p=task.page('p1');const VP=opts.viewport||CFG.viewport;
+ await p.cdp('Emulation.setDeviceMetricsOverride',{width:VP.width,height:VP.height,deviceScaleFactor:VP.dsf||1,mobile:false});
+ let queue=Promise.resolve();const serial=fn=>{const r=queue.then(fn);queue=r.catch(()=>{});return r;};
+ const sleep=ms=>new Promise(r=>setTimeout(r,ms));const report=[];let error=null,result=null;
+ const ctx={p,serial,sleep,fs,out,audio,rehearsal:true,report,commitAt:0,prev:null,recordMotion:()=>{},begin:async()=>{},
+  waitFor:async(fn,timeout=12000)=>{const a=Date.now();while(!(await serial(()=>p.evaluate(fn)))){if(Date.now()-a>timeout)throw Error('Expected page state did not appear');await sleep(100);}},
+  say:async(id,fn)=>{ctx.cueId=id;if(fn){ctx.commitAt=0;await fn();}}};
+ // 녹화와 같은 조건: screencast를 돌려 프레임은 받는 즉시 ACK만 한다(저장 없음). screencast 없이 두면 도중에 화면 크기 설정이 풀렸다(리허설 d05-8, CSS 1280 → 864).
+ let live=true;await serial(()=>p.cdp('Page.startScreencast',{format:'jpeg',quality:30,maxWidth:640,maxHeight:360,everyNthFrame:1}));
+ const pump=(async()=>{while(live){for(const e of await serial(()=>p.events()))if(e.method==='Page.screencastFrame')serial(()=>p.cdp('Page.screencastFrameAck',{sessionId:e.params.sessionId})).catch(()=>{});await sleep(30);}})().catch(()=>{});
+ try{const mod=await import((opts.moduleUrl||'file:///'+HERE+'segs/'+opts.module)+'?'+Date.now());result=await mod.default(ctx);}catch(e){error=String(e?.stack||e).slice(0,800);}
+ live=false;await pump;try{await p.cdp('Page.stopScreencast');}catch(e){}
+ const fails=report.filter(r=>r.fail);const num=(k,op)=>{const v=report.filter(r=>(!op||r.op===op)&&typeof r[k]==='number').map(r=>r[k]);return v.length?[Math.min(...v),Math.max(...v)]:null;};
+ const sum={dry:true,ok:!error&&!fails.length,error,cues:[...new Set(report.map(r=>r.cue))].length,ops:report.length,
+  found_inview:report.filter(r=>r.target).length,scrolled:report.filter(r=>r.scrolled).length,overlap_chars:num('overlap','point'),type_ms:num('ms','type'),wait_ms:num('ms','wait'),
+  failures:fails.map(r=>({cue:r.cue,op:r.op,why:r.why})),view:result?.view??null};
+ await fs.writeFile(out+'/dry.json',JSON.stringify({...sum,report},null,2));
+ return sum;
+}
+
 // opts: {name, module(segs/ 기준 파일명), pointer:{x,y}|null(앞 구간 끝 포인터)}
 export async function run(opts){
  const work=opts.work||WORK,audio=opts.audio||AUDIO;
  const out=work+'/'+opts.name;
+ if(opts.dry)return dryRun(opts,audio,out);
  await fs.mkdir(out+'/frames',{recursive:true});
  if((await fs.readdir(out+'/frames')).length)throw Error('Output folder already has frames: '+out);
  // opts.space·opts.viewport: VS Code 밖 화면(포털)을 다른 작업 공간에서 찍을 때. 포털은 1536x864 dsf1.5(→2304x1296 렌더 → 1920x1080 프레임).

@@ -14,6 +14,7 @@ const HERE = decodeURIComponent(new URL('.', import.meta.url).pathname).replace(
 const CUE_DIR = HERE + '../../../포털/';
 const PORTAL = 'http://127.0.0.1:8088/';
 const LEAD = 300;
+const CSS_W = 1280, CSS_H = 720;
 const REST = {x: 760, y: 84};   // 첫 구간 시작 화살표 자리(홈 제목 줄의 빈 곳 — 도식 · 카드를 가리지 않는다)
 const READ = {'HYD-01': '에이치와이디 영일', 'HYD-02': '에이치와이디 영이', 'HYD-03': '에이치와이디 영삼'};
 // 큐 ops의 at 구절이 대사 글자와 다른 곳 → 대사 속 실제 구절(같은 자리를 가리킨다).
@@ -79,7 +80,33 @@ function locateInPage(t) {
  return {x, y, top: b.top, sc, hit: !!top && (top === e || e.contains(top))};
 }
 
+// 페이지 안에서 실행: 화살표 끝을 (x, y)에 둘 때 화살표 몸통(SVG 경로, 20×27)이 덮는 글자. 가리키는 대상의 글은 뺀다.
+// 몸통 안 3px 격자 점마다 그 자리의 글자 한 칸(HTML은 caretRangeFromPoint, SVG는 text 요소)을 찾는다. 리허설의 ② 검사다.
+function coverInPage({x, y, css, contains}) {
+ const poly = [[1, 1], [1, 25], [7, 20], [12, 31], [17, 29], [12, 18], [22, 18]].map(([a, b]) => [a * 0.8, b * 0.8]);
+ const inside = (px, py) => { let c = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const [xi, yi] = poly[i], [xj, yj] = poly[j]; if ((yi > py) !== (yj > py) && px < (xj - xi) * (py - yi) / (yj - yi) + xi) c = !c; } return c; };
+ let tgt = [...document.querySelectorAll(css)]; if (contains) tgt = tgt.filter((e) => e.textContent.includes(contains));
+ const own = (n) => tgt.some((e) => e.contains(n));
+ const hit = new Set();
+ for (let dx = 0; dx <= 18; dx += 3) for (let dy = 0; dy <= 26; dy += 3) {
+  if (!inside(dx, dy)) continue;
+  const px = x + dx, py = y + dy, el = document.elementFromPoint(px, py); if (!el || own(el)) continue;
+  const svgText = el.closest('text');
+  if (svgText && svgText instanceof SVGElement) { if (!own(svgText)) hit.add(svgText.textContent.trim().slice(0, 20)); continue; }
+  const r = document.caretRangeFromPoint(px, py); const n = r?.startContainer;
+  if (!n || n.nodeType !== 3 || own(n)) continue;
+  for (const o of [r.startOffset, r.startOffset - 1]) {
+   if (o < 0 || o >= n.length || !n.data[o].trim()) continue;
+   const g = document.createRange(); g.setStart(n, o); g.setEnd(n, o + 1); const b = g.getBoundingClientRect();
+   if (px >= b.left && px <= b.right && py >= b.top && py <= b.bottom) { hit.add(n.data.slice(Math.max(0, o - 3), o + 4).trim()); break; }
+  }
+ }
+ return [...hit];
+}
+
 function layer(ctx, c) {
+ // 리허설 기록(ctx.report가 있을 때만): 조작마다 큐 id, 대상, 숫자, 실패 까닭.
+ const rep = (o) => { if (ctx.report) ctx.report.push({cue: ctx.cueId, ...o}); };
  const p = ctx.p, q1 = (fn) => ctx.serial(fn), sleep = ctx.sleep;
  const find = (t) => q1(() => p.evaluate(locateInPage, t)).then((r) => { if (r.error) throw Error(r.error); return r; });
  const pos = () => q1(() => p.evaluate(() => { const r = document.getElementById('recording-pointer')?.getBoundingClientRect(); if (!r) throw Error('Recording pointer missing'); return {x: r.x, y: r.y}; }));
@@ -110,7 +137,7 @@ function layer(ctx, c) {
    // 가리킬 점이 영역 안(위 6 · 아래 20 · 왼쪽 6 · 오른쪽 26px 여백 — 화살표 몸통이 오른쪽 아래로 그려진다)이면 그대로 쓴다.
    const outY = (s) => s.yv && (r.y < s.top + 6 || r.y > s.bottom - 20), outX = (s) => s.xv && (r.x < s.left + 6 || r.x > s.right - 26);
    const s = r.sc.find((s) => outY(s) || outX(s));
-   if (!s) return r;
+   if (!s) { r.scrolled = i; return r; }
    // 대상에 inview:true가 있으면 굴리지 않는다 — 말이 굴리기를 말하지 않는 자리(r06-402 지도의 주 펌프). 화면 밖이면 멈춘다.
    if (t.inview) throw Error('대상이 화면 밖이라 누르지 않음(inview): ' + JSON.stringify(t) + ` y ${Math.round(r.y)} 영역 ${Math.round(s.top)}~${Math.round(s.bottom)}`);
    const dy = outY(s) ? Math.round(r.y - (s.top + (s.bottom - s.top) * 0.4)) : 0;
@@ -121,7 +148,8 @@ function layer(ctx, c) {
  }
  async function settled(t) {
   let r = await inView(t);
-  for (let k = 0; k < 10; k++) { await sleep(150); const r2 = await find(t); if (Math.hypot(r2.x - r.x, r2.y - r.y) <= 1) return r2; r = r2; }
+  const sc = r.scrolled;
+  for (let k = 0; k < 10; k++) { await sleep(150); const r2 = await find(t); if (Math.hypot(r2.x - r.x, r2.y - r.y) <= 1) return Object.assign(r2, {scrolled: sc}); r = r2; }
   throw Error('대상 위치가 멈추지 않음: ' + JSON.stringify(t));
  }
  // 화살표 이동: 표시 화살표는 페이지 안 애니메이션으로 움직이고, 실제 입력은 도착한 뒤 목표 좌표로 한 번만 보낸다(포털 촬영도구 ui.mjs의 ego 방식).
@@ -140,7 +168,11 @@ function layer(ctx, c) {
  }
  const gate = async () => { const w = G.lastMoveEnd + 150 - Date.now(); if (w > 0) await sleep(w); ctx.committed ??= Date.now(); };
  const L = {};
- L.point = async (t) => { const r = await settled(aim(t, 'point')); await move(r.x, r.y); };
+ L.point = async (t) => {
+  const a = aim(t, 'point'), r = await settled(a); await move(r.x, r.y);
+  if (ctx.report) { const cover = await q1(() => p.evaluate(coverInPage, {x: r.x, y: r.y, css: t.css, contains: t.contains}));
+   rep({op: 'point', target: t.css + (t.contains ? ` ~${t.contains}` : ''), scrolled: r.scrolled || 0, overlap: cover.length, covered: cover, fail: cover.length > 0, why: cover.length ? '화살표가 글을 덮음: ' + cover.join(' | ') : undefined}); }
+ };
  L.click = async (t) => {
   const a = aim(t, 'click');
   for (let i = 0; i < 4; i++) {
@@ -148,7 +180,7 @@ function layer(ctx, c) {
    const now = await find(a);
    if (Math.hypot(now.x - r.x, now.y - r.y) > 2) continue;
    if (!now.hit) throw Error('누를 자리가 다른 요소에 가려짐: ' + JSON.stringify(t));
-   await q1(() => p.mouse.click(r.x, r.y)); await sleep(150); return;
+   await q1(() => p.mouse.click(r.x, r.y)); await sleep(150); rep({op: 'click', target: t.css + (t.contains ? ` ~${t.contains}` : ''), scrolled: r.scrolled || 0}); return;
   }
   throw Error('대상이 계속 움직임: ' + JSON.stringify(t));
  };
@@ -172,12 +204,16 @@ function layer(ctx, c) {
   // 그래서 네 글자 이상은 두 덩이로 나눠 넣는다(빠른 타이핑처럼 보이고, 다시 그리기는 두 번).
   await gate();
   const parts = [...text].length >= 4 ? [[...text].slice(0, Math.ceil([...text].length / 2)).join(''), [...text].slice(Math.ceil([...text].length / 2)).join('')] : [text];
+  const t0 = Date.now();
   for (const part of parts) { await q1(() => p.keyboard.insertText(part)); await sleep(160); }
+  // ③ 입력에 걸린 시간. 2.5초를 넘으면 말 없는 틈이 생긴다(r06-2-t1 6글자 약 6초).
+  const ms = Date.now() - t0; rep({op: 'type', text, ms, fail: ms > 2500, why: ms > 2500 ? `입력 ${ms}ms > 2500` : undefined});
  };
  L.key = async (k) => { await gate(); await q1(() => p.keyboard.press(k)); await sleep(200); };
  L.wait = async (t, secs) => {
   const a = Date.now(), limit = (secs || 30) * 1000;
-  for (;;) { try { return await find({...t, any: true}); } catch (e) { if (Date.now() - a > limit) throw Error(`나타나지 않음(${secs}초): ${JSON.stringify(t)} — ${e.message}`); await sleep(150); } }
+  // ④ 결과가 그려질 때까지 기다린 시간. 6초를 넘으면 말 없이 멈춘 화면이 된다.
+  for (;;) { try { const r = await find({...t, any: true}); const ms = Date.now() - a; rep({op: 'wait', target: t.css + (t.contains ? ` ~${t.contains}` : ''), ms, fail: ms > 6000, why: ms > 6000 ? `기다림 ${ms}ms > 6000` : undefined}); return r; } catch (e) { if (Date.now() - a > limit) throw Error(`나타나지 않음(${secs}초): ${JSON.stringify(t)} — ${e.message}`); await sleep(150); } }
  };
  L.op = async (o) => {
   const [k, a, b] = o;
@@ -225,11 +261,15 @@ function layer(ctx, c) {
  return L;
 }
 
-// 한 구간 녹화. file = 포털 폴더의 큐 파일 이름, n = 큐의 segment 값. ctx.rehearsal이면 대사 길이를 0으로 보고 조작만 차례로 한다(녹화 없이 길 확인).
+// 한 구간 녹화. file = 포털 폴더의 큐 파일 이름(또는 절대 경로), n = 큐의 segment 값. ctx.rehearsal(run.sh dry)이면 대사 길이를 0으로 보고 조작만 차례로 하며,
+// ctx.report에 조작마다 ① 대상이 하나로 찾아지고 화면 안에 들어왔는가(못 하면 멈춘다) ② 화살표가 덮는 글자 ③ 입력 시간 ④ 결과를 기다린 시간을 남긴다.
 export async function mapSeg(ctx, file, n, {first = false} = {}) {
- const cues = JSON.parse(await fs.readFile(CUE_DIR + file, 'utf8')).cues.filter((q) => String(q.segment) === String(n));
+ const cues = JSON.parse(await fs.readFile(/^([A-Za-z]:|\/)/.test(file) ? file : CUE_DIR + file, 'utf8')).cues.filter((q) => String(q.segment) === String(n));
  if (!cues.length) throw Error(`${file}: 구간 ${n} 큐 없음`);
  for (const q of cues) for (const o of q.ops || []) fracOf(q, o);   // 녹화 전에 시점 구절을 모두 확인한다
+ // 가리키는 자리와 상세 칸 두 단은 CSS 1280×720(VP {1920,1080,dsf:1})을 전제로 한다. 다르면 녹화 · 리허설 모두 멈춘다.
+ const css = await ctx.serial(() => ctx.p.evaluate(() => ({w: innerWidth, h: innerHeight})));
+ if (css.w !== CSS_W || css.h !== CSS_H) throw Error(`화면 크기 CSS ${css.w}×${css.h} — ${CSS_W}×${CSS_H}이어야 한다(VP='{width:1920,height:1080,dsf:1}')`);
  const c = await vscode(ctx);
  const L = layer(ctx, c);
  if (first) await L.fresh(); else if (!ctx.rehearsal) await L.restore(ctx.prev?.view);
@@ -245,7 +285,9 @@ export async function mapSeg(ctx, file, n, {first = false} = {}) {
     ctx.commitAt = 0; await L.op(o);
    }
   } : null;
-  await ctx.say(q.id, fn, {pointFrac: 0, pointDelay: 0});
+  const now = await ctx.serial(() => ctx.p.evaluate(() => innerWidth + '×' + innerHeight));
+  if (now !== CSS_W + '×' + CSS_H) throw Error(`${q.id}: 화면 크기가 도중에 바뀜 — CSS ${now}`);
+  ctx.cueId = q.id; await ctx.say(q.id, fn, {pointFrac: 0, pointDelay: 0});
  }
  // 마지막 조작의 결과(지도가 그려지는 등)가 녹화 프레임에 남도록 잠깐 둔다 — 화면이 바뀌어야 프레임이 오므로, 바로 끝내면 끝 프레임이 결과 전 화면이 된다(m05-1-t1).
  if (!ctx.rehearsal) await ctx.sleep(800);

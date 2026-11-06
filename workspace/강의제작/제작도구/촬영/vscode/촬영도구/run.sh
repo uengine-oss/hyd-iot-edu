@@ -4,6 +4,7 @@
 #   ./run.sh restore <cut25|noteTail|reload|state>                    녹화 밖 상태 맞춤(실행 취소 없이) · 읽기 전용 상태 보기
 #   SPACE=<ego 작업 공간> VP='{width:1536,height:864,dsf:1.5}' ./run.sh rec …  VS Code 밖 화면(포털). 앞 구간 URL로 되돌아가지 않는다
 #   HYD_AUDIO=<음성 캐시 폴더> ./run.sh rec …                    다른 도구의 음성 캐시(common.py). 앞 구간 이름은 구간 모듈에 ctx.prev(앞 take의 timing.json result)로도 넘어간다
+#   SPACE=… VP=… HYD_AUDIO=… ./run.sh dry <이름> <구간 파일>          리허설: 녹화 · 프레임 · 음성 대기 없이 조작만 실제로 해 보고 큐마다 검사(dry.json). 실패면 종료 코드 1
 #   ./run.sh measure <이름>                                     녹화 하나 다시 실측
 # 다른 ego 명령(ego-browser.exe)이 떠 있으면 시작하지 않는다(상태 파일 EPERM). 실행 전 node --check(ego는 문법 오류에 조용히 멈춘다),
 # stdin을 닫는다(-e가 입력을 기다린다). 시간 초과(TMO초, 기본 900) 시 ego의 NodeService(스크립트 실행기)만 정리한다.
@@ -37,7 +38,11 @@ case "$cmd" in
     pv=null; [ -n "$prev" ] && [ "${prev:0:1}" != "{" ] && pv="'${prev%%:*}'"
     js="const {run}=await import('file:///$here/ctrl.mjs?$stamp');console.log(JSON.stringify(await run({name:'$n',module:'$seg',pointer:$ptr,resumeUrl:$rurl,space:$sp,viewport:${VP:-null},audio:'$audio',prev:$pv})));"
     log="$work/$n.log";;
-  *) sed -n 2,5p "$0"; exit 2;;
+  dry)
+    n=$1; seg=$2; sp=null; [ -n "${SPACE:-}" ] && sp="\"$SPACE\""
+    js="const {run}=await import('file:///$here/ctrl.mjs?$stamp');console.log(JSON.stringify(await run({name:'$n',module:'$seg',space:$sp,viewport:${VP:-null},audio:'$audio',dry:true})));"
+    log="$work/$n.log";;
+  *) sed -n 2,6p "$0"; exit 2;;
 esac
 runner="$work/run-$cmd-$stamp.mjs"
 printf '%s\n' "$js" > "$runner"
@@ -47,4 +52,5 @@ rc=$?
 if [ $rc -eq 124 ]; then powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \"Name='ego.exe'\" | ? { \$_.CommandLine -match 'ego.mojom.NodeService' } | % { Stop-Process -Id \$_.ProcessId -Force }"; echo "TIMEOUT: NodeService만 정리함 — 끊긴 명령이 실제로 실행됐을 수 있으니 restore state로 확인"; fi
 grep -v "^    at" "$log" | tail -3 | cut -c1-600
 [ "$cmd" = rec ] && (cd "$here" && PYTHONUTF8=1 python measure.py "$n")
+if [ "$cmd" = dry ]; then grep '^{"dry"' "$log" | tail -1 | PYTHONUTF8=1 python -c "import json,sys;r=json.loads(sys.stdin.read());sys.exit(0 if r.get('ok') else 1)" 2>/dev/null || { echo "DRY FAIL: $n"; exit 1; }; echo "DRY OK: $n"; fi
 exit 0
