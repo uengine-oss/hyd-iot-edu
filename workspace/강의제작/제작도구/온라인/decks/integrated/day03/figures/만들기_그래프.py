@@ -14,8 +14,9 @@ import matplotlib.pyplot as plt
 from matplotlib import font_manager
 
 HERE = Path(__file__).resolve().parent
-font_manager.fontManager.addfont("C:/Windows/Fonts/malgun.ttf")
-font_manager.fontManager.addfont("C:/Windows/Fonts/malgunbd.ttf")
+for _f in ("C:/Windows/Fonts/malgun.ttf", "C:/Windows/Fonts/malgunbd.ttf", "/usr/share/fonts/malgun/MALGUN.TTF", "/usr/share/fonts/malgun/MALGUNBD.TTF"):
+    if Path(_f).exists():
+        font_manager.fontManager.addfont(_f)
 plt.rcParams["font.family"] = "Malgun Gothic"
 plt.rcParams["axes.unicode_minus"] = False
 NAVY, SKY, BLUE, PALE, GREY, MUTED = "#13294B", "#5CB8F2", "#1A6FC4", "#E7F3FD", "#D3D9E1", "#5B6B82"
@@ -43,7 +44,7 @@ for (name, v, tail), y in zip(cards, ys):
 ax.plot([55, 55], [-0.5, 3.95], color=BLUE, linewidth=1.4, linestyle=(0, (4, 3)), zorder=1)
 ax.plot([65, 65], [-0.5, 3.95], color=NAVY, linewidth=1.4, linestyle=(0, (4, 3)), zorder=1)
 BB = dict(facecolor="white", edgecolor="none", pad=2)
-ax.text(55.5, 4.02, "회복 경고 기준 55 ℃", ha="right", va="bottom", fontsize=13.5, color=BLUE, bbox=BB, zorder=6)
+ax.text(55.5, 4.02, "예측 유온 경고 55 ℃", ha="right", va="bottom", fontsize=13.5, color=BLUE, bbox=BB, zorder=6)
 ax.text(65, 4.02, "인터록 65 ℃", ha="center", va="bottom", fontsize=13.5, color=NAVY, bbox=BB, zorder=6)
 ax.set_xlim(X0, 69.5)
 ax.set_ylim(-0.5, 4.35)
