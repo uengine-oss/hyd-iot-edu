@@ -1,7 +1,7 @@
 """오프라인1 검수 안내에서 실제로 연결한 제공물만 묶는다. 배포 정본 변경 없음.
 
 python build_guide_bundle.py --draft 작업/<작업>/오프라인1_제공물검수
-기존 ZIP의 산출물/ 루트 경로를 유지하고 다음 회차와 시작 도구는 넣지 않는다.
+기존 ZIP의 산출물/ 루트 경로를 유지하고 다음 회차는 넣지 않는다.
 """
 from pathlib import Path
 from html.parser import HTMLParser

@@ -14,7 +14,7 @@ from collections import Counter
 from urllib.parse import unquote,urlsplit
 import hashlib,html,json,posixpath,re,sys,zipfile
 from build_labs import PICTURE_TYPES, student_photos
-from lab_package import PRIVATE, student_files, zip_root
+from lab_package import PRIVATE, guide_name, outside_guide, student_files, zip_root
 from lab_frame import MARK, SHOW_RESULT
 ROOT=Path(__file__).resolve().parents[4]
 HERE=Path(__file__).resolve().parent
@@ -113,8 +113,13 @@ def check_zip(zpath,folder,need=(),exclude_names=PRIVATE):
             if len(tops)!=1:return [f'{zpath.name}: ZIP 루트를 정할 수 없음 {sorted(tops)[:3]}'],notes
             root=tops.pop()+'/';inside=names
             notes.append(f'{zpath.name}: 루트 형식이 다름({root} — 다른 ZIP은 NN회차/랩/<랩>/)')
+        guide=outside_guide(folder);gname=guide_name(folder) if guide else None
+        if guide and gname not in names:errors.append(f'{zpath.name}: 랩 폴더 옆 가이드가 빠짐 {gname}')
         for n in names:
             if n in inside:continue
+            if n==gname:
+                if not same_content(z.read(n),guide.read_bytes()):errors.append(f'{zpath.name}: 가이드가 {guide.name}과 다름(다시 묶기 필요)')
+                continue
             errors.append(f'{zpath.name}: 강사 대본이 들어 있음 {n}' if '/대본/' in '/'+n else f'{zpath.name}: 랩 폴더 밖 항목 {n}')
         packed={n[len(root):]:z.read(n) for n in inside}
         for info in z.infolist():
@@ -148,12 +153,16 @@ def check_zip(zpath,folder,need=(),exclude_names=PRIVATE):
 START_STEP=re.compile(r'^\d+\. \*\*(.+?)\*\* — ',re.M)
 
 def verify_outside_guide(item,z,names,base):
-    """코딩 랩(guide_file 있음): 가이드는 ZIP 밖 한 파일(해시 · 단계 이름 = START 「진행 단계」 · 정답 토글 · 상대 링크 0),
-    ZIP 안에는 가이드가 없고 결과 화면 두 파일이 있으며 결과/는 README와 빈 틀뿐(공용틀_계약 2 · 3 · 4, K-7)."""
+    """코딩 랩(guide_file 있음): 가이드는 랩 폴더 밖 한 파일이고 ZIP에는 랩 폴더 옆 그 자리에 같은 바이트로 들어 있다
+    (해시 · 단계 이름 = START 「진행 단계」 · 정답 토글 · 상대 링크 0). 랩 폴더 안에는 가이드가 없고 결과 화면 두 파일이 있으며
+    결과/는 README와 빈 틀뿐(공용틀_계약 2 · 3 · 4, K-7)."""
     spec=item['guide_file'];guide=ROOT/spec['path']
     assert hashlib.sha256(guide.read_bytes()).hexdigest()==spec['sha256'],(item['id'],'가이드 해시 불일치')
+    sibling=base.rstrip('/').rsplit('/',1)[0]+'/'+guide.name
+    assert sibling in names and z.read(sibling)==guide.read_bytes(),(item['id'],'ZIP의 랩 폴더 옆 가이드가 없거나 다름',sibling)
     for n in names:
-        assert PurePosixPath(n).name not in ('guide.html','안내.html') and not n.endswith('_guide.html'),(item['id'],'ZIP 안에 가이드',n)
+        if n.startswith(base):
+            assert PurePosixPath(n).name not in ('guide.html','안내.html') and not n.endswith('_guide.html'),(item['id'],'랩 폴더 안에 가이드',n)
     for file in ['START.md','결과/README.md','show_result.py','lab_steps.py']:
         assert base+file in names,(item['id'],file)
     assert z.read(base+'show_result.py')==SHOW_RESULT.encode('utf-8'),(item['id'],'show_result.py가 공용 원본과 다름')
