@@ -8,9 +8,10 @@ from 삽화_기본 import BLUE, GREY, LIGHT, NAVY, PALE, SKY, WHITE, ON, NORM, a
 HERE=Path(__file__).resolve().parent
 
 def interval():
+    # 하한은 초과라 경계를 빼는 빈 원, 상한은 이하라 경계를 넣는 채운 원이다(plc.py 인터록은 65 ℃ 초과).
     y=240
     return [line(100,y,1090,y,GREY,5),line(310,y,875,y,BLUE,13),
-            circle(310,y,16,WHITE,BLUE,5),circle(875,y,16,WHITE,BLUE,5),
+            circle(310,y,16,WHITE,BLUE,5),circle(875,y,16,BLUE,BLUE,5),
             circle(592,y,16,BLUE,NAVY,4),line(592,y+23,592,y+55,NAVY,3)]
 
 def routes():

@@ -183,9 +183,8 @@ def quiet_point(data, fr, win):
     return (best[0] + best[-1]) / 2 + 0.005, peak
 
 
-def make(S, pptx, name, study_waits=None):
-
-    # 1) 슬라이드 그림
+def slide_images(pptx):
+    """덱의 장 그림 목록(슬라이드/<덱>/s-NN.png). PPTX 내용이 stamp와 다르면 다시 그린다."""
     img_dir = HERE / "슬라이드" / pptx.stem; img_dir.mkdir(parents=True, exist_ok=True)
     stamp = img_dir / "stamp"
     pptx_sha = hashlib.sha256(pptx.read_bytes()).hexdigest()   # 내용이 같으면 파일 시각이 달라져도 다시 그리지 않는다
@@ -197,9 +196,43 @@ def make(S, pptx, name, study_waits=None):
         run("soffice", "--headless", "--convert-to", "pdf", "--outdir", str(img_dir), str(pptx))
         run("pdftoppm", "-r", "150", "-png", str(img_dir / pptx.with_suffix(".pdf").name), str(img_dir / "s"))
         stamp.write_text(pptx_sha)
-    imgs = sorted(img_dir.glob("s-*.png"), key=lambda p: int(p.stem.split("-")[1]))
+    return sorted(img_dir.glob("s-*.png"), key=lambda p: int(p.stem.split("-")[1]))
 
-    # 2) 장별 음성
+
+# 쉼 넣기: 문장 끝, 물음 뒤, 문단 사이, 장이 넘어가는 자리에 말 없는 시간을 넣는다.
+# 말의 빠르기는 건드리지 않고, 쉼의 길이만 늘이거나 줄여 목표 시간에 맞춘다.
+# 쉼의 단계(문장 사이 자리마다 하나)
+# 0 = 잇는다. 쉬지 않고 바로 다음 문장으로 넘어간다(앞 문장을 받아 바로 풀어 주는 말, 나열의 중간).
+# 1 = 짧게 쉰다. 같은 이야기 안이지만 한 박자 끊어 주는 곳.
+# 2 = 한 호흡 쉰다. 한 가지 이야기가 끝난 곳, 중요한 말을 한 뒤, 물음을 던진 뒤.
+# 3 = 크게 쉰다. 화제가 바뀌는 곳. 한 장에 많아야 한두 곳.
+# 이 도구는 단계를 스스로 정하지도, 바깥 모델에 묻지도 않는다. 쉼_저장/ 에 적힌 것을 읽기만 한다.
+BDIR = HERE / "쉼_저장"
+
+
+def breath(sents):
+    """문장 목록을 받아 쉼_저장/ 에 적힌 단계(사이 자리마다 0~3)를 돌려준다. 아직 적히지 않았으면 빈 자리를 만들어 두고 None."""
+    if len(sents) < 2: return []
+    f = BDIR / f"{breath_key(sents)}.json"
+    if f.exists():
+        v = json.loads(f.read_text()).get("쉼")
+        if isinstance(v, list) and len(v) == len(sents) - 1 and all(x in (0, 1, 2, 3) for x in v): return v
+        return None
+    BDIR.mkdir(exist_ok=True); f.write_text(json.dumps({"문장": sents, "쉼": None}, ensure_ascii=False, indent=1), encoding="utf-8")
+    return None
+
+
+def plen(k):
+    """쉼의 길이. 호흡 방식에서는 적어 둔 단계와, 물음 뒤·문단 사이의 최소 쉼 가운데 긴 쪽을 쓴다."""
+    LEN = {"s": a.pause_sentence, "q": a.pause_question, "para": a.pause_para, 0: 0.0, 1: a.pause_short, 2: a.pause_mid, 3: a.pause_long}
+    return max(LEN[k[0]], {"s": 0.0, "q": a.pause_question, "para": a.pause_para}[k[1]]) if isinstance(k, tuple) else LEN[k]
+
+
+def lv(k): return k[0] if isinstance(k, tuple) else None
+
+
+def prepare(S, name, study_waits=None):
+    """장별 음성(캐시에 없으면 산다 — 유료)과 문장 사이 쉼 자리를 정한다. 돌려준다: 구획 목록, 쓴 크레딧, 말한 시간 합, 쉼 배율, 학습 대기 합(초)."""
     rows, spent = [], 0
     for i, (f, l, t) in enumerate(S):
         mp3, al, cost = tts(t, S[i - 1][2] if i else "", S[i + 1][2] if i + 1 < len(S) else "")
@@ -215,38 +248,6 @@ def make(S, pptx, name, study_waits=None):
             r["credit"] = int(item["credits"])
             spent += r["credit"]
     speech = sum(r["d"] for r in rows)
-
-    # 3) 쉼 넣기: 문장 끝, 물음 뒤, 문단 사이, 장이 넘어가는 자리에 말 없는 시간을 넣는다.
-    #    말의 빠르기는 건드리지 않고, 쉼의 길이만 늘이거나 줄여 목표 시간에 맞춘다.
-    import wave, array
-    PS, PQ, PP = a.pause_sentence, a.pause_question, a.pause_para
-
-    # 쉼의 단계(문장 사이 자리마다 하나)
-    # 0 = 잇는다. 쉬지 않고 바로 다음 문장으로 넘어간다(앞 문장을 받아 바로 풀어 주는 말, 나열의 중간).
-    # 1 = 짧게 쉰다. 같은 이야기 안이지만 한 박자 끊어 주는 곳.
-    # 2 = 한 호흡 쉰다. 한 가지 이야기가 끝난 곳, 중요한 말을 한 뒤, 물음을 던진 뒤.
-    # 3 = 크게 쉰다. 화제가 바뀌는 곳. 한 장에 많아야 한두 곳.
-    # 이 도구는 단계를 스스로 정하지도, 바깥 모델에 묻지도 않는다. 쉼_저장/ 에 적힌 것을 읽기만 한다.
-    BDIR = HERE / "쉼_저장"
-
-
-    def breath(sents):
-        """문장 목록을 받아 쉼_저장/ 에 적힌 단계(사이 자리마다 0~3)를 돌려준다. 아직 적히지 않았으면 빈 자리를 만들어 두고 None."""
-        if len(sents) < 2: return []
-        f = BDIR / f"{breath_key(sents)}.json"
-        if f.exists():
-            v = json.loads(f.read_text()).get("쉼")
-            if isinstance(v, list) and len(v) == len(sents) - 1 and all(x in (0, 1, 2, 3) for x in v): return v
-            return None
-        BDIR.mkdir(exist_ok=True); f.write_text(json.dumps({"문장": sents, "쉼": None}, ensure_ascii=False, indent=1), encoding="utf-8")
-        return None
-
-
-    LEN = {"s": PS, "q": PQ, "para": PP, 0: 0.0, 1: a.pause_short, 2: a.pause_mid, 3: a.pause_long}
-    def plen(k):
-        """쉼의 길이. 호흡 방식에서는 적어 둔 단계와, 물음 뒤·문단 사이의 최소 쉼 가운데 긴 쪽을 쓴다."""
-        return max(LEN[k[0]], {"s": 0.0, "q": PQ, "para": PP}[k[1]]) if isinstance(k, tuple) else LEN[k]
-    def lv(k): return k[0] if isinstance(k, tuple) else None
     for r in rows:
         c, tail = cuts(r); r["cuts"] = [(t, k) for t, k, _ in c]; r["sents"] = [x for _, _, x in c] + [tail]
     for r in rows:
@@ -273,90 +274,111 @@ def make(S, pptx, name, study_waits=None):
         if miss:
             sys.exit(f"쉼이 적히지 않은 장이 {len(miss)}곳 있다(SLIDE {', '.join(map(str, miss))}). {BDIR.name}/ 에서 \"쉼\"이 null인 파일을 채운 뒤 다시 돌린다. 음성은 저장돼 있어 다시 만들지 않는다.")
         for r, v in zip(rows, got): r["cuts"] = [(t, (lv, k0)) for (t, k0), lv in zip(r["cuts"], v)]
-    n = len(rows)
-    base = sum(plen(k) for r in rows for _, k in r["cuts"]) + a.gap * n
+    base = sum(plen(k) for r in rows for _, k in r["cuts"]) + a.gap * len(rows)
     fixed_wait = sum(sum(r.get("study_at", {}).values()) + r.get("study_tail", 0) for r in rows)
     scale = 1.0 if a.target <= 0 else min(2.2, max(0.3, (a.target - speech - fixed_wait) / base))
-    tempo = 1.0
-    def build(r, path):
-        wav = OUT / "tmp.wav"
-        run("ffmpeg", "-v", "error", "-y", "-i", str(r["mp3"]), "-ac", "1", "-ar", "44100", "-c:a", "pcm_s16le", str(wav))
-        with wave.open(str(wav)) as w: fr = w.getframerate(); data = array.array("h", w.readframes(w.getnframes()))
-        def quiet(win):
-            at, peak = quiet_point(data, fr, win)
-            if peak > QUIET_MAX:   # 문장 사이에 조용한 곳이 없다. 쉼을 넣으면 말이 잘린다
-                sys.exit(f"{name} SLIDE {r['first']}: {win[0]:.2f}~{win[1]:.2f}초 문장 사이에 조용한 곳이 없다(가장 작은 세기 {peak}). 쉼을 넣으면 말이 잘린다. 이 장의 음성이나 쉼 자리를 확인한다")
-            return at
-        # 0초 쉼은 소리를 끊지 않으므로 조용한 곳을 찾지 않는다(쉼 자리 0이 말이 붙은 문장 사이를 잇는 방법이다)
-        extra = [r.get("study_at", {}).get(t, 0) for t, _ in r["cuts"]]
-        r["cuts"] = [((quiet(t) if plen(k) * scale > 0 or wait else t[0]), k) for (t, k), wait in zip(r["cuts"], extra)]
-        out, pos, shift, marks = array.array("h"), 0, 0.0, []
-        r["study_intervals"] = []
-        for (t, k), wait in zip(r["cuts"], extra):
-            cut = min(len(data), int(t * fr)); out.extend(data[pos:cut]); pos = cut
-            if wait:
-                r["study_intervals"].append((len(out) / fr, wait))
-            add = plen(k) * scale + wait; out.extend(array.array("h", [0]) * int(add * fr)); shift += add; marks.append((t, shift))
-        out.extend(data[pos:])
-        if r.get("study_tail"):
-            r["study_intervals"].append((len(out) / fr, r["study_tail"]))
-            out.extend(array.array("h", [0]) * (r["study_tail"] * fr))
-        out.extend(array.array("h", [0]) * int(a.gap * scale * fr))
-        with wave.open(str(path), "w") as w: w.setnchannels(1); w.setsampwidth(2); w.setframerate(fr); w.writeframes(out.tobytes())
-        wav.unlink(); return len(out) / fr, marks
+    return rows, spent, speech, scale, fixed_wait
 
-    # 4) 장별 영상과 자막
-    segs, srt, clock, k, made = [], [], 0.0, 0, 0
-    PIECES.mkdir(parents=True, exist_ok=True)
-    def ts(x): return f"{int(x//3600):02d}:{int(x%3600//60):02d}:{int(x%60):02d},{int(x*1000%1000):03d}"
-    for r in rows:
-        wavp = OUT / f"seg_{r['first']:03d}.wav"
-        d, marks = build(r, wavp); r["d2"] = d
-        shown = imgs[r["first"] - 1:r["last"]]
-        if len(shown) == 1: spans = [d]
-        else:   # SLIDE NN~MM은 실습 간지 + 설명 장. 간지는 첫 문장과 그 뒤 쉼까지, 설명 장은 둘째 문장부터
-            if len(shown) != 2 or not marks:
-                sys.exit(f"{name} SLIDE {r['first']}~{r['last']}: 묶음 구획은 간지와 설명 두 장이고 문장이 둘 이상이어야 한다")
-            sw = marks[0][0] + marks[0][1]; spans = [sw, d - sw]; r["sw"] = clock + sw
-        ins = [x for img, t in zip(shown, spans) for x in ("-loop", "1", "-t", f"{t:.3f}", "-i", str(img))]
-        fit = "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,format=yuv420p,fps=10"
-        vf = ";".join(f"[{n}:v]{fit}[v{n}]" for n in range(len(shown))) + ";" + "".join(f"[v{n}]" for n in range(len(shown))) + f"concat=n={len(shown)}:v=1:a=0[v]"
-        enc = ["-r", "10", "-c:v", "libx264", "-preset", "veryfast", "-tune", "stillimage", "-c:a", "aac", "-b:a", "160k"]
-        # 장 조각 보관함: 쉼을 넣은 소리 · 보이는 장 그림 · 넘김 시각 · 인코딩 설정이 같으면 전에 만든 조각을 그대로 쓴다(바뀐 장만 인코딩)
-        key = hashlib.sha1(json.dumps([PIECE_VER, hashlib.sha256(wavp.read_bytes()).hexdigest(), [hashlib.sha256(x.read_bytes()).hexdigest() for x in shown],
-                                       [round(t, 3) for t in spans], round(d, 3), vf, enc]).encode()).hexdigest()[:20]
-        seg = PIECES / f"{key}.mp4"
-        if not seg.exists():
-            tmpseg = OUT / f"seg_{r['first']:03d}.mp4"
-            run("ffmpeg", "-v", "error", "-y", *ins, "-i", str(wavp), "-filter_complex", vf, "-map", "[v]", "-map", f"{len(shown)}:a", "-t", f"{d:.3f}",
-                *enc, str(tmpseg))
-            shutil.move(str(tmpseg), seg); made += 1
-        wavp.unlink(); segs.append(seg)
-        def sh(t): return t + max([m[1] for m in marks if m[0] <= t] or [0.0])
-        ch, st, en = r["al"].get("characters") or [], r["al"].get("character_start_times_seconds") or [], r["al"].get("character_end_times_seconds") or []
-        buf, b0 = "", None
-        for j, (c, s0, e0) in enumerate(zip(ch, st, en)):
-            if b0 is None and c.strip(): b0 = s0
-            buf += c
-            if (c == "\n" or sentence_mark(ch, j)) and buf.strip():
-                start = sh(b0); end = start + (e0 - b0)
-                for wait_start, seconds in r["study_intervals"]:
-                    if start < wait_start < end:
-                        end = wait_start
-                k += 1; srt.append(f"{k}\n{ts(clock + start)} --> {ts(clock + end)}\n{buf.strip()}\n"); buf, b0 = "", None
-        r["start"] = clock; clock += dur(seg)   # 인코딩된 구획은 계산한 길이 d보다 조금 길다. 그 차이가 쌓여 자막과 시간표가 영상보다 앞서지 않게 실제 길이로 센다
+
+def build(r, path, scale, name):
+    """구획 하나의 소리에 쉼을 넣어 path(wav)에 쓴다. 돌려준다: 길이(초), 넣은 자리 [(원래 초, 그때까지 민 초)]."""
+    import wave, array
+    wav = OUT / "tmp.wav"
+    run("ffmpeg", "-v", "error", "-y", "-i", str(r["mp3"]), "-ac", "1", "-ar", "44100", "-c:a", "pcm_s16le", str(wav))
+    with wave.open(str(wav)) as w: fr = w.getframerate(); data = array.array("h", w.readframes(w.getnframes()))
+    def quiet(win):
+        at, peak = quiet_point(data, fr, win)
+        if peak > QUIET_MAX:   # 문장 사이에 조용한 곳이 없다. 쉼을 넣으면 말이 잘린다
+            sys.exit(f"{name} SLIDE {r['first']}: {win[0]:.2f}~{win[1]:.2f}초 문장 사이에 조용한 곳이 없다(가장 작은 세기 {peak}). 쉼을 넣으면 말이 잘린다. 이 장의 음성이나 쉼 자리를 확인한다")
+        return at
+    # 0초 쉼은 소리를 끊지 않으므로 조용한 곳을 찾지 않는다(쉼 자리 0이 말이 붙은 문장 사이를 잇는 방법이다)
+    extra = [r.get("study_at", {}).get(t, 0) for t, _ in r["cuts"]]
+    r["cuts"] = [((quiet(t) if plen(k) * scale > 0 or wait else t[0]), k) for (t, k), wait in zip(r["cuts"], extra)]
+    out, pos, shift, marks = array.array("h"), 0, 0.0, []
+    r["study_intervals"] = []
+    for (t, k), wait in zip(r["cuts"], extra):
+        cut = min(len(data), int(t * fr)); out.extend(data[pos:cut]); pos = cut
+        if wait:
+            r["study_intervals"].append((len(out) / fr, wait))
+        add = plen(k) * scale + wait; out.extend(array.array("h", [0]) * int(add * fr)); shift += add; marks.append((t, shift))
+    out.extend(data[pos:])
+    if r.get("study_tail"):
+        r["study_intervals"].append((len(out) / fr, r["study_tail"]))
+        out.extend(array.array("h", [0]) * (r["study_tail"] * fr))
+    out.extend(array.array("h", [0]) * int(a.gap * scale * fr))
+    with wave.open(str(path), "w") as w: w.setnchannels(1); w.setsampwidth(2); w.setframerate(fr); w.writeframes(out.tobytes())
+    wav.unlink(); return len(out) / fr, marks
+
+
+def ts(x): return f"{int(x//3600):02d}:{int(x%3600//60):02d}:{int(x%60):02d},{int(x*1000%1000):03d}"
+
+
+def encode_row(r, imgs, clock, scale, name):
+    """구획 하나를 장 조각으로 만든다(보관함에 같은 조각이 있으면 그대로 쓴다). clock은 그 조각이 영상에서 시작하는 초.
+    돌려준다: 조각 경로, 새로 만들었으면 1, 자막 [(시작 초, 끝 초, 글)]."""
+    wavp = OUT / f"seg_{r['first']:03d}.wav"
+    d, marks = build(r, wavp, scale, name); r["d2"] = d
+    shown = imgs[r["first"] - 1:r["last"]]
+    if len(shown) == 1: spans = [d]
+    else:   # SLIDE NN~MM은 실습 간지 + 설명 장. 간지는 첫 문장과 그 뒤 쉼까지, 설명 장은 둘째 문장부터
+        if len(shown) != 2 or not marks:
+            sys.exit(f"{name} SLIDE {r['first']}~{r['last']}: 묶음 구획은 간지와 설명 두 장이고 문장이 둘 이상이어야 한다")
+        sw = marks[0][0] + marks[0][1]; spans = [sw, d - sw]; r["sw"] = clock + sw
+    ins = [x for img, t in zip(shown, spans) for x in ("-loop", "1", "-t", f"{t:.3f}", "-i", str(img))]
+    fit = "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,format=yuv420p,fps=10"
+    vf = ";".join(f"[{n}:v]{fit}[v{n}]" for n in range(len(shown))) + ";" + "".join(f"[v{n}]" for n in range(len(shown))) + f"concat=n={len(shown)}:v=1:a=0[v]"
+    enc = ["-r", "10", "-c:v", "libx264", "-preset", "veryfast", "-tune", "stillimage", "-c:a", "aac", "-b:a", "160k"]
+    # 장 조각 보관함: 쉼을 넣은 소리 · 보이는 장 그림 · 넘김 시각 · 인코딩 설정이 같으면 전에 만든 조각을 그대로 쓴다(바뀐 장만 인코딩)
+    key = hashlib.sha1(json.dumps([PIECE_VER, hashlib.sha256(wavp.read_bytes()).hexdigest(), [hashlib.sha256(x.read_bytes()).hexdigest() for x in shown],
+                                   [round(t, 3) for t in spans], round(d, 3), vf, enc]).encode()).hexdigest()[:20]
+    seg, made = PIECES / f"{key}.mp4", 0
+    if not seg.exists():
+        PIECES.mkdir(parents=True, exist_ok=True)
+        tmpseg = OUT / f"seg_{r['first']:03d}.mp4"
+        run("ffmpeg", "-v", "error", "-y", *ins, "-i", str(wavp), "-filter_complex", vf, "-map", "[v]", "-map", f"{len(shown)}:a", "-t", f"{d:.3f}",
+            *enc, str(tmpseg))
+        shutil.move(str(tmpseg), seg); made = 1
+    wavp.unlink()
+    def sh(t): return t + max([m[1] for m in marks if m[0] <= t] or [0.0])
+    ch, st, en = r["al"].get("characters") or [], r["al"].get("character_start_times_seconds") or [], r["al"].get("character_end_times_seconds") or []
+    subs, buf, b0 = [], "", None
+    for j, (c, s0, e0) in enumerate(zip(ch, st, en)):
+        if b0 is None and c.strip(): b0 = s0
+        buf += c
+        if (c == "\n" or sentence_mark(ch, j)) and buf.strip():
+            start = sh(b0); end = start + (e0 - b0)
+            for wait_start, seconds in r["study_intervals"]:
+                if start < wait_start < end:
+                    end = wait_start
+            subs.append((clock + start, clock + end, buf.strip())); buf, b0 = "", None
+    return seg, made, subs
+
+
+def report_head(name, S, rows, spent, speech, scale, length):
+    """시간표의 머리 여섯 줄(제목 · 음성 · 글자 · 쉼 · 영상 길이)."""
     gap = a.gap * scale
+    return [f"# {name}", "", f"- 음성 {a.voice} · 모델 {a.model} · " + ("빠르기 설정 없음" if V4 else f"속도 {a.speed}"), f"- 글자 {sum(len(t) for _, _, t in S)}자 · 이번에 쓴 크레딧 {spent}",
+            (f"- 말한 시간 합 {speech:.1f}초 · 장 안에는 쉼을 넣지 않음(모델이 읽은 그대로) · 장 넘김 {gap:.2f}초" if a.natural else
+             f"- 말한 시간 합 {speech:.1f}초 · 넣은 쉼(자리는 쉼_저장에서 읽음): 잇는 곳 {sum(lv(k) == 0 for r in rows for _, k in r['cuts'])}곳 · 짧게 {sum(lv(k) == 1 for r in rows for _, k in r['cuts'])}곳 {a.pause_short*scale:.2f}초 · 한 호흡 {sum(lv(k) == 2 for r in rows for _, k in r['cuts'])}곳 {a.pause_mid*scale:.2f}초 · 크게 {sum(lv(k) == 3 for r in rows for _, k in r['cuts'])}곳 {a.pause_long*scale:.2f}초 · 물음 뒤 최소 {a.pause_question*scale:.2f}초 · 문단 사이 최소 {a.pause_para*scale:.2f}초 · 장 넘김 {gap:.2f}초 (기본값의 {scale:.2f}배)" if a.breath else
+             f"- 말한 시간 합 {speech:.1f}초 · 넣은 쉼: 문장 {a.pause_sentence*scale:.2f}초 · 물음 {a.pause_question*scale:.2f}초 · 문단 {a.pause_para*scale:.2f}초 · 장 넘김 {gap:.2f}초 (기본값의 {scale:.2f}배)"),
+            f"- 영상 길이 {length:.1f}초 · 목표 {a.target:.0f}초"]
+
+
+def make(S, pptx, name, study_waits=None):
+    imgs = slide_images(pptx)
+    rows, spent, speech, scale, fixed_wait = prepare(S, name, study_waits)
+    segs, srt, clock, made = [], [], 0.0, 0
+    for r in rows:
+        seg, new, subs = encode_row(r, imgs, clock, scale, name)
+        made += new; segs.append(seg); srt += subs
+        r["start"] = clock; clock += dur(seg)   # 인코딩된 구획은 계산한 길이 d보다 조금 길다. 그 차이가 쌓여 자막과 시간표가 영상보다 앞서지 않게 실제 길이로 센다
     (OUT / "list.txt").write_text("".join(f"file '{s.as_posix()}'\n" for s in segs))
     run("ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(OUT / "list.txt"), "-c", "copy", str(OUT / f"{name}.mp4"))
     print(f"장 조각 {len(segs)}개(새로 만든 것 {made}, 보관함 재사용 {len(segs) - made})")
     (OUT / "list.txt").unlink()
     SIDE = OUT.parent / "_작업" / "영상_자막_기록"; SIDE.mkdir(parents=True, exist_ok=True)   # 영상 폴더에는 영상만 둔다. 자막과 길이 기록은 옆의 _작업 폴더로
-    (SIDE / f"{name}.srt").write_text("\n".join(srt), encoding="utf-8")
-    rep = [f"# {name}", "", f"- 음성 {a.voice} · 모델 {a.model} · " + ("빠르기 설정 없음" if V4 else f"속도 {a.speed}"), f"- 글자 {sum(len(t) for _, _, t in S)}자 · 이번에 쓴 크레딧 {spent}",
-           (f"- 말한 시간 합 {speech:.1f}초 · 장 안에는 쉼을 넣지 않음(모델이 읽은 그대로) · 장 넘김 {gap:.2f}초" if a.natural else
-            f"- 말한 시간 합 {speech:.1f}초 · 넣은 쉼(자리는 쉼_저장에서 읽음): 잇는 곳 {sum(lv(k) == 0 for r in rows for _, k in r['cuts'])}곳 · 짧게 {sum(lv(k) == 1 for r in rows for _, k in r['cuts'])}곳 {a.pause_short*scale:.2f}초 · 한 호흡 {sum(lv(k) == 2 for r in rows for _, k in r['cuts'])}곳 {a.pause_mid*scale:.2f}초 · 크게 {sum(lv(k) == 3 for r in rows for _, k in r['cuts'])}곳 {a.pause_long*scale:.2f}초 · 물음 뒤 최소 {PQ*scale:.2f}초 · 문단 사이 최소 {PP*scale:.2f}초 · 장 넘김 {gap:.2f}초 (기본값의 {scale:.2f}배)" if a.breath else
-            f"- 말한 시간 합 {speech:.1f}초 · 넣은 쉼: 문장 {PS*scale:.2f}초 · 물음 {PQ*scale:.2f}초 · 문단 {PP*scale:.2f}초 · 장 넘김 {gap:.2f}초 (기본값의 {scale:.2f}배)"),
-           f"- 영상 길이 {dur(OUT / (name + '.mp4')):.1f}초 · 목표 {a.target:.0f}초", "", "| 장 | 시작 | 음성(초) |", "|---|---|---|"]
+    (SIDE / f"{name}.srt").write_text("\n".join(f"{k}\n{ts(s)} --> {ts(e)}\n{t}\n" for k, (s, e, t) in enumerate(srt, 1)), encoding="utf-8")
+    rep = report_head(name, S, rows, spent, speech, scale, dur(OUT / (name + '.mp4'))) + ["", "| 장 | 시작 | 음성(초) |", "|---|---|---|"]
     rep += [f"| {r['first']}{'~'+str(r['last']) if r['last']!=r['first'] else ''} | {int(r['start']//60)}:{int(r['start']%60):02d}" + (f" (SLIDE {r['last']}부터 {int(r['sw']//60)}:{r['sw']%60:04.1f})" if 'sw' in r else '') + f" | {r['d2']:.1f} |" for r in rows]
     if a.audio_ledger:
         rep += ["", "| 음성 구획 | 생성 크레딧 |", "|---|---:|"]
