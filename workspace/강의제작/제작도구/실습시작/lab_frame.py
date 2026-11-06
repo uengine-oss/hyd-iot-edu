@@ -160,6 +160,7 @@ def A(say, *blocks, apply=None):
     files = {}
     for kind, target, text in blocks:
         if kind == 'paste':
+            target = target.split(' — ')[0]   # 「결과/정한_것.csv — 갈래: …」의 갈래 이름은 블록 꼬리표이고 파일 이름이 아니다
             if target in files and files[target] != text:
                 raise ValueError(f'정답 토글: {target}에 서로 다른 내용 둘 — 갈래가 둘이면 apply를 따로 줍니다')
             files[target] = text
