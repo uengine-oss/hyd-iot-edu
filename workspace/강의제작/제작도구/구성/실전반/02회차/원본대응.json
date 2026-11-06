@@ -150,6 +150,100 @@
    "origin": "응용 장",
    "source": [],
    "근거": "instances.cypher sen:ts1 · sv:ts1 · comp:cooler · part:cooler-core, schema.json OCCURS_IN, course_extractions.json fm:cooler-cooling-loss, 통합반 1회차 34장 경보(asset HYD-01 · evidence TS1)"
+  },
+  {
+   "destination": 11,
+   "title": "카디널리티와 모델링 선택",
+   "origin": "합친 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 14
+    },
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 19
+    }
+   ]
+  },
+  {
+   "destination": 12,
+   "title": "카디널리티의 네 가지 형태",
+   "origin": "같은 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 15
+    }
+   ]
+  },
+  {
+   "destination": 13,
+   "title": "카디널리티와 저장된 연결의 대조",
+   "origin": "같은 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 16
+    }
+   ]
+  },
+  {
+   "destination": 14,
+   "title": "공통 구성 노드와 설비별 노드",
+   "origin": "같은 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 17
+    }
+   ]
+  },
+  {
+   "destination": 15,
+   "title": "관계의 속성과 정보를 놓는 네 자리",
+   "origin": "합친 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 18
+    },
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 22
+    }
+   ]
+  },
+  {
+   "destination": 16,
+   "title": "새 클래스를 나누는 기준과 상속",
+   "origin": "합친 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 20
+    },
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 21
+    }
+   ]
+  },
+  {
+   "destination": 17,
+   "title": "응용: 가장 싼 견적과 승인 여부",
+   "origin": "응용 장",
+   "source": [],
+   "근거": "it/supabase/seed.sql ent.suppliers P-CLR-CORE sup:a · sup:b · sup:c(avl false), schema.json Supplier.avl · SUPPLIED_BY price · failRate · leadDays, scm_sync.py"
   }
  ],
  "dropped": [
