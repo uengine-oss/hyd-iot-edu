@@ -55,7 +55,7 @@
   {
    "destination": 4,
    "title": "클래스 · 인스턴스와 관계의 기초",
-   "origin": "같은 장",
+   "origin": "같은 장(부제 · 노트 고침)",
    "source": [
     {
      "course": "통합반",
@@ -146,10 +146,10 @@
   },
   {
    "destination": 10,
-   "title": "응용: 경보 태그 TS1에서 정비 준비 목록까지",
+   "title": "응용: 경보 근거 값의 기준과 조작 대상",
    "origin": "응용 장",
    "source": [],
-   "근거": "instances.cypher sen:ts1 · sv:ts1 · comp:cooler · part:cooler-core, schema.json OCCURS_IN, course_extractions.json fm:cooler-cooling-loss, 통합반 1회차 34장 경보(asset HYD-01 · evidence TS1)"
+   "근거": "instances.cypher sv:ts1 · sv:ce(limit null) · pattern:cooler-degradation(CE < 70) · INFLUENCES sv:fan-speed → sv:ts1 · actr:fan-drive · part:cooler-core, 사실표 대표 값"
   },
   {
    "destination": 11,
@@ -244,6 +244,64 @@
    "origin": "응용 장",
    "source": [],
    "근거": "it/supabase/seed.sql ent.suppliers P-CLR-CORE sup:a · sup:b · sup:c(avl false), schema.json Supplier.avl · SUPPLIED_BY price · failRate · leadDays, scm_sync.py"
+  },
+  {
+   "destination": 18,
+   "title": "스키마와 식별자",
+   "origin": "같은 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 23
+    }
+   ]
+  },
+  {
+   "destination": 19,
+   "title": "스키마와 식별자 · 이름 · 별칭",
+   "origin": "합친 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 24
+    },
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 25
+    }
+   ]
+  },
+  {
+   "destination": 20,
+   "title": "같은 대상인지 가리는 근거",
+   "origin": "합친 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 26
+    },
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 27
+    },
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 28
+    }
+   ]
+  },
+  {
+   "destination": 21,
+   "title": "응용: 이름이 다른 부품 기록과 품번",
+   "origin": "응용 장",
+   "source": [],
+   "근거": "실전반 실습3 자료/품번_교차표.csv P-FAN-BRG 두 줄, instances.cypher part:fan-bearing"
   }
  ],
  "dropped": [
@@ -369,6 +427,35 @@
    "title": "판단 문제: 부하를 더 낮추자는 제안",
    "origin": "새 장",
    "reason": "분량 조정(2026-10-23): 금지 사항은 71장 「금지 사항」 행과 98장이 맡는다"
+  }
+ ],
+ "확인단원": [
+  {
+   "단계": "덱",
+   "실전장": [
+    1,
+    10
+   ],
+   "상태": "확정",
+   "근거": "작업 판정/실전2_덱_U1.json — 단원 검토 1회 + 고칠목록 8건 고침 · 1회차(두 과정 공통) 받은 자리: 통합반_01일차.md 34 · 65 · 77장(장부 이름으로 받음)",
+   "원본": [
+    {
+     "커밋": "c184d9f778fb405c6fb3e7bf85c6a2051fd84d6b",
+     "경로": "workspace/강의제작/제작도구/온라인/decks/integrated/day02/통합반_02일차.md",
+     "장": [
+      1,
+      13
+     ]
+    },
+    {
+     "커밋": "c184d9f778fb405c6fb3e7bf85c6a2051fd84d6b",
+     "경로": "workspace/강의제작/제작도구/온라인/decks/integrated/day03/통합반_03일차.md",
+     "장": [
+      1,
+      3
+     ]
+    }
+   ]
   }
  ]
 }
