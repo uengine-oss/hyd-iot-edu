@@ -56,37 +56,35 @@
     "crop_box": null,
     "rectangles": [
       [
-        688,
-        480,
-        874,
-        521
+        680,
+        445,
+        1229,
+        530
       ],
       [
-        893,
-        480,
-        1219,
-        521
+        679,
+        599,
+        1229,
+        688
       ],
       [
-        688,
-        635,
-        1219,
-        677
+        679,
+        698,
+        1229,
+        787
       ],
       [
-        688,
-        735,
-        1219,
-        777
-      ],
-      [
-        803,
-        825,
-        1105,
-        877
+        793,
+        815,
+        1115,
+        887
       ]
     ],
-    "sha256": "7a06a70e7a48a9a742b8e52e68bbe8148a40d22d90727493602ea87b483876bb",
+    "pointer": [
+      954,
+      650
+    ],
+    "sha256": "8ac9ac707a7a216241ed838b9b22032fd9706edd44bd622ab843dbfa9d7ab634",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/00-connect.jpg",
     "earlier_unmarked_sha256": "ffbaf7e36e329956698a47b73264ab7705c12c22e865322145b406e72f19d7f7"
   },
@@ -101,37 +99,35 @@
     "crop_box": null,
     "rectangles": [
       [
-        688,
-        480,
-        874,
-        521
+        680,
+        445,
+        1229,
+        530
       ],
       [
-        893,
-        480,
-        1219,
-        521
+        679,
+        599,
+        1229,
+        688
       ],
       [
-        688,
-        635,
-        1219,
-        677
+        679,
+        698,
+        1229,
+        787
       ],
       [
-        688,
-        735,
-        1219,
-        777
-      ],
-      [
-        803,
-        825,
-        1105,
-        877
+        793,
+        815,
+        1115,
+        887
       ]
     ],
-    "sha256": "7a06a70e7a48a9a742b8e52e68bbe8148a40d22d90727493602ea87b483876bb",
+    "pointer": [
+      954,
+      650
+    ],
+    "sha256": "8ac9ac707a7a216241ed838b9b22032fd9706edd44bd622ab843dbfa9d7ab634",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/00-connect.jpg",
     "earlier_unmarked_sha256": "ffbaf7e36e329956698a47b73264ab7705c12c22e865322145b406e72f19d7f7"
   },
@@ -146,13 +142,17 @@
     "crop_box": null,
     "rectangles": [
       [
-        22,
-        824,
-        292,
-        850
+        18,
+        819,
+        296,
+        856
       ]
     ],
-    "sha256": "75ebda59b90653c97a7d7c4f2dd7c88ed2068dbeb0174fa29954efd9a0ab2f39"
+    "pointer": [
+      953,
+      852
+    ],
+    "sha256": "0dd81865165fa663cbe309fed4567579e5499c5a2df9cf4d1e5957de143ff5bb"
   },
   {
     "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/00-connected.jpg",
@@ -165,13 +165,17 @@
     "crop_box": null,
     "rectangles": [
       [
-        22,
-        824,
-        292,
-        850
+        18,
+        819,
+        296,
+        856
       ]
     ],
-    "sha256": "75ebda59b90653c97a7d7c4f2dd7c88ed2068dbeb0174fa29954efd9a0ab2f39"
+    "pointer": [
+      953,
+      852
+    ],
+    "sha256": "0dd81865165fa663cbe309fed4567579e5499c5a2df9cf4d1e5957de143ff5bb"
   },
   {
     "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/common-no-return.jpg",
@@ -187,22 +191,26 @@
         512,
         92,
         1810,
-        132
+        134
       ],
       [
-        1856,
-        95,
-        1911,
-        131
+        1847,
+        85,
+        1921,
+        141
       ],
       [
-        534,
-        218,
-        906,
-        244
+        528,
+        212,
+        910,
+        249
       ]
     ],
-    "sha256": "0a3874e7a102d4344fcd0d34e26037808fc8288cbe40a21cb74940050864e6aa",
+    "pointer": [
+      750,
+      365
+    ],
+    "sha256": "d833528a344a847ad63fd51c39f52a46bfa7fccbe4b69be6ce659429ebaee62f",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-no-return.jpg",
     "earlier_unmarked_sha256": "83a72e39cb54ffef39a1dc45b3d1dafd20cc408697305efd9885950aa9fd0c48"
   },
@@ -220,22 +228,26 @@
         512,
         92,
         1810,
-        132
+        134
       ],
       [
-        1856,
-        95,
-        1911,
-        131
+        1847,
+        85,
+        1921,
+        141
       ],
       [
-        534,
-        218,
-        906,
-        244
+        528,
+        212,
+        910,
+        249
       ]
     ],
-    "sha256": "0a3874e7a102d4344fcd0d34e26037808fc8288cbe40a21cb74940050864e6aa",
+    "pointer": [
+      750,
+      365
+    ],
+    "sha256": "d833528a344a847ad63fd51c39f52a46bfa7fccbe4b69be6ce659429ebaee62f",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-no-return.jpg",
     "earlier_unmarked_sha256": "83a72e39cb54ffef39a1dc45b3d1dafd20cc408697305efd9885950aa9fd0c48"
   },
@@ -256,13 +268,17 @@
         655
       ],
       [
-        1408,
-        330,
+        1404,
+        328,
         1592,
-        405
+        407
       ]
     ],
-    "sha256": "a73d44d5ab1fd984ca4411adde78f2b2e53006c3cef300f3708bc23ebfa32e46",
+    "pointer": [
+      1062,
+      415
+    ],
+    "sha256": "0f43da0ad364fab1bec080cfc432783307b0445593e77479c242127b1b133f40",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-created.jpg",
     "earlier_unmarked_sha256": "a61a64b2fb6beb8964b03f1c306deaeb3241bd8098365a953bfbd91cac79bc52"
   },
@@ -283,13 +299,17 @@
         655
       ],
       [
-        1408,
-        330,
+        1404,
+        328,
         1592,
-        405
+        407
       ]
     ],
-    "sha256": "a73d44d5ab1fd984ca4411adde78f2b2e53006c3cef300f3708bc23ebfa32e46",
+    "pointer": [
+      1062,
+      415
+    ],
+    "sha256": "0f43da0ad364fab1bec080cfc432783307b0445593e77479c242127b1b133f40",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-created.jpg",
     "earlier_unmarked_sha256": "a61a64b2fb6beb8964b03f1c306deaeb3241bd8098365a953bfbd91cac79bc52"
   },
@@ -304,16 +324,16 @@
     "crop_box": null,
     "rectangles": [
       [
-        8,
-        48,
-        38,
-        77
+        3,
+        43,
+        42,
+        83
       ],
       [
-        1293,
-        844,
-        1321,
-        874
+        1286,
+        838,
+        1327,
+        880
       ],
       [
         594,
@@ -325,10 +345,14 @@
         1408,
         330,
         1862,
-        615
+        618
       ]
     ],
-    "sha256": "80c55fcf2f54f9d55e82aba9e862f1d926d7c6e6a24ee3b8034fc39e05f85959",
+    "pointer": [
+      1567,
+      460
+    ],
+    "sha256": "d22dc82124d88bcf315518d8471a591a4d94c657a12dfcd89f908b0bb7f1e16b",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-properties.jpg",
     "earlier_unmarked_sha256": "594dc2ea4d1ee00f13d5cb94819d1798baf042cb09170b26c5c9561cf90d81ac"
   },
@@ -343,16 +367,16 @@
     "crop_box": null,
     "rectangles": [
       [
-        8,
-        48,
-        38,
-        77
+        3,
+        43,
+        42,
+        83
       ],
       [
-        1293,
-        844,
-        1321,
-        874
+        1286,
+        838,
+        1327,
+        880
       ],
       [
         594,
@@ -364,10 +388,14 @@
         1408,
         330,
         1862,
-        615
+        618
       ]
     ],
-    "sha256": "80c55fcf2f54f9d55e82aba9e862f1d926d7c6e6a24ee3b8034fc39e05f85959",
+    "pointer": [
+      1567,
+      460
+    ],
+    "sha256": "d22dc82124d88bcf315518d8471a591a4d94c657a12dfcd89f908b0bb7f1e16b",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-properties.jpg",
     "earlier_unmarked_sha256": "594dc2ea4d1ee00f13d5cb94819d1798baf042cb09170b26c5c9561cf90d81ac"
   },
@@ -383,12 +411,16 @@
     "rectangles": [
       [
         20,
-        315,
-        1000,
+        273,
+        1022,
         412
       ]
     ],
-    "sha256": "c5e18112bd44233bc156fabdb94c90ddccf97ad6a9b18461daa0b1df27b546f1",
+    "pointer": [
+      487,
+      340
+    ],
+    "sha256": "2052243d27760d6bfbb4a1f571102a889edd613126ed7b50da66f5cefbb57ab5",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-table.jpg",
     "earlier_unmarked_sha256": "e90c25e3e43473c857fed911544abb7f1239411824629b67341471056622f3cb"
   },
@@ -404,12 +436,16 @@
     "rectangles": [
       [
         20,
-        315,
-        1000,
+        273,
+        1022,
         412
       ]
     ],
-    "sha256": "c5e18112bd44233bc156fabdb94c90ddccf97ad6a9b18461daa0b1df27b546f1",
+    "pointer": [
+      487,
+      340
+    ],
+    "sha256": "2052243d27760d6bfbb4a1f571102a889edd613126ed7b50da66f5cefbb57ab5",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-table.jpg",
     "earlier_unmarked_sha256": "e90c25e3e43473c857fed911544abb7f1239411824629b67341471056622f3cb"
   },
@@ -430,13 +466,17 @@
         672
       ],
       [
-        1408,
-        335,
+        1404,
+        329,
         1580,
-        405
+        407
       ]
     ],
-    "sha256": "879be23d42f3ec5b32eae93179810e711243ccb4d39a96997065703140a2abd0",
+    "pointer": [
+      1062,
+      415
+    ],
+    "sha256": "857126537c4f9afc92a1a0a008967e22e246940675e922d37bb510ac87688346",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-filtered.jpg",
     "earlier_unmarked_sha256": "add4a01e3cf5f7418706a5e61f5482474f4e9dca946de542df6138d187d880bb"
   },
@@ -457,13 +497,17 @@
         672
       ],
       [
-        1408,
-        335,
+        1404,
+        329,
         1580,
-        405
+        407
       ]
     ],
-    "sha256": "879be23d42f3ec5b32eae93179810e711243ccb4d39a96997065703140a2abd0",
+    "pointer": [
+      1062,
+      415
+    ],
+    "sha256": "857126537c4f9afc92a1a0a008967e22e246940675e922d37bb510ac87688346",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-filtered.jpg",
     "earlier_unmarked_sha256": "add4a01e3cf5f7418706a5e61f5482474f4e9dca946de542df6138d187d880bb"
   },
@@ -478,10 +522,10 @@
     "crop_box": null,
     "rectangles": [
       [
-        100,
-        165,
-        1012,
-        195
+        99,
+        161,
+        1016,
+        199
       ],
       [
         356,
@@ -490,7 +534,11 @@
         673
       ]
     ],
-    "sha256": "a4a83363490a973cd5ddf3169d1193f06c714806ee4027ea50e677eac940efc3",
+    "pointer": [
+      1062,
+      415
+    ],
+    "sha256": "c7273c8e52d4e8c4ae2e2b2cb3b3cefd8909e4c87678e3345f2d00a68fdb4a1e",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-conditions.jpg",
     "earlier_unmarked_sha256": "6e73928e40f1379f28dfeb31e0f9b26724352a3a0e3f20f1a7ddd8ca002a0703"
   },
@@ -505,10 +553,10 @@
     "crop_box": null,
     "rectangles": [
       [
-        100,
-        165,
-        1012,
-        195
+        99,
+        161,
+        1016,
+        199
       ],
       [
         356,
@@ -517,7 +565,11 @@
         673
       ]
     ],
-    "sha256": "a4a83363490a973cd5ddf3169d1193f06c714806ee4027ea50e677eac940efc3",
+    "pointer": [
+      1062,
+      415
+    ],
+    "sha256": "c7273c8e52d4e8c4ae2e2b2cb3b3cefd8909e4c87678e3345f2d00a68fdb4a1e",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-conditions.jpg",
     "earlier_unmarked_sha256": "6e73928e40f1379f28dfeb31e0f9b26724352a3a0e3f20f1a7ddd8ca002a0703"
   },
@@ -538,19 +590,17 @@
         668
       ],
       [
-        34,
-        893,
-        216,
-        918
-      ],
-      [
-        34,
-        925,
-        656,
-        953
+        26,
+        889,
+        662,
+        959
       ]
     ],
-    "sha256": "f4e2fc5add49f1d3ce078c668ecc33958718a5ced5c9d6aa33204f7dd8f3d2eb",
+    "pointer": [
+      1062,
+      415
+    ],
+    "sha256": "4bea4b46a6481db6713a1ef93fd317f28e8b85062ec6602dc5da65f5033e2bf4",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-linked.jpg",
     "earlier_unmarked_sha256": "407cc2fbec58b8fafc555c9928e00812aa5c74cddff664dcbc302874e7d7cc9f"
   },
@@ -571,19 +621,17 @@
         668
       ],
       [
-        34,
-        893,
-        216,
-        918
-      ],
-      [
-        34,
-        925,
-        656,
-        953
+        26,
+        889,
+        662,
+        959
       ]
     ],
-    "sha256": "f4e2fc5add49f1d3ce078c668ecc33958718a5ced5c9d6aa33204f7dd8f3d2eb",
+    "pointer": [
+      1062,
+      415
+    ],
+    "sha256": "4bea4b46a6481db6713a1ef93fd317f28e8b85062ec6602dc5da65f5033e2bf4",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-linked.jpg",
     "earlier_unmarked_sha256": "407cc2fbec58b8fafc555c9928e00812aa5c74cddff664dcbc302874e7d7cc9f"
   },
@@ -600,17 +648,21 @@
       [
         686,
         488,
-        728,
+        738,
         668
       ],
       [
-        1408,
-        285,
+        1404,
+        283,
         1600,
-        365
+        367
       ]
     ],
-    "sha256": "6b56dd0e3be214b454f59e781359fc404e749f4b1a2c2e521a0ca778b9d5715a"
+    "pointer": [
+      1567,
+      460
+    ],
+    "sha256": "f6d9f3c3e9b69be8310efc6cf274c827f7cfb4c334a39cb97b964aecbd83b0d4"
   },
   {
     "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/common-relationship.jpg",
@@ -625,17 +677,21 @@
       [
         686,
         488,
-        728,
+        738,
         668
       ],
       [
-        1408,
-        285,
+        1404,
+        283,
         1600,
-        365
+        367
       ]
     ],
-    "sha256": "6b56dd0e3be214b454f59e781359fc404e749f4b1a2c2e521a0ca778b9d5715a"
+    "pointer": [
+      1567,
+      460
+    ],
+    "sha256": "f6d9f3c3e9b69be8310efc6cf274c827f7cfb4c334a39cb97b964aecbd83b0d4"
   },
   {
     "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/common-updated.jpg",
@@ -655,12 +711,16 @@
       ],
       [
         1412,
-        532,
+        530,
         1862,
-        615
+        618
       ]
     ],
-    "sha256": "2442649c4793c0beb82f2ef68ede339a0f5fdb605dc833a62b5c667512ea6635",
+    "pointer": [
+      1567,
+      460
+    ],
+    "sha256": "18c524d8899fe0d94530c85427156f90918cdc98ed33943daaa1abf10ed20ffd",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-updated.jpg",
     "earlier_unmarked_sha256": "7fab2464471600be82892aa2b384e0d381c6ae8515d8610e384fea1e8145b57b"
   },
@@ -682,12 +742,16 @@
       ],
       [
         1412,
-        532,
+        530,
         1862,
-        615
+        618
       ]
     ],
-    "sha256": "2442649c4793c0beb82f2ef68ede339a0f5fdb605dc833a62b5c667512ea6635",
+    "pointer": [
+      1567,
+      460
+    ],
+    "sha256": "18c524d8899fe0d94530c85427156f90918cdc98ed33943daaa1abf10ed20ffd",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-updated.jpg",
     "earlier_unmarked_sha256": "7fab2464471600be82892aa2b384e0d381c6ae8515d8610e384fea1e8145b57b"
   },
@@ -708,13 +772,17 @@
         673
       ],
       [
-        34,
-        893,
-        215,
-        918
+        28,
+        889,
+        221,
+        925
       ]
     ],
-    "sha256": "53de9638615e9b6ad7879b6f4d7c34a6ca6c4396ab7ea15843cc2fd9a7c4ba18",
+    "pointer": [
+      1062,
+      415
+    ],
+    "sha256": "e0060a29c84c07ec2b4f4a62b21eb753125c4699aae4d8bbc7d8997ed56e2260",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-unlinked.jpg",
     "earlier_unmarked_sha256": "4aa04abe6b3d354fed59f6bb61b867f77b05924318c71a0b7ef0d3c1680e1b98"
   },
@@ -735,13 +803,17 @@
         673
       ],
       [
-        34,
-        893,
-        215,
-        918
+        28,
+        889,
+        221,
+        925
       ]
     ],
-    "sha256": "53de9638615e9b6ad7879b6f4d7c34a6ca6c4396ab7ea15843cc2fd9a7c4ba18",
+    "pointer": [
+      1062,
+      415
+    ],
+    "sha256": "e0060a29c84c07ec2b4f4a62b21eb753125c4699aae4d8bbc7d8997ed56e2260",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-unlinked.jpg",
     "earlier_unmarked_sha256": "4aa04abe6b3d354fed59f6bb61b867f77b05924318c71a0b7ef0d3c1680e1b98"
   },
@@ -761,6 +833,10 @@
         1052,
         673
       ]
+    ],
+    "pointer": [
+      1062,
+      415
     ],
     "sha256": "d04cd8559d2e0c57e9e03e84833089d89e12230bfd6f82ae79cae299671dfae8",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-remaining.jpg",
@@ -783,6 +859,10 @@
         673
       ]
     ],
+    "pointer": [
+      1062,
+      415
+    ],
     "sha256": "d04cd8559d2e0c57e9e03e84833089d89e12230bfd6f82ae79cae299671dfae8",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-remaining.jpg",
     "earlier_unmarked_sha256": "5a6ada1b81a4c7b56a6a28db313eac6778d0e9555abc57529f7134d06239da7c"
@@ -803,6 +883,10 @@
         270,
         362
       ]
+    ],
+    "pointer": [
+      948,
+      340
     ],
     "sha256": "d7ccefe3c28cafc7be7db62474b6683ff7206d08abd7fc329e0ee38abff57f9d",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-clean.jpg",
@@ -825,6 +909,10 @@
         362
       ]
     ],
+    "pointer": [
+      948,
+      340
+    ],
     "sha256": "d7ccefe3c28cafc7be7db62474b6683ff7206d08abd7fc329e0ee38abff57f9d",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-clean.jpg",
     "earlier_unmarked_sha256": "f494d2349cfe3cb7935e81d64e876c89ddaaa5d0b0ee0842ba8d56f59c5d33e7"
@@ -840,19 +928,23 @@
     "crop_box": null,
     "rectangles": [
       [
-        1574,
-        790,
-        1872,
-        826
+        1572,
+        785,
+        1876,
+        830
       ],
       [
         1830,
-        843,
-        1880,
-        874
+        840,
+        1882,
+        878
       ]
     ],
-    "sha256": "7400b2a1900b0388f77deb989d48ff00c1bfe4c3f355fb812f0b4ee1206ceef9"
+    "pointer": [
+      1760,
+      812
+    ],
+    "sha256": "1aeac6e89573115cf16ce4b76f8a310492c30edb11900f41ea14c261dcabcc5c"
   },
   {
     "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-layout.jpg",
@@ -865,19 +957,23 @@
     "crop_box": null,
     "rectangles": [
       [
-        1574,
-        790,
-        1872,
-        826
+        1572,
+        785,
+        1876,
+        830
       ],
       [
         1830,
-        843,
-        1880,
-        874
+        840,
+        1882,
+        878
       ]
     ],
-    "sha256": "7400b2a1900b0388f77deb989d48ff00c1bfe4c3f355fb812f0b4ee1206ceef9"
+    "pointer": [
+      1760,
+      812
+    ],
+    "sha256": "1aeac6e89573115cf16ce4b76f8a310492c30edb11900f41ea14c261dcabcc5c"
   },
   {
     "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-whole.jpg",
@@ -890,10 +986,10 @@
     "crop_box": null,
     "rectangles": [
       [
-        1791,
-        844,
-        1823,
-        874
+        1786,
+        838,
+        1827,
+        880
       ],
       [
         586,
@@ -902,7 +998,11 @@
         374
       ]
     ],
-    "sha256": "aa5b91af9c2a149c02ea505c0559211b8f4e95ab690564a95ed4ba26dc37e52e",
+    "pointer": [
+      1585,
+      645
+    ],
+    "sha256": "3a0e8e2f614055633046b0aeaea4fcb85a45c7d7cb9b5e126d9f0344f9ca3eab",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-whole.jpg",
     "earlier_unmarked_sha256": "a4f564c75636554882a2bfbdff4add04a4d6c469da446cebfc11dc83730817fb"
   },
@@ -917,10 +1017,10 @@
     "crop_box": null,
     "rectangles": [
       [
-        1791,
-        844,
-        1823,
-        874
+        1786,
+        838,
+        1827,
+        880
       ],
       [
         586,
@@ -929,7 +1029,11 @@
         374
       ]
     ],
-    "sha256": "aa5b91af9c2a149c02ea505c0559211b8f4e95ab690564a95ed4ba26dc37e52e",
+    "pointer": [
+      1585,
+      645
+    ],
+    "sha256": "3a0e8e2f614055633046b0aeaea4fcb85a45c7d7cb9b5e126d9f0344f9ca3eab",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-whole.jpg",
     "earlier_unmarked_sha256": "a4f564c75636554882a2bfbdff4add04a4d6c469da446cebfc11dc83730817fb"
   },
@@ -955,6 +1059,10 @@
         1862,
         575
       ]
+    ],
+    "pointer": [
+      1567,
+      460
     ],
     "sha256": "d40292ebc248bf69bc9e7e90031621aa56b47e52414fb5ae265f93963bbcbf17",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-cooler.jpg",
@@ -983,6 +1091,10 @@
         575
       ]
     ],
+    "pointer": [
+      1567,
+      460
+    ],
     "sha256": "d40292ebc248bf69bc9e7e90031621aa56b47e52414fb5ae265f93963bbcbf17",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-cooler.jpg",
     "earlier_unmarked_sha256": "2dcee4ef7ee57e28bccf0c6d2b41fad6f3ee1581fbee7d42bd4a17414d9c66d2"
@@ -1009,6 +1121,10 @@
         1862,
         712
       ]
+    ],
+    "pointer": [
+      1567,
+      460
     ],
     "sha256": "3fe41c79f052a4a9df3de6c4b4a295ca9c74e0b21113fb030d9c807717edd75b",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-sensor.jpg",
@@ -1037,6 +1153,10 @@
         712
       ]
     ],
+    "pointer": [
+      1567,
+      460
+    ],
     "sha256": "3fe41c79f052a4a9df3de6c4b4a295ca9c74e0b21113fb030d9c807717edd75b",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-sensor.jpg",
     "earlier_unmarked_sha256": "6aa4458087a66b638216af11d096836d68a18a84e432a83e211b5bbde7ce1aa3"
@@ -1058,13 +1178,17 @@
         630
       ],
       [
-        1408,
-        285,
+        1404,
+        283,
         1600,
-        365
+        367
       ]
     ],
-    "sha256": "e5ddac7be00352a69e149c1c0a5fafeada64801260fc50ecc23519e27d80a44a",
+    "pointer": [
+      1567,
+      460
+    ],
+    "sha256": "5e5ced45d9b0e1d830ba4c812ebd162f579213b1373ad276dfe5c7e1c2b64338",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-relationship.jpg",
     "earlier_unmarked_sha256": "a08711d2c11fe6e1c95abe8a1ada80ea4701117f4cc9202ca004a6d6d258d588"
   },
@@ -1085,13 +1209,17 @@
         630
       ],
       [
-        1408,
-        285,
+        1404,
+        283,
         1600,
-        365
+        367
       ]
     ],
-    "sha256": "e5ddac7be00352a69e149c1c0a5fafeada64801260fc50ecc23519e27d80a44a",
+    "pointer": [
+      1567,
+      460
+    ],
+    "sha256": "5e5ced45d9b0e1d830ba4c812ebd162f579213b1373ad276dfe5c7e1c2b64338",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-relationship.jpg",
     "earlier_unmarked_sha256": "a08711d2c11fe6e1c95abe8a1ada80ea4701117f4cc9202ca004a6d6d258d588"
   },
@@ -1113,7 +1241,7 @@
       ],
       [
         1410,
-        332,
+        330,
         1550,
         366
       ],
@@ -1121,10 +1249,14 @@
         1412,
         578,
         1862,
-        752
+        754
       ]
     ],
-    "sha256": "8f6454503c879c6133a12456adf6eb67bdd3af574d382b90e63b981a2fae87b8",
+    "pointer": [
+      1567,
+      460
+    ],
+    "sha256": "dcbdbfe5c2f096dc9fcf0ab8c69ca42ed37770a2aed8447a47b7c032bf500966",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-quantity.jpg",
     "earlier_unmarked_sha256": "f31e8e6c80bf50f6a41621df33eaf66fdedb4e67b9448622cf14684dfcb221dd"
   },
@@ -1146,7 +1278,7 @@
       ],
       [
         1410,
-        332,
+        330,
         1550,
         366
       ],
@@ -1154,10 +1286,14 @@
         1412,
         578,
         1862,
-        752
+        754
       ]
     ],
-    "sha256": "8f6454503c879c6133a12456adf6eb67bdd3af574d382b90e63b981a2fae87b8",
+    "pointer": [
+      1567,
+      460
+    ],
+    "sha256": "dcbdbfe5c2f096dc9fcf0ab8c69ca42ed37770a2aed8447a47b7c032bf500966",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-quantity.jpg",
     "earlier_unmarked_sha256": "f31e8e6c80bf50f6a41621df33eaf66fdedb4e67b9448622cf14684dfcb221dd"
   },
@@ -1175,16 +1311,20 @@
         672,
         320,
         738,
-        832
+        842
       ],
       [
-        1408,
-        335,
+        1404,
+        329,
         1830,
-        555
+        559
       ]
     ],
-    "sha256": "a8f507260ccb27ff85f66a3bab2df6c0c7c1ae9aeadc290f3a805983e4f51769",
+    "pointer": [
+      705,
+      800
+    ],
+    "sha256": "22410bbc36dbe137dcce1000be343d302e97e0800d856518bf0ba7aa95c43f7c",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-filtered.jpg",
     "earlier_unmarked_sha256": "e20ac098db380adf753d9b4708e5177c95a5ba24d0039283731a242447591d5c"
   },
@@ -1202,16 +1342,20 @@
         672,
         320,
         738,
-        832
+        842
       ],
       [
-        1408,
-        335,
+        1404,
+        329,
         1830,
-        555
+        559
       ]
     ],
-    "sha256": "a8f507260ccb27ff85f66a3bab2df6c0c7c1ae9aeadc290f3a805983e4f51769",
+    "pointer": [
+      705,
+      800
+    ],
+    "sha256": "22410bbc36dbe137dcce1000be343d302e97e0800d856518bf0ba7aa95c43f7c",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-filtered.jpg",
     "earlier_unmarked_sha256": "e20ac098db380adf753d9b4708e5177c95a5ba24d0039283731a242447591d5c"
   },
@@ -1235,10 +1379,14 @@
         1412,
         578,
         1862,
-        615
+        618
       ]
     ],
-    "sha256": "618c78b9e3529de48b6528ba95c2e0dd20274b069469c740bc74ada9edc19d71",
+    "pointer": [
+      1567,
+      460
+    ],
+    "sha256": "0d49aebf2e7f223a504d6b113a89951f9c28aee5e4d4b431562d6b6fae7dbc93",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-part.jpg",
     "earlier_unmarked_sha256": "ad3aa6c6576a1279c1e0797dcf4651c3927fdc9bd062775d5710c12b7dedc4fa"
   },
@@ -1262,10 +1410,14 @@
         1412,
         578,
         1862,
-        615
+        618
       ]
     ],
-    "sha256": "618c78b9e3529de48b6528ba95c2e0dd20274b069469c740bc74ada9edc19d71",
+    "pointer": [
+      1567,
+      460
+    ],
+    "sha256": "0d49aebf2e7f223a504d6b113a89951f9c28aee5e4d4b431562d6b6fae7dbc93",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-part.jpg",
     "earlier_unmarked_sha256": "ad3aa6c6576a1279c1e0797dcf4651c3927fdc9bd062775d5710c12b7dedc4fa"
   },
@@ -1285,13 +1437,17 @@
     ],
     "rectangles": [
       [
-        958,
-        275,
+        956,
+        271,
         1520,
         460
       ]
     ],
-    "sha256": "537661f72d96296b83bc9abfeeda45f332e10fc53f5add25f9f2fcbdb3f44fed",
+    "pointer": [
+      262,
+      345
+    ],
+    "sha256": "2d9fb780b65b4c838eb0b5049e87b068ee419f1bc8392d83e72de92b7b417d07",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-count.jpg",
     "earlier_unmarked_sha256": "d2ecef30a15326efd9de1e6cecd3faa63696dd75ead8fdc2e36a417b493d59ef"
   },
@@ -1311,13 +1467,17 @@
     ],
     "rectangles": [
       [
-        958,
-        275,
+        956,
+        271,
         1520,
         460
       ]
     ],
-    "sha256": "537661f72d96296b83bc9abfeeda45f332e10fc53f5add25f9f2fcbdb3f44fed",
+    "pointer": [
+      262,
+      345
+    ],
+    "sha256": "2d9fb780b65b4c838eb0b5049e87b068ee419f1bc8392d83e72de92b7b417d07",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-count.jpg",
     "earlier_unmarked_sha256": "d2ecef30a15326efd9de1e6cecd3faa63696dd75ead8fdc2e36a417b493d59ef"
   },
@@ -1332,13 +1492,17 @@
     "crop_box": null,
     "rectangles": [
       [
-        1842,
-        220,
-        1884,
-        258
+        1838,
+        218,
+        1890,
+        264
       ]
     ],
-    "sha256": "07124b9710cfd3a9792e9bc8719af11dd858774b907b50fe878e634828aa499c"
+    "pointer": [
+      1862,
+      240
+    ],
+    "sha256": "dd0be9436511d967a13ad40eef6aed6e9000f31fe9b7763620e31e675091fe6e"
   },
   {
     "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-png.jpg",
@@ -1351,13 +1515,17 @@
     "crop_box": null,
     "rectangles": [
       [
-        1842,
-        220,
-        1884,
-        258
+        1838,
+        218,
+        1890,
+        264
       ]
     ],
-    "sha256": "07124b9710cfd3a9792e9bc8719af11dd858774b907b50fe878e634828aa499c"
+    "pointer": [
+      1862,
+      240
+    ],
+    "sha256": "dd0be9436511d967a13ad40eef6aed6e9000f31fe9b7763620e31e675091fe6e"
   },
   {
     "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-queries.jpg",
@@ -1370,19 +1538,23 @@
     "crop_box": null,
     "rectangles": [
       [
-        60,
-        45,
-        92,
-        80
+        44,
+        34,
+        100,
+        96
       ],
       [
-        652,
-        45,
-        690,
-        80
+        650,
+        41,
+        692,
+        84
       ]
     ],
-    "sha256": "6b75eec207aeab0dadcded40764b7fca501aab09fd9826f520c6eda753205dd8"
+    "pointer": [
+      672,
+      62
+    ],
+    "sha256": "a57d086f4ef3ad81abfe51d2a4c79d028ff4241e36280f45a862b505e34804e2"
   },
   {
     "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-queries.jpg",
@@ -1395,19 +1567,23 @@
     "crop_box": null,
     "rectangles": [
       [
-        60,
-        45,
-        92,
-        80
+        44,
+        34,
+        100,
+        96
       ],
       [
-        652,
-        45,
-        690,
-        80
+        650,
+        41,
+        692,
+        84
       ]
     ],
-    "sha256": "6b75eec207aeab0dadcded40764b7fca501aab09fd9826f520c6eda753205dd8"
+    "pointer": [
+      672,
+      62
+    ],
+    "sha256": "a57d086f4ef3ad81abfe51d2a4c79d028ff4241e36280f45a862b505e34804e2"
   },
   {
     "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-saved.jpg",
@@ -1427,24 +1603,22 @@
       ],
       [
         510,
-        98,
+        94,
         1080,
-        170
+        176
       ],
       [
-        40,
-        200,
-        300,
-        255
-      ],
-      [
-        402,
-        105,
-        432,
-        137
+        21,
+        165,
+        312,
+        261
       ]
     ],
-    "sha256": "6428661121f845c90d18830c2b6ce009425fcfa6d67c2a38182549bcc3e2e6c0"
+    "pointer": [
+      282,
+      215
+    ],
+    "sha256": "854579a13f696122f65b49d3b187e28a6ed7742aad0ce8f74d785897d9c7fadf"
   },
   {
     "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-saved.jpg",
@@ -1464,23 +1638,21 @@
       ],
       [
         510,
-        98,
+        94,
         1080,
-        170
+        176
       ],
       [
-        40,
-        200,
-        300,
-        255
-      ],
-      [
-        402,
-        105,
-        432,
-        137
+        21,
+        165,
+        312,
+        261
       ]
     ],
-    "sha256": "6428661121f845c90d18830c2b6ce009425fcfa6d67c2a38182549bcc3e2e6c0"
+    "pointer": [
+      282,
+      215
+    ],
+    "sha256": "854579a13f696122f65b49d3b187e28a6ed7742aad0ce8f74d785897d9c7fadf"
   }
 ]

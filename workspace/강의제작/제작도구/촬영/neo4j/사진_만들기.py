@@ -24,38 +24,60 @@ PROVENANCE = HERE.parent.parent/'실습시작/capture-provenance.json'
 ORIGINALS = HERE/'사진원본'
 RED, WIDTH = '#d32f2f', 4
 
-NODES2 = [356, 478, 1052, 673]    # 두 노드가 나란히 보이는 결과(펌프 · 팬 또는 펌프 · 센서)
-DETAIL_HEAD = [1408, 285, 1600, 365]   # 오른쪽 상세 창 제목과 레이블
-
-# 이름, 영상 초, 가이드 절, 빨간 표시들, 자르기(없으면 전체)
+# 이름, 영상 초, 가이드 절, 빨간 표시들, 자르기(없으면 전체), 마우스 포인터 끝(x, y — 표시 검사에서 포인터만 뺀다)
+# 표시 규칙(P-8): 선 굵기 WIDTH, 선의 안팎 GAP px 안에 글자 · 단추 같은 어두운 화소(밝기 DARK 미만)가 없고, 한 사진의 상자끼리는 GAP px 넘게 떨어진다.
 PHOTOS = [
-    ('00-connect', 44.0, '예제 준비하고 연결하기', [[688, 480, 874, 521], [893, 480, 1219, 521], [688, 635, 1219, 677], [688, 735, 1219, 777], [803, 825, 1105, 877]], None),
-    ('00-connected', 52.0, '예제 준비하고 연결하기', [[22, 824, 292, 850]], None),
-    ('common-no-return', 179.5, '노드 만들고 RETURN으로 그래프 보기', [[512, 92, 1810, 132], [1856, 95, 1911, 131], [534, 218, 906, 244]], None),
-    ('common-created', 218.5, '노드 만들고 RETURN으로 그래프 보기', [[680, 497, 1228, 655], [1408, 330, 1592, 405]], None),
-    ('common-properties', 256.5, '노드 만들고 RETURN으로 그래프 보기', [[8, 48, 38, 77], [1293, 844, 1321, 874], [594, 453, 814, 673], [1408, 330, 1862, 615]], None),
-    ('common-table', 328.5, '같은 노드를 그래프와 표로 조회하기', [[20, 315, 1000, 412]], None),
-    ('common-filtered', 362.0, '조건을 바꾸고 그래프 비교하기', [[607, 479, 801, 672], [1408, 335, 1580, 405]], None),
-    ('common-conditions', 455.5, '조건을 바꾸고 그래프 비교하기', [[100, 165, 1012, 195], NODES2], None),
-    ('common-linked', 569.5, '센서를 만들고 관계 연결하기', [[685, 488, 730, 668], [34, 893, 216, 918], [34, 925, 656, 953]], None),
-    ('common-relationship', 598.0, '센서를 만들고 관계 연결하기', [[686, 488, 728, 668], DETAIL_HEAD], None),
-    ('common-updated', 657.5, '속성을 수정하고 연결 확인하기', [[594, 465, 814, 687], [1412, 532, 1862, 615]], None),
-    ('common-unlinked', 723.5, '관계만 삭제하고 노드는 남기기', [NODES2, [34, 893, 215, 918]], None),
-    ('common-remaining', 803.5, '노드 삭제와 정리 확인하기', [NODES2], None),
-    ('common-clean', 860.5, '노드 삭제와 정리 확인하기', [[24, 272, 270, 362]], None),
-    ('forest-layout', 922.8, '전체 설비 지도 읽기', [[1574, 790, 1872, 826], [1830, 843, 1880, 874]], None),
-    ('forest-whole', 946.5, '전체 설비 지도 읽기', [[1791, 844, 1823, 874], [586, 316, 644, 374]], None),
-    ('forest-cooler', 1014.5, '전체 설비 지도 읽기', [[644, 502, 768, 626], [1408, 330, 1862, 575]], None),
-    ('forest-sensor', 1167.5, '센서와 관계를 클릭해서 읽기', [[632, 491, 778, 637], [1412, 578, 1862, 712]], None),
-    ('forest-relationship', 1238.5, '센서와 관계를 클릭해서 읽기', [[655, 440, 760, 630], DETAIL_HEAD], None),
-    ('forest-quantity', 1322.0, '센서에서 물리량까지 따라가기', [[643, 503, 768, 628], [1410, 332, 1550, 366], [1412, 578, 1862, 752]], None),
-    ('forest-filtered', 1362.5, '질문에 맞춰 조건과 반환값 바꾸기', [[672, 320, 738, 832], [1408, 335, 1830, 555]], None),
-    ('forest-part', 1519.5, '교체 부품 가지 탐색하기', [[638, 498, 772, 630], [1412, 578, 1862, 615]], None),
-    ('forest-count', 1599.0, '그림에서 센 수와 집계 비교하기', [[958, 275, 1520, 460]], [0, 0, 1920, 650]),
-    ('forest-png', 1687.0, '전체 지도에서 정리하고 저장하기', [[1842, 220, 1884, 258]], None),
-    ('forest-queries', 1712.0, '전체 지도에서 정리하고 저장하기', [[60, 45, 92, 80], [652, 45, 690, 80]], None),
-    ('forest-saved', 1741.0, '전체 지도에서 정리하고 저장하기', [[650, 45, 785, 80], [510, 98, 1080, 170], [40, 200, 300, 255], [402, 105, 432, 137]], None),
+    ('00-connect', 44.0, '예제 준비하고 연결하기', [[680, 445, 1229, 530], [679, 599, 1229, 688], [679, 698, 1229, 787], [793, 815, 1115, 887]], None, (954, 650)),
+    ('00-connected', 52.0, '예제 준비하고 연결하기', [[18, 819, 296, 856]], None, (953, 852)),
+    ('common-no-return', 179.5, '노드 만들고 RETURN으로 그래프 보기', [[512, 92, 1810, 134], [1847, 85, 1921, 141], [528, 212, 910, 249]], None, (750, 365)),
+    ('common-created', 218.5, '노드 만들고 RETURN으로 그래프 보기', [[680, 497, 1228, 655], [1404, 328, 1592, 407]], None, (1062, 415)),
+    ('common-properties', 256.5, '노드 만들고 RETURN으로 그래프 보기', [[3, 43, 42, 83], [1286, 838, 1327, 880], [594, 453, 814, 673], [1408, 330, 1862, 618]], None, (1567, 460)),
+    ('common-table', 328.5, '같은 노드를 그래프와 표로 조회하기', [[20, 273, 1022, 412]], None, (487, 340)),
+    ('common-filtered', 362.0, '조건을 바꾸고 그래프 비교하기', [[607, 479, 801, 672], [1404, 329, 1580, 407]], None, (1062, 415)),
+    ('common-conditions', 455.5, '조건을 바꾸고 그래프 비교하기', [[99, 161, 1016, 199], [356, 478, 1052, 673]], None, (1062, 415)),
+    ('common-linked', 569.5, '센서를 만들고 관계 연결하기', [[685, 488, 730, 668], [26, 889, 662, 959]], None, (1062, 415)),
+    ('common-relationship', 598.0, '센서를 만들고 관계 연결하기', [[686, 488, 738, 668], [1404, 283, 1600, 367]], None, (1567, 460)),
+    ('common-updated', 657.5, '속성을 수정하고 연결 확인하기', [[594, 465, 814, 687], [1412, 530, 1862, 618]], None, (1567, 460)),
+    ('common-unlinked', 723.5, '관계만 삭제하고 노드는 남기기', [[356, 478, 1052, 673], [28, 889, 221, 925]], None, (1062, 415)),
+    ('common-remaining', 803.5, '노드 삭제와 정리 확인하기', [[356, 478, 1052, 673]], None, (1062, 415)),
+    ('common-clean', 860.5, '노드 삭제와 정리 확인하기', [[24, 272, 270, 362]], None, (948, 340)),
+    ('forest-layout', 922.8, '전체 설비 지도 읽기', [[1572, 785, 1876, 830], [1830, 840, 1882, 878]], None, (1760, 812)),
+    ('forest-whole', 946.5, '전체 설비 지도 읽기', [[1786, 838, 1827, 880], [586, 316, 644, 374]], None, (1585, 645)),
+    ('forest-cooler', 1014.5, '전체 설비 지도 읽기', [[644, 502, 768, 626], [1408, 330, 1862, 575]], None, (1567, 460)),
+    ('forest-sensor', 1167.5, '센서와 관계를 클릭해서 읽기', [[632, 491, 778, 637], [1412, 578, 1862, 712]], None, (1567, 460)),
+    ('forest-relationship', 1238.5, '센서와 관계를 클릭해서 읽기', [[655, 440, 760, 630], [1404, 283, 1600, 367]], None, (1567, 460)),
+    ('forest-quantity', 1322.0, '센서에서 물리량까지 따라가기', [[643, 503, 768, 628], [1410, 330, 1550, 366], [1412, 578, 1862, 754]], None, (1567, 460)),
+    ('forest-filtered', 1362.5, '질문에 맞춰 조건과 반환값 바꾸기', [[672, 320, 738, 842], [1404, 329, 1830, 559]], None, (705, 800)),
+    ('forest-part', 1519.5, '교체 부품 가지 탐색하기', [[638, 498, 772, 630], [1412, 578, 1862, 618]], None, (1567, 460)),
+    ('forest-count', 1599.0, '그림에서 센 수와 집계 비교하기', [[956, 271, 1520, 460]], [0, 0, 1920, 650], (262, 345)),
+    ('forest-png', 1687.0, '전체 지도에서 정리하고 저장하기', [[1838, 218, 1890, 264]], None, (1862, 240)),
+    ('forest-queries', 1712.0, '전체 지도에서 정리하고 저장하기', [[44, 34, 100, 96], [650, 41, 692, 84]], None, (672, 62)),
+    ('forest-saved', 1741.0, '전체 지도에서 정리하고 저장하기', [[650, 45, 785, 80], [510, 94, 1080, 176], [21, 165, 312, 261]], None, (282, 215)),
 ]
+DARK, GAP = 140, 6
+
+
+def mark_problems(gray, rects, cursor):
+    """표시 규칙 위반 목록. gray는 표시 전 프레임(흑백 배열 — 리스트의 리스트가 아닌 numpy)."""
+    import numpy as np
+    dark = gray < DARK
+    if cursor:
+        x, y = cursor
+        dark[max(0, y-4):y+40, max(0, x-4):x+28] = False
+    h, w = dark.shape
+    def count(x0, y0, x1, y1):
+        return int(dark[max(0, y0):min(h, y1), max(0, x0):min(w, x1)].sum())
+    problems = []
+    for r in rects:
+        x0, y0, x1, y1 = r
+        sides = {'위': count(x0-GAP, y0-GAP, x1+GAP, y0+WIDTH+GAP), '아래': count(x0-GAP, y1-WIDTH-GAP, x1+GAP, y1+GAP),
+                 '왼쪽': count(x0-GAP, y0-GAP, x0+WIDTH+GAP, y1+GAP), '오른쪽': count(x1-WIDTH-GAP, y0-GAP, x1+GAP, y1+GAP)}
+        problems += [f'{r} {side} 선 {GAP}px 안 어두운 화소 {n}' for side, n in sides.items() if n]
+    for i, a in enumerate(rects):
+        for b in rects[i+1:]:
+            if a[0]-GAP < b[2] and b[0]-GAP < a[2] and a[1]-GAP < b[3] and b[1]-GAP < a[3]:
+                problems.append(f'{a}와 {b}가 {GAP}px 안으로 붙거나 겹침')
+    return problems
 
 
 def sha(path):
@@ -72,12 +94,20 @@ def main():
     work.mkdir(parents=True, exist_ok=True)
     video_sha = sha(ROOT/VIDEO)
     targets = {f'{lab}/{name}.jpg' for lab in LABS for name, *_ in PHOTOS}
-    records = []
-    for name, seconds, section, rects, crop in PHOTOS:
+    import numpy as np
+    frames, failures = {}, []
+    for name, seconds, section, rects, crop, cursor in PHOTOS:   # 먼저 모든 표시를 검사하고, 하나라도 어기면 아무것도 쓰지 않는다
         frame = work/f'{video_sha[:12]}-{seconds}.png'
         if not frame.exists():
             subprocess.run([imageio_ffmpeg.get_ffmpeg_exe(), '-hide_banner', '-loglevel', 'error', '-ss', str(seconds),
                             '-i', str(ROOT/VIDEO), '-frames:v', '1', str(frame)], check=True)
+        frames[name] = frame
+        failures += [f'{name}: {p}' for p in mark_problems(np.asarray(Image.open(frame).convert('L')).astype(int), rects, cursor)]
+    if failures:
+        raise SystemExit('표시 규칙 위반 — 사진을 쓰지 않았다:\n' + '\n'.join(failures))
+    records = []
+    for name, seconds, section, rects, crop, cursor in PHOTOS:
+        frame = frames[name]
         image = Image.open(frame).convert('RGB')
         draw = ImageDraw.Draw(image)
         for rect in rects:
@@ -90,7 +120,7 @@ def main():
             image.save(target, quality=92)
             records.append({'target': f'{lab}/{name}.jpg', 'kind': '학생 실습 화면', 'section': section,
                             'source': VIDEO, 'source_sha256': video_sha, 'seconds': seconds, 'raw_frame_sha256': sha(frame),
-                            'crop_box': crop, 'rectangles': rects, 'sha256': sha(target),
+                            'crop_box': crop, 'rectangles': rects, 'pointer': list(cursor) if cursor else None, 'sha256': sha(target),
                             **({'earlier_unmarked': original.relative_to(ROOT).as_posix(), 'earlier_unmarked_sha256': sha(original)} if original.exists() else {})})
     for lab in LABS:
         stale = {p.name for p in (ROOT/lab).glob('*.jpg')} - {n+'.jpg' for n, *_ in PHOTOS}

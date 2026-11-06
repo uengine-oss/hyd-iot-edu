@@ -802,6 +802,34 @@
       "sha256": "6d3e12355e7ff470dbe43ddb5b509d9b6cdd14a031cd9909cdc5a16f7bc92d4c",
       "raw_frame_sha256": "d8c30877bdd439e7fa92868f95d9a0a84190a6cb210135baf8245247ac43fcdb"
     },
+    "06-지도고장유형": {
+      "required_scene": "지도를 위아래로 굴리면 고장 유형 아래에 노랗게 표시된 쿨러 냉각 성능 상실이 보입니다. 이 칸을 누릅니다.",
+      "check": "지도를 위아래로 굴리면 고장 유형 아래에 노랗게 표시된 쿨러 냉각 성능 상실이 보입니다. 이 칸을 누릅니다.",
+      "path": "workspace/강의제작/제작도구/촬영/포털/사진/06-지도고장유형.png",
+      "verified": true,
+      "source_type": "video",
+      "source": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_06_실습_전체과정관찰.mp4",
+      "source_sha256": "72beb9fbcea59f61de827dd50a86acbcd3d6dab1cb7fcf9880373bba3490e1c8",
+      "seconds": 588.25,
+      "crop": [
+        405,
+        380,
+        1360,
+        1000
+      ],
+      "rectangles": [
+        [
+          737,
+          653,
+          998,
+          698
+        ]
+      ],
+      "redactions": [],
+      "caption": "지도를 위아래로 굴리면 고장 유형 아래에 노랗게 표시된 쿨러 냉각 성능 상실이 보입니다. 이 칸을 누릅니다.",
+      "sha256": "d63ad2b27ba1636ff6feb481cb958033eb8c87026318decf35d06b4fa1051a2a",
+      "raw_frame_sha256": "0bb3c77cf53afccec38afeacc6b863be4e936ce86c111a0779b0063e23fc8f34"
+    },
     "06-지도관계": {
       "required_scene": "고장 유형 쿨러 냉각 성능 상실의 나가는 관계에서 즉시 완화와 근본 조치를 찾습니다.",
       "check": "고장 유형 쿨러 냉각 성능 상실의 나가는 관계에서 즉시 완화와 근본 조치를 찾습니다.",
