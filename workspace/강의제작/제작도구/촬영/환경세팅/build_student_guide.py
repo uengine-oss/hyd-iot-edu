@@ -53,7 +53,8 @@ def render():
             raise ValueError(f'사진 판본 불일치: {key}')
         # 원본 영상 대조는 prepare_student_photos.py 몫이다 — 녹화 원본은 작업 폴더에만 있어 사진(제작도구)만으로 다시 만든다
         seconds = item.get('seconds')
-        if isinstance(seconds, bool) or not isinstance(seconds, (int, float)) or seconds < 0 or not item.get('rectangles') or not item.get('caption'):
+        video = item.get('source_type') != 'image'   # 이미지 원본(영상 밖에서 받은 화면)에는 영상 시각이 없다
+        if (video and (isinstance(seconds, bool) or not isinstance(seconds, (int, float)) or seconds < 0)) or not item.get('rectangles') or not item.get('caption'):
             raise ValueError(f'시각·표시 좌표·설명 누락: {key}')
         name = key + path.suffix
         assets[name] = path
