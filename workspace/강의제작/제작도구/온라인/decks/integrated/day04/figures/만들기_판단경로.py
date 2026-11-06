@@ -53,7 +53,6 @@ def main():
     drawings={'지침_두입력':double_route(), '에이전트_재조회':loop(),
               '호스트_클라이언트':hosting(),
               '개정_소유범위':branch(quote_doc,outline_doc,graph_icon),
-              '관측_판단갈림':branch(quote_doc,check_badge,magnifier),
               '점검_진동경계':branch(query_graph,magnifier,steps_icon)}
     for name, body in drawings.items():
         (HERE/f'{name}.svg').write_text(svg(body),encoding='utf8')
