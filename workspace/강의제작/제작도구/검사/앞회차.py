@@ -23,7 +23,7 @@ SLIDE = re.compile(r"^## SLIDE (\d+) — (.*)$")
 TERMS = "오늘 다룬 핵심 개념과 주요 용어 정리"
 QUOTED = re.compile(r"「([^」]+)」")
 FIRST = re.compile(r"통합 (\d+)회차")
-DEFINES = r"(?:은|는|이란|란|이라는 것은|=|:)\s"
+DEFINES = r"(?:은|는|이란|란|이라는 것은|=)\s"
 ENDS = re.compile(r"(?:이다|입니다|이에요|예요|뜻한다|뜻합니다|말한다|말합니다|가리킨다|가리킵니다)")
 
 
@@ -85,17 +85,23 @@ def check(files, rows, base):
     """[(파일, 줄, 종류, 말, 줄 글)] — 쓰지 않을 말, 그리고 base 회차보다 앞에 정의한 이름의 다시 정의 꼴."""
     banned = [(w, r["대상"]) for r in rows for w in r["금지"]]
     prior = [(n, r) for r in rows if r["회차"] and r["회차"] < base for n in r["이름들"]]
-    redefine = [(n, r, re.compile(rf"(?:\*\*{re.escape(n)}\*\*|^\s*(?:\d+\.\s*)?\|?\s*{re.escape(n)}\s*\||(?<![가-힣]){re.escape(n)}(?:\([^)]*\))?\s*{DEFINES})"))
-                for n, r in prior]
+    redefine = [(n, r, re.compile(rf"\*\*{re.escape(n)}\*\*\(|(?<![가-힣]){re.escape(n)}(?:\([^)]*\))?\s*{DEFINES}"),
+                 re.compile(rf"^\s*\d+\.\s*(?:\*\*)?{re.escape(n)}(\([A-Za-z][^)]*\))?(?:\*\*)?\s*\|")) for n, r in prior]
     out = []
     for f in files:
+        title = ""   # 덱 원고면 지금 장 제목 — 이름으로 시작하는 표 줄은 용어 정리 장이거나 영문 이름을 함께 실은 줄만 다시 정의로 본다
         for i, line in enumerate(Path(f).read_text(encoding="utf-8").splitlines(), 1):
+            m = SLIDE.match(line)
+            if m:
+                title = m[2].strip()
             for w, what in banned:
                 if w in line:
                     out.append((f, i, "쓰지 않을 말", f"「{w}」({what})", line.strip()))
-            for n, r, rx in redefine:
+            for n, r, rx, row in redefine:
                 hit = rx.search(line)
-                if hit and (hit[0].startswith("**") or "|" in hit[0] or ENDS.search(line[hit.end():])):
+                cell = row.search(line)
+                if (hit and (hit[0].startswith("**") or ENDS.search(line[hit.end():]))) or (
+                        cell and (title == TERMS or cell[1] or re.search(r"\|\s*[A-Z][A-Za-z ·]+\s*$", line))):
                     out.append((f, i, "다시 정의", f"「{n}」({r['처음']})", line.strip()))
     return out
 
@@ -181,15 +187,19 @@ def selftest():
         deck.write_text("\n".join([
             "- 메시지: 임계값을 넘으면 경보가 뜬다.",                          # 1 쓰지 않을 말
             "- 노트: · 임계치는 판정을 가르는 경계값이다 / [다음] 비교",          # 2 다시 정의(1회차 이름)
-            "- 메시지: **역량 질문**(Competency Question)은 설계의 출발점이다.",  # 3 다시 정의(굵게)
-            "  1. 역량 질문 | Competency Question / 온톨로지가 답할 질문",        # 4 용어 정리 표
-            "- 노트: · 임계치를 넘은 값으로 원인을 가린다",                      # 5 받아 씀 — 후보 아님
-            "- 메시지: 앞에서 정한 역량 질문에 답하는 쿼리를 쓴다.",              # 6 받아 씀 — 후보 아님
-            "- 노트: · 조치 카드가 곧 추천안",                                  # 7 쓰지 않을 말(모든 회차)
-            "- 노트: · 임계치(Threshold) = 경계값이에요",                        # 8 다시 정의(= 꼴)
+            "- 메시지: **역량 질문**(Competency Question)은 설계의 출발점이다.",  # 3 다시 정의(굵게 + 영문)
+            "- 노트: · 임계치를 넘은 값으로 원인을 가린다",                      # 4 받아 씀 — 후보 아님
+            "- 메시지: 앞에서 정한 역량 질문에 답하는 쿼리를 쓴다.",              # 5 받아 씀 — 후보 아님
+            "- 노트: · 조치 카드가 곧 추천안",                                  # 6 쓰지 않을 말(모든 회차)
+            "- 노트: · 임계치(Threshold) = 경계값이에요",                        # 7 다시 정의(= 꼴)
+            "  2. 임계치 | 55 ℃ | 본문 표의 한 줄",                              # 8 용어 정리 장 밖의 표 줄 — 후보 아님
+            "- 메시지: 값을 **역량 질문**으로 묶는다.",                          # 9 영문 괄호 없는 굵게는 강조 — 후보 아님
+            "  3. 임계치 | 판정을 가르는 경계값 | Threshold",                     # 10 영문 이름을 함께 실은 표 줄 — 다시 정의
+            "## SLIDE 70 — 오늘 다룬 핵심 개념과 주요 용어 정리",                # 11
+            "  1. 역량 질문 | Competency Question / 온톨로지가 답할 질문",        # 12 용어 정리 장의 표 줄 — 다시 정의
         ]) + "\n", encoding="utf-8")
         got = {(i, kind) for _, i, kind, *_ in check([deck], rows, 3)}
-        want = {(1, "쓰지 않을 말"), (2, "다시 정의"), (3, "다시 정의"), (4, "다시 정의"), (7, "쓰지 않을 말"), (8, "다시 정의")}
+        want = {(1, "쓰지 않을 말"), (2, "다시 정의"), (3, "다시 정의"), (6, "쓰지 않을 말"), (7, "다시 정의"), (10, "다시 정의"), (12, "다시 정의")}
         cases.append(("깨뜨린 줄은 모두 잡고 받아 쓴 줄은 놓아둔다", got == want, sorted(got ^ want)))
         early = {(i, kind) for _, i, kind, *_ in check([deck], rows, 2)}
         cases.append(("2회차 기준이면 2회차 이름(역량 질문)의 정의는 후보가 아니다", (3, "다시 정의") not in early and (2, "다시 정의") in early, sorted(early)))
