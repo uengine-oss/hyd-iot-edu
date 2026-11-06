@@ -57,9 +57,14 @@ def pcm(src, n, ss=None):
 
 def gray(video, f, count):
     """프레임 f부터 count장을 작은 회색 그림(160×90 바이트열)으로."""
-    raw = ff("-ss", f"{max(0, f - 0.5) / FPS:.5f}", "-i", video, "-frames:v", count, "-vf", "scale=160:90", "-f", "rawvideo", "-pix_fmt", "gray", "-", out=True)
+    raw = ff("-ss", at(f), "-i", video, "-frames:v", count, "-vf", "scale=160:90", "-f", "rawvideo", "-pix_fmt", "gray", "-", out=True)
     n = 160 * 90
     return [raw[i * n:(i + 1) * n] for i in range(len(raw) // n)]
+
+
+def at(f):
+    """프레임 f를 첫 프레임으로 푸는 -ss 값. ffmpeg는 그 시각을 덮는 프레임부터 내므로 프레임 시작보다 조금 뒤를 준다(앞을 주면 한 프레임 앞부터 나온다)."""
+    return f"{(f + 0.25) / FPS:.5f}"
 
 
 def diff(x, y): return sum(abs(p - q) for p, q in zip(x, y)) / len(x)
@@ -237,7 +242,7 @@ def main():
             if kind == "copy":
                 ff(*(["-ss", f"{fa / FPS + 0.001:.5f}"] if fa else []), "-i", video, "-frames:v", fb - fa, "-an", "-c", "copy", part)
             else:
-                ff("-ss", f"{(fa - 0.5) / FPS:.5f}", "-i", video, "-frames:v", fb - fa, *emph.ENC, part)
+                ff("-ss", at(fa), "-i", video, "-frames:v", fb - fa, *emph.ENC, part)
             if packets(part) != fb - fa: stop(f"기존 영상 {fa}~{fb} 프레임을 자른 조각의 프레임 수가 {packets(part)}다")
             files.append(part)
         lst = tmp / "parts.txt"; lst.write_text("".join(f"file '{p.as_posix()}'\n" for p in files), encoding="utf-8")
@@ -260,7 +265,7 @@ def main():
             fr = gray(result, s - 6, 13)
             dpre, dcut, dpost = diff(fr[0], fr[5]), diff(fr[5], fr[6]), diff(fr[6], fr[12])
             for off in (-6, -1, 0, 6):
-                ff("-ss", f"{(s + off - 0.5) / FPS:.5f}", "-i", result, "-frames:v", 1, seam_dir / f"{first}장_{where}_{off:+d}.png")
+                ff("-ss", at(s + off), "-i", result, "-frames:v", 1, seam_dir / f"{first}장_{where}_{off:+d}.png")
             msg = f"  {first}장 {where} {s / FPS:8.3f}초: 화면 {dpre:.2f} | {dcut:.2f} | {dpost:.2f}"
             if sa is not None:
                 x = pcm(result, int(0.4 * RATE), sa / FPS - 0.2)
