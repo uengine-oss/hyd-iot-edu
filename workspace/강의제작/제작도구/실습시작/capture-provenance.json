@@ -1654,5 +1654,95 @@
       215
     ],
     "sha256": "2d67f24be6fcf5e78d24bb85d1fe920dacd975ac2c44966d0dba6671b1616b68"
+  },
+  {
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/00-explorer.jpg",
+    "kind": "학생 실습 화면",
+    "section": "예제 준비하고 연결하기",
+    "source_type": "image",
+    "source": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/00-explorer.png",
+    "source_sha256": "5efa89868e4617d0d5b716fdcc5af8c3ff5f40d568e83b2088d404a6271b7094",
+    "source_note": "2026-11-06 이 PC에서 ZIP을 D:/HYD-Practice에 풀고 파일 탐색기 주소 표시줄 → PowerShell(Windows Terminal)로 두 명령을 실행하며 창을 찍음",
+    "crop_box": null,
+    "rectangles": [
+      [
+        208,
+        47,
+        743,
+        80
+      ]
+    ],
+    "pointer": null,
+    "sha256": "8ce1378e5771990486e0526441be4e477ec0c444f0c4e35b2e27a90f408684ef"
+  },
+  {
+    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/00-explorer.jpg",
+    "kind": "학생 실습 화면",
+    "section": "예제 준비하고 연결하기",
+    "source_type": "image",
+    "source": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/00-explorer.png",
+    "source_sha256": "5efa89868e4617d0d5b716fdcc5af8c3ff5f40d568e83b2088d404a6271b7094",
+    "source_note": "2026-11-06 이 PC에서 ZIP을 D:/HYD-Practice에 풀고 파일 탐색기 주소 표시줄 → PowerShell(Windows Terminal)로 두 명령을 실행하며 창을 찍음",
+    "crop_box": null,
+    "rectangles": [
+      [
+        208,
+        47,
+        743,
+        80
+      ]
+    ],
+    "pointer": null,
+    "sha256": "8ce1378e5771990486e0526441be4e477ec0c444f0c4e35b2e27a90f408684ef"
+  },
+  {
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/00-powershell.jpg",
+    "kind": "학생 실습 화면",
+    "section": "예제 준비하고 연결하기",
+    "source_type": "image",
+    "source": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/00-powershell.png",
+    "source_sha256": "3b1e3df791acbdf9d532a946d4fa73f9f907cf8b7e573c429ce5014eb82d3606",
+    "source_note": "2026-11-06 이 PC에서 ZIP을 D:/HYD-Practice에 풀고 파일 탐색기 주소 표시줄 → PowerShell(Windows Terminal)로 두 명령을 실행하며 창을 찍음",
+    "crop_box": [
+      0,
+      0,
+      1499,
+      440
+    ],
+    "rectangles": [
+      [
+        10,
+        119,
+        1205,
+        415
+      ]
+    ],
+    "pointer": null,
+    "sha256": "dad13d89c54e65de32737bd21ee9ca101ea57cbaa41d3633d31c893f8c2aff20"
+  },
+  {
+    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/00-powershell.jpg",
+    "kind": "학생 실습 화면",
+    "section": "예제 준비하고 연결하기",
+    "source_type": "image",
+    "source": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/00-powershell.png",
+    "source_sha256": "3b1e3df791acbdf9d532a946d4fa73f9f907cf8b7e573c429ce5014eb82d3606",
+    "source_note": "2026-11-06 이 PC에서 ZIP을 D:/HYD-Practice에 풀고 파일 탐색기 주소 표시줄 → PowerShell(Windows Terminal)로 두 명령을 실행하며 창을 찍음",
+    "crop_box": [
+      0,
+      0,
+      1499,
+      440
+    ],
+    "rectangles": [
+      [
+        10,
+        119,
+        1205,
+        415
+      ]
+    ],
+    "pointer": null,
+    "sha256": "dad13d89c54e65de32737bd21ee9ca101ea57cbaa41d3633d31c893f8c2aff20"
   }
 ]

@@ -26,9 +26,12 @@ for course,slug in active_courses:
             prepare=('예제 준비하고 연결하기', '<p>먼저 '+b('Docker Desktop')+'을 실행합니다. 이 실습의 데이터베이스가 Docker에서 돌아갑니다.</p>'
                      '<p>「실습 시작」 도구를 쓴다면 관계 조회 실습을 고르고 '+b('새로 시작')+'을 누르세요. 예제가 준비되고 이 가이드와 Neo4j Browser가 열리니 아래 연결 창으로 갑니다.</p>'
                      '<p>명령과 질의는 손으로 치지 말고 블록의 '+b('복사')+' 단추로 붙여 넣으세요. 손으로 옮기면 따옴표나 기호 하나만 틀려도 실행되지 않습니다.</p>'
-                     '<p>ZIP으로 받았다면 풀린 <code>02회차/랩/02일차_실습1_관계조회</code> 폴더를 파일 탐색기로 엽니다. 주소 표시줄에 powershell을 입력하고 Enter를 누르면 그 폴더에서 PowerShell 창이 열립니다. 다음 명령을 실행하세요.</p>'
+                     '<p>ZIP으로 받았다면 풀린 <code>02회차/랩/02일차_실습1_관계조회</code> 폴더를 파일 탐색기로 엽니다. 주소 표시줄에 powershell을 입력하고 Enter를 누르면 그 폴더에서 PowerShell 창이 열립니다.</p>'
+                     +figure('00-explorer','실습 폴더를 연 파일 탐색기의 주소 표시줄에 powershell을 넣은 모습. Enter를 누르면 이 폴더에서 PowerShell이 열립니다')
+                     +'<p>다음 명령을 실행하세요.</p>'
                      +block('shell','python prepare_example.py')+check('예제 준비 완료: 노드 20개 · 관계 19개가 표시됩니다. 이 예제는 HYD-01 한 대의 설비 구성입니다.')
                      +block('shell','python lab_db.py')+check('랩 DB 준비 완료와 Connect URL 주소가 표시되고, 브라우저에 연결 창이 열립니다.')
+                     +figure('00-powershell','두 명령의 출력. 첫 명령의 끝줄에 예제 준비 완료: 노드 20개 · 관계 19개, 두 번째 명령에 Connect URL이 나옵니다. 포트 번호는 PC마다 다릅니다')
                      +'<p>열린 연결 창의 '+b('Protocol')+'이 bolt://이고 '+b('Connection URL')+'이 PowerShell 또는 「실습 시작」 창에 표시된 연결 주소와 같은지 봅니다. 칸이 비어 있다면 표시된 주소의 127.0.0.1:포트 부분을 넣습니다. '
                      +b('Database user')+'에 neo4j를 넣고 '+b('Password')+'는 비워 둔 채 '+b('Connect')+'를 누르세요.</p>'
                      +figure('00-connect','연결 창의 주소 · 사용자 · 비밀번호 칸과 Connect 단추. 주소는 자신의 화면에 표시된 연결 주소와 대조합니다')

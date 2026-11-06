@@ -5,6 +5,7 @@ PYTHONUTF8=1 .venv314/Scripts/python.exe workspace/강의제작/제작도구/촬
 - 원본은 영상에서 뽑은 프레임(`--work`, git 밖)이다. 표시는 늘 그 원본에 다시 그린다(표시 위에 겹쳐 그리지 않는다).
 - 시각은 게시본 영상(v6)의 시각이다. 영상 판본이 바뀌면 시각을 다시 재고 이 파일을 고친다(영상 해시가 근거에 남는다).
 - 2026-11-06 이전 사진(표시 없는 촬영 프레임)은 `사진원본/`에 그대로 두었다. 같은 이름의 사진은 그 원본과 같은 시각의 영상 프레임이다.
+- 영상 밖 화면(첫 절의 파일 탐색기 · PowerShell)은 `SCREENS`이고, 그 원본 PNG도 `사진원본/`에 둔다.
 - 사진의 설명 글은 가이드 생성기(`실습시작/graph_guide.py`)가 가진다.
 """
 from pathlib import Path
@@ -57,6 +58,14 @@ PHOTOS = [
 ]
 DARK, GAP = 140, 6
 
+# 영상 밖 화면(영상이 연결 창부터 시작해 찍히지 않은 준비 단계): 이 PC에서 학생 경로대로 ZIP을 풀고 파일 탐색기 → PowerShell로 실행하며
+# 창을 그대로 찍은 원본(사진원본/<이름>.png). 이름, 원본, 가이드 절, 빨간 표시들, 자르기(없으면 전체)
+# 어두운 터미널에서는 밝기 검사(DARK)가 글자와 배경을 가르지 못해 검사하지 않고, 상자 둘레를 4배로 키워 눈으로 본다.
+SCREENS = [
+    ('00-explorer', ORIGINALS/'00-explorer.png', '예제 준비하고 연결하기', [[208, 47, 743, 80]], None),
+    ('00-powershell', ORIGINALS/'00-powershell.png', '예제 준비하고 연결하기', [[10, 119, 1205, 415]], [0, 0, 1499, 440]),
+]
+
 
 def mark_problems(gray, rects, cursor):
     """표시 규칙 위반 목록. gray는 표시 전 프레임(흑백 배열 — 리스트의 리스트가 아닌 numpy)."""
@@ -94,7 +103,7 @@ def main():
         parser.error('원본 프레임은 저장소 작업 폴더(작업/…)에 둡니다.')
     work.mkdir(parents=True, exist_ok=True)
     video_sha = sha(ROOT/VIDEO)
-    targets = {f'{lab}/{name}.jpg' for lab in LABS for name, *_ in PHOTOS}
+    targets = {f'{lab}/{name}.jpg' for lab in LABS for name, *_ in PHOTOS + SCREENS}
     import numpy as np
     frames, failures = {}, []
     for name, seconds, section, rects, crop, cursor in PHOTOS:   # 먼저 모든 표시를 검사하고, 하나라도 어기면 아무것도 쓰지 않는다
@@ -123,14 +132,28 @@ def main():
                             'source': VIDEO, 'source_sha256': video_sha, 'seconds': seconds, 'raw_frame_sha256': sha(frame),
                             'crop_box': crop, 'rectangles': rects, 'pointer': list(cursor) if cursor else None, 'sha256': sha(target),
                             **({'earlier_unmarked': original.relative_to(ROOT).as_posix(), 'earlier_unmarked_sha256': sha(original)} if original.exists() else {})})
+    for name, source, section, rects, crop in SCREENS:
+        image = Image.open(source).convert('RGB')
+        draw = ImageDraw.Draw(image)
+        for rect in rects:
+            draw.rectangle(rect, outline=RED, width=WIDTH)
+        if crop:
+            image = image.crop(crop)
+        for lab in LABS:
+            target = ROOT/lab/f'{name}.jpg'
+            image.save(target, quality=92)
+            records.append({'target': f'{lab}/{name}.jpg', 'kind': '학생 실습 화면', 'section': section, 'source_type': 'image',
+                            'source': source.relative_to(ROOT).as_posix(), 'source_sha256': sha(source),
+                            'source_note': '2026-11-06 이 PC에서 ZIP을 D:/HYD-Practice에 풀고 파일 탐색기 주소 표시줄 → PowerShell(Windows Terminal)로 두 명령을 실행하며 창을 찍음',
+                            'crop_box': crop, 'rectangles': rects, 'pointer': None, 'sha256': sha(target)})
     for lab in LABS:
-        stale = {p.name for p in (ROOT/lab).glob('*.jpg')} - {n+'.jpg' for n, *_ in PHOTOS}
+        stale = {p.name for p in (ROOT/lab).glob('*.jpg')} - {n+'.jpg' for n, *_ in PHOTOS + SCREENS}
         if stale:
             raise SystemExit(f'{lab}: 근거에 없는 사진 {sorted(stale)} — 이 파일에 넣거나 사진원본/으로 옮긴다')
     old = json.loads(PROVENANCE.read_text(encoding='utf-8'))
     keep = [x for x in old if x['target'] not in targets and x['target'].removeprefix('workspace/') not in {t.removeprefix('workspace/') for t in targets}]
     PROVENANCE.write_text(json.dumps(keep + records, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
-    print(len(PHOTOS), '사진 × 두 과정. 눈으로 본 뒤 가이드를 만든다.')
+    print(len(PHOTOS) + len(SCREENS), '사진 × 두 과정. 눈으로 본 뒤 가이드를 만든다.')
 
 
 if __name__ == '__main__':
