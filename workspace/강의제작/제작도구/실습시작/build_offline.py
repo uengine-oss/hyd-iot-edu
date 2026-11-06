@@ -53,7 +53,7 @@ def main():
         write(destination/f'workspace/강의제작/산출물/{course}/실습/01회차/오프라인_가이드.html', page)
     # 코딩랩 목록에는 도구 실습을 넣지 않는다. 다른 회차 항목은 그대로 보존한다.
     removed = {}
-    for filename in ('catalog.json', 'package-index.json'):
+    for filename in ('package-index.json',):
         data = json.loads((HERE/filename).read_text(encoding='utf-8-sig'))
         removed[filename] = [x for x in data['labs'] if x['id'] in OLD_IDS]
         data['labs'] = [x for x in data['labs'] if x['id'] not in OLD_IDS]

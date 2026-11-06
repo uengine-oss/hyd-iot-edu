@@ -399,7 +399,7 @@ def chosen_errors(root):
 import hashlib as _h
 _PROVIDED = {
  "doc_graph.py": "b81641078b1e185887118225ec0813142118c1da6490d055c12921f66a82d48b",
- "lab_cypher.py": "97cb3929bb37cbc00fcb2de05eaa34ea041890c2185bb89e96c8e367fab59bf2",
+ "lab_cypher.py": "a6ae2b16b5fff7f923287653468098733b246e2a589d9b98a6a07818df1f04a3",
  "lab_db.py": "8328793ea21000f17b36da076b53a16791bf7247e08a7357e6c7320f6cde125a",
  "lab_steps.py": "e25aabc76d3ba41528521a8abb122f62236cb8e93fa01e7a9e7c8ebd1c9a2b60",
  "show_result.py": "1d7bb59ff9b3a5c3e7bd94af2838eafb891b312a1c34e43877dd700d17fd7c9d"

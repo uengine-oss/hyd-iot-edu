@@ -10,7 +10,7 @@ system_root() 한 곳으로 그 위치를 찾는다.
     python lab_package.py <랩 폴더> [--version <새 판>]
 새 ZIP을 verify_packages.check_zip으로 검사해 통과할 때만 바꿔 끼우고, package-index에 그 랩이 있으면 그 항목의
 sha256(주면 version)만 고친다. 바이트가 바뀌었는데 --version이 없으면 멈춘다(판 이름이 내용을 가리키게).
-그다음 build_launcher.py로 catalog.json · 실습시작.zip을 묶는다.
+그다음 verify_packages.py로 검사한다.
 """
 from pathlib import Path
 import argparse
@@ -83,8 +83,16 @@ def pack(folder, exclude_names=PRIVATE, archive=None):
         with zipfile.ZipFile(existing) as z:
             if not any(n.startswith(root + '/') for n in z.namelist()):
                 raise ValueError(f'{existing.name}: 기존 ZIP의 루트가 {root}/가 아니다. 루트 형식을 사용자가 정한 뒤 묶는다.')
-    return write_zip(archive or existing,
-                     [(f'{root}/{p.relative_to(folder).as_posix()}', p.read_bytes()) for p in student_files(folder, exclude_names)])
+    entries = [(f'{root}/{p.relative_to(folder).as_posix()}', p.read_bytes()) for p in student_files(folder, exclude_names)]
+    guide = outside_guide(folder)
+    if guide:   # 코딩 랩 가이드는 ZIP 안 랩 폴더 옆에 함께 둔다 — 학생은 풀고 가이드는 브라우저로, 랩 폴더는 VS Code로 연다(가이드.md P-3)
+        entries.append((guide_name(folder), guide.read_bytes()))
+    return write_zip(archive or existing, entries)
+
+
+def guide_name(folder):
+    """ZIP 안 가이드 경로 NN회차/랩/<랩>_guide.html — 랩 폴더 옆이라 VS Code로 여는 폴더(AI가 읽는 범위) 밖이다."""
+    return f'{zip_root(folder).rsplit("/", 1)[0]}/{Path(folder).name}_guide.html'
 
 
 def sha256(path):
@@ -162,7 +170,7 @@ def main(argv=None):
         print(f'{archive.name}: 다시 묶음({new[:12]}). package-index 밖 랩이라 목록은 그대로다.')
         return 0
     register([item | {'version': args.version, 'sha256': new} | ({'guide_file': entry(item['id'], item['course'], item['session'], item['title'], args.version, folder)['guide_file']} if outside_guide(folder) else {})])
-    print(f'{archive.name}: 다시 묶음({new[:12]}), package-index {item["id"]} 판 {args.version}. 다음: build_launcher.py → verify_packages.py → test_launcher.py')
+    print(f'{archive.name}: 다시 묶음({new[:12]}), package-index {item["id"]} 판 {args.version}. 다음: verify_packages.py')
     return 0
 
 

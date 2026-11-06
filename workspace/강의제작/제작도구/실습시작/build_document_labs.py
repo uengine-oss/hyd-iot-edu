@@ -14,7 +14,7 @@
   3. 두 번 만들어 바이트가 같다(--check).
 
 사용: HYD_MAIN_ROOT=<main 체크아웃> python build_document_labs.py [--lab integrated-04-extract|practical-03-extract|integrated-04-graph|practical-03-card] [--check]
-package-index · catalog 등록은 하지 않는다 — ZIP만 묶는다(등록은 메인).
+package-index 등록은 하지 않는다 — ZIP만 묶는다(등록은 메인).
 """
 from pathlib import Path
 import argparse
@@ -2950,7 +2950,7 @@ def main(argv=None):
         archive = pack(folder)
         print(f'{folder.name}: 단계 {len(L["steps"])}, 파일 {sum(1 for p in folder.rglob("*") if p.is_file())}개, ZIP {archive.name} {hashlib.sha256(archive.read_bytes()).hexdigest()[:12]}, '
               f'가이드 {F.guide_path(folder).name} {hashlib.sha256(F.guide_path(folder).read_bytes()).hexdigest()[:12]}')
-    print('package-index · catalog 등록은 하지 않았습니다(메인이 lab_package.register · build_launcher.py로).')
+    print('package-index 등록은 하지 않았습니다(메인이 lab_package.register로).')
     return 0
 
 
