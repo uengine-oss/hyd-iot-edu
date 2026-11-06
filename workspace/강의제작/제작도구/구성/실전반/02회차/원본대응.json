@@ -302,6 +302,144 @@
    "origin": "응용 장",
    "source": [],
    "근거": "실전반 실습3 자료/품번_교차표.csv P-FAN-BRG 두 줄, instances.cypher part:fan-bearing"
+  },
+  {
+   "destination": 22,
+   "title": "속성 · 관계의 정의와 설비 모델",
+   "origin": "합친 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 29
+    },
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 37
+    }
+   ]
+  },
+  {
+   "destination": 23,
+   "title": "자료형 · 목록 · 열거형 · 필수 여부",
+   "origin": "합친 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 30
+    },
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 31
+    },
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 32
+    }
+   ]
+  },
+  {
+   "destination": 24,
+   "title": "클래스 이름 · 의미 · 속성 정의",
+   "origin": "같은 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 33
+    }
+   ]
+  },
+  {
+   "destination": 25,
+   "title": "관계 유형과 유효한 연결",
+   "origin": "같은 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 34
+    }
+   ]
+  },
+  {
+   "destination": 26,
+   "title": "제약에 어긋난 데이터와 고칠 근거",
+   "origin": "합친 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 35
+    },
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 36
+    }
+   ]
+  },
+  {
+   "destination": 27,
+   "title": "역량 질문에서 설비 모델 정의까지",
+   "origin": "합친 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 38
+    },
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 39
+    },
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 40
+    }
+   ]
+  },
+  {
+   "destination": 28,
+   "title": "인스턴스 추가와 스키마 넓히기",
+   "origin": "합친 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 41
+    },
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 42
+    }
+   ]
+  },
+  {
+   "destination": 29,
+   "title": "설비 · 진단 · 판단 · 성과의 지식",
+   "origin": "같은 장(카드 줄바꿈 · 노트 [다음])",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 43
+    }
+   ]
+  },
+  {
+   "destination": 30,
+   "title": "응용: 다른 기종의 새 설비를 들일 때",
+   "origin": "응용 장",
+   "source": [],
+   "근거": "실전반 실습3 자료/설비_대장.csv HYD-04(HPP-45B 수냉식) · 예비품_목록.csv P-CLR-PLT, schema.json Asset(모델 속성 없음) · Component 설명, instances.cypher 설비 UNWIND"
   }
  ],
  "dropped": [
