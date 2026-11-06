@@ -2,6 +2,7 @@
 언제: settings.json 훅 — SessionStart(compact) `compact`, PostToolUse(Read) `read`, PreToolUse(Edit · Write · NotebookEdit · Bash · PowerShell · Agent) `gate`.
 명령: <py> .claude/hooks/guide_gate.py selftest
 - 상태: 작업/_훅/<세션>__<에이전트>.json(git 밖). 서브에이전트는 따로 센다. 읽은 뒤 바뀐 문서 · 요약 뒤에는 다시 읽어야 하고, 요약 뒤에는 읽던 스펙 · 기록도 요구한다.
+- 작업 폴더는 이 PC에서 작업/<날짜>_<제목>/, 클라우드에서 workspace/강의제작/제작도구/근거/<날짜>_<제목>/이다(CLAUDE.md 7절) — 둘 다 같은 꼴로 센다.
 - 막는 것: 산출물 · 제작 재료 편집, 직접 부른 덱 · 영상 빌드(`--dry` 등 읽기 전용 제외), fable 모델. 지침 문서 자체 편집 · 셸 변수 · sed · 리다이렉션 쓰기는 막지 않는다.
 """
 import hashlib, json, os, re, subprocess, sys, tempfile, time, unicodedata
@@ -11,8 +12,9 @@ GUIDE = "workspace/강의제작/지침/{}.md"
 COMMON = GUIDE.format("공통")
 SHOOT = "workspace/강의제작/제작도구/촬영/{}/촬영준비.md"
 SHOOT_COMMON = "workspace/강의제작/제작도구/촬영/README.md"
-TRACKED = re.compile(r"^(workspace/강의제작/지침/[^/]+\.md|workspace/강의제작/제작도구/촬영/README\.md|workspace/강의제작/제작도구/촬영/[^/]+/촬영준비\.md|작업/[^/]+/(스펙|기록)\.md)$")
-TASK_DOC = re.compile(r"^작업/[^/]+/(스펙|기록)\.md$")
+TASKS = ("작업", "workspace/강의제작/제작도구/근거")   # 작업 폴더의 부모: 이 PC · 클라우드
+TASK_DOC = re.compile(r"^(?:작업|workspace/강의제작/제작도구/근거)/[^/]+/(스펙|기록)\.md$")
+TRACKED = re.compile(r"^(workspace/강의제작/지침/[^/]+\.md|workspace/강의제작/제작도구/촬영/README\.md|workspace/강의제작/제작도구/촬영/[^/]+/촬영준비\.md)$|" + TASK_DOC.pattern)
 RUN = r"(?<![\w.])(?:python\S*|py)[\"']?\s+(?:-\S+\s+)*[\"']?[^\s\"']*"   # 파이썬의 첫 인자로 실행할 때만(이름이 글에 나온 것은 아님)
 BUILD = [(re.compile(RUN + r"deck2pptx\.py"), "덱"), (re.compile(RUN + r"(강의영상|강조표시)\.py"), "영상")]
 READ_ONLY = re.compile(r"(--dry|--check|--help|-h)(\s|$)")
@@ -98,10 +100,12 @@ def on_compact(root, ev):
         if old.stat().st_mtime < limit: old.unlink()
     print("[요약 직후] 아래 문서를 Read로 처음부터 끝까지 다시 읽기 전에는 관련 산출물 편집이 막힌다.")
     for rel in before: print(f"- 이 세션이 읽던 문서: {rel}")
-    for d in sorted((Path(root) / "작업").glob("[0-9]" * 4 + "-*_*")):
-        spec = d / "스펙.md"
-        m = re.search(r"상태: *(\S+)", spec.read_text(encoding="utf-8")) if spec.exists() else None
-        print(f"- 열린 작업: 작업/{d.name} (상태 {m[1] if m else '스펙 없음'})")
+    for base in TASKS:
+        for d in sorted((Path(root) / base).glob("[0-9]" * 4 + "-*_*")):
+            spec = d / "스펙.md"
+            if base != "작업" and not spec.exists(): continue      # 근거/의 인계 자료 폴더는 작업 폴더가 아니다
+            m = re.search(r"상태: *(\S+)", spec.read_text(encoding="utf-8")) if spec.exists() else None
+            print(f"- 열린 작업: {base}/{d.name} (상태 {m[1] if m else '스펙 없음'})")
     print("순서: 그 작업 폴더 스펙.md · 기록.md → 공통.md + 그 일 문서(촬영이면 촬영/README.md + 그 도구 촬영준비) → git 상태와 기록.md 대조. 요약의 「완료」는 실제 파일 · 숫자로 다시 확인한다.")
     return 0
 
@@ -155,7 +159,9 @@ def selftest():
     DECK, SCRIPT, VIDEO, GD, LAB_G = (GUIDE.format(d) for d in ("덱", "대본", "영상", "가이드", "코딩랩"))
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
-        for rel in (COMMON, DECK, SCRIPT, VIDEO, GD, LAB_G, SHOOT_COMMON, SHOOT.format("포털"), "작업/2026-01-01_시험/스펙.md", "작업/2026-01-01_정리됨/기록.md"):
+        CLOUD = "workspace/강의제작/제작도구/근거/2026-01-01_클라우드/기록.md"
+        for rel in (COMMON, DECK, SCRIPT, VIDEO, GD, LAB_G, SHOOT_COMMON, SHOOT.format("포털"), "작업/2026-01-01_시험/스펙.md", "작업/2026-01-01_정리됨/기록.md", CLOUD, CLOUD.replace("기록", "스펙"),
+                    "workspace/강의제작/제작도구/근거/2026-01-01_인계자료/인계.md"):
             f = root / rel; f.parent.mkdir(parents=True, exist_ok=True); f.write_text("가\n" * 99 + "끝\n", encoding="utf-8")
 
         def call(mode, ev, want, name, sid="s"):
@@ -235,14 +241,18 @@ def selftest():
         call("gate", ed(graph + "/입력/모델/graph.json"), 0, "코딩랩 읽고 시작본의 모델 수정")
         call("read", rd("작업/2026-01-01_시험/스펙.md"), 0, "스펙")
         call("read", rd("작업/2026-01-01_정리됨/기록.md"), 0, "곧 지울 기록")
+        call("read", rd(CLOUD), 0, "클라우드 작업 폴더의 기록")
         out = call("compact", {"source": "compact"}, 0, "요약")
-        if "덱.md" not in out or "2026-01-01_시험" not in out or SHOOT_COMMON not in out: bad.append(f"요약 안내가 읽던 문서 · 열린 작업을 말하지 않음: {out[:300]}")
+        if "덱.md" not in out or "2026-01-01_시험" not in out or SHOOT_COMMON not in out or "근거/2026-01-01_클라우드" not in out: bad.append(f"요약 안내가 읽던 문서 · 열린 작업을 말하지 않음: {out[:300]}")
+        if "열린 작업: workspace/강의제작/제작도구/근거/2026-01-01_클라우드" not in out: bad.append(f"클라우드 작업 폴더를 열린 작업으로 안내하지 않음: {out[:300]}")
+        if "2026-01-01_인계자료" in out: bad.append(f"스펙 없는 근거/ 인계 자료 폴더를 작업으로 안내함: {out[:300]}")
         (root / "작업/2026-01-01_정리됨/기록.md").unlink()
         call("gate", ed(pptx), 2, "요약 뒤에는 다시 막힘")
         call("read", rd(DECK), 0, "요약 뒤 덱")
         call("read", rd(COMMON), 0, "요약 뒤 공통")
-        says(call("gate", ed(pptx), 2, "요약 뒤 스펙도 다시"), ["2026-01-01_시험/스펙.md"], ["정리됨"], "요약 뒤 스펙")
+        says(call("gate", ed(pptx), 2, "요약 뒤 스펙도 다시"), ["2026-01-01_시험/스펙.md", CLOUD], ["정리됨"], "요약 뒤 스펙 · 클라우드 기록")
         call("read", rd("작업/2026-01-01_시험/스펙.md"), 0, "요약 뒤 스펙")
+        call("read", rd(CLOUD), 0, "요약 뒤 클라우드 기록")
         call("gate", ed(pptx), 0, "요약 뒤 다 읽으면 통과(지운 폴더 기록은 요구 안 함)")
         call("gate", {"tool_name": "Agent", "tool_input": {"model": "fable", "prompt": "x"}}, 2, "fable 호출")
         call("gate", {"tool_name": "Agent", "tool_input": {"model": "opus", "prompt": "x"}}, 0, "opus 호출")

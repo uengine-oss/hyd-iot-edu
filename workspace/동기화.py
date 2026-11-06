@@ -1,7 +1,7 @@
 """main 체크아웃에 겹쳐 둔 workspace 브랜치와 작업 폴더를 다룬다(체크아웃 · 그 색인 · 브랜치는 건드리지 않는다).
 언제: 작업 폴더를 열 때 · 올리기 전후(순서 pull → commit → 바로 push) · 세션 시작 훅.
 명령: PYTHONUTF8=1 .venv314/Scripts/python.exe workspace/동기화.py <아래 하나>
-    시작 "제목"                         작업/<오늘>_<제목>/에 스펙.md · 기록.md 틀
+    시작 "제목"                         작업/<오늘>_<제목>/에 스펙.md · 기록.md 틀(클라우드는 커밋되는 근거/<오늘>_<제목>/에 — CLAUDE.md 7절)
     status                            로컬 작업 자료와 workspace 끝의 차이
     commit "메시지" [main 경로 …] [--만 workspace 경로 … | --만 --파일 <목록>]
                                       workspace = 지금 모습 그대로(--만이면 준 경로만), main = 준 경로만. origin이 앞서면 멈춘다.
@@ -11,7 +11,7 @@
                                       올리지 않은 커밋)은 디스크에 둔다 — 갈라졌으면 로컬 끝을 origin으로 옮기고 그 커밋 파일은 다음 commit에 들어간다.
                                       둘 다 바꾼 파일이 있으면 아무것도 쓰지 않고 멈춘다
     세션                               세션 시작 훅: 열린 작업 폴더 · origin보다 뒤처졌는지
-    정리 [--실행]                       스펙.md 「상태: 확정」 작업 폴더를 지운다(--실행 없으면 목록만)
+    정리 [--실행]                       스펙.md 「상태: 확정」 작업 폴더를 지운다(--실행 없으면 목록만). 폴더 밖의 문서가 그 폴더를 가리키면 지우지 않는다
 - 빼는 것: .env 전부(.env.example은 넣음) · main 추적 파일 · 캐시 · node_modules · worktrees · 슬라이드/ · 조각_저장/ · .claude/settings.local.json · .inspect.ndjson.
 - 이력은 다시 쓰지 않는다(노션 링크가 커밋을 가리킨다) · 강제 push 없음 · 100 MiB 넘는 파일이 든 커밋은 만들지 않는다.
 """
@@ -37,6 +37,8 @@ RULE_DOCS = ("workspace/강의제작/지침/", ".claude/")   # 이 아래가 바
 RULE_FILES = {"CLAUDE.md", "AGENTS.md", "workspace/README.md"}
 SIZE_LIMIT = 7_000_000_000
 WORK = ROOT / "작업"
+CLOUD_WORK = ROOT / "workspace" / "강의제작" / "제작도구" / "근거"   # 클라우드 작업 폴더의 부모 — VM이 회수돼도 커밋으로 남는다(CLAUDE.md 7절)
+REF_SUFFIXES = {".md", ".json", ".py", ".sh", ".txt", ".csv", ".yaml", ".yml", ".mjs", ".js", ".html"}
 PATHS = ["workspace", ".claude", ".codex/hooks.json", "CLAUDE.md", "AGENTS.md"]
 SKIP_DIRS = {"__pycache__", ".pytest_cache", "node_modules", "worktrees", "슬라이드", "조각_저장"}   # 둘 다 도구가 다시 만든다
 SKIP_FILES = {".claude/settings.local.json"}
@@ -56,7 +58,7 @@ README = """# workspace — 작업 자료 브랜치
 SPEC = """# {title}
 
 - 시작: {day} · 상태: 진행
-- 확정되면 이 줄의 상태를 「확정」으로 바꾸고 `PYTHONUTF8=1 .venv314/Scripts/python.exe workspace/동기화.py 정리 --실행`으로 이 폴더를 지운다.
+- 확정되면 이 줄의 상태를 「확정」으로 바꾸고 `<py> workspace/동기화.py 정리 --실행`으로 이 폴더를 지운다(클라우드는 지운 것을 커밋한다).
 
 ## 의도
 (왜 · 누구에게 무엇이 좋아지나)
@@ -65,7 +67,7 @@ SPEC = """# {title}
 (하는 것 · 빼는 것과 까닭)
 
 ## 읽을 문서
-(workspace/README.md 색인에서 고른 문서 하나 + 촬영이면 촬영/README.md와 그 도구의 촬영준비)
+(workspace/README.md 색인에서 고른 일 문서 — 덱 → 대본 → 영상처럼 단계가 이어지면 단계마다 하나 — 와 촬영이면 촬영/README.md와 그 도구의 촬영준비)
 
 ## 인수 조건
 (그 문서의 인수 조건에서 이번에 판정할 규칙 · 행과 판정 방법)
@@ -75,7 +77,13 @@ LOG = """# {title} — 기록
 덧붙이지 않고 고쳐 쓴다. 지금 상태 · 남은 일 · 막힌 것만 둔다(지난 경위는 지운다).
 
 ## 지금
-- {day} 시작
+- {day} 시작(순서 · 지금 위치 · 다음 행동)
+
+## 이름표
+(첫 조각 전에 `앞회차.py`가 찍은 과정 용어 장부에서 이 일이 받을 이름과, 새로 풀 이름 · 처음 장 · 쓰지 않을 말 — hyd-task 3-1)
+
+## 조각 메모
+(닫힌 조각마다 다음 조각이 받을 것만 — hyd-task 3-1)
 
 ## 남은 일
 -
@@ -255,7 +263,11 @@ def scan(*args):
 
 
 def tasks():
-    return sorted(p for p in WORK.glob("[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]_*") if p.is_dir()) if WORK.is_dir() else []
+    """열린 작업 폴더: 작업/<날짜>_<제목>/와, 스펙.md가 있는 근거/<날짜>_<제목>/(클라우드 작업 폴더 — 스펙 없는 근거 폴더는 인계 자료다)."""
+    pat = "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]_*"
+    here = [p for p in WORK.glob(pat) if p.is_dir()] if WORK.is_dir() else []
+    cloud = [p for p in CLOUD_WORK.glob(pat) if (p / "스펙.md").is_file()] if CLOUD_WORK.is_dir() else []
+    return sorted(here + cloud, key=lambda p: p.name)
 
 
 def state(task):
@@ -269,13 +281,16 @@ def start(title):
     if not name:
         sys.exit("제목이 비었다")
     day = datetime.date.today().isoformat()
-    d = WORK / f"{day}_{name}"
+    cloud = os.environ.get("CLAUDE_CODE_REMOTE") == "true"
+    d = (CLOUD_WORK if cloud else WORK) / f"{day}_{name}"
     if d.exists():
         sys.exit(f"이미 있다: {d.relative_to(ROOT).as_posix()}")
     d.mkdir(parents=True)
     (d / "스펙.md").write_text(SPEC.format(title=title.strip(), day=day), encoding="utf-8")
     (d / "기록.md").write_text(LOG.format(title=title.strip(), day=day), encoding="utf-8")
     print(f"만듦 {d.relative_to(ROOT).as_posix()}/스펙.md · 기록.md")
+    if cloud:
+        print(f"클라우드: 이 폴더(스펙 · 기록 · 판정 · 텍스트 실행 출력)는 조각을 닫을 때마다 커밋 · push한다. 렌더 · 영상 출력 같은 큰 중간 파일은 작업/{d.name}/에 둔다")
 
 
 def behind_note(local, origin):
@@ -448,12 +463,29 @@ def push():
     print(repo_size_note())
 
 
+def referrers(task):
+    """작업 폴더 밖의 규칙 · 작업 자료 가운데 이 폴더 경로(작업/<이름> · 근거/<이름>)를 적은 파일 — 지우면 그 링크가 끊긴다."""
+    key, out = f"{task.parent.name}/{task.name}", []
+    for top in (ROOT / "workspace", ROOT / ".claude", ROOT / "CLAUDE.md", ROOT / "AGENTS.md"):
+        files = [top] if top.is_file() else (f for f in top.rglob("*") if f.is_file()) if top.is_dir() else []
+        for f in files:
+            if f.suffix in REF_SUFFIXES and task not in f.parents and not SKIP_DIRS & set(f.parts):
+                with contextlib.suppress(OSError, UnicodeDecodeError):
+                    if key in f.read_text(encoding="utf-8"):
+                        out.append(f.relative_to(ROOT).as_posix())
+    return out
+
+
 def clean(run):
     done = [t for t in tasks() if state(t) == "확정"]
     for t in tasks():
         if t not in done:
             print(f"남김 {t.name}(상태 {state(t)})")
     for t in done:
+        refs = referrers(t)
+        if refs:
+            print(f"못 지움 {t.name} — 폴더 밖에서 가리킨다(정본에 쓸 것은 정본 자리로 옮기고 링크를 지운 뒤 다시): " + " · ".join(refs[:10]))
+            continue
         if run:
             shutil.rmtree(t)
             print(f"지움 {t.name}")
