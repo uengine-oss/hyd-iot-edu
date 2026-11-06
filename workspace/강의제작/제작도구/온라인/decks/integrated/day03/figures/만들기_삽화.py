@@ -70,6 +70,15 @@ def bolt(cx, cy, st: St, s=1.0):
     return [poly([(cx + x * s, cy + y * s) for x, y in pts], fill=st.accent, stroke=st.line, sw=3)]
 
 
+def receipt(cx, cy, st: St, s=1.0):
+    """계산서(지체상금 같은 돈 지표). 꼴은 find_icon.py 「receipt」(Tabler)를 이 화풍으로 옮긴 것."""
+    pts = [(-22, -30), (22, -30), (22, 30), (15, 24), (7, 30), (0, 24), (-7, 30), (-15, 24), (-22, 30)]
+    o = [poly([(cx + x * s, cy + y * s) for x, y in pts], fill=st.accent, stroke=st.line, sw=3)]
+    for y in (-16, -4, 8):
+        o.append(line(cx - 12 * s, cy + y * s, cx + 12 * s, cy + y * s, stroke=st.line, sw=3))
+    return o
+
+
 def crates(cx, cy, st: St):
     o = []
     for dx, dy in ((-24, 6), (4, 6), (-10, -22)):
@@ -427,7 +436,8 @@ def margin(stage: int) -> str:
 
 def tradeoff(stage: int) -> str:
     """1 조치와 설비의 값 · 2 유온과 인터록 여유 · 3 전력 사용량 · 4 생산량과 납기 준수율 · 5 전체."""
-    N = {"skill": (112, 230), "fan": (400, 80), "load": (400, 400), "ts1": (690, 236), "power": (985, 56),
+    # 전력 사용량은 팬 속도(실)와 펌프 부하(득)가 함께 닿아 두 설정값 사이에 둔다(instances.cypher INFLUENCES).
+    N = {"skill": (112, 230), "fan": (400, 80), "load": (400, 400), "ts1": (690, 236), "power": (400, 240),
          "margin": (985, 236), "out": (690, 400), "otd": (985, 400)}
     R = 46
     full = "skill fan load ts1 margin power out otd"
@@ -446,12 +456,12 @@ def tradeoff(stage: int) -> str:
         ux, uy = (bx - ax) / d_, (by - ay) / d_
         ra = 62 if a == "skill" else R
         on = a in shown and b in shown
-        hl = on and b in hot
+        hl = on and (b in hot or (stage == 6 and (a, b) == ("load", "power")))   # 6: 부하 → 전력은 득
         return arrow([(ax + ux * (ra + 6), ay + uy * (ra + 6)), (bx - ux * (R + 8), by - uy * (R + 8))],
                      BLUE if hl else NAVY if on else GREY, sw=5 if hl else 4 if on else 3, size=13)
 
     for a, b in (("skill", "fan"), ("skill", "load"), ("fan", "ts1"), ("load", "ts1"), ("ts1", "margin"),
-                 ("fan", "power"), ("load", "out"), ("out", "otd")):
+                 ("fan", "power"), ("load", "power"), ("load", "out"), ("out", "otd")):
         o.append(link(a, b))
     o.append(circle(*N["skill"], 62, fill=PALE, sw=4))
     o += g(N["skill"][0] - 20, N["skill"][1], 0.62, fan(0, 0, 46, ON, rot=20, hot=True), boost=1.0)
@@ -467,7 +477,7 @@ def tradeoff(stage: int) -> str:
     o += g(*N["power"], 0.85, bolt(0, 0, NORM if st("power") is ON else OFF), boost=0.9)
     o += g(*N["margin"], 0.85, shield(0, 0, NORM if st("margin") is ON else OFF), boost=0.9)
     o += g(*N["otd"], 0.5, calendar_icon(0, 0, NORM if st("otd") is ON else OFF))
-    ups = {"fan": True, "load": False, "ts1": False, "out": False, "power": True, "margin": True, "otd": False}
+    ups = {"fan": True, "load": False, "ts1": False, "out": False, "margin": True, "otd": False}   # 전력은 득실이 함께라 화살표 없음
     for name, up in ups.items():
         if name in shown:
             cx, cy = N[name]
@@ -579,7 +589,7 @@ def lead_lag() -> str:
     n = {"load": (130, 330, 56, "far"), "tp": (400, 190, 62, "hub"), "otd": (760, 330, 62, "near"), "pen": (1050, 190, 62, "near")}
     edges = [("load", "tp", NAVY), ("tp", "otd", BLUE), ("otd", "pen", BLUE)]
     icons = (g(130, 330, 0.85, pump(0, 0, NORM, 30), boost=0.9) + g(400, 190, 0.95, crates(0, 0, NORM), boost=0.9)
-             + g(760, 330, 0.5, calendar_icon(0, 0, NORM)) + g(1050, 190, 0.8, bolt(0, 0, NORM)))
+             + g(760, 330, 0.5, calendar_icon(0, 0, NORM)) + g(1050, 190, 0.8, receipt(0, 0, NORM)))
     ud = updown(130 + 70, 330 - 52, False, NAVY, h=30) + updown(400 + 76, 190 - 56, False, BLUE, h=30) \
         + updown(760 + 76, 330 - 56, False, BLUE, h=30) + updown(1050 + 76, 190 - 56, True, BLUE, h=30)
     return kg_svg(n, edges, extra=o, after=icons + ud)
