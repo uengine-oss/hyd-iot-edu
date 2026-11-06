@@ -27,7 +27,7 @@ COURSES = [('통합반','integrated'),('실전반','practical')]
 LAB3 = '02일차_실습3_온톨로지설계'
 LAB4 = '02일차_실습4_그래프구현과검증'
 VERSION = '2026-11-05-lab-v16'
-LAB_VERSION = {'integrated-02-ontology': '2026-11-06-lab-v18', 'integrated-02-graph': '2026-11-06-lab-v17-terms'}   # 통합반 실습3 v17은 학생 몫을 판단 규칙 + 규칙 밖 행으로 줄인 판(리허설 50L 뒤), v18과 실습4 terms는 클래스 정의 · 지식 그래프 이름을 2회차 이론과 맞춘 판
+LAB_VERSION = {'integrated-02-ontology': '2026-11-06-lab-v18', 'integrated-02-graph': '2026-11-06-lab-v17-terms2'}   # 통합반 실습3 v17은 학생 몫을 판단 규칙 + 규칙 밖 행으로 줄인 판(리허설 50L 뒤), v18과 실습4 terms는 클래스 정의 · 지식 그래프 이름을, 실습4 terms2는 Cypher 쿼리 이름까지 2회차 이론과 맞춘 판
 
 def write(path, text):
     path.parent.mkdir(parents=True,exist_ok=True)
@@ -449,11 +449,11 @@ SUPPLY_FORMAT = '''### 공급 조건 형식(다음 실습의 조회가 읽는 �
 '''
 
 def graph_format(change):
-    """실습4 결과 형식. 수정본 반영이 있는 랩(통합반)만 수정문 줄을 둔다."""
+    """실습4 결과 형식. 수정본 반영이 있는 랩(통합반)만 수정 쿼리 줄을 둔다."""
     return ('## 결과 형식\n\n`결과/`에 아래 파일을 둡니다. 파일 안에서 무엇을 어떤 문장으로 쓸지는 직접 정합니다.\n\n'
             '- `결과/load.cypher`(또는 적재 코드): 모델 파일의 대상과 관계를 랩 DB에 넣습니다. 같은 파일을 다시 실행해도 됩니다.\n'
             + ('- `결과/update.cypher`(또는 수정 코드): 수정본의 줄을 이미 넣은 그래프에 반영합니다.\n' if change else '')
-            + '- `결과/query.cypher`: 질문마다 조회문 하나. 조회문 위에 어느 질문의 조회인지 주석(`// 질문 1`)으로 적습니다.\n'
+            + '- `결과/query.cypher`: 질문마다 Cypher 쿼리 하나. 쿼리 위에 어느 질문의 쿼리인지 주석(`// 질문 1`)으로 적습니다.\n'
             '- `결과/검증_기록.md`: 「제공 빈 틀」의 칸대로 채웁니다.\n')
 
 PICTURE_TYPES = {'.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg', '.avif', '.tif', '.tiff'}
@@ -1008,11 +1008,11 @@ def graph_lab(course):
                + ')을 적고, 결정 지점을 `결과/정한_것.csv`에 적습니다.' + F.REQ_AFTER),
               F.ASK_DECIDE, F.REQ_EVIDENCE + ' 3단계 칸에 내 표가 보입니다.',
               expect_hint(ANS.GRAPH_EXPECT_COLUMNS, '질문', ANS.GRAPH_EXPECT_EXPLAIN[course]), cmd=SHOW, why=F.WHY_REQ, differ=F.DIFFER_REQ.format(rec='결과/기대_답.csv'),
-              answer=A('볼_열은 내 조회가 돌려줄 열 이름입니다(정답 보기의 조회문을 쓰면 아래 이름). 결정 지점은 갈래마다 바뀌는 답을 보고 고릅니다.',
+              answer=A('볼_열은 내 조회가 돌려줄 열 이름입니다(정답 보기의 쿼리를 쓰면 아래 이름). 결정 지점은 갈래마다 바뀌는 답을 보고 고릅니다.',
                        paste('결과/기대_답.csv', graph_expect_text(expect_rows, course)),
                        *[paste(f'결과/정한_것.csv — 갈래: {g}', chosen_text([row])) for g, row in graph_chosen(course).items()],
                        apply={'결과/기대_답.csv': graph_expect_text(expect_rows, course), '결과/정한_것.csv': chosen_text([graph_chosen(course)[k] for k in default_graph_branch(course)])}))
-    s_load = S('판단① 적재문 쓰기', '③ 계획 · ④ 구현',
+    s_load = S('판단① 적재 쿼리 쓰기', '③ 계획 · ④ 구현',
                ('`결과/load.cypher`에 종류 · 관계마다 문장 하나(위에 `// 넣을 것: <종류 또는 관계>`, 행은 `$rows`)를 AI와 쓰고 `python show_result.py`를 실행합니다. '
                 '행을 넘겨 실행하고 개수를 세는 것은 제공 코드가 합니다.' + ('' if change else ' 같은 적재를 한 번 더 해 늘지 않는지도 봅니다.')),
                (('같은 대상을 무엇으로 알아볼지(MERGE의 열쇠)와, 다시 적재할 때 이미 있는 대상의 값을 어떻게 할지 고릅니다 — 수정본으로 바뀐 값을 지킬지, 모델 파일(원자료) 값으로 통째로 되돌릴지. '
@@ -1035,7 +1035,7 @@ def graph_lab(course):
                 cmd=SHOW,
                 why='다시 넣을 때마다 늘면 같은 설비가 둘로 보입니다.',
                 differ='늘었으면 4단계 문장을 고치고 늘어난 대상만 지운 뒤 다시 실행합니다.',
-                answer=A('4단계 정답의 적재문이면 두 번째 실행에서 늘어나는 것이 없습니다.', ask_ai('결과 화면 5단계의 전후 개수를 보고, 늘어난 종류가 있으면 load.cypher의 어느 문장 때문인지 짚어 줘. 파일은 바꾸지 마.')))
+                answer=A('4단계 정답의 적재 쿼리면 두 번째 실행에서 늘어나는 것이 없습니다.', ask_ai('결과 화면 5단계의 전후 개수를 보고, 늘어난 종류가 있으면 load.cypher의 어느 문장 때문인지 짚어 줘. 파일은 바꾸지 마.')))
     queries = graph_queries(course)
     if practical:
         q_steps = [
@@ -1168,7 +1168,7 @@ def graph_lab(course):
     files = {'결과/검증_기록.md': record, '결과/정한_것.csv': F.CHOSEN_TEMPLATE,
              '결과/기대_답.csv': F.blank_csv(ANS.GRAPH_EXPECT_COLUMNS, ANS.GRAPH_EXPECT_EXPLAIN[course]),
              '결과/load.cypher': ANS.LOAD_BLANK, '결과/query.cypher': ANS.QUERY_BLANK,
-             '결과/README.md': (f'정할 자리(적재문 · 조회문{" · 수정문" if change else ""} · 기대 답 표)를 채우고 `python show_result.py`를 실행하면 제공 코드가 랩 DB에 실행하고 결과 화면 보기.html을 씁니다. 내 모델을 쓰면 결과/내_모델/에 복사해 둡니다.\n'
+             '결과/README.md': (f'정할 자리(적재 쿼리 · 조회 쿼리{" · 수정 쿼리" if change else ""} · 기대 답 표)를 채우고 `python show_result.py`를 실행하면 제공 코드가 랩 DB에 실행하고 결과 화면 보기.html을 씁니다. 내 모델을 쓰면 결과/내_모델/에 복사해 둡니다.\n'
                                 f'다시 열 때는 `python lab_db.py`로 랩 DB를 다시 켜고 `python show_result.py`를 실행합니다.\n'),
              '입력/README.md': f'제공된 {model}(schema.json · graph.json), 그 원자료(자료/), ' + ('기준일 뒤 수정본(자료_변경분/), ' if change else '') + '제공된 모델의 질문(요구사항.md)과 자료 처리 근거(자료_검토.md)입니다. 이 폴더는 읽기만 합니다.\n',
              '입력/요구사항.md': '# 제공된 모델이 답하는 질문\n\n' + '\n'.join('- ' + q for q in design['questions']) + '\n',
@@ -1179,10 +1179,10 @@ def graph_lab(course):
         title=title, course=course, rec='결과/검증_기록.md', readonly='`입력/`(원자료' + (' · 수정본' if change else '') + ' 포함) · 제공 파일(`show_result.py` · `lab_steps.py` · `lab_cypher.py` · `lab_db.py` · `check.py`)이', decide_step=2,
         goal=[('「설비·부품·공급 정보를 연결하는 온톨로지 설계하기」에서는 부품마다 쓰는 설비와 공급사별 조건을 모델에 넣었습니다. ' if practical else
                f'「현장 정보를 체계화하는 온톨로지 직접 설계하기」에서는 설비 · 센서 · 부품을 {CLASS_LINK} · 속성 · 관계로 정의해 모델을 만들었습니다. ')
-              + f'이번에는 제공된 {model}(또는 내 모델)을 이 폴더 전용 랩 DB(그래프 DB)에 적재하고, 질문마다 조회문을 만들어 원자료와 대조합니다. '
+              + f'이번에는 제공된 {model}(또는 내 모델)을 이 폴더 전용 랩 DB(그래프 DB)에 적재하고, 질문마다 Cypher 쿼리를 만들어 원자료와 대조합니다. '
               + '파일 읽기 · 실행 · 개수 세기 · 전후 비교는 제공 코드가 하고, 나는 같은 대상을 알아보는 열쇠와 조회가 돌려줄 것' + (', 수정본 반영' if change else '') + '을 정해 문장으로 씁니다.',
               F.STAGE_LINE.format(what='구현과 검증')],
-        make='만들 것: 적재문(`결과/load.cypher`), 질문별 조회문(`결과/query.cypher`), ' + ('수정본을 반영하는 수정문(`결과/update.cypher`), ' if change else '') + '`결과/기대_답.csv` · `결과/정한_것.csv` · `결과/검증_기록.md`.',
+        make='만들 것: 적재 쿼리(`결과/load.cypher`), 질문별 조회 쿼리(`결과/query.cypher`), ' + ('수정본을 반영하는 수정 쿼리(`결과/update.cypher`), ' if change else '') + '`결과/기대_답.csv` · `결과/정한_것.csv` · `결과/검증_기록.md`.',
         start=[f'`입력/schema.json` · `입력/graph.json` — 제공된 {model}. ' + (
                    '설비 7대 · 구성 요소 · 센서 · 부품 · 공급사와 그 연결이 들어 있고, 공급 조건마다 승인 여부 · 단가 · 불량률 · 납기와 값마다 출처가 붙어 있습니다. 그 밖에 붙은 속성은 `입력/schema.json`에서 봅니다.' if practical else
                    '설비 7대 · 구성 요소 · 센서 · 물리량 · 부품과 그 연결이 들어 있습니다.'),
@@ -1201,8 +1201,8 @@ def graph_lab(course):
                            ('입력/', '제공 모델 · 원자료' + (' · 수정본' if change else '') + '(읽기만)'),
                            ('AGENTS.md', '작업 규칙'), ('check.py', '검사'), ('CLAUDE.md', '작업 규칙'), ('lab_cypher.py', '적재 · 조회 실행(제공)'),
                            ('lab_db.py', '랩 DB 켜기'), ('lab_steps.py', '결과 화면 단계(제공)'), ('show_result.py', '결과 화면(제공)'), ('START.md', '과제와 진행 단계'), ('준비_안내.md', '처음 볼 곳')]),
-        lead=(f'{model}을 이 폴더 전용 그래프 DB에 적재하고 ' + ('부품의 사용 설비와 공급 조건을 돌려주는 조회문을 원자료와 대조합니다.' if practical else
-              '질문마다 조회문을 원자료와 대조하며, 수정본 반영 뒤 ID와 개수를 확인하고 포털 기준 지도와 견줍니다.')),
+        lead=(f'{model}을 이 폴더 전용 그래프 DB에 적재하고 ' + ('부품의 사용 설비와 공급 조건을 돌려주는 쿼리를 원자료와 대조합니다.' if practical else
+              '질문마다 쿼리 결과를 원자료와 대조하며, 수정본 반영 뒤 ID와 개수를 확인하고 포털 기준 지도와 견줍니다.')),
         need='VS Code와 Python, 로그인해 둔 Codex 또는 GitHub Copilot, 랩 DB를 켤 Docker Desktop.',
         terms=('**적재**는 모델 파일의 대상과 관계를 그래프 DB에 넣는 일' + (', **수정본**은 기준일 뒤 고친 줄만 모은 자료' if change else '')
                + ', **정할 자리**는 `결과/`에서 첫 줄에 「제공 빈 틀」이 있는 파일입니다.'),
@@ -1242,7 +1242,7 @@ def graph_queries(course):
 
 
 def graph_expect_rows(course, graph):
-    """실습4 기대 답 예 — 입력 모델(강사 참조)에서. 볼_열은 정답 보기 조회문이 돌려주는 열."""
+    """실습4 기대 답 예 — 입력 모델(강사 참조)에서. 볼_열은 정답 보기 쿼리가 돌려주는 열."""
     label = {n['props']['id']: n['labels'][0] for n in graph['nodes']}
     props = {n['props']['id']: n['props'] for n in graph['nodes']}
     rows = []
