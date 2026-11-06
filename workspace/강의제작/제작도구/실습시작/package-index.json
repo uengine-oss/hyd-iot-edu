@@ -187,13 +187,13 @@
       "course": "통합반",
       "session": "온라인 02회차",
       "title": "설계한 온톨로지를 그래프 DB에 구현하고 검증하기",
-      "version": "2026-11-06-lab-v17-terms",
+      "version": "2026-11-06-lab-v17-terms2",
       "folder": "02회차/랩/02일차_실습4_그래프구현과검증",
       "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습4_그래프구현과검증.zip",
-      "sha256": "2bde8ae94d2bcc4cdfff22cee14645c59889a5ec522e99b33f57ebe5bd01fdad",
+      "sha256": "562bf09837d7d4b7272427bacd3439ce1d0d44e68b215a98572e743ba8996e72",
       "guide_file": {
         "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습4_그래프구현과검증_guide.html",
-        "sha256": "e01d0063e24c9f3eedba3726ae745f0b8728a0c521b333775870ade23142be7c"
+        "sha256": "0bd037320fc6612e28fce79ba9859baca2b1be2efbb9a4c36c3947e4093e2672"
       }
     },
     {

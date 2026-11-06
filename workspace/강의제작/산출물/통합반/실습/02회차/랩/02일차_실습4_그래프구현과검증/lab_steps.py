@@ -177,7 +177,7 @@ STEPS = [
     dict(no=1, name='폴더와 출발점 · 랩 DB 켜기', slots=[], run=start),
     dict(no=2, name='파일을 바꾸지 않고 자료 파악', slots=[], run=None),
     dict(no=3, name='요구와 기대 답 정하기', slots=['결과/기대_답.csv'], run=expected),
-    dict(no=4, name='판단① 적재문 쓰기', slots=['결과/load.cypher'], run=load),
+    dict(no=4, name='판단① 적재 쿼리 쓰기', slots=['결과/load.cypher'], run=load),
     dict(no=5, name='같은 적재 다시 실행', slots=[], run=again),
     dict(no=6, name='판단② 설비별 센서 조회', slots=['결과/query.cypher'], run=q1),
     dict(no=7, name='판단③ 설비별 교체 부품 조회', slots=['결과/query.cypher'], run=q2),

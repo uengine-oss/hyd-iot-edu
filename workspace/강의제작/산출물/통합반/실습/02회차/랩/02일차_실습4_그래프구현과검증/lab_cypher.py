@@ -6,7 +6,7 @@
   python lab_cypher.py run 결과/<파일>.cypher          파일의 문장을 차례로 실행(문장은 줄 끝 ; 로 구분). $ 자리가 있는 문장은 query로
   python lab_cypher.py query 결과/<파일>.cypher [<번호>] [--param 이름=값 …]
                                                     `// 질문 <번호>` 아래 조회 하나(번호 없으면 전부)를 $ 자리에 값을 넣어 실행
-                                                    (값은 글 하나 — 여럿을 넘길 때는 조회문이 빈칸으로 나눠 쓴다: --param "이름=값1 값2")
+                                                    (값은 글 하나 — 여럿을 넘길 때는 쿼리가 빈칸으로 나눠 쓴다: --param "이름=값1 값2")
   python lab_cypher.py count                         전체 · 종류별 노드 수와 관계별 수
   python lab_cypher.py export 결과/<파일>.json         그래프를 graph.json과 같은 꼴로 내보냄(결과/남은_질문.json이 있으면 함께)
   python lab_cypher.py diff 결과/<전>.json 결과/<후>.json  두 내보내기를 견줘 늘어남 · 사라짐 · 속성 바뀜을 보임
