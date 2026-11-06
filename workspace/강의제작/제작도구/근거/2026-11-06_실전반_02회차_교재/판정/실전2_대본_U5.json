@@ -37,7 +37,7 @@
   "S-6": {
    "기준판": "b3aa81b98f83877c",
    "상태": "통과",
-   "근거": "grep connect-ingest|cmd-gateway|detector|HYD는|HYD의 실전반/이론/02회차/대본/03_이론_그래프저장과조회.md → 0줄. 원리가 주인공(33 저장 모양, 36~41 절의 목적). 단정 · 값의 근거: 덱 MD 32~43 제작 기준 칸(instances.cypher · constraints.cypher · t1_causes.cypher), 근거 폴더 실측/u5_결과.txt · u5b_결과.txt. 하지 않은 조작 · 없는 기능 말함 없음."
+   "근거": "workspace/강의제작/산출물/실전반/이론/02회차/대본/03_이론_그래프저장과조회.md(검토자 확인) — grep connect-ingest|cmd-gateway|detector|HYD는|HYD의 실전반/이론/02회차/대본/03_이론_그래프저장과조회.md → 0줄. 원리가 주인공(33 저장 모양, 36~41 절의 목적). 단정 · 값의 근거: 덱 MD 32~43 제작 기준 칸(instances.cypher · constraints.cypher · t1_causes.cypher), 근거 폴더 실측/u5_결과.txt · u5b_결과.txt. 하지 않은 조작 · 없는 기능 말함 없음."
   },
   "S-7": {
    "기준판": "58f49e930b2e721a",
