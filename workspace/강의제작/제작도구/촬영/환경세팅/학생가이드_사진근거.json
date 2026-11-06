@@ -2239,6 +2239,90 @@
       "caption": "Signed in to Codex가 보이면 로그인이 끝난 것입니다.",
       "sha256": "b312b82d3344666f18489657b0fab42a8afdc16346c8b1c8b72f6c9c7f53d8fe",
       "raw_frame_sha256": "5e65186d25899c8b62039d5a541387fb79bd88f367bec921495202ac50067b1e"
+    },
+    "project-trust-dialog": {
+      "required_scene": "폴더를 신뢰할지 묻는 창이 뜨면 왼쪽 파란 단추 Yes, I trust the authors를 누릅니다. 다른 PC의 화면이라 폴더 이름과 제품 이름이 다릅니다. ",
+      "check": "폴더를 신뢰할지 묻는 창이 뜨면 왼쪽 파란 단추 Yes, I trust the authors를 누릅니다. 다른 PC의 화면이라 폴더 이름과 제품 이름이 다릅니다. ",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/project-trust-dialog.png",
+      "verified": true,
+      "source": "workspace/강의제작/제작도구/촬영/환경세팅/사진원본/trust-dialog.png",
+      "source_type": "image",
+      "source_note": "사용자가 2026-11-06 채팅으로 준 화면(이 PC VS Code 1.144에서는 새 프로필로도 신뢰 창이 나오지 않아 찍지 못함)",
+      "source_sha256": "ba63e087138e8e3bc06dd5c62ad6e323ff1fa8df9c8b700650056ea09bd31c0b",
+      "crop": [
+        0,
+        0,
+        526,
+        354
+      ],
+      "rectangles": [
+        [
+          73,
+          280,
+          293,
+          331
+        ]
+      ],
+      "redactions": [],
+      "caption": "폴더를 신뢰할지 묻는 창이 뜨면 왼쪽 파란 단추 Yes, I trust the authors를 누릅니다. 다른 PC의 화면이라 폴더 이름과 제품 이름이 다릅니다. ",
+      "sha256": "3369c01e0006d64461c70ac417c347d014ca61cfe4da6b9ed7ab68fcb7cfb019",
+      "raw_frame_sha256": "ba63e087138e8e3bc06dd5c62ad6e323ff1fa8df9c8b700650056ea09bd31c0b"
+    },
+    "project-trust-restricted": {
+      "required_scene": "위에 제한 모드 안내 줄이, 왼쪽 아래에 Restricted Mode가 보이면 AI 도구가 동작하지 않습니다. 왼쪽 아래 Restricted Mode를 누릅니다. 다른 PC의 화면이라 폴더 이름과 제품 이름이 다릅니다. ",
+      "check": "위에 제한 모드 안내 줄이, 왼쪽 아래에 Restricted Mode가 보이면 AI 도구가 동작하지 않습니다. 왼쪽 아래 Restricted Mode를 누릅니다. 다른 PC의 화면이라 폴더 이름과 제품 이름이 다릅니다. ",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/project-trust-restricted.png",
+      "verified": true,
+      "source": "workspace/강의제작/제작도구/촬영/환경세팅/사진원본/trust-restricted.png",
+      "source_type": "image",
+      "source_note": "사용자가 2026-11-06 채팅으로 준 화면(이 PC VS Code 1.144에서는 새 프로필로도 신뢰 창이 나오지 않아 찍지 못함)",
+      "source_sha256": "6c7f3cb8ff06594f23a5b69a39c1e6887ed7b16d3bdec2167a0f5ccb8cfff8cc",
+      "crop": [
+        0,
+        0,
+        1680,
+        1050
+      ],
+      "rectangles": [
+        [
+          62,
+          1010,
+          283,
+          1048
+        ]
+      ],
+      "redactions": [],
+      "caption": "위에 제한 모드 안내 줄이, 왼쪽 아래에 Restricted Mode가 보이면 AI 도구가 동작하지 않습니다. 왼쪽 아래 Restricted Mode를 누릅니다. 다른 PC의 화면이라 폴더 이름과 제품 이름이 다릅니다. ",
+      "sha256": "854a72364909a70c54675e1222c66ac16b41c07b46e495f5fc6a04eadd9fc08b",
+      "raw_frame_sha256": "6c7f3cb8ff06594f23a5b69a39c1e6887ed7b16d3bdec2167a0f5ccb8cfff8cc"
+    },
+    "project-trust-manage": {
+      "required_scene": "Workspace Trust 화면의 왼쪽 칸에서 Trust를 누르면 모든 기능이 켜집니다. 다른 PC의 화면이라 폴더 이름과 제품 이름이 다릅니다. ",
+      "check": "Workspace Trust 화면의 왼쪽 칸에서 Trust를 누르면 모든 기능이 켜집니다. 다른 PC의 화면이라 폴더 이름과 제품 이름이 다릅니다. ",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/project-trust-manage.png",
+      "verified": true,
+      "source": "workspace/강의제작/제작도구/촬영/환경세팅/사진원본/trust-manage.png",
+      "source_type": "image",
+      "source_note": "사용자가 2026-11-06 채팅으로 준 화면(이 PC VS Code 1.144에서는 새 프로필로도 신뢰 창이 나오지 않아 찍지 못함)",
+      "source_sha256": "4607d9174151c1dd049b69039c27c2e011ed8c0d1a9083d3c5814fd5f0126b7e",
+      "crop": [
+        0,
+        0,
+        1280,
+        789
+      ],
+      "rectangles": [
+        [
+          270,
+          687,
+          344,
+          734
+        ]
+      ],
+      "redactions": [],
+      "caption": "Workspace Trust 화면의 왼쪽 칸에서 Trust를 누르면 모든 기능이 켜집니다. 다른 PC의 화면이라 폴더 이름과 제품 이름이 다릅니다. ",
+      "sha256": "cb8ea094a942e33d78429338e352d17dfdd1cc39e56ec4af14e2dff2c2ae1e15",
+      "raw_frame_sha256": "4607d9174151c1dd049b69039c27c2e011ed8c0d1a9083d3c5814fd5f0126b7e"
     }
   }
 }
