@@ -36,6 +36,14 @@ for spec in specs:
     for a in t['actions']:
         if a['time'] < end_ms:
             cues.append({**a, 'segment': seg, 'g': offset + a['time']})
+            # 자막 글은 지금 음성 캐시의 글이다. 녹화 뒤 음성만 다시 산 큐(녹화 때 글과 다름)는 큐 JSON(HYD_CUES)의 글과 같아야 하고,
+            # 아니면 멈춘다. 그 큐는 아래에서 녹화 때와 같은 시작에 넣고, 녹화 때 문장보다 0.1초 넘게 길면 멈춘다(take timing의 옛 글로 자막을 만들던 결함, m05-610).
+            now = json.loads((audio / (a['id'] + '.json')).read_text(encoding='utf-8'))['text']
+            if now != a['text']:
+                src = [c for f in filter(None, os.environ.get('HYD_CUES', '').split(';')) for c in json.loads(Path(f).read_text(encoding='utf-8'))['cues'] if c['id'] == a['id']]
+                if len(src) != 1 or src[0]['text'] != now:
+                    raise RuntimeError(f"{seg} {a['id']}: 음성 캐시의 글이 녹화 때와 다르고, 큐 JSON(환경변수 HYD_CUES)의 글과도 맞지 않음 — 큐 JSON · 음성을 맞춘 뒤 합성한다")
+                cues[-1].update(text=now, recached=True)
     for m in t['motions']:
         if m['end'] <= end_ms:
             v = [x for x in times if m['start'] <= x <= m['end']]
@@ -70,6 +78,12 @@ with wave.open(str(dest / 'narration.wav'), 'wb') as w:
             if n > orig + SR // 10:
                 raise RuntimeError(f"Override longer than recorded speech: {a['segment']} {a['id']} {n / SR:.2f}s > {orig / SR:.2f}s")
             s += max(0, orig - n); a['override'] = o['file']
+        elif a.get('recached'):
+            pcm = subprocess.check_output([ff, '-v', 'error', '-i', str(src), '-f', 's16le', '-ac', '1', '-ar', str(SR), '-'])
+            n, orig = len(pcm) // 2, round(a['duration'] / 1000 * SR)
+            if n > orig + SR // 10:
+                raise RuntimeError(f"다시 산 음성이 녹화 때 문장보다 김: {a['segment']} {a['id']} {n / SR:.2f}s > {orig / SR:.2f}s")
+            a['duration'] = round(n / SR * 1000)   # 시작은 녹화 때 그대로 — 조작 시점이 큐 시작에서 잰 대사 속 구절 자리라서(m05-610: 고친 곳은 끝 문장, 조작은 앞 3.7초)
         if s < cursor:
             raise RuntimeError('Overlapping speech ' + a['id'])
         w.writeframesraw(b'\0\0' * (s - cursor))
@@ -92,10 +106,10 @@ for stream in ('v', 'a'):
         raise RuntimeError(f'{mp4.name}: {stream} stream {got:.2f}s != segments {offset / 1000:.2f}s')
 def stamp(ms):
     ms = round(ms); m, s = divmod(ms, 60000); return f'{m:02}:{s // 1000:02}.{s % 1000:03}'
-(dest / '자막.srt').write_text('\n\n'.join(f"{i+1}\n00:{stamp(a['g']).replace('.', ',')} --> 00:{stamp(a['g']+a['duration']).replace('.', ',')}\n{a['text']}" for i, a in enumerate(cues)) + '\n', encoding='utf-8')
+(dest / '자막.srt').write_text('\n\n'.join(f"{i+1}\n00:{stamp(a['g']).replace('.', ',')} --> 00:{stamp(a['g'] + a['duration']).replace('.', ',')}\n{a['text']}" for i, a in enumerate(cues)) + '\n', encoding='utf-8')
 rows = []
 for i, a in enumerate(cues):
-    r = {'id': a['id'], 'speech': [stamp(a['g']), stamp(a['g'] + a['duration'])]}
+    r = {'id': a['id'], 'speech': [stamp(a['g']), stamp(a['g'] + a['duration'])], **({'recached': True} if a.get('recached') else {})}
     if a.get('actionStart') is not None:
         o = a['g'] - a['time']
         r['action'] = [stamp(o + a['actionStart']), stamp(o + a['actionEnd']) if a.get('actionEnd') is not None else None]
