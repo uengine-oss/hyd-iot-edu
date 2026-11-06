@@ -871,6 +871,188 @@
    "origin": "응용 장",
    "source": [],
    "근거": "PM-02 PM-2.1~2.6 · 2.9, supabase migrations 20261009000047(HYD-01 1,500 h · HYD-02 1,950 h · 씰 키트 가용 1), 통합3 10장 펌프 열"
+  },
+  {
+   "destination": 63,
+   "title": "조치를 가리는 판단 규칙",
+   "origin": "같은 장(번호)",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 21
+    }
+   ]
+  },
+  {
+   "destination": 64,
+   "title": "SOP와 DMN",
+   "origin": "같은 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 22
+    }
+   ]
+  },
+  {
+   "destination": 65,
+   "title": "결정 · 입력 데이터 · 결정표 · 규칙",
+   "origin": "합친 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 23
+    },
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 24
+    }
+   ]
+  },
+  {
+   "destination": 66,
+   "title": "임계치 · 비교 연산자 · 단위",
+   "origin": "합친 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 26
+    },
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 27
+    }
+   ]
+  },
+  {
+   "destination": 67,
+   "title": "범위 · AND · OR",
+   "origin": "합친 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 28
+    },
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 29
+    },
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 30
+    }
+   ]
+  },
+  {
+   "destination": 68,
+   "title": "규칙의 결과 넷과 운전 모드만 바꾼 판정",
+   "origin": "합친 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 31
+    },
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 32
+    }
+   ]
+  },
+  {
+   "destination": 69,
+   "title": "Hit Policy: 맞은 규칙이 여럿일 때",
+   "origin": "합친 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 33
+    },
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 34
+    },
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 35
+    }
+   ]
+  },
+  {
+   "destination": 70,
+   "title": "누락 · 중복 · 상충과 이 설비의 Hit Policy",
+   "origin": "합친 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 36
+    },
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 37
+    }
+   ]
+  },
+  {
+   "destination": 71,
+   "title": "입력 값을 모를 때: 확인되지 않은 조건",
+   "origin": "합친 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 25
+    },
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 38
+    },
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 39
+    }
+   ]
+  },
+  {
+   "destination": 72,
+   "title": "판정을 되짚는 근거와 쿨러 사건의 판정",
+   "origin": "합친 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 40
+    },
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 41
+    }
+   ]
+  },
+  {
+   "destination": 73,
+   "title": "응용: 정기 점검 매뉴얼에서 결정표로 옮기는 문장",
+   "origin": "응용 장",
+   "source": [],
+   "근거": "PM-02 PM-2.5 · 2.6 · 2.9, course_extractions.json rule:pm-no-seal-kit-excludes-execution · rule:pm-seal-kit-reorder-warning(PM-2.6 · 2.9 규칙 없음), scenario_structure.cypher in:spare-available, migrations 20261009000047 가용 1"
   }
  ],
  "dropped": [
