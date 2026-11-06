@@ -171,7 +171,7 @@
   {
    "destination": 12,
    "title": "카디널리티의 네 가지 형태",
-   "origin": "같은 장",
+   "origin": "같은 장(넷째 칸 · 노트 「계측 채널」 → 「센서」)",
    "source": [
     {
      "course": "통합반",
@@ -195,7 +195,7 @@
   {
    "destination": 14,
    "title": "공통 구성 노드와 설비별 노드",
-   "origin": "같은 장",
+   "origin": "같은 장(노트 [다음]만)",
    "source": [
     {
      "course": "통합반",
@@ -206,6 +206,30 @@
   },
   {
    "destination": 15,
+   "title": "새 클래스를 정의하는 기준",
+   "origin": "같은 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 20
+    }
+   ]
+  },
+  {
+   "destination": 16,
+   "title": "클래스 계층과 상속",
+   "origin": "같은 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 21
+    }
+   ]
+  },
+  {
+   "destination": 17,
    "title": "관계의 속성과 정보를 놓는 네 자리",
    "origin": "합친 장",
    "source": [
@@ -222,31 +246,14 @@
    ]
   },
   {
-   "destination": 16,
-   "title": "새 클래스를 나누는 기준과 상속",
-   "origin": "합친 장",
-   "source": [
-    {
-     "course": "통합반",
-     "day": 2,
-     "slide": 20
-    },
-    {
-     "course": "통합반",
-     "day": 2,
-     "slide": 21
-    }
-   ]
-  },
-  {
-   "destination": 17,
-   "title": "응용: 가장 싼 견적과 승인 여부",
+   "destination": 18,
+   "title": "응용: 표준 단가와 견적 단가의 자리",
    "origin": "응용 장",
    "source": [],
-   "근거": "it/supabase/seed.sql ent.suppliers P-CLR-CORE sup:a · sup:b · sup:c(avl false), schema.json Supplier.avl · SUPPLIED_BY price · failRate · leadDays, scm_sync.py"
+   "근거": "seed.sql ent.parts std_price 250 · ent.suppliers 180 · 260 · 120, enterprise.sql ent.parts.std_price, whatif.py 부품 비용(견적 없으면 std_price), schema.json SUPPLIED_BY.price"
   },
   {
-   "destination": 18,
+   "destination": 19,
    "title": "스키마와 식별자",
    "origin": "같은 장",
    "source": [
@@ -258,7 +265,7 @@
    ]
   },
   {
-   "destination": 19,
+   "destination": 20,
    "title": "스키마와 식별자 · 이름 · 별칭",
    "origin": "합친 장",
    "source": [
@@ -275,7 +282,7 @@
    ]
   },
   {
-   "destination": 20,
+   "destination": 21,
    "title": "같은 대상인지 가리는 근거",
    "origin": "합친 장",
    "source": [
@@ -297,14 +304,14 @@
    ]
   },
   {
-   "destination": 21,
+   "destination": 22,
    "title": "응용: 이름이 다른 부품 기록과 품번",
    "origin": "응용 장",
    "source": [],
    "근거": "실전반 실습3 자료/품번_교차표.csv P-FAN-BRG 두 줄, instances.cypher part:fan-bearing"
   },
   {
-   "destination": 22,
+   "destination": 23,
    "title": "속성 · 관계의 정의와 설비 모델",
    "origin": "합친 장",
    "source": [
@@ -321,7 +328,7 @@
    ]
   },
   {
-   "destination": 23,
+   "destination": 24,
    "title": "자료형 · 목록 · 열거형 · 필수 여부",
    "origin": "합친 장",
    "source": [
@@ -343,7 +350,7 @@
    ]
   },
   {
-   "destination": 24,
+   "destination": 25,
    "title": "클래스 이름 · 의미 · 속성 정의",
    "origin": "같은 장",
    "source": [
@@ -355,7 +362,7 @@
    ]
   },
   {
-   "destination": 25,
+   "destination": 26,
    "title": "관계 유형과 유효한 연결",
    "origin": "같은 장",
    "source": [
@@ -367,7 +374,7 @@
    ]
   },
   {
-   "destination": 26,
+   "destination": 27,
    "title": "제약에 어긋난 데이터와 고칠 근거",
    "origin": "합친 장",
    "source": [
@@ -384,7 +391,7 @@
    ]
   },
   {
-   "destination": 27,
+   "destination": 28,
    "title": "역량 질문에서 설비 모델 정의까지",
    "origin": "합친 장",
    "source": [
@@ -406,7 +413,7 @@
    ]
   },
   {
-   "destination": 28,
+   "destination": 29,
    "title": "인스턴스 추가와 스키마 넓히기",
    "origin": "합친 장",
    "source": [
@@ -423,7 +430,7 @@
    ]
   },
   {
-   "destination": 29,
+   "destination": 30,
    "title": "설비 · 진단 · 판단 · 성과의 지식",
    "origin": "같은 장(카드 줄바꿈 · 노트 [다음])",
    "source": [
@@ -435,7 +442,7 @@
    ]
   },
   {
-   "destination": 30,
+   "destination": 31,
    "title": "응용: 다른 기종의 새 설비를 들일 때",
    "origin": "응용 장",
    "source": [],
@@ -444,127 +451,7 @@
  ],
  "dropped": [
   {
-   "old_practical": 18,
-   "title": "클래스 계층과 모델링 선택",
-   "source": {
-    "course": "통합반",
-    "day": 2,
-    "slide": 18
-   },
-   "reason": "별도 계층 단원은 두지 않는다. 실전 20장에서 작업과 흐름 노드의 상속을 설비와 쿨러의 포함 관계와 구분한다."
-  },
-  {
-   "old_practical": 19,
-   "title": "클래스 계층과 상속",
-   "source": {
-    "course": "통합반",
-    "day": 2,
-    "slide": 19
-   },
-   "reason": "같음"
-  },
-  {
-   "old_practical": 20,
-   "title": "새 클래스를 정의하는 기준",
-   "source": {
-    "course": "통합반",
-    "day": 2,
-    "slide": 20
-   },
-   "reason": "같음"
-  },
-  {
-   "old_practical": 37,
-   "title": "설비 · 진단 · 판단 · 성과의 지식",
-   "source": {
-    "course": "통합반",
-    "day": 2,
-    "slide": 37
-   },
-   "reason": "실라버스 실전반 18행에 없는 네 묶음 소개. 진단 클래스는 10 · 14장, 판단 · 성과 클래스는 3회차가 다룬다"
-  },
-  {
-   "old_practical": 39,
-   "title": "테이블의 조인과 그래프의 연결",
-   "source": {
-    "course": "통합반",
-    "day": 2,
-    "slide": 39
-   },
-   "reason": "별도 비교 장은 두지 않는다. 실전 42장 대본에서 조회할 때 표의 행을 맞추는 일과 그래프에 저장된 관계를 따라가는 일을 비교한다."
-  },
-  {
-   "old_practical": 102,
-   "title": "Quiz 1. 스키마와 인스턴스",
-   "source": {
-    "course": "통합반",
-    "day": 2,
-    "slide": 69
-   },
-   "reason": "옛 퀴즈 넷은 104~106장 새 문항 셋으로 바꿨다. 옛 Quiz 2(단가 · 납기 자리)는 21장 판단 문제와 겹친다"
-  },
-  {
-   "old_practical": 103,
-   "title": "Quiz 2. 관계의 속성",
-   "source": {
-    "course": "통합반",
-    "day": 2,
-    "slide": 70
-   },
-   "reason": "같음"
-  },
-  {
-   "old_practical": 104,
-   "title": "Quiz 3. 저장을 막는 조건",
-   "source": {
-    "course": "통합반",
-    "day": 2,
-    "slide": 71
-   },
-   "reason": "같음"
-  },
-  {
-   "old_practical": 105,
-   "title": "Quiz 4. 조건 통과와 작업 수행",
-   "source": {
-    "course": "실전반 추가",
-    "day": 0,
-    "slide": 105
-   },
-   "reason": "옛 Quiz 4(승인 직전 모드 변경)는 79 · 95 · 98장 본문이 다룬다"
-  },
-  {
-   "removed_slide_112": 21,
-   "title": "응용: 요구가 바뀔 때 고칠 곳",
-   "origin": "새 장",
-   "reason": "분량 조정(2026-10-23): 다섯 요구 모두 7 · 16 · 18 · 19 · 21장에 이미 있다"
-  },
-  {
-   "removed_slide_112": 40,
-   "title": "응용: 스키마 변경이 미치는 범위",
-   "origin": "새 장(옛 장에서 출발)",
-   "old_practical": [
-    36
-   ],
-   "reason": "분량 조정(2026-10-23): 스키마 변경의 범위는 38장과 39장 판단 문제 정답 풀이(기존 데이터 · 넣는 쪽 · 찾는 쪽)가 맡는다"
-  },
-  {
-   "removed_slide_112": 55,
-   "title": "판단 문제: 한계 칸에 나온 NULL",
-   "origin": "새 장",
-   "reason": "분량 조정(2026-10-23): NULL은 46장이 설명하고, 「없음은 0이 아니다 · 기준은 경보 규칙 쪽」 한 문장을 46장 대본으로 옮겼다"
-  },
-  {
-   "removed_slide_112": 63,
-   "title": "판단 문제: 다시 적재했더니 늘어난 센서",
-   "origin": "새 장",
-   "reason": "분량 조정(2026-10-23): 다시 적재해 늘어나는 원인은 55~58장(CREATE · MERGE · 유일 제약)과 실습 4 검증이 맡는다"
-  },
-  {
-   "removed_slide_112": 78,
-   "title": "판단 문제: 부하를 더 낮추자는 제안",
-   "origin": "새 장",
-   "reason": "분량 조정(2026-10-23): 금지 사항은 71장 「금지 사항」 행과 98장이 맡는다"
+   "note": "새 판(실전 2회차 개편) 기준 — 통합 2회차 1~43장은 모두 실전 장에 실렸다(slides). 옛 110장 판의 dropped · removed 기록은 새 판에 해당하지 않아 지웠다(옛 판 대응은 근거 폴더 입력/원본대응_재매핑.md)."
   }
  ],
  "확인단원": [
@@ -575,10 +462,10 @@
     10
    ],
    "상태": "확정",
-   "근거": "작업 판정/실전2_덱_U1.json — 단원 검토 1회 + 고칠목록 8건 고침 · 1회차(두 과정 공통) 받은 자리: 통합반_01일차.md 34 · 65 · 77장(장부 이름으로 받음)",
+   "근거": "작업 판정/실전2_덱_U1.json — 단원 검토 1회 + 고칠목록 8건 고침 · 1회차(두 과정 공통) 받은 자리: 통합반_01일차.md 34 · 65 · 77장(장부 이름으로 받음) · 원본 다시 대조(통합3 2장 「임계값 → 임계치」 · 통합2 다른 장 용어 고침 — 실전 1~10 화면에 영향 없음)",
    "원본": [
     {
-     "커밋": "c184d9f778fb405c6fb3e7bf85c6a2051fd84d6b",
+     "커밋": "e7fe6ea29cce2efb91fd51e9509adf60c61974d7",
      "경로": "workspace/강의제작/제작도구/온라인/decks/integrated/day02/통합반_02일차.md",
      "장": [
       1,
@@ -586,11 +473,30 @@
      ]
     },
     {
-     "커밋": "c184d9f778fb405c6fb3e7bf85c6a2051fd84d6b",
+     "커밋": "e7fe6ea29cce2efb91fd51e9509adf60c61974d7",
      "경로": "workspace/강의제작/제작도구/온라인/decks/integrated/day03/통합반_03일차.md",
      "장": [
       1,
       3
+     ]
+    }
+   ]
+  },
+  {
+   "단계": "덱",
+   "실전장": [
+    11,
+    18
+   ],
+   "상태": "확정",
+   "근거": "작업 판정/실전2_덱_U2.json — 단원 검토 1회 + 고칠목록 6건 고침",
+   "원본": [
+    {
+     "커밋": "e7fe6ea29cce2efb91fd51e9509adf60c61974d7",
+     "경로": "workspace/강의제작/제작도구/온라인/decks/integrated/day02/통합반_02일차.md",
+     "장": [
+      14,
+      22
      ]
     }
    ]
