@@ -48,7 +48,8 @@
 <circle cx="0" cy="19.0" r="3.2" fill="#13294B" stroke="#13294B" stroke-width="0.80" stroke-linecap="round" stroke-linejoin="round"/>
 </g>
 <circle cx="760" cy="300" r="60" fill="#5CB8F2" stroke="#13294B" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
-<rect x="730" y="280" width="60" height="40" rx="8" ry="8" fill="#FFFFFF" stroke="#13294B" stroke-width="3.5" stroke-dasharray="8 6" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="730" y="280" width="60" height="40" rx="8" ry="8" fill="#FFFFFF" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 782.0,280.0 L 783.6,280.2 L 785.1,280.6 L 786.4,281.3 L 787.7,282.3 L 788.7,283.6 L 788.7,283.7 M 790.0,289.5 L 790.0,297.5 M 790.0,303.5 L 790.0,311.5 M 788.2,317.0 L 787.7,317.7 L 786.4,318.7 L 785.1,319.4 L 783.6,319.8 L 782.0,320.0 L 781.1,320.0 M 775.1,320.0 L 767.1,320.0 M 761.1,320.0 L 753.1,320.0 M 747.1,320.0 L 739.1,320.0 M 733.4,318.5 L 732.3,317.7 L 731.3,316.4 L 730.6,315.1 L 730.2,313.6 L 730.0,312.0 L 730.0,311.6 M 730.0,305.6 L 730.0,297.6 M 730.0,291.6 L 730.0,288.0 L 730.2,286.4 L 730.6,284.9 L 731.2,283.9 M 735.8,280.3 L 736.4,280.2 L 738.0,280.0 L 743.8,280.0 M 749.8,280.0 L 757.8,280.0 M 763.8,280.0 L 771.8,280.0 M 777.8,280.0 L 782.0,280.0" fill="none" stroke="#13294B" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
 <circle cx="1060" cy="300" r="50" fill="#FFFFFF" stroke="#13294B" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
 <g transform="translate(1060 300) scale(0.6)">
 <path d="M -42,-34 L -42,34 A 42 14 0 0 0 42,34 L 42,-34" stroke="#13294B" stroke-width="4.55" fill="#FFFFFF" stroke-linecap="round" stroke-linejoin="round"/>

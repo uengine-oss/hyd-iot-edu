@@ -25,10 +25,96 @@ OFF = St(GREY, WHITE, LIGHT, WHITE)
 
 
 def el(tag, **kw):
+    dash = kw.pop("stroke_dasharray", None)
+    if dash:
+        return _dashed(tag, dash, kw)
     kw.setdefault("stroke-linecap", "round")
     kw.setdefault("stroke-linejoin", "round")
     a = " ".join(f'{k.replace("_", "-")}="{v}"' for k, v in kw.items() if v is not None)
     return f"<{tag} {a}/>"
+
+
+# 점선: 덱 빌더의 SVG→PNG 변환(PyMuPDF)은 stroke-dasharray를 그리지 않아 점선이 실선으로 나온다.
+# 그래서 점선을 요청한 도형은 테두리 없는 도형 + 짧은 선분들의 path로 그린다(모든 생성기가 el()을 거친다).
+def _outline(tag, kw):
+    f = lambda k: float(kw[k])  # noqa: E731
+    if tag == "line":
+        return [[(f("x1"), f("y1")), (f("x2"), f("y2"))]]
+    if tag in ("circle", "ellipse"):
+        cx, cy = f("cx"), f("cy")
+        rx, ry = (f("r"), f("r")) if tag == "circle" else (f("rx"), f("ry"))
+        return [[(cx + rx * math.cos(2 * math.pi * i / 120), cy + ry * math.sin(2 * math.pi * i / 120)) for i in range(121)]]
+    if tag == "rect":
+        x, y, w, h = f("x"), f("y"), f("width"), f("height")
+        r = min(float(kw.get("rx") or 0), w / 2, h / 2)
+        pts = []
+        for (ccx, ccy, a0) in ((x + w - r, y + r, -90), (x + w - r, y + h - r, 0), (x + r, y + h - r, 90), (x + r, y + r, 180)):
+            for i in range(9):
+                a = math.radians(a0 + 90 * i / 8)
+                pts.append((ccx + r * math.cos(a), ccy + r * math.sin(a)))
+        return [pts + [pts[0]]]
+    if tag == "path":
+        toks = re.findall(r"[MLCQZ]|-?[\d.]+", str(kw["d"]).replace(",", " "))
+        polys, cur, i, cmd = [], [], 0, None
+        num = lambda: float(toks[i])  # noqa: E731
+        while i < len(toks):
+            if toks[i] in "MLCQZ":
+                cmd = toks[i]; i += 1
+                if cmd == "Z" and cur:
+                    cur.append(cur[0])
+                continue
+            if cmd == "M":
+                if len(cur) > 1:
+                    polys.append(cur)
+                cur = [(num(), float(toks[i + 1]))]; i += 2; cmd = "L"
+            elif cmd == "L":
+                cur.append((num(), float(toks[i + 1]))); i += 2
+            elif cmd in "CQ":
+                n = 3 if cmd == "C" else 2
+                ctrl = [cur[-1]] + [(float(toks[i + 2 * k]), float(toks[i + 2 * k + 1])) for k in range(n)]
+                i += 2 * n
+                for s in range(1, 25):
+                    t = s / 24
+                    pts = ctrl
+                    while len(pts) > 1:
+                        pts = [(a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t) for a, b in zip(pts, pts[1:])]
+                    cur.append(pts[0])
+            else:
+                raise ValueError(f"점선 path: 모르는 명령 {cmd}")
+        if len(cur) > 1:
+            polys.append(cur)
+        return polys
+    raise ValueError(f"점선을 그릴 수 없는 도형: {tag}")
+
+
+def _dashed(tag, dash, kw):
+    on, off = (float(v) for v in str(dash).split()[:2])
+    segs = []
+    for poly in _outline(tag, kw):
+        state, left, seg = True, on, [poly[0]]
+        for (ax, ay), (bx, by) in zip(poly, poly[1:]):
+            d = math.hypot(bx - ax, by - ay)
+            pos = 0.0
+            while d - pos > left:
+                pos += left
+                p = (ax + (bx - ax) * pos / d, ay + (by - ay) * pos / d)
+                if state:
+                    seg.append(p); segs.append(seg)
+                else:
+                    seg = [p]
+                state, left = not state, (off if state else on)
+            left -= d - pos
+            if state:
+                seg.append((bx, by))
+        if state and len(seg) > 1:
+            segs.append(seg)
+    d = " ".join("M " + " L ".join(f"{x:.1f},{y:.1f}" for x, y in s) for s in segs)
+    stroke = {k: kw.pop(k) for k in ("stroke", "stroke_width") if k in kw}
+    out = []
+    if kw.get("fill") not in (None, "none") and tag != "line":
+        out.append(el(tag, **{**kw, "stroke": "none", "stroke_width": 0}))
+    out.append(el("path", d=d, fill="none", stroke=stroke.get("stroke", NAVY), stroke_width=stroke.get("stroke_width", SW)))
+    return "\n".join(out)
 
 
 def rect(x, y, w, h, r=0, fill="none", stroke=NAVY, sw=SW, **kw):
