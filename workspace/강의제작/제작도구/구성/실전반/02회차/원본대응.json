@@ -1056,10 +1056,10 @@
   },
   {
    "destination": 74,
-   "title": "응용: 정기 점검 매뉴얼에서 결정표로 옮기는 문장",
+   "title": "응용: 구매 기준서에서 결정표로 옮기는 문장",
    "origin": "응용 장",
    "source": [],
-   "근거": "PM-02 PM-2.5 · 2.6 · 2.9, course_extractions.json rule:pm-no-seal-kit-excludes-execution · rule:pm-seal-kit-reorder-warning(PM-2.6 · 2.9 규칙 없음), scenario_structure.cypher in:spare-available, migrations 20261009000047 가용 1"
+   "근거": "PR-07 PR-7.3 · 7.5 · 7.7, course_extractions.json rule:pr07-approved-supplier-only · rule:pr07-over-delegation-threshold(PR-7.5 나눠 발주 · PR-7.7 규칙 없음)"
   },
   {
    "destination": 75,
@@ -1299,6 +1299,25 @@
    "구분": "고유",
    "근거": "작업 판정/실전2_덱_P4.json — 고칠목록 3건 고침. 실제 근거: 실습4 START.md(해결할 질문 1~3 · 진행 단계 4~7) · 가이드 02일차_실습4_그래프구현과검증_guide.html 4 · 6단계",
    "원본": []
+  },
+  {
+   "단계": "덱",
+   "실전장": [
+    52,
+    63
+   ],
+   "상태": "확정",
+   "근거": "작업 판정/실전2_덱_U6.json — 단원 검토 1회 + 고칠목록 7건 고침, 합친 장 대조표 근거/2026-11-06_실전반_02회차_교재/입력/합친장대조_U6.md",
+   "원본": [
+    {
+     "커밋": "b0e2348d290b2d58841aada6502113f5c86d2c00",
+     "경로": "workspace/강의제작/제작도구/온라인/decks/integrated/day03/통합반_03일차.md",
+     "장": [
+      4,
+      20
+     ]
+    }
+   ]
   }
  ]
 }
