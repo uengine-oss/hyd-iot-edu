@@ -19,6 +19,9 @@ const cfg=JSON.parse(await fs.readFile(base+'/cues.json','utf8'));
 const cues=cfg.cues.filter(c=>c.segment===SEG.segment&&(!SEG.from||c.id>=SEG.from)&&(!SEG.to||c.id<=SEG.to));
 await boot('taskSpace');const task=await taskSpace(SEG.space||conf.space);const p=task.page('p1');await boot('page');
 await p.cdp('Emulation.setDeviceMetricsOverride',{width:2304,height:1296,deviceScaleFactor:1,mobile:false});
+// 같은 창에서 다른 탭(사용자 탭 · 확장 탭)이 앞에 있으면 screencast 프레임이 띄엄띄엄 와서 커서가 0.5~1.3초씩 끊긴다. 녹화 탭을 앞으로 가져온다(다른 탭은 닫지 않는다).
+{const all=await task.cdp('Target.getTargets');const here=await p.url();const me=all.targetInfos.find(x=>x.type==='page'&&x.url===here);if(me)await task.cdp('Target.activateTarget',{targetId:me.targetId});}
+await p.cdp('Page.bringToFront');
 let queue=Promise.resolve();function serial(fn){const r=queue.then(fn);queue=r.catch(()=>{});return r;}
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 let recording=false,done=false,error=null,writeQueue=Promise.resolve(),bufferBytes=0,start=null;const frames=[],actions=[],motions=[];
@@ -90,6 +93,8 @@ try{
   await cue(c,ops.length?async()=>{for(const o of ops)await exec(o);}:null,pointing);
  }
  const tail=speechFree-Date.now();if(tail>0)await sleep(tail+400);
+ // arrows는 바뀐 그림을 늦게 저장한다(「Saving to Web Browser storage...」). 저장이 끝난 화면까지 녹화해야 끝 프레임과 끝 상태(end-state의 그림)가 같은 그림이 된다.
+ if((await serial(()=>p.url())).includes('arrows.app')){const t1=Date.now();await sleep(300);while(!(await serial(()=>p.evaluate(()=>document.body.innerText.includes('Saved to Web Browser storage'))))){if(Date.now()-t1>5000)throw Error('Graph not saved within 5s after last cue');await sleep(100);}await sleep(300);}
  result='segment '+SEG.segment+' done';
 }catch(e){error=String(e?.stack||e);}
 async function exec(o){
@@ -141,7 +146,9 @@ async function exec(o){
 }
 recording=false;done=true;await capture;const duration=start===null?0:Date.now()-start;await writeQueue;
 try{await p.cdp('Page.stopScreencast');}catch(e){}
-const state={url:await p.url().catch(()=>null),pointer:ui?ui.pos():null,saved:ctx.saved,
+// 끝 화면의 보기(확대율 · 위치)도 남긴다 — 다음 호출에서 화면 크기가 풀리면 그림 맞춤이 다시 되므로, 이어 찍는 구간은 이 값을 SEG.view로 넣는다.
+const view=await p.evaluate(()=>{const root=document.getElementById('root');const k=Object.keys(root).find(x=>x.startsWith('__reactContainer'));const seen=new Set(),st=[root[k]];let s=null;while(st.length&&!s){const f=st.pop();if(!f||seen.has(f))continue;seen.add(f);if(f.memoizedProps?.store?.getState)s=f.memoizedProps.store;else st.push(f.child,f.sibling);}if(!s)return null;const g=s.getState().viewTransformation;return {scale:g.scale,dx:g.offset.dx,dy:g.offset.dy};}).catch(()=>null);
+const state={url:await p.url().catch(()=>null),pointer:ui?ui.pos():null,saved:ctx.saved,view,
  clicks:await p.evaluate(()=>window.__tutorialClicks||[]).catch(()=>[]),
  graph:await p.evaluate(()=>{const id=location.hash.split('id=')[1];return id?JSON.parse(localStorage.getItem('GRAPH|'+id)):null;}).catch(()=>null)};
 await fs.writeFile(out+'/end-state.json',JSON.stringify(state,null,1));
