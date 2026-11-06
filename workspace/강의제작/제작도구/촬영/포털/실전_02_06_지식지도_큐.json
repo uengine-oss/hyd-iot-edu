@@ -1,0 +1,1101 @@
+{
+ "note": "실전반 2회차 실습 06 「기준 설비 지식의 실제 연결 구조 확인하기」 큐 초안(사용자 구성안 확인 전 · 음성 없음 · 길뚫기 미실행). 실라버스 실전반 온라인 32H 2회차 행, 배정 10분. 포털 지식 지도 화면에서 시작해 그 화면에서 끝난다(V-13). 조작 형식은 포털 촬영도구 segs/one06.mjs 머리말을 따르되 대상은 ui.mjs findInPage 꼴({css} · {css,contains})이고 dry.mjs로 아직 확인하지 않았다. 2026-11-06 ego 공간 「portal map look 20261106」에서 hyd-iot-edu 스택(AI_MODE replay)의 화면 · DOM · GET API로 상자별 관계 목록 · 개수 · 선택자 유일성을 확인했다(근거는 구성안 「확인한 화면 값」). 식별자 · 영문 키 낭독은 2회차 04 관계조회 대본과 같은 한글 표기다.",
+ "voice_id": "1PdAOcPlPTz12RwMyFVp",
+ "model_id": "eleven_v4",
+ "cues": [
+  {
+   "id": "r06-101",
+   "segment": 1,
+   "text": "네오포제이 브라우저의 설비 예제에서는 주 펌프에서 펌프 축 씰 키트로 이어지는 교체 부품 경로를 조회했습니다. 이번 시간에는 포털의 지식 지도에서 같은 씰 키트를 찾아, 어떤 설비와 문서에 이어져 있는지 따라가 보겠습니다. 그리고 그 연결만 보고 판단할 수 있는 것과, 따로 확인해야 하는 것을 구분하겠습니다.",
+   "ops": []
+  },
+  {
+   "id": "r06-102",
+   "segment": 1,
+   "text": "지식 지도를 누르겠습니다. 세로 칸 하나가 지식의 한 층이고, 칸 안의 작은 회색 머리글이 클래스, 그 아래 노드 하나하나가 인스턴스입니다. 노드를 누르면 지도 아래 상세 칸에 종류, 이름, 속성, 나가는 관계와 들어오는 관계가 나옵니다.",
+   "ops": [
+    [
+     "click",
+     {
+      "css": "button[data-tab=ontology]"
+     },
+     {
+      "at": "지식 지도를 누르"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#ontoMap .o-node"
+     },
+     30
+    ],
+    [
+     "point",
+     {
+      "css": "#ontoMap .o-lab",
+      "contains": "구성 요소"
+     },
+     {
+      "at": "칸 안의 작은"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "r06-201",
+   "segment": 2,
+   "text": "설비부터 내려가겠습니다. 위에서 고른 설비는 에이치와이디 영일입니다. 검색 칸에 유압 파워팩을 넣고, 설비 노드를 누르겠습니다.",
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#ontoAsset"
+     },
+     {
+      "at": "고른 설비는"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#ontoSearch"
+     },
+     {
+      "at": "검색 칸에"
+     }
+    ],
+    [
+     "type",
+     "유압 파워팩",
+     {
+      "at": "유압 파워팩을"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#ontoMap .o-node[data-id=\"asset:hyd-01\"]"
+     },
+     {
+      "at": "설비 노드를 누르"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#ontoNode a[data-go=\"comp:pump-a\"]"
+     },
+     10
+    ],
+    [
+     "scroll",
+     {
+      "css": "#ontoNode",
+      "top": 96
+     },
+     0.95
+    ]
+   ]
+  },
+  {
+   "id": "r06-202",
+   "segment": 2,
+   "text": "종류는 설비입니다. 속성 이름은 영어로 적혀 있는데, 코드, 설비 코드 칸의 값이 이 설비의 식별정보예요. 나가는 관계에 구성 요소 여섯 개가 있습니다. 씰 키트를 쓰는 주 펌프를 누르겠습니다.",
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#ontoNode .o-kind"
+     },
+     {
+      "at": "종류는 설비"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#ontoNode .kvt th",
+      "contains": "code"
+     },
+     {
+      "at": "코드, 설비 코드 칸"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#ontoNode a[data-go=\"comp:pump-a\"]"
+     },
+     {
+      "at": "주 펌프를 누르"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#ontoNode a[data-go=\"part:pump-seal\"]"
+     },
+     10
+    ]
+   ]
+  },
+  {
+   "id": "r06-203",
+   "segment": 2,
+   "text": "종류는 구성 요소입니다. 들어오는 관계에 구성 요소로 에이치와이디 영일 유압 파워팩이 있으니, 설비에서 펌프로 들어오는 방향이에요. 나가는 관계에는 교체 부품과 구동 장치가 하나씩, 관측 센서가 둘 있습니다. 센서부터 보겠습니다. 토출 압력 센서를 누르겠습니다.",
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#ontoNode .o-kind"
+     },
+     {
+      "at": "종류는 구성 요소"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#ontoNode a[data-go=\"asset:hyd-01\"]"
+     },
+     {
+      "at": "HYD-01 유압 파워팩이"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#ontoNode a[data-go=\"sen:ps1\"]"
+     },
+     {
+      "at": "토출 압력 센서를 누르"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#ontoNode .kvt th",
+      "contains": "tag"
+     },
+     10
+    ]
+   ]
+  },
+  {
+   "id": "r06-204",
+   "segment": 2,
+   "text": "종류는 센서이고, 식별정보는 태그 칸의 피에스원입니다. 현장 계기와 제어 화면에서 이 센서를 부르는 이름표예요. 유닛, 단위 칸은 바, 버추얼, 가상 여부 칸은 거짓이니 펌프에 실제로 달린 압력계입니다. 들어오는 관계의 주 펌프를 눌러 돌아가겠습니다.",
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#ontoNode .kvt th",
+      "contains": "tag"
+     },
+     {
+      "at": "태그 칸의"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#ontoNode .kvt th",
+      "contains": "virtual"
+     },
+     {
+      "at": "버추얼, 가상 여부"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#ontoNode a[data-go=\"comp:pump-a\"]"
+     },
+     {
+      "at": "주 펌프를 눌러"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#ontoNode a[data-go=\"part:pump-seal\"]"
+     },
+     10
+    ]
+   ]
+  },
+  {
+   "id": "r06-205",
+   "segment": 2,
+   "text": "이번에는 교체 부품인 펌프 축 씰 키트를 누르겠습니다.",
+   "ops": [
+    [
+     "click",
+     {
+      "css": "#ontoNode a[data-go=\"part:pump-seal\"]"
+     },
+     {
+      "at": "씰 키트를 누르"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#ontoNode .kvt th",
+      "contains": "partNo"
+     },
+     10
+    ]
+   ]
+  },
+  {
+   "id": "r06-301",
+   "segment": 3,
+   "text": "종류는 부품이고, 식별정보는 파트 넘버, 품번 칸입니다. 구매 요청서나 재고 장부에서 이 부품을 찾는 열쇠가 이 품번이에요. 같은 이름의 씰이 여러 개여도, 품번이 같아야 같은 부품입니다.",
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#ontoNode .o-kind"
+     },
+     {
+      "at": "종류는 부품"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#ontoNode .kvt th",
+      "contains": "partNo"
+     },
+     {
+      "at": "파트 넘버, 품번 칸"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "r06-302",
+   "segment": 3,
+   "text": "들어오는 관계를 출발점부터 읽어 보겠습니다. 주 펌프의 교체 부품이 이 씰 키트이고, 펌프 축 씰 마모라는 원인의 관련 부품도 이 씰 키트입니다. 발주 조치 방법들도 관련 부품으로 이 부품을 가리켜요.",
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#ontoNode a[data-go=\"comp:pump-a\"]"
+     },
+     {
+      "at": "주 펌프의 교체 부품이"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#ontoNode a[data-go=\"cause:pump-shaft-seal-wear\"]"
+     },
+     {
+      "at": "펌프 축 씰 마모라는"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#ontoNode a[data-go=\"skill:sop-pur-11\"]"
+     },
+     {
+      "at": "발주 조치 방법들도"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "r06-303",
+   "segment": 3,
+   "text": "나가는 관계에는 공급사 셋, 비오이엠 순정, 에이정밀 저가, 씨트레이딩 최저가가 이어져 있습니다. 이 부품에서 출발해 공급사로 가는 방향이에요. 어느 장치에 쓰이는지, 어떤 원인과 이어지는지, 어떤 발주 방법이 다루는지, 어디서 살 수 있는지가 이 부품 노드 하나에 모여 있습니다.",
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#ontoNode h4",
+      "contains": "나가는 관계"
+     },
+     {
+      "at": "공급사 셋이"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "r06-401",
+   "segment": 4,
+   "text": "이 부품을 쓰는 설비를 찾아보겠습니다. 들어오는 관계의 주 펌프를 누르면, 주 펌프의 들어오는 관계에 에이치와이디 영일 하나만 보입니다. 지도는 위에서 고른 설비 하나만 그리기 때문이에요.",
+   "ops": [
+    [
+     "click",
+     {
+      "css": "#ontoNode a[data-go=\"comp:pump-a\"]"
+     },
+     {
+      "at": "주 펌프를 누르면"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#ontoNode a[data-go=\"asset:hyd-01\"]"
+     },
+     10
+    ],
+    [
+     "point",
+     {
+      "css": "#ontoNode a[data-go=\"asset:hyd-01\"]"
+     },
+     {
+      "at": "HYD-01 하나만"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "r06-402",
+   "segment": 4,
+   "text": "화면을 올려 설비를 에이치와이디 영이로 바꾸고, 자원 칸의 주 펌프를 다시 누르겠습니다.",
+   "ops": [
+    [
+     "scroll",
+     {
+      "css": "#ontoAsset",
+      "top": 96
+     },
+     {
+      "at": "화면을 올려"
+     }
+    ],
+    [
+     "select",
+     {
+      "css": "#ontoAsset"
+     },
+     "HYD-02",
+     {
+      "at": "HYD-02로 바꾸"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#ontoMap .o-node[data-id=\"asset:hyd-02\"]"
+     },
+     20
+    ],
+    [
+     "click",
+     {
+      "css": "#ontoSearch"
+     },
+     {
+      "at": "주 펌프를 다시"
+     }
+    ],
+    [
+     "key",
+     "Control+a"
+    ],
+    [
+     "type",
+     "주 펌프"
+    ],
+    [
+     "click",
+     {
+      "css": "#ontoMap .o-node[data-id=\"comp:pump-a\"]"
+     },
+     0.9
+    ],
+    [
+     "wait",
+     {
+      "css": "#ontoNode a[data-go=\"asset:hyd-02\"]"
+     },
+     10
+    ],
+    [
+     "scroll",
+     {
+      "css": "#ontoNode",
+      "top": 96
+     },
+     0.97
+    ]
+   ]
+  },
+  {
+   "id": "r06-403",
+   "segment": 4,
+   "text": "이번에는 에이치와이디 영이 유압 파워팩이 들어옵니다. 교체 부품은 같은 씰 키트예요. 화면을 올려 설비를 에이치와이디 영삼으로 바꾸고, 주 펌프를 다시 누르겠습니다.",
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#ontoNode a[data-go=\"asset:hyd-02\"]"
+     },
+     {
+      "at": "HYD-02 유압 파워팩이"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#ontoNode a[data-go=\"part:pump-seal\"]"
+     },
+     {
+      "at": "같은 씰 키트"
+     }
+    ],
+    [
+     "scroll",
+     {
+      "css": "#ontoAsset",
+      "top": 96
+     },
+     {
+      "at": "화면을 올려"
+     }
+    ],
+    [
+     "select",
+     {
+      "css": "#ontoAsset"
+     },
+     "HYD-03",
+     {
+      "at": "HYD-03으로 바꾸"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#ontoMap .o-node[data-id=\"asset:hyd-03\"]"
+     },
+     20
+    ],
+    [
+     "click",
+     {
+      "css": "#ontoMap .o-node[data-id=\"comp:pump-a\"]"
+     },
+     {
+      "at": "주 펌프를 다시"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#ontoNode a[data-go=\"asset:hyd-03\"]"
+     },
+     10
+    ],
+    [
+     "scroll",
+     {
+      "css": "#ontoNode",
+      "top": 96
+     },
+     0.95
+    ]
+   ]
+  },
+  {
+   "id": "r06-403b",
+   "segment": 4,
+   "text": "에이치와이디 영삼 유압 파워팩이 들어오고, 교체 부품도 같은 씰 키트입니다.",
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#ontoNode a[data-go=\"asset:hyd-03\"]"
+     },
+     {
+      "at": "HYD-03 유압 파워팩이"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#ontoNode a[data-go=\"part:pump-seal\"]"
+     },
+     {
+      "at": "같은 씰 키트"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "r06-404",
+   "segment": 4,
+   "text": "세 설비가 같은 주 펌프 노드를 가리키고, 그 펌프가 이 씰 키트를 씁니다. 그러니 이 씰 키트의 재고나 공급에 문제가 생기면 세 설비가 함께 영향을 받습니다. 부품 담당이 이 지도에서 바로 얻는 정보가 바로 이것, 이 부품에 기대는 설비의 범위입니다.",
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#ontoNode a[data-go=\"asset:hyd-03\"]"
+     },
+     {
+      "at": "세 설비가"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#ontoNode a[data-go=\"part:pump-seal\"]"
+     },
+     {
+      "at": "이 씰 키트를 씁니다"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "r06-501",
+   "segment": 5,
+   "text": "이번에는 문서까지 따라가 보겠습니다. 씰 키트를 누르고, 들어오는 관계의 순정 오이엠 공급사 표준 발주를 누르겠습니다.",
+   "ops": [
+    [
+     "click",
+     {
+      "css": "#ontoNode a[data-go=\"part:pump-seal\"]"
+     },
+     {
+      "at": "씰 키트를 누르"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#ontoNode a[data-go=\"skill:sop-pur-11\"]"
+     },
+     10
+    ],
+    [
+     "click",
+     {
+      "css": "#ontoNode a[data-go=\"skill:sop-pur-11\"]"
+     },
+     {
+      "at": "표준 발주를 누르"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#ontoNode h4",
+      "contains": "나가는 관계"
+     },
+     10
+    ]
+   ]
+  },
+  {
+   "id": "r06-501b",
+   "segment": 5,
+   "text": "종류는 조치 방법입니다. 들어오는 관계를 보면, 적용 대상이라는 관계로 규칙 넷이 이 발주 방법을 가리킵니다. 리드타임이 필요일보다 길면 경고를 달고, 금액이 전결 기준을 넘으면 표시하고, 불량률이 십 퍼센트를 넘으면 전수 검사를 더하고, 승인되지 않은 공급사는 쓰지 않는다는 규칙이에요. 이 규칙들이 볼 납기와 금액, 불량률은 공급사마다 다른 견적 값입니다.",
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#ontoNode .o-kind"
+     },
+     {
+      "at": "종류는 조치 방법"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#ontoNode h4",
+      "contains": "들어오는 관계"
+     },
+     {
+      "at": "들어오는 관계를 보면"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#ontoNode li",
+      "contains": "리드타임이 필요일"
+     },
+     {
+      "at": "리드타임이 필요일보다"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#ontoNode li",
+      "contains": "승인되지 않은 공급사는"
+     },
+     {
+      "at": "승인되지 않은 공급사는 쓰지"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "r06-502",
+   "segment": 5,
+   "text": "나가는 관계에는 절차 단계 다섯 개와 관련 부품 셋, 그리고 승인 역할인 구매 담당이 있습니다. 발주 수량을 정하는 첫 단계를 누르고, 그 단계의 근거 매뉴얼 절을 누르겠습니다.",
+   "ops": [
+    [
+     "click",
+     {
+      "css": "#ontoNode a[data-go$=\":1\"]"
+     },
+     {
+      "at": "첫 단계를 누르"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#ontoNode .o-kind",
+      "contains": "절차 단계"
+     },
+     10
+    ],
+    [
+     "click",
+     {
+      "css": "#ontoNode a[data-go*=\":section:\"]"
+     },
+     {
+      "at": "근거 매뉴얼 절을"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#ontoNode .o-kind",
+      "contains": "매뉴얼 절"
+     },
+     10
+    ]
+   ]
+  },
+  {
+   "id": "r06-503",
+   "segment": 5,
+   "text": "발주 절차라는 매뉴얼 절이 나왔습니다. 나가는 관계의 속한 문서가 구매 기준 문서이고, 화면에는 파일 이름으로 보입니다. 발주 방법이 어느 문서의 어느 절에서 나왔는지가 이렇게 선으로 이어져 있어서, 근거를 원문까지 거슬러 갈 수 있습니다.",
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#ontoNode h3"
+     },
+     {
+      "at": "매뉴얼 절이"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#ontoNode li",
+      "contains": "속한 문서"
+     },
+     {
+      "at": "속한 문서가"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "r06-504",
+   "segment": 5,
+   "text": "속한 문서를 누르겠습니다. 문서 노드의 들어오는 관계에는 이 문서의 절 일곱 개가 줄지어 이어져 있어요. 그중 승인 공급사 절을 누르겠습니다.",
+   "ops": [
+    [
+     "click",
+     {
+      "css": "#ontoNode a[data-go^=\"ks:\"]"
+     },
+     {
+      "at": "속한 문서를 누르"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#ontoNode .o-kind",
+      "contains": "지식 출처"
+     },
+     10
+    ],
+    [
+     "point",
+     {
+      "css": "#ontoNode h4",
+      "contains": "들어오는 관계"
+     },
+     {
+      "at": "절들이 줄지어"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#ontoNode a[data-go]",
+      "contains": "승인 공급사"
+     },
+     {
+      "at": "승인 공급사 절을 누르"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#ontoNode .o-kind",
+      "contains": "매뉴얼 절"
+     },
+     10
+    ]
+   ]
+  },
+  {
+   "id": "r06-505",
+   "segment": 5,
+   "text": "이 절의 들어오는 관계에 근거 출처로 규칙 하나가 이어져 있습니다. 승인되지 않은 공급사는 긴급 발주여도 쓸 수 없다는 규칙이에요. 문서의 이 절이, 공급사의 승인 여부로 발주 후보를 빼는 판단의 근거라는 뜻입니다.",
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#ontoNode li",
+      "contains": "근거 출처"
+     },
+     {
+      "at": "근거 출처로 규칙"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "r06-601",
+   "segment": 6,
+   "text": "마지막으로 공급 조건을 보겠습니다. 화면을 올려 검색 칸에 펌프 축 씰을 넣고, 씰 키트를 누른 다음 공급사 하나를 누르겠습니다.",
+   "ops": [
+    [
+     "scroll",
+     {
+      "css": "#ontoSearch",
+      "top": 96
+     },
+     {
+      "at": "화면을 올려"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#ontoSearch"
+     },
+     {
+      "at": "검색 칸에"
+     }
+    ],
+    [
+     "key",
+     "Control+a"
+    ],
+    [
+     "type",
+     "펌프 축 씰",
+     {
+      "at": "펌프 축 씰을"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#ontoMap .o-node[data-id=\"part:pump-seal\"]"
+     },
+     {
+      "at": "씰 키트를 누른"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#ontoNode a[data-go=\"sup:c\"]"
+     },
+     10
+    ],
+    [
+     "scroll",
+     {
+      "css": "#ontoNode",
+      "top": 96
+     },
+     {
+      "at": "공급사 하나를"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#ontoNode a[data-go=\"sup:c\"]"
+     },
+     {
+      "at": "공급사 하나를 누르"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#ontoNode .kvt th",
+      "contains": "avl"
+     },
+     10
+    ]
+   ]
+  },
+  {
+   "id": "r06-602",
+   "segment": 6,
+   "text": "종류는 공급사이고, 속성에 에이브이엘, 승인 여부 칸이 있습니다. 씨트레이딩 최저가는 이 칸이 거짓, 승인되지 않은 공급사예요. 씰 키트와 선으로 이어져 있어도 회사 기준으로는 살 수 없는 곳입니다. 연결이 있다는 것과 써도 된다는 것은 다릅니다.",
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#ontoNode .o-kind"
+     },
+     {
+      "at": "종류는 공급사"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#ontoNode .kvt th",
+      "contains": "avl"
+     },
+     {
+      "at": "에이브이엘, 승인 여부"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "r06-602b",
+   "segment": 6,
+   "text": "비교를 위해 다른 공급사도 보겠습니다. 들어오는 관계의 씰 키트를 누르고, 비오이엠 순정을 누르겠습니다.",
+   "ops": [
+    [
+     "click",
+     {
+      "css": "#ontoNode a[data-go=\"part:pump-seal\"]"
+     },
+     {
+      "at": "씰 키트를 누르"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#ontoNode a[data-go=\"sup:b\"]"
+     },
+     10
+    ],
+    [
+     "click",
+     {
+      "css": "#ontoNode a[data-go=\"sup:b\"]"
+     },
+     {
+      "at": "공급사를 누르"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#ontoNode .kvt th",
+      "contains": "avl"
+     },
+     10
+    ]
+   ]
+  },
+  {
+   "id": "r06-602c",
+   "segment": 6,
+   "text": "이 공급사는 승인 여부가 참이고, 오이엠, 순정 여부 칸도 참입니다. 조금 전 규칙이 읽는 칸이 바로 이 승인 여부예요. 그래서 이 공급사는 발주 후보에 남고, 승인되지 않은 공급사는 빠집니다.",
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#ontoNode .kvt th",
+      "contains": "avl"
+     },
+     {
+      "at": "승인 여부가 참"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#ontoNode .kvt th",
+      "contains": "oem"
+     },
+     {
+      "at": "오이엠, 순정 여부"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "r06-603",
+   "segment": 6,
+   "text": "그런데 승인된 공급사라도 이 상세 칸에는 단가와 납기가 없습니다. 견적은 씰 키트와 공급사를 잇는 관계에 붙어 있는데, 상세 칸은 노드의 속성만 보여 주거든요. 지금 재고도 이 칸에는 없어요. 검색 칸에 씰 키트 가용을 넣어 보겠습니다.",
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#ontoNode .kvt"
+     },
+     {
+      "at": "단가와 납기가 없습니다"
+     }
+    ],
+    [
+     "scroll",
+     {
+      "css": "#ontoSearch",
+      "top": 96
+     },
+     {
+      "at": "지금 재고도"
+     }
+    ],
+    [
+     "click",
+     {
+      "css": "#ontoSearch"
+     },
+     {
+      "at": "검색 칸에"
+     }
+    ],
+    [
+     "key",
+     "Control+a"
+    ],
+    [
+     "type",
+     "씰 키트 가용",
+     {
+      "at": "씰 키트 가용을"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "r06-604",
+   "segment": 6,
+   "text": "조치 방법과 규칙 칸에 입력 데이터 하나가 표시됐습니다. 누르고 내려 보겠습니다.",
+   "ops": [
+    [
+     "wait",
+     {
+      "css": "#ontoMap .o-node.match[data-id=\"in:spare-available\"]"
+     },
+     10
+    ],
+    [
+     "click",
+     {
+      "css": "#ontoMap .o-node[data-id=\"in:spare-available\"]"
+     },
+     {
+      "at": "누르고"
+     }
+    ],
+    [
+     "wait",
+     {
+      "css": "#ontoNode a[data-go=\"sys:cmms\"]"
+     },
+     10
+    ],
+    [
+     "scroll",
+     {
+      "css": "#ontoNode",
+      "top": 96
+     },
+     {
+      "at": "내려 보겠"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "r06-605",
+   "segment": 6,
+   "text": "씰 키트 가용 재고라는 입력 데이터입니다. 지도에는 수량이 없고, 나가는 관계의 데이터 출처가 설비보전 시스템인 씨엠엠에스를 가리킵니다. 들어오는 관계에는 이 재고를 검사하는 규칙들이 있어요. 씰 키트가 없으면 정기 정비를 시행하지 않는다는 규칙도 보입니다. 규칙은 지도에 있지만, 그 규칙이 볼 수량은 판단하는 순간 씨엠엠에스에서 읽어 옵니다.",
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#ontoNode h3"
+     },
+     {
+      "at": "씰 키트 가용 재고라는"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#ontoNode a[data-go=\"sys:cmms\"]"
+     },
+     {
+      "at": "데이터 출처가"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#ontoNode h4",
+      "contains": "들어오는 관계"
+     },
+     {
+      "at": "들어오는 관계에는"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#ontoNode li",
+      "contains": "정기 정비를 시행하지"
+     },
+     {
+      "at": "씰 키트가 없으면"
+     }
+    ]
+   ]
+  },
+  {
+   "id": "r06-606",
+   "segment": 6,
+   "text": "그래서 이 지도로는 씰 키트를 쓰는 설비와 살 수 있는 공급사, 그 근거 문서까지 확인할 수 있습니다. 지금 재고가 있는지, 단가와 납기가 맞는지는 업무 시스템에서 따로 확인해야 해요. 연결을 근거로 찾을 곳을 정하고, 확보 여부는 그 값으로 판단합니다. 여기까지 살펴보겠습니다.",
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#ontoNode a[data-go=\"sys:cmms\"]"
+     },
+     0.6
+    ]
+   ]
+  }
+ ]
+}
