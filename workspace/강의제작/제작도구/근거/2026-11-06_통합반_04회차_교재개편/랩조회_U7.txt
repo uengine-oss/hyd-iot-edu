@@ -1,0 +1,118 @@
+# U7 근거: 실습 랩 「그래프반영과검증」 학생용완성본(workspace/강의제작/산출물/통합반/실습/04회차/완성본/04일차_실습3_그래프반영과검증_학생용완성본.zip)을 새 폴더에 풀어 실제로 돌린 기록
+# 명령: sudo dockerd & → python3 lab_db.py(neo4j:5.26-community) → python3 show_result.py → python3 lab_cypher.py query <파일> <번호>
+
+## show_result.py 적재 요약
+설비 모델과 조치 기준 적재: 설비 모델 노드 206개 · 관계 305개, SOP 7개 · 단계 25개, 규칙 5개 입력(다시 실행해도 늘지 않음)
+전체 노드 247개, 관계 428개
+종류별: Asset 7, Cause 3, Component 68, FailureMode 1, Part 15, Quantity 22, Rule 5, Sensor 94, Skill 7, Step 25
+관계별: ACTS_ON 27, ADDRESSES 4, CHECKS 45, HAS_COMPONENT 68, HAS_STEP 25, MITIGATED_BY 3, MONITORED_BY 94, OBSERVES 94, OUTPUTS 16, REMEDIED_BY 3, USES_PART 49
+설비 모델과 조치 기준 적재: 설비 모델 노드 206개 · 관계 305개, SOP 7개 · 단계 25개, 규칙 5개 입력(다시 실행해도 늘지 않음)
+전체 노드 247개, 관계 428개
+종류별: Asset 7, Cause 3, Component 68, FailureMode 1, Part 15, Quantity 22, Rule 5, Sensor 94, Skill 7, Step 25
+관계별: ACTS_ON 27, ADDRESSES 4, CHECKS 45, HAS_COMPONENT 68, HAS_STEP 25, MITIGATED_BY 3, MONITORED_BY 94, OBSERVES 94, OUTPUTS 16, REMEDIED_BY 3, USES_PART 49
+설비 모델과 조치 기준 적재: 설비 모델 노드 206개 · 관계 305개, SOP 7개 · 단계 25개, 규칙 5개 입력(다시 실행해도 늘지 않음)
+전체 노드 434개, 관계 734개
+종류별: Asset 7, Cause 3, Component 68, Document 7, FailureMode 1, Knowledge 144, Part 15, Quantity 22, Revision 7, Rule 5, Section 29, Sensor 94, Skill 7, Step 25
+관계별: ACTS_ON 27, ADDRESSES 4, APPLIES_TO 7, CHECKS 45, CONDITION_OF 96, EVIDENCE_FOR 17, HAS_COMPONENT 68, HAS_REVISION 7, HAS_SECTION 29, HAS_STEP 25, MITIGATED_BY 3, MONITORED_BY 94, OBSERVES 94, OUTPUTS 16, REMEDIED_BY 3, STATED_IN 144, SUPPORTS 6, USES_PART 49
+설비 모델과 조치 기준 적재: 설비 모델 노드 206개 · 관계 305개, SOP 7개 · 단계 25개, 규칙 5개 입력(다시 실행해도 늘지 않음)
+전체 노드 434개, 관계 734개
+종류별: Asset 7, Cause 3, Component 68, Document 7, FailureMode 1, Knowledge 144, Part 15, Quantity 22, Revision 7, Rule 5, Section 29, Sensor 94, Skill 7, Step 25
+관계별: ACTS_ON 27, ADDRESSES 4, APPLIES_TO 7, CHECKS 45, CONDITION_OF 96, EVIDENCE_FOR 17, HAS_COMPONENT 68, HAS_REVISION 7, HAS_SECTION 29, HAS_STEP 25, MITIGATED_BY 3, MONITORED_BY 94, OBSERVES 94, OUTPUTS 16, REMEDIED_BY 3, STATED_IN 144, SUPPORTS 6, USES_PART 49
+03 랩 DB 준비와 설비 모델 · 조치 기준 적재: 결과 보기
+06 판단③ 다른 문서의 조건 · 반복 적재: 채움
+## slide50.cypher
+// 질문 50
+MATCH (f:FailureMode)-[:REMEDIED_BY]->(s:Skill {id: 'SOP-COOL-14'})
+      -[:HAS_STEP]->(t:Step)
+OPTIONAL MATCH (k:Knowledge)-[c]->(t)
+  WHERE type(c) <> 'STATED_IN'
+RETURN s.id, t.order, s.approval_role, k.doc_id, k.rev, k.section
+ORDER BY t.order;
+
+## q47.cypher
+// 질문 a
+MATCH (f:FailureMode)-[m]->(s:Skill) RETURN f.id, f.name, type(m), s.id, s.name, s.approval_role ORDER BY s.id;
+// 질문 b
+MATCH (s:Skill {id:'SOP-COOL-14'})-[:ACTS_ON]->(c:Component)<-[:HAS_COMPONENT]-(a:Asset) RETURN s.id, c.id, c.name, a.id ORDER BY a.id;
+// 질문 c
+MATCH (k:Knowledge)-[c]->(t:Step)<-[:HAS_STEP]-(s:Skill {id:'SOP-COOL-14'}) WHERE t.order=1 MATCH (k)-[:STATED_IN]->(x:Section)<-[:HAS_SECTION]-(r:Revision)<-[:HAS_REVISION]-(d:Document) RETURN k.id, k.candidate, type(c), x.id, x.ref, x.title, r.id, r.status, d.id, d.title, d.name;
+// 질문 d
+MATCH (s:Skill)-[:HAS_STEP]->(t:Step) RETURN s.id, count(t) ORDER BY s.id;
+
+## q53c.cypher
+// 질문 a
+MATCH (k:Knowledge)-[r]->(t) WHERE (t:Skill AND t.id='SOP-COOL-14') OR (t:Step AND (:Skill {id:'SOP-COOL-14'})-[:HAS_STEP]->(t)) RETURN k.doc_id, k.rev, k.doc_status, type(r), labels(t)[0], count(k) ORDER BY k.doc_id;
+// 질문 b
+MATCH (k:Knowledge {doc_id:'OEM-HPP45A-MM'})-[r:CONDITION_OF]->(s:Skill {id:'SOP-COOL-14'}) MATCH (k)-[:STATED_IN]->(x:Section) RETURN k.candidate, k.kind, k.text, x.ref, x.title LIMIT 8;
+
+## q53d.cypher
+// 질문 a
+MATCH (k:Knowledge {doc_id:'HM-8'})-[:CONDITION_OF]->(s:Skill {id:'SOP-COOL-14'}) MATCH (k)-[:STATED_IN]->(x:Section) RETURN k.candidate, k.kind, k.text, x.ref;
+
+## 실행 출력
+-- 질문 50 (../slide50.cypher:2)
+s.id | t.order | s.approval_role | k.doc_id | k.rev | k.section
+SOP-COOL-14 | 1 | 설비보전팀장 | HM-8 | 1.1 | HM-8.7
+SOP-COOL-14 | 2 | 설비보전팀장 | HM-8 | 1.1 | HM-8.7
+SOP-COOL-14 | 3 | 설비보전팀장 | HM-8 | 1.1 | HM-8.7
+(3행)
+-- 질문 a (../q47.cypher:2)
+f.id | f.name | type(m) | s.id | s.name | s.approval_role
+fm:cooler-cooling-loss | 쿨러 냉각 성능 상실 | MITIGATED_BY | SOP-COOL-11 | 팬 최대 운전 | 운전원
+fm:cooler-cooling-loss | 쿨러 냉각 성능 상실 | MITIGATED_BY | SOP-COOL-12 | 팬 최대 운전과 부하 80 % | 운전원
+fm:cooler-cooling-loss | 쿨러 냉각 성능 상실 | MITIGATED_BY | SOP-COOL-13 | 부하 70 %와 야간 핀 세척 | 운전원(조치) · 설비보전팀장(4단계 SOP-COOL-14 작업지시)
+fm:cooler-cooling-loss | 쿨러 냉각 성능 상실 | REMEDIED_BY | SOP-COOL-14 | 쿨러 핀 세척 | 설비보전팀장
+fm:cooler-cooling-loss | 쿨러 냉각 성능 상실 | REMEDIED_BY | SOP-COOL-15 | 캐비닛 환기 보강 | 설비보전팀장
+fm:cooler-cooling-loss | 쿨러 냉각 성능 상실 | REMEDIED_BY | SOP-FAN-12 | 벨트 교체 절차 | 미확인 — HM-8.2 SOP-FAN-12 절에 승인 줄이 없음(설비보전팀장 승인 문장은 HM-8.7 근본 조치 절의 것)
+(6행)
+-- 질문 b (../q47.cypher:4)
+s.id | c.id | c.name | a.id
+SOP-COOL-14 | HYD-01:cooler | 오일 쿨러 | HYD-01
+SOP-COOL-14 | HYD-02:cooler | 오일 쿨러 | HYD-02
+SOP-COOL-14 | HYD-03:cooler | 오일 쿨러 | HYD-03
+(3행)
+-- 질문 c (../q47.cypher:6)
+k.id | k.candidate | type(c) | x.id | x.ref | x.title | r.id | r.status | d.id | d.title | d.name
+HM-8@1.1:HM-8-M059 | HM-8_1.1_검토.json#HM-8-M059 | CONDITION_OF | HM-8@1.1#HM-8.7 | HM-8.7 | null | HM-8@1.1 | 현행 | HM-8 | 유압 파워유닛 쿨러 팬 정비 매뉴얼 | null
+(1행)
+-- 질문 d (../q47.cypher:8)
+s.id | count(t)
+SOP-COOL-11 | 3
+SOP-COOL-12 | 4
+SOP-COOL-13 | 4
+SOP-COOL-14 | 3
+SOP-COOL-15 | 3
+SOP-FAN-11 | 4
+SOP-FAN-12 | 4
+(7행)
+-- 질문 a (../q53c.cypher:2)
+k.doc_id | k.rev | k.doc_status | type(r) | labels(t)[0] | count(k)
+HM-8 | 1.1 | 현행 | CONDITION_OF | Skill | 5
+HM-8 | 1.1 | 현행 | CONDITION_OF | Step | 3
+OEM-HPP45A-MM | C | 참고(제조사) | CONDITION_OF | Skill | 3
+PM-02 | 2.0 | 현행 | CONDITION_OF | Skill | 1
+(4행)
+-- 질문 b (../q53c.cypher:4)
+k.candidate | k.kind | k.text | x.ref | x.title
+OEM-HPP45A-MM_C_검토.json#OEM-HPP45A-MM-M050 | step | 펌프를 세우고 모터 전원을 잠근 뒤 팬이 멈출 때까지 기다린다. | 7 | null
+OEM-HPP45A-MM_C_검토.json#OEM-HPP45A-MM-M053 | prohibition | 고압 세척기는 쓰지 않는다. | 7 | null
+OEM-HPP45A-MM_C_검토.json#OEM-HPP45A-MM-R07 | step | Do not use a high-pressure washer. High-pressure water bends the fins. | 7 | null
+(3행)
+-- 질문 a (../q53d.cypher:2)
+k.candidate | k.kind | k.text | x.ref
+HM-8_1.1_검토.json#HM-8-M061 | prohibition | 고압수는 쓰지 않는다. | HM-8.7
+HM-8_1.1_검토.json#HM-8-R29 | unit_value | 재가동 후 냉각 효율 CE가 80 % 이상으로 돌아왔는지 확인한다. | HM-8.7
+HM-8_1.1_검토.json#HM-8-M058 | precondition | 완화에 성공해도 원인은 남아 있으므로, 원인에 맞는 근본 조치를 CMMS 작업지시로 발행하기 전에 설비보전팀장의 승인을 받아야 한다. | HM-8.7
+HM-8_1.1_검토.json#HM-8-R27 | precondition | 승인은 설비보전팀장이 한다. | HM-8.7
+HM-8_1.1_검토.json#HM-8-R28 | completion | 재가동 후 냉각 효율 CE가 80 % 이상으로 돌아왔는지 확인한다. | HM-8.7
+(5행)
+
+## python3 lab_cypher.py diff 결과/추가전_내보내기.json 결과/지식_내보내기.json (요약 줄)
+늘어난 노드: 38개
+사라진 노드: 0개
+속성 바뀐 노드: 0개
+늘어난 관계: 44개
+사라진 관계: 0개
+속성 바뀐 관계: 0개
+## 정리: docker rm -f hyd-student-a0353e4c5100 뒤 docker ps -a 결과 컨테이너 0
+dockerd 내림: pgrep dockerd 0
