@@ -248,17 +248,25 @@ def main():
             i = j + 1
         files = []
         for k, p in enumerate(plan):
-            if isinstance(p, Path): files.append(p); continue
+            if isinstance(p, Path): files.append((p, packets(p))); continue
             kind, fa, fb = p; part = tmp / f"old{k:03d}.mp4"
             if kind == "copy":
-                ff(*(["-ss", f"{fa / FPS + 0.001:.5f}"] if fa else []), "-i", video, "-frames:v", fb - fa, "-an", "-c", "copy", part)
+                cut = tmp / f"cut{k:03d}.mp4"
+                ff(*(["-ss", f"{fa / FPS + 0.001:.5f}"] if fa else []), "-i", video, "-frames:v", fb - fa, "-an", "-c", "copy", cut)
+                # 키프레임에서 무손실로 자르면 첫 프레임 시각이 한 프레임 앞(편집 목록으로 가림)에 찍힌다. concat은 편집 목록을 보지 않으므로 0으로 옮긴다
+                p0 = float(probe(cut, "-select_streams", "v:0", "-show_entries", "packet=pts_time", "-of", "csv=p=0").split()[0])
+                ff("-i", cut, "-c", "copy", "-output_ts_offset", f"{-p0:.6f}", part)
             else:
                 ff("-ss", at(fa), "-i", video, "-frames:v", fb - fa, *emph.ENC, part)
             if packets(part) != fb - fa: stop(f"기존 영상 {fa}~{fb} 프레임을 자른 조각의 프레임 수가 {packets(part)}다")
-            files.append(part)
-        lst = tmp / "parts.txt"; lst.write_text("".join(f"file '{p.as_posix()}'\n" for p in files), encoding="utf-8")
+            files.append((part, fb - fa))
+        # 조각마다 길이(프레임 수/30)를 적어 준다. 적지 않으면 concat이 자른 조각의 컨테이너 길이로 다음 조각을 놓아 뒤 화면이 한 프레임씩 어긋난다
+        lst = tmp / "parts.txt"; lst.write_text("".join(f"file '{p.as_posix()}'\nduration {c / FPS:.6f}\n" for p, c in files), encoding="utf-8")
         vid = tmp / "video.mp4"; ff("-f", "concat", "-safe", "0", "-i", lst, "-c", "copy", vid)
         if packets(vid) != Gf[-1]: stop(f"이은 화면이 {packets(vid)}프레임이다(기대 {Gf[-1]})")
+        pts = sorted(float(x) for x in probe(vid, "-select_streams", "v:0", "-show_entries", "packet=pts_time", "-of", "csv=p=0").split())
+        off = [k for k, t in enumerate(pts) if abs(t - k / FPS) > 0.001]
+        if off: stop(f"이은 화면의 시각이 1/30초 격자에서 벗어난 프레임이 {len(off)}개다(첫 프레임 {off[0]}, {pts[off[0]]:.4f}초)")
 
         # 6) 소리: 기존 소리를 타임스탬프 틈을 무음으로 채워 풀고(그냥 풀면 장 경계의 틈만큼 앞당겨진다), 구획 소리의 시작 표본에서 잘라
         #    바뀐 구획 자리에 새 조각의 소리를 넣는다. 뒤 구획은 화면과 같은 프레임 수만큼 민다. 그다음 한 번 인코딩한다.
