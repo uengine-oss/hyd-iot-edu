@@ -266,7 +266,7 @@
   },
   {
    "destination": 20,
-   "title": "스키마와 식별자 · 이름 · 별칭",
+   "title": "스키마 · 인스턴스 데이터와 식별자",
    "origin": "합친 장",
    "source": [
     {
@@ -305,10 +305,10 @@
   },
   {
    "destination": 22,
-   "title": "응용: 이름이 다른 부품 기록과 품번",
+   "title": "응용: 겹치는 부품 표기를 품번으로 나눈 결과",
    "origin": "응용 장",
    "source": [],
-   "근거": "실전반 실습3 자료/품번_교차표.csv P-FAN-BRG 두 줄, instances.cypher part:fan-bearing"
+   "근거": "실전반 실습3 자료/품번_교차표.csv P-FAN-BRG 세 줄 · P-BRG-6205 한 줄(6205-2RS 두 품번), 예비품_목록.csv P-FAN-BRG · P-BRG-6205, 구성요소_목록.csv HYD-05 · HYD-06 쿨러 팬, 공급_조건.csv, instances.cypher part:fan-bearing"
   },
   {
    "destination": 23,
@@ -684,6 +684,25 @@
      "장": [
       14,
       22
+     ]
+    }
+   ]
+  },
+  {
+   "단계": "덱",
+   "실전장": [
+    19,
+    22
+   ],
+   "상태": "확정",
+   "근거": "작업 판정/실전2_덱_U3.json — 단원 검토 1회 + 고칠목록 5건 고침",
+   "원본": [
+    {
+     "커밋": "36c8868325cedf397cbc464414db50965c0bcbd4",
+     "경로": "workspace/강의제작/제작도구/온라인/decks/integrated/day02/통합반_02일차.md",
+     "장": [
+      23,
+      28
      ]
     }
    ]
