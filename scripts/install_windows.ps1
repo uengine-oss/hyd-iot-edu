@@ -9,7 +9,7 @@ $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 . (Join-Path $PSScriptRoot 'install_version_policy.ps1')
 . (Join-Path $PSScriptRoot 'install_windows_winget.ps1')
-$V = Get-InstallVersions
+$Versions = Get-InstallVersions
 
 function Say($text, $color = 'Gray') { Write-Host $text -ForegroundColor $color }
 function Stop-WithPause($text) { Say "`n[멈춤] $text" 'Red'; Read-Host '창을 닫으려면 Enter'; exit 1 }
@@ -115,7 +115,7 @@ if ($dockerVersion -or (Test-Path $dockerExe)) {
 }
 return $null
 }
-Ensure-Minimum 'Docker Desktop' 'Docker.DockerDesktop' $V.DOCKER_DESKTOP_MIN { Get-DockerVersion }
+Ensure-Minimum 'Docker Desktop' 'Docker.DockerDesktop' $Versions.DOCKER_DESKTOP_MIN { Get-DockerVersion }
 # docker-users 그룹: 지금 로그인한 계정과 「Authenticated Users」(로그인한 모든 계정)를 넣는다.
 # 학교는 이 PC를 다른 PC로 복제하고 학생은 다른 계정으로 로그인할 수 있어서, 계정 하나만 넣으면 복제된 PC에서 Docker가 막힌다.
 if (Get-LocalGroup -Name 'docker-users' -ErrorAction SilentlyContinue) {
@@ -135,7 +135,7 @@ if (Get-LocalGroup -Name 'docker-users' -ErrorAction SilentlyContinue) {
 # 2. VS Code: 기준 판(2026년 8월 판) 이상이면 그대로 둔다(사용자 2026-10-29). 낮거나 없을 때만 설치 · 업데이트
 #    신규는 PC 전체 설치, 업데이트는 기존 설치 범위 유지
 Say "`n[2/4] Visual Studio Code"
-Ensure-Minimum 'VS Code' 'Microsoft.VisualStudioCode' $V.VSCODE_MIN {
+Ensure-Minimum 'VS Code' 'Microsoft.VisualStudioCode' $Versions.VSCODE_MIN {
 $v = Installed-App 'Microsoft Visual Studio Code*'
 if (-not $v) { $v = Version-Of 'code' @('--version') }
 return $v
@@ -144,21 +144,21 @@ return $v
 # 3. Node.js (+ supabase CLI: 없어도 시작.bat이 npx로 대신 받는다)
 #    장기 지원판(LTS) 줄을 깐다. OpenJS.NodeJS는 최신판(Current) 줄이다(2026-11-06 winget: Current 26.12.1 · LTS 26.13.0)
 Say "`n[3/4] Node.js"
-Ensure-Minimum 'Node.js' 'OpenJS.NodeJS.LTS' $V.NODE_MIN {
+Ensure-Minimum 'Node.js' 'OpenJS.NodeJS.LTS' $Versions.NODE_MIN {
 $v = Version-Of 'node' @('--version')
 if (-not $v) { $v = Installed-App 'Node.js*' }
 return $v
 }
 # Supabase uses the supported npx distribution, not npm global install.
 try {
-    $v = Version-Of 'npx.cmd' @('-y', "supabase@$($V.SUPABASE_CLI)", '--version')
-    if ((Get-InstallAction $v $V.SUPABASE_CLI) -ne 'keep') { throw 'Supabase CLI 준비 실패: Node.js와 네트워크를 확인하세요.' }
-    Record 'supabase CLI' '준비함' "$v — npx 실행 준비 완료"
+    $supabaseVersion = Version-Of 'npx.cmd' @('-y', "supabase@$($Versions.SUPABASE_CLI)", '--version')
+    if ((Get-InstallAction $supabaseVersion $Versions.SUPABASE_CLI) -ne 'keep') { throw 'Supabase CLI 준비 실패: Node.js와 네트워크를 확인하세요.' }
+    Record 'supabase CLI' '준비함' "$supabaseVersion — npx 실행 준비 완료"
 } catch { Record 'supabase CLI' '실패' $_.Exception.Message }
 
 # 4. Git (시작.bat이 Git Bash로 스크립트를 돌린다)
 Say "`n[4/4] Git"
-Ensure-Minimum 'Git' 'Git.Git' $V.GIT_MIN {
+Ensure-Minimum 'Git' 'Git.Git' $Versions.GIT_MIN {
 $v = Version-Of 'git' @('--version')
 if (-not $v) { $v = Installed-App 'Git version *' }
 return $v
