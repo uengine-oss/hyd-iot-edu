@@ -469,7 +469,8 @@ def referrers(task):
     for top in (ROOT / "workspace", ROOT / ".claude", ROOT / "CLAUDE.md", ROOT / "AGENTS.md"):
         files = [top] if top.is_file() else (f for f in top.rglob("*") if f.is_file()) if top.is_dir() else []
         for f in files:
-            if f.suffix in REF_SUFFIXES and task not in f.parents and not SKIP_DIRS & set(f.parts):
+            # 같은 작업의 짝 폴더(작업/<이름> · 근거/<이름>)는 함께 지우므로 밖으로 세지 않는다
+            if f.suffix in REF_SUFFIXES and not any(p.name == task.name for p in f.parents) and not SKIP_DIRS & set(f.parts):
                 with contextlib.suppress(OSError, UnicodeDecodeError):
                     if key in f.read_text(encoding="utf-8"):
                         out.append(f.relative_to(ROOT).as_posix())

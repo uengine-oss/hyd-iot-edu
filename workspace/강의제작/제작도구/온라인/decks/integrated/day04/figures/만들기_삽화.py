@@ -2,8 +2,6 @@
 
 사용: python 만들기_삽화.py            → 이 폴더에 SVG를 쓴다
 화풍(색 · 선 굵기 · 그림 조각)은 1일차의 `만들기_삽화.py`를 복사한 `조각_1일차.py`에서 그대로 가져온다.
-앞 일차의 그림을 그대로 다시 쓰는 장은 그 파일을 이 폴더에 복사해 둔다(이 스크립트가 만들지 않는다):
-관계.svg · 경로_1~3.svg · 흩어진정보.svg · 원인후보.svg(1일차), 두층_3.svg(2일차), 성과경로_5.svg · 그래프_조치후보_예측유온.png(3일차).
 """
 from __future__ import annotations
 
@@ -286,99 +284,6 @@ def input_slot() -> str:
 
 # ───────────────────────── 5. 네 일차의 흐름: 같은 그래프가 자란다 ─────────────────────────
 
-def four_days() -> str:
-    o: list[str] = []
-    pw, ph, gap, x0, y0 = 240, 340, 28, 14, 70
-    P = {"asset": (44, 62), "comp": (120, 62), "sen": (196, 62), "fm": (120, 158), "skill": (120, 256),
-         "rule": (198, 256), "kpi": (198, 158), "cause": (42, 158), "doc": (44, 284)}
-    r = 19
-
-    def at(px, name):
-        x, y = P[name]
-        return px + x, y0 + y
-
-    def lk(px, a, b, color=NAVY, sw=3.2, ra=r, rb=r):
-        (ax, ay), (bx, by) = at(px, a), at(px, b)
-        d_ = math.hypot(bx - ax, by - ay)
-        ux, uy = (bx - ax) / d_, (by - ay) / d_
-        return arrow([(ax + ux * (ra + 3), ay + uy * (ra + 3)), (bx - ux * (rb + 5), by - uy * (rb + 5))], color, sw=sw, size=9)
-
-    def node(px, name, new, tag=False):
-        x, y = at(px, name)
-        out = [circle(x, y, r, fill=SKY if new else WHITE, stroke=NAVY, sw=3.2)]
-        if tag:     # 종류 꼬리표(클래스)
-            out.append(rect(x - 15, y - r - 13, 30, 10, 4, fill=NAVY if new else GREY, stroke="none", sw=0))
-        return out
-
-    for i in range(4):
-        px = x0 + i * (pw + gap)
-        o.append(rect(px, y0, pw, ph, 14, fill=LIGHT, stroke="none", sw=0))
-        if i < 3:
-            o.append(arrow([(px + pw + 2, y0 + ph / 2), (px + pw + gap + 2, y0 + ph / 2)], BLUE, sw=5, size=13))
-
-    # 1일차: 손으로 그린 관계 그림(틀이 없다)
-    px = x0
-    pts = [(60, 80), (172, 66), (118, 172), (56, 266), (186, 260)]
-    for a, b in ((0, 2), (1, 2), (2, 3), (2, 4)):
-        (ax, ay), (bx, by) = pts[a], pts[b]
-        d_ = math.hypot(bx - ax, by - ay)
-        ux, uy = (bx - ax) / d_, (by - ay) / d_
-        o.append(arrow([(px + ax + ux * 24, y0 + ay + uy * 24), (px + bx - ux * 27, y0 + by - uy * 27)], NAVY, sw=3.2, size=9))
-    for k, (x, y) in enumerate(pts):
-        o.append(circle(px + x, y0 + y, 21, fill=SKY if k == 2 else WHITE, stroke=NAVY, sw=3.2, stroke_dasharray="7 5"))
-
-    # 2일차: 종류(클래스)가 붙은 설비 구조
-    px = x0 + (pw + gap)
-    o += [lk(px, "asset", "comp", BLUE), lk(px, "comp", "sen", BLUE)]
-    for n in ("asset", "comp", "sen"):
-        o += node(px, n, True, tag=True)
-    o += g(px + 120, y0 + 236, 1.0, cylinder_db(0, 0, ON)[:4], boost=1.0)
-
-    # 3일차: 조치 · 규칙 · 성과 지표
-    px = x0 + 2 * (pw + gap)
-    o += [lk(px, "asset", "comp"), lk(px, "comp", "sen")]
-    o += [lk(px, "fm", "comp", BLUE), lk(px, "fm", "skill", BLUE), lk(px, "rule", "skill", BLUE, ra=26), lk(px, "rule", "kpi", BLUE, ra=22, rb=22)]
-    for n in ("asset", "comp", "sen"):
-        o += node(px, n, False, tag=True)
-    o += node(px, "fm", True, tag=False)
-    x, y = at(px, "skill")
-    o += [circle(x, y, 24, fill=SKY, stroke=NAVY, sw=3.2)] + g(x, y, 0.62, steps_icon(0, 0, NORM), boost=1.5)
-    x, y = at(px, "rule")
-    o += g(x, y, 0.9, grid_icon(0, 0, ON), boost=1.0)
-    x, y = at(px, "kpi")
-    o += g(x, y, 0.9, bars_icon(0, 0, ON), boost=1.0)
-
-    # 4일차: 문서에서 온 원인 · 증거와 출처
-    px = x0 + 3 * (pw + gap)
-    o += [lk(px, "asset", "comp"), lk(px, "comp", "sen"), lk(px, "fm", "comp"), lk(px, "fm", "skill"),
-          lk(px, "rule", "skill", ra=26), lk(px, "rule", "kpi", ra=22, rb=22)]
-    o.append(lk(px, "cause", "fm", BLUE))
-    # 출처 선: 조치 방법과 규칙에서 문서로
-    (sx, sy), (dx, dy) = at(px, "skill"), at(px, "doc")
-    o += dots(sx - 26, sy + 8, dx + 30, dy + 2, color=BLUE, gap=10, r=2.6)
-    for n in ("asset", "comp", "sen"):
-        o += node(px, n, False, tag=True)
-    o += node(px, "fm", False)
-    x, y = at(px, "skill")
-    o += [circle(x, y, 24, fill=WHITE, stroke=NAVY, sw=3.2)] + g(x, y, 0.62, steps_icon(0, 0, NORM), boost=1.5)
-    x, y = at(px, "rule")
-    o += g(x, y, 0.9, grid_icon(0, 0, NORM), boost=1.0)
-    x, y = at(px, "kpi")
-    o += g(x, y, 0.9, bars_icon(0, 0, NORM), boost=1.0)
-    o += node(px, "cause", True)
-    x, y = at(px, "doc")
-    o += g(x, y, 0.72, doc(0, 0, ON, lines=4, mark=1), boost=1.2)
-    o += check_badge(x + 30, y + 30, ON, r=13)
-
-    # 그 뒤: 에이전트
-    ax = x0 + 4 * (pw + gap) - gap + 8
-    o.append(arrow([(ax, y0 + ph / 2), (ax + 34, y0 + ph / 2)], BLUE, sw=5, size=13))
-    o += g(ax + 84, y0 + ph / 2 + 6, 0.86, agent_icon(0, 0, ON), boost=1.0)
-    return svg(o)
-
-
-# ───────────────────────── 6. 원문 한 문장이 지식 후보로 갈라지는 모습 ─────────────────────────
-
 def one_sentence() -> str:
     o: list[str] = []
     o.append(rect(40, 16, 1120, 92, 14, fill=LIGHT, stroke=NAVY, sw=3.5))
@@ -406,44 +311,9 @@ def one_sentence() -> str:
 
 # ───────────────────────── 7. 세 층: 스키마, 인스턴스 데이터, 값 ─────────────────────────
 
-def three_layers() -> str:
-    """위에서 아래로 스키마(점선 상자) · 인스턴스 데이터(원) · 값(원천). 위 두 층이 지식 그래프, 맨 아래는 그래프 밖."""
-    from 조각_1일차 import broken_cooler, calendar_icon, dusty_cooler
-    o: list[str] = []
-    cols = (430, 710, 990)                 # 고장 유형 · 원인 · 증거
-    ys = (82, 247, 438)                    # 층의 가운데
-    bx, bw, bhs = 250, 936, (144, 150, 140)
-    yc, yi, yv = ys[0] + 14, ys[1] - 16, ys[2] - 20   # 클래스 상자 · 인스턴스 원 · 원천 그림의 가운데(이름을 얹을 자리를 둔다)
-    for k, (y, bh) in enumerate(zip(ys, bhs)):
-        o.append(rect(bx, y - bh / 2, bw, bh, 14, fill=PALE if k == 2 else LIGHT, stroke=SKY if k == 2 else "none", sw=3 if k == 2 else 0))
-    # 스키마: 클래스(점선 상자)와 관계 유형 / 인스턴스 데이터: 그 정의에 맞추어 놓인 대상과 관계
-    for a, b in ((1, 0), (1, 2)):
-        s = 1 if cols[b] > cols[a] else -1
-        o.append(arrow([(cols[a] + s * 82, yc), (cols[b] - s * 84, yc)], NAVY, sw=4, size=13))
-        o.append(arrow([(cols[a] + s * 48, yi), (cols[b] - s * 50, yi)], NAVY, sw=4, size=13))
-    for x in cols:
-        o += dots(x, yc + 46, x, yi - 52, color=GREY, gap=12, r=2.8)
-        o.append(rect(x - 78, yc - 36, 156, 72, 12, fill=WHITE, stroke=NAVY, sw=4, stroke_dasharray="11 9"))
-        o.append(circle(x, yi, 44, fill=WHITE, stroke=NAVY, sw=4))
-    o += g(cols[0], yi, 0.56, broken_cooler(0, 0, NORM), boost=1.3)
-    o += g(cols[1], yi, 0.56, dusty_cooler(0, 0, NORM), boost=1.3)
-    # 증거: 기준값이 그어진 눈금 막대(기준보다 낮은 쪽을 칠했다)
-    ex = cols[2]
-    o += [rect(ex - 28, yi - 8, 56, 16, 6, fill=WHITE, stroke=NAVY, sw=3), rect(ex - 28, yi - 8, 34, 16, 6, fill=SKY, stroke=NAVY, sw=3),
-          line(ex + 6, yi - 20, ex + 6, yi + 20, stroke=NAVY, sw=4)]
-    # 값: 그래프 밖의 원천. 증거의 기준에 대는 값은 판단하는 순간에 읽는다
-    o += dots(ex, ys[1] + bhs[1] / 2 + 6, ex, yv - 42, color=BLUE, gap=11, r=3.4)
-    o += gauge(ex - 56, yv, ON, r=28, hot=True, ang=-140)
-    o += g(ex + 40, yv + 2, 0.6, cylinder_db(0, 0, ON)[:4], boost=1.3)
-    o += g(cols[1], yv + 2, 0.56, plc(0, 0, NORM), boost=1.3)
-    o += g(cols[0], yv + 2, 0.56, calendar_icon(0, 0, NORM), boost=1.3)
-    return svg(o)
-
-
 def main():
-    out = {"인제스천_전체.svg": ingest_pipeline(0), **{f"인제스천_{k}.svg": ingest_pipeline(k) for k in range(1, 8)}, "인용.svg": citation(), "적재묶음_사슬.svg": batch_chain(),
-           "입력데이터_자리.svg": input_slot(), "네일차_흐름.svg": four_days(), "한문장.svg": one_sentence(),
-           "세층.svg": three_layers()}
+    out = {"인제스천_전체.svg": ingest_pipeline(0), "인용.svg": citation(), "적재묶음_사슬.svg": batch_chain(),
+           "입력데이터_자리.svg": input_slot(), "한문장.svg": one_sentence()}
     for name, text in out.items():
         assert "<text" not in text
         (HERE / name).write_text(text, encoding="utf-8")
