@@ -1,6 +1,6 @@
 #!/bin/bash
 # ego 실행기. 저장소의 촬영도구를 ego 안에서 불러 돌린다(Git Bash).
-#   ./run.sh rec <이름> <구간> [시작큐] [이전 구간 이름] [relax]   구간 하나 녹화(relax: 그림 주소가 바뀐 뒤 첫 구간)
+#   ./run.sh rec <이름> <구간> [시작큐] [이전 구간 이름] [relax]   구간 하나 녹화(relax: 그림 주소가 바뀐 뒤 첫 구간. VIEW={"scale":…,"dx":…,"dy":…}이면 녹화 전 보기를 그 값으로)
 #   ./run.sh restore <이전 구간 이름> [출발원 도착원]               녹화 밖 상태 복원(가져오기 + 원 크기 + 마지막 화살표 선택)
 #   ./run.sh coords                                                  사용자가 배치한 그림들의 저장 좌표 읽기(읽기 전용)
 # 실행 전 node --check로 문법 오류를 막고(ego는 문법 오류에 조용히 멈춘다), stdin을 닫는다(-e가 입력을 기다린다).
@@ -15,7 +15,7 @@ case "$cmd" in
   rec)
     n=$1; seg=$2; from=${3:-}; st=${4:-}; relax=false; [ -n "${5:-}" ] && relax=true
     mkdir -p "$work"
-    js="const {run}=await import('file:///$here/ctrl.mjs?$n');console.log(JSON.stringify(await run({name:'$n',segment:$seg,from:'$from',startState:'$st',expectUrl:'arrows.app',to:'${TO:-}',relaxUrl:$relax})));"
+    js="const {run}=await import('file:///$here/ctrl.mjs?$n');console.log(JSON.stringify(await run({name:'$n',segment:$seg,from:'$from',startState:'$st',expectUrl:'arrows.app',to:'${TO:-}',relaxUrl:$relax,view:${VIEW:-null}})));"
     log="$work/$n.log";;
   restore)
     take=$1; e1=${2:-}; e2=${3:-}

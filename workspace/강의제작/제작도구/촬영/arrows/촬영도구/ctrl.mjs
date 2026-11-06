@@ -71,7 +71,13 @@ try{
  await ui.install();
  // 녹화 전: 캔버스 기록이 비지 않도록 화면 크기를 1px 바꿨다 되돌려 한 번 다시 그리게 한다(녹화 프레임에는 남지 않음).
  if(url.includes('arrows.app')){await serial(()=>p.cdp('Emulation.setDeviceMetricsOverride',{width:2305,height:1296,deviceScaleFactor:1,mobile:false}));await sleep(300);await serial(()=>p.cdp('Emulation.setDeviceMetricsOverride',{width:2304,height:1296,deviceScaleFactor:1,mobile:false}));await sleep(400);
-  const n=(await ui.circles()).list.length;await log('circles before recording '+n);if(!n)throw Error('Canvas not recorded before start');}
+  const n=(await ui.circles()).list.length;await log('circles before recording '+n);if(!n)throw Error('Canvas not recorded before start');
+  // 이어 찍기: 크기 바꾸기(resize)는 약 0.3초 뒤 그림 맞춤을 다시 하므로, 그 뒤에 앞 판 끝 화면의 보기(SEG.view: 확대율 · 위치)를 넣고 0.8초 동안 그대로인지 본다(녹화 프레임에는 남지 않음).
+  if(SEG.view){const same=g=>g&&Math.abs(g.scale-SEG.view.scale)<1e-9&&Math.abs(g.offset.dx-SEG.view.dx)<1e-6&&Math.abs(g.offset.dy-SEG.view.dy)<1e-6;
+   const vt=set=>serial(()=>p.evaluate(([v,set])=>{const root=document.getElementById('root');const k=Object.keys(root).find(x=>x.startsWith('__reactContainer'));const seen=new Set(),st=[root[k]];let s=null;while(st.length&&!s){const f=st.pop();if(!f||seen.has(f))continue;seen.add(f);if(f.memoizedProps?.store?.getState)s=f.memoizedProps.store;else st.push(f.child,f.sibling);}if(!s)return null;if(set)s.dispatch({type:'ADJUST_VIEWPORT',scale:v.scale,panX:v.dx,panY:v.dy});return s.getState().viewTransformation;},[SEG.view,set]));
+   let ok=false;for(let i=0;i<4&&!ok;i++){await sleep(600);await vt(true);await sleep(800);ok=same(await vt(false));}
+   if(!ok)throw Error('View not stable: '+JSON.stringify(await vt(false)));await log('view '+JSON.stringify(SEG.view));}
+ }
  await serial(()=>p.mouse.move(ctx.startPos.x,ctx.startPos.y,{steps:1}));await sleep(500);
  recording=true;await serial(()=>p.cdp('Page.startScreencast',{format:'jpeg',quality:85,maxWidth:1920,maxHeight:1080,everyNthFrame:1}));
  {const t=Date.now();while(!frames.length){if(error)throw Error(error);if(Date.now()-t>12000)throw Error('Initial recording frame missing');await sleep(30);}}

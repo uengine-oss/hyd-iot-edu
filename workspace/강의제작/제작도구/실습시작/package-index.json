@@ -15,10 +15,10 @@
       "course": "실전반",
       "session": "온라인 02회차",
       "title": "Cypher로 그래프를 다루고 설비 조회 결과 해석하기",
-      "version": "2026-11-02-browser-only",
+      "version": "2026-11-06-relations-marked",
       "folder": "02회차/랩/02일차_실습1_관계조회",
       "path": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회.zip",
-      "sha256": "eb2408ed6c96a70b2be07f1398821f5b1c47712474998c22caa7ee928fb44b53",
+      "sha256": "643c3a7e120395365ce713bb885c29c805ae977dbe57bdd07cff1c859917568c",
       "entry": "neo4j"
     },
     {
@@ -151,10 +151,10 @@
       "course": "통합반",
       "session": "온라인 02회차",
       "title": "Cypher로 그래프를 생성·조회·수정·삭제하고 설비 관계 탐색하기",
-      "version": "2026-11-02-browser-only",
+      "version": "2026-11-06-relations-marked",
       "folder": "02회차/랩/02일차_실습1_관계조회",
       "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회.zip",
-      "sha256": "13016cedf9d69b630eaaa1a65428322638320d2c2c69385fc565a9ccd602f9ad",
+      "sha256": "1b05957887bc85baf31a929863f49fb65909dc29df9d0278dd8bad7ad431f08a",
       "entry": "neo4j"
     },
     {
