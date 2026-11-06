@@ -68,6 +68,8 @@ export async function run(opts){
    snapshot:async()=>serial(()=>p.snapshot()),
    begin:async()=>{await serial(()=>p.evaluate(()=>{window.__ptrStat={held:0,heldAfterFinish:0,applied:0};}));recording=true;await serial(()=>p.cdp('Page.startScreencast',{format:'jpeg',quality:85,maxWidth:1920,maxHeight:1080,everyNthFrame:1}));const t=Date.now();while(!frames.length){if(error)throw Error(error);if(Date.now()-t>12000)throw Error('Initial recording frame missing');await sleep(30);}await fs.writeFile(out+'/recording-start.json',JSON.stringify({start,url:await serial(()=>p.url())}));},
   };
+  // 앞 take가 남긴 화면 상태(구간 모듈이 돌려준 result). 녹화 밖에서 그 상태(굴린 자리 등)로 되돌릴 때 쓴다. 앞 take를 주었는데 기록이 없으면 멈춘다.
+  ctx.prev=opts.prev?JSON.parse(await fs.readFile(work+'/'+opts.prev+'/timing.json','utf8').catch(()=>{throw Error('앞 take 기록 없음: '+work+'/'+opts.prev+'/timing.json (촬영도구/ctrl.mjs)');})).result:null;
   ctx.say=async(id,fn,opt)=>{const f=audio+'/'+id+'.json';const c=JSON.parse(await fs.readFile(f,'utf8').catch(()=>{throw Error('Voice cue missing: '+f+' (생성 후 촬영)');}));await cue(ctx,c,fn,opt);};
   // 이어 찍기: 앞 구간 끝 포인터 위치에 표시·실제 포인터를 둔다(녹화 전, 화면에 남지 않음).
   // 이어 찍기: 앞 구간이 끝난 페이지가 아니면 녹화 전에 그 페이지를 연다(화면에 남지 않음).

@@ -22,6 +22,12 @@ for spec in specs:
         if a['time'] < end_ms and a['time'] + a['duration'] > end_ms:
             raise RuntimeError(f'{seg}: cut {end_ms} splits speech {a["id"]}')
     fr = sorted(t['frames'], key=lambda f: f['sourceTimestamp'])
+    # 녹화 시계 0(첫 프레임을 받은 때) 이전에 만들어진 프레임 가운데 마지막 하나만 시작 화면으로 쓴다. 그보다 앞선 것은 녹화 밖에서
+    # 화면 상태를 되돌리기 전의 화면이다. 모두 시각 0에 두면 1ms짜리로 남아 이음새의 30fps 표본에 뽑혔다
+    # (통합 668.183초 m05-6→7, 실전 112.100초 r06-2→3, 앞뒤 차 4.55 · 2.36). 버린 수는 합성 기록 segments.dropped_prestart에 남긴다.
+    pre = [f for f in fr if f['sourceTimestamp'] * 1000 - t['start'] <= 0]
+    dropped = max(0, len(pre) - 1)
+    fr = fr[dropped:]
     times = [max(0.0, f['sourceTimestamp'] * 1000 - t['start']) for f in fr]
     keep = [(f, x) for f, x in zip(fr, times) if x < end_ms]
     for i, (f, x) in enumerate(keep):
@@ -36,7 +42,7 @@ for spec in specs:
             g = [b - a for a, b in zip([m['start']] + v, v + [m['end']])]
             motions.append({'segment': seg, 'start_ms': round(offset + m['start']), 'duration_ms': m['end'] - m['start'], 'planned_ms': m.get('planned_ms'), 'frames': len(v), 'max_gap_ms': round(max(g))})
     st = json.loads((base / seg / 'end-state.json').read_text(encoding='utf-8'))
-    segs.append({'segment': seg, 'used_ms': end_ms, 'recorded_ms': t['duration'], 'error': t['error'], 'end_url': st['url']})
+    segs.append({'segment': seg, 'used_ms': end_ms, 'recorded_ms': t['duration'], 'error': t['error'], 'end_url': st['url'], 'dropped_prestart': dropped})
     offset += end_ms
 for c in st['clicks']:
     clicks.append({'x': c['x'], 'y': c['y'], 'dx': round(c['px'] - c['x'], 2), 'dy': round(c['py'] - c['y'], 2), 'gliding': c.get('gliding')})

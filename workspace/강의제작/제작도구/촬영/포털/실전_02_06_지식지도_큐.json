@@ -393,26 +393,12 @@
     [
      "click",
      {
-      "css": "#ontoSearch"
+      "css": "#ontoMap .o-node[data-id=\"comp:pump-a\"]",
+      "inview": true
      },
      {
       "at": "주 펌프를 다시"
      }
-    ],
-    [
-     "key",
-     "Control+a"
-    ],
-    [
-     "type",
-     "주 펌프"
-    ],
-    [
-     "click",
-     {
-      "css": "#ontoMap .o-node[data-id=\"comp:pump-a\"]"
-     },
-     0.9
     ],
     [
      "wait",

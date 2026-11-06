@@ -3,12 +3,14 @@
 #   ./run.sh rec <이름> <구간 파일(segs/ 기준)> [앞 구간 이름 | '{x:..,y:..}']   구간 하나 녹화 → 실측. 앞 구간 끝(또는 자른 시점) 포인터에서 시작
 #   ./run.sh restore <cut25|noteTail|reload|state>                    녹화 밖 상태 맞춤(실행 취소 없이) · 읽기 전용 상태 보기
 #   SPACE=<ego 작업 공간> VP='{width:1536,height:864,dsf:1.5}' ./run.sh rec …  VS Code 밖 화면(포털). 앞 구간 URL로 되돌아가지 않는다
+#   HYD_AUDIO=<음성 캐시 폴더> ./run.sh rec …                    다른 도구의 음성 캐시(common.py). 앞 구간 이름은 구간 모듈에 ctx.prev(앞 take의 timing.json result)로도 넘어간다
 #   ./run.sh measure <이름>                                     녹화 하나 다시 실측
 # 다른 ego 명령(ego-browser.exe)이 떠 있으면 시작하지 않는다(상태 파일 EPERM). 실행 전 node --check(ego는 문법 오류에 조용히 멈춘다),
 # stdin을 닫는다(-e가 입력을 기다린다). 시간 초과(TMO초, 기본 900) 시 ego의 NodeService(스크립트 실행기)만 정리한다.
 set -u
 here="$(cd "$(dirname "$0")" && pwd -W)"
-work="$(cd "$here" && PYTHONUTF8=1 python -c "from common import WORK;print(WORK.as_posix())")"
+work="$(cd "$here" && PYTHONUTF8=1 python -c "from common import WORK;print(WORK.as_posix())")" || exit 2
+audio="$(cd "$here" && PYTHONUTF8=1 python -c "from common import AUDIO;print(AUDIO.as_posix())")" || exit 2
 cmd=${1:-}; shift || true
 if [ "$cmd" = measure ]; then cd "$here" && PYTHONUTF8=1 python measure.py "$1"; exit; fi
 for f in ctrl.mjs ui.mjs segs/*.mjs; do node --check "$here/$f" || { echo "SYNTAX ERROR in $f: ego로 보내지 않음"; exit 2; }; done
@@ -32,7 +34,8 @@ case "$cmd" in
     elif [ -n "$prev" ]; then ptr=$(PYTHONUTF8=1 python -c "import json;n,_,c=r'$prev'.partition(':');ms=json.load(open(r'$work/'+n+'/timing.json',encoding='utf8'))['motions'];ms=[m for m in ms if not c or m['start']<float(c)];m=ms[-1];print('{x:%.1f,y:%.1f}'%(m['x'],m['y']))") || exit 2; fi
     rurl=null; [ -n "$prev" ] && [ "${prev:0:1}" != "{" ] && [ -z "${SPACE:-}" ] && rurl=$(PYTHONUTF8=1 python -c "import json;print(json.dumps(json.load(open(r'$work/${prev%%:*}/end-state.json',encoding='utf8'))['url']))")
     sp=null; [ -n "${SPACE:-}" ] && sp="\"$SPACE\""
-    js="const {run}=await import('file:///$here/ctrl.mjs?$stamp');console.log(JSON.stringify(await run({name:'$n',module:'$seg',pointer:$ptr,resumeUrl:$rurl,space:$sp,viewport:${VP:-null}})));"
+    pv=null; [ -n "$prev" ] && [ "${prev:0:1}" != "{" ] && pv="'${prev%%:*}'"
+    js="const {run}=await import('file:///$here/ctrl.mjs?$stamp');console.log(JSON.stringify(await run({name:'$n',module:'$seg',pointer:$ptr,resumeUrl:$rurl,space:$sp,viewport:${VP:-null},audio:'$audio',prev:$pv})));"
     log="$work/$n.log";;
   *) sed -n 2,5p "$0"; exit 2;;
 esac
