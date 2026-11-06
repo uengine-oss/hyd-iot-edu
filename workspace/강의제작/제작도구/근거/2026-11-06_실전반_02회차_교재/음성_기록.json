@@ -1,0 +1,32 @@
+{
+ "voice": "1PdAOcPlPTz12RwMyFVp",
+ "model": "eleven_v4",
+ "speed": 0.8,
+ "completed": {
+  "6f5706a5d762b425": {
+   "sha": "bfa1ff0e431d5af99f961005f7038b009cd7dff8b9748b6ddc3978e3d96950e4",
+   "credits": 0,
+   "편": "실전반_02회차_01_이론_클래스와인스턴스",
+   "장": "9",
+   "글자": 1443,
+   "기존": true
+  },
+  "970fc5ea4a44063a": {
+   "sha": "20347fb8bc0b0aed17956b1aa9a4014e55cacbb70fc0ceaa96671ebf667d228e",
+   "credits": 0,
+   "편": "실전반_02회차_01_이론_클래스와인스턴스",
+   "장": "13",
+   "글자": 929,
+   "기존": true
+  },
+  "035e90fcc173f78f": {
+   "sha": "49defcfeef315ee7351b5a6a91f51a19c5a682a746021ec6a9e2dbc4f2f2161d",
+   "credits": 182,
+   "편": "실전반_02회차_01_이론_클래스와인스턴스",
+   "장": "1",
+   "글자": 375,
+   "초": 11.4
+  }
+ },
+ "failed": []
+}
