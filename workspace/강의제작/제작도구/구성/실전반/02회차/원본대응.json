@@ -1,1641 +1,280 @@
 {
-  "note": "실전반 2회차 현 판(110장) 대응표. destination = 이 덱의 장, source = 화면 글이 가장 닮은 통합반 2 · 3회차 장(글닮음 0.35 미만이면 실전반에서 새로 쓴 장), old_practical = 재편 전 조립본에 같은 제목이 있을 때 그 장. dropped = 재편에서 뺀 통합반 장과 그 까닭.",
-  "slides": [
-    {
-      "destination": 1,
-      "title": "지식 구조와 작업 판단의 설계",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 1,
-          "글닮음": 0.56
-        }
-      ],
-      "old_practical": [
-        1
-      ]
-    },
-    {
-      "destination": 2,
-      "title": "학습목표",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 2,
-          "글닮음": 0.49
-        }
-      ],
-      "old_practical": [
-        2
-      ]
-    },
-    {
-      "destination": 3,
-      "title": "목차",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 3,
-          "글닮음": 0.46
-        }
-      ],
-      "old_practical": [
-        3
-      ]
-    },
-    {
-      "destination": 4,
-      "title": "클래스 · 인스턴스와 관계의 기초",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 4,
-          "글닮음": 0.71
-        }
-      ],
-      "old_practical": [
-        4
-      ]
-    },
-    {
-      "destination": 5,
-      "title": "클래스와 인스턴스",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 5,
-          "글닮음": 0.77
-        }
-      ],
-      "old_practical": [
-        5
-      ]
-    },
-    {
-      "destination": 6,
-      "title": "속성과 속성값",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 6,
-          "글닮음": 0.7
-        }
-      ],
-      "old_practical": [
-        6
-      ]
-    },
-    {
-      "destination": 7,
-      "title": "센서와 상태 변수: 한계를 둘 자리",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 7,
-          "글닮음": 0.37
-        }
-      ]
-    },
-    {
-      "destination": 8,
-      "title": "데이터 속성과 객체 간 관계",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 8,
-          "글닮음": 0.8
-        }
-      ],
-      "old_practical": [
-        8
-      ]
-    },
-    {
-      "destination": 9,
-      "title": "설비 · 구성 요소 · 부품",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 9,
-          "글닮음": 0.6
-        }
-      ],
-      "old_practical": [
-        9
-      ]
-    },
-    {
-      "destination": 10,
-      "title": "증상 · 고장 유형 · 원인: 경보 순간의 사실과 후보",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 10,
-          "글닮음": 0.62
-        }
-      ]
-    },
-    {
-      "destination": 11,
-      "title": "관계 유형: 이름 · 방향 · 양 끝 클래스",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 11,
-          "글닮음": 0.51
-        }
-      ]
-    },
-    {
-      "destination": 12,
-      "title": "조작 관계와 물리적 영향의 구분",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 12,
-          "글닮음": 0.68
-        }
-      ],
-      "old_practical": [
-        12
-      ]
-    },
-    {
-      "destination": 13,
-      "title": "오일 쿨러로 들어오는 관계와 나가는 관계",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 13,
-          "글닮음": 0.5
-        }
-      ]
-    },
-    {
-      "destination": 14,
-      "title": "응용: 경보에서 교체품까지 길 잇기",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 54,
-          "글닮음": 0.36
-        }
-      ]
-    },
-    {
-      "destination": 15,
-      "title": "카디널리티와 관계의 속성",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 14,
-          "글닮음": 0.7
-        }
-      ],
-      "old_practical": [
-        14
-      ]
-    },
-    {
-      "destination": 16,
-      "title": "카디널리티의 네 형태와 새 연결의 판정",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 45,
-          "글닮음": 0.42
-        }
-      ]
-    },
-    {
-      "destination": 17,
-      "title": "카디널리티 선언과 실제 데이터",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 12,
-          "글닮음": 0.36
-        }
-      ],
-      "old_practical": [
-        16
-      ]
-    },
-    {
-      "destination": 18,
-      "title": "한 단계 더: 공통 노드 하나로 둘까, 설비마다 나눌까",
-      "origin": "실전반에서 새로 씀",
-      "source": [],
-      "old_practical": [
-        16
-      ]
-    },
-    {
-      "destination": 19,
-      "title": "공급 관계에 딸린 값과 공급사에 딸린 값",
-      "origin": "실전반에서 새로 씀",
-      "source": []
-    },
-    {
-      "destination": 20,
-      "title": "정보를 표현하는 네 가지 선택",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 22,
-          "글닮음": 0.72
-        }
-      ],
-      "old_practical": [
-        21
-      ]
-    },
-    {
-      "destination": 21,
-      "title": "판단 문제: 비승인 공급사의 가격 인하",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 77,
-          "글닮음": 0.39
-        }
-      ]
-    },
-    {
-      "destination": 22,
-      "title": "스키마와 고유 식별자",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 23,
-          "글닮음": 0.78
-        }
-      ],
-      "old_practical": [
-        22
-      ]
-    },
-    {
-      "destination": 23,
-      "title": "스키마와 인스턴스 데이터",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 24,
-          "글닮음": 0.38
-        }
-      ],
-      "old_practical": [
-        23
-      ]
-    },
-    {
-      "destination": 24,
-      "title": "식별자 · 이름 · 별칭",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 25,
-          "글닮음": 0.69
-        }
-      ],
-      "old_practical": [
-        24
-      ]
-    },
-    {
-      "destination": 25,
-      "title": "응용: 이름이 다른 같은 설비 잇기",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 26,
-          "글닮음": 0.41
-        }
-      ],
-      "old_practical": [
-        25
-      ]
-    },
-    {
-      "destination": 26,
-      "title": "판단 문제: 이름이 다른 부품 두 줄",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 77,
-          "글닮음": 0.38
-        }
-      ]
-    },
-    {
-      "destination": 27,
-      "title": "속성과 연결의 정의 · 제약",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 29,
-          "글닮음": 0.79
-        }
-      ],
-      "old_practical": [
-        26
-      ]
-    },
-    {
-      "destination": 28,
-      "title": "클래스 정의: 레이블 · 뜻 · 속성의 칸",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 30,
-          "글닮음": 0.58
-        }
-      ],
-      "old_practical": [
-        27
-      ]
-    },
-    {
-      "destination": 29,
-      "title": "문자 · 수 · 참거짓으로 나눈 공급 정보",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 31,
-          "글닮음": 0.47
-        }
-      ]
-    },
-    {
-      "destination": 30,
-      "title": "여러 별칭의 목록과 물리량 종류의 허용값",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 32,
-          "글닮음": 0.51
-        }
-      ]
-    },
-    {
-      "destination": 31,
-      "title": "필수 속성과 선택 속성의 빈 칸",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 8,
-          "글닮음": 0.37
-        }
-      ],
-      "old_practical": [
-        29
-      ]
-    },
-    {
-      "destination": 32,
-      "title": "관계 정의와 유효한 연결",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 34,
-          "글닮음": 0.65
-        }
-      ],
-      "old_practical": [
-        30
-      ]
-    },
-    {
-      "destination": 33,
-      "title": "응용: 제약별로 걸러지는 데이터",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 35,
-          "글닮음": 0.47
-        }
-      ],
-      "old_practical": [
-        31
-      ]
-    },
-    {
-      "destination": 34,
-      "title": "한 단계 더: 검사를 통과해도 틀린 데이터",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 3,
-          "slide": 21,
-          "글닮음": 0.38
-        }
-      ],
-      "old_practical": [
-        30
-      ]
-    },
-    {
-      "destination": 35,
-      "title": "설비 모델의 설계와 확장",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 37,
-          "글닮음": 0.7
-        }
-      ],
-      "old_practical": [
-        32
-      ]
-    },
-    {
-      "destination": 36,
-      "title": "역량 질문에서 클래스 · 속성 · 관계로",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 38,
-          "글닮음": 0.57
-        }
-      ],
-      "old_practical": [
-        33
-      ]
-    },
-    {
-      "destination": 37,
-      "title": "설비 모델의 핵심 정의",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 39,
-          "글닮음": 0.74
-        }
-      ],
-      "old_practical": [
-        34
-      ]
-    },
-    {
-      "destination": 38,
-      "title": "세 질문이 지나는 관계 구조",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 40,
-          "글닮음": 0.51
-        }
-      ],
-      "old_practical": [
-        35
-      ]
-    },
-    {
-      "destination": 39,
-      "title": "인스턴스 추가와 스키마 변경",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 41,
-          "글닮음": 0.38
-        }
-      ],
-      "old_practical": [
-        36
-      ]
-    },
-    {
-      "destination": 40,
-      "title": "판단 문제: 부품 번호를 필수로 바꾸는 요구",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 78,
-          "글닮음": 0.36
-        }
-      ]
-    },
-    {
-      "destination": 41,
-      "title": "그래프 DB의 저장 구조와 / Cypher 쿼리로 찾기",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 44,
-          "글닮음": 0.75
-        }
-      ]
-    },
-    {
-      "destination": 42,
-      "title": "속성 그래프: 공통 유온 계측 채널이 저장된 모양",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 42,
-          "글닮음": 0.44
-        }
-      ]
-    },
-    {
-      "destination": 43,
-      "title": "스키마의 조건과 검증 책임",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 3,
-          "slide": 43,
-          "글닮음": 0.38
-        }
-      ]
-    },
-    {
-      "destination": 44,
-      "title": "Cypher 패턴: 경보 태그 TS1에서 유온 한계까지",
-      "origin": "실전반에서 새로 씀",
-      "source": []
-    },
-    {
-      "destination": 45,
-      "title": "MATCH · RETURN: 찾은 연결과 돌려받는 항목",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 50,
-          "글닮음": 0.62
-        }
-      ],
-      "old_practical": [
-        44,
-        45
-      ]
-    },
-    {
-      "destination": 46,
-      "title": "DISTINCT · COUNT: 행의 수와 대상의 수",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 52,
-          "글닮음": 0.57
-        }
-      ],
-      "old_practical": [
-        46,
-        47
-      ]
-    },
-    {
-      "destination": 47,
-      "title": "여러 관계를 이은 경로와 NULL",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 55,
-          "글닮음": 0.73
-        }
-      ],
-      "old_practical": [
-        48
-      ]
-    },
-    {
-      "destination": 48,
-      "title": "WHERE: 찾은 행을 거르는 조건",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 56,
-          "글닮음": 0.75
-        }
-      ],
-      "old_practical": [
-        49
-      ]
-    },
-    {
-      "destination": 49,
-      "title": "AND · OR의 결합 순서",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 57,
-          "글닮음": 0.68
-        }
-      ]
-    },
-    {
-      "destination": 50,
-      "title": "구성 요소별 집계와 ORDER BY",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 58,
-          "글닮음": 0.54
-        }
-      ],
-      "old_practical": [
-        51
-      ]
-    },
-    {
-      "destination": 51,
-      "title": "응용: 세 설비를 함께 세면 생기는 합산 중복",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 53,
-          "글닮음": 0.46
-        }
-      ]
-    },
-    {
-      "destination": 52,
-      "title": "쿨러 사건의 원인 후보와 역방향 탐색",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 59,
-          "글닮음": 0.4
-        }
-      ]
-    },
-    {
-      "destination": 53,
-      "title": "응용: 경보 하나에서 교체품까지 쿼리 하나로",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 55,
-          "글닮음": 0.37
-        }
-      ]
-    },
-    {
-      "destination": 54,
-      "title": "노드 · 관계의 생성 · 병합과 / 적재 검증",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 60,
-          "글닮음": 0.63
-        }
-      ]
-    },
-    {
-      "destination": 55,
-      "title": "구조 조회와 데이터 적재의 구분",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 12,
-          "글닮음": 0.37
-        }
-      ],
-      "old_practical": [
-        53,
-        57
-      ]
-    },
-    {
-      "destination": 56,
-      "title": "CREATE · MERGE · SET: 새로 만들기와 찾아서 쓰기",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 62,
-          "글닮음": 0.42
-        }
-      ],
-      "old_practical": [
-        54
-      ]
-    },
-    {
-      "destination": 57,
-      "title": "MERGE 패턴에 넣을 값과 SET으로 바꿀 값",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 62,
-          "글닮음": 0.74
-        }
-      ],
-      "old_practical": [
-        55
-      ]
-    },
-    {
-      "destination": 58,
-      "title": "한 단계 더: 유일 제약이 없는 DB에서의 MERGE",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 61,
-          "글닮음": 0.43
-        }
-      ]
-    },
-    {
-      "destination": 59,
-      "title": "양 끝 노드를 찾은 뒤 관계 잇기",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 63,
-          "글닮음": 0.59
-        }
-      ],
-      "old_practical": [
-        56
-      ]
-    },
-    {
-      "destination": 60,
-      "title": "스키마 정의에서 적재 검증까지",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 64,
-          "글닮음": 0.72
-        }
-      ],
-      "old_practical": [
-        57
-      ]
-    },
-    {
-      "destination": 61,
-      "title": "Cypher로 그래프를 다루고 / 설비 조회 결과 해석하기",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 65,
-          "글닮음": 0.73
-        }
-      ]
-    },
-    {
-      "destination": 62,
-      "title": "Cypher 편집과 설비 관계 조회",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 66,
-          "글닮음": 0.72
-        }
-      ]
-    },
-    {
-      "destination": 63,
-      "title": "기준 설비 지식의 실제 연결 구조 확인하기",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 67,
-          "글닮음": 0.75
-        }
-      ]
-    },
-    {
-      "destination": 64,
-      "title": "교체 부품의 사용 설비와 근거",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 72,
-          "글닮음": 0.55
-        }
-      ]
-    },
-    {
-      "destination": 65,
-      "title": "설비·부품·공급 정보를 연결하는 / 온톨로지 설계하기",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 69,
-          "글닮음": 0.76
-        }
-      ]
-    },
-    {
-      "destination": 66,
-      "title": "공용 부품과 공급 조건 모델",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 70,
-          "글닮음": 0.5
-        }
-      ]
-    },
-    {
-      "destination": 67,
-      "title": "부품의 사용 설비와 공급 정보를 / 조회하는 그래프 구현하기",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 69,
-          "글닮음": 0.53
-        }
-      ]
-    },
-    {
-      "destination": 68,
-      "title": "사용 설비와 유효 공급 조건 조회",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 66,
-          "글닮음": 0.56
-        }
-      ]
-    },
-    {
-      "destination": 69,
-      "title": "작업 절차의 단계와 수행 조건",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 37,
-          "글닮음": 0.55
-        }
-      ],
-      "old_practical": [
-        66
-      ]
-    },
-    {
-      "destination": 70,
-      "title": "원인 하나에 걸린 조치 후보 넷",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 3,
-          "slide": 54,
-          "글닮음": 0.42
-        }
-      ],
-      "old_practical": [
-        67
-      ]
-    },
-    {
-      "destination": 71,
-      "title": "SOP 원문에서 순서와 조건 가려 읽기",
-      "origin": "실전반에서 새로 씀",
-      "source": [],
-      "old_practical": [
-        68
-      ]
-    },
-    {
-      "destination": 72,
-      "title": "SOP의 여덟 구성요소와 작업자의 물음",
-      "origin": "실전반에서 새로 씀",
-      "source": [],
-      "old_practical": [
-        69
-      ]
-    },
-    {
-      "destination": 73,
-      "title": "원격 조치의 전제와 현장 작업의 안전 조건",
-      "origin": "실전반에서 새로 씀",
-      "source": [],
-      "old_practical": [
-        69,
-        70
-      ]
-    },
-    {
-      "destination": 74,
-      "title": "응용: 운전 모드가 바뀔 때 남는 후보",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 3,
-          "slide": 14,
-          "글닮음": 0.47
-        }
-      ],
-      "old_practical": [
-        71
-      ]
-    },
-    {
-      "destination": 75,
-      "title": "절차를 지식 그래프와 실행에 잇기",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 44,
-          "글닮음": 0.52
-        }
-      ],
-      "old_practical": [
-        72
-      ]
-    },
-    {
-      "destination": 76,
-      "title": "조치 방법(Skill) · 작업 단계(Step)로 옮긴 SOP",
-      "origin": "실전반에서 새로 씀",
-      "source": [],
-      "old_practical": [
-        73
-      ]
-    },
-    {
-      "destination": 77,
-      "title": "즉시 완화(MITIGATED_BY)와 근본 조치(REMEDIED_BY)",
-      "origin": "실전반에서 새로 씀",
-      "source": [],
-      "old_practical": [
-        74
-      ]
-    },
-    {
-      "destination": 78,
-      "title": "응용: 경보가 꺼진 뒤 무엇을 완료로 보고하나",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 3,
-          "slide": 18,
-          "글닮음": 0.57
-        }
-      ],
-      "old_practical": [
-        75
-      ]
-    },
-    {
-      "destination": 79,
-      "title": "고장 유형에서 핀 세척의 단계 · 근거 · 승인까지",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 3,
-          "slide": 16,
-          "글닮음": 0.41
-        }
-      ]
-    },
-    {
-      "destination": 80,
-      "title": "응용: 승인부터 정비 완료까지 따로 남는 기록",
-      "origin": "실전반에서 새로 씀",
-      "source": [],
-      "old_practical": [
-        77
-      ]
-    },
-    {
-      "destination": 81,
-      "title": "매뉴얼의 조건 문장을 판정 규칙으로",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 3,
-          "slide": 20,
-          "글닮음": 0.5
-        }
-      ]
-    },
-    {
-      "destination": 82,
-      "title": "순서를 정하는 SOP와 판정을 내는 DMN",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 3,
-          "slide": 21,
-          "글닮음": 0.41
-        }
-      ],
-      "old_practical": [
-        79
-      ]
-    },
-    {
-      "destination": 83,
-      "title": "입력 데이터(InputData): 판정에 쓰는 값과 읽는 곳",
-      "origin": "실전반에서 새로 씀",
-      "source": [],
-      "old_practical": [
-        80
-      ]
-    },
-    {
-      "destination": 84,
-      "title": "결정 · 결정표 · 규칙으로 쿨러 사건 판정하기",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 3,
-          "slide": 22,
-          "글닮음": 0.39
-        }
-      ],
-      "old_practical": [
-        81
-      ]
-    },
-    {
-      "destination": 85,
-      "title": "조건 문장을 입력 · 연산자 · 기준값으로 옮기기",
-      "origin": "실전반에서 새로 씀",
-      "source": [],
-      "old_practical": [
-        82
-      ]
-    },
-    {
-      "destination": 86,
-      "title": "응용: 사건 값으로는 보이지 않는 부호 실수",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 3,
-          "slide": 25,
-          "글닮음": 0.44
-        }
-      ]
-    },
-    {
-      "destination": 87,
-      "title": "한 행의 AND와 행을 나눈 OR",
-      "origin": "실전반에서 새로 씀",
-      "source": [],
-      "old_practical": [
-        84
-      ]
-    },
-    {
-      "destination": 88,
-      "title": "규칙의 출력: 후보 선택 · 제외 · 감점 · 경고",
-      "origin": "실전반에서 새로 씀",
-      "source": [],
-      "old_practical": [
-        85
-      ]
-    },
-    {
-      "destination": 89,
-      "title": "결정표를 지금의 값에 대어 판정하기",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 29,
-          "글닮음": 0.5
-        }
-      ],
-      "old_practical": [
-        86
-      ]
-    },
-    {
-      "destination": 90,
-      "title": "Hit Policy: 여러 행이 함께 맞을 때의 처리",
-      "origin": "실전반에서 새로 씀",
-      "source": [],
-      "old_practical": [
-        87
-      ]
-    },
-    {
-      "destination": 91,
-      "title": "응용: 같은 입력에 네 Hit Policy가 내는 답",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 3,
-          "slide": 33,
-          "글닮음": 0.43
-        }
-      ],
-      "old_practical": [
-        88
-      ]
-    },
-    {
-      "destination": 92,
-      "title": "결정표의 누락 · 중복 · 상충 점검",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 3,
-          "slide": 35,
-          "글닮음": 0.38
-        }
-      ],
-      "old_practical": [
-        89
-      ]
-    },
-    {
-      "destination": 93,
-      "title": "응용: 운전 모드와 운전 이력을 읽지 못했을 때",
-      "origin": "실전반에서 새로 씀",
-      "source": [],
-      "old_practical": [
-        90
-      ]
-    },
-    {
-      "destination": 94,
-      "title": "판정 근거: 걸린 규칙 · 그때의 값 · 원문 절",
-      "origin": "실전반에서 새로 씀",
-      "source": [],
-      "old_practical": [
-        91
-      ]
-    },
-    {
-      "destination": 95,
-      "title": "판단의 차례와 절차의 몫",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 23,
-          "글닮음": 0.51
-        }
-      ],
-      "old_practical": [
-        92
-      ]
-    },
-    {
-      "destination": 96,
-      "title": "원인 진단에서 승인까지 이어지는 판단",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 64,
-          "글닮음": 0.41
-        }
-      ],
-      "old_practical": [
-        93
-      ]
-    },
-    {
-      "destination": 97,
-      "title": "운전 모드 규칙과 단계가 만나는 조치 노드",
-      "origin": "실전반에서 새로 씀",
-      "source": []
-    },
-    {
-      "destination": 98,
-      "title": "판단 규칙의 선언과 실행",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 3,
-          "slide": 21,
-          "글닮음": 0.39
-        }
-      ]
-    },
-    {
-      "destination": 99,
-      "title": "응용: 결정표로 옮겨도 절차에 남는 것",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 3,
-          "slide": 23,
-          "글닮음": 0.35
-        }
-      ]
-    },
-    {
-      "destination": 100,
-      "title": "포털에서 절차와 판단 조건이 / 나뉘어 쓰이는 모습 확인하기",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 3,
-          "slide": 63,
-          "글닮음": 0.48
-        }
-      ]
-    },
-    {
-      "destination": 101,
-      "title": "절차와 판단 규칙을 대조할 기준",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 3,
-          "slide": 64,
-          "글닮음": 0.48
-        }
-      ]
-    },
-    {
-      "destination": 102,
-      "title": "작업 기준의 복합 조건과 예외를 / 조치 조건표로 표현하기",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 3,
-          "slide": 63,
-          "글닮음": 0.48
-        }
-      ]
-    },
-    {
-      "destination": 103,
-      "title": "조건표와 판단 기록의 확인 기준",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 70,
-          "글닮음": 0.44
-        }
-      ]
-    },
-    {
-      "destination": 104,
-      "title": "쿨러 경보 한 건으로 되짚는 지식 구조와 판단",
-      "origin": "실전반에서 새로 씀",
-      "source": [],
-      "old_practical": [
-        98
-      ]
-    },
-    {
-      "destination": 105,
-      "title": "오늘 다룬 핵심 개념과 주요 용어 정리",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 74,
-          "글닮음": 0.6
-        }
-      ],
-      "old_practical": [
-        99,
-        100
-      ]
-    },
-    {
-      "destination": 106,
-      "title": "Review Quiz: 핵심 흐름 되짚어보기",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 75,
-          "글닮음": 1.0
-        }
-      ],
-      "old_practical": [
-        101
-      ]
-    },
-    {
-      "destination": 107,
-      "title": "Quiz 1. 0행을 돌려준 센서 조회",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 76,
-          "글닮음": 0.38
-        }
-      ]
-    },
-    {
-      "destination": 108,
-      "title": "Quiz 2. 확인된 제외와 읽지 못한 값",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 3,
-          "slide": 71,
-          "글닮음": 0.51
-        }
-      ]
-    },
-    {
-      "destination": 109,
-      "title": "Quiz 3. 정확히 24시간을 채운 팬",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 3,
-          "slide": 72,
-          "글닮음": 0.38
-        }
-      ]
-    },
-    {
-      "destination": 110,
-      "title": "정답과 판단 기준",
-      "origin": "통합반 장을 줄이거나 다시 씀",
-      "source": [
-        {
-          "course": "통합반",
-          "day": 2,
-          "slide": 79,
-          "글닮음": 0.43
-        }
-      ],
-      "old_practical": [
-        106,
-        107
-      ]
+ "note": "실전반 2회차 새 판 대응표(단원마다 이어 씀). destination = 새 덱 장, origin = 같은 장 · 합친 장 · 응용 장 · 실전 고유 전환, source = 지금 판 통합반 2 · 3회차 장 번호. 옛 110장 판의 대응과 새 자리는 작업 폴더 입력/원본대응_재매핑.md.",
+ "slides": [
+  {
+   "destination": 1,
+   "title": "지식 구조와 작업 판단의 설계",
+   "origin": "합친 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 1
+    },
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 1
     }
-  ],
-  "dropped": [
+   ]
+  },
+  {
+   "destination": 2,
+   "title": "학습목표",
+   "origin": "합친 장",
+   "source": [
     {
-      "old_practical": 18,
-      "title": "클래스 계층과 모델링 선택",
-      "source": {
-        "course": "통합반",
-        "day": 2,
-        "slide": 18
-      },
-      "reason": "별도 계층 단원은 두지 않는다. 실전 20장에서 작업과 흐름 노드의 상속을 설비와 쿨러의 포함 관계와 구분한다."
+     "course": "통합반",
+     "day": 2,
+     "slide": 2
     },
     {
-      "old_practical": 19,
-      "title": "클래스 계층과 상속",
-      "source": {
-        "course": "통합반",
-        "day": 2,
-        "slide": 19
-      },
-      "reason": "같음"
-    },
-    {
-      "old_practical": 20,
-      "title": "새 클래스를 정의하는 기준",
-      "source": {
-        "course": "통합반",
-        "day": 2,
-        "slide": 20
-      },
-      "reason": "같음"
-    },
-    {
-      "old_practical": 37,
-      "title": "설비 · 진단 · 판단 · 성과의 지식",
-      "source": {
-        "course": "통합반",
-        "day": 2,
-        "slide": 37
-      },
-      "reason": "실라버스 실전반 18행에 없는 네 묶음 소개. 진단 클래스는 10 · 14장, 판단 · 성과 클래스는 3회차가 다룬다"
-    },
-    {
-      "old_practical": 39,
-      "title": "테이블의 조인과 그래프의 연결",
-      "source": {
-        "course": "통합반",
-        "day": 2,
-        "slide": 39
-      },
-      "reason": "별도 비교 장은 두지 않는다. 실전 42장 대본에서 조회할 때 표의 행을 맞추는 일과 그래프에 저장된 관계를 따라가는 일을 비교한다."
-    },
-    {
-      "old_practical": 102,
-      "title": "Quiz 1. 스키마와 인스턴스",
-      "source": {
-        "course": "통합반",
-        "day": 2,
-        "slide": 69
-      },
-      "reason": "옛 퀴즈 넷은 104~106장 새 문항 셋으로 바꿨다. 옛 Quiz 2(단가 · 납기 자리)는 21장 판단 문제와 겹친다"
-    },
-    {
-      "old_practical": 103,
-      "title": "Quiz 2. 관계의 속성",
-      "source": {
-        "course": "통합반",
-        "day": 2,
-        "slide": 70
-      },
-      "reason": "같음"
-    },
-    {
-      "old_practical": 104,
-      "title": "Quiz 3. 저장을 막는 조건",
-      "source": {
-        "course": "통합반",
-        "day": 2,
-        "slide": 71
-      },
-      "reason": "같음"
-    },
-    {
-      "old_practical": 105,
-      "title": "Quiz 4. 조건 통과와 작업 수행",
-      "source": {
-        "course": "실전반 추가",
-        "day": 0,
-        "slide": 105
-      },
-      "reason": "옛 Quiz 4(승인 직전 모드 변경)는 79 · 95 · 98장 본문이 다룬다"
-    },
-    {
-      "removed_slide_112": 21,
-      "title": "응용: 요구가 바뀔 때 고칠 곳",
-      "origin": "새 장",
-      "reason": "분량 조정(2026-10-23): 다섯 요구 모두 7 · 16 · 18 · 19 · 21장에 이미 있다"
-    },
-    {
-      "removed_slide_112": 40,
-      "title": "응용: 스키마 변경이 미치는 범위",
-      "origin": "새 장(옛 장에서 출발)",
-      "old_practical": [
-        36
-      ],
-      "reason": "분량 조정(2026-10-23): 스키마 변경의 범위는 38장과 39장 판단 문제 정답 풀이(기존 데이터 · 넣는 쪽 · 찾는 쪽)가 맡는다"
-    },
-    {
-      "removed_slide_112": 55,
-      "title": "판단 문제: 한계 칸에 나온 NULL",
-      "origin": "새 장",
-      "reason": "분량 조정(2026-10-23): NULL은 46장이 설명하고, 「없음은 0이 아니다 · 기준은 경보 규칙 쪽」 한 문장을 46장 대본으로 옮겼다"
-    },
-    {
-      "removed_slide_112": 63,
-      "title": "판단 문제: 다시 적재했더니 늘어난 센서",
-      "origin": "새 장",
-      "reason": "분량 조정(2026-10-23): 다시 적재해 늘어나는 원인은 55~58장(CREATE · MERGE · 유일 제약)과 실습 4 검증이 맡는다"
-    },
-    {
-      "removed_slide_112": 78,
-      "title": "판단 문제: 부하를 더 낮추자는 제안",
-      "origin": "새 장",
-      "reason": "분량 조정(2026-10-23): 금지 사항은 71장 「금지 사항」 행과 98장이 맡는다"
+     "course": "통합반",
+     "day": 3,
+     "slide": 2
     }
-  ]
+   ]
+  },
+  {
+   "destination": 3,
+   "title": "목차",
+   "origin": "합친 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 3
+    },
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 3
+    }
+   ]
+  },
+  {
+   "destination": 4,
+   "title": "클래스 · 인스턴스와 관계의 기초",
+   "origin": "같은 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 4
+    }
+   ]
+  },
+  {
+   "destination": 5,
+   "title": "클래스와 인스턴스 · 속성값",
+   "origin": "합친 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 5
+    },
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 6
+    }
+   ]
+  },
+  {
+   "destination": 6,
+   "title": "한계를 둘 자리: 속성과 관계",
+   "origin": "합친 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 7
+    },
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 8
+    }
+   ]
+  },
+  {
+   "destination": 7,
+   "title": "관계 그림의 이름을 클래스로",
+   "origin": "합친 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 9
+    },
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 10
+    }
+   ]
+  },
+  {
+   "destination": 8,
+   "title": "관계 유형: 이름 · 방향 · 양 끝 클래스",
+   "origin": "합친 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 11
+    },
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 13
+    }
+   ]
+  },
+  {
+   "destination": 9,
+   "title": "조작 관계와 영향 관계의 구분",
+   "origin": "같은 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 12
+    }
+   ]
+  },
+  {
+   "destination": 10,
+   "title": "응용: 경보 태그 TS1에서 정비 준비 목록까지",
+   "origin": "응용 장",
+   "source": [],
+   "근거": "instances.cypher sen:ts1 · sv:ts1 · comp:cooler · part:cooler-core, schema.json OCCURS_IN, course_extractions.json fm:cooler-cooling-loss, 통합반 1회차 34장 경보(asset HYD-01 · evidence TS1)"
+  }
+ ],
+ "dropped": [
+  {
+   "old_practical": 18,
+   "title": "클래스 계층과 모델링 선택",
+   "source": {
+    "course": "통합반",
+    "day": 2,
+    "slide": 18
+   },
+   "reason": "별도 계층 단원은 두지 않는다. 실전 20장에서 작업과 흐름 노드의 상속을 설비와 쿨러의 포함 관계와 구분한다."
+  },
+  {
+   "old_practical": 19,
+   "title": "클래스 계층과 상속",
+   "source": {
+    "course": "통합반",
+    "day": 2,
+    "slide": 19
+   },
+   "reason": "같음"
+  },
+  {
+   "old_practical": 20,
+   "title": "새 클래스를 정의하는 기준",
+   "source": {
+    "course": "통합반",
+    "day": 2,
+    "slide": 20
+   },
+   "reason": "같음"
+  },
+  {
+   "old_practical": 37,
+   "title": "설비 · 진단 · 판단 · 성과의 지식",
+   "source": {
+    "course": "통합반",
+    "day": 2,
+    "slide": 37
+   },
+   "reason": "실라버스 실전반 18행에 없는 네 묶음 소개. 진단 클래스는 10 · 14장, 판단 · 성과 클래스는 3회차가 다룬다"
+  },
+  {
+   "old_practical": 39,
+   "title": "테이블의 조인과 그래프의 연결",
+   "source": {
+    "course": "통합반",
+    "day": 2,
+    "slide": 39
+   },
+   "reason": "별도 비교 장은 두지 않는다. 실전 42장 대본에서 조회할 때 표의 행을 맞추는 일과 그래프에 저장된 관계를 따라가는 일을 비교한다."
+  },
+  {
+   "old_practical": 102,
+   "title": "Quiz 1. 스키마와 인스턴스",
+   "source": {
+    "course": "통합반",
+    "day": 2,
+    "slide": 69
+   },
+   "reason": "옛 퀴즈 넷은 104~106장 새 문항 셋으로 바꿨다. 옛 Quiz 2(단가 · 납기 자리)는 21장 판단 문제와 겹친다"
+  },
+  {
+   "old_practical": 103,
+   "title": "Quiz 2. 관계의 속성",
+   "source": {
+    "course": "통합반",
+    "day": 2,
+    "slide": 70
+   },
+   "reason": "같음"
+  },
+  {
+   "old_practical": 104,
+   "title": "Quiz 3. 저장을 막는 조건",
+   "source": {
+    "course": "통합반",
+    "day": 2,
+    "slide": 71
+   },
+   "reason": "같음"
+  },
+  {
+   "old_practical": 105,
+   "title": "Quiz 4. 조건 통과와 작업 수행",
+   "source": {
+    "course": "실전반 추가",
+    "day": 0,
+    "slide": 105
+   },
+   "reason": "옛 Quiz 4(승인 직전 모드 변경)는 79 · 95 · 98장 본문이 다룬다"
+  },
+  {
+   "removed_slide_112": 21,
+   "title": "응용: 요구가 바뀔 때 고칠 곳",
+   "origin": "새 장",
+   "reason": "분량 조정(2026-10-23): 다섯 요구 모두 7 · 16 · 18 · 19 · 21장에 이미 있다"
+  },
+  {
+   "removed_slide_112": 40,
+   "title": "응용: 스키마 변경이 미치는 범위",
+   "origin": "새 장(옛 장에서 출발)",
+   "old_practical": [
+    36
+   ],
+   "reason": "분량 조정(2026-10-23): 스키마 변경의 범위는 38장과 39장 판단 문제 정답 풀이(기존 데이터 · 넣는 쪽 · 찾는 쪽)가 맡는다"
+  },
+  {
+   "removed_slide_112": 55,
+   "title": "판단 문제: 한계 칸에 나온 NULL",
+   "origin": "새 장",
+   "reason": "분량 조정(2026-10-23): NULL은 46장이 설명하고, 「없음은 0이 아니다 · 기준은 경보 규칙 쪽」 한 문장을 46장 대본으로 옮겼다"
+  },
+  {
+   "removed_slide_112": 63,
+   "title": "판단 문제: 다시 적재했더니 늘어난 센서",
+   "origin": "새 장",
+   "reason": "분량 조정(2026-10-23): 다시 적재해 늘어나는 원인은 55~58장(CREATE · MERGE · 유일 제약)과 실습 4 검증이 맡는다"
+  },
+  {
+   "removed_slide_112": 78,
+   "title": "판단 문제: 부하를 더 낮추자는 제안",
+   "origin": "새 장",
+   "reason": "분량 조정(2026-10-23): 금지 사항은 71장 「금지 사항」 행과 98장이 맡는다"
+  }
+ ]
 }
