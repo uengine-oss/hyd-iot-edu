@@ -251,7 +251,11 @@ def main():
             if isinstance(p, Path): files.append((p, packets(p))); continue
             kind, fa, fb = p; part = tmp / f"old{k:03d}.mp4"
             if kind == "copy":
-                ff(*(["-ss", f"{fa / FPS + 0.001:.5f}"] if fa else []), "-i", video, "-frames:v", fb - fa, "-an", "-c", "copy", part)
+                cut = tmp / f"cut{k:03d}.mp4"
+                ff(*(["-ss", f"{fa / FPS + 0.001:.5f}"] if fa else []), "-i", video, "-frames:v", fb - fa, "-an", "-c", "copy", cut)
+                # 키프레임에서 무손실로 자르면 첫 프레임 시각이 한 프레임 앞(편집 목록으로 가림)에 찍힌다. concat은 편집 목록을 보지 않으므로 0으로 옮긴다
+                p0 = float(probe(cut, "-select_streams", "v:0", "-show_entries", "packet=pts_time", "-of", "csv=p=0").split()[0])
+                ff("-i", cut, "-c", "copy", "-output_ts_offset", f"{-p0:.6f}", part)
             else:
                 ff("-ss", at(fa), "-i", video, "-frames:v", fb - fa, *emph.ENC, part)
             if packets(part) != fb - fa: stop(f"기존 영상 {fa}~{fb} 프레임을 자른 조각의 프레임 수가 {packets(part)}다")
