@@ -525,7 +525,7 @@
   },
   {
    "destination": 37,
-   "title": "행의 수와 대상의 수: DISTINCT · COUNT · 묶는 기준",
+   "title": "DISTINCT · COUNT: 같은 노드가 여러 행에 나올 때",
    "origin": "합친 장",
    "source": [
     {
@@ -541,17 +541,24 @@
     {
      "course": "통합반",
      "day": 2,
-     "slide": 57
-    },
-    {
-     "course": "통합반",
-     "day": 2,
      "slide": 58
     }
    ]
   },
   {
    "destination": 38,
+   "title": "구성 요소별 집계와 원래 행 대조",
+   "origin": "같은 장(결과 열 별명)",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 57
+    }
+   ]
+  },
+  {
+   "destination": 39,
    "title": "여러 관계를 잇는 경로와 WHERE · AND · OR",
    "origin": "합친 장",
    "source": [
@@ -573,7 +580,7 @@
    ]
   },
   {
-   "destination": 39,
+   "destination": 40,
    "title": "Cypher에서 저장된 방향과 따라가는 방향",
    "origin": "같은 장(노트 [다음]만)",
    "source": [
@@ -585,7 +592,7 @@
    ]
   },
   {
-   "destination": 40,
+   "destination": 41,
    "title": "적재 쿼리: CREATE · MERGE · SET과 관계 잇기",
    "origin": "합친 장",
    "source": [
@@ -612,7 +619,7 @@
    ]
   },
   {
-   "destination": 41,
+   "destination": 42,
    "title": "DB 제약과 정의 · 적재 · 조회 · 검사",
    "origin": "합친 장",
    "source": [
@@ -629,14 +636,14 @@
    ]
   },
   {
-   "destination": 42,
-   "title": "응용: 유온을 낮출 변수를 쿼리로 찾을 때",
+   "destination": 43,
+   "title": "응용: 유온을 올리는 변수 가운데 명령으로 바꿀 수 있는 것",
    "origin": "응용 장",
    "source": [],
-   "근거": "instances.cypher INFLUENCES → sv:ts1(sign -1: fan-speed · ce) · actr:fan-drive MANIPULATES sv:fan-speed, 실측/u5_결과.txt"
+   "근거": "instances.cypher INFLUENCES sv:load · sv:leak → sv:ts1(+1), actr:pump-drive MANIPULATES sv:load, 실측 u5b_결과.txt"
   },
   {
-   "destination": 43,
+   "destination": 44,
    "title": "Cypher로 그래프를 다루고 / 설비 조회 결과 해석하기",
    "origin": "실습 간지",
    "source": [
@@ -649,7 +656,7 @@
    "근거": "실라버스 실전 실습(Neo4j) 행 — 통합 66과 같은 실습(공용 영상), 제목은 실전 행 글자"
   },
   {
-   "destination": 44,
+   "destination": 45,
    "title": "연습 그래프와 설비 예제 조회",
    "origin": "실습 설명",
    "source": [
@@ -662,49 +669,49 @@
    "근거": "공용 영상 통합반_02회차_04 진행, 실전 실습1 안내.html"
   },
   {
-   "destination": 45,
+   "destination": 46,
    "title": "기준 설비 지식의 실제 연결 구조 확인하기",
    "origin": "실습 간지",
    "source": [],
    "근거": "실전 고유 실습(포털) — 영상 실전반_02회차_06"
   },
   {
-   "destination": 46,
+   "destination": 47,
    "title": "부품 하나에 모인 연결과 확보 여부",
    "origin": "실습 설명",
    "source": [],
    "근거": "영상 실전반_02회차_06 진행(펌프 축 씰 키트)"
   },
   {
-   "destination": 47,
+   "destination": 48,
    "title": "설비·부품·공급 정보를 연결하는 / 온톨로지 설계하기",
    "origin": "실습 간지",
    "source": [],
    "근거": "실전 실습3 START.md"
   },
   {
-   "destination": 48,
+   "destination": 49,
    "title": "공급 조건을 잇는 모델 설계",
    "origin": "실습 설명",
    "source": [],
    "근거": "실전 실습3 START.md · 가이드"
   },
   {
-   "destination": 49,
+   "destination": 50,
    "title": "부품의 사용 설비와 공급 정보를 / 조회하는 그래프 구현하기",
    "origin": "실습 간지",
    "source": [],
    "근거": "실전 실습4 START.md"
   },
   {
-   "destination": 50,
+   "destination": 51,
    "title": "적재 · 조회와 원자료 대조",
    "origin": "실습 설명",
    "source": [],
    "근거": "실전 실습4 START.md · 가이드"
   },
   {
-   "destination": 51,
+   "destination": 52,
    "title": "조치를 수행하는 표준 작업 절차",
    "origin": "같은 장(번호 · [다음])",
    "source": [
@@ -716,7 +723,7 @@
    ]
   },
   {
-   "destination": 52,
+   "destination": 53,
    "title": "쿨러 핀 오염에 쓸 수 있는 조치 넷",
    "origin": "같은 장",
    "source": [
@@ -728,7 +735,7 @@
    ]
   },
   {
-   "destination": 53,
+   "destination": 54,
    "title": "고장 진단 뒤 조치를 정하는 세 물음",
    "origin": "합친 장",
    "source": [
@@ -745,7 +752,7 @@
    ]
   },
   {
-   "destination": 54,
+   "destination": 55,
    "title": "한 줄 지시와 SOP 원문",
    "origin": "합친 장",
    "source": [
@@ -762,7 +769,7 @@
    ]
   },
   {
-   "destination": 55,
+   "destination": 56,
    "title": "SOP 항목 여덟",
    "origin": "합친 장",
    "source": [
@@ -784,7 +791,7 @@
    ]
   },
   {
-   "destination": 56,
+   "destination": 57,
    "title": "SOP의 순서와 조건",
    "origin": "같은 장",
    "source": [
@@ -796,7 +803,7 @@
    ]
   },
   {
-   "destination": 57,
+   "destination": 58,
    "title": "운전 모드에 따라 남는 조치",
    "origin": "같은 장",
    "source": [
@@ -808,7 +815,7 @@
    ]
   },
   {
-   "destination": 58,
+   "destination": 59,
    "title": "원격 조치와 현장 작업이 요구하는 상태",
    "origin": "같은 장",
    "source": [
@@ -820,7 +827,7 @@
    ]
   },
   {
-   "destination": 59,
+   "destination": 60,
    "title": "SOP 항목이 지식 그래프에 담기는 자리",
    "origin": "합친 장",
    "source": [
@@ -837,7 +844,7 @@
    ]
   },
   {
-   "destination": 60,
+   "destination": 61,
    "title": "완화 조치 · 근본 조치 · 예방 조치",
    "origin": "같은 장",
    "source": [
@@ -849,7 +856,7 @@
    ]
   },
   {
-   "destination": 61,
+   "destination": 62,
    "title": "쿨러 사건 기록으로 판정하는 두 끝",
    "origin": "합친 장",
    "source": [
@@ -866,14 +873,14 @@
    ]
   },
   {
-   "destination": 62,
+   "destination": 63,
    "title": "응용: 펌프 정기 점검을 시작해도 되는가",
    "origin": "응용 장",
    "source": [],
    "근거": "PM-02 PM-2.1~2.6 · 2.9, supabase migrations 20261009000047(HYD-01 1,500 h · HYD-02 1,950 h · 씰 키트 가용 1), 통합3 10장 펌프 열"
   },
   {
-   "destination": 63,
+   "destination": 64,
    "title": "조치를 가리는 판단 규칙",
    "origin": "같은 장(번호)",
    "source": [
@@ -885,7 +892,7 @@
    ]
   },
   {
-   "destination": 64,
+   "destination": 65,
    "title": "SOP와 DMN",
    "origin": "같은 장",
    "source": [
@@ -897,7 +904,7 @@
    ]
   },
   {
-   "destination": 65,
+   "destination": 66,
    "title": "결정 · 입력 데이터 · 결정표 · 규칙",
    "origin": "합친 장",
    "source": [
@@ -914,7 +921,7 @@
    ]
   },
   {
-   "destination": 66,
+   "destination": 67,
    "title": "임계치 · 비교 연산자 · 단위",
    "origin": "합친 장",
    "source": [
@@ -931,7 +938,7 @@
    ]
   },
   {
-   "destination": 67,
+   "destination": 68,
    "title": "범위 · AND · OR",
    "origin": "합친 장",
    "source": [
@@ -953,7 +960,7 @@
    ]
   },
   {
-   "destination": 68,
+   "destination": 69,
    "title": "규칙의 결과 넷과 운전 모드만 바꾼 판정",
    "origin": "합친 장",
    "source": [
@@ -970,7 +977,7 @@
    ]
   },
   {
-   "destination": 69,
+   "destination": 70,
    "title": "Hit Policy: 맞은 규칙이 여럿일 때",
    "origin": "합친 장",
    "source": [
@@ -992,7 +999,7 @@
    ]
   },
   {
-   "destination": 70,
+   "destination": 71,
    "title": "누락 · 중복 · 상충과 이 설비의 Hit Policy",
    "origin": "합친 장",
    "source": [
@@ -1009,7 +1016,7 @@
    ]
   },
   {
-   "destination": 71,
+   "destination": 72,
    "title": "입력 값을 모를 때: 확인되지 않은 조건",
    "origin": "합친 장",
    "source": [
@@ -1031,7 +1038,7 @@
    ]
   },
   {
-   "destination": 72,
+   "destination": 73,
    "title": "판정을 되짚는 근거와 쿨러 사건의 판정",
    "origin": "합친 장",
    "source": [
@@ -1048,84 +1055,84 @@
    ]
   },
   {
-   "destination": 73,
+   "destination": 74,
    "title": "응용: 정기 점검 매뉴얼에서 결정표로 옮기는 문장",
    "origin": "응용 장",
    "source": [],
    "근거": "PM-02 PM-2.5 · 2.6 · 2.9, course_extractions.json rule:pm-no-seal-kit-excludes-execution · rule:pm-seal-kit-reorder-warning(PM-2.6 · 2.9 규칙 없음), scenario_structure.cypher in:spare-available, migrations 20261009000047 가용 1"
   },
   {
-   "destination": 74,
+   "destination": 75,
    "title": "포털에서 절차와 판단 조건이 / 나뉘어 쓰이는 모습 확인하기",
    "origin": "실습 간지",
    "source": [],
    "근거": "실라버스 실전 실습(포털) 행"
   },
   {
-   "destination": 75,
+   "destination": 76,
    "title": "같은 조치의 절차와 판단 결과 견주기",
    "origin": "실습 설명",
    "source": [],
    "근거": "실라버스 실전 실습(포털) 행 문장(실습 자료 · 영상 없음)"
   },
   {
-   "destination": 76,
+   "destination": 77,
    "title": "작업 기준의 복합 조건과 예외를 / 조치 조건표로 표현하기",
    "origin": "실습 간지",
    "source": [],
    "근거": "실전 실습5 START.md"
   },
   {
-   "destination": 77,
+   "destination": 78,
    "title": "SOP에서 조치 조건표로",
    "origin": "실습 설명",
    "source": [],
    "근거": "실전 실습5 START.md"
   },
   {
-   "destination": 78,
+   "destination": 79,
    "title": "복습: 쿨러 경보 한 건에 대어 본 오늘의 흐름",
    "origin": "마무리",
    "source": [],
    "근거": "덱 8 · 10 · 20 · 21 · 37 · 53 · 55 · 61 · 72장"
   },
   {
-   "destination": 79,
+   "destination": 80,
    "title": "오늘 다룬 핵심 개념과 주요 용어 정리",
    "origin": "마무리",
    "source": [],
    "근거": "본문 정의 장"
   },
   {
-   "destination": 80,
+   "destination": 81,
    "title": "Review Quiz: 핵심 흐름 되짚어보기",
    "origin": "마무리",
    "source": [],
    "근거": "고정 문구"
   },
   {
-   "destination": 81,
+   "destination": 82,
    "title": "Quiz 1. 코드가 다른 정비 기록",
    "origin": "마무리",
    "source": [],
    "근거": "덱 20 · 21장"
   },
   {
-   "destination": 82,
+   "destination": 83,
    "title": "Quiz 2. 세 설비가 함께 쓰는 부품 세기",
    "origin": "마무리",
    "source": [],
    "근거": "덱 36 · 37장"
   },
   {
-   "destination": 83,
+   "destination": 84,
    "title": "Quiz 3. 기록이 없는 팬 연속 운전시간",
    "origin": "마무리",
    "source": [],
    "근거": "덱 66 · 68 · 71장"
   },
   {
-   "destination": 84,
+   "destination": 85,
    "title": "정답과 판단 기준",
    "origin": "마무리",
    "source": [],
@@ -1218,6 +1225,25 @@
      "장": [
       29,
       43
+     ]
+    }
+   ]
+  },
+  {
+   "단계": "덱",
+   "실전장": [
+    32,
+    43
+   ],
+   "상태": "확정",
+   "근거": "작업 판정/실전2_덱_U5.json — 단원 검토 1회 + 고칠목록 8건 고침(37을 37 · 38 두 장으로), 합친 장 대조표 근거/2026-11-06_실전반_02회차_교재/입력/합친장대조_U5.md(빈칸 0)",
+   "원본": [
+    {
+     "커밋": "3d844d2204f0120b6e004fad50344a8622597c1f",
+     "경로": "workspace/강의제작/제작도구/온라인/decks/integrated/day02/통합반_02일차.md",
+     "장": [
+      44,
+      65
      ]
     }
    ]
