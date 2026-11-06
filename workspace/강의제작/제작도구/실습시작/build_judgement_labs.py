@@ -10,7 +10,7 @@ judge_tools · sop_tools — 정본 한 벌, 바이트 그대로 넣음)이고, 
 
 사용: HYD_MAIN_ROOT=<main 체크아웃> python build_judgement_labs.py [--lab integrated-03-criteria|integrated-03-judge|practical-02-conditions|practical-03-review] [--check]
   --check   두 번 만들어 랩 폴더 · 가이드 바이트가 같은지 본다(폴더는 다시 쓴다).
-package-index · catalog 등록은 하지 않는다 — ZIP만 묶는다(등록은 lab_package.register / build_launcher.py로 따로).
+package-index 등록은 하지 않는다 — ZIP만 묶는다(등록은 lab_package.register로 따로).
 """
 from pathlib import Path
 import argparse
@@ -1880,7 +1880,7 @@ def main(argv=None):
                 return 1
         archive = pack(folder)
         print(f'{folder.name}: 파일 {sum(1 for p in folder.rglob("*") if p.is_file())}개, ZIP {archive.name} {hashlib.sha256(archive.read_bytes()).hexdigest()[:12]}, 가이드 {guide.name}')
-    print('package-index · catalog 등록은 하지 않았습니다(lab_package.register · build_launcher.py로 따로).')
+    print('package-index 등록은 하지 않았습니다(lab_package.register로 따로).')
     return 0
 
 

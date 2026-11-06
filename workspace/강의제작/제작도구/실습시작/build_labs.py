@@ -1305,7 +1305,7 @@ def build_lab(folder, L):
         F.write(folder/'lab_db.py', (TOOLS/'lab_db.py').read_text(encoding='utf-8'))
     F.write_provided(folder, STEPS.render(L['kind'], L['title'], [s['name'] for s in L['steps']], L.get('change', False)))
     F.write(folder/'START.md', F.step_start(L))
-    F.write(folder/'준비_안내.md', '# 실습 준비\n\nVS Code에서 이 파일이 들어 있는 폴더를 연 뒤 [START.md](START.md)의 목표와 질문을 확인하세요. 단계별 안내는 「실습 시작」 도구가 이 폴더 옆에 내려 둔 가이드(노션 「가이드문서」에도 있음)에 있습니다.\n')
+    F.write(folder/'준비_안내.md', '# 실습 준비\n\nVS Code에서 이 파일이 들어 있는 폴더를 연 뒤 [START.md](START.md)의 목표와 질문을 확인하세요. 단계별 안내는 ZIP을 풀면 이 폴더 옆에 있는 가이드 파일에 있습니다.\n')
     F.write(folder/'check.py', checker_for(folder, L))
     F.write_guide(folder, F.step_guide(L), L.get('ai_wait'))
 
