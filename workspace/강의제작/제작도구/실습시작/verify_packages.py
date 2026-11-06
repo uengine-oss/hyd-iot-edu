@@ -5,7 +5,7 @@
 1. package-index.json의 ZIP마다 해시 · 시작 파일 · 가이드 링크 · 과제 정답 경계(verify_lab).
 2. 학생 ZIP(산출물/*/실습/*/랩/*.zip 전부, 인수를 주면 그것만)마다 check_zip — 랩 폴더와 경로 집합 · 바이트(텍스트는 줄끝을 맞춰)가
    같은가, 강사 대본(/대본/) · 제작 지시 문구 · __pycache__ · .env(TEMPLATES 밖)가 없는가, 빈 틀(.env.example · TEMPLATES의 .env)의
-   등호 뒤가 모두 비었는가, ZIP 안 HTML · START.md 링크가 ZIP 안 파일로 풀리는가. ZIP마다 한 줄(통과 · 실패 · 보관 판정 제외)을 찍고, 실패가 있으면 종료 코드 1. 결과는 작업/검사/package-verification.json.
+   등호 뒤가 모두 비었는가, ZIP 안 HTML · START.md 링크가 ZIP 안 파일로 풀리는가. ZIP마다 한 줄(통과 · 실패)을 찍고, 실패가 있으면 종료 코드 1. 결과는 작업/검사/package-verification.json.
 start_guides/build.py와 lab_package.py도 check_zip · forbidden_hits · link_errors를 부른다.
 """
 from pathlib import Path, PurePosixPath
@@ -22,8 +22,6 @@ OUT=ROOT/'workspace/강의제작/산출물'
 FORBIDDEN=('제작 참고용','낭독하지 않음','강사 대본','비낭독')   # 제작 지시 문구 — 학생 파일에 있으면 안 된다
 # 학생에게 주는 빈 .env 틀(값은 학생이 적는다 — START.md 「코드/.env: 모델 접속」). 동기화가 .env를 빼므로 다른 PC 체크아웃 폴더에는 없다.
 TEMPLATES={'실전반/실습/04회차/랩/04일차_실습2_원인추론과점검계획/코드/.env'}
-ARCHIVED={f'{course}/실습/01회차/랩/{name}':'1회차 실습 네 편 작업 보관(2026-11-03) — 다시 묶지 않음'
-          for course in ('통합반','실전반') for name in ('01일차_실습1_학습노트','01일차_실습2_실행환경','01일차_실습3_전체과정관찰','01일차_실습4_관계그림')}
 MD_LINK=re.compile(r'\]\(([^)\s]+)\)')
 HREF=re.compile(r'href="([^"]+)"')
 
@@ -256,9 +254,6 @@ def main(argv):
     for zpath in student_zips(argv):
         folder=zpath.parent/zpath.stem
         label=zpath.relative_to(OUT).as_posix() if zpath.is_relative_to(OUT) else str(zpath)
-        reason=ARCHIVED.get(folder.relative_to(OUT).as_posix()) if folder.is_relative_to(OUT) else None
-        if reason:
-            print(f'보관 · 판정 제외  {label} ({reason})');results.append({'zip':label,'result':'보관 · 판정 제외','reason':reason});continue
         if not zpath.is_file() or not folder.is_dir():
             errors,notes=[f'{label}: ZIP 또는 랩 폴더 없음'],[]
         else:
@@ -269,7 +264,7 @@ def main(argv):
         results.append({'zip':label,'result':'실패' if errors else '통과','errors':errors,'notes':notes})
     dest=ROOT/'작업/검사/package-verification.json';dest.parent.mkdir(parents=True,exist_ok=True)
     dest.write_text(json.dumps({'package_index':records,'student_zips':results},ensure_ascii=False,indent=2),encoding='utf-8')
-    print(f'학생 ZIP {len(results)}개: 통과 {sum(r["result"]=="통과" for r in results)}, 실패 {failed}, 보관 · 판정 제외 {sum(r["result"]=="보관 · 판정 제외" for r in results)}')
+    print(f'학생 ZIP {len(results)}개: 통과 {sum(r["result"]=="통과" for r in results)}, 실패 {failed}')
     return 1 if failed else 0
 
 

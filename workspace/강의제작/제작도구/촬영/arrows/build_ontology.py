@@ -333,27 +333,6 @@ def write_all():
     for r in final['relationships']:
         nodes_md += f"| {by[r['fromId']]} | {r['type']} | {by[r['toId']]} | {reads.get(r['type'], '')} |\n"
     nodes_md += '\n근거: 조건은 `매뉴얼_발췌.md` HM-8.4, 조치는 HM-8.1 · 8.5 · 8.7입니다.\n'
-    review = '''# 관계 검토표 — 쿨러 지식 그래프
-
-| 출발 | 관계 이름 | 도착 | 문장으로 읽은 뜻 | 원문 근거 | 고칠 부분 |
-|---|---|---|---|---|---|
-| | | | | | |
-
-## 확인할 것
-
-- 쿨러 냉각 성능 상실로 들어오는 CAUSES를 거슬러 원인 후보 세 개(핀 오염 · 팬 구동 불량 · 주변 온도 상승)를 찾을 수 있는가. 화살표를 뒤집지 않고 거슬러 읽었는가.
-- 세 원인의 판별 조건이 HM-8.4와 같은가: 핀 오염은 냉각 효율 30초 평균 < 70 % 이고 팬 진동 2분 평균 < 0.9 mm/s, 팬 구동 불량은 팬 진동 2분 평균 ≥ 0.9 mm/s, 주변 온도 상승은 캐비닛 온도 2분 평균 ≥ 35 ℃.
-- 팬 최대 운전(완화)과 핀 세척 · 팬 점검 · 캐비닛 환기 보강(근본 조치)을 구별했는가. 각 근본 조치가 맞는 원인에만 ADDRESSES로 이어졌는가.
-- 팬 베어링 열화가 쿨러 냉각 성능 상실로 이어지는가(LEADS_TO), 진동 증가가 베어링 열화를 가리키는가(INDICATES).
-- 조치 → 매뉴얼 절 화살표에 절차 번호(SOP-COOL-11 · 14 · 15, SOP-FAN-11)를 적었는가.
-- 원인 · 조치를 색으로 구별했는가. Cypher로 내보낸 문장에서 원 · 관계 · 조건을 찾을 수 있는가.
-- 조치마다 매뉴얼 절(HM-8.5 · 8.7 · 8.1)로 근거가 이어졌는가(캐비닛 환기 보강도 HM-8.7).
-- 팬 진동이 0.9 이상이면 어느 가지로 가는가. 팬 진동 자료가 없으면 왜 원인을 정하지 않고 보류하는가.
-
-## 저장 확인
-
-편집 데이터 JSON / 그림 PNG / 새 그림에서 Import로 다시 연 결과(원 · 화살표 · 조건 수) / 고친 점:
-'''
     screens = f'''# 화면 — 촬영 완료
 
 2026-10-23 촬영 영상(로컬 근거) `{VIDEO.relative_to(REPO).as_posix()}/` 의 실제 화면이다. 완성 그림은 `완성_쿨러_지식그래프.png`, 편집 데이터는 `완성_쿨러_지식그래프.json`(촬영 중 arrows.app에서 내려받은 참조본).
@@ -368,8 +347,7 @@ def write_all():
         day = REPO / 'workspace/강의제작/산출물' / course / '실습/01회차'
         lab = day / '랩/01일차_실습4_관계그림'
         (day / '대본/08_실습_관계그림.md').write_text(script.replace('(예상시간.md)', '(../../../../../제작도구/촬영/arrows/예상시간.md)'), encoding='utf-8')
-        for name, content in [('대상_목록.md', nodes_md), ('관계_검토표.md', review)]:
-            (lab / name).write_text(content, encoding='utf-8')
+        (lab / '대상_목록.md').write_text(nodes_md, encoding='utf-8')
         shutil.copyfile(EVID / 'saved' / '쿨러_지식그래프_최종.json', lab / '완성_쿨러_지식그래프.json')
         shutil.copyfile(EVID / 'saved' / '쿨러_지식그래프_최종.png', lab / '완성_쿨러_지식그래프.png')
         pack(lab)   # 가이드.html은 build_student_guide.py가 쓴다 — 여기서 덮지 않는다

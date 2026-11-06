@@ -129,10 +129,7 @@ def main(argv=None):
     archive = folder.parent/(folder.name + '.zip')
     if not folder.is_dir():
         raise SystemExit(f'{folder}: 랩 폴더 없음')
-    from verify_packages import ARCHIVED, OUT, check_zip
-    reason = ARCHIVED.get(folder.relative_to(OUT).as_posix()) if folder.is_relative_to(OUT) else None
-    if reason:
-        raise SystemExit(f'{folder.name}: {reason}')
+    from verify_packages import check_zip
     labs = json.loads(INDEX.read_text(encoding='utf-8'))['labs']
     item = next((x for x in labs if x['path'] == archive.relative_to(ROOT).as_posix()), None)
     if item is None and (folder/'START.md').is_file():
