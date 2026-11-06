@@ -279,11 +279,13 @@ BLOCK_KIND = {
     'term': ('터미널(PowerShell · 이 실습 폴더)', 'VS Code 아래쪽 터미널', '붙여 넣고 Enter를 누르세요'),
     'term_tpl': ('터미널(PowerShell · 이 실습 폴더) — <…>는 내 파일 이름 · 물을 값으로', 'VS Code 아래쪽 터미널', '붙여 넣은 뒤 <…> 자리를 바꾸고 Enter를 누르세요'),
     'cypher': ('Neo4j Browser 입력 칸', 'Neo4j Browser 위쪽 입력 칸', '붙여 넣고 Run을 누르세요'),
+    'cypher_tab': ('Neo4j Browser 새 쿼리 탭에 붙여 넣는 글', 'Neo4j Browser 새 쿼리 탭', '붙여 넣으세요'),
+    'shell': ('PowerShell · 이 실습 폴더', 'PowerShell 창', '붙여 넣고 Enter를 누르세요'),
     'paste': ('붙여 넣는 내용 · VS Code 편집기에서 — {target}', 'VS Code 편집기의 {target}', '붙여 넣고 Ctrl+S로 저장하세요'),
     'ask_ai': ('AI 채팅에 붙여 넣는 글', 'AI 채팅 입력 칸', '붙여 넣고 보내세요'),
     'tree': ('탐색기 모양', '', '')}
 STEP_CSS = ('.block{border:1px solid #c9d6cf;border-radius:10px;margin:14px 0;overflow:hidden}.block .kind{margin:0;padding:6px 14px;font-size:14px;font-weight:bold}'
-            '.block pre{margin:0;border-radius:0}.block.term .kind,.block.term_tpl .kind{background:#26323b;color:#f2f5f3}.block.cypher .kind{background:#e3ebf8;color:#1d3f75}'
+            '.block pre{margin:0;border-radius:0}.block.term .kind,.block.term_tpl .kind,.block.shell .kind{background:#26323b;color:#f2f5f3}.block.cypher .kind,.block.cypher_tab .kind{background:#e3ebf8;color:#1d3f75}'
             '.block.paste .kind{background:#efe6f8;color:#4b2a73}.block.ask_ai .kind{background:#e6f3f1;color:#14524a}'
             '.block.tree .kind{background:#eef1ee;color:#4b5c55}.block .copy{margin:8px 14px;padding:3px 14px;border:1px solid #176554;background:white;color:#176554;border-radius:6px;cursor:pointer;font:inherit;font-size:14px}'
             '.block .copied{font-size:14px;color:#176554}.hint{border:1px solid #e3d6b0;background:#fffaf0;border-radius:10px;padding:2px 16px 12px;margin:14px 0}.hint .kind{font-weight:bold;color:#7a5a12;margin:10px 0 0}'

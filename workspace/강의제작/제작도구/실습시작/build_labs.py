@@ -264,10 +264,12 @@ def reference_model(supply=False,branch='A'):
     if supply:supply_part(nodes,rels,branch)
     return schema_for(supply,branch),{'nodes':nodes,'rels':rels}
 
-def page(title,intro,sections):
+def page(title,intro,sections,blocks=False):
+    """blocks=True면 복사 블록(lab_frame.block)의 모양과 복사 단추 스크립트를 함께 싣는다."""
     nav=''.join(f'<a href="#s{i}">{i:02d} {html.escape(t)}</a>' for i,(t,_) in enumerate(sections,1))
     body=''.join(f'<section id="s{i}"><h2>{i:02d} {html.escape(t)}</h2>{content}</section>' for i,(t,content) in enumerate(sections,1))
-    return f'<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{html.escape(title)}</title><style>{CSS}</style><main><small>HYD · 실습 가이드</small><h1>{title}</h1><p>{intro}</p><nav>{nav}</nav>{body}</main></html>'
+    style,script=(F.STEP_CSS,F.COPY_JS) if blocks else ('','')
+    return f'<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{html.escape(title)}</title><style>{CSS}{style}</style><main><small>HYD · 실습 가이드</small><h1>{title}</h1><p>{intro}</p><nav>{nav}</nav>{body}</main>{script}</html>'
 
 RULES='''# 실습 작업 규칙
 
