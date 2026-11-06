@@ -1053,6 +1053,83 @@
    "origin": "응용 장",
    "source": [],
    "근거": "PM-02 PM-2.5 · 2.6 · 2.9, course_extractions.json rule:pm-no-seal-kit-excludes-execution · rule:pm-seal-kit-reorder-warning(PM-2.6 · 2.9 규칙 없음), scenario_structure.cypher in:spare-available, migrations 20261009000047 가용 1"
+  },
+  {
+   "destination": 74,
+   "title": "포털에서 절차와 판단 조건이 / 나뉘어 쓰이는 모습 확인하기",
+   "origin": "실습 간지",
+   "source": [],
+   "근거": "실라버스 실전 실습(포털) 행"
+  },
+  {
+   "destination": 75,
+   "title": "같은 조치의 절차와 판단 결과 견주기",
+   "origin": "실습 설명",
+   "source": [],
+   "근거": "실라버스 실전 실습(포털) 행 문장(실습 자료 · 영상 없음)"
+  },
+  {
+   "destination": 76,
+   "title": "작업 기준의 복합 조건과 예외를 / 조치 조건표로 표현하기",
+   "origin": "실습 간지",
+   "source": [],
+   "근거": "실전 실습5 START.md"
+  },
+  {
+   "destination": 77,
+   "title": "SOP에서 조치 조건표로",
+   "origin": "실습 설명",
+   "source": [],
+   "근거": "실전 실습5 START.md"
+  },
+  {
+   "destination": 78,
+   "title": "복습: 쿨러 경보 한 건에 대어 본 오늘의 흐름",
+   "origin": "마무리",
+   "source": [],
+   "근거": "덱 8 · 10 · 20 · 21 · 37 · 53 · 55 · 61 · 72장"
+  },
+  {
+   "destination": 79,
+   "title": "오늘 다룬 핵심 개념과 주요 용어 정리",
+   "origin": "마무리",
+   "source": [],
+   "근거": "본문 정의 장"
+  },
+  {
+   "destination": 80,
+   "title": "Review Quiz: 핵심 흐름 되짚어보기",
+   "origin": "마무리",
+   "source": [],
+   "근거": "고정 문구"
+  },
+  {
+   "destination": 81,
+   "title": "Quiz 1. 코드가 다른 정비 기록",
+   "origin": "마무리",
+   "source": [],
+   "근거": "덱 20 · 21장"
+  },
+  {
+   "destination": 82,
+   "title": "Quiz 2. 세 설비가 함께 쓰는 부품 세기",
+   "origin": "마무리",
+   "source": [],
+   "근거": "덱 36 · 37장"
+  },
+  {
+   "destination": 83,
+   "title": "Quiz 3. 기록이 없는 팬 연속 운전시간",
+   "origin": "마무리",
+   "source": [],
+   "근거": "덱 66 · 68 · 71장"
+  },
+  {
+   "destination": 84,
+   "title": "정답과 판단 기준",
+   "origin": "마무리",
+   "source": [],
+   "근거": "81~83장"
   }
  ],
  "dropped": [
