@@ -26,10 +26,10 @@
       "course": "실전반",
       "session": "온라인 02회차",
       "title": "기준 설비 지식의 실제 연결 구조 확인하기",
-      "version": "2026-11-02-map-v5-portal",
+      "version": "2026-11-07-map-video",
       "folder": "02회차/랩/02일차_실습2_지식지도탐색",
       "path": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습2_지식지도탐색.zip",
-      "sha256": "68a55d7fb2538b05d2bf0fdebcc5e7626d0dc70b2b43e628b631b7c649571d95",
+      "sha256": "ab645248dc90e57b91a204c15263da0e9ed35f6e516a440efbe52ca875e66a0e",
       "entry": "guide"
     },
     {
@@ -162,10 +162,10 @@
       "course": "통합반",
       "session": "온라인 02회차",
       "title": "설비 지식의 구조와 연결 관계 탐색하기",
-      "version": "2026-11-02-map-v5-portal",
+      "version": "2026-11-07-map-video",
       "folder": "02회차/랩/02일차_실습2_지식지도탐색",
       "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색.zip",
-      "sha256": "9f6166ce6523f31f41c444d249a7a14764ed4105c7e438bc7fce8d9758787446",
+      "sha256": "952e8cbfc4437cf9ee1df4a92ff9376c54a774d1cc5db29f1de7ba3224d971b0",
       "entry": "guide"
     },
     {

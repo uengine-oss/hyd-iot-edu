@@ -33,7 +33,7 @@
 </table>
 </header><div class="layout"><nav aria-label="실습 단계"><span>진행 순서</span><a href="#step1">01 README에서 시스템과 준비할 도구 확인하기</a><a href="#step2">02 Python 설치하고 실행 확인하기</a><a href="#step3">03 Node.js 설치하고 실행 확인하기</a><a href="#step4">04 Git 설치하고 Git Bash 열기</a><a href="#step5">05 VS Code 설치하기</a><a href="#step6">06 WSL 준비하기</a><a href="#step7">07 Docker Desktop 설치하고 저장소 주소 복사하기</a><a href="#step8">08 VS Code에 한국어 팩과 Codex 설치하기</a><a href="#step9">09 작업 폴더에서 프로젝트 받기</a><a href="#step10">10 Codex 연결과 저장소 수신 결과 확인하기</a><a href="#step11">11 명령 한 번으로 시스템 시작하기</a><a href="#step12">12 홈에서 전체 연결 확인하기</a><a href="#step13">13 작업·설비 화면 둘러보기</a><a href="#step14">14 판단 화면 둘러보기</a><a href="#step15">15 지식 화면 둘러보기</a><a href="#step16">16 인공지능 설정·성과·시스템 둘러보기</a></nav><main><section id="step1"><div class="step-head"><span class="number">01</span><h2>README에서 시스템과 준비할 도구 확인하기</h2></div><p><a href="https://github.com/uengine-oss/hyd-iot-edu#readme">프로젝트 README</a>를 엽니다. README는 프로젝트의 소개와 실행 방법을 담은 첫 안내문입니다. <strong>프로젝트 구성</strong>에서 설비의 값을 모으는 프로그램, 지식을 보관하는 프로그램, 판단과 승인을 처리하는 프로그램이 함께 쓰이는 것을 확인하세요.</p>
 <p><strong>실행 환경</strong>으로 내려가 프로그램별 역할과 설치 기준을 확인합니다. 설치 기준과 다운로드 주소는 이 README에서 확인하세요.</p>
-<p>이미 설치한 프로그램은 버전을 먼저 확인합니다. 기준 이상이면 그대로 사용하고, 없거나 기준보다 낮은 프로그램만 설치·업데이트한 뒤 다시 확인하세요. 아래 단계는 Windows에서 준비하는 순서입니다. Mac의 설치와 실행 방법은 같은 README의 macOS 안내를 사용합니다.</p>
+<p>이미 설치한 프로그램은 버전을 먼저 확인합니다. 기준 이상이면 그대로 사용하고, 없거나 기준보다 낮은 프로그램만 설치·업데이트한 뒤 다시 확인하세요. 아래 단계는 Windows에서 준비하는 순서입니다. Mac의 설치와 실행 방법은 같은 README의 macOS 안내를 사용합니다. README의 <strong>자동 설치 파일</strong>(<code>setup</code> 폴더의 <code>설치.bat</code>)로 여섯 도구를 한 번에 준비할 수도 있습니다. 이 가이드는 각 도구가 무슨 일을 하는지 보며 공식 설치 파일로 하나씩 준비합니다.</p>
 <table>
 <thead>
 <tr>
@@ -146,6 +146,9 @@
 </code></pre>
 <figure><a href="images/project-clone.png"><img src="images/project-clone.png" alt="터미널에서 git clone을 실행하면 Receiving objects의 수신 비율이 올라갑니다." width="662" height="172" loading="lazy" style="width:auto;max-width:100%;height:auto"></a><figcaption>터미널에서 git clone을 실행하면 Receiving objects의 수신 비율이 올라갑니다.</figcaption></figure>
 <p><strong>Receiving objects</strong>의 수신 비율이 올라갑니다. 사진의 명령에는 <code>--depth 1</code>이 없어 받는 양이 더 많고, 여러분은 이보다 빨리 끝납니다. 터미널은 열린 채로 두고 Codex를 연결하세요.</p>
+<p>학교 인터넷에서 받기가 <code>schannel: server closed abruptly</code>로 끊기면, 학교망 보안 장비가 Windows 기본 암호화 연결을 끊은 것입니다. 아래 명령을 한 번 실행한 뒤 같은 받기 명령을 다시 실행하세요. 그래도 끊기면 휴대폰 핫스팟에 연결해 받습니다.</p>
+<pre><code class="language-bash">git config --global http.sslBackend openssl
+</code></pre>
 </section><section id="step10"><div class="step-head"><span class="number">10</span><h2>Codex 연결과 저장소 수신 결과 확인하기</h2></div><p>오른쪽 패널의 <strong>Codex</strong> 탭을 엽니다. 처음 나오는 안내 화면은 <strong>다음</strong>으로 넘어갑니다.</p>
 <figure><a href="images/codex-next.png"><img src="images/codex-next.png" alt="Codex 탭의 안내 화면에서 다음을 누릅니다." width="670" height="340" loading="lazy" style="width:auto;max-width:100%;height:auto"></a><figcaption>Codex 탭의 안내 화면에서 다음을 누릅니다.</figcaption></figure>
 <p>모델 안내는 <strong>현재 모델로 계속 진행</strong>을 누르세요.</p>
@@ -175,7 +178,7 @@
 <pre><code class="language-bash">cd hyd-iot-edu
 </code></pre>
 <figure><a href="images/project-terminal-root.png"><img src="images/project-terminal-root.png" alt="프로젝트 폴더로 이동한 뒤 터미널의 현재 위치를 확인합니다." width="550" height="110" loading="lazy" style="width:auto;max-width:100%;height:auto"></a><figcaption>프로젝트 폴더로 이동한 뒤 터미널의 현재 위치를 확인합니다.</figcaption></figure>
-<p>현재 위치가 프로젝트 루트인지 확인한 뒤 실행하세요.</p>
+<p>현재 위치가 프로젝트 루트인지 확인한 뒤 실행하세요. README가 안내하는 <code>setup</code> 폴더의 <code>시작.bat</code>을 더블클릭해도 같은 명령이 실행됩니다.</p>
 <pre><code class="language-bash">bash scripts/start_all.sh
 </code></pre>
 <figure><a href="images/system-start.png"><img src="images/system-start.png" alt="프로젝트 폴더의 Git Bash에 시작 명령을 넣고 Enter를 누릅니다." width="299" height="43" loading="lazy" style="width:auto;max-width:100%;height:auto"></a><figcaption>프로젝트 폴더의 Git Bash에 시작 명령을 넣고 Enter를 누릅니다.</figcaption></figure>
