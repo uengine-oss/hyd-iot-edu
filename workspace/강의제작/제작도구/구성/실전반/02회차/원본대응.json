@@ -431,6 +431,13 @@
   },
   {
    "destination": 30,
+   "title": "응용: 다른 기종의 새 설비를 들일 때",
+   "origin": "응용 장",
+   "source": [],
+   "근거": "실전반 실습3 자료/설비_대장.csv HYD-04(HPP-45B 수냉식) · 예비품_목록.csv P-CLR-PLT, schema.json Asset(모델 속성 없음) · Component 설명, instances.cypher 설비 UNWIND"
+  },
+  {
+   "destination": 31,
    "title": "설비 · 진단 · 판단 · 성과의 지식",
    "origin": "같은 장(카드 줄바꿈 · 노트 [다음])",
    "source": [
@@ -440,13 +447,6 @@
      "slide": 43
     }
    ]
-  },
-  {
-   "destination": 31,
-   "title": "응용: 다른 기종의 새 설비를 들일 때",
-   "origin": "응용 장",
-   "source": [],
-   "근거": "실전반 실습3 자료/설비_대장.csv HYD-04(HPP-45B 수냉식) · 예비품_목록.csv P-CLR-PLT, schema.json Asset(모델 속성 없음) · Component 설명, instances.cypher 설비 UNWIND"
   },
   {
    "destination": 32,
@@ -702,6 +702,175 @@
    "origin": "실습 설명",
    "source": [],
    "근거": "실전 실습4 START.md · 가이드"
+  },
+  {
+   "destination": 51,
+   "title": "조치를 수행하는 표준 작업 절차",
+   "origin": "같은 장(번호 · [다음])",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 4
+    }
+   ]
+  },
+  {
+   "destination": 52,
+   "title": "쿨러 핀 오염에 쓸 수 있는 조치 넷",
+   "origin": "같은 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 6
+    }
+   ]
+  },
+  {
+   "destination": 53,
+   "title": "고장 진단 뒤 조치를 정하는 세 물음",
+   "origin": "합친 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 5
+    },
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 7
+    }
+   ]
+  },
+  {
+   "destination": 54,
+   "title": "한 줄 지시와 SOP 원문",
+   "origin": "합친 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 8
+    },
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 9
+    }
+   ]
+  },
+  {
+   "destination": 55,
+   "title": "SOP 항목 여덟",
+   "origin": "합친 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 10
+    },
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 11
+    },
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 12
+    }
+   ]
+  },
+  {
+   "destination": 56,
+   "title": "SOP의 순서와 조건",
+   "origin": "같은 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 13
+    }
+   ]
+  },
+  {
+   "destination": 57,
+   "title": "운전 모드에 따라 남는 조치",
+   "origin": "같은 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 14
+    }
+   ]
+  },
+  {
+   "destination": 58,
+   "title": "원격 조치와 현장 작업이 요구하는 상태",
+   "origin": "같은 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 15
+    }
+   ]
+  },
+  {
+   "destination": 59,
+   "title": "SOP 항목이 지식 그래프에 담기는 자리",
+   "origin": "합친 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 16
+    },
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 17
+    }
+   ]
+  },
+  {
+   "destination": 60,
+   "title": "완화 조치 · 근본 조치 · 예방 조치",
+   "origin": "같은 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 18
+    }
+   ]
+  },
+  {
+   "destination": 61,
+   "title": "쿨러 사건 기록으로 판정하는 두 끝",
+   "origin": "합친 장",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 19
+    },
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 20
+    }
+   ]
+  },
+  {
+   "destination": 62,
+   "title": "응용: 펌프 정기 점검을 시작해도 되는가",
+   "origin": "응용 장",
+   "source": [],
+   "근거": "PM-02 PM-2.1~2.6 · 2.9, supabase migrations 20261009000047(HYD-01 1,500 h · HYD-02 1,950 h · 씰 키트 가용 1), 통합3 10장 펌프 열"
   }
  ],
  "dropped": [
@@ -771,6 +940,25 @@
      "장": [
       23,
       28
+     ]
+    }
+   ]
+  },
+  {
+   "단계": "덱",
+   "실전장": [
+    23,
+    31
+   ],
+   "상태": "확정",
+   "근거": "작업 판정/실전2_덱_U4.json — 단원 검토 1회 + 고칠목록 6건 고침, 합친 장 대조표 근거/2026-11-06_실전반_02회차_교재/입력/합친장대조_U4.md(빈칸 0)",
+   "원본": [
+    {
+     "커밋": "ecbb257a039efcaa1f16671776617d94ae626b17",
+     "경로": "workspace/강의제작/제작도구/온라인/decks/integrated/day02/통합반_02일차.md",
+     "장": [
+      29,
+      43
      ]
     }
    ]
