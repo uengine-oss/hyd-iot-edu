@@ -230,8 +230,8 @@ def main():
                 src = tmp / f"src{i:03d}.mp4"; ff("-i", segs[i], "-an", "-c", "copy", src)
                 piece, new = emph.overlay("ffmpeg", src, Gf[i] - lead, Gf[i + 1], marks, font, tmp, i, lead)
                 made_e += new; plan.append(piece)
-                if i: seams.append((Gf[i] - lead, i, rows[i]["first"], "앞"))
-                if i + 1 < n and not swap[i + 1]: seams.append((Gf[i + 1], i + 1, rows[i]["first"], "뒤"))
+                if i: seams.append((Gf[i] - lead, i, rows[i]["first"], "앞", 6))
+                if i + 1 < n and not swap[i + 1]: seams.append((Gf[i + 1], i + 1, rows[i]["first"], "뒤", 6))
                 i += 1; continue
             j = i
             while j + 1 < n and not swap[j + 1]: j += 1
@@ -242,7 +242,8 @@ def main():
                 if kp < fb:   # 넘김 프레임이 키프레임이 아니다: 마지막 키프레임부터 다시 인코딩
                     if kp > fa: plan.append(("copy", fa, kp))
                     plan.append(("reenc", kp, fb)); reenc += 1
-                    seams.append((kp + Gf[i] - F[i], None, rows[j]["first"], "다시인코딩"))
+                    # 다시 인코딩한 자리 뒤 fb - kp 프레임에 원래 장 넘김(다음 장 그림)이 온다. 뒤 창은 그 앞에서 멈춘다(넘김은 「앞」 이음새가 본다)
+                    seams.append((kp + Gf[i] - F[i], None, rows[j]["first"], "다시인코딩", min(6, fb - kp - 1)))
                     i = j + 1; continue
             plan.append(("copy", fa, fb))
             i = j + 1
@@ -289,10 +290,10 @@ def main():
         # 7) 검사
         dv, da = (float(probe(result, "-select_streams", s, "-show_entries", "stream=duration", "-of", "csv=p=0")) for s in ("v:0", "a:0"))
         bad = []
-        print(f"이음새(프레임 차이: 0.2초 앞~직전 | 직전~이음새 | 이음새~0.2초 뒤 · 소리: 이음새 앞 0.2초 최대 세기 · 이음새 표본 차) — 그림은 {seam_dir}")
-        for s, sa, first, where in seams:
+        print(f"이음새(프레임 차이: 0.2초 앞~직전 | 직전~이음새 | 이음새~0.2초 뒤(다시인코딩은 원래 장 넘김 앞까지) · 소리: 이음새 앞 0.2초 최대 세기 · 이음새 표본 차) — 그림은 {seam_dir}")
+        for s, sa, first, where, post in seams:
             fr = gray(result, s - 6, 13)
-            dpre, dcut, dpost = diff(fr[0], fr[5]), diff(fr[5], fr[6]), diff(fr[6], fr[12])
+            dpre, dcut, dpost = diff(fr[0], fr[5]), diff(fr[5], fr[6]), diff(fr[6], fr[6 + post])
             for off in (-6, -1, 0, 6):
                 ff("-ss", at(s + off), "-i", result, "-frames:v", 1, seam_dir / f"{first}장_{where}_{off:+d}.png")
             msg = f"  {first}장 {where} {s / FPS:8.3f}초: 화면 {dpre:.2f} | {dcut:.2f} | {dpost:.2f}"
