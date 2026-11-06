@@ -11,17 +11,29 @@ import fitz  # noqa: E402
 if len(sys.argv) != 2:
     sys.exit(__doc__)
 doc = fitz.open(next(Path(sys.argv[1]).glob("*.pdf")))
+
+
+def text(l):
+    return "".join(s["text"] for s in l["spans"]).strip()
+
+
 for n, page in enumerate(doc, 1):
-    for b in page.get_text("dict")["blocks"]:
-        ls = [l for l in b.get("lines", []) if "".join(s["text"] for s in l["spans"]).strip()]
-        if len(ls) < 2:
+    # 가운데 정렬 글은 줄마다 다른 블록으로 나오므로, 블록을 가리지 않고 쪽의 모든 줄을 위치로 잇는다
+    ls = [l for b in page.get_text("dict")["blocks"] for l in b.get("lines", []) if text(l)]
+
+    def above(l):  # 바로 위에서 같은 크기 · 가로가 겹치는 줄
+        size = l["spans"][0]["size"]
+        c = [m for m in ls if m is not l and abs(m["spans"][0]["size"] - size) < .6
+             and 0 < l["bbox"][1] - m["bbox"][1] < size * 1.7
+             and m["bbox"][0] < l["bbox"][2] and l["bbox"][0] < m["bbox"][2]]
+        return max(c, key=lambda m: m["bbox"][1]) if c else None
+
+    for l in ls:
+        t, prev = text(l), above(l)
+        if prev is None or len(t.split()) != 1:
             continue
-        for k in range(1, len(ls)):
-            t = "".join(s["text"] for s in ls[k]["spans"]).strip()
-            prev = "".join(s["text"] for s in ls[k - 1]["spans"]).strip()
-            size = ls[k]["spans"][0]["size"]
-            same_size = abs(size - ls[k - 1]["spans"][0]["size"]) < .6
-            near = 0 < ls[k]["bbox"][1] - ls[k - 1]["bbox"][1] < size * 1.7
-            last = k == len(ls) - 1 or abs(ls[k + 1]["bbox"][1] - ls[k]["bbox"][1]) > size * 1.7
-            if same_size and near and last and len(t.split()) == 1 and (len(prev) >= 8 or prev.startswith("•")):
-                print(n, "|", prev[:48], "/", t)
+        if any(above(m) is l for m in ls):  # 아래에 같은 글의 줄이 더 있으면 마지막 줄이 아니다
+            continue
+        p = text(prev)
+        if len(p) >= 8 or p.startswith("•"):
+            print(n, "|", p[:48], "/", t)
