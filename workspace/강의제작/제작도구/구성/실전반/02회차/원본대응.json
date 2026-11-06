@@ -634,6 +634,74 @@
    "origin": "응용 장",
    "source": [],
    "근거": "instances.cypher INFLUENCES → sv:ts1(sign -1: fan-speed · ce) · actr:fan-drive MANIPULATES sv:fan-speed, 실측/u5_결과.txt"
+  },
+  {
+   "destination": 43,
+   "title": "Cypher로 그래프를 다루고 / 설비 조회 결과 해석하기",
+   "origin": "실습 간지",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 66
+    }
+   ],
+   "근거": "실라버스 실전 실습(Neo4j) 행 — 통합 66과 같은 실습(공용 영상), 제목은 실전 행 글자"
+  },
+  {
+   "destination": 44,
+   "title": "연습 그래프와 설비 예제 조회",
+   "origin": "실습 설명",
+   "source": [
+    {
+     "course": "통합반",
+     "day": 2,
+     "slide": 67
+    }
+   ],
+   "근거": "공용 영상 통합반_02회차_04 진행, 실전 실습1 안내.html"
+  },
+  {
+   "destination": 45,
+   "title": "기준 설비 지식의 실제 연결 구조 확인하기",
+   "origin": "실습 간지",
+   "source": [],
+   "근거": "실전 고유 실습(포털) — 영상 실전반_02회차_06"
+  },
+  {
+   "destination": 46,
+   "title": "부품 하나에 모인 연결과 확보 여부",
+   "origin": "실습 설명",
+   "source": [],
+   "근거": "영상 실전반_02회차_06 진행(펌프 축 씰 키트)"
+  },
+  {
+   "destination": 47,
+   "title": "설비·부품·공급 정보를 연결하는 / 온톨로지 설계하기",
+   "origin": "실습 간지",
+   "source": [],
+   "근거": "실전 실습3 START.md"
+  },
+  {
+   "destination": 48,
+   "title": "공급 조건을 잇는 모델 설계",
+   "origin": "실습 설명",
+   "source": [],
+   "근거": "실전 실습3 START.md · 가이드"
+  },
+  {
+   "destination": 49,
+   "title": "부품의 사용 설비와 공급 정보를 / 조회하는 그래프 구현하기",
+   "origin": "실습 간지",
+   "source": [],
+   "근거": "실전 실습4 START.md"
+  },
+  {
+   "destination": 50,
+   "title": "적재 · 조회와 원자료 대조",
+   "origin": "실습 설명",
+   "source": [],
+   "근거": "실전 실습4 START.md · 가이드"
   }
  ],
  "dropped": [
