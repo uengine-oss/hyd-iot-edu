@@ -1,0 +1,369 @@
+{
+ "고정_커밋": "d666ea3485a64813b26f995abd049b9f18fad500",
+ "확인_시각": "2026-11-06",
+ "방법": "curl -sIL <raw 링크>의 마지막 응답 상태와 Content-Length를 git cat-file -s d666ea34:<경로>와 비교. 영상은 blob 링크도 curl -L 상태 확인. 바꾼 뒤 네 페이지를 notion-fetch로 다시 읽어 새 링크를 확인.",
+ "요약": {
+  "바꾼_페이지": 4,
+  "바꾼_링크": 21,
+  "상태_200": 21,
+  "크기_일치": 21,
+  "실패": []
+ },
+ "바꾼_링크": [
+  {
+   "페이지": "01회차 · 데이터에서 판단과 조치까지",
+   "페이지_id": "401f0e285bb481bf8a56f6b2ba33d937",
+   "칸": "이론 영상 LESSON 02 영상 mp4",
+   "파일": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_02_이론_시스템구조.mp4",
+   "이전_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/7783a4379aea997004ac464592da1f2bd69d5f66/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/%ED%86%B5%ED%95%A9%EB%B0%98/%ED%86%B5%ED%95%A9%EB%B0%98_01%ED%9A%8C%EC%B0%A8_02_%EC%9D%B4%EB%A1%A0_%EC%8B%9C%EC%8A%A4%ED%85%9C%EA%B5%AC%EC%A1%B0.mp4",
+   "새_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/d666ea3485a64813b26f995abd049b9f18fad500/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/%ED%86%B5%ED%95%A9%EB%B0%98/%ED%86%B5%ED%95%A9%EB%B0%98_01%ED%9A%8C%EC%B0%A8_02_%EC%9D%B4%EB%A1%A0_%EC%8B%9C%EC%8A%A4%ED%85%9C%EA%B5%AC%EC%A1%B0.mp4",
+   "상태_코드": 200,
+   "raw_content_length": 80161269,
+   "저장소_크기": 80161269,
+   "크기_일치": true,
+   "blob_링크_상태": 200,
+   "blob_링크": "https://github.com/uengine-oss/hyd-iot-edu/blob/d666ea3485a64813b26f995abd049b9f18fad500/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/%ED%86%B5%ED%95%A9%EB%B0%98/%ED%86%B5%ED%95%A9%EB%B0%98_01%ED%9A%8C%EC%B0%A8_02_%EC%9D%B4%EB%A1%A0_%EC%8B%9C%EC%8A%A4%ED%85%9C%EA%B5%AC%EC%A1%B0.mp4",
+   "길이": {
+    "이전": "48분 24초",
+    "새": "48분 28초"
+   },
+   "노션_다시_fetch": "새 링크 확인(2026-11-06T19:19~19:21Z)"
+  },
+  {
+   "페이지": "01회차 · 데이터에서 판단과 조치까지",
+   "페이지_id": "401f0e285bb481bf8a56f6b2ba33d937",
+   "칸": "이론 영상 LESSON 03 영상 mp4",
+   "파일": "workspace/강의제작/산출물/영상/통합반/통합반_01회차_03_이론_온톨로지.mp4",
+   "이전_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/7783a4379aea997004ac464592da1f2bd69d5f66/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/%ED%86%B5%ED%95%A9%EB%B0%98/%ED%86%B5%ED%95%A9%EB%B0%98_01%ED%9A%8C%EC%B0%A8_03_%EC%9D%B4%EB%A1%A0_%EC%98%A8%ED%86%A8%EB%A1%9C%EC%A7%80.mp4",
+   "새_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/d666ea3485a64813b26f995abd049b9f18fad500/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/%ED%86%B5%ED%95%A9%EB%B0%98/%ED%86%B5%ED%95%A9%EB%B0%98_01%ED%9A%8C%EC%B0%A8_03_%EC%9D%B4%EB%A1%A0_%EC%98%A8%ED%86%A8%EB%A1%9C%EC%A7%80.mp4",
+   "상태_코드": 200,
+   "raw_content_length": 86541001,
+   "저장소_크기": 86541001,
+   "크기_일치": true,
+   "blob_링크_상태": 200,
+   "blob_링크": "https://github.com/uengine-oss/hyd-iot-edu/blob/d666ea3485a64813b26f995abd049b9f18fad500/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/%ED%86%B5%ED%95%A9%EB%B0%98/%ED%86%B5%ED%95%A9%EB%B0%98_01%ED%9A%8C%EC%B0%A8_03_%EC%9D%B4%EB%A1%A0_%EC%98%A8%ED%86%A8%EB%A1%9C%EC%A7%80.mp4",
+   "길이": {
+    "이전": "52분 52초",
+    "새": "52분 53초"
+   },
+   "노션_다시_fetch": "새 링크 확인(2026-11-06T19:19~19:21Z)"
+  },
+  {
+   "페이지": "01회차 · 데이터에서 판단과 조치까지",
+   "페이지_id": "401f0e285bb481bf8a56f6b2ba33d937",
+   "칸": "교재 다운로드 PPTX",
+   "파일": "workspace/강의제작/산출물/통합반/이론/01회차/통합반_01일차.pptx",
+   "이전_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/7783a4379aea997004ac464592da1f2bd69d5f66/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%ED%86%B5%ED%95%A9%EB%B0%98/%EC%9D%B4%EB%A1%A0/01%ED%9A%8C%EC%B0%A8/%ED%86%B5%ED%95%A9%EB%B0%98_01%EC%9D%BC%EC%B0%A8.pptx",
+   "새_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/d666ea3485a64813b26f995abd049b9f18fad500/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%ED%86%B5%ED%95%A9%EB%B0%98/%EC%9D%B4%EB%A1%A0/01%ED%9A%8C%EC%B0%A8/%ED%86%B5%ED%95%A9%EB%B0%98_01%EC%9D%BC%EC%B0%A8.pptx",
+   "상태_코드": 200,
+   "raw_content_length": 2902465,
+   "저장소_크기": 2902465,
+   "크기_일치": true,
+   "노션_다시_fetch": "새 링크 확인(2026-11-06T19:19~19:21Z)"
+  },
+  {
+   "페이지": "02회차 · 설비와 데이터의 관계를 체계화해 필요한 정보 찾기",
+   "페이지_id": "401f0e285bb4813a8f5cfcc7a427411b",
+   "칸": "이론 영상 LESSON 01 영상 mp4",
+   "파일": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_01_이론_클래스와인스턴스.mp4",
+   "이전_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/baa965900b215223966939d481fb609997dd4ddf/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/%ED%86%B5%ED%95%A9%EB%B0%98/%ED%86%B5%ED%95%A9%EB%B0%98_02%ED%9A%8C%EC%B0%A8_01_%EC%9D%B4%EB%A1%A0_%ED%81%B4%EB%9E%98%EC%8A%A4%EC%99%80%EC%9D%B8%EC%8A%A4%ED%84%B4%EC%8A%A4.mp4",
+   "새_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/d666ea3485a64813b26f995abd049b9f18fad500/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/%ED%86%B5%ED%95%A9%EB%B0%98/%ED%86%B5%ED%95%A9%EB%B0%98_02%ED%9A%8C%EC%B0%A8_01_%EC%9D%B4%EB%A1%A0_%ED%81%B4%EB%9E%98%EC%8A%A4%EC%99%80%EC%9D%B8%EC%8A%A4%ED%84%B4%EC%8A%A4.mp4",
+   "상태_코드": 200,
+   "raw_content_length": 68997934,
+   "저장소_크기": 68997934,
+   "크기_일치": true,
+   "blob_링크_상태": 200,
+   "blob_링크": "https://github.com/uengine-oss/hyd-iot-edu/blob/d666ea3485a64813b26f995abd049b9f18fad500/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/%ED%86%B5%ED%95%A9%EB%B0%98/%ED%86%B5%ED%95%A9%EB%B0%98_02%ED%9A%8C%EC%B0%A8_01_%EC%9D%B4%EB%A1%A0_%ED%81%B4%EB%9E%98%EC%8A%A4%EC%99%80%EC%9D%B8%EC%8A%A4%ED%84%B4%EC%8A%A4.mp4",
+   "길이": {
+    "이전": "44분 18초",
+    "새": "44분 07초"
+   },
+   "노션_다시_fetch": "새 링크 확인(2026-11-06T19:19~19:21Z)"
+  },
+  {
+   "페이지": "02회차 · 설비와 데이터의 관계를 체계화해 필요한 정보 찾기",
+   "페이지_id": "401f0e285bb4813a8f5cfcc7a427411b",
+   "칸": "이론 영상 LESSON 02 영상 mp4",
+   "파일": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_02_이론_스키마설계.mp4",
+   "이전_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/baa965900b215223966939d481fb609997dd4ddf/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/%ED%86%B5%ED%95%A9%EB%B0%98/%ED%86%B5%ED%95%A9%EB%B0%98_02%ED%9A%8C%EC%B0%A8_02_%EC%9D%B4%EB%A1%A0_%EC%8A%A4%ED%82%A4%EB%A7%88%EC%84%A4%EA%B3%84.mp4",
+   "새_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/d666ea3485a64813b26f995abd049b9f18fad500/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/%ED%86%B5%ED%95%A9%EB%B0%98/%ED%86%B5%ED%95%A9%EB%B0%98_02%ED%9A%8C%EC%B0%A8_02_%EC%9D%B4%EB%A1%A0_%EC%8A%A4%ED%82%A4%EB%A7%88%EC%84%A4%EA%B3%84.mp4",
+   "상태_코드": 200,
+   "raw_content_length": 51443447,
+   "저장소_크기": 51443447,
+   "크기_일치": true,
+   "blob_링크_상태": 200,
+   "blob_링크": "https://github.com/uengine-oss/hyd-iot-edu/blob/d666ea3485a64813b26f995abd049b9f18fad500/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/%ED%86%B5%ED%95%A9%EB%B0%98/%ED%86%B5%ED%95%A9%EB%B0%98_02%ED%9A%8C%EC%B0%A8_02_%EC%9D%B4%EB%A1%A0_%EC%8A%A4%ED%82%A4%EB%A7%88%EC%84%A4%EA%B3%84.mp4",
+   "길이": {
+    "이전": "32분 41초",
+    "새": "32분 26초"
+   },
+   "노션_다시_fetch": "새 링크 확인(2026-11-06T19:19~19:21Z)"
+  },
+  {
+   "페이지": "02회차 · 설비와 데이터의 관계를 체계화해 필요한 정보 찾기",
+   "페이지_id": "401f0e285bb4813a8f5cfcc7a427411b",
+   "칸": "이론 영상 LESSON 03 영상 mp4",
+   "파일": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_03_이론_그래프저장과조회.mp4",
+   "이전_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/baa965900b215223966939d481fb609997dd4ddf/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/%ED%86%B5%ED%95%A9%EB%B0%98/%ED%86%B5%ED%95%A9%EB%B0%98_02%ED%9A%8C%EC%B0%A8_03_%EC%9D%B4%EB%A1%A0_%EA%B7%B8%EB%9E%98%ED%94%84%EC%A0%80%EC%9E%A5%EA%B3%BC%EC%A1%B0%ED%9A%8C.mp4",
+   "새_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/d666ea3485a64813b26f995abd049b9f18fad500/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/%ED%86%B5%ED%95%A9%EB%B0%98/%ED%86%B5%ED%95%A9%EB%B0%98_02%ED%9A%8C%EC%B0%A8_03_%EC%9D%B4%EB%A1%A0_%EA%B7%B8%EB%9E%98%ED%94%84%EC%A0%80%EC%9E%A5%EA%B3%BC%EC%A1%B0%ED%9A%8C.mp4",
+   "상태_코드": 200,
+   "raw_content_length": 63584143,
+   "저장소_크기": 63584143,
+   "크기_일치": true,
+   "blob_링크_상태": 200,
+   "blob_링크": "https://github.com/uengine-oss/hyd-iot-edu/blob/d666ea3485a64813b26f995abd049b9f18fad500/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/%ED%86%B5%ED%95%A9%EB%B0%98/%ED%86%B5%ED%95%A9%EB%B0%98_02%ED%9A%8C%EC%B0%A8_03_%EC%9D%B4%EB%A1%A0_%EA%B7%B8%EB%9E%98%ED%94%84%EC%A0%80%EC%9E%A5%EA%B3%BC%EC%A1%B0%ED%9A%8C.mp4",
+   "길이": {
+    "이전": "40분 18초",
+    "새": "40분 15초"
+   },
+   "노션_다시_fetch": "새 링크 확인(2026-11-06T19:19~19:21Z)"
+  },
+  {
+   "페이지": "02회차 · 설비와 데이터의 관계를 체계화해 필요한 정보 찾기",
+   "페이지_id": "401f0e285bb4813a8f5cfcc7a427411b",
+   "칸": "교재 다운로드 PPTX",
+   "파일": "workspace/강의제작/산출물/통합반/이론/02회차/통합반_02일차.pptx",
+   "이전_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/baa965900b215223966939d481fb609997dd4ddf/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%ED%86%B5%ED%95%A9%EB%B0%98/%EC%9D%B4%EB%A1%A0/02%ED%9A%8C%EC%B0%A8/%ED%86%B5%ED%95%A9%EB%B0%98_02%EC%9D%BC%EC%B0%A8.pptx",
+   "새_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/d666ea3485a64813b26f995abd049b9f18fad500/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%ED%86%B5%ED%95%A9%EB%B0%98/%EC%9D%B4%EB%A1%A0/02%ED%9A%8C%EC%B0%A8/%ED%86%B5%ED%95%A9%EB%B0%98_02%EC%9D%BC%EC%B0%A8.pptx",
+   "상태_코드": 200,
+   "raw_content_length": 2363878,
+   "저장소_크기": 2363878,
+   "크기_일치": true,
+   "노션_다시_fetch": "새 링크 확인(2026-11-06T19:19~19:21Z)"
+  },
+  {
+   "페이지": "02회차 · 설비와 데이터의 관계를 체계화해 필요한 정보 찾기",
+   "페이지_id": "401f0e285bb4813a8f5cfcc7a427411b",
+   "칸": "가이드문서 실습3 ZIP",
+   "파일": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습3_온톨로지설계.zip",
+   "이전_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/afec9b0b6ec76517defc4974852c245905572211/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%ED%86%B5%ED%95%A9%EB%B0%98/%EC%8B%A4%EC%8A%B5/02%ED%9A%8C%EC%B0%A8/%EB%9E%A9/02%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B53_%EC%98%A8%ED%86%A8%EB%A1%9C%EC%A7%80%EC%84%A4%EA%B3%84.zip",
+   "새_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/d666ea3485a64813b26f995abd049b9f18fad500/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%ED%86%B5%ED%95%A9%EB%B0%98/%EC%8B%A4%EC%8A%B5/02%ED%9A%8C%EC%B0%A8/%EB%9E%A9/02%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B53_%EC%98%A8%ED%86%A8%EB%A1%9C%EC%A7%80%EC%84%A4%EA%B3%84.zip",
+   "상태_코드": 200,
+   "raw_content_length": 76081,
+   "저장소_크기": 76081,
+   "크기_일치": true,
+   "노션_다시_fetch": "새 링크 확인(2026-11-06T19:19~19:21Z)"
+  },
+  {
+   "페이지": "02회차 · 설비와 데이터의 관계를 체계화해 필요한 정보 찾기",
+   "페이지_id": "401f0e285bb4813a8f5cfcc7a427411b",
+   "칸": "가이드문서 실습4 ZIP",
+   "파일": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습4_그래프구현과검증.zip",
+   "이전_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/afec9b0b6ec76517defc4974852c245905572211/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%ED%86%B5%ED%95%A9%EB%B0%98/%EC%8B%A4%EC%8A%B5/02%ED%9A%8C%EC%B0%A8/%EB%9E%A9/02%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B54_%EA%B7%B8%EB%9E%98%ED%94%84%EA%B5%AC%ED%98%84%EA%B3%BC%EA%B2%80%EC%A6%9D.zip",
+   "새_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/d666ea3485a64813b26f995abd049b9f18fad500/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%ED%86%B5%ED%95%A9%EB%B0%98/%EC%8B%A4%EC%8A%B5/02%ED%9A%8C%EC%B0%A8/%EB%9E%A9/02%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B54_%EA%B7%B8%EB%9E%98%ED%94%84%EA%B5%AC%ED%98%84%EA%B3%BC%EA%B2%80%EC%A6%9D.zip",
+   "상태_코드": 200,
+   "raw_content_length": 73560,
+   "저장소_크기": 73560,
+   "크기_일치": true,
+   "노션_다시_fetch": "새 링크 확인(2026-11-06T19:19~19:21Z)"
+  },
+  {
+   "페이지": "03회차 · 설비 상황에 맞는 안전하고 효과적인 조치 선택하기",
+   "페이지_id": "401f0e285bb4816c8bace85ec073b5e1",
+   "칸": "이론 영상 LESSON 01 영상 mp4",
+   "파일": "workspace/강의제작/산출물/영상/통합반/통합반_03회차_01_이론_조치절차와수행기준.mp4",
+   "이전_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/6fff56ed06b5923c636ef72311fd2556c6441cd7/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/%ED%86%B5%ED%95%A9%EB%B0%98/%ED%86%B5%ED%95%A9%EB%B0%98_03%ED%9A%8C%EC%B0%A8_01_%EC%9D%B4%EB%A1%A0_%EC%A1%B0%EC%B9%98%EC%A0%88%EC%B0%A8%EC%99%80%EC%88%98%ED%96%89%EA%B8%B0%EC%A4%80.mp4",
+   "새_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/d666ea3485a64813b26f995abd049b9f18fad500/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/%ED%86%B5%ED%95%A9%EB%B0%98/%ED%86%B5%ED%95%A9%EB%B0%98_03%ED%9A%8C%EC%B0%A8_01_%EC%9D%B4%EB%A1%A0_%EC%A1%B0%EC%B9%98%EC%A0%88%EC%B0%A8%EC%99%80%EC%88%98%ED%96%89%EA%B8%B0%EC%A4%80.mp4",
+   "상태_코드": 200,
+   "raw_content_length": 44100533,
+   "저장소_크기": 44100533,
+   "크기_일치": true,
+   "blob_링크_상태": 200,
+   "blob_링크": "https://github.com/uengine-oss/hyd-iot-edu/blob/d666ea3485a64813b26f995abd049b9f18fad500/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/%ED%86%B5%ED%95%A9%EB%B0%98/%ED%86%B5%ED%95%A9%EB%B0%98_03%ED%9A%8C%EC%B0%A8_01_%EC%9D%B4%EB%A1%A0_%EC%A1%B0%EC%B9%98%EC%A0%88%EC%B0%A8%EC%99%80%EC%88%98%ED%96%89%EA%B8%B0%EC%A4%80.mp4",
+   "길이": {
+    "이전": "27분 36초",
+    "새": "27분 41초"
+   },
+   "노션_다시_fetch": "새 링크 확인(2026-11-06T19:19~19:21Z)"
+  },
+  {
+   "페이지": "03회차 · 설비 상황에 맞는 안전하고 효과적인 조치 선택하기",
+   "페이지_id": "401f0e285bb4816c8bace85ec073b5e1",
+   "칸": "이론 영상 LESSON 01 자막 srt",
+   "파일": "workspace/강의제작/산출물/영상/_작업/영상_자막_기록/통합반_03회차_01_이론_조치절차와수행기준.srt",
+   "이전_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/6fff56ed06b5923c636ef72311fd2556c6441cd7/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/_%EC%9E%91%EC%97%85/%EC%98%81%EC%83%81_%EC%9E%90%EB%A7%89_%EA%B8%B0%EB%A1%9D/%ED%86%B5%ED%95%A9%EB%B0%98_03%ED%9A%8C%EC%B0%A8_01_%EC%9D%B4%EB%A1%A0_%EC%A1%B0%EC%B9%98%EC%A0%88%EC%B0%A8%EC%99%80%EC%88%98%ED%96%89%EA%B8%B0%EC%A4%80.srt",
+   "새_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/d666ea3485a64813b26f995abd049b9f18fad500/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/_%EC%9E%91%EC%97%85/%EC%98%81%EC%83%81_%EC%9E%90%EB%A7%89_%EA%B8%B0%EB%A1%9D/%ED%86%B5%ED%95%A9%EB%B0%98_03%ED%9A%8C%EC%B0%A8_01_%EC%9D%B4%EB%A1%A0_%EC%A1%B0%EC%B9%98%EC%A0%88%EC%B0%A8%EC%99%80%EC%88%98%ED%96%89%EA%B8%B0%EC%A4%80.srt",
+   "상태_코드": 200,
+   "raw_content_length": 37730,
+   "저장소_크기": 37730,
+   "크기_일치": true,
+   "노션_다시_fetch": "새 링크 확인(2026-11-06T19:19~19:21Z)"
+  },
+  {
+   "페이지": "03회차 · 설비 상황에 맞는 안전하고 효과적인 조치 선택하기",
+   "페이지_id": "401f0e285bb4816c8bace85ec073b5e1",
+   "칸": "이론 영상 LESSON 02 영상 mp4",
+   "파일": "workspace/강의제작/산출물/영상/통합반/통합반_03회차_02_이론_판단규칙.mp4",
+   "이전_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/6fff56ed06b5923c636ef72311fd2556c6441cd7/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/%ED%86%B5%ED%95%A9%EB%B0%98/%ED%86%B5%ED%95%A9%EB%B0%98_03%ED%9A%8C%EC%B0%A8_02_%EC%9D%B4%EB%A1%A0_%ED%8C%90%EB%8B%A8%EA%B7%9C%EC%B9%99.mp4",
+   "새_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/d666ea3485a64813b26f995abd049b9f18fad500/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/%ED%86%B5%ED%95%A9%EB%B0%98/%ED%86%B5%ED%95%A9%EB%B0%98_03%ED%9A%8C%EC%B0%A8_02_%EC%9D%B4%EB%A1%A0_%ED%8C%90%EB%8B%A8%EA%B7%9C%EC%B9%99.mp4",
+   "상태_코드": 200,
+   "raw_content_length": 47726833,
+   "저장소_크기": 47726833,
+   "크기_일치": true,
+   "blob_링크_상태": 200,
+   "blob_링크": "https://github.com/uengine-oss/hyd-iot-edu/blob/d666ea3485a64813b26f995abd049b9f18fad500/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/%ED%86%B5%ED%95%A9%EB%B0%98/%ED%86%B5%ED%95%A9%EB%B0%98_03%ED%9A%8C%EC%B0%A8_02_%EC%9D%B4%EB%A1%A0_%ED%8C%90%EB%8B%A8%EA%B7%9C%EC%B9%99.mp4",
+   "길이": {
+    "이전": "30분 34초",
+    "새": "30분 43초"
+   },
+   "노션_다시_fetch": "새 링크 확인(2026-11-06T19:19~19:21Z)"
+  },
+  {
+   "페이지": "03회차 · 설비 상황에 맞는 안전하고 효과적인 조치 선택하기",
+   "페이지_id": "401f0e285bb4816c8bace85ec073b5e1",
+   "칸": "이론 영상 LESSON 02 자막 srt",
+   "파일": "workspace/강의제작/산출물/영상/_작업/영상_자막_기록/통합반_03회차_02_이론_판단규칙.srt",
+   "이전_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/6fff56ed06b5923c636ef72311fd2556c6441cd7/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/_%EC%9E%91%EC%97%85/%EC%98%81%EC%83%81_%EC%9E%90%EB%A7%89_%EA%B8%B0%EB%A1%9D/%ED%86%B5%ED%95%A9%EB%B0%98_03%ED%9A%8C%EC%B0%A8_02_%EC%9D%B4%EB%A1%A0_%ED%8C%90%EB%8B%A8%EA%B7%9C%EC%B9%99.srt",
+   "새_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/d666ea3485a64813b26f995abd049b9f18fad500/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/_%EC%9E%91%EC%97%85/%EC%98%81%EC%83%81_%EC%9E%90%EB%A7%89_%EA%B8%B0%EB%A1%9D/%ED%86%B5%ED%95%A9%EB%B0%98_03%ED%9A%8C%EC%B0%A8_02_%EC%9D%B4%EB%A1%A0_%ED%8C%90%EB%8B%A8%EA%B7%9C%EC%B9%99.srt",
+   "상태_코드": 200,
+   "raw_content_length": 40327,
+   "저장소_크기": 40327,
+   "크기_일치": true,
+   "노션_다시_fetch": "새 링크 확인(2026-11-06T19:19~19:21Z)"
+  },
+  {
+   "페이지": "03회차 · 설비 상황에 맞는 안전하고 효과적인 조치 선택하기",
+   "페이지_id": "401f0e285bb4816c8bace85ec073b5e1",
+   "칸": "이론 영상 LESSON 03 영상 mp4",
+   "파일": "workspace/강의제작/산출물/영상/통합반/통합반_03회차_03_이론_성과평가와조치비교.mp4",
+   "이전_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/6fff56ed06b5923c636ef72311fd2556c6441cd7/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/%ED%86%B5%ED%95%A9%EB%B0%98/%ED%86%B5%ED%95%A9%EB%B0%98_03%ED%9A%8C%EC%B0%A8_03_%EC%9D%B4%EB%A1%A0_%EC%84%B1%EA%B3%BC%ED%8F%89%EA%B0%80%EC%99%80%EC%A1%B0%EC%B9%98%EB%B9%84%EA%B5%90.mp4",
+   "새_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/d666ea3485a64813b26f995abd049b9f18fad500/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/%ED%86%B5%ED%95%A9%EB%B0%98/%ED%86%B5%ED%95%A9%EB%B0%98_03%ED%9A%8C%EC%B0%A8_03_%EC%9D%B4%EB%A1%A0_%EC%84%B1%EA%B3%BC%ED%8F%89%EA%B0%80%EC%99%80%EC%A1%B0%EC%B9%98%EB%B9%84%EA%B5%90.mp4",
+   "상태_코드": 200,
+   "raw_content_length": 59513533,
+   "저장소_크기": 59513533,
+   "크기_일치": true,
+   "blob_링크_상태": 200,
+   "blob_링크": "https://github.com/uengine-oss/hyd-iot-edu/blob/d666ea3485a64813b26f995abd049b9f18fad500/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/%ED%86%B5%ED%95%A9%EB%B0%98/%ED%86%B5%ED%95%A9%EB%B0%98_03%ED%9A%8C%EC%B0%A8_03_%EC%9D%B4%EB%A1%A0_%EC%84%B1%EA%B3%BC%ED%8F%89%EA%B0%80%EC%99%80%EC%A1%B0%EC%B9%98%EB%B9%84%EA%B5%90.mp4",
+   "길이": {
+    "이전": "38분 00초",
+    "새": "37분 58초"
+   },
+   "노션_다시_fetch": "새 링크 확인(2026-11-06T19:19~19:21Z)"
+  },
+  {
+   "페이지": "03회차 · 설비 상황에 맞는 안전하고 효과적인 조치 선택하기",
+   "페이지_id": "401f0e285bb4816c8bace85ec073b5e1",
+   "칸": "이론 영상 LESSON 03 자막 srt",
+   "파일": "workspace/강의제작/산출물/영상/_작업/영상_자막_기록/통합반_03회차_03_이론_성과평가와조치비교.srt",
+   "이전_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/6fff56ed06b5923c636ef72311fd2556c6441cd7/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/_%EC%9E%91%EC%97%85/%EC%98%81%EC%83%81_%EC%9E%90%EB%A7%89_%EA%B8%B0%EB%A1%9D/%ED%86%B5%ED%95%A9%EB%B0%98_03%ED%9A%8C%EC%B0%A8_03_%EC%9D%B4%EB%A1%A0_%EC%84%B1%EA%B3%BC%ED%8F%89%EA%B0%80%EC%99%80%EC%A1%B0%EC%B9%98%EB%B9%84%EA%B5%90.srt",
+   "새_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/d666ea3485a64813b26f995abd049b9f18fad500/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/_%EC%9E%91%EC%97%85/%EC%98%81%EC%83%81_%EC%9E%90%EB%A7%89_%EA%B8%B0%EB%A1%9D/%ED%86%B5%ED%95%A9%EB%B0%98_03%ED%9A%8C%EC%B0%A8_03_%EC%9D%B4%EB%A1%A0_%EC%84%B1%EA%B3%BC%ED%8F%89%EA%B0%80%EC%99%80%EC%A1%B0%EC%B9%98%EB%B9%84%EA%B5%90.srt",
+   "상태_코드": 200,
+   "raw_content_length": 47871,
+   "저장소_크기": 47871,
+   "크기_일치": true,
+   "노션_다시_fetch": "새 링크 확인(2026-11-06T19:19~19:21Z)"
+  },
+  {
+   "페이지": "03회차 · 설비 상황에 맞는 안전하고 효과적인 조치 선택하기",
+   "페이지_id": "401f0e285bb4816c8bace85ec073b5e1",
+   "칸": "교재 다운로드 PPTX",
+   "파일": "workspace/강의제작/산출물/통합반/이론/03회차/통합반_03일차.pptx",
+   "이전_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/6fff56ed06b5923c636ef72311fd2556c6441cd7/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%ED%86%B5%ED%95%A9%EB%B0%98/%EC%9D%B4%EB%A1%A0/03%ED%9A%8C%EC%B0%A8/%ED%86%B5%ED%95%A9%EB%B0%98_03%EC%9D%BC%EC%B0%A8.pptx",
+   "새_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/d666ea3485a64813b26f995abd049b9f18fad500/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%ED%86%B5%ED%95%A9%EB%B0%98/%EC%9D%B4%EB%A1%A0/03%ED%9A%8C%EC%B0%A8/%ED%86%B5%ED%95%A9%EB%B0%98_03%EC%9D%BC%EC%B0%A8.pptx",
+   "상태_코드": 200,
+   "raw_content_length": 1387569,
+   "저장소_크기": 1387569,
+   "크기_일치": true,
+   "노션_다시_fetch": "새 링크 확인(2026-11-06T19:19~19:21Z)"
+  },
+  {
+   "페이지": "04회차 · 현장 자료를 검증해 신뢰할 수 있는 판단 근거 만들기",
+   "페이지_id": "401f0e285bb4813f8bb9f006ecd5b1a1",
+   "칸": "이론 영상 LESSON 01 영상 mp4",
+   "파일": "workspace/강의제작/산출물/영상/통합반/통합반_04회차_01_이론_문서에서검증된지식으로.mp4",
+   "이전_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/10bfba173a847c9d76e719c6257ce605a62e7e64/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/%ED%86%B5%ED%95%A9%EB%B0%98/%ED%86%B5%ED%95%A9%EB%B0%98_04%ED%9A%8C%EC%B0%A8_01_%EC%9D%B4%EB%A1%A0_%EB%AC%B8%EC%84%9C%EC%97%90%EC%84%9C%EA%B2%80%EC%A6%9D%EB%90%9C%EC%A7%80%EC%8B%9D%EC%9C%BC%EB%A1%9C.mp4",
+   "새_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/d666ea3485a64813b26f995abd049b9f18fad500/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/%ED%86%B5%ED%95%A9%EB%B0%98/%ED%86%B5%ED%95%A9%EB%B0%98_04%ED%9A%8C%EC%B0%A8_01_%EC%9D%B4%EB%A1%A0_%EB%AC%B8%EC%84%9C%EC%97%90%EC%84%9C%EA%B2%80%EC%A6%9D%EB%90%9C%EC%A7%80%EC%8B%9D%EC%9C%BC%EB%A1%9C.mp4",
+   "상태_코드": 200,
+   "raw_content_length": 79495720,
+   "저장소_크기": 79495720,
+   "크기_일치": true,
+   "blob_링크_상태": 200,
+   "blob_링크": "https://github.com/uengine-oss/hyd-iot-edu/blob/d666ea3485a64813b26f995abd049b9f18fad500/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/%ED%86%B5%ED%95%A9%EB%B0%98/%ED%86%B5%ED%95%A9%EB%B0%98_04%ED%9A%8C%EC%B0%A8_01_%EC%9D%B4%EB%A1%A0_%EB%AC%B8%EC%84%9C%EC%97%90%EC%84%9C%EA%B2%80%EC%A6%9D%EB%90%9C%EC%A7%80%EC%8B%9D%EC%9C%BC%EB%A1%9C.mp4",
+   "길이": {
+    "이전": "38분 28초",
+    "새": "49분 25초"
+   },
+   "노션_다시_fetch": "새 링크 확인(2026-11-06T19:19~19:21Z)"
+  },
+  {
+   "페이지": "04회차 · 현장 자료를 검증해 신뢰할 수 있는 판단 근거 만들기",
+   "페이지_id": "401f0e285bb4813f8bb9f006ecd5b1a1",
+   "칸": "이론 영상 LESSON 01 자막 srt",
+   "파일": "workspace/강의제작/산출물/영상/_작업/영상_자막_기록/통합반_04회차_01_이론_문서에서검증된지식으로.srt",
+   "이전_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/10bfba173a847c9d76e719c6257ce605a62e7e64/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/_%EC%9E%91%EC%97%85/%EC%98%81%EC%83%81_%EC%9E%90%EB%A7%89_%EA%B8%B0%EB%A1%9D/%ED%86%B5%ED%95%A9%EB%B0%98_04%ED%9A%8C%EC%B0%A8_01_%EC%9D%B4%EB%A1%A0_%EB%AC%B8%EC%84%9C%EC%97%90%EC%84%9C%EA%B2%80%EC%A6%9D%EB%90%9C%EC%A7%80%EC%8B%9D%EC%9C%BC%EB%A1%9C.srt",
+   "새_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/d666ea3485a64813b26f995abd049b9f18fad500/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/_%EC%9E%91%EC%97%85/%EC%98%81%EC%83%81_%EC%9E%90%EB%A7%89_%EA%B8%B0%EB%A1%9D/%ED%86%B5%ED%95%A9%EB%B0%98_04%ED%9A%8C%EC%B0%A8_01_%EC%9D%B4%EB%A1%A0_%EB%AC%B8%EC%84%9C%EC%97%90%EC%84%9C%EA%B2%80%EC%A6%9D%EB%90%9C%EC%A7%80%EC%8B%9D%EC%9C%BC%EB%A1%9C.srt",
+   "상태_코드": 200,
+   "raw_content_length": 65701,
+   "저장소_크기": 65701,
+   "크기_일치": true,
+   "노션_다시_fetch": "새 링크 확인(2026-11-06T19:19~19:21Z)"
+  },
+  {
+   "페이지": "04회차 · 현장 자료를 검증해 신뢰할 수 있는 판단 근거 만들기",
+   "페이지_id": "401f0e285bb4813f8bb9f006ecd5b1a1",
+   "칸": "이론 영상 LESSON 02 영상 mp4",
+   "파일": "workspace/강의제작/산출물/영상/통합반/통합반_04회차_02_이론_온톨로지에서판단근거까지.mp4",
+   "이전_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/10bfba173a847c9d76e719c6257ce605a62e7e64/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/%ED%86%B5%ED%95%A9%EB%B0%98/%ED%86%B5%ED%95%A9%EB%B0%98_04%ED%9A%8C%EC%B0%A8_02_%EC%9D%B4%EB%A1%A0_%EC%98%A8%ED%86%A8%EB%A1%9C%EC%A7%80%EC%97%90%EC%84%9C%ED%8C%90%EB%8B%A8%EA%B7%BC%EA%B1%B0%EA%B9%8C%EC%A7%80.mp4",
+   "새_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/d666ea3485a64813b26f995abd049b9f18fad500/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/%ED%86%B5%ED%95%A9%EB%B0%98/%ED%86%B5%ED%95%A9%EB%B0%98_04%ED%9A%8C%EC%B0%A8_02_%EC%9D%B4%EB%A1%A0_%EC%98%A8%ED%86%A8%EB%A1%9C%EC%A7%80%EC%97%90%EC%84%9C%ED%8C%90%EB%8B%A8%EA%B7%BC%EA%B1%B0%EA%B9%8C%EC%A7%80.mp4",
+   "상태_코드": 200,
+   "raw_content_length": 53934275,
+   "저장소_크기": 53934275,
+   "크기_일치": true,
+   "blob_링크_상태": 200,
+   "blob_링크": "https://github.com/uengine-oss/hyd-iot-edu/blob/d666ea3485a64813b26f995abd049b9f18fad500/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/%ED%86%B5%ED%95%A9%EB%B0%98/%ED%86%B5%ED%95%A9%EB%B0%98_04%ED%9A%8C%EC%B0%A8_02_%EC%9D%B4%EB%A1%A0_%EC%98%A8%ED%86%A8%EB%A1%9C%EC%A7%80%EC%97%90%EC%84%9C%ED%8C%90%EB%8B%A8%EA%B7%BC%EA%B1%B0%EA%B9%8C%EC%A7%80.mp4",
+   "길이": {
+    "이전": "28분 3초",
+    "새": "32분 43초"
+   },
+   "노션_다시_fetch": "새 링크 확인(2026-11-06T19:19~19:21Z)"
+  },
+  {
+   "페이지": "04회차 · 현장 자료를 검증해 신뢰할 수 있는 판단 근거 만들기",
+   "페이지_id": "401f0e285bb4813f8bb9f006ecd5b1a1",
+   "칸": "이론 영상 LESSON 02 자막 srt",
+   "파일": "workspace/강의제작/산출물/영상/_작업/영상_자막_기록/통합반_04회차_02_이론_온톨로지에서판단근거까지.srt",
+   "이전_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/10bfba173a847c9d76e719c6257ce605a62e7e64/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/_%EC%9E%91%EC%97%85/%EC%98%81%EC%83%81_%EC%9E%90%EB%A7%89_%EA%B8%B0%EB%A1%9D/%ED%86%B5%ED%95%A9%EB%B0%98_04%ED%9A%8C%EC%B0%A8_02_%EC%9D%B4%EB%A1%A0_%EC%98%A8%ED%86%A8%EB%A1%9C%EC%A7%80%EC%97%90%EC%84%9C%ED%8C%90%EB%8B%A8%EA%B7%BC%EA%B1%B0%EA%B9%8C%EC%A7%80.srt",
+   "새_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/d666ea3485a64813b26f995abd049b9f18fad500/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/_%EC%9E%91%EC%97%85/%EC%98%81%EC%83%81_%EC%9E%90%EB%A7%89_%EA%B8%B0%EB%A1%9D/%ED%86%B5%ED%95%A9%EB%B0%98_04%ED%9A%8C%EC%B0%A8_02_%EC%9D%B4%EB%A1%A0_%EC%98%A8%ED%86%A8%EB%A1%9C%EC%A7%80%EC%97%90%EC%84%9C%ED%8C%90%EB%8B%A8%EA%B7%BC%EA%B1%B0%EA%B9%8C%EC%A7%80.srt",
+   "상태_코드": 200,
+   "raw_content_length": 41352,
+   "저장소_크기": 41352,
+   "크기_일치": true,
+   "노션_다시_fetch": "새 링크 확인(2026-11-06T19:19~19:21Z)"
+  },
+  {
+   "페이지": "04회차 · 현장 자료를 검증해 신뢰할 수 있는 판단 근거 만들기",
+   "페이지_id": "401f0e285bb4813f8bb9f006ecd5b1a1",
+   "칸": "교재 다운로드 PPTX",
+   "파일": "workspace/강의제작/산출물/통합반/이론/04회차/통합반_04일차.pptx",
+   "이전_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/10bfba173a847c9d76e719c6257ce605a62e7e64/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%ED%86%B5%ED%95%A9%EB%B0%98/%EC%9D%B4%EB%A1%A0/04%ED%9A%8C%EC%B0%A8/%ED%86%B5%ED%95%A9%EB%B0%98_04%EC%9D%BC%EC%B0%A8.pptx",
+   "새_링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/d666ea3485a64813b26f995abd049b9f18fad500/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%ED%86%B5%ED%95%A9%EB%B0%98/%EC%9D%B4%EB%A1%A0/04%ED%9A%8C%EC%B0%A8/%ED%86%B5%ED%95%A9%EB%B0%98_04%EC%9D%BC%EC%B0%A8.pptx",
+   "상태_코드": 200,
+   "raw_content_length": 954268,
+   "저장소_크기": 954268,
+   "크기_일치": true,
+   "노션_다시_fetch": "새 링크 확인(2026-11-06T19:19~19:21Z)"
+  }
+ ],
+ "그대로_둔_링크": [
+  {
+   "페이지": "01회차 · 데이터에서 판단과 조치까지",
+   "칸": "이론 영상 LESSON 01 영상 mp4 (바꾸지 않음 — 7783a43 판과 d666ea34 판 blob 같음)",
+   "링크": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/7783a4379aea997004ac464592da1f2bd69d5f66/workspace/%EA%B0%95%EC%9D%98%EC%A0%9C%EC%9E%91/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%98%81%EC%83%81/%ED%86%B5%ED%95%A9%EB%B0%98/%ED%86%B5%ED%95%A9%EB%B0%98_01%ED%9A%8C%EC%B0%A8_01_%EC%9D%B4%EB%A1%A0_%EC%A7%80%EC%8B%9D%EC%9E%90%EC%82%B0%ED%99%94.mp4",
+   "상태_코드": 200,
+   "raw_content_length": 19188093,
+   "저장소_크기": 19188093,
+   "크기_일치": true
+  }
+ ],
+ "그_밖에_바꾼_글": [
+  "1회차 영상 탭 머리 문장: 「2026-11-04 개정 영상입니다.」→「2026-11-06 개정 영상입니다(LESSON 01은 2026-11-04 판).」",
+  "4회차 영상 탭 머리 문장 추가(2·3회차와 같은 문장)",
+  "4회차 장 범위: LESSON 01 「교재 1–45장」→「1–44장」, LESSON 02 「교재 46–72장」→「45–71장」",
+  "영상 칸 길이: ffprobe 실측을 초 반올림해 10편 고침(길이 항목 참조)"
+ ],
+ "바꾸지_않은_것": [
+  "각 페이지 「작성 근거」 토글의 교재 2장 · 구성표 링크(페이지가 「제작 이력으로 보존」이라 적음)",
+  "실습 영상 칸 · 다른 가이드 ZIP 링크 · 속성",
+  "4회차 이론 영상 설명 문장(새 대본과 대조해 그대로 둠)"
+ ]
+}
