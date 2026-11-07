@@ -5,7 +5,8 @@ python3 workspace/강의제작/제작도구/오프라인/decks/조립.py workspa
 폴더의 구성.json(장 순서)과 새장.md(표지 · 학습목표 · 목차 · 간지 · 실습 연결 등 새로 쓴 장)로
 <폴더>/<이름>.md를 만든다. 온라인 장은 화면 내용을 그대로 옮기고, 그림 경로만 새 위치에 맞추며,
 노트의 [다음]은 다음 장이 온라인에서도 바로 다음 장일 때만 원 구절을 두고, 순서가 바뀐 곳은 구성.json의 next
-(새 장은 새장.md 노트의 [다음])에 적은 구절을 쓴다. 노트를 고칠 곳은 구성.json의 note_edits로만 바꾼다.
+(새 장은 새장.md 노트의 [다음])에 적은 구절을 쓴다. 노트를 고칠 곳은 구성.json의 note_edits로만, 화면 구성 칸(학생이 보지 않는
+배치 설명 — 현장 목차 줄 번호 등)은 layout_edits로만 바꾼다.
 간지 번호는 새 순서대로 다시 매긴다. 구성.json의 note_end(글머리 목록)는 마지막 장(정답과 판단 기준) 노트의
 [다음] 앞에 덧붙인다. 오프라인에는 대본이 없으므로 실습과 다음 회차로 잇는 말은 이 자리에만 둔다.
 """
@@ -79,8 +80,12 @@ def main():
         for old, rep in it.get('note_edits', []):
             assert screen.count(old) == 1, f'{src} {it["n"]}장 노트 고칠 곳이 한 번이 아님: {old}'
             screen = screen.replace(old, rep)
+        layout = section(b, '화면 구성')
+        for old, rep in it.get('layout_edits', []):
+            assert layout.count(old) == 1, f'{src} {it["n"]}장 화면 구성 고칠 곳이 한 번이 아님: {old}'
+            layout = layout.replace(old, rep)
         basis = f"[출처] 온라인 {COURSE[course]} {int(day[3:])}회차 {it['n']}장과 그 장의 제작 기준."
-        items.append(dict(title=title_of(b), screen=screen, layout=section(b, '화면 구성'), basis=basis, it=it,
+        items.append(dict(title=title_of(b), screen=screen, layout=layout, basis=basis, it=it,
                           src=(src, it['n'])))
     assert not new, f'새장.md에 쓰이지 않은 장: {list(new)}'
     out = [f"# {spec['title']}\n\n{spec['intro']}\n"]
