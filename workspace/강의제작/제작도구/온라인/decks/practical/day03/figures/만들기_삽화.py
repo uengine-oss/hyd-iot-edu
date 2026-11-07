@@ -12,8 +12,7 @@ sys.dont_write_bytecode = True       # 저장소의 그림 폴더에 __pycache__
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parents[2] / 'integrated' / 'day03' / 'figures'))
 
-from 삽화_기본 import BLUE, LIGHT, NAVY, PALE, SKY, WHITE, arrow, circle, dots, line, rect  # noqa: E402
-from 만들기_삽화 import check_mark, cross_mark  # noqa: E402
+from 삽화_기본 import BLUE, LIGHT, NAVY, SKY, WHITE, circle, dots, rect  # noqa: E402
 
 KW, KH = 1213, 540
 
@@ -50,49 +49,8 @@ def finish_time() -> str:
     return _svg(o)
 
 
-# ───────────────── 충돌 직전까지 남겼을 때와 전체 취소 ─────────────────
-CHIPS = ((462, True), (632, True), (802, False), (972, False))
-CHIP_W, CHIP_H = 150, 70
-
-
-def _empty(x: float, y: float, w: float, h: float) -> list[str]:
-    o = dots(x, y, x + w, y, color=NAVY, gap=14, r=2.6)
-    o += dots(x, y + h, x + w, y + h, color=NAVY, gap=14, r=2.6)
-    o += dots(x, y, x, y + h, color=NAVY, gap=14, r=2.6)
-    o += dots(x + w, y, x + w, y + h, color=NAVY, gap=14, r=2.6)
-    return o
-
-
-def partial_or_cancel() -> str:
-    o: list[str] = []
-    # 왼쪽: 이번 묶음 — 네 칸이 모두 찬 상자
-    o.append(rect(30, 120, 200, 300, 16, fill=LIGHT, stroke=NAVY, sw=4))
-    for i in range(4):
-        o.append(rect(48, 178 + i * 57, 164, 48, 8, fill=SKY if i < 2 else PALE, stroke=BLUE, sw=3))
-    # 가운데: 충돌을 발견한 지점에서 두 갈래
-    o.append(line(230, 270, 340, 270, stroke=NAVY, sw=4))
-    o.append(circle(352, 270, 12, fill=BLUE, stroke=NAVY, sw=3.5))
-    o.append(arrow([(364, 270), (418, 270), (418, 150), (436, 150)], NAVY, 4))
-    o.append(arrow([(418, 270), (418, 410), (436, 410)], BLUE, 4))
-    # 오른쪽 위: 일부만 남긴 상태 — 앞 두 칸만 차고 뒤 두 칸은 비었다
-    o.append(rect(438, 28, 748, 214, 16, fill=WHITE, stroke=NAVY, sw=4))
-    y = 112
-    for x, full in CHIPS:
-        if full:
-            o.append(rect(x, y, CHIP_W, CHIP_H, 10, fill=SKY, stroke=BLUE, sw=3.5))
-        else:
-            o += _empty(x, y, CHIP_W, CHIP_H)
-            o += cross_mark(x + CHIP_W / 2, y + CHIP_H + 32, 15)
-    # 오른쪽 아래: 전체 취소 — 이번 묶음은 없고 기존 지식은 그대로
-    o.append(rect(438, 298, 748, 214, 16, fill=PALE, stroke=BLUE, sw=4))
-    o.append(rect(462, 382, 660, 70, 10, fill=WHITE, stroke=BLUE, sw=3.5))
-    o += check_mark(1152, 417, 18)
-    return _svg(o)
-
-
 def main() -> None:
     (HERE / '감산별_완료시점.svg').write_text(finish_time(), encoding='utf-8')
-    (HERE / '일부반영과_전체취소.svg').write_text(partial_or_cancel(), encoding='utf-8')
 
 
 if __name__ == '__main__':
