@@ -33,7 +33,7 @@ V4 = bool(re.match(r"eleven_v[34]", a.model))   # 빠르기 설정이 없는 모
 if V4 and not a.breath: a.natural = True
 CACHE = HERE / "음성_저장"
 PIECES = HERE / "조각_저장" / "합성"   # 장 조각 보관함 — 저장소에 올리지 않는다(동기화.py SKIP_DIRS). 지워도 다시 만들어진다
-PIECE_VER = "장조각-1"   # 조각을 만드는 방법이 바뀌면 올린다
+PIECE_VER = "장조각-2"   # 조각을 만드는 방법이 바뀌면 올린다
 BAD_START = ("그럼", "그러면", "그래서", "자 ", "자,", "이제", "이어서")   # 영상.md V-9: 영상은 따로 재생되므로 앞 영상을 받는 말로 시작하지 않는다
 
 
@@ -306,6 +306,8 @@ def build(r, path, scale, name):
         r["study_intervals"].append((len(out) / fr, r["study_tail"]))
         out.extend(array.array("h", [0]) * (r["study_tail"] * fr))
     out.extend(array.array("h", [0]) * int(a.gap * scale * fr))
+    # 영상은 10 fps라 조각이 0.1초 단위로 끝난다. 소리도 그 격자에서 끝나게 무음을 덧대야 이어 붙인 뒤 영상과 소리 길이가 같다(영상.md V-12 ④)
+    step = round(fr / 10); out.extend(array.array("h", [0]) * (-len(out) % step))
     with wave.open(str(path), "w") as w: w.setnchannels(1); w.setsampwidth(2); w.setframerate(fr); w.writeframes(out.tobytes())
     wav.unlink(); return len(out) / fr, marks
 

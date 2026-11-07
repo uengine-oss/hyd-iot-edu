@@ -337,6 +337,7 @@ def main():
     t0, t1 = parts[0][1], parts[-1][2]
     font = font_sig(marks)
     made, files = 0, []
+    Path(a.out).parent.mkdir(parents=True, exist_ok=True)   # 조각을 다 인코딩한 뒤 출력 폴더가 없어 멈추지 않게 미리 만든다
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
         for k, (first, b0, b1) in enumerate(parts):
