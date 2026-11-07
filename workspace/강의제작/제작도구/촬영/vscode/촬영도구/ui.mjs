@@ -54,14 +54,16 @@ export async function vscode(ctx){
  c.explorer=async name=>c.clickSel('.explorer-folders-view .monaco-list-row .label-name',name);
  // 열린 편집기 탭
  c.tab=async name=>c.clickSel('.tabs-container .tab .label-name',name);
- // Codex 웹뷰 영역(보조 사이드바) 안의 상대 위치. fx·fy는 0~1 비율, 아래쪽 입력칸은 fy≈0.93.
+ // Codex 웹뷰 영역(보조 사이드바) 안의 상대 위치. fx·fy는 0~1 비율, 아래쪽 입력칸은 fy≈0.855(새 대화의 빈 화면 기준).
  c.codexArea=async()=>q1(()=>raw.evaluate(()=>{const b=document.querySelector('.part.auxiliarybar')?.getBoundingClientRect();if(!b||!b.width)throw Error('Codex 패널이 열려 있지 않음');return{x:b.x,y:b.y,w:b.width,h:b.height};}));
  c.codexPoint=async(fx,fy)=>{const a=await c.codexArea();return{x:a.x+a.w*fx,y:a.y+a.h*fy};};
- c.codexInput=async()=>{const q=await c.codexPoint(0.45,0.93);await c.clickAt(q.x,q.y);};
+ // 웹뷰는 첫 클릭에 패널만 활성화하고 입력칸 포커스는 둘째 클릭에서 받는다(한 번만 누르면 글이 편집기 쪽으로 가거나 버려졌다).
+ c.codexInput=async()=>{const q=await c.codexPoint(0.45,0.855);await c.clickAt(q.x,q.y);await sleep(400);await c.clickAt(q.x,q.y);};
  // 입력: 완성형 글자 단위(IME 조합 시연 아님). 입력 중 포인터는 입력칸 위 여백으로 비킨다.
  c.type=async(text,aside)=>{if(aside)await c.move(aside.x,aside.y);await gate();let i=0;for(const ch of text){await q1(()=>raw.keyboard.insertText(ch));await sleep([70,85,60,95,75][i++%5]);}};
  c.key=async k=>{await gate();await q1(()=>raw.keyboard.press(k));await sleep(200);};
- // 터미널: 열려 있지 않으면 Ctrl+` 로 연다. 명령은 type 뒤 Enter.
+ // 터미널: 열려 있지 않으면 Ctrl+` 로 연다. 명령은 typeKeys 뒤 Enter(터미널은 insertText로 넣은 글자를 받지 않는다).
+ c.typeKeys=async text=>{await gate();await q1(()=>raw.keyboard.type(text,{delay:45}));};
  c.terminalOpen=async()=>{const open=await q1(()=>raw.evaluate(()=>!!document.querySelector('.terminal-wrapper')?.checkVisibility()));if(!open)await c.key('Control+Backquote');await sleep(1500);};
  // 오른쪽 버튼(VS Code 탐색기 Copy·Paste 메뉴). 메뉴 항목은 clickSel('.context-view .action-label','Copy')로 누른다.
  c.rightClickSel=async(selector,text)=>{const q=await c.hoverSel(selector,text);await gate();await q1(()=>raw.mouse.click(q.x,q.y,{button:'right'}));await sleep(400);};
