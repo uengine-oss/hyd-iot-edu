@@ -13,7 +13,8 @@
     세션                               세션 시작 훅: 열린 작업 폴더 · origin보다 뒤처졌는지
     정리 [--실행]                       스펙.md 「상태: 확정」 작업 폴더를 지운다(--실행 없으면 목록만). 폴더 밖의 문서가 그 폴더를 가리키면 지우지 않는다
 - 빼는 것: .env 전부(.env.example은 넣음) · main 추적 파일 · 캐시 · node_modules · worktrees · 슬라이드/ · 조각_저장/ · .claude/settings.local.json · .inspect.ndjson.
-- 이력은 다시 쓰지 않는다(노션 링크가 커밋을 가리킨다) · 강제 push 없음 · 100 MiB 넘는 파일이 든 커밋은 만들지 않는다.
+- 이력은 다시 쓰지 않는다(노션 링크가 커밋을 가리킨다) · 강제 push 없음 · 100 MiB 넘는 파일이 든 커밋, 학생 영상(산출물/영상/의 mp4)을 새로 넣는 커밋은
+  만들지 않는다(영상은 Release 「영상」 — CLAUDE.md 2절, 도구 기존제작/tools/video/영상올리기.py).
 """
 import contextlib, datetime, os, re, shutil, subprocess, sys, tempfile
 from pathlib import Path
@@ -36,6 +37,7 @@ RULES_CHECK = ROOT / "workspace" / "강의제작" / "제작도구" / "검사" / 
 RULE_DOCS = ("workspace/강의제작/지침/", ".claude/")   # 이 아래가 바뀌면 커밋 때 재편검사를 돌린다(사실표 · 설계서도 지침 폴더 안)
 RULE_FILES = {"CLAUDE.md", "AGENTS.md", "workspace/README.md"}
 SIZE_LIMIT = 7_000_000_000
+VIDEO_DIR = "workspace/강의제작/산출물/영상/"
 WORK = ROOT / "작업"
 CLOUD_WORK = ROOT / "workspace" / "강의제작" / "제작도구" / "근거"   # 클라우드 작업 폴더의 부모 — VM이 회수돼도 커밋으로 남는다(CLAUDE.md 7절)
 REF_SUFFIXES = {".md", ".json", ".py", ".sh", ".txt", ".csv", ".yaml", ".yml", ".mjs", ".js", ".html"}
@@ -159,7 +161,7 @@ def fetch_origin():
 
 
 def check_sizes(old_tree, new_tree):
-    """새 트리가 넣는 파일 판의 크기 — GitHub 한도를 넘으면 커밋 전에 이름과 크기로 멈춘다."""
+    """새 트리가 넣는 파일 판 — GitHub 한도를 넘거나 학생 영상 mp4를 넣으면 커밋 전에 이름과 크기로 멈춘다."""
     blobs = {}
     for line in git("diff-tree", "-r", "--no-renames", old_tree, new_tree).splitlines():
         meta, path = line.split("\t", 1)
@@ -167,6 +169,10 @@ def check_sizes(old_tree, new_tree):
             blobs[path] = meta.split()[3]
     if not blobs:
         return
+    vids = [p for p in blobs if p.startswith(VIDEO_DIR) and p.lower().endswith(".mp4")]
+    if vids:
+        sys.exit("학생 영상 mp4는 git에 넣지 않는다(이력 7 GB를 넘어 Release 「영상」에 둔다 — CLAUDE.md 2절). "
+                 "`영상올리기.py`로 올리고 이 파일은 커밋에서 뺀다:\n  " + "\n  ".join(vids))
     sizes = dict(zip(blobs, map(int, git("cat-file", "--batch-check=%(objectsize)", inp="\n".join(blobs.values()).encode() + b"\n").split())))
     mib = lambda n: f"{n / 1024 ** 2:.1f} MiB"
     for path, size in sizes.items():
@@ -379,7 +385,7 @@ def repo_size_note():
     size = int(git("rev-list", "--disk-usage", "--objects", f"origin/{BRANCH}").strip())
     note = f"workspace 이력 {size / 1e9:.2f} GB"
     if size > SIZE_LIMIT:
-        note += f" — {SIZE_LIMIT / 1e9:.0f} GB를 넘었다. 새 영상을 Release로 옮길지 사용자에게 묻는다"
+        note += f" — {SIZE_LIMIT / 1e9:.0f} GB를 넘었다. 새 영상은 Release 「영상」에 두고, 이력을 키우는 다른 큰 파일이 있으면 사용자에게 알린다"
     return note
 
 
@@ -559,7 +565,7 @@ def pull():
         p.write_bytes(data)
     cat.stdin.close(); cat.wait()
     for n in delete:
-        (ROOT / n).unlink()
+        (ROOT / n).unlink(missing_ok=True)   # 이 PC에 이미 없으면 지운 것과 같다
     git("update-ref", f"refs/heads/{BRANCH}", remote, *([local] if local else []))
     print(f"workspace {local[:8] or '(없음)'} → origin {remote[:8]} — 쓴 파일 {len(write)} · 지운 파일 {len(delete)}")
     if fork != local:                                  # 갈라졌던 경우: 올리지 않은 커밋은 브랜치에서 빠지고 그 파일은 디스크에 남아 다음 commit에 들어간다
