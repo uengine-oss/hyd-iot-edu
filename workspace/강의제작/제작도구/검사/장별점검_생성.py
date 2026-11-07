@@ -76,13 +76,18 @@ def lengths(course, nn, sd, folders, partial):
         if t is None:
             if partial: continue
             sys.exit(f"{name}: {[str(d) for d in folders]} 아래에 시간표가 없다 — 영상을 다 구운 뒤 돌리거나 --어림을 준다")
+        clock = 0.0   # 「시작」 칸은 초 아래를 버린 값이라, 조각 시작은 앞 조각의 음성(초)을 차례로 더해 구한다
         for m in re.finditer(r"^\| (\d+)(?:~(\d+))? \| (\d+):(\d+)(?: \(SLIDE \d+부터 (\d+):([\d.]+)\))? \| ([\d.]+) \|", t.read_text(encoding="utf-8"), re.M):
             a, b, total = int(m.group(1)), m.group(2), float(m.group(7))
+            shown = int(m.group(3)) * 60 + int(m.group(4))   # 버린 값이라 합과 0~1초 차이에 반올림 몫만 더 벌어진다
+            if not shown - 0.5 <= clock < shown + 1.5:
+                sys.exit(f"{t}: SLIDE {a} 시작 {m.group(3)}:{m.group(4)}이 앞 조각 길이의 합 {clock:.1f}초와 맞지 않는다")
             if b:
-                first = int(m.group(5)) * 60 + float(m.group(6)) - (int(m.group(3)) * 60 + int(m.group(4)))
+                first = int(m.group(5)) * 60 + float(m.group(6)) - clock
                 out[a], out[int(b)] = round(first), round(total - first)
             else:
                 out[a] = round(total)
+            clock += total
     return out
 
 
