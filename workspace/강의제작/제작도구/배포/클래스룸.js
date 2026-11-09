@@ -1,0 +1,42 @@
+// 클래스룸 「수업 과제」 화면에서 자료를 만들고 고치는 도우미(배포 B-2 · B-3 · B-4).
+// 언제: 클래스룸 자료를 새로 만들거나, 설명 · 주제 · 첨부를 고치거나 지울 때.
+// 쓰는 법: 브라우저 창의 수업 과제 화면(https://classroom.google.com/u/0/w/<과정 id>/t/all)에서
+//   이 파일 내용 전체를 javascript_tool로 한 번 실행해 함수를 정의한 뒤 아래 함수를 부른다.
+//   화면을 옮길(navigate) 때마다 다시 실행한다. 창 폭이 좁으면 「만들기」 버튼이 숨으므로 창을 800x846으로 둔다.
+//   한 번의 실행은 45초 안에 끝나야 하므로 자료 3개 정도씩 나눠 부른다.
+// 드라이브 파일 첨부는 다른 사이트 화면(드라이브 선택 창)이라 이 도우미로 고를 수 없다 — 배포 길 5의 클릭 순서를 따른다.
+const sleep = ms => new Promise(r => setTimeout(r, ms)); window.sleep = sleep;
+// 열려 있는 자료 편집 창
+window.mdlg = () => [...document.querySelectorAll('[role=dialog]')].find(x => x.offsetParent && /저장 옵션|게시|저장/.test(x.innerText) && x.querySelector('textarea'));
+// 편집 창에 붙은 파일(zip · pptx) 이름, 붙은 순서대로
+window.fileList = () => [...mdlg().querySelectorAll('a')].map(a => a.innerText.trim().split('\n')[0]).filter(t => /\.(zip|pptx)$/.test(t));
+// 편집 창에 붙은 유튜브 영상 제목
+window.vids = () => [...mdlg().querySelectorAll('a')].map(a => a.innerText.trim().split('\n')[0]).filter(t => /^\d+-\d/.test(t));
+// 화면의 자료 제목(위에서부터) — 순서 확인용
+window.items = () => [...document.querySelectorAll('main li[data-stream-item-id]')].map(l => l.querySelector('[role=button][aria-label]').getAttribute('aria-label'));
+// 자료 주소: /c/<과정 id>/m/<btoa(data-stream-item-id)>/details
+window.itemIds = () => [...document.querySelectorAll('main li[data-stream-item-id]')].map(l => [l.querySelector('[role=button][aria-label]').getAttribute('aria-label'), btoa(l.dataset.streamItemId)]);
+// 주제 주소: /w/<과정 id>/tc/<btoa(data-topic-id)>
+window.topicIds = () => { const s = {}; [...document.querySelectorAll('main [data-topic-id]')].forEach(t => { const h = t.querySelector('h2,[role=heading]')?.innerText?.trim(); if (h && !s[t.dataset.topicId]) s[t.dataset.topicId] = h; }); return Object.entries(s).map(([k, v]) => [v, btoa(k)]); };
+
+window.openMaterial = async () => { const mk = [...document.querySelectorAll('[role=button], button')].find(b => b.offsetParent && b.innerText.trim().replace(/^add\s*/, '') === '만들기'); mk.click(); await sleep(1200); const m = [...document.querySelectorAll('[role=menuitem], li')].find(e => e.offsetParent && /^book\s*자료$/.test(e.innerText.trim())); m.click(); for (let i = 0; i < 10 && !mdlg(); i++) await sleep(500); await sleep(800); return !!mdlg(); };
+window.setDesc = async desc => { const ce = mdlg().querySelector('[contenteditable=true]'); ce.focus(); document.execCommand('selectAll'); document.execCommand('delete'); desc.split('\n').forEach((line, i) => { if (i) document.execCommand('insertParagraph'); if (line) document.execCommand('insertText', false, line); }); await sleep(300); };
+window.setTD = async (title, desc) => { const ta = mdlg().querySelector('textarea'); ta.focus(); ta.select(); document.execCommand('insertText', false, title); await sleep(300); await setDesc(desc); };
+window.addLink = async url => { const d = mdlg(); [...d.querySelectorAll('button,[role=button]')].find(b => b.getAttribute('aria-label') === '링크 추가').click(); await sleep(1200); const ld = [...document.querySelectorAll('[role=dialog]')].find(x => x.offsetParent && x !== d && /링크 추가/.test(x.innerText)); const li = ld.querySelector('input'); li.focus(); document.execCommand('insertText', false, url); await sleep(500); [...ld.querySelectorAll('button')].find(b => b.innerText.trim() === '링크 추가').click(); await sleep(3500); };
+// 유튜브 링크를 붙인 뒤 뜨는 선택 창(같은 사이트 iframe)의 「동영상 추가」를 누른다
+window.clickAddVideo = async () => { for (let i = 0; i < 10; i++) { const f = [...document.querySelectorAll('iframe')].find(f => f.offsetParent && /\/n\/picker/.test(f.src)); const b = f && [...f.contentDocument.querySelectorAll('button,[role=button]')].find(x => x.innerText.trim() === '동영상 추가'); if (b) { b.click(); await sleep(2500); return true; } await sleep(700); } return false; };
+// 드롭다운이 늦게 그려지므로 세 번까지 다시 연다. 돌려준 글에 주제 이름이 없으면 게시하지 않는다.
+window.setTopic = async prefix => { const cb = [...mdlg().querySelectorAll('[role=combobox], [role=listbox], [aria-haspopup=listbox]')].find(c => /주제 없음|회차|공지/.test(c.innerText)); let opt; for (let k = 0; k < 3 && !opt; k++) { cb.click(); for (let i = 0; i < 6 && !opt; i++) { await sleep(500); opt = [...document.querySelectorAll('[role=option]')].find(o => o.offsetParent && o.innerText.includes(prefix)); } } if (!opt) return 'no option ' + prefix; opt.click(); await sleep(800); return cb.innerText.trim(); };
+window.publishNow = async () => { [...mdlg().querySelectorAll('button')].find(b => b.innerText.trim() === '게시' && b.offsetParent).click(); await sleep(2500); const c = [...document.querySelectorAll('[role=dialog],[role=alertdialog]')].find(x => x.offsetParent && /게시하시겠습니까/.test(x.innerText)); if (c) { [...c.querySelectorAll('button')].find(b => b.innerText.trim() === '게시').click(); await sleep(3000); } for (let i = 0; i < 10 && mdlg(); i++) await sleep(500); return mdlg() ? 'still open' : 'published'; };
+window.openEdit = async label => { const b = [...document.querySelectorAll('main button[aria-label]')].find(e => e.getAttribute('aria-label').startsWith(label) && /자료 옵션$/.test(e.getAttribute('aria-label'))); if (!b) return 'no item'; b.scrollIntoView({ block: 'center' }); await sleep(400); b.click(); let m; for (let i = 0; i < 8 && !m; i++) { await sleep(400); m = [...document.querySelectorAll('[role=menuitem]')].find(m => m.offsetParent && m.innerText.trim() === '수정'); } m.click(); for (let i = 0; i < 14 && !mdlg(); i++) await sleep(500); await sleep(1500); return !!mdlg(); };
+window.saveEdit = async () => { [...mdlg().querySelectorAll('button')].find(b => b.innerText.trim() === '저장' && b.offsetParent).click(); for (let i = 0; i < 14 && mdlg(); i++) await sleep(500); await sleep(1500); return mdlg() ? 'still open' : 'saved'; };
+window.delItem = async label => { const b = [...document.querySelectorAll('main button[aria-label]')].find(e => e.getAttribute('aria-label') === label + ' 자료 옵션'); if (!b) return 'none'; b.scrollIntoView({ block: 'center' }); await sleep(500); b.click(); let m; for (let i = 0; i < 8 && !m; i++) { await sleep(400); m = [...document.querySelectorAll('[role=menuitem]')].find(m => m.offsetParent && m.innerText.trim() === '삭제'); } if (!m) return 'no menu'; m.click(); let c; for (let i = 0; i < 8 && !c; i++) { await sleep(400); c = [...document.querySelectorAll('[role=dialog],[role=alertdialog]')].find(x => x.offsetParent && /삭제/.test(x.innerText)); } [...c.querySelectorAll('button')].find(x => x.innerText.trim() === '삭제').click(); await sleep(2500); return 'deleted'; };
+
+// 영상 자료 하나: 제목 · 설명 · 유튜브 영상 하나 · 주제. 붙은 영상이 하나이고 제목으로 시작하지 않으면 게시하지 않고 창을 닫는다.
+window.makeVideo = async (title, desc, vid, topic) => { if (mdlg()) return 'DIALOG OPEN'; await openMaterial(); await setTD(title, desc); await addLink('https://youtu.be/' + vid); await clickAddVideo(); const v = vids(); if (v.length !== 1 || !v[0].startsWith(title)) { mdlg()?.querySelector('[aria-label="대화상자 닫기"]')?.click(); await sleep(2000); return 'BAD ' + JSON.stringify(v); } const t = await setTopic(topic); if (!t.includes(topic)) return 'TOPIC ' + t; return [t.slice(0, 8), await publishNow()]; };
+// 파일을 붙인 자료의 마무리: 붙은 파일이 기대 목록(드라이브정리.py가 찍은 그 회차 줄의 이름, 그 순서)과 같을 때만 주제를 정하고 게시한다. 다르면 게시하지 않는다.
+// 파일 기다림 20초 + 주제 약 10초 + 게시 약 10초라 45초 안에 끝난다.
+window.finishFiles = async (topic, want) => { for (let i = 0; i < 20 && fileList().length < want.length; i++) await sleep(1000); const f = fileList(); if (f.length !== want.length || f.some((x, i) => x !== want[i])) return ['BAD', f]; const t = await setTopic(topic); if (!t.includes(topic)) return ['TOPIC', t]; return [f, await publishNow()]; };
+// 자료를 그 주제 맨 위로: 다른 주제로 옮겼다가 되돌린다(새 자료와 주제를 바꾼 자료가 주제 맨 위에 붙는다).
+window.toTop = async (label, other, topic) => { for (const t of [other, topic]) { if (await openEdit(label) !== true) return 'OPEN ' + label; const s = await setTopic(t); if (!s.includes(t)) { mdlg()?.querySelector('[aria-label="대화상자 닫기"]')?.click(); return 'TOPIC ' + s; } const r = await saveEdit(); if (r !== 'saved') return r; await sleep(2500); } return 'moved'; };
+'클래스룸 도우미 준비됨';

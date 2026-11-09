@@ -59,6 +59,7 @@ def work_guides(rel, root):
     if re.match(r"workspace/강의제작/제작도구/(구성|온라인/decks)/", rel): return [DECK_OR_SCRIPT]
     if rel.startswith(("workspace/강의제작/제작도구/오프라인/decks/", ".claude/skills/hyd-course-deck/")): return [GUIDE.format("덱")]
     if rel.startswith(("workspace/강의제작/제작도구/실습시작/", "workspace/강의제작/제작도구/온라인/labs/")): return [GUIDE.format("코딩랩")]
+    if rel.startswith("workspace/강의제작/제작도구/배포/"): return [GUIDE.format("배포")]
     return []
 
 
@@ -156,11 +157,11 @@ def selftest():
     """임시 저장소에서 실제 훅 호출로 막아야 할 때 막고 통과할 때 통과하는지 본다."""
     me = Path(__file__).resolve(); bad = []
     S = "workspace/강의제작/산출물/통합반/"
-    DECK, SCRIPT, VIDEO, GD, LAB_G = (GUIDE.format(d) for d in ("덱", "대본", "영상", "가이드", "코딩랩"))
+    DECK, SCRIPT, VIDEO, GD, LAB_G, DLV = (GUIDE.format(d) for d in ("덱", "대본", "영상", "가이드", "코딩랩", "배포"))
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
         CLOUD = "workspace/강의제작/제작도구/근거/2026-01-01_클라우드/기록.md"
-        for rel in (COMMON, DECK, SCRIPT, VIDEO, GD, LAB_G, SHOOT_COMMON, SHOOT.format("포털"), "작업/2026-01-01_시험/스펙.md", "작업/2026-01-01_정리됨/기록.md", CLOUD, CLOUD.replace("기록", "스펙"),
+        for rel in (COMMON, DECK, SCRIPT, VIDEO, GD, LAB_G, DLV, SHOOT_COMMON, SHOOT.format("포털"), "작업/2026-01-01_시험/스펙.md", "작업/2026-01-01_정리됨/기록.md", CLOUD, CLOUD.replace("기록", "스펙"),
                     "workspace/강의제작/제작도구/근거/2026-01-01_인계자료/인계.md"):
             f = root / rel; f.parent.mkdir(parents=True, exist_ok=True); f.write_text("가\n" * 99 + "끝\n", encoding="utf-8")
 
@@ -209,6 +210,9 @@ def selftest():
         call("read", rd(COMMON, agent="a1"), 0, "a1 공통 읽기")
         call("gate", ed(pptx, "a1"), 0, "PPTX 노트는 대본 + 공통으로도 통과")
         call("gate", ed(S + "이론_오프라인/02회차/x.pptx", "a1"), 2, "오프라인 덱은 덱 문서")
+        says(call("gate", ed("workspace/강의제작/제작도구/배포/클래스룸.js", "a1"), 2, "배포 도구"), ["배포.md"], [], "배포 도구는 배포 문서")
+        call("read", rd(DLV, agent="a1"), 0, "a1 배포 읽기")
+        call("gate", ed("workspace/강의제작/제작도구/배포/클래스룸.js", "a1"), 0, "배포 + 공통이면 배포 도구 통과")
         call("read", rd(VIDEO, 1, 40), 0, "영상 잘린 읽기")
         call("gate", sh("python 강의영상.py out s.md"), 2, "잘린 만큼만 세어 영상 빌드 막힘")
         call("read", {"tool_name": "Read", "tool_input": {"file_path": str(root / VIDEO)}, "tool_response": "문자열"}, 1, "범위를 모르는 응답은 실패로 알림")

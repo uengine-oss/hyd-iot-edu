@@ -1,4 +1,4 @@
-"""지침 일곱(공통 + 일 여섯)의 꼴과 규칙 문서 전체의 끊긴 경로를 잰다. 오류마다 파일:줄, 하나라도 있으면 종료 1.
+"""지침 여덟(공통 + 일 일곱)의 꼴과 규칙 문서 전체의 끊긴 경로를 잰다. 오류마다 파일:줄, 하나라도 있으면 종료 1.
 언제: 지침 · CLAUDE.md · AGENTS.md · workspace/README.md · 스킬을 고친 뒤(`동기화.py commit`이 그런 커밋마다 부른다).
 명령: <py> workspace/강의제작/제작도구/검사/재편검사.py [--자가시험]
 """
@@ -10,7 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[4]
 GUIDES = "workspace/강의제작/지침"
-LETTER = {"공통": "C", "실라버스": "L", "덱": "D", "대본": "S", "영상": "V", "코딩랩": "K", "가이드": "P"}
+LETTER = {"공통": "C", "실라버스": "L", "덱": "D", "대본": "S", "영상": "V", "코딩랩": "K", "가이드": "P", "배포": "B"}
 WORKS = tuple(d for d in LETTER if d != "공통")
 SECTIONS = ["반드시", "길", "자료", "함정"]
 LIMIT = {"공통": 8000, "영상": 26000}          # 그 밖의 일 문서는 20,000자 — 읽기 쉬운 문장이 먼저, 상한은 다시 부풀지 않게만
@@ -18,7 +18,7 @@ MAX_RULES = 15
 WEAK = re.compile(r"가능하면|적절히|충분히|필요 ?시(?:에)?(?![가-힣])")
 OLD_NO = re.compile(r"[A-Z]규-\d+|[A-Z](?:요|목|맥)-\d+")
 BT_OLD = re.compile(r"`[A-Z]-\d+`")
-NEW_REF = re.compile(r"(?<![A-Za-z0-9_\-:./])([CLDSVKP])-(\d+)(?![0-9A-Za-z\-_]|\.\d)")
+NEW_REF = re.compile(r"(?<![A-Za-z0-9_\-:./])([CLDSVKPB])-(\d+)(?![0-9A-Za-z\-_]|\.\d)")
 RULE = re.compile(r"^(\d+)\. (.*)$")
 MD_LINK = re.compile(r"\]\(([^)#\s]+)(?:#[^)]*)?\)")
 BT_PATH = re.compile(r"`((?:workspace|\.claude|\.codex)/[^`\s]*)`")
