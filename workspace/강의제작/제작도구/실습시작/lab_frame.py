@@ -192,7 +192,7 @@ FIX_LOOP = '입력 · 기대 · 실제를 AI에게 전해 고친 뒤 다시 확�
 REQ_AFTER = ' 다 적으면 AI에게 파일을 바꾸지 말고 되짚게만 합니다.'
 REQ_EVIDENCE = ('기대 답마다 파일:줄이 있고, `결과/정한_것.csv`에 지점마다 고른 것 · 근거 · 바뀌는 답(또는 미결)이 있으며, AI가 바꾼 파일이 없습니다.')
 WHY_START = '무엇이 주어졌고 이 답을 누가 쓰는지 알아야 AI에게 같은 출발점을 말할 수 있습니다.'
-DIFFER_START = '보일 자리가 없으면 다른 실습이거나 덜 풀린 것이니 노션 「가이드문서」에서 ZIP을 다시 받아 풉니다.'
+DIFFER_START = '보일 자리가 없으면 다른 실습이거나 덜 풀린 것이니 클래스룸의 해당 회차 실습 자료에서 ZIP을 다시 받아 풉니다.'
 DIFFER_LOOK = '짚은 줄이 없거나 다르면 근거로 쓰지 않고 다시 찾게 합니다. 편집 승인 창이 뜨면 **Deny**를 누릅니다.'
 WHY_REQ = ('기대 답을 원자료에서 먼저 적어야 결과를 견줄 기준이 생깁니다. AI의 답을 옮기면 틀린 결과도 맞아 보입니다.')
 DIFFER_REQ = 'AI의 되짚기가 내 뜻과 다르면 `{rec}`를 고쳐 다시 되짚게 하고, 근거를 못 찾은 답은 미확인으로 둡니다.'
@@ -232,7 +232,7 @@ def req_template(record_title, extra_sections=''):
 # Neo4j Browser 5.26 = 리허설_04_통합_실습3.md 「부족했던 곳」 2(Run 단추, 안내 풍선 · 광고 창), 오류 줄 = lab_db.py · check.py 출력.
 TOOL = {
     '통합반': dict(
-        get=('노션 「가이드문서」에서 이 실습의 **ZIP 내려받기**를 눌러 받고, 받은 ZIP을 오른쪽 버튼으로 눌러 **압축 풀기**(Extract All)를 고릅니다. '
+        get=('클래스룸의 해당 회차 실습 자료에서 이 실습의 ZIP을 받고, 받은 ZIP을 오른쪽 버튼으로 눌러 **압축 풀기**(Extract All)를 고릅니다. '
              '풀린 폴더를 따라 들어가면 실습 폴더와 이 가이드(이름이 `_guide.html`로 끝나는 파일)가 나란히 있습니다. 가이드는 두 번 눌러 브라우저로 열고, '
              'VS Code에서는 **파일 → 폴더 열기**(File → Open Folder)로 **실습 폴더**를 엽니다 — 그 위 폴더를 열면 AI가 정답이 든 이 가이드까지 읽습니다. '
              '이어서 할 때는 같은 실습 폴더를 다시 엽니다(ZIP을 새로 풀면 고친 파일이 없는 새 폴더입니다).'),
@@ -254,7 +254,7 @@ TOOL = {
         db_stuck=('**막히면** 「랩 DB 준비 확인 필요:」는 Docker Desktop을 켜고 다시 실행합니다. 「이 PC의 Docker에 없습니다」 뒤 「랩 DB 준비 완료」는 이 폴더 전용 랩 DB를 새로(빈 채로) 만든 것입니다.'),
         check_stop='**막히면** 「아직 검사할 결과가 없습니다」는 오류가 아니라 결과 파일이 아직 없다는 뜻입니다 — 단계 띠에서 비어 있는 단계를 먼저 채웁니다.'),
     '실전반': dict(
-        get=('노션 「가이드문서」에서 이 실습의 ZIP을 받아 압축을 풀면, 풀린 폴더 안에 실습 폴더와 이 가이드가 나란히 있습니다. '
+        get=('클래스룸의 해당 회차 실습 자료에서 이 실습의 ZIP을 받아 압축을 풀면, 풀린 폴더 안에 실습 폴더와 이 가이드가 나란히 있습니다. '
              '가이드는 브라우저로, 실습 폴더는 VS Code의 **파일 → 폴더 열기**(File → Open Folder)로 엽니다 — 그 위 폴더를 열면 AI가 정답이 든 가이드까지 읽습니다. '
              '이어서 할 때는 같은 실습 폴더를 다시 엽니다.'),
         trust='처음 열 때 폴더를 신뢰할지 물으면 신뢰합니다 — **제한 모드**(Restricted Mode)에서는 AI 채팅이 동작하지 않습니다.',
@@ -391,7 +391,7 @@ def step_guide(L, photos=None):
         raise ValueError(f'{L["title"]}: 정답 토글이 없는 구현 · 판단 단계 {missing} — S(..., answer=A(...))를 채웁니다(가이드.md P-3).')
     T = TOOL[L['course']]
     if L.get('tools_from'):   # 한 칸에 이어 하는 둘째 랩 — 도구 사용법은 앞 가이드에서 읽었으므로 되풀이하지 않는다(사용자 2026-11-05 「가치 위주」)
-        how = (f'<p><b>받기 · 도구</b> 노션 「가이드문서」에서 이 실습의 ZIP을 받아 풀고 실습 폴더를 VS Code로 엽니다. 받기 · 폴더 신뢰 · 탐색기 · 터미널 · 결과 화면 · AI 채팅 · 편집 승인 창은 '
+        how = (f'<p><b>받기 · 도구</b> 클래스룸의 해당 회차 실습 자료에서 이 실습의 ZIP을 받아 풀고 실습 폴더를 VS Code로 엽니다. 받기 · 폴더 신뢰 · 탐색기 · 터미널 · 결과 화면 · AI 채팅 · 편집 승인 창은 '
                f'「{html.escape(L["tools_from"])}」 가이드와 같습니다. 명령은 직접 치지 말고 블록의 <b>복사</b>로 붙여 넣습니다. <b>필요한 것</b> {inline(L["need"])}</p>')
     else:
         how = f'<p><b>받기</b> {inline(T["get"])} <b>필요한 것</b> {inline(L["need"])}</p>'
@@ -414,14 +414,14 @@ def step_guide(L, photos=None):
         body = (first if i == 0 else '') + step_html(s, extras.get(i, ''), last, afters.get(i, ''))
         if last:
             body += (f'<p><b>저장 위치</b> 이 실습 폴더의 <code>결과/</code></p><p><b>다시 열어 볼 것</b> {inline(L["reopen"])}</p>'
-                     f'<p><b>다음 실습에 넘길 판본</b> {inline(L["save"])}</p>')
+                     f'<p><b>보관할 것</b> {inline(L["save"])}</p>')
         sections.append((s['name'], body))
     lead = inline(L['lead'] + ' ' + GUIDE_HOW)
     return step_page(L['title'], lead, sections)
 
 
 def step_start(L):
-    """START.md. L 키: title · goal · make · start · tools(선택) · user · questions · decide · outside · formats · steps · cases · commands · readonly · done · save."""
+    """START.md. L 키: title · goal · make · start · tools(선택) · user · questions · decide · outside · formats · steps · cases · commands · readonly · done · save. start_notes는 단계 뒤 보충 문장(생략하면 공통 안내)."""
     b = [f'# {L["title"]}', '## 목표', *L['goal'], L['make'], '## 출발점', '\n'.join('- ' + x for x in L['start'])]
     if L.get('tools'):
         b += ['## 처음 쓰는 도구', '\n'.join('- ' + x for x in L['tools'])]
@@ -429,11 +429,11 @@ def step_start(L):
           '## 학생이 정할 것', DECIDE_INTRO, '\n'.join(f'- **{k}** — {v}' for k, v in L['decide']), DECIDE_AI,
           '## 이번 범위 밖', '\n'.join('- ' + x for x in L['outside']) + '\n\n자료에 있어도 이번 결과에 만들지 않습니다.',
           *[f.strip() for f in L['formats']],
-          '## 진행 단계', STEP_INTRO, '\n'.join(f'{i}. **{s["name"]}** — {s["do"]}' for i, s in enumerate(L['steps'], 1)), SEVEN, BACKTICK,
+          '## 진행 단계', STEP_INTRO, '\n'.join(f'{i}. **{s["name"]}** — {s["do"]}' for i, s in enumerate(L['steps'], 1)), *L.get('start_notes', [SEVEN, BACKTICK]),
           '## 확인', '확인할 사례의 종류(어느 행이 해당하는지는 원자료에서 직접 찾습니다):', '\n'.join('- ' + x for x in L['cases']),
           '실행 명령:', '```\n' + L['commands'] + '\n```',
           f'바뀐 파일 확인: AI가 단계를 마칠 때마다 바뀐 파일 목록을 봅니다. {L["readonly"]} 바뀌지 않았는지, 요청하지 않은 파일이 생기지 않았는지 확인합니다. 편집 승인 창에서는 경로가 `결과/` 아래일 때만 허용합니다.',
-          '## 완료 판정', L['done'], '## 저장과 다음 실습', L['save']]
+          '## 완료 판정', L['done'], '## 저장', L['save']]
     return '\n\n'.join(b) + '\n'
 
 

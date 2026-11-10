@@ -173,13 +173,13 @@
       "course": "통합반",
       "session": "온라인 02회차",
       "title": "현장 정보를 체계화하는 온톨로지 직접 설계하기",
-      "version": "2026-11-06-lab-v18",
+      "version": "2026-11-10-lab-v19-start",
       "folder": "02회차/랩/02일차_실습3_온톨로지설계",
       "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습3_온톨로지설계.zip",
-      "sha256": "d3bde713940e34b2b33465aa8e2b29c178dc36614e210257b51cded79505edfd",
+      "sha256": "917ba212a03a6caf498532f0458ec032930ab5ad39ccba40f1ad8ac6ee02e6ac",
       "guide_file": {
         "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습3_온톨로지설계_guide.html",
-        "sha256": "046ef90627caade0f2e7a40e6604ceba5a75b95c94adaa9a873c869dda0f4419"
+        "sha256": "6971e03320e1a2321ef820fb73fe0e7624240de5b5a35e855b40eedd32e36532"
       }
     },
     {
@@ -187,13 +187,13 @@
       "course": "통합반",
       "session": "온라인 02회차",
       "title": "설계한 온톨로지를 그래프 DB에 구현하고 검증하기",
-      "version": "2026-11-06-lab-v17-terms2",
+      "version": "2026-11-10-lab-v18-start",
       "folder": "02회차/랩/02일차_실습4_그래프구현과검증",
       "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습4_그래프구현과검증.zip",
-      "sha256": "c9b0fd6dbf4b912439ebf8573afb284c2addb26f94dacd62d1bdcc063a662e21",
+      "sha256": "43e1354fa2ff90181c81ff43579305517e3c04c1e043e481dc90b6db9012d7b4",
       "guide_file": {
         "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습4_그래프구현과검증_guide.html",
-        "sha256": "f4cc0a9953a59bc4a8e298f87ef31cb7a26de8b982ef59495858c46b631ae0d1"
+        "sha256": "105abfc0a105329189412b7b84cff966c70a5f06ba1d465b22111eecdb81adf1"
       }
     },
     {
