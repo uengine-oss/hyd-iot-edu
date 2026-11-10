@@ -1188,6 +1188,16 @@ def chat_teacher() -> str:
     return svg(o)
 
 
+def retention_curves() -> str:
+    """시간이 지나며 남는 이해 — 외운 정의(회색, 빨리 내려감)와 내 말로 설명한 것(하늘색, 천천히 내려감). 숫자 · 눈금 없는 개념 그림."""
+    ox, oy, xr, yt = 130, 470, 1110, 40
+    o = [arrow([(ox, oy), (xr, oy)], NAVY, sw=3.5, size=14), arrow([(ox, oy), (ox, yt)], NAVY, sw=3.5, size=14)]
+    o.append(path(f"M {ox + 10},90 C {ox + 140},330 {ox + 330},410 {xr - 40},430", stroke=GREY, sw=7))
+    o.append(path(f"M {ox + 10},90 C {ox + 260},130 {ox + 560},165 {xr - 40},185", stroke=SKY, sw=9))
+    o.append(circle(ox + 10, 90, 9, fill=NAVY, stroke=NAVY, sw=2))
+    return svg(o)
+
+
 NEW_ONLY: set = {"경로2_1.svg", "경로2_2.svg", "데이터_명령_두경로.svg"}
 
 
@@ -1197,7 +1207,7 @@ def main():
            "흩어진정보.svg": scattered(), "노드관계.svg": node_rel(),
            "경로2_1.svg": walk2(1), "경로2_2.svg": walk2(2),
            "지식그래프_지도.svg": kg_map(),
-           "기록_되짚기.svg": record_trail(), "대화_교정.svg": chat_teacher(), "읽기위치_전후.svg": offset_rows(), "리니지_좁히기.svg": lineage_narrow(),
+           "기록_되짚기.svg": record_trail(), "대화_교정.svg": chat_teacher(), "기억_곡선.svg": retention_curves(), "읽기위치_전후.svg": offset_rows(), "리니지_좁히기.svg": lineage_narrow(),
            "종류_네칸.svg": kinds_columns(), "속성_눈금.svg": property_scale(), "관계_이름.svg": relation_named(),
            "채우기_정의변경.svg": fill_or_redefine(), "저장_그림_옳음.svg": stored_not_true(), "증거_세결과.svg": evidence_outcomes()}
     for name, text in out.items():
