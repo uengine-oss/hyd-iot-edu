@@ -12,6 +12,12 @@ window.mdlg = () => [...document.querySelectorAll('[role=dialog]')].find(x => x.
 window.fileList = () => [...mdlg().querySelectorAll('a')].map(a => a.innerText.trim().split('\n')[0]).filter(t => /\.(zip|pptx)$/.test(t));
 // 편집 창에 붙은 유튜브 영상 제목
 window.vids = () => [...mdlg().querySelectorAll('a')].map(a => a.innerText.trim().split('\n')[0]).filter(t => /^\d+-\d/.test(t));
+// 편집 창에 붙은 유튜브 영상 주소 — 새 판과 옛 판은 제목이 같으므로 바꿔 끼울 때는 이것(영상 id)으로 가른다
+window.vlinks = () => [...mdlg().querySelectorAll('a[href]')].map(a => a.href).filter(h => /youtu/.test(h));
+// 편집 창에서 영상 id가 든 첨부 하나만 뗀다(그 첨부 칸의 「… 삭제」 단추). 다른 영상과 한 칸에 묶여 있으면 떼지 않는다
+window.dropVid = async id => { const a = [...mdlg().querySelectorAll('a[href]')].find(a => a.href.includes(id)); if (!a) return 'no link'; let n = a, b; while (n && n !== mdlg()) { const bs = [...n.querySelectorAll('button[aria-label$="삭제"],[role=button][aria-label$="삭제"]')]; if (bs.length) { if ([...n.querySelectorAll('a[href]')].some(x => /youtu/.test(x.href) && !x.href.includes(id))) return 'ambiguous'; b = bs[0]; break; } n = n.parentElement; } if (!b) return 'no button'; b.click(); await sleep(1500); return 'dropped'; };
+// 영상 자료의 새 판(배포 길 11): 새 영상을 먼저 붙이고, 붙은 것을 확인한 뒤 옛 영상만 떼고 저장한다. 저장 뒤 다시 열어 새 id 하나만 붙었는지 본다
+window.swapVideo = async (label, oldId, newId) => { if (await openEdit(label) !== true) return 'OPEN ' + label; await addLink('https://youtu.be/' + newId); await clickAddVideo(); if (!vlinks().some(h => h.includes(newId))) { mdlg()?.querySelector('[aria-label="대화상자 닫기"]')?.click(); return 'NOT ADDED'; } const d = await dropVid(oldId); if (d !== 'dropped') { mdlg()?.querySelector('[aria-label="대화상자 닫기"]')?.click(); return 'DROP ' + d; } const s = await saveEdit(); if (s !== 'saved') return s; await sleep(1500); await openEdit(label); const v = vlinks(); mdlg().querySelector('[aria-label="대화상자 닫기"]').click(); await sleep(1500); return v.length === 1 && v[0].includes(newId) ? 'swapped' : 'CHECK ' + JSON.stringify(v); };
 // 화면의 자료 제목(위에서부터) — 순서 확인용
 window.items = () => [...document.querySelectorAll('main li[data-stream-item-id]')].map(l => l.querySelector('[role=button][aria-label]').getAttribute('aria-label'));
 // 자료 주소: /c/<과정 id>/m/<btoa(data-stream-item-id)>/details
