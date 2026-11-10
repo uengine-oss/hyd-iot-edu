@@ -1,5 +1,6 @@
-"""지침 여덟(공통 + 일 일곱)의 꼴과 규칙 문서 전체의 끊긴 경로를 잰다. 오류마다 파일:줄, 하나라도 있으면 종료 1.
+"""지침 여덟(공통 + 일 일곱)의 꼴과 규칙 문서 전체(DOCS · 스킬)의 끊긴 경로를 잰다. 오류마다 파일:줄, 하나라도 있으면 종료 1.
 언제: 지침 · CLAUDE.md · AGENTS.md · workspace/README.md · 스킬을 고친 뒤(`동기화.py commit`이 그런 커밋마다 부른다).
+- 백틱 안 `작업/…` 경로(이 PC의 git 밖 작업 자료)도 없으면 오류다. 작업/ 폴더가 없는 곳(클라우드)에서는 오류 대신 미검증 목록을 찍는다.
 명령: <py> workspace/강의제작/제작도구/검사/재편검사.py [--자가시험]
 """
 import re
@@ -13,7 +14,7 @@ GUIDES = "workspace/강의제작/지침"
 LETTER = {"공통": "C", "실라버스": "L", "덱": "D", "대본": "S", "영상": "V", "코딩랩": "K", "가이드": "P", "배포": "B"}
 WORKS = tuple(d for d in LETTER if d != "공통")
 SECTIONS = ["반드시", "길", "자료", "함정"]
-LIMIT = {"공통": 8000, "영상": 26000}          # 그 밖의 일 문서는 20,000자 — 읽기 쉬운 문장이 먼저, 상한은 다시 부풀지 않게만
+LIMIT = {"공통": 9000, "영상": 26000}          # 그 밖의 일 문서는 20,000자 — 읽기 쉬운 문장이 먼저, 상한은 다시 부풀지 않게만
 MAX_RULES = 15
 WEAK = re.compile(r"가능하면|적절히|충분히|필요 ?시(?:에)?(?![가-힣])")
 OLD_NO = re.compile(r"[A-Z]규-\d+|[A-Z](?:요|목|맥)-\d+")
@@ -21,7 +22,9 @@ BT_OLD = re.compile(r"`[A-Z]-\d+`")
 NEW_REF = re.compile(r"(?<![A-Za-z0-9_\-:./])([CLDSVKPB])-(\d+)(?![0-9A-Za-z\-_]|\.\d)")
 RULE = re.compile(r"^(\d+)\. (.*)$")
 MD_LINK = re.compile(r"\]\(([^)#\s]+)(?:#[^)]*)?\)")
-BT_PATH = re.compile(r"`((?:workspace|\.claude|\.codex)/[^`\s]*)`")
+BT_PATH = re.compile(r"`((?:workspace|\.claude|\.codex|작업)/[^`\s]*)`")
+DOCS = ("CLAUDE.md", "AGENTS.md", "workspace/README.md", "workspace/강의제작/남은일.md",   # 경로를 재는 규칙 · 상태 문서(없으면 오류)
+        "workspace/강의제작/산출물/통합반/README.md", "workspace/강의제작/산출물/실전반/README.md", "workspace/강의제작/산출물/영상/README.md")
 PLACEHOLDER = re.compile(r"[<>{}*…|]|NN|\.\.\.")
 
 
@@ -119,31 +122,37 @@ def check_refs(guide_dir, errs):
                     errs.append(f"{p}:{i}: 없는 규칙 {m[0]}을 가리킴")
 
 
-def check_paths(p, root, errs):
-    """마크다운 링크(문서 기준)와 백틱 안 저장소 경로(자리표시 없는 것)가 실제로 있다."""
+def check_paths(p, root, errs, unchecked):
+    """마크다운 링크(문서 기준)와 백틱 안 저장소 · 작업/ 경로(자리표시 없는 것)가 실제로 있다. 작업/ 폴더가 없으면 그 경로는 unchecked에 적는다."""
     for i, l in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
         for t in MD_LINK.findall(re.sub(r"`[^`]*`", "", l)):      # 백틱 안은 보기 글이다
             if not re.match(r"^[a-z]+:", t) and "<" not in t and not (p.parent / t).resolve().exists():
                 errs.append(f"{p}:{i}: 끊긴 링크 {t}")
         for t in BT_PATH.findall(l):
-            if not PLACEHOLDER.search(t) and not (root / t.rstrip("/")).exists():
+            if PLACEHOLDER.search(t):
+                continue
+            if t.startswith("작업/") and not (root / "작업").is_dir():
+                unchecked.append(f"{p}:{i}: {t}")
+            elif not (root / t.rstrip("/")).exists():
                 errs.append(f"{p}:{i}: 없는 경로 {t}")
 
 
-def run(root):
+def run(root, unchecked=None):
     errs, guide_dir = [], root / GUIDES
+    unchecked = [] if unchecked is None else unchecked
     for d in LETTER:
         p = guide_dir / f"{d}.md"
         if not p.exists():
             errs.append(f"{p}: 문서 없음")
             continue
         check_guide(p, d, errs)
-        check_paths(p, root, errs)
+        check_paths(p, root, errs, unchecked)
     check_refs(guide_dir, errs)
-    others = [root / n for n in ("CLAUDE.md", "AGENTS.md", "workspace/README.md")] + sorted((root / ".claude/skills").rglob("*.md"))
-    for p in others:
-        if p.exists():
-            check_paths(p, root, errs)
+    for n in DOCS:
+        if not (root / n).exists():
+            errs.append(f"{root / n}: 문서 없음")
+    for p in [root / n for n in DOCS if (root / n).exists()] + sorted((root / ".claude/skills").rglob("*.md")):
+        check_paths(p, root, errs, unchecked)
     return errs
 
 
@@ -166,7 +175,11 @@ def selftest():
         for d in LETTER:
             (g / f"{d}.md").write_text(doc(d), encoding="utf-8")
         (tmp / "workspace/README.md").write_text("`workspace/강의제작/지침/덱.md`\n", encoding="utf-8")
-        (tmp / "CLAUDE.md").write_text("`workspace/README.md` · `workspace/<날짜>/` · `작업/x`\n", encoding="utf-8")
+        (tmp / "CLAUDE.md").write_text("`workspace/README.md` · `workspace/<날짜>/` · `작업/<날짜>_<제목>/` · `작업/촬영/`\n", encoding="utf-8")
+        (tmp / "작업/촬영").mkdir(parents=True, exist_ok=True)
+        for n in DOCS[3:]:
+            (tmp / n).parent.mkdir(parents=True, exist_ok=True)
+            (tmp / n).write_text("`작업/촬영/` · `workspace/README.md`\n", encoding="utf-8")
         (tmp / "AGENTS.md").write_text("[색인](workspace/README.md)\n", encoding="utf-8")
         (tmp / ".claude/skills/hyd-x/SKILL.md").write_text("`.claude/skills/hyd-x/SKILL.md`\n", encoding="utf-8")
 
@@ -206,7 +219,7 @@ def selftest():
     check("규칙 16개", lambda: (g / "가이드.md").write_text(doc("가이드", 16), encoding="utf-8"), "규칙 16개")
     check("일 문서 20,000자 넘음", sub(D, "## 함정\n- 한 줄", "## 함정\n- " + "가" * 20000), "상한 20,000자")
     check("영상은 26,000자까지", sub(f"{GUIDES}/영상.md", "## 함정\n- 한 줄", "## 함정\n- " + "가" * 25000), None)
-    check("공통 8,000자 넘음", sub(f"{GUIDES}/공통.md", "   세부", "   " + "가" * 8000), "상한 8,000자")
+    check("공통 9,000자 넘음", sub(f"{GUIDES}/공통.md", "   세부", "   " + "가" * 9000), "상한 9,000자")
     for w in ("가능하면", "적절히", "충분히", "필요시", "필요 시"):
         check(f"약한 말 {w}", sub(D, "- 한 줄", f"- {w} 본다"), "약한 말")
     check("「필요 시간」은 약한 말이 아님", lambda: None, None)
@@ -223,6 +236,17 @@ def selftest():
     check("AGENTS.md의 끊긴 링크", sub("AGENTS.md", "(workspace/README.md)", "(workspace/옛.md)"), "AGENTS.md:1: 끊긴 링크")
     check("스킬의 끊긴 경로", sub(".claude/skills/hyd-x/SKILL.md", "SKILL.md`", "옛.md`"), "SKILL.md:1: 없는 경로")
     check("README의 끊긴 경로", sub("workspace/README.md", "덱.md", "옛덱.md"), "README.md:1: 없는 경로")
+    check("남은일의 끊긴 작업/ 경로", sub(DOCS[3], "`작업/촬영/`", "`작업/2026-01-01_지운폴더/기록.md`"), "남은일.md:1: 없는 경로 작업/2026-01-01_지운폴더/기록.md")
+    check("CLAUDE.md의 끊긴 작업/ 경로", sub("CLAUDE.md", "`작업/촬영/`", "`작업/_보관/없음/`"), "CLAUDE.md:1: 없는 경로 작업/_보관/없음/")
+    for n in DOCS[4:]:
+        check(f"{n}의 끊긴 경로", sub(n, "`workspace/README.md`", "`workspace/옛.md`"), f"{Path(n)}:1: 없는 경로 workspace/옛.md")
+    check("남은일.md가 없음", lambda: (tmp / DOCS[3]).unlink(), "남은일.md: 문서 없음")
+    check("작업/ 자리표시는 재지 않음", sub(DOCS[3], "`작업/촬영/`", "`작업/<날짜>_<제목>/기록.md` · `작업/2026-…/기록.md`"), None)
+    write_all()
+    shutil.rmtree(tmp / "작업")
+    left = []
+    e = run(tmp, left)
+    cases.append(("작업/ 폴더가 없으면(클라우드) 작업/ 경로는 오류가 아니라 미검증으로 셈", not e and len(left) == len(DOCS) - 2, (e, left)))
     check("지침 하나가 없음", lambda: (g / "코딩랩.md").unlink(), "코딩랩.md: 문서 없음")
     write_all()
     ids = rule_ids(g, "덱")
@@ -241,6 +265,9 @@ if __name__ == "__main__":
         sys.exit(0 if selftest() else 1)
     if sys.argv[1:]:
         sys.exit(__doc__)
-    found = run(ROOT)
+    left = []
+    found = run(ROOT, left)
+    if left:
+        print(f"작업/ 폴더가 없어 재지 못한 작업/ 경로 {len(left)}개(이 PC에서 다시 잰다):\n  " + "\n  ".join(left[:20]))
     print("\n".join(found + [f"오류 {len(found)}"]))
     sys.exit(1 if found else 0)

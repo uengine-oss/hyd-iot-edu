@@ -1,6 +1,6 @@
 ---
 name: hyd-coding-lab
-description: "HYD 제조 AI 교육과정 코딩 랩(VS Code에서 GitHub Copilot · Codex와 학생이 만드는 실습)의 과제 설계 · 제공물 · 시작본 · 연결 · 저장 · 완성 판정 · 학생용 완성본 · 학생 ZIP을 만들거나 고칠 때 쓴다. N회차 랩, 랩 코드, 시작본, 완성 판정, 실습 패키지 검사에 쓴다. 랩의 대본 · 촬영은 hyd-video, 학생 가이드는 hyd-lab-guide."
+description: "HYD 제조 AI 교육과정 코딩 랩(VS Code에서 학생이 Codex와 함께 만드는 실습)의 과제 설계 · 제공물 · 시작본 · 연결 · 저장 · 완성 판정 · 학생용 완성본 · 학생 ZIP 만들기를 하거나 고칠 때 쓴다. N회차 랩, 랩 코드, 시작본, 완성 판정, 실습 패키지 검사에 쓴다. 랩의 대본 · 촬영은 hyd-video, 학생 가이드는 hyd-lab-guide, 만든 ZIP을 클래스룸에 붙이는 일은 hyd-deliver."
 ---
 
 # 코딩랩 — 입구

@@ -73,7 +73,8 @@ export async function run(opts){
   if(!recording||start===null)throw Error('Cue '+c.id+' before recording began (call c.begin() first)');
   if(await fs.stat(work+'/STOP').then(()=>true).catch(()=>false))throw Error('Stop requested');
   if(!opt.overlap&&pending){await pending;pending=null;}
-  const w=Math.max(speechFree,opt.overlap?0:actionFree)+(opt.gap??250)-Date.now();if(w>0)await sleep(w);
+  // 큐 사이 기본 쉼 1000ms = 영상 V-14(큐 1.0초). 조작 직후 같은 문맥의 말은 opt.gap으로 짧게 준다.
+  const w=Math.max(speechFree,opt.overlap?0:actionFree)+(opt.gap??1000)-Date.now();if(w>0)await sleep(w);
   const t0=Date.now();const a={id:c.id,text:c.text,time:t0-start,duration:c.duration_ms};actions.push(a);
   speechFree=t0+c.duration_ms;
   if(!fn){actionFree=Math.max(actionFree,t0);return;}

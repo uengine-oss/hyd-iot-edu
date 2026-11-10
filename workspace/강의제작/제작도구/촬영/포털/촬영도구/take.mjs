@@ -116,7 +116,8 @@ export async function take(opts){
    if(waitingFor){if(id!==waitingFor)return;waitingFor=null;}
    current=id;
    const c=JSON.parse(await fs.readFile(audio+'/'+id+'.json','utf8'));
-   const w=Math.max(speechFree,actionFree)+(rehearsal?0:(opt.gap??250))-Date.now();if(w>0)await sleep(w);
+   // 큐 사이 기본 쉼 1000ms = 영상 V-14(큐 1.0초). 조작 직후 같은 문맥의 말은 opt.gap으로 짧게 준다.
+   const w=Math.max(speechFree,actionFree)+(rehearsal?0:(opt.gap??1000))-Date.now();if(w>0)await sleep(w);
    const t0=Date.now(),a={id,text:c.text,time:t0-start,duration:c.duration_ms};actions.push(a);speechFree=t0+c.duration_ms;
    if(!rehearsal)await fs.writeFile(out+'/partial.json',JSON.stringify({start,actions,motions,clicks,retargets,waits,captures}));
    if(opts.failAt===id&&!opts.resume)throw Error('복구 시험: 일부러 실패');

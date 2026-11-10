@@ -11,7 +11,7 @@
    - 모든 ego 호출은 직렬 큐 하나로 보낸다.
    - 표시 포인터(SVG를 `element.animate`로 움직임)와 실제 입력(같은 경로를 단계별 `mouse.move`)이 함께 움직이고, 실제 입력이 끝날 때까지 화살표를 목표에 고정한다.
    - 움직이는 대상은 150ms 간격으로 두 번 읽어 위치가 같을 때 출발한다.
-   - 조작은 행동 문장이 끝나기 약 250ms 전에 하고, 다음 음성은 행동이 끝나고 250ms 뒤에 시작한다.
+   - 조작은 행동 문장이 끝나기 약 250ms 전에 한다. 다음 음성은 행동이 끝난 뒤 녹화 제어의 `gap`만큼 쉬고 시작하며, 그 값은 영상 V-14의 쉼이다(조작 직후 같은 문맥의 말만 `gap` 옵션으로 줄인다).
 5. 대상 찾기 — 웹 페이지(Notion, 포털, Neo4j 입력칸)에서는 보이는 DOM 요소를 정확한 글로 찾고, 클릭 직전에 위치를 다시 읽는다. 화면 밖 요소를 고정 좌표로 누르지 않는다. 캔버스(ARROWS, Neo4j 그래프, bpmn.io)에서는 그리기 함수를 감싸 대상 위치를 기록하고, 배치 순서는 녹화 전에 계산해 큐에 고정한다.
 6. 사용자와 주고받기 — 사용자가 배치나 입력을 해야 하면 녹화를 멈추고 `task.handOff()` → 사용자 조작 → `takeOverTaskSpace(<번호>)` 순서로 넘겼다가 되찾는다. 사용자가 만든 결과는 앱의 저장 데이터로 읽는다. 「Control of this task space is with the user」가 나오면 사용자에게 「계속」을 받은 뒤에 되찾는다.
 7. 상태 맞추기 — 이전 구간의 끝 상태는 저장해 둔 `end-state.json`의 데이터를 가져와 맞춘다. 실행 취소는 마지막 수단이다. 포커스와 글자 단위 기록 때문에 다른 내용까지 잃을 수 있다.
@@ -22,7 +22,7 @@
 | 무엇 | 값 · 경로 |
 |---|---|
 | 도구 | 포털(클라우드 Playwright, 로컬 ego) [포털/](포털/촬영준비.md), Neo4j Browser [neo4j/](neo4j/촬영준비.md), ARROWS [arrows/](arrows/촬영준비.md), Notion [notion/](notion/촬영준비.md), 웹 VS Code [vscode/](vscode/촬영준비.md), 설치 구간(사용자 원본) [환경세팅/](환경세팅/촬영준비.md). bpmn.io는 처음 찍을 때 `bpmn/촬영준비.md`를 같은 꼴(길 · 자료 · 함정)로 만든다 |
-| 음성 | ElevenLabs `eleven_v4`, 목소리 「안치윤」 `1PdAOcPlPTz12RwMyFVp`, stability 0.5, similarity_boost 0.75, 형식 `mp3_44100_128`. 캐시는 큐마다 `<큐 id>.mp3`와 `.json`(text, duration_ms)이고, 같은 문장은 다시 만들지 않는다 |
+| 음성 | 목소리 · 모델 · 설정 값은 영상 V-4이고, 형식은 `mp3_44100_128`이다. 캐시는 큐마다 `<큐 id>.mp3`와 `.json`(text, duration_ms)이고, 같은 문장은 다시 만들지 않는다 |
 | 음성 키 | 포털과 Neo4j는 환경변수 `ELEVENLABS_API_KEY`를 쓴다. ARROWS, Notion, VS Code는 `HYD_ELEVENLABS_KEY_FILE`이 가리키는 파일을 쓴다(Git Bash에서 `export HYD_ELEVENLABS_KEY_FILE='<키 파일 경로>'`). 키 값을 출력하거나 남기지 않는다 |
 | 시간 | [시간계산.py](시간계산.py) `estimate <큐>`, 계수는 [시간계수.json](시간계수.json) |
 | 검사 · 잇기 | [포털/촬영도구/](포털/촬영도구/)의 `verify.py` · `scenes.py` · `listen.py` · `join.py` · `cut.py`는 어느 도구의 영상에나 쓴다 |

@@ -1,8 +1,9 @@
 """일 하나 = `공통.md` 전체 + 그 일 문서 전체(촬영은 + `촬영/README.md` + 그 도구 촬영준비)를 끝까지 읽어야 그 일의 산출물 · 도구를 고친다. Claude Code 훅이 부른다.
-언제: settings.json 훅 — SessionStart(compact) `compact`, PostToolUse(Read) `read`, PreToolUse(Edit · Write · NotebookEdit · Bash · PowerShell · Agent) `gate`.
+언제: settings.json 훅 — SessionStart(compact) `compact`, PostToolUse(Read · Edit · Write) `read`, PreToolUse(Edit · Write · NotebookEdit · Bash · PowerShell · Agent) `gate`.
 명령: <py> .claude/hooks/guide_gate.py selftest
-- 상태: 작업/_훅/<세션>__<에이전트>.json(git 밖). 서브에이전트는 따로 센다. 읽은 뒤 바뀐 문서 · 요약 뒤에는 다시 읽어야 하고, 요약 뒤에는 읽던 스펙 · 기록도 요구한다.
-- 작업 폴더는 이 PC에서 작업/<날짜>_<제목>/, 클라우드에서 workspace/강의제작/제작도구/근거/<날짜>_<제목>/이다(CLAUDE.md 7절) — 둘 다 같은 꼴로 센다.
+- 상태: 작업/_훅/<세션>__<에이전트>.json(git 밖). 서브에이전트는 따로 센다. 남이 바꾼 문서 · 요약 뒤에는 다시 읽어야 하고, 요약 뒤에는 이 세션이 편집한 작업 폴더의 스펙 · 기록도 요구한다.
+- 자기 편집: 고치기 전 판을 끝까지 읽은 문서를 Edit · Write로 고치면 고친 판을 다 읽은 것으로 옮긴다(덜 읽었으면 옮기지 않는다).
+- 작업 폴더는 이 PC에서 작업/<날짜>_<제목>/, 클라우드에서 workspace/강의제작/제작도구/근거/<날짜>_<제목>/이다(CLAUDE.md 7절) — 둘 다 같은 꼴로 세고, 상태 · 오래됨은 동기화.py `tasks` · `state` · `STALE_DAYS`와 같은 기준이다.
 - 막는 것: 산출물 · 제작 재료 편집, 직접 부른 덱 · 영상 빌드(`--dry` 등 읽기 전용 제외), fable 모델. 지침 문서 자체 편집 · 셸 변수 · sed · 리다이렉션 쓰기는 막지 않는다.
 """
 import hashlib, json, os, re, subprocess, sys, tempfile, time, unicodedata
@@ -14,6 +15,9 @@ SHOOT = "workspace/강의제작/제작도구/촬영/{}/촬영준비.md"
 SHOOT_COMMON = "workspace/강의제작/제작도구/촬영/README.md"
 TASKS = ("작업", "workspace/강의제작/제작도구/근거")   # 작업 폴더의 부모: 이 PC · 클라우드
 TASK_DOC = re.compile(r"^(?:작업|workspace/강의제작/제작도구/근거)/[^/]+/(스펙|기록)\.md$")
+TASK_DIR = re.compile(r"^((?:작업|workspace/강의제작/제작도구/근거)/\d{4}-\d\d-\d\d_[^/]+)/")
+STATES = ("진행", "중단", "끝")
+STALE_DAYS = 3
 TRACKED = re.compile(r"^(workspace/강의제작/지침/[^/]+\.md|workspace/강의제작/제작도구/촬영/README\.md|workspace/강의제작/제작도구/촬영/[^/]+/촬영준비\.md)$|" + TASK_DOC.pattern)
 RUN = r"(?<![\w.])(?:python\S*|py)[\"']?\s+(?:-\S+\s+)*[\"']?[^\s\"']*"   # 파이썬의 첫 인자로 실행할 때만(이름이 글에 나온 것은 아님)
 BUILD = [(re.compile(RUN + r"deck2pptx\.py"), "덱"), (re.compile(RUN + r"(강의영상|강조표시)\.py"), "영상")]
@@ -69,7 +73,9 @@ def state_path(root, ev):
 
 
 def load(p):
-    return json.loads(p.read_text(encoding="utf-8")) if p.exists() else {"읽음": {}, "이전": []}
+    st = json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}
+    for k, v in (("읽음", {}), ("이전", []), ("편집", []), ("편집전", {})): st.setdefault(k, v)
+    return st
 
 
 def save(p, st):
@@ -92,27 +98,63 @@ def gaps(root, rel, st):
     return out + ([f"{at}-{total}"] if at <= total else [])
 
 
+def task_state(d):
+    """스펙.md의 `상태: <진행|중단|끝>`. 스펙이 없거나 꼴이 틀리면 그 사실(동기화.py state와 같은 기준)."""
+    spec = d / "스펙.md"
+    if not spec.is_file(): return "꼴 틀림 — 스펙.md 없음"
+    m = re.search(r"상태:[ \t]*(\S+)", spec.read_text(encoding="utf-8"))
+    return m[1] if m and m[1] in STATES else f"꼴 틀림 — `상태: {'|'.join(STATES)}` 줄 없음"
+
+
+def task_age(d):
+    """작업 폴더가 마지막으로 바뀐 뒤 지난 날 수: 폴더 바로 아래 파일의 가장 늦은 수정 시각(파일이 없을 때만 폴더 시각)."""
+    t = max((f.stat().st_mtime for f in d.iterdir() if f.is_file()), default=d.stat().st_mtime)
+    return (time.time() - t) / 86400
+
+
 def on_compact(root, ev):
     p = state_path(root, ev); st = load(p)
-    before = sorted(set(st["읽음"]) | set(st["이전"]))
-    save(p, {"읽음": {}, "이전": before})
+    mine = sorted(set(st["편집"]))
+    keep = [r for r in sorted(set(st["읽음"]) | set(st["이전"])) if not TASK_DOC.match(r)]   # 읽던 지침은 알리기만 한다
+    before = keep + [f"{d}/{n}.md" for d in mine for n in ("스펙", "기록")]
+    save(p, {"읽음": {}, "이전": before, "편집": mine, "편집전": {}})
     limit = time.time() - 7 * 86400
     for old in p.parent.glob("*.json"):
         if old.stat().st_mtime < limit: old.unlink()
     print("[요약 직후] 아래 문서를 Read로 처음부터 끝까지 다시 읽기 전에는 관련 산출물 편집이 막힌다.")
-    for rel in before: print(f"- 이 세션이 읽던 문서: {rel}")
+    for rel in keep: print(f"- 이 세션이 읽던 문서: {rel}")
+    others = stale = 0
     for base in TASKS:
         for d in sorted((Path(root) / base).glob("[0-9]" * 4 + "-*_*")):
-            spec = d / "스펙.md"
-            if base != "작업" and not spec.exists(): continue      # 근거/의 인계 자료 폴더는 작업 폴더가 아니다
-            m = re.search(r"상태: *(\S+)", spec.read_text(encoding="utf-8")) if spec.exists() else None
-            print(f"- 열린 작업: {base}/{d.name} (상태 {m[1] if m else '스펙 없음'})")
+            if not d.is_dir(): continue
+            rel = f"{base}/{d.name}"
+            if rel in mine:
+                print(f"- 이 세션이 편집한 작업: {rel} (상태 {task_state(d)}) — 스펙.md · 기록.md를 다시 읽는다")
+            else:
+                others += 1; stale += task_age(d) > STALE_DAYS
+    print(f"- 그 밖의 열린 작업 폴더 {others}개(그중 {STALE_DAYS}일 넘게 바뀌지 않은 오래됨 {stale}개) — 목록은 `동기화.py status`")
     print("순서: 그 작업 폴더 스펙.md · 기록.md → 공통.md + 그 일 문서(촬영이면 촬영/README.md + 그 도구 촬영준비) → git 상태와 기록.md 대조. 요약의 「완료」는 실제 파일 · 숫자로 다시 확인한다.")
+    return 0
+
+
+def on_edited(root, ev, rel):
+    """Edit · Write가 끝난 뒤: 고치기 전 판을 끝까지 읽었으면(gate가 적은 편집전 sha가 읽은 판과 같으면) 고친 판을 다 읽은 것으로 옮긴다.
+    작업 폴더 안을 고쳤으면 그 폴더를 「이 세션이 편집한 작업」으로 적는다(요약 뒤 그 폴더 스펙 · 기록만 다시 요구한다)."""
+    p = state_path(root, ev); st = load(p)
+    m = TASK_DIR.match(rel)
+    if m and m[1] not in st["편집"]: st["편집"].append(m[1])
+    pre = st["편집전"].pop(rel, None)
+    f = Path(root) / rel
+    if pre is not None and TRACKED.match(rel) and f.exists():
+        data = f.read_bytes()
+        st["읽음"][rel] = {"sha": hashlib.sha256(data).hexdigest(), "줄": [[1, max(1, len(data.splitlines()))]]}
+    save(p, st)
     return 0
 
 
 def on_read(root, ev):
     rel = norm((ev.get("tool_input") or {}).get("file_path", ""), root)
+    if ev.get("tool_name") in ("Edit", "Write"): return on_edited(root, ev, rel) if rel else 0
     if not rel or not TRACKED.match(rel): return 0
     res = ev.get("tool_response")
     f = res.get("file") if isinstance(res, dict) else None   # 도구가 실제로 돌려준 범위만 센다(잘린 읽기는 잘린 만큼)
@@ -140,6 +182,12 @@ def on_gate(root, ev):
     else:
         what = norm(inp.get("file_path") or inp.get("notebook_path") or "", root)
         need = work_guides(what, root) if what else []
+        if tool in ("Edit", "Write") and what and TRACKED.match(what):
+            p = state_path(root, ev); st = load(p)   # 고치기 전 판을 끝까지 읽었는지 적어 둔다 — 고친 뒤(on_edited) 그 판만 옮긴다
+            f = Path(root) / what
+            if not f.exists() or not gaps(root, what, st): st["편집전"][what] = digest(f) if f.exists() else ""
+            else: st["편집전"].pop(what, None)
+            save(p, st)
     if not need: return 0
     st = load(state_path(root, ev))
     need += [COMMON] + [r for r in st["이전"] if TASK_DOC.match(r) and (Path(root) / r).exists()]
@@ -179,6 +227,12 @@ def selftest():
             return dict(ev, **({"agent_id": agent} if agent else {}))
         def says(msg, has, hasnt, name):
             if not all(h in msg for h in has) or any(h in msg for h in hasnt): bad.append(f"{name}: 막는 말이 다름 — {msg[:300]}")
+        def self_edit(rel, text=None, agent=None, tool="Edit"):
+            """훅을 거친 편집 한 번: PreToolUse gate → 파일 바꿈 → PostToolUse read(Edit)."""
+            ev = dict(ed(rel, agent), tool_name=tool)
+            call("gate", ev, 0, f"자기 편집 전 {rel}")
+            if text is not None: (root / rel).parent.mkdir(parents=True, exist_ok=True); (root / rel).write_text(text, encoding="utf-8")
+            call("read", dict(ev, tool_response={"filePath": str(root / rel)}), 0, f"자기 편집 뒤 {rel}")
 
         pptx = S + "이론/02회차/통합반_02일차.pptx"
         QUE = "workspace/강의제작/제작도구/촬영/포털/전체과정관찰_큐.json"
@@ -199,6 +253,18 @@ def selftest():
         call("read", rd(COMMON, 100, 1), 0, "공통 끝 줄")
         call("gate", ed(pptx), 0, "덱 · 공통 다 읽고 덱 고치기")
         call("gate", sh("python deck2pptx.py a.md b.pptx"), 0, "덱 빌드 통과")
+        self_edit(COMMON, "가\n" * 99 + "고친 끝\n" + "더함\n")
+        call("gate", ed(pptx), 0, "다 읽은 공통.md를 자기가 고친 뒤 통과")
+        self_edit(DECK, "새 덱 문서\n" * 5, tool="Write")
+        call("gate", ed(pptx), 0, "다 읽은 덱.md를 Write로 통째로 바꾼 뒤 통과")
+        call("read", rd(COMMON, 1, 10, agent="a2"), 0, "a2 공통 앞 10줄")
+        call("read", rd(DECK, 1, 5, agent="a2"), 0, "a2 덱")
+        self_edit(COMMON, "가\n" * 99 + "a2가 고친 끝\n", agent="a2")
+        says(call("gate", ed(pptx, "a2"), 2, "덜 읽고 고친 공통.md는 옮기지 않음"), ["공통.md(안 읽은 줄 1-100)"], [], "덜 읽은 자기 편집")
+        (root / COMMON).write_text("가\n" * 99 + "끝\n", encoding="utf-8")
+        says(call("gate", ed(pptx), 2, "다른 세션이 공통.md를 고친 뒤 막힘"), ["공통.md(안 읽은 줄 1-100)"], [], "다른 세션 편집")
+        call("read", rd(COMMON), 0, "다른 세션 판 다시 읽기")
+        call("gate", ed(pptx), 0, "다시 읽으면 통과")
         (root / COMMON).write_text("짧아짐\n" * 31, encoding="utf-8")
         says(call("gate", ed(pptx), 2, "공통.md가 바뀌면 다시 읽어야 함"), ["공통.md(안 읽은 줄 1-31)"], ["100", "덱.md"], "바뀐 판은 그 판 줄 수로")
         call("read", rd(COMMON, 1, 31), 0, "바뀐 공통 다시 읽기")
@@ -243,20 +309,33 @@ def selftest():
         call("gate", ed(S + "실습/03회차/랩/x/main.py"), 2, "랩 코드는 코딩랩 문서")
         call("read", rd(LAB_G), 0, "코딩 랩")
         call("gate", ed(graph + "/입력/모델/graph.json"), 0, "코딩랩 읽고 시작본의 모델 수정")
-        call("read", rd("작업/2026-01-01_시험/스펙.md"), 0, "스펙")
+        SPEC_T = "작업/2026-01-01_시험/스펙.md"
+        (root / SPEC_T).write_text("# 시험\n\n- 시작: 2026-01-01 · 상태: 진행\n", encoding="utf-8")
+        call("read", rd(SPEC_T), 0, "스펙")
+        self_edit(SPEC_T, "# 시험\n\n- 시작: 2026-01-01 · 상태: 진행\n- 한 줄 고침\n")
         call("read", rd("작업/2026-01-01_정리됨/기록.md"), 0, "곧 지울 기록")
+        self_edit("작업/2026-01-01_정리됨/기록.md")
         call("read", rd(CLOUD), 0, "클라우드 작업 폴더의 기록")
+        self_edit(CLOUD)
+        REF = "작업/2026-01-01_참고/기록.md"
+        (root / REF).parent.mkdir(parents=True); (root / REF).write_text("가\n", encoding="utf-8")
+        call("read", rd(REF, 1, 1), 0, "참고로만 연 다른 작업 폴더의 기록")
+        old = time.time() - 5 * 86400
+        for f in ((root / REF), (root / REF).parent): os.utime(f, (old, old))
         out = call("compact", {"source": "compact"}, 0, "요약")
-        if "덱.md" not in out or "2026-01-01_시험" not in out or SHOOT_COMMON not in out or "근거/2026-01-01_클라우드" not in out: bad.append(f"요약 안내가 읽던 문서 · 열린 작업을 말하지 않음: {out[:300]}")
-        if "열린 작업: workspace/강의제작/제작도구/근거/2026-01-01_클라우드" not in out: bad.append(f"클라우드 작업 폴더를 열린 작업으로 안내하지 않음: {out[:300]}")
-        if "2026-01-01_인계자료" in out: bad.append(f"스펙 없는 근거/ 인계 자료 폴더를 작업으로 안내함: {out[:300]}")
+        for h in (SHOOT_COMMON, "이 세션이 편집한 작업: 작업/2026-01-01_시험 (상태 진행)", "이 세션이 편집한 작업: workspace/강의제작/제작도구/근거/2026-01-01_클라우드 (상태 꼴 틀림",
+                  "그 밖의 열린 작업 폴더 2개(그중 3일 넘게 바뀌지 않은 오래됨 1개)"):
+            if h not in out: bad.append(f"요약 안내에 「{h}」가 없음: {out[:400]}")
+        for h in ("2026-01-01_참고", "2026-01-01_인계자료", "읽던 문서: 작업/"):   # 편집하지 않은 폴더는 이름을 찍지 않고 개수로만(근거/의 스펙 없는 폴더도 센다)
+            if h in out: bad.append(f"요약 안내가 편집하지 않은 작업 폴더 「{h}」를 찍음: {out[:400]}")
         (root / "작업/2026-01-01_정리됨/기록.md").unlink()
         call("gate", ed(pptx), 2, "요약 뒤에는 다시 막힘")
         call("read", rd(DECK), 0, "요약 뒤 덱")
         call("read", rd(COMMON), 0, "요약 뒤 공통")
-        says(call("gate", ed(pptx), 2, "요약 뒤 스펙도 다시"), ["2026-01-01_시험/스펙.md", CLOUD], ["정리됨"], "요약 뒤 스펙 · 클라우드 기록")
+        says(call("gate", ed(pptx), 2, "요약 뒤 스펙도 다시"), [SPEC_T, CLOUD, CLOUD.replace("기록", "스펙")], ["정리됨", "참고"], "요약 뒤 편집한 폴더의 스펙 · 기록만")
         call("read", rd("작업/2026-01-01_시험/스펙.md"), 0, "요약 뒤 스펙")
         call("read", rd(CLOUD), 0, "요약 뒤 클라우드 기록")
+        call("read", rd(CLOUD.replace("기록", "스펙")), 0, "요약 뒤 클라우드 스펙")
         call("gate", ed(pptx), 0, "요약 뒤 다 읽으면 통과(지운 폴더 기록은 요구 안 함)")
         call("gate", {"tool_name": "Agent", "tool_input": {"model": "fable", "prompt": "x"}}, 2, "fable 호출")
         call("gate", {"tool_name": "Agent", "tool_input": {"model": "opus", "prompt": "x"}}, 0, "opus 호출")

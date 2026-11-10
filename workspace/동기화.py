@@ -10,8 +10,11 @@
     pull                              origin/workspace를 받아 제자리에 푼다. 이 PC가 손대지 않은 파일만 원격 판으로 바꾸고, 이 PC 판(미커밋 ·
                                       올리지 않은 커밋)은 디스크에 둔다 — 갈라졌으면 로컬 끝을 origin으로 옮기고 그 커밋 파일은 다음 commit에 들어간다.
                                       둘 다 바꾼 파일이 있으면 아무것도 쓰지 않고 멈춘다
-    세션                               세션 시작 훅: 열린 작업 폴더 · origin보다 뒤처졌는지
-    정리 [--실행]                       스펙.md 「상태: 확정」 작업 폴더를 지운다(--실행 없으면 목록만). 폴더 밖의 문서가 그 폴더를 가리키면 지우지 않는다
+    세션                               세션 시작 훅: 열린 작업 폴더의 상태 · 오래됨(STALE_DAYS일 넘게 안 바뀜) · origin보다 뒤처졌는지
+    정리 [--실행]                       스펙.md 「상태: 끝」 작업 폴더를 지운다(--실행 없으면 목록만). 폴더 밖의 문서가 그 폴더를 가리키면 지우지 않는다.
+                                      상태 줄 꼴이 틀린 폴더가 하나라도 있으면 아무것도 지우지 않고 그 목록으로 실패한다
+- 작업 폴더: 작업/<날짜>_<제목>/와 근거/<날짜>_<제목>/(클라우드) 모두. 스펙.md에 `상태: 진행|중단|끝` 줄이 있어야 한다(STATES).
+  commit은 열린 작업 폴더의 기록.md에 `## 지금`이 둘 이상이거나 `~~` 취소선 항목이 남았으면 경고한다(기록은 고쳐 쓴다).
 - 받기(새 PC, main을 clone한 폴더에서, Git Bash): `git fetch origin workspace` → `git show origin/workspace:workspace/동기화.py > 동기화.py` →
   `PYTHONUTF8=1 python 동기화.py pull` → `rm 동기화.py`. PowerShell의 `>`는 인코딩을 바꿀 수 있어 쓰지 않는다.
 - 빼는 것: .env 전부(.env.example은 넣음) · 캐시 · node_modules · worktrees · 슬라이드/ · 조각_저장/ · .claude/settings.local.json · .inspect.ndjson.
@@ -52,10 +55,12 @@ SKIP_FILES = {".claude/settings.local.json"}
 GITHUB_FILE_LIMIT, GITHUB_FILE_WARN = 100 * 1024 ** 2, 50 * 1024 ** 2
 INDEX_CFG = ("-c", "core.autocrlf=false", "-c", "core.splitIndex=false", "-c", "core.fsmonitor=false")   # 따로 색인은 이 PC 설정과 상관없이 늘 이 값으로
 OLD_VERSION = re.compile(r"(?:[_-]v\d+|[_-]\d{8}|[_ -]?사본\d*| \(\d+\))$", re.I)
+STATES = ("진행", "중단", "끝")
+STALE_DAYS = 3
 SPEC = """# {title}
 
 - 시작: {day} · 상태: 진행
-- 확정되면 이 줄의 상태를 「확정」으로 바꾸고 `<py> workspace/동기화.py 정리 --실행`으로 이 폴더를 지운다(클라우드는 지운 것을 커밋한다).
+- 상태는 `진행` · `중단` · `끝` 셋 가운데 하나다. 일이 끝나면 「끝」으로 바꾸고 `<py> workspace/동기화.py 정리 --실행`으로 이 폴더를 지운다(클라우드는 지운 것을 커밋한다).
 
 ## 의도
 (왜 · 누구에게 무엇이 좋아지나)
@@ -64,30 +69,32 @@ SPEC = """# {title}
 (하는 것 · 빼는 것과 까닭)
 
 ## 읽을 문서
-(workspace/README.md 색인에서 고른 일 문서 — 덱 → 대본 → 영상처럼 단계가 이어지면 단계마다 하나 — 와 촬영이면 촬영/README.md와 그 도구의 촬영준비)
+- 일 문서: (workspace/README.md 색인에서 고른 일 문서 — 덱 → 대본 → 영상처럼 단계가 이어지면 단계마다 하나 — 와 촬영이면 촬영/README.md와 그 도구의 촬영준비)
+- 본보기: (workspace/강의제작/지침/본보기.md에서 이 일과 같은 종류의 장 · 편 — 만들기 전에 끝까지 읽는다)
 
 ## 인수 조건
 (그 문서의 인수 조건에서 이번에 판정할 규칙 · 행과 판정 방법)
 """
 LOG = """# {title} — 기록
 
-덧붙이지 않고 고쳐 쓴다. 지금 상태 · 남은 일 · 막힌 것만 둔다(지난 경위는 지운다).
+덧붙이지 않고 고쳐 쓴다. 절은 아래 다섯뿐이고, 인계는 「지금」 절을 다시 쓰는 것이다(덧대는 블록 · 취소선을 남기지 않는다).
 
 ## 지금
-- {day} 시작(순서 · 지금 위치 · 다음 행동)
+- 판: (지금 산출물의 커밋 또는 sha)
+- 맡은 사람: (이 일을 지금 맡은 세션 · 계정)
+- 다음 행동: {day} 시작 — (다음에 할 일 하나)
 
-## 이름표
-(첫 조각 전에 `앞회차.py`가 찍은 과정 용어 장부에서 이 일이 받을 이름과, 새로 풀 이름 · 처음 장 · 쓰지 않을 말 — hyd-task 3-1)
+## 사용자 기준
+(이 작업에서 사용자가 준 기준의 원문 — 일반 기준은 그 턴에 지침 · hyd-task 제자리로 옮긴다. 작업자 · 검토자 의뢰서에 이 절을 붙인다)
+
+## 확정 장부
+(사용자가 실물을 보고 확정한 것만: 원문 · 날짜 · 판)
 
 ## 조각 메모
-(닫힌 조각마다 다음 조각이 받을 것만 — hyd-task 3-1)
+(첫 조각 전의 이름표와, 닫힌 조각마다 다음 조각이 받을 것만 — hyd-task 3-1)
 
 ## 남은 일
--
-
-## 결과가 들어갈 자리
-- 최종본: workspace/강의제작/산출물/…
-- 재료: workspace/강의제작/제작도구/…
+(끝낸 줄은 지운다)
 """
 
 
@@ -268,17 +275,50 @@ def scan(*args):
 
 
 def tasks():
-    """열린 작업 폴더: 작업/<날짜>_<제목>/와, 스펙.md가 있는 근거/<날짜>_<제목>/(클라우드 작업 폴더 — 스펙 없는 근거 폴더는 인계 자료다)."""
+    """열린 작업 폴더: 작업/<날짜>_<제목>/와 근거/<날짜>_<제목>/(클라우드 작업 폴더). 근거/의 날짜 폴더도 스펙.md가 있어야 하고, 없으면 꼴 틀림이다."""
     pat = "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]_*"
-    here = [p for p in WORK.glob(pat) if p.is_dir()] if WORK.is_dir() else []
-    cloud = [p for p in CLOUD_WORK.glob(pat) if (p / "스펙.md").is_file()] if CLOUD_WORK.is_dir() else []
-    return sorted(here + cloud, key=lambda p: p.name)
+    return sorted((p for base in (WORK, CLOUD_WORK) if base.is_dir() for p in base.glob(pat) if p.is_dir()), key=lambda p: p.name)
 
 
 def state(task):
+    """스펙.md의 `상태: <진행|중단|끝>` 값. 스펙이 없거나 줄 꼴 · 값이 틀리면 「꼴 틀림 — 까닭」(정리가 이것으로 실패한다)."""
     spec = task / "스펙.md"
-    m = re.search(r"상태:\s*(\S+)", spec.read_text(encoding="utf-8")) if spec.is_file() else None
-    return m.group(1) if m else "스펙 없음"
+    if not spec.is_file():
+        return "꼴 틀림 — 스펙.md 없음"
+    m = re.search(r"상태:[ \t]*(\S+)", spec.read_text(encoding="utf-8"))
+    if not m:
+        return f"꼴 틀림 — `상태: {'|'.join(STATES)}` 줄 없음(콜론 빠짐 등)"
+    if m.group(1) not in STATES:
+        return f"꼴 틀림 — 상태 「{m.group(1)}」는 {'·'.join(STATES)} 밖" + ("(예전 「확정」은 「끝」)" if m.group(1) == "확정" else "")
+    return m.group(1)
+
+
+def age_days(task):
+    """작업 폴더가 마지막으로 바뀐 뒤 지난 날 수: 폴더 바로 아래 파일의 가장 늦은 수정 시각(큰 출력 하위 폴더는 훑지 않는다).
+    폴더 자체의 시각은 안의 파일을 지울 때도 바뀌므로 파일이 없을 때만 쓴다."""
+    t = max((f.stat().st_mtime for f in task.iterdir() if f.is_file()), default=task.stat().st_mtime)
+    return (datetime.datetime.now().timestamp() - t) / 86400
+
+
+def task_line(t):
+    days = age_days(t)
+    return f"{t.parent.name}/{t.name} · 상태 {state(t)}" + (f" · 오래됨 {days:.0f}일 — 닫을지 정한다" if days > STALE_DAYS else "")
+
+
+def log_warnings():
+    """열린 작업 폴더 기록.md의 고쳐 쓰기 위반: `## 지금` 절이 둘 이상 · `~~` 취소선이 남음. [(파일:줄, 까닭)]."""
+    out = []
+    for t in tasks():
+        f = t / "기록.md"
+        if not f.is_file():
+            continue
+        lines = f.read_text(encoding="utf-8").splitlines()
+        rel = f.relative_to(ROOT).as_posix()
+        now = [i for i, l in enumerate(lines, 1) if re.match(r"##\s*지금(?!\S)", l)]
+        if len(now) > 1:
+            out.append((f"{rel}:{','.join(map(str, now))}", f"`## 지금` 절이 {len(now)}개 — 하나로 다시 쓴다"))
+        out += [(f"{rel}:{i}", "`~~` 취소선 항목 — 끝낸 줄은 지운다") for i, l in enumerate(lines, 1) if re.search(r"~~[^~]+~~", l)]
+    return out
 
 
 def start(title):
@@ -306,7 +346,7 @@ def behind_note(local, origin):
 
 def status():
     for t in tasks():
-        print(f"작업 {t.name} · 상태 {state(t)}")
+        print(f"작업 {task_line(t)}")
     t = tip()
     note = behind_note(t, fetch_origin())
     if note:
@@ -395,9 +435,11 @@ def session_note():
     """세션 시작 때 훅이 부른다: 이 세션이 묻지 않고 알아야 할 것만 낸다. 고치는 것은 없다."""
     print("[세션 시작] 작업 순서는 스킬 hyd-task, 남은 일의 정본은 workspace/강의제작/남은일.md, 읽을 문서는 workspace/README.md 표다.")
     print("뚫은 길 · 함정 · 바뀐 값은 일을 끝내기 전에 그 문서 자리에 고쳐 쓴다(hyd-task 4절).")
-    names = [t.name for t in tasks()]
-    if names:
-        print(f"이 PC의 작업 폴더 {len(names)}개(사용자 범위와 맞는 것의 스펙.md · 기록.md부터 읽는다): " + " · ".join(names))
+    found = tasks()
+    if found:
+        print(f"이 PC의 작업 폴더 {len(found)}개(사용자 범위와 맞는 것의 스펙.md · 기록.md부터 읽는다. 오래됨 · 꼴 틀림은 닫거나 고칠지 정한다):")
+        for t in found:
+            print(f"- {task_line(t)}")
     try:
         note = behind_note(tip(), fetch_origin())
     except SystemExit as e:                     # git()이 실패를 sys.exit로 낸다 — 시작을 막지 않고 못 본 것을 그대로 알린다
@@ -413,6 +455,8 @@ def commit(msg, args):
     files = local_files()
     for g in old_versions(files):
         print("경고 — 이전 판이 함께 있다(최신 하나만 둔다): " + " · ".join(g))
+    for where, why in log_warnings():
+        print(f"경고 — 기록은 고쳐 쓴다: {where}: {why}")
     t = tip()
     tree = build_tree_only(t, only, files) if only else build_tree(files, t)
     if tree == git("rev-parse", f"{t}^{{tree}}").strip():
@@ -486,7 +530,11 @@ def referrers(task):
 
 
 def clean(run):
-    done = [t for t in tasks() if state(t) == "확정"]
+    bad = [t for t in tasks() if state(t) not in STATES]
+    if bad:
+        sys.exit("상태 줄 꼴이 틀린 작업 폴더가 있어 아무것도 지우지 않았다 — 스펙.md에 `상태: 진행|중단|끝`을 바로 쓴 뒤 다시:\n  "
+                 + "\n  ".join(f"{t.relative_to(ROOT).as_posix()}: {state(t)}" for t in bad))
+    done = [t for t in tasks() if state(t) == "끝"]
     for t in tasks():
         if t not in done:
             print(f"남김 {t.name}(상태 {state(t)})")
@@ -501,7 +549,7 @@ def clean(run):
         else:
             print(f"지울 것 {t.name} — `정리 --실행`으로 지운다")
     if not done:
-        print("확정된 작업 폴더가 없다")
+        print("「상태: 끝」인 작업 폴더가 없다")
 
 
 def tree_blobs(ref):

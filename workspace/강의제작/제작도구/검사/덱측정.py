@@ -8,7 +8,7 @@ from pathlib import Path
 W = Path(__file__).resolve().parents[2]   # workspace/강의제작
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(W / "제작도구/촬영"))
-from 장확정 import script_text  # noqa: E402
+from 장닫음 import script_text  # noqa: E402
 from 시간계산 import load_coef, script_slides, slide_seconds, spoken  # noqa: E402
 
 COURSE = {"통합": ("통합반", "integrated"), "실전": ("실전반", "practical")}
