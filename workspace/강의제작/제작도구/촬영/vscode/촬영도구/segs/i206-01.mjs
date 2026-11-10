@@ -1,5 +1,5 @@
-// 통합 2회차 06편 구간 01: 열린 START·탐색기·Codex를 짚는다. 요청·파일 변경 없음.
-// 시작: 2304×1296 metrics, 브라우저 125%, START 맨 위, 탐색기 폴더 접힘, 빈 Codex 새 대화.
+// 통합 2회차 06편 구간 01: 열린 README·탐색기·Codex를 짚는다. 요청·파일 변경 없음.
+// 시작: 2304×1296 metrics, 브라우저 125%, README 맨 위, 탐색기 폴더 접힘, 빈 Codex 새 대화.
 import {vscode} from '../ui.mjs';
 
 export default async ctx=>{
@@ -10,8 +10,8 @@ export default async ctx=>{
   root:document.querySelector('.pane-header[aria-label^="Explorer Section:"]')?.innerText,
   first:[...document.querySelectorAll('.editor-instance .view-lines .view-line')].some(e=>e.textContent.includes('#')&&e.textContent.includes('현장'))
  })));
- if(layout.title!=='START.md'||!layout.first||Math.abs(layout.dpr-1.25)>0.01||layout.width!==1843||layout.height!==1037)throw Error('첫 화면 조건 불일치: '+JSON.stringify(layout));
- if(layout.root!=='02일차_실습3_온톨로지설계')throw Error('다른 실습 폴더가 열려 있습니다.');
+ if(layout.title!=='README.md'||!layout.first||Math.abs(layout.dpr-1.25)>0.01||layout.width!==1843||layout.height!==1037)throw Error('첫 화면 조건 불일치: '+JSON.stringify(layout));
+ if(layout.root?.toLowerCase()!=='ontology-lab')throw Error('다른 실습 폴더가 열려 있습니다.');
  const snap=await c.serial(()=>ctx.p.snapshot());
  if(!snap.includes('Ask Codex anything.')||!snap.includes('6-Luna')||!snap.includes('Medium')||snap.includes('연결 확인입니다.')||snap.includes('Restricted Mode'))throw Error('빈 Codex 새 대화·모델·폴더 신뢰를 먼저 확인합니다.');
  const measure=async spec=>c.serial(()=>ctx.p.evaluate(spec=>{
@@ -50,17 +50,15 @@ export default async ctx=>{
  };
  await c.installPointer({x:365,y:92});
  await ctx.begin();
- await ctx.say('i206-0101',()=>line('목표','## 목표'),{pointFrac:0,pointDelay:0});
+ await ctx.say('i206-0101',()=>line('제목','# 현장'),{pointFrac:0,pointDelay:0});
  await ctx.say('i206-0102',()=>line('직접 정할 판단','포털 지식 지도에서'),{pointFrac:0,pointDelay:0});
  await ctx.say('i206-0103',root,sayOptions);
  await ctx.say('i206-0104',()=>point('웹 메뉴',{selector:'[role="menubar"]',fx:0.5}),{pointFrac:0,pointDelay:0});
  await ctx.say('i206-0105',root,sayOptions);
- await ctx.say('i206-0106',()=>point('열린 START 편집기',{selector:'.tabs-container .tab.active .label-name',left:true}),sayOptions);
+ await ctx.say('i206-0106',()=>point('열린 README 편집기',{selector:'.tabs-container .tab.active .label-name',left:true}),sayOptions);
  await ctx.say('i206-0110',()=>point('Codex 새 대화',{selector:'.part.auxiliarybar',fx:0.5,fy:0.45}),{pointFrac:0,pointDelay:0});
- await twoPoints('i206-0111',()=>point('Codex 입력칸',{selector:'.part.auxiliarybar',fx:0.04,fy:0.86}),()=>line('사람이 확인할 목표','## 목표'),'어떤 답이 필요한지');
- await ctx.say('i206-0107',()=>line('질문 1','1. 설비별로'),{pointFrac:0,pointDelay:0});
- await ctx.say('i206-0108',()=>line('질문 2','2. 각 센서가'),{pointFrac:0,pointDelay:0});
- await ctx.say('i206-0109',()=>line('질문 3','3. 교체 부품별로'),{pointFrac:0,pointDelay:0});
- await twoPoints('i206-0112',()=>folder('자료'),()=>folder('결과'),'제가 만든 결과');
- return{segment:'i206-01',view:layout,next:'START 1단계: 폴더 확인과 결과 화면 첫 실행',aiRequests:0};
+ await twoPoints('i206-0111',()=>point('Codex 입력칸',{selector:'.part.auxiliarybar',fx:0.04,fy:0.86}),()=>line('사람이 확인할 목적','포털 지식 지도에서'),'어떤 답이 필요한지');
+ await ctx.say('i206-0113',()=>folder('AGENTS.md'),sayOptions);
+ await twoPoints('i206-0112',()=>folder('data'),()=>folder('app'),'앱 폴더에는');
+ return{segment:'i206-01',view:layout,next:'가이드 1단계: data 확인과 python run.py 첫 실행',aiRequests:0};
 };

@@ -1414,7 +1414,7 @@ GNEXT = {'integrated-04-graph': '설비 이상 원인을 추론하고 다음 점
 GCOURSE = {'integrated-04-graph': '통합반', 'practical-03-card': '실전반'}
 GEXTRACT = {'integrated-04-graph': 'integrated-04-extract', 'practical-03-card': 'practical-03-extract'}
 GREC = '결과/구축_기록.md'
-LAB2_INPUT = {'통합반': OUT/'통합반/실습/02회차/랩/02일차_실습4_그래프구현과검증/입력',
+LAB2_INPUT = {'통합반': OUT/'통합반/실습/02회차/랩/graph-lab/data/model',
               '실전반': OUT/'실전반/실습/02회차/랩/02일차_실습4_그래프구현과검증/입력'}
 CARD_HEADINGS = ['대상 작업', '준비 조건', '금지 · 제한', '작업 순서', '완료 기준', '작업 직전 확인할 현재 값', '승인', '남은 질문']
 LATER_DOCS = ['OEM-HPP45A-MM', 'PR-07']        # 통합 04-3 행 「다른 문서의 추가 반영」 — 연결 규칙을 그 단계에서 채우는 문서

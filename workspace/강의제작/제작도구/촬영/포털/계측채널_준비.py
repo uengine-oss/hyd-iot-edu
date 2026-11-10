@@ -10,8 +10,8 @@ NAMESPACE = 'day02-sensors'
 
 
 def channels():
-    source = LAB / '02일차_실습3_온톨로지설계/자료/센서_목록.csv'
-    model = LAB / '02일차_실습4_그래프구현과검증/입력/graph.json'
+    source = LAB / 'ontology-lab/data/sensors.csv'
+    model = LAB / 'graph-lab/data/model/graph.json'
     sensors = {n['props']['id']: n['props'] for n in json.loads(model.read_text('utf8'))['nodes']
                if n['labels'] == ['Sensor']}
     rows = []

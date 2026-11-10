@@ -1,10 +1,7 @@
-"""2회차 네 랩 「정답 보기」 재생 — 가이드의 정답 토글 내용(apply)을 새 랩 사본에 단계 차례로 써 넣고 `python show_result.py`를 돌려,
-단계마다 상태가 「채움」(오류 · 비어 있음 0)이 되고 그 결과가 강사 참조와 같은 답인지 본다(요청문 DoD 11). 강사 참조 영역이며 학생 ZIP에 넣지 않는다.
-
-통합 02-3 = 토글로 만든 graph.json의 답(설비별 구성 요소 · 센서 태그, 물리량 묶음, 설비별 교체 부품, 품번 물음)이 갈래 A · B · C 기대 답과 같은지.
-실전 02-3 = 토글로 만든 SUPPLIES가 갈래 A · B · ㄴ · ㄷ 참조 graph.json의 SUPPLIES와 같은지(쌍 · 속성 전부).
-실습4 두 랩 = 실제 랩 DB(lab_db.py — Docker 필요)에서 적재 · 조회 · 수정이 오류 없이 돌고 결과 화면 대조 표가 모두 「같음」인지(--no-db면 건너뜀).
-사용: python reference/session2_toggle_replay.py [--no-db] [--keep]   → reference/session2_정답재생.json
+"""기존 실전반02 두 랩의 정답 코드 재생. 통합반 새 프로젝트에는 사용하지 않는다.
+통합반 참조·손상 검증은 session2_project_trials.py / session2_graph_trials.py이며,
+새 자연어 정답 요청의 학생 AI 검증은 별도 승인된 리허설로 확인한다.
+사용: python reference/session2_toggle_replay.py [--no-db] [--keep]
 """
 from pathlib import Path
 from collections import defaultdict
@@ -133,21 +130,6 @@ def main():
     report, bad = {}, []
     root = Path(tempfile.mkdtemp(prefix='s2replay-', dir=os.environ.get('HYD_REPLAY_DIR') or None))
     try:
-        L = B.design_integrated()
-        # 통합 02-3 — 갈래 A(토글 apply 그대로 — 관계.csv에 부품-부품 줄 없음), B(한 물품 · 이음 — 관계.csv 부품-부품 줄과 part_rules 갈래 B), C(따로 · 잇지 않음)
-        b_files = ANS.integrated_design('B')
-        for branch, override in [('A', None), ('B', {'결과/part_rules.py': b_files['결과/part_rules.py'], '결과/관계.csv': b_files['결과/관계.csv'], '결과/정한_것.csv': B.chosen_text(ANS.integrated_chosen('B'))}),
-                                 ('C', {'결과/part_rules.py': ANS.part_rules_answer(False, False), '결과/정한_것.csv': B.chosen_text(ANS.integrated_chosen('C'))})]:
-            folder = copy_lab('통합반', B.LAB3, root)
-            folder = folder.rename(folder.with_name(folder.name + branch))
-            log, rc, states, out = replay(L, folder, override)
-            graph = json.loads((folder / '결과/graph.json').read_text(encoding='utf-8'))
-            d = diff(design_answers(graph), reference_answers(branch))
-            differ = len(re.findall(r'data-st="(다름|실제 없음|기대 밖)"', (folder / '결과/보기.html').read_text(encoding='utf-8'))) if branch == 'A' else 0
-            ok = rc == 0 and all(x['state'] in ('채움', '볼 것 없음', '결과 보기') for x in log) and not d and differ == 0
-            report[f'통합반/실습3/{branch}'] = {'steps': log, 'final_rc': rc, 'mismatch': d, 'compare_rows_not_same': differ}
-            if not ok:
-                bad.append(f'통합반/실습3/{branch}: rc {rc}, 상태 {[(x["step"], x["state"]) for x in log if x["state"] not in ("채움", "볼 것 없음", "결과 보기")]}, 불일치 {d[:5]}\n{out[-1500:]}')
         # 실전 02-3 — 갈래 ㄴ(apply), A · B · ㄷ(approval_rule 갈래)
         L = B.design_practical()
         for branch in ['ㄴ', 'A', 'B', 'ㄷ']:
@@ -165,7 +147,7 @@ def main():
             if not ok:
                 bad.append(f'실전반/실습3/{branch}: rc {rc}, 상태 {[(x["step"], x["state"]) for x in log if x["state"] not in ("채움", "볼 것 없음", "결과 보기")]}, 불일치 {d[:5]}\n{out[-1500:]}')
         if not no_db:
-            for course in ['통합반', '실전반']:
+            for course in ['실전반']:
                 L = B.graph_lab(course)
                 folder = copy_lab(course, B.LAB4, root)
                 up = subprocess.run([PY, 'lab_db.py', '--no-open'], cwd=folder, capture_output=True, text=True, encoding='utf-8', errors='replace')

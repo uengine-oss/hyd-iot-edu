@@ -241,9 +241,10 @@ def keep_branch_bytes(env, branch, names):
     fix = {n: b for n, b in branch_bytes(now, branch).items() if b != now[n]}
     if fix:
         modes = {}
-        for e in filter(None, git("ls-files", "-s", "-z", "--", *fix, env=env).split("\0")):
+        for e in filter(None, git("ls-files", "-s", "-z", env=env).split("\0")):   # 경로를 인자로 주면 고칠 파일이 많을 때 Windows 명령 줄 길이(WinError 206)를 넘는다
             meta, n = e.split("\t", 1)
-            modes[n] = meta.split()[0]
+            if n in fix:
+                modes[n] = meta.split()[0]
         git(*INDEX_CFG, "update-index", "--index-info", env=env, inp="".join(f"{modes[n]} {b}\t{n}\n" for n, b in fix.items()).encode("utf-8"))
     return env
 

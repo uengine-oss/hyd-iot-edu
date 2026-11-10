@@ -6,6 +6,8 @@
 """
 from pathlib import Path
 import copy
+import argparse
+import os
 import json
 import shutil
 import subprocess
@@ -14,7 +16,7 @@ import tempfile
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[4]
-LABS = {'통합반': ROOT/'workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습3_온톨로지설계',
+LABS = {'통합반': ROOT/'workspace/강의제작/산출물/통합반/실습/02회차/랩/ontology-lab',
         '실전반': ROOT/'workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습3_온톨로지설계'}
 OUT = HERE/'session2_검사기_고의손상.json'
 
@@ -28,13 +30,16 @@ def load(course, branch='A'):
 
 
 def run(folder, schema, graph):
+    project = (folder/'run.py').is_file()
+    output = folder / ('output' if project else '결과')
+    output.mkdir(exist_ok=True)
     for name, value in [('schema.json', schema), ('graph.json', graph)]:
-        path = folder/'결과'/name
+        path = output/name
         if value is None:
             path.unlink(missing_ok=True)       # 결과를 아직 만들지 않은 상태
         else:
             path.write_text(json.dumps(value, ensure_ascii=False), encoding='utf-8')
-    p = subprocess.run([sys.executable, 'check.py'], cwd=folder, capture_output=True, text=True, encoding='utf-8', env={'PYTHONUTF8': '1', 'SYSTEMROOT': 'C:\\Windows'})
+    p = subprocess.run([sys.executable, *(['-m', 'app.utils.check'] if project else ['check.py'])], cwd=folder, capture_output=True, text=True, encoding='utf-8', env={**os.environ, 'PYTHONUTF8': '1'})
     return p.returncode, (p.stdout + p.stderr).strip()
 
 
@@ -128,12 +133,19 @@ def trials():
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--course', choices=list(LABS))
+    parser.add_argument('--out', type=Path, default=OUT)
+    args = parser.parse_args()
+    labs = {c: p for c, p in LABS.items() if not args.course or c == args.course}
     records, bad = [], []
     with tempfile.TemporaryDirectory() as t:
         tmp = Path(t)
-        for course, lab in LABS.items():
+        for course, lab in labs.items():
             shutil.copytree(lab, tmp/course)
         for course, name, branch, fn, ok, want, absent in trials():
+            if course not in labs:
+                continue
             schema, graph = load(course, branch)
             fn(schema, graph)
             if name.endswith('결과 없음'):
@@ -144,7 +156,7 @@ def main():
             if not good:
                 bad.append(f'{course} [{name}] 기대 {"통과" if ok else "실패"} {want} 없어야 {absent}, 실제 exit {code}: {out[-600:]}')
         # 공용 검사(lab_frame.provided_guard · CHOSEN_CHECK) — 실습3 · 4 네 폴더 모두: 제공 파일을 바꾸거나 정한_것.csv 칸이 비면 잡는가
-        labs4 = {c: ROOT/f'workspace/강의제작/산출물/{c}/실습/02회차/랩/02일차_실습4_그래프구현과검증' for c in LABS}
+        labs4 = {c: ROOT/f'workspace/강의제작/산출물/{c}/실습/02회차/랩'/('graph-lab' if c == '통합반' else '02일차_실습4_그래프구현과검증') for c in labs}
         chosen_head = '# 제공 빈 틀\n지점,고른_것,근거,바뀌는_답\n'
         file_trials = [
             ('F1 제공 파일 바뀜', lambda f: (f/'show_result.py').write_text((f/'show_result.py').read_text(encoding='utf-8') + '\n# 바꿈\n', encoding='utf-8'), ['제공 파일이 바뀌었습니다: show_result.py']),
@@ -153,25 +165,35 @@ def main():
             ('F4 정한 것 빈 칸', lambda f: (f/'결과/정한_것.csv').write_text(chosen_head + '시점,,자료/a.csv:3,\n', encoding='utf-8'), ['빈 칸 고른_것, 바뀌는_답']),
             ('F5 정한 것 열 이름', lambda f: (f/'결과/정한_것.csv').write_text('지점,고른 것,근거,바뀌는 답\n', encoding='utf-8'), ['열 이름이']),
             ('F0 손대지 않음(통과)', lambda f: None, [])]
-        for course in LABS:
+        for course in labs:
             for which, src in [('실습3', LABS[course]), ('실습4', labs4[course])]:
                 for name, fn, want in file_trials:
                     dest = tmp/f'{course}_{which}_{name.split()[0]}'
                     shutil.copytree(src, dest)
-                    if which == '실습3':
+                    project = (dest/'run.py').is_file()
+                    if which == '실습3' or project:
                         schema, graph = load(course, 'A' if course == '통합반' else 'ㄴ')
                         for n, v in [('schema.json', schema), ('graph.json', graph)]:
-                            (dest/'결과'/n).write_text(json.dumps(v, ensure_ascii=False), encoding='utf-8')
-                    fn(dest)
-                    p = subprocess.run([sys.executable, 'check.py'], cwd=dest, capture_output=True, text=True, encoding='utf-8', env={'PYTHONUTF8': '1', 'SYSTEMROOT': 'C:\\Windows'})
+                            target = dest/('output' if project else '결과')/n
+                            target.parent.mkdir(exist_ok=True)
+                            target.write_text(json.dumps(v, ensure_ascii=False), encoding='utf-8')
+                    if project:
+                        class Mapped:
+                            def __truediv__(self, rel):
+                                return dest / {'show_result.py':'run.py', 'lab_steps.py':'app/utils/actions.py', '결과/정한_것.csv':'app/features/decisions.csv'}.get(rel, rel)
+                        fn(Mapped())
+                        want=[w.replace('show_result.py','run.py').replace('lab_steps.py','app/utils/actions.py') for w in want]
+                    else:
+                        fn(dest)
+                    p = subprocess.run([sys.executable, *(['-m', 'app.utils.check'] if project else ['check.py'])], cwd=dest, capture_output=True, text=True, encoding='utf-8', env={**os.environ, 'PYTHONUTF8': '1'})
                     out = (p.stdout + p.stderr).strip()
                     ok = not want
                     good = (p.returncode == 0) == ok and all(w in out for w in want)
                     records.append({'반': course, '시험': f'{which} {name}', '갈래': '-', 'exit': p.returncode, '통과_기대': ok, '기대대로': good, '출력': out.splitlines()[-6:]})
                     if not good:
                         bad.append(f'{course} {which} [{name}] 기대 {want}, 실제 exit {p.returncode}: {out[-600:]}')
-    OUT.write_text(json.dumps(records, ensure_ascii=False, indent=1) + '\n', encoding='utf-8', newline='\n')
-    print(f'2회차 실습3 검사기 시험 {sum(r["기대대로"] for r in records)}/{len(records)} 기대대로 → {OUT.name}')
+    args.out.write_text(json.dumps(records, ensure_ascii=False, indent=1) + '\n', encoding='utf-8', newline='\n')
+    print(f'2회차 검사기 시험 {sum(r["기대대로"] for r in records)}/{len(records)} 기대대로 → {args.out.name}')
     if bad:
         print('\n'.join(bad))
         sys.exit(1)

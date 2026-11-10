@@ -306,6 +306,10 @@ def counts(lab):
 
 def change_rows(course, name):
     folder = B.OUT/course/'실습/02회차/랩'/B.LAB4/'입력/자료_변경분'/f'{D.CHANGE_DATE}_수정본'
+    if course == '통합반':
+        from session2_project import NAMES
+        folder = B.OUT/course/'실습/02회차/랩/graph-lab/data/changes'/D.CHANGE_DATE
+        name = NAMES[name]
     path = folder/name
     if not path.is_file():
         return []

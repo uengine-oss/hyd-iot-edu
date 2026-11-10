@@ -62,7 +62,7 @@ MINE = {   # 내 앞 결과를 쓰는 길(선택 — K-9). START 「출발점」
     'practical-03-review': ('내 조건표를 쓸 때: 제공 입력은 그대로 두고 내 `조건표.csv`를 `결과/내_입력/`에 복사해, 열 이름 · 규칙이 거는 후보가 `입출력_계약.md`와 같은지 먼저 견준 뒤 씁니다. '
                             '제공 코드와 구조 검사는 `결과/내_입력/`에 있는 파일을 기준으로 봅니다. 내 조건표가 없어도 제공된 조건표로 끝까지 할 수 있습니다.'),
 }
-LAB4_INPUT = OUT/'통합반/실습/02회차/랩/02일차_실습4_그래프구현과검증/입력'   # 앞 단계 입력 — 같은 바이트여야 한다
+LAB4_INPUT = OUT/'통합반/실습/02회차/랩/graph-lab/data'
 RULES_LINE = '`AGENTS.md` · `.github/copilot-instructions.md` · `CLAUDE.md` — Codex와 GitHub Copilot이 지키는 작업 규칙(세 파일이 같은 내용). 학생도 함께 읽습니다.'
 SHOW_LINE = '`show_result.py` · `lab_steps.py` — 결과 화면(`python show_result.py`가 채운 단계까지 제공 흐름을 돌려 `결과/보기.html`을 다시 씀). 고치지 않습니다.'
 MEMO = '사건_기록_HYD-02_1027.md'
@@ -1800,17 +1800,18 @@ BUILDERS = {'integrated-03-criteria': criteria_lab, 'integrated-03-judge': judge
 
 
 def criteria_inputs(folder):
-    """통합 03-2 입력/ = 2회차 실습4 입력/의 모델 · 설비 대장과 같은 바이트."""
+    """통합03 기존 형식은 보존하고 통합02의 영문 경로 변환 외 내용이 같은지 본다."""
+    from session2_project import convert
     schema, graph = B.reference_model(False, B.LAB4_INPUT_BRANCH['통합반'])
     F.dump(folder/'입력/schema.json', B.student_schema(schema))
     F.dump(folder/'입력/graph.json', graph)
     write(folder/'입력/자료/설비_대장.csv', D2._csv(D2.ASSET_COLS, D2.asset_rows()))
     diff = []
-    for rel in ['schema.json', 'graph.json', '자료/설비_대장.csv']:
-        src = LAB4_INPUT/rel
+    for rel, current in [('schema.json', 'model/schema.json'), ('graph.json', 'model/graph.json'), ('자료/설비_대장.csv', 'equipment.csv')]:
+        src = LAB4_INPUT/current
         if not src.is_file():
             raise RuntimeError(f'2회차 실습4 입력 {rel}이 없습니다 — 2회차 생성기로 먼저 만듭니다.')
-        if src.read_bytes() != (folder/'입력'/rel).read_bytes():
+        if src.read_text(encoding='utf-8-sig') != convert((folder/'입력'/rel).read_text(encoding='utf-8-sig')):
             diff.append(rel)
     if diff:
         raise RuntimeError(f'통합 03 실습2 입력이 2회차 실습4 입력과 다릅니다: {diff} — 2회차 생성기와 판을 맞춘 뒤 다시 만듭니다.')
