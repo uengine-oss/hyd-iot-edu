@@ -13,7 +13,8 @@ import account_chat as m
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--out', type=Path, required=True)
-args = parser.parse_args()
+options = parser.parse_args()
+real_run = subprocess.run
 
 IDENTITY = '01234567-89ab-cdef-0123-456789abcdef'
 def events(item=None):
@@ -46,12 +47,19 @@ with tempfile.TemporaryDirectory(prefix='hyd-account-trial-') as td:
         out=base/(mode+'-out')
         def fake_run(cmd,**kwargs):
             if 'exec' in cmd:
+                if mode == 'success':
+                    check('계정 채팅에서 호스트 셸 제외', 'features.shell_tool=false' in cmd)
                 if mode=='call_oserror': raise OSError('모형 실행 오류')
-                Path(cmd[cmd.index('-o')+1]).write_text('{"finish":{}}',encoding='utf-8')
+                Path(cmd[cmd.index('-o')+1]).write_text('{"finish":{"summary":"현재 관측 35℃"}}',encoding='utf-8')
                 item={'id':'tool','type':'mcp_tool_call'} if mode=='tool_used' else None
                 return subprocess.CompletedProcess(cmd,0,events(item),b'')
             if mode=='paste_timeout': raise subprocess.TimeoutExpired(cmd,30,output=b'partial')
             if mode=='paste_oserror': raise OSError('모형 붙여넣기 오류')
+            if mode == 'success':
+                # 부모 로케일에 기대지 않고 실제 파이프의 한글/단위가 보존되는지 본다.
+                p = real_run([sys.executable, '-c', 'import sys; sys.stdout.buffer.write(sys.stdin.read().encode("utf-8"))'],
+                             env=kwargs['env'], input=kwargs['input'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                check('자식 stdin UTF-8 바이트 보존', p.returncode == 0 and p.stdout == kwargs['input'])
             return subprocess.CompletedProcess(cmd,0,b'pasted',b'')
         args=['account_chat.py',str(lab),'abcdef012345','--out',str(out),'--codex-home',str(home),
               '--codex-bin','codex.exe','--model','gpt-6-luna','--reasoning','medium','--max-calls','1']
@@ -65,7 +73,7 @@ with tempfile.TemporaryDirectory(prefix='hyd-account-trial-') as td:
         if mode.startswith('paste_'):
             check(mode+' 정확한 실패',report['paste_exit']==('timeout' if mode=='paste_timeout' else 'launch_error'))
 
-out=args.out
+out=options.out
 out.parent.mkdir(parents=True, exist_ok=True)
 out.write_text(json.dumps({'actual_model_calls':0,'tests':results,'passed':len(results),'failed':0},ensure_ascii=False,indent=2),encoding='utf-8')
 print(f'검사 {len(results)} · 실패 0 · 실제 모델 호출 0')

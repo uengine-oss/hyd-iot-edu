@@ -119,10 +119,13 @@ def main():
     (run / 'prompt.txt').write_bytes(prompt)
     cmd = [binary, 'exec', '--skip-git-repo-check', '-s', 'read-only', '--json',
            '--model', a.model, '-c', f'model_reasoning_effort="{a.reasoning}"',
+           '-c', 'features.shell_tool=false',
            '-o', str(run / 'response.txt'), '-']
     started = time.monotonic()
+    child_env = dict(os.environ, CODEX_HOME=str(a.codex_home.resolve()),
+                     PYTHONUTF8='1', PYTHONIOENCODING='utf-8')
     try:
-        p = subprocess.run(cmd, cwd=isolated, env=dict(os.environ, CODEX_HOME=str(a.codex_home.resolve())),
+        p = subprocess.run(cmd, cwd=isolated, env=child_env,
                            input=prompt, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=a.timeout)
         raw, stderr, status = p.stdout, p.stderr, p.returncode
     except subprocess.TimeoutExpired as e:
@@ -142,6 +145,7 @@ def main():
               'tokens': observed.get('tokens'), 'errors': observed.get('errors'), 'actions': observed.get('actions'),
               'status': status, 'elapsed_seconds': round(time.monotonic() - started, 3),
               'thread_id': observed['thread_id'], 'completed': observed['completed'], 'usage': observed.get('usage'),
+              'host_shell_tool': False,
               'limit': a.max_calls, 'attempt': used + 1, 'method': '실제 Codex 계정 호출 뒤 학생 --paste',
               'course_api_call': False, 'pasted': False}
     answer = run / 'response.txt'
@@ -152,7 +156,7 @@ def main():
         report['response_sha256'] = hashlib.sha256(data).hexdigest()
         try:
             pasted = subprocess.run([sys.executable, 'llm_client.py', '--paste', a.digest, '--model', a.model],
-                                    cwd=lab, input=data, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=30)
+                                    cwd=lab, env=child_env, input=data, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=30)
             (run / 'paste.log').write_bytes(pasted.stdout)
             report['paste_exit'] = pasted.returncode
             report['pasted'] = pasted.returncode == 0
