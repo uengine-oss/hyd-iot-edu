@@ -311,7 +311,11 @@ def commands(tool, binary, prompts, model=None, reasoning=None):
 
 def environment(tool, home, key):
     if tool == 'codex':
-        return dict(os.environ, CODEX_HOME=str(home), LLM_API_KEY=key)
+        env = dict(os.environ, CODEX_HOME=str(home), LLM_API_KEY=key)
+        # 데스크톱 Core의 등록 표시는 독립 CLI 자식에 유효하지 않다. 권한 설정은 유지한다.
+        for name in ('CODEX_WINDOWS_REGISTERED_CORE', 'CODEX_WINDOWS_SANDBOX_PACKAGE_FAMILY'):
+            env.pop(name, None)
+        return env
     return {name: os.environ[name] for name in CLAUDE_ENV if name in os.environ} | {'HOME': str(home)}
 
 
@@ -453,6 +457,9 @@ def main():
             write_snapshot(out/f'after{n}.sha256', now)
             t = EXTRACT[a.tool](raw.read_text(encoding='utf-8', errors='replace'))
             if a.tool == 'codex':
+                if 'Failed to create unified exec process' in raw.read_text(encoding='utf-8', errors='replace'):
+                    t['errors'].append('학생 파일 읽기/실행 환경 오류 — 난도 시험으로 인정하지 않음')
+                    status = '실행 환경 오류'
                 for key, requested in [('model', a.codex_model), ('reasoning_effort', a.codex_reasoning)]:
                     if requested and t.get(key) != requested:
                         t['errors'].append(f"{key}: 요청 {requested}, 관측 {t.get(key) or '미확인'} — 시험 조건 불일치")

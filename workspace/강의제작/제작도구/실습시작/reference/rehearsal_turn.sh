@@ -7,6 +7,8 @@
 # resume --last는 실습 폴더(cwd)별로 이어지므로 여러 리허설이 같은 CODEX_HOME을 써도 섞이지 않는다.
 # 기록은 실습 폴더 옆 luna_log/turnNN.{prompt.txt,log,last.txt}. 실습 폴더는 저장소 밖 · Temp 밖에 둔다(코딩랩.md 「함정」).
 set -euo pipefail
+# 독립 CLI는 데스크톱 부모 Core의 등록 프로세스가 아니다. sandbox 설정은 유지한다.
+unset CODEX_WINDOWS_REGISTERED_CORE CODEX_WINDOWS_SANDBOX_PACKAGE_FAMILY
 [ -n "${CODEX_BIN:-}" ] && [ -x "$CODEX_BIN" ] || { echo "[rehearsal_turn] CODEX_BIN이 없거나 실행할 수 없다" >&2; exit 2; }
 [ -n "${CODEX_HOME:-}" ] && [ -f "$(cygpath -u "$CODEX_HOME" 2>/dev/null || echo "$CODEX_HOME")/auth.json" ] || { echo "[rehearsal_turn] CODEX_HOME에 로그인이 없다 — 사용자에게 그 폴더로 codex login을 부탁한다" >&2; exit 2; }
 LAB=$(cd "$1" && pwd); PROMPT_FILE=$(cd "$(dirname "$2")" && pwd)/$(basename "$2"); MODE=${3:-resume}
@@ -27,6 +29,7 @@ if [ "$MODE" = new ]; then
 else
   timeout 1500 "$CODEX_BIN" exec --skip-git-repo-check -c sandbox_mode='"workspace-write"' resume --last "${MODEL_ARGS[@]}" -o "$(cygpath -w "$LAST")" "$(cat "$PROMPT_FILE")" < /dev/null > "$LOG" 2>&1 || echo "[rehearsal_turn] 종료 코드 $? — $LOG 확인" >&2
 fi
+if grep -Fq 'Failed to create unified exec process' "$LOG"; then echo '[rehearsal_turn] 학생 파일 실행 환경 오류 — 다음 턴을 보내기 전에 원인을 확인한다' >&2; exit 2; fi
 # 실행 머리만 읽는다. 답이나 명령 출력에 같은 글자가 있어도 모델 확인으로 세지 않는다.
 HEADER=$(awk '/^--------\r?$/ { section++; next } section == 1 { sub(/\r$/, ""); print } section >= 2 { exit }' "$LOG")
 printf '%s\n' "$HEADER" | grep -m1 '^model:' | sed 's/^/[모델] /' >&2 || true
