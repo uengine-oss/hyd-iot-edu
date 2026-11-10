@@ -1,0 +1,197 @@
+[
+  {
+    "id": "i504-01-001",
+    "segment": "i504-01",
+    "text": "이번 시간에는 지식의 원인 후보를 관측과 대조하고, 다음 점검을 제안하는 에이전트를 만들겠습니다.",
+    "ops": [
+      [
+        "point",
+        "README.md 제목"
+      ]
+    ],
+    "planned_action": "시작 상태 계획: 웹 VS Code에 root-cause-lab 폴더만 열려 있다. 이전 실행 결과·대화·오류가 없는 탐색기와 README.md를 확인한 뒤 시작한다. 직전 포털 실습의 성공 결과나 파일은 전제하지 않는다.",
+    "status": "준비·미실행"
+  },
+  {
+    "id": "i504-01-002",
+    "segment": "i504-01",
+    "text": "클래스룸에서 받은 압축 파일을 풀고, 안쪽의 실습 폴더를 VS Code로 열어 주세요.",
+    "ops": [],
+    "planned_action": "받기·압축 풀기·네이티브 폴더 열기는 이 구간에서 조작하지 않는다. 가이드 s1의 root-cause-lab.zip → root-cause-lab 폴더를 안내하는 한 문장이다. 가이드는 형제 파일이므로 상위 폴더를 열지 않는다.",
+    "status": "준비·미실행"
+  },
+  {
+    "id": "i504-01-003",
+    "segment": "i504-01",
+    "text": "왼쪽 탐색기, Explorer에서 시작 안내를 열겠습니다.",
+    "ops": [
+      [
+        "click",
+        "Explorer README.md"
+      ],
+      [
+        "key",
+        "Enter"
+      ]
+    ],
+    "planned_action": "README.md 행 선택 → Enter. 목적·폴더 역할·첫 명령이 보이는지 확인한다.",
+    "status": "준비·미실행"
+  },
+  {
+    "id": "i504-01-004",
+    "segment": "i504-01",
+    "text": "여기서 자료 폴더와 우리가 구현할 핵심 기능의 자리를 보세요. 제공된 화면과 공통 처리 기능을 함께 사용합니다.",
+    "ops": [
+      [
+        "point",
+        "README.md 폴더 표"
+      ]
+    ],
+    "planned_action": "README.md 폴더 표에서 data/ → app/features/ → app/ui/·app/utils/ 순서로 짚는다. output/은 실행 뒤 생기는 결과임을 표에서 구별한다. 아직 output/이나 구현 결과가 있다고 말하지 않는다.",
+    "status": "준비·미실행"
+  },
+  {
+    "id": "i504-01-005",
+    "segment": "i504-01",
+    "text": "AI가 지킬 작업 원칙도 열어 보겠습니다.",
+    "ops": [
+      [
+        "click",
+        "Explorer AGENTS.md"
+      ],
+      [
+        "key",
+        "Enter"
+      ]
+    ],
+    "planned_action": "AGENTS.md 행 선택 → Enter. 자료와 제공 기능을 보존하고 구현 범위를 지키라는 항목을 보이게 한다.",
+    "status": "준비·미실행"
+  },
+  {
+    "id": "i504-01-006",
+    "segment": "i504-01",
+    "text": "이 원칙을 지키면서 자료를 먼저 파악하겠습니다. 근거가 없는 업무 요구는 사람이 정해야 합니다.",
+    "ops": [
+      [
+        "point",
+        "AGENTS.md 자료 파악·업무 요구"
+      ]
+    ],
+    "planned_action": "AGENTS.md의 자료 파악 우선·미정 업무 요구 확인 항목을 짚는다. 전달 요구의 답이나 choices.csv 행을 여기서 대신 정하지 않는다.",
+    "status": "준비·미실행"
+  },
+  {
+    "id": "i504-01-007",
+    "segment": "i504-01",
+    "text": "아래 터미널에서 현재 위치가 이 실습 폴더인지 먼저 보겠습니다.",
+    "ops": [
+      [
+        "click",
+        "Application Menu"
+      ],
+      [
+        "click",
+        "Terminal"
+      ],
+      [
+        "click",
+        "New Terminal"
+      ]
+    ],
+    "planned_action": "Application Menu → Terminal → New Terminal. 시작 경고가 없는 cmd 터미널과 root-cause-lab 위치를 확인한다. 위치가 다르면 다음 명령을 입력하지 않고 폴더 상태를 바로잡는다.",
+    "status": "준비·미실행"
+  },
+  {
+    "id": "i504-01-008",
+    "segment": "i504-01",
+    "text": "시작 안내에 있는 첫 명령으로 제공 자료와 읽기 도구를 확인하겠습니다.",
+    "ops": [
+      [
+        "type",
+        "python run.py --inspect"
+      ],
+      [
+        "key",
+        "Enter"
+      ]
+    ],
+    "planned_action": "터미널에 python run.py --inspect를 붙여넣고 Enter. 출력이 끝날 때까지 기다린다. 명령은 workflow.main의 inspect 분기이며 모델을 부르지 않는다. 오류가 나면 성공을 말하지 않고 실제 오류를 기록한다.",
+    "status": "준비·미실행"
+  },
+  {
+    "id": "i504-01-009",
+    "segment": "i504-01",
+    "text": "출력에서 기본 요청을 찾아보겠습니다.",
+    "ops": [
+      [
+        "point",
+        "터미널 default_request"
+      ]
+    ],
+    "planned_action": "실제 출력의 default_request를 확인한 뒤 진행한다. 기대 입력은 ALT-hyd03-0289-060b이며 현재 실행 출력은 미관찰이다. 노드·관계·요청 수는 실제 출력을 받기 전 낭독에 넣지 않는다.",
+    "status": "준비·미실행"
+  },
+  {
+    "id": "i504-01-010",
+    "segment": "i504-01",
+    "text": "왼쪽 자료 폴더에서 요청 표를 열고 같은 요청을 찾겠습니다.",
+    "ops": [
+      [
+        "click",
+        "Explorer data/requests.csv"
+      ],
+      [
+        "key",
+        "Enter"
+      ],
+      [
+        "key",
+        "Ctrl+F"
+      ],
+      [
+        "type",
+        "ALT-hyd03-0289-060b"
+      ],
+      [
+        "key",
+        "Escape"
+      ]
+    ],
+    "planned_action": "data/requests.csv를 열어 헤더의 열 순서를 먼저 읽는다. Ctrl+F로 실제 default_request 값을 찾아 같은 행의 값을 열 순서에 맞춰 읽는다. 계획 입력 ALT-hyd03-0289-060b는 원본 37행이다. 한글과 한 행 전체를 읽을 수 있도록 편집기 폭·줄바꿈을 확인한다.",
+    "status": "준비·미실행"
+  },
+  {
+    "id": "i504-01-011",
+    "segment": "i504-01",
+    "text": "이 줄에서 설비와 기준시각을 함께 보세요. 뒤에서 읽는 관측도 이 대상과 시각에 맞아야 합니다.",
+    "ops": [
+      [
+        "point",
+        "requests.csv asset"
+      ],
+      [
+        "point",
+        "requests.csv as_of"
+      ]
+    ],
+    "planned_action": "같은 행의 asset → as_of를 짚는다. 원본 값 HYD-03, 2026-10-10T10:45:31+09:00. 현재 시각이나 현장 실시간 값으로 부르지 않는다. 화면에 같은 행이 확인된 뒤에만 발화한다.",
+    "status": "준비·미실행"
+  },
+  {
+    "id": "i504-01-012",
+    "segment": "i504-01",
+    "text": "받는 역할과 질문도 보겠습니다. 원인 후보와 다음 점검 항목을, 근거와 확인하지 못한 내용까지 함께 검토하는 요청입니다.",
+    "ops": [
+      [
+        "point",
+        "requests.csv recipient"
+      ],
+      [
+        "point",
+        "requests.csv question"
+      ]
+    ],
+    "planned_action": "같은 행의 recipient → question을 짚는다. 원본 값 설비보전팀, 원인 후보와 다음 점검 항목을 근거·미확인과 함께 검토. 원인 판정이나 점검 순서의 답은 아직 없다.",
+    "status": "준비·미실행"
+  }
+]
