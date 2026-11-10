@@ -12,10 +12,10 @@ OTHER_DOCS = ['pm_02_periodic_inspection.md', 'pr_07_spare_parts_standard.md', '
 
 
 def owner(where):
-    """그 파일을 정할 자리로 가진 단계 — 「N단계 「이름」의 정할 자리」(STEPS는 이 파일 끝에서 정한다)."""
+    """그 파일을 빈 틀로 가진 단계 — 「N단계 「이름」의 빈 틀」(STEPS는 이 파일 끝에서 정한다)."""
     rel = str(where).split(':')[0].split(' ')[0]
     hit = next((x for x in STEPS if rel in x['slots']), None)
-    return f' — python run.py {hit["command"]}에서 쓰는 정할 자리' if hit else ''
+    return f' — python run.py {hit["command"]}에서 쓰는 빈 틀' if hit else ''
 
 
 def guard(fn):

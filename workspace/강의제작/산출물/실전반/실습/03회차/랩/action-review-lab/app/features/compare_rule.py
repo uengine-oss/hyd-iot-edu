@@ -7,4 +7,4 @@ kept(읽기만): [{'sop': 후보 ID, 'inputs': 판단 입력 일곱 개, 'warnin
 
 
 def choose_compared(kept):
-    raise NotImplementedError('정할 지점: app/features/compare_rule.py choose_compared')
+    raise NotImplementedError('빈 틀: app/features/compare_rule.py choose_compared')

@@ -395,16 +395,16 @@ def empty_tables(md):
 
 
 def slot_errors():
-    """정할 자리의 꼴 — 제공 코드(app/utils/extract.py)의 검사로 본다. 비어 있는 자리는 결과 화면의 단계 띠에서 짚으므로 여기서는 꼴만."""
+    """빈 틀의 꼴 — 제공 코드(app/utils/extract.py)의 검사로 본다. 비어 있는 자리는 결과 화면의 단계 띠에서 짚으므로 여기서는 꼴만."""
     from app.utils import extract as X
     out = []
     for fn in (X.settings, X.expected_rows, X.decision_rows, lambda: X.rule_rows(TASK), (X.role_rows if PRACTICAL else (lambda: None))):
         try:
             fn()
         except X.Problem as e:
-            out.append(f'정할 자리: {e}')
+            out.append(f'빈 틀: {e}')
         except OSError as e:
-            out.append(f'정할 자리 파일을 읽지 못함: {e}')
+            out.append(f'빈 틀 파일을 읽지 못함: {e}')
     return out
 
 
@@ -540,8 +540,8 @@ def chosen_errors(root):
 import hashlib as _h
 _PROVIDED = {
  "app/ui/render.py": "794a7c0de17bbbf7dd6e2896397c1db32cb4079b6fe7dfa88dc67160c2a0d81e",
- "app/utils/actions.py": "514b8bab3ca6edfea6fa9fe6652c091c89e7071c0ead5b31003f03c5f2c12102",
- "app/utils/extract.py": "8e9e8b199eea3ae695ead4d2f42df7978063a64b6230ee23a12cdf5c2bb46b23",
+ "app/utils/actions.py": "121cd0ace8afd9c32ead29a50d7279a59e985bcc0ea39026f388e5376f2396ab",
+ "app/utils/extract.py": "3887b380b2d85e2171007dea0c2e839250b3e9d2bf5cc54be4f1105e216a5fe1",
  "app/utils/llm_client.py": "53358ba7b090ab65dc800d877b50e9a495289734f039df2504e8ea03bb0b697a",
  "app/utils/results.py": "1c5b0596745e9ac1e9b7f06d84c7463d99720597edcf46801d32a51e640ae86b",
  "run.py": "27ff4eec7f60abedd1776b75be9335dc3617e432ea4cc758c0f9494ecc01da78"

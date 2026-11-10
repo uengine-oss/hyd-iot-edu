@@ -1,7 +1,7 @@
 """강사 참조 — 문서 지식 네 새 프로젝트(build_session4_projects.py)의 갈래 실행 · 검사기 고의 손상 · 받은 ZIP 첫 실행. 학생 폴더 · ZIP에 넣지 않는다. AI 호출 없음.
 
 옛 구조의 강사 참조(reference/session3_docs/run_reference.py)와 같은 갈래(fills.py)와 같은 판정을 새 경로에서 돌린다:
-1. 추출 갈래 — 두 반 × 지점5(가 · 나 · 다) × 지점6(가 · 나) = 12. 갈래마다 정할 자리(fills.py, 경로만 옮김)를 시작 폴더 사본에 넣고 run1 응답 기록으로
+1. 추출 갈래 — 두 반 × 지점5(가 · 나 · 다) × 지점6(가 · 나) = 12. 갈래마다 빈 틀 채움(fills.py, 경로만 옮김)을 시작 폴더 사본에 넣고 run1 응답 기록으로
    `python run.py trial · extract · review · rules (· collect | other)`를 돌린다. 본다: R4의 맞는 정도 = 지점5의 뜻, 제조사 지침의 「사내 기준이 정하지 않은 항목」 줄의 결정 = 지점6의 뜻,
    검토 결과 구조 검사 통과, 그리고 옛 구조 갈래 산출(reference/session3_docs/갈래/추출_*)과 경로만 다르고 같은지(실행 시각 칸 빼고).
 2. 그래프 갈래 — 두 반 × 지점7(가 · 나) = 4, 실제 Neo4j(사본마다 `python run.py db`, 끝나면 컨테이너를 지운다). 본다: 정기 점검표 지식이 핀 세척에 이어지는지 = 지점7의 뜻,
@@ -161,20 +161,20 @@ C = 'app/features/decisions.csv'
 DAMAGE_EXTRACT = [
     ('정한_것 근거가 파일:줄이 아님', C, lambda t: t.replace('data/contract.md:41', 'data/contract.md 4절'), '근거에 파일:줄이 없습니다'),
     ('제공 코드를 고침', 'app/utils/extract.py', lambda t: t + '\n# 고침\n', '제공 파일이 바뀌었습니다'),
-    ('결정 표에 없는 결정 말', 'app/features/review_decisions.csv', lambda t: t.replace(',채택,', ',승인,', 1), '정할 자리'),
-    ('조건 대조의 맞는 정도가 계약 값이 아님', 'app/features/rule_links.csv', lambda t: t.replace(',일치,', ',맞음,', 1) if ',일치,' in t else t.replace(',불일치,', ',안 맞음,', 1), '정할 자리'),
+    ('결정 표에 없는 결정 말', 'app/features/review_decisions.csv', lambda t: t.replace(',채택,', ',승인,', 1), '빈 틀'),
+    ('조건 대조의 맞는 정도가 계약 값이 아님', 'app/features/rule_links.csv', lambda t: t.replace(',일치,', ',맞음,', 1) if ',일치,' in t else t.replace(',불일치,', ',안 맞음,', 1), '빈 틀'),
     ('검토 결과의 인용 한 글자', 'output/reviews/HM-8_1.1_review.json', lambda t: t.replace('"quote": "1. 설비를 정지하고', '"quote": "1. 설비을 정지하고', 1), 'HM-8_1.1_review.json 계약 오류'),
     ('검토 결과의 결정과 상태가 어긋남', 'output/reviews/SR-04_2024_review.json', lambda t: t.replace('"status": "pending"', '"status": "approved"', 1), 'SR-04_2024_review.json 계약 오류'),
 ]
 DAMAGE_GRAPH = [
-    ('연결 규칙에 모델에 없는 ID', 'app/features/link_rules.csv', lambda t: t.replace('SOP-COOL-14 SOP-COOL-15', 'SOP-COOL-14 SOP-COOL-99', 1), '정할 자리'),
+    ('연결 규칙에 모델에 없는 ID', 'app/features/link_rules.csv', lambda t: t.replace('SOP-COOL-14 SOP-COOL-15', 'SOP-COOL-14 SOP-COOL-99', 1), '빈 틀'),
     ('제공 결과 화면을 고침', 'app/utils/actions.py', lambda t: t + '\n# 고침\n', '제공 파일이 바뀌었습니다'),
     ('내보내기에 끝점 없는 관계', 'output/knowledge_export.json', lambda t: t.replace('"rels": [', '"rels": [{"type": "X", "a": "nope-a", "b": "nope-b", "props": {}},', 1), '끝점이 없는 관계'),
     ('고른 것 빈 칸', C, lambda t: t.rstrip('\n') + '\n빈 지점,,,\n', '빈 칸'),
     ('내보내기에 같은 id의 노드 둘', 'output/knowledge_export.json', lambda t: t.replace('"nodes": [', '"nodes": [{"labels": ["Asset"], "props": {"id": "HYD-01"}},', 1), '같은 id의 노드'),
     ('적재 파일에 전체 삭제', 'output/load.cypher', lambda t: t + 'MATCH (n) DETACH DELETE n;\n', '전체를 지우는 문장'),
     ('적재 파일에 보류 후보', 'output/load.cypher', lambda t: t + 'MERGE (k:`Knowledge` {id: "HM-9@1.0:HM-9-M008"});\n', '승인(approved)이 아닌 후보 id'),
-]   # 관계 방향은 제공 코드가 정해 쓴다(지식 → 대상) — 정할 자리로는 방향을 바꿀 수 없어 손상 시험에 두지 않는다(옛 참조와 같음)
+]   # 관계 방향은 제공 코드가 정해 쓴다(지식 → 대상) — 빈 틀로는 방향을 바꿀 수 없어 손상 시험에 두지 않는다(옛 참조와 같음)
 DAMAGE_CARD = [('카드 제목 하나 없음', 'output/work_card_SOP-COOL-14.md', lambda t: t.replace('## 승인', '## 승인자', 1), '제목')]
 
 

@@ -81,7 +81,7 @@ PATHS = ([('결과/내_입력', 'app/features/my_inputs'), ('입력/검토결과
             ("'검토결과'", "'reviews'"), ('"검토결과"', '"reviews"'), ("'결과' / ", "'app/features' / "), ("'입력'", "'data'"), ("'자료'", "'data/documents'")])
 COMMANDS_TEXT = [('START.md 「학생이 정할 것」의 그 자리 이름', '사람이 결정할 지점의 이름'),
                  ('`python show_result.py`가 랩 DB에 올리는 것', '`python run.py db`가 랩 DB에 올리는 것'), ('`python show_result.py`의 마지막 단계가 쓴다', '`python run.py export`가 쓴다'),
-                 ('`python show_result.py`가 채운 자리까지 제공 코드', '명령마다(`python run.py <명령>`) 그 명령이 쓰는 정할 자리까지 제공 코드'),
+                 ('`python show_result.py`가 채운 자리까지 제공 코드', '명령마다(`python run.py <명령>`) 그 명령이 쓰는 빈 틀까지 제공 코드'),
                  ('`현재값 필요`)과 질문 3 · 카드', '`현재값 필요`)과 카드'), ('python show_result.py', 'python run.py'), ('show_result.py', 'run.py'), ('python check.py', 'python run.py check'), ('`check.py`', '`python run.py check`'),
                  ('check.py', 'app/utils/check.py'), ('python lab_db.py', 'python run.py db'), ('lab_db.py', 'app/utils/db.py'),
                  ('python lab_cypher.py', 'python -m app.utils.cypher'), ('lab_cypher.py', 'app/utils/cypher.py'), ('doc_extract.py', 'app/utils/extract.py'),
@@ -108,7 +108,7 @@ def convert(text, code=False):
         text = text.replace(old, new)
     for old, new in COMMANDS_TEXT:
         text = text.replace(old, new)
-    return text
+    return P.fill_term(text)   # 옛 「정할 자리」(채울 파일)는 「빈 틀」 — 결정 지점의 이름 「정할 지점」과 나눈다
 
 
 RESIDUE = re.compile(r'(결과|입력|자료)/|[가-힣](?:app|output|data|reviews)/|show_result|lab_steps|doc_extract|doc_graph|START\.md|랩_연결|\.github|CLAUDE\.md')
@@ -329,8 +329,8 @@ def actions_source(template, fill, commands):
     for old, new in fill.items():
         text = text.replace(old, new)
     text = convert(text, code=True)
-    text = text.replace("    return f' — {hit[\"no\"]}단계 「{hit[\"name\"]}」의 정할 자리' if hit else ''",
-                        "    return f' — python run.py {hit[\"command\"]}에서 쓰는 정할 자리' if hit else ''")
+    text = text.replace("    return f' — {hit[\"no\"]}단계 「{hit[\"name\"]}」의 빈 틀' if hit else ''",
+                        "    return f' — python run.py {hit[\"command\"]}에서 쓰는 빈 틀' if hit else ''")
     text = re.sub(r'^""".*?"""', lambda m: f'"""{fill["__TITLE__"]} — 명령마다 한 기능을 실행해 결과를 output/result.html에 보인다. 제공 파일 — 고치지 않는다."""', text, count=1, flags=re.S)
     for old, new in ACTION_TEXT:
         text = text.replace(old, new)
@@ -493,7 +493,7 @@ def run_source(extract, zip_name=''):
             .replace('__LLM_RUN__', "\n    if args.count:\n        return llm_client.main(['--count'])"))
 
 
-# 기능 이름 → (결과 화면 제목, 옛 단계 함수, 그 기능이 읽는 정할 자리)
+# 기능 이름 → (결과 화면 제목, 옛 단계 함수, 그 기능이 읽는 빈 틀)
 EXTRACT_COMMANDS = {
     False: {'sources': ('사건과 문서 묶음', 'look', []), 'connect': ('수업 모델 연결', 'connect', []),
             'expected': ('기대 항목', 'expect', ['app/features/expected.csv']), 'split': ('나누는 단위', 'split', ['app/features/split.json']),
@@ -543,7 +543,7 @@ def build_project(key, src, L, folder):
               .replace('는 data/reviews에 없는 짝', '는 읽은 검토 결과(app/features/my_inputs/reviews가 있으면 그것, 없으면 data/reviews)에 없는 짝'))
         write(folder / 'app/utils/cypher.py', convert((HERE / 'lab_cypher.py').read_text(encoding='utf-8'), code=True))
         write(folder / 'app/utils/db.py', GP.db_source().replace('새 DB는 비어 있으니, 저장해 둔 적재 · 수정 파일을 같은 순서로 다시 실행하세요.', '설비 모델 · 조치 기준은 이어서 다시 올립니다.')
-              .replace("print('새로 만든 랩 DB라 비어 있습니다. 적재부터 다시 실행하세요.')", "print('새로 만든 랩 DB라 정할 자리의 적재가 없습니다. 이어서 python run.py load → python run.py other를 실행합니다.')"))
+              .replace("print('새로 만든 랩 DB라 비어 있습니다. 적재부터 다시 실행하세요.')", "print('새로 만든 랩 DB라 빈 틀대로 올린 적재가 없습니다. 이어서 python run.py load → python run.py other를 실행합니다.')"))
         commands = GRAPH_COMMANDS[practical]
         fill = {'__TITLE__': L['title'], '__PRACTICAL__': str(practical), '__TASK__': TASK, '__LATER__': repr(BD.LATER_DOCS),
                 '__ITEMS__': repr(BD.CARD_HEADINGS if practical else None), '__KIND__': 'graph'}
@@ -579,11 +579,11 @@ def rules_for(key):
 
 
 RULES = {   # AGENTS.md에 더하는 이 랩의 작업 경계(코딩랩 K-6 — 정답 · 단계표 없음)
-    'extract': ('- 정할 자리는 `app/features/`의 파일이다. 후보 · 검토 결과 · 응답 기록 · 요청 글은 제공 코드가 `output/`에 쓴다. 응답 기록(`output/model_responses/`)은 고치지 않는다.\n'
+    'extract': ('- 빈 틀은 `app/features/`의 파일이다. 후보 · 검토 결과 · 응답 기록 · 요청 글은 제공 코드가 `output/`에 쓴다. 응답 기록(`output/model_responses/`)은 고치지 않는다.\n'
                 '- 수업 모델을 부르는 실행(`python run.py connect` · `trial` · `extract`__OTHER__)은 사람이 자기 터미널에서 한다. 키 · 접속 값을 채팅 · 파일 · 기록에 적지 않는다.\n'
                 '- 지식 후보는 모델의 답에서 만든다. `data/`의 SOP 구조 · 조건표를 후보로 옮기지 않고, 조건표 · __JUDGED__는 바꾸지 않는다.\n'
                 '- 어느 문서를 따를지, 어느 원문을 조건의 근거로 둘지는 사람이 원문 줄을 근거로 정한다.'),
-    'graph': ('- 정할 자리는 `app/features/`의 파일이다. 적재 · 조회 · 내보내기는 제공 코드가 하고 그 결과를 `output/`에 쓴다.\n'
+    'graph': ('- 빈 틀은 `app/features/`의 파일이다. 적재 · 조회 · 내보내기는 제공 코드가 하고 그 결과를 `output/`에 쓴다.\n'
               '- 승인(`approved`) 후보만 적재한다. 기존 ID를 바꾸거나 모델에 없는 ID를 지어내지 않는다.\n'
               '- 현재값(재고 · 작업지시 상태 · 센서 값)은 그래프에 넣지 않고 읽을 원천을 가리킨다.\n'
               '- 다른 문서의 조건을 이을지, 무엇을 어느 기존 ID에 이을지는 사람이 원문 줄을 근거로 정한다.'),
@@ -644,7 +644,7 @@ def extract_guide(key, event, facts):
     practical = key == 'practical-03-extract'
     name = LABS[key]['name']
     judged = '조치 검토 결과' if practical else '판정 결과'
-    files_note = (f'`README.md`에서 폴더 역할을 봅니다. `data/`는 문서 묶음과 조건표 · SOP 구조 · {judged}, `app/features/`는 내가 Codex와 채울 정할 자리입니다. '
+    files_note = (f'`README.md`에서 폴더 역할을 봅니다. `data/`는 문서 묶음과 조건표 · SOP 구조 · {judged}, `app/features/`는 내가 Codex와 채울 빈 틀입니다. '
                   '문서를 읽고 나누어 보내고 답을 지식 후보로 바꾸는 일은 제공 코드가 합니다. `AGENTS.md`는 Codex가 지킬 공통 원칙이고, 파일의 모양과 칸의 뜻은 `data/contract.md`에 있습니다. '
                   + FINGERPRINT)
     user = ('이 답은 보전 야간조가 핀 세척 전에 준비 · 금지 · 완료를 원문으로 되짚고, 설비보전팀장이 작업지시를 승인할 때 씁니다.' if practical else
@@ -709,7 +709,7 @@ def extract_guide(key, event, facts):
         s.append(section('문서를 나누는 단위 정하기', [
             split_why,
             'Codex에게 단위(절 · 절차 · 쪽 · 글자)마다 핀 세척 절차가 몇 조각에 걸치는지 물어봅니다. 정하는 것은 내가 하고, 단위 · 글자 상한을 `app/features/split.json`에, '
-            '고른 까닭을 `app/features/decisions.csv`에 한 줄 적습니다. 칸의 뜻은 `data/contract.md` 「정할 자리」에 있습니다.'],
+            '고른 까닭을 `app/features/decisions.csv`에 한 줄 적습니다. 칸의 뜻은 `data/contract.md` 「빈 틀」에 있습니다.'],
             prompt='단위(절 · 절차 · 쪽 · 글자)마다 핀 세척 절차가 몇 조각에 걸치는지 보여 줘. 내가 단위와 글자 상한을 고르면 app/features/split.json의 「단위」 · 「글자_상한」에 넣고, 고른 까닭을 decisions.csv에 한 줄 적어 줘. 다른 칸은 비워 둬.',
             cmd='python run.py split', check='문서마다 조각 수와 줄 범위가 보이고, 핀 세척 절차가 한 조각 안에 있습니다. 절차가 두 조각으로 갈라지면 단위나 상한을 바꿔 다시 봅니다.', ai=True))
         s.append(section('요청 글 쓰고 한 조각으로 시험하기', [prompt_why, prompt_how],
@@ -750,10 +750,10 @@ def extract_guide(key, event, facts):
             prompt='결과 화면에서 짝 없는 칸 하나가 원문의 어느 줄인지 짚고 실제 누락인지 여러 절을 합쳐 적은 것인지 설명해 줘. 내가 판단하면 review.md 「다른 문서에 적용」 표에 그 문서의 행을 적어 줘. 다른 파일은 바꾸지 마.',
             cmd='python run.py other', check='문서마다 지식 후보 · 찾지 못한 인용 수와 짝 표가 보이고, 기록에 센 수가 있습니다. 고치는 일은 마지막 단계에서 합니다.', ai=True))
     s.append(section('고치고 저장해 다시 열기', [
-        '앞에서 적어 둔 누락 · 근거 없는 내용 생성 가운데 하나를 정할 자리(나누는 단위 · 요청 글 · 결정 표)에서 고치고, 그 문서를 `split.json` 「다시_보낼_문서」에 적어 아래 명령으로 다시 셉니다. '
+        '앞에서 적어 둔 누락 · 근거 없는 내용 생성 가운데 하나를 빈 틀(나누는 단위 · 요청 글 · 결정 표)에서 고치고, 그 문서를 `split.json` 「다시_보낼_문서」에 적어 아래 명령으로 다시 셉니다. '
         '이미 지식 후보가 있는 다른 문서는 그때 만든 그대로 둡니다. 다시 센 수를 `review.md`에 적습니다.',
         '**파일 → 모두 저장**을 선택하고 폴더를 닫았다 다시 연 뒤 구조 검사를 실행합니다. `review.md` 끝에 기준일 · 저장 시점 · 확인하지 못한 점을 적고, 응답 기록(`output/model_responses/`)까지 실습 폴더 전체를 USB나 개인 클라우드에 보관합니다(재부팅하면 학교 PC 파일이 초기화될 수 있습니다).'],
-        prompt='구조 검사 출력이 가리키는 파일과 칸을 찾아 어느 정할 자리에서 생긴 문제인지 설명해 줘. 원자료 · 응답 기록 · 검사 기준은 바꾸지 마. 내가 원인을 확인하면 필요한 부분만 고쳐 줘.',
+        prompt='구조 검사 출력이 가리키는 파일과 칸을 찾아 어느 빈 틀에서 생긴 문제인지 설명해 줘. 원자료 · 응답 기록 · 검사 기준은 바꾸지 마. 내가 원인을 확인하면 필요한 부분만 고쳐 줘.',
         cmd='python run.py extract', check='고친 문서의 지식 후보 수가 바뀐 만큼 기대 항목과 다시 견줍니다.',
         followup=[('python run.py check', '「구조 검사 통과」가 보이면 저장한 결과의 구조가 맞습니다. 「구조 확인 필요」 아래 줄마다 어느 파일을 채울지 보고 채운 뒤 다시 실행합니다. 구조가 맞아도 무엇을 채택할지는 원문과 견줘 판단합니다.')]))
     return s
@@ -764,7 +764,7 @@ def graph_guide(key, event, facts):
     name = LABS[key]['name']
     data_note = ('`README.md`에서 폴더 역할을 봅니다. `data/reviews/`는 문서에서 뽑은 지식 후보를 원문과 견줘 결정을 적은 검토 결과로, 문서 지식을 추출 · 검토하는 실습의 결과와 같은 꼴입니다. '
                  '`data/model/`은 설비 모델, `data/sop.json` · `data/conditions.csv`는 조치 기준, `data/documents/`는 원문입니다. 적재 · 조회 · 내보내기는 제공 코드가 하고, '
-                 '`app/features/`에는 무엇을 어디에 이을지 내가 정할 자리가 있습니다. `AGENTS.md`는 Codex의 공통 작업 원칙입니다.')
+                 '`app/features/`에는 무엇을 어디에 이을지 내가 정해 채우는 빈 틀이 있습니다. `AGENTS.md`는 Codex의 공통 작업 원칙입니다.')
     mine = ('내 앞 결과를 쓰는 것은 선택입니다. 쓸 때는 형식이 `data/contract.md` 「입력」과 같은지 먼저 견주고, `app/features/my_inputs/`에 `data/`와 같은 이름 · 같은 자리로 복사합니다(검토 결과는 `my_inputs/reviews/`'
             + (', 이 사건의 작업 조건은 추출 실습의 `output/selected_task.json`을 `my_inputs/reviews/selected_task.json`으로' if practical else '') + '). '
             '넣은 검토 결과는 제공 검토 결과를 통째로 대신하므로, 내 결과에 없는 문서의 행은 연결 규칙에서 뺍니다. 제공 입력은 그대로 둡니다.')
@@ -779,7 +779,7 @@ def graph_guide(key, event, facts):
     ask_target = '02에서 적은 카드 항목 하나(예: 금지 · 제한)' if practical else '03에서 적은 다섯 질문 가운데 하나'
     shape_step = section('그래프 모양과 ID 정하기', [
         shape, '`app/features/graph_shape.json`에 문서 · 판본 · 절 · 지식과 그 관계의 이름 · 뜻, 판본을 따로 둘지(칸 이름 「판을_따로_둠」), 새 대상의 ID를 짓는 꼴을 Codex와 하나씩 정하고 그 까닭을 `decisions.csv`에 적습니다. '
-        f'Codex에게 {ask_target}를 이 모양에 대어 어느 노드 · 관계를 따라 답이 나오는지 짚게 합니다. 칸의 뜻은 `data/contract.md` 「정할 자리」에 있습니다.'],
+        f'Codex에게 {ask_target}를 이 모양에 대어 어느 노드 · 관계를 따라 답이 나오는지 짚게 합니다. 칸의 뜻은 `data/contract.md` 「빈 틀」에 있습니다.'],
         prompt=f'app/features/graph_shape.json의 칸을 나와 함께 채우자. 칸마다 네 안과 그 까닭을 보이면 내가 고를게. 설비 모델이 쓰는 종류 이름은 쓰지 말고, 고른 뒤에는 {ask_target}가 이 모양에서 어느 노드 · 관계를 따라 답하는지 보여 줘. 까닭은 decisions.csv에 한 줄 적어 줘.',
         cmd='python run.py plan', check='적재하지 않고 센 노드 수와 적재하지 않는 보류 · 제외 수가 보이고, 「같은 ID에 서로 다른 대상이 겹침」이 없습니다. 겹치면 그 ID들이 어느 문서 · 판본 · 절인지 보고 ID 꼴에 빠진 자리를 더합니다.', ai=True)
     load_step = section('승인 지식을 기존 ID에 잇고 적재하기', [
@@ -797,12 +797,12 @@ def graph_guide(key, event, facts):
     save_step = section('내보내고 저장해 다시 열기', [
         '내보내기는 지금 랩 DB의 그래프와 추가 자료가 필요한 질문을 한 파일로 남깁니다. 짚은 문제를 고친 뒤 아래 차례로 실행합니다: 내보내기 → 구조 검사 → **파일 → 모두 저장** → 폴더를 닫았다 다시 열기 → 랩 DB 다시 켜기 → 결과 다시 보기.',
         f'`{rec}` 끝에 기준일 · 저장 시점 · 확인하지 못한 점을 적고 실습 폴더 전체를 USB나 개인 클라우드에 보관합니다.'],
-        prompt='구조 검사 출력이 가리키는 파일 · 노드 · 관계를 찾아 어느 정할 자리에서 생긴 문제인지 설명해 줘. 원자료와 검사 기준은 바꾸지 마. 내가 원인을 확인하면 필요한 부분만 고쳐 줘.',
+        prompt='구조 검사 출력이 가리키는 파일 · 노드 · 관계를 찾아 어느 빈 틀에서 생긴 문제인지 설명해 줘. 원자료와 검사 기준은 바꾸지 마. 내가 원인을 확인하면 필요한 부분만 고쳐 줘.',
         extra=SG.commands([('python run.py export', '내보내기의 노드 · 관계 · 추가 자료가 필요한 질문 수가 랩 DB 수와 같고, 이어지는 구조 검사 출력이 보입니다.'),
                            ('python run.py check', '「구조 검사 통과」가 보이면 저장해 닫습니다. 「구조 확인 필요」 아래 줄마다 남은 일을 채운 뒤 다시 실행합니다.')])
         + '<p>' + F.inline('폴더를 다시 연 뒤 랩 DB를 다시 켭니다.') + '</p>',
         cmd='python run.py db', check='같은 폴더의 랩 DB가 켜집니다. ' + docker_off,
-        when_new=[('python run.py load', '정할 자리대로 다시 적재합니다.'), ('python run.py other', '다른 문서의 조건까지 다시 적재합니다.')],
+        when_new=[('python run.py load', '빈 틀대로 다시 적재합니다.'), ('python run.py other', '다른 문서의 조건까지 다시 적재합니다.')],
         followup=[reopen_query])
     codex_step = section('Codex와 기존 ID 찾기' if not practical else 'Codex와 핀 세척 근거와 기존 ID 찾기', [
         f'문서 속 대상은 모델의 ID와 다른 이름 · 번호로 적혀 있을 수 있어, 어느 기존 ID를 가리키는지 먼저 봅니다. Codex 확장 아이콘을 눌러 채팅을 열고 로그인합니다. 계정이 없거나 막히면 클래스룸에서 따로 받는 `{name}-completed.zip`을 실행해 볼 수 있습니다.',
@@ -933,7 +933,7 @@ def build(key, legacy_folder, L, parent, event):
     hand = legacy_cost['손_행'] * F.ROW_MIN + legacy_cost['근거_행'] * F.EVIDENCE_MIN
     plan = dict(cost, 손_행_정할자리=legacy_cost['손_행'], 근거_행_정할자리=legacy_cost['근거_행'], 계획_분=round(cost['사람_분'] + hand, 1),
                 옛_가이드_사람_분=legacy_cost['사람_분'])
-    print(F.cost_line(folder, cost) + f' + 정할 자리 손 행 {legacy_cost["손_행"]} × {F.ROW_MIN} · 근거 행 {legacy_cost["근거_행"]} × {F.EVIDENCE_MIN} = 계획 {plan["계획_분"]}분'
+    print(F.cost_line(folder, cost) + f' + 빈 틀 손 행 {legacy_cost["손_행"]} × {F.ROW_MIN} · 근거 행 {legacy_cost["근거_행"]} × {F.EVIDENCE_MIN} = 계획 {plan["계획_분"]}분'
           f' (옛 가이드 {legacy_cost["사람_분"]}분)')
     return folder, steps, plan
 
@@ -1006,7 +1006,7 @@ print(digest)
 
 
 def seed_extract(folder):
-    """강사 추출 실행 run1의 응답 기록 · 폴더 표지와 모델 이름(.env) — 정할 자리가 같은 판이면 제공 코드가 다시 보내지 않고 이 기록을 쓴다(replay.seed_extract와 같음)."""
+    """강사 추출 실행 run1의 응답 기록 · 폴더 표지와 모델 이름(.env) — 빈 틀이 같은 판이면 제공 코드가 다시 보내지 않고 이 기록을 쓴다(replay.seed_extract와 같음)."""
     run1 = REF / '강사_추출/run1/결과'
     shutil.copytree(run1 / '응답_기록', folder / 'output/model_responses', dirs_exist_ok=True)
     shutil.copy2(run1 / '폴더_표지.txt', folder / 'output/.folder_mark')
@@ -1041,7 +1041,7 @@ def drop_db(folder):
 
 
 def fill_completed(key, folder, legacy_replay):
-    """완성본 폴더 하나 — 옛 구조 정답 재생(replay.py)의 마지막 정할 자리 · 기록을 옮겨 쓰고 기능을 차례로 실행한다. 돌려주는 값: 실행 로그."""
+    """완성본 폴더 하나 — 옛 구조 정답 재생(replay.py)의 마지막 빈 틀 · 기록을 옮겨 쓰고 기능을 차례로 실행한다. 돌려주는 값: 실행 로그."""
     practical = LABS[key]['course'] == '실전반'
     graph = LABS[key]['kind'] == 'graph'
     slots = GRAPH_SLOTS if graph else EXTRACT_SLOTS
@@ -1142,8 +1142,8 @@ def completed(key, starter, work, legacy_folder):
         (folder / rel).unlink(missing_ok=True)
     title = L_title(key)
     write_metadata(folder, title + ' · 완성본',
-                   'AI 계정이 없거나 구현 중 막혔을 때 실행해 보는 묶음입니다. 정할 자리는 한 가지 판단으로 채웠고, 선택과 근거는 app/features/decisions.csv에 있습니다.'
-                   + (' Docker Desktop을 켠 뒤 실행합니다.' if graph else ' 응답 기록은 강의에서 미리 받아 둔 수업 모델의 답이라, 정할 자리를 바꾸지 않으면 다시 보내지 않습니다.'),
+                   'AI 계정이 없거나 구현 중 막혔을 때 실행해 보는 묶음입니다. 빈 틀은 한 가지 판단으로 채웠고, 선택과 근거는 app/features/decisions.csv에 있습니다.'
+                   + (' Docker Desktop을 켠 뒤 실행합니다.' if graph else ' 응답 기록은 강의에서 미리 받아 둔 수업 모델의 답이라, 빈 틀을 바꾸지 않으면 다시 보내지 않습니다.'),
                    command='\n'.join('python run.py ' + a for a in README_ORDER[(graph, practical)]), extra_rules=rules_for(key))
     archive = work / (starter.name + '-completed.zip')
     write_zip(archive, [(starter.name + '/' + p.relative_to(folder).as_posix(), p.read_bytes()) for p in student_files(folder)])

@@ -31,7 +31,24 @@ def convert(text):
     text = text.replace('START.md 「학생이 정할 것」의 그 자리 이름', '사람이 결정할 지점의 이름')
     text = text.replace('START.md', '가이드')
     text = text.replace('2026-10-20_수정본', '2026-10-20')
-    return text
+    return fill_term(text)
+
+
+# 옛 구조의 「정할 자리」(학생이 AI와 채우는 `app/features/`의 파일)를 새 구조의 이름 「빈 틀」로 바꾼다(코딩랩.md K-7 `app/features/`).
+# 「정할 지점」은 원자료만으로 정해지지 않아 학생이 근거를 대고 고르는 결정 지점의 이름이라 여기서 만들지 않는다.
+# 「자리」는 받침이 없고 「틀」은 ㄹ 받침이라, 바로 뒤(괄호 풀이가 있으면 그 뒤)의 조사를 받침 있는 꼴로 바꾼다.
+# 풀이가 「빈 틀」을 되풀이하는 괄호는 겹치지 않게 줄인다.
+FILL_TERM = re.compile(r'정할 자리( \(`[^`]*` — 내가 AI와 채우는 빈 틀\)|\([^()]*\))?(를|가|는|와|라|다)?')
+AFTER_CONSONANT = {'를': '을', '가': '이', '는': '은', '와': '과', '라': '이라', '다': '이다'}
+
+
+def fill_term(text):
+    def new(m):
+        note = m.group(1) or ''
+        head = ('빈 틀' + note.replace('채우는 빈 틀)', '채우는 파일)') if note.startswith(' (') else
+                '빈 틀' if note == '(빈 틀)' else '빈 틀 파일' if note == '(「제공 빈 틀」 파일)' else '빈 틀' + note)
+        return head + AFTER_CONSONANT.get(m.group(2) or '', '')
+    return FILL_TERM.sub(new, text)
 
 
 def extract(source, names):

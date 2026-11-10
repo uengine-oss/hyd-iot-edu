@@ -1,7 +1,7 @@
 """냉각 경보 조치 판정 · 비교의 제공 흐름(일반 로직). 고치지 않는다.
 
 원천 네 개(경보 · PLC 상태 · 팬 카운터 · 예측)에서 판단 입력을 `data/collection_notes.md`의 기록 방식대로 만들고, 조건표로 판정하고(condition_tools),
-`data/metrics/metric_definitions.md`의 식으로 견주어 결과 계약 꼴로 쓴다. 사람마다 갈릴 수 있는 두 자리는 학생이 채우는 정할 지점 파일의 함수를 부른다:
+`data/metrics/metric_definitions.md`의 식으로 견주어 결과 계약 꼴로 쓴다. 사람마다 갈릴 수 있는 두 자리는 학생이 채우는 빈 틀 파일의 함수를 부른다:
 - `app/features/gap_rule.py` fan_hours_when_gap(ctx): 팬 카운터의 정해진 주기 기록이 판정 요청 전에 끊긴 경보의 팬 100 % 연속 시간
 - `app/features/compare_rule.py` choose_compared(kept): 유지 후보 가운데 비교 산식으로 견주지 않을 후보와 그 까닭
 고른 것의 글은 `app/features/decisions.csv`에서 읽어 결과의 `decisions` · `comparison_basis`에 옮긴다. 이 파일은 그 두 자리의 답을 갖지 않는다.
@@ -30,7 +30,7 @@ CHOICE_HEADER = ['지점', '고른_것', '근거', '바뀌는_답']
 
 
 class Unfilled(Exception):
-    """정할 지점이 아직 비어 있음 — 파일 · 함수 · 칸을 밝힌다."""
+    """빈 틀이 아직 비어 있음 — 파일 · 함수 · 칸을 밝힌다."""
 
 
 def ts(text):
@@ -43,12 +43,12 @@ def pick(root, name):
     return mine if mine.is_file() else Path(root)/'data/criteria'/name
 
 
-# ───────────── 정할 지점 읽기 ─────────────
+# ───────────── 빈 틀 읽기 ─────────────
 GAP_FILE, COMPARE_FILE = 'app/features/gap_rule.py', 'app/features/compare_rule.py'
 
 
 def load_function(root, rel, name):
-    """정할 지점 파일의 함수 하나. 아직 채우지 않았으면(NotImplementedError가 남음) Unfilled."""
+    """빈 틀 파일의 함수 하나. 아직 채우지 않았으면(NotImplementedError가 남음) Unfilled."""
     path = Path(root)/rel
     if not path.is_file():
         raise Unfilled(f'{rel}가 없습니다(받은 ZIP의 빈 틀을 되살립니다)')
@@ -408,7 +408,7 @@ def review_md(rv):
 
 # ───────────── 학생 폴더에서 한 번에 ─────────────
 def run_folder(root, review_mode=False):
-    """학생 폴더의 정할 지점 · 정한 것으로 흐름을 돌려 결과 계약 파일을 쓴다. 돌려주는 값 = (안쪽 결과, 쓴 파일 목록)."""
+    """학생 폴더의 빈 틀 · 정한 것으로 흐름을 돌려 결과 계약 파일을 쓴다. 돌려주는 값 = (안쪽 결과, 쓴 파일 목록)."""
     root = Path(root)
     choices = load_choices(root)
     basis = choice_text(choices, POINT_BASIS)

@@ -1,6 +1,6 @@
 ﻿# 입출력 계약
 
-입력 · 정할 지점 · 결과 파일의 형식과 뜻만 정한다. 판정 원칙은 원문(`data/hm8_manual.md` · `data/work_standard.md` · `data/hi01_supplement.md`), 원천의 기록 방식은 `data/collection_notes.md`에 있다.
+입력 · 빈 틀 · 결과 파일의 형식과 뜻만 정한다. 판정 원칙은 원문(`data/hm8_manual.md` · `data/work_standard.md` · `data/hi01_supplement.md`), 원천의 기록 방식은 `data/collection_notes.md`에 있다.
 
 ## 입력
 
@@ -28,7 +28,7 @@
 - 목록 입력(`skill_code`)에는 `has_other_than`만 쓴다.
 - `source_section`: 이 행의 근거를 다른 사람이 다시 찾을 수 있게 적는다 — HM-8 매뉴얼 원문의 근거는 절 · SOP 단계 · 승인 줄을 ;로 잇고 문서 이름 · 판은 붙이지 않는다(꼴: HM-8.<절>; HM-8.<절> SOP-<ID> 단계 <n>; HM-8.<절> SOP-<ID> 승인), 자료 파일의 줄은 파일:줄, 결정표에서 가져온 행은 「판단 시스템 결정표 rule:<id>; 출처 <그 규칙의 출처>」 뒤에 HM-8 매뉴얼 원문에서 그 출처를 찾았는지를 적고, 결정표 규칙을 고쳐 HM-8 매뉴얼 원문 근거로 옮긴 행은 원문 출처 뒤에 「판단 시스템 결정표 rule:<id>」를 덧붙인다(결과 화면은 rule:<id>가 있어야 그 규칙을 출처로 든 것으로 읽는다).
 
-## 정할 지점 (`app/features/gap_rule.py` · `app/features/compare_rule.py` — 「제공 빈 틀」 빈 함수)
+## 빈 틀 (`app/features/gap_rule.py` · `app/features/compare_rule.py` — 「제공 빈 틀」 빈 함수)
 
 제공 코드 `judge_tools.py`가 부르는 함수 둘이다. 입력과 돌려줄 값의 꼴은 각 파일 머리에 있다. 함수가 꼴과 다른 값을 돌려주면 제공 코드가 그 파일 · 경보를 밝혀 멈춘다.
 `app/features/decisions.csv`의 `빈 값의 뜻` · `쓰는 사람에 따라 갈리는 답` 행의 `고른_것`은 결과의 `decisions`에, `비교 기준 문장` 행의 `고른_것`은 결과의 `comparison_basis`에 그대로 옮겨진다.

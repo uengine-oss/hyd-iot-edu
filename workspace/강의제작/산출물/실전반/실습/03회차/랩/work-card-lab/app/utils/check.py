@@ -331,7 +331,7 @@ def check_cards(todo):
 
 
 def slot_errors():
-    """정할 자리의 꼴 — 제공 코드(app/utils/graph.py)의 검사로 본다."""
+    """빈 틀의 꼴 — 제공 코드(app/utils/graph.py)의 검사로 본다."""
     from app.utils import graph as G
     out = []
     known = G.model_ids()[0]
@@ -339,7 +339,7 @@ def slot_errors():
         try:
             fn()
         except G.Problem as e:
-            out.append(f'정할 자리: {e}')
+            out.append(f'빈 틀: {e}')
     return out
 
 
@@ -401,8 +401,8 @@ _PROVIDED = {
  "app/ui/render.py": "794a7c0de17bbbf7dd6e2896397c1db32cb4079b6fe7dfa88dc67160c2a0d81e",
  "app/utils/actions.py": "fc84830c7e708c29ea3c8c4d128065212447abd7d0a249501445b0f3b6a3adef",
  "app/utils/cypher.py": "6c6272d9ea66ae25a3635280fba4b6a6e554eff91ff01b9e98a8ab64caf1946e",
- "app/utils/db.py": "a01709ba3b721e094c978a667cfa815a908e732920ec4d3aa4dd74730c653acf",
- "app/utils/graph.py": "8131addc12988f9bc78d4cb0de3185bc7b7943fc2c161d395532090ffb245142",
+ "app/utils/db.py": "4d5d6187db53e56f39d7ad9802a5477803bc55d7ab589470f7648124beaef200",
+ "app/utils/graph.py": "ccf03d4913a7036f64fef1dc1101df79c4c3f93495301515ef33013530c33ee4",
  "app/utils/results.py": "1c5b0596745e9ac1e9b7f06d84c7463d99720597edcf46801d32a51e640ae86b",
  "run.py": "a00350d7fc80b54988ee7ae1a54303f29f99f4940aa7678ce214bf301e74159d"
 }

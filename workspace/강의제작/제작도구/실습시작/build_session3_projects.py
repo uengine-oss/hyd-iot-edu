@@ -63,7 +63,6 @@ TEXT = [('(입출력_계약)', '(data/contract.md)'), ('START.md 「학생이 �
         ('5단계에서 내 판단 함수로 처음 실행한 시각(내 PC 시계 그대로 — 1단계의 결과 화면 열기는 세지 않음)', '판단 함수로 처음 실행한 시각(내 PC 시계 그대로 — 자료 확인 화면 열기는 세지 않음)'),
         ('(앞 단계를 아직 채우는 중이면 그 단계의 자리가 짚힙니다)', '(아직 채우지 않은 파일이 있으면 그 파일이 짚힙니다)'),
         ('「{point}」로 시작하는', '「{point}」(으)로 시작하는'),
-        ('정할 자리를', '정할 지점을'), ('정할 자리가', '정할 지점이'), ('정할 자리', '정할 지점'),
         ('비교 합계가', '비교값이'), ('비교 합계와', '비교값과'), ('비교 합계는', '비교값은'), ('비교 합계로', '비교값으로'), ('비교 합계', '비교값'), ('포털 성과 지표의 점수', '정책 점수'), ('받은 원문', 'HM-8 매뉴얼 원문'), ('즉시 완화', '완화 조치'), ('포털 성과 지표 점수', '정책 점수'),
         ('python show_result.py', 'python run.py'), ('python check.py', 'python run.py check'), ('show_result.py', 'run.py'), ('START.md', '가이드')]
 
@@ -87,7 +86,7 @@ def converter(key, prose=True):
             text = re.sub(r"(/\s*)'" + word + "'", r"\1'" + new + "'", text)
         for old, new in (TEXT if prose else []):   # 원자료(prose=False)는 파일 이름 · 경로만 바꾼다
             text = text.replace(old, new)
-        return text
+        return P.fill_term(text) if prose else text   # 옛 「정할 자리」(채울 파일)는 「빈 틀」 — 결정 지점의 이름 「정할 지점」과 나눈다
     return convert
 
 
@@ -220,7 +219,7 @@ def tool_source(name, convert):
 def check_messages(key):
     """검사기 본문에서 안내 글만 바꾸는 자리(판정 알고리즘은 그대로) — 기능 이름과 실제 명령 · 결과 파일 이름."""
     return [('python run.py가 판단 표로 만듭니다', 'python run.py classify가 판단 표로 만듭니다'),
-            ('python run.py가 정할 지점을 채운 단계까지 만듭니다', 'python run.py ' + ('compare' if key == 'practical-03-review' else 'write') + '가 만듭니다'),
+            ('python run.py가 빈 틀을 채운 단계까지 만듭니다', 'python run.py ' + ('compare' if key == 'practical-03-review' else 'write') + '가 만듭니다'),
             ("report([('result.json', state", "report([('judgement.json', state")]
 
 

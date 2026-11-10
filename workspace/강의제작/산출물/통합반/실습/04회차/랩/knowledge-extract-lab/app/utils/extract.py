@@ -1,7 +1,7 @@
 """제공 코드 — 문서에서 후보를 뽑고 검토 결과를 쓰는 일반 로직. 누가 해도 같은 일만 한다: 파일 읽기 · 글자 방식 · 조각 만들기 · 요청 보내기 ·
 답을 계약 꼴 후보로 바꾸기 · 인용 줄 찾기 · 견주기 · 검토 결과 쓰기. 어떻게 나눌지 · 무엇을 뽑을지 · 무엇을 채택할지 · 어느 원문을 근거로 둘지는
-app/features/의 정할 자리(split.json · prompt.md · expected.csv · review_decisions.csv · rule_links.csv · roles.csv)에 내가 적은 대로만 한다.
-정할 자리가 비었거나 꼴이 틀리면 그 파일 · 칸과 함께 멈춘다(다른 값으로 대신하지 않는다). 이 파일은 고치지 않는다 — run.py가 부른다.
+app/features/의 빈 틀(split.json · prompt.md · expected.csv · review_decisions.csv · rule_links.csv · roles.csv)에 내가 적은 대로만 한다.
+빈 틀이 비었거나 꼴이 틀리면 그 파일 · 칸과 함께 멈춘다(다른 값으로 대신하지 않는다). 이 파일은 고치지 않는다 — run.py가 부른다.
 """
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ REVIEWER = '이 폴더의 검토자'
 
 
 class Problem(Exception):
-    """정할 자리 · 입력의 꼴 문제 — 파일과 칸(또는 줄)을 함께 알린다."""
+    """빈 틀 · 입력의 꼴 문제 — 파일과 칸(또는 줄)을 함께 알린다."""
     def __init__(self, where, message):
         super().__init__(f'{where}: {message}')
         self.where, self.message = where, message
@@ -68,7 +68,7 @@ def numbered(path, keys):
             out.append((n, row))
     missing = [k for k in keys if k not in head]
     if missing:
-        raise Problem(f'{rel}:{kept[0][0]}', f'열 {", ".join(missing)}이 없음 — 열 이름은 data/contract.md 「정할 자리」 그대로')
+        raise Problem(f'{rel}:{kept[0][0]}', f'열 {", ".join(missing)}이 없음 — 열 이름은 data/contract.md 「빈 틀」 그대로')
     return out
 
 
@@ -132,7 +132,7 @@ def section_heads(text):
     return [n for n, line in enumerate(text.splitlines(), 1) if SECTION_HEAD.match(line.strip()) and '....' not in line]
 
 
-# ───────────── 나누기(정할 자리: app/features/split.json) ─────────────
+# ───────────── 나누기(빈 틀: app/features/split.json) ─────────────
 def settings():
     """app/features/split.json — 비었으면 None, 꼴이 틀리면 Problem."""
     path = HERE / 'app/features/split.json'
@@ -230,7 +230,7 @@ def chunk_range(first, body):
     return first, first + body.count('\n')
 
 
-# ───────────── 요청 글(정할 자리: app/features/prompt.md) ─────────────
+# ───────────── 요청 글(빈 틀: app/features/prompt.md) ─────────────
 def prompt_text():
     """요청 글 — 「제공 빈 틀」 표시 줄은 보내지 않는다. 머리 줄(#)만 남았으면 빈 것으로 본다."""
     path = HERE / 'app/features/prompt.md'
@@ -702,7 +702,7 @@ def compare_baseline():
     return name, data, rows + [('(후보에만)', k, q, cid) for cid, p, k, q in only]
 
 
-# ───────────── 검토(정할 자리: review_decisions.csv · rule_links.csv) ─────────────
+# ───────────── 검토(빈 틀: review_decisions.csv · rule_links.csv) ─────────────
 def basis(name):
     mine = HERE / 'app/features/my_inputs' / name
     return mine if mine.is_file() else HERE / 'data' / name
@@ -922,7 +922,7 @@ def apply_review(cfg_task=None, now=None):
     return written
 
 
-# ───────────── 이 작업의 조건 모으기(정할 자리: roles.csv — 실전) ─────────────
+# ───────────── 이 작업의 조건 모으기(빈 틀: roles.csv — 실전) ─────────────
 ITEMS = {'준비': 'preparation', '금지': 'prohibitions', '완료': 'completion'}
 ROLE_WORDS = ('준비', '금지', '순서', '완료', '승인', '넣지 않음')
 

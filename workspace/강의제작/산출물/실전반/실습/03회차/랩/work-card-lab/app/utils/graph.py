@@ -1,8 +1,8 @@
 """제공 코드 — 검토한 문서 지식을 랩 DB에 잇고 조회하는 일반 로직. 누가 해도 같은 일만 한다: 입력 읽기 · 설비 모델과 조치 기준 적재 ·
 MERGE 문장 만들기와 실행 · 세기 · 내보내기 · 조회 실행 · 카드 글 쓰기 · 추가 자료가 필요한 질문 파일 쓰기. 그래프의 모양 · 무엇을 어느 기존 ID에 이을지 ·
 어떤 종류를 어느 카드 항목에 둘지 · 다른 문서의 조건을 이을지 · 현재값을 어디서 읽을지 · 무엇을 물을지는
-app/features/의 정할 자리(graph_shape.json · link_rules.csv · aliases.csv · other_doc_conditions.csv · roles.csv · current_value_sources.csv · query_values.csv)에 내가 적은 대로만 한다.
-정할 자리가 비었거나 꼴이 틀리면 그 파일 · 칸과 함께 멈춘다(다른 값으로 대신하지 않는다). 이 파일은 고치지 않는다 — run.py가 부른다.
+app/features/의 빈 틀(graph_shape.json · link_rules.csv · aliases.csv · other_doc_conditions.csv · roles.csv · current_value_sources.csv · query_values.csv)에 내가 적은 대로만 한다.
+빈 틀이 비었거나 꼴이 틀리면 그 파일 · 칸과 함께 멈춘다(다른 값으로 대신하지 않는다). 이 파일은 고치지 않는다 — run.py가 부른다.
 """
 from __future__ import annotations
 
@@ -72,7 +72,7 @@ def reviews():
     return [(f.name, json.loads(read(f))) for f in sorted(basis('reviews').glob('*_review.json'))]
 
 
-# ───────────── 정할 자리 ─────────────
+# ───────────── 빈 틀 ─────────────
 def shape():
     """app/features/graph_shape.json — 비었으면 None, 꼴이 틀리면 Problem."""
     where = 'app/features/graph_shape.json'
@@ -287,7 +287,7 @@ def ask_values():
         where = f'app/features/query_values.csv:{n}'
         pair = (r['질문'], r['이름'])
         if pair not in ASKS:
-            raise Problem(where, f'질문 · 이름 {r["질문"]!r} {r["이름"]!r} — data/contract.md 「정할 자리」의 짝 가운데 하나')
+            raise Problem(where, f'질문 · 이름 {r["질문"]!r} {r["이름"]!r} — data/contract.md 「빈 틀」의 짝 가운데 하나')
         if pair in seen:
             raise Problem(f'app/features/query_values.csv:{seen[pair]} · {n}', f'같은 짝 {r["질문"]} {r["이름"]}이 두 줄 — 한 줄로 합칩니다')
         seen[pair] = n
@@ -527,7 +527,7 @@ def preview(sh):
 
 
 def load_all():
-    """정할 자리대로 적재 파일을 쓰고 실행한다. 돌려주는 값: 상태 dict(전후 수 · 겹친 ID · 이은 수 · 추가 전 비교)."""
+    """빈 틀대로 적재 파일을 쓰고 실행한다. 돌려주는 값: 상태 dict(전후 수 · 겹친 ID · 이은 수 · 추가 전 비교)."""
     known, _, _ = model_ids()
     sh = shape()
     if sh is None:
@@ -546,7 +546,7 @@ def load_all():
         write(snap, dump(export_graph()))          # 새 문서를 더하기 전 그래프 — 기존 연결이 그대로인지 견줄 기준
     planned, notes = plan_links(sh, rules, aliases, others, roles, known)
     stmts, clash = load_statements(sh, planned)
-    write(HERE / 'output/load.cypher', '// run.py가 정할 자리(그래프_모양 · 연결_규칙 · 별칭 · 다른문서_조건 · 역할)로 만든 적재 — MERGE · SET만\n' + '\n'.join(stmts) + '\n')
+    write(HERE / 'output/load.cypher', '// run.py가 빈 틀(그래프_모양 · 연결_규칙 · 별칭 · 다른문서_조건 · 역할)로 만든 적재 — MERGE · SET만\n' + '\n'.join(stmts) + '\n')
     write(HERE / 'output/schema_ext.json', dump(schema_ext(sh, rules, others)))
     if stmts:
         run([(s.rstrip(';'), {}) for s in stmts])

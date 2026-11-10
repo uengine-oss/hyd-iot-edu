@@ -22,7 +22,7 @@ RELATIONS = {'MITIGATED_BY': ('failure_modes', 'sops'), 'REMEDIED_BY': ('failure
 
 
 class Unfilled(Exception):
-    """정할 지점이 아직 비어 있음."""
+    """빈 틀이 아직 비어 있음."""
 
 
 def resolve(lab, refs, where):

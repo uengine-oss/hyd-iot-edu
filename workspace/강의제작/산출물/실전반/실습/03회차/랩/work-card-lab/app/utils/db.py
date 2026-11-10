@@ -52,7 +52,7 @@ def prepare():
         if time.monotonic()>deadline:raise RuntimeError('DB 시작 대기 시간을 넘었습니다. 같은 명령으로 다시 확인하세요.')
         time.sleep(1)
     print('랩 DB 준비 완료\nBrowser: '+state['browser']+'\nConnect URL: '+state['bolt']+'\nUsername: neo4j / Password: 비워 둠')
-    if renewed:print('새로 만든 랩 DB라 정할 자리의 적재가 없습니다. 이어서 python run.py load → python run.py other를 실행합니다.')
+    if renewed:print('새로 만든 랩 DB라 빈 틀대로 올린 적재가 없습니다. 이어서 python run.py load → python run.py other를 실행합니다.')
     return state
 
 if __name__=='__main__':

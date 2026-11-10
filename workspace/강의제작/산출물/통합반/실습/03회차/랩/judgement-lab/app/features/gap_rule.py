@@ -9,4 +9,4 @@ ctx(읽기만): alarm_id 경보 ID · asset 설비 · decision_time 판정 요�
 
 
 def fan_hours_when_gap(ctx):
-    raise NotImplementedError('정할 지점: app/features/gap_rule.py fan_hours_when_gap')
+    raise NotImplementedError('빈 틀: app/features/gap_rule.py fan_hours_when_gap')
