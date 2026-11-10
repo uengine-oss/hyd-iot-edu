@@ -193,5 +193,293 @@
     ],
     "planned_action": "같은 행의 recipient → question을 짚는다. 원본 값 설비보전팀, 원인 후보와 다음 점검 항목을 근거·미확인과 함께 검토. 원인 판정이나 점검 순서의 답은 아직 없다.",
     "status": "준비·미실행"
+  },
+  {
+    "id": "i504-02-001",
+    "segment": "i504-02",
+    "text": "같은 요청에 필요한 문서와 지식 그래프, 관측과 정비 이력이 어디에 있는지 찾아보겠습니다.",
+    "ops": [
+      [
+        "point",
+        "기본 요청 행"
+      ]
+    ],
+    "planned_action": "1구간의 data/requests.csv 기본 요청 행과 터미널 inspect 출력을 받는다. 새 요청으로 바꾸지 않는다. 실제 화면은 후속 수행 때 확인한다.",
+    "status": "준비·미실행",
+    "requires_observation": false
+  },
+  {
+    "id": "i504-02-002",
+    "segment": "i504-02",
+    "text": "오른쪽 Codex에서 자료의 위치를 물어보겠습니다.",
+    "ops": [
+      [
+        "click",
+        "Codex 입력 칸"
+      ]
+    ],
+    "planned_action": "Codex 입력 칸을 누른다. 현재 읽는 폴더가 root-cause-lab뿐인지, 모델 표시가 GPT-6 Luna Medium인지 확인하는 계획이다. 새 로그인·모델 호출은 이번 준비에서 하지 않는다.",
+    "status": "준비·미실행",
+    "requires_observation": false
+  },
+  {
+    "id": "i504-02-003",
+    "segment": "i504-02",
+    "text": "대상과 기준시각, 검토할 질문을 담아 요청하겠습니다. 자료를 찾은 파일과 원문 위치도 알려 달라고 적겠습니다.",
+    "ops": [
+      [
+        "manual",
+        "실제 요청 문장 작성 — 길이 미정"
+      ]
+    ],
+    "planned_action": "앞에서 읽은 요청 행을 바탕으로 강사가 자기 문장으로 요청을 쓴다. 작성 요점은 요청의 대상·시각·역할·질문, 문서·그래프·관측·정비 이력의 위치와 근거다. 고정 완성 프롬프트를 제공하거나 AI 답을 미리 넣지 않는다. 실제 요청 문장·길이는 미작성이다.",
+    "status": "준비·미실행",
+    "requires_observation": false
+  },
+  {
+    "id": "i504-02-004",
+    "segment": "i504-02",
+    "text": "이번에는 파일을 바꾸거나 기능을 실행하지 않고, 자료만 읽도록 범위를 정하겠습니다.",
+    "ops": [
+      [
+        "manual",
+        "읽기 전용 범위 확인"
+      ]
+    ],
+    "planned_action": "작성 중인 요청에 읽기 전용 탐색을 명시한다. app/features/ 구현, run.py --collect, 결과 작성, 폴더 밖 가이드 열기는 요구하지 않는다. 자료를 읽는 명령과 랩 기능을 실행하는 명령을 구별한다.",
+    "status": "준비·미실행",
+    "requires_observation": false
+  },
+  {
+    "id": "i504-02-005",
+    "segment": "i504-02",
+    "text": "요청을 보내겠습니다.",
+    "ops": [
+      [
+        "key",
+        "Enter"
+      ]
+    ],
+    "planned_action": "실제 요청문을 읽고 위 범위를 확인한 뒤 전송한다. 이 구간은 전송부터 응답 완료와 파일 견주기까지 한 흐름이다. 현재 작성에서는 전송하지 않았다.",
+    "status": "준비·미실행",
+    "requires_observation": true
+  },
+  {
+    "id": "i504-02-006",
+    "segment": "i504-02",
+    "text": "진행 표시를 보면서 응답이 끝날 때까지 기다리겠습니다.",
+    "ops": [
+      [
+        "verify",
+        "실제 진행과 완료 상태"
+      ]
+    ],
+    "planned_action": "실제 읽기 진행 내용이 이어지는지 확인한다. 끝났다는 UI/실행 기록을 확인한 뒤 다음 큐로 간다. 정해진 초만 기다리고 완료로 간주하지 않는다. 오류·권한 요청·추가 질문이면 그 실제 내용을 기록하고 아래 성공 전제 대사를 진행하지 않는다. 특정 상태 문구는 관찰 전 고정하지 않는다.",
+    "status": "준비·미실행",
+    "requires_observation": true
+  },
+  {
+    "id": "i504-02-007",
+    "segment": "i504-02",
+    "text": "답이 가리키는 파일을 직접 열어 설명과 맞는지 견주겠습니다.",
+    "ops": [
+      [
+        "point",
+        "실제로 끝난 탐색 응답의 경로"
+      ]
+    ],
+    "planned_action": "끝난 응답에서 실제로 제시한 경로·판본·줄을 읽은 뒤에만 사용한다. 응답이 없거나 경로를 제시하지 않았다면 이 큐와 해당 경로 견주기 큐를 사용하지 않고 미확인으로 남긴다. K3 시험 답이나 실제 수집7응답을 이 탐색 응답처럼 가져오지 않는다. 견주는 중 Codex를 다시 부르지 않는다.",
+    "status": "준비·미실행",
+    "requires_observation": true
+  },
+  {
+    "id": "i504-02-008",
+    "segment": "i504-02",
+    "text": "문서 목록에서는 판본과 상태를 먼저 확인하겠습니다.",
+    "ops": [
+      [
+        "click",
+        "Explorer data/documents/catalog.csv"
+      ],
+      [
+        "key",
+        "Enter"
+      ],
+      [
+        "point",
+        "실제 응답이 지목한 문서 행"
+      ]
+    ],
+    "planned_action": "data/documents/catalog.csv를 열어 헤더를 읽고, 실제 응답이 지목한 문서의 식별자·판본·상태·시행일을 찾는다. 판본을 찾는 실제 열 제목은 원자료의 「판」이므로 그대로 읽는다. 여러 판본 가운데 AI가 인용한 판본과 적용 가능한 판본이 같은지 확인할 자리다. 어느 판본을 답했다고 가정하지 않는다.",
+    "status": "준비·미실행",
+    "requires_observation": true
+  },
+  {
+    "id": "i504-02-009",
+    "segment": "i504-02",
+    "text": "목록에 적힌 이름을 실제 원문 파일 이름과 연결해 보겠습니다.",
+    "ops": [
+      [
+        "click",
+        "Explorer data/source_manifest.json"
+      ],
+      [
+        "key",
+        "Enter"
+      ],
+      [
+        "point",
+        "해당 문서의 catalog_file와 file"
+      ]
+    ],
+    "planned_action": "data/source_manifest.json의 documents에서 같은 doc_id·revision의 catalog_file → file을 견준다. 실제 파일은 data/documents/ 아래에 있다. 예컨대 HM-8 1.1의 목록 이름 HM-8_매뉴얼.md는 hm_8_1_1.md에 연결되는 제공 사실이며, AI가 이 판본을 답했다고 뜻하지 않는다. 실제 응답에 맞는 항목만 짚는다.",
+    "status": "준비·미실행",
+    "requires_observation": true
+  },
+  {
+    "id": "i504-02-010",
+    "segment": "i504-02",
+    "text": "원문에서는 인용한 줄의 앞뒤도 읽겠습니다. 어느 대상과 조건에 적용하는 내용인지 확인해 보세요.",
+    "ops": [
+      [
+        "click",
+        "실제 인용한 원문 파일"
+      ],
+      [
+        "key",
+        "Enter"
+      ],
+      [
+        "point",
+        "실제 인용 줄과 인접 조건"
+      ]
+    ],
+    "planned_action": "대응한 실제 원문을 열어 응답의 줄을 찾고 절 제목·앞뒤 조건까지 읽는다. 응답 인용 범위가 불명확하면 읽었다고 단정하지 않는다. 현행 HM-8의 적용 부하는 원본 25~26행, 후보 조건은 35~43행에 있으나 아직 이 문서를 선택한 AI 응답은 없다. 학생이 원문 범위를 정할 자리이지 정답 수치를 먼저 읽는 자리가 아니다. 원문을 다시 저장하지 않는다.",
+    "status": "준비·미실행",
+    "requires_observation": true
+  },
+  {
+    "id": "i504-02-011",
+    "segment": "i504-02",
+    "text": "지식 그래프 파일의 출처도 확인하겠습니다.",
+    "ops": [
+      [
+        "click",
+        "data/source_manifest.json 탭"
+      ],
+      [
+        "point",
+        "graph_sources"
+      ],
+      [
+        "click",
+        "Explorer data/model/graph.json"
+      ],
+      [
+        "key",
+        "Enter"
+      ]
+    ],
+    "planned_action": "data/source_manifest.json의 graph_sources에서 data/model/graph.json의 경로와 4회차 제공 입력이라는 origin을 확인하고 해당 파일을 읽기만 연다. 응답이 다른 파일을 제시했으면 원본 경로와 차이를 기록한다. 그래프에 적힌 원인 후보가 이번 사건에서 확인됐다고 말하지 않는다.",
+    "status": "준비·미실행",
+    "requires_observation": true
+  },
+  {
+    "id": "i504-02-012",
+    "segment": "i504-02",
+    "text": "관측 파일은 수집 조건부터 보겠습니다.",
+    "ops": [
+      [
+        "click",
+        "Explorer data/field_notes.md"
+      ],
+      [
+        "key",
+        "Enter"
+      ],
+      [
+        "point",
+        "관측 파일 절"
+      ]
+    ],
+    "planned_action": "data/field_notes.md의 관측 파일 절 11~14행을 연다. 다음 발화는 해당 제공 원문을 실제 화면에서 읽은 뒤 사용한다. 이 구간에서는 압축 관측을 전부 출력하거나 임의 집계하지 않는다.",
+    "status": "준비·미실행",
+    "requires_observation": true
+  },
+  {
+    "id": "i504-02-013",
+    "segment": "i504-02",
+    "text": "10초마다 뽑은 자료는 그때의 개별 관측값입니다. 요청 주변의 1초 자료와 제공 범위도 따로 확인해야 합니다.",
+    "ops": [
+      [
+        "point",
+        "field_notes.md 12행"
+      ],
+      [
+        "point",
+        "field_notes.md 13~14행"
+      ]
+    ],
+    "planned_action": "field_notes.md:12~14의 10초 개별 표본과 1초 사건 구간 표본·coverage_windows 안내를 같은 순서로 짚는다. 표본 추출 간격을 평균 구간이나 연속 수집 여부로 바꾸지 않는다. 이 설명은 제공 자료의 사실이며 AI가 정확히 설명했다고 주장하지 않는다.",
+    "status": "준비·미실행",
+    "requires_observation": true
+  },
+  {
+    "id": "i504-02-014",
+    "segment": "i504-02",
+    "text": "요청의 설비와 기준시각이 제공 범위에 들어가는지도 찾아보겠습니다.",
+    "ops": [
+      [
+        "click",
+        "Explorer data/data_manifest.json"
+      ],
+      [
+        "key",
+        "Enter"
+      ],
+      [
+        "point",
+        "해당 설비 coverage_windows"
+      ]
+    ],
+    "planned_action": "data/data_manifest.json의 files에서 실제 요청 대상의 1초 파일과 coverage_windows를 찾고 requests.csv의 as_of와 견준다. 기본 HYD-03 요청 시각은 2026-10-10T10:45:31+09:00이고 원본에 10:41:31~10:45:51 범위가 있다. 범위에 든다는 것과 그 안의 공백·유효 표본을 확인했다는 것을 구별한다. 아직 조회 결과를 생성하지 않는다.",
+    "status": "준비·미실행",
+    "requires_observation": true
+  },
+  {
+    "id": "i504-02-015",
+    "segment": "i504-02",
+    "text": "정비 이력에서는 작업한 시각과 보고한 시각의 위치를 보겠습니다.",
+    "ops": [
+      [
+        "click",
+        "Explorer data/maintenance.csv"
+      ],
+      [
+        "key",
+        "Enter"
+      ],
+      [
+        "point",
+        "performed_at와 reported_at"
+      ]
+    ],
+    "planned_action": "data/maintenance.csv의 헤더에서 asset·performed_at·reported_at을 짚고 data/field_notes.md:7 설명과 견준다. 이 구간은 위치·시각의 뜻 확인이며 특정 작업을 현재 경보의 원인이나 해소 근거로 판정하지 않는다.",
+    "status": "준비·미실행",
+    "requires_observation": true
+  },
+  {
+    "id": "i504-02-016",
+    "segment": "i504-02",
+    "text": "확인하지 못한 자료 위치나 설명은 그대로 구분해 두겠습니다.",
+    "ops": [
+      [
+        "verify",
+        "응답과 원문 견주기 및 파일 변경 없음"
+      ]
+    ],
+    "planned_action": "실제 끝난 응답의 주장과 지금 연 파일을 견주어 확인/불일치/미확인 항목을 구별한다. 이번 준비에서는 실제 항목을 채우지 않는다. 파일 수정이 없었는지도 실제 변경 목록으로 확인한다. 없는 경로·추가 질문·설명 오류를 정상적으로 견준 것처럼 읽지 않으며, 필요한 후속 탐색은 별도 요청 구간으로 넘긴다. 이 구간에서 가짜 오류를 만들거나 모델을 재호출하지 않는다.",
+    "status": "준비·미실행",
+    "requires_observation": true
   }
 ]
