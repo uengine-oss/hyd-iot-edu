@@ -1,6 +1,6 @@
 # 학생 랩 ZIP과 독립 시작본
 
-학생은 노션 회차 페이지 「가이드문서」에서 그 실습의 ZIP을 내려받아 압축을 풀고, 랩 폴더를 VS Code의 「파일 → 폴더 열기」로 연다. 코딩 랩 ZIP에는 랩 폴더 옆에 가이드(`<랩>_guide.html`)가 함께 들어 있어, 학생은 가이드를 브라우저로 열고 AI는 VS Code로 연 랩 폴더만 읽는다(가이드.md P-3). 일반 웹 링크는 PC 명령을 실행하지 않는다. 학교 기본 설치에 Python·VS Code가 있어야 하며 DB 실습은 Docker가 필요하다.
+학생은 클래스룸 그 회차의 실습 자료에서 해당 ZIP을 내려받아 압축을 풀고, 랩 폴더를 VS Code의 「파일 → 폴더 열기」로 연다. 코딩 랩 ZIP에는 랩 폴더 옆에 가이드(`<랩>_guide.html`)가 함께 들어 있어, 학생은 가이드를 브라우저로 열고 AI는 VS Code로 연 랩 폴더만 읽는다(가이드.md P-3). 일반 웹 링크는 PC 명령을 실행하지 않는다. 학교 기본 설치에 Python·VS Code가 있어야 하며 DB 실습은 Docker가 필요하다.
 
 이어서 할 때는 같은 랩 폴더를 다시 열고, ZIP을 새로 풀면 고친 파일이 없는 새 폴더가 된다. 학생 개인 Git 설정은 사용하지 않는다. VS Code 신뢰 설정은 바꾸지 않는다.
 
@@ -18,7 +18,7 @@ python workspace/강의제작/제작도구/실습시작/verify_packages.py [<ZIP
 - 학생 ZIP은 `lab_package.py` 한 곳이 쓴다. 항목 시각을 고정하고 경로를 소문자 순서로 넣어, 같은 PC(같은 zlib)에서는 내용이 같으면 바이트도 같다 — 바뀐 랩만 `package-index.json`의 해시가 바뀐다. 이 방식 전에 묶은 ZIP은 다음에 다시 묶을 때 한 번 줄끝(CRLF→LF)과 시각 때문에 해시가 바뀐다.
 - 폴더만 고친 랩은 `lab_package.py <랩 폴더> --version <새 판>`으로 그 ZIP과 목록 항목 하나만 고친다(생성기의 다른 변경이 딸려 오지 않는다). 새 ZIP이 `verify_packages.check_zip`을 통과할 때만 바꿔 끼우고, 바이트가 바뀌는데 판 이름이 없으면 멈춘다. START.md 랩은 `start_guides/build.py`로 묶는다.
 - `verify_packages.py`는 `package-index.json`의 ZIP(해시 · 시작 파일 · 가이드 링크 · 정답 경계)과 학생 ZIP 전부(`산출물/*/실습/*/랩/*.zip` — 랩 폴더와 경로 · 바이트, 강사 대본 · 제작 지시 문구 · `.env`, ZIP 안 링크)를 본다. 결과는 `작업/검사/package-verification.json`.
-- 노션 「가이드문서」에는 그 ZIP을 올린 workspace 커밋 고정 raw 링크를 건다(가이드.md P-14). 링크를 바꾸기 전에 그 커밋에서 `verify_packages.py`가 통과해야 한다.
+- 학생 배포는 가이드 P-14와 배포 지침에 따라 클래스룸에서 한다. 제작 검증은 올린 커밋에 고정된 ZIP과 현재 폴더를 대조한다.
 - 단계 랩(2회차 설계 · 구현, 냉각 경보 조치 판단 네 랩)의 학생 사진은 해당 랩의 `images/`에 보존한다. 감독이 확인한 사진을 `capture-provenance.json`에 `kind: 학생 실습 화면`, 가이드의 절 이름(`section`), 설명(`caption`), 대상 · 원본 경로와 SHA-256, 잘라 쓴 경우 좌표로 등록한다. `build_labs.py` · `build_judgement_labs.py`는 해당 절에 사진을 넣고 ZIP과 대조한다. 출처가 없거나 해시가 다른 사진은 그대로 보존하고 빌드를 멈춘다.
 
 | 학생 ZIP(두 과정 합) | 생성기(`제작도구/` 기준, 이름만 있으면 이 폴더) | 지금 |
@@ -41,6 +41,17 @@ python workspace/강의제작/제작도구/실습시작/verify_packages.py [<ZIP
 | 문서 지식 완성본 (4) — 통합반 04회차 실습2 · 3, 실전반 03회차 실습4 · 5 | `reference/session3_docs/completed.py [--model-run <폴더>] [--again-run <폴더>] [--no-neo4j]` | 랩 ZIP과 따로 받는다(package-index 밖). 추출 둘은 고정한 강사 추출 실행 `reference/session3_docs/강사_추출/run1`(instructor_extract.py `--keep` — 학생 추출 코드 `completed/extract_candidates.py` · 요청 글 · 응답 기록 · 후보)에 검토를 걸어 만들고, 같은 요청을 새 폴더에서 한 번 더 보낸 `run2`와의 차이를 검토 기록에 적는다. 폴더 표지(`결과/폴더_표지.txt`)는 넣지 않아, 완성본 폴더 · 학생 폴더에서 코드를 실행해도 `llm_client.py`가 그 응답 기록을 다시 쓰지 않는다. 고정한 실행이 없으면 문장 규칙 후보로 만든 임시판이다(`check.py`가 후보 파일마다 model_run 줄을 냄). 그래프 둘은 `run_reference.py` 4의 기본 판 산출을 넣고 새 폴더에서 안내의 명령을 실제 Neo4j로 다시 돌려 내보내기 바이트 · 학생 검사기 통과를 확인한다 |
 | 01회차 `오프라인1_가이드.zip` (2) | `build_offline.py` · `build_guide_bundle.py --draft 작업/<작업>/오프라인1_제공물검수` | 풀고 `가이드열기.html`을 연다(정본 HTML · 참조 이미지 · 자료를 묶고 내부 링크를 확인). 지금은 검수 출력만 — 정본을 바꾸지 않는다 |
 
+## 새 프로젝트 구조의 공용 API
+
+구조와 학생 문서 범위는 `코딩랩.md` K-5~K-7이 정한다. 기존 START 랩은 해당 담당의 이전 때까지 기존 생성·검사 경로를 유지한다.
+
+- `project_layout.write_metadata(folder, title, purpose, command="python run.py", extra_rules="")`: 짧은 루트 README, Codex AGENTS, VS Code 표시 설정을 쓴다. AGENTS는 보이고 .vscode와 실행 캐시만 숨긴다. 다른 AI 도구의 규칙 파일은 만들지 않는다. extra_rules는 랩별 작업 경계이며 정답·단계표·제작 지시를 넣지 않는다.
+- 생성기는 원자료를 `data`, 학생 구현을 `app/features`, 제공 화면을 `app/ui`, 일반 처리를 `app/utils`에 쓰고 루트 `run.py`를 제공한다. output은 실행 때 만들며 시작 ZIP에 넣지 않는다.
+- `lab_package.pack(folder)`는 run.py와 app/features가 있는 새 프로젝트를 영문 프로젝트 이름 하나 아래에 묶고 가이드는 그 옆에 둔다. 기존 랩의 ZIP 루트는 유지한다.
+- `lab_package.entry(..., guide_steps=[s["name"] for s in lab_definition["steps"]])`는 새 구조에 layout=project를 붙인다. 가이드 순서는 학생 START 파일 대신 생성기 정의와 대조한다. `register`는 해당 id의 항목만 갱신한다.
+- `verify_packages.py <ZIP 또는 폴더>`는 지정한 패키지와 그 목록 항목만 검사한다. 인수가 없으면 기존처럼 전체 목록·학생 ZIP·오프라인 링크를 검사한다.
+- 구조·과제 검증은 구별한다. `reference/project_layout_trials.py`는 새 ZIP의 파일 역할·안내 중복·실행 결과 유출·영문 루트·가이드 바이트와 기존 2회차 ZIP 호환을 검사한다. 학생 AI 수행이나 DB 결과 검증을 대신하지 않는다.
+
 ## 제공 범위
 
 - 온라인2 설계: 원자료·규칙·요구·빈 결과 틀. 실전반에는 앞 단계 설비/센서/부품 모델이 있고 공급 연결은 학생이 작성한다.
@@ -57,3 +68,5 @@ python workspace/강의제작/제작도구/실습시작/verify_packages.py [<ZIP
 `lab_db.py`는 폴더별 새 컨테이너와 자동 배정된 루프백 포트를 사용한다. `랩_연결.json`의 ID와 컨테이너 라벨이 일치할 때만 재사용한다. 포털 DB에 접속하지 않는다. 이미지 최초 다운로드·Docker 기동·학교 네트워크는 별도 조건이다. `NEO4J_AUTH=none`은 새 로컬 교육 컨테이너에만 적용하며 외부 주소에 바인딩하지 않는다.
 
 실행 근거와 미확인은 제작·검증 근거를 따른다. Python 함수·DB 검증과 학생 AI 수행, 데스크톱 화면 확인, 음성 포함 영상 완성은 서로 다른 판정이다.
+
+새 가이드 본문은 개별 생성기에서 작성하고 `lab_frame.step_page(title, lead, sections)`로 목차·절·복사를 붙인다. `command_block`·`answer_html`은 재사용하되 기존 `step_guide`의 고정 안내를 넣지 않는다. `guide_cost`와 `write_guide`에는 `ai_turns=요청 횟수`를 넘겨 자연문 본문도 대기 시간을 추정한다. 실측 `ai_wait`를 넘기면 그 값을 우선하며 새 판의 실측으로 오인하지 않는다.

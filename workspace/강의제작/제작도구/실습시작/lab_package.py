@@ -19,13 +19,14 @@ import json
 import os
 import sys
 import zipfile
+from project_layout import is_project, root_errors
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[3]
 INDEX = HERE/'package-index.json'
 STAMP = (2026, 1, 1, 0, 0, 0)                                # ZIP 항목 시각 — 파일 수정 시각이 해시를 흔들지 않게
 ALWAYS_SKIP = frozenset({'__pycache__', '.pytest_cache'})    # 실행 찌꺼기 — 어느 랩에도 넣지 않는다(.pyc도)
-PRIVATE = frozenset({'.env', '랩_연결.json'})                 # 이 PC의 키 · 랩 DB 연결 — 기본으로 뺀다
+PRIVATE = frozenset({'.env', '랩_연결.json', '.lab_connection.json'})  # 이 PC의 키 · 랩 DB 연결
 
 GUIDE_CSS = '''*{box-sizing:border-box}body{margin:0;background:#f4f6f3;color:#20342f;font:17px/1.8 "Malgun Gothic",sans-serif}main{max-width:1000px;margin:auto;padding:52px 28px}h1{font-size:36px;line-height:1.35}h2{font-size:25px;line-height:1.45;margin:0 0 18px}h3{font-size:20px;margin:22px 0 8px}section{background:white;border:1px solid #dce5df;border-radius:16px;padding:30px;margin:24px 0}a{color:#176554;text-underline-offset:4px}nav{display:flex;gap:14px;flex-wrap:wrap}nav a,.button{display:inline-block;background:#e2eee7;padding:8px 16px;border-radius:8px}p{margin:12px 0}li{margin:8px 0}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#edf2ef;padding:18px;border-radius:8px;font-size:15px}code{font-family:Consolas,monospace}table{border-collapse:collapse;width:100%}td,th{padding:12px;border-bottom:1px solid #dce5df;text-align:left;vertical-align:top}img{max-width:100%;height:auto}small{color:#607269}.check{border-left:4px solid #32886a;padding:12px 18px;background:#edf6ef}details{border-top:1px solid #dce5df;margin-top:18px;padding-top:12px}summary{cursor:pointer}'''
 
@@ -52,7 +53,12 @@ def student_files(folder, exclude_names=PRIVATE):
 
 
 def zip_root(folder):
-    """ZIP 안 랩 경로 NN회차/랩/<랩> — 학생이 풀면 이 구조가 생긴다."""
+    """새 프로젝트는 영문 폴더 하나. 기존 랩은 NN회차/랩/<랩> 구조를 유지한다."""
+    if is_project(folder):
+        errors = root_errors(Path(folder).name)
+        if errors:
+            raise ValueError('; '.join(errors))
+        return Path(folder).name
     return '/'.join(Path(folder).resolve().parts[-3:])
 
 
@@ -91,8 +97,10 @@ def pack(folder, exclude_names=PRIVATE, archive=None):
 
 
 def guide_name(folder):
-    """ZIP 안 가이드 경로 NN회차/랩/<랩>_guide.html — 랩 폴더 옆이라 VS Code로 여는 폴더(AI가 읽는 범위) 밖이다."""
-    return f'{zip_root(folder).rsplit("/", 1)[0]}/{Path(folder).name}_guide.html'
+    """랩 폴더 옆 <랩>_guide.html. 새 프로젝트는 ZIP 최상위, 기존 랩은 NN회차/랩/ 아래다."""
+    root = zip_root(folder)
+    parent = root.rsplit('/', 1)[0] + '/' if '/' in root else ''
+    return f'{parent}{Path(folder).name}_guide.html'
 
 
 def sha256(path):
@@ -113,6 +121,8 @@ def entry(id, course, session, title, version, folder, **extra):
     item = {'id': id, 'course': course, 'session': session, 'title': title, 'version': version,
             'folder': zip_root(folder), 'path': archive.resolve().relative_to(ROOT).as_posix(),
             'sha256': sha256(archive), **extra}
+    if is_project(folder):
+        item['layout'] = 'project'
     guide = outside_guide(folder)
     if guide:
         item['guide_file'] = {'path': guide.resolve().relative_to(ROOT).as_posix(), 'sha256': sha256(guide)}

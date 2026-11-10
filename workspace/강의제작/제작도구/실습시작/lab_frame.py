@@ -448,7 +448,7 @@ def guide_path(lab_folder):
     return lab_folder.parent/(lab_folder.name + GUIDE_SUFFIX)
 
 
-def write_guide(lab_folder, text, ai_wait=None):
+def write_guide(lab_folder, text, ai_wait=None, *, ai_turns=None):
     """가이드를 랩 폴더 밖에 쓰고, 폴더 안의 옛 가이드(guide.html · 안내.html — 생성물)를 지운다. 사진 폴더가 있으면 멈춘다(옮길 길이 아직 없음).
     쓴 뒤 그 랩의 사람 환산 셈(guide_cost)을 한 줄 찍는다 — ai_wait = (분, 출처) 리허설 실측이 있으면 그 값."""
     lab_folder = Path(lab_folder)
@@ -458,7 +458,7 @@ def write_guide(lab_folder, text, ai_wait=None):
         (lab_folder/name).unlink(missing_ok=True)
     target = guide_path(lab_folder)
     write(target, text)
-    print(cost_line(lab_folder, guide_cost(text, ai_wait)))
+    print(cost_line(lab_folder, guide_cost(text, ai_wait, ai_turns=ai_turns)))
     return target
 
 
@@ -519,7 +519,7 @@ class _GuideText(html_parser.HTMLParser):
             self.text.append(data)
 
 
-def guide_cost(guide_html, ai_wait=None):
+def guide_cost(guide_html, ai_wait=None, *, ai_turns=None):
     """사람 분 = max(보이는 글자 ÷ 500(판정 · 참고로 300도), AI 대기) + 손으로 쓰는 행 × 0.3 + 근거 줄을 열어 보는 행 × 0.1 + 명령 × 0.5(의뢰_구현50 3절 —
     강사가 AI를 기다리는 동안에도 설명하며 가고 가이드는 훑어 읽으므로 읽기와 AI 대기는 겹친다).
     보이는 글자 = 정답 토글 · 사진 · 복사 단추를 뺀 글을 공백 하나로 접어 센 수(이 정의는 여기 하나). 손 행 = 정답 토글이 채우는 정할 자리 · 기대 답 CSV의
@@ -529,7 +529,10 @@ def guide_cost(guide_html, ai_wait=None):
     p.feed(guide_html)
     chars = len(re.sub(r'\s+', ' ', ' '.join(p.text)).strip())
     rows, evidence = sum(p.rows.values()), sum(p.evidence.values())
-    wait, source = ai_wait if ai_wait else (p.hints * TURN_MIN, f'루나 턴 {p.hints} × {TURN_MIN}')
+    if ai_turns is not None and (type(ai_turns) is not int or ai_turns < 0):
+        raise ValueError('ai_turns는 랩 정의의 AI 요청 횟수인 0 이상의 정수입니다.')
+    turns = p.hints if ai_turns is None else ai_turns
+    wait, source = ai_wait if ai_wait is not None else (turns * TURN_MIN, f'AI 요청 {turns}회 × {TURN_MIN}분(추정)')
     rest = rows * ROW_MIN + evidence * EVIDENCE_MIN + p.commands * COMMAND_MIN
     return {'글자': chars, '손_행': rows, '근거_행': evidence, '명령': p.commands, 'AI_대기': round(wait, 1), 'AI_대기_출처': source,
             '사람_분': round(max(chars / READ_PER_MIN, wait) + rest, 1), '사람_분_300': round(max(chars / READ_SLOW, wait) + rest, 1),

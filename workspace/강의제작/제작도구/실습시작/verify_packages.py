@@ -16,6 +16,7 @@ import hashlib,html,json,posixpath,re,sys,zipfile
 from build_labs import PICTURE_TYPES, student_photos
 from lab_package import PRIVATE, guide_name, outside_guide, student_files, zip_root
 from lab_frame import MARK, SHOW_RESULT
+from project_layout import errors as project_errors
 ROOT=Path(__file__).resolve().parents[4]
 HERE=Path(__file__).resolve().parent
 OUT=ROOT/'workspace/강의제작/산출물'
@@ -64,7 +65,7 @@ def link_errors(files,docs=None):
     errors=[]
     for name in sorted(files):
         if docs is not None and name not in docs:continue
-        if docs is None and not (name.endswith('.html') or name=='START.md'):continue
+        if docs is None and not (name.endswith('.html') or name in ('START.md', 'README.md')):continue
         text=text_of(files[name]) or ''
         if name.endswith('.html'):
             parser=Links();parser.feed(text);targets=parser.targets
@@ -106,7 +107,10 @@ def check_zip(zpath,folder,need=(),exclude_names=PRIVATE):
     zpath=Path(zpath);folder=Path(folder);errors=[];notes=[]
     with zipfile.ZipFile(zpath) as z:
         names=[n for n in z.namelist() if not n.endswith('/')]
-        root=zip_root(folder)+'/'
+        try:
+            root=zip_root(folder)+'/'
+        except ValueError as exc:
+            return [str(exc)],notes
         inside=[n for n in names if n.startswith(root)]
         if not inside:
             tops={n.split('/',1)[0] for n in names}
@@ -145,6 +149,8 @@ def check_zip(zpath,folder,need=(),exclude_names=PRIVATE):
     for label,items in (('ZIP에만 있음',only_zip),('폴더에만 있음',only_dir),('내용 다름(다시 묶기 필요)',differ)):
         if items:errors.append(f'{zpath.name}: {label} {len(items)}개 — '+', '.join(items[:5])+(' …' if len(items)>5 else ''))
     errors+=forbidden_hits((f'{zpath.name}:{name}',data) for name,data in packed.items())
+    if 'run.py' in packed and any(n.startswith('app/features/') for n in packed):
+        errors += [f'{zpath.name}: {e}' for e in project_errors(packed, root.rstrip('/'))]
     errors+=[f'{zpath.name} 안: {e}' for e in link_errors(packed)]
     for name in need:
         if name not in packed:errors.append(f'{zpath.name}: 풀었을 때 {name} 없음')
@@ -158,24 +164,31 @@ def verify_outside_guide(item,z,names,base):
     결과/는 README와 빈 틀뿐(공용틀_계약 2 · 3 · 4, K-7)."""
     spec=item['guide_file'];guide=ROOT/spec['path']
     assert hashlib.sha256(guide.read_bytes()).hexdigest()==spec['sha256'],(item['id'],'가이드 해시 불일치')
-    sibling=base.rstrip('/').rsplit('/',1)[0]+'/'+guide.name
+    root=base.rstrip('/')
+    sibling=(root.rsplit('/',1)[0]+'/' if '/' in root else '')+guide.name
     assert sibling in names and z.read(sibling)==guide.read_bytes(),(item['id'],'ZIP의 랩 폴더 옆 가이드가 없거나 다름',sibling)
     for n in names:
         if n.startswith(base):
             assert PurePosixPath(n).name not in ('guide.html','안내.html') and not n.endswith('_guide.html'),(item['id'],'랩 폴더 안에 가이드',n)
-    for file in ['START.md','결과/README.md','show_result.py','lab_steps.py']:
-        assert base+file in names,(item['id'],file)
-    assert z.read(base+'show_result.py')==SHOW_RESULT.encode('utf-8'),(item['id'],'show_result.py가 공용 원본과 다름')
-    for n in names:
-        if n.startswith(base+'결과/') and not n.endswith('/'):
-            rest=n[len(base):]
-            assert rest!='결과/보기.html' and not rest.startswith('결과/.보기_이전'),(item['id'],'처음 ZIP에 결과 화면',rest)
-            head=' '.join((text_of(z.read(n)) or '').splitlines()[:3])
-            assert rest=='결과/README.md' or MARK in head,(item['id'],'결과/에 빈 틀이 아닌 파일',rest)
+    project=item.get('layout')=='project'
+    if project:
+        files={n[len(base):]:z.read(n) for n in names if n.startswith(base) and not n.endswith('/')}
+        errors=project_errors(files, root)
+        assert not errors,(item['id'],errors)
+    else:
+        for file in ['START.md','결과/README.md','show_result.py','lab_steps.py']:
+            assert base+file in names,(item['id'],file)
+        assert z.read(base+'show_result.py')==SHOW_RESULT.encode('utf-8'),(item['id'],'show_result.py가 공용 원본과 다름')
+        for n in names:
+            if n.startswith(base+'결과/') and not n.endswith('/'):
+                rest=n[len(base):]
+                assert rest!='결과/보기.html' and not rest.startswith('결과/.보기_이전'),(item['id'],'처음 ZIP에 결과 화면',rest)
+                head=' '.join((text_of(z.read(n)) or '').splitlines()[:3])
+                assert rest=='결과/README.md' or MARK in head,(item['id'],'결과/에 빈 틀이 아닌 파일',rest)
     text=guide.read_text(encoding='utf-8')
     headings=[html.unescape(h) for h in re.findall(r'<section id="s\d+"><h2>\d+ (.*?)</h2>', text)]
-    steps=START_STEP.findall((text_of(z.read(base+'START.md')) or '').split('## 진행 단계',1)[-1].split('\n## ',1)[0])
-    assert headings==steps,(item['id'],'가이드 절과 START 진행 단계가 다름',headings,steps)
+    steps=item.get('guide_steps',[]) if project else START_STEP.findall((text_of(z.read(base+'START.md')) or '').split('## 진행 단계',1)[-1].split('\n## ',1)[0])
+    assert steps and headings==steps,(item['id'],'가이드 절과 랩 정의의 진행 단계가 다름',headings,steps)
     assert '<details class="answer">' in text,(item['id'],'정답 보기 토글 없음')
     parser=Links();parser.feed(text)
     for link in parser.targets:
@@ -191,12 +204,15 @@ def verify_lab(item):
         if item.get('guide_file'):
             verify_outside_guide(item,z,names,base)
             assert not any(Path(x).name=='.env' or '__pycache__' in x for x in names)
+            project=item.get('layout')=='project'
+            input_dir='data/model/' if project else '입력/'
+            changes_dir='data/changes/' if project else '입력/자료_변경분/'
             if '-02-' in item['id']:
                 for file in ['결과/schema.json','결과/graph.json','offline_load.py']:assert base+file not in names,(item['id'],file)
                 assert not any(Path(x).name in ('기대답.json','session2_검증.json') or '/갈래B/' in x for x in names),(item['id'],'강사 기대 답 포함')
-            if item['id'].endswith('-02-graph'):assert base+'입력/graph.json' in names,(item['id'],'입력/graph.json')   # 2회차 실습4만 — 문서 지식 그래프 랩의 모델은 입력/모델/(생성기 설계 조건이 2회차 실습4 입력과 같은 바이트인지 본다)
+            if item['id'].endswith('-02-graph'):assert base+input_dir+'graph.json' in names,(item['id'],input_dir+'graph.json')
             if item['id']=='integrated-02-graph':
-                assert any(x.startswith(base+'입력/자료_변경분/') for x in names),(item['id'],'수정본 없음')
+                assert any(x.startswith(base+changes_dir) for x in names),(item['id'],'수정본 없음')
             if item['id']=='practical-02-ontology':
                 previous=json.loads(z.read(base+'입력/graph.json'))
                 assert not any('Supplier' in n['labels'] for n in previous['nodes'])
@@ -250,15 +266,18 @@ def student_zips(args):
 
 def main(argv):
     items = json.loads((HERE/'package-index.json').read_text(encoding='utf-8'))['labs']
+    if argv:
+        selected={p.resolve() for p in student_zips(argv)}
+        items=[item for item in items if (ROOT/item['path']).resolve() in selected]
     records = [verify_lab(item) for item in items]
-    for course in ['통합반','실전반']:
+    for course in ([] if argv else ['통합반','실전반']):
         guide=ROOT/'workspace/강의제작/산출물'/course/'실습/01회차/오프라인_가이드.html'
         parser=Links();parser.feed(guide.read_text(encoding='utf-8'))
         for link in parser.targets:
             path=urlsplit(link)
             if path.scheme or not path.path:continue
             assert (guide.parent/unquote(path.path)).resolve().exists(),link
-    print(f'package-index {len(records)}개 ZIP: 해시·시작 파일·가이드 링크·과제 정답 경계 통과. 오프라인 가이드 링크 통과.')
+    print(f'package-index {len(records)}개 ZIP: 해시·시작 파일·가이드 링크·과제 정답 경계 통과.' + ('' if argv else ' 오프라인 가이드 링크 통과.'))
     results=[];failed=0
     for zpath in student_zips(argv):
         folder=zpath.parent/zpath.stem
