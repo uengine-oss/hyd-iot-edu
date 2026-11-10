@@ -1198,6 +1198,112 @@ def retention_curves() -> str:
     return svg(o)
 
 
+# ───────────────────────── 02편 층 그림(스캔 고리 · 연결 · 이벤트 로그 · 처리 · 시계열) ─────────────────────────
+
+def _arc(cx, cy, r, a0, a1, color=BLUE, sw=7, size=18):
+    """시계 방향 원호와 끝 화살촉. 각도는 SVG 좌표(아래가 +)의 도."""
+    p0 = (cx + r * math.cos(math.radians(a0)), cy + r * math.sin(math.radians(a0)))
+    p1 = (cx + r * math.cos(math.radians(a1)), cy + r * math.sin(math.radians(a1)))
+    big = 1 if (a1 - a0) % 360 > 180 else 0
+    tang = math.radians(a1 + 90)
+    return [path(f"M {p0[0]:.1f},{p0[1]:.1f} A {r},{r} 0 {big} 1 {p1[0]:.1f},{p1[1]:.1f}", stroke=color, sw=sw),
+            head(p1[0] + 4 * math.cos(tang), p1[1] + 4 * math.sin(tang), tang, color, size)]
+
+
+def octagon(cx, cy, r, st: St):
+    pts = [(cx + r * math.cos(math.radians(22.5 + 45 * i)), cy + r * math.sin(math.radians(22.5 + 45 * i))) for i in range(8)]
+    return [poly(pts, fill=st.accent, stroke=st.line, sw=SW), line(cx - r * 0.5, cy, cx + r * 0.5, cy, stroke=WHITE, sw=7)]
+
+
+def plc_scan_loop() -> str:
+    """센서 → PLC를 감싼 읽기 · 판단 · 지시의 고리 → 구동기(팬). 아래 틈에 고리를 끊는 인터록 정지 표시."""
+    cx, cy, r = 600, 250, 160
+    o = _arc(cx, cy, r, 192, 348) + _arc(cx, cy, r, 12, 74) + _arc(cx, cy, r, 106, 168)
+    o += plc(cx, cy, ON)
+    o += thermo(200, 335, ON)
+    o.append(arrow([(250, 255), (418, 255)], NAVY, sw=4.5))
+    o.append(arrow([(782, 255), (918, 255)], NAVY, sw=4.5))
+    o += fan(1000, 255, 62, ON)
+    o += octagon(cx, cy + r, 30, ON)
+    return svg(o)
+
+
+def connect_p2p_broker() -> str:
+    """왼쪽: 보내는 쪽 셋과 받는 쪽 셋을 모두 직접 이은 얽힌 선. 오른쪽: 가운데 브로커 하나로 모이는 선."""
+    ys = (150, 280, 410)
+    o = dash_line(600, 70, 600, 500, GREY, 3, 10, 9)
+    for ya in ys:
+        for yb in ys:
+            o.append(line(150, ya, 440, yb, stroke=NAVY, sw=2.5))
+    bx, by = 905, 280
+    for y in ys:
+        o.append(line(760, y, bx - 42, by, stroke=BLUE, sw=3.5))
+        o.append(line(bx + 42, by, 1050, y, stroke=BLUE, sw=3.5))
+    for y in ys:
+        o += g(115, y, 0.55, plc(0, 0, NORM)) + g(475, y, 0.55, monitor(0, 0, NORM, "trend"))
+        o += g(725, y, 0.55, plc(0, 0, NORM)) + g(1085, y, 0.55, monitor(0, 0, NORM, "trend"))
+    o += g(bx, by, 0.8, server(0, 0, ON))
+    return svg(o)
+
+
+def event_log_band() -> str:
+    """뒤에 덧붙여 쌓이는 기록 띠(오른쪽 끝 점선 칸이 새 기록), 오른쪽 생산자, 아래 소비자 셋이 각자 읽는다."""
+    x0, cw, ch, y = 230, 62, 74, 190
+    n = 11
+    o: list[str] = []
+    for i in range(n):
+        if i == n - 1:
+            o += dash_rect(x0 + i * cw, y - ch / 2, cw, ch, NAVY, 3, 9, 7)
+        else:
+            o.append(rect(x0 + i * cw, y - ch / 2, cw, ch, 4, fill=PALE if i >= n - 3 else LIGHT, stroke=NAVY, sw=3))
+    o.append(arrow([(1015, y), (x0 + n * cw + 8, y)], BLUE, sw=5, size=16))
+    o += g(1085, y, 0.85, server(0, 0, ON))
+    for cxc, part, k in ((360, bell(0, 0, ON, 1.9), 1.0), (600, cylinder_db(0, 0, ON), 0.8), (840, monitor(0, 0, ON, "trend"), 0.8)):
+        o.append(arrow([(cxc, y + ch / 2 + 10), (cxc, 345)], NAVY, sw=4))
+        o += g(cxc, 410, k, part)
+    return svg(o)
+
+
+def batch_vs_stream() -> str:
+    """왼쪽: 통에 모았다가 정한 때(시계) 한꺼번에 처리 → 늦은 알림. 오른쪽: 흘러오는 기록을 관문에 바로 견주어 바로 알림."""
+    o = dash_line(600, 40, 600, 500, GREY, 3, 10, 9)
+    o.append(rect(70, 210, 300, 200, 10, fill=WHITE, stroke=NAVY))
+    for r_ in range(4):
+        for c in range(7):
+            o.append(rect(88 + c * 39, 230 + r_ * 44, 30, 32, 4, fill=LIGHT, stroke=NAVY, sw=2.5))
+    o += [circle(220, 120, 40, fill=WHITE, stroke=NAVY), line(220, 120, 220, 92, stroke=NAVY, sw=4), line(220, 120, 242, 132, stroke=NAVY, sw=4)]
+    o.append(arrow([(380, 310), (468, 310)], NAVY, sw=4.5))
+    o += bell(515, 305, NORM, 1.6)
+    ys = 310
+    for x in (650, 715, 780, 845):
+        o.append(rect(x, ys - 18, 36, 36, 4, fill=LIGHT, stroke=NAVY, sw=2.5))
+    o.append(rect(905, ys - 70, 26, 140, 6, fill=PALE, stroke=NAVY))
+    for dy in (-40, 0, 40):
+        o.append(line(905, ys + dy, 931, ys + dy, stroke=NAVY, sw=2.5))
+    o.append(rect(968, ys - 18, 36, 36, 4, fill=SKY, stroke=NAVY, sw=2.5))
+    o.append(rect(1040, ys - 18, 36, 36, 4, fill=LIGHT, stroke=NAVY, sw=2.5))
+    o.append(arrow([(640, ys + 52), (1120, ys + 52)], NAVY, sw=4))
+    o.append(arrow([(986, ys - 26), (986, 205)], BLUE, sw=4.5))
+    o += bell(986, 160, ON, 1.6)
+    return svg(o)
+
+
+def series_window() -> str:
+    """시각 축 위에 쌓인 세 태그의 값 줄과, 시각으로 골라 찾는 구간(하늘색 띠)."""
+    o = [rect(650, 70, 230, 370, 10, fill=PALE, stroke="none"),
+         arrow([(170, 455), (1130, 455)], NAVY, sw=4, size=15)]
+    base = (150, 260, 360)
+    xs = [200 + i * 60 for i in range(16)]
+    jit = (0, -10, 6, -4, 10, -8, 4, 12, -6, 2, -12, 8, -2, 6, -10, 4)
+    for k, b in enumerate(base):
+        pts = [(x, b + jit[(i + k * 5) % 16]) for i, x in enumerate(xs)]
+        o.append(path("M " + " L ".join(f"{x},{y}" for x, y in pts), stroke=GREY, sw=2.5))
+        for x, y in pts:
+            inside = 650 <= x <= 880
+            o.append(circle(x, y, 8, fill=SKY if inside else WHITE, stroke=NAVY, sw=2.5))
+    return svg(o)
+
+
 NEW_ONLY: set = {"경로2_1.svg", "경로2_2.svg", "데이터_명령_두경로.svg"}
 
 
@@ -1209,7 +1315,9 @@ def main():
            "지식그래프_지도.svg": kg_map(),
            "기록_되짚기.svg": record_trail(), "대화_교정.svg": chat_teacher(), "기억_곡선.svg": retention_curves(), "읽기위치_전후.svg": offset_rows(), "리니지_좁히기.svg": lineage_narrow(),
            "종류_네칸.svg": kinds_columns(), "속성_눈금.svg": property_scale(), "관계_이름.svg": relation_named(),
-           "채우기_정의변경.svg": fill_or_redefine(), "저장_그림_옳음.svg": stored_not_true(), "증거_세결과.svg": evidence_outcomes()}
+           "채우기_정의변경.svg": fill_or_redefine(), "저장_그림_옳음.svg": stored_not_true(), "증거_세결과.svg": evidence_outcomes(),
+           "PLC_스캔고리.svg": plc_scan_loop(), "연결_점대점_브로커.svg": connect_p2p_broker(), "이벤트로그_띠.svg": event_log_band(),
+           "처리_배치_스트림.svg": batch_vs_stream(), "시계열_구간.svg": series_window()}
     for name, text in out.items():
         assert "<text" not in text
         if (HERE / name).exists() and name not in NEW_ONLY:
