@@ -88,7 +88,7 @@ wsl --update
 - **clone · pull이 `schannel: server closed abruptly`로 끊길 때**: 학교망 보안 장비가 Windows 기본 암호화 연결을 끊는 경우다. `git config --global http.sslBackend openssl` 을 한 번 실행한 뒤 다시 받는다. 그래도 안 되면 휴대폰 핫스팟에서 받는다.
 - Git이 아직 없어 자동 설치 파일로 프로그램부터 준비하려면, [ZIP 다운로드](https://github.com/uengine-oss/hyd-iot-edu/archive/refs/heads/main.zip)로 받은 폴더에서 아래 「자동 설치 파일」만 실행하고, 설치가 끝나면 위처럼 `git clone`으로 실습 폴더를 받는다(ZIP 폴더는 설치용이라 지워도 된다).
 
-VS Code의 **File → Open Folder**에서 이 프로젝트 폴더를 연다. 한국어 표시가 필요하면 [Microsoft 한국어 언어 팩](https://marketplace.visualstudio.com/items?itemName=MS-CEINTL.vscode-language-pack-ko)을 설치하고 [표시 언어](https://code.visualstudio.com/docs/configure/locales)를 변경할 수 있다. 실습의 AI 코딩 도구는 두 가지다 — VS Code에 [GitHub Copilot](https://code.visualstudio.com/docs/copilot/setup)과 [OpenAI Codex 확장](https://learn.chatgpt.com/docs/codex/ide)을 설치하고 각각 본인 계정(GitHub · ChatGPT)을 연결한다. 사용 가능한 모델·사용량은 계정과 제품에 따라 다르다. 이 AI 코딩 도구는 실습 시스템의 강의 중계 키와 별개다.
+VS Code의 **File → Open Folder**에서 이 프로젝트 폴더를 연다. 한국어 표시가 필요하면 [Microsoft 한국어 언어 팩](https://marketplace.visualstudio.com/items?itemName=MS-CEINTL.vscode-language-pack-ko)을 설치하고 [표시 언어](https://code.visualstudio.com/docs/configure/locales)를 변경할 수 있다. 실습의 AI 코딩 도구는 [OpenAI Codex 확장](https://learn.chatgpt.com/docs/codex/ide) 하나다 — VS Code에 설치하고 본인 ChatGPT 계정을 연결한다(구글 계정으로 무료 가입해도 된다). 사용 가능한 모델·사용량은 계정에 따라 다르다. 이 AI 코딩 도구는 실습 시스템의 강의 중계 키와 별개다.
 
 ### 자동 설치 파일
 
