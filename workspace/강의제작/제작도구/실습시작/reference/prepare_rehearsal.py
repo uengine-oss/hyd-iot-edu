@@ -2,8 +2,9 @@
 쓰는 법: python prepare_rehearsal.py <리허설 폴더(없어야 함)> <학생 ZIP> [<학생 ZIP> …]   — 가이드는 각 ZIP 옆 <랩>_guide.html
 학생 역은 가이드_본문.txt만 읽고, 막힌 단계에서만 정답_토글/NN.txt를 연다(원본 HTML은 토글이 함께 읽혀 리허설이 무효가 된다).
 """
-import hashlib, html, re, shutil, sys, zipfile
+import hashlib, html, re, shutil, sys
 from pathlib import Path
+from ai_toy_test import RULE_FILES, unpack
 
 
 def text_of(fragment):
@@ -31,26 +32,43 @@ def split_guide(guide, out):
     return len(list(toggles.iterdir()))
 
 
+def check_root(root):
+    for parent in [root, *root.parents]:
+        hit = [n for n in RULE_FILES if (parent/n).exists()]
+        if hit:
+            raise SystemExit(f'{parent}에 {hit} — 학생 AI가 함께 읽는다, 다른 곳에 둔다')
+
+
+def prepare_bundle(z, root):
+    guide = z.with_name(z.stem + '_guide.html')
+    if not guide.is_file():
+        raise SystemExit(f'{guide}가 없다 — 같은 판의 가이드가 필요하다')
+    tmp = root/'_unpack'
+    if tmp.exists():
+        raise SystemExit(f'{tmp}가 이미 있다 — 이전 준비 결과를 먼저 확인한다')
+    base = unpack(z, tmp)
+    name = Path(base).name if base else z.stem
+    lab = root/name
+    out = root/f'{name}_가이드'
+    if lab.exists() or out.exists():
+        raise SystemExit(f'{name}: 같은 이름의 랩이나 가이드가 이미 있다 — 덮어쓰지 않는다')
+    shutil.move(str(tmp), str(lab))
+    out.mkdir()
+    n = split_guide(guide, out)
+    print(f'{name}: ZIP {hashlib.sha256(z.read_bytes()).hexdigest()[:12]} · 가이드 {hashlib.sha256(guide.read_bytes()).hexdigest()[:12]} · 토글 {n}단계 → {out}')
+    return lab, out
+
+
 def main():
-    root = Path(sys.argv[1])
+    if len(sys.argv) < 3:
+        raise SystemExit('prepare_rehearsal.py <새 리허설 폴더> <학생 ZIP> [<학생 ZIP> …]')
+    root = Path(sys.argv[1]).resolve()
+    check_root(root)
     if root.exists():
         raise SystemExit(f'{root}가 이미 있다 — 새 이름을 준다')
     root.mkdir(parents=True)
     for z in map(Path, sys.argv[2:]):
-        tmp = root/'_풀기'
-        zipfile.ZipFile(z).extractall(tmp)
-        lab = next(p for p in tmp.rglob('START.md')).parent
-        shutil.move(str(lab), str(root/lab.name))
-        shutil.rmtree(tmp)
-        guide = z.with_name(z.stem + '_guide.html')
-        out = root/f'{lab.name}_가이드'
-        out.mkdir()
-        n = split_guide(guide, out)
-        print(f'{lab.name}: ZIP {hashlib.sha256(z.read_bytes()).hexdigest()[:12]} · 가이드 {hashlib.sha256(guide.read_bytes()).hexdigest()[:12]} · 토글 {n}단계 → {out}')
-    for parent in [root, *root.parents]:
-        hit = [n for n in ('AGENTS.md', 'CLAUDE.md', '.git') if (parent/n).exists()]
-        if hit:
-            raise SystemExit(f'{parent}에 {hit} — 학생 AI가 함께 읽는다, 다른 곳에 둔다')
+        prepare_bundle(z, root)
 
 
 if __name__ == '__main__':

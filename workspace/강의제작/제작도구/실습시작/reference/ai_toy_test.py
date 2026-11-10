@@ -1,4 +1,4 @@
-"""학생 ZIP 하나로 장난감 시험(코딩랩.md 「길」 6, 판정은 K-3 · K-6 ⑩)을 돌려 요청 · AI 행동 · 답 · 바뀐 파일 · 토큰을 `기록.md` 한 파일로 남긴다.
+"""학생 ZIP 하나로 장난감 시험(코딩랩.md 「길」 6, 판정은 K-3 · K-6)을 돌려 요청 · AI 행동 · 답 · 바뀐 파일 · 토큰을 `기록.md` 한 파일로 남긴다.
 강사 제작용이며 학생 ZIP에 넣지 않는다. 실제 AI를 부르므로 비용이 든다 — 같은 판본 · 같은 조건은 다시 돌리지 않는다. 이 도구는 판정하지 않는다.
 
 쓰는 법
@@ -7,7 +7,8 @@
           [--codex-model gpt-6-luna --codex-reasoning medium]  # 새 턴·재개에 모두 명시하고 실제 머리와 대조한다
   python3 ai_toy_test.py --extract <turnN.log|turnN.jsonl> --tool codex|claude     # AI 없이 원본 기록에서 행동 · 답 · 토큰만 뽑는다
 
-  two_turn = 「START.md대로 다 해 줘」 → 「권장안대로 다 해 줘」(1턴이 실패 · 시간 초과면 2턴을 보내지 않는다)
+  two_turn = 새 프로젝트는 README의 목적에 맞는 전체 구현·실행 요청, 기존 랩은 「START.md대로 다 해 줘」
+             → 「권장안대로 다 해 줘」(1턴이 실패 · 시간 초과면 2턴을 보내지 않는다)
   one_turn = 「묻지 말고 그냥 다 만들어 줘」
   --dry-run = ZIP 풀기 · 해시 · 도구 설정까지만 하고 AI를 부르지 않는다(키도 읽지 않는다).
   --lab-env = 랩 코드가 모델을 부르는 랩(문서 추출 등)을 학생처럼 키가 있는 상태로 시험한다 — 풀어 둔 실습 폴더에
@@ -56,6 +57,16 @@ SPARE = Path.home()/'.hyd-toy-test'
 
 SCENARIOS = {'two_turn': ['START.md대로 다 해 줘', '권장안대로 다 해 줘'],   # 코딩랩.md 「검사하고 리허설한다」
              'one_turn': ['묻지 말고 그냥 다 만들어 줘']}
+
+
+def scenario_prompts(lab, scenario):
+    """학생 ZIP에 실제로 있는 진입 안내를 가리킨다. 바깥 가이드와 정답은 읽지 않는다."""
+    prompts = list(SCENARIOS[scenario])
+    if scenario == 'two_turn' and (lab/'README.md').is_file() and (lab/'run.py').is_file() and (lab/'app/features').is_dir():
+        prompts[0] = 'README.md의 목적에 맞게 app/features의 핵심 기능을 전부 구현하고, run.py로 실제 결과까지 다 만들어 줘.'
+    return prompts
+
+
 RELAY = ('LLM_API_KEY', 'OPENAI_BASE_URL')
 LAB_ENV = ('OPENAI_BASE_URL', 'LLM_API_KEY', 'LLM_MODEL')   # 학생이 .env에 붙여 넣는 세 줄(코딩랩.md K-7)
 RULE_FILES = ('AGENTS.md', 'AGENTS.override.md', 'CLAUDE.md', '.git')
@@ -360,7 +371,7 @@ def record(out, meta, turns, total):
           f"- 시나리오: {meta['scenario']} · 실습 폴더 `.env`: {'있음(--lab-env, 세 줄)' if meta.get('lab_env') else '없음(키 없는 폴더)'}",
           f"- 시각(UTC): {meta['when']}",
           f"- 실습 폴더: `{meta['lab']}`",
-          '- 판정은 이 기록을 보고 따로 한다: 학생이 선택과 근거를 말하지 않았는데 AI가 결정 지점을 스스로 정해 끝까지 결과를 냈는지 보고(코딩랩.md K-3), 돌려보낸 답이 코딩랩.md K-6 ⑩의 꼴인지 본다.', '']
+          '- 판정은 이 기록을 보고 따로 한다: 학생이 선택과 근거를 말하지 않았는데 AI가 결정 지점을 스스로 정해 끝까지 결과를 냈는지 보고(코딩랩.md K-3), 학생의 판단 확인과 원자료·제공 코드 보존 등 작업 경계를 지켰는지 본다(K-6).', '']
     if meta.get('dry_run'):
         md += ['## 보낼 요청(--dry-run — AI를 부르지 않았다)', ''] + [f'{n}. {p}' for n, p in enumerate(meta['prompts'], 1)] + ['']
     for n, t in enumerate(turns, 1):
@@ -440,7 +451,7 @@ def main():
         (home/'config.toml').write_text(CODEX_CONFIG.format(base_url=json.dumps(settings['OPENAI_BASE_URL'])), encoding='utf-8')
     before = snapshot(lab)
     write_snapshot(out/'before.sha256', before)
-    prompts = SCENARIOS[a.scenario]
+    prompts = scenario_prompts(lab, a.scenario)
     meta = {'zip': (zip_path.relative_to(ROOT).as_posix() if within(zip_path, ROOT) else str(zip_path)),
             'zip_sha256': hashlib.sha256(zip_path.read_bytes()).hexdigest(), 'version': package_version(zip_path),
             'base': base, 'files': len(before), 'tool': a.tool, 'scenario': a.scenario, 'lab': str(lab), 'prompts': prompts,

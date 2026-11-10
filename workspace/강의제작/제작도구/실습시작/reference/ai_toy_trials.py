@@ -1,5 +1,7 @@
 """언제: 장난감 시험 도구를 고쳤을 때 — 가이드 격리·손상 ZIP 거절·모델/추론 기록을 모델 호출 없이 확인한다."""
 from pathlib import Path
+import contextlib
+import io
 import json
 import os
 import shutil
@@ -8,6 +10,7 @@ import tempfile
 import zipfile
 
 import ai_toy_test as toy
+import prepare_rehearsal as rehearsal
 
 
 def main():
@@ -35,6 +38,45 @@ def main():
             'AGENTS.md', 'START.md', '자료/관측.csv']
         checks.append('형제 가이드는 풀지 않고 학생 파일 바이트 보존')
         assert (lab / '자료/관측.csv').read_text(encoding='utf-8') == good[base + '/자료/관측.csv']
+        assert toy.scenario_prompts(lab, 'two_turn') == ['START.md대로 다 해 줘', '권장안대로 다 해 줘']
+        checks.append('기존 랩의 전체 수행 요청 유지')
+        page = '<section id="s1"><p>자료를 읽어 선택한다.</p><details><summary>정답 보기</summary><p>이 단계의 답</p></details></section>'
+        project_base = 'root-cause-lab'
+        project = {project_base+'/README.md': '# 목적', project_base+'/AGENTS.md': '판단 확인',
+                   project_base+'/run.py': 'print("진입점")', project_base+'/app/features/query.py': 'raise NotImplementedError',
+                   project_base+'/data/observations.csv': '시각,값\n', project_base+'_guide.html': page}
+        for tag, entries, expected_name in [('legacy', good | {base+'_guide.html': page}, '실습'),
+                                             ('project', project, project_base)]:
+            archive = bundle(tag, entries)
+            archive.with_name(archive.stem+'_guide.html').write_text(page, encoding='utf-8')
+            destination = work/('rehearsal_'+tag)
+            destination.mkdir()
+            with contextlib.redirect_stdout(io.StringIO()):
+                prepared, guidance = rehearsal.prepare_bundle(archive, destination)
+            assert prepared.name == expected_name
+            assert not list(prepared.rglob('*.html'))
+            assert '이 단계의 답' not in (guidance/'가이드_본문.txt').read_text(encoding='utf-8')
+            assert '이 단계의 답' in (guidance/'정답_토글/01.txt').read_text(encoding='utf-8')
+            prefix = base if tag == 'legacy' else project_base
+            expected = {name[len(prefix)+1:]: value.encode('utf-8') for name,value in entries.items() if name.startswith(prefix+'/')}
+            observed = {p.relative_to(prepared).as_posix(): p.read_bytes() for p in prepared.rglob('*') if p.is_file()}
+            assert observed == expected
+            checks.append(f'{tag} 리허설 실제 준비: 학생 바이트 보존·본문/정답 분리')
+            if tag == 'project':
+                prompts = toy.scenario_prompts(prepared, 'two_turn')
+                assert 'README.md' in prompts[0] and 'app/features' in prompts[0] and 'run.py' in prompts[0]
+                assert 'START.md' not in prompts[0] and prompts[1] == '권장안대로 다 해 줘'
+                assert toy.scenario_prompts(prepared, 'one_turn') == ['묻지 말고 그냥 다 만들어 줘']
+                assert toy.SCENARIOS['two_turn'][0] == 'START.md대로 다 해 줘'
+                checks.append('새 프로젝트의 실제 진입점으로 전체 구현·실행 요청, 기존 요청 불변')
+        guarded = work/'unsafe-rehearsal'
+        try:
+            rehearsal.check_root(guarded)
+        except SystemExit:
+            assert not guarded.exists()
+            checks.append('저장소 상위 규칙 검사는 리허설 폴더 생성 전에 거절')
+        else:
+            raise AssertionError('저장소 안 리허설을 허용함')
         for i, bad in enumerate(['05회차/대본/답.md', '05회차/랩/다른_guide.html',
                                  base + '/../탈출.txt', base + '/..\\탈출.txt', base + '/C:/탈출.txt']):
             destination = work / f'reject{i}'
