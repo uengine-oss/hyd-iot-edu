@@ -10,7 +10,13 @@ def commands(items):
     return ''.join(F.command_block(cmd) + '<p class="check">' + F.inline(check) + '</p>' for cmd, check in items)
 
 
-def section(name, text, *, prompt=None, cmd=None, check='', ai=False, extra='', recovery=None, followup=None):
+SAVE_NOTE = '파일을 손으로 고친 뒤에는 **Ctrl+S**로 저장합니다(탭 이름 옆 ●가 사라지면 저장됨). 저장하지 않으면 명령이 고치기 전 내용을 읽어 0행으로 보입니다.'
+ASK_NOTE = ('요청에 파일 이름을 쓸 때는 백틱(`)으로 감쌉니다. 채팅 입력이 밑줄(_)을 서식으로 바꾸기 때문입니다. '
+            '`python run.py` 명령은 내 터미널에서 실행하고, 터미널 출력과 결과 화면으로 확인합니다.')
+IMPL_NOTE = ('Codex가 파일을 바꾸려 하면 편집 승인 창이 뜹니다. `app/features/` 아래 요청한 파일이면 **Allow once**, 그 밖의 경로면 **Deny**를 누릅니다. ' + ASK_NOTE)
+
+
+def section(name, text, *, prompt=None, cmd=None, check='', ai=False, extra='', recovery=None, followup=None, when_new=None):
     body = ''.join(paragraph(t) for t in text)
     if prompt:
         body += F.answer_html(F.A('막히면 지금까지 확인한 내용에 이어서 요청합니다.', F.ask_ai(prompt)))
@@ -19,6 +25,8 @@ def section(name, text, *, prompt=None, cmd=None, check='', ai=False, extra='', 
         body += F.command_block(cmd)
     if check:
         body += '<p class="check">' + F.inline(check) + '</p>'
+    if when_new:
+        body += '<details><summary>새 랩 DB가 만들어졌다는 안내가 나왔을 때 — 먼저 실행</summary>' + commands(when_new) + '</details>'
     if followup:
         body += commands(followup)
     if recovery:
@@ -27,7 +35,7 @@ def section(name, text, *, prompt=None, cmd=None, check='', ai=False, extra='', 
 
 
 ONTOLOGY_PURPOSE = '포털 지식 지도에서 살펴본 연결을 직접 설계합니다. 원자료로 온톨로지를 만들어 설비별 센서와 공용 부품을 찾습니다.'
-GRAPH_PURPOSE = '설비·센서·부품의 온톨로지를 별도 랩 DB에 구현합니다. 조회와 부분 수정 결과를 원자료와 대조합니다.'
+GRAPH_PURPOSE = '설비·센서·부품의 온톨로지를 이 폴더 전용 그래프 DB(랩 DB)에 구현합니다. 조회와 부분 수정 결과를 원자료와 대조합니다.'
 
 
 def setup(folder, first=True):
@@ -55,12 +63,12 @@ def ontology():
             '① 설비의 구성 요소마다 어떤 센서가 붙는가? ② 같은 물리량을 재는 센서의 단위·정상값·한계는 무엇인가? ③ 부품을 어느 설비가 함께 쓰며, 다른 품번 표기로 물어도 찾을 수 있는가?',
             '방금 찾은 자료 중 이 질문에 쓸 자료와 지킬 조건도 적습니다. 공급·입고 판단은 이번 범위에서 제외하고, 근거 없는 값과 연결을 만들지 않는 조건을 자기 말로 남깁니다.',
             '`app/features/expected.csv`에 원자료에서 찾은 답과 근거 줄을 적습니다. 질문 1은 고른 설비의 구성 요소 셋, 질문 2는 물리량 한 묶음, 질문 3은 공용 부품·다른 표기·없는 품번을 하나씩 확인합니다. 열의 뜻은 파일 첫 줄에 있습니다.',
-            '같은 제조사 품번의 사내 품번들을 한 물품으로 볼지, 품번이 없거나 품명만 있는 행을 예비품 목록으로 연결할지 정합니다. 답을 쓸 사람과 원자료를 근거로 선택하고 `app/features/decisions.csv`에 적습니다. AI의 추천은 선택 근거가 되지 않습니다.'],
+            '같은 제조사 품번의 사내 품번들을 한 물품으로 볼지, 품번이 없거나 품명만 있는 행을 예비품 목록으로 연결할지 정합니다. 답을 쓸 사람과 원자료를 근거로 선택하고 `app/features/decisions.csv`에 적습니다. AI의 추천은 선택 근거가 되지 않습니다.', SAVE_NOTE],
             prompt='내가 작성한 requirements.md, expected.csv, decisions.csv를 읽고 자료에서 확인한 내용과 맞는지 되짚어 줘. 파일은 바꾸지 말고, 서로 다른 뜻으로 읽히거나 근거가 없는 곳만 짚어 줘. 내가 아직 선택하지 않은 판단은 먼저 물어봐.',
             cmd='python run.py expected', check='화면의 기대 답과 근거가 내가 적은 내용인지 봅니다. 이 표는 구현 결과와 견줄 기준입니다.', ai=True),
         section('식별자와 관계 방향 정하기', [
             '이름이 같아도 다른 설비의 센서는 구분해야 합니다. Codex에게 자료의 어떤 열로 대상을 구별하고 관계를 어느 방향으로 연결할지 계획을 설명하게 합니다.',
-            '그 계획이 세 질문에 답할 수 있는지 검토한 뒤 `app/features/design.csv`와 `relations.csv`에 반영하도록 요청합니다. 식별자에 쓸 열은 `{열 이름}`으로 적습니다.'],
+            '그 계획이 세 질문에 답할 수 있는지 검토한 뒤 `app/features/design.csv`와 `relations.csv`에 반영하도록 요청합니다. 식별자에 쓸 열은 `{열 이름}`으로 적습니다.', IMPL_NOTE],
             prompt='지금 검토한 식별 기준과 관계 방향을 app/features/design.csv와 relations.csv에 반영해 줘. 같은 이름의 다른 대상이 합쳐지지 않는지 원자료 열로 확인해 줘. 아직 합의하지 않은 기준은 구현 전에 물어봐. 다른 기능은 만들지 마.',
             cmd='python run.py design', check='겹친 식별자가 같은 대상의 중복 행인지 원문에서 확인합니다. 다른 대상이 섞였다면 해당 행을 들어 식별 기준을 고칩니다.', ai=True),
         section('같은 장치의 이름 정리하기', [
@@ -85,14 +93,14 @@ def ontology():
             cmd='python run.py parts', check='부품별 사용 설비, 연결하지 않은 행, 같은 규격의 처리 결과를 선택 근거와 견줍니다. `output/schema.json`과 `graph.json`이 생성됩니다.', ai=True),
         section('질문으로 결과 검증하기', [
             '처음 적은 기대 답과 모델에 물은 답을 비교합니다. 다른 설비와 없는 품번도 확인해 처음 고른 사례에서만 맞는 규칙인지 살펴봅니다.',
-            '다른 줄이 있으면 입력·기대 답·실제 결과를 Codex에 함께 보여 줍니다. 원자료로 원인을 확인한 뒤 해당 기능만 고칩니다. 고쳤을 때는 `python run.py parts`로 모델을 다시 만든 뒤 아래 조회를 실행합니다.'],
+            '다른 줄이 있으면 입력·기대 답·실제 결과를 Codex에 함께 보여 줍니다. 원자료로 원인을 확인한 뒤 해당 기능만 고칩니다. 고쳤으면 아래 「고친 뒤 다시 확인」의 순서로 다시 실행합니다.'],
             prompt='지금 결과에서 다른 줄 하나의 입력, expected.csv의 근거, 실제 답을 비교해 원인을 설명해 줘. 먼저 파일은 바꾸지 마. 원인을 확인하면 해당 판단 함수나 기준 표만 고치도록 요청할게.',
             cmd='python run.py query', check='답이 맞거나 차이를 원자료로 설명할 수 있어야 합니다. 결과에 맞추려고 기대 답을 바꾸지 않습니다. 고친 근거는 requirements.md에 짧게 남깁니다.', ai=True,
             recovery=[('python run.py parts', '고친 기준으로 모델이 생성됐는지 봅니다.'),
                       ('python run.py query', 'F5를 눌러 고친 질문의 기대 답과 실제 답을 대조합니다.')]),
         section('구조 확인하기', [
             '답의 의미를 확인했으므로 식별자 중복과 잘못된 연결도 검사합니다. 오류가 있으면 명령과 출력 전문을 Codex에 보내 어느 구현에서 생겼는지 찾습니다.',
-            '기준이나 기능을 고쳤다면 `python run.py parts`로 모델을 다시 만들고 아래 검사를 실행합니다. 그 뒤 `python run.py query`로 질문의 답도 달라졌는지 봅니다.'],
+            '기준이나 기능을 고쳤다면 아래 「고친 뒤 다시 확인」의 순서로 모델 · 검사 · 질문의 답을 다시 봅니다.'],
             prompt='구조 검사 출력이 가리키는 대상과 관계를 찾아, app/features의 어떤 기준에서 생긴 문제인지 설명해 줘. 원자료와 검사 기준은 바꾸지 마. 내가 원인을 확인하면 필요한 부분만 고쳐 줘.',
             cmd='python run.py check', check='구조 검사 통과를 확인합니다. 구조가 맞아도 질문의 답이 맞는지는 앞의 원자료 대조로 판단합니다.',
             recovery=[('python run.py parts', '고친 기준으로 모델이 생성됐는지 봅니다.'),
@@ -113,7 +121,7 @@ def render(title, purpose, steps):
 def graph(portal_table):
     return [setup('graph-lab', first=False),
         section('랩 DB 준비하기', [
-            '모델을 넣고 조회할 공간을 준비합니다. Docker Desktop을 켜고 실행 중인지 본 뒤 아래 명령을 실행합니다. 이 폴더 전용의 별도 랩 DB가 만들어집니다.'],
+            '모델을 넣고 조회할 공간을 준비합니다. Docker Desktop을 켜고 실행 중인지 본 뒤 아래 명령을 실행합니다. 이 폴더에서만 쓰는 랩 DB가 만들어집니다.'],
             cmd='python run.py db', check='모델 파일의 개수와 랩 DB 개수가 나란히 보입니다. 처음 만든 DB는 0이며, 이어서 작업하는 DB는 이전에 넣은 개수입니다.'),
         section('Codex와 모델 파악하기', [
             '무엇을 넣을지 알아야 적재한 결과를 검증할 수 있습니다. Codex 채팅을 열어 로그인하고, 파일을 바꾸지 말고 `data/model/schema.json`과 `graph.json`의 종류·식별자·관계 방향을 설명해 달라고 요청합니다. 계정이 없거나 막히면 클래스룸에서 별도로 받는 `graph-lab-completed.zip`을 실행해 볼 수 있습니다.',
@@ -123,12 +131,12 @@ def graph(portal_table):
         section('질문과 기대 답 정하기', [
             '보전팀이 가동 중인 설비의 예비품을 준비할 때 쓸 답을 만듭니다. `app/features/review.md`에 질문·사용할 자료·기준일·지킬 조건을 자기 말로 적습니다. 공급 조건·입고 판단과 모델 정의 변경은 이번 범위에서 제외합니다.',
             '설비별 센서, 설비별 교체 부품, 부품의 사용 설비를 조회할 것입니다. `expected.csv`에 원자료에서 찾은 답과 근거를 먼저 적습니다. 설비 하나의 센서와 부품, 공용 부품, 다른 표기, 없는 품번을 확인할 값을 고릅니다. 볼 열은 조회 결과에서 비교할 열 이름입니다.',
-            '가동하지 않는 설비를 사용 설비 조회에서 어떻게 보일지 정합니다. `data/changes/2026-10-20/`의 수정본도 읽고 불용으로 바뀐 설비를 상태로 남길지, 그 설비에만 속한 대상과 함께 지울지 선택합니다. 선택과 근거를 `decisions.csv`에 적고 AI의 추천은 원자료로 다시 확인합니다.'],
+            '가동하지 않는 설비를 사용 설비 조회에서 어떻게 보일지 정합니다. `data/changes/2026-10-20/`의 수정본도 읽고 불용으로 바뀐 설비를 상태로 남길지, 그 설비에만 속한 대상과 함께 지울지 선택합니다. 선택과 근거를 `decisions.csv`에 적고 AI의 추천은 원자료로 다시 확인합니다.', SAVE_NOTE],
             prompt='내 review.md, expected.csv, decisions.csv를 읽고 방금 확인한 모델·원자료·수정본과 맞는지 짚어 줘. 파일은 바꾸지 마. 기대 답에 필요한 조건이나 내 선택이 빠졌으면 먼저 물어봐.',
             cmd='python run.py expected', check='화면에 내가 적은 입력·기대 답·근거가 보입니다. 이 답으로 조회 결과를 대조합니다.', ai=True),
         section('모델 적재하기', [
             '같은 대상을 무엇으로 알아볼지 Codex와 정합니다. 다시 적재할 때 이미 고친 값을 유지할지 원자료 값으로 되돌릴지도 검토합니다.',
-            '계획을 확인한 뒤 `app/features/load.cypher`만 작성하도록 요청합니다. 종류·관계마다 문장을 나누고, 바로 위에 `// 넣을 것: <종류 또는 관계>`를 적습니다. 제공 도구가 해당 행을 `$rows`로 넘겨 실행합니다.'],
+            '계획을 확인한 뒤 `app/features/load.cypher`만 작성하도록 요청합니다. 종류·관계마다 문장을 나누고, 바로 위에 `// 넣을 것: <종류 또는 관계>`를 적습니다. 제공 도구가 해당 행을 `$rows`로 넘겨 실행합니다.', IMPL_NOTE],
             prompt='지금 검토한 식별 기준과 재적재 시 값 처리 방식을 load.cypher에 구현해 줘. schema.json의 종류와 관계 방향을 따르고 행은 $rows로 받아 줘. 같은 대상을 중복 생성하거나 전체를 지우지 마. 조회와 수정은 아직 작성하지 마.',
             cmd='python run.py load', check='모델 파일과 DB의 종류별 개수가 같은지 봅니다. 다르면 해당 종류의 입력 행과 적재 문장을 Codex와 대조합니다.', ai=True),
         section('같은 적재 다시 확인하기', [
@@ -165,9 +173,9 @@ def graph(portal_table):
             '**파일 → 모두 저장**을 선택하고 같은 폴더를 닫았다 다시 엽니다. 아래 명령으로 랩 DB를 켜고 조회 결과와 저장한 그래프를 확인합니다.',
             '`review.md`에 기준일·수정본 날짜·저장 시점·확인하지 못한 점을 짧게 남깁니다. 실습 폴더 전체를 USB나 개인 클라우드에 보관합니다. 계정 없이 결과를 실행할 때는 클래스룸의 별도 `graph-lab-completed.zip`을 사용합니다.'],
             cmd='python run.py db',
-            check='같은 폴더의 DB가 열렸는지 봅니다. 수정 뒤 개수는 제공 모델과 다를 수 있습니다. 새 DB를 만들었다는 안내가 나오면 아래 접힌 안내에서 저장한 적재·수정을 먼저 실행합니다.',
+            check='같은 폴더의 DB가 열렸는지 봅니다. 수정 뒤 개수는 제공 모델과 다를 수 있습니다. 새 DB를 만들었다는 안내가 나오면 바로 아래 접힌 안내의 적재·수정을 먼저 실행합니다.',
+            when_new=[('python run.py load', '새 DB에 넣은 개수가 사용한 모델과 같은지 봅니다.'),
+                      ('python run.py update', '수정본의 값과 선택한 삭제 범위가 반영됐는지 봅니다.')],
             followup=[('python run.py usage', 'F5를 눌러 수정 뒤 조회 결과가 유지되는지 봅니다.'),
                       ('python run.py export', '`output/schema.json`과 `graph.json`에 저장한 개수를 확인합니다.'),
-                      ('python run.py check', '구조 검사를 통과하는지 확인합니다.')],
-            recovery=[('python run.py load', '새 DB에 넣은 개수가 사용한 모델과 같은지 봅니다.'),
-                      ('python run.py update', '수정본의 값과 선택한 삭제 범위가 반영됐는지 봅니다. 위의 조회·저장·구조 검사를 차례로 이어갑니다.')])]
+                      ('python run.py check', '구조 검사를 통과하는지 확인합니다.')])]

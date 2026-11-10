@@ -12,6 +12,20 @@ def norm(text):
     return ' · '.join(sorted(x for x in re.split(r'[·,\s]+', str(text or '')) if x))
 
 
+def same(expected, actual):
+    """대조 화면은 적은 글을 그대로 보이고, 같음 여부만 norm으로 견준다."""
+    return norm(expected) == norm(actual)
+
+
+def shown(value):
+    """조회 결과 칸을 화면 글로: 값 없음은 「없음」, 목록은 「 · 」로 잇는다."""
+    if value is None:
+        return '없음'
+    if isinstance(value, list):
+        return ' · '.join(shown(v) for v in value) or '없음'
+    return value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
+
+
 def expected_rows(columns, key):
     """기대 답 표의 행. key = 한 행을 가리키는 열들 — 같은 짝이 두 줄이면 결과 화면이 한 줄을 조용히 덮으므로 두 줄 번호를 대고 멈춘다."""
     path = HERE / 'app/features/expected.csv'
@@ -117,15 +131,15 @@ def ask_question(number):
     for r in rows or [{'물을_값': '', '볼_열': ''}]:
         params = {names[0]: r['물을_값']} if names else {}
         (_, _, cols, data), = db(C.query, path, str(number), params)
-        blocks.append(R.table(f'질문 {number} — 물은 값 「{r["물을_값"]}」', cols, [[json.dumps(v, ensure_ascii=False) if not isinstance(v, str) else v for v in row] for row in data]))
+        blocks.append(R.table(f'질문 {number} — 물은 값 「{r["물을_값"]}」', cols, [[shown(v) for v in row] for row in data]))
         if r.get('볼_열'):
             if r['볼_열'] not in cols:
                 raise R.Stop(f'app/features/expected.csv: 볼_열 「{r["볼_열"]}」이 질문 {number} 결과의 열({", ".join(cols)})에 없습니다.')
             i = cols.index(r['볼_열'])
-            exp.append({'짝': r['물을_값'], '답': norm(r['기대_답'])})
-            act.append({'짝': r['물을_값'], '답': norm(' · '.join('없음' if row[i] is None else str(row[i]) for row in data) or '0줄')})
+            exp.append({'짝': r['물을_값'], '답': r['기대_답']})
+            act.append({'짝': r['물을_값'], '답': ' · '.join('없음' if row[i] is None else str(row[i]) for row in data) or '0줄'})
     if exp:
-        blocks.insert(0, R.compare(f'질문 {number} 기대 답 ↔ 조회 결과(볼_열의 값)', '짝', exp, act, ['답']))
+        blocks.insert(0, R.compare(f'질문 {number} 기대 답 ↔ 조회 결과(볼_열의 값)', '짝', exp, act, ['답'], same=same))
     return blocks
 
 

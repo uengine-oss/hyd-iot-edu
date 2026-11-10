@@ -147,7 +147,7 @@ def paste(target, text):
 
 
 def ask_ai(text):
-    """정답 토글의 블록 — AI 채팅에 붙여 넣는 글."""
+    """정답 토글의 블록 — Codex 채팅에 붙여 넣는 글."""
     return ('ask_ai', '', text)
 
 
@@ -286,7 +286,7 @@ BLOCK_KIND = {
     'cypher_tab': ('Neo4j Browser 새 쿼리 탭에 붙여 넣는 글', 'Neo4j Browser 새 쿼리 탭', '붙여 넣으세요'),
     'shell': ('PowerShell · 이 실습 폴더', 'PowerShell 창', '붙여 넣고 Enter를 누르세요'),
     'paste': ('붙여 넣는 내용 · VS Code 편집기에서 — {target}', 'VS Code 편집기의 {target}', '붙여 넣고 Ctrl+S로 저장하세요'),
-    'ask_ai': ('AI 채팅에 붙여 넣는 글', 'AI 채팅 입력 칸', '붙여 넣고 보내세요'),
+    'ask_ai': ('Codex 채팅에 붙여 넣는 글', 'Codex 채팅 입력 칸', '붙여 넣고 보내세요'),
     'tree': ('탐색기 모양', '', '')}
 STEP_CSS = ('.block{border:1px solid #c9d6cf;border-radius:10px;margin:14px 0;overflow:hidden}.block .kind{margin:0;padding:6px 14px;font-size:14px;font-weight:bold}'
             '.block pre{margin:0;border-radius:0}.block.term .kind,.block.term_tpl .kind,.block.shell .kind{background:#26323b;color:#f2f5f3}.block.cypher .kind,.block.cypher_tab .kind{background:#e3ebf8;color:#1d3f75}'

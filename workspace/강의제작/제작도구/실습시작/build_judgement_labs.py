@@ -8,17 +8,14 @@ judge_tools · sop_tools — 정본 한 벌, 바이트 그대로 넣음)이고, 
 강사 참조(reference/session3 — criteria.py · judge_actions.py)의 기본 갈래 채움이다. 토글을 새 사본에 넣어 결과가 나오는지는 reference/session3/run_reference.py가 본다.
 판정 랩의 입력/(조건표 · SOP 구조)은 조건 랩의 강사 검증 판(criteria.py, 지점1 가 · 지점2 가)이다.
 
-사용: HYD_MAIN_ROOT=<main 체크아웃> python build_judgement_labs.py [--lab integrated-03-criteria|integrated-03-judge|practical-02-conditions|practical-03-review] [--check]
-  --check   두 번 만들어 랩 폴더 · 가이드 바이트가 같은지 본다(폴더는 다시 쓴다).
-package-index 등록은 하지 않는다 — ZIP만 묶는다(등록은 lab_package.register로 따로).
+네 랩은 새 프로젝트 구조로 바뀌었다. 이 파일의 랩 정의 · 검사기 · 결과 화면 함수는 build_session3_projects.py가 입력으로 쓰고
+(임시 폴더에 옛 구조를 만든 뒤 영어 경로로 옮김), 학생 폴더 · ZIP · package-index는 그 생성기가 쓴다. 이 파일을 직접 돌리면 새 생성기 이름을 대며 멈춘다.
+LABS의 경로는 옛 구조 랩의 이름(새 생성기가 임시 폴더 이름으로 쓴다)이며, 그 정본 자리에는 이제 폴더가 없다.
 """
 from pathlib import Path
-import argparse
 import csv
-import hashlib
 import io
 import json
-import shutil
 import sys
 
 import build_labs as B          # 2회차 설비 모델(통합 03-2 입력/) — 틀은 lab_frame
@@ -26,7 +23,6 @@ import lab_frame as F
 from lab_frame import A, H, S, paste, tree, write
 import data_conditions as DC
 import data_session2 as D2
-from lab_package import pack
 
 TOOLS = Path(__file__).resolve().parent
 PROVIDED_SRC = TOOLS/'judgement_tools'
@@ -1823,66 +1819,17 @@ def judge_inputs(folder):
     write(folder/'입력/sop.json', CR.sop_json(*CR.BASE))
 
 
-def build(key, files):
-    folder = LABS[key]
-    if folder.exists():
-        shutil.rmtree(folder)                     # 이 생성기가 만드는 랩 폴더 — 옛 판 파일이 남지 않게 통째로 다시 쓴다
-    folder.mkdir(parents=True)
-    F.write_rules(folder)
-    for name, core in DATA[key]:
-        write(folder/'자료'/name, files[core])
-    if key == 'integrated-03-criteria':
-        criteria_inputs(folder)
-    if key in ('integrated-03-judge', 'practical-03-review'):
-        judge_inputs(folder)
-    for name in PROVIDED[key]:
-        write(folder/name, (PROVIDED_SRC/name).read_text(encoding='utf-8'))
-    L = BUILDERS[key](files, folder)
-    write_at = [str(i) for i, st in enumerate(L['steps'], 1) if '정한_것.csv' in st['do']]
-    L['guide_extra'] = {**L['guide_extra'], L['decide_step']: L['guide_extra'].get(L['decide_step'], []) + [
-        f'<p>아래 지점은 지금 적지 않고 {" · ".join(write_at)}단계에서 원문을 열어 정한 뒤 <code>결과/정한_것.csv</code>에 적습니다. 여기서는 어떤 지점이 있는지만 봐 둡니다.</p>']}
-    for name, text in L['files'].items():
-        write(folder/name, text)
-    F.write_provided(folder, steps_source(key, L))
-    write(folder/'check.py', check_source(key, folder))
-    example = '`결과/조건표.csv`' if key in ('integrated-03-criteria', 'practical-02-conditions') else '`자료/수집_설명.md`'
-    write(folder/'START.md', F.step_start(L).replace('`결과/schema.json`처럼', example + '처럼'))
-    guide = F.write_guide(folder, F.step_guide(L))
-    return folder, L, guide
-
-
-def digest(folder, guide):
-    h = hashlib.sha256()
-    for p in sorted(folder.rglob('*')):
-        if p.is_file() and '__pycache__' not in p.parts:
-            h.update(p.relative_to(folder).as_posix().encode() + b'\0' + p.read_bytes())
-    h.update(b'guide\0' + guide.read_bytes())
-    return h.hexdigest()
+NEW_GENERATOR = {   # 네 랩은 새 프로젝트 구조로 바뀌었다 — 학생 폴더 · ZIP · package-index는 build_session3_projects.py가 쓴다
+    'integrated-03-criteria': 'build_session3_projects.py criteria --apply [--completed]',
+    'integrated-03-judge': 'build_session3_projects.py judge --apply [--completed]',
+    'practical-02-conditions': 'build_session3_projects.py conditions --apply [--completed]',
+    'practical-03-review': 'build_session3_projects.py review --apply [--completed]',
+}
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
-    parser.add_argument('--lab', choices=sorted(LABS), action='append')
-    parser.add_argument('--check', action='store_true')
-    args = parser.parse_args(argv)
-    keys = args.lab or sorted(LABS)
-    files, meta = DC.build()
-    ref = TOOLS/'reference/session3'
-    write(ref/'원자료_메타.json', json.dumps(meta, ensure_ascii=False, indent=1) + '\n')
-    for key in keys:
-        folder, L, guide = build(key, files)
-        first = digest(folder, guide)
-        if args.check:
-            files2, _ = DC.build()
-            folder, L, guide = build(key, files2)
-            second = digest(folder, guide)
-            print(f'{folder.name}: 두 번 생성 {"같음" if first == second else "다름"} ({first[:12]})')
-            if first != second:
-                return 1
-        archive = pack(folder)
-        print(f'{folder.name}: 파일 {sum(1 for p in folder.rglob("*") if p.is_file())}개, ZIP {archive.name} {hashlib.sha256(archive.read_bytes()).hexdigest()[:12]}, 가이드 {guide.name}')
-    print('package-index 등록은 하지 않았습니다(lab_package.register로 따로).')
-    return 0
+    raise SystemExit('build_judgement_labs.py는 학생 랩을 만들지 않습니다(옛 구조 정본 자리는 지웠다). 랩은 새 생성기로 만듭니다:\n'
+                     + '\n'.join(f'  {key}: {how}' for key, how in NEW_GENERATOR.items()))
 
 
 if __name__ == '__main__':

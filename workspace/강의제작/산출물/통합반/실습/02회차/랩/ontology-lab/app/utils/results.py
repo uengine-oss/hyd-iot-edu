@@ -7,7 +7,7 @@ class Stop(Exception):
 
 
 class Blank(Stop):
-    """정할 자리 파일 안에서 이 단계 몫이 아직 비었음(예: 조회 파일에 이 질문의 조회가 아직 없음). 해당 조회를 작성한 뒤 실행한다."""
+    """`app/features/` 파일 안에서 이 단계 몫이 아직 비었음(예: 조회 파일에 이 질문의 조회가 아직 없음). 해당 조회를 작성한 뒤 실행한다."""
 
 
 def rel(path):
@@ -75,9 +75,10 @@ def counts(title, items, note=''):
     return {'kind': 'counts', 'title': title, 'items': [(str(k), v) for k, v in items], 'note': note}
 
 
-def compare(title, key, expected, actual, columns, note=''):
+def compare(title, key, expected, actual, columns, note='', same=None):
     """기대 ↔ 실제 대조. expected · actual = [dict], key = 짝을 짓는 열, columns = 견줄 열.
-    칸 글자는 앞뒤 · 겹친 공백만 정리해 견준다. 행마다 같음 · 다름 · 실제 없음 · 기대 밖."""
+    칸에는 앞뒤 · 겹친 공백만 정리한 원래 글을 보인다. same(기대 글, 실제 글)을 주면 그것으로 견주고, 없으면 그 글이 같아야 같음.
+    행마다 같음 · 다름 · 실제 없음 · 기대 밖."""
     def norm(v):
         return re.sub(r'\s+', ' ', str(v if v is not None else '')).strip()
     for side, data in (('기대', expected), ('실제', actual)):
@@ -95,7 +96,7 @@ def compare(title, key, expected, actual, columns, note=''):
         elif a is None:
             state = '실제 없음'
         else:
-            state = '같음' if all(norm(e.get(c)) == norm(a.get(c)) for c in columns) else '다름'
+            state = '같음' if all((same or str.__eq__)(norm(e.get(c)), norm(a.get(c))) for c in columns) else '다름'
         rows.append({'key': k, 'state': state, 'cells': [(norm(e.get(c)) if e else '', norm(a.get(c)) if a else '') for c in columns]})
     return {'kind': 'compare', 'title': title, 'key': key, 'columns': list(columns), 'rows': rows, 'note': note}
 

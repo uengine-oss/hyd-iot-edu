@@ -214,7 +214,7 @@ def verify_lab(item):
             if item['id']=='integrated-02-graph':
                 assert any(x.startswith(base+changes_dir) for x in names),(item['id'],'수정본 없음')
             if item['id']=='practical-02-ontology':
-                previous=json.loads(z.read(base+'입력/graph.json'))
+                previous=json.loads(z.read(base+input_dir+'graph.json'))
                 assert not any('Supplier' in n['labels'] for n in previous['nodes'])
             return {'id':item['id'],'sha256':item['sha256'],'files':len(names),'guide':'outside','solution_boundary':'pass'}
         required = ['guide.html']

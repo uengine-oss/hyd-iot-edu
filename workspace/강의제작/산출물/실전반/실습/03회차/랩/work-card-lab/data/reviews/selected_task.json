@@ -1,0 +1,114 @@
+{
+  "task": "SOP-COOL-14",
+  "basis": "data/action_review.json 경보 ALT-hyd02-0172-54a5의 검토 의견(즉시 완화 뒤에도 원인이 남음) · data/documents/hm_8_manual.md 73~79줄(HM-8.7 근본 조치 · SOP-COOL-14)",
+  "preparation": [
+    {
+      "candidate": "output/reviews/HM-8_1.1_review.json#HM-8-M058",
+      "doc_id": "HM-8",
+      "rev": "1.1",
+      "section": "HM-8.7",
+      "quote": "원인에 맞는 근본 조치를 CMMS 작업지시로 발행한다.",
+      "decision": "수정"
+    },
+    {
+      "candidate": "output/reviews/HM-8_1.1_review.json#HM-8-M059",
+      "doc_id": "HM-8",
+      "rev": "1.1",
+      "section": "HM-8.7",
+      "quote": "1. 설비를 정지하고 현장 패널에서 LOCAL로 전환한 뒤 잠금(LOTO)을 건다.",
+      "decision": "채택"
+    },
+    {
+      "candidate": "output/reviews/HM-8_1.1_review.json#HM-8-R27",
+      "doc_id": "HM-8",
+      "rev": "1.1",
+      "section": "HM-8.7",
+      "quote": "승인은 설비보전팀장이 한다.",
+      "decision": "채택"
+    },
+    {
+      "candidate": "output/reviews/OEM-HPP45A-MM_C_review.json#OEM-HPP45A-MM-M050",
+      "doc_id": "OEM-HPP45A-MM",
+      "rev": "C",
+      "section": "7",
+      "quote": "Stop the pump, lock out the motor supply, and wait until the fan has stopped.",
+      "decision": "수정"
+    }
+  ],
+  "prohibitions": [
+    {
+      "candidate": "output/reviews/HM-8_1.1_review.json#HM-8-M061",
+      "doc_id": "HM-8",
+      "rev": "1.1",
+      "section": "HM-8.7",
+      "quote": "고압수는 쓰지 않는다.",
+      "decision": "수정"
+    },
+    {
+      "candidate": "output/reviews/OEM-HPP45A-MM_C_review.json#OEM-HPP45A-MM-M053",
+      "doc_id": "OEM-HPP45A-MM",
+      "rev": "C",
+      "section": "7",
+      "quote": "Do not use a high-pressure washer.",
+      "decision": "수정"
+    }
+  ],
+  "completion": [
+    {
+      "candidate": "output/reviews/HM-8_1.1_review.json#HM-8-R28",
+      "doc_id": "HM-8",
+      "rev": "1.1",
+      "section": "HM-8.7",
+      "quote": "재가동 후 냉각 효율 CE가 80 % 이상으로 돌아왔는지 확인한다.",
+      "decision": "채택"
+    }
+  ],
+  "remaining_questions": [
+    {
+      "item": "세척 전에 코어를 살펴 막힌 곳과 휘거나 손상된 핀을 기록한다.",
+      "kind": "보류",
+      "source": "OEM-HPP45A-MM C 7 107줄",
+      "note": "사내 기준이 정하지 않은 제조사 항목 — 세척 전 코어 막힘 · 휨 확인(HM-8 · PM-02에 없음) — 적용할지 HM-8 소유 부서(설비보전팀)에 묻는다"
+    },
+    {
+      "item": "세척 뒤에도 막힌 곳이나 휜 핀이 남으면 코어를 교체한다.",
+      "kind": "보류",
+      "source": "OEM-HPP45A-MM C 7 114줄",
+      "note": "사내 기준이 정하지 않은 제조사 항목 — 세척 뒤 막힘 · 휨이 남으면 코어 교체(HM-8 · PM-02에 없음) — 적용할지 HM-8 소유 부서(설비보전팀)에 묻는다"
+    },
+    {
+      "item": "After cleaning or replacement, run the unit at working load for 30 minutes and record the fluid temperature at the cooler inlet and outlet. The difference must not be less than the value in the commissioning record.",
+      "kind": "보류",
+      "source": "OEM-HPP45A-MM C 7 116줄",
+      "note": "사내 기준이 정하지 않은 제조사 항목 — 부하 운전 뒤 쿨러 입구 · 출구 유온 차 확인(HM-8의 완료 기준은 CE 80 %) — 적용할지 HM-8 소유 부서(설비보전팀)에 묻는다 — 이 항목을 담은 후보가 없어(까닭은 missing의 note) 검토자가 원문 문장으로 더함"
+    },
+    {
+      "item": "트립 뒤 복귀 조건(조건표 R5의 출처 HM-9.4)",
+      "kind": "제공되지 않은 절",
+      "source": "data/documents/hm_9_chapter_scan.txt 목차 HM-9.4(9-7쪽)",
+      "note": "스캔에 9-7쪽이 없다 — 원본 확인을 요청한다"
+    }
+  ],
+  "sop_diff": [
+    {
+      "item": "Stop the pump, lock out the motor supply, and wait until the fan has stopped.",
+      "where": "카드에만",
+      "note": "준비 — OEM-HPP45A-MM C 7에서 옴, 받은 SOP 구조의 이 작업에는 없음"
+    },
+    {
+      "item": "Do not use a high-pressure washer.",
+      "where": "카드에만",
+      "note": "금지 — OEM-HPP45A-MM C 7에서 옴, 받은 SOP 구조의 이 작업에는 없음"
+    },
+    {
+      "item": "조치 후 예측 유온이 65 ℃ 이상이면 이 후보를 쓰지 않는다.",
+      "where": "SOP 구조에만",
+      "note": "금지 — data/sop.json SOP-COOL-14 prohibitions, 승인한 원문 후보가 없음"
+    },
+    {
+      "item": "PLC가 트립 상태이면 리셋 외 명령을 내리지 않는다.",
+      "where": "SOP 구조에만",
+      "note": "금지 — data/sop.json SOP-COOL-14 prohibitions, 승인한 원문 후보가 없음"
+    }
+  ]
+}

@@ -12,9 +12,11 @@ AI_RULES = '''# AI 작업 경계
 - 원자료만으로 정해지지 않는 판단은 사람에게 근거와 선택을 확인한다. AI가 대신 선택하거나 추천한 갈래로 완성하지 않는다.
 - 원자료에 없는 값·관계·실행 결과를 만들지 않는다. 미확인, 값 없음, 0을 구별한다.
 - 실제 실행한 명령·결과·변경 파일을 보고한다. 실행하지 않은 것을 성공했다고 말하지 않는다.
-- DB는 이 폴더에 배정된 별도 랩 DB만 사용한다. 포털 DB나 전체 삭제 명령을 쓰지 않는다.
-- 키와 비밀번호를 코드·결과·기록에 적지 않는다. 프로젝트 밖의 정답 가이드는 읽지 않는다.
+- 키와 비밀번호를 코드·결과·기록에 적지 않는다. 열어 둔 프로젝트 폴더 밖의 파일은 읽지 않는다.
 '''
+# 랩 DB를 쓰는 랩만 extra_rules에 더한다.
+DB_RULE = ('- DB는 이 폴더에 배정된 랩 DB만 사용한다. 포털 DB나 전체 삭제 명령을 쓰지 않는다. '
+           'Docker와 랩 DB를 켜고 끄는 명령(`python run.py db` 등)은 사람이 자기 터미널에서 실행한다.')
 
 HIDDEN = {'.vscode': True,
           '**/__pycache__': True, '**/*.pyc': True}
@@ -35,7 +37,7 @@ def readme(title, purpose, command='python run.py'):
             'output/         실행 후 생기는 결과\n'
             'AGENTS.md       AI가 지킬 공통 규칙\n'
             '```\n\n'
-            f'실행: `{command}`\n')
+            + ('실행:\n\n```text\n' + command.strip() + '\n```\n' if '\n' in command.strip() else f'실행: `{command}`\n'))
 
 
 def write_metadata(folder, title, purpose, command='python run.py', extra_rules=''):

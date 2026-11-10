@@ -8,16 +8,12 @@
 추출 랩의 강사 검토 판(reference/session3_docs/branches.py — 지점5 나 · 지점6 가, 후보는 강사 추출 실행 run1). 그래서 추출 랩을 먼저 만든다.
 정답 보기 토글의 내용은 reference/session3_docs/fills.py 한 곳(기본 갈래)이다 — 같은 판을 학생용 완성본과 강사 참조 갈래 실행이 쓴다.
 
-설계 조건 검사(하나라도 어긋나면 쓰지 않고 멈춤):
-  1. 같은 바이트 — 추출 랩 자료 · 입력 = 3회차 랩, 그래프 랩 모델 = 2회차 실습4 입력, lab_db.py · lab_cypher.py · show_result.py = 실습시작 원본.
-  2. 학생 문장(START · README · 계약 · 결과 틀 · 작업 규칙 · 검사기 · 제공 코드)과 파일 · 열 이름, 가이드의 정답 토글 밖 본문에 결정 지점 · 함정의 답 0.
-  3. 두 번 만들어 바이트가 같다(--check).
-
-사용: HYD_MAIN_ROOT=<main 체크아웃> python build_document_labs.py [--lab integrated-04-extract|practical-03-extract|integrated-04-graph|practical-03-card] [--check]
-package-index 등록은 하지 않는다 — ZIP만 묶는다(등록은 메인).
+이 파일의 랩 정의 · 원문 · 검사기 · 결과 화면 함수(build · gbuild · lab · glab …)는 build_session4_projects.py가 입력으로 쓴다. 그 생성기가
+legacy()로 산출물 경로 · 입력 경로 · 사건(incident)을 작업 자리로 돌린 뒤 build · gbuild를 부르고, 영어 경로로 옮겨 정본 자리에 쓴다.
+이 파일을 직접 돌리면 멈춘다: 정본 자리에 옛 구조를 쓰던 길의 대조 기준(옛 구조 3회차 판정 랩 · 2회차 실습4 입력 · 3회차 학생용 완성본)이
+새 구조(judgement-lab · action-review-lab · graph-lab)로 바뀌어 지워졌기 때문이다.
 """
 from pathlib import Path
-import argparse
 import csv
 import hashlib
 import html as _html
@@ -26,7 +22,6 @@ import json
 import re
 import shutil
 import sys
-import zipfile
 
 import lab_frame as F
 import build_labs as B
@@ -50,8 +45,6 @@ NEXT = {'integrated-04-extract': '검토한 문서 지식을 그래프 DB에 반
         'practical-03-extract': '검토 지식으로 작업 확인 카드 만들기'}
 JUDGED = {'integrated-04-extract': 'result.json', 'practical-03-extract': '조치검토결과.json'}   # 3회차 판정 랩의 결과 이름 그대로
 S3_JUDGE = {'integrated-04-extract': 'integrated-03-judge', 'practical-03-extract': 'practical-03-review'}
-COMPLETED = {'integrated-04-extract': OUT/'통합반/실습/03회차/완성본/03일차_실습3_판단기능만들기_학생용완성본.zip',
-             'practical-03-extract': OUT/'실전반/실습/03회차/완성본/03일차_실습2_판단기능만들기_학생용완성본.zip'}
 BASE_JUDGED = B.TEACHER/'session3/갈래/판정_가-가'   # 3회차 강사 판 — 3회차 학생용 완성본과 같은 바이트
 REC = '결과/검토_기록.md'
 TASK = 'SOP-COOL-14'                                  # 이 사건의 작업(판정 뒤에 남은 근본 조치 — 쿨러 핀 세척). 사건이 정한다
@@ -64,12 +57,8 @@ PROVIDED_GRAPH = ['show_result.py', 'lab_steps.py', 'doc_graph.py', 'lab_cypher.
 
 
 def incident():
-    """사건 이름 · 시각 — 3회차 판정 랩 START의 글자 그대로."""
-    text = (BJ.LABS['integrated-03-judge']/'START.md').read_text(encoding='utf-8-sig')
-    m = re.search(r'10월 27일 \d\d:\d\d(?:\(한국 시각\))? HYD-02 쿨러 성능 저하 경보', text)
-    if not m:
-        raise RuntimeError('3회차 판정 랩 START.md에서 사건 이름 · 시각을 찾지 못했습니다 — 3회차 판을 먼저 맞춥니다.')
-    return m.group()
+    """사건 이름 · 시각 — build_session4_projects.legacy()가 data_conditions 판으로 바꿔 끼운다(옛 3회차 판정 랩 START.md는 지웠다)."""
+    raise RuntimeError('incident()는 build_session4_projects.py의 legacy() 안에서만 정해집니다 — build_session4_projects.py로 만듭니다.')
 
 
 def csv_body(text):
@@ -1414,8 +1403,7 @@ GNEXT = {'integrated-04-graph': '설비 이상 원인을 추론하고 다음 점
 GCOURSE = {'integrated-04-graph': '통합반', 'practical-03-card': '실전반'}
 GEXTRACT = {'integrated-04-graph': 'integrated-04-extract', 'practical-03-card': 'practical-03-extract'}
 GREC = '결과/구축_기록.md'
-LAB2_INPUT = {'통합반': OUT/'통합반/실습/02회차/랩/graph-lab/data/model',
-              '실전반': OUT/'실전반/실습/02회차/랩/02일차_실습4_그래프구현과검증/입력'}
+LAB2_INPUT = {}   # 그래프 랩 입력/모델의 원천 — build_session4_projects.legacy()가 과정마다 채운다(B.reference_model)
 CARD_HEADINGS = ['대상 작업', '준비 조건', '금지 · 제한', '작업 순서', '완료 기준', '작업 직전 확인할 현재 값', '승인', '남은 질문']
 LATER_DOCS = ['OEM-HPP45A-MM', 'PR-07']        # 통합 04-3 행 「다른 문서의 추가 반영」 — 연결 규칙을 그 단계에서 채우는 문서
 
@@ -2787,62 +2775,6 @@ def blank_checks(folder):
     return bad
 
 
-def design_checks(key, folder, L):
-    bad = guide_checks(folder, L, LEAKS) + blank_checks(folder)
-    s3 = BJ.LABS['integrated-03-criteria']/'자료'
-    for name in ['HM-8_매뉴얼.md', 'HM-8_1.0판_매뉴얼.md', 'HI-01_보충매뉴얼.md']:
-        if (folder/'자료'/name).read_bytes() != (s3/name).read_bytes():
-            bad.append(f'자료/{name}이 3회차 조치 기준 랩의 자료와 다름 — 3회차 랩을 다시 만든 뒤 만듭니다')
-    for name in ['조건표.csv', 'sop.json']:
-        if (folder/'입력'/name).read_bytes() != (BJ.LABS[S3_JUDGE[key]]/'입력'/name).read_bytes():
-            bad.append(f'입력/{name}이 3회차 판정 랩 입력과 다름')
-    with zipfile.ZipFile(COMPLETED[key]) as z:
-        inner = next(n for n in z.namelist() if n.endswith('/결과/' + JUDGED[key]))
-        if z.read(inner) != (folder/'입력'/JUDGED[key]).read_bytes():
-            bad.append(f'입력/{JUDGED[key]}이 3회차 학생용 완성본의 결과와 다름')
-    sr = (folder/'자료/SR-04_설비안전규정_발췌.txt').read_bytes().decode('cp949')
-    for word in ['예측', '작업지시', '후보', 'rule:', 'R4']:
-        if word in sr:
-            bad.append(f'SR-04 발췌에 「{word}」')
-    bad += text_leaks(folder, STUDENT_TEXT, LEAKS)
-    for p in folder.rglob('*'):
-        name = p.relative_to(folder).as_posix()
-        if any(w in name for w in NAME_LEAKS):
-            bad.append(f'이름 「{name}」에 두지 않는 말')
-    if (folder/'결과/응답_기록').exists():
-        bad.append('학생 폴더에 응답 기록이 있음')
-    for rel, src in {'llm_client.py': TOOLS/'lab_llm.py', 'show_result.py': TOOLS/'show_result.py', 'doc_extract.py': TOOLS/'doc_extract.py'}.items():
-        if (folder/rel).read_bytes() != src.read_bytes():
-            bad.append(f'{rel}이 실습시작 원본과 다름')
-    if bad:
-        raise RuntimeError(f'{folder.name} 설계 조건 검사 실패:\n- ' + '\n- '.join(bad))
-
-
-def gdesign_checks(key, folder, L):
-    bad = guide_checks(folder, L, GLEAKS) + blank_checks(folder)
-    course = GCOURSE[key]
-    for name in ['schema.json', 'graph.json']:
-        if (folder/'입력/모델'/name).read_bytes() != (LAB2_INPUT[course]/name).read_bytes():
-            bad.append(f'입력/모델/{name}이 2회차 실습4 입력과 다름')
-    for name in ['조건표.csv', 'sop.json']:
-        if (folder/'입력'/name).read_bytes() != (BJ.LABS[S3_JUDGE[GEXTRACT[key]]]/'입력'/name).read_bytes():
-            bad.append(f'입력/{name}이 3회차 판정 랩 입력과 다름')
-    ext = LABS[GEXTRACT[key]]/'자료'
-    for f in ext.iterdir():
-        if (folder/'자료'/f.name).read_bytes() != f.read_bytes():
-            bad.append(f'자료/{f.name}이 추출 랩 자료와 다름')
-    bad += text_leaks(folder, GSTUDENT_TEXT, GLEAKS)
-    for p in folder.rglob('*'):
-        name = p.relative_to(folder).as_posix()
-        if any(w in name for w in NAME_LEAKS) and not name.startswith('입력/검토결과/'):
-            bad.append(f'이름 「{name}」에 두지 않는 말')
-    for rel, src in {'lab_db.py': TOOLS/'lab_db.py', 'lab_cypher.py': TOOLS/'lab_cypher.py', 'show_result.py': TOOLS/'show_result.py', 'doc_graph.py': TOOLS/'doc_graph.py'}.items():
-        if (folder/rel).read_bytes() != src.read_bytes():
-            bad.append(f'{rel}이 실습시작 원본과 다름')
-    if bad:
-        raise RuntimeError(f'{folder.name} 설계 조건 검사 실패:\n- ' + '\n- '.join(bad))
-
-
 GLEAKS = ['HM-9.4', '9-7', 'HPP-45B', 'OEM-HPP45B', 'PM-2.4', '예정된 정비', '생산 오더', 'T-3.1', 'T-4.1', 'T-7.1', '코어 교체', '유온 차', '0171', '051f', 'HI-CC-45A', 'HI-RF-10',
           '1~3호기', '주로 야간', '야간 예정', 'MES 계획', '규칙 기반', '두 번째 구현', 'reference', '강사 참조', '갈래']
 GSTUDENT_TEXT = ['START.md', 'AGENTS.md', 'CLAUDE.md', '.github/copilot-instructions.md', '입출력_계약.md', '입력/README.md', '결과/README.md', GREC, 'check.py', 'lab_steps.py', 'doc_graph.py']
@@ -2919,39 +2851,10 @@ def gbuild(key):
     return folder, L
 
 
-def digest(folder):
-    h = hashlib.sha256()
-    for p in sorted(folder.rglob('*')):
-        if p.is_file() and '__pycache__' not in p.parts:
-            h.update(p.relative_to(folder).as_posix().encode() + b'\0' + p.read_bytes())
-    guide = F.guide_path(folder)
-    h.update(b'guide\0' + guide.read_bytes())
-    return h.hexdigest()
-
-
 def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
-    parser.add_argument('--lab', choices=sorted(LABS) + sorted(GLABS), action='append')
-    parser.add_argument('--check', action='store_true')
-    args = parser.parse_args(argv)
-    chosen = args.lab or sorted(LABS) + sorted(GLABS)
-    order = [k for k in sorted(LABS) if k in chosen] + [k for k in sorted(GLABS) if k in chosen]
-    for key in order:
-        graph = key in GLABS
-        folder, L = (gbuild if graph else build)(key)
-        (gdesign_checks if graph else design_checks)(key, folder, L)
-        first = digest(folder)
-        if args.check:
-            (gbuild if graph else build)(key)
-            second = digest(folder)
-            print(f'{folder.name}: 두 번 생성 {"같음" if first == second else "다름"} ({first[:12]})')
-            if first != second:
-                return 1
-        archive = pack(folder)
-        print(f'{folder.name}: 단계 {len(L["steps"])}, 파일 {sum(1 for p in folder.rglob("*") if p.is_file())}개, ZIP {archive.name} {hashlib.sha256(archive.read_bytes()).hexdigest()[:12]}, '
-              f'가이드 {F.guide_path(folder).name} {hashlib.sha256(F.guide_path(folder).read_bytes()).hexdigest()[:12]}')
-    print('package-index 등록은 하지 않았습니다(메인이 lab_package.register로).')
-    return 0
+    raise SystemExit('build_document_labs.py는 정본 자리에 옛 구조 랩을 쓰지 않습니다. 대조 기준이던 옛 구조 3회차 판정 랩 · 2회차 실습4 · '
+                     '3회차 학생용 완성본이 새 구조(judgement-lab · action-review-lab · graph-lab)로 바뀌었습니다. '
+                     '문서 지식 네 랩은 build_session4_projects.py <lab …> --dest|--apply [--completed]로 만듭니다.')
 
 
 if __name__ == '__main__':

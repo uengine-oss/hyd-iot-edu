@@ -17,11 +17,11 @@ import shutil
 import time
 
 import data_conditions as dc
+import data_documents as DD
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[3]
 GRAPH = HERE / 'reference/session3_docs/갈래/그래프_통합반_가'
-DOCS = ROOT / 'workspace/강의제작/산출물/통합반/실습/04회차/랩/04일차_실습3_그래프반영과검증/자료'
 NOTICE = '가상 사례: 공개된 현업 문제 유형을 따라 만든 자료이며 실제 회사·제조사·설비의 기록이 아니다.'
 
 
@@ -54,7 +54,8 @@ def copy_sources(lab):
         sources.append({'path': f'입력/ontology/{new}', 'origin': '4회차 그래프 반영과 검증의 제공 입력', 'sha256': digest(raw)})
     doc_target = lab / '자료/documents'
     doc_target.mkdir(parents=True, exist_ok=True)
-    raw_list = (DOCS / '문서_목록.csv').read_bytes()
+    docs = DD.bundle()   # 4회차 그래프 랩의 문서 묶음(옛 한글 이름 · 바이트 그대로)을 생성 함수에서 받는다
+    raw_list = docs['문서_목록.csv']
     (doc_target / '문서_목록.csv').write_bytes(raw_list)
     entries = list(csv.DictReader(line for line in raw_list.decode('utf-8-sig').splitlines() if not line.startswith('#')))
     manifest = []
@@ -62,7 +63,7 @@ def copy_sources(lab):
         item = {'doc_id': row['문서 식별자'], 'revision': row['판'], 'status': row['상태'], 'effective': row['시행일'],
                 'file': row['파일'], 'catalog_sha256': row['SHA-256'], 'catalog_line': len(manifest) + 3}
         if row['파일']:
-            raw = (DOCS / row['파일']).read_bytes()
+            raw = docs[row['파일']]
             try:
                 text = raw.decode('utf-8-sig'); encoding = 'utf-8-sig'
             except UnicodeDecodeError:

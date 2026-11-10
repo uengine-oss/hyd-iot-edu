@@ -1086,6 +1086,10 @@ def incident_table(judged, hand_rows, recomputed, chain_rec, mixed, expected):
 
 
 def main():
+    # 이 실행은 옛 구조 네 랩 폴더(BJ.LABS)를 읽고 8절에서 옛 구조 완성본을 정본 자리에 썼다. 그 폴더는 새 구조로 바뀌어 지웠으므로 멈춘다.
+    # 함수(sop_meaning · jp …)는 새 구조 시험 project_trials.py가 그대로 쓴다.
+    raise SystemExit('run_reference.py는 옛 구조 랩을 읽는 실행이라 멈춥니다. 새 구조 네 랩은 '
+                     'python reference/session3/project_trials.py <build_session3_projects.py --dest 폴더> --out <판정 폴더>로 봅니다.')
     global DC_META, TRIP_CASE, HOT_CASE
     files, DC_META = DC.build()
     meta_file = json.loads((HERE/'원자료_메타.json').read_text(encoding='utf-8'))

@@ -1,0 +1,90 @@
+﻿# 입출력 계약
+
+결과 파일과 판단 표의 형식과 뜻만 정한다. 무엇을 담을지는 원문에서 정한다.
+
+## SOP 구조 (`output/sop.json` — 제공 코드 `sop_tools.py`가 아래 판단 표 셋으로 쓴다)
+
+키는 영어로 적고 값(원문 문장 · 역할 이름)은 원문 그대로 적는다.
+
+```
+{
+  "document": {"id": "...", "revision": "...", "file": "data/..."},
+  "failure_modes": [ {"id": "failuremodes.csv의 ID", "name": "...", "source": "..."} ],
+  "causes": [ {"id": "cause:...", "name": "...", "source": "..."} ],
+  "sops": [
+    {
+      "id": "targets.csv의 SOP ID", "name": "...", "kind": "control 또는 work_order 또는 null", "codes": ["..."],
+      "source": "문서 절", "failure_mode": "고장 유형 ID",
+      "model_refs": {"assets": ["..."], "components": ["..."], "sensors": ["..."], "not_linked": "..."},
+      "apply_conditions": [ {"text": "...", "source": "...", "rules": ["rule_id"]} ],
+      "prohibitions": [ {"type": "금지 또는 제한", "text": "...", "source": "...", "rules": []} ],
+      "steps": [ {"order": 1, "text": "...", "source": "..."} ],
+      "completion": [ {"text": "...", "source": "...", "rules": []} ],
+      "approval": {"role": "...", "source": "..."}
+    }
+  ],
+  "relations": [ {"type": "...", "from": "ID", "to": "ID", "source": "..."} ]
+}
+```
+
+- 키의 뜻: `document` 원문 문서(식별자 · 판 · 파일), `failure_modes` 고장 유형, `causes` 원인, `sops` 조치 절차, `kind` 조치 종류, `codes` 실행 코드, `source` 출처,
+  `failure_mode` 그 절차가 다루는 고장 유형, `model_refs` 모델 참조(`assets` 설비 · `components` 구성 요소 · `sensors` 센서 · `not_linked` 걸지 않은 대상과 까닭),
+  `apply_conditions` 적용 조건, `prohibitions` 금지 조건, `steps` 수행 단계(`order` 순서), `completion` 완료 기준, `approval` 승인(`role` 역할), `rules` 이 조건을 옮긴 조건표의 `rule_id`, `relations` 관계 목록.
+- `targets.csv`의 SOP는 `sops`에 한 번씩 있다. `steps`는 매뉴얼의 번호 줄 그대로다.
+- `model_refs`의 값은 `data/model/graph.json`에 있는 ID만 쓴다 — `assets`에는 설비, `components`에는 구성 요소, `sensors`에는 센서의 ID. 모델에 없는 대상은 ID를 만들지 않고 `not_linked`에 그 까닭을 적는다.
+- `kind` · `codes` 값이 오는 곳: 판단 시스템 결정표 내보내기의 「스킬」 절 — 종류 칸과, 동작 칸을 「코드 이름」 절의 괄호 안 코드로 바꾼 것. 그곳에 같은 절차가 없으면 `kind`는 `null`, `codes`는 빈 목록이다.
+- `causes`의 `id`는 `cause:`로 시작하는 영어 소문자 · 하이픈 이름이다.
+- `relations`의 `type`: `MITIGATED_BY`(고장 유형 → 완화 조치 SOP) · `REMEDIED_BY`(고장 유형 → 근본 조치 SOP) · `ADDRESSES`(SOP → 그 SOP가 맞는 원인). 양 끝은 이 파일의 `failure_modes` · `causes` · `sops`에 있는 ID다.
+- 각 항목의 `source`는 문서 절과 SOP 단계(예: `HM-8.5 SOP-COOL-11 단계 2`)다. 매뉴얼 밖 자료를 근거로 들면 `파일:줄`이다.
+- `approval`은 원문 승인 줄의 역할과 출처다. 원문에서 그 절차의 승인을 찾지 못하면 역할을 만들지 않고 `role`을 `미확인`으로 시작해 찾아본 결과를 적으며, `source`에는 찾아본 절을 적는다.
+- 조건과 조건표의 연결은 `rules`에 조건표의 `rule_id`로 적는다. 조건표로 옮기지 않은 조건은 빈 목록이다.
+
+## 판단 표 셋 (`app/features/` — 「제공 빈 틀」, 첫머리 `#` 줄은 데이터가 아니다)
+
+「원문」 칸: `;`로 나눈 원문 자리. `data/hm8_manual.md`의 줄 번호(`45`)나 그 줄의 몇째 문장(`45.2` — 마침표 뒤 띄어쓰기로 나눔), 매뉴얼 밖 자료는 `파일 이름:줄`(`decision_table_export.txt:37`).
+제공 코드는 원문 자리의 문장을 그대로 인용하고, 그 자리가 있는 절 · SOP 단계 · 승인 줄을 출처로 적는다.
+
+- `app/features/condition_classes.csv` — 열 `sop_id,칸,원문,글,규칙`. 한 줄이 절차 하나의 한 칸이다 — 칸 · 원문 · 글 · 규칙이 같은 줄이 여러 절차에 걸리면 `sop_id`에 그 SOP ID를 `;`로 이어 한 줄에 적는다. `칸`: `고장 유형`(글 = failuremodes.csv의 ID) · `종류·코드`(글 = `control:코드;코드` · `work_order:코드` · `없음`) ·
+  `적용` · `금지` · `제한` · `완료`(글은 비우면 원문 문장을 인용, 매뉴얼 밖 자료만 가리키면 그 조건을 글에 적음) · `승인`(글 = 역할, 찾지 못했으면 `미확인`으로 시작해 찾아본 결과). `규칙` = 그 조건을 옮긴 조건표의 `rule_id`(`;`로 나눔).
+  절차마다 `고장 유형` · `종류·코드` · `승인`은 한 줄씩이다.
+- `app/features/relations.csv` — 열 `type,from,to,이름,원문`. `type`은 위 셋, `이름`은 `to`가 원인(`cause:…`)일 때 그 원인의 이름.
+- `app/features/equipment_links.csv` — 열 `sop_id,설비,구성_요소,센서,걸지_않은_까닭`. 설비는 설비 ID(`;`로 나눔), 구성 요소 · 센서는 설비 ID 뒤의 이름(`HYD-01:fan`의 `fan`)이고, 제공 코드가 고른 설비마다 모델에 있는 ID만 잇는다.
+
+## 조건표 (`app/features/condition_table.csv`)
+
+판단 기능 만들기 실습의 판정 기능이 조건표를 이 꼴 그대로 읽는다. 열 이름을 바꾸면 그 기능이 읽지 못한다. 이 문서는 형식과 뜻만 정하고, 어떤 조건을 어느 조치에 걸지는 원문에서 정한다. 첫머리의 `#` 줄(「제공 빈 틀」 표시)은 데이터가 아니다.
+
+열: `rule_id,action,condition_index,logic,input,operator,value,unit,boundary_included,result,penalty_manwon,reason,source_section`
+
+- 비교 하나가 한 행이다. 같은 `rule_id` · `action`의 행은 한 규칙 묶음이고 `condition_index`를 1부터 차례로 적으며 `logic`은 `AND`다. OR는 다른 `rule_id`로 나눈다.
+- `action`: `data/targets.csv`의 SOP ID 하나. 같은 규칙을 여러 조치에 걸면 조치마다 묶음 전체를 적는다. 표에 없는 조치 · 규칙 조합은 그 조치에 그 규칙을 걸지 않는다는 뜻이다.
+- `result`: `WARN`(경고) · `PENALTY`(감점) · `EXCLUDE`(제외). 같은 묶음의 `result` · `penalty_manwon` · `reason` · `source_section`은 모든 행에서 같다. `PENALTY`만 `penalty_manwon`(만원)을 적고 나머지는 빈칸이다.
+- `operator`: `>=` · `>` · `<=` · `<` · `==` · `!=` · `has_other_than`(목록 입력에 기준값이 아닌 항목이 하나라도 있음). `boundary_included`: 기준값 자체가 조건에 들어가면 `예`, 들어가지 않으면 `아니오`, 글자 · 목록 비교는 `해당없음`.
+- `input`과 단위: `forecast_ts1`(조치 후 예측 유온, ℃) · `forecast_ps1`(조치 후 예측 토출 압력, bar) · `fan100_hours`(팬 100 % 연속 운전 시간, h) · `plc_mode`(`REMOTE_AUTO` · `REMOTE_MANUAL` · `LOCAL`) · `plc_state`(`RUN` · `TRIP` · `STOP`) · `skill_kind`(조치 종류 `control` · `work_order`) · `skill_code`(실행 코드 목록). `skill_kind` · `skill_code` 값이 오는 곳: 판단 시스템 결정표 내보내기의 「스킬」 절 — 종류 칸과, 동작 칸을 「코드 이름」 절의 괄호 안 코드로 바꾼 것. 숫자 입력은 `unit`을 적는다.
+- 목록 입력(`skill_code`)에는 `has_other_than`만 쓴다.
+- `source_section`: 이 행의 근거를 다른 사람이 다시 찾을 수 있게 적는다 — HM-8 매뉴얼 원문의 근거는 절 · SOP 단계 · 승인 줄을 ;로 잇고 문서 이름 · 판은 붙이지 않는다(꼴: HM-8.<절>; HM-8.<절> SOP-<ID> 단계 <n>; HM-8.<절> SOP-<ID> 승인), 자료 파일의 줄은 파일:줄, 결정표에서 가져온 행은 「판단 시스템 결정표 rule:<id>; 출처 <그 규칙의 출처>」 뒤에 HM-8 매뉴얼 원문에서 그 출처를 찾았는지를 적고, 결정표 규칙을 고쳐 HM-8 매뉴얼 원문 근거로 옮긴 행은 원문 출처 뒤에 「판단 시스템 결정표 rule:<id>」를 덧붙인다(결과 화면은 rule:<id>가 있어야 그 규칙을 출처로 든 것으로 읽는다).
+
+모양을 보이는 한 줄(이 과제의 규칙이 아니다):
+
+```
+R0,SOP-COOL-00,1,AND,forecast_ts1,>=,0,℃,예,WARN,,이유 문장,문서 절
+```
+
+## 고른 것 (`app/features/decisions.csv`) · 기대 판정 (`app/features/expected.csv`)
+
+- `app/features/decisions.csv` — 열 `지점,고른_것,근거,바뀌는_답`. 칸마다 뜻은 그 파일 첫머리 `#` 줄에 있다. 같은 종류의 지점이 여럿이면 지점마다 한 줄.
+- `app/features/expected.csv` — 열 `사례,후보,기대_판정,근거`. `사례`는 `data/check_cases.csv`의 사례 ID(사건 메모의 경보도 그 ID). 제공 코드를 돌리기 전에 원자료 · 조건표 · 원문으로 손으로 구한 기대. `기대_판정`은 `유지` · `제외` · `보류`(뜻은 `data/work_standard.md` 4절), `근거`는 `파일:줄`.
+
+## 확인 사례 (`data/check_cases.csv`, 읽기만)
+
+열: `사례,설비,판정_요청_시각,후보,입력,값,단위,원천,원천_시각,비고`. 한 줄이 사례 하나의 판단 입력 하나다.
+
+- `값`은 판정을 요청한 때(`판정_요청_시각`)의 판단 입력이고 단위는 `단위` 칸이다. 조건표 `input`과의 짝: `운전_모드` = `plc_mode`, `상태` = `plc_state`,
+  `팬100_연속` = `fan100_hours`(판정 요청 때까지 팬 100 % 연속 운전 시간, h), `예측_TS1` = `forecast_ts1`(℃), `예측_PS1` = `forecast_ps1`(bar).
+- `후보`가 빈칸인 줄은 그 사례의 모든 후보에 같은 입력이다. `skill_kind` · `skill_code`는 이 파일에 없다 — 값이 오는 곳은 조건표 절의 `input` 설명과 같다.
+- `값`이 빈칸이면 그 입력을 얻지 못한 것이고, `비고`에 원천의 사정이 있다.
+- `원천` · `원천_시각`은 그 값을 만든 기록과 그 기록의 시각이다.
+
+## 제공 입력 (`data/model/`)
+
+제공된 설비 모델(2회차 그래프 구현 실습과 같은 모델) — 설비 7대의 schema.json · graph.json — 과 그 설비 대장(data/model/equipment.csv)입니다. 이 폴더는 읽기만 합니다.

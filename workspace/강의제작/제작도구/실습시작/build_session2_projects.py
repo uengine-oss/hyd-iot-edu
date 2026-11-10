@@ -16,13 +16,13 @@ import build_labs as B
 import data_session2 as D
 import lab_frame as F
 from lab_package import ROOT, pack, entry, register, student_files, write_zip
-from project_layout import write_metadata, errors
+from project_layout import write_metadata, errors, DB_RULE
 import session2_project as P
 import session2_project_guides as G
 import session2_graph_project as GP
 
 DEST = ROOT / 'workspace/강의제작/산출물/통합반/실습/02회차/랩'
-VERSION = 'v21-project'   # 2026-11-11: 1단계 결과 화면 여는 길(파일 탐색기)만 바꿈
+VERSION = 'v22-project'   # 2026-11-11: 공용 고침(대조 칸 원래 글 · 오류 위치 · 저장 · 편집 승인 · 새 DB 적재 자리 · DB 경계 · 「랩 DB」 한 이름)
 WORK = ROOT / '작업/검사/session2-projects'
 
 
@@ -118,7 +118,7 @@ def build_graph(folder):
     write(folder / 'app/utils/actions.py', GP.actions_source(L))
     write(folder / 'run.py', P.RUN)
     write(folder / 'app/utils/check.py', checker(folder, L))
-    write_metadata(folder, L['title'], G.GRAPH_PURPOSE)
+    write_metadata(folder, L['title'], G.GRAPH_PURPOSE, extra_rules=DB_RULE)
     steps = G.graph(B.portal_table())
     F.write_guide(folder, G.render(L['title'], G.GRAPH_PURPOSE, steps), ai_turns=sum(s['ai'] for s in steps))
     return L, steps

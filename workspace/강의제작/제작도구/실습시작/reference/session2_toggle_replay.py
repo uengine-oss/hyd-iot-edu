@@ -126,6 +126,9 @@ def supply_rels(graph):
 
 
 def main():
+    # 옛 구조 실전02 두 랩 폴더(B.LAB3 · B.LAB4)를 복사해 재생하던 실행이다. 그 폴더는 새 구조(ontology-lab · graph-lab)로 바뀌어 지웠으므로 멈춘다.
+    raise SystemExit('session2_toggle_replay.py는 옛 구조 실전02 랩을 재생하는 실행이라 멈춥니다. 새 구조 두 랩은 '
+                     'python reference/practical2_project_trials.py <ontology-lab 폴더> <graph-lab 폴더> --out <결과 폴더>로 봅니다.')
     no_db = '--no-db' in sys.argv
     report, bad = {}, []
     root = Path(tempfile.mkdtemp(prefix='s2replay-', dir=os.environ.get('HYD_REPLAY_DIR') or None))

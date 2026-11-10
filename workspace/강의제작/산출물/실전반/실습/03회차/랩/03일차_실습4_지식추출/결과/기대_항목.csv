@@ -1,3 +1,0 @@
-# 제공 빈 틀 — 실행 전에 원문에서 찾은 항목
-# 파일 = 자료/ 안의 파일 이름 · 줄 · 종류(step · precondition · prohibition · completion · unit_value, 한 줄에 둘이면 두 행)
-파일,줄,종류

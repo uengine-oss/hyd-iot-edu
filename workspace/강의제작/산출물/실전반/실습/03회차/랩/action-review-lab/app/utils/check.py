@@ -1,0 +1,204 @@
+"""output/action_review.json · .md의 구조와 계약 검사, 정한 것 · 기대 판정 · 제공 파일 확인. 생성 · 수정 · 네트워크 접속을 하지 않는다.
+판정 · 이유 · 출처가 원문 · 원천과 맞는지, 금액, 1위는 판정하지 않는다. 규칙 ID · 승인 역할은 app/features/criteria/의 파일이 있으면 그것으로 본다.
+사용: python run.py check
+"""
+from pathlib import Path
+import csv, io, json, re, sys
+root = Path(__file__).resolve().parents[2]
+def csv_rows(path):
+    """(열 이름, 행, 첫머리 # 줄 수) — 「제공 빈 틀」 표시 줄은 데이터가 아니다."""
+    lines = path.read_text(encoding='utf-8-sig').splitlines(keepends=True)
+    skip = 0
+    while skip < len(lines) and lines[skip].lstrip().startswith('#'):
+        skip += 1
+    reader = csv.DictReader(io.StringIO(''.join(lines[skip:]), newline=''))
+    return reader.fieldnames, list(reader), skip
+def read_csv(path):
+    head, rows, _ = csv_rows(path)
+    return head, rows
+def report(parts):
+    ok = True
+    for name, state, errs, note, required in parts:
+        print(f'- {name}: {state}' + (f' — {note}' if note else ''))
+        for e in errs[:40]: print('    ' + e)
+        if len(errs) > 40: print(f'    … 외 {len(errs) - 40}건')
+        if required and state not in ('통과', '아직 비어 있음'): ok = False
+    return ok
+def expect_part(root):
+    p = root/'app/features/expected.csv'
+    if not p.is_file(): return ('expected.csv', '없음 — 받은 ZIP의 빈 틀을 지우지 않습니다', [], '', True)
+    head, rows, skip = csv_rows(p)
+    if head != ['사례', '후보', '기대_판정', '근거']: return ('expected.csv', '확인 필요', ['열 이름이 사례,후보,기대_판정,근거가 아닙니다.'], '', True)
+    if not rows: return ('expected.csv', '아직 비어 있음', [], '실행 전에 기대 판정을 적습니다', False)
+    errs = []
+    for n, r in enumerate(rows, skip + 2):
+        if (r.get('기대_판정') or '').strip() not in ('유지', '제외', '보류'): errs.append(f'expected.csv:{n} 기대_판정은 유지 · 제외 · 보류 가운데 하나입니다.')
+        if not re.search(r'[^\s:]+:\d+', r.get('근거') or ''): errs.append(f'expected.csv:{n} 근거에 파일:줄이 없습니다.')
+    return ('expected.csv', '확인 필요' if errs else '통과', errs, f'행 {len(rows)}개', True)
+def chosen_part(root):
+    errs = chosen_errors(root)
+    p = root/'app/features/decisions.csv'
+    if not errs and p.is_file() and not csv_rows(p)[1]: return ('decisions.csv', '아직 비어 있음', [], '지점마다 고른 것 · 근거를 적습니다', False)
+    return ('decisions.csv', '확인 필요' if errs else '통과', errs, '', True)
+def provided_part(root):
+    errs = provided_errors(root)
+    return ('제공 파일', '확인 필요' if errs else '통과', errs, '', True)
+def chosen_errors(root):
+    """app/features/decisions.csv — 빈 칸 · 근거 꼴(파일:줄)만 본다. 고른 것이 맞는지는 보지 않는다."""
+    import csv, io, re
+    p = root / 'app/features' / 'decisions.csv'
+    if not p.is_file():
+        return ['app/features/decisions.csv가 없습니다 — 받은 ZIP의 빈 틀을 지우지 않습니다.']
+    lines = [x for x in p.read_text(encoding='utf-8-sig').splitlines() if x.strip() and not x.lstrip().startswith('#')]
+    rows = list(csv.DictReader(io.StringIO('\n'.join(lines))))
+    need = ['지점', '고른_것', '근거', '바뀌는_답']
+    if not lines or [c.strip() for c in csv.reader([lines[0]]).__next__()] != need:
+        return ['app/features/decisions.csv: 열 이름이 ' + ','.join(need) + '이어야 합니다.']
+    out = []
+    for n, r in enumerate(rows, 1):
+        empty = [c for c in need if not (r.get(c) or '').strip()]
+        if empty:
+            out.append(f'app/features/decisions.csv {n}번째 행: 빈 칸 ' + ', '.join(empty) + '(못 정했으면 고른_것에 「미결」).')
+        elif not re.search(r'[^\s:]+:\d+', r['근거']):
+            out.append(f'app/features/decisions.csv {n}번째 행: 근거에 파일:줄이 없습니다.')
+    return out
+import hashlib as _h
+_PROVIDED = {
+ "app/ui/render.py": "794a7c0de17bbbf7dd6e2896397c1db32cb4079b6fe7dfa88dc67160c2a0d81e",
+ "app/utils/actions.py": "7cbe5f7ebc8df16268ddaec17354c30667c208220f521d1e090c84d6e8f0c992",
+ "app/utils/condition_tools.py": "d5c7daf0b405d1a68ad86cee7d3f84e4e1eb67149534601edbe75649ce936d91",
+ "app/utils/judge_tools.py": "69113ef3ffc470ae3dae2f3a5b5de3ca3a1b5b18355a0946ffb822fa3b91c8ba",
+ "app/utils/results.py": "1c5b0596745e9ac1e9b7f06d84c7463d99720597edcf46801d32a51e640ae86b",
+ "run.py": "700d5805b32e7c0318247812c16e19ad7e641edf35305e892d8aa9268c56cce6"
+}
+def provided_errors(root):
+    out = []
+    for name, digest in _PROVIDED.items():
+        p = root / name
+        if not p.is_file():
+            out.append(f'제공 파일이 없습니다: {name} — 받은 ZIP의 것으로 되돌리세요.')
+        elif _h.sha256(p.read_bytes()).hexdigest() != digest:
+            out.append(f'제공 파일이 바뀌었습니다: {name} — 받은 ZIP의 것으로 되돌리세요.')
+    return out
+def pick(name):
+    # 검사의 기준 입력: app/features/criteria/에 같은 이름 파일이 있으면 그것, 없으면 제공 data/criteria/. 고른 파일을 찍는다(조용히 바꾸지 않는다).
+    mine = root/'app/features/criteria'/name
+    if mine.is_file():
+        print(f'기준 입력: app/features/criteria/{name} (내 입력)')
+        return mine
+    if (root/'app/features/criteria').is_dir():
+        print(f'기준 입력: data/criteria/{name} — app/features/criteria/에 {name}이 없어 제공 입력으로 봅니다')
+    else:
+        print(f'기준 입력: data/criteria/{name}')
+    return root/'data/criteria'/name
+
+INPUTS = ['forecast_ts1', 'forecast_ps1', 'fan100_hours', 'plc_mode', 'plc_state', 'skill_kind', 'skill_code']
+RANGE = {'forecast_ts1': (0, 150, '℃'), 'forecast_ps1': (50, 300, 'bar'), 'fan100_hours': (0, 1000, 'h')}
+LOSS = ['cost', 'production', 'quality', 'energy', 'penalty']
+def rows(path): return read_csv(path)[1]
+alarms = [r['경보_ID'] for r in rows(root/'data/alarms.csv') if r['구분'] == 'RAISE' and r['판정_요청_시각']]
+sops = [r['sop_id'] for r in rows(root/'data/targets.csv')]
+table_path = pick('condition_table.csv')
+table = rows(table_path)
+if not table or not {'rule_id', 'action'} <= set(table[0]):
+    print(f'구조 확인 필요 — {table_path.relative_to(root).as_posix()}의 열 이름이 계약(rule_id · action …)과 다릅니다. 내 입력이면 계약과 견주어 고친 뒤 다시 실행합니다.')
+    sys.exit(1)
+groups = {(r['rule_id'], r['action']) for r in table}
+def num(x): return isinstance(x, (int, float)) and not isinstance(x, bool)
+def inputs_errors(at, inputs, reasons):
+    out = []
+    for k in INPUTS:
+        if k not in inputs: out.append(f'{at}: 입력에 {k}가 없습니다(값이 없으면 null).')
+        elif inputs[k] is None and not (reasons or {}).get(k): out.append(f'{at}: {k}가 null인데 왜 없는지가 없습니다.')
+    for k, (lo, hi, unit) in RANGE.items():
+        v = inputs.get(k)
+        if num(v) and not lo <= v <= hi: out.append(f'{at}: {k}={v}는 계약 단위 {unit}의 범위({lo} ~ {hi})를 벗어납니다. 원천의 단위를 확인합니다.')
+    return out
+def total_errors(at, value):
+    if not isinstance(value, dict) or not all(num(value.get(k)) for k in LOSS + ['total']): return [f'{at}: 비교값(comparison)에 {LOSS + ["total"]}가 숫자로 있어야 합니다.']
+    if abs(sum(value[k] for k in LOSS) - value['total']) > 0.03: return [f'{at}: 합계 total {value["total"]}가 네 손실과 감점의 합 {sum(value[k] for k in LOSS):.2f}와 다릅니다.']
+    return []
+def rank_errors(at, ranked):
+    """ranked = [(sop, 순위, 합계)] — 합계 오름차순과 같은 합계 같은 순위(1, 1, 3)."""
+    out, ranked = [], sorted(ranked, key=lambda x: (x[1] if num(x[1]) else 9e9))
+    totals = [t for _, _, t in ranked]
+    if totals != sorted(totals): out.append(f'{at}: 순위가 합계가 작은 순서가 아닙니다.')
+    for i, (s, r, t) in enumerate(ranked):
+        want = ranked[i - 1][1] if i and ranked[i - 1][2] == t else i + 1
+        if r != want: out.append(f'{at}: {s}의 순위 {r} — 같은 합계는 같은 순위, 다음은 그 수만큼 건너뜁니다(1, 1, 3).')
+    return out
+def kept_errors(at, status, value, note):
+    """비교값은 유지 후보에만, 비교값이 없는 유지 후보에는 까닭."""
+    if status != '유지':
+        return [f'{at}: 유지가 아닌 후보({status})에 비교값이 있습니다.'] if value is not None else []
+    if value is None:
+        return [] if note else [f'{at}: 유지 후보에 비교값이 없으면 no_comparison_reason에 까닭이 필요합니다.']
+    return total_errors(at, value)
+def decisions_errors(value):
+    if not isinstance(value, list) or not value or any(not (isinstance(d, dict) and d.get('item') and d.get('decision') and d.get('basis')) for d in value):
+        return ['decisions(item · decision · basis — 판단 입력을 만든 방법 · 견주는 후보 등 정한 것)가 필요합니다.']
+    return []
+
+sop_doc = json.loads(pick('sop.json').read_text(encoding='utf-8-sig'))
+approver = {s['id']: (s.get('approval') or {}).get('role') for s in sop_doc.get('sops', [])}
+def check_review(jpath, mpath):
+    if not jpath.is_file(): return '없음', [], ''
+    try: rv = json.loads(jpath.read_text(encoding='utf-8-sig'))
+    except ValueError as e: return '확인 필요', [f'JSON 읽기 실패: {e}'], ''
+    md = mpath.read_text(encoding='utf-8-sig') if mpath.is_file() else ''
+    errs = [] if md else ['action_review.md가 없습니다.']
+    if not str(rv.get('comparison_basis', '')).strip(): errs.append('comparison_basis(비교값과 정책 점수 · 실행 승인의 구분 문장)가 없습니다.')
+    errs += decisions_errors(rv.get('decisions'))
+    events = rv.get('events')
+    if not isinstance(events, list): return '확인 필요', errs + ['events 목록이 없습니다.'], ''
+    got = [i.get('id') for i in events if isinstance(i, dict)]
+    if got != alarms: errs.append(f'events: alarms.csv의 RAISE 행과 사례 · 순서가 다릅니다(빠짐 {sorted(set(alarms) - set(got))}, 더함 {sorted(set(got) - set(alarms))}).')
+    for it in events:
+        iid = it.get('id'); cands = it.get('candidates') or []
+        if md and not re.search(r'^#+\s.*(?<![A-Za-z0-9-])' + re.escape(str(iid)) + r'(?![A-Za-z0-9-])', md, re.M): errs.append(f'action_review.md에 {iid}의 절 제목이 없습니다.')
+        if [c.get('sop') for c in cands] != sops: errs.append(f'{iid}: 후보 목록 · 순서가 targets.csv와 다릅니다.')
+        totals, ranked = {}, []
+        for c in cands:
+            at = f'{iid}/{c.get("sop")}'
+            st = c.get('status')
+            reasons = c.get('reasons') if isinstance(c.get('reasons'), list) else None
+            errs += inputs_errors(at, c.get('inputs') or {}, c.get('missing_reasons'))
+            if st not in ('유지', '제외', '보류'): errs.append(f'{at}: status는 유지 · 제외 · 보류 가운데 하나입니다.'); continue
+            if reasons is None: errs.append(f'{at}: 이유 목록(reasons)이 필요합니다.'); continue
+            for r in reasons:
+                if (r.get('rule_id'), c.get('sop')) not in groups: errs.append(f'{at}: 기준 조건표에 없는 규칙 · 후보 {r.get("rule_id")}')
+                if r.get('result') not in ('WARN', 'PENALTY', 'EXCLUDE', '미확인'): errs.append(f'{at} {r.get("rule_id")}: result는 WARN · PENALTY · EXCLUDE · 미확인 가운데 하나입니다.')
+                if not r.get('expression') or not r.get('source') or not isinstance(r.get('actual_inputs'), dict): errs.append(f'{at} {r.get("rule_id")}: actual_inputs · expression · source가 필요합니다.')
+                if r.get('result') == '미확인' and (not r.get('missing_inputs') or not r.get('missing_reason')): errs.append(f'{at} {r.get("rule_id")}: 미확인에는 missing_inputs와 missing_reason이 필요합니다.')
+            kinds = [r.get('result') for r in reasons]
+            want = '제외' if 'EXCLUDE' in kinds else ('보류' if '미확인' in kinds else '유지')
+            if st != want: errs.append(f'{at}: 판정 {st}이 이유의 결과({", ".join(kinds) or "없음"})와 맞지 않습니다(뜻은 work_standard.md 4절).')
+            if not c.get('sources'): errs.append(f'{at}: 원문 출처(sources)가 비었습니다.')
+            checks = c.get('checks')
+            if not isinstance(checks, list): errs.append(f'{at}: 추가로 확인할 값(checks) 목록이 필요합니다.'); checks = []
+            for m in sorted({m for r in reasons if r.get('result') == '미확인' for m in r.get('missing_inputs') or []}):
+                if not any(m in str(x) for x in checks): errs.append(f'{at}: 미확인 규칙의 빠진 입력 {m}이 추가로 확인할 값(checks)에 없습니다.')
+            ap = c.get('approval') or {}
+            if not ap.get('role') or not ap.get('source') or not ap.get('note'): errs.append(f'{at}: 승인(approval — role · source · note)이 필요합니다.')
+            elif ap.get('role') != approver.get(c.get('sop')): errs.append(f'{at}: 승인 역할 {ap.get("role")}이 기준 sop.json의 {approver.get(c.get("sop"))}과 다릅니다.')
+            value, rank = c.get('comparison'), c.get('rank')
+            errs += kept_errors(at, st, value, c.get('no_comparison_reason'))
+            if value is None and rank is not None: errs.append(f'{at}: 비교값이 없는 후보에 순위(rank)가 있습니다.')
+            if st == '유지' and isinstance(value, dict):
+                totals[c.get('sop')] = value.get('total'); ranked.append((c.get('sop'), rank, value.get('total')))
+        errs += rank_errors(iid, ranked)
+        op = it.get('review') or {}
+        top = op.get('top') if isinstance(op.get('top'), list) else None
+        if top is None: errs.append(f'{iid}: review.top 목록이 필요합니다(1위가 없으면 빈 목록).'); top = []
+        for s in top:
+            if s not in totals: errs.append(f'{iid}: review.top의 {s}는 비교값이 있는 유지 후보가 아닙니다.')
+        if not op.get('reason'): errs.append(f'{iid}: review.reason이 필요합니다.')
+        if not isinstance(op.get('checks'), list): errs.append(f'{iid}: review.checks 목록이 필요합니다(없으면 빈 목록).')
+    return ('확인 필요' if errs else '통과'), errs, f'사례 {len(events)}건'
+state, errs, note = check_review(root/'output/action_review.json', root/'output/action_review.md')
+if state == '없음': print('아직 검사할 결과가 없습니다: output/action_review.json — python run.py compare가 만듭니다')
+print('구조 검사 결과')
+ok = report([('action_review.json · .md', state, errs, note, True), chosen_part(root), expect_part(root), provided_part(root)]) and state == '통과'
+print('구조 검사 통과' if ok else '구조 확인 필요 — 위 줄마다 결과의 어느 사례 · 후보인지 찾아 고친 뒤 다시 실행합니다.')
+print('이 검사는 모양과 계약만 봅니다. 의미와 질문별 답(판정 · 이유 · 출처가 원문과 맞는지, 금액, 어느 후보가 1위인지)은 원자료와 따로 대조합니다.')
+sys.exit(0 if ok else 1)

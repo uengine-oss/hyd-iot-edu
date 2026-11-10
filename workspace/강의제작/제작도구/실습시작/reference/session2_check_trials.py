@@ -17,7 +17,7 @@ import tempfile
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[4]
 LABS = {'통합반': ROOT/'workspace/강의제작/산출물/통합반/실습/02회차/랩/ontology-lab',
-        '실전반': ROOT/'workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습3_온톨로지설계'}
+        '실전반': ROOT/'workspace/강의제작/산출물/실전반/실습/02회차/랩/ontology-lab'}
 OUT = HERE/'session2_검사기_고의손상.json'
 
 
@@ -156,7 +156,7 @@ def main():
             if not good:
                 bad.append(f'{course} [{name}] 기대 {"통과" if ok else "실패"} {want} 없어야 {absent}, 실제 exit {code}: {out[-600:]}')
         # 공용 검사(lab_frame.provided_guard · CHOSEN_CHECK) — 실습3 · 4 네 폴더 모두: 제공 파일을 바꾸거나 정한_것.csv 칸이 비면 잡는가
-        labs4 = {c: ROOT/f'workspace/강의제작/산출물/{c}/실습/02회차/랩'/('graph-lab' if c == '통합반' else '02일차_실습4_그래프구현과검증') for c in labs}
+        labs4 = {c: ROOT/f'workspace/강의제작/산출물/{c}/실습/02회차/랩/graph-lab' for c in labs}
         chosen_head = '# 제공 빈 틀\n지점,고른_것,근거,바뀌는_답\n'
         file_trials = [
             ('F1 제공 파일 바뀜', lambda f: (f/'show_result.py').write_text((f/'show_result.py').read_text(encoding='utf-8') + '\n# 바꿈\n', encoding='utf-8'), ['제공 파일이 바뀌었습니다: show_result.py']),

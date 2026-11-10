@@ -33,17 +33,28 @@
       "entry": "guide"
     },
     {
-      "id": "practical-02-ontology",
+      "id": "practical-02-conditions",
       "course": "실전반",
       "session": "온라인 02회차",
-      "title": "설비·부품·공급 정보를 연결하는 온톨로지 설계하기",
-      "version": "2026-11-05-lab-v16",
-      "folder": "02회차/랩/02일차_실습3_온톨로지설계",
-      "path": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습3_온톨로지설계.zip",
-      "sha256": "e3b9b2b7b19f02c34c785d6cb23a694837b0f5bd10265d15c8f2b544b2b200b9",
+      "title": "작업 기준의 복합 조건과 예외를 조치 조건표로 표현하기",
+      "version": "v2-project",
+      "folder": "condition-table-lab",
+      "path": "workspace/강의제작/산출물/실전반/실습/02회차/랩/condition-table-lab.zip",
+      "sha256": "67ad44631fee1cee3057a8d3104bf3f038197c2fdcb8f8bc771c05d8888f3688",
+      "guide_steps": [
+        "폴더 열고 자료 확인하기",
+        "Codex와 자료 파악하기",
+        "요구와 기대 판정 정하기",
+        "조건표 규칙 만들기",
+        "출처가 확인되지 않는 규칙 정하기",
+        "남은 후보와 실행 승인 적기",
+        "구조 확인하기",
+        "저장하고 다시 확인하기"
+      ],
+      "layout": "project",
       "guide_file": {
-        "path": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습3_온톨로지설계_guide.html",
-        "sha256": "e91c91ef0757cc8e7f0b5b6af5986dde501b44de5755e7964f2946d19625eb1a"
+        "path": "workspace/강의제작/산출물/실전반/실습/02회차/랩/condition-table-lab_guide.html",
+        "sha256": "7a52408aa621f6893e89df9cefd2eb847aff503de74bd51160f7b0e5aed69599"
       }
     },
     {
@@ -51,27 +62,48 @@
       "course": "실전반",
       "session": "온라인 02회차",
       "title": "부품의 사용 설비와 공급 정보를 조회하는 그래프 구현하기",
-      "version": "2026-11-05-lab-v16",
-      "folder": "02회차/랩/02일차_실습4_그래프구현과검증",
-      "path": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습4_그래프구현과검증.zip",
-      "sha256": "a78bb723d6a2ab936c53db18c387ff0bc515b094941ea06e5fe4ca614eb96206",
+      "version": "v18-project",
+      "folder": "graph-lab",
+      "path": "workspace/강의제작/산출물/실전반/실습/02회차/랩/graph-lab.zip",
+      "sha256": "55d9c94deca3b26bf80aa49721df859806a1da5a82d61c4cf26b6c8fec001b5d",
+      "guide_steps": [
+        "폴더 열고 자료 확인하기",
+        "랩 DB 준비하기",
+        "Codex와 모델 파악하기",
+        "질문과 기대 답 정하기",
+        "모델 적재하기",
+        "사용 설비와 공급 조건 조회하기",
+        "다른 표기와 없는 품번 구별하기",
+        "저장하고 다시 확인하기"
+      ],
+      "layout": "project",
       "guide_file": {
-        "path": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습4_그래프구현과검증_guide.html",
-        "sha256": "276e9a8d36554bbca93e8f1f8a5f69765fa8383b4b9ef10616a8f8d488cb2a9a"
+        "path": "workspace/강의제작/산출물/실전반/실습/02회차/랩/graph-lab_guide.html",
+        "sha256": "386239810b0471bc4a2ef7fb73e05c868882815c7479d89983d475a954e1166f"
       }
     },
     {
-      "id": "practical-02-conditions",
+      "id": "practical-02-ontology",
       "course": "실전반",
       "session": "온라인 02회차",
-      "title": "작업 기준의 복합 조건과 예외를 조치 조건표로 표현하기",
-      "version": "2026-11-07-zip-only",
-      "folder": "02회차/랩/02일차_실습5_조치조건표",
-      "path": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습5_조치조건표.zip",
-      "sha256": "a330467e8aa588a4960dd0d44c582ba09f39992bf9dcbec64c140b5d7308d6d0",
+      "title": "설비·부품·공급 정보를 연결하는 온톨로지 설계하기",
+      "version": "v18-project",
+      "folder": "ontology-lab",
+      "path": "workspace/강의제작/산출물/실전반/실습/02회차/랩/ontology-lab.zip",
+      "sha256": "db7571f959fb9d7a6814f36d1c77d7237467aacacedefc1e96df6b3c4865363f",
+      "guide_steps": [
+        "폴더 열고 자료 확인하기",
+        "Codex와 자료 파악하기",
+        "질문과 판단 기준 정하기",
+        "기준일에 쓸 견적 고르기",
+        "승인과 함께 볼 정보 담기",
+        "질문으로 결과 검증하기",
+        "저장하고 다시 확인하기"
+      ],
+      "layout": "project",
       "guide_file": {
-        "path": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습5_조치조건표_guide.html",
-        "sha256": "d4f28f03de98ad3197ce6e53fb8b89e26b5ee3ff71981ec9410d36dc86079e02"
+        "path": "workspace/강의제작/산출물/실전반/실습/02회차/랩/ontology-lab_guide.html",
+        "sha256": "874acc0e056c1b0c029cc73140d3e0cb0d8843d64fdb4dfa2d253c946929c610"
       }
     },
     {
@@ -85,20 +117,6 @@
       "sha256": "3383e5c6b2ca4bfb3c92c14a5cc5304b38056a343a9693ce9479e0eeb46189df"
     },
     {
-      "id": "practical-03-review",
-      "course": "실전반",
-      "session": "온라인 03회차",
-      "title": "판정·성과 비교를 조치 검토 결과로 완성하기",
-      "version": "2026-11-07-zip-only",
-      "folder": "03회차/랩/03일차_실습2_판단기능만들기",
-      "path": "workspace/강의제작/산출물/실전반/실습/03회차/랩/03일차_실습2_판단기능만들기.zip",
-      "sha256": "011c04ab5f2b80c1631268d2b6959f26dddeafc4bd751b8a2c88661b0326c820",
-      "guide_file": {
-        "path": "workspace/강의제작/산출물/실전반/실습/03회차/랩/03일차_실습2_판단기능만들기_guide.html",
-        "sha256": "70b5ad2d55e17df249ff55c79ac1a70f1f53e6bba072cb677f1cf3e7a0315129"
-      }
-    },
-    {
       "id": "practical-03-manual",
       "course": "실전반",
       "session": "온라인 03회차",
@@ -109,17 +127,56 @@
       "sha256": "6741afeeca125e57b3274cc965b1f22e85c9183ed08136e3c54dc02c66c511ff"
     },
     {
+      "id": "practical-03-review",
+      "course": "실전반",
+      "session": "온라인 03회차",
+      "title": "판정·성과 비교를 조치 검토 결과로 완성하기",
+      "version": "v2-project",
+      "folder": "action-review-lab",
+      "path": "workspace/강의제작/산출물/실전반/실습/03회차/랩/action-review-lab.zip",
+      "sha256": "2fc5b69f1672caeccedfa1b1772dad2bff03620c2e6e61394d5c9579ad5916f4",
+      "guide_steps": [
+        "폴더 열고 자료 확인하기",
+        "Codex와 원천 기록 파악하기",
+        "기대 판정 먼저 적기",
+        "끊긴 카운터 기록의 값 정하기",
+        "견줄 후보 정하기",
+        "비교 기준 문장과 검토 결과 쓰기",
+        "검토 결과로 사례 검증하기",
+        "구조 확인하기",
+        "저장하고 다시 확인하기"
+      ],
+      "layout": "project",
+      "guide_file": {
+        "path": "workspace/강의제작/산출물/실전반/실습/03회차/랩/action-review-lab_guide.html",
+        "sha256": "63c5f05b052bcc9e7553b2b15e68ed3d7e99075aae78dd5473c912b49dae60ba"
+      }
+    },
+    {
       "id": "practical-03-extract",
       "course": "실전반",
       "session": "온라인 03회차",
       "title": "문서에서 작업 조건과 근거를 추출하는 기능 만들기",
-      "version": "2026-11-07-zip-only",
-      "folder": "03회차/랩/03일차_실습4_지식추출",
-      "path": "workspace/강의제작/산출물/실전반/실습/03회차/랩/03일차_실습4_지식추출.zip",
-      "sha256": "4ca0fd1142b79c4ea3b5deaf99ab94963c31d6bed2d5b4f1ae7797f948bc81b8",
+      "version": "2026-11-11-project",
+      "folder": "condition-extract-lab",
+      "path": "workspace/강의제작/산출물/실전반/실습/03회차/랩/condition-extract-lab.zip",
+      "sha256": "6dfda5d9eab6a267d12b4b7f78e4b32b796153f8940eae30f740fa9a053e01a0",
+      "guide_steps": [
+        "폴더 열고 사건과 문서 확인하기",
+        "Codex와 핀 세척 원문 찾기",
+        "수업 모델 연결 확인하기",
+        "기대 항목 먼저 적기",
+        "나누는 단위와 요청 글을 한 조각으로 시험하기",
+        "문서 묶음에 실행하고 기대 · 다른 문서와 견주기",
+        "지식 후보 검토하기 — 사내 문서와 제조사 지침",
+        "이 작업에 걸린 조건의 근거 견주기",
+        "준비 · 금지 · 완료 모으기",
+        "고치고 저장해 다시 열기"
+      ],
+      "layout": "project",
       "guide_file": {
-        "path": "workspace/강의제작/산출물/실전반/실습/03회차/랩/03일차_실습4_지식추출_guide.html",
-        "sha256": "4a9d377fd819366ef7ae9e78870e917b5ec1099033a65527d7cf0bd212a88717"
+        "path": "workspace/강의제작/산출물/실전반/실습/03회차/랩/condition-extract-lab_guide.html",
+        "sha256": "4c398fa80afb4be810676509cd1918bf04435bf712e1189c853d8e88b8ac8e75"
       }
     },
     {
@@ -127,13 +184,25 @@
       "course": "실전반",
       "session": "온라인 03회차",
       "title": "검토 지식으로 작업 확인 카드 만들기",
-      "version": "2026-11-07-zip-only",
-      "folder": "03회차/랩/03일차_실습5_그래프반영",
-      "path": "workspace/강의제작/산출물/실전반/실습/03회차/랩/03일차_실습5_그래프반영.zip",
-      "sha256": "0291023709e2772abaa34ae2d044b2068e7578ba06f1eca715b60184ec8dbecb",
+      "version": "2026-11-11-project",
+      "folder": "work-card-lab",
+      "path": "workspace/강의제작/산출물/실전반/실습/03회차/랩/work-card-lab.zip",
+      "sha256": "8e177fd8c3e7ae9379839a50e31d904adc5784046be84fdd147af79747252c9f",
+      "guide_steps": [
+        "폴더 열고 랩 DB 준비하기",
+        "Codex와 핀 세척 근거와 기존 ID 찾기",
+        "기대 카드 먼저 적기",
+        "그래프 모양과 ID 정하기",
+        "승인 지식을 기존 ID에 잇고 적재하기",
+        "다른 문서의 조건 정하고 다시 적재하기",
+        "작업 확인 카드 만들기",
+        "다른 작업과 답할 수 있는 범위 확인하기",
+        "내보내고 저장해 다시 열기"
+      ],
+      "layout": "project",
       "guide_file": {
-        "path": "workspace/강의제작/산출물/실전반/실습/03회차/랩/03일차_실습5_그래프반영_guide.html",
-        "sha256": "f7c7b2b54c80ce6e6b3829b517af29cbcac4270bb4a2fe4cdc3bf917b988eb82"
+        "path": "workspace/강의제작/산출물/실전반/실습/03회차/랩/work-card-lab_guide.html",
+        "sha256": "6b183c10ba02f832da3d3604d55169b3aaa481f9550d3a390d23558c7a833dcf"
       }
     },
     {
@@ -197,10 +266,10 @@
       "course": "통합반",
       "session": "온라인 02회차",
       "title": "설계한 온톨로지를 그래프 DB에 구현하고 검증하기",
-      "version": "v21-project",
+      "version": "v22-project",
       "folder": "graph-lab",
       "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/graph-lab.zip",
-      "sha256": "5aad8d8221e58ae227d1f3bd941e07e5acab24c909bbad59faf9a681ca75fca7",
+      "sha256": "f5e1cbfb8bb7c0556076c46105f619b5a12de05e66aaec3ee4ef45449e40cb3c",
       "guide_steps": [
         "폴더 열고 자료 확인하기",
         "랩 DB 준비하기",
@@ -218,7 +287,7 @@
       "layout": "project",
       "guide_file": {
         "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/graph-lab_guide.html",
-        "sha256": "948f76ea5f04d2902ee3cd402ced1608a50def42ac47a058a3e9c4987b6dcce8"
+        "sha256": "5e760be735323efef644df6ef64c1048bf0d1aec765159b5f4b041c14b0742a3"
       }
     },
     {
@@ -226,10 +295,10 @@
       "course": "통합반",
       "session": "온라인 02회차",
       "title": "현장 정보를 체계화하는 온톨로지 직접 설계하기",
-      "version": "v21-project",
+      "version": "v22-project",
       "folder": "ontology-lab",
       "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/ontology-lab.zip",
-      "sha256": "e2868221f63e7bfa8f37814c96fff9130930985047d2d9e4acee488701c12030",
+      "sha256": "cad34c015c677a15713c12d7d0d31b14e715a6f555341900a2af12a04e35842e",
       "guide_steps": [
         "폴더 열고 자료 확인하기",
         "Codex와 자료 파악하기",
@@ -246,7 +315,7 @@
       "layout": "project",
       "guide_file": {
         "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/ontology-lab_guide.html",
-        "sha256": "430831096d637b8a48156b1691c37290ac446b7b1ff366fce6430ac5eaa424d6"
+        "sha256": "7422d6b26cd7c35be25e38aaef9bc5efe8c2ae0e9b3dbf6bfcea130cf4835457"
       }
     },
     {
@@ -264,13 +333,26 @@
       "course": "통합반",
       "session": "온라인 03회차",
       "title": "작업 절차와 판단 조건을 연결해 조치 기준 만들기",
-      "version": "2026-11-07-zip-only",
-      "folder": "03회차/랩/03일차_실습2_조치기준만들기",
-      "path": "workspace/강의제작/산출물/통합반/실습/03회차/랩/03일차_실습2_조치기준만들기.zip",
-      "sha256": "f40585b8161b13ed632f5aef70a94ed0da287d003cab55f835301f722f9e0443",
+      "version": "v2-project",
+      "folder": "action-criteria-lab",
+      "path": "workspace/강의제작/산출물/통합반/실습/03회차/랩/action-criteria-lab.zip",
+      "sha256": "698506acf0d50149db2aa3762766575203a129e336659cf0b2cf0414a1c41441",
+      "guide_steps": [
+        "폴더 열고 자료 확인하기",
+        "Codex와 자료 파악하기",
+        "요구와 기대 판정 정하기",
+        "조건 문장을 SOP 구조로 나누기",
+        "고장 유형 · 원인 · 조치 잇기",
+        "적용 범위와 설비 모델 ID 잇기",
+        "조건표 규칙 만들기",
+        "출처가 확인되지 않는 규칙 정하기",
+        "구조 확인하기",
+        "저장하고 다시 확인하기"
+      ],
+      "layout": "project",
       "guide_file": {
-        "path": "workspace/강의제작/산출물/통합반/실습/03회차/랩/03일차_실습2_조치기준만들기_guide.html",
-        "sha256": "4a59ce2545ae9d86306926e624b4e8cf88177e04f1b72ce4e1b51357d09a30ec"
+        "path": "workspace/강의제작/산출물/통합반/실습/03회차/랩/action-criteria-lab_guide.html",
+        "sha256": "deda13a288ce2d481c67512cd1de08114b0d9ffde12837b1144a71587a06dc88"
       }
     },
     {
@@ -278,13 +360,25 @@
       "course": "통합반",
       "session": "온라인 03회차",
       "title": "설비 조건별 최적의 조치를 비교하는 판단 기능 만들기",
-      "version": "2026-11-07-zip-only",
-      "folder": "03회차/랩/03일차_실습3_판단기능만들기",
-      "path": "workspace/강의제작/산출물/통합반/실습/03회차/랩/03일차_실습3_판단기능만들기.zip",
-      "sha256": "c109bb7729c0f11db35d9a5bb78500354e9ed07df3b1072be3f19642148b5e74",
+      "version": "v2-project",
+      "folder": "judgement-lab",
+      "path": "workspace/강의제작/산출물/통합반/실습/03회차/랩/judgement-lab.zip",
+      "sha256": "405fccc666d361cb1e8285ce0eee63b4df0e755a8118fc5ac4345458ba9f8740",
+      "guide_steps": [
+        "폴더 열고 자료 확인하기",
+        "Codex와 원천 기록 파악하기",
+        "기대 판정 먼저 적기",
+        "끊긴 카운터 기록의 값 정하기",
+        "견줄 후보 정하기",
+        "비교 기준 문장과 결과 쓰기",
+        "사례로 결과 검증하기",
+        "구조 확인하기",
+        "저장하고 다시 확인하기"
+      ],
+      "layout": "project",
       "guide_file": {
-        "path": "workspace/강의제작/산출물/통합반/실습/03회차/랩/03일차_실습3_판단기능만들기_guide.html",
-        "sha256": "75616580e84959bbce449fca9973d5ecb27e1b27080f470be4afd270ca9837ab"
+        "path": "workspace/강의제작/산출물/통합반/실습/03회차/랩/judgement-lab_guide.html",
+        "sha256": "d0d5b2f15bd98a51ebe252e52b08f94906a7938f1378d0e2d0226cb4a04ace66"
       }
     },
     {
@@ -292,13 +386,27 @@
       "course": "통합반",
       "session": "온라인 04회차",
       "title": "문서에서 근거 있는 지식을 추출하는 기능 만들기",
-      "version": "2026-11-07-zip-only",
-      "folder": "04회차/랩/04일차_실습2_문서지식추출",
-      "path": "workspace/강의제작/산출물/통합반/실습/04회차/랩/04일차_실습2_문서지식추출.zip",
-      "sha256": "d24c1466b1377938a1cf0ca60a15771d0c16ea4d9bb3004d563e9edd065ff43c",
+      "version": "2026-11-11-project",
+      "folder": "knowledge-extract-lab",
+      "path": "workspace/강의제작/산출물/통합반/실습/04회차/랩/knowledge-extract-lab.zip",
+      "sha256": "71ee3ba654a3096ee62ab93989eb6a9daf0ea30070f7c9b4d06115180c47bb20",
+      "guide_steps": [
+        "폴더 열고 사건과 문서 확인하기",
+        "Codex와 핀 세척 원문 찾기",
+        "수업 모델 연결 확인하기",
+        "기대 항목 먼저 적기",
+        "문서를 나누는 단위 정하기",
+        "요청 글 쓰고 한 조각으로 시험하기",
+        "주 대상 문서에 실행하고 기대와 견주기",
+        "지식 후보 검토하기 — 사내 문서와 제조사 지침",
+        "조건표 조건의 근거 견주기",
+        "다른 문서에 다시 적용하기",
+        "고치고 저장해 다시 열기"
+      ],
+      "layout": "project",
       "guide_file": {
-        "path": "workspace/강의제작/산출물/통합반/실습/04회차/랩/04일차_실습2_문서지식추출_guide.html",
-        "sha256": "2c338adc179cc6a59d72998078a9d09c414b57ee9c74dee3de5b0824e21f963a"
+        "path": "workspace/강의제작/산출물/통합반/실습/04회차/랩/knowledge-extract-lab_guide.html",
+        "sha256": "39d248ecedd117c6ea282fda568b0d5a3a5d1ed1d223ac257a3c1417d3762783"
       }
     },
     {
@@ -306,13 +414,27 @@
       "course": "통합반",
       "session": "온라인 04회차",
       "title": "검토한 문서 지식을 그래프 DB에 반영하고 관계 확인하기",
-      "version": "2026-11-07-zip-only",
-      "folder": "04회차/랩/04일차_실습3_그래프반영과검증",
-      "path": "workspace/강의제작/산출물/통합반/실습/04회차/랩/04일차_실습3_그래프반영과검증.zip",
-      "sha256": "2c1dff722e6cdfd6b10d2823f8e79a5c049451f14cfa64082291f1fca5269cac",
+      "version": "2026-11-11-project",
+      "folder": "knowledge-graph-lab",
+      "path": "workspace/강의제작/산출물/통합반/실습/04회차/랩/knowledge-graph-lab.zip",
+      "sha256": "a69fe61ad7aea29fa11eb9d2d7d8029d3458a5fd3b3d298e7931c7054bea94a9",
+      "guide_steps": [
+        "폴더 열고 검토 결과 확인하기",
+        "Codex와 기존 ID 찾기",
+        "질문과 기대 답 먼저 적기",
+        "랩 DB 준비하고 설비 모델 적재하기",
+        "그래프 모양과 ID 정하기",
+        "승인 지식을 기존 ID에 잇고 적재하기",
+        "다른 문서의 조건 정하고 다시 적재하기",
+        "질문 1~3 조회와 보류 확인하기",
+        "다른 문서 추가 반영하기",
+        "답할 수 있는 범위 나누기",
+        "내보내고 저장해 다시 열기"
+      ],
+      "layout": "project",
       "guide_file": {
-        "path": "workspace/강의제작/산출물/통합반/실습/04회차/랩/04일차_실습3_그래프반영과검증_guide.html",
-        "sha256": "b085d2d945c4a7c4e9841fe81e2379c8c2edef58ea56cd7a1e7687d9b5e1e929"
+        "path": "workspace/강의제작/산출물/통합반/실습/04회차/랩/knowledge-graph-lab_guide.html",
+        "sha256": "e12359138c16eb08689974b74774a0fe6f905583f35c1f33ad3ee2686a58142d"
       }
     }
   ]

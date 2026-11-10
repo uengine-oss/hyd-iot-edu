@@ -19,6 +19,20 @@ def norm(text):
     return ' · '.join(sorted(x for x in re.split(r'[·,\\s]+', str(text or '')) if x))
 
 
+def same(expected, actual):
+    """대조 화면은 적은 글을 그대로 보이고, 같음 여부만 norm으로 견준다."""
+    return norm(expected) == norm(actual)
+
+
+def shown(value):
+    """조회 결과 칸을 화면 글로: 값 없음은 「없음」, 목록은 「 · 」로 잇는다."""
+    if value is None:
+        return '없음'
+    if isinstance(value, list):
+        return ' · '.join(shown(v) for v in value) or '없음'
+    return value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
+
+
 def expected_rows(columns, key):
     """기대 답 표의 행. key = 한 행을 가리키는 열들 — 같은 짝이 두 줄이면 결과 화면이 한 줄을 조용히 덮으므로 두 줄 번호를 대고 멈춘다."""
     path = HERE / '결과/기대_답.csv'
@@ -137,14 +151,14 @@ def ask(previous):
     rows = expected_rows(['질문', '물을_값', '기대_답'], KEY)
     got = guarded(M.answers, list(dict.fromkeys((r['질문'], r['물을_값']) for r in rows)))   # 같은 설비를 여러 줄에 적어도 한 번만 묻는다
     key = lambda r: f"{{r['질문']}} | {{r['물을_값']}} | {{r.get('항목', '')}}"
-    exp = [{{'짝': key(r), '답': norm(r['기대_답'])}} for r in rows]
+    exp = [{{'짝': key(r), '답': r['기대_답']}} for r in rows]
     picked = {{}}      # 질문 1은 기대 답에 적은 구성 요소만 견준다(항목을 적은 설비)
     for r in rows:
         if str(r['질문']).strip() == '1' and r.get('항목'):
             picked.setdefault(r['물을_값'], set()).add(r['항목'])
     keep = [r for r in got if not (str(r['질문']) == '1' and r['물을_값'] in picked and r['항목'] not in picked[r['물을_값']])]
-    act = [{{'짝': key(r), '답': norm(r['답'])}} for r in keep]
-    return [R.compare('기대 답 ↔ 모델에 물은 답(질문 | 물을 값 | 항목)', '짝', exp, act, ['답'],
+    act = [{{'짝': key(r), '답': r['답']}} for r in keep]
+    return [R.compare('기대 답 ↔ 모델에 물은 답(질문 | 물을 값 | 항목)', '짝', exp, act, ['답'], same=same,
                       note=(f'질문 1은 기대 답에 적은 구성 요소만 견줍니다(모델이 더 돌려준 구성 요소 {{len(got) - len(keep)}}줄은 표에 넣지 않음). '
                             '「실제 없음」은 기대 답의 항목 이름이 모델의 이름과 다르거나 모델에 없는 것입니다. 「기대 밖」은 모델이 더 돌려준 항목입니다. '
                             '모델의 답 「없음」은 물은 품번 · 표기 · 설비 · 물리량이 모델에 없다는 뜻이고, 「쓰는 설비 없음」은 부품은 모델에 있지만 그 부품에 이은 구성 요소가 없다는 뜻입니다.'))]
@@ -226,9 +240,9 @@ def ask(previous):
     rows = expected_rows(['질문', '물을_값', '기대_답'], KEY)
     got = guarded(M.answers, list(dict.fromkeys((r['질문'], r['물을_값']) for r in rows)))   # 같은 품번을 여러 줄에 적어도 한 번만 묻는다
     key = lambda r: f"{{r['질문']}} | {{r['물을_값']}} | {{r.get('항목', '')}}"
-    exp = [{{'짝': key(r), '답': norm(r['기대_답'])}} for r in rows]
-    act = [{{'짝': key(r), '답': norm(r['답'])}} for r in got]
-    return [R.compare('기대 답 ↔ 모델에 물은 답(질문 | 물을 값 | 항목)', '짝', exp, act, ['답'])] + run_check()
+    exp = [{{'짝': key(r), '답': r['기대_답']}} for r in rows]
+    act = [{{'짝': key(r), '답': r['답']}} for r in got]
+    return [R.compare('기대 답 ↔ 모델에 물은 답(질문 | 물을 값 | 항목)', '짝', exp, act, ['답'], same=same)] + run_check()
 
 
 STEPS = [
@@ -326,15 +340,15 @@ def ask_question(number):
     for r in rows or [{{'물을_값': '', '볼_열': ''}}]:
         params = {{names[0]: r['물을_값']}} if names else {{}}
         (_, _, cols, data), = db(C.query, path, str(number), params)
-        blocks.append(R.table(f'질문 {{number}} — 물은 값 「{{r["물을_값"]}}」', cols, [[json.dumps(v, ensure_ascii=False) if not isinstance(v, str) else v for v in row] for row in data]))
+        blocks.append(R.table(f'질문 {{number}} — 물은 값 「{{r["물을_값"]}}」', cols, [[shown(v) for v in row] for row in data]))
         if r.get('볼_열'):
             if r['볼_열'] not in cols:
                 raise R.Stop(f'결과/기대_답.csv: 볼_열 「{{r["볼_열"]}}」이 질문 {{number}} 결과의 열({{", ".join(cols)}})에 없습니다.')
             i = cols.index(r['볼_열'])
-            exp.append({{'짝': r['물을_값'], '답': norm(r['기대_답'])}})
-            act.append({{'짝': r['물을_값'], '답': norm(' · '.join('없음' if row[i] is None else str(row[i]) for row in data) or '0줄')}})
+            exp.append({{'짝': r['물을_값'], '답': r['기대_답']}})
+            act.append({{'짝': r['물을_값'], '답': ' · '.join('없음' if row[i] is None else str(row[i]) for row in data) or '0줄'}})
     if exp:
-        blocks.insert(0, R.compare(f'질문 {{number}} 기대 답 ↔ 조회 결과(볼_열의 값)', '짝', exp, act, ['답']))
+        blocks.insert(0, R.compare(f'질문 {{number}} 기대 답 ↔ 조회 결과(볼_열의 값)', '짝', exp, act, ['답'], same=same))
     return blocks
 
 

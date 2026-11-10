@@ -238,7 +238,7 @@ def offline():
     lab4_sources = B.OUT/'실전반/실습/02회차/랩'/B.LAB4/'입력/자료'
     report['실전반']['실습4']['출처 줄'] = {'folder': lab4_sources.relative_to(B.ROOT).as_posix(),
                                         'mismatch': source_rows(json.loads((lab4_sources.parent/'graph.json').read_text(encoding='utf-8')), lab4_sources)
-                                        if lab4_sources.is_dir() else ['실습4 입력 폴더가 없습니다 — build_labs.py를 먼저 실행']}
+                                        if lab4_sources.is_dir() else ['실전반 실습4 옛 구조 입력 폴더가 없습니다(새 구조 graph-lab으로 바뀜) — 새 구조의 출처 줄 대조는 reference/practical2_project_trials.py가 한다']}
     return report
 
 

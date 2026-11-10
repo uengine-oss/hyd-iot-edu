@@ -1,7 +1,8 @@
-"""온라인 2회차 실습3 · 4(두 과정) 학생 폴더 · ZIP · 패키지 목록과 강사 참조 모델(reference/)을 만든다.
+"""온라인 2회차 실습3 · 4(두 과정)의 랩 정의 · 원자료 해석 · 정답과 강사 참조 모델(reference/)을 둔다.
 
-2회차 실습3 · 4 원자료는 data_session2.py가 만든다(가상 사례, 고정 시드). 네 랩은 단계 랩 틀(design_lab · graph_lab → build_lab)로 만들고,
-단계 하나가 START.md 「진행 단계」 한 줄과 가이드(랩 폴더 밖 `<랩>_guide.html`) 한 절이 된다. 틀은 lab_frame.py.
+2회차 실습3 · 4 원자료는 data_session2.py가 만든다(가상 사례, 고정 시드). 랩 정의(design_integrated · design_practical · graph_lab)는
+새 프로젝트 생성기(build_session2_projects.py · build_practical2_projects.py)가 입력으로 쓰고, 학생 폴더 · ZIP · package-index는 그 생성기가 쓴다.
+이 파일을 직접 돌리면(`--reference`) 강사 참조 모델만 쓰고, 그 밖에는 새 생성기 이름을 대며 멈춘다.
 reference_model()의 반환 형식(schema dict, {'nodes':[{labels,props}], 'rels':[{type,a,b,props}]})은
 3회차 랩(build_judgement_labs · build_session3_documents)이 import하므로 유지한다.
 """
@@ -482,13 +483,6 @@ def student_photos(folder, provenance, headings):
         if hashlib.sha256((folder/name).read_bytes()).hexdigest() != record['sha256']:
             raise ValueError(f'{folder/name}: 학생 화면의 해시가 다릅니다.')
     return photos
-
-
-def reset_generated(folder):
-    """이 생성기가 만드는 자리만 새로 만든다. 결과/의 학생 파일은 건드리지 않는다."""
-    for sub in ['자료','입력/자료','입력/자료_변경분']:
-        p=folder/sub
-        if p.is_dir() and p.resolve()!=D.SOURCE.resolve():shutil.rmtree(p)
 
 
 def graph_counts(change):
@@ -1281,99 +1275,28 @@ def graph_expect_text(rows, course):
 LABS = {3: lambda course: design_practical() if course == '실전반' else design_integrated(), 4: graph_lab}
 
 
-def checker_for(folder, L):
-    """check.py — 제공 파일 보호(계약 6) · 정한_것.csv 칸 검사(계약 5), 설계 랩은 그 뒤에 모델 구조 검사."""
-    guard = F.provided_guard(folder, ['show_result.py', 'lab_steps.py', *L['provided']])
-    head = ('"""제공 파일 · 기록 · 결과 구조 검사. 생성 · 수정 · DB 접속을 하지 않는다. 답이 맞는지는 보지 않는다 — 결과 화면에서 기대 답과 견준다."""\n'
-            'from pathlib import Path\nimport sys\n' + guard + F.CHOSEN_CHECK +
-            '_root = Path(__file__).resolve().parent\n_pre = provided_errors(_root) + chosen_errors(_root)\n'
-            "for _e in _pre:\n    print('확인 필요: ' + _e)\n")
-    if L['kind'].startswith('graph'):
-        return head + "if _pre:\n    sys.exit(1)\nprint('제공 파일 · 기록 검사 통과. 질문별 답은 결과 화면에서 기대 답과 견줍니다.')\n"
-    body = CHECKER_SUPPLY if L['kind'] == 'design_practical' else CHECKER
-    body = body.replace("if errors:\n    print(f'구조 확인 필요", "errors=_pre+errors\nif errors:\n    print(f'구조 확인 필요", 1)
-    body = body.replace("if missing:\n", "if missing:\n    if _pre:sys.exit(1)\n", 1)
-    return head + body
-
-
-def build_lab(folder, L):
-    """START · 작업 규칙 · 준비 안내 · 제공 코드 · 정할 자리 빈 틀 · check.py, 그리고 랩 폴더 밖 가이드."""
-    import session2_steps as STEPS
-    F.write_rules(folder)
-    for name, text in L['files'].items():
-        F.write(folder/name, text)
-    for name, src in {'model_tool.py': 'session2_model_tool.py', 'supply_tool.py': 'session2_supply_tool.py', 'lab_cypher.py': 'lab_cypher.py'}.items():
-        if name in L['provided']:
-            F.write(folder/name, (TOOLS/src).read_text(encoding='utf-8'))
-    if 'lab_db.py' in L['provided']:
-        F.write(folder/'lab_db.py', (TOOLS/'lab_db.py').read_text(encoding='utf-8'))
-    F.write_provided(folder, STEPS.render(L['kind'], L['title'], [s['name'] for s in L['steps']], L.get('change', False)))
-    F.write(folder/'START.md', F.step_start(L))
-    F.write(folder/'준비_안내.md', '# 실습 준비\n\nVS Code에서 이 파일이 들어 있는 폴더를 연 뒤 [START.md](START.md)의 목표와 질문을 확인하세요. 단계별 안내는 ZIP을 풀면 이 폴더 옆에 있는 가이드 파일에 있습니다.\n')
-    F.write(folder/'check.py', checker_for(folder, L))
-    F.write_guide(folder, F.step_guide(L), L.get('ai_wait'))
-
-
-def clean_generated(folder):
-    """이 생성기가 쓰는 자리를 새로 만든다 — 옛 판의 생성물(자료 · 입력 자료 · 결과 빈 틀 · 옛 가이드 · 제공 파일)을 지운다. 학생 작업 폴더가 아니라 산출물 폴더다."""
-    reset_generated(folder)
-    result = folder/'결과'
-    if result.is_dir():
-        shutil.rmtree(result)
-    for name in ['guide.html', '안내.html', 'check.py', 'model_tool.py', 'supply_tool.py', 'lab_cypher.py', 'show_result.py', 'lab_steps.py']:
-        (folder/name).unlink(missing_ok=True)
+MIGRATED = {   # 2회차 네 랩은 새 프로젝트 구조로 바뀌었다 — 이 생성기는 학생 폴더 · ZIP · package-index를 쓰지 않는다
+    'integrated-02-ontology': 'build_session2_projects.py ontology --apply [--completed]',
+    'integrated-02-graph': 'build_session2_projects.py graph --apply [--completed]',
+    'practical-02-ontology': 'build_practical2_projects.py ontology --apply [--completed]',
+    'practical-02-graph': 'build_practical2_projects.py graph --apply [--completed]',
+}
 
 
 def main():
+    """`--reference`일 때만 강사 참조 모델(reference/<과정>/ 갈래별 schema · graph)을 쓴다. 학생 랩은 MIGRATED의 새 생성기가 만든다."""
     import sys as _sys
-    only = None
-    if '--lab' in _sys.argv:
-        only = _sys.argv[_sys.argv.index('--lab') + 1]
-    migrated = {'integrated-02-ontology', 'integrated-02-graph'}
-    if only in migrated:
-        raise SystemExit(f'이 랩은 build_session2_projects.py {only.rsplit("-", 1)[1]} --apply [--completed]로 생성합니다.')
+    if '--reference' not in _sys.argv:
+        raise SystemExit('build_labs.py는 2회차 학생 랩을 만들지 않습니다. 랩은 새 생성기로 만듭니다:\n'
+                         + '\n'.join(f'  {lab_id}: {how}' for lab_id, how in MIGRATED.items())
+                         + '\n강사 참조 모델만 다시 쓰려면 python build_labs.py --reference')
     for course, _ in COURSES:
         for branch in REFERENCE_BRANCHES[course]:
             schema, graph = reference_model(course == '실전반', branch)
             dest = TEACHER/course/BRANCH_DIRS[branch]
             dump(dest/'schema.json', schema); dump(dest/'graph.json', graph)
     write(TEACHER/'실전반/README.md', PRACTICAL_BRANCH_README)
-    base_schema, base_graph = reference_model()
-    catalog = []
-    for course, slug in COURSES:
-        practical = course == '실전반'
-        for number, name in [(3, LAB3), (4, LAB4)]:
-            lab_id = f'{slug}-02-' + ('ontology' if number == 3 else 'graph')
-            if lab_id in migrated:
-                continue
-            if only and only != lab_id:
-                continue
-            folder = OUT/course/'실습/02회차/랩'/name
-            L = LABS[number](course)
-            keep_drawing = (folder/'입력/관계그림.json').read_bytes() if (folder/'입력/관계그림.json').is_file() else None
-            clean_generated(folder)
-            for sub in ['입력', '결과']:
-                (folder/sub).mkdir(parents=True, exist_ok=True)
-            if number == 3:
-                if practical:
-                    D.write_sources(folder/'자료', practical=True)
-                    dump(folder/'입력/schema.json', student_schema(base_schema)); dump(folder/'입력/graph.json', base_graph)
-                    (folder/'입력/관계그림.json').unlink(missing_ok=True)
-                elif keep_drawing is None:
-                    raise FileNotFoundError('1회차 관계 그림 입력이 없습니다: ' + str(folder))
-                else:
-                    (folder/'입력/관계그림.json').write_bytes(keep_drawing)
-            else:
-                schema, graph = reference_model(practical, LAB4_INPUT_BRANCH[course])
-                dump(folder/'입력/schema.json', student_schema(schema)); dump(folder/'입력/graph.json', graph)
-                D.write_sources(folder/'입력/자료', practical)
-                if not practical:
-                    D.write_changes(folder/'입력/자료_변경분'/f'{D.CHANGE_DATE}_수정본')
-            build_lab(folder, L)
-            pack(folder)
-            catalog.append(entry(lab_id, course, '온라인 02회차', L['title'], LAB_VERSION.get(lab_id, VERSION), folder))
-    register(catalog)
-    print(f'2회차 설계 · 구현 랩 {len(catalog)}개, ZIP {len(catalog)}개, 가이드(폴더 밖) {len(catalog)}개 생성')
+    print('강사 참조 모델을 썼습니다: ' + ', '.join(f'{c} {REFERENCE_BRANCHES[c]}' for c, _ in COURSES))
 
 
 if __name__ == '__main__':

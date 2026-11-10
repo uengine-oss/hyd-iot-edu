@@ -2,6 +2,7 @@
 from pathlib import Path
 import argparse
 import json
+import os
 import sys
 import webbrowser
 from app.utils import actions, results
@@ -18,8 +19,13 @@ def main():
     title, function = actions.COMMANDS[args.action]
     try:
         blocks = function({})
+    except results.Blank as exc:
+        blocks = [results.note('아직 비어 있습니다: ' + str(exc))]
+    except results.Stop as exc:
+        blocks = [results.error('확인 필요', str(exc))]
     except Exception as exc:
-        blocks = [results.error('실행 확인 필요 ' + results.where(exc), f'{type(exc).__name__}: {exc}')]
+        message = str(exc).replace(str(ROOT) + os.sep, '').replace(str(ROOT), '.')   # 학생 PC의 절대 경로를 보이지 않는다
+        blocks = [results.error('실행 확인 필요 ' + results.where(exc), message)]
     output = ROOT / 'output'
     output.mkdir(exist_ok=True)
     target = output / 'result.html'
@@ -29,7 +35,7 @@ def main():
     print(title)
     for block in blocks:
         if block['kind'] in ('note', 'error'):
-            print(block['text'])
+            print(block.get('title', '') + ('\n' if block.get('title') else '') + block['text'])
         elif block['kind'] == 'table':
             print(f"{block['title']}: {len(block['rows'])}행")
         elif block['kind'] == 'counts':
