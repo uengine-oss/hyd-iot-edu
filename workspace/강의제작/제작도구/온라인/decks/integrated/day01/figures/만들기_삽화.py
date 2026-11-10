@@ -1304,6 +1304,227 @@ def series_window() -> str:
     return svg(o)
 
 
+
+def kg_map_focus(side: str) -> str:
+    """지식 그래프 지도와 같은 자리 · 같은 선. side 쪽 노드와 그 쪽 관계만 밝히고 나머지는 회색으로 둔다.
+    'equip': 설비 · 구성 요소 · 센서와 증상의 관측, 고장이 생긴 곳. 'diag': 증상 · 고장 유형 · 원인 · 조치 방법 · 매뉴얼 절."""
+    nodes = {"equip": {"asset", "comp", "sen", "sym", "fm"}, "diag": {"sym", "fm", "cause", "skill", "doc"}}[side]
+    edges = {"equip": {("asset", "comp"), ("comp", "sen"), ("sym", "sen"), ("fm", "comp")},
+             "diag": {("sym", "fm"), ("cause", "fm"), ("fm", "skill"), ("skill", "doc")}}[side]
+    o: list[str] = []
+    for a, b in KG_EDGES:
+        (ax, ay, ar), (bx, by, br) = KG_NODES[a], KG_NODES[b]
+        d_ = math.hypot(bx - ax, by - ay)
+        ux, uy = (bx - ax) / d_, (by - ay) / d_
+        hot = (a, b) in edges
+        o.append(arrow([(ax + ux * (ar + 5), ay + uy * (ar + 5)), (bx - ux * (br + 9), by - uy * (br + 9))],
+                       BLUE if hot else GREY, sw=4 if hot else 3, size=13))
+    for k, (x, y, r) in KG_NODES.items():
+        if k not in nodes:
+            fill, stroke, sw = LIGHT, GREY, 3
+        elif k == "fm":
+            fill, stroke, sw = SKY, NAVY, 4
+        else:
+            fill, stroke, sw = PALE, BLUE, 3
+        o.append(circle(x, y, r, fill=fill, stroke=stroke, sw=sw))
+    return svg(o, 1213, 540)
+
+
+
+def words_apart() -> str:
+    """세 사람이 같은 일을 다른 말로 한다(말풍선) → 컴퓨터에게는 서로 이어지지 않은 세 말(따로 놓인 칸, 끊긴 표시)."""
+    o: list[str] = []
+    ys = (95, 260, 425)
+    for y in ys:
+        o += person_icon(80, y, NORM) + bubble(150, y - 39, 380, 78, "L", NAVY, WHITE)
+        o += dash_line(552, y, 712, y, GREY, 3, 9, 8)
+        o.append(rect(720, y - 30, 150, 60, 8, fill=LIGHT, stroke=NAVY, sw=3))
+        o.append(line(875, y, 1030, 260, stroke=GREY, sw=2.5))
+    for ym in ((95 + 260) / 2, (260 + 425) / 2):
+        o.append(line(781, ym - 14, 809, ym + 14, stroke=BLUE, sw=4))
+        o.append(line(809, ym - 14, 781, ym + 14, stroke=BLUE, sw=4))
+    o += agent_icon(1095, 268, ON)
+    return svg(o)
+
+
+def promised_words() -> str:
+    """흩어진 말(점선 칸 셋) → 약속된 단어장(하늘 바탕) 안에서 이름 · 종류가 정해진 두 대상과 이름 붙은 관계."""
+    o: list[str] = []
+    for y in (70, 200, 330):
+        o += dash_rect(40, y, 290, 70, GREY, 3, 9, 8)
+    o.append(arrow([(352, 240), (478, 240)], BLUE, sw=6, size=18))
+    o.append(rect(500, 40, 670, 362, 16, fill=PALE, stroke="none", sw=0))
+    o.append(circle(640, 225, 72, fill=WHITE, stroke=BLUE, sw=4))
+    o.append(circle(1030, 225, 82, fill=SKY, stroke=NAVY, sw=4))
+    o.append(arrow([(717, 225), (941, 225)], NAVY, sw=5, size=16))
+    return svg(o)
+
+
+
+# ───────────────────────── 02편 다듬기: MQTT(OT 안) · 통로와 창고 · 원인 갈래 · 에이전트 다섯 걸음 · 사건 한 건의 단계 ─────────────────────────
+
+def lineage_mqtt_ot() -> str:
+    """MQTT 발행 · 구독을 OT 안에서만: 설비 → 엣지(발행자) → 브로커 → 구독자 둘(운전 화면 · 다른 OT 프로그램). 바깥으로 내보내는 일은 그리지 않는다."""
+    w, h, r1, r2 = 1100, 500, 190, 345
+    x = dict(equip=110, plc=350, env=530, emqx=710, sub=980)
+    o: list[str] = [rect(12, 8, 1076, 484, 14, fill=LIGHT, stroke="none", sw=0)]
+    o += [arrow([(161, r1), (291, r1)], BLUE, sw=5, size=14), arrow([(407, r1), (658, r1)], BLUE, sw=5, size=14),
+          arrow([(760, r1), (928, r1)], BLUE, sw=5, size=14), arrow([(x["emqx"], r1 + 54), (x["emqx"], r2 - 54)], BLUE, sw=5, size=14)]
+    o += equip_mini(x["equip"], r1, ON) + plc(x["plc"], r1, ON) + envelope(x["env"], r1, ON) + server(x["emqx"], r1, ON)
+    o += monitor(x["emqx"], r2, ON, "hmi") + monitor(x["sub"], r1, ON, "trend")
+    return svg(o, w, h)
+
+
+def flow_vs_store() -> str:
+    """위: 기록이 차례로 지나가는 컨베이어(이벤트 로그). 그 끝에서 아래 창고 선반(시계열 저장소)으로 옮겨 쌓이고, 선반은 시각 축을 따라 칸이 놓여 구간(하늘색 두 열)을 골라 꺼낸다."""
+    o: list[str] = []
+    o.append(rect(60, 125, 600, 50, 25, fill=LIGHT, stroke=NAVY))
+    for cx in (85, 635):
+        o.append(circle(cx, 150, 18, fill=WHITE, stroke=NAVY, sw=3))
+    for i, bx in enumerate((150, 250, 350, 450, 550)):
+        o.append(rect(bx - 26, 72, 52, 52, 5, fill=PALE if i == 4 else WHITE, stroke=NAVY, sw=3))
+    o.append(arrow([(130, 40), (600, 40)], NAVY, sw=4, size=14))
+    o.append(arrow([(680, 150), (860, 150), (860, 205)], BLUE, sw=5, size=16))
+    gx, gy, cw, ch = 760, 220, 95, 52
+    for r_ in range(4):
+        for c in range(4):
+            hot = c in (1, 2)
+            o.append(rect(gx + c * cw, gy + r_ * ch, cw - 10, ch - 10, 4, fill=SKY if hot else WHITE, stroke=NAVY, sw=2.5))
+    o.append(arrow([(gx - 5, 452), (gx + 4 * cw + 20, 452)], NAVY, sw=4, size=14))
+    return svg(o)
+
+
+def cause_branches() -> str:
+    """경보 → 고장 유형 → 원인 후보 두 갈래 → 갈래마다 확인할 값 → 흔적 없는 아래 갈래는 내려놓고(회색 · X) 위 갈래만 조치로."""
+    o: list[str] = []
+    yb, yu, yl = 260, 130, 390
+    o.append(arrow([(150, yb), (232, yb)], NAVY, sw=4.5))
+    o.append(arrow([(355, yb - 25), (500, yu + 12)], BLUE, sw=4.5))
+    o.append(arrow([(355, yb + 25), (500, yl - 12)], GREY, sw=4))
+    o.append(arrow([(612, yu), (748, yu)], BLUE, sw=4.5))
+    o.append(arrow([(612, yl), (748, yl)], GREY, sw=4))
+    o.append(arrow([(852, yu), (998, yu)], BLUE, sw=4.5))
+    o += bell(95, yb, ON, 2.0)
+    o.append(circle(295, yb, 62, fill=SKY, stroke=NAVY, sw=4))
+    o += [line(270, yb - 22, 320, yb - 22, stroke=NAVY, sw=4), line(270, yb, 320, yb, stroke=NAVY, sw=4), line(270, yb + 22, 305, yb + 22, stroke=NAVY, sw=4)]
+    o.append(circle(556, yu, 52, fill=PALE, stroke=BLUE, sw=4))
+    o += dust(556, yu, ON, 0.85)
+    o.append(circle(556, yl, 52, fill=LIGHT, stroke=GREY, sw=3))
+    o += fan(556, yl, 30, OFF)
+    o.append(circle(800, yu, 46, fill=WHITE, stroke=BLUE, sw=4))
+    o += gauge(800, yu, ON, r=26, hot=True)
+    o.append(circle(800, yl, 46, fill=LIGHT, stroke=GREY, sw=3))
+    o += gauge(800, yl, OFF, r=26)
+    o += [line(895, yl - 26, 947, yl + 26, stroke=BLUE, sw=6), line(947, yl - 26, 895, yl + 26, stroke=BLUE, sw=6)]
+    o.append(circle(1052, yu, 52, fill=PALE, stroke=BLUE, sw=4))
+    o += radiator(1022, yu - 26, 60, 52, ON, fins=7, r=6)
+    return svg(o)
+
+
+def agent_five_steps() -> str:
+    """가운데 AI 에이전트를 두고 위로 둥글게 놓인 다섯 걸음(받기 · 조회 · 진단 · 추천안 · 남기기)을 차례로 잇는다."""
+    pts = [(170, 360), (340, 160), (600, 90), (860, 160), (1030, 360)]
+    o: list[str] = []
+    for (ax, ay) in pts:
+        o.append(line(600, 340, ax, ay, stroke=GREY, sw=2.5))
+    for (ax, ay), (bx, by) in zip(pts, pts[1:]):
+        d_ = math.hypot(bx - ax, by - ay)
+        ux, uy = (bx - ax) / d_, (by - ay) / d_
+        o.append(arrow([(ax + ux * 58, ay + uy * 58), (bx - ux * 62, by - uy * 62)], BLUE, sw=4.5, size=15))
+    for i, (cx, cy) in enumerate(pts):
+        o.append(circle(cx, cy, 52, fill=SKY if i == 3 else WHITE, stroke=NAVY if i == 3 else BLUE, sw=4))
+    o += bell(170, 356, ON, 1.3)
+    o += g(340, 160, 0.55, cylinder_db(0, 0, ON))
+    o += gauge(600, 90, ON, r=28, hot=True)
+    o += g(860, 160, 0.4, note_doc(0, 0, NORM))
+    o += g(1030, 360, 0.5, book_icon(0, 0, ON))
+    o.append(circle(600, 340, 74, fill=PALE, stroke="none", sw=0))
+    o += g(600, 345, 1.15, agent_icon(0, 0, ON))
+    return svg(o)
+
+
+def case_track() -> str:
+    """사건 한 건(왼쪽 서류철)이 다섯 단계 정류장을 차례로 지나고, 셋째(승인)에서 사람을 기다리며, 단계마다 아래에 기록이 한 장씩 남는다."""
+    xs = (240, 435, 630, 825, 1020)
+    y = 230
+    o: list[str] = [line(150, y, 1020, y, stroke=GREY, sw=6)]
+    o += [rect(40, y - 44, 76, 88, 8, fill=PALE, stroke=NAVY), line(56, y - 18, 100, y - 18, stroke=NAVY, sw=3), line(56, y + 4, 100, y + 4, stroke=NAVY, sw=3)]
+    o.append(arrow([(122, y), (186, y)], BLUE, sw=5, size=15))
+    for i, x in enumerate(xs):
+        hot = i == 2
+        o.append(circle(x, y, 46, fill=SKY if hot else WHITE, stroke=NAVY, sw=4))
+        o += dash_line(x, y + 50, x, 352, GREY, 3, 8, 7)
+        o += g(x, 400, 0.42, note_doc(0, 0, NORM))
+    for a, b in zip(xs, xs[1:]):
+        o.append(arrow([(a + 50, y), (b - 52, y)], NAVY, sw=4, size=13))
+    o += g(xs[2], y + 6, 0.62, person_icon(0, 0, ON))
+    return svg(o)
+
+
+
+# ───────────────────────── 03편 재편: 이름이 갈린 기록 · 한 대상으로 모이는 이름 · 틀을 두고 더하는 원인 · 따라가기 입구 ─────────────────────────
+
+def records_apart() -> str:
+    """정비 기록(위)과 설비 목록(아래)이 같은 부품을 다른 이름으로 적어, 컴퓨터에게는 이어지지 않은 두 칸(사이 X)으로 보인다."""
+    o: list[str] = []
+    for y in (140, 380):
+        o += note_doc(130, y, NORM)
+        o += dash_line(195, y, 708, y, GREY, 3, 9, 8)
+        o.append(rect(720, y - 30, 170, 60, 8, fill=LIGHT, stroke=NAVY, sw=3))
+        o.append(line(895, y, 1030, 265, stroke=GREY, sw=2.5))
+    o += [line(788, 246, 822, 280, stroke=BLUE, sw=5), line(822, 246, 788, 280, stroke=BLUE, sw=5)]
+    o += agent_icon(1095, 272, ON)
+    return svg(o)
+
+
+def aliases_merge() -> str:
+    """다른 이름으로 적힌 기록 셋(왼쪽 칸)이 한 대상(가운데 원)으로 모이고, 그 대상의 이력이 한곳에 쌓인다(오른쪽 기록 묶음)."""
+    o: list[str] = []
+    ys = (95, 260, 425)
+    for y in ys:
+        o.append(rect(50, y - 32, 280, 64, 10, fill=WHITE, stroke=NAVY, sw=3))
+        o.append(arrow([(340, y), (668, 260 + (y - 260) * 0.25)], BLUE, sw=4.5, size=15))
+    o.append(circle(760, 260, 88, fill=SKY, stroke=NAVY, sw=4))
+    o += g(760, 262, 0.95, radiator(-46, -32, 92, 64, ON, fins=8, r=8))
+    o.append(arrow([(852, 260), (968, 260)], NAVY, sw=4.5, size=15))
+    for i, dx in enumerate((0, 16, 32)):
+        o += g(1040 + dx, 250 + dx, 0.6, note_doc(0, 0, ON if i == 2 else NORM))
+    return svg(o)
+
+
+def add_cause() -> str:
+    """정의(위 칸)는 그대로 두고, 같은 고장 유형에 원인 하나를 더 잇는다(맨 아래 하늘색 원과 굵은 파란 화살표)."""
+    o: list[str] = [rect(560, 24, 520, 84, 12, fill=PALE, stroke=BLUE, sw=3)]
+    fx, fy = 820, 300
+    for i, y in enumerate((80, 200, 320, 440)):
+        new = i == 3
+        o.append(circle(300, y, 30, fill=SKY if new else WHITE, stroke=BLUE if new else NAVY, sw=4))
+        d_ = math.hypot(fx - 300, fy - y)
+        ux, uy = (fx - 300) / d_, (fy - y) / d_
+        o.append(arrow([(300 + ux * 36, y + uy * 36), (fx - ux * 90, fy - uy * 90)], BLUE if new else NAVY, sw=6 if new else 3.5, size=16 if new else 13))
+    o.append(circle(fx, fy, 80, fill=SKY, stroke=NAVY, sw=4))
+    return svg(o)
+
+
+def walk_entry() -> str:
+    """따라가기 입구: 이상 패턴 → 증상 → 고장 유형만 진하게, 고장 유형에서 원인 쪽으로 나갈 길은 짧은 회색 점선으로만 남긴다."""
+    o: list[str] = []
+    for a, b in (("P", "S"), ("S", "F")):
+        (ax, ay, ar), (bx, by, br) = WALK[a], WALK[b]
+        d_ = math.hypot(bx - ax, by - ay)
+        ux, uy = (bx - ax) / d_, (by - ay) / d_
+        o.append(arrow([(ax + ux * (ar + 5), ay + uy * (ar + 5)), (bx - ux * (br + 9), by - uy * (br + 9))], BLUE, sw=4, size=13))
+    fx, fy, fr = WALK["F"]
+    for ty in (120, 260, 400):
+        d_ = math.hypot(760 - fx, ty - fy)
+        ux, uy = (760 - fx) / d_, (ty - fy) / d_
+        o += dash_line(fx + ux * (fr + 10), fy + uy * (fr + 10), fx + ux * (fr + 150), fy + uy * (fr + 150), GREY, 4, 10, 9)
+    for k in ("P", "S", "F"):
+        x, y, r = WALK[k]
+        o.append(circle(x, y, r, fill=SKY if k == "F" else PALE, stroke=NAVY if k == "F" else BLUE, sw=4 if k == "F" else 3))
+    return svg(o, *WALK_WH)
+
+
 NEW_ONLY: set = {"경로2_1.svg", "경로2_2.svg", "데이터_명령_두경로.svg"}
 
 
@@ -1317,7 +1538,12 @@ def main():
            "종류_네칸.svg": kinds_columns(), "속성_눈금.svg": property_scale(), "관계_이름.svg": relation_named(),
            "채우기_정의변경.svg": fill_or_redefine(), "저장_그림_옳음.svg": stored_not_true(), "증거_세결과.svg": evidence_outcomes(),
            "PLC_스캔고리.svg": plc_scan_loop(), "연결_점대점_브로커.svg": connect_p2p_broker(), "이벤트로그_띠.svg": event_log_band(),
-           "처리_배치_스트림.svg": batch_vs_stream(), "시계열_구간.svg": series_window()}
+           "처리_배치_스트림.svg": batch_vs_stream(), "시계열_구간.svg": series_window(),
+           "지식그래프_설비쪽.svg": kg_map_focus("equip"), "지식그래프_진단조치쪽.svg": kg_map_focus("diag"),
+           "말_다르게부르기.svg": words_apart(), "단어장_약속.svg": promised_words(),
+           "MQTT_OT안.svg": lineage_mqtt_ot(), "통로_창고.svg": flow_vs_store(), "원인후보_갈래.svg": cause_branches(),
+           "에이전트_다섯걸음.svg": agent_five_steps(), "사건_단계.svg": case_track(),
+           "기록_이름갈림.svg": records_apart(), "이름_한대상.svg": aliases_merge(), "원인_더하기.svg": add_cause(), "경로_입구.svg": walk_entry()}
     for name, text in out.items():
         assert "<text" not in text
         if (HERE / name).exists() and name not in NEW_ONLY:
