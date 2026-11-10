@@ -520,7 +520,7 @@ def build(pf, out):
             if i0 < 0:
                 fail(f'단위 {u["id"]}: 새 음성이 영상 처음보다 앞에 놓인다({T:.2f}초)')
             seg = u['vx'][:max(0, len(Y) - i0)]; Y[i0:i0 + len(seg)] += seg
-            blocks += [[s, e, u['새글']]] if z0 == a0 else [[T + p, T + q, t] for (p, q), t in zip(u['spans'], u['ss'])]
+            blocks += [[T + p, T + q, t] for (p, q), t in zip(u['spans'], u['ss'])]   # 새 말은 옛 블록 수와 상관없이 문장마다 한 블록(긴 새 글이 한 블록에 몰리지 않게)
         for gx in P.get('글상자', []):
             if gx['단위'] == u['id']:
                 s, e = span(k); boxes.append((s, e + 1.0, gx['글']))
@@ -652,7 +652,7 @@ def check(mp4, srt, plan=None, keep=None, rec=None, m=None, quiet_out=False):
         for u in keep:
             if u.get('뺌'):
                 continue
-            nb = (1 if u['자막'][1] == u['자막'][0] else len(sentences(u['새글']))) if u.get('새음성') else u['자막'][1] - u['자막'][0] + 1
+            nb = len(sentences(u['새글'])) if u.get('새음성') else u['자막'][1] - u['자막'][0] + 1
             ends[pos + nb - 1] = u.get('쉼뒤', '큐'); pos += nb
         for i in range(len(B) - 1):
             c = ends.get(i)
@@ -731,20 +731,21 @@ def selftest():
             ok.append(f'{name}: 통과')
         run('정상', base)
         S = read_srt(tmp / '정상.srt'); r = json.loads((tmp / '정상_시각.json').read_text(encoding='utf-8'))
-        assert [t for _, _, t in S] == ['문장 0.', '문장 1.', '새 첫째. 새 둘째.', '새 하나. 새 둘.', '문장 4.', '문장 5.'], S
+        # 바꾼 B · C는 옛 자막이 한 블록이어도 새 글의 문장마다 한 블록이다
+        assert [t for _, _, t in S] == ['문장 0.', '문장 1.', '새 첫째.', '새 둘째.', '새 하나.', '새 둘.', '문장 4.', '문장 5.'], S
         gaps = [S[i + 1][0] - S[i][1] for i in range(len(S) - 1)]
-        assert gaps[1] >= 0.999 and gaps[2] >= 1.499 and gaps[3] >= 1.799, gaps   # A→B 큐, B→C 결과, C→D 전환
+        assert gaps[1] >= 0.999 and gaps[3] >= 1.499 and gaps[5] >= 1.799, gaps   # A→B 큐, B→C 결과, C→D 전환
         assert r['원본 프레임'] == N and r['잘라낸 프레임'] == [[300, 345]], r
-        ok.append(f'정상 결과: 자막 6 · 쉼 {[round(g, 2) for g in gaps]} · 멈춤 {len(r["멈춤"])} · 글상자 {r["글상자"][0][:2]}')
+        ok.append(f'정상 결과: 자막 8 · 쉼 {[round(g, 2) for g in gaps]} · 멈춤 {len(r["멈춤"])} · 글상자 {r["글상자"][0][:2]}')
         cm = Map.load(tmp / '정상_시각.json')
-        assert S[3][1] <= cm(9.5) + 0.05, f'붙임 뒤 새 말이 장면 전환을 넘었다: 끝 {S[3][1]:.2f} > 전환 {cm(9.5):.2f}'
-        ok.append(f'장면 전환 지킴: C 끝 {S[3][1]:.2f}초 ≤ 전환 {cm(9.5):.2f}초')
+        assert S[5][1] <= cm(9.5) + 0.05, f'붙임 뒤 새 말이 장면 전환을 넘었다: 끝 {S[5][1]:.2f} > 전환 {cm(9.5):.2f}'
+        ok.append(f'장면 전환 지킴: C 끝 {S[5][1]:.2f}초 ≤ 전환 {cm(9.5):.2f}초')
         # 맞닿은 말: B 자막 끝 = C 자막 시작(틈 0) — 멈출 프레임이 B 끝보다 앞에 놓여도 B(붙임 앞)와 C 사이가 벌어져야 한다
         s5 = tmp / '맞닿음.srt'; L = [[a0, b0, f'문장 {i}.'] for i, (a0, b0) in enumerate(talk)]; L[2][1] = 7.25; L[3][0] = 7.25; write_srt(s5, L)
         tight = json.loads(json.dumps(base)); tight['자막'] = str(s5); run('맞닿은 말', tight)
         S5 = read_srt(tmp / '맞닿은 말.srt')
-        assert S5[3][0] - S5[2][1] >= 1.499, f'맞닿은 말: B→C {S5[3][0] - S5[2][1]:.2f}초'
-        ok.append(f'맞닿은 말 결과: B→C {S5[3][0] - S5[2][1]:.2f}초')
+        assert S5[4][0] - S5[3][1] >= 1.499, f'맞닿은 말: B→C {S5[4][0] - S5[3][1]:.2f}초'
+        ok.append(f'맞닿은 말 결과: B→C {S5[4][0] - S5[3][1]:.2f}초')
         bad = json.loads(json.dumps(base)); bad['단위'][2]['새음성'] = str(tmp / '없음.wav'); run('없는 음성', bad, r'단위 C: 새 음성 파일이 없다')
         s2 = tmp / '겹침.srt'; L = [[a0, b0, f'문장 {i}.'] for i, (a0, b0) in enumerate(talk)]; L[3][0] = 7.0; write_srt(s2, L)
         bad = json.loads(json.dumps(base)); bad['자막'] = str(s2); run('겹치는 큐', bad, r'자막 2번.*3번.*겹친다')
