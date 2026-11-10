@@ -68,7 +68,8 @@ def _build_origin(tmp_path):
         shutil.copyfile(src, a / rel)
     (a / 'kept.txt').write_text('처음\n', encoding='utf-8')
     (a / 'gone.txt').write_text('지울 것\n', encoding='utf-8')
-    git(a, 'add', '.gitignore', '.gitattributes', 'scripts/hyd_env.py', 'kept.txt', 'gone.txt'); git(a, 'commit', '-q', '-m', 'first')
+    (a / 'README.md').write_text('# 학생용\n', encoding='utf-8')        # 실제처럼 main이 README.md를 추적한다(아래 workspace 첫 끝에도 같은 경로가 있다 — 옛 판)
+    git(a, 'add', '.gitignore', '.gitattributes', 'scripts/hyd_env.py', 'kept.txt', 'gone.txt', 'README.md'); git(a, 'commit', '-q', '-m', 'first')
     readme = git(a, 'hash-object', '-w', '--stdin', inp='# workspace\n')
     tree = git(a, 'mktree', inp=f'100644 blob {readme}\tREADME.md\n')
     git(a, 'update-ref', 'refs/heads/workspace', git(a, 'commit-tree', tree, '-m', 'workspace 처음'))
@@ -81,7 +82,7 @@ def _build_origin(tmp_path):
 
 
 def second_pc(tmp_path, remote):
-    """새 PC(B): main 을 clone 하고 README 안내대로 동기화.py 를 꺼내 pull."""
+    """새 PC(B): main 을 clone 하고 동기화.py 머리말의 「받기」대로 동기화.py 를 꺼내 pull."""
     b = tmp_path / 'B'
     git(tmp_path, 'clone', '-q', str(remote), str(b))
     identity(b)
@@ -123,7 +124,7 @@ def test_main에는_준_경로만_작업_트리_모습으로_커밋하고_새_�
     (a / 'other.txt').write_text('다른 작업\n', encoding='utf-8'); git(a, 'add', 'other.txt')     # 섞이면 안 되는 남의 변경
     out = sync(a, 'commit', '실행 파일', '시작.command', 'kept.txt', 'gone.txt')
     assert out.returncode == 0, out.stderr
-    assert {k: v for k, v in modes(a).items() if not k.startswith('scripts/')} == {'.gitattributes': '100644', '.gitignore': '100644', 'kept.txt': '100644', '시작.command': '100755'}
+    assert {k: v for k, v in modes(a).items() if not k.startswith('scripts/')} == {'.gitattributes': '100644', '.gitignore': '100644', 'README.md': '100644', 'kept.txt': '100644', '시작.command': '100755'}
     assert git(a, 'show', 'HEAD:kept.txt') == '고침'
     assert git(a, 'status', '--porcelain').splitlines() == ['A  other.txt']
 
@@ -142,8 +143,21 @@ def test_만을_주면_workspace에서도_준_경로만_바꾸고_다른_작업�
     assert git(a, 'show', 'refs/heads/workspace:workspace/doc.txt') == '고침'
     assert git(a, 'show', 'refs/heads/workspace:workspace/new/a.txt') == '새 파일'
     assert git(a, 'show', 'refs/heads/workspace:workspace/note.txt') == before
-    assert 'workspace/wip.txt' not in names and 'README.md' in names and 'workspace/동기화.py' in names
+    assert 'workspace/wip.txt' not in names and 'workspace/동기화.py' in names
     assert '내용 다름 1' in sync(a, 'status').stdout                      # note.txt 내용이 다른 것을 상태가 알린다
+
+
+def test_옛_끝에_든_main_경로는_만_commit도_전체_commit도_workspace_트리에서_뺀다(origin):
+    _, a = origin
+    for i, how in enumerate((('--만', 'workspace/doc.txt'), ())):
+        branch_put(a, 'README.md', '# workspace\n', '옛 판이 만든 README')
+        branch_put(a, 'kept.txt', 'workspace 판\n', '잘못 든 main 경로')
+        (a / 'workspace' / 'doc.txt').write_text(f'고침 {i}\n', encoding='utf-8')
+        out = sync(a, 'commit', '고침', *how)
+        assert out.returncode == 0, out.stderr
+        names = git(a, 'ls-tree', '-r', '--name-only', 'refs/heads/workspace').splitlines()
+        assert ('README.md' in names, 'kept.txt' in names, git(a, 'show', 'refs/heads/workspace:workspace/doc.txt')) == (False, False, f'고침 {i}')
+    assert ((a / 'README.md').read_text(encoding='utf-8'), (a / 'kept.txt').read_text(encoding='utf-8')) == ('# 학생용\n', '처음\n')
 
 
 def test_만으로_준_경로가_로컬에서_지워졌으면_브랜치에서도_뺀다(origin):
@@ -348,6 +362,20 @@ def test_빼는_자리지만_브랜치에_있는_파일은_pull이_지금_파일
     out = sync(b, 'pull')
     assert out.returncode == 0, out.stderr                             # 「이 PC에서 지웠다」로 잘못 멈추지 않는다
     assert png.read_text(encoding='utf-8') == '둘'
+
+
+def test_원격_workspace에_main_경로가_들어_있어도_pull은_멈추지_않고_main_파일을_쓰지_않는다(origin, tmp_path):
+    remote, a = origin
+    branch_put(a, 'README.md', '# workspace\n', '옛 판이 만든 README')
+    branch_put(a, 'kept.txt', 'workspace 판\n', '잘못 든 main 경로')
+    b = second_pc(tmp_path, remote)                                    # 새 PC의 첫 pull
+    branch_put(a, 'README.md', '# workspace 고친 판\n', 'README 고침')
+    (a / 'workspace' / 'doc.txt').write_text('A가 고침\n', encoding='utf-8')
+    assert sync(a, 'commit', 'A 고침', '--만', 'workspace/doc.txt').returncode == 0 and sync(a, 'push').returncode == 0
+    out = sync(b, 'pull')                                              # 끝이 README를 지우고 doc.txt를 고친 받기
+    assert out.returncode == 0, out.stderr
+    assert ((b / 'README.md').read_text(encoding='utf-8'), (b / 'kept.txt').read_text(encoding='utf-8')) == ('# 학생용\n', '처음\n')
+    assert (b / 'workspace' / 'doc.txt').read_text(encoding='utf-8') == 'A가 고침\n' and git(b, 'status', '--porcelain') == ''
 
 
 def test_이_PC에서_지운_파일은_되살리지_않는다(origin, tmp_path):

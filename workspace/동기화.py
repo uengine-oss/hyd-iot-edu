@@ -12,7 +12,12 @@
                                       둘 다 바꾼 파일이 있으면 아무것도 쓰지 않고 멈춘다
     세션                               세션 시작 훅: 열린 작업 폴더 · origin보다 뒤처졌는지
     정리 [--실행]                       스펙.md 「상태: 확정」 작업 폴더를 지운다(--실행 없으면 목록만). 폴더 밖의 문서가 그 폴더를 가리키면 지우지 않는다
-- 빼는 것: .env 전부(.env.example은 넣음) · main 추적 파일 · 캐시 · node_modules · worktrees · 슬라이드/ · 조각_저장/ · .claude/settings.local.json · .inspect.ndjson.
+- 받기(새 PC, main을 clone한 폴더에서, Git Bash): `git fetch origin workspace` → `git show origin/workspace:workspace/동기화.py > 동기화.py` →
+  `PYTHONUTF8=1 python 동기화.py pull` → `rm 동기화.py`. PowerShell의 `>`는 인코딩을 바꿀 수 있어 쓰지 않는다.
+- 빼는 것: .env 전부(.env.example은 넣음) · 캐시 · node_modules · worktrees · 슬라이드/ · 조각_저장/ · .claude/settings.local.json · .inspect.ndjson.
+- 두 브랜치는 같은 경로를 갖지 않는다. commit은 main이 추적하는 경로를 workspace 트리에 넣지 않고(옛 끝에 있으면 뺀다), pull · status는 그 경로를
+  보지도 쓰지도 않는다 — 같은 경로가 있으면 main 체크아웃에서 브랜치를 잘못 바꾸다 끊기거나 없는 파일만 되살릴 때 main 파일이 workspace 판으로
+  남는다(2026-11-07 학생용 README.md가 그렇게 덮였다).
 - 이력은 다시 쓰지 않는다(노션 링크가 커밋을 가리킨다) · 강제 push 없음 · 100 MiB 넘는 파일이 든 커밋, 학생 영상(산출물/영상/의 mp4)을 새로 넣는 커밋은
   만들지 않는다(영상은 Release 「영상」 — CLAUDE.md 2절, 도구 기존제작/tools/video/영상올리기.py).
 """
@@ -47,16 +52,6 @@ SKIP_FILES = {".claude/settings.local.json"}
 GITHUB_FILE_LIMIT, GITHUB_FILE_WARN = 100 * 1024 ** 2, 50 * 1024 ** 2
 INDEX_CFG = ("-c", "core.autocrlf=false", "-c", "core.splitIndex=false", "-c", "core.fsmonitor=false")   # 따로 색인은 이 PC 설정과 상관없이 늘 이 값으로
 OLD_VERSION = re.compile(r"(?:[_-]v\d+|[_-]\d{8}|[_ -]?사본\d*| \(\d+\))$", re.I)
-README = """# workspace — 작업 자료 브랜치
-
-학생이 받는 코드는 main 브랜치다. 이 브랜치는 강의를 만들고 시스템을 고치는 사람이 쓰는 작업 자료 전부다.
-
-- 어디부터: [workspace/README.md](workspace/README.md) — 하려는 일 → 읽을 문서 하나.
-- 받기(새 PC, main을 clone한 폴더에서, Git Bash): `git fetch origin workspace` → `git show origin/workspace:workspace/동기화.py > 동기화.py` → `PYTHONUTF8=1 python 동기화.py pull` → `rm 동기화.py`.
-  PowerShell의 `>`는 인코딩을 바꿀 수 있어 쓰지 않는다.
-- 경로는 저장소 루트 기준 그대로다. main과 병합하지 않는다. 이력을 다시 쓰지 않는다(노션 영상 링크가 이 브랜치 커밋을 가리킨다).
-- 공개 저장소다. 키 · 개인 정보 · 실물 매뉴얼 PDF를 올리지 않는다.
-"""
 SPEC = """# {title}
 
 - 시작: {day} · 상태: 진행
@@ -108,8 +103,13 @@ def is_env(name):
     return base == ".env" or (base.startswith(".env.") and base != ".env.example")
 
 
+def main_tracked():
+    """main 체크아웃의 색인이 추적하는 경로 — workspace 브랜치는 이 경로를 갖지 않는다(머리말)."""
+    return set(filter(None, git("ls-files", "-z").split("\0")))
+
+
 def local_files(need=True):
-    main = set(git("ls-files").splitlines())
+    main = main_tracked()
     files = []
     for top in PATHS:
         p = ROOT / top
@@ -185,7 +185,7 @@ def check_sizes(old_tree, new_tree):
 
 
 def synced_index(files, d):
-    """files + 이 도구가 만드는 README.md를 담은 색인을 임시 폴더 d에 두고 그 환경을 돌려준다(commit · status · pull이 같이 쓴다).
+    """files를 담은 색인을 임시 폴더 d에 두고 그 환경을 돌려준다(commit · status · pull이 같이 쓴다).
     이 PC 전용 사본(.git/hyd-workspace.index)에서 시작해 stat이 바뀐 파일만 다시 해시한다 — 줄끝은 늘 core.autocrlf=false + .gitattributes,
     .gitattributes가 사본보다 새로우면 처음부터. 사본은 복사해 쓰고 끝나면 갈아 끼우므로 여러 세션이 함께 돌아도 lock이 부딪치지 않고,
     늦게 쓴 쪽이 이겨도 남는 것은 캐시뿐이다(내용 판정은 git의 stat 비교가 지킨다)."""
@@ -201,13 +201,11 @@ def synced_index(files, d):
         old = set()
     else:
         old = set(filter(None, have.stdout.decode("utf-8", "replace").split("\0")))
-    gone = sorted(old - set(files) - {"README.md"})    # 로컬에서 지웠거나 빼는 자리가 된 파일
+    gone = sorted(old - set(files))                    # 로컬에서 지웠거나 빼는 자리가 된 파일(옛 판이 넣던 README.md도)
     if gone:
         git(*INDEX_CFG, "update-index", "--force-remove", "-z", "--stdin", env=env, inp="".join(p + "\0" for p in gone).encode("utf-8"))
     if files:
         git(*INDEX_CFG, "update-index", "--add", "-z", "--stdin", env=env, inp="".join(p + "\0" for p in files).encode("utf-8"))
-    readme = git("hash-object", "-w", "--stdin", inp=README.encode("utf-8")).strip()
-    git("update-index", "--add", "--cacheinfo", f"100644,{readme},README.md", env=env)
     part = keep.with_name(f"{keep.name}.{os.getpid()}")
     with contextlib.suppress(OSError):                 # 못 갈아 끼우면(다른 세션이 읽는 중인 Windows 등) 다음에 다시 해시할 뿐이다
         shutil.copy2(index, part)
@@ -312,7 +310,7 @@ def status():
     note = behind_note(t, fetch_origin())
     if note:
         print(note)
-    remote = set(git("ls-tree", "-r", "--name-only", t).splitlines()) - {"README.md"}
+    remote = set(tree_blobs(t))
     files = local_files()
     local = set(files)
     changed = changed_files(t, local & remote, files)
@@ -359,7 +357,10 @@ def build_tree_only(t, paths, files):
     with tempfile.TemporaryDirectory() as d:
         env = dict(os.environ, GIT_INDEX_FILE=str(Path(d) / "index"))
         git("read-tree", t, env=env)
-        gonelist = Path(d) / "paths"          # 경로가 많으면 명령 줄 길이(Windows 32k)를 넘으므로 목록 파일로 넘긴다
+        main = sorted(main_tracked() & set(remote))   # 옛 끝에 든 main 경로(옛 판이 만든 README.md)는 뺀다 — 두 브랜치는 같은 경로를 갖지 않는다
+        if main:
+            git("update-index", "--force-remove", "-z", "--stdin", env=env, inp="".join(p + "\0" for p in main).encode("utf-8"))
+        gonelist = Path(d) / "paths"         # 경로가 많으면 명령 줄 길이(Windows 32k)를 넘으므로 목록 파일로 넘긴다
         gonelist.write_text("\n".join(paths) + "\n", encoding="utf-8")
         git("rm", "-r", "-q", "-f", "--cached", "--ignore-unmatch", f"--pathspec-from-file={gonelist}", env=env)
         if add:
@@ -503,11 +504,11 @@ def clean(run):
 
 
 def tree_blobs(ref):
-    """{경로: 블롭} — 브랜치 맨 앞 README.md(이 도구가 만드는 것)는 뺀다."""
-    out = {}
+    """{경로: 블롭} — main이 추적하는 경로(옛 판이 브랜치 맨 앞에 만들던 README.md 등)는 뺀다. pull은 이 목록만 쓰고 지우므로 main 파일에 손대지 않는다."""
+    out, main = {}, main_tracked()
     for e in filter(None, git("ls-tree", "-r", "-z", ref).split("\0")):
         meta, n = e.split("\t", 1)
-        if n != "README.md" and meta.split()[1] == "blob":
+        if n not in main and meta.split()[1] == "blob":
             out[n] = meta.split()[2]
     return out
 
