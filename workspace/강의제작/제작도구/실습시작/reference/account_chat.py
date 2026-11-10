@@ -1,7 +1,7 @@
 """언제: 키 없는 랩의 요청 글을 실제 Codex 계정 채팅에 보내고 학생의 --paste 경로를 검증할 때.
 
 제작용이며 학생 ZIP에 넣지 않는다. 수업 API 호출로 기록하지 않는다. 실제 계정 호출의
-원문·응답·모델·추론·토큰을 보관하고, 그 응답 바이트를 학생 llm_client.py --paste에 넘긴다.
+원문·응답·모델·추론·토큰을 보관하고, 그 응답 바이트를 학생 실행 진입점의 --paste에 넘긴다.
 인증 내용과 .env를 열지 않는다. 랩에 .env가 있으면 이 경로는 사용하지 않는다.
 python account_chat.py <랩 폴더> <요청 해시> --out <새 시험 기록 루트>
     --codex-home D:/HYD-Practice/_codex_luna --codex-bin <절대 경로>
@@ -73,6 +73,15 @@ def turn_settings(home, identity):
     return settings[0]
 
 
+def student_interface(lab):
+    """새 프로젝트와 기존 START 랩의 실제 요청 위치·붙여넣기 진입점."""
+    if all((lab / name).is_file() for name in ('run.py', 'README.md', 'AGENTS.md', 'app/utils/llm_client.py')):
+        return lab / 'output/model_requests', 'run.py'
+    if (lab / 'llm_client.py').is_file() and (lab / 'START.md').is_file():
+        return lab / '결과/요청', 'llm_client.py'
+    raise ValueError('저장소 밖에 풀린 학생 프로젝트 또는 START 랩 폴더를 지정합니다')
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('lab', type=Path)
@@ -90,9 +99,13 @@ def main():
         ap.error('요청 해시는 12자리 소문자 16진수, 상한은 양수여야 합니다')
     if (lab / '.env').exists():
         ap.error('키 없는 경로만 시험합니다. .env가 있는 폴더는 열지 않습니다')
-    if lab.is_relative_to(ROOT) or not ((lab / 'llm_client.py').is_file() and (lab / 'START.md').is_file()):
+    if lab.is_relative_to(ROOT):
         ap.error('저장소 밖에 풀린 학생 랩 폴더를 지정합니다')
-    source = lab / '결과' / '요청' / (a.digest + '.md')
+    try:
+        requests, entrypoint = student_interface(lab)
+    except ValueError as error:
+        ap.error(str(error))
+    source = requests / (a.digest + '.md')
     if not source.is_file() or not (a.codex_home / 'auth.json').is_file():
         ap.error('요청 글 또는 로그인 파일이 없습니다')
     binary = shutil.which(a.codex_bin)
@@ -145,7 +158,7 @@ def main():
               'tokens': observed.get('tokens'), 'errors': observed.get('errors'), 'actions': observed.get('actions'),
               'status': status, 'elapsed_seconds': round(time.monotonic() - started, 3),
               'thread_id': observed['thread_id'], 'completed': observed['completed'], 'usage': observed.get('usage'),
-              'host_shell_tool': False,
+              'host_shell_tool': False, 'student_entrypoint': entrypoint,
               'limit': a.max_calls, 'attempt': used + 1, 'method': '실제 Codex 계정 호출 뒤 학생 --paste',
               'course_api_call': False, 'pasted': False}
     answer = run / 'response.txt'
@@ -155,7 +168,7 @@ def main():
         data = answer.read_bytes()
         report['response_sha256'] = hashlib.sha256(data).hexdigest()
         try:
-            pasted = subprocess.run([sys.executable, 'llm_client.py', '--paste', a.digest, '--model', a.model],
+            pasted = subprocess.run([sys.executable, entrypoint, '--paste', a.digest, '--model', a.model],
                                     cwd=lab, env=child_env, input=data, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=30)
             (run / 'paste.log').write_bytes(pasted.stdout)
             report['paste_exit'] = pasted.returncode

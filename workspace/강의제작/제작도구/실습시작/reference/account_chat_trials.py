@@ -40,14 +40,18 @@ with tempfile.TemporaryDirectory(prefix='hyd-account-trial-') as td:
     rollout=home/'sessions'/f'rollout-2026-{IDENTITY}.jsonl'
     rollout.write_text(json.dumps({'type':'turn_context','payload':{'model':'gpt-6-luna','effort':'medium'}}),encoding='utf-8')
     check('이번 세션 설정 읽기', m.turn_settings(home,IDENTITY)=={'model':'gpt-6-luna','reasoning_effort':'medium'})
-    for mode in ('success','paste_timeout','paste_oserror','tool_used','call_oserror'):
-        lab=base/mode; (lab/'결과/요청').mkdir(parents=True)
-        (lab/'START.md').touch(); (lab/'llm_client.py').touch()
-        (lab/'결과/요청/abcdef012345.md').write_text('요청',encoding='utf-8')
+    for mode in ('success','project_success','paste_timeout','paste_oserror','tool_used','call_oserror'):
+        lab=base/mode
+        project = mode == 'project_success'
+        requests = lab / ('output/model_requests' if project else '결과/요청')
+        requests.mkdir(parents=True)
+        for name in (('run.py','README.md','AGENTS.md','app/utils/llm_client.py') if project else ('START.md','llm_client.py')):
+            path=lab/name; path.parent.mkdir(parents=True,exist_ok=True); path.touch()
+        (requests/'abcdef012345.md').write_text('요청',encoding='utf-8')
         out=base/(mode+'-out')
         def fake_run(cmd,**kwargs):
             if 'exec' in cmd:
-                if mode == 'success':
+                if mode in ('success','project_success'):
                     check('계정 채팅에서 호스트 셸 제외', 'features.shell_tool=false' in cmd)
                 if mode=='call_oserror': raise OSError('모형 실행 오류')
                 Path(cmd[cmd.index('-o')+1]).write_text('{"finish":{"summary":"현재 관측 35℃"}}',encoding='utf-8')
@@ -55,7 +59,8 @@ with tempfile.TemporaryDirectory(prefix='hyd-account-trial-') as td:
                 return subprocess.CompletedProcess(cmd,0,events(item),b'')
             if mode=='paste_timeout': raise subprocess.TimeoutExpired(cmd,30,output=b'partial')
             if mode=='paste_oserror': raise OSError('모형 붙여넣기 오류')
-            if mode == 'success':
+            if mode in ('success','project_success'):
+                check(mode+' 학생 붙여넣기 진입점', cmd[1] == ('run.py' if project else 'llm_client.py'))
                 # 부모 로케일에 기대지 않고 실제 파이프의 한글/단위가 보존되는지 본다.
                 p = real_run([sys.executable, '-c', 'import sys; sys.stdout.buffer.write(sys.stdin.read().encode("utf-8"))'],
                              env=kwargs['env'], input=kwargs['input'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -69,9 +74,16 @@ with tempfile.TemporaryDirectory(prefix='hyd-account-trial-') as td:
             try: m.main()
             except SystemExit: pass
         report=json.loads((out/'abcdef012345/실행.json').read_text(encoding='utf-8'))
-        check(mode+' 보고 보존·판정', report['pasted']==(mode=='success'))
+        check(mode+' 보고 보존·판정', report['pasted']==(mode in ('success','project_success')))
         if mode.startswith('paste_'):
             check(mode+' 정확한 실패',report['paste_exit']==('timeout' if mode=='paste_timeout' else 'launch_error'))
+    invalid=base/'incomplete_project'; invalid.mkdir(); (invalid/'run.py').touch()
+    try:
+        m.student_interface(invalid)
+    except ValueError:
+        check('불완전 프로젝트 실행 거절', True)
+    else:
+        check('불완전 프로젝트 실행 거절', False)
 
 out=options.out
 out.parent.mkdir(parents=True, exist_ok=True)

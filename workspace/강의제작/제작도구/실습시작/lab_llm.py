@@ -38,6 +38,7 @@ RESULT = HERE / '결과'
 RECORDS = RESULT / '응답_기록'
 REQUESTS = RESULT / '요청'
 MARK = RESULT / '폴더_표지.txt'
+CLIENT_COMMAND = 'python llm_client.py'
 NAMES = ('OPENAI_BASE_URL', 'LLM_API_KEY', 'LLM_MODEL')
 SENT = '모델 서버'            # 보낸 방법 — 이 도구가 모델 서버에 보내 받은 답
 PASTED = '채팅으로 받음'       # 보낸 방법 — 키 없이 채팅에서 받아 붙여 넣은 답
@@ -47,6 +48,27 @@ TIMEOUT_S = 180
 MAX_SAME = 2
 EMPTY_REASONS = ('content_filter',)
 CHECK_REQUEST = [{'role': 'user', 'content': '연결 확인입니다. 한 문장으로 답해 주세요.'}]
+
+
+def configure(root, *, project=False):
+    """새 프로젝트의 제공 도구를 초기화한다. 호출하지 않은 기존 랩의 경로는 유지한다.
+
+    app/utils/llm_client.py를 가져온 실행 진입점은 첫 ask/main 전에
+    configure(프로젝트_루트, project=True)를 부른다. 파일을 읽거나 만들지 않는다.
+    """
+    global HERE, ENV, RESULT, RECORDS, REQUESTS, MARK, CLIENT_COMMAND
+    HERE = Path(root).resolve()
+    ENV = HERE / '.env'
+    RESULT = HERE / ('output' if project else '결과')
+    RECORDS = RESULT / ('model_responses' if project else '응답_기록')
+    REQUESTS = RESULT / ('model_requests' if project else '요청')
+    MARK = RESULT / ('.folder_mark' if project else '폴더_표지.txt')
+    CLIENT_COMMAND = 'python run.py' if project else 'python llm_client.py'
+
+
+def relative(path):
+    """현재 프로젝트에서 학생이 찾아갈 위치."""
+    return path.relative_to(HERE).as_posix()
 
 
 class Stop(SystemExit):
@@ -203,7 +225,7 @@ def ask(request, again=False):
     if not conf['LLM_API_KEY']:
         path = write_request(digest, messages)
         raise Stop(f'키가 없어 요청을 보내지 않았습니다. 보낼 글을 {path.relative_to(HERE).as_posix()}에 남겼습니다.\n'
-                   f'키 없이 이 한 조각만 받아 보려면: 그 글을 이 폴더를 모르는 채팅에 붙여 보내고, 받은 답을 `python llm_client.py --paste {digest} --model <채팅 화면의 모델 이름>`으로 남긴 뒤 '
+                   f'키 없이 이 한 조각만 받아 보려면: 그 글을 이 폴더를 모르는 채팅에 붙여 보내고, 받은 답을 `{CLIENT_COMMAND} --paste {digest} --model <채팅 화면의 모델 이름>`으로 남긴 뒤 '
                    '같은 코드를 다시 실행합니다.\n'
                    '키를 받았으면 .env에 받은 세 줄을 붙여 넣고 다시 실행합니다.', 2)
     empty = [name for name in NAMES if not conf[name]]
@@ -211,7 +233,7 @@ def ask(request, again=False):
         raise Stop(f'.env의 {", ".join(empty)} 값이 비어 있습니다. 강의에서 받은 세 줄을 그대로 붙여 넣었는지 봅니다.')
     count = sent_count()
     if count >= MAX_SENT:
-        raise Stop(f'결과/응답_기록/에 모델 서버로 보낸 기록이 {count}개라 비용을 지키는 이 폴더의 안내용 상한 {MAX_SENT}개에 닿았습니다. 더 보내지 않습니다. '
+        raise Stop(f'{relative(RECORDS)}/에 모델 서버로 보낸 기록이 {count}개라 비용을 지키는 이 폴더의 안내용 상한 {MAX_SENT}개에 닿았습니다. 더 보내지 않습니다. '
                    '같은 요청을 되풀이하는 코드가 있는지, 조각을 더 크게 묶을 수 있는지 봅니다.')
     print(f'수업 모델에 요청을 보냅니다(요청 해시 {digest}, 이 폴더 기록 {count + 1}번째 · 안내용 상한 {MAX_SENT}개) — 첫 요청은 1분쯤 걸릴 수 있습니다.')
     raw = send(body, conf)
@@ -252,7 +274,7 @@ def count_to_send(requests):
     if not model:
         print('.env의 모델 이름(LLM_MODEL)이 비어 있어, 모델 이름 없이 요청 해시를 셉니다 — 모델 이름을 넣으면 해시가 달라져 보낼 수도 달라집니다.')
     if others:
-        print(f'결과/응답_기록/에 이 폴더에서 받은 것이 아닌 기록 {others}개가 있습니다 — 다시 쓰지 않으므로 보낼 수에서 빼지 않습니다.')
+        print(f'{relative(RECORDS)}/에 이 폴더에서 받은 것이 아닌 기록 {others}개가 있습니다 — 다시 쓰지 않으므로 보낼 수에서 빼지 않습니다.')
     print(f'요청 {len(requests)}개(서로 다른 것 {len(set(digests))}개) 가운데 이 폴더의 응답 기록이 없어 보낼 것 {len(new)}개 · '
           f'이 폴더의 안내용 상한 {MAX_SENT}개까지 남은 수 {left}개' + (' — 남은 수보다 많습니다. 조각을 다시 묶거나 범위를 줄입니다.' if len(new) > left else ''))
     return len(new)
@@ -291,12 +313,13 @@ def show_count():
     others = sum(1 for d in recs if d.get('folder_mark') != mark)
     answered = {d.get('request_hash') for d in recs if usable(d) and d.get('folder_mark') == mark}
     waiting = [p.stem for p in sorted(REQUESTS.glob('*.md')) if p.stem not in answered] if REQUESTS.is_dir() else []
-    print(f'결과/응답_기록/: 모델 서버로 보낸 기록 {len(sent)}개(쓸 내용이 없던 답 {bad}개) · 채팅으로 받은 기록 {chat}개'
+    print(f'{relative(RECORDS)}/: 모델 서버로 보낸 기록 {len(sent)}개(쓸 내용이 없던 답 {bad}개) · 채팅으로 받은 기록 {chat}개'
           + (f' · 이 폴더에서 받은 것이 아닌 기록 {others}개(다시 쓰지 않음, 상한에는 셈)' if others else ''))
     print(f'비용을 지키는 이 폴더의 안내용 상한 {MAX_SENT}개까지 남은 수: {MAX_SENT - len(sent)}개. 같은 요청의 기록이 있으면 다시 보내지 않습니다.')
     if waiting:
-        print(f'결과/요청/에 답이 없는 요청 글 {len(waiting)}개: {", ".join(waiting[:10])}{" …" if len(waiting) > 10 else ""}')
-    print('코드에서 보내기 전에 세려면: from llm_client import count_to_send 뒤 count_to_send(요청 목록)')
+        print(f'{relative(REQUESTS)}/에 답이 없는 요청 글 {len(waiting)}개: {", ".join(waiting[:10])}{" …" if len(waiting) > 10 else ""}')
+    if CLIENT_COMMAND == 'python llm_client.py':
+        print('코드에서 보내기 전에 세려면: from llm_client import count_to_send 뒤 count_to_send(요청 목록)')
 
 
 def main(argv=None):
@@ -317,7 +340,7 @@ def main(argv=None):
     if not conf['LLM_API_KEY']:
         raise Stop('키가 없어 연결을 확인하지 않았습니다(.env가 없거나 LLM_API_KEY가 비어 있음).\n'
                    '키를 받았으면 .env.example을 복사해 이름을 .env로 바꾸고, 강의에서 받은 세 줄을 그대로 붙여 넣어 저장한 뒤 다시 실행합니다.\n'
-                   '키가 없으면 내 코드가 모델을 부를 때 보낼 글을 결과/요청/에 남기고 멈춥니다 — 그 글을 폴더를 모르는 채팅에 보내 받은 답을 --paste(채팅 화면의 모델 이름은 --model)로 남길 수 있습니다.', 2)
+                   f'키가 없으면 내 코드가 모델을 부를 때 보낼 글을 {relative(REQUESTS)}/에 남기고 멈춥니다 — 그 글을 폴더를 모르는 채팅에 보내 받은 답을 --paste(채팅 화면의 모델 이름은 --model)로 남길 수 있습니다.', 2)
     reply = ask(CHECK_REQUEST)
     if reply['sent'] and reply.get('usable', True):
         print(f'연결됨 · {conf["LLM_MODEL"]} · 응답의 model {reply.get("response_model") or "(없음)"}')
