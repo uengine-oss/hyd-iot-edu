@@ -137,6 +137,30 @@
       }
     },
     {
+      "id": "integrated-05-root-cause",
+      "course": "통합반",
+      "session": "05",
+      "title": "원인 후보와 다음 점검 계획",
+      "version": "2026-11-10-agent-root-guide-fixes",
+      "folder": "root-cause-lab",
+      "path": "workspace/강의제작/산출물/통합반/실습/05회차/랩/root-cause-lab.zip",
+      "sha256": "371e1207af62a3fc956b86631f8522e0718951be59628d2e4002d8f249498be5",
+      "guide_steps": [
+        "자료와 질문 파악",
+        "요구와 기대 답 정하기",
+        "조회와 판단 계획 검토",
+        "작게 구현하고 실행",
+        "실제 결과를 원문과 견주기",
+        "다른 입력으로 고치기",
+        "저장하고 다시 열기"
+      ],
+      "layout": "project",
+      "guide_file": {
+        "path": "workspace/강의제작/산출물/통합반/실습/05회차/랩/root-cause-lab_guide.html",
+        "sha256": "006a8b7fd9c9330d96c9fd516620b55c07a526ae860439ed526d9ca6fd5d7d83"
+      }
+    },
+    {
       "id": "integrated-01-offline",
       "course": "통합반",
       "session": "오프라인 01회차",

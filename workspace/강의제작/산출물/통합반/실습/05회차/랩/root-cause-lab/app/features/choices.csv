@@ -1,0 +1,2 @@
+# 제공 빈 틀 — decision=적용 기능 query/deliver, choice=내가 정한 기준 또는 전달 요구, source=원문 위치와 사람이 확인한 업무 근거, changed_action=달라지는 조회 또는 다음 행동
+decision,choice,source,changed_action

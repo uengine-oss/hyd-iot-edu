@@ -1,0 +1,2 @@
+# 제공 빈 틀 — request_id=요청 식별자, question=확인할 질문, expected=원문으로 먼저 정한 기대 또는 미확인, source=원문 파일:줄
+request_id,question,expected,source

@@ -1,0 +1,191 @@
+{
+  "version": "agent-evidence-2026-11-10",
+  "graph_sources": [
+    {
+      "path": "data/model/graph.json",
+      "origin": "4회차 그래프 반영과 검증의 제공 입력",
+      "sha256": "7e3da1ae090805f42c2c9fda6db7f2586f616e79eb53d463266d7a181a33412f"
+    },
+    {
+      "path": "data/model/schema.json",
+      "origin": "4회차 그래프 반영과 검증의 제공 입력",
+      "sha256": "2d49f06924dcc616992e79b70eec989412c6b50d93b1860f5e47437a8163a8a5"
+    },
+    {
+      "path": "data/model/shape.json",
+      "origin": "4회차 그래프 반영과 검증의 제공 입력",
+      "sha256": "086126d129b3eb14aaf05f401af9e704a3fcf76aa8a3567cf9ab2117d4beea74"
+    }
+  ],
+  "catalog": {
+    "path": "data/documents/catalog.csv",
+    "sha256": "d41a65219e4f11922addf694d99ea9c117bdc8a34191fbac8afb40c85aaf984e",
+    "file_mapping": "documents의 catalog_file은 목록 원래 이름, file은 이 폴더에서 읽는 파일 이름이다. 내용과 해시는 같다."
+  },
+  "graph_counts": {
+    "nodes": 434,
+    "rels": 734,
+    "remaining_questions": 158
+  },
+  "documents": [
+    {
+      "doc_id": "HM-8",
+      "revision": "1.0",
+      "status": "폐기",
+      "effective": "2025-03-10",
+      "file": "hm_8_1_0.md",
+      "catalog_sha256": "1d4fa845f6aac93023aaea998299c7518c488e5402629cad5dbc8694066a1ade",
+      "catalog_line": 3,
+      "encoding": "utf-8-sig",
+      "bytes_sha256": "bd455c3f6f002252473440f72c3eacd816eeaeb563964d10393194031db87570",
+      "source_encoding_lf_sha256": "1d4fa845f6aac93023aaea998299c7518c488e5402629cad5dbc8694066a1ade",
+      "normalized_utf8_lf_sha256": "1d4fa845f6aac93023aaea998299c7518c488e5402629cad5dbc8694066a1ade",
+      "lines": 91,
+      "catalog_file": "HM-8_1.0판_매뉴얼.md"
+    },
+    {
+      "doc_id": "HM-8",
+      "revision": "1.1",
+      "status": "현행",
+      "effective": "2026-09-01",
+      "file": "hm_8_1_1.md",
+      "catalog_sha256": "c903dc77650675ad83a9a5041adf7e9f5829e542af1328bc6664c326e31c7188",
+      "catalog_line": 4,
+      "encoding": "utf-8-sig",
+      "bytes_sha256": "a82866e07840d13e1b4696066b93f5ac030e438dc4531a60a0ebe25fcb2e7d5c",
+      "source_encoding_lf_sha256": "c903dc77650675ad83a9a5041adf7e9f5829e542af1328bc6664c326e31c7188",
+      "normalized_utf8_lf_sha256": "c903dc77650675ad83a9a5041adf7e9f5829e542af1328bc6664c326e31c7188",
+      "lines": 89,
+      "catalog_file": "HM-8_매뉴얼.md"
+    },
+    {
+      "doc_id": "HM-8",
+      "revision": "1.2",
+      "status": "개정 요청(미승인)",
+      "effective": "",
+      "file": "hm_8_1_2.md",
+      "catalog_sha256": "f5d8e3bfd6a0daab767f4f92019ee4cc05d7c064fb88cab0821ecb0cf032f8ff",
+      "catalog_line": 5,
+      "encoding": "utf-8-sig",
+      "bytes_sha256": "dc832d02bf9d3e2a823eb1067ac332a56cf32e80b78b8a068072b626de727047",
+      "source_encoding_lf_sha256": "f5d8e3bfd6a0daab767f4f92019ee4cc05d7c064fb88cab0821ecb0cf032f8ff",
+      "normalized_utf8_lf_sha256": "f5d8e3bfd6a0daab767f4f92019ee4cc05d7c064fb88cab0821ecb0cf032f8ff",
+      "lines": 106,
+      "catalog_file": "HM-8_1.2판_개정요청.md"
+    },
+    {
+      "doc_id": "HM-9",
+      "revision": "1.0",
+      "status": "참고(스캔본)",
+      "effective": "",
+      "file": "hm_9_1_0.txt",
+      "catalog_sha256": "698fc1c009138303e72d3cff12d3736b38dec14fdbcc219f7324e68315bce582",
+      "catalog_line": 6,
+      "encoding": "utf-8-sig",
+      "bytes_sha256": "f2c57695c3d0e1801d48ac96ff45993b17a7688eaae1b1940091dfd88b8518ad",
+      "source_encoding_lf_sha256": "698fc1c009138303e72d3cff12d3736b38dec14fdbcc219f7324e68315bce582",
+      "normalized_utf8_lf_sha256": "698fc1c009138303e72d3cff12d3736b38dec14fdbcc219f7324e68315bce582",
+      "lines": 72,
+      "catalog_file": "HM-9장_스캔본.txt"
+    },
+    {
+      "doc_id": "SR-04",
+      "revision": "2024",
+      "status": "현행",
+      "effective": "2024-03-01",
+      "file": "sr_04_2024.txt",
+      "catalog_sha256": "d0545f8fe6008ba23c928749ee7de9039dcbe66caf09ab7b505728e6b3ecb49d",
+      "catalog_line": 7,
+      "encoding": "cp949",
+      "bytes_sha256": "b63303fc1b9888f177bca504ac0bd4da5dbd59d49659c7e7e53d170cf4092180",
+      "source_encoding_lf_sha256": "d0545f8fe6008ba23c928749ee7de9039dcbe66caf09ab7b505728e6b3ecb49d",
+      "normalized_utf8_lf_sha256": "0193efa3426ef69f32d70846d37903eef01cccf3e85d01535199497c7cbf2f79",
+      "lines": 20,
+      "catalog_file": "SR-04_설비안전규정_발췌.txt"
+    },
+    {
+      "doc_id": "PM-02",
+      "revision": "2.0",
+      "status": "현행",
+      "effective": "2026-01-15",
+      "file": "pm_02_2_0.md",
+      "catalog_sha256": "8ceeba347a233ac3ef2750faccc5d084253610aea994ff857fd5e1be19492c16",
+      "catalog_line": 8,
+      "encoding": "utf-8-sig",
+      "bytes_sha256": "590fdd62eb39bea4a636a376da88c78962ff0143baee38f6be1ec72a366b83d1",
+      "source_encoding_lf_sha256": "8ceeba347a233ac3ef2750faccc5d084253610aea994ff857fd5e1be19492c16",
+      "normalized_utf8_lf_sha256": "8ceeba347a233ac3ef2750faccc5d084253610aea994ff857fd5e1be19492c16",
+      "lines": 116,
+      "catalog_file": "PM-02_정기점검표.md"
+    },
+    {
+      "doc_id": "PR-07",
+      "revision": "1.3",
+      "status": "현행",
+      "effective": "2026-04-01",
+      "file": "pr_07_1_3.md",
+      "catalog_sha256": "ba0e7a07632d516b8a5ea0d20640955332710faf7d79253a172e040062754d5a",
+      "catalog_line": 9,
+      "encoding": "utf-8-sig",
+      "bytes_sha256": "54bdb882ddf0802430ffaec772538b07d148667dbd4424241dd5b0bdaa725d4a",
+      "source_encoding_lf_sha256": "ba0e7a07632d516b8a5ea0d20640955332710faf7d79253a172e040062754d5a",
+      "normalized_utf8_lf_sha256": "ba0e7a07632d516b8a5ea0d20640955332710faf7d79253a172e040062754d5a",
+      "lines": 76,
+      "catalog_file": "PR-07_예비품기준.md"
+    },
+    {
+      "doc_id": "HI-01",
+      "revision": "1.0",
+      "status": "보충",
+      "effective": "2026-10-27",
+      "file": "hi_01_1_0.md",
+      "catalog_sha256": "274318a54baf86bd382106cddc428c0158e252c1cda4da5b8a2e8313cc7fad01",
+      "catalog_line": 10,
+      "encoding": "utf-8-sig",
+      "bytes_sha256": "19c0300db75369656387a6ed26f8f4d7cf9f996d9a8d0614b227f1e012015d42",
+      "source_encoding_lf_sha256": "274318a54baf86bd382106cddc428c0158e252c1cda4da5b8a2e8313cc7fad01",
+      "normalized_utf8_lf_sha256": "274318a54baf86bd382106cddc428c0158e252c1cda4da5b8a2e8313cc7fad01",
+      "lines": 34,
+      "catalog_file": "HI-01_보충매뉴얼.md"
+    },
+    {
+      "doc_id": "OEM-HPP45A-MM",
+      "revision": "C",
+      "status": "참고(제조사)",
+      "effective": "2024-06-01",
+      "file": "oem_hpp45a_mm_c.md",
+      "catalog_sha256": "5b1993904eea0004d1ad016bc7ebf8af0dcd51c55f65a41da21ed16d5ff6cad3",
+      "catalog_line": 11,
+      "encoding": "utf-8-sig",
+      "bytes_sha256": "313ddb4b29cd96e9c883e827a8f5a8c9d0b07df5b292c1289cf4a0fcfbac0bc9",
+      "source_encoding_lf_sha256": "5b1993904eea0004d1ad016bc7ebf8af0dcd51c55f65a41da21ed16d5ff6cad3",
+      "normalized_utf8_lf_sha256": "5b1993904eea0004d1ad016bc7ebf8af0dcd51c55f65a41da21ed16d5ff6cad3",
+      "lines": 117,
+      "catalog_file": "OEM-HPP45A_정비지침_영한.md"
+    },
+    {
+      "doc_id": "OEM-HPP45B-MM",
+      "revision": "",
+      "status": "참고(제조사)",
+      "effective": "",
+      "file": "",
+      "catalog_sha256": "",
+      "catalog_line": 12
+    },
+    {
+      "doc_id": "DC-01",
+      "revision": "3.0",
+      "status": "현행",
+      "effective": "2025-01-01",
+      "file": "dc_01_3_0.md",
+      "catalog_sha256": "ee427f9d331ef66bd1ddb303dc2cadee65fb84a8ec34321f2a0ca967d307b448",
+      "catalog_line": 13,
+      "encoding": "utf-8-sig",
+      "bytes_sha256": "7752feafdf19a702df79f5188dfbd5c1bdcb7981e3d71def663766d644469846",
+      "source_encoding_lf_sha256": "ee427f9d331ef66bd1ddb303dc2cadee65fb84a8ec34321f2a0ca967d307b448",
+      "normalized_utf8_lf_sha256": "ee427f9d331ef66bd1ddb303dc2cadee65fb84a8ec34321f2a0ca967d307b448",
+      "lines": 27,
+      "catalog_file": "DC-01_문서관리기준.md"
+    }
+  ]
+}

@@ -1,0 +1,2 @@
+# 제공 빈 틀 — request_id=요청 식별자, question=질문, expected=미리 적은 기대, actual=실행에서 본 내용, source=대조 근거, judgment=일치/불일치/미확인
+request_id,question,expected,actual,source,judgment
