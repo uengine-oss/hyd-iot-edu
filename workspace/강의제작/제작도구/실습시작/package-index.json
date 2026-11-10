@@ -169,20 +169,6 @@
       "entry": "guide"
     },
     {
-      "id": "integrated-02-ontology",
-      "course": "통합반",
-      "session": "온라인 02회차",
-      "title": "현장 정보를 체계화하는 온톨로지 직접 설계하기",
-      "version": "2026-11-10-lab-v19-start",
-      "folder": "02회차/랩/02일차_실습3_온톨로지설계",
-      "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습3_온톨로지설계.zip",
-      "sha256": "917ba212a03a6caf498532f0458ec032930ab5ad39ccba40f1ad8ac6ee02e6ac",
-      "guide_file": {
-        "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습3_온톨로지설계_guide.html",
-        "sha256": "6971e03320e1a2321ef820fb73fe0e7624240de5b5a35e855b40eedd32e36532"
-      }
-    },
-    {
       "id": "integrated-02-graph",
       "course": "통합반",
       "session": "온라인 02회차",
@@ -194,6 +180,34 @@
       "guide_file": {
         "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습4_그래프구현과검증_guide.html",
         "sha256": "105abfc0a105329189412b7b84cff966c70a5f06ba1d465b22111eecdb81adf1"
+      }
+    },
+    {
+      "id": "integrated-02-ontology",
+      "course": "통합반",
+      "session": "온라인 02회차",
+      "title": "현장 정보를 체계화하는 온톨로지 직접 설계하기",
+      "version": "v20-project",
+      "folder": "ontology-lab",
+      "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/ontology-lab.zip",
+      "sha256": "10cec6af138de4db822d49dc34da823534a70656de98ee5550d528bc777a8d8f",
+      "guide_steps": [
+        "폴더 열고 자료 확인하기",
+        "Codex와 자료 파악하기",
+        "질문과 판단 기준 정하기",
+        "식별자와 관계 방향 정하기",
+        "같은 장치의 이름 정리하기",
+        "같은 물리량의 센서 모으기",
+        "단위와 빈칸 처리하기",
+        "공용 부품 연결하기",
+        "질문으로 결과 검증하기",
+        "구조 확인하기",
+        "저장하고 다시 확인하기"
+      ],
+      "layout": "project",
+      "guide_file": {
+        "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/ontology-lab_guide.html",
+        "sha256": "2362bb4079fe00f6e4c7db666b9a6bb872b5026559ddd7b01f072ed47d4689b7"
       }
     },
     {

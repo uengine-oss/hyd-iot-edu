@@ -38,8 +38,9 @@ def dump(path, value):
 
 
 def rows(name, folder=None):
-    path=(folder or D.SOURCE)/name
-    with path.open(encoding='utf-8-sig',newline='') as f:return list(csv.DictReader(f))
+    if folder is None:
+        return list(csv.DictReader(io.StringIO(D.source_texts()[name])))
+    with (folder/name).open(encoding='utf-8-sig',newline='') as f:return list(csv.DictReader(f))
 
 # ───────────── 강사 참조 해석(원자료의 표기를 자료끼리 대조한 근거 — 같은 모델 · 계통 · 교체부품 · 태그 — 로 푼다) ─────────────
 NAME_ALIAS={'오일 쿨러':'cooler','쿨러':'cooler','열교환기':'cooler','오일 쿨러(공랭)':'cooler','수냉 열교환기':'cooler',
@@ -1328,7 +1329,9 @@ def main():
     only = None
     if '--lab' in _sys.argv:
         only = _sys.argv[_sys.argv.index('--lab') + 1]
-    D.write_sources()
+    migrated = {'integrated-02-ontology'}
+    if only in migrated:
+        raise SystemExit('이 랩은 build_session2_projects.py ontology --apply [--completed]로 생성합니다.')
     for course, _ in COURSES:
         for branch in REFERENCE_BRANCHES[course]:
             schema, graph = reference_model(course == '실전반', branch)
@@ -1341,6 +1344,8 @@ def main():
         practical = course == '실전반'
         for number, name in [(3, LAB3), (4, LAB4)]:
             lab_id = f'{slug}-02-' + ('ontology' if number == 3 else 'graph')
+            if lab_id in migrated:
+                continue
             if only and only != lab_id:
                 continue
             folder = OUT/course/'실습/02회차/랩'/name

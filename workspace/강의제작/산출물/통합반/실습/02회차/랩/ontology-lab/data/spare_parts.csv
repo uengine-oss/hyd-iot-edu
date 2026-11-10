@@ -1,0 +1,16 @@
+품번,품명,쓰는곳,적용모델,비고
+P-PMP-SEAL,펌프 축 씰 키트,주 펌프 A,HPP-45A,HYD-01~03 공용
+P-PMP-SEAL-HT,펌프 축 씰 키트(고온형 FKM),주 펌프 A,HPP-45B,P-PMP-SEAL과 끼워 쓰지 않음
+P-PMP-SEAL-22,기어 펌프 씰 키트,펌프,HPP-22M,
+P-FAN-BRG,팬 베어링,쿨러 팬,HPP-45A,HYD-01~03 공용
+P-BRG-6205,볼 베어링 6205-2RS,쿨러 팬,DPU-30,3라인 자재로 등록
+P-CLR-CORE,쿨러 코어,오일 쿨러,HPP-45A,HYD-01~03 공용. 세척으로 회복되지 않을 때 교체
+P-CLR-PLT,수냉 열교환기 플레이트 팩,수냉 열교환기,HPP-45B,
+P-RTN-FLT,리턴 필터 엘리먼트 10µm,리턴 필터,HPP-45A·45B·22M,
+P-DPU-FLT,리턴 필터 엘리먼트(DPU),리턴 필터,DPU-30,
+P-SUC-STR,흡입 스트레이너,흡입 스트레이너,HPP-45A·45B,
+P-ACC-BLD,어큐뮬레이터 블래더 4L,어큐뮬레이터,HPP-45A·45B,
+P-CPL-ELM,커플링 탄성체,커플링,HPP-45A·45B·22M,
+P-VLV-COIL,솔레노이드 코일 24VDC,전환 밸브,전 모델,D03 밸브 공용 규격
+P-DPU-SEAL,펌프 씰 키트(DPU),메인 펌프,DPU-30,
+P-HYD-OIL,작동유 ISO VG46 (20 L),작동유 탱크,전 모델,소모품

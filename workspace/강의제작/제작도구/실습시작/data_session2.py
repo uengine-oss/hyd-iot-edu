@@ -16,7 +16,7 @@ import io
 import random
 
 ROOT = Path(__file__).resolve().parents[4]
-SOURCE = ROOT/'workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습3_온톨로지설계/자료'
+SOURCE = ROOT/'workspace/강의제작/산출물/통합반/실습/02회차/랩/ontology-lab/data'
 REF_DATE = '2026-10-15'   # 자료 추출 기준일
 CHANGE_DATE = '2026-10-20'
 SEED = 20261015
@@ -487,9 +487,8 @@ def pr07_excerpt():
 '''
 
 
-def write_sources(dest=SOURCE, practical=False):
-    """과정별 원자료. 구매 기준서 발췌는 그것을 근거로 쓰는 실전반에만 둔다(통합반 실습3 · 4는 공급 판단을 하지 않는다)."""
-    dest.mkdir(parents=True, exist_ok=True)
+def source_texts(practical=False):
+    """과정별 원자료 정본. 새 프로젝트의 영문 경로 변환은 지정 생성기가 맡는다."""
     files = {
         '설비_대장.csv': _csv(ASSET_COLS, asset_rows()),
         '구성요소_목록.csv': _csv(COMP_COLS, component_rows()),
@@ -503,7 +502,14 @@ def write_sources(dest=SOURCE, practical=False):
     }
     if practical:
         files[PR07_FILE] = pr07_excerpt()
-    else:
+    return files
+
+
+def write_sources(dest, practical=False):
+    """명시한 생성 폴더에만 원자료를 쓴다. 다른 랩 산출물에 암묵적으로 쓰지 않는다."""
+    dest.mkdir(parents=True, exist_ok=True)
+    files = source_texts(practical)
+    if not practical:
         (dest/PR07_FILE).unlink(missing_ok=True)
     for name, text in files.items():
         (dest/name).write_text(text, encoding='utf-8', newline='')
@@ -595,7 +601,11 @@ def truth():
 TRUTH = truth()
 
 if __name__ == '__main__':
-    counts = write_sources()
-    print('원자료 생성:', SOURCE)
+    import argparse
+    parser = argparse.ArgumentParser(description='기존 형식 원자료를 지정 폴더에 생성합니다. 새 프로젝트는 build_session2_projects.py를 사용합니다.')
+    parser.add_argument('destination', type=Path)
+    args = parser.parse_args()
+    counts = write_sources(args.destination)
+    print('원자료 생성:', args.destination)
     for k, v in counts.items():
         print(f'  {k}: {v}행')
