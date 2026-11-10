@@ -1329,9 +1329,9 @@ def main():
     only = None
     if '--lab' in _sys.argv:
         only = _sys.argv[_sys.argv.index('--lab') + 1]
-    migrated = {'integrated-02-ontology'}
+    migrated = {'integrated-02-ontology', 'integrated-02-graph'}
     if only in migrated:
-        raise SystemExit('이 랩은 build_session2_projects.py ontology --apply [--completed]로 생성합니다.')
+        raise SystemExit(f'이 랩은 build_session2_projects.py {only.rsplit("-", 1)[1]} --apply [--completed]로 생성합니다.')
     for course, _ in COURSES:
         for branch in REFERENCE_BRANCHES[course]:
             schema, graph = reference_model(course == '실전반', branch)

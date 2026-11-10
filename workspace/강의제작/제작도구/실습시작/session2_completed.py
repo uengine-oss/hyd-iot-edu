@@ -90,8 +90,8 @@ def main():
         tmp = Path(tmp)
         for course, _ in B.COURSES:
             for number in (3, 4):
-                if (course, number) == ('통합반', 3):
-                    print('통합반 실습3: build_session2_projects.py ontology --apply --completed 사용')
+                if course == '통합반':
+                    print(f'통합반 실습{number}: build_session2_projects.py {"ontology" if number == 3 else "graph"} --apply --completed 사용')
                     continue
                 work = tmp / f'{course}{number}'
                 work.mkdir()

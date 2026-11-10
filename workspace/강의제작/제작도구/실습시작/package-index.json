@@ -173,13 +173,28 @@
       "course": "통합반",
       "session": "온라인 02회차",
       "title": "설계한 온톨로지를 그래프 DB에 구현하고 검증하기",
-      "version": "2026-11-10-lab-v18-start",
-      "folder": "02회차/랩/02일차_실습4_그래프구현과검증",
-      "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습4_그래프구현과검증.zip",
-      "sha256": "43e1354fa2ff90181c81ff43579305517e3c04c1e043e481dc90b6db9012d7b4",
+      "version": "v20-project",
+      "folder": "graph-lab",
+      "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/graph-lab.zip",
+      "sha256": "1aa4f0e63b1b4956978b8b2b2a1ae91443162c991d73a424d9b627849cc9fecc",
+      "guide_steps": [
+        "폴더 열고 자료 확인하기",
+        "랩 DB 준비하기",
+        "Codex와 모델 파악하기",
+        "질문과 기대 답 정하기",
+        "모델 적재하기",
+        "같은 적재 다시 확인하기",
+        "설비별 센서 조회하기",
+        "설비별 교체 부품 조회하기",
+        "부품의 사용 설비 조회하기",
+        "수정본 반영하기",
+        "기준 지도와 비교하기",
+        "저장하고 다시 확인하기"
+      ],
+      "layout": "project",
       "guide_file": {
-        "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습4_그래프구현과검증_guide.html",
-        "sha256": "105abfc0a105329189412b7b84cff966c70a5f06ba1d465b22111eecdb81adf1"
+        "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/graph-lab_guide.html",
+        "sha256": "b62155925d00324f5489a937beda1be39a2d9c8d109ef26f218e33a59564de79"
       }
     },
     {
@@ -190,7 +205,7 @@
       "version": "v20-project",
       "folder": "ontology-lab",
       "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/ontology-lab.zip",
-      "sha256": "10cec6af138de4db822d49dc34da823534a70656de98ee5550d528bc777a8d8f",
+      "sha256": "1f57e4d86a00fd80cbd0939f9f915781e66d5f08378681662a3069680f75e247",
       "guide_steps": [
         "폴더 열고 자료 확인하기",
         "Codex와 자료 파악하기",
@@ -207,7 +222,7 @@
       "layout": "project",
       "guide_file": {
         "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/ontology-lab_guide.html",
-        "sha256": "2362bb4079fe00f6e4c7db666b9a6bb872b5026559ddd7b01f072ed47d4689b7"
+        "sha256": "b2cde29e430a2a1cdeca64e59c069c8027fa4880765529a33c23241d5d08b611"
       }
     },
     {

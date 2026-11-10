@@ -10,5 +10,5 @@
   - [HTML 가이드](랩/02일차_실습2_지식지도탐색/안내.html)
 - [온톨로지 설계](랩/ontology-lab/) · [ZIP](랩/ontology-lab.zip) · [AI 계정 없이 결과를 실행할 완성본 ZIP](완성본/ontology-lab-completed.zip)
   - [HTML 가이드](랩/ontology-lab_guide.html)
-- [02일차_실습4_그래프구현과검증](랩/02일차_실습4_그래프구현과검증/) · [ZIP](랩/02일차_실습4_그래프구현과검증.zip) · [그래프 구현 완성본 ZIP](완성본/02일차_실습4_그래프구현과검증_학생용완성본.zip)
-  - [HTML 가이드](랩/02일차_실습4_그래프구현과검증_guide.html)
+- [그래프 구현과 검증](랩/graph-lab/) · [ZIP](랩/graph-lab.zip) · [완성본 ZIP](완성본/graph-lab-completed.zip)
+  - [HTML 가이드](랩/graph-lab_guide.html)

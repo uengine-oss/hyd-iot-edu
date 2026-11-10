@@ -14,15 +14,15 @@ NAMES = {
     '물리량.csv': 'quantity_overrides.csv', '단위.csv': 'unit_overrides.csv',
     '행_처리.csv': 'row_rules.csv', '기대_답.csv': 'expected.csv',
     '정한_것.csv': 'decisions.csv', '요구사항.md': 'requirements.md', '검증_기록.md': 'review.md',
-    '자료_검토.md': 'provenance.md', '센서_수정.csv': 'sensor_changes.csv',
-    '설비_수정.csv': 'equipment_changes.csv', '구성요소_수정.csv': 'component_changes.csv',
+    '자료_검토.md': 'provenance.md', '센서_변경.csv': 'sensor_changes.csv',
+    '설비_대장_변경.csv': 'equipment_changes.csv', '구성요소_변경.csv': 'component_changes.csv',
 }
 
 
 def convert(text):
     for old, new in sorted(NAMES.items(), key=lambda x: -len(x[0])):
         text = text.replace(old, new).replace(old.replace('.', r'\.'), new.replace('.', r'\.'))
-    for old, new in [('입력/자료_변경분/', 'data/changes/'), ('입력/자료/', 'data/'),
+    for old, new in [('결과/내_모델/', 'app/features/model/'), ('입력/자료_변경분/', 'data/changes/'), ('입력/자료/', 'data/'),
                      ('입력/schema.json', 'data/model/schema.json'), ('입력/graph.json', 'data/model/graph.json'),
                      ('입력/', 'data/'), ('자료/', 'data/'), ('결과/schema.json', 'output/schema.json'),
                      ('결과/graph.json', 'output/graph.json'), ('결과/', 'app/features/')]:
@@ -30,6 +30,7 @@ def convert(text):
     text = text.replace("'자료'", "'data'").replace("'결과'", "'app/features'")
     text = text.replace('START.md 「학생이 정할 것」의 그 자리 이름', '사람이 결정할 지점의 이름')
     text = text.replace('START.md', '가이드')
+    text = text.replace('2026-10-20_수정본', '2026-10-20')
     return text
 
 
