@@ -16,7 +16,7 @@
    "잘라낼": [[시작초, 끝초], …],                    # 옛 시각. 자막이 걸치면 멈춘다. 안에 통째로 든 단위는 함께 빠진다
    "글상자": [{"단위": id, "글": 한 줄}],            # 그 단위의 말이 나오는 동안 화면 아래에 글을 띄운다(화면에 없는 명령 등)
    "단위": [{"id": 큐 id, "구간": 이름, "자막": [첫 번호, 끝 번호](0부터), "글": 옛 글,
-            "쉼뒤": "잇기" | "큐" | "결과" | "전환",   # 다음 단위와의 사이. 잇기 = 한 문맥이라 그대로 둔다
+            "쉼뒤": "잇기" | "큐" | "결과" | "전환",   # 다음 단위와의 사이. 잇기 = 한 문맥이라 큐 쉼은 넣지 않고 「문장쉼」만 지킨다
             "새글": …, "새음성": mp3, "붙임": "앞" | "뒤",   # 바꾼 큐만. 앞 = 새 말 끝을 옛 말 끝(조작)에 맞춤, 뒤 = 새 말 시작을 옛 말 시작에
             "뺌": true}]}                                  # 말만 뺀다(화면은 둔다)
   초안의 「쉼뒤」: 앞 단위의 구간(segment)이 바뀌면 전환, 앞 단위의 끝 문장이 조작(누르 · 클릭 · 선택 · 입력 …)이면 결과, 그 밖은 큐.
@@ -323,7 +323,7 @@ def build(pf, out):
         fail(f'{P["영상"]}: {v["r_frame_rate"]} fps — 30 fps 영상만 다룬다')
     NF = int(v['nb_frames']); SR = int(a['sample_rate']); spf = SR // FPS
     B = read_srt(P['자막'], NF / FPS)
-    req = {'잇기': 0.0, **P['쉼']}
+    req = {'잇기': P.get('문장쉼', 0.0), **P['쉼']}   # 잇기 = 한 문맥 — 큐 쉼은 넣지 않고 문장 사이 쉼만 지킨다(따로 산 두 음성이 맞붙지 않게)
     U, seen = P['단위'], 0
     for u in U:
         a0, z0 = u['자막']
@@ -517,9 +517,10 @@ def build(pf, out):
             blocks += [[mc(B[j][0]) + O(k), mc(B[j][1]) + O(k), B[j][2]] for j in range(a0, z0 + 1)]
         else:
             s, e = span(k); T = s - u['on']; i0 = int(round(T * SR))
-            if i0 < 0:
-                fail(f'단위 {u["id"]}: 새 음성이 영상 처음보다 앞에 놓인다({T:.2f}초)')
-            seg = u['vx'][:max(0, len(Y) - i0)]; Y[i0:i0 + len(seg)] += seg
+            if s < -0.005:
+                fail(f'단위 {u["id"]}: 새 말이 영상 처음보다 앞에 놓인다({s:.2f}초)')
+            vx = u['vx'][max(0, -i0):]; i0 = max(0, i0)   # 영상 첫머리에 붙은 말이면 파일의 말 앞 무음만 잘라 낸다(말은 자르지 않는다)
+            seg = vx[:max(0, len(Y) - i0)]; Y[i0:i0 + len(seg)] += seg
             blocks += [[T + p, T + q, t] for (p, q), t in zip(u['spans'], u['ss'])]   # 새 말은 옛 블록 수와 상관없이 문장마다 한 블록(긴 새 글이 한 블록에 몰리지 않게)
         for gx in P.get('글상자', []):
             if gx['단위'] == u['id']:
@@ -656,8 +657,9 @@ def check(mp4, srt, plan=None, keep=None, rec=None, m=None, quiet_out=False):
             ends[pos + nb - 1] = u.get('쉼뒤', '큐'); pos += nb
         for i in range(len(B) - 1):
             c = ends.get(i)
-            if c and c != '잇기' and B[i + 1][0] - B[i][1] < plan['쉼'][c] - 0.035:
-                bad.append(f'자막 {i}→{i + 1}번 {s2t(B[i][1])}: {B[i + 1][0] - B[i][1]:.2f}초 < {c} {plan["쉼"][c]}초')
+            need = plan.get('문장쉼', 0.0) if c == '잇기' else plan['쉼'][c] if c else 0.0
+            if c and B[i + 1][0] - B[i][1] < need - 0.035:
+                bad.append(f'자막 {i}→{i + 1}번 {s2t(B[i][1])}: {B[i + 1][0] - B[i][1]:.2f}초 < {c} {need}초')
     else:
         bad += [f'자막 {i}→{i + 1}번 {s2t(B[i][1])}: {B[i + 1][0] - B[i][1]:.2f}초 붙음' for i in range(len(B) - 1) if B[i + 1][0] - B[i][1] < 0.3]
     if rec and plan and rec['멈춤(프레임 뒤에 장수)']:
@@ -746,6 +748,18 @@ def selftest():
         S5 = read_srt(tmp / '맞닿은 말.srt')
         assert S5[4][0] - S5[3][1] >= 1.499, f'맞닿은 말: B→C {S5[4][0] - S5[3][1]:.2f}초'
         ok.append(f'맞닿은 말 결과: B→C {S5[4][0] - S5[3][1]:.2f}초')
+        # 영상 첫머리의 말을 바꿈: 첫 자막이 0.02초에 시작하고 새 음성 파일의 말은 0.05초에 시작 — 말 앞 무음만 잘라 0초부터 놓는다
+        s6 = tmp / '첫머리.srt'; L = [[a0, b0, f'문장 {i}.'] for i, (a0, b0) in enumerate(talk)]; L[0][0] = 0.02; write_srt(s6, L)
+        head = json.loads(json.dumps(base)); head['자막'] = str(s6)
+        head['단위'][0].update({'새글': '새 첫째. 새 둘째.', '새음성': str(nv), '붙임': '뒤'}); run('첫머리 새 말', head)
+        S6 = read_srt(tmp / '첫머리 새 말.srt')
+        assert 0 <= S6[0][0] <= 0.05 and S6[0][2] == '새 첫째.', S6[0]
+        ok.append(f'첫머리 새 말 결과: 첫 자막 {S6[0][0]:.2f}초')
+        # 잇기도 문장쉼은 지킨다: B(새 음성) → C(새 음성)를 한 문맥으로 이으면 큐 쉼(1.5) 대신 문장쉼(0.5) 이상이고, 맞붙지 않는다
+        tie = json.loads(json.dumps(base)); tie['문장쉼'] = 0.5; tie['단위'][1]['쉼뒤'] = '잇기'; run('잇기 문장쉼', tie)
+        S7 = read_srt(tmp / '잇기 문장쉼.srt'); g7 = S7[4][0] - S7[3][1]
+        assert 0.499 <= g7 < 1.4, f'잇기: B→C {g7:.2f}초'
+        ok.append(f'잇기 문장쉼 결과: B→C {g7:.2f}초')
         bad = json.loads(json.dumps(base)); bad['단위'][2]['새음성'] = str(tmp / '없음.wav'); run('없는 음성', bad, r'단위 C: 새 음성 파일이 없다')
         s2 = tmp / '겹침.srt'; L = [[a0, b0, f'문장 {i}.'] for i, (a0, b0) in enumerate(talk)]; L[3][0] = 7.0; write_srt(s2, L)
         bad = json.loads(json.dumps(base)); bad['자막'] = str(s2); run('겹치는 큐', bad, r'자막 2번.*3번.*겹친다')
