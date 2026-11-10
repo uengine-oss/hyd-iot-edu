@@ -1140,6 +1140,54 @@ def evidence_outcomes() -> str:
     return svg(o)
 
 
+def person_icon(cx, cy, st: St):
+    return [circle(cx, cy - 22, 18, fill=st.fill, stroke=st.line),
+            path(f"M {cx - 34},{cy + 34} Q {cx - 34},{cy + 2} {cx},{cy + 2} Q {cx + 34},{cy + 2} {cx + 34},{cy + 34} Z", fill=st.fill, stroke=st.line)]
+
+
+def bubble(x, y, w, h, side, stroke, fill, dashed=False):
+    """말풍선 하나. side: 'L'이면 왼쪽(나), 'R'이면 오른쪽(AI)으로 꼬리를 낸다. 점선은 dash_line으로 긋는다(PyMuPDF가 dasharray를 그리지 않는다)."""
+    r, ty = 22, y + h / 2
+    tx = x if side == "L" else x + w
+    tip = tx - 24 if side == "L" else tx + 24
+    o = [path(f"M {tx},{ty - 14} L {tip},{ty} L {tx},{ty + 14} Z", stroke="none", fill=fill, sw=0),
+         rect(x, y, w, h, r, fill=fill, stroke="none", sw=0)]
+    if not dashed:
+        o.append(rect(x, y, w, h, r, fill="none", stroke=stroke, sw=3))
+        o.append(line(tx, ty - 12, tx, ty + 12, stroke=fill, sw=6))
+        o.append(path(f"M {tx},{ty - 14} L {tip},{ty} L {tx},{ty + 14}", stroke=stroke, sw=3))
+        return o
+    for a, b in (((x + r, y), (x + w - r, y)), ((x + r, y + h), (x + w - r, y + h)),
+                 ((x + w, y + r), (x + w, y + h - r)) if side == "L" else ((x, y + r), (x, ty - 16)),
+                 ((x, y + r), (x, ty - 16)) if side == "L" else ((x + w, y + r), (x + w, y + h - r)),
+                 ((x, ty + 16), (x, y + h - r)) if side == "L" else ((x + w, ty + 16), (x + w, y + h - r))):
+        o += dash_line(a[0], a[1], b[0], b[1], stroke, 3, 10, 9)
+    for cx_, cy_, a0 in ((x + r, y + r, 180), (x + w - r, y + r, 270), (x + w - r, y + h - r, 0), (x + r, y + h - r, 90)):
+        import math as _m
+        p0 = (cx_ + r * _m.cos(_m.radians(a0)), cy_ + r * _m.sin(_m.radians(a0)))
+        p1 = (cx_ + r * _m.cos(_m.radians(a0 + 90)), cy_ + r * _m.sin(_m.radians(a0 + 90)))
+        o.append(path(f"M {p0[0]:.1f},{p0[1]:.1f} A {r},{r} 0 0 1 {p1[0]:.1f},{p1[1]:.1f}", stroke=stroke, sw=3))
+    o += dash_line(tx, ty - 14, tip, ty, stroke, 3, 8, 7) + dash_line(tip, ty, tx, ty + 14, stroke, 3, 8, 7)
+    return o
+
+
+def chat_teacher() -> str:
+    """AI를 선생님으로 두고 주고받는 대화. 흐린 첫 말(점선) → 교정 → 모르는 말을 쉽게 파고드는 두 말(안쪽으로 들임) → 또렷해진 내 설명(강조).
+    글은 덱 MD 라벨로 얹는다."""
+    o: list[str] = []
+    h, step = 86, 104
+    # (줄, 쪽, 선, 바탕, 점선, 들임)
+    rows = [(0, "L", GREY, WHITE, True, 0), (1, "R", NAVY, LIGHT, False, 0), (2, "L", NAVY, WHITE, False, 70),
+            (3, "R", NAVY, LIGHT, False, 70), (4, "L", SKY, PALE, False, 0)]
+    for i, side, stroke, fill, dashed, ind in rows:
+        y = 14 + i * step
+        if side == "L":
+            o += person_icon(70 + ind, y + h / 2, NORM if dashed else ON) + bubble(150 + ind, y, 690 - ind, h, "L", stroke, fill, dashed)
+        else:
+            o += agent_icon(1130 - ind, y + h / 2 + 2, ON) + bubble(360, y, 690 - ind, h, "R", stroke, fill, dashed)
+    return svg(o)
+
+
 NEW_ONLY: set = {"경로2_1.svg", "경로2_2.svg", "데이터_명령_두경로.svg"}
 
 
@@ -1149,7 +1197,7 @@ def main():
            "흩어진정보.svg": scattered(), "노드관계.svg": node_rel(),
            "경로2_1.svg": walk2(1), "경로2_2.svg": walk2(2),
            "지식그래프_지도.svg": kg_map(),
-           "기록_되짚기.svg": record_trail(), "읽기위치_전후.svg": offset_rows(), "리니지_좁히기.svg": lineage_narrow(),
+           "기록_되짚기.svg": record_trail(), "대화_교정.svg": chat_teacher(), "읽기위치_전후.svg": offset_rows(), "리니지_좁히기.svg": lineage_narrow(),
            "종류_네칸.svg": kinds_columns(), "속성_눈금.svg": property_scale(), "관계_이름.svg": relation_named(),
            "채우기_정의변경.svg": fill_or_redefine(), "저장_그림_옳음.svg": stored_not_true(), "증거_세결과.svg": evidence_outcomes()}
     for name, text in out.items():
