@@ -11,8 +11,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[5]
 MD = [ROOT / f'workspace/강의제작/산출물/{c}/실습/01회차/대본/02_실습_학습노트.md' for c in ('통합반', '실전반')]
-PLAN = HERE / '02_계획.json'
-CUES = HERE / '노션_큐.json'
+PLAN = ROOT / 'workspace/강의제작/제작도구/촬영/notion/쉼넣기_계획.json'
+CUES = ROOT / 'workspace/강의제작/제작도구/촬영/notion/쉼넣기_큐.json'
 
 새글 = {
     # 1. 작업 화면 · 새 페이지 · 제목과 소개 · 안내 상자
