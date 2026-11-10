@@ -1525,7 +1525,131 @@ def walk_entry() -> str:
     return svg(o, *WALK_WH)
 
 
-NEW_ONLY: set = {"경로2_1.svg", "경로2_2.svg", "데이터_명령_두경로.svg"}
+# ───────────────────────── 03편 온톨로지 차례: 모양 · 문장으로 읽기 · 약속과 채움 · 네 가지 짚기 ─────────────────────────
+
+def _edge_arrow(a, b, color=NAVY, sw=4.5, size=15, gap_a=5, gap_b=9):
+    """원 a(x, y, r)의 테두리에서 원 b의 테두리까지 화살표. 화살촉은 b 쪽."""
+    (ax, ay, ar), (bx, by, br) = a, b
+    d_ = math.hypot(bx - ax, by - ay)
+    ux, uy = (bx - ax) / d_, (by - ay) / d_
+    return [arrow([(ax + ux * (ar + gap_a), ay + uy * (ar + gap_a)), (bx - ux * (br + gap_b), by - uy * (br + gap_b))], color, sw=sw, size=size)]
+
+
+def _rise_icon(cx, cy, k=1.0):
+    """증상: 온도계와 위 화살표."""
+    return thermo(cx - 12 * k, cy + 24 * k, ON, s=0.62 * k, level=0.7) + [arrow([(cx + 18 * k, cy + 20 * k), (cx + 18 * k, cy - 26 * k)], BLUE, sw=4, size=11)]
+
+
+def _shaky_fan(cx, cy, r, st: St):
+    """상한 팬: 팬 둘레에 떨림 호 두 겹."""
+    o = fan(cx, cy, r, st, rot=35)
+    for sgn in (-1, 1):
+        for rr in (r * 1.25, r * 1.5):
+            a0, a1 = math.radians(-28), math.radians(28)
+            o.append(path(f"M {cx + sgn * rr * math.cos(a0):.1f},{cy + rr * math.sin(a0):.1f} A {rr:.1f} {rr:.1f} 0 0 {1 if sgn > 0 else 0} "
+                          f"{cx + sgn * rr * math.cos(a1):.1f},{cy + rr * math.sin(a1):.1f}", stroke=NAVY, sw=3))
+    return o
+
+
+def _tag(tx, ty, to, sw=3):
+    """작은 둥근 꼬리표(연하늘 채움 · 남색 테두리)와 원 테두리 점 to까지의 짧은 끈."""
+    return [line(tx, ty, to[0], to[1], stroke=NAVY, sw=sw),
+            rect(tx - 34, ty - 17, 68, 34, 17, fill=PALE, stroke=NAVY, sw=sw), circle(tx - 18, ty, 4.5, fill=WHITE, stroke=NAVY, sw=2.5)]
+
+
+def _onto(P, k=1.0, rings=False):
+    """온톨로지의 모양: 증상 S · 고장 유형 F · 원인 C · 조치 방법 K의 원 넷과 이름 붙은 화살표 셋(S → F, C → F, F → K), 증상 원의 꼬리표.
+    P는 이름마다 (x, y, r). rings면 「일으킨다」 화살표의 출발 · 도착에 작은 파란 고리를 둔다."""
+    S, F, C, K, T = P["S"], P["F"], P["C"], P["K"], P["T"]
+    o: list[str] = []
+    o += _edge_arrow(S, F) + _edge_arrow(C, F) + _edge_arrow(F, K)
+    sx, sy, sr = S
+    d_ = math.hypot(T[0] - sx, T[1] - sy)
+    o += _tag(T[0] + (sx - T[0]) / d_ * 30, T[1] + (sy - T[1]) / d_ * 14, (sx + (T[0] - sx) / d_ * sr, sy + (T[1] - sy) / d_ * sr))
+    for key, (x, y, r) in (("S", S), ("C", C), ("K", K)):
+        o.append(circle(x, y, r, fill=PALE, stroke=BLUE, sw=3.5))
+    o.append(circle(*F, fill=SKY, stroke=NAVY, sw=4))
+    o += _rise_icon(S[0], S[1], k)
+    o += g(F[0], F[1], 0.62 * k * F[2] / 72, broken_cooler(0, 0, NORM))
+    o += g(C[0], C[1], 0.62 * k * C[2] / 56, dusty_cooler(0, 0, NORM))
+    o += fan(K[0], K[1], 0.62 * K[2], NORM, rot=20, hot=True)
+    if rings:
+        (cx, cy, cr), (fx, fy, fr) = C, F
+        d_ = math.hypot(fx - cx, fy - cy)
+        ux, uy = (fx - cx) / d_, (fy - cy) / d_
+        for px_, py_ in ((cx + ux * (cr + 5), cy + uy * (cr + 5)), (fx - ux * (fr + 5), fy - uy * (fr + 5))):
+            o.append(circle(round(px_, 1), round(py_, 1), 11, fill="none", stroke=BLUE, sw=4))
+    return o
+
+
+ONTO = {"S": (190, 270, 56), "F": (560, 180, 72), "C": (960, 85, 56), "K": (980, 305, 56), "T": (95, 180)}
+
+
+def ontology_shape() -> str:
+    """49장: 지식 그래프 지도와 같은 자리(증상 왼쪽 아래 · 원인 오른쪽 위 · 고장 유형 가운데 · 조치 방법 오른쪽 아래)의 원 넷과 화살표 셋,
+    증상 원의 꼬리표. 아래 띠(비유의 닮은 점 · 다른 점 두 칸)는 라벨 자리로 비운다."""
+    o: list[str] = [rect(20, 430, 570, 82, 12, fill=LIGHT, stroke="none", sw=0), rect(610, 430, 570, 82, 12, fill=LIGHT, stroke="none", sw=0)]
+    o += _onto(ONTO)
+    return svg(o)
+
+
+def ontology_sentences() -> str:
+    """50장: 원 셋을 한 줄로(증상 → 고장 유형 ← 원인), 고장 유형 아래로 조치 방법. 화살표마다 바로 아래에 흰 문장 칸(① 왼쪽 · ③ 가운데 · ② 오른쪽)을
+    가는 회색 점선으로 잇고, 문장 칸 줄의 오른쪽 끝에서 컴퓨터(로봇 얼굴)로 화살표 하나."""
+    S, F, C, K = (130, 130, 52), (470, 130, 62), (810, 130, 52), (470, 300, 50)
+    o: list[str] = []
+    o += _edge_arrow(S, F) + _edge_arrow(C, F) + _edge_arrow(F, K)
+    for (x, y, r) in (S, C, K):
+        o.append(circle(x, y, r, fill=PALE, stroke=BLUE, sw=3.5))
+    o.append(circle(*F, fill=SKY, stroke=NAVY, sw=4))
+    o += _rise_icon(S[0], S[1], 0.95)
+    o += g(F[0], F[1], 0.53, broken_cooler(0, 0, NORM)) + g(C[0], C[1], 0.6, dusty_cooler(0, 0, NORM))
+    o += fan(K[0], K[1], 31, NORM, rot=20, hot=True)
+    boxes = ((15, 315), (330, 630), (645, 945))          # ① · ③ · ②
+    for x0, x1 in boxes:
+        o.append(rect(x0, 392, x1 - x0, 110, 16, fill=WHITE, stroke=NAVY, sw=3))
+    o += dash_line(300, 142, 175, 386, GREY, 3, 8, 7)                                    # ① 가리킨다
+    o += dash_line(482, 222, 555, 222, GREY, 3, 8, 7) + dash_line(555, 222, 555, 386, GREY, 3, 8, 7)   # ③ 완화된다
+    o += dash_line(640, 142, 790, 386, GREY, 3, 8, 7)                                    # ② 일으킨다
+    o.append(arrow([(958, 447), (1022, 447)], NAVY, sw=4.5, size=15))
+    o += g(1105, 440, 1.25, agent_icon(0, 0, ON))
+    return svg(['<g transform="translate(0 -10)">', *o, "</g>"])          # 본문 영역에서 내용을 살짝 위에 둔다
+
+
+def promise_fill_layers() -> str:
+    """56장: 위 띠(연하늘) = 약속 — 테두리만 있는 원 셋(원인 → 고장 유형 → 조치 방법). 아래 띠(흰) = 채움 — 같은 가로 자리의 원 셋과 아이콘
+    (먼지 낀 쿨러 · 금이 간 쿨러 · 팬), 같은 화살표 둘. 아래 띠 원인 원 바로 아래에 원 하나(상한 팬)를 더 두고 고장 유형으로 잇는다.
+    위아래 같은 자리의 원은 가는 회색 점선으로 잇는다. 띠 왼쪽 끝은 띠 이름 라벨 자리로 비운다."""
+    xs, yt, yb = (400, 700, 1000), 125, 305
+    o: list[str] = [rect(15, 10, 1170, 200, 16, fill=PALE, stroke="none", sw=0), rect(15, 226, 1170, 288, 16, fill=WHITE, stroke=GREY, sw=3)]
+    for x in xs:
+        o += dash_line(x, yt + 53, x, yb - 55, GREY, 3, 8, 7)
+    o += [arrow([(xs[0] + 53, yt), (xs[1] - 57, yt)], NAVY, sw=4.5, size=15), arrow([(xs[1] + 53, yt), (xs[2] - 57, yt)], NAVY, sw=4.5, size=15)]
+    o += [arrow([(xs[0] + 55, yb), (xs[1] - 59, yb)], NAVY, sw=4.5, size=15), arrow([(xs[1] + 55, yb), (xs[2] - 59, yb)], NAVY, sw=4.5, size=15)]
+    for x in xs:
+        o.append(circle(x, yt, 48, fill=WHITE, stroke=NAVY, sw=3.5))
+    E = (400, 455, 40)
+    o += _edge_arrow(E, (xs[1], yb, 50), NAVY, sw=4.5)
+    for i, x in enumerate(xs):
+        o.append(circle(x, yb, 50, fill=SKY if i == 1 else PALE, stroke=NAVY if i == 1 else BLUE, sw=4 if i == 1 else 3.5))
+    o.append(circle(*E, fill=PALE, stroke=BLUE, sw=3.5))
+    o += g(xs[0], yb, 0.58, dusty_cooler(0, 0, NORM)) + g(xs[1], yb, 0.58, broken_cooler(0, 0, NORM)) + fan(xs[2], yb, 31, NORM, rot=20, hot=True)
+    o += _shaky_fan(E[0], E[1], 19, NORM)
+    return svg(o)
+
+
+ONTO4 = {"S": (135, 330, 50), "F": (370, 215, 62), "C": (610, 95, 50), "K": (615, 395, 50), "T": (55, 220)}
+
+
+def ontology_four() -> str:
+    """58장: 49장의 모양을 왼쪽 60 % 폭에 다시 그리고, 「일으킨다」 화살표의 출발 · 도착에 작은 파란 고리 둘. 짚는 번호(①~④)는 라벨로 얹는다.
+    오른쪽 40 %는 네 칸 목록(연회색 칸 넷)을 라벨로 얹는 자리다."""
+    o: list[str] = [rect(735, 12 + i * 126, 450, 114, 14, fill=LIGHT, stroke="none", sw=0) for i in range(4)]
+    o += _onto(ONTO4, 0.95, rings=True)
+    return svg(o)
+
+
+NEW_ONLY: set = {"경로2_1.svg", "경로2_2.svg", "데이터_명령_두경로.svg", "온톨로지_모양.svg", "온톨로지_문장읽기.svg", "약속_채움_두층.svg", "온톨로지_네가지.svg"}
 
 
 def main():
@@ -1543,7 +1667,9 @@ def main():
            "말_다르게부르기.svg": words_apart(), "단어장_약속.svg": promised_words(),
            "MQTT_OT안.svg": lineage_mqtt_ot(), "통로_창고.svg": flow_vs_store(), "원인후보_갈래.svg": cause_branches(),
            "에이전트_다섯걸음.svg": agent_five_steps(), "사건_단계.svg": case_track(),
-           "기록_이름갈림.svg": records_apart(), "이름_한대상.svg": aliases_merge(), "원인_더하기.svg": add_cause(), "경로_입구.svg": walk_entry()}
+           "기록_이름갈림.svg": records_apart(), "이름_한대상.svg": aliases_merge(), "원인_더하기.svg": add_cause(), "경로_입구.svg": walk_entry(),
+           "온톨로지_모양.svg": ontology_shape(), "온톨로지_문장읽기.svg": ontology_sentences(), "약속_채움_두층.svg": promise_fill_layers(),
+           "온톨로지_네가지.svg": ontology_four()}
     for name, text in out.items():
         assert "<text" not in text
         if (HERE / name).exists() and name not in NEW_ONLY:
