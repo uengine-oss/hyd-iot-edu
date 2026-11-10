@@ -3,6 +3,7 @@
 # 쓰는 법: rehearsal_turn.sh <실습 폴더> <프롬프트 파일> [new|resume]   — 첫 턴 new, 이후 resume
 # 필요한 환경 변수: CODEX_BIN(Codex CLI 실행 파일 — 예: npm i --prefix <폴더> @openai/codex@0.166.0 뒤 <폴더>/node_modules/.bin/codex)
 #                  CODEX_HOME(사용자가 `codex login`해 둔 시험용 폴더 — 이 PC는 D:/HYD-Practice/_codex_luna. 플러그인 · 컴퓨터 제어가 켜진 기본 ~/.codex는 쓰지 않는다)
+#                  CODEX_MODEL · CODEX_REASONING(선택 — 지정하면 새 턴/재개 모두 명시하고 실제 실행 머리와 대조)
 # resume --last는 실습 폴더(cwd)별로 이어지므로 여러 리허설이 같은 CODEX_HOME을 써도 섞이지 않는다.
 # 기록은 실습 폴더 옆 luna_log/turnNN.{prompt.txt,log,last.txt}. 실습 폴더는 저장소 밖 · Temp 밖에 둔다(코딩랩.md 「함정」).
 set -euo pipefail
@@ -18,11 +19,19 @@ LOG=$LOGDIR/turn$(printf %02d $N).log
 LAST=$LOGDIR/turn$(printf %02d $N).last.txt
 cp "$PROMPT_FILE" "$LOGDIR/turn$(printf %02d $N).prompt.txt"
 cd "$LAB"
+MODEL_ARGS=()
+[ -z "${CODEX_MODEL:-}" ] || MODEL_ARGS+=(--model "$CODEX_MODEL")
+[ -z "${CODEX_REASONING:-}" ] || MODEL_ARGS+=(-c "model_reasoning_effort=\"$CODEX_REASONING\"")
 if [ "$MODE" = new ]; then
-  timeout 1500 "$CODEX_BIN" exec --skip-git-repo-check -s workspace-write -o "$(cygpath -w "$LAST")" "$(cat "$PROMPT_FILE")" < /dev/null > "$LOG" 2>&1 || echo "[rehearsal_turn] 종료 코드 $? — $LOG 확인" >&2
+  timeout 1500 "$CODEX_BIN" exec --skip-git-repo-check -s workspace-write "${MODEL_ARGS[@]}" -o "$(cygpath -w "$LAST")" "$(cat "$PROMPT_FILE")" < /dev/null > "$LOG" 2>&1 || echo "[rehearsal_turn] 종료 코드 $? — $LOG 확인" >&2
 else
-  timeout 1500 "$CODEX_BIN" exec --skip-git-repo-check -c sandbox_mode='"workspace-write"' resume --last -o "$(cygpath -w "$LAST")" "$(cat "$PROMPT_FILE")" < /dev/null > "$LOG" 2>&1 || echo "[rehearsal_turn] 종료 코드 $? — $LOG 확인" >&2
+  timeout 1500 "$CODEX_BIN" exec --skip-git-repo-check -c sandbox_mode='"workspace-write"' resume --last "${MODEL_ARGS[@]}" -o "$(cygpath -w "$LAST")" "$(cat "$PROMPT_FILE")" < /dev/null > "$LOG" 2>&1 || echo "[rehearsal_turn] 종료 코드 $? — $LOG 확인" >&2
 fi
-grep -m1 '^model:' "$LOG" | sed 's/^/[모델] /' >&2 || true
+# 실행 머리만 읽는다. 답이나 명령 출력에 같은 글자가 있어도 모델 확인으로 세지 않는다.
+HEADER=$(awk '/^--------\r?$/ { section++; next } section == 1 { sub(/\r$/, ""); print } section >= 2 { exit }' "$LOG")
+printf '%s\n' "$HEADER" | grep -m1 '^model:' | sed 's/^/[모델] /' >&2 || true
+printf '%s\n' "$HEADER" | grep -m1 '^reasoning effort:' | sed 's/^/[추론] /' >&2 || true
+if [ -n "${CODEX_MODEL:-}" ] && ! printf '%s\n' "$HEADER" | grep -Fxq "model: $CODEX_MODEL"; then echo '[rehearsal_turn] 모델 불일치 또는 미확인 — 결과를 통과 근거로 쓰지 않는다' >&2; exit 2; fi
+if [ -n "${CODEX_REASONING:-}" ] && ! printf '%s\n' "$HEADER" | grep -Fxq "reasoning effort: $CODEX_REASONING"; then echo '[rehearsal_turn] 추론 불일치 또는 미확인 — 결과를 통과 근거로 쓰지 않는다' >&2; exit 2; fi
 grep -A1 '^tokens used' "$LOG" | tail -1 | sed 's/^/[토큰] /' >&2 || true
 if [ -s "$LAST" ]; then cat "$LAST"; echo; else echo "[rehearsal_turn] 마지막 답 파일이 비었다 — $LOG"; tail -30 "$LOG"; exit 1; fi

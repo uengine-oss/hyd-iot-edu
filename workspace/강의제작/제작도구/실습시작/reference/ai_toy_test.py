@@ -4,6 +4,7 @@
 쓰는 법
   python3 ai_toy_test.py <학생 ZIP> --tool codex|claude --scenario two_turn|one_turn --out <새 출력 폴더>
           [--env-file <.env 꼴 파일>] [--lab-env <.env 꼴 파일>] [--codex-bin <경로>] [--claude-bin <경로>] [--timeout 초] [--dry-run]
+          [--codex-model gpt-6-luna --codex-reasoning medium]  # 새 턴·재개에 모두 명시하고 실제 머리와 대조한다
   python3 ai_toy_test.py --extract <turnN.log|turnN.jsonl> --tool codex|claude     # AI 없이 원본 기록에서 행동 · 답 · 토큰만 뽑는다
 
   two_turn = 「START.md대로 다 해 줘」 → 「권장안대로 다 해 줘」(1턴이 실패 · 시간 초과면 2턴을 보내지 않는다)
@@ -154,6 +155,7 @@ def codex_turn(text):
         close()
     final = '\n'.join(tail or []).strip() or (messages[-1] if messages else '')
     return {'tool': 'codex', 'version': version, 'model': head.get('model'), 'provider': head.get('provider'),
+            'reasoning_effort': head.get('reasoning effort'),
             'sandbox': head.get('sandbox'), 'session': head.get('session id'), 'prompt': '\n'.join(prompt).strip(),
             'actions': actions, 'messages': messages, 'final': final, 'tokens': tokens, 'errors': errors}
 
@@ -199,18 +201,28 @@ EXTRACT = {'codex': codex_turn, 'claude': claude_turn}
 # ───────────── 실습 폴더 · 해시 ─────────────
 
 def unpack(zip_path, lab):
-    """ZIP 안 실습 폴더(START.md · AGENTS.md가 있는 가장 얕은 폴더)를 lab에 그대로 푼다. 그 밖의 항목 · 위로 나가는 경로는 멈춘다."""
+    """실습 폴더만 푼다. P-3의 형제 가이드는 건너뛰고 다른 바깥 항목·위로 나가는 경로는 멈춘다."""
     with zipfile.ZipFile(zip_path) as z:
         names = [n for n in z.namelist() if not n.endswith('/')]
+        for n in names:
+            parts = PurePosixPath(n)
+            if parts.is_absolute() or '..' in parts.parts or '\\' in n or any(':' in p for p in parts.parts):
+                raise SystemExit(f'{zip_path}: 실습 폴더 밖을 가리키는 경로 {n}')
+        normalized = [PurePosixPath(n).as_posix().casefold() for n in names]
+        if len(normalized) != len(set(normalized)):
+            raise SystemExit(f'{zip_path}: 중복 ZIP 항목이 있습니다')
         marks = [n.rpartition('/')[0] for n in names if n.rpartition('/')[2] in ('START.md', 'AGENTS.md')]
         if not marks:
             raise SystemExit(f'{zip_path}: START.md · AGENTS.md가 있는 실습 폴더를 찾지 못했습니다.')
         base = min(marks, key=len)
         prefix = base + '/' if base else ''
-        outside = [n for n in names if not n.startswith(prefix)]
+        guide = base + '_guide.html' if base else None
+        outside = [n for n in names if not n.startswith(prefix) and n != guide]
         if outside:
             raise SystemExit(f'{zip_path}: 실습 폴더({base or "루트"}) 밖 항목 {outside[:3]}')
         for n in names:
+            if n == guide:
+                continue  # 정답 토글을 학생 AI의 폴더에 넣지 않는다.
             rel = PurePosixPath(n[len(prefix):])
             if rel.is_absolute() or '..' in rel.parts:
                 raise SystemExit(f'{zip_path}: 실습 폴더 밖을 가리키는 경로 {n}')
@@ -287,11 +299,12 @@ def lab_env_lines(env_file):
     return found
 
 
-def commands(tool, binary, prompts):
+def commands(tool, binary, prompts, model=None, reasoning=None):
     if tool == 'codex':
         first = [binary, 'exec', '--skip-git-repo-check', '-s', 'workspace-write']
         more = [binary, 'exec', '--skip-git-repo-check', 'resume', '--last', '-c', 'sandbox_mode="workspace-write"']
-        return [(first if n == 0 else more) + [p] for n, p in enumerate(prompts)]
+        settings = (['--model', model] if model else []) + (['-c', f'model_reasoning_effort="{reasoning}"'] if reasoning else [])
+        return [(first if n == 0 else more) + settings + [p] for n, p in enumerate(prompts)]
     tail = ['--model', 'sonnet', '--permission-mode', 'acceptEdits', '--output-format', 'stream-json', '--verbose', '--allowedTools', *CLAUDE_TOOLS]
     return [[binary, '-p', *([] if n == 0 else ['--continue']), p, *tail] for n, p in enumerate(prompts)]
 
@@ -338,7 +351,8 @@ def package_version(zip_path):
 def record(out, meta, turns, total):
     md = ['# 장난감 시험 기록', '',
           f"- 학생 ZIP: `{meta['zip']}` (SHA-256 {meta['zip_sha256']}, 판 {meta['version'] or '목록에 없음'}, 안의 실습 폴더 `{meta['base']}`, 파일 {meta['files']}개)",
-          f"- 도구: {meta['tool']} · 모델 {meta.get('model') or '미확인'} · 도구 판 {meta.get('tool_version') or '미확인'}",
+          f"- 도구: {meta['tool']} · 모델 {meta.get('model') or '미확인'} · 추론 {meta.get('reasoning_effort') or '미확인'} · 도구 판 {meta.get('tool_version') or '미확인'}",
+          f"- 명시한 모델/추론: {meta.get('requested_model') or '설정 파일'} / {meta.get('requested_reasoning') or '설정 파일'}",
           f"- 시나리오: {meta['scenario']} · 실습 폴더 `.env`: {'있음(--lab-env, 세 줄)' if meta.get('lab_env') else '없음(키 없는 폴더)'}",
           f"- 시각(UTC): {meta['when']}",
           f"- 실습 폴더: `{meta['lab']}`",
@@ -373,11 +387,15 @@ def main():
     ap.add_argument('--lab-env', type=Path, help='실습 폴더에 학생처럼 .env 세 줄을 쓸 .env 꼴 파일(모델을 부르는 랩의 키 있는 시험)')
     ap.add_argument('--codex-home', type=Path, help='학생 계정으로 로그인해 둔 CODEX_HOME(auth.json · config.toml이 있는 폴더). 주면 강의 중계 설정을 쓰지 않고 그 계정 · 모델로 돈다(codex만)')
     ap.add_argument('--codex-bin', default='codex')
+    ap.add_argument('--codex-model', help='매 턴에 명시할 모델. 실행 머리와 다르거나 확인할 수 없으면 다음 턴을 보내지 않는다')
+    ap.add_argument('--codex-reasoning', choices=['none', 'low', 'medium', 'high', 'xhigh', 'max'], help='매 턴에 명시할 추론 수준')
     ap.add_argument('--claude-bin', default='claude')
     ap.add_argument('--timeout', type=int, default=1500, help='한 턴의 시간 상한(초)')
     ap.add_argument('--dry-run', action='store_true', help='ZIP 풀기 · 해시 · 도구 설정까지만(AI를 부르지 않음)')
     ap.add_argument('--extract', type=Path, help='AI 없이 원본 기록 하나에서 행동 · 답 · 토큰을 뽑아 JSON으로 보인다')
     a = ap.parse_args()
+    if (a.codex_model or a.codex_reasoning) and a.tool != 'codex':
+        ap.error('--codex-model/--codex-reasoning은 --tool codex에만 씁니다')
 
     if a.extract:
         print(json.dumps(EXTRACT[a.tool](a.extract.read_text(encoding='utf-8', errors='replace')), ensure_ascii=False, indent=1))
@@ -423,24 +441,31 @@ def main():
             'zip_sha256': hashlib.sha256(zip_path.read_bytes()).hexdigest(), 'version': package_version(zip_path),
             'base': base, 'files': len(before), 'tool': a.tool, 'scenario': a.scenario, 'lab': str(lab), 'prompts': prompts,
             'when': datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d %H:%M'), 'dry_run': a.dry_run,
-            'lab_env': bool(lab_env)}
+            'lab_env': bool(lab_env), 'requested_model': a.codex_model, 'requested_reasoning': a.codex_reasoning}
     turns, last = [], before
     if not a.dry_run:
         env = environment(a.tool, home, settings['LLM_API_KEY'])
-        for n, cmd in enumerate(commands(a.tool, binary, prompts), 1):
+        for n, cmd in enumerate(commands(a.tool, binary, prompts, a.codex_model, a.codex_reasoning), 1):
             raw = out/(f'turn{n}.log' if a.tool == 'codex' else f'turn{n}.jsonl')
             err = out/f'turn{n}.err' if a.tool == 'claude' else None
             status = run_turn(cmd, lab, env, raw, err, a.timeout, keys)
             now = snapshot(lab)
             write_snapshot(out/f'after{n}.sha256', now)
             t = EXTRACT[a.tool](raw.read_text(encoding='utf-8', errors='replace'))
+            if a.tool == 'codex':
+                for key, requested in [('model', a.codex_model), ('reasoning_effort', a.codex_reasoning)]:
+                    if requested and t.get(key) != requested:
+                        t['errors'].append(f"{key}: 요청 {requested}, 관측 {t.get(key) or '미확인'} — 시험 조건 불일치")
+                        status = '시험 조건 불일치'
             t.update(status=status, prompt=prompts[n - 1], changed=changes(last, now))
             turns.append(t)
-            meta.update(model=t.get('model') or meta.get('model'), tool_version=t.get('version') or meta.get('tool_version'))
+            meta.update(model=t.get('model') or meta.get('model'), reasoning_effort=t.get('reasoning_effort') or meta.get('reasoning_effort'),
+                        tool_version=t.get('version') or meta.get('tool_version'))
             last = now
             if status != 0:
                 break
     record(out, meta, turns, changes(before, last))
+    (out/'실행.json').write_text(json.dumps({'meta': meta, 'turns': turns, 'changed': changes(before, last)}, ensure_ascii=False, indent=2), encoding='utf-8')
     print(f"{out/'기록.md'} — 실습 폴더 {lab}, 파일 {len(before)}개, "
           + ('AI를 부르지 않음(--dry-run)' if a.dry_run else ', '.join(f"턴 {n} 종료 {t['status']} · 바뀐 파일 {sum(map(len, t['changed'].values()))}개" for n, t in enumerate(turns, 1))))
 
