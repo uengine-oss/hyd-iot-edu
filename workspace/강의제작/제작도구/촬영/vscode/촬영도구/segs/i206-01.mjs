@@ -13,7 +13,7 @@ export default async ctx=>{
  if(layout.title!=='README.md'||!layout.first||Math.abs(layout.dpr-1.25)>0.01||layout.width!==1843||layout.height!==1037)throw Error('첫 화면 조건 불일치: '+JSON.stringify(layout));
  if(layout.root?.toLowerCase()!=='ontology-lab')throw Error('다른 실습 폴더가 열려 있습니다.');
  const snap=await c.serial(()=>ctx.p.snapshot());
- if(!snap.includes('Ask Codex anything.')||!snap.includes('6-Luna')||!snap.includes('Medium')||snap.includes('연결 확인입니다.')||snap.includes('Restricted Mode'))throw Error('빈 Codex 새 대화·모델·폴더 신뢰를 먼저 확인합니다.');
+ if(!snap.includes('Ask Codex anything.')||!snap.includes('6-Luna')||!snap.includes('Medium')||snap.includes('연결 확인입니다.')||snap.includes('Restricted Mode')||snap.includes('Unable to send message'))throw Error('빈 Codex 새 대화·모델·폴더 신뢰를 먼저 확인합니다.');
  const measure=async spec=>c.serial(()=>ctx.p.evaluate(spec=>{
   let e;
   if(spec.line)e=[...document.querySelectorAll('.editor-instance .view-lines .view-line')].find(x=>x.textContent.replace(/\u00a0/g,' ').startsWith(spec.line));

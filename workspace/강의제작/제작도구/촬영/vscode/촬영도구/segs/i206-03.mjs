@@ -7,7 +7,7 @@ const PAGE = 'file:///D:/HYD-Practice/i206p-27c52108/ontology-lab/output/result.
 
 export default async ctx => {
  const c = await vscode(ctx);
- if (await c.serial(() => ctx.p.url()) !== PAGE) { await c.serial(() => ctx.p.goto(PAGE)); await ctx.sleep(800); }
+ await c.serial(() => ctx.p.goto(PAGE)); await ctx.sleep(800);   // 녹화 전: 같은 주소여도 방금 쓴 결과 파일을 다시 읽는다(앞 판 화면이 남아 있었다)
  const view = await c.serial(() => ctx.p.evaluate(() => ({w: innerWidth, h: innerHeight, dpr: devicePixelRatio, title: document.title, sw: document.documentElement.scrollWidth})));
  if (view.w !== 1843 || Math.abs(view.dpr - 1.25) > 0.01 || view.sw > view.w || !view.title.startsWith('원자료')) throw Error('결과 화면 조건 불일치: ' + JSON.stringify(view));
  const cell = name => c.serial(() => ctx.p.evaluate(name => {

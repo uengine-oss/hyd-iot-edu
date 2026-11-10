@@ -23,6 +23,9 @@ const command = async name => {
  await p.keyboard.insertText(name); await p.waitForTimeout(700); await p.keyboard.press('Enter'); await p.waitForTimeout(1200);
 };
 if (await p.evaluate(() => !!document.querySelector('.terminal-wrapper'))) await command('Terminal: Kill All Terminals');
+// 폴더를 바꾼 직후에는 Welcome 탭이 늦게 뜬다 — 다 뜬 뒤에 닫는다
+for (let n = 0; n < 15 && !(await p.evaluate(() => document.querySelectorAll('.tabs-container .tab').length)); n++) await p.waitForTimeout(1000);
+await p.waitForTimeout(1500);
 await command('View: Close All Editors');
 await command('File: Collapse Folders in Explorer');
 const cx = await p.evaluate(() => { const e = [...document.querySelectorAll('.part.auxiliarybar .composite-bar .action-label')].find(x => (x.getAttribute('aria-label') || '').startsWith('Codex')); if (!e) return null; const r = e.getBoundingClientRect(); return {x: r.x + r.width / 2, y: r.y + r.height / 2}; });
@@ -31,6 +34,11 @@ for (const rel of ['output', 'app/__pycache__', 'app/utils/__pycache__', 'app/ui
 const row = await p.evaluate(() => { const e = [...document.querySelectorAll('.explorer-folders-view .monaco-list-row .label-name')].find(x => x.textContent.trim() === 'README.md'); const r = e.getBoundingClientRect(); return {x: r.x + r.width / 2, y: r.y + r.height / 2}; });
 await p.mouse.click(row.x, row.y, {label: 'select README'}); await p.keyboard.press('Enter'); await p.waitForTimeout(1500);
 await p.mouse.click(row.x + 600, 500, {label: 'focus editor body'}); await p.keyboard.press('Control+Home');
+// 빈 입력칸에서 Enter가 눌리면 Codex가 「Unable to send message」 상자를 띄운다(요청은 나가지 않는다) — 있으면 OK로 닫는다.
+for (let n = 0; (await p.snapshot()).includes('Unable to send message'); n++) {   // 웹뷰가 자리 잡기 전에는 단추 크기가 0이라 누를 수 없다 — 잠시 뒤 다시
+ if (n >= 10) throw Error('Codex 「Unable to send message」 상자를 닫지 못함');
+ await p.click('text="OK"').catch(() => null); await p.waitForTimeout(1000);
+}
 const state = await p.evaluate(() => ({
  tabs: [...document.querySelectorAll('.tabs-container .tab .label-name')].map(e => e.textContent),
  rows: [...document.querySelectorAll('.explorer-folders-view .monaco-list-row')].map(e => e.innerText.trim()),
