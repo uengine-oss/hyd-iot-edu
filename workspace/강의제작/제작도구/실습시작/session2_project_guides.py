@@ -40,7 +40,7 @@ def setup(folder, first=True):
         text += ['`README.md`에서 폴더 역할을 봅니다. `AGENTS.md`는 Codex의 공통 작업 원칙입니다. `data/model/`에는 바로 쓸 수 있는 모델이 있어 자기 모델이 없어도 시작할 수 있습니다.']
     text += ['**터미널 → 새 터미널**을 엽니다. 오타를 줄이도록 명령 블록의 **복사**를 눌러 붙여 넣고 Enter를 누릅니다.']
     return section('폴더 열고 자료 확인하기', text, cmd='python run.py',
-                   check='원자료 파일과 행 수가 보이는지 봅니다. 결과는 `output/result.html`에 저장됩니다. 브라우저가 열리지 않으면 탐색기에서 이 파일을 찾아 엽니다. 이후에는 명령을 실행한 뒤 열린 화면에서 F5를 누릅니다.')
+                   check='원자료 파일과 행 수가 보이는지 봅니다. 결과는 `output/result.html`에 저장됩니다. 브라우저가 열리지 않으면 Windows 파일 탐색기로 이 실습 폴더의 output 폴더를 열고 result.html을 두 번 누릅니다(VS Code 탐색기에서 누르면 화면이 아니라 HTML 글이 열립니다). 이후에는 명령을 실행한 뒤 열린 화면에서 F5를 누릅니다.')
 
 
 def ontology():

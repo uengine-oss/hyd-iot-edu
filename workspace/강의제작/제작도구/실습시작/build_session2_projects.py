@@ -22,7 +22,7 @@ import session2_project_guides as G
 import session2_graph_project as GP
 
 DEST = ROOT / 'workspace/강의제작/산출물/통합반/실습/02회차/랩'
-VERSION = 'v20-project'
+VERSION = 'v21-project'   # 2026-11-11: 1단계 결과 화면 여는 길(파일 탐색기)만 바꿈
 WORK = ROOT / '작업/검사/session2-projects'
 
 
