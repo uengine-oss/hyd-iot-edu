@@ -16,13 +16,19 @@ def e(x):
     return html.escape(str(x))
 
 
+def token(c):
+    """띄어쓰기 없는 짧은 값(숫자 · 식별자)은 칸 안에서 꺾지 않게 표시한다."""
+    s = str(c)
+    return ' class="k"' if s and len(s) <= 20 and not any(ch.isspace() for ch in s) else ''
+
+
 def grid(columns, rows, marks=None, compare_rows=False):
     big = len(rows) > FOLD
     head = '<tr>' + ''.join(f'<th>{e(c)}</th>' for c in columns) + '</tr>'
     body = ''
     for i, r in enumerate(rows):
         st = marks[i] if marks else ''
-        body += f'<tr data-st="{e(st)}">' + ''.join(f'<td class="st-{e(str(c).split(" ")[0])}">{e(c)}</td>' if (marks and j == 1) else f'<td>{e(c)}</td>'
+        body += f'<tr data-st="{e(st)}">' + ''.join(f'<td class="st-{e(str(c).split(" ")[0])}">{e(c)}</td>' if (marks and j == 1) else f'<td{token(c)}>{e(c)}</td>'
                                                     for j, c in enumerate(r)) + '</tr>'
     tools = '<input class="f" placeholder="글자로 거르기">' if len(rows) > 8 else ''
     if big:
@@ -58,7 +64,7 @@ def render_block(b, previous, current):
         return title + f'<p class="note">같은 항목 {b["same"]}개</p>' + grid(['항목', '바뀜', '전', '후'], b['rows'], [r[1] for r in b['rows']]) + tail
     raise ValueError(f'모르는 블록 종류 {k!r}')
 
-CSS = '*{box-sizing:border-box}body{margin:0;background:#181b20;color:#e6eaf0;font:16px/1.65 "Malgun Gothic",sans-serif}main{max-width:1240px;margin:auto;padding:30px 24px}h1{font-size:28px;margin:0}h2{font-size:22px}h3{font-size:17px;margin:0 0 14px}section{margin:18px 0;padding:20px;background:#232830;border:1px solid #3b424e;border-radius:10px;overflow:auto}.tbl{overflow:auto}table{border-collapse:collapse;width:100%;font-size:14px}th,td{padding:9px 12px;border-bottom:1px solid #3b424e;text-align:left;vertical-align:top}th{background:#303743;cursor:pointer}td{overflow-wrap:anywhere}tr.hide{display:none}.note,small{color:#b6c1d0}.note,.err{white-space:pre-wrap}.err{border-left:4px solid #ff8e88;padding:12px;background:#422b2d}.st-같음{color:#8cdbbc}.st-다름,.st-실제,.st-사라짐{color:#ffaaa4}.st-기대,.st-늘어남,.st-값{color:#eac77b}input.f,button.t{font:inherit;color:#e6eaf0;background:#303743;border:1px solid #687589;border-radius:6px;padding:5px 10px;margin:0 8px 12px 0}input.f{max-width:100%}.src{white-space:pre-wrap;font-family:Consolas,monospace}.src b{display:inline-block;width:4em;color:#a5b3c5}@media(max-width:600px){main{padding:18px 12px}section{padding:14px}h1{font-size:24px}}th{white-space:nowrap}td{word-break:keep-all}td[class^="st-"]{white-space:nowrap}.tbl:has(button.only) td:first-child{min-width:210px}'
+CSS = '*{box-sizing:border-box}body{margin:0;background:#181b20;color:#e6eaf0;font:16px/1.65 "Malgun Gothic",sans-serif}main{max-width:1240px;margin:auto;padding:30px 24px}h1{font-size:28px;margin:0}h2{font-size:22px}h3{font-size:17px;margin:0 0 14px}section{margin:18px 0;padding:20px;background:#232830;border:1px solid #3b424e;border-radius:10px;overflow:auto}.tbl{overflow:auto}table{border-collapse:collapse;width:100%;font-size:14px}th,td{padding:9px 12px;border-bottom:1px solid #3b424e;text-align:left;vertical-align:top}th{background:#303743;cursor:pointer}td{overflow-wrap:break-word}td.k{white-space:nowrap}tr.hide{display:none}.note,small{color:#b6c1d0}.note,.err{white-space:pre-wrap}.err{border-left:4px solid #ff8e88;padding:12px;background:#422b2d}.st-같음{color:#8cdbbc}.st-다름,.st-실제,.st-사라짐{color:#ffaaa4}.st-기대,.st-늘어남,.st-값{color:#eac77b}input.f,button.t{font:inherit;color:#e6eaf0;background:#303743;border:1px solid #687589;border-radius:6px;padding:5px 10px;margin:0 8px 12px 0}input.f{max-width:100%}.src{white-space:pre-wrap;font-family:Consolas,monospace}.src b{display:inline-block;width:4em;color:#a5b3c5}@media(max-width:600px){main{padding:18px 12px}section{padding:14px}h1{font-size:24px}}th{white-space:nowrap}td{word-break:keep-all}td[class^="st-"]{white-space:nowrap}.tbl:has(button.only) td:first-child{min-width:210px}'
 
 def page(title, action, blocks):
     body = ''.join('<section>' + render_block(b, {}, {}) + '</section>' for b in blocks)

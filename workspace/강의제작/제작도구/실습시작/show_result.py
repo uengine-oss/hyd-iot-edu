@@ -272,13 +272,19 @@ def e(x):
     return html.escape(str(x))
 
 
+def token(c):
+    """띄어쓰기 없는 짧은 값(숫자 · 식별자)은 칸 안에서 꺾지 않게 표시한다."""
+    s = str(c)
+    return ' class="k"' if s and len(s) <= 20 and not any(ch.isspace() for ch in s) else ''
+
+
 def grid(columns, rows, marks=None, compare_rows=False):
     big = len(rows) > FOLD
     head = '<tr>' + ''.join(f'<th>{e(c)}</th>' for c in columns) + '</tr>'
     body = ''
     for i, r in enumerate(rows):
         st = marks[i] if marks else ''
-        body += f'<tr data-st="{e(st)}">' + ''.join(f'<td class="st-{e(str(c).split(" ")[0])}">{e(c)}</td>' if (marks and j == 1) else f'<td>{e(c)}</td>'
+        body += f'<tr data-st="{e(st)}">' + ''.join(f'<td class="st-{e(str(c).split(" ")[0])}">{e(c)}</td>' if (marks and j == 1) else f'<td{token(c)}>{e(c)}</td>'
                                                     for j, c in enumerate(r)) + '</tr>'
     tools = '<input class="f" placeholder="글자로 거르기">' if len(rows) > 8 else ''
     if big:

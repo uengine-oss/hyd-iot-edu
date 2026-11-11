@@ -70,7 +70,7 @@ def result_sources():
                      'Stop', 'Blank', 'rel', 'read_text', 'read_table', 'read_json', 'source_lines',
                      'table', 'counts', 'compare', 'before_after', 'note', 'error', 'where'}))
     utilities = utilities.replace('상태 「비어 있음」.', '해당 조회를 작성한 뒤 실행한다.').replace('정할 자리 파일', '`app/features/` 파일').replace('정할 자리', '`app/features/`의 빈 틀')
-    ui = 'import html\nFOLD = 30\n\n' + extract(source, {'JS', 'e', 'grid', 'render_block'})
+    ui = 'import html\nFOLD = 30\n\n' + extract(source, {'JS', 'e', 'token', 'grid', 'render_block'})
     start = ui.index("        key = 'counts:'")
     end = ui.index("    if k == 'compare':", start)
     ui = ui[:start] + "        return title + grid(['항목', '개수'], b['items']) + tail\n" + ui[end:]
@@ -80,7 +80,7 @@ def result_sources():
     return utilities, ui
 
 
-DARK_CSS = '''*{box-sizing:border-box}body{margin:0;background:#181b20;color:#e6eaf0;font:16px/1.65 "Malgun Gothic",sans-serif}main{max-width:1240px;margin:auto;padding:30px 24px}h1{font-size:28px;margin:0}h2{font-size:22px}h3{font-size:17px;margin:0 0 14px}section{margin:18px 0;padding:20px;background:#232830;border:1px solid #3b424e;border-radius:10px;overflow:auto}.tbl{overflow:auto}table{border-collapse:collapse;width:100%;font-size:14px}th,td{padding:9px 12px;border-bottom:1px solid #3b424e;text-align:left;vertical-align:top}th{background:#303743;cursor:pointer}td{overflow-wrap:anywhere}tr.hide{display:none}.note,small{color:#b6c1d0}.note,.err{white-space:pre-wrap}.err{border-left:4px solid #ff8e88;padding:12px;background:#422b2d}.st-같음{color:#8cdbbc}.st-다름,.st-실제,.st-사라짐{color:#ffaaa4}.st-기대,.st-늘어남,.st-값{color:#eac77b}input.f,button.t{font:inherit;color:#e6eaf0;background:#303743;border:1px solid #687589;border-radius:6px;padding:5px 10px;margin:0 8px 12px 0}input.f{max-width:100%}.src{white-space:pre-wrap;font-family:Consolas,monospace}.src b{display:inline-block;width:4em;color:#a5b3c5}@media(max-width:600px){main{padding:18px 12px}section{padding:14px}h1{font-size:24px}}'''
+DARK_CSS = '''*{box-sizing:border-box}body{margin:0;background:#181b20;color:#e6eaf0;font:16px/1.65 "Malgun Gothic",sans-serif}main{max-width:1240px;margin:auto;padding:30px 24px}h1{font-size:28px;margin:0}h2{font-size:22px}h3{font-size:17px;margin:0 0 14px}section{margin:18px 0;padding:20px;background:#232830;border:1px solid #3b424e;border-radius:10px;overflow:auto}.tbl{overflow:auto}table{border-collapse:collapse;width:100%;font-size:14px}th,td{padding:9px 12px;border-bottom:1px solid #3b424e;text-align:left;vertical-align:top}th{background:#303743;cursor:pointer}td{overflow-wrap:break-word}td.k{white-space:nowrap}tr.hide{display:none}.note,small{color:#b6c1d0}.note,.err{white-space:pre-wrap}.err{border-left:4px solid #ff8e88;padding:12px;background:#422b2d}.st-같음{color:#8cdbbc}.st-다름,.st-실제,.st-사라짐{color:#ffaaa4}.st-기대,.st-늘어남,.st-값{color:#eac77b}input.f,button.t{font:inherit;color:#e6eaf0;background:#303743;border:1px solid #687589;border-radius:6px;padding:5px 10px;margin:0 8px 12px 0}input.f{max-width:100%}.src{white-space:pre-wrap;font-family:Consolas,monospace}.src b{display:inline-block;width:4em;color:#a5b3c5}@media(max-width:600px){main{padding:18px 12px}section{padding:14px}h1{font-size:24px}}'''
 
 DARK_CSS += 'th{white-space:nowrap}td{word-break:keep-all}td[class^="st-"]{white-space:nowrap}.tbl:has(button.only) td:first-child{min-width:210px}'
 

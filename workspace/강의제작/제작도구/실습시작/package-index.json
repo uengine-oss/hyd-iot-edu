@@ -40,7 +40,7 @@
       "version": "v2-project",
       "folder": "condition-table-lab",
       "path": "workspace/강의제작/산출물/실전반/실습/02회차/랩/condition-table-lab.zip",
-      "sha256": "a26344c417ecb348882390df606271be92200f9ab400bf139e495a5f8b04dae5",
+      "sha256": "d3849a15ba2a1a362b37078c8ba0da149dbeacf112f6b5bdbaad438646909258",
       "guide_steps": [
         "폴더 열고 자료 확인하기",
         "Codex와 자료 파악하기",
@@ -65,7 +65,7 @@
       "version": "v18-project",
       "folder": "graph-lab",
       "path": "workspace/강의제작/산출물/실전반/실습/02회차/랩/graph-lab.zip",
-      "sha256": "55d9c94deca3b26bf80aa49721df859806a1da5a82d61c4cf26b6c8fec001b5d",
+      "sha256": "0b7618664bcad1af9a6a2d9a0011fdc72744a0cebf6efa4b6a24bb6951f627e2",
       "guide_steps": [
         "폴더 열고 자료 확인하기",
         "랩 DB 준비하기",
@@ -90,7 +90,7 @@
       "version": "v18-project",
       "folder": "ontology-lab",
       "path": "workspace/강의제작/산출물/실전반/실습/02회차/랩/ontology-lab.zip",
-      "sha256": "db7571f959fb9d7a6814f36d1c77d7237467aacacedefc1e96df6b3c4865363f",
+      "sha256": "2a7e8165fb0e200634b1d782d789eaa5625006fe894310b0dccc228e85efa931",
       "guide_steps": [
         "폴더 열고 자료 확인하기",
         "Codex와 자료 파악하기",
@@ -134,7 +134,7 @@
       "version": "v2-project",
       "folder": "action-review-lab",
       "path": "workspace/강의제작/산출물/실전반/실습/03회차/랩/action-review-lab.zip",
-      "sha256": "566cf4047ee700d183f4c270c9d0b594e0b3bd60758fbb2117c3126382da9dcd",
+      "sha256": "a187ceba6749d9a06dc2ed0bbe502160a25bc173cc97caae0192dc3b50ad0401",
       "guide_steps": [
         "폴더 열고 자료 확인하기",
         "Codex와 원천 기록 파악하기",
@@ -160,7 +160,7 @@
       "version": "2026-11-11-project",
       "folder": "condition-extract-lab",
       "path": "workspace/강의제작/산출물/실전반/실습/03회차/랩/condition-extract-lab.zip",
-      "sha256": "9607c63490facaebfab0d777523dd95903f7522f365416c81ed56dbe5cb41ea4",
+      "sha256": "e0076eb3b8247dc0fc406d4b56dbfb9ecf9c9c39713967e46fa7ffc2012ef96e",
       "guide_steps": [
         "폴더 열고 사건과 문서 확인하기",
         "Codex와 핀 세척 원문 찾기",
@@ -187,7 +187,7 @@
       "version": "2026-11-11-project",
       "folder": "work-card-lab",
       "path": "workspace/강의제작/산출물/실전반/실습/03회차/랩/work-card-lab.zip",
-      "sha256": "f49b917cb9401c4a38108feb04870eb80118b75dde1ff850a0fa38184cfdc991",
+      "sha256": "f1a55b739d10d692db2e734ed7c80dea9bda12a9b8395a0e581b3d79015903f3",
       "guide_steps": [
         "폴더 열고 랩 DB 준비하기",
         "Codex와 핀 세척 근거와 기존 ID 찾기",
@@ -269,7 +269,7 @@
       "version": "v22-project",
       "folder": "graph-lab",
       "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/graph-lab.zip",
-      "sha256": "f5e1cbfb8bb7c0556076c46105f619b5a12de05e66aaec3ee4ef45449e40cb3c",
+      "sha256": "3b60ca65ee77c2aa0360a099fe468f389b82882eb1c2b4f07ebc114f67f571dc",
       "guide_steps": [
         "폴더 열고 자료 확인하기",
         "랩 DB 준비하기",
@@ -298,7 +298,7 @@
       "version": "v22-project",
       "folder": "ontology-lab",
       "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/ontology-lab.zip",
-      "sha256": "2cd0dea82666eae7d56c48b3a451206b5eb044b0941cde85ac54d2cbe86825a6",
+      "sha256": "de28cdbdef426460b522568ef12bbc3d1a476a8f6b806a142392ad4bda58495b",
       "guide_steps": [
         "폴더 열고 자료 확인하기",
         "Codex와 자료 파악하기",
@@ -336,7 +336,7 @@
       "version": "v2-project",
       "folder": "action-criteria-lab",
       "path": "workspace/강의제작/산출물/통합반/실습/03회차/랩/action-criteria-lab.zip",
-      "sha256": "bfccf3e033bc2fa25f6ce180f832431158abf4a5ac874155bd4eb952783efabc",
+      "sha256": "922eaec16abb3c4b54f7e538e58f6b67270084a15bc71c6445bc2c044ad03feb",
       "guide_steps": [
         "폴더 열고 자료 확인하기",
         "Codex와 자료 파악하기",
@@ -363,7 +363,7 @@
       "version": "v2-project",
       "folder": "judgement-lab",
       "path": "workspace/강의제작/산출물/통합반/실습/03회차/랩/judgement-lab.zip",
-      "sha256": "2a60f43318b86d1aee1bc3e29286c1c58b76305fd87bf6b1e90654ba133230a3",
+      "sha256": "35a16aa0c6aa2a25b9bbabb344452910145e8da3b1b9b85c58264553d4c72f0c",
       "guide_steps": [
         "폴더 열고 자료 확인하기",
         "Codex와 원천 기록 파악하기",
@@ -389,7 +389,7 @@
       "version": "2026-11-11-project",
       "folder": "knowledge-extract-lab",
       "path": "workspace/강의제작/산출물/통합반/실습/04회차/랩/knowledge-extract-lab.zip",
-      "sha256": "6ba2c2f477d8e5476d41b8b732ca7edfc3262c656ff4cf0e6f46e1c0088227db",
+      "sha256": "ec273938980ed8af564cc0afe14ea5a946a869605a50acee632e6ff597eb2ead",
       "guide_steps": [
         "폴더 열고 사건과 문서 확인하기",
         "Codex와 핀 세척 원문 찾기",
@@ -417,7 +417,7 @@
       "version": "2026-11-11-project",
       "folder": "knowledge-graph-lab",
       "path": "workspace/강의제작/산출물/통합반/실습/04회차/랩/knowledge-graph-lab.zip",
-      "sha256": "31fffa2ea7daabdf7e25058ac5c8e6a826c6c31df122cda7535f30e5509d3b7b",
+      "sha256": "99271aa9c61aa4c6abd6831fd65abec84289b6d831202a3eeb6864137bf47438",
       "guide_steps": [
         "폴더 열고 검토 결과 확인하기",
         "Codex와 기존 ID 찾기",

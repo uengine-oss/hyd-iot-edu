@@ -539,7 +539,7 @@ def chosen_errors(root):
 
 import hashlib as _h
 _PROVIDED = {
- "app/ui/render.py": "794a7c0de17bbbf7dd6e2896397c1db32cb4079b6fe7dfa88dc67160c2a0d81e",
+ "app/ui/render.py": "907e551b102d445518b4118709135b231f489299c8eab1112b70af8462730a8e",
  "app/utils/actions.py": "9088a15ad336a7f48f8b57be832e980dd8d40306c1dc745ffa270c5ef3e80a82",
  "app/utils/extract.py": "3887b380b2d85e2171007dea0c2e839250b3e9d2bf5cc54be4f1105e216a5fe1",
  "app/utils/llm_client.py": "53358ba7b090ab65dc800d877b50e9a495289734f039df2504e8ea03bb0b697a",

@@ -2,7 +2,7 @@ from pathlib import Path
 import sys
 import hashlib as _h
 _PROVIDED = {
- "app/ui/render.py": "794a7c0de17bbbf7dd6e2896397c1db32cb4079b6fe7dfa88dc67160c2a0d81e",
+ "app/ui/render.py": "907e551b102d445518b4118709135b231f489299c8eab1112b70af8462730a8e",
  "app/utils/actions.py": "023f67ade532f4fca19e9ca35359aa8b03562095c7b4aeaa2cb1eb9ec2f93e74",
  "app/utils/results.py": "1c5b0596745e9ac1e9b7f06d84c7463d99720597edcf46801d32a51e640ae86b",
  "app/utils/supply.py": "78f34b1251971e2593f895ac1bf66e017866d00756e34ace6a6dd6fa08392de7",
