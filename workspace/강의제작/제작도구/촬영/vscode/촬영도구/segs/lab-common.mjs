@@ -1,5 +1,5 @@
 // 새 구조 코딩 랩(README · data · app · output) 앞 구간들이 함께 쓰는 짚기 도구와 녹화 밖 되돌리기. 조작 층은 ../ui.mjs.
-// i206 · i207은 각자 파일을 쓰고, 이 파일은 그 뒤 편(i305 · i306 · i404 · i405 · p207~p209 · p305 · p307 · p308)이 쓴다.
+// 온톨로지 파트 두 반의 12편(i206 · i207 · i305 · i306 · i404 · i405 · p207~p209 · p305 · p307 · p308)이 쓴다.
 // 터미널 줄을 짚으려면 촬영용 웹 VS Code의 terminal.integrated.gpuAcceleration이 off여야 한다(촬영준비 길 4).
 // 구간 모듈은 조작 층을 labUi(ctx)로 받는다. labUi는 ../ui.mjs의 vscode(ctx)에 세 가지를 더한다.
 //  ① 짚기 · 클릭 · 타이핑 · 키마다 ctx.report에 {cue, op, target, fail, why}를 남긴다(run.sh dry의 dry.json이 큐 · 조작을 센다 — ../ctrl.mjs dryRun).
@@ -21,6 +21,8 @@ export const page = lab => 'file:///' + lab + '/output/result.html';
 const OUT = 'D:/work/study/hyd-iot-edu-system/workspace/강의제작/산출물/';
 const CUES = decodeURIComponent(new URL('../../', import.meta.url).pathname).replace(/^\/([A-Za-z]:)/, '$1');
 export const LABS = {
+ i206: {dir: 'D:/HYD-Practice/i206p-de28cdbd/ontology-lab', zip: OUT + '통합반/실습/02회차/랩/ontology-lab.zip', features: 13, cues: '통합_02_06_온톨로지설계_큐.json'},
+ i207: {dir: 'D:/HYD-Practice/i207p-3b60ca65/graph-lab', zip: OUT + '통합반/실습/02회차/랩/graph-lab.zip', features: 6, cues: '통합_02_07_그래프구현_큐.json'},
  i305: {dir: 'D:/HYD-Practice/i305p-922eaec1/action-criteria-lab', zip: OUT + '통합반/실습/03회차/랩/action-criteria-lab.zip', features: 7, cues: '통합_03_05_조치기준_큐.json'},
  i306: {dir: 'D:/HYD-Practice/i306p-35a16aa0/judgement-lab', zip: OUT + '통합반/실습/03회차/랩/judgement-lab.zip', features: 5, cues: '통합_03_06_판단기능_큐.json'},
  i404: {dir: 'D:/HYD-Practice/i404p-ec273938/knowledge-extract-lab', zip: OUT + '통합반/실습/04회차/랩/knowledge-extract-lab.zip', features: 7, cues: '통합_04_04_문서지식추출_큐.json'},
@@ -184,6 +186,8 @@ export async function resetLab(key, {restore = [], top = []} = {}) {
   const b = await p.evaluate(() => { const x = [...document.querySelectorAll('.monaco-button')].find(e => e.textContent.trim() === 'Trust' && e.getBoundingClientRect().width > 0); const r = x.getBoundingClientRect(); return {x: r.x + r.width / 2, y: r.y + r.height / 2}; });
   await p.mouse.click(b.x, b.y, {label: 'trust workspace'});
   await p.waitForFunction(() => ![...document.querySelectorAll('.statusbar-item')].some(e => e.innerText.includes('Restricted Mode')), undefined, {timeout: 20000});
+  // 신뢰를 준 그 창에서는 Codex 패널에 웹뷰가 생기지 않았다(새 폴더 i206 되돌리기가 60초 기다려도 「Ask Codex anything」 없음, 새로 고치니 4초 만에 뜸 — 2026-11-11). 신뢰 뒤에 창을 한 번 새로 고친다.
+  await p.reload({timeout: 60000}); await p.waitForSelector('.monaco-workbench', {timeout: 60000}); await p.waitForTimeout(3000);
  }
  // 폴더를 연 직후 Codex 웹뷰는 늦게 떠서 뜨는 순간 초점을 가져간다(회귀 dry p308 되돌리기가 두 번 「F1 앞 초점 codex」로 멈춤, 2026-11-11).
  // 신뢰가 있는 폴더에서 새 대화 화면 글이 뜰 때까지 기다린 뒤에 명령을 보낸다(Restricted Mode에서는 Codex가 꺼져 있으므로 신뢰 뒤에 기다린다).
