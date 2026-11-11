@@ -5,17 +5,14 @@
 분류: 「이론 교재 (온라인|오프라인)」이 든 PPTX → 1 이론 교재(1 온라인 수업용, 2 오프라인 수업용)
       「오프라인 」으로 시작 → 3 오프라인 수업 자료 / 「완성본」이 든 ZIP → 2 실습 자료의 「완성본 · …」
       「실습」으로 시작하는 ZIP(코딩 랩) · HTML(도구 실습의 한 파일 가이드) → 2 실습 자료
-      2 실습 자료에 실습 파일이 둘 이상이면 그 파일을 같은 이름으로 담은 「실습 자료 한꺼번에 받기 · <반> NN회차.zip」(압축 없음)을 끝에 더한다.
       앞에 붙은 「NN 」 번호는 뗀다. 분류되지 않는 파일이 하나라도 있으면 아무것도 만들지 않고 멈춘다.
 """
 import re
 import shutil
 import sys
-import zipfile
 from pathlib import Path
 
 GROUPS = ("1 이론 교재", "2 실습 자료", "3 오프라인 수업 자료")
-BUNDLE = "실습 자료 한꺼번에 받기"
 
 
 def classify(name):
@@ -72,16 +69,6 @@ def build(src, dst, sessions):
                 (base / g).mkdir(parents=True)
                 for p, n in files:
                     shutil.copy2(p, base / g / n)
-        labs = [(p, n) for p, n in items[GROUPS[1]] if not n.startswith("완성본")]
-        if len(labs) >= 2:   # 실습 자료를 한꺼번에 받는 묶음 — 따로 받는 파일과 같은 이름 · 같은 바이트, 압축 없이(배포 B-4)
-            z = base / GROUPS[1] / f"{BUNDLE} · {course} {sess}.zip"
-            with zipfile.ZipFile(z, "w", zipfile.ZIP_STORED) as zf:
-                for p, n in labs:
-                    zf.write(p, n)
-            with zipfile.ZipFile(z) as zf:
-                if zf.testzip() or zf.namelist() != [n for _, n in labs] or any(zf.read(n) != p.read_bytes() for p, n in labs):
-                    sys.exit(f"{z}: 묶음 검사 실패")
-            items[GROUPS[1]].append((z, z.name))
         print(f"== {course} {sess}  파일 {sum(len(f) for f in items.values())}개")
         for g, files in items.items():
             for p, n in files:

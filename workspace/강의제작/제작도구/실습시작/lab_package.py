@@ -153,21 +153,21 @@ def _is_full_screen(path):
 
 
 def _image_uri(path):
-    """사진 하나를 data: 주소로. PNG는 같은 해상도의 JPEG(품질 85)가 더 작으면 JPEG로 바꾼다 — 화면 사진은 3분의 1쯤으로 줄고,
-    선 그림은 PNG가 더 작아 그대로 남는다. 같은 파일 · 같은 Pillow 판이면 바이트가 같다."""
+    """사진 하나를 data: 주소로. 같은 해상도의 WebP(품질 85)로 넣는다 — JPEG 85만큼 선명하면서 한 파일 가이드가 절반 아래로 줄어,
+    네 가이드가 모두 7MB 남짓 아래가 된다(드라이브 커넥터는 base64로 10MB까지 — 원본 7.5MB). WebP가 원본보다 크면 원본을 넣는다.
+    같은 파일 · 같은 Pillow 판이면 바이트가 같다."""
+    import io
+    from PIL import Image
     data = Path(path).read_bytes()
-    kind = {'.png': 'png', '.jpg': 'jpeg', '.jpeg': 'jpeg', '.svg': 'svg+xml', '.gif': 'gif', '.webp': 'webp'}.get(Path(path).suffix.lower())
+    kind = {'.png': 'png', '.jpg': 'jpeg', '.jpeg': 'jpeg', '.webp': 'webp'}.get(Path(path).suffix.lower())
     if kind is None:
         raise ValueError(f'{path}: 가이드 사진으로 넣을 수 없는 형식')
-    if kind == 'png':
-        import io
-        from PIL import Image
-        im = Image.open(io.BytesIO(data))
-        if im.mode in ('RGBA', 'LA') or (im.mode == 'P' and 'transparency' in im.info):
-            im = Image.alpha_composite(Image.new('RGBA', im.size, 'white'), im.convert('RGBA'))
-        buf = io.BytesIO(); im.convert('RGB').save(buf, 'JPEG', quality=85, optimize=True)
-        if len(buf.getvalue()) < len(data):
-            data, kind = buf.getvalue(), 'jpeg'
+    im = Image.open(io.BytesIO(data))
+    if im.mode in ('RGBA', 'LA') or (im.mode == 'P' and 'transparency' in im.info):
+        im = Image.alpha_composite(Image.new('RGBA', im.size, 'white'), im.convert('RGBA'))
+    buf = io.BytesIO(); im.convert('RGB').save(buf, 'WEBP', quality=85, method=6)
+    if len(buf.getvalue()) < len(data):
+        data, kind = buf.getvalue(), 'webp'
     return f'data:image/{kind};base64,' + base64.b64encode(data).decode('ascii')
 
 

@@ -4,12 +4,12 @@
 //   이 파일 내용 전체를 javascript_tool로 한 번 실행해 함수를 정의한 뒤 아래 함수를 부른다.
 //   화면을 옮길(navigate) 때마다 다시 실행한다. 창 폭이 좁으면 「만들기」 버튼이 숨으므로 창을 800x846으로 둔다.
 //   한 번의 실행은 45초 안에 끝나야 하므로 자료 3개 정도씩 나눠 부른다.
-// 드라이브 파일 첨부는 다른 사이트 화면(드라이브 선택 창)이라 이 도우미로 고를 수 없다 — 배포 길 5의 클릭 순서를 따른다.
+// 드라이브 파일은 addLink에 드라이브 파일 주소(https://drive.google.com/file/d/<id>/view)를 넣으면 드라이브 첨부로 붙는다 — 배포 길 5.
 const sleep = ms => new Promise(r => setTimeout(r, ms)); window.sleep = sleep;
 // 열려 있는 자료 편집 창
 window.mdlg = () => [...document.querySelectorAll('[role=dialog]')].find(x => x.offsetParent && /저장 옵션|게시|저장/.test(x.innerText) && x.querySelector('textarea'));
-// 편집 창에 붙은 파일(zip · pptx) 이름, 붙은 순서대로
-window.fileList = () => [...mdlg().querySelectorAll('a')].map(a => a.innerText.trim().split('\n')[0]).filter(t => /\.(zip|pptx)$/.test(t));
+// 편집 창에 붙은 파일(zip · pptx · html · xlsx) 이름, 붙은 순서대로
+window.fileList = () => [...mdlg().querySelectorAll('a')].map(a => a.innerText.trim().split('\n')[0]).filter(t => /\.(zip|pptx|html|xlsx)$/.test(t));
 // 편집 창에 붙은 유튜브 영상 제목
 window.vids = () => [...mdlg().querySelectorAll('a')].map(a => a.innerText.trim().split('\n')[0]).filter(t => /^\d+-\d/.test(t));
 // 편집 창에 붙은 유튜브 영상 주소 — 새 판과 옛 판은 제목이 같으므로 바꿔 끼울 때는 이것(영상 id)으로 가른다
