@@ -16,7 +16,9 @@
    "잘라낼": [[시작초, 끝초], …],                    # 옛 시각. 자막이 걸치면 멈춘다. 안에 통째로 든 단위는 함께 빠진다
    "글상자": [{"단위": id, "글": 한 줄}],            # 그 단위의 말이 나오는 동안 화면 아래에 글을 띄운다(화면에 없는 명령 등)
    "단위": [{"id": 큐 id, "구간": 이름, "자막": [첫 번호, 끝 번호](0부터), "글": 옛 글,
-            "쉼뒤": "잇기" | "큐" | "결과" | "전환",   # 다음 단위와의 사이. 잇기 = 한 문맥이라 큐 쉼은 넣지 않고 「문장쉼」만 지킨다
+            "쉼뒤": "잇기" | "큐" | "결과" | "전환" | "따라하기",   # 다음 단위와의 사이. 잇기 = 한 문맥이라 큐 쉼은 넣지 않고 「문장쉼」만 지킨다
+            "따라하기초": 초,     # 쉼뒤가 따라하기일 때만, 꼭 준다. 학생이 강사와 같이 입력하거나 결과를 확인하는 화면 멈춤(영상 V-14)의
+                                  # 그 자리 초 — 「쉼」의 값을 쓰지 않고 이 값만큼 단위 사이를 벌린다. 초안은 따라하기를 정하지 않으니 사람이 적는다
             "새글": …, "새음성": mp3, "붙임": "앞" | "뒤",   # 바꾼 큐만. 앞 = 새 말 끝을 옛 말 끝(조작)에 맞춤, 뒤 = 새 말 시작을 옛 말 시작에
             "뺌": true}]}                                  # 말만 뺀다(화면은 둔다)
   초안의 「쉼뒤」: 앞 단위의 구간(segment)이 바뀌면 전환, 앞 단위의 끝 문장이 조작(누르 · 클릭 · 선택 · 입력 …)이면 결과, 그 밖은 큐.
@@ -50,7 +52,14 @@ from common import ffmpeg, chapters, write_chapters  # noqa: E402
 FPS = 30
 LOOP_SHIFT = 1   # 이 ffmpeg 판의 loop start=K는 K-1번 프레임을 되풀이한다 — 「시험」이 확인한다
 ACT = re.compile(r'누르|누릅|눌러|클릭|선택|입력|적겠|적어|적을|적습|닫|열겠|열어|엽니다|열게|엔터|가져가|실행|붙여 ?넣|체크|복사|고릅|칠게|쳐 볼|칩니다')
-CLASS = ('잇기', '큐', '결과', '전환')
+CLASS = ('잇기', '큐', '결과', '전환', '따라하기')
+FOLLOW = '따라하기'   # 계획의 「쉼」에 값이 없고, 단위마다 「따라하기초」를 쓰는 갈래
+
+
+def gap_need(u, req):
+    """단위 u 뒤에 있어야 할 최소 틈(초). 따라하기는 그 단위의 따라하기초, 나머지 갈래는 계획의 쉼 · 문장쉼(req)."""
+    c = u.get('쉼뒤', '큐')
+    return float(u['따라하기초']) if c == FOLLOW else req[c]
 FONTS = ('C:/Windows/Fonts/malgun.ttf', '/usr/share/fonts/malgun/malgun.ttf', '/usr/share/fonts/malgun/MALGUN.TTF')   # 이 PC · 클라우드(렌더환경_클라우드.sh가 넣는 자리)
 SCENE = 8.0      # 프레임 차이(96×54 회색 평균 절대차)가 이 값 이상이면 장면 전환 — 04 실측: 창 전환 · 스크롤 · 설치 창 다음 단계는 8~210, 진행 막대 · 커서는 1 아래
 
@@ -338,6 +347,12 @@ def build(pf, out):
         seen = z0 + 1
         if u.get('쉼뒤', '큐') not in CLASS:
             fail(f'단위 {u["id"]}: 쉼뒤 {u.get("쉼뒤")!r}는 {CLASS} 가운데 하나여야 한다')
+        if u.get('쉼뒤') == FOLLOW:
+            s = u.get('따라하기초')
+            if isinstance(s, bool) or not isinstance(s, (int, float)) or s <= 0:
+                fail(f'단위 {u["id"]}: 쉼뒤가 따라하기면 따라하기초(0보다 큰 초)를 적는다 — 지금 {s!r}')
+        elif '따라하기초' in u:
+            fail(f'단위 {u["id"]}: 따라하기초는 쉼뒤가 따라하기일 때만 쓴다(지금 쉼뒤 {u.get("쉼뒤", "큐")!r})')
         if u.get('새음성') and u.get('붙임') not in ('앞', '뒤'):
             fail(f'단위 {u["id"]}: 새음성이 있으면 붙임을 앞 · 뒤로 정한다')
         if u.get('새음성') and u.get('뺌'):
@@ -484,10 +499,10 @@ def build(pf, out):
     for k in range(1, len(keep)):
         if keep[k - 1].get('뺌') or keep[k].get('뺌'):
             continue
-        c = keep[k - 1].get('쉼뒤', '큐')
+        want = gap_need(keep[k - 1], req)
         have = span(k)[0] - span(k - 1)[1]
-        if have < req[c] - 1e-6:
-            gaps[k]['n'] += math.ceil((req[c] - have) * FPS - 1e-6)
+        if have < want - 1e-6:
+            gaps[k]['n'] += math.ceil((want - have) * FPS - 1e-6)
     m = Map(cuts, [(g['k'], g['n']) for g in gaps if g['n']])
     order = sorted([g for g in gaps if g['n']], key=lambda g: g['k'])
     # 소리 잇기
@@ -660,10 +675,10 @@ def check(mp4, srt, plan=None, keep=None, rec=None, m=None, quiet_out=False):
             if u.get('뺌'):
                 continue
             nb = len(sentences(u['새글'])) if u.get('새음성') else u['자막'][1] - u['자막'][0] + 1
-            ends[pos + nb - 1] = u.get('쉼뒤', '큐'); pos += nb
+            ends[pos + nb - 1] = (u.get('쉼뒤', '큐'), u.get('따라하기초')); pos += nb
         for i in range(len(B) - 1):
-            c = ends.get(i)
-            need = plan.get('문장쉼', 0.0) if c == '잇기' else plan['쉼'][c] if c else 0.0
+            c, fs = ends.get(i, (None, None))
+            need = float(fs) if c == FOLLOW else plan.get('문장쉼', 0.0) if c == '잇기' else plan['쉼'][c] if c else 0.0
             if c and B[i + 1][0] - B[i][1] < need - 0.035:
                 bad.append(f'자막 {i}→{i + 1}번 {s2t(B[i][1])}: {B[i + 1][0] - B[i][1]:.2f}초 < {c} {need}초')
     else:
@@ -766,6 +781,13 @@ def selftest():
         S7 = read_srt(tmp / '잇기 문장쉼.srt'); g7 = S7[4][0] - S7[3][1]
         assert 0.499 <= g7 < 1.4, f'잇기: B→C {g7:.2f}초'
         ok.append(f'잇기 문장쉼 결과: B→C {g7:.2f}초')
+        # 따라하기: A 뒤를 큐(1.0) 대신 그 단위의 따라하기초(3.0)만큼 벌린다 — 「쉼」에 따라하기 값이 없어도 된다
+        fol = json.loads(json.dumps(base)); fol['단위'][0].update({'쉼뒤': '따라하기', '따라하기초': 3.0}); run('따라하기', fol)
+        S8 = read_srt(tmp / '따라하기.srt'); g8 = S8[2][0] - S8[1][1]
+        assert 2.999 <= g8 < 3.5, f'따라하기: A→B {g8:.2f}초'
+        ok.append(f'따라하기 결과: A→B {g8:.2f}초')
+        bad = json.loads(json.dumps(base)); bad['단위'][0]['쉼뒤'] = '따라하기'; run('따라하기초 없음', bad, r'단위 A: 쉼뒤가 따라하기면 따라하기초')
+        bad = json.loads(json.dumps(base)); bad['단위'][0]['따라하기초'] = 3.0; run('따라하기 아닌데 초', bad, r'단위 A: 따라하기초는 쉼뒤가 따라하기일 때만')
         bad = json.loads(json.dumps(base)); bad['단위'][2]['새음성'] = str(tmp / '없음.wav'); run('없는 음성', bad, r'단위 C: 새 음성 파일이 없다')
         s2 = tmp / '겹침.srt'; L = [[a0, b0, f'문장 {i}.'] for i, (a0, b0) in enumerate(talk)]; L[3][0] = 7.0; write_srt(s2, L)
         bad = json.loads(json.dumps(base)); bad['자막'] = str(s2); run('겹치는 큐', bad, r'자막 2번.*3번.*겹친다')
