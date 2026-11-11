@@ -30,6 +30,7 @@
      그 프레임을 되풀이하고 같은 길이의 무음을 넣는다.
   3. 자르기 — 프레임 단위로 화면과 소리를 함께 뺀다. 자막 · 장 시각도 옮긴다.
   4. 영상은 select + loop(+ drawtext) 필터로 한 번 인코딩한다(libx264 crf 18, 30 fps, 원본 소리 표본 빈도 · AAC 160k).
+     디코드 · 출력은 프레임을 덧붙이지 않는다(passthrough) — 평균 빈도가 30이 아닌 원본에서 -r 30(cfr)은 끝에 프레임을 하나 더 붙인다(08 관계 그림).
   5. 검사 — 소리와 화면 길이 ±0.1초, 프레임 수, 멈춘 자리마다 결과 프레임이 옛 프레임과 같은지(이음새에서 화면이 튀지 않음),
      자막 블록마다 그 안에 말이 있고 시작 0.25초 안에 말이 시작되는지, 블록 사이 0.3초 이상 틈에 말이 없는지, 단위 사이가 쉼 기준 이상인지.
   출력: <출력>.mp4 · <출력>.srt · <출력>_시각.json(옛 → 새 시각: 대본 · 가이드의 영상 시각은 Map.load(이 파일)로 옮긴다)
@@ -129,7 +130,8 @@ def speech_thr(d):
 
 
 def frames_gray(mp4):
-    p = subprocess.Popen([ffmpeg(), '-v', 'error', '-i', str(mp4), '-map', '0:v:0', '-vf', 'scale=96:54,format=gray', '-f', 'rawvideo', '-'],
+    """디코드한 프레임을 그대로 내보낸다(passthrough) — 기본값(auto)은 평균 프레임 빈도가 30이 아닌 영상에서 프레임을 덧붙여 nb_frames와 어긋난다(08 관계 그림 37454 → 37456)."""
+    p = subprocess.Popen([ffmpeg(), '-v', 'error', '-i', str(mp4), '-map', '0:v:0', '-fps_mode', 'passthrough', '-vf', 'scale=96:54,format=gray', '-f', 'rawvideo', '-'],
                          stdout=subprocess.PIPE)
     n = 96 * 54
     while True:
@@ -142,7 +144,7 @@ def frames_gray(mp4):
 
 def motion(mp4, cache):
     """프레임마다 앞 프레임과의 차이(96×54 회색 평균 절대차). 캐시는 크기 · 수정 시각이 같을 때만 쓴다."""
-    st = Path(mp4).stat(); key = f'{st.st_size}-{int(st.st_mtime)}'
+    st = Path(mp4).stat(); key = f'{st.st_size}-{int(st.st_mtime)}-passthrough'   # 디코드 방식이 바뀌면 옛 캐시를 버린다
     kf = cache.with_suffix('.key')
     if cache.exists() and kf.exists() and kf.read_text() == key:
         return np.load(cache)
@@ -297,9 +299,12 @@ def widen(x, sr, spans, least):
 
 
 def split_times(on, off, runs, sents, uid, path):
-    """문장마다 (시작, 끝) — 글자 수 비례 자리 근처(말 길이의 ±25%)에서 가장 긴 무음 칸을 순서대로 고른다(없으면 가장 가까운 칸)."""
+    """문장마다 (시작, 끝) — 글자 수 비례 자리 근처(말 길이의 ±25%)에서, 문장 끝 쉼만큼 긴(0.3초 이상) 무음 칸 가운데 비례 자리에 가장 가까운 칸을
+    순서대로 고른다(그런 칸이 없으면 가장 긴 칸, 근처에 없으면 가장 가까운 칸). 말 끝에 붙은 무음 칸은 문장 사이가 아니므로 뺀다.
+    가장 긴 칸만 고르면 창이 넓은 긴 큐에서 다음 문장 끝을 집어 마지막 문장이 0초가 된다(06 C039a, 2026-11-11)."""
     if len(sents) == 1:
         return [(on, off)]
+    runs = [r for r in runs if r[1] < off - 0.05]
     if len(runs) < len(sents) - 1:
         fail(f'단위 {uid}: 새 음성 {path}에서 문장 사이 무음(0.12초 이상)이 {len(runs)}곳뿐인데 문장은 {len(sents)}개다')
     L = [len(re.sub(r'\s', '', s)) for s in sents]; tot = sum(L); acc = 0; used = -1; cuts = []
@@ -307,7 +312,8 @@ def split_times(on, off, runs, sents, uid, path):
         acc += L[j]; want = on + (off - on) * acc / tot
         ok_i = [i for i in range(len(runs)) if i > used and len(runs) - i >= len(sents) - 1 - j]
         near = [i for i in ok_i if abs(sum(runs[i]) / 2 - want) <= 0.25 * (off - on)]   # 숫자 · 영어는 글자 수보다 길게 읽혀 비례 자리가 빗나간다
-        i = max(near, key=lambda i: runs[i][1] - runs[i][0]) if near else min(ok_i, key=lambda i: abs(sum(runs[i]) / 2 - want))
+        long_ = [i for i in near if runs[i][1] - runs[i][0] >= 0.3]
+        i = (min(long_, key=lambda i: abs(sum(runs[i]) / 2 - want)) if long_ else max(near, key=lambda i: runs[i][1] - runs[i][0])) if near             else min(ok_i, key=lambda i: abs(sum(runs[i]) / 2 - want))
         used = i; cuts.append(runs[i])
     return list(zip([on] + [b for a, b in cuts], [a for a, b in cuts] + [off]))
 
@@ -536,7 +542,7 @@ def build(pf, out):
     removed = lambda k: sum(min(fb, k + 1) - fa for fa, fb in cuts if fa <= k)
     for g in sorted(order, key=lambda g: -g['k']):
         fc.append(f'loop=loop={g["n"]}:size=1:start={g["k"] - removed(g["k"]) + LOOP_SHIFT}')
-    fc.append(f'setpts=N/{FPS}/TB')
+    fc.append(f'settb=1/{FPS},setpts=N')   # 프레임 하나가 1/30초 — 아래 출력은 passthrough라 덧붙이지 않는다
     font = next((f for f in FONTS if Path(f).is_file()), None)
     if boxes and not font:
         fail(f'글상자에 쓸 맑은 고딕이 없다 — {" · ".join(FONTS)} 중 하나에 둔다(클라우드는 CLAUDE.md 7절 「덱 렌더」의 글꼴 설치)')
@@ -553,7 +559,7 @@ def build(pf, out):
     meta = tmp / '장.txt'; write_chapters(meta, [c for c in chs if c[1] > c[0]])
     subprocess.run([ffmpeg(), '-v', 'error', '-y', '-i', str(P['영상']), '-i', str(wav), '-i', str(meta), '-/filter_complex', str(tmp / 'fc.txt'),
                     '-map', '[v]', '-map', '1:a', '-map_chapters', '2', '-c:v', 'libx264', '-preset', 'medium', '-crf', '18', '-pix_fmt', 'yuv420p',
-                    '-r', str(FPS), '-c:a', 'aac', '-b:a', '160k', '-ar', str(SR), '-ac', '1', '-movflags', '+faststart', str(out)], check=True)
+                    '-fps_mode', 'passthrough', '-c:a', 'aac', '-b:a', '160k', '-ar', str(SR), '-ac', '1', '-movflags', '+faststart', str(out)], check=True)
     write_srt(out.with_suffix('.srt'), blocks)
     for f in tmp.iterdir():
         f.unlink()
