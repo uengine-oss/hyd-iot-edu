@@ -15,6 +15,7 @@ ROOT = HERE.parents[4]
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--work', required=True, type=Path)
+    parser.add_argument('--key', action='append', help='이 사진만 다시 만든다(여러 번 줄 수 있다). 없으면 crop이 있는 사진 전부')
     args = parser.parse_args()
     work = args.work.resolve()
     if not work.is_relative_to((ROOT/'작업').resolve()):
@@ -24,8 +25,11 @@ def main():
     manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
     count = 0
     source_hashes = {}
+    unknown = set(args.key or []) - set(manifest['photos'])
+    if unknown:
+        parser.error('사진 근거에 없는 키: '+', '.join(sorted(unknown)))
     for key, photo in manifest['photos'].items():
-        if 'crop' not in photo:
+        if 'crop' not in photo or (args.key and key not in args.key):
             continue
         source = ROOT/photo['source']
         if source not in source_hashes:
@@ -48,8 +52,13 @@ def main():
             draw.rectangle(redaction['box'],fill='white')
             font = ImageFont.truetype('C:/Windows/Fonts/malgun.ttf',18)
             draw.text((redaction['box'][0]+3,redaction['box'][1]+2),redaction['label'],font=font,fill='#555555')
-        for rectangle in photo['rectangles']:
-            draw.rectangle(rectangle,outline='#d32f2f',width=3)
+        # 화면 전체 사진은 가로 1920을 가이드 폭으로 줄여 보이므로 네모를 굵게, 대상 바깥으로 그려 글을 가리지 않는다(가이드 P-8 — 위치가 보이는 전체 화면, 2026-11-11 사용자 「전체화면이라던지」).
+        full = photo['crop'] == [0, 0, image.width, image.height]
+        for x0, y0, x1, y1 in photo['rectangles']:
+            if full:
+                draw.rectangle([x0-6, y0-6, x1+6, y1+6],outline='#d32f2f',width=6)
+            else:
+                draw.rectangle([x0, y0, x1, y1],outline='#d32f2f',width=3)
         image = image.crop(photo['crop'])
         destination = ROOT/photo['path']
         destination.parent.mkdir(parents=True,exist_ok=True)

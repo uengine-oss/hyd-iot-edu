@@ -17,6 +17,9 @@ import argparse
 import hashlib
 import json
 import os
+import re
+import html
+from urllib.parse import unquote
 import sys
 import zipfile
 from project_layout import is_project, root_errors
@@ -94,6 +97,20 @@ def pack(folder, exclude_names=PRIVATE, archive=None):
     if guide:   # 코딩 랩 가이드는 ZIP 안 랩 폴더 옆에 함께 둔다 — 학생은 풀고 가이드는 브라우저로, 랩 폴더는 VS Code로 연다(가이드.md P-3)
         entries.append((guide_name(folder), guide.read_bytes()))
     return write_zip(archive or existing, entries)
+
+
+def pack_guide(folder, root):
+    """도구 실습 랩 폴더 → 옆의 <랩>.zip. 가이드.html과 가이드가 여는 파일만 루트 폴더 root/ 아래에 담는다
+    (2026-11-11 사용자 「1회차는 가이드파일만 담겨있으면 될텐데」, 가이드 P-13). 랩 폴더에 가이드가 열지 않는 파일이 있거나
+    가이드가 여는 파일이 없으면 멈춘다 — 랩 폴더와 ZIP이 같은 것을 담게 한다."""
+    folder = Path(folder)
+    page = (folder/'가이드.html').read_text(encoding='utf-8')
+    refs = {unquote(html.unescape(r)) for r in re.findall(r'(?:src|href)="([^"#?:]+)"', page)}
+    have = {p.relative_to(folder).as_posix() for p in student_files(folder)} - {'가이드.html'}
+    if refs != have:
+        raise ValueError(f'{folder}: 가이드가 여는 파일과 랩 폴더가 다르다 — 폴더에 없음 {sorted(refs-have)}, 가이드가 안 씀 {sorted(have-refs)}')
+    names = ['가이드.html', *sorted(refs, key=lambda n: n.lower().split('/'))]
+    return write_zip(folder.parent/(folder.name+'.zip'), [(f'{root}/{n}', (folder/n).read_bytes()) for n in names])
 
 
 def guide_name(folder):
