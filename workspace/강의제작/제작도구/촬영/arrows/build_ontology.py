@@ -1,7 +1,7 @@
 """ARROWS 실습 원본: 교재 SLIDE 67·73·74의 쿨러 지식 그래프를 arrows.app에서 그리는 큐(발화+조작).
 이 파일 하나가 음성 목록·촬영 조작·수업 원고·두 과정 랩 산출물의 원본이다. 앱·음성 API는 호출하지 않는다.
 사용: python build_ontology.py cues <cues.json 출력 경로>   # 촬영용 큐
-      python build_ontology.py sync                       # 수업원고·시간·두 과정 대본/랩/가이드/ZIP 동기화
+      python build_ontology.py sync                       # 수업원고·시간·두 과정 대본 · 한 파일 가이드 동기화
 """
 import json, re, sys
 from pathlib import Path
@@ -306,7 +306,6 @@ def manuscript():
 def write_all():
     import hashlib, re, shutil
     final = json.loads((EVID / 'saved' / '쿨러_지식그래프_최종.json').read_text(encoding='utf-8'))
-    by = {n['id']: n['caption'] for n in final['nodes']}
     ver = json.loads((VIDEO / 'verification.json').read_text(encoding='utf-8'))
     script = manuscript()
     (ROOT / '수업원고.md').write_text(script, encoding='utf-8')
@@ -323,16 +322,6 @@ def write_all():
 영상 안에는 원 끌어내기를 헛잡고 다시 잡는 장면이 그대로 있다. 사용자가 영상을 재생해 확인하고 이 판으로 확정했다(2026-10-23).
 '''
     (ROOT / '예상시간.md').write_text(timing, encoding='utf-8')
-    nodes_md = '# 쿨러 지식 그래프 — 그릴 대상과 관계\n\n교재 75장의 클래스로 오일 쿨러 사례를 그립니다. 아래는 강사 화면에서 완성한 그림(`완성_쿨러_지식그래프.json`)의 내용입니다. 직접 만든 결과와 비교할 때 참고합니다.\n\n| 이름(Caption) | 종류(Label) | 조건(Property) |\n|---|---|---|\n'
-    for n in final['nodes']:
-        props = ' / '.join(f'{k}: {v}' for k, v in n.get('properties', {}).items())
-        nodes_md += f"| {n['caption']} | {', '.join(n['labels'])} | {props or '—'} |\n"
-    nodes_md += '\n## 관계 — 출발 · 이름 · 도착\n\n| 출발 | 관계 이름(Type) | 도착 | 문장으로 읽기 |\n|---|---|---|---|\n'
-    reads = {'HAS_COMPONENT': '구성 요소로 가진다', 'MONITORED_BY': '로 계측된다', 'OBSERVED_BY': '에서 관측된다', 'INDICATES': '를 가리킨다', 'OCCURS_IN': '에서 일어난다',
-             'CAUSES': '를 일으킨다', 'MITIGATED_BY': '로 완화된다', 'REMEDIED_BY': '로 근본 해결된다', 'ADDRESSES': '를 해결 대상으로 한다', 'REFERS_TO': '의 근거로 이어진다'}
-    for r in final['relationships']:
-        nodes_md += f"| {by[r['fromId']]} | {r['type']} | {by[r['toId']]} | {reads.get(r['type'], '')} |\n"
-    nodes_md += '\n근거: 조건은 `매뉴얼_발췌.md` HM-8.4, 조치는 HM-8.1 · 8.5 · 8.7입니다.\n'
     screens = f'''# 화면 — 촬영 완료
 
 2026-10-23 촬영 영상(로컬 근거) `{VIDEO.relative_to(REPO).as_posix()}/` 의 실제 화면이다. 완성 그림은 `완성_쿨러_지식그래프.png`, 편집 데이터는 `완성_쿨러_지식그래프.json`(촬영 중 arrows.app에서 내려받은 참조본).
@@ -342,17 +331,14 @@ def write_all():
 ''' + ''.join(f'| {k} | {v} | 실제 화면 |\n' for k, v in SEGMENT_TITLE.items())
     (ROOT / '촬영화면.md').write_text(screens, encoding='utf-8')
     sys.path.insert(0, str(REPO / 'workspace/강의제작/제작도구/실습시작'))
-    from lab_package import pack
+    from lab_package import pack_page
     for course in ['실전반', '통합반']:
         day = REPO / 'workspace/강의제작/산출물' / course / '실습/01회차'
         lab = day / '랩/01일차_실습4_관계그림'
         (day / '대본/08_실습_관계그림.md').write_text(script.replace('(예상시간.md)', '(../../../../../제작도구/촬영/arrows/예상시간.md)'), encoding='utf-8')
-        (lab / '대상_목록.md').write_text(nodes_md, encoding='utf-8')
-        shutil.copyfile(EVID / 'saved' / '쿨러_지식그래프_최종.json', lab / '완성_쿨러_지식그래프.json')
-        shutil.copyfile(EVID / 'saved' / '쿨러_지식그래프_최종.png', lab / '완성_쿨러_지식그래프.png')
-        pack(lab)   # 가이드.html은 build_student_guide.py가 쓴다 — 여기서 덮지 않는다
+        pack_page(lab)   # 가이드.html은 build_student_guide.py가 쓴다 — 여기서 덮지 않는다. 랩 폴더에는 가이드가 여는 파일만 둔다
     files = [ROOT / '수업원고.md', ROOT / '예상시간.md', ROOT / '촬영화면.md'] + [REPO / 'workspace/강의제작/산출물' / c / '실습/01회차' / x for c in ['실전반', '통합반'] for x in
-             ['대본/08_실습_관계그림.md', '랩/01일차_실습4_관계그림/가이드.html', '랩/01일차_실습4_관계그림/대상_목록.md', '랩/01일차_실습4_관계그림.zip']]
+             ['대본/08_실습_관계그림.md', '랩/01일차_실습4_관계그림/가이드.html', '랩/01일차_실습4_관계그림.html']]
     (ROOT / '동기화판본.json').write_text(json.dumps({f.relative_to(REPO).as_posix(): hashlib.sha256(f.read_bytes()).hexdigest() for f in files}, ensure_ascii=False, indent=1), encoding='utf-8')
     print('synced', ver['duration_s'], 's;', len(final['nodes']), 'nodes', len(final['relationships']), 'rels')
 

@@ -1,16 +1,6 @@
 {
   "labs": [
     {
-      "id": "practical-01-offline",
-      "course": "실전반",
-      "session": "오프라인 01회차",
-      "title": "랩 그래프 적재와 질문",
-      "version": "2026-11-07-zip-only",
-      "folder": "01회차/랩/01일차_오프라인_모델과질문",
-      "path": "workspace/강의제작/산출물/실전반/실습/01회차/랩/01일차_오프라인_모델과질문.zip",
-      "sha256": "88944a614bb93c8804f86fa853023632456a7464f858f9fd5f91b7dcc5fbb61f"
-    },
-    {
       "id": "practical-02-relations",
       "course": "실전반",
       "session": "온라인 02회차",
@@ -228,16 +218,6 @@
         "path": "workspace/강의제작/산출물/통합반/실습/05회차/랩/root-cause-lab_guide.html",
         "sha256": "006a8b7fd9c9330d96c9fd516620b55c07a526ae860439ed526d9ca6fd5d7d83"
       }
-    },
-    {
-      "id": "integrated-01-offline",
-      "course": "통합반",
-      "session": "오프라인 01회차",
-      "title": "랩 그래프 적재와 질문",
-      "version": "2026-11-07-zip-only",
-      "folder": "01회차/랩/01일차_오프라인_모델과질문",
-      "path": "workspace/강의제작/산출물/통합반/실습/01회차/랩/01일차_오프라인_모델과질문.zip",
-      "sha256": "88944a614bb93c8804f86fa853023632456a7464f858f9fd5f91b7dcc5fbb61f"
     },
     {
       "id": "integrated-02-relations",

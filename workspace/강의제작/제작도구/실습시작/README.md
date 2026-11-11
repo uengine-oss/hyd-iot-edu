@@ -35,14 +35,10 @@ python workspace/강의제작/제작도구/실습시작/verify_packages.py [<ZIP
 | 통합반 05회차 원인 후보와 다음 점검 계획 | `build_agent_labs.py --report <작업 폴더>/판정/생성.json` → `lab_package.py <root-cause-lab 폴더> --version <판 이름>` → `verify_packages.py <root-cause-lab.zip>` | `root-cause-lab/`·같은 이름 ZIP·옆의 가이드를 생성한다. 기존 자료를 유지하며 `--refresh-data`는 자료 개편 때만 쓴다. 조회·판정·전달 함수와 사람의 선택을 분리하고, 제공 일반 처리는 `agent_tools/`, 참조와 검사기는 `reference/session5_root/`에 둔다. 실제 실행 기록과 명시적인 계약 fixture를 구별한다. |
 | 통합반 05~08회차 이전 구조(원인·점검 랩 제외) | 없음 — START.md를 쓴 뒤 `start_guides/build.py` | ZIP에 강사 대본(`NN회차/대본/*_실습_*.md`)과 제작 안내가 들어 있다(검사 실패) |
 | shift-handover — 통합반 11회차 · 실전반 08회차 (2) | `기존제작/labs/build_handover_package.py`(`안내.html`도 이것이 만든다) | ZIP 루트가 `shift-handover/`(다른 ZIP은 `NN회차/랩/<랩>/`)이고 ZIP 안 README.md가 폴더보다 옛 판이다 — 루트 형식을 정한 뒤 묶는다(`lab_package`는 다른 루트를 만나면 멈춘다) |
-| 01회차 오프라인_모델과질문 (2) | 없음 — `lab_package.py` | |
-| 01회차 실습1 학습노트 (2) | `촬영/notion/build.py` | 보관 — 생성기로 다시 만들지 않는다. 폴더를 고쳤으면 `lab_package.py`로 그 ZIP만 다시 묶는다(가이드.md 「함정」) |
-| 01회차 실습2 실행환경 · 실습3 전체과정관찰 (4) | 없음 | 보관 — 생성기로 다시 만들지 않는다. 폴더를 고쳤으면 `lab_package.py`로 그 ZIP만 다시 묶는다(가이드.md 「함정」) |
-| 01회차 실습4 관계그림 (2) | `촬영/arrows/build_ontology.py` · `build_student_guide.py`, `pack_arrows.py` | 보관 — 생성기로 다시 만들지 않는다. 폴더를 고쳤으면 `lab_package.py`로 그 ZIP만 다시 묶는다(가이드.md 「함정」) |
+| 01회차 도구 실습 넷 — 실습1 학습노트 · 실습2 실행환경 · 실습3 전체과정관찰 · 실습4 관계그림 (8) | 생성 원본은 가이드.md 「자료」 표(촬영/notion · 환경세팅 · 포털 · arrows) — 모두 `lab_package.pack_page`로 끝난다. 랩 폴더만 고쳤으면 `lab_package.py <랩 폴더> --page` | ZIP이 아니라 한 파일 가이드 `랩/<랩>.html`(사진과 참고 문서를 넣은 HTML 하나, 가이드 P-13). 랩 폴더에는 가이드.html과 가이드가 여는 파일만 둔다(`pack_page`가 확인). `verify_packages.py`가 랩 폴더로 다시 만든 바이트와 견준다 |
 | 통합반 05회차 원인·점검 완성본 | `reference/session5_root/build_completed.py --source <실제 실행 폴더> --execution-evidence <실행 근거 JSON> --review <원문 검토 CSV> --review-evidence <검토 근거 JSON> --out <새 작업 폴더>/root-cause-lab-completed.zip` | 실제 응답·수집·판정·전달 결과와 제작 담당의 사후 원문 검토를 구별해 묶는다. 원 실행은 바꾸지 않으며 모델을 새로 부르지 않는다. 새 폴더 실행 확인 후 `통합반/실습/05회차/완성본/root-cause-lab-completed.zip`에 둔다(package-index 밖). 실제 촬영·네이티브 화면 관찰 완료와 구별한다. |
 | 02 · 03회차 새 구조 랩의 완성본(두 과정 2회차 설계 · 그래프, 냉각 경보 조치 판단 네 랩) | 그 랩의 생성기에 `--completed`(위 표의 각 줄) | 랩 ZIP과 따로 받는다(package-index 밖). `완성본/<랩>-completed.zip`. 옛 구조 폴더로 완성본을 묶던 `session2_completed.py`는 새 생성기 이름을 대며 멈춘다 |
 | 문서 지식 완성본 (4) — 통합반 04회차 실습2 · 3, 실전반 03회차 실습4 · 5 | `reference/session3_docs/completed.py [--model-run <폴더>] [--again-run <폴더>] [--no-neo4j]` | 랩 ZIP과 따로 받는다(package-index 밖). 추출 둘은 고정한 강사 추출 실행 `reference/session3_docs/강사_추출/run1`(instructor_extract.py `--keep` — 학생 추출 코드 `completed/extract_candidates.py` · 요청 글 · 응답 기록 · 후보)에 검토를 걸어 만들고, 같은 요청을 새 폴더에서 한 번 더 보낸 `run2`와의 차이를 검토 기록에 적는다. 폴더 표지(`결과/폴더_표지.txt`)는 넣지 않아, 완성본 폴더 · 학생 폴더에서 코드를 실행해도 `llm_client.py`가 그 응답 기록을 다시 쓰지 않는다. 고정한 실행이 없으면 문장 규칙 후보로 만든 임시판이다(`check.py`가 후보 파일마다 model_run 줄을 냄). 그래프 둘은 `run_reference.py` 4의 기본 판 산출을 넣고 새 폴더에서 안내의 명령을 실제 Neo4j로 다시 돌려 내보내기 바이트 · 학생 검사기 통과를 확인한다 |
-| 01회차 `오프라인1_가이드.zip` (2) | `build_offline.py` · `build_guide_bundle.py --draft 작업/<작업>/오프라인1_제공물검수` | 풀고 `가이드열기.html`을 연다(정본 HTML · 참조 이미지 · 자료를 묶고 내부 링크를 확인). 지금은 검수 출력만 — 정본을 바꾸지 않는다 |
 
 ## 새 프로젝트 구조의 공용 API
 
@@ -52,14 +48,13 @@ python workspace/강의제작/제작도구/실습시작/verify_packages.py [<ZIP
 - 생성기는 원자료를 `data`, 학생 구현을 `app/features`, 제공 화면을 `app/ui`, 일반 처리를 `app/utils`에 쓰고 루트 `run.py`를 제공한다. output은 실행 때 만들며 시작 ZIP에 넣지 않는다.
 - `lab_package.pack(folder)`는 run.py와 app/features가 있는 새 프로젝트를 영문 프로젝트 이름 하나 아래에 묶고 가이드는 그 옆에 둔다. 기존 랩의 ZIP 루트는 유지한다.
 - `lab_package.entry(..., guide_steps=[s["name"] for s in lab_definition["steps"]])`는 새 구조에 layout=project를 붙인다. 가이드 순서는 학생 START 파일 대신 생성기 정의와 대조한다. `register`는 해당 id의 항목만 갱신한다.
-- `verify_packages.py <ZIP 또는 폴더>`는 지정한 패키지와 그 목록 항목만 검사한다. 인수가 없으면 기존처럼 전체 목록·학생 ZIP·오프라인 링크를 검사한다.
+- `verify_packages.py <ZIP 또는 폴더>`는 지정한 패키지와 그 목록 항목만 검사한다. 인수가 없으면 전체 목록 · 한 파일 가이드 · 학생 ZIP을 검사한다.
 - 구조·과제 검증은 구별한다. `reference/project_layout_trials.py`는 새 ZIP의 파일 역할·안내 중복·실행 결과 유출·영문 루트·가이드 바이트와 기존 2회차 ZIP 호환을 검사한다. 학생 AI 수행이나 DB 결과 검증을 대신하지 않는다.
 
 ## 제공 범위
 
 - 온라인2 설계: 원자료·규칙·요구·빈 결과 틀. 실전반에는 앞 단계 설비/센서/부품 모델이 있고 공급 연결은 학생이 작성한다.
 - 온라인2 그래프: 앞 단계 완성 모델 + `lab_db.py` 환경 준비. 이번 적재·조회 로직은 제공하지 않는다.
-- 오프라인1 적재: 승인 편성의 제공 절차에 따라 `offline_load.py`와 질문을 제공한다. 온라인 구현 ZIP에 넣지 않는다. 설비 3대 작은 모델(노드 44 · 관계 57, 커밋 160f846a의 `reference/통합반`에서 고정, 온라인 2회차 모델 `data_session2.py`와 별개)의 정본은 두 과정 `01일차_오프라인_모델과질문/입력/`의 `graph.json` · `schema.json`이다.
 - 통합반 조치 기준 · 실전반 조건표: 원문 · 판단 시스템 결정표 내보내기 · 사건 메모(실전반은 확인 사례, 통합반은 설비 모델 · 작업 이력도), 빈 결과 틀, 구조 검사, 학생용 START · 가이드. SOP 구조 · 조건표 · 기록은 학생이 작성한다.
 - 통합반 판단 기능 · 실전반 조치 검토 결과: 조건 랩의 강사 검증 판(조건표 · SOP 구조)을 `입력/`에, 판단 입력의 원천 네 개 · 오더 현황 · 비교 산식 · 원문 · 수집 설명, 빈 기대 결과 틀, 구조 검사, 학생용 START · 가이드. 판단 입력 만들기 · 판정 · 비교 · 선택 이유(실전반은 검토 결과)는 학생이 구현한다. 구조 검사는 `결과/내_입력/`에 학생 자신의 앞 결과가 있으면 그것을 기준으로 보고 어느 파일을 봤는지 찍는다.
 - 통합반 문서 지식 추출 · 실전반 지식 추출: 문서 열 개와 문서 목록, 조치 판단 랩의 강사 검증 판(조건표 · SOP 구조)과 판정 결과를 `입력/`에, 값이 빈 `.env.example`과 수업 모델 연결 도구 `llm_client.py`(응답 기록 · 같은 요청 다시 안 보냄 · 폴더 상한 · 키가 없으면 보낼 글만 남기고 멈춤), 입출력 계약, 빈 검토 기록 틀, 구조 검사, 학생용 START. 요청 글 · 문서 읽기 · 나누기 · 응답을 후보로 · 인용 위치 찾기 · 검토(실전반은 이 사건의 작업의 조건 모으기도)는 학생이 구현한다. 강사가 저장한 응답은 넣지 않는다.

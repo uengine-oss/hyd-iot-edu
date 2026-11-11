@@ -21,7 +21,6 @@ from PIL import Image
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[4]
 LAB = '01일차_실습2_실행환경'
-ZIP_ROOT = '실습2 실행환경'   # 학생이 푼 폴더 이름 — 드라이브의 「실습2 실행환경.zip」과 같다
 OUTPUTS = ROOT / 'workspace/강의제작/산출물'
 
 
@@ -124,13 +123,13 @@ def main():
     if unresolved:
         parser.error('미확인 사진이 있어 배포하지 않습니다: '+', '.join(unresolved))
     sys.path.insert(0, str(HERE.parents[1]/'실습시작'))
-    from lab_package import pack_guide
+    from lab_package import pack_page
     for course in ['통합반', '실전반']:
         lab = OUTPUTS/course/'실습/01회차/랩'/LAB
         shutil.rmtree(lab/'images', ignore_errors=True)
         write_guide(lab, page, assets)
-        pack_guide(lab, ZIP_ROOT)
-    print('두 과정 환경 가이드 · ZIP 갱신.')
+        pack_page(lab)
+    print('두 과정 환경 가이드 · 한 파일 가이드(<랩>.html) 갱신.')
 
 
 if __name__ == '__main__':

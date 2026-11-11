@@ -3,7 +3,8 @@
     python verify_packages.py [<ZIP 또는 랩 폴더> …]
 
 1. package-index.json의 ZIP마다 해시 · 시작 파일 · 가이드 링크 · 과제 정답 경계(verify_lab).
-2. 학생 ZIP(산출물/*/실습/*/랩/*.zip 전부, 인수를 주면 그것만)마다 check_zip — 랩 폴더와 경로 집합 · 바이트(텍스트는 줄끝을 맞춰)가
+2. 도구 실습의 한 파일 가이드(랩/<랩>.html)마다 랩 폴더로 다시 만든 바이트와 같은가(lab_package.page_bytes, 가이드 P-13).
+3. 학생 ZIP(산출물/*/실습/*/랩/*.zip 전부, 인수를 주면 그것만)마다 check_zip — 랩 폴더와 경로 집합 · 바이트(텍스트는 줄끝을 맞춰)가
    같은가, 강사 대본(/대본/) · 제작 지시 문구 · __pycache__ · .env(TEMPLATES 밖)가 없는가, 빈 틀(.env.example · TEMPLATES의 .env)의
    등호 뒤가 모두 비었는가, ZIP 안 HTML · START.md 링크가 ZIP 안 파일로 풀리는가. ZIP마다 한 줄(통과 · 실패)을 찍고, 실패가 있으면 종료 코드 1. 결과는 작업/검사/package-verification.json.
 start_guides/build.py와 lab_package.py도 check_zip · forbidden_hits · link_errors를 부른다.
@@ -14,7 +15,7 @@ from collections import Counter
 from urllib.parse import unquote,urlsplit
 import hashlib,html,json,posixpath,re,sys,zipfile
 from build_labs import PICTURE_TYPES, student_photos
-from lab_package import PRIVATE, guide_name, outside_guide, student_files, zip_root
+from lab_package import PRIVATE, guide_name, outside_guide, page_bytes, student_files, zip_root
 from lab_frame import MARK, SHOW_RESULT
 from project_layout import errors as project_errors
 ROOT=Path(__file__).resolve().parents[4]
@@ -259,6 +260,10 @@ def verify_lab(item):
             assert base+unquote(path.path) in names,(item['id'],link)
     return {'id':item['id'],'sha256':item['sha256'],'files':len(names),'links':'pass','solution_boundary':'pass'}
 
+def student_pages():
+    """도구 실습의 한 파일 가이드(랩/<랩>.html, 옆에 가이드.html이 든 <랩>/ 폴더가 있는 것). 코딩 랩 가이드(<랩>_guide.html)는 ZIP 안에서 본다."""
+    return sorted(p for p in OUT.glob('*/실습/*/랩/*.html') if (p.parent/p.stem/'가이드.html').is_file())
+
 def student_zips(args):
     if not args:return sorted(OUT.glob('*/실습/*/랩/*.zip'))
     paths=[Path(a).resolve() for a in args]
@@ -270,14 +275,19 @@ def main(argv):
         selected={p.resolve() for p in student_zips(argv)}
         items=[item for item in items if (ROOT/item['path']).resolve() in selected]
     records = [verify_lab(item) for item in items]
-    for course in ([] if argv else ['통합반','실전반']):
-        guide=ROOT/'workspace/강의제작/산출물'/course/'실습/01회차/오프라인_가이드.html'
-        parser=Links();parser.feed(guide.read_text(encoding='utf-8'))
-        for link in parser.targets:
-            path=urlsplit(link)
-            if path.scheme or not path.path:continue
-            assert (guide.parent/unquote(path.path)).resolve().exists(),link
-    print(f'package-index {len(records)}개 ZIP: 해시·시작 파일·가이드 링크·과제 정답 경계 통과.' + ('' if argv else ' 오프라인 가이드 링크 통과.'))
+    print(f'package-index {len(records)}개 ZIP: 해시·시작 파일·가이드 링크·과제 정답 경계 통과.')
+    pages=[];bad_pages=0
+    for page in ([] if argv else student_pages()):
+        folder=page.parent/page.stem
+        label=page.relative_to(OUT).as_posix()
+        try:
+            errors=[] if page_bytes(folder)==page.read_bytes() else [f'{label}: 랩 폴더({folder.name}/)로 다시 만든 한 파일과 바이트가 다르다 — lab_package.py {folder.name} --page']
+        except (OSError,ValueError) as exc:
+            errors=[str(exc)]
+        bad_pages+=bool(errors)
+        print(f'{"실패" if errors else "통과"}({len(errors)})  {label}')
+        for e in errors:print('    오류:',e)
+        pages.append({'page':label,'result':'실패' if errors else '통과','errors':errors})
     results=[];failed=0
     for zpath in student_zips(argv):
         folder=zpath.parent/zpath.stem
@@ -291,9 +301,9 @@ def main(argv):
         for e in errors:print('    오류:',e)
         results.append({'zip':label,'result':'실패' if errors else '통과','errors':errors,'notes':notes})
     dest=ROOT/'작업/검사/package-verification.json';dest.parent.mkdir(parents=True,exist_ok=True)
-    dest.write_text(json.dumps({'package_index':records,'student_zips':results},ensure_ascii=False,indent=2),encoding='utf-8')
-    print(f'학생 ZIP {len(results)}개: 통과 {sum(r["result"]=="통과" for r in results)}, 실패 {failed}')
-    return 1 if failed else 0
+    dest.write_text(json.dumps({'package_index':records,'student_pages':pages,'student_zips':results},ensure_ascii=False,indent=2),encoding='utf-8')
+    print(f'한 파일 가이드 {len(pages)}개: 통과 {len(pages)-bad_pages}, 실패 {bad_pages} · 학생 ZIP {len(results)}개: 통과 {sum(r["result"]=="통과" for r in results)}, 실패 {failed}')
+    return 1 if failed or bad_pages else 0
 
 
 if __name__ == '__main__':

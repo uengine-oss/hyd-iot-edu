@@ -22,7 +22,7 @@
           800
         ]
       ],
-      "caption": "README 실행 환경 표에서 여섯 도구의 준비 기준과 공식 설치 링크를 확인합니다.",
+      "caption": "실행 환경 표의 기준과 설치 링크",
       "sha256": "bcd37ae962beb1833b92788e14078719464342508bbbacf8e42d6effba65974e",
       "raw_frame_sha256": "d56e52d029157dca8951bc79c82c61981b0526429da623fa0cfbfff47a9a07bf"
     },
@@ -43,20 +43,20 @@
       "rectangles": [
         [
           779,
-          717,
+          719,
           1014,
           749
         ],
         [
-          816,
+          821,
           469,
           969,
-          501
+          497
         ]
       ],
-      "caption": "Add python.exe to PATH를 선택한 뒤 Install Now를 누릅니다.",
+      "caption": "Add python.exe to PATH 선택",
       "redactions": [],
-      "sha256": "0325b406e37fff438ba44ab574890382780df8f0360ba3bf020fe72610cab1ae",
+      "sha256": "69fea2d645a4acc762516f76211f252cc7df180af1e4269e886215878ff414b7",
       "raw_frame_sha256": "aef54e1fb70eed3090ab902579c0e93f1778e2e628339e291d65697749e0a36c"
     },
     "python-version": {
@@ -87,7 +87,7 @@
           299
         ]
       ],
-      "caption": "PowerShell에서 python --version을 실행한 결과는 Python 3.14.7입니다.",
+      "caption": "Python 3.14.7",
       "sha256": "5bdd6c6a209a202a011afffcf2b5307494391af8c548011561e5331f7068eb70",
       "raw_frame_sha256": "51841abf45e6418304e1ccda4e1396cfec301e0f6b4e965965acb252d4c3160c",
       "redactions": []
@@ -120,7 +120,7 @@
           740
         ]
       ],
-      "caption": "추가 도구 자동 설치 항목을 비워 두고 Next를 누릅니다.",
+      "caption": "자동 설치 항목은 비워 둠",
       "redactions": [],
       "sha256": "c1181e6b8c686121d3d3bc95960b2d0138899ffc2ae77ab727ae7e74d6ff0cb3",
       "raw_frame_sha256": "0455f47eff61349ee7c2140d1201dca6d934983e762094e02cc4b8569ecac92c"
@@ -153,7 +153,7 @@
           270
         ]
       ],
-      "caption": "node --version의 출력 v24.22.1을 README의 준비 기준과 비교합니다.",
+      "caption": "v24.22.1",
       "redactions": [],
       "sha256": "cb135d92e4e6bbf2289fbb4c0225d1cc1a1d868d585faea6d9bf2dae5a2a8b2b",
       "raw_frame_sha256": "c6845895aec8a1a31c1665bc6f3dfcf010f9481a396b017ba23b9f803c4b6dc2"
@@ -175,7 +175,7 @@
       "rectangles": [
         [
           656,
-          540,
+          545,
           929,
           577
         ],
@@ -186,19 +186,19 @@
           783
         ]
       ],
-      "caption": "추가 작업에서 PATH에 추가를 확인하고 다음을 누릅니다.",
+      "caption": "PATH에 추가 선택",
       "redactions": [],
-      "sha256": "e33f17aac3ba0fc078cc497604d463d86a4113528e126625e93618cca7d6b3b0",
+      "sha256": "677f0e4bb0fcd2ba8da216d4487f6c81712c93b5dbcbee91055cac2e1878df5e",
       "raw_frame_sha256": "ee00cacbae799fc3b01f779a6b216c0c3aeca6ab151f4b78744972cae27159c6"
     },
     "vscode-language": {
-      "required_scene": "VS Code 한국어 언어 팩",
-      "check": "Microsoft 게시자·설치 상태와 한국어 메뉴 확인",
+      "required_scene": "검색칸에 korean을 넣으면 나오는 첫 항목에서 한국어 언어 팩 이름과 게시자 Microsoft를 확인하고 Install을 누릅니다.",
+      "check": "검색칸에 korean을 넣으면 나오는 첫 항목에서 한국어 언어 팩 이름과 게시자 Microsoft를 확인하고 Install을 누릅니다.",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/vscode-language.png",
       "verified": true,
       "source": "작업/촬영/환경세팅/게시본_20261104.mp4",
       "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
-      "seconds": 610.3,
+      "seconds": 603.5,
       "crop": [
         0,
         0,
@@ -207,16 +207,36 @@
       ],
       "rectangles": [
         [
-          681,
-          107,
-          1377,
-          185
+          71,
+          90,
+          426,
+          121
+        ],
+        [
+          146,
+          144,
+          300,
+          216
+        ],
+        [
+          366,
+          198,
+          414,
+          218
         ]
       ],
-      "caption": "한국어 언어 팩 이름과 게시자 Microsoft를 확인합니다. 이미 설치했다면 Uninstall이 표시됩니다.",
+      "caption": "게시자 Microsoft",
       "redactions": [],
-      "sha256": "3eb019c117359580a4a3575757e29cf0e351113391e2af2582d05d5952279da8",
-      "raw_frame_sha256": "9ed8a8b54bb0f3d6450b1f59f570ece12f30d3658a57483a225afef9d06e7a0d"
+      "sha256": "9594b21dc31e7d075ac4045c47b8c5b0bd36b34fc1bc642e007cf797e7401021",
+      "raw_frame_sha256": "95de111f61392f795e0046b37c899bb6b39247f2e7cf4bb149b00148da628442",
+      "ignore": [
+        [
+          372,
+          186,
+          406,
+          226
+        ]
+      ]
     },
     "codex-connect": {
       "required_scene": "VS Code의 Codex 확장·연결 화면",
@@ -240,24 +260,24 @@
           340
         ]
       ],
-      "caption": "Codex 확장 이름과 게시자 OpenAI를 확인합니다. 여기서는 확장을 설치하는 중입니다.",
+      "caption": "게시자 OpenAI",
       "redactions": [],
       "sha256": "eab06dc0377f2a4221f9ac0bed82afe24998945355267551c38207696a6f96ed",
       "raw_frame_sha256": "85c346ab59b5fc1121db6a94d070c49a3df607d7f6c08c56650443962ba5a812"
     },
     "codex-response": {
-      "required_scene": "Codex 패널에 보낸 인사와 돌아온 답이 함께 보입니다. 답의 문구는 달라질 수 있습니다.",
-      "check": "Codex 패널에 보낸 인사와 돌아온 답이 함께 보입니다. 답의 문구는 달라질 수 있습니다.",
+      "required_scene": "Codex 패널의 인사와 답, 왼쪽 탐색기의 hyd-iot-edu 폴더, 아래 터미널의 두 100% 줄과 다시 나타난 입력 표시를 확인합니다. 답의 문구는 달라질 수 있습니다.",
+      "check": "Codex 패널의 인사와 답, 왼쪽 탐색기의 hyd-iot-edu 폴더, 아래 터미널의 두 100% 줄과 다시 나타난 입력 표시를 확인합니다. 답의 문구는 달라질 수 있습니다.",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/codex-response.png",
       "verified": true,
       "source": "작업/촬영/환경세팅/게시본_20261104.mp4",
       "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
       "seconds": 854.587,
       "crop": [
-        1330,
-        41,
-        1917,
-        319
+        0,
+        0,
+        1920,
+        1080
       ],
       "rectangles": [
         [
@@ -270,13 +290,27 @@
           1349,
           208,
           1638,
-          262
+          259
+        ],
+        [
+          80,
+          122,
+          195,
+          144
+        ],
+        [
+          463,
+          845,
+          1080,
+          952,
+          4,
+          4
         ]
       ],
       "redactions": [],
-      "caption": "Codex 패널에 보낸 인사와 돌아온 답이 함께 보입니다. 답의 문구는 달라질 수 있습니다.",
-      "sha256": "cbcbfe0127e111c9237091588a30b9ea8ba40cc98d65500eaa9825bb45b3baba",
-      "raw_frame_sha256": "f6617ca92f4e46621dea8674408a7332ab0f8f02a9293639ecb906afd208d591"
+      "caption": "Codex의 답, 탐색기의 hyd-iot-edu, 터미널의 두 100% 줄. 답의 문구는 다를 수 있습니다.",
+      "sha256": "ab60ecffcd8f7dc6d032bd3b5d873879e1116b4c671b5dd22d97680b382d9a5b",
+      "raw_frame_sha256": "eadf9253d2403796382215508eb845ed1e6af1b60ac55cfe7f4857a7020de660"
     },
     "git-install": {
       "required_scene": "Git 설치 PATH 옵션",
@@ -300,15 +334,15 @@
           469
         ],
         [
-          1128,
+          1131,
           763,
           1237,
-          798
+          799
         ]
       ],
-      "caption": "다른 터미널에서도 Git을 쓸 수 있는 권장 옵션을 유지하고 Next를 누릅니다.",
+      "caption": "권장 PATH 선택",
       "redactions": [],
-      "sha256": "3e8f964ca630e5bb469794c3d62e244e4fc57e41bf726cbf232f47ee96edf8cf",
+      "sha256": "7fdd1efc41e66d2a49beac33a5ad7d88dc93370cee1208ce7976318beb940e22",
       "raw_frame_sha256": "499e716803a873f73bd90704d566509de031a6ff8058d33803f23403f70e82e8"
     },
     "wsl-version": {
@@ -333,7 +367,7 @@
           584
         ]
       ],
-      "caption": "설치 완료 메시지 아래의 WSL 버전은 3.0.3.0입니다.",
+      "caption": "설치 완료 아래 WSL 버전 3.0.3.0",
       "sha256": "3391731c83b041c74f8a5eac1ac294a4a8b500579687b333ae9cb5a3ca26096c",
       "raw_frame_sha256": "01fc0fb1cc9f023cc50c7884e9e92f5191b1a7e98893d3f909cfec330992f862",
       "redactions": []
@@ -366,7 +400,7 @@
           740
         ]
       ],
-      "caption": "WSL 2 선택을 확인하고 OK를 누릅니다.",
+      "caption": "WSL 2 선택",
       "raw_frame_sha256": "7c5b8ba1bf324d2d7bd7ef5622a3eaece3ddf6726a118e048897924c87a0f27f",
       "sha256": "2a47b5c5ace4ddc9ffd7a5372176c12b060d70867978486678e6af29734f8bac"
     },
@@ -386,23 +420,23 @@
           483,
           456,
           1030,
-          516
+          511
         ],
         [
           1194,
           740,
-          1321,
+          1315,
           812
         ]
       ],
       "redactions": [],
-      "caption": "사용 조건을 읽습니다. 계속하려면 오른쪽 아래 Accept를 누릅니다.",
+      "caption": "오른쪽 아래 Accept",
       "required_scene": "사용 조건을 읽습니다. 계속하려면 오른쪽 아래 Accept를 누릅니다.",
       "check": "사용 조건을 읽습니다. 계속하려면 오른쪽 아래 Accept를 누릅니다.",
       "video_seconds": 875.63333,
       "verified": true,
       "raw_frame_sha256": "0df7338307e5dd6519dcde9b562737cc2091853eefc55a5902451deb5e6e9ff1",
-      "sha256": "faea184c908ab173bef34f6d7df6f6ad7fe07dd9492da1e449e2c15482138f4c"
+      "sha256": "75482cbb3041e8ef238d551134a20610a57aa545024bbece79b62d6afa054edf"
     },
     "docker-wsl": {
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/docker-wsl.png",
@@ -417,6 +451,12 @@
       ],
       "rectangles": [
         [
+          190,
+          586,
+          464,
+          616
+        ],
+        [
           542,
           583,
           920,
@@ -427,29 +467,7 @@
           582,
           1438,
           659
-        ]
-      ],
-      "redactions": [],
-      "caption": "General 화면의 Choose Virtual Machine Manager (VMM)에서 WSL 2가 선택돼 있습니다.",
-      "required_scene": "General 화면의 Choose Virtual Machine Manager (VMM)에서 WSL 2가 선택돼 있습니다.",
-      "check": "General 화면의 Choose Virtual Machine Manager (VMM)에서 WSL 2가 선택돼 있습니다.",
-      "video_seconds": 912.63333,
-      "verified": true,
-      "raw_frame_sha256": "4d6766495fe62e89d578ce4ff4455c1455f3692d4d96a30de5d2c1d671da6b3d",
-      "sha256": "77f8a8ebfd64792faf644c03634d48c277e44ae13e66704dddfb5c7c0ce3ba43"
-    },
-    "docker-engine": {
-      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/docker-engine.png",
-      "source": "작업/촬영/환경세팅/게시본_20261104.mp4",
-      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
-      "seconds": 914.02,
-      "crop": [
-        0,
-        0,
-        1920,
-        1080
-      ],
-      "rectangles": [
+        ],
         [
           186,
           911,
@@ -458,13 +476,13 @@
         ]
       ],
       "redactions": [],
-      "caption": "Docker Desktop 왼쪽 아래의 Engine running이 엔진을 사용할 수 있다는 표시입니다.",
-      "required_scene": "Docker Desktop 왼쪽 아래의 Engine running이 엔진을 사용할 수 있다는 표시입니다.",
-      "check": "Docker Desktop 왼쪽 아래의 Engine running이 엔진을 사용할 수 있다는 표시입니다.",
-      "video_seconds": 906.23333,
+      "caption": "왼쪽 아래 Engine running과 VMM 값 WSL 2",
+      "required_scene": "왼쪽 아래 Engine running을 확인하고, Settings의 General에서 Choose Virtual Machine Manager (VMM)가 WSL 2인지 봅니다.",
+      "check": "왼쪽 아래 Engine running을 확인하고, Settings의 General에서 Choose Virtual Machine Manager (VMM)가 WSL 2인지 봅니다.",
+      "video_seconds": 912.63333,
       "verified": true,
-      "raw_frame_sha256": "fe4da83893996175bc651cf63d16f3e24eb91883b0ac58d1e3b473a44ba7e774",
-      "sha256": "d1c3ae4b7897d7fad62a6993f7caf9c84bd816fa27227eb5aea21cebb2c99a9e"
+      "raw_frame_sha256": "4d6766495fe62e89d578ce4ff4455c1455f3692d4d96a30de5d2c1d671da6b3d",
+      "sha256": "2041326c8b0912c793e24ea74856608632fc74a7ace29baaac30c53f93164c16"
     },
     "project-workfolder": {
       "required_scene": "만든 작업 폴더를 고르고 폴더 선택을 누릅니다.",
@@ -482,22 +500,30 @@
       ],
       "rectangles": [
         [
-          228,
+          227,
           805,
           1170,
           842
         ],
         [
-          1119,
-          890,
-          1242,
-          932
+          1118,
+          898,
+          1247,
+          930
         ]
       ],
       "redactions": [],
-      "caption": "만든 작업 폴더를 고르고 폴더 선택을 누릅니다.",
-      "sha256": "bfc19b13571408d0b86e3734cd2af21fb884b84e3b765109a4c586b868c7c114",
-      "raw_frame_sha256": "5e067a40edc8300745d76b2aca04e05af984c11254a56747b9e0959444f737c1"
+      "caption": "만든 작업 폴더와 폴더 선택",
+      "sha256": "dec0e3e27e40b6fb81b9a298bbb345868000e96912a0e65be6251262e3b1285f",
+      "raw_frame_sha256": "5e067a40edc8300745d76b2aca04e05af984c11254a56747b9e0959444f737c1",
+      "ignore": [
+        [
+          1224,
+          926,
+          1244,
+          950
+        ]
+      ]
     },
     "project-address": {
       "required_scene": "Code 메뉴의 HTTPS 주소 오른쪽에 있는 복사 버튼을 누릅니다.",
@@ -521,15 +547,15 @@
           511
         ],
         [
-          759,
-          713,
-          1345,
-          782
+          764,
+          722,
+          1340,
+          775
         ]
       ],
       "redactions": [],
-      "caption": "Code 메뉴의 HTTPS 주소 오른쪽에 있는 복사 버튼을 누릅니다.",
-      "sha256": "3b295bc6e2849e77a6ec3c7e0dd452f2ff307815db3f9423cd5c7166fc72479b",
+      "caption": "HTTPS 주소 오른쪽 복사 버튼",
+      "sha256": "cf4430b87a295ee94d8a78d66b25df32dffac75dfaee725eac009ef7a7b19738",
       "raw_frame_sha256": "969d0edc76bd1f69bab6e9ef6c514aedc160aba1fe55064b9fcd576136a7715f"
     },
     "project-clone": {
@@ -538,60 +564,37 @@
       "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
       "seconds": 771.42,
       "crop": [
-        448,
-        743,
+        440,
+        722,
         1110,
-        915
+        895
       ],
       "rectangles": [
         [
-          458,
-          745,
-          1027,
-          780
+          450,
+          758,
+          1030,
+          774,
+          5,
+          5
         ],
         [
-          458,
-          854,
+          455,
+          846,
           1050,
-          894
+          884,
+          5,
+          5
         ]
       ],
       "redactions": [],
-      "caption": "터미널에서 git clone을 실행하면 Receiving objects의 수신 비율이 올라갑니다.",
+      "caption": "Receiving objects 비율",
       "required_scene": "터미널에서 git clone을 실행하면 Receiving objects의 수신 비율이 올라갑니다.",
       "check": "터미널에서 git clone을 실행하면 Receiving objects의 수신 비율이 올라갑니다.",
       "video_seconds": 771.23333,
       "verified": true,
-      "raw_frame_sha256": "ce146f6476906002fb8a1051e26db5a90eabc3a51cd878f5b550906a8794a6eb",
-      "sha256": "7ea29e0160ea21bf4e96fdebc18470d3c8088cbff764805e1b1cc68c228628d4"
-    },
-    "project-root": {
-      "required_scene": "터미널에서 Receiving objects와 Resolving deltas가 모두 100%로 끝난 줄을 확인합니다.",
-      "check": "터미널에서 Receiving objects와 Resolving deltas가 모두 100%로 끝난 줄을 확인합니다.",
-      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/project-root.png",
-      "verified": true,
-      "source": "작업/촬영/환경세팅/게시본_20261104.mp4",
-      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
-      "seconds": 854.587,
-      "crop": [
-        440,
-        682,
-        1170,
-        904
-      ],
-      "rectangles": [
-        [
-          459,
-          833,
-          1112,
-          894
-        ]
-      ],
-      "redactions": [],
-      "caption": "터미널에서 Receiving objects와 Resolving deltas가 모두 100%로 끝난 줄을 확인합니다.",
-      "sha256": "b04de11cecf0b3822300febe3e8084ba491d2f427fefdbef072dac2a35394706",
-      "raw_frame_sha256": "f6617ca92f4e46621dea8674408a7332ab0f8f02a9293639ecb906afd208d591"
+      "raw_frame_sha256": "a6f4a0ed658fbf1a027ecea6eb89da0cd18e999b3e521a3054604d23adce4cec",
+      "sha256": "5cc4a89eab3e80f0b24d4b46ba815412f1e1a862f6df259e701b2d38e88654c2"
     },
     "project-terminal": {
       "required_scene": "VS Code 터미널의 Git Bash 선택·폴더 이동",
@@ -615,20 +618,20 @@
           391
         ],
         [
-          1236,
+          1224,
           662,
-          1270,
+          1265,
           695
         ]
       ],
-      "caption": "새 터미널 옆 화살표를 열어 Git Bash를 선택합니다.",
-      "sha256": "6dd3a8b76c310c6502d9270aa6b25166d6f8929e65dcf013057222baa93d9302",
+      "caption": "새 터미널 옆 화살표의 Git Bash",
+      "sha256": "705873e03140c495c69ee1bba811ca641ccac8f20cd6d7ae00d8be226de70297",
       "raw_frame_sha256": "3d057c513de89016509b05d70e7b5013e807b5cf5c46d766241c157450d377d6",
       "review_status": "본 촬영 실제 장면에서 확인; 현재 영상과 장면 순서는 별도 판정."
     },
     "system-start": {
-      "required_scene": "프로젝트 폴더의 Git Bash에 시작 명령을 넣고 Enter를 누릅니다.",
-      "check": "프로젝트 폴더의 Git Bash에 시작 명령을 넣고 Enter를 누릅니다.",
+      "required_scene": "cd hyd-iot-edu 뒤 입력 줄의 위치가 /c/study/hyd-iot-edu로 바뀐 것을 보고, 시작 명령을 넣어 Enter를 누릅니다.",
+      "check": "cd hyd-iot-edu 뒤 입력 줄의 위치가 /c/study/hyd-iot-edu로 바뀐 것을 보고, 시작 명령을 넣어 Enter를 누릅니다.",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/system-start.png",
       "verified": true,
       "source": "작업/촬영/환경세팅/게시본_20261104.mp4",
@@ -642,25 +645,33 @@
       ],
       "rectangles": [
         [
-          461,
-          927,
-          726,
-          956
+          450,
+          866,
+          632,
+          885,
+          3,
+          3
+        ],
+        [
+          465,
+          906,
+          984,
+          950
         ]
       ],
       "redactions": [],
-      "caption": "프로젝트 폴더의 Git Bash에 시작 명령을 넣고 Enter를 누릅니다.",
-      "sha256": "463b28243495fbe5c47e5a802b2a1dee5959f177bcea806aa1331b0ad87f39bd",
+      "caption": "입력 줄 위치 /c/study/hyd-iot-edu",
+      "sha256": "70195aeaf2d31ba71cd095e71917e4947e37665a27e8347b8cf840774cde9f96",
       "raw_frame_sha256": "58c37a43907dcec6c039f93c18ed28a65a3e9f9c8fd6eb1126d5e9d9a2305b3d"
     },
     "system-ready": {
-      "required_scene": "VS Code 터미널의 완료 줄에서 포털 주소 위에 마우스를 놓습니다. 링크 안내가 뜨면 Ctrl을 누른 채 클릭합니다.",
-      "check": "VS Code 터미널의 완료 줄에서 포털 주소 위에 마우스를 놓습니다. 링크 안내가 뜨면 Ctrl을 누른 채 클릭합니다.",
+      "required_scene": "VS Code 터미널의 완료 줄에서 포털 주소 위에 마우스를 놓고 Ctrl을 누른 채 클릭합니다.",
+      "check": "VS Code 터미널의 완료 줄에서 포털 주소 위에 마우스를 놓고 Ctrl을 누른 채 클릭합니다.",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/system-ready.png",
       "verified": true,
       "source": "작업/촬영/환경세팅/게시본_20261104.mp4",
       "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
-      "seconds": 1140.62,
+      "seconds": 1139.0,
       "crop": [
         0,
         0,
@@ -671,18 +682,20 @@
         [
           452,
           864,
-          784,
-          902
+          788,
+          902,
+          2,
+          2
         ]
       ],
       "redactions": [],
-      "caption": "VS Code 터미널의 완료 줄에서 포털 주소 위에 마우스를 놓습니다. 링크 안내가 뜨면 Ctrl을 누른 채 클릭합니다.",
-      "sha256": "d15f7ed6fa57fb7b032bee552effe66563d3c601be8e28f5bd40ab0efc527359",
-      "raw_frame_sha256": "ec67b9effb049e100bc77709ef7cd28a8e366e689bb031f5c27cf3108047f939"
+      "caption": "완료 줄의 포털 주소",
+      "sha256": "4888b7a0212f3bf48ddd4e131fa43b7d816b5fdca4f48649cd6d7af5fa800c52",
+      "raw_frame_sha256": "9421fe617fcb9490e48101c5f06c16a3d99b30eb236c0d629c5f5ab7a51ccfb7"
     },
     "portal-home": {
-      "required_scene": "위쪽 네 칸의 전체 상태와 아래 설비 · 데이터 · AI 연결 그림을 읽습니다.",
-      "check": "위쪽 네 칸의 전체 상태와 아래 설비 · 데이터 · AI 연결 그림을 읽습니다.",
+      "required_scene": "위쪽 네 칸의 전체 상태, 아래 설비 · 데이터 · AI 연결 그림, 맨 위 줄의 진행 중 사건 · 서비스 수 · 나 표시를 읽습니다.",
+      "check": "위쪽 네 칸의 전체 상태, 아래 설비 · 데이터 · AI 연결 그림, 맨 위 줄의 진행 중 사건 · 서비스 수 · 나 표시를 읽습니다.",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-home.png",
       "verified": true,
       "source_type": "video",
@@ -692,67 +705,50 @@
       "portal_segment_seconds": 60,
       "crop": [
         0,
-        60,
-        1900,
-        1040
-      ],
-      "rectangles": [
-        [
-          415,
-          190,
-          1855,
-          335
-        ],
-        [
-          415,
-          430,
-          1855,
-          1000
-        ]
-      ],
-      "redactions": [],
-      "caption": "위쪽 네 칸의 전체 상태와 아래 설비 · 데이터 · AI 연결 그림을 읽습니다.",
-      "sha256": "48098c9b6a539fa71fdca265dfd316cec46fc6381055ce512ddb71ccd6419a19",
-      "raw_frame_sha256": "2e4c5e2034278d6bd6f693a6b89cf9be8675dff02988d6029611d1a9e06bcdb7"
-    },
-    "portal-work": {
-      "required_scene": "내 작업함을 열면 먼저 나를 고르라고 나옵니다.",
-      "check": "내 작업함을 열면 먼저 나를 고르라고 나옵니다.",
-      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-work.png",
-      "verified": true,
-      "source_type": "video",
-      "source": "작업/촬영/환경세팅/게시본_20261104.mp4",
-      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
-      "seconds": 1271.033,
-      "portal_segment_seconds": 129.5,
-      "crop": [
-        0,
         0,
         1920,
         1080
       ],
       "rectangles": [
         [
-          15,
-          142,
-          354,
-          186
+          420,
+          198,
+          1850,
+          333
         ],
         [
-          415,
-          238,
+          420,
+          428,
           1850,
-          275
+          1019
+        ],
+        [
+          1005,
+          24,
+          1132,
+          54
+        ],
+        [
+          1340,
+          24,
+          1488,
+          54
+        ],
+        [
+          1652,
+          22,
+          1862,
+          56
         ]
       ],
       "redactions": [],
-      "caption": "내 작업함을 열면 먼저 나를 고르라고 나옵니다.",
-      "sha256": "741e3bb2a70ea5047fcc2943e0c5c178720f52c4bf47cbd45d2b70a2066e311e",
-      "raw_frame_sha256": "62bfaff6b07702957c154208357257981612ea3fd919ca4a6702baa1de587edf"
+      "caption": "위쪽 네 칸, 연결 그림, 맨 위 줄의 사건 · 서비스 수 · 나",
+      "sha256": "7415426383766f0aab3beb73c861c7a3130c0272e4a584d93861679de9777c4a",
+      "raw_frame_sha256": "e36b8c7effbdee25b9f29f58e89227b1fa8016550f74d4332d4b50bb41319dcb"
     },
     "portal-inbox-tabs": {
-      "required_scene": "최운전 · 운전원을 고르면 오른쪽 위 이름이 바뀌고 내 작업 · 알림 탭이 나타납니다.",
-      "check": "최운전 · 운전원을 고르면 오른쪽 위 이름이 바뀌고 내 작업 · 알림 탭이 나타납니다.",
+      "required_scene": "왼쪽 내 작업함을 열고 나에서 최운전 · 운전원을 고르면 오른쪽 위 이름이 바뀌고 내 작업 · 알림 탭이 나타납니다.",
+      "check": "왼쪽 내 작업함을 열고 나에서 최운전 · 운전원을 고르면 오른쪽 위 이름이 바뀌고 내 작업 · 알림 탭이 나타납니다.",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-inbox-tabs.png",
       "verified": true,
       "source_type": "video",
@@ -768,27 +764,33 @@
       ],
       "rectangles": [
         [
-          1655,
+          15,
+          145,
+          250,
+          190
+        ],
+        [
+          420,
+          232,
+          1850,
+          280
+        ],
+        [
+          420,
+          343,
+          660,
+          388
+        ],
+        [
+          1659,
           22,
           1860,
-          60
-        ],
-        [
-          415,
-          238,
-          1850,
-          275
-        ],
-        [
-          415,
-          345,
-          680,
-          385
+          55
         ]
       ],
       "redactions": [],
-      "caption": "최운전 · 운전원을 고르면 오른쪽 위 이름이 바뀌고 내 작업 · 알림 탭이 나타납니다.",
-      "sha256": "6f4e09455498079eee7cf8b13210d9ce827d5039f26f4d6d53d27914fb1fdedf",
+      "caption": "나 선택과 오른쪽 위 이름, 내 작업 · 알림 탭",
+      "sha256": "09ed1722f64176d6e3fadd4046f987e684dcbe833c962150b05f83e0cb20f6dd",
       "raw_frame_sha256": "5b123c6ce7179acad9a5acce68c4b9c9c0cef17a7fe036ab64706970b291717d"
     },
     "portal-instances": {
@@ -803,34 +805,34 @@
       "portal_segment_seconds": 181,
       "crop": [
         0,
-        60,
-        1900,
-        1040
+        0,
+        1920,
+        1080
       ],
       "rectangles": [
         [
           15,
-          194,
-          354,
-          238
+          198,
+          250,
+          241
         ],
         [
-          415,
-          165,
-          1855,
-          305
+          420,
+          198,
+          1850,
+          300
         ],
         [
-          415,
-          550,
-          1855,
-          730
+          420,
+          538,
+          1850,
+          752
         ]
       ],
       "redactions": [],
-      "caption": "처리 건의 위쪽 현황과 아래 목록 · 상세 자리를 찾습니다.",
-      "sha256": "554d3a383b0f0ec8f0a861f1232f3455bc770daf5e522a987c977a6b0038bf3d",
-      "raw_frame_sha256": "789c0aee933076cb4f8346165b4c740c5551a389ea205dcb892a66d73fdad8e1"
+      "caption": "위쪽 현황과 아래 목록 · 상세 자리",
+      "sha256": "35001cad17eda4b3a8f3af1cdf33b993c95509b84bbaf64888df1490a3e230bb",
+      "raw_frame_sha256": "bcb8a6a6a2fb6f8b892132798ae3a599b859ac1710fe383fa4bae7196f61866d"
     },
     "portal-equipment": {
       "required_scene": "결함 시뮬레이션의 HYD-01 카드에서 유온과 값들을, 다른 두 카드에서 업무 알림을 봅니다.",
@@ -844,40 +846,42 @@
       "portal_segment_seconds": 229.5,
       "crop": [
         0,
-        60,
-        1900,
-        1040
+        0,
+        1920,
+        1080
       ],
       "rectangles": [
         [
           15,
-          298,
-          354,
-          342
+          300,
+          250,
+          345
         ],
         [
-          420,
-          196,
-          885,
-          985
+          422,
+          200,
+          873,
+          1026,
+          5,
+          5
         ],
         [
-          1065,
+          1078,
           232,
-          1225,
-          265
+          1238,
+          266
         ],
         [
-          1535,
+          1568,
           232,
-          1695,
-          265
+          1713,
+          266
         ]
       ],
       "redactions": [],
-      "caption": "결함 시뮬레이션의 HYD-01 카드에서 유온과 값들을, 다른 두 카드에서 업무 알림을 봅니다.",
-      "sha256": "f3f42efe6b2a03768b8842cb086e734f0edf32e527e3a0c3b9e71673426bdee5",
-      "raw_frame_sha256": "e432a5aaca36fc506583af2c3a0c89dd400133e159083abb9504dc81b3199da0"
+      "caption": "HYD-01의 유온, 다른 두 카드의 업무 알림",
+      "sha256": "5bf2de3cc6dbf0f571866eef76c8169d328f58ab99d02ba756b8d30080a4b8cc",
+      "raw_frame_sha256": "68564885bf41b90eb26ef1f6eb691f4d3c89efd10f980f984d6bc0319bcb1b80"
     },
     "portal-oil": {
       "required_scene": "오일 분석 입력은 검사 결과를 사람이 넣는 화면입니다.",
@@ -898,20 +902,20 @@
       "rectangles": [
         [
           15,
-          350,
-          354,
-          394
+          351,
+          250,
+          396
         ],
         [
-          415,
-          196,
-          1855,
-          680
+          420,
+          200,
+          1850,
+          698
         ]
       ],
       "redactions": [],
-      "caption": "오일 분석 입력은 검사 결과를 사람이 넣는 화면입니다.",
-      "sha256": "f6009f7beabff97a24cfdbf49f9b901e3100ddeaa6ca6083ff77a44ff9641634",
+      "caption": "오일 분석 입력",
+      "sha256": "dd586f87835ae434781824a3d8ab245f65e1676e2a5aac09bec2c8ff3befb32b",
       "raw_frame_sha256": "2151b22aaec788648051c721788dbde50ea3bb22aba0bcd22471433d0d98a653"
     },
     "portal-operation": {
@@ -926,34 +930,34 @@
       "portal_segment_seconds": 279.3,
       "crop": [
         0,
-        60,
-        1900,
-        1040
+        0,
+        1920,
+        1080
       ],
       "rectangles": [
         [
           15,
           402,
-          354,
-          446
+          250,
+          447
         ],
         [
           420,
-          196,
+          190,
           1850,
           660
         ],
         [
           420,
-          690,
+          700,
           1850,
-          940
+          905
         ]
       ],
       "redactions": [],
-      "caption": "이상 확인 · 조치는 설비 상태 그림과 아래 사건 자리를 보여 줍니다.",
-      "sha256": "02f2196ea24767cae4cb094c690cfe5fa37ad2a217c90719bc21ee7efd7f6d91",
-      "raw_frame_sha256": "a9941c2aa97e51150bcd81a3531b0209eeba94c3fe8897b6c50bc21f2df8ccac"
+      "caption": "이상 확인 · 조치",
+      "sha256": "25b94426b1c644b08f8b2d093c294915b27ebbb0838dea4b57e34ba6ebe5e505",
+      "raw_frame_sha256": "2728b33915aaef8320cc7398cbb3417cbd44e44f15942449d93d62da5cee1c0f"
     },
     "portal-monitoring": {
       "required_scene": "실시간 모니터링의 유온 그래프에서 위쪽 빨간 기준선과 현재 값의 선을 구별합니다.",
@@ -967,28 +971,28 @@
       "portal_segment_seconds": 299.8,
       "crop": [
         0,
-        60,
-        1900,
-        1040
+        0,
+        1920,
+        1080
       ],
       "rectangles": [
         [
           15,
-          454,
-          354,
+          453,
+          250,
           498
         ],
         [
-          415,
-          196,
-          1860,
-          700
+          420,
+          200,
+          1850,
+          698
         ]
       ],
       "redactions": [],
-      "caption": "실시간 모니터링의 유온 그래프에서 위쪽 빨간 기준선과 현재 값의 선을 구별합니다.",
-      "sha256": "3f4ec1f851783d4f454435f5a096b5171b15812f41d5d0045b3ca5e75bbe30d9",
-      "raw_frame_sha256": "e85c8ea187a3497b30d6a04a5db03b9eb93fafa4a73406b322e7c99a477bafbe"
+      "caption": "유온 그래프의 빨간 기준선",
+      "sha256": "d3fb77e8dfdf9316df690c2cee7549e6965ddd7f0a6f8b5a6f24fecf673fc0a5",
+      "raw_frame_sha256": "5d05fa186659e796ca4d70bd9cfa7785fd07b47e48fbee64cfb5ebecab26484a"
     },
     "portal-rules": {
       "required_scene": "조치 판단 규칙의 판단 조건과 판단 실행 위치입니다.",
@@ -1002,34 +1006,34 @@
       "portal_segment_seconds": 325.7,
       "crop": [
         0,
-        60,
-        1900,
-        1040
+        0,
+        1920,
+        1080
       ],
       "rectangles": [
         [
           15,
-          558,
-          354,
-          602
+          557,
+          250,
+          604
         ],
         [
-          415,
-          200,
-          1855,
-          470
+          420,
+          215,
+          1850,
+          455
         ],
         [
-          1695,
-          482,
-          1835,
-          520
+          1698,
+          475,
+          1826,
+          522
         ]
       ],
       "redactions": [],
-      "caption": "조치 판단 규칙의 판단 조건과 판단 실행 위치입니다.",
-      "sha256": "7b4176c5a5e95f879623e0fe7f19008b4544c3c1410801092498ec72245ae3e5",
-      "raw_frame_sha256": "d44620d4193f22068783152546fabc5ad4354131e736969eb2fd3749b313c675"
+      "caption": "판단 조건과 판단 실행",
+      "sha256": "9021806e6dc1a6940ed7f4947fb41cb8b6a4b35b98f8d95541fbd461075013bc",
+      "raw_frame_sha256": "f04e6de13d1905de78aecb110be1f7850b0d8393d6c43c8118e4d85cacbc21dc"
     },
     "portal-tradeoff": {
       "required_scene": "조건별 손익에서 시험 기준을 불러오는 칸입니다.",
@@ -1043,63 +1047,69 @@
       "portal_segment_seconds": 338.5,
       "crop": [
         0,
-        60,
-        1900,
-        1040
+        0,
+        1920,
+        1080
       ],
       "rectangles": [
         [
           15,
           610,
-          354,
-          654
+          250,
+          657
         ],
         [
-          415,
-          188,
-          1855,
-          372
+          420,
+          198,
+          1850,
+          420
         ]
       ],
       "redactions": [],
-      "caption": "조건별 손익에서 시험 기준을 불러오는 칸입니다.",
-      "sha256": "bba0b939fca6f58280ced55ba4272c3ca78b0c2834ec027482a86bc75e0894a2",
-      "raw_frame_sha256": "3f1c190299984e032862dbe4ab0c997475d6a27ee4c0f730f77202cbe9d105bf"
+      "caption": "조건별 손익",
+      "sha256": "4875f7e33dbb5e27a5cc7c1381e753489f6160722dffc615f65f192351c2fcd0",
+      "raw_frame_sha256": "e53e590d49392407e8b9a2f87d1a509fe00915cfdbc6c023728d463f58987e5c"
     },
     "portal-flow": {
-      "required_scene": "승인과 실행의 판단 결과 목록과 상세 자리입니다.",
-      "check": "승인과 실행의 판단 결과 목록과 상세 자리입니다.",
+      "required_scene": "승인과 실행의 판단 결과 목록 · 상세 자리와, 아래 기업 시스템 현황의 생산 오더 납기를 봅니다.",
+      "check": "승인과 실행의 판단 결과 목록 · 상세 자리와, 아래 기업 시스템 현황의 생산 오더 납기를 봅니다.",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-flow.png",
       "verified": true,
       "source_type": "video",
       "source": "작업/촬영/환경세팅/게시본_20261104.mp4",
       "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
-      "seconds": 1491.733,
+      "seconds": 1500.0,
       "portal_segment_seconds": 350.2,
       "crop": [
         0,
-        60,
-        1900,
-        1040
+        0,
+        1920,
+        1080
       ],
       "rectangles": [
         [
           15,
-          662,
-          354,
-          706
+          660,
+          250,
+          707
         ],
         [
-          415,
-          405,
-          1855,
-          632
+          420,
+          400,
+          1850,
+          636
+        ],
+        [
+          420,
+          662,
+          1850,
+          1015
         ]
       ],
       "redactions": [],
-      "caption": "승인과 실행의 판단 결과 목록과 상세 자리입니다.",
-      "sha256": "38f1a47c476c3a755ca1d147135a0d6e3d71c15d3e02347a6b09a03fea00c21f",
-      "raw_frame_sha256": "422be1b0124d226ead18d979fc834471b87f84d25accfd29ffb2dae24aa940e8"
+      "caption": "판단 결과 자리와 생산 오더 납기",
+      "sha256": "2b99600020de4d8e21081a3d188dd5e345123d2a3aa3b5c27f0b3aabd79303b5",
+      "raw_frame_sha256": "42baf4347a38ad2802b94c371ca1078c8a1bf1f8b3c63a1ca98ea47c43c520b4"
     },
     "portal-import": {
       "required_scene": "흐름 가져오기의 위치와 등록 칸입니다.",
@@ -1113,28 +1123,28 @@
       "portal_segment_seconds": 388.6,
       "crop": [
         0,
-        60,
-        1900,
-        1040
+        0,
+        1920,
+        1080
       ],
       "rectangles": [
         [
           15,
-          710,
-          354,
-          754
+          711,
+          250,
+          757
         ],
         [
-          415,
-          188,
+          420,
+          198,
           1850,
-          590
+          612
         ]
       ],
       "redactions": [],
-      "caption": "흐름 가져오기의 위치와 등록 칸입니다.",
-      "sha256": "b044294f29af9dd576dcd2eae0d93a78a1b82e0d1bb8bdcdb7b8233f16819437",
-      "raw_frame_sha256": "28f81c94cc05af95041c752e598c88c34419bc907a1955a35e6002903c3d965c"
+      "caption": "흐름 가져오기",
+      "sha256": "ab7dd15741f78209879f063db2150adfa5fb63c1078f50ebf17e7144e9d6f7fb",
+      "raw_frame_sha256": "c0a5c06ad4c54e94d2426a2b9b674b1d9eeaa415f4737b1ab9b9b8130eddb739"
     },
     "portal-ontology": {
       "required_scene": "지식 지도 위쪽의 항목 · 연결 수와 설비 진단 칸을 찾습니다.",
@@ -1148,34 +1158,34 @@
       "portal_segment_seconds": 424.9,
       "crop": [
         0,
-        60,
-        1900,
-        1040
+        0,
+        1920,
+        1080
       ],
       "rectangles": [
         [
           15,
-          818,
-          354,
+          815,
+          250,
           862
         ],
         [
-          430,
-          392,
-          1300,
-          425
+          421,
+          394,
+          1170,
+          420
         ],
         [
-          1300,
-          452,
-          1570,
-          1015
+          1292,
+          444,
+          1562,
+          1002
         ]
       ],
       "redactions": [],
-      "caption": "지식 지도 위쪽의 항목 · 연결 수와 설비 진단 칸을 찾습니다.",
-      "sha256": "f26d2ab9dfe8ef04dc6024fb2caf09efbbc1782d8660042dc26b84845215f8bc",
-      "raw_frame_sha256": "50085b948eb8d42d8f973cddc2e3429dac22fa89f1ad38a955ff2e561fdd2abd"
+      "caption": "위쪽 항목 · 연결 수와 설비 진단 칸",
+      "sha256": "f900cc86f1fd6b8cdbb7bedfdd6dc77e603744580a6d5fc2e8e16bfdeb5ca25a",
+      "raw_frame_sha256": "250de5f2066036c68a7213fd01a03b5e5a58bdb89b26343b69266cc5bdab73f7"
     },
     "portal-knowledge": {
       "required_scene": "지식 관리의 매뉴얼 등록 자리입니다.",
@@ -1189,28 +1199,28 @@
       "portal_segment_seconds": 458.4,
       "crop": [
         0,
-        60,
-        1900,
-        1040
+        0,
+        1920,
+        1080
       ],
       "rectangles": [
         [
           15,
-          922,
-          354,
-          966
+          919,
+          250,
+          964
         ],
         [
-          415,
-          250,
+          420,
+          245,
           1850,
-          655
+          682
         ]
       ],
       "redactions": [],
-      "caption": "지식 관리의 매뉴얼 등록 자리입니다.",
-      "sha256": "7711289a6096a9f0ed68e6237c37d236f11a68e27ab49e251b5067eb1d7e9e51",
-      "raw_frame_sha256": "bb26d3fffe018ebea02b4265e988385b34c93227e3171d5e0e2513b01a593a6c"
+      "caption": "매뉴얼 등록 자리",
+      "sha256": "1c5eb4897828ae1ff35c2ab3777a8d10beb85e46d0b2ac7308cf628ba7c0f9bd",
+      "raw_frame_sha256": "1b27a5cbddc577e824c0a7f4a65231814788f18f6d1819a1aa926c744ec10735"
     },
     "portal-sops": {
       "required_scene": "조치 방법 목록에 설비 제어와 정비 요청이 함께 있습니다.",
@@ -1224,28 +1234,28 @@
       "portal_segment_seconds": 446.4,
       "crop": [
         0,
-        60,
-        1900,
-        1040
+        0,
+        1920,
+        1080
       ],
       "rectangles": [
         [
           15,
-          870,
-          354,
-          914
+          867,
+          250,
+          912
         ],
         [
-          415,
+          422,
           250,
-          870,
+          868,
           995
         ]
       ],
       "redactions": [],
-      "caption": "조치 방법 목록에 설비 제어와 정비 요청이 함께 있습니다.",
-      "sha256": "df810836eb4298d853796a036e0905f2fa8bf20ff5b42c307d85f4cc5d3fe838",
-      "raw_frame_sha256": "471eb1ab8d2a96cd6a98c38734b3d36bc01e78233b692fd0f423c5c7ff81921d"
+      "caption": "설비 제어와 정비 요청",
+      "sha256": "618cb58417bfe4ea3020cd40ff6a7c4a2b0c9d57654ec43310398479261c3c7f",
+      "raw_frame_sha256": "0f006389fe852f461bf252d8ec1603dca9a4e8157bd02cac2ed23ae27e00b220"
     },
     "portal-data": {
       "required_scene": "데이터 연결에서 연결 상태를 봅니다.",
@@ -1259,28 +1269,28 @@
       "portal_segment_seconds": 471,
       "crop": [
         0,
-        60,
-        1900,
-        1040
+        0,
+        1920,
+        1080
       ],
       "rectangles": [
         [
           15,
-          970,
-          354,
-          1014
+          971,
+          250,
+          1016
         ],
         [
-          415,
-          190,
-          1855,
-          370
+          420,
+          198,
+          1850,
+          360
         ]
       ],
       "redactions": [],
-      "caption": "데이터 연결에서 연결 상태를 봅니다.",
-      "sha256": "ff203bf75ef7a08649d7f024df6fe1dee6cb7ca25dc6fa9e451f4019ee5cfbaf",
-      "raw_frame_sha256": "606e306d0bcb1639a63e774db87cc92d915db844718220ffe13e0b7e9bfe98b3"
+      "caption": "연결 상태",
+      "sha256": "8d8c3b6535838f87a3b722e8b29bf84b379fc8b603a348088edf58618ed1bc30",
+      "raw_frame_sha256": "1fd55563d21ce12b00726b356a5f5c9826168e2f6413c86232d97dd66ddbf936"
     },
     "portal-agents": {
       "required_scene": "에이전트 목록에서 맡은 일이 다른 에이전트들을 봅니다.",
@@ -1294,28 +1304,28 @@
       "portal_segment_seconds": 511.6,
       "crop": [
         0,
-        60,
-        1900,
-        1040
+        0,
+        1920,
+        1080
       ],
       "rectangles": [
         [
           15,
           866,
-          354,
+          250,
           910
         ],
         [
-          415,
-          320,
-          870,
-          1005
+          422,
+          324,
+          845,
+          1001
         ]
       ],
       "redactions": [],
-      "caption": "에이전트 목록에서 맡은 일이 다른 에이전트들을 봅니다.",
-      "sha256": "cbbf9ca4d7cd2de41e6c3aa4472fd4862665b2f44612f1d8b275e1f1dc83fc75",
-      "raw_frame_sha256": "8f437c1fa8ce9103f51316189b28b56f47aee40d8f6a29a8aa3a22ee54d19720"
+      "caption": "에이전트 목록",
+      "sha256": "24965cbdaa01e4e7e5312208d97f7c61b5b573479252d80e877326c1d6ba7397",
+      "raw_frame_sha256": "e280e5e1c4fb30ce478d2de4880ab77332f4744ed0dacc6c7ddd0a50f867f9ce"
     },
     "portal-chat": {
       "required_scene": "에이전트에게 질문의 질문 단추 위치입니다.",
@@ -1329,28 +1339,28 @@
       "portal_segment_seconds": 495,
       "crop": [
         0,
-        60,
-        1900,
-        1040
+        0,
+        1920,
+        1080
       ],
       "rectangles": [
         [
           15,
           814,
-          354,
-          858
+          250,
+          860
         ],
         [
-          430,
-          660,
-          1290,
-          800
+          446,
+          666,
+          1345,
+          801
         ]
       ],
       "redactions": [],
-      "caption": "에이전트에게 질문의 질문 단추 위치입니다.",
-      "sha256": "26e8609704a6e8a049e2efca2392273438eba1b462f2deac40f1ea8388057c1a",
-      "raw_frame_sha256": "ef68a59dc477bd7fb0383819fe7fd9d415a3866fe4cb99ccf3f77f7579a70f71"
+      "caption": "질문 단추",
+      "sha256": "53a6f5612f2dad84e6a25dbe6470ca01f3705a167a593828860fd3ba6fcb2ad6",
+      "raw_frame_sha256": "18960925d85d8e51b90e522665ab75238aefdf0f4791655e94275f414fac0acc"
     },
     "portal-tools": {
       "required_scene": "도구 연결에서 에이전트가 쓰는 도구 묶음을 봅니다.",
@@ -1364,28 +1374,28 @@
       "portal_segment_seconds": 521,
       "crop": [
         0,
-        60,
-        1900,
-        1040
+        0,
+        1920,
+        1080
       ],
       "rectangles": [
         [
           15,
-          918,
-          354,
+          917,
+          250,
           962
         ],
         [
-          415,
-          335,
+          420,
+          322,
           1850,
-          1005
+          1015
         ]
       ],
       "redactions": [],
-      "caption": "도구 연결에서 에이전트가 쓰는 도구 묶음을 봅니다.",
-      "sha256": "404c2c2f629e6a2ede11ae64c32d66d01528b06c74006178c5f2fa4e23c99f63",
-      "raw_frame_sha256": "46ee0c85a0775d25bdc2bf47f53b8da2d330c278fb7a169baa3adfeedf8cf4db"
+      "caption": "도구 묶음",
+      "sha256": "cd68e36850667abafe0bb6ac7c03e23ff006fa8856372d2cd7ac2a18c596d489",
+      "raw_frame_sha256": "465b5e963650bfe7aa947c4f6b6afb07a03aeeaa9fe4a664ba850ed7da6f8b77"
     },
     "portal-compare": {
       "required_scene": "시험 비교의 시험 조건 칸입니다.",
@@ -1399,28 +1409,28 @@
       "portal_segment_seconds": 527,
       "crop": [
         0,
-        60,
-        1900,
-        1040
+        0,
+        1920,
+        1080
       ],
       "rectangles": [
         [
           15,
           970,
-          354,
-          1014
+          250,
+          1016
         ],
         [
-          415,
-          196,
-          1855,
-          520
+          420,
+          198,
+          1850,
+          602
         ]
       ],
       "redactions": [],
-      "caption": "시험 비교의 시험 조건 칸입니다.",
-      "sha256": "135347529ffc66e26b47cbfe616adf128eedb63b3c93cd3e262b4d2e603faa42",
-      "raw_frame_sha256": "c434a2c138b38cf71f54f5321567f5c21d7bd6a92ffe0d0f278de3625c2cbbc9"
+      "caption": "시험 조건 칸",
+      "sha256": "21c683628263abda43dffc05175e47371fbcceba5cb8212bd68328fc8f7d87f6",
+      "raw_frame_sha256": "1de7ddcbd5d0bae09d75d890524cf42fc7771b49ca10a313790b3e515d3a3936"
     },
     "portal-evaluation": {
       "required_scene": "판단 채점의 현황 칸입니다.",
@@ -1434,28 +1444,28 @@
       "portal_segment_seconds": 538,
       "crop": [
         0,
-        60,
-        1900,
-        1075
+        0,
+        1920,
+        1080
       ],
       "rectangles": [
         [
           15,
           1018,
-          354,
+          250,
           1062
         ],
         [
-          420,
-          296,
-          1850,
-          420
+          422,
+          278,
+          1849,
+          410
         ]
       ],
       "redactions": [],
-      "caption": "판단 채점의 현황 칸입니다.",
-      "sha256": "8242ad305f5c77293817a86d201d47f7f80e2859391b9c9a40935100a972addf",
-      "raw_frame_sha256": "e776e4957399e5f539add7a37ff7fa1a984b00fa9211a6c93c92c420600daaf3"
+      "caption": "채점 현황",
+      "sha256": "28bdb367b83d40d36d14fbeb25f8f728f6f304b9c624b4a5656451b8f2808d1d",
+      "raw_frame_sha256": "11d90d0f601867d73131d0690dc2fbf6f51eae7d9c261ba2b076958787d7ad43"
     },
     "portal-performance": {
       "required_scene": "성과 지표의 숫자들을 봅니다.",
@@ -1469,28 +1479,28 @@
       "portal_segment_seconds": 553.6,
       "crop": [
         0,
-        60,
-        1900,
-        1040
+        0,
+        1920,
+        1080
       ],
       "rectangles": [
         [
           15,
           814,
-          354,
-          858
+          250,
+          860
         ],
         [
-          415,
+          420,
           262,
-          1860,
-          420
+          1850,
+          436
         ]
       ],
       "redactions": [],
-      "caption": "성과 지표의 숫자들을 봅니다.",
-      "sha256": "b608b99409a3ae63ebb63048e63703321b51691f5225cc9fbc780c884c9db22f",
-      "raw_frame_sha256": "f37be63c0b1891884318f85f5fa6838e88c8fe1cd55f55bc43036ca941d69c5b"
+      "caption": "성과 지표",
+      "sha256": "76fc8dc20de6ec02d3554b4f6352a018a152a3bcd115381c94b33a551ebb24d2",
+      "raw_frame_sha256": "fe2b65f758d4e30a4e9fe0155715fc7ce41f9198763e3e61fc677c27a74590d1"
     },
     "portal-system": {
       "required_scene": "시스템 구성의 프로그램 목록입니다.",
@@ -1504,28 +1514,28 @@
       "portal_segment_seconds": 560,
       "crop": [
         0,
-        60,
-        1900,
-        1040
+        0,
+        1920,
+        1080
       ],
       "rectangles": [
         [
           15,
-          974,
-          354,
-          1018
+          972,
+          250,
+          1016
         ],
         [
-          415,
-          196,
+          420,
+          193,
           1850,
-          1020
+          1002
         ]
       ],
       "redactions": [],
-      "caption": "시스템 구성의 프로그램 목록입니다.",
-      "sha256": "52edd0d50c15e7d2bedfd9663fa176879f6398ef75952090a46532bb4bc4b6c2",
-      "raw_frame_sha256": "8c53f32ff9ec12df1ba052c1fca055fffb6214691e32f975b05340e74e4b739e"
+      "caption": "프로그램 목록",
+      "sha256": "8780bf0a2b7151f945335e510f1e5dd3f2bc0188694d519115a3c039fe6f1561",
+      "raw_frame_sha256": "f0033a487eb38b3e99f6a880eb696b27274f87a15789e1a7db67c5fe86e98f89"
     },
     "portal-admin": {
       "required_scene": "관리 화면의 항목들입니다.",
@@ -1539,28 +1549,28 @@
       "portal_segment_seconds": 570.4,
       "crop": [
         0,
-        60,
-        1900,
-        1075
+        0,
+        1920,
+        1080
       ],
       "rectangles": [
         [
           15,
-          1026,
-          354,
+          1022,
+          250,
           1070
         ],
         [
-          415,
-          188,
-          1855,
-          552
+          420,
+          202,
+          1850,
+          544
         ]
       ],
       "redactions": [],
-      "caption": "관리 화면의 항목들입니다.",
-      "sha256": "308d5e48c5faa415574e2353251d536e46734e4f7fe3b66e6d3bf4a3d8813d9c",
-      "raw_frame_sha256": "4b30f70ef93f409d635625b800d3405c6638dc28a985972e32895206a5ba5338"
+      "caption": "관리 항목",
+      "sha256": "676644447ff7b86305f45bce4976cf658e7e0217fcc7860e141b3fb77102d601",
+      "raw_frame_sha256": "0d6395664a44f206a56dcaf4719329e518823b57fb81afe34ed34891043c3e91"
     },
     "docker-install-complete": {
       "required_scene": "Docker Desktop 설치 완료",
@@ -1589,41 +1599,10 @@
           471
         ]
       ],
-      "caption": "Installation succeeded를 확인하고 Close를 누릅니다.",
+      "caption": "Installation succeeded",
       "raw_frame_sha256": "ab3f7c0328f3cee10e306d7c129cf39b4b0b5ebe7fdaa8e25ef6a67e2ca73432",
       "sha256": "593ee568374d9ef4763c9fbc3901e73ac4ee84d43a7a9fc08d406a485a677425",
       "verified": true
-    },
-    "project-terminal-root": {
-      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/project-terminal-root.png",
-      "verified": true,
-      "source": "작업/촬영/환경세팅/게시본_20261104.mp4",
-      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
-      "seconds": 934.42,
-      "crop": [
-        450,
-        850,
-        1000,
-        960
-      ],
-      "rectangles": [
-        [
-          462,
-          866,
-          640,
-          892
-        ],
-        [
-          462,
-          908,
-          975,
-          934
-        ]
-      ],
-      "caption": "프로젝트 폴더로 이동한 뒤 터미널의 현재 위치를 확인합니다.",
-      "sha256": "83d9c138ce47746115e22d9c57c806dcdc1d2abc29b4b76a73f828eb0d9781ec",
-      "raw_frame_sha256": "cc72b0d0a5e77f38cd6e23bab3e1f9754add719e25aa352008bfcd167804c50c",
-      "redactions": []
     },
     "git-version": {
       "required_scene": "새 터미널의 Git 버전 확인",
@@ -1647,7 +1626,7 @@
           207
         ]
       ],
-      "caption": "Git Bash에서 git --version을 실행하고 버전을 확인합니다.",
+      "caption": "git version 줄",
       "sha256": "8c01641ecddcc8949304f2d435c16f310a3c3d494d32d1a78931c6693e186691",
       "raw_frame_sha256": "14bfdd1717629f27e50101001775d8cbdf1ced9f924f658d3967b3b30f20c6d9",
       "review_status": "본 촬영의 실제 명령과 출력 확인; 개인 프롬프트는 크롭 밖. 현 유성 후보 포함 여부는 별도 확인."
@@ -1671,7 +1650,7 @@
           847,
           422,
           992,
-          455
+          451
         ],
         [
           1128,
@@ -1680,8 +1659,8 @@
           804
         ]
       ],
-      "caption": "설치 완료 창에서 Launch Git Bash를 선택하고 Finish를 누릅니다.",
-      "sha256": "8de03e2798acf0275faa3b398031d76b97d6123f1914f11287b9138f85128770",
+      "caption": "Launch Git Bash 선택",
+      "sha256": "db9a371ad07a9028ecd2c8cd871b3d53506c31797e930d35230dfdc258e1960b",
       "raw_frame_sha256": "f3f3ffb87d4d2387767b36ec81c2c061b042e789611d406e3c2466b34dc19f41",
       "review_status": "본 촬영 실제 설치 완료 창 확인."
     },
@@ -1708,7 +1687,7 @@
         ]
       ],
       "redactions": [],
-      "caption": "Windows 검색 결과에서 Windows PowerShell을 눌러 새 창을 엽니다.",
+      "caption": "검색 결과의 Windows PowerShell",
       "sha256": "592e01714978f8e86d4c60e3c4e6219081b1b57bd215a69e84dfd728ef121e4e",
       "raw_frame_sha256": "225923d7bcd0758166f18d2347afaa25fe2d08883fb9caf76c0b5d141806e8a1"
     },
@@ -1721,17 +1700,19 @@
       "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
       "seconds": 1051.087,
       "crop": [
-        452,
-        725,
-        1755,
-        958
+        445,
+        718,
+        1795,
+        965
       ],
       "rectangles": [
         [
-          459,
-          732,
-          1311,
-          763
+          455,
+          740,
+          1312,
+          758,
+          5,
+          5
         ],
         [
           1199,
@@ -1741,13 +1722,13 @@
         ]
       ],
       "redactions": [],
-      "caption": "4/8 단계의 Pulling 표시와 받은 양이 달라지면 이미지를 받고 있는 중입니다.",
-      "sha256": "00f26ce05b1367fc7345913afd4b6beca0b7f15ba05cd0b9b6fe30df9b878ed0",
-      "raw_frame_sha256": "3f62ad4d3dab806765d7afa56a908be705fe5190f8b25c28c592d4f4e303de0f"
+      "caption": "4/8 단계의 Pulling과 받은 양",
+      "sha256": "e2fc2a769245241059cd01d88977fd207a8b02c08e4e8a99a25c9944dd668df4",
+      "raw_frame_sha256": "e92de334a72853912cab3c2298fa0ceb7829e01ace5711bb056c0dee2be36636"
     },
     "portal-arrival": {
-      "required_scene": "열린 포털 홈에서 제목과 왼쪽 작업 메뉴를 확인합니다. 상태 카드의 숫자는 실행 중인 환경에 따라 다릅니다.",
-      "check": "열린 포털 홈에서 제목과 왼쪽 작업 메뉴를 확인합니다. 상태 카드의 숫자는 실행 중인 환경에 따라 다릅니다.",
+      "required_scene": "열린 포털 홈에서 제목 홈, 왼쪽 작업 · 설비 메뉴, 위쪽 상태 카드를 확인합니다. 카드의 숫자는 실행 중인 환경에 따라 다릅니다.",
+      "check": "열린 포털 홈에서 제목 홈, 왼쪽 작업 · 설비 메뉴, 위쪽 상태 카드를 확인합니다. 카드의 숫자는 실행 중인 환경에 따라 다릅니다.",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-arrival.png",
       "verified": true,
       "source_type": "video",
@@ -1763,21 +1744,33 @@
       ],
       "rectangles": [
         [
-          415,
+          418,
           118,
-          490,
-          165
+          458,
+          160
         ],
         [
-          15,
-          130,
-          354,
-          235
+          12,
+          104,
+          355,
+          236
+        ],
+        [
+          12,
+          262,
+          355,
+          490
+        ],
+        [
+          420,
+          198,
+          1850,
+          333
         ]
       ],
       "redactions": [],
-      "caption": "열린 포털 홈에서 제목과 왼쪽 작업 메뉴를 확인합니다. 상태 카드의 숫자는 실행 중인 환경에 따라 다릅니다.",
-      "sha256": "89e2449a31c8c947a201f9ca89df9c0a3d1a5a2732b3edc2a4e8f3f28dd8451b",
+      "caption": "제목 홈, 왼쪽 작업 · 설비, 위쪽 상태 카드",
+      "sha256": "555a1db751349544691824cad02bc0251c7b33b40e8762e25806d7b0beb8ef56",
       "raw_frame_sha256": "58536c73144ba5b1b6ce1c88da85cee65eefb5054121dbba4a6919e6357c881b"
     },
     "docker-skip": {
@@ -1802,58 +1795,17 @@
           1214,
           314,
           1290,
-          369
+          368
         ]
       ],
       "redactions": [],
-      "caption": "Welcome to Docker의 오른쪽 위 Skip을 누르면 계정 입력 단계를 지나갑니다.",
+      "caption": "오른쪽 위 Skip",
       "required_scene": "Welcome to Docker의 오른쪽 위 Skip을 누르면 계정 입력 단계를 지나갑니다.",
       "check": "Welcome to Docker의 오른쪽 위 Skip을 누르면 계정 입력 단계를 지나갑니다.",
       "video_seconds": 880.13333,
       "verified": true,
       "raw_frame_sha256": "2feaa2b665834b320fa083491a602c5733f4a8ae6cba092619f0371dca2edf93",
-      "sha256": "99b2862516ba63bc42203f2502fc5708750b3de405976e63f69e1b2976d08041"
-    },
-    "portal-topbar": {
-      "required_scene": "위쪽 줄의 진행 중 사건, 서비스 수, 나 표시를 찾습니다.",
-      "check": "위쪽 줄의 진행 중 사건, 서비스 수, 나 표시를 찾습니다.",
-      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-topbar.png",
-      "verified": true,
-      "source_type": "video",
-      "source": "작업/촬영/환경세팅/게시본_20261104.mp4",
-      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
-      "seconds": 1233.533,
-      "portal_segment_seconds": 92,
-      "crop": [
-        0,
-        0,
-        1920,
-        1080
-      ],
-      "rectangles": [
-        [
-          970,
-          22,
-          1130,
-          60
-        ],
-        [
-          1345,
-          22,
-          1490,
-          60
-        ],
-        [
-          1655,
-          22,
-          1860,
-          60
-        ]
-      ],
-      "redactions": [],
-      "caption": "위쪽 줄의 진행 중 사건, 서비스 수, 나 표시를 찾습니다.",
-      "sha256": "bd7e47304f53e5b7382c9824b348e17ef7c679c0c0599dbd9cfc4af3e6731d47",
-      "raw_frame_sha256": "299309172d221082bf8e87ebc66b199b69c488fc307575d423d39df1706708fc"
+      "sha256": "e46dcdeba640f1dc2f22f24f8029aebe70412cc0a3506af30f130fd7cfdb96a3"
     },
     "portal-button": {
       "required_scene": "카드 아래쪽 결함 실험의 쿨러 열화 주입 위치입니다. 지금은 누르지 않습니다.",
@@ -1875,49 +1827,20 @@
         [
           15,
           298,
-          354,
+          250,
           342
         ],
         [
           455,
-          455,
+          449,
           640,
-          492
+          496
         ]
       ],
       "redactions": [],
-      "caption": "카드 아래쪽 결함 실험의 쿨러 열화 주입 위치입니다. 지금은 누르지 않습니다.",
-      "sha256": "9ba1c3f0f4ad59554948880c09cb4b5d91865c0cf576bb8963407fc5dadfcc0a",
+      "caption": "쿨러 열화 주입",
+      "sha256": "233246643253ae056a6177b1a2b80dc7fcda5a36e7ff73921732be29c73e1a1b",
       "raw_frame_sha256": "625d1874b48661243f0c906223af691a6c9c7d93066c46509069d3728bd69740"
-    },
-    "portal-enterprise": {
-      "required_scene": "기업 시스템 현황에서 생산 오더의 납기를 봅니다.",
-      "check": "기업 시스템 현황에서 생산 오더의 납기를 봅니다.",
-      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-enterprise.png",
-      "verified": true,
-      "source_type": "video",
-      "source": "작업/촬영/환경세팅/게시본_20261104.mp4",
-      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
-      "seconds": 1511.433,
-      "portal_segment_seconds": 369.9,
-      "crop": [
-        0,
-        60,
-        1900,
-        1040
-      ],
-      "rectangles": [
-        [
-          415,
-          665,
-          1855,
-          1010
-        ]
-      ],
-      "redactions": [],
-      "caption": "기업 시스템 현황에서 생산 오더의 납기를 봅니다.",
-      "sha256": "86deb850a82da7593fb43946b986b93e5faceb63f560a6d344a39bc41f1d802e",
-      "raw_frame_sha256": "e30676373e74ff679e9c4c6911ea4d4c90dedcea3d207d215151ad969ff9faac"
     },
     "wsl-enter": {
       "required_scene": "아무 키나 누르라는 안내가 나오면 60초 안에 Enter를 누릅니다.",
@@ -1935,16 +1858,26 @@
       ],
       "rectangles": [
         [
-          238,
-          420,
-          1140,
-          490
+          234,
+          423,
+          782,
+          480,
+          2,
+          2
         ]
       ],
       "redactions": [],
-      "caption": "아무 키나 누르라는 안내가 나오면 60초 안에 Enter를 누릅니다.",
-      "sha256": "12089b6ee62bdf990344a40fa11db793fef02d9cc0880a57f591a1a139a2a7cf",
-      "raw_frame_sha256": "20364cc7ee3ee92f67b8101ecdd099249b2114b677b1f8e3bb986533e3b59f17"
+      "caption": "아무 키나 누르라는 안내",
+      "sha256": "592f6accdf0af243cd18fabffc3fb5e427e97c9c66fbbb5697aef78b58b43435",
+      "raw_frame_sha256": "20364cc7ee3ee92f67b8101ecdd099249b2114b677b1f8e3bb986533e3b59f17",
+      "ignore": [
+        [
+          226,
+          415,
+          232,
+          490
+        ]
+      ]
     },
     "vscode-first-login": {
       "required_scene": "처음 뜨는 로그인 창에서 Continue without Signing In을 누릅니다.",
@@ -1965,12 +1898,12 @@
           1280,
           795,
           1520,
-          850
+          857
         ]
       ],
       "redactions": [],
-      "caption": "처음 뜨는 로그인 창에서 Continue without Signing In을 누릅니다.",
-      "sha256": "19567e4046689174c680f5246d53470150bda6b54d7aaa3b6965739cc1e88205",
+      "caption": "Continue without Signing In",
+      "sha256": "3f627de99494789df4ae66287dc3f68f37337499319a3c010651b05445aa862e",
       "raw_frame_sha256": "a1a4d899be89c3bc2a3a762d4e2033bca5fb2ba04c072370137900eaafad113e"
     },
     "vscode-first-theme": {
@@ -1989,15 +1922,15 @@
       ],
       "rectangles": [
         [
-          1400,
+          1393,
           800,
           1525,
           845
         ]
       ],
       "redactions": [],
-      "caption": "테마 창에서 Get Started를 누릅니다.",
-      "sha256": "1211d2f182338dc64003e917cc578d7aad47cc1a241ee0914aab925bb3ce41ef",
+      "caption": "Get Started",
+      "sha256": "ed0f5aad2fcfe229bc5fea9e945e1e3360880312d6fffa8c46768f7f39023d8c",
       "raw_frame_sha256": "d3364833917185c2b128ed96c9f112f3f382466fa956f49d7d5e6114d968ab5f"
     },
     "vscode-language-restart": {
@@ -2019,12 +1952,12 @@
           1068,
           515,
           1158,
-          555
+          554
         ]
       ],
       "redactions": [],
-      "caption": "표시 언어를 바꾸려면 Restart를 누릅니다.",
-      "sha256": "bd14c6fcec40219c6442619b6818f5a5419286732b154301c4e09dae657a1b0a",
+      "caption": "Restart",
+      "sha256": "9c1885252f7e20ffe2fa462335c40751b6a2c62dba6b604883fb7932f1bf5d28",
       "raw_frame_sha256": "d02b9e413e2760729d088d0611d614f2062498fb23ad4ad03f026ea92b4f3b36"
     },
     "project-open-folder": {
@@ -2043,20 +1976,28 @@
       ],
       "rectangles": [
         [
-          70,
-          205,
-          430,
-          240
+          55,
+          206,
+          422,
+          236
         ]
       ],
       "redactions": [],
-      "caption": "파일 메뉴에서 폴더 열기를 누릅니다.",
-      "sha256": "f6496331486798ed4a241fe6b4249b933792c61f7ec0783b121505ec903ddb6d",
-      "raw_frame_sha256": "2165ae0c1dcdac1051d17bc0032d0c0ae674b0e6e05aab9a3486495ea0914fac"
+      "caption": "파일 메뉴의 폴더 열기",
+      "sha256": "b7548cfb0c0079ed9e820e861fbd39be6530010f806bc707c823dcdf6f2ab83f",
+      "raw_frame_sha256": "2165ae0c1dcdac1051d17bc0032d0c0ae674b0e6e05aab9a3486495ea0914fac",
+      "ignore": [
+        [
+          116,
+          222,
+          144,
+          254
+        ]
+      ]
     },
     "project-new-terminal": {
-      "required_scene": "터미널 메뉴에서 새 터미널을 누릅니다.",
-      "check": "터미널 메뉴에서 새 터미널을 누릅니다.",
+      "required_scene": "창 폭이 좁아 메뉴가 접혀 있으면 위쪽 …을 누르고 터미널 → 새 터미널을 누릅니다.",
+      "check": "창 폭이 좁아 메뉴가 접혀 있으면 위쪽 …을 누르고 터미널 → 새 터미널을 누릅니다.",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/project-new-terminal.png",
       "verified": true,
       "source": "작업/촬영/환경세팅/게시본_20261104.mp4",
@@ -2070,22 +2011,36 @@
       ],
       "rectangles": [
         [
-          450,
-          68,
-          705,
-          106
+          446,
+          7,
+          481,
+          33
         ],
         [
-          725,
-          68,
-          1125,
-          106
+          444,
+          72,
+          714,
+          101
+        ],
+        [
+          726,
+          73,
+          1122,
+          102
         ]
       ],
       "redactions": [],
-      "caption": "터미널 메뉴에서 새 터미널을 누릅니다.",
-      "sha256": "34a09f2d9f303da2b3a98ee923f0c51c0fb7eb809967e5fbbf5a6933d8721ddd",
-      "raw_frame_sha256": "ee9c52d9e0260dba83da52606f2a0a2bdf12e177c14bf6d453a1e575ab34c282"
+      "caption": "접힌 메뉴 …",
+      "sha256": "45d80009799c1a0fb894451f9da91ad692141eb0aaf11caca958aa3dc66219c1",
+      "raw_frame_sha256": "ee9c52d9e0260dba83da52606f2a0a2bdf12e177c14bf6d453a1e575ab34c282",
+      "ignore": [
+        [
+          826,
+          80,
+          858,
+          116
+        ]
+      ]
     },
     "codex-next": {
       "required_scene": "Codex 탭의 안내 화면에서 다음을 누릅니다.",
@@ -2104,14 +2059,14 @@
       "rectangles": [
         [
           1788,
-          880,
+          879,
           1878,
           924
         ]
       ],
       "redactions": [],
-      "caption": "Codex 탭의 안내 화면에서 다음을 누릅니다.",
-      "sha256": "ac99d6ac40e2d80447528d14a6d84cab0c3f73c790b055ee76f9027c005a7ea4",
+      "caption": "다음",
+      "sha256": "88b586e2906d89d29073703053dc0ab88e2b795bbfb5efab7ff2833d4b20d564",
       "raw_frame_sha256": "f25426356bcc006b0909de0a2352c8e9f98f34f703cf42dbf42a4da2ceaf10e5"
     },
     "codex-model": {
@@ -2137,7 +2092,7 @@
         ]
       ],
       "redactions": [],
-      "caption": "모델 안내에서 현재 모델로 계속 진행을 누릅니다.",
+      "caption": "현재 모델로 계속 진행",
       "sha256": "c9c984f5b5a5293933cc2bda1f38967cbfaa81131ac0741fc4a5b8dab763816f",
       "raw_frame_sha256": "d38b7acb4389ba55502d9db48f6083f7168711e6658f326612d14507fa4fbe11"
     },
@@ -2158,14 +2113,14 @@
       "rectangles": [
         [
           748,
-          420,
+          413,
           1172,
           505
         ]
       ],
       "redactions": [],
-      "caption": "브라우저의 Welcome back 화면에서 본인 계정을 누릅니다.",
-      "sha256": "e262b3ff6f92d77ed635783a99e61b3ee0d3e5433ff2890e4a0febc9bb713703",
+      "caption": "Welcome back의 본인 계정",
+      "sha256": "d29c1f3897392aa7e3dcdc1b9a6ff9e8379726c495186cf09e8533a044a1f67d",
       "raw_frame_sha256": "6d797173030a77dc58134c5f0a17e0778a68369196e54cc785d76e0a8333ef49"
     },
     "codex-login-workspace": {
@@ -2186,13 +2141,13 @@
         [
           960,
           468,
-          1214,
+          1215,
           540
         ]
       ],
       "redactions": [],
-      "caption": "Select a workspace에서 Continue를 누릅니다.",
-      "sha256": "7d78aed765128fc25ebde9f4667e84296332b44b9beea8ab5a021a9338084784",
+      "caption": "Continue",
+      "sha256": "f617e0ff801f4a54d9a22387b1dcd7f172229dfe301156eeed060259f1cec621",
       "raw_frame_sha256": "ae382a1aac1fa4517fa624cb8ee874765a32307a2819dedf117b6250a2556a3f"
     },
     "codex-signed-in": {
@@ -2214,13 +2169,13 @@
           750,
           418,
           1170,
-          462
+          463
         ]
       ],
       "redactions": [],
-      "caption": "Signed in to Codex가 보이면 로그인이 끝난 것입니다.",
-      "sha256": "b312b82d3344666f18489657b0fab42a8afdc16346c8b1c8b72f6c9c7f53d8fe",
-      "raw_frame_sha256": "5e65186d25899c8b62039d5a541387fb79bd88f367bec921495202ac50067b1e"
+      "caption": "Signed in to Codex",
+      "sha256": "43b97008169bd81a9327131725f85e31df8fe1826b213effd5b7f9ff55ca8c07",
+      "raw_frame_sha256": "deb497a1571194c7072211e641be55b35fb216e234a1a67ce96509e2140b5506"
     },
     "project-trust-dialog": {
       "required_scene": "폴더를 신뢰할지 묻는 창이 뜨면 왼쪽 파란 단추 Yes, I trust the authors를 누릅니다. 다른 PC의 화면이라 폴더 이름과 제품 이름이 다릅니다. ",
@@ -2246,13 +2201,13 @@
         ]
       ],
       "redactions": [],
-      "caption": "폴더를 신뢰할지 묻는 창이 뜨면 왼쪽 파란 단추 Yes, I trust the authors를 누릅니다. 다른 PC의 화면이라 폴더 이름과 제품 이름이 다릅니다. ",
-      "sha256": "3369c01e0006d64461c70ac417c347d014ca61cfe4da6b9ed7ab68fcb7cfb019",
+      "caption": "왼쪽 파란 단추. 다른 PC 화면이라 폴더 이름이 다릅니다.",
+      "sha256": "8afb91b22b962c169a4bcdd71039f36ae40a2f17b059b52dbea85614814e0720",
       "raw_frame_sha256": "ba63e087138e8e3bc06dd5c62ad6e323ff1fa8df9c8b700650056ea09bd31c0b"
     },
     "project-trust-restricted": {
-      "required_scene": "위에 제한 모드 안내 줄이, 왼쪽 아래에 Restricted Mode가 보이면 AI 도구가 동작하지 않습니다. 왼쪽 아래 Restricted Mode를 누릅니다. 다른 PC의 화면이라 폴더 이름과 제품 이름이 다릅니다. ",
-      "check": "위에 제한 모드 안내 줄이, 왼쪽 아래에 Restricted Mode가 보이면 AI 도구가 동작하지 않습니다. 왼쪽 아래 Restricted Mode를 누릅니다. 다른 PC의 화면이라 폴더 이름과 제품 이름이 다릅니다. ",
+      "required_scene": "위에 제한 모드 안내 줄이, 왼쪽 아래에 Restricted Mode가 보이면 AI 도구가 동작하지 않습니다. 왼쪽 아래 Restricted Mode를 누릅니다. 다른 PC의 화면이라 폴더 이름과 제품 이름이 다릅니다.",
+      "check": "위에 제한 모드 안내 줄이, 왼쪽 아래에 Restricted Mode가 보이면 AI 도구가 동작하지 않습니다. 왼쪽 아래 Restricted Mode를 누릅니다. 다른 PC의 화면이라 폴더 이름과 제품 이름이 다릅니다.",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/project-trust-restricted.png",
       "verified": true,
       "source": "workspace/강의제작/제작도구/촬영/환경세팅/사진원본/trust-restricted.png",
@@ -2267,16 +2222,30 @@
       ],
       "rectangles": [
         [
-          62,
-          1010,
-          283,
-          1048
+          69,
+          1016,
+          277,
+          1042
         ]
       ],
       "redactions": [],
-      "caption": "위에 제한 모드 안내 줄이, 왼쪽 아래에 Restricted Mode가 보이면 AI 도구가 동작하지 않습니다. 왼쪽 아래 Restricted Mode를 누릅니다. 다른 PC의 화면이라 폴더 이름과 제품 이름이 다릅니다. ",
-      "sha256": "854a72364909a70c54675e1222c66ac16b41c07b46e495f5fc6a04eadd9fc08b",
-      "raw_frame_sha256": "6c7f3cb8ff06594f23a5b69a39c1e6887ed7b16d3bdec2167a0f5ccb8cfff8cc"
+      "caption": "위쪽 제한 모드 줄과 왼쪽 아래 Restricted Mode. 다른 PC 화면입니다.",
+      "sha256": "42fc11c7baeb6c85c2c0a05252bfeb4bae1f2fab09e5259a5f8f02bcdd13fa4c",
+      "raw_frame_sha256": "6c7f3cb8ff06594f23a5b69a39c1e6887ed7b16d3bdec2167a0f5ccb8cfff8cc",
+      "erase": [
+        [
+          205,
+          125,
+          295,
+          230
+        ],
+        [
+          205,
+          905,
+          290,
+          995
+        ]
+      ]
     },
     "project-trust-manage": {
       "required_scene": "Workspace Trust 화면의 왼쪽 칸에서 Trust를 누르면 모든 기능이 켜집니다. 다른 PC의 화면이라 폴더 이름과 제품 이름이 다릅니다. ",
@@ -2295,15 +2264,15 @@
       ],
       "rectangles": [
         [
-          270,
-          687,
-          344,
-          734
+          272,
+          690,
+          381,
+          730
         ]
       ],
       "redactions": [],
-      "caption": "Workspace Trust 화면의 왼쪽 칸에서 Trust를 누르면 모든 기능이 켜집니다. 다른 PC의 화면이라 폴더 이름과 제품 이름이 다릅니다. ",
-      "sha256": "cb8ea094a942e33d78429338e352d17dfdd1cc39e56ec4af14e2dff2c2ae1e15",
+      "caption": "왼쪽 칸의 Trust. 다른 PC 화면입니다.",
+      "sha256": "d7b3123d2278f8ece2b3cf238ee57026d07a8323cfba10c4328d28c9677897bb",
       "raw_frame_sha256": "4607d9174151c1dd049b69039c27c2e011ed8c0d1a9083d3c5814fd5f0126b7e"
     }
   }

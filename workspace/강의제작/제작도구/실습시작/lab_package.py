@@ -11,9 +11,14 @@ system_root() 한 곳으로 그 위치를 찾는다.
 새 ZIP을 verify_packages.check_zip으로 검사해 통과할 때만 바꿔 끼우고, package-index에 그 랩이 있으면 그 항목의
 sha256(주면 version)만 고친다. 바이트가 바뀌었는데 --version이 없으면 멈춘다(판 이름이 내용을 가리키게).
 그다음 verify_packages.py로 검사한다.
+
+도구 실습(1회차 Notion · 실행 환경 · 포털 · ARROWS)은 ZIP 대신 가이드 한 파일(<랩>.html)로 낸다(가이드 P-13):
+    python lab_package.py <랩 폴더> --page
+생성기 넷(촬영/notion · 환경세팅 · 포털 · arrows)도 같은 pack_page를 부른다.
 """
 from pathlib import Path
 import argparse
+import base64
 import hashlib
 import json
 import os
@@ -99,18 +104,120 @@ def pack(folder, exclude_names=PRIVATE, archive=None):
     return write_zip(archive or existing, entries)
 
 
-def pack_guide(folder, root):
-    """도구 실습 랩 폴더 → 옆의 <랩>.zip. 가이드.html과 가이드가 여는 파일만 루트 폴더 root/ 아래에 담는다
-    (2026-11-11 사용자 「1회차는 가이드파일만 담겨있으면 될텐데」, 가이드 P-13). 랩 폴더에 가이드가 열지 않는 파일이 있거나
-    가이드가 여는 파일이 없으면 멈춘다 — 랩 폴더와 ZIP이 같은 것을 담게 한다."""
+PAGE_JS = ('<div id="zoom" hidden onclick="this.hidden=true"><img alt=""></div>'
+           '<style>#zoom{position:fixed;inset:0;z-index:99;background:rgba(0,0,0,.86);display:flex;align-items:center;justify-content:center;cursor:zoom-out;padding:12px}'
+           '#zoom[hidden]{display:none}#zoom img{max-width:100%;max-height:100%;width:auto;height:auto;border:0;border-radius:4px;background:white}'
+           'a.zoom{cursor:zoom-in}img.full{width:68%!important;margin-left:auto;margin-right:auto}@media(max-width:850px){img.full{width:100%!important}}dialog.doc{max-width:860px;width:calc(100% - 32px);border:1px solid #dce5df;border-radius:14px;padding:28px 32px;font:16px/1.8 "Malgun Gothic",sans-serif;color:#213330}'
+           'dialog.doc::backdrop{background:rgba(0,0,0,.45)}dialog.doc h1{font-size:24px;margin:0 0 12px}dialog.doc h2{font-size:19px;margin:22px 0 6px}dialog.doc h3{font-size:16px;margin:16px 0 4px}'
+           'dialog.doc form{text-align:right;margin:0}dialog.doc button{font:inherit;padding:6px 16px;border-radius:8px;border:1px solid #c9d6ce;background:#e6eee6;cursor:pointer}</style>'
+           '<script>document.addEventListener("click",e=>{const a=e.target.closest("a.zoom");if(a){e.preventDefault();const z=document.getElementById("zoom");'
+           'z.querySelector("img").src=a.querySelector("img").src;z.hidden=false;return}const d=e.target.closest("a[data-doc]");'
+           'if(d){e.preventDefault();const g=document.getElementById(d.dataset.doc);g.showModal();g.scrollTop=0}});'
+           'document.addEventListener("keydown",e=>{if(e.key==="Escape")document.getElementById("zoom").hidden=true})</script>')
+
+
+def _md_html(text):
+    """참고 문서(.md)를 대화 창에 넣을 HTML로 — 제목 · 목록 · 번호 목록 · 문단 · `코드`만 다룬다(1회차 참고 문서가 쓰는 꼴)."""
+    def inline(s):
+        return re.sub(r'`([^`]+)`', r'<code>\1</code>', html.escape(s, quote=False))
+    out, items, kind = [], [], None
+    def close():
+        nonlocal items, kind
+        if items:
+            out.append(f'<{kind}>' + ''.join(f'<li>{i}</li>' for i in items) + f'</{kind}>')
+        items, kind = [], None
+    for line in text.splitlines():
+        m = re.match(r'(#{1,3}) (.+)', line)
+        if m:
+            close(); n = len(m[1]); out.append(f'<h{n}>{inline(m[2])}</h{n}>'); continue
+        m = re.match(r'(- |\d+\. )(.+)', line)
+        if m:
+            k = 'ul' if m[1] == '- ' else 'ol'
+            if kind != k:
+                close(); kind = k
+            items.append(inline(m[2])); continue
+        close()
+        if line.strip():
+            out.append(f'<p>{inline(line)}</p>')
+    close()
+    return ''.join(out)
+
+
+def _is_full_screen(path):
+    """화면 전체 사진(가로 1400px 이상이고 가로:세로가 1.6 이상 — 1920x1080 · 1440x810 · 1900x980 같은 화면 캡처)인가.
+    이런 사진은 본문 폭의 68%로 싣고 누르면 원래 크기로 연다(2026-11-11 사용자 「가이드문서가 너무 길어질려나」). 선 그림 · 패널 자르기는 제 폭 그대로."""
+    from PIL import Image
+    with Image.open(path) as im:
+        w, h = im.size
+    return w >= 1400 and w / h >= 1.6
+
+
+def _image_uri(path):
+    """사진 하나를 data: 주소로. PNG는 같은 해상도의 JPEG(품질 85)가 더 작으면 JPEG로 바꾼다 — 화면 사진은 3분의 1쯤으로 줄고,
+    선 그림은 PNG가 더 작아 그대로 남는다. 같은 파일 · 같은 Pillow 판이면 바이트가 같다."""
+    data = Path(path).read_bytes()
+    kind = {'.png': 'png', '.jpg': 'jpeg', '.jpeg': 'jpeg', '.svg': 'svg+xml', '.gif': 'gif', '.webp': 'webp'}.get(Path(path).suffix.lower())
+    if kind is None:
+        raise ValueError(f'{path}: 가이드 사진으로 넣을 수 없는 형식')
+    if kind == 'png':
+        import io
+        from PIL import Image
+        im = Image.open(io.BytesIO(data))
+        if im.mode in ('RGBA', 'LA') or (im.mode == 'P' and 'transparency' in im.info):
+            im = Image.alpha_composite(Image.new('RGBA', im.size, 'white'), im.convert('RGBA'))
+        buf = io.BytesIO(); im.convert('RGB').save(buf, 'JPEG', quality=85, optimize=True)
+        if len(buf.getvalue()) < len(data):
+            data, kind = buf.getvalue(), 'jpeg'
+    return f'data:image/{kind};base64,' + base64.b64encode(data).decode('ascii')
+
+
+def page_bytes(folder):
+    """도구 실습 랩 폴더의 가이드.html을 한 파일로 만든 바이트(pack_page가 쓰고 verify_packages가 다시 만들어 견준다).
+    사진은 data: 주소로, 참고 문서(.md)는 같은 쪽의 대화 창으로 넣는다. 사진을 감싼 「크게 보기」 링크는 쪽 안에서 크게 여는 창으로 바꾼다
+    (브라우저는 data: 주소를 새 탭으로 열지 않는다). 랩 폴더에 가이드가 열지 않는 파일이 있거나, 가이드가 여는 파일이 폴더에 없거나,
+    넣은 뒤 로컬 주소가 남으면 멈춘다."""
     folder = Path(folder)
     page = (folder/'가이드.html').read_text(encoding='utf-8')
-    refs = {unquote(html.unescape(r)) for r in re.findall(r'(?:src|href)="([^"#?:]+)"', page)}
+    raw = set(re.findall(r'(?:src|href)="([^"#?:]+)"', page))
+    single = sorted(set(re.findall(r"(?:src|href)='([^'#?:]+)'", page)))
+    if single:
+        raise ValueError(f'{folder}/가이드.html: 작은따옴표로 쓴 로컬 주소는 넣지 못한다 — {single}')
+    refs = {unquote(html.unescape(r)) for r in raw}
     have = {p.relative_to(folder).as_posix() for p in student_files(folder)} - {'가이드.html'}
     if refs != have:
         raise ValueError(f'{folder}: 가이드가 여는 파일과 랩 폴더가 다르다 — 폴더에 없음 {sorted(refs-have)}, 가이드가 안 씀 {sorted(have-refs)}')
-    names = ['가이드.html', *sorted(refs, key=lambda n: n.lower().split('/'))]
-    return write_zip(folder.parent/(folder.name+'.zip'), [(f'{root}/{n}', (folder/n).read_bytes()) for n in names])
+    docs = []
+    for r in sorted(raw):
+        name = unquote(html.unescape(r))
+        if name.endswith('.md'):
+            did = f'doc{len(docs) + 1}'
+            page = page.replace(f'href="{r}"', f'href="#{did}" data-doc="{did}"')
+            docs.append(f'<dialog class="doc" id="{did}">{_md_html((folder/name).read_text(encoding="utf-8"))}'
+                        '<form method="dialog"><button>닫기</button></form></dialog>')
+        else:
+            page = re.sub(rf'<a href="{re.escape(r)}"(?: target="_blank")?(?: rel="noopener")?>(?=<img )', '<a href="#" class="zoom">', page)
+            full = ' class="full"' if _is_full_screen(folder/name) else ''
+            page = page.replace(f'src="{r}"', f'src="{_image_uri(folder/name)}"{full}')
+    left = sorted(set(re.findall(r'''(?:src|href)=["']([^"'#?:]+)["']''', page)))
+    if left:
+        raise ValueError(f'{folder}: 한 파일에 넣지 못한 로컬 주소가 남았다 — {left}')
+    if page.count('</body>') != 1:
+        raise ValueError(f'{folder}/가이드.html: </body>가 하나가 아니다')
+    return page.replace('</body>', ''.join(docs) + PAGE_JS + '</body>').encode('utf-8')
+
+
+def pack_page(folder):
+    """도구 실습 랩 폴더 → 옆의 <랩>.html 한 파일(가이드 P-13 — 2026-11-11 사용자 「가이드만 받고 싶은 학생」 · 「권고대로」).
+    학생은 파일 하나를 받아 두 번 눌러 연다. 옆에 옛 <랩>.zip이 있으면 지운다(같은 자료로 가는 길을 둘 두지 않는다)."""
+    folder = Path(folder)
+    target = folder.parent/(folder.name + '.html')
+    tmp = target.with_name(target.name + '.tmp')
+    tmp.write_bytes(page_bytes(folder))
+    os.replace(tmp, target)
+    old = folder.parent/(folder.name + '.zip')
+    if old.exists():
+        old.unlink()
+    return target
 
 
 def guide_name(folder):
@@ -159,8 +266,16 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description='폴더만 고친 랩 하나를 다시 묶는다.')
     parser.add_argument('folder', type=Path, help='산출물/<과정>/실습/NN회차/랩/<랩>')
     parser.add_argument('--version', help='package-index의 새 판 이름(바이트가 바뀌면 필수)')
+    parser.add_argument('--page', action='store_true', help='도구 실습: ZIP 대신 가이드 한 파일 <랩>.html을 쓴다')
     args = parser.parse_args(argv)
     folder = args.folder.resolve()
+    if args.page:
+        try:
+            target = pack_page(folder)
+        except ValueError as exc:
+            raise SystemExit(str(exc))
+        print(f'{target.name}: {target.stat().st_size / 1e6:.1f}MB · sha256 {sha256(target)[:12]}')
+        return 0
     archive = folder.parent/(folder.name + '.zip')
     if not folder.is_dir():
         raise SystemExit(f'{folder}: 랩 폴더 없음')

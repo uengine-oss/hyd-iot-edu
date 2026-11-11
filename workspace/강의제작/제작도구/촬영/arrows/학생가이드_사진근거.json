@@ -1,51 +1,712 @@
 {
-  "capture_method": "ARROWS実画面 canvas.toDataURL; ego task space 1; original fixed video preserved",
-  "frames": [
+  "video": {
+    "file": "Release 영상 int-01-08-lab.mp4 (이 PC 사본: 작업/촬영/arrows/통합반_01회차_08_실습_관계그림.mp4)",
+    "duration": "25:25.07",
+    "sha256": "57cd131da4962c87e9a14c8e0292c0405b1744cb08618c0958765b8cce487cdc"
+  },
+  "box": {
+    "color": "#e60000",
+    "width": 6,
+    "note": "대상 경계 바깥 margin px에서 굵기 6 선이 바깥으로 그려진다. outer는 네모 바깥 경계다"
+  },
+  "ui_frames": [
     {
-      "stage": "01",
-      "nodes": 3,
-      "relationships": 2
+      "file": "images/ui-01-start.png",
+      "seconds": 72.0,
+      "frame_sha256": "506571184c9cc118511564a8d2e3ea3d407eea88ac5c68f64d5ce90dbb6e0443",
+      "crop": null,
+      "boxes": [
+        {
+          "target": [
+            1747,
+            113,
+            1890,
+            153
+          ],
+          "margin": 6,
+          "outer": [
+            1735,
+            101,
+            1902,
+            165
+          ],
+          "dark_px_under_line": 18
+        },
+        {
+          "target": [
+            1634,
+            252,
+            1769,
+            296
+          ],
+          "margin": 6,
+          "outer": [
+            1622,
+            240,
+            1781,
+            308
+          ],
+          "dark_px_under_line": 0
+        },
+        {
+          "target": [
+            1585,
+            718,
+            1672,
+            740
+          ],
+          "margin": 6,
+          "outer": [
+            1573,
+            706,
+            1684,
+            752
+          ],
+          "dark_px_under_line": 0
+        }
+      ],
+      "sha256": "a8a18c78304b296fbe9cb4ae3cabb8a990cd10956f36f4f9dcb0b98d4251ba20"
     },
     {
-      "stage": "02",
-      "nodes": 5,
-      "relationships": 5
+      "file": "images/ui-02-caption.png",
+      "seconds": 126.0,
+      "frame_sha256": "7da76ca5b7b38b6521469f401e0049bece9e5a93623a02140d4ebabbd7d5a7e2",
+      "crop": null,
+      "boxes": [
+        {
+          "target": [
+            1407,
+            325,
+            1890,
+            371
+          ],
+          "margin": 2,
+          "outer": [
+            1399,
+            317,
+            1898,
+            379
+          ],
+          "dark_px_under_line": 0
+        },
+        {
+          "target": [
+            1407,
+            419,
+            1890,
+            463
+          ],
+          "margin": 2,
+          "outer": [
+            1399,
+            411,
+            1898,
+            471
+          ],
+          "dark_px_under_line": 0
+        },
+        {
+          "target": [
+            1789,
+            481,
+            1890,
+            519
+          ],
+          "margin": [
+            6,
+            2,
+            6,
+            0
+          ],
+          "outer": [
+            1777,
+            473,
+            1902,
+            525
+          ],
+          "dark_px_under_line": 0
+        }
+      ],
+      "sha256": "7f4fbab41b011f55ffa62245d5a1dba10b83b24a034905ae3edbd82116b4ac14"
     },
     {
-      "stage": "03",
-      "nodes": 6,
-      "relationships": 6
+      "file": "images/ui-03-type.png",
+      "seconds": 185.0,
+      "frame_sha256": "f6163d4d22f757832470026f969b79234e26ba30c97ec98deb621d5533bf64a7",
+      "crop": null,
+      "boxes": [
+        {
+          "target": [
+            1407,
+            367,
+            1890,
+            413
+          ],
+          "margin": [
+            4,
+            1,
+            4,
+            4
+          ],
+          "outer": [
+            1397,
+            360,
+            1900,
+            423
+          ],
+          "dark_px_under_line": 22
+        }
+      ],
+      "sha256": "06b66431ce64a9781def814ee91a6579059be98bc6355a521213b78df44810a4"
     },
     {
-      "stage": "04",
-      "nodes": 10,
-      "relationships": 11
+      "file": "images/ui-04-reverse.png",
+      "seconds": 296.0,
+      "frame_sha256": "f95ebaccf89bc22a97365132c60ec2639806eaa9707d157712ade5641eb3837b",
+      "crop": null,
+      "boxes": [
+        {
+          "target": [
+            1490,
+            156,
+            1619,
+            197
+          ],
+          "margin": 3,
+          "outer": [
+            1481,
+            147,
+            1628,
+            206
+          ],
+          "dark_px_under_line": 0
+        }
+      ],
+      "sha256": "0966aec728eeec7eedd1b95cd6f7c1e9caecb54c04beede3dc5790e55de1a641"
     },
     {
-      "stage": "05",
-      "nodes": 13,
-      "relationships": 15
+      "file": "images/ui-05-property.png",
+      "seconds": 495.0,
+      "frame_sha256": "7fd66e5fc83dcd42514b1366ad1d5985ed357c27f1f145734c6dde57d40018e2",
+      "crop": null,
+      "boxes": [
+        {
+          "target": [
+            1409,
+            550,
+            1892,
+            650
+          ],
+          "margin": [
+            4,
+            2,
+            4,
+            4
+          ],
+          "outer": [
+            1399,
+            542,
+            1902,
+            660
+          ],
+          "dark_px_under_line": 29
+        }
+      ],
+      "sha256": "d400eae9a2f60ed7467d2c43d10d9d3ffec5b6d5c88bc54113558f75b9f4ce17"
     },
     {
-      "stage": "06",
-      "nodes": 15,
-      "relationships": 19
+      "file": "images/ui-06-color.png",
+      "seconds": 1232.0,
+      "frame_sha256": "6965e023b08799ff5674c8b23b8957237beb10df34b60bceabfe7cd4c3d56db0",
+      "crop": null,
+      "boxes": [
+        {
+          "target": [
+            1407,
+            101,
+            1551,
+            138
+          ],
+          "margin": 4,
+          "outer": [
+            1397,
+            91,
+            1561,
+            148
+          ],
+          "dark_px_under_line": 0
+        },
+        {
+          "target": [
+            1550,
+            920,
+            1766,
+            942
+          ],
+          "margin": 6,
+          "outer": [
+            1538,
+            908,
+            1778,
+            954
+          ],
+          "dark_px_under_line": 0
+        }
+      ],
+      "sha256": "94fa4fd2ed534ef9ea5a98b75d4f225cf560fbb45f4d7ee03620e2c44b9a85bb"
     },
     {
-      "stage": "07",
-      "nodes": 17,
-      "relationships": 21
+      "file": "images/ui-07-export-json.png",
+      "seconds": 1399.0,
+      "frame_sha256": "0da8886ca8e1ebb92321568971b760eb89008ae5d9854877a782840bc525bf4a",
+      "crop": null,
+      "boxes": [
+        {
+          "target": [
+            1333,
+            5,
+            1553,
+            48
+          ],
+          "margin": 2,
+          "outer": [
+            1325,
+            0,
+            1561,
+            56
+          ],
+          "dark_px_under_line": 3384
+        },
+        {
+          "target": [
+            573,
+            181,
+            650,
+            225
+          ],
+          "margin": 6,
+          "outer": [
+            561,
+            169,
+            662,
+            237
+          ],
+          "dark_px_under_line": 0
+        },
+        {
+          "target": [
+            330,
+            264,
+            487,
+            309
+          ],
+          "margin": 6,
+          "outer": [
+            318,
+            252,
+            499,
+            321
+          ],
+          "dark_px_under_line": 6
+        }
+      ],
+      "sha256": "7ea5ba81443c9d0f480392b5cdbb63c1e2ffd8004d0964e1f42210ee4d143f69"
+    },
+    {
+      "file": "images/ui-08-export-png.png",
+      "seconds": 1405.0,
+      "frame_sha256": "25d501bac0991f1f1e48a98b39b228a6a3f05bde1df3c361fc23844f622276a4",
+      "crop": null,
+      "boxes": [
+        {
+          "target": [
+            311,
+            181,
+            381,
+            225
+          ],
+          "margin": 6,
+          "outer": [
+            299,
+            169,
+            393,
+            237
+          ],
+          "dark_px_under_line": 0
+        },
+        {
+          "target": [
+            345,
+            503,
+            550,
+            522
+          ],
+          "margin": 6,
+          "outer": [
+            333,
+            491,
+            562,
+            534
+          ],
+          "dark_px_under_line": 55
+        }
+      ],
+      "sha256": "1cbcf1a08cd53b12d31d2a6138380f13c6a6e866d1defcc24240008a71f74d3f"
+    },
+    {
+      "file": "images/ui-09-menu.png",
+      "seconds": 1418.0,
+      "frame_sha256": "5e70a48a3b73a367003892addbba92eef738b6cd71ddeaad5006d91c3318440c",
+      "crop": null,
+      "boxes": [
+        {
+          "target": [
+            16,
+            10,
+            50,
+            42
+          ],
+          "margin": 2,
+          "outer": [
+            8,
+            2,
+            58,
+            50
+          ],
+          "dark_px_under_line": 0
+        },
+        {
+          "target": [
+            12,
+            60,
+            98,
+            92
+          ],
+          "margin": 2,
+          "outer": [
+            4,
+            52,
+            106,
+            100
+          ],
+          "dark_px_under_line": 0
+        },
+        {
+          "target": [
+            110,
+            150,
+            338,
+            190
+          ],
+          "margin": 6,
+          "outer": [
+            98,
+            138,
+            350,
+            202
+          ],
+          "dark_px_under_line": 15
+        },
+        {
+          "target": [
+            14,
+            214,
+            80,
+            242
+          ],
+          "margin": 6,
+          "outer": [
+            2,
+            202,
+            92,
+            254
+          ],
+          "dark_px_under_line": 0
+        }
+      ],
+      "sha256": "1857086f5c7ed4de589bedc1f8439ff23ca9e2aab061aa7182eaec1f5d14dd30"
+    },
+    {
+      "file": "images/ui-10-import.png",
+      "seconds": 1434.0,
+      "frame_sha256": "c236de5a03e1759fbea3aa3173fe1d85665357694dd605018956d1d3c9fd5507",
+      "crop": null,
+      "boxes": [
+        {
+          "target": [
+            312,
+            382,
+            500,
+            426
+          ],
+          "margin": 6,
+          "outer": [
+            300,
+            370,
+            512,
+            438
+          ],
+          "dark_px_under_line": 0
+        },
+        {
+          "target": [
+            1507,
+            859,
+            1613,
+            904
+          ],
+          "margin": 6,
+          "outer": [
+            1495,
+            847,
+            1625,
+            916
+          ],
+          "dark_px_under_line": 0
+        }
+      ],
+      "sha256": "18816f650c1f316c8427840feb9742735c1f9838684381214e4e6bdb2b32fe4e"
+    },
+    {
+      "file": "images/ui-11-imported.png",
+      "seconds": 1448.0,
+      "frame_sha256": "cc3c44c7274184d7945c9eb705c14b52679513ff073d1de58f1713bdc0a5804b",
+      "crop": [
+        330,
+        70,
+        1610,
+        1010
+      ],
+      "boxes": [
+        {
+          "target": [
+            1166,
+            917,
+            1292,
+            950
+          ],
+          "margin": 6,
+          "outer": [
+            1154,
+            905,
+            1304,
+            962
+          ],
+          "dark_px_under_line": 60
+        }
+      ],
+      "sha256": "af76afdafcf15ede4ecbe6f3165e9c0b4c6fe1eb9e6776c39c2ae5f8c7718e82"
     }
   ],
-  "source_layout_sha256": "3b5492a146146ee6caa03b6dc9447af676591f13109074a998fe1fe9362bf83a",
-  "video_frames": [
+  "stage_frames": [
     {
-      "file": "09-export.jpg",
-      "seconds": 1167.7
+      "file": "images/stage-01.png",
+      "source_sha256": "78889eaebcddf7d1a131de925cbf1ea4b7a8d8f23ca4b40eb9670a09b494197f",
+      "background": "white",
+      "boxes": [
+        {
+          "target": [
+            871,
+            479,
+            1533,
+            1217
+          ],
+          "margin": 6,
+          "outer": [
+            859,
+            467,
+            1545,
+            1229
+          ],
+          "dark_px_under_line": 0
+        }
+      ],
+      "sha256": "f27de0acbe3f64f3f11d2e4b3955a8fecaddbd32862f2253c3b9e44a80d9505f"
     },
     {
-      "file": "10-import.jpg",
-      "seconds": 1213.86
+      "file": "images/stage-02.png",
+      "source_sha256": "8e871fb18d0c29e3767c7eefa0a03534ee1ced3b41409828b0e03afbd38e3cb9",
+      "background": "white",
+      "boxes": [
+        {
+          "target": [
+            1515,
+            479,
+            1757,
+            1217
+          ],
+          "margin": 6,
+          "outer": [
+            1503,
+            467,
+            1769,
+            1229
+          ],
+          "dark_px_under_line": 24
+        }
+      ],
+      "sha256": "922d668dc04c036702321bee141c0853f2afb5583e01b0e8668a249a48142c5b"
+    },
+    {
+      "file": "images/stage-03.png",
+      "source_sha256": "3b500ba50895b2fcdfa4183674edccd78db70b679b52f73371272df8f40e818a",
+      "background": "white",
+      "boxes": [
+        {
+          "target": [
+            1643,
+            555,
+            2224,
+            797
+          ],
+          "margin": 6,
+          "outer": [
+            1631,
+            543,
+            2236,
+            809
+          ],
+          "dark_px_under_line": 12
+        }
+      ],
+      "sha256": "555fd5f996224e569cf1ba2a2c05768d2b1a0e23d3cf07303ec02c99d4636c20"
+    },
+    {
+      "file": "images/stage-04.png",
+      "source_sha256": "8b4968a7cbd6f79500758ac5e2e8a07f0557bcd89374e9a877507cc2ec4a4dd9",
+      "background": "white",
+      "boxes": [
+        {
+          "target": [
+            1271,
+            1419,
+            1877,
+            1621
+          ],
+          "margin": 6,
+          "outer": [
+            1259,
+            1407,
+            1889,
+            1633
+          ],
+          "dark_px_under_line": 59
+        }
+      ],
+      "sha256": "373b21229e39ef7e48b7bde5546c141472a3aa983c5556676f2bc3f663e508fa"
+    },
+    {
+      "file": "images/stage-05.png",
+      "source_sha256": "123e957adff2c6de371893d7a4ed46e30d321000052a6cef029cab604d0087ea",
+      "background": "white",
+      "boxes": [
+        {
+          "target": [
+            1078,
+            72,
+            1415,
+            229
+          ],
+          "margin": 6,
+          "outer": [
+            1066,
+            60,
+            1427,
+            241
+          ],
+          "dark_px_under_line": 52
+        }
+      ],
+      "sha256": "a1b0a1bbdb2d4d6b588e4f301ecfc1ddfbb2fd0661d71b1ef25f41607639e550"
+    },
+    {
+      "file": "images/stage-06.png",
+      "source_sha256": "02562c4d10258489080ce814e52ce0f290af3d884917ce4d28c7a0cad8c2b6b4",
+      "background": "white",
+      "boxes": [
+        {
+          "target": [
+            1591,
+            1115,
+            1749,
+            1273
+          ],
+          "margin": 6,
+          "outer": [
+            1579,
+            1103,
+            1761,
+            1285
+          ],
+          "dark_px_under_line": 27
+        }
+      ],
+      "sha256": "d00bd496af4701b319533a789c5324ebd0c5b00e3031cdb0491d4e62a5d1a64f"
+    },
+    {
+      "file": "images/stage-07.png",
+      "source_sha256": "98bec4bc74ac6cc8ced5ef3f04b52e0d1def2eddaab7fadbde474d9a3fd7274f",
+      "background": "white",
+      "boxes": [
+        {
+          "target": [
+            355,
+            75,
+            777,
+            229
+          ],
+          "margin": 6,
+          "outer": [
+            343,
+            63,
+            789,
+            241
+          ],
+          "dark_px_under_line": 9
+        }
+      ],
+      "sha256": "45cd4fe1308c040872b2b48b7029c6261a619fc757e04313998a0bd20b5ecc13"
     }
-  ]
+  ],
+  "stage_capture": {
+    "capture_method": "ARROWS実画面 canvas.toDataURL; ego task space 1; original fixed video preserved",
+    "frames": [
+      {
+        "stage": "01",
+        "nodes": 3,
+        "relationships": 2
+      },
+      {
+        "stage": "02",
+        "nodes": 5,
+        "relationships": 5
+      },
+      {
+        "stage": "03",
+        "nodes": 6,
+        "relationships": 6
+      },
+      {
+        "stage": "04",
+        "nodes": 10,
+        "relationships": 11
+      },
+      {
+        "stage": "05",
+        "nodes": 13,
+        "relationships": 15
+      },
+      {
+        "stage": "06",
+        "nodes": 15,
+        "relationships": 19
+      },
+      {
+        "stage": "07",
+        "nodes": 17,
+        "relationships": 21
+      }
+    ],
+    "source_layout_sha256": "3b5492a146146ee6caa03b6dc9447af676591f13109074a998fe1fe9362bf83a"
+  }
 }

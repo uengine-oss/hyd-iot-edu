@@ -1,4 +1,4 @@
-"""Notion 실습을 실제 촬영판(사용자 확정 영상)의 발화 · 조작 시각으로 두 과정 대본 · 가이드 · 시간 · ZIP에 반영한다.
+"""Notion 실습을 실제 촬영판(사용자 확정 영상)의 발화 · 조작 시각으로 두 과정 대본 · 가이드 · 시간 · 한 파일 가이드에 반영한다.
 장면 제목 · 준비 문단 · 입력값은 준비 원고(수업원고.md · 행동목록.json)에서, 말한 문장과 시각은 영상 verification.json과 음성 캐시에서 온다.
 앱/학생 코드는 실행하지 않는다. 학생 가이드는 build_student_guide.py의 검수 출력으로만 반영한다.
 사용: python build.py --student-draft <검수출력> --student-backup <작업폴더/새백업>"""
@@ -132,7 +132,6 @@ def main():
         base = ROOT / 'workspace/강의제작/산출물' / course / '실습/01회차'
         script_path = base / '대본/02_실습_학습노트.md'
         lab = base / '랩/01일차_실습1_학습노트'
-        archive = lab.with_suffix('.zip')
         text = script.replace('{{과정}}', course)
         script_path.write_text(text, encoding='utf-8', newline='\n')
         course_result = apply_course(args.student_draft, args.student_backup, course)

@@ -1,5 +1,5 @@
-"""1회차 06 도구 실습의 공통 학생 가이드 · ZIP 생성. 사진은 사진_만들기.py가 게시본 영상에서 뽑는다.
---draft <작업 폴더>: 초안만, --apply: 사진 확인이 다 된 뒤 두 과정 정본 폴더 · ZIP을 바꿔 끼운다."""
+"""1회차 06 도구 실습의 공통 학생 가이드와 한 파일 가이드(<랩>.html) 생성. 사진은 사진_만들기.py가 게시본 영상에서 뽑는다.
+--draft <작업 폴더>: 초안만, --apply: 사진 확인이 다 된 뒤 두 과정 정본 폴더 · 한 파일 가이드를 바꿔 끼운다."""
 from pathlib import Path
 import argparse,hashlib,html,json,re,shutil,sys,zipfile
 from markdown_it import MarkdownIt
@@ -38,12 +38,12 @@ def main():
   page,assets,pending=render(draft=False)
   if pending or len(assets)!=len(photos):raise SystemExit('사진 누락: 정본을 바꾸지 않았습니다')
   sys.path.insert(0,str(HERE.parents[1]/'실습시작'))
-  from lab_package import pack
+  from lab_package import pack_page
   for course in ('통합반','실전반'):
    target=OUT/course/'실습/01회차/랩'/LAB
    if target.exists():shutil.rmtree(target)
-   write(target,page,assets);pack(target)
-  print('두 과정 가이드 · ZIP 적용');return
+   write(target,page,assets);pack_page(target)
+  print('두 과정 가이드 · 한 파일 가이드(<랩>.html) 적용');return
  dest=args.draft.resolve()
  if not dest.is_relative_to((ROOT/'작업').resolve()):ap.error('초안은 작업 폴더 안에만 둡니다')
  page,assets,pending=render(draft=True)
