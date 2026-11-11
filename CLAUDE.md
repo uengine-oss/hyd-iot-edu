@@ -71,7 +71,7 @@
 
 | | 로컬 Windows |
 |---|---|
-| Python | `.venv314/Scripts/python.exe`를 쓰고 늘 `PYTHONUTF8=1`을 붙인다. uv 파이썬은 Smart App Control이 막는다 |
+| Python | `.venv314/Scripts/python.exe`를 쓰고 늘 `PYTHONUTF8=1`을 붙인다. uv 파이썬은 Smart App Control이 막는다. 저장소 파일을 고쳐 쓰는 스크립트는 `open(…, 'w', newline='')`이나 바이트로 쓴다. 텍스트 모드 쓰기가 줄 끝을 `\r\n`으로 바꿔 파일 전체가 바뀐 것처럼 되기 때문이다 |
 | 테스트 | `workspace/개발/문서/RUNBOOK.md` §5의 첫 줄 명령을 쓴다(이 PC의 업무 DB 포트는 64322, 포털은 8088). 테스트 DB 이름은 `hyd_test…`만 받으며, 테스트가 그 DB를 지우고 다시 만든다. Docker가 켜져 있어야 한다 |
 | 떠 있는 스택 확인 | 점검은 `bash scripts/check_all.sh`(점검.bat과 같다), 수업 한 바퀴는 `workspace/개발/scripts/class_round.py` |
 | 호스트 워커 멈추기 | `workspace/개발/scripts/stop_worker_host.ps1`을 돌리고 포트 8097이 내려갔는지 확인한다(워커 1개가 python 프로세스 2개로 보인다) |

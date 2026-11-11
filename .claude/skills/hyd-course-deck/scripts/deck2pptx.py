@@ -1253,17 +1253,20 @@ def render_code(sl, s, page):
     need_items = sum((line_count(it.plain_title, 17, pw0) * 17 + line_count("\n".join(it.lines) or " ", BODY_PT, pw0)
                       * BODY_PT) * LINE_SPACING / 72 + 0.45 for it in s.items)
     need_code = line_count(code, 13, (cw - 0.6) / 1.12) * (13 * LINE_SPACING + 2) / 72 + 0.6
-    h = min(end - top, max(need_code, need_items, 2.4))   # 코드와 짚을 점 가운데 긴 쪽에 맞춘다
-    top += (end - top - h) / 2
-    add_box(sl, MX, top, cw, h, NAVY, radius=0.03)
-    add_text(sl, MX + 0.2, top + 0.15, cw - 0.4, h - 0.3, code, 13, CODE_FG, face=MONO,
+    # 코드 상자는 코드 높이에, 짚을 점 칸은 제 높이에 맞추고 둘을 저마다 세로 가운데에 둔다
+    # (긴 쪽에 상자를 맞추면 코드가 위에 붙고 상자 아래가 빈다)
+    room = end - top
+    hc = min(room, max(need_code, 1.2))
+    add_box(sl, MX, top + (room - hc) / 2, cw, hc, NAVY, radius=0.03)
+    add_text(sl, MX + 0.2, top + (room - hc) / 2 + 0.15, cw - 0.4, hc - 0.3, code, 13, CODE_FG, face=MONO,
              name="코드", slide_no=s.no, space_after=2)
     if not n:
         return
+    hi = min(room, max(need_items, hc))
     px = MX + cw + 0.35
     pw = SLIDE_W - MX - px
-    rh = h / n
-    y0 = top
+    rh = hi / n
+    y0 = top + (room - hi) / 2
     for i, it in enumerate(s.items):
         item_block(sl, px, y0 + i * rh, pw, rh, it, s.no, f"짚을 점{i + 1}", bullet=False,
                    anchor=MSO_ANCHOR.MIDDLE)
