@@ -9,6 +9,7 @@ from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[5]
 SOURCE = Path(__file__).with_name('학생가이드.json')
+PHOTO_WIDTH = 1440   # 화면 전체 사진의 가로 — 글자가 읽히고 158장이 약 12MB(JPEG 85)
 
 def sha(p):
     return hashlib.sha256(p.read_bytes()).hexdigest()
@@ -39,14 +40,15 @@ def main():
             raw=args.frames/(p['id']+'.png')
             if not raw.is_file(): raise FileNotFoundError(raw)
             im=Image.open(raw).convert('RGB')
-            crop=p['crop']; target=p['target']
-            if not (0 <= crop[0] <= target[0] < target[2] <= crop[2] <= im.width and 0 <= crop[1] <= target[1] < target[3] <= crop[3] <= im.height):
+            target=p['target']
+            if not (0 <= target[0] < target[2] <= im.width and 0 <= target[1] < target[3] <= im.height):
                 raise ValueError(p['id']+' 잘못된 좌표')
-            im=im.crop(crop)
-            # Draw outside the target so text is not covered.
-            rect=[target[0]-crop[0]-5,target[1]-crop[1]-5,target[2]-crop[0]+5,target[3]-crop[1]+5]
-            ImageDraw.Draw(im).rectangle(rect, outline='#d82929', width=4)
-            dest=images/(p['id']+'.png'); im.save(dest)
+            # 화면 전체를 보이고 누를 곳만 네모로 짚는다(2026-11-11 사용자 「전체화면이라던지」 — 단추만 잘라 내면 위치를 찾을 수 없다, 가이드 P-8).
+            # 네모는 대상 바깥에 그려 글을 가리지 않는다.
+            rect=[target[0]-8,target[1]-8,target[2]+8,target[3]+8]
+            ImageDraw.Draw(im).rectangle(rect, outline='#d82929', width=8)
+            im=im.resize((PHOTO_WIDTH, round(im.height*PHOTO_WIDTH/im.width)), Image.LANCZOS)
+            dest=images/(p['id']+'.jpg'); im.save(dest, 'JPEG', quality=85)
             caption=html.escape(p['caption'])
             block.append(f'<figure><a href="images/{dest.name}" target="_blank"><img src="images/{dest.name}" width="{im.width}" height="{im.height}" alt="{caption}" loading="lazy"></a><figcaption>{caption} · 사진을 누르면 원래 크기로 볼 수 있습니다.</figcaption></figure>')
             provenance.append({**p,'raw_sha256':sha(raw),'output_sha256':sha(dest),'raw':raw.relative_to(ROOT).as_posix(),'output':dest.relative_to(ROOT).as_posix()})
