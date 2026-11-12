@@ -1,0 +1,95 @@
+[
+ [
+  "shot",
+  "10chips"
+ ],
+ [
+  "text",
+  "#ontoStats",
+  "항목 332 · 연결 729 · 조치 방법 19 · 규칙 25 · 성과 지표 21"
+ ],
+ [
+  "eval",
+  "[...document.querySelectorAll('#ontoMap .o-lab')].map(t=>t.t",
+  "부서 · 7 / 역할 · 7 / 시스템 · 10 / 설비 · 1 / 구성 요소 · 6 / 센서 · 5 / 구동기 · 3 / 상태 변수 · 11 / 부품 · 4 / 공급사 · 3 / 이상 패턴 · 9 / 증상 · 6 / 고장 유형 · 2 / 원인 · 5 / 증거 · 6 / 매뉴얼 절 · 25 / 조치 방법 · 19 / 절차 단계 · 74 / 세부 동작 · 9 / 판단 · 4 / 결정표 · 4 / 규칙 · 25 / 입력 데이터 · 36 / 지식 출처 · 11"
+ ],
+ [
+  "eval",
+  "JSON.stringify({mapW:document.querySelector('#ontoMap').clie",
+  "{\"mapW\":951,\"mapSW\":951}"
+ ],
+ [
+  "eval",
+  "[...document.querySelectorAll('#ontoMap .o-node')].filter(g=",
+  "asset:hyd-01=HYD-01 유압 파워팩 | comp:cooler=오일 쿨러 | comp:fan=쿨러 팬 | comp:motor=구동 모터 | comp:pump-a=주 펌프 (A) | comp:pump-b=예비 펌프 (B) | comp:tank=작동유 탱크 | actr:fan-drive=팬 인버터 | actr:pump-drive=펌프 부하 설정 | actr:pump-selector=펌프 전환 밸브 | sv:bearing-wear=팬 베어링 마모도 | sv:ce=냉각 효율 | sv:fan-speed=팬 속도 | sv:fouling=쿨러 핀 오염도 | sv:fs1=유량 | sv:leak=펌프 내부 누설 | sv:load=펌프 부하 | sv:ps1=토출 압력 | sv:pump-select=운전 펌프 선택 | sv:ts1=유온 | sv:vs1=팬 진동 | part:cooler-core=쿨러 코어 | part:fan-bearing=팬 베어링 | part:pump-seal=펌프 축 씰 키트 | part:return-filter=리턴 필터 엘리먼트 | sup:a=A정밀 (저가) | sup:b=B-OEM (순정) | sup:c=C트레이딩 (최저가) | action:controlled-stop=계획 정지 | action:purchase-request=부품 구매요청 | action:raise-pressure=압력 설정 상향 | action:reschedule-work-order=기존 PM 정비 오더 일정 변경 | action:reset=인터록 리셋 | action:select-pump=운전 펌프 전환 | action:set-fan=팬 속도 설정 | action:set-load=펌프 부하 설정 | action:work-order=정비 작업지시 발행"
+ ],
+ [
+  "shot",
+  "11search"
+ ],
+ [
+  "text",
+  "#ontoStats",
+  "항목 332 · 연결 729 · 조치 방법 19 · 규칙 25 · 성과 지표 21 · 검색 결과 1개"
+ ],
+ [
+  "eval",
+  "[...document.querySelectorAll('#ontoMap .o-node.match')].map",
+  "asset:hyd-01=HYD-01 유압 파워팩"
+ ],
+ [
+  "click",
+  "#ontoMap .o-node.match",
+  "",
+  "matches",
+  1,
+  "visible",
+  1
+ ],
+ [
+  "shot",
+  "12asset"
+ ],
+ [
+  "text",
+  "#ontoNode",
+  "설비\nHYD-01 유압 파워팩\nforecastHorizonS\t900\ncode\tHYD-01\nforecastRevision\t1.1\nforecastModel\thydraulic-lumped-simulator-v1\nforecastScope\t교육용 HYD 시뮬레이터 — 입력을 고정한 열린 루프 기준 예측\n나가는 관계 6\n→ 구성 요소 작동유 탱크\n→ 구성 요소 주 펌프 (A)\n→ 구성 요소 구동 모터\n→ 구성 요소 예비 펌프 (B)\n→ 구성 요소 쿨러 팬\n→ 구성 요소 오일 쿨러\n들어오는 관계 3\n← 대상 설비 설비 이상 조치\n← 대상 설비 정비 작업지시\n← 대상 설비 미지원 경보 현장 검토"
+ ],
+ [
+  "click",
+  "#ontoNode a[data-go]",
+  "오일 쿨러",
+  "matches",
+  1,
+  "visible",
+  1
+ ],
+ [
+  "text",
+  "#ontoNode",
+  "구성 요소\n오일 쿨러\naliases\t[\"쿨러\",\"열교환기\"]\n나가는 관계 3\n→ 교체 부품 쿨러 코어\n→ 관측 센서 유온 센서\n→ 관측 센서 냉각 효율 (가상)\n들어오는 관계 2\n← 구성 요소 HYD-01 유압 파워팩\n← 발생 위치 쿨러 냉각 성능 상실"
+ ],
+ [
+  "shot",
+  "13cooler"
+ ],
+ [
+  "click",
+  "#ontoNode a[data-go]",
+  "유온 센서",
+  "matches",
+  1,
+  "visible",
+  1
+ ],
+ [
+  "text",
+  "#ontoNode",
+  "센서\n유온 센서\nvirtual\tfalse\nunit\t℃\ntag\tTS1\n나가는 관계 1\n→ 읽는 상태 변수 유온\n들어오는 관계 3\n← 관측 센서 오일 쿨러\n← 데이터 출처 유온\n← 관측 센서 유온 상승"
+ ],
+ [
+  "eval",
+  "[...document.querySelectorAll('#ontoNode a[data-go]')].map(a",
+  "sv:ts1=유온 | comp:cooler=오일 쿨러 | in:ts1=유온 | sym:ts1-rise=유온 상승"
+ ]
+]

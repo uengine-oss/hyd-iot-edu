@@ -1,0 +1,6 @@
+[["shot","00home"],["text",".rail nav"],["text","header, .topbar, #shellTop"],["tab","ontology"],["shot","01map"],
+ ["text","#content h2, #content h1"],["eval","[...document.querySelectorAll('#content select, #content input')].filter(e=>e.checkVisibility()).map(e=>e.id+':'+(e.tagName==='SELECT'?[...e.options].map(o=>(o.selected?'*':'')+o.textContent).join('|'):e.placeholder))"],
+ ["text","#ontoStats"],["text","#ontoLayers"],["eval","[...document.querySelectorAll('#ontoMap .o-colh')].map(t=>t.textContent)"],
+ ["eval","[...document.querySelectorAll('#ontoMap .o-lab')].map(t=>t.textContent).join(' / ')"],["text","#ontoNode"],
+ ["eval","JSON.stringify({mapW:document.querySelector('#ontoMap').clientWidth,mapSW:document.querySelector('#ontoMap').scrollWidth,mapH:document.querySelector('#ontoMap').clientHeight,mainH:document.querySelector('main#content').clientHeight,mainSH:document.querySelector('main#content').scrollHeight})"]
+]
