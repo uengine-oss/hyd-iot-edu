@@ -1,4 +1,4 @@
-"""이어 찍은 자리의 화면이 같은지 잰다. 사용: python 이음새검수.py <이어 찍은 take 이름>
+"""이어 찍은 자리의 화면이 같은지 잰다. 사용: python 이음새검수.py <이어 찍은 take 이름>(RESUME으로 이어 찍었거나 AFTER로 다음 구간을 찍은 take)
 앞 take의 잘린 지점 마지막 프레임과 이어 찍은 take의 첫 프레임을 화소로 비교한다(녹화 프레임에는 커서가 없다). 나란히 그림을 남긴다.
 통과 = 두 프레임이 같은 화면이다(값이 12 넘게 바뀐 화소 0.5 % 이하). 실패면 그 큐보다 앞에서 다시 잇거나 그 구간을 다시 찍는다.
 행동이 잘렸는지는 앞 take가 말이 없는 큐 경계에서 끝나는 것으로 막고(take.mjs), 이 도구는 화면 상태만 판정한다."""
@@ -27,5 +27,5 @@ sheet.save(WORK / name / '이음새.jpg', quality=88)
 report = {'앞take': s['prev'], '잘린ms': s['cut_ms'], '이어찍은큐': s['fromCue'], '바뀐화소퍼센트': round(changed, 3), '바뀐영역': diff.getbbox(), '판정': '같은 화면' if changed <= 0.5 else '다른 화면'}
 (WORK / name / '이음새.json').write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding='utf-8')
 print(json.dumps(report, ensure_ascii=False))
-print(f"합성: python encode.py <출력> {s['prev']}:{s['cut_ms']} {name}")
+print(f"합성: python encode.py <출력> {s['prev']}:{s['cut_ms']} {name}" if s.get('fromCue') else f"합성: python encode.py <출력> {s['prev']} {name}")
 sys.exit(0 if changed <= 0.5 else 1)

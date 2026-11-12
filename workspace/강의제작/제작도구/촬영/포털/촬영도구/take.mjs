@@ -54,7 +54,7 @@ async function openPage(opts){
  return{p,view:{width:v.width,height:v.height,deviceScaleFactor:v.deviceScaleFactor},close:async()=>{await s.detach().catch(()=>{});await browser.close().catch(()=>{});}};
 }
 
-// opts: {mode, name, cueFile, module(segs/ 기준), segments:[구간 번호…], space, silent, resume:{prev,fromCue}, failAt(복구 시험용: 그 큐에서 일부러 실패)}
+// opts: {mode, name, cueFile, module(segs/ 기준), segments:[구간 번호…], space, silent, resume:{prev,fromCue}, after(앞 구간 take 이름 — 그 끝 커서에서 시작), failAt(복구 시험용: 그 큐에서 일부러 실패)}
 export async function take(opts){
  const rehearsal=opts.mode==='rehearse',out=WORK+'/'+opts.name;
  const proof=WORK+'/rehearsal-'+opts.name.replace(/-.*$/,'')+'.json';
@@ -93,7 +93,12 @@ export async function take(opts){
  let speechFree=0,actionFree=0,result=null;
  const seam=opts.resume?await resumePoint(opts.resume):null;
  if(seam)await fs.writeFile(out+'/이음.json',JSON.stringify({prev:opts.resume.prev,fromCue:opts.resume.fromCue,cut_ms:seam.cut,pointer:seam.pointer}));
- const pos0=seam?seam.pointer:{x:760,y:430};let waitingFor=opts.resume?.fromCue||null;
+ // after: 구간으로 나눠 찍을 때 앞 take(끝까지 찍은 것)의 마지막 커서 자리에서 시작한다 — 영상 길 16. 페이지는 앞 take 끝 화면 그대로다(browser.mjs가 쥐고 있다).
+ const after=opts.after?await loadTiming(opts.after).then(t=>{if(t.error)throw Error('앞 take가 실패로 끝남: '+opts.after);const m=t.motions.at(-1);return m?{x:m.x,y:m.y}:null;}):null;
+ if(opts.after&&!after)throw Error('앞 take에 커서 기록이 없다: '+opts.after);
+ const pos0=seam?seam.pointer:after||{x:760,y:430};
+ if(after)await fs.writeFile(out+'/이음.json',JSON.stringify({prev:opts.after,fromCue:null,cut_ms:(await loadTiming(opts.after)).duration+1,pointer:after}));   // 이음새검수.py가 앞 take 끝 프레임과 이 take 첫 프레임을 견준다
+ let waitingFor=opts.resume?.fromCue||null;
  const ctx={p,serial,sleep,fs,out,audio,cueFile:opts.cueFile,rehearsal,virtualPointer:pos0,resuming:!!seam,
   recordMotion:m=>motions.push({...m,cue:current,start:m.start-start,end:m.end-start,glide:m.glide-start}),
   recordClick:c=>clicks.push({...c,cue:current,time:Date.now()-start}),
