@@ -4,7 +4,7 @@
 
 명령(저장소 루트에서, <py>는 공통.md 「자료」, P=workspace/강의제작/제작도구/촬영/포털/촬영도구, ffmpeg는 PATH나 환경변수 FFMPEG):
   <py> $P/쉼넣기.py 초안 <영상.mp4> <자막.srt> <계획.json> [--큐 <영상을 만든 판의 큐.json> …]   # 계획 초안(덮어쓰지 않는다)
-  <py> $P/쉼넣기.py 바꿈 <계획.json> <큐.json>=<음성 폴더> …                                # 지금 큐 글이 옛 글과 다른 단위에 새글 · 새음성 · 붙임, 큐에 없는 단위에 뺌
+  <py> $P/쉼넣기.py 바꿈 <계획.json> <큐.json>=<음성 폴더> …                                # 지금 큐 글이 옛 글과 다른 단위에 새글 · 새음성 · 붙임(붙임고정 단위는 사람이 정한 붙임 그대로), 큐에 없는 단위에 뺌
   <py> $P/쉼넣기.py 만들기 <계획.json> <출력.mp4>                                          # 한 번 인코딩, 끝나면 스스로 검사
   <py> $P/쉼넣기.py 검사 <영상.mp4> <자막.srt>                                              # 길이 · 자막과 소리 · 붙은 말
   <py> $P/쉼넣기.py 시험                                                                   # 일부러 깨뜨린 입력의 자가시험
@@ -19,14 +19,19 @@
             "쉼뒤": "잇기" | "큐" | "결과" | "전환" | "따라하기",   # 다음 단위와의 사이. 잇기 = 한 문맥이라 큐 쉼은 넣지 않고 「문장쉼」만 지킨다
             "따라하기초": 초,     # 쉼뒤가 따라하기일 때만, 꼭 준다. 학생이 강사와 같이 입력하거나 결과를 확인하는 화면 멈춤(영상 V-14)의
                                   # 그 자리 초 — 「쉼」의 값을 쓰지 않고 이 값만큼 단위 사이를 벌린다. 초안은 따라하기를 정하지 않으니 사람이 적는다
-            "새글": …, "새음성": mp3, "붙임": "앞" | "뒤",   # 바꾼 큐만. 앞 = 새 말 끝을 옛 말 끝(조작)에 맞춤, 뒤 = 새 말 시작을 옛 말 시작에
+            "새글": …, "새음성": mp3, "붙임": "앞" | "뒤" | "글자",   # 바꾼 큐만. 앞 = 새 말 끝을 옛 말 끝(조작)에 맞춤, 뒤 = 새 말 시작을 옛 말 시작에,
+                                  # 글자 = 큐 가운데의 조작 — 새글에서 조작 낱말이 끝나는 자리(그 문장 안 글자 비율로 새 음성 시각을 어림)를 「조작초」에 맞춤
+            "조작초": 초,         # 붙임이 글자일 때만, 꼭 준다. 옛 영상에서 그 조작이 일어난 초(프레임을 보고 적는다, 옛 말 시작 +0.1초 ~ 끝 −0.1초 안)
+            "조작말": 글,         # (선택) 붙임 글자에서 맞출 낱말 — 새글에 한 번만 나와야 하고, 그 끝 글자를 맞춘다. 없으면 새글의 조작 낱말(ACT)이 하나여야 한다
+            "붙임고정": true,     # 사람이 고친 붙임을 「바꿈」이 지우거나 다시 정하지 않는다(이 단위는 바꿈에서 새음성이 있어야 한다)
             "뺌": true}]}                                  # 말만 뺀다(화면은 둔다)
-  초안의 「쉼뒤」: 앞 단위의 구간(segment)이 바뀌면 전환, 앞 단위의 끝 문장이 조작(누르 · 클릭 · 선택 · 입력 …)이면 결과, 그 밖은 큐.
+  초안의 「쉼뒤」: 앞 단위의 구간(segment)이 바뀌면 전환, 앞 단위의 끝 문장이 조작(누르 · 클릭 · 고르시면 · 치시고 · 끌어 주세요 …, ACT)이면 결과, 그 밖은 큐.
+  「바꿈」의 붙임: 새글 끝 문장이 조작이면 앞, 아니면 뒤. 붙임 뒤인데 새글 가운데 조작 낱말이 있는 단위는 「가운데 조작 후보」로 찍는다 — 사람이 프레임을 보고 글자 · 조작초 · 붙임고정을 적는다.
   한 큐 안 문장 사이가 0.3초 미만인 곳은 「읽을 곳」으로 찍는다 — 한 문맥이 아니면 「자막」 묶음을 나눠 단위를 둘로 만든다.
 
 만들기가 하는 일
   1. 바꾼 큐 — 옛 말 자리(첫 자막 −0.05초 ~ 끝 자막 +0.15초, 이웃 말은 건드리지 않음)를 비우고, 새 음성을 옛 말 크기에 맞춰 놓는다.
-     새 말이 길어 모자란 시간은 붙임 앞이면 앞 틈에서, 뒤면 뒤 틈에서 화면을 멈춰 만든다.
+     새 말이 길어 모자란 시간은 맞춘 자리 앞의 말이 모자라면 앞 틈에서, 뒤의 말이 모자라면 뒤 틈에서 화면을 멈춰 만든다(앞은 앞 틈, 뒤는 뒤 틈, 글자는 둘 다).
   2. 쉼 — 단위 사이(새 말 자리 기준)가 「쉼」의 값보다 짧으면 모자란 만큼 넣는다. 이미 긴 사이는 줄이지 않는다.
      넣는 자리는 두 말 사이에서 소리가 조용하고 화면 움직임이 가장 적은 프레임이다(같으면 늦은 쪽 = 조작 결과가 다 뜬 뒤).
      그 프레임을 되풀이하고 같은 길이의 무음을 넣는다.
@@ -58,7 +63,18 @@ from common import ffmpeg, chapters, write_chapters  # noqa: E402
 FPS = 30
 CRF = int(os.environ.get('CRF', '18'))   # 인코딩 화질(cut.py · join.py와 같은 이름). 원본보다 화질이 떨어지면 안 되는 영상은 원본 crf보다 낮게 준다
 LOOP_SHIFT = 1   # 이 ffmpeg 판의 loop start=K는 K-1번 프레임을 되풀이한다 — 「시험」이 확인한다
-ACT = re.compile(r'누르|누릅|눌러|클릭|선택|입력|적겠|적어|적을|적습|닫|열겠|열어|엽니다|열게|엔터|가져가|실행|붙여 ?넣|체크|복사|고릅|칠게|쳐 볼|칩니다')
+# 강사가 그 자리에서 하는 조작의 말. 「~시면 · ~시고 · ~어 주세요 · ~어 볼게요」는 잡고, 학생에게 권하는 「~어 보세요」, 상태 「닫혀 · 지워진 · 펼쳐져」,
+# 설명 「바꿔요 · 지워도」는 잡지 않는다(잡을 말 · 안 잡을 말은 ACT_CASES, 「시험」이 본다)
+ACT = re.compile(r'누르|누릅|눌러|클릭|선택|입력|적겠|적어|적을|적습|적으시|닫(?![혀힌히])|열겠|열어|엽니다|열게|여시|엔터|가져가|실행|붙여 ?넣|체크|복사'
+                 r'|넣으시|넣겠|넣을게|넣습|고르시|고릅|고를게|치시|칩니|칠게|끌어|드래그|펼치|접으시|바꾸시|숨기시|옮기시|지우시'
+                 r'|(?:넣어|골라|쳐|접어|지워|바꿔|펼쳐|숨겨|옮겨) ?(?:주|볼게|봅|보겠)')
+ACT_CASES = {True: ['메뉴에서 페이지를 고르시면', '「공책」이라고 치시면', '손잡이를 잡고 끌어 주세요', '파란색 배경으로 바꿔 주세요', '여기에 제목을 적으시면',
+                    '주소를 넣으시면', '토글을 펼치시면 안이 보여요', '다 보셨으면 다시 접으시고', '이 칸은 숨겨 주세요', '블록을 아래로 옮겨 주세요',
+                    '남은 글자를 지우시고', '색은 하늘색으로 골라 주세요', '위에 설정 누르시고', '페이지 이름을 바꾸시면', '센서 노드를 지워 볼게요'],
+             False: ['설명은 이 칸에 있어요', '지금은 그대로 두세요', '보시면 이름이 바뀌었죠', '메뉴가 펼쳐져 있어요', '목록은 숨겨진 상태예요',
+                     '페이지가 옮겨진 게 보이죠', '글자가 지워진 걸 볼 수 있어요', '펼친 목록에 세 가지가 있어요', '창이 닫혀 있으면 괜찮아요',
+                     '만들고 지워도 포털에는 아무 영향이 없어요', '관측 관계도 같이 지워졌을 거예요', '이름 속성 하나만 바꿔요', '여러분도 넣어 보세요']}
+ATTACH = ('앞', '뒤', '글자')
 CLASS = ('잇기', '큐', '결과', '전환', '따라하기')
 FOLLOW = '따라하기'   # 계획의 「쉼」에 값이 없고, 단위마다 「따라하기초」를 쓰는 갈래
 
@@ -341,6 +357,29 @@ def split_times(on, off, runs, sents, uid, path):
     return list(zip([on] + [b for a, b in cuts], [a for a, b in cuts] + [off]))
 
 
+def act_time(u, ss, spans):
+    """붙임 글자: 새글에서 조작 낱말이 끝나는 자리의 새 음성 안 시각. 그 문장의 말 길이(spans)를 그 문장 글자 수(빈칸 뺌)에 비례로 나눈다.
+    낱말은 조작말(새글에 한 번), 없으면 새글에 하나뿐인 조작 낱말(ACT)의 어절 끝이다."""
+    t, w = u['새글'].strip(), u.get('조작말')
+    if w is not None:
+        hits = [m.end() for m in re.finditer(re.escape(w), t)] if w else []
+        if len(hits) != 1:
+            fail(f'단위 {u["id"]}: 조작말 {w!r}가 새글에 {len(hits)}번 나온다 — 한 번만 나오는 말로 적는다')
+        end = hits[0]
+    else:
+        hits = list(ACT.finditer(t))
+        if len(hits) != 1:
+            fail(f'단위 {u["id"]}: 붙임 글자인데 새글의 조작 낱말이 {len(hits)}개다({[m.group() for m in hits]}) — 조작초에 맞출 낱말을 조작말로 적는다')
+        end = hits[0].end() + re.search(r'\s|$', t[hits[0].end():]).start()
+    nsp = lambda s: len(re.sub(r'\s', '', s))
+    pos = 0
+    for s, (a, b) in zip(ss, spans):
+        p = t.index(s, pos); pos = p + len(s)
+        if end <= pos:
+            return a + (b - a) * nsp(t[p:end]) / nsp(s)
+    fail(f'단위 {u["id"]}: 조작 낱말 끝(글자 {end})이 새글의 문장 밖이다')
+
+
 def build(pf, out):
     P = load_plan(pf); out = Path(out)
     if out.exists():
@@ -367,11 +406,17 @@ def build(pf, out):
                 fail(f'단위 {u["id"]}: 쉼뒤가 따라하기면 따라하기초(0보다 큰 초)를 적는다 — 지금 {s!r}')
         elif '따라하기초' in u:
             fail(f'단위 {u["id"]}: 따라하기초는 쉼뒤가 따라하기일 때만 쓴다(지금 쉼뒤 {u.get("쉼뒤", "큐")!r})')
-        if u.get('새음성') and u.get('붙임') not in ('앞', '뒤'):
-            fail(f'단위 {u["id"]}: 새음성이 있으면 붙임을 앞 · 뒤로 정한다')
+        if u.get('새음성') and u.get('붙임') not in ATTACH:
+            fail(f'단위 {u["id"]}: 새음성이 있으면 붙임을 {" · ".join(ATTACH)} 가운데 하나로 정한다')
         if u.get('새음성') and u.get('뺌'):
             fail(f'단위 {u["id"]}: 새음성과 뺌을 함께 줄 수 없다')
         u['s'], u['e'] = B[a0][0], B[z0][1]
+        if (u.get('붙임') == '글자') != ('조작초' in u) or ('조작말' in u and u.get('붙임') != '글자'):
+            fail(f'단위 {u["id"]}: 조작초는 붙임 글자에 꼭 쓰고 조작초 · 조작말은 붙임 글자에만 쓴다 — 지금 붙임 {u.get("붙임")!r} · 조작초 {u.get("조작초")!r}')
+        if u.get('붙임') == '글자':
+            c = u['조작초']
+            if isinstance(c, bool) or not isinstance(c, (int, float)) or not u['s'] + 0.1 <= c <= u['e'] - 0.1:
+                fail(f'단위 {u["id"]}: 조작초 {c!r}가 옛 말 {u["s"]:.2f}~{u["e"]:.2f}초의 가운데(시작 +0.1 ~ 끝 −0.1초)에 있지 않다 — 끝의 조작이면 붙임 앞, 시작이면 뒤를 쓴다')
     if seen != len(B):
         fail(f'단위가 자막 {seen}번부터 {len(B) - seen}개를 덮지 않는다')
     x = decode_audio(P['영상'], SR)
@@ -429,6 +474,8 @@ def build(pf, out):
             spans = split_times(on, off, runs, ss, u['id'], u['새음성'])
             vx, off, spans = widen(vx, SR, spans, P.get('문장쉼', 0.0))
             u.update(vx=limit(vx * g, SR), on=on, off=off, ss=ss, gain=g, spans=spans)
+            # 맞춤: 옛 영상 시각 at에 새 음성 파일 안 시각 vat를 놓는다 — 앞 = 옛 말 끝 · 새 말 끝, 뒤 = 옛 말 시작 · 새 말 시작, 글자 = 조작초 · 조작 낱말 끝
+            u['at'], u['vat'] = {'앞': (u['e'], off), '뒤': (u['s'], on)}.get(u['붙임']) or (u['조작초'], act_time(u, ss, spans))
     # 틈과 멈출 프레임
     mot = motion(P['영상'], Path(pf).with_name(Path(P['영상']).stem + '_움직임.npy'))
     if len(mot) != NF:
@@ -474,29 +521,29 @@ def build(pf, out):
         gaps.append({'lo': lo, 'hi': hi, 'n': 0})
     gaps.append({'lo': keep[-1]['e'] + 0.08, 'hi': NF / FPS - 0.05, 'n': 0})
     # 바꾼 말이 길면 먼저 같은 장면의 말 없는 화면으로 흘려보낸다 — 장면 전환은 넘지 않는다(말과 화면의 차례를 지킨다).
-    # 붙임 뒤: 옛 말 시작부터 다음 장면 전환(또는 다음 말) 전까지, 붙임 앞: 앞 장면 전환(또는 앞 말) 뒤부터 옛 말 끝(조작)까지.
-    # 모자란 만큼만 그 장면 안의 가장 가만한 프레임에서 멈춘다.
+    # 맞춘 자리(at) 앞의 새 말은 앞 장면 전환(또는 앞 말) 뒤부터 at까지(앞 틈), 뒤의 새 말은 at부터 다음 장면 전환(또는 다음 말) 전까지(뒤 틈)에 든다.
+    # 붙임 앞은 앞 틈만, 뒤는 뒤 틈만, 글자는 둘 다 쓴다. 모자란 만큼만 그 장면 안의 가장 가만한 프레임에서 멈춘다.
     for k, u in enumerate(keep):
         if not u.get('새음성'):
             continue
-        if u['붙임'] == '뒤':
-            u['edge'] = min(change_after(u['e']), keep[k + 1]['s'] if k + 1 < len(keep) else NF / FPS)
-            g = gaps[k + 1]; g['hi'] = max(g['lo'] + 0.04, min(g['hi'], u['edge'] - 1 / FPS))
-        else:
-            u['edge'] = max(change_before(u['s']), keep[k - 1]['e'] if k else 0.0)
-            g = gaps[k]; g['lo'] = min(g['hi'] - 0.04, max(g['lo'], u['edge']))
-    need = set(range(1, len(keep))) | {k for k, u in enumerate(keep) if u.get('새음성') and u['붙임'] == '앞'}         | {k + 1 for k, u in enumerate(keep) if u.get('새음성') and u['붙임'] == '뒤'}
+        if u['붙임'] != '앞':
+            u['edge_b'] = min(change_after(u['e']), keep[k + 1]['s'] if k + 1 < len(keep) else NF / FPS)
+            g = gaps[k + 1]; g['hi'] = max(g['lo'] + 0.04, min(g['hi'], u['edge_b'] - 1 / FPS))
+        if u['붙임'] != '뒤':
+            u['edge_a'] = max(change_before(u['s']), keep[k - 1]['e'] if k else 0.0)
+            g = gaps[k]; g['lo'] = min(g['hi'] - 0.04, max(g['lo'], u['edge_a']))
+    need = set(range(1, len(keep))) | {k for k, u in enumerate(keep) if u.get('새음성') and u['붙임'] != '뒤'}         | {k + 1 for k, u in enumerate(keep) if u.get('새음성') and u['붙임'] != '앞'}
     for k in sorted(need):
         g = gaps[k]; g['who'] = f'{keep[k - 1]["id"] if k else "처음"} ~ {keep[k]["id"] if k < len(keep) else "끝"}'
         g['k'], g['mot'] = pick(g['lo'], g['hi'], g['who']); g['p'] = (g['k'] + 1) / FPS
     mc = Map(cuts, [])                     # 자르기만 넣은 시각
     for k, u in enumerate(keep):
         if u.get('새음성'):
-            L = u['off'] - u['on']
-            if u['붙임'] == '앞':          # 새 말 시작이 앞 장면 전환(또는 앞 말 끝)보다 앞서지 않게
-                g = gaps[k]; g['n'] += max(0, math.ceil((L - (mc(u['e']) - mc(min(u['edge'], g['p'])))) * FPS))
-            else:                          # 새 말 끝이 다음 장면 전환(또는 다음 말 시작)을 넘지 않게
-                g = gaps[k + 1]; g['n'] += max(0, math.ceil((L - (mc(max(u['edge'], g['p'])) - mc(u['s']))) * FPS))
+            pre, post = u['vat'] - u['on'], u['off'] - u['vat']   # 앞은 post 0, 뒤는 pre 0
+            if u['붙임'] != '뒤':          # 새 말 시작이 앞 장면 전환(또는 앞 말 끝)보다 앞서지 않게
+                g = gaps[k]; g['n'] += max(0, math.ceil((pre - (mc(u['at']) - mc(min(u['edge_a'], g['p'])))) * FPS))
+            if u['붙임'] != '앞':          # 새 말 끝이 다음 장면 전환(또는 다음 말 시작)을 넘지 않게
+                g = gaps[k + 1]; g['n'] += max(0, math.ceil((post - (mc(max(u['edge_b'], g['p'])) - mc(u['at']))) * FPS))
 
     def O(k):
         """단위 k 안의 새 시각 = 자르기만 넣은 시각 + 틈 0~k에 넣은 멈춤. 시각이 아니라 틈의 차례로 센다 — 말이 맞닿은 틈에서는
@@ -507,9 +554,7 @@ def build(pf, out):
         u = keep[k]
         if not u.get('새음성'):
             return mc(u['s']) + O(k), mc(u['e']) + O(k)
-        if u['붙임'] == '앞':
-            e = mc(u['e']) + O(k); return e - (u['off'] - u['on']), e
-        s = mc(u['s']) + O(k); return s, s + (u['off'] - u['on'])
+        s = mc(u['at']) + O(k) - (u['vat'] - u['on']); return s, s + (u['off'] - u['on'])   # at은 뒤 틈(k+1)의 멈춤 앞이라 O(k)로 센다
 
     for k in range(1, len(keep)):
         if keep[k - 1].get('뺌') or keep[k].get('뺌'):
@@ -596,7 +641,7 @@ def build(pf, out):
     tmp.rmdir()
     rec = {'계획': str(Path(pf).resolve()), '원본': str(P['영상']), '원본 프레임': NF, '출력 프레임': NFo, **m.dump(),
            '멈춤': [{'자리': g['who'], '옛 시각': round(g['p'], 3), '초': round(g['n'] / FPS, 3), '움직임': round(g['mot'], 2)} for g in order],
-           '바꾼 단위': [{'id': u['id'], '붙임': u['붙임'], '새 말 초': round(u['off'] - u['on'], 2), '옛 말 초': round(u['e'] - u['s'], 2),
+           '바꾼 단위': [{'id': u['id'], '붙임': u['붙임'], '맞춘 옛 시각': round(u['at'], 2), '새 말 초': round(u['off'] - u['on'], 2), '옛 말 초': round(u['e'] - u['s'], 2),
                       '이득': round(u['gain'], 2)} for u in keep if u.get('새음성')],
            '뺀 단위': [u['id'] for u in U if u not in keep or u.get('뺌')], '글상자': [[round(s, 2), round(e, 2), t] for s, e, t in boxes]}
     Path(str(out.with_suffix('')) + '_시각.json').write_text(json.dumps(rec, ensure_ascii=False, indent=1), encoding='utf-8')
@@ -607,7 +652,8 @@ def build(pf, out):
 
 
 def fill(pf, pairs):
-    """계획의 단위마다 지금 큐 글을 옛 글(「글」)과 견주어 새글 · 새음성 · 붙임 · 뺌을 다시 채운다(사람이 고친 붙임도 덮는다)."""
+    """계획의 단위마다 지금 큐 글을 옛 글(「글」)과 견주어 새글 · 새음성 · 붙임 · 뺌을 다시 채운다. 「붙임고정」 단위는 사람이 정한 붙임(과 조작초 · 조작말)을
+    지우거나 다시 정하지 않고, 그 단위의 글이 바뀌지 않았으면(새음성이 없으면) 멈춘다."""
     pf = Path(pf); P = json.loads(pf.read_text(encoding='utf-8'))
     now = {}
     for pair in pairs:
@@ -622,7 +668,10 @@ def fill(pf, pairs):
     cut = lambda u: any(c0 <= B[u['자막'][0]][0] and B[u['자막'][1]][1] <= c1 for c0, c1 in P.get('잘라낼', []))
     n = d = 0
     for u in P['단위']:
-        for k in ('새글', '새음성', '붙임', '뺌'):
+        if '붙임고정' in u and u['붙임고정'] is not True:
+            fail(f'단위 {u["id"]}: 붙임고정은 true로만 적는다(풀려면 키를 지운다) — 지금 {u["붙임고정"]!r}')
+        fixed = u.get('붙임고정') is True
+        for k in ('새글', '새음성', '뺌') + (() if fixed else ('붙임',)):
             u.pop(k, None)
         if cut(u):
             continue
@@ -637,9 +686,16 @@ def fill(pf, pairs):
             if got != t:
                 fail(f'단위 {u["id"]}: {mp3.with_suffix(".json")}의 글이 큐 글과 다르다 — 옛 음성이다, voice.py로 다시 산다')
             u['새글'] = t; u['새음성'] = os.path.relpath(mp3.resolve(), pf.parent.resolve()).replace(os.sep, '/')
-            u['붙임'] = '앞' if ACT.search(sentences(t)[-1]) else '뒤'; n += 1
+            if not fixed:
+                u['붙임'] = '앞' if ACT.search(sentences(t)[-1]) else '뒤'
+            n += 1
+    for u in P['단위']:
+        if u.get('붙임고정') and (not u.get('새음성') or u.get('붙임') not in ATTACH):
+            fail(f'단위 {u["id"]}: 붙임고정인데 새음성 {u.get("새음성")!r} · 붙임 {u.get("붙임")!r} — 글이 바뀐 단위에 붙임({" · ".join(ATTACH)})과 함께 둔다')
     pf.write_text(json.dumps(P, ensure_ascii=False, indent=1) + '\n', encoding='utf-8')
-    print(f'바꿈 {n} · 뺌 {d} {[u["id"] for u in P["단위"] if u.get("뺌")]} · 붙임 앞 {sum(u.get("붙임") == "앞" for u in P["단위"])} — {pf}')
+    mid = [u['id'] for u in P['단위'] if u.get('붙임') == '뒤' and not u.get('붙임고정') and u.get('새글') and ACT.search(u['새글'])]
+    print(f'바꿈 {n} · 뺌 {d} {[u["id"] for u in P["단위"] if u.get("뺌")]} · 붙임 앞 {sum(u.get("붙임") == "앞" for u in P["단위"])}'
+          f' · 붙임고정 {[u["id"] for u in P["단위"] if u.get("붙임고정")]} · 가운데 조작 후보(붙임 뒤인데 조작 낱말) {mid} — {pf}')
 
 
 def sheet(out, cuts, order, m):
@@ -723,6 +779,9 @@ def selftest():
     import shutil
     ff = ffmpeg(); tmp = Path(tempfile.mkdtemp(prefix='쉼넣기시험_')); ok = []
     try:
+        miss = [(w, s) for w, L in ACT_CASES.items() for s in L if bool(ACT.search(s)) != w]
+        assert not miss, f'조작 낱말(ACT) 판정이 표와 다르다(기대, 말): {miss}'
+        ok.append(f'ACT 표: 잡을 말 {len(ACT_CASES[True])} · 안 잡을 말 {len(ACT_CASES[False])}')
         fr = np.stack([np.full((16, 16), i * 10, np.uint8) for i in range(12)])
         o = subprocess.run([ff, '-v', 'error', '-f', 'rawvideo', '-pix_fmt', 'gray', '-s', '16x16', '-r', '30', '-i', '-', '-vf',
                             f"select='not(between(n\\,2\\,3))',setpts=N/30/TB,loop=loop=2:size=1:start={4 + LOOP_SHIFT},setpts=N/30/TB",
@@ -801,6 +860,15 @@ def selftest():
         S8 = read_srt(tmp / '따라하기.srt'); g8 = S8[2][0] - S8[1][1]
         assert 2.999 <= g8 < 3.5, f'따라하기: A→B {g8:.2f}초'
         ok.append(f'따라하기 결과: A→B {g8:.2f}초')
+        # 붙임 글자: B(옛 말 6.0~7.2초)의 조작이 6.6초에 있다 — 새 글 첫 문장 끝(조작말 「첫째.」)이 6.6초의 새 시각에 와야 한다.
+        # 앞이었다면 그 자리는 옛 말 끝(7.2초)에서 둘째 문장 길이(약 1.65초)만큼 앞이라 어긋난다
+        mid = json.loads(json.dumps(base)); mid['단위'][1].update({'붙임': '글자', '조작초': 6.6, '조작말': '첫째.'}); run('붙임 글자', mid)
+        S9 = read_srt(tmp / '붙임 글자.srt'); m9 = Map.load(tmp / '붙임 글자_시각.json')
+        assert S9[2][2] == '새 첫째.' and abs(S9[2][1] - m9(6.6)) <= 0.04, f'붙임 글자: 조작말 끝 {S9[2][1]:.2f}초 ≠ 조작 {m9(6.6):.2f}초'
+        assert S9[2][0] >= S9[1][1] + 0.999 and S9[4][0] - S9[3][1] >= 1.499, S9   # A→B 큐, B→C 결과는 그대로 지킨다
+        ok.append(f'붙임 글자 결과: 조작말 끝 {S9[2][1]:.2f}초 = 조작 {m9(6.6):.2f}초 · B→C {S9[4][0] - S9[3][1]:.2f}초')
+        bad = json.loads(json.dumps(base)); bad['단위'][1]['붙임'] = '글자'; run('글자 조작초 없음', bad, r'단위 B: 조작초는 붙임 글자에 꼭')
+        bad = json.loads(json.dumps(base)); bad['단위'][1].update({'붙임': '글자', '조작초': 6.6}); run('글자 조작 낱말 없음', bad, r'단위 B: 붙임 글자인데 새글의 조작 낱말이 0개')
         bad = json.loads(json.dumps(base)); bad['단위'][0]['쉼뒤'] = '따라하기'; run('따라하기초 없음', bad, r'단위 A: 쉼뒤가 따라하기면 따라하기초')
         bad = json.loads(json.dumps(base)); bad['단위'][0]['따라하기초'] = 3.0; run('따라하기 아닌데 초', bad, r'단위 A: 따라하기초는 쉼뒤가 따라하기일 때만')
         bad = json.loads(json.dumps(base)); bad['단위'][2]['새음성'] = str(tmp / '없음.wav'); run('없는 음성', bad, r'단위 C: 새 음성 파일이 없다')
@@ -827,7 +895,17 @@ def selftest():
             fill(fp, [f'{cq}={vd}']); raise AssertionError('옛 음성을 못 잡았다')
         except 실패 as e:
             assert '옛 음성이다' in str(e), e
-        ok.append('바꿈: B 앞 붙임 · E 뺌 · 옛 음성 멈춤')
+        # 붙임고정: 사람이 B를 뒤로 고쳐 두면 끝 문장이 조작이어도 바꿈이 앞으로 되돌리지 않는다 · 글이 그대로인 단위의 붙임고정은 멈춘다
+        (vd / 'B.json').write_text(json.dumps({'text': '새 글. 버튼을 누릅니다.'}, ensure_ascii=False), encoding='utf-8')
+        FP = json.loads(fp.read_text(encoding='utf-8')); FP['단위'][1].update({'붙임': '뒤', '붙임고정': True}); fp.write_text(json.dumps(FP, ensure_ascii=False), encoding='utf-8')
+        fill(fp, [f'{cq}={vd}'])
+        assert json.loads(fp.read_text(encoding='utf-8'))['단위'][1]['붙임'] == '뒤', '붙임고정을 바꿈이 덮었다'
+        FP = json.loads(fp.read_text(encoding='utf-8')); FP['단위'][0]['붙임고정'] = True; fp.write_text(json.dumps(FP, ensure_ascii=False), encoding='utf-8')
+        try:
+            fill(fp, [f'{cq}={vd}']); raise AssertionError('글이 그대로인 단위의 붙임고정을 못 잡았다')
+        except 실패 as e:
+            assert '단위 A: 붙임고정인데' in str(e), e
+        ok.append('바꿈: B 앞 붙임 · E 뺌 · 옛 음성 멈춤 · 붙임고정 지킴 · 바뀌지 않은 단위의 붙임고정 멈춤')
         global FONTS
         keep_fonts, FONTS = FONTS, (str(tmp / '없는글꼴.ttf'),)
         try:

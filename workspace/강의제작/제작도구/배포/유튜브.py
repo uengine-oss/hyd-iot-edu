@@ -9,6 +9,9 @@
          일부 공개(unlisted) · 아동용 아님 · 교육 분류(27)로 올리고, 받은 영상 id를 작업/_로컬/배포/영상제목.json에 더한 뒤
          oEmbed 제목을 대조한다. --dry는 네트워크 없이 올릴 파일 · 크기 · 제목만 찍는다.
   대조   <py> workspace/강의제작/제작도구/배포/유튜브.py 대조 <영상 id> --제목 "…"
+  지우기 <py> workspace/강의제작/제작도구/배포/유튜브.py 지우기 <영상 id> --제목 "…"
+         새 판으로 바꾼 옛 영상을 완전삭제한다(되돌릴 수 없다 — 작업자는 그 영상 이름을 대고 사용자 승인을 받은 뒤에만 돌린다, 배포 길 11).
+         지우기 전에 oEmbed 제목이 --제목과 같고 채널이 강의 채널인지 대조하고, 지운 뒤 그 주소가 404인지 확인하며, 주소표에서 그 id를 뺀다.
 비밀: 클라이언트 비밀값과 토큰은 화면에 찍지 않고 git 밖 작업/_로컬/배포/에만 둔다. 게시는 외부 공개이므로 작업자는 올리기 전에
   파일 · 제목 목록으로 사용자 승인을 받는다(배포 B-6).
 """
@@ -21,7 +24,7 @@ CLIENT = LOCAL / "유튜브_클라이언트.json"
 TOKEN = LOCAL / "유튜브토큰.json"
 TITLES = LOCAL / "영상제목.json"
 CHANNEL = LOCAL / "유튜브채널.txt"  # 강의 채널 이름 한 줄(예: 브랜드 계정 채널). 있으면 올린 영상의 채널을 대조한다
-SCOPE = "https://www.googleapis.com/auth/youtube.upload"
+SCOPE = "https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.force-ssl"  # 올리기 + 지우기
 CHUNK = 8 * 1024 * 1024  # 256 KiB의 배수
 
 
@@ -118,6 +121,32 @@ def cmd_check(a):
     print(f"{a.id}: 제목 일치 「{d['title']}」 · 채널 「{d['author_name']}」")
 
 
+def cmd_delete(a):
+    cmd_check(a)  # 제목 · 채널이 다르면 여기서 멈춘다
+    tok = access_token()
+    c = http.client.HTTPSConnection("www.googleapis.com", timeout=120)
+    c.request("DELETE", "/youtube/v3/videos?" + urllib.parse.urlencode({"id": a.id}), headers={"Authorization": f"Bearer {tok}"})
+    r = c.getresponse(); txt = r.read().decode("utf-8", "replace"); c.close()
+    if r.status == 403 and "insufficient" in txt.lower():
+        fail(f"{a.id}: 토큰에 지우기 권한이 없다 — 「인증」을 다시 돌려 강의 채널로 동의한다")
+    if r.status != 204:
+        fail(f"{a.id}: 지우기 {r.status}: {txt[:300]}")
+    u = "https://www.youtube.com/oembed?" + urllib.parse.urlencode({"url": f"https://youtu.be/{a.id}", "format": "json"})
+    for _ in range(6):
+        try:
+            urllib.request.urlopen(u, timeout=30).close(); time.sleep(5)
+        except urllib.error.HTTPError as e:
+            if e.code in (400, 401, 403, 404):
+                break
+    else:
+        fail(f"{a.id}: 지우기 응답은 204인데 주소가 아직 열린다 — Studio에서 확인한다")
+    if TITLES.exists():
+        titles = json.loads(TITLES.read_text(encoding="utf-8"))
+        if titles.pop(a.id, None) is not None:
+            TITLES.write_text(json.dumps(titles, ensure_ascii=False, indent=1), encoding="utf-8")
+    print(f"지움: {a.id} 「{a.제목}」 — 주소가 닫힌 것을 확인함")
+
+
 def put_chunk(loc, sess, data, start, size):
     end = start + len(data) - 1
     for attempt in range(5):
@@ -185,6 +214,7 @@ def main():
     u = s.add_parser("올리기"); u.add_argument("mp4"); u.add_argument("--제목", required=True)
     u.add_argument("--설명"); u.add_argument("--dry", action="store_true"); u.set_defaults(fn=cmd_upload)
     k = s.add_parser("대조"); k.add_argument("id"); k.add_argument("--제목", required=True); k.set_defaults(fn=cmd_check)
+    d = s.add_parser("지우기"); d.add_argument("id"); d.add_argument("--제목", required=True); d.set_defaults(fn=cmd_delete)
     a = p.parse_args(); a.fn(a)
 
 

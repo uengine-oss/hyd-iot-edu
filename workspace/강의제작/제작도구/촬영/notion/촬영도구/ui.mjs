@@ -15,7 +15,11 @@ export function installPointerInPage(pos){
   const old=document.getElementById('recording-pointer');const keep=old?old.style.transform:pos?`translate(${pos.x}px,${pos.y}px)`:'translate(1400px,650px)';old?.remove();
   const e=document.createElement('div');e.id='recording-pointer';e.setAttribute('aria-hidden','true');
   e.style.cssText='position:fixed;left:0;top:0;width:20px;height:27px;pointer-events:none;z-index:2147483647;will-change:transform;transform:'+keep;
-  e.innerHTML='<svg xmlns="http://www.w3.org/2000/svg" width="20" height="27" viewBox="0 0 25 34"><path d="M1 1 L1 25 L7 20 L12 31 L17 29 L12 18 L22 18 Z" fill="white" stroke="#111" stroke-width="1.7" stroke-linejoin="round"/></svg>';
+  // innerHTML 대신 DOM으로 그린다(Trusted Types를 거는 페이지 — chrome://downloads 같은 — 에서도 같은 화살표가 그려지게).
+  const NS='http://www.w3.org/2000/svg',svg=document.createElementNS(NS,'svg'),path=document.createElementNS(NS,'path');
+  for(const [k,v] of [['width','20'],['height','27'],['viewBox','0 0 25 34']])svg.setAttribute(k,v);
+  for(const [k,v] of [['d','M1 1 L1 25 L7 20 L12 31 L17 29 L12 18 L22 18 Z'],['fill','white'],['stroke','#111'],['stroke-width','1.7'],['stroke-linejoin','round']])path.setAttribute(k,v);
+  svg.append(path);e.append(svg);
   document.documentElement.append(e);window.__tutorialClicks??=[];window.__glide=null;
   // 이동 중(__glide: 애니메이션 또는 'hold')에는 실제 mousemove로 화살표를 옮기지 않는다. 늦게 도착한 중간 입력이 목표에 닿은 화살표를
   // 뒤로 끌어당겨 휘청이던 결함(2026-10-23 take-29) 방지 — 마지막 실제 입력이 끝난 뒤 ui.mjs가 'hold'를 푼다.
@@ -27,6 +31,23 @@ export function installPointerInPage(pos){
   window.__startGlide=(ax,ay,x,y,ms)=>{if(window.__glide?.cancel)window.__glide.cancel();const kf=[];for(let i=0;i<=20;i++){const t=i/20,u=t*t*(3-2*t);kf.push({transform:`translate(${ax+(x-ax)*u}px,${ay+(y-ay)*u}px)`,offset:t});}
    const a=e.animate(kf,{duration:ms,easing:'linear',fill:'forwards'});window.__glide=a;
    a.onfinish=()=>{e.style.transform=`translate(${x}px,${y}px)`;a.cancel();if(window.__glide===a)window.__glide='hold';};};
+}
+
+// 열린 대화상자 안에서는 그 이름 줄의 버튼 · 스위치를, 아니면 그 글자를 찾는다. button=true면 대화상자 안에서 그 이름의 버튼 중 마지막 것
+// (탭과 같은 이름의 아래쪽 실행 버튼). mark를 주면 찾은 요소에 data-v12=<mark>를 단다. 페이지에서 실행되는 함수다.
+export function labelTargetInPage({label,button,mark}){
+ const vis=e=>{const r=e.getBoundingClientRect();return r.width>0&&r.height>0&&e.checkVisibility({checkVisibilityCSS:true});};
+ const dlg=[...document.querySelectorAll('[role=dialog]')].filter(vis).at(-1);const scope=dlg||document;
+ let t=null;
+ if(button)t=[...scope.querySelectorAll('[role=button],button')].filter(e=>vis(e)&&e.textContent.trim()===label).at(-1);
+ else{
+  const leaf=[...scope.querySelectorAll('div,span,a,button,[role=tab]')].filter(e=>vis(e)&&e.textContent.trim()===label).filter((e,_,all)=>!all.some(o=>o!==e&&e.contains(o)))[0];
+  t=leaf;
+  if(leaf&&dlg){for(let p=leaf.parentElement,i=0;p&&p!==dlg&&i<4;p=p.parentElement,i++){const ctl=[...p.querySelectorAll('[role=button],[role=switch],button')].filter(vis).find(e=>!e.contains(leaf));if(ctl){t=ctl;break;}}}
+ }
+ if(!t)throw Error('Label target missing: '+label);
+ if(mark)t.setAttribute('data-v12',mark);
+ const r=t.getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2};
 }
 
 export async function v10(ctx){
@@ -41,8 +62,12 @@ export async function v10(ctx){
   const a=await q1(pointerPos);const dist=Math.hypot(x-a.x,y-a.y);if(dist<1){gateState.lastMoveEnd=Date.now();lastPos={x,y};return;}
   const ms=Math.round(Math.max(260,Math.min(620,200+dist*0.4)));const t0=Date.now();
   await q1(()=>raw.evaluate(({ax,ay,x,y,ms})=>window.__startGlide(ax,ay,x,y,ms),{ax:a.x,ay:a.y,x,y,ms}));
-  // 실제 입력 8단계(16단계는 명령이 밀려 캡처 공백 · 늦은 도착이 컸다). 마지막 단계는 정확히 목표 좌표.
-  for(let i=1;i<=8;i++){const t=i/8,u=t*t*(3-2*t);const w=t0+ms*t-Date.now();if(w>0)await sleep(w);await q1(()=>raw.mouse.move(a.x+(x-a.x)*u,a.y+(y-a.y)*u,{steps:1}));}
+  // 실제 입력은 3단계다. 보이는 화살표는 SVG 애니메이션이라 단계 수와 상관없이 부드럽다. 녹화 중에는 실제 입력이 프레임 ACK와 같은 직렬 큐를 쓰므로
+  // 8단계면 이동 하나가 1.2~2초 밀려 그동안 화살표가 목표에서 기다리고 말 없는 시간이 생겼다(k3 · 리허설 cv2: 계획 260~430ms → 실제 1.2~2.1초).
+  // 마지막 단계는 정확히 목표 좌표.
+  // 끌기 중이 아니면 실제 마우스는 목표로 한 번에 간다: 중간 점에 머물면 그 자리 항목의 하위 메뉴가 열려 슬래시 메뉴를 가렸다(리허설 m1 s08-06 「페이지 위치:」).
+  const n=gateState.dragging?3:1;
+  for(let i=1;i<=n;i++){const t=i/n,u=t*t*(3-2*t);const w=t0+ms*t-Date.now();if(w>0)await sleep(w);await q1(()=>raw.mouse.move(a.x+(x-a.x)*u,a.y+(y-a.y)*u,{steps:1}));}
   // 애니메이션이 목표에 닿을 때까지 기다린 뒤 고정('hold')을 푼다. 이후 실제 위치 = 목표이므로 화살표가 움직이지 않는다.
   for(let n=0;n<60&&await q1(()=>raw.evaluate(()=>window.__glide&&window.__glide!=='hold'));n++)await sleep(20);
   await q1(()=>raw.evaluate(()=>{window.__glide=null;}));
@@ -50,6 +75,7 @@ export async function v10(ctx){
  }
  // ego 선택자 일부(css, X:has-text("T"), loc=role:R[name="N"])를 화면 좌표로. 화면 밖이면 휠로 들인다.
  async function targetPoint(selector){
+  let lastR=null;
   for(let i=0;i<10;i++){
    const r=await q1(()=>raw.evaluate(sel=>{
     let es;const ht=sel.match(/^(.*):has-text\("(.*)"\)$/),loc=sel.match(/^loc=role:([a-z]+)\[name="(.*)"\]$/);
@@ -62,16 +88,18 @@ export async function v10(ctx){
     const b=es[0].getBoundingClientRect();return{x:b.x+Math.min(45,b.width/2),y:b.y+b.height/2,top:b.top,bottom:b.bottom,h:innerHeight};
    },selector));
    if(r.error)throw Error(r.error);
-   if(r.top>=60&&r.bottom<=r.h-20)return r;
+   if(r.top>=60&&r.bottom<=r.h-20)return r;lastR=r;
    const dy=r.top<60?r.top-120:r.bottom-r.h+80;await q1(()=>raw.mouse.wheel(0,Math.max(-500,Math.min(500,dy))));await sleep(250);
   }
+  // 열 번 굴려도 한가운데로 못 들였어도 일부가 화면에 보이면 그 자리를 쓴다(사용자 2026-11-13 「유연하게」). 아예 없을 때만 멈춘다.
+  if(lastR&&lastR.bottom>60+14&&lastR.top<lastR.h-20-14)return lastR;
   throw Error('Cannot bring into view: '+selector);
  }
  const p=new Proxy(raw,{get(t,k){
   if(k==='hover'||k==='click'||k==='dblclick'||k==='dragAndDrop')return async sel=>{throw Error('Unported page.'+String(k)+'('+sel+'): use c.hoverSel/c.clickSel');};
   if(k==='mouse')return new Proxy(t.mouse,{get(m,j){
    if(j==='move')return async()=>{throw Error('Unported page.mouse.move: use c.move');};
-   if(['click','down','up','dblclick'].includes(j))return async(...a)=>{await gate();return m[j](...a);};
+   if(['click','down','up','dblclick'].includes(j))return async(...a)=>{await gate();if(j==='down')gateState.dragging=true;if(j==='up')gateState.dragging=false;return m[j](...a);};
    const v=m[j];return typeof v==='function'?v.bind(m):v;}});
   if(k==='keyboard')return new Proxy(t.keyboard,{get(kb,j){const v=kb[j];return typeof v==='function'?async(...a)=>{await gate();return v.apply(kb,a);}:v;}});
   const v=t[k];return typeof v==='function'?v.bind(t):v;}});
@@ -82,24 +110,10 @@ export async function v10(ctx){
  c.installPointer=async(at)=>c.serial(()=>raw.evaluate(installPointerInPage,at||lastPos));
  c.setPos=pos=>{lastPos=pos;};
  c.move=async(x,y)=>{await moveCore(x,y);if((ctx.commitAt||0)>Date.now())await gate();};
- // 설명하며 가리키기(누르지 않음). 열린 대화상자 안에서는 그 이름 줄의 버튼 · 스위치를, 아니면 그 글자를 가리킨다.
- // button=true면 대화상자 안에서 그 이름의 버튼 중 마지막 것(탭과 같은 이름의 아래쪽 실행 버튼).
- c.hoverLabel=async(label,button=false)=>{
-  const q=await c.serial(()=>raw.evaluate(({label,button})=>{
-   const vis=e=>{const r=e.getBoundingClientRect();return r.width>0&&r.height>0&&e.checkVisibility({checkVisibilityCSS:true});};
-   const dlg=[...document.querySelectorAll('[role=dialog]')].filter(vis).at(-1);const scope=dlg||document;
-   let t=null;
-   if(button)t=[...scope.querySelectorAll('[role=button],button')].filter(e=>vis(e)&&e.textContent.trim()===label).at(-1);
-   else{
-    const leaf=[...scope.querySelectorAll('div,span,a,button,[role=tab]')].filter(e=>vis(e)&&e.textContent.trim()===label).filter((e,_,all)=>!all.some(o=>o!==e&&e.contains(o)))[0];
-    t=leaf;
-    if(leaf&&dlg){for(let p=leaf.parentElement,i=0;p&&p!==dlg&&i<4;p=p.parentElement,i++){const ctl=[...p.querySelectorAll('[role=button],[role=switch],button')].filter(vis).find(e=>!e.contains(leaf));if(ctl){t=ctl;break;}}}
-   }
-   if(!t)throw Error('Label target missing: '+label);
-   const r=t.getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2};
-  },{label,button}));
-  await c.move(q.x,q.y);
- };
+ // 설명하며 가리키기(누르지 않음). 대상 찾기는 labelTargetInPage(v12도 같은 것을 쓴다).
+ c.hoverLabel=async(label,button=false)=>{const q=await c.serial(()=>raw.evaluate(labelTargetInPage,{label,button}));await c.move(q.x,q.y);};
+ // 게이트 없이 커서만 옮긴다(v12의 화면 안에 들이기가 휠을 굴릴 자리로 갈 때 — 말 시점을 기다리지 않는다).
+ c.glide=moveCore;
  c.hoverSel=async sel=>{const q=await targetPoint(sel);await c.move(q.x,q.y);};
  c.clickSel=async sel=>{const q=await targetPoint(sel);await c.move(q.x,q.y);await gate();await c.serial(()=>raw.mouse.click(q.x,q.y));await sleep(150);};
  c.gate=gate;
@@ -109,7 +123,7 @@ export async function v10(ctx){
    // 메뉴 걸러짐·레이아웃 이동 중에 출발하면 도착 뒤 다시 움직여 휘청인다(take-27 116s). 150ms 간격 두 번 같은 위치일 때 출발.
    let q=await c.locate(kind,value);for(let k=0;k<10;k++){await sleep(150);const q2=await c.locate(kind,value);if(Math.hypot(q2.x-q.x,q2.y-q.y)<=1){q=q2;break;}q=q2;}
    await c.move(q.x,q.y);await gate();const now=await c.locate(kind,value);
-   if(Math.hypot(now.x-q.x,now.y-q.y)>2)continue;
+   if(Math.hypot(now.x-q.x,now.y-q.y)>8)continue;  // 8px 안의 흔들림은 같은 자리로 본다(사용자 2026-11-13 「유연하게」)
    await c.serial(()=>raw.mouse.click(now.x,now.y));await sleep(150);
    if(kind==='menu'&&MENU_CLOSES.includes(value))await c.serial(()=>raw.waitForFunction(s=>{const e=document.querySelector(s);return !e||!e.checkVisibility({checkVisibilityCSS:true});},now.selector,{timeout:7000}));
    if(kind==='menu'&&['파란색 배경','회색 배경'].includes(value)&&c.activeCalloutPrefix){const target={prefix:c.activeCalloutPrefix,color:value==='파란색 배경'?'rgb(229, 242, 252)':'rgb(249, 248, 247)'};await c.serial(()=>raw.waitForFunction(({prefix,color})=>[...document.querySelectorAll('[role=note]')].some(e=>e.textContent.startsWith(prefix)&&getComputedStyle(e.firstElementChild).backgroundColor===color),target,{timeout:8000}));}
@@ -140,7 +154,12 @@ export async function v10(ctx){
   const f=await c.serial(()=>raw.evaluate(()=>{const e=document.activeElement;return !!(e?.isContentEditable||e?.matches('input,textarea'))&&!e.closest('[data-testid="agent-chat-view"]')&&!e.getAttribute('placeholder')?.includes('AI로');}));
   if(!f)throw Error('Typing target is not an editor');
   await c.aside();await gate();
-  let i=0;for(const ch of text){await c.serial(()=>raw.keyboard.insertText(ch));await sleep([105,125,95,135,110][i++%5]);}
+  // 박자는 글자당 약 0.11초(작은 흔들림)로 시각에 맞춘다: 큐가 밀려 한 번 넣기가 늦으면 그동안 쳤어야 할 글자를 한 번에 넣는다
+  // (글자마다 기다리면 녹화 중 입력이 말보다 몇 초 늦게 끝났다 — 리허설 cv2 · k3).
+  // 「/」는 따로 넣고 메뉴가 뜰 틈을 둔다 — 뒤 글자와 한 번에 넣으면 Notion이 슬래시 명령으로 받지 않고 글로 남긴다(k11 s08-05 「/페이지」).
+  if(text.startsWith('/')){await c.serial(()=>raw.keyboard.insertText('/'));await sleep(250);text=text.slice(1);if(!text)return;}
+  const chars=[...text],due=[];let acc=0;for(let i=0;i<chars.length;i++){due.push(acc);acc+=[105,125,95,135,110][i%5];}
+  const t0=Date.now();let k=0;while(k<chars.length){const now=Date.now()-t0;let n=k+1;while(n<chars.length&&due[n]<=now)n++;const chunk=chars.slice(k,n).join('');await c.serial(()=>raw.keyboard.insertText(chunk));k=n;if(k<chars.length){const w=t0+due[k]-Date.now();if(w>0)await sleep(w);}}
  };
  c.key=async k=>{await gate();await c.serial(()=>raw.keyboard.press(k));await sleep(200);};
  // 안내 상자 안 빈 줄에서 Enter로 상자 밖에 나간다. 1.5초 안에 반영되지 않으면(take-26 실측) 한 번 더 누르고 기록한다.
@@ -161,7 +180,7 @@ export async function v10(ctx){
   // 한 번에 다 선택되지 않으면 사람처럼 다시 끈다(take-37b: 녹화 중 한 번 선택이 안 잡힘, 같은 화면 시험에서는 한 번에 됨).
   const selected=()=>c.serial(()=>raw.waitForFunction(t=>getSelection().toString()===t,r.text,{timeout:1500})).then(()=>true,()=>false);
   let ok=false;
-  for(let k=0;k<2&&!ok;k++){await c.move(r.x0,r.y0);await gate();await c.serial(()=>raw.mouse.down());await c.move(r.x1,r.y1);await c.serial(()=>raw.mouse.up());ok=await selected();
+  for(let k=0;k<2&&!ok;k++){await c.move(r.x0,r.y0);await gate();await c.serial(()=>raw.mouse.down());gateState.dragging=true;await c.move(r.x1,r.y1);await c.serial(()=>raw.mouse.up());gateState.dragging=false;ok=await selected();
    if(!ok)await ctx.fs.appendFile(ctx.out+'/reclicks.jsonl',JSON.stringify({action:'title drag',reason:'not fully selected',try:k+1})+String.fromCharCode(10));}
   if(!ok)throw Error('Title text was not fully selected by drag twice: '+r.text);
   await c.type(text);

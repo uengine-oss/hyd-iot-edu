@@ -19,7 +19,9 @@ export function extend(c){
     if(hit.length===1)es=hit;
     if(es.length!==1)throw Error('Ambiguous '+kind+' '+value+': '+es.length);
     const e=es[0],r=e.getBoundingClientRect(),token='target-'+Date.now();e.setAttribute('data-tutorial-locate',token);
-    return{x:r.x+Math.min(45,r.width/2),y:r.y+r.height/2,scroll:r.top<0||r.bottom>innerHeight-5,selector:'[data-tutorial-locate="'+token+'"]'};
+    // path: 편집 영역 안 요소는 Notion이 위 표시를 곧 지우므로 Notion 자신의 id · data-block-id에 붙인 구조 선택자도 준다(v12의 화면 안에 들이기가 쓴다).
+    const pathOf=e=>{if(!e.closest('[contenteditable=true]'))return null;const parts=[];let a=e;while(a&&a!==document.documentElement){const bid=a.getAttribute('data-block-id');const own=a.id?'#'+CSS.escape(a.id):bid?a.tagName.toLowerCase()+'[data-block-id="'+bid+'"]':null;if(own&&document.querySelectorAll(own).length===1){parts.unshift(own);break;}parts.unshift(a.tagName.toLowerCase()+':nth-child('+([...a.parentElement.children].indexOf(a)+1)+')');a=a.parentElement;}const sel=parts.join(' > ');if(document.querySelector(sel)!==e)throw Error('Structural selector does not resolve back: '+sel);return sel;};
+    return{x:r.x+Math.min(45,r.width/2),y:r.y+r.height/2,scroll:r.top<0||r.bottom>innerHeight-5,selector:'[data-tutorial-locate="'+token+'"]',path:pathOf(e)};
    },{kind,value}));
    if(q.missing){await c.sleep(200);continue;}
    if(q.scroll){try{await c.serial(()=>c.p.hover(q.selector));}catch(e){if(!/matched 0|not connected/.test(String(e)))throw e;}await c.sleep(250);continue;}
@@ -31,7 +33,7 @@ export function extend(c){
   const before=kind==='menu'&&value==='페이지'?await c.serial(()=>c.p.url()):null;
   for(let i=0;i<5;i++){
    const q=await c.locate(kind,value);await c.move(q.x,q.y);const now=await c.locate(kind,value);
-   if(Math.hypot(now.x-q.x,now.y-q.y)>2)continue;
+   if(Math.hypot(now.x-q.x,now.y-q.y)>8)continue;  // 8px 안의 흔들림은 같은 자리로 본다(사용자 2026-11-13 「유연하게」)
    await c.serial(()=>c.p.mouse.click(now.x,now.y));await c.sleep(450);
    if(kind==='menu'&&['콜아웃','제목2','글머리 기호 목록','번호 매기기 목록','토글 목록','구분선','할 일 목록','목차'].includes(value))await c.serial(()=>c.p.waitForFunction(s=>{const e=document.querySelector(s);return !e||!e.checkVisibility({checkVisibilityCSS:true});},now.selector,{timeout:7000}));
    if(before)await c.serial(()=>c.p.waitForFunction(url=>location.href!==url, before,{timeout:10000}));

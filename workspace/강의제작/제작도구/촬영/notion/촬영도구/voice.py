@@ -1,4 +1,5 @@
-"""안치윤 음성 준비. 사용: python voice.py
+"""안치윤 음성 준비. 사용: python voice.py            (옛 판: voice-jobs.json과 검수 음성)
+                     python voice.py source-cues-v12.json   (v12: 그 큐 파일의 큐만 — id와 글이 캐시와 다른 큐만 산다, 검수 음성 복사는 하지 않는다)
 1) voice-jobs.json의 새 큐를 ElevenLabs(eleven_v4, 안치윤, stability 0.5 · similarity 0.75)로 만든다. 이미 같은 문장이 있으면 다시 만들지 않는다.
 2) fix-* 큐: 오전 검수에서 고친 음성(음성내용검수/<이름>.mp3)을 음성 캐시에 큐로 복사한다(새 비용 없음).
 키는 환경변수 HYD_ELEVENLABS_KEY_FILE이 가리키는 파일에서만 읽고 출력하지 않는다. 결과 = 음성 캐시(config audio)의 <id>.mp3 · <id>.json(text, duration_ms)."""
@@ -16,9 +17,10 @@ def duration_ms(mp3):
 def write_meta(cid, text, mp3):
     (AUDIO / f'{cid}.json').write_text(json.dumps({'id': cid, 'text': text, 'duration_ms': duration_ms(mp3)}, ensure_ascii=False), encoding='utf-8')
 
-# 2) 검수에서 고친 음성
+# 2) 검수에서 고친 음성(옛 판만)
+CUES = sys.argv[1] if len(sys.argv) > 1 else None
 review = AUDIO.parent / '음성내용검수'
-for f in json.loads((review / '음성수정안.json').read_text(encoding='utf-8')):
+for f in ([] if CUES else json.loads((review / '음성수정안.json').read_text(encoding='utf-8'))):
     src, cid = review / f"{f['name']}.mp3", f"fix-{f['name']}"
     if not src.exists():
         raise SystemExit(f'검수 음성 없음: {src}')
@@ -26,7 +28,7 @@ for f in json.loads((review / '음성수정안.json').read_text(encoding='utf-8'
     shutil.copyfile(src, dst); write_meta(cid, f['text'], dst)
 
 # 1) 새 큐
-jobs = json.loads((HERE / 'voice-jobs.json').read_text(encoding='utf-8'))
+jobs = json.loads((HERE / CUES).read_text(encoding='utf-8'))['cues'] if CUES else json.loads((HERE / 'voice-jobs.json').read_text(encoding='utf-8'))
 todo = [j for j in jobs if not ((AUDIO / f"{j['id']}.json").exists() and json.loads((AUDIO / f"{j['id']}.json").read_text(encoding='utf-8'))['text'] == j['text'])]
 print(f'새로 만들 큐 {len(todo)} / 전체 {len(jobs)}', flush=True)
 if todo:

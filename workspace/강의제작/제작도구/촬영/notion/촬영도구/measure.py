@@ -10,12 +10,14 @@ src = sorted(f['sourceTimestamp'] * 1000 - st for f in t['frames'])
 # 이동 시작(m.start)부터 첫 프레임까지는 화살표 애니메이션이 출발하기 전이라 화면 변화가 없다(출발 지연). 끊김 판정은
 # 첫 프레임 이후 이동 중 공백으로 하고, 출발 지연은 따로 기록한다(2026-10-23 take-27: 100ms 넘는 공백 7개가 모두 출발 직전).
 gaps, starts = [], []
+# 재는 창은 화살표가 움직이는 동안(계획 시간 + 150ms)이다 — 그 뒤는 목표에 고정된 정지라 프레임이 오지 않는다(ctrl.mjs measureGaps와 같은 셈).
 for m in t['motions']:
-    v = [x for x in src if m['start'] <= x <= m['end']]
+    end = min(m['end'], m['start'] + m.get('planned_ms', m['end'] - m['start']) + 150)
+    v = [x for x in src if m['start'] <= x <= end]
     if not v:
-        gaps.append(round(m['end'] - m['start'])); starts.append(None); continue
+        gaps.append(round(end - m['start'])); starts.append(None); continue
     starts.append(round(v[0] - m['start']))
-    g = [b - a for a, b in zip(v, v[1:] + [m['end']])]
+    g = [b - a for a, b in zip(v, v[1:] + [end])]
     gaps.append(round(max(g)))
 es = json.loads((d / 'end-state.json').read_text(encoding='utf-8')); clicks = es['clicks']
 # pointer.applied: 녹화 중 실제 입력이 화살표를 옮긴 횟수(이동은 모두 애니메이션이므로 0이어야 함). heldAfterFinish: 막아 낸 늦은 입력 수.

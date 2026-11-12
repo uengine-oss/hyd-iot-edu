@@ -1,12 +1,30 @@
 {
- "note": "경로는 이 폴더 기준 상대 경로. work = 녹화 원본·끝 상태가 쌓이는 근거 폴더(Git 밖). audio = 안치윤 음성 캐시(<큐id>.mp3 · <큐id>.json: text·duration_ms, Git 밖). space = ego 작업 공간 이름. page = 촬영 전용 Notion 페이지 id(이어 쓰기). protect = 덮어쓰면 안 되는 최종본 id(입력 금지). viewport = setDeviceMetricsOverride 값(Notion은 1536x864 dsf1, ego 150% → 프레임 1920x1080). ffmpeg는 환경변수 FFMPEG 또는 PATH. ElevenLabs 키 파일은 환경변수 HYD_ELEVENLABS_KEY_FILE(값은 출력·커밋 금지).",
+ "note": "경로는 이 폴더 기준 상대 경로. work = 녹화 원본·끝 상태가 쌓이는 근거 폴더(Git 밖). audio = 안치윤 음성 캐시(산 그대로, <큐id>.mp3 · <큐id>.json: text·duration_ms). audio_play = 녹화 · 합성이 읽는 음성(음성쉼.py가 audio의 큐 안 문장 사이를 0.5초로 넓혀 쓴다). space = ego 작업 공간 이름. page = 촬영 전용 Notion 페이지 id(이어 쓰기). protect = 덮어쓰면 안 되는 최종본 id(입력 금지). viewport = setDeviceMetricsOverride 값(Notion은 1536x864 dsf1, ego 150% → 프레임 1920x1080). ffmpeg는 환경변수 FFMPEG 또는 PATH. ElevenLabs 키 파일은 환경변수 HYD_ELEVENLABS_KEY_FILE(값은 출력·커밋 금지). v12 = 새 대본 다시 찍기(run.sh chain12): space(비우면 위 space), home = 새 계정 작업 화면 주소(2단계가 연다), download = 1단계 다운로드 쪽, cover = 커버 갤러리에서 고를 그림 이름(aria-label · title · alt — 길뚫기에서 적는다), guide = 학생 가이드 HTML(이 폴더 기준), emoji = 페이지마다 아이콘 고르는 창의 검색어(첫 결과가 대본 재현 값의 이모지인 말 — 길뚫기에서 확인). home은 1단계 준비가 먼저 열어 「Notion 열기」가 돌아올 쪽이다(그 단추는 마지막으로 본 쪽을 연다) — Notion 「홈」(사용자 2026-11-13 결정).",
  "work": "../../../../../../작업/촬영/notion",
  "audio": "../음성",
+ "audio_play": "../음성_쉼",
  "space": "notion rhythm 20261023",
  "page": "402f0e285bb48002b697e5ee2dfedd02",
  "protect": "3bcf0e285bb4806f93c1cc2ace1f0836",
  "viewport": {
   "width": 1536,
   "height": 864
+ },
+ "v12": {
+  "space": "notion rhythm 20261023",
+  "home": "https://app.notion.com/home",
+  "download": "https://www.notion.com/ko/desktop",
+  "cover": "흐릿한 반투명 유리",
+  "guide": "../../../../산출물/통합반/실습/01회차/랩/01일차_실습1_학습노트.html",
+  "emoji": {
+   "홈": "공책",
+   "Notion 익히기": "연필",
+   "첫 페이지 꾸미기": "팔레트",
+   "페이지 연결하기": "링크",
+   "지식 자산화": "전구",
+   "새 주제": "페이지",
+   "나만의 독서 기록": "책 여러 권",
+   "다음에 읽을 책": "펼쳐진 책"
+  }
  }
 }

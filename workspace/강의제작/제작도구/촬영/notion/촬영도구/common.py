@@ -5,7 +5,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 CFG = json.loads((HERE / 'config.json').read_text(encoding='utf-8'))
 WORK = (HERE / CFG['work']).resolve()
-AUDIO = (HERE / CFG['audio']).resolve()
+AUDIO = (HERE / CFG['audio']).resolve()            # 산 음성(voice.py가 쓴다)
+PLAY_AUDIO = (HERE / CFG['audio_play']).resolve()  # 녹화 · 합성이 읽는 음성(음성쉼.py가 쓴다)
 
 
 def ffmpeg():
