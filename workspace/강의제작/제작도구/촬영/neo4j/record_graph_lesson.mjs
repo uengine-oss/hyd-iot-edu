@@ -206,7 +206,9 @@ try{
     // 받은 그림 파일을 새 탭으로 연다(학생이 내려받기 표시에서 여는 것과 같은 그림). 녹화 밖에서 열어 두지 않고 그 자리에서 연다.
     case 'openFile':{await g(c.at??.4);if(!lastDownload)throw Error('열 파일이 없다(앞 png 조작)');
      const pg=await P.newPage();await P.attach(pg);await pg.goto('file://'+lastDownload);await serial(()=>metrics(pg));await installPointer(pg,pos);P.file=pg;await show(pg);break;}
-    case 'newTab':await g(c.at??.8);await act({css:'button[aria-label="Add new tab"]'},true);await serial(()=>p.waitForFunction(()=>[...document.querySelectorAll('[role="tab"]')].some(e=>/Untitled Query/.test(e.textContent)),undefined,{timeout:5000}));break;
+    // 새 탭은 이름 글자가 비어 있기도 해서(새 프로필), 쿼리 탭(Stream 옆)의 수가 늘었는지로 본다.
+    case 'newTab':{await g(c.at??.8);const tabs=()=>p.evaluate(()=>document.querySelectorAll('[aria-label="Close tab"]').length);const n0=await serial(tabs);await act({css:'button[aria-label="Add new tab"]'},true);
+     await serial(()=>p.waitForFunction(n=>document.querySelectorAll('[aria-label="Close tab"]').length>n,n0,{timeout:5000}));break;}
     case 'closeTab':await g(c.at??.8);await act({css:'button[aria-label="Close tab"]'},true);break;
     case 'openSaved':await g(c.at??.8);await act({css:`[role="group"][aria-label="${spec.saved_title}"]`},true);
      await serial(()=>p.waitForFunction(t=>Array.from(document.querySelectorAll('[aria-label="Cypher Editor"]')).some(e=>e.getBoundingClientRect().height>0&&e.innerText.includes(t)),spec.saved_title,{timeout:10000}));a.reopened=true;break;
