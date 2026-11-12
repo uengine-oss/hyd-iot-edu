@@ -47,7 +47,7 @@ const ACT=/(누르|확정|넓힐|옮기겠|정리할|놓겠|칠하겠|눌러|누
 function plan(text){
  const s=text.split(/(?<=[.?!])\s+/);const total=text.length;let at=0;const spans=s.map(x=>{const a=at;at+=x.length+1;return{a,b:Math.min(total,at-1),x};});
  const k=[...spans].reverse().find(x=>ACT.test(x.x))||spans.at(-1);
- return{pointFrac:k.a/total,commitFrac:k.b/total,sentence:k.x};
+ return{pointFrac:k.a/total,commitFrac:k.b/total,sentence:k.x,lastFrac:spans.at(-1).a/total};
 }
 let speechFree=0,actionFree=0;const ctx={p,serial,sleep,saved:{}};
 ctx.recordMotion=m=>motions.push({...m,start:m.start-start,end:m.end-start});
@@ -59,10 +59,12 @@ async function cue(c,fn,pointing){
  speechFree=t0+c.duration_ms;ctx.cueT0=t0;ctx.cueDur=c.duration_ms;
  if(!fn){actionFree=t0;return;}
  const pl=plan(c.text);
- const pointAt=pointing?t0+150:t0+Math.round(c.duration_ms*pl.pointFrac)+250;
- const commitAt=t0+Math.round(c.duration_ms*pl.commitFrac)-250;
+ // 시간표 큐(조작이 at으로 시작): 말 속 낱말 자리에서 바로 하므로 문장 끝을 기다리지 않는다(짚기 · Ctrl로 함께 고르기).
+ const timeline=c.ops?.[0]?.[0]==='at';
+ const pointAt=pointing||timeline?t0+150:t0+Math.round(c.duration_ms*(c.cut?pl.lastFrac:pl.pointFrac))+250;
+ const commitAt=timeline?0:t0+Math.round(c.duration_ms*(c.cut?1:pl.commitFrac))-250;
  Object.assign(a,{plannedPoint:pointAt-start,plannedCommit:commitAt-start,actionSentence:pl.sentence});
- const w2=pointAt-Date.now();if(w2>0)await sleep(w2);ctx.commitAt=pointing?0:commitAt;ctx.committed=null;a.actionStart=Date.now()-start;
+ const w2=pointAt-Date.now();if(w2>0)await sleep(w2);ctx.commitAt=pointing||timeline?0:commitAt;ctx.committed=null;a.actionStart=Date.now()-start;
  await fn();a.commit=ctx.committed?ctx.committed-start:null;a.actionEnd=Date.now()-start;actionFree=Date.now();
 }
 await boot('capture loop');let result=null,ui=null;
@@ -92,7 +94,7 @@ try{
  if(SEG.pre){const pre=JSON.parse(SEG.pre);ctx.cueT0=Date.now();ctx.cueDur=0;ctx.commitAt=0;for(const o of pre)await exec(o);await log('pre done');}
  for(const c0 of cues){
   const c={...c0,...JSON.parse(await fs.readFile(audio+'/'+c0.id+'.json','utf8').catch(()=>{throw Error('Voice cue missing: '+audio+'/'+c0.id+'.json (voice.py로 만든 뒤 촬영)');}))};
-  const ops=c0.ops;const pointing=ops.length&&ops.every(o=>['at','point','verify'].includes(o[0]));
+  const ops=c0.ops;const pointing=ops.length&&ops.every(o=>['at','point','verify','note'].includes(o[0]));
   await cue(c,ops.length?async()=>{for(const o of ops)await exec(o);}:null,pointing);
  }
  const tail=speechFree-Date.now();if(tail>0)await sleep(tail+400);

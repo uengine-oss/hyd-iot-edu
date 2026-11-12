@@ -99,6 +99,9 @@ export async function makeUI(ctx){
    else if(name==='download')es=btn('Download').slice(0,1);
    else if(name==='importButton')es=[...document.querySelectorAll('button')].filter(e=>vis(e)&&e.textContent.trim()==='Import'&&!e.closest('[role=listbox]'));
    else if(name==='chooseFile')es=btn('Choose File');
+   else if(name==='importText')es=[...document.querySelectorAll('.modal textarea')].filter(vis);
+   // 오른쪽 칸 맨 위 개수(Selection: · Graph: 밑의 nodes: N).
+   else if(name==='selCount')es=[...document.querySelectorAll('*')].filter(e=>vis(e)&&e.childElementCount<=3&&/^nodes:\s*\d+$/.test(e.textContent.replace(/\s+/g,' ').trim())).slice(0,1);
    // 화면 글자 그대로 찾는 단추(쿠키 안내 · 도움말 창처럼 이름표를 따로 두지 않은 것). 글이 같은 단추가 둘 이상이면 오류.
    else if(name.startsWith('text:'))es=btn(name.slice(5));
    else if(name.startsWith('tab:'))es=[...document.querySelectorAll('a,button,.item')].filter(e=>vis(e)&&e.textContent.trim()===name.slice(4)&&!e.closest('[role=listbox]'));
@@ -119,7 +122,13 @@ export async function makeUI(ctx){
   },name));
   if(r.error)throw Error(r.error);return r;
  }
- const FIXED={canvasMid:{x:560,y:430},panelMid:{x:1290,y:300}};
+ // 고정 자리(CSS 1536×864 화면 기준): 그림판 가운데 · 오른쪽 칸 · 테마 견본 · 주황 Save to Google Drive.
+ const FIXED={canvasMid:{x:560,y:430},panelMid:{x:1290,y:300},samples:{x:1320,y:520},orange:{x:1370,y:30}};
+ // 그림판에 그린 글자(관계 이름 · Label 띠 · 화살표 속성)를 그 글로 찾는다. 같은 글이 둘 이상이면 오류.
+ async function ctext(want){
+  const r=await q1(()=>raw.evaluate(w=>{const c=document.querySelector('canvas');if(!(c.__texts||[]).length)window.__redraw();const T=(c.__texts||[]).filter(t=>t.at>0),lt=Math.max(0,...T.map(t=>t.at));const hit=T.filter(t=>t.at>=lt-20&&t.t.includes(w));const u=[];for(const h of hit)if(!u.some(q=>Math.hypot(q.x-h.x,q.y-h.y)<4))u.push(h);return u.length===1?{x:u[0].x,y:u[0].y}:{error:'canvas text '+w+' matched '+u.length};},want));
+  if(r.error)throw Error(r.error);return r;
+ }
  // 빈 곳: 고정 좌표는 배치가 바뀌면 원·화살표에 맞아 선택이 풀리지 않는다(10구간 radius가 원 하나에만 들어간 원인).
  // 지금 화면의 원·화살표·글자에서 가장 먼 캔버스 지점을 고른다.
  async function blank(){
@@ -146,6 +155,9 @@ export async function makeUI(ctx){
   if(name.startsWith('node:'))return node(name.slice(5));
   if(name.startsWith('look:')){const n=await node(name.slice(5));return{x:n.x+n.r*0.78,y:n.y+n.r*0.78};}
   if(name.startsWith('props:')){const n=await node(name.slice(6));return{x:n.x+n.r+40,y:n.y};}
+  if(name.startsWith('ctext:'))return ctext(name.slice(6));
+  // 두 원 사이 화살표의 가운데(화살표를 짚을 때).
+  if(name.startsWith('edgeMid:')){const [a,b]=name.slice(8).split('>');const p=await node(a),t=await node(b);return{x:(p.x+t.x)/2,y:(p.y+t.y)/2};}
   return dom(name);
  }
  const ui={raw,install,gate,node,dom,circles,
