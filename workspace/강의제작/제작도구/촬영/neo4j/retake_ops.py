@@ -74,7 +74,7 @@ RETAKE_OPS = {
      ('쿼리는 손으로 치지', {'op': 'guideShow', 'block': 3, 'at': .93}),
      ('2번 첫 칸에', {'op': 'guideCopy', 'block': 3, 'point_at': .45, 'at': .85}),
      ('이쪽으로 돌아오시면', {'op': 'mainShow', 'at': .4}),
-     ('제 칸은 비어 있는데', [{'op': 'point', 'points': [{'css': ED, 'at': .3}]}, {'op': 'paste', 'block': 3, 'at': .95}]),
+     ('입력칸을 누르고 붙여', [{'op': 'point', 'points': [{'css': ED, 'at': .3}]}, {'op': 'paste', 'block': 3, 'at': .95}]),
      ('복사한 문장이 그대로', E('CREATE', .3)),
      ('붙여 넣은 건 CREATE', [E('CREATE', .2), E('연습장치', .7)]),
      ('점수는 펌프 40', E('score', .2)),
