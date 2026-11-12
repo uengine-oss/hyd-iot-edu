@@ -1,6 +1,6 @@
 {
- "output": "05-지식지도-새판3_1080p.mp4",
- "duration_s": 1013.733,
+ "output": "05-지식지도-새판4_1080p.mp4",
+ "duration_s": 1011.4,
  "source": "1920x1080 JPEG screencast",
  "output_fps": 30,
  "pointer": [
@@ -64,15 +64,15 @@
    "end_tab": "ontology"
   },
   {
-   "segment": "m05-s5",
+   "segment": "m05-s5b",
    "tool": "포털",
    "part": 5,
    "from_ms": 0.0,
-   "used_ms": 164822.0,
+   "used_ms": 162488.0,
    "start_s": 414.067,
-   "frames": 4945,
+   "frames": 4875,
    "mode": "overlay",
-   "recorded_ms": 164822,
+   "recorded_ms": 162488,
    "error": null,
    "end_url": "http://127.0.0.1:8088/#/ontology",
    "end_tab": "ontology"
@@ -83,7 +83,7 @@
    "part": 6,
    "from_ms": 0.0,
    "used_ms": 225480.0,
-   "start_s": 578.9,
+   "start_s": 576.567,
    "frames": 6764,
    "mode": "overlay",
    "recorded_ms": 225480,
@@ -97,7 +97,7 @@
    "part": 7,
    "from_ms": 0.0,
    "used_ms": 174562.0,
-   "start_s": 804.367,
+   "start_s": 802.033,
    "frames": 5237,
    "mode": "overlay",
    "recorded_ms": 174562,
@@ -111,7 +111,7 @@
    "part": 8,
    "from_ms": 0.0,
    "used_ms": 34799.0,
-   "start_s": 978.933,
+   "start_s": 976.6,
    "frames": 1044,
    "mode": "overlay",
    "recorded_ms": 34799,
@@ -792,290 +792,290 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 7229
+   "next_speech_after_action_ms": 7218
   },
   {
    "id": "m05-501",
    "speech": [
-    "06:54.083",
-    "07:03.283"
+    "06:54.072",
+    "07:03.272"
    ],
    "action": [
-    "06:54.084",
-    "07:03.261"
+    "06:54.073",
+    "07:03.250"
    ],
-   "commit": "07:02.800",
-   "commit_before_speech_end_ms": 483,
+   "commit": "07:02.798",
+   "commit_before_speech_end_ms": 474,
    "next_speech_after_action_ms": 4022
   },
   {
    "id": "m05-502",
    "speech": [
-    "07:07.283",
-    "07:08.803"
+    "07:07.272",
+    "07:08.792"
    ],
    "action": [
-    "07:07.284",
-    "07:07.923"
+    "07:07.272",
+    "07:07.971"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 1480
+   "next_speech_after_action_ms": 1421
   },
   {
    "id": "m05-503",
    "speech": [
-    "07:09.403",
-    "07:16.443"
+    "07:09.392",
+    "07:16.432"
    ],
    "action": [
-    "07:09.407",
-    "07:10.953"
+    "07:09.393",
+    "07:10.962"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 6090
+   "next_speech_after_action_ms": 6070
   },
   {
    "id": "m05-504",
    "speech": [
-    "07:17.043",
-    "07:21.763"
+    "07:17.032",
+    "07:21.752"
    ],
    "action": [
-    "07:17.044",
-    "07:18.170"
+    "07:17.033",
+    "07:18.120"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 4193
+   "next_speech_after_action_ms": 4232
   },
   {
    "id": "m05-505",
    "speech": [
-    "07:22.363",
-    "07:26.283"
+    "07:22.352",
+    "07:26.272"
    ]
   },
   {
    "id": "m05-506",
    "speech": [
-    "07:27.583",
-    "07:39.903"
+    "07:27.572",
+    "07:39.892"
    ],
    "action": [
-    "07:27.587",
-    "07:37.884"
+    "07:27.575",
+    "07:37.862"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 2621
+   "next_speech_after_action_ms": 2630
   },
   {
    "id": "m05-507",
    "speech": [
-    "07:40.505",
-    "07:48.105"
+    "07:40.492",
+    "07:48.092"
    ],
    "action": [
-    "07:40.506",
-    "07:45.880"
+    "07:40.497",
+    "07:45.769"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 2825
+   "next_speech_after_action_ms": 2923
   },
   {
    "id": "m05-508",
    "speech": [
-    "07:48.705",
-    "07:53.425"
+    "07:48.692",
+    "07:53.412"
    ],
    "action": [
-    "07:48.706",
-    "07:53.345"
+    "07:48.693",
+    "07:53.397"
    ],
-   "commit": "07:52.934",
-   "commit_before_speech_end_ms": 491,
-   "next_speech_after_action_ms": 2081
+   "commit": "07:52.968",
+   "commit_before_speech_end_ms": 444,
+   "next_speech_after_action_ms": 2015
   },
   {
    "id": "m05-509",
    "speech": [
-    "07:55.426",
-    "07:57.586"
+    "07:55.412",
+    "07:57.572"
    ],
    "action": [
-    "07:55.428",
-    "07:56.179"
+    "07:55.413",
+    "07:56.170"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 2007
+   "next_speech_after_action_ms": 2002
   },
   {
    "id": "m05-510",
    "speech": [
-    "07:58.186",
-    "08:20.426"
+    "07:58.172",
+    "08:20.412"
    ],
    "action": [
-    "07:58.194",
-    "08:20.487"
+    "07:58.173",
+    "08:20.464"
    ],
-   "commit": "08:20.081",
-   "commit_before_speech_end_ms": 345,
+   "commit": "08:20.041",
+   "commit_before_speech_end_ms": 371,
    "next_speech_after_action_ms": 2000
   },
   {
    "id": "m05-511",
    "speech": [
-    "08:22.487",
-    "08:25.207"
+    "08:22.464",
+    "08:25.184"
    ],
    "action": [
-    "08:22.489",
-    "08:23.661"
+    "08:22.465",
+    "08:23.642"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 2146
+   "next_speech_after_action_ms": 2142
   },
   {
    "id": "m05-512",
    "speech": [
-    "08:25.807",
-    "08:37.967"
+    "08:25.784",
+    "08:37.944"
    ]
   },
   {
    "id": "m05-513",
    "speech": [
-    "08:39.267",
-    "08:43.107"
+    "08:39.247",
+    "08:43.087"
    ],
    "action": [
-    "08:39.269",
-    "08:41.888"
+    "08:39.249",
+    "08:41.820"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 1820
+   "next_speech_after_action_ms": 1867
   },
   {
    "id": "m05-514",
    "speech": [
-    "08:43.708",
-    "08:46.108"
+    "08:43.687",
+    "08:46.087"
    ],
    "action": [
-    "08:43.711",
-    "08:44.335"
+    "08:43.688",
+    "08:44.327"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 2373
+   "next_speech_after_action_ms": 2360
   },
   {
    "id": "m05-515",
    "speech": [
-    "08:46.708",
-    "08:52.068"
+    "08:46.687",
+    "08:52.047"
    ]
   },
   {
    "id": "m05-516",
    "speech": [
-    "08:53.368",
-    "09:00.008"
+    "08:53.347",
+    "08:59.987"
    ],
    "action": [
-    "08:53.394",
-    "08:54.905"
+    "08:53.352",
+    "08:54.825"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 5703
+   "next_speech_after_action_ms": 5762
   },
   {
    "id": "m05-517",
    "speech": [
-    "09:00.608",
-    "09:04.448"
+    "09:00.587",
+    "09:04.427"
    ]
   },
   {
    "id": "m05-518",
    "speech": [
-    "09:05.748",
-    "09:26.788"
+    "09:05.727",
+    "09:24.447"
    ],
    "action": [
-    "09:05.755",
-    "09:13.751"
+    "09:05.728",
+    "09:16.601"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 14337
+   "next_speech_after_action_ms": 9146
   },
   {
    "id": "m05-519",
    "speech": [
-    "09:28.088",
-    "09:31.128"
+    "09:25.747",
+    "09:28.787"
    ],
    "action": [
-    "09:28.100",
-    "09:28.921"
+    "09:25.749",
+    "09:26.514"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 2807
+   "next_speech_after_action_ms": 2873
   },
   {
    "id": "m05-520",
    "speech": [
-    "09:31.728",
-    "09:35.728"
+    "09:29.387",
+    "09:33.387"
    ],
    "action": [
-    "09:31.731",
-    "09:35.314"
+    "09:29.388",
+    "09:33.006"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 1014
+   "next_speech_after_action_ms": 983
   },
   {
    "id": "m05-521",
    "speech": [
-    "09:36.328",
-    "09:38.488"
+    "09:33.989",
+    "09:36.149"
    ]
   },
   {
    "id": "m05-601",
    "speech": [
-    "09:38.918",
-    "09:46.198"
+    "09:36.585",
+    "09:43.865"
    ],
    "action": [
-    "09:38.918",
-    "09:45.583"
+    "09:36.585",
+    "09:43.250"
    ],
-   "commit": "09:45.025",
+   "commit": "09:42.692",
    "commit_before_speech_end_ms": 1173,
    "next_speech_after_action_ms": 4616
   },
   {
    "id": "m05-602",
    "speech": [
-    "09:50.199",
-    "09:55.639"
+    "09:47.866",
+    "09:53.306"
    ],
    "action": [
-    "09:50.200",
-    "09:51.489"
+    "09:47.867",
+    "09:49.156"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1084,26 +1084,26 @@
   {
    "id": "m05-603",
    "speech": [
-    "09:56.240",
-    "10:02.880"
+    "09:53.907",
+    "10:00.547"
    ],
    "action": [
-    "09:56.252",
-    "10:02.910"
+    "09:53.919",
+    "10:00.577"
    ],
-   "commit": "10:02.500",
+   "commit": "10:00.167",
    "commit_before_speech_end_ms": 380,
    "next_speech_after_action_ms": 4001
   },
   {
    "id": "m05-604",
    "speech": [
-    "10:06.911",
-    "10:10.751"
+    "10:04.578",
+    "10:08.418"
    ],
    "action": [
-    "10:06.912",
-    "10:09.810"
+    "10:04.579",
+    "10:07.477"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1112,12 +1112,12 @@
   {
    "id": "m05-605",
    "speech": [
-    "10:11.351",
-    "10:14.791"
+    "10:09.018",
+    "10:12.458"
    ],
    "action": [
-    "10:11.352",
-    "10:12.202"
+    "10:09.019",
+    "10:09.869"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1126,12 +1126,12 @@
   {
    "id": "m05-606",
    "speech": [
-    "10:15.391",
-    "10:20.191"
+    "10:13.058",
+    "10:17.858"
    ],
    "action": [
-    "10:15.396",
-    "10:16.856"
+    "10:13.063",
+    "10:14.523"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1140,19 +1140,19 @@
   {
    "id": "m05-607",
    "speech": [
-    "10:20.791",
-    "10:29.911"
+    "10:18.458",
+    "10:27.578"
    ]
   },
   {
    "id": "m05-608",
    "speech": [
-    "10:31.211",
-    "10:35.691"
+    "10:28.878",
+    "10:33.358"
    ],
    "action": [
-    "10:31.215",
-    "10:33.741"
+    "10:28.882",
+    "10:31.408"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1161,26 +1161,26 @@
   {
    "id": "m05-609",
    "speech": [
-    "10:36.294",
-    "10:45.014"
+    "10:33.961",
+    "10:42.681"
    ],
    "action": [
-    "10:36.305",
-    "10:44.971"
+    "10:33.972",
+    "10:42.638"
    ],
-   "commit": "10:44.522",
+   "commit": "10:42.189",
    "commit_before_speech_end_ms": 492,
    "next_speech_after_action_ms": 2043
   },
   {
    "id": "m05-610",
    "speech": [
-    "10:47.014",
-    "10:49.654"
+    "10:44.681",
+    "10:47.321"
    ],
    "action": [
-    "10:47.016",
-    "10:47.953"
+    "10:44.683",
+    "10:45.620"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1189,12 +1189,12 @@
   {
    "id": "m05-611",
    "speech": [
-    "10:50.254",
-    "10:52.734"
+    "10:47.921",
+    "10:50.401"
    ],
    "action": [
-    "10:50.255",
-    "10:51.387"
+    "10:47.922",
+    "10:49.054"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1203,12 +1203,12 @@
   {
    "id": "m05-612",
    "speech": [
-    "10:53.334",
-    "10:55.654"
+    "10:51.001",
+    "10:53.321"
    ],
    "action": [
-    "10:53.335",
-    "10:53.787"
+    "10:51.002",
+    "10:51.454"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1217,19 +1217,19 @@
   {
    "id": "m05-613",
    "speech": [
-    "10:56.254",
-    "11:04.494"
+    "10:53.921",
+    "11:02.161"
    ]
   },
   {
    "id": "m05-614",
    "speech": [
-    "11:05.794",
-    "11:08.594"
+    "11:03.461",
+    "11:06.261"
    ],
    "action": [
-    "11:05.796",
-    "11:07.344"
+    "11:03.463",
+    "11:05.011"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1238,19 +1238,19 @@
   {
    "id": "m05-615",
    "speech": [
-    "11:09.204",
-    "11:16.244"
+    "11:06.871",
+    "11:13.911"
    ]
   },
   {
    "id": "m05-616",
    "speech": [
-    "11:17.544",
-    "11:19.544"
+    "11:15.211",
+    "11:17.211"
    ],
    "action": [
-    "11:17.548",
-    "11:18.117"
+    "11:15.215",
+    "11:15.784"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1259,12 +1259,12 @@
   {
    "id": "m05-617",
    "speech": [
-    "11:20.144",
-    "11:31.744"
+    "11:17.811",
+    "11:29.411"
    ],
    "action": [
-    "11:20.146",
-    "11:30.952"
+    "11:17.813",
+    "11:28.619"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1273,26 +1273,26 @@
   {
    "id": "m05-618",
    "speech": [
-    "11:32.344",
-    "11:53.544"
+    "11:30.011",
+    "11:51.211"
    ],
    "action": [
-    "11:32.345",
-    "11:53.745"
+    "11:30.012",
+    "11:51.412"
    ],
-   "commit": "11:53.338",
+   "commit": "11:51.005",
    "commit_before_speech_end_ms": 206,
    "next_speech_after_action_ms": 2000
   },
   {
    "id": "m05-619",
    "speech": [
-    "11:55.745",
-    "11:57.345"
+    "11:53.412",
+    "11:55.012"
    ],
    "action": [
-    "11:55.746",
-    "11:56.438"
+    "11:53.413",
+    "11:54.105"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1301,12 +1301,12 @@
   {
    "id": "m05-620",
    "speech": [
-    "11:57.945",
-    "12:04.265"
+    "11:55.612",
+    "12:01.932"
    ],
    "action": [
-    "11:57.946",
-    "12:01.992"
+    "11:55.613",
+    "11:59.659"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1315,26 +1315,26 @@
   {
    "id": "m05-621",
    "speech": [
-    "12:04.865",
-    "12:21.105"
+    "12:02.532",
+    "12:18.772"
    ],
    "action": [
-    "12:04.866",
-    "12:21.333"
+    "12:02.533",
+    "12:19.000"
    ],
-   "commit": "12:20.840",
+   "commit": "12:18.507",
    "commit_before_speech_end_ms": 265,
    "next_speech_after_action_ms": 4000
   },
   {
    "id": "m05-622",
    "speech": [
-    "12:25.333",
-    "12:27.893"
+    "12:23.000",
+    "12:25.560"
    ],
    "action": [
-    "12:25.336",
-    "12:26.186"
+    "12:23.003",
+    "12:23.853"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1343,12 +1343,12 @@
   {
    "id": "m05-623",
    "speech": [
-    "12:28.493",
-    "12:37.773"
+    "12:26.160",
+    "12:35.440"
    ],
    "action": [
-    "12:28.494",
-    "12:35.546"
+    "12:26.161",
+    "12:33.213"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1357,12 +1357,12 @@
   {
    "id": "m05-624",
    "speech": [
-    "12:38.373",
-    "12:44.453"
+    "12:36.040",
+    "12:42.120"
    ],
    "action": [
-    "12:38.374",
-    "12:41.802"
+    "12:36.041",
+    "12:39.469"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1371,12 +1371,12 @@
   {
    "id": "m05-625",
    "speech": [
-    "12:46.453",
-    "12:53.733"
+    "12:44.120",
+    "12:51.400"
    ],
    "action": [
-    "12:46.456",
-    "12:51.617"
+    "12:44.123",
+    "12:49.284"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1385,12 +1385,12 @@
   {
    "id": "m05-626",
    "speech": [
-    "12:54.333",
-    "12:58.573"
+    "12:52.000",
+    "12:56.240"
    ],
    "action": [
-    "12:54.335",
-    "12:54.910"
+    "12:52.002",
+    "12:52.577"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1399,12 +1399,12 @@
   {
    "id": "m05-627",
    "speech": [
-    "12:59.880",
-    "13:23.960"
+    "12:57.547",
+    "13:21.627"
    ],
    "action": [
-    "12:59.906",
-    "13:10.884"
+    "12:57.573",
+    "13:08.551"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1413,40 +1413,40 @@
   {
    "id": "m05-701",
    "speech": [
-    "13:24.376",
-    "13:36.216"
+    "13:22.042",
+    "13:33.882"
    ],
    "action": [
-    "13:24.376",
-    "13:33.966"
+    "13:22.042",
+    "13:31.632"
    ],
-   "commit": "13:33.052",
+   "commit": "13:30.718",
    "commit_before_speech_end_ms": 3164,
    "next_speech_after_action_ms": 2852
   },
   {
    "id": "m05-702",
    "speech": [
-    "13:36.818",
-    "13:40.738"
+    "13:34.484",
+    "13:38.404"
    ],
    "action": [
-    "13:36.818",
-    "13:40.998"
+    "13:34.484",
+    "13:38.664"
    ],
-   "commit": "13:40.288",
+   "commit": "13:37.954",
    "commit_before_speech_end_ms": 450,
    "next_speech_after_action_ms": 4000
   },
   {
    "id": "m05-703",
    "speech": [
-    "13:44.998",
-    "13:47.958"
+    "13:42.664",
+    "13:45.624"
    ],
    "action": [
-    "13:44.999",
-    "13:45.478"
+    "13:42.665",
+    "13:43.144"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1455,12 +1455,12 @@
   {
    "id": "m05-704",
    "speech": [
-    "13:48.558",
-    "13:52.078"
+    "13:46.224",
+    "13:49.744"
    ],
    "action": [
-    "13:48.559",
-    "13:51.073"
+    "13:46.225",
+    "13:48.739"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1469,26 +1469,26 @@
   {
    "id": "m05-705",
    "speech": [
-    "13:54.078",
-    "14:20.238"
+    "13:51.744",
+    "14:17.904"
    ],
    "action": [
-    "13:54.081",
-    "14:20.214"
+    "13:51.747",
+    "14:17.880"
    ],
-   "commit": "14:19.090",
+   "commit": "14:16.756",
    "commit_before_speech_end_ms": 1148,
    "next_speech_after_action_ms": 6025
   },
   {
    "id": "m05-706",
    "speech": [
-    "14:26.239",
-    "14:28.719"
+    "14:23.905",
+    "14:26.385"
    ],
    "action": [
-    "14:26.241",
-    "14:26.936"
+    "14:23.907",
+    "14:24.602"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1497,12 +1497,12 @@
   {
    "id": "m05-707",
    "speech": [
-    "14:29.321",
-    "14:33.241"
+    "14:26.987",
+    "14:30.907"
    ],
    "action": [
-    "14:29.321",
-    "14:30.675"
+    "14:26.987",
+    "14:28.341"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1511,33 +1511,33 @@
   {
    "id": "m05-708",
    "speech": [
-    "14:33.841",
-    "14:40.161"
+    "14:31.507",
+    "14:37.827"
    ]
   },
   {
    "id": "m05-709",
    "speech": [
-    "14:41.461",
-    "14:45.701"
+    "14:39.127",
+    "14:43.367"
    ],
    "action": [
-    "14:41.461",
-    "14:45.895"
+    "14:39.127",
+    "14:43.561"
    ],
-   "commit": "14:44.659",
+   "commit": "14:42.325",
    "commit_before_speech_end_ms": 1042,
    "next_speech_after_action_ms": 2000
   },
   {
    "id": "m05-710",
    "speech": [
-    "14:47.895",
-    "14:51.415"
+    "14:45.561",
+    "14:49.081"
    ],
    "action": [
-    "14:47.897",
-    "14:48.773"
+    "14:45.563",
+    "14:46.439"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1546,12 +1546,12 @@
   {
    "id": "m05-711",
    "speech": [
-    "14:52.018",
-    "14:56.258"
+    "14:49.684",
+    "14:53.924"
    ],
    "action": [
-    "14:52.020",
-    "14:53.491"
+    "14:49.686",
+    "14:51.157"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1560,33 +1560,33 @@
   {
    "id": "m05-712",
    "speech": [
-    "14:56.858",
-    "15:03.338"
+    "14:54.524",
+    "15:01.004"
    ]
   },
   {
    "id": "m05-713",
    "speech": [
-    "15:04.638",
-    "15:12.638"
+    "15:02.304",
+    "15:10.304"
    ],
    "action": [
-    "15:04.639",
-    "15:10.172"
+    "15:02.305",
+    "15:07.838"
    ],
-   "commit": "15:09.444",
+   "commit": "15:07.110",
    "commit_before_speech_end_ms": 3194,
    "next_speech_after_action_ms": 6466
   },
   {
    "id": "m05-714",
    "speech": [
-    "15:16.638",
-    "15:20.558"
+    "15:14.304",
+    "15:18.224"
    ],
    "action": [
-    "15:16.639",
-    "15:18.102"
+    "15:14.305",
+    "15:15.768"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1595,12 +1595,12 @@
   {
    "id": "m05-715",
    "speech": [
-    "15:21.159",
-    "15:24.359"
+    "15:18.825",
+    "15:22.025"
    ],
    "action": [
-    "15:21.160",
-    "15:22.339"
+    "15:18.826",
+    "15:20.005"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1609,12 +1609,12 @@
   {
    "id": "m05-716",
    "speech": [
-    "15:24.959",
-    "15:46.559"
+    "15:22.625",
+    "15:44.225"
    ],
    "action": [
-    "15:24.959",
-    "15:32.579"
+    "15:22.625",
+    "15:30.245"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1623,40 +1623,40 @@
   {
    "id": "m05-717",
    "speech": [
-    "15:47.860",
-    "16:08.900"
+    "15:45.526",
+    "16:06.566"
    ]
   },
   {
    "id": "m05-718",
    "speech": [
-    "16:10.201",
-    "16:18.521"
+    "16:07.867",
+    "16:16.187"
    ]
   },
   {
    "id": "m05-801",
    "speech": [
-    "16:18.959",
-    "16:21.999"
+    "16:16.626",
+    "16:19.666"
    ],
    "action": [
-    "16:18.960",
-    "16:22.164"
+    "16:16.627",
+    "16:19.831"
    ],
-   "commit": "16:20.679",
+   "commit": "16:18.346",
    "commit_before_speech_end_ms": 1320,
    "next_speech_after_action_ms": 2000
   },
   {
    "id": "m05-802",
    "speech": [
-    "16:24.164",
-    "16:27.764"
+    "16:21.831",
+    "16:25.431"
    ],
    "action": [
-    "16:24.167",
-    "16:25.471"
+    "16:21.834",
+    "16:23.138"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1665,12 +1665,12 @@
   {
    "id": "m05-803",
    "speech": [
-    "16:28.364",
-    "16:43.164"
+    "16:26.031",
+    "16:40.831"
    ],
    "action": [
-    "16:28.371",
-    "16:41.701"
+    "16:26.038",
+    "16:39.368"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1679,12 +1679,12 @@
   {
    "id": "m05-804",
    "speech": [
-    "16:43.764",
-    "16:46.164"
+    "16:41.431",
+    "16:43.831"
    ],
    "action": [
-    "16:43.767",
-    "16:45.202"
+    "16:41.434",
+    "16:42.869"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1693,12 +1693,12 @@
   {
    "id": "m05-805",
    "speech": [
-    "16:46.767",
-    "16:50.207"
+    "16:44.434",
+    "16:47.874"
    ],
    "action": [
-    "16:46.768",
-    "16:48.093"
+    "16:44.435",
+    "16:45.760"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1707,8 +1707,8 @@
   {
    "id": "m05-806",
    "speech": [
-    "16:52.207",
-    "16:53.327"
+    "16:49.874",
+    "16:50.994"
    ]
   }
  ],
@@ -1778,7 +1778,7 @@
    "gliding": null
   },
   {
-   "segment": "m05-s5",
+   "segment": "m05-s5b",
    "x": 879.3646240234375,
    "y": 480.5,
    "dx": 0.0,
@@ -1786,7 +1786,7 @@
    "gliding": null
   },
   {
-   "segment": "m05-s5",
+   "segment": "m05-s5b",
    "x": 869.7083740234375,
    "y": 566.7916870117188,
    "dx": 0.0,
@@ -1794,7 +1794,7 @@
    "gliding": null
   },
   {
-   "segment": "m05-s5",
+   "segment": "m05-s5b",
    "x": 919.7708740234375,
    "y": 480.35418701171875,
    "dx": 0.0,
@@ -2369,189 +2369,189 @@
    "max_gap_ms": 25
   },
   {
-   "segment": "m05-s5",
+   "segment": "m05-s5b",
    "mode": "overlay",
-   "start_ms": 422355,
+   "start_ms": 422353,
    "duration_ms": 270,
    "planned_ms": 270,
-   "frames": 8,
-   "start_delay_ms": 8,
-   "max_gap_ms": 61
+   "frames": 16,
+   "start_delay_ms": 3,
+   "max_gap_ms": 24
   },
   {
-   "segment": "m05-s5",
+   "segment": "m05-s5b",
    "mode": "overlay",
-   "start_ms": 427462,
+   "start_ms": 427475,
    "duration_ms": 440,
    "planned_ms": 440,
-   "frames": 17,
-   "start_delay_ms": 26,
-   "max_gap_ms": 68
+   "frames": 23,
+   "start_delay_ms": 7,
+   "max_gap_ms": 31
   },
   {
-   "segment": "m05-s5",
+   "segment": "m05-s5b",
    "mode": "overlay",
-   "start_ms": 430687,
+   "start_ms": 430678,
    "duration_ms": 260,
    "planned_ms": 260,
    "frames": 13,
-   "start_delay_ms": 17,
-   "max_gap_ms": 32
-  },
-  {
-   "segment": "m05-s5",
-   "mode": "overlay",
-   "start_ms": 437885,
-   "duration_ms": 260,
-   "planned_ms": 260,
-   "frames": 10,
-   "start_delay_ms": 10,
-   "max_gap_ms": 52
-  },
-  {
-   "segment": "m05-s5",
-   "mode": "overlay",
-   "start_ms": 457468,
-   "duration_ms": 387,
-   "planned_ms": 387,
-   "frames": 17,
-   "start_delay_ms": 5,
-   "max_gap_ms": 42
-  },
-  {
-   "segment": "m05-s5",
-   "mode": "overlay",
-   "start_ms": 465588,
-   "duration_ms": 260,
-   "planned_ms": 260,
-   "frames": 14,
-   "start_delay_ms": 8,
-   "max_gap_ms": 29
-  },
-  {
-   "segment": "m05-s5",
-   "mode": "overlay",
-   "start_ms": 472485,
-   "duration_ms": 260,
-   "planned_ms": 260,
-   "frames": 11,
-   "start_delay_ms": 8,
-   "max_gap_ms": 37
-  },
-  {
-   "segment": "m05-s5",
-   "mode": "overlay",
-   "start_ms": 475718,
-   "duration_ms": 441,
-   "planned_ms": 441,
-   "frames": 17,
-   "start_delay_ms": 3,
-   "max_gap_ms": 50
-  },
-  {
-   "segment": "m05-s5",
-   "mode": "overlay",
-   "start_ms": 484477,
-   "duration_ms": 260,
-   "planned_ms": 260,
-   "frames": 12,
-   "start_delay_ms": 23,
+   "start_delay_ms": 4,
    "max_gap_ms": 34
   },
   {
-   "segment": "m05-s5",
+   "segment": "m05-s5b",
    "mode": "overlay",
-   "start_ms": 490739,
-   "duration_ms": 386,
-   "planned_ms": 386,
-   "frames": 21,
-   "start_delay_ms": 19,
+   "start_ms": 437843,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 16,
+   "start_delay_ms": 7,
+   "max_gap_ms": 19
+  },
+  {
+   "segment": "m05-s5b",
+   "mode": "overlay",
+   "start_ms": 457439,
+   "duration_ms": 387,
+   "planned_ms": 387,
+   "frames": 22,
+   "start_delay_ms": 18,
    "max_gap_ms": 27
   },
   {
-   "segment": "m05-s5",
+   "segment": "m05-s5b",
    "mode": "overlay",
-   "start_ms": 499641,
-   "duration_ms": 270,
-   "planned_ms": 270,
-   "frames": 13,
-   "start_delay_ms": 21,
-   "max_gap_ms": 41
-  },
-  {
-   "segment": "m05-s5",
-   "mode": "overlay",
-   "start_ms": 503176,
-   "duration_ms": 456,
-   "planned_ms": 456,
-   "frames": 22,
-   "start_delay_ms": 12,
-   "max_gap_ms": 37
-  },
-  {
-   "segment": "m05-s5",
-   "mode": "overlay",
-   "start_ms": 521575,
+   "start_ms": 465471,
    "duration_ms": 260,
    "planned_ms": 260,
-   "frames": 11,
-   "start_delay_ms": 7,
-   "max_gap_ms": 59
+   "frames": 9,
+   "start_delay_ms": 6,
+   "max_gap_ms": 78
   },
   {
-   "segment": "m05-s5",
+   "segment": "m05-s5b",
    "mode": "overlay",
-   "start_ms": 524058,
+   "start_ms": 472543,
    "duration_ms": 260,
    "planned_ms": 260,
    "frames": 10,
-   "start_delay_ms": 8,
-   "max_gap_ms": 51
-  },
-  {
-   "segment": "m05-s5",
-   "mode": "overlay",
-   "start_ms": 534620,
-   "duration_ms": 260,
-   "planned_ms": 260,
-   "frames": 13,
    "start_delay_ms": 7,
-   "max_gap_ms": 37
+   "max_gap_ms": 55
   },
   {
-   "segment": "m05-s5",
+   "segment": "m05-s5b",
    "mode": "overlay",
-   "start_ms": 553460,
-   "duration_ms": 260,
-   "planned_ms": 260,
-   "frames": 11,
-   "start_delay_ms": 3,
-   "max_gap_ms": 50
+   "start_ms": 475717,
+   "duration_ms": 441,
+   "planned_ms": 441,
+   "frames": 24,
+   "start_delay_ms": 4,
+   "max_gap_ms": 28
   },
   {
-   "segment": "m05-s5",
+   "segment": "m05-s5b",
    "mode": "overlay",
-   "start_ms": 568629,
+   "start_ms": 484435,
    "duration_ms": 260,
    "planned_ms": 260,
    "frames": 12,
-   "start_delay_ms": 7,
-   "max_gap_ms": 26
+   "start_delay_ms": 5,
+   "max_gap_ms": 40
   },
   {
-   "segment": "m05-s5",
+   "segment": "m05-s5b",
    "mode": "overlay",
-   "start_ms": 574921,
+   "start_ms": 490742,
+   "duration_ms": 386,
+   "planned_ms": 386,
+   "frames": 18,
+   "start_delay_ms": 9,
+   "max_gap_ms": 40
+  },
+  {
+   "segment": "m05-s5b",
+   "mode": "overlay",
+   "start_ms": 499603,
+   "duration_ms": 270,
+   "planned_ms": 270,
+   "frames": 15,
+   "start_delay_ms": 10,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "m05-s5b",
+   "mode": "overlay",
+   "start_ms": 503165,
+   "duration_ms": 456,
+   "planned_ms": 456,
+   "frames": 20,
+   "start_delay_ms": 11,
+   "max_gap_ms": 61
+  },
+  {
+   "segment": "m05-s5b",
+   "mode": "overlay",
+   "start_ms": 521522,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 9,
+   "start_delay_ms": 8,
+   "max_gap_ms": 44
+  },
+  {
+   "segment": "m05-s5b",
+   "mode": "overlay",
+   "start_ms": 524031,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 15,
+   "start_delay_ms": 7,
+   "max_gap_ms": 29
+  },
+  {
+   "segment": "m05-s5b",
+   "mode": "overlay",
+   "start_ms": 534546,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 13,
+   "start_delay_ms": 6,
+   "max_gap_ms": 37
+  },
+  {
+   "segment": "m05-s5b",
+   "mode": "overlay",
+   "start_ms": 556325,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 14,
+   "start_delay_ms": 4,
+   "max_gap_ms": 38
+  },
+  {
+   "segment": "m05-s5b",
+   "mode": "overlay",
+   "start_ms": 566231,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 12,
+   "start_delay_ms": 19,
+   "max_gap_ms": 39
+  },
+  {
+   "segment": "m05-s5b",
+   "mode": "overlay",
+   "start_ms": 572580,
    "duration_ms": 388,
    "planned_ms": 388,
-   "frames": 17,
-   "start_delay_ms": 5,
-   "max_gap_ms": 45
+   "frames": 21,
+   "start_delay_ms": 12,
+   "max_gap_ms": 32
   },
   {
    "segment": "m05-s6b",
    "mode": "overlay",
-   "start_ms": 584576,
+   "start_ms": 582243,
    "duration_ms": 266,
    "planned_ms": 266,
    "frames": 12,
@@ -2561,7 +2561,7 @@
   {
    "segment": "m05-s6b",
    "mode": "overlay",
-   "start_ms": 591178,
+   "start_ms": 588845,
    "duration_ms": 276,
    "planned_ms": 276,
    "frames": 15,
@@ -2571,7 +2571,7 @@
   {
    "segment": "m05-s6b",
    "mode": "overlay",
-   "start_ms": 602059,
+   "start_ms": 599726,
    "duration_ms": 260,
    "planned_ms": 260,
    "frames": 10,
@@ -2581,7 +2581,7 @@
   {
    "segment": "m05-s6b",
    "mode": "overlay",
-   "start_ms": 609337,
+   "start_ms": 607004,
    "duration_ms": 447,
    "planned_ms": 447,
    "frames": 21,
@@ -2591,7 +2591,7 @@
   {
    "segment": "m05-s6b",
    "mode": "overlay",
-   "start_ms": 611924,
+   "start_ms": 609591,
    "duration_ms": 260,
    "planned_ms": 260,
    "frames": 12,
@@ -2601,7 +2601,7 @@
   {
    "segment": "m05-s6b",
    "mode": "overlay",
-   "start_ms": 616456,
+   "start_ms": 614123,
    "duration_ms": 387,
    "planned_ms": 387,
    "frames": 17,
@@ -2611,7 +2611,7 @@
   {
    "segment": "m05-s6b",
    "mode": "overlay",
-   "start_ms": 633457,
+   "start_ms": 631124,
    "duration_ms": 260,
    "planned_ms": 260,
    "frames": 15,
@@ -2621,7 +2621,7 @@
   {
    "segment": "m05-s6b",
    "mode": "overlay",
-   "start_ms": 644019,
+   "start_ms": 641686,
    "duration_ms": 288,
    "planned_ms": 288,
    "frames": 9,
@@ -2631,7 +2631,7 @@
   {
    "segment": "m05-s6b",
    "mode": "overlay",
-   "start_ms": 647463,
+   "start_ms": 645130,
    "duration_ms": 474,
    "planned_ms": 474,
    "frames": 19,
@@ -2641,7 +2641,7 @@
   {
    "segment": "m05-s6b",
    "mode": "overlay",
-   "start_ms": 650976,
+   "start_ms": 648643,
    "duration_ms": 386,
    "planned_ms": 386,
    "frames": 14,
@@ -2651,7 +2651,7 @@
   {
    "segment": "m05-s6b",
    "mode": "overlay",
-   "start_ms": 653513,
+   "start_ms": 651180,
    "duration_ms": 260,
    "planned_ms": 260,
    "frames": 13,
@@ -2661,7 +2661,7 @@
   {
    "segment": "m05-s6b",
    "mode": "overlay",
-   "start_ms": 667060,
+   "start_ms": 664727,
    "duration_ms": 260,
    "planned_ms": 260,
    "frames": 13,
@@ -2671,7 +2671,7 @@
   {
    "segment": "m05-s6b",
    "mode": "overlay",
-   "start_ms": 677827,
+   "start_ms": 675494,
    "duration_ms": 260,
    "planned_ms": 260,
    "frames": 12,
@@ -2681,7 +2681,7 @@
   {
    "segment": "m05-s6b",
    "mode": "overlay",
-   "start_ms": 681206,
+   "start_ms": 678873,
    "duration_ms": 260,
    "planned_ms": 260,
    "frames": 9,
@@ -2691,7 +2691,7 @@
   {
    "segment": "m05-s6b",
    "mode": "overlay",
-   "start_ms": 690672,
+   "start_ms": 688339,
    "duration_ms": 260,
    "planned_ms": 260,
    "frames": 15,
@@ -2701,7 +2701,7 @@
   {
    "segment": "m05-s6b",
    "mode": "overlay",
-   "start_ms": 694834,
+   "start_ms": 692501,
    "duration_ms": 260,
    "planned_ms": 260,
    "frames": 14,
@@ -2711,7 +2711,7 @@
   {
    "segment": "m05-s6b",
    "mode": "overlay",
-   "start_ms": 697813,
+   "start_ms": 695480,
    "duration_ms": 260,
    "planned_ms": 260,
    "frames": 12,
@@ -2721,7 +2721,7 @@
   {
    "segment": "m05-s6b",
    "mode": "overlay",
-   "start_ms": 712902,
+   "start_ms": 710569,
    "duration_ms": 271,
    "planned_ms": 271,
    "frames": 9,
@@ -2731,7 +2731,7 @@
   {
    "segment": "m05-s6b",
    "mode": "overlay",
-   "start_ms": 715943,
+   "start_ms": 713610,
    "duration_ms": 474,
    "planned_ms": 474,
    "frames": 22,
@@ -2741,7 +2741,7 @@
   {
    "segment": "m05-s6b",
    "mode": "overlay",
-   "start_ms": 718733,
+   "start_ms": 716400,
    "duration_ms": 387,
    "planned_ms": 387,
    "frames": 13,
@@ -2751,7 +2751,7 @@
   {
    "segment": "m05-s6b",
    "mode": "overlay",
-   "start_ms": 721720,
+   "start_ms": 719387,
    "duration_ms": 260,
    "planned_ms": 260,
    "frames": 13,
@@ -2761,7 +2761,7 @@
   {
    "segment": "m05-s6b",
    "mode": "overlay",
-   "start_ms": 733050,
+   "start_ms": 730717,
    "duration_ms": 387,
    "planned_ms": 387,
    "frames": 15,
@@ -2771,7 +2771,7 @@
   {
    "segment": "m05-s6b",
    "mode": "overlay",
-   "start_ms": 740224,
+   "start_ms": 737891,
    "duration_ms": 440,
    "planned_ms": 440,
    "frames": 18,
@@ -2781,7 +2781,7 @@
   {
    "segment": "m05-s6b",
    "mode": "overlay",
-   "start_ms": 745726,
+   "start_ms": 743393,
    "duration_ms": 446,
    "planned_ms": 446,
    "frames": 21,
@@ -2791,7 +2791,7 @@
   {
    "segment": "m05-s6b",
    "mode": "overlay",
-   "start_ms": 755267,
+   "start_ms": 752934,
    "duration_ms": 260,
    "planned_ms": 260,
    "frames": 12,
@@ -2801,7 +2801,7 @@
   {
    "segment": "m05-s6b",
    "mode": "overlay",
-   "start_ms": 761352,
+   "start_ms": 759019,
    "duration_ms": 386,
    "planned_ms": 386,
    "frames": 14,
@@ -2811,7 +2811,7 @@
   {
    "segment": "m05-s6b",
    "mode": "overlay",
-   "start_ms": 767428,
+   "start_ms": 765095,
    "duration_ms": 260,
    "planned_ms": 260,
    "frames": 9,
@@ -2821,7 +2821,7 @@
   {
    "segment": "m05-s6b",
    "mode": "overlay",
-   "start_ms": 771346,
+   "start_ms": 769013,
    "duration_ms": 260,
    "planned_ms": 260,
    "frames": 9,
@@ -2831,7 +2831,7 @@
   {
    "segment": "m05-s6b",
    "mode": "overlay",
-   "start_ms": 774631,
+   "start_ms": 772298,
    "duration_ms": 260,
    "planned_ms": 260,
    "frames": 14,
@@ -2841,7 +2841,7 @@
   {
    "segment": "m05-s6b",
    "mode": "overlay",
-   "start_ms": 790613,
+   "start_ms": 788280,
    "duration_ms": 260,
    "planned_ms": 260,
    "frames": 14,
@@ -2851,7 +2851,7 @@
   {
    "segment": "m05-s7b",
    "mode": "overlay",
-   "start_ms": 812519,
+   "start_ms": 810185,
    "duration_ms": 357,
    "planned_ms": 357,
    "frames": 12,
@@ -2861,7 +2861,7 @@
   {
    "segment": "m05-s7b",
    "mode": "overlay",
-   "start_ms": 819857,
+   "start_ms": 817523,
    "duration_ms": 260,
    "planned_ms": 260,
    "frames": 13,
@@ -2871,7 +2871,7 @@
   {
    "segment": "m05-s7b",
    "mode": "overlay",
-   "start_ms": 829345,
+   "start_ms": 827011,
    "duration_ms": 282,
    "planned_ms": 282,
    "frames": 9,
@@ -2881,7 +2881,7 @@
   {
    "segment": "m05-s7b",
    "mode": "overlay",
-   "start_ms": 830772,
+   "start_ms": 828438,
    "duration_ms": 273,
    "planned_ms": 273,
    "frames": 10,
@@ -2891,7 +2891,7 @@
   {
    "segment": "m05-s7b",
    "mode": "overlay",
-   "start_ms": 858612,
+   "start_ms": 856278,
    "duration_ms": 306,
    "planned_ms": 306,
    "frames": 15,
@@ -2901,7 +2901,7 @@
   {
    "segment": "m05-s7b",
    "mode": "overlay",
-   "start_ms": 866641,
+   "start_ms": 864307,
    "duration_ms": 272,
    "planned_ms": 272,
    "frames": 11,
@@ -2911,7 +2911,7 @@
   {
    "segment": "m05-s7b",
    "mode": "overlay",
-   "start_ms": 870371,
+   "start_ms": 868037,
    "duration_ms": 272,
    "planned_ms": 272,
    "frames": 13,
@@ -2921,7 +2921,7 @@
   {
    "segment": "m05-s7b",
    "mode": "overlay",
-   "start_ms": 884227,
+   "start_ms": 881893,
    "duration_ms": 272,
    "planned_ms": 272,
    "frames": 9,
@@ -2931,7 +2931,7 @@
   {
    "segment": "m05-s7b",
    "mode": "overlay",
-   "start_ms": 888462,
+   "start_ms": 886128,
    "duration_ms": 286,
    "planned_ms": 286,
    "frames": 14,
@@ -2941,7 +2941,7 @@
   {
    "segment": "m05-s7b",
    "mode": "overlay",
-   "start_ms": 893214,
+   "start_ms": 890880,
    "duration_ms": 260,
    "planned_ms": 260,
    "frames": 10,
@@ -2951,7 +2951,7 @@
   {
    "segment": "m05-s7b",
    "mode": "overlay",
-   "start_ms": 908841,
+   "start_ms": 906507,
    "duration_ms": 421,
    "planned_ms": 421,
    "frames": 21,
@@ -2961,7 +2961,7 @@
   {
    "segment": "m05-s7b",
    "mode": "overlay",
-   "start_ms": 917747,
+   "start_ms": 915413,
    "duration_ms": 289,
    "planned_ms": 289,
    "frames": 8,
@@ -2971,7 +2971,7 @@
   {
    "segment": "m05-s7b",
    "mode": "overlay",
-   "start_ms": 922027,
+   "start_ms": 919693,
    "duration_ms": 260,
    "planned_ms": 260,
    "frames": 9,
@@ -2981,7 +2981,7 @@
   {
    "segment": "m05-s7b",
    "mode": "overlay",
-   "start_ms": 932289,
+   "start_ms": 929955,
    "duration_ms": 260,
    "planned_ms": 260,
    "frames": 6,
@@ -2991,7 +2991,7 @@
   {
    "segment": "m05-s8",
    "mode": "overlay",
-   "start_ms": 980214,
+   "start_ms": 977881,
    "duration_ms": 260,
    "planned_ms": 260,
    "frames": 6,
@@ -3001,7 +3001,7 @@
   {
    "segment": "m05-s8",
    "mode": "overlay",
-   "start_ms": 985148,
+   "start_ms": 982815,
    "duration_ms": 306,
    "planned_ms": 306,
    "frames": 14,
@@ -3011,7 +3011,7 @@
   {
    "segment": "m05-s8",
    "mode": "overlay",
-   "start_ms": 995901,
+   "start_ms": 993568,
    "duration_ms": 260,
    "planned_ms": 260,
    "frames": 9,
@@ -3021,7 +3021,7 @@
   {
    "segment": "m05-s8",
    "mode": "overlay",
-   "start_ms": 997419,
+   "start_ms": 995086,
    "duration_ms": 389,
    "planned_ms": 389,
    "frames": 18,
@@ -3031,7 +3031,7 @@
   {
    "segment": "m05-s8",
    "mode": "overlay",
-   "start_ms": 1001299,
+   "start_ms": 998966,
    "duration_ms": 380,
    "planned_ms": 380,
    "frames": 16,
@@ -3041,7 +3041,7 @@
   {
    "segment": "m05-s8",
    "mode": "overlay",
-   "start_ms": 1004826,
+   "start_ms": 1002493,
    "duration_ms": 343,
    "planned_ms": 343,
    "frames": 17,
@@ -3051,7 +3051,7 @@
   {
    "segment": "m05-s8",
    "mode": "overlay",
-   "start_ms": 1007692,
+   "start_ms": 1005359,
    "duration_ms": 386,
    "planned_ms": 386,
    "frames": 16,
@@ -3061,8 +3061,8 @@
  ],
  "decode": "passed",
  "stream_end_s": {
-  "v": 1013.733,
-  "a": 1013.733
+  "v": 1011.4,
+  "a": 1011.4
  },
  "seams": [
   {
@@ -3159,7 +3159,7 @@
    "번호": 4,
    "시각": "06:54.067",
    "앞": "m05-s4@102084",
-   "뒤": "m05-s5@0",
+   "뒤": "m05-s5b@0",
    "종류": "이음새",
    "프레임간격_ok": true,
    "원본정지_ms": [
@@ -3168,9 +3168,9 @@
    ],
    "소리튐": false,
    "표본차": 0.0,
-   "기준": 0.0664,
+   "기준": 0.0666,
    "소리시작_어긋남_ms": [
-    0.0
+    -0.0
    ],
    "소리_ok": true,
    "바뀐화소퍼센트": 0.009,
@@ -3187,29 +3187,24 @@
   },
   {
    "번호": 5,
-   "시각": "09:38.900",
-   "앞": "m05-s5@164822",
+   "시각": "09:36.567",
+   "앞": "m05-s5b@162488",
    "뒤": "m05-s6b@0",
    "종류": "이음새",
    "프레임간격_ok": true,
    "원본정지_ms": [
-    25,
+    95,
     0
    ],
    "소리튐": false,
    "표본차": 0.0,
-   "기준": 0.074,
+   "기준": 0.0737,
    "소리시작_어긋남_ms": [
     0.0
    ],
    "소리_ok": true,
-   "바뀐화소퍼센트": 0.017,
-   "바뀐영역": [
-    1160,
-    28,
-    1184,
-    52
-   ],
+   "바뀐화소퍼센트": 0.0,
+   "바뀐영역": null,
    "화면_ok": true,
    "그림": "이음새_05.jpg",
    "허용": false,
@@ -3217,7 +3212,7 @@
   },
   {
    "번호": 6,
-   "시각": "13:24.367",
+   "시각": "13:22.033",
    "앞": "m05-s6b@225480",
    "뒤": "m05-s7b@0",
    "종류": "이음새",
@@ -3228,7 +3223,7 @@
    ],
    "소리튐": false,
    "표본차": 0.0,
-   "기준": 0.044,
+   "기준": 0.0436,
    "소리시작_어긋남_ms": [
     0.0
    ],
@@ -3247,7 +3242,7 @@
   },
   {
    "번호": 7,
-   "시각": "16:18.933",
+   "시각": "16:16.600",
    "앞": "m05-s7b@174562",
    "뒤": "m05-s8@0",
    "종류": "이음새",
@@ -3258,7 +3253,7 @@
    ],
    "소리튐": false,
    "표본차": 0.0,
-   "기준": 0.0221,
+   "기준": 0.022,
    "소리시작_어긋남_ms": [
     0.0
    ],
@@ -3282,7 +3277,7 @@
   "직접 청취",
   "사용자 재생 확인"
  ],
- "이름": "05-지식지도-새판3",
+ "이름": "05-지식지도-새판4",
  "도구": "포털",
  "crf": 18,
  "fps": 30,
@@ -3296,7 +3291,7 @@
    "m05-s2",
    "m05-s3",
    "m05-s4",
-   "m05-s5",
+   "m05-s5b",
    "m05-s6b",
    "m05-s7b",
    "m05-s8"
@@ -4404,68 +4399,68 @@
    ]
   },
   {
-   "키": "226061f5877014b44e65dc93",
+   "키": "1331af4a6e420819ab03a9c9",
    "도구": "포털",
-   "take": "m05-s5",
+   "take": "m05-s5b",
    "from_ms": 0.0,
-   "to_ms": 164822.0,
-   "frames": 4945,
+   "to_ms": 162488.0,
+   "frames": 4875,
    "mode": "overlay",
    "part": 5,
    "audio": "../음성",
    "error": null,
-   "recorded_ms": 164822,
+   "recorded_ms": 162488,
    "end_url": "http://127.0.0.1:8088/#/ontology",
    "end_tab": "ontology",
    "edge_age": [
     0,
-    25
+    95
    ],
    "cues": [
     {
      "id": "m05-501",
      "text": "다음은 유온 센서예요. 센서가 잰 온도가 괜찮은지는 무엇과 견줘서 아는지 보려고 해요. 나가는 쪽의 유온 센서를 눌러 주세요",
-     "time": 16,
+     "time": 5,
      "duration": 9200,
-     "actionStart": 17,
-     "actionEnd": 9194,
-     "commit": 8733,
+     "actionStart": 6,
+     "actionEnd": 9183,
+     "commit": 8731,
      "segment": 5
     },
     {
      "id": "m05-502",
      "text": "클래스가 센서죠",
-     "time": 13216,
+     "time": 13205,
      "duration": 1520,
-     "actionStart": 13217,
-     "actionEnd": 13856,
+     "actionStart": 13205,
+     "actionEnd": 13904,
      "commit": null,
      "segment": 5
     },
     {
      "id": "m05-503",
      "text": "가상인지 묻는 줄이 거짓이니, 계산하는 센서가 아니라 쿨러에 실제로 달려 온도를 재는 센서예요",
-     "time": 15336,
+     "time": 15325,
      "duration": 7040,
-     "actionStart": 15340,
-     "actionEnd": 16886,
+     "actionStart": 15326,
+     "actionEnd": 16895,
      "commit": null,
      "segment": 5
     },
     {
      "id": "m05-504",
      "text": "맨 아래 태그 줄은 현장에서 센서에 붙여 부르는 짧은 이름표예요",
-     "time": 22976,
+     "time": 22965,
      "duration": 4720,
-     "actionStart": 22977,
-     "actionEnd": 24103,
+     "actionStart": 22966,
+     "actionEnd": 24053,
      "commit": null,
      "segment": 5
     },
     {
      "id": "m05-505",
      "text": "이 지도 안에서는 이 센서를 가리키는 식별자 노릇도 해요.",
-     "time": 28296,
+     "time": 28285,
      "duration": 3920,
      "actionStart": null,
      "actionEnd": null,
@@ -4475,67 +4470,67 @@
     {
      "id": "m05-506",
      "text": "그런데 센서는 온도를 재기만 할 뿐, 괜찮은지 따질 기준은 여기 없어요. 기준이 어디 있는지 관계를 볼게요. 나가는 쪽에 읽는 상태 변수, 유온이 있죠",
-     "time": 33516,
+     "time": 33505,
      "duration": 12320,
-     "actionStart": 33520,
-     "actionEnd": 43817,
+     "actionStart": 33508,
+     "actionEnd": 43795,
      "commit": null,
      "segment": 5
     },
     {
      "id": "m05-507",
      "text": "이 센서가 재는 물리량이 유온이라는 선이에요. 그런데 들어오는 쪽 데이터 출처 줄에도 유온이 있어요",
-     "time": 46438,
+     "time": 46425,
      "duration": 7600,
-     "actionStart": 46439,
-     "actionEnd": 51813,
+     "actionStart": 46430,
+     "actionEnd": 51702,
      "commit": null,
      "segment": 5
     },
     {
      "id": "m05-508",
      "text": "이름이 같은데 무엇이 다른지, 들어오는 쪽 유온부터 눌러 볼게요",
-     "time": 54638,
+     "time": 54625,
      "duration": 4720,
-     "actionStart": 54639,
-     "actionEnd": 59278,
-     "commit": 58867,
+     "actionStart": 54626,
+     "actionEnd": 59330,
+     "commit": 58901,
      "segment": 5
     },
     {
      "id": "m05-509",
      "text": "클래스가 입력 데이터예요",
-     "time": 61359,
+     "time": 61345,
      "duration": 2160,
-     "actionStart": 61361,
-     "actionEnd": 62112,
+     "actionStart": 61346,
+     "actionEnd": 62103,
      "commit": null,
      "segment": 5
     },
     {
      "id": "m05-510",
      "text": "경보나 판정 규칙이 받아 읽는 값을 적어 둔 노드라서, 출처가 이 센서인 거예요. 속성 두 줄은 프로그램이 이 값을 부르는 이름과 형식이라 넘어갈게요. 이 노드의 나가는 쪽에도 유온이 또 있죠. 나타내는 변수 · 지표라는 관계인데, 이 값이 어떤 물리량을 나타내는지 가리켜요. 눌러 보면",
-     "time": 64119,
+     "time": 64105,
      "duration": 22240,
-     "actionStart": 64127,
-     "actionEnd": 86420,
-     "commit": 86014,
+     "actionStart": 64106,
+     "actionEnd": 86397,
+     "commit": 85974,
      "segment": 5
     },
     {
      "id": "m05-511",
      "text": "이번엔 클래스가 상태 변수예요",
-     "time": 88420,
+     "time": 88397,
      "duration": 2720,
-     "actionStart": 88422,
-     "actionEnd": 89594,
+     "actionStart": 88398,
+     "actionEnd": 89575,
      "commit": null,
      "segment": 5
     },
     {
      "id": "m05-512",
      "text": "이론에서 본 상태 변수, 작동유 온도라는 물리량 그 자체죠. 둘 다 이름은 유온인데 클래스가 다르니까, 노드는 이름만 보지 말고 클래스를 같이 봐야 해요.",
-     "time": 91740,
+     "time": 91717,
      "duration": 12160,
      "actionStart": null,
      "actionEnd": null,
@@ -4545,27 +4540,27 @@
     {
      "id": "m05-513",
      "text": "기준값은 여기 있어요. 정상값이 48도",
-     "time": 105200,
+     "time": 105180,
      "duration": 3840,
-     "actionStart": 105202,
-     "actionEnd": 107821,
+     "actionStart": 105182,
+     "actionEnd": 107753,
      "commit": null,
      "segment": 5
     },
     {
      "id": "m05-514",
      "text": "맨 아래 한계가 65도예요",
-     "time": 109641,
+     "time": 109620,
      "duration": 2400,
-     "actionStart": 109644,
-     "actionEnd": 110268,
+     "actionStart": 109621,
+     "actionEnd": 110260,
      "commit": null,
      "segment": 5
     },
     {
      "id": "m05-515",
      "text": "지금 잰 온도를 이 두 값과 견줘서 괜찮은지 위험한지 따지는 거죠.",
-     "time": 112641,
+     "time": 112620,
      "duration": 5360,
      "actionStart": null,
      "actionEnd": null,
@@ -4575,17 +4570,17 @@
     {
      "id": "m05-516",
      "text": "그 사이 다른 이름 줄에는 오일 온도, 작동유 온도와 함께 센서 태그와 같은 글자도 있어요",
-     "time": 119301,
+     "time": 119280,
      "duration": 6640,
-     "actionStart": 119327,
-     "actionEnd": 120838,
+     "actionStart": 119285,
+     "actionEnd": 120758,
      "commit": null,
      "segment": 5
     },
     {
      "id": "m05-517",
      "text": "현장에서 센서 이름표로 그 온도를 부르기도 해서예요.",
-     "time": 126541,
+     "time": 126520,
      "duration": 3840,
      "actionStart": null,
      "actionEnd": null,
@@ -4594,38 +4589,38 @@
     },
     {
      "id": "m05-518",
-     "text": "이론에서는 두 번째 설비 쿨러를 재는 센서의 한계를 관계로 따라가 봤죠. 설비에서 쿨러, 센서를 지나 여기까지 온 길이 그 길이에요. 다만 이론에서는 한계를 센서에 뒀는데, 이 지도는 유온의 기준이 하나라서 상태 변수에 한 번만 적어 두었어요. 그래서 한 칸 더 온 거예요.",
-     "time": 131681,
-     "duration": 21040,
-     "actionStart": 131688,
-     "actionEnd": 139684,
+     "text": "이론에서는 두 번째 설비 쿨러를 재는 센서의 한계를 관계로 따라가 봤죠. 거기서는 한계가 센서에 있었는데, 이 지도는 유온의 기준이 하나라서 상태 변수에 한 번만 적어 두었어요. 그래서 센서에서 읽는 상태 변수 선을 하나 더 건너야 기준이 나와요.",
+     "time": 131660,
+     "duration": 18720,
+     "actionStart": 131661,
+     "actionEnd": 142534,
      "commit": null,
      "segment": 5
     },
     {
      "id": "m05-519",
      "text": "나머지 줄과 영향 관계는 오늘 넘어갈게요",
-     "time": 154021,
+     "time": 151680,
      "duration": 3040,
-     "actionStart": 154033,
-     "actionEnd": 154854,
+     "actionStart": 151682,
+     "actionEnd": 152447,
      "commit": null,
      "segment": 5
     },
     {
      "id": "m05-520",
      "text": "들어오는 쪽의 읽는 상태 변수 줄에 유온 센서가 있죠",
-     "time": 157661,
+     "time": 155320,
      "duration": 4000,
-     "actionStart": 157664,
-     "actionEnd": 161247,
+     "actionStart": 155321,
+     "actionEnd": 158939,
      "commit": null,
      "segment": 5
     },
     {
      "id": "m05-521",
      "text": "이걸 누르면 센서로 돌아가요.",
-     "time": 162261,
+     "time": 159922,
      "duration": 2160,
      "actionStart": null,
      "actionEnd": null,
@@ -4635,166 +4630,166 @@
    ],
    "motions": [
     {
-     "start": 8288,
-     "end": 8558,
-     "glide": 8288,
+     "start": 8286,
+     "end": 8556,
+     "glide": 8286,
      "planned_ms": 270,
-     "start_delay_ms": 8,
-     "max_gap_ms": 61,
-     "frames": 8
-    },
-    {
-     "start": 13395,
-     "end": 13835,
-     "glide": 13395,
-     "planned_ms": 440,
-     "start_delay_ms": 26,
-     "max_gap_ms": 68,
-     "frames": 17
-    },
-    {
-     "start": 16620,
-     "end": 16880,
-     "glide": 16620,
-     "planned_ms": 260,
-     "start_delay_ms": 17,
-     "max_gap_ms": 32,
-     "frames": 13
-    },
-    {
-     "start": 23818,
-     "end": 24078,
-     "glide": 23818,
-     "planned_ms": 260,
-     "start_delay_ms": 10,
-     "max_gap_ms": 52,
-     "frames": 10
-    },
-    {
-     "start": 43401,
-     "end": 43788,
-     "glide": 43401,
-     "planned_ms": 387,
-     "start_delay_ms": 5,
-     "max_gap_ms": 42,
-     "frames": 17
-    },
-    {
-     "start": 51521,
-     "end": 51781,
-     "glide": 51521,
-     "planned_ms": 260,
-     "start_delay_ms": 8,
-     "max_gap_ms": 29,
-     "frames": 14
-    },
-    {
-     "start": 58418,
-     "end": 58678,
-     "glide": 58418,
-     "planned_ms": 260,
-     "start_delay_ms": 8,
-     "max_gap_ms": 37,
-     "frames": 11
-    },
-    {
-     "start": 61651,
-     "end": 62092,
-     "glide": 61651,
-     "planned_ms": 441,
      "start_delay_ms": 3,
-     "max_gap_ms": 50,
-     "frames": 17
+     "max_gap_ms": 24,
+     "frames": 16
     },
     {
-     "start": 70410,
-     "end": 70670,
-     "glide": 70410,
+     "start": 13408,
+     "end": 13848,
+     "glide": 13408,
+     "planned_ms": 440,
+     "start_delay_ms": 7,
+     "max_gap_ms": 31,
+     "frames": 23
+    },
+    {
+     "start": 16611,
+     "end": 16871,
+     "glide": 16611,
      "planned_ms": 260,
-     "start_delay_ms": 23,
+     "start_delay_ms": 4,
      "max_gap_ms": 34,
-     "frames": 12
-    },
-    {
-     "start": 76672,
-     "end": 77058,
-     "glide": 76672,
-     "planned_ms": 386,
-     "start_delay_ms": 19,
-     "max_gap_ms": 27,
-     "frames": 21
-    },
-    {
-     "start": 85574,
-     "end": 85844,
-     "glide": 85574,
-     "planned_ms": 270,
-     "start_delay_ms": 21,
-     "max_gap_ms": 41,
      "frames": 13
     },
     {
-     "start": 89109,
-     "end": 89565,
-     "glide": 89109,
-     "planned_ms": 456,
-     "start_delay_ms": 12,
-     "max_gap_ms": 37,
+     "start": 23776,
+     "end": 24036,
+     "glide": 23776,
+     "planned_ms": 260,
+     "start_delay_ms": 7,
+     "max_gap_ms": 19,
+     "frames": 16
+    },
+    {
+     "start": 43372,
+     "end": 43759,
+     "glide": 43372,
+     "planned_ms": 387,
+     "start_delay_ms": 18,
+     "max_gap_ms": 27,
      "frames": 22
     },
     {
-     "start": 107508,
-     "end": 107768,
-     "glide": 107508,
+     "start": 51404,
+     "end": 51664,
+     "glide": 51404,
      "planned_ms": 260,
-     "start_delay_ms": 7,
-     "max_gap_ms": 59,
-     "frames": 11
+     "start_delay_ms": 6,
+     "max_gap_ms": 78,
+     "frames": 9
     },
     {
-     "start": 109991,
-     "end": 110251,
-     "glide": 109991,
+     "start": 58476,
+     "end": 58736,
+     "glide": 58476,
      "planned_ms": 260,
-     "start_delay_ms": 8,
-     "max_gap_ms": 51,
+     "start_delay_ms": 7,
+     "max_gap_ms": 55,
      "frames": 10
     },
     {
-     "start": 120553,
-     "end": 120813,
-     "glide": 120553,
+     "start": 61650,
+     "end": 62091,
+     "glide": 61650,
+     "planned_ms": 441,
+     "start_delay_ms": 4,
+     "max_gap_ms": 28,
+     "frames": 24
+    },
+    {
+     "start": 70368,
+     "end": 70628,
+     "glide": 70368,
+     "planned_ms": 260,
+     "start_delay_ms": 5,
+     "max_gap_ms": 40,
+     "frames": 12
+    },
+    {
+     "start": 76675,
+     "end": 77061,
+     "glide": 76675,
+     "planned_ms": 386,
+     "start_delay_ms": 9,
+     "max_gap_ms": 40,
+     "frames": 18
+    },
+    {
+     "start": 85536,
+     "end": 85806,
+     "glide": 85536,
+     "planned_ms": 270,
+     "start_delay_ms": 10,
+     "max_gap_ms": 33,
+     "frames": 15
+    },
+    {
+     "start": 89098,
+     "end": 89554,
+     "glide": 89098,
+     "planned_ms": 456,
+     "start_delay_ms": 11,
+     "max_gap_ms": 61,
+     "frames": 20
+    },
+    {
+     "start": 107455,
+     "end": 107715,
+     "glide": 107455,
+     "planned_ms": 260,
+     "start_delay_ms": 8,
+     "max_gap_ms": 44,
+     "frames": 9
+    },
+    {
+     "start": 109964,
+     "end": 110224,
+     "glide": 109964,
      "planned_ms": 260,
      "start_delay_ms": 7,
+     "max_gap_ms": 29,
+     "frames": 15
+    },
+    {
+     "start": 120479,
+     "end": 120739,
+     "glide": 120479,
+     "planned_ms": 260,
+     "start_delay_ms": 6,
      "max_gap_ms": 37,
      "frames": 13
     },
     {
-     "start": 139393,
-     "end": 139653,
-     "glide": 139393,
+     "start": 142258,
+     "end": 142518,
+     "glide": 142258,
      "planned_ms": 260,
-     "start_delay_ms": 3,
-     "max_gap_ms": 50,
-     "frames": 11
+     "start_delay_ms": 4,
+     "max_gap_ms": 38,
+     "frames": 14
     },
     {
-     "start": 154562,
-     "end": 154822,
-     "glide": 154562,
+     "start": 152164,
+     "end": 152424,
+     "glide": 152164,
      "planned_ms": 260,
-     "start_delay_ms": 7,
-     "max_gap_ms": 26,
+     "start_delay_ms": 19,
+     "max_gap_ms": 39,
      "frames": 12
     },
     {
-     "start": 160854,
-     "end": 161242,
-     "glide": 160854,
+     "start": 158513,
+     "end": 158901,
+     "glide": 158513,
      "planned_ms": 388,
-     "start_delay_ms": 5,
-     "max_gap_ms": 45,
-     "frames": 17
+     "start_delay_ms": 12,
+     "max_gap_ms": 32,
+     "frames": 21
     }
    ],
    "clicks": [
@@ -5944,8 +5939,8 @@
   }
  ],
  "mp4": {
-  "sha256": "e24e02d962f70b372a83b753d3dc6fc86abd5e2aa76cd38ef79a47a666a2d9cb",
-  "video_packets": 30412,
-  "bytes": 45781651
+  "sha256": "d5d946e40b161e2294cd92c08dec54a1d6c44081f41b9e120cfb9e22608951ef",
+  "video_packets": 30342,
+  "bytes": 45704884
  }
 }
