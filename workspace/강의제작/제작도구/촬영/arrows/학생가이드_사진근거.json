@@ -1,8 +1,8 @@
 {
   "video": {
-    "file": "Release 영상 int-01-08-lab.mp4 (이 PC 사본: 작업/촬영/arrows/통합반_01회차_08_실습_관계그림.mp4)",
-    "duration": "25:25.07",
-    "sha256": "57cd131da4962c87e9a14c8e0292c0405b1744cb08618c0958765b8cce487cdc"
+    "file": "Release 영상 통합반_01회차_08_실습_관계그림.mp4",
+    "duration": "00:34:04.20",
+    "sha256": "1ec21a6ce40d1ee153c47337797252aff5efa466ec66e7d93fe1b7a1227e11de"
   },
   "box": {
     "color": "#e60000",
@@ -11,702 +11,749 @@
   },
   "ui_frames": [
     {
-      "file": "images/ui-01-start.png",
-      "seconds": 72.0,
-      "frame_sha256": "506571184c9cc118511564a8d2e3ea3d407eea88ac5c68f64d5ce90dbb6e0443",
+      "file": "images/ui-01-radius.png",
+      "seconds": 135.7,
+      "frame_sha256": "6160aeae1377026980ffd079da9a66f499974073d7935568eed90cd858540899",
       "crop": null,
       "boxes": [
         {
           "target": [
-            1747,
-            113,
-            1890,
-            153
-          ],
-          "margin": 6,
-          "outer": [
-            1735,
-            101,
-            1902,
-            165
-          ],
-          "dark_px_under_line": 18
-        },
-        {
-          "target": [
-            1634,
-            252,
-            1769,
-            296
-          ],
-          "margin": 6,
-          "outer": [
-            1622,
-            240,
-            1781,
-            308
-          ],
-          "dark_px_under_line": 0
-        },
-        {
-          "target": [
-            1585,
-            718,
-            1672,
-            740
-          ],
-          "margin": 6,
-          "outer": [
-            1573,
-            706,
-            1684,
-            752
-          ],
-          "dark_px_under_line": 0
-        }
-      ],
-      "sha256": "a8a18c78304b296fbe9cb4ae3cabb8a990cd10956f36f4f9dcb0b98d4251ba20"
-    },
-    {
-      "file": "images/ui-02-caption.png",
-      "seconds": 126.0,
-      "frame_sha256": "7da76ca5b7b38b6521469f401e0049bece9e5a93623a02140d4ebabbd7d5a7e2",
-      "crop": null,
-      "boxes": [
-        {
-          "target": [
-            1407,
-            325,
-            1890,
-            371
-          ],
-          "margin": 2,
-          "outer": [
-            1399,
-            317,
-            1898,
-            379
-          ],
-          "dark_px_under_line": 0
-        },
-        {
-          "target": [
-            1407,
-            419,
-            1890,
-            463
-          ],
-          "margin": 2,
-          "outer": [
-            1399,
-            411,
-            1898,
-            471
-          ],
-          "dark_px_under_line": 0
-        },
-        {
-          "target": [
-            1789,
-            481,
-            1890,
-            519
-          ],
-          "margin": [
-            6,
-            2,
-            6,
-            0
-          ],
-          "outer": [
-            1777,
-            473,
-            1902,
-            525
-          ],
-          "dark_px_under_line": 0
-        }
-      ],
-      "sha256": "7f4fbab41b011f55ffa62245d5a1dba10b83b24a034905ae3edbd82116b4ac14"
-    },
-    {
-      "file": "images/ui-03-type.png",
-      "seconds": 185.0,
-      "frame_sha256": "f6163d4d22f757832470026f969b79234e26ba30c97ec98deb621d5533bf64a7",
-      "crop": null,
-      "boxes": [
-        {
-          "target": [
-            1407,
-            367,
-            1890,
-            413
-          ],
-          "margin": [
-            4,
-            1,
-            4,
-            4
-          ],
-          "outer": [
-            1397,
-            360,
-            1900,
-            423
-          ],
-          "dark_px_under_line": 22
-        }
-      ],
-      "sha256": "06b66431ce64a9781def814ee91a6579059be98bc6355a521213b78df44810a4"
-    },
-    {
-      "file": "images/ui-04-reverse.png",
-      "seconds": 296.0,
-      "frame_sha256": "f95ebaccf89bc22a97365132c60ec2639806eaa9707d157712ade5641eb3837b",
-      "crop": null,
-      "boxes": [
-        {
-          "target": [
-            1490,
-            156,
-            1619,
-            197
-          ],
-          "margin": 3,
-          "outer": [
-            1481,
-            147,
-            1628,
-            206
-          ],
-          "dark_px_under_line": 0
-        }
-      ],
-      "sha256": "0966aec728eeec7eedd1b95cd6f7c1e9caecb54c04beede3dc5790e55de1a641"
-    },
-    {
-      "file": "images/ui-05-property.png",
-      "seconds": 495.0,
-      "frame_sha256": "7fd66e5fc83dcd42514b1366ad1d5985ed357c27f1f145734c6dde57d40018e2",
-      "crop": null,
-      "boxes": [
-        {
-          "target": [
-            1409,
-            550,
-            1892,
-            650
-          ],
-          "margin": [
-            4,
-            2,
-            4,
-            4
-          ],
-          "outer": [
-            1399,
-            542,
-            1902,
-            660
-          ],
-          "dark_px_under_line": 29
-        }
-      ],
-      "sha256": "d400eae9a2f60ed7467d2c43d10d9d3ffec5b6d5c88bc54113558f75b9f4ce17"
-    },
-    {
-      "file": "images/ui-06-color.png",
-      "seconds": 1232.0,
-      "frame_sha256": "6965e023b08799ff5674c8b23b8957237beb10df34b60bceabfe7cd4c3d56db0",
-      "crop": null,
-      "boxes": [
-        {
-          "target": [
-            1407,
-            101,
-            1551,
-            138
+            1674,
+            262,
+            1792,
+            299
           ],
           "margin": 4,
           "outer": [
-            1397,
-            91,
-            1561,
-            148
+            1664,
+            252,
+            1802,
+            309
           ],
           "dark_px_under_line": 0
         },
         {
           "target": [
-            1550,
-            920,
-            1766,
-            942
+            1626,
+            674,
+            1712,
+            700
           ],
-          "margin": 6,
+          "margin": 4,
           "outer": [
-            1538,
-            908,
-            1778,
-            954
+            1616,
+            664,
+            1722,
+            710
           ],
           "dark_px_under_line": 0
         }
       ],
-      "sha256": "94fa4fd2ed534ef9ea5a98b75d4f225cf560fbb45f4d7ee03620e2c44b9a85bb"
+      "sha256": "a243841792a1d65d5612d8d2f6b6f38b9466e6891ba4bda4256f3a953078187d"
     },
     {
-      "file": "images/ui-07-export-json.png",
-      "seconds": 1399.0,
-      "frame_sha256": "0da8886ca8e1ebb92321568971b760eb89008ae5d9854877a782840bc525bf4a",
+      "file": "images/ui-02-caption.png",
+      "seconds": 205.8,
+      "frame_sha256": "66a319b8c2e2d1a8af4cc97104ada921a5621b65771286935ff4381acdda3cbe",
       "crop": null,
       "boxes": [
         {
           "target": [
-            1333,
-            5,
-            1553,
-            48
+            1468,
+            287,
+            1904,
+            328
           ],
           "margin": 2,
           "outer": [
-            1325,
-            0,
-            1561,
-            56
-          ],
-          "dark_px_under_line": 3384
-        },
-        {
-          "target": [
-            573,
-            181,
-            650,
-            225
-          ],
-          "margin": 6,
-          "outer": [
-            561,
-            169,
-            662,
-            237
+            1460,
+            279,
+            1912,
+            336
           ],
           "dark_px_under_line": 0
         },
         {
           "target": [
-            330,
-            264,
-            487,
-            309
+            1815,
+            388,
+            1904,
+            421
           ],
-          "margin": 6,
+          "margin": 4,
           "outer": [
-            318,
-            252,
-            499,
-            321
+            1805,
+            378,
+            1914,
+            431
           ],
-          "dark_px_under_line": 6
+          "dark_px_under_line": 0
         }
       ],
-      "sha256": "7ea5ba81443c9d0f480392b5cdbb63c1e2ffd8004d0964e1f42210ee4d143f69"
+      "sha256": "c142cb0e32d6c029c3b9c51fed9aa3a06a45d0ffeb9a5074096e01188005fd3c"
     },
     {
-      "file": "images/ui-08-export-png.png",
-      "seconds": 1405.0,
-      "frame_sha256": "25d501bac0991f1f1e48a98b39b228a6a3f05bde1df3c361fc23844f622276a4",
+      "file": "images/ui-03-type.png",
+      "seconds": 319.8,
+      "frame_sha256": "c44c62ffb8d6daa08c1023896585981fc8a9d8b26fbb8dd96b816bb5f7bdefc0",
       "crop": null,
       "boxes": [
         {
           "target": [
-            311,
-            181,
-            381,
-            225
+            1468,
+            323,
+            1903,
+            365
           ],
-          "margin": 6,
+          "margin": 2,
           "outer": [
-            299,
-            169,
-            393,
-            237
+            1460,
+            315,
+            1911,
+            373
+          ],
+          "dark_px_under_line": 0
+        }
+      ],
+      "sha256": "67b6f186ae294e0bd63461fe94d5cd40bcd137183bcd9abb3aca08f82567c52b"
+    },
+    {
+      "file": "images/ui-04-reverse.png",
+      "seconds": 466.8,
+      "frame_sha256": "798276417b3730fa302510f546f142d9c989ac7aa87c999633fce40d011624a0",
+      "crop": null,
+      "boxes": [
+        {
+          "target": [
+            1552,
+            138,
+            1666,
+            174
+          ],
+          "margin": 3,
+          "outer": [
+            1543,
+            129,
+            1675,
+            183
+          ],
+          "dark_px_under_line": 0
+        }
+      ],
+      "sha256": "2c6614702c73d4f80c95de03897f285e6c897f0568f8dea9da28012fe1c339a8"
+    },
+    {
+      "file": "images/ui-05-property.png",
+      "seconds": 774.9,
+      "frame_sha256": "950e67166da245364b7210fc6707313cf8a05b82fca87ddf1ccedc3c753ed269",
+      "crop": null,
+      "boxes": [
+        {
+          "target": [
+            1468,
+            487,
+            1908,
+            566
+          ],
+          "margin": [
+            2,
+            2,
+            2,
+            0
+          ],
+          "outer": [
+            1460,
+            479,
+            1916,
+            572
           ],
           "dark_px_under_line": 0
         },
         {
           "target": [
-            345,
-            503,
-            550,
-            522
+            1795,
+            582,
+            1904,
+            615
           ],
-          "margin": 6,
+          "margin": [
+            4,
+            2,
+            4,
+            4
+          ],
           "outer": [
-            333,
-            491,
-            562,
-            534
+            1785,
+            574,
+            1914,
+            625
           ],
-          "dark_px_under_line": 55
+          "dark_px_under_line": 0
         }
       ],
-      "sha256": "1cbcf1a08cd53b12d31d2a6138380f13c6a6e866d1defcc24240008a71f74d3f"
+      "sha256": "d0b87559ef859760cbb727060073b792399aba35bcf4b4b17a25212cbaabc884"
+    },
+    {
+      "file": "images/ui-06-color.png",
+      "seconds": 1643.0,
+      "frame_sha256": "04d27ed0d0e50c98276d9590578933a76aa45af29b76dde1bf14643bdb0707ac",
+      "crop": null,
+      "boxes": [
+        {
+          "target": [
+            1468,
+            88,
+            1596,
+            122
+          ],
+          "margin": 3,
+          "outer": [
+            1459,
+            79,
+            1605,
+            131
+          ],
+          "dark_px_under_line": 0
+        },
+        {
+          "target": [
+            1598,
+            810,
+            1758,
+            842
+          ],
+          "margin": 4,
+          "outer": [
+            1588,
+            800,
+            1768,
+            852
+          ],
+          "dark_px_under_line": 0
+        }
+      ],
+      "sha256": "32cc1d4ebece97b96658ab4e5b4a1692f13268efd327b9bbfa31ebc51ebbc62a"
+    },
+    {
+      "file": "images/ui-07-export-png.png",
+      "seconds": 1822.1,
+      "frame_sha256": "ca49b752026a5d183f11baaaf4fbf72c6559e789067db7c75eb7f47b6abf260a",
+      "crop": null,
+      "boxes": [
+        {
+          "target": [
+            390,
+            167,
+            450,
+            205
+          ],
+          "margin": 4,
+          "outer": [
+            380,
+            157,
+            460,
+            215
+          ],
+          "dark_px_under_line": 0
+        },
+        {
+          "target": [
+            407,
+            448,
+            600,
+            470
+          ],
+          "margin": 4,
+          "outer": [
+            397,
+            438,
+            610,
+            480
+          ],
+          "dark_px_under_line": 49
+        }
+      ],
+      "sha256": "5108d5be71e99d65d0ed2df5af24814378d71f635b5c342eb0ab5caa9c51c80c"
+    },
+    {
+      "file": "images/ui-08-export-json.png",
+      "seconds": 1830.4,
+      "frame_sha256": "256275764245f78bac8205e02f4642dda7c814911f0bd35c3ae4e2d47f9338ce",
+      "crop": null,
+      "boxes": [
+        {
+          "target": [
+            620,
+            167,
+            687,
+            205
+          ],
+          "margin": 4,
+          "outer": [
+            610,
+            157,
+            697,
+            215
+          ],
+          "dark_px_under_line": 0
+        },
+        {
+          "target": [
+            406,
+            240,
+            544,
+            278
+          ],
+          "margin": 4,
+          "outer": [
+            396,
+            230,
+            554,
+            288
+          ],
+          "dark_px_under_line": 44
+        }
+      ],
+      "sha256": "3a02acfacf11553f43d3586e107c1bb3cff67f6ae11d21e115e383ffdfd75143"
     },
     {
       "file": "images/ui-09-menu.png",
-      "seconds": 1418.0,
-      "frame_sha256": "5e70a48a3b73a367003892addbba92eef738b6cd71ddeaad5006d91c3318440c",
+      "seconds": 1850.8,
+      "frame_sha256": "b6348d96eee535dad35bdd6d22b29febaa1d4ba82c37e5ac67899c1476c3736a",
       "crop": null,
       "boxes": [
         {
           "target": [
-            16,
-            10,
-            50,
-            42
-          ],
-          "margin": 2,
-          "outer": [
-            8,
-            2,
-            58,
-            50
-          ],
-          "dark_px_under_line": 0
-        },
-        {
-          "target": [
             12,
-            60,
-            98,
-            92
+            6,
+            48,
+            40
           ],
           "margin": 2,
           "outer": [
             4,
-            52,
-            106,
-            100
+            0,
+            56,
+            48
           ],
           "dark_px_under_line": 0
         },
         {
           "target": [
-            110,
-            150,
-            338,
-            190
+            94,
+            130,
+            300,
+            168
           ],
-          "margin": 6,
+          "margin": [
+            3,
+            3,
+            3,
+            0
+          ],
           "outer": [
-            98,
-            138,
-            350,
-            202
+            85,
+            121,
+            309,
+            174
           ],
-          "dark_px_under_line": 15
+          "dark_px_under_line": 61
         },
         {
           "target": [
-            14,
-            214,
-            80,
-            242
+            4,
+            185,
+            95,
+            215
           ],
-          "margin": 6,
+          "margin": [
+            3,
+            1,
+            3,
+            3
+          ],
           "outer": [
-            2,
-            202,
-            92,
-            254
+            0,
+            178,
+            104,
+            224
           ],
           "dark_px_under_line": 0
         }
       ],
-      "sha256": "1857086f5c7ed4de589bedc1f8439ff23ca9e2aab061aa7182eaec1f5d14dd30"
+      "sha256": "8a561fd18a23dc568707f2dd16996f3f8b49871f2fa04318c44ceaadf8106495"
     },
     {
       "file": "images/ui-10-import.png",
-      "seconds": 1434.0,
-      "frame_sha256": "c236de5a03e1759fbea3aa3173fe1d85665357694dd605018956d1d3c9fd5507",
+      "seconds": 1884.4,
+      "frame_sha256": "eb61c4be80932a2ede3cb902a0218ef43e63f89453ad88c90e52e490b636bd2b",
       "crop": null,
       "boxes": [
         {
           "target": [
-            312,
-            382,
-            500,
-            426
+            390,
+            343,
+            555,
+            381
           ],
-          "margin": 6,
+          "margin": 4,
           "outer": [
-            300,
-            370,
-            512,
-            438
+            380,
+            333,
+            565,
+            391
           ],
           "dark_px_under_line": 0
         },
         {
           "target": [
-            1507,
-            859,
-            1613,
-            904
+            1442,
+            768,
+            1536,
+            806
           ],
-          "margin": 6,
+          "margin": 4,
           "outer": [
-            1495,
-            847,
-            1625,
-            916
+            1432,
+            758,
+            1546,
+            816
           ],
           "dark_px_under_line": 0
         }
       ],
-      "sha256": "18816f650c1f316c8427840feb9742735c1f9838684381214e4e6bdb2b32fe4e"
+      "sha256": "322260e47565192ebed0da8bf628ff405518cf81c1dfc791b534b7f15cc65812"
     },
     {
       "file": "images/ui-11-imported.png",
-      "seconds": 1448.0,
-      "frame_sha256": "cc3c44c7274184d7945c9eb705c14b52679513ff073d1de58f1713bdc0a5804b",
-      "crop": [
-        330,
-        70,
-        1610,
-        1010
-      ],
+      "seconds": 1902.5,
+      "frame_sha256": "000a69fdc7c23cd675cc5a56be0421f65f2c06f49048ad3e45ddb88b471595d4",
+      "crop": null,
       "boxes": [
         {
           "target": [
-            1166,
-            917,
-            1292,
-            950
+            1468,
+            88,
+            1793,
+            122
           ],
-          "margin": 6,
+          "margin": 4,
           "outer": [
-            1154,
-            905,
-            1304,
-            962
+            1458,
+            78,
+            1803,
+            132
           ],
-          "dark_px_under_line": 60
+          "dark_px_under_line": 0
         }
       ],
-      "sha256": "af76afdafcf15ede4ecbe6f3165e9c0b4c6fe1eb9e6776c39c2ae5f8c7718e82"
+      "sha256": "d7b75203307afd1370c3b5cfccc01ef9412745f28601b49afb52b91b135e25f3"
+    },
+    {
+      "file": "images/ui-12-cypher.png",
+      "seconds": 1973.0,
+      "frame_sha256": "fbec111621e11592702b15686b0c2216f5f6a362f7e636d8a4a874b22cab3e3e",
+      "crop": null,
+      "boxes": [
+        {
+          "target": [
+            530,
+            166,
+            610,
+            204
+          ],
+          "margin": 4,
+          "outer": [
+            520,
+            156,
+            620,
+            214
+          ],
+          "dark_px_under_line": 0
+        },
+        {
+          "target": [
+            430,
+            350,
+            515,
+            378
+          ],
+          "margin": 4,
+          "outer": [
+            420,
+            340,
+            525,
+            388
+          ],
+          "dark_px_under_line": 53
+        }
+      ],
+      "sha256": "8346e1a1b9d88bdaa03795a76314edc6e15b3dd2460995f57b72c26f6236307e"
     }
   ],
   "stage_frames": [
     {
       "file": "images/stage-01.png",
-      "source_sha256": "78889eaebcddf7d1a131de925cbf1ea4b7a8d8f23ca4b40eb9670a09b494197f",
-      "background": "white",
+      "seconds": 419.0,
+      "frame_sha256": "9cc1996200b65c12fdb892072829028197ad994529c44661ae48f3769ee55101",
+      "crop": [
+        0,
+        45,
+        1455,
+        1045
+      ],
       "boxes": [
         {
           "target": [
-            871,
-            479,
-            1533,
-            1217
+            50,
+            523,
+            518,
+            958
           ],
           "margin": 6,
           "outer": [
-            859,
-            467,
-            1545,
-            1229
+            38,
+            511,
+            530,
+            970
           ],
           "dark_px_under_line": 0
         }
       ],
-      "sha256": "f27de0acbe3f64f3f11d2e4b3955a8fecaddbd32862f2253c3b9e44a80d9505f"
+      "sha256": "8f486ea262939fca8c9c62f47ef1bc535ed71d2cb610d3c552757d279d7638e3"
     },
     {
       "file": "images/stage-02.png",
-      "source_sha256": "8e871fb18d0c29e3767c7eefa0a03534ee1ced3b41409828b0e03afbd38e3cb9",
-      "background": "white",
+      "seconds": 599.4,
+      "frame_sha256": "5f75052319d5f1068bab2b7a287cb11e23710fe1032437ffadcd095cf64d8eaa",
+      "crop": [
+        0,
+        45,
+        1455,
+        1045
+      ],
       "boxes": [
         {
           "target": [
-            1515,
-            479,
-            1757,
-            1217
+            657,
+            523,
+            805,
+            958
           ],
           "margin": 6,
           "outer": [
-            1503,
-            467,
-            1769,
-            1229
+            645,
+            511,
+            817,
+            970
           ],
-          "dark_px_under_line": 24
+          "dark_px_under_line": 64
         }
       ],
-      "sha256": "922d668dc04c036702321bee141c0853f2afb5583e01b0e8668a249a48142c5b"
+      "sha256": "e87696911cce7b8bb5c48e849e36060e202002c1094a90063302f2b2df3c0bc2"
     },
     {
       "file": "images/stage-03.png",
-      "source_sha256": "3b500ba50895b2fcdfa4183674edccd78db70b679b52f73371272df8f40e818a",
-      "background": "white",
-      "boxes": [
-        {
-          "target": [
-            1643,
-            555,
-            2224,
-            797
-          ],
-          "margin": 6,
-          "outer": [
-            1631,
-            543,
-            2236,
-            809
-          ],
-          "dark_px_under_line": 12
-        }
+      "seconds": 800.5,
+      "frame_sha256": "4c2b8467be2b3eb5ceb5d6a761c3f21512c1af5ec6ddc0f88294e90a396ca736",
+      "crop": [
+        0,
+        45,
+        1455,
+        1045
       ],
-      "sha256": "555fd5f996224e569cf1ba2a2c05768d2b1a0e23d3cf07303ec02c99d4636c20"
-    },
-    {
-      "file": "images/stage-04.png",
-      "source_sha256": "8b4968a7cbd6f79500758ac5e2e8a07f0557bcd89374e9a877507cc2ec4a4dd9",
-      "background": "white",
       "boxes": [
         {
           "target": [
-            1271,
-            1419,
-            1877,
-            1621
+            1092,
+            715,
+            1430,
+            895
           ],
           "margin": 6,
           "outer": [
-            1259,
-            1407,
-            1889,
-            1633
+            1080,
+            703,
+            1442,
+            907
           ],
           "dark_px_under_line": 59
         }
       ],
-      "sha256": "373b21229e39ef7e48b7bde5546c141472a3aa983c5556676f2bc3f663e508fa"
+      "sha256": "80a93d67ce877612113117a04fd4102f9dff48558cf6d6247a100a756c7bae64"
+    },
+    {
+      "file": "images/stage-04.png",
+      "seconds": 1025.0,
+      "frame_sha256": "c1465f4067bb23c859c4ef4c19c497291200812ff73a1b2d15fa8e98ff9e0af9",
+      "crop": [
+        0,
+        45,
+        1455,
+        1045
+      ],
+      "boxes": [
+        {
+          "target": [
+            964,
+            523,
+            1422,
+            671
+          ],
+          "margin": 6,
+          "outer": [
+            952,
+            511,
+            1434,
+            683
+          ],
+          "dark_px_under_line": 77
+        },
+        {
+          "target": [
+            860,
+            876,
+            1416,
+            1024
+          ],
+          "margin": 6,
+          "outer": [
+            848,
+            864,
+            1428,
+            1036
+          ],
+          "dark_px_under_line": 385
+        }
+      ],
+      "sha256": "594d8a1d7403c5293eb74447567eea588130e514dadd3e5b9198569d8ad9c4e7"
     },
     {
       "file": "images/stage-05.png",
-      "source_sha256": "123e957adff2c6de371893d7a4ed46e30d321000052a6cef029cab604d0087ea",
-      "background": "white",
+      "seconds": 1187.0,
+      "frame_sha256": "edfabf49a65542fceb1d3e8210dabb3636bc9262280bddaedd1cd565f91e3600",
+      "crop": [
+        0,
+        45,
+        1455,
+        1045
+      ],
       "boxes": [
         {
           "target": [
-            1078,
-            72,
-            1415,
-            229
+            420,
+            98,
+            772,
+            263
           ],
           "margin": 6,
           "outer": [
-            1066,
-            60,
-            1427,
-            241
+            408,
+            86,
+            784,
+            275
           ],
-          "dark_px_under_line": 52
+          "dark_px_under_line": 73
+        },
+        {
+          "target": [
+            928,
+            56,
+            1422,
+            198
+          ],
+          "margin": [
+            6,
+            3,
+            6,
+            6
+          ],
+          "outer": [
+            916,
+            47,
+            1434,
+            210
+          ],
+          "dark_px_under_line": 98
         }
       ],
-      "sha256": "a1b0a1bbdb2d4d6b588e4f301ecfc1ddfbb2fd0661d71b1ef25f41607639e550"
+      "sha256": "7a9f8cd039e5206ea6f9fd2176dda788424ae7efcd05b7aff23860c25f462b92"
     },
     {
       "file": "images/stage-06.png",
-      "source_sha256": "02562c4d10258489080ce814e52ce0f290af3d884917ce4d28c7a0cad8c2b6b4",
-      "background": "white",
+      "seconds": 1335.6,
+      "frame_sha256": "f4dc64cf0c84a28e9f29bdf0ea5866e2739e930f66981344fd13dc2b6c1bf220",
+      "crop": [
+        0,
+        45,
+        1455,
+        1045
+      ],
       "boxes": [
         {
           "target": [
-            1591,
-            1115,
-            1749,
-            1273
+            772,
+            214,
+            1108,
+            399
           ],
           "margin": 6,
           "outer": [
-            1579,
-            1103,
-            1761,
-            1285
+            760,
+            202,
+            1120,
+            411
           ],
-          "dark_px_under_line": 27
+          "dark_px_under_line": 370
+        },
+        {
+          "target": [
+            1282,
+            205,
+            1414,
+            337
+          ],
+          "margin": 6,
+          "outer": [
+            1270,
+            193,
+            1426,
+            349
+          ],
+          "dark_px_under_line": 169
         }
       ],
-      "sha256": "d00bd496af4701b319533a789c5324ebd0c5b00e3031cdb0491d4e62a5d1a64f"
+      "sha256": "a065248b5c577b5c25f44262d0def024cc731b913b040a1ca089014ae3cbfaa4"
     },
     {
       "file": "images/stage-07.png",
-      "source_sha256": "98bec4bc74ac6cc8ced5ef3f04b52e0d1def2eddaab7fadbde474d9a3fd7274f",
-      "background": "white",
+      "seconds": 1591.3,
+      "frame_sha256": "5911635be082cb8c0107dc8b2851a37edc360a2253df28ff84ea2a7b680561f1",
+      "crop": [
+        0,
+        45,
+        1455,
+        1045
+      ],
       "boxes": [
         {
           "target": [
-            355,
-            75,
-            777,
-            229
+            50,
+            279,
+            518,
+            427
           ],
           "margin": 6,
           "outer": [
-            343,
-            63,
-            789,
-            241
+            38,
+            267,
+            530,
+            439
           ],
-          "dark_px_under_line": 9
+          "dark_px_under_line": 45
         }
       ],
-      "sha256": "45cd4fe1308c040872b2b48b7029c6261a619fc757e04313998a0bd20b5ecc13"
+      "sha256": "1541f103de6040a9c1e20b9af9d582614613a2d97dcf25a8ecc5be3c7614f87d"
     }
-  ],
-  "stage_capture": {
-    "capture_method": "ARROWS実画面 canvas.toDataURL; ego task space 1; original fixed video preserved",
-    "frames": [
-      {
-        "stage": "01",
-        "nodes": 3,
-        "relationships": 2
-      },
-      {
-        "stage": "02",
-        "nodes": 5,
-        "relationships": 5
-      },
-      {
-        "stage": "03",
-        "nodes": 6,
-        "relationships": 6
-      },
-      {
-        "stage": "04",
-        "nodes": 10,
-        "relationships": 11
-      },
-      {
-        "stage": "05",
-        "nodes": 13,
-        "relationships": 15
-      },
-      {
-        "stage": "06",
-        "nodes": 15,
-        "relationships": 19
-      },
-      {
-        "stage": "07",
-        "nodes": 17,
-        "relationships": 21
-      }
-    ],
-    "source_layout_sha256": "3b5492a146146ee6caa03b6dc9447af676591f13109074a998fe1fe9362bf83a"
-  }
+  ]
 }

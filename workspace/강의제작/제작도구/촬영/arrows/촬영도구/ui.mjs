@@ -14,7 +14,7 @@ export async function makeUI(ctx){
    document.getElementById('recording-pointer')?.remove();
    const e=document.createElement('div');e.id='recording-pointer';e.setAttribute('aria-hidden','true');
    e.style.cssText='position:fixed;left:0;top:0;width:20px;height:27px;pointer-events:none;z-index:2147483647;will-change:transform;transform:'+`translate(${pos.x}px,${pos.y}px)`;
-   e.innerHTML='<svg xmlns="http://www.w3.org/2000/svg" width="20" height="27" viewBox="0 0 25 34"><path d="M1 1 L1 25 L7 20 L12 31 L17 29 L12 18 L22 18 Z" fill="white" stroke="#111" stroke-width="1.7" stroke-linejoin="round"/></svg>';
+   e.innerHTML='<svg xmlns="http://www.w3.org/2000/svg" width="25" height="34" viewBox="0 0 25 34"><path d="M1 1 L1 25 L7 20 L12 31 L17 29 L12 18 L22 18 Z" fill="white" stroke="#111" stroke-width="1.7" stroke-linejoin="round"/></svg>';
    document.documentElement.append(e);window.__tutorialClicks??=[];window.__glide=null;
    window.__tutorialMove=ev=>{if(!window.__glide)e.style.transform=`translate(${ev.clientX}px,${ev.clientY}px)`;};
    window.__tutorialDown=ev=>{const r=e.getBoundingClientRect();window.__tutorialClicks.push({x:ev.clientX,y:ev.clientY,px:r.x,py:r.y,trusted:ev.isTrusted,gliding:!!window.__glide,time:performance.now(),url:location.href});};
@@ -32,7 +32,7 @@ export async function makeUI(ctx){
    {const scr=(c,x,y)=>{const m=c.getTransform(),r=c.canvas.getBoundingClientRect();return{x:r.x+(m.a*x+m.c*y+m.e)*r.width/c.canvas.width,y:r.y+(m.b*x+m.d*y+m.f)*r.height/c.canvas.height,k:Math.hypot(m.a,m.b)*r.width/c.canvas.width};};
     const main=c=>c.canvas===document.querySelector('canvas');const keep=a=>{if(a.length>3000)a.splice(0,a.length-1500);return a;};
     const oa=P.__orig.arc;P.arc=function(x,y,rad,...a){if(main(this)){const s=scr(this,x,y);keep(this.canvas.__arcs??=[]).push({x:s.x,y:s.y,r:rad*s.k,t:performance.now()});}return oa.call(this,x,y,rad,...a);};
-    const ot=P.__orig.fillText;P.fillText=function(t,x,y,...a){if(main(this)){const w=this.measureText(t).width,off=this.textAlign==='center'?0:(this.textAlign==='right'||this.textAlign==='end')?-w/2:w/2;const s=scr(this,x+off,y);keep(this.canvas.__texts??=[]).push({t:String(t),x:s.x,y:s.y,at:performance.now()});}return ot.call(this,t,x,y,...a);};
+    const ot=P.__orig.fillText;P.fillText=function(t,x,y,...a){if(main(this)){const w=this.measureText(t).width,off=this.textAlign==='center'?0:(this.textAlign==='right'||this.textAlign==='end')?-w/2:w/2;const s=scr(this,x+off,y),e=scr(this,x+off+w/2,y);keep(this.canvas.__texts??=[]).push({t:String(t),x:s.x,y:s.y,w:2*(e.x-s.x),at:performance.now()});}return ot.call(this,t,x,y,...a);};
    }
   },lastPos));
  }
@@ -57,7 +57,7 @@ export async function makeUI(ctx){
    const r=await q1(()=>raw.evaluate(cap=>new Promise(res=>{const c=document.querySelector('canvas');if(!(c.__arcs||[]).length)window.__redraw();
     requestAnimationFrame(()=>requestAnimationFrame(()=>{
      const A=(c.__arcs||[]).filter(a=>a.t>0),T=(c.__texts||[]).filter(t=>t.at>0),la=Math.max(0,...A.map(a=>a.t)),lt=Math.max(0,...T.map(t=>t.at));
-     const arcs=A.filter(a=>a.t>=la-20&&a.r<160&&a.r>Math.max(8,0.75*Math.max(...A.filter(b=>b.t>=la-20&&b.r<160).map(b=>b.r)))),texts=T.filter(t=>t.at>=lt-20),want=cap.replace(/\s/g,'');
+     const arcs=A.filter(a=>a.t>=la-20&&a.r<160&&a.r>Math.max(8,0.75*Math.max(...A.filter(b=>b.t>=la-20&&b.r<160).map(b=>b.r)))),texts=T.filter(t=>t.at>=la-20),want=cap.replace(/\s/g,''); // 원과 같은 그리기 회차의 글자만(새 그림에는 글자가 없어 앞 그림 글자가 남는다)
      const seen=[];for(const a of [...arcs].sort((p,q)=>p.r-q.r)){if(seen.some(s=>Math.hypot(s.x-a.x,s.y-a.y)<4))continue;seen.push(a);}
      const part=t=>{const v=t.t.replace(/\s/g,'');return v&&want.includes(v);};
      const LABELS=['Asset','Component','Sensor','Symptom','FailureMode','Cause','Skill','ManualSection'];const other=t=>{const v=t.t.trim();return v&&!part(t)&&!LABELS.includes(v)&&!/^[A-Z_]+$/.test(v);};
@@ -122,8 +122,8 @@ export async function makeUI(ctx){
   },name));
   if(r.error)throw Error(r.error);return r;
  }
- // 고정 자리(CSS 1536×864 화면 기준): 그림판 가운데 · 오른쪽 칸 · 테마 견본 · 주황 Save to Google Drive.
- const FIXED={canvasMid:{x:560,y:430},panelMid:{x:1290,y:300},samples:{x:1320,y:520},orange:{x:1370,y:30}};
+ // 고정 자리(CSS 1744×981 화면 기준, 포인터가 글자를 덮지 않는 빈 곳 · 단추 아래 테두리 — 110 % 화면에 점을 찍어 확인): 그림판 가운데 · 오른쪽 칸 · 테마 견본 · 주황 Save to Google Drive.
+ const FIXED={canvasMid:{x:420,y:330},panelMid:{x:1343,y:150},samples:{x:1518,y:430},orange:{x:1578,y:37}};   // CSS 1744×981(config cloud metrics)
  // 그림판에 그린 글자(관계 이름 · Label 띠 · 화살표 속성)를 그 글로 찾는다. 같은 글이 둘 이상이면 오류.
  async function ctext(want){
   const r=await q1(()=>raw.evaluate(w=>{const c=document.querySelector('canvas');if(!(c.__texts||[]).length)window.__redraw();const T=(c.__texts||[]).filter(t=>t.at>0),lt=Math.max(0,...T.map(t=>t.at));const hit=T.filter(t=>t.at>=lt-20&&t.t.includes(w));const u=[];for(const h of hit)if(!u.some(q=>Math.hypot(q.x-h.x,q.y-h.y)<4))u.push(h);return u.length===1?{x:u[0].x,y:u[0].y}:{error:'canvas text '+w+' matched '+u.length};},want));
@@ -154,8 +154,14 @@ export async function makeUI(ctx){
   if(FIXED[name])return FIXED[name];
   if(name.startsWith('node:'))return node(name.slice(5));
   if(name.startsWith('look:')){const n=await node(name.slice(5));return{x:n.x+n.r*0.78,y:n.y+n.r*0.78};}
-  if(name.startsWith('props:')){const n=await node(name.slice(6));return{x:n.x+n.r+40,y:n.y};}
-  if(name.startsWith('ctext:'))return ctext(name.slice(6));
+  // 증거(속성) 줄: 그 원 둘레에 그려진 「키: 값」 글자(관계의 「절차:」는 뺀다)를 찾아, 첫 줄 바로 왼쪽을 짚는다(포인터가 글자를 덮지 않게).
+  if(name.startsWith('props:')){const n=await node(name.slice(6));
+   const r=await q1(()=>raw.evaluate(n=>{const c=document.querySelector('canvas');const T=(c.__texts||[]).filter(t=>t.at>0),lt=Math.max(0,...T.map(t=>t.at));
+    const L=T.filter(t=>t.at>=lt-20&&t.t.includes(':')&&!t.t.startsWith('절차')&&Math.hypot(t.x-n.x,t.y-n.y)<n.r+190);if(!L.length)return null;
+    return{left:Math.min(...L.map(t=>t.x-t.w/2)),top:Math.min(...L.map(t=>t.y))};},n));
+   if(!r)throw Error('props '+name.slice(6)+': no property text near the node');return{x:r.left-30,y:r.top-6};}
+  // 캔버스 글자(관계 이름 · 절차 번호 · Label 띠)는 글자 한가운데가 아니라 오른쪽 아래를 짚는다 — 포인터 몸통이 아래 · 오른쪽으로 뻗으므로 가로 · 세로 글자 모두 가리지 않는다(t13-s1 a019 「Asset」을 덮음).
+  if(name.startsWith('ctext:')){const c=await ctext(name.slice(6));return{x:c.x+10,y:c.y+14};}
   // 두 원 사이 화살표의 가운데(화살표를 짚을 때).
   if(name.startsWith('edgeMid:')){const [a,b]=name.slice(8).split('>');const p=await node(a),t=await node(b);return{x:(p.x+t.x)/2,y:(p.y+t.y)/2};}
   return dom(name);
@@ -166,7 +172,10 @@ export async function makeUI(ctx){
   point:async name=>{const q=await point(name);await moveCore(q.x,q.y);},
   click:async name=>{
    for(let i=0;i<4;i++){
-    const q=await point(name);await moveCore(q.x,q.y);await gate();const now=name==='blank'?q:await point(name);
+    const q=await point(name);
+    // 하위 메뉴(New ▸ Web Browser storage): 비스듬히 가면 아래 줄 Open을 지나 그 하위 메뉴가 대신 열린다. 사람처럼 지금 줄에서 오른쪽으로 먼저 옮긴 뒤 내려간다.
+    if(name==='menu:newLocal'){const a=await q1(pointerPos);await moveCore(q.x,a.y);}
+    await moveCore(q.x,q.y);await gate();const now=name==='blank'?q:await point(name);
     if(Math.hypot(now.x-q.x,now.y-q.y)>2)continue;
     await q1(()=>raw.mouse.click(now.x,now.y));await sleep(160);
     if(now.input)ctx.focusBox=now;return;
@@ -258,9 +267,17 @@ export async function makeUI(ctx){
   },
   // 정한 자리로 끌기: 그림 좌표 (gx,gy)를 지금 보기(확대율 · 위치)로 화면 좌표로 바꿔, 원 테두리에서 그쪽으로 끌어 새 원 + 화살표를 만든다.
   // 녹화 내내 보기를 한 번 정해 두므로(촬영준비 길 4) 끝 그림의 자리를 녹화 전에 정할 수 있다. 놓을 자리가 원과 겹치면 멈춘다(자리 표가 틀린 것).
+  // 휠로 그림판 옮기기: 지금 보기 위치(offset)를 (tx,ty)로, 24번에 나눠 휠을 굴린다(arrows 휠은 확대 없이 옮기기만 한다 — offset -= delta).
+  wheelTo:async(tx,ty)=>{
+   const cur=()=>q1(()=>raw.evaluate(()=>{if(!window.__arrowsStore)window.__redraw();const t=window.__arrowsStore.getState().viewTransformation;return{dx:t.offset.dx,dy:t.offset.dy};}));
+   await moveCore(FIXED.canvasMid.x,FIXED.canvasMid.y);let w=await cur();
+   // 남은 몫이 있으면 다시 굴린다. arrows는 그림이 그림판 밖으로 나가게는 옮기지 않으므로(원 하나일 때 x 124까지) 그 밖의 목표는 멈춘다.
+   for(let pass=0;pass<4&&(Math.abs(w.dx-tx)>1||Math.abs(w.dy-ty)>1);pass++){const N=pass?4:24,ddx=(w.dx-tx)/N,ddy=(w.dy-ty)/N;
+    for(let i=0;i<N;i++){await q1(()=>raw.mouse.wheel(ddx,ddy));await sleep(45);}await sleep(300);w=await cur();}if(Math.abs(w.dx-tx)>1||Math.abs(w.dy-ty)>1)throw Error(`wheelTo ${tx},${ty}: view ${w.dx},${w.dy}`);
+  },
   growTo:async(source,gx,gy)=>{
    const s=await node(source);await ui.click('node:'+source);
-   const v=await q1(()=>raw.evaluate(()=>{const st=window.__arrowsStore;const t=st.getState().viewTransformation;const c=document.querySelector('canvas').getBoundingClientRect();return{k:t.scale,dx:t.offset.dx,dy:t.offset.dy,l:c.left,t:c.top};}));
+   const v=await q1(()=>raw.evaluate(()=>{if(!window.__arrowsStore)window.__redraw();const st=window.__arrowsStore;const t=st.getState().viewTransformation;const c=document.querySelector('canvas').getBoundingClientRect();return{k:t.scale,dx:t.offset.dx,dy:t.offset.dy,l:c.left,t:c.top};}));
    const x=v.l+gx*v.k+v.dx,y=v.t+gy*v.k+v.dy;
    const {list}=await circles();if(list.some(c=>Math.hypot(c.x-x,c.y-y)<c.r+s.r))throw Error(`growTo ${source}: target ${gx},${gy} overlaps a circle`);
    const rels=await q1(()=>raw.evaluate(()=>{const id=location.hash.split('id=')[1];const g=JSON.parse(localStorage.getItem('GRAPH|'+id)).graph;const by=Object.fromEntries(g.nodes.map(n=>[n.id,n.caption]));return g.relationships.map(r=>[by[r.fromId],by[r.toId]]);}));

@@ -1,8 +1,10 @@
 """지침 여덟(공통 + 일 일곱)의 꼴과 규칙 문서 전체(DOCS · 스킬)의 끊긴 경로를 잰다. 오류마다 파일:줄, 하나라도 있으면 종료 1.
 언제: 지침 · CLAUDE.md · AGENTS.md · workspace/README.md · 스킬을 고친 뒤(`동기화.py commit`이 그런 커밋마다 부른다).
-- 백틱 안 `작업/…` 경로(이 PC의 git 밖 작업 자료)도 없으면 오류다. 작업/ 폴더가 없는 곳(클라우드)에서는 오류 대신 미검증 목록을 찍는다.
+- 백틱 안 `작업/…` 경로(이 PC의 git 밖 작업 자료)도 없으면 오류다. 클라우드(`CLAUDE_CODE_REMOTE=true`, 또는 작업/ 폴더가 없는 곳)에서는 오류 대신 미검증 목록을 찍는다.
+  클라우드도 큰 중간 파일을 작업/에 두므로(CLAUDE.md 7절) 폴더가 있는지만으로는 이 PC인지 모른다.
 명령: <py> workspace/강의제작/제작도구/검사/재편검사.py [--자가시험]
 """
+import os
 import re
 import shutil
 import sys
@@ -10,6 +12,7 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[4]
+CLOUD = os.environ.get("CLAUDE_CODE_REMOTE") == "true"   # 클라우드에는 이 PC의 작업/ 자료가 없다
 GUIDES = "workspace/강의제작/지침"
 LETTER = {"공통": "C", "실라버스": "L", "덱": "D", "대본": "S", "영상": "V", "코딩랩": "K", "가이드": "P", "배포": "B"}
 WORKS = tuple(d for d in LETTER if d != "공통")
@@ -131,7 +134,7 @@ def check_paths(p, root, errs, unchecked):
         for t in BT_PATH.findall(l):
             if PLACEHOLDER.search(t):
                 continue
-            if t.startswith("작업/") and not (root / "작업").is_dir():
+            if t.startswith("작업/") and ((CLOUD and root == ROOT) or not (root / "작업").is_dir()):
                 unchecked.append(f"{p}:{i}: {t}")
             elif not (root / t.rstrip("/")).exists():
                 errs.append(f"{p}:{i}: 없는 경로 {t}")
@@ -268,6 +271,6 @@ if __name__ == "__main__":
     left = []
     found = run(ROOT, left)
     if left:
-        print(f"작업/ 폴더가 없어 재지 못한 작업/ 경로 {len(left)}개(이 PC에서 다시 잰다):\n  " + "\n  ".join(left[:20]))
+        print(f"이 PC의 작업/ 자료가 없어 재지 못한 작업/ 경로 {len(left)}개(이 PC에서 다시 잰다):\n  " + "\n  ".join(left[:20]))
     print("\n".join(found + [f"오류 {len(found)}"]))
     sys.exit(1 if found else 0)

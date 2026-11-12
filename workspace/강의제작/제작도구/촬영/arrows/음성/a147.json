@@ -1,0 +1,1 @@
+{"id": "a147", "text": "마지막으로 이 그림을 데이터베이스에 넣는 명령으로도 바꿔 보겠습니다. 컴퓨터가 이 내용을 찾아 쓰려면 그림이 아니라 데이터베이스에 담겨 있어야 하거든요. 원과 화살표를 그대로 담는 데이터베이스로 Neo4j가 있고, 거기 쓰는 명령 언어가 Cypher입니다. 다시 Download / Export 누르시고", "duration_ms": 21520, "voice_id": "1PdAOcPlPTz12RwMyFVp", "model_id": "eleven_v4", "character_cost": 82}
