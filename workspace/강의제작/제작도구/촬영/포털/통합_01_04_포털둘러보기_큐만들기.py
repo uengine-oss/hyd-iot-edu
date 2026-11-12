@@ -76,22 +76,38 @@ OPS = {
     10: [TAB('main'), P('nav.page-navigation button.next'), P('main text', exact='인공지능')],
 }
 
-# ▸ 없이 큐 첫머리(시점 0)에 하는 짚기 — 말이 「이 그림」처럼 화면 전체를 받을 때(화면대조 1~3구간 t4-03-01: 커서가 종 옆에 남아 있었다)
-PRE = {'t4-03-01': [P('#view-main svg.m-hero-svg', anchor='center')],
-       # 3~4구간 화면대조 t4-04-09: 「이 카드 숫자가」에서 화면이 버튼 쪽으로 내려가 있어 숫자가 안 보였다 — 숫자를 다시 짚어 본문이 말없이 올라오게 한다
-       't4-04-09': [V('scenario', 'span.v', nth=0, anchor='center', dx=18, dy=6)],
-       # 묶음 이름을 말할 때는 그 묶음 머리글을 짚어 메뉴가 보이게 한다(6~7구간 화면대조 t4-06-01 · t4-07-01과 같은 꼴을 8구간에 먼저)
-       't4-08-01': [P('.rail .navgroup', exact='작업', anchor='after', dy=-7)]}
-
-# ▸ 뒤에 대사 속 구절에 맞춰 더 짚는 것(map.mjs의 {at: 구절}) — 5구간 화면대조 t4-05-10: 두 카드의 승인 역할을 말하는데 커서가 상세 칸 한 곳에 머물렀다
+# ▸ 말고 대사 구절에 맞춰 더 하는 조작: (구간, 구절) → 조작(목록이면 그 구절에서 잇달아). 그 구절이 든 큐에서, 구절이 시작하는 글자 비율에 넣는다.
+# 모두 화면대조에서 「말하는 대상이 그 순간 화면에 없음」으로 걸린 꼴을 화면 쪽에서 고친 것이다(대사는 그대로).
+#  · 「이 그림」처럼 화면 전체를 받는 말에서 커서가 엉뚱한 데 남음(1~3구간 t4-03-01)
+#  · 「이 카드 숫자가」에서 화면이 버튼 쪽으로 내려가 숫자가 안 보임(3~4구간 t4-04-09) — 숫자를 다시 짚어 본문이 말없이 올라오게
+#  · 두 카드의 승인 역할을 말하는데 커서가 한 곳(5구간 t4-05-10)
+#  · 메뉴 제목(설비 · 판단 · 인공지능 설정 …)을 말하는데 그 제목이 메뉴 밖(6~7구간 t4-06-01 · t4-07-01) — 메뉴 제목을 말하는 모든 자리에 건다
+#  · 「가운데 운전 모드」에서 커서가 아래 안내 글(t4-07-03), 생산 · 정비 · 구매를 말하는데 구매 칸이 화면 밖(t4-07-08 — 「밑으로 내려 보시면」에서 실제로 내리고 칸마다)
 ENT = '#view-process h3, #view-process strong, #view-process b'
-AT = {'t4-05-10': [(V('skills', 'span.sub', nth=0), '팬 최대 운전은'), (V('skills', 'span.sub', contains='(근본 조치)', nth=0), '쿨러 핀 세척은')],
-      # 6~7구간 화면대조: 묶음 이름을 말하는데 그 묶음이 메뉴 밖(t4-06-01 · t4-07-01), 「가운데 운전 모드」에서 커서가 아래 안내 글(t4-07-03),
-      # 생산 · 정비 · 구매를 말하는데 구매 칸이 화면 밖(t4-07-08 — 「밑으로 내려 보시면」에서 실제로 내리고 칸마다 짚는다)
-      't4-06-01': [([['scroll', {'css': '.rail .navgroup', 'exact': '인공지능 설정', 'top': 300}], P('.rail .navgroup', exact='인공지능 설정', anchor='after', dy=-7)], '인공지능 설정 묶음')],
-      't4-07-01': [(P('.rail .navgroup', exact='판단', anchor='after', dy=-7), '판단 묶음')],
-      't4-07-03': [(V('decision', 'label', exact='운전 모드'), '가운데 운전 모드')],
-      't4-07-08': [(P(ENT, exact='생산 관리'), '생산,'), (P(ENT, exact='정비 관리'), '정비,'), (P(ENT, exact='구매 · 재고 관리'), '구매에')]}
+
+
+def GROUP(t, top=None):
+    o = P('.rail .navgroup', exact=t, anchor='after', dy=-7)
+    return [['scroll', {'css': '.rail .navgroup', 'exact': t, 'top': top}], o] if top else o
+
+
+EXTRA = {
+    (3, '그럼 밑에 있는 그림을'): P('#view-main svg.m-hero-svg', anchor='center'),
+    (4, '설비 아래 결함'): GROUP('설비'),
+    (4, '이 카드 숫자가'): V('scenario', 'span.v', nth=0, anchor='center', dx=18, dy=6),
+    (5, '지식 아래 지식 지도'): GROUP('지식'),
+    (5, '팬 최대 운전은'): V('skills', 'span.sub', nth=0),
+    (5, '쿨러 핀 세척은'): V('skills', 'span.sub', contains='(근본 조치)', nth=0),
+    (6, '인공지능 설정 아래에'): GROUP('인공지능 설정', top=300),
+    (7, '위쪽 판단 아래에'): GROUP('판단'),
+    (7, '가운데 운전 모드'): V('decision', 'label', exact='운전 모드'),
+    (7, '생산,'): P(ENT, exact='생산 관리'),
+    (7, '정비,'): P(ENT, exact='정비 관리'),
+    (7, '구매에'): P(ENT, exact='구매 · 재고 관리'),
+    (8, '작업 아래, 내 작업함'): GROUP('작업'),
+    (9, '성과 아래 성과 지표'): GROUP('성과'),
+    (9, '마지막 시스템 아래에는'): GROUP('시스템'),
+}
 
 GAP_IN, GAP_PAUSE, GAP_RESULT, GAP_SEG = 0.5, 1.0, 1.5, 1.8
 
@@ -146,12 +162,21 @@ def build(md):
                         gap = GAP_RESULT if prev and prev[-1][0] == 'click' else GAP_PAUSE
                     first = False
                     cues.append({'id': f't4-{n:02d}-{seq:02d}', 'segment': n, 'text': text, 'gap': gap, 'ops': qops})
-    for c in cues:
-        c['ops'][:0] = [[*o, 0.0] for o in PRE.get(c['id'], [])]
-        for o, at in AT.get(c['id'], []):
-            assert at in c['text'], (c['id'], at)
-            grp = o if isinstance(o[0], list) else [o]   # 목록이면 그 구절에서 잇달아 한다(둘째부터는 앞 조작 바로 뒤)
-            c['ops'].extend([[*grp[0], {'at': at}], *grp[1:]])
+    for (n, at), o in EXTRA.items():
+        hit = [c for c in cues if c['segment'] == n and at in c['text']]
+        if len(hit) != 1:
+            sys.exit(f'EXTRA ({n}, {at}): 그 구절이 든 큐 {len(hit)}개 — 하나여야 한다')
+        c, grp = hit[0], (o if isinstance(o[0], list) else [o])
+        f = round(c['text'].index(at) / len(c['text']), 3)
+        units, cur = [], None   # 시점이 있는 조작 + 그 뒤 시점 없는 조작 = 한 덩이. 시점 차례로 끼운다
+        for op in c['ops']:
+            if isinstance(op[-1], (int, float)) and not isinstance(op[-1], bool) and op[0] != 'wait':
+                cur = [op]; units.append(cur)
+            else:
+                cur.append(op)
+        units.append([[*grp[0], f], *grp[1:]])
+        units.sort(key=lambda u: u[0][-1])
+        c['ops'] = [op for u in units for op in u]
     # 메뉴를 누른 뒤 화면은 서버 응답으로 그려진다 — 누르기 바로 뒤에 다음 가리킬 대상이 나타날 때까지 기다린다(이미 있으면 바로 지나간다)
     flat = [(c, i) for c in cues for i in range(len(c['ops']))]
     for j, (c, i) in enumerate(flat):
