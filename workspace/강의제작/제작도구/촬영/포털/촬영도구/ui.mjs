@@ -50,7 +50,11 @@ export function findInPage(t){
   // 대상을 담은 스크롤 영역(포털은 왼쪽 메뉴 .rail과 본문 main#content가 따로 굴러간다). 고정 위치(위 막대)면 굴리지 않는다.
   let fixed=false,a=es[0].parentElement,sc=null;
   for(let n=es[0];n&&n!==document.documentElement;n=n.parentElement)if(getComputedStyle(n).position==='fixed'||getComputedStyle(n).position==='sticky')fixed=true;
-  for(;a&&a!==document.body&&a!==document.documentElement;a=a.parentElement){const cs=getComputedStyle(a);if(/(auto|scroll)/.test(cs.overflowY)&&a.scrollHeight>a.clientHeight+2){const r=a.getBoundingClientRect();sc={top:r.top,bottom:r.bottom,left:r.left,right:r.right};break;}}
+  // 스크롤 영역이 겹쳐 있으면(처리 건 목록 #instList가 본문 main#content 안에서 또 굴러간다) 안쪽 칸의 크기만 보고 「보인다」고 하면 안 된다 —
+  // 안쪽 칸이 본문 아래로 뻗어 있으면 화면 밖(y 1025, 창 높이 720)을 가리킨 적이 있다(2026-11-12 06 o1104). 안쪽부터 보아 가리킬 지점이 그 칸 밖이면
+  // 그 칸을 굴리고, 모든 칸 안이면 가장 안쪽 칸을 쓴다. 「보이는 범위」(vtop · vbottom)는 그 칸을 바깥 칸들과 창으로 잘라 낸 범위다.
+  const scs=[];for(;a&&a!==document.body&&a!==document.documentElement;a=a.parentElement){const cs=getComputedStyle(a);if(/(auto|scroll)/.test(cs.overflowY)&&a.scrollHeight>a.clientHeight+2){const r=a.getBoundingClientRect();scs.push({top:r.top,bottom:r.bottom,left:r.left,right:r.right});}}
+  if(scs.length){let k=scs.findIndex(s=>y<s.top||y>s.bottom);if(k<0)k=0;sc={...scs[k],vtop:Math.max(0,...scs.slice(k).map(s=>s.top)),vbottom:Math.min(innerHeight,...scs.slice(k).map(s=>s.bottom))};}
   // 문서 전체가 굴러가지 않는 화면(포털)에서 스크롤 영역 밖 요소(위 막대)는 늘 보인다.
   if(!sc&&document.scrollingElement.scrollHeight<=innerHeight+2)fixed=true;
   // hit: 누를 지점의 맨 위 요소가 이 대상이거나 그 안쪽인가(다른 요소에 가려졌으면 false).
@@ -84,13 +88,14 @@ export async function portal(ctx){
   // 가리킬 지점이 그 스크롤 영역 안(위 20 · 아래 20px 여백, 창 전체가 영역이면 위 60 · 아래 40px)에 있으면 그대로 쓴다. 고정된 위 막대는 굴려도 자리가 같다.
   // 밖이면 화살표를 먼저 그 영역 위로 옮긴 뒤 굴린다(휠은 화살표 아래 영역을 굴린다 — 메뉴 칸 위에서 굴려야 메뉴가 움직인다).
   for(let i=0;i<12;i++){const r=await find(t);const y=r.y+(t.dy||0);ctx.lastView={i,y:Math.round(y),top:Math.round(r.top),sc:r.sc,pos:lastPos};if(r.fixed)return r;
-   const lo=r.sc?r.sc.top+20:60,hi=r.sc?r.sc.bottom-20:r.h-40;if(y>=lo&&y<=hi&&r.top>=-r.h)return r;
+   const lo=r.sc?r.sc.vtop+20:60,hi=r.sc?r.sc.vbottom-20:r.h-40;if(y>=lo&&y<=hi&&r.top>=-r.h)return r;
    await over(r);const dy=y<lo?y-lo-140:y-hi+140;await wheel(virtual?dy:Math.max(-420,Math.min(420,dy)),r.sc);}
   throw Error('Cannot bring into view: '+JSON.stringify(t)+' '+JSON.stringify(ctx.lastView||null));
  }
  async function over(r){if(!r.sc)return;const p=lastPos||await q1(pointerPos);const s=r.sc;
-  if(p.x>=s.left+10&&p.x<=s.right-10&&p.y>=s.top+10&&p.y<=s.bottom-10)return;
-  const cl=(v,a,b)=>Math.max(a,Math.min(b,v));await moveCore(cl(r.x,s.left+40,s.right-40),cl(p.y,s.top+80,s.bottom-80));}
+  const vt=s.vtop??s.top,vb=s.vbottom??s.bottom;   // 칸이 창 밖으로 뻗어 있어도 화살표는 보이는 범위 안에 둔다
+  if(p.x>=s.left+10&&p.x<=s.right-10&&p.y>=vt+10&&p.y<=vb-10)return;
+  const cl=(v,a,b)=>Math.max(a,Math.min(b,v));await moveCore(cl(r.x,s.left+40,s.right-40),cl(p.y,vt+80,vb-80));}
  async function settled(t){let q=await inView(t);for(let k=0;k<10;k++){await sleep(150);const q2=await find(t);if(Math.hypot(q2.x-q.x,q2.y-q.y)<=1)return q2;q=q2;}throw Error('Target layout did not settle: '+JSON.stringify(t));}
  // 휠: 헤드리스에서는 휠 한 번이 부드럽게 굴러가지 않고 그 거리만큼 바로 뛴다(120px씩 나누니 520px가 프레임 6장 · 공백 191ms, 2026-10-23 test-click-1).
  // 그래서 약 30px씩 프레임 간격(30ms)에 맞춰 굴린다. 처음과 끝은 작게(가속 · 감속). 화살표는 움직이지 않는다.

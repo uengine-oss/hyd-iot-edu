@@ -94,7 +94,8 @@ export async function take(opts){
  const seam=opts.resume?await resumePoint(opts.resume):null;
  if(seam)await fs.writeFile(out+'/이음.json',JSON.stringify({prev:opts.resume.prev,fromCue:opts.resume.fromCue,cut_ms:seam.cut,pointer:seam.pointer}));
  // after: 구간으로 나눠 찍을 때 앞 take(끝까지 찍은 것)의 마지막 커서 자리에서 시작한다 — 영상 길 16. 페이지는 앞 take 끝 화면 그대로다(browser.mjs가 쥐고 있다).
- const after=opts.after?await loadTiming(opts.after).then(t=>{if(t.error)throw Error('앞 take가 실패로 끝남: '+opts.after);const m=t.motions.at(-1);return m?{x:m.x,y:m.y}:null;}):null;
+ const after=opts.after?await loadTiming(opts.after).then(t=>{if(t.error)throw Error('앞 take가 실패로 끝남: '+opts.after);const m=t.motions.at(-1);if(m)return {x:m.x,y:m.y};   // 움직임 없이 끝난 take(말만 하는 구간)는 시작 자리에 커서가 그대로 있다
+  return fs.readFile(WORK+'/'+opts.after+'/pointer-start.json','utf8').then(JSON.parse).then(q=>({x:q.x,y:q.y})).catch(()=>null);}):null;
  if(opts.after&&!after)throw Error('앞 take에 커서 기록이 없다: '+opts.after);
  const pos0=seam?seam.pointer:after||{x:760,y:430};
  if(after)await fs.writeFile(out+'/이음.json',JSON.stringify({prev:opts.after,fromCue:null,cut_ms:(await loadTiming(opts.after)).duration+1,pointer:after}));   // 이음새검수.py가 앞 take 끝 프레임과 이 take 첫 프레임을 견준다
