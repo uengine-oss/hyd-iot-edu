@@ -76,6 +76,9 @@ OPS = {
     10: [TAB('main'), P('nav.page-navigation button.next'), P('main text', exact='인공지능')],
 }
 
+# ▸ 없이 큐 첫머리(시점 0)에 하는 짚기 — 말이 「이 그림」처럼 화면 전체를 받을 때(화면대조 1~3구간 t4-03-01: 커서가 종 옆에 남아 있었다)
+PRE = {'t4-03-01': [P('#view-main svg.m-hero-svg', anchor='center')]}
+
 GAP_IN, GAP_PAUSE, GAP_RESULT, GAP_SEG = 0.5, 1.0, 1.5, 1.8
 
 
@@ -129,6 +132,8 @@ def build(md):
                         gap = GAP_RESULT if prev and prev[-1][0] == 'click' else GAP_PAUSE
                     first = False
                     cues.append({'id': f't4-{n:02d}-{seq:02d}', 'segment': n, 'text': text, 'gap': gap, 'ops': qops})
+    for c in cues:
+        c['ops'][:0] = [[*o, 0.0] for o in PRE.get(c['id'], [])]
     # 메뉴를 누른 뒤 화면은 서버 응답으로 그려진다 — 누르기 바로 뒤에 다음 가리킬 대상이 나타날 때까지 기다린다(이미 있으면 바로 지나간다)
     flat = [(c, i) for c in cues for i in range(len(c['ops']))]
     for j, (c, i) in enumerate(flat):
