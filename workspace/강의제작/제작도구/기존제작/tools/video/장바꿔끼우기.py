@@ -258,7 +258,15 @@ def main():
                 p0 = float(probe(cut, "-select_streams", "v:0", "-show_entries", "packet=pts_time", "-of", "csv=p=0").split()[0])
                 ff("-i", cut, "-c", "copy", "-output_ts_offset", f"{-p0:.6f}", part)
             else:
-                ff("-ss", at(fa), "-i", video, "-frames:v", fb - fa, *emph.ENC, part)
+                # 풀어 낸 프레임을 그대로 받아 인코딩한다. `-ss at(fa) -i 영상 … 인코딩`으로 바로 mp4를 쓰면 한 프레임 밀려 fa+1부터 담기고
+                # 끝에 다음 장 그림(fb)이 딸려 온다(2026-11-12 1회차 03편 51→52장, 장 넘김이 한 프레임 일찍 떴다).
+                # rawvideo로 풀면 gray() · turn()과 같은 프레임(fa부터)이 나온다
+                dec = subprocess.Popen(["ffmpeg", "-v", "error", "-ss", at(fa), "-i", str(video), "-frames:v", str(fb - fa),
+                                        "-f", "rawvideo", "-pix_fmt", "yuv420p", "-"], stdout=subprocess.PIPE)
+                enc = subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "yuv420p", "-s", f"{emph.W}x{emph.H}",
+                                      "-framerate", str(FPS), "-i", "-", *emph.ENC, str(part)], stdin=dec.stdout, capture_output=True)
+                dec.stdout.close()
+                if dec.wait() or enc.returncode: stop(f"앞 장 끝 다시 인코딩 실패: {enc.stderr.decode('utf-8', 'replace')[:300]}")
             if packets(part) != fb - fa: stop(f"기존 영상 {fa}~{fb} 프레임을 자른 조각의 프레임 수가 {packets(part)}다")
             files.append((part, fb - fa))
         # 조각마다 길이(프레임 수/30)를 적어 준다. 적지 않으면 concat이 자른 조각의 컨테이너 길이로 다음 조각을 놓아 뒤 화면이 한 프레임씩 어긋난다

@@ -47,6 +47,9 @@ def read_srt(p):
     return out
 
 
+BUNDLE = {}   # 묶음 구획의 간지 장 → 설명 장(read_slides가 채운다)
+
+
 def read_slides(p):
     """시간표에서 장 번호 → 시작 초(시간표는 초 단위로 반올림해 적는다)."""
     text = p.read_text(encoding="utf-8")
@@ -57,6 +60,8 @@ def read_slides(p):
     # 묶음 구획(간지 + 설명 장)은 「(SLIDE M부터 m:ss.s)」에 설명 장 M의 시작이 적혀 있다 — 설명 장에도 강조를 단다(영상 V-11)
     for m, a, b in re.findall(r"\(SLIDE (\d+)부터 (\d+):(\d+(?:\.\d+)?)\)", text):
         table[int(m)] = int(a) * 60 + float(b)
+    for n, m in re.findall(r"^\| (\d+)~(\d+) \|", text, flags=re.M):
+        BUNDLE[int(n)] = int(m)
     if not table: stop(f"{p}: 장 시작 표를 읽지 못함")
     return table
 
@@ -141,7 +146,10 @@ def plan(cfg, subs, slides):
         hit, hi = find_sentence(where, subs, slides, m["장"], m["문장"])
         start = hit[0] + word_offset(where, m["문장"], hit[1] - hit[0], m["낱말"])
         if m.get("끝문장"):
-            end = find_sentence(where, subs, slides, m["장"], m["끝문장"])[0][0]
+            # 묶음 구획의 간지 표시는 설명 장의 첫 문장(둘째 문장)에서 지운다 — 그 문장은 설명 장의 시각 안에 있다(영상 V-11)
+            n_end = BUNDLE.get(m["장"], m["장"])
+            end = find_sentence(where, subs, slides, n_end, m["끝문장"])[0][0]
+            if n_end != m["장"]: end = min(end, slides[n_end])   # 간지 그림이 설명 장으로 바뀌는 시각을 넘기지 않는다
         else:
             end = max(s[1] for s in subs if s[0] < hi)
         if end <= start: stop(f"{where}: 지우는 시각이 그리는 시각보다 앞섬")
