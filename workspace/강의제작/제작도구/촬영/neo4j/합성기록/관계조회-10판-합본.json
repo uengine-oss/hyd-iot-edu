@@ -1,5 +1,5 @@
 {
- "output": "관계조회-9판-합본_1080p.mp4",
+ "output": "관계조회-10판-합본_1080p.mp4",
  "duration_s": 1963.733,
  "source": "1920x1080 JPEG screencast",
  "output_fps": 30,
@@ -561,12 +561,12 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 617
+   "next_speech_after_action_ms": 1257
   },
   {
    "id": "r0403",
    "speech": [
-    "03:35.811",
+    "03:36.451",
     "03:37.811"
    ],
    "revoiced": "cache",
@@ -576,12 +576,12 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 16101
+   "next_speech_after_action_ms": 17141
   },
   {
    "id": "r0404",
    "speech": [
-    "03:53.053",
+    "03:54.093",
     "03:55.213"
    ],
    "revoiced": "cache",
@@ -591,26 +591,27 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 601
+   "next_speech_after_action_ms": 841
   },
   {
    "id": "r0405",
    "speech": [
-    "03:55.936",
+    "03:56.176",
     "03:58.256"
    ],
+   "revoiced": "cache",
    "action": [
     "03:55.937",
     "03:56.929"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 12548
+   "next_speech_after_action_ms": 15508
   },
   {
    "id": "r0406",
    "speech": [
-    "04:09.477",
+    "04:12.437",
     "04:20.837"
    ],
    "revoiced": "cache",
@@ -664,12 +665,12 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 2502
+   "next_speech_after_action_ms": 9462
   },
   {
    "id": "r0410",
    "speech": [
-    "04:40.479",
+    "04:47.439",
     "04:54.319"
    ],
    "revoiced": "cache",
@@ -753,12 +754,12 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 1054
+   "next_speech_after_action_ms": 4734
   },
   {
    "id": "r0504",
    "speech": [
-    "05:52.251",
+    "05:55.931",
     "06:01.531"
    ],
    "revoiced": "cache",
@@ -946,12 +947,12 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 6841
+   "next_speech_after_action_ms": 9801
   },
   {
    "id": "r0606",
    "speech": [
-    "07:45.981",
+    "07:48.941",
     "07:50.941"
    ],
    "revoiced": "cache",
@@ -2145,12 +2146,12 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 7143
+   "next_speech_after_action_ms": 5143
   },
   {
    "id": "r1108",
    "speech": [
-    "19:55.468",
+    "19:53.468",
     "20:00.988"
    ],
    "revoiced": "cache",
@@ -3044,13 +3045,13 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 4178
+   "next_speech_after_action_ms": 5276
   },
   {
    "id": "r1600",
    "speech": [
-    "28:54.733",
-    "29:09.693"
+    "28:55.831",
+    "29:09.271"
    ],
    "revoiced": "cache",
    "action": [
@@ -3177,12 +3178,12 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 121
+   "next_speech_after_action_ms": 2041
   },
   {
    "id": "r1609",
    "speech": [
-    "29:58.766",
+    "30:00.686",
     "30:04.526"
    ],
    "revoiced": "cache",
@@ -3312,12 +3313,12 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 355
+   "next_speech_after_action_ms": 1155
   },
   {
    "id": "r1618",
    "speech": [
-    "31:03.323",
+    "31:04.123",
     "31:11.803"
    ],
    "revoiced": "cache",
@@ -13451,11 +13452,9 @@
     0
    ],
    "소리튐": false,
-   "표본차": 0.0001,
-   "기준": 0.0638,
-   "소리시작_어긋남_ms": [
-    0.0
-   ],
+   "표본차": 0.0,
+   "기준": 0.0,
+   "소리시작_어긋남_ms": [],
    "소리_ok": true,
    "바뀐화소퍼센트": 0.001,
    "바뀐영역": [
@@ -13495,6 +13494,7 @@
   "r0402",
   "r0403",
   "r0404",
+  "r0405",
   "r0406",
   "r0407",
   "r0408",
@@ -13653,7 +13653,7 @@
   "직접 청취",
   "사용자 재생 확인"
  ],
- "이름": "관계조회-9판-합본",
+ "이름": "관계조회-10판-합본",
  "도구": "neo4j",
  "crf": 16,
  "fps": 30,
@@ -24731,8 +24731,8 @@
   }
  ],
  "mp4": {
-  "sha256": "c0e308579214325d781f9becb38ae2ff2c960f16717099e9e100daeee3e783fe",
+  "sha256": "918b18dd28f5dad7bf2055021d3e11d37b4f738872638698cf4d6395f4c34d6d",
   "video_packets": 58912,
-  "bytes": 53602047
+  "bytes": 53184273
  }
 }
