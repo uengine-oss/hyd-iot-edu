@@ -109,6 +109,10 @@ def check_config(script, config):
     if not isinstance(cfg, dict) or not isinstance(cfg.get("표시"), list):
         sys.exit(f"{config}: 표시 목록이 없다")
     blocks = {first: (last, breath.sentences(text)) for first, last, text in tool.slides_text(script)}
+    # 묶음 구획(간지 + 설명 장)의 설명 장은 둘째 문장부터 보이므로, 그 장의 강조는 둘째 문장부터 잇는다(영상 V-11)
+    for first, (last, sentences) in list(blocks.items()):
+        if last != first:
+            blocks[last] = (last, sentences[1:])
     errors = []
     for i, mark in enumerate(cfg["표시"], 1):
         if not isinstance(mark, dict):
@@ -122,7 +126,7 @@ def check_config(script, config):
         if "파일" in mark and mark["파일"] != script.name:
             errors.append(f"{where}: 대본 파일이 다르다")
         if type(n) is not int or n not in blocks:
-            errors.append(f"{where}: 이 편의 시간표에 독립된 시작 장이 없다(묶음 구획은 첫 장만 있음)")
+            errors.append(f"{where}: 이 편의 대본에 그 장이 없다")
             continue
         last, sentences = blocks[n]
         start, word, end = mark.get("문장"), mark.get("낱말"), mark.get("끝문장")

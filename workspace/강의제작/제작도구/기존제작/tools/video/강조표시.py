@@ -49,10 +49,14 @@ def read_srt(p):
 
 def read_slides(p):
     """시간표에서 장 번호 → 시작 초(시간표는 초 단위로 반올림해 적는다)."""
-    rows = re.findall(r"^\| (\d+)(?:~\d+)? \| (\d+):(\d+)(?::(\d+))?(?: \(SLIDE[^)]*\))? \|", p.read_text(encoding="utf-8"), flags=re.M)
+    text = p.read_text(encoding="utf-8")
+    rows = re.findall(r"^\| (\d+)(?:~\d+)? \| (\d+):(\d+)(?::(\d+))?(?: \(SLIDE[^)]*\))? \|", text, flags=re.M)
     table = {}
     for n, a, b, c in rows:
         table[int(n)] = int(a) * 3600 + int(b) * 60 + int(c) if c else int(a) * 60 + int(b)
+    # 묶음 구획(간지 + 설명 장)은 「(SLIDE M부터 m:ss.s)」에 설명 장 M의 시작이 적혀 있다 — 설명 장에도 강조를 단다(영상 V-11)
+    for m, a, b in re.findall(r"\(SLIDE (\d+)부터 (\d+):(\d+(?:\.\d+)?)\)", text):
+        table[int(m)] = int(a) * 60 + float(b)
     if not table: stop(f"{p}: 장 시작 표를 읽지 못함")
     return table
 
