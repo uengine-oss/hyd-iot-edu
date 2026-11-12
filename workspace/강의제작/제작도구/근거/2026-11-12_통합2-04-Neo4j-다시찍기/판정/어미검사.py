@@ -14,8 +14,8 @@ for block in re.split(r'^### ', open(sys.argv[1], encoding='utf-8').read(), flag
         kinds.append(k)
     run = 0
     for i, k in enumerate(kinds):
-        if i and k == '요' and kinds[i - 1] == '요':
-            bad += 1; print(f'[요요] {title.split()[0]} {sents[i-1][-18:]} / {sents[i][-24:]}')
+        if i and k == kinds[i - 1] and k != '기타':
+            bad += 1; print(f'[같은 끝 {k}] {title.split()[0]} {sents[i-1][-18:]} / {sents[i][-24:]}')
         run = run + 1 if k == '다' else 0
         if run == 4:
             bad += 1; print(f'[다×4] {title.split()[0]} {sents[i][-24:]}')
