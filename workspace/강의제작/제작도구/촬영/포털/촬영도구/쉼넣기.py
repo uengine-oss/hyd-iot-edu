@@ -31,7 +31,7 @@
      넣는 자리는 두 말 사이에서 소리가 조용하고 화면 움직임이 가장 적은 프레임이다(같으면 늦은 쪽 = 조작 결과가 다 뜬 뒤).
      그 프레임을 되풀이하고 같은 길이의 무음을 넣는다.
   3. 자르기 — 프레임 단위로 화면과 소리를 함께 뺀다. 자막 · 장 시각도 옮긴다.
-  4. 영상은 select + loop(+ drawtext) 필터로 한 번 인코딩한다(libx264 crf 18, 30 fps, 원본 소리 표본 빈도 · AAC 160k).
+  4. 영상은 select + loop(+ drawtext) 필터로 한 번 인코딩한다(libx264 crf(환경 변수 CRF, 기본 18), 30 fps, 원본 소리 표본 빈도 · AAC 160k).
      디코드 · 출력은 프레임을 덧붙이지 않는다(passthrough) — 평균 빈도가 30이 아닌 원본에서 -r 30(cfr)은 끝에 프레임을 하나 더 붙인다(08 관계 그림).
   5. 검사 — 소리와 화면 길이 ±0.1초, 프레임 수, 멈춘 자리마다 결과 프레임이 옛 프레임과 같은지(이음새에서 화면이 튀지 않음),
      자막 블록마다 그 안에 말이 있고 시작 0.25초 안에 말이 시작되는지, 블록 사이 0.3초 이상 틈에 말이 없는지, 단위 사이가 쉼 기준 이상인지.
@@ -50,6 +50,7 @@ sys.path.insert(0, str(HERE))
 from common import ffmpeg, chapters, write_chapters  # noqa: E402
 
 FPS = 30
+CRF = int(os.environ.get('CRF', '18'))   # 인코딩 화질(cut.py · join.py와 같은 이름). 원본보다 화질이 떨어지면 안 되는 영상은 원본 crf보다 낮게 준다
 LOOP_SHIFT = 1   # 이 ffmpeg 판의 loop start=K는 K-1번 프레임을 되풀이한다 — 「시험」이 확인한다
 ACT = re.compile(r'누르|누릅|눌러|클릭|선택|입력|적겠|적어|적을|적습|닫|열겠|열어|엽니다|열게|엔터|가져가|실행|붙여 ?넣|체크|복사|고릅|칠게|쳐 볼|칩니다')
 CLASS = ('잇기', '큐', '결과', '전환', '따라하기')
@@ -573,7 +574,7 @@ def build(pf, out):
     chs = [(m(s), m(e), t) for s, e, t in chapters(P['영상'])]
     meta = tmp / '장.txt'; write_chapters(meta, [c for c in chs if c[1] > c[0]])
     subprocess.run([ffmpeg(), '-v', 'error', '-y', '-i', str(P['영상']), '-i', str(wav), '-i', str(meta), '-/filter_complex', str(tmp / 'fc.txt'),
-                    '-map', '[v]', '-map', '1:a', '-map_chapters', '2', '-c:v', 'libx264', '-preset', 'medium', '-crf', '18', '-pix_fmt', 'yuv420p',
+                    '-map', '[v]', '-map', '1:a', '-map_chapters', '2', '-c:v', 'libx264', '-preset', 'medium', '-crf', str(CRF), '-pix_fmt', 'yuv420p',
                     '-fps_mode', 'passthrough', '-c:a', 'aac', '-b:a', '160k', '-ar', str(SR), '-ac', '1', '-movflags', '+faststart', str(out)], check=True)
     write_srt(out.with_suffix('.srt'), blocks)
     for f in tmp.iterdir():
