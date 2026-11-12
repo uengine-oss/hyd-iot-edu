@@ -231,17 +231,6 @@
       "entry": "neo4j"
     },
     {
-      "id": "integrated-02-map",
-      "course": "통합반",
-      "session": "온라인 02회차",
-      "title": "설비 지식의 구조와 연결 관계 탐색하기",
-      "version": "2026-11-07-map-video",
-      "folder": "02회차/랩/02일차_실습2_지식지도탐색",
-      "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색.zip",
-      "sha256": "952e8cbfc4437cf9ee1df4a92ff9376c54a774d1cc5db29f1de7ba3224d971b0",
-      "entry": "guide"
-    },
-    {
       "id": "integrated-02-graph",
       "course": "통합반",
       "session": "온라인 02회차",
