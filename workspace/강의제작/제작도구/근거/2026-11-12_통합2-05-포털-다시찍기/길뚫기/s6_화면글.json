@@ -1,0 +1,124 @@
+[
+ [
+  "click",
+  "#ontoMap .o-node.match",
+  "",
+  "matches",
+  1,
+  "visible",
+  1
+ ],
+ [
+  "click",
+  "#ontoNode a[data-go=\"comp:cooler\"]",
+  "",
+  "matches",
+  1,
+  "visible",
+  1
+ ],
+ [
+  "click",
+  "#ontoNode a[data-go=\"sen:ts1\"]",
+  "",
+  "matches",
+  1,
+  "visible",
+  1
+ ],
+ [
+  "click",
+  "#ontoNode a[data-go=\"sv:ts1\"]",
+  "",
+  "matches",
+  1,
+  "visible",
+  1
+ ],
+ [
+  "click",
+  "#ontoNode a[data-go=\"sen:ts1\"]",
+  "",
+  "matches",
+  1,
+  "visible",
+  1
+ ],
+ [
+  "click",
+  "#ontoNode a[data-go=\"sym:ts1-rise\"]",
+  "",
+  "matches",
+  1,
+  "visible",
+  1
+ ],
+ [
+  "text",
+  "#ontoNode",
+  "증상\n유온 상승\naliases\t[\"온도 상승\",\"과열\"]\n나가는 관계 2\n→ 나타내는 고장 쿨러 냉각 성능 상실\n→ 관측 센서 유온 센서\n들어오는 관계 2\n← 감지 증상 쿨러 성능 저하\n← 감지 증상 과열 인터록 트립"
+ ],
+ [
+  "shot",
+  "60sym"
+ ],
+ [
+  "click",
+  "#ontoNode a[data-go=\"fm:cooler-cooling-loss\"]",
+  "",
+  "matches",
+  1,
+  "visible",
+  1
+ ],
+ [
+  "text",
+  "#ontoNode",
+  "고장 유형\n쿨러 냉각 성능 상실\n나가는 관계 8\n→ 근본 조치 쿨러 핀 세척\n→ 근본 조치 벨트 교체 절차\n→ 즉시 완화 팬 최대 운전과 부하 80 %\n→ 즉시 완화 팬 최대 운전\n→ 근본 조치 쿨러 팬 점검 절차\n→ 즉시 완화 부하 70 %와 야간 핀 세척\n→ 근본 조치 캐비닛 환기 보강\n→ 발생 위치 오일 쿨러\n들어오는 관계 5\n← 나타내는 고장 유온 상승\n← 나타내는 고장 냉각 효율 저하\n← 일으키는 고장 팬 구동 불량\n← 일으키는 고장 주변 온도 상승\n← 일으키는 고장 쿨러 핀 오염"
+ ],
+ [
+  "shot",
+  "61fm"
+ ],
+ [
+  "eval",
+  "(()=>{const n=document.querySelector('#ontoNode');const r=n.",
+  "{\"top\":405.54168701171875,\"h\":439.5208435058594,\"main\":419.3333435058594}"
+ ],
+ [
+  "click",
+  "#ontoNode a[data-go=\"cause:cooler-fin-fouling\"]",
+  "",
+  "matches",
+  1,
+  "visible",
+  1
+ ],
+ [
+  "text",
+  "#ontoNode",
+  "원인\n쿨러 핀 오염\naliases\t[\"핀 오염\"]\nprior\t0.6\n나가는 관계 5\n→ 움직이는 외란 쿨러 핀 오염도\n→ 일으키는 고장 쿨러 냉각 성능 상실\n→ 확증 근거 최근 2분 팬 진동 평균 정상 범위\n→ 확증 근거 최근 30초 냉각 효율 평균 저하\n→ 관련 부품 쿨러 코어\n들어오는 관계 2\n← 고르는 결과 쿨러 성능 저하 경보에서 냉각 효율이 70 % 미만이면 핀 오염을 1순위 원인으로 둔다.\n← 해당 원인 쿨러 핀 세척"
+ ],
+ [
+  "shot",
+  "62cause"
+ ],
+ [
+  "click",
+  "#ontoNode a[data-go=\"part:cooler-core\"]",
+  "",
+  "matches",
+  1,
+  "visible",
+  1
+ ],
+ [
+  "text",
+  "#ontoNode",
+  "부품\n쿨러 코어\npartNo\tP-CLR-CORE\n나가는 관계 3\n→ 공급사 C트레이딩 (최저가)\n→ 공급사 A정밀 (저가)\n→ 공급사 B-OEM (순정)\n들어오는 관계 6\n← 교체 부품 오일 쿨러\n← 관련 부품 쿨러 핀 오염\n← 관련 부품 순정(OEM) 공급사 표준 발주\n← 관련 부품 대체 승인 공급사 발주\n← 관련 부품 최단 납기 긴급 발주\n← 관련 부품 입고 지연 통보 및 보고"
+ ],
+ [
+  "shot",
+  "63part"
+ ]
+]

@@ -1,0 +1,10 @@
+[["tab","ontology"],["chip","전략 목표"],["chip","프로세스"],["chip","외부 변수"],["chip","내 업무 개념"],
+ ["type","#ontoSearch","유압 파워팩"],["click","#ontoMap .o-node.match",""],
+ ["click","#ontoNode a[data-go=\"comp:cooler\"]",""],["click","#ontoNode a[data-go=\"sen:ts1\"]",""],
+ ["click","#ontoNode a[data-go=\"sv:ts1\"]",""],["click","#ontoNode a[data-go=\"sen:ts1\"]",""],
+ ["click","#ontoNode a[data-go=\"sym:ts1-rise\"]",""],["text","#ontoNode"],["shot","60sym"],
+ ["click","#ontoNode a[data-go=\"fm:cooler-cooling-loss\"]",""],["text","#ontoNode"],["shot","61fm"],
+ ["eval","(()=>{const n=document.querySelector('#ontoNode');const r=n.getBoundingClientRect();return JSON.stringify({top:r.top,h:r.height,main:document.querySelector('main#content').scrollTop})})()"],
+ ["click","#ontoNode a[data-go=\"cause:cooler-fin-fouling\"]",""],["text","#ontoNode"],["shot","62cause"],
+ ["click","#ontoNode a[data-go=\"part:cooler-core\"]",""],["text","#ontoNode"],["shot","63part"]
+]
