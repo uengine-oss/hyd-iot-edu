@@ -50,6 +50,7 @@ OPS={
  '03-03':[P(t('.mprev section.card .chip',contains='수정할 항목'))],
  '03-04':[P(t('.mprev section.card .card-body > ul > li','margin',nth=0),'절차마다')],
  '03-05':[P(t('.mprev section.card .card-body > ul > li','margin',nth=7),'이 절차를')],
+ '03-06':[P(t('.mprev section.card .card-body > ul > li:nth-child(8) > details > summary'),'접힌 칸')],
  '04-01':[C(t('#manualFullSource','center'),'추출 원문 전체 보기 누르'),['wait',t('#manualSourceText details > summary'),15]],
  '04-02':[C(t('#manualSourceText details > summary','left'),'펼쳐')],
  '04-03':[PH('## HM-8.1'),PH('## HM-8.2','갈아 끼우는')],
@@ -73,16 +74,16 @@ OPS={
  '04-21':[PH('## HM-8.8')],
  '05-01':[C(t('#manualAgentExtract','center'),'추출 제안 준비 누르'),['waittext','진행 · 결과 확인을 누르세요',60]],
  '05-02':[P(t('#manualAgentStatus')),['clickuntil',t('#manualAgentResult','center'),"document.querySelectorAll('.mproc').length>0",A('결과 확인 누르')]],
- '05-03':[P(t('.mprev > div.muted','below'))],
+ '05-03':[P(tx('등록할 조치 방법',tag='h3'))],
  '05-04':[P(t('.mprev > details:first-of-type > summary'))],
  '05-05':[['open',t('.mprev > details:first-of-type > summary','left'),0]],
  '05-06':[P(t('.mprev > details:first-of-type li','margin',nth=0),'하나는')],
  '05-07':[P(t('.mprev > details:first-of-type li','margin',nth=1))],
  '05-08':[P(t('.mprev > details:first-of-type li','margin',nth=2))],
- '05-09':[P(t('.mprev section.card .card-body > ul > li','margin',contains='벨트 교체'),'벨트 교체 한 줄')],
+ '05-09':[P(t('.mprev section.card .card-body > ul > li','margin',contains='벨트 교체'),'검사 칸을')],
  '06-01':[P(tx('매뉴얼 절',tag='h3'),'아래 왼쪽은'),P(tx('등록할 조치 방법',tag='h3'),'오른쪽 등록할')],
  '06-02':[P(t('[data-manual-name="SOP-FAN-11"]','right')),P(t('[data-manual-name="SOP-FAN-12"]','right'),'벨트 교체')],
- '06-03':[P(t('[data-rel="SOP-FAN-12"]','below'),'관계는'),P(t('[data-kind="SOP-FAN-12"]','below'),'종류는')],
+ '06-03':[P(t('[data-rel="SOP-FAN-11"]','below'),'관계는'),P(t('[data-kind="SOP-FAN-11"]','below'),'종류는'),P(t('[data-rel="SOP-FAN-12"]','below'),'이 두 개는'),P(t('[data-kind="SOP-FAN-12"]','below'),'종류가 정비 요청')],
  '06-04':[P(t('[data-manual-name="SOP-COOL-11"]','right'))],
  '06-05':[P(t('[data-fm="SOP-COOL-11"]','below'))],
  '06-06':[P(t('[data-rel="SOP-COOL-11"]','below')),P(t('[data-kind="SOP-COOL-11"]','below'),'종류는')],
@@ -121,7 +122,7 @@ OPS={
  '09-08':[P(t('#ontoNode h4',nth=0)),P(tx('팬 최대 운전',tag='a',within='#ontoNode'),'팬 최대 운전,'),P(tx('쿨러 핀 세척',tag='a',within='#ontoNode'),'쿨러 핀 세척 같은'),P(t('#ontoNode a[data-go]',contains='오일 쿨러'),'오일 쿨러도')],
  '09-09':[P(t('#ontoNode a[data-go]',contains='유온 상승'),'증상에서 출발'),P(t('#ontoNode h3'),'이 고장을 찾고'),P(t('#ontoNode a[data-go]',contains='핀 오염'),'원인을 찾고'),P(tx('팬 최대 운전',tag='a',within='#ontoNode'),'조치를 꺼내')],
  '10-01':[C('tab:scenario','결함 시뮬레이션 누르'),['wait',t(H),20]],
- '10-02':[P(t(H+' .big.num'),'유온은')],
+ '10-02':[P(t(H+' header strong'),'첫 번째 설비 카드'),P(t(H+' .big.num'),'유온은')],
  '10-03':[P(t(H+' .kv em.ce'))],
  '10-04':[P(t(H+' .kv em.vs1'))],
  '10-05':[P(t(H+' header .mode','below'))],
@@ -133,7 +134,7 @@ OPS={
  '10-12':[P(t(H+' .bar','below'))],
  '10-13':[P(t(H+' .kv em.phase'),'아래 경보 칸'),['waitjs',f"/이상 징후|경보 발생/.test(document.querySelector('{H} .kv em.phase')?.textContent||'')",180]],
  '10-14':[['waitjs',f"(document.querySelector('{H} .kv em.phase')?.textContent||'').includes('경보 발생')",60]],
- '11-01':[C('tab:instances','처리 건 누르'),['wait',t('#todoList .item strong',nth=0),60]],
+ '11-01':[C('tab:instances','처리 건 누르'),['wait',t('#todoList .item strong',nth=0),60],['wait',t('#instDetail .td-now'),60],['settle',None,10]],
  '11-02':[P(t('#todoList .item strong',nth=0))],
  '11-03':[P(t('#todoPanel h3',nth=0))],
  '11-04':[P(t('#instList [data-inst^="c3_cooling."] strong',nth=0)),P(t('#instList [data-inst] strong',nth=1),'그 밑의 건은')],
@@ -150,14 +151,14 @@ OPS={
  '12-07':[P(t('#todoPanel .ap-evidence .ap-row .ap-label',nth=1))],
  '12-08':[['open',t('#todoPanel .ap-card > details:has(.ap-lost-list) > summary','left'),A('펼쳐 보면')]],
  '12-09':[P(t('#todoPanel .ap-lost-head b',nth=0)),P(t('#todoPanel .ap-lost-head b',nth=1),'생산이 줄어서')],
- '12-10':[P(t('#todoPanel .ap-lost-head b',nth=2))],
+ '12-10':[P(t('#todoPanel .ap-lost',nth=2,anchor='margin'))],
  '12-11':[P(t('#todoPanel .ap-switch',nth=0),'이 안으로 바꾸기')],
  '12-12':[P(t('#tdGo','center'),'승인 버튼')],
  '12-13':[P(t('#todoPanel .field-hint',contains='먼저 나를')),C('tab:inbox','내 작업함 누르')],
  '12-14':[['select',t('select[data-inbox-me]','right'),'user:choi-op',A('최운전')]],
  '12-15':[['wait',t('[data-inbox-link]',nth=0),60],P(t('[data-inbox-link]',nth=0)),C('tab:instances','처리 건으로')],
  '12-16':[['wait',t('#todoPanel .field.ro .ro-value',contains='최운전'),60],P(t('#todoPanel .field.ro .ro-value',contains='최운전'))],
- '12-17':[P(t('#tdGo','center')),P(t('#todoPanel textarea','left'),'사유는'),C(t('#tdGo','center'),'승인 누르')],
+ '12-17':[P(t('#tdGo','center')),P(t('#todoPanel textarea','left'),'사유는'),C(t('#tdGo','center'),'승인 누르'),['waitjs',"!/운전원 승인/.test(document.querySelector('#instDetail .td-now')?.textContent||'운전원 승인')",60],['settle',None,10]],
  '13-01':[['stepmark','운전원 승인',A('아래 처리 과정')]],
  '13-02':[['stepmark','운전원 승인',0],['stepmark','승인 지연',A('지연 알림은')]],
  '13-03':[['stepmark','냉각 명령',0]],
@@ -166,12 +167,12 @@ OPS={
  '13-06':[P(t('#instDetail .td-now'))],
  '14-01':[C(t('[data-inst-tab=record]','center'),'처리 기록 탭 누르'),['wait',REC(1,'.cr-title'),30]],
  '14-03':[P(REC(1,'.cr-title'))],
- '14-04':[P(REC(1,'.cr-chips','left'))],
+ '14-04':[P(t('#instRecord [data-cr-steps] > li:nth-child(1) .cr-chips .chip','below',nth=0)),P(t('#instRecord [data-cr-steps] > li:nth-child(1) .cr-chips .chip','below',contains='냉각 효율'),'냉각 효율은'),P(t('#instRecord [data-cr-steps] > li:nth-child(1) .cr-chips .chip','below',contains='유온'),'유온은')],
  '14-05':[P(REC(2,'.cr-title'))],
  '14-06':[P(REC(2,'.cr-sentence','margin')),C(tx('모두 펼치기',tag='button',within='#instRecord',anchor='center'),'모두 펼치기 누르')],
  '14-07':[P(t('#instRecord .cr-sec > summary, #instRecord .cr-sec-body > h6',contains='지식 경로'),'지식 경로를')],
- '14-09':[P(t('#instRecord .cr-sec > summary, #instRecord .cr-sec-body > h6',contains='원인 후보와 증거')),P(t('#instRecord .cr-sec-body:has(> h6) tr','margin',contains='쿨러 핀 오염'),'핀 오염 줄은')],
- '14-10':[P(t('#instRecord .cr-sec-body:has(> h6) tr','margin',contains='주변 온도'))],
+ '14-09':[P(t('#instRecord .cr-sec > summary, #instRecord .cr-sec-body > h6',contains='원인 후보와 증거')),P(t('#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > h6 + .cr-scroll table.cr-table td','after',contains='쿨러 핀 오염'),'핀 오염 줄은'),P(t('#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > h6 + .cr-scroll table.cr-table td .chip','after',nth=0),'두 줄 다'),P(t('#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > h6 + .cr-scroll table.cr-table td .chip','after',nth=1),'맞음으로')],
+ '14-10':[P(t('#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > h6 + .cr-scroll table.cr-table td .chip','after',nth=2)),P(t('#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > h6 + .cr-scroll table.cr-table td .chip','after',nth=3),'아님')],
  '14-12':[P(t('#instRecord .cr-sec > summary, #instRecord .cr-sec-body > h6',contains='추천안에 이른 길'))],
  '14-14':[P(REC(3,'.cr-title'))],
  '14-15':[P(REC(3,'.cr-sentence','margin'))],
@@ -184,18 +185,20 @@ OPS={
  '14-22':[P(REC(6,'.cr-sentence','margin'))],
  '14-23':[P(REC(7,'.cr-title'))],
  '14-24':[P(REC(7,'.cr-sentence','margin')),P('top:알림','알림 종')],
- '15-01':[C(t('[data-inst-tab="result"]','center'),'결과 탭을 누르'),['wait',t('[data-open-record]'),30]],
+ '14-08':[P(t('#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > .cr-path:first-child > .cr-node','below',nth=0),'경보에서'),P(t('#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > .cr-path:first-child > .cr-node','below',nth=1),'증상에서 고장'),P(t('#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > .cr-path:first-child > .cr-node','below',nth=2),'고장으로 가서'),P(t('#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > .cr-path:first-child > .cr-node','below',nth=3),'원인을 찾았')],
+ '14-11':[P(t('#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > h6 + .cr-scroll table.cr-table td.num','after',contains='< 0.9'),'미만'),P(t('#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > h6 + .cr-scroll table.cr-table td.num','after',contains='≥ 0.9'),'이상까지')],
+ '14-13':[P(t('#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > h6 + .cr-path > .cr-node','below',nth=0),'원인에서'),P(t('#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > h6 + .cr-path > .cr-node','below',nth=1),'고장에서'),P(t('#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > h6 + .cr-path > .cr-node','below',nth=2),'팬 최대 운전')],
+ '15-01':[P(t('[data-inst-tab="result"]','below')),C(t('[data-inst-tab="result"]','center'),'결과 탭을 누르'),['wait',t('[data-open-record]'),30]],
  '15-02':[P(t('#instDetail .rr-badge')),P(t('#instDetail .rr-val',nth=0),'유온이'),P(t('#instDetail .rr-val',nth=1),'경보 해제')],
  '15-03':[P(t('#instDetail .rr-who .ap-label')),P(t('#instDetail .rr-steps-wrap .ap-label'),'시스템이 한 일')],
 }
-# 앞 큐 끝 표시에 따른 쉼(영상 V-14 1회차 값): ▸ 잇기 0.5초, ‖ 큐 1.0초, 조작 결과 뒤(▸+‖) 1.5초, 기다림 뒤 1.5초
-def gap(prev):
-    if prev is None: return 1000
+# 앞 큐 끝 표시에 따른 쉼(사용자 2026-11-12 「이어지는 말 0.6초, 큐 사이 1.3초, 결과 뒤 2.0초, 구간 사이 2.3」 — 영상 V-14의 값)
+def gap(prev,cur_seg):
+    if prev is None or prev['seg']!=cur_seg: return 2300
     a=prev['after']
-    if '[기다림]' in a: return 1500
-    if '▸' in a and '‖' in a: return 1500
-    if '‖' in a or a=='끝': return 1000
-    return 500
+    if '[기다림]' in a or ('▸' in a and '‖' in a): return 2000
+    if '‖' in a or a=='끝': return 1300
+    return 600
 cues=[];used=set();prev=None
 for c in raw:
     k=f"{c['stage']:02d}-{c['n']:02d}";used.add(k)
@@ -203,8 +206,8 @@ for c in raw:
     for o in ops:
         v=o[-1]
         if isinstance(v,dict) and 'at' in v and v['at'] not in c['text']: sys.exit(f'{k}: 대사에 없는 구절 {v["at"]}')
-    cues.append({'id':'o'+k.replace('-',''),'segment':SEG[c['stage']],'gap':gap(prev),'mark':c['after'],'text':c['text'],'ops':ops})
-    prev=c
+    cues.append({'id':'o'+k.replace('-',''),'segment':SEG[c['stage']],'gap':gap(prev,SEG[c['stage']]),'mark':c['after'],'text':c['text'],'ops':ops})
+    prev={**c,'seg':SEG[c['stage']]}
 bad=set(OPS)-used
 if bad: sys.exit('없는 큐: '+str(sorted(bad)))
 d={'note':'1회차 실습 06 전체과정관찰 다시 찍는 판. 글은 확정 대본(06_전체과정관찰_다시찍을판.md, 커밋 c382d773) §2를 ▸ · ‖ · [기다림]에서 자른 것 그대로다. 조작 형식은 촬영도구/segs/one06.mjs 머리말. gap은 앞 큐와의 쉼(ms, 영상 V-14 1회차 값), mark는 대본의 끝 표시.','voice_id':'1PdAOcPlPTz12RwMyFVp','model_id':'eleven_v4','cues':cues}

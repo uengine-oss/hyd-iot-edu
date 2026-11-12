@@ -43,6 +43,13 @@ export async function op(ctx,c,o){
     const w=ctx.p.waitForFileChooser({timeout:20000});w.catch(()=>{});await c.click(T(a));await (await w).setFiles(src);await c.sleep(400);
     if(!(await ctx.serial(()=>ctx.p.evaluate(n=>[...document.querySelectorAll('input[type=file]')].some(i=>[...i.files].some(f=>f.name===n)),b))))throw Error('파일 칸에 들어가지 않음: '+b);return;}
   case 'type':return c.type(a);
+  // 화면이 다 그려질 때까지: 본문 굴린 자리와 높이가 1.2초 동안 그대로면 끝(최대 b초, 기본 10). 처리 건을 연 직후 포털이 목록 · 상세를 다시 그리며
+  // 본문이 조작 없이 위아래로 튀었다(2026-11-12 06 o1102) — 그 동안 말을 시작하지 않으려고 둔다.
+  case 'settle':{const t0=Date.now(),lim=(b??10)*1000;let last=null,since=Date.now();
+    for(;;){const v=await ctx.serial(()=>ctx.p.evaluate(()=>{const m=document.querySelector('main#content');return m.scrollTop+'|'+m.scrollHeight+'|'+(document.querySelector('#instDetail')?.scrollHeight||0);}));
+     if(v!==last){last=v;since=Date.now();}else if(Date.now()-since>=1200)break;
+     if(Date.now()-t0>lim)break;await c.sleep(150);}
+    ctx.recordWait?.({label:'settle',start:t0,end:Date.now()});return;}
   // 원문 칸이 화면에 다 들어오게 본문을 먼저 굴리고(화살표는 칸 옆 여백), 그다음 칸 안에서 그 구절까지 굴린다(화살표는 칸 위).
   case 'phrase':{for(let i=0;;i++){const q=await ctx.serial(()=>ctx.p.evaluate(phraseInPage,a));if(q.error)throw Error(q.error);
     if(i>=8)throw Error('원문 위치에 닿지 못함: '+a);
@@ -74,7 +81,7 @@ export async function op(ctx,c,o){
 // 시점: 대사 속 구절이면 그 구절 앞까지의 글자 비율. wait · waittext · waitjs의 셋째 값은 기다릴 초라 시점이 아니다 — 앞 조작이 끝나면 바로 기다린다.
 // (셋째 값을 시점으로 읽어 C003이 대사 길이 × 30 = 약 504초를 멈췄다, 2026-11-03 06-t1. 리허설은 대사 길이가 0이라 드러나지 않았다.)
 function fracOf(q,o){const v=o.at(-1);
- if(['wait','waittext','waitjs'].includes(o[0])&&o.length<4)return null;
+ if(['wait','waittext','waitjs','settle'].includes(o[0])&&o.length<4)return null;
  if(typeof v==='number')return v;
  if(v&&typeof v==='object'&&v.at){const i=q.text.indexOf(v.at);if(i<0)throw Error(`${q.id}: 대사에 없는 구절 — ${v.at}`);return i/q.text.length;}
  return null;}
@@ -89,6 +96,9 @@ export async function seg(ctx,n){
   await p.evaluate(()=>{document.querySelector('.rail nav button[data-tab="main"]').click();for(const e of document.querySelectorAll('.rail,main#content'))e.scrollTop=0;});
   await ctx.sleep(2500);await ctx.installPointer({x:760,y:430});}
  await ctx.begin();
+ // 구간 사이 쉼(첫 큐의 gap, 영상 V-14 「구간 사이」): 앞 take는 마지막 말 뒤 약 0.4초에서 끝나므로(take.mjs) 그만큼 빼고 이 take 첫 말 앞에서 기다린다.
+ // 첫 구간(영상 시작)과 실패 뒤 이어 찍기는 기다리지 않는다.
+ if(n!==1&&!ctx.resuming&&!ctx.rehearsal&&cues[0].gap)await ctx.sleep(Math.max(0,cues[0].gap-400));
  for(const q of cues){
   const dur=JSON.parse(await fs.readFile(ctx.audio+'/'+q.id+'.json','utf8')).duration_ms;
   const ops=q.ops||[];const lead=300;
