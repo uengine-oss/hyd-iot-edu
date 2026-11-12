@@ -77,7 +77,9 @@ OPS = {
 }
 
 # ▸ 없이 큐 첫머리(시점 0)에 하는 짚기 — 말이 「이 그림」처럼 화면 전체를 받을 때(화면대조 1~3구간 t4-03-01: 커서가 종 옆에 남아 있었다)
-PRE = {'t4-03-01': [P('#view-main svg.m-hero-svg', anchor='center')]}
+PRE = {'t4-03-01': [P('#view-main svg.m-hero-svg', anchor='center')],
+       # 3~4구간 화면대조 t4-04-09: 「이 카드 숫자가」에서 화면이 버튼 쪽으로 내려가 있어 숫자가 안 보였다 — 숫자를 다시 짚어 본문이 말없이 올라오게 한다
+       't4-04-09': [V('scenario', 'span.v', nth=0, anchor='center', dx=18, dy=6)]}
 
 GAP_IN, GAP_PAUSE, GAP_RESULT, GAP_SEG = 0.5, 1.0, 1.5, 1.8
 
