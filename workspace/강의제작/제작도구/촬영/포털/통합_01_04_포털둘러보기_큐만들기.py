@@ -81,6 +81,9 @@ PRE = {'t4-03-01': [P('#view-main svg.m-hero-svg', anchor='center')],
        # 3~4구간 화면대조 t4-04-09: 「이 카드 숫자가」에서 화면이 버튼 쪽으로 내려가 있어 숫자가 안 보였다 — 숫자를 다시 짚어 본문이 말없이 올라오게 한다
        't4-04-09': [V('scenario', 'span.v', nth=0, anchor='center', dx=18, dy=6)]}
 
+# ▸ 뒤에 대사 속 구절에 맞춰 더 짚는 것(map.mjs의 {at: 구절}) — 5구간 화면대조 t4-05-10: 두 카드의 승인 역할을 말하는데 커서가 상세 칸 한 곳에 머물렀다
+AT = {'t4-05-10': [(V('skills', 'span.sub', nth=0), '팬 최대 운전은'), (V('skills', 'span.sub', contains='(근본 조치)', nth=0), '쿨러 핀 세척은')]}
+
 GAP_IN, GAP_PAUSE, GAP_RESULT, GAP_SEG = 0.5, 1.0, 1.5, 1.8
 
 
@@ -136,6 +139,9 @@ def build(md):
                     cues.append({'id': f't4-{n:02d}-{seq:02d}', 'segment': n, 'text': text, 'gap': gap, 'ops': qops})
     for c in cues:
         c['ops'][:0] = [[*o, 0.0] for o in PRE.get(c['id'], [])]
+        for o, at in AT.get(c['id'], []):
+            assert at in c['text'], (c['id'], at)
+            c['ops'].append([*o, {'at': at}])
     # 메뉴를 누른 뒤 화면은 서버 응답으로 그려진다 — 누르기 바로 뒤에 다음 가리킬 대상이 나타날 때까지 기다린다(이미 있으면 바로 지나간다)
     flat = [(c, i) for c in cues for i in range(len(c['ops']))]
     for j, (c, i) in enumerate(flat):
