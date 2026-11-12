@@ -22,7 +22,7 @@ import session2_project_guides as G
 import session2_graph_project as GP
 
 DEST = ROOT / 'workspace/강의제작/산출물/통합반/실습/02회차/랩'
-VERSION = 'v26-graph'   # 2026-11-12: 판단 보강(카디널리티 · 자리와 실물 · 확인 필요 · 붙은 자리까지 물리량, 친절한 비고 걷기 · 3라인 계장태그 · 리턴 필터 후보 둘 · 품번 합치기 역할 근거, 질문 2 값 대조 · 질문 4) — 작업 판정/보강_20261112
+VERSION = 'v27-practical'   # 2026-11-12: 판단 보강(카디널리티 · 자리와 실물 · 확인 필요 · 붙은 자리까지 물리량, 친절한 비고 걷기 · 3라인 계장태그 · 리턴 필터 후보 둘 · 품번 합치기 역할 근거, 질문 2 값 대조 · 질문 4) — 작업 판정/보강_20261112
 WORK = ROOT / '작업/검사/session2-projects'
 
 
