@@ -694,15 +694,15 @@
       "raw_frame_sha256": "9421fe617fcb9490e48101c5f06c16a3d99b30eb236c0d629c5f5ab7a51ccfb7"
     },
     "portal-home": {
-      "required_scene": "위쪽 네 칸의 전체 상태, 아래 설비 · 데이터 · AI 연결 그림, 맨 위 줄의 진행 중 사건 · 서비스 수 · 나 표시를 읽습니다.",
-      "check": "위쪽 네 칸의 전체 상태, 아래 설비 · 데이터 · AI 연결 그림, 맨 위 줄의 진행 중 사건 · 서비스 수 · 나 표시를 읽습니다.",
+      "required_scene": "홈의 설비 · 데이터 · AI 연결 그림과 맨 위 막대를 본다",
+      "check": "홈의 설비 · 데이터 · AI 연결 그림과 맨 위 막대를 본다",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-home.png",
-      "verified": true,
+      "verified": false,
       "source_type": "video",
-      "source": "작업/촬영/환경세팅/게시본_20261104.mp4",
-      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
-      "seconds": 1201.533,
-      "portal_segment_seconds": 60,
+      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
+      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
+      "seconds": 162.0,
+      "portal_segment_seconds": 162.0,
       "crop": [
         0,
         0,
@@ -712,97 +712,38 @@
       "rectangles": [
         [
           420,
-          198,
-          1850,
-          333
+          376,
+          650,
+          406
         ],
         [
-          420,
-          428,
-          1850,
-          1019
-        ],
-        [
-          1005,
-          24,
-          1132,
-          54
-        ],
-        [
-          1340,
-          24,
-          1488,
-          54
-        ],
-        [
-          1652,
-          22,
-          1862,
+          990,
+          26,
+          1120,
           56
+        ],
+        [
+          1325,
+          26,
+          1455,
+          57
         ]
       ],
       "redactions": [],
-      "caption": "위쪽 네 칸, 연결 그림, 맨 위 줄의 사건 · 서비스 수 · 나",
-      "sha256": "7415426383766f0aab3beb73c861c7a3130c0272e4a584d93861679de9777c4a",
-      "raw_frame_sha256": "e36b8c7effbdee25b9f29f58e89227b1fa8016550f74d4332d4b50bb41319dcb"
-    },
-    "portal-inbox-tabs": {
-      "required_scene": "왼쪽 내 작업함을 열고 나에서 최운전 · 운전원을 고르면 오른쪽 위 이름이 바뀌고 내 작업 · 알림 탭이 나타납니다.",
-      "check": "왼쪽 내 작업함을 열고 나에서 최운전 · 운전원을 고르면 오른쪽 위 이름이 바뀌고 내 작업 · 알림 탭이 나타납니다.",
-      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-inbox-tabs.png",
-      "verified": true,
-      "source_type": "video",
-      "source": "작업/촬영/환경세팅/게시본_20261104.mp4",
-      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
-      "seconds": 1291.533,
-      "portal_segment_seconds": 150,
-      "crop": [
-        0,
-        0,
-        1920,
-        1080
-      ],
-      "rectangles": [
-        [
-          15,
-          145,
-          250,
-          190
-        ],
-        [
-          420,
-          232,
-          1850,
-          280
-        ],
-        [
-          420,
-          343,
-          660,
-          388
-        ],
-        [
-          1659,
-          22,
-          1860,
-          55
-        ]
-      ],
-      "redactions": [],
-      "caption": "나 선택과 오른쪽 위 이름, 내 작업 · 알림 탭",
-      "sha256": "09ed1722f64176d6e3fadd4046f987e684dcbe833c962150b05f83e0cb20f6dd",
-      "raw_frame_sha256": "5b123c6ce7179acad9a5acce68c4b9c9c0cef17a7fe036ab64706970b291717d"
+      "caption": "설비 · 데이터 · AI 연결 그림과 맨 위 막대의 진행 중 사건 · 서비스 수",
+      "sha256": "7774cfcdd746b14da381ff3e2a09f2c91a5fd84b46188c0fdc717c53a0b709a9",
+      "raw_frame_sha256": "f7f0b5fd821eb89ace62616eaa6ee3160669737c9fcf678ae570fe3b9fe71233"
     },
     "portal-instances": {
-      "required_scene": "처리 건의 위쪽 현황과 아래 목록 · 상세 자리를 찾습니다.",
-      "check": "처리 건의 위쪽 현황과 아래 목록 · 상세 자리를 찾습니다.",
+      "required_scene": "처리 건을 연다",
+      "check": "처리 건을 연다",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-instances.png",
-      "verified": true,
+      "verified": false,
       "source_type": "video",
-      "source": "작업/촬영/환경세팅/게시본_20261104.mp4",
-      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
-      "seconds": 1322.533,
-      "portal_segment_seconds": 181,
+      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
+      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
+      "seconds": 963.41,
+      "portal_segment_seconds": 963.41,
       "crop": [
         0,
         0,
@@ -812,38 +753,30 @@
       "rectangles": [
         [
           15,
-          198,
-          250,
-          241
+          194,
+          356,
+          242
         ],
         [
           420,
-          198,
-          1850,
-          300
-        ],
-        [
-          420,
-          538,
-          1850,
-          752
+          192,
+          1849,
+          303
         ]
       ],
       "redactions": [],
-      "caption": "위쪽 현황과 아래 목록 · 상세 자리",
-      "sha256": "35001cad17eda4b3a8f3af1cdf33b993c95509b84bbaf64888df1490a3e230bb",
-      "raw_frame_sha256": "bcb8a6a6a2fb6f8b892132798ae3a599b859ac1710fe383fa4bae7196f61866d"
+      "caption": "처리 건 — 진행 중 · 내 차례 칸"
     },
     "portal-equipment": {
-      "required_scene": "결함 시뮬레이션의 HYD-01 카드에서 유온과 값들을, 다른 두 카드에서 업무 알림을 봅니다.",
-      "check": "결함 시뮬레이션의 HYD-01 카드에서 유온과 값들을, 다른 두 카드에서 업무 알림을 봅니다.",
+      "required_scene": "설비 → 결함 시뮬레이션을 열고 HYD-01 카드를 본다",
+      "check": "설비 → 결함 시뮬레이션을 열고 HYD-01 카드를 본다",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-equipment.png",
-      "verified": true,
+      "verified": false,
       "source_type": "video",
-      "source": "작업/촬영/환경세팅/게시본_20261104.mp4",
-      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
-      "seconds": 1371.033,
-      "portal_segment_seconds": 229.5,
+      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
+      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
+      "seconds": 239.21,
+      "portal_segment_seconds": 239.21,
       "crop": [
         0,
         0,
@@ -854,45 +787,29 @@
         [
           15,
           300,
-          250,
-          345
+          356,
+          348
         ],
         [
-          422,
-          200,
-          873,
-          1026,
-          5,
-          5
-        ],
-        [
-          1078,
-          232,
-          1238,
-          266
-        ],
-        [
-          1568,
-          232,
-          1713,
-          266
+          445,
+          217,
+          848,
+          473
         ]
       ],
       "redactions": [],
-      "caption": "HYD-01의 유온, 다른 두 카드의 업무 알림",
-      "sha256": "5bf2de3cc6dbf0f571866eef76c8169d328f58ab99d02ba756b8d30080a4b8cc",
-      "raw_frame_sha256": "68564885bf41b90eb26ef1f6eb691f4d3c89efd10f980f984d6bc0319bcb1b80"
+      "caption": "결함 시뮬레이션 — HYD-01 카드의 유온과 보호 정지 기준"
     },
     "portal-oil": {
-      "required_scene": "오일 분석 입력은 검사 결과를 사람이 넣는 화면입니다.",
-      "check": "오일 분석 입력은 검사 결과를 사람이 넣는 화면입니다.",
+      "required_scene": "오일 분석 입력을 연다",
+      "check": "오일 분석 입력을 연다",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-oil.png",
-      "verified": true,
+      "verified": false,
       "source_type": "video",
-      "source": "작업/촬영/환경세팅/게시본_20261104.mp4",
-      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
-      "seconds": 1405.933,
-      "portal_segment_seconds": 264.4,
+      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
+      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
+      "seconds": 402.63,
+      "portal_segment_seconds": 402.63,
       "crop": [
         0,
         0,
@@ -903,31 +820,31 @@
         [
           15,
           351,
-          250,
-          396
+          356,
+          399
         ],
         [
           420,
-          200,
-          1850,
-          698
+          192,
+          1849,
+          738
         ]
       ],
       "redactions": [],
-      "caption": "오일 분석 입력",
-      "sha256": "dd586f87835ae434781824a3d8ab245f65e1676e2a5aac09bec2c8ff3befb32b",
-      "raw_frame_sha256": "2151b22aaec788648051c721788dbde50ea3bb22aba0bcd22471433d0d98a653"
+      "caption": "오일 분석 입력 — 기름 검사 결과를 넣는 칸",
+      "sha256": "c3294a2165818595488293ba13b6259faf5714d0bafce60afcc293a914b9ef67",
+      "raw_frame_sha256": "c79c4975274693d316420f8012672b97ad38c0657627cb8abc04ebe3466b1701"
     },
     "portal-operation": {
-      "required_scene": "이상 확인 · 조치는 설비 상태 그림과 아래 사건 자리를 보여 줍니다.",
-      "check": "이상 확인 · 조치는 설비 상태 그림과 아래 사건 자리를 보여 줍니다.",
+      "required_scene": "이상 확인 · 조치를 연다",
+      "check": "이상 확인 · 조치를 연다",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-operation.png",
-      "verified": true,
+      "verified": false,
       "source_type": "video",
-      "source": "작업/촬영/환경세팅/게시본_20261104.mp4",
-      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
-      "seconds": 1420.833,
-      "portal_segment_seconds": 279.3,
+      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
+      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
+      "seconds": 421.97,
+      "portal_segment_seconds": 421.97,
       "crop": [
         0,
         0,
@@ -937,38 +854,30 @@
       "rectangles": [
         [
           15,
-          402,
-          250,
-          447
+          401,
+          356,
+          450
         ],
         [
           420,
-          190,
-          1850,
-          660
-        ],
-        [
-          420,
-          700,
-          1850,
-          905
+          192,
+          1849,
+          657
         ]
       ],
       "redactions": [],
-      "caption": "이상 확인 · 조치",
-      "sha256": "25b94426b1c644b08f8b2d093c294915b27ebbb0838dea4b57e34ba6ebe5e505",
-      "raw_frame_sha256": "2728b33915aaef8320cc7398cbb3417cbd44e44f15942449d93d62da5cee1c0f"
+      "caption": "이상 확인 · 조치 — 설비 세 대의 상태 그림"
     },
     "portal-monitoring": {
-      "required_scene": "실시간 모니터링의 유온 그래프에서 위쪽 빨간 기준선과 현재 값의 선을 구별합니다.",
-      "check": "실시간 모니터링의 유온 그래프에서 위쪽 빨간 기준선과 현재 값의 선을 구별합니다.",
+      "required_scene": "실시간 모니터링을 열고 유온 그래프를 본다",
+      "check": "실시간 모니터링을 열고 유온 그래프를 본다",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-monitoring.png",
-      "verified": true,
+      "verified": false,
       "source_type": "video",
-      "source": "작업/촬영/환경세팅/게시본_20261104.mp4",
-      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
-      "seconds": 1441.333,
-      "portal_segment_seconds": 299.8,
+      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
+      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
+      "seconds": 358.84,
+      "portal_segment_seconds": 358.84,
       "crop": [
         0,
         0,
@@ -978,32 +887,32 @@
       "rectangles": [
         [
           15,
-          453,
-          250,
-          498
+          452,
+          356,
+          501
         ],
         [
           420,
-          200,
-          1850,
-          698
+          201,
+          1849,
+          696
         ]
       ],
       "redactions": [],
-      "caption": "유온 그래프의 빨간 기준선",
-      "sha256": "d3fb77e8dfdf9316df690c2cee7549e6965ddd7f0a6f8b5a6f24fecf673fc0a5",
-      "raw_frame_sha256": "5d05fa186659e796ca4d70bd9cfa7785fd07b47e48fbee64cfb5ebecab26484a"
+      "caption": "실시간 모니터링 — 유온 그래프",
+      "sha256": "d2d299bc1663d17ffbeb0488f7d184da4e7ac6cb9c2f45de59de8a4e974a00b0",
+      "raw_frame_sha256": "863b919392380a03793ef01db68d104bf159d21cc86639c8489e499e4193a1ac"
     },
     "portal-rules": {
-      "required_scene": "조치 판단 규칙의 판단 조건과 판단 실행 위치입니다.",
-      "check": "조치 판단 규칙의 판단 조건과 판단 실행 위치입니다.",
+      "required_scene": "판단 → 조치 판단 규칙을 연다",
+      "check": "판단 → 조치 판단 규칙을 연다",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-rules.png",
-      "verified": true,
+      "verified": false,
       "source_type": "video",
-      "source": "작업/촬영/환경세팅/게시본_20261104.mp4",
-      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
-      "seconds": 1467.233,
-      "portal_segment_seconds": 325.7,
+      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
+      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
+      "seconds": 772.35,
+      "portal_segment_seconds": 772.35,
       "crop": [
         0,
         0,
@@ -1013,38 +922,63 @@
       "rectangles": [
         [
           15,
-          557,
-          250,
-          604
+          508,
+          356,
+          557
         ],
         [
           420,
-          215,
-          1850,
-          455
-        ],
-        [
-          1698,
-          475,
-          1826,
-          522
+          192,
+          1849,
+          548
         ]
       ],
       "redactions": [],
-      "caption": "판단 조건과 판단 실행",
-      "sha256": "9021806e6dc1a6940ed7f4947fb41cb8b6a4b35b98f8d95541fbd461075013bc",
-      "raw_frame_sha256": "f04e6de13d1905de78aecb110be1f7850b0d8393d6c43c8118e4d85cacbc21dc"
+      "caption": "조치 판단 규칙 — 설비 · 이상 패턴 고르기"
     },
     "portal-tradeoff": {
-      "required_scene": "조건별 손익에서 시험 기준을 불러오는 칸입니다.",
-      "check": "조건별 손익에서 시험 기준을 불러오는 칸입니다.",
+      "required_scene": "조건별 손익을 연다",
+      "check": "조건별 손익을 연다",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-tradeoff.png",
-      "verified": true,
+      "verified": false,
       "source_type": "video",
-      "source": "작업/촬영/환경세팅/게시본_20261104.mp4",
-      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
-      "seconds": 1480.033,
-      "portal_segment_seconds": 338.5,
+      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
+      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
+      "seconds": 806.78,
+      "portal_segment_seconds": 806.78,
+      "crop": [
+        0,
+        0,
+        1920,
+        1080
+      ],
+      "rectangles": [
+        [
+          15,
+          559,
+          356,
+          608
+        ],
+        [
+          420,
+          192,
+          1849,
+          420
+        ]
+      ],
+      "redactions": [],
+      "caption": "조건별 손익"
+    },
+    "portal-flow": {
+      "required_scene": "승인과 실행을 연다",
+      "check": "승인과 실행을 연다",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-flow.png",
+      "verified": false,
+      "source_type": "video",
+      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
+      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
+      "seconds": 842.76,
+      "portal_segment_seconds": 842.76,
       "crop": [
         0,
         0,
@@ -1055,72 +989,35 @@
         [
           15,
           610,
-          250,
-          657
+          356,
+          659
         ],
         [
           420,
-          198,
-          1850,
-          420
+          246,
+          1849,
+          365
+        ],
+        [
+          420,
+          449,
+          1849,
+          627
         ]
       ],
       "redactions": [],
-      "caption": "조건별 손익",
-      "sha256": "4875f7e33dbb5e27a5cc7c1381e753489f6160722dffc615f65f192351c2fcd0",
-      "raw_frame_sha256": "e53e590d49392407e8b9a2f87d1a509fe00915cfdbc6c023728d463f58987e5c"
-    },
-    "portal-flow": {
-      "required_scene": "승인과 실행의 판단 결과 목록 · 상세 자리와, 아래 기업 시스템 현황의 생산 오더 납기를 봅니다.",
-      "check": "승인과 실행의 판단 결과 목록 · 상세 자리와, 아래 기업 시스템 현황의 생산 오더 납기를 봅니다.",
-      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-flow.png",
-      "verified": true,
-      "source_type": "video",
-      "source": "작업/촬영/환경세팅/게시본_20261104.mp4",
-      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
-      "seconds": 1500.0,
-      "portal_segment_seconds": 350.2,
-      "crop": [
-        0,
-        0,
-        1920,
-        1080
-      ],
-      "rectangles": [
-        [
-          15,
-          660,
-          250,
-          707
-        ],
-        [
-          420,
-          400,
-          1850,
-          636
-        ],
-        [
-          420,
-          662,
-          1850,
-          1015
-        ]
-      ],
-      "redactions": [],
-      "caption": "판단 결과 자리와 생산 오더 납기",
-      "sha256": "2b99600020de4d8e21081a3d188dd5e345123d2a3aa3b5c27f0b3aabd79303b5",
-      "raw_frame_sha256": "42baf4347a38ad2802b94c371ca1078c8a1bf1f8b3c63a1ca98ea47c43c520b4"
+      "caption": "승인과 실행 — 업무 흐름 칸과 판단 결과 칸"
     },
     "portal-import": {
-      "required_scene": "흐름 가져오기의 위치와 등록 칸입니다.",
-      "check": "흐름 가져오기의 위치와 등록 칸입니다.",
+      "required_scene": "흐름 가져오기를 연다",
+      "check": "흐름 가져오기를 연다",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-import.png",
-      "verified": true,
+      "verified": false,
       "source_type": "video",
-      "source": "작업/촬영/환경세팅/게시본_20261104.mp4",
-      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
-      "seconds": 1530.133,
-      "portal_segment_seconds": 388.6,
+      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
+      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
+      "seconds": 821.36,
+      "portal_segment_seconds": 821.36,
       "crop": [
         0,
         0,
@@ -1130,32 +1027,30 @@
       "rectangles": [
         [
           15,
-          711,
-          250,
-          757
+          661,
+          356,
+          709
         ],
         [
           420,
-          198,
-          1850,
-          612
+          192,
+          1849,
+          607
         ]
       ],
       "redactions": [],
-      "caption": "흐름 가져오기",
-      "sha256": "ab7dd15741f78209879f063db2150adfa5fb63c1078f50ebf17e7144e9d6f7fb",
-      "raw_frame_sha256": "c0a5c06ad4c54e94d2426a2b9b674b1d9eeaa415f4737b1ab9b9b8130eddb739"
+      "caption": "흐름 가져오기"
     },
     "portal-ontology": {
-      "required_scene": "지식 지도 위쪽의 항목 · 연결 수와 설비 진단 칸을 찾습니다.",
-      "check": "지식 지도 위쪽의 항목 · 연결 수와 설비 진단 칸을 찾습니다.",
+      "required_scene": "지식 → 지식 지도를 연다",
+      "check": "지식 → 지식 지도를 연다",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-ontology.png",
-      "verified": true,
+      "verified": false,
       "source_type": "video",
-      "source": "작업/촬영/환경세팅/게시본_20261104.mp4",
-      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
-      "seconds": 1566.433,
-      "portal_segment_seconds": 424.9,
+      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
+      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
+      "seconds": 458.87,
+      "portal_segment_seconds": 458.87,
       "crop": [
         0,
         0,
@@ -1165,38 +1060,42 @@
       "rectangles": [
         [
           15,
-          815,
-          250,
-          862
+          817,
+          356,
+          866
         ],
         [
-          421,
-          394,
-          1170,
-          420
+          420,
+          192,
+          607,
+          243
         ],
         [
-          1292,
-          444,
-          1562,
-          1002
+          625,
+          192,
+          1003,
+          243
+        ],
+        [
+          420,
+          327,
+          1849,
+          367
         ]
       ],
       "redactions": [],
-      "caption": "위쪽 항목 · 연결 수와 설비 진단 칸",
-      "sha256": "f900cc86f1fd6b8cdbb7bedfdd6dc77e603744580a6d5fc2e8e16bfdeb5ca25a",
-      "raw_frame_sha256": "250de5f2066036c68a7213fd01a03b5e5a58bdb89b26343b69266cc5bdab73f7"
+      "caption": "지식 지도 — 설비 · 지식 묶음 고르기와 갈래 고르기"
     },
     "portal-knowledge": {
-      "required_scene": "지식 관리의 매뉴얼 등록 자리입니다.",
-      "check": "지식 관리의 매뉴얼 등록 자리입니다.",
+      "required_scene": "지식 관리를 연다",
+      "check": "지식 관리를 연다",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-knowledge.png",
-      "verified": true,
+      "verified": false,
       "source_type": "video",
-      "source": "작업/촬영/환경세팅/게시본_20261104.mp4",
-      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
-      "seconds": 1599.933,
-      "portal_segment_seconds": 458.4,
+      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
+      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
+      "seconds": 599.41,
+      "portal_segment_seconds": 599.41,
       "crop": [
         0,
         0,
@@ -1207,31 +1106,29 @@
         [
           15,
           919,
-          250,
-          964
+          356,
+          967
         ],
         [
           420,
-          245,
-          1850,
-          682
+          246,
+          1849,
+          654
         ]
       ],
       "redactions": [],
-      "caption": "매뉴얼 등록 자리",
-      "sha256": "1c5eb4897828ae1ff35c2ab3777a8d10beb85e46d0b2ac7308cf628ba7c0f9bd",
-      "raw_frame_sha256": "1b27a5cbddc577e824c0a7f4a65231814788f18f6d1819a1aa926c744ec10735"
+      "caption": "지식 관리 — 매뉴얼 등록"
     },
     "portal-sops": {
-      "required_scene": "조치 방법 목록에 설비 제어와 정비 요청이 함께 있습니다.",
-      "check": "조치 방법 목록에 설비 제어와 정비 요청이 함께 있습니다.",
+      "required_scene": "조치 방법을 연다",
+      "check": "조치 방법을 연다",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-sops.png",
-      "verified": true,
+      "verified": false,
       "source_type": "video",
-      "source": "작업/촬영/환경세팅/게시본_20261104.mp4",
-      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
-      "seconds": 1587.933,
-      "portal_segment_seconds": 446.4,
+      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
+      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
+      "seconds": 525.12,
+      "portal_segment_seconds": 525.12,
       "crop": [
         0,
         0,
@@ -1241,172 +1138,30 @@
       "rectangles": [
         [
           15,
-          867,
-          250,
-          912
+          868,
+          356,
+          916
         ],
         [
-          422,
-          250,
-          868,
-          995
+          420,
+          192,
+          870,
+          981
         ]
       ],
       "redactions": [],
-      "caption": "설비 제어와 정비 요청",
-      "sha256": "618cb58417bfe4ea3020cd40ff6a7c4a2b0c9d57654ec43310398479261c3c7f",
-      "raw_frame_sha256": "0f006389fe852f461bf252d8ec1603dca9a4e8157bd02cac2ed23ae27e00b220"
+      "caption": "조치 방법 — 조치 목록"
     },
     "portal-data": {
-      "required_scene": "데이터 연결에서 연결 상태를 봅니다.",
-      "check": "데이터 연결에서 연결 상태를 봅니다.",
+      "required_scene": "데이터 연결을 연다",
+      "check": "데이터 연결을 연다",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-data.png",
-      "verified": true,
+      "verified": false,
       "source_type": "video",
-      "source": "작업/촬영/환경세팅/게시본_20261104.mp4",
-      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
-      "seconds": 1612.533,
-      "portal_segment_seconds": 471,
-      "crop": [
-        0,
-        0,
-        1920,
-        1080
-      ],
-      "rectangles": [
-        [
-          15,
-          971,
-          250,
-          1016
-        ],
-        [
-          420,
-          198,
-          1850,
-          360
-        ]
-      ],
-      "redactions": [],
-      "caption": "연결 상태",
-      "sha256": "8d8c3b6535838f87a3b722e8b29bf84b379fc8b603a348088edf58618ed1bc30",
-      "raw_frame_sha256": "1fd55563d21ce12b00726b356a5f5c9826168e2f6413c86232d97dd66ddbf936"
-    },
-    "portal-agents": {
-      "required_scene": "에이전트 목록에서 맡은 일이 다른 에이전트들을 봅니다.",
-      "check": "에이전트 목록에서 맡은 일이 다른 에이전트들을 봅니다.",
-      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-agents.png",
-      "verified": true,
-      "source_type": "video",
-      "source": "작업/촬영/환경세팅/게시본_20261104.mp4",
-      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
-      "seconds": 1653.133,
-      "portal_segment_seconds": 511.6,
-      "crop": [
-        0,
-        0,
-        1920,
-        1080
-      ],
-      "rectangles": [
-        [
-          15,
-          866,
-          250,
-          910
-        ],
-        [
-          422,
-          324,
-          845,
-          1001
-        ]
-      ],
-      "redactions": [],
-      "caption": "에이전트 목록",
-      "sha256": "24965cbdaa01e4e7e5312208d97f7c61b5b573479252d80e877326c1d6ba7397",
-      "raw_frame_sha256": "e280e5e1c4fb30ce478d2de4880ab77332f4744ed0dacc6c7ddd0a50f867f9ce"
-    },
-    "portal-chat": {
-      "required_scene": "에이전트에게 질문의 질문 단추 위치입니다.",
-      "check": "에이전트에게 질문의 질문 단추 위치입니다.",
-      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-chat.png",
-      "verified": true,
-      "source_type": "video",
-      "source": "작업/촬영/환경세팅/게시본_20261104.mp4",
-      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
-      "seconds": 1636.533,
-      "portal_segment_seconds": 495,
-      "crop": [
-        0,
-        0,
-        1920,
-        1080
-      ],
-      "rectangles": [
-        [
-          15,
-          814,
-          250,
-          860
-        ],
-        [
-          446,
-          666,
-          1345,
-          801
-        ]
-      ],
-      "redactions": [],
-      "caption": "질문 단추",
-      "sha256": "53a6f5612f2dad84e6a25dbe6470ca01f3705a167a593828860fd3ba6fcb2ad6",
-      "raw_frame_sha256": "18960925d85d8e51b90e522665ab75238aefdf0f4791655e94275f414fac0acc"
-    },
-    "portal-tools": {
-      "required_scene": "도구 연결에서 에이전트가 쓰는 도구 묶음을 봅니다.",
-      "check": "도구 연결에서 에이전트가 쓰는 도구 묶음을 봅니다.",
-      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-tools.png",
-      "verified": true,
-      "source_type": "video",
-      "source": "작업/촬영/환경세팅/게시본_20261104.mp4",
-      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
-      "seconds": 1662.533,
-      "portal_segment_seconds": 521,
-      "crop": [
-        0,
-        0,
-        1920,
-        1080
-      ],
-      "rectangles": [
-        [
-          15,
-          917,
-          250,
-          962
-        ],
-        [
-          420,
-          322,
-          1850,
-          1015
-        ]
-      ],
-      "redactions": [],
-      "caption": "도구 묶음",
-      "sha256": "cd68e36850667abafe0bb6ac7c03e23ff006fa8856372d2cd7ac2a18c596d489",
-      "raw_frame_sha256": "465b5e963650bfe7aa947c4f6b6afb07a03aeeaa9fe4a664ba850ed7da6f8b77"
-    },
-    "portal-compare": {
-      "required_scene": "시험 비교의 시험 조건 칸입니다.",
-      "check": "시험 비교의 시험 조건 칸입니다.",
-      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-compare.png",
-      "verified": true,
-      "source_type": "video",
-      "source": "작업/촬영/환경세팅/게시본_20261104.mp4",
-      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
-      "seconds": 1668.533,
-      "portal_segment_seconds": 527,
+      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
+      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
+      "seconds": 625.09,
+      "portal_segment_seconds": 625.09,
       "crop": [
         0,
         0,
@@ -1417,31 +1172,165 @@
         [
           15,
           970,
-          250,
-          1016
+          356,
+          1018
         ],
         [
           420,
-          198,
-          1850,
-          602
+          192,
+          1849,
+          362
         ]
       ],
       "redactions": [],
-      "caption": "시험 조건 칸",
-      "sha256": "21c683628263abda43dffc05175e47371fbcceba5cb8212bd68328fc8f7d87f6",
-      "raw_frame_sha256": "1de7ddcbd5d0bae09d75d890524cf42fc7771b49ca10a313790b3e515d3a3936"
+      "caption": "데이터 연결 — 연결 상태 칸",
+      "sha256": "278691a386f2fd2a562374ad492376d981d75cf0c14c53790d10441da23b2d51",
+      "raw_frame_sha256": "31afb98d708a2e4758951643b7d266cffd9463b15e1b9608544e8fa607e36fe8"
+    },
+    "portal-agents": {
+      "required_scene": "에이전트를 연다",
+      "check": "에이전트를 연다",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-agents.png",
+      "verified": false,
+      "source_type": "video",
+      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
+      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
+      "seconds": 692.56,
+      "portal_segment_seconds": 692.56,
+      "crop": [
+        0,
+        0,
+        1920,
+        1080
+      ],
+      "rectangles": [
+        [
+          15,
+          557,
+          356,
+          605
+        ],
+        [
+          425,
+          378,
+          843,
+          539
+        ]
+      ],
+      "redactions": [],
+      "caption": "에이전트 — 준비된 에이전트 가운데 첫 번째"
+    },
+    "portal-chat": {
+      "required_scene": "인공지능 설정 → 에이전트에게 질문을 연다",
+      "check": "인공지능 설정 → 에이전트에게 질문을 연다",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-chat.png",
+      "verified": false,
+      "source_type": "video",
+      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
+      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
+      "seconds": 670.34,
+      "portal_segment_seconds": 670.34,
+      "crop": [
+        0,
+        0,
+        1920,
+        1080
+      ],
+      "rectangles": [
+        [
+          15,
+          506,
+          356,
+          554
+        ],
+        [
+          445,
+          506,
+          1344,
+          621
+        ]
+      ],
+      "redactions": [],
+      "caption": "에이전트에게 질문 — 질문 칸",
+      "sha256": "6dfca08d1485f717d85668fa51ac1dbe7daf36a5dedce323f64098af72b445ea",
+      "raw_frame_sha256": "4569acb9743d46e9dc82c1a50548defa80c9b2a87c6c340c78da106dc1bcf06e"
+    },
+    "portal-tools": {
+      "required_scene": "도구 연결을 연다",
+      "check": "도구 연결을 연다",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-tools.png",
+      "verified": false,
+      "source_type": "video",
+      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
+      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
+      "seconds": 727.97,
+      "portal_segment_seconds": 727.97,
+      "crop": [
+        0,
+        0,
+        1920,
+        1080
+      ],
+      "rectangles": [
+        [
+          15,
+          608,
+          356,
+          656
+        ],
+        [
+          420,
+          322,
+          884,
+          765
+        ]
+      ],
+      "redactions": [],
+      "caption": "도구 연결 — 판단 시스템 도구"
+    },
+    "portal-compare": {
+      "required_scene": "시험 비교를 연다",
+      "check": "시험 비교를 연다",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-compare.png",
+      "verified": false,
+      "source_type": "video",
+      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
+      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
+      "seconds": 743.79,
+      "portal_segment_seconds": 743.79,
+      "crop": [
+        0,
+        0,
+        1920,
+        1080
+      ],
+      "rectangles": [
+        [
+          15,
+          658,
+          356,
+          707
+        ],
+        [
+          420,
+          192,
+          1849,
+          709
+        ]
+      ],
+      "redactions": [],
+      "caption": "시험 비교"
     },
     "portal-evaluation": {
-      "required_scene": "판단 채점의 현황 칸입니다.",
-      "check": "판단 채점의 현황 칸입니다.",
+      "required_scene": "판단 채점을 연다",
+      "check": "판단 채점을 연다",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-evaluation.png",
-      "verified": true,
+      "verified": false,
       "source_type": "video",
-      "source": "작업/촬영/환경세팅/게시본_20261104.mp4",
-      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
-      "seconds": 1679.533,
-      "portal_segment_seconds": 538,
+      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
+      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
+      "seconds": 748.56,
+      "portal_segment_seconds": 748.56,
       "crop": [
         0,
         0,
@@ -1451,32 +1340,30 @@
       "rectangles": [
         [
           15,
-          1018,
-          250,
-          1062
+          709,
+          356,
+          758
         ],
         [
-          422,
-          278,
+          420,
+          276,
           1849,
-          410
+          418
         ]
       ],
       "redactions": [],
-      "caption": "채점 현황",
-      "sha256": "28bdb367b83d40d36d14fbeb25f8f728f6f304b9c624b4a5656451b8f2808d1d",
-      "raw_frame_sha256": "11d90d0f601867d73131d0690dc2fbf6f51eae7d9c261ba2b076958787d7ad43"
+      "caption": "판단 채점 — 위쪽 점수 칸"
     },
     "portal-performance": {
-      "required_scene": "성과 지표의 숫자들을 봅니다.",
-      "check": "성과 지표의 숫자들을 봅니다.",
+      "required_scene": "성과 → 성과 지표를 연다",
+      "check": "성과 → 성과 지표를 연다",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-performance.png",
-      "verified": true,
+      "verified": false,
       "source_type": "video",
-      "source": "작업/촬영/환경세팅/게시본_20261104.mp4",
-      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
-      "seconds": 1695.133,
-      "portal_segment_seconds": 553.6,
+      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
+      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
+      "seconds": 1027.79,
+      "portal_segment_seconds": 1027.79,
       "crop": [
         0,
         0,
@@ -1486,32 +1373,30 @@
       "rectangles": [
         [
           15,
-          814,
-          250,
-          860
+          727,
+          356,
+          776
         ],
         [
           420,
-          262,
-          1850,
-          436
+          264,
+          1849,
+          434
         ]
       ],
       "redactions": [],
-      "caption": "성과 지표",
-      "sha256": "76fc8dc20de6ec02d3554b4f6352a018a152a3bcd115381c94b33a551ebb24d2",
-      "raw_frame_sha256": "fe2b65f758d4e30a4e9fe0155715fc7ce41f9198763e3e61fc677c27a74590d1"
+      "caption": "성과 지표 — 위쪽 숫자 칸"
     },
     "portal-system": {
-      "required_scene": "시스템 구성의 프로그램 목록입니다.",
-      "check": "시스템 구성의 프로그램 목록입니다.",
+      "required_scene": "시스템 → 시스템 구성을 연다",
+      "check": "시스템 → 시스템 구성을 연다",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-system.png",
-      "verified": true,
+      "verified": false,
       "source_type": "video",
-      "source": "작업/촬영/환경세팅/게시본_20261104.mp4",
-      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
-      "seconds": 1701.533,
-      "portal_segment_seconds": 560,
+      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
+      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
+      "seconds": 1062.11,
+      "portal_segment_seconds": 1062.11,
       "crop": [
         0,
         0,
@@ -1521,56 +1406,19 @@
       "rectangles": [
         [
           15,
-          972,
-          250,
-          1016
+          884,
+          356,
+          933
         ],
         [
-          420,
+          421,
           193,
-          1850,
-          1002
+          1848,
+          637
         ]
       ],
       "redactions": [],
-      "caption": "프로그램 목록",
-      "sha256": "8780bf0a2b7151f945335e510f1e5dd3f2bc0188694d519115a3c039fe6f1561",
-      "raw_frame_sha256": "f0033a487eb38b3e99f6a880eb696b27274f87a15789e1a7db67c5fe86e98f89"
-    },
-    "portal-admin": {
-      "required_scene": "관리 화면의 항목들입니다.",
-      "check": "관리 화면의 항목들입니다.",
-      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-admin.png",
-      "verified": true,
-      "source_type": "video",
-      "source": "작업/촬영/환경세팅/게시본_20261104.mp4",
-      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
-      "seconds": 1711.933,
-      "portal_segment_seconds": 570.4,
-      "crop": [
-        0,
-        0,
-        1920,
-        1080
-      ],
-      "rectangles": [
-        [
-          15,
-          1022,
-          250,
-          1070
-        ],
-        [
-          420,
-          202,
-          1850,
-          544
-        ]
-      ],
-      "redactions": [],
-      "caption": "관리 항목",
-      "sha256": "676644447ff7b86305f45bce4976cf658e7e0217fcc7860e141b3fb77102d601",
-      "raw_frame_sha256": "0d6395664a44f206a56dcaf4719329e518823b57fb81afe34ed34891043c3e91"
+      "caption": "시스템 구성 — 켜 둔 서비스들의 층"
     },
     "docker-install-complete": {
       "required_scene": "Docker Desktop 설치 완료",
@@ -1727,15 +1575,15 @@
       "raw_frame_sha256": "e92de334a72853912cab3c2298fa0ceb7829e01ace5711bb056c0dee2be36636"
     },
     "portal-arrival": {
-      "required_scene": "열린 포털 홈에서 제목 홈, 왼쪽 작업 · 설비 메뉴, 위쪽 상태 카드를 확인합니다. 카드의 숫자는 실행 중인 환경에 따라 다릅니다.",
-      "check": "열린 포털 홈에서 제목 홈, 왼쪽 작업 · 설비 메뉴, 위쪽 상태 카드를 확인합니다. 카드의 숫자는 실행 중인 환경에 따라 다릅니다.",
+      "required_scene": "Ctrl 클릭 뒤 열린 포털 홈에서 제목 홈과 위쪽 네 칸을 본다",
+      "check": "Ctrl 클릭 뒤 열린 포털 홈에서 제목 홈과 위쪽 네 칸을 본다",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-arrival.png",
-      "verified": true,
+      "verified": false,
       "source_type": "video",
-      "source": "작업/촬영/환경세팅/게시본_20261104.mp4",
-      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
-      "seconds": 1147.533,
-      "portal_segment_seconds": 6,
+      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
+      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
+      "seconds": 3.0,
+      "portal_segment_seconds": 3.0,
       "crop": [
         0,
         0,
@@ -1744,34 +1592,22 @@
       ],
       "rectangles": [
         [
-          418,
-          118,
-          458,
-          160
-        ],
-        [
-          12,
-          104,
-          355,
-          236
-        ],
-        [
-          12,
-          262,
-          355,
-          490
+          420,
+          120,
+          453,
+          162
         ],
         [
           420,
-          198,
-          1850,
-          333
+          192,
+          1849,
+          334
         ]
       ],
       "redactions": [],
-      "caption": "제목 홈, 왼쪽 작업 · 설비, 위쪽 상태 카드",
-      "sha256": "555a1db751349544691824cad02bc0251c7b33b40e8762e25806d7b0beb8ef56",
-      "raw_frame_sha256": "58536c73144ba5b1b6ce1c88da85cee65eefb5054121dbba4a6919e6357c881b"
+      "caption": "포털 홈 — 제목 홈과 위쪽 네 칸",
+      "sha256": "8e0ae83ca8f468549d2e147b4cb7659e1fd9c8a082d76d2241702165ad61203e",
+      "raw_frame_sha256": "629b76e0f9c440f4c1f587c90d93611b58b065fdc05f40815d0fc44936a24fb8"
     },
     "docker-skip": {
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/docker-skip.png",
@@ -1806,41 +1642,6 @@
       "verified": true,
       "raw_frame_sha256": "2feaa2b665834b320fa083491a602c5733f4a8ae6cba092619f0371dca2edf93",
       "sha256": "e46dcdeba640f1dc2f22f24f8029aebe70412cc0a3506af30f130fd7cfdb96a3"
-    },
-    "portal-button": {
-      "required_scene": "카드 아래쪽 결함 실험의 쿨러 열화 주입 위치입니다. 지금은 누르지 않습니다.",
-      "check": "카드 아래쪽 결함 실험의 쿨러 열화 주입 위치입니다. 지금은 누르지 않습니다.",
-      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-button.png",
-      "verified": true,
-      "source_type": "video",
-      "source": "작업/촬영/환경세팅/게시본_20261104.mp4",
-      "source_sha256": "e0b335fed08f87889599f6b34d93125599dd2f8a7d296f2f9945bc2dc951966a",
-      "seconds": 1391.533,
-      "portal_segment_seconds": 250,
-      "crop": [
-        0,
-        0,
-        1920,
-        1080
-      ],
-      "rectangles": [
-        [
-          15,
-          298,
-          250,
-          342
-        ],
-        [
-          455,
-          449,
-          640,
-          496
-        ]
-      ],
-      "redactions": [],
-      "caption": "쿨러 열화 주입",
-      "sha256": "233246643253ae056a6177b1a2b80dc7fcda5a36e7ff73921732be29c73e1a1b",
-      "raw_frame_sha256": "625d1874b48661243f0c906223af691a6c9c7d93066c46509069d3728bd69740"
     },
     "wsl-enter": {
       "required_scene": "아무 키나 누르라는 안내가 나오면 60초 안에 Enter를 누릅니다.",
@@ -2274,6 +2075,41 @@
       "caption": "왼쪽 칸의 Trust. 다른 PC 화면입니다.",
       "sha256": "d7b3123d2278f8ece2b3cf238ee57026d07a8323cfba10c4328d28c9677897bb",
       "raw_frame_sha256": "4607d9174151c1dd049b69039c27c2e011ed8c0d1a9083d3c5814fd5f0126b7e"
+    },
+    "portal-inbox": {
+      "required_scene": "작업 → 내 작업함을 연다. 나는 고르지 않는다",
+      "check": "작업 → 내 작업함을 연다. 나는 고르지 않는다",
+      "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-inbox.png",
+      "verified": false,
+      "source_type": "video",
+      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
+      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
+      "seconds": 910.35,
+      "portal_segment_seconds": 910.35,
+      "crop": [
+        0,
+        0,
+        1920,
+        1080
+      ],
+      "rectangles": [
+        [
+          15,
+          143,
+          356,
+          191
+        ],
+        [
+          420,
+          192,
+          1849,
+          319
+        ]
+      ],
+      "redactions": [],
+      "caption": "내 작업함 — 나를 고르는 칸(지금은 비워 둡니다)",
+      "sha256": "be9f2040ee4726aa43d6deaa6cd0839ca7ad774ada5fc6af77fec7322eed8df5",
+      "raw_frame_sha256": "632a4ba21c766271af0ba926366b2a754a113d1083fce0e2cfaf09a739b138d1"
     }
   }
 }

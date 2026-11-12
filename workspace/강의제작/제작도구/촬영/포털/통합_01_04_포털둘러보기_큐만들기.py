@@ -34,14 +34,14 @@ GRAPH = {'css': '#pTs1', 'anchor': 'center', 'dx': 110}
 # 단계마다 ▸ 차례대로 하나씩. 목록 안의 목록은 한 ▸에서 잇달아 하는 조작이다(둘째부터는 앞 조작 바로 뒤).
 OPS = {
     2: [P('main span', exact='설비'), P('main span', exact='열린 사건'), P('main span', exact='지식 항목'),
-        P('main span', exact='시간 배율'), P('#openCount'), P('#healthDots'), P('#shellMe'), P('#shellBell', anchor='center', dx=4, dy=6)],
+        P('main span', exact='시간 배율'), P('#openCount'), P('#healthDots', anchor='center', dy=14), P('#shellMe', anchor='center', dy=14), P('#shellBell', anchor='center', dx=4, dy=6)],
     3: [P('main text', exact='현장 설비'), P('main text', exact='관제 · 데이터'), P('main text', exact='인공지능'),
         P('main text', exact='고장 유형 · 냉각 상실'), P('main text', exact='승인된 조치 → 검증 → 설비'),
         P('.rail .navgroup', exact='작업', anchor='after', dy=-7), P('.rail .navgroup', exact='시스템', anchor='after', dy=-7)],
     4: [TAB('scenario'), V('scenario', 'strong', exact='HYD-01'), V('scenario', 'span.v', nth=0, anchor='center', dx=18, dy=6),
         V('scenario', '.threshold-note', nth=0), V('scenario', '.kv span', exact='냉각 효율CE', nth=0),
         V('scenario', 'span.chip', exact='감시 중', nth=0), V('scenario', 'span.chip.tone-success', nth=0),
-        V('scenario', 'span.chip', exact='정기 점검 도래'), V('scenario', 'button', exact='쿨러 열화 주입'),
+        V('scenario', 'span.chip', exact='정기 점검 도래'), V('scenario', 'button', exact='쿨러 열화 주입', anchor='center', dy=24),
         TAB('trends'), ['point', {**GRAPH, 'dy': 66}], ['point', {**GRAPH, 'dy': -74}], ['point', {**GRAPH, 'dy': 9}],
         TAB('oil'), V('oil', 'label', contains='측정값 (mgKOH/g)'), V('oil', 'label', contains='기준 이탈 여부'),
         TAB('incidents'), V('incidents', 'text', contains='탱크', nth=0), V('incidents', 'text', exact='P', nth=0, anchor='center', dy=-10),
@@ -83,6 +83,8 @@ OPS = {
 #  · 두 카드의 승인 역할을 말하는데 커서가 한 곳(5구간 t4-05-10)
 #  · 메뉴 제목(설비 · 판단 · 인공지능 설정 …)을 말하는데 그 제목이 메뉴 밖(6~7구간 t4-06-01 · t4-07-01) — 메뉴 제목을 말하는 모든 자리에 건다
 #  · 종 그림 옆 빈 자리를 짚음(2구간 t4-02-06 — 그림 단추는 가운데를 짚는다), 길 위 MQTT · DMZ와 메뉴 제목 「설비」를 부르는데 커서가 그 위에 없음(3구간 t4-03-02 · t4-03-05)
+#  · 맨 위 막대의 서비스 수 · 「나」를 글 끝 오른쪽으로 짚어 옆 단추를 가리킴, 「두 대」의 HYD-03 재고 보충을 짚지 않음,
+#    「쿨러 열화 주입」 위에 커서가 올라가 단추가 바래고 누르기 직전처럼 보임(2 · 4구간 — 단추는 바로 밑 빈자리를 짚는다)
 #  · 맺음에서 설비 → AI → 승인 → 설비 흐름을 부르는데 커서가 인공지능 마디에만 있음(10구간 t4-10-03)
 #  · 「가운데 운전 모드」에서 커서가 아래 안내 글(t4-07-03), 생산 · 정비 · 구매를 말하는데 구매 칸이 화면 밖(t4-07-08 — 「밑으로 내려 보시면」에서 실제로 내리고 칸마다)
 ENT = '#view-process h3, #view-process strong, #view-process b'
@@ -98,6 +100,7 @@ EXTRA = {
     (3, 'MQTT랑'): P('main text', exact='MQTT'),
     (3, 'DMZ를'): P('main text', exact='DMZ'),
     (3, '설비 이렇게'): GROUP('설비'),
+    (4, '부품을 채워야'): V('scenario', 'span.chip', exact='재고 보충 필요'),
     (4, '이 숫자들이 시간에'): V('scenario', 'span.v', nth=0, anchor='center', dx=18, dy=6),
     (5, '지식 아래 지식 지도'): GROUP('지식'),
     (5, '팬 최대 운전은'): V('skills', 'span.sub', nth=0),
