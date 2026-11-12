@@ -108,8 +108,9 @@ async function exec(o){
  if(op==='note')return serial(()=>p.evaluate(t=>{let e=document.getElementById('recording-note');if(t===null){e?.remove();return;}
   if(!e){e=document.createElement('div');e.id='recording-note';e.setAttribute('aria-hidden','true');document.documentElement.append(e);}
   const c=document.querySelector('canvas').getBoundingClientRect();
-  e.style.cssText=`position:fixed;left:${c.left+c.width/2}px;bottom:${innerHeight-c.bottom+24}px;transform:translateX(-50%);max-width:${c.width-80}px;padding:10px 22px;border-radius:10px;background:rgba(17,24,39,.86);color:#fff;font:600 21px/1.45 'Noto Sans CJK KR','Malgun Gothic',sans-serif;white-space:pre;text-align:center;pointer-events:none;z-index:2147483646`;
-  e.textContent=t;},a[0]));
+  const at=a[1]||'bc';const hz=at[1]==='l'?`left:${c.left+24}px;`:`left:${c.left+c.width/2}px;transform:translateX(-50%);`;const vt=at[0]==='t'?`top:${c.top+20}px;`:`bottom:${innerHeight-c.bottom+24}px;`;
+  e.style.cssText=`position:fixed;${hz}${vt}max-width:${c.width-80}px;padding:10px 22px;border-radius:10px;background:rgba(17,24,39,.86);color:#fff;font:600 21px/1.45 'Noto Sans CJK KR','Malgun Gothic',sans-serif;white-space:pre;text-align:center;pointer-events:none;z-index:2147483646`;
+  e.textContent=t;},[a[0],a[1]].length&&a[0]===null?null:a[0]));
  if(op==='click')return ui.click(a[0]);
  if(op==='type')return ui.type(a[0]);
  if(op==='key')return ui.key(a[0]);
@@ -119,6 +120,7 @@ async function exec(o){
  // 사람처럼 그 자리에서 다시 시도: 끌어내기는 방향을 바꿔, 화살표 선택·잇기는 한 번 더. 녹화는 멈추지 않는다.
  if(op==='grow'){for(const d of [0,60]){try{return await ui.grow(a[0],a[1]+d);}catch(e){await log('retry grow '+a[0]+' '+String(e).slice(0,80));}}throw Error('grow failed 3 times from '+a[0]);}
  if(op==='move')return ui.move(a[0],a[1],a[2]);
+ if(op==='growTo')return ui.growTo(a[0],a[1],a[2]);
  // 사용자가 직접 조작하는 동안 녹화만 유지한다. DONE 파일이 생기면 끝(최대 15분). 포인터는 사용자 마우스 이동을 따라간다.
  if(op==='manual'){await log('manual start');const t0=Date.now();while(!(await fs.stat(base+'/DONE').then(()=>true).catch(()=>false))){if(Date.now()-t0>900000)throw Error('manual timeout');await sleep(300);}await log('manual done');return;}
  if(op==='place'){const r=await ui.place(a[0]);await log('place '+r.join(' '));return;}

@@ -244,6 +244,22 @@ export async function makeUI(ctx){
    await moveCore(sx,sy);await gate();await q1(()=>raw.mouse.down());await moveCore(pick.x,pick.y);await q1(()=>raw.mouse.up());await sleep(300);
    const n1=(await circles()).list.length;if(n1!==n0+1)throw Error(`grow from ${source}: circles ${n0} -> ${n1}`);
   },
+  // 정한 자리로 끌기: 그림 좌표 (gx,gy)를 지금 보기(확대율 · 위치)로 화면 좌표로 바꿔, 원 테두리에서 그쪽으로 끌어 새 원 + 화살표를 만든다.
+  // 녹화 내내 보기를 한 번 정해 두므로(촬영준비 길 4) 끝 그림의 자리를 녹화 전에 정할 수 있다. 놓을 자리가 원과 겹치면 멈춘다(자리 표가 틀린 것).
+  growTo:async(source,gx,gy)=>{
+   const s=await node(source);await ui.click('node:'+source);
+   const v=await q1(()=>raw.evaluate(()=>{const st=window.__arrowsStore;const t=st.getState().viewTransformation;const c=document.querySelector('canvas').getBoundingClientRect();return{k:t.scale,dx:t.offset.dx,dy:t.offset.dy,l:c.left,t:c.top};}));
+   const x=v.l+gx*v.k+v.dx,y=v.t+gy*v.k+v.dy;
+   const {list}=await circles();if(list.some(c=>Math.hypot(c.x-x,c.y-y)<c.r+s.r))throw Error(`growTo ${source}: target ${gx},${gy} overlaps a circle`);
+   const rels=await q1(()=>raw.evaluate(()=>{const id=location.hash.split('id=')[1];const g=JSON.parse(localStorage.getItem('GRAPH|'+id)).graph;const by=Object.fromEntries(g.nodes.map(n=>[n.id,n.caption]));return g.relationships.map(r=>[by[r.fromId],by[r.toId]]);}));
+   const pos={};for(const [a,b] of rels)for(const c of [a,b])if(c&&!pos[c])pos[c]=await node(c);
+   const segs=rels.filter(([a,b])=>pos[a]&&pos[b]).map(([a,b])=>[pos[a],pos[b]]);
+   const near=(px,py)=>segs.some(([P,Q])=>{const vx=Q.x-P.x,vy=Q.y-P.y,L=vx*vx+vy*vy||1,u=Math.max(0,Math.min(1,((px-P.x)*vx+(py-P.y)*vy)/L));return Math.hypot(P.x+u*vx-px,P.y+u*vy-py)<16;});
+   const base=Math.atan2(y-s.y,x-s.x);let ang=base;for(const d of [0,0.25,-0.25,0.5,-0.5,0.75,-0.75]){const g=base+d;if(!near(s.x+Math.cos(g)*s.r*1.09,s.y+Math.sin(g)*s.r*1.09)){ang=g;break;}}
+   const sx=s.x+s.r*1.09*Math.cos(ang),sy=s.y+s.r*1.09*Math.sin(ang);const n0=list.length;
+   await moveCore(sx,sy);await gate();await q1(()=>raw.mouse.down());await moveCore(x,y);await q1(()=>raw.mouse.up());await sleep(300);
+   const n1=(await circles()).list.length;if(n1!==n0+1)throw Error(`growTo from ${source}: circles ${n0} -> ${n1}`);
+  },
   // 두 원 사이 화살표를 눌러 관계 선택(Type 칸 확인).
   edge:async(a,b)=>{
    // 한가운데 대신 출발 원 쪽 35% 지점: 여러 화살표가 모이는 도착 원 근처에서 다른 선을 누르지 않게 한다.

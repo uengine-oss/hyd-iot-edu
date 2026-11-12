@@ -1,0 +1,8 @@
+{
+ "note": "Neo4j Browser 녹화(클라우드 Playwright) 값. 경로는 이 폴더 기준. work = 녹화 원본(루트 작업/촬영/neo4j, 커밋하지 않음), audio = 이번 판 음성 캐시(<큐id>.mp3 · .json). viewport = CSS 1536x864 x 1.25 → 프레임 1920x1080(옛 ego 판과 같은 CSS 크기. 1.2배는 소수 오차로 1920x1079가 나온다). cdp = 상주 브라우저(포털 browser.mjs를 HYD_BROWSER_CONFIG로 이 파일을 주어 띄움) 원격 디버깅 포트. pointer = overlay(페이지 화살표 투명, 합성 때 포털 encode.py가 기록 경로로 그림).",
+ "work": "../../../../../../작업/촬영/neo4j",
+ "audio": "../음성/common-retake-v7",
+ "cdp": 9334,
+ "viewport": {"width": 1536, "height": 864, "deviceScaleFactor": 1.25},
+ "pointer": "overlay"
+}

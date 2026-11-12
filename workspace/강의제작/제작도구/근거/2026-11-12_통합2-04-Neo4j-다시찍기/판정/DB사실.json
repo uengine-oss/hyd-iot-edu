@@ -1,0 +1,380 @@
+{
+ "전체 수": [
+  [
+   20,
+   19
+  ]
+ ],
+ "레이블별": [
+  [
+   "Asset",
+   1
+  ],
+  [
+   "Component",
+   6
+  ],
+  [
+   "Part",
+   3
+  ],
+  [
+   "Sensor",
+   5
+  ],
+  [
+   "StateVariable",
+   5
+  ]
+ ],
+ "노드 속성": [
+  [
+   "Asset",
+   {
+    "code": "HYD-01",
+    "name": "HYD-01 유압 파워팩",
+    "id": "asset:hyd-01"
+   }
+  ],
+  [
+   "Component",
+   {
+    "name": "오일 쿨러",
+    "id": "comp:cooler"
+   }
+  ],
+  [
+   "Component",
+   {
+    "name": "쿨러 팬",
+    "id": "comp:fan"
+   }
+  ],
+  [
+   "Component",
+   {
+    "name": "구동 모터",
+    "id": "comp:motor"
+   }
+  ],
+  [
+   "Component",
+   {
+    "name": "주 펌프 (A)",
+    "id": "comp:pump-a"
+   }
+  ],
+  [
+   "Component",
+   {
+    "name": "예비 펌프 (B)",
+    "id": "comp:pump-b"
+   }
+  ],
+  [
+   "Component",
+   {
+    "name": "작동유 탱크",
+    "id": "comp:tank"
+   }
+  ],
+  [
+   "Part",
+   {
+    "name": "쿨러 코어",
+    "id": "part:cooler-core",
+    "partNo": "P-CLR-CORE"
+   }
+  ],
+  [
+   "Part",
+   {
+    "name": "팬 베어링",
+    "id": "part:fan-bearing",
+    "partNo": "P-FAN-BRG"
+   }
+  ],
+  [
+   "Part",
+   {
+    "name": "펌프 축 씰 키트",
+    "id": "part:pump-seal",
+    "partNo": "P-PMP-SEAL"
+   }
+  ],
+  [
+   "Sensor",
+   {
+    "virtual": true,
+    "unit": "%",
+    "name": "냉각 효율 (가상)",
+    "id": "sen:ce",
+    "tag": "CE"
+   }
+  ],
+  [
+   "Sensor",
+   {
+    "unit": "l/min",
+    "virtual": false,
+    "name": "유량 센서",
+    "tag": "FS1",
+    "id": "sen:fs1"
+   }
+  ],
+  [
+   "Sensor",
+   {
+    "virtual": false,
+    "unit": "bar",
+    "name": "토출 압력 센서",
+    "id": "sen:ps1",
+    "tag": "PS1"
+   }
+  ],
+  [
+   "Sensor",
+   {
+    "unit": "℃",
+    "virtual": false,
+    "name": "유온 센서",
+    "tag": "TS1",
+    "id": "sen:ts1"
+   }
+  ],
+  [
+   "Sensor",
+   {
+    "unit": "mm/s",
+    "virtual": false,
+    "name": "팬 진동 센서",
+    "tag": "VS1",
+    "id": "sen:vs1"
+   }
+  ],
+  [
+   "StateVariable",
+   {
+    "normal": 84,
+    "unit": "%",
+    "kind": "controlled",
+    "name": "냉각 효율",
+    "id": "sv:ce"
+   }
+  ],
+  [
+   "StateVariable",
+   {
+    "normal": 9,
+    "unit": "l/min",
+    "kind": "controlled",
+    "name": "유량",
+    "id": "sv:fs1"
+   }
+  ],
+  [
+   "StateVariable",
+   {
+    "normal": 182,
+    "unit": "bar",
+    "kind": "controlled",
+    "limit": 130,
+    "name": "토출 압력",
+    "id": "sv:ps1"
+   }
+  ],
+  [
+   "StateVariable",
+   {
+    "normal": 48,
+    "unit": "℃",
+    "kind": "controlled",
+    "limit": 65,
+    "name": "유온",
+    "id": "sv:ts1"
+   }
+  ],
+  [
+   "StateVariable",
+   {
+    "normal": 0.6,
+    "unit": "mm/s",
+    "kind": "controlled",
+    "name": "팬 진동",
+    "limit": 2,
+    "id": "sv:vs1"
+   }
+  ]
+ ],
+ "관계": [
+  [
+   "HYD-01 유압 파워팩",
+   "HAS_COMPONENT",
+   "오일 쿨러"
+  ],
+  [
+   "HYD-01 유압 파워팩",
+   "HAS_COMPONENT",
+   "쿨러 팬"
+  ],
+  [
+   "HYD-01 유압 파워팩",
+   "HAS_COMPONENT",
+   "주 펌프 (A)"
+  ],
+  [
+   "HYD-01 유압 파워팩",
+   "HAS_COMPONENT",
+   "예비 펌프 (B)"
+  ],
+  [
+   "HYD-01 유압 파워팩",
+   "HAS_COMPONENT",
+   "구동 모터"
+  ],
+  [
+   "HYD-01 유압 파워팩",
+   "HAS_COMPONENT",
+   "작동유 탱크"
+  ],
+  [
+   "오일 쿨러",
+   "MONITORED_BY",
+   "유온 센서"
+  ],
+  [
+   "오일 쿨러",
+   "MONITORED_BY",
+   "냉각 효율 (가상)"
+  ],
+  [
+   "주 펌프 (A)",
+   "MONITORED_BY",
+   "토출 압력 센서"
+  ],
+  [
+   "주 펌프 (A)",
+   "MONITORED_BY",
+   "유량 센서"
+  ],
+  [
+   "쿨러 팬",
+   "MONITORED_BY",
+   "팬 진동 센서"
+  ],
+  [
+   "냉각 효율 (가상)",
+   "OBSERVES",
+   "냉각 효율"
+  ],
+  [
+   "유량 센서",
+   "OBSERVES",
+   "유량"
+  ],
+  [
+   "유온 센서",
+   "OBSERVES",
+   "유온"
+  ],
+  [
+   "토출 압력 센서",
+   "OBSERVES",
+   "토출 압력"
+  ],
+  [
+   "팬 진동 센서",
+   "OBSERVES",
+   "팬 진동"
+  ],
+  [
+   "오일 쿨러",
+   "USES_PART",
+   "쿨러 코어"
+  ],
+  [
+   "주 펌프 (A)",
+   "USES_PART",
+   "펌프 축 씰 키트"
+  ],
+  [
+   "쿨러 팬",
+   "USES_PART",
+   "팬 베어링"
+  ]
+ ],
+ "TS1 표": [
+  [
+   "오일 쿨러",
+   "TS1",
+   "유온",
+   "℃",
+   48,
+   65
+  ]
+ ],
+ "한계 표": [
+  [
+   "PS1",
+   "토출 압력",
+   "bar",
+   130
+  ],
+  [
+   "TS1",
+   "유온",
+   "℃",
+   65
+  ],
+  [
+   "VS1",
+   "팬 진동",
+   "mm/s",
+   2
+  ]
+ ],
+ "센서 집계": [
+  [
+   "comp:cooler",
+   "오일 쿨러",
+   [
+    "CE",
+    "TS1"
+   ],
+   2
+  ],
+  [
+   "comp:pump-a",
+   "주 펌프 (A)",
+   [
+    "FS1",
+    "PS1"
+   ],
+   2
+  ],
+  [
+   "comp:fan",
+   "쿨러 팬",
+   [
+    "VS1"
+   ],
+   1
+  ]
+ ],
+ "경로 수": [
+  [
+   5
+  ]
+ ],
+ "_질의": {
+  "전체 수": "MATCH (n) WITH count(n) AS n MATCH ()-[r]->() RETURN n, count(r)",
+  "레이블별": "MATCH (n) UNWIND labels(n) AS l RETURN l, count(*) ORDER BY l",
+  "노드 속성": "MATCH (n) RETURN labels(n)[0], properties(n) ORDER BY labels(n)[0], n.id",
+  "관계": "MATCH (a)-[r]->(b) RETURN a.name, type(r), b.name ORDER BY type(r), a.name",
+  "TS1 표": "MATCH p=(a:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)-[:MONITORED_BY]->(s:Sensor)-[:OBSERVES]->(v:StateVariable) WHERE s.tag = 'TS1' RETURN c.name AS component, s.tag AS tag, v.name AS quantity, v.unit AS unit, v.normal AS normal, v.limit AS limit",
+  "한계 표": "MATCH p=(a:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)-[:MONITORED_BY]->(s:Sensor)-[:OBSERVES]->(v:StateVariable) WHERE v.limit IS NOT NULL RETURN s.tag AS tag, v.name AS quantity, v.unit AS unit, v.limit AS limit ORDER BY tag",
+  "센서 집계": "MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)-[:MONITORED_BY]->(s:Sensor) RETURN c.id AS component_id, c.name AS component, collect(DISTINCT s.tag) AS tags, count(DISTINCT s) AS channels ORDER BY channels DESC, component_id",
+  "경로 수": "MATCH p=(a:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)-[:MONITORED_BY]->(s:Sensor)-[:OBSERVES]->(v:StateVariable) RETURN count(p)"
+ },
+ "_DB": "VM 실습 DB(학생 ZIP의 prepare_example.py로 만든 neo4j:5.26-community, 2026-11-12)"
+}
