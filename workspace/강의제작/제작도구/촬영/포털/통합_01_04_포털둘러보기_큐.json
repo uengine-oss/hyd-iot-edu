@@ -802,6 +802,27 @@
       "exact": "승인 역할"
      },
      0.089
+    ],
+    [
+     "point",
+     {
+      "css": "#view-skills span.sub",
+      "nth": 0
+     },
+     {
+      "at": "팬 최대 운전은"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#view-skills span.sub",
+      "contains": "(근본 조치)",
+      "nth": 0
+     },
+     {
+      "at": "쿨러 핀 세척은"
+     }
     ]
    ]
   },
