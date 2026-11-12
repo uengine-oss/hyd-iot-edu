@@ -9,7 +9,7 @@
    를 실습3 갈래마다, 실습4 입력 모델(통합 A · 실전 ㄴ) 위에서 통합반은 설비별 교체 부품 조회와 수정본 반영 → 재반영을 수정본 갈래마다,
    실전반은 조회 갈래마다 실제로 하고 개수·답·출처를 확인한다. 통합반은 수정본 전에도 부품의 사용 설비를 설비 상태와 함께 조회한다
    (10단계 「지금 가동하는 설비」). 끝나면 그 컨테이너와 이름 없는 볼륨만 지운다.
-갈래: 실습3 통합반 A · B · C, 실전반 A · B · ㄴ · ㄷ(build_labs.REFERENCE_BRANCHES, 대응은 reference/실전반/README.md).
+갈래: 실습3 통합반 A · B · C, 실전반 A · B · ㄴ · ㄷ · ㄹ · ㅁ(build_labs.REFERENCE_BRANCHES, ㄹ · ㅁ은 ㄴ에 견적 갈래만 다름 — 대응은 reference/실전반/README.md).
       실습4 통합반 수정본 갈래 남김 · 삭제(build_labs.LAB4_CHANGE_BRANCHES — 불용 설비를 상태로 남김 · 전용 하위 대상과 함께 지움),
       실전반 조회 갈래 ㄱ · ㄴ(build_labs.LAB4_QUERY_BRANCHES — PR-07 7.4 정보를 빼고 · 함께 돌려줌).
 사용: python verify_reference.py [--offline]
@@ -34,12 +34,13 @@ REPORT = HERE/'reference/session2_검증.json'
 EXPECT = {'통합반': HERE/'reference/통합반/기대답.json', '실전반': HERE/'reference/실전반/기대답.json'}
 # 6205-2RS: 두 사내 품번(P-FAN-BRG·P-BRG-6205)이 같은 제조사 품번을 가진다 → 후보 둘. 갈래 A는 후보마다 따로, 갈래 B는 같은 물품 묶음으로 답한다.
 PROBES = {'통합반': ['P-PMP-SEAL', 'P-FAN-BRG', 'P-BRG-6205', 'P-PMP-SEAL-HT', 'P-RTN-FLT', 'P-RTN-FLT-25', 'P-HYD-OIL', 'PMP-SEAL', 'RF-10', 'P-PMP-SEAL-X', '6205-2RS'],
-          '실전반': ['P-PMP-SEAL', 'P-PMP-SEAL-HT', 'P-CLR-CORE', 'P-CLR-PLT', 'P-ACC-BLD', 'P-RTN-FLT', 'PS-4510', 'PMP-SEAL', 'P-PMP-SEAL-X']}
+          '실전반': ['P-PMP-SEAL', 'P-PMP-SEAL-HT', 'P-CLR-CORE', 'P-CLR-PLT', 'P-ACC-BLD', 'P-RTN-FLT', 'P-FAN-BRG', 'PS-4510', 'PMP-SEAL', 'P-PMP-SEAL-X']}
 
 
 # ───────────── 기대 답(생성 정답 구조에서) ─────────────
 def supply_row(branch, supplier, approved, price, defect, lead, extra, pending):
-    """공급 조건 한 줄. 갈래 ㄴ은 PR-07 7.4 비교 가산 비용, ㄷ은 미결(확인 요청) 표시를 덧붙인다."""
+    """공급 조건 한 줄. 갈래 ㄴ은 PR-07 7.4 비교 가산 비용, ㄷ은 미결(확인 요청) 표시를 덧붙인다(ㄹ · ㅁ은 승인 판단이 ㄴ)."""
+    branch = B.supply_branch(branch)[0]
     row = [supplier, approved, price, defect, lead]
     if branch == 'ㄴ':
         row.append(extra)
@@ -128,7 +129,7 @@ def expected(course, branch):
             if course == '실전반':
                 entry['supply'] = sorted(supply_row(branch, s, v['approved_B' if branch == 'B' else 'approved_A'], v['price_manwon'], v['defect_rate'], v['lead_days'],
                                                     float(D.PR74_EXTRA_MANWON) if v['pr74'] else None, v['pr74'] and not v['condition'])
-                                         for (s, p), v in t['supply'].items() if p == pid)
+                                         for (s, p), v in t['supply_modes'][B.supply_branch(branch)[1]].items() if p == pid)
             found.append(entry)
         probes[code] = None if not found else (found[0] if len(found) == 1 else {'candidates': found})
     out = {'sensors_by_asset': sensors_by_asset, 'quantity_members': {k: sorted(v) for k, v in sorted(quantity_members.items())},
@@ -143,7 +144,7 @@ def expected(course, branch):
                                  for aid, a in sorted(t['assets'].items())}
     else:                    # 실습3 「값마다 출처 남기기」: 생성 순서에서 센 줄(CSV를 다시 읽지 않음)
         out['supply_sources'] = {f'{s}→{p}': [D.line_ref(D.QUOTE_FILE, v['quote_line']), D.line_ref(D.AVL_FILE, v['avl_line']) if 'avl_line' in v else None, D.REF_DATE]
-                                 for (s, p), v in sorted(t['supply'].items())}
+                                 for (s, p), v in sorted(t['supply_modes'][B.supply_branch(branch)[1]].items())}
     return out
 
 

@@ -4962,9 +4962,9 @@
       "props": {
         "approved": true,
         "approval_status": "승인",
-        "price_manwon": 18.0,
+        "price_manwon": 21.0,
         "defect_rate": 0.1,
-        "lead_days": 1,
+        "lead_days": 2,
         "min_order_qty": 1,
         "supplier_part_no": "AJ-B6205",
         "quote_date": "2026-10-02",
