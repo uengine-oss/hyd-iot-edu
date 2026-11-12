@@ -50,6 +50,7 @@ OPS={
  '03-03':[P(t('.mprev section.card .chip',contains='수정할 항목'))],
  '03-04':[P(t('.mprev section.card .card-body > ul > li','margin',nth=0),'절차마다')],
  '03-05':[P(t('.mprev section.card .card-body > ul > li','margin',nth=7),'이 절차를')],
+ '03-06':[P(t('.mprev section.card .card-body > ul > li:nth-child(8) > details > summary'),'접힌 칸')],
  '04-01':[C(t('#manualFullSource','center'),'추출 원문 전체 보기 누르'),['wait',t('#manualSourceText details > summary'),15]],
  '04-02':[C(t('#manualSourceText details > summary','left'),'펼쳐')],
  '04-03':[PH('## HM-8.1'),PH('## HM-8.2','갈아 끼우는')],
@@ -73,16 +74,16 @@ OPS={
  '04-21':[PH('## HM-8.8')],
  '05-01':[C(t('#manualAgentExtract','center'),'추출 제안 준비 누르'),['waittext','진행 · 결과 확인을 누르세요',60]],
  '05-02':[P(t('#manualAgentStatus')),['clickuntil',t('#manualAgentResult','center'),"document.querySelectorAll('.mproc').length>0",A('결과 확인 누르')]],
- '05-03':[P(t('.mprev > div.muted','below'))],
+ '05-03':[P(tx('등록할 조치 방법',tag='h3'))],
  '05-04':[P(t('.mprev > details:first-of-type > summary'))],
  '05-05':[['open',t('.mprev > details:first-of-type > summary','left'),0]],
  '05-06':[P(t('.mprev > details:first-of-type li','margin',nth=0),'하나는')],
  '05-07':[P(t('.mprev > details:first-of-type li','margin',nth=1))],
  '05-08':[P(t('.mprev > details:first-of-type li','margin',nth=2))],
- '05-09':[P(t('.mprev section.card .card-body > ul > li','margin',contains='벨트 교체'),'벨트 교체 한 줄')],
+ '05-09':[P(t('.mprev section.card .card-body > ul > li','margin',contains='벨트 교체'),'검사 칸을')],
  '06-01':[P(tx('매뉴얼 절',tag='h3'),'아래 왼쪽은'),P(tx('등록할 조치 방법',tag='h3'),'오른쪽 등록할')],
  '06-02':[P(t('[data-manual-name="SOP-FAN-11"]','right')),P(t('[data-manual-name="SOP-FAN-12"]','right'),'벨트 교체')],
- '06-03':[P(t('[data-rel="SOP-FAN-12"]','below'),'관계는'),P(t('[data-kind="SOP-FAN-12"]','below'),'종류는')],
+ '06-03':[P(t('[data-rel="SOP-FAN-11"]','below'),'관계는'),P(t('[data-kind="SOP-FAN-11"]','below'),'종류는'),P(t('[data-rel="SOP-FAN-12"]','below'),'이 두 개는'),P(t('[data-kind="SOP-FAN-12"]','below'),'종류가 정비 요청')],
  '06-04':[P(t('[data-manual-name="SOP-COOL-11"]','right'))],
  '06-05':[P(t('[data-fm="SOP-COOL-11"]','below'))],
  '06-06':[P(t('[data-rel="SOP-COOL-11"]','below')),P(t('[data-kind="SOP-COOL-11"]','below'),'종류는')],
@@ -188,14 +189,13 @@ OPS={
  '15-02':[P(t('#instDetail .rr-badge')),P(t('#instDetail .rr-val',nth=0),'유온이'),P(t('#instDetail .rr-val',nth=1),'경보 해제')],
  '15-03':[P(t('#instDetail .rr-who .ap-label')),P(t('#instDetail .rr-steps-wrap .ap-label'),'시스템이 한 일')],
 }
-# 앞 큐 끝 표시에 따른 쉼(영상 V-14 1회차 값): ▸ 잇기 0.5초, ‖ 큐 1.0초, 조작 결과 뒤(▸+‖) 1.5초, 기다림 뒤 1.5초
-def gap(prev):
-    if prev is None: return 1000
+# 앞 큐 끝 표시에 따른 쉼(사용자 2026-11-12 「이어지는 말 0.6초, 큐 사이 1.3초, 결과 뒤 2.0초, 구간 사이 2.3」 — 영상 V-14의 값)
+def gap(prev,cur_seg):
+    if prev is None or prev['seg']!=cur_seg: return 2300
     a=prev['after']
-    if '[기다림]' in a: return 1500
-    if '▸' in a and '‖' in a: return 1500
-    if '‖' in a or a=='끝': return 1000
-    return 500
+    if '[기다림]' in a or ('▸' in a and '‖' in a): return 2000
+    if '‖' in a or a=='끝': return 1300
+    return 600
 cues=[];used=set();prev=None
 for c in raw:
     k=f"{c['stage']:02d}-{c['n']:02d}";used.add(k)
@@ -203,8 +203,8 @@ for c in raw:
     for o in ops:
         v=o[-1]
         if isinstance(v,dict) and 'at' in v and v['at'] not in c['text']: sys.exit(f'{k}: 대사에 없는 구절 {v["at"]}')
-    cues.append({'id':'o'+k.replace('-',''),'segment':SEG[c['stage']],'gap':gap(prev),'mark':c['after'],'text':c['text'],'ops':ops})
-    prev=c
+    cues.append({'id':'o'+k.replace('-',''),'segment':SEG[c['stage']],'gap':gap(prev,SEG[c['stage']]),'mark':c['after'],'text':c['text'],'ops':ops})
+    prev={**c,'seg':SEG[c['stage']]}
 bad=set(OPS)-used
 if bad: sys.exit('없는 큐: '+str(sorted(bad)))
 d={'note':'1회차 실습 06 전체과정관찰 다시 찍는 판. 글은 확정 대본(06_전체과정관찰_다시찍을판.md, 커밋 c382d773) §2를 ▸ · ‖ · [기다림]에서 자른 것 그대로다. 조작 형식은 촬영도구/segs/one06.mjs 머리말. gap은 앞 큐와의 쉼(ms, 영상 V-14 1회차 값), mark는 대본의 끝 표시.','voice_id':'1PdAOcPlPTz12RwMyFVp','model_id':'eleven_v4','cues':cues}

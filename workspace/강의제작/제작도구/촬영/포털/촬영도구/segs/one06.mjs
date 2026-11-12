@@ -89,6 +89,9 @@ export async function seg(ctx,n){
   await p.evaluate(()=>{document.querySelector('.rail nav button[data-tab="main"]').click();for(const e of document.querySelectorAll('.rail,main#content'))e.scrollTop=0;});
   await ctx.sleep(2500);await ctx.installPointer({x:760,y:430});}
  await ctx.begin();
+ // 구간 사이 쉼(첫 큐의 gap, 영상 V-14 「구간 사이」): 앞 take는 마지막 말 뒤 약 0.4초에서 끝나므로(take.mjs) 그만큼 빼고 이 take 첫 말 앞에서 기다린다.
+ // 첫 구간(영상 시작)과 실패 뒤 이어 찍기는 기다리지 않는다.
+ if(n!==1&&!ctx.resuming&&!ctx.rehearsal&&cues[0].gap)await ctx.sleep(Math.max(0,cues[0].gap-400));
  for(const q of cues){
   const dur=JSON.parse(await fs.readFile(ctx.audio+'/'+q.id+'.json','utf8')).duration_ms;
   const ops=q.ops||[];const lead=300;
