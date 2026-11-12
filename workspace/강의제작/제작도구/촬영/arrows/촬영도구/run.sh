@@ -27,7 +27,7 @@ case "$cmd" in
     [ -f "$work/browser.pid" ] && kill "$(cat "$work/browser.pid")" 2>/dev/null; sleep 2
     curl -s -m 2 "http://127.0.0.1:$port/json/version" >/dev/null && { echo "STILL UP :$port"; exit 1; } || echo "down"; exit 0;;
   open)
-    js="const {taskSpace}=await import('$pre$here/pw.mjs?$stamp');const p=(await taskSpace()).page();await p.goto('https://arrows.app',{waitUntil:'networkidle',timeout:60000});await p.waitForSelector('canvas');await p.waitForTimeout(1500);console.log(JSON.stringify({url:p.url(),text:(await p.evaluate(()=>document.body.innerText)).slice(0,80)}));"
+    js="const {taskSpace}=await import('$pre$here/pw.mjs?$stamp');const p=(await taskSpace()).page();await p.goto('https://arrows.app',{waitUntil:'load',timeout:60000});await p.waitForSelector('canvas');await p.waitForTimeout(1500);console.log(JSON.stringify({url:p.url(),text:(await p.evaluate(()=>document.body.innerText)).slice(0,80)}));"
     log="$work/open-$stamp.log";;
   rec)
     n=$1; seg=$2; from=${3:-}; st=${4:-}; relax=false; [ -n "${5:-}" ] && relax=true
