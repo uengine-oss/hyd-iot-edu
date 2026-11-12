@@ -51,23 +51,23 @@ async function loadPatterns() {
 
 /* ================================================= 지식 지도 */
 async function loadNamespaces(force) {
-  // G4: 학생 이름 공간 목록(맨 위 = 수업 기준). 못 읽으면 고르기 칸에 사유를 보이고 다음 "다시 읽기"에 또 읽는다
+  // G4: 학생 이름 공간(화면 이름 「지식 묶음」) 목록(맨 위 = 기본 지식 = ns 없는 노드). 못 읽으면 고르기 칸에 사유를 보이고 다음 "다시 읽기"에 또 읽는다
   const sel = $('#ontoNs'); if (!sel || (sel.dataset.loaded && !force)) return;
   const keep = sel.value;
   let list;
   try { list = await getJ(API.agent + '/api/ontology/namespaces'); }
   catch (e) {   // 이미 받은 이름 공간은 그대로 두고 사유 한 줄만 붙인다(고른 것이 사라지지 않게)
     sel.querySelectorAll('option[data-note]').forEach(o => o.remove());
-    sel.append(nsNote(`학생 이름 공간 목록을 읽지 못함 — ${e.message}`));
-    sel.title = `학생 이름 공간 목록을 읽지 못했습니다: ${e.message}`; delete sel.dataset.loaded;
+    sel.append(nsNote(`더 넣은 지식 묶음 목록을 읽지 못함 — ${e.message}`));
+    sel.title = `더 넣은 지식 묶음 목록을 읽지 못했습니다: ${e.message}`; delete sel.dataset.loaded;
     return;
   }
   sel.querySelectorAll('option:not([value=""]), option[data-note]').forEach(o => o.remove());
   list.forEach(x => sel.append(new Option(`${x.ns} · 항목 ${x.nodes}개`, x.ns)));
-  if (!list.length) sel.append(nsNote('학생 이름 공간 없음'));
+  if (!list.length) sel.append(nsNote('더 넣은 지식 묶음 없음'));
   sel.title = ''; sel.dataset.loaded = '1';
   if (list.some(x => x.ns === keep)) sel.value = keep;
-  else if (keep) { sel.value = ''; UI.toast(`이름 공간 ${keep} 이 그래프에 없어 수업 기준으로 돌아갑니다`, { tone: 'neg' }); loadGraph(true); }
+  else if (keep) { sel.value = ''; UI.toast(`지식 묶음 ${keep}이(가) 그래프에 없어 기본 지식으로 돌아갑니다`, { tone: 'neg' }); loadGraph(true); }
 }
 const nsNote = text => { const o = new Option(text, ''); o.disabled = true; o.dataset.note = '1'; return o; };
 async function loadGraph(force) {
