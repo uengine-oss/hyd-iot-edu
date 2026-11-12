@@ -2,6 +2,7 @@
 언제: 다시 찍을 판 대본(▸ · ‖ 표기)을 고친 뒤 큐를 다시 만들 때.
 사용: python3 build_retake_cues.py <대본.md> <안내.html> <출력 큐.json>
       python3 build_retake_cues.py <대본.md> <안내.html> --목록      구간 · 큐 번호 · 글만 찍는다(조작 표 RETAKE_OPS를 적을 때 본다)
+      python3 build_retake_cues.py <대본.md> <큐.json> --대본 <출력.md> …   그 큐로 산출물 실습 대본(영상 길 13의 꼴: 구간마다 | 큐 | 발화 | 조작 · 결과 확인 — 비낭독 |, 끝에 # 촬영 본문 끝 + 다시 찍을 판의 제작 확인용)을 쓴다
   대본의 「### N. 제목」 절이 구간(segment N)이고, 절 안을 ▸ · ‖로 자른 말 조각 하나가 큐 하나다. 빈 조각은 앞 큐의 쉼만 바꾼다
   (「▸ ▸」= 말 없이 이어지는 조작, 앞 큐의 ops에 붙인다).
   쉼(영상 V-14, 2회차 값): 앞 표시가 ▸면 잇기 0.6초, ‖면 1.3초, 앞 큐가 결과를 띄운 조작(run · 누르기)으로 끝났으면 2.0초, 구간의 첫 큐는 2.3초.
@@ -86,6 +87,51 @@ def build(script, guide, out):
     print(f'큐 {len(cues)}개 · 구간 {len(segs)} · 글자 {sum(len(c["text"]) for c in cues)} → {out}')
 
 
+OPNAME = {'intro': '첫 화면 짚기', 'connect': 'Connect', 'tour': '안내 창 닫기', 'point': '짚기', 'pointText': '글 짚기', 'pointStream': '결과 칸 짚기',
+          'pointCard': '앞 카드 짚기', 'sidebar': '왼쪽 패널 단추', 'openSidebar': '왼쪽 패널 펼치기', 'collapse': '왼쪽 패널 접기', 'fit': '화면 맞춤',
+          'closeDetails': '정보 칸 닫기', 'layout': 'Hierarchical layout', 'guideShow': '안내 문서 탭으로', 'guideCopy': '안내 문서 칸 복사',
+          'mainShow': 'Neo4j 탭으로', 'paste': '입력칸에 붙여 넣기', 'query': '안내 문서 다음 칸 붙여 넣기', 'clear': ':clear',
+          'run': 'Run', 'runSummary': 'Run · 결과 글 확인', 'result': '결과 짚기', 'graphTalk': '그림의 원 · 선 짚기', 'node': '노드 누르기',
+          'edge': '관계 누르기', 'detailsTour': '정보 칸 짚기', 'png': 'Download as PNG', 'openFile': '받은 그림 열기', 'newTab': '새 탭',
+          'saveText': '보관 글 붙여 넣기', 'savedPoint': 'Drafts 짚기', 'closeTab': '탭 닫기', 'openSaved': '목록에서 다시 열기',
+          'download': 'Download all(CSV)', 'outro': '끝 자리', 'none': ''}
+
+
+def op_note(o):
+    name = OPNAME.get(o['op'], o['op'])
+    if o['op'] == 'run':
+        name += f" → 그림 노드 {o['nodes']} · 관계 {o['edges']}" if o.get('graph') else f" → 표 {o['rows']}줄"
+    for k in ('label', 'contains', 'text', 'button', 'verify'):
+        if o.get(k) and o['op'] not in ('run',):
+            name += f" 「{o[k]}」"; break
+    if o.get('points'):
+        css = {'[aria-label="Cypher Editor"]': '입력칸', '[data-testid="instance-menu-button"]': '연결 주소', '[data-testid="database-menu-button"]': '데이터베이스 이름',
+               'button[aria-label="Upload"]': '올리기 단추'}
+        name += ' ' + ' · '.join(p.get('label') or p.get('text') or css.get(p.get('css', ''), p.get('css', '')) if not p.get('between') else '·'.join(p['between']) + ' 사이' for p in o['points'])
+    return name.strip()
+
+
+def write_script(script, cue_file, outs):
+    """산출물 실습 대본을 쓴다. 큐 글 · 조작은 큐 파일, 단계 이름 · 제작 확인용은 다시 찍을 판에서 가져온다."""
+    spec = json.loads(Path(cue_file).read_text(encoding='utf-8'))
+    src = Path(script).read_text(encoding='utf-8')
+    titles = {n: title for n, title, _ in chunks(script)}
+    lines = ['# 두 과정 공통 Cypher 실습 — 관계조회(Neo4j Browser)', '',
+             f'> 강사 단독 진행. 「조작 · 결과 확인」 칸은 낭독하지 않는다. 다시 찍을 판 `{Path(script).name}`의 확정본으로 만든 촬영 큐 `{Path(cue_file).name}`(큐 {len(spec["cues"])}개)를 옮긴 것이다. 큐 id로 음성을 다시 쓴다.', '']
+    seg = None
+    for c in spec['cues']:
+        if c['segment'] != seg:
+            seg = c['segment']
+            lines += ['', f'## {titles[seg]}', '', '| 큐 | 발화 | 조작 · 결과 확인 — 비낭독 |', '|---|---|---|']
+        note = ' → '.join(x for x in (op_note(o) for o in c['ops']) if x)
+        lines.append(f"| {c['id']} | {c['text'].replace('|', '｜')} | {note.replace('|', '｜')} |")
+    tail = src[src.index('# 촬영 본문 끝'):]
+    text = '\n'.join(lines) + '\n\n' + tail
+    for o in outs:
+        Path(o).write_text(text, encoding='utf-8')
+        print(f'대본 → {o}')
+
+
 if __name__ == '__main__':
     a = sys.argv[1:]
     if '--목록' in a:
@@ -96,5 +142,8 @@ if __name__ == '__main__':
         blocks = guide_blocks(a[1])
         for k, b in enumerate(blocks, 1):
             print(f'칸 {k}: {b.splitlines()[0][:70]}')
+    elif '--대본' in a:
+        i = a.index('--대본')
+        write_script(a[0], a[1], a[i + 1:])
     else:
         build(a[0], a[1], a[2])
