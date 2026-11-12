@@ -107,6 +107,11 @@ def expected(previous):
 
 
 def quotes(previous):
+    try:
+        need_decided(['기준일에 유효한 견적이 여럿인 쌍'])
+    except R.Stop as e:   # 그 결정이 갈리는 원자료 줄을 함께 짚는다(어느 줄을 쓸지는 정하지 않는다)
+        where = ' / '.join(f"{s} · {p}: data/{M.QUOTES}:{' · '.join(map(str, lines))}" for s, p, lines in guarded(M.several_live))
+        raise R.Stop(f'{e} 기준일({M.AS_OF})에 유효기한이 남은 견적이 둘 이상인 쌍 — {where}')
     pairs, used, found = guarded(M.pairs, '견적')
     split = {}
     for v in used.values():

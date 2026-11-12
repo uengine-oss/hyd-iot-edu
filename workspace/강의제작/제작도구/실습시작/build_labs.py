@@ -233,8 +233,16 @@ def base_graph(branch='A'):
 # 실습4 갈래는 실습3 갈래와 따로, 실습4 입력/ 모델(GRAPH_LAB_INPUT) 위에서 돌린다(verify_reference.py):
 # 통합반 수정본 갈래(「시점과 상태」) 남김 = 불용 설비를 상태로 남김 · 삭제 = 불용 설비를 전용 하위 대상(구성 요소 · 센서)과 함께 지움.
 # 실전반 조회 갈래(「쓰는 사람에 따라 갈리는 답」) ㄱ = 승인 여부 · 단가 · 불량률 · 납기만 돌려줌 · ㄴ = PR-07 7.4 정보(입고 검사 · 비교 가산 비용)를 함께 돌려줌.
-REFERENCE_BRANCHES = {'통합반': ['A', 'B', 'C', 'D', 'E'], '실전반': ['A', 'B', 'ㄴ', 'ㄷ']}
-BRANCH_DIRS = {'A': '', 'B': '갈래B', 'C': '갈래C', 'D': '갈래D', 'E': '갈래E', 'ㄴ': '갈래ㄴ', 'ㄷ': '갈래ㄷ'}
+REFERENCE_BRANCHES = {'통합반': ['A', 'B', 'C', 'D', 'E'], '실전반': ['A', 'B', 'ㄴ', 'ㄷ', 'ㄹ', 'ㅁ']}
+BRANCH_DIRS = {'A': '', 'B': '갈래B', 'C': '갈래C', 'D': '갈래D', 'E': '갈래E', 'ㄴ': '갈래ㄴ', 'ㄷ': '갈래ㄷ', 'ㄹ': '갈래ㄹ', 'ㅁ': '갈래ㅁ'}
+# 실전반 결정 지점 「기준일에 유효한 견적이 여럿인 쌍」의 갈래: ㄹ · ㅁ은 승인 판단이 ㄴ이고 견적 갈래만 다르다. 그 밖의 갈래는 늦게 받은 견적(D.QUOTE_MODES[0]).
+QUOTE_BRANCH = {'ㄹ': ('ㄴ', D.QUOTE_MODES[1]), 'ㅁ': ('ㄴ', D.QUOTE_MODES[2])}
+
+
+def supply_branch(branch):
+    """공급 갈래 → (승인 판단 갈래, 견적 갈래)."""
+    return QUOTE_BRANCH.get(branch, (branch, D.QUOTE_MODES[0]))
+
 GRAPH_LAB_INPUT = {'통합반': 'E', '실전반': 'ㄴ'}     # 2회차 그래프 랩 data/model의 앞 단계 완성 모델 — 두 과정 같은 설비 판단(갈래 E, 실전반은 그 위에 공급 ㄴ)
 PROVIDED_BRANCH = 'E'                                  # 두 과정 2회차의 제공 설비 모델 판단(실전반 설계 랩의 제공 모델 · 공급 모델의 바탕 · 통합반 그래프 랩)
 # 3 · 4회차 생성기가 받는 설비 모델은 2026-11-12 보강 전 판으로 고정한다(reference/2회차_이전판 — 그때 생성기로 만든 그대로).
@@ -259,7 +267,9 @@ PR74_LINE = next(i for i, x in enumerate(D.pr07_excerpt().splitlines(), 1) if '�
 PR74_SOURCE = D.line_ref(D.PR07_FILE, PR74_LINE) + '(7.4)'
 PRACTICAL_BRANCH_README = ('# 실전반 강사 참조 갈래\n\n'
     '실습3: 루트 = 갈래 A(조건부 승인 = 승인) · PR-07 7.4 갈래 ㄱ(SCM 등록대로) / `갈래B/` = 조건부 승인 = 비승인 · ㄱ / '
-    '`갈래ㄴ/` = A · 7.4를 정보로 표시(실습4 `입력/` 모델) / `갈래ㄷ/` = A · 7.4 미결(확인 요청). 기대 답은 `기대답.json`의 같은 키(A · B · ㄴ · ㄷ).\n\n'
+    '`갈래ㄴ/` = A · 7.4를 정보로 표시(실습4 `입력/` 모델) / `갈래ㄷ/` = A · 7.4 미결(확인 요청) / `갈래ㄹ/` = ㄴ · 먼저 받은 견적 / `갈래ㅁ/` = ㄴ · 견적 확인 필요. 기대 답은 `기대답.json`의 같은 키(A · B · ㄴ · ㄷ · ㄹ · ㅁ).\n\n'
+    f'「기준일에 유효한 견적이 여럿인 쌍」(`{D.QUOTE_FILE}` 8 · 9행, A정밀 · P-FAN-BRG — 7월 견적의 기한 안에 10월 재견적) = {D.QUOTE_MODES[0]}(ㄱ · ㄴ · ㄷ · A · B — 10월 줄) · '
+    f'{D.QUOTE_MODES[1]}(ㄹ — 7월 줄, 발주 때 7월 조건을 요구) · {D.QUOTE_MODES[2]}(ㅁ — 두 줄 모두 쓰지 않아 그 쌍이 비교에서 빠짐, 공급사에 어느 견적이 유효한지 확인). 원자료(현장 메모 6절 · PR-07 발췌)는 어느 줄을 쓸지 정하지 않는다.\n\n'
     '실습3 「학생이 정할 것」과 갈래: 「조건이 붙은 승인」 = A(승인) · B(비승인), 「빈 값의 뜻」(SCM 등록의 빈 조건 칸) = ㄱ(조건 없음) · ㄷ(미결), '
     '「쓰는 사람에 따라 갈리는 답」(PR-07 7.4 정보) = ㄱ(SCM 등록만) · ㄴ(7.4 정보 함께). 확인 사례 「출처마다 다른 승인 정보」는 결정 지점이 아니다 — '
     f'`{D.PR07_FILE}` 7.3({next(i for i, x in enumerate(D.pr07_excerpt().splitlines(), 1) if "SCM 구매 포털의 등록을 따른다" in x)}행) 「공급사의 승인 여부는 SCM 구매 포털의 등록을 따른다」가 답을 주므로 모든 갈래가 `{D.AVL_FILE}`와 기준일을 따른다'
@@ -274,15 +284,20 @@ def student_schema(schema):
 
 def supply_part(nodes,rels,branch='A'):
     """실습3 「값마다 출처 남기기」까지 한 완성 상태: 견적 값은 쓴 견적 줄(quote_source), 승인 값은 SCM 등록 줄(approval_source), 판단 시점은 기준일(as_of)."""
+    branch,quote_mode=supply_branch(branch)
     parts={p['품번']:p for p in rows('예비품_목록.csv')}
     avl={(r['공급사'],r['품번']):(line,r) for line,r in enumerate(rows(D.AVL_FILE),2)}
-    best={}
+    live={}
     for line,q in enumerate(rows(D.QUOTE_FILE),2):
         pid=q['품번'] if q['품번'] in parts else next(p for p,row in parts.items() if row['품명']==q['품번'])
         sup=next(k for k in D.SUPPLIERS if q['공급사'].startswith(k))
         if q['유효기한']<D.REF_DATE:continue          # 만료 견적은 조건으로 쓰지 않는다
-        prev=best.get((sup,pid))
-        if prev is None or q['견적일']>prev[1]['견적일']:best[(sup,pid)]=(line,q)
+        live.setdefault((sup,pid),[]).append((line,q))
+    best={}
+    for k,quotes in live.items():                    # 유효한 견적이 여럿인 쌍은 견적 갈래대로(D.QUOTE_MODES)
+        if len(quotes)==1:best[k]=quotes[0]
+        elif quote_mode==D.QUOTE_MODES[0]:best[k]=max(quotes,key=lambda x:x[1]['견적일'])
+        elif quote_mode==D.QUOTE_MODES[1]:best[k]=min(quotes,key=lambda x:x[1]['견적일'])
     for sup in sorted({s for s,_ in best}):nodes.append({'labels':['Supplier'],'props':{'id':'supplier:'+sup,'name':sup}})
     for (sup,pid),(line,q) in sorted(best.items()):
         a_line,a=avl.get((sup,pid),(None,None))
@@ -334,9 +349,12 @@ def schema_for(supply,branch):
         props={'approved':'boolean','approval_status':'string','condition':'string','price_manwon':'number','defect_rate':'number','defect_rate_original':'string',
                'lead_days':'integer','lead_days_original':'string','min_order_qty':'integer','supplier_part_no':'string','quote_date':'string','valid_until':'string',
                'quote_source':'string','approval_source':'string','as_of':'string'}
-        if branch=='ㄴ':props.update(inspection='string',compare_extra_manwon='number',rule_source='string')
-        if branch=='ㄷ':props.update(pending_check='string')
-        relation_defs['SUPPLIES']={'from':'Supplier','to':'Part','cardinality':'N:M','note':'공급사·품번마다 유효한 최신 견적 하나','properties':props}
+        ab,quote_mode=supply_branch(branch)
+        if ab=='ㄴ':props.update(inspection='string',compare_extra_manwon='number',rule_source='string')
+        if ab=='ㄷ':props.update(pending_check='string')
+        note={D.QUOTE_MODES[0]:'공급사·품번마다 기준일에 유효한 견적 하나(여럿이면 견적일이 가장 늦은 줄)',D.QUOTE_MODES[1]:'공급사·품번마다 기준일에 유효한 견적 하나(여럿이면 견적일이 가장 이른 줄)',
+              D.QUOTE_MODES[2]:'공급사·품번마다 기준일에 유효한 견적 하나(여럿인 쌍은 확인 전까지 두지 않음)'}[quote_mode]
+        relation_defs['SUPPLIES']={'from':'Supplier','to':'Part','cardinality':'N:M','note':note,'properties':props}
     constraints=['id는 전체 그래프에서 고유. 구성요소·센서는 설비코드:이름, 부품은 사내 품번' + (', 실물은 unit:일련번호' if split else ''),
                  '옛 코드 줄(같은 기능위치 · 일련번호)·점검표 중복 행은 대상을 새로 만들지 않는다' + ('. 철거된 실물은 그 자리의 지난 실물(INSTALLED_UNIT current=false)로 남긴다' if split else '. 철거 실물 행도 대상을 새로 만들지 않는다'),
                  'limit 생략은 0과 다르다. normal 생략은 미확인','단위는 Quantity 기준 단위로 맞추고 바꾼 경우 source_unit을 남긴다']
@@ -346,8 +364,9 @@ def schema_for(supply,branch):
                             '단가는 만원, 불량률은 0~1 비율, 납기는 일로 맞추고, 바꾼 불량률 · 납기는 원래 표기를 defect_rate_original · lead_days_original로 남긴다',
                             f'값마다 출처를 남긴다: quote_source = 쓴 견적의 {D.QUOTE_FILE} 줄, approval_source = {D.AVL_FILE}의 등록 줄, as_of = 기준일']
     # 실습4 입력 모델(갈래 ㄴ)의 schema가 학생에게 간다 — 「함께 남긴다」처럼 실습4 결정(돌려줄지)을 미리 정하는 말 없이, 값이 어디서 왔는지만 적는다(코딩랩.md K-4).
-    if supply and branch=='ㄴ':constraints.append(f'inspection · compare_extra_manwon · rule_source는 구매 기준서 PR-07 7.4 문장(rule_source 줄)에서 온 값이고, 그 절에 걸리는 승인 공급사 쌍(불량률 {D.PR74_RATE_PCT} % 초과)에만 있다')
-    if supply and branch=='ㄷ':constraints.append('SCM 등록에 조건이 없는데 구매 기준서 PR-07 7.4에 걸리는 승인 공급사 쌍은 pending_check로 확인 필요를 남긴다(approved는 SCM 등록대로)')
+    ab=supply_branch(branch)[0] if supply else branch
+    if supply and ab=='ㄴ':constraints.append(f'inspection · compare_extra_manwon · rule_source는 구매 기준서 PR-07 7.4 문장(rule_source 줄)에서 온 값이고, 그 절에 걸리는 승인 공급사 쌍(불량률 {D.PR74_RATE_PCT} % 초과)에만 있다')
+    if supply and ab=='ㄷ':constraints.append('SCM 등록에 조건이 없는데 구매 기준서 PR-07 7.4에 걸리는 승인 공급사 쌍은 pending_check로 확인 필요를 남긴다(approved는 SCM 등록대로)')
     return {'classes':definitions,'relations':relation_defs,'identity':'id는 전체 그래프에서 고유.','branch':branch,'constraints':constraints}
 
 def reference_model(supply=False,branch='A'):
@@ -993,7 +1012,7 @@ def design_practical():
             '함수 머리는 그대로. 쌍마다 줄 하나 또는 None. 점수 · 순위로 고르지 않는다.', '본문을 채운 `use_quote`', '「견적 줄마다 간 곳」을 견적일 · 유효기한과 견준다'),
           cmd=SHOW, why=('같은 공급사 · 부품에 견적이 여러 번 있으면 기준일에 쓸 것은 하나여야 고르는 사람이 같은 조건을 봅니다. 어느 줄을 왜 골랐는지 남겨야 나중에 그 선택을 다시 볼 수 있습니다. '
                          '기한 지난 줄을 빼느냐, 가장 늦은 줄을 쓰느냐에 따라 4단계 표의 단가 · 납기 · 견적일이 쌍마다 달라집니다.'), differ=F.FIX_LOOP,
-          answer=A('기준일에 유효기한이 지난 견적은 빼고, 남은 줄 가운데 견적일이 가장 늦은 줄을 씁니다.', paste('결과/quote_rule.py', ANS.QUOTE_RULE_ANSWER))),
+          answer=A('기준일에 유효기한이 지난 견적은 빼고, 남은 줄 가운데 견적일이 가장 늦은 줄을 씁니다.', paste('결과/quote_rule.py', ANS.quote_rule_answer('ㄴ')))),
         S('판단② 승인과 함께 볼 것 정하기', '④ ~ ⑥ 판단 · 대조 · 고침',
           '`결과/approval_rule.py`의 `approval` · `buyer_info`를 `결과/정한_것.csv`의 세 결정대로 AI와 채우고 `python show_result.py`를 실행합니다.',
           ('출처마다 다른 승인 정보와 기한 지난 등록은 어느 자료를 따랐는지, 조건부 승인 · 빈 조건 · 함께 볼 정보가 내 결정대로 처리됐는지 쌍마다 근거 줄로 묻습니다. '
@@ -1039,7 +1058,8 @@ def design_practical():
         questions=['펌프 축 씰 키트를 쓰는 설비는 어디인가?',
                    f'기준일({D.REF_DATE})에 펌프 축 씰 키트를 어느 공급사에서 어떤 조건(승인 여부 · 단가 · 불량률 · 납기)으로 살 수 있고, 각 값은 어느 파일 · 어느 줄에서 왔는가?',
                    '이름이 비슷한 다른 품번, 예전 품번이나 다른 표기, 원자료에 없는 품번으로 물으면 결과가 서로 구별되는가?'],
-        decide=[('조건이 붙은 승인', '승인 목록에 조건을 달아 등록된 쌍을 승인 여부(참 · 거짓)에 어떻게 담고, 그 조건을 구매 담당에게 어떻게 보여 줄지'),
+        decide=[(ANS.QUOTE_POINT, '같은 공급사 · 부품에 기준일에 유효한 견적이 둘 이상이면 어느 줄을 쓸지(늦게 받은 줄 · 먼저 받은 줄 · 확인 전까지 쓰지 않음)'),
+                ('조건이 붙은 승인', '승인 목록에 조건을 달아 등록된 쌍을 승인 여부(참 · 거짓)에 어떻게 담고, 그 조건을 구매 담당에게 어떻게 보여 줄지'),
                 ('빈 값의 뜻', '비어 있는 칸을 「없음」으로 읽을지 「적지 않음」으로 읽을지'),
                 ('쓰는 사람에 따라 갈리는 답', '구매 담당이 공급사를 비교할 때 함께 봐야 할 것이 자료에 있으면, 그것을 모델에 어떻게 남길지')],
         outside=['공급사를 고르거나 점수 · 순위를 매기는 일', '입고 이력으로 실측 납기를 계산하는 일', '그래프 DB에 적재하고 조회하는 일(다음 실습)',
