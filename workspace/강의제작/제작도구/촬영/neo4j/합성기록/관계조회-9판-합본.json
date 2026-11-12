@@ -1,7 +1,7 @@
 {
- "output": "관계조회-7판-합본3_1080p.mp4",
+ "output": "관계조회-9판-합본_1080p.mp4",
  "duration_s": 1963.733,
- "source": "Neo4j Browser 클라우드 Playwright 1920x1080 JPEG95 screencast, overlay pointer, 7판 음성(어미만 고침 · 화면대조 4곳 고침)",
+ "source": "1920x1080 JPEG screencast",
  "output_fps": 30,
  "pointer": [
   "overlay"
@@ -292,12 +292,12 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 5631
+   "next_speech_after_action_ms": 7951
   },
   {
    "id": "r0201",
    "speech": [
-    "00:43.002",
+    "00:45.322",
     "00:57.002"
    ],
    "revoiced": "cache",
@@ -307,12 +307,12 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 6141
+   "next_speech_after_action_ms": 7261
   },
   {
    "id": "r0202",
    "speech": [
-    "01:04.885",
+    "01:06.005",
     "01:16.165"
    ],
    "revoiced": "cache",
@@ -352,27 +352,28 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 10266
+   "next_speech_after_action_ms": 10746
   },
   {
    "id": "r0205",
    "speech": [
-    "01:35.415",
+    "01:35.895",
     "01:38.855"
    ],
+   "revoiced": "cache",
    "action": [
     "01:35.416",
     "01:36.418"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 2437
+   "next_speech_after_action_ms": 2638
   },
   {
    "id": "r0206",
    "speech": [
-    "01:38.855",
-    "01:58.775"
+    "01:39.056",
+    "01:58.736"
    ],
    "revoiced": "cache",
    "action": [
@@ -381,12 +382,12 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 1568
+   "next_speech_after_action_ms": 2208
   },
   {
    "id": "r0207",
    "speech": [
-    "01:59.175",
+    "01:59.815",
     "02:01.015"
    ],
    "revoiced": "cache",
@@ -396,12 +397,12 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 2739
+   "next_speech_after_action_ms": 1939
   },
   {
    "id": "r0208",
    "speech": [
-    "02:02.075",
+    "02:01.275",
     "02:10.475"
    ],
    "revoiced": "cache",
@@ -417,7 +418,7 @@
    "id": "r0300",
    "speech": [
     "02:15.867",
-    "02:30.827"
+    "02:30.187"
    ],
    "revoiced": "cache",
    "action": [
@@ -470,26 +471,27 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 4965
+   "next_speech_after_action_ms": 5285
   },
   {
    "id": "r0304",
    "speech": [
-    "02:52.296",
+    "02:52.616",
     "02:56.376"
    ],
+   "revoiced": "cache",
    "action": [
     "02:52.296",
     "02:52.980"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 3916
+   "next_speech_after_action_ms": 4236
   },
   {
    "id": "r0305",
    "speech": [
-    "02:56.896",
+    "02:57.216",
     "02:59.776"
    ],
    "revoiced": "cache",
@@ -529,12 +531,12 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 15060
+   "next_speech_after_action_ms": 15300
   },
   {
    "id": "r0401",
    "speech": [
-    "03:21.890",
+    "03:22.130",
     "03:30.930"
    ],
    "revoiced": "cache",
@@ -544,12 +546,12 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 616
+   "next_speech_after_action_ms": 2296
   },
   {
    "id": "r0402",
    "speech": [
-    "03:31.530",
+    "03:33.210",
     "03:35.690"
    ],
    "revoiced": "cache",
@@ -559,12 +561,12 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 697
+   "next_speech_after_action_ms": 617
   },
   {
    "id": "r0403",
    "speech": [
-    "03:35.891",
+    "03:35.811",
     "03:37.811"
    ],
    "revoiced": "cache",
@@ -574,12 +576,12 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 1381
+   "next_speech_after_action_ms": 16101
   },
   {
    "id": "r0404",
    "speech": [
-    "03:38.333",
+    "03:53.053",
     "03:55.213"
    ],
    "revoiced": "cache",
@@ -641,6 +643,7 @@
     "04:28.438",
     "04:31.238"
    ],
+   "revoiced": "cache",
    "action": [
     "04:28.439",
     "04:31.213"
@@ -676,12 +679,12 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 15224
+   "next_speech_after_action_ms": 23224
   },
   {
    "id": "r0411",
    "speech": [
-    "04:55.464",
+    "05:03.464",
     "05:09.224"
    ],
    "revoiced": "cache",
@@ -706,12 +709,12 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 7858
+   "next_speech_after_action_ms": 14338
   },
   {
    "id": "r0501",
    "speech": [
-    "05:17.555",
+    "05:24.035",
     "05:33.395"
    ],
    "revoiced": "cache",
@@ -765,26 +768,27 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 3204
+   "next_speech_after_action_ms": 5124
   },
   {
    "id": "r0505",
    "speech": [
-    "06:02.833",
+    "06:04.753",
     "06:10.433"
    ],
+   "revoiced": "cache",
    "action": [
     "06:02.836",
     "06:10.488"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 681
+   "next_speech_after_action_ms": 761
   },
   {
    "id": "r0506",
    "speech": [
-    "06:11.169",
+    "06:11.249",
     "06:14.689"
    ],
    "revoiced": "cache",
@@ -802,6 +806,7 @@
     "06:15.562",
     "06:17.482"
    ],
+   "revoiced": "cache",
    "action": [
     "06:15.563",
     "06:17.444"
@@ -859,7 +864,7 @@
    "id": "r0600",
    "speech": [
     "06:44.700",
-    "06:52.220"
+    "06:52.380"
    ],
    "revoiced": "cache",
    "action": [
@@ -1416,12 +1421,12 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 7561
+   "next_speech_after_action_ms": 9881
   },
   {
    "id": "r0813",
    "speech": [
-    "12:30.777",
+    "12:33.097",
     "12:34.857"
    ],
    "revoiced": "cache",
@@ -1461,12 +1466,12 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 5527
+   "next_speech_after_action_ms": 7047
   },
   {
    "id": "r0816",
    "speech": [
-    "12:50.047",
+    "12:51.567",
     "12:55.087"
    ],
    "revoiced": "cache",
@@ -1704,7 +1709,7 @@
    "id": "r1000",
    "speech": [
     "14:45.100",
-    "14:57.340"
+    "14:57.260"
    ],
    "revoiced": "cache",
    "action": [
@@ -1919,12 +1924,12 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 530
+   "next_speech_after_action_ms": 4450
   },
   {
    "id": "r1015",
    "speech": [
-    "16:55.971",
+    "16:59.891",
     "17:03.411"
    ],
    "revoiced": "cache",
@@ -2080,12 +2085,12 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 5533
+   "next_speech_after_action_ms": 6333
   },
   {
    "id": "r1104",
    "speech": [
-    "19:03.161",
+    "19:03.961",
     "19:17.321"
    ],
    "revoiced": "cache",
@@ -2095,14 +2100,15 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 627
+   "next_speech_after_action_ms": 1267
   },
   {
    "id": "r1105",
    "speech": [
-    "19:17.921",
+    "19:18.561",
     "19:19.921"
    ],
+   "revoiced": "cache",
    "action": [
     "19:17.922",
     "19:20.185"
@@ -2139,12 +2145,12 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 1383
+   "next_speech_after_action_ms": 7143
   },
   {
    "id": "r1108",
    "speech": [
-    "19:49.708",
+    "19:55.468",
     "20:00.988"
    ],
    "revoiced": "cache",
@@ -2566,12 +2572,12 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 7466
+   "next_speech_after_action_ms": 12666
   },
   {
    "id": "r1310",
    "speech": [
-    "23:53.021",
+    "23:58.221",
     "24:15.101"
    ],
    "revoiced": "cache",
@@ -2817,13 +2823,13 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 3599
+   "next_speech_after_action_ms": 5783
   },
   {
    "id": "r1404",
    "speech": [
-    "26:39.021",
-    "26:44.141"
+    "26:41.205",
+    "26:43.285"
    ],
    "revoiced": "cache",
    "action": [
@@ -3141,12 +3147,12 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 5461
+   "next_speech_after_action_ms": 6181
   },
   {
    "id": "r1607",
    "speech": [
-    "29:47.465",
+    "29:48.185",
     "29:56.025"
    ],
    "revoiced": "cache",
@@ -3156,26 +3162,27 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 602
+   "next_speech_after_action_ms": 762
   },
   {
    "id": "r1608",
    "speech": [
-    "29:56.627",
+    "29:56.787",
     "29:58.227"
    ],
+   "revoiced": "cache",
    "action": [
     "29:56.628",
     "29:58.645"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 601
+   "next_speech_after_action_ms": 121
   },
   {
    "id": "r1609",
    "speech": [
-    "29:59.246",
+    "29:58.766",
     "30:04.526"
    ],
    "revoiced": "cache",
@@ -3215,12 +3222,12 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 889
+   "next_speech_after_action_ms": 8409
   },
   {
    "id": "r1612",
    "speech": [
-    "30:21.909",
+    "30:29.429",
     "30:32.069"
    ],
    "revoiced": "cache",
@@ -3230,12 +3237,12 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 11222
+   "next_speech_after_action_ms": 11462
   },
   {
    "id": "r1613",
    "speech": [
-    "30:33.291",
+    "30:33.531",
     "30:37.771"
    ],
    "revoiced": "cache",
@@ -3245,14 +3252,15 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 1635
+   "next_speech_after_action_ms": 1955
   },
   {
    "id": "r1614",
    "speech": [
-    "30:38.372",
+    "30:38.692",
     "30:40.452"
    ],
+   "revoiced": "cache",
    "action": [
     "30:38.373",
     "30:40.307"
@@ -3289,14 +3297,15 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 14176
+   "next_speech_after_action_ms": 14016
   },
   {
    "id": "r1617",
    "speech": [
-    "31:00.803",
+    "31:00.643",
     "31:03.043"
    ],
+   "revoiced": "cache",
    "action": [
     "31:00.803",
     "31:02.968"
@@ -3419,12 +3428,12 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 7143
+   "next_speech_after_action_ms": 7223
   },
   {
    "id": "r1626",
    "speech": [
-    "32:02.326",
+    "32:02.406",
     "32:14.406"
    ],
    "revoiced": "cache",
@@ -3449,14 +3458,15 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 9662
+   "next_speech_after_action_ms": 10542
   },
   {
    "id": "r1628",
    "speech": [
-    "32:24.670",
+    "32:25.550",
     "32:30.830"
    ],
+   "revoiced": "cache",
    "action": [
     "32:24.676",
     "32:29.290"
@@ -13101,8 +13111,8 @@
     0
    ],
    "소리튐": false,
-   "표본차": 0.0002,
-   "기준": 0.0502,
+   "표본차": 0.0001,
+   "기준": 0.0544,
    "소리시작_어긋남_ms": [
     -0.0
    ],
@@ -13192,7 +13202,7 @@
    ],
    "소리튐": false,
    "표본차": 0.0009,
-   "기준": 0.0684,
+   "기준": 0.0501,
    "소리시작_어긋남_ms": [
     -0.0
    ],
@@ -13291,10 +13301,10 @@
     0
    ],
    "소리튐": false,
-   "표본차": 0.0001,
-   "기준": 0.0976,
+   "표본차": 0.0002,
+   "기준": 0.0722,
    "소리시작_어긋남_ms": [
-    0.0
+    -0.0
    ],
    "소리_ok": true,
    "바뀐화소퍼센트": 0.0,
@@ -13470,12 +13480,14 @@
   "r0202",
   "r0203",
   "r0204",
+  "r0205",
   "r0206",
   "r0207",
   "r0208",
   "r0300",
   "r0302",
   "r0303",
+  "r0304",
   "r0305",
   "r0306",
   "r0400",
@@ -13485,13 +13497,16 @@
   "r0404",
   "r0406",
   "r0407",
+  "r0408",
   "r0410",
   "r0411",
   "r0500",
   "r0501",
   "r0503",
   "r0504",
+  "r0505",
   "r0506",
+  "r0507",
   "r0508",
   "r0509",
   "r0510",
@@ -13561,6 +13576,7 @@
   "r1102",
   "r1103",
   "r1104",
+  "r1105",
   "r1106",
   "r1107",
   "r1108",
@@ -13614,26 +13630,30 @@
   "r1605",
   "r1606",
   "r1607",
+  "r1608",
   "r1609",
   "r1610",
   "r1611",
   "r1612",
   "r1613",
+  "r1614",
   "r1615",
   "r1616",
+  "r1617",
   "r1618",
   "r1619",
   "r1620",
   "r1622",
   "r1626",
   "r1627",
+  "r1628",
   "r1629"
  ],
  "not_verified": [
   "직접 청취",
   "사용자 재생 확인"
  ],
- "이름": "관계조회-7판-합본3",
+ "이름": "관계조회-9판-합본",
  "도구": "neo4j",
  "crf": 16,
  "fps": 30,
@@ -24711,8 +24731,8 @@
   }
  ],
  "mp4": {
-  "sha256": "613720ecef9556b7b239183dd65c4ce069b780f7ff059614022472d264d3b654",
+  "sha256": "c0e308579214325d781f9becb38ae2ff2c960f16717099e9e100daeee3e783fe",
   "video_packets": 58912,
-  "bytes": 55027142
+  "bytes": 53602047
  }
 }

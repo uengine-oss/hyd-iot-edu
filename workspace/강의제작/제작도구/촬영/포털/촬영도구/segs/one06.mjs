@@ -43,6 +43,13 @@ export async function op(ctx,c,o){
     const w=ctx.p.waitForFileChooser({timeout:20000});w.catch(()=>{});await c.click(T(a));await (await w).setFiles(src);await c.sleep(400);
     if(!(await ctx.serial(()=>ctx.p.evaluate(n=>[...document.querySelectorAll('input[type=file]')].some(i=>[...i.files].some(f=>f.name===n)),b))))throw Error('파일 칸에 들어가지 않음: '+b);return;}
   case 'type':return c.type(a);
+  // 요소 안 글의 한 구절 끝을 짚는다(값 · 조건 글자를 정확히 — 2026-11-12 06 최종 판정 「칠십 밑」을 말할 때 줄 앞을 짚음). a: 대상, b: 구절.
+  // 먼저 그 요소를 화면에 들이고(point와 같은 굴림), 구절의 글자 상자 오른쪽 끝 바로 뒤로 간다. 구절이 없거나 여러 번이면 멈춘다.
+  case 'textin':{const t=T(a);await c.point({...t,anchor:'left'});
+    const q=await ctx.serial(()=>ctx.p.evaluate(({t,b})=>{const vis=e=>e.checkVisibility();let es=[...document.querySelectorAll(t.css)].filter(vis);if(t.contains)es=es.filter(e=>e.textContent.includes(t.contains));if(t.nth!==undefined)es=es.slice(t.nth,t.nth+1);
+      if(es.length!==1)return{error:'textin 대상 '+es.length+'개: '+t.css};const el=es[0];const w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);const hits=[];for(let n;(n=w.nextNode());){let i=-1;while((i=n.textContent.indexOf(b,i+1))>=0)hits.push([n,i]);}
+      if(hits.length!==1)return{error:'구절 '+hits.length+'번: '+b};const [n,i]=hits[0];const g=document.createRange();g.setStart(n,i);g.setEnd(n,i+b.length);const rs=[...g.getClientRects()],r=rs.at(-1);return{x:Math.min(innerWidth-30,r.right+8),y:r.top+r.height/2};},{t,b}));
+    if(q.error)throw Error(q.error);return c.move(q.x,q.y);}
   // 화면이 다 그려질 때까지: 본문 굴린 자리와 높이가 1.2초 동안 그대로면 끝(최대 b초, 기본 10). 처리 건을 연 직후 포털이 목록 · 상세를 다시 그리며
   // 본문이 조작 없이 위아래로 튀었다(2026-11-12 06 o1102) — 그 동안 말을 시작하지 않으려고 둔다.
   case 'settle':{const t0=Date.now(),lim=(b??10)*1000;let last=null,since=Date.now();

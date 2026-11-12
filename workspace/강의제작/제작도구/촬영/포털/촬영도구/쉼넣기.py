@@ -65,6 +65,13 @@ FONTS = ('C:/Windows/Fonts/malgun.ttf', '/usr/share/fonts/malgun/malgun.ttf', '/
 SCENE = 8.0      # 프레임 차이(96×54 회색 평균 절대차)가 이 값 이상이면 장면 전환 — 04 실측: 창 전환 · 스크롤 · 설치 창 다음 단계는 8~210, 진행 막대 · 커서는 1 아래
 
 
+def fc_file(path):
+    """필터 글을 파일로 넘기는 옵션. ffmpeg 7부터는 「-/filter_complex <파일>」, 그 앞 판(이 클라우드 VM의 6.1)은 「-filter_complex_script <파일>」만 안다."""
+    v = subprocess.run([ffmpeg(), '-version'], capture_output=True, text=True).stdout.split()
+    major = int(re.match(r'\d+', v[2]).group()) if len(v) > 2 and re.match(r'\d+', v[2]) else 7
+    return ['-/filter_complex', str(path)] if major >= 7 else ['-filter_complex_script', str(path)]
+
+
 class 실패(SystemExit):
     pass
 
@@ -573,7 +580,7 @@ def build(pf, out):
                    input=np.clip(Y, -32768, 32767).astype(np.int16).tobytes(), check=True)
     chs = [(m(s), m(e), t) for s, e, t in chapters(P['영상'])]
     meta = tmp / '장.txt'; write_chapters(meta, [c for c in chs if c[1] > c[0]])
-    subprocess.run([ffmpeg(), '-v', 'error', '-y', '-i', str(P['영상']), '-i', str(wav), '-i', str(meta), '-/filter_complex', str(tmp / 'fc.txt'),
+    subprocess.run([ffmpeg(), '-v', 'error', '-y', '-i', str(P['영상']), '-i', str(wav), '-i', str(meta), *fc_file(tmp / 'fc.txt'),
                     '-map', '[v]', '-map', '1:a', '-map_chapters', '2', '-c:v', 'libx264', '-preset', 'medium', '-crf', str(CRF), '-pix_fmt', 'yuv420p',
                     '-fps_mode', 'passthrough', '-c:a', 'aac', '-b:a', '160k', '-ar', str(SR), '-ac', '1', '-movflags', '+faststart', str(out)], check=True)
     write_srt(out.with_suffix('.srt'), blocks)

@@ -253,11 +253,12 @@ def entry(id, course, session, title, version, folder, **extra):
     return item
 
 
-def register(entries, index=INDEX):
-    """같은 id는 바꾸고 새 id는 더한 뒤 (과정, 회차, 폴더) 순서로 쓴다 — 어느 생성기가 마지막에 돌아도 순서가 같다."""
+def register(entries, index=INDEX, drop=()):
+    """같은 id는 바꾸고 새 id는 더한 뒤 (과정, 회차, 폴더) 순서로 쓴다 — 어느 생성기가 마지막에 돌아도 순서가 같다.
+    drop의 id는 지운다(ZIP을 한 파일 가이드로 바꾼 도구 실습 — 가이드 P-13)."""
     data = json.loads(index.read_text(encoding='utf-8')) if index.exists() else {'labs': []}
     new = {item['id']: item for item in entries}
-    labs = [item for item in data['labs'] if item['id'] not in new] + list(new.values())
+    labs = [item for item in data['labs'] if item['id'] not in new and item['id'] not in drop] + list(new.values())
     data['labs'] = sorted(labs, key=lambda item: (item['course'], item['session'], item['folder']))
     index.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
 
