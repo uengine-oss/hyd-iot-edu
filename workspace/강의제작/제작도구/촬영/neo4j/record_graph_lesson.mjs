@@ -173,7 +173,7 @@ try{
    switch(c.op){
     case 'none':break;
     // 결과 카드(그림 · 표)를 위에서부터 센 n번째(0 = 맨 위 새 카드)의 윗부분을 짚는다. 화면 안에 없으면 멈춘다.
-    case 'pointCard':{await g(c.at??.2);const r=await serial(()=>p.evaluate(n=>{const els=[...document.querySelectorAll('[data-testid="nvl-c2d-canvas"],[role="table"]')].filter(e=>e.getBoundingClientRect().height>0).sort((a,b)=>a.getBoundingClientRect().top-b.getBoundingClientRect().top);const e=els[n];if(!e)throw Error('그 카드가 없다: '+n);const r=e.getBoundingClientRect();if(r.top>innerHeight-50)throw Error('그 카드가 화면 아래에 있다: '+n);return {x:r.x+r.width*.4,y:Math.min(r.top+50,innerHeight-30)};},c.n));await move(r);break;}
+    case 'pointCard':{await g(c.at??.2);const r=await serial(()=>p.evaluate(n=>{const hs=[...document.querySelectorAll('*')].filter(e=>e.children.length===0&&/^neo4j\$/.test(e.textContent.trim())&&e.getBoundingClientRect().height>0).sort((a,b)=>a.getBoundingClientRect().top-b.getBoundingClientRect().top);const e=hs[n];if(!e)throw Error('그 카드가 없다: '+n);const r=e.getBoundingClientRect();if(r.bottom>innerHeight-4)throw Error('그 카드 머리 줄이 화면 아래에 있다: '+n);return {x:r.x+90,y:r.y+r.height/2};},c.n));await move(r);break;}
     case 'point':for(const q of c.points){await g(q.at??.1);await pointAt(q);}break;
     case 'pointText':await g(c.at??.1);await pointAt({contains:c.contains,within:c.within,dx:c.dx,dy:c.dy});break;
     case 'pointStream':await g(c.at??.1);{const r=await serial(()=>p.evaluate(()=>{const e=[...document.querySelectorAll('article,[data-testid*="frame"],section')].find(e=>{const r=e.getBoundingClientRect();return r.y>150&&r.height>120&&r.x>400;});if(!e)throw Error('결과 카드가 없다');const r=e.getBoundingClientRect();return {x:r.x+r.width*.45,y:r.y+Math.min(r.height*.4,180)};}));await move(r);}break;
