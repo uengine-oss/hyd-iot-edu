@@ -12,9 +12,23 @@ def norm(text):
     return ' · '.join(sorted(x for x in re.split(r'[·,\s]+', str(text or '')) if x))
 
 
+def numbers(text):
+    """같은 값의 숫자는 같은 글로 견준다(0.30 = 0.3, 35.0 = 35)."""
+    out = []
+    for piece in re.split(r'([·,\s]+)', str(text or '')):
+        try:
+            out.append(f'{float(piece):g}' if piece.strip() and piece.lower() not in ('nan', 'inf', '-inf') else piece)
+        except ValueError:
+            out.append(piece)
+    return ''.join(out)
+
+
 def same(expected, actual):
-    """대조 화면은 적은 글을 그대로 보이고, 같음 여부만 norm으로 견준다."""
-    return norm(expected) == norm(actual)
+    """대조 화면은 적은 글을 그대로 보이고, 같음 여부는 조각의 순서와 숫자 표기(35 = 35.0)를 떼고 견준다 — 그 사실은 대조 표 아래 SAME_NOTE로 밝힌다."""
+    return norm(numbers(expected)) == norm(numbers(actual))
+
+
+SAME_NOTE = '값은 「 · 」로 나눈 조각의 순서와 숫자 표기(35와 35.0, 0.30과 0.3)를 떼고 견줍니다. 줄 순서도 보지 않습니다.'
 
 
 def shown(value):
