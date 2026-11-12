@@ -1,0 +1,5951 @@
+{
+ "output": "05-지식지도-새판3_1080p.mp4",
+ "duration_s": 1013.733,
+ "source": "1920x1080 JPEG screencast",
+ "output_fps": 30,
+ "pointer": [
+  "overlay"
+ ],
+ "segments": [
+  {
+   "segment": "m05-s1",
+   "tool": "포털",
+   "part": 1,
+   "from_ms": 0.0,
+   "used_ms": 46922.0,
+   "start_s": 0.0,
+   "frames": 1408,
+   "mode": "overlay",
+   "recorded_ms": 46922,
+   "error": null,
+   "end_url": "http://127.0.0.1:8088/#/ontology",
+   "end_tab": "ontology"
+  },
+  {
+   "segment": "m05-s2",
+   "tool": "포털",
+   "part": 2,
+   "from_ms": 0.0,
+   "used_ms": 100555.0,
+   "start_s": 46.933,
+   "frames": 3017,
+   "mode": "overlay",
+   "recorded_ms": 100555,
+   "error": null,
+   "end_url": "http://127.0.0.1:8088/#/ontology",
+   "end_tab": "ontology"
+  },
+  {
+   "segment": "m05-s3",
+   "tool": "포털",
+   "part": 3,
+   "from_ms": 0.0,
+   "used_ms": 164469.0,
+   "start_s": 147.5,
+   "frames": 4934,
+   "mode": "overlay",
+   "recorded_ms": 164469,
+   "error": null,
+   "end_url": "http://127.0.0.1:8088/#/ontology",
+   "end_tab": "ontology"
+  },
+  {
+   "segment": "m05-s4",
+   "tool": "포털",
+   "part": 4,
+   "from_ms": 0.0,
+   "used_ms": 102084.0,
+   "start_s": 311.967,
+   "frames": 3063,
+   "mode": "overlay",
+   "recorded_ms": 102084,
+   "error": null,
+   "end_url": "http://127.0.0.1:8088/#/ontology",
+   "end_tab": "ontology"
+  },
+  {
+   "segment": "m05-s5",
+   "tool": "포털",
+   "part": 5,
+   "from_ms": 0.0,
+   "used_ms": 164822.0,
+   "start_s": 414.067,
+   "frames": 4945,
+   "mode": "overlay",
+   "recorded_ms": 164822,
+   "error": null,
+   "end_url": "http://127.0.0.1:8088/#/ontology",
+   "end_tab": "ontology"
+  },
+  {
+   "segment": "m05-s6b",
+   "tool": "포털",
+   "part": 6,
+   "from_ms": 0.0,
+   "used_ms": 225480.0,
+   "start_s": 578.9,
+   "frames": 6764,
+   "mode": "overlay",
+   "recorded_ms": 225480,
+   "error": null,
+   "end_url": "http://127.0.0.1:8088/#/ontology",
+   "end_tab": "ontology"
+  },
+  {
+   "segment": "m05-s7b",
+   "tool": "포털",
+   "part": 7,
+   "from_ms": 0.0,
+   "used_ms": 174562.0,
+   "start_s": 804.367,
+   "frames": 5237,
+   "mode": "overlay",
+   "recorded_ms": 174562,
+   "error": null,
+   "end_url": "http://127.0.0.1:8088/#/ontology",
+   "end_tab": "ontology"
+  },
+  {
+   "segment": "m05-s8",
+   "tool": "포털",
+   "part": 8,
+   "from_ms": 0.0,
+   "used_ms": 34799.0,
+   "start_s": 978.933,
+   "frames": 1044,
+   "mode": "overlay",
+   "recorded_ms": 34799,
+   "error": null,
+   "end_url": "http://127.0.0.1:8088/#/ontology",
+   "end_tab": "ontology"
+  }
+ ],
+ "speech_cues": 124,
+ "cue_timeline": [
+  {
+   "id": "m05-101",
+   "speech": [
+    "00:00.012",
+    "00:12.972"
+   ]
+  },
+  {
+   "id": "m05-102",
+   "speech": [
+    "00:14.272",
+    "00:18.912"
+   ],
+   "action": [
+    "00:14.272",
+    "00:18.577"
+   ],
+   "commit": "00:17.997",
+   "commit_before_speech_end_ms": 915,
+   "next_speech_after_action_ms": 2335
+  },
+  {
+   "id": "m05-103",
+   "speech": [
+    "00:20.912",
+    "00:46.512"
+   ],
+   "action": [
+    "00:20.916",
+    "00:37.688"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 9249
+  },
+  {
+   "id": "m05-201",
+   "speech": [
+    "00:46.937",
+    "00:55.977"
+   ],
+   "action": [
+    "00:46.938",
+    "00:49.839"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 6738
+  },
+  {
+   "id": "m05-202",
+   "speech": [
+    "00:56.577",
+    "00:59.137"
+   ],
+   "action": [
+    "00:56.577",
+    "00:58.379"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 1358
+  },
+  {
+   "id": "m05-203",
+   "speech": [
+    "00:59.737",
+    "01:04.457"
+   ],
+   "action": [
+    "00:59.737",
+    "01:00.509"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 4549
+  },
+  {
+   "id": "m05-204",
+   "speech": [
+    "01:05.058",
+    "01:07.378"
+   ],
+   "action": [
+    "01:05.061",
+    "01:05.585"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 3093
+  },
+  {
+   "id": "m05-205",
+   "speech": [
+    "01:08.678",
+    "01:24.678"
+   ],
+   "action": [
+    "01:08.684",
+    "01:22.482"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 2796
+  },
+  {
+   "id": "m05-206",
+   "speech": [
+    "01:25.278",
+    "01:27.278"
+   ],
+   "action": [
+    "01:25.286",
+    "01:26.092"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 1786
+  },
+  {
+   "id": "m05-207",
+   "speech": [
+    "01:27.878",
+    "01:31.478"
+   ],
+   "action": [
+    "01:27.881",
+    "01:29.171"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 2907
+  },
+  {
+   "id": "m05-208",
+   "speech": [
+    "01:32.078",
+    "01:39.278"
+   ],
+   "action": [
+    "01:32.087",
+    "01:38.566"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 2012
+  },
+  {
+   "id": "m05-209",
+   "speech": [
+    "01:40.578",
+    "01:49.138"
+   ],
+   "action": [
+    "01:40.579",
+    "01:45.399"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 4339
+  },
+  {
+   "id": "m05-210",
+   "speech": [
+    "01:49.738",
+    "01:57.018"
+   ],
+   "action": [
+    "01:49.763",
+    "01:52.217"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 6102
+  },
+  {
+   "id": "m05-211",
+   "speech": [
+    "01:58.319",
+    "01:59.439"
+   ],
+   "action": [
+    "01:58.320",
+    "01:59.249"
+   ],
+   "commit": "01:58.678",
+   "commit_before_speech_end_ms": 761,
+   "next_speech_after_action_ms": 790
+  },
+  {
+   "id": "m05-212",
+   "speech": [
+    "02:00.039",
+    "02:00.999"
+   ],
+   "action": [
+    "02:00.042",
+    "02:01.275"
+   ],
+   "commit": "02:00.714",
+   "commit_before_speech_end_ms": 285,
+   "next_speech_after_action_ms": 600
+  },
+  {
+   "id": "m05-213",
+   "speech": [
+    "02:01.875",
+    "02:06.035"
+   ],
+   "action": [
+    "02:01.876",
+    "02:04.641"
+   ],
+   "commit": "02:04.185",
+   "commit_before_speech_end_ms": 1850,
+   "next_speech_after_action_ms": 1994
+  },
+  {
+   "id": "m05-214",
+   "speech": [
+    "02:06.635",
+    "02:09.675"
+   ],
+   "action": [
+    "02:06.636",
+    "02:07.622"
+   ],
+   "commit": "02:07.259",
+   "commit_before_speech_end_ms": 2416,
+   "next_speech_after_action_ms": 8058
+  },
+  {
+   "id": "m05-215",
+   "speech": [
+    "02:15.680",
+    "02:20.800"
+   ],
+   "action": [
+    "02:15.690",
+    "02:18.726"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 2674
+  },
+  {
+   "id": "m05-216",
+   "speech": [
+    "02:21.400",
+    "02:27.080"
+   ]
+  },
+  {
+   "id": "m05-301",
+   "speech": [
+    "02:27.520",
+    "02:33.120"
+   ],
+   "action": [
+    "02:27.522",
+    "02:33.064"
+   ],
+   "commit": "02:29.667",
+   "commit_before_speech_end_ms": 3453,
+   "next_speech_after_action_ms": 656
+  },
+  {
+   "id": "m05-302",
+   "speech": [
+    "02:33.720",
+    "02:38.200"
+   ]
+  },
+  {
+   "id": "m05-303",
+   "speech": [
+    "02:43.203",
+    "02:48.003"
+   ],
+   "action": [
+    "02:43.205",
+    "02:44.376"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 5627
+  },
+  {
+   "id": "m05-304",
+   "speech": [
+    "02:50.003",
+    "02:55.043"
+   ],
+   "action": [
+    "02:50.004",
+    "02:51.719"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 3924
+  },
+  {
+   "id": "m05-305",
+   "speech": [
+    "02:55.643",
+    "03:08.523"
+   ],
+   "action": [
+    "02:55.645",
+    "03:05.989"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 3134
+  },
+  {
+   "id": "m05-306",
+   "speech": [
+    "03:09.123",
+    "03:14.083"
+   ],
+   "action": [
+    "03:09.136",
+    "03:11.090"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 4293
+  },
+  {
+   "id": "m05-307",
+   "speech": [
+    "03:15.383",
+    "03:20.583"
+   ],
+   "action": [
+    "03:15.386",
+    "03:20.552"
+   ],
+   "commit": "03:20.134",
+   "commit_before_speech_end_ms": 449,
+   "next_speech_after_action_ms": 4031
+  },
+  {
+   "id": "m05-308",
+   "speech": [
+    "03:24.583",
+    "03:28.583"
+   ],
+   "action": [
+    "03:24.583",
+    "03:25.291"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 3893
+  },
+  {
+   "id": "m05-309",
+   "speech": [
+    "03:29.184",
+    "03:32.784"
+   ],
+   "action": [
+    "03:29.185",
+    "03:32.509"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 2275
+  },
+  {
+   "id": "m05-310",
+   "speech": [
+    "03:34.784",
+    "03:38.784"
+   ],
+   "action": [
+    "03:34.785",
+    "03:36.220"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 3165
+  },
+  {
+   "id": "m05-311",
+   "speech": [
+    "03:39.385",
+    "03:41.145"
+   ],
+   "action": [
+    "03:39.388",
+    "03:39.896"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 1849
+  },
+  {
+   "id": "m05-312",
+   "speech": [
+    "03:41.745",
+    "03:44.865"
+   ]
+  },
+  {
+   "id": "m05-313",
+   "speech": [
+    "03:46.164",
+    "03:58.164"
+   ],
+   "action": [
+    "03:46.165",
+    "03:56.436"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 2328
+  },
+  {
+   "id": "m05-314",
+   "speech": [
+    "03:58.764",
+    "04:08.764"
+   ],
+   "action": [
+    "03:58.768",
+    "04:05.753"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 5011
+  },
+  {
+   "id": "m05-315",
+   "speech": [
+    "04:10.764",
+    "04:17.164"
+   ],
+   "action": [
+    "04:10.765",
+    "04:14.389"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 3375
+  },
+  {
+   "id": "m05-316",
+   "speech": [
+    "04:17.764",
+    "04:21.684"
+   ],
+   "action": [
+    "04:17.766",
+    "04:18.357"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 3931
+  },
+  {
+   "id": "m05-317",
+   "speech": [
+    "04:22.288",
+    "04:29.328"
+   ]
+  },
+  {
+   "id": "m05-318",
+   "speech": [
+    "04:30.628",
+    "04:38.708"
+   ],
+   "action": [
+    "04:30.631",
+    "04:36.515"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 2793
+  },
+  {
+   "id": "m05-319",
+   "speech": [
+    "04:39.308",
+    "04:44.428"
+   ],
+   "action": [
+    "04:39.314",
+    "04:43.216"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 1812
+  },
+  {
+   "id": "m05-320",
+   "speech": [
+    "04:45.028",
+    "04:47.108"
+   ],
+   "action": [
+    "04:45.031",
+    "04:45.488"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 2220
+  },
+  {
+   "id": "m05-321",
+   "speech": [
+    "04:47.708",
+    "05:02.188"
+   ]
+  },
+  {
+   "id": "m05-322",
+   "speech": [
+    "05:03.488",
+    "05:11.568"
+   ],
+   "action": [
+    "05:03.493",
+    "05:04.109"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 7875
+  },
+  {
+   "id": "m05-401",
+   "speech": [
+    "05:11.984",
+    "05:23.184"
+   ],
+   "action": [
+    "05:11.984",
+    "05:23.115"
+   ],
+   "commit": "05:22.695",
+   "commit_before_speech_end_ms": 489,
+   "next_speech_after_action_ms": 4069
+  },
+  {
+   "id": "m05-402",
+   "speech": [
+    "05:27.184",
+    "05:30.304"
+   ],
+   "action": [
+    "05:27.186",
+    "05:28.457"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 2447
+  },
+  {
+   "id": "m05-403",
+   "speech": [
+    "05:30.904",
+    "05:35.624"
+   ],
+   "action": [
+    "05:30.907",
+    "05:32.497"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 3727
+  },
+  {
+   "id": "m05-404",
+   "speech": [
+    "05:36.224",
+    "05:43.424"
+   ]
+  },
+  {
+   "id": "m05-405",
+   "speech": [
+    "05:44.724",
+    "05:59.284"
+   ],
+   "action": [
+    "05:44.725",
+    "05:58.914"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 972
+  },
+  {
+   "id": "m05-406",
+   "speech": [
+    "05:59.886",
+    "06:08.926"
+   ],
+   "action": [
+    "05:59.888",
+    "06:08.413"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 1114
+  },
+  {
+   "id": "m05-407",
+   "speech": [
+    "06:09.527",
+    "06:18.247"
+   ],
+   "action": [
+    "06:09.535",
+    "06:17.047"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 1800
+  },
+  {
+   "id": "m05-408",
+   "speech": [
+    "06:18.847",
+    "06:26.607"
+   ]
+  },
+  {
+   "id": "m05-409",
+   "speech": [
+    "06:27.907",
+    "06:32.067"
+   ],
+   "action": [
+    "06:27.908",
+    "06:28.952"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 4415
+  },
+  {
+   "id": "m05-410",
+   "speech": [
+    "06:33.367",
+    "06:37.447"
+   ],
+   "action": [
+    "06:33.368",
+    "06:34.743"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 3304
+  },
+  {
+   "id": "m05-411",
+   "speech": [
+    "06:38.047",
+    "06:53.647"
+   ],
+   "action": [
+    "06:38.047",
+    "06:46.854"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 7229
+  },
+  {
+   "id": "m05-501",
+   "speech": [
+    "06:54.083",
+    "07:03.283"
+   ],
+   "action": [
+    "06:54.084",
+    "07:03.261"
+   ],
+   "commit": "07:02.800",
+   "commit_before_speech_end_ms": 483,
+   "next_speech_after_action_ms": 4022
+  },
+  {
+   "id": "m05-502",
+   "speech": [
+    "07:07.283",
+    "07:08.803"
+   ],
+   "action": [
+    "07:07.284",
+    "07:07.923"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 1480
+  },
+  {
+   "id": "m05-503",
+   "speech": [
+    "07:09.403",
+    "07:16.443"
+   ],
+   "action": [
+    "07:09.407",
+    "07:10.953"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 6090
+  },
+  {
+   "id": "m05-504",
+   "speech": [
+    "07:17.043",
+    "07:21.763"
+   ],
+   "action": [
+    "07:17.044",
+    "07:18.170"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 4193
+  },
+  {
+   "id": "m05-505",
+   "speech": [
+    "07:22.363",
+    "07:26.283"
+   ]
+  },
+  {
+   "id": "m05-506",
+   "speech": [
+    "07:27.583",
+    "07:39.903"
+   ],
+   "action": [
+    "07:27.587",
+    "07:37.884"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 2621
+  },
+  {
+   "id": "m05-507",
+   "speech": [
+    "07:40.505",
+    "07:48.105"
+   ],
+   "action": [
+    "07:40.506",
+    "07:45.880"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 2825
+  },
+  {
+   "id": "m05-508",
+   "speech": [
+    "07:48.705",
+    "07:53.425"
+   ],
+   "action": [
+    "07:48.706",
+    "07:53.345"
+   ],
+   "commit": "07:52.934",
+   "commit_before_speech_end_ms": 491,
+   "next_speech_after_action_ms": 2081
+  },
+  {
+   "id": "m05-509",
+   "speech": [
+    "07:55.426",
+    "07:57.586"
+   ],
+   "action": [
+    "07:55.428",
+    "07:56.179"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 2007
+  },
+  {
+   "id": "m05-510",
+   "speech": [
+    "07:58.186",
+    "08:20.426"
+   ],
+   "action": [
+    "07:58.194",
+    "08:20.487"
+   ],
+   "commit": "08:20.081",
+   "commit_before_speech_end_ms": 345,
+   "next_speech_after_action_ms": 2000
+  },
+  {
+   "id": "m05-511",
+   "speech": [
+    "08:22.487",
+    "08:25.207"
+   ],
+   "action": [
+    "08:22.489",
+    "08:23.661"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 2146
+  },
+  {
+   "id": "m05-512",
+   "speech": [
+    "08:25.807",
+    "08:37.967"
+   ]
+  },
+  {
+   "id": "m05-513",
+   "speech": [
+    "08:39.267",
+    "08:43.107"
+   ],
+   "action": [
+    "08:39.269",
+    "08:41.888"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 1820
+  },
+  {
+   "id": "m05-514",
+   "speech": [
+    "08:43.708",
+    "08:46.108"
+   ],
+   "action": [
+    "08:43.711",
+    "08:44.335"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 2373
+  },
+  {
+   "id": "m05-515",
+   "speech": [
+    "08:46.708",
+    "08:52.068"
+   ]
+  },
+  {
+   "id": "m05-516",
+   "speech": [
+    "08:53.368",
+    "09:00.008"
+   ],
+   "action": [
+    "08:53.394",
+    "08:54.905"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 5703
+  },
+  {
+   "id": "m05-517",
+   "speech": [
+    "09:00.608",
+    "09:04.448"
+   ]
+  },
+  {
+   "id": "m05-518",
+   "speech": [
+    "09:05.748",
+    "09:26.788"
+   ],
+   "action": [
+    "09:05.755",
+    "09:13.751"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 14337
+  },
+  {
+   "id": "m05-519",
+   "speech": [
+    "09:28.088",
+    "09:31.128"
+   ],
+   "action": [
+    "09:28.100",
+    "09:28.921"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 2807
+  },
+  {
+   "id": "m05-520",
+   "speech": [
+    "09:31.728",
+    "09:35.728"
+   ],
+   "action": [
+    "09:31.731",
+    "09:35.314"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 1014
+  },
+  {
+   "id": "m05-521",
+   "speech": [
+    "09:36.328",
+    "09:38.488"
+   ]
+  },
+  {
+   "id": "m05-601",
+   "speech": [
+    "09:38.918",
+    "09:46.198"
+   ],
+   "action": [
+    "09:38.918",
+    "09:45.583"
+   ],
+   "commit": "09:45.025",
+   "commit_before_speech_end_ms": 1173,
+   "next_speech_after_action_ms": 4616
+  },
+  {
+   "id": "m05-602",
+   "speech": [
+    "09:50.199",
+    "09:55.639"
+   ],
+   "action": [
+    "09:50.200",
+    "09:51.489"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 4751
+  },
+  {
+   "id": "m05-603",
+   "speech": [
+    "09:56.240",
+    "10:02.880"
+   ],
+   "action": [
+    "09:56.252",
+    "10:02.910"
+   ],
+   "commit": "10:02.500",
+   "commit_before_speech_end_ms": 380,
+   "next_speech_after_action_ms": 4001
+  },
+  {
+   "id": "m05-604",
+   "speech": [
+    "10:06.911",
+    "10:10.751"
+   ],
+   "action": [
+    "10:06.912",
+    "10:09.810"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 1541
+  },
+  {
+   "id": "m05-605",
+   "speech": [
+    "10:11.351",
+    "10:14.791"
+   ],
+   "action": [
+    "10:11.352",
+    "10:12.202"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 3189
+  },
+  {
+   "id": "m05-606",
+   "speech": [
+    "10:15.391",
+    "10:20.191"
+   ],
+   "action": [
+    "10:15.396",
+    "10:16.856"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 3935
+  },
+  {
+   "id": "m05-607",
+   "speech": [
+    "10:20.791",
+    "10:29.911"
+   ]
+  },
+  {
+   "id": "m05-608",
+   "speech": [
+    "10:31.211",
+    "10:35.691"
+   ],
+   "action": [
+    "10:31.215",
+    "10:33.741"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 2553
+  },
+  {
+   "id": "m05-609",
+   "speech": [
+    "10:36.294",
+    "10:45.014"
+   ],
+   "action": [
+    "10:36.305",
+    "10:44.971"
+   ],
+   "commit": "10:44.522",
+   "commit_before_speech_end_ms": 492,
+   "next_speech_after_action_ms": 2043
+  },
+  {
+   "id": "m05-610",
+   "speech": [
+    "10:47.014",
+    "10:49.654"
+   ],
+   "action": [
+    "10:47.016",
+    "10:47.953"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 2301
+  },
+  {
+   "id": "m05-611",
+   "speech": [
+    "10:50.254",
+    "10:52.734"
+   ],
+   "action": [
+    "10:50.255",
+    "10:51.387"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 1947
+  },
+  {
+   "id": "m05-612",
+   "speech": [
+    "10:53.334",
+    "10:55.654"
+   ],
+   "action": [
+    "10:53.335",
+    "10:53.787"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 2467
+  },
+  {
+   "id": "m05-613",
+   "speech": [
+    "10:56.254",
+    "11:04.494"
+   ]
+  },
+  {
+   "id": "m05-614",
+   "speech": [
+    "11:05.794",
+    "11:08.594"
+   ],
+   "action": [
+    "11:05.796",
+    "11:07.344"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 1860
+  },
+  {
+   "id": "m05-615",
+   "speech": [
+    "11:09.204",
+    "11:16.244"
+   ]
+  },
+  {
+   "id": "m05-616",
+   "speech": [
+    "11:17.544",
+    "11:19.544"
+   ],
+   "action": [
+    "11:17.548",
+    "11:18.117"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 2027
+  },
+  {
+   "id": "m05-617",
+   "speech": [
+    "11:20.144",
+    "11:31.744"
+   ],
+   "action": [
+    "11:20.146",
+    "11:30.952"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 1392
+  },
+  {
+   "id": "m05-618",
+   "speech": [
+    "11:32.344",
+    "11:53.544"
+   ],
+   "action": [
+    "11:32.345",
+    "11:53.745"
+   ],
+   "commit": "11:53.338",
+   "commit_before_speech_end_ms": 206,
+   "next_speech_after_action_ms": 2000
+  },
+  {
+   "id": "m05-619",
+   "speech": [
+    "11:55.745",
+    "11:57.345"
+   ],
+   "action": [
+    "11:55.746",
+    "11:56.438"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 1507
+  },
+  {
+   "id": "m05-620",
+   "speech": [
+    "11:57.945",
+    "12:04.265"
+   ],
+   "action": [
+    "11:57.946",
+    "12:01.992"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 2873
+  },
+  {
+   "id": "m05-621",
+   "speech": [
+    "12:04.865",
+    "12:21.105"
+   ],
+   "action": [
+    "12:04.866",
+    "12:21.333"
+   ],
+   "commit": "12:20.840",
+   "commit_before_speech_end_ms": 265,
+   "next_speech_after_action_ms": 4000
+  },
+  {
+   "id": "m05-622",
+   "speech": [
+    "12:25.333",
+    "12:27.893"
+   ],
+   "action": [
+    "12:25.336",
+    "12:26.186"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 2307
+  },
+  {
+   "id": "m05-623",
+   "speech": [
+    "12:28.493",
+    "12:37.773"
+   ],
+   "action": [
+    "12:28.494",
+    "12:35.546"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 2827
+  },
+  {
+   "id": "m05-624",
+   "speech": [
+    "12:38.373",
+    "12:44.453"
+   ],
+   "action": [
+    "12:38.374",
+    "12:41.802"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 4651
+  },
+  {
+   "id": "m05-625",
+   "speech": [
+    "12:46.453",
+    "12:53.733"
+   ],
+   "action": [
+    "12:46.456",
+    "12:51.617"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 2716
+  },
+  {
+   "id": "m05-626",
+   "speech": [
+    "12:54.333",
+    "12:58.573"
+   ],
+   "action": [
+    "12:54.335",
+    "12:54.910"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 4970
+  },
+  {
+   "id": "m05-627",
+   "speech": [
+    "12:59.880",
+    "13:23.960"
+   ],
+   "action": [
+    "12:59.906",
+    "13:10.884"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 13492
+  },
+  {
+   "id": "m05-701",
+   "speech": [
+    "13:24.376",
+    "13:36.216"
+   ],
+   "action": [
+    "13:24.376",
+    "13:33.966"
+   ],
+   "commit": "13:33.052",
+   "commit_before_speech_end_ms": 3164,
+   "next_speech_after_action_ms": 2852
+  },
+  {
+   "id": "m05-702",
+   "speech": [
+    "13:36.818",
+    "13:40.738"
+   ],
+   "action": [
+    "13:36.818",
+    "13:40.998"
+   ],
+   "commit": "13:40.288",
+   "commit_before_speech_end_ms": 450,
+   "next_speech_after_action_ms": 4000
+  },
+  {
+   "id": "m05-703",
+   "speech": [
+    "13:44.998",
+    "13:47.958"
+   ],
+   "action": [
+    "13:44.999",
+    "13:45.478"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 3080
+  },
+  {
+   "id": "m05-704",
+   "speech": [
+    "13:48.558",
+    "13:52.078"
+   ],
+   "action": [
+    "13:48.559",
+    "13:51.073"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 3005
+  },
+  {
+   "id": "m05-705",
+   "speech": [
+    "13:54.078",
+    "14:20.238"
+   ],
+   "action": [
+    "13:54.081",
+    "14:20.214"
+   ],
+   "commit": "14:19.090",
+   "commit_before_speech_end_ms": 1148,
+   "next_speech_after_action_ms": 6025
+  },
+  {
+   "id": "m05-706",
+   "speech": [
+    "14:26.239",
+    "14:28.719"
+   ],
+   "action": [
+    "14:26.241",
+    "14:26.936"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 2385
+  },
+  {
+   "id": "m05-707",
+   "speech": [
+    "14:29.321",
+    "14:33.241"
+   ],
+   "action": [
+    "14:29.321",
+    "14:30.675"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 3166
+  },
+  {
+   "id": "m05-708",
+   "speech": [
+    "14:33.841",
+    "14:40.161"
+   ]
+  },
+  {
+   "id": "m05-709",
+   "speech": [
+    "14:41.461",
+    "14:45.701"
+   ],
+   "action": [
+    "14:41.461",
+    "14:45.895"
+   ],
+   "commit": "14:44.659",
+   "commit_before_speech_end_ms": 1042,
+   "next_speech_after_action_ms": 2000
+  },
+  {
+   "id": "m05-710",
+   "speech": [
+    "14:47.895",
+    "14:51.415"
+   ],
+   "action": [
+    "14:47.897",
+    "14:48.773"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 3245
+  },
+  {
+   "id": "m05-711",
+   "speech": [
+    "14:52.018",
+    "14:56.258"
+   ],
+   "action": [
+    "14:52.020",
+    "14:53.491"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 3367
+  },
+  {
+   "id": "m05-712",
+   "speech": [
+    "14:56.858",
+    "15:03.338"
+   ]
+  },
+  {
+   "id": "m05-713",
+   "speech": [
+    "15:04.638",
+    "15:12.638"
+   ],
+   "action": [
+    "15:04.639",
+    "15:10.172"
+   ],
+   "commit": "15:09.444",
+   "commit_before_speech_end_ms": 3194,
+   "next_speech_after_action_ms": 6466
+  },
+  {
+   "id": "m05-714",
+   "speech": [
+    "15:16.638",
+    "15:20.558"
+   ],
+   "action": [
+    "15:16.639",
+    "15:18.102"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 3057
+  },
+  {
+   "id": "m05-715",
+   "speech": [
+    "15:21.159",
+    "15:24.359"
+   ],
+   "action": [
+    "15:21.160",
+    "15:22.339"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 2620
+  },
+  {
+   "id": "m05-716",
+   "speech": [
+    "15:24.959",
+    "15:46.559"
+   ],
+   "action": [
+    "15:24.959",
+    "15:32.579"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 15281
+  },
+  {
+   "id": "m05-717",
+   "speech": [
+    "15:47.860",
+    "16:08.900"
+   ]
+  },
+  {
+   "id": "m05-718",
+   "speech": [
+    "16:10.201",
+    "16:18.521"
+   ]
+  },
+  {
+   "id": "m05-801",
+   "speech": [
+    "16:18.959",
+    "16:21.999"
+   ],
+   "action": [
+    "16:18.960",
+    "16:22.164"
+   ],
+   "commit": "16:20.679",
+   "commit_before_speech_end_ms": 1320,
+   "next_speech_after_action_ms": 2000
+  },
+  {
+   "id": "m05-802",
+   "speech": [
+    "16:24.164",
+    "16:27.764"
+   ],
+   "action": [
+    "16:24.167",
+    "16:25.471"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 2893
+  },
+  {
+   "id": "m05-803",
+   "speech": [
+    "16:28.364",
+    "16:43.164"
+   ],
+   "action": [
+    "16:28.371",
+    "16:41.701"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 2063
+  },
+  {
+   "id": "m05-804",
+   "speech": [
+    "16:43.764",
+    "16:46.164"
+   ],
+   "action": [
+    "16:43.767",
+    "16:45.202"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 1565
+  },
+  {
+   "id": "m05-805",
+   "speech": [
+    "16:46.767",
+    "16:50.207"
+   ],
+   "action": [
+    "16:46.768",
+    "16:48.093"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 4114
+  },
+  {
+   "id": "m05-806",
+   "speech": [
+    "16:52.207",
+    "16:53.327"
+   ]
+  }
+ ],
+ "clicks": [
+  {
+   "segment": "m05-s1",
+   "x": 217.33334350585938,
+   "y": 561.2083339691162,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "m05-s2",
+   "x": 294,
+   "y": 237.1666669845581,
+   "dx": 0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "m05-s2",
+   "x": 412.7083435058594,
+   "y": 237.1666669845581,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "m05-s2",
+   "x": 896.1666870117188,
+   "y": 237.1666669845581,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "m05-s2",
+   "x": 1083.291748046875,
+   "y": 237.1666669845581,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "m05-s3",
+   "x": 498.6666717529297,
+   "y": 191,
+   "dx": 0.0,
+   "dy": 0,
+   "gliding": null
+  },
+  {
+   "segment": "m05-s3",
+   "x": 540.6666870117188,
+   "y": 365.1458435058594,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "m05-s4",
+   "x": 879.3646240234375,
+   "y": 480.41668701171875,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "m05-s5",
+   "x": 879.3646240234375,
+   "y": 480.5,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "m05-s5",
+   "x": 869.7083740234375,
+   "y": 566.7916870117188,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "m05-s5",
+   "x": 919.7708740234375,
+   "y": 480.35418701171875,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "m05-s6b",
+   "x": 909.0208740234375,
+   "y": 494.7083435058594,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "m05-s6b",
+   "x": 879.3646240234375,
+   "y": 590.9375,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "m05-s6b",
+   "x": 964.6771240234375,
+   "y": 480.35418701171875,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "m05-s6b",
+   "x": 922.0208740234375,
+   "y": 590.9166870117188,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "m05-s6b",
+   "x": 879.3646240234375,
+   "y": 484.2708435058594,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "m05-s7b",
+   "x": 498.6666717529297,
+   "y": 191,
+   "dx": 0.0,
+   "dy": 0,
+   "gliding": null
+  },
+  {
+   "segment": "m05-s7b",
+   "x": 389.33333587646484,
+   "y": 145,
+   "dx": 0.0,
+   "dy": 0,
+   "gliding": null
+  },
+  {
+   "segment": "m05-s7b",
+   "x": 498.6666717529297,
+   "y": 191,
+   "dx": 0.0,
+   "dy": 0,
+   "gliding": null
+  },
+  {
+   "segment": "m05-s7b",
+   "x": 540.6666870117188,
+   "y": 365.1458435058594,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "m05-s7b",
+   "x": 389.33333587646484,
+   "y": 145,
+   "dx": 0.0,
+   "dy": 0,
+   "gliding": null
+  },
+  {
+   "segment": "m05-s8",
+   "x": 540.6666870117188,
+   "y": 365.1458435058594,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  }
+ ],
+ "motion_summary": {
+  "count": 116,
+  "page_count": 0,
+  "max_gap_ms_max": null,
+  "start_delay_max_ms": null,
+  "over_100ms": []
+ },
+ "motions": [
+  {
+   "segment": "m05-s1",
+   "mode": "overlay",
+   "start_ms": 17317,
+   "duration_ms": 489,
+   "planned_ms": 489,
+   "frames": 23,
+   "start_delay_ms": 14,
+   "max_gap_ms": 48
+  },
+  {
+   "segment": "m05-s1",
+   "mode": "overlay",
+   "start_ms": 37218,
+   "duration_ms": 455,
+   "planned_ms": 455,
+   "frames": 21,
+   "start_delay_ms": 8,
+   "max_gap_ms": 43
+  },
+  {
+   "segment": "m05-s2",
+   "mode": "overlay",
+   "start_ms": 49401,
+   "duration_ms": 366,
+   "planned_ms": 366,
+   "frames": 8,
+   "start_delay_ms": 32,
+   "max_gap_ms": 105
+  },
+  {
+   "segment": "m05-s2",
+   "mode": "overlay",
+   "start_ms": 56750,
+   "duration_ms": 296,
+   "planned_ms": 296,
+   "frames": 13,
+   "start_delay_ms": 43,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "m05-s2",
+   "mode": "overlay",
+   "start_ms": 57990,
+   "duration_ms": 338,
+   "planned_ms": 338,
+   "frames": 15,
+   "start_delay_ms": 24,
+   "max_gap_ms": 35
+  },
+  {
+   "segment": "m05-s2",
+   "mode": "overlay",
+   "start_ms": 60101,
+   "duration_ms": 391,
+   "planned_ms": 391,
+   "frames": 16,
+   "start_delay_ms": 4,
+   "max_gap_ms": 46
+  },
+  {
+   "segment": "m05-s2",
+   "mode": "overlay",
+   "start_ms": 65268,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 9,
+   "start_delay_ms": 13,
+   "max_gap_ms": 46
+  },
+  {
+   "segment": "m05-s2",
+   "mode": "overlay",
+   "start_ms": 69144,
+   "duration_ms": 344,
+   "planned_ms": 344,
+   "frames": 14,
+   "start_delay_ms": 3,
+   "max_gap_ms": 58
+  },
+  {
+   "segment": "m05-s2",
+   "mode": "overlay",
+   "start_ms": 75298,
+   "duration_ms": 430,
+   "planned_ms": 430,
+   "frames": 15,
+   "start_delay_ms": 5,
+   "max_gap_ms": 60
+  },
+  {
+   "segment": "m05-s2",
+   "mode": "overlay",
+   "start_ms": 82171,
+   "duration_ms": 277,
+   "planned_ms": 277,
+   "frames": 13,
+   "start_delay_ms": 5,
+   "max_gap_ms": 38
+  },
+  {
+   "segment": "m05-s2",
+   "mode": "overlay",
+   "start_ms": 85751,
+   "duration_ms": 277,
+   "planned_ms": 277,
+   "frames": 6,
+   "start_delay_ms": 15,
+   "max_gap_ms": 100
+  },
+  {
+   "segment": "m05-s2",
+   "mode": "overlay",
+   "start_ms": 88878,
+   "duration_ms": 277,
+   "planned_ms": 277,
+   "frames": 14,
+   "start_delay_ms": 21,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "m05-s2",
+   "mode": "overlay",
+   "start_ms": 93073,
+   "duration_ms": 355,
+   "planned_ms": 355,
+   "frames": 15,
+   "start_delay_ms": 10,
+   "max_gap_ms": 48
+  },
+  {
+   "segment": "m05-s2",
+   "mode": "overlay",
+   "start_ms": 98262,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 10,
+   "start_delay_ms": 30,
+   "max_gap_ms": 41
+  },
+  {
+   "segment": "m05-s2",
+   "mode": "overlay",
+   "start_ms": 105059,
+   "duration_ms": 290,
+   "planned_ms": 290,
+   "frames": 12,
+   "start_delay_ms": 13,
+   "max_gap_ms": 49
+  },
+  {
+   "segment": "m05-s2",
+   "mode": "overlay",
+   "start_ms": 111803,
+   "duration_ms": 397,
+   "planned_ms": 397,
+   "frames": 13,
+   "start_delay_ms": 9,
+   "max_gap_ms": 85
+  },
+  {
+   "segment": "m05-s2",
+   "mode": "overlay",
+   "start_ms": 120272,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 11,
+   "start_delay_ms": 15,
+   "max_gap_ms": 45
+  },
+  {
+   "segment": "m05-s2",
+   "mode": "overlay",
+   "start_ms": 123612,
+   "duration_ms": 393,
+   "planned_ms": 393,
+   "frames": 17,
+   "start_delay_ms": 8,
+   "max_gap_ms": 55
+  },
+  {
+   "segment": "m05-s2",
+   "mode": "overlay",
+   "start_ms": 126814,
+   "duration_ms": 275,
+   "planned_ms": 275,
+   "frames": 15,
+   "start_delay_ms": 5,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "m05-s2",
+   "mode": "overlay",
+   "start_ms": 138288,
+   "duration_ms": 380,
+   "planned_ms": 380,
+   "frames": 14,
+   "start_delay_ms": 42,
+   "max_gap_ms": 47
+  },
+  {
+   "segment": "m05-s3",
+   "mode": "overlay",
+   "start_ms": 149221,
+   "duration_ms": 263,
+   "planned_ms": 263,
+   "frames": 12,
+   "start_delay_ms": 18,
+   "max_gap_ms": 38
+  },
+  {
+   "segment": "m05-s3",
+   "mode": "overlay",
+   "start_ms": 164085,
+   "duration_ms": 272,
+   "planned_ms": 272,
+   "frames": 12,
+   "start_delay_ms": 16,
+   "max_gap_ms": 37
+  },
+  {
+   "segment": "m05-s3",
+   "mode": "overlay",
+   "start_ms": 171377,
+   "duration_ms": 311,
+   "planned_ms": 311,
+   "frames": 15,
+   "start_delay_ms": 12,
+   "max_gap_ms": 39
+  },
+  {
+   "segment": "m05-s3",
+   "mode": "overlay",
+   "start_ms": 185677,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 10,
+   "start_delay_ms": 7,
+   "max_gap_ms": 65
+  },
+  {
+   "segment": "m05-s3",
+   "mode": "overlay",
+   "start_ms": 189354,
+   "duration_ms": 311,
+   "planned_ms": 311,
+   "frames": 8,
+   "start_delay_ms": 13,
+   "max_gap_ms": 101
+  },
+  {
+   "segment": "m05-s3",
+   "mode": "overlay",
+   "start_ms": 190001,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 13,
+   "start_delay_ms": 13,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "m05-s3",
+   "mode": "overlay",
+   "start_ms": 190807,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 11,
+   "start_delay_ms": 4,
+   "max_gap_ms": 54
+  },
+  {
+   "segment": "m05-s3",
+   "mode": "overlay",
+   "start_ms": 199681,
+   "duration_ms": 263,
+   "planned_ms": 263,
+   "frames": 11,
+   "start_delay_ms": 10,
+   "max_gap_ms": 34
+  },
+  {
+   "segment": "m05-s3",
+   "mode": "overlay",
+   "start_ms": 215891,
+   "duration_ms": 306,
+   "planned_ms": 306,
+   "frames": 17,
+   "start_delay_ms": 13,
+   "max_gap_ms": 26
+  },
+  {
+   "segment": "m05-s3",
+   "mode": "overlay",
+   "start_ms": 219600,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 9,
+   "start_delay_ms": 1,
+   "max_gap_ms": 75
+  },
+  {
+   "segment": "m05-s3",
+   "mode": "overlay",
+   "start_ms": 226637,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 11,
+   "start_delay_ms": 9,
+   "max_gap_ms": 45
+  },
+  {
+   "segment": "m05-s3",
+   "mode": "overlay",
+   "start_ms": 236147,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 10,
+   "start_delay_ms": 3,
+   "max_gap_ms": 61
+  },
+  {
+   "segment": "m05-s3",
+   "mode": "overlay",
+   "start_ms": 245478,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 14,
+   "start_delay_ms": 6,
+   "max_gap_ms": 30
+  },
+  {
+   "segment": "m05-s3",
+   "mode": "overlay",
+   "start_ms": 253916,
+   "duration_ms": 392,
+   "planned_ms": 392,
+   "frames": 20,
+   "start_delay_ms": 2,
+   "max_gap_ms": 42
+  },
+  {
+   "segment": "m05-s3",
+   "mode": "overlay",
+   "start_ms": 258027,
+   "duration_ms": 273,
+   "planned_ms": 273,
+   "frames": 13,
+   "start_delay_ms": 20,
+   "max_gap_ms": 49
+  },
+  {
+   "segment": "m05-s3",
+   "mode": "overlay",
+   "start_ms": 271398,
+   "duration_ms": 263,
+   "planned_ms": 263,
+   "frames": 14,
+   "start_delay_ms": 6,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "m05-s3",
+   "mode": "overlay",
+   "start_ms": 285205,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 13,
+   "start_delay_ms": 16,
+   "max_gap_ms": 46
+  },
+  {
+   "segment": "m05-s3",
+   "mode": "overlay",
+   "start_ms": 303816,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 10,
+   "start_delay_ms": 18,
+   "max_gap_ms": 41
+  },
+  {
+   "segment": "m05-s4",
+   "mode": "overlay",
+   "start_ms": 322260,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 8,
+   "start_delay_ms": 1,
+   "max_gap_ms": 55
+  },
+  {
+   "segment": "m05-s4",
+   "mode": "overlay",
+   "start_ms": 327997,
+   "duration_ms": 441,
+   "planned_ms": 441,
+   "frames": 17,
+   "start_delay_ms": 10,
+   "max_gap_ms": 79
+  },
+  {
+   "segment": "m05-s4",
+   "mode": "overlay",
+   "start_ms": 332213,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 9,
+   "start_delay_ms": 18,
+   "max_gap_ms": 60
+  },
+  {
+   "segment": "m05-s4",
+   "mode": "overlay",
+   "start_ms": 358495,
+   "duration_ms": 386,
+   "planned_ms": 386,
+   "frames": 16,
+   "start_delay_ms": 25,
+   "max_gap_ms": 59
+  },
+  {
+   "segment": "m05-s4",
+   "mode": "overlay",
+   "start_ms": 368137,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 15,
+   "start_delay_ms": 3,
+   "max_gap_ms": 32
+  },
+  {
+   "segment": "m05-s4",
+   "mode": "overlay",
+   "start_ms": 376752,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 10,
+   "start_delay_ms": 2,
+   "max_gap_ms": 53
+  },
+  {
+   "segment": "m05-s4",
+   "mode": "overlay",
+   "start_ms": 388641,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 14,
+   "start_delay_ms": 18,
+   "max_gap_ms": 42
+  },
+  {
+   "segment": "m05-s4",
+   "mode": "overlay",
+   "start_ms": 394460,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 12,
+   "start_delay_ms": 14,
+   "max_gap_ms": 35
+  },
+  {
+   "segment": "m05-s4",
+   "mode": "overlay",
+   "start_ms": 406569,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 13,
+   "start_delay_ms": 13,
+   "max_gap_ms": 25
+  },
+  {
+   "segment": "m05-s5",
+   "mode": "overlay",
+   "start_ms": 422355,
+   "duration_ms": 270,
+   "planned_ms": 270,
+   "frames": 8,
+   "start_delay_ms": 8,
+   "max_gap_ms": 61
+  },
+  {
+   "segment": "m05-s5",
+   "mode": "overlay",
+   "start_ms": 427462,
+   "duration_ms": 440,
+   "planned_ms": 440,
+   "frames": 17,
+   "start_delay_ms": 26,
+   "max_gap_ms": 68
+  },
+  {
+   "segment": "m05-s5",
+   "mode": "overlay",
+   "start_ms": 430687,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 13,
+   "start_delay_ms": 17,
+   "max_gap_ms": 32
+  },
+  {
+   "segment": "m05-s5",
+   "mode": "overlay",
+   "start_ms": 437885,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 10,
+   "start_delay_ms": 10,
+   "max_gap_ms": 52
+  },
+  {
+   "segment": "m05-s5",
+   "mode": "overlay",
+   "start_ms": 457468,
+   "duration_ms": 387,
+   "planned_ms": 387,
+   "frames": 17,
+   "start_delay_ms": 5,
+   "max_gap_ms": 42
+  },
+  {
+   "segment": "m05-s5",
+   "mode": "overlay",
+   "start_ms": 465588,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 14,
+   "start_delay_ms": 8,
+   "max_gap_ms": 29
+  },
+  {
+   "segment": "m05-s5",
+   "mode": "overlay",
+   "start_ms": 472485,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 11,
+   "start_delay_ms": 8,
+   "max_gap_ms": 37
+  },
+  {
+   "segment": "m05-s5",
+   "mode": "overlay",
+   "start_ms": 475718,
+   "duration_ms": 441,
+   "planned_ms": 441,
+   "frames": 17,
+   "start_delay_ms": 3,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "m05-s5",
+   "mode": "overlay",
+   "start_ms": 484477,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 12,
+   "start_delay_ms": 23,
+   "max_gap_ms": 34
+  },
+  {
+   "segment": "m05-s5",
+   "mode": "overlay",
+   "start_ms": 490739,
+   "duration_ms": 386,
+   "planned_ms": 386,
+   "frames": 21,
+   "start_delay_ms": 19,
+   "max_gap_ms": 27
+  },
+  {
+   "segment": "m05-s5",
+   "mode": "overlay",
+   "start_ms": 499641,
+   "duration_ms": 270,
+   "planned_ms": 270,
+   "frames": 13,
+   "start_delay_ms": 21,
+   "max_gap_ms": 41
+  },
+  {
+   "segment": "m05-s5",
+   "mode": "overlay",
+   "start_ms": 503176,
+   "duration_ms": 456,
+   "planned_ms": 456,
+   "frames": 22,
+   "start_delay_ms": 12,
+   "max_gap_ms": 37
+  },
+  {
+   "segment": "m05-s5",
+   "mode": "overlay",
+   "start_ms": 521575,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 11,
+   "start_delay_ms": 7,
+   "max_gap_ms": 59
+  },
+  {
+   "segment": "m05-s5",
+   "mode": "overlay",
+   "start_ms": 524058,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 10,
+   "start_delay_ms": 8,
+   "max_gap_ms": 51
+  },
+  {
+   "segment": "m05-s5",
+   "mode": "overlay",
+   "start_ms": 534620,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 13,
+   "start_delay_ms": 7,
+   "max_gap_ms": 37
+  },
+  {
+   "segment": "m05-s5",
+   "mode": "overlay",
+   "start_ms": 553460,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 11,
+   "start_delay_ms": 3,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "m05-s5",
+   "mode": "overlay",
+   "start_ms": 568629,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 12,
+   "start_delay_ms": 7,
+   "max_gap_ms": 26
+  },
+  {
+   "segment": "m05-s5",
+   "mode": "overlay",
+   "start_ms": 574921,
+   "duration_ms": 388,
+   "planned_ms": 388,
+   "frames": 17,
+   "start_delay_ms": 5,
+   "max_gap_ms": 45
+  },
+  {
+   "segment": "m05-s6b",
+   "mode": "overlay",
+   "start_ms": 584576,
+   "duration_ms": 266,
+   "planned_ms": 266,
+   "frames": 12,
+   "start_delay_ms": 10,
+   "max_gap_ms": 37
+  },
+  {
+   "segment": "m05-s6b",
+   "mode": "overlay",
+   "start_ms": 591178,
+   "duration_ms": 276,
+   "planned_ms": 276,
+   "frames": 15,
+   "start_delay_ms": 4,
+   "max_gap_ms": 32
+  },
+  {
+   "segment": "m05-s6b",
+   "mode": "overlay",
+   "start_ms": 602059,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 10,
+   "start_delay_ms": 4,
+   "max_gap_ms": 67
+  },
+  {
+   "segment": "m05-s6b",
+   "mode": "overlay",
+   "start_ms": 609337,
+   "duration_ms": 447,
+   "planned_ms": 447,
+   "frames": 21,
+   "start_delay_ms": 26,
+   "max_gap_ms": 48
+  },
+  {
+   "segment": "m05-s6b",
+   "mode": "overlay",
+   "start_ms": 611924,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 12,
+   "start_delay_ms": 11,
+   "max_gap_ms": 38
+  },
+  {
+   "segment": "m05-s6b",
+   "mode": "overlay",
+   "start_ms": 616456,
+   "duration_ms": 387,
+   "planned_ms": 387,
+   "frames": 17,
+   "start_delay_ms": 11,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "m05-s6b",
+   "mode": "overlay",
+   "start_ms": 633457,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 15,
+   "start_delay_ms": 12,
+   "max_gap_ms": 23
+  },
+  {
+   "segment": "m05-s6b",
+   "mode": "overlay",
+   "start_ms": 644019,
+   "duration_ms": 288,
+   "planned_ms": 288,
+   "frames": 9,
+   "start_delay_ms": 14,
+   "max_gap_ms": 74
+  },
+  {
+   "segment": "m05-s6b",
+   "mode": "overlay",
+   "start_ms": 647463,
+   "duration_ms": 474,
+   "planned_ms": 474,
+   "frames": 19,
+   "start_delay_ms": 4,
+   "max_gap_ms": 56
+  },
+  {
+   "segment": "m05-s6b",
+   "mode": "overlay",
+   "start_ms": 650976,
+   "duration_ms": 386,
+   "planned_ms": 386,
+   "frames": 14,
+   "start_delay_ms": 16,
+   "max_gap_ms": 63
+  },
+  {
+   "segment": "m05-s6b",
+   "mode": "overlay",
+   "start_ms": 653513,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 13,
+   "start_delay_ms": 2,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "m05-s6b",
+   "mode": "overlay",
+   "start_ms": 667060,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 13,
+   "start_delay_ms": 16,
+   "max_gap_ms": 41
+  },
+  {
+   "segment": "m05-s6b",
+   "mode": "overlay",
+   "start_ms": 677827,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 12,
+   "start_delay_ms": 9,
+   "max_gap_ms": 54
+  },
+  {
+   "segment": "m05-s6b",
+   "mode": "overlay",
+   "start_ms": 681206,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 9,
+   "start_delay_ms": 17,
+   "max_gap_ms": 51
+  },
+  {
+   "segment": "m05-s6b",
+   "mode": "overlay",
+   "start_ms": 690672,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 15,
+   "start_delay_ms": 14,
+   "max_gap_ms": 22
+  },
+  {
+   "segment": "m05-s6b",
+   "mode": "overlay",
+   "start_ms": 694834,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 14,
+   "start_delay_ms": 17,
+   "max_gap_ms": 21
+  },
+  {
+   "segment": "m05-s6b",
+   "mode": "overlay",
+   "start_ms": 697813,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 12,
+   "start_delay_ms": 8,
+   "max_gap_ms": 38
+  },
+  {
+   "segment": "m05-s6b",
+   "mode": "overlay",
+   "start_ms": 712902,
+   "duration_ms": 271,
+   "planned_ms": 271,
+   "frames": 9,
+   "start_delay_ms": 17,
+   "max_gap_ms": 48
+  },
+  {
+   "segment": "m05-s6b",
+   "mode": "overlay",
+   "start_ms": 715943,
+   "duration_ms": 474,
+   "planned_ms": 474,
+   "frames": 22,
+   "start_delay_ms": 11,
+   "max_gap_ms": 48
+  },
+  {
+   "segment": "m05-s6b",
+   "mode": "overlay",
+   "start_ms": 718733,
+   "duration_ms": 387,
+   "planned_ms": 387,
+   "frames": 13,
+   "start_delay_ms": 10,
+   "max_gap_ms": 68
+  },
+  {
+   "segment": "m05-s6b",
+   "mode": "overlay",
+   "start_ms": 721720,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 13,
+   "start_delay_ms": 18,
+   "max_gap_ms": 34
+  },
+  {
+   "segment": "m05-s6b",
+   "mode": "overlay",
+   "start_ms": 733050,
+   "duration_ms": 387,
+   "planned_ms": 387,
+   "frames": 15,
+   "start_delay_ms": 3,
+   "max_gap_ms": 47
+  },
+  {
+   "segment": "m05-s6b",
+   "mode": "overlay",
+   "start_ms": 740224,
+   "duration_ms": 440,
+   "planned_ms": 440,
+   "frames": 18,
+   "start_delay_ms": 4,
+   "max_gap_ms": 75
+  },
+  {
+   "segment": "m05-s6b",
+   "mode": "overlay",
+   "start_ms": 745726,
+   "duration_ms": 446,
+   "planned_ms": 446,
+   "frames": 21,
+   "start_delay_ms": 14,
+   "max_gap_ms": 70
+  },
+  {
+   "segment": "m05-s6b",
+   "mode": "overlay",
+   "start_ms": 755267,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 12,
+   "start_delay_ms": 2,
+   "max_gap_ms": 58
+  },
+  {
+   "segment": "m05-s6b",
+   "mode": "overlay",
+   "start_ms": 761352,
+   "duration_ms": 386,
+   "planned_ms": 386,
+   "frames": 14,
+   "start_delay_ms": 1,
+   "max_gap_ms": 73
+  },
+  {
+   "segment": "m05-s6b",
+   "mode": "overlay",
+   "start_ms": 767428,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 9,
+   "start_delay_ms": 3,
+   "max_gap_ms": 86
+  },
+  {
+   "segment": "m05-s6b",
+   "mode": "overlay",
+   "start_ms": 771346,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 9,
+   "start_delay_ms": 9,
+   "max_gap_ms": 65
+  },
+  {
+   "segment": "m05-s6b",
+   "mode": "overlay",
+   "start_ms": 774631,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 14,
+   "start_delay_ms": 6,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "m05-s6b",
+   "mode": "overlay",
+   "start_ms": 790613,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 14,
+   "start_delay_ms": 6,
+   "max_gap_ms": 44
+  },
+  {
+   "segment": "m05-s7b",
+   "mode": "overlay",
+   "start_ms": 812519,
+   "duration_ms": 357,
+   "planned_ms": 357,
+   "frames": 12,
+   "start_delay_ms": 1,
+   "max_gap_ms": 71
+  },
+  {
+   "segment": "m05-s7b",
+   "mode": "overlay",
+   "start_ms": 819857,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 13,
+   "start_delay_ms": 14,
+   "max_gap_ms": 32
+  },
+  {
+   "segment": "m05-s7b",
+   "mode": "overlay",
+   "start_ms": 829345,
+   "duration_ms": 282,
+   "planned_ms": 282,
+   "frames": 9,
+   "start_delay_ms": 17,
+   "max_gap_ms": 69
+  },
+  {
+   "segment": "m05-s7b",
+   "mode": "overlay",
+   "start_ms": 830772,
+   "duration_ms": 273,
+   "planned_ms": 273,
+   "frames": 10,
+   "start_delay_ms": 5,
+   "max_gap_ms": 61
+  },
+  {
+   "segment": "m05-s7b",
+   "mode": "overlay",
+   "start_ms": 858612,
+   "duration_ms": 306,
+   "planned_ms": 306,
+   "frames": 15,
+   "start_delay_ms": 0,
+   "max_gap_ms": 36
+  },
+  {
+   "segment": "m05-s7b",
+   "mode": "overlay",
+   "start_ms": 866641,
+   "duration_ms": 272,
+   "planned_ms": 272,
+   "frames": 11,
+   "start_delay_ms": 14,
+   "max_gap_ms": 41
+  },
+  {
+   "segment": "m05-s7b",
+   "mode": "overlay",
+   "start_ms": 870371,
+   "duration_ms": 272,
+   "planned_ms": 272,
+   "frames": 13,
+   "start_delay_ms": 8,
+   "max_gap_ms": 34
+  },
+  {
+   "segment": "m05-s7b",
+   "mode": "overlay",
+   "start_ms": 884227,
+   "duration_ms": 272,
+   "planned_ms": 272,
+   "frames": 9,
+   "start_delay_ms": 2,
+   "max_gap_ms": 52
+  },
+  {
+   "segment": "m05-s7b",
+   "mode": "overlay",
+   "start_ms": 888462,
+   "duration_ms": 286,
+   "planned_ms": 286,
+   "frames": 14,
+   "start_delay_ms": 16,
+   "max_gap_ms": 49
+  },
+  {
+   "segment": "m05-s7b",
+   "mode": "overlay",
+   "start_ms": 893214,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 10,
+   "start_delay_ms": 2,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "m05-s7b",
+   "mode": "overlay",
+   "start_ms": 908841,
+   "duration_ms": 421,
+   "planned_ms": 421,
+   "frames": 21,
+   "start_delay_ms": 9,
+   "max_gap_ms": 31
+  },
+  {
+   "segment": "m05-s7b",
+   "mode": "overlay",
+   "start_ms": 917747,
+   "duration_ms": 289,
+   "planned_ms": 289,
+   "frames": 8,
+   "start_delay_ms": 18,
+   "max_gap_ms": 118
+  },
+  {
+   "segment": "m05-s7b",
+   "mode": "overlay",
+   "start_ms": 922027,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 9,
+   "start_delay_ms": 2,
+   "max_gap_ms": 84
+  },
+  {
+   "segment": "m05-s7b",
+   "mode": "overlay",
+   "start_ms": 932289,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 6,
+   "start_delay_ms": 5,
+   "max_gap_ms": 133
+  },
+  {
+   "segment": "m05-s8",
+   "mode": "overlay",
+   "start_ms": 980214,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 6,
+   "start_delay_ms": 25,
+   "max_gap_ms": 109
+  },
+  {
+   "segment": "m05-s8",
+   "mode": "overlay",
+   "start_ms": 985148,
+   "duration_ms": 306,
+   "planned_ms": 306,
+   "frames": 14,
+   "start_delay_ms": 1,
+   "max_gap_ms": 55
+  },
+  {
+   "segment": "m05-s8",
+   "mode": "overlay",
+   "start_ms": 995901,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 9,
+   "start_delay_ms": 6,
+   "max_gap_ms": 74
+  },
+  {
+   "segment": "m05-s8",
+   "mode": "overlay",
+   "start_ms": 997419,
+   "duration_ms": 389,
+   "planned_ms": 389,
+   "frames": 18,
+   "start_delay_ms": 6,
+   "max_gap_ms": 66
+  },
+  {
+   "segment": "m05-s8",
+   "mode": "overlay",
+   "start_ms": 1001299,
+   "duration_ms": 380,
+   "planned_ms": 380,
+   "frames": 16,
+   "start_delay_ms": 15,
+   "max_gap_ms": 81
+  },
+  {
+   "segment": "m05-s8",
+   "mode": "overlay",
+   "start_ms": 1004826,
+   "duration_ms": 343,
+   "planned_ms": 343,
+   "frames": 17,
+   "start_delay_ms": 8,
+   "max_gap_ms": 41
+  },
+  {
+   "segment": "m05-s8",
+   "mode": "overlay",
+   "start_ms": 1007692,
+   "duration_ms": 386,
+   "planned_ms": 386,
+   "frames": 16,
+   "start_delay_ms": 16,
+   "max_gap_ms": 63
+  }
+ ],
+ "decode": "passed",
+ "stream_end_s": {
+  "v": 1013.733,
+  "a": 1013.733
+ },
+ "seams": [
+  {
+   "번호": 1,
+   "시각": "00:46.933",
+   "앞": "m05-s1@46922",
+   "뒤": "m05-s2@0",
+   "종류": "이음새",
+   "프레임간격_ok": true,
+   "원본정지_ms": [
+    68,
+    0
+   ],
+   "소리튐": false,
+   "표본차": 0.0,
+   "기준": 0.0367,
+   "소리시작_어긋남_ms": [
+    0.0
+   ],
+   "소리_ok": true,
+   "바뀐화소퍼센트": 0.003,
+   "바뀐영역": [
+    1064,
+    780,
+    1696,
+    932
+   ],
+   "화면_ok": true,
+   "그림": "이음새_01.jpg",
+   "허용": false,
+   "판정": "통과"
+  },
+  {
+   "번호": 2,
+   "시각": "02:27.500",
+   "앞": "m05-s2@100555",
+   "뒤": "m05-s3@0",
+   "종류": "이음새",
+   "프레임간격_ok": true,
+   "원본정지_ms": [
+    48,
+    0
+   ],
+   "소리튐": false,
+   "표본차": 0.0,
+   "기준": 0.0554,
+   "소리시작_어긋남_ms": [
+    -0.0
+   ],
+   "소리_ok": true,
+   "바뀐화소퍼센트": 0.022,
+   "바뀐영역": [
+    988,
+    32,
+    1572,
+    960
+   ],
+   "화면_ok": true,
+   "그림": "이음새_02.jpg",
+   "허용": false,
+   "판정": "통과"
+  },
+  {
+   "번호": 3,
+   "시각": "05:11.967",
+   "앞": "m05-s3@164469",
+   "뒤": "m05-s4@0",
+   "종류": "이음새",
+   "프레임간격_ok": true,
+   "원본정지_ms": [
+    20,
+    0
+   ],
+   "소리튐": false,
+   "표본차": 0.0,
+   "기준": 0.0723,
+   "소리시작_어긋남_ms": [
+    -0.0
+   ],
+   "소리_ok": true,
+   "바뀐화소퍼센트": 0.018,
+   "바뀐영역": [
+    1160,
+    28,
+    1184,
+    52
+   ],
+   "화면_ok": true,
+   "그림": "이음새_03.jpg",
+   "허용": false,
+   "판정": "통과"
+  },
+  {
+   "번호": 4,
+   "시각": "06:54.067",
+   "앞": "m05-s4@102084",
+   "뒤": "m05-s5@0",
+   "종류": "이음새",
+   "프레임간격_ok": true,
+   "원본정지_ms": [
+    49,
+    0
+   ],
+   "소리튐": false,
+   "표본차": 0.0,
+   "기준": 0.0664,
+   "소리시작_어긋남_ms": [
+    0.0
+   ],
+   "소리_ok": true,
+   "바뀐화소퍼센트": 0.009,
+   "바뀐영역": [
+    472,
+    32,
+    1180,
+    384
+   ],
+   "화면_ok": true,
+   "그림": "이음새_04.jpg",
+   "허용": false,
+   "판정": "통과"
+  },
+  {
+   "번호": 5,
+   "시각": "09:38.900",
+   "앞": "m05-s5@164822",
+   "뒤": "m05-s6b@0",
+   "종류": "이음새",
+   "프레임간격_ok": true,
+   "원본정지_ms": [
+    25,
+    0
+   ],
+   "소리튐": false,
+   "표본차": 0.0,
+   "기준": 0.074,
+   "소리시작_어긋남_ms": [
+    0.0
+   ],
+   "소리_ok": true,
+   "바뀐화소퍼센트": 0.017,
+   "바뀐영역": [
+    1160,
+    28,
+    1184,
+    52
+   ],
+   "화면_ok": true,
+   "그림": "이음새_05.jpg",
+   "허용": false,
+   "판정": "통과"
+  },
+  {
+   "번호": 6,
+   "시각": "13:24.367",
+   "앞": "m05-s6b@225480",
+   "뒤": "m05-s7b@0",
+   "종류": "이음새",
+   "프레임간격_ok": true,
+   "원본정지_ms": [
+    105,
+    0
+   ],
+   "소리튐": false,
+   "표본차": 0.0,
+   "기준": 0.044,
+   "소리시작_어긋남_ms": [
+    0.0
+   ],
+   "소리_ok": true,
+   "바뀐화소퍼센트": 0.008,
+   "바뀐영역": [
+    1164,
+    32,
+    1216,
+    752
+   ],
+   "화면_ok": true,
+   "그림": "이음새_06.jpg",
+   "허용": false,
+   "판정": "통과"
+  },
+  {
+   "번호": 7,
+   "시각": "16:18.933",
+   "앞": "m05-s7b@174562",
+   "뒤": "m05-s8@0",
+   "종류": "이음새",
+   "프레임간격_ok": true,
+   "원본정지_ms": [
+    151,
+    0
+   ],
+   "소리튐": false,
+   "표본차": 0.0,
+   "기준": 0.0221,
+   "소리시작_어긋남_ms": [
+    0.0
+   ],
+   "소리_ok": true,
+   "바뀐화소퍼센트": 0.002,
+   "바뀐영역": [
+    452,
+    556,
+    1484,
+    896
+   ],
+   "화면_ok": true,
+   "그림": "이음새_07.jpg",
+   "허용": false,
+   "판정": "통과"
+  }
+ ],
+ "voice": "config audio 캐시",
+ "revoiced": [],
+ "not_verified": [
+  "직접 청취",
+  "사용자 재생 확인"
+ ],
+ "이름": "05-지식지도-새판3",
+ "도구": "포털",
+ "crf": 18,
+ "fps": 30,
+ "size": [
+  1920,
+  1080
+ ],
+ "origin": {
+  "명세": [
+   "m05-s1",
+   "m05-s2",
+   "m05-s3",
+   "m05-s4",
+   "m05-s5",
+   "m05-s6b",
+   "m05-s7b",
+   "m05-s8"
+  ]
+ },
+ "음성교체": [],
+ "조각": [
+  {
+   "키": "d3c60e1a9fd759100bce0a05",
+   "도구": "포털",
+   "take": "m05-s1",
+   "from_ms": 0.0,
+   "to_ms": 46922.0,
+   "frames": 1408,
+   "mode": "overlay",
+   "part": 1,
+   "audio": "../음성",
+   "error": null,
+   "recorded_ms": 46922,
+   "end_url": "http://127.0.0.1:8088/#/ontology",
+   "end_tab": "ontology",
+   "edge_age": [
+    0,
+    68
+   ],
+   "cues": [
+    {
+     "id": "m05-101",
+     "text": "Neo4j Browser에서는 연습용으로 따로 만든 작은 그래프를 쿼리로 다뤄 봤죠. 이번에는 에이전트가 실제로 쓰는 설비 지식이 포털에 어떻게 들어 있는지, 지식 지도에서 눌러 가며 볼게요.",
+     "time": 12,
+     "duration": 12960,
+     "actionStart": null,
+     "actionEnd": null,
+     "commit": null,
+     "segment": 1
+    },
+    {
+     "id": "m05-102",
+     "text": "포털 홈에서 왼쪽 메뉴 지식 아래에 있는 지식 지도를 누르세요",
+     "time": 14272,
+     "duration": 4640,
+     "actionStart": 14272,
+     "actionEnd": 18577,
+     "commit": 17997,
+     "segment": 1
+    },
+    {
+     "id": "m05-103",
+     "text": "1회차에 쿨러 고장의 조치를 확인하러 들어왔던 화면이죠. 그 쿨러 사건에서는 유온이 오르고 냉각 효율이 떨어지자 쿨러 성능 저하 경보가 났고, 에이전트가 원인을 쿨러 핀 오염으로 짚었어요. 에이전트가 그렇게 짚을 수 있었던 건 이 지도에 담긴 지식 덕분이에요. 오늘은 설비에서 출발해 노드를 하나씩 열면서, 그 지식이 어떻게 이어져 있는지 따라가 볼게요.",
+     "time": 20912,
+     "duration": 25600,
+     "actionStart": 20916,
+     "actionEnd": 37688,
+     "commit": null,
+     "segment": 1
+    }
+   ],
+   "motions": [
+    {
+     "start": 17317,
+     "end": 17806,
+     "glide": 17317,
+     "planned_ms": 489,
+     "start_delay_ms": 14,
+     "max_gap_ms": 48,
+     "frames": 23
+    },
+    {
+     "start": 37218,
+     "end": 37673,
+     "glide": 37218,
+     "planned_ms": 455,
+     "start_delay_ms": 8,
+     "max_gap_ms": 43,
+     "frames": 21
+    }
+   ],
+   "clicks": [
+    {
+     "x": 217.33334350585938,
+     "y": 561.2083339691162,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    }
+   ]
+  },
+  {
+   "키": "c3af733a0894c8a10a5d51d4",
+   "도구": "포털",
+   "take": "m05-s2",
+   "from_ms": 0.0,
+   "to_ms": 100555.0,
+   "frames": 3017,
+   "mode": "overlay",
+   "part": 2,
+   "audio": "../음성",
+   "error": null,
+   "recorded_ms": 100555,
+   "end_url": "http://127.0.0.1:8088/#/ontology",
+   "end_tab": "ontology",
+   "edge_age": [
+    0,
+    48
+   ],
+   "cues": [
+    {
+     "id": "m05-201",
+     "text": "먼저 화면을 살펴볼게요. 맨 위 설비 칸에서 어느 설비의 지도를 볼지 고르는데, 지금은 첫 번째 설비가 골라져 있어요",
+     "time": 4,
+     "duration": 9040,
+     "actionStart": 5,
+     "actionEnd": 2906,
+     "commit": null,
+     "segment": 2
+    },
+    {
+     "id": "m05-202",
+     "text": "옆의 두 칸은 손대지 않으셔도 되고요",
+     "time": 9644,
+     "duration": 2560,
+     "actionStart": 9644,
+     "actionEnd": 11446,
+     "commit": null,
+     "segment": 2
+    },
+    {
+     "id": "m05-203",
+     "text": "그 밑이 이름 검색 칸이에요. 이름 일부만 쳐도 찾아 줘요",
+     "time": 12804,
+     "duration": 4720,
+     "actionStart": 12804,
+     "actionEnd": 13576,
+     "commit": null,
+     "segment": 2
+    },
+    {
+     "id": "m05-204",
+     "text": "옆의 다시 읽기는 오늘 안 써요.",
+     "time": 18125,
+     "duration": 2320,
+     "actionStart": 18128,
+     "actionEnd": 18652,
+     "commit": null,
+     "segment": 2
+    },
+    {
+     "id": "m05-205",
+     "text": "지도는 세로 칸 여러 개로 나뉘어 있죠. 이론에서 설비, 진단, 판단, 성과처럼 영역을 나눠 봤는데, 그 영역이 이 칸들이에요. 오늘은 이 가운데 세 칸만 써요. 설비와 센서, 부품이 든 자원",
+     "time": 21745,
+     "duration": 16000,
+     "actionStart": 21751,
+     "actionEnd": 35549,
+     "commit": null,
+     "segment": 2
+    },
+    {
+     "id": "m05-206",
+     "text": "고장을 다루는 설비 진단",
+     "time": 38345,
+     "duration": 2000,
+     "actionStart": 38353,
+     "actionEnd": 39159,
+     "commit": null,
+     "segment": 2
+    },
+    {
+     "id": "m05-207",
+     "text": "무엇을 할지 적어 둔 조치 방법과 규칙이에요",
+     "time": 40945,
+     "duration": 3600,
+     "actionStart": 40948,
+     "actionEnd": 42238,
+     "commit": null,
+     "segment": 2
+    },
+    {
+     "id": "m05-208",
+     "text": "자원 칸 맨 위에는 부서와 역할이 먼저 나오는데, 오늘은 안 보셔도 되고 설비는 그 밑에 있어요.",
+     "time": 45145,
+     "duration": 7200,
+     "actionStart": 45154,
+     "actionEnd": 51633,
+     "commit": null,
+     "segment": 2
+    },
+    {
+     "id": "m05-209",
+     "text": "칸 일곱 개가 다 펼쳐져 있으니 화면보다 넓죠. 그래서 이 줄 끝에 지도 안에서 좌우로 이동이라고 나와요",
+     "time": 53645,
+     "duration": 8560,
+     "actionStart": 53646,
+     "actionEnd": 58466,
+     "commit": null,
+     "segment": 2
+    },
+    {
+     "id": "m05-210",
+     "text": "안 쓰는 칸은 접어 둘게요. 위의 단추에서 체크를 끄면 칸이 접힐 뿐, 지식이 지워지지는 않아요.",
+     "time": 62805,
+     "duration": 7280,
+     "actionStart": 62830,
+     "actionEnd": 65284,
+     "commit": null,
+     "segment": 2
+    },
+    {
+     "id": "m05-211",
+     "text": "전략 목표",
+     "time": 71386,
+     "duration": 1120,
+     "actionStart": 71387,
+     "actionEnd": 72316,
+     "commit": 71745,
+     "segment": 2
+    },
+    {
+     "id": "m05-212",
+     "text": "프로세스",
+     "time": 73106,
+     "duration": 960,
+     "actionStart": 73109,
+     "actionEnd": 74342,
+     "commit": 73781,
+     "segment": 2
+    },
+    {
+     "id": "m05-213",
+     "text": "그리고 오른쪽 끝의 외부 변수 · 예측 · 사례",
+     "time": 74942,
+     "duration": 4160,
+     "actionStart": 74943,
+     "actionEnd": 77708,
+     "commit": 77252,
+     "segment": 2
+    },
+    {
+     "id": "m05-214",
+     "text": "내 업무 개념, 이렇게 넷을 꺼 주세요",
+     "time": 79702,
+     "duration": 3040,
+     "actionStart": 79703,
+     "actionEnd": 80689,
+     "commit": 80326,
+     "segment": 2
+    },
+    {
+     "id": "m05-215",
+     "text": "이제 세 칸이 화면에 다 들어오고, 좌우로 이동하라는 말도 사라졌어요",
+     "time": 88747,
+     "duration": 5120,
+     "actionStart": 88757,
+     "actionEnd": 91793,
+     "commit": null,
+     "segment": 2
+    },
+    {
+     "id": "m05-216",
+     "text": "화면이 좁으면 이 말이 남을 수 있는데, 그럴 땐 지도 안을 옆으로 밀어 보시면 돼요.",
+     "time": 94467,
+     "duration": 5680,
+     "actionStart": null,
+     "actionEnd": null,
+     "commit": null,
+     "segment": 2
+    }
+   ],
+   "motions": [
+    {
+     "start": 2468,
+     "end": 2834,
+     "glide": 2468,
+     "planned_ms": 366,
+     "start_delay_ms": 32,
+     "max_gap_ms": 105,
+     "frames": 8
+    },
+    {
+     "start": 9817,
+     "end": 10113,
+     "glide": 9817,
+     "planned_ms": 296,
+     "start_delay_ms": 43,
+     "max_gap_ms": 33,
+     "frames": 13
+    },
+    {
+     "start": 11057,
+     "end": 11395,
+     "glide": 11057,
+     "planned_ms": 338,
+     "start_delay_ms": 24,
+     "max_gap_ms": 35,
+     "frames": 15
+    },
+    {
+     "start": 13168,
+     "end": 13559,
+     "glide": 13168,
+     "planned_ms": 391,
+     "start_delay_ms": 4,
+     "max_gap_ms": 46,
+     "frames": 16
+    },
+    {
+     "start": 18335,
+     "end": 18595,
+     "glide": 18335,
+     "planned_ms": 260,
+     "start_delay_ms": 13,
+     "max_gap_ms": 46,
+     "frames": 9
+    },
+    {
+     "start": 22211,
+     "end": 22555,
+     "glide": 22211,
+     "planned_ms": 344,
+     "start_delay_ms": 3,
+     "max_gap_ms": 58,
+     "frames": 14
+    },
+    {
+     "start": 28365,
+     "end": 28795,
+     "glide": 28365,
+     "planned_ms": 430,
+     "start_delay_ms": 5,
+     "max_gap_ms": 60,
+     "frames": 15
+    },
+    {
+     "start": 35238,
+     "end": 35515,
+     "glide": 35238,
+     "planned_ms": 277,
+     "start_delay_ms": 5,
+     "max_gap_ms": 38,
+     "frames": 13
+    },
+    {
+     "start": 38818,
+     "end": 39095,
+     "glide": 38818,
+     "planned_ms": 277,
+     "start_delay_ms": 15,
+     "max_gap_ms": 100,
+     "frames": 6
+    },
+    {
+     "start": 41945,
+     "end": 42222,
+     "glide": 41945,
+     "planned_ms": 277,
+     "start_delay_ms": 21,
+     "max_gap_ms": 33,
+     "frames": 14
+    },
+    {
+     "start": 46140,
+     "end": 46495,
+     "glide": 46140,
+     "planned_ms": 355,
+     "start_delay_ms": 10,
+     "max_gap_ms": 48,
+     "frames": 15
+    },
+    {
+     "start": 51329,
+     "end": 51589,
+     "glide": 51329,
+     "planned_ms": 260,
+     "start_delay_ms": 30,
+     "max_gap_ms": 41,
+     "frames": 10
+    },
+    {
+     "start": 58126,
+     "end": 58416,
+     "glide": 58126,
+     "planned_ms": 290,
+     "start_delay_ms": 13,
+     "max_gap_ms": 49,
+     "frames": 12
+    },
+    {
+     "start": 64870,
+     "end": 65267,
+     "glide": 64870,
+     "planned_ms": 397,
+     "start_delay_ms": 9,
+     "max_gap_ms": 85,
+     "frames": 13
+    },
+    {
+     "start": 73339,
+     "end": 73599,
+     "glide": 73339,
+     "planned_ms": 260,
+     "start_delay_ms": 15,
+     "max_gap_ms": 45,
+     "frames": 11
+    },
+    {
+     "start": 76679,
+     "end": 77072,
+     "glide": 76679,
+     "planned_ms": 393,
+     "start_delay_ms": 8,
+     "max_gap_ms": 55,
+     "frames": 17
+    },
+    {
+     "start": 79881,
+     "end": 80156,
+     "glide": 79881,
+     "planned_ms": 275,
+     "start_delay_ms": 5,
+     "max_gap_ms": 33,
+     "frames": 15
+    },
+    {
+     "start": 91355,
+     "end": 91735,
+     "glide": 91355,
+     "planned_ms": 380,
+     "start_delay_ms": 42,
+     "max_gap_ms": 47,
+     "frames": 14
+    }
+   ],
+   "clicks": [
+    {
+     "x": 294,
+     "y": 237.1666669845581,
+     "dx": 0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 412.7083435058594,
+     "y": 237.1666669845581,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 896.1666870117188,
+     "y": 237.1666669845581,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 1083.291748046875,
+     "y": 237.1666669845581,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    }
+   ]
+  },
+  {
+   "키": "63c75985173362f8c05abc02",
+   "도구": "포털",
+   "take": "m05-s3",
+   "from_ms": 0.0,
+   "to_ms": 164469.0,
+   "frames": 4934,
+   "mode": "overlay",
+   "part": 3,
+   "audio": "../음성",
+   "error": null,
+   "recorded_ms": 164469,
+   "end_url": "http://127.0.0.1:8088/#/ontology",
+   "end_tab": "ontology",
+   "edge_age": [
+    0,
+    20
+   ],
+   "cues": [
+    {
+     "id": "m05-301",
+     "text": "설비부터 찾아볼게요. 검색 칸을 누르고 유압 파워팩이라고 쳐 보세요",
+     "time": 20,
+     "duration": 5600,
+     "actionStart": 22,
+     "actionEnd": 5564,
+     "commit": 2167,
+     "segment": 3
+    },
+    {
+     "id": "m05-302",
+     "text": "글자를 칠 때마다 지도를 새로 그려서 조금 느릴 수 있어요",
+     "time": 6220,
+     "duration": 4480,
+     "actionStart": null,
+     "actionEnd": null,
+     "commit": null,
+     "segment": 3
+    },
+    {
+     "id": "m05-303",
+     "text": "이름이 맞는 네모가 노랗게 바뀌고, 지도가 그 자리로 옮겨 갔어요",
+     "time": 15703,
+     "duration": 4800,
+     "actionStart": 15705,
+     "actionEnd": 16876,
+     "commit": null,
+     "segment": 3
+    },
+    {
+     "id": "m05-304",
+     "text": "네모 위에 작은 회색 글씨로 설비, 1이라고 적혀 있죠",
+     "time": 22503,
+     "duration": 5040,
+     "actionStart": 22504,
+     "actionEnd": 24219,
+     "commit": null,
+     "segment": 3
+    },
+    {
+     "id": "m05-305",
+     "text": "이게 클래스 머리글이고, 숫자는 그 밑에 그려진 노드 수예요. 위에서 첫 번째 설비를 골라 뒀으니 설비는 한 대만 그려진 거예요. 그 밑 구성 요소 머리글에는 여섯 개가 있어요",
+     "time": 28143,
+     "duration": 12880,
+     "actionStart": 28145,
+     "actionEnd": 38489,
+     "commit": null,
+     "segment": 3
+    },
+    {
+     "id": "m05-306",
+     "text": "오일 쿨러, 쿨러 팬, 주 펌프처럼 이 설비를 이루는 장치들이죠.",
+     "time": 41623,
+     "duration": 4960,
+     "actionStart": 41636,
+     "actionEnd": 43590,
+     "commit": null,
+     "segment": 3
+    },
+    {
+     "id": "m05-307",
+     "text": "네모 속 내용은 1회차에서처럼 눌러야 보여요. 노란 네모를 눌러 보세요",
+     "time": 47883,
+     "duration": 5200,
+     "actionStart": 47886,
+     "actionEnd": 53052,
+     "commit": 52634,
+     "segment": 3
+    },
+    {
+     "id": "m05-308",
+     "text": "이 노드와 이어진 선만 진해지고 나머지는 흐려졌죠",
+     "time": 57083,
+     "duration": 4000,
+     "actionStart": 57083,
+     "actionEnd": 57791,
+     "commit": null,
+     "segment": 3
+    },
+    {
+     "id": "m05-309",
+     "text": "자세한 내용은 지도 밑에 나오니까 조금 내려 볼게요",
+     "time": 61684,
+     "duration": 3600,
+     "actionStart": 61685,
+     "actionEnd": 65009,
+     "commit": null,
+     "segment": 3
+    },
+    {
+     "id": "m05-310",
+     "text": "맨 위 작은 글씨가 클래스, 설비이고",
+     "time": 67284,
+     "duration": 4000,
+     "actionStart": 67285,
+     "actionEnd": 68720,
+     "commit": null,
+     "segment": 3
+    },
+    {
+     "id": "m05-311",
+     "text": "큰 글씨가 이름이에요",
+     "time": 71885,
+     "duration": 1760,
+     "actionStart": 71888,
+     "actionEnd": 72396,
+     "commit": null,
+     "segment": 3
+    },
+    {
+     "id": "m05-312",
+     "text": "노드를 열면 늘 이 둘부터 읽으면 돼요.",
+     "time": 74245,
+     "duration": 3120,
+     "actionStart": null,
+     "actionEnd": null,
+     "commit": null,
+     "segment": 3
+    },
+    {
+     "id": "m05-313",
+     "text": "그 아래 표가 속성이에요. 왼쪽이 속성 이름, 오른쪽이 값인데, 속성 이름이 영어라 낯설면 볼 줄만 그때그때 짚어 드릴게요. 둘째 줄이 설비 코드예요",
+     "time": 78664,
+     "duration": 12000,
+     "actionStart": 78665,
+     "actionEnd": 88936,
+     "commit": null,
+     "segment": 3
+    },
+    {
+     "id": "m05-314",
+     "text": "이론에서 본 공통 식별자라서, 시계열 저장소나 정비 기록도 이 코드로 같은 설비를 찾아요. 나머지 줄은 예측에 쓰는 설정이라 넘어갈게요",
+     "time": 91264,
+     "duration": 10000,
+     "actionStart": 91268,
+     "actionEnd": 98253,
+     "commit": null,
+     "segment": 3
+    },
+    {
+     "id": "m05-315",
+     "text": "오른쪽에는 관계가 두 묶음으로 나와요. 나가는 관계는 이 설비에서 출발하는 선",
+     "time": 103264,
+     "duration": 6400,
+     "actionStart": 103265,
+     "actionEnd": 106889,
+     "commit": null,
+     "segment": 3
+    },
+    {
+     "id": "m05-316",
+     "text": "들어오는 관계는 다른 노드에서 이 설비로 오는 선이에요",
+     "time": 110264,
+     "duration": 3920,
+     "actionStart": 110266,
+     "actionEnd": 110857,
+     "commit": null,
+     "segment": 3
+    },
+    {
+     "id": "m05-317",
+     "text": "1회차에서 본 저장된 방향 그대로, 선마다 출발하는 쪽이 정해져 있어서 이렇게 둘로 나눠 보여 줘요.",
+     "time": 114788,
+     "duration": 7040,
+     "actionStart": null,
+     "actionEnd": null,
+     "commit": null,
+     "segment": 3
+    },
+    {
+     "id": "m05-318",
+     "text": "한 줄에서 화살표가 방향, 검은 글씨가 이론에서 본 관계 유형의 이름, 파란 글씨가 닿는 노드예요",
+     "time": 123128,
+     "duration": 8080,
+     "actionStart": 123131,
+     "actionEnd": 129015,
+     "commit": null,
+     "segment": 3
+    },
+    {
+     "id": "m05-319",
+     "text": "나가는 쪽 여섯 줄은 모두 구성 요소라는 관계로, 작동유 탱크부터",
+     "time": 131808,
+     "duration": 5120,
+     "actionStart": 131814,
+     "actionEnd": 135716,
+     "commit": null,
+     "segment": 3
+    },
+    {
+     "id": "m05-320",
+     "text": "오일 쿨러까지 닿아 있어요",
+     "time": 137528,
+     "duration": 2080,
+     "actionStart": 137531,
+     "actionEnd": 137988,
+     "commit": null,
+     "segment": 3
+    },
+    {
+     "id": "m05-321",
+     "text": "설비는 이 장치들이 모여서 돌아가니까, 설비에 문제가 생기면 이 줄을 따라 어느 장치 탓인지 내려가 보면 돼요. 클래스 이름에도 구성 요소가 있어서 헷갈릴 수 있는데, 줄 안의 검은 글씨는 관계 이름이에요.",
+     "time": 140208,
+     "duration": 14480,
+     "actionStart": null,
+     "actionEnd": null,
+     "commit": null,
+     "segment": 3
+    },
+    {
+     "id": "m05-322",
+     "text": "들어오는 쪽은 업무 흐름이 이 설비를 대상으로 가리키는 선이에요. 아까 접은 프로세스 칸의 것이라 오늘은 넘어갈게요",
+     "time": 155988,
+     "duration": 8080,
+     "actionStart": 155993,
+     "actionEnd": 156609,
+     "commit": null,
+     "segment": 3
+    }
+   ],
+   "motions": [
+    {
+     "start": 1721,
+     "end": 1984,
+     "glide": 1721,
+     "planned_ms": 263,
+     "start_delay_ms": 18,
+     "max_gap_ms": 38,
+     "frames": 12
+    },
+    {
+     "start": 16585,
+     "end": 16857,
+     "glide": 16585,
+     "planned_ms": 272,
+     "start_delay_ms": 16,
+     "max_gap_ms": 37,
+     "frames": 12
+    },
+    {
+     "start": 23877,
+     "end": 24188,
+     "glide": 23877,
+     "planned_ms": 311,
+     "start_delay_ms": 12,
+     "max_gap_ms": 39,
+     "frames": 15
+    },
+    {
+     "start": 38177,
+     "end": 38437,
+     "glide": 38177,
+     "planned_ms": 260,
+     "start_delay_ms": 7,
+     "max_gap_ms": 65,
+     "frames": 10
+    },
+    {
+     "start": 41854,
+     "end": 42165,
+     "glide": 41854,
+     "planned_ms": 311,
+     "start_delay_ms": 13,
+     "max_gap_ms": 101,
+     "frames": 8
+    },
+    {
+     "start": 42501,
+     "end": 42761,
+     "glide": 42501,
+     "planned_ms": 260,
+     "start_delay_ms": 13,
+     "max_gap_ms": 33,
+     "frames": 13
+    },
+    {
+     "start": 43307,
+     "end": 43567,
+     "glide": 43307,
+     "planned_ms": 260,
+     "start_delay_ms": 4,
+     "max_gap_ms": 54,
+     "frames": 11
+    },
+    {
+     "start": 52181,
+     "end": 52444,
+     "glide": 52181,
+     "planned_ms": 263,
+     "start_delay_ms": 10,
+     "max_gap_ms": 34,
+     "frames": 11
+    },
+    {
+     "start": 68391,
+     "end": 68697,
+     "glide": 68391,
+     "planned_ms": 306,
+     "start_delay_ms": 13,
+     "max_gap_ms": 26,
+     "frames": 17
+    },
+    {
+     "start": 72100,
+     "end": 72360,
+     "glide": 72100,
+     "planned_ms": 260,
+     "start_delay_ms": 1,
+     "max_gap_ms": 75,
+     "frames": 9
+    },
+    {
+     "start": 79137,
+     "end": 79397,
+     "glide": 79137,
+     "planned_ms": 260,
+     "start_delay_ms": 9,
+     "max_gap_ms": 45,
+     "frames": 11
+    },
+    {
+     "start": 88647,
+     "end": 88907,
+     "glide": 88647,
+     "planned_ms": 260,
+     "start_delay_ms": 3,
+     "max_gap_ms": 61,
+     "frames": 10
+    },
+    {
+     "start": 97978,
+     "end": 98238,
+     "glide": 97978,
+     "planned_ms": 260,
+     "start_delay_ms": 6,
+     "max_gap_ms": 30,
+     "frames": 14
+    },
+    {
+     "start": 106416,
+     "end": 106808,
+     "glide": 106416,
+     "planned_ms": 392,
+     "start_delay_ms": 2,
+     "max_gap_ms": 42,
+     "frames": 20
+    },
+    {
+     "start": 110527,
+     "end": 110800,
+     "glide": 110527,
+     "planned_ms": 273,
+     "start_delay_ms": 20,
+     "max_gap_ms": 49,
+     "frames": 13
+    },
+    {
+     "start": 123898,
+     "end": 124161,
+     "glide": 123898,
+     "planned_ms": 263,
+     "start_delay_ms": 6,
+     "max_gap_ms": 33,
+     "frames": 14
+    },
+    {
+     "start": 137705,
+     "end": 137965,
+     "glide": 137705,
+     "planned_ms": 260,
+     "start_delay_ms": 16,
+     "max_gap_ms": 46,
+     "frames": 13
+    },
+    {
+     "start": 156316,
+     "end": 156576,
+     "glide": 156316,
+     "planned_ms": 260,
+     "start_delay_ms": 18,
+     "max_gap_ms": 41,
+     "frames": 10
+    }
+   ],
+   "clicks": [
+    {
+     "x": 498.6666717529297,
+     "y": 191,
+     "dx": 0.0,
+     "dy": 0,
+     "gliding": null
+    },
+    {
+     "x": 540.6666870117188,
+     "y": 365.1458435058594,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    }
+   ]
+  },
+  {
+   "키": "c2733f0bc734733947c547b6",
+   "도구": "포털",
+   "take": "m05-s4",
+   "from_ms": 0.0,
+   "to_ms": 102084.0,
+   "frames": 3063,
+   "mode": "overlay",
+   "part": 4,
+   "audio": "../음성",
+   "error": null,
+   "recorded_ms": 102084,
+   "end_url": "http://127.0.0.1:8088/#/ontology",
+   "end_tab": "ontology",
+   "edge_age": [
+    0,
+    49
+   ],
+   "cues": [
+    {
+     "id": "m05-401",
+     "text": "이제 장치를 하나 열어 볼게요. 그 사건의 주인공인 쿨러예요. 상세 칸의 파란 이름을 누르면 그 노드로 넘어가요. 나가는 쪽의 오일 쿨러를 눌러 주세요",
+     "time": 17,
+     "duration": 11200,
+     "actionStart": 17,
+     "actionEnd": 11148,
+     "commit": 10728,
+     "segment": 4
+    },
+    {
+     "id": "m05-402",
+     "text": "구성 요소 클래스의 오일 쿨러로 넘어왔어요",
+     "time": 15217,
+     "duration": 3120,
+     "actionStart": 15219,
+     "actionEnd": 16490,
+     "commit": null,
+     "segment": 4
+    },
+    {
+     "id": "m05-403",
+     "text": "속성은 다른 이름 한 줄인데, 쿨러와 열교환기가 적혀 있죠",
+     "time": 18937,
+     "duration": 4720,
+     "actionStart": 18940,
+     "actionEnd": 20530,
+     "commit": null,
+     "segment": 4
+    },
+    {
+     "id": "m05-404",
+     "text": "현장에서는 쿨러를 열교환기라고도 부르니까, 어느 말로 찾아도 이 노드로 오게 둘 다 적어 둔 거예요.",
+     "time": 24257,
+     "duration": 7200,
+     "actionStart": null,
+     "actionEnd": null,
+     "commit": null,
+     "segment": 4
+    },
+    {
+     "id": "m05-405",
+     "text": "쿨러에 무엇이 붙어 있는지는 쿨러가 하는 일을 떠올리면 쉽게 읽혀요. 쿨러는 뜨거워진 기름을 식히는 장치죠. 나가는 쪽 셋을 출발한 노드부터 읽어 볼게요. 오일 쿨러의 교체 부품은 쿨러 코어",
+     "time": 32757,
+     "duration": 14560,
+     "actionStart": 32758,
+     "actionEnd": 46947,
+     "commit": null,
+     "segment": 4
+    },
+    {
+     "id": "m05-406",
+     "text": "쿨러 안에서 기름의 열을 실제로 빼 주는 몸통이라, 오래 쓰면 갈아 끼우는 부품이에요. 오일 쿨러의 관측 센서는 유온 센서",
+     "time": 47919,
+     "duration": 9040,
+     "actionStart": 47921,
+     "actionEnd": 56446,
+     "commit": null,
+     "segment": 4
+    },
+    {
+     "id": "m05-407",
+     "text": "잘 식히는지는 기름 온도를 보면 아니까 유온 센서가 붙어 있어요. 관측 센서가 하나 더 있죠, 냉각 효율 (가상)",
+     "time": 57560,
+     "duration": 8720,
+     "actionStart": 57568,
+     "actionEnd": 65080,
+     "commit": null,
+     "segment": 4
+    },
+    {
+     "id": "m05-408",
+     "text": "얼마나 잘 식히는지를 따로 재는 장치 없이 다른 값들로 계산해 내는 센서라서 이름 끝에 가상이 붙었어요.",
+     "time": 66880,
+     "duration": 7760,
+     "actionStart": null,
+     "actionEnd": null,
+     "commit": null,
+     "segment": 4
+    },
+    {
+     "id": "m05-409",
+     "text": "쿨러 코어는 조금 뒤에 다른 길로 다시 만나니까 기억해 두세요.",
+     "time": 75940,
+     "duration": 4160,
+     "actionStart": 75941,
+     "actionEnd": 76985,
+     "commit": null,
+     "segment": 4
+    },
+    {
+     "id": "m05-410",
+     "text": "들어오는 쪽 첫 줄은 첫 번째 설비의 유압 파워팩이에요",
+     "time": 81400,
+     "duration": 4080,
+     "actionStart": 81401,
+     "actionEnd": 82776,
+     "commit": null,
+     "segment": 4
+    },
+    {
+     "id": "m05-411",
+     "text": "아까 설비에서 나가는 쪽으로 본 선을 반대쪽 끝에서 보는 거예요. 선 하나는 이렇게 양쪽 노드에 다 나와요. 그 밑의 쿨러 냉각 성능 상실은 1회차에 열어 본 고장 유형인데, 이것도 조금 뒤 다른 길로 닿을 거예요",
+     "time": 86080,
+     "duration": 15600,
+     "actionStart": 86080,
+     "actionEnd": 94887,
+     "commit": null,
+     "segment": 4
+    }
+   ],
+   "motions": [
+    {
+     "start": 10293,
+     "end": 10553,
+     "glide": 10293,
+     "planned_ms": 260,
+     "start_delay_ms": 1,
+     "max_gap_ms": 55,
+     "frames": 8
+    },
+    {
+     "start": 16030,
+     "end": 16471,
+     "glide": 16030,
+     "planned_ms": 441,
+     "start_delay_ms": 10,
+     "max_gap_ms": 79,
+     "frames": 17
+    },
+    {
+     "start": 20246,
+     "end": 20506,
+     "glide": 20246,
+     "planned_ms": 260,
+     "start_delay_ms": 18,
+     "max_gap_ms": 60,
+     "frames": 9
+    },
+    {
+     "start": 46528,
+     "end": 46914,
+     "glide": 46528,
+     "planned_ms": 386,
+     "start_delay_ms": 25,
+     "max_gap_ms": 59,
+     "frames": 16
+    },
+    {
+     "start": 56170,
+     "end": 56430,
+     "glide": 56170,
+     "planned_ms": 260,
+     "start_delay_ms": 3,
+     "max_gap_ms": 32,
+     "frames": 15
+    },
+    {
+     "start": 64785,
+     "end": 65045,
+     "glide": 64785,
+     "planned_ms": 260,
+     "start_delay_ms": 2,
+     "max_gap_ms": 53,
+     "frames": 10
+    },
+    {
+     "start": 76674,
+     "end": 76934,
+     "glide": 76674,
+     "planned_ms": 260,
+     "start_delay_ms": 18,
+     "max_gap_ms": 42,
+     "frames": 14
+    },
+    {
+     "start": 82493,
+     "end": 82753,
+     "glide": 82493,
+     "planned_ms": 260,
+     "start_delay_ms": 14,
+     "max_gap_ms": 35,
+     "frames": 12
+    },
+    {
+     "start": 94602,
+     "end": 94862,
+     "glide": 94602,
+     "planned_ms": 260,
+     "start_delay_ms": 13,
+     "max_gap_ms": 25,
+     "frames": 13
+    }
+   ],
+   "clicks": [
+    {
+     "x": 879.3646240234375,
+     "y": 480.41668701171875,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    }
+   ]
+  },
+  {
+   "키": "226061f5877014b44e65dc93",
+   "도구": "포털",
+   "take": "m05-s5",
+   "from_ms": 0.0,
+   "to_ms": 164822.0,
+   "frames": 4945,
+   "mode": "overlay",
+   "part": 5,
+   "audio": "../음성",
+   "error": null,
+   "recorded_ms": 164822,
+   "end_url": "http://127.0.0.1:8088/#/ontology",
+   "end_tab": "ontology",
+   "edge_age": [
+    0,
+    25
+   ],
+   "cues": [
+    {
+     "id": "m05-501",
+     "text": "다음은 유온 센서예요. 센서가 잰 온도가 괜찮은지는 무엇과 견줘서 아는지 보려고 해요. 나가는 쪽의 유온 센서를 눌러 주세요",
+     "time": 16,
+     "duration": 9200,
+     "actionStart": 17,
+     "actionEnd": 9194,
+     "commit": 8733,
+     "segment": 5
+    },
+    {
+     "id": "m05-502",
+     "text": "클래스가 센서죠",
+     "time": 13216,
+     "duration": 1520,
+     "actionStart": 13217,
+     "actionEnd": 13856,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "m05-503",
+     "text": "가상인지 묻는 줄이 거짓이니, 계산하는 센서가 아니라 쿨러에 실제로 달려 온도를 재는 센서예요",
+     "time": 15336,
+     "duration": 7040,
+     "actionStart": 15340,
+     "actionEnd": 16886,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "m05-504",
+     "text": "맨 아래 태그 줄은 현장에서 센서에 붙여 부르는 짧은 이름표예요",
+     "time": 22976,
+     "duration": 4720,
+     "actionStart": 22977,
+     "actionEnd": 24103,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "m05-505",
+     "text": "이 지도 안에서는 이 센서를 가리키는 식별자 노릇도 해요.",
+     "time": 28296,
+     "duration": 3920,
+     "actionStart": null,
+     "actionEnd": null,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "m05-506",
+     "text": "그런데 센서는 온도를 재기만 할 뿐, 괜찮은지 따질 기준은 여기 없어요. 기준이 어디 있는지 관계를 볼게요. 나가는 쪽에 읽는 상태 변수, 유온이 있죠",
+     "time": 33516,
+     "duration": 12320,
+     "actionStart": 33520,
+     "actionEnd": 43817,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "m05-507",
+     "text": "이 센서가 재는 물리량이 유온이라는 선이에요. 그런데 들어오는 쪽 데이터 출처 줄에도 유온이 있어요",
+     "time": 46438,
+     "duration": 7600,
+     "actionStart": 46439,
+     "actionEnd": 51813,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "m05-508",
+     "text": "이름이 같은데 무엇이 다른지, 들어오는 쪽 유온부터 눌러 볼게요",
+     "time": 54638,
+     "duration": 4720,
+     "actionStart": 54639,
+     "actionEnd": 59278,
+     "commit": 58867,
+     "segment": 5
+    },
+    {
+     "id": "m05-509",
+     "text": "클래스가 입력 데이터예요",
+     "time": 61359,
+     "duration": 2160,
+     "actionStart": 61361,
+     "actionEnd": 62112,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "m05-510",
+     "text": "경보나 판정 규칙이 받아 읽는 값을 적어 둔 노드라서, 출처가 이 센서인 거예요. 속성 두 줄은 프로그램이 이 값을 부르는 이름과 형식이라 넘어갈게요. 이 노드의 나가는 쪽에도 유온이 또 있죠. 나타내는 변수 · 지표라는 관계인데, 이 값이 어떤 물리량을 나타내는지 가리켜요. 눌러 보면",
+     "time": 64119,
+     "duration": 22240,
+     "actionStart": 64127,
+     "actionEnd": 86420,
+     "commit": 86014,
+     "segment": 5
+    },
+    {
+     "id": "m05-511",
+     "text": "이번엔 클래스가 상태 변수예요",
+     "time": 88420,
+     "duration": 2720,
+     "actionStart": 88422,
+     "actionEnd": 89594,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "m05-512",
+     "text": "이론에서 본 상태 변수, 작동유 온도라는 물리량 그 자체죠. 둘 다 이름은 유온인데 클래스가 다르니까, 노드는 이름만 보지 말고 클래스를 같이 봐야 해요.",
+     "time": 91740,
+     "duration": 12160,
+     "actionStart": null,
+     "actionEnd": null,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "m05-513",
+     "text": "기준값은 여기 있어요. 정상값이 48도",
+     "time": 105200,
+     "duration": 3840,
+     "actionStart": 105202,
+     "actionEnd": 107821,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "m05-514",
+     "text": "맨 아래 한계가 65도예요",
+     "time": 109641,
+     "duration": 2400,
+     "actionStart": 109644,
+     "actionEnd": 110268,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "m05-515",
+     "text": "지금 잰 온도를 이 두 값과 견줘서 괜찮은지 위험한지 따지는 거죠.",
+     "time": 112641,
+     "duration": 5360,
+     "actionStart": null,
+     "actionEnd": null,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "m05-516",
+     "text": "그 사이 다른 이름 줄에는 오일 온도, 작동유 온도와 함께 센서 태그와 같은 글자도 있어요",
+     "time": 119301,
+     "duration": 6640,
+     "actionStart": 119327,
+     "actionEnd": 120838,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "m05-517",
+     "text": "현장에서 센서 이름표로 그 온도를 부르기도 해서예요.",
+     "time": 126541,
+     "duration": 3840,
+     "actionStart": null,
+     "actionEnd": null,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "m05-518",
+     "text": "이론에서는 두 번째 설비 쿨러를 재는 센서의 한계를 관계로 따라가 봤죠. 설비에서 쿨러, 센서를 지나 여기까지 온 길이 그 길이에요. 다만 이론에서는 한계를 센서에 뒀는데, 이 지도는 유온의 기준이 하나라서 상태 변수에 한 번만 적어 두었어요. 그래서 한 칸 더 온 거예요.",
+     "time": 131681,
+     "duration": 21040,
+     "actionStart": 131688,
+     "actionEnd": 139684,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "m05-519",
+     "text": "나머지 줄과 영향 관계는 오늘 넘어갈게요",
+     "time": 154021,
+     "duration": 3040,
+     "actionStart": 154033,
+     "actionEnd": 154854,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "m05-520",
+     "text": "들어오는 쪽의 읽는 상태 변수 줄에 유온 센서가 있죠",
+     "time": 157661,
+     "duration": 4000,
+     "actionStart": 157664,
+     "actionEnd": 161247,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "m05-521",
+     "text": "이걸 누르면 센서로 돌아가요.",
+     "time": 162261,
+     "duration": 2160,
+     "actionStart": null,
+     "actionEnd": null,
+     "commit": null,
+     "segment": 5
+    }
+   ],
+   "motions": [
+    {
+     "start": 8288,
+     "end": 8558,
+     "glide": 8288,
+     "planned_ms": 270,
+     "start_delay_ms": 8,
+     "max_gap_ms": 61,
+     "frames": 8
+    },
+    {
+     "start": 13395,
+     "end": 13835,
+     "glide": 13395,
+     "planned_ms": 440,
+     "start_delay_ms": 26,
+     "max_gap_ms": 68,
+     "frames": 17
+    },
+    {
+     "start": 16620,
+     "end": 16880,
+     "glide": 16620,
+     "planned_ms": 260,
+     "start_delay_ms": 17,
+     "max_gap_ms": 32,
+     "frames": 13
+    },
+    {
+     "start": 23818,
+     "end": 24078,
+     "glide": 23818,
+     "planned_ms": 260,
+     "start_delay_ms": 10,
+     "max_gap_ms": 52,
+     "frames": 10
+    },
+    {
+     "start": 43401,
+     "end": 43788,
+     "glide": 43401,
+     "planned_ms": 387,
+     "start_delay_ms": 5,
+     "max_gap_ms": 42,
+     "frames": 17
+    },
+    {
+     "start": 51521,
+     "end": 51781,
+     "glide": 51521,
+     "planned_ms": 260,
+     "start_delay_ms": 8,
+     "max_gap_ms": 29,
+     "frames": 14
+    },
+    {
+     "start": 58418,
+     "end": 58678,
+     "glide": 58418,
+     "planned_ms": 260,
+     "start_delay_ms": 8,
+     "max_gap_ms": 37,
+     "frames": 11
+    },
+    {
+     "start": 61651,
+     "end": 62092,
+     "glide": 61651,
+     "planned_ms": 441,
+     "start_delay_ms": 3,
+     "max_gap_ms": 50,
+     "frames": 17
+    },
+    {
+     "start": 70410,
+     "end": 70670,
+     "glide": 70410,
+     "planned_ms": 260,
+     "start_delay_ms": 23,
+     "max_gap_ms": 34,
+     "frames": 12
+    },
+    {
+     "start": 76672,
+     "end": 77058,
+     "glide": 76672,
+     "planned_ms": 386,
+     "start_delay_ms": 19,
+     "max_gap_ms": 27,
+     "frames": 21
+    },
+    {
+     "start": 85574,
+     "end": 85844,
+     "glide": 85574,
+     "planned_ms": 270,
+     "start_delay_ms": 21,
+     "max_gap_ms": 41,
+     "frames": 13
+    },
+    {
+     "start": 89109,
+     "end": 89565,
+     "glide": 89109,
+     "planned_ms": 456,
+     "start_delay_ms": 12,
+     "max_gap_ms": 37,
+     "frames": 22
+    },
+    {
+     "start": 107508,
+     "end": 107768,
+     "glide": 107508,
+     "planned_ms": 260,
+     "start_delay_ms": 7,
+     "max_gap_ms": 59,
+     "frames": 11
+    },
+    {
+     "start": 109991,
+     "end": 110251,
+     "glide": 109991,
+     "planned_ms": 260,
+     "start_delay_ms": 8,
+     "max_gap_ms": 51,
+     "frames": 10
+    },
+    {
+     "start": 120553,
+     "end": 120813,
+     "glide": 120553,
+     "planned_ms": 260,
+     "start_delay_ms": 7,
+     "max_gap_ms": 37,
+     "frames": 13
+    },
+    {
+     "start": 139393,
+     "end": 139653,
+     "glide": 139393,
+     "planned_ms": 260,
+     "start_delay_ms": 3,
+     "max_gap_ms": 50,
+     "frames": 11
+    },
+    {
+     "start": 154562,
+     "end": 154822,
+     "glide": 154562,
+     "planned_ms": 260,
+     "start_delay_ms": 7,
+     "max_gap_ms": 26,
+     "frames": 12
+    },
+    {
+     "start": 160854,
+     "end": 161242,
+     "glide": 160854,
+     "planned_ms": 388,
+     "start_delay_ms": 5,
+     "max_gap_ms": 45,
+     "frames": 17
+    }
+   ],
+   "clicks": [
+    {
+     "x": 879.3646240234375,
+     "y": 480.5,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 869.7083740234375,
+     "y": 566.7916870117188,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 919.7708740234375,
+     "y": 480.35418701171875,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    }
+   ]
+  },
+  {
+   "키": "02b23f462f9d31953b1f149b",
+   "도구": "포털",
+   "take": "m05-s6b",
+   "from_ms": 0.0,
+   "to_ms": 225480.0,
+   "frames": 6764,
+   "mode": "overlay",
+   "part": 6,
+   "audio": "../음성",
+   "error": null,
+   "recorded_ms": 225480,
+   "end_url": "http://127.0.0.1:8088/#/ontology",
+   "end_tab": "ontology",
+   "edge_age": [
+    0,
+    105
+   ],
+   "cues": [
+    {
+     "id": "m05-601",
+     "text": "이제 기름 온도가 오르면 지식이 어디로 이어지는지 따라가 볼게요. 유온 센서를 눌러 센서로 돌아오세요",
+     "time": 18,
+     "duration": 7280,
+     "actionStart": 18,
+     "actionEnd": 6683,
+     "commit": 6125,
+     "segment": 6
+    },
+    {
+     "id": "m05-602",
+     "text": "들어오는 쪽에 유온 상승이 관측 센서라는 관계로 이 센서를 가리키고 있죠",
+     "time": 11299,
+     "duration": 5440,
+     "actionStart": 11300,
+     "actionEnd": 12589,
+     "commit": null,
+     "segment": 6
+    },
+    {
+     "id": "m05-603",
+     "text": "기름 온도가 오르는 건 이 센서 값으로 알아채니까 이쪽을 가리키는 거예요. 유온 상승을 눌러 보세요",
+     "time": 17340,
+     "duration": 6640,
+     "actionStart": 17352,
+     "actionEnd": 24010,
+     "commit": 23600,
+     "segment": 6
+    },
+    {
+     "id": "m05-604",
+     "text": "설비 진단 칸으로 넘어왔어요. 클래스가 증상이죠",
+     "time": 28011,
+     "duration": 3840,
+     "actionStart": 28012,
+     "actionEnd": 30910,
+     "commit": null,
+     "segment": 6
+    },
+    {
+     "id": "m05-605",
+     "text": "다른 이름에는 온도 상승, 과열도 있고요",
+     "time": 32451,
+     "duration": 3440,
+     "actionStart": 32452,
+     "actionEnd": 33302,
+     "commit": null,
+     "segment": 6
+    },
+    {
+     "id": "m05-606",
+     "text": "들어오는 쪽에는 쿨러 성능 저하가 감지 증상이라는 관계로 와 있어요",
+     "time": 36491,
+     "duration": 4800,
+     "actionStart": 36496,
+     "actionEnd": 37956,
+     "commit": null,
+     "segment": 6
+    },
+    {
+     "id": "m05-607",
+     "text": "그 사건에서 쿨러 성능 저하 경보를 낸 이상 패턴이에요. 이 패턴이 알아채는 증상 가운데 하나가 유온 상승이라 이리로 선이 와요.",
+     "time": 41891,
+     "duration": 9120,
+     "actionStart": null,
+     "actionEnd": null,
+     "commit": null,
+     "segment": 6
+    },
+    {
+     "id": "m05-608",
+     "text": "나가는 쪽에는 나타내는 고장으로 쿨러 냉각 성능 상실이 있어요",
+     "time": 52311,
+     "duration": 4480,
+     "actionStart": 52315,
+     "actionEnd": 54841,
+     "commit": null,
+     "segment": 6
+    },
+    {
+     "id": "m05-609",
+     "text": "기름 온도가 오른다는 건 쿨러가 제대로 못 식힌다는 신호니까, 증상에서 고장 유형으로 선이 가요. 이 고장으로 넘어가 볼게요",
+     "time": 57394,
+     "duration": 8720,
+     "actionStart": 57405,
+     "actionEnd": 66071,
+     "commit": 65622,
+     "segment": 6
+    },
+    {
+     "id": "m05-610",
+     "text": "1회차에 열어 본 그 고장 유형이에요",
+     "time": 68114,
+     "duration": 2640,
+     "actionStart": 68116,
+     "actionEnd": 69053,
+     "commit": null,
+     "segment": 6
+    },
+    {
+     "id": "m05-611",
+     "text": "그때 본 조치인 쿨러 핀 세척",
+     "time": 71354,
+     "duration": 2480,
+     "actionStart": 71355,
+     "actionEnd": 72487,
+     "commit": null,
+     "segment": 6
+    },
+    {
+     "id": "m05-612",
+     "text": "팬 최대 운전이 여기에도 있죠",
+     "time": 74434,
+     "duration": 2320,
+     "actionStart": 74435,
+     "actionEnd": 74887,
+     "commit": null,
+     "segment": 6
+    },
+    {
+     "id": "m05-613",
+     "text": "고장에서 조치 방법과 규칙 칸으로도 선이 이어져 있는 거예요. 어떤 조치를 언제 고르는지는 다음 회차에 배워요.",
+     "time": 77354,
+     "duration": 8240,
+     "actionStart": null,
+     "actionEnd": null,
+     "commit": null,
+     "segment": 6
+    },
+    {
+     "id": "m05-614",
+     "text": "발생 위치 줄은 오일 쿨러를 가리켜요",
+     "time": 86894,
+     "duration": 2800,
+     "actionStart": 86896,
+     "actionEnd": 88444,
+     "commit": null,
+     "segment": 6
+    },
+    {
+     "id": "m05-615",
+     "text": "기름을 못 식히는 고장이니 일어나는 자리가 쿨러죠. 아까 쿨러의 들어오는 쪽에서 본 그 선이에요.",
+     "time": 90304,
+     "duration": 7040,
+     "actionStart": null,
+     "actionEnd": null,
+     "commit": null,
+     "segment": 6
+    },
+    {
+     "id": "m05-616",
+     "text": "이제 들어오는 쪽을 볼게요",
+     "time": 98644,
+     "duration": 2000,
+     "actionStart": 98648,
+     "actionEnd": 99217,
+     "commit": null,
+     "segment": 6
+    },
+    {
+     "id": "m05-617",
+     "text": "첫 줄은 방금 건너온 유온 상승이고, 그 밑 냉각 효율 저하도 이 고장을 알려 주는 증상이에요. 그 아래 세 줄이 1회차에 매뉴얼에서 읽은 세 원인이에요",
+     "time": 101244,
+     "duration": 11600,
+     "actionStart": 101246,
+     "actionEnd": 112052,
+     "commit": null,
+     "segment": 6
+    },
+    {
+     "id": "m05-618",
+     "text": "팬 구동 불량이면 바람이 모자라고, 주변 온도가 오르면 식힐 공기부터 덥고, 핀이 오염되면 열이 빠져나가질 못하죠. 셋 다 쿨러가 못 식히게 만드니까 같은 고장으로 이어져 있어요. 셋 중 어느 원인인지 가려내는 법은 오늘 다루지 않고, 그 사건에서 에이전트가 짚은 쿨러 핀 오염으로 가 볼게요",
+     "time": 113444,
+     "duration": 21200,
+     "actionStart": 113445,
+     "actionEnd": 134845,
+     "commit": 134438,
+     "segment": 6
+    },
+    {
+     "id": "m05-619",
+     "text": "클래스가 원인이에요",
+     "time": 136845,
+     "duration": 1600,
+     "actionStart": 136846,
+     "actionEnd": 137538,
+     "commit": null,
+     "segment": 6
+    },
+    {
+     "id": "m05-620",
+     "text": "나가는 쪽에 일으키는 고장으로 방금 그 고장이 있고, 관련 부품 줄에 쿨러 코어가 있어요",
+     "time": 139045,
+     "duration": 6320,
+     "actionStart": 139046,
+     "actionEnd": 143092,
+     "commit": null,
+     "segment": 6
+    },
+    {
+     "id": "m05-621",
+     "text": "핀이 막히면 열을 못 빼서 냉각이 떨어지는데, 그 핀이 붙어 있는 데가 쿨러 코어라서 원인이 이 부품을 가리켜요. 속성의 숫자나 확증 근거 같은 다른 줄은 원인을 가려낼 때 쓰는 지식이라 넘어갈게요. 쿨러 코어를 눌러 보세요",
+     "time": 145965,
+     "duration": 16240,
+     "actionStart": 145966,
+     "actionEnd": 162433,
+     "commit": 161940,
+     "segment": 6
+    },
+    {
+     "id": "m05-622",
+     "text": "쿨러 코어는 클래스가 부품이에요",
+     "time": 166433,
+     "duration": 2560,
+     "actionStart": 166436,
+     "actionEnd": 167286,
+     "commit": null,
+     "segment": 6
+    },
+    {
+     "id": "m05-623",
+     "text": "쿨러는 구성 요소였죠. 쿨러 코어는 그 안에서 갈아 끼우는 부품이라 클래스가 달라요. 품번 줄이 이 부품의 식별자예요",
+     "time": 169593,
+     "duration": 9280,
+     "actionStart": 169594,
+     "actionEnd": 176646,
+     "commit": null,
+     "segment": 6
+    },
+    {
+     "id": "m05-624",
+     "text": "주문할 때 이 품번으로 찾죠. 나가는 쪽의 공급사들은 이 부품을 살 수 있는 곳이고요",
+     "time": 179473,
+     "duration": 6080,
+     "actionStart": 179474,
+     "actionEnd": 182902,
+     "commit": null,
+     "segment": 6
+    },
+    {
+     "id": "m05-625",
+     "text": "들어오는 쪽에는 교체 부품이라는 관계로 오일 쿨러가 있고, 그 밑이 방금 건너온 쿨러 핀 오염이에요",
+     "time": 187553,
+     "duration": 7280,
+     "actionStart": 187556,
+     "actionEnd": 192717,
+     "commit": null,
+     "segment": 6
+    },
+    {
+     "id": "m05-626",
+     "text": "발주라고 적힌 줄들은 이 부품을 사들이는 조치라 넘어갈게요.",
+     "time": 195433,
+     "duration": 4240,
+     "actionStart": 195435,
+     "actionEnd": 196010,
+     "commit": null,
+     "segment": 6
+    },
+    {
+     "id": "m05-627",
+     "text": "아까 쿨러에서 기억해 두자고 한 그 쿨러 코어에, 이번엔 원인 쪽 길로 닿았어요. 쿨러에서 센서, 증상, 고장, 원인을 지나 부품까지 따라왔더니 다시 쿨러로 돌아온 거예요. 그사이 칸 세 개를 다 건너왔죠. 영역은 나눠 두어도 이렇게 선으로 이어져 있어서, 에이전트도 경보가 나면 이 선을 따라 원인과 손볼 부품을 찾아요.",
+     "time": 200980,
+     "duration": 24080,
+     "actionStart": 201006,
+     "actionEnd": 211984,
+     "commit": null,
+     "segment": 6
+    }
+   ],
+   "motions": [
+    {
+     "start": 5676,
+     "end": 5942,
+     "glide": 5676,
+     "planned_ms": 266,
+     "start_delay_ms": 10,
+     "max_gap_ms": 37,
+     "frames": 12
+    },
+    {
+     "start": 12278,
+     "end": 12554,
+     "glide": 12278,
+     "planned_ms": 276,
+     "start_delay_ms": 4,
+     "max_gap_ms": 32,
+     "frames": 15
+    },
+    {
+     "start": 23159,
+     "end": 23419,
+     "glide": 23159,
+     "planned_ms": 260,
+     "start_delay_ms": 4,
+     "max_gap_ms": 67,
+     "frames": 10
+    },
+    {
+     "start": 30437,
+     "end": 30884,
+     "glide": 30437,
+     "planned_ms": 447,
+     "start_delay_ms": 26,
+     "max_gap_ms": 48,
+     "frames": 21
+    },
+    {
+     "start": 33024,
+     "end": 33284,
+     "glide": 33024,
+     "planned_ms": 260,
+     "start_delay_ms": 11,
+     "max_gap_ms": 38,
+     "frames": 12
+    },
+    {
+     "start": 37556,
+     "end": 37943,
+     "glide": 37556,
+     "planned_ms": 387,
+     "start_delay_ms": 11,
+     "max_gap_ms": 50,
+     "frames": 17
+    },
+    {
+     "start": 54557,
+     "end": 54817,
+     "glide": 54557,
+     "planned_ms": 260,
+     "start_delay_ms": 12,
+     "max_gap_ms": 23,
+     "frames": 15
+    },
+    {
+     "start": 65119,
+     "end": 65407,
+     "glide": 65119,
+     "planned_ms": 288,
+     "start_delay_ms": 14,
+     "max_gap_ms": 74,
+     "frames": 9
+    },
+    {
+     "start": 68563,
+     "end": 69037,
+     "glide": 68563,
+     "planned_ms": 474,
+     "start_delay_ms": 4,
+     "max_gap_ms": 56,
+     "frames": 19
+    },
+    {
+     "start": 72076,
+     "end": 72462,
+     "glide": 72076,
+     "planned_ms": 386,
+     "start_delay_ms": 16,
+     "max_gap_ms": 63,
+     "frames": 14
+    },
+    {
+     "start": 74613,
+     "end": 74873,
+     "glide": 74613,
+     "planned_ms": 260,
+     "start_delay_ms": 2,
+     "max_gap_ms": 33,
+     "frames": 13
+    },
+    {
+     "start": 88160,
+     "end": 88420,
+     "glide": 88160,
+     "planned_ms": 260,
+     "start_delay_ms": 16,
+     "max_gap_ms": 41,
+     "frames": 13
+    },
+    {
+     "start": 98927,
+     "end": 99187,
+     "glide": 98927,
+     "planned_ms": 260,
+     "start_delay_ms": 9,
+     "max_gap_ms": 54,
+     "frames": 12
+    },
+    {
+     "start": 102306,
+     "end": 102566,
+     "glide": 102306,
+     "planned_ms": 260,
+     "start_delay_ms": 17,
+     "max_gap_ms": 51,
+     "frames": 9
+    },
+    {
+     "start": 111772,
+     "end": 112032,
+     "glide": 111772,
+     "planned_ms": 260,
+     "start_delay_ms": 14,
+     "max_gap_ms": 22,
+     "frames": 15
+    },
+    {
+     "start": 115934,
+     "end": 116194,
+     "glide": 115934,
+     "planned_ms": 260,
+     "start_delay_ms": 17,
+     "max_gap_ms": 21,
+     "frames": 14
+    },
+    {
+     "start": 118913,
+     "end": 119173,
+     "glide": 118913,
+     "planned_ms": 260,
+     "start_delay_ms": 8,
+     "max_gap_ms": 38,
+     "frames": 12
+    },
+    {
+     "start": 134002,
+     "end": 134273,
+     "glide": 134002,
+     "planned_ms": 271,
+     "start_delay_ms": 17,
+     "max_gap_ms": 48,
+     "frames": 9
+    },
+    {
+     "start": 137043,
+     "end": 137517,
+     "glide": 137043,
+     "planned_ms": 474,
+     "start_delay_ms": 11,
+     "max_gap_ms": 48,
+     "frames": 22
+    },
+    {
+     "start": 139833,
+     "end": 140220,
+     "glide": 139833,
+     "planned_ms": 387,
+     "start_delay_ms": 10,
+     "max_gap_ms": 68,
+     "frames": 13
+    },
+    {
+     "start": 142820,
+     "end": 143080,
+     "glide": 142820,
+     "planned_ms": 260,
+     "start_delay_ms": 18,
+     "max_gap_ms": 34,
+     "frames": 13
+    },
+    {
+     "start": 154150,
+     "end": 154537,
+     "glide": 154150,
+     "planned_ms": 387,
+     "start_delay_ms": 3,
+     "max_gap_ms": 47,
+     "frames": 15
+    },
+    {
+     "start": 161324,
+     "end": 161764,
+     "glide": 161324,
+     "planned_ms": 440,
+     "start_delay_ms": 4,
+     "max_gap_ms": 75,
+     "frames": 18
+    },
+    {
+     "start": 166826,
+     "end": 167272,
+     "glide": 166826,
+     "planned_ms": 446,
+     "start_delay_ms": 14,
+     "max_gap_ms": 70,
+     "frames": 21
+    },
+    {
+     "start": 176367,
+     "end": 176627,
+     "glide": 176367,
+     "planned_ms": 260,
+     "start_delay_ms": 2,
+     "max_gap_ms": 58,
+     "frames": 12
+    },
+    {
+     "start": 182452,
+     "end": 182838,
+     "glide": 182452,
+     "planned_ms": 386,
+     "start_delay_ms": 1,
+     "max_gap_ms": 73,
+     "frames": 14
+    },
+    {
+     "start": 188528,
+     "end": 188788,
+     "glide": 188528,
+     "planned_ms": 260,
+     "start_delay_ms": 3,
+     "max_gap_ms": 86,
+     "frames": 9
+    },
+    {
+     "start": 192446,
+     "end": 192706,
+     "glide": 192446,
+     "planned_ms": 260,
+     "start_delay_ms": 9,
+     "max_gap_ms": 65,
+     "frames": 9
+    },
+    {
+     "start": 195731,
+     "end": 195991,
+     "glide": 195731,
+     "planned_ms": 260,
+     "start_delay_ms": 6,
+     "max_gap_ms": 33,
+     "frames": 14
+    },
+    {
+     "start": 211713,
+     "end": 211973,
+     "glide": 211713,
+     "planned_ms": 260,
+     "start_delay_ms": 6,
+     "max_gap_ms": 44,
+     "frames": 14
+    }
+   ],
+   "clicks": [
+    {
+     "x": 909.0208740234375,
+     "y": 494.7083435058594,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 879.3646240234375,
+     "y": 590.9375,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 964.6771240234375,
+     "y": 480.35418701171875,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 922.0208740234375,
+     "y": 590.9166870117188,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 879.3646240234375,
+     "y": 484.2708435058594,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    }
+   ]
+  },
+  {
+   "키": "b9ade66d12debddbbf016d2c",
+   "도구": "포털",
+   "take": "m05-s7b",
+   "from_ms": 0.0,
+   "to_ms": 174562.0,
+   "frames": 5237,
+   "mode": "overlay",
+   "part": 7,
+   "audio": "../음성",
+   "error": null,
+   "recorded_ms": 174562,
+   "end_url": "http://127.0.0.1:8088/#/ontology",
+   "end_tab": "ontology",
+   "edge_age": [
+    0,
+    151
+   ],
+   "cues": [
+    {
+     "id": "m05-701",
+     "text": "이 쿨러가 첫 번째 설비에만 딸린 건지 보려고 설비를 바꿔 볼게요. 위로 올라가서 검색 칸 글자부터 지울게요. 남아 있으면 새 지도에도 노란 표시가 섞이거든요",
+     "time": 9,
+     "duration": 11840,
+     "actionStart": 9,
+     "actionEnd": 9599,
+     "commit": 8685,
+     "segment": 7
+    },
+    {
+     "id": "m05-702",
+     "text": "그다음 위의 설비 칸에서 두 번째 설비를 골라 주세요",
+     "time": 12451,
+     "duration": 3920,
+     "actionStart": 12451,
+     "actionEnd": 16631,
+     "commit": 15921,
+     "segment": 7
+    },
+    {
+     "id": "m05-703",
+     "text": "지도가 두 번째 설비로 새로 그려졌어요",
+     "time": 20631,
+     "duration": 2960,
+     "actionStart": 20632,
+     "actionEnd": 21111,
+     "commit": null,
+     "segment": 7
+    },
+    {
+     "id": "m05-704",
+     "text": "설비 머리글 밑에 두 번째 설비 이름이 보이죠",
+     "time": 24191,
+     "duration": 3520,
+     "actionStart": 24192,
+     "actionEnd": 26706,
+     "commit": null,
+     "segment": 7
+    },
+    {
+     "id": "m05-705",
+     "text": "이번엔 이름 말고 식별자로 쿨러를 찾아볼게요. 아까 유온처럼 이름이 같은 노드가 따로 있을 수 있으니까요. 이 쿨러의 식별자는 컴프 콜론 쿨러예요. Neo4j 예제에서 쿨러 아이디로 썼던 그 값이죠. 구성 요소에는 설비 코드나 태그, 품번 같은 줄이 없고 식별자도 상세 칸엔 안 나오지만, 검색 칸은 식별자로도 찾아 줘요. 검색 칸에 쳐 보세요",
+     "time": 29711,
+     "duration": 26160,
+     "actionStart": 29714,
+     "actionEnd": 55847,
+     "commit": 54723,
+     "segment": 7
+    },
+    {
+     "id": "m05-706",
+     "text": "오일 쿨러 하나가 노랗게 바뀌었죠",
+     "time": 61872,
+     "duration": 2480,
+     "actionStart": 61874,
+     "actionEnd": 62569,
+     "commit": null,
+     "segment": 7
+    },
+    {
+     "id": "m05-707",
+     "text": "넣은 식별자 앞에 어느 설비라는 말이 없어요",
+     "time": 64954,
+     "duration": 3920,
+     "actionStart": 64954,
+     "actionEnd": 66308,
+     "commit": null,
+     "segment": 7
+    },
+    {
+     "id": "m05-708",
+     "text": "이론에서 쿨러를 설비마다 둘 땐 앞에 설비 코드를 붙였는데, 여기는 쿨러만 있어요.",
+     "time": 69474,
+     "duration": 6320,
+     "actionStart": null,
+     "actionEnd": null,
+     "commit": null,
+     "segment": 7
+    },
+    {
+     "id": "m05-709",
+     "text": "이 쿨러가 어느 설비에 붙어 있는지, 눌러서 밑을 볼게요",
+     "time": 77094,
+     "duration": 4240,
+     "actionStart": 77094,
+     "actionEnd": 81528,
+     "commit": 80292,
+     "segment": 7
+    },
+    {
+     "id": "m05-710",
+     "text": "나가는 쪽은 첫 번째 설비에서 본 것과 같은데",
+     "time": 83528,
+     "duration": 3520,
+     "actionStart": 83530,
+     "actionEnd": 84406,
+     "commit": null,
+     "segment": 7
+    },
+    {
+     "id": "m05-711",
+     "text": "들어오는 쪽이 이번엔 두 번째 설비의 유압 파워팩이에요",
+     "time": 87651,
+     "duration": 4240,
+     "actionStart": 87653,
+     "actionEnd": 89124,
+     "commit": null,
+     "segment": 7
+    },
+    {
+     "id": "m05-712",
+     "text": "지도는 위에서 고른 설비 하나를 기준으로 그려서, 들어오는 쪽에도 지금 고른 설비만 나와요.",
+     "time": 92491,
+     "duration": 6480,
+     "actionStart": null,
+     "actionEnd": null,
+     "commit": null,
+     "segment": 7
+    },
+    {
+     "id": "m05-713",
+     "text": "이번엔 검색어는 남겨 두고 설비만 첫 번째 설비로 바꿔 볼게요. 같은 식별자로 그쪽 지도에서도 찾아보려는 거예요",
+     "time": 100271,
+     "duration": 8000,
+     "actionStart": 100272,
+     "actionEnd": 105805,
+     "commit": 105077,
+     "segment": 7
+    },
+    {
+     "id": "m05-714",
+     "text": "노란 쿨러 위의 설비 이름이 첫 번째 설비로 바뀌었고",
+     "time": 112271,
+     "duration": 3920,
+     "actionStart": 112272,
+     "actionEnd": 113735,
+     "commit": null,
+     "segment": 7
+    },
+    {
+     "id": "m05-715",
+     "text": "같은 식별자로 찾은 쿨러는 이번에도 하나예요",
+     "time": 116792,
+     "duration": 3200,
+     "actionStart": 116793,
+     "actionEnd": 117972,
+     "commit": null,
+     "segment": 7
+    },
+    {
+     "id": "m05-716",
+     "text": "두 설비에서 본 쿨러가 같은 노드라는 거죠. 이 지도는 이 기종의 오일 쿨러를 노드 하나로 두고, 설비마다 그 노드를 가리키게 그렸어요. 이론에서 본, 쿨러 하나를 함께 쓰는 그림이에요. 설비 하나에 구성 요소가 여럿이고 쿨러 하나에 설비가 여럿 닿으니, 카디널리티로 말하면 N:M이죠.",
+     "time": 120592,
+     "duration": 21600,
+     "actionStart": 120592,
+     "actionEnd": 128212,
+     "commit": null,
+     "segment": 7
+    },
+    {
+     "id": "m05-717",
+     "text": "이론에서는 고장과 정비를 쿨러 노드에서 물으려고 설비마다 쿨러를 두는 그래프로 정리했는데, 이 지도는 반대로 그렸어요. 아까 따라온 고장, 원인, 부품처럼 세 설비에 똑같이 맞는 지식을 담는 곳이라서예요. 두 그림 다 맞는 그리는 법이고, 어떤 질문에 답하게 할지가 고르는 기준이에요.",
+     "time": 143493,
+     "duration": 21040,
+     "actionStart": null,
+     "actionEnd": null,
+     "commit": null,
+     "segment": 7
+    },
+    {
+     "id": "m05-718",
+     "text": "그래서 설비마다 다른 정비 기록이나 매초 바뀌는 온도 값은 이 쿨러에 달지 않고, 설비 코드와 함께 따로 쌓아 둬요.",
+     "time": 165834,
+     "duration": 8320,
+     "actionStart": null,
+     "actionEnd": null,
+     "commit": null,
+     "segment": 7
+    }
+   ],
+   "motions": [
+    {
+     "start": 8152,
+     "end": 8509,
+     "glide": 8152,
+     "planned_ms": 357,
+     "start_delay_ms": 1,
+     "max_gap_ms": 71,
+     "frames": 12
+    },
+    {
+     "start": 15490,
+     "end": 15750,
+     "glide": 15490,
+     "planned_ms": 260,
+     "start_delay_ms": 14,
+     "max_gap_ms": 32,
+     "frames": 13
+    },
+    {
+     "start": 24978,
+     "end": 25260,
+     "glide": 24978,
+     "planned_ms": 282,
+     "start_delay_ms": 17,
+     "max_gap_ms": 69,
+     "frames": 9
+    },
+    {
+     "start": 26405,
+     "end": 26678,
+     "glide": 26405,
+     "planned_ms": 273,
+     "start_delay_ms": 5,
+     "max_gap_ms": 61,
+     "frames": 10
+    },
+    {
+     "start": 54245,
+     "end": 54551,
+     "glide": 54245,
+     "planned_ms": 306,
+     "start_delay_ms": 0,
+     "max_gap_ms": 36,
+     "frames": 15
+    },
+    {
+     "start": 62274,
+     "end": 62546,
+     "glide": 62274,
+     "planned_ms": 272,
+     "start_delay_ms": 14,
+     "max_gap_ms": 41,
+     "frames": 11
+    },
+    {
+     "start": 66004,
+     "end": 66276,
+     "glide": 66004,
+     "planned_ms": 272,
+     "start_delay_ms": 8,
+     "max_gap_ms": 34,
+     "frames": 13
+    },
+    {
+     "start": 79860,
+     "end": 80132,
+     "glide": 79860,
+     "planned_ms": 272,
+     "start_delay_ms": 2,
+     "max_gap_ms": 52,
+     "frames": 9
+    },
+    {
+     "start": 84095,
+     "end": 84381,
+     "glide": 84095,
+     "planned_ms": 286,
+     "start_delay_ms": 16,
+     "max_gap_ms": 49,
+     "frames": 14
+    },
+    {
+     "start": 88847,
+     "end": 89107,
+     "glide": 88847,
+     "planned_ms": 260,
+     "start_delay_ms": 2,
+     "max_gap_ms": 50,
+     "frames": 10
+    },
+    {
+     "start": 104474,
+     "end": 104895,
+     "glide": 104474,
+     "planned_ms": 421,
+     "start_delay_ms": 9,
+     "max_gap_ms": 31,
+     "frames": 21
+    },
+    {
+     "start": 113380,
+     "end": 113669,
+     "glide": 113380,
+     "planned_ms": 289,
+     "start_delay_ms": 18,
+     "max_gap_ms": 118,
+     "frames": 8
+    },
+    {
+     "start": 117660,
+     "end": 117920,
+     "glide": 117660,
+     "planned_ms": 260,
+     "start_delay_ms": 2,
+     "max_gap_ms": 84,
+     "frames": 9
+    },
+    {
+     "start": 127922,
+     "end": 128182,
+     "glide": 127922,
+     "planned_ms": 260,
+     "start_delay_ms": 5,
+     "max_gap_ms": 133,
+     "frames": 6
+    }
+   ],
+   "clicks": [
+    {
+     "x": 498.6666717529297,
+     "y": 191,
+     "dx": 0.0,
+     "dy": 0,
+     "gliding": null
+    },
+    {
+     "x": 389.33333587646484,
+     "y": 145,
+     "dx": 0.0,
+     "dy": 0,
+     "gliding": null
+    },
+    {
+     "x": 498.6666717529297,
+     "y": 191,
+     "dx": 0.0,
+     "dy": 0,
+     "gliding": null
+    },
+    {
+     "x": 540.6666870117188,
+     "y": 365.1458435058594,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 389.33333587646484,
+     "y": 145,
+     "dx": 0.0,
+     "dy": 0,
+     "gliding": null
+    }
+   ]
+  },
+  {
+   "키": "38fb8c5b976512a05c526414",
+   "도구": "포털",
+   "take": "m05-s8",
+   "from_ms": 0.0,
+   "to_ms": 34799.0,
+   "frames": 1044,
+   "mode": "overlay",
+   "part": 8,
+   "audio": "../음성",
+   "error": null,
+   "recorded_ms": 34799,
+   "end_url": "http://127.0.0.1:8088/#/ontology",
+   "end_tab": "ontology",
+   "edge_age": [
+    0,
+    96
+   ],
+   "cues": [
+    {
+     "id": "m05-801",
+     "text": "노란 쿨러를 다시 눌러 두고 정리해 볼게요",
+     "time": 26,
+     "duration": 3040,
+     "actionStart": 27,
+     "actionEnd": 3231,
+     "commit": 1746,
+     "segment": 8
+    },
+    {
+     "id": "m05-802",
+     "text": "처음 보는 노드를 만나면 클래스로 종류부터 보고",
+     "time": 5231,
+     "duration": 3600,
+     "actionStart": 5234,
+     "actionEnd": 6538,
+     "commit": null,
+     "segment": 8
+    },
+    {
+     "id": "m05-803",
+     "text": "설비 코드나 태그, 품번 같은 줄이 있으면 그걸로 어느 대상인지 가려요. 이 쿨러처럼 그런 줄이 없으면 이름과 다른 이름, 이어진 설비를 함께 보시고, 식별자를 알면 검색 칸에 넣어 하나로 찾으면 돼요",
+     "time": 9431,
+     "duration": 14800,
+     "actionStart": 9438,
+     "actionEnd": 22768,
+     "commit": null,
+     "segment": 8
+    },
+    {
+     "id": "m05-804",
+     "text": "그다음 속성에서 값을 읽고",
+     "time": 24831,
+     "duration": 2400,
+     "actionStart": 24834,
+     "actionEnd": 26269,
+     "commit": null,
+     "segment": 8
+    },
+    {
+     "id": "m05-805",
+     "text": "관계 방향을 따라 어디와 닿아 있는지 보시면 돼요",
+     "time": 27834,
+     "duration": 3440,
+     "actionStart": 27835,
+     "actionEnd": 29160,
+     "commit": null,
+     "segment": 8
+    },
+    {
+     "id": "m05-806",
+     "text": "수고하셨습니다.",
+     "time": 33274,
+     "duration": 1120,
+     "actionStart": null,
+     "actionEnd": null,
+     "commit": null,
+     "segment": 8
+    }
+   ],
+   "motions": [
+    {
+     "start": 1281,
+     "end": 1541,
+     "glide": 1281,
+     "planned_ms": 260,
+     "start_delay_ms": 25,
+     "max_gap_ms": 109,
+     "frames": 6
+    },
+    {
+     "start": 6215,
+     "end": 6521,
+     "glide": 6215,
+     "planned_ms": 306,
+     "start_delay_ms": 1,
+     "max_gap_ms": 55,
+     "frames": 14
+    },
+    {
+     "start": 16968,
+     "end": 17228,
+     "glide": 16968,
+     "planned_ms": 260,
+     "start_delay_ms": 6,
+     "max_gap_ms": 74,
+     "frames": 9
+    },
+    {
+     "start": 18486,
+     "end": 18875,
+     "glide": 18486,
+     "planned_ms": 389,
+     "start_delay_ms": 6,
+     "max_gap_ms": 66,
+     "frames": 18
+    },
+    {
+     "start": 22366,
+     "end": 22746,
+     "glide": 22366,
+     "planned_ms": 380,
+     "start_delay_ms": 15,
+     "max_gap_ms": 81,
+     "frames": 16
+    },
+    {
+     "start": 25893,
+     "end": 26236,
+     "glide": 25893,
+     "planned_ms": 343,
+     "start_delay_ms": 8,
+     "max_gap_ms": 41,
+     "frames": 17
+    },
+    {
+     "start": 28759,
+     "end": 29145,
+     "glide": 28759,
+     "planned_ms": 386,
+     "start_delay_ms": 16,
+     "max_gap_ms": 63,
+     "frames": 16
+    }
+   ],
+   "clicks": [
+    {
+     "x": 540.6666870117188,
+     "y": 365.1458435058594,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    }
+   ]
+  }
+ ],
+ "mp4": {
+  "sha256": "e24e02d962f70b372a83b753d3dc6fc86abd5e2aa76cd38ef79a47a666a2d9cb",
+  "video_packets": 30412,
+  "bytes": 45781651
+ }
+}
