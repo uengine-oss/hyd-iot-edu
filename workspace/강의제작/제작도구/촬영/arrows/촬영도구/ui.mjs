@@ -99,6 +99,8 @@ export async function makeUI(ctx){
    else if(name==='download')es=btn('Download').slice(0,1);
    else if(name==='importButton')es=[...document.querySelectorAll('button')].filter(e=>vis(e)&&e.textContent.trim()==='Import'&&!e.closest('[role=listbox]'));
    else if(name==='chooseFile')es=btn('Choose File');
+   // 화면 글자 그대로 찾는 단추(쿠키 안내 · 도움말 창처럼 이름표를 따로 두지 않은 것). 글이 같은 단추가 둘 이상이면 오류.
+   else if(name.startsWith('text:'))es=btn(name.slice(5));
    else if(name.startsWith('tab:'))es=[...document.querySelectorAll('a,button,.item')].filter(e=>vis(e)&&e.textContent.trim()===name.slice(4)&&!e.closest('[role=listbox]'));
    else if(name==='logo')es=[...document.querySelectorAll('[role=listbox]')].filter(vis).slice(0,1);
    else if(name==='menu:New')es=[...document.querySelectorAll('[role=option]')].filter(e=>vis(e)&&e.textContent.startsWith('NewStore'));
