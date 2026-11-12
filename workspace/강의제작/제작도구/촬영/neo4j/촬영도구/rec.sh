@@ -6,6 +6,7 @@
 #   bash rec.sh rec <설정.json>          녹화 한 번(설정 = record_graph_lesson.mjs 머리말의 값) → measure.py
 # 실행 전 node --check, 시간 초과(TMO초, 기본 1800) 때 그 녹화만 끊는다(브라우저는 유지).
 set -u
+export PYTHONDONTWRITEBYTECODE=1   # 공용 포털 촬영도구 폴더에 캐시를 남기지 않는다
 here="$(cd "$(dirname "$0")" && pwd)"; n4="$(dirname "$here")"; portal="$n4/../포털/촬영도구"
 work="$(cd "$portal" && python3 -c "from common import tool;print(tool('neo4j').work.as_posix())")"
 port=$(python3 -c "import json;print(json.load(open('$here/config.json'))['cdp'])")
