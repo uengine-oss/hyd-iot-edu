@@ -3,7 +3,7 @@
  "model_id": "eleven_v4",
  "saved_title": "설비 연결 탐색",
  "saved_query": "// 설비 연결 탐색\n// 전체20노드19관계, 쿨러 센서2, 센서 집계 쿨러2 주펌프2 팬1\n// 노드 클릭: comp:cooler, sen:ts1, sv:ts1, part:cooler-core\n\n// 전체 설비 지도\nMATCH p=(a:Asset {code:'HYD-01'})-[*1..3]->(n)\nRETURN p;\n\n// 쿨러 한 개\nMATCH (c:Component {id:'comp:cooler'})\nRETURN c;\n\n// 쿨러와 센서\nMATCH (c:Component {id:'comp:cooler'})-[r:MONITORED_BY]->(s:Sensor)\nRETURN c,r,s;\n\n// 설비에서 물리량까지\nMATCH p=(a:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)\n        -[:MONITORED_BY]->(s:Sensor)-[:OBSERVES]->(v:StateVariable)\nRETURN p;\n\n// TS1 경로만 선택\nMATCH p=(a:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)\n        -[:MONITORED_BY]->(s:Sensor)-[:OBSERVES]->(v:StateVariable)\nWHERE s.tag = 'TS1'\nRETURN p;\n\n// TS1 속성 표\nMATCH p=(a:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)\n        -[:MONITORED_BY]->(s:Sensor)-[:OBSERVES]->(v:StateVariable)\nWHERE s.tag = 'TS1'\nRETURN c.name AS component, s.tag AS tag, v.name AS quantity,\n       v.unit AS unit, v.normal AS normal, v.limit AS limit;\n\n// 한계가 있는 항목\nMATCH p=(a:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)\n        -[:MONITORED_BY]->(s:Sensor)-[:OBSERVES]->(v:StateVariable)\nWHERE v.limit IS NOT NULL\nRETURN s.tag AS tag, v.name AS quantity, v.unit AS unit, v.limit AS limit\nORDER BY tag;\n\n// 장치와 교체 부품\nMATCH p=(:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)\n        -[:USES_PART]->(part:Part)\nRETURN p;\n\n// 센서 연결과 직접 세기\nMATCH p=(:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)\n        -[:MONITORED_BY]->(s:Sensor)\nRETURN p;\n\n// 센서 목록과 집계\nMATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)\n      -[:MONITORED_BY]->(s:Sensor)\nRETURN c.id AS component_id, c.name AS component,\n       collect(DISTINCT s.tag) AS tags, count(DISTINCT s) AS channels\nORDER BY channels DESC, component_id;",
- "source": "새대본_다시찍을판.md",
+ "source": "관계조회_다시찍을판_대본.md",
  "cues": [
   {
    "id": "r0100",
@@ -630,7 +630,7 @@
   {
    "id": "r0600",
    "segment": 6,
-   "text": "아까 쌍점 clear는 결과만 치운다고 했죠. 정말 그런지 비우고 다시 찾아보겠습니다. 화면 비우시고",
+   "text": "아까 쌍점 clear는 결과만 치운다고 했죠. 정말 그런지 화면을 비우고",
    "ops": [
     {
      "op": "clear",
@@ -643,7 +643,7 @@
   {
    "id": "r0601",
    "segment": 6,
-   "text": "3번 첫 칸, 아까와 똑같은 찾기 문장을 돌려 보세요.",
+   "text": "3번 첫 칸, 아까와 똑같은 찾기 문장을 돌려 볼게요.",
    "ops": [
     {
      "op": "query",
@@ -909,7 +909,7 @@
   {
    "id": "r0708",
    "segment": 7,
-   "text": "조건 두 개를 함께 걸 수도 있습니다. OR는 또는, AND는 그리고인데, 둘을 섞을 때는 괄호가 중요해요. 화면 비우고 다음 칸 붙여 넣으시면 됩니다.",
+   "text": "조건 두 개를 함께 걸 수도 있습니다. OR는 또는, AND는 그리고인데, 둘을 섞을 때는 괄호가 중요해요. 화면 비우고 다음 칸입니다.",
    "ops": [
     {
      "op": "clear",
@@ -1383,7 +1383,7 @@
   {
    "id": "r0901",
    "segment": 9,
-   "text": "화면 비우시고 6번 첫 칸 붙여 넣으시면 됩니다.",
+   "text": "이번엔 6번 첫 칸입니다.",
    "ops": [
     {
      "op": "clear",
@@ -1593,7 +1593,7 @@
   {
    "id": "r1001",
    "segment": 10,
-   "text": "화면 비우시고 7번 첫 칸 붙여 넣으세요.",
+   "text": "7번 첫 칸이에요.",
    "ops": [
     {
      "op": "clear",
@@ -1951,7 +1951,7 @@
   {
    "id": "r1101",
    "segment": 11,
-   "text": "화면 비우시고 9번 칸 붙여 넣으세요.",
+   "text": "9번 칸이에요.",
    "ops": [
     {
      "op": "clear",
@@ -2136,7 +2136,7 @@
   {
    "id": "r1201",
    "segment": 12,
-   "text": "화면 비우시고 10번 칸 붙여 넣으시면 됩니다.",
+   "text": "10번 칸입니다.",
    "ops": [
     {
      "op": "clear",
@@ -2194,7 +2194,7 @@
   {
    "id": "r1204",
    "segment": 12,
-   "text": "그림을 뒤지지 않고 아이디 하나로 바로 꺼낸 거예요.",
+   "text": "그림을 뒤지지 않고 아이디 하나로 꺼낸 거예요.",
    "ops": [
     {
      "op": "none"
@@ -2216,7 +2216,7 @@
   {
    "id": "r1206",
    "segment": 12,
-   "text": "화면 비우시고 11번 칸 붙여 넣으시면 됩니다.",
+   "text": "11번 칸입니다.",
    "ops": [
     {
      "op": "clear",
@@ -2398,7 +2398,7 @@
   {
    "id": "r1301",
    "segment": 13,
-   "text": "화면 비우시고 붙여 넣으세요.",
+   "text": "붙여 넣을게요.",
    "ops": [
     {
      "op": "clear",
@@ -2416,7 +2416,7 @@
   {
    "id": "r1302",
    "segment": 13,
-   "text": "관계를 세 번 건너죠. 길어서 두 줄로 나눠 적었고, 대괄호 셋은 앞에서부터 구성 요소를 갖는다, 센서로 계측된다, 센서가 잰다는 관계입니다. 이름을 외우실 필요는 없어요.",
+   "text": "관계를 세 번 건너죠. 대괄호 셋은 앞에서부터 구성 요소를 갖는다, 센서로 계측된다, 센서가 잰다는 관계입니다. 이름을 외우실 필요는 없어요.",
    "ops": [
     {
      "op": "pointText",
@@ -2818,7 +2818,7 @@
   {
    "id": "r1400",
    "segment": 14,
-   "text": "같은 방법으로 다른 가지도 따라갈 수 있습니다. 구성 요소에 달린 부품 가지인데, 화면 비우시고 14번 칸 붙여 넣으세요.",
+   "text": "같은 방법으로 다른 가지도 따라갈 수 있습니다. 구성 요소에 달린 부품 가지이고, 14번 칸이에요.",
    "ops": [
     {
      "op": "clear",
@@ -2952,7 +2952,7 @@
   {
    "id": "r1501",
    "segment": 15,
-   "text": "화면 비우시고 15번 첫 칸 붙여 넣으시면 됩니다.",
+   "text": "15번 첫 칸입니다.",
    "ops": [
     {
      "op": "clear",
@@ -3175,7 +3175,7 @@
   {
    "id": "r1600",
    "segment": 16,
-   "text": "마지막으로 전체 그림으로 돌아가서, 오늘 따라간 가지들이 어디에 붙어 있는지 맞춰 보겠습니다. 화면 비우시고 16번 첫 칸 붙여 넣으세요. 아까 9번과 같은 전체 경로 문장입니다.",
+   "text": "마지막으로 전체 그림으로 돌아가서, 오늘 따라간 가지들이 어디에 붙어 있는지 맞춰 보겠습니다. 16번 첫 칸이 아까 9번과 같은 전체 경로 문장이에요.",
    "ops": [
     {
      "op": "clear",
@@ -3423,7 +3423,7 @@
   {
    "id": "r1617",
    "segment": 16,
-   "text": "위 탭 줄의 더하기 누르시고,",
+   "text": "위 탭 줄의 더하기를 누르고,",
    "ops": [
     {
      "op": "newTab",

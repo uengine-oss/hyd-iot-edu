@@ -19,6 +19,7 @@ if((await fs.readdir(out+'/frames')).length)throw Error('Output folder already h
 const log=m=>fs.appendFile(out+'/progress.log',new Date().toISOString().slice(11,23)+' '+m+'\n');
 await log('start '+JSON.stringify(SEG));
 const cfg=JSON.parse(await fs.readFile(process.env.HYD_CUES||base+'/cues.json','utf8'));
+const VIEWSET=SEG.view||cfg.view||null;
 const cues=cfg.cues.filter(c=>c.segment===SEG.segment&&(!SEG.from||c.id>=SEG.from)&&(!SEG.to||c.id<=SEG.to));
 await boot('taskSpace');const task=await taskSpace(SEG.space||conf.space);const p=task.page('p1');await boot('page');
 await p.cdp('Emulation.setDeviceMetricsOverride',metrics());
@@ -80,11 +81,11 @@ try{
  // 녹화 전: 캔버스 기록이 비지 않도록 화면 크기를 1px 바꿨다 되돌려 한 번 다시 그리게 한다(녹화 프레임에는 남지 않음).
  if(url.includes('arrows.app')){await serial(()=>p.cdp('Emulation.setDeviceMetricsOverride',metrics(1)));await sleep(300);await serial(()=>p.cdp('Emulation.setDeviceMetricsOverride',metrics()));await sleep(400);
   const n=(await ui.circles()).list.length;await log('circles before recording '+n);if(!n)throw Error('Canvas not recorded before start');
-  // 이어 찍기: 크기 바꾸기(resize)는 약 0.3초 뒤 그림 맞춤을 다시 하므로, 그 뒤에 앞 판 끝 화면의 보기(SEG.view: 확대율 · 위치)를 넣고 0.8초 동안 그대로인지 본다(녹화 프레임에는 남지 않음).
-  if(SEG.view){const same=g=>g&&Math.abs(g.scale-SEG.view.scale)<1e-9&&Math.abs(g.offset.dx-SEG.view.dx)<1e-6&&Math.abs(g.offset.dy-SEG.view.dy)<1e-6;
-   const vt=set=>serial(()=>p.evaluate(([v,set])=>{const root=document.getElementById('root');const k=Object.keys(root).find(x=>x.startsWith('__reactContainer'));const seen=new Set(),st=[root[k]];let s=null;while(st.length&&!s){const f=st.pop();if(!f||seen.has(f))continue;seen.add(f);if(f.memoizedProps?.store?.getState)s=f.memoizedProps.store;else st.push(f.child,f.sibling);}if(!s)return null;if(set)s.dispatch({type:'ADJUST_VIEWPORT',scale:v.scale,panX:v.dx,panY:v.dy});return s.getState().viewTransformation;},[SEG.view,set]));
+  // 이어 찍기: 크기 바꾸기(resize)는 약 0.3초 뒤 그림 맞춤을 다시 하므로, 그 뒤에 앞 판 끝 화면의 보기(VIEWSET: 확대율 · 위치)를 넣고 0.8초 동안 그대로인지 본다(녹화 프레임에는 남지 않음).
+  if(VIEWSET){const same=g=>g&&Math.abs(g.scale-VIEWSET.scale)<1e-9&&Math.abs(g.offset.dx-VIEWSET.dx)<1e-6&&Math.abs(g.offset.dy-VIEWSET.dy)<1e-6;
+   const vt=set=>serial(()=>p.evaluate(([v,set])=>{const root=document.getElementById('root');const k=Object.keys(root).find(x=>x.startsWith('__reactContainer'));const seen=new Set(),st=[root[k]];let s=null;while(st.length&&!s){const f=st.pop();if(!f||seen.has(f))continue;seen.add(f);if(f.memoizedProps?.store?.getState)s=f.memoizedProps.store;else st.push(f.child,f.sibling);}if(!s)return null;if(set)s.dispatch({type:'ADJUST_VIEWPORT',scale:v.scale,panX:v.dx,panY:v.dy});return s.getState().viewTransformation;},[VIEWSET,set]));
    let ok=false;for(let i=0;i<4&&!ok;i++){await sleep(600);await vt(true);await sleep(800);ok=same(await vt(false));}
-   if(!ok)throw Error('View not stable: '+JSON.stringify(await vt(false)));await log('view '+JSON.stringify(SEG.view));}
+   if(!ok)throw Error('View not stable: '+JSON.stringify(await vt(false)));await log('view '+JSON.stringify(VIEWSET));}
  }
  await serial(()=>p.mouse.move(ctx.startPos.x,ctx.startPos.y,{steps:1}));await sleep(500);
  recording=true;await serial(()=>p.cdp('Page.startScreencast',{format:'jpeg',quality:85,maxWidth:1920,maxHeight:1080,everyNthFrame:1}));
@@ -105,14 +106,16 @@ try{
 async function exec(o){
  const [op,...a]=o;
  if(op==='at'){const w=ctx.cueT0+ctx.cueDur*a[0]-Date.now();if(w>0)await sleep(w);return;}
+ // 짚기 뒤 끝 조작: 말 끝 0.9초 전에 출발해(커서 이동) 끝 0.25초 전에 누른다(시간표 큐의 마지막 누르기 · 적기).
+ if(op==='atend'){const w=ctx.cueT0+ctx.cueDur-900-Date.now();if(w>0)await sleep(w);ctx.commitAt=ctx.cueT0+ctx.cueDur-250;return;}
  if(op==='point')return ui.point(a[0]);
  // 글상자: 화면에 없는 값(판단할 사건 값 등)을 그림 아래에 띄운다(note 글) · 지운다(note null). 페이지 위에 얹는 표시일 뿐 클릭을 받지 않는다.
- if(op==='note')return serial(()=>p.evaluate(t=>{let e=document.getElementById('recording-note');if(t===null){e?.remove();return;}
+ if(op==='note')return serial(()=>p.evaluate(([t,at])=>{let e=document.getElementById('recording-note');if(t===null){e?.remove();return;}
   if(!e){e=document.createElement('div');e.id='recording-note';e.setAttribute('aria-hidden','true');document.documentElement.append(e);}
   const c=document.querySelector('canvas').getBoundingClientRect();
-  const at=a[1]||'bc';const hz=at[1]==='l'?`left:${c.left+24}px;`:`left:${c.left+c.width/2}px;transform:translateX(-50%);`;const vt=at[0]==='t'?`top:${c.top+20}px;`:`bottom:${innerHeight-c.bottom+24}px;`;
-  e.style.cssText=`position:fixed;${hz}${vt}max-width:${c.width-80}px;padding:10px 22px;border-radius:10px;background:rgba(17,24,39,.86);color:#fff;font:600 21px/1.45 'Noto Sans CJK KR','Malgun Gothic',sans-serif;white-space:pre;text-align:center;pointer-events:none;z-index:2147483646`;
-  e.textContent=t;},[a[0],a[1]].length&&a[0]===null?null:a[0]));
+  const hz=at[1]==='l'?`left:${c.left+24}px;`:`left:${c.left+c.width/2}px;transform:translateX(-50%);`;const vt=at[0]==='t'?`top:${c.top+20}px;`:`bottom:${innerHeight-c.bottom+24}px;`;
+  e.style.cssText=`position:fixed;${hz}${vt}max-width:${c.width-80}px;padding:10px 22px;border-radius:10px;background:rgba(17,24,39,.86);color:#fff;font:600 21px/1.45 'Malgun Gothic',sans-serif;white-space:pre;text-align:center;pointer-events:none;z-index:2147483646`;
+  e.textContent=t;},[a[0]??null,a[1]||'bc']));
  if(op==='click')return ui.click(a[0]);
  if(op==='type')return ui.type(a[0]);
  if(op==='key')return ui.key(a[0]);
@@ -123,6 +126,7 @@ async function exec(o){
  if(op==='grow'){for(const d of [0,60]){try{return await ui.grow(a[0],a[1]+d);}catch(e){await log('retry grow '+a[0]+' '+String(e).slice(0,80));}}throw Error('grow failed 3 times from '+a[0]);}
  if(op==='move')return ui.move(a[0],a[1],a[2]);
  if(op==='growTo')return ui.growTo(a[0],a[1],a[2]);
+ if(op==='wheelTo')return ui.wheelTo(a[0],a[1]);
  // 사용자가 직접 조작하는 동안 녹화만 유지한다. DONE 파일이 생기면 끝(최대 15분). 포인터는 사용자 마우스 이동을 따라간다.
  if(op==='manual'){await log('manual start');const t0=Date.now();while(!(await fs.stat(base+'/DONE').then(()=>true).catch(()=>false))){if(Date.now()-t0>900000)throw Error('manual timeout');await sleep(300);}await log('manual done');return;}
  if(op==='place'){const r=await ui.place(a[0]);await log('place '+r.join(' '));return;}
@@ -149,6 +153,7 @@ async function exec(o){
  }
  if(op==='verify'){
   const g=await serial(()=>p.evaluate(()=>{const id=location.hash.split('id=')[1];return JSON.parse(localStorage.getItem('GRAPH|'+id)).graph;}));
+  g.nodes=g.nodes.filter(n=>n.caption); // New가 만든 빈 원(이름 없음)은 가져온 그림이 아니므로 빼고 센다(화면 Selection도 17)
   const props=g.nodes.filter(n=>Object.keys(n.properties||{}).length).map(n=>n.caption+':'+Object.keys(n.properties).length);
   await log('verify '+g.nodes.length+' nodes '+g.relationships.length+' rels '+props.join(','));
   const want=[cfg.nodes.length,cfg.relationships.length,Object.keys(cfg.properties).length];
@@ -159,7 +164,7 @@ async function exec(o){
 }
 recording=false;done=true;await capture;const duration=start===null?0:Date.now()-start;await writeQueue;
 try{await p.cdp('Page.stopScreencast');}catch(e){}
-// 끝 화면의 보기(확대율 · 위치)도 남긴다 — 다음 호출에서 화면 크기가 풀리면 그림 맞춤이 다시 되므로, 이어 찍는 구간은 이 값을 SEG.view로 넣는다.
+// 끝 화면의 보기(확대율 · 위치)도 남긴다 — 다음 호출에서 화면 크기가 풀리면 그림 맞춤이 다시 되므로, 이어 찍는 구간은 이 값을 VIEWSET로 넣는다.
 const view=await p.evaluate(()=>{const root=document.getElementById('root');const k=Object.keys(root).find(x=>x.startsWith('__reactContainer'));const seen=new Set(),st=[root[k]];let s=null;while(st.length&&!s){const f=st.pop();if(!f||seen.has(f))continue;seen.add(f);if(f.memoizedProps?.store?.getState)s=f.memoizedProps.store;else st.push(f.child,f.sibling);}if(!s)return null;const g=s.getState().viewTransformation;return {scale:g.scale,dx:g.offset.dx,dy:g.offset.dy};}).catch(()=>null);
 const state={url:await p.url().catch(()=>null),pointer:ui?ui.pos():null,saved:ctx.saved,view,
  clicks:await p.evaluate(()=>window.__tutorialClicks||[]).catch(()=>[]),

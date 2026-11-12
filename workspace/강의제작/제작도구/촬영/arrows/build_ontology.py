@@ -56,214 +56,200 @@ PROPS = {
 }
 KIND = dict(NODES)
 
-def new_node(caption):
-    """빈 곳 클릭은 별도 큐에서 한다. 여기서는 Caption·Label 입력만."""
-    return [['click', 'caption'], ['type', caption], ['click', 'labelPlus'], ['click', 'labelInput'], ['type', KIND[caption]], ['key', 'Tab']]
+# ── 큐 원본(2026-11-12 다시 찍을 판) ──────────────────────────────────────────────
+# 낭독 글은 대본원고.md(사용자가 확정한 대본 「2. 새 대본 전문」)이고, 여기 MAP이 그 글의 ▸ 자리마다 조작을 단다.
+# MAP의 한 칸 = ('A', 조작들): 그 말이 끝날 때 하고 큐를 끊는다 · ('P', 조작들): 바로 뒤 낱말을 말할 때 짚는다(끊지 않음)
+#             · ('T', 조작들): 말 속 그 자리에서 바로 한다(끊지 않음, Ctrl로 함께 고르기처럼 말하면서 하는 조작).
+# 쉼: ▸로 끊은 다음 큐 · ‖ 뒤 · 조작 결과 뒤 ‖ · 따라 적은(type) 뒤 ‖ · 단계가 바뀌는 곳 — 값은 아래 GAP.
+# 원은 처음부터 끝 자리에 놓는다(사용자 「정돈하기 … 더 자연스러운 방향」): POS = 끝 그림의 그림 좌표(HYD-01 = 새 그림의 빈 원 (0, 0)).
+H, K, S, U, F = 'HYD-01 유압 파워팩', '오일 쿨러', '유온 센서 TS1', '유온 상승', '쿨러 냉각 성능 상실'
+PO, MX, PC, M85, M87 = '쿨러 핀 오염', '팬 최대 운전', '쿨러 핀 세척', 'HM-8.5 즉시 완화 조치', 'HM-8.7 근본 조치'
+FD, FI, M81, AT, CV, BR, VB = '팬 구동 불량', '팬 점검', 'HM-8.1 팬 벨트 점검', '주변 온도 상승', '캐비닛 환기 보강', '팬 베어링 열화', '진동 증가'
+POS = {H: (0, 0), K: (290, 0), S: (290, 260), U: (550, 260), F: (550, 0), PO: (945, 175), MX: (720, 330), PC: (830, 0), M85: (1120, 330),
+       M87: (1120, 0), FD: (520, -385), FI: (810, -420), M81: (1120, -430), AT: (830, -260), CV: (1120, -295), BR: (290, -220), VB: (0, -220)}
+# 원 크기 60 · 110 % 화면. 그림판이 좁아 원 사이를 줄였고, 관계 이름 끝 글자 몇 곳(HAS_COMPONENT · MONITORED_BY · OBSERVED_BY · 핀 세척→핀 오염 ADDRESSES)과 핀 오염 증거 끝 「mm/s」가 원 · 칸 가장자리에 조금 걸린다(사용자 「노드가 가려지는 것만 아니면 상관없는데」). 원끼리는 겹치지 않는다.
+# WHEEL = 배율 1에서 끝 그림이 그림판(CSS 1744×981의 1319×909)에 다 들어오는 보기 위치. 새 그림의 빈 원은 가운데에 있으므로 2단계 말 「마우스 휠로」에서 휠로 옮긴다.
+# arrows는 보기 배율이 그림 맞춤보다 작으면 누를 때 맞춤으로 되돌리므로(촬영준비 함정) 배율은 1 그대로 둔다.
+WHEEL = (114, 500)   # 원이 하나일 때 arrows가 왼쪽으로 옮기는 한계는 반지름 + 54(원 70에서 x 124를 잼)
+RED, GREEN = '#fca5a5', '#86efac'
+CASE = '쿨러 사건\n냉각 효율 30초 평균 46.2 %\n팬 진동 2분 평균 0.575 mm/s\n캐비닛 온도 2분 평균 28 ℃'
+CASE38 = '냉각 효율 30초 평균 46.2 %\n팬 진동 2분 평균 0.575 mm/s\n캐비닛 온도 2분 평균 38 ℃'
 
-def grow(source, deg):
-    """선택한 원의 테두리를 deg 방향의 빈 곳으로 끌어 새 원+화살표를 만든다(빈 곳은 촬영 코드가 찾는다)."""
-    return [['grow', source, deg]]
+def nn(c):
+    return [['click', 'caption'], ['type', c], ['click', 'labelPlus'], ['click', 'labelInput'], ['type', KIND[c]], ['key', 'Tab']]
+def gt(src, dst):
+    return [['growTo', src, *POS[dst]]]
+def et(a, b, t=None, rev=False):
+    return [['edge', a, b]] + ([['click', 'reverse']] if rev else []) + ([['click', 'type'], ['type', t]] if t else [])
+def ty(t):
+    return [['click', 'type'], ['type', t]]
+def con(a, b, t=None):
+    return [['click', 'node:' + a], ['connect', a, b]] + (ty(t) if t else [])
+def pv(k, v):
+    return [['click', 'propKey'], ['type', k], ['click', 'propVal'], ['type', v]]
+def color(v):
+    return [['click', 'style:node-color'], ['key', 'ControlOrMeta+A'], ['type', v], ['key', 'Tab']]
+A = lambda *ops: ('A', [o for x in ops for o in x])
+P = lambda t: ('P', [['point', t]])
+N = lambda text: ('P', [['note', text, 'tl']])
+T = lambda *ops: ('T', [o for x in ops for o in x])
+L = lambda c: P('look:' + c)
 
-def name_edge(a, b, typ):
-    return [['edge', a, b], ['click', 'type'], ['type', typ]]
+MAP = {
+ 1: [A([['click', 'text:Use necessary cookies only']]), A([['click', 'done']]), P('canvasMid'), P('node:'), P('panelMid'), P('samples'), P('orange')],
+ 2: [P('node:'), A([['click', 'customize']]), A([['click', 'style:radius'], ['key', 'ControlOrMeta+A'], ['type', '60'], ['key', 'Tab']]), T([['wheelTo', *WHEEL]])],
+ 3: [A([['click', 'node:']]), A([['click', 'caption'], ['type', H]]), A([['click', 'labelPlus']]), A([['click', 'labelInput'], ['type', 'Asset'], ['key', 'Tab']]), P('ctext:Asset')],
+ 4: [A(gt(H, K)), A(nn(K)), A([['edge', H, K]]), A(ty('HAS_COMPONENT')), P('ctext:HAS_COMPONENT'), L(H), L(K)],
+ 5: [A(gt(K, S)), A(nn(S)), A(et(K, S, 'MONITORED_BY'))],
+ 6: [A(gt(S, U)), A(nn(U)), P(f'edgeMid:{S}>{U}'), A(et(S, U, rev=True)), A(ty('OBSERVED_BY')), P('ctext:MONITORED_BY'), P('ctext:OBSERVED_BY')],
+ 7: [A(gt(U, F)), A(nn(F)), A(et(U, F, 'INDICATES')), A(con(F, K)), A(ty('OCCURS_IN')), L(U), L(S), L(F), L(K)],
+ 8: [A(gt(F, PO)), A(nn(PO)), P(f'edgeMid:{F}>{PO}'), A(et(F, PO, rev=True)), A(ty('CAUSES'))],
+ 9: [A([['click', 'node:' + PO]]), A([['click', 'propPlus']]), P('propKey'), P('propVal'),
+     A([['click', 'propKey'], ['type', '냉각 효율']]), A([['click', 'propVal'], ['type', '30초 평균 < 70 %']]), A([['click', 'propPlus']]),
+     A(pv('팬 진동', '2분 평균 < 0.9 mm/s')), P('props:' + PO)],
+ 10: [A(gt(F, MX)), A(nn(MX)), A(et(F, MX, 'MITIGATED_BY')), A(gt(F, PC)), A(nn(PC)), A(et(F, PC, 'REMEDIED_BY')), A(con(PC, PO)), A(ty('ADDRESSES'))],
+ 11: [A(gt(MX, M85)), A([['click', 'caption'], ['type', M85]]), A([['click', 'labelPlus'], ['click', 'labelInput'], ['type', 'ManualSection'], ['key', 'Tab']]),
+      A(et(MX, M85, 'REFERS_TO')), A(gt(PC, M87)), A(nn(M87)), A(et(PC, M87, 'REFERS_TO'))],
+ 12: [A(gt(F, FD)), A(nn(FD)), A(et(F, FD, 'CAUSES', rev=True)), A([['click', 'node:' + FD], ['click', 'propPlus']]), A(pv('팬 진동', '2분 평균 ≥ 0.9 mm/s')),
+      P('props:' + PO), P('props:' + FD), A(gt(F, FI)), A(nn(FI)), A(et(F, FI, 'REMEDIED_BY')), A(con(FI, FD, 'ADDRESSES')), A(gt(FI, M81)), A(nn(M81), et(FI, M81, 'REFERS_TO'))],
+ 13: [A(gt(F, AT)), A(nn(AT)), A(et(F, AT, 'CAUSES', rev=True)), A([['click', 'node:' + AT], ['click', 'propPlus']]), A(pv('캐비닛 온도', '2분 평균 ≥ 35 ℃')),
+      A(gt(AT, CV)), A(nn(CV)), P(f'edgeMid:{AT}>{CV}'), A(et(AT, CV, 'ADDRESSES', rev=True)), A(con(F, CV, 'REMEDIED_BY')), A(con(CV, M87, 'REFERS_TO'))],
+ 14: [A(gt(F, BR)), A(nn(BR)), A(et(F, BR, rev=True)), A(ty('LEADS_TO')), A(gt(BR, VB)), A(nn(VB)), A(et(BR, VB, 'INDICATES', rev=True)), L(VB), L(BR), L(F)],
+ 15: [A([['edge', MX, M85]]), A([['click', 'propPlus']], pv('절차', 'SOP-COOL-11')), P('ctext:SOP-COOL-11'),
+      A([['edge', PC, M87], ['click', 'propPlus']], pv('절차', 'SOP-COOL-14')), A([['edge', CV, M87], ['click', 'propPlus']], pv('절차', 'SOP-COOL-15')),
+      A([['edge', FI, M81], ['click', 'propPlus']], pv('절차', 'SOP-FAN-11')), P('ctext:SOP-COOL-14'), P('ctext:SOP-COOL-15')],
+ 16: [L(H), L(F), L(PC), L(M87), T([['click', 'node:' + PO], ['ctrlclick', 'node:' + FD]]), T([['ctrlclick', 'node:' + AT]]), ('P', []), P('selCount'), A(color(RED)),
+      T([['click', 'node:' + MX]]), T([['ctrlclick', 'node:' + PC]]), T([['ctrlclick', 'node:' + FI]]), T([['ctrlclick', 'node:' + CV]]), ('A', []), A(color(GREEN)),
+      L(FD), L(PC), A([['click', 'blank'], ['click', 'panelToggle']])],
+ 17: [L(F), L(PO), L(FD), L(AT), N(CASE), P('props:' + PO), P('props:' + FD), P('props:' + AT), L(PO),
+      L(PC), L(M87), L(MX), L(M85), N('팬 진동 2분 평균 1.4 mm/s'), P('props:' + FD), L(FI), L(M81), L(BR), N(CASE38), P('props:' + AT), P('props:' + PO), L(CV), L(PC), P('props:' + PO)],
+ 18: [A([['click', 'export']]), A([['download', 'png', 'Untitled graph']]), A([['click', 'tab:JSON'], ['download', 'json', 'Untitled graph']]), A([['click', 'done']]),
+      A([['click', 'logo']]), A([['point', 'menu:New'], ['click', 'menu:newLocal']]), P('node:'), A([['click', 'logo'], ['click', 'menu:Import']]), A([['choose', 'json']]),
+      P('importText'), A([['click', 'importButton']]), A([['click', 'panelToggle']]), P('selCount'), P('props:' + PO), P('ctext:SOP-COOL-14'), P('node:'),
+      A([['click', 'node:'], ['click', 'text:Delete'], ['verify']])],
+ 19: [A([['click', 'export']]), A([['click', 'tab:Cypher']]), P('cypherText'), A([['click', 'done']])],
+ 20: [],
+}
+SEG_OF = {1: 1, 2: 1, 3: 1, 4: 2, 5: 2, 6: 3, 7: 3, 8: 4, 9: 4, 10: 5, 11: 5, 12: 6, 13: 7, 14: 8, 15: 8, 16: 9, 17: 10, 18: 11, 19: 12, 20: 12}
+# 쉼(ms): 사용자 2026-11-12 「이어지는 말 0.6초, 큐 사이 1.3초, 결과 뒤 2.0초, 구간 사이 2.3」(영상 V-14 2회차 값과 같다). 따라 적은 뒤도 결과 뒤와 같은 2.0초. 5초씩 멈춰 있는 자리만 없게 한다(사용자 「쉼 없이 하라는 게 아니라 5초 이런 것만 막는 거」).
+GAP = {'join': 600, 'pause': 1300, 'result': 2000, 'follow': 2000, 'stage': 2300}
 
-# 정리 배치: 사용자가 ego에서 직접 잡은 15개 배치(그림 `zo9DD…`의 저장 좌표) + 새 원 2개(팬 베어링 열화 · 진동 증가)를 비어 있는 왼쪽 위에 둔다.
-# 촬영 때 현재 그림 범위에 비율로 맞춘다. ORDER는 녹화 전 계산(촬영도구/plan_order.py)으로 정한 순서다:
-# 어느 단계에서도 아직 안 옮긴 원 자리에 놓지 않고, 그림 범위가 줄지 않는다(화면 맞춤 폭주 방지).
-USER = {'HYD-01 유압 파워팩': (129, 351), '오일 쿨러': (348, 351), '유온 센서 TS1': (348, 616), '유온 상승': (614, 616), '쿨러 냉각 성능 상실': (614, 351),
-        '쿨러 핀 오염': (1003, 532), '팬 최대 운전': (851, 709), '쿨러 핀 세척': (1003, 351), 'HM-8.5 즉시 완화 조치': (1173, 709), 'HM-8.7 근본 조치': (1278, 351),
-        '팬 구동 불량': (604, -124), '팬 점검': (941, -124), 'HM-8.1 팬 벨트 점검': (1278, -124), '주변 온도 상승': (1003, 56), '캐비닛 환기 보강': (1278, 56),
-        '팬 베어링 열화': (350, 100), '진동 증가': (129, 100)}
-ORDER = ['HYD-01 유압 파워팩', '팬 최대 운전', '유온 상승', '쿨러 냉각 성능 상실', '쿨러 핀 세척', '팬 구동 불량', '쿨러 핀 오염', '팬 점검', 'HM-8.7 근본 조치',
-         '주변 온도 상승', '캐비닛 환기 보강', '팬 베어링 열화', '진동 증가', 'HM-8.1 팬 벨트 점검', 'HM-8.5 즉시 완화 조치', '유온 센서 TS1', '오일 쿨러']
-xs = [p[0] for p in USER.values()]; ys = [p[1] for p in USER.values()]
-NORM = [[c, round((USER[c][0] - min(xs)) / (max(xs) - min(xs)), 4), round((USER[c][1] - min(ys)) / (max(ys) - min(ys)), 4)] for c in ORDER]
 
+def stages():
+    """대본원고.md → [(단계 번호, 제목, 본문)]."""
+    t = (ROOT / '대본원고.md').read_text(encoding='utf-8')
+    out = []
+    for x in re.split(r'^### ', t, flags=re.M)[1:]:
+        head, body = x.split('\n', 1)
+        n = int(head.split('.')[0])
+        out.append((n, head.strip(), ' '.join(body.split())))
+    return out
 
-# (구간, 발화, 조작). 조작은 발화의 마지막 행동 문장에서 가리키기 시작해 문장 끝 직전에 실행한다.
-CUES = [
- (1, '이번에는 온톨로지를 직접 그려 볼게요. 쿨러 고장 이야기를 놓고, 이건 무슨 종류인지, 둘은 무슨 사이인지, 화살표는 어느 쪽인지를 하나씩 정하면서 그려 갈 거예요. 그렇게 그려 두면 똑같이 기름 온도가 올라도, 원인에 따라 어떤 조치로 가야 하는지가 한눈에 보여요.', []),
- (1, '검색 결과에서 Arrows.app을 눌러 들어갈게요.', [['openLink']]),
- (1, 'Arrows는 이렇게 원과 화살표로 온톨로지를 그려 볼 수 있는 웹 도구예요. 왼쪽 넓은 곳에 그림을 그리고, 오른쪽에는 고른 원이나 화살표의 이름과 내용을 적어요.', [['at', 0.35], ['point', 'canvasMid'], ['at', 0.7], ['point', 'panelMid']]),
- (1, '처음 기본 원은 긴 이름을 넣기에 조금 작아요. 오른쪽 STYLE에서 Customize를 누를게요.', [['click', 'customize']]),
- (1, 'Nodes 아래 radius가 원의 크기예요. 50을 70으로 바꾸고 Tab 키로 확정하겠습니다.', [['click', 'style:radius'], ['key', 'ControlOrMeta+A'], ['type', '70'], ['key', 'Tab']]),
- (1, '자, 먼저 뭐가 있어야 할까요? 고장 날 쿨러도, 그걸 재는 센서도 다 설비 한 대 안에 들어 있죠. 그러니까 설비부터 원으로 놓아요. 이렇게 실제 대상 하나를 나타내는 원을 노드라고 해요. 위쪽의 파란 Add Node를 눌러 첫 원을 만들게요.', [['click', 'addNode']]),
- (1, '원이 생기고 오른쪽에 내용 칸이 열렸어요. Caption은 원 안에 보일 이름이에요. 이름은 HYD-01 유압 파워팩으로 할게요. HYD-01은 설비 번호이고, 유압 파워팩은 기름에 압력을 넣어 기계를 움직이는 설비예요. 이 칸을 누르고 HYD-01 유압 파워팩이라고 적을게요.', [['click', 'caption'], ['type', 'HYD-01 유압 파워팩']]),
- (1, '이 원이 무슨 종류인지도 정해 둘게요. 종류를 붙여 두면 나중에 원이 많아져도 설비는 설비끼리, 원인은 원인끼리 바로 골라 볼 수 있거든요. 종류는 Label에 적어요. Label 옆 더하기를 누를게요.', [['click', 'labelPlus']]),
- (1, '새로 생긴 칸을 누르고, 설비니까 Asset이라고 적은 뒤 Tab 키로 확정하겠습니다.', [['click', 'labelInput'], ['type', 'Asset'], ['key', 'Tab']]),
- 
- (2, '원 안에 이름과 종류가 함께 보이죠. 이름은 바로 이 설비 한 대를, 종류는 이게 어떤 무리에 드는지를 말해요.', []),
- (2, '이제 고장 날 오일 쿨러를 놓을 차례죠. 이 설비 안에서 기름을 식혀 주는 부품, 그러니까 구성 요소예요. 쿨러를 따로 원으로 그려 둬야 나중에 쿨러가 문제라고 콕 집어 말할 수 있어요. 설비 원의 테두리 바로 바깥을 잡아 빈 곳으로 끌면, 설비와 이어진 새 원이 생겨요.', grow('HYD-01 유압 파워팩', 0)),
- (2, '새 원이 선택돼 있죠. Caption에 오일 쿨러, 종류는 구성 요소니까 Label에 Component라고 적을게요.', new_node('오일 쿨러')),
- (2, '그런데 지금 화살표는 선만 있어서, 둘이 무슨 사이인지는 몰라요. 그래서 화살표에 이름을 붙여요. 이렇게 이름이 붙은 화살표를 관계라고 해요. 화살표를 누르면 오른쪽에 관계 이름을 적는 Type 칸이 나와요.', [['edge', 'HYD-01 유압 파워팩', '오일 쿨러']]),
- (2, 'Type 칸을 누르고, 구성 요소로 가진다는 뜻으로 HAS_COMPONENT라고 적을게요.', [['click', 'type'], ['type', 'HAS_COMPONENT']]),
- (2, '이 화살표는, 설비가 오일 쿨러를 구성 요소로 가진다, 이렇게 읽어요. 출발하는 쪽이 주어, 도착하는 쪽이 목적어예요. 그래서 방향이 중요해요. 거꾸로 그으면 쿨러가 설비를 갖는다는, 말이 안 되는 뜻이 되거든요.', [['at', 0.1], ['point', 'look:HYD-01 유압 파워팩'], ['at', 0.45], ['point', 'look:오일 쿨러']]),
- (2, '그런데 쿨러가 제대로 식히고 있는지는 어떻게 알까요? 재 봐야죠. 쿨러로 들어가는 기름 온도, 유온을 재는 센서가 있어야 해요. 오일 쿨러에서 같은 방법으로 왼쪽 아래에 원을 하나 더 만들게요.', grow('오일 쿨러', 135)),
- (2, 'Caption에 유온 센서 TS1, Label에 Sensor라고 적겠습니다.', new_node('유온 센서 TS1')),
- (2, '화살표를 누르고 Type에 MONITORED_BY라고 적을게요. 오일 쿨러를 유온 센서가 지켜본다는 뜻이에요. 이렇게 이어 두면 쿨러 상태가 궁금할 때 어느 센서 값을 보면 되는지 화살표만 따라가면 돼요.', name_edge('오일 쿨러', '유온 센서 TS1', 'MONITORED_BY')),
-
- (3, '그런데 어느 날부터 이 유온이 자꾸 올라간다고 해 볼게요. 이렇게 겉으로 드러난 이상을 증상이라고 해요. 센서는 재는 물건이고 유온 상승은 그 센서에 잡힌 일이니까, 원을 따로 그려요. 유온 센서에서 오른쪽으로 원을 끌어낼게요.', grow('유온 센서 TS1', 0)),
- (3, '이름은 유온 상승, 종류는 Symptom이에요.', new_node('유온 상승')),
- (3, '그런데 화살표가 센서에서 증상 쪽으로 나가 있죠. 우리가 하려는 말은 유온 상승이 유온 센서에서 관측된다는 거니까, 증상에서 출발해야 해요. 화살표를 누르고 오른쪽의 Reverse를 누르면 방향이 뒤집힙니다.', [['edge', '유온 센서 TS1', '유온 상승'], ['click', 'reverse']]),
- (3, 'Type에는 OBSERVED_BY라고 적을게요.', [['click', 'type'], ['type', 'OBSERVED_BY']]),
- (3, '유온이 계속 오른다는 건, 쿨러가 열을 빼내는 제 일을 못 하고 있다는 거죠. 이렇게 무엇을 못 하게 됐는지를 고장 유형이라고 해요. 유온 상승에서 오른쪽 위로 끌어낼게요.', grow('유온 상승', -30)),
- (3, '이름은 쿨러 냉각 성능 상실, 종류는 고장 유형, FailureMode예요.', new_node('쿨러 냉각 성능 상실')),
- (3, '이 화살표는, 유온 상승이 쿨러 냉각 성능 상실을 가리킨다, 이렇게 읽어요. 유온이 오르면 이 고장부터 의심해 보라는 거죠. 화살표를 누르고 Type에 INDICATES라고 적겠습니다.', name_edge('유온 상승', '쿨러 냉각 성능 상실', 'INDICATES')),
- (3, '그럼 이 고장은 어디서 난 걸까요? 오일 쿨러죠. 쿨러 원은 벌써 있으니까 새로 그리지 않고 거기에 이어요. 또 그리면 같은 쿨러가 두 대 있는 것처럼 돼 버리거든요. 쿨러 냉각 성능 상실을 선택하고, 이번에는 테두리를 빈 곳이 아니라 오일 쿨러 위에 놓을게요.', [['click', 'node:쿨러 냉각 성능 상실'], ['connect', '쿨러 냉각 성능 상실', '오일 쿨러']]),
- (3, '있는 원 위에 놓으니 화살표만 생겼죠. 고장에서 쿨러 쪽이라, 냉각 성능 상실이 오일 쿨러에서 일어난다고 읽히니까 그대로 둬요. Type에 OCCURS_IN이라고 적겠습니다.', [['click', 'type'], ['type', 'OCCURS_IN']]),
- (3, '여기까지 읽어 볼게요. 유온 상승은 유온 센서에서 관측되고, 쿨러 냉각 성능 상실을 가리킵니다. 그 고장은 오일 쿨러에서 일어나죠.', [['at', 0.15], ['point', 'look:유온 상승'], ['at', 0.5], ['point', 'look:쿨러 냉각 성능 상실'], ['at', 0.8], ['point', 'look:오일 쿨러']]),
-
- (4, '원인과 조치를 붙일 자리를 만들게요. 쿨러 냉각 성능 상실 원의 가운데를 잡고 오른쪽 아래로 조금 옮기겠습니다. 원을 옮겨도 화살표는 그대로 따라와요.', [['move', '쿨러 냉각 성능 상실', 48, 116]]),
- (4, '그럼 이 고장은 왜 났을까요? 쿨러에서 열을 내보내는 얇은 날개, 핀에 먼지가 꼈을 수 있죠. 이게 원인이에요. 고장 유형은 뭐가 안 되느냐, 원인은 왜 안 되느냐라서 원을 따로 그려요. 쿨러 냉각 성능 상실에서 오른쪽 위로 원을 끌어낼게요.', grow('쿨러 냉각 성능 상실', -50)),
- (4, '이름은 쿨러 핀 오염, 종류는 Cause예요.', new_node('쿨러 핀 오염')),
- (4, '이번에도 화살표가 고장에서 원인 쪽으로 나가 있죠. 핀 오염이 냉각 성능 상실을 일으키는 거니까, 원인에서 출발하게 뒤집어야 해요. 그리고 여기서 약속을 하나 할게요. 일으킨다는 화살표는 원인에서 고장 유형으로만 긋기로요. 그러면 엉뚱하게 그은 화살표를 가려낼 기준이 생겨요. 화살표를 누르고 Reverse를 누른 뒤, Type에 CAUSES라고 적겠습니다.', [['edge', '쿨러 냉각 성능 상실', '쿨러 핀 오염'], ['click', 'reverse'], ['click', 'type'], ['type', 'CAUSES']]),
- (4, '그런데 정말 핀 오염인지는 어떻게 알까요? 값을 재서 매뉴얼 8.4절의 기준과 견줘 봐야죠. 이렇게 원인을 가려 주는 기준을 증거라고 할게요. 증거는 핀 오염 원에 딸린 내용이라 속성, Property에 적어요. 쿨러 핀 오염 원을 다시 선택할게요.', [['click', 'node:쿨러 핀 오염']]),
- (4, 'Property 옆 더하기를 누르면 항목과 값을 적는 칸이 한 줄 생겨요.', [['click', 'propPlus']]),
- (4, '왼쪽 칸에는 냉각 효율이라고 적을게요.', [['click', 'propKey'], ['type', '냉각 효율']]),
- (4, '오른쪽 칸에는 30초 평균 70퍼센트 미만이라고 적겠습니다.', [['click', 'propVal'], ['type', '30초 평균 < 70 %']]),
- (4, 'Property를 하나 더 추가해서, 팬 진동은 2분 평균 0.9 미만이라고 적을게요.', [['click', 'propPlus'], ['click', 'propKey'], ['type', '팬 진동'], ['click', 'propVal'], ['type', '2분 평균 < 0.9 mm/s']]),
- (4, '두 증거가 함께 맞아야 핀 오염으로 판단해요. 쿨러가 열을 못 빼내는데 팬은 조용하다, 그러면 팬 탓이 아니라 핀이 막혔다고 볼 수 있는 거죠.', [['at', 0.2], ['point', 'props:쿨러 핀 오염']]),
- (4, '원인 후보까지 놓았으니, 이제 뭘 해야 할까요? 급한 건 유온부터 내리는 거죠. 팬을 최대로 돌리는 거예요. 이건 원인을 없애진 못하고 고장을 우선 누그러뜨리는 완화 조치라서, 원인이 아니라 고장 유형에 이어요. 쿨러 냉각 성능 상실에서 아래로 원을 끌어낼게요.', grow('쿨러 냉각 성능 상실', 100)),
- (4, 'Caption은 팬 최대 운전, Label은 조치 방법을 뜻하는 Skill이라고 적을게요.', new_node('팬 최대 운전')),
- (4, '이번엔 방향을 그대로 둬요. 냉각 성능 상실이 팬 최대 운전으로 완화된다, 이렇게 읽히거든요. 화살표를 누르고 Type에 MITIGATED_BY라고 적겠습니다.', name_edge('쿨러 냉각 성능 상실', '팬 최대 운전', 'MITIGATED_BY')),
- (4, '팬을 세게 돌리면 온도는 내려가지만 막힌 핀은 그대로죠. 원인을 없애는 핀 세척도 놓을게요. 쿨러 냉각 성능 상실에서 오른쪽으로 끌어낼게요.', grow('쿨러 냉각 성능 상실', -5)),
- (4, 'Caption은 쿨러 핀 세척, Label은 Skill이라고 적을게요.', new_node('쿨러 핀 세척')),
- (4, '핀 세척도 같은 고장에서 나가지만, 이건 원인을 아예 없애는 근본 조치예요. 그래서 이름을 팬 최대 운전과 다르게 붙여야, 급한 불을 끄는 조치와 뿌리를 뽑는 조치가 갈려요. 화살표를 누르고 Type에 REMEDIED_BY라고 적을게요.', name_edge('쿨러 냉각 성능 상실', '쿨러 핀 세척', 'REMEDIED_BY')),
- (4, '다만 핀 세척은 핀 오염일 때만 통해요. 팬이 고장 났다면 핀을 닦아도 소용없죠. 그래서 어느 원인에 맞는 조치인지도 이어 둬요. 핀 세척이 핀 오염을 없앤다, 이렇게 읽히게 조치에서 원인 쪽으로 그을게요. 쿨러 핀 세척에서 쿨러 핀 오염 위로 끌어 놓고, ADDRESSES라고 적겠습니다.', [['click', 'node:쿨러 핀 세척'], ['connect', '쿨러 핀 세척', '쿨러 핀 오염'], ['click', 'type'], ['type', 'ADDRESSES']]),
-
- (5, '그런데 이 조치들, 어디에 나와 있는 걸까요? 근거 매뉴얼도 이어 둘게요. 그래야 조치를 고를 때 원문까지 따라가 확인할 수 있어요. 팬 최대 운전에서 왼쪽 아래로 원을 끌어낼게요.', grow('팬 최대 운전', 150)),
- (5, '이름은 HM-8.5 즉시 완화 조치, 종류는 매뉴얼 절이라 ManualSection이에요. HM-8.5는 이 매뉴얼의 8.5절이라는 뜻이에요.', new_node('HM-8.5 즉시 완화 조치')),
- (5, '팬 최대 운전이 8.5절을 근거로 한다, 방향은 이대로 맞아요. 화살표를 누르고 Type에 REFERS_TO라고 적겠습니다.', name_edge('팬 최대 운전', 'HM-8.5 즉시 완화 조치', 'REFERS_TO')),
- (5, '', []),
- (5, '근본 조치의 근거도 이어 둘게요. 쿨러 핀 세척에서 오른쪽으로 끌어낼게요.', grow('쿨러 핀 세척', -20)),
- (5, '이번엔 HM-8.7 근본 조치, 종류는 똑같이 ManualSection이에요.', new_node('HM-8.7 근본 조치')),
- (5, '화살표를 누르고 REFERS_TO라고 적을게요.', name_edge('쿨러 핀 세척', 'HM-8.7 근본 조치', 'REFERS_TO')),
-
- (6, '그런데 유온이 오르는 게 꼭 핀 오염 때문일까요? 팬이 제대로 안 돌아도 쿨러는 열을 못 내보내죠. 이런 원인은 새 그림이 아니라 지금 그림에 가지로 붙이면 돼요. 쿨러 냉각 성능 상실에서 오른쪽 아래로 끌어낼게요.', grow('쿨러 냉각 성능 상실', 55)),
- (6, '이름은 팬 구동 불량, 이것도 Cause예요.', new_node('팬 구동 불량')),
- (6, '이것도 원인이니 화살표를 누르고 Reverse로 뒤집은 다음, CAUSES라고 적을게요.', [['edge', '쿨러 냉각 성능 상실', '팬 구동 불량'], ['click', 'reverse'], ['click', 'type'], ['type', 'CAUSES']]),
- (6, '이 원인에도 증거를 적어 둘게요. 팬 구동 불량 원을 선택하고 Property 더하기를 누르겠습니다.', [['click', 'node:팬 구동 불량'], ['click', 'propPlus']]),
- (6, '왼쪽 칸에 팬 진동, 오른쪽 칸에 2분 평균 0.9 이상이라고 적을게요.', [['click', 'propKey'], ['type', '팬 진동'], ['click', 'propVal'], ['type', '2분 평균 ≥ 0.9 mm/s']]),
- (6, '같은 팬 진동을 보지만 핀 오염은 0.9 미만, 팬 구동 불량은 0.9 이상이에요. 보는 값은 같아도 기준이 반대라서, 팬 진동 하나로 두 원인이 갈려요.', [['at', 0.15], ['point', 'props:쿨러 핀 오염'], ['at', 0.45], ['point', 'props:팬 구동 불량']]),
- (6, '팬 쪽 원인에는 팬 점검이 맞는 조치예요. 쿨러 냉각 성능 상실에서 하나 더 끌어낼게요.', grow('쿨러 냉각 성능 상실', 25)),
- (6, '이름은 팬 점검, 종류는 역시 Skill이에요.', new_node('팬 점검')),
- (6, '팬 점검도 원인을 없애는 근본 조치라, 화살표를 누르고 REMEDIED_BY라고 적겠습니다.', name_edge('쿨러 냉각 성능 상실', '팬 점검', 'REMEDIED_BY')),
- (6, '팬 점검은 팬 구동 불량일 때만 맞는 조치니까, 팬 구동 불량 위로 끌어 놓고 ADDRESSES라고 적을게요.', [['click', 'node:팬 점검'], ['connect', '팬 점검', '팬 구동 불량'], ['click', 'type'], ['type', 'ADDRESSES']]),
- (6, '근거 문서도 이어 둘게요. 팬 점검에서 오른쪽으로 끌어낼게요.', grow('팬 점검', 10)),
- (6, 'HM-8.1 팬 벨트 점검, 이것도 ManualSection이에요.', new_node('HM-8.1 팬 벨트 점검')),
- (6, '화살표를 누르고 REFERS_TO라고 적겠습니다.', name_edge('팬 점검', 'HM-8.1 팬 벨트 점검', 'REFERS_TO')),
- (7, '원인이 하나 더 있어요. 쿨러가 들어 있는 함, 캐비닛 안 공기가 더우면 쿨러도 팬도 멀쩡한데 열을 잘 못 내보내요. 이게 주변 온도 상승이에요. 쿨러 냉각 성능 상실에서 왼쪽 위로 원을 끌어낼게요.', grow('쿨러 냉각 성능 상실', -125)),
- (7, '이름은 주변 온도 상승, 이것도 원인이니 Cause예요.', new_node('주변 온도 상승')),
- (7, '원인이니까 화살표를 누르고 Reverse로 뒤집은 다음, CAUSES라고 적겠습니다.', [['edge', '쿨러 냉각 성능 상실', '주변 온도 상승'], ['click', 'reverse'], ['click', 'type'], ['type', 'CAUSES']]),
- (7, '주변 온도 상승도 증거를 적어 둘게요. 원을 선택하고 Property 더하기를 누르겠습니다.', [['click', 'node:주변 온도 상승'], ['click', 'propPlus']]),
- (7, '왼쪽 칸에 캐비닛 온도, 오른쪽 칸에 2분 평균 35도 이상이라고 적을게요.', [['click', 'propKey'], ['type', '캐비닛 온도'], ['click', 'propVal'], ['type', '2분 평균 ≥ 35 ℃']]),
- (7, '주변 온도가 원인이면 조치는 캐비닛 환기 보강이에요. 주변 온도 상승에서 옆으로 원을 하나 끌어낼게요.', grow('주변 온도 상승', 180)),
- (7, '이름은 캐비닛 환기 보강, 종류는 Skill이에요.', new_node('캐비닛 환기 보강')),
- (7, '이번엔 원인에서 끌어냈으니 방향이 거꾸로예요. 화살표를 누르고 Reverse로 뒤집은 뒤 ADDRESSES라고 적겠습니다.', [['edge', '주변 온도 상승', '캐비닛 환기 보강'], ['click', 'reverse'], ['click', 'type'], ['type', 'ADDRESSES']]),
- (7, '환기 보강도 근본 조치라 고장에서도 이어 둬요. 쿨러 냉각 성능 상실에서 캐비닛 환기 보강 위로 끌어 놓고 REMEDIED_BY라고 적을게요.', [['click', 'node:쿨러 냉각 성능 상실'], ['connect', '쿨러 냉각 성능 상실', '캐비닛 환기 보강'], ['click', 'type'], ['type', 'REMEDIED_BY']]),
- (7, '근거는 핀 세척과 같은 8.7절이에요. 아까 쿨러 때처럼, 있는 원에 그대로 이어요. 캐비닛 환기 보강에서 8.7절 원 위로 끌어 놓고 REFERS_TO라고 적겠습니다.', [['click', 'node:캐비닛 환기 보강'], ['connect', '캐비닛 환기 보강', 'HM-8.7 근본 조치'], ['click', 'type'], ['type', 'REFERS_TO']]),
-
- (8, '고장이 다른 고장으로 이어지기도 해요. 팬 축을 받쳐 주는 베어링이 닳으면, 베어링이 제 할 일을 못 하니 이것도 고장 유형이에요. 그러면 팬이 바람을 덜 보내서 결국 냉각 성능 상실로 이어질 수 있죠. 쿨러 냉각 성능 상실에서 원을 하나 끌어낼게요.', grow('쿨러 냉각 성능 상실', 120)),
- (8, '이름은 팬 베어링 열화, 종류는 원인이 아니라 고장 유형, FailureMode예요.', new_node('팬 베어링 열화')),
- (8, '여기서 아까 한 약속이 쓰여요. CAUSES는 원인에서 고장 유형으로만 긋기로 했죠. 그러니 고장과 고장 사이는 다른 이름을 써요. 베어링 열화에서 냉각 성능 상실 쪽이 되게 화살표를 누르고 Reverse로 뒤집은 뒤, 이어진다는 뜻의 LEADS_TO라고 적겠습니다.', [['edge', '쿨러 냉각 성능 상실', '팬 베어링 열화'], ['click', 'reverse'], ['click', 'type'], ['type', 'LEADS_TO']]),
- (8, '이 고장은 팬 진동이 커지는 증상으로 나타나요. 팬 베어링 열화에서 원을 끌어낼게요.', grow('팬 베어링 열화', 180)),
- (8, '이름은 진동 증가, 종류는 Symptom이에요.', new_node('진동 증가')),
- (8, '증상이 고장을 가리키는 방향이니 화살표를 누르고 Reverse로 뒤집은 다음 INDICATES라고 적겠습니다.', [['edge', '팬 베어링 열화', '진동 증가'], ['click', 'reverse'], ['click', 'type'], ['type', 'INDICATES']]),
- (8, '진동 증가에서 베어링 열화를 거쳐 냉각 성능 상실까지, 고장이 번져 가는 길이 그림에 남았어요. 팬 진동이 커지면 냉각이 나빠지기 전에 베어링부터 볼 수 있죠.', [['at', 0.15], ['point', 'look:진동 증가'], ['at', 0.4], ['point', 'look:팬 베어링 열화'], ['at', 0.7], ['point', 'look:쿨러 냉각 성능 상실']]),
-
- (9, '실제로 조치할 때는 매뉴얼의 절차대로 하죠. 그런데 한 절 안에도 절차가 여러 개라서, 어떤 절차를 따르는지는 조치와 절을 잇는 화살표에 적어 둘게요. 팬 최대 운전에서 8.5절로 가는 화살표를 누르겠습니다.', [['edge', '팬 최대 운전', 'HM-8.5 즉시 완화 조치']]),
- (9, '관계를 선택해도 오른쪽에 Property가 있어요. 더하기를 누르고 왼쪽 칸에 절차, 오른쪽 칸에 팬 최대 운전의 절차 번호를 적을게요.', [['click', 'propPlus'], ['click', 'propKey'], ['type', '절차'], ['click', 'propVal'], ['type', 'SOP-COOL-11']]),
- (9, '핀 세척에서 8.7절로 가는 화살표에도 절차 번호를 적겠습니다.', [['edge', '쿨러 핀 세척', 'HM-8.7 근본 조치'], ['click', 'propPlus'], ['click', 'propKey'], ['type', '절차'], ['click', 'propVal'], ['type', 'SOP-COOL-14']]),
- (9, '환기 보강 화살표에는 환기 보강 절차를 적고요.', [['edge', '캐비닛 환기 보강', 'HM-8.7 근본 조치'], ['click', 'propPlus'], ['click', 'propKey'], ['type', '절차'], ['click', 'propVal'], ['type', 'SOP-COOL-15']]),
- (9, '팬 점검에서 8.1절로 가는 화살표까지 적을게요.', [['edge', '팬 점검', 'HM-8.1 팬 벨트 점검'], ['click', 'propPlus'], ['click', 'propKey'], ['type', '절차'], ['click', 'propVal'], ['type', 'SOP-FAN-11']]),
- (9, '이렇게 적어 두면 화살표를 따라가다가 바로 실행할 절차를 찾을 수 있어요. 같은 매뉴얼 8.7절이라도 핀 세척과 환기 보강은 절차가 다르다는 것도 보이죠.', [['at', 0.2], ['point', 'look:HM-8.7 근본 조치']]),
-
- (10, '원이 많아져서 화살표가 얽혔죠. 흐름이 보이도록 정리해 볼게요. 먼저 빈 곳을 눌러 선택을 풀겠습니다.', [['click', 'blank']]),
- (10, '자리를 만들려고 원 크기를 70에서 47로 줄일게요.', [['click', 'customize'], ['click', 'style:radius'], ['key', 'ControlOrMeta+A'], ['type', '47'], ['key', 'Tab']]),
- (10, '이제 원 가운데를 잡고 하나씩 옮겨서 왼쪽에서 오른쪽으로 읽히게 놓겠습니다. 설비랑 쿨러, 센서는 왼쪽에 두고요, 고장 유형은 가운데, 원인과 조치는 그 둘레, 매뉴얼은 맨 오른쪽이에요. 고장 유형이 가운데 있으면 증상에서 오는 화살표도, 원인에서 오는 화살표도 한곳에 모여서 얽히지 않고 읽혀요.', [['layoutNorm', NORM, ['HYD-01 유압 파워팩', 'HM-8.1 팬 벨트 점검']]]),
- (10, '판단할 때 맞춰 봐야 하는 건 원인과 조치의 짝이에요. 둘이 한눈에 갈리게 색을 칠할게요. 쿨러 핀 오염을 누르고, Ctrl을 누른 채 나머지 원인 두 개도 함께 고르겠습니다.', [['click', 'node:쿨러 핀 오염'], ['ctrlclick', 'node:팬 구동 불량'], ['ctrlclick', 'node:주변 온도 상승']]),
- (10, '아래 node-color가 원 색을 정하는 칸이에요. 여기에 연한 빨간색 값을 적고 Tab으로 확정할게요.', [['click', 'style:node-color'], ['key', 'ControlOrMeta+A'], ['type', '#fde2e2'], ['key', 'Tab']]),
- (10, '조치 원 네 개도 같은 방법으로 함께 선택해서 연한 초록색을 칠하겠습니다.', [['click', 'node:팬 최대 운전'], ['ctrlclick', 'node:쿨러 핀 세척'], ['ctrlclick', 'node:팬 점검'], ['ctrlclick', 'node:캐비닛 환기 보강'], ['click', 'style:node-color'], ['key', 'ControlOrMeta+A'], ['type', '#dcfce7'], ['key', 'Tab']]),
- (10, '원인은 빨간색, 조치는 초록색이라 어느 쪽인지 바로 구별되네요. 빈 곳을 눌러 선택을 풀겠습니다.', [['click', 'blank']]),
-
- (11, '이제 완성된 그림을 읽어 볼게요. 그림을 넓게 보려고 오른쪽 맨 위 버튼으로 패널을 접겠습니다.', [['click', 'panelToggle']]),
- (11, '쿨러 냉각 성능 상실로 들어오는 CAUSES를 거슬러 가면 원인 후보가 세 개 나와요. 핀 오염, 팬 구동 불량, 주변 온도 상승이죠. 화살표는 원인에서 고장 쪽으로 그렸지만, 찾을 때는 이렇게 거꾸로 따라가면 돼요.', [['at', 0.1], ['point', 'look:쿨러 냉각 성능 상실'], ['at', 0.45], ['point', 'look:쿨러 핀 오염'], ['at', 0.55], ['point', 'look:팬 구동 불량'], ['at', 0.65], ['point', 'look:주변 온도 상승']]),
- (11, '이 그림으로 실제 사건을 판단해 볼게요. 쿨러 고장이 났을 때 값을 읽어 보니, 냉각 효율은 30초 평균 46.2퍼센트, 팬 진동은 2분 평균 초당 0.575밀리미터, 캐비닛 온도는 2분 평균 28도였어요.', [['at', 0.4], ['point', 'look:유온 상승']]),
- (11, '세 원인의 증거와 견주면, 냉각 효율이 70퍼센트 미만이고 팬 진동이 0.9 미만이니 핀 오염의 증거에 맞아요. 팬 구동 불량은 진동이 0.9 이상이어야 하고, 주변 온도 상승은 캐비닛 온도가 35도 이상이어야 하니 둘 다 아닙니다.', [['at', 0.15], ['point', 'props:쿨러 핀 오염'], ['at', 0.6], ['point', 'props:팬 구동 불량'], ['at', 0.8], ['point', 'props:주변 온도 상승']]),
- (11, '그러면 핀 오염을 해결하는 핀 세척을 찾고, 근거인 매뉴얼 8.7절로 갑니다. 세척하려면 설비를 세워야 하니, 그 전에 유온부터 낮추는 팬 최대 운전과 8.5절도 함께 확인하겠습니다.', [['at', 0.1], ['point', 'look:쿨러 핀 세척'], ['at', 0.3], ['point', 'look:HM-8.7 근본 조치'], ['at', 0.65], ['point', 'look:팬 최대 운전'], ['at', 0.85], ['point', 'look:HM-8.5 즉시 완화 조치']]),
- (11, '값이 달라진 경우도 볼게요. 냉각 효율은 낮은데 팬 진동이 1.4면 팬 구동 불량 쪽이에요. 팬 점검과 매뉴얼 8.1절로 가고, 팬 자체가 의심되니 팬 최대 운전부터 고르지는 않습니다. 진동이 계속 커지면 베어링 열화도 함께 봐야겠죠.', [['at', 0.2], ['point', 'props:팬 구동 불량'], ['at', 0.4], ['point', 'look:팬 점검'], ['at', 0.55], ['point', 'look:HM-8.1 팬 벨트 점검'], ['at', 0.85], ['point', 'look:팬 베어링 열화']]),
- (11, '캐비닛 온도가 38도라면 주변 온도 상승이에요. 캐비닛 환기 보강과 매뉴얼 8.7절로 이어집니다.', [['at', 0.25], ['point', 'props:주변 온도 상승'], ['at', 0.55], ['point', 'look:캐비닛 환기 보강'], ['at', 0.85], ['point', 'look:HM-8.7 근본 조치']]),
- (11, '팬 진동 값을 아직 못 받았다면요? 냉각 효율이 낮다는 것만으로는 핀 오염이라고 못 박을 수 없어요. 진동 기준을 견줘 보기 전까지는 원인을 정하지 말고, 진동 값부터 받아 보는 거예요.', [['at', 0.3], ['point', 'props:쿨러 핀 오염']]),
- (11, '이렇게 그림이 있으면 어떤 값을 더 봐야 하는지, 어느 조치로 가야 하는지 따라갈 수 있어요.', []),
- (12, '다음에 이어 고치거나 다른 사람과 나누려면 파일로 남겨야죠. 위쪽 Download / Export를 누르겠습니다.', [['click', 'export']]),
- (12, 'JSON은 나중에 다시 열어 고칠 수 있는 데이터예요. JSON을 골라 받을게요.', [['click', 'tab:JSON'], ['download', 'json', '쿨러_지식그래프_최종']]),
- (12, 'PNG는 그림 파일이라 보고서나 메신저에 붙일 때 써요. 이것도 받겠습니다.', [['click', 'tab:PNG'], ['download', 'png', '쿨러_지식그래프_최종']]),
- (12, 'Done을 눌러 그림으로 돌아갈게요.', [['click', 'done']]),
- (12, '저장한 데이터가 제대로 열리는지 새 그림에서 확인해 볼게요. 왼쪽 위 로고 메뉴를 누르겠습니다.', [['click', 'logo']]),
- (12, 'New에서 Web Browser storage를 눌러 빈 그림을 새로 열게요.', [['point', 'menu:New'], ['click', 'menu:newLocal']]),
- (12, '다시 로고 메뉴를 열고 Import를 누를게요.', [['click', 'logo'], ['click', 'menu:Import']]),
- (12, 'Choose File을 눌러 방금 내려받은 JSON 파일을 고르겠습니다.', [['choose', 'json']]),
- (12, '아래 Import 버튼을 누르면 그림이 들어옵니다.', [['click', 'importButton']]),
- (12, '새 그림에 처음부터 있던 빈 원이 하나 남아 있네요. 이 원을 눌러 선택하고 Delete 키로 지우겠습니다.', [['click', 'node:'], ['key', 'Delete']]),
- (12, '원 열일곱 개와 화살표 스물한 개, 증거와 절차 번호까지 그대로 돌아왔네요.', [['verify'], ['at', 0.3], ['point', 'look:쿨러 핀 오염'], ['at', 0.6], ['point', 'look:팬 구동 불량']]),
- (13, '마지막으로, 이 그림을 데이터베이스에 넣는 명령으로도 바꿀 수 있어요. 그림은 사람이 보기 좋은 거고, 컴퓨터가 찾아 쓰려면 데이터베이스에 담아야 하거든요. 여기서는 원과 화살표를 그대로 담는 Neo4j를 쓰는데, 거기에 쓰는 명령 언어가 Cypher예요. 위쪽 Download / Export를 누르고 Cypher 탭을 누르겠습니다.', [['click', 'export'], ['click', 'tab:Cypher']]),
- (13, 'CREATE로 시작하는 문장이 보이죠. 원과 화살표, 증거와 절차 번호까지 Neo4j에 바로 넣을 수 있는 명령으로 바뀌었어요.', [['at', 0.15], ['point', 'cypherText']]),
- (13, 'Done을 눌러 그림으로 돌아갈게요.', [['click', 'done']]),
- (13, '설비에서 시작해 증상, 고장, 원인, 조치, 매뉴얼까지 쿨러 고장 이야기 하나가 그림 한 장에 이어졌어요. 그리면서 계속 정했죠. 이건 무슨 종류인지, 원에 어떤 값을 적을지, 둘은 무슨 사이인지, 화살표는 어느 쪽인지, CAUSES는 원인에서 고장 유형으로만 긋는다는 약속까지요. 이렇게 정한 틀이 온톨로지예요. 그 틀에 쿨러 사례를 채워 넣은 게 지식 그래프고, 이 그림은 그걸 눈으로 보여 주는 한 장이에요.', []),
-]
 
 def cues():
+    """낭독 원고의 ▸ · ‖ · 〔글상자〕와 MAP으로 큐를 만든다. MAP 칸 수가 ▸ 수와 다르면 단계 번호와 함께 멈춘다."""
     out = []
-    i = 0
-    for seg, text, ops, *own in CUES:
-        if not own:
-            i += 1
-        out.append({'id': own[0] if own else f'o{i:03}', 'segment': seg, 'text': text, 'ops': ops})
+
+    def flush(cur, marks, acts, gap, seg, cut):
+        raw = cur
+        text = raw.strip()
+        if not text and not marks and not acts:
+            return None
+        lead = len(raw) - len(raw.lstrip())
+        ops = []
+        for pos, o in marks:
+            frac = 0.0 if not text else max(0.0, min(0.95, (pos - lead) / len(text)))
+            ops += [['at', round(frac, 3)]] + o
+        if acts:
+            ops += ([['atend']] if marks else []) + acts
+        c = {'id': f'a{len(out) + 1:03}', 'segment': seg, 'text': ' '.join(text.split()), 'ops': ops, 'gap': gap}
+        if acts and not marks:
+            c['cut'] = True
+        out.append(c)
+        return c
+
+    for n, head, body in stages():
+        seg, m = SEG_OF[n], list(MAP[n])
+        want = body.count('▸')
+        if len(m) != want:
+            raise SystemExit(f'{n}단계 「{head}」: ▸ {want}곳인데 MAP 칸이 {len(m)}개다 (build_ontology.py MAP)')
+        body = re.sub(r'〔글상자:[^〕]*〕', '', body)
+        toks = re.split(r'(▸|‖|〔글상자 내림〕)', body)
+        cur, marks, acts, gap = '', [], [], GAP['stage']
+        for tok in toks:
+            if tok == '▸':
+                kind, ops = m.pop(0)
+                if kind == 'A':
+                    acts += ops
+                    c = flush(cur, marks, acts, gap, seg, True)
+                    cur, marks, acts, gap = '', [], [], GAP['join']
+                else:
+                    marks.append((len(cur), ops))
+            elif tok == '〔글상자 내림〕':
+                marks.append((len(cur), [['note', None]]))
+            elif tok == '‖':
+                c = flush(cur, marks, acts, gap, seg, False)
+                if c is None and out:
+                    c = out[-1]
+                typed = c and any(o[0] == 'type' for o in c['ops'])
+                acted = c and any(o[0] not in ('at', 'point', 'note') for o in c['ops'])
+                cur, marks, acts = '', [], []
+                gap = GAP['follow'] if typed else GAP['result'] if acted else GAP['pause']
+            else:
+                cur += tok
+        flush(cur, marks, acts, gap, seg, False)
+    for c in out:
+        if not c['text']:
+            raise SystemExit(f"{c['id']}: 말이 빈 큐 — ▸ 자리를 원고에서 확인 (조작 {c['ops'][:2]})")
     return out
+
 
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parents[4]
-EVID = REPO / '작업' / '촬영' / 'arrows'
-VIDEO = EVID / 'ARROWS-온톨로지-최종배치'
-SEGMENT_TITLE = {1: 'arrows.app 열기 · 원 크기 · 첫 원', 2: '구성 요소 · 센서 · 첫 관계', 3: '증상 · 고장 유형', 4: '원인 · 조건 · 조치', 5: '매뉴얼 절', 6: '팬 구동 불량 가지',
-                 7: '세 번째 원인 · 주변 온도 상승', 8: '고장이 고장으로 · 팬 베어링 열화', 9: '화살표에 절차 번호', 10: '배치 정리 · 종류별 색칠', 11: '완성 그림 읽고 판단하기', 12: '저장 · 다시 열기', 13: 'Cypher로 내보내기 · 마무리'}
-TARGET = {'addNode': 'Add Node 클릭', 'caption': 'Caption 입력칸 클릭', 'labelPlus': 'Label 옆 + 클릭', 'labelInput': '새 Label 입력칸 클릭',
+EVID = REPO / '작업' / '촬영' / 'arrows'          # 녹화 원본 · 합성 출력(git 밖)
+FINAL = '통합1-08-관계그림'                        # 합성 출력 이름(포털 encode.py --도구 arrows) — 합성기록/<FINAL>.json
+VIDEO_NAME = '통합반_01회차_08_실습_관계그림.mp4'
+SEGMENT_TITLE = {1: 'arrows.app 열기 · 원 크기 · 첫 원(설비)', 2: '쿨러 · 센서 · 첫 관계', 3: '증상 · 방향 뒤집기 · 고장 유형', 4: '원인 · 증거(속성)',
+                 5: '완화 · 근본 조치 · 근거 매뉴얼', 6: '두 번째 원인 · 팬 구동 불량', 7: '세 번째 원인 · 주변 온도 상승', 8: '고장이 고장으로 · 절차 번호',
+                 9: '원인 · 조치 색칠', 10: '그림으로 판단하기', 11: '파일로 남기고 다시 열기', 12: 'Cypher로 바꿔 보기 · 맺음'}
+TARGET = {'caption': 'Caption 입력칸 클릭', 'labelPlus': 'Label 옆 + 클릭', 'labelInput': '새 Label 입력칸 클릭',
           'propPlus': 'Property 옆 + 클릭', 'propKey': '새 속성의 왼쪽(이름) 칸 클릭', 'propVal': '오른쪽(내용) 칸 클릭', 'type': 'Type 입력칸 클릭',
           'blank': '그림의 빈 곳 클릭(선택 해제)', 'customize': 'STYLE의 Customize 클릭', 'style:radius': 'radius 입력칸 클릭',
           'reverse': 'Reverse 클릭(화살표 방향 뒤집기)', 'export': 'Download / Export 클릭', 'tab:JSON': 'JSON 탭 클릭', 'tab:PNG': 'PNG 탭 클릭',
           'done': 'Done 클릭', 'logo': '왼쪽 위 로고 메뉴 클릭', 'menu:newLocal': 'New ▸ Web Browser storage 클릭(새 그림)', 'menu:Import': 'Import 클릭',
-          'importButton': '창 아래 Import 버튼 클릭', 'panelToggle': '오른쪽 위 ☰ 클릭(패널 접기)', 'canvasMid': '그림 영역 가리키기', 'panelMid': '오른쪽 패널 가리키기',
-          'menu:New': 'New에 커서 올리기', 'node:': '빈 원 클릭', 'cypherText': 'Cypher 문장 가리키기', 'tab:Cypher': 'Cypher 탭 클릭', 'style:node-color': 'node-color 입력칸 클릭'}
+          'menu:New': 'New에 커서 올리기', 'importButton': '창 아래 Import 버튼 클릭', 'panelToggle': '오른쪽 위 ☰ 클릭(오른쪽 칸 접기 · 펴기)',
+          'canvasMid': '그림 영역 가리키기', 'panelMid': '오른쪽 칸 가리키기', 'samples': '모양 견본 가리키기', 'orange': '주황 Save to Google Drive 가리키기',
+          'node:': '빈 원 클릭', 'cypherText': 'Cypher 글 가리키기', 'tab:Cypher': 'Cypher 탭 클릭', 'style:node-color': 'node-color 입력칸 클릭',
+          'selCount': '오른쪽 nodes 개수 가리키기', 'importText': '가져오기 칸에 채워진 파일 내용 가리키기', 'download': 'Download 클릭'}
 
 
 def act(op):
     k, *a = op
-    if k == 'at':
+    if k in ('at', 'atend'):
         return None
-    if k == 'openLink':
-        return '검색 결과의 Arrows.app 링크 클릭 → arrows.app 열림 확인'
     if k in ('click', 'point'):
         t = a[0]
         if t in TARGET:
             return TARGET[t]
-        for pre, word in (('node:', '원 클릭'), ('look:', '원 가리키기'), ('props:', '원의 조건 가리키기')):
+        for pre, word in (('node:', '원'), ('look:', '원'), ('props:', '원의 증거 줄'), ('ctext:', '글자'), ('text:', '단추')):
             if t.startswith(pre):
-                return f'‘{t[len(pre):]}’ {word}' if k == 'click' or pre != 'node:' else f'‘{t[5:]}’ 원 가리키기'
+                return f'‘{t[len(pre):]}’ {word} ' + ('클릭' if k == 'click' else '가리키기')
+        if t.startswith('edgeMid:'):
+            x, y = t[8:].split('>')
+            return f'‘{x}’ → ‘{y}’ 화살표 가리키기'
         return t
     if k == 'type':
         return f'`{a[0]}` 입력'
     if k == 'key':
-        return {'ControlOrMeta+A': 'Ctrl+A(칸 전체 선택)'}.get(a[0], a[0] + ' 키')
-    if k == 'grow':
+        return {'ControlOrMeta+A': 'Ctrl+A(칸 전체 선택)', 'Tab': 'Tab(입력 마침)'}.get(a[0], a[0] + ' 키')
+    if k == 'growTo':
         return f'‘{a[0]}’ 원 테두리 바로 바깥을 잡아 빈 곳으로 끌기 → 새 원과 화살표 생성'
+    if k == 'wheelTo':
+        return '마우스 휠로 그림판 옮기기(왼쪽으로)'
     if k == 'edge':
         return f'‘{a[0]}’–‘{a[1]}’ 사이 화살표 클릭(관계 선택)'
     if k == 'connect':
         return f'‘{a[0]}’ 테두리를 잡아 ‘{a[1]}’ 원 위에 놓기 → 화살표 생성'
-    if k == 'move':
-        return f'‘{a[0]}’ 원 가운데를 잡아 오른쪽 아래로 조금 옮기기'
-    if k in ('layout', 'layoutNorm'):
-        return '원 가운데를 잡아 차례로 옮기기: ' + ', '.join(m[0] for m in a[0]) + ' (왼쪽→오른쪽 흐름, 화살표 교차 없음)'
     if k == 'download':
         return 'Download 클릭 → 파일 저장 확인'
     if k == 'ctrlclick':
@@ -271,60 +257,65 @@ def act(op):
     if k == 'choose':
         return 'Choose File로 방금 저장한 JSON 선택'
     if k == 'verify':
-        return '원 17 · 화살표 21 · 원인 조건 · 절차 번호 복원 확인'
+        return '원 17 · 화살표 21 · 원인 증거 · 절차 번호 복원 확인'
+    if k == 'note':
+        return '화면 위에 사건 값 글상자 띄우기' if a[0] else '글상자 내리기'
     return k
 
 
 def manuscript():
-    out = ['''# ARROWS 실습 — 쿨러 고장의 지식 그래프 그리기
+    out = [f'''# ARROWS 실습 — 쿨러 고장의 지식 그래프 그리기
 
-2026-10-23 촬영판. 교재 SLIDE 67(지식 그래프 지도) · 73 · 74(핀 오염 기본도 → 팬 구동 불량 가지 → 비교 · 저장 · 다시 열기)의 실습이다. HM-8.4의 세 번째 원인(주변 온도 상승), 고장이 다른 고장으로 이어지는 팬 베어링 열화, 화살표의 절차 번호까지 그린 뒤 정리 · 색칠하고, 완성 그림으로 판단해 보고, 저장 · 다시 열기와 Cypher 내보내기로 마친다. 두 과정 공통.
+2026-11-12 다시 찍은 판이다. 사용자가 확정한 대본(윤문 4차)을 클라우드 Playwright 녹화기로 찍고(브라우저 배율 약 110 %, 원 크기 60), 화면은 그대로 둔 채 말만 다듬은 윤문 5 · 6차의 음성으로 합성했다. 영상은 `{VIDEO_NAME}`(정본은 Release 「영상」 — 영상 V-7)이고, 구간 · 시간은 제작용 [예상시간](예상시간.md)에 있다.
 
 ## 진행 메모 — 낭독하지 않음
 
-- 실제 촬영한 큐 그대로다. 표 왼쪽 발화로 대상과 행동을 먼저 알리고, 행동 문장이 끝나기 약 0.25초 전에 오른쪽 조작을 실행한 뒤 결과가 보이면 다음 발화로 간다.
-- 원 위치는 고정 좌표가 아니다. 테두리 끌기로 원을 만들 때 빈 곳을 찾아 놓고, 10구간에서 흐름이 보이게 정리한다. arrows.app은 그림 전체를 화면에 자동으로 맞춘다.
-- 첫 원만 Add Node로 만들고 나머지는 원 테두리를 빈 곳으로 끌어 원과 화살표를 함께 만든다. 원인 → 고장(CAUSES)과 증상 → 센서(OBSERVED_BY)는 만든 뒤 Reverse로 방향을 뒤집는다.
+- 실제로 찍은 큐 그대로다. 발화로 대상과 까닭을 먼저 말하고, 조작은 그 말 끝(짚기는 그 낱말을 말할 때)에 한다. 결과가 보이면 다음 말로 간다.
+- 원은 처음부터 끝 자리에 놓는다(정리 단계 없음). 새 그림의 빈 원을 첫 원으로 쓰고, 나머지는 원 테두리를 빈 곳으로 끌어 원과 화살표를 함께 만든다. 원인 → 고장(CAUSES), 증상 → 센서(OBSERVED_BY), 고장 → 고장(LEADS_TO), 증상 → 고장(INDICATES), 조치 → 원인(ADDRESSES)은 끌어낸 방향이 반대면 Reverse로 뒤집는다.
+- 색은 판단 앞에서 Ctrl로 함께 골라 한 번에 칠한다: 원인 셋 `#fca5a5`(연한 빨강), 조치 넷 `#86efac`(연한 초록).
 - 입력값 출처: 클래스 · 관계 이름은 `workspace/개발/문서/ontology/schema-v2.md` · `it/neo4j/v2/instances.cypher`, 판별 기준은 랩 `매뉴얼_발췌.md` HM-8.4, 조치 근거는 HM-8.1 · 8.5 · 8.7.
-- 영상: `workspace/강의제작/산출물/영상/통합반/통합반_01회차_08_실습_관계그림.mp4`(로컬 근거, Git 미포함). 구간 · 시간 · 측정은 제작용 [예상시간](예상시간.md).
 ''']
     seg = 0
     for c in cues():
         if c['segment'] != seg:
             seg = c['segment']
-            out.append(f'\n## {seg}구간 · {SEGMENT_TITLE[seg]}\n\n| 발화 | 조작·결과 확인 — 비낭독 |\n|---|---|')
+            out.append(f'\n## {seg}구간 · {SEGMENT_TITLE[seg]}\n\n| 큐 | 발화 | 조작·결과 확인 — 비낭독 |\n|---|---|---|')
         acts = [x for x in (act(o) for o in c['ops']) if x]
-        fix = '' if re.fullmatch(r'o\d{3}', c['id']) else '촬영 중 수습 — 다시 할 때는 없음 · '
-        out.append(f"| {c['text']} | {fix}{' → '.join(acts) if acts else '—'} |")
+        out.append(f"| {c['id']} | {c['text']} | {' → '.join(acts) if acts else '—'} |")
     out.append('\n# 촬영 본문 끝\n\n## 제작 확인용 — 낭독하지 않음\n\n'
-               '- 판별 조건은 HM-8.4 원문 기준이다(핀 오염: CE 30초 평균 < 70 % 이고 VS1 2분 평균 < 0.9 mm/s, 팬 구동 불량: VS1 2분 평균 ≥ 0.9 mm/s, 주변 온도 상승: TS4 2분 평균 ≥ 35 ℃). 캐비닛 환기 보강은 랩 발췌 HM-8.7의 SOP-COOL-15다. 이번 그림은 판별 기준을 담은 지식 구조이며 새 진단 실행 결과가 아니다.\n'
-               '- REFERS_TO는 실제 데이터에서 Skill → Step → ManualSection 두 단계(HAS_STEP · REFERS_TO)다. 교재 지도처럼 한 번에 이었다고 영상에서 말한다.\n'
-               '- 10구간 배치는 사용자가 ego에서 직접 잡은 15개 배치를 비율대로 따랐다(원 크기 70 → 47). 그 배치에 없던 팬 베어링 열화 · 진동 증가는 비어 있는 왼쪽 위에 두었다.\n')
+               '- 판별 조건은 HM-8.4 원문 기준이다(핀 오염: CE 30초 평균 < 70 % 이고 VS1 2분 평균 < 0.9 mm/s, 팬 구동 불량: VS1 2분 평균 ≥ 0.9 mm/s, 주변 온도 상승: TS4 2분 평균 ≥ 35 ℃).\n'
+               '- REFERS_TO는 실제 데이터에서 Skill → Step → ManualSection 두 단계(HAS_STEP · REFERS_TO)다. 교재 지도처럼 한 번에 잇고, 절차 번호는 그 화살표의 속성으로 적는다.\n'
+               '- 원 자리 · 쉼 · 조작은 `workspace/강의제작/제작도구/촬영/arrows/build_ontology.py`(POS · GAP · MAP), 낭독 글은 같은 폴더 `대본원고.md`, 찍는 법은 `촬영준비.md`에 있다.\n')
     return '\n'.join(out) + '\n'
 
 
 def write_all():
-    import hashlib, re, shutil
-    final = json.loads((EVID / 'saved' / '쿨러_지식그래프_최종.json').read_text(encoding='utf-8'))
-    ver = json.loads((VIDEO / 'verification.json').read_text(encoding='utf-8'))
+    import hashlib
+    rec = json.loads((ROOT / '합성기록' / f'{FINAL}.json').read_text(encoding='utf-8'))
     script = manuscript()
     (ROOT / '수업원고.md').write_text(script, encoding='utf-8')
-    spoken = sum(json.loads((EVID / 'audio' / (c['id'] + '.json')).read_text(encoding='utf-8'))['duration_ms'] for c in cues()) / 1000
-    used = [(s['segment'], s['used_ms'] / 1000) for s in ver['segments']]
+    cs = cues()
+    spoken = sum(json.loads((ROOT / '음성' / (c['id'] + '.json')).read_text(encoding='utf-8'))['duration_ms'] for c in cs) / 1000
+    cuts = json.loads((ROOT / f'잘라냄_통합1-08.json').read_text(encoding='utf-8'))   # cut.py로 잘라 낸 멈춘 화면 [시작, 끝]초(합성 영상 기준)
+    cut_s = sum(e - s for s, e in cuts)
+    dur = rec['duration_s'] - cut_s
+    segs = [g for g in rec['segments']]
+    rows = ''.join(f"| {n} · {SEGMENT_TITLE[n]} | {g['segment']} | {g['used_ms'] / 1000:.1f} |\n" for n, g in enumerate(segs, 1))
     timing = f'''# ARROWS 실습 시간 — 실측
 
-대상: 2026-10-23 촬영판 [수업원고](수업원고.md). **실측 영상 길이 {ver['duration_s'] / 60:.1f}분({ver['duration_s']:.0f}초)**, 음성 {ver['speech_cues']}큐(음성만 합하면 {spoken / 60:.1f}분). 설명하면서 조작한 실제 타임라인의 합이며 배속 · 중간 컷이 없다. 원래 배정 30분보다 짧지만 필요한 내용을 자연스럽게 진행한 결과로 그대로 둔다.
+대상: 2026-11-12 판 [수업원고](수업원고.md). **실측 영상 길이 {dur / 60:.1f}분({dur:.1f}초)**, 음성 {len(cs)}큐(음성만 합하면 {spoken / 60:.1f}분). 쉼은 이어지는 말 0.6초 · 큐 사이 1.3초 · 결과 뒤 2.0초 · 구간 사이 2.3초다.
 
-| 촬영 조각 | 사용 길이(초) |
-|---|---|
-''' + ''.join(f'| {n} | {t:.1f} |\n' for n, t in used) + f'''
-측정: 이동 {ver['motion_summary']['count']}회 중 최대 프레임 공백 {ver['motion_summary']['max_gap_ms_max']}ms, 100ms 이상 {len(ver['motion_summary']['over_100ms'])}회(각각 한 번의 짧은 끊김). 문장 끝보다 늦게 실행된 조작 0건.
-영상 안에는 원 끌어내기를 헛잡고 다시 잡는 장면이 그대로 있다. 사용자가 영상을 재생해 확인하고 이 판으로 확정했다(2026-10-23).
+| 구간 | 녹화 조각(take) | 길이(초) |
+|---|---|---|
+''' + rows + f'''
+합성한 뒤 말 없이 화면이 서 있는 곳 {len(cuts)}곳에서 쉼 기준을 넘는 {cut_s:.1f}초를 잘라 냈다(`잘라냄_통합1-08.json`, 구간 길이는 잘라 내기 전 값).
+
+측정: 구간마다 `measure.py`의 0.5초 넘는 이동 공백 0, 튐은 모두 클릭이 만든 변화(오른쪽 칸 접기 · 내보내기 · 불러오기 창 · 지우기), 합성의 최대 프레임 간격 {rec['motion_summary']['max_gap_ms_max']}ms.
 '''
     (ROOT / '예상시간.md').write_text(timing, encoding='utf-8')
     screens = f'''# 화면 — 촬영 완료
 
-2026-10-23 촬영 영상(로컬 근거) `{VIDEO.relative_to(REPO).as_posix()}/` 의 실제 화면이다. 완성 그림은 `완성_쿨러_지식그래프.png`, 편집 데이터는 `완성_쿨러_지식그래프.json`(촬영 중 arrows.app에서 내려받은 참조본).
+1회차 실습 4 영상(`{VIDEO_NAME}`)의 실제 화면이다(클라우드 Playwright, 브라우저 배율 약 110 %, 프레임 1920×1080).
 
 | 구간 | 보여 준 것 | 확인한 결과 |
 |---|---|---|
@@ -336,11 +327,11 @@ def write_all():
         day = REPO / 'workspace/강의제작/산출물' / course / '실습/01회차'
         lab = day / '랩/01일차_실습4_관계그림'
         (day / '대본/08_실습_관계그림.md').write_text(script.replace('(예상시간.md)', '(../../../../../제작도구/촬영/arrows/예상시간.md)'), encoding='utf-8')
-        pack_page(lab)   # 가이드.html은 build_student_guide.py가 쓴다 — 여기서 덮지 않는다. 랩 폴더에는 가이드가 여는 파일만 둔다
+        pack_page(lab)   # 가이드.html은 build_student_guide.py가 쓴다 — 여기서 덮지 않는다
     files = [ROOT / '수업원고.md', ROOT / '예상시간.md', ROOT / '촬영화면.md'] + [REPO / 'workspace/강의제작/산출물' / c / '실습/01회차' / x for c in ['실전반', '통합반'] for x in
              ['대본/08_실습_관계그림.md', '랩/01일차_실습4_관계그림/가이드.html', '랩/01일차_실습4_관계그림.html']]
     (ROOT / '동기화판본.json').write_text(json.dumps({f.relative_to(REPO).as_posix(): hashlib.sha256(f.read_bytes()).hexdigest() for f in files}, ensure_ascii=False, indent=1), encoding='utf-8')
-    print('synced', ver['duration_s'], 's;', len(final['nodes']), 'nodes', len(final['relationships']), 'rels')
+    print('synced', dur, 's;', len(cs), 'cues')
 
 
 if __name__ == '__main__':

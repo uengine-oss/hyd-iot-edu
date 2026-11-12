@@ -31,8 +31,9 @@ def secret_file(env):
 def elevenlabs_key():
     """ElevenLabs 키: 클라우드는 환경변수 ELEVENLABS_API_KEY, 이 PC는 HYD_ELEVENLABS_KEY_FILE이 가리키는 파일(sk_…). 값은 출력하지 않는다."""
     import re
-    if os.environ.get('ELEVENLABS_API_KEY'):
-        return os.environ['ELEVENLABS_API_KEY'].strip()
+    for name in ('ELEVENLABS_API_KEY', 'ElevenLabs_API_KEY'):   # 클라우드 환경 변수 칸에 대소문자가 다른 이름으로 들어온 적이 있다
+        if os.environ.get(name):
+            return os.environ[name].strip()
     m = re.search(r'(sk_[A-Za-z0-9]+)', secret_file('HYD_ELEVENLABS_KEY_FILE').read_text(encoding='utf-8-sig'))
     if not m:
         raise SystemExit('HYD_ELEVENLABS_KEY_FILE이 가리키는 파일에서 ElevenLabs 키(sk_…)를 찾지 못함 (촬영도구/common.py)')
