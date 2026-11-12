@@ -81,7 +81,7 @@ OPS = {
  '513': [['point', K('normal'), at('정상값')]],
  '514': [['point', K('limit'), 0.2]],
  '516': [['point', K('aliases'), 0.2]],
- '518': [['point', H3, at('여기까지')]],
+ '518': [['point', H3, at('상태 변수에 한 번만')]],
  '519': [['point', K('kind'), 0.2]],
  '520': [['point', L('sen:ts1'), at('유온 센서')]],
  '601': [['click', L('sen:ts1'), at('눌러')], kind('센서')],
