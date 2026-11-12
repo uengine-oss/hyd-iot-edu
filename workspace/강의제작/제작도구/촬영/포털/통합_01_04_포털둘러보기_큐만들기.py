@@ -93,7 +93,7 @@ def GROUP(t, top=None):
 
 EXTRA = {
     (3, '밑에 이 그림은'): P('#view-main svg.m-hero-svg', anchor='center'),
-    (4, '이 카드 숫자가'): V('scenario', 'span.v', nth=0, anchor='center', dx=18, dy=6),
+    (4, '이 숫자들이 시간에'): V('scenario', 'span.v', nth=0, anchor='center', dx=18, dy=6),
     (5, '지식 아래 지식 지도'): GROUP('지식'),
     (5, '팬 최대 운전은'): V('skills', 'span.sub', nth=0),
     (5, '쿨러 핀 세척은'): V('skills', 'span.sub', contains='(근본 조치)', nth=0),
