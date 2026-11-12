@@ -1,7 +1,7 @@
 {
- "output": "관계조회-8판-합본_1080p.mp4",
+ "output": "관계조회-9판-합본_1080p.mp4",
  "duration_s": 1963.733,
- "source": "Neo4j Browser 클라우드 Playwright 1920x1080 JPEG95 screencast, overlay pointer, 8판 음성",
+ "source": "1920x1080 JPEG screencast",
  "output_fps": 30,
  "pointer": [
   "overlay"
@@ -292,12 +292,12 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 5631
+   "next_speech_after_action_ms": 7951
   },
   {
    "id": "r0201",
    "speech": [
-    "00:43.002",
+    "00:45.322",
     "00:57.002"
    ],
    "revoiced": "cache",
@@ -307,12 +307,12 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 6141
+   "next_speech_after_action_ms": 7261
   },
   {
    "id": "r0202",
    "speech": [
-    "01:04.885",
+    "01:06.005",
     "01:16.165"
    ],
    "revoiced": "cache",
@@ -471,26 +471,27 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 4965
+   "next_speech_after_action_ms": 5285
   },
   {
    "id": "r0304",
    "speech": [
-    "02:52.296",
+    "02:52.616",
     "02:56.376"
    ],
+   "revoiced": "cache",
    "action": [
     "02:52.296",
     "02:52.980"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 3916
+   "next_speech_after_action_ms": 4236
   },
   {
    "id": "r0305",
    "speech": [
-    "02:56.896",
+    "02:57.216",
     "02:59.776"
    ],
    "revoiced": "cache",
@@ -642,6 +643,7 @@
     "04:28.438",
     "04:31.238"
    ],
+   "revoiced": "cache",
    "action": [
     "04:28.439",
     "04:31.213"
@@ -2570,12 +2572,12 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 7466
+   "next_speech_after_action_ms": 12666
   },
   {
    "id": "r1310",
    "speech": [
-    "23:53.021",
+    "23:58.221",
     "24:15.101"
    ],
    "revoiced": "cache",
@@ -13485,6 +13487,7 @@
   "r0300",
   "r0302",
   "r0303",
+  "r0304",
   "r0305",
   "r0306",
   "r0400",
@@ -13494,6 +13497,7 @@
   "r0404",
   "r0406",
   "r0407",
+  "r0408",
   "r0410",
   "r0411",
   "r0500",
@@ -13649,7 +13653,7 @@
   "직접 청취",
   "사용자 재생 확인"
  ],
- "이름": "관계조회-8판-합본",
+ "이름": "관계조회-9판-합본",
  "도구": "neo4j",
  "crf": 16,
  "fps": 30,
@@ -24727,8 +24731,8 @@
   }
  ],
  "mp4": {
-  "sha256": "8c9b7f5fffd28d1d3122c4a737e7b58ebc87384be7be0f576f0b75352d487c76",
+  "sha256": "c0e308579214325d781f9becb38ae2ff2c960f16717099e9e100daeee3e783fe",
   "video_packets": 58912,
-  "bytes": 53788203
+  "bytes": 53602047
  }
 }

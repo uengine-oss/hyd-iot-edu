@@ -7,1122 +7,6 @@
     "kind": "별도 실습 DB 실제 촬영 프레임, 원본 그대로"
   },
   {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/00-connect.jpg",
-    "kind": "학생 실습 화면",
-    "section": "예제 준비하고 연결하기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 44.0,
-    "raw_frame_sha256": "2a73e36b428e185a25917ba7a7540a8d305de3e64b7cc6d6261edef03a59a3cc",
-    "crop_box": null,
-    "rectangles": [
-      [
-        680,
-        445,
-        1229,
-        530
-      ],
-      [
-        679,
-        599,
-        1229,
-        688
-      ],
-      [
-        679,
-        698,
-        1229,
-        787
-      ],
-      [
-        793,
-        815,
-        1115,
-        887
-      ]
-    ],
-    "pointer": [
-      954,
-      650
-    ],
-    "sha256": "8ac9ac707a7a216241ed838b9b22032fd9706edd44bd622ab843dbfa9d7ab634",
-    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/00-connect.jpg",
-    "earlier_unmarked_sha256": "ffbaf7e36e329956698a47b73264ab7705c12c22e865322145b406e72f19d7f7"
-  },
-  {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/00-connect.jpg",
-    "kind": "학생 실습 화면",
-    "section": "예제 준비하고 연결하기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 44.0,
-    "raw_frame_sha256": "2a73e36b428e185a25917ba7a7540a8d305de3e64b7cc6d6261edef03a59a3cc",
-    "crop_box": null,
-    "rectangles": [
-      [
-        680,
-        445,
-        1229,
-        530
-      ],
-      [
-        679,
-        599,
-        1229,
-        688
-      ],
-      [
-        679,
-        698,
-        1229,
-        787
-      ],
-      [
-        793,
-        815,
-        1115,
-        887
-      ]
-    ],
-    "pointer": [
-      954,
-      650
-    ],
-    "sha256": "8ac9ac707a7a216241ed838b9b22032fd9706edd44bd622ab843dbfa9d7ab634",
-    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/00-connect.jpg",
-    "earlier_unmarked_sha256": "ffbaf7e36e329956698a47b73264ab7705c12c22e865322145b406e72f19d7f7"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/00-connected.jpg",
-    "kind": "학생 실습 화면",
-    "section": "예제 준비하고 연결하기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 52.0,
-    "raw_frame_sha256": "aad31e341346f238707ce07110857ad5eb1c8c3d59bda2248a9ba2a0c9c7ee72",
-    "crop_box": null,
-    "rectangles": [
-      [
-        18,
-        819,
-        296,
-        856
-      ]
-    ],
-    "pointer": [
-      953,
-      852
-    ],
-    "sha256": "0dd81865165fa663cbe309fed4567579e5499c5a2df9cf4d1e5957de143ff5bb"
-  },
-  {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/00-connected.jpg",
-    "kind": "학생 실습 화면",
-    "section": "예제 준비하고 연결하기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 52.0,
-    "raw_frame_sha256": "aad31e341346f238707ce07110857ad5eb1c8c3d59bda2248a9ba2a0c9c7ee72",
-    "crop_box": null,
-    "rectangles": [
-      [
-        18,
-        819,
-        296,
-        856
-      ]
-    ],
-    "pointer": [
-      953,
-      852
-    ],
-    "sha256": "0dd81865165fa663cbe309fed4567579e5499c5a2df9cf4d1e5957de143ff5bb"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/common-no-return.jpg",
-    "kind": "학생 실습 화면",
-    "section": "노드 만들고 RETURN으로 그래프 보기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 179.5,
-    "raw_frame_sha256": "75a2f67fdd0c51f42c79ce3d72d2f5267626041d82ece36fadee371a475ce003",
-    "crop_box": null,
-    "rectangles": [
-      [
-        512,
-        92,
-        1810,
-        134
-      ],
-      [
-        1847,
-        85,
-        1921,
-        141
-      ],
-      [
-        528,
-        212,
-        910,
-        249
-      ]
-    ],
-    "pointer": [
-      750,
-      365
-    ],
-    "sha256": "d833528a344a847ad63fd51c39f52a46bfa7fccbe4b69be6ce659429ebaee62f",
-    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-no-return.jpg",
-    "earlier_unmarked_sha256": "83a72e39cb54ffef39a1dc45b3d1dafd20cc408697305efd9885950aa9fd0c48"
-  },
-  {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/common-no-return.jpg",
-    "kind": "학생 실습 화면",
-    "section": "노드 만들고 RETURN으로 그래프 보기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 179.5,
-    "raw_frame_sha256": "75a2f67fdd0c51f42c79ce3d72d2f5267626041d82ece36fadee371a475ce003",
-    "crop_box": null,
-    "rectangles": [
-      [
-        512,
-        92,
-        1810,
-        134
-      ],
-      [
-        1847,
-        85,
-        1921,
-        141
-      ],
-      [
-        528,
-        212,
-        910,
-        249
-      ]
-    ],
-    "pointer": [
-      750,
-      365
-    ],
-    "sha256": "d833528a344a847ad63fd51c39f52a46bfa7fccbe4b69be6ce659429ebaee62f",
-    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-no-return.jpg",
-    "earlier_unmarked_sha256": "83a72e39cb54ffef39a1dc45b3d1dafd20cc408697305efd9885950aa9fd0c48"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/common-created.jpg",
-    "kind": "학생 실습 화면",
-    "section": "노드 만들고 RETURN으로 그래프 보기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 218.5,
-    "raw_frame_sha256": "765f6f4e1b8b1823877b12ebf45425b8c06f8a8fe8b7c925171350b64684a144",
-    "crop_box": null,
-    "rectangles": [
-      [
-        680,
-        497,
-        1228,
-        655
-      ],
-      [
-        1404,
-        328,
-        1592,
-        407
-      ]
-    ],
-    "pointer": [
-      1062,
-      415
-    ],
-    "sha256": "0f43da0ad364fab1bec080cfc432783307b0445593e77479c242127b1b133f40",
-    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-created.jpg",
-    "earlier_unmarked_sha256": "a61a64b2fb6beb8964b03f1c306deaeb3241bd8098365a953bfbd91cac79bc52"
-  },
-  {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/common-created.jpg",
-    "kind": "학생 실습 화면",
-    "section": "노드 만들고 RETURN으로 그래프 보기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 218.5,
-    "raw_frame_sha256": "765f6f4e1b8b1823877b12ebf45425b8c06f8a8fe8b7c925171350b64684a144",
-    "crop_box": null,
-    "rectangles": [
-      [
-        680,
-        497,
-        1228,
-        655
-      ],
-      [
-        1404,
-        328,
-        1592,
-        407
-      ]
-    ],
-    "pointer": [
-      1062,
-      415
-    ],
-    "sha256": "0f43da0ad364fab1bec080cfc432783307b0445593e77479c242127b1b133f40",
-    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-created.jpg",
-    "earlier_unmarked_sha256": "a61a64b2fb6beb8964b03f1c306deaeb3241bd8098365a953bfbd91cac79bc52"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/common-properties.jpg",
-    "kind": "학생 실습 화면",
-    "section": "노드 만들고 RETURN으로 그래프 보기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 256.5,
-    "raw_frame_sha256": "712aeabe95d01c448d83489d55a90aa109e3a187d53653600bef6972d0b31220",
-    "crop_box": null,
-    "rectangles": [
-      [
-        3,
-        43,
-        42,
-        83
-      ],
-      [
-        1286,
-        838,
-        1327,
-        880
-      ],
-      [
-        594,
-        453,
-        814,
-        673
-      ],
-      [
-        1408,
-        330,
-        1862,
-        618
-      ]
-    ],
-    "pointer": [
-      1567,
-      460
-    ],
-    "sha256": "d22dc82124d88bcf315518d8471a591a4d94c657a12dfcd89f908b0bb7f1e16b",
-    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-properties.jpg",
-    "earlier_unmarked_sha256": "594dc2ea4d1ee00f13d5cb94819d1798baf042cb09170b26c5c9561cf90d81ac"
-  },
-  {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/common-properties.jpg",
-    "kind": "학생 실습 화면",
-    "section": "노드 만들고 RETURN으로 그래프 보기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 256.5,
-    "raw_frame_sha256": "712aeabe95d01c448d83489d55a90aa109e3a187d53653600bef6972d0b31220",
-    "crop_box": null,
-    "rectangles": [
-      [
-        3,
-        43,
-        42,
-        83
-      ],
-      [
-        1286,
-        838,
-        1327,
-        880
-      ],
-      [
-        594,
-        453,
-        814,
-        673
-      ],
-      [
-        1408,
-        330,
-        1862,
-        618
-      ]
-    ],
-    "pointer": [
-      1567,
-      460
-    ],
-    "sha256": "d22dc82124d88bcf315518d8471a591a4d94c657a12dfcd89f908b0bb7f1e16b",
-    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-properties.jpg",
-    "earlier_unmarked_sha256": "594dc2ea4d1ee00f13d5cb94819d1798baf042cb09170b26c5c9561cf90d81ac"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/common-table.jpg",
-    "kind": "학생 실습 화면",
-    "section": "같은 노드를 그래프와 표로 조회하기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 328.5,
-    "raw_frame_sha256": "d2236910c7266d7ea35c6bcdf30947c2199847b72c18a48df864bd039c29b325",
-    "crop_box": null,
-    "rectangles": [
-      [
-        13,
-        273,
-        1022,
-        412
-      ]
-    ],
-    "pointer": [
-      487,
-      340
-    ],
-    "sha256": "7fd9aa5c7d0e3a424cde6b1eb70c58ad324157ee14819f5ac289e027d27a5807",
-    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-table.jpg",
-    "earlier_unmarked_sha256": "e90c25e3e43473c857fed911544abb7f1239411824629b67341471056622f3cb"
-  },
-  {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/common-table.jpg",
-    "kind": "학생 실습 화면",
-    "section": "같은 노드를 그래프와 표로 조회하기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 328.5,
-    "raw_frame_sha256": "d2236910c7266d7ea35c6bcdf30947c2199847b72c18a48df864bd039c29b325",
-    "crop_box": null,
-    "rectangles": [
-      [
-        13,
-        273,
-        1022,
-        412
-      ]
-    ],
-    "pointer": [
-      487,
-      340
-    ],
-    "sha256": "7fd9aa5c7d0e3a424cde6b1eb70c58ad324157ee14819f5ac289e027d27a5807",
-    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-table.jpg",
-    "earlier_unmarked_sha256": "e90c25e3e43473c857fed911544abb7f1239411824629b67341471056622f3cb"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/common-filtered.jpg",
-    "kind": "학생 실습 화면",
-    "section": "조건을 바꾸고 그래프 비교하기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 362.0,
-    "raw_frame_sha256": "34bdb786e34f886f95da1f271ae5d6934b22fab6af5b204baf3173db6b918237",
-    "crop_box": null,
-    "rectangles": [
-      [
-        607,
-        479,
-        801,
-        672
-      ],
-      [
-        1404,
-        329,
-        1580,
-        407
-      ]
-    ],
-    "pointer": [
-      1062,
-      415
-    ],
-    "sha256": "857126537c4f9afc92a1a0a008967e22e246940675e922d37bb510ac87688346",
-    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-filtered.jpg",
-    "earlier_unmarked_sha256": "add4a01e3cf5f7418706a5e61f5482474f4e9dca946de542df6138d187d880bb"
-  },
-  {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/common-filtered.jpg",
-    "kind": "학생 실습 화면",
-    "section": "조건을 바꾸고 그래프 비교하기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 362.0,
-    "raw_frame_sha256": "34bdb786e34f886f95da1f271ae5d6934b22fab6af5b204baf3173db6b918237",
-    "crop_box": null,
-    "rectangles": [
-      [
-        607,
-        479,
-        801,
-        672
-      ],
-      [
-        1404,
-        329,
-        1580,
-        407
-      ]
-    ],
-    "pointer": [
-      1062,
-      415
-    ],
-    "sha256": "857126537c4f9afc92a1a0a008967e22e246940675e922d37bb510ac87688346",
-    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-filtered.jpg",
-    "earlier_unmarked_sha256": "add4a01e3cf5f7418706a5e61f5482474f4e9dca946de542df6138d187d880bb"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/common-conditions.jpg",
-    "kind": "학생 실습 화면",
-    "section": "조건을 바꾸고 그래프 비교하기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 455.5,
-    "raw_frame_sha256": "3c3f73b5c5f83c7cdca2f80a4a697fa4289e262308b5ad7121f668eee39d48ad",
-    "crop_box": null,
-    "rectangles": [
-      [
-        24,
-        161,
-        1016,
-        199
-      ],
-      [
-        356,
-        478,
-        1052,
-        673
-      ]
-    ],
-    "pointer": [
-      1062,
-      415
-    ],
-    "sha256": "3c1b6bf2c11481341dd19f829cf5a2bd5157ebdf61ea5144eb2b882f00673a49",
-    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-conditions.jpg",
-    "earlier_unmarked_sha256": "6e73928e40f1379f28dfeb31e0f9b26724352a3a0e3f20f1a7ddd8ca002a0703"
-  },
-  {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/common-conditions.jpg",
-    "kind": "학생 실습 화면",
-    "section": "조건을 바꾸고 그래프 비교하기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 455.5,
-    "raw_frame_sha256": "3c3f73b5c5f83c7cdca2f80a4a697fa4289e262308b5ad7121f668eee39d48ad",
-    "crop_box": null,
-    "rectangles": [
-      [
-        24,
-        161,
-        1016,
-        199
-      ],
-      [
-        356,
-        478,
-        1052,
-        673
-      ]
-    ],
-    "pointer": [
-      1062,
-      415
-    ],
-    "sha256": "3c1b6bf2c11481341dd19f829cf5a2bd5157ebdf61ea5144eb2b882f00673a49",
-    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-conditions.jpg",
-    "earlier_unmarked_sha256": "6e73928e40f1379f28dfeb31e0f9b26724352a3a0e3f20f1a7ddd8ca002a0703"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/common-linked.jpg",
-    "kind": "학생 실습 화면",
-    "section": "센서를 만들고 관계 연결하기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 569.5,
-    "raw_frame_sha256": "4842523b79d1269e97508763d6aa9956a95b9c277331ded7fb206ba1cdc2a882",
-    "crop_box": null,
-    "rectangles": [
-      [
-        685,
-        488,
-        730,
-        668
-      ],
-      [
-        26,
-        889,
-        662,
-        959
-      ]
-    ],
-    "pointer": [
-      1062,
-      415
-    ],
-    "sha256": "4bea4b46a6481db6713a1ef93fd317f28e8b85062ec6602dc5da65f5033e2bf4",
-    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-linked.jpg",
-    "earlier_unmarked_sha256": "407cc2fbec58b8fafc555c9928e00812aa5c74cddff664dcbc302874e7d7cc9f"
-  },
-  {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/common-linked.jpg",
-    "kind": "학생 실습 화면",
-    "section": "센서를 만들고 관계 연결하기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 569.5,
-    "raw_frame_sha256": "4842523b79d1269e97508763d6aa9956a95b9c277331ded7fb206ba1cdc2a882",
-    "crop_box": null,
-    "rectangles": [
-      [
-        685,
-        488,
-        730,
-        668
-      ],
-      [
-        26,
-        889,
-        662,
-        959
-      ]
-    ],
-    "pointer": [
-      1062,
-      415
-    ],
-    "sha256": "4bea4b46a6481db6713a1ef93fd317f28e8b85062ec6602dc5da65f5033e2bf4",
-    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-linked.jpg",
-    "earlier_unmarked_sha256": "407cc2fbec58b8fafc555c9928e00812aa5c74cddff664dcbc302874e7d7cc9f"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/common-relationship.jpg",
-    "kind": "학생 실습 화면",
-    "section": "센서를 만들고 관계 연결하기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 598.0,
-    "raw_frame_sha256": "07a9a7fa37c0f1c6947c4c7b86b45bbc81e230015eda1ca271a12f7ae86a840b",
-    "crop_box": null,
-    "rectangles": [
-      [
-        686,
-        488,
-        738,
-        668
-      ],
-      [
-        1404,
-        283,
-        1600,
-        367
-      ]
-    ],
-    "pointer": [
-      1567,
-      460
-    ],
-    "sha256": "f6d9f3c3e9b69be8310efc6cf274c827f7cfb4c334a39cb97b964aecbd83b0d4"
-  },
-  {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/common-relationship.jpg",
-    "kind": "학생 실습 화면",
-    "section": "센서를 만들고 관계 연결하기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 598.0,
-    "raw_frame_sha256": "07a9a7fa37c0f1c6947c4c7b86b45bbc81e230015eda1ca271a12f7ae86a840b",
-    "crop_box": null,
-    "rectangles": [
-      [
-        686,
-        488,
-        738,
-        668
-      ],
-      [
-        1404,
-        283,
-        1600,
-        367
-      ]
-    ],
-    "pointer": [
-      1567,
-      460
-    ],
-    "sha256": "f6d9f3c3e9b69be8310efc6cf274c827f7cfb4c334a39cb97b964aecbd83b0d4"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/common-updated.jpg",
-    "kind": "학생 실습 화면",
-    "section": "속성을 수정하고 연결 확인하기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 657.5,
-    "raw_frame_sha256": "d35f1a07325f3d684798b59809002e38f6844a2fa147fbdf535e3f151bbbfb6c",
-    "crop_box": null,
-    "rectangles": [
-      [
-        594,
-        465,
-        814,
-        687
-      ],
-      [
-        1412,
-        530,
-        1862,
-        618
-      ]
-    ],
-    "pointer": [
-      1567,
-      460
-    ],
-    "sha256": "18c524d8899fe0d94530c85427156f90918cdc98ed33943daaa1abf10ed20ffd",
-    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-updated.jpg",
-    "earlier_unmarked_sha256": "7fab2464471600be82892aa2b384e0d381c6ae8515d8610e384fea1e8145b57b"
-  },
-  {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/common-updated.jpg",
-    "kind": "학생 실습 화면",
-    "section": "속성을 수정하고 연결 확인하기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 657.5,
-    "raw_frame_sha256": "d35f1a07325f3d684798b59809002e38f6844a2fa147fbdf535e3f151bbbfb6c",
-    "crop_box": null,
-    "rectangles": [
-      [
-        594,
-        465,
-        814,
-        687
-      ],
-      [
-        1412,
-        530,
-        1862,
-        618
-      ]
-    ],
-    "pointer": [
-      1567,
-      460
-    ],
-    "sha256": "18c524d8899fe0d94530c85427156f90918cdc98ed33943daaa1abf10ed20ffd",
-    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-updated.jpg",
-    "earlier_unmarked_sha256": "7fab2464471600be82892aa2b384e0d381c6ae8515d8610e384fea1e8145b57b"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/common-unlinked.jpg",
-    "kind": "학생 실습 화면",
-    "section": "관계만 삭제하고 노드는 남기기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 723.5,
-    "raw_frame_sha256": "02aa05cc10223864cb0537b6de221159181f5dcba846bffde8ea89e29aa36d0d",
-    "crop_box": null,
-    "rectangles": [
-      [
-        356,
-        478,
-        1052,
-        673
-      ],
-      [
-        28,
-        889,
-        221,
-        925
-      ]
-    ],
-    "pointer": [
-      1062,
-      415
-    ],
-    "sha256": "e0060a29c84c07ec2b4f4a62b21eb753125c4699aae4d8bbc7d8997ed56e2260",
-    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-unlinked.jpg",
-    "earlier_unmarked_sha256": "4aa04abe6b3d354fed59f6bb61b867f77b05924318c71a0b7ef0d3c1680e1b98"
-  },
-  {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/common-unlinked.jpg",
-    "kind": "학생 실습 화면",
-    "section": "관계만 삭제하고 노드는 남기기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 723.5,
-    "raw_frame_sha256": "02aa05cc10223864cb0537b6de221159181f5dcba846bffde8ea89e29aa36d0d",
-    "crop_box": null,
-    "rectangles": [
-      [
-        356,
-        478,
-        1052,
-        673
-      ],
-      [
-        28,
-        889,
-        221,
-        925
-      ]
-    ],
-    "pointer": [
-      1062,
-      415
-    ],
-    "sha256": "e0060a29c84c07ec2b4f4a62b21eb753125c4699aae4d8bbc7d8997ed56e2260",
-    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-unlinked.jpg",
-    "earlier_unmarked_sha256": "4aa04abe6b3d354fed59f6bb61b867f77b05924318c71a0b7ef0d3c1680e1b98"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/common-remaining.jpg",
-    "kind": "학생 실습 화면",
-    "section": "노드 삭제와 정리 확인하기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 803.5,
-    "raw_frame_sha256": "22e690eb026de0d3c48af312a557224d86f137b00dc6c6dc8eb259b84cf74a70",
-    "crop_box": null,
-    "rectangles": [
-      [
-        356,
-        478,
-        1052,
-        673
-      ]
-    ],
-    "pointer": [
-      1062,
-      415
-    ],
-    "sha256": "d04cd8559d2e0c57e9e03e84833089d89e12230bfd6f82ae79cae299671dfae8",
-    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-remaining.jpg",
-    "earlier_unmarked_sha256": "5a6ada1b81a4c7b56a6a28db313eac6778d0e9555abc57529f7134d06239da7c"
-  },
-  {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/common-remaining.jpg",
-    "kind": "학생 실습 화면",
-    "section": "노드 삭제와 정리 확인하기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 803.5,
-    "raw_frame_sha256": "22e690eb026de0d3c48af312a557224d86f137b00dc6c6dc8eb259b84cf74a70",
-    "crop_box": null,
-    "rectangles": [
-      [
-        356,
-        478,
-        1052,
-        673
-      ]
-    ],
-    "pointer": [
-      1062,
-      415
-    ],
-    "sha256": "d04cd8559d2e0c57e9e03e84833089d89e12230bfd6f82ae79cae299671dfae8",
-    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-remaining.jpg",
-    "earlier_unmarked_sha256": "5a6ada1b81a4c7b56a6a28db313eac6778d0e9555abc57529f7134d06239da7c"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/common-clean.jpg",
-    "kind": "학생 실습 화면",
-    "section": "노드 삭제와 정리 확인하기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 860.5,
-    "raw_frame_sha256": "b74527a32d2515b0b74fc6fd9acf09a8bb99948ac8fae7a0e5a241af9fa2d4f2",
-    "crop_box": null,
-    "rectangles": [
-      [
-        24,
-        272,
-        270,
-        362
-      ]
-    ],
-    "pointer": [
-      948,
-      340
-    ],
-    "sha256": "d7ccefe3c28cafc7be7db62474b6683ff7206d08abd7fc329e0ee38abff57f9d",
-    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-clean.jpg",
-    "earlier_unmarked_sha256": "f494d2349cfe3cb7935e81d64e876c89ddaaa5d0b0ee0842ba8d56f59c5d33e7"
-  },
-  {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/common-clean.jpg",
-    "kind": "학생 실습 화면",
-    "section": "노드 삭제와 정리 확인하기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 860.5,
-    "raw_frame_sha256": "b74527a32d2515b0b74fc6fd9acf09a8bb99948ac8fae7a0e5a241af9fa2d4f2",
-    "crop_box": null,
-    "rectangles": [
-      [
-        24,
-        272,
-        270,
-        362
-      ]
-    ],
-    "pointer": [
-      948,
-      340
-    ],
-    "sha256": "d7ccefe3c28cafc7be7db62474b6683ff7206d08abd7fc329e0ee38abff57f9d",
-    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-clean.jpg",
-    "earlier_unmarked_sha256": "f494d2349cfe3cb7935e81d64e876c89ddaaa5d0b0ee0842ba8d56f59c5d33e7"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-layout.jpg",
-    "kind": "학생 실습 화면",
-    "section": "전체 설비 지도 읽기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 922.8,
-    "raw_frame_sha256": "3a9f2e4b5ee0e5d5a2eda13198def65c8c6797341a045c072ec2acb2cace34e0",
-    "crop_box": null,
-    "rectangles": [
-      [
-        1572,
-        785,
-        1876,
-        830
-      ],
-      [
-        1830,
-        840,
-        1882,
-        878
-      ]
-    ],
-    "pointer": [
-      1760,
-      812
-    ],
-    "sha256": "1aeac6e89573115cf16ce4b76f8a310492c30edb11900f41ea14c261dcabcc5c"
-  },
-  {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-layout.jpg",
-    "kind": "학생 실습 화면",
-    "section": "전체 설비 지도 읽기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 922.8,
-    "raw_frame_sha256": "3a9f2e4b5ee0e5d5a2eda13198def65c8c6797341a045c072ec2acb2cace34e0",
-    "crop_box": null,
-    "rectangles": [
-      [
-        1572,
-        785,
-        1876,
-        830
-      ],
-      [
-        1830,
-        840,
-        1882,
-        878
-      ]
-    ],
-    "pointer": [
-      1760,
-      812
-    ],
-    "sha256": "1aeac6e89573115cf16ce4b76f8a310492c30edb11900f41ea14c261dcabcc5c"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-whole.jpg",
-    "kind": "학생 실습 화면",
-    "section": "전체 설비 지도 읽기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 946.5,
-    "raw_frame_sha256": "2194e17e5b63e625c5aafadd3725a4a590016c6745a8f175d15c95471e482f82",
-    "crop_box": null,
-    "rectangles": [
-      [
-        1786,
-        838,
-        1827,
-        880
-      ],
-      [
-        586,
-        316,
-        644,
-        374
-      ]
-    ],
-    "pointer": [
-      1585,
-      645
-    ],
-    "sha256": "3a0e8e2f614055633046b0aeaea4fcb85a45c7d7cb9b5e126d9f0344f9ca3eab",
-    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-whole.jpg",
-    "earlier_unmarked_sha256": "a4f564c75636554882a2bfbdff4add04a4d6c469da446cebfc11dc83730817fb"
-  },
-  {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-whole.jpg",
-    "kind": "학생 실습 화면",
-    "section": "전체 설비 지도 읽기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 946.5,
-    "raw_frame_sha256": "2194e17e5b63e625c5aafadd3725a4a590016c6745a8f175d15c95471e482f82",
-    "crop_box": null,
-    "rectangles": [
-      [
-        1786,
-        838,
-        1827,
-        880
-      ],
-      [
-        586,
-        316,
-        644,
-        374
-      ]
-    ],
-    "pointer": [
-      1585,
-      645
-    ],
-    "sha256": "3a0e8e2f614055633046b0aeaea4fcb85a45c7d7cb9b5e126d9f0344f9ca3eab",
-    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-whole.jpg",
-    "earlier_unmarked_sha256": "a4f564c75636554882a2bfbdff4add04a4d6c469da446cebfc11dc83730817fb"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-cooler.jpg",
-    "kind": "학생 실습 화면",
-    "section": "전체 설비 지도 읽기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 1014.5,
-    "raw_frame_sha256": "39618f359e761323daaa6596e65f1511b3d3d52b054fc0d5bdd64e3d9970ec6e",
-    "crop_box": null,
-    "rectangles": [
-      [
-        644,
-        502,
-        768,
-        626
-      ],
-      [
-        1408,
-        330,
-        1862,
-        575
-      ]
-    ],
-    "pointer": [
-      1567,
-      460
-    ],
-    "sha256": "d40292ebc248bf69bc9e7e90031621aa56b47e52414fb5ae265f93963bbcbf17",
-    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-cooler.jpg",
-    "earlier_unmarked_sha256": "2dcee4ef7ee57e28bccf0c6d2b41fad6f3ee1581fbee7d42bd4a17414d9c66d2"
-  },
-  {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-cooler.jpg",
-    "kind": "학생 실습 화면",
-    "section": "전체 설비 지도 읽기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 1014.5,
-    "raw_frame_sha256": "39618f359e761323daaa6596e65f1511b3d3d52b054fc0d5bdd64e3d9970ec6e",
-    "crop_box": null,
-    "rectangles": [
-      [
-        644,
-        502,
-        768,
-        626
-      ],
-      [
-        1408,
-        330,
-        1862,
-        575
-      ]
-    ],
-    "pointer": [
-      1567,
-      460
-    ],
-    "sha256": "d40292ebc248bf69bc9e7e90031621aa56b47e52414fb5ae265f93963bbcbf17",
-    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-cooler.jpg",
-    "earlier_unmarked_sha256": "2dcee4ef7ee57e28bccf0c6d2b41fad6f3ee1581fbee7d42bd4a17414d9c66d2"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-sensor.jpg",
-    "kind": "학생 실습 화면",
-    "section": "센서와 관계를 클릭해서 읽기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 1167.5,
-    "raw_frame_sha256": "12f36fdd2ad5a43de737af81d11f894ae754209ba96980dd37e50ff2bdae19cf",
-    "crop_box": null,
-    "rectangles": [
-      [
-        632,
-        491,
-        778,
-        637
-      ],
-      [
-        1412,
-        578,
-        1862,
-        712
-      ]
-    ],
-    "pointer": [
-      1567,
-      460
-    ],
-    "sha256": "3fe41c79f052a4a9df3de6c4b4a295ca9c74e0b21113fb030d9c807717edd75b",
-    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-sensor.jpg",
-    "earlier_unmarked_sha256": "6aa4458087a66b638216af11d096836d68a18a84e432a83e211b5bbde7ce1aa3"
-  },
-  {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-sensor.jpg",
-    "kind": "학생 실습 화면",
-    "section": "센서와 관계를 클릭해서 읽기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 1167.5,
-    "raw_frame_sha256": "12f36fdd2ad5a43de737af81d11f894ae754209ba96980dd37e50ff2bdae19cf",
-    "crop_box": null,
-    "rectangles": [
-      [
-        632,
-        491,
-        778,
-        637
-      ],
-      [
-        1412,
-        578,
-        1862,
-        712
-      ]
-    ],
-    "pointer": [
-      1567,
-      460
-    ],
-    "sha256": "3fe41c79f052a4a9df3de6c4b4a295ca9c74e0b21113fb030d9c807717edd75b",
-    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-sensor.jpg",
-    "earlier_unmarked_sha256": "6aa4458087a66b638216af11d096836d68a18a84e432a83e211b5bbde7ce1aa3"
-  },
-  {
     "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-relationship.jpg",
     "kind": "학생 실습 화면",
     "section": "센서와 관계를 클릭해서 읽기",
@@ -1183,528 +67,6 @@
     "sha256": "5e5ced45d9b0e1d830ba4c812ebd162f579213b1373ad276dfe5c7e1c2b64338",
     "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-relationship.jpg",
     "earlier_unmarked_sha256": "a08711d2c11fe6e1c95abe8a1ada80ea4701117f4cc9202ca004a6d6d258d588"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-quantity.jpg",
-    "kind": "학생 실습 화면",
-    "section": "센서에서 물리량까지 따라가기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 1322.0,
-    "raw_frame_sha256": "ee84b2ef1f4ef1e981a8a3c735a0d809c305d4aebebc83ca06dbd5f90d9eb17e",
-    "crop_box": null,
-    "rectangles": [
-      [
-        643,
-        503,
-        768,
-        628
-      ],
-      [
-        1410,
-        330,
-        1550,
-        366
-      ],
-      [
-        1412,
-        578,
-        1862,
-        754
-      ]
-    ],
-    "pointer": [
-      1567,
-      460
-    ],
-    "sha256": "dcbdbfe5c2f096dc9fcf0ab8c69ca42ed37770a2aed8447a47b7c032bf500966",
-    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-quantity.jpg",
-    "earlier_unmarked_sha256": "f31e8e6c80bf50f6a41621df33eaf66fdedb4e67b9448622cf14684dfcb221dd"
-  },
-  {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-quantity.jpg",
-    "kind": "학생 실습 화면",
-    "section": "센서에서 물리량까지 따라가기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 1322.0,
-    "raw_frame_sha256": "ee84b2ef1f4ef1e981a8a3c735a0d809c305d4aebebc83ca06dbd5f90d9eb17e",
-    "crop_box": null,
-    "rectangles": [
-      [
-        643,
-        503,
-        768,
-        628
-      ],
-      [
-        1410,
-        330,
-        1550,
-        366
-      ],
-      [
-        1412,
-        578,
-        1862,
-        754
-      ]
-    ],
-    "pointer": [
-      1567,
-      460
-    ],
-    "sha256": "dcbdbfe5c2f096dc9fcf0ab8c69ca42ed37770a2aed8447a47b7c032bf500966",
-    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-quantity.jpg",
-    "earlier_unmarked_sha256": "f31e8e6c80bf50f6a41621df33eaf66fdedb4e67b9448622cf14684dfcb221dd"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-filtered.jpg",
-    "kind": "학생 실습 화면",
-    "section": "질문에 맞춰 조건과 반환값 바꾸기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 1362.5,
-    "raw_frame_sha256": "12fbd84738c7f7c488f3591a66f953138329705bc2de95c138af6b1003de1ded",
-    "crop_box": null,
-    "rectangles": [
-      [
-        672,
-        320,
-        738,
-        842
-      ],
-      [
-        1404,
-        329,
-        1830,
-        559
-      ]
-    ],
-    "pointer": [
-      705,
-      800
-    ],
-    "sha256": "22410bbc36dbe137dcce1000be343d302e97e0800d856518bf0ba7aa95c43f7c",
-    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-filtered.jpg",
-    "earlier_unmarked_sha256": "e20ac098db380adf753d9b4708e5177c95a5ba24d0039283731a242447591d5c"
-  },
-  {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-filtered.jpg",
-    "kind": "학생 실습 화면",
-    "section": "질문에 맞춰 조건과 반환값 바꾸기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 1362.5,
-    "raw_frame_sha256": "12fbd84738c7f7c488f3591a66f953138329705bc2de95c138af6b1003de1ded",
-    "crop_box": null,
-    "rectangles": [
-      [
-        672,
-        320,
-        738,
-        842
-      ],
-      [
-        1404,
-        329,
-        1830,
-        559
-      ]
-    ],
-    "pointer": [
-      705,
-      800
-    ],
-    "sha256": "22410bbc36dbe137dcce1000be343d302e97e0800d856518bf0ba7aa95c43f7c",
-    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-filtered.jpg",
-    "earlier_unmarked_sha256": "e20ac098db380adf753d9b4708e5177c95a5ba24d0039283731a242447591d5c"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-part.jpg",
-    "kind": "학생 실습 화면",
-    "section": "교체 부품 가지 탐색하기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 1519.5,
-    "raw_frame_sha256": "d672c9c96b45a9762a8d865f700d6005fa1caee2a4ff91ac67fc27bbe7a894bd",
-    "crop_box": null,
-    "rectangles": [
-      [
-        638,
-        498,
-        772,
-        630
-      ],
-      [
-        1412,
-        578,
-        1862,
-        618
-      ]
-    ],
-    "pointer": [
-      1567,
-      460
-    ],
-    "sha256": "0d49aebf2e7f223a504d6b113a89951f9c28aee5e4d4b431562d6b6fae7dbc93",
-    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-part.jpg",
-    "earlier_unmarked_sha256": "ad3aa6c6576a1279c1e0797dcf4651c3927fdc9bd062775d5710c12b7dedc4fa"
-  },
-  {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-part.jpg",
-    "kind": "학생 실습 화면",
-    "section": "교체 부품 가지 탐색하기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 1519.5,
-    "raw_frame_sha256": "d672c9c96b45a9762a8d865f700d6005fa1caee2a4ff91ac67fc27bbe7a894bd",
-    "crop_box": null,
-    "rectangles": [
-      [
-        638,
-        498,
-        772,
-        630
-      ],
-      [
-        1412,
-        578,
-        1862,
-        618
-      ]
-    ],
-    "pointer": [
-      1567,
-      460
-    ],
-    "sha256": "0d49aebf2e7f223a504d6b113a89951f9c28aee5e4d4b431562d6b6fae7dbc93",
-    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-part.jpg",
-    "earlier_unmarked_sha256": "ad3aa6c6576a1279c1e0797dcf4651c3927fdc9bd062775d5710c12b7dedc4fa"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-count.jpg",
-    "kind": "학생 실습 화면",
-    "section": "그림에서 센 수와 집계 비교하기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 1599.0,
-    "raw_frame_sha256": "898bd430db217aa197887038380d9cb16de94067455986b202833862b94cbf0b",
-    "crop_box": [
-      0,
-      0,
-      1920,
-      650
-    ],
-    "rectangles": [
-      [
-        956,
-        271,
-        1520,
-        460
-      ]
-    ],
-    "pointer": [
-      262,
-      345
-    ],
-    "sha256": "2d9fb780b65b4c838eb0b5049e87b068ee419f1bc8392d83e72de92b7b417d07",
-    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-count.jpg",
-    "earlier_unmarked_sha256": "d2ecef30a15326efd9de1e6cecd3faa63696dd75ead8fdc2e36a417b493d59ef"
-  },
-  {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-count.jpg",
-    "kind": "학생 실습 화면",
-    "section": "그림에서 센 수와 집계 비교하기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 1599.0,
-    "raw_frame_sha256": "898bd430db217aa197887038380d9cb16de94067455986b202833862b94cbf0b",
-    "crop_box": [
-      0,
-      0,
-      1920,
-      650
-    ],
-    "rectangles": [
-      [
-        956,
-        271,
-        1520,
-        460
-      ]
-    ],
-    "pointer": [
-      262,
-      345
-    ],
-    "sha256": "2d9fb780b65b4c838eb0b5049e87b068ee419f1bc8392d83e72de92b7b417d07",
-    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-count.jpg",
-    "earlier_unmarked_sha256": "d2ecef30a15326efd9de1e6cecd3faa63696dd75ead8fdc2e36a417b493d59ef"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-png.jpg",
-    "kind": "학생 실습 화면",
-    "section": "전체 지도에서 정리하고 저장하기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 1687.0,
-    "raw_frame_sha256": "9f7b4b41ff7076a55915bee89051ac1a1fd97a5c1149d0596765cde0387c0a35",
-    "crop_box": null,
-    "rectangles": [
-      [
-        1838,
-        218,
-        1890,
-        264
-      ]
-    ],
-    "pointer": [
-      1862,
-      240
-    ],
-    "sha256": "dd0be9436511d967a13ad40eef6aed6e9000f31fe9b7763620e31e675091fe6e"
-  },
-  {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-png.jpg",
-    "kind": "학생 실습 화면",
-    "section": "전체 지도에서 정리하고 저장하기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 1687.0,
-    "raw_frame_sha256": "9f7b4b41ff7076a55915bee89051ac1a1fd97a5c1149d0596765cde0387c0a35",
-    "crop_box": null,
-    "rectangles": [
-      [
-        1838,
-        218,
-        1890,
-        264
-      ]
-    ],
-    "pointer": [
-      1862,
-      240
-    ],
-    "sha256": "dd0be9436511d967a13ad40eef6aed6e9000f31fe9b7763620e31e675091fe6e"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-queries.jpg",
-    "kind": "학생 실습 화면",
-    "section": "전체 지도에서 정리하고 저장하기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 1712.0,
-    "raw_frame_sha256": "f59d31ff1758be206b81f39de8226629f49d40dd748227182e241de54e416104",
-    "crop_box": null,
-    "rectangles": [
-      [
-        44,
-        34,
-        100,
-        96
-      ],
-      [
-        650,
-        41,
-        692,
-        84
-      ]
-    ],
-    "pointer": [
-      672,
-      62
-    ],
-    "sha256": "a57d086f4ef3ad81abfe51d2a4c79d028ff4241e36280f45a862b505e34804e2"
-  },
-  {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-queries.jpg",
-    "kind": "학생 실습 화면",
-    "section": "전체 지도에서 정리하고 저장하기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 1712.0,
-    "raw_frame_sha256": "f59d31ff1758be206b81f39de8226629f49d40dd748227182e241de54e416104",
-    "crop_box": null,
-    "rectangles": [
-      [
-        44,
-        34,
-        100,
-        96
-      ],
-      [
-        650,
-        41,
-        692,
-        84
-      ]
-    ],
-    "pointer": [
-      672,
-      62
-    ],
-    "sha256": "a57d086f4ef3ad81abfe51d2a4c79d028ff4241e36280f45a862b505e34804e2"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-saved.jpg",
-    "kind": "학생 실습 화면",
-    "section": "전체 지도에서 정리하고 저장하기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 1741.0,
-    "raw_frame_sha256": "029534e0691a592333eb67ec7bd3309edb26d46a9ff29dbf5a8b2b395f29b631",
-    "crop_box": null,
-    "rectangles": [
-      [
-        650,
-        45,
-        785,
-        80
-      ],
-      [
-        498,
-        94,
-        1795,
-        340
-      ],
-      [
-        21,
-        165,
-        312,
-        261
-      ]
-    ],
-    "pointer": [
-      282,
-      215
-    ],
-    "sha256": "2d67f24be6fcf5e78d24bb85d1fe920dacd975ac2c44966d0dba6671b1616b68"
-  },
-  {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-saved.jpg",
-    "kind": "학생 실습 화면",
-    "section": "전체 지도에서 정리하고 저장하기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_04_실습_관계조회.mp4",
-    "source_sha256": "cdfef0a93938d0dd54c7e197438c217fdad454896489a4e9c6e85007ab53d6ec",
-    "seconds": 1741.0,
-    "raw_frame_sha256": "029534e0691a592333eb67ec7bd3309edb26d46a9ff29dbf5a8b2b395f29b631",
-    "crop_box": null,
-    "rectangles": [
-      [
-        650,
-        45,
-        785,
-        80
-      ],
-      [
-        498,
-        94,
-        1795,
-        340
-      ],
-      [
-        21,
-        165,
-        312,
-        261
-      ]
-    ],
-    "pointer": [
-      282,
-      215
-    ],
-    "sha256": "2d67f24be6fcf5e78d24bb85d1fe920dacd975ac2c44966d0dba6671b1616b68"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/00-explorer.jpg",
-    "kind": "학생 실습 화면",
-    "section": "예제 준비하고 연결하기",
-    "source_type": "image",
-    "source": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/00-explorer.png",
-    "source_sha256": "5efa89868e4617d0d5b716fdcc5af8c3ff5f40d568e83b2088d404a6271b7094",
-    "source_note": "2026-11-06 이 PC에서 ZIP을 D:/HYD-Practice에 풀고 파일 탐색기 주소 표시줄 → PowerShell(Windows Terminal)로 두 명령을 실행하며 창을 찍음",
-    "crop_box": null,
-    "rectangles": [
-      [
-        208,
-        47,
-        743,
-        80
-      ]
-    ],
-    "pointer": null,
-    "sha256": "8ce1378e5771990486e0526441be4e477ec0c444f0c4e35b2e27a90f408684ef"
-  },
-  {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/00-explorer.jpg",
-    "kind": "학생 실습 화면",
-    "section": "예제 준비하고 연결하기",
-    "source_type": "image",
-    "source": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/00-explorer.png",
-    "source_sha256": "5efa89868e4617d0d5b716fdcc5af8c3ff5f40d568e83b2088d404a6271b7094",
-    "source_note": "2026-11-06 이 PC에서 ZIP을 D:/HYD-Practice에 풀고 파일 탐색기 주소 표시줄 → PowerShell(Windows Terminal)로 두 명령을 실행하며 창을 찍음",
-    "crop_box": null,
-    "rectangles": [
-      [
-        208,
-        47,
-        743,
-        80
-      ]
-    ],
-    "pointer": null,
-    "sha256": "8ce1378e5771990486e0526441be4e477ec0c444f0c4e35b2e27a90f408684ef"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/00-powershell.jpg",
-    "kind": "학생 실습 화면",
-    "section": "예제 준비하고 연결하기",
-    "source_type": "image",
-    "source": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/00-powershell.png",
-    "source_sha256": "3b1e3df791acbdf9d532a946d4fa73f9f907cf8b7e573c429ce5014eb82d3606",
-    "source_note": "2026-11-06 이 PC에서 ZIP을 D:/HYD-Practice에 풀고 파일 탐색기 주소 표시줄 → PowerShell(Windows Terminal)로 두 명령을 실행하며 창을 찍음",
-    "crop_box": [
-      0,
-      0,
-      1499,
-      440
-    ],
-    "rectangles": [
-      [
-        10,
-        119,
-        1205,
-        415
-      ]
-    ],
-    "pointer": null,
-    "sha256": "dad13d89c54e65de32737bd21ee9ca101ea57cbaa41d3633d31c893f8c2aff20"
-  },
-  {
-    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/00-powershell.jpg",
-    "kind": "학생 실습 화면",
-    "section": "예제 준비하고 연결하기",
-    "source_type": "image",
-    "source": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/00-powershell.png",
-    "source_sha256": "3b1e3df791acbdf9d532a946d4fa73f9f907cf8b7e573c429ce5014eb82d3606",
-    "source_note": "2026-11-06 이 PC에서 ZIP을 D:/HYD-Practice에 풀고 파일 탐색기 주소 표시줄 → PowerShell(Windows Terminal)로 두 명령을 실행하며 창을 찍음",
-    "crop_box": [
-      0,
-      0,
-      1499,
-      440
-    ],
-    "rectangles": [
-      [
-        10,
-        119,
-        1205,
-        415
-      ]
-    ],
-    "pointer": null,
-    "sha256": "dad13d89c54e65de32737bd21ee9ca101ea57cbaa41d3633d31c893f8c2aff20"
   },
   {
     "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-01-open.jpg",
@@ -2935,5 +1297,1793 @@
       810
     ],
     "sha256": "c7714b1fbcecce17080f27efb8b71f7f6bf88ccebae2d13c8e45038676b7c15d"
+  },
+  {
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/00-connect.jpg",
+    "kind": "학생 실습 화면",
+    "section": "예제 준비하고 연결하기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 52.8,
+    "raw_frame_sha256": "f9c31c6a4dca002071b8f530fc2b4193ef7984b5434bc8c2630ab0a68ee7678c",
+    "crop_box": null,
+    "rectangles": [
+      [
+        680,
+        442,
+        1229,
+        530
+      ],
+      [
+        679,
+        597,
+        1229,
+        688
+      ],
+      [
+        679,
+        697,
+        1234,
+        787
+      ],
+      [
+        800,
+        933,
+        1120,
+        1003
+      ]
+    ],
+    "pointer": [
+      960,
+      660
+    ],
+    "sha256": "7608d7ff807d03f57e2a296fd14d873ff6a30b30d59d683274cf5f1fb15b1fc0",
+    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/00-connect.jpg",
+    "earlier_unmarked_sha256": "ffbaf7e36e329956698a47b73264ab7705c12c22e865322145b406e72f19d7f7"
+  },
+  {
+    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/00-connect.jpg",
+    "kind": "학생 실습 화면",
+    "section": "예제 준비하고 연결하기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 52.8,
+    "raw_frame_sha256": "f9c31c6a4dca002071b8f530fc2b4193ef7984b5434bc8c2630ab0a68ee7678c",
+    "crop_box": null,
+    "rectangles": [
+      [
+        680,
+        442,
+        1229,
+        530
+      ],
+      [
+        679,
+        597,
+        1229,
+        688
+      ],
+      [
+        679,
+        697,
+        1234,
+        787
+      ],
+      [
+        800,
+        933,
+        1120,
+        1003
+      ]
+    ],
+    "pointer": [
+      960,
+      660
+    ],
+    "sha256": "7608d7ff807d03f57e2a296fd14d873ff6a30b30d59d683274cf5f1fb15b1fc0",
+    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/00-connect.jpg",
+    "earlier_unmarked_sha256": "ffbaf7e36e329956698a47b73264ab7705c12c22e865322145b406e72f19d7f7"
+  },
+  {
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/00-tour.jpg",
+    "kind": "학생 실습 화면",
+    "section": "예제 준비하고 연결하기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 68.47,
+    "raw_frame_sha256": "30032f7768ef473a6ac387fe8b02f5f3393b691c19f5123158d6fb42bae0be75",
+    "crop_box": null,
+    "rectangles": [
+      [
+        643,
+        83,
+        1063,
+        446
+      ]
+    ],
+    "pointer": [
+      790,
+      200
+    ],
+    "sha256": "bf665a346378a0fa55da2f036382bc0319da1061fc8111590130dfbfe0f7d6cd"
+  },
+  {
+    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/00-tour.jpg",
+    "kind": "학생 실습 화면",
+    "section": "예제 준비하고 연결하기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 68.47,
+    "raw_frame_sha256": "30032f7768ef473a6ac387fe8b02f5f3393b691c19f5123158d6fb42bae0be75",
+    "crop_box": null,
+    "rectangles": [
+      [
+        643,
+        83,
+        1063,
+        446
+      ]
+    ],
+    "pointer": [
+      790,
+      200
+    ],
+    "sha256": "bf665a346378a0fa55da2f036382bc0319da1061fc8111590130dfbfe0f7d6cd"
+  },
+  {
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/00-connected.jpg",
+    "kind": "학생 실습 화면",
+    "section": "예제 준비하고 연결하기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 78.32,
+    "raw_frame_sha256": "1247b627c1a37c16698673615baa053175fd082db1dac6abaeb1860e14286021",
+    "crop_box": null,
+    "rectangles": [
+      [
+        20,
+        4,
+        474,
+        37
+      ]
+    ],
+    "pointer": [
+      414,
+      34
+    ],
+    "sha256": "1d603605ff2e86827f75575d199a1de8ecfe98a28f742c93cc875732fe9cf317"
+  },
+  {
+    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/00-connected.jpg",
+    "kind": "학생 실습 화면",
+    "section": "예제 준비하고 연결하기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 78.32,
+    "raw_frame_sha256": "1247b627c1a37c16698673615baa053175fd082db1dac6abaeb1860e14286021",
+    "crop_box": null,
+    "rectangles": [
+      [
+        20,
+        4,
+        474,
+        37
+      ]
+    ],
+    "pointer": [
+      414,
+      34
+    ],
+    "sha256": "1d603605ff2e86827f75575d199a1de8ecfe98a28f742c93cc875732fe9cf317"
+  },
+  {
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/00-overview.jpg",
+    "kind": "학생 실습 화면",
+    "section": "예제 준비하고 연결하기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 169.92,
+    "raw_frame_sha256": "c2a34a99aa60f3fcd4dfc9fe7c6852b7c8d12a4b9c60a501cb2cbd6796bddaf2",
+    "crop_box": null,
+    "rectangles": [
+      [
+        5,
+        41,
+        55,
+        95
+      ],
+      [
+        10,
+        150,
+        422,
+        551
+      ]
+    ],
+    "pointer": [
+      86,
+      532
+    ],
+    "sha256": "23a35f565f188b020ef0f531c77a42005d5d0dea4e12ecfd83086c90083c53d3"
+  },
+  {
+    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/00-overview.jpg",
+    "kind": "학생 실습 화면",
+    "section": "예제 준비하고 연결하기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 169.92,
+    "raw_frame_sha256": "c2a34a99aa60f3fcd4dfc9fe7c6852b7c8d12a4b9c60a501cb2cbd6796bddaf2",
+    "crop_box": null,
+    "rectangles": [
+      [
+        5,
+        41,
+        55,
+        95
+      ],
+      [
+        10,
+        150,
+        422,
+        551
+      ]
+    ],
+    "pointer": [
+      86,
+      532
+    ],
+    "sha256": "23a35f565f188b020ef0f531c77a42005d5d0dea4e12ecfd83086c90083c53d3"
+  },
+  {
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/common-no-return.jpg",
+    "kind": "학생 실습 화면",
+    "section": "노드 만들고 RETURN으로 그래프 보기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 251.33,
+    "raw_frame_sha256": "a4cd74ff77f29f9bce58a65a3240cb303b7064b529ae1a21d7abe09bd2502393",
+    "crop_box": null,
+    "rectangles": [
+      [
+        512,
+        92,
+        1810,
+        134
+      ],
+      [
+        528,
+        212,
+        911,
+        282
+      ]
+    ],
+    "pointer": [
+      750,
+      365
+    ],
+    "sha256": "34edb0e8050ac4a9e763bd1ca3ea159196cf46c929996e6e245ba8ebb7383a8d",
+    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-no-return.jpg",
+    "earlier_unmarked_sha256": "83a72e39cb54ffef39a1dc45b3d1dafd20cc408697305efd9885950aa9fd0c48"
+  },
+  {
+    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/common-no-return.jpg",
+    "kind": "학생 실습 화면",
+    "section": "노드 만들고 RETURN으로 그래프 보기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 251.33,
+    "raw_frame_sha256": "a4cd74ff77f29f9bce58a65a3240cb303b7064b529ae1a21d7abe09bd2502393",
+    "crop_box": null,
+    "rectangles": [
+      [
+        512,
+        92,
+        1810,
+        134
+      ],
+      [
+        528,
+        212,
+        911,
+        282
+      ]
+    ],
+    "pointer": [
+      750,
+      365
+    ],
+    "sha256": "34edb0e8050ac4a9e763bd1ca3ea159196cf46c929996e6e245ba8ebb7383a8d",
+    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-no-return.jpg",
+    "earlier_unmarked_sha256": "83a72e39cb54ffef39a1dc45b3d1dafd20cc408697305efd9885950aa9fd0c48"
+  },
+  {
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/common-created.jpg",
+    "kind": "학생 실습 화면",
+    "section": "노드 만들고 RETURN으로 그래프 보기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 309.26,
+    "raw_frame_sha256": "1069fcfa2354c2a2791ab7857f32ea7753010fe98b502b4dc7a5b2491dc2b2d2",
+    "crop_box": null,
+    "rectangles": [
+      [
+        900,
+        370,
+        1020,
+        790
+      ],
+      [
+        1404,
+        328,
+        1603,
+        410
+      ]
+    ],
+    "pointer": [
+      966,
+      444
+    ],
+    "sha256": "9ed3c23cc91d7296a941183bdb991c0bfb5e27a97d572cb0922a56a15cf1677b",
+    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-created.jpg",
+    "earlier_unmarked_sha256": "a61a64b2fb6beb8964b03f1c306deaeb3241bd8098365a953bfbd91cac79bc52"
+  },
+  {
+    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/common-created.jpg",
+    "kind": "학생 실습 화면",
+    "section": "노드 만들고 RETURN으로 그래프 보기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 309.26,
+    "raw_frame_sha256": "1069fcfa2354c2a2791ab7857f32ea7753010fe98b502b4dc7a5b2491dc2b2d2",
+    "crop_box": null,
+    "rectangles": [
+      [
+        900,
+        370,
+        1020,
+        790
+      ],
+      [
+        1404,
+        328,
+        1603,
+        410
+      ]
+    ],
+    "pointer": [
+      966,
+      444
+    ],
+    "sha256": "9ed3c23cc91d7296a941183bdb991c0bfb5e27a97d572cb0922a56a15cf1677b",
+    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-created.jpg",
+    "earlier_unmarked_sha256": "a61a64b2fb6beb8964b03f1c306deaeb3241bd8098365a953bfbd91cac79bc52"
+  },
+  {
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/common-properties.jpg",
+    "kind": "학생 실습 화면",
+    "section": "노드 만들고 RETURN으로 그래프 보기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 349.92,
+    "raw_frame_sha256": "16ca76ebdef5c2533a6e6bc36aa2f1173ccecd25ea8c2f83aa898cedfe48d52b",
+    "crop_box": null,
+    "rectangles": [
+      [
+        3,
+        43,
+        42,
+        83
+      ],
+      [
+        1260,
+        838,
+        1339,
+        881
+      ],
+      [
+        650,
+        668,
+        770,
+        788
+      ],
+      [
+        1408,
+        330,
+        1885,
+        644
+      ]
+    ],
+    "pointer": [
+      1534,
+      624
+    ],
+    "sha256": "30195256415ae393c8e8b2a9a7ca6c839f2e7d175be49a4a2a49ec0ddb4ca38d",
+    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-properties.jpg",
+    "earlier_unmarked_sha256": "594dc2ea4d1ee00f13d5cb94819d1798baf042cb09170b26c5c9561cf90d81ac"
+  },
+  {
+    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/common-properties.jpg",
+    "kind": "학생 실습 화면",
+    "section": "노드 만들고 RETURN으로 그래프 보기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 349.92,
+    "raw_frame_sha256": "16ca76ebdef5c2533a6e6bc36aa2f1173ccecd25ea8c2f83aa898cedfe48d52b",
+    "crop_box": null,
+    "rectangles": [
+      [
+        3,
+        43,
+        42,
+        83
+      ],
+      [
+        1260,
+        838,
+        1339,
+        881
+      ],
+      [
+        650,
+        668,
+        770,
+        788
+      ],
+      [
+        1408,
+        330,
+        1885,
+        644
+      ]
+    ],
+    "pointer": [
+      1534,
+      624
+    ],
+    "sha256": "30195256415ae393c8e8b2a9a7ca6c839f2e7d175be49a4a2a49ec0ddb4ca38d",
+    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-properties.jpg",
+    "earlier_unmarked_sha256": "594dc2ea4d1ee00f13d5cb94819d1798baf042cb09170b26c5c9561cf90d81ac"
+  },
+  {
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/common-table.jpg",
+    "kind": "학생 실습 화면",
+    "section": "같은 노드를 그래프와 표로 조회하기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 413.24,
+    "raw_frame_sha256": "f26c8cc09ceab6d854b8b9357a1f1f0b60e3a66d2f24ddb58dff33e1074db63f",
+    "crop_box": null,
+    "rectangles": [
+      [
+        13,
+        273,
+        1035,
+        412
+      ]
+    ],
+    "pointer": [
+      500,
+      356
+    ],
+    "sha256": "1c69429914280c19c0928b7aa50462ba2cb46da2940ff3e2dfe98890ef518825",
+    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-table.jpg",
+    "earlier_unmarked_sha256": "e90c25e3e43473c857fed911544abb7f1239411824629b67341471056622f3cb"
+  },
+  {
+    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/common-table.jpg",
+    "kind": "학생 실습 화면",
+    "section": "같은 노드를 그래프와 표로 조회하기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 413.24,
+    "raw_frame_sha256": "f26c8cc09ceab6d854b8b9357a1f1f0b60e3a66d2f24ddb58dff33e1074db63f",
+    "crop_box": null,
+    "rectangles": [
+      [
+        13,
+        273,
+        1035,
+        412
+      ]
+    ],
+    "pointer": [
+      500,
+      356
+    ],
+    "sha256": "1c69429914280c19c0928b7aa50462ba2cb46da2940ff3e2dfe98890ef518825",
+    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-table.jpg",
+    "earlier_unmarked_sha256": "e90c25e3e43473c857fed911544abb7f1239411824629b67341471056622f3cb"
+  },
+  {
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/common-filtered.jpg",
+    "kind": "학생 실습 화면",
+    "section": "조건을 바꾸고 그래프 비교하기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 448.73,
+    "raw_frame_sha256": "2671fa1cbbd447076f52256fad374eb04cc6f1fdbce69ef65fd6120498569f8f",
+    "crop_box": null,
+    "rectangles": [
+      [
+        607,
+        479,
+        801,
+        672
+      ],
+      [
+        1404,
+        329,
+        1596,
+        410
+      ]
+    ],
+    "pointer": [
+      716,
+      592
+    ],
+    "sha256": "ed21c80d22ae7c59ba9728be537f4cc26feb9095a1cbe3adc4c434b21d4680d7",
+    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-filtered.jpg",
+    "earlier_unmarked_sha256": "add4a01e3cf5f7418706a5e61f5482474f4e9dca946de542df6138d187d880bb"
+  },
+  {
+    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/common-filtered.jpg",
+    "kind": "학생 실습 화면",
+    "section": "조건을 바꾸고 그래프 비교하기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 448.73,
+    "raw_frame_sha256": "2671fa1cbbd447076f52256fad374eb04cc6f1fdbce69ef65fd6120498569f8f",
+    "crop_box": null,
+    "rectangles": [
+      [
+        607,
+        479,
+        801,
+        672
+      ],
+      [
+        1404,
+        329,
+        1596,
+        410
+      ]
+    ],
+    "pointer": [
+      716,
+      592
+    ],
+    "sha256": "ed21c80d22ae7c59ba9728be537f4cc26feb9095a1cbe3adc4c434b21d4680d7",
+    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-filtered.jpg",
+    "earlier_unmarked_sha256": "add4a01e3cf5f7418706a5e61f5482474f4e9dca946de542df6138d187d880bb"
+  },
+  {
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/common-conditions.jpg",
+    "kind": "학생 실습 화면",
+    "section": "조건을 바꾸고 그래프 비교하기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 530.35,
+    "raw_frame_sha256": "2a9a24b1782aa427b94927e5aa9c5123b2524c794f2be346d4b2309eecdcb9e7",
+    "crop_box": null,
+    "rectangles": [
+      [
+        24,
+        161,
+        1032,
+        204
+      ],
+      [
+        646,
+        368,
+        774,
+        792
+      ]
+    ],
+    "pointer": [
+      720,
+      744
+    ],
+    "sha256": "c75abc623a0b705cbd5868cb58bbfb25cc3b77f301b7688248187e8e923879d8",
+    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-conditions.jpg",
+    "earlier_unmarked_sha256": "6e73928e40f1379f28dfeb31e0f9b26724352a3a0e3f20f1a7ddd8ca002a0703"
+  },
+  {
+    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/common-conditions.jpg",
+    "kind": "학생 실습 화면",
+    "section": "조건을 바꾸고 그래프 비교하기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 530.35,
+    "raw_frame_sha256": "2a9a24b1782aa427b94927e5aa9c5123b2524c794f2be346d4b2309eecdcb9e7",
+    "crop_box": null,
+    "rectangles": [
+      [
+        24,
+        161,
+        1032,
+        204
+      ],
+      [
+        646,
+        368,
+        774,
+        792
+      ]
+    ],
+    "pointer": [
+      720,
+      744
+    ],
+    "sha256": "c75abc623a0b705cbd5868cb58bbfb25cc3b77f301b7688248187e8e923879d8",
+    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-conditions.jpg",
+    "earlier_unmarked_sha256": "6e73928e40f1379f28dfeb31e0f9b26724352a3a0e3f20f1a7ddd8ca002a0703"
+  },
+  {
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/common-linked.jpg",
+    "kind": "학생 실습 화면",
+    "section": "센서를 만들고 관계 연결하기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 670.21,
+    "raw_frame_sha256": "e1807c1c0f21d16a48d09d4151722239bfc9f9f8377a32460e9f1c69fd3c5baa",
+    "crop_box": null,
+    "rectangles": [
+      [
+        683,
+        488,
+        730,
+        668
+      ],
+      [
+        26,
+        889,
+        663,
+        985
+      ]
+    ],
+    "pointer": [
+      230,
+      964
+    ],
+    "sha256": "c0fdf69f85dc568c96e967d41e184c12235d2b682a65ae49b2497d79403741a7",
+    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-linked.jpg",
+    "earlier_unmarked_sha256": "407cc2fbec58b8fafc555c9928e00812aa5c74cddff664dcbc302874e7d7cc9f"
+  },
+  {
+    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/common-linked.jpg",
+    "kind": "학생 실습 화면",
+    "section": "센서를 만들고 관계 연결하기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 670.21,
+    "raw_frame_sha256": "e1807c1c0f21d16a48d09d4151722239bfc9f9f8377a32460e9f1c69fd3c5baa",
+    "crop_box": null,
+    "rectangles": [
+      [
+        683,
+        488,
+        730,
+        668
+      ],
+      [
+        26,
+        889,
+        663,
+        985
+      ]
+    ],
+    "pointer": [
+      230,
+      964
+    ],
+    "sha256": "c0fdf69f85dc568c96e967d41e184c12235d2b682a65ae49b2497d79403741a7",
+    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-linked.jpg",
+    "earlier_unmarked_sha256": "407cc2fbec58b8fafc555c9928e00812aa5c74cddff664dcbc302874e7d7cc9f"
+  },
+  {
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/common-relationship.jpg",
+    "kind": "학생 실습 화면",
+    "section": "센서를 만들고 관계 연결하기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 689.45,
+    "raw_frame_sha256": "f0cee448520fd10949c2084d5b4f0786d9b072cb605ac89742a871b43a0160ad",
+    "crop_box": null,
+    "rectangles": [
+      [
+        675,
+        488,
+        738,
+        668
+      ],
+      [
+        1404,
+        283,
+        1600,
+        369
+      ]
+    ],
+    "pointer": [
+      1534,
+      480
+    ],
+    "sha256": "642b60094111a69a7a3bf4aa7a8c34170e04507892cb4d3654099765ad3db7e8"
+  },
+  {
+    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/common-relationship.jpg",
+    "kind": "학생 실습 화면",
+    "section": "센서를 만들고 관계 연결하기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 689.45,
+    "raw_frame_sha256": "f0cee448520fd10949c2084d5b4f0786d9b072cb605ac89742a871b43a0160ad",
+    "crop_box": null,
+    "rectangles": [
+      [
+        675,
+        488,
+        738,
+        668
+      ],
+      [
+        1404,
+        283,
+        1600,
+        369
+      ]
+    ],
+    "pointer": [
+      1534,
+      480
+    ],
+    "sha256": "642b60094111a69a7a3bf4aa7a8c34170e04507892cb4d3654099765ad3db7e8"
+  },
+  {
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/common-updated.jpg",
+    "kind": "학생 실습 화면",
+    "section": "속성을 수정하고 연결 확인하기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 736.67,
+    "raw_frame_sha256": "a9428391df6485705fd2cdbfb5ed6d76a7e7e3f9af50f7110a98168b1b7ddfc7",
+    "crop_box": null,
+    "rectangles": [
+      [
+        594,
+        465,
+        814,
+        687
+      ],
+      [
+        1412,
+        530,
+        1885,
+        621
+      ]
+    ],
+    "pointer": [
+      1534,
+      580
+    ],
+    "sha256": "03d13c14daa2c966ab9deebdf035b1f4404300ddfcf531b62ce080c68b2ffa3f",
+    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-updated.jpg",
+    "earlier_unmarked_sha256": "7fab2464471600be82892aa2b384e0d381c6ae8515d8610e384fea1e8145b57b"
+  },
+  {
+    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/common-updated.jpg",
+    "kind": "학생 실습 화면",
+    "section": "속성을 수정하고 연결 확인하기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 736.67,
+    "raw_frame_sha256": "a9428391df6485705fd2cdbfb5ed6d76a7e7e3f9af50f7110a98168b1b7ddfc7",
+    "crop_box": null,
+    "rectangles": [
+      [
+        594,
+        465,
+        814,
+        687
+      ],
+      [
+        1412,
+        530,
+        1885,
+        621
+      ]
+    ],
+    "pointer": [
+      1534,
+      580
+    ],
+    "sha256": "03d13c14daa2c966ab9deebdf035b1f4404300ddfcf531b62ce080c68b2ffa3f",
+    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-updated.jpg",
+    "earlier_unmarked_sha256": "7fab2464471600be82892aa2b384e0d381c6ae8515d8610e384fea1e8145b57b"
+  },
+  {
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/common-unlinked.jpg",
+    "kind": "학생 실습 화면",
+    "section": "관계만 삭제하고 노드는 남기기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 818.01,
+    "raw_frame_sha256": "060208f4eabb40876f6026466adb39c8b88e30ff78f4f05c39e82cfc688e63f1",
+    "crop_box": null,
+    "rectangles": [
+      [
+        646,
+        368,
+        774,
+        792
+      ],
+      [
+        28,
+        889,
+        221,
+        927
+      ]
+    ],
+    "pointer": [
+      720,
+      444
+    ],
+    "sha256": "c350d3fed4c15ec50e6ca5c70def8dc2c60f959f29d687a4b160bb6de05f6023",
+    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-unlinked.jpg",
+    "earlier_unmarked_sha256": "4aa04abe6b3d354fed59f6bb61b867f77b05924318c71a0b7ef0d3c1680e1b98"
+  },
+  {
+    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/common-unlinked.jpg",
+    "kind": "학생 실습 화면",
+    "section": "관계만 삭제하고 노드는 남기기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 818.01,
+    "raw_frame_sha256": "060208f4eabb40876f6026466adb39c8b88e30ff78f4f05c39e82cfc688e63f1",
+    "crop_box": null,
+    "rectangles": [
+      [
+        646,
+        368,
+        774,
+        792
+      ],
+      [
+        28,
+        889,
+        221,
+        927
+      ]
+    ],
+    "pointer": [
+      720,
+      444
+    ],
+    "sha256": "c350d3fed4c15ec50e6ca5c70def8dc2c60f959f29d687a4b160bb6de05f6023",
+    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-unlinked.jpg",
+    "earlier_unmarked_sha256": "4aa04abe6b3d354fed59f6bb61b867f77b05924318c71a0b7ef0d3c1680e1b98"
+  },
+  {
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/common-remaining.jpg",
+    "kind": "학생 실습 화면",
+    "section": "노드 삭제와 정리 확인하기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 886.44,
+    "raw_frame_sha256": "40764dde36cca9c05761ccd67a6c7046e445d5323c0ba34dd10d9e87e72992d4",
+    "crop_box": null,
+    "rectangles": [
+      [
+        646,
+        368,
+        774,
+        792
+      ]
+    ],
+    "pointer": [
+      160,
+      984
+    ],
+    "sha256": "d3294d42bcebfe01ae87901583e50da05b421cc278dd50d213cf01b5606c2a6a",
+    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-remaining.jpg",
+    "earlier_unmarked_sha256": "5a6ada1b81a4c7b56a6a28db313eac6778d0e9555abc57529f7134d06239da7c"
+  },
+  {
+    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/common-remaining.jpg",
+    "kind": "학생 실습 화면",
+    "section": "노드 삭제와 정리 확인하기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 886.44,
+    "raw_frame_sha256": "40764dde36cca9c05761ccd67a6c7046e445d5323c0ba34dd10d9e87e72992d4",
+    "crop_box": null,
+    "rectangles": [
+      [
+        646,
+        368,
+        774,
+        792
+      ]
+    ],
+    "pointer": [
+      160,
+      984
+    ],
+    "sha256": "d3294d42bcebfe01ae87901583e50da05b421cc278dd50d213cf01b5606c2a6a",
+    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-remaining.jpg",
+    "earlier_unmarked_sha256": "5a6ada1b81a4c7b56a6a28db313eac6778d0e9555abc57529f7134d06239da7c"
+  },
+  {
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/common-clean.jpg",
+    "kind": "학생 실습 화면",
+    "section": "노드 삭제와 정리 확인하기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 932.07,
+    "raw_frame_sha256": "0e02a60d83b5b9142cd77cd302b69e232f868f0da3758cf4119556cbe34e81ec",
+    "crop_box": null,
+    "rectangles": [
+      [
+        24,
+        272,
+        270,
+        362
+      ]
+    ],
+    "pointer": [
+      968,
+      356
+    ],
+    "sha256": "b3151dd89ea7e2abf4a52d1073e799a5c6dd71ad2181f83362a22463983cbfb8",
+    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-clean.jpg",
+    "earlier_unmarked_sha256": "f494d2349cfe3cb7935e81d64e876c89ddaaa5d0b0ee0842ba8d56f59c5d33e7"
+  },
+  {
+    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/common-clean.jpg",
+    "kind": "학생 실습 화면",
+    "section": "노드 삭제와 정리 확인하기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 932.07,
+    "raw_frame_sha256": "0e02a60d83b5b9142cd77cd302b69e232f868f0da3758cf4119556cbe34e81ec",
+    "crop_box": null,
+    "rectangles": [
+      [
+        24,
+        272,
+        270,
+        362
+      ]
+    ],
+    "pointer": [
+      968,
+      356
+    ],
+    "sha256": "b3151dd89ea7e2abf4a52d1073e799a5c6dd71ad2181f83362a22463983cbfb8",
+    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/common-clean.jpg",
+    "earlier_unmarked_sha256": "f494d2349cfe3cb7935e81d64e876c89ddaaa5d0b0ee0842ba8d56f59c5d33e7"
+  },
+  {
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-layout.jpg",
+    "kind": "학생 실습 화면",
+    "section": "전체 설비 지도 읽기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 1004.6,
+    "raw_frame_sha256": "162b155e9a4c7f88cf71494261def3c5f72fcb6e7d88af48207ab38a6180d45f",
+    "crop_box": null,
+    "rectangles": [
+      [
+        1096,
+        789,
+        1390,
+        830
+      ],
+      [
+        1342,
+        842,
+        1393,
+        894
+      ]
+    ],
+    "pointer": [
+      1376,
+      876
+    ],
+    "sha256": "cccc9743051dc84ddad443759498eaaf73cbab8fcfd89543a04bbeadc0f9fdd2"
+  },
+  {
+    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-layout.jpg",
+    "kind": "학생 실습 화면",
+    "section": "전체 설비 지도 읽기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 1004.6,
+    "raw_frame_sha256": "162b155e9a4c7f88cf71494261def3c5f72fcb6e7d88af48207ab38a6180d45f",
+    "crop_box": null,
+    "rectangles": [
+      [
+        1096,
+        789,
+        1390,
+        830
+      ],
+      [
+        1342,
+        842,
+        1393,
+        894
+      ]
+    ],
+    "pointer": [
+      1376,
+      876
+    ],
+    "sha256": "cccc9743051dc84ddad443759498eaaf73cbab8fcfd89543a04bbeadc0f9fdd2"
+  },
+  {
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-whole.jpg",
+    "kind": "학생 실습 화면",
+    "section": "전체 설비 지도 읽기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 1029.64,
+    "raw_frame_sha256": "ebe63c08af667a80ed559ef0dd67cf836ec8e031ed1ec7b9abc77580565202a7",
+    "crop_box": null,
+    "rectangles": [
+      [
+        1340,
+        842,
+        1393,
+        880
+      ],
+      [
+        356,
+        322,
+        416,
+        384
+      ]
+    ],
+    "pointer": [
+      110,
+      510
+    ],
+    "sha256": "654a575153758d41f20061934b657e77a94f6d86524a17537d114363929fd61f",
+    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-whole.jpg",
+    "earlier_unmarked_sha256": "a4f564c75636554882a2bfbdff4add04a4d6c469da446cebfc11dc83730817fb"
+  },
+  {
+    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-whole.jpg",
+    "kind": "학생 실습 화면",
+    "section": "전체 설비 지도 읽기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 1029.64,
+    "raw_frame_sha256": "ebe63c08af667a80ed559ef0dd67cf836ec8e031ed1ec7b9abc77580565202a7",
+    "crop_box": null,
+    "rectangles": [
+      [
+        1340,
+        842,
+        1393,
+        880
+      ],
+      [
+        356,
+        322,
+        416,
+        384
+      ]
+    ],
+    "pointer": [
+      110,
+      510
+    ],
+    "sha256": "654a575153758d41f20061934b657e77a94f6d86524a17537d114363929fd61f",
+    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-whole.jpg",
+    "earlier_unmarked_sha256": "a4f564c75636554882a2bfbdff4add04a4d6c469da446cebfc11dc83730817fb"
+  },
+  {
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-cooler.jpg",
+    "kind": "학생 실습 화면",
+    "section": "전체 설비 지도 읽기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 1057.69,
+    "raw_frame_sha256": "a2be202624b5be3be02402c5160ff4a5c9ff3d80fec4bcbff3bc9ac4802799e2",
+    "crop_box": null,
+    "rectangles": [
+      [
+        646,
+        500,
+        774,
+        628
+      ],
+      [
+        1408,
+        330,
+        1885,
+        575
+      ]
+    ],
+    "pointer": [
+      1534,
+      530
+    ],
+    "sha256": "dcb73f3ef3c47390a338a46281eda4b4b25adda0579504211fdb0e6cc544f3cd",
+    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-cooler.jpg",
+    "earlier_unmarked_sha256": "2dcee4ef7ee57e28bccf0c6d2b41fad6f3ee1581fbee7d42bd4a17414d9c66d2"
+  },
+  {
+    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-cooler.jpg",
+    "kind": "학생 실습 화면",
+    "section": "전체 설비 지도 읽기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 1057.69,
+    "raw_frame_sha256": "a2be202624b5be3be02402c5160ff4a5c9ff3d80fec4bcbff3bc9ac4802799e2",
+    "crop_box": null,
+    "rectangles": [
+      [
+        646,
+        500,
+        774,
+        628
+      ],
+      [
+        1408,
+        330,
+        1885,
+        575
+      ]
+    ],
+    "pointer": [
+      1534,
+      530
+    ],
+    "sha256": "dcb73f3ef3c47390a338a46281eda4b4b25adda0579504211fdb0e6cc544f3cd",
+    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-cooler.jpg",
+    "earlier_unmarked_sha256": "2dcee4ef7ee57e28bccf0c6d2b41fad6f3ee1581fbee7d42bd4a17414d9c66d2"
+  },
+  {
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-sensor.jpg",
+    "kind": "학생 실습 화면",
+    "section": "쿨러에 달린 센서 찾기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 1157.5,
+    "raw_frame_sha256": "66d4e06a2e87530ff4c8ea40edb6fbd20a142021cc1e4d0b29e9315ad86b9890",
+    "crop_box": null,
+    "rectangles": [
+      [
+        632,
+        491,
+        778,
+        637
+      ],
+      [
+        1412,
+        580,
+        1885,
+        713
+      ]
+    ],
+    "pointer": [
+      1534,
+      620
+    ],
+    "sha256": "42dab89d6139de11873dc92a64824258082b46d16b7855a4ec90b8ef183f0f2b",
+    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-sensor.jpg",
+    "earlier_unmarked_sha256": "6aa4458087a66b638216af11d096836d68a18a84e432a83e211b5bbde7ce1aa3"
+  },
+  {
+    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-sensor.jpg",
+    "kind": "학생 실습 화면",
+    "section": "쿨러에 달린 센서 찾기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 1157.5,
+    "raw_frame_sha256": "66d4e06a2e87530ff4c8ea40edb6fbd20a142021cc1e4d0b29e9315ad86b9890",
+    "crop_box": null,
+    "rectangles": [
+      [
+        632,
+        491,
+        778,
+        637
+      ],
+      [
+        1412,
+        580,
+        1885,
+        713
+      ]
+    ],
+    "pointer": [
+      1534,
+      620
+    ],
+    "sha256": "42dab89d6139de11873dc92a64824258082b46d16b7855a4ec90b8ef183f0f2b",
+    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-sensor.jpg",
+    "earlier_unmarked_sha256": "6aa4458087a66b638216af11d096836d68a18a84e432a83e211b5bbde7ce1aa3"
+  },
+  {
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-quantity.jpg",
+    "kind": "학생 실습 화면",
+    "section": "센서에서 물리량까지 따라가기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 1243.33,
+    "raw_frame_sha256": "f7ed468b6208bc2f0779568fbfcbd31a8aec359f0387c9ef6da0d217c7ed70e3",
+    "crop_box": null,
+    "rectangles": [
+      [
+        643,
+        503,
+        768,
+        628
+      ],
+      [
+        1410,
+        330,
+        1558,
+        367
+      ],
+      [
+        1412,
+        578,
+        1885,
+        759
+      ]
+    ],
+    "pointer": [
+      1536,
+      714
+    ],
+    "sha256": "5b332aeafafe5bb5c899a34e2d42e28d673448ae9305e0c01e979e6be005477b",
+    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-quantity.jpg",
+    "earlier_unmarked_sha256": "f31e8e6c80bf50f6a41621df33eaf66fdedb4e67b9448622cf14684dfcb221dd"
+  },
+  {
+    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-quantity.jpg",
+    "kind": "학생 실습 화면",
+    "section": "센서에서 물리량까지 따라가기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 1243.33,
+    "raw_frame_sha256": "f7ed468b6208bc2f0779568fbfcbd31a8aec359f0387c9ef6da0d217c7ed70e3",
+    "crop_box": null,
+    "rectangles": [
+      [
+        643,
+        503,
+        768,
+        628
+      ],
+      [
+        1410,
+        330,
+        1558,
+        367
+      ],
+      [
+        1412,
+        578,
+        1885,
+        759
+      ]
+    ],
+    "pointer": [
+      1536,
+      714
+    ],
+    "sha256": "5b332aeafafe5bb5c899a34e2d42e28d673448ae9305e0c01e979e6be005477b",
+    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-quantity.jpg",
+    "earlier_unmarked_sha256": "f31e8e6c80bf50f6a41621df33eaf66fdedb4e67b9448622cf14684dfcb221dd"
+  },
+  {
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-filtered.jpg",
+    "kind": "학생 실습 화면",
+    "section": "질문에 맞춰 조건과 반환값 바꾸기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 1288.31,
+    "raw_frame_sha256": "fa1a8d3a38355551484e3ddc4b1e138b973bc6c97cf5fe00b699948d630000ee",
+    "crop_box": null,
+    "rectangles": [
+      [
+        672,
+        320,
+        738,
+        842
+      ],
+      [
+        1404,
+        329,
+        1835,
+        562
+      ]
+    ],
+    "pointer": [
+      160,
+      984
+    ],
+    "sha256": "bb9c2d422e1192d900c2350ed3f081ee15c493542f5922acb9df1a3b44818e7e",
+    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-filtered.jpg",
+    "earlier_unmarked_sha256": "e20ac098db380adf753d9b4708e5177c95a5ba24d0039283731a242447591d5c"
+  },
+  {
+    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-filtered.jpg",
+    "kind": "학생 실습 화면",
+    "section": "질문에 맞춰 조건과 반환값 바꾸기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 1288.31,
+    "raw_frame_sha256": "fa1a8d3a38355551484e3ddc4b1e138b973bc6c97cf5fe00b699948d630000ee",
+    "crop_box": null,
+    "rectangles": [
+      [
+        672,
+        320,
+        738,
+        842
+      ],
+      [
+        1404,
+        329,
+        1835,
+        562
+      ]
+    ],
+    "pointer": [
+      160,
+      984
+    ],
+    "sha256": "bb9c2d422e1192d900c2350ed3f081ee15c493542f5922acb9df1a3b44818e7e",
+    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-filtered.jpg",
+    "earlier_unmarked_sha256": "e20ac098db380adf753d9b4708e5177c95a5ba24d0039283731a242447591d5c"
+  },
+  {
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-part.jpg",
+    "kind": "학생 실습 화면",
+    "section": "교체 부품 가지 탐색하기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 1416.21,
+    "raw_frame_sha256": "8f8df63252e395d32e36815854f22541fd1d2fb4ec1d4fae933e632225ccc9b2",
+    "crop_box": null,
+    "rectangles": [
+      [
+        638,
+        498,
+        772,
+        630
+      ],
+      [
+        1412,
+        578,
+        1885,
+        644
+      ]
+    ],
+    "pointer": [
+      1536,
+      624
+    ],
+    "sha256": "baf1cdd0590c143bd7e6054aff0da8cd13024388c1c196c5f6e7abb8a0886da9",
+    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-part.jpg",
+    "earlier_unmarked_sha256": "ad3aa6c6576a1279c1e0797dcf4651c3927fdc9bd062775d5710c12b7dedc4fa"
+  },
+  {
+    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-part.jpg",
+    "kind": "학생 실습 화면",
+    "section": "교체 부품 가지 탐색하기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 1416.21,
+    "raw_frame_sha256": "8f8df63252e395d32e36815854f22541fd1d2fb4ec1d4fae933e632225ccc9b2",
+    "crop_box": null,
+    "rectangles": [
+      [
+        638,
+        498,
+        772,
+        630
+      ],
+      [
+        1412,
+        578,
+        1885,
+        644
+      ]
+    ],
+    "pointer": [
+      1536,
+      624
+    ],
+    "sha256": "baf1cdd0590c143bd7e6054aff0da8cd13024388c1c196c5f6e7abb8a0886da9",
+    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-part.jpg",
+    "earlier_unmarked_sha256": "ad3aa6c6576a1279c1e0797dcf4651c3927fdc9bd062775d5710c12b7dedc4fa"
+  },
+  {
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-count.jpg",
+    "kind": "학생 실습 화면",
+    "section": "그림에서 센 수와 집계 비교하기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 1507.74,
+    "raw_frame_sha256": "ee11bc24a277b2167af0beb2916aa1ed9efc54d90e6b0d88c0a2ae52aa035636",
+    "crop_box": [
+      0,
+      0,
+      1920,
+      650
+    ],
+    "rectangles": [
+      [
+        956,
+        271,
+        1535,
+        462
+      ]
+    ],
+    "pointer": [
+      576,
+      464
+    ],
+    "sha256": "5e466c2676425be0583c71391968b194b8898e7975c9bd5dbb3edde16ecb30d9",
+    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-count.jpg",
+    "earlier_unmarked_sha256": "d2ecef30a15326efd9de1e6cecd3faa63696dd75ead8fdc2e36a417b493d59ef"
+  },
+  {
+    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-count.jpg",
+    "kind": "학생 실습 화면",
+    "section": "그림에서 센 수와 집계 비교하기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 1507.74,
+    "raw_frame_sha256": "ee11bc24a277b2167af0beb2916aa1ed9efc54d90e6b0d88c0a2ae52aa035636",
+    "crop_box": [
+      0,
+      0,
+      1920,
+      650
+    ],
+    "rectangles": [
+      [
+        956,
+        271,
+        1535,
+        462
+      ]
+    ],
+    "pointer": [
+      576,
+      464
+    ],
+    "sha256": "5e466c2676425be0583c71391968b194b8898e7975c9bd5dbb3edde16ecb30d9",
+    "earlier_unmarked": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/forest-count.jpg",
+    "earlier_unmarked_sha256": "d2ecef30a15326efd9de1e6cecd3faa63696dd75ead8fdc2e36a417b493d59ef"
+  },
+  {
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-png.jpg",
+    "kind": "학생 실습 화면",
+    "section": "전체 지도에서 정리하고 저장하기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 1576.7,
+    "raw_frame_sha256": "0d587e337ca5a574bf3f71f068518d13c6a93cdde25cdb56c9b217f6a76bb735",
+    "crop_box": null,
+    "rectangles": [
+      [
+        1848,
+        214,
+        1900,
+        273
+      ]
+    ],
+    "pointer": [
+      1880,
+      252
+    ],
+    "sha256": "47116e2e4bf19e766afe573fe91ce86bed11d4f472f74a74c58216b10844bbc7"
+  },
+  {
+    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-png.jpg",
+    "kind": "학생 실습 화면",
+    "section": "전체 지도에서 정리하고 저장하기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 1576.7,
+    "raw_frame_sha256": "0d587e337ca5a574bf3f71f068518d13c6a93cdde25cdb56c9b217f6a76bb735",
+    "crop_box": null,
+    "rectangles": [
+      [
+        1848,
+        214,
+        1900,
+        273
+      ]
+    ],
+    "pointer": [
+      1880,
+      252
+    ],
+    "sha256": "47116e2e4bf19e766afe573fe91ce86bed11d4f472f74a74c58216b10844bbc7"
+  },
+  {
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-queries.jpg",
+    "kind": "학생 실습 화면",
+    "section": "전체 지도에서 정리하고 저장하기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 1622.92,
+    "raw_frame_sha256": "4ab36275f287123b6170861081de3804fddf6688ad76f4402ed6bccb29437918",
+    "crop_box": null,
+    "rectangles": [
+      [
+        44,
+        34,
+        100,
+        96
+      ],
+      [
+        650,
+        41,
+        692,
+        84
+      ]
+    ],
+    "pointer": [
+      150,
+      610
+    ],
+    "sha256": "62a86092014b08af673d624e27e9e9dc670435f29f779af44e2d0626ffd7baf0"
+  },
+  {
+    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-queries.jpg",
+    "kind": "학생 실습 화면",
+    "section": "전체 지도에서 정리하고 저장하기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 1622.92,
+    "raw_frame_sha256": "4ab36275f287123b6170861081de3804fddf6688ad76f4402ed6bccb29437918",
+    "crop_box": null,
+    "rectangles": [
+      [
+        44,
+        34,
+        100,
+        96
+      ],
+      [
+        650,
+        41,
+        692,
+        84
+      ]
+    ],
+    "pointer": [
+      150,
+      610
+    ],
+    "sha256": "62a86092014b08af673d624e27e9e9dc670435f29f779af44e2d0626ffd7baf0"
+  },
+  {
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-saved.jpg",
+    "kind": "학생 실습 화면",
+    "section": "전체 지도에서 정리하고 저장하기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 1671.11,
+    "raw_frame_sha256": "c1098bf7065d1375e4b009404c35cd74cf75ced4590be1cac8ab2c6858932fc1",
+    "crop_box": null,
+    "rectangles": [
+      [
+        650,
+        45,
+        785,
+        80
+      ],
+      [
+        498,
+        93,
+        1811,
+        340
+      ],
+      [
+        21,
+        165,
+        312,
+        261
+      ]
+    ],
+    "pointer": [
+      644,
+      134
+    ],
+    "sha256": "1cde32ce9771630c05e0f937e2f9095057908fcfc98bf21a81ccc740683f3feb"
+  },
+  {
+    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-saved.jpg",
+    "kind": "학생 실습 화면",
+    "section": "전체 지도에서 정리하고 저장하기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 1671.11,
+    "raw_frame_sha256": "c1098bf7065d1375e4b009404c35cd74cf75ced4590be1cac8ab2c6858932fc1",
+    "crop_box": null,
+    "rectangles": [
+      [
+        650,
+        45,
+        785,
+        80
+      ],
+      [
+        498,
+        93,
+        1811,
+        340
+      ],
+      [
+        21,
+        165,
+        312,
+        261
+      ]
+    ],
+    "pointer": [
+      644,
+      134
+    ],
+    "sha256": "1cde32ce9771630c05e0f937e2f9095057908fcfc98bf21a81ccc740683f3feb"
+  },
+  {
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-csv.jpg",
+    "kind": "학생 실습 화면",
+    "section": "전체 지도에서 정리하고 저장하기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 1694.29,
+    "raw_frame_sha256": "18863d4be8aaf52d262fc423f2203adf77e83dc24106c459879b7c002bc6cddc",
+    "crop_box": null,
+    "rectangles": [
+      [
+        399,
+        103,
+        438,
+        155
+      ],
+      [
+        444,
+        103,
+        482,
+        140
+      ]
+    ],
+    "pointer": [
+      424,
+      134
+    ],
+    "sha256": "df4b97aa93d893efd2b903c31f2944e016b3266ae8da9901eb6481ab72dd1adf"
+  },
+  {
+    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-csv.jpg",
+    "kind": "학생 실습 화면",
+    "section": "전체 지도에서 정리하고 저장하기",
+    "source": "작업/촬영/neo4j/관계조회-9판-합본/관계조회-9판-최종_1080p.mp4",
+    "source_sha256": "3cdc5d715f1339e20dd5cbc5e14e6e2d9f80de487ff9e3449d5f55f856e566f8",
+    "seconds": 1694.29,
+    "raw_frame_sha256": "18863d4be8aaf52d262fc423f2203adf77e83dc24106c459879b7c002bc6cddc",
+    "crop_box": null,
+    "rectangles": [
+      [
+        399,
+        103,
+        438,
+        155
+      ],
+      [
+        444,
+        103,
+        482,
+        140
+      ]
+    ],
+    "pointer": [
+      424,
+      134
+    ],
+    "sha256": "df4b97aa93d893efd2b903c31f2944e016b3266ae8da9901eb6481ab72dd1adf"
+  },
+  {
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/00-explorer.jpg",
+    "kind": "학생 실습 화면",
+    "section": "예제 준비하고 연결하기",
+    "source_type": "image",
+    "source": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/00-explorer.png",
+    "source_sha256": "5efa89868e4617d0d5b716fdcc5af8c3ff5f40d568e83b2088d404a6271b7094",
+    "source_note": "2026-11-06 이 PC에서 ZIP을 D:/HYD-Practice에 풀고 파일 탐색기 주소 표시줄 → PowerShell(Windows Terminal)로 두 명령을 실행하며 창을 찍음",
+    "crop_box": null,
+    "rectangles": [
+      [
+        208,
+        47,
+        743,
+        80
+      ]
+    ],
+    "pointer": null,
+    "sha256": "8ce1378e5771990486e0526441be4e477ec0c444f0c4e35b2e27a90f408684ef"
+  },
+  {
+    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/00-explorer.jpg",
+    "kind": "학생 실습 화면",
+    "section": "예제 준비하고 연결하기",
+    "source_type": "image",
+    "source": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/00-explorer.png",
+    "source_sha256": "5efa89868e4617d0d5b716fdcc5af8c3ff5f40d568e83b2088d404a6271b7094",
+    "source_note": "2026-11-06 이 PC에서 ZIP을 D:/HYD-Practice에 풀고 파일 탐색기 주소 표시줄 → PowerShell(Windows Terminal)로 두 명령을 실행하며 창을 찍음",
+    "crop_box": null,
+    "rectangles": [
+      [
+        208,
+        47,
+        743,
+        80
+      ]
+    ],
+    "pointer": null,
+    "sha256": "8ce1378e5771990486e0526441be4e477ec0c444f0c4e35b2e27a90f408684ef"
+  },
+  {
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/00-powershell.jpg",
+    "kind": "학생 실습 화면",
+    "section": "예제 준비하고 연결하기",
+    "source_type": "image",
+    "source": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/00-powershell.png",
+    "source_sha256": "3b1e3df791acbdf9d532a946d4fa73f9f907cf8b7e573c429ce5014eb82d3606",
+    "source_note": "2026-11-06 이 PC에서 ZIP을 D:/HYD-Practice에 풀고 파일 탐색기 주소 표시줄 → PowerShell(Windows Terminal)로 두 명령을 실행하며 창을 찍음",
+    "crop_box": [
+      0,
+      0,
+      1499,
+      440
+    ],
+    "rectangles": [
+      [
+        10,
+        119,
+        1205,
+        415
+      ]
+    ],
+    "pointer": null,
+    "sha256": "dad13d89c54e65de32737bd21ee9ca101ea57cbaa41d3633d31c893f8c2aff20"
+  },
+  {
+    "target": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/00-powershell.jpg",
+    "kind": "학생 실습 화면",
+    "section": "예제 준비하고 연결하기",
+    "source_type": "image",
+    "source": "workspace/강의제작/제작도구/촬영/neo4j/사진원본/00-powershell.png",
+    "source_sha256": "3b1e3df791acbdf9d532a946d4fa73f9f907cf8b7e573c429ce5014eb82d3606",
+    "source_note": "2026-11-06 이 PC에서 ZIP을 D:/HYD-Practice에 풀고 파일 탐색기 주소 표시줄 → PowerShell(Windows Terminal)로 두 명령을 실행하며 창을 찍음",
+    "crop_box": [
+      0,
+      0,
+      1499,
+      440
+    ],
+    "rectangles": [
+      [
+        10,
+        119,
+        1205,
+        415
+      ]
+    ],
+    "pointer": null,
+    "sha256": "dad13d89c54e65de32737bd21ee9ca101ea57cbaa41d3633d31c893f8c2aff20"
   }
 ]
