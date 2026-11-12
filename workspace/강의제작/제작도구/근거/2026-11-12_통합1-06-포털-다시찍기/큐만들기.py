@@ -122,7 +122,7 @@ OPS={
  '09-08':[P(t('#ontoNode h4',nth=0)),P(tx('팬 최대 운전',tag='a',within='#ontoNode'),'팬 최대 운전,'),P(tx('쿨러 핀 세척',tag='a',within='#ontoNode'),'쿨러 핀 세척 같은'),P(t('#ontoNode a[data-go]',contains='오일 쿨러'),'오일 쿨러도')],
  '09-09':[P(t('#ontoNode a[data-go]',contains='유온 상승'),'증상에서 출발'),P(t('#ontoNode h3'),'이 고장을 찾고'),P(t('#ontoNode a[data-go]',contains='핀 오염'),'원인을 찾고'),P(tx('팬 최대 운전',tag='a',within='#ontoNode'),'조치를 꺼내')],
  '10-01':[C('tab:scenario','결함 시뮬레이션 누르'),['wait',t(H),20]],
- '10-02':[P(t(H+' header strong'),'첫 번째 설비 카드'),P(t(H+' .big.num'),'유온은')],
+ '10-02':[P(t(H+' header strong'),'첫 번째 설비'),P(t(H+' .big.num'),'유온은')],
  '10-03':[P(t(H+' .kv em.ce'))],
  '10-04':[P(t(H+' .kv em.vs1'))],
  '10-05':[P(t(H+' header .mode','below'))],
