@@ -49,13 +49,16 @@ export function findInPage(t){
   else if(t.anchor==='after'){const g=document.createRange();g.selectNodeContents(es[0]);const tb=g.getBoundingClientRect();x=(tb.width?tb.right:b.right)+12;y=b.y+b.height/2;}
   // 대상을 담은 스크롤 영역(포털은 왼쪽 메뉴 .rail과 본문 main#content가 따로 굴러간다). 고정 위치(위 막대)면 굴리지 않는다.
   let fixed=false,a=es[0].parentElement,sc=null;
-  for(let n=es[0];n&&n!==document.documentElement;n=n.parentElement)if(getComputedStyle(n).position==='fixed'||getComputedStyle(n).position==='sticky')fixed=true;
+  // 고정: position fixed면 늘 보인다. sticky는 굴러가는 칸 안에서는 그 칸과 함께 화면 밖으로 나갈 수 있으므로(처리 건 목록 칸, 2026-11-12 06 o1104)
+  // 스크롤 영역이 없을 때만 고정으로 본다 — 아래 스크롤 영역을 찾은 뒤 판단한다.
+  let sticky=false;for(let n=es[0];n&&n!==document.documentElement;n=n.parentElement){const ps=getComputedStyle(n).position;if(ps==='fixed')fixed=true;else if(ps==='sticky')sticky=true;}
   // 스크롤 영역이 겹쳐 있으면(처리 건 목록 #instList가 본문 main#content 안에서 또 굴러간다) 안쪽 칸의 크기만 보고 「보인다」고 하면 안 된다 —
   // 안쪽 칸이 본문 아래로 뻗어 있으면 화면 밖(y 1025, 창 높이 720)을 가리킨 적이 있다(2026-11-12 06 o1104). 안쪽부터 보아 가리킬 지점이 그 칸 밖이면
   // 그 칸을 굴리고, 모든 칸 안이면 가장 안쪽 칸을 쓴다. 「보이는 범위」(vtop · vbottom)는 그 칸을 바깥 칸들과 창으로 잘라 낸 범위다.
   const scs=[];for(;a&&a!==document.body&&a!==document.documentElement;a=a.parentElement){const cs=getComputedStyle(a);if(/(auto|scroll)/.test(cs.overflowY)&&a.scrollHeight>a.clientHeight+2){const r=a.getBoundingClientRect();scs.push({top:r.top,bottom:r.bottom,left:r.left,right:r.right});}}
   if(scs.length){let k=scs.findIndex(s=>y<s.top||y>s.bottom);if(k<0)k=0;sc={...scs[k],vtop:Math.max(0,...scs.slice(k).map(s=>s.top)),vbottom:Math.min(innerHeight,...scs.slice(k).map(s=>s.bottom))};}
   // 문서 전체가 굴러가지 않는 화면(포털)에서 스크롤 영역 밖 요소(위 막대)는 늘 보인다.
+  if(sticky&&!sc)fixed=true;
   if(!sc&&document.scrollingElement.scrollHeight<=innerHeight+2)fixed=true;
   // hit: 누를 지점의 맨 위 요소가 이 대상이거나 그 안쪽인가(다른 요소에 가려졌으면 false).
   const top=document.elementFromPoint(x+(t.dx||0),y+(t.dy||0));const hit=!!top&&(top===es[0]||es[0].contains(top));
