@@ -76,18 +76,31 @@ def lead(text):
     return int(t), None
 
 
-def pairs(stage):
-    """stage = '견적'(app/features/quote_rule.py까지) · '승인'(app/features/approval_rule.py까지).
-    돌려주는 것: (쌍 목록 [dict], 견적 줄 갈래 {줄: '씀' · '기준일에 안 씀'}, 품번 찾은 줄 [(줄, 원래 글, 사내 품번, 찾은 법)])."""
+def quote_groups():
+    """견적 줄을 (공급사 이름, 사내 품번) 쌍으로 모은다. 돌려주는 것: ({쌍: [줄 dict]}, 품번 찾은 줄 [(줄, 원래 글, 사내 품번, 찾은 법)])."""
     _, graph = base_model()
     parts = {n['props']['id']: n['props'] for n in graph['nodes'] if 'Part' in n['labels']}
-    quote_rule = load_rule('quote_rule.py')
     grouped, found = {}, []
     for line, r in table(QUOTES):
         pid, how = part_of(r['품번'], parts, line)
         if how != '사내 품번':
             found.append((line, r['품번'], pid, how))
         grouped.setdefault((supplier_name(r['공급사']), pid), []).append({**r, '줄': line})
+    return grouped, found
+
+
+def several_live():
+    """기준일에 유효기한이 남은 견적이 둘 이상인 쌍 — [(공급사, 사내 품번, [줄])]. 어느 줄을 쓸지는 정하지 않는다(app/features/decisions.csv의 결정)."""
+    grouped, _ = quote_groups()
+    return [(sup, pid, [q['줄'] for q in quotes if q['유효기한'] >= AS_OF]) for (sup, pid), quotes in sorted(grouped.items())
+            if sum(q['유효기한'] >= AS_OF for q in quotes) > 1]
+
+
+def pairs(stage):
+    """stage = '견적'(app/features/quote_rule.py까지) · '승인'(app/features/approval_rule.py까지).
+    돌려주는 것: (쌍 목록 [dict], 견적 줄 갈래 {줄: '씀' · '기준일에 안 씀'}, 품번 찾은 줄 [(줄, 원래 글, 사내 품번, 찾은 법)])."""
+    quote_rule = load_rule('quote_rule.py')
+    grouped, found = quote_groups()
     used, out = {}, []
     for (sup, pid), quotes in sorted(grouped.items()):
         pick = quote_rule.use_quote([dict(q) for q in quotes], AS_OF)

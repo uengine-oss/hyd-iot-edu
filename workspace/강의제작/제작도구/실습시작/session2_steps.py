@@ -273,6 +273,11 @@ def expected(previous):
 
 
 def quotes(previous):
+    try:
+        need_decided([{quote_point!r}])
+    except R.Stop as e:   # 그 결정이 갈리는 원자료 줄을 함께 짚는다(어느 줄을 쓸지는 정하지 않는다)
+        where = ' / '.join(f"{{s}} · {{p}}: 자료/{{M.QUOTES}}:{{' · '.join(map(str, lines))}}" for s, p, lines in guarded(M.several_live))
+        raise R.Stop(f'{{e}} 기준일({{M.AS_OF}})에 유효기한이 남은 견적이 둘 이상인 쌍 — {{where}}')
     pairs, used, found = guarded(M.pairs, '견적')
     split = {{}}
     for v in used.values():
@@ -509,7 +514,8 @@ def render(kind, title, names, change=False):
     if kind == 'design_integrated':
         return DESIGN_INTEGRATED.format(title=title, **s)
     if kind == 'design_practical':
-        return DESIGN_PRACTICAL.format(title=title, **s)
+        import session2_answers as ANS
+        return DESIGN_PRACTICAL.format(title=title, quote_point=ANS.QUOTE_POINT, **s)
     steps = (GRAPH_STEPS_INTEGRATED if kind == 'graph_integrated' else GRAPH_STEPS_PRACTICAL).format(**s)
     decide = {'3': ['시점과 상태'], 'update': ['불용 결정 설비']} if kind == 'graph_integrated' else {'1': ['쓰는 사람에 따라 갈리는 답']}
     return GRAPH.format(title=title, change=change, steps=steps, decide=decide)
