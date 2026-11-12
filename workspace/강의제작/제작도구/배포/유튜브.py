@@ -20,6 +20,7 @@ LOCAL = ROOT / "작업" / "_로컬" / "배포"
 CLIENT = LOCAL / "유튜브_클라이언트.json"
 TOKEN = LOCAL / "유튜브토큰.json"
 TITLES = LOCAL / "영상제목.json"
+CHANNEL = LOCAL / "유튜브채널.txt"  # 강의 채널 이름 한 줄(예: 브랜드 계정 채널). 있으면 올린 영상의 채널을 대조한다
 SCOPE = "https://www.googleapis.com/auth/youtube.upload"
 CHUNK = 8 * 1024 * 1024  # 256 KiB의 배수
 
@@ -96,22 +97,25 @@ def access_token():
         "client_id": cid, "client_secret": csec, "refresh_token": rt, "grant_type": "refresh_token"})["access_token"]
 
 
-def oembed_title(vid):
+def oembed(vid):
     u = "https://www.youtube.com/oembed?" + urllib.parse.urlencode({"url": f"https://youtu.be/{vid}", "format": "json"})
     for _ in range(12):
         try:
             with urllib.request.urlopen(u, timeout=30) as r:
-                return json.loads(r.read())["title"]
+                return json.loads(r.read())
         except urllib.error.HTTPError:
             time.sleep(10)  # 막 올린 영상은 처리 중이라 잠시 404를 돌려준다
     fail(f"{vid}: oEmbed가 2분 동안 제목을 돌려주지 않는다 — Studio에서 처리 상태를 본다")
 
 
 def cmd_check(a):
-    t = oembed_title(a.id)
-    if t != a.제목:
-        fail(f"{a.id}: 유튜브 제목 「{t}」이 제목표 「{a.제목}」과 다르다")
-    print(f"{a.id}: 제목 일치 「{t}」")
+    d = oembed(a.id)
+    if d["title"] != a.제목:
+        fail(f"{a.id}: 유튜브 제목 「{d['title']}」이 제목표 「{a.제목}」과 다르다")
+    # 강의 채널(작업/_로컬/배포/유튜브채널.txt)과 다른 채널에 올라갔으면 실패한다 — 계정 기본 채널로 잘못 올라간 일이 있었다(2026-11-12)
+    if CHANNEL.exists() and d["author_name"] != CHANNEL.read_text(encoding="utf-8").strip():
+        fail(f"{a.id}: 채널 「{d['author_name']}」에 올라갔다 — 강의 채널 「{CHANNEL.read_text(encoding='utf-8').strip()}」이 아니다. 인증을 다시 받아 계정 선택 화면에서 강의 채널을 고른다")
+    print(f"{a.id}: 제목 일치 「{d['title']}」 · 채널 「{d['author_name']}」")
 
 
 def put_chunk(loc, sess, data, start, size):
