@@ -1,0 +1,12 @@
+[["tab","ontology"],["chip","전략 목표"],["chip","프로세스"],["chip","외부 변수"],["chip","내 업무 개념"],
+ ["type","#ontoSearch","유압"],["eval","document.querySelector('#ontoStats').textContent"],["shot","50half"],
+ ["type","#ontoSearch","유압 파워팩"],["click","#ontoMap .o-node.match",""],["shot","51selmatch"],
+ ["click","#ontoNode a[data-go]","오일 쿨러"],["click","#ontoNode a[data-go]","유온 센서"],
+ ["click","#ontoNode a[data-go=\"in:ts1\"]",""],["text","#ontoNode"],["shot","52input"],
+ ["eval","[...document.querySelectorAll('#ontoNode a[data-go]')].map(a=>a.dataset.go+'='+a.textContent).join(' | ')"],
+ ["type","#ontoSearch","주"],["eval","document.querySelector('#ontoStats').textContent"],
+ ["type","#ontoSearch",""],["select","#ontoAsset","HYD-02"],["shot","53hyd02clear"],["text","#ontoNode"],
+ ["type","#ontoSearch","comp:cooler"],["shot","54id"],["click","#ontoMap .o-node.match",""],["text","#ontoNode"],
+ ["eval","(()=>{const n=document.querySelector('#ontoNode');n.scrollIntoView({block:'start'});return 1})()"],["shot","55id_detail"],
+ ["eval","(()=>{document.querySelector('main#content').scrollTop=0;return 1})()"],["select","#ontoAsset","HYD-01"],["shot","56back"],["text","#ontoNode"],["eval","document.querySelector('#ontoStats').textContent"]
+]
