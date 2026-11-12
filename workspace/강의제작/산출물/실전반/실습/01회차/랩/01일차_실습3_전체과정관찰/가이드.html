@@ -1,4 +1,4 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>쿨러 경보 한 건을 원문에서 조치 결과까지 따라가기</title><style>body{font:17px/1.75 'Malgun Gothic',sans-serif;color:#23313d;margin:0;background:#f6f8f9}header,main{max-width:1100px;margin:auto;padding:24px}header{background:white}nav{position:sticky;top:0;background:white;border-bottom:1px solid #ccd6dc;padding:12px;display:flex;gap:18px;overflow-x:auto}nav a{white-space:nowrap;color:#174f72}section{scroll-margin-top:5rem;background:white;margin:24px 0;padding:24px;border-radius:12px}figure{margin:18px 0}img{display:block;max-width:100%;height:auto;border:1px solid #ccd6dc}figcaption{font-size:.9em;color:#445761}table{border-collapse:collapse;width:100%}th,td{border:1px solid #b9c6cf;padding:9px;vertical-align:top}.pending{background:#fff5dc;border-left:4px solid #a36b16;padding:14px} @media(max-width:700px){header,main{padding:12px}section{padding:15px}table{display:block;overflow-x:auto}}</style></head><body><header><p>1회차 · 두 과정 공통</p><h1>쿨러 경보 한 건을 원문에서 조치 결과까지 따라가기</h1><p>이론에서 본 「센서 값 → 판단 → 사람의 승인 → 조치」를 처리 건 하나에서 끝까지 따라갑니다. 쿨러 매뉴얼을 지식으로 넣고, 쿨러에 이상을 일으켜 생긴 처리 건을 승인한 뒤 기록을 읽습니다.</p>
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>쿨러 고장 한 건을 매뉴얼에서 조치 결과까지 따라가기</title><style>body{font:17px/1.75 'Malgun Gothic',sans-serif;color:#23313d;margin:0;background:#f6f8f9}header,main{max-width:1100px;margin:auto;padding:24px}header{background:white}nav{position:sticky;top:0;background:white;border-bottom:1px solid #ccd6dc;padding:12px;display:flex;gap:18px;overflow-x:auto}nav a{white-space:nowrap;color:#174f72}section{scroll-margin-top:5rem;background:white;margin:24px 0;padding:24px;border-radius:12px}figure{margin:18px 0}img{display:block;max-width:100%;height:auto;border:1px solid #ccd6dc}figcaption{font-size:.9em;color:#445761}table{border-collapse:collapse;width:100%}th,td{border:1px solid #b9c6cf;padding:9px;vertical-align:top}.pending{background:#fff5dc;border-left:4px solid #a36b16;padding:14px} @media(max-width:700px){header,main{padding:12px}section{padding:15px}table{display:block;overflow-x:auto}}</style></head><body><header><p>1회차 · 두 과정 공통</p><h1>쿨러 고장 한 건을 매뉴얼에서 조치 결과까지 따라가기</h1><p>포털을 둘러볼 때 본 홈 그림의 흐름(설비 → AI의 판단 → 사람의 승인 → 다시 설비)을 쿨러 고장 한 건으로 처음부터 끝까지 직접 돌립니다. AI가 원인을 짚고 조치를 고르려면 그 설비의 매뉴얼을 알아야 하므로, 고장을 내기 전에 쿨러 매뉴얼부터 지식으로 넣습니다.</p>
 <table>
 <thead>
 <tr>
@@ -9,167 +9,221 @@
 <tbody>
 <tr>
 <td>목표</td>
-<td>지식 → 경보 → AI 판단 → 사람의 승인 → 설비 명령 → 재관측 → 정비 요청이 한 사건에서 어떻게 이어지는지 확인합니다.</td>
+<td>매뉴얼 → 지식 → 경보 → AI 판단 → 사람의 승인 → 설비 명령 → 재관측 → 정비 요청이 한 처리 건에서 어떻게 이어지는지 확인합니다.</td>
 </tr>
 <tr>
 <td>입력</td>
-<td>포털의 제공 문서 <code>HM-8_cooler-fan-manual.md</code>와 결함 시뮬레이션의 쿨러 열화 주입을 사용합니다.</td>
+<td>포털의 제공 문서 <code>HM-8_cooler-fan-manual.md</code>와 결함 시뮬레이션의 <strong>쿨러 열화 주입</strong>을 씁니다.</td>
 </tr>
 <tr>
 <td>할 일</td>
-<td>매뉴얼을 넣고 AI의 추출을 원문과 맞춰 적재합니다. 쿨러 열화를 일으켜 생긴 처리 건에서 추천과 근거를 읽고 승인한 뒤, 기록을 따라갑니다.</td>
+<td>매뉴얼을 개정으로 넣고, AI가 정리한 내용을 원문과 맞춰 본 뒤 적재합니다. 쿨러 열화를 일으켜 생긴 처리 건에서 승인 요청을 읽고 운전원으로 승인한 뒤, 처리 기록과 결과를 읽습니다.</td>
 </tr>
 <tr>
 <td>남는 결과</td>
-<td>포털에 적재된 쿨러 지식과, 승인 · 명령 · 재관측 · 정비 요청이 남은 처리 건 한 건입니다.</td>
+<td>포털에 적재된 쿨러 매뉴얼 지식과, 승인 · 명령 · 재관측 · 정비 요청이 남은 처리 건 한 건입니다.</td>
 </tr>
 <tr>
 <td>성공 기준</td>
-<td>같은 처리 건에서 AI의 추천, 사람의 승인, 설비의 응답, 다시 잰 값, 남은 정비 요청을 각각 짚을 수 있습니다.</td>
+<td>같은 처리 건에서 AI의 추천과 근거, 사람의 승인, 설비의 응답, 다시 잰 값, 남은 정비 요청을 각각 짚을 수 있습니다.</td>
 </tr>
 </tbody>
 </table>
-<p>실행 환경 실습에서 연 포털의 <strong>홈</strong>에서 시작합니다. <strong>열린 사건</strong>이 0인지 보세요.</p>
-<figure><a href="images/06-연결그림.png"><img src="images/06-연결그림.png" alt="홈 위쪽의 열린 사건 칸" loading="lazy"></a><figcaption>홈 위쪽의 열린 사건 칸</figcaption></figure>
-</header><nav aria-label="실습 순서"><a href="#step1">쿨러 매뉴얼을 넣고 미리 보기</a><a href="#step2">매뉴얼 원문에서 판단 조건 찾기</a><a href="#step3">추출을 요청하고 조치 방법을 원문과 비교하기</a><a href="#step4">지식 후보를 원문과 비교하기</a><a href="#step5">추출 경고를 읽고 지식으로 적재하기</a><a href="#step6">지식 지도에서 고장과 조치의 연결 찾기</a><a href="#step7">운전원을 고르고 쿨러 열화 일으키기</a><a href="#step8">추천과 근거를 읽고 승인하기</a><a href="#step9">원인 판단에 쓰인 정보 확인하기</a><a href="#step10">처리 기록에서 예측 · 명령 · 재관측 구별하기</a><a href="#step11">결과와 남은 정비 요청 확인하기</a></nav><main><section id="step1"><h2>쿨러 매뉴얼을 넣고 미리 보기</h2><p>왼쪽 <strong>지식 관리</strong>를 누르세요. 오른쪽에 <strong>매뉴얼 등록</strong>이 열립니다.</p>
-<p>**제공 문서(받기)**의 첫 링크 <code>HM-8_cooler-fan-manual.md</code>를 눌러 받으세요. 다른 세 문서는 받지 않습니다.</p>
-<p><strong>파일 선택</strong>으로 받은 파일을 고르세요. 버튼 옆에 파일 이름이 나옵니다.</p>
-<p><strong>등록할 문서</strong>에서 같은 이름 옆에 <strong>문서 개정</strong>이 붙은 항목을 고르세요. 같은 문서의 개정으로 묶여야 내용을 비교할 수 있습니다.</p>
-<p><strong>담당자</strong>가 <strong>지식 관리자</strong>인지 보고 <strong>미리보기</strong>를 누르세요.</p>
-<p><strong>확인:</strong> 버튼 아래에 파일 이름과 글자 수 · 절 · 절차 수가 나옵니다. <strong>수정할 항목 있음</strong>은 뒤의 추출 · 검토에서 채울 곳이니 그대로 둡니다.</p>
-<figure><a href="images/06-매뉴얼등록.png"><img src="images/06-매뉴얼등록.png" alt="미리보기 뒤 버튼 아래의 글자 수 · 절 · 절차 수" loading="lazy"></a><figcaption>미리보기 뒤 버튼 아래의 글자 수 · 절 · 절차 수</figcaption></figure>
-</section><section id="step2"><h2>매뉴얼 원문에서 판단 조건 찾기</h2><p>뒤에서 AI의 추출과 비교할 기준을 원문에서 먼저 찾습니다. 아래로 내려 <strong>추출 원문 전체 보기</strong>를 누르고 <strong>1쪽 전체</strong>를 펼치세요.</p>
+<p>실행 환경 실습에서 연 포털의 <strong>홈</strong>에서 시작합니다.</p>
+<figure><a href="images/06-연결그림.png"><img src="images/06-연결그림.png" alt="홈 위쪽의 열린 사건 칸과 흐름 그림" loading="lazy"></a><figcaption>홈 위쪽의 열린 사건 칸과 흐름 그림</figcaption></figure>
+</header><nav aria-label="실습 순서"><a href="#step1">쿨러 매뉴얼을 개정으로 고르고 미리 보기</a><a href="#step2">원문에서 판단 기준 먼저 읽기</a><a href="#step3">AI에게 정리를 맡기고 추출 경고 읽기</a><a href="#step4">조치 방법을 원문과 맞춰 보기</a><a href="#step5">지식 후보를 원문과 맞춰 보기</a><a href="#step6">검토 표시하고 지식으로 적재하기</a><a href="#step7">지식 지도에서 고장에 이어진 것 보기</a><a href="#step8">쿨러에 고장 내기</a><a href="#step9">처리 건에서 진행 상황 보기</a><a href="#step10">승인 요청 읽기</a><a href="#step11">운전원을 고르고 승인하기</a><a href="#step12">승인 뒤 처리 과정 지켜보기</a><a href="#step13">처리 기록으로 처음부터 따라가기</a><a href="#step14">결과 탭에서 마무리 확인하기</a></nav><main><section id="step1"><h2>쿨러 매뉴얼을 개정으로 고르고 미리 보기</h2><p>왼쪽 메뉴 <strong>지식</strong> 아래 <strong>지식 관리</strong>를 누르세요. <strong>매뉴얼 등록</strong> 칸이 나옵니다.</p>
+<p>**제공 문서(받기)**의 첫 이름 <code>HM-8_cooler-fan-manual.md</code>를 누르면 내 컴퓨터로 내려받아지고, 브라우저 위쪽에 받은 파일이 뜹니다. <strong>파일 선택</strong>을 누르고 다운로드 폴더에서 그 파일을 고르세요. 버튼 옆에 파일 이름이 뜨면 제대로 고른 것입니다.</p>
+<p><strong>담당자</strong>는 <strong>지식 관리자</strong> 그대로 둡니다.</p>
+<p>아래 <strong>등록된 매뉴얼</strong>에는 쿨러 팬 매뉴얼이 처음부터 들어 있습니다. 그래서 <strong>등록할 문서</strong>에서는 <strong>새 문서 등록</strong>이 아니라 <code>HM-8_cooler-fan-manual.md · 문서 개정</code>을 고르세요. 새 문서로 넣으면 같은 매뉴얼이 둘이 되어 AI가 어느 쪽을 믿을지 헷갈립니다.</p>
+<figure><a href="images/06-문서개정.png"><img src="images/06-문서개정.png" alt="고른 파일과 등록할 문서의 문서 개정" loading="lazy"></a><figcaption>고른 파일과 등록할 문서의 문서 개정</figcaption></figure>
+<p><strong>미리보기</strong>를 누르세요. 넣기 전에 포털이 파일을 제대로 읽었는지 먼저 봅니다.</p>
+<p><strong>확인:</strong> 맨 위 줄에 <strong>절 8개 · 절차 7개</strong>가 나옵니다. 매뉴얼의 큰 제목 하나가 절이고, 그 안에 번호를 매겨 적은 작업 순서가 절차입니다. 그 밑 검사 칸의 <strong>수정할 항목 있음</strong>은 매뉴얼이 틀렸다는 뜻이 아닙니다. 절차를 어느 고장에 쓰는지와 언제 꺼내 쓸지(후보 규칙)가 아직 비어 있다는 뜻이고, 이 두 가지는 뒤에서 AI에게 원문을 읽혀 채웁니다. 줄마다 붙은 접힌 칸은 몰라도 됩니다.</p>
+<figure><a href="images/06-미리보기.png"><img src="images/06-미리보기.png" alt="미리보기 뒤의 절 · 절차 수와 검사 칸" loading="lazy"></a><figcaption>미리보기 뒤의 절 · 절차 수와 검사 칸</figcaption></figure>
+</section><section id="step2"><h2>원문에서 판단 기준 먼저 읽기</h2><p>AI가 정리해 온 것이 맞는지 맞춰 보려면 원문에 무엇이 적혀 있는지 먼저 알아야 합니다. 아래 <strong>추출 원문 전체 보기</strong>를 누르고, 나온 <strong>1쪽 전체</strong>를 펼치세요.</p>
 <figure><a href="images/06-원문펼치기.png"><img src="images/06-원문펼치기.png" alt="추출 원문 전체 보기와 1쪽 전체" loading="lazy"></a><figcaption>추출 원문 전체 보기와 1쪽 전체</figcaption></figure>
-<p>원문 칸을 굴리며 아래 다섯 곳을 차례로 읽으세요.</p>
-<p>벨트: 상태 확인과 교체가 따로 있습니다.</p>
-<figure><a href="images/06-벨트원문.png"><img src="images/06-벨트원문.png" alt="HM-8.2와 벨트 교체 절차" loading="lazy"></a><figcaption>HM-8.2와 벨트 교체 절차</figcaption></figure>
-<p>판정 기준: 유온, 냉각 효율, 유온이 계속 오르는지를 함께 봅니다.</p>
+<p>원문 칸을 내려 가며 아래를 차례로 찾으세요.</p>
+<ul>
+<li>맨 위 두 절(팬 점검 · 벨트 교체)은 둘 다 현장 제어(LOCAL)로 바꾸는 데서 시작합니다. 사람이 손을 대는 동안 멀리서 기계가 움직이면 위험하기 때문입니다.</li>
+<li><strong>냉각 성능 판정 기준</strong>: 유온(기름 온도) 기준은 55 ℃, 냉각 효율(쿨러가 열을 빼내는 정도) 기준은 70 %입니다. 유온이 55 ℃를 넘고 냉각 효율이 70 % 밑이면 쿨러 냉각 성능 상실입니다. 이 두 숫자는 뒤에서 고장을 낼 때 화면에서 다시 봅니다.</li>
+</ul>
 <figure><a href="images/06-판정기준.png"><img src="images/06-판정기준.png" alt="HM-8.3 냉각 성능 판정 기준" loading="lazy"></a><figcaption>HM-8.3 냉각 성능 판정 기준</figcaption></figure>
-<p>핀 오염: 어떤 값을 몇 초 · 몇 분 평균으로 보는지 찾으세요.</p>
-<figure><a href="images/06-원인증거.png"><img src="images/06-원인증거.png" alt="HM-8.4 핀 오염 — 최근 30초 냉각 효율 평균과 최근 2분 팬 진동 평균" loading="lazy"></a><figcaption>HM-8.4 핀 오염 — 최근 30초 냉각 효율 평균과 최근 2분 팬 진동 평균</figcaption></figure>
-<p>회복 판정: 조치 뒤 몇 분 동안 무엇이 유지되어야 하는지 찾으세요.</p>
-<figure><a href="images/06-회복기준.png"><img src="images/06-회복기준.png" alt="HM-8.6 회복 판정 — 조치 뒤 15분 유지" loading="lazy"></a><figcaption>HM-8.6 회복 판정 — 조치 뒤 15분 유지</figcaption></figure>
-<p>핀 세척 절차와 금지 · 제한: 원격 조치가 되는 운전 모드와 팬 연속 운전 제한을 찾으세요.</p>
-<figure><a href="images/06-금지제한.png"><img src="images/06-금지제한.png" alt="SOP-COOL-14 쿨러 핀 세척 절차와 HM-8.8 금지와 제한" loading="lazy"></a><figcaption>SOP-COOL-14 쿨러 핀 세척 절차와 HM-8.8 금지와 제한</figcaption></figure>
-<p><strong>확인:</strong> 핀 오염을 가리는 두 평균값, 회복으로 볼 시간, 원격 조치가 되는 운전 모드를 원문에서 짚을 수 있습니다.</p>
-</section><section id="step3"><h2>추출을 요청하고 조치 방법을 원문과 비교하기</h2><p>원문 칸 아래 <strong>추출 제안 준비</strong>를 한 번 누르고, 안내가 나오면 <strong>추출 진행 · 결과 확인</strong>을 누르세요. <strong>이 문서의 추출 작업</strong>이 <strong>완료</strong>가 될 때까지 기다립니다. 진행 중이면 잠시 뒤 <strong>추출 진행 · 결과 확인</strong>을 다시 누르세요.</p>
-<figure><a href="images/06-추출요청.png"><img src="images/06-추출요청.png" alt="이 문서의 추출 작업 상태" loading="lazy"></a><figcaption>이 문서의 추출 작업 상태</figcaption></figure>
-<p>검토할 제안이 나옵니다. 아직 지식이 아니라 사람이 검토할 제안입니다.</p>
-<figure><a href="images/06-조치방법.png"><img src="images/06-조치방법.png" alt="강사 화면의 예입니다. 오른쪽 등록할 조치 방법이 검토할 제안" loading="lazy"></a><figcaption>강사 화면의 예입니다. 오른쪽 등록할 조치 방법이 검토할 제안</figcaption></figure>
-<p><strong>등록할 조치 방법</strong>의 첫 항목부터 <strong>원문 인용</strong>을 펼쳐 <strong>관계</strong> · <strong>종류</strong> · 작업 단계를 원문과 비교하세요. 영어가 섞인 이름 · 번호 칸은 몰라도 됩니다.</p>
-<figure><a href="images/06-관계종류.png"><img src="images/06-관계종류.png" alt="강사 화면의 예입니다. 팬 최대 운전의 관계 · 종류와 원문 인용" loading="lazy"></a><figcaption>강사 화면의 예입니다. 팬 최대 운전의 관계 · 종류와 원문 인용</figcaption></figure>
-<figure><a href="images/06-핀세척.png"><img src="images/06-핀세척.png" alt="강사 화면의 예입니다. 쿨러 핀 세척 — 근본 조치, 종류는 정비 요청" loading="lazy"></a><figcaption>강사 화면의 예입니다. 쿨러 핀 세척 — 근본 조치, 종류는 정비 요청</figcaption></figure>
-<p>나머지 항목도 아래 표대로 비교하세요.</p>
+<ul>
+<li><strong>원인과 확인 증거</strong>: 원인은 쿨러 핀 오염(사전 확률 0.6으로 가장 흔함), 주변 온도 상승, 팬 구동 불량 셋입니다. 핀 오염과 팬 구동 불량은 팬 진동 0.9 mm/s로 가릅니다. 핀 오염이면 진동이 낮고, 팬 구동 불량이면 높습니다.</li>
+</ul>
+<figure><a href="images/06-원인.png"><img src="images/06-원인.png" alt="HM-8.4 원인 셋과 팬 진동 기준" loading="lazy"></a><figcaption>HM-8.4 원인 셋과 팬 진동 기준</figcaption></figure>
+<ul>
+<li><strong>즉시 완화 조치</strong>: 원인은 두고 온도부터 낮추는 방법(팬을 세게 돌리거나 펌프 일을 줄이기)이고, 원격 조치는 PLC 운전 모드가 REMOTE_AUTO일 때만 합니다. 절차마다 끝에 생산이 그대로인지 줄어드는지도 적혀 있습니다.</li>
+</ul>
+<figure><a href="images/06-즉시완화.png"><img src="images/06-즉시완화.png" alt="HM-8.5 즉시 완화 조치 — 원격 조치는 REMOTE_AUTO일 때만" loading="lazy"></a><figcaption>HM-8.5 즉시 완화 조치 — 원격 조치는 REMOTE_AUTO일 때만</figcaption></figure>
+<ul>
+<li><strong>회복 판정 · 근본 조치 · 금지와 제한</strong>: 조치 뒤 15분 동안 유온이 55 ℃ 밑으로 내려오고 경보가 풀리는지 봅니다. 근본 조치는 원인을 없애는 정비이고, 맨 아래 금지와 제한은 조치를 고를 때 지켜야 할 것입니다.</li>
+</ul>
+<figure><a href="images/06-회복금지.png"><img src="images/06-회복금지.png" alt="HM-8.8 금지와 제한" loading="lazy"></a><figcaption>HM-8.8 금지와 제한</figcaption></figure>
+<p><strong>확인:</strong> 판정 기준의 두 값, 원인 셋을 가르는 팬 진동 기준, 원격 조치가 되는 운전 모드를 원문에서 짚을 수 있습니다.</p>
+</section><section id="step3"><h2>AI에게 정리를 맡기고 추출 경고 읽기</h2><p>원문 아래 <strong>추출 제안 준비</strong>를 누르고, 옆에 안내가 뜨면 <strong>추출 진행 · 결과 확인</strong>을 누르세요.</p>
+<figure><a href="images/06-추출요청.png"><img src="images/06-추출요청.png" alt="추출 제안 준비와 추출 진행 · 결과 확인" loading="lazy"></a><figcaption>추출 제안 준비와 추출 진행 · 결과 확인</figcaption></figure>
+<p>AI가 정리한 결과가 아래로 나옵니다. 사람이 확인한 것만 지식이 되므로 이것은 아직 제안입니다. AI도 잘못 읽거나 원문에 없는 것을 지어낼 수 있어서, 이 확인을 직접 합니다.</p>
+<p>위쪽 <strong>추출 경고 3개</strong>를 펼치세요. AI가 정리하다가 사람에게 남긴 메모입니다. 섞여 있는 영어와 번호는 몰라도 됩니다.</p>
+<ul>
+<li>하나는 팬 점검과 벨트 교체를 쿨러 고장을 고치는 일로 붙였다는 메모입니다. 원문에 어느 고장에 붙일지 정해져 있지 않아 원문을 보고 판단했다는 뜻입니다.</li>
+<li>또 하나는 벨트를 언제 갈지는 규칙으로 만들지 않았다는 메모입니다. 벨트는 사람이 현장에서 보고 정하는 일이라 원문에 없는 조건을 지어내지 않은 것입니다.</li>
+<li>마지막은 나머지를 원문 그대로 뒀다는 메모입니다.</li>
+</ul>
+<figure><a href="images/06-추출경고.png"><img src="images/06-추출경고.png" alt="강사 화면의 예입니다. 추출 경고 원문 3개" loading="lazy"></a><figcaption>강사 화면의 예입니다. 추출 경고 원문 3개</figcaption></figure>
+<p><strong>확인:</strong> 그 밑 검사 칸에는 미리보기 때 비어 있던 칸이 채워져 벨트 교체 한 줄만 남습니다. 벨트 규칙은 일부러 만들지 않았으니 그 줄이 남는 것이 맞습니다.</p>
+</section><section id="step4"><h2>조치 방법을 원문과 맞춰 보기</h2><p>아래 왼쪽은 매뉴얼의 절이고, 오른쪽 <strong>등록할 조치 방법</strong>은 AI가 절차 하나를 조치 하나로 정리한 것입니다. 모두 일곱 개이고, 볼 칸은 둘입니다.</p>
+<ul>
+<li><strong>관계</strong>: 이 조치가 급한 불을 끄는 것(즉시 완화)인지, 원인을 없애는 것(근본 조치)인지</li>
+<li><strong>종류</strong>: 설비에 명령을 보내는 것(설비 제어)인지, 사람에게 정비를 맡기는 것(정비 요청)인지</li>
+</ul>
+<p>이 둘이 틀리면 AI가 급한 조치와 정비를 헷갈립니다. <strong>절차의 업무 범위</strong>나 영어로 된 칸은 몰라도 됩니다.</p>
+<figure><a href="images/06-조치방법.png"><img src="images/06-조치방법.png" alt="강사 화면의 예입니다. 등록할 조치 방법의 관계와 종류" loading="lazy"></a><figcaption>강사 화면의 예입니다. 등록할 조치 방법의 관계와 종류</figcaption></figure>
 <table>
 <thead>
 <tr>
 <th>조치 방법</th>
-<th>원문과 맞춰 볼 것</th>
+<th>관계</th>
+<th>종류</th>
+<th>까닭</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>팬 최대 운전</td>
-<td>팬을 올리기 전에 운전 모드를 확인하는지, 올린 뒤 다시 관측하는지</td>
-</tr>
-<tr>
-<td>팬 최대 운전과 부하 80 %</td>
-<td>부하를 낮추는 대상과 값. 생산 속도에 영향을 주므로 팬만 바꾸는 조치와 구별</td>
-</tr>
-<tr>
-<td>부하 70 %와 야간 핀 세척</td>
-<td>팬 속도는 그대로 두고, 부하를 낮추는 단계와 야간 정비 요청 단계가 함께 있는지</td>
-</tr>
-<tr>
-<td>쿨러 핀 세척</td>
-<td>정지와 잠금을 거쳐 사람이 작업하는 근본 조치인지</td>
-</tr>
-<tr>
-<td>캐비닛 환기 보강</td>
-<td>작업 전 온도 기록과 작업 뒤 온도 확인이 모두 남았는지</td>
-</tr>
-<tr>
 <td>쿨러 팬 점검</td>
-<td>정지와 현장 제어, 벨트 · 베어링 점검, 재가동 뒤 진동 확인 순서</td>
+<td>근본 조치</td>
+<td>정비 요청</td>
+<td>사람이 팬을 손보는 일</td>
 </tr>
 <tr>
 <td>벨트 교체</td>
-<td>현장 제어로 바꾸고 잠금을 확인한 뒤 시작하는지</td>
+<td>근본 조치</td>
+<td>정비 요청</td>
+<td>사람이 팬을 손보는 일</td>
+</tr>
+<tr>
+<td>팬 최대 운전</td>
+<td>즉시 완화</td>
+<td>설비 제어</td>
+<td>멀리서 명령으로 팬을 세게 돌려 온도부터 잡는 일</td>
+</tr>
+<tr>
+<td>팬 최대 운전과 부하 80 %</td>
+<td>즉시 완화</td>
+<td>설비 제어</td>
+<td>펌프 일을 줄여 부하를 낮추는 명령</td>
+</tr>
+<tr>
+<td>부하 70 %와 야간 핀 세척</td>
+<td>즉시 완화</td>
+<td>설비 제어</td>
+<td>펌프 일을 줄여 부하를 낮추는 명령</td>
+</tr>
+<tr>
+<td>쿨러 핀 세척</td>
+<td>근본 조치</td>
+<td>정비 요청</td>
+<td>사람이 설비를 세워 놓고 하는 일</td>
+</tr>
+<tr>
+<td>캐비닛 환기 보강</td>
+<td>근본 조치</td>
+<td>정비 요청</td>
+<td>사람이 현장에서 하는 일</td>
 </tr>
 </tbody>
 </table>
-<p><strong>확인:</strong> 일곱 조치의 관계 · 종류 · 첫 단계가 원문과 맞습니다. 어긋난 칸은 원문대로 고치고, 원문에 근거가 없는 항목은 <strong>제외</strong>에 표시하세요. 판단은 사진이 아니라 원문과 비교해서 합니다.</p>
-</section><section id="step4"><h2>지식 후보를 원문과 비교하기</h2><p>아래로 내려 <strong>추출한 지식 후보</strong>의 각 항목에서 <strong>원문 인용</strong>을 열어 비교하세요.</p>
-<p><strong>원인</strong>: 핀 오염, 주변 온도 상승, 팬 구동 불량을 어떤 관측으로 구분하는지 봅니다.</p>
-<figure><a href="images/06-원인후보.png"><img src="images/06-원인후보.png" alt="강사 화면의 예입니다. 원인 후보 셋과 원문 인용" loading="lazy"></a><figcaption>강사 화면의 예입니다. 원인 후보 셋과 원문 인용</figcaption></figure>
-<p><strong>확인 증거</strong>: 평균 시간과 비교 방향(낮은 진동 · 높은 진동)을 봅니다.</p>
-<figure><a href="images/06-확인증거.png"><img src="images/06-확인증거.png" alt="강사 화면의 예입니다. 팬 진동의 평균 시간과 비교 방향" loading="lazy"></a><figcaption>강사 화면의 예입니다. 팬 진동의 평균 시간과 비교 방향</figcaption></figure>
-<p><strong>규칙</strong>: 굵은 글씨의 조건만 보세요. 원격 자동이 아니면 원격 조치를 빼고, 팬 최대 운전이 연속 시간 기준을 넘으면 비용을 감점하며, 예측 유온 경고는 다른 대안과 비교하라는 뜻입니다.</p>
-<figure><a href="images/06-제한경고.png"><img src="images/06-제한경고.png" alt="강사 화면의 예입니다. 굵은 글씨의 조건 셋" loading="lazy"></a><figcaption>강사 화면의 예입니다. 굵은 글씨의 조건 셋</figcaption></figure>
-<p><strong>확인:</strong> 원인 셋 · 확인 증거 넷의 조건이 원문과 맞습니다. 어긋나면 고치거나 <strong>제외</strong>에 표시하세요.</p>
-</section><section id="step5"><h2>추출 경고를 읽고 지식으로 적재하기</h2><p>위로 올라가 <strong>추출 경고 원문</strong>을 펼치고 두 번째 경고를 읽으세요. 벨트 교체는 현장 점검(처짐 · 균열) 결과로 정합니다.</p>
-<figure><a href="images/06-경고.png"><img src="images/06-경고.png" alt="강사 화면의 예입니다. 두 번째 경고의 현장 점검 조건" loading="lazy"></a><figcaption>강사 화면의 예입니다. 두 번째 경고의 현장 점검 조건</figcaption></figure>
-<p>아래로 내려 <strong>원문 · 단계 · 고장 유형 · 관계를 검토했습니다</strong>에 체크하고 <strong>검토한 내용 적재</strong>를 누르세요.</p>
-<p><strong>확인:</strong> <strong>적재 완료</strong>와 함께 절 · 조치 방법 · 단계 수, 후보 규칙에 연결된 고장이 나옵니다. 사진에서는 절 8 · 조치 방법 7 · 단계 25, 쿨러 냉각 성능 상실입니다. 제외한 항목이 있으면 수가 그만큼 다릅니다.</p>
-<figure><a href="images/06-적재결과.png"><img src="images/06-적재결과.png" alt="적재 완료 아래의 절 · 조치 방법 · 단계 수와 연결된 고장" loading="lazy"></a><figcaption>적재 완료 아래의 절 · 조치 방법 · 단계 수와 연결된 고장</figcaption></figure>
-</section><section id="step6"><h2>지식 지도에서 고장과 조치의 연결 찾기</h2><p>왼쪽 <strong>지식 지도</strong>를 누르고 <strong>이름 검색</strong>에 <code>쿨러</code>를 넣으세요. 쿨러가 든 항목이 노랗게 표시됩니다.</p>
-<figure><a href="images/06-지도검색.png"><img src="images/06-지도검색.png" alt="노랗게 표시된 쿨러 항목" loading="lazy"></a><figcaption>노랗게 표시된 쿨러 항목</figcaption></figure>
-<p>지도를 굴려 <strong>고장 유형</strong> 아래의 노란 <strong>쿨러 냉각 성능 상실</strong>을 누르세요.</p>
-<figure><a href="images/06-지도고장유형.png"><img src="images/06-지도고장유형.png" alt="고장 유형 아래의 쿨러 냉각 성능 상실" loading="lazy"></a><figcaption>고장 유형 아래의 쿨러 냉각 성능 상실</figcaption></figure>
-<p>아래로 내려 <strong>나가는 관계</strong>에서 <strong>즉시 완화</strong>와 <strong>근본 조치</strong>를 찾으세요.</p>
-<figure><a href="images/06-지도관계.png"><img src="images/06-지도관계.png" alt="나가는 관계의 즉시 완화와 근본 조치" loading="lazy"></a><figcaption>나가는 관계의 즉시 완화와 근본 조치</figcaption></figure>
-<p><strong>확인:</strong> 즉시 완화에 <strong>팬 최대 운전</strong>, 근본 조치에 <strong>쿨러 핀 세척</strong>이 있습니다. 없으면 <strong>지식 관리</strong>의 적재 결과부터 다시 보세요.</p>
-</section><section id="step7"><h2>운전원을 고르고 쿨러 열화 일으키기</h2><p>왼쪽 <strong>내 작업함</strong>을 누르고 <strong>나</strong>에서 <strong>최운전 · 운전원</strong>을 고르세요. 승인은 이 역할로 합니다.</p>
-<figure><a href="images/06-운전원.png"><img src="images/06-운전원.png" alt="오른쪽 위에도 바뀐 이름 최운전" loading="lazy"></a><figcaption>오른쪽 위에도 바뀐 이름 최운전</figcaption></figure>
-<p>왼쪽 <strong>결함 시뮬레이션</strong>을 누르고 <strong>HYD-01</strong> 카드의 운전 모드 · 유온 · 냉각 효율을 먼저 읽어 두세요. 사진에서는 원격 자동, 48.0 ℃, 84 %입니다.</p>
-<figure><a href="images/06-설비시작.png"><img src="images/06-설비시작.png" alt="HYD-01의 운전 모드 · 유온 · 냉각 효율" loading="lazy"></a><figcaption>HYD-01의 운전 모드 · 유온 · 냉각 효율</figcaption></figure>
-<p>카드를 아래로 내려 <strong>결함 실험 · A 긴급 대응</strong>의 <strong>쿨러 열화 주입</strong>을 한 번 누르세요.</p>
-<p>결함이 이미 진행 중이거나 쿨러 성능 비율이 100 %가 아니면, 먼저 <strong>쿨러 복구</strong>를 누르고 <strong>감지기가 다음 경보를 기다립니다</strong>가 나온 뒤 주입하세요.</p>
-<figure><a href="images/06-열화주입전.png"><img src="images/06-열화주입전.png" alt="원격 자동과 쿨러 열화 주입 버튼" loading="lazy"></a><figcaption>원격 자동과 쿨러 열화 주입 버튼</figcaption></figure>
-<p>화면을 그대로 두고 기다리세요. 쿨러 성능 비율과 냉각 효율이 떨어지다가, 강사 화면에서는 1분 안에 <strong>경보</strong> 칸이 <strong>경보 발생</strong>으로 바뀌었습니다.</p>
-<figure><a href="images/06-경보발생.png"><img src="images/06-경보발생.png" alt="떨어진 쿨러 성능 비율과 경보 발생" loading="lazy"></a><figcaption>떨어진 쿨러 성능 비율과 경보 발생</figcaption></figure>
-<p>왼쪽 <strong>처리 건</strong>을 누르고 새로 생긴 <strong>냉각 긴급 대응 HYD-01</strong>을 누르세요. 보이지 않으면 <strong>다시 읽기</strong>를 누릅니다.</p>
+<p>팬 최대 운전의 <strong>원문 인용</strong>을 눌러 펼치세요. 이 조치를 매뉴얼의 어느 절차에서 뽑았는지 나오고, 밑의 작업 순서도 원문처럼 원격 자동인지 확인하는 데서 시작합니다. 이름이 같아도 이런 단계 하나가 빠지면 다른 작업이 되므로 순서까지 봅니다.</p>
+<figure><a href="images/06-원문인용.png"><img src="images/06-원문인용.png" alt="강사 화면의 예입니다. 팬 최대 운전 — 즉시 완화 · 설비 제어와 원문 인용" loading="lazy"></a><figcaption>강사 화면의 예입니다. 팬 최대 운전 — 즉시 완화 · 설비 제어와 원문 인용</figcaption></figure>
+<p><strong>확인:</strong> 일곱 조치의 관계 · 종류와 작업 순서가 원문과 맞습니다. 원문과 다르면 원문대로 고칩니다.</p>
+</section><section id="step5"><h2>지식 후보를 원문과 맞춰 보기</h2><p>조치 밑의 <strong>추출한 지식 후보</strong>에는 AI가 뽑아 온 고장, 원인, 확인 증거, 규칙이 있습니다. 맨 위 <strong>고장 유형</strong>은 쿨러 냉각 성능 상실이고, 그 밑 <strong>원인</strong> 셋도 원문의 세 원인입니다.</p>
+<p>핀 오염의 <strong>원문 인용</strong>을 펼치세요. 냉각 효율이 70 % 밑이고 팬 진동이 0.9 mm/s 밑이면 핀 오염이라는 원문 문장이 나옵니다.</p>
+<figure><a href="images/06-원인원문.png"><img src="images/06-원인원문.png" alt="강사 화면의 예입니다. 쿨러 핀 오염의 원문 인용" loading="lazy"></a><figcaption>강사 화면의 예입니다. 쿨러 핀 오염의 원문 인용</figcaption></figure>
+<p><strong>확인 증거</strong>는 그 조건을 한 줄씩 나눠 적은 것으로, 뒤에서 AI가 센서 값과 한 줄씩 맞춰 보는 데 씁니다. 줄마다 볼 것은 두 가지입니다. 미만이 이상으로 바뀌지 않았는지, 그리고 줄 앞의 시간(최근 30초, 최근 2분)이 원문과 같은지입니다. 값은 순간순간 튀므로 그 시간 동안의 평균으로 봅니다.</p>
+<figure><a href="images/06-확인증거.png"><img src="images/06-확인증거.png" alt="강사 화면의 예입니다. 확인 증거의 시간과 미만 · 이상" loading="lazy"></a><figcaption>강사 화면의 예입니다. 확인 증거의 시간과 미만 · 이상</figcaption></figure>
+<p><strong>규칙</strong>은 「이럴 땐 이렇게 하라」는 약속입니다. 규칙에 나오는 <code>COOLER_DEGRADATION</code>(쿨러 성능 저하)은 경보에 붙는 이름이고, 이 경보가 가리키는 고장이 쿨러 냉각 성능 상실입니다. 첫 줄은 이 경보가 오고 냉각 효율이 70 % 밑이면 핀 오염부터 의심하라는 규칙이고, 다음 줄은 그 경보가 오면 즉시 완화 세 가지를 고를 거리로 올려 두라는 규칙입니다. 미리보기 검사 칸에서 없다던 것이 이 규칙입니다.</p>
+<figure><a href="images/06-규칙.png"><img src="images/06-규칙.png" alt="강사 화면의 예입니다. 규칙의 첫 두 줄" loading="lazy"></a><figcaption>강사 화면의 예입니다. 규칙의 첫 두 줄</figcaption></figure>
+<p>줄마다 붙은 <strong>제외</strong> 칸은 원문과 다른 줄이 있을 때 체크해 그 줄만 빼고 넣는 칸입니다. 다 맞으면 비워 둡니다.</p>
+<p><strong>확인:</strong> 원인 셋의 원문 문장, 확인 증거 넷의 미만 · 이상과 시간이 원문과 맞습니다.</p>
+</section><section id="step6"><h2>검토 표시하고 지식으로 적재하기</h2><p>맨 아래 <strong>원문 · 단계 · 고장 유형 · 관계를 검토했습니다</strong>에 체크하세요. 사람이 확인했다는 표시입니다. 그리고 <strong>검토한 내용 적재</strong>를 누르세요.</p>
+<p><strong>확인:</strong> <strong>적재 완료</strong>와 함께 절 · 조치 방법 · 단계 수와 후보 규칙에 연결된 고장이 나옵니다. 강사 화면에서는 절 8 · 조치 방법 7 · 단계 25, 쿨러 냉각 성능 상실이었습니다. 제외한 줄이 있으면 수가 그만큼 다릅니다. 아래 <strong>등록된 매뉴얼</strong> 맨 위에도 쿨러 팬 매뉴얼이 <strong>현재 판본</strong>으로 올라옵니다.</p>
+<figure><a href="images/06-적재결과.png"><img src="images/06-적재결과.png" alt="검토 체크와 적재 완료의 수" loading="lazy"></a><figcaption>검토 체크와 적재 완료의 수</figcaption></figure>
+</section><section id="step7"><h2>지식 지도에서 고장에 이어진 것 보기</h2><p>AI는 지식 지도의 선을 따라 원인과 조치를 찾아갑니다. 왼쪽 <strong>지식 지도</strong>를 누르고, 위 검색 칸에 <code>쿨러</code>를 넣은 뒤, 나온 것 가운데 <strong>쿨러 냉각 성능 상실</strong>을 누르세요.</p>
+<figure><a href="images/06-지도검색.png"><img src="images/06-지도검색.png" alt="검색 칸의 쿨러 — 쿨러가 든 항목이 노랗게 표시된다" loading="lazy"></a><figcaption>검색 칸의 쿨러 — 쿨러가 든 항목이 노랗게 표시된다</figcaption></figure>
+<p>아래 칸이 이 고장에 선으로 이어진 것들입니다. 선을 하나하나 읽는 법은 다음 회차에서 자세히 보고, 오늘은 무엇이 붙어 있는지만 봅니다.</p>
+<ul>
+<li><strong>들어오는 관계</strong>: 쿨러 핀 오염 · 주변 온도 상승 · 팬 구동 불량이 이 고장을 일으키는 원인이고, 유온 상승과 냉각 효율 저하가 이 고장을 나타내는 증상입니다.</li>
+<li><strong>나가는 관계</strong>: 팬 최대 운전, 쿨러 핀 세척 같은 조치들과, 이 고장이 생기는 자리인 오일 쿨러가 있습니다.</li>
+</ul>
+<p>고장 자체는 눈에 보이지 않고 화면에 보이는 것은 증상뿐입니다. 그래서 AI는 증상에서 출발해 이 고장을 찾고, 그 원인을 찾고, 이 고장에 붙은 조치를 꺼내 옵니다. 선을 이렇게 이어 둔 까닭입니다.</p>
+<figure><a href="images/06-지도관계.png"><img src="images/06-지도관계.png" alt="쿨러 냉각 성능 상실의 나가는 관계 · 들어오는 관계" loading="lazy"></a><figcaption>쿨러 냉각 성능 상실의 나가는 관계 · 들어오는 관계</figcaption></figure>
+<p><strong>확인:</strong> 들어오는 관계에 원인 셋, 나가는 관계에 즉시 완화와 근본 조치가 있습니다.</p>
+</section><section id="step8"><h2>쿨러에 고장 내기</h2><p>왼쪽 <strong>결함 시뮬레이션</strong>을 누르세요. 고장을 내기 전에 <strong>HYD-01</strong> 카드에서 멀쩡할 때의 값을 읽어 둡니다. 그래야 무엇이 달라지는지 압니다. 강사 화면에서는 유온 48.0 ℃, 냉각 효율 84 %, 팬 진동은 0.9 mm/s보다 한참 낮았고, 오른쪽 위는 <strong>원격 자동</strong>이었습니다. 매뉴얼에서 원격 조치는 이 상태일 때만 한다고 했습니다.</p>
+<figure><a href="images/06-설비시작.png"><img src="images/06-설비시작.png" alt="HYD-01의 원격 자동 · 유온 · 냉각 효율" loading="lazy"></a><figcaption>HYD-01의 원격 자동 · 유온 · 냉각 효율</figcaption></figure>
+<p>카드 아래쪽 <strong>쿨러 열화 주입</strong>을 한 번 누르세요.</p>
+<figure><a href="images/06-열화주입.png"><img src="images/06-열화주입.png" alt="쿨러 열화 주입 버튼" loading="lazy"></a><figcaption>쿨러 열화 주입 버튼</figcaption></figure>
+<p>화면을 그대로 두고 지켜보세요.</p>
+<ul>
+<li><strong>쿨러 성능 비율</strong>(쿨러 자체의 상태)이 먼저 떨어지고, 그 결과로 위의 <strong>냉각 효율</strong>도 내려가 70 % 밑으로 들어옵니다. 팬 진동은 여전히 낮으니 매뉴얼대로라면 핀 오염 쪽입니다.</li>
+<li>기름이 덜 식으니 유온이 천천히 오르고, 숫자 아래 막대(보호 정지까지 남은 여유)도 차오릅니다.</li>
+<li>유온이 55 ℃를 넘으면 <strong>경보</strong> 칸이 <strong>이상 징후</strong>였다가 <strong>경보 발생</strong>으로 바뀝니다. 값이 잠깐 튄 것으로 경보를 울리지 않도록 그 상태가 계속되는지 조금 지켜본 뒤 경보를 냅니다. 이 설비는 시간이 실제보다 스무 배 빨리 흘러서, 강사 화면에서는 누른 뒤 1분 안쪽에 경보 발생이 됐습니다.</li>
+</ul>
+<figure><a href="images/06-경보발생.png"><img src="images/06-경보발생.png" alt="떨어진 냉각 효율 · 쿨러 성능 비율과 경보 발생" loading="lazy"></a><figcaption>떨어진 냉각 효율 · 쿨러 성능 비율과 경보 발생</figcaption></figure>
+</section><section id="step9"><h2>처리 건에서 진행 상황 보기</h2><p>경보가 났으면 왼쪽 <strong>처리 건</strong>을 누르세요.</p>
+<p>위 <strong>내 차례</strong>에는 지금 사람이 할 차례인 일이 뜹니다. <strong>운전원 승인</strong>이 하나 올라와 있고, 그 밑에 크게 뜬 것이 그 <strong>승인 요청</strong>입니다.</p>
+<p>아래 목록에는 <strong>냉각 긴급 대응 HYD-01</strong>이 새로 생겼습니다. 경보가 들어오자 처리 건이 하나 열린 것이고, 이 고장이 끝날 때까지 일어나는 일이 모두 이 안에 남습니다. 그 밑의 건은 앞에서 매뉴얼 정리를 맡긴 일입니다.</p>
 <figure><a href="images/06-새처리건.png"><img src="images/06-새처리건.png" alt="새로 생긴 냉각 긴급 대응 HYD-01" loading="lazy"></a><figcaption>새로 생긴 냉각 긴급 대응 HYD-01</figcaption></figure>
-<p><strong>진행 상황</strong> 탭을 누르세요.</p>
-<figure><a href="images/06-진행상황.png"><img src="images/06-진행상황.png" alt="끝난 단계와 진행 중인 운전원 승인" loading="lazy"></a><figcaption>끝난 단계와 진행 중인 운전원 승인</figcaption></figure>
-<p><strong>확인:</strong> 원인 진단이 끝났고 <strong>운전원 승인</strong>이 진행 중입니다. 원인 진단이 아직 진행 중이면 조금 기다리세요.</p>
-</section><section id="step8"><h2>추천과 근거를 읽고 승인하기</h2><p>왼쪽 <strong>내 작업함</strong>의 <strong>내 작업</strong>에서 <strong>운전원 승인</strong> 요청을 누르세요.</p>
-<figure><a href="images/06-작업요청.png"><img src="images/06-작업요청.png" alt="운전원 승인 요청의 설비 · 기한" loading="lazy"></a><figcaption>운전원 승인 요청의 설비 · 기한</figcaption></figure>
-<p><strong>받은 입력</strong>의 <strong>조치 카드 묶음</strong>을 읽으세요. 관측값이 앞에서 찾은 매뉴얼 조건과 맞는지, 추천안이 지금 운전 모드에서 실행되는지 봅니다. 사진의 추천안과 같다는 것만으로 승인하지 않습니다.</p>
-<figure><a href="images/06-승인근거.png"><img src="images/06-승인근거.png" alt="강사 화면의 예입니다. 조치 카드 묶음의 추천안과 대안의 순위 · 이유" loading="lazy"></a><figcaption>강사 화면의 예입니다. 조치 카드 묶음의 추천안과 대안의 순위 · 이유</figcaption></figure>
-<p>아래로 내려 승인하면 나갈 명령과 근거를 읽고, <strong>역할</strong>이 <strong>운전원</strong>인지 보세요.</p>
-<figure><a href="images/06-승인카드.png"><img src="images/06-승인카드.png" alt="강사 화면의 예입니다. 나갈 명령 · 근거와 역할" loading="lazy"></a><figcaption>강사 화면의 예입니다. 나갈 명령 · 근거와 역할</figcaption></figure>
-<p>조건이 맞으면 오른쪽 아래 <strong>승인</strong>을 누르세요. 거절하려면 <strong>사유</strong>에 까닭을 적습니다.</p>
-<figure><a href="images/06-승인선택.png"><img src="images/06-승인선택.png" alt="역할 운전원과 승인 버튼" loading="lazy"></a><figcaption>역할 운전원과 승인 버튼</figcaption></figure>
-<p><strong>처리 과정</strong>에서 <strong>운전원 승인</strong>을 펼치고 <strong>단계 자세히</strong>를 누르세요.</p>
-<figure><a href="images/06-단계자세히.png"><img src="images/06-단계자세히.png" alt="운전원 승인 아래의 단계 자세히" loading="lazy"></a><figcaption>운전원 승인 아래의 단계 자세히</figcaption></figure>
-<p><strong>판단 · 출력</strong>을 펼치세요. 사진에서는 권고와 고른 조치가 둘 다 팬 최대 운전, 승인자는 최운전, 사유는 값 없음입니다.</p>
-<figure><a href="images/06-승인판단.png"><img src="images/06-승인판단.png" alt="강사 화면의 예입니다. 권고 · 고른 조치 · 승인자" loading="lazy"></a><figcaption>강사 화면의 예입니다. 권고 · 고른 조치 · 승인자</figcaption></figure>
-<p><strong>다음 단계로 넘긴 값</strong>을 펼치세요.</p>
-<figure><a href="images/06-승인전달.png"><img src="images/06-승인전달.png" alt="강사 화면의 예입니다. 다음 단계로 넘긴 값의 고른 조치" loading="lazy"></a><figcaption>강사 화면의 예입니다. 다음 단계로 넘긴 값의 고른 조치</figcaption></figure>
-<p><strong>확인:</strong> 넘긴 값의 고른 조치가 내가 승인한 조치와 같습니다.</p>
-</section><section id="step9"><h2>원인 판단에 쓰인 정보 확인하기</h2><p><strong>닫기</strong>를 누르고 <strong>원인 진단 · 냉각 조치 제안</strong>의 <strong>단계 자세히</strong> → <strong>받은 입력</strong>을 펼치세요. 경보 · 관측 값 · 판단 대상이 보입니다.</p>
-<figure><a href="images/06-원인입력.png"><img src="images/06-원인입력.png" alt="강사 화면의 예입니다. 원인 진단 단계의 받은 입력" loading="lazy"></a><figcaption>강사 화면의 예입니다. 원인 진단 단계의 받은 입력</figcaption></figure>
-<p><strong>판단 · 출력</strong>의 <strong>원인</strong>을 읽으세요. 냉각 효율과 팬 진동 조건이 쓰였는지 봅니다.</p>
-<figure><a href="images/06-원인판단.png"><img src="images/06-원인판단.png" alt="강사 화면의 예입니다. 판단 · 출력의 원인" loading="lazy"></a><figcaption>강사 화면의 예입니다. 판단 · 출력의 원인</figcaption></figure>
-<p><strong>처리 과정</strong>을 펼쳐 AI가 어떤 정보를 찾아 확인했는지 보세요. 관측이 오래됐거나 센서 값이 빠졌으면 그 판단은 믿을 수 없습니다.</p>
-<figure><a href="images/06-처리과정.png"><img src="images/06-처리과정.png" alt="강사 화면의 예입니다. AI가 찾아 확인한 정보" loading="lazy"></a><figcaption>강사 화면의 예입니다. AI가 찾아 확인한 정보</figcaption></figure>
-<p>다시 <strong>판단 · 출력</strong>에서 판단 근거와 추천을 읽으세요. 어떤 관측과 운전 조건으로 후보를 남겼는지 봅니다.</p>
-<figure><a href="images/06-추천판단.png"><img src="images/06-추천판단.png" alt="강사 화면의 예입니다. 판단 근거와 추천" loading="lazy"></a><figcaption>강사 화면의 예입니다. 판단 근거와 추천</figcaption></figure>
-<p><strong>확인:</strong> 판단 근거의 조건이 매뉴얼 원문에 있습니다. 원문에 없는 조건이 있으면 근거가 부족한 판단입니다.</p>
-</section><section id="step10"><h2>처리 기록에서 예측 · 명령 · 재관측 구별하기</h2><p><strong>닫기</strong>를 누르고 <strong>처리 기록</strong> 탭을 누르세요. 경보부터 승인, 시스템 처리까지 시간 순서로 나옵니다.</p>
-<figure><a href="images/06-기록탭.png"><img src="images/06-기록탭.png" alt="처리 기록 탭 위쪽의 처리 순서" loading="lazy"></a><figcaption>처리 기록 탭 위쪽의 처리 순서</figcaption></figure>
-<p>처리 순서의 <strong>원인 진단 · 냉각 조치 제안</strong>을 누르고 <strong>비교한 대안</strong>의 예측 유온을 읽으세요. 예측값이지 다시 잰 온도가 아닙니다.</p>
-<figure><a href="images/06-대안비교.png"><img src="images/06-대안비교.png" alt="강사 화면의 예입니다. 비교한 대안의 예측 평형 유온" loading="lazy"></a><figcaption>강사 화면의 예입니다. 비교한 대안의 예측 평형 유온</figcaption></figure>
-<p>아래로 내려 <strong>냉각 명령</strong>에서 나간 명령과 설비의 확인 응답(ACK)을, <strong>재관측</strong>에서 명령 뒤 다시 잰 값을 읽으세요. 확인 응답은 명령을 처리했다는 뜻이고, 유온 회복은 재관측으로 봅니다.</p>
-<p>사진에서는 설비 시간 20분 동안 유온이 59.7 ℃에서 51.2 ℃로 내려갔고 기준 안에 있던 시간은 67 %입니다. 값은 실행마다 다릅니다. 원문의 회복 조건은 15분 연속 유지이므로 이 비율만으로는 연속 유지를 알 수 없습니다.</p>
-<figure><a href="images/06-처리기록.png"><img src="images/06-처리기록.png" alt="냉각 명령의 실행 완료 응답과 재관측의 유온 변화 · 기준 안 시간 비율" loading="lazy"></a><figcaption>냉각 명령의 실행 완료 응답과 재관측의 유온 변화 · 기준 안 시간 비율</figcaption></figure>
-<p><strong>확인:</strong> 예측값, 확인 응답, 다시 잰 값을 각각 다른 자리에서 짚을 수 있습니다.</p>
-</section><section id="step11"><h2>결과와 남은 정비 요청 확인하기</h2><p><strong>결과</strong> 탭을 누르세요. 정상 · 기준 미달 · 확인 중 가운데 무엇인지와 그 판단에 쓴 관측 값을 읽습니다. 유온이 기준 55 ℃ 아래로 내려왔고 경보가 해제됐다고 남지만, 매뉴얼의 15분 연속 유지까지 확인한 판정은 아닙니다. <strong>처리 기록 보기</strong>를 누르세요.</p>
-<figure><a href="images/06-결과탭.png"><img src="images/06-결과탭.png" alt="결과 탭의 유온 · 경보 해제와 처리 기록 보기" loading="lazy"></a><figcaption>결과 탭의 유온 · 경보 해제와 처리 기록 보기</figcaption></figure>
-<p>처리 순서의 <strong>작업지시 등록</strong>을 누르세요. 정비 요청이 등록된 것이지 정비가 끝난 것은 아닙니다.</p>
-<figure><a href="images/06-후속정비.png"><img src="images/06-후속정비.png" alt="작업지시 등록의 정비 오더" loading="lazy"></a><figcaption>작업지시 등록의 정비 오더</figcaption></figure>
-<p>처리 순서 맨 위 <strong>센서 경보로 시작</strong>을 누르고, 원인 판단 → 승인 → 명령 → 재관측으로 내려가며 각 단계의 결과가 다음 단계의 입력이 됐는지 보세요. 기록의 뜻은 <a href="%EC%B0%B8%EA%B3%A0_%EA%B5%90%EC%9E%AC_%EB%B0%9C%EC%B7%8C.md">참고 교재 발췌</a>에 있습니다.</p>
-<figure><a href="images/06-처음경보.png"><img src="images/06-처음경보.png" alt="센서 경보로 시작의 설비 · 시각 · 값" loading="lazy"></a><figcaption>센서 경보로 시작의 설비 · 시각 · 값</figcaption></figure>
-<p><strong>확인:</strong> 같은 처리 건에서 AI의 추천, 사람의 승인, 설비의 응답, 다시 잰 값, 남은 정비 요청을 차례로 가리킬 수 있으면 이 실습을 마친 것입니다.</p>
+<p>오른쪽 <strong>진행 상황</strong> 그림을 보세요.</p>
+<p><strong>확인:</strong> 에이전트 줄의 <strong>원인 진단 · 냉각 조치 제안</strong>이 초록으로 끝나 있고, 담당자 줄의 <strong>운전원 승인</strong>에서 멈춰 있습니다. 위에는 운전원 선택을 기다리는 중이라고 나옵니다. 누가 운전원으로 승인할지가 아직 정해지지 않았다는 뜻입니다. AI가 고른 것을 해도 될지는 사람이 정해야 하므로 설비로는 아직 아무것도 가지 않았습니다.</p>
+<figure><a href="images/06-진행상황.png"><img src="images/06-진행상황.png" alt="끝난 원인 진단과 멈춰 있는 운전원 승인" loading="lazy"></a><figcaption>끝난 원인 진단과 멈춰 있는 운전원 승인</figcaption></figure>
+</section><section id="step10"><h2>승인 요청 읽기</h2><p>위로 올라가 <strong>승인 요청</strong>을 읽으세요. 아래는 강사 화면의 예이고, 추천안과 순위는 실행할 때마다 다시 계산되므로 다를 수 있습니다.</p>
+<ul>
+<li>승인 요청 옆에는 <strong>지연 알림</strong>까지 남은 시간이 있습니다. 그 안에 아무도 승인하지 않으면 알림이 갑니다.</li>
+<li>맨 위에 크게 적힌 것이 첫 번째로 꼽힌 조치입니다. AI가 짚은 원인과 근거로 판단 엔진이 순위를 매겼습니다.</li>
+<li>그 밑에 이 조치를 하면 유온이 어디까지 내려갈지 예상한 값, <strong>좋아지는 것</strong>과 <strong>감수할 것</strong>, 승인하면 시스템이 할 일, 이 판단의 출처(앞에서 넣은 매뉴얼)가 있습니다. 승인하는 사람이 얻는 것과 치를 것을 같이 보고 정하라고 나란히 보여 줍니다.</li>
+</ul>
+<figure><a href="images/06-승인요청.png"><img src="images/06-승인요청.png" alt="강사 화면의 예입니다. 승인 요청의 첫 번째 조치와 예상 · 좋아지는 것 · 감수할 것" loading="lazy"></a><figcaption>강사 화면의 예입니다. 승인 요청의 첫 번째 조치와 예상 · 좋아지는 것 · 감수할 것</figcaption></figure>
+<p>접힌 칸 가운데 <strong>다른 안 3개는 왜 졌나</strong>를 펼치세요. 강사 화면에서는 부하를 낮추는 안들이 온도는 더 내려가지만 생산이 줄어서 졌고(매뉴얼 절차 끝의 생산 이야기가 여기서 쓰입니다), 핀 세척은 설비를 세워야 해서 뒤로 밀렸습니다. 오른쪽 <strong>이 안으로 바꾸기</strong>를 누르면 다른 안으로 바꿔 승인할 수 있지만, 이번 실습에서는 고른 대로 승인합니다.</p>
+<figure><a href="images/06-다른안.png"><img src="images/06-다른안.png" alt="강사 화면의 예입니다. 다른 안 3개는 왜 졌나와 이 안으로 바꾸기" loading="lazy"></a><figcaption>강사 화면의 예입니다. 다른 안 3개는 왜 졌나와 이 안으로 바꾸기</figcaption></figure>
+<p><strong>확인:</strong> 맨 아래 <strong>승인</strong> 버튼이 흐립니다. 승인에는 누가 했는지가 남아야 하므로 먼저 나를 고르라고 나옵니다.</p>
+</section><section id="step11"><h2>운전원을 고르고 승인하기</h2><p>이 승인 요청은 운전원이 승인하는 일입니다. 왼쪽 <strong>내 작업함</strong>을 누르고, <strong>나</strong> 칸에서 <strong>최운전 · 운전원</strong>을 고르세요. 포털에 미리 등록해 둔 운전원입니다.</p>
+<p><strong>확인:</strong> 밑의 <strong>내 작업</strong>에 <strong>운전원 승인</strong>이 와 있습니다.</p>
+<figure><a href="images/06-운전원.png"><img src="images/06-운전원.png" alt="나 칸의 최운전 · 운전원과 내 작업의 운전원 승인" loading="lazy"></a><figcaption>나 칸의 최운전 · 운전원과 내 작업의 운전원 승인</figcaption></figure>
+<p>다른 안까지 펼쳐 본 그 승인 요청에서 승인하려고 왼쪽 <strong>처리 건</strong>으로 돌아갑니다. 승인 요청 아래 <strong>담당자</strong>에 최운전이 들어와 있고 <strong>승인</strong> 버튼이 진해졌습니다. <strong>사유</strong>는 거절할 때 쓰는 칸이라 비워 두고 <strong>승인</strong>을 누르세요.</p>
+<figure><a href="images/06-승인.png"><img src="images/06-승인.png" alt="담당자 최운전과 진해진 승인 버튼" loading="lazy"></a><figcaption>담당자 최운전과 진해진 승인 버튼</figcaption></figure>
+</section><section id="step12"><h2>승인 뒤 처리 과정 지켜보기</h2><p>승인한 뒤로는 포털이 알아서 진행합니다. 아래 <strong>처리 과정</strong>을 보세요.</p>
+<ul>
+<li><strong>운전원 승인</strong>에 체크가 붙고, 앞에서 본 지연 알림은 필요 없어져 꺼집니다.</li>
+<li><strong>냉각 명령</strong>이 붙습니다. 승인한 조치가 명령이 되어 설비로 갔고, 설비가 처리했다고 답한 것입니다.</li>
+<li>지금은 <strong>재관측</strong>(다시 재 보는 단계)입니다. 명령이 갔다고 온도가 바로 내려가지는 않으므로 정말 식는지 지켜봅니다.</li>
+</ul>
+<figure><a href="images/06-처리과정.png"><img src="images/06-처리과정.png" alt="운전원 승인 · 냉각 명령 · 재관측" loading="lazy"></a><figcaption>운전원 승인 · 냉각 명령 · 재관측</figcaption></figure>
+<p>매뉴얼대로 15분을 지켜보는데, 시간이 스무 배 빨리 흘러서 실제로는 1분쯤입니다. 위에 재측정까지 남은 시간이 보입니다. 시간이 다 지나면 다시 잰 유온과 경보로 회복인지 판정합니다. 중간에 영어로 찍히는 줄은 몰라도 됩니다.</p>
+<p><strong>확인:</strong> 처리 건 위에 <strong>끝</strong>이 뜨고, 이 건이 마무리됩니다.</p>
+<figure><a href="images/06-끝.png"><img src="images/06-끝.png" alt="처리 건 위의 끝" loading="lazy"></a><figcaption>처리 건 위의 끝</figcaption></figure>
+</section><section id="step13"><h2>처리 기록으로 처음부터 따라가기</h2><p><strong>처리 기록</strong> 탭을 누르세요. 누가 언제 무엇을 했는지가 단계마다 한 줄로 남아 있습니다.</p>
+<figure><a href="images/06-기록탭.png"><img src="images/06-기록탭.png" alt="처리 기록 탭과 단계 순서" loading="lazy"></a><figcaption>처리 기록 탭과 단계 순서</figcaption></figure>
+<ul>
+<li><strong>센서 경보로 시작</strong>: 경보가 울린 그때의 값이 붙어 있습니다. 냉각 효율은 70 % 밑, 유온은 55 ℃ 위로, 매뉴얼 기준에 들어온 값입니다.</li>
+<li><strong>원인 진단 · 냉각 조치 제안</strong>: 이론에서 본 판단 기록이 여기 남습니다. 강사 화면에서는 원인이 쿨러 핀 오염, 추천이 팬 최대 운전이었습니다.</li>
+</ul>
+<p>왜 그렇게 봤는지는 <strong>모두 펼치기</strong>를 누르면 안에 다 있습니다. 위의 긴 자료 표는 몰라도 되고, 조금 내려서 <strong>지식 경로</strong>를 보세요. 경보에서 증상으로, 증상에서 고장으로 가서 그 고장을 일으킨 원인을 찾았습니다. 지식 지도에서 본 길을 따라간 것입니다.</p>
+<p>그 밑 표는 원인마다 확인 증거를 센서 값과 맞춰 본 것입니다. 강사 화면에서는 핀 오염 줄이 팬 진동도 낮고 냉각 효율도 70 % 밑이라 두 줄 다 <strong>맞음</strong>, 다른 두 원인은 <strong>아님</strong>이었습니다. 원문과 맞춰 넣은 그 확인 증거가 여기서 쓰였고, 그래서 미만 · 이상까지 꼼꼼히 맞춰 본 것입니다.</p>
+<p>아래 <strong>추천안에 이른 길</strong>은 원인에서 고장으로, 고장에서 즉시 완화 조치인 팬 최대 운전으로 이어집니다.</p>
+<figure><a href="images/06-추천길.png"><img src="images/06-추천길.png" alt="강사 화면의 예입니다. 지식 경로 · 원인마다 맞춰 본 증거 · 추천안에 이른 길" loading="lazy"></a><figcaption>강사 화면의 예입니다. 지식 경로 · 원인마다 맞춰 본 증거 · 추천안에 이른 길</figcaption></figure>
+<p>이어서 아래로 내려 가며 읽으세요.</p>
+<ul>
+<li><strong>운전원 승인</strong>: 최운전이 추천안 그대로 승인했다고 남아 있고, 설비에 보낼 일로 쿨러 팬 속도 100 %가 남았습니다. 팬 최대 운전이라는 조치를 설비가 알아듣는 실제 명령으로 바꿔 적은 것입니다.</li>
+<li><strong>냉각 명령</strong>: 설비가 받아서 처리했다고 답한 기록입니다. 이 답을 이론에서 확인 응답이라고 했습니다. 끝의 안전 연동은 위험한 명령을 막는 인터록이고, 여기에 걸리지 않고 들어갔다는 뜻입니다.</li>
+<li><strong>재관측</strong>: 명령 뒤에 다시 잰 유온입니다. 기름은 금방 식지 않아 처음엔 기준보다 높다가 점점 내려옵니다. 끝에 55 ℃ 밑으로 내려오고 경보도 풀려서, 매뉴얼의 회복 판정대로 회복으로 봤습니다. 값은 실행마다 다릅니다.</li>
+</ul>
+<figure><a href="images/06-재관측.png"><img src="images/06-재관측.png" alt="강사 화면의 예입니다. 냉각 명령의 응답과 재관측" loading="lazy"></a><figcaption>강사 화면의 예입니다. 냉각 명령의 응답과 재관측</figcaption></figure>
+<ul>
+<li><strong>작업지시 등록</strong>: 정비 쪽에 일을 넘긴 단계입니다. 팬으로 급한 불은 껐지만 원인은 그대로 남아 있을 수 있으므로, 정비하는 사람이 설비를 살펴보도록 점검을 걸어 둡니다. 정비가 끝났다는 뜻은 아닙니다.</li>
+<li><strong>결과 보고: 정상</strong>: 이 건이 어떻게 끝났는지 담당자에게 알린 단계입니다. 위 알림 종에도 숫자가 붙습니다.</li>
+</ul>
+<figure><a href="images/06-정비결과보고.png"><img src="images/06-정비결과보고.png" alt="강사 화면의 예입니다. 작업지시 등록과 결과 보고: 정상" loading="lazy"></a><figcaption>강사 화면의 예입니다. 작업지시 등록과 결과 보고: 정상</figcaption></figure>
+</section><section id="step14"><h2>결과 탭에서 마무리 확인하기</h2><p>옆의 <strong>결과</strong> 탭을 누르세요. 정상이라는 판정과 그 근거가 한눈에 보입니다. 유온이 기준 55 ℃ 아래로 내려왔고 <strong>경보 해제</strong> 칸이 <strong>예</strong>입니다. 아래에는 승인한 안과 승인한 사람, 시스템이 한 일이 모여 있습니다.</p>
+<figure><a href="images/06-결과.png"><img src="images/06-결과.png" alt="강사 화면의 예입니다. 결과 탭의 유온 · 경보 해제" loading="lazy"></a><figcaption>강사 화면의 예입니다. 결과 탭의 유온 · 경보 해제</figcaption></figure>
+<p>추천과 승인과 실제 조치가 각자 다른 단계로 남아 있어서, 나중에 문제가 생겨도 누가 어디서 무엇을 정했는지 처음부터 다시 따라갈 수 있습니다. 기록의 뜻은 <a href="%EC%B0%B8%EA%B3%A0_%EA%B5%90%EC%9E%AC_%EB%B0%9C%EC%B7%8C.md">참고 교재 발췌</a>에 있습니다.</p>
+<p><strong>확인:</strong> 같은 처리 건에서 AI의 추천과 근거, 운전원의 승인, 설비의 확인 응답, 다시 잰 유온, 남은 정비 요청을 차례로 가리킬 수 있으면 이 실습을 마친 것입니다.</p>
 </section></main></body></html>
