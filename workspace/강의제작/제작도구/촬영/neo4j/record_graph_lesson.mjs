@@ -144,7 +144,8 @@ try{
  const runButton={css:'[data-testid="run-button"]'};
  // 입력칸을 비우고 글을 넣는다. paste:true면 붙여넣기(안내 문서에서 복사한 글)로 넣고, 들어간 글이 기대한 문장과 같은지 본다.
  async function input(text,{paste=false}={}){
-  await act(editor);await clickHere();await serial(()=>p.keyboard.press('ControlOrMeta+A'));await serial(()=>p.keyboard.press('Backspace'));
+  // 이 판 Neo4j Browser는 돌린 글이 입력칸에 남는다. 학생과 같이 전부 고른 뒤(컨트롤 A) 그 위에 붙이거나 적어 바꾼다.
+  await act(editor);await clickHere();await serial(()=>p.keyboard.press('ControlOrMeta+A'));
   if(paste){await serial(()=>p.keyboard.press('ControlOrMeta+V'));}
   else{await move({x:650,y:135});await serial(()=>p.keyboard.insertText(text));}
   const got=await serial(()=>p.evaluate(()=>{const e=Array.from(document.querySelectorAll('[aria-label="Cypher Editor"]')).find(e=>e.getBoundingClientRect().height>0);return e?.querySelector('.cm-content')?.innerText??e?.innerText;}));
@@ -223,7 +224,7 @@ try{
     case 'clear':
      await g(c.at??.25);await input(':clear');await g(c.enter_at??.65);await serial(()=>p.keyboard.press('Enter'));
      await serial(()=>p.waitForFunction(()=>!document.querySelector('[role="table"]')&&!document.querySelector('[data-testid="nvl-c2d-canvas"]')&&!document.body.innerText.includes(':welcome'),undefined,{timeout:10000}));
-     await serial(()=>p.keyboard.press('ControlOrMeta+A'));await serial(()=>p.keyboard.press('Backspace'));graph=false;break;
+     graph=false;break;
     case 'overview':
      if(await serial(()=>p.evaluate(()=>!!document.querySelector('button[title="Open Sidebar"]')))){await g(.12);await act({css:'button[title="Open Sidebar"]'},true);}
      await g(c.at?.[0]??.25);await act({css:'button[title="Collapse Sidebar"]'},true);await g(c.at?.[1]??.45);await act({css:'button[title="Open Sidebar"]'},true);
