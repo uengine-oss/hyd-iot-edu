@@ -141,6 +141,14 @@
     [
      "point",
      {
+      "css": "#view-main svg.m-hero-svg",
+      "anchor": "center"
+     },
+     0.0
+    ],
+    [
+     "point",
+     {
       "css": "main text",
       "exact": "현장 설비"
      },
