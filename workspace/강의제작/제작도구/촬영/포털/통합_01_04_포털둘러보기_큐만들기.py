@@ -92,14 +92,13 @@ def GROUP(t, top=None):
 
 
 EXTRA = {
-    (3, '그럼 밑에 있는 그림을'): P('#view-main svg.m-hero-svg', anchor='center'),
-    (4, '설비 아래 결함'): GROUP('설비'),
+    (3, '밑에 이 그림은'): P('#view-main svg.m-hero-svg', anchor='center'),
     (4, '이 카드 숫자가'): V('scenario', 'span.v', nth=0, anchor='center', dx=18, dy=6),
     (5, '지식 아래 지식 지도'): GROUP('지식'),
     (5, '팬 최대 운전은'): V('skills', 'span.sub', nth=0),
     (5, '쿨러 핀 세척은'): V('skills', 'span.sub', contains='(근본 조치)', nth=0),
-    (6, '인공지능 설정 아래에'): GROUP('인공지능 설정', top=300),
-    (7, '위쪽 판단 아래에'): GROUP('판단'),
+    (6, '인공지능 설정 쪽'): GROUP('인공지능 설정', top=300),
+    (7, '판단 쪽 메뉴'): GROUP('판단'),
     (7, '가운데 운전 모드'): V('decision', 'label', exact='운전 모드'),
     (7, '생산,'): P(ENT, exact='생산 관리'),
     (7, '정비,'): P(ENT, exact='정비 관리'),
