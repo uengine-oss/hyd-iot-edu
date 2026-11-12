@@ -402,6 +402,17 @@
    "gap": 1.0,
    "ops": [
     [
+     "point",
+     {
+      "css": "#view-scenario span.v",
+      "nth": 0,
+      "anchor": "center",
+      "dx": 18,
+      "dy": 6
+     },
+     0.0
+    ],
+    [
      "click",
      {
       "css": ".rail nav button[data-tab=\"trends\"]"
