@@ -697,12 +697,12 @@
       "required_scene": "홈의 설비 · 데이터 · AI 연결 그림과 맨 위 막대를 본다",
       "check": "홈의 설비 · 데이터 · AI 연결 그림과 맨 위 막대를 본다",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-home.png",
-      "verified": false,
+      "verified": true,
       "source_type": "video",
-      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
-      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
-      "seconds": 162.0,
-      "portal_segment_seconds": 162.0,
+      "source": "작업/2026-11-12_통합1-04-포털둘러보기-다시찍기/합본/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "a719f88f68ec1537492be03ae5cc54887f1c47cb2c2122fe56ed6fd2ca241611",
+      "seconds": 1686.29,
+      "portal_segment_seconds": 161.89,
       "crop": [
         0,
         0,
@@ -731,19 +731,19 @@
       ],
       "redactions": [],
       "caption": "설비 · 데이터 · AI 연결 그림과 맨 위 막대의 진행 중 사건 · 서비스 수",
-      "sha256": "7774cfcdd746b14da381ff3e2a09f2c91a5fd84b46188c0fdc717c53a0b709a9",
-      "raw_frame_sha256": "f7f0b5fd821eb89ace62616eaa6ee3160669737c9fcf678ae570fe3b9fe71233"
+      "sha256": "67508f6e6777fa3cc29d77efa634b5e93dddd7fb8464eb93fe0fe61c7bbf3160",
+      "raw_frame_sha256": "f9cf5966c795d1c9ceb6f43d14fe1e1a74e5defe9b853fe3ab2c334906c49139"
     },
     "portal-instances": {
       "required_scene": "처리 건을 연다",
       "check": "처리 건을 연다",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-instances.png",
-      "verified": false,
+      "verified": true,
       "source_type": "video",
-      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
-      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
-      "seconds": 963.41,
-      "portal_segment_seconds": 963.41,
+      "source": "작업/2026-11-12_통합1-04-포털둘러보기-다시찍기/합본/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "a719f88f68ec1537492be03ae5cc54887f1c47cb2c2122fe56ed6fd2ca241611",
+      "seconds": 2487.23,
+      "portal_segment_seconds": 962.83,
       "crop": [
         0,
         0,
@@ -755,7 +755,9 @@
           15,
           194,
           356,
-          242
+          242,
+          0,
+          4
         ],
         [
           420,
@@ -765,18 +767,28 @@
         ]
       ],
       "redactions": [],
-      "caption": "처리 건 — 진행 중 · 내 차례 칸"
+      "caption": "처리 건 — 진행 중 · 내 차례 칸",
+      "ignore": [
+        [
+          240,
+          192,
+          372,
+          282
+        ]
+      ],
+      "sha256": "a403c368c3f2a410617b09113b2ba797c8f351df8e1a9d3095a1f459c0920175",
+      "raw_frame_sha256": "d10e8b7f077c8648ef5bfacf887d5e726c2cbc75eddc34ad8ba578e1f896a8a9"
     },
     "portal-equipment": {
       "required_scene": "설비 → 결함 시뮬레이션을 열고 HYD-01 카드를 본다",
       "check": "설비 → 결함 시뮬레이션을 열고 HYD-01 카드를 본다",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-equipment.png",
-      "verified": false,
+      "verified": true,
       "source_type": "video",
-      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
-      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
-      "seconds": 239.21,
-      "portal_segment_seconds": 239.21,
+      "source": "작업/2026-11-12_통합1-04-포털둘러보기-다시찍기/합본/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "a719f88f68ec1537492be03ae5cc54887f1c47cb2c2122fe56ed6fd2ca241611",
+      "seconds": 1763.42,
+      "portal_segment_seconds": 239.02,
       "crop": [
         0,
         0,
@@ -788,7 +800,9 @@
           15,
           300,
           356,
-          348
+          348,
+          0,
+          4
         ],
         [
           445,
@@ -798,18 +812,28 @@
         ]
       ],
       "redactions": [],
-      "caption": "결함 시뮬레이션 — HYD-01 카드의 유온과 보호 정지 기준"
+      "caption": "결함 시뮬레이션 — HYD-01 카드의 유온과 보호 정지 기준",
+      "ignore": [
+        [
+          240,
+          298,
+          372,
+          388
+        ]
+      ],
+      "sha256": "8ecebe5850ddf45c9e8c863ea21313e28fda066bddfb61aafa7399bd42f65169",
+      "raw_frame_sha256": "0994e41f226921ba90239a8ab2fb60940261cbbd781e232c815bc0752ccc89df"
     },
     "portal-oil": {
       "required_scene": "오일 분석 입력을 연다",
       "check": "오일 분석 입력을 연다",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-oil.png",
-      "verified": false,
+      "verified": true,
       "source_type": "video",
-      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
-      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
-      "seconds": 402.63,
-      "portal_segment_seconds": 402.63,
+      "source": "작업/2026-11-12_통합1-04-포털둘러보기-다시찍기/합본/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "a719f88f68ec1537492be03ae5cc54887f1c47cb2c2122fe56ed6fd2ca241611",
+      "seconds": 1925.15,
+      "portal_segment_seconds": 400.75,
       "crop": [
         0,
         0,
@@ -821,7 +845,9 @@
           15,
           351,
           356,
-          399
+          399,
+          0,
+          4
         ],
         [
           420,
@@ -832,19 +858,27 @@
       ],
       "redactions": [],
       "caption": "오일 분석 입력 — 기름 검사 결과를 넣는 칸",
-      "sha256": "c3294a2165818595488293ba13b6259faf5714d0bafce60afcc293a914b9ef67",
-      "raw_frame_sha256": "c79c4975274693d316420f8012672b97ad38c0657627cb8abc04ebe3466b1701"
+      "ignore": [
+        [
+          240,
+          349,
+          372,
+          439
+        ]
+      ],
+      "sha256": "674bc70d03e5692a1c3f6d2a339c615ea5a4c118e00edf74a2bf1c24a7f60983",
+      "raw_frame_sha256": "e7af0082480e10edd0693b4be5f91b062975fb69742ab9c5ea8c052881a22433"
     },
     "portal-operation": {
       "required_scene": "이상 확인 · 조치를 연다",
       "check": "이상 확인 · 조치를 연다",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-operation.png",
-      "verified": false,
+      "verified": true,
       "source_type": "video",
-      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
-      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
-      "seconds": 421.97,
-      "portal_segment_seconds": 421.97,
+      "source": "작업/2026-11-12_통합1-04-포털둘러보기-다시찍기/합본/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "a719f88f68ec1537492be03ae5cc54887f1c47cb2c2122fe56ed6fd2ca241611",
+      "seconds": 1945.06,
+      "portal_segment_seconds": 420.66,
       "crop": [
         0,
         0,
@@ -856,7 +890,9 @@
           15,
           401,
           356,
-          450
+          450,
+          0,
+          4
         ],
         [
           420,
@@ -866,18 +902,28 @@
         ]
       ],
       "redactions": [],
-      "caption": "이상 확인 · 조치 — 설비 세 대의 상태 그림"
+      "caption": "이상 확인 · 조치 — 설비 세 대의 상태 그림",
+      "ignore": [
+        [
+          240,
+          399,
+          372,
+          490
+        ]
+      ],
+      "sha256": "1e0f7666652e43e509a3a548b80d81c1bc7c0d10c433ce7d25fe0c5b3a54ed02",
+      "raw_frame_sha256": "6927251ae9fe2d4811a5c0b81faeb7bb67d1e56ad06d57e04a65f31a442488ce"
     },
     "portal-monitoring": {
       "required_scene": "실시간 모니터링을 열고 유온 그래프를 본다",
       "check": "실시간 모니터링을 열고 유온 그래프를 본다",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-monitoring.png",
-      "verified": false,
+      "verified": true,
       "source_type": "video",
-      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
-      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
-      "seconds": 358.84,
-      "portal_segment_seconds": 358.84,
+      "source": "작업/2026-11-12_통합1-04-포털둘러보기-다시찍기/합본/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "a719f88f68ec1537492be03ae5cc54887f1c47cb2c2122fe56ed6fd2ca241611",
+      "seconds": 1882.24,
+      "portal_segment_seconds": 357.84,
       "crop": [
         0,
         0,
@@ -889,7 +935,9 @@
           15,
           452,
           356,
-          501
+          501,
+          0,
+          4
         ],
         [
           420,
@@ -900,19 +948,27 @@
       ],
       "redactions": [],
       "caption": "실시간 모니터링 — 유온 그래프",
-      "sha256": "d2d299bc1663d17ffbeb0488f7d184da4e7ac6cb9c2f45de59de8a4e974a00b0",
-      "raw_frame_sha256": "863b919392380a03793ef01db68d104bf159d21cc86639c8489e499e4193a1ac"
+      "ignore": [
+        [
+          240,
+          450,
+          372,
+          541
+        ]
+      ],
+      "sha256": "b3804d2be8ffc4c4f009a46c70c8288c08dd910759a8ba284dd0ea9aeb3334d1",
+      "raw_frame_sha256": "89a7b0d27ea14697d96dff2abbbd15fa249d8eb90f0fa35c3b0a4ce78969cda2"
     },
     "portal-rules": {
       "required_scene": "판단 → 조치 판단 규칙을 연다",
       "check": "판단 → 조치 판단 규칙을 연다",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-rules.png",
-      "verified": false,
+      "verified": true,
       "source_type": "video",
-      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
-      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
-      "seconds": 772.35,
-      "portal_segment_seconds": 772.35,
+      "source": "작업/2026-11-12_통합1-04-포털둘러보기-다시찍기/합본/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "a719f88f68ec1537492be03ae5cc54887f1c47cb2c2122fe56ed6fd2ca241611",
+      "seconds": 2295.45,
+      "portal_segment_seconds": 771.05,
       "crop": [
         0,
         0,
@@ -924,7 +980,9 @@
           15,
           508,
           356,
-          557
+          557,
+          0,
+          4
         ],
         [
           420,
@@ -934,18 +992,28 @@
         ]
       ],
       "redactions": [],
-      "caption": "조치 판단 규칙 — 설비 · 이상 패턴 고르기"
+      "caption": "조치 판단 규칙 — 설비 · 이상 패턴 고르기",
+      "ignore": [
+        [
+          240,
+          506,
+          372,
+          597
+        ]
+      ],
+      "sha256": "de47c5a8e487a6ce6705ac769e9031d99dc64e197a5605a1ab404c7ac4afe692",
+      "raw_frame_sha256": "cf21b50a8ab3740ba67fa39fc6b40f89706424db46609bba7daa64c51fe34482"
     },
     "portal-tradeoff": {
       "required_scene": "조건별 손익을 연다",
       "check": "조건별 손익을 연다",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-tradeoff.png",
-      "verified": false,
+      "verified": true,
       "source_type": "video",
-      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
-      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
-      "seconds": 806.78,
-      "portal_segment_seconds": 806.78,
+      "source": "작업/2026-11-12_통합1-04-포털둘러보기-다시찍기/합본/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "a719f88f68ec1537492be03ae5cc54887f1c47cb2c2122fe56ed6fd2ca241611",
+      "seconds": 2329.88,
+      "portal_segment_seconds": 805.48,
       "crop": [
         0,
         0,
@@ -957,7 +1025,9 @@
           15,
           559,
           356,
-          608
+          608,
+          0,
+          4
         ],
         [
           420,
@@ -967,18 +1037,28 @@
         ]
       ],
       "redactions": [],
-      "caption": "조건별 손익"
+      "caption": "조건별 손익",
+      "ignore": [
+        [
+          240,
+          557,
+          372,
+          648
+        ]
+      ],
+      "sha256": "cd4929000a0122f2bcf33c2b8fd40250f9964e7c89ec56fe4031953c23ef3b44",
+      "raw_frame_sha256": "ed5499d2e2422b618cea28fe4b44611ea7d4f70000f69c940b6645110fb7d574"
     },
     "portal-flow": {
       "required_scene": "승인과 실행을 연다",
       "check": "승인과 실행을 연다",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-flow.png",
-      "verified": false,
+      "verified": true,
       "source_type": "video",
-      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
-      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
-      "seconds": 842.76,
-      "portal_segment_seconds": 842.76,
+      "source": "작업/2026-11-12_통합1-04-포털둘러보기-다시찍기/합본/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "a719f88f68ec1537492be03ae5cc54887f1c47cb2c2122fe56ed6fd2ca241611",
+      "seconds": 2365.86,
+      "portal_segment_seconds": 841.46,
       "crop": [
         0,
         0,
@@ -990,7 +1070,9 @@
           15,
           610,
           356,
-          659
+          659,
+          0,
+          4
         ],
         [
           420,
@@ -1006,18 +1088,28 @@
         ]
       ],
       "redactions": [],
-      "caption": "승인과 실행 — 업무 흐름 칸과 판단 결과 칸"
+      "caption": "승인과 실행 — 업무 흐름 칸과 판단 결과 칸",
+      "ignore": [
+        [
+          240,
+          608,
+          372,
+          699
+        ]
+      ],
+      "sha256": "0d403b1388369e233c80d423e25684d0d787e5d01ddc599994e64b77b2429569",
+      "raw_frame_sha256": "dabb140f2ca02dca750d5fa8145fb8c3dd3a85bf63e1ec3663156350e7a16752"
     },
     "portal-import": {
       "required_scene": "흐름 가져오기를 연다",
       "check": "흐름 가져오기를 연다",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-import.png",
-      "verified": false,
+      "verified": true,
       "source_type": "video",
-      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
-      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
-      "seconds": 821.36,
-      "portal_segment_seconds": 821.36,
+      "source": "작업/2026-11-12_통합1-04-포털둘러보기-다시찍기/합본/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "a719f88f68ec1537492be03ae5cc54887f1c47cb2c2122fe56ed6fd2ca241611",
+      "seconds": 2344.46,
+      "portal_segment_seconds": 820.06,
       "crop": [
         0,
         0,
@@ -1029,7 +1121,9 @@
           15,
           661,
           356,
-          709
+          709,
+          0,
+          4
         ],
         [
           420,
@@ -1039,18 +1133,28 @@
         ]
       ],
       "redactions": [],
-      "caption": "흐름 가져오기"
+      "caption": "흐름 가져오기",
+      "ignore": [
+        [
+          240,
+          659,
+          372,
+          749
+        ]
+      ],
+      "sha256": "ef1d319b0c5cfffb4ded99013cec3c6a6f770d823d536b9a9f0a76e421e40995",
+      "raw_frame_sha256": "3b24af8ab2f99e578fbb8797505baa7a4412b00e3ad1bdf554ea85d88966c505"
     },
     "portal-ontology": {
       "required_scene": "지식 → 지식 지도를 연다",
       "check": "지식 → 지식 지도를 연다",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-ontology.png",
-      "verified": false,
+      "verified": true,
       "source_type": "video",
-      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
-      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
-      "seconds": 458.87,
-      "portal_segment_seconds": 458.87,
+      "source": "작업/2026-11-12_통합1-04-포털둘러보기-다시찍기/합본/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "a719f88f68ec1537492be03ae5cc54887f1c47cb2c2122fe56ed6fd2ca241611",
+      "seconds": 1981.97,
+      "portal_segment_seconds": 457.57,
       "crop": [
         0,
         0,
@@ -1062,7 +1166,9 @@
           15,
           817,
           356,
-          866
+          866,
+          0,
+          4
         ],
         [
           420,
@@ -1084,18 +1190,28 @@
         ]
       ],
       "redactions": [],
-      "caption": "지식 지도 — 설비 · 지식 묶음 고르기와 갈래 고르기"
+      "caption": "지식 지도 — 설비 · 지식 묶음 고르기와 갈래 고르기",
+      "ignore": [
+        [
+          240,
+          815,
+          372,
+          906
+        ]
+      ],
+      "sha256": "20044272813db9ad10c325d970005278abb154806c832491df266bb19532fdb8",
+      "raw_frame_sha256": "907136dd5e4cf33b9ba06431fa12b9893269694c51625004625be21d0a8cfd06"
     },
     "portal-knowledge": {
       "required_scene": "지식 관리를 연다",
       "check": "지식 관리를 연다",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-knowledge.png",
-      "verified": false,
+      "verified": true,
       "source_type": "video",
-      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
-      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
-      "seconds": 599.41,
-      "portal_segment_seconds": 599.41,
+      "source": "작업/2026-11-12_통합1-04-포털둘러보기-다시찍기/합본/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "a719f88f68ec1537492be03ae5cc54887f1c47cb2c2122fe56ed6fd2ca241611",
+      "seconds": 2122.51,
+      "portal_segment_seconds": 598.11,
       "crop": [
         0,
         0,
@@ -1107,28 +1223,48 @@
           15,
           919,
           356,
-          967
+          967,
+          0,
+          4
         ],
         [
           420,
           246,
           1849,
-          654
+          654,
+          3,
+          5
         ]
       ],
       "redactions": [],
-      "caption": "지식 관리 — 매뉴얼 등록"
+      "caption": "지식 관리 — 매뉴얼 등록",
+      "ignore": [
+        [
+          240,
+          917,
+          372,
+          1007
+        ],
+        [
+          410,
+          600,
+          490,
+          700
+        ]
+      ],
+      "sha256": "4a2ffb223166d11e007a5f0652cce86805b6d65cc3fa143ba9be8cc7463e683f",
+      "raw_frame_sha256": "2a817eb32adbf79992475a1cf9b6d382bcc3d6fad4a8efe3f6c2fb697657f7a4"
     },
     "portal-sops": {
       "required_scene": "조치 방법을 연다",
       "check": "조치 방법을 연다",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-sops.png",
-      "verified": false,
+      "verified": true,
       "source_type": "video",
-      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
-      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
-      "seconds": 525.12,
-      "portal_segment_seconds": 525.12,
+      "source": "작업/2026-11-12_통합1-04-포털둘러보기-다시찍기/합본/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "a719f88f68ec1537492be03ae5cc54887f1c47cb2c2122fe56ed6fd2ca241611",
+      "seconds": 2048.28,
+      "portal_segment_seconds": 523.88,
       "crop": [
         0,
         0,
@@ -1140,7 +1276,9 @@
           15,
           868,
           356,
-          916
+          916,
+          0,
+          4
         ],
         [
           420,
@@ -1150,18 +1288,28 @@
         ]
       ],
       "redactions": [],
-      "caption": "조치 방법 — 조치 목록"
+      "caption": "조치 방법 — 조치 목록",
+      "ignore": [
+        [
+          240,
+          866,
+          372,
+          956
+        ]
+      ],
+      "sha256": "45c1494421a0ce74ec4ff9f86c747a97c09b2438ed06d3383419d9468af67f0f",
+      "raw_frame_sha256": "88a899e43a22f365f040a188250233be19b2a9fc3fd8c847ff29a3608926c1cd"
     },
     "portal-data": {
       "required_scene": "데이터 연결을 연다",
       "check": "데이터 연결을 연다",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-data.png",
-      "verified": false,
+      "verified": true,
       "source_type": "video",
-      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
-      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
-      "seconds": 625.09,
-      "portal_segment_seconds": 625.09,
+      "source": "작업/2026-11-12_통합1-04-포털둘러보기-다시찍기/합본/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "a719f88f68ec1537492be03ae5cc54887f1c47cb2c2122fe56ed6fd2ca241611",
+      "seconds": 2148.19,
+      "portal_segment_seconds": 623.79,
       "crop": [
         0,
         0,
@@ -1173,7 +1321,9 @@
           15,
           970,
           356,
-          1018
+          1018,
+          0,
+          4
         ],
         [
           420,
@@ -1184,19 +1334,27 @@
       ],
       "redactions": [],
       "caption": "데이터 연결 — 연결 상태 칸",
-      "sha256": "278691a386f2fd2a562374ad492376d981d75cf0c14c53790d10441da23b2d51",
-      "raw_frame_sha256": "31afb98d708a2e4758951643b7d266cffd9463b15e1b9608544e8fa607e36fe8"
+      "ignore": [
+        [
+          240,
+          968,
+          372,
+          1058
+        ]
+      ],
+      "sha256": "ba3b2570d2bb5e2d2a8b55d9523855d5944b03db15b673ea9d0012e882a5812c",
+      "raw_frame_sha256": "987366ecde00cd0e0126481e9ed4103bb1da52e9fdc66061b8e9aa2433936fc5"
     },
     "portal-agents": {
       "required_scene": "에이전트를 연다",
       "check": "에이전트를 연다",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-agents.png",
-      "verified": false,
+      "verified": true,
       "source_type": "video",
-      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
-      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
-      "seconds": 692.56,
-      "portal_segment_seconds": 692.56,
+      "source": "작업/2026-11-12_통합1-04-포털둘러보기-다시찍기/합본/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "a719f88f68ec1537492be03ae5cc54887f1c47cb2c2122fe56ed6fd2ca241611",
+      "seconds": 2215.66,
+      "portal_segment_seconds": 691.26,
       "crop": [
         0,
         0,
@@ -1208,7 +1366,9 @@
           15,
           557,
           356,
-          605
+          605,
+          0,
+          4
         ],
         [
           425,
@@ -1218,18 +1378,28 @@
         ]
       ],
       "redactions": [],
-      "caption": "에이전트 — 준비된 에이전트 가운데 첫 번째"
+      "caption": "에이전트 — 준비된 에이전트 가운데 첫 번째",
+      "ignore": [
+        [
+          240,
+          555,
+          372,
+          645
+        ]
+      ],
+      "sha256": "20bafd7fabe11b818b337ca92e044b9cb609c2bca96ee68b02db2d375c4c26da",
+      "raw_frame_sha256": "c05c3d3e2684ad3a2bf8f94d56c1d421ba7e35dce8cbf5aec47704526bb9b281"
     },
     "portal-chat": {
       "required_scene": "인공지능 설정 → 에이전트에게 질문을 연다",
       "check": "인공지능 설정 → 에이전트에게 질문을 연다",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-chat.png",
-      "verified": false,
+      "verified": true,
       "source_type": "video",
-      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
-      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
-      "seconds": 670.34,
-      "portal_segment_seconds": 670.34,
+      "source": "작업/2026-11-12_통합1-04-포털둘러보기-다시찍기/합본/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "a719f88f68ec1537492be03ae5cc54887f1c47cb2c2122fe56ed6fd2ca241611",
+      "seconds": 2193.44,
+      "portal_segment_seconds": 669.04,
       "crop": [
         0,
         0,
@@ -1241,7 +1411,9 @@
           15,
           506,
           356,
-          554
+          554,
+          0,
+          4
         ],
         [
           445,
@@ -1252,19 +1424,27 @@
       ],
       "redactions": [],
       "caption": "에이전트에게 질문 — 질문 칸",
-      "sha256": "6dfca08d1485f717d85668fa51ac1dbe7daf36a5dedce323f64098af72b445ea",
-      "raw_frame_sha256": "4569acb9743d46e9dc82c1a50548defa80c9b2a87c6c340c78da106dc1bcf06e"
+      "ignore": [
+        [
+          240,
+          504,
+          372,
+          594
+        ]
+      ],
+      "sha256": "18fe01239a50e7de695773593cbe9f16f71665079a7520a27f3348e041175411",
+      "raw_frame_sha256": "0a4e74fdb37e2a35f56f026610f195ff26445081142bf92cd6b05c31515acd2c"
     },
     "portal-tools": {
       "required_scene": "도구 연결을 연다",
       "check": "도구 연결을 연다",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-tools.png",
-      "verified": false,
+      "verified": true,
       "source_type": "video",
-      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
-      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
-      "seconds": 727.97,
-      "portal_segment_seconds": 727.97,
+      "source": "작업/2026-11-12_통합1-04-포털둘러보기-다시찍기/합본/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "a719f88f68ec1537492be03ae5cc54887f1c47cb2c2122fe56ed6fd2ca241611",
+      "seconds": 2251.07,
+      "portal_segment_seconds": 726.67,
       "crop": [
         0,
         0,
@@ -1276,7 +1456,9 @@
           15,
           608,
           356,
-          656
+          656,
+          0,
+          4
         ],
         [
           420,
@@ -1286,18 +1468,28 @@
         ]
       ],
       "redactions": [],
-      "caption": "도구 연결 — 판단 시스템 도구"
+      "caption": "도구 연결 — 판단 시스템 도구",
+      "ignore": [
+        [
+          240,
+          606,
+          372,
+          696
+        ]
+      ],
+      "sha256": "046ac1ef63e5d7809dd2cd4466ccf232c7b249dd3464d3c9b151d1d6a77002f6",
+      "raw_frame_sha256": "0d740d7a19c937461da550f58fa32ad1791194e6f1d89b27482db3b1a09d7eee"
     },
     "portal-compare": {
       "required_scene": "시험 비교를 연다",
       "check": "시험 비교를 연다",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-compare.png",
-      "verified": false,
+      "verified": true,
       "source_type": "video",
-      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
-      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
-      "seconds": 743.79,
-      "portal_segment_seconds": 743.79,
+      "source": "작업/2026-11-12_통합1-04-포털둘러보기-다시찍기/합본/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "a719f88f68ec1537492be03ae5cc54887f1c47cb2c2122fe56ed6fd2ca241611",
+      "seconds": 2266.89,
+      "portal_segment_seconds": 742.49,
       "crop": [
         0,
         0,
@@ -1309,7 +1501,9 @@
           15,
           658,
           356,
-          707
+          707,
+          0,
+          4
         ],
         [
           420,
@@ -1319,18 +1513,28 @@
         ]
       ],
       "redactions": [],
-      "caption": "시험 비교"
+      "caption": "시험 비교",
+      "ignore": [
+        [
+          240,
+          656,
+          372,
+          747
+        ]
+      ],
+      "sha256": "0467983aaf7aef7131ec4e73ed7b207ff27df809e619d8094fc0e950a21e899f",
+      "raw_frame_sha256": "3c52aa4e45a2c3c6daffbbfe1aaf80e8297af1576cb8536e0e8bb17d5fb9be6e"
     },
     "portal-evaluation": {
       "required_scene": "판단 채점을 연다",
       "check": "판단 채점을 연다",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-evaluation.png",
-      "verified": false,
+      "verified": true,
       "source_type": "video",
-      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
-      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
-      "seconds": 748.56,
-      "portal_segment_seconds": 748.56,
+      "source": "작업/2026-11-12_통합1-04-포털둘러보기-다시찍기/합본/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "a719f88f68ec1537492be03ae5cc54887f1c47cb2c2122fe56ed6fd2ca241611",
+      "seconds": 2271.66,
+      "portal_segment_seconds": 747.26,
       "crop": [
         0,
         0,
@@ -1342,28 +1546,42 @@
           15,
           709,
           356,
-          758
+          758,
+          0,
+          4
         ],
         [
           420,
           276,
           1849,
-          418
+          418,
+          2,
+          4
         ]
       ],
       "redactions": [],
-      "caption": "판단 채점 — 위쪽 점수 칸"
+      "caption": "판단 채점 — 위쪽 점수 칸",
+      "ignore": [
+        [
+          240,
+          707,
+          372,
+          798
+        ]
+      ],
+      "sha256": "395259d5be02132e7586d5e144dde93894885417a0a4dbc7af710f42a8285bba",
+      "raw_frame_sha256": "65172fa43e757f9cc75ca188840f847086d4a743b9135883c5fd6a853a2142ce"
     },
     "portal-performance": {
       "required_scene": "성과 → 성과 지표를 연다",
       "check": "성과 → 성과 지표를 연다",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-performance.png",
-      "verified": false,
+      "verified": true,
       "source_type": "video",
-      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
-      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
-      "seconds": 1027.79,
-      "portal_segment_seconds": 1027.79,
+      "source": "작업/2026-11-12_통합1-04-포털둘러보기-다시찍기/합본/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "a719f88f68ec1537492be03ae5cc54887f1c47cb2c2122fe56ed6fd2ca241611",
+      "seconds": 2550.89,
+      "portal_segment_seconds": 1026.49,
       "crop": [
         0,
         0,
@@ -1375,7 +1593,9 @@
           15,
           727,
           356,
-          776
+          776,
+          0,
+          4
         ],
         [
           420,
@@ -1385,18 +1605,28 @@
         ]
       ],
       "redactions": [],
-      "caption": "성과 지표 — 위쪽 숫자 칸"
+      "caption": "성과 지표 — 위쪽 숫자 칸",
+      "ignore": [
+        [
+          240,
+          725,
+          372,
+          816
+        ]
+      ],
+      "sha256": "fa14bbfdfd113e77e9a4780618655d8922f9f2234e269f3eeab5850ca15b4eb6",
+      "raw_frame_sha256": "d761b69e69989e0d971f6ac2de9493c821b301b865cb326e7a83b4453863e274"
     },
     "portal-system": {
       "required_scene": "시스템 → 시스템 구성을 연다",
       "check": "시스템 → 시스템 구성을 연다",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-system.png",
-      "verified": false,
+      "verified": true,
       "source_type": "video",
-      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
-      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
-      "seconds": 1062.11,
-      "portal_segment_seconds": 1062.11,
+      "source": "작업/2026-11-12_통합1-04-포털둘러보기-다시찍기/합본/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "a719f88f68ec1537492be03ae5cc54887f1c47cb2c2122fe56ed6fd2ca241611",
+      "seconds": 2585.21,
+      "portal_segment_seconds": 1060.81,
       "crop": [
         0,
         0,
@@ -1408,7 +1638,9 @@
           15,
           884,
           356,
-          933
+          933,
+          0,
+          4
         ],
         [
           421,
@@ -1418,7 +1650,17 @@
         ]
       ],
       "redactions": [],
-      "caption": "시스템 구성 — 켜 둔 서비스들의 층"
+      "caption": "시스템 구성 — 켜 둔 서비스들의 층",
+      "ignore": [
+        [
+          240,
+          882,
+          372,
+          973
+        ]
+      ],
+      "sha256": "8bd188ca9bf59ce37bfe18ff92de378ecc31f2acd834d5815cdb0d4f5ac3813f",
+      "raw_frame_sha256": "6445d964d0f074106773a5e3bf9ab7b6ef4131fd3abbf882d9aed2bedc87b407"
     },
     "docker-install-complete": {
       "required_scene": "Docker Desktop 설치 완료",
@@ -1578,11 +1820,11 @@
       "required_scene": "Ctrl 클릭 뒤 열린 포털 홈에서 제목 홈과 위쪽 네 칸을 본다",
       "check": "Ctrl 클릭 뒤 열린 포털 홈에서 제목 홈과 위쪽 네 칸을 본다",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-arrival.png",
-      "verified": false,
+      "verified": true,
       "source_type": "video",
-      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
-      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
-      "seconds": 3.0,
+      "source": "작업/2026-11-12_통합1-04-포털둘러보기-다시찍기/합본/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "a719f88f68ec1537492be03ae5cc54887f1c47cb2c2122fe56ed6fd2ca241611",
+      "seconds": 1527.4,
       "portal_segment_seconds": 3.0,
       "crop": [
         0,
@@ -1606,8 +1848,8 @@
       ],
       "redactions": [],
       "caption": "포털 홈 — 제목 홈과 위쪽 네 칸",
-      "sha256": "8e0ae83ca8f468549d2e147b4cb7659e1fd9c8a082d76d2241702165ad61203e",
-      "raw_frame_sha256": "629b76e0f9c440f4c1f587c90d93611b58b065fdc05f40815d0fc44936a24fb8"
+      "sha256": "e486dbd4f2f750601dd4e660643df7e92360015339d7385496be544077927d02",
+      "raw_frame_sha256": "01f2eb79e2d56f6480f578a90143a518a35e10418fe2efdd12184e76e4bdc220"
     },
     "docker-skip": {
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/docker-skip.png",
@@ -2080,12 +2322,12 @@
       "required_scene": "작업 → 내 작업함을 연다. 나는 고르지 않는다",
       "check": "작업 → 내 작업함을 연다. 나는 고르지 않는다",
       "path": "workspace/강의제작/제작도구/촬영/환경세팅/사진/portal-inbox.png",
-      "verified": false,
+      "verified": true,
       "source_type": "video",
-      "source": "작업/촬영/포털/t4-최종11/t4-최종11_1080p.mp4",
-      "source_sha256": "5b8dac4772e86317a7279390c98ff9b861c8db05926297d8e3e72600165b3562",
-      "seconds": 910.35,
-      "portal_segment_seconds": 910.35,
+      "source": "작업/2026-11-12_통합1-04-포털둘러보기-다시찍기/합본/통합반_01회차_04_실습_실행환경.mp4",
+      "source_sha256": "a719f88f68ec1537492be03ae5cc54887f1c47cb2c2122fe56ed6fd2ca241611",
+      "seconds": 2433.7,
+      "portal_segment_seconds": 909.3,
       "crop": [
         0,
         0,
@@ -2097,19 +2339,37 @@
           15,
           143,
           356,
-          191
+          191,
+          0,
+          4
         ],
         [
           420,
           192,
           1849,
-          319
+          319,
+          3,
+          5
         ]
       ],
       "redactions": [],
       "caption": "내 작업함 — 나를 고르는 칸(지금은 비워 둡니다)",
-      "sha256": "be9f2040ee4726aa43d6deaa6cd0839ca7ad774ada5fc6af77fec7322eed8df5",
-      "raw_frame_sha256": "632a4ba21c766271af0ba926366b2a754a113d1083fce0e2cfaf09a739b138d1"
+      "ignore": [
+        [
+          240,
+          141,
+          372,
+          231
+        ],
+        [
+          1320,
+          265,
+          1410,
+          345
+        ]
+      ],
+      "sha256": "e5d946abdc27bb06adaf727fdc03ccc97ddcbc2654e187bd97c659a1498ef751",
+      "raw_frame_sha256": "eee2adad2257c9a9d2b77a8a385f4a6f8c9d34aab8a4b8108e55ad3a76a3c2b1"
     }
   }
 }

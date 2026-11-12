@@ -1,0 +1,5520 @@
+{
+ "output": "t4-최종12_1080p.mp4",
+ "duration_s": 1119.233,
+ "source": "1920x1080 JPEG screencast",
+ "output_fps": 30,
+ "pointer": [
+  "overlay"
+ ],
+ "segments": [
+  {
+   "segment": "t4-n1",
+   "tool": "포털",
+   "part": 1,
+   "from_ms": 0.0,
+   "used_ms": 75130.0,
+   "start_s": 0.0,
+   "frames": 2254,
+   "mode": "overlay",
+   "recorded_ms": 75130,
+   "error": null,
+   "end_url": "http://127.0.0.1:8088/#/main",
+   "end_tab": "main"
+  },
+  {
+   "segment": "t4-q2",
+   "tool": "포털",
+   "part": 2,
+   "from_ms": 0.0,
+   "used_ms": 80831.0,
+   "start_s": 75.133,
+   "frames": 2425,
+   "mode": "overlay",
+   "recorded_ms": 80831,
+   "error": null,
+   "end_url": "http://127.0.0.1:8088/#/main",
+   "end_tab": "main"
+  },
+  {
+   "segment": "t4-q3",
+   "tool": "포털",
+   "part": 3,
+   "from_ms": 0.0,
+   "used_ms": 75932.0,
+   "start_s": 155.967,
+   "frames": 2278,
+   "mode": "overlay",
+   "recorded_ms": 75932,
+   "error": null,
+   "end_url": "http://127.0.0.1:8088/#/main",
+   "end_tab": "main"
+  },
+  {
+   "segment": "t4-q4",
+   "tool": "포털",
+   "part": 4,
+   "from_ms": 0.0,
+   "used_ms": 202564.0,
+   "start_s": 231.9,
+   "frames": 6077,
+   "mode": "overlay",
+   "recorded_ms": 202564,
+   "error": null,
+   "end_url": "http://127.0.0.1:8088/#/incidents",
+   "end_tab": "incidents"
+  },
+  {
+   "segment": "t4-m5",
+   "tool": "포털",
+   "part": 5,
+   "from_ms": 0.0,
+   "used_ms": 210549.0,
+   "start_s": 434.467,
+   "frames": 6316,
+   "mode": "overlay",
+   "recorded_ms": 210549,
+   "error": null,
+   "end_url": "http://127.0.0.1:8088/#/fabric",
+   "end_tab": "fabric"
+  },
+  {
+   "segment": "t4-m6",
+   "tool": "포털",
+   "part": 6,
+   "from_ms": 0.0,
+   "used_ms": 109844.0,
+   "start_s": 645.0,
+   "frames": 3295,
+   "mode": "overlay",
+   "recorded_ms": 109844,
+   "error": null,
+   "end_url": "http://127.0.0.1:8088/#/eval",
+   "end_tab": "eval"
+  },
+  {
+   "segment": "t4-m7",
+   "tool": "포털",
+   "part": 7,
+   "from_ms": 0.0,
+   "used_ms": 143012.0,
+   "start_s": 754.833,
+   "frames": 4290,
+   "mode": "overlay",
+   "recorded_ms": 143012,
+   "error": null,
+   "end_url": "http://127.0.0.1:8088/#/process",
+   "end_tab": "process"
+  },
+  {
+   "segment": "t4-m8",
+   "tool": "포털",
+   "part": 8,
+   "from_ms": 0.0,
+   "used_ms": 116167.0,
+   "start_s": 897.833,
+   "frames": 3485,
+   "mode": "overlay",
+   "recorded_ms": 116167,
+   "error": null,
+   "end_url": "http://127.0.0.1:8088/#/instances",
+   "end_tab": "instances"
+  },
+  {
+   "segment": "t4-m9",
+   "tool": "포털",
+   "part": 9,
+   "from_ms": 0.0,
+   "used_ms": 72861.0,
+   "start_s": 1014.0,
+   "frames": 2186,
+   "mode": "overlay",
+   "recorded_ms": 72861,
+   "error": null,
+   "end_url": "http://127.0.0.1:8088/#/home",
+   "end_tab": "home"
+  },
+  {
+   "segment": "t4-p10",
+   "tool": "포털",
+   "part": 10,
+   "from_ms": 0.0,
+   "used_ms": 32379.0,
+   "start_s": 1086.867,
+   "frames": 971,
+   "mode": "overlay",
+   "recorded_ms": 32379,
+   "error": null,
+   "end_url": "http://127.0.0.1:8088/#/main",
+   "end_tab": "main"
+  }
+ ],
+ "speech_cues": 83,
+ "cue_timeline": [
+  {
+   "id": "t4-01-01",
+   "speech": [
+    "00:00.093",
+    "00:19.773"
+   ],
+   "revoiced": "cache"
+  },
+  {
+   "id": "t4-01-02",
+   "speech": [
+    "00:21.632",
+    "01:02.272"
+   ],
+   "revoiced": "cache"
+  },
+  {
+   "id": "t4-01-03",
+   "speech": [
+    "01:03.572",
+    "01:14.692"
+   ]
+  },
+  {
+   "id": "t4-02-01",
+   "speech": [
+    "01:17.001",
+    "01:35.721"
+   ],
+   "action": [
+    "01:17.001",
+    "01:27.546"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 8776
+  },
+  {
+   "id": "t4-02-02",
+   "speech": [
+    "01:36.322",
+    "01:43.202"
+   ],
+   "action": [
+    "01:36.335",
+    "01:36.903"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 6899
+  },
+  {
+   "id": "t4-02-03",
+   "speech": [
+    "01:43.802",
+    "01:58.682"
+   ],
+   "action": [
+    "01:43.807",
+    "01:44.355"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 15627
+  },
+  {
+   "id": "t4-02-04",
+   "speech": [
+    "01:59.982",
+    "02:17.102"
+   ],
+   "action": [
+    "02:00.003",
+    "02:07.160"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 11243
+  },
+  {
+   "id": "t4-02-05",
+   "speech": [
+    "02:18.403",
+    "02:29.043"
+   ],
+   "action": [
+    "02:18.404",
+    "02:18.912"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 10732
+  },
+  {
+   "id": "t4-02-06",
+   "speech": [
+    "02:29.644",
+    "02:35.564"
+   ],
+   "action": [
+    "02:29.645",
+    "02:31.892"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 5998
+  },
+  {
+   "id": "t4-03-01",
+   "speech": [
+    "02:37.891",
+    "02:45.731"
+   ],
+   "action": [
+    "02:37.892",
+    "02:43.832"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 2499
+  },
+  {
+   "id": "t4-03-02",
+   "speech": [
+    "02:46.331",
+    "02:55.851"
+   ],
+   "action": [
+    "02:46.335",
+    "02:54.282"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 2169
+  },
+  {
+   "id": "t4-03-03",
+   "speech": [
+    "02:56.451",
+    "03:08.291"
+   ],
+   "action": [
+    "02:56.452",
+    "02:58.142"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 11449
+  },
+  {
+   "id": "t4-03-04",
+   "speech": [
+    "03:09.591",
+    "03:33.591"
+   ],
+   "action": [
+    "03:09.593",
+    "03:12.415"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 22477
+  },
+  {
+   "id": "t4-03-05",
+   "speech": [
+    "03:34.892",
+    "03:40.252"
+   ],
+   "action": [
+    "03:34.894",
+    "03:37.384"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 3468
+  },
+  {
+   "id": "t4-03-06",
+   "speech": [
+    "03:40.852",
+    "03:51.492"
+   ],
+   "action": [
+    "03:40.852",
+    "03:43.885"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 9931
+  },
+  {
+   "id": "t4-04-01",
+   "speech": [
+    "03:53.816",
+    "04:04.616"
+   ],
+   "action": [
+    "03:53.818",
+    "03:57.763"
+   ],
+   "commit": "03:57.580",
+   "commit_before_speech_end_ms": 7036,
+   "next_speech_after_action_ms": 7454
+  },
+  {
+   "id": "t4-04-02",
+   "speech": [
+    "04:05.217",
+    "04:21.777"
+   ],
+   "action": [
+    "04:05.236",
+    "04:05.729"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 17348
+  },
+  {
+   "id": "t4-04-03",
+   "speech": [
+    "04:23.077",
+    "04:36.597"
+   ],
+   "action": [
+    "04:23.079",
+    "04:23.576"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 13621
+  },
+  {
+   "id": "t4-04-04",
+   "speech": [
+    "04:37.197",
+    "04:50.397"
+   ],
+   "action": [
+    "04:37.200",
+    "04:41.846"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 9150
+  },
+  {
+   "id": "t4-04-05",
+   "speech": [
+    "04:50.996",
+    "04:59.236"
+   ],
+   "action": [
+    "04:50.998",
+    "04:54.628"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 5209
+  },
+  {
+   "id": "t4-04-06",
+   "speech": [
+    "04:59.837",
+    "05:09.277"
+   ],
+   "action": [
+    "04:59.838",
+    "05:05.615"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 4962
+  },
+  {
+   "id": "t4-04-07",
+   "speech": [
+    "05:10.577",
+    "05:29.617"
+   ],
+   "action": [
+    "05:10.591",
+    "05:13.563"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 17353
+  },
+  {
+   "id": "t4-04-08",
+   "speech": [
+    "05:30.916",
+    "05:44.916"
+   ]
+  },
+  {
+   "id": "t4-04-09",
+   "speech": [
+    "05:46.216",
+    "05:51.816"
+   ],
+   "action": [
+    "05:46.217",
+    "05:50.002"
+   ],
+   "commit": "05:49.674",
+   "commit_before_speech_end_ms": 2142,
+   "next_speech_after_action_ms": 2413
+  },
+  {
+   "id": "t4-04-10",
+   "speech": [
+    "05:52.415",
+    "06:00.255"
+   ],
+   "action": [
+    "05:52.416",
+    "05:55.428"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 5427
+  },
+  {
+   "id": "t4-04-11",
+   "speech": [
+    "06:00.855",
+    "06:26.695"
+   ],
+   "action": [
+    "06:00.856",
+    "06:05.211"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 22784
+  },
+  {
+   "id": "t4-04-12",
+   "speech": [
+    "06:27.995",
+    "06:41.755"
+   ],
+   "action": [
+    "06:27.997",
+    "06:40.676"
+   ],
+   "commit": "06:38.766",
+   "commit_before_speech_end_ms": 2989,
+   "next_speech_after_action_ms": 1687
+  },
+  {
+   "id": "t4-04-13",
+   "speech": [
+    "06:42.363",
+    "06:51.083"
+   ],
+   "action": [
+    "06:42.364",
+    "06:43.047"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 9337
+  },
+  {
+   "id": "t4-04-14",
+   "speech": [
+    "06:52.384",
+    "07:00.304"
+   ],
+   "action": [
+    "06:52.385",
+    "06:58.835"
+   ],
+   "commit": "06:58.558",
+   "commit_before_speech_end_ms": 1746,
+   "next_speech_after_action_ms": 2069
+  },
+  {
+   "id": "t4-04-15",
+   "speech": [
+    "07:00.904",
+    "07:08.344"
+   ],
+   "action": [
+    "07:00.917",
+    "07:07.186"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 1757
+  },
+  {
+   "id": "t4-04-16",
+   "speech": [
+    "07:08.943",
+    "07:14.063"
+   ],
+   "action": [
+    "07:08.945",
+    "07:10.836"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 5535
+  },
+  {
+   "id": "t4-05-01",
+   "speech": [
+    "07:16.371",
+    "07:31.571"
+   ]
+  },
+  {
+   "id": "t4-05-02",
+   "speech": [
+    "07:32.871",
+    "07:42.551"
+   ],
+   "revoiced": "cache",
+   "action": [
+    "07:32.872",
+    "07:35.953"
+   ],
+   "commit": "07:35.345",
+   "commit_before_speech_end_ms": 7206,
+   "next_speech_after_action_ms": 8158
+  },
+  {
+   "id": "t4-05-03",
+   "speech": [
+    "07:44.111",
+    "08:07.071"
+   ],
+   "revoiced": "cache",
+   "action": [
+    "07:43.152",
+    "07:47.142"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 22029
+  },
+  {
+   "id": "t4-05-04",
+   "speech": [
+    "08:09.171",
+    "08:28.931"
+   ],
+   "revoiced": "cache",
+   "action": [
+    "08:08.373",
+    "08:15.042"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 15188
+  },
+  {
+   "id": "t4-05-05",
+   "speech": [
+    "08:30.230",
+    "08:38.550"
+   ]
+  },
+  {
+   "id": "t4-05-06",
+   "speech": [
+    "08:39.371",
+    "08:43.531"
+   ],
+   "revoiced": "cache",
+   "action": [
+    "08:39.853",
+    "08:42.294"
+   ],
+   "commit": "08:42.074",
+   "commit_before_speech_end_ms": 1457,
+   "next_speech_after_action_ms": 2318
+  },
+  {
+   "id": "t4-05-07",
+   "speech": [
+    "08:44.612",
+    "09:05.492"
+   ],
+   "revoiced": "cache",
+   "action": [
+    "08:44.136",
+    "08:44.736"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 21356
+  },
+  {
+   "id": "t4-05-08",
+   "speech": [
+    "09:06.092",
+    "09:13.852"
+   ],
+   "action": [
+    "09:06.094",
+    "09:06.630"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 7582
+  },
+  {
+   "id": "t4-05-09",
+   "speech": [
+    "09:14.212",
+    "09:32.852"
+   ],
+   "revoiced": "cache",
+   "action": [
+    "09:14.475",
+    "09:17.393"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 16059
+  },
+  {
+   "id": "t4-05-10",
+   "speech": [
+    "09:33.452",
+    "09:41.692"
+   ],
+   "revoiced": "cache",
+   "action": [
+    "09:33.467",
+    "09:39.155"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 3136
+  },
+  {
+   "id": "t4-05-11",
+   "speech": [
+    "09:42.291",
+    "09:47.251"
+   ],
+   "action": [
+    "09:42.292",
+    "09:43.428"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 6324
+  },
+  {
+   "id": "t4-05-12",
+   "speech": [
+    "09:49.752",
+    "09:56.712"
+   ],
+   "revoiced": "cache",
+   "action": [
+    "09:48.553",
+    "09:56.252"
+   ],
+   "commit": "09:55.989",
+   "commit_before_speech_end_ms": 723,
+   "next_speech_after_action_ms": 1061
+  },
+  {
+   "id": "t4-05-13",
+   "speech": [
+    "09:57.313",
+    "10:04.193"
+   ],
+   "action": [
+    "09:57.314",
+    "09:58.344"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 6450
+  },
+  {
+   "id": "t4-05-14",
+   "speech": [
+    "10:04.794",
+    "10:09.674"
+   ],
+   "action": [
+    "10:04.795",
+    "10:05.910"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 4364
+  },
+  {
+   "id": "t4-05-15",
+   "speech": [
+    "10:10.274",
+    "10:14.674"
+   ],
+   "action": [
+    "10:10.275",
+    "10:12.995"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 2979
+  },
+  {
+   "id": "t4-05-16",
+   "speech": [
+    "10:15.974",
+    "10:22.934"
+   ],
+   "action": [
+    "10:15.976",
+    "10:21.997"
+   ],
+   "commit": "10:21.697",
+   "commit_before_speech_end_ms": 1237,
+   "next_speech_after_action_ms": 1536
+  },
+  {
+   "id": "t4-05-17",
+   "speech": [
+    "10:23.533",
+    "10:26.013"
+   ],
+   "action": [
+    "10:23.538",
+    "10:24.193"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 3220
+  },
+  {
+   "id": "t4-05-18",
+   "speech": [
+    "10:27.413",
+    "10:44.613"
+   ],
+   "revoiced": "cache",
+   "action": [
+    "10:26.614",
+    "10:27.238"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 19684
+  },
+  {
+   "id": "t4-06-01",
+   "speech": [
+    "10:46.922",
+    "11:03.322"
+   ],
+   "action": [
+    "10:46.923",
+    "11:00.315"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 4309
+  },
+  {
+   "id": "t4-06-02",
+   "speech": [
+    "11:04.624",
+    "11:10.624"
+   ],
+   "action": [
+    "11:04.625",
+    "11:07.905"
+   ],
+   "commit": "11:06.840",
+   "commit_before_speech_end_ms": 3784,
+   "next_speech_after_action_ms": 4679
+  },
+  {
+   "id": "t4-06-03",
+   "speech": [
+    "11:12.584",
+    "11:27.624"
+   ],
+   "revoiced": "cache",
+   "action": [
+    "11:11.229",
+    "11:11.843"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 16920
+  },
+  {
+   "id": "t4-06-04",
+   "speech": [
+    "11:28.763",
+    "11:32.523"
+   ],
+   "revoiced": "cache",
+   "action": [
+    "11:28.924",
+    "11:29.873"
+   ],
+   "commit": "11:29.668",
+   "commit_before_speech_end_ms": 2855,
+   "next_speech_after_action_ms": 3810
+  },
+  {
+   "id": "t4-06-05",
+   "speech": [
+    "11:33.683",
+    "11:52.403"
+   ],
+   "revoiced": "cache",
+   "action": [
+    "11:33.124",
+    "11:43.969"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 9033
+  },
+  {
+   "id": "t4-06-06",
+   "speech": [
+    "11:53.002",
+    "12:00.762"
+   ],
+   "revoiced": "cache",
+   "action": [
+    "11:53.003",
+    "11:57.413"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 4569
+  },
+  {
+   "id": "t4-06-07",
+   "speech": [
+    "12:01.982",
+    "12:05.902"
+   ],
+   "revoiced": "cache",
+   "action": [
+    "12:02.099",
+    "12:05.293"
+   ],
+   "commit": "12:04.715",
+   "commit_before_speech_end_ms": 1187,
+   "next_speech_after_action_ms": 1369
+  },
+  {
+   "id": "t4-06-08",
+   "speech": [
+    "12:06.662",
+    "12:18.022"
+   ],
+   "revoiced": "cache",
+   "action": [
+    "12:06.503",
+    "12:12.846"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 6475
+  },
+  {
+   "id": "t4-06-09",
+   "speech": [
+    "12:19.321",
+    "12:34.441"
+   ],
+   "action": [
+    "12:19.322",
+    "12:25.275"
+   ],
+   "commit": "12:20.484",
+   "commit_before_speech_end_ms": 13957,
+   "next_speech_after_action_ms": 11465
+  },
+  {
+   "id": "t4-07-01",
+   "speech": [
+    "12:36.740",
+    "12:45.860"
+   ],
+   "action": [
+    "12:36.740",
+    "12:45.247"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 1194
+  },
+  {
+   "id": "t4-07-02",
+   "speech": [
+    "12:46.441",
+    "12:59.001"
+   ],
+   "revoiced": "cache",
+   "action": [
+    "12:47.161",
+    "12:49.493"
+   ],
+   "commit": "12:49.284",
+   "commit_before_speech_end_ms": 9717,
+   "next_speech_after_action_ms": 10187
+  },
+  {
+   "id": "t4-07-03",
+   "speech": [
+    "12:59.680",
+    "13:16.800"
+   ],
+   "revoiced": "cache",
+   "action": [
+    "12:59.603",
+    "13:09.311"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 8389
+  },
+  {
+   "id": "t4-07-04",
+   "speech": [
+    "13:17.700",
+    "13:36.420"
+   ],
+   "revoiced": "cache",
+   "action": [
+    "13:18.101",
+    "13:27.056"
+   ],
+   "commit": "13:23.693",
+   "commit_before_speech_end_ms": 12727,
+   "next_speech_after_action_ms": 10503
+  },
+  {
+   "id": "t4-07-05",
+   "speech": [
+    "13:37.559",
+    "13:47.159"
+   ],
+   "revoiced": "cache",
+   "action": [
+    "13:37.721",
+    "13:38.779"
+   ],
+   "commit": "13:38.577",
+   "commit_before_speech_end_ms": 8582,
+   "next_speech_after_action_ms": 10380
+  },
+  {
+   "id": "t4-07-06",
+   "speech": [
+    "13:49.159",
+    "14:00.759"
+   ],
+   "action": [
+    "13:49.160",
+    "13:59.460"
+   ],
+   "commit": "13:59.257",
+   "commit_before_speech_end_ms": 1502,
+   "next_speech_after_action_ms": 2140
+  },
+  {
+   "id": "t4-07-07",
+   "speech": [
+    "14:01.600",
+    "14:16.640"
+   ],
+   "revoiced": "cache",
+   "action": [
+    "14:01.361",
+    "14:06.249"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 11691
+  },
+  {
+   "id": "t4-07-08",
+   "speech": [
+    "14:17.940",
+    "14:26.180"
+   ],
+   "action": [
+    "14:17.941",
+    "14:23.621"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 3319
+  },
+  {
+   "id": "t4-07-09",
+   "speech": [
+    "14:26.940",
+    "14:40.860"
+   ],
+   "revoiced": "cache",
+   "action": [
+    "14:26.785",
+    "14:28.034"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 14126
+  },
+  {
+   "id": "t4-07-10",
+   "speech": [
+    "14:42.160",
+    "14:57.440"
+   ]
+  },
+  {
+   "id": "t4-08-01",
+   "speech": [
+    "14:59.672",
+    "15:25.032"
+   ],
+   "revoiced": "cache",
+   "action": [
+    "14:59.756",
+    "15:09.525"
+   ],
+   "commit": "15:06.486",
+   "commit_before_speech_end_ms": 18546,
+   "next_speech_after_action_ms": 16807
+  },
+  {
+   "id": "t4-08-02",
+   "speech": [
+    "15:26.332",
+    "15:56.412"
+   ],
+   "action": [
+    "15:26.333",
+    "15:38.858"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 19734
+  },
+  {
+   "id": "t4-08-03",
+   "speech": [
+    "15:58.592",
+    "16:25.312"
+   ],
+   "revoiced": "cache",
+   "action": [
+    "15:57.713",
+    "16:00.775"
+   ],
+   "commit": "16:00.414",
+   "commit_before_speech_end_ms": 24898,
+   "next_speech_after_action_ms": 26377
+  },
+  {
+   "id": "t4-08-04",
+   "speech": [
+    "16:27.152",
+    "16:34.912"
+   ],
+   "revoiced": "cache",
+   "action": [
+    "16:27.315",
+    "16:30.627"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 4885
+  },
+  {
+   "id": "t4-08-05",
+   "speech": [
+    "16:35.512",
+    "16:53.592"
+   ],
+   "action": [
+    "16:35.513",
+    "16:41.358"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 14080
+  },
+  {
+   "id": "t4-09-01",
+   "speech": [
+    "16:55.438",
+    "17:12.398"
+   ],
+   "revoiced": "cache",
+   "action": [
+    "16:55.921",
+    "17:04.386"
+   ],
+   "commit": "17:04.172",
+   "commit_before_speech_end_ms": 8226,
+   "next_speech_after_action_ms": 8612
+  },
+  {
+   "id": "t4-09-02",
+   "speech": [
+    "17:12.998",
+    "17:20.998"
+   ],
+   "action": [
+    "17:12.998",
+    "17:13.563"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 8435
+  },
+  {
+   "id": "t4-09-03",
+   "speech": [
+    "17:21.998",
+    "17:33.198"
+   ],
+   "revoiced": "cache",
+   "action": [
+    "17:21.599",
+    "17:24.269"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 10869
+  },
+  {
+   "id": "t4-09-04",
+   "speech": [
+    "17:35.138",
+    "17:42.098"
+   ],
+   "revoiced": "cache",
+   "action": [
+    "17:34.499",
+    "17:38.264"
+   ],
+   "commit": "17:38.061",
+   "commit_before_speech_end_ms": 4037,
+   "next_speech_after_action_ms": 4434
+  },
+  {
+   "id": "t4-09-05",
+   "speech": [
+    "17:42.698",
+    "17:47.498"
+   ],
+   "action": [
+    "17:42.701",
+    "17:45.710"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 3107
+  },
+  {
+   "id": "t4-09-06",
+   "speech": [
+    "17:48.817",
+    "17:59.937"
+   ],
+   "revoiced": "cache",
+   "action": [
+    "17:48.099",
+    "17:48.718"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 11820
+  },
+  {
+   "id": "t4-09-07",
+   "speech": [
+    "18:00.538",
+    "18:06.458"
+   ],
+   "action": [
+    "18:00.539",
+    "18:01.404"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 7143
+  },
+  {
+   "id": "t4-10-01",
+   "speech": [
+    "18:08.547",
+    "18:10.387"
+   ],
+   "revoiced": "cache",
+   "action": [
+    "18:08.788",
+    "18:09.613"
+   ],
+   "commit": "18:09.403",
+   "commit_before_speech_end_ms": 984,
+   "next_speech_after_action_ms": 1374
+  },
+  {
+   "id": "t4-10-02",
+   "speech": [
+    "18:10.987",
+    "18:17.467"
+   ],
+   "action": [
+    "18:10.990",
+    "18:13.373"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null,
+   "next_speech_after_action_ms": 5393
+  },
+  {
+   "id": "t4-10-03",
+   "speech": [
+    "18:18.766",
+    "18:38.846"
+   ],
+   "action": [
+    "18:18.767",
+    "18:30.552"
+   ],
+   "commit": null,
+   "commit_before_speech_end_ms": null
+  }
+ ],
+ "clicks": [
+  {
+   "segment": "t4-q4",
+   "x": 217.33334350585938,
+   "y": 216.2291774749756,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "t4-q4",
+   "x": 217.33334350585938,
+   "y": 317.9791774749756,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "t4-q4",
+   "x": 217.33334350585938,
+   "y": 250.1458339691162,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "t4-q4",
+   "x": 217.33334350585938,
+   "y": 284.06252098083496,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "t4-m5",
+   "x": 217.33334350585938,
+   "y": 561.2083339691162,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "t4-m5",
+   "x": 217.33334350585938,
+   "y": 595.125020980835,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "t4-m5",
+   "x": 217.33334350585938,
+   "y": 629.0417079925537,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "t4-m5",
+   "x": 217.33334350585938,
+   "y": 662.9583339691162,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "t4-m6",
+   "x": 217.33334350585938,
+   "y": 353.6979274749756,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "t4-m6",
+   "x": 217.33334350585938,
+   "y": 387.6145839691162,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "t4-m6",
+   "x": 217.33334350585938,
+   "y": 421.53127098083496,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "t4-m6",
+   "x": 217.33334350585938,
+   "y": 455.4479274749756,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "t4-m6",
+   "x": 217.33334350585938,
+   "y": 489.3645839691162,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "t4-m7",
+   "x": 217.33334350585938,
+   "y": 355.3854274749756,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "t4-m7",
+   "x": 217.33334350585938,
+   "y": 389.3020839691162,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "t4-m7",
+   "x": 217.33334350585938,
+   "y": 457.1354274749756,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "t4-m7",
+   "x": 217.33334350585938,
+   "y": 423.21877098083496,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "t4-m8",
+   "x": 217.33334350585938,
+   "y": 111.57291984558105,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "t4-m8",
+   "x": 217.33334350585938,
+   "y": 145.4895839691162,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "t4-m9",
+   "x": 217.33334350585938,
+   "y": 501.43752098083496,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "t4-m9",
+   "x": 217.33334350585938,
+   "y": 606.093770980835,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  },
+  {
+   "segment": "t4-p10",
+   "x": 217.33334350585938,
+   "y": 572.1770839691162,
+   "dx": 0.0,
+   "dy": 0.0,
+   "gliding": null
+  }
+ ],
+ "motion_summary": {
+  "count": 131,
+  "page_count": 0,
+  "max_gap_ms_max": null,
+  "start_delay_max_ms": null,
+  "over_100ms": []
+ },
+ "motions": [
+  {
+   "segment": "t4-q2",
+   "mode": "overlay",
+   "start_ms": 83743,
+   "duration_ms": 373,
+   "planned_ms": 373,
+   "frames": 12,
+   "start_delay_ms": 14,
+   "max_gap_ms": 79
+  },
+  {
+   "segment": "t4-q2",
+   "mode": "overlay",
+   "start_ms": 87215,
+   "duration_ms": 308,
+   "planned_ms": 308,
+   "frames": 15,
+   "start_delay_ms": 9,
+   "max_gap_ms": 34
+  },
+  {
+   "segment": "t4-q2",
+   "mode": "overlay",
+   "start_ms": 96574,
+   "duration_ms": 296,
+   "planned_ms": 296,
+   "frames": 10,
+   "start_delay_ms": 7,
+   "max_gap_ms": 91
+  },
+  {
+   "segment": "t4-q2",
+   "mode": "overlay",
+   "start_ms": 104026,
+   "duration_ms": 296,
+   "planned_ms": 296,
+   "frames": 13,
+   "start_delay_ms": 18,
+   "max_gap_ms": 37
+  },
+  {
+   "segment": "t4-q2",
+   "mode": "overlay",
+   "start_ms": 120225,
+   "duration_ms": 340,
+   "planned_ms": 340,
+   "frames": 12,
+   "start_delay_ms": 22,
+   "max_gap_ms": 54
+  },
+  {
+   "segment": "t4-q2",
+   "mode": "overlay",
+   "start_ms": 126873,
+   "duration_ms": 269,
+   "planned_ms": 269,
+   "frames": 9,
+   "start_delay_ms": 16,
+   "max_gap_ms": 64
+  },
+  {
+   "segment": "t4-q2",
+   "mode": "overlay",
+   "start_ms": 138574,
+   "duration_ms": 288,
+   "planned_ms": 288,
+   "frames": 12,
+   "start_delay_ms": 13,
+   "max_gap_ms": 49
+  },
+  {
+   "segment": "t4-q2",
+   "mode": "overlay",
+   "start_ms": 149827,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 12,
+   "start_delay_ms": 13,
+   "max_gap_ms": 37
+  },
+  {
+   "segment": "t4-q2",
+   "mode": "overlay",
+   "start_ms": 151372,
+   "duration_ms": 489,
+   "planned_ms": 489,
+   "frames": 16,
+   "start_delay_ms": 9,
+   "max_gap_ms": 97
+  },
+  {
+   "segment": "t4-q3",
+   "mode": "overlay",
+   "start_ms": 158056,
+   "duration_ms": 418,
+   "planned_ms": 418,
+   "frames": 20,
+   "start_delay_ms": 11,
+   "max_gap_ms": 59
+  },
+  {
+   "segment": "t4-q3",
+   "mode": "overlay",
+   "start_ms": 163452,
+   "duration_ms": 363,
+   "planned_ms": 363,
+   "frames": 14,
+   "start_delay_ms": 11,
+   "max_gap_ms": 59
+  },
+  {
+   "segment": "t4-q3",
+   "mode": "overlay",
+   "start_ms": 169205,
+   "duration_ms": 357,
+   "planned_ms": 357,
+   "frames": 17,
+   "start_delay_ms": 23,
+   "max_gap_ms": 37
+  },
+  {
+   "segment": "t4-q3",
+   "mode": "overlay",
+   "start_ms": 171878,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 12,
+   "start_delay_ms": 5,
+   "max_gap_ms": 39
+  },
+  {
+   "segment": "t4-q3",
+   "mode": "overlay",
+   "start_ms": 172763,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 10,
+   "start_delay_ms": 4,
+   "max_gap_ms": 56
+  },
+  {
+   "segment": "t4-q3",
+   "mode": "overlay",
+   "start_ms": 173940,
+   "duration_ms": 324,
+   "planned_ms": 324,
+   "frames": 12,
+   "start_delay_ms": 1,
+   "max_gap_ms": 60
+  },
+  {
+   "segment": "t4-q3",
+   "mode": "overlay",
+   "start_ms": 177854,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 11,
+   "start_delay_ms": 13,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "t4-q3",
+   "mode": "overlay",
+   "start_ms": 192101,
+   "duration_ms": 280,
+   "planned_ms": 280,
+   "frames": 17,
+   "start_delay_ms": 3,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "t4-q3",
+   "mode": "overlay",
+   "start_ms": 216297,
+   "duration_ms": 586,
+   "planned_ms": 586,
+   "frames": 25,
+   "start_delay_ms": 2,
+   "max_gap_ms": 70
+  },
+  {
+   "segment": "t4-q3",
+   "mode": "overlay",
+   "start_ms": 217101,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 13,
+   "start_delay_ms": 3,
+   "max_gap_ms": 38
+  },
+  {
+   "segment": "t4-q3",
+   "mode": "overlay",
+   "start_ms": 223512,
+   "duration_ms": 342,
+   "planned_ms": 342,
+   "frames": 14,
+   "start_delay_ms": 9,
+   "max_gap_ms": 39
+  },
+  {
+   "segment": "t4-q4",
+   "mode": "overlay",
+   "start_ms": 237055,
+   "duration_ms": 340,
+   "planned_ms": 340,
+   "frames": 14,
+   "start_delay_ms": 6,
+   "max_gap_ms": 45
+  },
+  {
+   "segment": "t4-q4",
+   "mode": "overlay",
+   "start_ms": 245456,
+   "duration_ms": 269,
+   "planned_ms": 269,
+   "frames": 13,
+   "start_delay_ms": 15,
+   "max_gap_ms": 48
+  },
+  {
+   "segment": "t4-q4",
+   "mode": "overlay",
+   "start_ms": 263251,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 10,
+   "start_delay_ms": 19,
+   "max_gap_ms": 51
+  },
+  {
+   "segment": "t4-q4",
+   "mode": "overlay",
+   "start_ms": 277390,
+   "duration_ms": 287,
+   "planned_ms": 287,
+   "frames": 17,
+   "start_delay_ms": 1,
+   "max_gap_ms": 28
+  },
+  {
+   "segment": "t4-q4",
+   "mode": "overlay",
+   "start_ms": 281540,
+   "duration_ms": 273,
+   "planned_ms": 273,
+   "frames": 12,
+   "start_delay_ms": 20,
+   "max_gap_ms": 46
+  },
+  {
+   "segment": "t4-q4",
+   "mode": "overlay",
+   "start_ms": 291194,
+   "duration_ms": 323,
+   "planned_ms": 323,
+   "frames": 17,
+   "start_delay_ms": 8,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "t4-q4",
+   "mode": "overlay",
+   "start_ms": 294360,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 13,
+   "start_delay_ms": 8,
+   "max_gap_ms": 41
+  },
+  {
+   "segment": "t4-q4",
+   "mode": "overlay",
+   "start_ms": 300038,
+   "duration_ms": 408,
+   "planned_ms": 408,
+   "frames": 15,
+   "start_delay_ms": 14,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "t4-q4",
+   "mode": "overlay",
+   "start_ms": 305262,
+   "duration_ms": 330,
+   "planned_ms": 330,
+   "frames": 15,
+   "start_delay_ms": 9,
+   "max_gap_ms": 56
+  },
+  {
+   "segment": "t4-q4",
+   "mode": "overlay",
+   "start_ms": 313001,
+   "duration_ms": 518,
+   "planned_ms": 518,
+   "frames": 23,
+   "start_delay_ms": 0,
+   "max_gap_ms": 44
+  },
+  {
+   "segment": "t4-q4",
+   "mode": "overlay",
+   "start_ms": 347149,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 10,
+   "start_delay_ms": 58,
+   "max_gap_ms": 32
+  },
+  {
+   "segment": "t4-q4",
+   "mode": "overlay",
+   "start_ms": 349237,
+   "duration_ms": 266,
+   "planned_ms": 266,
+   "frames": 14,
+   "start_delay_ms": 14,
+   "max_gap_ms": 34
+  },
+  {
+   "segment": "t4-q4",
+   "mode": "overlay",
+   "start_ms": 354919,
+   "duration_ms": 460,
+   "planned_ms": 460,
+   "frames": 21,
+   "start_delay_ms": 13,
+   "max_gap_ms": 46
+  },
+  {
+   "segment": "t4-q4",
+   "mode": "overlay",
+   "start_ms": 361025,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 13,
+   "start_delay_ms": 10,
+   "max_gap_ms": 34
+  },
+  {
+   "segment": "t4-q4",
+   "mode": "overlay",
+   "start_ms": 364929,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 16,
+   "start_delay_ms": 7,
+   "max_gap_ms": 20
+  },
+  {
+   "segment": "t4-q4",
+   "mode": "overlay",
+   "start_ms": 398126,
+   "duration_ms": 461,
+   "planned_ms": 461,
+   "frames": 24,
+   "start_delay_ms": 20,
+   "max_gap_ms": 63
+  },
+  {
+   "segment": "t4-q4",
+   "mode": "overlay",
+   "start_ms": 400136,
+   "duration_ms": 530,
+   "planned_ms": 530,
+   "frames": 28,
+   "start_delay_ms": 20,
+   "max_gap_ms": 29
+  },
+  {
+   "segment": "t4-q4",
+   "mode": "overlay",
+   "start_ms": 402545,
+   "duration_ms": 458,
+   "planned_ms": 458,
+   "frames": 25,
+   "start_delay_ms": 17,
+   "max_gap_ms": 37
+  },
+  {
+   "segment": "t4-q4",
+   "mode": "overlay",
+   "start_ms": 418117,
+   "duration_ms": 276,
+   "planned_ms": 276,
+   "frames": 14,
+   "start_delay_ms": 5,
+   "max_gap_ms": 64
+  },
+  {
+   "segment": "t4-q4",
+   "mode": "overlay",
+   "start_ms": 421469,
+   "duration_ms": 262,
+   "planned_ms": 262,
+   "frames": 13,
+   "start_delay_ms": 2,
+   "max_gap_ms": 42
+  },
+  {
+   "segment": "t4-q4",
+   "mode": "overlay",
+   "start_ms": 422490,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 13,
+   "start_delay_ms": 15,
+   "max_gap_ms": 53
+  },
+  {
+   "segment": "t4-q4",
+   "mode": "overlay",
+   "start_ms": 423348,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 15,
+   "start_delay_ms": 13,
+   "max_gap_ms": 36
+  },
+  {
+   "segment": "t4-q4",
+   "mode": "overlay",
+   "start_ms": 426810,
+   "duration_ms": 318,
+   "planned_ms": 318,
+   "frames": 14,
+   "start_delay_ms": 4,
+   "max_gap_ms": 81
+  },
+  {
+   "segment": "t4-q4",
+   "mode": "overlay",
+   "start_ms": 430405,
+   "duration_ms": 410,
+   "planned_ms": 410,
+   "frames": 20,
+   "start_delay_ms": 6,
+   "max_gap_ms": 47
+  },
+  {
+   "segment": "t4-m5",
+   "mode": "overlay",
+   "start_ms": 453072,
+   "duration_ms": 574,
+   "planned_ms": 574,
+   "frames": 21,
+   "start_delay_ms": 14,
+   "max_gap_ms": 62
+  },
+  {
+   "segment": "t4-m5",
+   "mode": "overlay",
+   "start_ms": 454918,
+   "duration_ms": 268,
+   "planned_ms": 268,
+   "frames": 14,
+   "start_delay_ms": 19,
+   "max_gap_ms": 26
+  },
+  {
+   "segment": "t4-m5",
+   "mode": "overlay",
+   "start_ms": 463359,
+   "duration_ms": 319,
+   "planned_ms": 319,
+   "frames": 14,
+   "start_delay_ms": 10,
+   "max_gap_ms": 57
+  },
+  {
+   "segment": "t4-m5",
+   "mode": "overlay",
+   "start_ms": 464763,
+   "duration_ms": 341,
+   "planned_ms": 341,
+   "frames": 8,
+   "start_delay_ms": 10,
+   "max_gap_ms": 78
+  },
+  {
+   "segment": "t4-m5",
+   "mode": "overlay",
+   "start_ms": 466734,
+   "duration_ms": 336,
+   "planned_ms": 336,
+   "frames": 11,
+   "start_delay_ms": 2,
+   "max_gap_ms": 63
+  },
+  {
+   "segment": "t4-m5",
+   "mode": "overlay",
+   "start_ms": 488556,
+   "duration_ms": 414,
+   "planned_ms": 414,
+   "frames": 18,
+   "start_delay_ms": 14,
+   "max_gap_ms": 42
+  },
+  {
+   "segment": "t4-m5",
+   "mode": "overlay",
+   "start_ms": 494678,
+   "duration_ms": 291,
+   "planned_ms": 291,
+   "frames": 9,
+   "start_delay_ms": 18,
+   "max_gap_ms": 90
+  },
+  {
+   "segment": "t4-m5",
+   "mode": "overlay",
+   "start_ms": 521314,
+   "duration_ms": 599,
+   "planned_ms": 599,
+   "frames": 26,
+   "start_delay_ms": 23,
+   "max_gap_ms": 53
+  },
+  {
+   "segment": "t4-m5",
+   "mode": "overlay",
+   "start_ms": 524346,
+   "duration_ms": 359,
+   "planned_ms": 359,
+   "frames": 13,
+   "start_delay_ms": 7,
+   "max_gap_ms": 63
+  },
+  {
+   "segment": "t4-m5",
+   "mode": "overlay",
+   "start_ms": 546292,
+   "duration_ms": 321,
+   "planned_ms": 321,
+   "frames": 14,
+   "start_delay_ms": 17,
+   "max_gap_ms": 48
+  },
+  {
+   "segment": "t4-m5",
+   "mode": "overlay",
+   "start_ms": 554658,
+   "duration_ms": 279,
+   "planned_ms": 279,
+   "frames": 13,
+   "start_delay_ms": 12,
+   "max_gap_ms": 41
+  },
+  {
+   "segment": "t4-m5",
+   "mode": "overlay",
+   "start_ms": 557081,
+   "duration_ms": 294,
+   "planned_ms": 294,
+   "frames": 9,
+   "start_delay_ms": 8,
+   "max_gap_ms": 78
+  },
+  {
+   "segment": "t4-m5",
+   "mode": "overlay",
+   "start_ms": 574070,
+   "duration_ms": 405,
+   "planned_ms": 405,
+   "frames": 17,
+   "start_delay_ms": 11,
+   "max_gap_ms": 74
+  },
+  {
+   "segment": "t4-m5",
+   "mode": "overlay",
+   "start_ms": 576834,
+   "duration_ms": 377,
+   "planned_ms": 377,
+   "frames": 14,
+   "start_delay_ms": 21,
+   "max_gap_ms": 67
+  },
+  {
+   "segment": "t4-m5",
+   "mode": "overlay",
+   "start_ms": 578828,
+   "duration_ms": 294,
+   "planned_ms": 294,
+   "frames": 15,
+   "start_delay_ms": 11,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "t4-m5",
+   "mode": "overlay",
+   "start_ms": 583101,
+   "duration_ms": 283,
+   "planned_ms": 283,
+   "frames": 13,
+   "start_delay_ms": 4,
+   "max_gap_ms": 40
+  },
+  {
+   "segment": "t4-m5",
+   "mode": "overlay",
+   "start_ms": 595389,
+   "duration_ms": 422,
+   "planned_ms": 422,
+   "frames": 15,
+   "start_delay_ms": 14,
+   "max_gap_ms": 65
+  },
+  {
+   "segment": "t4-m5",
+   "mode": "overlay",
+   "start_ms": 597941,
+   "duration_ms": 374,
+   "planned_ms": 374,
+   "frames": 12,
+   "start_delay_ms": 8,
+   "max_gap_ms": 67
+  },
+  {
+   "segment": "t4-m5",
+   "mode": "overlay",
+   "start_ms": 605617,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 12,
+   "start_delay_ms": 11,
+   "max_gap_ms": 36
+  },
+  {
+   "segment": "t4-m5",
+   "mode": "overlay",
+   "start_ms": 610465,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 12,
+   "start_delay_ms": 29,
+   "max_gap_ms": 22
+  },
+  {
+   "segment": "t4-m5",
+   "mode": "overlay",
+   "start_ms": 611461,
+   "duration_ms": 267,
+   "planned_ms": 267,
+   "frames": 11,
+   "start_delay_ms": 45,
+   "max_gap_ms": 31
+  },
+  {
+   "segment": "t4-m5",
+   "mode": "overlay",
+   "start_ms": 612720,
+   "duration_ms": 267,
+   "planned_ms": 267,
+   "frames": 11,
+   "start_delay_ms": 2,
+   "max_gap_ms": 65
+  },
+  {
+   "segment": "t4-m5",
+   "mode": "overlay",
+   "start_ms": 621157,
+   "duration_ms": 319,
+   "planned_ms": 319,
+   "frames": 8,
+   "start_delay_ms": 40,
+   "max_gap_ms": 68
+  },
+  {
+   "segment": "t4-m5",
+   "mode": "overlay",
+   "start_ms": 623719,
+   "duration_ms": 436,
+   "planned_ms": 436,
+   "frames": 18,
+   "start_delay_ms": 16,
+   "max_gap_ms": 45
+  },
+  {
+   "segment": "t4-m5",
+   "mode": "overlay",
+   "start_ms": 626794,
+   "duration_ms": 423,
+   "planned_ms": 423,
+   "frames": 16,
+   "start_delay_ms": 17,
+   "max_gap_ms": 59
+  },
+  {
+   "segment": "t4-m6",
+   "mode": "overlay",
+   "start_ms": 658709,
+   "duration_ms": 566,
+   "planned_ms": 566,
+   "frames": 28,
+   "start_delay_ms": 2,
+   "max_gap_ms": 39
+  },
+  {
+   "segment": "t4-m6",
+   "mode": "overlay",
+   "start_ms": 660009,
+   "duration_ms": 271,
+   "planned_ms": 271,
+   "frames": 14,
+   "start_delay_ms": 5,
+   "max_gap_ms": 38
+  },
+  {
+   "segment": "t4-m6",
+   "mode": "overlay",
+   "start_ms": 666416,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 13,
+   "start_delay_ms": 7,
+   "max_gap_ms": 29
+  },
+  {
+   "segment": "t4-m6",
+   "mode": "overlay",
+   "start_ms": 667398,
+   "duration_ms": 476,
+   "planned_ms": 476,
+   "frames": 23,
+   "start_delay_ms": 7,
+   "max_gap_ms": 61
+  },
+  {
+   "segment": "t4-m6",
+   "mode": "overlay",
+   "start_ms": 671472,
+   "duration_ms": 302,
+   "planned_ms": 302,
+   "frames": 14,
+   "start_delay_ms": 25,
+   "max_gap_ms": 31
+  },
+  {
+   "segment": "t4-m6",
+   "mode": "overlay",
+   "start_ms": 689110,
+   "duration_ms": 383,
+   "planned_ms": 383,
+   "frames": 23,
+   "start_delay_ms": 7,
+   "max_gap_ms": 27
+  },
+  {
+   "segment": "t4-m6",
+   "mode": "overlay",
+   "start_ms": 693307,
+   "duration_ms": 304,
+   "planned_ms": 304,
+   "frames": 10,
+   "start_delay_ms": 1,
+   "max_gap_ms": 58
+  },
+  {
+   "segment": "t4-m6",
+   "mode": "overlay",
+   "start_ms": 698824,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 12,
+   "start_delay_ms": 10,
+   "max_gap_ms": 32
+  },
+  {
+   "segment": "t4-m6",
+   "mode": "overlay",
+   "start_ms": 703680,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 13,
+   "start_delay_ms": 11,
+   "max_gap_ms": 40
+  },
+  {
+   "segment": "t4-m6",
+   "mode": "overlay",
+   "start_ms": 717087,
+   "duration_ms": 307,
+   "planned_ms": 307,
+   "frames": 14,
+   "start_delay_ms": 16,
+   "max_gap_ms": 32
+  },
+  {
+   "segment": "t4-m6",
+   "mode": "overlay",
+   "start_ms": 724193,
+   "duration_ms": 326,
+   "planned_ms": 326,
+   "frames": 11,
+   "start_delay_ms": 14,
+   "max_gap_ms": 52
+  },
+  {
+   "segment": "t4-m6",
+   "mode": "overlay",
+   "start_ms": 726663,
+   "duration_ms": 397,
+   "planned_ms": 397,
+   "frames": 20,
+   "start_delay_ms": 5,
+   "max_gap_ms": 37
+  },
+  {
+   "segment": "t4-m6",
+   "mode": "overlay",
+   "start_ms": 732565,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 11,
+   "start_delay_ms": 9,
+   "max_gap_ms": 37
+  },
+  {
+   "segment": "t4-m6",
+   "mode": "overlay",
+   "start_ms": 739888,
+   "duration_ms": 432,
+   "planned_ms": 432,
+   "frames": 17,
+   "start_delay_ms": 14,
+   "max_gap_ms": 56
+  },
+  {
+   "segment": "t4-m6",
+   "mode": "overlay",
+   "start_ms": 744637,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 12,
+   "start_delay_ms": 15,
+   "max_gap_ms": 52
+  },
+  {
+   "segment": "t4-m7",
+   "mode": "overlay",
+   "start_ms": 764911,
+   "duration_ms": 296,
+   "planned_ms": 296,
+   "frames": 7,
+   "start_delay_ms": 14,
+   "max_gap_ms": 90
+  },
+  {
+   "segment": "t4-m7",
+   "mode": "overlay",
+   "start_ms": 768819,
+   "duration_ms": 268,
+   "planned_ms": 268,
+   "frames": 12,
+   "start_delay_ms": 15,
+   "max_gap_ms": 55
+  },
+  {
+   "segment": "t4-m7",
+   "mode": "overlay",
+   "start_ms": 779765,
+   "duration_ms": 284,
+   "planned_ms": 284,
+   "frames": 17,
+   "start_delay_ms": 5,
+   "max_gap_ms": 22
+  },
+  {
+   "segment": "t4-m7",
+   "mode": "overlay",
+   "start_ms": 780531,
+   "duration_ms": 399,
+   "planned_ms": 399,
+   "frames": 19,
+   "start_delay_ms": 10,
+   "max_gap_ms": 47
+  },
+  {
+   "segment": "t4-m7",
+   "mode": "overlay",
+   "start_ms": 783694,
+   "duration_ms": 364,
+   "planned_ms": 364,
+   "frames": 10,
+   "start_delay_ms": 2,
+   "max_gap_ms": 88
+  },
+  {
+   "segment": "t4-m7",
+   "mode": "overlay",
+   "start_ms": 786745,
+   "duration_ms": 323,
+   "planned_ms": 323,
+   "frames": 18,
+   "start_delay_ms": 9,
+   "max_gap_ms": 29
+  },
+  {
+   "segment": "t4-m7",
+   "mode": "overlay",
+   "start_ms": 788862,
+   "duration_ms": 427,
+   "planned_ms": 427,
+   "frames": 17,
+   "start_delay_ms": 3,
+   "max_gap_ms": 70
+  },
+  {
+   "segment": "t4-m7",
+   "mode": "overlay",
+   "start_ms": 803246,
+   "duration_ms": 281,
+   "planned_ms": 281,
+   "frames": 11,
+   "start_delay_ms": 3,
+   "max_gap_ms": 48
+  },
+  {
+   "segment": "t4-m7",
+   "mode": "overlay",
+   "start_ms": 806534,
+   "duration_ms": 496,
+   "planned_ms": 496,
+   "frames": 22,
+   "start_delay_ms": 17,
+   "max_gap_ms": 39
+  },
+  {
+   "segment": "t4-m7",
+   "mode": "overlay",
+   "start_ms": 817902,
+   "duration_ms": 499,
+   "planned_ms": 499,
+   "frames": 28,
+   "start_delay_ms": 10,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "t4-m7",
+   "mode": "overlay",
+   "start_ms": 838821,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 12,
+   "start_delay_ms": 27,
+   "max_gap_ms": 35
+  },
+  {
+   "segment": "t4-m7",
+   "mode": "overlay",
+   "start_ms": 841537,
+   "duration_ms": 490,
+   "planned_ms": 490,
+   "frames": 20,
+   "start_delay_ms": 12,
+   "max_gap_ms": 52
+  },
+  {
+   "segment": "t4-m7",
+   "mode": "overlay",
+   "start_ms": 845863,
+   "duration_ms": 360,
+   "planned_ms": 360,
+   "frames": 12,
+   "start_delay_ms": 18,
+   "max_gap_ms": 66
+  },
+  {
+   "segment": "t4-m7",
+   "mode": "overlay",
+   "start_ms": 858745,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 14,
+   "start_delay_ms": 4,
+   "max_gap_ms": 35
+  },
+  {
+   "segment": "t4-m7",
+   "mode": "overlay",
+   "start_ms": 862061,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 16,
+   "start_delay_ms": 7,
+   "max_gap_ms": 21
+  },
+  {
+   "segment": "t4-m7",
+   "mode": "overlay",
+   "start_ms": 862600,
+   "duration_ms": 394,
+   "planned_ms": 394,
+   "frames": 17,
+   "start_delay_ms": 3,
+   "max_gap_ms": 51
+  },
+  {
+   "segment": "t4-m7",
+   "mode": "overlay",
+   "start_ms": 863176,
+   "duration_ms": 398,
+   "planned_ms": 398,
+   "frames": 19,
+   "start_delay_ms": 4,
+   "max_gap_ms": 60
+  },
+  {
+   "segment": "t4-m7",
+   "mode": "overlay",
+   "start_ms": 867679,
+   "duration_ms": 330,
+   "planned_ms": 330,
+   "frames": 12,
+   "start_delay_ms": 26,
+   "max_gap_ms": 45
+  },
+  {
+   "segment": "t4-m8",
+   "mode": "overlay",
+   "start_ms": 902752,
+   "duration_ms": 387,
+   "planned_ms": 387,
+   "frames": 15,
+   "start_delay_ms": 5,
+   "max_gap_ms": 60
+  },
+  {
+   "segment": "t4-m8",
+   "mode": "overlay",
+   "start_ms": 903832,
+   "duration_ms": 313,
+   "planned_ms": 313,
+   "frames": 17,
+   "start_delay_ms": 7,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "t4-m8",
+   "mode": "overlay",
+   "start_ms": 906045,
+   "duration_ms": 267,
+   "planned_ms": 267,
+   "frames": 10,
+   "start_delay_ms": 16,
+   "max_gap_ms": 48
+  },
+  {
+   "segment": "t4-m8",
+   "mode": "overlay",
+   "start_ms": 906895,
+   "duration_ms": 612,
+   "planned_ms": 612,
+   "frames": 35,
+   "start_delay_ms": 12,
+   "max_gap_ms": 33
+  },
+  {
+   "segment": "t4-m8",
+   "mode": "overlay",
+   "start_ms": 909057,
+   "duration_ms": 446,
+   "planned_ms": 446,
+   "frames": 25,
+   "start_delay_ms": 9,
+   "max_gap_ms": 35
+  },
+  {
+   "segment": "t4-m8",
+   "mode": "overlay",
+   "start_ms": 938388,
+   "duration_ms": 446,
+   "planned_ms": 446,
+   "frames": 24,
+   "start_delay_ms": 17,
+   "max_gap_ms": 35
+  },
+  {
+   "segment": "t4-m8",
+   "mode": "overlay",
+   "start_ms": 959636,
+   "duration_ms": 611,
+   "planned_ms": 611,
+   "frames": 34,
+   "start_delay_ms": 6,
+   "max_gap_ms": 36
+  },
+  {
+   "segment": "t4-m8",
+   "mode": "overlay",
+   "start_ms": 987484,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 10,
+   "start_delay_ms": 2,
+   "max_gap_ms": 59
+  },
+  {
+   "segment": "t4-m8",
+   "mode": "overlay",
+   "start_ms": 990276,
+   "duration_ms": 328,
+   "planned_ms": 328,
+   "frames": 20,
+   "start_delay_ms": 6,
+   "max_gap_ms": 21
+  },
+  {
+   "segment": "t4-m8",
+   "mode": "overlay",
+   "start_ms": 996764,
+   "duration_ms": 323,
+   "planned_ms": 323,
+   "frames": 15,
+   "start_delay_ms": 22,
+   "max_gap_ms": 45
+  },
+  {
+   "segment": "t4-m8",
+   "mode": "overlay",
+   "start_ms": 1000948,
+   "duration_ms": 393,
+   "planned_ms": 393,
+   "frames": 18,
+   "start_delay_ms": 7,
+   "max_gap_ms": 35
+  },
+  {
+   "segment": "t4-m9",
+   "mode": "overlay",
+   "start_ms": 1021229,
+   "duration_ms": 519,
+   "planned_ms": 519,
+   "frames": 22,
+   "start_delay_ms": 15,
+   "max_gap_ms": 41
+  },
+  {
+   "segment": "t4-m9",
+   "mode": "overlay",
+   "start_ms": 1022608,
+   "duration_ms": 265,
+   "planned_ms": 265,
+   "frames": 12,
+   "start_delay_ms": 0,
+   "max_gap_ms": 50
+  },
+  {
+   "segment": "t4-m9",
+   "mode": "overlay",
+   "start_ms": 1023716,
+   "duration_ms": 268,
+   "planned_ms": 268,
+   "frames": 11,
+   "start_delay_ms": 12,
+   "max_gap_ms": 59
+  },
+  {
+   "segment": "t4-m9",
+   "mode": "overlay",
+   "start_ms": 1033167,
+   "duration_ms": 376,
+   "planned_ms": 376,
+   "frames": 21,
+   "start_delay_ms": 11,
+   "max_gap_ms": 32
+  },
+  {
+   "segment": "t4-m9",
+   "mode": "overlay",
+   "start_ms": 1043894,
+   "duration_ms": 344,
+   "planned_ms": 344,
+   "frames": 21,
+   "start_delay_ms": 8,
+   "max_gap_ms": 19
+  },
+  {
+   "segment": "t4-m9",
+   "mode": "overlay",
+   "start_ms": 1054731,
+   "duration_ms": 347,
+   "planned_ms": 347,
+   "frames": 15,
+   "start_delay_ms": 4,
+   "max_gap_ms": 66
+  },
+  {
+   "segment": "t4-m9",
+   "mode": "overlay",
+   "start_ms": 1055997,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 14,
+   "start_delay_ms": 17,
+   "max_gap_ms": 28
+  },
+  {
+   "segment": "t4-m9",
+   "mode": "overlay",
+   "start_ms": 1057624,
+   "duration_ms": 261,
+   "planned_ms": 261,
+   "frames": 11,
+   "start_delay_ms": 19,
+   "max_gap_ms": 32
+  },
+  {
+   "segment": "t4-m9",
+   "mode": "overlay",
+   "start_ms": 1062881,
+   "duration_ms": 406,
+   "planned_ms": 406,
+   "frames": 18,
+   "start_delay_ms": 9,
+   "max_gap_ms": 60
+  },
+  {
+   "segment": "t4-m9",
+   "mode": "overlay",
+   "start_ms": 1065236,
+   "duration_ms": 422,
+   "planned_ms": 422,
+   "frames": 23,
+   "start_delay_ms": 14,
+   "max_gap_ms": 35
+  },
+  {
+   "segment": "t4-m9",
+   "mode": "overlay",
+   "start_ms": 1068293,
+   "duration_ms": 376,
+   "planned_ms": 376,
+   "frames": 17,
+   "start_delay_ms": 6,
+   "max_gap_ms": 59
+  },
+  {
+   "segment": "t4-m9",
+   "mode": "overlay",
+   "start_ms": 1080905,
+   "duration_ms": 480,
+   "planned_ms": 480,
+   "frames": 25,
+   "start_delay_ms": 10,
+   "max_gap_ms": 35
+  },
+  {
+   "segment": "t4-p10",
+   "mode": "overlay",
+   "start_ms": 1088977,
+   "duration_ms": 260,
+   "planned_ms": 260,
+   "frames": 14,
+   "start_delay_ms": 16,
+   "max_gap_ms": 31
+  },
+  {
+   "segment": "t4-p10",
+   "mode": "overlay",
+   "start_ms": 1092725,
+   "duration_ms": 617,
+   "planned_ms": 617,
+   "frames": 29,
+   "start_delay_ms": 5,
+   "max_gap_ms": 36
+  },
+  {
+   "segment": "t4-p10",
+   "mode": "overlay",
+   "start_ms": 1103242,
+   "duration_ms": 294,
+   "planned_ms": 294,
+   "frames": 16,
+   "start_delay_ms": 2,
+   "max_gap_ms": 36
+  },
+  {
+   "segment": "t4-p10",
+   "mode": "overlay",
+   "start_ms": 1105854,
+   "duration_ms": 482,
+   "planned_ms": 482,
+   "frames": 19,
+   "start_delay_ms": 2,
+   "max_gap_ms": 72
+  },
+  {
+   "segment": "t4-p10",
+   "mode": "overlay",
+   "start_ms": 1107563,
+   "duration_ms": 482,
+   "planned_ms": 482,
+   "frames": 24,
+   "start_delay_ms": 11,
+   "max_gap_ms": 39
+  },
+  {
+   "segment": "t4-p10",
+   "mode": "overlay",
+   "start_ms": 1110231,
+   "duration_ms": 294,
+   "planned_ms": 294,
+   "frames": 15,
+   "start_delay_ms": 19,
+   "max_gap_ms": 36
+  }
+ ],
+ "decode": "passed",
+ "stream_end_s": {
+  "v": 1119.233,
+  "a": 1119.233
+ },
+ "seams": [
+  {
+   "번호": 1,
+   "시각": "01:15.133",
+   "앞": "t4-n1@75130",
+   "뒤": "t4-q2@0",
+   "종류": "이음새",
+   "프레임간격_ok": true,
+   "원본정지_ms": [
+    190,
+    0
+   ],
+   "소리튐": false,
+   "표본차": 0.0,
+   "기준": 0.0,
+   "소리시작_어긋남_ms": [],
+   "소리_ok": true,
+   "바뀐화소퍼센트": 0.481,
+   "바뀐영역": [
+    656,
+    28,
+    1656,
+    1004
+   ],
+   "화면_ok": true,
+   "그림": "이음새_01.jpg",
+   "허용": false,
+   "판정": "통과"
+  },
+  {
+   "번호": 2,
+   "시각": "02:35.967",
+   "앞": "t4-q2@80831",
+   "뒤": "t4-q3@0",
+   "종류": "이음새",
+   "프레임간격_ok": true,
+   "원본정지_ms": [
+    28,
+    0
+   ],
+   "소리튐": false,
+   "표본차": 0.0,
+   "기준": 0.0,
+   "소리시작_어긋남_ms": [],
+   "소리_ok": true,
+   "바뀐화소퍼센트": 0.311,
+   "바뀐영역": [
+    752,
+    396,
+    1768,
+    1004
+   ],
+   "화면_ok": true,
+   "그림": "이음새_02.jpg",
+   "허용": false,
+   "판정": "통과"
+  },
+  {
+   "번호": 3,
+   "시각": "03:51.900",
+   "앞": "t4-q3@75932",
+   "뒤": "t4-q4@0",
+   "종류": "이음새",
+   "프레임간격_ok": true,
+   "원본정지_ms": [
+    55,
+    0
+   ],
+   "소리튐": false,
+   "표본차": 0.0,
+   "기준": 0.0,
+   "소리시작_어긋남_ms": [],
+   "소리_ok": true,
+   "바뀐화소퍼센트": 0.356,
+   "바뀐영역": [
+    752,
+    396,
+    1768,
+    1004
+   ],
+   "화면_ok": true,
+   "그림": "이음새_03.jpg",
+   "허용": false,
+   "판정": "통과"
+  },
+  {
+   "번호": 4,
+   "시각": "07:14.467",
+   "앞": "t4-q4@202564",
+   "뒤": "t4-m5@0",
+   "종류": "이음새",
+   "프레임간격_ok": true,
+   "원본정지_ms": [
+    13,
+    0
+   ],
+   "소리튐": false,
+   "표본차": 0.0,
+   "기준": 0.0,
+   "소리시작_어긋남_ms": [],
+   "소리_ok": true,
+   "바뀐화소퍼센트": 0.024,
+   "바뀐영역": [
+    560,
+    32,
+    1172,
+    576
+   ],
+   "화면_ok": true,
+   "그림": "이음새_04.jpg",
+   "허용": false,
+   "판정": "통과"
+  },
+  {
+   "번호": 5,
+   "시각": "10:45.000",
+   "앞": "t4-m5@210549",
+   "뒤": "t4-m6@0",
+   "종류": "이음새",
+   "프레임간격_ok": true,
+   "원본정지_ms": [
+    141,
+    0
+   ],
+   "소리튐": false,
+   "표본차": 0.0,
+   "기준": 0.0,
+   "소리시작_어긋남_ms": [],
+   "소리_ok": true,
+   "바뀐화소퍼센트": 0.0,
+   "바뀐영역": null,
+   "화면_ok": true,
+   "그림": "이음새_05.jpg",
+   "허용": false,
+   "판정": "통과"
+  },
+  {
+   "번호": 6,
+   "시각": "12:34.833",
+   "앞": "t4-m6@109844",
+   "뒤": "t4-m7@0",
+   "종류": "이음새",
+   "프레임간격_ok": true,
+   "원본정지_ms": [
+    10,
+    0
+   ],
+   "소리튐": false,
+   "표본차": 0.0,
+   "기준": 0.0,
+   "소리시작_어긋남_ms": [],
+   "소리_ok": true,
+   "바뀐화소퍼센트": 0.021,
+   "바뀐영역": [
+    428,
+    28,
+    1552,
+    480
+   ],
+   "화면_ok": true,
+   "그림": "이음새_06.jpg",
+   "허용": false,
+   "판정": "통과"
+  },
+  {
+   "번호": 7,
+   "시각": "14:57.833",
+   "앞": "t4-m7@143012",
+   "뒤": "t4-m8@0",
+   "종류": "이음새",
+   "프레임간격_ok": true,
+   "원본정지_ms": [
+    0,
+    0
+   ],
+   "소리튐": false,
+   "표본차": 0.0,
+   "기준": 0.0,
+   "소리시작_어긋남_ms": [],
+   "소리_ok": true,
+   "바뀐화소퍼센트": 0.01,
+   "바뀐영역": [
+    880,
+    28,
+    1176,
+    640
+   ],
+   "화면_ok": true,
+   "그림": "이음새_07.jpg",
+   "허용": false,
+   "판정": "통과"
+  },
+  {
+   "번호": 8,
+   "시각": "16:54.000",
+   "앞": "t4-m8@116167",
+   "뒤": "t4-m9@0",
+   "종류": "이음새",
+   "프레임간격_ok": true,
+   "원본정지_ms": [
+    58,
+    0
+   ],
+   "소리튐": false,
+   "표본차": 0.0,
+   "기준": 0.0,
+   "소리시작_어긋남_ms": [],
+   "소리_ok": true,
+   "바뀐화소퍼센트": 0.032,
+   "바뀐영역": [
+    420,
+    48,
+    1172,
+    572
+   ],
+   "화면_ok": true,
+   "그림": "이음새_08.jpg",
+   "허용": false,
+   "판정": "통과"
+  },
+  {
+   "번호": 9,
+   "시각": "18:06.867",
+   "앞": "t4-m9@72861",
+   "뒤": "t4-p10@0",
+   "종류": "이음새",
+   "프레임간격_ok": true,
+   "원본정지_ms": [
+    7,
+    0
+   ],
+   "소리튐": false,
+   "표본차": 0.0,
+   "기준": 0.0,
+   "소리시작_어긋남_ms": [],
+   "소리_ok": true,
+   "바뀐화소퍼센트": 0.0,
+   "바뀐영역": null,
+   "화면_ok": true,
+   "그림": "이음새_09.jpg",
+   "허용": false,
+   "판정": "통과"
+  }
+ ],
+ "voice": "config audio 캐시",
+ "revoiced": [
+  "t4-01-01",
+  "t4-01-02",
+  "t4-05-02",
+  "t4-05-03",
+  "t4-05-04",
+  "t4-05-06",
+  "t4-05-07",
+  "t4-05-09",
+  "t4-05-10",
+  "t4-05-12",
+  "t4-05-18",
+  "t4-06-03",
+  "t4-06-04",
+  "t4-06-05",
+  "t4-06-06",
+  "t4-06-07",
+  "t4-06-08",
+  "t4-07-02",
+  "t4-07-03",
+  "t4-07-04",
+  "t4-07-05",
+  "t4-07-07",
+  "t4-07-09",
+  "t4-08-01",
+  "t4-08-03",
+  "t4-08-04",
+  "t4-09-01",
+  "t4-09-03",
+  "t4-09-04",
+  "t4-09-06",
+  "t4-10-01"
+ ],
+ "not_verified": [
+  "직접 청취",
+  "사용자 재생 확인"
+ ],
+ "이름": "t4-최종12",
+ "도구": "포털",
+ "crf": 18,
+ "fps": 30,
+ "size": [
+  1920,
+  1080
+ ],
+ "origin": {
+  "명세": [
+   "t4-n1",
+   "t4-q2",
+   "t4-q3",
+   "t4-q4",
+   "t4-m5",
+   "t4-m6",
+   "t4-m7",
+   "t4-m8",
+   "t4-m9",
+   "t4-p10"
+  ]
+ },
+ "음성교체": [],
+ "조각": [
+  {
+   "키": "75da02c298d090cac96babda",
+   "도구": "포털",
+   "take": "t4-n1",
+   "from_ms": 0.0,
+   "to_ms": 75130.0,
+   "frames": 2254,
+   "mode": "overlay",
+   "part": 1,
+   "audio": "../음성",
+   "error": null,
+   "recorded_ms": 75130,
+   "end_url": "http://127.0.0.1:8088/#/main",
+   "end_tab": "main",
+   "edge_age": [
+    0,
+    190
+   ],
+   "cues": [
+    {
+     "id": "t4-01-01",
+     "text": "포털이 열렸습니다. 앞으로 설비 상황을 보고 승인하는 일은 다 여기서 하게 될 거라서, 본격적으로 쓰기 전에 어디에 뭐가 있는지 한 바퀴 쭉 둘러볼게요. 지금 다 외우실 필요는 없습니다. 하나씩 써 보다 보면 금방 손에 익거든요. 오늘은 메뉴만 열어 보고, 그 안의 버튼은 누르지 않을 거죠.",
+     "time": 13,
+     "duration": 19760,
+     "actionStart": null,
+     "actionEnd": null,
+     "commit": null,
+     "segment": 1
+    },
+    {
+     "id": "t4-01-02",
+     "text": "그 전에 하나만 알고 넘어가겠습니다. 이 포털에는 AI가 들어 있어서, 일이 생기면 판단을 써 줘요. 그런데 그 판단을 그 자리에서 만들려면 API 키라는 게 필요합니다. AI를 만든 회사에서 그 AI를 빌려 쓸 때 받는 이용권 같은 거죠. 이 키는 온라인으로 함부로 나눠 드릴 수가 없어요. 그래서 온라인 수업에서는 어쩔 수 없이, 미리 저장해 둔 답을 지금 생긴 일에 맞춰 다시 보여 주는 재생 모드 방식으로 갑니다. 오프라인 수업 때는 현장에서 키를 받아서, AI가 직접 답을 만드는 걸 써 보실 거고요. 화면이랑 여러분이 누르고 고르는 건 어느 쪽이든 똑같습니다.",
+     "time": 21072,
+     "duration": 41200,
+     "actionStart": null,
+     "actionEnd": null,
+     "commit": null,
+     "segment": 1
+    },
+    {
+     "id": "t4-01-03",
+     "text": "가끔 「AI 키가 없을 때 쓰는 재생 모드에서는」 하고 시작하는 안내가 뜰 때가 있는데, 미리 저장해 두지 않은 걸 시켰다는 뜻이라, 고장 난 건 아니니까 안심하세요.",
+     "time": 63572,
+     "duration": 11120,
+     "actionStart": null,
+     "actionEnd": null,
+     "commit": null,
+     "segment": 1
+    }
+   ],
+   "motions": [],
+   "clicks": []
+  },
+  {
+   "키": "b49b938c13e7c0568f26c27d",
+   "도구": "포털",
+   "take": "t4-q2",
+   "from_ms": 0.0,
+   "to_ms": 80831.0,
+   "frames": 2425,
+   "mode": "overlay",
+   "part": 2,
+   "audio": "../음성",
+   "error": null,
+   "recorded_ms": 80831,
+   "end_url": "http://127.0.0.1:8088/#/main",
+   "end_tab": "main",
+   "edge_age": [
+    0,
+    28
+   ],
+   "cues": [
+    {
+     "id": "t4-02-01",
+     "text": "지금 보시는 이 첫 화면이 홈이죠. 위에 있는 네 칸이 공장 상황을 한눈에 보여 주는데요, 여기 설비는 공장에 설비가 몇 대 있는지고요, 옆에 열린 사건은 설비에 문제가 생겨서 경보가 울리면 한 건씩 늘어납니다. 지금은 0이니까 아무 일도 없는 거죠.",
+     "time": 1868,
+     "duration": 18720,
+     "actionStart": 1868,
+     "actionEnd": 12413,
+     "commit": null,
+     "segment": 2
+    },
+    {
+     "id": "t4-02-02",
+     "text": "지식 항목은 아까 켜면서 넣어 둔 기본 지식이 몇 개 들어 있는지인데, 지식은 조금 이따 열어 볼게요.",
+     "time": 21189,
+     "duration": 6880,
+     "actionStart": 21202,
+     "actionEnd": 21770,
+     "commit": null,
+     "segment": 2
+    },
+    {
+     "id": "t4-02-03",
+     "text": "마지막 시간 배율 20배는 설비 안의 시간이 실제보다 스무 배 빨리 간다는 뜻이죠. 실제로 한 시간 걸릴 변화가 3분이면 지나가니까, 수업 시간 안에 고장이 나고 처리되는 것까지 다 볼 수 있습니다.",
+     "time": 28669,
+     "duration": 14880,
+     "actionStart": 28674,
+     "actionEnd": 29222,
+     "commit": null,
+     "segment": 2
+    },
+    {
+     "id": "t4-02-04",
+     "text": "맨 위 이 막대도 잠깐 보시면, 가운데에 방금 본 열린 사건 수가 진행 중 사건으로 나와 있고, 옆에는 서비스가 몇 개 돌고 있는지가 나오죠. 서비스가 다 켜져 있어야 포털이 제대로 돌아가니까, 켜고 나서는 늘 이 숫자부터 보시면 됩니다.",
+     "time": 44849,
+     "duration": 17120,
+     "actionStart": 44870,
+     "actionEnd": 52027,
+     "commit": null,
+     "segment": 2
+    },
+    {
+     "id": "t4-02-05",
+     "text": "오른쪽 끝은 지금 이 포털을 누가 쓰고 있는지, 그러니까 내가 누구로 들어와 있는지예요. 고르는 건 뒤에서 승인하는 곳을 볼 때 같이 보겠습니다.",
+     "time": 63270,
+     "duration": 10640,
+     "actionStart": 63271,
+     "actionEnd": 63779,
+     "commit": null,
+     "segment": 2
+    },
+    {
+     "id": "t4-02-06",
+     "text": "그 옆 종은 알림이죠. 나머지 글자는 수업 단계 같은 진행 표시라 넘어갈게요.",
+     "time": 74511,
+     "duration": 5920,
+     "actionStart": 74512,
+     "actionEnd": 76759,
+     "commit": null,
+     "segment": 2
+    }
+   ],
+   "motions": [
+    {
+     "start": 8610,
+     "end": 8983,
+     "glide": 8610,
+     "planned_ms": 373,
+     "start_delay_ms": 14,
+     "max_gap_ms": 79,
+     "frames": 12
+    },
+    {
+     "start": 12082,
+     "end": 12390,
+     "glide": 12082,
+     "planned_ms": 308,
+     "start_delay_ms": 9,
+     "max_gap_ms": 34,
+     "frames": 15
+    },
+    {
+     "start": 21441,
+     "end": 21737,
+     "glide": 21441,
+     "planned_ms": 296,
+     "start_delay_ms": 7,
+     "max_gap_ms": 91,
+     "frames": 10
+    },
+    {
+     "start": 28893,
+     "end": 29189,
+     "glide": 28893,
+     "planned_ms": 296,
+     "start_delay_ms": 18,
+     "max_gap_ms": 37,
+     "frames": 13
+    },
+    {
+     "start": 45092,
+     "end": 45432,
+     "glide": 45092,
+     "planned_ms": 340,
+     "start_delay_ms": 22,
+     "max_gap_ms": 54,
+     "frames": 12
+    },
+    {
+     "start": 51740,
+     "end": 52009,
+     "glide": 51740,
+     "planned_ms": 269,
+     "start_delay_ms": 16,
+     "max_gap_ms": 64,
+     "frames": 9
+    },
+    {
+     "start": 63441,
+     "end": 63729,
+     "glide": 63441,
+     "planned_ms": 288,
+     "start_delay_ms": 13,
+     "max_gap_ms": 49,
+     "frames": 12
+    },
+    {
+     "start": 74694,
+     "end": 74954,
+     "glide": 74694,
+     "planned_ms": 260,
+     "start_delay_ms": 13,
+     "max_gap_ms": 37,
+     "frames": 12
+    },
+    {
+     "start": 76239,
+     "end": 76728,
+     "glide": 76239,
+     "planned_ms": 489,
+     "start_delay_ms": 9,
+     "max_gap_ms": 97,
+     "frames": 16
+    }
+   ],
+   "clicks": []
+  },
+  {
+   "키": "44004272cff591009b947da1",
+   "도구": "포털",
+   "take": "t4-q3",
+   "from_ms": 0.0,
+   "to_ms": 75932.0,
+   "frames": 2278,
+   "mode": "overlay",
+   "part": 3,
+   "audio": "../음성",
+   "error": null,
+   "recorded_ms": 75932,
+   "end_url": "http://127.0.0.1:8088/#/main",
+   "end_tab": "main",
+   "edge_age": [
+    0,
+    55
+   ],
+   "cues": [
+    {
+     "id": "t4-03-01",
+     "text": "밑에 이 그림은 설비부터 AI까지 어떻게 이어져 있는지 보여 줍니다. 왼쪽이 공장 현장 설비예요.",
+     "time": 1924,
+     "duration": 7840,
+     "actionStart": 1925,
+     "actionEnd": 7865,
+     "commit": null,
+     "segment": 3
+    },
+    {
+     "id": "t4-03-02",
+     "text": "여기서 나온 온도, 압력 같은 값이 가운데 길을 따라서, 아까 배운 MQTT랑 DMZ를 지나 오른쪽 AI까지 가죠.",
+     "time": 10364,
+     "duration": 9520,
+     "actionStart": 10368,
+     "actionEnd": 18315,
+     "commit": null,
+     "segment": 3
+    },
+    {
+     "id": "t4-03-03",
+     "text": "AI는 둘레에 붙은 고장 유형, 원인, 판단, 성과 지표 같은 지식을 꺼내 보고 뭘 할지 판단합니다. 이 지식들은 오늘 메뉴를 열면서 하나씩 만나게 돼요.",
+     "time": 20484,
+     "duration": 11840,
+     "actionStart": 20485,
+     "actionEnd": 22175,
+     "commit": null,
+     "segment": 3
+    },
+    {
+     "id": "t4-03-04",
+     "text": "사람이 승인하고 나면, 그 조치가 위쪽 이 화살표를 따라서 다시 설비로 돌아갑니다. 가는 길에 검증이라고 돼 있죠. 설비는 잘못 움직이면 위험하니까, 정해진 길로 온 승인된 요청이 맞는지 설비에 닿기 직전에 한 번 더 검사하는 거예요. 설비에서 AI로, 다시 설비로 도는 이 흐름을 앞으로 계속 보게 될 겁니다.",
+     "time": 33624,
+     "duration": 24000,
+     "actionStart": 33626,
+     "actionEnd": 36448,
+     "commit": null,
+     "segment": 3
+    },
+    {
+     "id": "t4-03-05",
+     "text": "왼쪽 메뉴도 보시면 작업, 설비 이렇게 회색 글씨로 제목이 붙어 있죠.",
+     "time": 58925,
+     "duration": 5360,
+     "actionStart": 58927,
+     "actionEnd": 61417,
+     "commit": null,
+     "segment": 3
+    },
+    {
+     "id": "t4-03-06",
+     "text": "하는 일끼리 묶어 둔 건데, 밑으로 쭉 내려 보면 모두 일곱 개예요. 오늘은 방금 본 그림 차례대로, 값이 생기는 설비부터 하나씩 열어 보겠습니다.",
+     "time": 64885,
+     "duration": 10640,
+     "actionStart": 64885,
+     "actionEnd": 67918,
+     "commit": null,
+     "segment": 3
+    }
+   ],
+   "motions": [
+    {
+     "start": 2089,
+     "end": 2507,
+     "glide": 2089,
+     "planned_ms": 418,
+     "start_delay_ms": 11,
+     "max_gap_ms": 59,
+     "frames": 20
+    },
+    {
+     "start": 7485,
+     "end": 7848,
+     "glide": 7485,
+     "planned_ms": 363,
+     "start_delay_ms": 11,
+     "max_gap_ms": 59,
+     "frames": 14
+    },
+    {
+     "start": 13238,
+     "end": 13595,
+     "glide": 13238,
+     "planned_ms": 357,
+     "start_delay_ms": 23,
+     "max_gap_ms": 37,
+     "frames": 17
+    },
+    {
+     "start": 15911,
+     "end": 16171,
+     "glide": 15911,
+     "planned_ms": 260,
+     "start_delay_ms": 5,
+     "max_gap_ms": 39,
+     "frames": 12
+    },
+    {
+     "start": 16796,
+     "end": 17056,
+     "glide": 16796,
+     "planned_ms": 260,
+     "start_delay_ms": 4,
+     "max_gap_ms": 56,
+     "frames": 10
+    },
+    {
+     "start": 17973,
+     "end": 18297,
+     "glide": 17973,
+     "planned_ms": 324,
+     "start_delay_ms": 1,
+     "max_gap_ms": 60,
+     "frames": 12
+    },
+    {
+     "start": 21887,
+     "end": 22147,
+     "glide": 21887,
+     "planned_ms": 260,
+     "start_delay_ms": 13,
+     "max_gap_ms": 50,
+     "frames": 11
+    },
+    {
+     "start": 36134,
+     "end": 36414,
+     "glide": 36134,
+     "planned_ms": 280,
+     "start_delay_ms": 3,
+     "max_gap_ms": 33,
+     "frames": 17
+    },
+    {
+     "start": 60330,
+     "end": 60916,
+     "glide": 60330,
+     "planned_ms": 586,
+     "start_delay_ms": 2,
+     "max_gap_ms": 70,
+     "frames": 25
+    },
+    {
+     "start": 61134,
+     "end": 61394,
+     "glide": 61134,
+     "planned_ms": 260,
+     "start_delay_ms": 3,
+     "max_gap_ms": 38,
+     "frames": 13
+    },
+    {
+     "start": 67545,
+     "end": 67887,
+     "glide": 67545,
+     "planned_ms": 342,
+     "start_delay_ms": 9,
+     "max_gap_ms": 39,
+     "frames": 14
+    }
+   ],
+   "clicks": []
+  },
+  {
+   "키": "54b31917cf589b3fe3a46b01",
+   "도구": "포털",
+   "take": "t4-q4",
+   "from_ms": 0.0,
+   "to_ms": 202564.0,
+   "frames": 6077,
+   "mode": "overlay",
+   "part": 4,
+   "audio": "../음성",
+   "error": null,
+   "recorded_ms": 202564,
+   "end_url": "http://127.0.0.1:8088/#/incidents",
+   "end_tab": "incidents",
+   "edge_age": [
+    0,
+    13
+   ],
+   "cues": [
+    {
+     "id": "t4-04-01",
+     "text": "설비 아래 결함 시뮬레이션 누르시면 설비에 일부러 고장을 내 보는 화면이 열리죠. 결함은 고장, 시뮬레이션은 흉내 내서 돌려 본다는 뜻이거든요.",
+     "time": 1916,
+     "duration": 10800,
+     "actionStart": 1918,
+     "actionEnd": 5863,
+     "commit": 5680,
+     "segment": 4
+    },
+    {
+     "id": "t4-04-02",
+     "text": "여기 세 칸이 우리 공장 유압 설비 세 대고요, 기름을 눌러서 생긴 힘으로 움직이는 그 기계죠. 진짜 공장에서는 연습하자고 기계를 망가뜨릴 수는 없잖아요. 이 설비들은 컴퓨터 안에서 도는 가상 설비라서, 마음껏 고장을 내 봐도 괜찮습니다.",
+     "time": 13317,
+     "duration": 16560,
+     "actionStart": 13336,
+     "actionEnd": 13829,
+     "commit": null,
+     "segment": 4
+    },
+    {
+     "id": "t4-04-03",
+     "text": "설비마다 제일 크게 보이는 숫자가 유온, 쿨러로 들어가는 기름 온도예요. 기름이 너무 뜨거우면 기계가 상하니까, 65도를 넘으면 설비가 알아서 멈추는 보호 정지가 걸리게 해 놨습니다.",
+     "time": 31177,
+     "duration": 13520,
+     "actionStart": 31179,
+     "actionEnd": 31676,
+     "commit": null,
+     "segment": 4
+    },
+    {
+     "id": "t4-04-04",
+     "text": "숫자 밑에 막대는 그 기준까지 얼마나 남았는지 보여 주고요, 그 아래 냉각 효율, 팬 속도 같은 값들은 설비가 도는 동안 조금씩 오르내려요. 고장이 나면 이 값들이 크게 달라집니다.",
+     "time": 45297,
+     "duration": 13200,
+     "actionStart": 45300,
+     "actionEnd": 49946,
+     "commit": null,
+     "segment": 4
+    },
+    {
+     "id": "t4-04-05",
+     "text": "경보는 울리지 않고 지켜보는 중이라 감시 중, 설비 상태는 운전 중이죠. 세 대 다 정상으로 잘 돌고 있습니다.",
+     "time": 59096,
+     "duration": 8240,
+     "actionStart": 59098,
+     "actionEnd": 62728,
+     "commit": null,
+     "segment": 4
+    },
+    {
+     "id": "t4-04-06",
+     "text": "두 대에 붙은 주황색 표시도 고장 표시는 아니에요. 정기 점검 날이 다가왔다, 부품을 채워야 한다 같은 일을 챙기라는 업무 알림입니다.",
+     "time": 67937,
+     "duration": 9440,
+     "actionStart": 67938,
+     "actionEnd": 73715,
+     "commit": null,
+     "segment": 4
+    },
+    {
+     "id": "t4-04-07",
+     "text": "밑으로 조금 내려 보시면 첫 번째 설비에 쿨러 열화 주입이라는 빨간 버튼이 있어요. 기름을 식혀 주는 쿨러가 점점 나빠지는 고장, 그러니까 열화를 일부러 넣는 버튼이죠. 이걸 누르면 그 고장을 알아채고 처리하는 과정을 처음부터 끝까지 따라가 볼 수 있습니다.",
+     "time": 78677,
+     "duration": 19040,
+     "actionStart": 78691,
+     "actionEnd": 81663,
+     "commit": null,
+     "segment": 4
+    },
+    {
+     "id": "t4-04-08",
+     "text": "다만 이 화면 버튼들은 누르는 순간 그 일이 시작돼서, 오늘 둘러볼 다른 화면들까지 다 바뀌어요. 그 과정은 처음부터 같이 보면서 해야 하니까, 오늘은 보기만 하시고 아무것도 누르지 않으시면 됩니다.",
+     "time": 99016,
+     "duration": 14000,
+     "actionStart": null,
+     "actionEnd": null,
+     "commit": null,
+     "segment": 4
+    },
+    {
+     "id": "t4-04-09",
+     "text": "이 숫자들이 시간에 따라 어떻게 변했는지는 실시간 모니터링에서 그래프로 봐요.",
+     "time": 114316,
+     "duration": 5600,
+     "actionStart": 114317,
+     "actionEnd": 118102,
+     "commit": 117774,
+     "segment": 4
+    },
+    {
+     "id": "t4-04-10",
+     "text": "네, 맨 위가 유온 그래프고요, 이 파란 선이 지금 유온입니다. 한참 밑에서 평평하게 가고 있죠.",
+     "time": 120515,
+     "duration": 7840,
+     "actionStart": 120516,
+     "actionEnd": 123528,
+     "commit": null,
+     "segment": 4
+    },
+    {
+     "id": "t4-04-11",
+     "text": "위쪽 빨간 선이 아까 본 65도, 보호 정지 기준이고요, 그 사이 주황 선은 55도입니다. 보호 정지까지 가기 전에 유온이 높다고 먼저 알려 주는 선이죠. 고장을 넣으면 파란 선이 이 두 선 쪽으로 올라가고, 조치를 하고 나면 다시 내려오는 게 여기서 보여요. 그래서 조치가 잘 먹혔는지도 이 그래프로 확인합니다. 밑에 있는 그래프들은 넘어가셔도 돼요.",
+     "time": 128955,
+     "duration": 25840,
+     "actionStart": 128956,
+     "actionEnd": 133311,
+     "commit": null,
+     "segment": 4
+    },
+    {
+     "id": "t4-04-12",
+     "text": "여기까지 본 값은 다 센서가 재는 건데, 기름이 얼마나 상했는지 같은 건 센서로는 못 잽니다. 그래서 기름을 주기적으로 뽑아서 검사한 결과를 오일 분석 입력에서 사람이 여기 칸에 직접 넣죠.",
+     "time": 156095,
+     "duration": 13760,
+     "actionStart": 156097,
+     "actionEnd": 168776,
+     "commit": 166866,
+     "segment": 4
+    },
+    {
+     "id": "t4-04-13",
+     "text": "기준 이탈 여부에서 예를 고르고 보내면, 센서 경보가 울렸을 때와 똑같이 처리가 시작돼요. 여기도 오늘은 비워 두겠습니다.",
+     "time": 170463,
+     "duration": 8720,
+     "actionStart": 170464,
+     "actionEnd": 171147,
+     "commit": null,
+     "segment": 4
+    },
+    {
+     "id": "t4-04-14",
+     "text": "센서 값이든 오일 분석 값이든 기준을 넘으면 사건이 하나 열리고, 그 사건은 이상 확인·조치에서 따라가죠.",
+     "time": 180484,
+     "duration": 7920,
+     "actionStart": 180485,
+     "actionEnd": 186935,
+     "commit": 186658,
+     "segment": 4
+    },
+    {
+     "id": "t4-04-15",
+     "text": "설비마다 기름 탱크에서 펌프를 지나 쿨러로 기름이 도는 길이 그려져 있고요, 사건은 여기 밑에 쌓입니다.",
+     "time": 189004,
+     "duration": 7440,
+     "actionStart": 189017,
+     "actionEnd": 195286,
+     "commit": null,
+     "segment": 4
+    },
+    {
+     "id": "t4-04-16",
+     "text": "설비 카드를 누르면 오른쪽에 원인부터 조치까지 그 과정이 나와요.",
+     "time": 197043,
+     "duration": 5120,
+     "actionStart": 197045,
+     "actionEnd": 198936,
+     "commit": null,
+     "segment": 4
+    }
+   ],
+   "motions": [
+    {
+     "start": 5155,
+     "end": 5495,
+     "glide": 5155,
+     "planned_ms": 340,
+     "start_delay_ms": 6,
+     "max_gap_ms": 45,
+     "frames": 14
+    },
+    {
+     "start": 13556,
+     "end": 13825,
+     "glide": 13556,
+     "planned_ms": 269,
+     "start_delay_ms": 15,
+     "max_gap_ms": 48,
+     "frames": 13
+    },
+    {
+     "start": 31351,
+     "end": 31611,
+     "glide": 31351,
+     "planned_ms": 260,
+     "start_delay_ms": 19,
+     "max_gap_ms": 51,
+     "frames": 10
+    },
+    {
+     "start": 45490,
+     "end": 45777,
+     "glide": 45490,
+     "planned_ms": 287,
+     "start_delay_ms": 1,
+     "max_gap_ms": 28,
+     "frames": 17
+    },
+    {
+     "start": 49640,
+     "end": 49913,
+     "glide": 49640,
+     "planned_ms": 273,
+     "start_delay_ms": 20,
+     "max_gap_ms": 46,
+     "frames": 12
+    },
+    {
+     "start": 59294,
+     "end": 59617,
+     "glide": 59294,
+     "planned_ms": 323,
+     "start_delay_ms": 8,
+     "max_gap_ms": 33,
+     "frames": 17
+    },
+    {
+     "start": 62460,
+     "end": 62720,
+     "glide": 62460,
+     "planned_ms": 260,
+     "start_delay_ms": 8,
+     "max_gap_ms": 41,
+     "frames": 13
+    },
+    {
+     "start": 68138,
+     "end": 68546,
+     "glide": 68138,
+     "planned_ms": 408,
+     "start_delay_ms": 14,
+     "max_gap_ms": 50,
+     "frames": 15
+    },
+    {
+     "start": 73362,
+     "end": 73692,
+     "glide": 73362,
+     "planned_ms": 330,
+     "start_delay_ms": 9,
+     "max_gap_ms": 56,
+     "frames": 15
+    },
+    {
+     "start": 81101,
+     "end": 81619,
+     "glide": 81101,
+     "planned_ms": 518,
+     "start_delay_ms": 0,
+     "max_gap_ms": 44,
+     "frames": 23
+    },
+    {
+     "start": 115249,
+     "end": 115509,
+     "glide": 115249,
+     "planned_ms": 260,
+     "start_delay_ms": 58,
+     "max_gap_ms": 32,
+     "frames": 10
+    },
+    {
+     "start": 117337,
+     "end": 117603,
+     "glide": 117337,
+     "planned_ms": 266,
+     "start_delay_ms": 14,
+     "max_gap_ms": 34,
+     "frames": 14
+    },
+    {
+     "start": 123019,
+     "end": 123479,
+     "glide": 123019,
+     "planned_ms": 460,
+     "start_delay_ms": 13,
+     "max_gap_ms": 46,
+     "frames": 21
+    },
+    {
+     "start": 129125,
+     "end": 129385,
+     "glide": 129125,
+     "planned_ms": 260,
+     "start_delay_ms": 10,
+     "max_gap_ms": 34,
+     "frames": 13
+    },
+    {
+     "start": 133029,
+     "end": 133289,
+     "glide": 133029,
+     "planned_ms": 260,
+     "start_delay_ms": 7,
+     "max_gap_ms": 20,
+     "frames": 16
+    },
+    {
+     "start": 166226,
+     "end": 166687,
+     "glide": 166226,
+     "planned_ms": 461,
+     "start_delay_ms": 20,
+     "max_gap_ms": 63,
+     "frames": 24
+    },
+    {
+     "start": 168236,
+     "end": 168766,
+     "glide": 168236,
+     "planned_ms": 530,
+     "start_delay_ms": 20,
+     "max_gap_ms": 29,
+     "frames": 28
+    },
+    {
+     "start": 170645,
+     "end": 171103,
+     "glide": 170645,
+     "planned_ms": 458,
+     "start_delay_ms": 17,
+     "max_gap_ms": 37,
+     "frames": 25
+    },
+    {
+     "start": 186217,
+     "end": 186493,
+     "glide": 186217,
+     "planned_ms": 276,
+     "start_delay_ms": 5,
+     "max_gap_ms": 64,
+     "frames": 14
+    },
+    {
+     "start": 189569,
+     "end": 189831,
+     "glide": 189569,
+     "planned_ms": 262,
+     "start_delay_ms": 2,
+     "max_gap_ms": 42,
+     "frames": 13
+    },
+    {
+     "start": 190590,
+     "end": 190850,
+     "glide": 190590,
+     "planned_ms": 260,
+     "start_delay_ms": 15,
+     "max_gap_ms": 53,
+     "frames": 13
+    },
+    {
+     "start": 191448,
+     "end": 191708,
+     "glide": 191448,
+     "planned_ms": 260,
+     "start_delay_ms": 13,
+     "max_gap_ms": 36,
+     "frames": 15
+    },
+    {
+     "start": 194910,
+     "end": 195228,
+     "glide": 194910,
+     "planned_ms": 318,
+     "start_delay_ms": 4,
+     "max_gap_ms": 81,
+     "frames": 14
+    },
+    {
+     "start": 198505,
+     "end": 198915,
+     "glide": 198505,
+     "planned_ms": 410,
+     "start_delay_ms": 6,
+     "max_gap_ms": 47,
+     "frames": 20
+    }
+   ],
+   "clicks": [
+    {
+     "x": 217.33334350585938,
+     "y": 216.2291774749756,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 217.33334350585938,
+     "y": 317.9791774749756,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 217.33334350585938,
+     "y": 250.1458339691162,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 217.33334350585938,
+     "y": 284.06252098083496,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    }
+   ]
+  },
+  {
+   "키": "6fdd9c6bd295a49d2a172ddf",
+   "도구": "포털",
+   "take": "t4-m5",
+   "from_ms": 0.0,
+   "to_ms": 210549.0,
+   "frames": 6316,
+   "mode": "overlay",
+   "part": 5,
+   "audio": "../음성",
+   "error": null,
+   "recorded_ms": 210549,
+   "end_url": "http://127.0.0.1:8088/#/fabric",
+   "end_tab": "fabric",
+   "edge_age": [
+    0,
+    141
+   ],
+   "cues": [
+    {
+     "id": "t4-05-01",
+     "text": "값은 이렇게 들어오는데, AI가 그걸 보고 뭘 해야 할지 알려면 아는 게 있어야겠죠. 그게 아까 홈 그림 오른쪽에 있던 지식입니다. 설비에 어떤 문제가 생기고, 원인이 뭐고, 어떻게 고치는지 같은 거요.",
+     "time": 1904,
+     "duration": 15200,
+     "actionStart": null,
+     "actionEnd": null,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "t4-05-02",
+     "text": "지식 아래 지식 지도 누르시면 처음 보면 좀 복잡해 보이죠. 이 공장에 대해 아는 것들이 갈래마다 색이 다른 세로 칸으로 나뉘어 있습니다.",
+     "time": 18404,
+     "duration": 9680,
+     "actionStart": 18405,
+     "actionEnd": 21486,
+     "commit": 20878,
+     "segment": 5
+    },
+    {
+     "id": "t4-05-03",
+     "text": "맨 왼쪽 전략 목표부터 오른쪽으로 쭉 이어지고요, 칸 사이사이에 가는 선들 보이시죠. 관련 있는 것끼리 이어 둔 거라 지식 지도라고 부릅니다. 이렇게 이어 둬야 AI가 문제 하나에서 출발해서 원인이랑 조치까지 선을 따라 찾아갈 수 있거든요. 위에 고르는 칸은 설비나 지식 묶음을 바꿔 볼 때 쓰는데, 이번 강의에서는 안 씁니다.",
+     "time": 28684,
+     "duration": 23920,
+     "actionStart": 28685,
+     "actionEnd": 32675,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "t4-05-04",
+     "text": "설비 진단 칸을 보시면 쿨러 성능 저하처럼 설비가 이상할 때 알아채는 이상 패턴들이 있고, 그 옆 칸에 그럴 때 쓸 조치 방법이랑 규칙이 있고요. 쿨러 성능 저하에서 선을 따라 몇 번 건너가면 팬을 세게 돌리는 조치까지 닿는데, 이 길을 하나씩 읽는 건 나중에 지도를 직접 눌러 가며 볼 거죠.",
+     "time": 53904,
+     "duration": 20560,
+     "actionStart": 53906,
+     "actionEnd": 60575,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "t4-05-05",
+     "text": "이 지식 지도는 온톨로지 위에 만들어져 있는데요, 온톨로지는 이 과정의 첫 번째 큰 주제라 뒤에서 자세히 배웁니다.",
+     "time": 75763,
+     "duration": 8320,
+     "actionStart": null,
+     "actionEnd": null,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "t4-05-06",
+     "text": "조치 방법 누르시면 조치들이 카드로 쭉 있네요.",
+     "time": 85384,
+     "duration": 3680,
+     "actionStart": 85386,
+     "actionEnd": 87827,
+     "commit": 87607,
+     "segment": 5
+    },
+    {
+     "id": "t4-05-07",
+     "text": "맨 위 팬 최대 운전 카드 밑에 쿨러 냉각 성능 상실이라고 적혀 있죠. 이 조치를 그 고장에 쓴다는 뜻입니다. 쿨러가 기름을 제대로 못 식히게 된 고장이라 기름이 덜 식고 유온이 올라가니까, 팬을 세게 돌려서 더 식히는 거죠. 설비를 직접 움직이는 거라 파란색 설비 제어가 붙어 있고요.",
+     "time": 89665,
+     "duration": 21360,
+     "actionStart": 89669,
+     "actionEnd": 90269,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "t4-05-08",
+     "text": "밑에 주황색 정비 요청이 붙은 쿨러 핀 세척도 같은 고장에 쓰는데, 이건 사람한테 정비를 맡기는 쪽입니다.",
+     "time": 111625,
+     "duration": 7760,
+     "actionStart": 111627,
+     "actionEnd": 112163,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "t4-05-09",
+     "text": "괄호 안을 보시면 팬은 즉시 완화, 핀 세척은 근본 조치라고 돼 있죠. 팬을 세게 돌리면 당장 온도는 잡히지만, 쿨러 핀에 먼지가 껴서 나빠진 거라면 그 까닭은 남아 있거든요. 그래서 급한 불은 팬으로 끄고, 핀은 사람이 따로 청소하는 거죠.",
+     "time": 119985,
+     "duration": 18400,
+     "actionStart": 120008,
+     "actionEnd": 122926,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "t4-05-10",
+     "text": "카드마다 누가 승인하는지도 적혀 있습니다. 팬 최대 운전은 운전원, 쿨러 핀 세척은 설비보전팀장이에요.",
+     "time": 138985,
+     "duration": 8240,
+     "actionStart": 139000,
+     "actionEnd": 144688,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "t4-05-11",
+     "text": "오른쪽을 밑으로 내려 보시면 절차에 작업 순서가 하나씩 나와 있습니다.",
+     "time": 147824,
+     "duration": 4960,
+     "actionStart": 147825,
+     "actionEnd": 148961,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "t4-05-12",
+     "text": "그런데 이 조치들은 어디서 왔을까요? 다 매뉴얼에서 뽑은 거죠. 그 매뉴얼을 올리는 데가 지식 관리입니다.",
+     "time": 154085,
+     "duration": 8160,
+     "actionStart": 154086,
+     "actionEnd": 161785,
+     "commit": 161522,
+     "segment": 5
+    },
+    {
+     "id": "t4-05-13",
+     "text": "새 문서는 여기 파일 선택으로 올리면 AI가 읽어서 정리해 주고, 사람이 확인한 것만 지식이 돼요.",
+     "time": 162846,
+     "duration": 6880,
+     "actionStart": 162847,
+     "actionEnd": 163877,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "t4-05-14",
+     "text": "밑에 등록된 매뉴얼 보시면 처음부터 넣어 둔 문서가 세 개 들어 있습니다.",
+     "time": 170327,
+     "duration": 4880,
+     "actionStart": 170328,
+     "actionEnd": 171443,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "t4-05-15",
+     "text": "예비품 기준, 정기 점검표, 쿨러 팬 매뉴얼이에요.",
+     "time": 175807,
+     "duration": 4400,
+     "actionStart": 175808,
+     "actionEnd": 178528,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "t4-05-16",
+     "text": "AI는 지식 말고 업무 기록이랑 센서 기록도 읽는데, 어디서 읽어 오는지는 데이터 연결에서 봅니다.",
+     "time": 181507,
+     "duration": 6960,
+     "actionStart": 181509,
+     "actionEnd": 187530,
+     "commit": 187230,
+     "segment": 5
+    },
+    {
+     "id": "t4-05-17",
+     "text": "앞에 세 칸이 다 연결됨이죠.",
+     "time": 189066,
+     "duration": 2480,
+     "actionStart": 189071,
+     "actionEnd": 189726,
+     "commit": null,
+     "segment": 5
+    },
+    {
+     "id": "t4-05-18",
+     "text": "맨 오른쪽 쓰기는 없음이고요. 읽기만 하고 고치지는 못하게 막아 둔 겁니다. 판단하다가 실수로 회사 기록을 바꿔 버리면 안 되니까요. 그 사이 숫자는 표가 몇 개고 그중 몇 개가 지식과 이어졌는지 세어 둔 거고, 아래쪽 묶어 보기는 이번 강의에서는 안 씁니다.",
+     "time": 192146,
+     "duration": 18000,
+     "actionStart": 192147,
+     "actionEnd": 192771,
+     "commit": null,
+     "segment": 5
+    }
+   ],
+   "motions": [
+    {
+     "start": 18605,
+     "end": 19179,
+     "glide": 18605,
+     "planned_ms": 574,
+     "start_delay_ms": 14,
+     "max_gap_ms": 62,
+     "frames": 21
+    },
+    {
+     "start": 20451,
+     "end": 20719,
+     "glide": 20451,
+     "planned_ms": 268,
+     "start_delay_ms": 19,
+     "max_gap_ms": 26,
+     "frames": 14
+    },
+    {
+     "start": 28892,
+     "end": 29211,
+     "glide": 28892,
+     "planned_ms": 319,
+     "start_delay_ms": 10,
+     "max_gap_ms": 57,
+     "frames": 14
+    },
+    {
+     "start": 30296,
+     "end": 30637,
+     "glide": 30296,
+     "planned_ms": 341,
+     "start_delay_ms": 10,
+     "max_gap_ms": 78,
+     "frames": 8
+    },
+    {
+     "start": 32267,
+     "end": 32603,
+     "glide": 32267,
+     "planned_ms": 336,
+     "start_delay_ms": 2,
+     "max_gap_ms": 63,
+     "frames": 11
+    },
+    {
+     "start": 54089,
+     "end": 54503,
+     "glide": 54089,
+     "planned_ms": 414,
+     "start_delay_ms": 14,
+     "max_gap_ms": 42,
+     "frames": 18
+    },
+    {
+     "start": 60211,
+     "end": 60502,
+     "glide": 60211,
+     "planned_ms": 291,
+     "start_delay_ms": 18,
+     "max_gap_ms": 90,
+     "frames": 9
+    },
+    {
+     "start": 86847,
+     "end": 87446,
+     "glide": 86847,
+     "planned_ms": 599,
+     "start_delay_ms": 23,
+     "max_gap_ms": 53,
+     "frames": 26
+    },
+    {
+     "start": 89879,
+     "end": 90238,
+     "glide": 89879,
+     "planned_ms": 359,
+     "start_delay_ms": 7,
+     "max_gap_ms": 63,
+     "frames": 13
+    },
+    {
+     "start": 111825,
+     "end": 112146,
+     "glide": 111825,
+     "planned_ms": 321,
+     "start_delay_ms": 17,
+     "max_gap_ms": 48,
+     "frames": 14
+    },
+    {
+     "start": 120191,
+     "end": 120470,
+     "glide": 120191,
+     "planned_ms": 279,
+     "start_delay_ms": 12,
+     "max_gap_ms": 41,
+     "frames": 13
+    },
+    {
+     "start": 122614,
+     "end": 122908,
+     "glide": 122614,
+     "planned_ms": 294,
+     "start_delay_ms": 8,
+     "max_gap_ms": 78,
+     "frames": 9
+    },
+    {
+     "start": 139603,
+     "end": 140008,
+     "glide": 139603,
+     "planned_ms": 405,
+     "start_delay_ms": 11,
+     "max_gap_ms": 74,
+     "frames": 17
+    },
+    {
+     "start": 142367,
+     "end": 142744,
+     "glide": 142367,
+     "planned_ms": 377,
+     "start_delay_ms": 21,
+     "max_gap_ms": 67,
+     "frames": 14
+    },
+    {
+     "start": 144361,
+     "end": 144655,
+     "glide": 144361,
+     "planned_ms": 294,
+     "start_delay_ms": 11,
+     "max_gap_ms": 33,
+     "frames": 15
+    },
+    {
+     "start": 148634,
+     "end": 148917,
+     "glide": 148634,
+     "planned_ms": 283,
+     "start_delay_ms": 4,
+     "max_gap_ms": 40,
+     "frames": 13
+    },
+    {
+     "start": 160922,
+     "end": 161344,
+     "glide": 160922,
+     "planned_ms": 422,
+     "start_delay_ms": 14,
+     "max_gap_ms": 65,
+     "frames": 15
+    },
+    {
+     "start": 163474,
+     "end": 163848,
+     "glide": 163474,
+     "planned_ms": 374,
+     "start_delay_ms": 8,
+     "max_gap_ms": 67,
+     "frames": 12
+    },
+    {
+     "start": 171150,
+     "end": 171410,
+     "glide": 171150,
+     "planned_ms": 260,
+     "start_delay_ms": 11,
+     "max_gap_ms": 36,
+     "frames": 12
+    },
+    {
+     "start": 175998,
+     "end": 176258,
+     "glide": 175998,
+     "planned_ms": 260,
+     "start_delay_ms": 29,
+     "max_gap_ms": 22,
+     "frames": 12
+    },
+    {
+     "start": 176994,
+     "end": 177261,
+     "glide": 176994,
+     "planned_ms": 267,
+     "start_delay_ms": 45,
+     "max_gap_ms": 31,
+     "frames": 11
+    },
+    {
+     "start": 178253,
+     "end": 178520,
+     "glide": 178253,
+     "planned_ms": 267,
+     "start_delay_ms": 2,
+     "max_gap_ms": 65,
+     "frames": 11
+    },
+    {
+     "start": 186690,
+     "end": 187009,
+     "glide": 186690,
+     "planned_ms": 319,
+     "start_delay_ms": 40,
+     "max_gap_ms": 68,
+     "frames": 8
+    },
+    {
+     "start": 189252,
+     "end": 189688,
+     "glide": 189252,
+     "planned_ms": 436,
+     "start_delay_ms": 16,
+     "max_gap_ms": 45,
+     "frames": 18
+    },
+    {
+     "start": 192327,
+     "end": 192750,
+     "glide": 192327,
+     "planned_ms": 423,
+     "start_delay_ms": 17,
+     "max_gap_ms": 59,
+     "frames": 16
+    }
+   ],
+   "clicks": [
+    {
+     "x": 217.33334350585938,
+     "y": 561.2083339691162,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 217.33334350585938,
+     "y": 595.125020980835,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 217.33334350585938,
+     "y": 629.0417079925537,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 217.33334350585938,
+     "y": 662.9583339691162,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    }
+   ]
+  },
+  {
+   "키": "7a0fb4d2d89585db8ffd4e8e",
+   "도구": "포털",
+   "take": "t4-m6",
+   "from_ms": 0.0,
+   "to_ms": 109844.0,
+   "frames": 3295,
+   "mode": "overlay",
+   "part": 6,
+   "audio": "../음성",
+   "error": null,
+   "recorded_ms": 109844,
+   "end_url": "http://127.0.0.1:8088/#/eval",
+   "end_tab": "eval",
+   "edge_age": [
+    0,
+    10
+   ],
+   "cues": [
+    {
+     "id": "t4-06-01",
+     "text": "매뉴얼이랑 데이터를 꺼내 쓰면서 일하는 게, 앞에서 배운 AI 에이전트예요. 홈 그림 오른쪽에도 지식 지도 옆에 에이전트가 같이 붙어 있었죠. 그 에이전트를 다루는 데가 인공지능 설정 쪽인데, 여기는 이름이랑 하는 일만 볼 거예요.",
+     "time": 1922,
+     "duration": 16400,
+     "actionStart": 1923,
+     "actionEnd": 15315,
+     "commit": null,
+     "segment": 6
+    },
+    {
+     "id": "t4-06-02",
+     "text": "에이전트에게 질문 누르시면 여기 칸에 궁금한 걸 적어서 에이전트한테 물어볼 수 있죠.",
+     "time": 19624,
+     "duration": 6000,
+     "actionStart": 19625,
+     "actionEnd": 22905,
+     "commit": 21840,
+     "segment": 6
+    },
+    {
+     "id": "t4-06-03",
+     "text": "칸 밑에 미리 만들어 둔 질문을 누르면 칸에 채워지고, 보내면 에이전트가 매뉴얼이랑 데이터를 찾아보고 답해 줍니다. 온라인 수업에서는 저장해 둔 답으로 가니까, 물어보실 때는 이 질문들로 하시면 돼요. 오늘은 보내지 않겠습니다.",
+     "time": 26224,
+     "duration": 16400,
+     "actionStart": 26229,
+     "actionEnd": 26843,
+     "commit": null,
+     "segment": 6
+    },
+    {
+     "id": "t4-06-04",
+     "text": "에이전트 누르시면 준비된 에이전트들이 쭉 있어요.",
+     "time": 43923,
+     "duration": 3600,
+     "actionStart": 43924,
+     "actionEnd": 44873,
+     "commit": 44668,
+     "segment": 6
+    },
+    {
+     "id": "t4-06-05",
+     "text": "맨 위 교대 인수인계 에이전트는 교대할 때 다음 사람이 볼 일을 정리해 주고, 냉각 긴급 대응 에이전트는 쿨러가 제대로 못 식힐 때 나서고요, 예비품 구매 에이전트는 부품이 모자랄 때 얼마나 사고 어느 공급사에서 살지 정해서 올립니다. 맡은 일이 다 다르네요.",
+     "time": 48123,
+     "duration": 19280,
+     "actionStart": 48124,
+     "actionEnd": 58969,
+     "commit": null,
+     "segment": 6
+    },
+    {
+     "id": "t4-06-06",
+     "text": "오른쪽은 지금 고른 에이전트의 설정이라 몰라도 되고요, 나중에 여기 새 에이전트로 나만의 에이전트도 만들어 볼 거죠.",
+     "time": 68002,
+     "duration": 7760,
+     "actionStart": 68003,
+     "actionEnd": 72413,
+     "commit": null,
+     "segment": 6
+    },
+    {
+     "id": "t4-06-07",
+     "text": "에이전트가 일할 때 쓰는 도구들은 도구 연결에 모여 있습니다.",
+     "time": 77062,
+     "duration": 3840,
+     "actionStart": 77099,
+     "actionEnd": 80293,
+     "commit": 79715,
+     "segment": 6
+    },
+    {
+     "id": "t4-06-08",
+     "text": "판단 시스템처럼 카드 하나하나가 데이터를 찾아보거나 규칙을 확인하는 기능들이고, 다 연결됨이죠. 에이전트는 이 도구로 직접 찾아본 것만 가지고 답해요.",
+     "time": 81502,
+     "duration": 11520,
+     "actionStart": 81503,
+     "actionEnd": 87846,
+     "commit": null,
+     "segment": 6
+    },
+    {
+     "id": "t4-06-09",
+     "text": "그 밑에 시험 비교는 두 에이전트를 같은 상황에 놓고 견줘 보는 곳이고, 판단 채점은 판단이 맞았는지 점수를 매겨 보는 곳입니다. 둘 다 에이전트를 만들고 고칠 때 쓰는 거라, 지금은 이름만 알아 두세요.",
+     "time": 94321,
+     "duration": 15120,
+     "actionStart": 94322,
+     "actionEnd": 100275,
+     "commit": 95484,
+     "segment": 6
+    }
+   ],
+   "motions": [
+    {
+     "start": 13709,
+     "end": 14275,
+     "glide": 13709,
+     "planned_ms": 566,
+     "start_delay_ms": 2,
+     "max_gap_ms": 39,
+     "frames": 28
+    },
+    {
+     "start": 15009,
+     "end": 15280,
+     "glide": 15009,
+     "planned_ms": 271,
+     "start_delay_ms": 5,
+     "max_gap_ms": 38,
+     "frames": 14
+    },
+    {
+     "start": 21416,
+     "end": 21676,
+     "glide": 21416,
+     "planned_ms": 260,
+     "start_delay_ms": 7,
+     "max_gap_ms": 29,
+     "frames": 13
+    },
+    {
+     "start": 22398,
+     "end": 22874,
+     "glide": 22398,
+     "planned_ms": 476,
+     "start_delay_ms": 7,
+     "max_gap_ms": 61,
+     "frames": 23
+    },
+    {
+     "start": 26472,
+     "end": 26774,
+     "glide": 26472,
+     "planned_ms": 302,
+     "start_delay_ms": 25,
+     "max_gap_ms": 31,
+     "frames": 14
+    },
+    {
+     "start": 44110,
+     "end": 44493,
+     "glide": 44110,
+     "planned_ms": 383,
+     "start_delay_ms": 7,
+     "max_gap_ms": 27,
+     "frames": 23
+    },
+    {
+     "start": 48307,
+     "end": 48611,
+     "glide": 48307,
+     "planned_ms": 304,
+     "start_delay_ms": 1,
+     "max_gap_ms": 58,
+     "frames": 10
+    },
+    {
+     "start": 53824,
+     "end": 54084,
+     "glide": 53824,
+     "planned_ms": 260,
+     "start_delay_ms": 10,
+     "max_gap_ms": 32,
+     "frames": 12
+    },
+    {
+     "start": 58680,
+     "end": 58940,
+     "glide": 58680,
+     "planned_ms": 260,
+     "start_delay_ms": 11,
+     "max_gap_ms": 40,
+     "frames": 13
+    },
+    {
+     "start": 72087,
+     "end": 72394,
+     "glide": 72087,
+     "planned_ms": 307,
+     "start_delay_ms": 16,
+     "max_gap_ms": 32,
+     "frames": 14
+    },
+    {
+     "start": 79193,
+     "end": 79519,
+     "glide": 79193,
+     "planned_ms": 326,
+     "start_delay_ms": 14,
+     "max_gap_ms": 52,
+     "frames": 11
+    },
+    {
+     "start": 81663,
+     "end": 82060,
+     "glide": 81663,
+     "planned_ms": 397,
+     "start_delay_ms": 5,
+     "max_gap_ms": 37,
+     "frames": 20
+    },
+    {
+     "start": 87565,
+     "end": 87825,
+     "glide": 87565,
+     "planned_ms": 260,
+     "start_delay_ms": 9,
+     "max_gap_ms": 37,
+     "frames": 11
+    },
+    {
+     "start": 94888,
+     "end": 95320,
+     "glide": 94888,
+     "planned_ms": 432,
+     "start_delay_ms": 14,
+     "max_gap_ms": 56,
+     "frames": 17
+    },
+    {
+     "start": 99637,
+     "end": 99897,
+     "glide": 99637,
+     "planned_ms": 260,
+     "start_delay_ms": 15,
+     "max_gap_ms": 52,
+     "frames": 12
+    }
+   ],
+   "clicks": [
+    {
+     "x": 217.33334350585938,
+     "y": 353.6979274749756,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 217.33334350585938,
+     "y": 387.6145839691162,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 217.33334350585938,
+     "y": 421.53127098083496,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 217.33334350585938,
+     "y": 455.4479274749756,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 217.33334350585938,
+     "y": 489.3645839691162,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    }
+   ]
+  },
+  {
+   "키": "a28064de9a360fba6e4d2e4b",
+   "도구": "포털",
+   "take": "t4-m7",
+   "from_ms": 0.0,
+   "to_ms": 143012.0,
+   "frames": 4290,
+   "mode": "overlay",
+   "part": 7,
+   "audio": "../음성",
+   "error": null,
+   "recorded_ms": 143012,
+   "end_url": "http://127.0.0.1:8088/#/process",
+   "end_tab": "process",
+   "edge_age": [
+    0,
+    0
+   ],
+   "cues": [
+    {
+     "id": "t4-07-01",
+     "text": "아까 도구 가운데 판단 시스템이 있었죠. 에이전트가 확인하는 그 규칙을 사람이 직접 돌려 볼 수 있는 곳이 판단 쪽 메뉴입니다.",
+     "time": 1907,
+     "duration": 9120,
+     "actionStart": 1907,
+     "actionEnd": 10414,
+     "commit": null,
+     "segment": 7
+    },
+    {
+     "id": "t4-07-02",
+     "text": "조치 판단 규칙 누르시면 이런 상황이면 이런 조치, 하고 미리 정해 둔 규칙이 들어 있어요. 이렇게 규칙으로 정해 두면 누가 해도 늘 같은 기준으로 고를 수 있습니다.",
+     "time": 12328,
+     "duration": 11840,
+     "actionStart": 12328,
+     "actionEnd": 14660,
+     "commit": 14451,
+     "segment": 7
+    },
+    {
+     "id": "t4-07-03",
+     "text": "위에서 설비랑 아까 지식 지도에서 본 이상 패턴을 고르고 판단 실행 누르면, 규칙에 맞는 조치들이 여기 밑에 순서대로 나와요. 가운데 운전 모드 같은 칸들은 지금 설비 값을 쓰는 칸이라 몰라도 되고요, 여기도 누르지 않고 두겠습니다.",
+     "time": 24767,
+     "duration": 17200,
+     "actionStart": 24770,
+     "actionEnd": 34478,
+     "commit": null,
+     "segment": 7
+    },
+    {
+     "id": "t4-07-04",
+     "text": "그런데 같은 고장이라도 상황에 따라 더 나은 조치가 달라질 수 있어요. 조건별 손익은 그걸 시험해 보는 화면인데요, 여기 적혀 있는 것처럼 조치마다 돈으로 얼마나 이득이고 손해인지 견줘서, 조건이 어디까지 바뀌면 가장 나은 조치가 바뀌는지 찾아보죠.",
+     "time": 43267,
+     "duration": 18320,
+     "actionStart": 43268,
+     "actionEnd": 52223,
+     "commit": 48860,
+     "segment": 7
+    },
+    {
+     "id": "t4-07-05",
+     "text": "흐름 가져오기는 일이 어떤 순서로 진행되는지 그려 둔 업무 흐름을 올리는 곳인데, 업무 흐름은 뒤 회차에서 배우니까 자리만 알아 두시면 됩니다.",
+     "time": 62886,
+     "duration": 9440,
+     "actionStart": 62888,
+     "actionEnd": 63946,
+     "commit": 63744,
+     "segment": 7
+    },
+    {
+     "id": "t4-07-06",
+     "text": "에이전트도 판단할 때 아까 그 규칙을 확인하고, 회사 목표에 견줘서 조치를 골라요. 그렇게 고른 판단이 실제로 어떻게 됐는지는 승인과 실행에서 봅니다.",
+     "time": 74326,
+     "duration": 11600,
+     "actionStart": 74327,
+     "actionEnd": 84627,
+     "commit": 84424,
+     "segment": 7
+    },
+    {
+     "id": "t4-07-07",
+     "text": "맨 위 업무 흐름 칸은 방금 말한 그 흐름이 그려지는 자리고요, 판단 결과 칸에 에이전트가 올린 판단이 들어오는데, 아직 사건이 없어서 비어 있죠. 그 판단이 승인돼서 실제로 어떻게 실행됐는지도 여기 같이 모여요.",
+     "time": 86527,
+     "duration": 15280,
+     "actionStart": 86528,
+     "actionEnd": 91416,
+     "commit": null,
+     "segment": 7
+    },
+    {
+     "id": "t4-07-08",
+     "text": "밑으로 내려 보시면 기업 시스템 현황이 있는데요, 회사가 생산, 정비, 구매에 쓰는 프로그램들 상태가 보입니다.",
+     "time": 103107,
+     "duration": 8240,
+     "actionStart": 103108,
+     "actionEnd": 108788,
+     "commit": null,
+     "segment": 7
+    },
+    {
+     "id": "t4-07-09",
+     "text": "생산 주문마다 여기 납기까지 몇 시간 남았는지 나와 있죠. 설비를 세우면 기름은 식겠지만 그 설비로 만들던 주문이 늦어질 수 있잖아요. 이런 게 조치를 고를 때 같이 따져야 하는 회사 사정입니다.",
+     "time": 111947,
+     "duration": 14080,
+     "actionStart": 111952,
+     "actionEnd": 113201,
+     "commit": null,
+     "segment": 7
+    },
+    {
+     "id": "t4-07-10",
+     "text": "다만 아무리 좋은 조치를 찾아도, 사람이 승인하기 전에는 설비에 손대지 않아요. AI도 틀릴 수 있고, 설비를 움직이는 건 책임이 따르는 일이라 마지막 결정은 사람이 하는 거죠. 이 점은 꼭 기억해 두시기 바랍니다.",
+     "time": 127327,
+     "duration": 15280,
+     "actionStart": null,
+     "actionEnd": null,
+     "commit": null,
+     "segment": 7
+    }
+   ],
+   "motions": [
+    {
+     "start": 10078,
+     "end": 10374,
+     "glide": 10078,
+     "planned_ms": 296,
+     "start_delay_ms": 14,
+     "max_gap_ms": 90,
+     "frames": 7
+    },
+    {
+     "start": 13986,
+     "end": 14254,
+     "glide": 13986,
+     "planned_ms": 268,
+     "start_delay_ms": 15,
+     "max_gap_ms": 55,
+     "frames": 12
+    },
+    {
+     "start": 24932,
+     "end": 25216,
+     "glide": 24932,
+     "planned_ms": 284,
+     "start_delay_ms": 5,
+     "max_gap_ms": 22,
+     "frames": 17
+    },
+    {
+     "start": 25698,
+     "end": 26097,
+     "glide": 25698,
+     "planned_ms": 399,
+     "start_delay_ms": 10,
+     "max_gap_ms": 47,
+     "frames": 19
+    },
+    {
+     "start": 28861,
+     "end": 29225,
+     "glide": 28861,
+     "planned_ms": 364,
+     "start_delay_ms": 2,
+     "max_gap_ms": 88,
+     "frames": 10
+    },
+    {
+     "start": 31912,
+     "end": 32235,
+     "glide": 31912,
+     "planned_ms": 323,
+     "start_delay_ms": 9,
+     "max_gap_ms": 29,
+     "frames": 18
+    },
+    {
+     "start": 34029,
+     "end": 34456,
+     "glide": 34029,
+     "planned_ms": 427,
+     "start_delay_ms": 3,
+     "max_gap_ms": 70,
+     "frames": 17
+    },
+    {
+     "start": 48413,
+     "end": 48694,
+     "glide": 48413,
+     "planned_ms": 281,
+     "start_delay_ms": 3,
+     "max_gap_ms": 48,
+     "frames": 11
+    },
+    {
+     "start": 51701,
+     "end": 52197,
+     "glide": 51701,
+     "planned_ms": 496,
+     "start_delay_ms": 17,
+     "max_gap_ms": 39,
+     "frames": 22
+    },
+    {
+     "start": 63069,
+     "end": 63568,
+     "glide": 63069,
+     "planned_ms": 499,
+     "start_delay_ms": 10,
+     "max_gap_ms": 33,
+     "frames": 28
+    },
+    {
+     "start": 83988,
+     "end": 84248,
+     "glide": 83988,
+     "planned_ms": 260,
+     "start_delay_ms": 27,
+     "max_gap_ms": 35,
+     "frames": 12
+    },
+    {
+     "start": 86704,
+     "end": 87194,
+     "glide": 86704,
+     "planned_ms": 490,
+     "start_delay_ms": 12,
+     "max_gap_ms": 52,
+     "frames": 20
+    },
+    {
+     "start": 91030,
+     "end": 91390,
+     "glide": 91030,
+     "planned_ms": 360,
+     "start_delay_ms": 18,
+     "max_gap_ms": 66,
+     "frames": 12
+    },
+    {
+     "start": 103912,
+     "end": 104172,
+     "glide": 103912,
+     "planned_ms": 260,
+     "start_delay_ms": 4,
+     "max_gap_ms": 35,
+     "frames": 14
+    },
+    {
+     "start": 107228,
+     "end": 107488,
+     "glide": 107228,
+     "planned_ms": 260,
+     "start_delay_ms": 7,
+     "max_gap_ms": 21,
+     "frames": 16
+    },
+    {
+     "start": 107767,
+     "end": 108161,
+     "glide": 107767,
+     "planned_ms": 394,
+     "start_delay_ms": 3,
+     "max_gap_ms": 51,
+     "frames": 17
+    },
+    {
+     "start": 108343,
+     "end": 108741,
+     "glide": 108343,
+     "planned_ms": 398,
+     "start_delay_ms": 4,
+     "max_gap_ms": 60,
+     "frames": 19
+    },
+    {
+     "start": 112846,
+     "end": 113176,
+     "glide": 112846,
+     "planned_ms": 330,
+     "start_delay_ms": 26,
+     "max_gap_ms": 45,
+     "frames": 12
+    }
+   ],
+   "clicks": [
+    {
+     "x": 217.33334350585938,
+     "y": 355.3854274749756,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 217.33334350585938,
+     "y": 389.3020839691162,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 217.33334350585938,
+     "y": 457.1354274749756,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 217.33334350585938,
+     "y": 423.21877098083496,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    }
+   ]
+  },
+  {
+   "키": "c9cde5410c266f6dae17a015",
+   "도구": "포털",
+   "take": "t4-m8",
+   "from_ms": 0.0,
+   "to_ms": 116167.0,
+   "frames": 3485,
+   "mode": "overlay",
+   "part": 8,
+   "audio": "../음성",
+   "error": null,
+   "recorded_ms": 116167,
+   "end_url": "http://127.0.0.1:8088/#/instances",
+   "end_tab": "instances",
+   "edge_age": [
+    0,
+    58
+   ],
+   "cues": [
+    {
+     "id": "t4-08-01",
+     "text": "그럼 그 승인은 어디서 할까요? 메뉴 맨 위 작업 아래, 내 작업함입니다. 눌러 보시면 맨 위에 나를 고르는 고르기 칸이 있고, 밑에 적혀 있는 것처럼 나를 고르면 나한테 온 일이랑 알림이 이 화면에 모여요. 회사 결재함이라고 생각하시면 됩니다. 에이전트가 올린 판단도 승인할 차례가 되면 여기로 오고, 여기서 승인해야 설비로 명령이 나가거든요.",
+     "time": 1919,
+     "duration": 25280,
+     "actionStart": 1923,
+     "actionEnd": 11692,
+     "commit": 8653,
+     "segment": 8
+    },
+    {
+     "id": "t4-08-02",
+     "text": "아까 조치 방법에서 팬 최대 운전은 운전원이, 쿨러 핀 세척은 설비보전팀장이 승인한다고 적혀 있었죠. 이렇게 무엇을 승인할 수 있는지가 역할마다 달라서, 내가 누구인지 이 고르기에서 골라 두는 겁니다. 여기서 고른 사람은 브라우저가 기억해 두고, 승인할 때 그 사람 이름과 역할로 들어가죠. 지금 아무나 골라 두면 나중에 엉뚱한 사람 이름이 남을 수 있으니까, 고르는 건 실제로 승인할 때 하고 지금은 비워 두세요.",
+     "time": 28499,
+     "duration": 30080,
+     "actionStart": 28500,
+     "actionEnd": 41025,
+     "commit": null,
+     "segment": 8
+    },
+    {
+     "id": "t4-08-03",
+     "text": "그 밑에 처리 건 누르시면 일 하나가 생겼을 때 그걸 처리하는 과정이 처음부터 끝까지 한 건으로 쭉 이어져 기록되는 곳입니다. 이 한 건을 처리 건이라고 불러요. 설비 고장 같은 사건도, 정기 점검이나 부품 보충 같은 일도 처리 건이 하나씩 생기죠. 그러니까 이상 확인·조치에서 본 사건도, 승인과 실행에 모이는 판단도 결국 여기 처리 건 한 줄 안에 들어갑니다.",
+     "time": 59879,
+     "duration": 27600,
+     "actionStart": 59880,
+     "actionEnd": 62942,
+     "commit": 62581,
+     "segment": 8
+    },
+    {
+     "id": "t4-08-04",
+     "text": "위에 이 칸들은 진행 중인 게 몇 건인지, 지금 내 차례인 게 몇 건인지 보여 주죠. 아직은 다 0이네요.",
+     "time": 89479,
+     "duration": 7600,
+     "actionStart": 89482,
+     "actionEnd": 92794,
+     "commit": null,
+     "segment": 8
+    },
+    {
+     "id": "t4-08-05",
+     "text": "처리 건이 생기면 여기 비어 있는 자리에 한 줄씩 쌓이고, 하나를 누르면 오른쪽에 AI가 어떤 근거로 뭘 추천했는지, 누가 언제 승인했는지가 순서대로 적힙니다. 이렇게 남겨 둬야 나중에 무슨 일이 있었고 누가 뭘 했는지 되짚어 볼 수 있죠.",
+     "time": 97679,
+     "duration": 18080,
+     "actionStart": 97680,
+     "actionEnd": 103525,
+     "commit": null,
+     "segment": 8
+    }
+   ],
+   "motions": [
+    {
+     "start": 4919,
+     "end": 5306,
+     "glide": 4919,
+     "planned_ms": 387,
+     "start_delay_ms": 5,
+     "max_gap_ms": 60,
+     "frames": 15
+    },
+    {
+     "start": 5999,
+     "end": 6312,
+     "glide": 5999,
+     "planned_ms": 313,
+     "start_delay_ms": 7,
+     "max_gap_ms": 33,
+     "frames": 17
+    },
+    {
+     "start": 8212,
+     "end": 8479,
+     "glide": 8212,
+     "planned_ms": 267,
+     "start_delay_ms": 16,
+     "max_gap_ms": 48,
+     "frames": 10
+    },
+    {
+     "start": 9062,
+     "end": 9674,
+     "glide": 9062,
+     "planned_ms": 612,
+     "start_delay_ms": 12,
+     "max_gap_ms": 33,
+     "frames": 35
+    },
+    {
+     "start": 11224,
+     "end": 11670,
+     "glide": 11224,
+     "planned_ms": 446,
+     "start_delay_ms": 9,
+     "max_gap_ms": 35,
+     "frames": 25
+    },
+    {
+     "start": 40555,
+     "end": 41001,
+     "glide": 40555,
+     "planned_ms": 446,
+     "start_delay_ms": 17,
+     "max_gap_ms": 35,
+     "frames": 24
+    },
+    {
+     "start": 61803,
+     "end": 62414,
+     "glide": 61803,
+     "planned_ms": 611,
+     "start_delay_ms": 6,
+     "max_gap_ms": 36,
+     "frames": 34
+    },
+    {
+     "start": 89651,
+     "end": 89911,
+     "glide": 89651,
+     "planned_ms": 260,
+     "start_delay_ms": 2,
+     "max_gap_ms": 59,
+     "frames": 10
+    },
+    {
+     "start": 92443,
+     "end": 92771,
+     "glide": 92443,
+     "planned_ms": 328,
+     "start_delay_ms": 6,
+     "max_gap_ms": 21,
+     "frames": 20
+    },
+    {
+     "start": 98931,
+     "end": 99254,
+     "glide": 98931,
+     "planned_ms": 323,
+     "start_delay_ms": 22,
+     "max_gap_ms": 45,
+     "frames": 15
+    },
+    {
+     "start": 103115,
+     "end": 103508,
+     "glide": 103115,
+     "planned_ms": 393,
+     "start_delay_ms": 7,
+     "max_gap_ms": 35,
+     "frames": 18
+    }
+   ],
+   "clicks": [
+    {
+     "x": 217.33334350585938,
+     "y": 111.57291984558105,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 217.33334350585938,
+     "y": 145.4895839691162,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    }
+   ]
+  },
+  {
+   "키": "ea28a73a4b0e2e39389c1cf6",
+   "도구": "포털",
+   "take": "t4-m9",
+   "from_ms": 0.0,
+   "to_ms": 72861.0,
+   "frames": 2186,
+   "mode": "overlay",
+   "part": 9,
+   "audio": "../음성",
+   "error": null,
+   "recorded_ms": 72861,
+   "end_url": "http://127.0.0.1:8088/#/home",
+   "end_tab": "home",
+   "edge_age": [
+    0,
+    7
+   ],
+   "cues": [
+    {
+     "id": "t4-09-01",
+     "text": "남은 조치가 회사에 좋았는지는 어떻게 알까요? 회사 숫자로 재 봐야겠죠. 성과 아래 성과 지표 누르시면 회사가 중요하게 보는 값들이 모여 있습니다. AI가 조치를 고를 때도 이 값들이 좋아지는지 나빠지는지를 따지고요.",
+     "time": 1918,
+     "duration": 16480,
+     "actionStart": 1921,
+     "actionEnd": 10386,
+     "commit": 10172,
+     "segment": 9
+    },
+    {
+     "id": "t4-09-02",
+     "text": "에너지비처럼 돈으로 재는 게 먼저 나오는데요, 옆에 붙은 목표 없음은 견줄 목표를 아직 안 정해 둔 겁니다.",
+     "time": 18998,
+     "duration": 8000,
+     "actionStart": 18998,
+     "actionEnd": 19563,
+     "commit": null,
+     "segment": 9
+    },
+    {
+     "id": "t4-09-03",
+     "text": "밑으로 내려 보면 설비 가동률처럼 설비가 얼마나 쉬지 않고 돌았는지 재는 것도 있어요. 군데군데 계산 불가는 아직 계산할 자료가 없다는 거라 신경 안 쓰셔도 됩니다.",
+     "time": 27598,
+     "duration": 11600,
+     "actionStart": 27599,
+     "actionEnd": 30269,
+     "commit": null,
+     "segment": 9
+    },
+    {
+     "id": "t4-09-04",
+     "text": "마지막 시스템 아래에는 처음 본 홈이 있고요, 그 밑에 시스템 구성 누르시면 아까 켠 서비스들이 모여 있어요.",
+     "time": 40498,
+     "duration": 7600,
+     "actionStart": 40499,
+     "actionEnd": 44264,
+     "commit": 44061,
+     "segment": 9
+    },
+    {
+     "id": "t4-09-05",
+     "text": "배운 기능 계층대로 줄이 나뉘어 있고, 서비스마다 하는 일이 적혀 있죠.",
+     "time": 48698,
+     "duration": 4800,
+     "actionStart": 48701,
+     "actionEnd": 51710,
+     "commit": null,
+     "segment": 9
+    },
+    {
+     "id": "t4-09-06",
+     "text": "앞의 초록 점은 켜져 있다는 표시고, 회색 점은 따로 켜는 도구이거나 상태를 따로 안 보는 거라 괜찮아요. 혹시 안 켜진 게 있을 때 여기서 어느 서비스인지 찾으시면 되죠.",
+     "time": 54097,
+     "duration": 11840,
+     "actionStart": 54099,
+     "actionEnd": 54718,
+     "commit": null,
+     "segment": 9
+    },
+    {
+     "id": "t4-09-07",
+     "text": "맨 밑 관리는 업무 흐름을 올리고 배포하는 화면이라, 이번 강의에서는 열지 않겠습니다.",
+     "time": 66538,
+     "duration": 5920,
+     "actionStart": 66539,
+     "actionEnd": 67404,
+     "commit": null,
+     "segment": 9
+    }
+   ],
+   "motions": [
+    {
+     "start": 7229,
+     "end": 7748,
+     "glide": 7229,
+     "planned_ms": 519,
+     "start_delay_ms": 15,
+     "max_gap_ms": 41,
+     "frames": 22
+    },
+    {
+     "start": 8608,
+     "end": 8873,
+     "glide": 8608,
+     "planned_ms": 265,
+     "start_delay_ms": 0,
+     "max_gap_ms": 50,
+     "frames": 12
+    },
+    {
+     "start": 9716,
+     "end": 9984,
+     "glide": 9716,
+     "planned_ms": 268,
+     "start_delay_ms": 12,
+     "max_gap_ms": 59,
+     "frames": 11
+    },
+    {
+     "start": 19167,
+     "end": 19543,
+     "glide": 19167,
+     "planned_ms": 376,
+     "start_delay_ms": 11,
+     "max_gap_ms": 32,
+     "frames": 21
+    },
+    {
+     "start": 29894,
+     "end": 30238,
+     "glide": 29894,
+     "planned_ms": 344,
+     "start_delay_ms": 8,
+     "max_gap_ms": 19,
+     "frames": 21
+    },
+    {
+     "start": 40731,
+     "end": 41078,
+     "glide": 40731,
+     "planned_ms": 347,
+     "start_delay_ms": 4,
+     "max_gap_ms": 66,
+     "frames": 15
+    },
+    {
+     "start": 41997,
+     "end": 42257,
+     "glide": 41997,
+     "planned_ms": 260,
+     "start_delay_ms": 17,
+     "max_gap_ms": 28,
+     "frames": 14
+    },
+    {
+     "start": 43624,
+     "end": 43885,
+     "glide": 43624,
+     "planned_ms": 261,
+     "start_delay_ms": 19,
+     "max_gap_ms": 32,
+     "frames": 11
+    },
+    {
+     "start": 48881,
+     "end": 49287,
+     "glide": 48881,
+     "planned_ms": 406,
+     "start_delay_ms": 9,
+     "max_gap_ms": 60,
+     "frames": 18
+    },
+    {
+     "start": 51236,
+     "end": 51658,
+     "glide": 51236,
+     "planned_ms": 422,
+     "start_delay_ms": 14,
+     "max_gap_ms": 35,
+     "frames": 23
+    },
+    {
+     "start": 54293,
+     "end": 54669,
+     "glide": 54293,
+     "planned_ms": 376,
+     "start_delay_ms": 6,
+     "max_gap_ms": 59,
+     "frames": 17
+    },
+    {
+     "start": 66905,
+     "end": 67385,
+     "glide": 66905,
+     "planned_ms": 480,
+     "start_delay_ms": 10,
+     "max_gap_ms": 35,
+     "frames": 25
+    }
+   ],
+   "clicks": [
+    {
+     "x": 217.33334350585938,
+     "y": 501.43752098083496,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    },
+    {
+     "x": 217.33334350585938,
+     "y": 606.093770980835,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    }
+   ]
+  },
+  {
+   "키": "9bc51fc69f142f2faf46900c",
+   "도구": "포털",
+   "take": "t4-p10",
+   "from_ms": 0.0,
+   "to_ms": 32379.0,
+   "frames": 971,
+   "mode": "overlay",
+   "part": 10,
+   "audio": "../음성",
+   "error": null,
+   "recorded_ms": 32379,
+   "end_url": "http://127.0.0.1:8088/#/main",
+   "end_tab": "main",
+   "edge_age": [
+    0,
+    10
+   ],
+   "cues": [
+    {
+     "id": "t4-10-01",
+     "text": "다시 홈으로 왔네요.",
+     "time": 1920,
+     "duration": 1600,
+     "actionStart": 1921,
+     "actionEnd": 2746,
+     "commit": 2536,
+     "segment": 10
+    },
+    {
+     "id": "t4-10-02",
+     "text": "혼자 다시 둘러보실 때는 화면 아래 이 다음을 누르시면 메뉴 차례대로 하나씩 넘어갑니다.",
+     "time": 4120,
+     "duration": 6480,
+     "actionStart": 4123,
+     "actionEnd": 6506,
+     "commit": null,
+     "segment": 10
+    },
+    {
+     "id": "t4-10-03",
+     "text": "이렇게 포털을 한 바퀴 다 둘러봤는데요, 오늘 본 화면들은 다 이 그림의 흐름 어딘가에서 쓰여요. 설비에서 값이 생기고, AI가 지식을 보고 판단을 올리고, 사람이 승인하면 그 조치가 다시 설비로 돌아가는 거죠. 메뉴가 많아 보여도 처음에는 이 흐름 하나만 잡으시면 됩니다.",
+     "time": 11899,
+     "duration": 20080,
+     "actionStart": 11900,
+     "actionEnd": 23685,
+     "commit": null,
+     "segment": 10
+    }
+   ],
+   "motions": [
+    {
+     "start": 2110,
+     "end": 2370,
+     "glide": 2110,
+     "planned_ms": 260,
+     "start_delay_ms": 16,
+     "max_gap_ms": 31,
+     "frames": 14
+    },
+    {
+     "start": 5858,
+     "end": 6475,
+     "glide": 5858,
+     "planned_ms": 617,
+     "start_delay_ms": 5,
+     "max_gap_ms": 36,
+     "frames": 29
+    },
+    {
+     "start": 16375,
+     "end": 16669,
+     "glide": 16375,
+     "planned_ms": 294,
+     "start_delay_ms": 2,
+     "max_gap_ms": 36,
+     "frames": 16
+    },
+    {
+     "start": 18987,
+     "end": 19469,
+     "glide": 18987,
+     "planned_ms": 482,
+     "start_delay_ms": 2,
+     "max_gap_ms": 72,
+     "frames": 19
+    },
+    {
+     "start": 20696,
+     "end": 21178,
+     "glide": 20696,
+     "planned_ms": 482,
+     "start_delay_ms": 11,
+     "max_gap_ms": 39,
+     "frames": 24
+    },
+    {
+     "start": 23364,
+     "end": 23658,
+     "glide": 23364,
+     "planned_ms": 294,
+     "start_delay_ms": 19,
+     "max_gap_ms": 36,
+     "frames": 15
+    }
+   ],
+   "clicks": [
+    {
+     "x": 217.33334350585938,
+     "y": 572.1770839691162,
+     "dx": 0.0,
+     "dy": 0.0,
+     "gliding": null
+    }
+   ]
+  }
+ ],
+ "mp4": {
+  "sha256": "e9b03de0c924d23bb3eb933996c5ba7aa5eca640779b852378b6726ebf23af18",
+  "video_packets": 33577,
+  "bytes": 67358963
+ }
+}

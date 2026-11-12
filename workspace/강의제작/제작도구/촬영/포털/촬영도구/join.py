@@ -8,7 +8,7 @@
   5. 이음매마다 앞 0.7초 · 뒤 0.4초 장면을 <출력>_이음매.jpg로 남긴다 — 눈으로 이어짐을 확인한다.
   --흐림 <조각 번호>:<시작초>-<끝초>:<x>,<y>,<w>,<h>(여러 번) — 그 조각 안 시각(조각 처음이 0)에 그 칸만 흐리게 가린다(영상 V-6 — 화면에 찍힌
      그날 뉴스 검색어처럼 수업과 무관한 글자). 같은 인코딩 안에서 하므로 화질을 한 번 더 잃지 않는다. 조각 번호는 1부터, 칸은 1920×1080 화소다.
-GitHub 파일 한도는 100 MiB다. 넘으면 실패한다(crf를 올려 다시 만든다). 끝나면 verify.py로 검증한다."""
+영상은 git이 아니라 Release `영상`에 올리므로(영상 V-7) 한도는 Release 첨부 한도 2 GiB다. 넘으면 실패한다. 끝나면 verify.py로 검증한다."""
 import json, re, subprocess, sys
 from pathlib import Path
 from PIL import Image, ImageDraw
@@ -64,7 +64,7 @@ cmd += ['-filter_complex', ';'.join(fc), '-map', '[v]', '-map', '[a]', '-c:v', '
         '-c:a', 'aac', '-b:a', '160k', '-ar', '48000', '-movflags', '+faststart', str(out)]
 subprocess.run(cmd, check=True, capture_output=True)
 size = out.stat().st_size
-if size >= 100 * 1024 * 1024: sys.exit(f'{size/2**20:.1f} MiB ≥ 100 MiB(GitHub 한도): CRF=20 등으로 다시 만든다')
+if size >= 2 * 1024 ** 3: sys.exit(f'{size/2**20:.1f} MiB ≥ 2 GiB(Release 첨부 한도)')
 
 # 자막 합치기
 def ms(t):
