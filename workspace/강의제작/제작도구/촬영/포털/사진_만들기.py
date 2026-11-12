@@ -2,7 +2,9 @@
 
 PYTHONUTF8=1 .venv314/Scripts/python.exe workspace/강의제작/제작도구/촬영/포털/사진_만들기.py --work 작업/<작업>/06원본
     → 사진/06-*.png, 전체과정_학생가이드_사진근거.json. 바뀐 사진은 verified가 풀린다.
---확인 <이름 …>: 눈으로 본 사진을 verified로 적는다(이름 없이 --확인 전부면 모두). 영상 판본이 바뀌면 시각을 다시 재고 이 파일을 고친다.
+--확인 <이름 …>: 눈으로 본 사진을 verified로 적는다(이름 없이 --확인 전부면 모두).
+시각은 큐 id로 적는다. 자막(SRT)의 n번째 말이 큐 파일의 n번째 큐이므로, 영상 판본이 바뀌어도 VIDEO · SRT만 바꾸면 시각이 따라온다
+(말 수가 큐 수와 다르면 멈춘다). 화면 배치가 바뀐 판이면 좌표는 프레임을 보고 다시 잰다.
 네모 그리기 · 선 자리 검사 · 자르기 가장자리 검사는 환경세팅 prepare_student_photos.py의 사진_만들기 하나를 같이 쓴다(가이드 P-8).
 """
 from pathlib import Path
@@ -17,7 +19,9 @@ from PIL import Image
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[4]
-VIDEO = '작업/촬영/포털/게시본_06.mp4'   # 옛 06 게시본(이 PC). 지금 판(Release int-01-06-lab)은 이 화면에 쉼만 넣은 것이라 화면이 같다
+VIDEO = '작업/촬영/포털/06-최종/06-최종.mp4'   # 다시 찍은 06(2026-11-12)의 합본. 학생에게 낸 판과 같은 바이트여야 한다
+SRT = '작업/촬영/포털/06-최종/06-최종.srt'
+CUES = HERE/'전체과정관찰_다시찍기_큐.json'
 MANIFEST = HERE/'전체과정_학생가이드_사진근거.json'
 EX = '강사 화면의 예입니다. '
 _spec = importlib.util.spec_from_file_location('prepare_student_photos', HERE.parent/'환경세팅'/'prepare_student_photos.py')
@@ -77,6 +81,29 @@ PHOTOS = [
 ]
 
 
+def cue_times():
+    """큐 id → (말 시작초, 말 끝초). SRT의 n번째 말이 큐 파일의 n번째 큐다."""
+    import re
+    blocks = [x for x in re.split(r'\n\s*\n', (ROOT/SRT).read_text('utf8').strip()) if x.strip()]
+    ids = [q['id'] for q in json.loads(CUES.read_text('utf8'))['cues']]
+    if len(blocks) != len(ids):
+        raise SystemExit(f'자막 말 {len(blocks)}개와 큐 {len(ids)}개가 다릅니다 — 이 영상의 큐 파일인지 보세요')
+    def sec(t):
+        h, m, s = t.replace(',', '.').split(':')
+        return int(h)*3600 + int(m)*60 + float(s)
+    out = {}
+    for cid, blk in zip(ids, blocks):
+        a, z = blk.splitlines()[1].split(' --> ')
+        out[cid] = (sec(a), sec(z))
+    return out
+
+
+def at_seconds(times, at):
+    """(큐 id, 'start'|'end', 더할 초) → 영상 초."""
+    cid, where, delta = at
+    return round(times[cid][0 if where == 'start' else 1] + delta, 2)
+
+
 def sha(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
@@ -106,7 +133,9 @@ def main():
     out = HERE/'사진'
     out.mkdir(exist_ok=True)
     photos = {}
-    for name, seconds, crop, rects, caption, *rest in PHOTOS:
+    times = cue_times()
+    for name, at, crop, rects, caption, *rest in PHOTOS:
+        seconds = at_seconds(times, at)
         ignore = rest[0] if rest else []
         key = '06-'+name
         frame = work/f'{video_sha[:12]}-{seconds}.png'
@@ -119,7 +148,7 @@ def main():
         digest = sha(target)
         photos[key] = {'required_scene': caption, 'check': caption, 'path': target.relative_to(ROOT).as_posix(),
                        'verified': bool(old.get(key, {}).get('verified')) and old[key].get('sha256') == digest,
-                       'source_type': 'video', 'source': VIDEO, 'source_sha256': video_sha, 'seconds': seconds, 'crop': crop,
+                       'source_type': 'video', 'source': VIDEO, 'source_sha256': video_sha, 'seconds': seconds, 'cue': list(at), 'crop': crop,
                        'rectangles': rects, 'ignore': ignore, 'redactions': [], 'caption': caption, 'sha256': digest, 'raw_frame_sha256': sha(frame)}
     stale = {p.name for p in out.glob('06-*.png')} - {k+'.png' for k in photos}
     if stale:

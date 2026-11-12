@@ -412,7 +412,8 @@ def build(pf, out):
         for t0, t1 in ((lo - 0.3, lo), (hi, hi + 0.3)):
             seg = d0[max(0, int(t0 * 100)):max(0, int(t1 * 100))]
             owner = [w for w in keep if w is not u and w['s'] - 0.1 < t1 and w['e'] + 0.1 > t0]
-            if len(seg) and (seg > thr).sum() >= 12 and not owner:
+            cut_away = any(fa / FPS <= max(t0, 0) and t1 <= fb / FPS for fa, fb in cuts)   # 잘라내는 자리의 말은 화면과 함께 빠진다
+            if len(seg) and (seg > thr).sum() >= 12 and not owner and not cut_away:
                 fail(f'단위 {u["id"]}: 비운 자리({lo:.2f}~{hi:.2f}초) 밖 {t0:.2f}~{t1:.2f}초에 옛 말이 남는다 — 자막 시각을 확인한다')
         od = d0[int(u['s'] * 100):int(u['e'] * 100)]
         u['old_db'] = float(np.median(od[od > thr])) if (od > thr).any() else None

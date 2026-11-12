@@ -6,6 +6,8 @@
   4. 장(chapter): 조각에 장이 있으면 앞 조각 길이만큼 밀어 옮기고, 없으면 <장 이름>을 준 조각에 장 하나를 단다.
      ffmpeg 기본값은 첫 장 있는 조각의 장을 시간 그대로 옮긴다 — 2026-10-23 합본이 그래서 README 구간에 「Python」 장이 붙었다.
   5. 이음매마다 앞 0.7초 · 뒤 0.4초 장면을 <출력>_이음매.jpg로 남긴다 — 눈으로 이어짐을 확인한다.
+  --흐림 <조각 번호>:<시작초>-<끝초>:<x>,<y>,<w>,<h>(여러 번) — 그 조각 안 시각(조각 처음이 0)에 그 칸만 흐리게 가린다(영상 V-6 — 화면에 찍힌
+     그날 뉴스 검색어처럼 수업과 무관한 글자). 같은 인코딩 안에서 하므로 화질을 한 번 더 잃지 않는다. 조각 번호는 1부터, 칸은 1920×1080 화소다.
 GitHub 파일 한도는 100 MiB다. 넘으면 실패한다(crf를 올려 다시 만든다). 끝나면 verify.py로 검증한다."""
 import json, re, subprocess, sys
 from pathlib import Path
@@ -14,7 +16,16 @@ sys.stdout.reconfigure(encoding='utf-8')
 from common import ffmpeg, chapters, write_chapters
 
 ff = ffmpeg()
-out = Path(sys.argv[1]); parts = [(a.split(':') + [None, None])[:3] for a in sys.argv[2:]]   # 조각, 자막, 장 이름
+argv, blurs = sys.argv[1:], {}
+while '--흐림' in argv:
+    k = argv.index('--흐림'); spec = argv[k + 1]; del argv[k:k + 2]
+    m = re.fullmatch(r'(\d+):([\d.]+)-([\d.]+):(\d+),(\d+),(\d+),(\d+)', spec)
+    if not m: sys.exit(f'--흐림 {spec}: <조각 번호>:<시작초>-<끝초>:<x>,<y>,<w>,<h> 꼴이 아니다')
+    n, t0, t1, x, y, w, h = int(m[1]), float(m[2]), float(m[3]), *map(int, m.groups()[3:])
+    if t1 <= t0 or x + w > 1920 or y + h > 1080: sys.exit(f'--흐림 {spec}: 시각이 거꾸로이거나 칸이 화면 밖이다')
+    blurs.setdefault(n - 1, []).append((t0, t1, x, y, w, h))
+out = Path(argv[0]); parts = [(a.split(':') + [None, None])[:3] for a in argv[1:]]   # 조각, 자막, 장 이름
+if max(blurs, default=-1) >= len(parts): sys.exit(f'--흐림: 조각 {max(blurs) + 1}이 없다')
 if len(parts) < 2: sys.exit('조각이 둘 이상 필요하다')
 CRF = int(__import__('os').environ.get('CRF', '18'))
 
@@ -32,7 +43,13 @@ fc = []
 for i, m in enumerate(meas):
     fc.append(f"[{i}:a]aresample=48000,loudnorm=I=-16:TP=-1.5:LRA=11:measured_I={m['input_i']}:measured_TP={m['input_tp']}:measured_LRA={m['input_lra']}:"
               f"measured_thresh={m['input_thresh']}:offset={m['target_offset']}:linear=true,aresample=48000,aformat=channel_layouts=mono[a{i}]")
-    fc.append(f'[{i}:v]setpts=PTS-STARTPTS,scale=1920:1080,fps=30,format=yuv420p[v{i}]')
+    bl = blurs.get(i, [])
+    fc.append(f'[{i}:v]setpts=PTS-STARTPTS,scale=1920:1080,fps=30,format=yuv420p[' + (f'b{i}_0' if bl else f'v{i}') + ']')
+    for k, (t0, t1, x, y, w, h) in enumerate(bl):
+        last = f'v{i}' if k == len(bl) - 1 else f'b{i}_{k + 1}'
+        fc.append(f"[b{i}_{k}]split[b{i}_{k}a][b{i}_{k}b];[b{i}_{k}b]crop={w}:{h}:{x}:{y},boxblur=24:3[b{i}_{k}c];"
+                  f"[b{i}_{k}a][b{i}_{k}c]overlay={x}:{y}:enable='between(t,{t0},{t1})'[{last}]")
+    if bl: print(f'조각 {i + 1}: 흐림 {len(bl)}곳 {bl}')
 fc.append(''.join(f'[v{i}][a{i}]' for i in range(len(parts))) + f'concat=n={len(parts)}:v=1:a=1[v][a]')
 chs, off = [], 0.0
 for (v, _, title), d in zip(parts, durs):
