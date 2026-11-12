@@ -56,9 +56,10 @@ function locateInPage(t) {
   const cs = getComputedStyle(a);
   const yv = /(auto|scroll)/.test(cs.overflowY) && a.scrollHeight > a.clientHeight + 2, xv = /(auto|scroll)/.test(cs.overflowX) && a.scrollWidth > a.clientWidth + 2;
   if (!yv && !xv) continue;
-  if (!a.id) return {error: `이름 없는 스크롤 영역 ${a.tagName}.${a.className}`};
+  // id 없는 스크롤 영역(에이전트 목록 div.list 등)은 보이지 않는 이름표를 달아 같은 길로 굴린다
+  if (!a.id && !a.dataset.hydScroll) a.dataset.hydScroll = String((window.__hydScroll = (window.__hydScroll || 0) + 1));
   const r = a.getBoundingClientRect();
-  sc.push({sel: '#' + a.id, top: Math.max(0, r.top), bottom: Math.min(innerHeight, r.top + a.clientHeight), left: r.left, right: r.left + a.clientWidth, xv, yv});
+  sc.push({sel: a.id ? '#' + a.id : `[data-hyd-scroll="${a.dataset.hydScroll}"]`, top: Math.max(0, r.top), bottom: Math.min(innerHeight, r.top + a.clientHeight), left: r.left, right: r.left + a.clientWidth, xv, yv});
  }
  const top = document.elementFromPoint(x, y);
  return {x, y, top: b.top, bl: b.left, br: b.right, sc, hit: !!top && (top === e || e.contains(top)), h: innerHeight, w: innerWidth};
@@ -124,8 +125,9 @@ function layer(ctx, report) {
   for (let i = 0; i < 8; i++) {
    const r = await find(t);
    const outY = (s) => s.yv && (r.y < s.top + 6 || r.y > s.bottom - 26), outX = (s) => s.xv && (r.bl < s.left - 2 || Math.min(r.br, r.x) > s.right - 26);   // 가로는 대상 상자로 잰다(왼쪽 여백을 가리키는 머리글은 가리킬 점이 지도 밖이다)
-   const winOut = r.y < 60 || r.y > r.h - 26 || r.x < 4 || r.x > r.w - 26;
-   const s = r.sc.find((s) => outY(s) || outX(s)) || (winOut ? r.sc.find((s) => s.yv && s.sel === '#content') : null);
+   // 창 가장자리 여백(위 60 · 아래 26)은 굴러가는 영역 안의 대상에만 건다. 어떤 스크롤 영역에도 들지 않는 고정 막대(위 막대 · 메뉴 머리)의 대상은 창 안이면 보인다.
+   const winOut = r.sc.length ? (r.y < 60 || r.y > r.h - 26 || r.x < 4 || r.x > r.w - 26) : (r.y < 0 || r.y > r.h || r.x < 0 || r.x > r.w);
+   const s = r.sc.find((s) => outY(s) || outX(s)) || (winOut ? (r.sc.find((s) => s.yv && s.sel === '#content') || r.sc.find((s) => s.yv)) : null);
    if (!s) { if (winOut) throw Error('창 밖 대상인데 굴릴 영역 없음: ' + JSON.stringify(t)); r.scrolled = i; return r; }
    if (t.inview) throw Error('대상이 화면 밖이라 누르지 않음(inview): ' + JSON.stringify(t));
    const lo = Math.max(s.top, 60), hi = Math.min(s.bottom, r.h - 26);

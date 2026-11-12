@@ -211,12 +211,12 @@ SENSOR_COLS = ['설비코드', '태그', '계장태그', '센서명', '붙은곳
 QUOTES = [  # 품번칸 글, 공급사 글, 공급사품번, 승인칸, 단가, 불량률 글, 납기 글, MOQ, 견적일, 유효기한, 비고
     ('P-PMP-SEAL', 'A정밀 (저가)', 'AJ-S4510', '예', '35', '0.12', '2', '1', '2026-10-02', '2026-12-31', ''),
     ('P-PMP-SEAL', 'B-OEM (순정)', 'HI-SK-45A', '예', '55', '0.02', '5', '1', '2026-10-02', '2026-12-31', ''),
-    ('P-PMP-SEAL', 'C트레이딩 (최저가 · 비승인)', 'CT-PS-0045', '아니오', '20', '0.30', '1', '5', '2026-10-02', '2026-11-30', ''),
+    ('P-PMP-SEAL', 'C트레이딩', 'CT-PS-0045', '아니오', '20', '0.30', '1', '5', '2026-10-02', '2026-11-30', ''),
     ('P-PMP-SEAL', 'B-OEM (순정)', 'HI-SK-45A', '예', '58', '0.02', '6', '1', '2026-04-03', '2026-06-30', ''),
     ('P-PMP-SEAL-HT', 'B-OEM (순정)', 'HI-SK-45B', '예', '82', '0.02', '10', '1', '2026-09-15', '2026-12-31', ''),
     ('P-PMP-SEAL-HT', 'A정밀', 'AJ-S4520', '예', '61', '0.09', '7', '2', '2026-09-15', '2026-12-31', ''),
     ('P-FAN-BRG', 'A정밀 (저가)', 'AJ-B6205', '예', '18', '0.10', '1', '1', '2026-07-01', '2026-12-31', ''),
-    ('P-FAN-BRG', 'A정밀 (저가)', 'AJ-B6205', '예', '18', '0.10', '1', '1', '2026-10-02', '2026-12-31', ''),
+    ('P-FAN-BRG', 'A정밀 (저가)', 'AJ-B6205', '예', '21', '0.10', '2', '1', '2026-10-02', '2026-12-31', ''),
     ('P-FAN-BRG', 'B-OEM (순정)', '6205-2RS', '예', '28', '0.03', '3', '1', '2026-10-02', '2026-12-31', ''),
     ('P-BRG-6205', '대한베어링', 'DB-6205-2RS', '예', '9', '0.04', '2', '10', '2026-08-10', '2027-02-28', ''),
     ('P-CLR-CORE', 'A정밀 (저가)', 'AJ-C4500', '예', '180', '0.12', '3', '1', '2026-10-02', '2026-12-31', ''),
@@ -263,6 +263,10 @@ AVL_COLS = ['공급사', '품번', '승인상태', '승인일', '유효기한', 
 # 공급사 이름 = 승인공급사_목록(SCM 등록)에 적힌 이름. 견적표의 공급사 칸(「A정밀 (저가)」 「B-OEM(순정)」 등)은 이 이름으로 시작한다.
 SUPPLIERS = ('A정밀', 'B-OEM', 'C트레이딩', '대한베어링', '대원하이드로', '정유상사')
 QUOTE_FILE = '공급_조건.csv'
+# 기준일에 유효기한이 남은 견적이 한 쌍(공급사 · 품번)에 둘 이상일 때 쓸 줄 — 실전반 결정 지점 「기준일에 유효한 견적이 여럿인 쌍」의 갈래.
+# 늦게 받은 견적 = 견적일이 가장 늦은 줄(새 견적이 앞 견적을 대신함), 먼저 받은 견적 = 견적일이 가장 이른 줄(공급사가 기한까지 약속한 조건),
+# 확인 필요 = 어느 줄도 쓰지 않음(공급사에 어느 견적이 유효한지 확인할 때까지 그 쌍을 비교에서 뺌). 강사 참조 갈래(build_labs.QUOTE_BRANCH)와 TRUTH가 이 이름을 쓴다.
+QUOTE_MODES = ('늦게 받은 견적', '먼저 받은 견적', '확인 필요')
 AVL_FILE = '승인공급사_목록.csv'
 
 
@@ -595,7 +599,7 @@ def truth():
             sensors = {'TI-1': dict(component='tank', quantity='quantity:TS1', unit='℃', normal=45.0, limit=None, direction=None, kind='measured'),
                        'PI-1': dict(component='pump', quantity='quantity:PS1', unit='bar', normal=140.0, limit=None, direction=None, kind='measured')}
         t['assets'][code] = {'model': model, 'components': comps, 'sensors': sensors}
-    valid = {}
+    live = {}
     # 줄 번호는 _csv가 쓰는 순서 그대로(머리줄이 1행) — 참조 모델이 CSV를 다시 읽어 남긴 출처 줄을 이것과 견준다.
     for line, (part, sup, _, _, price, fail, lead, *_rest) in enumerate(QUOTES, 2):
         quote_date, until = _rest[1], _rest[2]
@@ -605,9 +609,25 @@ def truth():
             continue
         f = float(fail.rstrip('%')) / 100 if fail.endswith('%') else float(fail)
         d = int(lead[:-1]) * 7 if lead.endswith('주') else int(lead)
-        prev = valid.get((sid, pid))
-        if prev is None or quote_date > prev['quote_date']:
-            valid[(sid, pid)] = dict(price_manwon=float(price), defect_rate=f, lead_days=d, quote_date=quote_date, valid_until=until, quote_line=line)
+        live.setdefault((sid, pid), []).append(dict(price_manwon=float(price), defect_rate=f, lead_days=d, quote_date=quote_date, valid_until=until, quote_line=line))
+    t['several_live'] = {k: [q['quote_line'] for q in v] for k, v in sorted(live.items()) if len(v) > 1}   # 견적 갈래가 갈리는 쌍과 그 견적 줄
+    t['supply_modes'] = {mode: _supply(live, mode) for mode in QUOTE_MODES}
+    t['supply'] = t['supply_modes'][QUOTE_MODES[0]]
+    return t
+
+
+def _supply(live, mode):
+    """쌍마다 쓸 견적 하나(mode = QUOTE_MODES)와 SCM 등록. 유효한 견적이 하나뿐인 쌍은 갈래와 상관없이 그 줄이다."""
+    valid = {}
+    for k, quotes in live.items():
+        if len(quotes) == 1:
+            valid[k] = dict(quotes[0])
+        elif mode == QUOTE_MODES[0]:
+            valid[k] = dict(max(quotes, key=lambda q: q['quote_date']))
+        elif mode == QUOTE_MODES[1]:
+            valid[k] = dict(min(quotes, key=lambda q: q['quote_date']))
+        elif mode != QUOTE_MODES[2]:
+            raise ValueError(f'견적 갈래 {mode!r}는 QUOTE_MODES에 없습니다.')
     for line, (sup, pid, status, _, until, cond, _) in enumerate(AVL, 2):
         if (sup, pid) in valid:
             valid[(sup, pid)]['avl_line'] = line
@@ -616,8 +636,7 @@ def truth():
                                      approved_B=(status == '승인' and until >= REF_DATE), condition=cond)
     for v in valid.values():   # PR-07 7.4: 승인 공급사(갈래 A 기준) 가운데 불량률이 기준을 넘는 쌍
         v['pr74'] = bool(v.get('approved_A')) and round(v['defect_rate'] * 100, 6) > PR74_RATE_PCT
-    t['supply'] = valid
-    return t
+    return valid
 
 
 TRUTH = truth()

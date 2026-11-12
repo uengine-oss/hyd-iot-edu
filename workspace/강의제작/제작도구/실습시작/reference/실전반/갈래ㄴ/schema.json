@@ -127,7 +127,7 @@
       "from": "Supplier",
       "to": "Part",
       "cardinality": "N:M",
-      "note": "공급사·품번마다 유효한 최신 견적 하나",
+      "note": "공급사·품번마다 기준일에 유효한 견적 하나(여럿이면 견적일이 가장 늦은 줄)",
       "properties": {
         "approved": "boolean",
         "approval_status": "string",

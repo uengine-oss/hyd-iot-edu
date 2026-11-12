@@ -398,12 +398,14 @@ DECISION_POINTS = ['구성 요소 자리와 그 실물', '같은 물리량의 �
 
 
 # ───────────── 실전 02-3 ─────────────
+QUOTE_POINT = '기준일에 유효한 견적이 여럿인 쌍'   # 정한_것.csv 지점 줄 — 견적 단계(lab_steps quotes)가 이 줄이 비었으면 멈춘다
 QUOTE_RULE_BLANK = f'''# {F.MARK} — 기준일에 쓸 견적을 고르는 내 판단. 함수 머리와 설명은 그대로 두고 본문만 채웁니다.
 
 
 def use_quote(quotes, as_of):
     """같은 공급사 · 같은 부품의 견적 줄들(공급_조건.csv 행 dict — 원자료 칸 그대로와 '줄' = 편집기 줄 번호)을 받는다. as_of = 자료 기준일('YYYY-MM-DD').
-    돌려줄 것: 기준일 조건으로 쓸 줄 하나(받은 dict 그대로) 또는 None(이 쌍은 기준일에 쓸 조건이 없음)."""
+    돌려줄 것: 기준일 조건으로 쓸 줄 하나(받은 dict 그대로) 또는 None(이 쌍은 기준일에 쓸 조건이 없음).
+    기준일에 유효한 줄이 둘 이상이면 정한_것.csv 「{QUOTE_POINT}」 줄에 내가 고른 대로 한다(그 줄이 비어 있으면 견적 단계가 멈춘다)."""
     raise NotImplementedError
 '''
 
@@ -418,22 +420,31 @@ def approval(entry, as_of):
 
 def buyer_info(pair):
     """쌍 하나(공급사 · 부품 · 단가 · 불량률 · 납기 · 승인 결과 등 지금까지 붙은 값의 dict)를 받는다.
-    돌려줄 것: 구매 담당이 공급사를 비교할 때 함께 봐야 해서 이 쌍에 더 남길 속성 dict(남길 것이 없으면 {{}}). 이미 있는 속성은 덮어쓰지 않는다."""
+    돌려줄 것: 구매 담당이 공급사를 비교할 때 함께 봐야 해서 이 쌍에 더 남길 속성 dict(남길 것이 없으면 {{}}). 이미 있는 속성은 덮어쓰지 않는다.
+    pair에 값이 없으면(키가 없거나 None) 0 같은 값으로 채우지 않고, 판단할 수 없는 값으로 다룬다(미확인 · 값 없음 · 0은 서로 다르다)."""
     raise NotImplementedError
 '''
 
-QUOTE_RULE_ANSWER = f'''# {F.MARK} — 기준일에 쓸 견적을 고르는 내 판단. 함수 머리와 설명은 그대로 두고 본문만 채웁니다.
+def quote_rule_answer(branch='ㄴ'):
+    """견적 갈래(build_labs.supply_branch → D.QUOTE_MODES)마다의 use_quote — 기한 지난 줄은 모든 갈래에서 쓰지 않는다."""
+    mode = B.supply_branch(branch)[1]
+    many = {D.QUOTE_MODES[0]: ('견적일이 가장 늦은 줄(새 견적이 앞 견적을 대신함)', "    return max(live, key=lambda q: q['견적일'])\n"),
+            D.QUOTE_MODES[1]: ('견적일이 가장 이른 줄(공급사가 유효기한까지 약속한 조건)', "    return min(live, key=lambda q: q['견적일'])\n"),
+            D.QUOTE_MODES[2]: ('쓰지 않음 — 공급사에 어느 견적이 유효한지 확인할 때까지 그 쌍을 비교에서 뺌', '    return None\n')}[mode]
+    return f'''# {F.MARK} — 기준일에 쓸 견적을 고르는 내 판단. 함수 머리와 설명은 그대로 두고 본문만 채웁니다.
 
 
 def use_quote(quotes, as_of):
-    """근거: 자료/현장_메모.md 6절(견적을 쌓아 둔 표), 공급_조건.csv 유효기한 칸 — 기준일에 기한이 지난 견적은 쓰지 않고, 남은 것 가운데 견적일이 가장 늦은 줄."""
+    """근거: 공급_조건.csv 유효기한 칸 — 기준일에 기한이 지난 견적은 쓰지 않는다. 유효한 줄이 둘 이상이면 정한_것.csv 「{QUOTE_POINT}」대로 {many[0]}."""
     live = [q for q in quotes if q['유효기한'] >= as_of]
-    return max(live, key=lambda q: q['견적일']) if live else None
-'''
+    if len(live) <= 1:
+        return live[0] if live else None
+{many[1]}'''
 
 
 def approval_rule_answer(branch):
-    """A = 조건부 승인도 승인 · 빈 조건은 조건 없음 · 7.4 정보 안 남김(ㄱ), B = 조건부 승인은 비승인, ㄴ = A + 7.4 정보, ㄷ = A + 빈 조건이 7.4에 걸리면 확인 필요."""
+    """A = 조건부 승인도 승인 · 빈 조건은 조건 없음 · 7.4 정보 안 남김(ㄱ), B = 조건부 승인은 비승인, ㄴ = A + 7.4 정보, ㄷ = A + 빈 조건이 7.4에 걸리면 확인 필요. ㄹ · ㅁ은 승인이 ㄴ(견적 갈래만 다름)."""
+    branch = B.supply_branch(branch)[0]
     ok = "('승인', '조건부 승인')" if branch != 'B' else "('승인',)"
     if branch == 'ㄴ':
         info = (f"    if pair['approved'] and round(pair['defect_rate'] * 100, 6) > {D.PR74_RATE_PCT}:\n"
@@ -470,8 +481,15 @@ def buyer_info(pair):
 
 
 def practical_chosen(branch='ㄴ'):
+    branch, mode = B.supply_branch(branch)
     a = 'B' if branch == 'B' else 'A'
-    return [['조건이 붙은 승인', '승인으로 담고 조건을 함께' if a == 'A' else '비승인으로', '자료/승인공급사_목록.csv:10 · 자료/구매기준서_PR-07_발췌.md:24',
+    if len(D.TRUTH['several_live']) != 1:
+        raise ValueError(f"「{QUOTE_POINT}」 예시 줄은 갈리는 쌍 하나를 짚는다 — 지금 {sorted(D.TRUTH['several_live'])}")
+    (sup, pid), lines = next(iter(D.TRUTH['several_live'].items()))
+    where = ' · '.join(f'자료/{D.QUOTE_FILE}:{n}' for n in lines)
+    v = D.TRUTH['supply_modes'][mode].get((sup, pid))
+    quote = [QUOTE_POINT, mode, where, f'{sup} · {pid} ' + (f"{v['quote_date']} 견적(단가 {v['price_manwon']:g} · 납기 {v['lead_days']}일)" if v else '쌍이 빠짐(확인 전까지 비교 제외)')]
+    return [quote, ['조건이 붙은 승인', '승인으로 담고 조건을 함께' if a == 'A' else '비승인으로', '자료/승인공급사_목록.csv:10 · 자료/구매기준서_PR-07_발췌.md:24',
              'A정밀 · 쿨러 코어의 approved ' + ('참' if a == 'A' else '거짓')],
             ['빈 값의 뜻', '조건 없음' if branch != 'ㄷ' else '미결(등록 확인 필요)', '자료/승인공급사_목록.csv:2', 'A정밀 · 펌프 축 씰 키트 ' + ('표시 없음' if branch != 'ㄷ' else 'pending_check 붙음')],
             ['쓰는 사람에 따라 갈리는 답', '7.4 정보를 함께 남김' if branch == 'ㄴ' else '승인 여부 · 단가 · 불량률 · 납기만', '자료/구매기준서_PR-07_발췌.md:30',
@@ -488,7 +506,7 @@ EXPECT_EXPLAIN_SUPPLY = ('한 줄 = (질문 · 물을_값 · 항목) 하나. 질
 GRAPH_EXPECT_COLUMNS = ['질문', '물을_값', '볼_열', '기대_답', '근거']
 GRAPH_EXPECT_EXPLAIN = {course: ('(질문 · 물을_값) 짝마다 한 줄만 쓰고, 그 줄에서 견줄 열(볼_열)은 하나. 같은 짝의 다른 열을 견주려면 같은 대상의 다른 표기를 물을_값으로 쓴 줄을 더함. 질문 = query.cypher의 「// 질문 N」 번호. '
                                   f'물을_값 = $ 자리에 넣을 값 하나({ask}). 볼_열 = 그 조회 결과에서 견줄 열 이름 하나. '
-                                  '기대_답 = 그 열의 값들(결과 줄마다 하나). 근거 = 파일:줄. ' + EXPECT_FORMAT)
+                                  '기대_답 = 그 열의 값들(결과 줄마다 하나, 줄 순서는 보지 않음). 근거 = 파일:줄(원자료에 없는 품번은 찾아본 파일 이름만). ' + EXPECT_FORMAT)
                         for course, ask in [('통합반', '질문 1 · 2는 설비 코드, 질문 3은 품번이나 표기'), ('실전반', '질문 1 · 2 모두 품번이나 표기')]}
 LOAD_BLANK = F.blank_text('적재 파일 — 문장마다 바로 위에 「// 넣을 것: <종류 또는 관계>」 한 줄, 행은 $rows로 받음(python show_result.py가 실행).\n'
                           '넣을 수 있는 종류 · 관계는 입력/schema.json에 있습니다.', '//')

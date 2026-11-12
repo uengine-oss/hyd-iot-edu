@@ -12,9 +12,23 @@ def norm(text):
     return ' · '.join(sorted(x for x in re.split(r'[·,\s]+', str(text or '')) if x))
 
 
+def numbers(text):
+    """같은 값의 숫자는 같은 글로 견준다(0.30 = 0.3, 35.0 = 35)."""
+    out = []
+    for piece in re.split(r'([·,\s]+)', str(text or '')):
+        try:
+            out.append(f'{float(piece):g}' if piece.strip() and piece.lower() not in ('nan', 'inf', '-inf') else piece)
+        except ValueError:
+            out.append(piece)
+    return ''.join(out)
+
+
 def same(expected, actual):
-    """대조 화면은 적은 글을 그대로 보이고, 같음 여부만 norm으로 견준다."""
-    return norm(expected) == norm(actual)
+    """대조 화면은 적은 글을 그대로 보이고, 같음 여부는 조각의 순서와 숫자 표기(35 = 35.0)를 떼고 견준다 — 그 사실은 대조 표 아래 SAME_NOTE로 밝힌다."""
+    return norm(numbers(expected)) == norm(numbers(actual))
+
+
+SAME_NOTE = '값은 「 · 」로 나눈 조각의 순서와 숫자 표기(35와 35.0, 0.30과 0.3)를 떼고 견줍니다. 줄 순서도 보지 않습니다.'
 
 
 def shown(value):
@@ -96,7 +110,8 @@ def start(previous):
     have = db(C.counts)
     rows = [(k, v, have.get(k, 0)) for k, v in sorted(model.items())]
     return [R.table(f'모델 파일({R.rel(path)})과 지금 랩 DB의 개수', ['항목', '모델 파일', '랩 DB'], rows),
-            R.note('처음 켠 랩 DB는 비어 있습니다(0). 적재한 뒤에는 두 칸이 같아야 합니다.')]
+            R.note('처음 켠 랩 DB는 비어 있습니다(0). 적재한 뒤에는 두 칸이 같아야 합니다.' if not any(have.values()) else
+                   '이 폴더의 랩 DB에 전에 넣은 대상이 남아 있습니다 — 랩 DB 칸이 지금 개수입니다. 모델 파일 칸과 다르면 적재나 수정이 반영된 것인지 봅니다.')]
 
 
 def load_once():
@@ -136,7 +151,7 @@ def expected(previous):
 
 def cell(value):
     """조회 결과 칸 하나를 견줄 글로: 값 없음은 「없음」, 목록은 「 · 」로 잇는다."""
-    if value is None:
+    if value is None or value == '':
         return '없음'
     if isinstance(value, list):
         return ' · '.join(cell(v) for v in value) or '없음'
@@ -183,7 +198,8 @@ def ask_question(number):
                 values = values[:1]   # 모아 돌려준 목록이 줄마다 되풀이되면 한 번만 견준다
             act.append({'짝': pair, '답': ' · '.join(cell(v) for v in values) or '0줄'})
     if exp:
-        blocks.insert(0, R.compare(f'질문 {number} 기대 답 ↔ 조회 결과(물을 값 | 볼_열)', '짝', exp, act, ['답'], same=same))
+        blocks.insert(0, R.compare(f'질문 {number} 기대 답 ↔ 조회 결과(물을 값 | 볼_열)', '짝', exp, act, ['답'], same=same,
+                                   note=SAME_NOTE + ' 값 없음(null)과 빈 글자 칸은 「없음」으로 견줍니다.'))
     elif rows:
         blocks.insert(0, R.note('기대 답의 볼_열이 비어 있어 대조하지 않았습니다. 이 조회가 돌려주는 열 이름으로 볼_열을 채우면 대조합니다.'))
     return blocks

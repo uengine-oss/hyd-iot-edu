@@ -77,7 +77,7 @@ def legacy_fixture(work):
 
 
 def answer_files(branch):
-    return {'결과/quote_rule.py': A.QUOTE_RULE_ANSWER, '결과/approval_rule.py': A.approval_rule_answer(branch),
+    return {'결과/quote_rule.py': A.quote_rule_answer(branch), '결과/approval_rule.py': A.approval_rule_answer(branch),
             '결과/정한_것.csv': B.chosen_text(A.practical_chosen(branch)), '결과/기대_답.csv': BP.expect_supply_text()}
 
 
@@ -95,10 +95,17 @@ def ontology(starter, graph_starter, work, logs):
         for name, text in files.items():
             B.write(legacy / name, text)
         command(legacy, '-c', "import supply_tool as M; M.write_model(M.pairs('승인')[0])")
-        actions = ['sources', 'expected', 'quotes', 'approval', 'query', 'check'] if branch == 'ㄴ' else ['approval', 'check']
+        actions = (['sources', 'expected', 'quotes', 'approval', 'query', 'check'] if branch == 'ㄴ' else
+                   ['quotes', 'approval', 'check'] if branch in B.QUOTE_BRANCH else ['approval', 'check'])
         for action in actions:
             out, result = blocks(new, action)
             logs[f'ontology-{branch}-{action}'] = out
+            if action == 'quotes':   # 유효한 견적이 여럿인 쌍의 줄이 견적 갈래대로 갔는가(TRUTH — CSV를 다시 읽지 않음)
+                went = {str(r[0]): r[1] for b in result if b.get('title', '').startswith('견적 줄마다 간 곳') for r in b['rows']}
+                for pair, lines in D.TRUTH['several_live'].items():
+                    v = D.TRUTH['supply_modes'][B.supply_branch(branch)[1]].get(pair)
+                    want = {str(n): '씀' if v and v['quote_line'] == n else '기준일에 안 씀' for n in lines}
+                    assert {n: went.get(n) for n in want} == want, (branch, pair, went, want)
             if action == 'query':
                 compared = all_same(result)
                 assert any(b['kind'] == 'note' and '구조 검사 통과' in b['text'] for b in result)
@@ -127,7 +134,28 @@ def ontology(starter, graph_starter, work, logs):
             assert record['next_lab_input_same_items'], '설계 랩 기본 갈래 결과와 그래프 랩 제공 모델이 다름'
             record['guide_style_expected'] = guide_style_ontology(new, logs)
         records.append(record)
+    records.append(quote_undecided(starter, work, logs))
     return records
+
+
+def quote_undecided(starter, work, logs):
+    """「기준일에 유효한 견적이 여럿인 쌍」 줄이 비었거나 미결이면 견적 단계가 그 줄과 갈리는 견적 줄을 짚고 멈춘다(판단 함수가 채워져 있어도)."""
+    lines = []
+    for pair, rows in D.TRUTH['several_live'].items():
+        lines.append(f"{pair[0]} · {pair[1]}: data/supply_terms.csv:{' · '.join(map(str, rows))}")
+    out = {}
+    for case, chosen in (('빈 줄', ''), ('미결', '미결')):
+        folder = copy_project(starter, work / f'quote-undecided-{case}')
+        files = answer_files('ㄴ')
+        rows = A.practical_chosen('ㄴ')
+        rows[0] = [rows[0][0], chosen, rows[0][2] if chosen else '', rows[0][3] if chosen else '']
+        files['결과/정한_것.csv'] = B.chosen_text(rows)
+        BP.put(folder, files)
+        text = command(folder, 'run.py', 'quotes', '--no-open', ok=False)
+        logs[f'ontology-quote-undecided-{case}'] = text
+        assert A.QUOTE_POINT in text and 'app/features/decisions.csv:' in text and all(x in text for x in lines), text[-800:]
+        out[case] = True
+    return {'branch': 'quote-undecided', 'stops_on': sorted(out), 'points_to': lines}
 
 
 # ───────────── 검사기 고의 손상(옛 시험 목록을 새 경로에서) ─────────────
