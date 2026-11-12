@@ -30,8 +30,12 @@ function aim(t, kind) {
  if (/\.o-node/.test(t.css)) return {...t, anchor: 'right', dx: 12};
  if (/chiptoggle/.test(t.css)) return {...t, anchor: 'left', dx: -14};
  if (/^#onto(Asset|Ns|Focus|Search)$/.test(t.css) || kind === 'click') return {...t, anchor: 'right'};
- if (/^#ontoNode/.test(t.css)) return {...t, anchor: 'margin'};
- if (/\.o-lab|\.o-colh/.test(t.css)) return {...t, anchor: 'margin'};
+ // 상세 칸 · 지도 머리글은 그 글자 끝 바로 오른쪽을 짚는다(줄 왼쪽 바깥을 짚으면 어느 줄인지 안 보인다 — 사용자 2026-11-12 「마우스 커서가 좀 정확하지 않고」).
+ // 속성 이름(th)은 그 줄의 값(td) 끝을 짚는다 — 이름 바로 뒤는 값 글자를 덮는다.
+ if (/^#ontoNode \.kvt th/.test(t.css)) return {...t, anchor: 'value', dy: t.dy ?? -8};   // 표 줄이 촘촘해 꼬리가 아랫줄 값을 덮지 않게 조금 위
+ if (/^#ontoNode \.o-kind/.test(t.css)) return {...t, anchor: 'after', dx: t.dx ?? -4, dy: t.dy ?? -14};   // 클래스 글씨 바로 밑이 큰 이름이라 꼬리가 닿지 않게 더 위
+ if (/^#ontoNode/.test(t.css)) return {...t, anchor: 'after', dx: t.dx ?? -4, dy: t.dy ?? -6};   // 꼬리가 아래 줄 글을 덮지 않게 조금 위
+ if (/\.o-lab|\.o-colh/.test(t.css)) return {...t, anchor: 'after', dx: t.dx ?? -4, dy: t.dy ?? -6};   // 바로 아래 머리글 · 노드 글을 꼬리가 덮지 않게 조금 위
  return {...t, anchor: 'after'};
 }
 
@@ -48,6 +52,7 @@ function locateInPage(t) {
  if (t.anchor === 'right') { const r1 = e.getClientRects()[0] || b; x = r1.right - Math.min(r1.width / 2, 20); y = r1.top + r1.height / 2; }
  else if (t.anchor === 'left') { x = b.x + Math.min(b.width / 2, 28); }
  else if (t.anchor === 'margin') { const row = e.closest('li, tr') || e; x = Math.max(4, row.getBoundingClientRect().x - 24); y = b.y + Math.min(b.height / 2, 14); }
+ else if (t.anchor === 'value') { const td = e.closest('tr')?.querySelector('td') || e; const g = document.createRange(); g.selectNodeContents(td); const r = g.getClientRects(); const last = r[r.length - 1] || td.getBoundingClientRect(); x = last.right + 8; y = last.top + last.height / 2; }
  else if (t.anchor === 'after') { const g = document.createRange(); g.selectNodeContents(e); const r = g.getBoundingClientRect(); x = (r.width ? r.right : b.right) + 12; }
  else if (t.anchor === 'below') { x = b.x + Math.min(b.width / 2, 30); y = b.bottom + 6; }
  x += t.dx || 0; y += t.dy || 0;
