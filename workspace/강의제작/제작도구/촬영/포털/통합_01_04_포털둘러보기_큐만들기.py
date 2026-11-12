@@ -66,7 +66,7 @@ OPS = {
         TAB('whatif'), V('whatif', 'span', contains='카드별 손익'),
         TAB('flows'),
         TAB('process'), V('process', 'b', contains='처리 건의 흐름'), V('process', 'b', exact='아직 제출된 판단이 없습니다', anchor='after', dy=-8),
-        V('process', 'h2', contains='기업 시스템 현황'), V('process', 'th', exact='납기까지 (시간)')],
+        [['scroll', {'css': '#view-process h2', 'contains': '기업 시스템 현황', 'top': 70}], V('process', 'h2', contains='기업 시스템 현황')], V('process', 'th', exact='납기까지 (시간)')],
     8: [[TAB('inbox'), P('select[data-inbox-me]')], V('inbox', 'p.field-hint'), P('select[data-inbox-me]'),
         TAB('instances'), V('instances', 'span', exact='진행 중'), V('instances', 'span', exact='내 차례'),
         V('instances', 'b', exact='아직 처리 건이 없습니다', anchor='after', dy=-8), V('instances', 'b', exact='처리 건을 선택하세요', anchor='after', dy=-8)],
@@ -79,10 +79,19 @@ OPS = {
 # ▸ 없이 큐 첫머리(시점 0)에 하는 짚기 — 말이 「이 그림」처럼 화면 전체를 받을 때(화면대조 1~3구간 t4-03-01: 커서가 종 옆에 남아 있었다)
 PRE = {'t4-03-01': [P('#view-main svg.m-hero-svg', anchor='center')],
        # 3~4구간 화면대조 t4-04-09: 「이 카드 숫자가」에서 화면이 버튼 쪽으로 내려가 있어 숫자가 안 보였다 — 숫자를 다시 짚어 본문이 말없이 올라오게 한다
-       't4-04-09': [V('scenario', 'span.v', nth=0, anchor='center', dx=18, dy=6)]}
+       't4-04-09': [V('scenario', 'span.v', nth=0, anchor='center', dx=18, dy=6)],
+       # 묶음 이름을 말할 때는 그 묶음 머리글을 짚어 메뉴가 보이게 한다(6~7구간 화면대조 t4-06-01 · t4-07-01과 같은 꼴을 8구간에 먼저)
+       't4-08-01': [P('.rail .navgroup', exact='작업', anchor='after', dy=-7)]}
 
 # ▸ 뒤에 대사 속 구절에 맞춰 더 짚는 것(map.mjs의 {at: 구절}) — 5구간 화면대조 t4-05-10: 두 카드의 승인 역할을 말하는데 커서가 상세 칸 한 곳에 머물렀다
-AT = {'t4-05-10': [(V('skills', 'span.sub', nth=0), '팬 최대 운전은'), (V('skills', 'span.sub', contains='(근본 조치)', nth=0), '쿨러 핀 세척은')]}
+ENT = '#view-process h3, #view-process strong, #view-process b'
+AT = {'t4-05-10': [(V('skills', 'span.sub', nth=0), '팬 최대 운전은'), (V('skills', 'span.sub', contains='(근본 조치)', nth=0), '쿨러 핀 세척은')],
+      # 6~7구간 화면대조: 묶음 이름을 말하는데 그 묶음이 메뉴 밖(t4-06-01 · t4-07-01), 「가운데 운전 모드」에서 커서가 아래 안내 글(t4-07-03),
+      # 생산 · 정비 · 구매를 말하는데 구매 칸이 화면 밖(t4-07-08 — 「밑으로 내려 보시면」에서 실제로 내리고 칸마다 짚는다)
+      't4-06-01': [([['scroll', {'css': '.rail .navgroup', 'exact': '인공지능 설정', 'top': 300}], P('.rail .navgroup', exact='인공지능 설정', anchor='after', dy=-7)], '인공지능 설정 묶음')],
+      't4-07-01': [(P('.rail .navgroup', exact='판단', anchor='after', dy=-7), '판단 묶음')],
+      't4-07-03': [(V('decision', 'label', exact='운전 모드'), '가운데 운전 모드')],
+      't4-07-08': [(P(ENT, exact='생산 관리'), '생산,'), (P(ENT, exact='정비 관리'), '정비,'), (P(ENT, exact='구매 · 재고 관리'), '구매에')]}
 
 GAP_IN, GAP_PAUSE, GAP_RESULT, GAP_SEG = 0.5, 1.0, 1.5, 1.8
 
@@ -141,7 +150,8 @@ def build(md):
         c['ops'][:0] = [[*o, 0.0] for o in PRE.get(c['id'], [])]
         for o, at in AT.get(c['id'], []):
             assert at in c['text'], (c['id'], at)
-            c['ops'].append([*o, {'at': at}])
+            grp = o if isinstance(o[0], list) else [o]   # 목록이면 그 구절에서 잇달아 한다(둘째부터는 앞 조작 바로 뒤)
+            c['ops'].extend([[*grp[0], {'at': at}], *grp[1:]])
     # 메뉴를 누른 뒤 화면은 서버 응답으로 그려진다 — 누르기 바로 뒤에 다음 가리킬 대상이 나타날 때까지 기다린다(이미 있으면 바로 지나간다)
     flat = [(c, i) for c in cues for i in range(len(c['ops']))]
     for j, (c, i) in enumerate(flat):
