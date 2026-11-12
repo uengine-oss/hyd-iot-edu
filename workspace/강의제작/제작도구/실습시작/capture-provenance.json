@@ -2321,10 +2321,10 @@
     "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-01-open.jpg",
     "kind": "학생 실습 화면",
     "section": "지식 지도 열고 칸 접기",
-    "source": "작업/촬영/포털/05-지식지도-최종/05-지식지도-최종_1080p.mp4",
-    "source_sha256": "a277e472449a5c234572645427bc6cf0491924c33ae51deb46422ec27a4f6b36",
-    "seconds": 22,
-    "raw_frame_sha256": "80e7f62650be25ec774607d28fe426c220815fd3643a8df9d8dd42c736add6a0",
+    "source": "작업/촬영/포털/다듬기/2차.mp4",
+    "source_sha256": "461d3a0bcc83db7cf21e589342622448a14df2ad9aed69b066ffac0b5c013a90",
+    "seconds": 18.0,
+    "raw_frame_sha256": "69748eeb24f0c855c0876880ba04b977d7bbba31ed17548b6bb3e8a65aca277f",
     "crop_box": null,
     "rectangles": [
       [
@@ -2344,16 +2344,16 @@
       327,
       846
     ],
-    "sha256": "174b41512a6d734ee561c6fc69737c318940d6e2be874db485321a2bd3b831f3"
+    "sha256": "8cf7a0640cccfb9f716495dde7620c37bb0c28148de6b8f4efedde0e6bd80c46"
   },
   {
     "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-02-columns.jpg",
     "kind": "학생 실습 화면",
     "section": "지식 지도 열고 칸 접기",
-    "source": "작업/촬영/포털/05-지식지도-최종/05-지식지도-최종_1080p.mp4",
-    "source_sha256": "a277e472449a5c234572645427bc6cf0491924c33ae51deb46422ec27a4f6b36",
-    "seconds": 133,
-    "raw_frame_sha256": "114b257a02f3dd6f606e5502951aef4a3f95c151d19380ad05f7944eb58a06bb",
+    "source": "작업/촬영/포털/다듬기/2차.mp4",
+    "source_sha256": "461d3a0bcc83db7cf21e589342622448a14df2ad9aed69b066ffac0b5c013a90",
+    "seconds": 111.2,
+    "raw_frame_sha256": "cf1a0e2f59d79e1aebcfcc7deaf2ea900e98d1194139c82ac4c40924bc799abc",
     "crop_box": null,
     "rectangles": [
       [
@@ -2385,16 +2385,16 @@
       1747,
       452
     ],
-    "sha256": "7b0fa6fa02483ca5d7acdc2df33a0b149896d36fe2c40a64b35b8bccce1e5ad9"
+    "sha256": "264d2315e01d079dca49cb406342e166c17ffba2a0222792508e887f5e08d9b9"
   },
   {
     "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-03-layers.jpg",
     "kind": "학생 실습 화면",
     "section": "지식 지도 열고 칸 접기",
-    "source": "작업/촬영/포털/05-지식지도-최종/05-지식지도-최종_1080p.mp4",
-    "source_sha256": "a277e472449a5c234572645427bc6cf0491924c33ae51deb46422ec27a4f6b36",
-    "seconds": 158,
-    "raw_frame_sha256": "f25ff50b6f89fd1ed0bac4f74562fcd862c96dcc2d4b799b34c22e6c9efe788b",
+    "source": "작업/촬영/포털/다듬기/2차.mp4",
+    "source_sha256": "461d3a0bcc83db7cf21e589342622448a14df2ad9aed69b066ffac0b5c013a90",
+    "seconds": 132.5,
+    "raw_frame_sha256": "ee0bd1148527984a46534756b11ee2bb9576c808679e75461659c99fc47f15ee",
     "crop_box": null,
     "rectangles": [
       [
@@ -2432,16 +2432,16 @@
       952,
       410
     ],
-    "sha256": "384929aa25e8cdd163559e311ea993f4d5a6840989d758216bf411ee4bfab0dc"
+    "sha256": "0dae6b63826495d622c8c6c6d96ecff1cd7aa458866471d0212af2d7de60f118"
   },
   {
     "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-04-search.jpg",
     "kind": "학생 실습 화면",
     "section": "설비 노드 읽기",
-    "source": "작업/촬영/포털/05-지식지도-최종/05-지식지도-최종_1080p.mp4",
-    "source_sha256": "a277e472449a5c234572645427bc6cf0491924c33ae51deb46422ec27a4f6b36",
-    "seconds": 184,
-    "raw_frame_sha256": "a4b2b170b2b3bb45bc75cb5ece5540d8f3108766289aaf542e04a81679e0a88d",
+    "source": "작업/촬영/포털/다듬기/2차.mp4",
+    "source_sha256": "461d3a0bcc83db7cf21e589342622448a14df2ad9aed69b066ffac0b5c013a90",
+    "seconds": 145.7,
+    "raw_frame_sha256": "7f67744d37458cb4be13451bd84abe8d322ec09d585c93aeec43c3a01120a66b",
     "crop_box": null,
     "rectangles": [
       [
@@ -2461,16 +2461,16 @@
       503,
       506
     ],
-    "sha256": "321a8633d5dd3ab705a5d484ced7726c4889209f9092d08a164b6a69abd547b6"
+    "sha256": "37df3307885557fed059c882187e7634e93baa48315fe50b17052ccb0237afa0"
   },
   {
     "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-05-asset.jpg",
     "kind": "학생 실습 화면",
     "section": "설비 노드 읽기",
-    "source": "작업/촬영/포털/05-지식지도-최종/05-지식지도-최종_1080p.mp4",
-    "source_sha256": "a277e472449a5c234572645427bc6cf0491924c33ae51deb46422ec27a4f6b36",
-    "seconds": 250,
-    "raw_frame_sha256": "7acbf00db0eb5b74b8de8092669d9669410a2778d70fc4663427ddd57bbc73be",
+    "source": "작업/촬영/포털/다듬기/2차.mp4",
+    "source_sha256": "461d3a0bcc83db7cf21e589342622448a14df2ad9aed69b066ffac0b5c013a90",
+    "seconds": 206.1,
+    "raw_frame_sha256": "6fb56d5d2274fc9629eff02bc0fcab81fe4634b9d1a5ac03926ff66a28edf39f",
     "crop_box": null,
     "rectangles": [
       [
@@ -2502,16 +2502,16 @@
       697,
       595
     ],
-    "sha256": "8852a749055bdb573766d2bb89797f7b729bcb59b910a480430735d90acf9687"
+    "sha256": "3efc1439470e0a63edcd141374981d6cb0ed856475fa3728947693a2a42d5f76"
   },
   {
     "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-06-cooler.jpg",
     "kind": "학생 실습 화면",
     "section": "오일 쿨러 열기",
-    "source": "작업/촬영/포털/05-지식지도-최종/05-지식지도-최종_1080p.mp4",
-    "source_sha256": "a277e472449a5c234572645427bc6cf0491924c33ae51deb46422ec27a4f6b36",
-    "seconds": 405,
-    "raw_frame_sha256": "592ec66c519dea16144506e535702116b90069c44ab33506f2a869b3dee15e13",
+    "source": "작업/촬영/포털/다듬기/2차.mp4",
+    "source_sha256": "461d3a0bcc83db7cf21e589342622448a14df2ad9aed69b066ffac0b5c013a90",
+    "seconds": 361.1,
+    "raw_frame_sha256": "82d03801d9d12d754e73584846170c7579b16564adcd2984a18da92d698db754",
     "crop_box": null,
     "rectangles": [
       [
@@ -2543,16 +2543,16 @@
       1460,
       842
     ],
-    "sha256": "894571b9e0cb732497480a659614f420bb2c09b961b58318b7cb6a0d793c60f9"
+    "sha256": "e5b18a2ecdc480ad653d79921bef19a8dad5ec1dde88177794e1916112de6bf7"
   },
   {
     "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-07-sensor.jpg",
     "kind": "학생 실습 화면",
     "section": "유온 센서와 기준값 찾기",
-    "source": "작업/촬영/포털/05-지식지도-최종/05-지식지도-최종_1080p.mp4",
-    "source_sha256": "a277e472449a5c234572645427bc6cf0491924c33ae51deb46422ec27a4f6b36",
-    "seconds": 470,
-    "raw_frame_sha256": "c398a908a3bd36df18ebc324e2b585ad22456131156eb1e141b82383672980b2",
+    "source": "작업/촬영/포털/다듬기/2차.mp4",
+    "source_sha256": "461d3a0bcc83db7cf21e589342622448a14df2ad9aed69b066ffac0b5c013a90",
+    "seconds": 426.1,
+    "raw_frame_sha256": "f7f4fb1c60d9da57f5430beee352ef731b121d809f6ce97173b0e5e0c4bbc94b",
     "crop_box": null,
     "rectangles": [
       [
@@ -2584,16 +2584,16 @@
       1363,
       717
     ],
-    "sha256": "74a5a4a4b623d1ec8d8678d1bf588904eba60b7ed5542e17d1da2a907dffa9d2"
+    "sha256": "fd6d136aeda94e05938ea54c4ec402f0883cc02308ed39745a085a815ca06817"
   },
   {
     "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-08-input.jpg",
     "kind": "학생 실습 화면",
     "section": "유온 센서와 기준값 찾기",
-    "source": "작업/촬영/포털/05-지식지도-최종/05-지식지도-최종_1080p.mp4",
-    "source_sha256": "a277e472449a5c234572645427bc6cf0491924c33ae51deb46422ec27a4f6b36",
-    "seconds": 498,
-    "raw_frame_sha256": "f6cf92a3c5a4ce4e8a16a7e26b54f9adcc155307c311e68c58d553f3f715a12c",
+    "source": "작업/촬영/포털/다듬기/2차.mp4",
+    "source_sha256": "461d3a0bcc83db7cf21e589342622448a14df2ad9aed69b066ffac0b5c013a90",
+    "seconds": 454.1,
+    "raw_frame_sha256": "a24160bdc1e2b82319e8433a25c650a700caae69e539f2372e5e2fa7dd830fa0",
     "crop_box": null,
     "rectangles": [
       [
@@ -2613,16 +2613,16 @@
       857,
       738
     ],
-    "sha256": "016f1b1a01b9f5ca27d9160067204e00c20350951f6f669e72540719966072e8"
+    "sha256": "0cdd8aa0d0b5d91e36b2b6341dbc43f3133a1d5eb39c9ece4bb12b1c987d1e0b"
   },
   {
     "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-09-statevar.jpg",
     "kind": "학생 실습 화면",
     "section": "유온 센서와 기준값 찾기",
-    "source": "작업/촬영/포털/05-지식지도-최종/05-지식지도-최종_1080p.mp4",
-    "source_sha256": "a277e472449a5c234572645427bc6cf0491924c33ae51deb46422ec27a4f6b36",
-    "seconds": 535,
-    "raw_frame_sha256": "63ea4763181982ffbcd55c03e0f9f81a7ed919bba828795640e4ec6d8ea390b2",
+    "source": "작업/촬영/포털/다듬기/2차.mp4",
+    "source_sha256": "461d3a0bcc83db7cf21e589342622448a14df2ad9aed69b066ffac0b5c013a90",
+    "seconds": 491.1,
+    "raw_frame_sha256": "03522f47e28fa11ed6ce22439d8fc38eeeb3a08cd8066c6cc1bdf6921961b01b",
     "crop_box": null,
     "rectangles": [
       [
@@ -2654,16 +2654,16 @@
       630,
       890
     ],
-    "sha256": "dffba4477c5e76b68a4c67fee3b77b6edd8b0e8d039170e2c67164bfecc72ff9"
+    "sha256": "38d9ff3cfed8e390a5a6f3810fac2b112fddcd2e7233c4fc957efad9ba9bb1f7"
   },
   {
     "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-10-symptom.jpg",
     "kind": "학생 실습 화면",
     "section": "증상에서 부품까지 따라가기",
-    "source": "작업/촬영/포털/05-지식지도-최종/05-지식지도-최종_1080p.mp4",
-    "source_sha256": "a277e472449a5c234572645427bc6cf0491924c33ae51deb46422ec27a4f6b36",
-    "seconds": 645,
-    "raw_frame_sha256": "d2aaade0a7afe3c89231174f2e2d6fef5d7ae4763124197a612c0b1f00d5c1d7",
+    "source": "작업/촬영/포털/다듬기/2차.mp4",
+    "source_sha256": "461d3a0bcc83db7cf21e589342622448a14df2ad9aed69b066ffac0b5c013a90",
+    "seconds": 599.7,
+    "raw_frame_sha256": "b6ec5f3da9745c16f754dcec6ae56aa88506e2d51f7a3a01c29f84fa08940d6e",
     "crop_box": null,
     "rectangles": [
       [
@@ -2695,16 +2695,16 @@
       1491,
       712
     ],
-    "sha256": "d090fabf5eb14a9c5eab031ce0540c08f69a75c82d12da40f26f21da52137d6b"
+    "sha256": "516390aa59f702d346a2e728039afa85db3de3c2a63ba64c8d06769f900b0e8b"
   },
   {
     "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-11-failure.jpg",
     "kind": "학생 실습 화면",
     "section": "증상에서 부품까지 따라가기",
-    "source": "작업/촬영/포털/05-지식지도-최종/05-지식지도-최종_1080p.mp4",
-    "source_sha256": "a277e472449a5c234572645427bc6cf0491924c33ae51deb46422ec27a4f6b36",
-    "seconds": 718,
-    "raw_frame_sha256": "e2eec25d1c41104747b0ce4817ec9ae97a006516202b4abec5d63df4c0818b56",
+    "source": "작업/촬영/포털/다듬기/2차.mp4",
+    "source_sha256": "461d3a0bcc83db7cf21e589342622448a14df2ad9aed69b066ffac0b5c013a90",
+    "seconds": 671.0,
+    "raw_frame_sha256": "2d02eb01744863eda0fbc89c39259ad88bc410a2d6a9ebdd1b59157b2d09e011",
     "crop_box": null,
     "rectangles": [
       [
@@ -2730,16 +2730,16 @@
       1425,
       882
     ],
-    "sha256": "6687e2df0645c3386a41934b8ec79d8f9bf065eaa47e21bbb7797843f1d635b3"
+    "sha256": "eeff1185164329da9b8fbc79e02c5e80c5e2ccc19f5dc5dc3f8168836705ae50"
   },
   {
     "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-12-cause.jpg",
     "kind": "학생 실습 화면",
     "section": "증상에서 부품까지 따라가기",
-    "source": "작업/촬영/포털/05-지식지도-최종/05-지식지도-최종_1080p.mp4",
-    "source_sha256": "a277e472449a5c234572645427bc6cf0491924c33ae51deb46422ec27a4f6b36",
-    "seconds": 730,
-    "raw_frame_sha256": "75451c5b334c15de1d18e8ee2208c94a3166ea5f26024f16064dde07d56ad49f",
+    "source": "작업/촬영/포털/다듬기/2차.mp4",
+    "source_sha256": "461d3a0bcc83db7cf21e589342622448a14df2ad9aed69b066ffac0b5c013a90",
+    "seconds": 683.0,
+    "raw_frame_sha256": "ac133110de72087968685d008075e799f7cf31d958baa6bc02d585d702259424",
     "crop_box": null,
     "rectangles": [
       [
@@ -2759,16 +2759,16 @@
       1490,
       610
     ],
-    "sha256": "708a61d61d5daf8ee86e7806143c57d2630cd4b5597c4b4428a0caf473af0620"
+    "sha256": "e960d9d6f92bee27261d5d936a1814ee5ef24c11942a59524a6c23f902630d84"
   },
   {
     "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-13-core.jpg",
     "kind": "학생 실습 화면",
     "section": "증상에서 부품까지 따라가기",
-    "source": "작업/촬영/포털/05-지식지도-최종/05-지식지도-최종_1080p.mp4",
-    "source_sha256": "a277e472449a5c234572645427bc6cf0491924c33ae51deb46422ec27a4f6b36",
-    "seconds": 772,
-    "raw_frame_sha256": "5b2df3f789c7f39750b1168ef31f85375f716c24a02ce9fd08c33e06af7cb258",
+    "source": "작업/촬영/포털/다듬기/2차.mp4",
+    "source_sha256": "461d3a0bcc83db7cf21e589342622448a14df2ad9aed69b066ffac0b5c013a90",
+    "seconds": 725.0,
+    "raw_frame_sha256": "99a2d181e3d44bb36ec54c31df8ddb2c020c6c34bf94af42ddff9ae43d2c38b6",
     "crop_box": null,
     "rectangles": [
       [
@@ -2794,16 +2794,16 @@
       1290,
       545
     ],
-    "sha256": "c817ae641e5fb64abdf0334f76a4646fa728b745bd8bfd3ed9ef2aeceece92b3"
+    "sha256": "8fe96d0088412b3e6b4a28b23248ec6581319b91c310139b45ee24b529465443"
   },
   {
     "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-14-hyd02.jpg",
     "kind": "학생 실습 화면",
     "section": "다른 설비에서 같은 쿨러 찾기",
-    "source": "작업/촬영/포털/05-지식지도-최종/05-지식지도-최종_1080p.mp4",
-    "source_sha256": "a277e472449a5c234572645427bc6cf0491924c33ae51deb46422ec27a4f6b36",
-    "seconds": 842,
-    "raw_frame_sha256": "c8088ee3a4be2ae260fc25818f6156023a6717b6b7395aa3c17ef5bdd304f823",
+    "source": "작업/촬영/포털/다듬기/2차.mp4",
+    "source_sha256": "461d3a0bcc83db7cf21e589342622448a14df2ad9aed69b066ffac0b5c013a90",
+    "seconds": 791.4,
+    "raw_frame_sha256": "acc2e6c51e678845b0ac8052f4b58804f6ab270d2761463af54e37ab75e653ce",
     "crop_box": null,
     "rectangles": [
       [
@@ -2823,16 +2823,16 @@
       812,
       682
     ],
-    "sha256": "abf30b616e6dc6a6e83e6a226a20e634d15d49eaec89cbcd884914afb2870f4a"
+    "sha256": "4bd5d021aab310aee4bd347cab25c26ffdd26fb8692a73d721be55105b599530"
   },
   {
     "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-15-comp-cooler.jpg",
     "kind": "학생 실습 화면",
     "section": "다른 설비에서 같은 쿨러 찾기",
-    "source": "작업/촬영/포털/05-지식지도-최종/05-지식지도-최종_1080p.mp4",
-    "source_sha256": "a277e472449a5c234572645427bc6cf0491924c33ae51deb46422ec27a4f6b36",
-    "seconds": 882,
-    "raw_frame_sha256": "8fd3feefdc38835eaa4e70c786a2bed541bc1c31c6f6a028e436cca90df0523c",
+    "source": "작업/촬영/포털/다듬기/2차.mp4",
+    "source_sha256": "461d3a0bcc83db7cf21e589342622448a14df2ad9aed69b066ffac0b5c013a90",
+    "seconds": 831.4,
+    "raw_frame_sha256": "d87f11a23a4de613a9ce984294f94059def9f06f8b6c596fc666aadb6e187e64",
     "crop_box": null,
     "rectangles": [
       [
@@ -2858,16 +2858,16 @@
       750,
       288
     ],
-    "sha256": "ee3c5e50be3df1f7cbfa5136f1b17f3ba4b55b399e08010d915574c1986fd018"
+    "sha256": "1143e775c7e3739260afa7fc1ed2a35e895f140a17693e730635a67b8d8e15fc"
   },
   {
     "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-16-cooler-hyd02.jpg",
     "kind": "학생 실습 화면",
     "section": "다른 설비에서 같은 쿨러 찾기",
-    "source": "작업/촬영/포털/05-지식지도-최종/05-지식지도-최종_1080p.mp4",
-    "source_sha256": "a277e472449a5c234572645427bc6cf0491924c33ae51deb46422ec27a4f6b36",
-    "seconds": 906,
-    "raw_frame_sha256": "0568b0e7fa5c13fa4cf471c0df39f5a1b63bd8021c4db53dc51e5c54b49e49f2",
+    "source": "작업/촬영/포털/다듬기/2차.mp4",
+    "source_sha256": "461d3a0bcc83db7cf21e589342622448a14df2ad9aed69b066ffac0b5c013a90",
+    "seconds": 855.4,
+    "raw_frame_sha256": "227d7a535e2eb5e3f4df003db6b71101c4ef644cb49d11083a5d258c2c477290",
     "crop_box": null,
     "rectangles": [
       [
@@ -2893,16 +2893,16 @@
       1463,
       848
     ],
-    "sha256": "89703640df11d51b6e4b87bb04984cf653cfd950e72ec61edb9b6ec529319019"
+    "sha256": "b7de3360720dc2c8485b190c499ecf88155fdbeca4ce3cde7f533234ba88f6bc"
   },
   {
     "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-17-hyd01.jpg",
     "kind": "학생 실습 화면",
     "section": "다른 설비에서 같은 쿨러 찾기",
-    "source": "작업/촬영/포털/05-지식지도-최종/05-지식지도-최종_1080p.mp4",
-    "source_sha256": "a277e472449a5c234572645427bc6cf0491924c33ae51deb46422ec27a4f6b36",
-    "seconds": 928,
-    "raw_frame_sha256": "b7d85dc4451fbac3a1183eee845f278070c6ea0d7751f4eb739c7be99e8e69a5",
+    "source": "작업/촬영/포털/다듬기/2차.mp4",
+    "source_sha256": "461d3a0bcc83db7cf21e589342622448a14df2ad9aed69b066ffac0b5c013a90",
+    "seconds": 874.1,
+    "raw_frame_sha256": "42238d542f8634d65abe0857794a68ab31017bf40ce264ee0a87eadef1c6b059",
     "crop_box": null,
     "rectangles": [
       [
@@ -2922,16 +2922,16 @@
       812,
       555
     ],
-    "sha256": "f14a7ea7ba8122dc5fea003e8c7e3d255d27371069fdb09416df2ba55bacbd01"
+    "sha256": "e925e89f968b24a3d991ef53134a3d64d13fd239031eaa4520d9256f8663a142"
   },
   {
     "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-18-read.jpg",
     "kind": "학생 실습 화면",
     "section": "결과 확인하기",
-    "source": "작업/촬영/포털/05-지식지도-최종/05-지식지도-최종_1080p.mp4",
-    "source_sha256": "a277e472449a5c234572645427bc6cf0491924c33ae51deb46422ec27a4f6b36",
-    "seconds": 1008,
-    "raw_frame_sha256": "f3a0befaef853d787a2367c964e4a7c9a55d337e4f1194b0107d9b79f31a481c",
+    "source": "작업/촬영/포털/다듬기/2차.mp4",
+    "source_sha256": "461d3a0bcc83db7cf21e589342622448a14df2ad9aed69b066ffac0b5c013a90",
+    "seconds": 952.6,
+    "raw_frame_sha256": "a36986ce3df0fb0ac2e84dd0491e4da84bd3a249fdcbad1aa925fa09c36e344e",
     "crop_box": null,
     "rectangles": [
       [
@@ -2963,6 +2963,6 @@
       1460,
       845
     ],
-    "sha256": "0a34d2a2226f3b78eb950b9884c01374cbc5ae645bd1592eb2192928c75a0fcd"
+    "sha256": "9577ae50aaac8993e6cd42721fda8df4d3008b9ca8e25db56113fb129dab6cbd"
   }
 ]
