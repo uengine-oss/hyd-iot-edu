@@ -5,12 +5,13 @@
 export async function restore({take, edge, space}){
  const fs=await import('node:fs/promises');const {fileURLToPath}=await import('node:url');const path=await import('node:path');
  const here=path.dirname(fileURLToPath(import.meta.url));const conf=JSON.parse(await fs.readFile(path.join(here,'config.json'),'utf8'));
+ const ego=typeof globalThis.taskSpace==='function';const taskSpace=ego?globalThis.taskSpace:(await import('./pw.mjs')).taskSpace;const M=(ego?conf.ego:conf.cloud).metrics;const metrics=(dw=0)=>({width:M.width+dw,height:M.height,deviceScaleFactor:M.deviceScaleFactor,mobile:false});
  const base=path.resolve(here,conf.work);
  const end=JSON.parse(await fs.readFile(path.join(base,take,'end-state.json'),'utf8')).graph.graph;
  const t=await taskSpace(space||conf.space);
  let p=(await Promise.all((await t.tabs()).map(async x=>[x,x.url]))).find(([x,u])=>u&&u.includes('arrows.app'))?.[0];
  p=p?(p.label?t.page(p.label):await t.adopt(p.page)):t.page('p1');
- await p.cdp('Emulation.setDeviceMetricsOverride',{width:2304,height:1296,deviceScaleFactor:1,mobile:false});
+ await p.cdp('Emulation.setDeviceMetricsOverride',metrics());
  if(!(await p.url()).includes('arrows.app')){await p.goto('https://arrows.app');await p.waitForSelector('canvas');}
  const G=()=>p.evaluate(()=>{const id=location.hash.split('id=')[1];return JSON.parse(localStorage.getItem('GRAPH|'+id)).graph;});
  // 새 그림(New ▸ Web Browser storage)
@@ -27,7 +28,7 @@ export async function restore({take, edge, space}){
  await p.mouse.click(300,150);if((await G()).nodes.length){await p.keyboard.press('ControlOrMeta+A');await p.click('button:has-text("Delete")');}
  await p.click('css=[role=listbox] >> nth=0');await p.click('text="Import"');await p.waitForTimeout(400);
  await p.fill('textarea',JSON.stringify({nodes:end.nodes,relationships:end.relationships,style:end.style}));
- await p.click('loc=role:button[name="Import"]');await p.waitForTimeout(800);
+ await p.click(ego?'loc=role:button[name="Import"]':'role=button[name="Import"]');await p.waitForTimeout(800);
  await p.mouse.click(300,150);await p.waitForTimeout(300);
  await p.waitForFunction(()=>document.body.innerText.includes('Saved to Web Browser storage'),undefined,{timeout:10000});
  // 원 크기를 이전 끝으로 되돌림(Import는 50으로 넣는다)
@@ -41,7 +42,7 @@ export async function restore({take, edge, space}){
   const {makeUI}=await import('./ui.mjs?restore'+Date.now());
   let q=Promise.resolve();const serial=fn=>{const r=q.then(fn);q=r.catch(()=>{});return r;};
   const ui=await makeUI({p,serial,sleep:ms=>new Promise(r=>setTimeout(r,ms)),startPos:{x:700,y:400}});await ui.install();
-  await p.cdp('Emulation.setDeviceMetricsOverride',{width:2305,height:1296,deviceScaleFactor:1,mobile:false});await p.waitForTimeout(300);await p.cdp('Emulation.setDeviceMetricsOverride',{width:2304,height:1296,deviceScaleFactor:1,mobile:false});await p.waitForTimeout(400);
+  await p.cdp('Emulation.setDeviceMetricsOverride',metrics(1));await p.waitForTimeout(300);await p.cdp('Emulation.setDeviceMetricsOverride',metrics());await p.waitForTimeout(400);
   await ui.edge(edge[0],edge[1]);
  }
  const out={url:await p.url(),nodes:g.nodes.length,rels:g.relationships.length,radius:(await G()).style.radius,wantRadius:end.style.radius,relSame:rel(g.nodes)===rel(end.nodes)};
@@ -53,6 +54,7 @@ export async function restore({take, edge, space}){
 export async function coords({space}={}){
  const fs=await import('node:fs/promises');const {fileURLToPath}=await import('node:url');const path=await import('node:path');
  const here=path.dirname(fileURLToPath(import.meta.url));const conf=JSON.parse(await fs.readFile(path.join(here,'config.json'),'utf8'));
+ const ego=typeof globalThis.taskSpace==='function';const taskSpace=ego?globalThis.taskSpace:(await import('./pw.mjs')).taskSpace;const M=(ego?conf.ego:conf.cloud).metrics;const metrics=(dw=0)=>({width:M.width+dw,height:M.height,deviceScaleFactor:M.deviceScaleFactor,mobile:false});
  const p=(await taskSpace(space||conf.space)).page('p1');
  if(!(await p.url()).includes('arrows.app')){await p.goto('https://arrows.app');await p.waitForSelector('canvas');}
  return p.evaluate(()=>{const cur=location.hash.split('id=')[1];const res=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(!k.startsWith('GRAPH|'))continue;try{const g=JSON.parse(localStorage.getItem(k)).graph;res.push({id:k.slice(6),current:k.slice(6)===cur,nodes:g.nodes.map(n=>[n.caption,Math.round(n.position.x),Math.round(n.position.y)]),rels:g.relationships.length,radius:g.style.radius});}catch(e){}}return res;});

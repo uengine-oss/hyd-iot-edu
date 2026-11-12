@@ -1,10 +1,13 @@
-"""촬영도구 공통 설정: config.json의 근거 폴더, 환경변수의 키 파일 · ffmpeg 위치. 값이 없으면 어디가 비었는지 알리고 멈춘다."""
+"""촬영도구 공통 설정: config.json의 근거 폴더 · 음성 폴더, 환경변수의 키 · ffmpeg 위치. 값이 없으면 어디가 비었는지 알리고 멈춘다."""
 import json, os, shutil
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 CFG = json.loads((HERE / 'config.json').read_text(encoding='utf-8'))
 WORK = (HERE / CFG['work']).resolve()
+# 음성 캐시(커밋함)와 큐 파일. 시험 녹화는 HYD_AUDIO · HYD_CUES로 다른 자리를 준다(본 음성 폴더를 더럽히지 않는다).
+AUDIO = Path(os.environ['HYD_AUDIO']).resolve() if os.environ.get('HYD_AUDIO') else (HERE / CFG['audio']).resolve()
+CUES = Path(os.environ['HYD_CUES']).resolve() if os.environ.get('HYD_CUES') else WORK / 'cues.json'
 
 
 def ffmpeg():
@@ -23,3 +26,14 @@ def secret_file(env):
     if not path.is_file():
         raise SystemExit(f'{env}가 가리키는 파일 없음: {path} — 환경변수 {env}를 이 PC의 키 파일 경로로 고친다 (촬영도구/common.py)')
     return path
+
+
+def elevenlabs_key():
+    """ElevenLabs 키: 클라우드는 환경변수 ELEVENLABS_API_KEY, 이 PC는 HYD_ELEVENLABS_KEY_FILE이 가리키는 파일(sk_…). 값은 출력하지 않는다."""
+    import re
+    if os.environ.get('ELEVENLABS_API_KEY'):
+        return os.environ['ELEVENLABS_API_KEY'].strip()
+    m = re.search(r'(sk_[A-Za-z0-9]+)', secret_file('HYD_ELEVENLABS_KEY_FILE').read_text(encoding='utf-8-sig'))
+    if not m:
+        raise SystemExit('HYD_ELEVENLABS_KEY_FILE이 가리키는 파일에서 ElevenLabs 키(sk_…)를 찾지 못함 (촬영도구/common.py)')
+    return m.group(1)

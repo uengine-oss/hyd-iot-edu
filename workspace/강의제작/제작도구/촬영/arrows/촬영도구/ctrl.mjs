@@ -1,12 +1,15 @@
 // ARROWS 구간 녹화 제어기(Notion ctrl-v10 방식). 한 번 실행에 구간 하나를 녹화한다(분할 촬영).
 // - 음성은 큐 단위 클립. 행동 문장이 시작되면 가리키고, 클릭·입력·키는 그 문장 끝 약250ms 전에 실행한다.
-// - 다음 음성은 행동 종료 +250ms. 전체 음성 길이만큼 기다리는 고정 대기는 없다.
+// - 다음 음성은 앞 음성 · 행동이 끝난 뒤 그 큐의 gap(ms)만큼 쉬고 시작한다(영상 V-14의 쉼. 큐에 없으면 1000 = 1회차 큐 사이 1.0초). 전체 음성 길이만큼 기다리는 고정 대기는 없다.
 // - 캡처 ACK는 즉시, 모든 ego 호출은 하나의 직렬 큐. 무거운 인코딩은 녹화 뒤에 한다.
 export async function run(SEG){
 const fs0=await import('node:fs/promises');const {fileURLToPath}=await import('node:url');const path=await import('node:path');
 // 근거 폴더 · 작업 공간 번호는 이 폴더의 config.json에서 읽는다(PC마다 절대 경로를 코드에 두지 않는다).
 const here=path.dirname(fileURLToPath(import.meta.url));const conf=JSON.parse(await fs0.readFile(path.join(here,'config.json'),'utf8'));
-const base=path.resolve(here,conf.work).split(path.sep).join('/');
+const base=path.resolve(here,conf.work).split(path.sep).join('/');const audio=path.resolve(here,process.env.HYD_AUDIO||conf.audio).split(path.sep).join('/');
+// 브라우저 앞부분: ego에서는 전역 taskSpace, 클라우드에서는 pw.mjs(Playwright, run.sh up이 띄운 browser.mjs에 붙음). 화면 값도 그 갈래의 config 값을 쓴다.
+const ego=typeof globalThis.taskSpace==='function';const taskSpace=ego?globalThis.taskSpace:(await import('./pw.mjs')).taskSpace;
+const M=(ego?conf.ego:conf.cloud).metrics;const metrics=(dw=0)=>({width:M.width+dw,height:M.height,deviceScaleFactor:M.deviceScaleFactor,mobile:false});
 const boot=m=>fs0.appendFile(base+'/boot.log',new Date().toISOString().slice(11,23)+' '+SEG.name+' '+m+String.fromCharCode(10));await boot('enter');
 const {makeUI}=await import('./ui.mjs?'+SEG.name);
 const fs=await import('node:fs/promises');
@@ -15,10 +18,10 @@ await fs.mkdir(out+'/frames',{recursive:true});
 if((await fs.readdir(out+'/frames')).length)throw Error('Output folder already has frames: '+out);
 const log=m=>fs.appendFile(out+'/progress.log',new Date().toISOString().slice(11,23)+' '+m+'\n');
 await log('start '+JSON.stringify(SEG));
-const cfg=JSON.parse(await fs.readFile(base+'/cues.json','utf8'));
+const cfg=JSON.parse(await fs.readFile(process.env.HYD_CUES||base+'/cues.json','utf8'));
 const cues=cfg.cues.filter(c=>c.segment===SEG.segment&&(!SEG.from||c.id>=SEG.from)&&(!SEG.to||c.id<=SEG.to));
 await boot('taskSpace');const task=await taskSpace(SEG.space||conf.space);const p=task.page('p1');await boot('page');
-await p.cdp('Emulation.setDeviceMetricsOverride',{width:2304,height:1296,deviceScaleFactor:1,mobile:false});
+await p.cdp('Emulation.setDeviceMetricsOverride',metrics());
 // 같은 창에서 다른 탭(사용자 탭 · 확장 탭)이 앞에 있으면 screencast 프레임이 띄엄띄엄 와서 커서가 0.5~1.3초씩 끊긴다. 녹화 탭을 앞으로 가져온다(다른 탭은 닫지 않는다).
 {const all=await task.cdp('Target.getTargets');const here=await p.url();const me=all.targetInfos.find(x=>x.type==='page'&&x.url===here);if(me)await task.cdp('Target.activateTarget',{targetId:me.targetId});}
 await p.cdp('Page.bringToFront');
@@ -51,7 +54,7 @@ ctx.recordMotion=m=>motions.push({...m,start:m.start-start,end:m.end-start});
 async function cue(c,fn,pointing){
  if(error)throw Error(error);
  if(await fs.stat(base+'/STOP').then(()=>true).catch(()=>false))throw Error('Stop requested');
- const ready=Math.max(speechFree,actionFree)+250;const w=ready-Date.now();if(w>0)await sleep(w);
+ const ready=Math.max(speechFree,actionFree)+(c.gap??1000);const w=ready-Date.now();if(w>0)await sleep(w);
  const t0=Date.now();const a={id:c.id,text:c.text,time:t0-start,duration:c.duration_ms};actions.push(a);await log('cue '+c.id);
  speechFree=t0+c.duration_ms;ctx.cueT0=t0;ctx.cueDur=c.duration_ms;
  if(!fn){actionFree=t0;return;}
@@ -73,7 +76,7 @@ try{
  if(prev&&prev.url!==url&&!SEG.relaxUrl)throw Error('Start URL differs from previous end state: '+url);
  await ui.install();
  // 녹화 전: 캔버스 기록이 비지 않도록 화면 크기를 1px 바꿨다 되돌려 한 번 다시 그리게 한다(녹화 프레임에는 남지 않음).
- if(url.includes('arrows.app')){await serial(()=>p.cdp('Emulation.setDeviceMetricsOverride',{width:2305,height:1296,deviceScaleFactor:1,mobile:false}));await sleep(300);await serial(()=>p.cdp('Emulation.setDeviceMetricsOverride',{width:2304,height:1296,deviceScaleFactor:1,mobile:false}));await sleep(400);
+ if(url.includes('arrows.app')){await serial(()=>p.cdp('Emulation.setDeviceMetricsOverride',metrics(1)));await sleep(300);await serial(()=>p.cdp('Emulation.setDeviceMetricsOverride',metrics()));await sleep(400);
   const n=(await ui.circles()).list.length;await log('circles before recording '+n);if(!n)throw Error('Canvas not recorded before start');
   // 이어 찍기: 크기 바꾸기(resize)는 약 0.3초 뒤 그림 맞춤을 다시 하므로, 그 뒤에 앞 판 끝 화면의 보기(SEG.view: 확대율 · 위치)를 넣고 0.8초 동안 그대로인지 본다(녹화 프레임에는 남지 않음).
   if(SEG.view){const same=g=>g&&Math.abs(g.scale-SEG.view.scale)<1e-9&&Math.abs(g.offset.dx-SEG.view.dx)<1e-6&&Math.abs(g.offset.dy-SEG.view.dy)<1e-6;
@@ -88,7 +91,7 @@ try{
  // 이어 찍기: 앞 녹화에서 멈춘 동작의 나머지를 음성 없이 먼저 수행한다(SEG.pre).
  if(SEG.pre){const pre=JSON.parse(SEG.pre);ctx.cueT0=Date.now();ctx.cueDur=0;ctx.commitAt=0;for(const o of pre)await exec(o);await log('pre done');}
  for(const c0 of cues){
-  const c={...c0,...JSON.parse(await fs.readFile(base+'/audio/'+c0.id+'.json','utf8'))};
+  const c={...c0,...JSON.parse(await fs.readFile(audio+'/'+c0.id+'.json','utf8').catch(()=>{throw Error('Voice cue missing: '+audio+'/'+c0.id+'.json (voice.py로 만든 뒤 촬영)');}))};
   const ops=c0.ops;const pointing=ops.length&&ops.every(o=>['at','point','verify'].includes(o[0]));
   await cue(c,ops.length?async()=>{for(const o of ops)await exec(o);}:null,pointing);
  }
@@ -101,6 +104,12 @@ async function exec(o){
  const [op,...a]=o;
  if(op==='at'){const w=ctx.cueT0+ctx.cueDur*a[0]-Date.now();if(w>0)await sleep(w);return;}
  if(op==='point')return ui.point(a[0]);
+ // 글상자: 화면에 없는 값(판단할 사건 값 등)을 그림 아래에 띄운다(note 글) · 지운다(note null). 페이지 위에 얹는 표시일 뿐 클릭을 받지 않는다.
+ if(op==='note')return serial(()=>p.evaluate(t=>{let e=document.getElementById('recording-note');if(t===null){e?.remove();return;}
+  if(!e){e=document.createElement('div');e.id='recording-note';e.setAttribute('aria-hidden','true');document.documentElement.append(e);}
+  const c=document.querySelector('canvas').getBoundingClientRect();
+  e.style.cssText=`position:fixed;left:${c.left+c.width/2}px;bottom:${innerHeight-c.bottom+24}px;transform:translateX(-50%);max-width:${c.width-80}px;padding:10px 22px;border-radius:10px;background:rgba(17,24,39,.86);color:#fff;font:600 21px/1.45 'Noto Sans CJK KR','Malgun Gothic',sans-serif;white-space:pre;text-align:center;pointer-events:none;z-index:2147483646`;
+  e.textContent=t;},a[0]));
  if(op==='click')return ui.click(a[0]);
  if(op==='type')return ui.type(a[0]);
  if(op==='key')return ui.key(a[0]);
