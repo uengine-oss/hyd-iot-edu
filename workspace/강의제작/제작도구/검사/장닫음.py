@@ -120,7 +120,7 @@ def main():
         for n in (sorted(deck) if a.전부 else pick(a.장, deck)):
             done[deck[n]] = a.검토자
         book.parent.mkdir(parents=True, exist_ok=True)
-        book.write_text(json.dumps(dict(sorted(done.items())), ensure_ascii=False, indent=0) + "\n", "utf8")
+        book.write_text(json.dumps(dict(sorted(done.items())), ensure_ascii=False, indent=0) + "\n", "utf8", newline="")
     todo = [n for n, h in deck.items() if h not in done]
     print(f"{pptx.name}: {len(deck)}장 · 닫힘 {len(deck) - len(todo)} · 볼 장 {len(todo)}")
     if todo:
