@@ -112,6 +112,18 @@
         "Part"
       ],
       "props": {
+        "id": "P-RTN-FLT-25",
+        "name": "리턴 필터 엘리먼트 25µm",
+        "other_codes": [
+          "HI-RF-25"
+        ]
+      }
+    },
+    {
+      "labels": [
+        "Part"
+      ],
+      "props": {
         "id": "P-DPU-FLT",
         "name": "리턴 필터 엘리먼트(DPU)",
         "other_codes": [
@@ -546,7 +558,15 @@
       "props": {
         "id": "HYD-01:pump-a",
         "name": "주 펌프 (A)",
-        "group": "동력",
+        "group": "동력"
+      }
+    },
+    {
+      "labels": [
+        "Unit"
+      ],
+      "props": {
+        "id": "unit:KP-1904-221",
         "serial": "KP-1904-221"
       }
     },
@@ -674,10 +694,18 @@
         "id": "HYD-02:pump-a",
         "name": "주 펌프 (A)",
         "group": "동력",
-        "serial": "KP-2603-114",
         "aliases": [
           "유압 펌프"
         ]
+      }
+    },
+    {
+      "labels": [
+        "Unit"
+      ],
+      "props": {
+        "id": "unit:KP-2603-114",
+        "serial": "KP-2603-114"
       }
     },
     {
@@ -822,10 +850,18 @@
         "id": "HYD-03:pump-a",
         "name": "주 펌프 (A)",
         "group": "동력",
-        "serial": "KP-2002-087",
         "aliases": [
           "주 펌프 A"
         ]
+      }
+    },
+    {
+      "labels": [
+        "Unit"
+      ],
+      "props": {
+        "id": "unit:KP-2002-087",
+        "serial": "KP-2002-087"
       }
     },
     {
@@ -947,7 +983,15 @@
       "props": {
         "id": "HYD-04:pump-a",
         "name": "주 펌프 (A)",
-        "group": "동력",
+        "group": "동력"
+      }
+    },
+    {
+      "labels": [
+        "Unit"
+      ],
+      "props": {
+        "id": "unit:KP-2407-310",
         "serial": "KP-2407-310"
       }
     },
@@ -1071,7 +1115,15 @@
       "props": {
         "id": "HYD-05:pump",
         "name": "메인 펌프",
-        "group": "동력",
+        "group": "동력"
+      }
+    },
+    {
+      "labels": [
+        "Unit"
+      ],
+      "props": {
+        "id": "unit:DWP-2101-12",
         "serial": "DWP-2101-12"
       }
     },
@@ -1161,7 +1213,15 @@
       "props": {
         "id": "HYD-06:pump",
         "name": "메인 펌프",
-        "group": "동력",
+        "group": "동력"
+      }
+    },
+    {
+      "labels": [
+        "Unit"
+      ],
+      "props": {
+        "id": "unit:DWP-2101-13",
         "serial": "DWP-2101-13"
       }
     },
@@ -1229,10 +1289,18 @@
         "id": "HYD-07:pump",
         "name": "메인 펌프",
         "group": "동력",
-        "serial": "GP-1709-004",
         "aliases": [
           "펌프"
         ]
+      }
+    },
+    {
+      "labels": [
+        "Unit"
+      ],
+      "props": {
+        "id": "unit:GP-1709-004",
+        "serial": "GP-1709-004"
       }
     },
     {
@@ -1279,6 +1347,15 @@
         "id": "HYD-07:rtn-filter",
         "name": "리턴 필터",
         "group": "저장·여과"
+      }
+    },
+    {
+      "labels": [
+        "Unit"
+      ],
+      "props": {
+        "id": "unit:KP-1902-551",
+        "serial": "KP-1902-551"
       }
     },
     {
@@ -2457,7 +2534,7 @@
       "props": {
         "id": "HYD-05:T_OIL",
         "tag": "T_OIL",
-        "instrument_tag": "TT-311",
+        "instrument_tag": "TT-3101",
         "unit": "℃",
         "kind": "measured",
         "derived": false,
@@ -2474,7 +2551,7 @@
       "props": {
         "id": "HYD-05:T_TANK",
         "tag": "T_TANK",
-        "instrument_tag": "TT-313",
+        "instrument_tag": "TT-3102",
         "unit": "℃",
         "kind": "measured",
         "derived": false,
@@ -2489,7 +2566,7 @@
       "props": {
         "id": "HYD-05:P_MAIN",
         "tag": "P_MAIN",
-        "instrument_tag": "PT-311",
+        "instrument_tag": "PT-3103",
         "unit": "bar",
         "kind": "measured",
         "derived": false,
@@ -2506,7 +2583,7 @@
       "props": {
         "id": "HYD-05:P_PILOT",
         "tag": "P_PILOT",
-        "instrument_tag": "PT-315",
+        "instrument_tag": "PT-3104",
         "unit": "bar",
         "kind": "measured",
         "derived": false,
@@ -2521,7 +2598,7 @@
       "props": {
         "id": "HYD-05:Q_MAIN",
         "tag": "Q_MAIN",
-        "instrument_tag": "FT-311",
+        "instrument_tag": "FT-3105",
         "unit": "L/min",
         "kind": "measured",
         "derived": false,
@@ -2536,7 +2613,7 @@
       "props": {
         "id": "HYD-05:I_MOTOR",
         "tag": "I_MOTOR",
-        "instrument_tag": "IT-311",
+        "instrument_tag": "IT-3106",
         "unit": "A",
         "kind": "measured",
         "derived": false,
@@ -2553,7 +2630,7 @@
       "props": {
         "id": "HYD-05:V_FAN",
         "tag": "V_FAN",
-        "instrument_tag": "VT-311",
+        "instrument_tag": "VT-3107",
         "unit": "mm/s",
         "kind": "measured",
         "derived": false,
@@ -2570,7 +2647,7 @@
       "props": {
         "id": "HYD-05:DP_FILTER",
         "tag": "DP_FILTER",
-        "instrument_tag": "PDT-314",
+        "instrument_tag": "PDT-3108",
         "unit": "bar",
         "kind": "measured",
         "derived": false,
@@ -2586,7 +2663,7 @@
       "props": {
         "id": "HYD-05:LVL_TANK",
         "tag": "LVL_TANK",
-        "instrument_tag": "LT-311",
+        "instrument_tag": "LT-3109",
         "unit": "%",
         "kind": "measured",
         "derived": false,
@@ -2603,7 +2680,7 @@
       "props": {
         "id": "HYD-06:T_OIL",
         "tag": "T_OIL",
-        "instrument_tag": "TT-321",
+        "instrument_tag": "TT-3201",
         "unit": "℃",
         "kind": "measured",
         "derived": false,
@@ -2620,7 +2697,7 @@
       "props": {
         "id": "HYD-06:T_TANK",
         "tag": "T_TANK",
-        "instrument_tag": "TT-323",
+        "instrument_tag": "TT-3202",
         "unit": "℃",
         "kind": "measured",
         "derived": false,
@@ -2635,7 +2712,7 @@
       "props": {
         "id": "HYD-06:P_MAIN",
         "tag": "P_MAIN",
-        "instrument_tag": "PT-321",
+        "instrument_tag": "PT-3203",
         "unit": "bar",
         "kind": "measured",
         "derived": false,
@@ -2652,7 +2729,7 @@
       "props": {
         "id": "HYD-06:P_PILOT",
         "tag": "P_PILOT",
-        "instrument_tag": "PT-325",
+        "instrument_tag": "PT-3204",
         "unit": "bar",
         "kind": "measured",
         "derived": false,
@@ -2667,7 +2744,7 @@
       "props": {
         "id": "HYD-06:Q_MAIN",
         "tag": "Q_MAIN",
-        "instrument_tag": "FT-321",
+        "instrument_tag": "FT-3205",
         "unit": "L/min",
         "kind": "measured",
         "derived": false,
@@ -2682,7 +2759,7 @@
       "props": {
         "id": "HYD-06:I_MOTOR",
         "tag": "I_MOTOR",
-        "instrument_tag": "IT-321",
+        "instrument_tag": "IT-3206",
         "unit": "A",
         "kind": "measured",
         "derived": false,
@@ -2698,7 +2775,7 @@
       "props": {
         "id": "HYD-06:V_FAN",
         "tag": "V_FAN",
-        "instrument_tag": "VT-321",
+        "instrument_tag": "VT-3207",
         "unit": "mm/s",
         "kind": "measured",
         "derived": false,
@@ -2715,7 +2792,7 @@
       "props": {
         "id": "HYD-06:DP_FILTER",
         "tag": "DP_FILTER",
-        "instrument_tag": "PDT-324",
+        "instrument_tag": "PDT-3208",
         "unit": "bar",
         "kind": "measured",
         "derived": false,
@@ -2731,7 +2808,7 @@
       "props": {
         "id": "HYD-06:LVL_TANK",
         "tag": "LVL_TANK",
-        "instrument_tag": "LT-321",
+        "instrument_tag": "LT-3209",
         "unit": "%",
         "kind": "measured",
         "derived": false,
@@ -2858,6 +2935,14 @@
       "a": "HYD-01",
       "b": "HYD-01:pump-a",
       "props": {}
+    },
+    {
+      "type": "INSTALLED_UNIT",
+      "a": "HYD-01:pump-a",
+      "b": "unit:KP-1904-221",
+      "props": {
+        "current": true
+      }
     },
     {
       "type": "USES_PART",
@@ -3004,6 +3089,14 @@
       "props": {}
     },
     {
+      "type": "INSTALLED_UNIT",
+      "a": "HYD-02:pump-a",
+      "b": "unit:KP-2603-114",
+      "props": {
+        "current": true
+      }
+    },
+    {
       "type": "USES_PART",
       "a": "HYD-02:pump-a",
       "b": "P-PMP-SEAL",
@@ -3148,6 +3241,14 @@
       "props": {}
     },
     {
+      "type": "INSTALLED_UNIT",
+      "a": "HYD-03:pump-a",
+      "b": "unit:KP-2002-087",
+      "props": {
+        "current": true
+      }
+    },
+    {
       "type": "USES_PART",
       "a": "HYD-03:pump-a",
       "b": "P-PMP-SEAL",
@@ -3276,6 +3377,14 @@
       "a": "HYD-04",
       "b": "HYD-04:pump-a",
       "props": {}
+    },
+    {
+      "type": "INSTALLED_UNIT",
+      "a": "HYD-04:pump-a",
+      "b": "unit:KP-2407-310",
+      "props": {
+        "current": true
+      }
     },
     {
       "type": "USES_PART",
@@ -3414,6 +3523,14 @@
       "props": {}
     },
     {
+      "type": "INSTALLED_UNIT",
+      "a": "HYD-05:pump",
+      "b": "unit:DWP-2101-12",
+      "props": {
+        "current": true
+      }
+    },
+    {
       "type": "USES_PART",
       "a": "HYD-05:pump",
       "b": "P-DPU-SEAL",
@@ -3502,6 +3619,14 @@
       "props": {}
     },
     {
+      "type": "INSTALLED_UNIT",
+      "a": "HYD-06:pump",
+      "b": "unit:DWP-2101-13",
+      "props": {
+        "current": true
+      }
+    },
+    {
       "type": "USES_PART",
       "a": "HYD-06:pump",
       "b": "P-DPU-SEAL",
@@ -3570,6 +3695,14 @@
       "props": {}
     },
     {
+      "type": "INSTALLED_UNIT",
+      "a": "HYD-07:pump",
+      "b": "unit:GP-1709-004",
+      "props": {
+        "current": true
+      }
+    },
+    {
       "type": "USES_PART",
       "a": "HYD-07:pump",
       "b": "P-PMP-SEAL-22",
@@ -3623,6 +3756,14 @@
       "b": "P-RTN-FLT",
       "props": {
         "source_text": "P-RTN-FLT"
+      }
+    },
+    {
+      "type": "INSTALLED_UNIT",
+      "a": "HYD-02:pump-a",
+      "b": "unit:KP-1902-551",
+      "props": {
+        "current": false
       }
     },
     {
@@ -4738,7 +4879,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-07:TI-1",
-      "b": "quantity:TS1",
+      "b": "quantity:TS3",
       "props": {}
     },
     {
@@ -4792,7 +4933,7 @@
         "as_of": "2026-10-15",
         "inspection": "입고 전수 검사",
         "compare_extra_manwon": 20.0,
-        "rule_source": "purchasing_standard_pr07.md 30행(7.4)"
+        "rule_source": "purchasing_standard_pr07.md 28행(7.4)"
       }
     },
     {
@@ -4852,7 +4993,7 @@
         "as_of": "2026-10-15",
         "inspection": "입고 전수 검사",
         "compare_extra_manwon": 20.0,
-        "rule_source": "purchasing_standard_pr07.md 30행(7.4)"
+        "rule_source": "purchasing_standard_pr07.md 28행(7.4)"
       }
     },
     {

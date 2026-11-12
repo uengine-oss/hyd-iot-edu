@@ -99,8 +99,8 @@ def write(path, text, bom=False):
 # ───────────── 기존 구조 정의를 임시 폴더에 한 번 만든다(정본 자리는 건드리지 않음) ─────────────
 def model_inputs():
     """통합02 그래프 랩과 같은 생성기 함수에서 받은 설비 모델 — (schema, graph, 설비 대장 CSV)."""
-    schema, graph = B.reference_model(False, B.LAB4_INPUT_BRANCH['통합반'])
-    return B.student_schema(schema), graph, D2._csv(D2.ASSET_COLS, D2.asset_rows())
+    schema, graph = B.frozen_model(False)     # 2회차 보강 전 판으로 고정(build_labs.FROZEN) — 새 2회차 결과를 받는 것은 이 회차를 다시 만들 때 정한다
+    return B.student_schema(schema), graph, B.frozen_assets_csv()
 
 
 def old_lab(key, files, folder):

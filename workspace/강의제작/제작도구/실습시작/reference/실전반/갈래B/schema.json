@@ -17,14 +17,13 @@
       }
     },
     "Component": {
-      "meaning": "설비 안의 정비 가능 품목. 기능 자리 기준 ID(설비코드:품목)로, 실물 교체는 serial로 남긴다",
+      "meaning": "설비 안의 정비 가능 품목이 놓인 자리. 기능 자리 기준 ID(설비코드:품목)이고, 그 자리에 달린 실물은 Unit",
       "required": {
         "id": "string",
         "name": "string",
         "group": "string"
       },
       "optional": {
-        "serial": "string",
         "aliases": "list"
       }
     },
@@ -55,7 +54,7 @@
       }
     },
     "Quantity": {
-      "meaning": "재는 물리량 종류와 기준 단위",
+      "meaning": "재는 물리량과 기준 단위. 붙은 자리가 다르면 다른 물리량(쿨러 쪽 유온 · 탱크 유온)",
       "required": {
         "id": "string",
         "name": "string",
@@ -70,6 +69,13 @@
       },
       "optional": {
         "other_codes": "list"
+      }
+    },
+    "Unit": {
+      "meaning": "일련번호가 붙은 실물 한 대(그 자리에 지금 달린 것 · 전에 달렸다가 철거된 것)",
+      "required": {
+        "id": "string",
+        "serial": "string"
       }
     },
     "Supplier": {
@@ -92,7 +98,7 @@
         "Asset"
       ],
       "to": "Sensor",
-      "cardinality": "1:0..N",
+      "cardinality": "1:N",
       "note": "설비 전체에 붙은 계산값(SE)은 Asset에서"
     },
     "OBSERVES": {
@@ -103,10 +109,19 @@
     "USES_PART": {
       "from": "Component",
       "to": "Part",
-      "cardinality": "N:0..1",
+      "cardinality": "N:1",
       "properties": {
         "source_text": "string"
       }
+    },
+    "INSTALLED_UNIT": {
+      "from": "Component",
+      "to": "Unit",
+      "cardinality": "1:N",
+      "properties": {
+        "current": "boolean"
+      },
+      "note": "current=true가 지금 달린 실물, false가 철거된 실물"
     },
     "SUPPLIES": {
       "from": "Supplier",
@@ -135,8 +150,8 @@
   "identity": "id는 전체 그래프에서 고유.",
   "branch": "B",
   "constraints": [
-    "id는 전체 그래프에서 고유. 구성요소·센서는 설비코드:이름, 부품은 사내 품번",
-    "이관 기록(코드 통합)·철거 실물·점검표 중복 행은 대상을 새로 만들지 않는다",
+    "id는 전체 그래프에서 고유. 구성요소·센서는 설비코드:이름, 부품은 사내 품번, 실물은 unit:일련번호",
+    "옛 코드 줄(같은 기능위치 · 일련번호)·점검표 중복 행은 대상을 새로 만들지 않는다. 철거된 실물은 그 자리의 지난 실물(INSTALLED_UNIT current=false)로 남긴다",
     "limit 생략은 0과 다르다. normal 생략은 미확인",
     "단위는 Quantity 기준 단위로 맞추고 바꾼 경우 source_unit을 남긴다",
     "승인 여부는 승인공급사_목록(SCM 등록)과 기준일로 정한다",

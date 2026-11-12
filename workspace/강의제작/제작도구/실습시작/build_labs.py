@@ -69,20 +69,53 @@ def model_match(model,applies):
     head,*rest=applies.split('·');prefix=head.rsplit('-',1)[0]+'-'
     return model in [head,*[prefix+x for x in rest]]
 
-def resolve_part(text,model,key,parts,cross,link=True):
-    """교체부품 칸 → 사내 품번. 품번·교차표로 풀고, 품명만 있거나 비어 있으면 같은 모델의 쓰는곳으로 푼다(메모 2·5절).
-    link=False(통합반 갈래 C)면 품번 · 교차표로 풀리지 않는 칸은 잇지 않는다(None)."""
+# 통합반 결정 지점 넷의 강사 참조 갈래(REFERENCE_BRANCHES 위 주석): (같은 규격의 다른 사내 품번, 품번이 적히지 않은 교체부품 칸, 구성 요소 자리와 그 실물, 같은 물리량의 범위)
+POLICY = {'A': ('따로', '이음', '한 대상', '종류'), 'B': ('한 물품', '이음', '한 대상', '종류'), 'C': ('따로', '안 이음', '한 대상', '종류'),
+          'D': ('따로', '확인', '나눔', '자리'), 'E': ('따로', '이음', '나눔', '자리')}
+LINK_MODE = {b: p[1] for b, p in POLICY.items()}
+
+
+def policy(branch, supply=False):
+    """그 갈래의 설비 판단. 공급 갈래(실전반)는 제공 설비 모델의 판단(PROVIDED_BRANCH) 위에 선다."""
+    return POLICY['E' if supply or branch not in POLICY else branch]
+
+
+def legacy_rows(assets):
+    """설비 대장의 옛 코드 줄: 다른 줄과 기능위치 · 일련번호가 같고 가동 중이 아닌 줄 → {옛 코드: 지금 코드}. 상태 글자로 정하지 않는다(M1)."""
+    out = {}
+    for a in assets:
+        same = [x for x in assets if x is not a and x['기능위치'] == a['기능위치'] and x['일련번호'] == a['일련번호']]
+        if same and a['상태'] != '가동' and any(x['상태'] == '가동' for x in same):
+            out[a['설비코드']] = next(x['설비코드'] for x in same if x['상태'] == '가동')
+    return out
+
+
+def spare_key(row):
+    """예비품 목록 쓰는곳 칸 → 구성 요소 키."""
+    return NAME_ALIAS.get(row['쓰는곳'], 'pump-a' if row['쓰는곳'] == '주 펌프 A' else ('pump' if row['쓰는곳'] == '펌프' else None))
+
+
+def resolve_part(text,model,key,parts,cross,mode='이음',siblings=()):
+    """교체부품 칸 → 사내 품번(str) · None(잇지 않음) · 후보 목록(list — 확인 필요).
+    품번 · 교차표로 풀리는 칸은 갈래와 상관없이 그 품번이다. 풀리지 않는 칸(빈칸 · 품명만)은 같은 모델에 적용되고 쓰는곳이 같은 예비품(후보)으로 본다:
+    mode '이음' = 후보가 하나면 잇고, 여럿이면 같은 모델의 다른 설비가 그 자리에 적은 품번(siblings)이 후보 하나를 가리킬 때만 잇는다.
+    mode '확인' = 품명만 있고 후보가 하나면 잇고, 빈칸이거나 후보가 여럿이면 후보를 확인 필요로 남긴다. mode '안 이음' = 잇지 않는다."""
     t=text.strip()
     m=re.search(r'\((P-[A-Z0-9-]+)\)',t)
     if m:return m.group(1)
     if t in parts:return t
     hits=sorted({c['사내품번'] for c in cross if c['다른표기']==t})
     if len(hits)==1:return hits[0]
-    if not link:return None
-    cand=[p for p,row in parts.items() if model_match(model,row['적용모델']) and NAME_ALIAS.get(row['쓰는곳'],'pump-a' if row['쓰는곳']=='주 펌프 A' else ('pump' if row['쓰는곳']=='펌프' else None))==key]
+    if mode=='안 이음':return None
+    cand=sorted(p for p,row in parts.items() if model_match(model,row['적용모델']) and spare_key(row)==key)
+    if not cand:
+        if t:raise ValueError(f'교체부품을 풀지 못함: {text!r} {model} {key} — 후보 없음')
+        return None
+    if mode=='확인' and (not t or len(cand)>1):return cand
     if len(cand)==1:return cand[0]
-    if not t and not cand:return None
-    raise ValueError(f'교체부품을 풀지 못함: {text!r} {model} {key} 후보={cand}')
+    used=sorted({s for s in siblings if s in cand})
+    if len(used)==1:return used[0]
+    raise ValueError(f'교체부품을 풀지 못함: {text!r} {model} {key} 후보={cand} 같은 모델 설비가 쓰는 것={used}')
 
 def number(text):
     m=re.match(r'\s*(-?\d+(?:\.\d+)?)',text or '')
@@ -92,7 +125,8 @@ def blank_unit_basis(folder=None):
     """단위 칸이 빈 센서 줄마다 그 단위의 근거 줄: 같은 모델(설비 대장) · 같은 태그로 단위가 적힌 줄 가운데 정상값 · 한계 · 한계구분까지 같은 줄.
     근거가 없거나 단위가 갈리면 멈춘다 — 강사 참조는 단위를 짐작하지 않는다(작업 규칙 3 · 4, 통합 실습3 7단계).
     반환: {센서 id: {'line': 빈 줄 번호, 'basis': [근거 줄 번호 …], 'unit': 단위}}. 줄 번호는 편집기에 보이는 번호(머리줄이 1행)."""
-    model={a['설비코드']:a['모델'] for a in rows('설비_대장.csv',folder) if a['상태']!='코드 통합'}
+    assets=rows('설비_대장.csv',folder);old=legacy_rows(assets)
+    model={a['설비코드']:a['모델'] for a in assets if a['설비코드'] not in old}
     sensors=list(enumerate(rows('센서_목록.csv',folder),2))
     out={}
     for line,s in sensors:
@@ -104,6 +138,12 @@ def blank_unit_basis(folder=None):
         out[s['설비코드']+':'+s['태그']]={'line':line,'basis':[n for n,_ in same],'unit':units.pop()}
     return out
 
+def quantities_of(pol):
+    """그 판단의 물리량 {id: (이름, 기준 단위)} — 붙은 자리까지면 측정 지점 물리량(D.QUANTITIES), 재는 값의 종류면 D.QUANTITY_KINDS."""
+    if pol[3]=='자리':return dict(D.QUANTITIES)
+    return {k: (n, u) for k, n, u in dict.fromkeys(D.QUANTITY_KINDS.values())}
+
+
 def base_graph(branch='A'):
     nodes=[];rels=[];index={}
     def node(label,id,**props):
@@ -114,33 +154,53 @@ def base_graph(branch='A'):
     for pid,p in parts.items():
         alt=sorted({c['다른표기'] for c in cross if c['사내품번']==pid})
         node('Part',pid,name=p['품명'],other_codes=alt)
-    for qid,(name,unit) in D.QUANTITIES.items():node('Quantity',qid,name=name,unit=unit)
-    assets=rows('설비_대장.csv');models={}
+    for qid,(name,unit) in quantities_of(policy(branch)).items():node('Quantity',qid,name=name,unit=unit)
+    assets=rows('설비_대장.csv');models={};old=legacy_rows(assets)
     for a in assets:
-        if a['상태']=='코드 통합':continue
-        legacy=[x['설비코드'] for x in assets if x['상태']=='코드 통합' and x['기능위치']==a['기능위치'] and x['일련번호']==a['일련번호']]
+        if a['설비코드'] in old:continue
+        legacy=[x for x,now in old.items() if now==a['설비코드']]
         models[a['설비코드']]=a['모델']
         node('Asset',a['설비코드'],name=a['설비명'],model=a['모델'],maker=a['제조사'],serial=a['일련번호'],functional_location=a['기능위치'],
              installed=a['설치일'],status=a['상태'],legacy_codes=legacy or None)
-    comps={}
-    for c in rows('구성요소_목록.csv'):
+    comps={};pol=policy(branch);mode=pol[1];split=pol[2]=='나눔';removed=[]
+    comp_rows=rows('구성요소_목록.csv')
+    def ckey(c):return comp_key(c['구성요소'],{k for k,*_ in D.MODEL_COMPONENTS[models[c['설비코드']]]})
+    explicit={}   # 같은 모델의 다른 설비가 그 자리에 품번으로 적은 것(갈래 '이음'의 후보 여럿 풀기)
+    for c in comp_rows:
         if '철거' in c['비고']:continue
+        model=models[c['설비코드']];pid=resolve_part(c['교체부품'],model,ckey(c),parts,cross,mode='안 이음')
+        if pid:explicit.setdefault((model,ckey(c)),[]).append((c['설비코드'],pid))
+    for c in comp_rows:
         aid=c['설비코드'];model=models[aid]
-        keys={k for k,*_ in D.MODEL_COMPONENTS[model]}
-        key=comp_key(c['구성요소'],keys);cid=aid+':'+key
+        key=ckey(c);cid=aid+':'+key
+        if '철거' in c['비고']:removed.append((cid,c));continue
         name='수냉 열교환기' if (model=='HPP-45B' and key=='cooler') else CANON_NAME[key]
         if cid in comps:raise ValueError('구성요소 중복 '+cid)
         comps[cid]=(aid,model,key)
-        node('Component',cid,name=name,group=c['계통'],serial=c['일련번호'] or None,aliases=[c['구성요소']] if c['구성요소']!=name else None)
+        node('Component',cid,name=name,group=c['계통'],serial=None if split else (c['일련번호'] or None),aliases=[c['구성요소']] if c['구성요소']!=name else None)
         rel('HAS_COMPONENT',aid,cid)
-        pid=resolve_part(c['교체부품'],model,key,parts,cross,link=branch!='C')
-        if pid:rel('USES_PART',cid,pid,source_text=c['교체부품'] or '(빈칸: 같은 모델 공용 근거)')
+        if split and c['일련번호']:
+            node('Unit','unit:'+c['일련번호'],serial=c['일련번호'])
+            rel('INSTALLED_UNIT',cid,'unit:'+c['일련번호'],current=True)
+        pid=resolve_part(c['교체부품'],model,key,parts,cross,mode=mode,siblings=[p for a,p in explicit.get((model,key),[]) if a!=aid])
+        if isinstance(pid,list):
+            for k in pid:rel('CANDIDATE_PART',cid,k,source_text=c['교체부품'] or '(빈칸)')
+        elif pid:rel('USES_PART',cid,pid,source_text=c['교체부품'] or '(빈칸: 같은 모델 공용 근거)')
+    for cid,c in removed:   # 철거된 실물: 갈래 D(자리와 실물을 나눔)만 지난 실물로 남기고, 한 대상 갈래는 대상을 만들지 않는다
+        if split:
+            if cid not in comps:raise ValueError(f'철거 실물의 자리 {cid}가 구성 요소에 없음')
+            node('Unit','unit:'+c['일련번호'],serial=c['일련번호'])
+            rel('INSTALLED_UNIT',cid,'unit:'+c['일련번호'],current=False)
     seen=set();basis=blank_unit_basis()
     for s in rows('센서_목록.csv'):
         aid=s['설비코드'];sid=aid+':'+s['태그']
         if sid in seen:continue                 # 점검표에서 다시 옮겨 적은 같은 센서
         seen.add(sid);model=models[aid]
-        q='quantity:'+WHAT_ALIAS[s['재는것']];qunit=D.QUANTITIES[q][1]
+        q='quantity:'+WHAT_ALIAS[s['재는것']]
+        if pol[3]=='자리' and q=='quantity:TS1' and s['붙은곳']!='설비 전체' and comp_key(s['붙은곳'],{k for k,*_ in D.MODEL_COMPONENTS[model]})=='tank':
+            q='quantity:TS3'   # 붙은 자리까지: 탱크에 붙은 유온계는 탱크 유온
+        if pol[3]=='종류':q=D.QUANTITY_KINDS[q][0]   # 재는 값의 종류: 자리는 센서가 붙은 구성 요소가 말한다
+        qunit=quantities_of(pol)[q][1]
         raw=s['단위'] or basis[sid]['unit'];unit,factor=UNIT.get(raw,(raw,1))   # 빈 단위 칸은 근거 줄의 단위로만(blank_unit_basis)
         if unit!=qunit:raise ValueError(f'{sid} 단위 {raw} → 물리량 {q} {qunit}')
         normal=number(s['정상값']);limit=number(s['한계'])
@@ -155,7 +215,7 @@ def base_graph(branch='A'):
         if place=='설비 전체':rel('MONITORED_BY',aid,sid)
         else:rel('MONITORED_BY',aid+':'+comp_key(place,{k for k,*_ in D.MODEL_COMPONENTS[model]}),sid)
         rel('OBSERVES',sid,q)
-    if branch=='B':   # 같은 제조사 품번(규격)인 다른 사내 품번을 같은 물품으로 잇는다
+    if pol[0]=='한 물품':   # 같은 제조사 품번(규격)인 다른 사내 품번을 같은 물품으로 잇는다
         by={}
         for c in cross:
             if c['표기종류']=='제조사 품번':by.setdefault(c['다른표기'],set()).add(c['사내품번'])
@@ -164,15 +224,34 @@ def base_graph(branch='A'):
             for other in ids[1:]:rel('SAME_ITEM_AS',other,ids[0],maker_part_no=code)
     return nodes,rels
 
-# 강사 참조 갈래. 통합반 B = 같은 제조사 품번의 다른 사내 품번을 SAME_ITEM_AS로 잇는다. C = A(따로)에서 빈 칸 · 품명만 적힌 교체부품 칸을 예비품 목록으로 잇지 않는다.
+# 강사 참조 갈래(통합반 결정 지점 넷 — 같은 규격의 다른 사내 품번 · 품번이 적히지 않은 교체부품 칸 · 자리와 실물 · 같은 물리량의 범위).
+# 통합반 A = 따로 · 이음(후보가 여럿이면 같은 모델 설비가 쓰는 품번) · 한 대상 · 재는 값의 종류(작동유 온도 하나 — 자리는 붙은 구성 요소). B = A에서 같은 제조사 품번의 다른 사내 품번을 SAME_ITEM_AS로 잇는다.
+# C = A에서 빈 칸 · 품명만 적힌 교체부품 칸을 잇지 않는다. D = 따로 · 확인 필요로 남김(빈칸 · 후보 여럿은 CANDIDATE_PART) · 구성 요소 자리와 그 실물을 나눔(Unit, 지난 실물 남김) · 붙은 자리까지(탱크 유온계는 탱크 유온).
+# E = D에서 품번이 적히지 않은 칸을 이음 — 두 과정 그래프 랩 · 실전반 설계 랩의 제공 설비 모델(PROVIDED_BRANCH).
 # 실전반 A = 조건부 승인을 승인으로 봄 + PR-07 7.4는 SCM 등록대로(갈래 ㄱ, 빈 조건 = 조건 없음). B = 조건부 승인을 비승인으로(ㄱ).
 # 실전반 ㄴ · ㄷ = A에 더해 7.4(불량률 기준 초과 승인 공급사)를 ㄴ 정보로 붙임 · ㄷ 미결(확인 요청)로 표시. 실전반의 설비·부품 부분은 통합반 A와 같다.
-# 실습4 갈래는 실습3 갈래와 따로, 실습4 입력/ 모델(LAB4_INPUT_BRANCH) 위에서 돌린다(verify_reference.py):
+# 실습4 갈래는 실습3 갈래와 따로, 실습4 입력/ 모델(GRAPH_LAB_INPUT) 위에서 돌린다(verify_reference.py):
 # 통합반 수정본 갈래(「시점과 상태」) 남김 = 불용 설비를 상태로 남김 · 삭제 = 불용 설비를 전용 하위 대상(구성 요소 · 센서)과 함께 지움.
 # 실전반 조회 갈래(「쓰는 사람에 따라 갈리는 답」) ㄱ = 승인 여부 · 단가 · 불량률 · 납기만 돌려줌 · ㄴ = PR-07 7.4 정보(입고 검사 · 비교 가산 비용)를 함께 돌려줌.
-REFERENCE_BRANCHES = {'통합반': ['A', 'B', 'C'], '실전반': ['A', 'B', 'ㄴ', 'ㄷ']}
-BRANCH_DIRS = {'A': '', 'B': '갈래B', 'C': '갈래C', 'ㄴ': '갈래ㄴ', 'ㄷ': '갈래ㄷ'}
-LAB4_INPUT_BRANCH = {'통합반': 'A', '실전반': 'ㄴ'}     # 실습4 입력/의 앞 단계 완성 모델
+REFERENCE_BRANCHES = {'통합반': ['A', 'B', 'C', 'D', 'E'], '실전반': ['A', 'B', 'ㄴ', 'ㄷ']}
+BRANCH_DIRS = {'A': '', 'B': '갈래B', 'C': '갈래C', 'D': '갈래D', 'E': '갈래E', 'ㄴ': '갈래ㄴ', 'ㄷ': '갈래ㄷ'}
+GRAPH_LAB_INPUT = {'통합반': 'E', '실전반': 'ㄴ'}     # 2회차 그래프 랩 data/model의 앞 단계 완성 모델 — 두 과정 같은 설비 판단(갈래 E, 실전반은 그 위에 공급 ㄴ)
+PROVIDED_BRANCH = 'E'                                  # 두 과정 2회차의 제공 설비 모델 판단(실전반 설계 랩의 제공 모델 · 공급 모델의 바탕 · 통합반 그래프 랩)
+# 3 · 4회차 생성기가 받는 설비 모델은 2026-11-12 보강 전 판으로 고정한다(reference/2회차_이전판 — 그때 생성기로 만든 그대로).
+# 그 회차를 다시 만드는 작업이 새 2회차 결과(GRAPH_LAB_INPUT)를 받을지 정한다 — 그때까지 2회차 밖 랩이 말없이 바뀌지 않게 한다.
+FROZEN = TEACHER/'2회차_이전판'
+
+
+def frozen_model(practical=False):
+    """3 · 4회차 생성기용: 보강 전 2회차 설비 모델(통합반 갈래 A, 실전반 공급 갈래 ㄴ). 반환 형식은 reference_model과 같다."""
+    name = '실전반' if practical else '통합반'
+    return (json.loads((FROZEN/f'{name}_schema.json').read_text(encoding='utf-8')),
+            json.loads((FROZEN/f'{name}_graph.json').read_text(encoding='utf-8')))
+
+
+def frozen_assets_csv():
+    """3 · 4회차 생성기용: 보강 전 설비 대장 CSV 글."""
+    return (FROZEN/'설비_대장.csv').read_text(encoding='utf-8')
 LAB4_CHANGE_BRANCHES = ['남김', '삭제']                  # 통합반만(실전반 실습4 행에는 수정본 반영이 없다)
 LAB4_QUERY_BRANCHES = {'ㄱ': 'A', 'ㄴ': 'ㄴ'}            # 실전반 실습4 조회 갈래 → 같은 열을 내는 실습3 기대 답의 키
 APPROVED_STATUS = {'A': ('승인', '조건부 승인'), 'B': ('승인',), 'ㄴ': ('승인', '조건부 승인'), 'ㄷ': ('승인', '조건부 승인')}
@@ -227,20 +306,29 @@ def supply_part(nodes,rels,branch='A'):
         rels.append({'type':'SUPPLIES','a':'supplier:'+sup,'b':pid,'props':{k:v for k,v in props.items() if v is not None}})
 
 def schema_for(supply,branch):
+    pol=policy(branch,supply);split=pol[2]=='나눔';place=pol[3]=='자리'
     definitions={
       'Asset':{'meaning':'개별 설비(설비코드 기준). 기능위치·실물 일련번호를 속성으로 둔다','required':{'id':'string','name':'string','model':'string','status':'string'},
                'optional':{'maker':'string','serial':'string','functional_location':'string','installed':'string','legacy_codes':'list'}},
-      'Component':{'meaning':'설비 안의 정비 가능 품목. 기능 자리 기준 ID(설비코드:품목)로, 실물 교체는 serial로 남긴다','required':{'id':'string','name':'string','group':'string'},
-                   'optional':{'serial':'string','aliases':'list'}},
+      'Component':({'meaning':'설비 안의 정비 가능 품목이 놓인 자리. 기능 자리 기준 ID(설비코드:품목)이고, 그 자리에 달린 실물은 Unit','required':{'id':'string','name':'string','group':'string'},
+                    'optional':{'aliases':'list'}} if split else
+                   {'meaning':'설비 안의 정비 가능 품목. 기능 자리 기준 ID(설비코드:품목)로, 실물 교체는 serial로 남긴다','required':{'id':'string','name':'string','group':'string'},
+                    'optional':{'serial':'string','aliases':'list'}}),
       'Sensor':{'meaning':'설비별 계측 채널. 실측·계산값·설정값을 kind로 구별','required':{'id':'string','tag':'string','unit':'string','kind':['measured','derived','setpoint'],'derived':'boolean'},
                 'optional':{'normal':'number','limit':'number','limit_direction':['upper','lower'],'instrument_tag':'string','sample_hz':'number','collection':'string','source_unit':'string'}},
-      'Quantity':{'meaning':'재는 물리량 종류와 기준 단위','required':{'id':'string','name':'string','unit':'string'}},
+      'Quantity':{'meaning':'재는 물리량과 기준 단위. 붙은 자리가 다르면 다른 물리량(쿨러 쪽 유온 · 탱크 유온)' if place else '재는 값의 종류(무엇의 어떤 값)와 기준 단위. 어디에 붙었는지는 센서가 붙은 구성 요소가 말한다','required':{'id':'string','name':'string','unit':'string'}},
       'Part':{'meaning':'사내 품번 하나로 관리하는 부품 품목','required':{'id':'string','name':'string'},'optional':{'other_codes':'list'}}}
+    if split:definitions['Unit']={'meaning':'일련번호가 붙은 실물 한 대(그 자리에 지금 달린 것 · 전에 달렸다가 철거된 것)','required':{'id':'string','serial':'string'}}
+    # 카디널리티는 이론의 표기(시작 쪽 수:끝 쪽 수, 각 쪽은 많아야 몇 개) — 1:N = 시작 하나에 끝 여럿, 끝 하나에는 시작 하나. 학생 검사기가 이 수를 그래프와 견준다.
     relation_defs={'HAS_COMPONENT':{'from':'Asset','to':'Component','cardinality':'1:N'},
-        'MONITORED_BY':{'from':['Component','Asset'],'to':'Sensor','cardinality':'1:0..N','note':'설비 전체에 붙은 계산값(SE)은 Asset에서'},
+        'MONITORED_BY':{'from':['Component','Asset'],'to':'Sensor','cardinality':'1:N','note':'설비 전체에 붙은 계산값(SE)은 Asset에서'},
         'OBSERVES':{'from':'Sensor','to':'Quantity','cardinality':'N:1'},
-        'USES_PART':{'from':'Component','to':'Part','cardinality':'N:0..1','properties':{'source_text':'string'}}}
-    if not supply and branch=='B':relation_defs['SAME_ITEM_AS']={'from':'Part','to':'Part','cardinality':'N:1','properties':{'maker_part_no':'string'},'note':'같은 제조사 품번인 다른 사내 품번'}
+        'USES_PART':{'from':'Component','to':'Part','cardinality':'N:1','properties':{'source_text':'string'}}}
+    if split:
+        relation_defs['INSTALLED_UNIT']={'from':'Component','to':'Unit','cardinality':'1:N','properties':{'current':'boolean'},'note':'current=true가 지금 달린 실물, false가 철거된 실물'}
+    if pol[1]=='확인':
+        relation_defs['CANDIDATE_PART']={'from':'Component','to':'Part','cardinality':'N:M','properties':{'source_text':'string'},'note':'원자료가 하나로 정하지 않아 확인이 필요한 교체 부품 후보'}
+    if pol[0]=='한 물품':relation_defs['SAME_ITEM_AS']={'from':'Part','to':'Part','cardinality':'N:1','properties':{'maker_part_no':'string'},'note':'같은 제조사 품번인 다른 사내 품번'}
     if supply:
         definitions['Supplier']={'meaning':'견적을 낸 공급사','required':{'id':'string','name':'string'}}
         props={'approved':'boolean','approval_status':'string','condition':'string','price_manwon':'number','defect_rate':'number','defect_rate_original':'string',
@@ -249,8 +337,10 @@ def schema_for(supply,branch):
         if branch=='ㄴ':props.update(inspection='string',compare_extra_manwon='number',rule_source='string')
         if branch=='ㄷ':props.update(pending_check='string')
         relation_defs['SUPPLIES']={'from':'Supplier','to':'Part','cardinality':'N:M','note':'공급사·품번마다 유효한 최신 견적 하나','properties':props}
-    constraints=['id는 전체 그래프에서 고유. 구성요소·센서는 설비코드:이름, 부품은 사내 품번','이관 기록(코드 통합)·철거 실물·점검표 중복 행은 대상을 새로 만들지 않는다',
+    constraints=['id는 전체 그래프에서 고유. 구성요소·센서는 설비코드:이름, 부품은 사내 품번' + (', 실물은 unit:일련번호' if split else ''),
+                 '옛 코드 줄(같은 기능위치 · 일련번호)·점검표 중복 행은 대상을 새로 만들지 않는다' + ('. 철거된 실물은 그 자리의 지난 실물(INSTALLED_UNIT current=false)로 남긴다' if split else '. 철거 실물 행도 대상을 새로 만들지 않는다'),
                  'limit 생략은 0과 다르다. normal 생략은 미확인','단위는 Quantity 기준 단위로 맞추고 바꾼 경우 source_unit을 남긴다']
+    if pol[1]=='확인':constraints+=['교체부품 칸이 비었거나 같은 모델 · 같은 쓰는곳의 예비품이 둘 이상이면 USES_PART로 정하지 않고 후보마다 CANDIDATE_PART로 남긴다']
     if supply:constraints+=['승인 여부는 승인공급사_목록(SCM 등록)과 기준일로 정한다','만료 견적은 SUPPLIES로 쓰지 않는다',
                             '공급사 이름은 승인공급사_목록의 이름이다(견적표의 공급사 칸은 그 이름으로 시작한다)',
                             '단가는 만원, 불량률은 0~1 비율, 납기는 일로 맞추고, 바꾼 불량률 · 납기는 원래 표기를 defect_rate_original · lead_days_original로 남긴다',
@@ -262,7 +352,7 @@ def schema_for(supply,branch):
 
 def reference_model(supply=False,branch='A'):
     """원자료끼리 대조한 근거로 만든 강사 참조 모델(반환 형식 유지). 갈래는 REFERENCE_BRANCHES 위 주석."""
-    nodes,rels=base_graph('A' if supply else branch)
+    nodes,rels=base_graph(PROVIDED_BRANCH if supply else branch)
     if supply:supply_part(nodes,rels,branch)
     return schema_for(supply,branch),{'nodes':nodes,'rels':rels}
 
@@ -370,6 +460,23 @@ try:
         for k,v in props.items():
             if k in pspec:check_value(f'{t} {a}→{b}',k,v,pspec[k])
             elif k!='id':warnings.append(f'{t}에 정의되지 않은 속성 {k}')
+    # 카디널리티(시작 쪽 수:끝 쪽 수) — 「1」 쪽은 많아야 하나. 그래프의 실제 연결 수가 적은 수를 넘으면 그 대상을 짚는다.
+    ONE={'1','0..1'};MANY={'N','M','0..N','1..N','*'}
+    out_n={};in_n={}
+    for r in rels:
+        t=r.get('type');a=r.get('a');b=r.get('b')
+        if t in relations and a in labels_by_id and b in labels_by_id:
+            out_n.setdefault((t,a),set()).add(b);in_n.setdefault((t,b),set()).add(a)
+    for t,spec in relations.items():
+        card=spec.get('cardinality') if isinstance(spec,dict) else None
+        if card in (None,''):continue
+        sides=str(card).replace(' ','').split(':')
+        if len(sides)!=2 or not all(x in ONE|MANY for x in sides):
+            errors.append(f'schema.json {t}의 cardinality 「{card}」: 1:1 · 1:N · N:1 · N:M 꼴로 씁니다.');continue
+        for side,count,word in [(sides[1],out_n,'시작 하나에 끝이'),(sides[0],in_n,'끝 하나에 시작이')]:
+            if side not in ONE:continue
+            over=sorted((x,len(v)) for (tt,x),v in count.items() if tt==t and len(v)>1)
+            if over:errors.append(f'{t} 카디널리티 {card} 어긋남: {word} 많아야 하나인데 둘 이상인 대상 {len(over)}개 — '+', '.join(f'{x} {n}개' for x,n in over[:5])+(' …' if len(over)>5 else ''))
 except (OSError,ValueError,TypeError,AttributeError) as e:
     errors.append(str(e))
 if warnings:
@@ -565,15 +672,30 @@ def portal_table():
             f'<p>포털 실습에서 본 것처럼 설비 칸을 {html.escape(nodes[switched]["code"])}로 바꾸면 <code>{switched}</code>에서 같은 <code>{PORTAL_COMPONENT}</code>로 '
             f'「{ko["HAS_COMPONENT"]}」 관계가 이어지고, 그 아래 센서 · 상태 변수도 이 표와 같은 노드입니다.</p>')
 
+def blank_pump_basis():
+    """제공 모델이 교체부품 칸이 빈 HYD-03 주 펌프를 이은 근거 — 원자료의 다른 칸(같은 모델의 예비품 · 입고 이력 비고)으로 밝힌다(H3)."""
+    comp = next(i for i, c in enumerate(rows('구성요소_목록.csv'), 2) if c['설비코드'] == 'HYD-03' and c['구성요소'] == '주 펌프 A')
+    spare = next(i for i, p in enumerate(rows('예비품_목록.csv'), 2) if p['품번'] == 'P-PMP-SEAL')
+    place = next(a['기능위치'] for a in rows('설비_대장.csv') if a['설비코드'] == 'HYD-03')
+    receipt = next(i for i, r in enumerate(rows('입고_이력.csv'), 2) if place in r['비고'] and r['품번'] == 'P-PMP-SEAL')
+    return (f'- HYD-03 주 펌프: `입력/자료/구성요소_목록.csv` {comp}행은 교체부품 칸이 비어 있습니다. 같은 모델(HPP-45A)의 주 펌프에 적용되는 예비품이 '
+            f'`입력/자료/예비품_목록.csv` {spare}행 P-PMP-SEAL 하나뿐이고, `입력/자료/입고_이력.csv` {receipt}행 비고의 정비 예약 기능위치 {place}가 설비 대장의 HYD-03이라 P-PMP-SEAL로 이었습니다.')
+
+
 def provided_basis(practical):
     """실습4 입력/자료_검토.md — 제공된 모델이 원자료를 어떻게 처리했는지(이번 실습의 결과가 아님)."""
     lines = ['# 제공된 모델의 자료 처리 근거', '',
              '이 모델(schema.json · graph.json)은 원자료와 현장 메모로 만든 설계 단계의 완성 모델입니다. 이번 실습의 적재 · 조회 결과가 아닙니다. 처리 기준은 schema.json의 constraints에 적혀 있습니다.', '',
-             '- 설비: 「코드 통합」 이관 기록은 대상을 새로 만들지 않고 legacy_codes로 남겼습니다. 구성 요소는 기능 자리 기준 ID이고 실물 교체는 serial로 남겼습니다(철거 행 제외).',
-             '- 센서: 같은 설비 · 태그의 점검표 재기입 행은 하나로 두었습니다. 단위는 물리량 기준 단위로 맞추고 바꾼 경우 source_unit을 남겼습니다. 계산값 · 설정값은 kind로 구별했습니다. 한계가 없으면 limit을 생략했습니다.',
+             '- 설비: 다른 줄과 기능위치 · 일련번호 · 설치일이 같고 가동 중이 아닌 옛 코드 줄은 대상을 새로 만들지 않고 legacy_codes로 남겼습니다.',
+             '- 구성 요소와 실물: 구성 요소(Component)는 설비 안의 구성 요소 자리이고, 구성 요소 목록에 일련번호가 적힌 장치는 실물(Unit)로 따로 두었습니다. '
+             'INSTALLED_UNIT의 current가 true면 지금 달린 실물, false면 철거된 실물입니다.',
+             '- 센서: 같은 설비 · 태그의 점검표 재기입 행은 하나로 두었습니다. 단위는 물리량 기준 단위로 맞추고 바꾼 경우 source_unit을 남겼습니다. 계산값 · 설정값은 kind로 구별했습니다. 한계가 없으면 limit을 생략했습니다. '
+             '같은 물리량은 재는 값의 종류와 붙은 계통까지 같아야 묶었습니다(탱크에 붙은 유온계는 탱크 유온, 쿨러 입구와 출구 유온은 따로).',
              *[f'- 센서 {sid}: `입력/자료/센서_목록.csv` {b["line"]}행은 단위 칸이 비어 있어, 같은 모델 · 같은 태그로 정상값 · 한계까지 같은 줄({" · ".join(f"{n}행" for n in b["basis"])})을 근거로 단위를 {b["unit"]}로 두었습니다.'
                for sid, b in blank_unit_basis().items()],
-             '- 부품: 교체부품 칸의 품명 · 표기 변형 · 제조사 품번은 품번 교차표와 예비품 목록의 적용 모델 · 쓰는곳으로 사내 품번에 이었습니다. 같은 규격의 다른 사내 품번은 따로 두었습니다.']
+             '- 부품: 교체부품 칸의 품명 · 표기 변형 · 제조사 품번은 품번 교차표와 예비품 목록의 적용 모델 · 쓰는곳으로 사내 품번에 이었습니다. 같은 규격의 다른 사내 품번은 따로 두었습니다. '
+             '같은 모델 · 같은 쓰는곳의 예비품이 둘 이상이면 같은 모델의 다른 설비가 그 구성 요소에 적은 품번으로 이었습니다.',
+             blank_pump_basis()]
     if practical:
         # 7.4를 「붙였다」고 풀어 쓰면 실습4 결정 지점(조회에 함께 돌려줄지)이 한쪽으로 기운다(리허설 — 코딩랩.md K-4). 값이 어디서 왔는지만 적는다.
         lines.append('- 공급: 공급사 · 품번마다 기준일에 유효한 최신 견적 하나를 SUPPLIES로 두었습니다. 공급사 이름은 승인공급사_목록(SCM 등록)의 이름입니다(견적표의 공급사 칸은 그 이름으로 시작합니다). '
@@ -768,7 +890,7 @@ def design_integrated():
         guide_extra={0: ['terminal', 'result'], 1: ['ai', 'review']}, guide_after={9: ['check_stop']},
         provided=['model_tool.py'], kind='design_integrated', answers={'A': a, 'B': b},
         ai_wait=(3.2, '리허설 50L2 실측 — v17, 2026-11-05'),
-        files={'결과/요구사항.md': F.req_template('요구사항'), '결과/정한_것.csv': F.CHOSEN_TEMPLATE,
+        files={'결과/요구사항.md': F.req_template('요구사항'), '결과/정한_것.csv': decision_template(ANS.DECISION_POINTS),
                '결과/기대_답.csv': F.blank_csv(ANS.EXPECT_COLUMNS_DESIGN, ANS.EXPECT_EXPLAIN_DESIGN),
                **{f'결과/{n}': F.blank_csv(ANS.DESIGN_COLUMNS[n], ANS.DESIGN_EXPLAIN[n]) for n in ANS.DESIGN_COLUMNS},
                '결과/part_rules.py': ANS.PART_RULES_BLANK, '결과/name_rules.py': ANS.NAME_RULES_BLANK,
@@ -785,35 +907,49 @@ def chosen_text(rows):
     return F.CHOSEN_TEMPLATE + buf.getvalue()
 
 
-def expect_design_text():
-    """통합 02-3 기대 답 예 — 강사 참조 A 모델(원자료끼리 대조해 만든 것)에서 뽑은 HYD-01 질문 1, 유온 질문 2, 공용 · 다른 표기 · 없는 품번 질문 3."""
+def expect_design_text(branch='A'):
+    """통합 02-3 기대 답 예 — 그 갈래의 판단을 생성 정답 구조(data_session2.TRUTH, verify_reference.expected)에 적용해 원자료 쪽에서 만든다.
+    강사 참조 모델(reference_model)을 읽지 않는다 — 모델을 자기 자신과 견주지 않기 위해서다. 질문 1 = HYD-01 구성 요소 셋, 질문 2 = 쿨러 쪽 유온을 담은 묶음
+    (붙은 자리까지면 탱크 유온 묶음도)과 센서 값 셋, 질문 3 = 공용 부품 · 다른 표기 · 없는 품번(확인 필요로 남긴 설비는 「(확인 필요)」 항목)."""
     import session2_answers as ANS
-    _, graph = reference_model(False, 'A')
-    label = {n['props']['id']: n['labels'][0] for n in graph['nodes']}
-    props = {n['props']['id']: n['props'] for n in graph['nodes']}
-    rows = []
-    comp_sensors = {}
-    for r in graph['rels']:
-        if r['type'] == 'MONITORED_BY' and r['a'].startswith('HYD-01'):
-            name = '설비 전체' if label[r['a']] == 'Asset' else props[r['a']]['name']
-            comp_sensors.setdefault(name, []).append(props[r['b']]['tag'])
-    for name, tags in sorted(sorted(comp_sensors.items()), key=lambda x: -len(x[1]))[:3]:   # 질문 1은 구성 요소 셋
-        rows.append(['1', 'HYD-01', name, ' · '.join(sorted(tags)), '자료/센서_목록.csv:2~21 붙은곳 칸'])
-    members = sorted(r['a'] for r in graph['rels'] if r['type'] == 'OBSERVES' and r['b'] == 'quantity:TS1')
-    rows.append(['2', D.QUANTITIES['quantity:TS1'][0], '', ' · '.join(members), '자료/센서_목록.csv 재는것 · 계장태그 칸'])
-    for code, row_hint in [('P-FAN-BRG', '자료/구성요소_목록.csv 교체부품 칸'), ('RF-10', '자료/품번_교차표.csv'), ('P-PMP-SEAL-X', '원자료에 없음')]:
-        hits = [i for i, p in props.items() if label[i] == 'Part' and (i == code or code in p.get('other_codes', []))]
-        if not hits:
-            rows.append(['3', code, '', '없음', row_hint])
-        for pid in hits:
-            assets = sorted({r2['a'] for r in graph['rels'] if r['type'] == 'USES_PART' and r['b'] == pid for r2 in graph['rels'] if r2['type'] == 'HAS_COMPONENT' and r2['b'] == r['a']})
-            rows.append(['3', code, pid, ' · '.join(assets), row_hint])
+    import verify_reference as V
+    exp = V.expected('통합반', branch)
+    pol = policy(branch)
+    names = quantities_of(pol)
+    line = {(s['설비코드'], s['태그']): i for i, s in reversed(list(enumerate(rows('센서_목록.csv'), 2)))}
+    rows_ = []
+    per = {k: v for k, v in exp['sensors_by_asset']['HYD-01'].items() if k != '(설비 전체)'}
+    for key, tags in sorted(sorted(per.items(), key=lambda x: CANON_NAME[x[0]]), key=lambda x: -len(x[1]))[:3]:   # 질문 1은 구성 요소 셋
+        rows_.append(['1', 'HYD-01', CANON_NAME[key], ' · '.join(sorted(tags)), '자료/센서_목록.csv:2~21 붙은곳 칸'])
+    props = exp['sensor_props']
+    groups = list(dict.fromkeys(props[s][0] for s in ('HYD-01:TS1', 'HYD-07:TI-1')))
+    for q in groups:
+        rows_.append(['2', names[q][0], '', ' · '.join(exp['quantity_members'][q]), '자료/센서_목록.csv 재는것 · 계장태그 · 붙은곳 칸'])
+    for sid in ('HYD-01:TS1', 'HYD-07:TI-1', 'HYD-05:DP_FILTER'):
+        q, unit, normal, limit, direction, _ = props[sid]
+        value = ' · '.join([unit, '없음' if normal is None else '%g' % normal, '없음' if limit is None else '%g' % limit, {'upper': '상한', 'lower': '하한'}.get(direction, '없음')])
+        rows_.append(['2', names[q][0], sid, value, f'자료/센서_목록.csv:{line[tuple(sid.split(":"))]} 단위 · 정상값 · 한계 · 한계구분 칸'])
+    for code, row_hint in [('P-PMP-SEAL', '자료/구성요소_목록.csv 교체부품 칸'), ('P-FAN-BRG', '자료/구성요소_목록.csv 교체부품 칸'),
+                           ('RF-10', '자료/품번_교차표.csv · 구성요소_목록.csv 교체부품 칸'), ('P-PMP-SEAL-X', '자료/예비품_목록.csv · 자료/품번_교차표.csv에 없음')]:
+        found = exp['probes'][code]
+        if found is None:
+            rows_.append(['3', code, '', '없음', row_hint])
+            continue
+        for e in found.get('candidates', [found]):
+            rows_.append(['3', code, e['part'], ' · '.join(e['assets']) or '쓰는 설비 없음', row_hint])
+            if e.get('to_check'):
+                rows_.append(['3', code, e['part'] + '(확인 필요)', ' · '.join(e['to_check']['assets']), row_hint + ' · 구성요소_목록.csv 비고 칸'])
     buf = io.StringIO()
     w = csv.writer(buf, lineterminator='\n')
     w.writerow(ANS.EXPECT_COLUMNS_DESIGN)
-    for r in rows:
+    for r in rows_:
         w.writerow(r)
     return f'# {F.MARK} — {ANS.EXPECT_EXPLAIN_DESIGN}\n' + buf.getvalue()
+
+
+def decision_template(points):
+    """정한_것.csv 빈 틀 — 머리(lab_frame.CHOSEN_TEMPLATE 한 곳)와 결정 지점 줄. 고른_것 · 근거 · 바뀌는_답은 비워 두고, 그 결정을 쓰는 단계의 제공 코드가 빈 줄을 짚고 멈춘다."""
+    return F.CHOSEN_TEMPLATE + ''.join(f'{p},,,\n' for p in points)
 
 
 # ───────────── 실전반 02-3 ─────────────
@@ -925,7 +1061,7 @@ def design_practical():
                '**정할 자리**는 `결과/`에서 첫 줄에 「제공 빈 틀」이 있는 파일입니다.'),
         guide_extra={0: ['terminal', 'result'], 1: ['ai', 'review']}, guide_after={5: ['check_stop']},
         provided=['supply_tool.py'], kind='design_practical', ai_wait=(5.9, '리허설 50L 실측 — 2026-11-05'),
-        files={'결과/요구사항.md': F.req_template('요구사항'), '결과/정한_것.csv': F.CHOSEN_TEMPLATE,
+        files={'결과/요구사항.md': F.req_template('요구사항'), '결과/정한_것.csv': decision_template([r[0] for r in ANS.practical_chosen('ㄴ')]),
                '결과/기대_답.csv': F.blank_csv(ANS.EXPECT_COLUMNS_SUPPLY, ANS.EXPECT_EXPLAIN_SUPPLY),
                '결과/quote_rule.py': ANS.QUOTE_RULE_BLANK, '결과/approval_rule.py': ANS.APPROVAL_RULE_BLANK,
                '결과/README.md': '정할 자리(첫 줄에 「제공 빈 틀」이 있는 파일)를 채우고 `python show_result.py`를 실행하면 제공 코드가 이 폴더에 schema.json · graph.json과 결과 화면 보기.html을 씁니다.\n다시 열 때는 `python show_result.py`를 다시 실행해 결과 화면의 단계 띠와 6단계 대조 표를 봅니다.\n',
@@ -969,7 +1105,7 @@ def graph_lab(course):
     title = '부품의 사용 설비와 공급 정보를 조회하는 그래프 구현하기' if practical else '설계한 온톨로지를 그래프 DB에 구현하고 검증하기'
     model = '설비 · 부품 · 공급 모델' if practical else '설비 · 센서 · 부품 모델'
     change_dir = f'입력/자료_변경분/{D.CHANGE_DATE}_수정본/'
-    input_graph = reference_model(practical, LAB4_INPUT_BRANCH[course])[1]
+    input_graph = reference_model(practical, GRAPH_LAB_INPUT[course])[1]
     load_text = ANS.load_answer(input_graph)
     q_rules = (' 물을 값(품번)은 $ 자리 하나로 받는다.' if practical else ' 물을 값(설비 코드 · 품번)은 $ 자리 하나로 받는다.')
     s_tree = S('폴더와 출발점 · 랩 DB 켜기', '시작',
@@ -1155,7 +1291,7 @@ def graph_lab(course):
     record = record.replace('## 사용할 자료와 기준일\n\n', f'## 사용한 입력과 랩 DB\n\n- 사용한 모델(제공된 모델 · 내 모델):\n- 랩 DB 주소(인증값 제외):\n- {dates}:\n\n')
     record = record.replace('- 기준일:\n', f'- {dates}:\n')
     design = design_integrated() if not practical else design_practical()
-    files = {'결과/검증_기록.md': record, '결과/정한_것.csv': F.CHOSEN_TEMPLATE,
+    files = {'결과/검증_기록.md': record, '결과/정한_것.csv': decision_template(GRAPH_POINTS[course]),
              '결과/기대_답.csv': F.blank_csv(ANS.GRAPH_EXPECT_COLUMNS, ANS.GRAPH_EXPECT_EXPLAIN[course]),
              '결과/load.cypher': ANS.LOAD_BLANK, '결과/query.cypher': ANS.QUERY_BLANK,
              '결과/README.md': (f'정할 자리(적재 쿼리 · 조회 쿼리{" · 수정 쿼리" if change else ""} · 기대 답 표)를 채우고 `python show_result.py`를 실행하면 제공 코드가 랩 DB에 실행하고 결과 화면 보기.html을 씁니다. 내 모델을 쓰면 결과/내_모델/에 복사해 둡니다.\n'
@@ -1219,6 +1355,9 @@ WHY_G_PLAN = ('스키마의 종류(이론의 클래스) 이름은 그래프의 �
               '다시 넣을 때 값을 덮어쓰면 수정본으로 고친 값이 되돌아가고, 처음 만들 때만 넣으면 그대로 남습니다.')
 
 
+GRAPH_POINTS = {'통합반': ['시점과 상태', '불용 결정 설비'], '실전반': ['쓰는 사람에 따라 갈리는 답']}   # 그래프 랩 정한_것.csv의 지점 줄(graph_chosen의 지점)
+
+
 def default_graph_branch(course):
     """정답 보기의 apply에 쓰는 강사 참조 기본 갈래(정한_것.csv 행들)."""
     return ['ㄴ'] if course == '실전반' else ['상태와 함께', '수정본 남김']
@@ -1256,8 +1395,16 @@ def graph_expect_rows(course, graph):
     parts = sorted(r['b'] for r in graph['rels'] if r['type'] == 'USES_PART' and owner.get(r['a']) == 'HYD-07')
     comps = [r['b'] for r in graph['rels'] if r['type'] == 'HAS_COMPONENT' and r['a'] == 'HYD-07']
     rows.append(['2', 'HYD-07', 'part', ' · '.join(parts + ['없음'] * (len(comps) - len(parts))), '입력/자료/구성요소_목록.csv:66~70'])
-    users = sorted({owner[r['a']] for r in graph['rels'] if r['type'] == 'USES_PART' and r['b'] == 'P-RTN-FLT'})
+    # 질문 3의 사용 설비는 확정 연결(USES_PART)과 확인 필요 후보(CANDIDATE_PART)를 함께 돌려주고 note 칸에 「확인 필요」를 단다(정답 보기 쿼리)
+    users = sorted({owner[r['a']] for r in graph['rels'] if r['type'] in ('USES_PART', 'CANDIDATE_PART') and r['b'] == 'P-RTN-FLT'})
     rows.append(['3', 'RF-10', 'asset', ' · '.join(users), '입력/자료/품번_교차표.csv · 구성요소_목록.csv 교체부품 칸'])
+    checks = [r for r in graph['rels'] if r['type'] == 'CANDIDATE_PART' and r['b'] == 'P-RTN-FLT-25']
+    if checks:
+        rows.append(['3', 'P-RTN-FLT-25', 'note', ' · '.join(['확인 필요'] * len(checks)), '입력/자료/예비품_목록.csv · 구성요소_목록.csv 교체부품 칸'])
+    shared = sorted({owner[r['a']] for r in graph['rels'] if r['type'] == 'USES_PART' and r['b'] in ('P-FAN-BRG', 'P-BRG-6205')})   # 한 표기가 사내 품번 둘에 걸림
+    rows.append(['3', '6205-2RS', 'asset', ' · '.join(shared), '입력/자료/품번_교차표.csv 제조사 품번 6205-2RS 두 줄'])
+    users25 = sorted({owner[r['a']] for r in graph['rels'] if r['type'] == 'USES_PART' and r['b'] == 'P-RTN-FLT-25'})
+    rows.append(['3', 'P-RTN-FLT-25', 'asset', ' · '.join(users25) or '없음', '입력/자료/예비품_목록.csv · 구성요소_목록.csv 교체부품 칸'])
     rows.append(['3', 'P-PMP-SEAL-X', 'note', '원자료에 없는 품번', '원자료에 없음'])
     return rows
 

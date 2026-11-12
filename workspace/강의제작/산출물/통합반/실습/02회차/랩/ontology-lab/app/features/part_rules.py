@@ -1,12 +1,13 @@
 # 제공 빈 틀 — 교체 부품을 잇는 내 판단. 함수 머리와 설명은 그대로 두고 본문만 채웁니다.
 
 
-def find_part(cell, asset, component, spares, cross, same_component):
+def find_part(cell, asset, component, spares, cross, same_component, same_model):
     """components.csv의 교체부품 칸을 제공 코드가 바로 풀지 못한 행(빈칸 · 품명 · 짧은 표기)에서 부른다.
     cell = 교체부품 칸 글자(빈칸이면 ''), asset = {'설비코드', '모델'}, component = 내가 정한 구성 요소 이름,
     spares = spare_parts.csv 행들(dict), cross = part_aliases.csv 행들(dict),
-    same_component(원자료 이름) = 그 이름이 이 구성 요소와 같은 것인지(정한 이름 기준 — 그 모델의 구성 요소에 없는 이름은 원자료 이름 그대로 견줌) True · False.
-    돌려줄 것: 이을 사내 품번(str) 또는 None(잇지 않음)."""
+    same_component(원자료 이름) = 그 이름이 이 구성 요소와 같은 것인지(정한 이름 기준 — 그 모델의 구성 요소에 없는 이름은 원자료 이름 그대로 견줌) True · False,
+    same_model = 같은 모델의 다른 설비에서 같은 구성 요소의 교체부품 칸이 품번으로 풀린 것 [{'설비코드', '품번'}, ...](없으면 빈 목록).
+    돌려줄 것: 이을 사내 품번(str), None(잇지 않음), 또는 확인이 필요한 후보 사내 품번 목록(list — 「확인 필요」로 남김)."""
     raise NotImplementedError
 
 

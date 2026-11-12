@@ -321,8 +321,7 @@
     "HYD-03:TS1",
     "HYD-04:TS1",
     "HYD-05:T_OIL",
-    "HYD-06:T_OIL",
-    "HYD-07:TI-1"
+    "HYD-06:T_OIL"
    ],
    "quantity:TS2": [
     "HYD-01:TS2",
@@ -336,7 +335,8 @@
     "HYD-03:TS3",
     "HYD-04:TS3",
     "HYD-05:T_TANK",
-    "HYD-06:T_TANK"
+    "HYD-06:T_TANK",
+    "HYD-07:TI-1"
    ],
    "quantity:TS4": [
     "HYD-01:TS4",
@@ -1098,7 +1098,7 @@
     "measured"
    ],
    "HYD-07:TI-1": [
-    "quantity:TS1",
+    "quantity:TS3",
     "℃",
     45.0,
     null,
@@ -1789,8 +1789,7 @@
     "HYD-03:TS1",
     "HYD-04:TS1",
     "HYD-05:T_OIL",
-    "HYD-06:T_OIL",
-    "HYD-07:TI-1"
+    "HYD-06:T_OIL"
    ],
    "quantity:TS2": [
     "HYD-01:TS2",
@@ -1804,7 +1803,8 @@
     "HYD-03:TS3",
     "HYD-04:TS3",
     "HYD-05:T_TANK",
-    "HYD-06:T_TANK"
+    "HYD-06:T_TANK",
+    "HYD-07:TI-1"
    ],
    "quantity:TS4": [
     "HYD-01:TS4",
@@ -2566,7 +2566,7 @@
     "measured"
    ],
    "HYD-07:TI-1": [
-    "quantity:TS1",
+    "quantity:TS3",
     "℃",
     45.0,
     null,
@@ -3257,8 +3257,7 @@
     "HYD-03:TS1",
     "HYD-04:TS1",
     "HYD-05:T_OIL",
-    "HYD-06:T_OIL",
-    "HYD-07:TI-1"
+    "HYD-06:T_OIL"
    ],
    "quantity:TS2": [
     "HYD-01:TS2",
@@ -3272,7 +3271,8 @@
     "HYD-03:TS3",
     "HYD-04:TS3",
     "HYD-05:T_TANK",
-    "HYD-06:T_TANK"
+    "HYD-06:T_TANK",
+    "HYD-07:TI-1"
    ],
    "quantity:TS4": [
     "HYD-01:TS4",
@@ -4034,7 +4034,7 @@
     "measured"
    ],
    "HYD-07:TI-1": [
-    "quantity:TS1",
+    "quantity:TS3",
     "℃",
     45.0,
     null,
@@ -4744,8 +4744,7 @@
     "HYD-03:TS1",
     "HYD-04:TS1",
     "HYD-05:T_OIL",
-    "HYD-06:T_OIL",
-    "HYD-07:TI-1"
+    "HYD-06:T_OIL"
    ],
    "quantity:TS2": [
     "HYD-01:TS2",
@@ -4759,7 +4758,8 @@
     "HYD-03:TS3",
     "HYD-04:TS3",
     "HYD-05:T_TANK",
-    "HYD-06:T_TANK"
+    "HYD-06:T_TANK",
+    "HYD-07:TI-1"
    ],
    "quantity:TS4": [
     "HYD-01:TS4",
@@ -5521,7 +5521,7 @@
     "measured"
    ],
    "HYD-07:TI-1": [
-    "quantity:TS1",
+    "quantity:TS3",
     "℃",
     45.0,
     null,

@@ -4,40 +4,50 @@
  "offline": {
   "통합반": {
    "A": {
-    "nodes": 206,
+    "nodes": 200,
     "rels": 305,
     "mismatch": []
    },
    "B": {
-    "nodes": 206,
+    "nodes": 200,
     "rels": 306,
     "mismatch": []
    },
    "C": {
-    "nodes": 206,
+    "nodes": 200,
     "rels": 294,
+    "mismatch": []
+   },
+   "D": {
+    "nodes": 215,
+    "rels": 314,
+    "mismatch": []
+   },
+   "E": {
+    "nodes": 215,
+    "rels": 313,
     "mismatch": []
    }
   },
   "실전반": {
    "A": {
-    "nodes": 212,
-    "rels": 326,
+    "nodes": 221,
+    "rels": 334,
     "mismatch": []
    },
    "B": {
-    "nodes": 212,
-    "rels": 326,
+    "nodes": 221,
+    "rels": 334,
     "mismatch": []
    },
    "ㄴ": {
-    "nodes": 212,
-    "rels": 326,
+    "nodes": 221,
+    "rels": 334,
     "mismatch": []
    },
    "ㄷ": {
-    "nodes": 212,
-    "rels": 326,
+    "nodes": 221,
+    "rels": 334,
     "mismatch": []
    },
    "실습4": {
@@ -53,7 +63,8 @@
     },
     "출처 줄": {
      "folder": "workspace/강의제작/산출물/실전반/실습/02회차/랩/02일차_실습4_그래프구현과검증/입력/자료",
-     "mismatch": []
+     "mismatch": [],
+     "note": "실전반 실습4 옛 구조 입력 폴더가 없습니다(새 구조 graph-lab으로 바뀜) — 새 구조의 출처 줄 대조는 reference/practical2_project_trials.py가 한다"
     }
    }
   }
@@ -63,11 +74,11 @@
    "실습3": {
     "A": {
      "first": [
-      206,
+      200,
       305
      ],
      "second": [
-      206,
+      200,
       305
      ],
      "probe_mismatch": [],
@@ -127,15 +138,16 @@
        ]
       ]
      ],
-     "quantity_TS1_members_match": true
+     "quantity_of_HYD-01_TS1": "quantity:oil-temp",
+     "quantity_members_match": true
     },
     "B": {
      "first": [
-      206,
+      200,
       306
      ],
      "second": [
-      206,
+      200,
       306
      ],
      "probe_mismatch": [],
@@ -195,15 +207,16 @@
        ]
       ]
      ],
-     "quantity_TS1_members_match": true
+     "quantity_of_HYD-01_TS1": "quantity:oil-temp",
+     "quantity_members_match": true
     },
     "C": {
      "first": [
-      206,
+      200,
       294
      ],
      "second": [
-      206,
+      200,
       294
      ],
      "probe_mismatch": [],
@@ -263,12 +276,151 @@
        ]
       ]
      ],
-     "quantity_TS1_members_match": true
+     "quantity_of_HYD-01_TS1": "quantity:oil-temp",
+     "quantity_members_match": true
+    },
+    "D": {
+     "first": [
+      215,
+      314
+     ],
+     "second": [
+      215,
+      314
+     ],
+     "probe_mismatch": [],
+     "sensors_per_asset_via_component": [
+      [
+       "HYD-01",
+       18
+      ],
+      [
+       "HYD-02",
+       18
+      ],
+      [
+       "HYD-03",
+       18
+      ],
+      [
+       "HYD-04",
+       16
+      ],
+      [
+       "HYD-05",
+       9
+      ],
+      [
+       "HYD-06",
+       9
+      ],
+      [
+       "HYD-07",
+       2
+      ]
+     ],
+     "asset_level_sensors": [
+      [
+       "HYD-01",
+       [
+        "SE"
+       ]
+      ],
+      [
+       "HYD-02",
+       [
+        "SE"
+       ]
+      ],
+      [
+       "HYD-03",
+       [
+        "SE"
+       ]
+      ],
+      [
+       "HYD-04",
+       [
+        "SE"
+       ]
+      ]
+     ],
+     "quantity_of_HYD-01_TS1": "quantity:TS1",
+     "quantity_members_match": true
+    },
+    "E": {
+     "first": [
+      215,
+      313
+     ],
+     "second": [
+      215,
+      313
+     ],
+     "probe_mismatch": [],
+     "sensors_per_asset_via_component": [
+      [
+       "HYD-01",
+       18
+      ],
+      [
+       "HYD-02",
+       18
+      ],
+      [
+       "HYD-03",
+       18
+      ],
+      [
+       "HYD-04",
+       16
+      ],
+      [
+       "HYD-05",
+       9
+      ],
+      [
+       "HYD-06",
+       9
+      ],
+      [
+       "HYD-07",
+       2
+      ]
+     ],
+     "asset_level_sensors": [
+      [
+       "HYD-01",
+       [
+        "SE"
+       ]
+      ],
+      [
+       "HYD-02",
+       [
+        "SE"
+       ]
+      ],
+      [
+       "HYD-03",
+       [
+        "SE"
+       ]
+      ],
+      [
+       "HYD-04",
+       [
+        "SE"
+       ]
+      ]
+     ],
+     "quantity_of_HYD-01_TS1": "quantity:TS1",
+     "quantity_members_match": true
     }
    },
    "실습4": {
     "설비별 교체 부품": {
-     "input_branch": "A",
+     "input_branch": "E",
      "mismatch": [],
      "HYD-01": {
       "accumulator": "P-ACC-BLD",
@@ -316,26 +468,27 @@
      ]
     },
     "남김": {
-     "input_branch": "A",
+     "input_branch": "E",
      "first": [
-      206,
-      305
+      215,
+      313
      ],
      "changes_applied": [
       "HYD-02 이름·상태 수정",
       "HYD-07 이름·상태 수정",
       "HYD-03:pump-a 교체부품 확인",
+      "HYD-03:rtn-filter 교체부품 확인",
       "HYD-03:VS1 값 보완",
       "HYD-06:I_MOTOR 값 보완",
       "HYD-01:TS1 중복 행 삭제(같은 센서의 다른 행이 남아 대상 유지)"
      ],
      "after_changes": [
-      206,
-      305
+      215,
+      313
      ],
      "after_changes_again": [
-      206,
-      305
+      215,
+      313
      ],
      "change_checks": {
       "HYD-02 name": "HYD-02 2라인 2호 파워팩",
@@ -356,10 +509,6 @@
         "가동"
        ],
        [
-        "HYD-03",
-        "가동"
-       ],
-       [
         "HYD-04",
         "가동"
        ],
@@ -371,32 +520,38 @@
       "P-RTN-FLT 지금 가동 설비": [
        "HYD-01",
        "HYD-02",
-       "HYD-03",
        "HYD-04"
+      ],
+      "HYD-03:pump-a 교체 부품": [
+       [
+        "USES_PART",
+        "P-PMP-SEAL"
+       ]
       ]
      }
     },
     "삭제": {
-     "input_branch": "A",
+     "input_branch": "E",
      "first": [
-      206,
-      305
+      215,
+      313
      ],
      "changes_applied": [
       "HYD-02 이름·상태 수정",
       "HYD-07 하위 대상과 삭제",
       "HYD-03:pump-a 교체부품 확인",
+      "HYD-03:rtn-filter 교체부품 확인",
       "HYD-03:VS1 값 보완",
       "HYD-06:I_MOTOR 값 보완",
       "HYD-01:TS1 중복 행 삭제(같은 센서의 다른 행이 남아 대상 유지)"
      ],
      "after_changes": [
-      198,
-      292
+      206,
+      299
      ],
      "after_changes_again": [
-      198,
-      292
+      206,
+      299
      ],
      "change_checks": {
       "HYD-02 name": "HYD-02 2라인 2호 파워팩",
@@ -413,10 +568,6 @@
         "가동"
        ],
        [
-        "HYD-03",
-        "가동"
-       ],
-       [
         "HYD-04",
         "가동"
        ]
@@ -424,8 +575,13 @@
       "P-RTN-FLT 지금 가동 설비": [
        "HYD-01",
        "HYD-02",
-       "HYD-03",
        "HYD-04"
+      ],
+      "HYD-03:pump-a 교체 부품": [
+       [
+        "USES_PART",
+        "P-PMP-SEAL"
+       ]
       ]
      }
     }
@@ -435,12 +591,12 @@
    "실습3": {
     "A": {
      "first": [
-      212,
-      326
+      221,
+      334
      ],
      "second": [
-      212,
-      326
+      221,
+      334
      ],
      "probe_mismatch": [],
      "sensors_per_asset_via_component": [
@@ -499,7 +655,8 @@
        ]
       ]
      ],
-     "quantity_TS1_members_match": true,
+     "quantity_of_HYD-01_TS1": "quantity:TS1",
+     "quantity_members_match": true,
      "P-PMP-SEAL": {
       "part": "P-PMP-SEAL",
       "assets": [
@@ -540,12 +697,12 @@
     },
     "B": {
      "first": [
-      212,
-      326
+      221,
+      334
      ],
      "second": [
-      212,
-      326
+      221,
+      334
      ],
      "probe_mismatch": [],
      "sensors_per_asset_via_component": [
@@ -604,7 +761,8 @@
        ]
       ]
      ],
-     "quantity_TS1_members_match": true,
+     "quantity_of_HYD-01_TS1": "quantity:TS1",
+     "quantity_members_match": true,
      "P-PMP-SEAL": {
       "part": "P-PMP-SEAL",
       "assets": [
@@ -645,12 +803,12 @@
     },
     "ㄴ": {
      "first": [
-      212,
-      326
+      221,
+      334
      ],
      "second": [
-      212,
-      326
+      221,
+      334
      ],
      "probe_mismatch": [],
      "sensors_per_asset_via_component": [
@@ -709,7 +867,8 @@
        ]
       ]
      ],
-     "quantity_TS1_members_match": true,
+     "quantity_of_HYD-01_TS1": "quantity:TS1",
+     "quantity_members_match": true,
      "P-PMP-SEAL": {
       "part": "P-PMP-SEAL",
       "assets": [
@@ -753,12 +912,12 @@
     },
     "ㄷ": {
      "first": [
-      212,
-      326
+      221,
+      334
      ],
      "second": [
-      212,
-      326
+      221,
+      334
      ],
      "probe_mismatch": [],
      "sensors_per_asset_via_component": [
@@ -817,7 +976,8 @@
        ]
       ]
      ],
-     "quantity_TS1_members_match": true,
+     "quantity_of_HYD-01_TS1": "quantity:TS1",
+     "quantity_members_match": true,
      "P-PMP-SEAL": {
       "part": "P-PMP-SEAL",
       "assets": [
@@ -865,12 +1025,12 @@
      "input_branch": "ㄴ",
      "expected_key": "A",
      "first": [
-      212,
-      326
+      221,
+      334
      ],
      "second": [
-      212,
-      326
+      221,
+      334
      ],
      "probe_mismatch": [],
      "P-PMP-SEAL": {
@@ -914,12 +1074,12 @@
      "input_branch": "ㄴ",
      "expected_key": "ㄴ",
      "first": [
-      212,
-      326
+      221,
+      334
      ],
      "second": [
-      212,
-      326
+      221,
+      334
      ],
      "probe_mismatch": [],
      "P-PMP-SEAL": {

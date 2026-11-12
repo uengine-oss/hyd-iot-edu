@@ -6,7 +6,7 @@ JS = ('<script>document.querySelectorAll("div.tbl").forEach(function(d){var t=d.
       'function show(){var q=f?f.value.trim().toLowerCase():"",n=0;rs.forEach(function(r){var ok=(!q||r.textContent.toLowerCase().indexOf(q)>=0)&&(!only||r.dataset.st!=="같음");'
       'if(ok)n++;r.classList.toggle("hide",!ok||(!all&&n>' + str(FOLD) + '))})}'
       'if(f)f.addEventListener("input",show);if(m)m.addEventListener("click",function(){all=!all;m.textContent=all?"접기":"모두 보기";show()});'
-      'if(o)o.addEventListener("click",function(){only=!only;o.textContent=only?"모든 줄":"다른 줄만";show()});'
+      'if(o)o.addEventListener("click",function(){only=!only;o.textContent=only?"모든 줄 보기":"같음 줄 숨기기";show()});'
       '[].slice.call(t.tHead.rows[0].cells).forEach(function(th,i){th.addEventListener("click",function(){var up=th.dataset.up!=="1";th.dataset.up=up?"1":"0";'
       'rs.sort(function(a,b){var x=a.cells[i].textContent,y=b.cells[i].textContent,nx=parseFloat(x),ny=parseFloat(y);'
       'var c=(!isNaN(nx)&&!isNaN(ny))?nx-ny:x.localeCompare(y,"ko");return up?c:-c});rs.forEach(function(r){t.tBodies[0].appendChild(r)});show()})});show()})</script>')
@@ -34,7 +34,7 @@ def grid(columns, rows, marks=None, compare_rows=False):
     if big:
         tools += f'<button class="t more">모두 보기</button> <small>{len(rows)}행 가운데 {FOLD}행만 보임</small>'
     if compare_rows:
-        tools += '<button class="t only">다른 줄만</button>'
+        tools += '<button class="t only">같음 줄 숨기기</button>'
     return f'<div class="tbl">{tools}<table><thead>{head}</thead><tbody>{body}</tbody></table></div>'
 
 

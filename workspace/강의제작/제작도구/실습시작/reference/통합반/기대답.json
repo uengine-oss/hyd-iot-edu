@@ -225,40 +225,10 @@
     "HYD-03:CP",
     "HYD-04:CP"
    ],
-   "quantity:CW-FLOW": [
-    "HYD-04:FS2"
-   ],
-   "quantity:EPS1": [
-    "HYD-01:EPS1",
-    "HYD-02:EPS1",
-    "HYD-03:EPS1",
-    "HYD-04:EPS1"
-   ],
-   "quantity:FS1": [
-    "HYD-01:FS1",
-    "HYD-02:FS1",
-    "HYD-03:FS1",
-    "HYD-04:FS1",
-    "HYD-05:Q_MAIN",
-    "HYD-06:Q_MAIN"
-   ],
-   "quantity:FS2": [
-    "HYD-01:FS2",
-    "HYD-02:FS2",
-    "HYD-03:FS2"
-   ],
    "quantity:FanSpeedSP": [
     "HYD-01:FanSpeedSP",
     "HYD-02:FanSpeedSP",
     "HYD-03:FanSpeedSP"
-   ],
-   "quantity:I_MOTOR": [
-    "HYD-05:I_MOTOR",
-    "HYD-06:I_MOTOR"
-   ],
-   "quantity:LVL": [
-    "HYD-05:LVL_TANK",
-    "HYD-06:LVL_TANK"
    ],
    "quantity:LoadSP": [
     "HYD-01:LoadSP",
@@ -266,28 +236,26 @@
     "HYD-03:LoadSP",
     "HYD-04:LoadSP"
    ],
-   "quantity:PS1": [
-    "HYD-01:PS1",
-    "HYD-02:PS1",
-    "HYD-03:PS1",
-    "HYD-04:PS1",
-    "HYD-05:P_MAIN",
-    "HYD-06:P_MAIN",
-    "HYD-07:PI-1"
+   "quantity:SE": [
+    "HYD-01:SE",
+    "HYD-02:SE",
+    "HYD-03:SE",
+    "HYD-04:SE"
    ],
-   "quantity:PS2": [
-    "HYD-01:PS2",
-    "HYD-02:PS2",
-    "HYD-03:PS2",
-    "HYD-04:PS2"
+   "quantity:cabinet-temp": [
+    "HYD-01:TS4",
+    "HYD-02:TS4",
+    "HYD-03:TS4",
+    "HYD-04:TS4"
    ],
-   "quantity:PS3": [
-    "HYD-01:PS3",
-    "HYD-02:PS3",
-    "HYD-03:PS3",
-    "HYD-04:PS3"
+   "quantity:coolant-flow": [
+    "HYD-04:FS2"
    ],
-   "quantity:PS4": [
+   "quantity:current": [
+    "HYD-05:I_MOTOR",
+    "HYD-06:I_MOTOR"
+   ],
+   "quantity:dp": [
     "HYD-01:PS4",
     "HYD-02:PS4",
     "HYD-03:PS4",
@@ -295,56 +263,74 @@
     "HYD-05:DP_FILTER",
     "HYD-06:DP_FILTER"
    ],
-   "quantity:PS5": [
+   "quantity:level": [
+    "HYD-05:LVL_TANK",
+    "HYD-06:LVL_TANK"
+   ],
+   "quantity:oil-flow": [
+    "HYD-01:FS1",
+    "HYD-01:FS2",
+    "HYD-02:FS1",
+    "HYD-02:FS2",
+    "HYD-03:FS1",
+    "HYD-03:FS2",
+    "HYD-04:FS1",
+    "HYD-05:Q_MAIN",
+    "HYD-06:Q_MAIN"
+   ],
+   "quantity:oil-pressure": [
+    "HYD-01:PS1",
+    "HYD-01:PS2",
+    "HYD-01:PS3",
     "HYD-01:PS5",
-    "HYD-02:PS5",
-    "HYD-03:PS5",
-    "HYD-04:PS5",
-    "HYD-05:P_PILOT",
-    "HYD-06:P_PILOT"
-   ],
-   "quantity:PS6": [
     "HYD-01:PS6",
+    "HYD-02:PS1",
+    "HYD-02:PS2",
+    "HYD-02:PS3",
+    "HYD-02:PS5",
     "HYD-02:PS6",
+    "HYD-03:PS1",
+    "HYD-03:PS2",
+    "HYD-03:PS3",
+    "HYD-03:PS5",
     "HYD-03:PS6",
-    "HYD-04:PS6"
+    "HYD-04:PS1",
+    "HYD-04:PS2",
+    "HYD-04:PS3",
+    "HYD-04:PS5",
+    "HYD-04:PS6",
+    "HYD-05:P_MAIN",
+    "HYD-05:P_PILOT",
+    "HYD-06:P_MAIN",
+    "HYD-06:P_PILOT",
+    "HYD-07:PI-1"
    ],
-   "quantity:SE": [
-    "HYD-01:SE",
-    "HYD-02:SE",
-    "HYD-03:SE",
-    "HYD-04:SE"
-   ],
-   "quantity:TS1": [
+   "quantity:oil-temp": [
     "HYD-01:TS1",
+    "HYD-01:TS2",
+    "HYD-01:TS3",
     "HYD-02:TS1",
+    "HYD-02:TS2",
+    "HYD-02:TS3",
     "HYD-03:TS1",
+    "HYD-03:TS2",
+    "HYD-03:TS3",
     "HYD-04:TS1",
+    "HYD-04:TS2",
+    "HYD-04:TS3",
     "HYD-05:T_OIL",
+    "HYD-05:T_TANK",
     "HYD-06:T_OIL",
+    "HYD-06:T_TANK",
     "HYD-07:TI-1"
    ],
-   "quantity:TS2": [
-    "HYD-01:TS2",
-    "HYD-02:TS2",
-    "HYD-03:TS2",
-    "HYD-04:TS2"
+   "quantity:power": [
+    "HYD-01:EPS1",
+    "HYD-02:EPS1",
+    "HYD-03:EPS1",
+    "HYD-04:EPS1"
    ],
-   "quantity:TS3": [
-    "HYD-01:TS3",
-    "HYD-02:TS3",
-    "HYD-03:TS3",
-    "HYD-04:TS3",
-    "HYD-05:T_TANK",
-    "HYD-06:T_TANK"
-   ],
-   "quantity:TS4": [
-    "HYD-01:TS4",
-    "HYD-02:TS4",
-    "HYD-03:TS4",
-    "HYD-04:TS4"
-   ],
-   "quantity:VS1": [
+   "quantity:vibration": [
     "HYD-01:VS1",
     "HYD-02:VS1",
     "HYD-03:VS1",
@@ -370,7 +356,7 @@
     "derived"
    ],
    "HYD-01:EPS1": [
-    "quantity:EPS1",
+    "quantity:power",
     "kW",
     2.8,
     null,
@@ -378,7 +364,7 @@
     "measured"
    ],
    "HYD-01:FS1": [
-    "quantity:FS1",
+    "quantity:oil-flow",
     "L/min",
     9.0,
     null,
@@ -386,7 +372,7 @@
     "measured"
    ],
    "HYD-01:FS2": [
-    "quantity:FS2",
+    "quantity:oil-flow",
     "L/min",
     10.0,
     null,
@@ -410,7 +396,7 @@
     "setpoint"
    ],
    "HYD-01:PS1": [
-    "quantity:PS1",
+    "quantity:oil-pressure",
     "bar",
     182.0,
     130.0,
@@ -418,7 +404,7 @@
     "measured"
    ],
    "HYD-01:PS2": [
-    "quantity:PS2",
+    "quantity:oil-pressure",
     "bar",
     150.0,
     null,
@@ -426,7 +412,7 @@
     "measured"
    ],
    "HYD-01:PS3": [
-    "quantity:PS3",
+    "quantity:oil-pressure",
     "bar",
     2.0,
     null,
@@ -434,7 +420,7 @@
     "measured"
    ],
    "HYD-01:PS4": [
-    "quantity:PS4",
+    "quantity:dp",
     "bar",
     1.5,
     null,
@@ -442,7 +428,7 @@
     "measured"
    ],
    "HYD-01:PS5": [
-    "quantity:PS5",
+    "quantity:oil-pressure",
     "bar",
     8.5,
     null,
@@ -450,7 +436,7 @@
     "measured"
    ],
    "HYD-01:PS6": [
-    "quantity:PS6",
+    "quantity:oil-pressure",
     "bar",
     8.2,
     null,
@@ -466,7 +452,7 @@
     "derived"
    ],
    "HYD-01:TS1": [
-    "quantity:TS1",
+    "quantity:oil-temp",
     "℃",
     48.0,
     65.0,
@@ -474,7 +460,7 @@
     "measured"
    ],
    "HYD-01:TS2": [
-    "quantity:TS2",
+    "quantity:oil-temp",
     "℃",
     44.0,
     null,
@@ -482,7 +468,7 @@
     "measured"
    ],
    "HYD-01:TS3": [
-    "quantity:TS3",
+    "quantity:oil-temp",
     "℃",
     40.0,
     null,
@@ -490,7 +476,7 @@
     "measured"
    ],
    "HYD-01:TS4": [
-    "quantity:TS4",
+    "quantity:cabinet-temp",
     "℃",
     42.0,
     null,
@@ -498,7 +484,7 @@
     "measured"
    ],
    "HYD-01:VS1": [
-    "quantity:VS1",
+    "quantity:vibration",
     "mm/s",
     0.6,
     2.0,
@@ -522,7 +508,7 @@
     "derived"
    ],
    "HYD-02:EPS1": [
-    "quantity:EPS1",
+    "quantity:power",
     "kW",
     2.8,
     null,
@@ -530,7 +516,7 @@
     "measured"
    ],
    "HYD-02:FS1": [
-    "quantity:FS1",
+    "quantity:oil-flow",
     "L/min",
     9.0,
     null,
@@ -538,7 +524,7 @@
     "measured"
    ],
    "HYD-02:FS2": [
-    "quantity:FS2",
+    "quantity:oil-flow",
     "L/min",
     10.0,
     null,
@@ -562,7 +548,7 @@
     "setpoint"
    ],
    "HYD-02:PS1": [
-    "quantity:PS1",
+    "quantity:oil-pressure",
     "bar",
     182.0,
     130.0,
@@ -570,7 +556,7 @@
     "measured"
    ],
    "HYD-02:PS2": [
-    "quantity:PS2",
+    "quantity:oil-pressure",
     "bar",
     150.0,
     null,
@@ -578,7 +564,7 @@
     "measured"
    ],
    "HYD-02:PS3": [
-    "quantity:PS3",
+    "quantity:oil-pressure",
     "bar",
     2.0,
     null,
@@ -586,7 +572,7 @@
     "measured"
    ],
    "HYD-02:PS4": [
-    "quantity:PS4",
+    "quantity:dp",
     "bar",
     1.5,
     null,
@@ -594,7 +580,7 @@
     "measured"
    ],
    "HYD-02:PS5": [
-    "quantity:PS5",
+    "quantity:oil-pressure",
     "bar",
     8.5,
     null,
@@ -602,7 +588,7 @@
     "measured"
    ],
    "HYD-02:PS6": [
-    "quantity:PS6",
+    "quantity:oil-pressure",
     "bar",
     8.2,
     null,
@@ -618,7 +604,7 @@
     "derived"
    ],
    "HYD-02:TS1": [
-    "quantity:TS1",
+    "quantity:oil-temp",
     "℃",
     48.0,
     65.0,
@@ -626,7 +612,7 @@
     "measured"
    ],
    "HYD-02:TS2": [
-    "quantity:TS2",
+    "quantity:oil-temp",
     "℃",
     44.0,
     null,
@@ -634,7 +620,7 @@
     "measured"
    ],
    "HYD-02:TS3": [
-    "quantity:TS3",
+    "quantity:oil-temp",
     "℃",
     40.0,
     null,
@@ -642,7 +628,7 @@
     "measured"
    ],
    "HYD-02:TS4": [
-    "quantity:TS4",
+    "quantity:cabinet-temp",
     "℃",
     42.0,
     null,
@@ -650,7 +636,7 @@
     "measured"
    ],
    "HYD-02:VS1": [
-    "quantity:VS1",
+    "quantity:vibration",
     "mm/s",
     0.6,
     2.0,
@@ -674,7 +660,7 @@
     "derived"
    ],
    "HYD-03:EPS1": [
-    "quantity:EPS1",
+    "quantity:power",
     "kW",
     2.8,
     null,
@@ -682,7 +668,7 @@
     "measured"
    ],
    "HYD-03:FS1": [
-    "quantity:FS1",
+    "quantity:oil-flow",
     "L/min",
     9.0,
     null,
@@ -690,7 +676,7 @@
     "measured"
    ],
    "HYD-03:FS2": [
-    "quantity:FS2",
+    "quantity:oil-flow",
     "L/min",
     10.0,
     null,
@@ -714,7 +700,7 @@
     "setpoint"
    ],
    "HYD-03:PS1": [
-    "quantity:PS1",
+    "quantity:oil-pressure",
     "bar",
     182.0,
     130.0,
@@ -722,7 +708,7 @@
     "measured"
    ],
    "HYD-03:PS2": [
-    "quantity:PS2",
+    "quantity:oil-pressure",
     "bar",
     150.0,
     null,
@@ -730,7 +716,7 @@
     "measured"
    ],
    "HYD-03:PS3": [
-    "quantity:PS3",
+    "quantity:oil-pressure",
     "bar",
     2.0,
     null,
@@ -738,7 +724,7 @@
     "measured"
    ],
    "HYD-03:PS4": [
-    "quantity:PS4",
+    "quantity:dp",
     "bar",
     1.5,
     null,
@@ -746,7 +732,7 @@
     "measured"
    ],
    "HYD-03:PS5": [
-    "quantity:PS5",
+    "quantity:oil-pressure",
     "bar",
     8.5,
     null,
@@ -754,7 +740,7 @@
     "measured"
    ],
    "HYD-03:PS6": [
-    "quantity:PS6",
+    "quantity:oil-pressure",
     "bar",
     8.2,
     null,
@@ -770,7 +756,7 @@
     "derived"
    ],
    "HYD-03:TS1": [
-    "quantity:TS1",
+    "quantity:oil-temp",
     "℃",
     48.0,
     65.0,
@@ -778,7 +764,7 @@
     "measured"
    ],
    "HYD-03:TS2": [
-    "quantity:TS2",
+    "quantity:oil-temp",
     "℃",
     44.0,
     null,
@@ -786,7 +772,7 @@
     "measured"
    ],
    "HYD-03:TS3": [
-    "quantity:TS3",
+    "quantity:oil-temp",
     "℃",
     40.0,
     null,
@@ -794,7 +780,7 @@
     "measured"
    ],
    "HYD-03:TS4": [
-    "quantity:TS4",
+    "quantity:cabinet-temp",
     "℃",
     42.0,
     null,
@@ -802,7 +788,7 @@
     "measured"
    ],
    "HYD-03:VS1": [
-    "quantity:VS1",
+    "quantity:vibration",
     "mm/s",
     0.6,
     2.0,
@@ -826,7 +812,7 @@
     "derived"
    ],
    "HYD-04:EPS1": [
-    "quantity:EPS1",
+    "quantity:power",
     "kW",
     3.1,
     null,
@@ -834,7 +820,7 @@
     "measured"
    ],
    "HYD-04:FS1": [
-    "quantity:FS1",
+    "quantity:oil-flow",
     "L/min",
     11.0,
     null,
@@ -842,7 +828,7 @@
     "measured"
    ],
    "HYD-04:FS2": [
-    "quantity:CW-FLOW",
+    "quantity:coolant-flow",
     "L/min",
     18.0,
     null,
@@ -858,7 +844,7 @@
     "setpoint"
    ],
    "HYD-04:PS1": [
-    "quantity:PS1",
+    "quantity:oil-pressure",
     "bar",
     190.0,
     140.0,
@@ -866,7 +852,7 @@
     "measured"
    ],
    "HYD-04:PS2": [
-    "quantity:PS2",
+    "quantity:oil-pressure",
     "bar",
     150.0,
     null,
@@ -874,7 +860,7 @@
     "measured"
    ],
    "HYD-04:PS3": [
-    "quantity:PS3",
+    "quantity:oil-pressure",
     "bar",
     2.0,
     null,
@@ -882,7 +868,7 @@
     "measured"
    ],
    "HYD-04:PS4": [
-    "quantity:PS4",
+    "quantity:dp",
     "bar",
     1.5,
     null,
@@ -890,7 +876,7 @@
     "measured"
    ],
    "HYD-04:PS5": [
-    "quantity:PS5",
+    "quantity:oil-pressure",
     "bar",
     8.5,
     null,
@@ -898,7 +884,7 @@
     "measured"
    ],
    "HYD-04:PS6": [
-    "quantity:PS6",
+    "quantity:oil-pressure",
     "bar",
     8.2,
     null,
@@ -914,7 +900,7 @@
     "derived"
    ],
    "HYD-04:TS1": [
-    "quantity:TS1",
+    "quantity:oil-temp",
     "℃",
     46.0,
     65.0,
@@ -922,7 +908,7 @@
     "measured"
    ],
    "HYD-04:TS2": [
-    "quantity:TS2",
+    "quantity:oil-temp",
     "℃",
     44.0,
     null,
@@ -930,7 +916,7 @@
     "measured"
    ],
    "HYD-04:TS3": [
-    "quantity:TS3",
+    "quantity:oil-temp",
     "℃",
     40.0,
     null,
@@ -938,7 +924,7 @@
     "measured"
    ],
    "HYD-04:TS4": [
-    "quantity:TS4",
+    "quantity:cabinet-temp",
     "℃",
     42.0,
     null,
@@ -946,7 +932,7 @@
     "measured"
    ],
    "HYD-05:DP_FILTER": [
-    "quantity:PS4",
+    "quantity:dp",
     "bar",
     0.8,
     null,
@@ -954,7 +940,7 @@
     "measured"
    ],
    "HYD-05:I_MOTOR": [
-    "quantity:I_MOTOR",
+    "quantity:current",
     "A",
     18.5,
     25.0,
@@ -962,7 +948,7 @@
     "measured"
    ],
    "HYD-05:LVL_TANK": [
-    "quantity:LVL",
+    "quantity:level",
     "%",
     75.0,
     40.0,
@@ -970,7 +956,7 @@
     "measured"
    ],
    "HYD-05:P_MAIN": [
-    "quantity:PS1",
+    "quantity:oil-pressure",
     "bar",
     140.0,
     100.0,
@@ -978,7 +964,7 @@
     "measured"
    ],
    "HYD-05:P_PILOT": [
-    "quantity:PS5",
+    "quantity:oil-pressure",
     "bar",
     7.5,
     null,
@@ -986,7 +972,7 @@
     "measured"
    ],
    "HYD-05:Q_MAIN": [
-    "quantity:FS1",
+    "quantity:oil-flow",
     "L/min",
     12.0,
     null,
@@ -994,7 +980,7 @@
     "measured"
    ],
    "HYD-05:T_OIL": [
-    "quantity:TS1",
+    "quantity:oil-temp",
     "℃",
     50.0,
     70.0,
@@ -1002,7 +988,7 @@
     "measured"
    ],
    "HYD-05:T_TANK": [
-    "quantity:TS3",
+    "quantity:oil-temp",
     "℃",
     42.0,
     null,
@@ -1010,7 +996,7 @@
     "measured"
    ],
    "HYD-05:V_FAN": [
-    "quantity:VS1",
+    "quantity:vibration",
     "mm/s",
     0.8,
     2.8,
@@ -1018,7 +1004,7 @@
     "measured"
    ],
    "HYD-06:DP_FILTER": [
-    "quantity:PS4",
+    "quantity:dp",
     "bar",
     0.8,
     null,
@@ -1026,7 +1012,7 @@
     "measured"
    ],
    "HYD-06:I_MOTOR": [
-    "quantity:I_MOTOR",
+    "quantity:current",
     "A",
     null,
     25.0,
@@ -1034,7 +1020,7 @@
     "measured"
    ],
    "HYD-06:LVL_TANK": [
-    "quantity:LVL",
+    "quantity:level",
     "%",
     75.0,
     40.0,
@@ -1042,7 +1028,7 @@
     "measured"
    ],
    "HYD-06:P_MAIN": [
-    "quantity:PS1",
+    "quantity:oil-pressure",
     "bar",
     140.0,
     100.0,
@@ -1050,7 +1036,7 @@
     "measured"
    ],
    "HYD-06:P_PILOT": [
-    "quantity:PS5",
+    "quantity:oil-pressure",
     "bar",
     7.5,
     null,
@@ -1058,7 +1044,7 @@
     "measured"
    ],
    "HYD-06:Q_MAIN": [
-    "quantity:FS1",
+    "quantity:oil-flow",
     "L/min",
     12.0,
     null,
@@ -1066,7 +1052,7 @@
     "measured"
    ],
    "HYD-06:T_OIL": [
-    "quantity:TS1",
+    "quantity:oil-temp",
     "℃",
     50.0,
     70.0,
@@ -1074,7 +1060,7 @@
     "measured"
    ],
    "HYD-06:T_TANK": [
-    "quantity:TS3",
+    "quantity:oil-temp",
     "℃",
     42.0,
     null,
@@ -1082,7 +1068,7 @@
     "measured"
    ],
    "HYD-06:V_FAN": [
-    "quantity:VS1",
+    "quantity:vibration",
     "mm/s",
     0.8,
     2.8,
@@ -1090,7 +1076,7 @@
     "measured"
    ],
    "HYD-07:PI-1": [
-    "quantity:PS1",
+    "quantity:oil-pressure",
     "bar",
     140.0,
     null,
@@ -1098,7 +1084,7 @@
     "measured"
    ],
    "HYD-07:TI-1": [
-    "quantity:TS1",
+    "quantity:oil-temp",
     "℃",
     45.0,
     null,
@@ -1169,6 +1155,11 @@
      "HYD-04:rtn-filter",
      "HYD-07:rtn-filter"
     ]
+   },
+   "P-RTN-FLT-25": {
+    "part": "P-RTN-FLT-25",
+    "assets": [],
+    "components": []
    },
    "P-HYD-OIL": {
     "part": "P-HYD-OIL",
@@ -1251,6 +1242,7 @@
     ]
    }
   },
+  "units": {},
   "parts_by_asset": {
    "HYD-01": {
     "accumulator": "P-ACC-BLD",
@@ -1562,40 +1554,10 @@
     "HYD-03:CP",
     "HYD-04:CP"
    ],
-   "quantity:CW-FLOW": [
-    "HYD-04:FS2"
-   ],
-   "quantity:EPS1": [
-    "HYD-01:EPS1",
-    "HYD-02:EPS1",
-    "HYD-03:EPS1",
-    "HYD-04:EPS1"
-   ],
-   "quantity:FS1": [
-    "HYD-01:FS1",
-    "HYD-02:FS1",
-    "HYD-03:FS1",
-    "HYD-04:FS1",
-    "HYD-05:Q_MAIN",
-    "HYD-06:Q_MAIN"
-   ],
-   "quantity:FS2": [
-    "HYD-01:FS2",
-    "HYD-02:FS2",
-    "HYD-03:FS2"
-   ],
    "quantity:FanSpeedSP": [
     "HYD-01:FanSpeedSP",
     "HYD-02:FanSpeedSP",
     "HYD-03:FanSpeedSP"
-   ],
-   "quantity:I_MOTOR": [
-    "HYD-05:I_MOTOR",
-    "HYD-06:I_MOTOR"
-   ],
-   "quantity:LVL": [
-    "HYD-05:LVL_TANK",
-    "HYD-06:LVL_TANK"
    ],
    "quantity:LoadSP": [
     "HYD-01:LoadSP",
@@ -1603,28 +1565,26 @@
     "HYD-03:LoadSP",
     "HYD-04:LoadSP"
    ],
-   "quantity:PS1": [
-    "HYD-01:PS1",
-    "HYD-02:PS1",
-    "HYD-03:PS1",
-    "HYD-04:PS1",
-    "HYD-05:P_MAIN",
-    "HYD-06:P_MAIN",
-    "HYD-07:PI-1"
+   "quantity:SE": [
+    "HYD-01:SE",
+    "HYD-02:SE",
+    "HYD-03:SE",
+    "HYD-04:SE"
    ],
-   "quantity:PS2": [
-    "HYD-01:PS2",
-    "HYD-02:PS2",
-    "HYD-03:PS2",
-    "HYD-04:PS2"
+   "quantity:cabinet-temp": [
+    "HYD-01:TS4",
+    "HYD-02:TS4",
+    "HYD-03:TS4",
+    "HYD-04:TS4"
    ],
-   "quantity:PS3": [
-    "HYD-01:PS3",
-    "HYD-02:PS3",
-    "HYD-03:PS3",
-    "HYD-04:PS3"
+   "quantity:coolant-flow": [
+    "HYD-04:FS2"
    ],
-   "quantity:PS4": [
+   "quantity:current": [
+    "HYD-05:I_MOTOR",
+    "HYD-06:I_MOTOR"
+   ],
+   "quantity:dp": [
     "HYD-01:PS4",
     "HYD-02:PS4",
     "HYD-03:PS4",
@@ -1632,56 +1592,74 @@
     "HYD-05:DP_FILTER",
     "HYD-06:DP_FILTER"
    ],
-   "quantity:PS5": [
+   "quantity:level": [
+    "HYD-05:LVL_TANK",
+    "HYD-06:LVL_TANK"
+   ],
+   "quantity:oil-flow": [
+    "HYD-01:FS1",
+    "HYD-01:FS2",
+    "HYD-02:FS1",
+    "HYD-02:FS2",
+    "HYD-03:FS1",
+    "HYD-03:FS2",
+    "HYD-04:FS1",
+    "HYD-05:Q_MAIN",
+    "HYD-06:Q_MAIN"
+   ],
+   "quantity:oil-pressure": [
+    "HYD-01:PS1",
+    "HYD-01:PS2",
+    "HYD-01:PS3",
     "HYD-01:PS5",
-    "HYD-02:PS5",
-    "HYD-03:PS5",
-    "HYD-04:PS5",
-    "HYD-05:P_PILOT",
-    "HYD-06:P_PILOT"
-   ],
-   "quantity:PS6": [
     "HYD-01:PS6",
+    "HYD-02:PS1",
+    "HYD-02:PS2",
+    "HYD-02:PS3",
+    "HYD-02:PS5",
     "HYD-02:PS6",
+    "HYD-03:PS1",
+    "HYD-03:PS2",
+    "HYD-03:PS3",
+    "HYD-03:PS5",
     "HYD-03:PS6",
-    "HYD-04:PS6"
+    "HYD-04:PS1",
+    "HYD-04:PS2",
+    "HYD-04:PS3",
+    "HYD-04:PS5",
+    "HYD-04:PS6",
+    "HYD-05:P_MAIN",
+    "HYD-05:P_PILOT",
+    "HYD-06:P_MAIN",
+    "HYD-06:P_PILOT",
+    "HYD-07:PI-1"
    ],
-   "quantity:SE": [
-    "HYD-01:SE",
-    "HYD-02:SE",
-    "HYD-03:SE",
-    "HYD-04:SE"
-   ],
-   "quantity:TS1": [
+   "quantity:oil-temp": [
     "HYD-01:TS1",
+    "HYD-01:TS2",
+    "HYD-01:TS3",
     "HYD-02:TS1",
+    "HYD-02:TS2",
+    "HYD-02:TS3",
     "HYD-03:TS1",
+    "HYD-03:TS2",
+    "HYD-03:TS3",
     "HYD-04:TS1",
+    "HYD-04:TS2",
+    "HYD-04:TS3",
     "HYD-05:T_OIL",
+    "HYD-05:T_TANK",
     "HYD-06:T_OIL",
+    "HYD-06:T_TANK",
     "HYD-07:TI-1"
    ],
-   "quantity:TS2": [
-    "HYD-01:TS2",
-    "HYD-02:TS2",
-    "HYD-03:TS2",
-    "HYD-04:TS2"
+   "quantity:power": [
+    "HYD-01:EPS1",
+    "HYD-02:EPS1",
+    "HYD-03:EPS1",
+    "HYD-04:EPS1"
    ],
-   "quantity:TS3": [
-    "HYD-01:TS3",
-    "HYD-02:TS3",
-    "HYD-03:TS3",
-    "HYD-04:TS3",
-    "HYD-05:T_TANK",
-    "HYD-06:T_TANK"
-   ],
-   "quantity:TS4": [
-    "HYD-01:TS4",
-    "HYD-02:TS4",
-    "HYD-03:TS4",
-    "HYD-04:TS4"
-   ],
-   "quantity:VS1": [
+   "quantity:vibration": [
     "HYD-01:VS1",
     "HYD-02:VS1",
     "HYD-03:VS1",
@@ -1707,7 +1685,7 @@
     "derived"
    ],
    "HYD-01:EPS1": [
-    "quantity:EPS1",
+    "quantity:power",
     "kW",
     2.8,
     null,
@@ -1715,7 +1693,7 @@
     "measured"
    ],
    "HYD-01:FS1": [
-    "quantity:FS1",
+    "quantity:oil-flow",
     "L/min",
     9.0,
     null,
@@ -1723,7 +1701,7 @@
     "measured"
    ],
    "HYD-01:FS2": [
-    "quantity:FS2",
+    "quantity:oil-flow",
     "L/min",
     10.0,
     null,
@@ -1747,7 +1725,7 @@
     "setpoint"
    ],
    "HYD-01:PS1": [
-    "quantity:PS1",
+    "quantity:oil-pressure",
     "bar",
     182.0,
     130.0,
@@ -1755,7 +1733,7 @@
     "measured"
    ],
    "HYD-01:PS2": [
-    "quantity:PS2",
+    "quantity:oil-pressure",
     "bar",
     150.0,
     null,
@@ -1763,7 +1741,7 @@
     "measured"
    ],
    "HYD-01:PS3": [
-    "quantity:PS3",
+    "quantity:oil-pressure",
     "bar",
     2.0,
     null,
@@ -1771,7 +1749,7 @@
     "measured"
    ],
    "HYD-01:PS4": [
-    "quantity:PS4",
+    "quantity:dp",
     "bar",
     1.5,
     null,
@@ -1779,7 +1757,7 @@
     "measured"
    ],
    "HYD-01:PS5": [
-    "quantity:PS5",
+    "quantity:oil-pressure",
     "bar",
     8.5,
     null,
@@ -1787,7 +1765,7 @@
     "measured"
    ],
    "HYD-01:PS6": [
-    "quantity:PS6",
+    "quantity:oil-pressure",
     "bar",
     8.2,
     null,
@@ -1803,7 +1781,7 @@
     "derived"
    ],
    "HYD-01:TS1": [
-    "quantity:TS1",
+    "quantity:oil-temp",
     "℃",
     48.0,
     65.0,
@@ -1811,7 +1789,7 @@
     "measured"
    ],
    "HYD-01:TS2": [
-    "quantity:TS2",
+    "quantity:oil-temp",
     "℃",
     44.0,
     null,
@@ -1819,7 +1797,7 @@
     "measured"
    ],
    "HYD-01:TS3": [
-    "quantity:TS3",
+    "quantity:oil-temp",
     "℃",
     40.0,
     null,
@@ -1827,7 +1805,7 @@
     "measured"
    ],
    "HYD-01:TS4": [
-    "quantity:TS4",
+    "quantity:cabinet-temp",
     "℃",
     42.0,
     null,
@@ -1835,7 +1813,7 @@
     "measured"
    ],
    "HYD-01:VS1": [
-    "quantity:VS1",
+    "quantity:vibration",
     "mm/s",
     0.6,
     2.0,
@@ -1859,7 +1837,7 @@
     "derived"
    ],
    "HYD-02:EPS1": [
-    "quantity:EPS1",
+    "quantity:power",
     "kW",
     2.8,
     null,
@@ -1867,7 +1845,7 @@
     "measured"
    ],
    "HYD-02:FS1": [
-    "quantity:FS1",
+    "quantity:oil-flow",
     "L/min",
     9.0,
     null,
@@ -1875,7 +1853,7 @@
     "measured"
    ],
    "HYD-02:FS2": [
-    "quantity:FS2",
+    "quantity:oil-flow",
     "L/min",
     10.0,
     null,
@@ -1899,7 +1877,7 @@
     "setpoint"
    ],
    "HYD-02:PS1": [
-    "quantity:PS1",
+    "quantity:oil-pressure",
     "bar",
     182.0,
     130.0,
@@ -1907,7 +1885,7 @@
     "measured"
    ],
    "HYD-02:PS2": [
-    "quantity:PS2",
+    "quantity:oil-pressure",
     "bar",
     150.0,
     null,
@@ -1915,7 +1893,7 @@
     "measured"
    ],
    "HYD-02:PS3": [
-    "quantity:PS3",
+    "quantity:oil-pressure",
     "bar",
     2.0,
     null,
@@ -1923,7 +1901,7 @@
     "measured"
    ],
    "HYD-02:PS4": [
-    "quantity:PS4",
+    "quantity:dp",
     "bar",
     1.5,
     null,
@@ -1931,7 +1909,7 @@
     "measured"
    ],
    "HYD-02:PS5": [
-    "quantity:PS5",
+    "quantity:oil-pressure",
     "bar",
     8.5,
     null,
@@ -1939,7 +1917,7 @@
     "measured"
    ],
    "HYD-02:PS6": [
-    "quantity:PS6",
+    "quantity:oil-pressure",
     "bar",
     8.2,
     null,
@@ -1955,7 +1933,7 @@
     "derived"
    ],
    "HYD-02:TS1": [
-    "quantity:TS1",
+    "quantity:oil-temp",
     "℃",
     48.0,
     65.0,
@@ -1963,7 +1941,7 @@
     "measured"
    ],
    "HYD-02:TS2": [
-    "quantity:TS2",
+    "quantity:oil-temp",
     "℃",
     44.0,
     null,
@@ -1971,7 +1949,7 @@
     "measured"
    ],
    "HYD-02:TS3": [
-    "quantity:TS3",
+    "quantity:oil-temp",
     "℃",
     40.0,
     null,
@@ -1979,7 +1957,7 @@
     "measured"
    ],
    "HYD-02:TS4": [
-    "quantity:TS4",
+    "quantity:cabinet-temp",
     "℃",
     42.0,
     null,
@@ -1987,7 +1965,7 @@
     "measured"
    ],
    "HYD-02:VS1": [
-    "quantity:VS1",
+    "quantity:vibration",
     "mm/s",
     0.6,
     2.0,
@@ -2011,7 +1989,7 @@
     "derived"
    ],
    "HYD-03:EPS1": [
-    "quantity:EPS1",
+    "quantity:power",
     "kW",
     2.8,
     null,
@@ -2019,7 +1997,7 @@
     "measured"
    ],
    "HYD-03:FS1": [
-    "quantity:FS1",
+    "quantity:oil-flow",
     "L/min",
     9.0,
     null,
@@ -2027,7 +2005,7 @@
     "measured"
    ],
    "HYD-03:FS2": [
-    "quantity:FS2",
+    "quantity:oil-flow",
     "L/min",
     10.0,
     null,
@@ -2051,7 +2029,7 @@
     "setpoint"
    ],
    "HYD-03:PS1": [
-    "quantity:PS1",
+    "quantity:oil-pressure",
     "bar",
     182.0,
     130.0,
@@ -2059,7 +2037,7 @@
     "measured"
    ],
    "HYD-03:PS2": [
-    "quantity:PS2",
+    "quantity:oil-pressure",
     "bar",
     150.0,
     null,
@@ -2067,7 +2045,7 @@
     "measured"
    ],
    "HYD-03:PS3": [
-    "quantity:PS3",
+    "quantity:oil-pressure",
     "bar",
     2.0,
     null,
@@ -2075,7 +2053,7 @@
     "measured"
    ],
    "HYD-03:PS4": [
-    "quantity:PS4",
+    "quantity:dp",
     "bar",
     1.5,
     null,
@@ -2083,7 +2061,7 @@
     "measured"
    ],
    "HYD-03:PS5": [
-    "quantity:PS5",
+    "quantity:oil-pressure",
     "bar",
     8.5,
     null,
@@ -2091,7 +2069,7 @@
     "measured"
    ],
    "HYD-03:PS6": [
-    "quantity:PS6",
+    "quantity:oil-pressure",
     "bar",
     8.2,
     null,
@@ -2107,7 +2085,7 @@
     "derived"
    ],
    "HYD-03:TS1": [
-    "quantity:TS1",
+    "quantity:oil-temp",
     "℃",
     48.0,
     65.0,
@@ -2115,7 +2093,7 @@
     "measured"
    ],
    "HYD-03:TS2": [
-    "quantity:TS2",
+    "quantity:oil-temp",
     "℃",
     44.0,
     null,
@@ -2123,7 +2101,7 @@
     "measured"
    ],
    "HYD-03:TS3": [
-    "quantity:TS3",
+    "quantity:oil-temp",
     "℃",
     40.0,
     null,
@@ -2131,7 +2109,7 @@
     "measured"
    ],
    "HYD-03:TS4": [
-    "quantity:TS4",
+    "quantity:cabinet-temp",
     "℃",
     42.0,
     null,
@@ -2139,7 +2117,7 @@
     "measured"
    ],
    "HYD-03:VS1": [
-    "quantity:VS1",
+    "quantity:vibration",
     "mm/s",
     0.6,
     2.0,
@@ -2163,7 +2141,7 @@
     "derived"
    ],
    "HYD-04:EPS1": [
-    "quantity:EPS1",
+    "quantity:power",
     "kW",
     3.1,
     null,
@@ -2171,7 +2149,7 @@
     "measured"
    ],
    "HYD-04:FS1": [
-    "quantity:FS1",
+    "quantity:oil-flow",
     "L/min",
     11.0,
     null,
@@ -2179,7 +2157,7 @@
     "measured"
    ],
    "HYD-04:FS2": [
-    "quantity:CW-FLOW",
+    "quantity:coolant-flow",
     "L/min",
     18.0,
     null,
@@ -2195,7 +2173,7 @@
     "setpoint"
    ],
    "HYD-04:PS1": [
-    "quantity:PS1",
+    "quantity:oil-pressure",
     "bar",
     190.0,
     140.0,
@@ -2203,7 +2181,7 @@
     "measured"
    ],
    "HYD-04:PS2": [
-    "quantity:PS2",
+    "quantity:oil-pressure",
     "bar",
     150.0,
     null,
@@ -2211,7 +2189,7 @@
     "measured"
    ],
    "HYD-04:PS3": [
-    "quantity:PS3",
+    "quantity:oil-pressure",
     "bar",
     2.0,
     null,
@@ -2219,7 +2197,7 @@
     "measured"
    ],
    "HYD-04:PS4": [
-    "quantity:PS4",
+    "quantity:dp",
     "bar",
     1.5,
     null,
@@ -2227,7 +2205,7 @@
     "measured"
    ],
    "HYD-04:PS5": [
-    "quantity:PS5",
+    "quantity:oil-pressure",
     "bar",
     8.5,
     null,
@@ -2235,7 +2213,7 @@
     "measured"
    ],
    "HYD-04:PS6": [
-    "quantity:PS6",
+    "quantity:oil-pressure",
     "bar",
     8.2,
     null,
@@ -2251,7 +2229,7 @@
     "derived"
    ],
    "HYD-04:TS1": [
-    "quantity:TS1",
+    "quantity:oil-temp",
     "℃",
     46.0,
     65.0,
@@ -2259,7 +2237,7 @@
     "measured"
    ],
    "HYD-04:TS2": [
-    "quantity:TS2",
+    "quantity:oil-temp",
     "℃",
     44.0,
     null,
@@ -2267,7 +2245,7 @@
     "measured"
    ],
    "HYD-04:TS3": [
-    "quantity:TS3",
+    "quantity:oil-temp",
     "℃",
     40.0,
     null,
@@ -2275,7 +2253,7 @@
     "measured"
    ],
    "HYD-04:TS4": [
-    "quantity:TS4",
+    "quantity:cabinet-temp",
     "℃",
     42.0,
     null,
@@ -2283,7 +2261,7 @@
     "measured"
    ],
    "HYD-05:DP_FILTER": [
-    "quantity:PS4",
+    "quantity:dp",
     "bar",
     0.8,
     null,
@@ -2291,7 +2269,7 @@
     "measured"
    ],
    "HYD-05:I_MOTOR": [
-    "quantity:I_MOTOR",
+    "quantity:current",
     "A",
     18.5,
     25.0,
@@ -2299,7 +2277,7 @@
     "measured"
    ],
    "HYD-05:LVL_TANK": [
-    "quantity:LVL",
+    "quantity:level",
     "%",
     75.0,
     40.0,
@@ -2307,7 +2285,7 @@
     "measured"
    ],
    "HYD-05:P_MAIN": [
-    "quantity:PS1",
+    "quantity:oil-pressure",
     "bar",
     140.0,
     100.0,
@@ -2315,7 +2293,7 @@
     "measured"
    ],
    "HYD-05:P_PILOT": [
-    "quantity:PS5",
+    "quantity:oil-pressure",
     "bar",
     7.5,
     null,
@@ -2323,7 +2301,7 @@
     "measured"
    ],
    "HYD-05:Q_MAIN": [
-    "quantity:FS1",
+    "quantity:oil-flow",
     "L/min",
     12.0,
     null,
@@ -2331,7 +2309,7 @@
     "measured"
    ],
    "HYD-05:T_OIL": [
-    "quantity:TS1",
+    "quantity:oil-temp",
     "℃",
     50.0,
     70.0,
@@ -2339,7 +2317,7 @@
     "measured"
    ],
    "HYD-05:T_TANK": [
-    "quantity:TS3",
+    "quantity:oil-temp",
     "℃",
     42.0,
     null,
@@ -2347,7 +2325,7 @@
     "measured"
    ],
    "HYD-05:V_FAN": [
-    "quantity:VS1",
+    "quantity:vibration",
     "mm/s",
     0.8,
     2.8,
@@ -2355,7 +2333,7 @@
     "measured"
    ],
    "HYD-06:DP_FILTER": [
-    "quantity:PS4",
+    "quantity:dp",
     "bar",
     0.8,
     null,
@@ -2363,7 +2341,7 @@
     "measured"
    ],
    "HYD-06:I_MOTOR": [
-    "quantity:I_MOTOR",
+    "quantity:current",
     "A",
     null,
     25.0,
@@ -2371,7 +2349,7 @@
     "measured"
    ],
    "HYD-06:LVL_TANK": [
-    "quantity:LVL",
+    "quantity:level",
     "%",
     75.0,
     40.0,
@@ -2379,7 +2357,7 @@
     "measured"
    ],
    "HYD-06:P_MAIN": [
-    "quantity:PS1",
+    "quantity:oil-pressure",
     "bar",
     140.0,
     100.0,
@@ -2387,7 +2365,7 @@
     "measured"
    ],
    "HYD-06:P_PILOT": [
-    "quantity:PS5",
+    "quantity:oil-pressure",
     "bar",
     7.5,
     null,
@@ -2395,7 +2373,7 @@
     "measured"
    ],
    "HYD-06:Q_MAIN": [
-    "quantity:FS1",
+    "quantity:oil-flow",
     "L/min",
     12.0,
     null,
@@ -2403,7 +2381,7 @@
     "measured"
    ],
    "HYD-06:T_OIL": [
-    "quantity:TS1",
+    "quantity:oil-temp",
     "℃",
     50.0,
     70.0,
@@ -2411,7 +2389,7 @@
     "measured"
    ],
    "HYD-06:T_TANK": [
-    "quantity:TS3",
+    "quantity:oil-temp",
     "℃",
     42.0,
     null,
@@ -2419,7 +2397,7 @@
     "measured"
    ],
    "HYD-06:V_FAN": [
-    "quantity:VS1",
+    "quantity:vibration",
     "mm/s",
     0.8,
     2.8,
@@ -2427,7 +2405,7 @@
     "measured"
    ],
    "HYD-07:PI-1": [
-    "quantity:PS1",
+    "quantity:oil-pressure",
     "bar",
     140.0,
     null,
@@ -2435,7 +2413,7 @@
     "measured"
    ],
    "HYD-07:TI-1": [
-    "quantity:TS1",
+    "quantity:oil-temp",
     "℃",
     45.0,
     null,
@@ -2516,6 +2494,11 @@
      "HYD-04:rtn-filter",
      "HYD-07:rtn-filter"
     ]
+   },
+   "P-RTN-FLT-25": {
+    "part": "P-RTN-FLT-25",
+    "assets": [],
+    "components": []
    },
    "P-HYD-OIL": {
     "part": "P-HYD-OIL",
@@ -2608,6 +2591,7 @@
     ]
    }
   },
+  "units": {},
   "parts_by_asset": {
    "HYD-01": {
     "accumulator": "P-ACC-BLD",
@@ -2694,6 +2678,1315 @@
   }
  },
  "C": {
+  "sensors_by_asset": {
+   "HYD-01": {
+    "(설비 전체)": [
+     "SE"
+    ],
+    "cabinet": [
+     "TS4"
+    ],
+    "cooler": [
+     "CE",
+     "CP",
+     "FS2",
+     "TS1",
+     "TS2"
+    ],
+    "fan": [
+     "FanSpeedSP",
+     "VS1"
+    ],
+    "motor": [
+     "EPS1"
+    ],
+    "pump-a": [
+     "FS1",
+     "LoadSP",
+     "PS1"
+    ],
+    "rtn-filter": [
+     "PS3",
+     "PS4"
+    ],
+    "tank": [
+     "TS3"
+    ],
+    "valve": [
+     "PS2",
+     "PS5",
+     "PS6"
+    ]
+   },
+   "HYD-02": {
+    "(설비 전체)": [
+     "SE"
+    ],
+    "cabinet": [
+     "TS4"
+    ],
+    "cooler": [
+     "CE",
+     "CP",
+     "FS2",
+     "TS1",
+     "TS2"
+    ],
+    "fan": [
+     "FanSpeedSP",
+     "VS1"
+    ],
+    "motor": [
+     "EPS1"
+    ],
+    "pump-a": [
+     "FS1",
+     "LoadSP",
+     "PS1"
+    ],
+    "rtn-filter": [
+     "PS3",
+     "PS4"
+    ],
+    "tank": [
+     "TS3"
+    ],
+    "valve": [
+     "PS2",
+     "PS5",
+     "PS6"
+    ]
+   },
+   "HYD-03": {
+    "(설비 전체)": [
+     "SE"
+    ],
+    "cabinet": [
+     "TS4"
+    ],
+    "cooler": [
+     "CE",
+     "CP",
+     "FS2",
+     "TS1",
+     "TS2"
+    ],
+    "fan": [
+     "FanSpeedSP",
+     "VS1"
+    ],
+    "motor": [
+     "EPS1"
+    ],
+    "pump-a": [
+     "FS1",
+     "LoadSP",
+     "PS1"
+    ],
+    "rtn-filter": [
+     "PS3",
+     "PS4"
+    ],
+    "tank": [
+     "TS3"
+    ],
+    "valve": [
+     "PS2",
+     "PS5",
+     "PS6"
+    ]
+   },
+   "HYD-04": {
+    "(설비 전체)": [
+     "SE"
+    ],
+    "cabinet": [
+     "TS4"
+    ],
+    "cooler": [
+     "CE",
+     "CP",
+     "FS2",
+     "TS1",
+     "TS2"
+    ],
+    "motor": [
+     "EPS1"
+    ],
+    "pump-a": [
+     "FS1",
+     "LoadSP",
+     "PS1"
+    ],
+    "rtn-filter": [
+     "PS3",
+     "PS4"
+    ],
+    "tank": [
+     "TS3"
+    ],
+    "valve": [
+     "PS2",
+     "PS5",
+     "PS6"
+    ]
+   },
+   "HYD-05": {
+    "cooler": [
+     "T_OIL"
+    ],
+    "fan": [
+     "V_FAN"
+    ],
+    "motor": [
+     "I_MOTOR"
+    ],
+    "pump": [
+     "P_MAIN",
+     "Q_MAIN"
+    ],
+    "rtn-filter": [
+     "DP_FILTER"
+    ],
+    "tank": [
+     "LVL_TANK",
+     "T_TANK"
+    ],
+    "valve": [
+     "P_PILOT"
+    ]
+   },
+   "HYD-06": {
+    "cooler": [
+     "T_OIL"
+    ],
+    "fan": [
+     "V_FAN"
+    ],
+    "motor": [
+     "I_MOTOR"
+    ],
+    "pump": [
+     "P_MAIN",
+     "Q_MAIN"
+    ],
+    "rtn-filter": [
+     "DP_FILTER"
+    ],
+    "tank": [
+     "LVL_TANK",
+     "T_TANK"
+    ],
+    "valve": [
+     "P_PILOT"
+    ]
+   },
+   "HYD-07": {
+    "pump": [
+     "PI-1"
+    ],
+    "tank": [
+     "TI-1"
+    ]
+   }
+  },
+  "quantity_members": {
+   "quantity:CE": [
+    "HYD-01:CE",
+    "HYD-02:CE",
+    "HYD-03:CE",
+    "HYD-04:CE"
+   ],
+   "quantity:CP": [
+    "HYD-01:CP",
+    "HYD-02:CP",
+    "HYD-03:CP",
+    "HYD-04:CP"
+   ],
+   "quantity:FanSpeedSP": [
+    "HYD-01:FanSpeedSP",
+    "HYD-02:FanSpeedSP",
+    "HYD-03:FanSpeedSP"
+   ],
+   "quantity:LoadSP": [
+    "HYD-01:LoadSP",
+    "HYD-02:LoadSP",
+    "HYD-03:LoadSP",
+    "HYD-04:LoadSP"
+   ],
+   "quantity:SE": [
+    "HYD-01:SE",
+    "HYD-02:SE",
+    "HYD-03:SE",
+    "HYD-04:SE"
+   ],
+   "quantity:cabinet-temp": [
+    "HYD-01:TS4",
+    "HYD-02:TS4",
+    "HYD-03:TS4",
+    "HYD-04:TS4"
+   ],
+   "quantity:coolant-flow": [
+    "HYD-04:FS2"
+   ],
+   "quantity:current": [
+    "HYD-05:I_MOTOR",
+    "HYD-06:I_MOTOR"
+   ],
+   "quantity:dp": [
+    "HYD-01:PS4",
+    "HYD-02:PS4",
+    "HYD-03:PS4",
+    "HYD-04:PS4",
+    "HYD-05:DP_FILTER",
+    "HYD-06:DP_FILTER"
+   ],
+   "quantity:level": [
+    "HYD-05:LVL_TANK",
+    "HYD-06:LVL_TANK"
+   ],
+   "quantity:oil-flow": [
+    "HYD-01:FS1",
+    "HYD-01:FS2",
+    "HYD-02:FS1",
+    "HYD-02:FS2",
+    "HYD-03:FS1",
+    "HYD-03:FS2",
+    "HYD-04:FS1",
+    "HYD-05:Q_MAIN",
+    "HYD-06:Q_MAIN"
+   ],
+   "quantity:oil-pressure": [
+    "HYD-01:PS1",
+    "HYD-01:PS2",
+    "HYD-01:PS3",
+    "HYD-01:PS5",
+    "HYD-01:PS6",
+    "HYD-02:PS1",
+    "HYD-02:PS2",
+    "HYD-02:PS3",
+    "HYD-02:PS5",
+    "HYD-02:PS6",
+    "HYD-03:PS1",
+    "HYD-03:PS2",
+    "HYD-03:PS3",
+    "HYD-03:PS5",
+    "HYD-03:PS6",
+    "HYD-04:PS1",
+    "HYD-04:PS2",
+    "HYD-04:PS3",
+    "HYD-04:PS5",
+    "HYD-04:PS6",
+    "HYD-05:P_MAIN",
+    "HYD-05:P_PILOT",
+    "HYD-06:P_MAIN",
+    "HYD-06:P_PILOT",
+    "HYD-07:PI-1"
+   ],
+   "quantity:oil-temp": [
+    "HYD-01:TS1",
+    "HYD-01:TS2",
+    "HYD-01:TS3",
+    "HYD-02:TS1",
+    "HYD-02:TS2",
+    "HYD-02:TS3",
+    "HYD-03:TS1",
+    "HYD-03:TS2",
+    "HYD-03:TS3",
+    "HYD-04:TS1",
+    "HYD-04:TS2",
+    "HYD-04:TS3",
+    "HYD-05:T_OIL",
+    "HYD-05:T_TANK",
+    "HYD-06:T_OIL",
+    "HYD-06:T_TANK",
+    "HYD-07:TI-1"
+   ],
+   "quantity:power": [
+    "HYD-01:EPS1",
+    "HYD-02:EPS1",
+    "HYD-03:EPS1",
+    "HYD-04:EPS1"
+   ],
+   "quantity:vibration": [
+    "HYD-01:VS1",
+    "HYD-02:VS1",
+    "HYD-03:VS1",
+    "HYD-05:V_FAN",
+    "HYD-06:V_FAN"
+   ]
+  },
+  "sensor_props": {
+   "HYD-01:CE": [
+    "quantity:CE",
+    "%",
+    84.0,
+    null,
+    null,
+    "derived"
+   ],
+   "HYD-01:CP": [
+    "quantity:CP",
+    "kW",
+    1.5,
+    null,
+    null,
+    "derived"
+   ],
+   "HYD-01:EPS1": [
+    "quantity:power",
+    "kW",
+    2.8,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-01:FS1": [
+    "quantity:oil-flow",
+    "L/min",
+    9.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-01:FS2": [
+    "quantity:oil-flow",
+    "L/min",
+    10.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-01:FanSpeedSP": [
+    "quantity:FanSpeedSP",
+    "%",
+    60.0,
+    null,
+    null,
+    "setpoint"
+   ],
+   "HYD-01:LoadSP": [
+    "quantity:LoadSP",
+    "%",
+    90.0,
+    null,
+    null,
+    "setpoint"
+   ],
+   "HYD-01:PS1": [
+    "quantity:oil-pressure",
+    "bar",
+    182.0,
+    130.0,
+    "lower",
+    "measured"
+   ],
+   "HYD-01:PS2": [
+    "quantity:oil-pressure",
+    "bar",
+    150.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-01:PS3": [
+    "quantity:oil-pressure",
+    "bar",
+    2.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-01:PS4": [
+    "quantity:dp",
+    "bar",
+    1.5,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-01:PS5": [
+    "quantity:oil-pressure",
+    "bar",
+    8.5,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-01:PS6": [
+    "quantity:oil-pressure",
+    "bar",
+    8.2,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-01:SE": [
+    "quantity:SE",
+    "%",
+    60.0,
+    null,
+    null,
+    "derived"
+   ],
+   "HYD-01:TS1": [
+    "quantity:oil-temp",
+    "℃",
+    48.0,
+    65.0,
+    "upper",
+    "measured"
+   ],
+   "HYD-01:TS2": [
+    "quantity:oil-temp",
+    "℃",
+    44.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-01:TS3": [
+    "quantity:oil-temp",
+    "℃",
+    40.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-01:TS4": [
+    "quantity:cabinet-temp",
+    "℃",
+    42.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-01:VS1": [
+    "quantity:vibration",
+    "mm/s",
+    0.6,
+    2.0,
+    "upper",
+    "measured"
+   ],
+   "HYD-02:CE": [
+    "quantity:CE",
+    "%",
+    84.0,
+    null,
+    null,
+    "derived"
+   ],
+   "HYD-02:CP": [
+    "quantity:CP",
+    "kW",
+    1.5,
+    null,
+    null,
+    "derived"
+   ],
+   "HYD-02:EPS1": [
+    "quantity:power",
+    "kW",
+    2.8,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-02:FS1": [
+    "quantity:oil-flow",
+    "L/min",
+    9.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-02:FS2": [
+    "quantity:oil-flow",
+    "L/min",
+    10.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-02:FanSpeedSP": [
+    "quantity:FanSpeedSP",
+    "%",
+    60.0,
+    null,
+    null,
+    "setpoint"
+   ],
+   "HYD-02:LoadSP": [
+    "quantity:LoadSP",
+    "%",
+    90.0,
+    null,
+    null,
+    "setpoint"
+   ],
+   "HYD-02:PS1": [
+    "quantity:oil-pressure",
+    "bar",
+    182.0,
+    130.0,
+    "lower",
+    "measured"
+   ],
+   "HYD-02:PS2": [
+    "quantity:oil-pressure",
+    "bar",
+    150.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-02:PS3": [
+    "quantity:oil-pressure",
+    "bar",
+    2.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-02:PS4": [
+    "quantity:dp",
+    "bar",
+    1.5,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-02:PS5": [
+    "quantity:oil-pressure",
+    "bar",
+    8.5,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-02:PS6": [
+    "quantity:oil-pressure",
+    "bar",
+    8.2,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-02:SE": [
+    "quantity:SE",
+    "%",
+    60.0,
+    null,
+    null,
+    "derived"
+   ],
+   "HYD-02:TS1": [
+    "quantity:oil-temp",
+    "℃",
+    48.0,
+    65.0,
+    "upper",
+    "measured"
+   ],
+   "HYD-02:TS2": [
+    "quantity:oil-temp",
+    "℃",
+    44.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-02:TS3": [
+    "quantity:oil-temp",
+    "℃",
+    40.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-02:TS4": [
+    "quantity:cabinet-temp",
+    "℃",
+    42.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-02:VS1": [
+    "quantity:vibration",
+    "mm/s",
+    0.6,
+    2.0,
+    "upper",
+    "measured"
+   ],
+   "HYD-03:CE": [
+    "quantity:CE",
+    "%",
+    84.0,
+    null,
+    null,
+    "derived"
+   ],
+   "HYD-03:CP": [
+    "quantity:CP",
+    "kW",
+    1.5,
+    null,
+    null,
+    "derived"
+   ],
+   "HYD-03:EPS1": [
+    "quantity:power",
+    "kW",
+    2.8,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-03:FS1": [
+    "quantity:oil-flow",
+    "L/min",
+    9.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-03:FS2": [
+    "quantity:oil-flow",
+    "L/min",
+    10.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-03:FanSpeedSP": [
+    "quantity:FanSpeedSP",
+    "%",
+    60.0,
+    null,
+    null,
+    "setpoint"
+   ],
+   "HYD-03:LoadSP": [
+    "quantity:LoadSP",
+    "%",
+    90.0,
+    null,
+    null,
+    "setpoint"
+   ],
+   "HYD-03:PS1": [
+    "quantity:oil-pressure",
+    "bar",
+    182.0,
+    130.0,
+    "lower",
+    "measured"
+   ],
+   "HYD-03:PS2": [
+    "quantity:oil-pressure",
+    "bar",
+    150.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-03:PS3": [
+    "quantity:oil-pressure",
+    "bar",
+    2.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-03:PS4": [
+    "quantity:dp",
+    "bar",
+    1.5,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-03:PS5": [
+    "quantity:oil-pressure",
+    "bar",
+    8.5,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-03:PS6": [
+    "quantity:oil-pressure",
+    "bar",
+    8.2,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-03:SE": [
+    "quantity:SE",
+    "%",
+    60.0,
+    null,
+    null,
+    "derived"
+   ],
+   "HYD-03:TS1": [
+    "quantity:oil-temp",
+    "℃",
+    48.0,
+    65.0,
+    "upper",
+    "measured"
+   ],
+   "HYD-03:TS2": [
+    "quantity:oil-temp",
+    "℃",
+    44.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-03:TS3": [
+    "quantity:oil-temp",
+    "℃",
+    40.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-03:TS4": [
+    "quantity:cabinet-temp",
+    "℃",
+    42.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-03:VS1": [
+    "quantity:vibration",
+    "mm/s",
+    0.6,
+    2.0,
+    "upper",
+    "measured"
+   ],
+   "HYD-04:CE": [
+    "quantity:CE",
+    "%",
+    88.0,
+    null,
+    null,
+    "derived"
+   ],
+   "HYD-04:CP": [
+    "quantity:CP",
+    "kW",
+    1.5,
+    null,
+    null,
+    "derived"
+   ],
+   "HYD-04:EPS1": [
+    "quantity:power",
+    "kW",
+    3.1,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-04:FS1": [
+    "quantity:oil-flow",
+    "L/min",
+    11.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-04:FS2": [
+    "quantity:coolant-flow",
+    "L/min",
+    18.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-04:LoadSP": [
+    "quantity:LoadSP",
+    "%",
+    90.0,
+    null,
+    null,
+    "setpoint"
+   ],
+   "HYD-04:PS1": [
+    "quantity:oil-pressure",
+    "bar",
+    190.0,
+    140.0,
+    "lower",
+    "measured"
+   ],
+   "HYD-04:PS2": [
+    "quantity:oil-pressure",
+    "bar",
+    150.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-04:PS3": [
+    "quantity:oil-pressure",
+    "bar",
+    2.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-04:PS4": [
+    "quantity:dp",
+    "bar",
+    1.5,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-04:PS5": [
+    "quantity:oil-pressure",
+    "bar",
+    8.5,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-04:PS6": [
+    "quantity:oil-pressure",
+    "bar",
+    8.2,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-04:SE": [
+    "quantity:SE",
+    "%",
+    60.0,
+    null,
+    null,
+    "derived"
+   ],
+   "HYD-04:TS1": [
+    "quantity:oil-temp",
+    "℃",
+    46.0,
+    65.0,
+    "upper",
+    "measured"
+   ],
+   "HYD-04:TS2": [
+    "quantity:oil-temp",
+    "℃",
+    44.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-04:TS3": [
+    "quantity:oil-temp",
+    "℃",
+    40.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-04:TS4": [
+    "quantity:cabinet-temp",
+    "℃",
+    42.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-05:DP_FILTER": [
+    "quantity:dp",
+    "bar",
+    0.8,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-05:I_MOTOR": [
+    "quantity:current",
+    "A",
+    18.5,
+    25.0,
+    "upper",
+    "measured"
+   ],
+   "HYD-05:LVL_TANK": [
+    "quantity:level",
+    "%",
+    75.0,
+    40.0,
+    "lower",
+    "measured"
+   ],
+   "HYD-05:P_MAIN": [
+    "quantity:oil-pressure",
+    "bar",
+    140.0,
+    100.0,
+    "lower",
+    "measured"
+   ],
+   "HYD-05:P_PILOT": [
+    "quantity:oil-pressure",
+    "bar",
+    7.5,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-05:Q_MAIN": [
+    "quantity:oil-flow",
+    "L/min",
+    12.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-05:T_OIL": [
+    "quantity:oil-temp",
+    "℃",
+    50.0,
+    70.0,
+    "upper",
+    "measured"
+   ],
+   "HYD-05:T_TANK": [
+    "quantity:oil-temp",
+    "℃",
+    42.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-05:V_FAN": [
+    "quantity:vibration",
+    "mm/s",
+    0.8,
+    2.8,
+    "upper",
+    "measured"
+   ],
+   "HYD-06:DP_FILTER": [
+    "quantity:dp",
+    "bar",
+    0.8,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-06:I_MOTOR": [
+    "quantity:current",
+    "A",
+    null,
+    25.0,
+    "upper",
+    "measured"
+   ],
+   "HYD-06:LVL_TANK": [
+    "quantity:level",
+    "%",
+    75.0,
+    40.0,
+    "lower",
+    "measured"
+   ],
+   "HYD-06:P_MAIN": [
+    "quantity:oil-pressure",
+    "bar",
+    140.0,
+    100.0,
+    "lower",
+    "measured"
+   ],
+   "HYD-06:P_PILOT": [
+    "quantity:oil-pressure",
+    "bar",
+    7.5,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-06:Q_MAIN": [
+    "quantity:oil-flow",
+    "L/min",
+    12.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-06:T_OIL": [
+    "quantity:oil-temp",
+    "℃",
+    50.0,
+    70.0,
+    "upper",
+    "measured"
+   ],
+   "HYD-06:T_TANK": [
+    "quantity:oil-temp",
+    "℃",
+    42.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-06:V_FAN": [
+    "quantity:vibration",
+    "mm/s",
+    0.8,
+    2.8,
+    "upper",
+    "measured"
+   ],
+   "HYD-07:PI-1": [
+    "quantity:oil-pressure",
+    "bar",
+    140.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-07:TI-1": [
+    "quantity:oil-temp",
+    "℃",
+    45.0,
+    null,
+    null,
+    "measured"
+   ]
+  },
+  "probes": {
+   "P-PMP-SEAL": {
+    "part": "P-PMP-SEAL",
+    "assets": [
+     "HYD-01",
+     "HYD-02"
+    ],
+    "components": [
+     "HYD-01:pump-a",
+     "HYD-02:pump-a"
+    ]
+   },
+   "P-FAN-BRG": {
+    "part": "P-FAN-BRG",
+    "assets": [
+     "HYD-01",
+     "HYD-02"
+    ],
+    "components": [
+     "HYD-01:fan",
+     "HYD-02:fan"
+    ]
+   },
+   "P-BRG-6205": {
+    "part": "P-BRG-6205",
+    "assets": [
+     "HYD-05"
+    ],
+    "components": [
+     "HYD-05:fan"
+    ]
+   },
+   "P-PMP-SEAL-HT": {
+    "part": "P-PMP-SEAL-HT",
+    "assets": [
+     "HYD-04"
+    ],
+    "components": [
+     "HYD-04:pump-a"
+    ]
+   },
+   "P-RTN-FLT": {
+    "part": "P-RTN-FLT",
+    "assets": [
+     "HYD-01",
+     "HYD-02",
+     "HYD-04",
+     "HYD-07"
+    ],
+    "components": [
+     "HYD-01:rtn-filter",
+     "HYD-02:rtn-filter",
+     "HYD-04:rtn-filter",
+     "HYD-07:rtn-filter"
+    ]
+   },
+   "P-RTN-FLT-25": {
+    "part": "P-RTN-FLT-25",
+    "assets": [],
+    "components": []
+   },
+   "P-HYD-OIL": {
+    "part": "P-HYD-OIL",
+    "assets": [
+     "HYD-01",
+     "HYD-02",
+     "HYD-04",
+     "HYD-05",
+     "HYD-07"
+    ],
+    "components": [
+     "HYD-01:tank",
+     "HYD-02:tank",
+     "HYD-04:tank",
+     "HYD-05:tank",
+     "HYD-07:tank"
+    ]
+   },
+   "PMP-SEAL": {
+    "part": "P-PMP-SEAL",
+    "assets": [
+     "HYD-01",
+     "HYD-02"
+    ],
+    "components": [
+     "HYD-01:pump-a",
+     "HYD-02:pump-a"
+    ]
+   },
+   "RF-10": {
+    "part": "P-RTN-FLT",
+    "assets": [
+     "HYD-01",
+     "HYD-02",
+     "HYD-04",
+     "HYD-07"
+    ],
+    "components": [
+     "HYD-01:rtn-filter",
+     "HYD-02:rtn-filter",
+     "HYD-04:rtn-filter",
+     "HYD-07:rtn-filter"
+    ]
+   },
+   "P-PMP-SEAL-X": null,
+   "6205-2RS": {
+    "candidates": [
+     {
+      "part": "P-BRG-6205",
+      "assets": [
+       "HYD-05"
+      ],
+      "components": [
+       "HYD-05:fan"
+      ]
+     },
+     {
+      "part": "P-FAN-BRG",
+      "assets": [
+       "HYD-01",
+       "HYD-02"
+      ],
+      "components": [
+       "HYD-01:fan",
+       "HYD-02:fan"
+      ]
+     }
+    ]
+   }
+  },
+  "units": {},
+  "parts_by_asset": {
+   "HYD-01": {
+    "accumulator": "P-ACC-BLD",
+    "cabinet": null,
+    "cooler": "P-CLR-CORE",
+    "coupling": "P-CPL-ELM",
+    "fan": "P-FAN-BRG",
+    "motor": null,
+    "pump-a": "P-PMP-SEAL",
+    "pump-b": null,
+    "rtn-filter": "P-RTN-FLT",
+    "strainer": "P-SUC-STR",
+    "tank": "P-HYD-OIL",
+    "valve": "P-VLV-COIL"
+   },
+   "HYD-02": {
+    "accumulator": "P-ACC-BLD",
+    "cabinet": null,
+    "cooler": "P-CLR-CORE",
+    "coupling": "P-CPL-ELM",
+    "fan": "P-FAN-BRG",
+    "motor": null,
+    "pump-a": "P-PMP-SEAL",
+    "pump-b": null,
+    "rtn-filter": "P-RTN-FLT",
+    "strainer": "P-SUC-STR",
+    "tank": "P-HYD-OIL",
+    "valve": "P-VLV-COIL"
+   },
+   "HYD-03": {
+    "accumulator": null,
+    "cabinet": null,
+    "cooler": null,
+    "coupling": null,
+    "fan": null,
+    "motor": null,
+    "pump-a": null,
+    "pump-b": null,
+    "rtn-filter": null,
+    "strainer": null,
+    "tank": null,
+    "valve": null
+   },
+   "HYD-04": {
+    "accumulator": "P-ACC-BLD",
+    "cabinet": null,
+    "cooler": "P-CLR-PLT",
+    "coupling": "P-CPL-ELM",
+    "motor": null,
+    "pump-a": "P-PMP-SEAL-HT",
+    "pump-b": null,
+    "rtn-filter": "P-RTN-FLT",
+    "strainer": "P-SUC-STR",
+    "tank": "P-HYD-OIL",
+    "valve": "P-VLV-COIL"
+   },
+   "HYD-05": {
+    "cabinet": null,
+    "cooler": null,
+    "fan": "P-BRG-6205",
+    "motor": null,
+    "pump": "P-DPU-SEAL",
+    "rtn-filter": "P-DPU-FLT",
+    "tank": "P-HYD-OIL",
+    "valve": "P-VLV-COIL"
+   },
+   "HYD-06": {
+    "cabinet": null,
+    "cooler": null,
+    "fan": null,
+    "motor": null,
+    "pump": "P-DPU-SEAL",
+    "rtn-filter": "P-DPU-FLT",
+    "tank": null,
+    "valve": "P-VLV-COIL"
+   },
+   "HYD-07": {
+    "coupling": "P-CPL-ELM",
+    "motor": null,
+    "pump": "P-PMP-SEAL-22",
+    "rtn-filter": "P-RTN-FLT",
+    "tank": "P-HYD-OIL"
+   }
+  }
+ },
+ "D": {
   "sensors_by_asset": {
    "HYD-01": {
     "(설비 전체)": [
@@ -3015,8 +4308,7 @@
     "HYD-03:TS1",
     "HYD-04:TS1",
     "HYD-05:T_OIL",
-    "HYD-06:T_OIL",
-    "HYD-07:TI-1"
+    "HYD-06:T_OIL"
    ],
    "quantity:TS2": [
     "HYD-01:TS2",
@@ -3030,7 +4322,8 @@
     "HYD-03:TS3",
     "HYD-04:TS3",
     "HYD-05:T_TANK",
-    "HYD-06:T_TANK"
+    "HYD-06:T_TANK",
+    "HYD-07:TI-1"
    ],
    "quantity:TS4": [
     "HYD-01:TS4",
@@ -3792,7 +5085,7 @@
     "measured"
    ],
    "HYD-07:TI-1": [
-    "quantity:TS1",
+    "quantity:TS3",
     "℃",
     45.0,
     null,
@@ -3810,26 +5103,38 @@
     "components": [
      "HYD-01:pump-a",
      "HYD-02:pump-a"
-    ]
+    ],
+    "to_check": {
+     "assets": [
+      "HYD-03"
+     ],
+     "components": [
+      "HYD-03:pump-a"
+     ]
+    }
    },
    "P-FAN-BRG": {
     "part": "P-FAN-BRG",
     "assets": [
      "HYD-01",
-     "HYD-02"
+     "HYD-02",
+     "HYD-03"
     ],
     "components": [
      "HYD-01:fan",
-     "HYD-02:fan"
+     "HYD-02:fan",
+     "HYD-03:fan"
     ]
    },
    "P-BRG-6205": {
     "part": "P-BRG-6205",
     "assets": [
-     "HYD-05"
+     "HYD-05",
+     "HYD-06"
     ],
     "components": [
-     "HYD-05:fan"
+     "HYD-05:fan",
+     "HYD-06:fan"
     ]
    },
    "P-PMP-SEAL-HT": {
@@ -3854,22 +5159,47 @@
      "HYD-02:rtn-filter",
      "HYD-04:rtn-filter",
      "HYD-07:rtn-filter"
-    ]
+    ],
+    "to_check": {
+     "assets": [
+      "HYD-03"
+     ],
+     "components": [
+      "HYD-03:rtn-filter"
+     ]
+    }
+   },
+   "P-RTN-FLT-25": {
+    "part": "P-RTN-FLT-25",
+    "assets": [],
+    "components": [],
+    "to_check": {
+     "assets": [
+      "HYD-03"
+     ],
+     "components": [
+      "HYD-03:rtn-filter"
+     ]
+    }
    },
    "P-HYD-OIL": {
     "part": "P-HYD-OIL",
     "assets": [
      "HYD-01",
      "HYD-02",
+     "HYD-03",
      "HYD-04",
      "HYD-05",
+     "HYD-06",
      "HYD-07"
     ],
     "components": [
      "HYD-01:tank",
      "HYD-02:tank",
+     "HYD-03:tank",
      "HYD-04:tank",
      "HYD-05:tank",
+     "HYD-06:tank",
      "HYD-07:tank"
     ]
    },
@@ -3882,7 +5212,15 @@
     "components": [
      "HYD-01:pump-a",
      "HYD-02:pump-a"
-    ]
+    ],
+    "to_check": {
+     "assets": [
+      "HYD-03"
+     ],
+     "components": [
+      "HYD-03:pump-a"
+     ]
+    }
    },
    "RF-10": {
     "part": "P-RTN-FLT",
@@ -3897,7 +5235,15 @@
      "HYD-02:rtn-filter",
      "HYD-04:rtn-filter",
      "HYD-07:rtn-filter"
-    ]
+    ],
+    "to_check": {
+     "assets": [
+      "HYD-03"
+     ],
+     "components": [
+      "HYD-03:rtn-filter"
+     ]
+    }
    },
    "P-PMP-SEAL-X": null,
    "6205-2RS": {
@@ -3905,25 +5251,77 @@
      {
       "part": "P-BRG-6205",
       "assets": [
-       "HYD-05"
+       "HYD-05",
+       "HYD-06"
       ],
       "components": [
-       "HYD-05:fan"
+       "HYD-05:fan",
+       "HYD-06:fan"
       ]
      },
      {
       "part": "P-FAN-BRG",
       "assets": [
        "HYD-01",
-       "HYD-02"
+       "HYD-02",
+       "HYD-03"
       ],
       "components": [
        "HYD-01:fan",
-       "HYD-02:fan"
+       "HYD-02:fan",
+       "HYD-03:fan"
       ]
      }
     ]
    }
+  },
+  "units": {
+   "HYD-01:pump-a": [
+    [
+     "KP-1904-221",
+     true
+    ]
+   ],
+   "HYD-02:pump-a": [
+    [
+     "KP-1902-551",
+     false
+    ],
+    [
+     "KP-2603-114",
+     true
+    ]
+   ],
+   "HYD-03:pump-a": [
+    [
+     "KP-2002-087",
+     true
+    ]
+   ],
+   "HYD-04:pump-a": [
+    [
+     "KP-2407-310",
+     true
+    ]
+   ],
+   "HYD-05:pump": [
+    [
+     "DWP-2101-12",
+     true
+    ]
+   ],
+   "HYD-06:pump": [
+    [
+     "DWP-2101-13",
+     true
+    ]
+   ],
+   "HYD-07:pump": [
+    [
+     "GP-1709-004",
+     true
+    ]
+   ]
   },
   "parts_by_asset": {
    "HYD-01": {
@@ -3955,18 +5353,27 @@
     "valve": "P-VLV-COIL"
    },
    "HYD-03": {
-    "accumulator": null,
+    "accumulator": "P-ACC-BLD",
     "cabinet": null,
-    "cooler": null,
-    "coupling": null,
-    "fan": null,
+    "cooler": "P-CLR-CORE",
+    "coupling": "P-CPL-ELM",
+    "fan": "P-FAN-BRG",
     "motor": null,
-    "pump-a": null,
+    "pump-a": {
+     "확인 필요": [
+      "P-PMP-SEAL"
+     ]
+    },
     "pump-b": null,
-    "rtn-filter": null,
-    "strainer": null,
-    "tank": null,
-    "valve": null
+    "rtn-filter": {
+     "확인 필요": [
+      "P-RTN-FLT",
+      "P-RTN-FLT-25"
+     ]
+    },
+    "strainer": "P-SUC-STR",
+    "tank": "P-HYD-OIL",
+    "valve": "P-VLV-COIL"
    },
    "HYD-04": {
     "accumulator": "P-ACC-BLD",
@@ -3994,11 +5401,1401 @@
    "HYD-06": {
     "cabinet": null,
     "cooler": null,
-    "fan": null,
+    "fan": "P-BRG-6205",
     "motor": null,
     "pump": "P-DPU-SEAL",
     "rtn-filter": "P-DPU-FLT",
-    "tank": null,
+    "tank": "P-HYD-OIL",
+    "valve": "P-VLV-COIL"
+   },
+   "HYD-07": {
+    "coupling": "P-CPL-ELM",
+    "motor": null,
+    "pump": "P-PMP-SEAL-22",
+    "rtn-filter": "P-RTN-FLT",
+    "tank": "P-HYD-OIL"
+   }
+  }
+ },
+ "E": {
+  "sensors_by_asset": {
+   "HYD-01": {
+    "(설비 전체)": [
+     "SE"
+    ],
+    "cabinet": [
+     "TS4"
+    ],
+    "cooler": [
+     "CE",
+     "CP",
+     "FS2",
+     "TS1",
+     "TS2"
+    ],
+    "fan": [
+     "FanSpeedSP",
+     "VS1"
+    ],
+    "motor": [
+     "EPS1"
+    ],
+    "pump-a": [
+     "FS1",
+     "LoadSP",
+     "PS1"
+    ],
+    "rtn-filter": [
+     "PS3",
+     "PS4"
+    ],
+    "tank": [
+     "TS3"
+    ],
+    "valve": [
+     "PS2",
+     "PS5",
+     "PS6"
+    ]
+   },
+   "HYD-02": {
+    "(설비 전체)": [
+     "SE"
+    ],
+    "cabinet": [
+     "TS4"
+    ],
+    "cooler": [
+     "CE",
+     "CP",
+     "FS2",
+     "TS1",
+     "TS2"
+    ],
+    "fan": [
+     "FanSpeedSP",
+     "VS1"
+    ],
+    "motor": [
+     "EPS1"
+    ],
+    "pump-a": [
+     "FS1",
+     "LoadSP",
+     "PS1"
+    ],
+    "rtn-filter": [
+     "PS3",
+     "PS4"
+    ],
+    "tank": [
+     "TS3"
+    ],
+    "valve": [
+     "PS2",
+     "PS5",
+     "PS6"
+    ]
+   },
+   "HYD-03": {
+    "(설비 전체)": [
+     "SE"
+    ],
+    "cabinet": [
+     "TS4"
+    ],
+    "cooler": [
+     "CE",
+     "CP",
+     "FS2",
+     "TS1",
+     "TS2"
+    ],
+    "fan": [
+     "FanSpeedSP",
+     "VS1"
+    ],
+    "motor": [
+     "EPS1"
+    ],
+    "pump-a": [
+     "FS1",
+     "LoadSP",
+     "PS1"
+    ],
+    "rtn-filter": [
+     "PS3",
+     "PS4"
+    ],
+    "tank": [
+     "TS3"
+    ],
+    "valve": [
+     "PS2",
+     "PS5",
+     "PS6"
+    ]
+   },
+   "HYD-04": {
+    "(설비 전체)": [
+     "SE"
+    ],
+    "cabinet": [
+     "TS4"
+    ],
+    "cooler": [
+     "CE",
+     "CP",
+     "FS2",
+     "TS1",
+     "TS2"
+    ],
+    "motor": [
+     "EPS1"
+    ],
+    "pump-a": [
+     "FS1",
+     "LoadSP",
+     "PS1"
+    ],
+    "rtn-filter": [
+     "PS3",
+     "PS4"
+    ],
+    "tank": [
+     "TS3"
+    ],
+    "valve": [
+     "PS2",
+     "PS5",
+     "PS6"
+    ]
+   },
+   "HYD-05": {
+    "cooler": [
+     "T_OIL"
+    ],
+    "fan": [
+     "V_FAN"
+    ],
+    "motor": [
+     "I_MOTOR"
+    ],
+    "pump": [
+     "P_MAIN",
+     "Q_MAIN"
+    ],
+    "rtn-filter": [
+     "DP_FILTER"
+    ],
+    "tank": [
+     "LVL_TANK",
+     "T_TANK"
+    ],
+    "valve": [
+     "P_PILOT"
+    ]
+   },
+   "HYD-06": {
+    "cooler": [
+     "T_OIL"
+    ],
+    "fan": [
+     "V_FAN"
+    ],
+    "motor": [
+     "I_MOTOR"
+    ],
+    "pump": [
+     "P_MAIN",
+     "Q_MAIN"
+    ],
+    "rtn-filter": [
+     "DP_FILTER"
+    ],
+    "tank": [
+     "LVL_TANK",
+     "T_TANK"
+    ],
+    "valve": [
+     "P_PILOT"
+    ]
+   },
+   "HYD-07": {
+    "pump": [
+     "PI-1"
+    ],
+    "tank": [
+     "TI-1"
+    ]
+   }
+  },
+  "quantity_members": {
+   "quantity:CE": [
+    "HYD-01:CE",
+    "HYD-02:CE",
+    "HYD-03:CE",
+    "HYD-04:CE"
+   ],
+   "quantity:CP": [
+    "HYD-01:CP",
+    "HYD-02:CP",
+    "HYD-03:CP",
+    "HYD-04:CP"
+   ],
+   "quantity:CW-FLOW": [
+    "HYD-04:FS2"
+   ],
+   "quantity:EPS1": [
+    "HYD-01:EPS1",
+    "HYD-02:EPS1",
+    "HYD-03:EPS1",
+    "HYD-04:EPS1"
+   ],
+   "quantity:FS1": [
+    "HYD-01:FS1",
+    "HYD-02:FS1",
+    "HYD-03:FS1",
+    "HYD-04:FS1",
+    "HYD-05:Q_MAIN",
+    "HYD-06:Q_MAIN"
+   ],
+   "quantity:FS2": [
+    "HYD-01:FS2",
+    "HYD-02:FS2",
+    "HYD-03:FS2"
+   ],
+   "quantity:FanSpeedSP": [
+    "HYD-01:FanSpeedSP",
+    "HYD-02:FanSpeedSP",
+    "HYD-03:FanSpeedSP"
+   ],
+   "quantity:I_MOTOR": [
+    "HYD-05:I_MOTOR",
+    "HYD-06:I_MOTOR"
+   ],
+   "quantity:LVL": [
+    "HYD-05:LVL_TANK",
+    "HYD-06:LVL_TANK"
+   ],
+   "quantity:LoadSP": [
+    "HYD-01:LoadSP",
+    "HYD-02:LoadSP",
+    "HYD-03:LoadSP",
+    "HYD-04:LoadSP"
+   ],
+   "quantity:PS1": [
+    "HYD-01:PS1",
+    "HYD-02:PS1",
+    "HYD-03:PS1",
+    "HYD-04:PS1",
+    "HYD-05:P_MAIN",
+    "HYD-06:P_MAIN",
+    "HYD-07:PI-1"
+   ],
+   "quantity:PS2": [
+    "HYD-01:PS2",
+    "HYD-02:PS2",
+    "HYD-03:PS2",
+    "HYD-04:PS2"
+   ],
+   "quantity:PS3": [
+    "HYD-01:PS3",
+    "HYD-02:PS3",
+    "HYD-03:PS3",
+    "HYD-04:PS3"
+   ],
+   "quantity:PS4": [
+    "HYD-01:PS4",
+    "HYD-02:PS4",
+    "HYD-03:PS4",
+    "HYD-04:PS4",
+    "HYD-05:DP_FILTER",
+    "HYD-06:DP_FILTER"
+   ],
+   "quantity:PS5": [
+    "HYD-01:PS5",
+    "HYD-02:PS5",
+    "HYD-03:PS5",
+    "HYD-04:PS5",
+    "HYD-05:P_PILOT",
+    "HYD-06:P_PILOT"
+   ],
+   "quantity:PS6": [
+    "HYD-01:PS6",
+    "HYD-02:PS6",
+    "HYD-03:PS6",
+    "HYD-04:PS6"
+   ],
+   "quantity:SE": [
+    "HYD-01:SE",
+    "HYD-02:SE",
+    "HYD-03:SE",
+    "HYD-04:SE"
+   ],
+   "quantity:TS1": [
+    "HYD-01:TS1",
+    "HYD-02:TS1",
+    "HYD-03:TS1",
+    "HYD-04:TS1",
+    "HYD-05:T_OIL",
+    "HYD-06:T_OIL"
+   ],
+   "quantity:TS2": [
+    "HYD-01:TS2",
+    "HYD-02:TS2",
+    "HYD-03:TS2",
+    "HYD-04:TS2"
+   ],
+   "quantity:TS3": [
+    "HYD-01:TS3",
+    "HYD-02:TS3",
+    "HYD-03:TS3",
+    "HYD-04:TS3",
+    "HYD-05:T_TANK",
+    "HYD-06:T_TANK",
+    "HYD-07:TI-1"
+   ],
+   "quantity:TS4": [
+    "HYD-01:TS4",
+    "HYD-02:TS4",
+    "HYD-03:TS4",
+    "HYD-04:TS4"
+   ],
+   "quantity:VS1": [
+    "HYD-01:VS1",
+    "HYD-02:VS1",
+    "HYD-03:VS1",
+    "HYD-05:V_FAN",
+    "HYD-06:V_FAN"
+   ]
+  },
+  "sensor_props": {
+   "HYD-01:CE": [
+    "quantity:CE",
+    "%",
+    84.0,
+    null,
+    null,
+    "derived"
+   ],
+   "HYD-01:CP": [
+    "quantity:CP",
+    "kW",
+    1.5,
+    null,
+    null,
+    "derived"
+   ],
+   "HYD-01:EPS1": [
+    "quantity:EPS1",
+    "kW",
+    2.8,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-01:FS1": [
+    "quantity:FS1",
+    "L/min",
+    9.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-01:FS2": [
+    "quantity:FS2",
+    "L/min",
+    10.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-01:FanSpeedSP": [
+    "quantity:FanSpeedSP",
+    "%",
+    60.0,
+    null,
+    null,
+    "setpoint"
+   ],
+   "HYD-01:LoadSP": [
+    "quantity:LoadSP",
+    "%",
+    90.0,
+    null,
+    null,
+    "setpoint"
+   ],
+   "HYD-01:PS1": [
+    "quantity:PS1",
+    "bar",
+    182.0,
+    130.0,
+    "lower",
+    "measured"
+   ],
+   "HYD-01:PS2": [
+    "quantity:PS2",
+    "bar",
+    150.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-01:PS3": [
+    "quantity:PS3",
+    "bar",
+    2.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-01:PS4": [
+    "quantity:PS4",
+    "bar",
+    1.5,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-01:PS5": [
+    "quantity:PS5",
+    "bar",
+    8.5,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-01:PS6": [
+    "quantity:PS6",
+    "bar",
+    8.2,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-01:SE": [
+    "quantity:SE",
+    "%",
+    60.0,
+    null,
+    null,
+    "derived"
+   ],
+   "HYD-01:TS1": [
+    "quantity:TS1",
+    "℃",
+    48.0,
+    65.0,
+    "upper",
+    "measured"
+   ],
+   "HYD-01:TS2": [
+    "quantity:TS2",
+    "℃",
+    44.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-01:TS3": [
+    "quantity:TS3",
+    "℃",
+    40.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-01:TS4": [
+    "quantity:TS4",
+    "℃",
+    42.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-01:VS1": [
+    "quantity:VS1",
+    "mm/s",
+    0.6,
+    2.0,
+    "upper",
+    "measured"
+   ],
+   "HYD-02:CE": [
+    "quantity:CE",
+    "%",
+    84.0,
+    null,
+    null,
+    "derived"
+   ],
+   "HYD-02:CP": [
+    "quantity:CP",
+    "kW",
+    1.5,
+    null,
+    null,
+    "derived"
+   ],
+   "HYD-02:EPS1": [
+    "quantity:EPS1",
+    "kW",
+    2.8,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-02:FS1": [
+    "quantity:FS1",
+    "L/min",
+    9.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-02:FS2": [
+    "quantity:FS2",
+    "L/min",
+    10.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-02:FanSpeedSP": [
+    "quantity:FanSpeedSP",
+    "%",
+    60.0,
+    null,
+    null,
+    "setpoint"
+   ],
+   "HYD-02:LoadSP": [
+    "quantity:LoadSP",
+    "%",
+    90.0,
+    null,
+    null,
+    "setpoint"
+   ],
+   "HYD-02:PS1": [
+    "quantity:PS1",
+    "bar",
+    182.0,
+    130.0,
+    "lower",
+    "measured"
+   ],
+   "HYD-02:PS2": [
+    "quantity:PS2",
+    "bar",
+    150.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-02:PS3": [
+    "quantity:PS3",
+    "bar",
+    2.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-02:PS4": [
+    "quantity:PS4",
+    "bar",
+    1.5,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-02:PS5": [
+    "quantity:PS5",
+    "bar",
+    8.5,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-02:PS6": [
+    "quantity:PS6",
+    "bar",
+    8.2,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-02:SE": [
+    "quantity:SE",
+    "%",
+    60.0,
+    null,
+    null,
+    "derived"
+   ],
+   "HYD-02:TS1": [
+    "quantity:TS1",
+    "℃",
+    48.0,
+    65.0,
+    "upper",
+    "measured"
+   ],
+   "HYD-02:TS2": [
+    "quantity:TS2",
+    "℃",
+    44.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-02:TS3": [
+    "quantity:TS3",
+    "℃",
+    40.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-02:TS4": [
+    "quantity:TS4",
+    "℃",
+    42.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-02:VS1": [
+    "quantity:VS1",
+    "mm/s",
+    0.6,
+    2.0,
+    "upper",
+    "measured"
+   ],
+   "HYD-03:CE": [
+    "quantity:CE",
+    "%",
+    84.0,
+    null,
+    null,
+    "derived"
+   ],
+   "HYD-03:CP": [
+    "quantity:CP",
+    "kW",
+    1.5,
+    null,
+    null,
+    "derived"
+   ],
+   "HYD-03:EPS1": [
+    "quantity:EPS1",
+    "kW",
+    2.8,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-03:FS1": [
+    "quantity:FS1",
+    "L/min",
+    9.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-03:FS2": [
+    "quantity:FS2",
+    "L/min",
+    10.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-03:FanSpeedSP": [
+    "quantity:FanSpeedSP",
+    "%",
+    60.0,
+    null,
+    null,
+    "setpoint"
+   ],
+   "HYD-03:LoadSP": [
+    "quantity:LoadSP",
+    "%",
+    90.0,
+    null,
+    null,
+    "setpoint"
+   ],
+   "HYD-03:PS1": [
+    "quantity:PS1",
+    "bar",
+    182.0,
+    130.0,
+    "lower",
+    "measured"
+   ],
+   "HYD-03:PS2": [
+    "quantity:PS2",
+    "bar",
+    150.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-03:PS3": [
+    "quantity:PS3",
+    "bar",
+    2.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-03:PS4": [
+    "quantity:PS4",
+    "bar",
+    1.5,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-03:PS5": [
+    "quantity:PS5",
+    "bar",
+    8.5,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-03:PS6": [
+    "quantity:PS6",
+    "bar",
+    8.2,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-03:SE": [
+    "quantity:SE",
+    "%",
+    60.0,
+    null,
+    null,
+    "derived"
+   ],
+   "HYD-03:TS1": [
+    "quantity:TS1",
+    "℃",
+    48.0,
+    65.0,
+    "upper",
+    "measured"
+   ],
+   "HYD-03:TS2": [
+    "quantity:TS2",
+    "℃",
+    44.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-03:TS3": [
+    "quantity:TS3",
+    "℃",
+    40.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-03:TS4": [
+    "quantity:TS4",
+    "℃",
+    42.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-03:VS1": [
+    "quantity:VS1",
+    "mm/s",
+    0.6,
+    2.0,
+    "upper",
+    "measured"
+   ],
+   "HYD-04:CE": [
+    "quantity:CE",
+    "%",
+    88.0,
+    null,
+    null,
+    "derived"
+   ],
+   "HYD-04:CP": [
+    "quantity:CP",
+    "kW",
+    1.5,
+    null,
+    null,
+    "derived"
+   ],
+   "HYD-04:EPS1": [
+    "quantity:EPS1",
+    "kW",
+    3.1,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-04:FS1": [
+    "quantity:FS1",
+    "L/min",
+    11.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-04:FS2": [
+    "quantity:CW-FLOW",
+    "L/min",
+    18.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-04:LoadSP": [
+    "quantity:LoadSP",
+    "%",
+    90.0,
+    null,
+    null,
+    "setpoint"
+   ],
+   "HYD-04:PS1": [
+    "quantity:PS1",
+    "bar",
+    190.0,
+    140.0,
+    "lower",
+    "measured"
+   ],
+   "HYD-04:PS2": [
+    "quantity:PS2",
+    "bar",
+    150.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-04:PS3": [
+    "quantity:PS3",
+    "bar",
+    2.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-04:PS4": [
+    "quantity:PS4",
+    "bar",
+    1.5,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-04:PS5": [
+    "quantity:PS5",
+    "bar",
+    8.5,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-04:PS6": [
+    "quantity:PS6",
+    "bar",
+    8.2,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-04:SE": [
+    "quantity:SE",
+    "%",
+    60.0,
+    null,
+    null,
+    "derived"
+   ],
+   "HYD-04:TS1": [
+    "quantity:TS1",
+    "℃",
+    46.0,
+    65.0,
+    "upper",
+    "measured"
+   ],
+   "HYD-04:TS2": [
+    "quantity:TS2",
+    "℃",
+    44.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-04:TS3": [
+    "quantity:TS3",
+    "℃",
+    40.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-04:TS4": [
+    "quantity:TS4",
+    "℃",
+    42.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-05:DP_FILTER": [
+    "quantity:PS4",
+    "bar",
+    0.8,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-05:I_MOTOR": [
+    "quantity:I_MOTOR",
+    "A",
+    18.5,
+    25.0,
+    "upper",
+    "measured"
+   ],
+   "HYD-05:LVL_TANK": [
+    "quantity:LVL",
+    "%",
+    75.0,
+    40.0,
+    "lower",
+    "measured"
+   ],
+   "HYD-05:P_MAIN": [
+    "quantity:PS1",
+    "bar",
+    140.0,
+    100.0,
+    "lower",
+    "measured"
+   ],
+   "HYD-05:P_PILOT": [
+    "quantity:PS5",
+    "bar",
+    7.5,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-05:Q_MAIN": [
+    "quantity:FS1",
+    "L/min",
+    12.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-05:T_OIL": [
+    "quantity:TS1",
+    "℃",
+    50.0,
+    70.0,
+    "upper",
+    "measured"
+   ],
+   "HYD-05:T_TANK": [
+    "quantity:TS3",
+    "℃",
+    42.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-05:V_FAN": [
+    "quantity:VS1",
+    "mm/s",
+    0.8,
+    2.8,
+    "upper",
+    "measured"
+   ],
+   "HYD-06:DP_FILTER": [
+    "quantity:PS4",
+    "bar",
+    0.8,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-06:I_MOTOR": [
+    "quantity:I_MOTOR",
+    "A",
+    null,
+    25.0,
+    "upper",
+    "measured"
+   ],
+   "HYD-06:LVL_TANK": [
+    "quantity:LVL",
+    "%",
+    75.0,
+    40.0,
+    "lower",
+    "measured"
+   ],
+   "HYD-06:P_MAIN": [
+    "quantity:PS1",
+    "bar",
+    140.0,
+    100.0,
+    "lower",
+    "measured"
+   ],
+   "HYD-06:P_PILOT": [
+    "quantity:PS5",
+    "bar",
+    7.5,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-06:Q_MAIN": [
+    "quantity:FS1",
+    "L/min",
+    12.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-06:T_OIL": [
+    "quantity:TS1",
+    "℃",
+    50.0,
+    70.0,
+    "upper",
+    "measured"
+   ],
+   "HYD-06:T_TANK": [
+    "quantity:TS3",
+    "℃",
+    42.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-06:V_FAN": [
+    "quantity:VS1",
+    "mm/s",
+    0.8,
+    2.8,
+    "upper",
+    "measured"
+   ],
+   "HYD-07:PI-1": [
+    "quantity:PS1",
+    "bar",
+    140.0,
+    null,
+    null,
+    "measured"
+   ],
+   "HYD-07:TI-1": [
+    "quantity:TS3",
+    "℃",
+    45.0,
+    null,
+    null,
+    "measured"
+   ]
+  },
+  "probes": {
+   "P-PMP-SEAL": {
+    "part": "P-PMP-SEAL",
+    "assets": [
+     "HYD-01",
+     "HYD-02",
+     "HYD-03"
+    ],
+    "components": [
+     "HYD-01:pump-a",
+     "HYD-02:pump-a",
+     "HYD-03:pump-a"
+    ]
+   },
+   "P-FAN-BRG": {
+    "part": "P-FAN-BRG",
+    "assets": [
+     "HYD-01",
+     "HYD-02",
+     "HYD-03"
+    ],
+    "components": [
+     "HYD-01:fan",
+     "HYD-02:fan",
+     "HYD-03:fan"
+    ]
+   },
+   "P-BRG-6205": {
+    "part": "P-BRG-6205",
+    "assets": [
+     "HYD-05",
+     "HYD-06"
+    ],
+    "components": [
+     "HYD-05:fan",
+     "HYD-06:fan"
+    ]
+   },
+   "P-PMP-SEAL-HT": {
+    "part": "P-PMP-SEAL-HT",
+    "assets": [
+     "HYD-04"
+    ],
+    "components": [
+     "HYD-04:pump-a"
+    ]
+   },
+   "P-RTN-FLT": {
+    "part": "P-RTN-FLT",
+    "assets": [
+     "HYD-01",
+     "HYD-02",
+     "HYD-03",
+     "HYD-04",
+     "HYD-07"
+    ],
+    "components": [
+     "HYD-01:rtn-filter",
+     "HYD-02:rtn-filter",
+     "HYD-03:rtn-filter",
+     "HYD-04:rtn-filter",
+     "HYD-07:rtn-filter"
+    ]
+   },
+   "P-RTN-FLT-25": {
+    "part": "P-RTN-FLT-25",
+    "assets": [],
+    "components": []
+   },
+   "P-HYD-OIL": {
+    "part": "P-HYD-OIL",
+    "assets": [
+     "HYD-01",
+     "HYD-02",
+     "HYD-03",
+     "HYD-04",
+     "HYD-05",
+     "HYD-06",
+     "HYD-07"
+    ],
+    "components": [
+     "HYD-01:tank",
+     "HYD-02:tank",
+     "HYD-03:tank",
+     "HYD-04:tank",
+     "HYD-05:tank",
+     "HYD-06:tank",
+     "HYD-07:tank"
+    ]
+   },
+   "PMP-SEAL": {
+    "part": "P-PMP-SEAL",
+    "assets": [
+     "HYD-01",
+     "HYD-02",
+     "HYD-03"
+    ],
+    "components": [
+     "HYD-01:pump-a",
+     "HYD-02:pump-a",
+     "HYD-03:pump-a"
+    ]
+   },
+   "RF-10": {
+    "part": "P-RTN-FLT",
+    "assets": [
+     "HYD-01",
+     "HYD-02",
+     "HYD-03",
+     "HYD-04",
+     "HYD-07"
+    ],
+    "components": [
+     "HYD-01:rtn-filter",
+     "HYD-02:rtn-filter",
+     "HYD-03:rtn-filter",
+     "HYD-04:rtn-filter",
+     "HYD-07:rtn-filter"
+    ]
+   },
+   "P-PMP-SEAL-X": null,
+   "6205-2RS": {
+    "candidates": [
+     {
+      "part": "P-BRG-6205",
+      "assets": [
+       "HYD-05",
+       "HYD-06"
+      ],
+      "components": [
+       "HYD-05:fan",
+       "HYD-06:fan"
+      ]
+     },
+     {
+      "part": "P-FAN-BRG",
+      "assets": [
+       "HYD-01",
+       "HYD-02",
+       "HYD-03"
+      ],
+      "components": [
+       "HYD-01:fan",
+       "HYD-02:fan",
+       "HYD-03:fan"
+      ]
+     }
+    ]
+   }
+  },
+  "units": {
+   "HYD-01:pump-a": [
+    [
+     "KP-1904-221",
+     true
+    ]
+   ],
+   "HYD-02:pump-a": [
+    [
+     "KP-1902-551",
+     false
+    ],
+    [
+     "KP-2603-114",
+     true
+    ]
+   ],
+   "HYD-03:pump-a": [
+    [
+     "KP-2002-087",
+     true
+    ]
+   ],
+   "HYD-04:pump-a": [
+    [
+     "KP-2407-310",
+     true
+    ]
+   ],
+   "HYD-05:pump": [
+    [
+     "DWP-2101-12",
+     true
+    ]
+   ],
+   "HYD-06:pump": [
+    [
+     "DWP-2101-13",
+     true
+    ]
+   ],
+   "HYD-07:pump": [
+    [
+     "GP-1709-004",
+     true
+    ]
+   ]
+  },
+  "parts_by_asset": {
+   "HYD-01": {
+    "accumulator": "P-ACC-BLD",
+    "cabinet": null,
+    "cooler": "P-CLR-CORE",
+    "coupling": "P-CPL-ELM",
+    "fan": "P-FAN-BRG",
+    "motor": null,
+    "pump-a": "P-PMP-SEAL",
+    "pump-b": null,
+    "rtn-filter": "P-RTN-FLT",
+    "strainer": "P-SUC-STR",
+    "tank": "P-HYD-OIL",
+    "valve": "P-VLV-COIL"
+   },
+   "HYD-02": {
+    "accumulator": "P-ACC-BLD",
+    "cabinet": null,
+    "cooler": "P-CLR-CORE",
+    "coupling": "P-CPL-ELM",
+    "fan": "P-FAN-BRG",
+    "motor": null,
+    "pump-a": "P-PMP-SEAL",
+    "pump-b": null,
+    "rtn-filter": "P-RTN-FLT",
+    "strainer": "P-SUC-STR",
+    "tank": "P-HYD-OIL",
+    "valve": "P-VLV-COIL"
+   },
+   "HYD-03": {
+    "accumulator": "P-ACC-BLD",
+    "cabinet": null,
+    "cooler": "P-CLR-CORE",
+    "coupling": "P-CPL-ELM",
+    "fan": "P-FAN-BRG",
+    "motor": null,
+    "pump-a": "P-PMP-SEAL",
+    "pump-b": null,
+    "rtn-filter": "P-RTN-FLT",
+    "strainer": "P-SUC-STR",
+    "tank": "P-HYD-OIL",
+    "valve": "P-VLV-COIL"
+   },
+   "HYD-04": {
+    "accumulator": "P-ACC-BLD",
+    "cabinet": null,
+    "cooler": "P-CLR-PLT",
+    "coupling": "P-CPL-ELM",
+    "motor": null,
+    "pump-a": "P-PMP-SEAL-HT",
+    "pump-b": null,
+    "rtn-filter": "P-RTN-FLT",
+    "strainer": "P-SUC-STR",
+    "tank": "P-HYD-OIL",
+    "valve": "P-VLV-COIL"
+   },
+   "HYD-05": {
+    "cabinet": null,
+    "cooler": null,
+    "fan": "P-BRG-6205",
+    "motor": null,
+    "pump": "P-DPU-SEAL",
+    "rtn-filter": "P-DPU-FLT",
+    "tank": "P-HYD-OIL",
+    "valve": "P-VLV-COIL"
+   },
+   "HYD-06": {
+    "cabinet": null,
+    "cooler": null,
+    "fan": "P-BRG-6205",
+    "motor": null,
+    "pump": "P-DPU-SEAL",
+    "rtn-filter": "P-DPU-FLT",
+    "tank": "P-HYD-OIL",
     "valve": "P-VLV-COIL"
    },
    "HYD-07": {

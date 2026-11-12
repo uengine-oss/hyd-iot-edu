@@ -19,7 +19,19 @@ def cypher_source():
     text = text.replace('def guard(path, parts):\n', "def guard(path, parts):\n    if not parts:\n        raise RuntimeError(f'{path}: 실행할 문장이 없습니다. 현재 기능의 문장을 작성한 뒤 실행합니다.')\n")
     text = text.replace("    path = mine if mine.is_file() else HERE / 'data/model/graph.json'",
                         "    if mine.exists() and not mine.with_name('schema.json').is_file():\n        raise RuntimeError('app/features/model에는 schema.json과 graph.json을 함께 둡니다.')\n    path = mine if mine.is_file() else HERE / 'data/model/graph.json'")
+    old = "        out[nums[-1]] = (line, s)\n"
+    if text.count(old) != 1:
+        raise ValueError('cypher.questions의 꼴이 바뀌었습니다 — 묻힌 질문 주석을 짚을 자리를 다시 봅니다.')
+    text = text.replace(old, old + BURIED)
     return text
+
+
+# 조회 끝에 ;가 없으면 다음 「// 질문 N」 주석이 앞 조회 문장 안에 들어간다(리허설 07 막힘 1) — 그 줄과 끝이 빠진 조회를 짚고 멈춘다.
+BURIED = '''        for k, body_line in enumerate(s.splitlines()):
+            m = QUESTION.match(body_line)
+            if m and k:
+                raise RuntimeError(f'{path}:{line + k}: 「// 질문 {m.group(1)}」가 질문 {nums[-1]} 조회 문장 안에 있습니다 — 질문 {nums[-1]} 조회({line}행부터) 끝에 ;가 없습니다.')
+'''
 
 
 ENDPOINT = '''
@@ -59,7 +71,7 @@ EXTRA_ACTIONS = '''
 def sources(previous):
     path, counts = graph_counts()
     files = [(p.name, len(R.read_table(p))) for p in sorted((HERE / 'data').glob('*.csv'))]
-    return [R.table('원자료 파일과 행 수', ['파일', '행'], files),
+    return [R.counts('원자료 파일마다 행 수', files),
             R.counts('사용할 모델: ' + R.rel(path), sorted(counts.items()))]
 
 

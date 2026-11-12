@@ -112,6 +112,18 @@
         "Part"
       ],
       "props": {
+        "id": "P-RTN-FLT-25",
+        "name": "리턴 필터 엘리먼트 25µm",
+        "other_codes": [
+          "HI-RF-25"
+        ]
+      }
+    },
+    {
+      "labels": [
+        "Part"
+      ],
+      "props": {
         "id": "P-DPU-FLT",
         "name": "리턴 필터 엘리먼트(DPU)",
         "other_codes": [
@@ -196,8 +208,8 @@
         "Quantity"
       ],
       "props": {
-        "id": "quantity:TS1",
-        "name": "유온",
+        "id": "quantity:oil-temp",
+        "name": "작동유 온도",
         "unit": "℃"
       }
     },
@@ -206,8 +218,8 @@
         "Quantity"
       ],
       "props": {
-        "id": "quantity:TS2",
-        "name": "쿨러 출구 유온",
+        "id": "quantity:cabinet-temp",
+        "name": "제어반 온도",
         "unit": "℃"
       }
     },
@@ -216,28 +228,8 @@
         "Quantity"
       ],
       "props": {
-        "id": "quantity:TS3",
-        "name": "탱크 유온",
-        "unit": "℃"
-      }
-    },
-    {
-      "labels": [
-        "Quantity"
-      ],
-      "props": {
-        "id": "quantity:TS4",
-        "name": "제어반 내부 온도",
-        "unit": "℃"
-      }
-    },
-    {
-      "labels": [
-        "Quantity"
-      ],
-      "props": {
-        "id": "quantity:PS1",
-        "name": "토출 압력",
+        "id": "quantity:oil-pressure",
+        "name": "작동유 압력",
         "unit": "bar"
       }
     },
@@ -246,8 +238,8 @@
         "Quantity"
       ],
       "props": {
-        "id": "quantity:PS2",
-        "name": "시스템 압력",
+        "id": "quantity:dp",
+        "name": "차압",
         "unit": "bar"
       }
     },
@@ -256,58 +248,8 @@
         "Quantity"
       ],
       "props": {
-        "id": "quantity:PS3",
-        "name": "리턴 라인 압력",
-        "unit": "bar"
-      }
-    },
-    {
-      "labels": [
-        "Quantity"
-      ],
-      "props": {
-        "id": "quantity:PS4",
-        "name": "필터 차압",
-        "unit": "bar"
-      }
-    },
-    {
-      "labels": [
-        "Quantity"
-      ],
-      "props": {
-        "id": "quantity:PS5",
-        "name": "파일럿 압력",
-        "unit": "bar"
-      }
-    },
-    {
-      "labels": [
-        "Quantity"
-      ],
-      "props": {
-        "id": "quantity:PS6",
-        "name": "파일럿 후단 압력",
-        "unit": "bar"
-      }
-    },
-    {
-      "labels": [
-        "Quantity"
-      ],
-      "props": {
-        "id": "quantity:EPS1",
-        "name": "모터 출력",
-        "unit": "kW"
-      }
-    },
-    {
-      "labels": [
-        "Quantity"
-      ],
-      "props": {
-        "id": "quantity:FS1",
-        "name": "유량",
+        "id": "quantity:oil-flow",
+        "name": "작동유 유량",
         "unit": "L/min"
       }
     },
@@ -316,17 +258,7 @@
         "Quantity"
       ],
       "props": {
-        "id": "quantity:FS2",
-        "name": "냉각 회로 유량",
-        "unit": "L/min"
-      }
-    },
-    {
-      "labels": [
-        "Quantity"
-      ],
-      "props": {
-        "id": "quantity:CW-FLOW",
+        "id": "quantity:coolant-flow",
         "name": "냉각수 유량",
         "unit": "L/min"
       }
@@ -336,9 +268,39 @@
         "Quantity"
       ],
       "props": {
-        "id": "quantity:VS1",
-        "name": "팬 진동",
+        "id": "quantity:vibration",
+        "name": "진동",
         "unit": "mm/s"
+      }
+    },
+    {
+      "labels": [
+        "Quantity"
+      ],
+      "props": {
+        "id": "quantity:power",
+        "name": "모터 출력",
+        "unit": "kW"
+      }
+    },
+    {
+      "labels": [
+        "Quantity"
+      ],
+      "props": {
+        "id": "quantity:current",
+        "name": "모터 전류",
+        "unit": "A"
+      }
+    },
+    {
+      "labels": [
+        "Quantity"
+      ],
+      "props": {
+        "id": "quantity:level",
+        "name": "레벨",
+        "unit": "%"
       }
     },
     {
@@ -388,26 +350,6 @@
       "props": {
         "id": "quantity:LoadSP",
         "name": "부하 설정값",
-        "unit": "%"
-      }
-    },
-    {
-      "labels": [
-        "Quantity"
-      ],
-      "props": {
-        "id": "quantity:I_MOTOR",
-        "name": "모터 전류",
-        "unit": "A"
-      }
-    },
-    {
-      "labels": [
-        "Quantity"
-      ],
-      "props": {
-        "id": "quantity:LVL",
-        "name": "탱크 레벨",
         "unit": "%"
       }
     },
@@ -2457,7 +2399,7 @@
       "props": {
         "id": "HYD-05:T_OIL",
         "tag": "T_OIL",
-        "instrument_tag": "TT-311",
+        "instrument_tag": "TT-3101",
         "unit": "℃",
         "kind": "measured",
         "derived": false,
@@ -2474,7 +2416,7 @@
       "props": {
         "id": "HYD-05:T_TANK",
         "tag": "T_TANK",
-        "instrument_tag": "TT-313",
+        "instrument_tag": "TT-3102",
         "unit": "℃",
         "kind": "measured",
         "derived": false,
@@ -2489,7 +2431,7 @@
       "props": {
         "id": "HYD-05:P_MAIN",
         "tag": "P_MAIN",
-        "instrument_tag": "PT-311",
+        "instrument_tag": "PT-3103",
         "unit": "bar",
         "kind": "measured",
         "derived": false,
@@ -2506,7 +2448,7 @@
       "props": {
         "id": "HYD-05:P_PILOT",
         "tag": "P_PILOT",
-        "instrument_tag": "PT-315",
+        "instrument_tag": "PT-3104",
         "unit": "bar",
         "kind": "measured",
         "derived": false,
@@ -2521,7 +2463,7 @@
       "props": {
         "id": "HYD-05:Q_MAIN",
         "tag": "Q_MAIN",
-        "instrument_tag": "FT-311",
+        "instrument_tag": "FT-3105",
         "unit": "L/min",
         "kind": "measured",
         "derived": false,
@@ -2536,7 +2478,7 @@
       "props": {
         "id": "HYD-05:I_MOTOR",
         "tag": "I_MOTOR",
-        "instrument_tag": "IT-311",
+        "instrument_tag": "IT-3106",
         "unit": "A",
         "kind": "measured",
         "derived": false,
@@ -2553,7 +2495,7 @@
       "props": {
         "id": "HYD-05:V_FAN",
         "tag": "V_FAN",
-        "instrument_tag": "VT-311",
+        "instrument_tag": "VT-3107",
         "unit": "mm/s",
         "kind": "measured",
         "derived": false,
@@ -2570,7 +2512,7 @@
       "props": {
         "id": "HYD-05:DP_FILTER",
         "tag": "DP_FILTER",
-        "instrument_tag": "PDT-314",
+        "instrument_tag": "PDT-3108",
         "unit": "bar",
         "kind": "measured",
         "derived": false,
@@ -2586,7 +2528,7 @@
       "props": {
         "id": "HYD-05:LVL_TANK",
         "tag": "LVL_TANK",
-        "instrument_tag": "LT-311",
+        "instrument_tag": "LT-3109",
         "unit": "%",
         "kind": "measured",
         "derived": false,
@@ -2603,7 +2545,7 @@
       "props": {
         "id": "HYD-06:T_OIL",
         "tag": "T_OIL",
-        "instrument_tag": "TT-321",
+        "instrument_tag": "TT-3201",
         "unit": "℃",
         "kind": "measured",
         "derived": false,
@@ -2620,7 +2562,7 @@
       "props": {
         "id": "HYD-06:T_TANK",
         "tag": "T_TANK",
-        "instrument_tag": "TT-323",
+        "instrument_tag": "TT-3202",
         "unit": "℃",
         "kind": "measured",
         "derived": false,
@@ -2635,7 +2577,7 @@
       "props": {
         "id": "HYD-06:P_MAIN",
         "tag": "P_MAIN",
-        "instrument_tag": "PT-321",
+        "instrument_tag": "PT-3203",
         "unit": "bar",
         "kind": "measured",
         "derived": false,
@@ -2652,7 +2594,7 @@
       "props": {
         "id": "HYD-06:P_PILOT",
         "tag": "P_PILOT",
-        "instrument_tag": "PT-325",
+        "instrument_tag": "PT-3204",
         "unit": "bar",
         "kind": "measured",
         "derived": false,
@@ -2667,7 +2609,7 @@
       "props": {
         "id": "HYD-06:Q_MAIN",
         "tag": "Q_MAIN",
-        "instrument_tag": "FT-321",
+        "instrument_tag": "FT-3205",
         "unit": "L/min",
         "kind": "measured",
         "derived": false,
@@ -2682,7 +2624,7 @@
       "props": {
         "id": "HYD-06:I_MOTOR",
         "tag": "I_MOTOR",
-        "instrument_tag": "IT-321",
+        "instrument_tag": "IT-3206",
         "unit": "A",
         "kind": "measured",
         "derived": false,
@@ -2698,7 +2640,7 @@
       "props": {
         "id": "HYD-06:V_FAN",
         "tag": "V_FAN",
-        "instrument_tag": "VT-321",
+        "instrument_tag": "VT-3207",
         "unit": "mm/s",
         "kind": "measured",
         "derived": false,
@@ -2715,7 +2657,7 @@
       "props": {
         "id": "HYD-06:DP_FILTER",
         "tag": "DP_FILTER",
-        "instrument_tag": "PDT-324",
+        "instrument_tag": "PDT-3208",
         "unit": "bar",
         "kind": "measured",
         "derived": false,
@@ -2731,7 +2673,7 @@
       "props": {
         "id": "HYD-06:LVL_TANK",
         "tag": "LVL_TANK",
-        "instrument_tag": "LT-321",
+        "instrument_tag": "LT-3209",
         "unit": "%",
         "kind": "measured",
         "derived": false,
@@ -3580,7 +3522,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-01:TS1",
-      "b": "quantity:TS1",
+      "b": "quantity:oil-temp",
       "props": {}
     },
     {
@@ -3592,7 +3534,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-01:TS2",
-      "b": "quantity:TS2",
+      "b": "quantity:oil-temp",
       "props": {}
     },
     {
@@ -3604,7 +3546,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-01:TS3",
-      "b": "quantity:TS3",
+      "b": "quantity:oil-temp",
       "props": {}
     },
     {
@@ -3616,7 +3558,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-01:TS4",
-      "b": "quantity:TS4",
+      "b": "quantity:cabinet-temp",
       "props": {}
     },
     {
@@ -3628,7 +3570,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-01:PS1",
-      "b": "quantity:PS1",
+      "b": "quantity:oil-pressure",
       "props": {}
     },
     {
@@ -3640,7 +3582,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-01:PS2",
-      "b": "quantity:PS2",
+      "b": "quantity:oil-pressure",
       "props": {}
     },
     {
@@ -3652,7 +3594,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-01:PS3",
-      "b": "quantity:PS3",
+      "b": "quantity:oil-pressure",
       "props": {}
     },
     {
@@ -3664,7 +3606,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-01:PS4",
-      "b": "quantity:PS4",
+      "b": "quantity:dp",
       "props": {}
     },
     {
@@ -3676,7 +3618,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-01:PS5",
-      "b": "quantity:PS5",
+      "b": "quantity:oil-pressure",
       "props": {}
     },
     {
@@ -3688,7 +3630,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-01:PS6",
-      "b": "quantity:PS6",
+      "b": "quantity:oil-pressure",
       "props": {}
     },
     {
@@ -3700,7 +3642,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-01:EPS1",
-      "b": "quantity:EPS1",
+      "b": "quantity:power",
       "props": {}
     },
     {
@@ -3712,7 +3654,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-01:FS1",
-      "b": "quantity:FS1",
+      "b": "quantity:oil-flow",
       "props": {}
     },
     {
@@ -3724,7 +3666,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-01:FS2",
-      "b": "quantity:FS2",
+      "b": "quantity:oil-flow",
       "props": {}
     },
     {
@@ -3736,7 +3678,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-01:VS1",
-      "b": "quantity:VS1",
+      "b": "quantity:vibration",
       "props": {}
     },
     {
@@ -3808,7 +3750,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-02:TS1",
-      "b": "quantity:TS1",
+      "b": "quantity:oil-temp",
       "props": {}
     },
     {
@@ -3820,7 +3762,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-02:TS2",
-      "b": "quantity:TS2",
+      "b": "quantity:oil-temp",
       "props": {}
     },
     {
@@ -3832,7 +3774,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-02:TS3",
-      "b": "quantity:TS3",
+      "b": "quantity:oil-temp",
       "props": {}
     },
     {
@@ -3844,7 +3786,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-02:TS4",
-      "b": "quantity:TS4",
+      "b": "quantity:cabinet-temp",
       "props": {}
     },
     {
@@ -3856,7 +3798,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-02:PS1",
-      "b": "quantity:PS1",
+      "b": "quantity:oil-pressure",
       "props": {}
     },
     {
@@ -3868,7 +3810,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-02:PS2",
-      "b": "quantity:PS2",
+      "b": "quantity:oil-pressure",
       "props": {}
     },
     {
@@ -3880,7 +3822,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-02:PS3",
-      "b": "quantity:PS3",
+      "b": "quantity:oil-pressure",
       "props": {}
     },
     {
@@ -3892,7 +3834,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-02:PS4",
-      "b": "quantity:PS4",
+      "b": "quantity:dp",
       "props": {}
     },
     {
@@ -3904,7 +3846,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-02:PS5",
-      "b": "quantity:PS5",
+      "b": "quantity:oil-pressure",
       "props": {}
     },
     {
@@ -3916,7 +3858,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-02:PS6",
-      "b": "quantity:PS6",
+      "b": "quantity:oil-pressure",
       "props": {}
     },
     {
@@ -3928,7 +3870,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-02:EPS1",
-      "b": "quantity:EPS1",
+      "b": "quantity:power",
       "props": {}
     },
     {
@@ -3940,7 +3882,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-02:FS1",
-      "b": "quantity:FS1",
+      "b": "quantity:oil-flow",
       "props": {}
     },
     {
@@ -3952,7 +3894,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-02:FS2",
-      "b": "quantity:FS2",
+      "b": "quantity:oil-flow",
       "props": {}
     },
     {
@@ -3964,7 +3906,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-02:VS1",
-      "b": "quantity:VS1",
+      "b": "quantity:vibration",
       "props": {}
     },
     {
@@ -4036,7 +3978,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-03:TS1",
-      "b": "quantity:TS1",
+      "b": "quantity:oil-temp",
       "props": {}
     },
     {
@@ -4048,7 +3990,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-03:TS2",
-      "b": "quantity:TS2",
+      "b": "quantity:oil-temp",
       "props": {}
     },
     {
@@ -4060,7 +4002,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-03:TS3",
-      "b": "quantity:TS3",
+      "b": "quantity:oil-temp",
       "props": {}
     },
     {
@@ -4072,7 +4014,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-03:TS4",
-      "b": "quantity:TS4",
+      "b": "quantity:cabinet-temp",
       "props": {}
     },
     {
@@ -4084,7 +4026,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-03:PS1",
-      "b": "quantity:PS1",
+      "b": "quantity:oil-pressure",
       "props": {}
     },
     {
@@ -4096,7 +4038,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-03:PS2",
-      "b": "quantity:PS2",
+      "b": "quantity:oil-pressure",
       "props": {}
     },
     {
@@ -4108,7 +4050,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-03:PS3",
-      "b": "quantity:PS3",
+      "b": "quantity:oil-pressure",
       "props": {}
     },
     {
@@ -4120,7 +4062,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-03:PS4",
-      "b": "quantity:PS4",
+      "b": "quantity:dp",
       "props": {}
     },
     {
@@ -4132,7 +4074,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-03:PS5",
-      "b": "quantity:PS5",
+      "b": "quantity:oil-pressure",
       "props": {}
     },
     {
@@ -4144,7 +4086,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-03:PS6",
-      "b": "quantity:PS6",
+      "b": "quantity:oil-pressure",
       "props": {}
     },
     {
@@ -4156,7 +4098,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-03:EPS1",
-      "b": "quantity:EPS1",
+      "b": "quantity:power",
       "props": {}
     },
     {
@@ -4168,7 +4110,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-03:FS1",
-      "b": "quantity:FS1",
+      "b": "quantity:oil-flow",
       "props": {}
     },
     {
@@ -4180,7 +4122,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-03:FS2",
-      "b": "quantity:FS2",
+      "b": "quantity:oil-flow",
       "props": {}
     },
     {
@@ -4192,7 +4134,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-03:VS1",
-      "b": "quantity:VS1",
+      "b": "quantity:vibration",
       "props": {}
     },
     {
@@ -4264,7 +4206,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-04:TS1",
-      "b": "quantity:TS1",
+      "b": "quantity:oil-temp",
       "props": {}
     },
     {
@@ -4276,7 +4218,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-04:TS2",
-      "b": "quantity:TS2",
+      "b": "quantity:oil-temp",
       "props": {}
     },
     {
@@ -4288,7 +4230,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-04:TS3",
-      "b": "quantity:TS3",
+      "b": "quantity:oil-temp",
       "props": {}
     },
     {
@@ -4300,7 +4242,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-04:TS4",
-      "b": "quantity:TS4",
+      "b": "quantity:cabinet-temp",
       "props": {}
     },
     {
@@ -4312,7 +4254,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-04:PS1",
-      "b": "quantity:PS1",
+      "b": "quantity:oil-pressure",
       "props": {}
     },
     {
@@ -4324,7 +4266,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-04:PS2",
-      "b": "quantity:PS2",
+      "b": "quantity:oil-pressure",
       "props": {}
     },
     {
@@ -4336,7 +4278,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-04:PS3",
-      "b": "quantity:PS3",
+      "b": "quantity:oil-pressure",
       "props": {}
     },
     {
@@ -4348,7 +4290,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-04:PS4",
-      "b": "quantity:PS4",
+      "b": "quantity:dp",
       "props": {}
     },
     {
@@ -4360,7 +4302,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-04:PS5",
-      "b": "quantity:PS5",
+      "b": "quantity:oil-pressure",
       "props": {}
     },
     {
@@ -4372,7 +4314,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-04:PS6",
-      "b": "quantity:PS6",
+      "b": "quantity:oil-pressure",
       "props": {}
     },
     {
@@ -4384,7 +4326,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-04:EPS1",
-      "b": "quantity:EPS1",
+      "b": "quantity:power",
       "props": {}
     },
     {
@@ -4396,7 +4338,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-04:FS1",
-      "b": "quantity:FS1",
+      "b": "quantity:oil-flow",
       "props": {}
     },
     {
@@ -4408,7 +4350,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-04:FS2",
-      "b": "quantity:CW-FLOW",
+      "b": "quantity:coolant-flow",
       "props": {}
     },
     {
@@ -4468,7 +4410,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-05:T_OIL",
-      "b": "quantity:TS1",
+      "b": "quantity:oil-temp",
       "props": {}
     },
     {
@@ -4480,7 +4422,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-05:T_TANK",
-      "b": "quantity:TS3",
+      "b": "quantity:oil-temp",
       "props": {}
     },
     {
@@ -4492,7 +4434,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-05:P_MAIN",
-      "b": "quantity:PS1",
+      "b": "quantity:oil-pressure",
       "props": {}
     },
     {
@@ -4504,7 +4446,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-05:P_PILOT",
-      "b": "quantity:PS5",
+      "b": "quantity:oil-pressure",
       "props": {}
     },
     {
@@ -4516,7 +4458,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-05:Q_MAIN",
-      "b": "quantity:FS1",
+      "b": "quantity:oil-flow",
       "props": {}
     },
     {
@@ -4528,7 +4470,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-05:I_MOTOR",
-      "b": "quantity:I_MOTOR",
+      "b": "quantity:current",
       "props": {}
     },
     {
@@ -4540,7 +4482,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-05:V_FAN",
-      "b": "quantity:VS1",
+      "b": "quantity:vibration",
       "props": {}
     },
     {
@@ -4552,7 +4494,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-05:DP_FILTER",
-      "b": "quantity:PS4",
+      "b": "quantity:dp",
       "props": {}
     },
     {
@@ -4564,7 +4506,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-05:LVL_TANK",
-      "b": "quantity:LVL",
+      "b": "quantity:level",
       "props": {}
     },
     {
@@ -4576,7 +4518,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-06:T_OIL",
-      "b": "quantity:TS1",
+      "b": "quantity:oil-temp",
       "props": {}
     },
     {
@@ -4588,7 +4530,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-06:T_TANK",
-      "b": "quantity:TS3",
+      "b": "quantity:oil-temp",
       "props": {}
     },
     {
@@ -4600,7 +4542,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-06:P_MAIN",
-      "b": "quantity:PS1",
+      "b": "quantity:oil-pressure",
       "props": {}
     },
     {
@@ -4612,7 +4554,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-06:P_PILOT",
-      "b": "quantity:PS5",
+      "b": "quantity:oil-pressure",
       "props": {}
     },
     {
@@ -4624,7 +4566,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-06:Q_MAIN",
-      "b": "quantity:FS1",
+      "b": "quantity:oil-flow",
       "props": {}
     },
     {
@@ -4636,7 +4578,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-06:I_MOTOR",
-      "b": "quantity:I_MOTOR",
+      "b": "quantity:current",
       "props": {}
     },
     {
@@ -4648,7 +4590,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-06:V_FAN",
-      "b": "quantity:VS1",
+      "b": "quantity:vibration",
       "props": {}
     },
     {
@@ -4660,7 +4602,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-06:DP_FILTER",
-      "b": "quantity:PS4",
+      "b": "quantity:dp",
       "props": {}
     },
     {
@@ -4672,7 +4614,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-06:LVL_TANK",
-      "b": "quantity:LVL",
+      "b": "quantity:level",
       "props": {}
     },
     {
@@ -4684,7 +4626,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-07:TI-1",
-      "b": "quantity:TS1",
+      "b": "quantity:oil-temp",
       "props": {}
     },
     {
@@ -4696,7 +4638,7 @@
     {
       "type": "OBSERVES",
       "a": "HYD-07:PI-1",
-      "b": "quantity:PS1",
+      "b": "quantity:oil-pressure",
       "props": {}
     },
     {
