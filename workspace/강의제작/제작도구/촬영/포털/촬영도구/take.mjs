@@ -97,6 +97,8 @@ export async function take(opts){
  const after=opts.after?await loadTiming(opts.after).then(t=>{if(t.error)throw Error('앞 take가 실패로 끝남: '+opts.after);const m=t.motions.at(-1);if(m)return {x:m.x,y:m.y};   // 움직임 없이 끝난 take(말만 하는 구간)는 시작 자리에 커서가 그대로 있다
   return fs.readFile(WORK+'/'+opts.after+'/pointer-start.json','utf8').then(JSON.parse).then(q=>({x:q.x,y:q.y})).catch(()=>null);}):null;
  if(opts.after&&!after)throw Error('앞 take에 커서 기록이 없다: '+opts.after);
+ // 구간 경계의 쉼: 앞 take는 마지막 말이 끝나고 조금 뒤에 끝난다(끝 여백). 이어 찍는 take의 첫 큐는 「그 큐의 gap − 앞 take 끝 여백」만큼 기다려, 합본에서 경계 쉼이 큐의 gap과 같아지게 한다.
+ const afterTail=opts.after?await loadTiming(opts.after).then(t=>{const a=t.actions.at(-1);return a?Math.max(0,t.duration-(a.time+a.duration)):0;}):null;
  const pos0=seam?seam.pointer:after||{x:760,y:430};
  if(after)await fs.writeFile(out+'/이음.json',JSON.stringify({prev:opts.after,fromCue:null,cut_ms:(await loadTiming(opts.after)).duration+1,pointer:after}));   // 이음새검수.py가 앞 take 끝 프레임과 이 take 첫 프레임을 견준다
  let waitingFor=opts.resume?.fromCue||null;
@@ -116,7 +118,8 @@ export async function take(opts){
    await metrics();recording=true;captures++;
    await serial(()=>p.cdp('Page.startScreencast',{format:'jpeg',quality:85,maxWidth:1920,maxHeight:1080,everyNthFrame:1}));
    await serial(()=>p.evaluate(()=>{const e=document.documentElement,o=e.style.opacity;e.style.opacity='0.999';requestAnimationFrame(()=>{e.style.opacity=o;});}));
-   const t=Date.now();while(!frames.length){if(error)throw Error(error);if(Date.now()-t>12000)throw Error('Initial recording frame missing');await sleep(30);}},
+   const t=Date.now();while(!frames.length){if(error)throw Error(error);if(Date.now()-t>12000)throw Error('Initial recording frame missing');await sleep(30);}
+   if(afterTail!=null)speechFree=Date.now()-afterTail;},
   say:async(id,fn,opt={})=>{
    if(error)throw Error(error);
    if(waitingFor){if(id!==waitingFor)return;waitingFor=null;}
