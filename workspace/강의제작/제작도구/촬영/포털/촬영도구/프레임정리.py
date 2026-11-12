@@ -1,6 +1,9 @@
 """take의 frames/ 가운데 encode.py가 쓰지 않는 프레임만 지운다 — 디스크가 빠듯한 클라우드 VM에서 구간마다 검사(measure · 이음새검수)를 마친 뒤 돌린다.
   python3 프레임정리.py <take>            지울 수와 크기만 낸다
   python3 프레임정리.py <take> --실행     지우고, 지운 뒤 조각 키가 그대로인지 다시 계산해 확인한다(다르면 멈춘다)
+  python3 프레임정리.py <take> --비움     인코딩을 마친 take의 남은 프레임까지 같은 크기의 빈(희소) 파일로 바꾼다. 조각이 `조각_저장/`에 있어야 한다
+`--비움`은 그 take의 조각을 다시 쓰는 합성만 된다(조각 키는 이름 · 크기라 같고, 화면을 새로 그리는 합성 — 커서 경로를 바꾼 합성 등 — 은 다시 찍어야 한다).
+첫 프레임(크기를 읽음)과 끝 60장(다음 구간의 이음새검수가 읽음)은 남긴다. 7구간 06을 한 VM에서 찍을 때 구간마다 1.3~1.7 GB를 비웠다.
 녹화는 화면이 바뀔 때마다 프레임을 받아(초당 20~40장) 30fps로 합성하는 encode.py가 쓰지 않는 프레임이 생긴다(약 35 %). encode.py는 출력 시각마다
 그 시각까지 받은 마지막 프레임을 고르고, 조각 키에는 고른 프레임의 이름 · 횟수 · 크기만 넣는다. 그래서 take 전체를 한 덩이로 합성할 때(`encode.py <출력> <take> …`)
 고르지 않는 프레임을 지워도 조각 키와 출력 영상이 같다. 첫 · 끝 프레임은 이음새검수 · 앞뒤보기가 쓰므로 남긴다.
@@ -25,6 +28,8 @@ def plan(take):
 def main():
     take, do = sys.argv[1], '--실행' in sys.argv
     T, ffv, chunks = plan(take)
+    if '--비움' in sys.argv:
+        return hollow(chunks, T)
     d = chunks[0].dir
     used = {f for c in chunks for f, _ in c.runs}
     allf = [f['file'] for f in json.loads((d / 'timing.json').read_text(encoding='utf-8'))['frames']]
@@ -41,6 +46,29 @@ def main():
     if again != keys:
         sys.exit(f'{take}: 지운 뒤 조각 키가 바뀌었다 {keys} → {again}')
     print('지움 · 조각 키 같음', keys)
+
+
+def hollow(chunks, T):
+    cache = Path(T.work) / '조각_저장'
+    missing = [c.key for c in chunks if not (cache / f'{c.key}.mp4').exists()]
+    if missing:
+        sys.exit(f'조각이 없다 {missing} — 먼저 encode.py로 합성한다')
+    d = chunks[0].dir
+    allf = [f['file'] for f in json.loads((d / 'timing.json').read_text(encoding='utf-8'))['frames']]
+    keep = {allf[0], *allf[-60:]}
+    n = freed = 0
+    for f in allf:
+        p = d / f
+        if f in keep or not p.exists():
+            continue
+        st = p.stat()
+        if st.st_blocks == 0:
+            continue
+        freed += st.st_blocks * 512
+        os.truncate(p, 0)
+        os.truncate(p, st.st_size)
+        n += 1
+    print(f'비움 {n}장 · {freed / 1e6:.0f} MB')
 
 
 if __name__ == '__main__':

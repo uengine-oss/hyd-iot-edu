@@ -18,7 +18,8 @@
   받은 마지막 원본 프레임이다 — 원본에 없는 화면을 만들지 않는다. 출력 크기는 첫 원본 JPEG 크기, config viewport · deviceScaleFactor는 화살표 배율에만 쓴다.
 고친 음성: 캐시의 글 · 길이가 녹화 때와 다르면(녹화 뒤 대사만 고쳐 다시 만든 음성) 원래 말이 끝나던 자리에 끝나도록 오른쪽에 맞춘다(조작이 말 직후 그대로).
   원래보다 길어 앞 말과 겹치면 앞 말 끝(또는 조각 시작)부터 놓고, 조각 끝을 넘으면 멈춘다. 자막은 고친 글 · 길이로 쓴다. 합성 안에 두 번 이상 나오는 큐 id가
-  바뀌었으면 어느 자리인지 알 수 없어 멈춘다 — --음성교체 <json>([{segment(take), time(take ms), file(json 기준), text(선택)}])으로 자리마다 정한다.
+  바뀌었으면 어느 자리인지 알 수 없어 멈춘다 — --음성교체 <json>([{segment(take), time(take ms), file(json 기준), text(선택), 붙임(선택)}])으로 자리마다 정한다.
+  고친 음성은 원래 말 끝에 맞춰 놓고(조작으로 끝나는 말), 붙임 "뒤"를 준 자리만 원래 말 시작에 놓는다(짧아진 말의 앞 쉼이 늘지 않게).
 이음새 자동 검사(영상 「분할 촬영의 단위와 고치는 길」 · V-179): 조각 경계마다 프레임 간격(영상 시각이 한 프레임씩 이어짐), 소리 튐(경계 앞뒤 급변 · 경계 뒤 큐의 소리 시작 ±1/30초),
   다른 녹화가 만나는 이음새는 앞뒤 화면(1/4로 줄여 값이 12 넘게 바뀐 화소 0.5 % 이하 — 커서 위치만 다를 수 있다. 줄이지 않으면 같은 원본도
   overlay · page 압축 차이로 1.9 %가 난다)과 앞뒤 0.2초 나란히 그림(<출력>/이음새_NN.jpg).
@@ -370,7 +371,8 @@ def place_cues(chunks, overrides, ov_base, silent):
                 r.update(pcm=pcm, src=str(src), lead=None)
                 if hit or changed:
                     new = n * 1000 / SR
-                    g = max(g0 + a['duration'] - new, cursor * 1000 / SR, c0)
+                    left = hit and overrides[hit[0]].get('붙임') == '뒤'   # 짧아진 말을 원래 시작에 두면 앞 쉼이 그대로다
+                    g = max(g0 if left else g0 + a['duration'] - new, cursor * 1000 / SR, c0)
                     if g + new > c1 + 1:
                         raise RuntimeError(f"{c.take}: 고친 음성 {a['id']}이 조각 끝을 넘는다({g + new:.0f} > {c1:.0f}ms)")
                     r.update(g=g, dur=round(new), say=text, revoiced=True)

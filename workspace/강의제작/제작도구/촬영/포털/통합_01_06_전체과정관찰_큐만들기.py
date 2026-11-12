@@ -1,7 +1,10 @@
-# 확정 대본(06_전체과정관찰_다시찍을판.md §2)을 ▸ · ‖ · [기다림]에서 잘라 큐 JSON을 만든다. 글은 대본 그대로, 조작은 아래 표.
+# 통합 1회차 06 전체과정관찰(다시 찍을 판)의 큐 JSON을 확정 대본에서 만든다.
+#   python3 통합_01_06_전체과정관찰_큐만들기.py <확정 대본.md>  → 같은 폴더의 전체과정관찰_다시찍기_큐.json
+# 대본 「## 2. 새 대본 전문」의 「### N.」 단계를 ▸ · ‖ · [기다림]에서 잘라 큐로 만든다. 글은 대본 그대로, 조작은 아래 표(OPS), 쉼(gap)은 영상 V-14.
 import re,json,sys
-SRC='/home/user/hyd-iot-edu/workspace/강의제작/제작도구/근거/2026-11-12_통합1-06-포털-다시찍기/06_전체과정관찰_다시찍을판.md'
-OUT='/home/user/hyd-iot-edu/workspace/강의제작/제작도구/촬영/포털/전체과정관찰_다시찍기_큐.json'
+from pathlib import Path
+SRC=sys.argv[1]
+OUT=Path(__file__).resolve().parent/'전체과정관찰_다시찍기_큐.json'
 src=open(SRC,encoding='utf-8').read()
 body=src[src.index('## 2. 새 대본 전문'):src.index('# 촬영 본문 끝')]
 st=re.split(r'\n### (\d+)\. [^\n]*\n',body)[1:]
