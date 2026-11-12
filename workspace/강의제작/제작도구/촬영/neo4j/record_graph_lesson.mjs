@@ -186,6 +186,7 @@ try{
     case 'openSidebar':await g(c.at??.8);await act({css:'button[title="Open Sidebar"]'},true);break;
     case 'collapse':await g(c.at??.8);await act({css:'button[title="Collapse Sidebar"]'},true);break;
     case 'fit':await g(c.at??.8);await act({css:'button[aria-label="Zoom to fit"]'},true);await sleep(500);break;
+    case 'blank':{await g(c.at??.6);const b=await serial(()=>p.evaluate(()=>{const r=[...document.querySelectorAll('[data-testid="nvl-c2d-canvas"]')].find(c=>c.getBoundingClientRect().height>0).getBoundingClientRect();return {x:r.x+35,y:r.y+30};}));await move(b);await clickHere();await sleep(300);break;}
     case 'closeDetails':await g(c.at??.8);if(await serial(hasDetails))await act({css:'button[aria-label="Toggle graph details panel"]'},true);break;
     case 'layout':await g(c.at??.6);await act({css:'button[aria-label="Select layout"]'},true);await sleep(250);await act({css:'[role="menuitemradio"]',text:'Hierarchical layout'},true);await sleep(600);break;
     case 'guideShow':{
