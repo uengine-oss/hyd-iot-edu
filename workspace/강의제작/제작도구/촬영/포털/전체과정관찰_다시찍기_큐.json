@@ -1987,6 +1987,16 @@
     [
      "point",
      {
+      "css": "#units [data-asset=\"HYD-01\"] header strong",
+      "anchor": "after"
+     },
+     {
+      "at": "첫 번째 설비 카드"
+     }
+    ],
+    [
+     "point",
+     {
       "css": "#units [data-asset=\"HYD-01\"] .big.num",
       "anchor": "after"
      },
@@ -2255,6 +2265,19 @@
       "nth": 0
      },
      60
+    ],
+    [
+     "wait",
+     {
+      "css": "#instDetail .td-now",
+      "anchor": "after"
+     },
+     60
+    ],
+    [
+     "settle",
+     null,
+     10
     ]
    ]
   },
@@ -2629,8 +2652,8 @@
     [
      "point",
      {
-      "css": "#todoPanel .ap-lost-head b",
-      "anchor": "after",
+      "css": "#todoPanel .ap-lost",
+      "anchor": "margin",
       "nth": 2
      },
      0
@@ -2816,6 +2839,16 @@
      {
       "at": "승인 누르"
      }
+    ],
+    [
+     "waitjs",
+     "!/운전원 승인/.test(document.querySelector('#instDetail .td-now')?.textContent||'운전원 승인')",
+     60
+    ],
+    [
+     "settle",
+     null,
+     10
     ]
    ]
   },
@@ -2987,10 +3020,33 @@
     [
      "point",
      {
-      "css": "#instRecord [data-cr-steps] > li:nth-child(1) .cr-chips",
-      "anchor": "left"
+      "css": "#instRecord [data-cr-steps] > li:nth-child(1) .cr-chips .chip",
+      "anchor": "below",
+      "nth": 0
      },
      0
+    ],
+    [
+     "point",
+     {
+      "css": "#instRecord [data-cr-steps] > li:nth-child(1) .cr-chips .chip",
+      "anchor": "below",
+      "contains": "냉각 효율"
+     },
+     {
+      "at": "냉각 효율은"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#instRecord [data-cr-steps] > li:nth-child(1) .cr-chips .chip",
+      "anchor": "below",
+      "contains": "유온"
+     },
+     {
+      "at": "유온은"
+     }
     ]
    ]
   },
@@ -3066,7 +3122,52 @@
    "gap": 600,
    "mark": "▸",
    "text": "경보에서 증상으로, 증상에서 고장으로 가서, 그 고장을 일으킨 원인을 찾았죠. 지식 지도에서 본 길을 따라간 겁니다",
-   "ops": []
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > .cr-path:first-child > .cr-node",
+      "anchor": "below",
+      "nth": 0
+     },
+     {
+      "at": "경보에서"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > .cr-path:first-child > .cr-node",
+      "anchor": "below",
+      "nth": 1
+     },
+     {
+      "at": "증상에서 고장"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > .cr-path:first-child > .cr-node",
+      "anchor": "below",
+      "nth": 2
+     },
+     {
+      "at": "고장으로 가서"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > .cr-path:first-child > .cr-node",
+      "anchor": "below",
+      "nth": 3
+     },
+     {
+      "at": "원인을 찾았"
+     }
+    ]
+   ]
   },
   {
    "id": "o1409",
@@ -3087,12 +3188,34 @@
     [
      "point",
      {
-      "css": "#instRecord .cr-sec-body:has(> h6) tr",
-      "anchor": "margin",
+      "css": "#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > h6 + .cr-scroll table.cr-table td",
+      "anchor": "after",
       "contains": "쿨러 핀 오염"
      },
      {
       "at": "핀 오염 줄은"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > h6 + .cr-scroll table.cr-table td .chip",
+      "anchor": "after",
+      "nth": 0
+     },
+     {
+      "at": "두 줄 다"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > h6 + .cr-scroll table.cr-table td .chip",
+      "anchor": "after",
+      "nth": 1
+     },
+     {
+      "at": "맞음으로"
      }
     ]
    ]
@@ -3107,11 +3230,22 @@
     [
      "point",
      {
-      "css": "#instRecord .cr-sec-body:has(> h6) tr",
-      "anchor": "margin",
-      "contains": "주변 온도"
+      "css": "#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > h6 + .cr-scroll table.cr-table td .chip",
+      "anchor": "after",
+      "nth": 2
      },
      0
+    ],
+    [
+     "point",
+     {
+      "css": "#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > h6 + .cr-scroll table.cr-table td .chip",
+      "anchor": "after",
+      "nth": 3
+     },
+     {
+      "at": "아님"
+     }
     ]
    ]
   },
@@ -3121,7 +3255,30 @@
    "gap": 600,
    "mark": "‖",
    "text": "우리가 원문과 맞춰 넣은 그 증거가 여기서 쓰인 겁니다. 그래서 미만, 이상까지 꼼꼼히 본 거고요.",
-   "ops": []
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > h6 + .cr-scroll table.cr-table td.num",
+      "anchor": "after",
+      "contains": "< 0.9"
+     },
+     {
+      "at": "미만"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > h6 + .cr-scroll table.cr-table td.num",
+      "anchor": "after",
+      "contains": "≥ 0.9"
+     },
+     {
+      "at": "이상까지"
+     }
+    ]
+   ]
   },
   {
    "id": "o1412",
@@ -3147,7 +3304,41 @@
    "gap": 600,
    "mark": "‖",
    "text": "원인에서 고장으로, 고장에서 즉시 완화 조치인 팬 최대 운전으로 이어져요.",
-   "ops": []
+   "ops": [
+    [
+     "point",
+     {
+      "css": "#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > h6 + .cr-path > .cr-node",
+      "anchor": "below",
+      "nth": 0
+     },
+     {
+      "at": "원인에서"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > h6 + .cr-path > .cr-node",
+      "anchor": "below",
+      "nth": 1
+     },
+     {
+      "at": "고장에서"
+     }
+    ],
+    [
+     "point",
+     {
+      "css": "#instRecord [data-cr-steps] > li:nth-child(2) .cr-sec-body > h6 + .cr-path > .cr-node",
+      "anchor": "below",
+      "nth": 2
+     },
+     {
+      "at": "팬 최대 운전"
+     }
+    ]
+   ]
   },
   {
    "id": "o1414",
@@ -3351,6 +3542,14 @@
    "mark": "▸",
    "text": "옆의 결과 탭을 누르시면",
    "ops": [
+    [
+     "point",
+     {
+      "css": "[data-inst-tab=\"result\"]",
+      "anchor": "below"
+     },
+     0
+    ],
     [
      "click",
      {
