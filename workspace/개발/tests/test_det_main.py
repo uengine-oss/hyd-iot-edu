@@ -163,3 +163,60 @@ def test_경보가_없는_기록은_하나마다가_아니라_주기로만_체�
     quick, between, last = asyncio.run(scenario())
     assert quick, '20건을 한 주기 안에 처리하지 못해 이 판정을 할 수 없다(PC 가 너무 바쁨)'
     assert between is None or between <= last - 18, f'경보 없는 기록마다 체크포인트를 썼다(처리 직후 자리 {between}, 마지막 {last})'
+
+
+def test_리밸런스로_커밋이_거절돼도_소비는_이어지고_다시_받은_기록은_한_번만_센다(det, brokers, monkeypatch):
+    """호스트가 바빠 소비 루프가 하트비트를 놓치면 그룹이 리밸런스하고 다음 커밋이 CommitFailedError로 거절된다. 그때 루프가
+    끝나면 감지가 멈추고 /healthz 가 503 에 머문다(2026-11-12 클라우드 녹화 중 실제로 일어남). 실제 redpanda 에서 기록 하나를
+    처리하는 동안 세션 시간보다 오래 루프를 막아 리밸런스를 일으키고, 거절된 커밋 뒤에도 새 기록이 처리되는지, 다시 배정된
+    파티션이 되돌려 준 기록을 SQLite 체크포인트로 걸러 한 번만 세는지 본다."""
+    import json
+    import time
+    from aiokafka import AIOKafkaProducer
+    monkeypatch.setenv('KAFKA_BOOTSTRAP', brokers.kafka)
+    real = det.process
+    blocked = []
+
+    async def slow(prod, rec):
+        if not blocked and rec.topic == topics.K_STATUS:
+            blocked.append(rec.offset)
+            time.sleep(12)                                   # 세션 시간(aiokafka 기본 10 s)보다 오래 루프를 막는다
+        await real(prod, rec)
+    monkeypatch.setattr(det, 'process', slow)
+
+    def status():
+        return {'asset': 'HYD-02', 't': _iso(time.time()), 'mode': 'REMOTE_AUTO', 'state': 'RUN', 'trip': None}
+
+    async def scenario():
+        task = asyncio.create_task(det.run())
+        sender = AIOKafkaProducer(bootstrap_servers=brokers.kafka, value_serializer=lambda v: json.dumps(v).encode())
+        await sender.start()
+        try:
+            while not det.state['kafka']:
+                assert not task.done(), task.exception()
+                await asyncio.sleep(0.05)
+            seen, sent = det.state['statuses'], 0
+            deadline = time.monotonic() + 90
+            while det.state['commit_refused'] == 0 or det.state['statuses'] < seen + sent:
+                assert not task.done(), f'소비 루프가 끝났다: {task.exception()!r}'
+                assert time.monotonic() < deadline, f"거절 {det.state['commit_refused']} · 처리 {det.state['statuses'] - seen}/{sent}"
+                await sender.send_and_wait(topics.K_STATUS, status(), key=b'hyd02')
+                sent += 1
+                await asyncio.sleep(0.3)
+            await asyncio.sleep(det.CHECKPOINT_S + 1)       # 리밸런스 뒤 첫 커밋까지 한 주기 더 — 그사이 되돌아온 기록이 있으면 센다
+            await sender.send_and_wait(topics.K_STATUS, status(), key=b'hyd02')
+            sent += 1
+            while det.state['statuses'] < seen + sent:
+                assert not task.done(), f'소비 루프가 끝났다: {task.exception()!r}'
+                assert time.monotonic() < deadline + 30
+                await asyncio.sleep(0.05)
+            await asyncio.sleep(1)
+            return det.state['statuses'] - seen, sent, det.health()
+        finally:
+            await sender.stop()
+            task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
+    counted, sent, health = asyncio.run(scenario())
+    assert blocked, '막을 기록이 오지 않았다'
+    assert counted == sent, f'보낸 {sent}건을 {counted}건으로 셌다(되돌아온 기록을 다시 셌거나 빠뜨렸다)'
+    assert health['commit_refused'] >= 1 and not health.get('consumer_dead'), health

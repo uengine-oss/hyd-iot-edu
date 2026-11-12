@@ -6,11 +6,13 @@ sys.stdout.reconfigure(encoding='utf-8')
 ff = ffmpeg()
 key = elevenlabs_key()
 cfg = json.loads(CUES.read_text(encoding='utf-8'))
-segs = {int(s) for s in sys.argv[1:]}
+args = sys.argv[1:]
+only = set(args[args.index('--큐') + 1].split(',')) if '--큐' in args else None   # --큐 a001,a002: 그 큐만(대표 큐로 단가 재기)
+segs = {int(s) for s in args if s.isdigit()}
 audio = AUDIO; audio.mkdir(exist_ok=True)
 made = 0
 for c in cfg['cues']:
-    if c['segment'] not in segs:
+    if (only and c['id'] not in only) or (not only and c['segment'] not in segs):
         continue
     mp3, meta = audio / (c['id'] + '.mp3'), audio / (c['id'] + '.json')
     if meta.exists() and json.loads(meta.read_text(encoding='utf-8'))['text'] == c['text']:
@@ -20,12 +22,13 @@ for c in cfg['cues']:
                                  headers={'xi-api-key': key, 'Content-Type': 'application/json'})
     try:
         with urllib.request.urlopen(req, timeout=180) as r:
-            mp3.write_bytes(r.read())
+            mp3.write_bytes(r.read()); cost = r.headers.get('character-cost')   # 같은 계정을 여러 세션이 쓰므로 이 요청의 실제 차감을 남긴다
     except urllib.error.HTTPError as e:
         raise RuntimeError(f"{c['id']}: voice HTTP {e.code} {e.read()[:200]!r}") from None
     pcm = subprocess.check_output([ff, '-v', 'error', '-i', str(mp3), '-f', 's16le', '-ac', '1', '-ar', '44100', '-'])
     dur = round(len(pcm) / 2 / 44100 * 1000)
-    meta.write_text(json.dumps({'id': c['id'], 'text': c['text'], 'duration_ms': dur}, ensure_ascii=False), encoding='utf-8')
+    meta.write_text(json.dumps({'id': c['id'], 'text': c['text'], 'duration_ms': dur, 'voice_id': cfg['voice_id'], 'model_id': cfg['model_id'], 'character_cost': int(cost) if cost else None}, ensure_ascii=False), encoding='utf-8')
     made += 1
-    print(c['id'], dur, flush=True)
-print('generated', made)
+    spent = locals().get('spent', 0) + (int(cost) if cost else 0)
+    print(c['id'], dur, 'cost', cost, flush=True)
+print('generated', made, 'character-cost 합', locals().get('spent', 0))

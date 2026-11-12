@@ -21,9 +21,9 @@
 
 | 무엇 | 값 · 경로 |
 |---|---|
-| 도구 | 포털(클라우드 Playwright, 로컬 ego) [포털/](포털/촬영준비.md), Neo4j Browser(클라우드 Playwright, 로컬 ego) [neo4j/](neo4j/촬영준비.md), ARROWS [arrows/](arrows/촬영준비.md), Notion [notion/](notion/촬영준비.md), 웹 VS Code [vscode/](vscode/촬영준비.md), 설치 구간(사용자 원본) [환경세팅/](환경세팅/촬영준비.md). bpmn.io는 처음 찍을 때 `bpmn/촬영준비.md`를 같은 꼴(길 · 자료 · 함정)로 만든다 |
+| 도구 | 포털(클라우드 Playwright, 로컬 ego) [포털/](포털/촬영준비.md), Neo4j Browser(클라우드 Playwright, 로컬 ego) [neo4j/](neo4j/촬영준비.md), ARROWS(클라우드 Playwright, 로컬 ego) [arrows/](arrows/촬영준비.md), Notion [notion/](notion/촬영준비.md), 웹 VS Code [vscode/](vscode/촬영준비.md), 설치 구간(사용자 원본) [환경세팅/](환경세팅/촬영준비.md). bpmn.io는 처음 찍을 때 `bpmn/촬영준비.md`를 같은 꼴(길 · 자료 · 함정)로 만든다 |
 | 음성 | 목소리 · 모델 · 설정 값은 영상 V-4이고, 형식은 `mp3_44100_128`이다. 캐시는 큐마다 `<큐 id>.mp3`와 `.json`(text, duration_ms)이고, 같은 문장은 다시 만들지 않는다 |
-| 음성 키 | 포털과 Neo4j는 환경변수 `ELEVENLABS_API_KEY`를 쓴다. ARROWS, Notion, VS Code는 `HYD_ELEVENLABS_KEY_FILE`이 가리키는 파일을 쓴다(Git Bash에서 `export HYD_ELEVENLABS_KEY_FILE='<키 파일 경로>'`). 키 값을 출력하거나 남기지 않는다 |
+| 음성 키 | 포털과 Neo4j, 클라우드의 ARROWS는 환경변수 `ELEVENLABS_API_KEY`를 쓴다. 이 PC의 ARROWS와 Notion, VS Code는 `HYD_ELEVENLABS_KEY_FILE`이 가리키는 파일을 쓴다(Git Bash에서 `export HYD_ELEVENLABS_KEY_FILE='<키 파일 경로>'`). 키 값을 출력하거나 남기지 않는다 |
 | 시간 | [시간계산.py](시간계산.py) `estimate <큐>`, 계수는 [시간계수.json](시간계수.json) |
 | 검사 · 잇기 | [포털/촬영도구/](포털/촬영도구/)의 `verify.py` · `scenes.py` · `listen.py` · `join.py` · `cut.py`는 어느 도구의 영상에나 쓴다 |
 | ffmpeg(이 PC) | PATH에 없다. `FFMPEG="$(python -c 'import imageio_ffmpeg;print(imageio_ffmpeg.get_ffmpeg_exe())')"`로 잡거나 `CLAUDE.md` 6절의 WinGet 경로를 쓴다 |
