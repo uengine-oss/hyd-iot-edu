@@ -2,6 +2,7 @@
 // 조작 형식: [종류, 대상, …, 시점]. 시점은 0~1 또는 대사 속 구절(그 구절이 시작될 때). 대상은 포털 소개 이름(tab:knowledge) 또는 {css,anchor,…}.
 // 되돌릴 수 없는 조작(적재 · 주입 · 승인)이 있어 리허설은 스냅샷.sh로 시작 상태를 되돌린 뒤 본촬영을 한다.
 import fs from 'node:fs/promises';
+import os from 'node:os';
 import {fileURLToPath} from 'node:url';
 import {portal} from '../ui.mjs';
 import {target as tourTarget} from './portal_tour.mjs';
@@ -36,7 +37,11 @@ export async function op(ctx,c,o){
   case 'select':return c.select(T(a),b);
   case 'selectwith':{const t=T(a);const v=await ctx.p.evaluate(({css,words})=>{const m=[...document.querySelector(css).options].filter(x=>words.every(w=>x.textContent.includes(w)));return m.length===1?m[0].value:null;},{css:t.css,words:b});if(v===null)throw Error('고를 항목이 하나로 정해지지 않음: '+b.join(' '));return c.select(t,v);}
   case 'download':{const w=ctx.p.waitForEvent('download',{timeout:20000});await c.click(T(a));await (await w).saveAs(ctx.out+'/'+b);return;}
-  case 'file':{const w=ctx.p.waitForFileChooser({timeout:20000});await c.click(T(a));await (await w).setFiles(ctx.out+'/'+b);await c.sleep(400);return;}
+  // 클라우드 Playwright가 직접 띄운 브라우저에서는 한글이 든 경로의 파일이 파일 칸에 들어가지 않고 오류도 없었다(2026-11-12 길뚫기 — CDP로 붙은
+  // 녹화 브라우저에서는 들어갔다). 녹화 폴더(작업/촬영/포털)가 한글이라 영문 임시 폴더로 복사해 넣고, 파일 칸에 실제로 들어갔는지 확인한다.
+  case 'file':{const dir=os.tmpdir()+'/hyd-upload';await fs.mkdir(dir,{recursive:true});const src=dir+'/'+b;await fs.copyFile(ctx.out+'/'+b,src);
+    const w=ctx.p.waitForFileChooser({timeout:20000});await c.click(T(a));await (await w).setFiles(src);await c.sleep(400);
+    if(!(await ctx.serial(()=>ctx.p.evaluate(n=>[...document.querySelectorAll('input[type=file]')].some(i=>[...i.files].some(f=>f.name===n)),b))))throw Error('파일 칸에 들어가지 않음: '+b);return;}
   case 'type':return c.type(a);
   // 원문 칸이 화면에 다 들어오게 본문을 먼저 굴리고(화살표는 칸 옆 여백), 그다음 칸 안에서 그 구절까지 굴린다(화살표는 칸 위).
   case 'phrase':{for(let i=0;;i++){const q=await ctx.serial(()=>ctx.p.evaluate(phraseInPage,a));if(q.error)throw Error(q.error);
