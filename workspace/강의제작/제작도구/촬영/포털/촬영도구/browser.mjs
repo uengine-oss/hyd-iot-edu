@@ -6,7 +6,8 @@ import {fileURLToPath} from 'node:url';
 const require=createRequire(import.meta.url);
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'/opt/node22/lib/node_modules/playwright');
 const HERE=fileURLToPath(new URL('.',import.meta.url));
-const CFG=JSON.parse(fs.readFileSync(HERE+'config.json','utf8'));
+// 다른 도구(neo4j)도 같은 상주 브라우저를 쓴다: HYD_BROWSER_CONFIG=<그 도구 촬영도구/config.json> node browser.mjs (값은 그 파일의 cdp · viewport).
+const CFG=JSON.parse(fs.readFileSync(process.env.HYD_BROWSER_CONFIG||HERE+'config.json','utf8'));
 // 페이지는 브라우저 기본 문맥에 둔다(launchPersistentContext, 빈 프로필 폴더 = 임시). 새 문맥(newContext)에 두면 CDP로 붙은 녹화 쪽이
 // 내려받은 파일을 이 프로세스의 임시 폴더에서 찾지 못해 saveAs가 ENOENT로 실패한다(2026-11-03 06 촬영 C003a). 기본 문맥은 붙은 쪽이 내려받기 위치를 정한다.
 const ctx=await chromium.launchPersistentContext('',{headless:true,args:[`--remote-debugging-port=${CFG.cdp}`,`--force-device-scale-factor=${CFG.viewport.deviceScaleFactor}`,'--hide-scrollbars','--font-render-hinting=none'],
