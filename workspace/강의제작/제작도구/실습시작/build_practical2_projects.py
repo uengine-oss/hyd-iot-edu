@@ -29,7 +29,7 @@ import session2_project_guides as G
 import session2_graph_project as GP
 
 DEST = ROOT / 'workspace/강의제작/산출물/실전반/실습/02회차/랩'
-VERSION = 'v18-project'   # 2026-11-11: 독립 검토 고침 + 공용 고침
+VERSION = 'v22-graph'   # 2026-11-12: 공용 원자료 보강(친절한 비고 걷기 · 3라인 계장태그 · 리턴 필터 후보 둘 · 품번 합치기 역할 근거 · 제작 사실 걷기), 제공 모델 카디널리티 표기 · 검사기 카디널리티 검사 · 대조 단추 글자 — 작업 판정/보강_20261112
 WORK = ROOT / '작업/검사/practical2-projects'
 PR07 = 'purchasing_standard_pr07.md'
 LABS = {'ontology': 'ontology-lab', 'graph': 'graph-lab'}
@@ -68,7 +68,7 @@ def source_data(folder):
 
 def model_files(folder, supply):
     """제공 모델: 설계 랩은 설비·부품 모델(공급 정보 없음), 그래프 랩은 앞 단계 완성 모델(갈래 ㄴ)과 자료 처리 근거."""
-    schema, graph = B.reference_model(supply, B.LAB4_INPUT_BRANCH['실전반']) if supply else B.reference_model()
+    schema, graph = B.reference_model(supply, B.GRAPH_LAB_INPUT['실전반']) if supply else B.reference_model(False, B.PROVIDED_BRANCH)
     for name, value in [('schema.json', B.student_schema(schema)), ('graph.json', graph)]:
         write(folder / 'data/model' / name, convert(json.dumps(value, ensure_ascii=False, indent=2) + '\n'))
     if supply:
@@ -164,7 +164,7 @@ def ontology():
             '지킬 조건도 적습니다. 공급사를 고르거나 점수·순위를 매기는 일, 입고 이력으로 실측 납기를 세는 일, 제공 모델의 설비·부품 부분을 고치는 일은 이번 범위에서 제외합니다. 공용 부품을 설비별로 따로 만들지 않고 단위와 출처를 남긴다는 조건을 자기 말로 남깁니다.',
             '`app/features/expected.csv`에 원자료에서 찾은 답과 근거 줄을 적습니다. 질문 1은 사용 설비 코드를 적습니다. 질문 2는 항목에 「사내 품번/공급사」(공급사는 `data/approved_suppliers.csv`의 이름), 기대_답에 「승인 또는 비승인 · 단가(만원 숫자) · 불량률(0~1 소수) · 납기(일 수)」를 적습니다. '
             '질문 3은 질문 1·2 줄에 다른 표기와 없는 품번을 물을 값으로 쓰고, 원자료에 없는 품번은 항목을 비우고 기대_답에 「없음」을 적습니다. 줄의 꼴은 `질문,물을_값,항목,기대_답,근거`이고 근거는 `data/파일.csv:줄`입니다.',
-            '세 지점을 정해 `app/features/decisions.csv`에 적습니다. **조건이 붙은 승인**은 조건을 달아 등록된 쌍을 승인 여부(참·거짓)에 어떻게 담고 그 조건을 어떻게 보여 줄지, **빈 값의 뜻**은 비어 있는 칸을 「없음」으로 읽을지 「적지 않음」으로 읽을지, '
+            '`app/features/decisions.csv`에 미리 있는 세 지점 줄에 고른 것을 적습니다(비어 있으면 승인 기능이 그 줄을 짚고 멈춥니다). **조건이 붙은 승인**은 조건을 달아 등록된 쌍을 승인 여부(참·거짓)에 어떻게 담고 그 조건을 어떻게 보여 줄지, **빈 값의 뜻**은 비어 있는 칸을 「없음」으로 읽을지 「적지 않음」으로 읽을지, '
             '**쓰는 사람에 따라 갈리는 답**은 구매 담당이 공급사를 비교할 때 함께 봐야 할 것이 자료에 있으면 그것을 모델에 어떻게 남길지입니다. 선택마다 근거 줄과 그 선택으로 바뀌는 답을 적습니다. AI의 추천은 선택 근거가 되지 않습니다.', G.SAVE_NOTE],
             prompt='질문 1~3마다 `data/`의 원자료에서 답과 근거 줄(파일:줄)을 함께 찾아, `expected.csv`의 열 꼴대로 한 줄씩 적을 내용을 보여 줘. 파일은 바꾸지 마. 값은 내가 그 줄을 열어 확인한 뒤 적을게. '
                    '`decisions.csv`의 세 지점은 내가 정하니, 지점마다 근거가 될 줄만 짚어 주고 선택은 하지 마.',
@@ -297,7 +297,7 @@ def same(expected, actual):
     \"\"\"숫자 표기 차이(0.30 = 0.3)까지 같게 견준다. 화면에는 적은 글을 그대로 보인다.\"\"\"
     return norm(numbers(expected)) == norm(numbers(actual))
 """
-GRAPH_EXPECT = [('한 줄 = (질문 · 물을_값) 하나에 볼_열 하나.', '한 줄 = (질문 · 물을_값 · 볼_열) 하나 — 한 물을 값에 견줄 열이 여럿이면 볼_열마다 한 줄.'),
+GRAPH_EXPECT = [('(질문 · 물을_값) 짝마다 한 줄만 쓰고, 그 줄에서 견줄 열(볼_열)은 하나. 같은 짝의 다른 열을 견주려면 같은 대상의 다른 표기를 물을_값으로 쓴 줄을 더함.', '한 줄 = (질문 · 물을_값 · 볼_열) 하나 — 한 물을 값에 견줄 열이 여럿이면 볼_열마다 한 줄.'),
                 ('볼_열 = 그 조회 결과에서 견줄 열 이름 하나.', '볼_열 = 그 조회 결과에서 견줄 열 이름 하나(조회를 만든 뒤 채움).'),
                 ('기대_답 = 그 열의 값들(결과 줄마다 하나).', '기대_답 = 그 열의 값들(결과 줄마다 하나, 목록 칸은 「 · 」로 잇고 모든 줄에서 같은 목록이면 한 번만).')]
 GRAPH_ASK = """
@@ -374,7 +374,7 @@ def build_ontology(folder):
                 text = replace_all(text, ONTOLOGY_EXPECT)
             write(folder / convert(name), convert(text))
     write(folder / 'app/features/requirements.md', '# 요구사항\n\n## 답을 쓸 사람·질문·기준일\n\n## 지킬 조건\n\n## 대조 결과·고친 점\n\n## 저장 시점·확인하지 못한 점\n')
-    utilities, ui = P.result_sources()
+    utilities, ui = S2.result_sources()
     write(folder / 'app/utils/results.py', utilities)
     write(folder / 'app/ui/render.py', ui)
     write(folder / 'app/utils/supply.py', supply_source())
@@ -389,9 +389,9 @@ def build_ontology(folder):
                                 'quotes': ('기준일에 쓸 견적', 'quotes'), 'approval': ('승인과 함께 볼 정보', 'approval'),
                                 'query': ('질문별 대조와 구조 검사', 'ask'), 'check': ('구조 검사', 'check')})
     write(folder / 'app/utils/actions.py', convert(actions))
-    write(folder / 'run.py', P.RUN)
+    write(folder / 'run.py', S2.run_source())
     write(folder / 'app/utils/check.py', checker(folder, L))
-    write_metadata(folder, L['title'], ONTOLOGY_PURPOSE, extra_rules=ONTOLOGY_RULES)
+    write_metadata(folder, L['title'], ONTOLOGY_PURPOSE, extra_rules=ONTOLOGY_RULES + '\n' + S2.DECISION_RULE)
     steps = ontology()
     F.write_guide(folder, G.render(L['title'], ONTOLOGY_LEAD, steps), ai_turns=sum(s['ai'] for s in steps))
     return L, steps
@@ -412,7 +412,7 @@ def build_graph(folder):
                 text = replace_all(text, [(EXPECT_OLD, EXPECT_NEW)] + GRAPH_EXPECT)
             write(folder / convert(name), convert(text).replace('python show_result.py가 실행', 'python run.py load가 실행'))
     write(folder / 'app/features/review.md', GRAPH_REVIEW)
-    utilities, ui = P.result_sources()
+    utilities, ui = S2.result_sources()
     write(folder / 'app/utils/results.py', utilities)
     write(folder / 'app/ui/render.py', ui)
     write(folder / 'app/utils/db.py', replace_all(GP.db_source(), [('저장해 둔 적재 · 수정 파일을 같은 순서로 다시 실행하세요.', '저장해 둔 적재 파일부터 다시 실행하세요.')]))
@@ -425,9 +425,9 @@ def build_graph(folder):
         'usage': ('사용 설비와 공급 조건', 'q1'), 'aliases': ('다른 표기와 없는 품번', 'q2'),
         'export': ('그래프 저장', 'export'), 'check': ('구조 검사', 'check')})
     write(folder / 'app/utils/actions.py', convert(actions))
-    write(folder / 'run.py', P.RUN)
+    write(folder / 'run.py', S2.run_source())
     write(folder / 'app/utils/check.py', checker(folder, L))
-    write_metadata(folder, L['title'], GRAPH_PURPOSE, extra_rules=GRAPH_RULES + '\n' + DB_RULE)
+    write_metadata(folder, L['title'], GRAPH_PURPOSE, extra_rules=GRAPH_RULES + '\n' + S2.GRAPH_DECISION_RULE + '\n' + DB_RULE)
     steps = graph()
     F.write_guide(folder, G.render(L['title'], GRAPH_LEAD, steps), ai_turns=sum(s['ai'] for s in steps))
     return L, steps

@@ -22,12 +22,59 @@ import session2_project_guides as G
 import session2_graph_project as GP
 
 DEST = ROOT / 'workspace/강의제작/산출물/통합반/실습/02회차/랩'
-VERSION = 'v22-project'   # 2026-11-11: 공용 고침(대조 칸 원래 글 · 오류 위치 · 저장 · 편집 승인 · 새 DB 적재 자리 · DB 경계 · 「랩 DB」 한 이름)
+VERSION = 'v26-graph'   # 2026-11-12: 판단 보강(카디널리티 · 자리와 실물 · 확인 필요 · 붙은 자리까지 물리량, 친절한 비고 걷기 · 3라인 계장태그 · 리턴 필터 후보 둘 · 품번 합치기 역할 근거, 질문 2 값 대조 · 질문 4) — 작업 판정/보강_20261112
 WORK = ROOT / '작업/검사/session2-projects'
 
 
 def write(path, text):
     F.write(path, text)
+
+
+def result_sources():
+    """제공 결과 화면 코드. 대조 표의 거르기 단추 글자를 표 머리로 읽히지 않는 말로 바꾼다(리허설 06 막힘 6)."""
+    utilities, ui = P.result_sources()
+    for old, new in [('o.textContent=only?"모든 줄":"다른 줄만"', 'o.textContent=only?"모든 줄 보기":"같음 줄 숨기기"'),
+                     ('<button class="t only">다른 줄만</button>', '<button class="t only">같음 줄 숨기기</button>')]:
+        if ui.count(old) != 1:
+            raise ValueError(f'결과 화면 코드에서 바꿀 글을 찾지 못했습니다: {old}')
+        ui = ui.replace(old, new)
+    return utilities, ui
+
+
+# 장난감 시험(2026-11-12) — AI가 결정 · 기대 답을 스스로 채우고, 기능 파일 여럿을 한꺼번에 짰다. 작업 경계만 둔다(형식은 강제하지 않음, 코딩랩 K-6).
+DECISION_RULE = ('- `app/features/decisions.csv`의 고른_것 · 근거와 `app/features/expected.csv`의 기대 답에는 학생이 대화에서 말한 것만 적는다. '
+                 '학생이 정하지 않았으면 적지 않고, 근거가 될 원자료 줄을 짚어 묻는다.\n'
+                 '- 한 번에 요청받은 기능 파일 하나만 고치고, 그 기능을 실행해 실제 결과를 보인 뒤 멈춘다. 랩 DB를 쓰는 기능은 랩 DB에서 실행한 결과로 확인한다.')
+
+
+# 리허설 07 막힘: Codex 샌드박스는 랩 DB(Docker)에 닿지 못해 AI가 실행을 시도하다 실패했다. 그래프 랩은 랩 DB 명령을 학생 터미널에 둔다.
+GRAPH_DECISION_RULE = ('- `app/features/decisions.csv`의 고른_것 · 근거와 `app/features/expected.csv`의 기대 답에는 학생이 대화에서 말한 것만 적는다. '
+                       '학생이 정하지 않았으면 적지 않고, 근거가 될 원자료 줄을 짚어 묻는다.\n'
+                       '- 한 번에 요청받은 기능 파일 하나만 고친 뒤 멈춘다. 랩 DB를 쓰는 명령(`python run.py` 기능)은 학생이 자기 터미널에서 실행하고, '
+                       'AI는 학생이 붙여 준 터미널 출력과 결과 화면으로 확인한다. AI가 그 명령을 직접 실행하지 않는다.')
+
+
+def run_source():
+    """제공 run.py — 실행이 확인 필요로 끝나도 직전에 성공한 결과를 지우지 않고, 이번 실패를 위에 · 직전 성공을 그 아래에 밝혀 보인다(리허설 07 막힘)."""
+    BS = chr(92)
+    text = P.RUN
+    old = "    target.write_text(page(actions.TITLE, title, blocks), encoding='utf-8', newline='" + BS + "n')" + chr(10) + \
+          "    (output / 'result.json').write_text(json.dumps({'action': args.action, 'blocks': blocks}, ensure_ascii=False, indent=2) + '" + BS + "n', encoding='utf-8')" + chr(10)
+    new = ("    failed = any(b['kind'] == 'error' for b in blocks)" + chr(10) +
+           "    saved = output / 'result.json'" + chr(10) +
+           "    last = json.loads(saved.read_text(encoding='utf-8')).get('last_success') if saved.exists() else None" + chr(10) +
+           "    if not failed:" + chr(10) +
+           "        last = {'action': args.action, 'title': title, 'blocks': blocks}" + chr(10) +
+           "    shown = blocks + ([results.note('아래는 직전에 성공한 「' + last['title'] + '」 실행의 결과입니다. 이번 실행은 위의 확인 필요로 끝났습니다.')] + last['blocks'] if failed and last else [])" + chr(10) +
+           "    target.write_text(page(actions.TITLE, title, shown), encoding='utf-8', newline='" + BS + "n')" + chr(10) +
+           "    saved.write_text(json.dumps({'action': args.action, 'blocks': blocks, 'last_success': last}, ensure_ascii=False, indent=2) + '" + BS + "n', encoding='utf-8')" + chr(10))
+    if text.count(old) != 1:
+        raise ValueError('run.py 원본의 결과 쓰기 줄을 찾지 못했습니다.')
+    return text.replace(old, new)
+
+
+REQUIREMENTS = ('# 요구사항\n\n## 목적과 답을 쓸 사람\n\n## 역량 질문과 기준일\n\n## 지킬 조건 · 범위 밖\n\n'
+                '## 용어(같은 대상의 다른 이름)\n\n## 대조 결과 · 고친 점\n\n## 저장 시점 · 확인하지 못한 점\n')
 
 
 def source_data(folder):
@@ -68,8 +115,8 @@ def build_ontology(folder):
             text = P.convert(text)
             text = text.replace('5단계에서 정한 이름 기준', '정한 이름 기준')
             write(folder / P.convert(name), text)
-    write(folder / 'app/features/requirements.md', '# 요구사항\n\n## 답을 쓸 사람·질문·기준일\n\n## 지킬 조건\n\n## 대조 결과·고친 점\n\n## 저장 시점·확인하지 못한 점\n')
-    utilities, ui = P.result_sources()
+    write(folder / 'app/features/requirements.md', REQUIREMENTS)
+    utilities, ui = result_sources()
     write(folder / 'app/utils/results.py', utilities)
     write(folder / 'app/ui/render.py', ui)
     write(folder / 'app/utils/model.py', P.model_source())
@@ -80,9 +127,9 @@ def build_ontology(folder):
                 'parts': ('공용 부품과 모델', 'parts'), 'query': ('질문별 대조', 'ask'), 'check': ('구조 검사', 'check')}
     actions += '\nCOMMANDS = {\n' + ''.join(f'    {cmd!r}: ({label!r}, {fn}),\n' for cmd, (label, fn) in commands.items()) + '}\n'
     write(folder / 'app/utils/actions.py', actions)
-    write(folder / 'run.py', P.RUN)
+    write(folder / 'run.py', run_source())
     write(folder / 'app/utils/check.py', checker(folder, L))
-    write_metadata(folder, L['title'], G.ONTOLOGY_PURPOSE)
+    write_metadata(folder, L['title'], G.ONTOLOGY_PURPOSE, extra_rules=DECISION_RULE)
     steps = G.ontology()
     F.write_guide(folder, G.render(L['title'], G.ONTOLOGY_PURPOSE, steps), ai_turns=sum(s['ai'] for s in steps))
     return L, steps
@@ -91,7 +138,7 @@ def build_ontology(folder):
 def build_graph(folder):
     L = B.graph_lab('통합반')
     source_data(folder)
-    schema, graph = B.reference_model(False, B.LAB4_INPUT_BRANCH['통합반'])
+    schema, graph = B.reference_model(False, B.GRAPH_LAB_INPUT['통합반'])
     for name, value in [('schema.json', B.student_schema(schema)), ('graph.json', graph)]:
         write(folder / 'data/model' / name, P.convert(json.dumps(value, ensure_ascii=False, indent=2) + '\n'))
     write(folder / 'data/model/provenance.md', P.convert(B.provided_basis(False)))
@@ -110,15 +157,15 @@ def build_graph(folder):
             name = 'notes.md' if path.name == 'README.md' else P.NAMES[path.name]
             text = P.convert(path.read_text(encoding='utf-8-sig')).replace('`../data/`', '`data/`')
             write(folder / 'data/changes' / D.CHANGE_DATE / name, text)
-    utilities, ui = P.result_sources()
+    utilities, ui = result_sources()
     write(folder / 'app/utils/results.py', utilities)
     write(folder / 'app/ui/render.py', ui)
     write(folder / 'app/utils/db.py', GP.db_source())
     write(folder / 'app/utils/cypher.py', GP.cypher_source())
     write(folder / 'app/utils/actions.py', GP.actions_source(L))
-    write(folder / 'run.py', P.RUN)
+    write(folder / 'run.py', run_source())
     write(folder / 'app/utils/check.py', checker(folder, L))
-    write_metadata(folder, L['title'], G.GRAPH_PURPOSE, extra_rules=DB_RULE)
+    write_metadata(folder, L['title'], G.GRAPH_PURPOSE, extra_rules=GRAPH_DECISION_RULE + '\n' + DB_RULE)
     steps = G.graph(B.portal_table())
     F.write_guide(folder, G.render(L['title'], G.GRAPH_PURPOSE, steps), ai_turns=sum(s['ai'] for s in steps))
     return L, steps
@@ -155,9 +202,10 @@ def completed(starter, destination, work):
     folder = work / 'completed' / starter.name
     shutil.copytree(starter, folder)
     if starter.name == 'ontology-lab':
-        files = A.integrated_design('A')
-        files['결과/정한_것.csv'] = B.chosen_text(A.integrated_chosen('A'))
-        files['결과/기대_답.csv'] = B.expect_design_text()
+        branch = B.GRAPH_LAB_INPUT['통합반']    # 완성본은 다음 랩(그래프)의 제공 모델과 같은 판단
+        files = A.integrated_design(branch)
+        files['결과/정한_것.csv'] = B.chosen_text(A.integrated_chosen(branch))
+        files['결과/기대_답.csv'] = B.expect_design_text(branch)
         for name, text in files.items():
             write(folder / P.convert(name), P.convert(text))
         title, initial = '온톨로지 설계', 'python run.py parts\npython run.py query'
@@ -168,7 +216,7 @@ def completed(starter, destination, work):
         title, initial = '그래프 구현과 검증', 'python run.py db\npython run.py load\npython run.py update\npython run.py usage'
         context, actions = instance(folder), ('load', 'repeat', 'sensors', 'parts', 'usage', 'update', 'compare', 'export', 'check', 'usage')
     write_metadata(folder, title + ' · 완성본',
-                   'AI 계정이 없거나 구현 중 막혔을 때 실행해 보는 묶음입니다. 판단 기준 한 가지를 적용했으며 선택과 근거는 app/features/decisions.csv에 있습니다.'
+                   'AI 계정이 없거나 구현 중 막혔을 때 실행해 보는 묶음입니다. 판단마다 갈래 하나를 골라 적용했으며 선택과 근거는 app/features/decisions.csv에 있습니다.'
                    + (' Docker Desktop을 켠 뒤 실행합니다.' if starter.name == 'graph-lab' else ''), command=initial)
     logs = {}
     with context:

@@ -44,6 +44,21 @@ def expected_rows(columns, key):
     return rows
 
 
+def need_decided(points):
+    """이 기능이 쓰는 결정이 app/features/decisions.csv에 정해졌는가(빈 틀에 지점 줄이 미리 있다). 고른_것 · 근거가 비었거나 미결이면 그 줄을 짚고 멈춘다 — 고른 것이 맞는지는 보지 않는다."""
+    path = HERE / 'app/features/decisions.csv'
+    text, _ = R.read_text(path)
+    lines = [i for i, x in enumerate(text.splitlines(), 1) if x.strip() and not x.lstrip().startswith('#')][1:]
+    rows = {(r.get('지점') or '').strip(): (line, r) for line, r in zip(lines, R.read_table(path))}
+    for point in points:
+        if point not in rows:
+            raise R.Stop(f'app/features/decisions.csv: 지점 「{point}」 줄이 없습니다 — 받은 빈 틀의 지점 줄을 지우지 않습니다.')
+        line, r = rows[point]
+        if not (r.get('고른_것') or '').strip() or r['고른_것'].strip() == '미결' or not (r.get('근거') or '').strip():
+            raise R.Stop(f'app/features/decisions.csv:{line}: 「{point}」의 고른_것 · 근거가 아직 비어 있습니다(미결 포함). 이 기능은 이 결정대로 결과를 냅니다 — '
+                         '원자료를 보고 고른 것과 근거 줄을 적은 뒤 다시 실행합니다. AI가 대신 고르지 않습니다.')
+
+
 def run_check():
     p = subprocess.run([sys.executable, '-m', 'app.utils.check'], cwd=HERE, capture_output=True, text=True, encoding='utf-8', errors='replace')
     text = (p.stdout + p.stderr).strip()
@@ -54,6 +69,7 @@ from app.utils import cypher as C
 
 TITLE = '설계한 온톨로지를 그래프 DB에 구현하고 검증하기'
 CHANGE = True
+DECIDE = {'3': ['시점과 상태'], 'update': ['불용 결정 설비']}   # 기능마다 쓰는 결정 지점(질문 번호 · update)
 
 
 def db(fn, *a):
@@ -115,6 +131,7 @@ def load_and_again(previous):
 
 
 def ask_question(number):
+    need_decided(DECIDE.get(str(number), []))
     rows = [r for r in expected_rows(['질문', '물을_값', '볼_열', '기대_답'], ['질문', '물을_값']) if r['질문'] == str(number)]
     path = HERE / 'app/features/query.cypher'
     try:
@@ -127,7 +144,7 @@ def ask_question(number):
     names = sorted(set(C.PARAM.findall(text)))
     if len(names) > 1:
         raise R.Stop(f'app/features/query.cypher:{line}: 질문 {number}의 $ 자리가 {len(names)}개({", ".join(names)}) — 물을 값 하나를 $ 자리 하나로 받습니다.')
-    blocks, exp, act = [], [], []
+    blocks, exp, act, blanks = [], [], [], 0
     for r in rows or [{'물을_값': '', '볼_열': ''}]:
         params = {names[0]: r['물을_값']} if names else {}
         (_, _, cols, data), = db(C.query, path, str(number), params)
@@ -137,9 +154,11 @@ def ask_question(number):
                 raise R.Stop(f'app/features/expected.csv: 볼_열 「{r["볼_열"]}」이 질문 {number} 결과의 열({", ".join(cols)})에 없습니다.')
             i = cols.index(r['볼_열'])
             exp.append({'짝': r['물을_값'], '답': r['기대_답']})
-            act.append({'짝': r['물을_값'], '답': ' · '.join('없음' if row[i] is None else str(row[i]) for row in data) or '0줄'})
+            act.append({'짝': r['물을_값'], '답': ' · '.join('없음' if row[i] in (None, '') else str(row[i]) for row in data) or '0줄'})
+            blanks += sum(1 for row in data if row[i] == '')
     if exp:
-        blocks.insert(0, R.compare(f'질문 {number} 기대 답 ↔ 조회 결과(볼_열의 값)', '짝', exp, act, ['답'], same=same))
+        blocks.insert(0, R.compare(f'질문 {number} 기대 답 ↔ 조회 결과(볼_열의 값)', '짝', exp, act, ['답'], same=same,
+                                   note=(f'볼_열에서 빈 글자 {blanks}칸을 값 없음(null)과 같은 「없음」으로 견줬습니다. 조회가 값이 없는 칸을 빈 글자로 바꾸고 있습니다 — 값 없음은 null로 돌려주는 편이 다른 조회와 섞이지 않습니다.' if blanks else '')))
     return blocks
 
 
@@ -156,6 +175,7 @@ def q3(previous):
 
 
 def change(previous):
+    need_decided(DECIDE.get('update', []))
     before = db(C.export_graph)
     first = db(C.run_file, HERE / 'app/features/update.cypher')
     after = db(C.export_graph)
@@ -191,7 +211,7 @@ def portal(previous):
 def sources(previous):
     path, counts = graph_counts()
     files = [(p.name, len(R.read_table(p))) for p in sorted((HERE / 'data').glob('*.csv'))]
-    return [R.table('원자료 파일과 행 수', ['파일', '행'], files),
+    return [R.counts('원자료 파일마다 행 수', files),
             R.counts('사용할 모델: ' + R.rel(path), sorted(counts.items()))]
 
 

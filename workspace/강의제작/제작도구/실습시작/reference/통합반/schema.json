@@ -55,7 +55,7 @@
       }
     },
     "Quantity": {
-      "meaning": "재는 물리량 종류와 기준 단위",
+      "meaning": "재는 값의 종류(무엇의 어떤 값)와 기준 단위. 어디에 붙었는지는 센서가 붙은 구성 요소가 말한다",
       "required": {
         "id": "string",
         "name": "string",
@@ -85,7 +85,7 @@
         "Asset"
       ],
       "to": "Sensor",
-      "cardinality": "1:0..N",
+      "cardinality": "1:N",
       "note": "설비 전체에 붙은 계산값(SE)은 Asset에서"
     },
     "OBSERVES": {
@@ -96,7 +96,7 @@
     "USES_PART": {
       "from": "Component",
       "to": "Part",
-      "cardinality": "N:0..1",
+      "cardinality": "N:1",
       "properties": {
         "source_text": "string"
       }
@@ -106,7 +106,7 @@
   "branch": "A",
   "constraints": [
     "id는 전체 그래프에서 고유. 구성요소·센서는 설비코드:이름, 부품은 사내 품번",
-    "이관 기록(코드 통합)·철거 실물·점검표 중복 행은 대상을 새로 만들지 않는다",
+    "옛 코드 줄(같은 기능위치 · 일련번호)·점검표 중복 행은 대상을 새로 만들지 않는다. 철거 실물 행도 대상을 새로 만들지 않는다",
     "limit 생략은 0과 다르다. normal 생략은 미확인",
     "단위는 Quantity 기준 단위로 맞추고 바꾼 경우 source_unit을 남긴다"
   ]

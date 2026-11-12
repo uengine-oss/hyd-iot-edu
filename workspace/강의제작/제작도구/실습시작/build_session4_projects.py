@@ -167,7 +167,7 @@ def model_dirs(folder):
     """그래프 랩의 설비 모델 — 통합반은 2회차 graph-lab의 data/model과 같은 꼴(P.convert), 실전반은 2회차 실습4 입력과 같은 꼴."""
     out = {}
     for course, practical in (('통합반', False), ('실전반', True)):
-        schema, graph = B.reference_model(practical, B.LAB4_INPUT_BRANCH[course])
+        schema, graph = B.frozen_model(practical)     # 2회차 보강 전 판으로 고정(build_labs.FROZEN)
         for name, value in (('schema.json', B.student_schema(schema)), ('graph.json', graph)):
             text = json.dumps(value, ensure_ascii=False, indent=2) + '\n'
             write(folder / course / name, P.convert(text) if course == '통합반' else text)

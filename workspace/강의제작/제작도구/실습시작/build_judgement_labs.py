@@ -1798,10 +1798,10 @@ BUILDERS = {'integrated-03-criteria': criteria_lab, 'integrated-03-judge': judge
 def criteria_inputs(folder):
     """통합03 기존 형식은 보존하고 통합02의 영문 경로 변환 외 내용이 같은지 본다."""
     from session2_project import convert
-    schema, graph = B.reference_model(False, B.LAB4_INPUT_BRANCH['통합반'])
+    schema, graph = B.frozen_model(False)     # 2회차 보강 전 판으로 고정(build_labs.FROZEN)
     F.dump(folder/'입력/schema.json', B.student_schema(schema))
     F.dump(folder/'입력/graph.json', graph)
-    write(folder/'입력/자료/설비_대장.csv', D2._csv(D2.ASSET_COLS, D2.asset_rows()))
+    write(folder/'입력/자료/설비_대장.csv', B.frozen_assets_csv())
     diff = []
     for rel, current in [('schema.json', 'model/schema.json'), ('graph.json', 'model/graph.json'), ('자료/설비_대장.csv', 'equipment.csv')]:
         src = LAB4_INPUT/current

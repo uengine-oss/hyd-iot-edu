@@ -44,6 +44,21 @@ def expected_rows(columns, key):
     return rows
 
 
+def need_decided(points):
+    """이 기능이 쓰는 결정이 app/features/decisions.csv에 정해졌는가(빈 틀에 지점 줄이 미리 있다). 고른_것 · 근거가 비었거나 미결이면 그 줄을 짚고 멈춘다 — 고른 것이 맞는지는 보지 않는다."""
+    path = HERE / 'app/features/decisions.csv'
+    text, _ = R.read_text(path)
+    lines = [i for i, x in enumerate(text.splitlines(), 1) if x.strip() and not x.lstrip().startswith('#')][1:]
+    rows = {(r.get('지점') or '').strip(): (line, r) for line, r in zip(lines, R.read_table(path))}
+    for point in points:
+        if point not in rows:
+            raise R.Stop(f'app/features/decisions.csv: 지점 「{point}」 줄이 없습니다 — 받은 빈 틀의 지점 줄을 지우지 않습니다.')
+        line, r = rows[point]
+        if not (r.get('고른_것') or '').strip() or r['고른_것'].strip() == '미결' or not (r.get('근거') or '').strip():
+            raise R.Stop(f'app/features/decisions.csv:{line}: 「{point}」의 고른_것 · 근거가 아직 비어 있습니다(미결 포함). 이 기능은 이 결정대로 결과를 냅니다 — '
+                         '원자료를 보고 고른 것과 근거 줄을 적은 뒤 다시 실행합니다. AI가 대신 고르지 않습니다.')
+
+
 def run_check():
     p = subprocess.run([sys.executable, '-m', 'app.utils.check'], cwd=HERE, capture_output=True, text=True, encoding='utf-8', errors='replace')
     text = (p.stdout + p.stderr).strip()
@@ -54,6 +69,7 @@ from app.utils import cypher as C
 
 TITLE = '부품의 사용 설비와 공급 정보를 조회하는 그래프 구현하기'
 CHANGE = False
+DECIDE = {'1': ['쓰는 사람에 따라 갈리는 답']}   # 기능마다 쓰는 결정 지점(질문 번호 · update)
 
 
 def db(fn, *a):
@@ -175,7 +191,7 @@ def ask_question(number):
 def sources(previous):
     path, counts = graph_counts()
     files = [(p.name, len(R.read_table(p))) for p in sorted((HERE / 'data').glob('*.csv'))]
-    return [R.table('원자료 파일과 행 수', ['파일', '행'], files),
+    return [R.counts('원자료 파일마다 행 수', files),
             R.counts('사용할 모델: ' + R.rel(path), sorted(counts.items()))]
 
 

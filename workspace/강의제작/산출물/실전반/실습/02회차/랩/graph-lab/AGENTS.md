@@ -10,4 +10,6 @@
 
 - 이 실습에서 구현하는 파일은 `app/features/load.cypher`와 `app/features/query.cypher`이고, 학생 기록은 `app/features/review.md`·`expected.csv`·`decisions.csv`다.
 - 실행 결과와 내보낸 그래프는 `output/`에 생긴다. 자기 모델을 쓰면 `app/features/model/`에 schema.json과 graph.json을 함께 둔다.
+- `app/features/decisions.csv`의 고른_것 · 근거와 `app/features/expected.csv`의 기대 답에는 학생이 대화에서 말한 것만 적는다. 학생이 정하지 않았으면 적지 않고, 근거가 될 원자료 줄을 짚어 묻는다.
+- 한 번에 요청받은 기능 파일 하나만 고친 뒤 멈춘다. 랩 DB를 쓰는 명령(`python run.py` 기능)은 학생이 자기 터미널에서 실행하고, AI는 학생이 붙여 준 터미널 출력과 결과 화면으로 확인한다. AI가 그 명령을 직접 실행하지 않는다.
 - DB는 이 폴더에 배정된 랩 DB만 사용한다. 포털 DB나 전체 삭제 명령을 쓰지 않는다. Docker와 랩 DB를 켜고 끄는 명령(`python run.py db` 등)은 사람이 자기 터미널에서 실행한다.
