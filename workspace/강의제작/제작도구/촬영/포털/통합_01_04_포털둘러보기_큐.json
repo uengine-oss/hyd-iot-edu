@@ -136,6 +136,15 @@
       "dy": 6
      },
      0.0
+    ],
+    [
+     "point",
+     {
+      "css": "#courseStatus",
+      "anchor": "center",
+      "dy": 14
+     },
+     0.302
     ]
    ]
   },
