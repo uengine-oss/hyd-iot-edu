@@ -1,7 +1,7 @@
 {
- "output": "관계조회-6판-합본1_1080p.mp4",
- "duration_s": 1956.067,
- "source": "Neo4j Browser 클라우드 Playwright 1920x1080 JPEG95 screencast, overlay pointer",
+ "output": "관계조회-8판-합본_1080p.mp4",
+ "duration_s": 1963.733,
+ "source": "Neo4j Browser 클라우드 Playwright 1920x1080 JPEG95 screencast, overlay pointer, 8판 음성",
  "output_fps": 30,
  "pointer": [
   "overlay"
@@ -50,15 +50,15 @@
    "end_tab": null
   },
   {
-   "segment": "t6-s04",
+   "segment": "t6-s04b",
    "tool": "neo4j",
    "part": 4,
    "from_ms": 0.0,
-   "used_ms": 115190.0419921875,
+   "used_ms": 122868.65502929688,
    "start_s": 186.767,
-   "frames": 3456,
+   "frames": 3686,
    "mode": "overlay",
-   "recorded_ms": 115190.0419921875,
+   "recorded_ms": 122868.65502929688,
    "error": null,
    "end_url": "http://127.0.0.1:32768/browser/",
    "end_tab": null
@@ -69,7 +69,7 @@
    "part": 5,
    "from_ms": 0.0,
    "used_ms": 95053.92602539062,
-   "start_s": 301.967,
+   "start_s": 309.633,
    "frames": 2852,
    "mode": "overlay",
    "recorded_ms": 95053.92602539062,
@@ -83,7 +83,7 @@
    "part": 6,
    "from_ms": 0.0,
    "used_ms": 81454.52807617188,
-   "start_s": 397.033,
+   "start_s": 404.7,
    "frames": 2444,
    "mode": "overlay",
    "recorded_ms": 81454.52807617188,
@@ -97,7 +97,7 @@
    "part": 7,
    "from_ms": 0.0,
    "used_ms": 135335.0400390625,
-   "start_s": 478.5,
+   "start_s": 486.167,
    "frames": 4060,
    "mode": "overlay",
    "recorded_ms": 135335.0400390625,
@@ -111,7 +111,7 @@
    "part": 8,
    "from_ms": 0.0,
    "used_ms": 173093.40209960938,
-   "start_s": 613.833,
+   "start_s": 621.5,
    "frames": 5193,
    "mode": "overlay",
    "recorded_ms": 173093.40209960938,
@@ -125,7 +125,7 @@
    "part": 9,
    "from_ms": 0.0,
    "used_ms": 90501.49609375,
-   "start_s": 786.933,
+   "start_s": 794.6,
    "frames": 2715,
    "mode": "overlay",
    "recorded_ms": 90501.49609375,
@@ -139,7 +139,7 @@
    "part": 10,
    "from_ms": 0.0,
    "used_ms": 198806.07690429688,
-   "start_s": 877.433,
+   "start_s": 885.1,
    "frames": 5964,
    "mode": "overlay",
    "recorded_ms": 198806.07690429688,
@@ -153,7 +153,7 @@
    "part": 11,
    "from_ms": 0.0,
    "used_ms": 144214.14086914062,
-   "start_s": 1076.233,
+   "start_s": 1083.9,
    "frames": 4326,
    "mode": "overlay",
    "recorded_ms": 144214.14086914062,
@@ -167,7 +167,7 @@
    "part": 12,
    "from_ms": 0.0,
    "used_ms": 112754.99291992188,
-   "start_s": 1220.433,
+   "start_s": 1228.1,
    "frames": 3383,
    "mode": "overlay",
    "recorded_ms": 112754.99291992188,
@@ -181,7 +181,7 @@
    "part": 13,
    "from_ms": 0.0,
    "used_ms": 223929.751953125,
-   "start_s": 1333.2,
+   "start_s": 1340.867,
    "frames": 6718,
    "mode": "overlay",
    "recorded_ms": 223929.751953125,
@@ -195,7 +195,7 @@
    "part": 14,
    "from_ms": 0.0,
    "used_ms": 61704.6240234375,
-   "start_s": 1557.133,
+   "start_s": 1564.8,
    "frames": 1851,
    "mode": "overlay",
    "recorded_ms": 61704.6240234375,
@@ -209,7 +209,7 @@
    "part": 15,
    "from_ms": 0.0,
    "used_ms": 108222.13208007812,
-   "start_s": 1618.833,
+   "start_s": 1626.5,
    "frames": 3247,
    "mode": "overlay",
    "recorded_ms": 108222.13208007812,
@@ -223,7 +223,7 @@
    "part": 16,
    "from_ms": 0.0,
    "used_ms": 229007.34301757812,
-   "start_s": 1727.067,
+   "start_s": 1734.733,
    "frames": 6870,
    "mode": "overlay",
    "recorded_ms": 229007.34301757812,
@@ -237,177 +237,190 @@
   {
    "id": "r0100",
    "speech": [
-    "00:00.075",
-    "00:13.275"
+    "00:00.000",
+    "00:13.440"
    ],
+   "revoiced": "cache",
    "action": [
     "00:00.075",
     "00:00.076"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 14499
+   "next_speech_after_action_ms": 14419
   },
   {
    "id": "r0101",
    "speech": [
-    "00:14.575",
+    "00:14.495",
     "00:21.055"
    ],
+   "revoiced": "cache",
    "action": [
     "00:14.574",
     "00:14.574"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 7782
+   "next_speech_after_action_ms": 7302
   },
   {
    "id": "r0102",
    "speech": [
-    "00:22.356",
+    "00:21.876",
     "00:35.636"
    ],
+   "revoiced": "cache",
    "action": [
     "00:22.355",
     "00:22.355"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 13728
+   "next_speech_after_action_ms": 13678
   },
   {
    "id": "r0200",
    "speech": [
-    "00:36.082",
-    "00:42.482"
+    "00:36.033",
+    "00:42.673"
    ],
+   "revoiced": "cache",
    "action": [
     "00:36.083",
     "00:37.371"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 5711
+   "next_speech_after_action_ms": 5631
   },
   {
    "id": "r0201",
    "speech": [
-    "00:43.082",
+    "00:43.002",
     "00:57.002"
    ],
+   "revoiced": "cache",
    "action": [
     "00:43.082",
     "00:58.744"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 6301
+   "next_speech_after_action_ms": 6141
   },
   {
    "id": "r0202",
    "speech": [
-    "01:05.045",
+    "01:04.885",
     "01:16.165"
    ],
+   "revoiced": "cache",
    "action": [
     "01:05.045",
     "01:15.350"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 5116
+   "next_speech_after_action_ms": 4956
   },
   {
    "id": "r0203",
    "speech": [
-    "01:20.466",
+    "01:20.306",
     "01:24.546"
    ],
+   "revoiced": "cache",
    "action": [
     "01:20.470",
     "01:23.202"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 1946
+   "next_speech_after_action_ms": 1466
   },
   {
    "id": "r0204",
    "speech": [
-    "01:25.148",
+    "01:24.668",
     "01:34.108"
    ],
+   "revoiced": "cache",
    "action": [
     "01:25.149",
     "01:25.149"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 10266
+   "next_speech_after_action_ms": 10746
   },
   {
    "id": "r0205",
    "speech": [
-    "01:35.415",
+    "01:35.895",
     "01:38.855"
    ],
+   "revoiced": "cache",
    "action": [
     "01:35.416",
     "01:36.418"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 3038
+   "next_speech_after_action_ms": 2638
   },
   {
    "id": "r0206",
    "speech": [
-    "01:39.456",
+    "01:39.056",
     "01:58.736"
    ],
+   "revoiced": "cache",
    "action": [
     "01:39.456",
     "01:57.607"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 1728
+   "next_speech_after_action_ms": 2208
   },
   {
    "id": "r0207",
    "speech": [
-    "01:59.335",
+    "01:59.815",
     "02:01.015"
    ],
+   "revoiced": "cache",
    "action": [
     "01:59.336",
     "01:59.336"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 2979
+   "next_speech_after_action_ms": 1939
   },
   {
    "id": "r0208",
    "speech": [
-    "02:02.315",
+    "02:01.275",
     "02:10.475"
    ],
+   "revoiced": "cache",
    "action": [
     "02:02.316",
     "02:02.316"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 13614
+   "next_speech_after_action_ms": 13550
   },
   {
    "id": "r0300",
    "speech": [
-    "02:15.930",
-    "02:30.090"
+    "02:15.867",
+    "02:30.187"
    ],
+   "revoiced": "cache",
    "action": [
     "02:15.930",
     "02:29.430"
@@ -428,14 +441,15 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 1684
+   "next_speech_after_action_ms": 1764
   },
   {
    "id": "r0302",
    "speech": [
-    "02:38.132",
+    "02:38.212",
     "02:40.772"
    ],
+   "revoiced": "cache",
    "action": [
     "02:38.132",
     "02:38.548"
@@ -450,6 +464,7 @@
     "02:41.375",
     "02:51.695"
    ],
+   "revoiced": "cache",
    "action": [
     "02:41.376",
     "02:47.331"
@@ -470,101 +485,108 @@
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 3996
+   "next_speech_after_action_ms": 3916
   },
   {
    "id": "r0305",
    "speech": [
-    "02:56.976",
+    "02:56.896",
     "02:59.776"
    ],
+   "revoiced": "cache",
    "action": [
     "02:56.977",
     "02:57.531"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 3547
+   "next_speech_after_action_ms": 3307
   },
   {
    "id": "r0306",
    "speech": [
-    "03:01.078",
+    "03:00.838",
     "03:06.358"
    ],
+   "revoiced": "cache",
    "action": [
     "03:01.080",
     "03:01.080"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 5749
+   "next_speech_after_action_ms": 6069
   },
   {
    "id": "r0400",
    "speech": [
-    "03:06.829",
+    "03:07.149",
     "03:20.989"
    ],
+   "revoiced": "cache",
    "action": [
     "03:06.829",
-    "03:06.831"
+    "03:06.830"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 15458
+   "next_speech_after_action_ms": 15300
   },
   {
    "id": "r0401",
    "speech": [
-    "03:22.289",
-    "03:30.929"
+    "03:22.130",
+    "03:30.930"
    ],
+   "revoiced": "cache",
    "action": [
-    "03:22.289",
-    "03:30.898"
+    "03:22.292",
+    "03:30.914"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 631
+   "next_speech_after_action_ms": 2296
   },
   {
    "id": "r0402",
    "speech": [
-    "03:31.529",
-    "03:35.689"
+    "03:33.210",
+    "03:35.690"
    ],
+   "revoiced": "cache",
    "action": [
-    "03:31.530",
-    "03:35.186"
+    "03:31.531",
+    "03:35.194"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 1104
+   "next_speech_after_action_ms": 617
   },
   {
    "id": "r0403",
    "speech": [
-    "03:36.290",
-    "03:37.810"
+    "03:35.811",
+    "03:37.811"
    ],
+   "revoiced": "cache",
    "action": [
-    "03:36.290",
-    "03:36.955"
+    "03:36.292",
+    "03:36.952"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 1455
+   "next_speech_after_action_ms": 16101
   },
   {
    "id": "r0404",
    "speech": [
-    "03:38.410",
-    "03:47.050"
+    "03:53.053",
+    "03:55.213"
    ],
+   "revoiced": "cache",
    "action": [
-    "03:38.409",
-    "03:47.534"
+    "03:38.414",
+    "03:55.335"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -573,124 +595,130 @@
   {
    "id": "r0405",
    "speech": [
-    "03:48.135",
-    "03:50.455"
+    "03:55.936",
+    "03:58.256"
    ],
    "action": [
-    "03:48.135",
-    "03:49.132"
+    "03:55.937",
+    "03:56.929"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 12623
+   "next_speech_after_action_ms": 12548
   },
   {
    "id": "r0406",
    "speech": [
-    "04:01.755",
-    "04:13.035"
+    "04:09.477",
+    "04:20.837"
    ],
+   "revoiced": "cache",
    "action": [
-    "04:01.755",
-    "04:09.931"
+    "04:09.558",
+    "04:17.727"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 3704
+   "next_speech_after_action_ms": 3630
   },
   {
    "id": "r0407",
    "speech": [
-    "04:13.635",
-    "04:20.035"
+    "04:21.357",
+    "04:27.837"
    ],
+   "revoiced": "cache",
    "action": [
-    "04:13.636",
-    "04:15.264"
+    "04:21.438",
+    "04:23.061"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 5372
+   "next_speech_after_action_ms": 5377
   },
   {
    "id": "r0408",
    "speech": [
-    "04:20.636",
-    "04:23.436"
+    "04:28.438",
+    "04:31.238"
    ],
    "action": [
-    "04:20.636",
-    "04:23.567"
+    "04:28.439",
+    "04:31.213"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 6001
+   "next_speech_after_action_ms": 6024
   },
   {
    "id": "r0409",
    "speech": [
-    "04:29.568",
-    "04:31.968"
+    "04:37.237",
+    "04:39.637"
    ],
    "action": [
-    "04:29.572",
-    "04:30.295"
+    "04:37.241",
+    "04:37.977"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 2274
+   "next_speech_after_action_ms": 2502
   },
   {
    "id": "r0410",
    "speech": [
-    "04:32.569",
-    "04:46.649"
+    "04:40.479",
+    "04:54.319"
    ],
+   "revoiced": "cache",
    "action": [
-    "04:32.570",
-    "04:32.570"
+    "04:40.240",
+    "04:40.240"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 15382
+   "next_speech_after_action_ms": 23224
   },
   {
    "id": "r0411",
    "speech": [
-    "04:47.952",
-    "05:01.552"
+    "05:03.464",
+    "05:09.224"
    ],
+   "revoiced": "cache",
    "action": [
-    "04:47.953",
-    "04:47.953"
+    "04:55.625",
+    "04:55.625"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 14076
+   "next_speech_after_action_ms": 14150
   },
   {
    "id": "r0500",
    "speech": [
-    "05:02.029",
-    "05:09.789"
+    "05:09.775",
+    "05:17.455"
    ],
+   "revoiced": "cache",
    "action": [
-    "05:02.029",
-    "05:02.031"
+    "05:09.695",
+    "05:09.697"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 9058
+   "next_speech_after_action_ms": 14338
   },
   {
    "id": "r0501",
    "speech": [
-    "05:11.089",
-    "05:25.729"
+    "05:24.035",
+    "05:33.395"
    ],
+   "revoiced": "cache",
    "action": [
-    "05:11.090",
-    "05:19.438"
+    "05:18.756",
+    "05:27.104"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -699,68 +727,72 @@
   {
    "id": "r0502",
    "speech": [
-    "05:26.330",
-    "05:32.330"
+    "05:33.996",
+    "05:39.996"
    ],
    "action": [
-    "05:26.330",
-    "05:33.063"
+    "05:33.996",
+    "05:40.729"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 7001
+   "next_speech_after_action_ms": 7081
   },
   {
    "id": "r0503",
    "speech": [
-    "05:40.064",
-    "05:44.064"
+    "05:47.810",
+    "05:51.730"
    ],
+   "revoiced": "cache",
    "action": [
-    "05:40.068",
-    "05:43.531"
+    "05:47.734",
+    "05:51.197"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 1134
+   "next_speech_after_action_ms": 1054
   },
   {
    "id": "r0504",
    "speech": [
-    "05:44.665",
-    "05:53.865"
+    "05:52.251",
+    "06:01.531"
    ],
+   "revoiced": "cache",
    "action": [
-    "05:44.666",
-    "05:51.963"
+    "05:52.332",
+    "05:59.629"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 3204
+   "next_speech_after_action_ms": 5124
   },
   {
    "id": "r0505",
    "speech": [
-    "05:55.167",
-    "06:02.767"
+    "06:04.753",
+    "06:10.433"
    ],
+   "revoiced": "cache",
    "action": [
-    "05:55.170",
-    "06:02.822"
+    "06:02.836",
+    "06:10.488"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 601
+   "next_speech_after_action_ms": 761
   },
   {
    "id": "r0506",
    "speech": [
-    "06:03.423",
-    "06:07.023"
+    "06:11.249",
+    "06:14.689"
    ],
+   "revoiced": "cache",
    "action": [
-    "06:03.424",
-    "06:07.294"
+    "06:11.090",
+    "06:14.960"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -769,68 +801,73 @@
   {
    "id": "r0507",
    "speech": [
-    "06:07.896",
-    "06:09.816"
+    "06:15.562",
+    "06:17.482"
    ],
+   "revoiced": "cache",
    "action": [
-    "06:07.897",
-    "06:09.778"
+    "06:15.563",
+    "06:17.444"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 8039
+   "next_speech_after_action_ms": 7879
   },
   {
    "id": "r0508",
    "speech": [
-    "06:17.817",
-    "06:23.257"
+    "06:25.323",
+    "06:30.923"
    ],
+   "revoiced": "cache",
    "action": [
-    "06:17.821",
-    "06:21.872"
+    "06:25.487",
+    "06:29.538"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 1986
+   "next_speech_after_action_ms": 1906
   },
   {
    "id": "r0509",
    "speech": [
-    "06:23.858",
-    "06:30.898"
+    "06:31.444",
+    "06:38.564"
    ],
+   "revoiced": "cache",
    "action": [
-    "06:23.859",
-    "06:26.245"
+    "06:31.525",
+    "06:33.911"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 5254
+   "next_speech_after_action_ms": 5094
   },
   {
    "id": "r0510",
    "speech": [
-    "06:31.499",
-    "06:36.619"
+    "06:39.005",
+    "06:44.285"
    ],
+   "revoiced": "cache",
    "action": [
-    "06:31.499",
-    "06:33.561"
+    "06:39.165",
+    "06:41.227"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 3535
+   "next_speech_after_action_ms": 3473
   },
   {
    "id": "r0600",
    "speech": [
-    "06:37.096",
-    "06:44.456"
+    "06:44.700",
+    "06:52.380"
    ],
+   "revoiced": "cache",
    "action": [
-    "06:37.096",
-    "06:44.329"
+    "06:44.763",
+    "06:51.996"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -839,26 +876,27 @@
   {
    "id": "r0601",
    "speech": [
-    "06:45.055",
-    "06:49.535"
+    "06:52.722",
+    "06:57.202"
    ],
    "action": [
-    "06:45.055",
-    "06:50.253"
+    "06:52.722",
+    "06:57.920"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 12001
+   "next_speech_after_action_ms": 11761
   },
   {
    "id": "r0602",
    "speech": [
-    "07:02.254",
-    "07:05.454"
+    "07:09.681",
+    "07:13.121"
    ],
+   "revoiced": "cache",
    "action": [
-    "07:02.257",
-    "07:03.994"
+    "07:09.924",
+    "07:11.661"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -867,54 +905,57 @@
   {
    "id": "r0603",
    "speech": [
-    "07:06.055",
-    "07:09.175"
+    "07:13.722",
+    "07:16.842"
    ],
    "action": [
-    "07:06.055",
-    "07:06.055"
+    "07:13.722",
+    "07:13.722"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 4421
+   "next_speech_after_action_ms": 4741
   },
   {
    "id": "r0604",
    "speech": [
-    "07:10.476",
-    "07:18.156"
+    "07:18.463",
+    "07:25.823"
    ],
+   "revoiced": "cache",
    "action": [
-    "07:10.478",
-    "07:17.953"
+    "07:18.145",
+    "07:25.620"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 802
+   "next_speech_after_action_ms": 562
   },
   {
    "id": "r0605",
    "speech": [
-    "07:18.755",
-    "07:30.755"
+    "07:26.182",
+    "07:38.422"
    ],
+   "revoiced": "cache",
    "action": [
-    "07:18.755",
-    "07:31.473"
+    "07:26.422",
+    "07:39.140"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 7001
+   "next_speech_after_action_ms": 6841
   },
   {
    "id": "r0606",
    "speech": [
-    "07:38.474",
-    "07:43.274"
+    "07:45.981",
+    "07:50.941"
    ],
+   "revoiced": "cache",
    "action": [
-    "07:38.475",
-    "07:41.759"
+    "07:46.142",
+    "07:49.426"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -923,166 +964,177 @@
   {
    "id": "r0607",
    "speech": [
-    "07:43.875",
-    "07:51.955"
+    "07:51.542",
+    "07:59.622"
    ],
    "action": [
-    "07:43.875",
-    "07:45.592"
+    "07:51.542",
+    "07:53.259"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 6967
+   "next_speech_after_action_ms": 6727
   },
   {
    "id": "r0608",
    "speech": [
-    "07:52.559",
-    "07:58.079"
+    "07:59.986",
+    "08:05.746"
    ],
+   "revoiced": "cache",
    "action": [
-    "07:52.560",
-    "07:52.560"
+    "08:00.227",
+    "08:00.227"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 5999
+   "next_speech_after_action_ms": 5940
   },
   {
    "id": "r0700",
    "speech": [
-    "07:58.559",
-    "08:03.599"
+    "08:06.167",
+    "08:11.367"
    ],
+   "revoiced": "cache",
    "action": [
-    "07:58.559",
-    "07:58.561"
+    "08:06.226",
+    "08:06.228"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 6339
+   "next_speech_after_action_ms": 6419
   },
   {
    "id": "r0701",
    "speech": [
-    "08:04.900",
-    "08:06.740"
+    "08:12.647",
+    "08:14.407"
    ],
+   "revoiced": "cache",
    "action": [
-    "08:04.901",
-    "08:06.772"
+    "08:12.568",
+    "08:14.439"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 602
+   "next_speech_after_action_ms": 762
   },
   {
    "id": "r0702",
    "speech": [
-    "08:07.374",
-    "08:15.694"
+    "08:15.201",
+    "08:23.361"
    ],
+   "revoiced": "cache",
    "action": [
-    "08:07.374",
-    "08:16.557"
+    "08:15.041",
+    "08:24.224"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 7001
+   "next_speech_after_action_ms": 7081
   },
   {
    "id": "r0703",
    "speech": [
-    "08:23.558",
-    "08:24.998"
+    "08:31.305",
+    "08:32.665"
    ],
+   "revoiced": "cache",
    "action": [
-    "08:23.562",
-    "08:24.622"
+    "08:31.229",
+    "08:32.289"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 977
+   "next_speech_after_action_ms": 897
   },
   {
    "id": "r0704",
    "speech": [
-    "08:25.599",
-    "08:30.479"
+    "08:33.186",
+    "08:38.146"
    ],
+   "revoiced": "cache",
    "action": [
-    "08:25.600",
-    "08:25.600"
+    "08:33.267",
+    "08:33.267"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 6181
+   "next_speech_after_action_ms": 6661
   },
   {
    "id": "r0705",
    "speech": [
-    "08:31.781",
-    "08:37.061"
+    "08:39.928",
+    "08:44.728"
    ],
+   "revoiced": "cache",
    "action": [
-    "08:31.783",
-    "08:37.868"
+    "08:39.450",
+    "08:45.535"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 12002
+   "next_speech_after_action_ms": 11842
   },
   {
    "id": "r0706",
    "speech": [
-    "08:49.870",
-    "08:52.430"
+    "08:57.377",
+    "09:00.097"
    ],
+   "revoiced": "cache",
    "action": [
-    "08:49.877",
-    "08:51.640"
+    "08:57.544",
+    "08:59.307"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 1391
+   "next_speech_after_action_ms": 1551
   },
   {
    "id": "r0707",
    "speech": [
-    "08:53.031",
-    "08:57.111"
+    "09:00.858",
+    "09:04.778"
    ],
+   "revoiced": "cache",
    "action": [
-    "08:53.032",
-    "08:53.032"
+    "09:00.699",
+    "09:00.699"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 5383
+   "next_speech_after_action_ms": 5063
   },
   {
    "id": "r0708",
    "speech": [
-    "08:58.415",
-    "09:09.935"
+    "09:05.762",
+    "09:17.602"
    ],
+   "revoiced": "cache",
    "action": [
-    "08:58.416",
-    "09:10.192"
+    "09:06.083",
+    "09:17.859"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 601
+   "next_speech_after_action_ms": 201
   },
   {
    "id": "r0709",
    "speech": [
-    "09:10.793",
-    "09:20.553"
+    "09:18.060",
+    "09:28.220"
    ],
+   "revoiced": "cache",
    "action": [
-    "09:10.793",
-    "09:21.336"
+    "09:18.460",
+    "09:29.003"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1091,12 +1143,12 @@
   {
    "id": "r0710",
    "speech": [
-    "09:28.338",
-    "09:29.858"
+    "09:36.005",
+    "09:37.525"
    ],
    "action": [
-    "09:28.342",
-    "09:29.419"
+    "09:36.009",
+    "09:37.086"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1105,12 +1157,13 @@
   {
    "id": "r0711",
    "speech": [
-    "09:30.459",
-    "09:34.539"
+    "09:38.126",
+    "09:42.206"
    ],
+   "revoiced": "cache",
    "action": [
-    "09:30.459",
-    "09:30.459"
+    "09:38.126",
+    "09:38.126"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1119,82 +1172,87 @@
   {
    "id": "r0712",
    "speech": [
-    "09:35.841",
-    "09:39.121"
+    "09:43.508",
+    "09:46.788"
    ],
    "action": [
-    "09:35.843",
-    "09:38.899"
+    "09:43.510",
+    "09:46.566"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 823
+   "next_speech_after_action_ms": 903
   },
   {
    "id": "r0713",
    "speech": [
-    "09:39.722",
-    "09:50.362"
+    "09:47.469",
+    "09:58.029"
    ],
+   "revoiced": "cache",
    "action": [
-    "09:39.723",
-    "09:51.025"
+    "09:47.390",
+    "09:58.692"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 7001
+   "next_speech_after_action_ms": 6921
   },
   {
    "id": "r0714",
    "speech": [
-    "09:58.026",
-    "09:59.946"
+    "10:05.613",
+    "10:07.613"
    ],
+   "revoiced": "cache",
    "action": [
-    "09:58.030",
-    "09:59.401"
+    "10:05.697",
+    "10:07.068"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 1146
+   "next_speech_after_action_ms": 1066
   },
   {
    "id": "r0715",
    "speech": [
-    "10:00.547",
-    "10:13.427"
+    "10:08.134",
+    "10:21.094"
    ],
+   "revoiced": "cache",
    "action": [
-    "10:00.547",
-    "10:00.547"
+    "10:08.214",
+    "10:08.214"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 13340
+   "next_speech_after_action_ms": 13286
   },
   {
    "id": "r0800",
    "speech": [
-    "10:13.887",
-    "10:20.367"
+    "10:21.500",
+    "10:28.140"
    ],
+   "revoiced": "cache",
    "action": [
-    "10:13.888",
-    "10:13.889"
+    "10:21.554",
+    "10:21.555"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 7779
+   "next_speech_after_action_ms": 7219
   },
   {
    "id": "r0801",
    "speech": [
-    "10:21.668",
-    "10:35.268"
+    "10:28.774",
+    "10:42.934"
    ],
+   "revoiced": "cache",
    "action": [
-    "10:21.668",
-    "10:21.668"
+    "10:29.334",
+    "10:29.334"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1203,12 +1261,12 @@
   {
    "id": "r0802",
    "speech": [
-    "10:36.574",
-    "10:39.774"
+    "10:44.240",
+    "10:47.440"
    ],
    "action": [
-    "10:36.576",
-    "10:40.460"
+    "10:44.242",
+    "10:48.126"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1217,12 +1275,13 @@
   {
    "id": "r0803",
    "speech": [
-    "10:41.061",
-    "10:59.461"
+    "10:48.727",
+    "11:07.127"
    ],
+   "revoiced": "cache",
    "action": [
-    "10:41.062",
-    "11:00.223"
+    "10:48.728",
+    "11:07.889"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1231,180 +1290,192 @@
   {
    "id": "r0804",
    "speech": [
-    "11:07.224",
-    "11:08.904"
+    "11:14.890",
+    "11:16.570"
    ],
    "action": [
-    "11:07.225",
-    "11:08.510"
+    "11:14.891",
+    "11:16.176"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 995
+   "next_speech_after_action_ms": 1075
   },
   {
    "id": "r0805",
    "speech": [
-    "11:09.505",
-    "11:11.825"
+    "11:17.251",
+    "11:19.491"
    ],
+   "revoiced": "cache",
    "action": [
-    "11:09.505",
-    "11:09.506"
+    "11:17.171",
+    "11:17.172"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 3619
+   "next_speech_after_action_ms": 3699
   },
   {
    "id": "r0806",
    "speech": [
-    "11:13.125",
-    "11:21.365"
+    "11:20.871",
+    "11:29.031"
    ],
+   "revoiced": "cache",
    "action": [
-    "11:13.127",
-    "11:21.482"
+    "11:20.793",
+    "11:29.148"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 601
+   "next_speech_after_action_ms": 681
   },
   {
    "id": "r0807",
    "speech": [
-    "11:22.083",
-    "11:29.763"
+    "11:29.829",
+    "11:37.429"
    ],
+   "revoiced": "cache",
    "action": [
-    "11:22.083",
-    "11:30.662"
+    "11:29.749",
+    "11:38.328"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 7001
+   "next_speech_after_action_ms": 6841
   },
   {
    "id": "r0808",
    "speech": [
-    "11:37.663",
-    "11:39.183"
+    "11:45.169",
+    "11:46.849"
    ],
+   "revoiced": "cache",
    "action": [
-    "11:37.667",
-    "11:38.557"
+    "11:45.333",
+    "11:46.223"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 1227
+   "next_speech_after_action_ms": 1147
   },
   {
    "id": "r0809",
    "speech": [
-    "11:39.784",
-    "11:48.184"
+    "11:47.370",
+    "11:55.850"
    ],
+   "revoiced": "cache",
    "action": [
-    "11:39.785",
-    "11:45.740"
+    "11:47.451",
+    "11:53.406"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 3045
+   "next_speech_after_action_ms": 3205
   },
   {
    "id": "r0810",
    "speech": [
-    "11:48.785",
-    "11:52.545"
+    "11:56.611",
+    "12:00.211"
    ],
+   "revoiced": "cache",
    "action": [
-    "11:48.786",
-    "11:48.786"
+    "11:56.452",
+    "11:56.452"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 5062
+   "next_speech_after_action_ms": 4742
   },
   {
    "id": "r0811",
    "speech": [
-    "11:53.848",
-    "12:02.888"
+    "12:01.194",
+    "12:10.554"
    ],
+   "revoiced": "cache",
    "action": [
-    "11:53.849",
-    "12:03.053"
+    "12:01.515",
+    "12:10.719"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 601
+   "next_speech_after_action_ms": 761
   },
   {
    "id": "r0812",
    "speech": [
-    "12:03.654",
-    "12:14.534"
+    "12:11.480",
+    "12:22.200"
    ],
+   "revoiced": "cache",
    "action": [
-    "12:03.654",
-    "12:15.550"
+    "12:11.320",
+    "12:23.216"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 7001
+   "next_speech_after_action_ms": 9881
   },
   {
    "id": "r0813",
    "speech": [
-    "12:22.551",
-    "12:27.191"
+    "12:33.097",
+    "12:34.857"
    ],
+   "revoiced": "cache",
    "action": [
-    "12:22.555",
-    "12:27.795"
+    "12:30.221",
+    "12:35.461"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 602
+   "next_speech_after_action_ms": 682
   },
   {
    "id": "r0814",
    "speech": [
-    "12:28.397",
-    "12:34.557"
+    "12:36.143",
+    "12:42.223"
    ],
+   "revoiced": "cache",
    "action": [
-    "12:28.398",
-    "12:33.306"
+    "12:36.064",
+    "12:40.972"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 1852
+   "next_speech_after_action_ms": 1772
   },
   {
    "id": "r0815",
    "speech": [
-    "12:35.158",
-    "12:41.558"
+    "12:42.744",
+    "12:49.224"
    ],
+   "revoiced": "cache",
    "action": [
-    "12:35.158",
-    "12:36.854"
+    "12:42.824",
+    "12:44.520"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 6007
+   "next_speech_after_action_ms": 7047
   },
   {
    "id": "r0816",
    "speech": [
-    "12:42.861",
-    "12:47.421"
+    "12:51.567",
+    "12:55.087"
    ],
+   "revoiced": "cache",
    "action": [
-    "12:42.862",
-    "12:47.599"
+    "12:50.528",
+    "12:55.265"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1413,26 +1484,27 @@
   {
    "id": "r0817",
    "speech": [
-    "12:55.600",
-    "12:58.080"
+    "13:03.266",
+    "13:05.746"
    ],
    "action": [
-    "12:55.605",
-    "12:57.078"
+    "13:03.271",
+    "13:04.744"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 1604
+   "next_speech_after_action_ms": 1524
   },
   {
    "id": "r0818",
    "speech": [
-    "12:58.682",
-    "13:06.522"
+    "13:06.268",
+    "13:14.188"
    ],
+   "revoiced": "cache",
    "action": [
-    "12:58.683",
-    "13:05.354"
+    "13:06.349",
+    "13:13.020"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1441,54 +1513,58 @@
   {
    "id": "r0900",
    "speech": [
-    "13:07.013",
-    "13:15.013"
+    "13:14.679",
+    "13:22.679"
    ],
+   "revoiced": "cache",
    "action": [
-    "13:07.013",
-    "13:07.014"
+    "13:14.679",
+    "13:14.680"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 9299
+   "next_speech_after_action_ms": 8819
   },
   {
    "id": "r0901",
    "speech": [
-    "13:16.313",
-    "13:19.513"
+    "13:23.499",
+    "13:27.179"
    ],
+   "revoiced": "cache",
    "action": [
-    "13:16.314",
-    "13:20.182"
+    "13:23.980",
+    "13:27.848"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 601
+   "next_speech_after_action_ms": 361
   },
   {
    "id": "r0902",
    "speech": [
-    "13:20.783",
-    "13:24.303"
+    "13:28.209",
+    "13:31.969"
    ],
+   "revoiced": "cache",
    "action": [
-    "13:20.783",
-    "13:25.292"
+    "13:28.449",
+    "13:32.958"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 7001
+   "next_speech_after_action_ms": 6761
   },
   {
    "id": "r0903",
    "speech": [
-    "13:32.293",
-    "13:35.573"
+    "13:39.719",
+    "13:43.239"
    ],
+   "revoiced": "cache",
    "action": [
-    "13:32.294",
-    "13:34.060"
+    "13:39.960",
+    "13:41.726"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1497,26 +1573,27 @@
   {
    "id": "r0904",
    "speech": [
-    "13:36.175",
-    "13:38.895"
+    "13:43.841",
+    "13:46.561"
    ],
    "action": [
-    "13:36.176",
-    "13:37.027"
+    "13:43.842",
+    "13:44.693"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 3170
+   "next_speech_after_action_ms": 2690
   },
   {
    "id": "r0905",
    "speech": [
-    "13:40.197",
-    "13:45.477"
+    "13:47.383",
+    "13:53.143"
    ],
+   "revoiced": "cache",
    "action": [
-    "13:40.199",
-    "13:45.679"
+    "13:47.865",
+    "13:53.345"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1525,110 +1602,117 @@
   {
    "id": "r0906",
    "speech": [
-    "13:53.680",
-    "13:56.240"
+    "14:01.346",
+    "14:03.906"
    ],
    "action": [
-    "13:53.685",
-    "13:55.243"
+    "14:01.351",
+    "14:02.909"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 1598
+   "next_speech_after_action_ms": 1678
   },
   {
    "id": "r0907",
    "speech": [
-    "13:56.841",
-    "13:58.361"
+    "14:04.587",
+    "14:06.027"
    ],
+   "revoiced": "cache",
    "action": [
-    "13:56.842",
-    "13:57.277"
+    "14:04.508",
+    "14:04.943"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 1684
+   "next_speech_after_action_ms": 1524
   },
   {
    "id": "r0908",
    "speech": [
-    "13:58.961",
-    "14:01.601"
+    "14:06.467",
+    "14:09.267"
    ],
+   "revoiced": "cache",
    "action": [
-    "13:58.962",
-    "13:58.962"
+    "14:06.628",
+    "14:06.628"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 3940
+   "next_speech_after_action_ms": 3860
   },
   {
    "id": "r0909",
    "speech": [
-    "14:02.902",
-    "14:10.102"
+    "14:10.488",
+    "14:17.768"
    ],
+   "revoiced": "cache",
    "action": [
-    "14:02.903",
-    "14:10.415"
+    "14:10.569",
+    "14:18.081"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 601
+   "next_speech_after_action_ms": 521
   },
   {
    "id": "r0910",
    "speech": [
-    "14:11.016",
-    "14:21.656"
+    "14:18.602",
+    "14:29.322"
    ],
+   "revoiced": "cache",
    "action": [
-    "14:11.015",
-    "14:22.546"
+    "14:18.681",
+    "14:30.212"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 7001
+   "next_speech_after_action_ms": 7081
   },
   {
    "id": "r0911",
    "speech": [
-    "14:29.547",
-    "14:33.147"
+    "14:37.293",
+    "14:40.813"
    ],
+   "revoiced": "cache",
    "action": [
-    "14:29.549",
-    "14:31.808"
+    "14:37.215",
+    "14:39.474"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 1940
+   "next_speech_after_action_ms": 2020
   },
   {
    "id": "r0912",
    "speech": [
-    "14:33.748",
-    "14:37.028"
+    "14:41.494",
+    "14:44.694"
    ],
+   "revoiced": "cache",
    "action": [
-    "14:33.749",
-    "14:33.749"
+    "14:41.415",
+    "14:41.415"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 3741
+   "next_speech_after_action_ms": 3685
   },
   {
    "id": "r1000",
    "speech": [
-    "14:37.489",
-    "14:49.409"
+    "14:45.100",
+    "14:57.260"
    ],
+   "revoiced": "cache",
    "action": [
-    "14:37.488",
-    "14:37.489"
+    "14:45.155",
+    "14:45.156"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1637,26 +1721,27 @@
   {
    "id": "r1001",
    "speech": [
-    "14:50.711",
-    "14:54.151"
+    "14:58.378",
+    "15:01.818"
    ],
    "action": [
-    "14:50.713",
-    "14:54.810"
+    "14:58.380",
+    "15:02.477"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 602
+   "next_speech_after_action_ms": 362
   },
   {
    "id": "r1002",
    "speech": [
-    "14:55.412",
-    "15:04.292"
+    "15:02.839",
+    "15:11.959"
    ],
+   "revoiced": "cache",
    "action": [
-    "14:55.412",
-    "15:00.578"
+    "15:03.079",
+    "15:08.245"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1665,26 +1750,28 @@
   {
    "id": "r1003",
    "speech": [
-    "15:04.892",
-    "15:12.092"
+    "15:12.559",
+    "15:19.759"
    ],
+   "revoiced": "cache",
    "action": [
-    "15:04.893",
-    "15:13.128"
+    "15:12.560",
+    "15:20.795"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 7001
+   "next_speech_after_action_ms": 6841
   },
   {
    "id": "r1004",
    "speech": [
-    "15:20.129",
-    "15:22.929"
+    "15:27.636",
+    "15:30.596"
    ],
+   "revoiced": "cache",
    "action": [
-    "15:20.133",
-    "15:21.944"
+    "15:27.800",
+    "15:29.611"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1693,26 +1780,27 @@
   {
    "id": "r1005",
    "speech": [
-    "15:23.531",
-    "15:27.211"
+    "15:31.198",
+    "15:34.878"
    ],
    "action": [
-    "15:23.532",
-    "15:23.533"
+    "15:31.199",
+    "15:31.200"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 4978
+   "next_speech_after_action_ms": 4738
   },
   {
    "id": "r1006",
    "speech": [
-    "15:28.511",
-    "15:37.951"
+    "15:35.938",
+    "15:45.618"
    ],
+   "revoiced": "cache",
    "action": [
-    "15:28.513",
-    "15:38.421"
+    "15:36.180",
+    "15:46.088"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1721,54 +1809,57 @@
   {
    "id": "r1007",
    "speech": [
-    "15:50.422",
-    "15:51.942"
+    "15:58.089",
+    "15:59.609"
    ],
    "action": [
-    "15:50.432",
-    "15:51.659"
+    "15:58.099",
+    "15:59.326"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 1584
+   "next_speech_after_action_ms": 1344
   },
   {
    "id": "r1008",
    "speech": [
-    "15:53.243",
-    "15:57.163"
+    "16:00.670",
+    "16:04.830"
    ],
+   "revoiced": "cache",
    "action": [
-    "15:53.244",
-    "15:57.346"
+    "16:00.911",
+    "16:05.013"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 602
+   "next_speech_after_action_ms": 842
   },
   {
    "id": "r1009",
    "speech": [
-    "15:57.948",
-    "16:11.228"
+    "16:05.855",
+    "16:18.895"
    ],
+   "revoiced": "cache",
    "action": [
-    "15:57.949",
-    "16:11.887"
+    "16:05.616",
+    "16:19.554"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 7001
+   "next_speech_after_action_ms": 7081
   },
   {
    "id": "r1010",
    "speech": [
-    "16:18.888",
-    "16:20.808"
+    "16:26.635",
+    "16:28.475"
    ],
+   "revoiced": "cache",
    "action": [
-    "16:18.890",
-    "16:19.858"
+    "16:26.557",
+    "16:27.525"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1777,82 +1868,87 @@
   {
    "id": "r1011",
    "speech": [
-    "16:21.409",
-    "16:26.129"
+    "16:29.076",
+    "16:33.796"
    ],
    "action": [
-    "16:21.410",
-    "16:23.309"
+    "16:29.077",
+    "16:30.976"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 4123
+   "next_speech_after_action_ms": 3883
   },
   {
    "id": "r1012",
    "speech": [
-    "16:27.432",
-    "16:32.072"
+    "16:34.859",
+    "16:39.739"
    ],
+   "revoiced": "cache",
    "action": [
-    "16:27.432",
-    "16:32.405"
+    "16:35.099",
+    "16:40.072"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 601
+   "next_speech_after_action_ms": 681
   },
   {
    "id": "r1013",
    "speech": [
-    "16:33.006",
-    "16:38.286"
+    "16:40.753",
+    "16:45.953"
    ],
+   "revoiced": "cache",
    "action": [
-    "16:33.006",
-    "16:39.102"
+    "16:40.673",
+    "16:46.769"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 7002
+   "next_speech_after_action_ms": 7242
   },
   {
    "id": "r1014",
    "speech": [
-    "16:46.104",
-    "16:48.184"
+    "16:54.011",
+    "16:55.851"
    ],
+   "revoiced": "cache",
    "action": [
-    "16:46.106",
-    "16:47.774"
+    "16:53.773",
+    "16:55.441"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 1010
+   "next_speech_after_action_ms": 4450
   },
   {
    "id": "r1015",
    "speech": [
-    "16:48.784",
-    "16:55.744"
+    "16:59.891",
+    "17:03.411"
    ],
+   "revoiced": "cache",
    "action": [
-    "16:48.785",
-    "16:50.308"
+    "16:56.452",
+    "16:57.975"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 6739
+   "next_speech_after_action_ms": 6579
   },
   {
    "id": "r1016",
    "speech": [
-    "16:57.047",
-    "17:06.967"
+    "17:04.554",
+    "17:14.634"
    ],
+   "revoiced": "cache",
    "action": [
-    "16:57.048",
-    "17:04.424"
+    "17:04.715",
+    "17:12.091"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1861,12 +1957,12 @@
   {
    "id": "r1017",
    "speech": [
-    "17:07.567",
-    "17:14.767"
+    "17:15.234",
+    "17:22.434"
    ],
    "action": [
-    "17:07.568",
-    "17:15.600"
+    "17:15.235",
+    "17:23.267"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1875,26 +1971,27 @@
   {
    "id": "r1018",
    "speech": [
-    "17:22.601",
-    "17:24.361"
+    "17:30.268",
+    "17:32.028"
    ],
    "action": [
-    "17:22.602",
-    "17:23.538"
+    "17:30.269",
+    "17:31.205"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 2125
+   "next_speech_after_action_ms": 2765
   },
   {
    "id": "r1019",
    "speech": [
-    "17:25.663",
-    "17:36.943"
+    "17:33.970",
+    "17:44.610"
    ],
+   "revoiced": "cache",
    "action": [
-    "17:25.665",
-    "17:37.310"
+    "17:33.332",
+    "17:44.977"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1903,26 +2000,27 @@
   {
    "id": "r1020",
    "speech": [
-    "17:49.311",
-    "17:50.591"
+    "17:56.978",
+    "17:58.258"
    ],
    "action": [
-    "17:49.318",
-    "17:50.170"
+    "17:56.985",
+    "17:57.837"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 1021
+   "next_speech_after_action_ms": 861
   },
   {
    "id": "r1021",
    "speech": [
-    "17:51.191",
-    "17:55.831"
+    "17:58.698",
+    "18:03.498"
    ],
+   "revoiced": "cache",
    "action": [
-    "17:51.191",
-    "17:51.191"
+    "17:58.858",
+    "17:58.858"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1931,12 +2029,13 @@
   {
    "id": "r1100",
    "speech": [
-    "17:56.292",
-    "18:12.452"
+    "18:03.959",
+    "18:20.119"
    ],
+   "revoiced": "cache",
    "action": [
-    "17:56.292",
-    "17:56.294"
+    "18:03.959",
+    "18:03.961"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -1945,180 +2044,192 @@
   {
    "id": "r1101",
    "speech": [
-    "18:13.752",
-    "18:16.472"
+    "18:21.419",
+    "18:24.139"
    ],
    "action": [
-    "18:13.754",
-    "18:17.165"
+    "18:21.421",
+    "18:24.832"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 602
+   "next_speech_after_action_ms": 762
   },
   {
    "id": "r1102",
    "speech": [
-    "18:17.767",
-    "18:41.367"
+    "18:25.594",
+    "18:49.034"
    ],
+   "revoiced": "cache",
    "action": [
-    "18:17.768",
-    "18:41.972"
+    "18:25.435",
+    "18:49.639"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 7001
+   "next_speech_after_action_ms": 6841
   },
   {
    "id": "r1103",
    "speech": [
-    "18:48.973",
-    "18:55.133"
+    "18:56.480",
+    "19:02.800"
    ],
+   "revoiced": "cache",
    "action": [
-    "18:48.975",
-    "18:49.961"
+    "18:56.642",
+    "18:57.628"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 5773
+   "next_speech_after_action_ms": 6333
   },
   {
    "id": "r1104",
    "speech": [
-    "18:55.734",
-    "19:09.654"
+    "19:03.961",
+    "19:17.321"
    ],
+   "revoiced": "cache",
    "action": [
-    "18:55.734",
-    "19:09.627"
+    "19:03.401",
+    "19:17.294"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 627
+   "next_speech_after_action_ms": 1267
   },
   {
    "id": "r1105",
    "speech": [
-    "19:10.254",
-    "19:12.254"
+    "19:18.561",
+    "19:19.921"
    ],
+   "revoiced": "cache",
    "action": [
-    "19:10.255",
-    "19:12.518"
+    "19:17.922",
+    "19:20.185"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 7301
+   "next_speech_after_action_ms": 7061
   },
   {
    "id": "r1106",
    "speech": [
-    "19:19.819",
-    "19:34.699"
+    "19:27.246",
+    "19:42.366"
    ],
+   "revoiced": "cache",
    "action": [
-    "19:19.827",
-    "19:33.642"
+    "19:27.494",
+    "19:41.309"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 1658
+   "next_speech_after_action_ms": 1578
   },
   {
    "id": "r1107",
    "speech": [
-    "19:35.300",
-    "19:41.460"
+    "19:42.887",
+    "19:49.127"
    ],
+   "revoiced": "cache",
    "action": [
-    "19:35.301",
-    "19:40.658"
+    "19:42.968",
+    "19:48.325"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 2103
+   "next_speech_after_action_ms": 7143
   },
   {
    "id": "r1108",
    "speech": [
-    "19:42.761",
-    "19:53.321"
+    "19:55.468",
+    "20:00.988"
    ],
+   "revoiced": "cache",
    "action": [
-    "19:42.762",
-    "19:53.355"
+    "19:50.429",
+    "20:01.022"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 8001
+   "next_speech_after_action_ms": 8321
   },
   {
    "id": "r1109",
    "speech": [
-    "20:01.356",
-    "20:12.156"
+    "20:09.343",
+    "20:19.823"
    ],
+   "revoiced": "cache",
    "action": [
-    "20:01.359",
-    "20:03.466"
+    "20:09.026",
+    "20:11.133"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 9293
+   "next_speech_after_action_ms": 9213
   },
   {
    "id": "r1110",
    "speech": [
-    "20:12.759",
-    "20:20.039"
+    "20:20.346",
+    "20:27.706"
    ],
+   "revoiced": "cache",
    "action": [
-    "20:12.760",
-    "20:13.408"
+    "20:20.427",
+    "20:21.075"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 7086
+   "next_speech_after_action_ms": 7025
   },
   {
    "id": "r1200",
    "speech": [
-    "20:20.494",
-    "20:30.494"
+    "20:28.100",
+    "20:38.180"
    ],
+   "revoiced": "cache",
    "action": [
-    "20:20.495",
-    "20:20.496"
+    "20:28.162",
+    "20:28.163"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 11301
+   "next_speech_after_action_ms": 10741
   },
   {
    "id": "r1201",
    "speech": [
-    "20:31.797",
-    "20:34.597"
+    "20:38.904",
+    "20:42.264"
    ],
+   "revoiced": "cache",
    "action": [
-    "20:31.798",
-    "20:35.285"
+    "20:39.465",
+    "20:42.952"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 602
+   "next_speech_after_action_ms": 1002
   },
   {
    "id": "r1202",
    "speech": [
-    "20:35.887",
-    "20:41.327"
+    "20:43.954",
+    "20:48.994"
    ],
+   "revoiced": "cache",
    "action": [
-    "20:35.888",
-    "20:42.226"
+    "20:43.555",
+    "20:49.893"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -2127,12 +2238,13 @@
   {
    "id": "r1203",
    "speech": [
-    "20:49.227",
-    "20:51.227"
+    "20:56.894",
+    "20:58.894"
    ],
+   "revoiced": "cache",
    "action": [
-    "20:49.228",
-    "20:50.598"
+    "20:56.895",
+    "20:58.265"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -2141,68 +2253,72 @@
   {
    "id": "r1204",
    "speech": [
-    "20:51.828",
-    "20:55.428"
+    "20:59.495",
+    "21:03.095"
    ],
    "action": [
-    "20:51.829",
-    "20:51.829"
+    "20:59.496",
+    "20:59.496"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 4903
+   "next_speech_after_action_ms": 4743
   },
   {
    "id": "r1205",
    "speech": [
-    "20:56.732",
-    "21:08.652"
+    "21:04.239",
+    "21:16.319"
    ],
+   "revoiced": "cache",
    "action": [
-    "20:56.733",
-    "20:56.734"
+    "21:04.400",
+    "21:04.401"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 13228
+   "next_speech_after_action_ms": 12828
   },
   {
    "id": "r1206",
    "speech": [
-    "21:09.962",
-    "21:12.922"
+    "21:17.229",
+    "21:20.589"
    ],
+   "revoiced": "cache",
    "action": [
-    "21:09.963",
-    "21:13.621"
+    "21:17.630",
+    "21:21.288"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 601
+   "next_speech_after_action_ms": 1241
   },
   {
    "id": "r1207",
    "speech": [
-    "21:14.222",
-    "21:25.182"
+    "21:22.529",
+    "21:32.849"
    ],
+   "revoiced": "cache",
    "action": [
-    "21:14.223",
-    "21:25.969"
+    "21:21.890",
+    "21:33.636"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 7001
+   "next_speech_after_action_ms": 7161
   },
   {
    "id": "r1208",
    "speech": [
-    "21:32.970",
-    "21:35.930"
+    "21:40.797",
+    "21:43.597"
    ],
+   "revoiced": "cache",
    "action": [
-    "21:32.974",
-    "21:34.313"
+    "21:40.641",
+    "21:41.980"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -2211,26 +2327,27 @@
   {
    "id": "r1209",
    "speech": [
-    "21:36.532",
-    "21:38.372"
+    "21:44.199",
+    "21:46.039"
    ],
    "action": [
-    "21:36.533",
-    "21:37.179"
+    "21:44.200",
+    "21:44.846"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 1794
+   "next_speech_after_action_ms": 1634
   },
   {
    "id": "r1210",
    "speech": [
-    "21:38.973",
-    "21:41.213"
+    "21:46.480",
+    "21:48.880"
    ],
+   "revoiced": "cache",
    "action": [
-    "21:38.974",
-    "21:39.662"
+    "21:46.641",
+    "21:47.329"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -2239,26 +2356,27 @@
   {
    "id": "r1211",
    "speech": [
-    "21:41.815",
-    "21:45.735"
+    "21:49.482",
+    "21:53.402"
    ],
    "action": [
-    "21:41.816",
-    "21:44.045"
+    "21:49.483",
+    "21:51.712"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 2992
+   "next_speech_after_action_ms": 2832
   },
   {
    "id": "r1212",
    "speech": [
-    "21:47.037",
-    "21:50.877"
+    "21:54.544",
+    "21:58.544"
    ],
+   "revoiced": "cache",
    "action": [
-    "21:47.038",
-    "21:52.940"
+    "21:54.705",
+    "22:00.607"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -2267,12 +2385,13 @@
   {
    "id": "r1213",
    "speech": [
-    "22:00.941",
-    "22:02.621"
+    "22:08.608",
+    "22:10.288"
    ],
+   "revoiced": "cache",
    "action": [
-    "22:00.946",
-    "22:01.916"
+    "22:08.613",
+    "22:09.583"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -2281,40 +2400,43 @@
   {
    "id": "r1214",
    "speech": [
-    "22:03.221",
-    "22:09.621"
+    "22:10.888",
+    "22:17.288"
    ],
+   "revoiced": "cache",
    "action": [
-    "22:03.221",
-    "22:04.162"
+    "22:10.888",
+    "22:11.829"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 6060
+   "next_speech_after_action_ms": 6140
   },
   {
    "id": "r1215",
    "speech": [
-    "22:10.222",
-    "22:12.782"
+    "22:17.969",
+    "22:20.449"
    ],
+   "revoiced": "cache",
    "action": [
-    "22:10.223",
-    "22:10.223"
+    "22:17.890",
+    "22:17.890"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 3036
+   "next_speech_after_action_ms": 2977
   },
   {
    "id": "r1300",
    "speech": [
-    "22:13.260",
-    "22:34.380"
+    "22:20.867",
+    "22:42.307"
    ],
+   "revoiced": "cache",
    "action": [
-    "22:13.261",
-    "22:13.261"
+    "22:20.927",
+    "22:20.927"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -2323,40 +2445,42 @@
   {
    "id": "r1301",
    "speech": [
-    "22:35.684",
-    "22:37.844"
+    "22:43.350",
+    "22:45.510"
    ],
    "action": [
-    "22:35.686",
-    "22:38.569"
+    "22:43.352",
+    "22:46.235"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 601
+   "next_speech_after_action_ms": 281
   },
   {
    "id": "r1302",
    "speech": [
-    "22:39.170",
-    "22:52.690"
+    "22:46.516",
+    "23:00.356"
    ],
+   "revoiced": "cache",
    "action": [
-    "22:39.170",
-    "22:53.528"
+    "22:46.836",
+    "23:01.194"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 7001
+   "next_speech_after_action_ms": 6761
   },
   {
    "id": "r1303",
    "speech": [
-    "23:00.529",
-    "23:06.289"
+    "23:07.955",
+    "23:13.955"
    ],
+   "revoiced": "cache",
    "action": [
-    "23:00.530",
-    "23:05.566"
+    "23:08.196",
+    "23:13.232"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -2365,12 +2489,12 @@
   {
    "id": "r1304",
    "speech": [
-    "23:07.590",
-    "23:11.110"
+    "23:15.256",
+    "23:18.776"
    ],
    "action": [
-    "23:07.592",
-    "23:11.016"
+    "23:15.258",
+    "23:18.682"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -2379,26 +2503,27 @@
   {
    "id": "r1305",
    "speech": [
-    "23:11.710",
-    "23:13.470"
+    "23:19.376",
+    "23:21.136"
    ],
    "action": [
-    "23:11.711",
-    "23:17.203"
+    "23:19.377",
+    "23:24.869"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 8001
+   "next_speech_after_action_ms": 7761
   },
   {
    "id": "r1306",
    "speech": [
-    "23:25.204",
-    "23:28.724"
+    "23:32.630",
+    "23:36.390"
    ],
+   "revoiced": "cache",
    "action": [
-    "23:25.204",
-    "23:26.398"
+    "23:32.870",
+    "23:34.064"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -2407,12 +2532,12 @@
   {
    "id": "r1307",
    "speech": [
-    "23:29.327",
-    "23:33.727"
+    "23:36.993",
+    "23:41.393"
    ],
    "action": [
-    "23:29.328",
-    "23:29.849"
+    "23:36.994",
+    "23:37.515"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -2421,68 +2546,72 @@
   {
    "id": "r1308",
    "speech": [
-    "23:34.328",
-    "23:37.288"
+    "23:41.994",
+    "23:44.954"
    ],
    "action": [
-    "23:34.329",
-    "23:34.749"
+    "23:41.995",
+    "23:42.415"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 3139
+   "next_speech_after_action_ms": 3059
   },
   {
    "id": "r1309",
    "speech": [
-    "23:37.888",
-    "23:44.768"
+    "23:45.474",
+    "23:52.434"
    ],
+   "revoiced": "cache",
    "action": [
-    "23:37.889",
-    "23:37.889"
+    "23:45.555",
+    "23:45.555"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 8186
+   "next_speech_after_action_ms": 7466
   },
   {
    "id": "r1310",
    "speech": [
-    "23:46.075",
-    "24:07.435"
+    "23:53.021",
+    "24:15.101"
    ],
+   "revoiced": "cache",
    "action": [
-    "23:46.077",
-    "24:07.422"
+    "23:53.743",
+    "24:15.088"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 613
+   "next_speech_after_action_ms": 373
   },
   {
    "id": "r1311",
    "speech": [
-    "24:08.035",
-    "24:16.915"
+    "24:15.461",
+    "24:24.581"
    ],
+   "revoiced": "cache",
    "action": [
-    "24:08.034",
-    "24:17.757"
+    "24:15.700",
+    "24:25.423"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 7001
+   "next_speech_after_action_ms": 6761
   },
   {
    "id": "r1312",
    "speech": [
-    "24:24.758",
-    "24:30.118"
+    "24:32.184",
+    "24:37.784"
    ],
+   "revoiced": "cache",
    "action": [
-    "24:24.762",
-    "24:27.863"
+    "24:32.428",
+    "24:35.529"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -2491,40 +2620,42 @@
   {
    "id": "r1313",
    "speech": [
-    "24:30.720",
-    "24:33.760"
+    "24:38.386",
+    "24:41.426"
    ],
    "action": [
-    "24:30.721",
-    "24:31.729"
+    "24:38.387",
+    "24:39.395"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 3333
+   "next_speech_after_action_ms": 3173
   },
   {
    "id": "r1314",
    "speech": [
-    "24:35.062",
-    "24:41.542"
+    "24:42.568",
+    "24:49.208"
    ],
+   "revoiced": "cache",
    "action": [
-    "24:35.064",
-    "24:41.410"
+    "24:42.730",
+    "24:49.076"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 733
+   "next_speech_after_action_ms": 493
   },
   {
    "id": "r1315",
    "speech": [
-    "24:42.143",
-    "24:46.223"
+    "24:49.569",
+    "24:53.889"
    ],
+   "revoiced": "cache",
    "action": [
-    "24:42.144",
-    "24:47.064"
+    "24:49.810",
+    "24:54.730"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -2533,12 +2664,12 @@
   {
    "id": "r1316",
    "speech": [
-    "24:54.065",
-    "24:55.345"
+    "25:01.731",
+    "25:03.011"
    ],
    "action": [
-    "24:54.068",
-    "24:55.046"
+    "25:01.734",
+    "25:02.712"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -2547,12 +2678,13 @@
   {
    "id": "r1317",
    "speech": [
-    "24:55.945",
-    "25:05.865"
+    "25:03.611",
+    "25:13.531"
    ],
+   "revoiced": "cache",
    "action": [
-    "24:55.946",
-    "25:04.995"
+    "25:03.612",
+    "25:12.661"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -2561,12 +2693,12 @@
   {
    "id": "r1318",
    "speech": [
-    "25:06.466",
-    "25:15.506"
+    "25:14.132",
+    "25:23.172"
    ],
    "action": [
-    "25:06.467",
-    "25:06.467"
+    "25:14.133",
+    "25:14.133"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -2575,82 +2707,88 @@
   {
    "id": "r1319",
    "speech": [
-    "25:16.812",
-    "25:26.012"
+    "25:24.478",
+    "25:33.678"
    ],
+   "revoiced": "cache",
    "action": [
-    "25:16.814",
-    "25:26.403"
+    "25:24.480",
+    "25:34.069"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 601
+   "next_speech_after_action_ms": 201
   },
   {
    "id": "r1320",
    "speech": [
-    "25:27.004",
-    "25:40.604"
+    "25:34.270",
+    "25:48.270"
    ],
+   "revoiced": "cache",
    "action": [
-    "25:27.005",
-    "25:41.280"
+    "25:34.671",
+    "25:48.946"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 7001
+   "next_speech_after_action_ms": 6921
   },
   {
    "id": "r1321",
    "speech": [
-    "25:48.281",
-    "25:52.201"
+    "25:55.867",
+    "25:59.867"
    ],
+   "revoiced": "cache",
    "action": [
-    "25:48.285",
-    "25:50.326"
+    "25:55.951",
+    "25:57.992"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 2477
+   "next_speech_after_action_ms": 2397
   },
   {
    "id": "r1322",
    "speech": [
-    "25:52.803",
-    "25:56.723"
+    "26:00.389",
+    "26:04.389"
    ],
+   "revoiced": "cache",
    "action": [
-    "25:52.804",
-    "25:52.804"
+    "26:00.470",
+    "26:00.470"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 4392
+   "next_speech_after_action_ms": 4472
   },
   {
    "id": "r1400",
    "speech": [
-    "25:57.196",
-    "26:05.916"
+    "26:04.943",
+    "26:13.583"
    ],
+   "revoiced": "cache",
    "action": [
-    "25:57.196",
-    "26:06.332"
+    "26:04.863",
+    "26:13.999"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 601
+   "next_speech_after_action_ms": 681
   },
   {
    "id": "r1401",
    "speech": [
-    "26:06.933",
-    "26:15.653"
+    "26:14.680",
+    "26:23.320"
    ],
+   "revoiced": "cache",
    "action": [
-    "26:06.933",
-    "26:16.471"
+    "26:14.600",
+    "26:24.138"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -2659,12 +2797,13 @@
   {
    "id": "r1402",
    "speech": [
-    "26:23.472",
-    "26:27.152"
+    "26:31.139",
+    "26:34.819"
    ],
+   "revoiced": "cache",
    "action": [
-    "26:23.476",
-    "26:25.752"
+    "26:31.143",
+    "26:33.419"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -2673,26 +2812,27 @@
   {
    "id": "r1403",
    "speech": [
-    "26:27.754",
-    "26:31.354"
+    "26:35.421",
+    "26:39.021"
    ],
    "action": [
-    "26:27.755",
-    "26:27.755"
+    "26:35.422",
+    "26:35.422"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 4903
+   "next_speech_after_action_ms": 5783
   },
   {
    "id": "r1404",
    "speech": [
-    "26:32.658",
-    "26:35.618"
+    "26:41.205",
+    "26:43.285"
    ],
+   "revoiced": "cache",
    "action": [
-    "26:32.660",
-    "26:37.990"
+    "26:40.327",
+    "26:45.657"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -2701,12 +2841,13 @@
   {
    "id": "r1405",
    "speech": [
-    "26:45.991",
-    "26:53.271"
+    "26:53.658",
+    "27:00.938"
    ],
+   "revoiced": "cache",
    "action": [
-    "26:45.996",
-    "26:47.555"
+    "26:53.663",
+    "26:55.222"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -2715,54 +2856,58 @@
   {
    "id": "r1406",
    "speech": [
-    "26:53.874",
-    "26:58.434"
+    "27:01.541",
+    "27:06.101"
    ],
+   "revoiced": "cache",
    "action": [
-    "26:53.875",
-    "26:54.636"
+    "27:01.542",
+    "27:02.303"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 4259
+   "next_speech_after_action_ms": 4339
   },
   {
    "id": "r1500",
    "speech": [
-    "26:58.894",
-    "27:15.854"
+    "27:06.641",
+    "27:23.521"
    ],
+   "revoiced": "cache",
    "action": [
-    "26:58.894",
-    "26:58.895"
+    "27:06.561",
+    "27:06.562"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 18260
+   "next_speech_after_action_ms": 17940
   },
   {
    "id": "r1501",
    "speech": [
-    "27:17.155",
-    "27:20.595"
+    "27:24.502",
+    "27:28.262"
    ],
+   "revoiced": "cache",
    "action": [
-    "27:17.156",
-    "27:21.254"
+    "27:24.823",
+    "27:28.921"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 602
+   "next_speech_after_action_ms": 1082
   },
   {
    "id": "r1502",
    "speech": [
-    "27:21.856",
-    "27:29.616"
+    "27:30.003",
+    "27:37.283"
    ],
+   "revoiced": "cache",
    "action": [
-    "27:21.856",
-    "27:30.181"
+    "27:29.523",
+    "27:37.848"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -2771,12 +2916,12 @@
   {
    "id": "r1503",
    "speech": [
-    "27:37.182",
-    "27:42.302"
+    "27:44.849",
+    "27:49.969"
    ],
    "action": [
-    "27:37.183",
-    "27:40.213"
+    "27:44.850",
+    "27:47.880"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -2785,12 +2930,12 @@
   {
    "id": "r1504",
    "speech": [
-    "27:49.603",
-    "27:51.283"
+    "27:57.270",
+    "27:58.950"
    ],
    "action": [
-    "27:49.610",
-    "27:50.496"
+    "27:57.277",
+    "27:58.163"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -2799,12 +2944,12 @@
   {
    "id": "r1505",
    "speech": [
-    "27:51.884",
-    "27:53.564"
+    "27:59.551",
+    "28:01.231"
    ],
    "action": [
-    "27:51.884",
-    "27:52.696"
+    "27:59.551",
+    "28:00.363"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -2813,54 +2958,58 @@
   {
    "id": "r1506",
    "speech": [
-    "27:54.164",
-    "27:56.004"
+    "28:01.831",
+    "28:03.671"
    ],
+   "revoiced": "cache",
    "action": [
-    "27:54.164",
-    "27:54.997"
+    "28:01.831",
+    "28:02.664"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 2308
+   "next_speech_after_action_ms": 2228
   },
   {
    "id": "r1507",
    "speech": [
-    "27:57.305",
-    "28:00.265"
+    "28:04.892",
+    "28:07.932"
    ],
+   "revoiced": "cache",
    "action": [
-    "27:57.307",
-    "28:00.751"
+    "28:04.974",
+    "28:08.418"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 601
+   "next_speech_after_action_ms": 201
   },
   {
    "id": "r1508",
    "speech": [
-    "28:01.352",
-    "28:23.752"
+    "28:08.619",
+    "28:31.419"
    ],
+   "revoiced": "cache",
    "action": [
-    "28:01.352",
-    "28:24.522"
+    "28:09.019",
+    "28:32.189"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 7001
+   "next_speech_after_action_ms": 7081
   },
   {
    "id": "r1509",
    "speech": [
-    "28:31.523",
-    "28:36.323"
+    "28:39.270",
+    "28:43.990"
    ],
+   "revoiced": "cache",
    "action": [
-    "28:31.525",
-    "28:34.778"
+    "28:39.192",
+    "28:42.445"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -2869,68 +3018,72 @@
   {
    "id": "r1510",
    "speech": [
-    "28:36.925",
-    "28:42.285"
+    "28:44.592",
+    "28:49.952"
    ],
    "action": [
-    "28:36.925",
-    "28:39.611"
+    "28:44.592",
+    "28:47.278"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 3277
+   "next_speech_after_action_ms": 3197
   },
   {
    "id": "r1511",
    "speech": [
-    "28:42.888",
-    "28:46.648"
+    "28:50.475",
+    "28:54.315"
    ],
+   "revoiced": "cache",
    "action": [
-    "28:42.888",
-    "28:42.888"
+    "28:50.555",
+    "28:50.555"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 4236
+   "next_speech_after_action_ms": 4178
   },
   {
    "id": "r1600",
    "speech": [
-    "28:47.124",
-    "29:01.604"
+    "28:54.733",
+    "29:09.693"
    ],
+   "revoiced": "cache",
    "action": [
-    "28:47.125",
-    "29:02.068"
+    "28:54.792",
+    "29:09.735"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 12002
+   "next_speech_after_action_ms": 12162
   },
   {
    "id": "r1601",
    "speech": [
-    "29:14.070",
-    "29:22.550"
+    "29:21.897",
+    "29:30.217"
    ],
+   "revoiced": "cache",
    "action": [
-    "29:14.073",
-    "29:21.714"
+    "29:21.740",
+    "29:29.381"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 1437
+   "next_speech_after_action_ms": 1517
   },
   {
    "id": "r1602",
    "speech": [
-    "29:23.151",
-    "29:24.831"
+    "29:30.898",
+    "29:32.498"
    ],
+   "revoiced": "cache",
    "action": [
-    "29:23.152",
-    "29:23.964"
+    "29:30.819",
+    "29:31.631"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -2939,12 +3092,12 @@
   {
    "id": "r1603",
    "speech": [
-    "29:26.132",
-    "29:28.692"
+    "29:33.799",
+    "29:36.359"
    ],
    "action": [
-    "29:26.134",
-    "29:28.347"
+    "29:33.801",
+    "29:36.014"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -2953,12 +3106,12 @@
   {
    "id": "r1604",
    "speech": [
-    "29:29.293",
-    "29:30.413"
+    "29:36.960",
+    "29:38.080"
    ],
    "action": [
-    "29:29.294",
-    "29:29.846"
+    "29:36.961",
+    "29:37.513"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -2967,12 +3120,13 @@
   {
    "id": "r1605",
    "speech": [
-    "29:31.013",
-    "29:33.733"
+    "29:38.680",
+    "29:41.400"
    ],
+   "revoiced": "cache",
    "action": [
-    "29:31.014",
-    "29:31.730"
+    "29:38.681",
+    "29:39.397"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -2981,194 +3135,208 @@
   {
    "id": "r1606",
    "speech": [
-    "29:34.336",
-    "29:38.896"
+    "29:42.003",
+    "29:46.563"
    ],
+   "revoiced": "cache",
    "action": [
-    "29:34.337",
-    "29:34.337"
+    "29:42.004",
+    "29:42.004"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 5861
+   "next_speech_after_action_ms": 6181
   },
   {
    "id": "r1607",
    "speech": [
-    "29:40.198",
-    "29:48.358"
+    "29:48.185",
+    "29:56.025"
    ],
+   "revoiced": "cache",
    "action": [
-    "29:40.200",
-    "29:48.358"
+    "29:47.867",
+    "29:56.025"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 602
+   "next_speech_after_action_ms": 762
   },
   {
    "id": "r1608",
    "speech": [
-    "29:48.960",
-    "29:50.560"
+    "29:56.787",
+    "29:58.227"
    ],
+   "revoiced": "cache",
    "action": [
-    "29:48.961",
-    "29:50.978"
+    "29:56.628",
+    "29:58.645"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 601
+   "next_speech_after_action_ms": 121
   },
   {
    "id": "r1609",
    "speech": [
-    "29:51.579",
-    "29:56.859"
+    "29:58.766",
+    "30:04.526"
    ],
+   "revoiced": "cache",
    "action": [
-    "29:51.580",
-    "29:56.516"
+    "29:59.247",
+    "30:04.183"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 944
+   "next_speech_after_action_ms": 544
   },
   {
    "id": "r1610",
    "speech": [
-    "29:57.460",
-    "29:58.900"
+    "30:04.727",
+    "30:06.567"
    ],
+   "revoiced": "cache",
    "action": [
-    "29:57.461",
-    "29:57.461"
+    "30:05.128",
+    "30:05.128"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 10741
+   "next_speech_after_action_ms": 10021
   },
   {
    "id": "r1611",
    "speech": [
-    "30:08.202",
-    "30:13.802"
+    "30:15.149",
+    "30:21.469"
    ],
+   "revoiced": "cache",
    "action": [
-    "30:08.212",
-    "30:13.353"
+    "30:15.879",
+    "30:21.020"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 1049
+   "next_speech_after_action_ms": 8409
   },
   {
    "id": "r1612",
    "speech": [
-    "30:14.402",
-    "30:24.402"
+    "30:29.429",
+    "30:32.069"
    ],
+   "revoiced": "cache",
    "action": [
-    "30:14.402",
-    "30:14.402"
+    "30:22.069",
+    "30:22.069"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 11302
+   "next_speech_after_action_ms": 11462
   },
   {
    "id": "r1613",
    "speech": [
-    "30:25.704",
-    "30:30.104"
+    "30:33.531",
+    "30:37.771"
    ],
+   "revoiced": "cache",
    "action": [
-    "30:25.705",
-    "30:29.070"
+    "30:33.372",
+    "30:36.737"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 1635
+   "next_speech_after_action_ms": 1955
   },
   {
    "id": "r1614",
    "speech": [
-    "30:30.705",
-    "30:32.785"
+    "30:38.692",
+    "30:40.452"
    ],
+   "revoiced": "cache",
    "action": [
-    "30:30.706",
-    "30:32.640"
+    "30:38.373",
+    "30:40.307"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 746
+   "next_speech_after_action_ms": 506
   },
   {
    "id": "r1615",
    "speech": [
-    "30:33.386",
-    "30:36.506"
+    "30:40.813",
+    "30:44.173"
    ],
+   "revoiced": "cache",
    "action": [
-    "30:33.387",
-    "30:36.116"
+    "30:41.054",
+    "30:43.783"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 990
+   "next_speech_after_action_ms": 510
   },
   {
    "id": "r1616",
    "speech": [
-    "30:37.106",
-    "30:51.826"
+    "30:44.293",
+    "30:59.493"
    ],
+   "revoiced": "cache",
    "action": [
-    "30:37.107",
-    "30:38.960"
+    "30:44.774",
+    "30:46.627"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 14176
+   "next_speech_after_action_ms": 14016
   },
   {
    "id": "r1617",
    "speech": [
-    "30:53.136",
-    "30:55.376"
+    "31:00.643",
+    "31:03.043"
    ],
+   "revoiced": "cache",
    "action": [
-    "30:53.136",
-    "30:55.301"
+    "31:00.803",
+    "31:02.968"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 675
+   "next_speech_after_action_ms": 355
   },
   {
    "id": "r1618",
    "speech": [
-    "30:55.976",
-    "31:04.136"
+    "31:03.323",
+    "31:11.803"
    ],
+   "revoiced": "cache",
    "action": [
-    "30:55.977",
-    "31:04.485"
+    "31:03.644",
+    "31:12.152"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 9301
+   "next_speech_after_action_ms": 9781
   },
   {
    "id": "r1619",
    "speech": [
-    "31:13.786",
-    "31:19.386"
+    "31:21.933",
+    "31:27.053"
    ],
+   "revoiced": "cache",
    "action": [
-    "31:13.786",
-    "31:18.823"
+    "31:21.453",
+    "31:26.490"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -3177,12 +3345,13 @@
   {
    "id": "r1620",
    "speech": [
-    "31:19.987",
-    "31:27.827"
+    "31:27.654",
+    "31:35.494"
    ],
+   "revoiced": "cache",
    "action": [
-    "31:19.987",
-    "31:25.792"
+    "31:27.654",
+    "31:33.459"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -3191,26 +3360,27 @@
   {
    "id": "r1621",
    "speech": [
-    "31:28.429",
-    "31:32.509"
+    "31:36.096",
+    "31:40.176"
    ],
    "action": [
-    "31:28.429",
-    "31:31.508"
+    "31:36.096",
+    "31:39.175"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 1603
+   "next_speech_after_action_ms": 1523
   },
   {
    "id": "r1622",
    "speech": [
-    "31:33.111",
-    "31:39.591"
+    "31:40.698",
+    "31:47.258"
    ],
+   "revoiced": "cache",
    "action": [
-    "31:33.112",
-    "31:37.276"
+    "31:40.779",
+    "31:44.943"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -3219,12 +3389,12 @@
   {
    "id": "r1623",
    "speech": [
-    "31:40.892",
-    "31:43.452"
+    "31:48.559",
+    "31:51.119"
    ],
    "action": [
-    "31:40.894",
-    "31:43.637"
+    "31:48.561",
+    "31:51.304"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -3233,12 +3403,12 @@
   {
    "id": "r1624",
    "speech": [
-    "31:44.238",
-    "31:46.238"
+    "31:51.905",
+    "31:53.905"
    ],
    "action": [
-    "31:44.238",
-    "31:46.166"
+    "31:51.905",
+    "31:53.833"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
@@ -3247,68 +3417,72 @@
   {
    "id": "r1625",
    "speech": [
-    "31:46.838",
-    "31:48.518"
+    "31:54.505",
+    "31:56.185"
    ],
    "action": [
-    "31:46.839",
-    "31:47.516"
+    "31:54.506",
+    "31:55.183"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 7303
+   "next_speech_after_action_ms": 7223
   },
   {
    "id": "r1626",
    "speech": [
-    "31:54.819",
-    "32:06.739"
+    "32:02.406",
+    "32:14.406"
    ],
+   "revoiced": "cache",
    "action": [
-    "31:54.821",
-    "32:05.893"
+    "32:02.488",
+    "32:13.560"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 1447
+   "next_speech_after_action_ms": 1367
   },
   {
    "id": "r1627",
    "speech": [
-    "32:07.340",
-    "32:10.700"
+    "32:14.927",
+    "32:18.367"
    ],
+   "revoiced": "cache",
    "action": [
-    "32:07.341",
-    "32:07.341"
+    "32:15.008",
+    "32:15.008"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 9662
+   "next_speech_after_action_ms": 10542
   },
   {
    "id": "r1628",
    "speech": [
-    "32:17.003",
-    "32:23.163"
+    "32:25.550",
+    "32:30.830"
    ],
+   "revoiced": "cache",
    "action": [
-    "32:17.009",
-    "32:21.623"
+    "32:24.676",
+    "32:29.290"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null,
-   "next_speech_after_action_ms": 2840
+   "next_speech_after_action_ms": 3080
   },
   {
    "id": "r1629",
    "speech": [
-    "32:24.463",
-    "32:35.663"
+    "32:32.370",
+    "32:43.330"
    ],
+   "revoiced": "cache",
    "action": [
-    "32:24.465",
-    "32:26.040"
+    "32:32.132",
+    "32:33.707"
    ],
    "commit": null,
    "commit_before_speech_end_ms": null
@@ -3372,23 +3546,7 @@
    "gliding": false
   },
   {
-   "segment": "t6-s04",
-   "x": 768,
-   "y": 774,
-   "dx": 0,
-   "dy": 0.4,
-   "gliding": false
-  },
-  {
-   "segment": "t6-s04",
-   "x": 723,
-   "y": 251,
-   "dx": 0.73,
-   "dy": 0.2,
-   "gliding": false
-  },
-  {
-   "segment": "t6-s04",
+   "segment": "t6-s04b",
    "x": 940,
    "y": 90,
    "dx": 0.83,
@@ -3396,71 +3554,7 @@
    "gliding": false
   },
   {
-   "segment": "t6-s04",
-   "x": 24,
-   "y": 54,
-   "dx": 0,
-   "dy": 0,
-   "gliding": false
-  },
-  {
-   "segment": "t6-s04",
-   "x": 940,
-   "y": 90,
-   "dx": -878.62,
-   "dy": 323.2,
-   "gliding": false
-  },
-  {
-   "segment": "t6-s04",
-   "x": 940,
-   "y": 90,
-   "dx": -878.62,
-   "dy": 323.2,
-   "gliding": false
-  },
-  {
-   "segment": "t6-s04",
-   "x": 1506,
-   "y": 90,
-   "dx": -1444.62,
-   "dy": 323.2,
-   "gliding": false
-  },
-  {
-   "segment": "t6-s04",
-   "x": 940,
-   "y": 90,
-   "dx": -878.62,
-   "dy": 323.2,
-   "gliding": false
-  },
-  {
-   "segment": "t6-s04",
-   "x": 1506,
-   "y": 90,
-   "dx": -1444.62,
-   "dy": 323.2,
-   "gliding": false
-  },
-  {
-   "segment": "t6-s04",
-   "x": 940,
-   "y": 90,
-   "dx": -878.62,
-   "dy": 323.2,
-   "gliding": false
-  },
-  {
-   "segment": "t6-s04",
-   "x": 940,
-   "y": 90,
-   "dx": 0.83,
-   "dy": 0.6,
-   "gliding": false
-  },
-  {
-   "segment": "t6-s04",
+   "segment": "t6-s04b",
    "x": 1506,
    "y": 90,
    "dx": 0.83,
@@ -9927,109 +10021,109 @@
    "max_gap_ms": 65
   },
   {
-   "segment": "t6-s04",
+   "segment": "t6-s04b",
    "mode": "overlay",
-   "start_ms": 210382,
-   "duration_ms": 516,
+   "start_ms": 210390,
+   "duration_ms": 524,
    "planned_ms": 503,
    "frames": 0,
    "start_delay_ms": null,
-   "max_gap_ms": 514
+   "max_gap_ms": 521
   },
   {
-   "segment": "t6-s04",
+   "segment": "t6-s04b",
    "mode": "overlay",
-   "start_ms": 213406,
-   "duration_ms": 392,
+   "start_ms": 213408,
+   "duration_ms": 388,
    "planned_ms": 379,
    "frames": 0,
    "start_delay_ms": null,
-   "max_gap_ms": 390
+   "max_gap_ms": 386
   },
   {
-   "segment": "t6-s04",
+   "segment": "t6-s04b",
    "mode": "overlay",
-   "start_ms": 221006,
-   "duration_ms": 476,
+   "start_ms": 223462,
+   "duration_ms": 467,
    "planned_ms": 460,
-   "frames": 2,
-   "start_delay_ms": 20,
-   "max_gap_ms": 354
+   "frames": 0,
+   "start_delay_ms": null,
+   "max_gap_ms": 465
   },
   {
-   "segment": "t6-s04",
+   "segment": "t6-s04b",
    "mode": "overlay",
-   "start_ms": 226775,
-   "duration_ms": 273,
+   "start_ms": 234534,
+   "duration_ms": 278,
    "planned_ms": 260,
-   "frames": 3,
-   "start_delay_ms": 19,
-   "max_gap_ms": 98
+   "frames": 0,
+   "start_delay_ms": null,
+   "max_gap_ms": 275
   },
   {
-   "segment": "t6-s04",
+   "segment": "t6-s04b",
    "mode": "overlay",
-   "start_ms": 227191,
-   "duration_ms": 340,
+   "start_ms": 234993,
+   "duration_ms": 337,
    "planned_ms": 318,
    "frames": 1,
-   "start_delay_ms": 10,
-   "max_gap_ms": 328
+   "start_delay_ms": 11,
+   "max_gap_ms": 324
   },
   {
-   "segment": "t6-s04",
+   "segment": "t6-s04b",
    "mode": "overlay",
-   "start_ms": 228836,
-   "duration_ms": 296,
+   "start_ms": 236635,
+   "duration_ms": 294,
    "planned_ms": 272,
    "frames": 2,
-   "start_delay_ms": 23,
-   "max_gap_ms": 151
+   "start_delay_ms": 22,
+   "max_gap_ms": 150
   },
   {
-   "segment": "t6-s04",
+   "segment": "t6-s04b",
    "mode": "overlay",
-   "start_ms": 249655,
-   "duration_ms": 276,
+   "start_ms": 257456,
+   "duration_ms": 270,
    "planned_ms": 260,
    "frames": 2,
-   "start_delay_ms": 17,
-   "max_gap_ms": 218
+   "start_delay_ms": 16,
+   "max_gap_ms": 220
   },
   {
-   "segment": "t6-s04",
+   "segment": "t6-s04b",
    "mode": "overlay",
-   "start_ms": 254920,
-   "duration_ms": 344,
+   "start_ms": 262722,
+   "duration_ms": 339,
    "planned_ms": 330,
    "frames": 2,
-   "start_delay_ms": 24,
-   "max_gap_ms": 265
+   "start_delay_ms": 19,
+   "max_gap_ms": 264
   },
   {
-   "segment": "t6-s04",
+   "segment": "t6-s04b",
    "mode": "overlay",
-   "start_ms": 262751,
-   "duration_ms": 462,
+   "start_ms": 270555,
+   "duration_ms": 459,
    "planned_ms": 449,
-   "frames": 4,
-   "start_delay_ms": 21,
-   "max_gap_ms": 397
+   "frames": 3,
+   "start_delay_ms": 17,
+   "max_gap_ms": 414
   },
   {
-   "segment": "t6-s04",
+   "segment": "t6-s04b",
    "mode": "overlay",
-   "start_ms": 269692,
-   "duration_ms": 603,
+   "start_ms": 277362,
+   "duration_ms": 615,
    "planned_ms": 592,
    "frames": 8,
-   "start_delay_ms": 79,
-   "max_gap_ms": 410
+   "start_delay_ms": 90,
+   "max_gap_ms": 411
   },
   {
    "segment": "t6-s05",
    "mode": "overlay",
-   "start_ms": 318569,
+   "start_ms": 326235,
    "duration_ms": 379,
    "planned_ms": 368,
    "frames": 0,
@@ -10039,7 +10133,7 @@
   {
    "segment": "t6-s05",
    "mode": "overlay",
-   "start_ms": 319057,
+   "start_ms": 326723,
    "duration_ms": 343,
    "planned_ms": 318,
    "frames": 0,
@@ -10049,7 +10143,7 @@
   {
    "segment": "t6-s05",
    "mode": "overlay",
-   "start_ms": 326933,
+   "start_ms": 334599,
    "duration_ms": 281,
    "planned_ms": 260,
    "frames": 2,
@@ -10059,7 +10153,7 @@
   {
    "segment": "t6-s05",
    "mode": "overlay",
-   "start_ms": 332186,
+   "start_ms": 339852,
    "duration_ms": 595,
    "planned_ms": 582,
    "frames": 7,
@@ -10069,7 +10163,7 @@
   {
    "segment": "t6-s05",
    "mode": "overlay",
-   "start_ms": 342024,
+   "start_ms": 349690,
    "duration_ms": 573,
    "planned_ms": 555,
    "frames": 14,
@@ -10079,7 +10173,7 @@
   {
    "segment": "t6-s05",
    "mode": "overlay",
-   "start_ms": 343222,
+   "start_ms": 350888,
    "duration_ms": 309,
    "planned_ms": 296,
    "frames": 0,
@@ -10089,7 +10183,7 @@
   {
    "segment": "t6-s05",
    "mode": "overlay",
-   "start_ms": 351577,
+   "start_ms": 359243,
    "duration_ms": 386,
    "planned_ms": 368,
    "frames": 0,
@@ -10099,7 +10193,7 @@
   {
    "segment": "t6-s05",
    "mode": "overlay",
-   "start_ms": 362163,
+   "start_ms": 369829,
    "duration_ms": 533,
    "planned_ms": 521,
    "frames": 1,
@@ -10109,7 +10203,7 @@
   {
    "segment": "t6-s05",
    "mode": "overlay",
-   "start_ms": 366103,
+   "start_ms": 373769,
    "duration_ms": 584,
    "planned_ms": 560,
    "frames": 1,
@@ -10119,7 +10213,7 @@
   {
    "segment": "t6-s05",
    "mode": "overlay",
-   "start_ms": 369049,
+   "start_ms": 376715,
    "duration_ms": 414,
    "planned_ms": 399,
    "frames": 8,
@@ -10129,7 +10223,7 @@
   {
    "segment": "t6-s05",
    "mode": "overlay",
-   "start_ms": 381377,
+   "start_ms": 389043,
    "duration_ms": 495,
    "planned_ms": 475,
    "frames": 1,
@@ -10139,7 +10233,7 @@
   {
    "segment": "t6-s05",
    "mode": "overlay",
-   "start_ms": 385975,
+   "start_ms": 393641,
    "duration_ms": 270,
    "planned_ms": 260,
    "frames": 1,
@@ -10149,7 +10243,7 @@
   {
    "segment": "t6-s05",
    "mode": "overlay",
-   "start_ms": 391759,
+   "start_ms": 399425,
    "duration_ms": 286,
    "planned_ms": 260,
    "frames": 0,
@@ -10159,7 +10253,7 @@
   {
    "segment": "t6-s05",
    "mode": "overlay",
-   "start_ms": 392526,
+   "start_ms": 400192,
    "duration_ms": 268,
    "planned_ms": 260,
    "frames": 0,
@@ -10169,7 +10263,7 @@
   {
    "segment": "t6-s05",
    "mode": "overlay",
-   "start_ms": 393294,
+   "start_ms": 400960,
    "duration_ms": 267,
    "planned_ms": 260,
    "frames": 0,
@@ -10179,7 +10273,7 @@
   {
    "segment": "t6-s06",
    "mode": "overlay",
-   "start_ms": 403442,
+   "start_ms": 411109,
    "duration_ms": 470,
    "planned_ms": 450,
    "frames": 0,
@@ -10189,7 +10283,7 @@
   {
    "segment": "t6-s06",
    "mode": "overlay",
-   "start_ms": 404023,
+   "start_ms": 411690,
    "duration_ms": 272,
    "planned_ms": 260,
    "frames": 0,
@@ -10199,7 +10293,7 @@
   {
    "segment": "t6-s06",
    "mode": "overlay",
-   "start_ms": 406555,
+   "start_ms": 414222,
    "duration_ms": 273,
    "planned_ms": 260,
    "frames": 2,
@@ -10209,7 +10303,7 @@
   {
    "segment": "t6-s06",
    "mode": "overlay",
-   "start_ms": 406932,
+   "start_ms": 414599,
    "duration_ms": 280,
    "planned_ms": 260,
    "frames": 1,
@@ -10219,7 +10313,7 @@
   {
    "segment": "t6-s06",
    "mode": "overlay",
-   "start_ms": 409467,
+   "start_ms": 417134,
    "duration_ms": 561,
    "planned_ms": 543,
    "frames": 6,
@@ -10229,7 +10323,7 @@
   {
    "segment": "t6-s06",
    "mode": "overlay",
-   "start_ms": 422732,
+   "start_ms": 430399,
    "duration_ms": 628,
    "planned_ms": 620,
    "frames": 9,
@@ -10239,7 +10333,7 @@
   {
    "segment": "t6-s06",
    "mode": "overlay",
-   "start_ms": 423692,
+   "start_ms": 431359,
    "duration_ms": 302,
    "planned_ms": 296,
    "frames": 0,
@@ -10249,7 +10343,7 @@
   {
    "segment": "t6-s06",
    "mode": "overlay",
-   "start_ms": 437164,
+   "start_ms": 444831,
    "duration_ms": 329,
    "planned_ms": 322,
    "frames": 0,
@@ -10259,7 +10353,7 @@
   {
    "segment": "t6-s06",
    "mode": "overlay",
-   "start_ms": 437601,
+   "start_ms": 445268,
    "duration_ms": 277,
    "planned_ms": 260,
    "frames": 0,
@@ -10269,7 +10363,7 @@
   {
    "segment": "t6-s06",
    "mode": "overlay",
-   "start_ms": 439359,
+   "start_ms": 447026,
    "duration_ms": 451,
    "planned_ms": 431,
    "frames": 3,
@@ -10279,7 +10373,7 @@
   {
    "segment": "t6-s06",
    "mode": "overlay",
-   "start_ms": 442958,
+   "start_ms": 450625,
    "duration_ms": 269,
    "planned_ms": 260,
    "frames": 2,
@@ -10289,7 +10383,7 @@
   {
    "segment": "t6-s06",
    "mode": "overlay",
-   "start_ms": 450551,
+   "start_ms": 458218,
    "duration_ms": 631,
    "planned_ms": 620,
    "frames": 4,
@@ -10299,7 +10393,7 @@
   {
    "segment": "t6-s06",
    "mode": "overlay",
-   "start_ms": 461119,
+   "start_ms": 468786,
    "duration_ms": 640,
    "planned_ms": 620,
    "frames": 11,
@@ -10309,7 +10403,7 @@
   {
    "segment": "t6-s06",
    "mode": "overlay",
-   "start_ms": 465244,
+   "start_ms": 472911,
    "duration_ms": 348,
    "planned_ms": 335,
    "frames": 3,
@@ -10319,7 +10413,7 @@
   {
    "segment": "t6-s07",
    "mode": "overlay",
-   "start_ms": 485979,
+   "start_ms": 493646,
    "duration_ms": 378,
    "planned_ms": 357,
    "frames": 2,
@@ -10329,7 +10423,7 @@
   {
    "segment": "t6-s07",
    "mode": "overlay",
-   "start_ms": 486467,
+   "start_ms": 494134,
    "duration_ms": 272,
    "planned_ms": 260,
    "frames": 0,
@@ -10339,7 +10433,7 @@
   {
    "segment": "t6-s07",
    "mode": "overlay",
-   "start_ms": 487794,
+   "start_ms": 495461,
    "duration_ms": 445,
    "planned_ms": 432,
    "frames": 2,
@@ -10349,7 +10443,7 @@
   {
    "segment": "t6-s07",
    "mode": "overlay",
-   "start_ms": 495601,
+   "start_ms": 503268,
    "duration_ms": 641,
    "planned_ms": 620,
    "frames": 5,
@@ -10359,7 +10453,7 @@
   {
    "segment": "t6-s07",
    "mode": "overlay",
-   "start_ms": 504006,
+   "start_ms": 511673,
    "duration_ms": 616,
    "planned_ms": 604,
    "frames": 13,
@@ -10369,7 +10463,7 @@
   {
    "segment": "t6-s07",
    "mode": "overlay",
-   "start_ms": 514581,
+   "start_ms": 522248,
    "duration_ms": 375,
    "planned_ms": 364,
    "frames": 0,
@@ -10379,7 +10473,7 @@
   {
    "segment": "t6-s07",
    "mode": "overlay",
-   "start_ms": 515067,
+   "start_ms": 522734,
    "duration_ms": 272,
    "planned_ms": 260,
    "frames": 0,
@@ -10389,7 +10483,7 @@
   {
    "segment": "t6-s07",
    "mode": "overlay",
-   "start_ms": 516955,
+   "start_ms": 524622,
    "duration_ms": 578,
    "planned_ms": 543,
    "frames": 6,
@@ -10399,7 +10493,7 @@
   {
    "segment": "t6-s07",
    "mode": "overlay",
-   "start_ms": 530541,
+   "start_ms": 538208,
    "duration_ms": 630,
    "planned_ms": 620,
    "frames": 9,
@@ -10409,7 +10503,7 @@
   {
    "segment": "t6-s07",
    "mode": "overlay",
-   "start_ms": 531328,
+   "start_ms": 538995,
    "duration_ms": 312,
    "planned_ms": 296,
    "frames": 0,
@@ -10419,7 +10513,7 @@
   {
    "segment": "t6-s07",
    "mode": "overlay",
-   "start_ms": 547794,
+   "start_ms": 555461,
    "duration_ms": 344,
    "planned_ms": 322,
    "frames": 0,
@@ -10429,7 +10523,7 @@
   {
    "segment": "t6-s07",
    "mode": "overlay",
-   "start_ms": 548249,
+   "start_ms": 555916,
    "duration_ms": 273,
    "planned_ms": 260,
    "frames": 0,
@@ -10439,7 +10533,7 @@
   {
    "segment": "t6-s07",
    "mode": "overlay",
-   "start_ms": 549517,
+   "start_ms": 557184,
    "duration_ms": 270,
    "planned_ms": 260,
    "frames": 2,
@@ -10449,7 +10543,7 @@
   {
    "segment": "t6-s07",
    "mode": "overlay",
-   "start_ms": 549895,
+   "start_ms": 557562,
    "duration_ms": 275,
    "planned_ms": 260,
    "frames": 1,
@@ -10459,7 +10553,7 @@
   {
    "segment": "t6-s07",
    "mode": "overlay",
-   "start_ms": 551286,
+   "start_ms": 558953,
    "duration_ms": 368,
    "planned_ms": 354,
    "frames": 2,
@@ -10469,7 +10563,7 @@
   {
    "segment": "t6-s07",
    "mode": "overlay",
-   "start_ms": 554701,
+   "start_ms": 562368,
    "duration_ms": 286,
    "planned_ms": 275,
    "frames": 3,
@@ -10479,7 +10573,7 @@
   {
    "segment": "t6-s07",
    "mode": "overlay",
-   "start_ms": 560419,
+   "start_ms": 568086,
    "duration_ms": 636,
    "planned_ms": 620,
    "frames": 5,
@@ -10489,7 +10583,7 @@
   {
    "segment": "t6-s07",
    "mode": "overlay",
-   "start_ms": 568799,
+   "start_ms": 576466,
    "duration_ms": 620,
    "planned_ms": 604,
    "frames": 14,
@@ -10499,7 +10593,7 @@
   {
    "segment": "t6-s07",
    "mode": "overlay",
-   "start_ms": 578131,
+   "start_ms": 585798,
    "duration_ms": 371,
    "planned_ms": 364,
    "frames": 0,
@@ -10509,7 +10603,7 @@
   {
    "segment": "t6-s07",
    "mode": "overlay",
-   "start_ms": 578608,
+   "start_ms": 586275,
    "duration_ms": 277,
    "planned_ms": 260,
    "frames": 0,
@@ -10519,7 +10613,7 @@
   {
    "segment": "t6-s07",
    "mode": "overlay",
-   "start_ms": 590196,
+   "start_ms": 597863,
    "duration_ms": 561,
    "planned_ms": 543,
    "frames": 6,
@@ -10529,7 +10623,7 @@
   {
    "segment": "t6-s07",
    "mode": "overlay",
-   "start_ms": 598760,
+   "start_ms": 606427,
    "duration_ms": 641,
    "planned_ms": 620,
    "frames": 9,
@@ -10539,7 +10633,7 @@
   {
    "segment": "t6-s08",
    "mode": "overlay",
-   "start_ms": 638012,
+   "start_ms": 645678,
    "duration_ms": 432,
    "planned_ms": 408,
    "frames": 0,
@@ -10549,7 +10643,7 @@
   {
    "segment": "t6-s08",
    "mode": "overlay",
-   "start_ms": 638552,
+   "start_ms": 646218,
    "duration_ms": 275,
    "planned_ms": 260,
    "frames": 0,
@@ -10559,7 +10653,7 @@
   {
    "segment": "t6-s08",
    "mode": "overlay",
-   "start_ms": 639770,
+   "start_ms": 647436,
    "duration_ms": 273,
    "planned_ms": 260,
    "frames": 2,
@@ -10569,7 +10663,7 @@
   {
    "segment": "t6-s08",
    "mode": "overlay",
-   "start_ms": 640148,
+   "start_ms": 647814,
    "duration_ms": 278,
    "planned_ms": 260,
    "frames": 1,
@@ -10579,7 +10673,7 @@
   {
    "segment": "t6-s08",
    "mode": "overlay",
-   "start_ms": 642537,
+   "start_ms": 650203,
    "duration_ms": 406,
    "planned_ms": 400,
    "frames": 2,
@@ -10589,7 +10683,7 @@
   {
    "segment": "t6-s08",
    "mode": "overlay",
-   "start_ms": 651185,
+   "start_ms": 658851,
    "duration_ms": 275,
    "planned_ms": 260,
    "frames": 2,
@@ -10599,7 +10693,7 @@
   {
    "segment": "t6-s08",
    "mode": "overlay",
-   "start_ms": 659249,
+   "start_ms": 666915,
    "duration_ms": 626,
    "planned_ms": 620,
    "frames": 7,
@@ -10609,7 +10703,7 @@
   {
    "segment": "t6-s08",
    "mode": "overlay",
-   "start_ms": 667887,
+   "start_ms": 675553,
    "duration_ms": 622,
    "planned_ms": 604,
    "frames": 13,
@@ -10619,7 +10713,7 @@
   {
    "segment": "t6-s08",
    "mode": "overlay",
-   "start_ms": 680700,
+   "start_ms": 688366,
    "duration_ms": 374,
    "planned_ms": 364,
    "frames": 0,
@@ -10629,7 +10723,7 @@
   {
    "segment": "t6-s08",
    "mode": "overlay",
-   "start_ms": 681181,
+   "start_ms": 688847,
    "duration_ms": 277,
    "planned_ms": 260,
    "frames": 0,
@@ -10639,7 +10733,7 @@
   {
    "segment": "t6-s08",
    "mode": "overlay",
-   "start_ms": 682854,
+   "start_ms": 690520,
    "duration_ms": 453,
    "planned_ms": 434,
    "frames": 3,
@@ -10649,7 +10743,7 @@
   {
    "segment": "t6-s08",
    "mode": "overlay",
-   "start_ms": 688232,
+   "start_ms": 695898,
    "duration_ms": 275,
    "planned_ms": 260,
    "frames": 2,
@@ -10659,7 +10753,7 @@
   {
    "segment": "t6-s08",
    "mode": "overlay",
-   "start_ms": 689763,
+   "start_ms": 697429,
    "duration_ms": 634,
    "planned_ms": 620,
    "frames": 7,
@@ -10669,7 +10763,7 @@
   {
    "segment": "t6-s08",
    "mode": "overlay",
-   "start_ms": 698047,
+   "start_ms": 705713,
    "duration_ms": 510,
    "planned_ms": 504,
    "frames": 19,
@@ -10679,7 +10773,7 @@
   {
    "segment": "t6-s08",
    "mode": "overlay",
-   "start_ms": 705253,
+   "start_ms": 712919,
    "duration_ms": 487,
    "planned_ms": 469,
    "frames": 1,
@@ -10689,7 +10783,7 @@
   {
    "segment": "t6-s08",
    "mode": "overlay",
-   "start_ms": 722142,
+   "start_ms": 729808,
    "duration_ms": 481,
    "planned_ms": 473,
    "frames": 3,
@@ -10699,7 +10793,7 @@
   {
    "segment": "t6-s08",
    "mode": "overlay",
-   "start_ms": 722731,
+   "start_ms": 730397,
    "duration_ms": 278,
    "planned_ms": 260,
    "frames": 0,
@@ -10709,7 +10803,7 @@
   {
    "segment": "t6-s08",
    "mode": "overlay",
-   "start_ms": 731493,
+   "start_ms": 739159,
    "duration_ms": 414,
    "planned_ms": 391,
    "frames": 1,
@@ -10719,7 +10813,7 @@
   {
    "segment": "t6-s08",
    "mode": "overlay",
-   "start_ms": 734473,
+   "start_ms": 742139,
    "duration_ms": 645,
    "planned_ms": 620,
    "frames": 6,
@@ -10729,7 +10823,7 @@
   {
    "segment": "t6-s08",
    "mode": "overlay",
-   "start_ms": 746653,
+   "start_ms": 754319,
    "duration_ms": 527,
    "planned_ms": 500,
    "frames": 10,
@@ -10739,7 +10833,7 @@
   {
    "segment": "t6-s08",
    "mode": "overlay",
-   "start_ms": 749478,
+   "start_ms": 757144,
    "duration_ms": 410,
    "planned_ms": 401,
    "frames": 7,
@@ -10749,7 +10843,7 @@
   {
    "segment": "t6-s08",
    "mode": "overlay",
-   "start_ms": 750709,
+   "start_ms": 758375,
    "duration_ms": 296,
    "planned_ms": 285,
    "frames": 0,
@@ -10759,7 +10853,7 @@
   {
    "segment": "t6-s08",
    "mode": "overlay",
-   "start_ms": 753023,
+   "start_ms": 760689,
    "duration_ms": 283,
    "planned_ms": 260,
    "frames": 0,
@@ -10769,7 +10863,7 @@
   {
    "segment": "t6-s08",
    "mode": "overlay",
-   "start_ms": 756445,
+   "start_ms": 764111,
    "duration_ms": 409,
    "planned_ms": 397,
    "frames": 1,
@@ -10779,7 +10873,7 @@
   {
    "segment": "t6-s08",
    "mode": "overlay",
-   "start_ms": 766737,
+   "start_ms": 774403,
    "duration_ms": 419,
    "planned_ms": 397,
    "frames": 1,
@@ -10789,7 +10883,7 @@
   {
    "segment": "t6-s08",
    "mode": "overlay",
-   "start_ms": 776597,
+   "start_ms": 784263,
    "duration_ms": 481,
    "planned_ms": 454,
    "frames": 1,
@@ -10799,7 +10893,7 @@
   {
    "segment": "t6-s08",
    "mode": "overlay",
-   "start_ms": 779469,
+   "start_ms": 787135,
    "duration_ms": 267,
    "planned_ms": 260,
    "frames": 1,
@@ -10809,7 +10903,7 @@
   {
    "segment": "t6-s08",
    "mode": "overlay",
-   "start_ms": 784877,
+   "start_ms": 792543,
    "duration_ms": 477,
    "planned_ms": 464,
    "frames": 0,
@@ -10819,7 +10913,7 @@
   {
    "segment": "t6-s09",
    "mode": "overlay",
-   "start_ms": 797751,
+   "start_ms": 805417,
    "duration_ms": 377,
    "planned_ms": 364,
    "frames": 0,
@@ -10829,7 +10923,7 @@
   {
    "segment": "t6-s09",
    "mode": "overlay",
-   "start_ms": 798236,
+   "start_ms": 805902,
    "duration_ms": 275,
    "planned_ms": 260,
    "frames": 0,
@@ -10839,7 +10933,7 @@
   {
    "segment": "t6-s09",
    "mode": "overlay",
-   "start_ms": 799509,
+   "start_ms": 807175,
    "duration_ms": 268,
    "planned_ms": 260,
    "frames": 3,
@@ -10849,7 +10943,7 @@
   {
    "segment": "t6-s09",
    "mode": "overlay",
-   "start_ms": 799883,
+   "start_ms": 807549,
    "duration_ms": 278,
    "planned_ms": 260,
    "frames": 1,
@@ -10859,7 +10953,7 @@
   {
    "segment": "t6-s09",
    "mode": "overlay",
-   "start_ms": 801842,
+   "start_ms": 809508,
    "duration_ms": 455,
    "planned_ms": 436,
    "frames": 3,
@@ -10869,7 +10963,7 @@
   {
    "segment": "t6-s09",
    "mode": "overlay",
-   "start_ms": 804388,
+   "start_ms": 812054,
    "duration_ms": 639,
    "planned_ms": 620,
    "frames": 5,
@@ -10879,7 +10973,7 @@
   {
    "segment": "t6-s09",
    "mode": "overlay",
-   "start_ms": 813436,
+   "start_ms": 821102,
    "duration_ms": 624,
    "planned_ms": 604,
    "frames": 14,
@@ -10889,7 +10983,7 @@
   {
    "segment": "t6-s09",
    "mode": "overlay",
-   "start_ms": 816588,
+   "start_ms": 824254,
    "duration_ms": 439,
    "planned_ms": 420,
    "frames": 0,
@@ -10899,7 +10993,7 @@
   {
    "segment": "t6-s09",
    "mode": "overlay",
-   "start_ms": 824950,
+   "start_ms": 832616,
    "duration_ms": 443,
    "planned_ms": 420,
    "frames": 0,
@@ -10909,7 +11003,7 @@
   {
    "segment": "t6-s09",
    "mode": "overlay",
-   "start_ms": 833940,
+   "start_ms": 841606,
    "duration_ms": 470,
    "planned_ms": 462,
    "frames": 0,
@@ -10919,7 +11013,7 @@
   {
    "segment": "t6-s09",
    "mode": "overlay",
-   "start_ms": 834963,
+   "start_ms": 842629,
    "duration_ms": 280,
    "planned_ms": 260,
    "frames": 0,
@@ -10929,7 +11023,7 @@
   {
    "segment": "t6-s09",
    "mode": "overlay",
-   "start_ms": 836996,
+   "start_ms": 844662,
    "duration_ms": 281,
    "planned_ms": 260,
    "frames": 0,
@@ -10939,7 +11033,7 @@
   {
    "segment": "t6-s09",
    "mode": "overlay",
-   "start_ms": 849546,
+   "start_ms": 857212,
    "duration_ms": 463,
    "planned_ms": 441,
    "frames": 0,
@@ -10949,7 +11043,7 @@
   {
    "segment": "t6-s09",
    "mode": "overlay",
-   "start_ms": 850117,
+   "start_ms": 857783,
    "duration_ms": 276,
    "planned_ms": 260,
    "frames": 0,
@@ -10959,7 +11053,7 @@
   {
    "segment": "t6-s09",
    "mode": "overlay",
-   "start_ms": 861599,
+   "start_ms": 869265,
    "duration_ms": 556,
    "planned_ms": 543,
    "frames": 5,
@@ -10969,7 +11063,7 @@
   {
    "segment": "t6-s09",
    "mode": "overlay",
-   "start_ms": 870425,
+   "start_ms": 878091,
    "duration_ms": 632,
    "planned_ms": 620,
    "frames": 13,
@@ -10979,7 +11073,7 @@
   {
    "segment": "t6-s09",
    "mode": "overlay",
-   "start_ms": 871502,
+   "start_ms": 879168,
    "duration_ms": 306,
    "planned_ms": 285,
    "frames": 0,
@@ -10989,7 +11083,7 @@
   {
    "segment": "t6-s10",
    "mode": "overlay",
-   "start_ms": 892249,
+   "start_ms": 899916,
    "duration_ms": 346,
    "planned_ms": 327,
    "frames": 0,
@@ -10999,7 +11093,7 @@
   {
    "segment": "t6-s10",
    "mode": "overlay",
-   "start_ms": 892703,
+   "start_ms": 900370,
    "duration_ms": 278,
    "planned_ms": 260,
    "frames": 0,
@@ -11009,7 +11103,7 @@
   {
    "segment": "t6-s10",
    "mode": "overlay",
-   "start_ms": 894137,
+   "start_ms": 901804,
    "duration_ms": 276,
    "planned_ms": 260,
    "frames": 2,
@@ -11019,7 +11113,7 @@
   {
    "segment": "t6-s10",
    "mode": "overlay",
-   "start_ms": 894520,
+   "start_ms": 902187,
    "duration_ms": 274,
    "planned_ms": 260,
    "frames": 1,
@@ -11029,7 +11123,7 @@
   {
    "segment": "t6-s10",
    "mode": "overlay",
-   "start_ms": 900299,
+   "start_ms": 907966,
    "duration_ms": 279,
    "planned_ms": 260,
    "frames": 2,
@@ -11039,7 +11133,7 @@
   {
    "segment": "t6-s10",
    "mode": "overlay",
-   "start_ms": 905256,
+   "start_ms": 912923,
    "duration_ms": 404,
    "planned_ms": 398,
    "frames": 3,
@@ -11049,7 +11143,7 @@
   {
    "segment": "t6-s10",
    "mode": "overlay",
-   "start_ms": 912105,
+   "start_ms": 919772,
    "duration_ms": 639,
    "planned_ms": 620,
    "frames": 6,
@@ -11059,7 +11153,7 @@
   {
    "segment": "t6-s10",
    "mode": "overlay",
-   "start_ms": 920849,
+   "start_ms": 928516,
    "duration_ms": 627,
    "planned_ms": 620,
    "frames": 9,
@@ -11069,7 +11163,7 @@
   {
    "segment": "t6-s10",
    "mode": "overlay",
-   "start_ms": 921634,
+   "start_ms": 929301,
    "duration_ms": 310,
    "planned_ms": 296,
    "frames": 0,
@@ -11079,7 +11173,7 @@
   {
    "segment": "t6-s10",
    "mode": "overlay",
-   "start_ms": 935279,
+   "start_ms": 942946,
    "duration_ms": 330,
    "planned_ms": 322,
    "frames": 0,
@@ -11089,7 +11183,7 @@
   {
    "segment": "t6-s10",
    "mode": "overlay",
-   "start_ms": 935720,
+   "start_ms": 943387,
    "duration_ms": 274,
    "planned_ms": 260,
    "frames": 0,
@@ -11099,7 +11193,7 @@
   {
    "segment": "t6-s10",
    "mode": "overlay",
-   "start_ms": 937635,
+   "start_ms": 945302,
    "duration_ms": 553,
    "planned_ms": 543,
    "frames": 5,
@@ -11109,7 +11203,7 @@
   {
    "segment": "t6-s10",
    "mode": "overlay",
-   "start_ms": 951042,
+   "start_ms": 958709,
    "duration_ms": 617,
    "planned_ms": 604,
    "frames": 13,
@@ -11119,7 +11213,7 @@
   {
    "segment": "t6-s10",
    "mode": "overlay",
-   "start_ms": 956539,
+   "start_ms": 964206,
    "duration_ms": 386,
    "planned_ms": 364,
    "frames": 0,
@@ -11129,7 +11223,7 @@
   {
    "segment": "t6-s10",
    "mode": "overlay",
-   "start_ms": 957035,
+   "start_ms": 964702,
    "duration_ms": 274,
    "planned_ms": 260,
    "frames": 0,
@@ -11139,7 +11233,7 @@
   {
    "segment": "t6-s10",
    "mode": "overlay",
-   "start_ms": 958614,
+   "start_ms": 966281,
    "duration_ms": 444,
    "planned_ms": 431,
    "frames": 2,
@@ -11149,7 +11243,7 @@
   {
    "segment": "t6-s10",
    "mode": "overlay",
-   "start_ms": 970985,
+   "start_ms": 978652,
    "duration_ms": 636,
    "planned_ms": 620,
    "frames": 5,
@@ -11159,7 +11253,7 @@
   {
    "segment": "t6-s10",
    "mode": "overlay",
-   "start_ms": 979333,
+   "start_ms": 987000,
    "duration_ms": 525,
    "planned_ms": 504,
    "frames": 17,
@@ -11169,7 +11263,7 @@
   {
    "segment": "t6-s10",
    "mode": "overlay",
-   "start_ms": 982832,
+   "start_ms": 990499,
    "duration_ms": 477,
    "planned_ms": 455,
    "frames": 1,
@@ -11179,7 +11273,7 @@
   {
    "segment": "t6-s10",
    "mode": "overlay",
-   "start_ms": 991533,
+   "start_ms": 999200,
    "duration_ms": 475,
    "planned_ms": 459,
    "frames": 3,
@@ -11189,7 +11283,7 @@
   {
    "segment": "t6-s10",
    "mode": "overlay",
-   "start_ms": 992116,
+   "start_ms": 999783,
    "duration_ms": 275,
    "planned_ms": 260,
    "frames": 0,
@@ -11199,7 +11293,7 @@
   {
    "segment": "t6-s10",
    "mode": "overlay",
-   "start_ms": 998283,
+   "start_ms": 1005950,
    "duration_ms": 570,
    "planned_ms": 543,
    "frames": 5,
@@ -11209,7 +11303,7 @@
   {
    "segment": "t6-s10",
    "mode": "overlay",
-   "start_ms": 1006677,
+   "start_ms": 1014344,
    "duration_ms": 629,
    "planned_ms": 620,
    "frames": 8,
@@ -11219,7 +11313,7 @@
   {
    "segment": "t6-s10",
    "mode": "overlay",
-   "start_ms": 1007463,
+   "start_ms": 1015130,
    "duration_ms": 311,
    "planned_ms": 296,
    "frames": 0,
@@ -11229,7 +11323,7 @@
   {
    "segment": "t6-s10",
    "mode": "overlay",
-   "start_ms": 1009834,
+   "start_ms": 1017501,
    "duration_ms": 474,
    "planned_ms": 450,
    "frames": 0,
@@ -11239,7 +11333,7 @@
   {
    "segment": "t6-s10",
    "mode": "overlay",
-   "start_ms": 1020182,
+   "start_ms": 1027849,
    "duration_ms": 592,
    "planned_ms": 570,
    "frames": 0,
@@ -11249,7 +11343,7 @@
   {
    "segment": "t6-s10",
    "mode": "overlay",
-   "start_ms": 1020883,
+   "start_ms": 1028550,
    "duration_ms": 274,
    "planned_ms": 260,
    "frames": 0,
@@ -11259,7 +11353,7 @@
   {
    "segment": "t6-s10",
    "mode": "overlay",
-   "start_ms": 1023995,
+   "start_ms": 1031662,
    "duration_ms": 429,
    "planned_ms": 407,
    "frames": 3,
@@ -11269,7 +11363,7 @@
   {
    "segment": "t6-s10",
    "mode": "overlay",
-   "start_ms": 1034706,
+   "start_ms": 1042373,
    "duration_ms": 637,
    "planned_ms": 620,
    "frames": 6,
@@ -11279,7 +11373,7 @@
   {
    "segment": "t6-s10",
    "mode": "overlay",
-   "start_ms": 1043023,
+   "start_ms": 1050690,
    "duration_ms": 515,
    "planned_ms": 504,
    "frames": 16,
@@ -11289,7 +11383,7 @@
   {
    "segment": "t6-s10",
    "mode": "overlay",
-   "start_ms": 1052592,
+   "start_ms": 1060259,
    "duration_ms": 296,
    "planned_ms": 274,
    "frames": 2,
@@ -11299,7 +11393,7 @@
   {
    "segment": "t6-s10",
    "mode": "overlay",
-   "start_ms": 1052995,
+   "start_ms": 1060662,
    "duration_ms": 278,
    "planned_ms": 260,
    "frames": 0,
@@ -11309,7 +11403,7 @@
   {
    "segment": "t6-s10",
    "mode": "overlay",
-   "start_ms": 1056533,
+   "start_ms": 1064200,
    "duration_ms": 560,
    "planned_ms": 543,
    "frames": 7,
@@ -11319,7 +11413,7 @@
   {
    "segment": "t6-s10",
    "mode": "overlay",
-   "start_ms": 1069658,
+   "start_ms": 1077325,
    "duration_ms": 512,
    "planned_ms": 504,
    "frames": 16,
@@ -11329,7 +11423,7 @@
   {
    "segment": "t6-s11",
    "mode": "overlay",
-   "start_ms": 1095000,
+   "start_ms": 1102667,
    "duration_ms": 297,
    "planned_ms": 274,
    "frames": 2,
@@ -11339,7 +11433,7 @@
   {
    "segment": "t6-s11",
    "mode": "overlay",
-   "start_ms": 1095408,
+   "start_ms": 1103075,
    "duration_ms": 273,
    "planned_ms": 260,
    "frames": 0,
@@ -11349,7 +11443,7 @@
   {
    "segment": "t6-s11",
    "mode": "overlay",
-   "start_ms": 1096493,
+   "start_ms": 1104160,
    "duration_ms": 269,
    "planned_ms": 260,
    "frames": 1,
@@ -11359,7 +11453,7 @@
   {
    "segment": "t6-s11",
    "mode": "overlay",
-   "start_ms": 1096866,
+   "start_ms": 1104533,
    "duration_ms": 280,
    "planned_ms": 260,
    "frames": 1,
@@ -11369,7 +11463,7 @@
   {
    "segment": "t6-s11",
    "mode": "overlay",
-   "start_ms": 1098951,
+   "start_ms": 1106618,
    "duration_ms": 411,
    "planned_ms": 396,
    "frames": 3,
@@ -11379,7 +11473,7 @@
   {
    "segment": "t6-s11",
    "mode": "overlay",
-   "start_ms": 1109571,
+   "start_ms": 1117238,
    "duration_ms": 274,
    "planned_ms": 260,
    "frames": 3,
@@ -11389,7 +11483,7 @@
   {
    "segment": "t6-s11",
    "mode": "overlay",
-   "start_ms": 1121052,
+   "start_ms": 1128719,
    "duration_ms": 626,
    "planned_ms": 620,
    "frames": 4,
@@ -11399,7 +11493,7 @@
   {
    "segment": "t6-s11",
    "mode": "overlay",
-   "start_ms": 1129596,
+   "start_ms": 1137263,
    "duration_ms": 365,
    "planned_ms": 349,
    "frames": 13,
@@ -11409,7 +11503,7 @@
   {
    "segment": "t6-s11",
    "mode": "overlay",
-   "start_ms": 1147730,
+   "start_ms": 1155397,
    "duration_ms": 382,
    "planned_ms": 365,
    "frames": 6,
@@ -11419,7 +11513,7 @@
   {
    "segment": "t6-s11",
    "mode": "overlay",
-   "start_ms": 1148631,
+   "start_ms": 1156298,
    "duration_ms": 279,
    "planned_ms": 260,
    "frames": 5,
@@ -11429,7 +11523,7 @@
   {
    "segment": "t6-s11",
    "mode": "overlay",
-   "start_ms": 1151611,
+   "start_ms": 1159278,
    "duration_ms": 292,
    "planned_ms": 260,
    "frames": 5,
@@ -11439,7 +11533,7 @@
   {
    "segment": "t6-s11",
    "mode": "overlay",
-   "start_ms": 1173083,
+   "start_ms": 1180750,
    "duration_ms": 559,
    "planned_ms": 539,
    "frames": 8,
@@ -11449,7 +11543,7 @@
   {
    "segment": "t6-s11",
    "mode": "overlay",
-   "start_ms": 1176393,
+   "start_ms": 1184060,
    "duration_ms": 316,
    "planned_ms": 302,
    "frames": 0,
@@ -11459,7 +11553,7 @@
   {
    "segment": "t6-s11",
    "mode": "overlay",
-   "start_ms": 1180081,
+   "start_ms": 1187748,
    "duration_ms": 577,
    "planned_ms": 563,
    "frames": 0,
@@ -11469,7 +11563,7 @@
   {
    "segment": "t6-s11",
    "mode": "overlay",
-   "start_ms": 1185406,
+   "start_ms": 1193073,
    "duration_ms": 602,
    "planned_ms": 591,
    "frames": 0,
@@ -11479,7 +11573,7 @@
   {
    "segment": "t6-s11",
    "mode": "overlay",
-   "start_ms": 1186717,
+   "start_ms": 1194384,
    "duration_ms": 634,
    "planned_ms": 620,
    "frames": 2,
@@ -11489,7 +11583,7 @@
   {
    "segment": "t6-s11",
    "mode": "overlay",
-   "start_ms": 1188431,
+   "start_ms": 1196098,
    "duration_ms": 411,
    "planned_ms": 395,
    "frames": 8,
@@ -11499,7 +11593,7 @@
   {
    "segment": "t6-s11",
    "mode": "overlay",
-   "start_ms": 1188845,
+   "start_ms": 1196512,
    "duration_ms": 387,
    "planned_ms": 371,
    "frames": 11,
@@ -11509,7 +11603,7 @@
   {
    "segment": "t6-s11",
    "mode": "overlay",
-   "start_ms": 1189394,
+   "start_ms": 1197061,
    "duration_ms": 314,
    "planned_ms": 294,
    "frames": 0,
@@ -11519,7 +11613,7 @@
   {
    "segment": "t6-s11",
    "mode": "overlay",
-   "start_ms": 1192794,
+   "start_ms": 1200461,
    "duration_ms": 281,
    "planned_ms": 260,
    "frames": 0,
@@ -11529,7 +11623,7 @@
   {
    "segment": "t6-s11",
    "mode": "overlay",
-   "start_ms": 1202981,
+   "start_ms": 1210648,
    "duration_ms": 485,
    "planned_ms": 461,
    "frames": 1,
@@ -11539,7 +11633,7 @@
   {
    "segment": "t6-s11",
    "mode": "overlay",
-   "start_ms": 1213126,
+   "start_ms": 1220793,
    "duration_ms": 282,
    "planned_ms": 260,
    "frames": 1,
@@ -11549,7 +11643,7 @@
   {
    "segment": "t6-s12",
    "mode": "overlay",
-   "start_ms": 1233077,
+   "start_ms": 1240744,
    "duration_ms": 455,
    "planned_ms": 432,
    "frames": 0,
@@ -11559,7 +11653,7 @@
   {
    "segment": "t6-s12",
    "mode": "overlay",
-   "start_ms": 1233641,
+   "start_ms": 1241308,
    "duration_ms": 274,
    "planned_ms": 260,
    "frames": 0,
@@ -11569,7 +11663,7 @@
   {
    "segment": "t6-s12",
    "mode": "overlay",
-   "start_ms": 1234615,
+   "start_ms": 1242282,
    "duration_ms": 268,
    "planned_ms": 260,
    "frames": 1,
@@ -11579,7 +11673,7 @@
   {
    "segment": "t6-s12",
    "mode": "overlay",
-   "start_ms": 1234991,
+   "start_ms": 1242658,
    "duration_ms": 275,
    "planned_ms": 260,
    "frames": 1,
@@ -11589,7 +11683,7 @@
   {
    "segment": "t6-s12",
    "mode": "overlay",
-   "start_ms": 1238067,
+   "start_ms": 1245734,
    "duration_ms": 365,
    "planned_ms": 342,
    "frames": 2,
@@ -11599,7 +11693,7 @@
   {
    "segment": "t6-s12",
    "mode": "overlay",
-   "start_ms": 1241322,
+   "start_ms": 1248989,
    "duration_ms": 644,
    "planned_ms": 620,
    "frames": 6,
@@ -11609,7 +11703,7 @@
   {
    "segment": "t6-s12",
    "mode": "overlay",
-   "start_ms": 1249986,
+   "start_ms": 1257653,
    "duration_ms": 612,
    "planned_ms": 604,
    "frames": 12,
@@ -11619,7 +11713,7 @@
   {
    "segment": "t6-s12",
    "mode": "overlay",
-   "start_ms": 1271303,
+   "start_ms": 1278970,
    "duration_ms": 377,
    "planned_ms": 364,
    "frames": 0,
@@ -11629,7 +11723,7 @@
   {
    "segment": "t6-s12",
    "mode": "overlay",
-   "start_ms": 1271784,
+   "start_ms": 1279451,
    "duration_ms": 280,
    "planned_ms": 260,
    "frames": 0,
@@ -11639,7 +11733,7 @@
   {
    "segment": "t6-s12",
    "mode": "overlay",
-   "start_ms": 1272934,
+   "start_ms": 1280601,
    "duration_ms": 280,
    "planned_ms": 260,
    "frames": 2,
@@ -11649,7 +11743,7 @@
   {
    "segment": "t6-s12",
    "mode": "overlay",
-   "start_ms": 1273322,
+   "start_ms": 1280989,
    "duration_ms": 275,
    "planned_ms": 260,
    "frames": 1,
@@ -11659,7 +11753,7 @@
   {
    "segment": "t6-s12",
    "mode": "overlay",
-   "start_ms": 1275322,
+   "start_ms": 1282989,
    "duration_ms": 292,
    "planned_ms": 280,
    "frames": 2,
@@ -11669,7 +11763,7 @@
   {
    "segment": "t6-s12",
    "mode": "overlay",
-   "start_ms": 1285118,
+   "start_ms": 1292785,
    "duration_ms": 628,
    "planned_ms": 620,
    "frames": 5,
@@ -11679,7 +11773,7 @@
   {
    "segment": "t6-s12",
    "mode": "overlay",
-   "start_ms": 1293719,
+   "start_ms": 1301386,
    "duration_ms": 594,
    "planned_ms": 586,
    "frames": 8,
@@ -11689,7 +11783,7 @@
   {
    "segment": "t6-s12",
    "mode": "overlay",
-   "start_ms": 1296872,
+   "start_ms": 1304539,
    "duration_ms": 307,
    "planned_ms": 298,
    "frames": 0,
@@ -11699,7 +11793,7 @@
   {
    "segment": "t6-s12",
    "mode": "overlay",
-   "start_ms": 1299354,
+   "start_ms": 1307021,
    "duration_ms": 308,
    "planned_ms": 288,
    "frames": 0,
@@ -11709,7 +11803,7 @@
   {
    "segment": "t6-s12",
    "mode": "overlay",
-   "start_ms": 1302604,
+   "start_ms": 1310271,
    "duration_ms": 445,
    "planned_ms": 426,
    "frames": 2,
@@ -11719,7 +11813,7 @@
   {
    "segment": "t6-s12",
    "mode": "overlay",
-   "start_ms": 1303780,
+   "start_ms": 1311447,
    "duration_ms": 265,
    "planned_ms": 260,
    "frames": 2,
@@ -11729,7 +11823,7 @@
   {
    "segment": "t6-s12",
    "mode": "overlay",
-   "start_ms": 1307424,
+   "start_ms": 1315091,
    "duration_ms": 638,
    "planned_ms": 620,
    "frames": 0,
@@ -11739,7 +11833,7 @@
   {
    "segment": "t6-s12",
    "mode": "overlay",
-   "start_ms": 1308328,
+   "start_ms": 1315995,
    "duration_ms": 635,
    "planned_ms": 620,
    "frames": 2,
@@ -11749,7 +11843,7 @@
   {
    "segment": "t6-s12",
    "mode": "overlay",
-   "start_ms": 1310034,
+   "start_ms": 1317701,
    "duration_ms": 628,
    "planned_ms": 609,
    "frames": 9,
@@ -11759,7 +11853,7 @@
   {
    "segment": "t6-s12",
    "mode": "overlay",
-   "start_ms": 1310665,
+   "start_ms": 1318332,
    "duration_ms": 284,
    "planned_ms": 263,
    "frames": 7,
@@ -11769,7 +11863,7 @@
   {
    "segment": "t6-s12",
    "mode": "overlay",
-   "start_ms": 1311110,
+   "start_ms": 1318777,
    "duration_ms": 386,
    "planned_ms": 368,
    "frames": 0,
@@ -11779,7 +11873,7 @@
   {
    "segment": "t6-s12",
    "mode": "overlay",
-   "start_ms": 1321449,
+   "start_ms": 1329116,
    "duration_ms": 467,
    "planned_ms": 456,
    "frames": 1,
@@ -11789,7 +11883,7 @@
   {
    "segment": "t6-s12",
    "mode": "overlay",
-   "start_ms": 1323865,
+   "start_ms": 1331532,
    "duration_ms": 297,
    "planned_ms": 282,
    "frames": 1,
@@ -11799,7 +11893,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1356709,
+   "start_ms": 1364375,
    "duration_ms": 459,
    "planned_ms": 450,
    "frames": 0,
@@ -11809,7 +11903,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1357276,
+   "start_ms": 1364942,
    "duration_ms": 275,
    "planned_ms": 260,
    "frames": 0,
@@ -11819,7 +11913,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1357891,
+   "start_ms": 1365557,
    "duration_ms": 276,
    "planned_ms": 260,
    "frames": 0,
@@ -11829,7 +11923,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1358272,
+   "start_ms": 1365938,
    "duration_ms": 279,
    "planned_ms": 260,
    "frames": 1,
@@ -11839,7 +11933,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1364582,
+   "start_ms": 1372248,
    "duration_ms": 318,
    "planned_ms": 299,
    "frames": 2,
@@ -11849,7 +11943,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1366613,
+   "start_ms": 1374279,
    "duration_ms": 304,
    "planned_ms": 286,
    "frames": 1,
@@ -11859,7 +11953,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1368637,
+   "start_ms": 1376303,
    "duration_ms": 296,
    "planned_ms": 288,
    "frames": 2,
@@ -11869,7 +11963,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1372574,
+   "start_ms": 1380240,
    "duration_ms": 645,
    "planned_ms": 620,
    "frames": 6,
@@ -11879,7 +11973,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1381554,
+   "start_ms": 1389220,
    "duration_ms": 628,
    "planned_ms": 620,
    "frames": 9,
@@ -11889,7 +11983,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1383279,
+   "start_ms": 1390945,
    "duration_ms": 270,
    "planned_ms": 260,
    "frames": 0,
@@ -11899,7 +11993,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1385296,
+   "start_ms": 1392962,
    "duration_ms": 270,
    "planned_ms": 260,
    "frames": 0,
@@ -11909,7 +12003,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1388100,
+   "start_ms": 1395766,
    "duration_ms": 316,
    "planned_ms": 296,
    "frames": 0,
@@ -11919,7 +12013,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1389335,
+   "start_ms": 1397001,
    "duration_ms": 281,
    "planned_ms": 260,
    "frames": 0,
@@ -11929,7 +12023,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1390742,
+   "start_ms": 1398408,
    "duration_ms": 274,
    "planned_ms": 260,
    "frames": 0,
@@ -11939,7 +12033,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1391889,
+   "start_ms": 1399555,
    "duration_ms": 393,
    "planned_ms": 387,
    "frames": 0,
@@ -11949,7 +12043,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1392545,
+   "start_ms": 1400211,
    "duration_ms": 641,
    "planned_ms": 620,
    "frames": 2,
@@ -11959,7 +12053,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1394302,
+   "start_ms": 1401968,
    "duration_ms": 614,
    "planned_ms": 598,
    "frames": 8,
@@ -11969,7 +12063,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1394919,
+   "start_ms": 1402585,
    "duration_ms": 349,
    "planned_ms": 318,
    "frames": 9,
@@ -11979,7 +12073,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1395434,
+   "start_ms": 1403100,
    "duration_ms": 332,
    "planned_ms": 316,
    "frames": 0,
@@ -11989,7 +12083,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1405912,
+   "start_ms": 1413578,
    "duration_ms": 486,
    "planned_ms": 464,
    "frames": 1,
@@ -11999,7 +12093,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1409550,
+   "start_ms": 1417216,
    "duration_ms": 299,
    "planned_ms": 281,
    "frames": 1,
@@ -12009,7 +12103,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1414479,
+   "start_ms": 1422145,
    "duration_ms": 270,
    "planned_ms": 260,
    "frames": 0,
@@ -12019,7 +12113,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1446533,
+   "start_ms": 1454199,
    "duration_ms": 480,
    "planned_ms": 469,
    "frames": 0,
@@ -12029,7 +12123,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1447121,
+   "start_ms": 1454787,
    "duration_ms": 276,
    "planned_ms": 260,
    "frames": 0,
@@ -12039,7 +12133,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1448927,
+   "start_ms": 1456593,
    "duration_ms": 437,
    "planned_ms": 432,
    "frames": 2,
@@ -12049,7 +12143,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1450703,
+   "start_ms": 1458369,
    "duration_ms": 278,
    "planned_ms": 260,
    "frames": 2,
@@ -12059,7 +12153,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1456804,
+   "start_ms": 1464470,
    "duration_ms": 646,
    "planned_ms": 620,
    "frames": 8,
@@ -12069,7 +12163,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1465189,
+   "start_ms": 1472855,
    "duration_ms": 591,
    "planned_ms": 584,
    "frames": 9,
@@ -12079,7 +12173,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1465991,
+   "start_ms": 1473657,
    "duration_ms": 273,
    "planned_ms": 260,
    "frames": 0,
@@ -12089,7 +12183,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1466793,
+   "start_ms": 1474459,
    "duration_ms": 270,
    "planned_ms": 260,
    "frames": 0,
@@ -12099,7 +12193,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1467597,
+   "start_ms": 1475263,
    "duration_ms": 266,
    "planned_ms": 260,
    "frames": 0,
@@ -12109,7 +12203,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1471334,
+   "start_ms": 1479000,
    "duration_ms": 395,
    "planned_ms": 388,
    "frames": 0,
@@ -12119,7 +12213,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1480405,
+   "start_ms": 1488071,
    "duration_ms": 592,
    "planned_ms": 570,
    "frames": 0,
@@ -12129,7 +12223,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1481102,
+   "start_ms": 1488768,
    "duration_ms": 277,
    "planned_ms": 260,
    "frames": 0,
@@ -12139,7 +12233,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1486174,
+   "start_ms": 1493840,
    "duration_ms": 570,
    "planned_ms": 543,
    "frames": 6,
@@ -12149,7 +12243,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1494413,
+   "start_ms": 1502079,
    "duration_ms": 632,
    "planned_ms": 620,
    "frames": 12,
@@ -12159,7 +12253,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1503392,
+   "start_ms": 1511058,
    "duration_ms": 570,
    "planned_ms": 562,
    "frames": 8,
@@ -12169,7 +12263,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1504678,
+   "start_ms": 1512344,
    "duration_ms": 317,
    "planned_ms": 299,
    "frames": 3,
@@ -12179,7 +12273,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1524331,
+   "start_ms": 1531997,
    "duration_ms": 446,
    "planned_ms": 437,
    "frames": 3,
@@ -12189,7 +12283,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1524886,
+   "start_ms": 1532552,
    "duration_ms": 276,
    "planned_ms": 260,
    "frames": 0,
@@ -12199,7 +12293,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1525708,
+   "start_ms": 1533374,
    "duration_ms": 269,
    "planned_ms": 260,
    "frames": 2,
@@ -12209,7 +12303,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1526083,
+   "start_ms": 1533749,
    "duration_ms": 278,
    "planned_ms": 260,
    "frames": 1,
@@ -12219,7 +12313,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1529048,
+   "start_ms": 1536714,
    "duration_ms": 380,
    "planned_ms": 363,
    "frames": 2,
@@ -12229,7 +12323,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1540352,
+   "start_ms": 1548018,
    "duration_ms": 647,
    "planned_ms": 620,
    "frames": 7,
@@ -12239,7 +12333,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1548482,
+   "start_ms": 1556148,
    "duration_ms": 627,
    "planned_ms": 620,
    "frames": 11,
@@ -12249,7 +12343,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1549264,
+   "start_ms": 1556930,
    "duration_ms": 279,
    "planned_ms": 260,
    "frames": 1,
@@ -12259,7 +12353,7 @@
   {
    "segment": "t6-s13",
    "mode": "overlay",
-   "start_ms": 1550049,
+   "start_ms": 1557715,
    "duration_ms": 277,
    "planned_ms": 260,
    "frames": 1,
@@ -12269,7 +12363,7 @@
   {
    "segment": "t6-s14",
    "mode": "overlay",
-   "start_ms": 1563896,
+   "start_ms": 1571563,
    "duration_ms": 377,
    "planned_ms": 358,
    "frames": 4,
@@ -12279,7 +12373,7 @@
   {
    "segment": "t6-s14",
    "mode": "overlay",
-   "start_ms": 1564386,
+   "start_ms": 1572053,
    "duration_ms": 267,
    "planned_ms": 260,
    "frames": 0,
@@ -12289,7 +12383,7 @@
   {
    "segment": "t6-s14",
    "mode": "overlay",
-   "start_ms": 1565636,
+   "start_ms": 1573303,
    "duration_ms": 284,
    "planned_ms": 260,
    "frames": 3,
@@ -12299,7 +12393,7 @@
   {
    "segment": "t6-s14",
    "mode": "overlay",
-   "start_ms": 1566027,
+   "start_ms": 1573694,
    "duration_ms": 276,
    "planned_ms": 260,
    "frames": 1,
@@ -12309,7 +12403,7 @@
   {
    "segment": "t6-s14",
    "mode": "overlay",
-   "start_ms": 1570427,
+   "start_ms": 1578094,
    "duration_ms": 409,
    "planned_ms": 389,
    "frames": 2,
@@ -12319,7 +12413,7 @@
   {
    "segment": "t6-s14",
    "mode": "overlay",
-   "start_ms": 1575548,
+   "start_ms": 1583215,
    "duration_ms": 640,
    "planned_ms": 620,
    "frames": 7,
@@ -12329,7 +12423,7 @@
   {
    "segment": "t6-s14",
    "mode": "overlay",
-   "start_ms": 1584369,
+   "start_ms": 1592036,
    "duration_ms": 550,
    "planned_ms": 541,
    "frames": 12,
@@ -12339,7 +12433,7 @@
   {
    "segment": "t6-s14",
    "mode": "overlay",
-   "start_ms": 1585471,
+   "start_ms": 1593138,
    "duration_ms": 281,
    "planned_ms": 261,
    "frames": 0,
@@ -12349,7 +12443,7 @@
   {
    "segment": "t6-s14",
    "mode": "overlay",
-   "start_ms": 1592956,
+   "start_ms": 1600623,
    "duration_ms": 528,
    "planned_ms": 509,
    "frames": 0,
@@ -12359,7 +12453,7 @@
   {
    "segment": "t6-s14",
    "mode": "overlay",
-   "start_ms": 1593751,
+   "start_ms": 1601418,
    "duration_ms": 635,
    "planned_ms": 620,
    "frames": 2,
@@ -12369,7 +12463,7 @@
   {
    "segment": "t6-s14",
    "mode": "overlay",
-   "start_ms": 1595455,
+   "start_ms": 1603122,
    "duration_ms": 296,
    "planned_ms": 278,
    "frames": 8,
@@ -12379,7 +12473,7 @@
   {
    "segment": "t6-s14",
    "mode": "overlay",
-   "start_ms": 1595754,
+   "start_ms": 1603421,
    "duration_ms": 302,
    "planned_ms": 288,
    "frames": 8,
@@ -12389,7 +12483,7 @@
   {
    "segment": "t6-s14",
    "mode": "overlay",
-   "start_ms": 1596218,
+   "start_ms": 1603885,
    "duration_ms": 333,
    "planned_ms": 325,
    "frames": 0,
@@ -12399,7 +12493,7 @@
   {
    "segment": "t6-s14",
    "mode": "overlay",
-   "start_ms": 1607087,
+   "start_ms": 1614754,
    "duration_ms": 468,
    "planned_ms": 452,
    "frames": 1,
@@ -12409,7 +12503,7 @@
   {
    "segment": "t6-s14",
    "mode": "overlay",
-   "start_ms": 1614334,
+   "start_ms": 1622001,
    "duration_ms": 302,
    "planned_ms": 283,
    "frames": 1,
@@ -12419,7 +12513,7 @@
   {
    "segment": "t6-s15",
    "mode": "overlay",
-   "start_ms": 1638689,
+   "start_ms": 1646356,
    "duration_ms": 458,
    "planned_ms": 450,
    "frames": 0,
@@ -12429,7 +12523,7 @@
   {
    "segment": "t6-s15",
    "mode": "overlay",
-   "start_ms": 1639257,
+   "start_ms": 1646924,
    "duration_ms": 274,
    "planned_ms": 260,
    "frames": 0,
@@ -12439,7 +12533,7 @@
   {
    "segment": "t6-s15",
    "mode": "overlay",
-   "start_ms": 1640579,
+   "start_ms": 1648246,
    "duration_ms": 268,
    "planned_ms": 260,
    "frames": 3,
@@ -12449,7 +12543,7 @@
   {
    "segment": "t6-s15",
    "mode": "overlay",
-   "start_ms": 1640953,
+   "start_ms": 1648620,
    "duration_ms": 278,
    "planned_ms": 260,
    "frames": 1,
@@ -12459,7 +12553,7 @@
   {
    "segment": "t6-s15",
    "mode": "overlay",
-   "start_ms": 1649384,
+   "start_ms": 1657051,
    "duration_ms": 566,
    "planned_ms": 543,
    "frames": 6,
@@ -12469,7 +12563,7 @@
   {
    "segment": "t6-s15",
    "mode": "overlay",
-   "start_ms": 1657856,
+   "start_ms": 1665523,
    "duration_ms": 641,
    "planned_ms": 620,
    "frames": 9,
@@ -12479,7 +12573,7 @@
   {
    "segment": "t6-s15",
    "mode": "overlay",
-   "start_ms": 1658880,
+   "start_ms": 1666547,
    "duration_ms": 300,
    "planned_ms": 292,
    "frames": 0,
@@ -12489,7 +12583,7 @@
   {
    "segment": "t6-s15",
    "mode": "overlay",
-   "start_ms": 1659903,
+   "start_ms": 1667570,
    "duration_ms": 310,
    "planned_ms": 292,
    "frames": 0,
@@ -12499,7 +12593,7 @@
   {
    "segment": "t6-s15",
    "mode": "overlay",
-   "start_ms": 1670107,
+   "start_ms": 1677774,
    "duration_ms": 389,
    "planned_ms": 383,
    "frames": 0,
@@ -12509,7 +12603,7 @@
   {
    "segment": "t6-s15",
    "mode": "overlay",
-   "start_ms": 1672381,
+   "start_ms": 1680048,
    "duration_ms": 315,
    "planned_ms": 292,
    "frames": 0,
@@ -12519,7 +12613,7 @@
   {
    "segment": "t6-s15",
    "mode": "overlay",
-   "start_ms": 1674693,
+   "start_ms": 1682360,
    "duration_ms": 304,
    "planned_ms": 292,
    "frames": 0,
@@ -12529,7 +12623,7 @@
   {
    "segment": "t6-s15",
    "mode": "overlay",
-   "start_ms": 1679978,
+   "start_ms": 1687645,
    "duration_ms": 333,
    "planned_ms": 323,
    "frames": 0,
@@ -12539,7 +12633,7 @@
   {
    "segment": "t6-s15",
    "mode": "overlay",
-   "start_ms": 1680415,
+   "start_ms": 1688082,
    "duration_ms": 280,
    "planned_ms": 260,
    "frames": 0,
@@ -12549,7 +12643,7 @@
   {
    "segment": "t6-s15",
    "mode": "overlay",
-   "start_ms": 1682476,
+   "start_ms": 1690143,
    "duration_ms": 319,
    "planned_ms": 298,
    "frames": 3,
@@ -12559,7 +12653,7 @@
   {
    "segment": "t6-s15",
    "mode": "overlay",
-   "start_ms": 1684716,
+   "start_ms": 1692383,
    "duration_ms": 329,
    "planned_ms": 308,
    "frames": 4,
@@ -12569,7 +12663,7 @@
   {
    "segment": "t6-s15",
    "mode": "overlay",
-   "start_ms": 1693675,
+   "start_ms": 1701342,
    "duration_ms": 271,
    "planned_ms": 260,
    "frames": 3,
@@ -12579,7 +12673,7 @@
   {
    "segment": "t6-s15",
    "mode": "overlay",
-   "start_ms": 1700395,
+   "start_ms": 1708062,
    "duration_ms": 266,
    "planned_ms": 260,
    "frames": 2,
@@ -12589,7 +12683,7 @@
   {
    "segment": "t6-s15",
    "mode": "overlay",
-   "start_ms": 1703460,
+   "start_ms": 1711127,
    "duration_ms": 634,
    "planned_ms": 620,
    "frames": 6,
@@ -12599,7 +12693,7 @@
   {
    "segment": "t6-s15",
    "mode": "overlay",
-   "start_ms": 1712006,
+   "start_ms": 1719673,
    "duration_ms": 355,
    "planned_ms": 335,
    "frames": 13,
@@ -12609,7 +12703,7 @@
   {
    "segment": "t6-s15",
    "mode": "overlay",
-   "start_ms": 1714410,
+   "start_ms": 1722077,
    "duration_ms": 368,
    "planned_ms": 357,
    "frames": 1,
@@ -12619,7 +12713,7 @@
   {
    "segment": "t6-s15",
    "mode": "overlay",
-   "start_ms": 1717198,
+   "start_ms": 1724865,
    "duration_ms": 364,
    "planned_ms": 341,
    "frames": 2,
@@ -12629,7 +12723,7 @@
   {
    "segment": "t6-s15",
    "mode": "overlay",
-   "start_ms": 1718269,
+   "start_ms": 1725936,
    "duration_ms": 276,
    "planned_ms": 260,
    "frames": 1,
@@ -12639,7 +12733,7 @@
   {
    "segment": "t6-s15",
    "mode": "overlay",
-   "start_ms": 1719342,
+   "start_ms": 1727009,
    "duration_ms": 269,
    "planned_ms": 260,
    "frames": 1,
@@ -12649,7 +12743,7 @@
   {
    "segment": "t6-s16",
    "mode": "overlay",
-   "start_ms": 1735247,
+   "start_ms": 1742914,
    "duration_ms": 369,
    "planned_ms": 358,
    "frames": 4,
@@ -12659,7 +12753,7 @@
   {
    "segment": "t6-s16",
    "mode": "overlay",
-   "start_ms": 1735725,
+   "start_ms": 1743392,
    "duration_ms": 274,
    "planned_ms": 260,
    "frames": 0,
@@ -12669,7 +12763,7 @@
   {
    "segment": "t6-s16",
    "mode": "overlay",
-   "start_ms": 1738139,
+   "start_ms": 1745806,
    "duration_ms": 275,
    "planned_ms": 260,
    "frames": 1,
@@ -12679,7 +12773,7 @@
   {
    "segment": "t6-s16",
    "mode": "overlay",
-   "start_ms": 1738517,
+   "start_ms": 1746184,
    "duration_ms": 264,
    "planned_ms": 260,
    "frames": 1,
@@ -12689,7 +12783,7 @@
   {
    "segment": "t6-s16",
    "mode": "overlay",
-   "start_ms": 1741324,
+   "start_ms": 1748991,
    "duration_ms": 562,
    "planned_ms": 543,
    "frames": 7,
@@ -12699,7 +12793,7 @@
   {
    "segment": "t6-s16",
    "mode": "overlay",
-   "start_ms": 1758912,
+   "start_ms": 1766579,
    "duration_ms": 452,
    "planned_ms": 440,
    "frames": 14,
@@ -12709,7 +12803,7 @@
   {
    "segment": "t6-s16",
    "mode": "overlay",
-   "start_ms": 1761448,
+   "start_ms": 1769115,
    "duration_ms": 266,
    "planned_ms": 260,
    "frames": 0,
@@ -12719,7 +12813,7 @@
   {
    "segment": "t6-s16",
    "mode": "overlay",
-   "start_ms": 1763655,
+   "start_ms": 1771322,
    "duration_ms": 309,
    "planned_ms": 291,
    "frames": 0,
@@ -12729,7 +12823,7 @@
   {
    "segment": "t6-s16",
    "mode": "overlay",
-   "start_ms": 1767831,
+   "start_ms": 1775498,
    "duration_ms": 516,
    "planned_ms": 499,
    "frames": 0,
@@ -12739,7 +12833,7 @@
   {
    "segment": "t6-s16",
    "mode": "overlay",
-   "start_ms": 1769574,
+   "start_ms": 1777241,
    "duration_ms": 272,
    "planned_ms": 260,
    "frames": 0,
@@ -12749,7 +12843,7 @@
   {
    "segment": "t6-s16",
    "mode": "overlay",
-   "start_ms": 1771448,
+   "start_ms": 1779115,
    "duration_ms": 282,
    "planned_ms": 260,
    "frames": 0,
@@ -12759,7 +12853,7 @@
   {
    "segment": "t6-s16",
    "mode": "overlay",
-   "start_ms": 1787708,
+   "start_ms": 1795375,
    "duration_ms": 538,
    "planned_ms": 528,
    "frames": 0,
@@ -12769,7 +12863,7 @@
   {
    "segment": "t6-s16",
    "mode": "overlay",
-   "start_ms": 1789916,
+   "start_ms": 1797583,
    "duration_ms": 450,
    "planned_ms": 430,
    "frames": 1,
@@ -12779,7 +12873,7 @@
   {
    "segment": "t6-s16",
    "mode": "overlay",
-   "start_ms": 1795963,
+   "start_ms": 1803630,
    "duration_ms": 416,
    "planned_ms": 400,
    "frames": 12,
@@ -12789,7 +12883,7 @@
   {
    "segment": "t6-s16",
    "mode": "overlay",
-   "start_ms": 1831900,
+   "start_ms": 1839567,
    "duration_ms": 628,
    "planned_ms": 620,
    "frames": 11,
@@ -12799,7 +12893,7 @@
   {
    "segment": "t6-s16",
    "mode": "overlay",
-   "start_ms": 1835727,
+   "start_ms": 1843394,
    "duration_ms": 267,
    "planned_ms": 260,
    "frames": 2,
@@ -12809,7 +12903,7 @@
   {
    "segment": "t6-s16",
    "mode": "overlay",
-   "start_ms": 1838585,
+   "start_ms": 1846252,
    "duration_ms": 375,
    "planned_ms": 370,
    "frames": 1,
@@ -12819,7 +12913,7 @@
   {
    "segment": "t6-s16",
    "mode": "overlay",
-   "start_ms": 1854639,
+   "start_ms": 1862306,
    "duration_ms": 461,
    "planned_ms": 440,
    "frames": 1,
@@ -12829,7 +12923,7 @@
   {
    "segment": "t6-s16",
    "mode": "overlay",
-   "start_ms": 1863475,
+   "start_ms": 1871142,
    "duration_ms": 385,
    "planned_ms": 378,
    "frames": 7,
@@ -12839,7 +12933,7 @@
   {
    "segment": "t6-s16",
    "mode": "overlay",
-   "start_ms": 1863966,
+   "start_ms": 1871633,
    "duration_ms": 343,
    "planned_ms": 332,
    "frames": 1,
@@ -12849,7 +12943,7 @@
   {
    "segment": "t6-s16",
    "mode": "overlay",
-   "start_ms": 1877303,
+   "start_ms": 1884970,
    "duration_ms": 286,
    "planned_ms": 260,
    "frames": 5,
@@ -12859,7 +12953,7 @@
   {
    "segment": "t6-s16",
    "mode": "overlay",
-   "start_ms": 1885491,
+   "start_ms": 1893158,
    "duration_ms": 301,
    "planned_ms": 279,
    "frames": 0,
@@ -12869,7 +12963,7 @@
   {
    "segment": "t6-s16",
    "mode": "overlay",
-   "start_ms": 1889660,
+   "start_ms": 1897327,
    "duration_ms": 349,
    "planned_ms": 337,
    "frames": 1,
@@ -12879,7 +12973,7 @@
   {
    "segment": "t6-s16",
    "mode": "overlay",
-   "start_ms": 1891237,
+   "start_ms": 1898904,
    "duration_ms": 271,
    "planned_ms": 260,
    "frames": 1,
@@ -12889,7 +12983,7 @@
   {
    "segment": "t6-s16",
    "mode": "overlay",
-   "start_ms": 1893764,
+   "start_ms": 1901431,
    "duration_ms": 345,
    "planned_ms": 329,
    "frames": 2,
@@ -12899,7 +12993,7 @@
   {
    "segment": "t6-s16",
    "mode": "overlay",
-   "start_ms": 1897004,
+   "start_ms": 1904671,
    "duration_ms": 272,
    "planned_ms": 260,
    "frames": 0,
@@ -12909,7 +13003,7 @@
   {
    "segment": "t6-s16",
    "mode": "overlay",
-   "start_ms": 1903225,
+   "start_ms": 1910892,
    "duration_ms": 276,
    "planned_ms": 260,
    "frames": 2,
@@ -12919,7 +13013,7 @@
   {
    "segment": "t6-s16",
    "mode": "overlay",
-   "start_ms": 1905594,
+   "start_ms": 1913261,
    "duration_ms": 381,
    "planned_ms": 362,
    "frames": 2,
@@ -12929,7 +13023,7 @@
   {
    "segment": "t6-s16",
    "mode": "overlay",
-   "start_ms": 1907179,
+   "start_ms": 1914846,
    "duration_ms": 337,
    "planned_ms": 318,
    "frames": 2,
@@ -12939,7 +13033,7 @@
   {
    "segment": "t6-s16",
    "mode": "overlay",
-   "start_ms": 1925473,
+   "start_ms": 1933140,
    "duration_ms": 288,
    "planned_ms": 271,
    "frames": 4,
@@ -12949,7 +13043,7 @@
   {
    "segment": "t6-s16",
    "mode": "overlay",
-   "start_ms": 1941318,
+   "start_ms": 1948985,
    "duration_ms": 305,
    "planned_ms": 260,
    "frames": 11,
@@ -12959,7 +13053,7 @@
   {
    "segment": "t6-s16",
    "mode": "overlay",
-   "start_ms": 1945584,
+   "start_ms": 1953251,
    "duration_ms": 456,
    "planned_ms": 442,
    "frames": 0,
@@ -12969,8 +13063,8 @@
  ],
  "decode": "passed",
  "stream_end_s": {
-  "v": 1956.067,
-  "a": 1956.066
+  "v": 1963.733,
+  "a": 1963.733
  },
  "seams": [
   {
@@ -12986,7 +13080,7 @@
    ],
    "소리튐": false,
    "표본차": 0.0,
-   "기준": 0.0492,
+   "기준": 0.05,
    "소리시작_어긋남_ms": [
     -0.0
    ],
@@ -13015,10 +13109,10 @@
     0
    ],
    "소리튐": false,
-   "표본차": 0.0,
-   "기준": 0.0472,
+   "표본차": 0.0001,
+   "기준": 0.0544,
    "소리시작_어긋남_ms": [
-    0.0
+    -0.0
    ],
    "소리_ok": true,
    "바뀐화소퍼센트": 0.005,
@@ -13037,7 +13131,7 @@
    "번호": 3,
    "시각": "03:06.767",
    "앞": "t6-s03@50901",
-   "뒤": "t6-s04@0",
+   "뒤": "t6-s04b@0",
    "종류": "이음새",
    "프레임간격_ok": true,
    "원본정지_ms": [
@@ -13046,17 +13140,17 @@
    ],
    "소리튐": false,
    "표본차": 0.0,
-   "기준": 0.0513,
+   "기준": 0.0,
    "소리시작_어긋남_ms": [
     -0.0
    ],
    "소리_ok": true,
-   "바뀐화소퍼센트": 0.09,
+   "바뀐화소퍼센트": 0.157,
    "바뀐영역": [
     20,
     480,
-    100,
-    524
+    356,
+    1060
    ],
    "화면_ok": true,
    "그림": "이음새_03.jpg",
@@ -13065,28 +13159,28 @@
   },
   {
    "번호": 4,
-   "시각": "05:01.967",
-   "앞": "t6-s04@115190",
+   "시각": "05:09.633",
+   "앞": "t6-s04b@122869",
    "뒤": "t6-s05@0",
    "종류": "이음새",
    "프레임간격_ok": true,
    "원본정지_ms": [
-    32048,
+    32034,
     0
    ],
    "소리튐": false,
    "표본차": 0.0,
-   "기준": 0.0494,
+   "기준": 0.0285,
    "소리시작_어긋남_ms": [
     0.0
    ],
    "소리_ok": true,
-   "바뀐화소퍼센트": 0.002,
+   "바뀐화소퍼센트": 0.082,
    "바뀐영역": [
     208,
-    480,
-    220,
-    484
+    224,
+    1872,
+    1060
    ],
    "화면_ok": true,
    "그림": "이음새_04.jpg",
@@ -13095,7 +13189,7 @@
   },
   {
    "번호": 5,
-   "시각": "06:37.033",
+   "시각": "06:44.700",
    "앞": "t6-s05@95054",
    "뒤": "t6-s06@0",
    "종류": "이음새",
@@ -13105,8 +13199,8 @@
     0
    ],
    "소리튐": false,
-   "표본차": 0.0,
-   "기준": 0.0329,
+   "표본차": 0.0009,
+   "기준": 0.0501,
    "소리시작_어긋남_ms": [
     -0.0
    ],
@@ -13120,7 +13214,7 @@
   },
   {
    "번호": 6,
-   "시각": "07:58.500",
+   "시각": "08:06.167",
    "앞": "t6-s06@81455",
    "뒤": "t6-s07@0",
    "종류": "이음새",
@@ -13130,10 +13224,10 @@
     0
    ],
    "소리튐": false,
-   "표본차": 0.0,
-   "기준": 0.0597,
+   "표본차": 0.0004,
+   "기준": 0.0864,
    "소리시작_어긋남_ms": [
-    0.7
+    0.0
    ],
    "소리_ok": true,
    "바뀐화소퍼센트": 0.0,
@@ -13145,7 +13239,7 @@
   },
   {
    "번호": 7,
-   "시각": "10:13.833",
+   "시각": "10:21.500",
    "앞": "t6-s07@135335",
    "뒤": "t6-s08@0",
    "종류": "이음새",
@@ -13155,10 +13249,10 @@
     0
    ],
    "소리튐": false,
-   "표본차": 0.0,
-   "기준": 0.036,
+   "표본차": 0.0001,
+   "기준": 0.059,
    "소리시작_어긋남_ms": [
-    -0.0
+    0.0
    ],
    "소리_ok": true,
    "바뀐화소퍼센트": 0.0,
@@ -13170,7 +13264,7 @@
   },
   {
    "번호": 8,
-   "시각": "13:06.933",
+   "시각": "13:14.600",
    "앞": "t6-s08@173093",
    "뒤": "t6-s09@0",
    "종류": "이음새",
@@ -13181,7 +13275,7 @@
    ],
    "소리튐": false,
    "표본차": 0.0,
-   "기준": 0.0294,
+   "기준": 0.0286,
    "소리시작_어긋남_ms": [
     0.0
    ],
@@ -13195,7 +13289,7 @@
   },
   {
    "번호": 9,
-   "시각": "14:37.433",
+   "시각": "14:45.100",
    "앞": "t6-s09@90501",
    "뒤": "t6-s10@0",
    "종류": "이음새",
@@ -13205,10 +13299,10 @@
     0
    ],
    "소리튐": false,
-   "표본차": 0.0,
-   "기준": 0.0526,
+   "표본차": 0.0002,
+   "기준": 0.0722,
    "소리시작_어긋남_ms": [
-    0.0
+    -0.0
    ],
    "소리_ok": true,
    "바뀐화소퍼센트": 0.0,
@@ -13220,7 +13314,7 @@
   },
   {
    "번호": 10,
-   "시각": "17:56.233",
+   "시각": "18:03.900",
    "앞": "t6-s10@198806",
    "뒤": "t6-s11@0",
    "종류": "이음새",
@@ -13231,7 +13325,7 @@
    ],
    "소리튐": false,
    "표본차": 0.0,
-   "기준": 0.0499,
+   "기준": 0.0576,
    "소리시작_어긋남_ms": [
     -0.0
    ],
@@ -13245,7 +13339,7 @@
   },
   {
    "번호": 11,
-   "시각": "20:20.433",
+   "시각": "20:28.100",
    "앞": "t6-s11@144214",
    "뒤": "t6-s12@0",
    "종류": "이음새",
@@ -13255,8 +13349,8 @@
     0
    ],
    "소리튐": false,
-   "표본차": 0.0,
-   "기준": 0.0351,
+   "표본차": 0.0001,
+   "기준": 0.0577,
    "소리시작_어긋남_ms": [
     -0.0
    ],
@@ -13270,7 +13364,7 @@
   },
   {
    "번호": 12,
-   "시각": "22:13.200",
+   "시각": "22:20.867",
    "앞": "t6-s12@112755",
    "뒤": "t6-s13@0",
    "종류": "이음새",
@@ -13280,10 +13374,10 @@
     0
    ],
    "소리튐": false,
-   "표본차": 0.0,
-   "기준": 0.0268,
+   "표본차": 0.0005,
+   "기준": 0.024,
    "소리시작_어긋남_ms": [
-    -6.7
+    -0.0
    ],
    "소리_ok": true,
    "바뀐화소퍼센트": 0.0,
@@ -13295,7 +13389,7 @@
   },
   {
    "번호": 13,
-   "시각": "25:57.133",
+   "시각": "26:04.800",
    "앞": "t6-s13@223930",
    "뒤": "t6-s14@0",
    "종류": "이음새",
@@ -13306,9 +13400,9 @@
    ],
    "소리튐": false,
    "표본차": 0.0,
-   "기준": 0.0261,
+   "기준": 0.0148,
    "소리시작_어긋남_ms": [
-    0.3
+    -0.0
    ],
    "소리_ok": true,
    "바뀐화소퍼센트": 0.0,
@@ -13320,7 +13414,7 @@
   },
   {
    "번호": 14,
-   "시각": "26:58.833",
+   "시각": "27:06.500",
    "앞": "t6-s14@61705",
    "뒤": "t6-s15@0",
    "종류": "이음새",
@@ -13331,7 +13425,7 @@
    ],
    "소리튐": false,
    "표본차": 0.0,
-   "기준": 0.0473,
+   "기준": 0.0364,
    "소리시작_어긋남_ms": [
     -0.0
    ],
@@ -13345,7 +13439,7 @@
   },
   {
    "번호": 15,
-   "시각": "28:47.067",
+   "시각": "28:54.733",
    "앞": "t6-s15@108222",
    "뒤": "t6-s16@0",
    "종류": "이음새",
@@ -13355,10 +13449,10 @@
     0
    ],
    "소리튐": false,
-   "표본차": 0.0,
-   "기준": 0.054,
+   "표본차": 0.0001,
+   "기준": 0.0638,
    "소리시작_어긋남_ms": [
-    -0.0
+    0.0
    ],
    "소리_ok": true,
    "바뀐화소퍼센트": 0.001,
@@ -13375,12 +13469,187 @@
   }
  ],
  "voice": "config audio 캐시",
- "revoiced": [],
+ "revoiced": [
+  "r0100",
+  "r0101",
+  "r0102",
+  "r0200",
+  "r0201",
+  "r0202",
+  "r0203",
+  "r0204",
+  "r0205",
+  "r0206",
+  "r0207",
+  "r0208",
+  "r0300",
+  "r0302",
+  "r0303",
+  "r0305",
+  "r0306",
+  "r0400",
+  "r0401",
+  "r0402",
+  "r0403",
+  "r0404",
+  "r0406",
+  "r0407",
+  "r0410",
+  "r0411",
+  "r0500",
+  "r0501",
+  "r0503",
+  "r0504",
+  "r0505",
+  "r0506",
+  "r0507",
+  "r0508",
+  "r0509",
+  "r0510",
+  "r0600",
+  "r0602",
+  "r0604",
+  "r0605",
+  "r0606",
+  "r0608",
+  "r0700",
+  "r0701",
+  "r0702",
+  "r0703",
+  "r0704",
+  "r0705",
+  "r0706",
+  "r0707",
+  "r0708",
+  "r0709",
+  "r0711",
+  "r0713",
+  "r0714",
+  "r0715",
+  "r0800",
+  "r0801",
+  "r0803",
+  "r0805",
+  "r0806",
+  "r0807",
+  "r0808",
+  "r0809",
+  "r0810",
+  "r0811",
+  "r0812",
+  "r0813",
+  "r0814",
+  "r0815",
+  "r0816",
+  "r0818",
+  "r0900",
+  "r0901",
+  "r0902",
+  "r0903",
+  "r0905",
+  "r0907",
+  "r0908",
+  "r0909",
+  "r0910",
+  "r0911",
+  "r0912",
+  "r1000",
+  "r1002",
+  "r1003",
+  "r1004",
+  "r1006",
+  "r1008",
+  "r1009",
+  "r1010",
+  "r1012",
+  "r1013",
+  "r1014",
+  "r1015",
+  "r1016",
+  "r1019",
+  "r1021",
+  "r1100",
+  "r1102",
+  "r1103",
+  "r1104",
+  "r1105",
+  "r1106",
+  "r1107",
+  "r1108",
+  "r1109",
+  "r1110",
+  "r1200",
+  "r1201",
+  "r1202",
+  "r1203",
+  "r1205",
+  "r1206",
+  "r1207",
+  "r1208",
+  "r1210",
+  "r1212",
+  "r1213",
+  "r1214",
+  "r1215",
+  "r1300",
+  "r1302",
+  "r1303",
+  "r1306",
+  "r1309",
+  "r1310",
+  "r1311",
+  "r1312",
+  "r1314",
+  "r1315",
+  "r1317",
+  "r1319",
+  "r1320",
+  "r1321",
+  "r1322",
+  "r1400",
+  "r1401",
+  "r1402",
+  "r1404",
+  "r1405",
+  "r1406",
+  "r1500",
+  "r1501",
+  "r1502",
+  "r1506",
+  "r1507",
+  "r1508",
+  "r1509",
+  "r1511",
+  "r1600",
+  "r1601",
+  "r1602",
+  "r1605",
+  "r1606",
+  "r1607",
+  "r1608",
+  "r1609",
+  "r1610",
+  "r1611",
+  "r1612",
+  "r1613",
+  "r1614",
+  "r1615",
+  "r1616",
+  "r1617",
+  "r1618",
+  "r1619",
+  "r1620",
+  "r1622",
+  "r1626",
+  "r1627",
+  "r1628",
+  "r1629"
+ ],
  "not_verified": [
   "직접 청취",
   "사용자 재생 확인"
  ],
- "이름": "관계조회-6판-합본1",
+ "이름": "관계조회-8판-합본",
  "도구": "neo4j",
  "crf": 16,
  "fps": 30,
@@ -13393,7 +13662,7 @@
    "t6-s01",
    "t6-s02",
    "t6-s03",
-   "t6-s04",
+   "t6-s04b",
    "t6-s05",
    "t6-s06",
    "t6-s07",
@@ -13912,308 +14181,238 @@
    ]
   },
   {
-   "키": "a6fe641c5856d051353716d0",
+   "키": "cd4f8dbe3b56df3d6f98bc4e",
    "도구": "neo4j",
-   "take": "t6-s04",
+   "take": "t6-s04b",
    "from_ms": 0.0,
-   "to_ms": 115190.0419921875,
-   "frames": 3456,
+   "to_ms": 122868.65502929688,
+   "frames": 3686,
    "mode": "overlay",
    "part": 4,
    "audio": "../음성/common-retake-v7",
    "error": null,
-   "recorded_ms": 115190.0419921875,
+   "recorded_ms": 122868.65502929688,
    "end_url": "http://127.0.0.1:32768/browser/",
    "end_tab": null,
    "edge_age": [
     0,
-    32048
+    32034
    ],
    "cues": [
     {
      "id": "r0400",
      "text": "처음 할 일은 노드 만들기예요. 이 데이터베이스엔 설비 데이터가 이미 들어 있어서, 우리가 만드는 노드에는 레이블을 따로 붙일 거예요. 그래야 나중에 우리가 만든 것만 골라서 고치고 지울 수 있거든요.",
-     "time": 62.0419921875,
+     "time": 62.655029296875,
      "duration": 14160,
-     "actionStart": 62.0419921875,
-     "actionEnd": 64.0419921875,
+     "actionStart": 62.655029296875,
+     "actionEnd": 63.655029296875,
      "commit": null,
      "segment": 4
     },
     {
      "id": "r0401",
      "text": "쿼리는 손으로 치지 말고 안내 문서에서 복사해 오세요. 따옴표 하나만 틀려도 안 돌아가요. 옆 탭의 안내 문서로 가시면",
-     "time": 15522.0419921875,
+     "time": 15523.655029296875,
      "duration": 8640,
-     "actionStart": 15522.0419921875,
-     "actionEnd": 24131.0419921875,
+     "actionStart": 15525.655029296875,
+     "actionEnd": 24147.655029296875,
      "commit": null,
      "segment": 4
     },
     {
      "id": "r0402",
      "text": "2번 첫 칸에 이 문장이 있어요. 밑에 복사 누르시고",
-     "time": 24762.0419921875,
+     "time": 24763.655029296875,
      "duration": 4160,
-     "actionStart": 24763.0419921875,
-     "actionEnd": 28419.0419921875,
+     "actionStart": 24764.655029296875,
+     "actionEnd": 28427.655029296875,
      "commit": null,
      "segment": 4
     },
     {
      "id": "r0403",
      "text": "이쪽으로 돌아오세요.",
-     "time": 29523.0419921875,
+     "time": 29524.655029296875,
      "duration": 1520,
-     "actionStart": 29523.0419921875,
-     "actionEnd": 30188.0419921875,
+     "actionStart": 29525.655029296875,
+     "actionEnd": 30185.655029296875,
      "commit": null,
      "segment": 4
     },
     {
      "id": "r0404",
-     "text": "아까 돌린 쌍점 clear는 칸에서 지워져 있어요. 돌린 글은 이렇게 비워지니까, 입력칸을 누르고 그대로 붙여 넣으시면 돼요.",
-     "time": 31643.0419921875,
-     "duration": 8640,
-     "actionStart": 31642.0419921875,
-     "actionEnd": 40767.0419921875,
+     "text": "제 칸은 비어 있는데, 아까 친 쌍점 clear가 남아 있을 때도 있어요. 치자마자 엔터를 누르면 지워지지 않고 남거든요. 남은 채로 붙이면 그 뒤에 이어 붙어 오류가 나니까, 입력칸을 누르고 컨트롤 A로 다 고른 다음 붙여 넣으세요.",
+     "time": 31646.655029296875,
+     "duration": 16800,
+     "actionStart": 31647.655029296875,
+     "actionEnd": 48568.655029296875,
      "commit": null,
      "segment": 4
     },
     {
      "id": "r0405",
      "text": "복사한 문장이 그대로 들어왔죠.",
-     "time": 41368.0419921875,
+     "time": 49169.655029296875,
      "duration": 2320,
-     "actionStart": 41368.0419921875,
-     "actionEnd": 42365.0419921875,
+     "actionStart": 49170.655029296875,
+     "actionEnd": 50162.655029296875,
      "commit": null,
      "segment": 4
     },
     {
      "id": "r0406",
      "text": "붙여 넣은 건 CREATE 문장이에요. CREATE는 이론에서 본 대로 적은 모양 그대로 새로 만드는 절이고, 여기서는 펌프 노드 하나랑 팬 노드 하나를 만들어요.",
-     "time": 54988.0419921875,
+     "time": 62790.655029296875,
      "duration": 11280,
-     "actionStart": 54988.0419921875,
-     "actionEnd": 63164.0419921875,
+     "actionStart": 62791.655029296875,
+     "actionEnd": 70960.65502929688,
      "commit": null,
      "segment": 4
     },
     {
      "id": "r0407",
      "text": "점수는 펌프 40, 팬 70으로 적었는데, 이건 조금 뒤에 조건을 걸 때 써요.",
-     "time": 66868.0419921875,
+     "time": 74670.65502929688,
      "duration": 6400,
-     "actionStart": 66869.0419921875,
-     "actionEnd": 68497.0419921875,
+     "actionStart": 74671.65502929688,
+     "actionEnd": 76294.65502929688,
      "commit": null,
      "segment": 4
     },
     {
      "id": "r0408",
      "text": "입력칸 오른쪽 파란 Run 누르세요.",
-     "time": 73869.0419921875,
+     "time": 81671.65502929688,
      "duration": 2800,
-     "actionStart": 73869.0419921875,
-     "actionEnd": 76800.0419921875,
+     "actionStart": 81672.65502929688,
+     "actionEnd": 84446.65502929688,
      "commit": null,
      "segment": 4
     },
     {
      "id": "r0409",
      "text": "노드 두 개를 만들었다는 글이 떴죠.",
-     "time": 82801.0419921875,
+     "time": 90470.65502929688,
      "duration": 2400,
-     "actionStart": 82805.0419921875,
-     "actionEnd": 83528.0419921875,
+     "actionStart": 90474.65502929688,
+     "actionEnd": 91210.65502929688,
      "commit": null,
      "segment": 4
     },
     {
      "id": "r0410",
      "text": "속성 여섯 개, 레이블 두 개를 붙였다는 말도 있어요. 노드마다 속성 셋, 레이블 하나씩이에요. 그런데 그림은 안 나왔어요. 만들기만 하고 결과로 돌려 달라는 RETURN을 적지 않아서 그래요.",
-     "time": 85802.0419921875,
+     "time": 93472.65502929688,
      "duration": 14080,
-     "actionStart": 85803.0419921875,
-     "actionEnd": 85803.0419921875,
+     "actionStart": 93473.65502929688,
+     "actionEnd": 93473.65502929688,
      "commit": null,
      "segment": 4
     },
     {
      "id": "r0411",
      "text": "이 문장은 한 번만 돌리세요. 또 돌리면 똑같은 노드가 두 개 더 생겨요. 혹시 두 번 돌리셨으면 뒤에서 원이 네 개로 보일 텐데, 마지막에 지울 때 같이 지워지니까 그대로 따라오시면 돼요.",
-     "time": 101185.0419921875,
+     "time": 108857.65502929688,
      "duration": 13600,
-     "actionStart": 101186.0419921875,
-     "actionEnd": 101186.0419921875,
+     "actionStart": 108858.65502929688,
+     "actionEnd": 108858.65502929688,
      "commit": null,
      "segment": 4
     }
    ],
    "motions": [
     {
-     "start": 23615.0419921875,
-     "end": 24131.0419921875,
-     "glide": 23617.0419921875,
+     "start": 23623.655029296875,
+     "end": 24147.655029296875,
+     "glide": 23626.655029296875,
      "planned_ms": 503,
      "start_delay_ms": null,
-     "max_gap_ms": 514,
+     "max_gap_ms": 521,
      "frames": 0
     },
     {
-     "start": 26639.0419921875,
-     "end": 27031.0419921875,
-     "glide": 26641.0419921875,
+     "start": 26641.655029296875,
+     "end": 27029.655029296875,
+     "glide": 26643.655029296875,
      "planned_ms": 379,
      "start_delay_ms": null,
-     "max_gap_ms": 390,
+     "max_gap_ms": 386,
      "frames": 0
     },
     {
-     "start": 34239.0419921875,
-     "end": 34715.0419921875,
-     "glide": 34241.0419921875,
+     "start": 36695.655029296875,
+     "end": 37162.655029296875,
+     "glide": 36697.655029296875,
      "planned_ms": 460,
-     "start_delay_ms": 20,
-     "max_gap_ms": 354,
-     "frames": 2
+     "start_delay_ms": null,
+     "max_gap_ms": 465,
+     "frames": 0
     },
     {
-     "start": 40008.0419921875,
-     "end": 40281.0419921875,
-     "glide": 40010.0419921875,
+     "start": 47767.655029296875,
+     "end": 48045.655029296875,
+     "glide": 47770.655029296875,
      "planned_ms": 260,
-     "start_delay_ms": 19,
-     "max_gap_ms": 98,
-     "frames": 3
+     "start_delay_ms": null,
+     "max_gap_ms": 275,
+     "frames": 0
     },
     {
-     "start": 40424.0419921875,
-     "end": 40764.0419921875,
-     "glide": 40426.0419921875,
+     "start": 48226.655029296875,
+     "end": 48563.655029296875,
+     "glide": 48228.655029296875,
      "planned_ms": 318,
-     "start_delay_ms": 10,
-     "max_gap_ms": 328,
+     "start_delay_ms": 11,
+     "max_gap_ms": 324,
      "frames": 1
     },
     {
-     "start": 42069.0419921875,
-     "end": 42365.0419921875,
-     "glide": 42071.0419921875,
+     "start": 49868.655029296875,
+     "end": 50162.655029296875,
+     "glide": 49870.655029296875,
      "planned_ms": 272,
-     "start_delay_ms": 23,
-     "max_gap_ms": 151,
+     "start_delay_ms": 22,
+     "max_gap_ms": 150,
      "frames": 2
     },
     {
-     "start": 62888.0419921875,
-     "end": 63164.0419921875,
-     "glide": 62891.0419921875,
+     "start": 70689.65502929688,
+     "end": 70959.65502929688,
+     "glide": 70690.65502929688,
      "planned_ms": 260,
-     "start_delay_ms": 17,
-     "max_gap_ms": 218,
+     "start_delay_ms": 16,
+     "max_gap_ms": 220,
      "frames": 2
     },
     {
-     "start": 68153.0419921875,
-     "end": 68497.0419921875,
-     "glide": 68155.0419921875,
+     "start": 75955.65502929688,
+     "end": 76294.65502929688,
+     "glide": 75957.65502929688,
      "planned_ms": 330,
-     "start_delay_ms": 24,
-     "max_gap_ms": 265,
+     "start_delay_ms": 19,
+     "max_gap_ms": 264,
      "frames": 2
     },
     {
-     "start": 75984.0419921875,
-     "end": 76446.0419921875,
-     "glide": 75986.0419921875,
+     "start": 83788.65502929688,
+     "end": 84247.65502929688,
+     "glide": 83789.65502929688,
      "planned_ms": 449,
-     "start_delay_ms": 21,
-     "max_gap_ms": 397,
-     "frames": 4
+     "start_delay_ms": 17,
+     "max_gap_ms": 414,
+     "frames": 3
     },
     {
-     "start": 82925.0419921875,
-     "end": 83528.0419921875,
-     "glide": 82926.0419921875,
+     "start": 90595.65502929688,
+     "end": 91210.65502929688,
+     "glide": 90599.65502929688,
      "planned_ms": 592,
-     "start_delay_ms": 79,
-     "max_gap_ms": 410,
+     "start_delay_ms": 90,
+     "max_gap_ms": 411,
      "frames": 8
     }
    ],
    "clicks": [
-    {
-     "x": 768,
-     "y": 774,
-     "dx": 0,
-     "dy": 0.4,
-     "gliding": false
-    },
-    {
-     "x": 723,
-     "y": 251,
-     "dx": 0.73,
-     "dy": 0.2,
-     "gliding": false
-    },
-    {
-     "x": 940,
-     "y": 90,
-     "dx": 0.83,
-     "dy": 0.6,
-     "gliding": false
-    },
-    {
-     "x": 24,
-     "y": 54,
-     "dx": 0,
-     "dy": 0,
-     "gliding": false
-    },
-    {
-     "x": 940,
-     "y": 90,
-     "dx": -878.62,
-     "dy": 323.2,
-     "gliding": false
-    },
-    {
-     "x": 940,
-     "y": 90,
-     "dx": -878.62,
-     "dy": 323.2,
-     "gliding": false
-    },
-    {
-     "x": 1506,
-     "y": 90,
-     "dx": -1444.62,
-     "dy": 323.2,
-     "gliding": false
-    },
-    {
-     "x": 940,
-     "y": 90,
-     "dx": -878.62,
-     "dy": 323.2,
-     "gliding": false
-    },
-    {
-     "x": 1506,
-     "y": 90,
-     "dx": -1444.62,
-     "dy": 323.2,
-     "gliding": false
-    },
-    {
-     "x": 940,
-     "y": 90,
-     "dx": -878.62,
-     "dy": 323.2,
-     "gliding": false
-    },
     {
      "x": 940,
      "y": 90,
@@ -24528,8 +24727,8 @@
   }
  ],
  "mp4": {
-  "sha256": "c09cd1bbf211094686ca0c8f17c5c00707b0b91d10bf2c1263533acc371f3caa",
-  "video_packets": 58682,
-  "bytes": 54480788
+  "sha256": "8c9b7f5fffd28d1d3122c4a737e7b58ebc87384be7be0f576f0b75352d487c76",
+  "video_packets": 58912,
+  "bytes": 53788203
  }
 }

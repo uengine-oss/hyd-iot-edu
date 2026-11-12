@@ -2320,620 +2320,649 @@
   {
     "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-01-open.jpg",
     "kind": "학생 실습 화면",
-    "section": "지식 지도 열고 읽는 법 익히기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_05_실습_지식지도탐색.mp4",
-    "source_sha256": "7bc0d7d65e2fa1e566604a4eddd37ec96e6a8fa7528dd429ce63492b998fdca3",
-    "seconds": 66,
-    "raw_frame_sha256": "ed5389e9c52d117c543b2fac23f33dee1d6c5d53c04b81a405e86e4f788f922e",
+    "section": "지식 지도 열고 칸 접기",
+    "source": "작업/촬영/포털/05-지식지도-최종/05-지식지도-최종_1080p.mp4",
+    "source_sha256": "a277e472449a5c234572645427bc6cf0491924c33ae51deb46422ec27a4f6b36",
+    "seconds": 22,
+    "raw_frame_sha256": "80e7f62650be25ec774607d28fe426c220815fd3643a8df9d8dd42c736add6a0",
     "crop_box": null,
     "rectangles": [
       [
-        12,
-        819,
-        171,
-        867
+        14,
+        816,
+        170,
+        870
       ],
       [
-        409,
-        191,
-        613,
-        248
-      ],
-      [
-        409,
-        378,
-        1186,
-        421
+        411,
+        183,
+        1008,
+        250
       ]
     ],
     "pointer": [
-      1476,
-      234
+      327,
+      846
     ],
-    "sha256": "704de891233d1741f97d85e1638021a8088b785af7c7f192d3ed3107beab641f"
+    "sha256": "174b41512a6d734ee561c6fc69737c318940d6e2be874db485321a2bd3b831f3"
   },
   {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-02-layers.jpg",
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-02-columns.jpg",
     "kind": "학생 실습 화면",
-    "section": "지식 지도 열고 읽는 법 익히기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_05_실습_지식지도탐색.mp4",
-    "source_sha256": "7bc0d7d65e2fa1e566604a4eddd37ec96e6a8fa7528dd429ce63492b998fdca3",
-    "seconds": 140,
-    "raw_frame_sha256": "75aaa98f51f3b9543fc97278051717952edc5205463567716161946e15611fac",
+    "section": "지식 지도 열고 칸 접기",
+    "source": "작업/촬영/포털/05-지식지도-최종/05-지식지도-최종_1080p.mp4",
+    "source_sha256": "a277e472449a5c234572645427bc6cf0491924c33ae51deb46422ec27a4f6b36",
+    "seconds": 133,
+    "raw_frame_sha256": "114b257a02f3dd6f606e5502951aef4a3f95c151d19380ad05f7944eb58a06bb",
     "crop_box": null,
     "rectangles": [
       [
-        424,
-        325,
-        583,
-        368
+        405,
+        389,
+        1170,
+        428
       ],
       [
-        603,
-        325,
-        756,
-        367
+        1000,
+        440,
+        1062,
+        480
       ],
       [
-        1330,
-        325,
-        1593,
-        368
+        1290,
+        440,
+        1395,
+        480
       ],
       [
-        1612,
-        324,
-        1796,
-        371
-      ],
-      [
-        421,
-        716,
-        576,
-        791
+        1578,
+        440,
+        1745,
+        480
       ]
     ],
     "pointer": [
-      560,
-      750
+      1747,
+      452
     ],
-    "sha256": "3fab8636a148c8acd12673f28002a467b0e78f66501c1c155392f1607fe93421"
+    "sha256": "7b0fa6fa02483ca5d7acdc2df33a0b149896d36fe2c40a64b35b8bccce1e5ad9"
   },
   {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-03-search.jpg",
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-03-layers.jpg",
     "kind": "학생 실습 화면",
-    "section": "설비를 골라 상세 칸 읽기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_05_실습_지식지도탐색.mp4",
-    "source_sha256": "7bc0d7d65e2fa1e566604a4eddd37ec96e6a8fa7528dd429ce63492b998fdca3",
-    "seconds": 172,
-    "raw_frame_sha256": "b3b3278a317fe1b6b424050f7585e2c7be117f4704270ba11d9b2a9749d1e8a3",
+    "section": "지식 지도 열고 칸 접기",
+    "source": "작업/촬영/포털/05-지식지도-최종/05-지식지도-최종_1080p.mp4",
+    "source_sha256": "a277e472449a5c234572645427bc6cf0491924c33ae51deb46422ec27a4f6b36",
+    "seconds": 158,
+    "raw_frame_sha256": "f25ff50b6f89fd1ed0bac4f74562fcd862c96dcc2d4b799b34c22e6c9efe788b",
     "crop_box": null,
     "rectangles": [
       [
-        1503,
-        181,
-        1792,
-        255
+        412,
+        328,
+        586,
+        382
       ],
       [
-        427,
-        516,
-        822,
-        563
+        598,
+        328,
+        764,
+        382
+      ],
+      [
+        1316,
+        328,
+        1594,
+        382
+      ],
+      [
+        1604,
+        328,
+        1797,
+        382
+      ],
+      [
+        405,
+        389,
+        950,
+        430
       ]
     ],
     "pointer": [
-      1750,
-      230
+      952,
+      410
     ],
-    "sha256": "d5dcde2f2e6e4ab9eb2ce7f0906c62044856d50c4b24f8e6fe78db9b1d0a9e79"
+    "sha256": "384929aa25e8cdd163559e311ea993f4d5a6840989d758216bf411ee4bfab0dc"
   },
   {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-04-asset.jpg",
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-04-search.jpg",
     "kind": "학생 실습 화면",
-    "section": "설비를 골라 상세 칸 읽기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_05_실습_지식지도탐색.mp4",
-    "source_sha256": "7bc0d7d65e2fa1e566604a4eddd37ec96e6a8fa7528dd429ce63492b998fdca3",
-    "seconds": 240,
-    "raw_frame_sha256": "bbfa4e3270123bbee5c03c6a1963e23d0f187d91e0dab5aa7d188c7eca6532bc",
+    "section": "설비 노드 읽기",
+    "source": "작업/촬영/포털/05-지식지도-최종/05-지식지도-최종_1080p.mp4",
+    "source_sha256": "a277e472449a5c234572645427bc6cf0491924c33ae51deb46422ec27a4f6b36",
+    "seconds": 184,
+    "raw_frame_sha256": "a4b2b170b2b3bb45bc75cb5ece5540d8f3108766289aaf542e04a81679e0a88d",
     "crop_box": null,
     "rectangles": [
       [
-        446,
+        400,
+        248,
+        925,
+        326
+      ],
+      [
+        420,
+        492,
+        815,
+        580
+      ]
+    ],
+    "pointer": [
+      503,
+      506
+    ],
+    "sha256": "321a8633d5dd3ab705a5d484ced7726c4889209f9092d08a164b6a69abd547b6"
+  },
+  {
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-05-asset.jpg",
+    "kind": "학생 실습 화면",
+    "section": "설비 노드 읽기",
+    "source": "작업/촬영/포털/05-지식지도-최종/05-지식지도-최종_1080p.mp4",
+    "source_sha256": "a277e472449a5c234572645427bc6cf0491924c33ae51deb46422ec27a4f6b36",
+    "seconds": 250,
+    "raw_frame_sha256": "7acbf00db0eb5b74b8de8092669d9669410a2778d70fc4663427ddd57bbc73be",
+    "crop_box": null,
+    "rectangles": [
+      [
+        445,
         457,
         692,
-        540
+        538
       ],
       [
-        597,
-        585,
-        680,
-        624
+        446,
+        581,
+        700,
+        623
       ],
       [
-        1145,
+        1140,
         480,
-        1399,
-        743
+        1390,
+        742
       ],
       [
-        1145,
-        754,
-        1480,
-        909
+        1140,
+        755,
+        1470,
+        908
       ]
     ],
     "pointer": [
-      1128,
-      790
+      697,
+      595
     ],
-    "sha256": "ab9ea9d5dd7070c9461cb3ff0643ca3aaa573dd32766f0d527d353e06757f379"
+    "sha256": "8852a749055bdb573766d2bb89797f7b729bcb59b910a480430735d90acf9687"
   },
   {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-05-cooler.jpg",
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-06-cooler.jpg",
     "kind": "학생 실습 화면",
-    "section": "오일 쿨러에서 관계 방향 읽기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_05_실습_지식지도탐색.mp4",
-    "source_sha256": "7bc0d7d65e2fa1e566604a4eddd37ec96e6a8fa7528dd429ce63492b998fdca3",
-    "seconds": 372,
-    "raw_frame_sha256": "9852cb6c1dad210f0843c7e28a9f2f71729cdb61e23cc936a496b3c2f964934a",
+    "section": "오일 쿨러 열기",
+    "source": "작업/촬영/포털/05-지식지도-최종/05-지식지도-최종_1080p.mp4",
+    "source_sha256": "a277e472449a5c234572645427bc6cf0491924c33ae51deb46422ec27a4f6b36",
+    "seconds": 405,
+    "raw_frame_sha256": "592ec66c519dea16144506e535702116b90069c44ab33506f2a869b3dee15e13",
     "crop_box": null,
     "rectangles": [
       [
         445,
-        603,
-        571,
-        684
+        602,
+        572,
+        682
       ],
       [
-        445,
-        690,
-        818,
-        733
+        446,
+        688,
+        830,
+        735
       ],
       [
-        1145,
+        1140,
         625,
-        1427,
+        1425,
         782
       ],
       [
-        1115,
-        792,
-        1463,
-        936
+        1140,
+        791,
+        1474,
+        912
       ]
     ],
     "pointer": [
-      1330,
-      740
+      1460,
+      842
     ],
-    "sha256": "b6948be5cd0e651d0a70053697741e4d9e33dde0053a2a9aa2b2e570adf79595"
+    "sha256": "894571b9e0cb732497480a659614f420bb2c09b961b58318b7cb6a0d793c60f9"
   },
   {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-06-sensor.jpg",
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-07-sensor.jpg",
     "kind": "학생 실습 화면",
-    "section": "센서와 상태 변수 구별하기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_05_실습_지식지도탐색.mp4",
-    "source_sha256": "7bc0d7d65e2fa1e566604a4eddd37ec96e6a8fa7528dd429ce63492b998fdca3",
-    "seconds": 400,
-    "raw_frame_sha256": "5e9a46d8732453b43886a4a6f6d94c77f93b45b4a2d68cf45a7e9b8fe9feb49a",
+    "section": "유온 센서와 기준값 찾기",
+    "source": "작업/촬영/포털/05-지식지도-최종/05-지식지도-최종_1080p.mp4",
+    "source_sha256": "a277e472449a5c234572645427bc6cf0491924c33ae51deb46422ec27a4f6b36",
+    "seconds": 470,
+    "raw_frame_sha256": "c398a908a3bd36df18ebc324e2b585ad22456131156eb1e141b82383672980b2",
     "crop_box": null,
     "rectangles": [
       [
-        446,
-        639,
-        571,
-        721
+        445,
+        638,
+        572,
+        716
       ],
       [
         446,
-        728,
-        923,
-        847
+        722,
+        1125,
+        850
       ],
       [
-        1145,
-        661,
-        1369,
-        744
+        1140,
+        660,
+        1395,
+        742
       ],
       [
-        1145,
+        1140,
         755,
-        1369,
+        1395,
         910
       ]
     ],
     "pointer": [
-      430,
-      766
+      1363,
+      717
     ],
-    "sha256": "5f7a60c90328fb6c61fc537ead4dbaf4a5f08ee6d5455e30e1261d4992be0c14"
+    "sha256": "74a5a4a4b623d1ec8d8678d1bf588904eba60b7ed5542e17d1da2a907dffa9d2"
   },
   {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-07-statevar.jpg",
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-08-input.jpg",
     "kind": "학생 실습 화면",
-    "section": "센서와 상태 변수 구별하기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_05_실습_지식지도탐색.mp4",
-    "source_sha256": "7bc0d7d65e2fa1e566604a4eddd37ec96e6a8fa7528dd429ce63492b998fdca3",
-    "seconds": 506,
-    "raw_frame_sha256": "2d42989f1518949cc9546a4703dfff8b29c547d9303b881fce0baa46f5d28bdb",
+    "section": "유온 센서와 기준값 찾기",
+    "source": "작업/촬영/포털/05-지식지도-최종/05-지식지도-최종_1080p.mp4",
+    "source_sha256": "a277e472449a5c234572645427bc6cf0491924c33ae51deb46422ec27a4f6b36",
+    "seconds": 498,
+    "raw_frame_sha256": "f6cf92a3c5a4ce4e8a16a7e26b54f9adcc155307c311e68c58d553f3f715a12c",
     "crop_box": null,
     "rectangles": [
       [
-        446,
-        385,
-        547,
-        467
-      ],
-      [
         445,
-        474,
-        870,
-        664
+        638,
+        572,
+        716
       ],
       [
-        1145,
-        408,
-        1441,
-        526
-      ],
-      [
-        1145,
-        537,
-        1538,
-        911
-      ]
-    ],
-    "pointer": [
-      1130,
-      760
-    ],
-    "sha256": "519146fb81cbdd4fe94115c84d63b7487d400b278d674c897fde4c322d502a1c"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-08-efficiency.jpg",
-    "kind": "학생 실습 화면",
-    "section": "센서와 상태 변수 구별하기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_05_실습_지식지도탐색.mp4",
-    "source_sha256": "7bc0d7d65e2fa1e566604a4eddd37ec96e6a8fa7528dd429ce63492b998fdca3",
-    "seconds": 544,
-    "raw_frame_sha256": "d38255b99f21e986fc779e3b3417bcf9e152fb9d461370f97e8ca39d34e022c6",
-    "crop_box": null,
-    "rectangles": [
-      [
-        446,
-        639,
-        646,
-        721
-      ],
-      [
-        445,
-        728,
-        936,
-        847
-      ],
-      [
-        1145,
-        661,
+        1140,
+        660,
         1415,
-        744
-      ],
-      [
-        1145,
-        755,
-        1415,
-        910
+        780
       ]
     ],
     "pointer": [
-      430,
-      760
+      857,
+      738
     ],
-    "sha256": "7bb7cdedbb3cfa223b63dd69be6717c245f9bf7b1e371598aafbdc1270411ed0"
+    "sha256": "016f1b1a01b9f5ca27d9160067204e00c20350951f6f669e72540719966072e8"
   },
   {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-09-core.jpg",
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-09-statevar.jpg",
     "kind": "학생 실습 화면",
-    "section": "교체 부품과 여러 센서 찾기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_05_실습_지식지도탐색.mp4",
-    "source_sha256": "7bc0d7d65e2fa1e566604a4eddd37ec96e6a8fa7528dd429ce63492b998fdca3",
-    "seconds": 606,
-    "raw_frame_sha256": "9d16e1cc5cc0b7f7be66c208268f2160fd7c80664040e881324e11a8e6b70032",
+    "section": "유온 센서와 기준값 찾기",
+    "source": "작업/촬영/포털/05-지식지도-최종/05-지식지도-최종_1080p.mp4",
+    "source_sha256": "a277e472449a5c234572645427bc6cf0491924c33ae51deb46422ec27a4f6b36",
+    "seconds": 535,
+    "raw_frame_sha256": "63ea4763181982ffbcd55c03e0f9f81a7ed919bba828795640e4ec6d8ea390b2",
     "crop_box": null,
     "rectangles": [
       [
         445,
-        640,
-        571,
-        721
+        638,
+        572,
+        716
       ],
       [
         446,
-        728,
-        838,
-        771
+        722,
+        700,
+        767
       ],
       [
-        1145,
-        661,
-        1426,
-        818
+        446,
+        800,
+        880,
+        844
+      ],
+      [
+        446,
+        876,
+        700,
+        918
       ]
     ],
     "pointer": [
-      1130,
-      810
+      630,
+      890
     ],
-    "sha256": "8e984e2f790a26779b7b6a2f0c301334da0c11a850a56c00ae8bcd7935cedabb"
+    "sha256": "dffba4477c5e76b68a4c67fee3b77b6edd8b0e8d039170e2c67164bfecc72ff9"
   },
   {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-10-pump-search.jpg",
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-10-symptom.jpg",
     "kind": "학생 실습 화면",
-    "section": "교체 부품과 여러 센서 찾기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_05_실습_지식지도탐색.mp4",
-    "source_sha256": "7bc0d7d65e2fa1e566604a4eddd37ec96e6a8fa7528dd429ce63492b998fdca3",
-    "seconds": 620,
-    "raw_frame_sha256": "d15ea5eca2087d69224e3920ce103fbba278ea61210e8b2acb8f84bbc207e6f9",
+    "section": "증상에서 부품까지 따라가기",
+    "source": "작업/촬영/포털/05-지식지도-최종/05-지식지도-최종_1080p.mp4",
+    "source_sha256": "a277e472449a5c234572645427bc6cf0491924c33ae51deb46422ec27a4f6b36",
+    "seconds": 645,
+    "raw_frame_sha256": "d2aaade0a7afe3c89231174f2e2d6fef5d7ae4763124197a612c0b1f00d5c1d7",
     "crop_box": null,
     "rectangles": [
       [
-        1503,
-        133,
-        1792,
-        207
+        445,
+        638,
+        572,
+        716
       ],
       [
-        426,
-        463,
+        446,
+        722,
         830,
-        517
-      ]
-    ],
-    "pointer": [
-      1750,
-      180
-    ],
-    "sha256": "c742d60d8d99fb9fe0e95e807cab0ccace2d22e18fbd5609e49c02c11e95dd1a"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-11-pump.jpg",
-    "kind": "학생 실습 화면",
-    "section": "교체 부품과 여러 센서 찾기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_05_실습_지식지도탐색.mp4",
-    "source_sha256": "7bc0d7d65e2fa1e566604a4eddd37ec96e6a8fa7528dd429ce63492b998fdca3",
-    "seconds": 630,
-    "raw_frame_sha256": "6903d4c1b48611e232e9d30f631d7a33fe63f548f2c9b817fb7909c197208744",
-    "crop_box": null,
-    "rectangles": [
-      [
-        445,
-        566,
-        591,
-        650
+        776
       ],
       [
-        1145,
-        589,
-        1422,
+        1140,
+        660,
+        1490,
         780
       ],
       [
-        1145,
+        1140,
         791,
-        1488,
-        909
-      ]
-    ],
-    "pointer": [
-      1130,
-      700
-    ],
-    "sha256": "7107a0e4a3aed650570b75fd245e3d3e13395e1f73db6401ebc5294b83a10f38"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-12-seal.jpg",
-    "kind": "학생 실습 화면",
-    "section": "교체 부품과 여러 센서 찾기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_05_실습_지식지도탐색.mp4",
-    "source_sha256": "7bc0d7d65e2fa1e566604a4eddd37ec96e6a8fa7528dd429ce63492b998fdca3",
-    "seconds": 662,
-    "raw_frame_sha256": "26b9c9345fb42616c55951fb95437697b1ea0145c5f233149e4eb96985efa650",
-    "crop_box": null,
-    "rectangles": [
-      [
-        446,
-        567,
-        636,
-        648
-      ],
-      [
-        446,
-        656,
-        838,
-        698
-      ],
-      [
-        1145,
-        589,
-        1424,
-        745
-      ]
-    ],
-    "pointer": [
-      430,
-      690
-    ],
-    "sha256": "0d4af5b7af9c899dabaa25462e2812a8705e8fdc8446624162fbfba42f47fc00"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-13-hyd02.jpg",
-    "kind": "학생 실습 화면",
-    "section": "설비를 바꿔 같은 노드 보기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_05_실습_지식지도탐색.mp4",
-    "source_sha256": "7bc0d7d65e2fa1e566604a4eddd37ec96e6a8fa7528dd429ce63492b998fdca3",
-    "seconds": 688,
-    "raw_frame_sha256": "dba706e7373eec76fc866e00d4248e11bf742d06a2c536f9abc0ef0bb551abd1",
-    "crop_box": null,
-    "rectangles": [
-      [
-        409,
-        143,
-        613,
-        200
-      ],
-      [
-        1503,
-        132,
-        1791,
-        208
-      ],
-      [
-        426,
-        468,
-        818,
-        517
-      ]
-    ],
-    "pointer": [
-      1652,
-      166
-    ],
-    "sha256": "4142a436a073e48be0a73f593060226bc82d073b252d2e45359c6c22a42b7250"
-  },
-  {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-14-cooler-hyd02.jpg",
-    "kind": "학생 실습 화면",
-    "section": "설비를 바꿔 같은 노드 보기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_05_실습_지식지도탐색.mp4",
-    "source_sha256": "7bc0d7d65e2fa1e566604a4eddd37ec96e6a8fa7528dd429ce63492b998fdca3",
-    "seconds": 716,
-    "raw_frame_sha256": "2e15e1477839b51a92c44b7466fd6a126b6b67c5855bf387406a0384fe41f758",
-    "crop_box": null,
-    "rectangles": [
-      [
-        445,
-        603,
-        571,
-        684
-      ],
-      [
-        1145,
-        625,
-        1427,
-        782
-      ],
-      [
-        1147,
-        792,
-        1463,
+        1490,
         910
       ]
     ],
     "pointer": [
-      1130,
-      870
+      1491,
+      712
     ],
-    "sha256": "dffa630f6846d78af6dab3cb1d41f97ce95e1ea7ecba5f897e083015101001da"
+    "sha256": "d090fabf5eb14a9c5eab031ce0540c08f69a75c82d12da40f26f21da52137d6b"
   },
   {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-15-comp-cooler.jpg",
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-11-failure.jpg",
     "kind": "학생 실습 화면",
-    "section": "Cypher 예제 그래프와 비교하기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_05_실습_지식지도탐색.mp4",
-    "source_sha256": "7bc0d7d65e2fa1e566604a4eddd37ec96e6a8fa7528dd429ce63492b998fdca3",
-    "seconds": 770,
-    "raw_frame_sha256": "b797a969c83e63236b8c41ab02f4f4f986d4d6acae48f2bd4b37fef1a9326639",
+    "section": "증상에서 부품까지 따라가기",
+    "source": "작업/촬영/포털/05-지식지도-최종/05-지식지도-최종_1080p.mp4",
+    "source_sha256": "a277e472449a5c234572645427bc6cf0491924c33ae51deb46422ec27a4f6b36",
+    "seconds": 718,
+    "raw_frame_sha256": "e2eec25d1c41104747b0ce4817ec9ae97a006516202b4abec5d63df4c0818b56",
     "crop_box": null,
     "rectangles": [
       [
-        1504,
-        132,
-        1790,
-        208
+        445,
+        312,
+        680,
+        392
       ],
       [
-        427,
-        468,
-        829,
-        517
+        1140,
+        335,
+        1505,
+        667
+      ],
+      [
+        1140,
+        682,
+        1442,
+        905
+      ]
+    ],
+    "pointer": [
+      1425,
+      882
+    ],
+    "sha256": "6687e2df0645c3386a41934b8ec79d8f9bf065eaa47e21bbb7797843f1d635b3"
+  },
+  {
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-12-cause.jpg",
+    "kind": "학생 실습 화면",
+    "section": "증상에서 부품까지 따라가기",
+    "source": "작업/촬영/포털/05-지식지도-최종/05-지식지도-최종_1080p.mp4",
+    "source_sha256": "a277e472449a5c234572645427bc6cf0491924c33ae51deb46422ec27a4f6b36",
+    "seconds": 730,
+    "raw_frame_sha256": "75451c5b334c15de1d18e8ee2208c94a3166ea5f26024f16064dde07d56ad49f",
+    "crop_box": null,
+    "rectangles": [
+      [
+        445,
+        499,
+        602,
+        576
+      ],
+      [
+        1140,
+        522,
+        1570,
+        748
+      ]
+    ],
+    "pointer": [
+      1490,
+      610
+    ],
+    "sha256": "708a61d61d5daf8ee86e7806143c57d2630cd4b5597c4b4428a0caf473af0620"
+  },
+  {
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-13-core.jpg",
+    "kind": "학생 실습 화면",
+    "section": "증상에서 부품까지 따라가기",
+    "source": "작업/촬영/포털/05-지식지도-최종/05-지식지도-최종_1080p.mp4",
+    "source_sha256": "a277e472449a5c234572645427bc6cf0491924c33ae51deb46422ec27a4f6b36",
+    "seconds": 772,
+    "raw_frame_sha256": "5b2df3f789c7f39750b1168ef31f85375f716c24a02ce9fd08c33e06af7cb258",
+    "crop_box": null,
+    "rectangles": [
+      [
+        445,
+        500,
+        840,
+        632
+      ],
+      [
+        1140,
+        522,
+        1425,
+        677
+      ],
+      [
+        1140,
+        686,
+        1535,
+        950
+      ]
+    ],
+    "pointer": [
+      1290,
+      545
+    ],
+    "sha256": "c817ae641e5fb64abdf0334f76a4646fa728b745bd8bfd3ed9ef2aeceece92b3"
+  },
+  {
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-14-hyd02.jpg",
+    "kind": "학생 실습 화면",
+    "section": "다른 설비에서 같은 쿨러 찾기",
+    "source": "작업/촬영/포털/05-지식지도-최종/05-지식지도-최종_1080p.mp4",
+    "source_sha256": "a277e472449a5c234572645427bc6cf0491924c33ae51deb46422ec27a4f6b36",
+    "seconds": 842,
+    "raw_frame_sha256": "c8088ee3a4be2ae260fc25818f6156023a6717b6b7395aa3c17ef5bdd304f823",
+    "crop_box": null,
+    "rectangles": [
+      [
+        411,
+        183,
+        624,
+        250
+      ],
+      [
+        420,
+        620,
+        815,
+        706
       ]
     ],
     "pointer": [
       812,
-      490
+      682
     ],
-    "sha256": "25ec36d928875d63f7dace8e54c9bfff7b8d219483ffc23717b13fc7938fd913"
+    "sha256": "abf30b616e6dc6a6e83e6a226a20e634d15d49eaec89cbcd884914afb2870f4a"
   },
   {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-16-tank.jpg",
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-15-comp-cooler.jpg",
     "kind": "학생 실습 화면",
-    "section": "Cypher 예제 그래프와 비교하기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_05_실습_지식지도탐색.mp4",
-    "source_sha256": "7bc0d7d65e2fa1e566604a4eddd37ec96e6a8fa7528dd429ce63492b998fdca3",
-    "seconds": 820,
-    "raw_frame_sha256": "9831dc587a00c1453b23e79932f92a1b10e64069f41ffb977eb5b80694bbae5a",
+    "section": "다른 설비에서 같은 쿨러 찾기",
+    "source": "작업/촬영/포털/05-지식지도-최종/05-지식지도-최종_1080p.mp4",
+    "source_sha256": "a277e472449a5c234572645427bc6cf0491924c33ae51deb46422ec27a4f6b36",
+    "seconds": 882,
+    "raw_frame_sha256": "8fd3feefdc38835eaa4e70c786a2bed541bc1c31c6f6a028e436cca90df0523c",
     "crop_box": null,
     "rectangles": [
       [
-        446,
-        711,
-        596,
-        793
+        400,
+        248,
+        925,
+        326
       ],
       [
-        1145,
-        733,
-        1454,
-        816
+        405,
+        389,
+        1075,
+        430
       ],
       [
-        1145,
-        828,
-        1463,
-        909
+        420,
+        492,
+        815,
+        578
       ]
     ],
     "pointer": [
-      820,
-      556
+      750,
+      288
     ],
-    "sha256": "53461f09939bd3fe7c6ecf3d17c8799cca1a47c1cf18341b6fc377fd45513ca3"
+    "sha256": "ee3c5e50be3df1f7cbfa5136f1b17f3ba4b55b399e08010d915574c1986fd018"
   },
   {
-    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-17-standby.jpg",
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-16-cooler-hyd02.jpg",
     "kind": "학생 실습 화면",
-    "section": "Cypher 예제 그래프와 비교하기",
-    "source": "workspace/강의제작/산출물/영상/통합반/통합반_02회차_05_실습_지식지도탐색.mp4",
-    "source_sha256": "7bc0d7d65e2fa1e566604a4eddd37ec96e6a8fa7528dd429ce63492b998fdca3",
-    "seconds": 862,
-    "raw_frame_sha256": "b42c82e8901cf5023a7d255ff311b8a3606a1b9bf84178b1afc3b250ecc42514",
+    "section": "다른 설비에서 같은 쿨러 찾기",
+    "source": "작업/촬영/포털/05-지식지도-최종/05-지식지도-최종_1080p.mp4",
+    "source_sha256": "a277e472449a5c234572645427bc6cf0491924c33ae51deb46422ec27a4f6b36",
+    "seconds": 906,
+    "raw_frame_sha256": "0568b0e7fa5c13fa4cf471c0df39f5a1b63bd8021c4db53dc51e5c54b49e49f2",
     "crop_box": null,
     "rectangles": [
       [
         445,
-        711,
-        613,
-        795
+        602,
+        572,
+        682
       ],
       [
-        1145,
-        733,
-        1415,
-        816
+        1140,
+        625,
+        1425,
+        782
       ],
       [
-        1145,
-        828,
-        1463,
-        909
+        1140,
+        791,
+        1474,
+        912
       ]
     ],
     "pointer": [
-      1130,
-      810
+      1463,
+      848
     ],
-    "sha256": "c7714b1fbcecce17080f27efb8b71f7f6bf88ccebae2d13c8e45038676b7c15d"
+    "sha256": "89703640df11d51b6e4b87bb04984cf653cfd950e72ec61edb9b6ec529319019"
+  },
+  {
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-17-hyd01.jpg",
+    "kind": "학생 실습 화면",
+    "section": "다른 설비에서 같은 쿨러 찾기",
+    "source": "작업/촬영/포털/05-지식지도-최종/05-지식지도-최종_1080p.mp4",
+    "source_sha256": "a277e472449a5c234572645427bc6cf0491924c33ae51deb46422ec27a4f6b36",
+    "seconds": 928,
+    "raw_frame_sha256": "b7d85dc4451fbac3a1183eee845f278070c6ea0d7751f4eb739c7be99e8e69a5",
+    "crop_box": null,
+    "rectangles": [
+      [
+        411,
+        183,
+        624,
+        250
+      ],
+      [
+        420,
+        436,
+        815,
+        578
+      ]
+    ],
+    "pointer": [
+      812,
+      555
+    ],
+    "sha256": "f14a7ea7ba8122dc5fea003e8c7e3d255d27371069fdb09416df2ba55bacbd01"
+  },
+  {
+    "target": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색/images/map-18-read.jpg",
+    "kind": "학생 실습 화면",
+    "section": "결과 확인하기",
+    "source": "작업/촬영/포털/05-지식지도-최종/05-지식지도-최종_1080p.mp4",
+    "source_sha256": "a277e472449a5c234572645427bc6cf0491924c33ae51deb46422ec27a4f6b36",
+    "seconds": 1008,
+    "raw_frame_sha256": "f3a0befaef853d787a2367c964e4a7c9a55d337e4f1194b0107d9b79f31a481c",
+    "crop_box": null,
+    "rectangles": [
+      [
+        445,
+        602,
+        572,
+        682
+      ],
+      [
+        446,
+        688,
+        830,
+        735
+      ],
+      [
+        1140,
+        625,
+        1425,
+        782
+      ],
+      [
+        1140,
+        791,
+        1474,
+        912
+      ]
+    ],
+    "pointer": [
+      1460,
+      845
+    ],
+    "sha256": "0a34d2a2226f3b78eb950b9884c01374cbc5ae645bd1592eb2192928c75a0fcd"
   }
 ]
