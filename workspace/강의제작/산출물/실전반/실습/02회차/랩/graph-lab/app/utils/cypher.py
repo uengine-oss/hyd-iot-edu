@@ -161,6 +161,10 @@ def questions(path):
         if not nums:
             raise RuntimeError(f'{path}:{line}: 조회 위에 `// 질문 <번호>` 주석이 없습니다.')
         out[nums[-1]] = (line, s)
+        for k, body_line in enumerate(s.splitlines()):
+            m = QUESTION.match(body_line)
+            if m and k:
+                raise RuntimeError(f'{path}:{line + k}: 「// 질문 {m.group(1)}」가 질문 {nums[-1]} 조회 문장 안에 있습니다 — 질문 {nums[-1]} 조회({line}행부터) 끝에 ;가 없습니다.')
     return out
 
 

@@ -67,7 +67,7 @@ def legacy_fixture(work):
     old = work / 'legacy-fixture'
     D.write_sources(old / '자료', practical=True)
     shutil.copyfile(HERE / 'session2_supply_tool.py', old / 'supply_tool.py')
-    schema, graph = B.reference_model()
+    schema, graph = B.reference_model(False, B.PROVIDED_BRANCH)
     B.dump(old / '입력/schema.json', B.student_schema(schema))
     B.dump(old / '입력/graph.json', graph)
     for name, text in B.design_practical()['files'].items():
@@ -85,7 +85,7 @@ def ontology(starter, graph_starter, work, logs):
     records = []
     old = legacy_fixture(work)
     next_input = json.loads((graph_starter / 'data/model/graph.json').read_text(encoding='utf-8'))
-    base = B.reference_model()[1]
+    base = B.reference_model(False, B.PROVIDED_BRANCH)[1]
     for branch in B.REFERENCE_BRANCHES['실전반']:
         new = copy_project(starter, work / ('new-' + branch))
         legacy = work / ('old-' + branch)
@@ -134,6 +134,7 @@ def ontology(starter, graph_starter, work, logs):
 def checker_trials(starter, graph_starter, work):
     records, bad = [], []
     folder = copy_project(starter, work / 'check-ontology')
+    CT.filled(folder)
     for course, name, branch, fn, ok, want, absent in CT.trials():
         if course != '실전반':
             continue
@@ -154,7 +155,8 @@ def checker_trials(starter, graph_starter, work):
         ('F3 정한 것 근거 꼴', lambda f: (f / 'app/features/decisions.csv').write_text(head + '지점,하나,원문 보고 정함,바뀜\n', encoding='utf-8'), ['근거에 파일:줄이 없습니다']),
         ('F4 정한 것 빈 칸', lambda f: (f / 'app/features/decisions.csv').write_text(head + '지점,,data/a.csv:3,\n', encoding='utf-8'), ['빈 칸 고른_것, 바뀌는_답']),
         ('F5 정한 것 열 이름', lambda f: (f / 'app/features/decisions.csv').write_text('지점,고른 것,근거,바뀌는 답\n', encoding='utf-8'), ['열 이름이']),
-        ('F0 손대지 않음(통과)', lambda f: None, [])]
+        ('F0 받은 그대로(결정 지점 줄이 비어 있어 확인 필요)', lambda f: None, ['빈 칸 고른_것, 근거, 바뀌는_답']),
+        ('F6 결정을 채움(통과)', lambda f: (f / 'app/features/decisions.csv').write_text(head + '지점,하나,data/a.csv:3,바뀜\n', encoding='utf-8'), [])]
     model = CT.load('실전반', 'ㄴ')
     for lab, src in (('ontology-lab', starter), ('graph-lab', graph_starter)):
         for name, fn, want in file_trials:
@@ -193,7 +195,7 @@ def table_rows(block):
 def graph(starter, work, logs):
     records = []
     model = json.loads((starter / 'data/model/graph.json').read_text(encoding='utf-8'))
-    reference = B.reference_model(True, B.LAB4_INPUT_BRANCH['실전반'])[1]
+    reference = B.reference_model(True, B.GRAPH_LAB_INPUT['실전반'])[1]
     assert model == converted(reference), '제공 모델이 옛 판 입력(갈래 ㄴ)과 다름'
     assert not V.diff(V.expected('실전반', 'ㄴ'), V.answers_from_graph('실전반', 'ㄴ', back(model)))
     korean = work / 'source-rows'

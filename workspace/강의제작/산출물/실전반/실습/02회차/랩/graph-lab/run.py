@@ -30,8 +30,14 @@ def main():
     output.mkdir(exist_ok=True)
     target = output / 'result.html'
     first = not target.exists()
-    target.write_text(page(actions.TITLE, title, blocks), encoding='utf-8', newline='\n')
-    (output / 'result.json').write_text(json.dumps({'action': args.action, 'blocks': blocks}, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    failed = any(b['kind'] == 'error' for b in blocks)
+    saved = output / 'result.json'
+    last = json.loads(saved.read_text(encoding='utf-8')).get('last_success') if saved.exists() else None
+    if not failed:
+        last = {'action': args.action, 'title': title, 'blocks': blocks}
+    shown = blocks + ([results.note('아래는 직전에 성공한 「' + last['title'] + '」 실행의 결과입니다. 이번 실행은 위의 확인 필요로 끝났습니다.')] + last['blocks'] if failed and last else [])
+    target.write_text(page(actions.TITLE, title, shown), encoding='utf-8', newline='\n')
+    saved.write_text(json.dumps({'action': args.action, 'blocks': blocks, 'last_success': last}, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     print(title)
     for block in blocks:
         if block['kind'] in ('note', 'error'):

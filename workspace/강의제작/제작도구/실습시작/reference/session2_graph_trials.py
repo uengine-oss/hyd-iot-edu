@@ -33,6 +33,10 @@ def fill(folder, change='남김', running=False):
 def expectation(folder, graph, running, changed=False, deleted=False):
     rows = B.graph_expect_rows('통합반', graph)
     for row in rows:
+        if row[0:2] == ['3', 'RF-10'] and changed:   # 수정본 구성요소_변경.csv 3줄: HYD-03 리턴 필터가 P-RTN-FLT-25로 바뀜
+            row[3] = ' · '.join(x for x in row[3].split(' · ') if x != 'HYD-03')
+        if row[0:2] == ['3', 'P-RTN-FLT-25'] and changed:
+            row[3] = 'HYD-03'
         if row[0:2] == ['3', 'RF-10'] and (running or (changed and deleted)):
             row[3] = ' · '.join(x for x in row[3].split(' · ') if x != 'HYD-07')
             row[4] += ' · ' + ('입력/자료_변경분/2026-10-20_수정본/설비_대장_변경.csv:3' if changed else '입력/자료/설비_대장.csv:9')
@@ -86,7 +90,9 @@ def trials(starter, work):
         folder = work / change / starter.name
         shutil.copytree(starter, folder, ignore=shutil.ignore_patterns('__pycache__', 'output', '.lab_connection.json'))
         graph = json.loads((folder / 'data/model/graph.json').read_text(encoding='utf-8'))
-        assert V.answers_from_graph('통합반', 'A', graph) == V.expected('통합반', 'A')
+        branch = B.GRAPH_LAB_INPUT['통합반']     # 제공 모델 = 설계 랩 강사 참조 그 갈래(실물 · 확인 필요 후보 · 붙은 자리까지 물리량)
+        assert V.answers_from_graph('통합반', branch, graph) == V.expected('통합반', branch)
+        assert not V.diff(V.answers_from_graph('통합반', branch, graph), V.answers_from_graph('통합반', branch, B.reference_model(False, branch)[1]))
         command(folder, 'run.py', '--no-open')
         # 빈 기능을 이미 실행된 결과처럼 보이지 않는다.
         empty = command(folder, 'run.py', 'load', '--no-open', ok=False)
@@ -102,6 +108,15 @@ def trials(starter, work):
             assert normalized(initial) == normalized(json.loads((folder / 'output/graph.json').read_text(encoding='utf-8')))
             equal_answers(result(folder, 'sensors'))
             equal_answers(result(folder, 'parts'))
+            # 빈 결정이면 멈춤: 정한_것.csv 지점 줄이 비어 있으면 그 결정을 쓰는 기능(사용 설비 조회 · 수정본 반영)이 그 줄을 짚고 멈춘다
+            decisions = folder / 'app/features/decisions.csv'
+            filled = decisions.read_bytes()
+            decisions.write_text(P.convert(B.decision_template(B.GRAPH_POINTS['통합반'])), encoding='utf-8', newline='\n')
+            for action, point in (('usage', '시점과 상태'), ('update', '불용 결정 설비')):
+                out = command(folder, 'run.py', action, '--no-open', ok=False)
+                assert 'decisions.csv:' in out and point in out, out[-500:]
+                records.append({'empty_decision': action, 'stopped_on': point})
+            decisions.write_bytes(filled)
             for running in (False, True):
                 fill(folder, change, running)
                 equal_answers(result(folder, 'usage'))
@@ -113,11 +128,17 @@ def trials(starter, work):
             assert props['HYD-06:I_MOTOR']['normal'] == 18.5
             assert props['HYD-03:VS1']['unit'] == 'mm/s'
             assert 'HYD-01:TS1' in props
+            # 수정본의 교체부품 확인 줄: 그 자리의 확인 필요 후보가 사라지고 확인된 품번 하나로만 이어진다
+            pump = [(r['type'], r['b']) for r in after['rels'] if r['a'] == 'HYD-03:pump-a' and r['type'] in ('USES_PART', 'CANDIDATE_PART')]
+            assert pump == [('USES_PART', 'P-PMP-SEAL')], pump
+            rtn = [(r['type'], r['b']) for r in after['rels'] if r['a'] == 'HYD-03:rtn-filter' and r['type'] == 'USES_PART']
+            assert rtn == [('USES_PART', 'P-RTN-FLT-25')], rtn   # 잇는 부품이 바뀐 수정 — 옛 관계는 지워지고 새 관계 하나
             if change == '남김':
                 assert props['HYD-07']['status'] == '불용(매각 예정)'
                 assert len(after['nodes']) == len(graph['nodes']) and len(after['rels']) == len(graph['rels'])
             else:
-                gone = 1 + len(D.TRUTH['assets']['HYD-07']['components']) + len(D.TRUTH['assets']['HYD-07']['sensors'])
+                units = sum(1 for (aid, _), _s in D.SERIALS.items() if aid == 'HYD-07')   # 그 설비 자리에 달린 실물도 함께 지운다
+                gone = 1 + len(D.TRUTH['assets']['HYD-07']['components']) + len(D.TRUTH['assets']['HYD-07']['sensors']) + units
                 assert 'HYD-07' not in props and len(graph['nodes']) - len(after['nodes']) == gone
             for running in (False, True):
                 fill(folder, change, running)

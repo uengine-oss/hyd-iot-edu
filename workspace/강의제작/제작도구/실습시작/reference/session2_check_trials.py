@@ -21,7 +21,7 @@ LABS = {'통합반': ROOT/'workspace/강의제작/산출물/통합반/실습/02�
 OUT = HERE/'session2_검사기_고의손상.json'
 
 
-BRANCH_DIRS = {'A': '', 'B': '갈래B', 'C': '갈래C', 'ㄴ': '갈래ㄴ', 'ㄷ': '갈래ㄷ'}   # build_labs.BRANCH_DIRS와 같은 자리
+BRANCH_DIRS = {'A': '', 'B': '갈래B', 'C': '갈래C', 'D': '갈래D', 'ㄴ': '갈래ㄴ', 'ㄷ': '갈래ㄷ'}   # build_labs.BRANCH_DIRS와 같은 자리
 
 
 def load(course, branch='A'):
@@ -60,6 +60,7 @@ def trials():
     noop = lambda s, g: None
     add('통합반', '원본 A', noop, True, ['구조 검사 통과', 'MONITORED_BY: Asset → Sensor 4개', 'Component를 거치지 않고 Asset에 바로 붙은 Sensor 4개(MONITORED_BY)'])
     add('통합반', '원본 B(SAME_ITEM_AS)', noop, True, ['구조 검사 통과', 'SAME_ITEM_AS: Part → Part 1개'], branch='B')
+    add('통합반', '원본 D(실물 · 확인 필요 후보)', noop, True, ['구조 검사 통과', 'INSTALLED_UNIT: Component → Unit 8개', 'CANDIDATE_PART: Component → Part 3개'], branch='D')
     add('실전반', '원본 A', noop, True, ['구조 검사 통과', 'SUPPLIES: Supplier → Part 21개'])
     add('실전반', '원본 B(조건부 승인=비승인)', noop, True, ['구조 검사 통과'], branch='B')
     add('실전반', '원본 ㄴ(PR-07 7.4 정보 표시)', noop, True, ['구조 검사 통과', 'SUPPLIES: Supplier → Part 21개'], branch='ㄴ')
@@ -77,6 +78,13 @@ def trials():
     add('실전반', '10 납기 소수', lambda s, g: rel(g, 'SUPPLIES', 'supplier:A정밀', 'P-ACC-BLD')['props'].update(lead_days=2.5), False, ['lead_days=2.5'])
     add('통합반', '11 빈 그래프', lambda s, g: (g['nodes'].clear(), g['rels'].clear()), False, ['노드 또는 관계가 비어'])
     add('통합반', '12 스키마 형식 다름', lambda s, g: s['relations'].pop('HAS_COMPONENT'), False, ['스키마에 없는 관계 HAS_COMPONENT'])
+    # 새 칸(카디널리티 — 2026-11-12 보강): 적은 수를 넘는 연결과 모르는 꼴을 대상과 함께 짚는다
+    add('통합반', '23 카디널리티 어긋남(센서 하나에 물리량 둘)', lambda s, g: g['rels'].append({'type': 'OBSERVES', 'a': 'HYD-01:TS1', 'b': 'quantity:dp', 'props': {}}), False,
+        ['OBSERVES 카디널리티 N:1 어긋남', 'HYD-01:TS1 2개'])
+    add('통합반', '24 카디널리티 꼴 모름', lambda s, g: s['relations']['HAS_COMPONENT'].update(cardinality='여럿'), False, ['HAS_COMPONENT의 cardinality 「여럿」'])
+    add('통합반', '25 확정 교체 부품 둘(D — USES_PART N:1)', lambda s, g: g['rels'].append({'type': 'USES_PART', 'a': 'HYD-03:fan', 'b': 'P-BRG-6205', 'props': {}}), False,
+        ['USES_PART 카디널리티 N:1 어긋남'], branch='D')
+    add('통합반', '26 확인 필요 후보 여럿은 통과(D — CANDIDATE_PART N:M)', noop, True, ['구조 검사 통과'], ['CANDIDATE_PART 카디널리티'], branch='D')
 
     # 리허설 2: 구성요소를 못 찾은 센서를 조용히 설비에 붙인 모델 — 구조는 통과하지만 분포 정보로 드러난다
     def fallback(s, g):
@@ -90,7 +98,7 @@ def trials():
     def reverse_fallback(s, g):
         fallback(s, g)
         spec = s['relations'].pop('MONITORED_BY')
-        s['relations']['ATTACHED_TO'] = {**spec, 'from': 'Sensor', 'to': spec['from']}
+        s['relations']['ATTACHED_TO'] = {**spec, 'from': 'Sensor', 'to': spec['from'], 'cardinality': ':'.join(reversed(spec['cardinality'].split(':')))}   # 방향을 뒤집으면 카디널리티도 뒤집힌다
         for r in g['rels']:
             if r['type'] == 'MONITORED_BY':
                 r.update(type='ATTACHED_TO', a=r['b'], b=r['a'])
@@ -132,6 +140,12 @@ def trials():
     return T
 
 
+def filled(folder):
+    """이 시험은 schema · graph의 구조를 본다 — 받은 빈 틀의 결정 지점 줄(비어 있으면 검사가 짚음)을 채운 사본에서 돌린다. 빈 결정은 파일 시험 F0이 본다."""
+    path = folder / ('app/features/decisions.csv' if (folder / 'run.py').is_file() else '결과/정한_것.csv')
+    path.write_text('# 제공 빈 틀' + '\n' + '지점,고른_것,근거,바뀌는_답' + '\n' + '시점,하나,자료/a.csv:3,바뀜' + '\n', encoding='utf-8')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--course', choices=list(LABS))
@@ -143,6 +157,7 @@ def main():
         tmp = Path(t)
         for course, lab in labs.items():
             shutil.copytree(lab, tmp/course)
+            filled(tmp/course)
         for course, name, branch, fn, ok, want, absent in trials():
             if course not in labs:
                 continue
@@ -164,7 +179,8 @@ def main():
             ('F3 정한 것 근거 꼴', lambda f: (f/'결과/정한_것.csv').write_text(chosen_head + '시점,하나,원문 보고 정함,바뀜\n', encoding='utf-8'), ['근거에 파일:줄이 없습니다']),
             ('F4 정한 것 빈 칸', lambda f: (f/'결과/정한_것.csv').write_text(chosen_head + '시점,,자료/a.csv:3,\n', encoding='utf-8'), ['빈 칸 고른_것, 바뀌는_답']),
             ('F5 정한 것 열 이름', lambda f: (f/'결과/정한_것.csv').write_text('지점,고른 것,근거,바뀌는 답\n', encoding='utf-8'), ['열 이름이']),
-            ('F0 손대지 않음(통과)', lambda f: None, [])]
+            ('F0 받은 그대로(결정 지점 줄이 비어 있어 확인 필요)', lambda f: None, ['빈 칸 고른_것, 근거, 바뀌는_답']),
+            ('F6 결정을 채움(통과)', lambda f: (f/'결과/정한_것.csv').write_text(chosen_head + '시점,하나,자료/a.csv:3,바뀜\n', encoding='utf-8'), [])]
         for course in labs:
             for which, src in [('실습3', LABS[course]), ('실습4', labs4[course])]:
                 for name, fn, want in file_trials:

@@ -2,11 +2,11 @@ from pathlib import Path
 import sys
 import hashlib as _h
 _PROVIDED = {
- "app/ui/render.py": "907e551b102d445518b4118709135b231f489299c8eab1112b70af8462730a8e",
- "app/utils/actions.py": "023f67ade532f4fca19e9ca35359aa8b03562095c7b4aeaa2cb1eb9ec2f93e74",
+ "app/ui/render.py": "f2a80ab6f2d359d26b9610dadab032638decd2496da7a9aac143a1a704320c64",
+ "app/utils/actions.py": "cb6d564ab395397352928192654cc01bd2bc1f77173ebeeac776c8bbd2f33443",
  "app/utils/results.py": "1c5b0596745e9ac1e9b7f06d84c7463d99720597edcf46801d32a51e640ae86b",
  "app/utils/supply.py": "78f34b1251971e2593f895ac1bf66e017866d00756e34ace6a6dd6fa08392de7",
- "run.py": "700d5805b32e7c0318247812c16e19ad7e641edf35305e892d8aa9268c56cce6"
+ "run.py": "a2be7676a114229a2f866a562d53df8f281f5acba64e724816df9cb0a78f1878"
 }
 def provided_errors(root):
     out = []
@@ -117,6 +117,23 @@ try:
         for k,v in props.items():
             if k in pspec:check_value(f'{t} {a}→{b}',k,v,pspec[k])
             elif k!='id':warnings.append(f'{t}에 정의되지 않은 속성 {k}')
+    # 카디널리티(시작 쪽 수:끝 쪽 수) — 「1」 쪽은 많아야 하나. 그래프의 실제 연결 수가 적은 수를 넘으면 그 대상을 짚는다.
+    ONE={'1','0..1'};MANY={'N','M','0..N','1..N','*'}
+    out_n={};in_n={}
+    for r in rels:
+        t=r.get('type');a=r.get('a');b=r.get('b')
+        if t in relations and a in labels_by_id and b in labels_by_id:
+            out_n.setdefault((t,a),set()).add(b);in_n.setdefault((t,b),set()).add(a)
+    for t,spec in relations.items():
+        card=spec.get('cardinality') if isinstance(spec,dict) else None
+        if card in (None,''):continue
+        sides=str(card).replace(' ','').split(':')
+        if len(sides)!=2 or not all(x in ONE|MANY for x in sides):
+            errors.append(f'schema.json {t}의 cardinality 「{card}」: 1:1 · 1:N · N:1 · N:M 꼴로 씁니다.');continue
+        for side,count,word in [(sides[1],out_n,'시작 하나에 끝이'),(sides[0],in_n,'끝 하나에 시작이')]:
+            if side not in ONE:continue
+            over=sorted((x,len(v)) for (tt,x),v in count.items() if tt==t and len(v)>1)
+            if over:errors.append(f'{t} 카디널리티 {card} 어긋남: {word} 많아야 하나인데 둘 이상인 대상 {len(over)}개 — '+', '.join(f'{x} {n}개' for x,n in over[:5])+(' …' if len(over)>5 else ''))
     NEED={'approved':'boolean','price_manwon':'number','defect_rate':'number','lead_days':'integer','quote_date':'string'}
     sspec=relations.get('SUPPLIES')
     if not isinstance(sspec,dict):errors.append('schema.json relations에 공급 조건 관계 SUPPLIES가 없습니다.')
