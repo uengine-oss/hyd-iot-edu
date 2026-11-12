@@ -34,7 +34,7 @@ GRAPH = {'css': '#pTs1', 'anchor': 'center', 'dx': 110}
 # 단계마다 ▸ 차례대로 하나씩. 목록 안의 목록은 한 ▸에서 잇달아 하는 조작이다(둘째부터는 앞 조작 바로 뒤).
 OPS = {
     2: [P('main span', exact='설비'), P('main span', exact='열린 사건'), P('main span', exact='지식 항목'),
-        P('main span', exact='시간 배율'), P('#openCount'), P('#healthDots'), P('#shellMe'), P('#shellBell')],
+        P('main span', exact='시간 배율'), P('#openCount'), P('#healthDots'), P('#shellMe'), P('#shellBell', anchor='center', dx=4, dy=6)],
     3: [P('main text', exact='현장 설비'), P('main text', exact='관제 · 데이터'), P('main text', exact='인공지능'),
         P('main text', exact='고장 유형 · 냉각 상실'), P('main text', exact='승인된 조치 → 검증 → 설비'),
         P('.rail .navgroup', exact='작업', anchor='after', dy=-7), P('.rail .navgroup', exact='시스템', anchor='after', dy=-7)],
@@ -82,6 +82,8 @@ OPS = {
 #  · 「이 카드 숫자가」에서 화면이 버튼 쪽으로 내려가 숫자가 안 보임(3~4구간 t4-04-09) — 숫자를 다시 짚어 본문이 말없이 올라오게
 #  · 두 카드의 승인 역할을 말하는데 커서가 한 곳(5구간 t4-05-10)
 #  · 메뉴 제목(설비 · 판단 · 인공지능 설정 …)을 말하는데 그 제목이 메뉴 밖(6~7구간 t4-06-01 · t4-07-01) — 메뉴 제목을 말하는 모든 자리에 건다
+#  · 종 그림 옆 빈 자리를 짚음(2구간 t4-02-06 — 그림 단추는 가운데를 짚는다), 길 위 MQTT · DMZ와 메뉴 제목 「설비」를 부르는데 커서가 그 위에 없음(3구간 t4-03-02 · t4-03-05)
+#  · 맺음에서 설비 → AI → 승인 → 설비 흐름을 부르는데 커서가 인공지능 마디에만 있음(10구간 t4-10-03)
 #  · 「가운데 운전 모드」에서 커서가 아래 안내 글(t4-07-03), 생산 · 정비 · 구매를 말하는데 구매 칸이 화면 밖(t4-07-08 — 「밑으로 내려 보시면」에서 실제로 내리고 칸마다)
 ENT = '#view-process h3, #view-process strong, #view-process b'
 
@@ -93,7 +95,10 @@ def GROUP(t, top=None):
 
 EXTRA = {
     (3, '밑에 이 그림은'): P('#view-main svg.m-hero-svg', anchor='center'),
-    (4, '이 카드 숫자가'): V('scenario', 'span.v', nth=0, anchor='center', dx=18, dy=6),
+    (3, 'MQTT랑'): P('main text', exact='MQTT'),
+    (3, 'DMZ를'): P('main text', exact='DMZ'),
+    (3, '설비 이렇게'): GROUP('설비'),
+    (4, '이 숫자들이 시간에'): V('scenario', 'span.v', nth=0, anchor='center', dx=18, dy=6),
     (5, '지식 아래 지식 지도'): GROUP('지식'),
     (5, '팬 최대 운전은'): V('skills', 'span.sub', nth=0),
     (5, '쿨러 핀 세척은'): V('skills', 'span.sub', contains='(근본 조치)', nth=0),
@@ -106,6 +111,9 @@ EXTRA = {
     (8, '작업 아래, 내 작업함'): GROUP('작업'),
     (9, '성과 아래 성과 지표'): GROUP('성과'),
     (9, '마지막 시스템 아래에는'): GROUP('시스템'),
+    (10, '설비에서 값이'): P('main text', exact='현장 설비'),
+    (10, 'AI가 지식을'): P('main text', exact='인공지능'),
+    (10, '사람이 승인하면'): P('main text', exact='승인된 조치 → 검증 → 설비'),
 }
 
 GAP_IN, GAP_PAUSE, GAP_RESULT, GAP_SEG = 0.6, 1.3, 2.0, 2.3
