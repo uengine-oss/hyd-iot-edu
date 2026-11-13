@@ -172,18 +172,22 @@
     const open = new Set([...S.el.querySelectorAll('details[open] > summary')].map(x => x.textContent.trim()));      // 다시 그려도 펼친 「자세히」는 그대로 둔다
     S.el.innerHTML = `<p class="page-lead">같은 입력으로 에이전트 둘의 판단 단계를 모의해, 원인과 1순위 조치, 도구 호출이 어떻게 다른지 나란히 봅니다.</p>` +
       `<div class="cmp rd-io"><div class="rd-in">${formPane()}</div><div class="rd-out"><div class="cmp-result" aria-live="polite">${S.busy
-        ? hydLive.waitHtml('시험 실행 중', { since: S.busySince, hint: '원천을 읽어 입력을 고정하고, 에이전트 A와 B의 판단 단계를 차례로 모의하는 중입니다. 서버가 둘 다 끝낸 뒤 결과를 한 번에 줍니다.' }) : resultView(S.result)}</div>${S.opts && S.opts.agents.length ? historyPane() : ''}</div></div>`;
+        ? '<div data-cmp-track></div>' : resultView(S.result)}</div>${S.opts && S.opts.agents.length ? historyPane() : ''}</div></div>`;
     S.el.querySelectorAll('details > summary').forEach(x => { if (open.has(x.textContent.trim())) x.parentElement.open = true; });
+    if (S.busy && S.track) S.track.mount(S.el.querySelector('[data-cmp-track]'));      // 다시 그려도 같은 진행 목록이 새 자리로 옮겨 간다
   }
 
   async function runTrial() {
     if (!S.form.scenario) { S.error = '시나리오를 고르세요.'; render(); return; }      // 고르지 않은 시나리오로 시험하지 않는다
-    S.busy = true; S.busySince = new Date().toISOString(); S.error = null; render();
+    // 서버가 「입력 고정 → 에이전트 A 시험 → 에이전트 B 시험 → 두 결과 비교」를 그 일이 시작 · 끝날 때 진행 기록에 적는다(hydLive.track 이 읽어 채운다)
+    S.track = hydLive.track({ text: '시험 실행 중', hint: '원천을 읽어 입력을 고정하고, 에이전트 A와 B의 판단 단계를 차례로 모의합니다. 비교 결과는 모두 끝난 뒤 보입니다.' });
+    S.busy = true; S.error = null; render();
     try {
-      S.result = await postJ(api('/api/agent-trials/run'), { scenario: S.form.scenario, reuse_latest: S.form.input === 'latest',
+      S.result = await postJ(api('/api/agent-trials/run'), { request_id: S.track.id, scenario: S.form.scenario, reuse_latest: S.form.input === 'latest',
         a: { agent: S.form.a }, b: { agent: S.form.b, variant: { without_tools: S.dropTools, without_skills: S.dropSkills } } });
       S.history = null;
     } catch (e) { S.error = '시험을 실행하지 못했습니다: ' + e.message; S.result = null; }
+    S.track.stop(); S.track = null;
     S.busy = false; render();
   }
 

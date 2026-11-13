@@ -20,6 +20,9 @@
   const modelText = m => !m || m === course().model ? '수업 모델' : m;
   const api = path => API.process + path;
   const del = url => requestJ(url, { method: 'DELETE' });
+  // 누가 했나 = 이 PC의 담당자 id. 에이전트 지우기 · 되돌리기 · 단계 배정은 서버가 「누가」를 요구한다(열린 단계의 담당이 바뀐 기록에 남는다 —
+  // inbox.actor_or_400, 비면 400). 담당자를 못 읽었으면 다른 값으로 대신하지 않고 까닭과 함께 멈춘다(act 가 그 까닭을 띄운다)
+  function me() { const id = window.hydInbox?.me?.()?.id; if (!id) throw new Error('담당자 정보를 읽지 못해 보낼 수 없습니다. 화면을 새로 고친 뒤 다시 해 주세요.'); return id; }
   const mineChip = o => UI.chipText(o === 'user' ? '내가 만든' : '기본', 'neutral');      // 색은 상태에만 쓴다 — 기본 / 내가 만든은 글로 가른다
   // 키-값 · 이름표 붙은 묶음(기준 4절). 값이 없는 줄은 그리지 않는다. 오류 · 읽는 중 · 빈 상태는 ui.js 의 부품을 쓴다
   const errBox = (what, why) => UI.errorBlock(what, why, { retry: true, cls: 'compact' });      // [다시 시도]는 onClick 의 data-retry 가 받는다
@@ -332,7 +335,7 @@
   async function setMap(sel) {
     const [definition_id, activity_id] = sel.dataset.map.split('|');
     try {
-      if (sel.value) await postJ(api('/api/agent-assignments'), { definition_id, activity_id, agent_id: sel.value }, 'PUT');
+      if (sel.value) await postJ(api('/api/agent-assignments'), { definition_id, activity_id, agent_id: sel.value, by: me() }, 'PUT');
       else await del(api(`/api/agent-assignments/${encodeURIComponent(definition_id)}/${encodeURIComponent(activity_id)}`));
       UI.toast(sel.value ? '담당을 바꿨습니다. 다음에 열리는 단계부터 적용됩니다.' : '기본 담당으로 되돌렸습니다.', { tone: 'ok' });
     } catch (e) { UI.toast(reason(e), { tone: 'neg', timeout: 8000 }); }
@@ -358,7 +361,7 @@
   }
   async function deleteAgent(d) {
     if (!await UI.confirm({ title: `'${d.name}'${window.hydWords.josa(d.name, '을/를')} 지울까요?`, body: '단계 배정도 함께 지워지고, 열려 있는 그 에이전트의 단계는 기본 담당으로 돌아갑니다.', ok: '지우기', danger: true })) return;
-    const out = await act(() => del(api('/api/agents/' + encodeURIComponent(d.id))), o => `지웠습니다.${o.returned_tasks.length ? ` 열려 있던 단계 ${o.returned_tasks.length}건은 기본 담당으로 돌아갔습니다.` : ''}`);
+    const out = await act(() => del(api('/api/agents/' + encodeURIComponent(d.id) + '?by=' + encodeURIComponent(me()))), o => `지웠습니다.${o.returned_tasks.length ? ` 열려 있던 단계 ${o.returned_tasks.length}건은 기본 담당으로 돌아갔습니다.` : ''}`);
     if (out) { st.pick.agents = null; await load(); }
   }
   async function deleteSkill(s) {
@@ -368,7 +371,7 @@
   }
   async function resetAll() {
     if (!await UI.confirm({ title: '기준으로 되돌릴까요?', body: '내가 만든 에이전트와 스킬, 스킬 붙이기, 역할, 단계 배정을 모두 지웁니다. 흐름이 쓰는 역할은 남깁니다. 기본 에이전트와 기본 역할은 그대로입니다.', ok: '되돌리기', danger: true })) return;
-    const out = await act(() => postJ(api('/api/agents/reset'), {}),
+    const out = await act(() => postJ(api('/api/agents/reset'), { by: me() }),
       o => {      // 지운 것만 문장으로(0인 것은 뺀다)
         const removed = [['에이전트', o.agents, '개'], ['스킬', o.skills, '개'], ['스킬 붙이기', o.attachments, '건'], ['역할', o.roles, '개'], ['단계 배정', o.assignments, '건']]
           .filter(([, n]) => n > 0).map(([name, n, unit]) => `${name} ${n}${unit}`);

@@ -9,6 +9,8 @@
   GET    /api/eval/worker-candidates      채점할 수 있는 지난 처리 건 (에이전트 task 출력 + 제출된 판단이 있는 것)
   POST   /api/eval/runs                   {path: decide|evaluate, items?, repeats?, by, note?}  정답표 항목을 agent 로 N회 판단해 채점
                                           {path: worker, instances: [{instance, item?}], by, note?}  지난 처리 건의 실제 워커 판단을 채점
+                                          request_id(화면이 만든 UUID)를 실으면 도는 동안 GET /api/progress/{request_id} 로 진행을 읽는다:
+                                          정답표 읽기 → 지식 상태 읽기 → 항목(또는 처리 건)마다 하나씩 → 채점 기록 저장 (progress.py)
   GET    /api/eval/runs?limit=(1~100) · /api/eval/runs/{id} · /api/eval/compare?before=&after=
 채점은 읽기 전용이다 — agent decide · evaluate 는 제출하지 않고, 처리 건 · 설비 명령 · 기준 데이터를 만들거나 바꾸지 않는다.
 """
@@ -25,6 +27,7 @@ from fastapi import HTTPException
 from pydantic import BaseModel, Field
 
 from . import judgment_eval as je
+from . import progress as progress_log
 
 log = logging.getLogger('process.eval')
 MAX_WORKER_INSTANCES = 50          # 마이그레이션 30 의 repeats 상한과 같다
@@ -38,6 +41,7 @@ class RunReq(BaseModel):
     repeats: int = Field(1, ge=1, le=je.MAX_REPEATS)
     instances: list[dict] | None = None
     note: str | None = None
+    request_id: str | None = None
 
 
 class GoldenReq(BaseModel):
@@ -51,11 +55,11 @@ def _post(url: str, body: dict, timeout: float) -> dict:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             return json.loads(r.read())
     except urllib.error.HTTPError as e:
-        raw = e.read().decode(errors='replace')[:2000]
-        try:
+        raw = e.read().decode(errors='replace')
+        try:                               # 본문 전체를 읽은 뒤 사유 칸을 꺼낸다 — 앞에서 자르고 읽으면 긴 거절 본문이 JSON 으로 읽히지 않아 원문이 사유로 남는다
             detail = json.loads(raw).get('detail')
-        except ValueError:
-            detail = raw
+        except (ValueError, AttributeError):
+            detail = raw[:2000]
         e.reason_text = detail.get('reason') if isinstance(detail, dict) else str(detail)
         raise
     except urllib.error.URLError as e:
@@ -219,7 +223,16 @@ def register(app, *, driver_factory, store_factory, agent_url: str, book: dict, 
         return await run(lambda: candidates(limit_of(limit)))
 
     # ---------------------------------------------------------------- 채점 실행
-    def server_run(req: RunReq, golden: list[dict]) -> list[dict]:
+    SAVE_STEP = ('save', '채점 기록 저장')
+
+    def said(r: dict) -> str:
+        """항목 하나의 채점 결과 한 줄(진행 기록에 적는다)."""
+        if r['status'] in je.NOT_JUDGED:
+            return f"{r['score']}점 · 판단이 나오지 않음 — {r['reason'] or r['status']}"
+        mark = lambda key: '맞음' if r['checks'][key]['ok'] else '틀림'   # noqa: E731
+        return f"{r['score']}점 · 원인 {mark('cause')} · 1위 조치 {mark('top')}"
+
+    def server_run(req: RunReq, golden: list[dict], p) -> list[dict]:
         by_id = {it['id']: it for it in golden}
         wanted = req.items or list(by_id)
         if not wanted:
@@ -230,9 +243,20 @@ def register(app, *, driver_factory, store_factory, agent_url: str, book: dict, 
                 raise KeyError(i)
             items.append(by_id[i])
         judge = judges[req.path]
-        return [je.aggregate(it, [judge(it) for _ in range(req.repeats)], deterministic=req.path == 'decide') for it in items]
+        p.plan([(f'item:{n}', it['title']) for n, it in enumerate(items)] + [SAVE_STEP])
+        results = []
+        for n, it in enumerate(items):
+            p.start(f'item:{n}')
+            judged = []
+            for k in range(req.repeats):
+                judged.append(judge(it))
+                if req.repeats > 1:
+                    p.note(f'item:{n}', f'{k + 1}/{req.repeats}회 판단함')
+            results.append(je.aggregate(it, judged, deterministic=req.path == 'decide'))
+            p.done(f'item:{n}', f'항목 {n + 1}/{len(items)} 끝 · {said(results[-1])}')
+        return results
 
-    def worker_run(req: RunReq, golden: list[dict]) -> list[dict]:
+    def worker_run(req: RunReq, golden: list[dict], p) -> list[dict]:
         if not req.instances:
             raise ValueError('채점할 처리 건(instances)을 하나 이상 고르세요')
         if len(req.instances) > MAX_WORKER_INSTANCES:
@@ -240,7 +264,10 @@ def register(app, *, driver_factory, store_factory, agent_url: str, book: dict, 
         rt = runtime()
         by_id = {it['id']: it for it in golden}
         groups: dict[str, list] = {}
+        p.plan([(f'inst:{n}', f"처리 건 {spec.get('instance') if isinstance(spec, dict) else ''}".strip()) for n, spec in enumerate(req.instances)]
+               + [SAVE_STEP])
         for n, spec in enumerate(req.instances):
+            p.start(f'inst:{n}')
             pid = spec.get('instance') if isinstance(spec, dict) else None
             if not pid:
                 raise ValueError(f'instances[{n}].instance 가 필요합니다')
@@ -262,6 +289,8 @@ def register(app, *, driver_factory, store_factory, agent_url: str, book: dict, 
             groups.setdefault(item['id'], [item, [], []])
             groups[item['id']][1].append(judged)
             groups[item['id']][2].append({k: cand[k] for k in ('instance', 'name', 'status', 'started', 'decision_id', 'chosen_skill')})
+            p.done(f'inst:{n}', f"처리 건 {n + 1}/{len(req.instances)} 끝 · 정답표 「{item['title']}」와 견줄 판단을 읽음"
+                   + (f" — {judged['reason']}" if judged.get('reason') else ''), label=cand.get('name') or None)
         results = []
         for item, judged, cands in groups.values():
             r = je.aggregate(item, judged, deterministic=False)
@@ -276,16 +305,22 @@ def register(app, *, driver_factory, store_factory, agent_url: str, book: dict, 
         if not req.by.strip():
             raise HTTPException(400, '누가 실행했는지(by)가 필요합니다')
 
-        def work():
+        def work(p):
+            p.start('golden')
             golden = store().golden_list()
+            p.done('golden', f'항목 {len(golden)}개')
+            p.start('knowledge')
             state = knowledge()
-            results = worker_run(req, golden) if req.path == 'worker' else server_run(req, golden)
+            p.done('knowledge')
+            results = worker_run(req, golden, p) if req.path == 'worker' else server_run(req, golden, p)
+            p.start('save')
             rec = je.new_run(path=req.path, by=req.by, repeats=req.repeats if req.path != 'worker' else max(r['repeats'] for r in results),
                              knowledge=state, results=results, note=req.note)
             store().put(rec)
             audit('-', rec['by'], 'JUDGMENT_EVALUATED', {'run': rec['id'], 'path': rec['path'], 'score': rec['summary']['score'], 'items': rec['summary']['items']})
+            p.done('save', f"평균 {rec['summary']['score']}점 · 항목 {rec['summary']['items']}개")
             return {**rec, 'knowledge': je.public_knowledge(rec['knowledge'])}
-        return await run(work)
+        return await run(progress_log.tracked(req.request_id, 'eval_run', work, [('golden', '정답표 읽기'), ('knowledge', '지식 상태 읽기')]))
 
     @app.get('/api/eval/runs')
     async def list_runs(limit: int = 50):

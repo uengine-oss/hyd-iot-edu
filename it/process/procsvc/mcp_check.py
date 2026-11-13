@@ -43,6 +43,7 @@ from referencing import Registry
 from referencing.exceptions import NoSuchResource, Unresolvable
 
 from .mcp_secrets import is_reference_only
+from .progress import SILENT
 
 log = logging.getLogger("process.mcp_check")
 PROTOCOL_VERSION = "2025-06-18"
@@ -625,8 +626,19 @@ def portal_slot(wait: float):
         _SLOTS.release()
 
 
-def _with_session(spec: dict, timeout: float, work) -> dict:
-    """연결 → initialize → work(session, init) . 예외를 던지지 않고 status · error 로 답한다."""
+def check_steps(spec: dict) -> list[tuple[str, str]]:
+    """연결 검사의 실제 경계(진행 기록 progress 에 적는 단계). SSE 는 이벤트 스트림을 먼저 연다 — 그것이 「연결」이다.
+    streamable_http 는 따로 여는 연결이 없다: 첫 요청(initialize)이 연결이자 인사라 한 단계다."""
+    if spec.get("transport") == "sse":
+        return [("connect", "서버에 연결(이벤트 스트림 열기)"), ("initialize", "인사 주고받기(initialize)"), ("tools", "도구 목록 받기")]
+    return [("initialize", "서버에 연결해 인사 주고받기(initialize)"), ("tools", "도구 목록 받기")]
+
+
+def _with_session(spec: dict, timeout: float, work, progress=SILENT, clean=None) -> dict:
+    """연결 → initialize → work(session, init) . 예외를 던지지 않고 status · error 로 답한다.
+    progress: 진행 기록(check_steps 의 단계가 이미 적혀 있어야 한다 — mcp_registry.run_check 가 적는다). clean: 기록에 적을 글에서 비밀 값을
+    지우는 함수(오류 문구에 접속 헤더 값이 섞일 수 있다)."""
+    clean = clean or (lambda text: text)
     started = time.monotonic()
     out = {"status": "failed", "error": None, "error_kind": None, "server_info": None, "protocol_version": None,
            "checked_at": _now_z(), "elapsed_ms": 0, "transport": spec.get("transport")}
@@ -636,11 +648,16 @@ def _with_session(spec: dict, timeout: float, work) -> dict:
         if kind == "streamable_http":
             transport = _StreamableHttp(spec)
         elif kind == "sse":
+            progress.start("connect")
             transport = _Sse(spec, timeout)
+            progress.done("connect")
         else:
             raise CheckError("config", f"transport '{kind}' 는 연결할 수 없습니다 (가능: streamable_http · sse)")
         session = _Session(transport, timeout)
+        progress.start("initialize")
         init = _initialize(session)
+        info = init.get("server_info") or {}
+        progress.done("initialize", clean(" ".join(str(x) for x in (info.get("name"), info.get("version")) if x)))
         out.update(init)
         done = work(session)
         out.update(done)
@@ -648,10 +665,12 @@ def _with_session(spec: dict, timeout: float, work) -> dict:
             out["status"] = "ok"
     except CheckError as e:
         out.update(status="failed", error=e.message, error_kind=e.kind)
+        progress.fail_running(clean(e.message))
     except Exception as e:  # noqa: BLE001 — 분류 못 한 실패도 사유는 남긴다. 예외 글은 싣지 않는다(머리글 값 같은 비밀이 섞일 수 있다 — P3-17)
         log.warning("MCP connection to %s failed unexpectedly: %s", spec.get("url"), type(e).__name__)
         out.update(status="failed", error=f"연결 중 예상하지 못한 오류가 났습니다({type(e).__name__}) — 주소와 접속 헤더 값을 확인하고 다시 검사하세요",
                    error_kind="protocol")
+        progress.fail_running(out["error"])
     finally:
         if transport is not None:
             try:
@@ -662,9 +681,15 @@ def _with_session(spec: dict, timeout: float, work) -> dict:
     return out
 
 
-def check(spec: dict, timeout: float = DEFAULT_TIMEOUT) -> dict:
-    """정규화된 설정으로 실제 연결 → 도구 목록(이름 · 설명 · 입력 형식 · 읽기 전용 판정). 실패면 tools=[] 와 사유."""
-    out = _with_session(spec, _clamp(timeout), lambda session: {"tools": _list_tools(session)})
+def check(spec: dict, timeout: float = DEFAULT_TIMEOUT, *, progress=SILENT, clean=None) -> dict:
+    """정규화된 설정으로 실제 연결 → 도구 목록(이름 · 설명 · 입력 형식 · 읽기 전용 판정). 실패면 tools=[] 와 사유.
+    progress · clean: _with_session 과 같다(진행 기록에는 check_steps(spec) 의 단계가 적혀 있어야 한다)."""
+    def tools(session):
+        progress.start("tools")
+        found = _list_tools(session)
+        progress.done("tools", f"도구 {len(found)}개")
+        return {"tools": found}
+    out = _with_session(spec, _clamp(timeout), tools, progress, clean)
     out.setdefault("tools", [])
     return out
 

@@ -25,6 +25,7 @@ from datetime import datetime, timezone
 
 from fastapi import HTTPException
 
+from . import progress as progress_log
 from .agents_store import agent_settings, csv_list, run_servers
 
 SCENARIOS = [
@@ -176,6 +177,15 @@ def summary(t: dict) -> dict:
             "recommended": (r.get("recommended") or {}).get("sopId"), "calls": len(r.get("calls") or [])}
 
 
+def said(t: dict) -> str:
+    """시험 실행 하나의 결과 한 줄(진행 기록에 적는다): 누가 · 찾은 원인 · 1순위 조치 · 도구 호출 수."""
+    r = t.get("result") or {}
+    dx = (r.get("diagnosis") or {}).get("top") or {}
+    rec = r.get("recommended") or {}
+    return (f"{(t.get('setting') or {}).get('name') or t.get('agent_id')} — 원인 {dx.get('name') or dx.get('id') or '없음'} · "
+            f"1순위 조치 {rec.get('name') or rec.get('sopId') or '없음'} · 도구 호출 {len(r.get('calls') or [])}회")
+
+
 # ---------------------------------------------------------------- comparison (pure)
 def _sig(call: dict) -> str:
     return canonical([call.get("server"), call.get("tool"), call.get("args")])
@@ -317,19 +327,33 @@ class TrialService:
                "status": trial["status"], "fingerprint": trial["fingerprint"], "result": trial, "created_at": _now()}
         return self.store.save_trial(rec)
 
-    def run(self, body: dict) -> dict:
+    def run(self, body: dict, progress=progress_log.SILENT) -> dict:
+        """progress: 진행 기록 — 입력 스냅숏 준비 → 에이전트 A 시험 → (B 시험 → 두 결과 비교)를 그 일이 시작 · 끝날 때 적는다.
+        새 스냅숏은 비어 있고, 입력 값은 시험이 원천을 처음 읽을 때 스냅숏에 고정된다(_run_one 의 added) — 그래서 고정한 값의 수는 시험 단계에 적는다."""
         scenario = self._scenario(body.get("scenario"))
-        p = agent_profiles(self.rt)
         sides = [s for s in (body.get("a"), body.get("b")) if s]
         if not sides:
             raise ValueError("시험할 에이전트를 하나 이상 고르세요")
+        progress.plan([("input", "입력 스냅숏 준비")] + [(f"side:{i}", f"에이전트 {'AB'[i]} 시험") for i in range(len(sides))]
+                      + ([("compare", "두 결과 비교")] if len(sides) > 1 else []))
+        progress.start("input")
+        p = agent_profiles(self.rt)
         snap, reused = self._snapshot(scenario, body.get("snapshot"), bool(body.get("reuse_latest")))
-        trials = [self._run_one(scenario, snap, p["agents"], p["tenant_servers"], s) for s in sides]
+        progress.done("input", f"지난 시험의 입력을 다시 씀 · 고정된 값 {len(snap['entries'])}개" if reused
+                      else "새 입력 스냅숏을 만듦 — 시험이 원천에서 처음 읽는 값이 여기에 고정됩니다")
+        trials = []
+        for i, side in enumerate(sides):
+            progress.start(f"side:{i}")
+            held = len(snap["entries"])
+            trials.append(self._run_one(scenario, snap, p["agents"], p["tenant_servers"], side))
+            progress.done(f"side:{i}", f"{said(trials[-1])} · 이번에 고정한 입력 값 {len(snap['entries']) - held}개")
         out = {"scenario": scenario, "snapshot": {"id": snap["id"], "created_at": snap["created_at"], "reused": reused,
                                                   "entries": len(snap["entries"])},
                "a": trials[0], "b": trials[1] if len(trials) > 1 else None}
         if len(trials) > 1:
+            progress.start("compare")
             out["diff"] = compare(trials[0], trials[1])
+            progress.done("compare", "두 결과가 같음" if out["diff"]["same_result"] else "두 결과가 다름")
         return out
 
     def diff(self, a_id: str, b_id: str) -> dict:
@@ -364,7 +388,8 @@ def register(app, *, runtime_factory, evaluate=None):
 
     @app.post("/api/agent-trials/run")
     async def trial_run(body: dict):
-        return await run(lambda: service().run(body))
+        """request_id(화면이 만든 UUID)를 실으면 도는 동안 GET /api/progress/{request_id} 로 진행을 읽는다(progress.py)."""
+        return await run(progress_log.tracked(body.get("request_id"), "agent_trial", lambda p: service().run(body, p)))
 
     @app.get("/api/agent-trials")
     async def trial_list(asset: str | None = None, limit: int = 30):

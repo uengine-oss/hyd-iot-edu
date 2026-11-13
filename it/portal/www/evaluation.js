@@ -199,11 +199,12 @@
     const h = q('[data-r="cands"]'); if (h) h.innerHTML = renderCands();
   }
 
-  // 채점이 도는 동안: 단추는 「채점하는 중 · 걸린 시간」, 그 위 줄은 무엇을 기다리는지. 실행 칸이 다시 그려져도(항목 고르기 등) 같은 시각에서 이어 보인다
+  // 채점이 도는 동안: 단추는 「채점하는 중 · 걸린 시간」, 그 아래에 서버가 적는 진행(정답표 읽기 → 지식 상태 읽기 → 항목마다 결과 → 저장 — hydLive.track).
+  // 실행 칸이 다시 그려져도(항목 고르기 등) 같은 목록이 새 자리로 옮겨 가 이어 보인다
   function showRunWait() {
     const w = E.runWait, btn = q('[data-act="run"]'), m = q('[data-msg="run"]'); if (!w || !btn || !m) return;
     hydLive.busy(btn, '채점하는 중', w.since);
-    m.className = 'form-msg'; m.innerHTML = hydLive.waitHtml(w.text, { since: w.since, hint: w.hint });
+    m.className = 'form-msg'; w.track.mount(m);
   }
   async function runEval() {
     if (E.busy) return;
@@ -219,16 +220,18 @@
     }
     E.busy = true; E.busyWhy = '채점 중에는 할 수 없습니다. 채점이 끝난 뒤 다시 눌러 주세요.'; const btn = q('[data-act="run"]');
     const n = path === 'worker' ? body.instances.length : (body.items || E.golden).length * body.repeats;
-    // 서버는 판단 n회를 모두 끝낸 뒤 결과를 한 번에 준다(항목별 진행은 내보내지 않는다) — 그래서 걸린 시간과 무엇을 기다리는지만 보인다
-    E.runWait = { since: new Date().toISOString(), text: `판단 ${n}회를 정답표와 견주는 중`, hint: path === 'worker' ? '고른 지난 처리 건의 AI 판단을 정답표 항목과 견주는 중입니다. 서버가 모두 끝낸 뒤 결과를 한 번에 줍니다.'
-      : `판단 엔진에 ${n}번 묻는 중입니다(항목 ${n / body.repeats}개 × ${body.repeats}회). 서버가 모두 끝낸 뒤 결과를 한 번에 줍니다.` };
+    // 서버는 항목(또는 처리 건) 하나를 끝낼 때마다 진행 기록에 그 결과를 적는다 — 화면은 그것을 읽어 아래에 하나씩 채운다. 채점 결과 전체는 끝난 뒤 한 번에 온다
+    const since = new Date().toISOString();
+    E.runWait = { since, track: hydLive.track({ since, text: `판단 ${n}회를 정답표와 견주는 중`, hint: path === 'worker' ? '고른 지난 처리 건의 AI 판단을 정답표 항목과 차례로 견줍니다.'
+      : `판단 엔진에 ${n}번 묻습니다(항목 ${n / body.repeats}개 × ${body.repeats}회). 항목이 끝날 때마다 아래에 결과가 채워집니다.` }) };
+    body.request_id = E.runWait.track.id;
     E.runSaid = null; showRunWait();
     try {
       const run = await longJ(API.process + '/api/eval/runs', 'POST', body);
       E.sel = run.id; E.run = run; E.runSaid = [`채점 완료. 평균 ${run.summary.score}점입니다.`, false];
       await loadRuns(); renderDetail();
     } catch (e) { E.runSaid = [e.message, true]; }
-    finally { E.busy = false; E.runWait = null; renderRunForm(); if (E.runSaid) msg('run', E.runSaid[0], E.runSaid[1]); }      // 실행 칸을 다시 그려 단추를 원래대로 하고 결과 문장을 쓴다   // 채점 중에 실행 칸이 다시 그려졌어도 지금 단추를 켠다
+    finally { E.runWait.track.stop(); E.busy = false; E.runWait = null; renderRunForm(); if (E.runSaid) msg('run', E.runSaid[0], E.runSaid[1]); }      // 실행 칸을 다시 그려 단추를 원래대로 하고 결과 문장을 쓴다   // 채점 중에 실행 칸이 다시 그려졌어도 지금 단추를 켠다
   }
 
   /* ---------------------------------------------------------------- 3. 실행 기록 */

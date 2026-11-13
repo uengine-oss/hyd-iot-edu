@@ -34,7 +34,7 @@ import hashlib
 import json
 import re
 
-from . import mcp_check, mcp_secrets
+from . import mcp_check, mcp_secrets, progress as progress_log
 
 #: seed.sql 의 tenants.mcp 다섯 서버 — 워커 기본 허용 목록(settings.DEFAULT_ALLOWED_TOOLS)이 적는 서버와 같다.
 #: C2: 업무 MCP 를 보전용(enterprise-maint) · 구매용(enterprise-purchase)으로 나눈 두 서버도 기준이다(같은 읽기 전용 코드).
@@ -133,8 +133,11 @@ def _check_limit(raw) -> float:
     return value
 
 
-def run_check(entry: dict, timeout: float, secrets: dict | None = None, *, student: bool = True) -> dict:
+def run_check(entry: dict, timeout: float, secrets: dict | None = None, *, student: bool = True, progress=progress_log.SILENT,
+              then: tuple = ()) -> dict:
     """실제 연결 검사(기존 검사기) → 저장할 기록 모양. 입력 형식(input_schema)은 싣지 않는다(도구 지도가 그때그때 읽는다).
+    progress: 진행 기록 — 연결하기 직전에 검사의 단계(mcp_check.check_steps)와 그 뒤에 부르는 쪽이 할 단계(then — 저장)를 적고,
+    검사가 단계마다 시작 · 끝 · 실패를 적는다. 비밀 값이 없어 연결하지 않은 검사는 단계를 적지 않는다(하지 않은 일을 적지 않는다).
     G2: ${SECRET:KEY} 는 검사 직전에 secrets 로 채운다(해시는 채우기 전 설정). 값이 없으면 연결하지 않고 사유와 함께 실패.
     채운 값은 검사 결과(오류 문구 · stderr 꼬리 · 도구 설명)에서 지운다 — 기록 · 응답 · 감사로 새지 않게.
     student: 기준 다섯 서버만 False(학생 서버는 루프백 주소도 거절 — mcp_check.address_problem)."""
@@ -145,9 +148,11 @@ def run_check(entry: dict, timeout: float, secrets: dict | None = None, *, stude
                   "error_kind": "secret", "tools": [], "elapsed_ms": 0, "checked_at": mcp_check._now_z(), "transport": spec.get("transport")}
     else:
         used = [secrets[k] for k in mcp_secrets.references(spec)] if secrets else []
+        progress.plan([*mcp_check.check_steps(resolved), *then])
         try:
             with mcp_check.portal_slot(timeout):
-                result = mcp_secrets.redact(mcp_check.check(resolved, timeout), used)
+                result = mcp_secrets.redact(mcp_check.check(resolved, timeout, progress=progress,
+                                                            clean=lambda text: mcp_secrets.redact(text, used)), used)
         except mcp_check.CheckError as e:          # 자리 없음(busy) — 서버 탓이 아니니 검사 기록으로 남기지 않는다
             raise RegistryError(503, e.message) from e
     tools = [{"name": t["name"], "title": t.get("title"), "description": t.get("description") or "", "annotations": t.get("annotations") or {},
@@ -378,10 +383,23 @@ def warnings_of(entry: dict) -> list[str]:
             "(설정은 내보내기 · 도구 지도에 실립니다)"] if found else []
 
 
-def dry_check(store, tenant_id: str, body: dict) -> dict:
+SAVE_STEP = ("save", "검사 결과 저장")
+
+
+def _saved(progress, record: dict, write) -> None:
+    """검사 뒤의 저장. 연결한 검사면 진행 기록의 저장 단계로 적는다(비밀 값이 없어 연결하지 않은 검사는 run_check 가 단계를 적지 않았다)."""
+    if record.get("error_kind") == "secret":
+        write()
+        return
+    progress.start(SAVE_STEP[0])
+    write()
+    progress.done(SAVE_STEP[0])
+
+
+def dry_check(store, tenant_id: str, body: dict, *, progress=progress_log.SILENT) -> dict:
     """등록 전 검사: 저장 없이 형식 → 연결 → 도구 판정."""
     entry = entry_from_body(body)
-    record = run_check(entry, _check_limit(body.get("timeout")), secrets_of(store, tenant_id, entry))
+    record = run_check(entry, _check_limit(body.get("timeout")), secrets_of(store, tenant_id, entry), progress=progress)
     return {"check": record, "config": mcp_check.masked(mcp_check.normalize(entry)), "gate": gate_of(record) if record["status"] == "ok" else None,
             "warnings": warnings_of(entry)}
 
@@ -391,24 +409,27 @@ def _require_pass(record: dict, verb: str) -> None:
         raise RegistryError(422, f"연결 검사 실패로 {verb} 않았습니다 — {record.get('error') or '사유 없음'}", check=record)
 
 
-def register(store, tenant_id: str, body: dict, by: str) -> dict:
+def register(store, tenant_id: str, body: dict, by: str, *, progress=progress_log.SILENT) -> dict:
     name = _validate_name((body or {}).get("name"))
     if name in BASE_SERVERS:
         raise RegistryError(409, f"'{name}' 는 기준(기본 제공) 서버 이름입니다 — 다른 이름을 쓰세요")
     if name in store.servers(tenant_id):
         raise RegistryError(409, f"'{name}' 서버가 이미 있습니다 — 고치기를 쓰거나 다른 이름을 쓰세요")
     entry = entry_from_body(body)
-    record = run_check(entry, _check_limit(body.get("timeout")), secrets_of(store, tenant_id, entry))
+    record = run_check(entry, _check_limit(body.get("timeout")), secrets_of(store, tenant_id, entry), progress=progress, then=(SAVE_STEP,))
     _require_pass(record, "등록하지")
     now = _now()
     entry[META_KEY] = {"origin": "user", "created_at": now, "updated_at": now, "by": by, "gate": gate_of(record)}
-    if not store.insert_server(tenant_id, name, entry):
-        raise RegistryError(409, f"'{name}' 서버가 이미 있습니다")
-    store.save_check(tenant_id, name, record, by)
+
+    def write():
+        if not store.insert_server(tenant_id, name, entry):
+            raise RegistryError(409, f"'{name}' 서버가 이미 있습니다")
+        store.save_check(tenant_id, name, record, by)
+    _saved(progress, record, write)
     return {"name": name, "check": record, "gate": entry[META_KEY]["gate"], "warnings": warnings_of(entry)}
 
 
-def update(store, tenant_id: str, name: str, body: dict, by: str) -> dict:
+def update(store, tenant_id: str, name: str, body: dict, by: str, *, progress=progress_log.SILENT) -> dict:
     if name in BASE_SERVERS:
         raise RegistryError(403, f"'{name}' 는 기준(기본 제공) 서버라 고칠 수 없습니다 — 새 이름으로 등록해 쓰세요")
     servers = store.servers(tenant_id)
@@ -416,7 +437,7 @@ def update(store, tenant_id: str, name: str, body: dict, by: str) -> dict:
     if old is None:
         raise RegistryError(404, f"MCP 서버 '{name}' 가 없습니다")
     entry = entry_from_body(body, old if isinstance(old, dict) else {})
-    record = run_check(entry, _check_limit(body.get("timeout")), secrets_of(store, tenant_id, entry))
+    record = run_check(entry, _check_limit(body.get("timeout")), secrets_of(store, tenant_id, entry), progress=progress, then=(SAVE_STEP,))
     _require_pass(record, "고치지")
     old_meta = old.get(META_KEY) if isinstance(old, dict) and isinstance(old.get(META_KEY), dict) else {}
     confirmed = confirmed_of(old)                                      # 강사 확인은 도구 이름에 붙는다 — 고쳐도 남고, 도장은 새 검사로 다시 계산
@@ -425,9 +446,12 @@ def update(store, tenant_id: str, name: str, body: dict, by: str) -> dict:
                        "by": by, "gate": gate_of(record, confirmed)}
     if confirmed:
         entry[META_KEY]["read_confirmed"] = confirmed
-    if not store.replace_server(tenant_id, name, entry):
-        raise RegistryError(404, f"MCP 서버 '{name}' 가 없습니다")
-    store.save_check(tenant_id, name, record, by)
+
+    def write():
+        if not store.replace_server(tenant_id, name, entry):
+            raise RegistryError(404, f"MCP 서버 '{name}' 가 없습니다")
+        store.save_check(tenant_id, name, record, by)
+    _saved(progress, record, write)
     return {"name": name, "check": record, "gate": entry[META_KEY]["gate"], "warnings": warnings_of(entry)}
 
 
@@ -446,24 +470,28 @@ def remove(store, repo, tenant_id: str, name: str, *, force: bool = False) -> di
     return {"name": name, "deleted": True, "agents_still_naming_it": users}
 
 
-def check_saved(store, tenant_id: str, name: str, *, timeout=None, by: str) -> dict:
+def check_saved(store, tenant_id: str, name: str, *, timeout=None, by: str, progress=progress_log.SILENT) -> dict:
     """등록된 서버 검사: 기록을 남기고, 학생 서버면 워커 도장(hyd.gate)을 고친다. 기준 서버 설정(tenants.mcp)은 바꾸지 않는다."""
     entry = store.servers(tenant_id).get(name)
     if entry is None:
         raise RegistryError(404, f"MCP 서버 '{name}' 가 없습니다")
     try:
-        record = run_check(entry, _check_limit(timeout), secrets_of(store, tenant_id, entry), student=origin_of(name, entry) != "seed")
+        record = run_check(entry, _check_limit(timeout), secrets_of(store, tenant_id, entry), student=origin_of(name, entry) != "seed",
+                           progress=progress, then=(SAVE_STEP,))
     except ValueError as e:
         raise RegistryError(422, f"MCP 서버 '{name}' 설정 오류 — {e}")
-    store.save_check(tenant_id, name, record, by)
-    if origin_of(name, entry) != "seed":
-        meta = dict(entry.get(META_KEY) or {}) if isinstance(entry.get(META_KEY), dict) else {}
-        meta.setdefault("origin", "external")
-        if record["status"] == "ok":
-            meta["gate"] = gate_of(record, confirmed_of(entry))
-        else:
-            meta.pop("gate", None)                        # 실패한 서버는 워커가 연결하지 않는다
-        store.set_meta(tenant_id, name, meta)
+
+    def write():
+        store.save_check(tenant_id, name, record, by)
+        if origin_of(name, entry) != "seed":
+            meta = dict(entry.get(META_KEY) or {}) if isinstance(entry.get(META_KEY), dict) else {}
+            meta.setdefault("origin", "external")
+            if record["status"] == "ok":
+                meta["gate"] = gate_of(record, confirmed_of(entry))
+            else:
+                meta.pop("gate", None)                        # 실패한 서버는 워커가 연결하지 않는다
+            store.set_meta(tenant_id, name, meta)
+    _saved(progress, record, write)
     return {"name": name, "check": record, "state": check_state(name, entry, record)}
 
 
@@ -587,10 +615,13 @@ def mount(app, *, runtime_factory, audit):
         rt = runtime()
         return await run(lambda: selectable(store_for(rt.repo), rt.tenant_id))
 
+    def tracked(body, kind: str, work):
+        return progress_log.tracked((body or {}).get("request_id"), kind, work)
+
     @app.post("/api/mcp/check")
     async def dry_check_route(body: dict | None = None):
         rt = runtime()
-        out = await run(lambda: dry_check(store_for(rt.repo), rt.tenant_id, body or {}))
+        out = await run(tracked(body, "mcp_check", lambda p: dry_check(store_for(rt.repo), rt.tenant_id, body or {}, progress=p)))
         return out
 
     @app.post("/api/mcp/servers", status_code=201)
@@ -598,30 +629,30 @@ def mount(app, *, runtime_factory, audit):
         rt = runtime()
         by = by_of(body)
 
-        def work():
+        def work(p):
             try:
-                out = register(store_for(rt.repo), rt.tenant_id, body or {}, by)
+                out = register(store_for(rt.repo), rt.tenant_id, body or {}, by, progress=p)
             except RegistryError as e:
                 note("MCP_SERVER_REJECTED", str((body or {}).get("name") or ""), by, {"reason": e.reason})
                 raise
             note("MCP_SERVER_REGISTERED", out["name"], by, {"tools": len(out["check"]["tools"]), "read_tools": out["gate"]["read_tools"]})
             return out
-        return await run(work)
+        return await run(tracked(body, "mcp_register", work))
 
     @app.put("/api/mcp/servers/{name}")
     async def update_route(name: str, body: dict | None = None):
         rt = runtime()
         by = by_of(body)
 
-        def work():
+        def work(p):
             try:
-                out = update(store_for(rt.repo), rt.tenant_id, name, body or {}, by)
+                out = update(store_for(rt.repo), rt.tenant_id, name, body or {}, by, progress=p)
             except RegistryError as e:
                 note("MCP_SERVER_REJECTED", name, by, {"reason": e.reason})
                 raise
             note("MCP_SERVER_UPDATED", name, by, {"read_tools": out["gate"]["read_tools"]})
             return out
-        return await run(work)
+        return await run(tracked(body, "mcp_update", work))
 
     @app.delete("/api/mcp/servers/{name}")
     async def delete_route(name: str, force: bool = False, by: str = ""):
@@ -638,7 +669,9 @@ def mount(app, *, runtime_factory, audit):
     @app.post("/api/mcp/servers/{name}/check")
     async def check_route(name: str, body: dict | None = None):
         rt = runtime()
-        return await run(lambda: check_saved(store_for(rt.repo), rt.tenant_id, name, timeout=(body or {}).get("timeout"), by=by_of(body)))
+        by = by_of(body)
+        return await run(tracked(body, "mcp_check_saved", lambda p: check_saved(store_for(rt.repo), rt.tenant_id, name,
+                                                                                timeout=(body or {}).get("timeout"), by=by, progress=p)))
 
     @app.post("/api/mcp/servers/{name}/read-confirm")
     async def read_confirm_route(name: str, body: dict | None = None):

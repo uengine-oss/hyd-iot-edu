@@ -1,5 +1,6 @@
-/* B6 출발본: 내가 만든 구성(에이전트 · 스킬 · MCP · 업무분장 · 흐름 · 배정 · 배포)을 파일로 받기 · 파일로 불러오기 · 기준으로 되돌리기.
-   API: GET /api/config/export · POST /api/config/import {bundle, secrets?, skip_missing_secrets?} · POST /api/config/reset
+/* B6 출발본: 내가 만든 구성(에이전트 · 스킬 · MCP · 역할 · 흐름 · 배정 · 배포)을 파일로 받기 · 파일로 불러오기 · 기준으로 되돌리기.
+   API: GET /api/config/export · POST /api/config/import {bundle, secrets?, skip_missing_secrets?, by, request_id} · POST /api/config/reset {by, request_id}
+   불러오기 · 되돌리기는 도는 동안 서버가 적는 단계별 진행을 읽어 채운다(hydLive.track — GET /api/progress/{request_id}).
    불러오기는 "되돌리기 → 순서대로 적용 → 다시 읽어 대조"이고, 실패하면 어디서 왜 멈췄는지와 적용 전 상태로 되돌렸는지 보여 준다.
    설정에 그대로 적힌 비밀값(MCP 접속 헤더의 토큰 등)은 파일에 없다 — 필요하면 여기서 입력하거나 그 서버만 건너뛴다.
    수업 단계에서 불러오기가 막혀 있으면 서버가 준 까닭을 단추 옆 글로 보인다(마우스를 올리지 않아도). */
@@ -7,7 +8,7 @@
   const H = esc;                                        // 포털 공용 이스케이프(ui.js)
   const IMPORT = 'config.import';                        // 수업 경계 행동 키 — 수업 단계에서는 서버가 막고 까닭을 준다(courseAccess.js)
   // [이름, 세는 말] — 도구 서버는 도구 연결 화면(mcp.js)과 같은 이름
-  const COUNT_WORDS = { mcp_servers: ['도구 서버', '개'], skills: ['스킬', '개'], agents: ['AI 에이전트', '개'], role_members: ['업무분장', '건'], flows: ['흐름', '개'],
+  const COUNT_WORDS = { mcp_servers: ['도구 서버', '개'], skills: ['스킬', '개'], agents: ['AI 에이전트', '개'], roles: ['역할', '개'], flows: ['흐름', '개'],
     flow_versions: ['흐름 판본', '개'], assignments: ['단계 배정', '건'], deployments: ['배포', '건'], secrets_needed: ['입력할 비밀값', '개'] };
 
   // 공용 요청 함수 하나(requestJ) — 불러오기는 MCP 연결 검사를 하므로 3분, 내보내기는 파일 이름 머리글이 필요하다. 서버 사유 칸(detail)은 그대로 쓴다
@@ -39,7 +40,7 @@
           <p class="field-hint" id="cfgImportWhy"></p>
           <div class="rd-form-actions"><button type="button" class="btn" id="cfgImport"${hydCourseAccess.attrs(IMPORT)}>불러오기</button><span class="form-msg" id="cfgImportMsg" role="status"></span></div>
           <div id="cfgImportResult"></div>`) +
-      part('기준으로 되돌리기', '내가 만든 AI 에이전트 · 스킬 · 역할 · 배정 · 업무분장 · 도구 서버 · 비밀 값 · 흐름 · 배포와 끝난 질문 · 판단 채점 · 에이전트 시험 비교 기록을 지웁니다. 기준은 그대로입니다.',
+      part('기준으로 되돌리기', '내가 만든 AI 에이전트 · 스킬 · 역할 · 배정 · 도구 서버 · 비밀 값 · 흐름 · 배포와 끝난 질문 · 판단 채점 · 에이전트 시험 비교 기록을 지웁니다. 기준은 그대로입니다.',
         `<div class="rd-form-actions"><button type="button" class="btn danger" id="cfgReset">기준으로 되돌리기</button><span class="form-msg" id="cfgResetMsg" role="status"></span></div>
           <div id="cfgResetResult"></div>`);
     const $ = id => el.querySelector('#' + id);
@@ -98,18 +99,19 @@
       if (!pending) { msg('cfgImportMsg', '출발본 파일을 고르세요', true); return; }
       if (importing) return;
       importing = true;
-      // 서버는 「기준으로 되돌리기 → 파일 내용을 순서대로 적용 → 다시 읽어 대조」를 모두 끝낸 뒤 단계별 결과를 한 번에 준다(도중 진행은 내보내지 않는다)
+      // 서버는 「파일 검사 → 지금 구성 보관 → 되돌리기 → 파일 내용을 순서대로 적용 → 다시 읽어 대조」의 단계가 시작 · 끝날 때마다 진행 기록에 적는다
       const end = hydLive.busy($('cfgImport'), '불러오는 중'); if ($('cfgSkip')) $('cfgSkip').disabled = true;
       $('cfgImportMsg').textContent = ''; $('cfgImportMsg').className = 'form-msg';
-      $('cfgImportResult').innerHTML = hydLive.waitHtml('출발본을 불러오는 중', { hint: '지금 구성을 기준으로 되돌리고, 파일 내용을 순서대로 적용하고, 도구 서버 연결을 검사한 뒤 다시 읽어 대조합니다. 서버가 모두 끝낸 뒤 단계별 결과를 줍니다(길면 3분).' });
+      const track = hydLive.track({ text: '출발본을 불러오는 중', hint: '지금 구성을 기준으로 되돌리고, 파일 내용을 순서대로 적용하고, 도구 서버 연결을 검사한 뒤 다시 읽어 대조합니다(길면 3분).' });
+      track.mount($('cfgImportResult'));
       try {
-        const { body } = await call('/api/config/import', { bundle: pending, secrets: secretsFromForm(), skip_missing_secrets: !!skip, by: actor() });
+        const { body } = await call('/api/config/import', { bundle: pending, secrets: secretsFromForm(), skip_missing_secrets: !!skip, by: actor(), request_id: track.id });
         msg('cfgImportMsg', body.message); $('cfgSecrets').innerHTML = ''; showResult(body);
         UI.toast(body.message, { tone: 'ok' });
       } catch (e) {
         msg('cfgImportMsg', e.message, true); showFailure(e.detail || {});
         if (e.detail && e.detail.needs_secrets && !e.detail.problems) secretForm(e.detail.needs_secrets);
-      } finally { importing = false; end(false); if ($('cfgSkip')) $('cfgSkip').disabled = false; hydCourseAccess.apply(el); why(); }
+      } finally { track.stop(); importing = false; end(false); if ($('cfgSkip')) $('cfgSkip').disabled = false; hydCourseAccess.apply(el); why(); }
     }
     $('cfgFile').addEventListener('change', async () => {
       pending = null; $('cfgSecrets').innerHTML = ''; $('cfgImportResult').innerHTML = '';
@@ -121,24 +123,25 @@
     });
     $('cfgImport').addEventListener('click', async () => {
       if (!pending) { msg('cfgImportMsg', '출발본 파일을 고르세요', true); return; }
-      const yes = await UI.confirm({ title: '출발본을 불러올까요?', body: '지금 내가 만든 구성을 지우고 파일 내용으로 다시 세웁니다. 수업 흐름(시작할 때 설치되는 A · B · C)도 파일 내용대로 바뀝니다. 기준 구성과 질문 기록은 그대로입니다.', ok: '불러오기' });
+      const yes = await UI.confirm({ title: '출발본을 불러올까요?', body: '지금 내가 만든 구성(AI 에이전트 · 스킬 · 역할 · 단계 배정 · 도구 서버 · 흐름 · 배포)을 지우고 파일 내용으로 다시 세웁니다. 수업 흐름(시작할 때 설치되는 A · B · C)도 지우고 파일 내용대로 다시 세웁니다. 지운 흐름으로 끝난 처리 건은 [처리 건] 목록에서 숨겨집니다. 진행 중인 처리 건이 있으면 아무것도 바꾸지 않고 멈춥니다. 기준 구성, 비밀 값, 질문 · 판단 채점 · 에이전트 시험 비교 기록은 그대로입니다.', ok: '불러오기' });
       if (yes) run(false);
     });
     $('cfgReset').addEventListener('click', async () => {
-      const yes = await UI.confirm({ title: '기준으로 되돌릴까요?', body: '내가 만든 구성과 비밀 값, 끝난 질문 · 판단 채점 · 에이전트 시험 비교 기록을 모두 지웁니다. 수업 흐름(시작할 때 설치되는 A · B · C)은 남습니다. 먼저 출발본으로 받아 두면 구성은 다시 불러올 수 있습니다(비밀 값 · 기록은 파일에 없습니다).', ok: '되돌리기', danger: true });
+      const yes = await UI.confirm({ title: '기준으로 되돌릴까요?', body: '내가 만든 구성(AI 에이전트 · 스킬 · 역할 · 단계 배정 · 도구 서버 · 흐름 · 배포)과 비밀 값, 끝난 질문 · 판단 채점 · 에이전트 시험 비교 기록을 모두 지웁니다. 내가 가져온 흐름으로 끝난 처리 건은 [처리 건] 목록에서 숨겨집니다. 수업 흐름(시작할 때 설치되는 A · B · C)과 그 처리 건, 기준 구성은 남습니다. 먼저 출발본으로 받아 두면 구성은 다시 불러올 수 있습니다(비밀 값 · 기록은 파일에 없습니다).', ok: '되돌리기', danger: true });
       if (!yes) return;
       const end = hydLive.busy($('cfgReset'), '되돌리는 중');
       $('cfgResetMsg').textContent = '';
-      $('cfgResetResult').innerHTML = hydLive.waitHtml('기준으로 되돌리는 중', { hint: '내가 만든 것을 종류별로 차례로 지우는 중입니다. 서버가 모두 끝낸 뒤 지운 것을 줍니다.' });
+      const track = hydLive.track({ text: '기준으로 되돌리는 중', hint: '내가 만든 것을 종류별로 차례로 지웁니다.' });
+      track.mount($('cfgResetResult'));
       try {
-        const { body } = await call('/api/config/reset', { by: actor() });
+        const { body } = await call('/api/config/reset', { by: actor(), request_id: track.id });
         msg('cfgResetMsg', body.message); $('cfgResetResult').innerHTML = `<section class="rd-group"><h4 class="rd-label">지운 것</h4>${list(body.steps.map(s => `${s.label}: ${s.text}`))}</section>`;
         UI.toast(body.message, { tone: 'ok' });
       } catch (e) {
         msg('cfgResetMsg', e.message, true);
         const d = e.detail || {};
         $('cfgResetResult').innerHTML = d.blocking ? list(d.blocking.map(b => b.reason)) : d.done ? `<p>지운 단계: ${H(d.done.map(x => x.label).join(', ') || '없음')}</p>` : '';
-      } finally { end(false); }
+      } finally { track.stop(); end(false); }
     });
   }
 

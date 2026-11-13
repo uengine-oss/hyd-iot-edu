@@ -1072,6 +1072,9 @@ flows_api.register(app, runtime_factory=instance_mode.current, audit=_audit)
 # B6 출발본: 학생 구성 내보내기 · 가져오기(되돌리기 → 순서대로 적용 → 대조) · 하나의 기준으로 되돌리기 (config_bundle.py)
 from . import config_bundle
 config_bundle.register(app, runtime_factory=instance_mode.current, audit=_audit)
+# 오래 걸리는 요청(판단 채점 · 시험 비교 · 출발본 · 도구 서버 연결 검사)의 진행 기록 읽기: GET /api/progress/{request_id} (progress.py)
+from . import progress
+progress.register(app)
 
 
 # 경보로 처리 건을 여는 길은 원천 접수 하나다(B-10): Kafka 경보 · 사람 입력 경보(B7, human_alert.py) · 업무 감시 · 수업 버튼 ·

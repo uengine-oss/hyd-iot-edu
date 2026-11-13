@@ -1,4 +1,6 @@
-"""B1: 포털에서 에이전트 · 스킬을 만들고 고치고 붙이기, 역할 → 사람 · 단계 → 에이전트 배정, 되돌리기.
+"""B1: 포털에서 에이전트 · 스킬 · 역할을 만들고 고치고 붙이기, 단계 → 에이전트 배정, 되돌리기.
+사람은 이 PC의 담당자 한 명이고 모든 역할의 구성원이다(migration 000072) — 역할에 사람을 넣고 빼는 길은 없다. 역할을 만들면 담당자가
+구성원이 된다(create_role 한 곳).
 
 원천은 U2 와 같다(읽는 쪽은 agents_store.agent_settings — 워커와 포털이 같은 함수를 부른다):
   에이전트 public.users(is_agent) · 스킬 public.tenant_skills · 붙이기 public.agent_skills · 업무분장 public.role_members.
@@ -216,7 +218,7 @@ def _default_endpoint(rt, row):
     return (binding or {}).get("endpoint"), (binding or {}).get("name")
 
 
-def return_open_rows(rt, agent_ids: list[str], reason: str, by: str | None) -> list[dict]:
+def return_open_rows(rt, agent_ids: list[str], reason: str, by: str) -> list[dict]:
     """열려 있지만 아직 집히지 않은 단계(IN_PROGRESS, 실행 전)를 정의의 역할 담당으로 되돌린다 — 지워진 에이전트 id 로 남아
     프로필 없이 실행되는 조용한 대체를 막는다. 되돌린 기록은 task_assignments(kind=agent_map).
     기본 담당을 찾을 수 없는 열린 단계가 하나라도 있으면 아무것도 옮기지 않고 409 로 거절한다(지운 뒤 그 단계가 주인 없이 남지 않게)."""
@@ -243,12 +245,13 @@ def return_open_rows(rt, agent_ids: list[str], reason: str, by: str | None) -> l
                 row["assignees"] = list(row.get("assignees") or []) + [{"endpoint": endpoint, "kind": "agent", "via": aid, "resolution": "agent-map-removed"}]
                 rt.repo.update_workitem(row)
                 rt.repo.insert_assignment({"tenant_id": rt.tenant_id, "proc_inst_id": row["proc_inst_id"], "todo_id": row["id"], "from_user_id": aid,
-                                           "to_user_id": endpoint, "kind": KIND_MAP, "by_user": by or "sys:process", "reason": reason})
+                                           "to_user_id": endpoint, "kind": KIND_MAP, "by_user": by, "reason": reason})
                 moved.append({"todo_id": row["id"], "proc_inst_id": row["proc_inst_id"], "activity_id": row["activity_id"], "to": endpoint})
     return moved
 
 
-def delete_agent(rt, agent_id: str, *, by: str | None = None) -> dict:
+def delete_agent(rt, agent_id: str, *, by: str) -> dict:
+    """by: 지운 사람 — 열린 단계를 기본 담당으로 돌린 기록(task_assignments.by_user)에 남는다. HTTP 는 inbox.actor_or_400 으로 받는다."""
     repo, tenant_id = rt.repo, rt.tenant_id
     row = get_agent(repo, tenant_id, agent_id)
     _protect(row, "지울")
@@ -411,7 +414,7 @@ def assignment_board(rt) -> dict:
             "agents": [{"id": u["id"], "name": _name(u), "origin": origin_of(u)} for u in sorted(agents_of(repo, tenant_id), key=_name)]}
 
 
-def set_assignment(rt, definition_id: str, activity_id: str, agent_id: str, *, by: str | None = None) -> dict:
+def set_assignment(rt, definition_id: str, activity_id: str, agent_id: str, *, by: str) -> dict:
     repo, tenant_id = rt.repo, rt.tenant_id
     step = next((s for s in agent_activities(rt) if s["definition_id"] == definition_id and s["activity_id"] == activity_id), None)
     if step is None:
@@ -451,7 +454,7 @@ def apply_agent_map(rt, inst: dict, adv) -> None:
         row["user_id"], row["username"] = agent["id"], _name(agent)
         row["assignees"] = list(row.get("assignees") or []) + [{"endpoint": agent["id"], "kind": "agent", "via": before, "resolution": "agent-map"}]
         rt.repo.insert_assignment({"tenant_id": rt.tenant_id, "proc_inst_id": row["proc_inst_id"], "todo_id": row["id"], "from_user_id": before,
-                                   "to_user_id": agent["id"], "kind": KIND_MAP, "by_user": m.get("by_user") or "sys:process",
+                                   "to_user_id": agent["id"], "kind": KIND_MAP, "by_user": m.get("by_user"),      # 배정한 사람(set_assignment 가 받는다)
                                    "reason": f"단계 배정: {row.get('activity_name') or row['activity_id']} → {_name(agent)}"})
         participants = inst.setdefault("participants", [])
         if agent["id"] not in participants:
@@ -462,6 +465,11 @@ def apply_agent_map(rt, inst: dict, adv) -> None:
 def _role_rows(repo, tenant_id: str) -> list[dict]:
     from . import inbox
     return [u for u in inbox.role_users(repo, tenant_id) if not u.get("is_agent")]
+
+
+def user_roles(repo, tenant_id: str) -> list[dict]:
+    """학생이 만든 역할(origin='user') — 출발본에 담는 것(config_bundle)."""
+    return sorted((u for u in _role_rows(repo, tenant_id) if origin_of(u) == USER), key=lambda u: u["id"])
 
 
 def roles_in_definitions(rt) -> dict[str, list[str]]:
@@ -489,9 +497,8 @@ def role_open_rows(repo, tenant_id: str, role_id: str) -> list[dict]:
             if role_id in csv_list(w.get("user_id") or "")]
 
 
-def create_role(repo, tenant_id: str, body: dict, *, by: str | None = None) -> dict:
-    """학생 흐름의 레인(담당자)을 받을 역할을 만든다: users 행 role:<키>, 사람 아님, origin='user'.
-    키를 비우면 role:u-<6자리>. 이름은 테넌트 안 역할끼리 겹치면 거절 — 흐름 가져오기가 레인 이름으로 역할을 잇기 때문."""
+def role_fields(body: dict) -> tuple[str, str, str]:
+    """저장소를 읽지 않는 역할 칸 검사 → (이름, 키(비면 ''), 종류). 출발본 검증(config_bundle.validate)도 같은 함수를 부른다."""
     name = _text(body, "name", "역할 이름", required=True)
     key = str(body.get("key") or "").strip().lower()
     if key and not ROLE_KEY_RE.match(key):
@@ -499,6 +506,13 @@ def create_role(repo, tenant_id: str, body: dict, *, by: str | None = None) -> d
     kind = str(body.get("kind") or "manager").strip()
     if kind not in ROLE_KINDS:
         raise AuthoringError(f"역할 종류는 {' · '.join(ROLE_KINDS)} 가운데 하나여야 합니다")
+    return name, key, kind
+
+
+def create_role(repo, tenant_id: str, body: dict, *, by: str | None = None) -> dict:
+    """학생 흐름의 레인(담당자)을 받을 역할을 만든다: users 행 role:<키>, 사람 아님, origin='user'.
+    키를 비우면 role:u-<6자리>. 이름은 테넌트 안 역할끼리 겹치면 거절 — 흐름 가져오기가 레인 이름으로 역할을 잇기 때문."""
+    name, key, kind = role_fields(body)
     existing = _role_rows(repo, tenant_id)
     taken = {u["id"] for u in repo.list_users(None, tenant_id)}
     if not key:
@@ -540,38 +554,11 @@ def delete_role(rt, role_id: str, *, by: str | None = None) -> dict:
     return {"id": role_id, "deleted": True}
 
 
-# ---------------------------------------------------------------- 역할 → 사람
-def add_member(repo, tenant_id: str, role_id: str, user_id: str) -> dict:
-    from . import inbox
-    roles = {r["id"]: r for r in inbox.role_users(repo, tenant_id)}
-    people = {u["id"]: u for u in inbox.person_users(repo, tenant_id)}
-    if role_id not in roles:
-        raise AuthoringError(f"그런 역할이 없습니다: {role_id}", 404)
-    if user_id not in people:
-        raise AuthoringError(f"사람 사용자만 역할에 넣을 수 있습니다: {user_id}", 404)
-    if user_id in inbox.members_of(repo, tenant_id, role_id):
-        raise AuthoringError(f"{_name(people[user_id])} 님은 이미 {_name(roles[role_id])} 역할입니다", 409)
-    repo.put_role_member(tenant_id, role_id, user_id, USER)
-    return {"role_id": role_id, "members": inbox.members_of(repo, tenant_id, role_id)}
-
-
-def remove_member(repo, tenant_id: str, role_id: str, user_id: str) -> dict:
-    from . import inbox
-    row = next((m for m in repo.list_role_members(tenant_id, role_id) if m["user_id"] == user_id), None)
-    if row is None:
-        raise AuthoringError(f"그 사람은 이 역할이 아닙니다: {user_id}", 404)
-    if origin_of(row) != USER:
-        names = {u["id"]: _name(u) for u in repo.list_users([role_id, user_id], tenant_id)}
-        raise AuthoringError(f"기본 업무분장({names.get(role_id, role_id)} ← {names.get(user_id, user_id)})은 뺄 수 없습니다 — 수업 기준이라 보호합니다. "
-                             "포털에서 넣은 사람만 뺄 수 있습니다.", 403)
-    repo.set_role_member(tenant_id, role_id, user_id, False)
-    return {"role_id": role_id, "members": inbox.members_of(repo, tenant_id, role_id)}
-
-
 # ---------------------------------------------------------------- 되돌리기
-def reset(rt, *, by: str | None = None) -> dict:
-    """포털에서 만든 것만 지운다: origin=user 에이전트 · 스킬 · 업무분장, 단계 배정 전부(배정은 모두 포털에서 만든다).
-    기본(seed) 행은 건드리지 않는다. 실행 중인 작업이 학생 에이전트에 있으면 아무것도 지우지 않고 거절한다."""
+def reset(rt, *, by: str) -> dict:
+    """포털에서 만든 것만 지운다: origin=user 에이전트 · 스킬 · 역할(과 그 구성원 행), 단계 배정 전부(배정은 모두 포털에서 만든다).
+    기본(seed) 행은 건드리지 않는다. 실행 중인 작업이 학생 에이전트에 있으면 아무것도 지우지 않고 거절한다.
+    by: 되돌린 사람 — 열린 단계를 기본 담당으로 돌린 기록에 남는다. HTTP 는 inbox.actor_or_400 으로 받는다."""
     repo, tenant_id = rt.repo, rt.tenant_id
     agents = [u for u in repo.list_users(None, tenant_id) if u.get("is_agent") and origin_of(u) == USER]
     ids = [u["id"] for u in agents]

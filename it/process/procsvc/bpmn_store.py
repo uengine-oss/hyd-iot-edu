@@ -128,16 +128,25 @@ class FlowStore:
     @staticmethod
     def _blocking_row(r) -> dict:
         """거절 응답(409 본문 blocking — HTTPException 은 표준 JSON 으로 쓴다)에 싣는 진행 중 처리 건 한 줄 — 시작 시각은 ISO 문자열.
-        running() 과 reset() 의 FlowBusy 가 같은 꼴을 쓴다(한쪽만 고치면 다른 쪽이 datetime 으로 500 — 마지막고침 검증 A5)."""
+        running() 과 reset() 의 FlowBusy 가 같은 줄을 쓴다(_running)."""
         return dict(r, start_date=r["start_date"].isoformat() if r["start_date"] else None)
 
-    def running(self) -> list[dict]:
-        """B6: 되돌리기 전 확인 — 학생 판본을 쓰는 진행 중(NEW · RUNNING) 처리 건. 아무것도 바꾸지 않는다(reset 의 거절 조건과 같다)."""
+    #: 처리 건(i)이 「되돌리기가 지울 학생 판본」을 쓰는가 — 매개변수 (def_id, def_id, keep). running() 과 reset() 이 이 조각 하나를 쓴다:
+    #: 되돌리기 전 확인이 남길 흐름(keep — 수업 흐름)을 빼지 않고 세면, 실제 되돌리기는 건드리지 않는 처리 건을 까닭으로 거절한다.
+    PINNED = """exists (select 1 from proc_def_version v where v.tenant_id=i.tenant_id and v.proc_def_id=i.proc_def_id
+                and v.version=i.proc_def_version and v.origin='user' and (%s::text is null or v.proc_def_id=%s)
+                and not (v.proc_def_id = any(%s::text[])))"""
+
+    def _running(self, c, def_id: str | None, keep: list[str]) -> list[dict]:
+        return [self._blocking_row(r) for r in c.execute(f"""select proc_inst_id, proc_inst_name, proc_def_id, proc_def_version, start_date
+                from bpm_proc_inst i where tenant_id=%s and not is_deleted and status in ('NEW','RUNNING') and {self.PINNED}
+                order by start_date""", (self.tenant_id, def_id, def_id, keep)).fetchall()]
+
+    def running(self, def_id: str | None = None, keep: frozenset | set = frozenset()) -> list[dict]:
+        """B6: 되돌리기 전 확인 — reset(def_id, keep) 이 지울 학생 판본을 쓰는 진행 중(NEW · RUNNING) 처리 건. 아무것도 바꾸지 않는다.
+        reset 과 같은 def_id · keep 을 넘겨야 같은 답이다(keep = 남길 흐름 — 관리 탭 되돌리기는 수업 흐름)."""
         with self.repo._conn() as c:
-            return [self._blocking_row(r) for r in c.execute("""select proc_inst_id, proc_inst_name, proc_def_id, proc_def_version, start_date from bpm_proc_inst i
-                    where tenant_id=%s and not is_deleted and status in ('NEW','RUNNING') and exists (select 1 from proc_def_version v
-                    where v.tenant_id=i.tenant_id and v.proc_def_id=i.proc_def_id and v.version=i.proc_def_version and v.origin='user')
-                    order by start_date""", (self.tenant_id,)).fetchall()]
+            return self._running(c, def_id, sorted(set(keep)))
 
     def reset(self, def_id: str | None = None, keep: frozenset | set = frozenset()) -> dict:
         """학생이 가져온 정의 · 판본 · 초안만 지운다. 그 판본으로 끝난 처리 건은 목록에서 숨긴다(is_deleted — 정의가 없어지므로).
@@ -147,15 +156,10 @@ class FlowStore:
         keep = sorted(set(keep))
         with self.repo._conn() as c, c.transaction():
             c.execute("select pg_advisory_xact_lock(hashtextextended(%s, 0))", (f"b3-flow-reset:{self.tenant_id}",))
-            pinned = """exists (select 1 from proc_def_version v where v.tenant_id=i.tenant_id and v.proc_def_id=i.proc_def_id
-                        and v.version=i.proc_def_version and v.origin='user' and (%s::text is null or v.proc_def_id=%s)
-                        and not (v.proc_def_id = any(%s::text[])))"""
-            running = c.execute(f"""select proc_inst_id, proc_inst_name, proc_def_id, proc_def_version, start_date from bpm_proc_inst i
-                                    where tenant_id=%s and not is_deleted and status in ('NEW','RUNNING') and {pinned}
-                                    order by start_date""", (self.tenant_id, def_id, def_id, keep)).fetchall()
+            running = self._running(c, def_id, keep)
             if running:
-                raise FlowBusy([self._blocking_row(r) for r in running])
-            hidden = c.execute(f"update bpm_proc_inst i set is_deleted=true where tenant_id=%s and not is_deleted and {pinned} returning proc_inst_id",
+                raise FlowBusy(running)
+            hidden = c.execute(f"update bpm_proc_inst i set is_deleted=true where tenant_id=%s and not is_deleted and {self.PINNED} returning proc_inst_id",
                                (self.tenant_id, def_id, def_id, keep)).fetchall()
             versions = c.execute("delete from proc_def_version where tenant_id=%s and origin='user' and (%s::text is null or proc_def_id=%s) and not (proc_def_id = any(%s::text[]))", (self.tenant_id, def_id, def_id, keep)).rowcount
             definitions = c.execute("delete from proc_def where tenant_id=%s and origin='user' and (%s::text is null or id=%s) and not (id = any(%s::text[]))", (self.tenant_id, def_id, def_id, keep)).rowcount

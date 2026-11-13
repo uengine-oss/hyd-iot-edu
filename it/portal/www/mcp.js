@@ -179,6 +179,7 @@
     const tasks = s.tasks.length ? `<ul class="rd-lines">${s.tasks.map(t => `<li><span>${esc(UI.flowName(t.activity_name))}</span><small>${esc(t.agent || '담당 없음')}${t.fixed_tools ? ' · 정해진 조회 도구만' : ''}</small></li>`).join('')}</ul>` : '';
     const limit = r.timeout_s || S.listTimeout;
     const status = s.config_error ? `<p class="field-error" role="alert">${esc(s.config_error)}</p>`
+      : r.loading && r.track ? '<div data-mcp-track></div>'
       : r.loading ? hydLive.waitHtml('연결 확인 중', { since: r.since, hint: `도구 서버가 도구 목록을 돌려주기를 기다립니다${S.listTimeout ? ` (최대 ${S.listTimeout}초)` : ''}.` })
       : r.status === 'ok' ? `<p class="rd-note">도구 ${tools.length}개 · 응답 ${esc(hydTrace.fmtMs(r.elapsed_ms))} · ${esc(UI.dateTime(r.checked_at))} 확인</p>`
       : `<p class="field-error" role="alert">${esc(r.error || '연결 실패')}</p>${r.checked_at ? `<p class="rd-note">${esc(UI.dateTime(r.checked_at) + ' 확인' + (limit ? ' · 제한 ' + limit + '초' : ''))}</p>` : ''}`;
@@ -196,6 +197,7 @@
       `<div class="rd-group"><div class="rd-seg" role="tablist" aria-label="보기">${seg}</div><div id="mcpPane"></div></div>` +
       `<div class="rd-group">${UI.fold('자세히 · 연결 설정 (비밀값은 ******** 로 가림)', kv(settings.map(([k, v]) => [k, v ? `<code>${esc(v)}</code>` : ''])) +
         `<p class="rd-note">${s.editable ? '고치기는 연결 검사를 통과해야 저장됩니다.' : '기준(기본 제공) 서버는 고치거나 지울 수 없습니다. 새 이름으로 등록해 씁니다.'}</p>`, { cls: 'small' })}</div>`;
+    if (r.loading && r.track) r.track.mount(box.querySelector('[data-mcp-track]'));      // [연결 검사]가 도는 동안: 서버가 적는 단계(hydLive.track)
     box.querySelector('#mcpProbe')?.addEventListener('click', ev => checkSaved(s.name, ev.currentTarget));
     box.querySelector('#mcpEdit')?.addEventListener('click', () => openForm(s));
     box.querySelector('#mcpDelete')?.addEventListener('click', ev => removeServer(s, ev.currentTarget));
@@ -376,11 +378,13 @@
   function checkSaved(name, button) {
     const by = actor(); if (!by) return;
     return once('check:' + name, button, async () => {
-      S.tools[name] = { loading: true }; renderServers(); if (S.sel === name) renderDetail();
+      const track = hydLive.track({ text: '연결 검사 중', hint: `도구 서버에 연결해 인사를 주고받고 도구 목록을 받습니다${S.listTimeout ? ` (최대 ${S.listTimeout}초)` : ''}.` });
+      S.tools[name] = { loading: true, track }; renderServers(); if (S.sel === name) renderDetail();
       try {
-        const r = await postJ(api(`/api/mcp/servers/${encodeURIComponent(name)}/check`), { by });
+        const r = await postJ(api(`/api/mcp/servers/${encodeURIComponent(name)}/check`), { by, request_id: track.id });
         UI.toast(r.check.status === 'ok' ? `${serverLabel(name)}: 연결 검사를 통과했습니다. 도구 ${r.check.tools.length}개` : `${serverLabel(name)}: 연결 검사에 실패했습니다. ${r.check.error || ''}`, { tone: r.check.status === 'ok' ? 'ok' : 'neg' });
       } catch (e) { UI.toast(`${serverLabel(name)}: ${e.message}`, { tone: 'neg' }); }
+      finally { track.stop(); }
       await load();
     });
   }
@@ -423,7 +427,8 @@
       `<div class="form rd-form rd-group">${UI.section('', fields)}${F.error ? `<p class="field-error" role="alert">${esc(F.error)}</p>` : ''}` +
       `<div class="rd-form-actions"><button class="btn primary" id="mcpSave" ${F.busy ? 'disabled' : ''}${reg()}>${F.editing ? '검사 후 저장' : '검사 후 등록'}</button>` +
       `<button class="btn" id="mcpDry" ${F.busy ? 'disabled' : ''}${reg()}>연결 검사만</button><button class="btn" id="mcpFormClose">취소</button></div></div>` +
-      `<div id="mcpFormResult" class="rd-group" aria-live="polite">${F.busy ? hydLive.waitHtml('연결 검사 중', { since: F.since, hint: `적은 주소의 서버에 연결해 인사를 주고받고 도구 목록을 받는 중입니다${S.listTimeout ? ` (최대 ${S.listTimeout}초)` : ''}. 통과해야 저장합니다.` }) : checkHtml(F.result)}</div>`;
+      `<div id="mcpFormResult" class="rd-group" aria-live="polite">${F.busy ? '<div data-mcp-track></div>' : checkHtml(F.result)}</div>`;
+    if (F.busy && F.track) F.track.mount(box.querySelector('[data-mcp-track]'));      // 다시 그려도 같은 진행 목록이 새 자리로 옮겨 간다
     box.querySelector('#mcpFormClose').addEventListener('click', () => { S.form = null; renderForm(); renderDetail(); });
     box.querySelector('#mcpDry').addEventListener('click', () => submitForm(true));
     box.querySelector('#mcpSave').addEventListener('click', () => submitForm(false));
@@ -449,19 +454,22 @@
     let body;
     try { body = bodyFrom(readForm()); } catch (e) { F.error = e.message; renderForm(); return; }
     body.by = actor(); if (!body.by) return;
-    F.busy = true; F.since = new Date().toISOString(); F.error = ''; F.result = null; renderForm();
+    // 서버가 「연결 → 인사(initialize) → 도구 목록 → 저장」을 그 일이 시작 · 끝날 때 진행 기록에 적는다(hydLive.track 이 읽어 채운다)
+    F.track = hydLive.track({ text: '연결 검사 중', hint: `적은 주소의 서버에 연결해 인사를 주고받고 도구 목록을 받습니다${S.listTimeout ? ` (최대 ${S.listTimeout}초)` : ''}. 통과해야 저장합니다.` });
+    body.request_id = F.track.id;
+    F.busy = true; F.error = ''; F.result = null; renderForm();
     try {
       const r = dry ? await postJ(api('/api/mcp/check'), body)
         : F.editing ? await postJ(api(`/api/mcp/servers/${encodeURIComponent(body.name)}`), body, 'PUT')
         : await postJ(api('/api/mcp/servers'), body);
-      F.result = r.check; F.busy = false;
+      F.track.stop(); F.result = r.check; F.busy = false;
       if (!dry) {
         UI.toast(`${body.name}: ${F.editing ? '고쳤습니다' : '등록했습니다'} · 에이전트에 붙일 수 있는 도구 ${r.gate.read_tools.length}개`, { tone: 'ok' });
         (r.warnings || []).forEach(w => UI.toast(`${body.name}: ${w}`, { tone: 'neg' }));
         S.form = null; renderForm(); S.sel = body.name; S.trying = null; S.info = null; await load(); return;
       }
     } catch (e) {
-      F.busy = false; F.error = e.message;
+      F.track.stop(); F.busy = false; F.error = e.message;
     }
     renderForm();
   }
@@ -526,7 +534,7 @@
 
   async function resetAll(button) {
     const by = actor(); if (!by) return;
-    const ok = await UI.confirm({ title: '도구 서버를 기준으로 되돌릴까요?', body: '내가 등록한 서버 · 포털 밖에서 추가한 서버, 모든 연결 검사 기록, 비밀 값을 지웁니다. 기준(기본 제공) 서버는 그대로입니다.', ok: '되돌리기', danger: true });
+    const ok = await UI.confirm({ title: '도구 서버를 기준으로 되돌릴까요?', body: '내가 등록한 서버 · 포털 밖에서 추가한 서버, 모든 연결 검사 기록(기준 서버의 것 포함), 비밀 값을 지웁니다. 기준(기본 제공) 서버와, 지운 서버를 도구로 붙였던 에이전트는 그대로입니다 — 그 에이전트는 그 서버 없이 실행됩니다.', ok: '되돌리기', danger: true });
     if (!ok) return;
     return once('reset', button, async () => {
       try {

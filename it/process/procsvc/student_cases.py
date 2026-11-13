@@ -143,11 +143,11 @@ def select_bundle(rt, bundle, label):
         for version in flow['versions']:
             raw = (rt.repo.get_proc_def(flow['definition_id'], rt.tenant_id, version=version['version']) or {}).get('definition') or {}
             roles.update(r.get('endpoint') for r in raw.get('roles',[]))
-    content['role_members'] = [r for r in content['role_members'] if r['role_id'] in roles]
+    content['roles'] = [r for r in content['roles'] if r['id'] in roles]      # 고른 흐름이 담당으로 쓰는 학생 역할만
     out['case_tags'] = [r for r in out.get('case_tags',[]) if (r['kind'],r['asset_id']) in chosen]
     out['case_selection'] = {'label':label, 'direct_count':len(direct), 'dependency_count':len(chosen-direct),
                              'dependencies':[{'kind_name':KINDS[k], 'name':next(a['name'] for a in catalog(bundle)['assets'] if a['kind']==k and a['asset_id']==aid)} for k,aid in sorted(chosen-direct)]}
-    out['summary'] = {k:len(content[k]) for k in ('mcp_servers','skills','agents','role_members','flows','assignments')}
+    out['summary'] = {k:len(content[k]) for k in ('mcp_servers','skills','agents','roles','flows','assignments')}
     out['summary'].update(flow_versions=sum(len(f['versions']) for f in content['flows']), deployments=len(content['deployments']['flows']), secrets_needed=sum(len(s['secrets']) for s in content['mcp_servers']))
     return out
 
