@@ -9,6 +9,7 @@
     {"장": …, "문장": …, "낱말": …, "모양": "글씨", "글": "포함", "중심": [x, y], "크기": 40}
     {"장": …, …, "모양": "띠" | "밑줄" | "네모", "상자": [x1, y1, x2, y2]}   # 띠 = 반투명 노란 형광펜(글 위에 덮어도 읽힌다), 밑줄 = 상자 아래 변 바로 밑, 네모 = 상자 둘레
     {"장": …, …, "모양": "화살표", "시작": [x, y], "끝": [x, y]}            # 끝이 가리키는 곳(촉)
+  끝문장이 없는 표시에 "장끝까지": true를 주면 그 장의 말이 끝난 뒤에도 다음 장으로 넘어가기 직전까지 남는다(마지막 문장에서 뜨는 짧은 표시에 쓴다).
   어느 모양을 쓰는지: 둘레가 비어 있는 대상 하나 → 동그라미, 줄 간격이 촘촘한 글 한 줄 · 표의 한 행 → 띠나 밑줄,
   칸 · 상자 하나 → 네모, 대상 둘레를 감쌀 자리가 없고 옆이 비어 있으면 → 화살표, 화면에 없는 말을 짧게 더할 때 → 글씨.
   좌표는 1920x1080 영상 프레임 기준이다. 본보기: 강조표시_본보기/.
@@ -48,11 +49,14 @@ def read_srt(p):
 
 
 BUNDLE = {}   # 묶음 구획의 간지 장 → 설명 장(read_slides가 채운다)
+TURN_GAP = 0.0   # 시간표 머리의 장 넘김 쉼(초, read_slides가 채운다) — 「장끝까지」 표시가 쓴다
 
 
 def read_slides(p):
     """시간표에서 장 번호 → 시작 초(시간표는 초 단위로 반올림해 적는다)."""
     text = p.read_text(encoding="utf-8")
+    global TURN_GAP
+    g = re.search(r"장 넘김 ([\d.]+)초", text); TURN_GAP = float(g[1]) if g else 0.0
     rows = re.findall(r"^\| (\d+)(?:~\d+)? \| (\d+):(\d+)(?::(\d+))?(?: \(SLIDE[^)]*\))? \|", text, flags=re.M)
     table = {}
     for n, a, b, c in rows:
@@ -152,6 +156,10 @@ def plan(cfg, subs, slides):
             if n_end != m["장"]: end = min(end, slides[n_end])   # 간지 그림이 설명 장으로 바뀌는 시각을 넘기지 않는다
         else:
             end = max(s[1] for s in subs if s[0] < hi)
+            # 마지막 문장에서 뜨는 짧은 표시는 말이 끝난 뒤 장 넘김 쉼 동안에도 남긴다. 장 조각은 말 끝 + 장 넘김 쉼보다 짧지 않으므로, 다 지워진 때가 넘김 0.2초 앞이다
+            if m.get("장끝까지"):
+                if TURN_GAP <= 0: stop(f"{m['장']}장 「장끝까지」 표시: 시간표 머리에 「장 넘김 N초」가 없다")
+                end += max(0.0, TURN_GAP - FADE - 0.2)
         if end <= start: stop(f"{where}: 지우는 시각이 그리는 시각보다 앞섬")
         marks.append(dict(m, start=start, end=end, seed=i))
     return marks

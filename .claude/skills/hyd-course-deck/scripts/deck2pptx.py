@@ -65,12 +65,13 @@ LINE_SPACING = 1.22
 
 BODY_KINDS = ("흐름", "카드", "비교", "표", "단계", "강조", "그림", "삽화", "풀이", "구조", "파이프라인", "관계도",
               "코드", "문답")
-COUNTS = {"표지": (0, 0), "목차": (2, 9), "간지": (0, 0),
+COUNTS = {"표지": (0, 0), "목차": (2, 9), "간지": (0, 9),
           "흐름": (2, 6), "카드": (2, 4), "비교": (2, 2), "표": (2, 9), "단계": (3, 5), "강조": (0, 3),
           "그림": (0, 4), "삽화": (0, 16), "풀이": (2, 6), "구조": (2, 12), "파이프라인": (3, 7), "관계도": (2, 8),
           "코드": (0, 4), "문답": (2, 5)}
 KEYS = {"유형", "메시지", "노트", "요소", "아이콘", "그림", "문장", "기관", "과정", "부제", "번호", "구분",
-        "머리", "영역", "연결", "사이", "코드", "라벨", "단"}
+        "머리", "영역", "연결", "사이", "코드", "라벨", "단", "층", "참고"}
+LAYERS = 9                     # `층:` 눈금의 칸 수(기능 계층의 수)
 NEED = {"표지": ("기관", "과정"), "강조": ("문장",), "문답": ("문장",), "그림": ("그림",), "삽화": ("그림",), "구조": ("영역",),
         "코드": ("코드",), "관계도": ("연결",)}
 SKILL_DIR = Path(__file__).resolve().parent.parent
@@ -212,6 +213,10 @@ def validate(slides: list[Slide], md_path: Path) -> None:
                 errs.append(f"{where} 본문 장에 `메시지:`(거버닝 메시지 한 줄 · 한 문장)가 없음")
             elif re.search(r"(다|요|까|음|함)[.?!]\s+\S", msg):
                 errs.append(f"{where} 메시지가 두 문장임(한 문장으로 쓴다): {msg}")
+        if "층" in sl.fields and (sl.kind not in BODY_KINDS or not re.fullmatch(rf"[1-{LAYERS}]\s*\|\s*\S.*", sl.fields["층"])):
+            errs.append(f"{where} `층:`은 본문 장에서 `번호(1~{LAYERS}) | 층 이름` 꼴이어야 함")
+        if "참고" in sl.fields and (sl.kind not in BODY_KINDS or not re.fullmatch(r"\S.*?\s\|\s+\S.*", sl.fields["참고"])):
+            errs.append(f"{where} `참고:`는 본문 장에서 `꼬리표 | 내용` 꼴이어야 함")
         lo, hi = COUNTS[sl.kind]
         if "단" in sl.fields:
             if sl.kind != "표" or sl.fields["단"] != "2":
@@ -567,9 +572,54 @@ def frame(sl, s: Slide, page: int) -> tuple[float, float]:
     add_text(sl, MX - 0.1, 1.02, CW + 0.2, 0.46, s.fields["메시지"], MSG_PT, MUTED, anchor=MSO_ANCHOR.MIDDLE,
              hi_color=SKY_D, name="메시지(한 줄 · 한 문장)", slide_no=s.no, max_lines=1)
     add_box(sl, MX, 1.54, CW, 0.02, LINE, shape=MSO_SHAPE.RECTANGLE)
+    layer_tag(sl, s)
+    ref_line(sl, s)
     page_no(sl, page)
     notes(sl, s)
     return BODY_Y, BODY_END
+
+
+def layer_tag(sl, s: Slide):
+    """`층: N | 층 이름` — 제목 줄 오른쪽 끝의 층 표시. 층 이름 꼬리표와 눈금(아래가 1, 지금 층만 파랑)을 둔다."""
+    val = s.fields.get("층")
+    if not val:
+        return
+    no, _, name = (p.strip() for p in val.partition("|"))
+    cw, ch, gap = 0.36, 0.058, 0.02
+    total = LAYERS * ch + (LAYERS - 1) * gap
+    lx, mid = MX + CW - cw, 0.69            # 제목 줄의 세로 가운데
+    for i in range(LAYERS):                  # 위가 맨 위 층 — 전체 지도 장과 같은 차례
+        add_box(sl, lx, mid - total / 2 + i * (ch + gap), cw, ch, SKY_D if LAYERS - i == int(no) else LINE,
+                shape=MSO_SHAPE.RECTANGLE)
+    w = max(0.9, text_w(name, 12) + 0.4)
+    x = lx - 0.14 - w
+    if MX + text_w(plain(s.title), TITLE_PT) + 0.3 > x:
+        FIT.errs.append(f"SLIDE {s.no:02d} 층 표시가 제목과 겹침 — 제목이나 `층:`의 이름을 줄인다")
+    chip(sl, x, mid - 0.16, name, False, s.no, w=w)
+
+
+def ref_line(sl, s: Slide):
+    """`참고: 꼬리표 | 내용` — 본문 아래(쪽 번호와 같은 줄) 왼쪽의 작은 회색 한 줄. 그 자리에 쓰이는 제품 · 표준 이름처럼
+    본문 판단에 쓰이지 않지만 강사가 말로 드는 이름을 화면에 남긴다."""
+    val = s.fields.get("참고")
+    if not val:
+        return
+    label, _, body = (p.strip() for p in val.partition("|"))
+    add_text(sl, MX - 0.1, 7.06, CW - 1.0, 0.32, f"**{label}**   {body}", 11, MUTED, hi_color=MUTED,
+             anchor=MSO_ANCHOR.MIDDLE, name="참고 줄", slide_no=s.no, max_lines=1)
+
+
+def divider_band(sl, s: Slide):
+    """간지의 `요소:` — 이 단원에서 차례로 오를 층의 띠. 한 줄로 놓고 왼쪽 끝이 첫째다."""
+    n = len(s.items)
+    gap, h, y = 0.07, 0.92, 6.1
+    w = (CW - gap * (n - 1)) / n
+    for i, it in enumerate(s.items):
+        x = MX + i * (w + gap)
+        add_box(sl, x, y, w, h, WHITE, radius=0.08)
+        add_text(sl, x, y, w, h, "\n".join([it.plain_title, *it.lines]), 11.5, NAVY, align=PP_ALIGN.CENTER,
+                 anchor=MSO_ANCHOR.MIDDLE, first_size=13, first_color=SKY_D, name=f"띠 {i + 1}", slide_no=s.no,
+                 max_lines=1 + len(it.lines), shrink_tail=False)
 
 
 # ── 표지 · 목차 · 간지 ─────────────────────────────────────────────────────
@@ -645,6 +695,8 @@ def render_divider(sl, s: Slide, _page):
     if s.fields.get("부제"):
         add_text(sl, x, y, SLIDE_W - MX - x, 0.5, s.fields["부제"], 17, MUTED, name="간지 부제",
                  slide_no=s.no, max_lines=1)
+    if s.items:
+        divider_band(sl, s)
     notes(sl, s)
 
 

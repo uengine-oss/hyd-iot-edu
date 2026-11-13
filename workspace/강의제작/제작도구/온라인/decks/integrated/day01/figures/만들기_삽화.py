@@ -357,7 +357,9 @@ def kg_map() -> str:
     ring = {"fm": (SKY, NAVY, 4), "comp": (PALE, BLUE, 3), "skill": (PALE, BLUE, 3), "cause": (PALE, BLUE, 3), "sym": (PALE, BLUE, 3),
             "asset": (LIGHT, GREY, 3), "sen": (LIGHT, GREY, 3), "doc": (LIGHT, GREY, 3)}
     o: list[str] = []
-    for a, b in KG_EDGES:
+    # 이 지도만의 선: 구성 요소 → 센서는 빼고(증상 → 센서 하나로 센서 쪽을 보인다), 근본 조치가 어느 원인을 없애는지 잇는 조치 방법 → 원인을 더한다.
+    edges = [e for e in KG_EDGES if e != ("comp", "sen")] + [("skill", "cause")]
+    for a, b in edges:
         (ax, ay, ar), (bx, by, br) = KG_NODES[a], KG_NODES[b]
         d_ = math.hypot(bx - ax, by - ay)
         ux, uy = (bx - ax) / d_, (by - ay) / d_
@@ -1649,6 +1651,71 @@ def ontology_four() -> str:
     return svg(o)
 
 
+def memo_two_readings() -> str:
+    """51장: 위 가운데 메모 한 장을 왼쪽은 사람이, 오른쪽은 컴퓨터가 읽는다. 두 칸의 글(읽어 낸 것)은 라벨로 얹는다."""
+    o: list[str] = []
+    o += g(300, 78, 0.95, note_doc(0, 0, ON))
+    o += [line(600, 150, 600, 172, stroke=NAVY, sw=3.5), line(300, 172, 900, 172, stroke=NAVY, sw=3.5)]
+    o += [arrow([(300, 172), (300, 208)], NAVY, sw=3.5), arrow([(900, 172), (900, 208)], NAVY, sw=3.5)]
+    o += [rect(40, 212, 520, 296, 14, fill=LIGHT, stroke="none", sw=0), rect(640, 212, 520, 296, 14, fill=LIGHT, stroke="none", sw=0)]
+    o += g(125, 365, 1.45, person_icon(0, 0, ON)) + g(725, 362, 1.15, agent_icon(0, 0, ON))
+    return svg(o)
+
+
+def ontology_frame() -> str:
+    """52장: 온톨로지의 틀 — 빈 원 둘(종류), 왼쪽 원의 꼬리표(속성), 이름 붙은 화살표(관계), 화살표 양 끝의 파란 고리(제약).
+    실제 대상의 그림은 넣지 않는다. 오른쪽 40 %는 네 칸 목록(연회색 칸 넷)을 라벨로 얹는 자리다."""
+    o: list[str] = [rect(735, 12 + i * 126, 450, 114, 14, fill=LIGHT, stroke="none", sw=0) for i in range(4)]
+    C, F = (160, 300, 84), (530, 300, 94)
+    o += _edge_arrow(C, F)
+    o += _tag(78, 150, (C[0] - 84 * 0.55, C[1] - 84 * 0.835))
+    o.append(circle(*C, fill=PALE, stroke=BLUE, sw=3.5))
+    o.append(circle(*F, fill=SKY, stroke=NAVY, sw=4))
+    for px_ in (C[0] + C[2] + 5, F[0] - F[2] - 5):
+        o.append(circle(px_, 300, 11, fill="none", stroke=BLUE, sw=4))
+    return svg(o)
+
+
+def constraint_check() -> str:
+    """57장: 위 띠 = 정해 둔 조건(빈 원 둘과 화살표, 양 끝 고리). 아래 두 칸 = 그 조건에 실제 연결을 대어 본 것 —
+    왼쪽은 맞는 연결(확인 표시), 오른쪽은 거꾸로 이은 연결(X 표시)."""
+    o: list[str] = [rect(15, 10, 1170, 180, 16, fill=PALE, stroke="none", sw=0)]
+    A, B = (470, 104, 58), (810, 104, 58)
+    o += _edge_arrow(A, B)
+    o += [circle(*A, fill=WHITE, stroke=NAVY, sw=3.5), circle(*B, fill=WHITE, stroke=NAVY, sw=3.5)]
+    for px_ in (A[0] + A[2] + 5, B[0] - B[2] - 5):
+        o.append(circle(px_, 104, 11, fill="none", stroke=BLUE, sw=4))
+    for ox, ok in ((15, True), (610, False)):
+        o.append(rect(ox, 208, 575, 304, 14, fill=LIGHT, stroke="none", sw=0))
+        a, b = (ox + 120, 318, 58), (ox + 390, 318, 58)
+        o += _edge_arrow(a, b, BLUE)
+        cause, fm = (a, b) if ok else (b, a)
+        o.append(circle(*cause, fill=PALE, stroke=BLUE, sw=3.5))
+        o.append(circle(*fm, fill=SKY, stroke=NAVY, sw=4))
+        mx, my = ox + 505, 318
+        o.append(circle(mx, my, 27, fill=WHITE, stroke=NAVY if ok else BLUE, sw=3))
+        if ok:
+            o.append(path(f"M {mx - 13},{my} L {mx - 3},{my + 10} L {mx + 14},{my - 11}", stroke=BLUE, sw=4.5))
+        else:
+            o += [line(mx - 11, my - 11, mx + 11, my + 11, stroke=BLUE, sw=4.5), line(mx + 11, my - 11, mx - 11, my + 11, stroke=BLUE, sw=4.5)]
+    return svg(o)
+
+
+def cause_to_action() -> str:
+    """67장: 가려진 원인(왼쪽 위)에서 근본 조치(가운데 위)로, 고장 유형(왼쪽 아래)에서 완화 조치(가운데 아래)로, 두 조치에서 근거 문서(오른쪽)로.
+    원인을 없애는 조치의 화살표와 완화 화살표는 파랑, 나머지는 남색."""
+    C, F, R, M, D = (300, 125, 62), (300, 395, 70), (680, 125, 62), (680, 395, 62), (1050, 260, 68)
+    o: list[str] = []
+    o += _edge_arrow(C, F) + _edge_arrow(R, C, BLUE) + _edge_arrow(F, M, BLUE) + _edge_arrow(R, D) + _edge_arrow(M, D)
+    o.append(circle(*C, fill=PALE, stroke=BLUE, sw=3.5))
+    o.append(circle(*F, fill=SKY, stroke=NAVY, sw=4))
+    o += [circle(*R, fill=WHITE, stroke=NAVY, sw=3.5), circle(*M, fill=WHITE, stroke=NAVY, sw=3.5), circle(*D, fill=LIGHT, stroke=GREY, sw=3.5)]
+    o += g(C[0], C[1], 0.66, dusty_cooler(0, 0, NORM)) + g(F[0], F[1], 0.62, broken_cooler(0, 0, NORM))
+    o += g(R[0], R[1], 0.72, radiator(-44, -34, 88, 68, ON, fins=8, r=7)) + fan(M[0], M[1], 38, ON, rot=20, hot=True)
+    o += g(D[0], D[1], 0.72, book_icon(0, 0, NORM))
+    return svg(o)
+
+
 NEW_ONLY: set = {"경로2_1.svg", "경로2_2.svg", "데이터_명령_두경로.svg", "온톨로지_모양.svg", "온톨로지_문장읽기.svg", "약속_채움_두층.svg", "온톨로지_네가지.svg"}
 
 
@@ -1669,7 +1736,9 @@ def main():
            "에이전트_다섯걸음.svg": agent_five_steps(), "사건_단계.svg": case_track(),
            "기록_이름갈림.svg": records_apart(), "이름_한대상.svg": aliases_merge(), "원인_더하기.svg": add_cause(), "경로_입구.svg": walk_entry(),
            "온톨로지_모양.svg": ontology_shape(), "온톨로지_문장읽기.svg": ontology_sentences(), "약속_채움_두층.svg": promise_fill_layers(),
-           "온톨로지_네가지.svg": ontology_four()}
+           "온톨로지_네가지.svg": ontology_four(),
+           "메모_두읽기.svg": memo_two_readings(), "온톨로지_틀.svg": ontology_frame(), "제약_걸러내기.svg": constraint_check(),
+           "원인에서_조치로.svg": cause_to_action()}
     for name, text in out.items():
         assert "<text" not in text
         if (HERE / name).exists() and name not in NEW_ONLY:
