@@ -23,9 +23,9 @@
   }
 
   function taskItem(r) {
-    return `<div class="item agent-task"><div class="row"><strong>${esc(UI.flowName(r.activity_name))}</strong>${UI.chip(r.draft_status || r.status)}</div>
-      <span class="sub">${esc(instName(r.proc_inst_id))} · ${esc(UI.dateTime(r.start_date))}</span>
-      <div class="row-wrap"><button type="button" class="btn small" data-agent-task="${esc(r.id)}" data-agent-inst="${esc(r.proc_inst_id)}">${esc(UI.t('agents.open'))}</button></div></div>`;
+    // 줄을 누르면 그 처리 건의 단계 상세가 열린다(줄 자체가 단추)
+    return `<button type="button" class="item agent-task" data-agent-task="${esc(r.id)}" data-agent-inst="${esc(r.proc_inst_id)}" title="${esc(UI.t('agents.open'))}"><div class="row"><strong>${esc(UI.flowName(r.activity_name))}</strong>${UI.chip(r.draft_status || r.status)}</div>
+      <span class="sub">${esc(instName(r.proc_inst_id))} · ${esc(UI.dateTime(r.start_date))}</span></button>`;
   }
   function render() {
     const box = document.getElementById('agentsPanel'); if (!box) return;
@@ -33,17 +33,18 @@
     const held = A.rows.filter(r => r.consumer), waiting = A.rows.filter(r => !r.consumer);
     const count = document.getElementById('agentsFoldCount'); if (count) count.textContent = held.length ? String(held.length) : '';
     const dot = document.getElementById('agentsFoldDot'); if (dot) dot.className = 'live-dot ' + (s && s.reachable ? (held.length ? 'on' : 'off') : 'error');
-    const service = s ? UI.card({ title: esc(UI.t('agents.service')), chips: s.reachable ? UI.chipText(UI.t('agents.up'), 'success') : UI.chipText(UI.t('agents.down'), 'danger'),
-      value: s.reachable ? `<span class="kv">${esc(h.runs_in_flight ?? 0)}</span> <span class="muted">${esc(UI.t('agents.inFlight'))}</span>` : '',
-      sub: s.reachable ? `${esc(UI.t('agents.handled'))} ${esc(h.handled ?? 0)}건 · ${esc(UI.t('agents.lastLook'))} ${h.last_poll ? esc(UI.dateTime(h.last_poll)) : esc(UI.t('agents.never'))}` : esc(UI.t('agents.downWhy')),
-      body: UI.metaFold([[UI.t('agents.clis'), (s.agents || []).map(a => `${esc(a.agent_id)} ${a.installed ? UI.chipText(UI.t('agents.installed'), 'success') : UI.chipText(UI.t('agents.missing'))}`).join(' ')],
-        [UI.t('agents.raw'), s.error ? `<span class="mono">${esc(s.error)}</span>` : '']]), cls: 'soft' })
-      : `<p class="neg">${esc(UI.t('inst.noConn'))}${A.err ? ': ' + esc(A.err) : ''}</p>`;
+    // 실행 서비스의 지금 상태 한 문장(점 색 = 연결됨 · 안 됨) → 처리 수 · 마지막으로 일을 찾은 시각. 설치된 CLI · 오류 원문은 「상세 정보」 접기 안에
+    const service = s ? `<div class="agents-service"><p class="rd-state ${s.reachable ? 'ok' : 'bad'}"><span><b>${esc(UI.t('agents.service'))}</b> — ${s.reachable
+        ? `${esc(UI.t('agents.up'))} · ${esc(UI.t('agents.inFlight'))} ${esc(h.runs_in_flight ?? 0)}건 · ${esc(UI.t('agents.handled'))} ${esc(h.handled ?? 0)}건 · ${esc(UI.t('agents.lastLook'))} ${h.last_poll ? esc(UI.dateTime(h.last_poll)) : esc(UI.t('agents.never'))}`
+        : `${esc(UI.t('agents.down'))} · ${esc(UI.t('agents.downWhy'))}`}</span></p>` +
+      UI.metaFold([[UI.t('agents.clis'), (s.agents || []).map(a => `${esc(a.agent_id)} (${esc(UI.t(a.installed ? 'agents.installed' : 'agents.missing'))})`).join(', ')],
+        [UI.t('agents.raw'), s.error ? `<span class="mono">${esc(s.error)}</span>` : '']]) + `</div>`
+      : `<p class="field-error" role="alert">${esc(UI.t('inst.noConn'))}${A.err ? ': ' + esc(A.err) : ''}</p>`;
     const byWorker = new Map(); held.forEach(r => { if (!byWorker.has(r.consumer)) byWorker.set(r.consumer, []); byWorker.get(r.consumer).push(r); });
-    const workers = [...byWorker.values()].map((rows, i) => UI.card({ title: `${esc(UI.t('agents.worker'))} ${i + 1}`, chips: UI.chipText(`${rows.length}`, 'accent'),
-      body: `<div class="list agent-tasks">${rows.map(taskItem).join('')}</div>` })).join('');
-    const wait = waiting.length ? UI.fold(`${esc(UI.t('agents.waiting'))} <span class="chip tone-neutral sm">${waiting.length}</span>`, `<div class="list agent-tasks">${waiting.map(taskItem).join('')}</div>`, { cls: 'plain' }) : '';
-    box.innerHTML = `<div class="agents-grid">${service}${workers || (A.rowsErr ? `<p class="neg">${esc(UI.t('agents.rowsFail'))}: ${esc(A.rowsErr)}</p>` : UI.empty(UI.t('agents.none'), UI.t('agents.noneSub'), 'compact'))}</div>${wait}`;
+    const section = (label, rows) => `<section class="rd-group"><h3 class="rd-label">${esc(label)}</h3><div class="list agent-tasks">${rows.map(taskItem).join('')}</div></section>`;
+    const workers = [...byWorker.values()].map((rows, i) => section(`${UI.t('agents.worker')} ${i + 1} · ${UI.t('agents.holding')} ${rows.length}건`, rows)).join('');
+    const wait = waiting.length ? section(`${UI.t('agents.waiting')} ${waiting.length}건`, waiting) : '';
+    box.innerHTML = service + (workers || (A.rowsErr ? UI.errorBlock(UI.t('agents.rowsFail'), A.rowsErr, { cls: 'compact' }) : UI.empty(UI.t('agents.none'), UI.t('agents.noneSub'), 'compact'))) + wait;
     box.querySelectorAll('[data-agent-task]').forEach(b => b.addEventListener('click', async () => {
       const I = window.hydInstances && window.hydInstances.I; if (!I) return;
       I.sel = b.dataset.agentInst; I.taskSel = null; I.tab = 'flow';

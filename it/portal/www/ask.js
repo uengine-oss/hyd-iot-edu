@@ -2,6 +2,8 @@
    질문 하나 = 처리 건 하나(정식 정의 ask_agent). 답할 에이전트를 고르고 보내면, 진행 중에는 도구 호출이 한 줄씩 나타나고(1.5초마다 다시 읽음),
    끝나면 답 + 근거(실행한 질의 · 조회 결과 · 실행 기록에서 확인됐는지) 또는 "답할 수 없음 + 이유"와 "처리 건에서 보기" 링크.
    한 질문 → 한 답(이전 질문을 기억하지 않음). 지난 질문 목록. 서버: process GET/POST /api/ask* (it/process/procsvc/ask.py).
+   짜임: 왼쪽에 질문 칸(답할 에이전트 → 질문 → [보내기])과 그 아래 대화(질문 → 답 → 근거 → 처리 과정), 오른쪽에 지난 질문 목록.
+   답이 먼저이고 근거(실행한 질의 · 조회 결과)와 처리 과정(도구 호출)은 그 아래 접기 안에 있다. 진행 중에는 처리 과정이 열려 있다.
    원본 대응: process-gpt-vue3 ui/WorkItemChat.vue(도구 입력 · 결과 접기), apps/todolist/InstanceTimeline.vue(작업 하나 = 메시지 하나). */
 (function () {
   const LIVE = new Set(['waiting', 'running', 'submitted', 'correcting', 'asking']);
@@ -92,40 +94,42 @@
      참고: Dify base/chat/chat/answer/workflow-process.tsx(답 위의 "처리 과정" 접이 카드, 실행 중 회전) · tool-detail.tsx(도구 한 줄, 펼치면 요청 · 응답),
            process-gpt-vue3 components/ui/WorkItemChat.vue · ds/components/PgMessage.vue(사용자 말풍선 오른쪽, 에이전트 왼쪽). */
   function readyHtml() {
-    if (A.statusErr) return `<p class="neg" role="status">질문 기능 상태를 읽지 못했습니다: ${esc(A.statusErr)}</p>`;
+    if (A.statusErr) return `<p class="field-error" role="alert">질문 기능 상태를 읽지 못했습니다: ${esc(A.statusErr)}</p>`;
     const s = A.status;
-    if (!s) return '<p class="muted">상태를 확인하는 중…</p>';
-    if (s.ready) return `<span class="live-conn on">답할 AI 에이전트 연결됨</span>`;
-    return `<div class="ask-warn" role="status">${UI.chipText('지금은 답할 AI 에이전트가 없습니다', 'warning')} <span>${esc(s.reason || '')}</span></div>`;
+    if (!s) return UI.loading('상태를 확인하는 중', 'compact');
+    if (s.ready) return '';      // 준비됐으면 따로 말하지 않는다 — 안 될 때만 까닭을 보인다
+    return `<p class="rd-state warn" role="status">지금은 답할 AI 에이전트가 없습니다${s.reason ? ' — ' + esc(s.reason) : ''}</p>`;
   }
   function agentOptions() {
     return A.agents.map(a => `<option value="${esc(a.id)}" ${a.id === A.agent ? 'selected' : ''}>${esc(a.name)}${a.default ? ' (기본)' : a.mine ? ' (내가 만든 것)' : ''}</option>`).join('');
   }
+  // 고른 에이전트가 무엇을 하고 질문에 어떤 도구 서버 · 스킬을 쓰는지 글로(칩으로 늘어놓지 않는다)
   function agentLine() {
     const a = A.agents.find(x => x.id === A.agent);
     if (!a) return '';
     // 질문에 실제로 연결하는 도구 서버(서버 계산 a.servers — 질문용 조회 도구가 있는 서버만, 워커와 같은 규칙)와 질문에는 쓰지 않는 서버(a.left_out)
     const serverLabel = t => hydWords.serverName(t);
-    const tools = a.servers.length ? a.servers.map(t => UI.chipText(serverLabel(t), 'neutral')).join(' ') : UI.chipText('질문에 쓸 도구 서버 없음', 'warning');
-    const out = a.left_out.length ? `<p class="field-hint">질문에는 쓰지 않는 도구 서버(질문용 조회 도구가 없음): ${a.left_out.map(t => esc(serverLabel(t))).join(', ')}</p>` : '';
-    return `<p class="field-hint">${esc(a.goal || a.role || '')}</p><div class="row-wrap ask-tools">${tools}${a.skills.length ? ' ' + a.skills.map(x => UI.chipText(x, 'accent')).join(' ') : ''}</div>${out}`;
+    const uses = [a.servers.length ? '도구 서버 ' + a.servers.map(serverLabel).join(', ') : '', a.skills.length ? '스킬 ' + a.skills.join(', ') : ''].filter(Boolean).join(' · ');
+    return (a.goal || a.role ? `<p class="rd-note">${esc(a.goal || a.role)}</p>` : '') +
+      (a.servers.length ? `<p class="rd-note">질문에 쓰는 것: ${esc(uses)}</p>` : `<p class="rd-state warn">이 에이전트에는 질문에 쓸 도구 서버가 없습니다${a.skills.length ? ' (스킬 ' + esc(a.skills.join(', ')) + ')' : ''}</p>`) +
+      (a.left_out.length ? `<p class="rd-note">질문에는 쓰지 않는 도구 서버(질문용 조회 도구가 없음): ${a.left_out.map(t => esc(serverLabel(t))).join(', ')}</p>` : '');
   }
+  // 답 → 근거(접기). 답할 수 없으면 그 이유가 답 자리에 온다
   function resultHtml(v) {
     const r = v.result;
     if (!r) return '';
     if (r.kind === 'answered') {
-      const ev = (r.evidence || []).map(e => `<li>${UI.chipText(e.verified ? '실행 기록에서 확인됨' : '실행 기록에 없음', e.verified ? 'success' : 'warning')} <b>${esc(UI.toolName(e.tool))}</b>
-          <div class="ask-query"><code>${esc(UI.clean(e.query))}</code></div>${e.result != null ? `<div class="muted">에이전트 요약: ${esc(window.hydTrace ? hydTrace.outBrief(e.result, 200) : String(e.result))}</div>` : ''}
-          <div class="muted">실제 조회 결과: ${esc(e.actual_result || '원문 없음')}</div>
-          ${e.result_check ? `<p class="field-hint">${esc(e.result_check.note)}${e.result_check.missing?.length ? `: ${esc(e.result_check.missing.join(', '))}` : ''}</p>` : ''}</li>`).join('');
-      return `<div class="ask-answer"><p>${esc(UI.clean(r.answer))}</p>
-        <div class="card-chips">${UI.chipText(`실행 기록과 맞은 근거 ${r.verified}건`, 'neutral')} ${UI.chipText(`성공한 조회 ${r.queried}건`, 'neutral')}</div>
-        ${r.answer_check ? `<p class="field-hint">${esc(r.answer_check.note)}${r.answer_check.missing?.length ? `: ${esc(r.answer_check.missing.join(', '))}` : ''}</p>` : ''}</div>`
-        + UI.fold(`근거 — 실행한 질의 · 조회 결과 <span class="chip tone-neutral sm">${(r.evidence || []).length}</span>`, `<ol class="stack-list">${ev}</ol>`
-          + (r.note ? `<p class="field-hint">고른 근거: ${esc(UI.clean(r.note))}</p>` : ''), { cls: 'small' });
+      const ev = (r.evidence || []).map(x => `<li><p class="rd-state ${x.verified ? 'ok' : 'warn'}"><span><b>${esc(UI.toolName(x.tool))}</b> — ${x.verified ? '실행 기록에서 확인됨' : '실행 기록에 없음'}</span></p>
+          <div class="ask-query"><code>${esc(UI.clean(x.query))}</code></div>${x.result != null ? `<div class="muted">에이전트 요약: ${esc(window.hydTrace ? hydTrace.outBrief(x.result, 200) : String(x.result))}</div>` : ''}
+          <div class="muted">실제 조회 결과: ${esc(x.actual_result || '원문 없음')}</div>
+          ${x.result_check ? `<p class="rd-note">${esc(x.result_check.note)}${x.result_check.missing?.length ? `: ${esc(x.result_check.missing.join(', '))}` : ''}</p>` : ''}</li>`).join('');
+      return `<div class="ask-answer"><h3 class="rd-label">답</h3><p>${esc(UI.clean(r.answer))}</p>
+        ${r.answer_check ? `<p class="rd-note">${esc(r.answer_check.note)}${r.answer_check.missing?.length ? `: ${esc(r.answer_check.missing.join(', '))}` : ''}</p>` : ''}</div>`
+        + UI.fold(`근거 · 실행한 질의와 조회 결과 ${(r.evidence || []).length}건`, `<p class="rd-note">실행 기록과 맞은 근거 ${esc(r.verified)}건 · 성공한 조회 ${esc(r.queried)}건</p><ol class="stack-list">${ev}</ol>`
+          + (r.note ? `<p class="rd-note">고른 근거: ${esc(UI.clean(r.note))}</p>` : ''), { cls: 'small' });
     }
-    return `<div class="ask-answer warn" role="status"><p>${UI.chipText('답할 수 없음', 'warning')} ${esc(UI.clean(r.reason || '이유가 기록되지 않았습니다'))}</p>
-      <p class="muted">${r.by === 'server' ? '에이전트가 낸 답을 실제 도구 호출 기록과 대조했지만 근거를 찾지 못했습니다.' : '에이전트가 조회해 보고 답할 수 없다고 했습니다.'}</p></div>`
+    return `<div class="ask-answer warn" role="status"><h3 class="rd-label">답</h3><p class="rd-state warn">답할 수 없음 — ${esc(UI.clean(r.reason || '이유가 기록되지 않았습니다'))}</p>
+      <p class="rd-note">${r.by === 'server' ? '에이전트가 낸 답을 실제 도구 호출 기록과 대조했지만 근거를 찾지 못했습니다.' : '에이전트가 조회해 보고 답할 수 없다고 했습니다.'}</p></div>`
       + (r.claimed ? UI.fold('에이전트가 낸 답 (근거 확인 안 됨)', `<p>${esc(UI.clean(r.claimed))}</p>`, { cls: 'small' }) : '');
   }
   // the agent's work as a live trace (one work item, flat rows) — fed by GET /api/todolist/{id} and the SSE bus
@@ -152,46 +156,47 @@
     hydTrace.TR.mounted.add(A.trace);
     A.trace.update({ instance: { status: LIVE.has(A.cur.state) ? 'RUNNING' : 'COMPLETED' }, definition: { activities: [] }, workitems: [A.item], events: A.item.events || [] });
   }
+  // 도구 호출 한 줄: 상태 칩은 실행 중 · 실패일 때만
   function callRow(c) {
-    const tone = c.running ? 'accent' : c.ok ? 'success' : c.ok === false ? 'danger' : 'neutral';
-    const label = c.running ? '실행 중' : c.ok ? '성공' : c.ok === false ? '실패' : '완료';
-    return `<li>${UI.chipText(label, tone)} <b>${esc(toolName(c))}</b> <span class="muted">${esc(UI.clean(c.input_text || ''))}</span>${c.problem ? `<div class="neg">${esc(UI.clean(c.problem))}</div>` : ''}</li>`;
+    const chip = c.running ? UI.chipText('실행 중', 'accent') : c.ok === false ? UI.chipText('실패', 'danger') : '';
+    return `<li><b>${esc(toolName(c))}</b> ${chip} <span class="muted">${esc(UI.clean(c.input_text || ''))}</span>${c.problem ? `<div class="neg">${esc(UI.clean(c.problem))}</div>` : ''}</li>`;
   }
   function threadHtml(staticCalls) {
     const v = A.cur;
-    if (!v) return UI.empty('질문을 적고 보내세요', replay() ? '위의 질문 단추를 누르면 질문 칸에 들어갑니다.'
-      : '예: 완제품 재고가 가장 적은 설비와 그 수량은? · HYD-01 팬 진동 최근 최대값은? · 어떤 규칙이 지금 성립하나?');
+    if (!v) return UI.empty('아직 보낸 질문이 없습니다', replay() ? '위의 질문 단추를 누르면 질문 칸에 들어갑니다. [보내기]를 누르면 답과 근거가 여기에 나옵니다.'
+      : '위 칸에 질문을 적고 [보내기]를 누르면 답과 근거가 여기에 나옵니다. 예: 완제품 재고가 가장 적은 설비와 그 수량은? · HYD-01 팬 진동 최근 최대값은?', 'compact');
     const [label, tone] = STATE[v.state] || [v.state, 'neutral'];
     const live = LIVE.has(v.state);
     const calls = v.tool_calls || [];
+    // 차례: 질문 → (누가 · 상태) → 답 → 근거 → 처리 과정. 진행 중에는 답이 아직 없어 처리 과정이 열려 있다
     return `<div class="ask-thread">
       <div class="ask-q"><div class="ask-bubble">${esc(v.question)}</div><span class="muted">${esc(v.asked_by || '')} · ${esc(UI.dateTime(v.started))}</span></div>
       <div class="ask-a card">
-        <div class="ask-a-head"><span class="tr-block k-agent${live ? ' live' : ''}">${window.hydTrace ? hydTrace.icon('agent') : ''}</span><b>${esc(v.agent ? v.agent.name : '')}</b>${UI.chipText(label, tone)}
-          <span class="muted">${esc(UI.clean(v.message || ''))}</span><span class="ask-count">${window.hydTrace ? hydTrace.icon('tool') : ''}${calls.length}</span></div>
-        <details class="fold small ask-process" ${live || A.processOpen ? 'open' : ''}><summary>처리 과정 · 도구 호출 ${calls.length} ${live && window.hydTrace ? hydTrace.spinner('sm') : ''}</summary><div class="fold-body">${A.traceErr ? `<p class="field-hint">자세한 처리 과정을 읽지 못해 도구 호출 목록만 보입니다 — ${esc(A.traceErr)}</p>` : ''}<div data-ask-trace>${staticCalls ? `<ol class="stack-list">${calls.map(callRow).join('')}</ol>` : ''}</div></div></details>
+        <header class="rd-head"><div><div class="rd-title"><h3>${esc(v.agent ? v.agent.name : '')}</h3>${UI.chipText(label, tone)}</div>${v.message ? `<p class="rd-sub">${esc(UI.clean(v.message))}</p>` : ''}</div></header>
         ${resultHtml(v)}
-        ${v.state==='failed' && replay() ? '<p class="field-hint" role="status">AI 키가 없을 때 쓰는 재생 모드에서는 같은 질문을 다시 진행할 수 없습니다.</p>' : ''}
+        <details class="fold small ask-process" ${live || A.processOpen ? 'open' : ''}><summary>처리 과정 · 도구 호출 ${calls.length}건 ${live && window.hydTrace ? hydTrace.spinner('sm') : ''}</summary><div class="fold-body">${A.traceErr ? `<p class="rd-note">자세한 처리 과정을 읽지 못해 도구 호출 목록만 보입니다 — ${esc(A.traceErr)}</p>` : ''}<div data-ask-trace>${staticCalls ? `<ol class="stack-list">${calls.map(callRow).join('')}</ol>` : ''}</div></div></details>
+        ${v.state==='failed' && replay() ? '<p class="rd-note" role="status">AI 키가 없을 때 쓰는 재생 모드에서는 같은 질문을 다시 진행할 수 없습니다.</p>' : ''}
         ${v.state==='failed' && !replay() ? UI.field({label:'다시 진행할 때 반영할 내용(선택)',input:`<textarea id="askRetryNote" rows="2">${esc(A.retryNote || '')}</textarea>`}) : ''}
-        <div class="form-actions">${v.state==='failed' && !replay() ? `<button class="btn small" id="askRetry" ${A.sending?'disabled':''}>같은 질문 다시 진행</button>` : ''}<a class="btn small ghost" href="${esc(v.link)}">처리 건에서 보기 →</a></div></div></div>`;
+        <div class="rd-form-actions">${v.state==='failed' && !replay() ? `<button class="btn small" id="askRetry" ${A.sending?'disabled':''}>같은 질문 다시 진행</button>` : ''}<a class="link-btn" href="${esc(v.link)}">처리 건에서 보기 →</a></div></div></div>`;
   }
   function historyHtml() {
-    if (A.histErr) return `<p class="neg">${esc('지난 질문을 읽지 못했습니다: ' + A.histErr)}</p>`;
-    if (!A.history.length) return '<p class="muted">아직 질문이 없습니다.</p>';
+    if (A.histErr) return UI.errorBlock('지난 질문을 읽지 못했습니다', A.histErr, { cls: 'compact' });
+    if (!A.history.length) return UI.empty('아직 질문이 없습니다', '질문을 보내면 여기에 쌓이고, 누르면 그 답을 다시 볼 수 있습니다.', 'compact');
     const kind = h => h.verdict === 'answered' ? UI.chipText('답함', 'success') : h.verdict === 'unanswerable' ? UI.chipText('답할 수 없음', 'warning')
       : UI.chipText((STATE[h.state] || [h.state])[0], (STATE[h.state] || [0, 'neutral'])[1]);
     return `<div class="list ask-history">${A.history.map(h => `<button type="button" class="item${A.cur && A.cur.id === h.id ? ' sel' : ''}" data-ask-open="${esc(h.id)}"><div class="row"><strong>${esc(h.question)}</strong>${kind(h)}</div>
-      <span class="sub">${esc(h.agent ? h.agent.name : '')} · 도구 ${h.calls}건 · ${esc(UI.dateTime(h.started))}</span></button>`).join('')}</div>`
-      + `<div class="form-actions"><button type="button" class="btn small" id="askReset">끝난 질문 기록 지우기</button></div>`;
+      <span class="sub">${esc(h.agent ? h.agent.name : '')} · ${esc(UI.dateTime(h.started))}</span></button>`).join('')}</div>`
+      + `<p class="rd-foot"><span>끝난 질문 기록을 목록에서 지웁니다.</span><button type="button" class="btn small danger" id="askReset">끝난 질문 기록 지우기</button></p>`;
   }
   function formHtml() {
-    return `<header class="card-head"><div class="card-title"><h3>에이전트에게 질문하기</h3></div><div class="card-actions">${readyHtml()}</div></header>
-        <div class="form-grid">${UI.field({ label: '답할 에이전트', input: `<select id="askAgent">${agentOptions()}</select>` })}</div>${agentLine()}
+    return `${readyHtml()}
+        ${UI.field({ label: '답할 에이전트', input: `<select id="askAgent">${agentOptions()}</select>` })}${agentLine()}
         <div class="ask-input">${UI.field({ label: '질문', hint: 'Enter 보내기 · Shift+Enter 줄바꿈. 에이전트는 자기 도구로 실제 조회한 결과만으로 답합니다.', input: `<textarea id="askText" rows="3" maxlength="${esc(window.hydCourseAccess.questionMaxChars || '')}"></textarea>` })}${replay() ? picks() : ''}</div>
-        <div class="form-actions"><button class="btn primary" id="askSend" ${A.sending || !A.draft.trim() ? 'disabled' : ''}>${A.sending ? '보내는 중…' : '보내기'}</button></div>`;
+        <div class="rd-form-actions"><button class="btn primary" id="askSend" ${A.sending || !A.draft.trim() ? 'disabled' : ''}>${A.sending ? '보내는 중…' : '보내기'}</button></div>`;
   }
-  const layout = (form, err, thread, hist) => `<div class="ask-layout"><div class="ask-main"><section class="card ask-compose" data-ask-form>${form}</section><div data-ask-err>${err}</div><div data-ask-thread>${thread}</div></div>
-        <aside class="ask-side"><h2 class="sec">지난 질문</h2><div data-ask-history>${hist}</div></aside></div>`;
+  const layout = (form, err, thread, hist) => `<p class="page-lead">에이전트에게 질문 하나를 보내면 처리 건 하나로 돌고, 도구로 실제 조회한 결과만으로 답합니다.</p>` +
+        `<div class="ask-layout"><div class="ask-main"><section class="ask-compose rd-form" data-ask-form>${form}</section><div data-ask-err>${err}</div><div data-ask-thread>${thread}</div></div>
+        <aside class="ask-side"><h2 class="rd-sec">지난 질문</h2><div data-ask-history>${hist}</div></aside></div>`;
   function render() {
     if (!A.el) return;
     if (!A.el.querySelector('[data-ask-form]')) A.el.innerHTML = layout('', '', '', '');
@@ -203,7 +208,7 @@
       const t = form.querySelector('#askText'); t.value = A.draft;
       wireForm(form);
     } else { const b = form.querySelector('#askSend'); if (b) b.disabled = A.sending || !A.draft.trim(); }
-    A.el.querySelector('[data-ask-err]').innerHTML = A.err ? `<p class="neg" role="status">${esc(A.err)}</p>` : '';
+    A.el.querySelector('[data-ask-err]').innerHTML = A.err ? `<p class="field-error" role="alert">${esc(A.err)}</p>` : '';
     const thread = A.el.querySelector('[data-ask-thread]');
     const v = A.cur, trace = v ? ensureTrace(v) : null;
     const proc = thread.querySelector('.ask-process'); if (proc) A.processOpen = proc.open;

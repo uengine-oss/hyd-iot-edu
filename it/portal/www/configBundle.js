@@ -28,18 +28,20 @@
   const counts = s => Object.entries(COUNT_WORDS).filter(([k]) => s && s[k]).map(([k, [w, unit]]) => `${w} ${s[k]}${unit}`).join(' · ') || '내가 만든 것 없음(기준 그대로)';
 
   function render(el) {
+    // 세 가지 일을 위에서 아래로: 받기 → 불러오기 → 되돌리기. 일마다 제목 · 한 문장 · 단추 하나(카드로 싸지 않고 여백과 선으로 가른다)
+    const part = (title, note, body) => `<section class="rd-group rd-part"><h3 class="rd-sec">${title}</h3><p class="rd-note">${note}</p>${body}</section>`;
     el.innerHTML = '<div id="studentCasesView"></div>' +
-      UI.card({ title: '출발본 내보내기', sub: '지금 내가 만든 구성만 파일 하나로 받습니다. 기준 구성과 비밀값은 들어가지 않습니다.',
-        body: `<div class="form-actions"><span class="form-msg" id="cfgExportMsg" role="status"></span><button type="button" class="btn primary" id="cfgExport">파일 받기</button></div>` }) +
-      UI.card({ title: '출발본 불러오기', sub: '받은 출발본 파일을 올리면 지금 구성을 기준으로 되돌린 뒤 파일 내용으로 다시 세웁니다. 망쳐도 다시 불러오면 됩니다.',
-        body: `<div class="form-grid"><div class="field wide"><label for="cfgFile">출발본 파일(.json)</label><input type="file" id="cfgFile" accept=".json,application/json"></div></div>
+      part('출발본 내보내기', '지금 내가 만든 구성만 파일 하나로 받습니다. 기준 구성과 비밀값은 들어가지 않습니다.',
+        `<div class="rd-form-actions"><button type="button" class="btn" id="cfgExport">파일 받기</button><span class="form-msg" id="cfgExportMsg" role="status"></span></div>`) +
+      part('출발본 불러오기', '받은 출발본 파일을 올리면 지금 구성을 기준으로 되돌린 뒤 파일 내용으로 다시 세웁니다. 망쳐도 다시 불러오면 됩니다.',
+        `<div class="rd-form"><div class="field"><label for="cfgFile">출발본 파일(.json)</label><input type="file" id="cfgFile" accept=".json,application/json"></div></div>
           <div id="cfgSecrets"></div>
           <p class="field-hint" id="cfgImportWhy"></p>
-          <div class="form-actions"><span class="form-msg" id="cfgImportMsg" role="status"></span><button type="button" class="btn primary" id="cfgImport"${hydCourseAccess.attrs(IMPORT)}>불러오기</button></div>
-          <div id="cfgImportResult"></div>` }) +
-      UI.card({ title: '기준으로 되돌리기', sub: '내가 만든 AI 에이전트 · 스킬 · 역할 · 배정 · 업무분장 · 도구 서버 · 비밀 값 · 흐름 · 배포와 끝난 질문 · 판단 채점 · 시험 비교 기록을 지웁니다. 기준은 그대로입니다.',
-        body: `<div class="form-actions"><span class="form-msg" id="cfgResetMsg" role="status"></span><button type="button" class="btn danger" id="cfgReset">기준으로 되돌리기</button></div>
-          <div id="cfgResetResult"></div>` });
+          <div class="rd-form-actions"><button type="button" class="btn" id="cfgImport"${hydCourseAccess.attrs(IMPORT)}>불러오기</button><span class="form-msg" id="cfgImportMsg" role="status"></span></div>
+          <div id="cfgImportResult"></div>`) +
+      part('기준으로 되돌리기', '내가 만든 AI 에이전트 · 스킬 · 역할 · 배정 · 업무분장 · 도구 서버 · 비밀 값 · 흐름 · 배포와 끝난 질문 · 판단 채점 · 에이전트 시험 비교 기록을 지웁니다. 기준은 그대로입니다.',
+        `<div class="rd-form-actions"><button type="button" class="btn danger" id="cfgReset">기준으로 되돌리기</button><span class="form-msg" id="cfgResetMsg" role="status"></span></div>
+          <div id="cfgResetResult"></div>`);
     const $ = id => el.querySelector('#' + id);
     const why = () => { $('cfgImportWhy').textContent = hydCourseAccess.blocked(IMPORT); };
     why();
@@ -64,7 +66,7 @@
       $('cfgSecrets').innerHTML = UI.section('비밀값 입력', needs.map(n => n.slots.map(s =>
         UI.field({ label: `${hydWords.serverName(n.server)} — ${s.label}`, input: `<input type="password" autocomplete="off" data-server="${H(n.server)}" data-slot="${H(s.slot)}">`,
           hint: '파일에는 담지 않은 값입니다' })).join('')).join('')) +
-        `<div class="form-actions"><button type="button" class="btn" id="cfgSkip"${hydCourseAccess.attrs(IMPORT)}>비밀값이 없는 서버만 건너뛰고 불러오기</button></div>`;
+        `<div class="rd-form-actions"><button type="button" class="btn" id="cfgSkip"${hydCourseAccess.attrs(IMPORT)}>비밀값이 없는 서버만 건너뛰고 불러오기</button></div>`;
       $('cfgSkip').addEventListener('click', () => run(true));
       why();
     }
@@ -74,9 +76,9 @@
       return out;
     }
     function showResult(r) {
-      $('cfgImportResult').innerHTML = UI.fold(`적용한 것 ${r.applied.reduce((n, a) => n + a.count, 0)}건 · 건너뛴 것 ${r.skipped.length}건`,
+      $('cfgImportResult').innerHTML = `<section class="rd-group"><h4 class="rd-label">적용한 것 ${r.applied.reduce((n, a) => n + a.count, 0)}건 · 건너뛴 것 ${r.skipped.length}건</h4>` +
         r.applied.map(a => `<p><b>${H(a.label)}</b> ${a.count}건</p>${list(a.items)}`).join('') +
-        (r.skipped.length ? `<p><b>건너뛴 것</b></p>${list(r.skipped.map(s => `${s.what} — ${s.reason}`))}` : ''), { open: true });
+        (r.skipped.length ? `<p><b>건너뛴 것</b></p>${list(r.skipped.map(s => `${s.what} — ${s.reason}`))}` : '') + `</section>`;
     }
     function showFailure(d) {
       const parts = [];
@@ -87,9 +89,9 @@
         if (d.applied && d.applied.length) parts.push(`<p><b>그 전에 적용된 단계</b></p>${list(d.applied.map(a => `${a.label} ${a.count}건`))}`);
         if (d.partially_applied && d.partially_applied.length) parts.push(`<p><b>멈춘 단계에서 들어간 것</b></p>${list(d.partially_applied)}`);
         if (d.not_applied && d.not_applied.length) parts.push(`<p><b>적용하지 않은 단계</b></p>${list(d.not_applied.map(s => s.label))}`);
-        parts.push(`<p>${d.rolled_back ? UI.chipText('불러오기 전 상태로 되돌림', 'success') : UI.chipText('불러오기 전 상태로 되돌리지 못함', 'danger') + ' ' + H(d.rollback_error || '')}</p>`);
+        parts.push(`<p class="rd-state ${d.rolled_back ? 'ok' : 'bad'}">${d.rolled_back ? '불러오기 전 상태로 되돌렸습니다' : '불러오기 전 상태로 되돌리지 못했습니다 ' + H(d.rollback_error || '')}</p>`);
       }
-      $('cfgImportResult').innerHTML = parts.length ? UI.fold('왜 안 됐는지', parts.join(''), { open: true }) : '';
+      $('cfgImportResult').innerHTML = parts.length ? `<section class="rd-group"><h4 class="rd-label">왜 안 됐는지</h4>${parts.join('')}</section>` : '';
     }
     let importing = false;                                // 불러오기 · 건너뛰고 불러오기는 한 번에 하나(두 번 누름)
     async function run(skip) {
@@ -121,12 +123,12 @@
       if (yes) run(false);
     });
     $('cfgReset').addEventListener('click', async () => {
-      const yes = await UI.confirm({ title: '기준으로 되돌릴까요?', body: '내가 만든 구성과 비밀 값, 끝난 질문 · 판단 채점 · 시험 비교 기록을 모두 지웁니다. 수업 흐름(시작할 때 설치되는 A · B · C)은 남습니다. 먼저 출발본으로 받아 두면 구성은 다시 불러올 수 있습니다(비밀 값 · 기록은 파일에 없습니다).', ok: '되돌리기', danger: true });
+      const yes = await UI.confirm({ title: '기준으로 되돌릴까요?', body: '내가 만든 구성과 비밀 값, 끝난 질문 · 판단 채점 · 에이전트 시험 비교 기록을 모두 지웁니다. 수업 흐름(시작할 때 설치되는 A · B · C)은 남습니다. 먼저 출발본으로 받아 두면 구성은 다시 불러올 수 있습니다(비밀 값 · 기록은 파일에 없습니다).', ok: '되돌리기', danger: true });
       if (!yes) return;
       $('cfgReset').disabled = true;
       try {
         const { body } = await call('/api/config/reset', { by: actor() });
-        msg('cfgResetMsg', body.message); $('cfgResetResult').innerHTML = UI.fold('지운 것', list(body.steps.map(s => `${s.label}: ${s.text}`)));
+        msg('cfgResetMsg', body.message); $('cfgResetResult').innerHTML = `<section class="rd-group"><h4 class="rd-label">지운 것</h4>${list(body.steps.map(s => `${s.label}: ${s.text}`))}</section>`;
         UI.toast(body.message, { tone: 'ok' });
       } catch (e) {
         msg('cfgResetMsg', e.message, true);

@@ -14,28 +14,32 @@
   function locked(value){busy=value;for(const id of ['sourceEventRefresh','sourceEventMore','sourceEventStatus']) q(id).disabled=value;
     q('sourceEventRetry').querySelector('button').disabled=value;
     q('sourceEventDetailRefresh').disabled=value||!selected;}
-  function rowText(row){return '#'+row.id+' · '+(labels[row.status]||row.status)+' · '+(row.asset||'설비 미상')+' · '+(kinds[row.kind]||row.kind)+(row.error?' · '+UI.logText(row.error):'');}   // A141: 영문 오류 문구는 번역 표로, 원문은 선택 접수의 '오류' 칸에 그대로
+  // 접수 한 줄: 무엇이(종류 · 설비) + 상태 칩 하나, 둘째 줄에 접수 번호와 오류 한 줄(A141: 영문 오류 문구는 번역 표로, 원문은 고른 접수의 '오류' 칸에 그대로)
+  const TONE={FAILED:'danger',CONFLICT:'danger',INVALID:'danger',WAITING:'warning',PENDING:'neutral',CLAIMED:'accent',HANDLED:'success',DUPLICATE:'neutral'};
+  function rowHtml(row){return '<div class="row"><strong>'+esc((kinds[row.kind]||row.kind)+' · '+(row.asset||'설비 미상'))+'</strong>'+UI.chipText(labels[row.status]||row.status,TONE[row.status]||'neutral')+'</div>'+
+    '<span class="sub">접수 '+esc(row.id)+(row.error?' · '+esc(UI.logText(row.error)):'')+'</span>';}
   function field(parent,label,value){const title=document.createElement('h3'),body=document.createElement('pre');
     title.textContent=label;body.textContent=typeof value==='string'?value:JSON.stringify(value,null,2);
-    body.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere';parent.append(title,body);}
+    title.className='rd-label';body.className='rd-wrap';parent.append(title,body);}
   // 접수 요약은 키-값 표로(JSON 으로 보이지 않는다). 값이 없는 줄은 뺀다. 원문 · 정의 · 이력은 원문 그대로 아래 칸에
   function meta(parent,label,rows){const title=document.createElement('h3'),list=document.createElement('dl');
-    title.textContent=label;list.className='meta-list';
+    title.textContent=label;title.className='rd-label';list.className='kv';
     for(const [key,value] of rows){if(value==null||value==='')continue;
-      const line=document.createElement('div'),dt=document.createElement('dt'),dd=document.createElement('dd');
-      dt.textContent=key;dd.textContent=typeof value==='string'?value:String(value);dd.style.overflowWrap='anywhere';line.append(dt,dd);list.append(line);}
+      const dt=document.createElement('dt'),dd=document.createElement('dd');
+      dt.textContent=key;dd.textContent=typeof value==='string'?value:String(value);list.append(dt,dd);}
     parent.append(title,list);}
   async function detail(id){
     if(busy)return;locked(true);
     try{const row=await getJ(API.process+'/api/source-events/'+encodeURIComponent(id));selected=row;
       const listed=q('sourceEventList').querySelector('[data-receipt="'+row.id+'"]');
-      if(listed){if(q('sourceEventStatus').value&&q('sourceEventStatus').value!==row.status)listed.remove();else listed.textContent=rowText(row);}
+      if(listed){if(q('sourceEventStatus').value&&q('sourceEventStatus').value!==row.status)listed.remove();else listed.innerHTML=rowHtml(row);}
+      q('sourceEventList').querySelectorAll('.item').forEach(n=>n.classList.toggle('sel',n.dataset.receipt===String(row.id)));
       const box=q('sourceEventDetail');box.replaceChildren();
       meta(box,'접수 '+row.id+' · '+(labels[row.status]||row.status),[['종류',kinds[row.kind]||row.kind],['받은 방식',sources[row.source]||row.source],['설비',row.asset],
         ['접수 시각',row.received_at?UI.dateTime(row.received_at):''],['처리 시도',row.attempts!=null?row.attempts+'회':''],['실패 횟수',row.failures!=null?row.failures+'회':''],['원본 접수 번호',row.parent_id],
         ['오류',row.error],['처리 결과',row.result==null?'':typeof row.result==='string'?row.result:JSON.stringify(row.result)]]);
       field(box,'접수 원문',row.payload);field(box,'접수 당시 처리 정의',row.policy);field(box,'처리 이력',row.history);
-      const wire=document.createElement('details'),summary=document.createElement('summary');summary.textContent='전송 원문과 무결성 확인';wire.append(summary);
+      const wire=document.createElement('details'),summary=document.createElement('summary');summary.textContent='자세히 · 전송 원문과 무결성 확인';wire.className='fold small';wire.append(summary);
       meta(wire,'원문 보존 형식',[['형식',wires[row.wire_kind]||row.wire_kind],['지문(SHA-256)',row.wire_sha],['원문(base64)',row.wire_base64],
         ['토픽',row.topic],['파티션',row.partition_no],['위치(offset)',row.offset_no]]);box.append(wire);
       q('sourceEventRetry').hidden=row.status!=='FAILED';
@@ -47,8 +51,8 @@
     if(busy)return;locked(true);
     try{if(reset){cursor=0;selected=null;q('sourceEventList').replaceChildren();q('sourceEventDetail').replaceChildren();q('sourceEventRetry').hidden=true;}
       const status=q('sourceEventStatus').value, rows=await getJ(API.process+'/api/source-events?limit=50&after_id='+cursor+(status?'&status='+encodeURIComponent(status):''));
-      for(const row of rows){const button=document.createElement('button');button.className='btn';button.type='button';
-        button.dataset.receipt=row.id;button.textContent=rowText(row);
+      for(const row of rows){const button=document.createElement('button');button.className='item';button.type='button';
+        button.dataset.receipt=row.id;button.innerHTML=rowHtml(row);
         button.addEventListener('click',()=>detail(row.id));q('sourceEventList').append(button);cursor=row.id;}
       message(rows.length?'접수 '+rows.length+'건을 읽었습니다. 더 있으면 [더 보기]를 누르세요.':'이 조건에서 더 읽을 접수가 없습니다.');
     }catch(e){message('접수 목록을 읽지 못했습니다: '+e.message,true);}finally{locked(false);}

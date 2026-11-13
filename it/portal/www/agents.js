@@ -9,7 +9,7 @@
 (function () {
   const MODEL_FROM = { activity: '단계 설정', agent: '에이전트 설정' };
   const TOOLS_FROM = { agent: '에이전트 설정', activity: '단계 설정', 'agent+activity': '에이전트 도구 중 단계가 허용한 것' };
-  const SHORT = 80;
+  const SHORT = 240;
   const st = { host: null, tab: 'agents', agents: null, skills: null, pick: { agents: null, skills: null }, detail: null, error: '', open: {}, seq: 0,
     form: null, options: null, board: null, boardError: '', busy: false, acting: new Set() };
 
@@ -20,19 +20,24 @@
   const modelText = m => !m || m === course().model ? '수업 모델' : m;
   const api = path => API.process + path;
   const del = url => requestJ(url, { method: 'DELETE' });
-  const mineChip = o => o === 'user' ? UI.chipText('내가 만든', 'success') : UI.chipText('기본', 'neutral');
+  const mineChip = o => UI.chipText(o === 'user' ? '내가 만든' : '기본', 'neutral');      // 색은 상태에만 쓴다 — 기본 / 내가 만든은 글로 가른다
+  // 키-값 · 이름표 붙은 묶음(기준 4절). 값이 없는 줄은 그리지 않는다. 오류 · 읽는 중 · 빈 상태는 ui.js 의 부품을 쓴다
+  const errBox = (what, why) => UI.errorBlock(what, why, { retry: true, cls: 'compact' });      // [다시 시도]는 onClick 의 data-retry 가 받는다
+  const loading = () => UI.loading('', 'compact');
+  const blank = (title, sub = '') => UI.empty(title, sub, 'compact');
+  const kv = rows => { const r = rows.filter(([, v]) => v != null && v !== ''); return r.length ? `<dl class="kv">${r.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${v}</dd>`).join('')}</dl>` : ''; };
+  const group = (label, body) => body ? `<section class="rd-group"><h3 class="rd-label">${esc(label)}</h3>${body}</section>` : '';
   function reason(e) {
     if (e && e.status === 404 && !/[가-힣]/.test(e.message || '')) return '찾을 수 없습니다. 지웠거나 이름이 바뀌었을 수 있습니다. 다시 읽어 보세요.';
     return (e && e.message) || '처리 엔진에 연결할 수 없습니다';
   }
   function longText(key, text) {
     const t = String(text || '');
-    if (t.length <= SHORT || st.open[key]) return esc(t) + (t.length > SHORT ? ` <button type="button" class="btn small" data-fold-text="${esc(key)}">접기</button>` : '');
-    return esc(t.slice(0, SHORT)) + '… ' + `<button type="button" class="btn small" data-fold-text="${esc(key)}">펼치기</button>`;
+    if (t.length <= SHORT || st.open[key]) return esc(t) + (t.length > SHORT ? ` <button type="button" class="link-btn" data-fold-text="${esc(key)}">줄이기</button>` : '');
+    return esc(t.slice(0, SHORT)) + '… ' + `<button type="button" class="link-btn" data-fold-text="${esc(key)}">더 보기</button>`;
   }
   const clip = (t, n = 48) => (t.length > n ? t.slice(0, n) + '…' : t);
   const stepLabel = s => `${s.definition_name || UI.defName(s.definition_id)} · ${UI.flowName(s.name)}`;   // 정의에 등록된 이름 먼저
-  const chips = (items, tone = 'neutral') => items.length ? items.map(t => UI.chipText(t, tone)).join(' ') : '<span class="muted">없음</span>';
   // 두 번 눌림 막기: 같은 일이 끝날 때까지 그 단추를 끈다(복제가 두 벌 생기거나 붙이기가 409 로 보이지 않게)
   async function once(key, button, work) {
     if (st.acting.has(key)) return null;
@@ -89,122 +94,120 @@
     if (!key) { box.innerHTML = emptyDetail(); return; }
     const url = st.tab === 'agents' ? '/api/agents/' + encodeURIComponent(key) : '/api/skills/' + encodeURIComponent(key);
     const tab = st.tab;
-    box.innerHTML = UI.empty('불러오는 중', '', 'compact');
+    box.innerHTML = loading();
     try {
       const d = await getJ(api(url));
       if (tab !== st.tab || key !== (tab === 'agents' ? st.pick.agents : st.pick.skills) || st.form) return;
       st.detail = d;
       box.innerHTML = tab === 'agents' ? agentDetail(d) : skillDetail(d);
     } catch (e) {
-      box.innerHTML = `<div class="neg" role="status">${esc(reason(e))}</div>`;
+      box.innerHTML = errBox(tab === 'agents' ? '에이전트를 읽지 못했습니다' : '스킬을 읽지 못했습니다', reason(e));
     }
   }
   function emptyDetail() {
     return st.tab === 'agents'
-      ? UI.empty('에이전트가 없습니다', '"새 에이전트"로 만들면 여기에 나타납니다.')
-      : UI.empty('아직 스킬이 없습니다', '"새 스킬"로 작업 요령 문서(SKILL.md)를 쓰면 여기에 나타납니다.');
+      ? blank('에이전트가 없습니다', '화면 위의 [새 에이전트]로 만들면 여기에 나타납니다.')
+      : blank('아직 스킬이 없습니다', '화면 위의 [새 스킬]로 작업 요령 문서(SKILL.md)를 쓰면 여기에 나타납니다.');
   }
 
   /* ---------- 목록 ---------- */
   function agentItem(a) {
     const sel = a.id === st.pick.agents && !st.form ? ' sel' : '';
-    const agentSteps = a.steps.filter(s => s.agent).length;
-    const count = a.kind === 'agent' ? `맡은 단계 ${agentSteps}개 · 도구 서버 ${a.tools.length ? a.tools.length + '개' : '모두'} · 스킬 ${a.skills.length}개` : `맡은 단계 ${a.steps.length}개`;
     return `<div class="item${sel}" role="button" tabindex="0" data-pick-agent="${esc(a.id)}" title="${esc(a.name)}">` +
-      `<div class="row"><strong>${esc(a.name)}</strong>${a.kind === 'agent' ? mineChip(a.origin) : UI.chipText('시스템 수행자', 'neutral')}</div>` +
-      `<span class="sub">${esc(clip(a.goal || a.role || '목표가 적혀 있지 않습니다'))}</span><span class="sub">${esc(count)}</span></div>`;
+      `<div class="row"><strong>${esc(a.name)}</strong>${a.kind === 'agent' ? mineChip(a.origin) : ''}</div>` +
+      `<span class="sub">${esc(clip(a.goal || a.role || '목표가 적혀 있지 않습니다'))}</span></div>`;
   }
   function skillItem(s) {
     const sel = s.skill_name === st.pick.skills && !st.form ? ' sel' : '';
-    const who = s.agents.length ? s.agents.map(a => a.name).join(', ') : '붙은 에이전트 없음';
+    // 칩은 한 줄에 하나: 어느 에이전트에도 붙지 않은 스킬은 그 상태를, 나머지는 기본 / 내가 만든을 보인다
     return `<div class="item${sel}" role="button" tabindex="0" data-pick-skill="${esc(s.skill_name)}">` +
-      `<div class="row"><strong>${esc(s.title)}</strong>${mineChip(s.origin)}${s.agents.length ? '' : UI.chipText('미배정', 'warning')}</div>` +
-      `<span class="sub">${esc(s.description || '설명 없음')}</span><span class="sub">${esc(who)}</span></div>`;
+      `<div class="row"><strong>${esc(s.title)}</strong>${s.agents.length ? mineChip(s.origin) : UI.chipText('미배정', 'warning')}</div>` +
+      `<span class="sub">${esc(clip(s.description || '설명 없음'))}</span></div>`;
   }
   function listHtml() {
     if (st.tab === 'agents') {
       const agents = (st.agents || []).filter(a => a.kind === 'agent'), systems = (st.agents || []).filter(a => a.kind !== 'agent');
-      return `<button type="button" class="btn primary small" data-new-agent style="width:100%;margin-bottom:var(--s2)">새 에이전트</button>` +
-        (agents.length ? agents.map(agentItem).join('') : UI.empty('AI 에이전트가 없습니다', '', 'compact')) +
-        (systems.length ? UI.fold(`시스템 수행자 <span class="chip tone-neutral sm">${systems.length}</span>`, systems.map(agentItem).join(''),
+      return (agents.length ? `<div class="list">${agents.map(agentItem).join('')}</div>` : blank('AI 에이전트가 없습니다', '화면 위의 [새 에이전트]로 만듭니다.')) +
+        (systems.length ? UI.fold(`시스템 수행자 ${systems.length}`, `<div class="list">${systems.map(agentItem).join('')}</div>`,
           { open: systems.some(a => a.id === st.pick.agents), cls: 'small' }) : '');
     }
-    return `<button type="button" class="btn primary small" data-new-skill style="width:100%;margin-bottom:var(--s2)">새 스킬</button>` +
-      ((st.skills || []).length ? st.skills.map(skillItem).join('') : UI.empty('아직 스킬이 없습니다', '', 'compact'));
+    return (st.skills || []).length ? `<div class="list">${st.skills.map(skillItem).join('')}</div>` : blank('아직 스킬이 없습니다', '화면 위의 [새 스킬]로 만듭니다.');
   }
 
   /* ---------- 에이전트 상세 (요약 먼저, 실행 설정·지시문은 펼침) ---------- */
   function agentActions(d) {
     if (d.kind !== 'agent') return '';
-    if (!d.editable) return `<button type="button" class="btn primary small" data-clone="${esc(d.id)}">복제해서 고치기</button>`;
-    return `<button type="button" class="btn primary small" data-edit-agent>고치기</button> <button type="button" class="btn small" data-clone="${esc(d.id)}">복제해서 고치기</button> ` +
-      `<button type="button" class="btn danger small" data-del-agent>지우기</button>`;
+    const clone = `<button type="button" class="btn small" data-clone="${esc(d.id)}">복제해서 고치기</button>`;
+    if (!d.editable) return clone;
+    return `<button type="button" class="btn small" data-edit-agent>고치기</button>${clone}<button type="button" class="btn danger small" data-del-agent>지우기</button>`;
   }
+  // 읽는 차례(기준 5-1 · 5-6): 이름과 한 줄 → 맡는 일 → 쓰는 것 → 맡은 단계 → 「자세히」(실행 설정 · 지시문 · 식별자)
   function agentDetail(d) {
     const isAgent = d.kind === 'agent';
-    const toolChips = d.tools.length ? d.tools.map(t => `<span class="chip tone-${t.registered ? 'success' : 'danger'}" title="${esc(t.name)}">${esc(serverName(t.name, t.description))}${t.registered ? '' : ' · 등록 안 됨'}</span>`).join(' ')
-      : `<span class="muted">${isAgent ? '지정하지 않아 등록된 도구 서버를 모두 씁니다' : '없음'}</span>`;
-    const skillBtns = d.skills.length ? d.skills.map(s => s.found
-      ? `<button type="button" class="btn small" data-goto-skill="${esc(s.skill_name)}" title="${esc(s.description)}">${esc(s.title)}</button>`
-      : `<span class="chip tone-danger" title="${esc(s.skill_name)}">본문 없는 스킬</span>`).join(' ') : '<span class="muted">없음</span>';
-    const steps = d.steps.length ? d.steps.map(s => UI.chipText(stepLabel(s) + (s.assigned ? ' (배정)' : ''), s.assigned ? 'accent' : 'neutral')).join(' ')
-      : '<span class="muted">맡은 단계가 없습니다. "담당 배정" 탭에서 단계를 맡기면 그 단계가 이 에이전트로 실행됩니다.</span>';
-    const rows = [['역할', esc(d.role || '–')], ['목표', longText('goal:' + d.id, d.goal || '–')]];
-    if (isAgent) rows.push(['성격 · 말투', d.persona ? longText('persona:' + d.id, d.persona) : '<span class="muted">적혀 있지 않습니다</span>'],
-      ['모델', esc(modelText(d.model))], ['쓰는 도구', toolChips], ['스킬', skillBtns],
-      ['업무 규칙', d.work_rules_detail?.error ? `<span class="neg">${esc(d.work_rules_detail.error)}</span>` : d.work_rules_detail ? UI.fold(esc(d.work_rules_detail.label), `<pre>${esc(d.work_rules_detail.content)}</pre>`) : d.work_rules ? `<span class="neg">업무 규칙 내용을 읽지 못했습니다</span>` : '공통 안전 규칙만 적용']);
-    rows.push(['맡은 단계', steps]);
-    const summary = `<dl class="meta-list" style="grid-template-columns:1fr">${rows.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${v}</dd></div>`).join('')}</dl>`;
+    const tools = d.tools.length ? d.tools.map(t => `<span title="${esc(t.name)}">${esc(serverName(t.name, t.description))}</span>${t.registered ? '' : ' <span class="neg">(등록 안 됨)</span>'}`).join(', ')
+      : isAgent ? '지정하지 않아 등록된 도구 서버를 모두 씁니다' : '';
+    const skills = d.skills.map(s => s.found
+      ? `<button type="button" class="link-btn" data-goto-skill="${esc(s.skill_name)}" title="${esc(s.description)}">${esc(s.title)}</button>`
+      : `<span class="neg" title="${esc(s.skill_name)}">본문 없는 스킬</span>`).join(', ');
+    const rules = d.work_rules_detail?.error ? `<span class="neg">${esc(d.work_rules_detail.error)}</span>` : d.work_rules_detail ? esc(d.work_rules_detail.label)
+      : d.work_rules ? `<span class="neg">업무 규칙 내용을 읽지 못했습니다</span>` : '공통 안전 규칙만 적용';
+    const steps = d.steps.length ? `<ul class="rd-lines">${d.steps.map(s => `<li><span>${esc(stepLabel(s))}</span>${s.assigned ? '<small>담당 배정으로 맡음</small>' : ''}</li>`).join('')}</ul>`
+      : `<p class="rd-note">맡은 단계가 없습니다. [담당 배정]에서 단계를 맡기면 그 단계가 이 에이전트로 실행됩니다.</p>`;
     const note = !isAgent ? '정해진 업무를 하는 시스템입니다. 에이전트 설정은 쓰지 않습니다.'
       : d.editable ? '내가 만든 에이전트입니다. 고친 내용은 다음 실행부터 쓰입니다.'
-        : '기본 에이전트는 수업 기준이라 고칠 수 없습니다. "복제해서 고치기"로 사본을 만들어 고치세요.';
-    let html = `<div class="detail-head"><div class="row"><h2>${esc(d.name)}</h2>${isAgent ? mineChip(d.origin) : UI.chipText('시스템 수행자', 'neutral')}</div>` +
-      `<div class="sub">${esc(note)}</div></div>` +
-      UI.card({ title: '요약', body: summary, actions: agentActions(d) });
+        : '기본 에이전트는 수업 기준이라 고칠 수 없습니다. 복제해서 사본을 고칩니다.';
+    let html = `<header class="rd-head"><div><div class="rd-title"><h2>${esc(d.name)}</h2>${isAgent ? mineChip(d.origin) : ''}</div><p class="rd-sub">${esc(note)}</p></div>` +
+      `<div class="rd-actions">${agentActions(d)}</div></header>` +
+      group('맡는 일', kv([['역할', esc(d.role || '')], ['목표', d.goal ? `<p>${longText('goal:' + d.id, d.goal)}</p>` : ''],
+        ['성격 · 말투', isAgent && d.persona ? `<p>${longText('persona:' + d.id, d.persona)}</p>` : '']])) +
+      (isAgent ? group('쓰는 것', kv([['모델', esc(modelText(d.model))], ['도구 서버', tools], ['스킬', skills || '없음'], ['업무 규칙', rules]])) : '') +
+      group('맡은 단계', steps);
+    const more = [];
     if (isAgent) {
       const run = d.run || {};
       const stepRows = (run.steps || []).map(s => {
         const x = s.settings;
-        const tools = runServersText(s.servers);
-        return `<tr><td>${esc(UI.flowName(s.name))}</td><td>${esc(modelText(x.model))}${x.model_source ? `<br><span class="muted">${esc(MODEL_FROM[x.model_source] || '')}</span>` : ''}</td>` +
-          `<td>${esc(tools)}${x.tools_source ? `<br><span class="muted">${esc(TOOLS_FROM[x.tools_source] || '')}</span>` : ''}</td>` +
-          `<td>${esc(x.skills.length ? x.skills.map(n=>skillName(n,x.skill_labels || [])).join(', ') : '없음')}${x.missing_skills.length ? `<br><span class="neg">본문 없는 스킬 ${x.missing_skills.length}개</span>` : ''}${UI.fold('설정 식별자 원문',`<pre>${esc(JSON.stringify({skills:x.skills,missing_skills:x.missing_skills,tools:x.tools},null,2))}</pre>`,{cls:'small'})}</td></tr>`;
+        return `<tr><td>${esc(UI.flowName(s.name))}</td><td>${esc(modelText(x.model))}${x.model_source ? `<small>${esc(MODEL_FROM[x.model_source] || '')}</small>` : ''}</td>` +
+          `<td>${esc(runServersText(s.servers))}${x.tools_source ? `<small>${esc(TOOLS_FROM[x.tools_source] || '')}</small>` : ''}</td>` +
+          `<td>${esc(x.skills.length ? x.skills.map(n=>skillName(n,x.skill_labels || [])).join(', ') : '없음')}${x.missing_skills.length ? `<small class="neg">본문 없는 스킬 ${x.missing_skills.length}개</small>` : ''}${UI.fold('설정 식별자 원문',`<pre>${esc(JSON.stringify({skills:x.skills,missing_skills:x.missing_skills,tools:x.tools},null,2))}</pre>`,{cls:'small'})}</td></tr>`;
       }).join('');
-      html += UI.fold(`단계별 실제 실행 설정 <span class="chip tone-neutral sm">${(run.steps || []).length}</span>`,
-        stepRows ? `<div class="table-scroll"><table class="compact-table"><thead><tr><th>단계</th><th>모델</th><th>도구 서버</th><th>스킬 파일</th></tr></thead><tbody>${stepRows}</tbody></table></div>`
-          : UI.empty('맡은 단계가 없습니다', '처리 건에서는 불리지 않습니다.', 'compact'));
-      html += UI.fold('실행 지시문에 더해지는 내용', run.instructions ? `<pre>${esc(run.instructions)}</pre><p class="muted">AI 에이전트가 이 내용을 지시문에 넣고, 스킬은 실행 작업 폴더에 SKILL.md 파일로 씁니다.</p>`
-        : UI.empty('더해지는 내용이 없습니다', '이름·목표·성격·스킬이 비어 있습니다.', 'compact'));
+      more.push(group('단계별 실제 실행 설정', stepRows ? `<div class="rd-scroll"><table class="tbl"><thead><tr><th>단계</th><th>모델</th><th>도구 서버</th><th>스킬 파일</th></tr></thead><tbody>${stepRows}</tbody></table></div>`
+        : `<p class="rd-note">맡은 단계가 없어 처리 건에서는 불리지 않습니다.</p>`));
+      more.push(group('실행 지시문에 더해지는 내용', run.instructions ? `<pre class="rd-doc">${esc(run.instructions)}</pre><p class="rd-note">AI 에이전트가 이 내용을 지시문에 넣고, 스킬은 실행 작업 폴더에 SKILL.md 파일로 씁니다.</p>`
+        : `<p class="rd-note">더해지는 내용이 없습니다. 이름 · 목표 · 성격 · 스킬이 비어 있습니다.</p>`));
+      if (d.work_rules_detail && !d.work_rules_detail.error) more.push(group('업무 규칙 원문 · ' + d.work_rules_detail.label, `<pre class="rd-doc">${esc(d.work_rules_detail.content)}</pre>`));
     }
-    html += UI.metaFold([['식별자', `<span class="mono">${esc(d.id)}</span>`],
-      ['등록된 도구 서버', esc(((d.run || {}).servers_registered || []).map(n => serverName(n.name, n.description)).join(', '))]]);
+    more.push(group('식별자', kv([['식별자', `<span class="mono">${esc(d.id)}</span>`],
+      ['등록된 도구 서버', esc(((d.run || {}).servers_registered || []).map(n => serverName(n.name, n.description)).join(', '))]])));
+    html += `<div class="rd-group">${UI.fold(isAgent ? '자세히 · 단계별 실행 설정 · 실행 지시문 · 식별자' : '자세히 · 식별자', more.join(''), { cls: 'small' })}</div>`;
     return html;
   }
 
   /* ---------- 스킬 상세 ---------- */
+  // 읽는 차례: 이름과 한 줄 → 설명 → 스킬 문서(읽을 내용) → 붙은 에이전트 · 선언한 단계 → 「자세히」
   function skillDetail(s) {
     const mineAgents = (st.agents || []).filter(a => a.kind === 'agent' && a.editable);
     const attachedIds = new Set(s.agents.map(a => a.id));
-    const agents = s.agents.length ? s.agents.map(a => {
+    const agents = s.agents.length ? `<ul class="rd-lines">${s.agents.map(a => {
       const own = mineAgents.some(m => m.id === a.id);
-      return `<span class="row" style="display:inline-flex;gap:4px"><button type="button" class="btn small" data-goto-agent="${esc(a.id)}">${esc(a.name)}</button>` +
-        (own ? `<button type="button" class="btn small" data-detach="${esc(a.id)}" title="이 에이전트에서 스킬을 뗍니다">스킬 떼기</button>` : '') + '</span>';
-    }).join(' ') : '<span class="muted">붙은 에이전트가 없습니다. 붙이지 않은 스킬은 어떤 실행에도 들어가지 않습니다.</span>';
+      return `<li><button type="button" class="link-btn" data-goto-agent="${esc(a.id)}">${esc(a.name)}</button>` +
+        (own ? `<button type="button" class="btn small ghost" data-detach="${esc(a.id)}" title="이 에이전트에서 스킬을 뗍니다">스킬 떼기</button>` : '') + '</li>';
+    }).join('')}</ul>` : '<p class="rd-note">붙은 에이전트가 없습니다. 붙이지 않은 스킬은 어떤 실행에도 들어가지 않습니다.</p>';
     const can = mineAgents.filter(a => !attachedIds.has(a.id));
-    const attach = can.length ? `<div class="row" style="gap:var(--s2);margin-top:var(--s2)"><select data-attach-to aria-label="붙일 에이전트"><option value="">에이전트 선택</option>${can.map(a => `<option value="${esc(a.id)}">${esc(a.name)}</option>`).join('')}</select>` +
+    const attach = can.length ? `<div class="rd-inline"><select data-attach-to aria-label="붙일 에이전트"><option value="">에이전트 선택</option>${can.map(a => `<option value="${esc(a.id)}">${esc(a.name)}</option>`).join('')}</select>` +
       `<button type="button" class="btn small" data-attach disabled title="붙일 에이전트를 먼저 고르세요">내 에이전트에 붙이기</button></div>`
-      : `<p class="muted">붙일 수 있는 내 에이전트가 없습니다. 기본 에이전트에는 붙일 수 없으니 복제해서 붙이세요.</p>`;
-    const steps = s.steps.length ? chips(s.steps.map(stepLabel)) : '<span class="muted">없음</span>';
-    const summary = `<dl class="meta-list" style="grid-template-columns:1fr">` +
-      [['설명', esc(s.description || '–')], ['붙은 에이전트', agents + attach], ['선언한 단계', steps], ['고친 시각', esc(s.updated_at ? UI.dateTime(s.updated_at) : '–')]]
-        .map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${v}</dd></div>`).join('') + '</dl>';
+      : `<p class="rd-note">붙일 수 있는 내 에이전트가 없습니다. 기본 에이전트에는 붙일 수 없으니 복제해서 붙이세요.</p>`;
     const mine = s.origin === 'user';
-    const actions = mine ? `<button type="button" class="btn primary small" data-edit-skill>고치기</button> <button type="button" class="btn danger small" data-del-skill>지우기</button>` : '';
-    return `<div class="detail-head"><div class="row"><h2>${esc(s.title)}</h2>${mineChip(s.origin)}</div>` +
-      `<div class="sub">${mine ? '붙은 에이전트가 실행될 때 작업 폴더에 이 문서가 SKILL.md 로 들어갑니다.' : '기본 스킬은 수업 기준이라 고칠 수 없습니다. 새 스킬을 만들어 쓰세요.'}</div></div>` +
-      UI.card({ title: '요약', body: summary, actions }) +
-      UI.card({ title:'스킬 문서', body:UI.fold('문서 원문',`<pre style="max-height:480px;overflow:auto">${esc(s.content || '')}</pre>`) }) +
-      UI.metaFold([['폴더 이름', `<span class="mono">${esc(s.skill_name)}</span>`], ['길이', esc((s.content || '').length.toLocaleString('ko-KR') + '자')]]);
+    const actions = mine ? `<button type="button" class="btn small" data-edit-skill>고치기</button><button type="button" class="btn danger small" data-del-skill>지우기</button>` : '';
+    return `<header class="rd-head"><div><div class="rd-title"><h2>${esc(s.title)}</h2>${mineChip(s.origin)}</div>` +
+      `<p class="rd-sub">${mine ? '붙은 에이전트가 실행될 때 작업 폴더에 이 문서가 SKILL.md 로 들어갑니다.' : '기본 스킬은 수업 기준이라 고칠 수 없습니다. 새 스킬을 만들어 씁니다.'}</p></div>` +
+      `<div class="rd-actions">${actions}</div></header>` +
+      group('설명', s.description ? `<p class="rd-p">${esc(s.description)}</p>` : '') +
+      group('스킬 문서', `<pre class="rd-doc">${esc(s.content || '')}</pre>`) +
+      group('붙은 에이전트', agents + attach) +
+      group('선언한 단계', s.steps.length ? `<ul class="rd-lines">${s.steps.map(x => `<li><span>${esc(stepLabel(x))}</span></li>`).join('')}</ul>` : '') +
+      `<div class="rd-group">${UI.fold('자세히 · 폴더 이름 · 길이 · 고친 시각', kv([['폴더 이름', `<span class="mono">${esc(s.skill_name)}</span>`],
+        ['길이', esc((s.content || '').length.toLocaleString('ko-KR') + '자')], ['고친 시각', s.updated_at ? esc(UI.dateTime(s.updated_at)) : '']]), { cls: 'small' })}</div>`;
   }
 
   /* ---------- 만들기 · 고치기 폼 ---------- */
@@ -226,34 +229,37 @@
       // 붙일 수 있는지는 서버 판정(mcp_registry.selectable) 그대로 — 붙일 수 없는 서버는 까닭과 함께 꺼 둔다(이미 붙어 있으면 뗄 수는 있다)
       const tools = o.servers.length ? o.servers.map(s => { const on = d.tools.includes(s.name), off = !s.selectable && !on;
         return `<label class="check"><input type="checkbox" data-f-tool value="${esc(s.name)}" ${on ? 'checked' : ''} ${off ? 'disabled' : ''}> ` +
-          `<span>${esc(serverName(s.name, s.description))}${s.selectable ? '' : ` ${UI.chipText('붙일 수 없음', 'warning')} <small class="muted">${esc(s.reason || '')}</small>`}</span></label>`; }).join('')
+          `<span>${esc(serverName(s.name, s.description))}${s.selectable ? '' : ` <small class="muted">붙일 수 없음${s.reason ? ' — ' + esc(s.reason) : ''}</small>`}</span></label>`; }).join('')
         : '<span class="muted">등록된 도구 서버가 없습니다</span>';
       const skills = o.skills.length ? o.skills.map(s => `<label class="check"><input type="checkbox" data-f-skill value="${esc(s.skill_name)}" ${d.skills.includes(s.skill_name) ? 'checked' : ''}> ` +
-        `<span>${esc(UI.skillLabel(s).label)} ${mineChip(s.origin)}</span></label>`).join('') : '<span class="muted">아직 스킬이 없습니다. 스킬 탭에서 먼저 만드세요.</span>';
-      return `<div class="detail-head"><div class="row"><h2>${f.id ? '에이전트 고치기' : '새 에이전트'}</h2>${UI.chipText('내가 만든', 'success')}</div>` +
-        `<div class="sub">저장하면 다음 실행부터 이 설정으로 실행됩니다. 단계를 맡기려면 저장 뒤 "담당 배정" 탭에서 고르세요.</div></div>` +
-        `<form data-ag-form>` +
-        UI.section('프로필', UI.field({ label: '이름', required: true, input: `<input data-f="name" maxlength="60" value="${esc(d.name)}">` }) +
+        `<span>${esc(UI.skillLabel(s).label)}${s.origin === 'user' ? ' <small class="muted">내가 만든</small>' : ''}</span></label>`).join('') : '<span class="muted">아직 스킬이 없습니다. [스킬]에서 먼저 만드세요.</span>';
+      return `<header class="rd-head"><div><div class="rd-title"><h2>${f.id ? '에이전트 고치기' : '새 에이전트'}</h2></div>` +
+        `<p class="rd-sub">저장하면 다음 실행부터 이 설정으로 실행됩니다. 단계를 맡기려면 저장한 뒤 [담당 배정]에서 고릅니다.</p></div></header>` +
+        `<form data-ag-form class="rd-form rd-group">` +
+        UI.section('기본', UI.field({ label: '이름', required: true, input: `<input data-f="name" maxlength="60" value="${esc(d.name)}">` }) +
           UI.field({ label: '역할', input: `<input data-f="role" maxlength="200" value="${esc(d.role)}" placeholder="예: 쿨러 열화를 먼저 본다">` }) +
           UI.field({ label: '목표', required: true, input: `<textarea data-f="goal" maxlength="500">${esc(d.goal)}</textarea>`, hint: '이 에이전트가 무엇을 해내야 하는지 한 문장' }) +
           UI.field({ label: '성격 · 말투', input: `<textarea data-f="persona" maxlength="2000">${esc(d.persona)}</textarea>` }) +
           UI.readonly('모델', esc(modelText('')), '수업용 모델 하나를 씁니다. 바꿀 수 없습니다.')) +
-        UI.section('쓸 도구 (등록된 MCP 서버)', `<div>${tools}<p class="field-hint">하나도 고르지 않으면 등록된 서버를 모두 씁니다.</p></div>`) +
-        UI.section('스킬', `<div>${skills}</div>`) +
+        UI.section('쓰는 도구 (등록된 MCP 서버)', `<div class="rd-checks">${tools}<p class="field-hint">하나도 고르지 않으면 등록된 서버를 모두 씁니다.</p></div>`) +
+        UI.section('스킬', `<div class="rd-checks">${skills}</div>`) +
         UI.section('업무 규칙', UI.field({ label: '적용할 업무 규칙', input: `<select data-f="work_rules"><option value="">공통 안전 규칙만 적용</option>${d.work_rules && !(o.work_rules || []).some(r => r.key === d.work_rules) ? `<option value="${esc(d.work_rules)}" selected>등록되지 않은 업무 규칙 — 다시 선택하세요</option>` : ''}${(o.work_rules || []).map(r => `<option value="${esc(r.key)}" ${d.work_rules === r.key ? 'selected' : ''}>${esc(r.label)}</option>`).join('')}</select>` }) +
-          (o.work_rules || []).map(r => UI.fold(esc(r.label) + ' 내용', `<pre>${esc(r.content)}</pre>`)).join('')) +
-        UI.actions(`<button type="button" class="btn" data-f-cancel>취소</button><button type="submit" class="btn primary" ${st.busy ? 'disabled' : ''}>저장</button>`, f.error) +
-        `</form>`;
+          (o.work_rules || []).map(r => UI.fold(esc(r.label) + ' 내용', `<pre>${esc(r.content)}</pre>`, { cls: 'small' })).join('')) +
+        formActions(f) + `</form>`;
     }
-    return `<div class="detail-head"><div class="row"><h2>${f.id ? '스킬 고치기' : '새 스킬'}</h2>${UI.chipText('내가 만든', 'success')}</div>` +
-      `<div class="sub">SKILL.md 한 장이 에이전트의 작업 요령입니다. 붙은 에이전트가 실행될 때 작업 폴더에 이 문서가 들어갑니다.</div></div>` +
-      `<form data-ag-form>` +
+    return `<header class="rd-head"><div><div class="rd-title"><h2>${f.id ? '스킬 고치기' : '새 스킬'}</h2></div>` +
+      `<p class="rd-sub">SKILL.md 한 장이 에이전트의 작업 요령입니다. 붙은 에이전트가 실행될 때 작업 폴더에 이 문서가 들어갑니다.</p></div></header>` +
+      `<form data-ag-form class="rd-form rd-group">` +
       UI.section('', UI.field({ label: '폴더 이름', required: true, input: `<input data-f="skill_name" class="mono" maxlength="64" value="${esc(d.skill_name)}" ${f.id ? 'disabled' : ''} placeholder="예: cooler-check">`,
         hint: '영문 소문자 · 숫자 · 하이픈. 문서 머리의 name 과 같아야 합니다' }) +
         UI.field({ label: '설명 한 줄', input: `<input data-f="description" maxlength="300" value="${esc(d.description)}">`, hint: '비우면 문서 머리의 description 이나 첫 제목을 씁니다' }) +
-        UI.field({ label: 'SKILL.md', required: true, input: `<textarea data-f="content" class="mono" rows="14">${esc(d.content)}</textarea>` })) +
-      UI.actions(`<button type="button" class="btn" data-f-cancel>취소</button><button type="submit" class="btn primary" ${st.busy ? 'disabled' : ''}>저장</button>`, f.error) +
-      `</form>`;
+        UI.field({ label: 'SKILL.md', required: true, cls: 'wide', input: `<textarea data-f="content" class="mono" rows="14">${esc(d.content)}</textarea>` })) +
+      formActions(f) + `</form>`;
+  }
+  // 폼의 단추 줄: 맨 아래 왼쪽에 주 단추 → 보조 단추(기준 5-6). 저장이 안 된 까닭은 단추 줄 바로 위에
+  function formActions(f) {
+    return (f.error ? `<p class="field-error" role="alert">${esc(f.error)}</p>` : '') +
+      `<div class="rd-form-actions"><button type="submit" class="btn primary" ${st.busy ? 'disabled' : ''}>저장</button><button type="button" class="btn" data-f-cancel>취소</button></div>`;
   }
   function readForm(form) {
     const d = st.form.draft;
@@ -287,39 +293,38 @@
 
   /* ---------- 담당 배정 (단계별 담당 에이전트, 역할 목록) ---------- */
   function assignHtml() {
-    if (st.boardError) return `<div class="neg" role="status">${esc(st.boardError)}</div>`;
+    if (st.boardError) return errBox('담당 배정을 읽지 못했습니다', st.boardError);
     const b = st.board;
-    if (!b) return UI.empty('불러오는 중', '', 'compact');
+    if (!b) return loading();
     const closedWhy = [...new Set(b.steps.map(s => course().assignBlocked(s.definition_id)).filter(Boolean))];
     const rows = b.steps.map(s => {
       const cur = s.assigned ? s.assigned.agent_id : '';
       const opts = [`<option value="">기본 담당 (${esc(s.default_names.join(', '))})</option>`].concat(
         b.agents.filter(a => !s.default_agents.includes(a.id)).map(a => `<option value="${esc(a.id)}" ${a.id === cur ? 'selected' : ''}>${esc(a.name)}${a.origin === 'user' ? ' · 내가 만든' : ''}</option>`)).join('');
       const closed = course().assignBlocked(s.definition_id);
-      return `<tr><td>${esc(stepLabel(s))}</td><td>${esc(s.default_names.join(', '))}</td>` +
-        `<td><select data-map="${esc(s.definition_id)}|${esc(s.activity_id)}" aria-label="${esc(s.name)} 담당"${closed ? ` disabled title="${esc(closed)}"` : ''}>${opts}</select></td>` +
-        `<td>${s.assigned ? UI.chipText('배정됨', 'accent') : UI.chipText('기본', 'neutral')}</td></tr>`;
+      return `<tr${s.assigned ? ' class="pick"' : ''}><td>${esc(stepLabel(s))}</td><td>${esc(s.default_names.join(', '))}</td>` +
+        `<td><select data-map="${esc(s.definition_id)}|${esc(s.activity_id)}" aria-label="${esc(s.name)} 담당"${closed ? ` disabled title="${esc(closed)}"` : ''}>${opts}</select></td></tr>`;
     }).join('');
-    const steps = UI.card({ title: '단계별 담당 AI 에이전트',
-      body: `<p class="muted">흐름 정의는 그대로 두고, 이 단계가 열릴 때 고른 에이전트가 맡습니다. 기본 담당으로 되돌리면 다음에 열리는 단계부터 기본으로 실행됩니다.</p>` +
-        closedWhy.map(w => `<p class="field-hint">${esc(w)}</p>`).join('') +
-        (rows ? `<div class="table-scroll"><table class="compact-table"><thead><tr><th>단계</th><th>기본 담당</th><th>지금 담당</th><th>상태</th></tr></thead><tbody>${rows}</tbody></table></div>`
-          : UI.empty('에이전트가 맡는 단계가 없습니다', '', 'compact')) });
+    const steps = `<section class="rd-group"><h2 class="rd-sec">단계별 담당 AI 에이전트</h2>` +
+      `<p class="rd-note">흐름 정의는 그대로 두고, 이 단계가 열릴 때 고른 에이전트가 맡습니다. 기본 담당으로 되돌리면 다음에 열리는 단계부터 기본으로 실행됩니다.</p>` +
+      closedWhy.map(w => `<p class="rd-note">${esc(w)}</p>`).join('') +
+      (rows ? `<div class="rd-scroll"><table class="tbl"><thead><tr><th>단계</th><th>기본 담당</th><th>지금 담당</th></tr></thead><tbody>${rows}</tbody></table></div>`
+        : blank('에이전트가 맡는 단계가 없습니다', '흐름을 등록하면 그 흐름의 AI 단계가 여기에 나옵니다.')) + `</section>`;
     // 쓰는 사람은 늘 이 PC의 담당자 한 명이고 모든 역할을 맡는다(새 역할도 서버 agent_authoring.create_role 이 담당자를 넣는다) — 사람을 넣고 빼는 칸이 없다.
-    // 구성원이 한 명도 없는 역할은 그 사실을 그대로 보인다(그 역할의 사람 단계가 작업함에 뜨지 않는다)
+    // 구성원이 한 명도 없는 역할은 그 사실을 그대로 보인다(그 역할의 사람 단계가 내가 할 일에 뜨지 않는다)
     const roles = (b.roles || []).map(r => {
       // G10: 포털에서 만든 역할은 표시하고 지울 수 있다(흐름 정의가 쓰면 서버가 사유와 함께 거절)
-      const mine = r.origin === 'user' ? ` ${UI.chipText('내가 만든', 'accent')} <button type="button" class="btn small" data-role-del="${esc(r.id)}">지우기</button>` : '';
-      const none = r.members.length ? '' : '<br><span class="neg">이 역할에 담당자가 연결되어 있지 않아, 이 역할의 사람 단계가 내 작업함에 뜨지 않습니다. 시작 파일을 다시 실행해 업무 DB를 최신 판으로 맞추세요.</span>';
-      return `<li>${esc(UI.performers[r.id] || r.name)}${mine}${none}</li>`;
+      const mine = r.origin === 'user' ? `<span class="rd-inline"><small class="muted">내가 만든</small><button type="button" class="btn small danger" data-role-del="${esc(r.id)}">지우기</button></span>` : '';
+      const none = r.members.length ? '' : '<br><span class="neg">이 역할에 담당자가 연결되어 있지 않아, 이 역할의 사람 단계가 내가 할 일에 뜨지 않습니다. 시작 파일을 다시 실행해 업무 DB를 최신 판으로 맞추세요.</span>';
+      return `<li><span>${esc(UI.performers[r.id] || r.name)}${none}</span>${mine}</li>`;
     }).join('');
-    const newRole = `<div class="row-wrap" role="group" aria-label="역할 만들기"><input data-role-name placeholder="역할 이름 (내 흐름의 레인 이름과 같게)" aria-label="새 역할 이름">` +
+    const people = `<section class="rd-group"><h2 class="rd-sec">역할</h2>` +
+      `<p class="rd-note">모든 역할은 이 PC의 담당자가 맡습니다. 사람 단계는 그 단계의 역할 이름으로 내가 할 일에 뜹니다.</p>` +
+      (roles ? `<ul class="rd-lines">${roles}</ul>` : blank('역할이 없습니다', '아래에서 역할을 만듭니다.')) +
+      `<div class="rd-group"><h3 class="rd-label">역할 만들기</h3>` +
+      `<div class="rd-inline" role="group" aria-label="역할 만들기"><input data-role-name placeholder="역할 이름 (내 흐름의 레인 이름과 같게)" aria-label="새 역할 이름">` +
       `<input data-role-key placeholder="키 (선택, 예: s01-organizer)" aria-label="새 역할 키"><button type="button" class="btn small" data-role-add>역할 만들기</button></div>` +
-      `<p class="muted">흐름 가져오기는 그림의 레인 이름이 역할 이름과 같으면 그 역할로 잇습니다. 새로 만든 역할도 이 PC의 담당자가 맡습니다.</p>`;
-    const people = UI.card({ title: '역할',
-      body: `<p class="muted">모든 역할은 이 PC의 담당자가 맡습니다. 사람 단계는 그 단계의 역할 이름으로 내 작업함에 뜹니다.</p>` +
-        (roles ? `<ul class="plain">${roles}</ul>` : UI.empty('역할이 없습니다', '', 'compact')) +
-        UI.fold('역할 만들기', newRole, { cls: 'plain' }) });
+      `<p class="rd-note">흐름 화면에서 가져온 그림은 레인 이름이 역할 이름과 같으면 그 역할로 이어집니다. 새로 만든 역할도 이 PC의 담당자가 맡습니다.</p></div></section>`;
     return steps + people;
   }
   async function setMap(sel) {
@@ -372,17 +377,22 @@
   }
 
   /* ---------- 화면 ---------- */
+  // 차례: 제목 · 한 문장 · 주 단추 하나 → 보기 바꾸기(조각 탭) → 왼쪽 목록 · 오른쪽 상세 → 맨 아래 「기준으로 되돌리기」
   function render() {
     if (!st.host) return;
     const n = st.agents ? st.agents.filter(a => a.kind === 'agent').length : null, m = st.skills ? st.skills.length : null;
+    const seg = [['agents', '에이전트', n], ['skills', '스킬', m], ['assign', '담당 배정']].map(([k, l, c]) =>
+      `<button type="button" role="tab" class="${k === st.tab ? 'on' : ''}" data-ag-tab="${k}" aria-selected="${k === st.tab}">${esc(l)}${c != null ? `<span class="n">${c}</span>` : ''}</button>`).join('');
+    // 주 단추는 화면에 하나: 폼을 쓰는 동안에는 폼의 [저장]이 주 단추라 새로 만들기 단추를 그리지 않는다
+    const make = st.form || st.tab === 'assign' ? '' : st.tab === 'agents' ? `<button type="button" class="btn primary" data-new-agent>새 에이전트</button>` : `<button type="button" class="btn primary" data-new-skill>새 스킬</button>`;
     const body = st.tab === 'assign' ? assignHtml()
-      : `<div class="split"><div><div class="list">${st.agents ? listHtml() : UI.empty('불러오는 중', '', 'compact')}</div></div><div class="detail" data-ag-detail></div></div>`;
+      : `<div class="rd-split"><div class="rd-side">${st.agents ? listHtml() : loading()}</div><div data-ag-detail></div></div>`;
     st.host.innerHTML =
-      `<div class="page-head"><h1>AI 에이전트</h1><div class="page-tools"><button type="button" class="btn small" data-ag-reload>다시 읽기</button>` +
-      `<button type="button" class="btn small" data-ag-reset title="내가 만든 것만 지웁니다">기준으로 되돌리기</button></div></div>` +
-      `<p class="muted">AI 에이전트와 스킬을 만들고 단계에 맡겨 보세요. 기본 에이전트는 고칠 수 없어 복제해서 고칩니다. 코딩 랩에서 만든 것도 다시 읽으면 함께 보입니다.</p>` +
-      (st.error ? `<div class="neg" role="status">${esc(st.error)}</div>` : '') +
-      UI.tabs([['agents', '에이전트', n], ['skills', '스킬', m], ['assign', '담당 배정']], st.tab, 'data-ag-tab') + body;
+      `<div class="page-head"><h1>${esc(UI.t('nav.agents'))}</h1><div class="page-tools"><button type="button" class="btn" data-ag-reload title="코딩 랩에서 만든 것도 다시 읽으면 함께 보입니다">다시 읽기</button>${make}</div></div>` +
+      `<p class="page-lead">AI 에이전트와 스킬을 만들고, 흐름의 단계를 어느 에이전트가 맡을지 정합니다.</p>` +
+      (st.error ? errBox('에이전트와 스킬 목록을 읽지 못했습니다', st.error) : '') +
+      `<div class="rd-seg" role="tablist" aria-label="보기">${seg}</div>` + body +
+      `<p class="rd-foot"><span>내가 만든 에이전트 · 스킬 · 역할 · 담당 배정을 모두 지우고 수업 기준으로 돌아갑니다.</span><button type="button" class="btn small danger" data-ag-reset>기준으로 되돌리기</button></p>`;
   }
   function pick(tab, key) {
     st.tab = tab; st.pick[tab] = key; st.form = null;
@@ -393,6 +403,7 @@
     const t = e.target.closest('button, [data-pick-agent], [data-pick-skill]');
     if (!t || !st.host.contains(t)) return;
     if (t.hasAttribute('data-ag-reload')) { st.form = null; return load(); }
+    if (t.hasAttribute('data-retry')) return t.closest('[data-ag-detail]') ? loadDetail() : load();      // 오류 블록의 [다시 시도]: 상세만 못 읽었으면 상세만 다시 읽는다
     if (t.hasAttribute('data-ag-reset')) return resetAll();
     if (t.dataset.agTab) { st.tab = t.dataset.agTab; st.form = null; if (st.tab === 'assign') { render(); await loadBoard(); } render(); return loadDetail(); }
     if (t.dataset.pickAgent) return pick('agents', t.dataset.pickAgent);

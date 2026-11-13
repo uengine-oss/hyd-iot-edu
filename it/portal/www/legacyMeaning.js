@@ -1,4 +1,4 @@
-/* A9 옛 DB 뜻 복원 — 지식 관리 › 업무 데이터 연결 안의 접기 섹션.
+/* A9 옛 DB 뜻 복원 — 지식 › 문서 등록 › 업무 데이터 연결 안의 접기 섹션.
    흐름: DDL 미리보기 → "AI에게 뜻 후보 묻기"(에이전트 작업 한 건) → 열마다 후보 · 근거 · 확신도 → 사람이 승인 · 고치기 · 제외
    → 검토 저장(감사 기록) → 미리보기에 그 검토만 반영 → 기존 "적재". AI 후보는 승인 전에는 미리보기 · 그래프 어디에도 들어가지 않는다.
    hitl.js 의 DDL 미리보기가 window.hydLegacy.mount(el, ctx)로 부른다. ctx = {preview, text, by(), replan(reviewId|null)}. */
@@ -30,7 +30,7 @@
 
   async function load() {
     if (!S.run) return;
-    if (state.tab !== 'knowledge' && S.timer) return;      // 지식 관리 탭을 떠나 있으면 읽지 않는다 — 타이머는 살아 있어 돌아오면 다음 차례에 이어 읽는다
+    if (state.tab !== 'knowledge' && S.timer) return;      // 문서 등록 화면을 떠나 있으면 읽지 않는다 — 타이머는 살아 있어 돌아오면 다음 차례에 이어 읽는다
     try { S.data = await getJ(API_BASE() + '/' + encodeURIComponent(S.run)); S.error = null; }
     catch (e) { S.error = '후보를 읽지 못했습니다: ' + e.message; }
     if (!S.data || ['DONE', 'FAILED', 'CANCELLED'].includes(S.data.status) || !document.body.contains(el)) stop();
@@ -189,7 +189,7 @@
       if (done || (S.data && ['FAILED', 'CANCELLED'].includes(S.data.status))) body += `<p><button class="btn small" id="lmAgain" ${S.busy ? 'disabled' : ''}${hydCourseAccess.attrs('ddl.meanings')}>후보 다시 받기</button></p>`;
     }
     if (S.error) body += `<p class="neg" role="alert">${esc(S.error)}</p>`;
-    el.innerHTML = UI.fold(`옛 DB 뜻 복원 <span class="muted" style="font-weight:400">— ${esc(sumLine)}</span>`, body, { open: !!(S.run || ctx.preview.meaningReview) });
+    el.innerHTML = UI.fold(`옛 DB 뜻 복원 — ${esc(sumLine)}`, body, { open: !!(S.run || ctx.preview.meaningReview) });
     hydCourseAccess.apply(el);   // attrs 로 그린 단추: 수업 단계에서 꺼진 까닭을 단추 옆 한 줄로(W3-07)
     wire();
   }
