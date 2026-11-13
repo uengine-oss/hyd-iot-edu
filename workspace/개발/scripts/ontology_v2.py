@@ -1,0 +1,661 @@
+"""온톨로지 v2 도구: 스키마 하나(it/neo4j/v2/schema.json)에서 나머지를 만들고, 떠 있는 수업 그래프를 검사한다.
+
+  .venv314/Scripts/python.exe workspace/개발/scripts/ontology_v2.py gen        # constraints.cypher · ontology-schema.ttl(OWL) · schema_prompt.md · 클래스 그림 · 표 생성
+  .venv314/Scripts/python.exe workspace/개발/scripts/ontology_v2.py validate   # 그래프가 스키마(속성 · 끝점 · 다중도 · 필수 관계)를 지키는지 (위반 0건이면 통과)
+  .venv314/Scripts/python.exe workspace/개발/scripts/ontology_v2.py queries    # queries.cypher의 예시 질의 실행
+
+그래프 적재는 kg-seed(it/neo4j/seed.sh) 하나다 — 이 도구는 적재하지 않는다. 접속은 이 PC의 수업 스택 Neo4j(.hyd-runtime/ports.json 의 7687 바깥 포트,
+인증은 compose.yaml neo4j 서비스의 NEO4J_AUTH — 환경 변수 NEO4J_URI · NEO4J_AUTH 가 있으면 그것). 드라이버는 hydcommon.graphdb 한 곳.
+생성은 원본 글이 깨졌으면(U+FFFD · 「??」 — 비 UTF-8 경로로 고친 흔적) 그 자리를 대고 멈춘다.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[3]
+V2 = ROOT / "it" / "neo4j" / "v2"
+SCHEMA = V2 / "schema.json"
+
+
+def load_schema() -> dict:
+    return json.loads(SCHEMA.read_text(encoding="utf-8"))
+
+
+def broken_text(value, path="$") -> list[str]:
+    """원본의 깨진 글자 자리(U+FFFD 또는 물음표 둘 연속) — 생성물 · 에이전트 스키마 설명으로 그대로 퍼지지 않게."""
+    if isinstance(value, dict):
+        return [x for k, v in value.items() for x in broken_text(v, f"{path}.{k}")]
+    if isinstance(value, list):
+        return [x for i, v in enumerate(value) for x in broken_text(v, f"{path}[{i}]")]
+    return [path] if isinstance(value, str) and ("\ufffd" in value or "??" in value) else []
+
+
+def search_labels(s: dict) -> list[str]:
+    """질문의 말로 노드를 찾는 전문 검색 색인의 대상: 이름(name)을 가진 업무 클래스 전부(실행 기록 record 층 · 흐름 process 층 제외)."""
+    return [c["name"] for c in s["classes"] if c["layer"] not in ("record", "process") and not c.get("extends")
+            and any(p["name"] in ("name", "aliases") for p in c["properties"])]
+
+
+# 학생 노드(이름 공간 ns 속성이 있는 노드)는 수업 기준 검사에서 뺀다 — 랩에서 같은 그래프에 넣어도 반 전체 검사를 깨지 않게
+NS_PROP = "ns"
+
+
+def base_scope(records_nodes, records_rels):
+    """수업 기준 검사의 범위: 이름 공간이 없는 노드와 그 노드끼리의 관계. 학생 노드와 거기 닿는 관계는 빼고, 이름 공간별로 몇 개를 뺐는지 돌려준다."""
+    skipped: dict[str, int] = {}
+    for n in records_nodes:
+        ns = n["props"].get(NS_PROP)
+        if ns is not None:
+            skipped[str(ns)] = skipped.get(str(ns), 0) + 1
+    nodes = [n for n in records_nodes if n["props"].get(NS_PROP) is None]
+    ids = {n["props"].get("id") for n in nodes}
+    return nodes, [r for r in records_rels if r["a"] in ids and r["b"] in ids], skipped
+
+
+def classes_by_name(s: dict) -> dict:
+    return {c["name"]: c for c in s["classes"]}
+
+
+def all_props(s: dict, cname: str) -> list[dict]:
+    """A class's own properties plus its parent's (extends)."""
+    by = classes_by_name(s)
+    c = by[cname]
+    parent = by[c["extends"]]["properties"] if c.get("extends") else []
+    own = {p["name"] for p in c["properties"]}
+    return [p for p in parent if p["name"] not in own] + c["properties"]
+
+
+# ------------------------------------------------------------------ generation
+def gen_constraints(s: dict) -> str:
+    out = ["// 생성 파일 — workspace/개발/scripts/ontology_v2.py gen (원본: schema.json). 직접 고치지 않는다.", ""]
+    for c in s["classes"]:
+        if c.get("extends"):
+            continue  # 부모(FlowNode) 레이블에 건다
+        if any(p["name"] == "id" for p in c["properties"]):
+            out.append(f"CREATE CONSTRAINT v2_{c['name'].lower()}_id IF NOT EXISTS FOR (n:{c['name']}) REQUIRE n.id IS UNIQUE;")
+    # 색인 대상이 바뀌어도 같은 이름의 옛 색인이 남지 않게 지우고 다시 만든다(IF NOT EXISTS 는 대상이 달라도 옛 것을 둔다 — 노드 수백 개라 순간이다)
+    out += ["", "// 엔티티 인식(entity resolution)용 전문 검색 색인: 업무 클래스의 이름과 다른 이름(aliases)",
+            "DROP INDEX ont_names IF EXISTS;",
+            f"CREATE FULLTEXT INDEX ont_names IF NOT EXISTS FOR (n:{'|'.join(search_labels(s))}) ON EACH [n.name, n.aliases];", ""]
+    return "\n".join(out)
+
+
+XSD = {"string": "xsd:string", "integer": "xsd:integer", "number": "xsd:decimal", "boolean": "xsd:boolean",
+       "datetime": "xsd:dateTime", "enum": "xsd:string", "string[]": "xsd:string", "any": "rdfs:Literal"}
+
+
+def _ttl_str(v: str) -> str:
+    return '"' + v.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n") + '"@ko'
+
+
+def _union(names: list[str]) -> str:
+    if len(names) == 1:
+        return f"hyd:{names[0]}"
+    return "[ a owl:Class ; owl:unionOf ( " + " ".join(f"hyd:{n}" for n in names) + " ) ]"
+
+
+def gen_ttl(s: dict) -> str:
+    ns = s["namespace"]
+    L = [f"@prefix hyd: <{ns}> .", "@prefix owl: <http://www.w3.org/2002/07/owl#> .",
+         "@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .", "@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .",
+         "@prefix dcterms: <http://purl.org/dc/terms/> .", "",
+         "# 생성 파일 — workspace/개발/scripts/ontology_v2.py gen (원본: it/neo4j/v2/schema.json). 직접 고치지 않는다.",
+         "# 관계의 속성(sign, condition 등)은 OWL로 표현하지 않고 rdfs:comment에 적었다 (Neo4j 관계 속성으로 구현).", "",
+         f"<{ns.rstrip('#')}> a owl:Ontology ;", f"  rdfs:label {_ttl_str(s['name'])} ;",
+         f"  owl:versionInfo \"{s['version']}\" ;", f"  rdfs:comment {_ttl_str(s['description'])} .", "",
+         "hyd:layer a owl:AnnotationProperty ; rdfs:label \"계층\"@ko .",
+         "hyd:standard a owl:AnnotationProperty ; rdfs:label \"준용 표준\"@ko .",
+         "hyd:cardinality a owl:AnnotationProperty ; rdfs:label \"다중도\"@ko .", ""]
+    layers = {l["id"]: l for l in s["layers"]}
+    L.append("# ---------------------------------------------------------------- classes")
+    for c in s["classes"]:
+        lines = [f"hyd:{c['name']} a owl:Class ;", f"  rdfs:label \"{c['name']}\" ;",
+                 f"  rdfs:comment {_ttl_str(c['description'])} ;", f"  hyd:layer {_ttl_str(layers[c['layer']]['name'])} ;",
+                 f"  hyd:standard {_ttl_str(c['standard'])}"]
+        if c.get("extends"):
+            lines[-1] += " ;"
+            lines.append(f"  rdfs:subClassOf hyd:{c['extends']}")
+        L.append("\n".join(lines) + " .")
+    L += ["", "# ---------------------------------------------------------------- object properties (graph relationships)"]
+    for r in s["relationships"]:
+        comment = r["description"]
+        if r.get("properties"):
+            comment += " | 관계 속성: " + ", ".join(p["name"] + (" (필수)" if p.get("required") else "") for p in r["properties"])
+        if r.get("endpointPairs"):
+            comment += " | 허용된 끝점 쌍: " + ", ".join(f"{a} → {b}" for a, b in r["endpointPairs"])
+        L.append("\n".join([f"hyd:{r['type']} a owl:ObjectProperty ;", f"  rdfs:label \"{r['type']}\" ;",
+                            f"  rdfs:domain {_union(r['from'])} ;", f"  rdfs:range {_union(r['to'])} ;",
+                            f"  hyd:cardinality \"{r['cardinality']}\" ;", f"  rdfs:comment {_ttl_str(comment)} ."]))
+    L += ["", "# ---------------------------------------------------------------- datatype properties (node properties)"]
+    # 이름이 같은 속성(kind · order · status …)은 클래스마다 뜻 · 허용값이 다르다 — 설명을 클래스별로 적는다(첫 클래스 것만 남기지 않는다)
+    props: dict[str, dict] = {}
+    for c in s["classes"]:
+        for p in c["properties"]:
+            e = props.setdefault(p["name"], {"classes": [], "types": [], "by_text": {}})
+            e["classes"].append(c["name"])
+            e["types"].append(p["type"])
+            text = ((p.get("description") or "") + ((" 허용값: " + ", ".join(map(str, p["values"]))) if p.get("values") else "")).strip()
+            e["by_text"].setdefault(text, []).append(c["name"])
+    for name, e in sorted(props.items()):
+        rng = XSD.get(e["types"][0], "xsd:string") if len(set(e["types"])) == 1 else "rdfs:Literal"
+        texts = {t: cs for t, cs in e["by_text"].items() if t}
+        if len(e["by_text"]) == 1:
+            desc = next(iter(e["by_text"]))
+        else:
+            desc = " / ".join(f"{', '.join(cs)}: {t}" for t, cs in texts.items())
+        lines = [f"hyd:{name} a owl:DatatypeProperty ;", f"  rdfs:label \"{name}\" ;", f"  rdfs:domain {_union(e['classes'])} ;", f"  rdfs:range {rng}"]
+        if desc:
+            lines[-1] += " ;"
+            lines.append(f"  rdfs:comment {_ttl_str(desc)}")
+        L.append("\n".join(lines) + " .")
+    return "\n".join(L) + "\n"
+
+
+def gen_prompt(s: dict) -> str:
+    """Compact schema text handed to the agent (the 'DDL' of GraphRAG / Text2Cypher)."""
+    by_layer: dict[str, list] = {}
+    for c in s["classes"]:
+        by_layer.setdefault(c["layer"], []).append(c)
+    out = ["# 온톨로지 스키마 (에이전트 제공용)", "",
+           "생성 파일이다 (workspace/개발/scripts/ontology_v2.py gen, 원본 it/neo4j/v2/schema.json). 에이전트는 이 스키마와 사용자의 질문을 함께 받아 Cypher를 만든다.", "",
+           "## 규칙", ""]
+    out += [f"- {v}" for v in s["conventions"].values()]
+    out += ["- 질문에 나온 말은 먼저 전문 검색 색인으로 노드를 찾는다: `CALL db.index.fulltext.queryNodes('ont_names', $text)`.",
+            "- 상충 관계 질문은 `AFFECTS` 한 번 뒤에 `INFLUENCES*`를 따라 `msr:op-profit`까지 가는 경로를 찾고, 경로의 sign을 곱해 방향을 정한다.",
+            "- 조치 방법은 Skill이다. 스킬 하나가 SOP 하나이고(sopId, 단계), 기존 고장 조치는 고장 유형에 매칭된다: `(:FailureMode)-[:MITIGATED_BY|REMEDIED_BY|PREVENTED_BY]->(:Skill)`. 근본 조치가 특정 원인에만 맞으면 `Skill-[:ADDRESSES]->Cause`가 있다. 고장 대응 후보는 MITIGATED_BY·REMEDIED_BY, PM_DUE 후보는 PREVENTED_BY다. 명시 scope=purchase 원문 절차만 FM 없이 `System/sys:erp-[:HAS_SKILL]->Skill-[:INVOLVES_PART]->Part`로 범위를 선언한다. executable=false는 참고 보관이며 실행 후보가 아니다. true는 원문·PR_CREATE-only·구매 승인 역할·실제 공급 관계를 검사한다. 고장 조치의 FM 조건은 그대로다.",
+            "- 명시 kind=reference/executable=false는 원문 보관만 한다. FM·승인 미상을 허용하지만 시스템·Action·후보 Rule 연결은 금지한다. 기존 Skill 재참조 원문 Step은 DOCUMENTS로 연결하며 active HAS_STEP를 바꾸지 않는다. 원문 SOP 번호·전체 단계 동일성과 검토한 대상 실행 계약 hash를 확인한다.",
+            "- 조치 카드의 출처는 `Rule-[:DERIVED_FROM]->`와 `Skill-[:HAS_STEP]->Step-[:REFERS_TO]->ManualSection` 경로다. DOCUMENTS는 별도 원문 출처이며 실행 단계/권한이 아니다.", ""]
+    for l in sorted(s["layers"], key=lambda x: (x["order"], x["id"])):
+        out += [f"## {l['name']} — {l['standard']}", "", l["description"], ""]
+        for c in by_layer.get(l["id"], []):
+            ps = []
+            for p in all_props(s, c["name"]):
+                t = p["name"] + ("!" if p.get("required") else "")
+                if p.get("values"):
+                    t += "[" + "|".join(map(str, p["values"])) + "]"
+                ps.append(t)
+            labels = c["name"] + (":" + c["extends"] if c.get("extends") else "")
+            out.append(f"- `(:{labels} {{{', '.join(ps)}}})` {c['description']}")
+            for req in c.get("requiredRelationships", []):
+                condition = ''
+                if req.get('whenProperty'):
+                    condition += ' 적용 조건 ' + str(req['whenProperty'])
+                if req.get('unlessProperty'):
+                    condition += ' 제외 조건 ' + str(req['unlessProperty'])
+                out.append(f"  - 필수: {req['description']} (`{'|'.join(req['type'])}` {req['direction']}, 최소 {req.get('min', 1)}){condition}")
+        out.append("")
+    out += ["조회할 때 `plan`, `before`, `after`, `snapshot`은 큰 보관 원문이므로 노드 전체를 반환하지 말고 필요한 속성만 고른다. 적재 목록은 id·filename·status·createdAt과 같이 작은 필드로 조회한다. MCP 응답의 `truncated:true`는 전체 결과가 아님을 뜻한다. `collect()`의 긴 목록도 생략 위치가 표시되므로, 필요한 조건과 `ORDER BY / SKIP / LIMIT`으로 행을 나눠 조회한다. 긴 문자열의 실제 내용이 필요하면 `substring(속성, 시작, 길이)`로 해당 구간을 읽는다. 잘린 결과를 근거로 「없다」고 판단하지 않는다.", ""]
+    out += ["## 관계", "", "`!`는 필수 속성이다.", ""]
+    for r in s["relationships"]:
+        rp = ""
+        if r.get("properties"):
+            rp = " {" + ", ".join(p["name"] + ("!" if p.get("required") else "") for p in r["properties"]) + "}"
+        out.append(f"- `(:{'|'.join(r['from'])})-[:{r['type']}{rp}]->(:{'|'.join(r['to'])})` {r['cardinality']}. {r['description']}")
+        if r.get("endpointPairs"):
+            out.append("  - 허용된 끝점 쌍: " + ", ".join(f"`{a} → {b}`" for a, b in r["endpointPairs"]) + ". 위 from/to 목록의 모든 조합을 허용하는 것은 아니다.")
+    return "\n".join(out) + "\n"
+
+
+LAYER_COLORS = {"value": "#6d28d9", "process": "#1d4ed8", "resource": "#4b5563", "diagnosis": "#b42318",
+                "skill": "#0f766e", "external": "#9a6700", "record": "#7c2d12"}
+SVG_COLUMNS = [["value"], ["process"], ["resource"], ["diagnosis"], ["skill"], ["external", "record"]]
+DOCS = ROOT / "workspace/개발/문서/ontology"   # 사람이 읽는 생성물(클래스 그림 · 표) — workspace 브랜치
+
+
+def _xml(v: str) -> str:
+    return str(v).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+
+
+def gen_svg(s: dict) -> str:
+    """One picture of every class and every relationship of the schema (layers as columns, relationship names on the edges)."""
+    BW, BH, COLW, GAPY, TOP, LEFT = 196, 46, 400, 34, 136, 30
+    layers = {l["id"]: l for l in s["layers"]}
+    pos: dict[str, tuple[float, float]] = {}
+    heads = []
+    max_y = 0
+    for ci, ids in enumerate(SVG_COLUMNS):
+        x = LEFT + ci * COLW
+        y = TOP
+        for lid in ids:
+            heads.append((x, y - 16, layers[lid]["name"], LAYER_COLORS[lid]))
+            for c in [c for c in s["classes"] if c["layer"] == lid]:
+                pos[c["name"]] = (x, y)
+                y += BH + GAPY
+            y += 52
+        max_y = max(max_y, y)
+    W, H = LEFT + len(SVG_COLUMNS) * COLW - (COLW - BW) + 110, max_y + 30
+    by = classes_by_name(s)
+    out = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}" font-family="Pretendard, \'Noto Sans KR\', \'Malgun Gothic\', sans-serif">',
+           "<defs>",
+           '<marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="context-stroke"/></marker>',
+           '<marker id="tri" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="11" markerHeight="11" orient="auto"><path d="M0 0L12 6L0 12z" fill="#fff" stroke="#374151"/></marker>',
+           "</defs>",
+           f'<rect width="{W}" height="{H}" fill="#ffffff"/>',
+           f'<text x="{LEFT}" y="34" font-size="22" font-weight="700" fill="#111827">{_xml(s["name"])} v{_xml(s["version"])} — 클래스 {len(s["classes"])}개 · 관계 {len(s["relationships"])}종</text>',
+           f'<text x="{LEFT}" y="58" font-size="13" fill="#4b5563">BSC(관점 · 전략 목표 · 성과 지표) → 프로세스(BPMN) → 리소스 → 설비 진단(ISO 13374) → 조치 방법 = Skill = SOP · 규칙(DMN) → 외부 변수 · 예측 · 운영 기록. 화살표 = 관계 방향, 점선 삼각형 = 상속</text>']
+    for x, y, name, col in heads:
+        out.append(f'<text x="{x}" y="{y}" font-size="14" font-weight="700" fill="{col}">{_xml(name)}</text>')
+    pairs = []
+    for r in s["relationships"]:
+        for a in r["from"]:
+            for b in r["to"]:
+                pairs.append((a, b, r["type"]))
+    edges, labels = [], []
+    same_col_count: dict[str, int] = {}
+    for i, (a, b, t) in enumerate(pairs):
+        ax, ay = pos[a]
+        bx, byy = pos[b]
+        col = LAYER_COLORS[by[a]["layer"]]
+        if a == b:                                         # self relationship: loop on the right edge
+            x0, y0 = ax + BW, ay + BH * 0.35
+            pts = ((x0, y0), (x0 + 46, y0 - 26), (x0 + 46, y0 + 30), (x0, y0 + 16))
+        elif abs(ax - bx) < 1:                             # same column: arc on the right side
+            n = same_col_count[a + b] = same_col_count.get(a + b, 0) + 1
+            x0, y0, y1 = ax + BW, ay + BH / 2, byy + BH / 2
+            bend = 34 + 14 * (abs(y1 - y0) / (BH + GAPY)) ** 0.5 + 8 * n
+            pts = ((x0, y0), (x0 + bend, y0), (x0 + bend, y1), (x0, y1))
+        else:
+            right = bx > ax
+            x0 = ax + (BW if right else 0)
+            x1 = bx + (0 if right else BW)
+            y0, y1 = ay + BH / 2, byy + BH / 2
+            dx = (x1 - x0) * 0.45
+            pts = ((x0, y0), (x0 + dx, y0), (x1 - dx, y1), (x1, y1))
+        (p0, p1, p2, p3) = pts
+        d = f"M{p0[0]:.1f},{p0[1]:.1f} C{p1[0]:.1f},{p1[1]:.1f} {p2[0]:.1f},{p2[1]:.1f} {p3[0]:.1f},{p3[1]:.1f}"
+        edges.append(f'<path d="{d}" fill="none" stroke="{col}" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>{_xml(a)} -[{_xml(t)}]-> {_xml(b)}</title></path>')
+        labels.append((pts, t, col))
+    for c in s["classes"]:                                  # inheritance
+        if c.get("extends"):
+            ax, ay = pos[c["name"]]
+            bx, byy = pos[c["extends"]]
+            edges.append(f'<path d="M{ax + 18},{ay} L{bx + 18},{byy + BH}" fill="none" stroke="#374151" stroke-dasharray="4 3" marker-end="url(#tri)"/>')
+    out += edges
+    def bez(pts, u):
+        (a0, a1, a2, a3) = pts
+        f = lambda i: (1 - u) ** 3 * a0[i] + 3 * (1 - u) ** 2 * u * a1[i] + 3 * (1 - u) * u * u * a2[i] + u ** 3 * a3[i]
+        return f(0), f(1)
+    boxes = [(x, y, x + BW, y + BH) for (x, y) in pos.values()]
+    placed: list[tuple[float, float, float]] = []
+    def free(lx, ly, w):
+        if any(bx0 - 4 < lx + w / 2 and lx - w / 2 < bx1 + 4 and by0 - 6 < ly and ly - 9 < by1 + 2 for bx0, by0, bx1, by1 in boxes):
+            return False
+        return all(abs(lx - px) > (w + pw) / 2 + 4 or abs(ly - py) > 11 for px, py, pw in placed)
+    for pts, t, col in labels:                             # put each label on its own curve where nothing else is
+        w = 6.1 * len(t)
+        best = None
+        for u in (0.5, 0.4, 0.6, 0.3, 0.7, 0.22, 0.78, 0.15, 0.85):
+            lx, ly = bez(pts, u)
+            if free(lx, ly, w):
+                best = (lx, ly)
+                break
+        if best is None:
+            lx, ly = bez(pts, 0.5)
+            for _ in range(14):
+                ly += 11
+                if free(lx, ly, w):
+                    break
+            best = (lx, ly)
+        placed.append((best[0], best[1], w))
+        out.append(f'<text x="{best[0]:.0f}" y="{best[1] + 3:.0f}" font-size="9.5" text-anchor="middle" fill="{col}" stroke="#fff" stroke-width="3" paint-order="stroke">{_xml(t)}</text>')
+    for c in s["classes"]:
+        x, y = pos[c["name"]]
+        col = LAYER_COLORS[c["layer"]]
+        dash = ' stroke-dasharray="5 3"' if c.get("abstract") else ""
+        out.append(f'<g><rect x="{x}" y="{y}" width="{BW}" height="{BH}" rx="7" fill="#fff" stroke="{col}" stroke-width="1.8"{dash}/>'
+                   f'<rect x="{x}" y="{y}" width="6" height="{BH}" rx="3" fill="{col}"/>'
+                   f'<text x="{x + 14}" y="{y + 19}" font-size="14" font-weight="700" fill="#111827">{_xml(c["name"])}</text>'
+                   f'<text x="{x + 14}" y="{y + 37}" font-size="12" fill="#374151">{_xml(c.get("label_ko", ""))}</text>'
+                   f'<title>{_xml(c["name"])} ({_xml(c.get("label_ko", ""))}) — {_xml(c["standard"])}</title></g>')
+    out.append("</svg>")
+    return "\n".join(out) + "\n"
+
+
+def gen_class_table(s: dict) -> str:
+    layers = {l["id"]: l["name"] for l in s["layers"]}
+    rows = ["| 계층 | 클래스 (영문) | 클래스 (한글) | 준용 표준 |", "|---|---|---|---|"]
+    for c in s["classes"]:
+        rows.append(f"| {layers[c['layer']]} | {c['name']} | {c.get('label_ko', '')} | {c['standard']} |")
+    return "\n".join(rows) + "\n"
+
+
+def cmd_gen(_args) -> int:
+    s = load_schema()
+    broken = broken_text(s)
+    if broken:
+        print(f"{SCHEMA}: 깨진 글자(U+FFFD · ??)가 있어 생성하지 않습니다 — {', '.join(broken[:8])}", file=sys.stderr)
+        return 1
+    (V2 / "constraints.cypher").write_text(gen_constraints(s), encoding="utf-8", newline="\n")
+    (V2 / "ontology-schema.ttl").write_text(gen_ttl(s), encoding="utf-8", newline="\n")
+    (V2 / "schema_prompt.md").write_text(gen_prompt(s), encoding="utf-8", newline="\n")
+    DOCS.mkdir(parents=True, exist_ok=True)
+    (DOCS / "ontology-classes.svg").write_text(gen_svg(s), encoding="utf-8", newline="\n")
+    (DOCS / "class-table.md").write_text("# 온톨로지 클래스 (생성 파일 — schema.json)\n\n" + gen_class_table(s), encoding="utf-8", newline="\n")
+    print(f"generated constraints.cypher, ontology-schema.ttl, schema_prompt.md, workspace/개발/문서/ontology/ontology-classes.svg, class-table.md "
+          f"({len(s['classes'])} classes, {len(s['relationships'])} relationships)")
+    return 0
+
+
+# ------------------------------------------------------------------ database
+def stack_graph_env() -> None:
+    """이 PC 수업 스택의 Neo4j 주소 · 인증을 환경에 둔다(있으면 그대로) — 포트는 시작이 정한 바깥 포트, 인증은 compose 의 neo4j 서비스 값."""
+    if not os.environ.get("NEO4J_URI"):
+        sys.path.insert(0, str(ROOT / "scripts"))
+        from prepare_ports import saved_port
+        os.environ["NEO4J_URI"] = f"bolt://127.0.0.1:{saved_port(ROOT, 7687)}"
+    if not (os.environ.get("NEO4J_AUTH") or os.environ.get("NEO4J_PASSWORD")):
+        out = subprocess.run(["docker", "compose", "config", "--format", "json", "neo4j"], cwd=ROOT, capture_output=True, text=True, encoding="utf-8")
+        if out.returncode != 0:
+            raise RuntimeError(f"compose 설정을 읽지 못했습니다(docker compose config) — NEO4J_AUTH 를 직접 주세요: {out.stderr.strip()[:300]}")
+        os.environ["NEO4J_AUTH"] = json.loads(out.stdout)["services"]["neo4j"]["environment"]["NEO4J_AUTH"]
+
+
+def driver(_args=None):
+    common = str(ROOT / "common")
+    if common not in sys.path:
+        sys.path.insert(0, common)
+    from hydcommon import graphdb
+    stack_graph_env()
+    return graphdb.connect()
+
+
+def cardinality_violations(records_rels, rel_by: dict) -> list[str]:
+    """선언한 다중도를 지키는가: 1:N 은 끝 노드마다 들어오는 관계 하나, N:1 은 시작 노드마다 나가는 관계 하나, 1:1 은 둘 다."""
+    errs = []
+    for t, spec in rel_by.items():
+        card = spec.get("cardinality")
+        rows = [r for r in records_rels if r["type"] == t]
+        for side, end, other in (("in", "b", "a"), ("out", "a", "b")):
+            if (side == "in" and card in ("1:N", "1:1")) or (side == "out" and card in ("N:1", "1:1")):
+                seen: dict = {}
+                for r in rows:
+                    seen.setdefault(r[end], set()).add(r[other])
+                errs += [f"rel {t} ({card}): {node} 에 {'들어오는' if side == 'in' else '나가는'} 관계가 {len(peers)}개({sorted(map(str, peers))[:4]})"
+                         for node, peers in sorted(seen.items(), key=lambda x: str(x[0])) if len(peers) > 1]
+    return errs
+
+
+def validate(records_nodes, records_rels, s: dict) -> list[str]:
+    """Pure check of graph rows against the schema. Returns a list of violations."""
+    by = classes_by_name(s)
+    rel_by = {r["type"]: r for r in s["relationships"]}
+    errs = []
+    for n in records_nodes:
+        labels, props, nid = set(n["labels"]), n["props"], n["props"].get("id", "?")
+        unknown = labels - set(by)
+        if unknown:
+            errs.append(f"node {nid}: 스키마에 없는 레이블 {sorted(unknown)}")
+        concrete = [l for l in labels if l in by and not by[l].get("abstract")]
+        if not concrete:
+            errs.append(f"node {nid}: 구체 클래스 레이블이 없다 {sorted(labels)}")
+        for l in concrete:
+            c = by[l]
+            if c.get("extends") and c["extends"] not in labels:
+                errs.append(f"node {nid}: {l}는 부모 레이블 {c['extends']}도 달아야 한다")
+            for p in all_props(s, l):
+                v = props.get(p["name"])
+                if p.get("required") and v is None:
+                    errs.append(f"node {nid} ({l}): 필수 속성 {p['name']} 없음")
+                if v is not None and p.get("values") and p["type"] == "enum" and v not in p["values"]:
+                    errs.append(f"node {nid} ({l}): {p['name']}={v!r} 허용값 아님 {p['values']}")
+            declared = {p["name"] for p in all_props(s, l)}
+            for k in props:
+                if k not in declared and not any(k in {p["name"] for p in all_props(s, o)} for o in concrete):
+                    errs.append(f"node {nid} ({l}): 스키마에 없는 속성 {k}")
+    for r in records_rels:
+        t = r["type"]
+        if t not in rel_by:
+            errs.append(f"rel {t}: 스키마에 없는 관계 ({r['a']} → {r['b']})")
+            continue
+        spec = rel_by[t]
+        if not set(r["la"]) & set(spec["from"]) or not set(r["lb"]) & set(spec["to"]):
+            errs.append(f"rel {t}: {r['a']}{r['la']} → {r['b']}{r['lb']} 는 허용된 끝점({spec['from']} → {spec['to']})이 아님")
+        elif spec.get("endpointPairs") and not any(a in r['la'] and b in r['lb'] for a, b in spec['endpointPairs']):
+            errs.append(f"rel {t}: {r['a']} → {r['b']} 는 허용된 끝점 쌍이 아님 {spec['endpointPairs']}")
+        for p in spec.get("properties", []):
+            v = r["props"].get(p["name"])
+            if p.get("required") and v is None:
+                errs.append(f"rel {t} ({r['a']} → {r['b']}): 필수 속성 {p['name']} 없음")
+            if v is not None and p.get("values") and v not in p["values"]:
+                errs.append(f"rel {t} ({r['a']} → {r['b']}): {p['name']}={v!r} 허용값 아님")
+        allowed = {p["name"] for p in spec.get("properties", [])}
+        for k in r["props"]:
+            if k not in allowed:
+                errs.append(f"rel {t} ({r['a']} → {r['b']}): 스키마에 없는 관계 속성 {k}")
+    # class-level required relationships (e.g. every Skill = SOP has steps and is matched to a FailureMode)
+    for n in records_nodes:
+        nid = n["props"].get("id")
+        for l in n["labels"]:
+            for req in by.get(l, {}).get("requiredRelationships", []):
+                if req.get('whenProperty') and not all(n['props'].get(k) in v for k, v in req['whenProperty'].items()):
+                    continue
+                if any(n["props"].get(k) in v for k, v in req.get("unlessProperty", {}).items()):
+                    continue
+                if req["direction"] == "out":
+                    cnt = sum(1 for r in records_rels if r["a"] == nid and r["type"] in req["type"])
+                else:
+                    cnt = sum(1 for r in records_rels if r["b"] == nid and r["type"] in req["type"]
+                              and (not req.get("fromClass") or req["fromClass"] in r["la"])
+                              and (not req.get('fromId') or req['fromId'] == r['a']))
+                if cnt < req.get("min", 1):
+                    errs.append(f"node {nid} ({l}): 필수 관계 위반 — {req['description']} ({'/'.join(req['type'])} {cnt}개)")
+    errs += cardinality_violations(records_rels, rel_by)
+    errs += integrity(records_nodes, records_rels)
+    return errs
+
+
+def _out(rels, t, a=None):
+    return [(r["a"], r["b"], r["props"]) for r in rels if r["type"] == t and (a is None or r["a"] == a)]
+
+
+def integrity(records_nodes, records_rels) -> list[str]:
+    """Cross-layer checks the scenarios rely on (DMN consistency, BPMN data connectivity).
+    이상 패턴의 사람용 조건(rule)은 시드가 TESTS 행에서 만들고 kg-seed 되읽기(seed_checks.cypher)가 대조한다 — 여기서는 규칙(when)만 본다."""
+    errs = []
+    props = {n["props"].get("id"): n["props"] for n in records_nodes}
+    # Source-only is an explicit graph contract, not a universal FM exemption.
+    for node in records_nodes:
+        p = node['props']
+        if 'Skill' not in node['labels'] or p.get('kind') != 'reference':
+            continue
+        sid = p.get('id')
+        if p.get('executable') is not False or not p.get('source_id') or not p.get('citation') or not p.get('_manual_document'):
+            errs.append(f'{sid}: 참고 Skill은 executable=false와 검토한 원문/소유 출처가 필요합니다')
+        bad = [r for r in records_rels if (r['a'] == sid and r['type'] in ('CONSISTS_OF', 'APPROVED_BY', 'ADDRESSES', 'AFFECTS', 'INVOLVES_PART'))
+               or (r['b'] == sid and r['type'] in ('HAS_SKILL', 'OUTPUTS', 'MITIGATED_BY', 'REMEDIED_BY', 'PREVENTED_BY'))]
+        if bad:
+            errs.append(f'{sid}: 참고 Skill에는 실행/후보/승인 관계를 연결할 수 없습니다')
+    # Use the same explicit purchase-domain contract as ingestion/runtime.
+    common_root = str(ROOT / 'common')
+    if common_root not in sys.path:
+        sys.path.insert(0, common_root)
+    from hydcommon.skill_scope import purchase_graph_issues
+    errs += purchase_graph_issues(records_nodes, records_rels)
+    # DMN: a rule's TESTS read inputs its decision declares; the readable 'when' states the same thresholds
+    table_of_rule = {b: a for a, b, _ in _out(records_rels, "HAS_RULE")}
+    decision_of_table = {b: a for a, b, _ in _out(records_rels, "IMPLEMENTED_BY")}
+    for rule, inp, tp in _out(records_rels, "TESTS"):
+        var = props.get(inp, {}).get("variable", "?")
+        when = props.get(rule, {}).get("when")
+        if when is not None:
+            val = tp.get("value")
+            sval = ("true" if val else "false") if isinstance(val, bool) else (str(int(val)) if isinstance(val, float) and val.is_integer() else str(val))
+            if f"{var} {tp.get('operator')}" not in when or sval not in when:
+                errs.append(f"rule {rule}: when '{when}' 에 TESTS ({var} {tp.get('operator')} {sval}) 가 드러나지 않는다")
+        dec = decision_of_table.get(table_of_rule.get(rule))
+        if dec and inp not in {b for _, b, _ in _out(records_rels, "REQUIRES_INPUT", dec)}:
+            errs.append(f"decision {dec}: 규칙 {rule}이 검사하는 {inp}를 REQUIRES_INPUT에 선언하지 않았다")
+    errs += kpi_role_integrity(records_nodes, records_rels)
+    return errs
+
+
+def kpi_role_integrity(records_nodes, records_rels) -> list[str]:
+    """A144 (D02): BSC leading/lagging roles must agree with the strategy-map causality. A lagging (outcome) Measure never
+    INFLUENCES a leading (driver) Measure, and every leading Measure reaches some lagging Measure through INFLUENCES
+    (a driver that drives no outcome is not a driver). Measures without a role are reported by validate() as a missing
+    required property; here they are skipped so one defect is reported once."""
+    role = {n["props"].get("id"): n["props"].get("kpiRole") for n in records_nodes if "Measure" in n["labels"]}
+    edges = [(a, b) for a, b, _ in _out(records_rels, "INFLUENCES") if a in role and b in role]
+    errs = []
+    for a, b in edges:
+        if role[a] == "lagging" and role[b] == "leading":
+            errs.append(f"measure {a}: 후행(lagging) 지표가 선행(leading) 지표 {b}에 INFLUENCES — 전략맵 인과 방향 위반")
+    out = {}
+    for a, b in edges:
+        out.setdefault(a, set()).add(b)
+    for m, r in role.items():
+        if r != "leading":
+            continue
+        seen, stack, reached = set(), [m], False
+        while stack and not reached:
+            cur = stack.pop()
+            for nxt in out.get(cur, ()):
+                if role.get(nxt) == "lagging":
+                    reached = True
+                    break
+                if nxt not in seen:
+                    seen.add(nxt)
+                    stack.append(nxt)
+        if not reached:
+            errs.append(f"measure {m}: 선행(leading) 지표인데 INFLUENCES 경로로 닿는 후행(lagging) 지표가 없다")
+    return errs
+
+
+def usage_report(records_nodes, records_rels, s: dict) -> list[str]:
+    """Minimal-set check: schema elements (classes, properties, enum values, relationships, relationship properties)
+    that no instance uses. The schema should carry only what the scenarios need."""
+    out = []
+    for c in s["classes"]:
+        if c.get("abstract"):
+            continue
+        inst = [n["props"] for n in records_nodes if c["name"] in n["labels"]]
+        if not inst:
+            out.append(f"class {c['name']}")
+            continue
+        for p in c["properties"]:
+            vals = [i[p["name"]] for i in inst if i.get(p["name"]) is not None]
+            if not vals:
+                out.append(f"property {c['name']}.{p['name']}")
+            elif p["type"] == "enum" and p.get("values"):
+                unused = [v for v in p["values"] if v not in vals]
+                if unused:
+                    out.append(f"enum {c['name']}.{p['name']} {unused}")
+    for r in s["relationships"]:
+        inst = [x["props"] for x in records_rels if x["type"] == r["type"]]
+        if not inst:
+            out.append(f"relationship {r['type']}")
+            continue
+        for p in r.get("properties", []):
+            if not any(i.get(p["name"]) is not None for i in inst):
+                out.append(f"relationship property {r['type']}.{p['name']}")
+    return out
+
+
+def read_rows(ses):
+    """그래프 전체를 검사기가 읽는 행 모양으로. ses 는 run() 이 있는 세션 또는 트랜잭션(T2 적재가 커밋 전 검사에 같은 읽기를 쓴다)."""
+    nodes = [{"labels": r["l"], "props": dict(r["p"])} for r in ses.run("MATCH (n) RETURN labels(n) AS l, properties(n) AS p")]
+    rels = [{"type": r["t"], "a": r["a"], "b": r["b"], "la": r["la"], "lb": r["lb"], "props": dict(r["p"])} for r in ses.run(
+        "MATCH (a)-[x]->(b) RETURN type(x) AS t, a.id AS a, b.id AS b, labels(a) AS la, labels(b) AS lb, properties(x) AS p")]
+    return nodes, rels
+
+
+def _graph_rows(args):
+    with driver(args) as d, d.session() as ses:
+        return read_rows(ses)
+
+
+def _report(errs: list[str], noun: str) -> int:
+    for e in errs:
+        print(" -", e)
+    print("PASS" if not errs else f"FAIL ({len(errs)} {noun})")
+    return 0 if not errs else 1
+
+
+def cmd_validate(args) -> int:
+    s = load_schema()
+    nodes, rels, skipped = base_scope(*_graph_rows(args))
+    errs = validate(nodes, rels, s)
+    for ns, count in sorted(skipped.items()):
+        print(f"namespace {ns!r}: 학생 노드 {count}개는 수업 기준 검사에서 뺐다")
+    used = {l for n in nodes for l in n["labels"]}
+    unused = [c["name"] for c in s["classes"] if c["name"] not in used]
+    print(f"checked {len(nodes)} nodes, {len(rels)} relationships against {len(s['classes'])} classes / {len(s['relationships'])} relationship types")
+    if unused:
+        print("classes with no instance:", unused)
+    for e in errs:
+        print(" -", e)
+    unused_elems = usage_report(nodes, rels, s)
+    if unused_elems:
+        print(f"minimal-set: {len(unused_elems)} schema elements unused by any instance:")
+        for u in unused_elems:
+            print("   ·", u)
+    else:
+        print("minimal-set: every schema element is used by the scenario instances")
+    print("PASS" if not errs else f"FAIL ({len(errs)} violations)")
+    return 0 if not errs else 1
+
+
+def parse_queries(text: str) -> list[dict]:
+    """queries.cypher blocks: '// @query <name>' then '// @ask <question>' then optional '// @params {...}', then Cypher until the next @query."""
+    out, cur = [], None
+    for line in text.splitlines():
+        m = re.match(r"\s*//\s*@query\s+(\S+)", line)
+        if m:
+            cur = {"name": m.group(1), "ask": "", "params": {}, "cypher": []}
+            out.append(cur)
+            continue
+        if cur is None:
+            continue
+        m = re.match(r"\s*//\s*@ask\s+(.*)", line)
+        if m:
+            cur["ask"] = m.group(1)
+            continue
+        m = re.match(r"\s*//\s*@params\s+(.*)", line)
+        if m:
+            cur["params"] = json.loads(m.group(1))
+            continue
+        if line.strip().startswith("//"):
+            continue
+        cur["cypher"].append(line)
+    for q in out:
+        q["cypher"] = "\n".join(q["cypher"]).strip().rstrip(";")
+    return out
+
+
+def cmd_queries(args) -> int:
+    qs = parse_queries((V2 / "queries.cypher").read_text(encoding="utf-8"))
+    bad = 0
+    with driver(args) as d, d.session() as ses:
+        for q in qs:
+            if args.only and q["name"] != args.only:
+                continue
+            rows = [r.data() for r in ses.run(q["cypher"], q["params"])]
+            print(f"\n=== {q['name']} — {q['ask']}  ({len(rows)} rows)")
+            for r in rows[: args.limit]:
+                print("  ", json.dumps(r, ensure_ascii=False, default=str)[:400])
+            bad += 0 if rows else 1
+    print(f"\n{len(qs)} queries, {bad} empty")
+    return 0 if not bad else 1
+
+
+def main(argv=None) -> int:
+    sys.stdout.reconfigure(encoding="utf-8")
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("cmd", choices=["gen", "validate", "queries"])
+    ap.add_argument("--uri", help="validate · queries: 다른 그래프(bolt://…) — 없으면 이 PC 수업 스택")
+    ap.add_argument("--only", help="queries: 이 이름의 질의만")
+    ap.add_argument("--limit", type=int, default=8)
+    a = ap.parse_args(argv)
+    if a.uri:
+        os.environ["NEO4J_URI"] = a.uri
+    return {"gen": cmd_gen, "validate": cmd_validate, "queries": cmd_queries}[a.cmd](a)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
