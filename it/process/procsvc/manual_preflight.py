@@ -17,6 +17,7 @@ def validate(proposal, catalog):
     """Use a successfully read current catalog; never invent reviewed/by or modify proposals."""
     original = deepcopy(proposal)
     issues = []
+    notices = []      # 고칠 곳이 아니라 사람이 알고 넘어갈 것(검토 필요 수에 세지 않는다)
 
     def issue(code, owner, field, message):
         issues.append(dict(code=code, sop=owner, field=field, message=message))
@@ -152,8 +153,30 @@ def validate(proposal, catalog):
     own_outputs = {ref for r in k.get('rules') or [] if r.get('effect') == 'SELECT' and r.get('table') == 'dt:action-candidates'
                    for ref in r.get('outputs') or []}
     joinable = {r['id'] for r in catalog['candidate_failure_modes']}
+    # 후보 규칙이 없는 절차를 셋으로 가른다(2026-11-14 — 수업 문서 하나를 기준으로 맞고 틀림을 정하지 않는다).
+    #  ① 정비 묶음(maintenance_policy.packages.sop)이 부르는 절차: 그 묶음을 가진 절차가 후보이고 이 절차는 그 안에서 실행된다 — 알리지 않는다.
+    #  ② 같은 원인을 맡은 다른 절차가 후보로 나오는 절차: 그 절차의 결과에 따라 이어지는 절차(HM-8 의 점검 뒤 교체)일 수도, 빠뜨린 대안 조치일 수도
+    #     있다 — 검사기가 가를 수 없으니 「검토 필요」가 아니라 참고(notices)로 알리고 사람이 원문을 보고 정한다.
+    #  ③ 그 밖: 이 절차도, 같은 원인의 다른 절차도 후보로 나올 길이 없다 — 판단이 「후보 지식이 없습니다」로 보류된다(2026-10-23 리허설). 검토 필요.
+    packaged = {pkg.get('sop') for q in plan['procedures'] for pkg in ((q.get('maintenance_policy') or {}).get('packages') or [])}
+    is_candidate = lambda q: q['id'] in own_outputs or kgadmin.skill_id(q['id']) in own_outputs
+    covering = {}
+    for q in plan['procedures']:
+        if is_candidate(q):
+            for cause in q.get('addresses') or []:
+                covering.setdefault(cause, []).append(q['id'])
     for p in plan['procedures']:
         if p.get('kind') == 'reference' or p.get('executable') is False:
+            continue
+        if p['id'] in packaged:
+            continue
+        siblings = sorted({s for cause in p.get('addresses') or [] for s in covering.get(cause, []) if s != p['id']})
+        if not is_candidate(p) and siblings and all(cause in covering for cause in p['addresses']):
+            relation = p.get('relation') or ('REMEDIED_BY' if p.get('failureMode') else None)
+            if not (relation in kgadmin.CORRECTIVE_RELATIONS and p.get('failureMode') in joinable):
+                notices.append(dict(code='CANDIDATE_NOT_DIRECT', sop=p['id'], field='knowledge.rules', siblings=siblings,
+                                    message=f"{p['id']}: 판단의 조치 후보에 직접 나오지 않는 절차입니다. 같은 원인의 {' · '.join(siblings)}이(가) 후보로 나옵니다. "
+                                            f"그 절차의 결과에 따라 이어지는 절차라면 그대로 두세요. 경보에서 바로 고를 조치라면 조치 후보 규칙을 더하세요"))
             continue
         if p['id'] in own_outputs or kgadmin.skill_id(p['id']) in own_outputs:
             continue
@@ -195,6 +218,7 @@ def validate(proposal, catalog):
                                   source_notice='구매 지식의 구조 검사 결과입니다. 실제 견적·재고·공급사 조건과 실행 시점의 업무 사실은 확인하지 않았습니다. 승인 전에 실제 조건을 다시 검사해야 합니다.'))
     result = dict(checked=True, technical_ready=not issues, needs_human_review=True, can_commit=False, issues=issues)
     result['source_value_warnings'] = manual_knowledge.source_value_warnings(original)
+    result['notices'] = notices
     if execution:
         result.update(execution=execution, executable_ready=any(e['ready'] for e in execution))
     return result

@@ -123,9 +123,11 @@ const healthState = {};
 function renderStack() {
   const stack = $('#stack'); stack.innerHTML = '';
   for (const L of LAYERS) {
-    const zone = L.zone === 'mixed' ? 'it' : L.zone;
+    // 두 영역에 걸친 계층(관제 = OT + IT, 이벤트 백본 = DMZ + IT)은 걸친 영역을 모두 보인다 — IT 하나로 그리면 교재의 구조와 다르게 읽힌다
+    const zones = L.zone === 'mixed' ? ['ot', 'dmz', 'it'].filter(z => L.comps.some(c => c.zone === z)) : [L.zone];
+    const zone = zones[zones.length - 1];
     const row = el('div', 'layer zone-' + zone + (L.focus ? ' focus' : ''));
-    row.append(el('div', 'zone', `<i class="z ${zone}">${esc(zone.toUpperCase())}</i>`));            // A122: zone chip instead of the layer number (UIUX_PLAN §1)
+    row.append(el('div', 'zone', zones.map(z => `<i class="z ${z}">${esc(z.toUpperCase())}</i>`).join(' ')));            // A122: zone chip instead of the layer number (UIUX_PLAN §1)
     row.append(el('div', 'name', `<strong>${esc(L.name)}</strong><span>${esc(L.role)}</span>`));
     const comps = el('div', 'comps');
     for (const c of L.comps) {
@@ -134,7 +136,7 @@ function renderStack() {
       const optionalEntry = c.entryHealth || c.optional;
       // 상태를 재지 않는 칸(health 없음)은 회색 점을 두지 않는다 — 「꺼짐」처럼 읽힌다. 글자로 「상태 확인 대상 아님」을 붙인다
       comp.innerHTML = `<span class="comp-name">${c.health ? `<i class="dot ${healthState[key] || 'unknown'}" data-h="${esc(key)}"></i>` : ''}<i class="z ${c.zone}">${c.zone.toUpperCase()}</i>` +
-        `<a href="${c.url}" data-entry="${esc(c.url)}" target="_blank" rel="noopener"${optionalEntry ? ' title="선택 도구 — 누르면 켜져 있는지 확인하고 엽니다."' : ''}>${esc(c.name)} ↗</a></span><span class="role-desc">${esc(c.role)}` +
+        `<a href="${c.url}" data-entry="${esc(c.url)}" target="_blank" rel="noopener"${optionalEntry ? ' title="선택 도구 — 누르면 켜져 있는지 확인하고 엽니다."' : ''}>${esc(c.name)} ↗</a></span><span class="role-desc">${esc(c.role)}${c.real ? ` <span class="role">· 현업에서는 ${esc(c.real)}</span>` : ''}` +
         (optionalEntry ? ` <span class="role" data-entry-status="${esc(c.url)}">(선택 도구)</span>` : '') + (c.health ? '' : ' <span class="role">(상태 확인 대상 아님)</span>') + '</span>';
       if (optionalEntry) comp.querySelector('a').addEventListener('click', e => openOptional(e, c));
       comps.append(comp);
@@ -246,6 +248,7 @@ function renderUnits() {
           <button class="btn" data-act="load">부하 70 %</button>
           <button class="btn" data-act="reset">보호 정지 해제</button>
           </div></fieldset>
+          <p class="field-hint">설비 앞 현장 패널을 흉내 낸 실습 버튼입니다. 사람 승인과 명령 관문을 거치지 않고 설비에 바로 씁니다. AI가 권고한 조치는 이 길이 아니라 처리 건 승인 뒤 명령 관문으로만 나갑니다.</p>
         </div></details>`;
       card.querySelectorAll('button').forEach(b => b.addEventListener('click', () => unitAction(asset, b.dataset.act, b.dataset.mode, b)));
       box.append(card);

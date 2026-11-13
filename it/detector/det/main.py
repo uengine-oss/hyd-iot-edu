@@ -46,7 +46,7 @@ ERROR_WINDOW_S = 60.0
 runtime = PatternRuntime(None, DAQ_PROFILE, TIME_SCALE, OBSERVATION_GRACE_S)
 store = None
 pending_alerts = []
-catalog_status = {'ready': False, 'error': 'NOT_LOADED', 'checked_at': None, 'applied_at': None}
+catalog_status = {'ready': False, 'error': 'NOT_LOADED', 'rejected': [], 'checked_at': None, 'applied_at': None}
 mutation_lock = asyncio.Lock()
 refresh_lock = asyncio.Lock()
 
@@ -176,8 +176,10 @@ async def _refresh_catalog():
     try:
         rows, names = await asyncio.to_thread(fetch_catalog)
         async with mutation_lock:
-            runtime.replace(rows, names)
-            catalog_status.update(ready=True, error=None, checked_at=time.time(), applied_at=time.time())
+            rejected = runtime.replace(rows, names)
+            catalog_status.update(ready=True, error=None, rejected=rejected, checked_at=time.time(), applied_at=time.time())
+            if rejected:      # 틀린 패턴만 빠진다 — 나머지 감지는 계속된다. /healthz 의 patterns.rejected 와 /api/detector/patterns 에 까닭이 보인다
+                log.warning('patterns left out of detection: %s', '; '.join(f"{r['code'] or r['id']}: {r['reason']}" for r in rejected))
             if store is not None:
                 checkpoint()
         return True

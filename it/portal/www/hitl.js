@@ -486,6 +486,7 @@
     return UI.card({title:'자동 검증', chips:UI.chipText(v.technical_ready === true ? '자동 검증 통과' : `검토 필요 ${issues.length}건`,v.technical_ready === true ? 'neutral' : 'warning'),
       body:`<p>AI 추출 결과의 연결 구조를 자동으로 검증한 결과입니다. ${v.technical_ready === true ? '구조에는 문제가 없습니다. 내용이 원문과 맞는지는 아래에서 직접 검토하세요.' : '아래 항목은 문서가 틀렸다는 뜻이 아니라, AI가 채우지 못했거나 사람이 확인해야 하는 곳입니다. 해당 절차에서 값을 고르거나 고친 뒤 적재하세요.'} 고친 연결은 적재할 때 다시 검증합니다.</p>` +
         (values.length ? UI.fold(`원문 수치 확인 필요 ${values.length}개`, `<ul>${values.map(w=>`<li>${esc(w)}</li>`).join('')}</ul>`, {cls:'small', open:true}) : '') +
+        (Array.isArray(v.notices) && v.notices.length ? UI.fold(`참고 ${v.notices.length}건 (고칠 곳이 아니라 알고 넘어갈 것)`, `<ul>${v.notices.map(n => `<li>${esc(n.message)}</li>`).join('')}</ul>`, { cls: 'small' }) : '') +
         (issues.length ? `<ul>${issues.map(x=>`<li>${esc(manualIssueMessage(x,preview,catalog))}${UI.fold('검사 항목 원문',`<pre>${esc(JSON.stringify(x,null,2))}</pre>`,{cls:'small'})}</li>`).join('')}</ul>` : '<p class="muted">현재 지식에서 기계가 찾은 수정 항목은 없습니다.</p>')});
   }
   function manualExecutionHtml(v, preview, catalog) {

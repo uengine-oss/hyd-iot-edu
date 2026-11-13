@@ -30,8 +30,8 @@ class PatternRuntime:
     validity, gaps and slope windows), whether or not a catalog has been read yet — the PLC trip watch and the features read
     the same samples. Without a catalog (source not read yet) nothing is evaluated.
     Candidate holds restart on revision change. Raised alerts keep their original definition until CLEAR, including when
-    that definition is removed from the catalog. Invalid catalog replacements fail atomically, leaving the applied catalog
-    unchanged. `names` (pattern code -> display name, every pattern in the graph) labels the alerts.
+    that definition is removed from the catalog. A replacement applies the valid definitions and leaves the invalid ones
+    out (replace() returns them); when none is valid it fails, leaving the applied catalog unchanged. `names` (pattern code -> display name, every pattern in the graph) labels the alerts.
     """
     def __init__(self, rows, profile, time_scale, grace_s, names=None):
         Observations(profile, grace_s)  # validate before accepting any catalog
@@ -42,9 +42,12 @@ class PatternRuntime:
         self.source_ready = rows is not None
 
     def replace(self, rows, names):
-        validated = compile_catalog(rows, self.profile, self.time_scale)
+        """맞는 패턴만 적용하고, 틀려서 뺀 패턴의 목록 [{id, code, reason}] 을 돌려준다(하나도 맞지 않으면 예외 — 적용된 목록은 그대로)."""
+        rejected = []
+        validated = compile_catalog(rows, self.profile, self.time_scale, rejected)
         self.catalog, self.names = validated, dict(names)
         self.source_ready = True
+        return rejected
 
     def source_failed(self):
         self.source_ready = False

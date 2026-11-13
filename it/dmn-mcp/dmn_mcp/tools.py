@@ -17,12 +17,12 @@ from hydcommon.skill_scope import PURCHASE_PATTERN
 
 
 #: Recorded in a decision's origin: where the cause argument of evaluate_cards/submit_decision was checked against.
-CAUSE_BASIS = "ontology T1 (pattern → symptom → failure mode ← cause), same query as diagnose"
+CAUSE_BASIS = "지식 지도의 진단 경로(이상 패턴 → 증상 → 고장 유형 ← 원인) — 원인 진단과 같은 질의"      # 처리 기록에 그대로 보이는 문장이다(한국어로 — 화면이 영문을 낱말마다 바꾸지 않게)
 #: C2: 정기 정비 도래(PM_DUE)에는 증상(T1)이 없다. 원인은 업무 근거로 이어진 것만 받는다(business_causes 와 같은 질의).
 #: 재고 기준 이탈(SPARE_BELOW_MIN)은 원인 경로가 없다 — 부품이 근거다(purchase_context · evaluate_purchase · submit_purchase).
 #: 2026-10-30 검진 G2-26: 원인 경로가 남아 있을 때 경보의 부품이 아니라 모자란 모든 부품에서 사전 확률 1순위를 골랐다.
 BUSINESS_CAUSE_BASIS = {
-    PM_PATTERN: "ontology: failure mode -PREVENTED_BY-> skill (정기 정비가 막는 고장), cause -CAUSES-> failure mode",
+    PM_PATTERN: "지식 지도의 정비 경로(정기 정비가 막는 고장 유형과 그 고장을 일으키는 원인)",
 }
 #: 원인 근거의 종류(판단 origin.cause_route) — 화면이 원인을 '진단'으로 읽을지 '정비로 막는 원인'으로 읽을지 정한다.
 #: 라이브 3차: 업무 경보도 cause_basis 에 T1(증상) 문장이 적혀 고장 진단처럼 보였다.

@@ -72,6 +72,10 @@ def prepare(repo, row: dict, tenant_id: str) -> Context:
         form = repo.get_form(form_id,tenant_id)
     fields = (form or {}).get('fields_json')
     if fields is None:
+        # 폼을 이름으로 가리켰는데 그 폼이 정의에도 폼 표에도 없으면 자유형식으로 돌리지 않는다 — 결과 계약 없이 AI 가 아무 글이나 내고 「성공」한다.
+        # 폼을 가리키지 않은 작업(도구 없음)만 자유형식 한 칸이다(2026-11-14).
+        if tool.startswith('formHandler:'):
+            raise LookupError(f'작업이 가리키는 결과 폼 {form_id} 을(를) 찾을 수 없습니다 — 흐름 정의의 폼 이름을 확인하세요')
         fields = FREEFORM_FIELDS
     user_ids = [u.strip() for u in (row.get("user_id") or "").split(",") if u.strip()]
     people = repo.list_users(user_ids, tenant_id) if user_ids else []

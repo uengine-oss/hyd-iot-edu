@@ -46,8 +46,10 @@ def unresolved(rule, facts):
 
 
 def _parameterized(skill, parameters):
-    if not isinstance(parameters, dict) or set(parameters) - {'fan_pct', 'load_pct'}:
-        raise ValueError('조치 변경은 팬·부하 설정만 지원합니다')
+    # 바꿀 수 있는 값은 이 SOP 의 명령 조치가 범위(min · max)와 함께 밝힌 것뿐이다 — 설정 이름을 여기 적어 두지 않는다(수업 냉각 SOP 의 팬 · 부하만
+    # 받던 목록을 2026-11-14 에 지웠다: 다른 설정을 가진 절차도 같은 검사로 받는다)
+    if not isinstance(parameters, dict):
+        raise ValueError('조치 변경은 {설정 이름: 값} 꼴이어야 합니다')
     effective = deepcopy(skill)
     normalized = {}
     for key, value in parameters.items():
@@ -60,7 +62,7 @@ def _parameterized(skill, parameters):
     if normalized:
         labels = {'fan_pct':'팬', 'load_pct':'부하'}
         effective['name'] = (skill.get('sopId') or skill['name']) + ' 변경안: ' + ', '.join(
-            f'{labels[k]} {v:g}%' for k,v in sorted(normalized.items()))
+            f'{labels.get(k, k)} {v:g}' + ('%' if k.endswith('_pct') else '') for k,v in sorted(normalized.items()))
         effective['description'] = 'SOP 원문 기본값과 구분하여 검토하는 조치값입니다. 실제 적용값은 아래 원자 조치를 확인하세요.'
     return effective, normalized
 

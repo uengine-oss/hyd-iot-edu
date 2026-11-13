@@ -24,7 +24,7 @@ x-py-health: &py-health
 networks:
   ot-net: {}
   it-net: {}
-  sim-net: {}                              # 실습 시뮬레이터 API(:8000) 전용: process(정비 수행 모사) · portal(같은 출처 /svc/plant-sim/) ↔ plant-sim 만. OT 망(emqx · PLC)은 DMZ 만 넘는다
+  sim-net: {}                              # 실습 시뮬레이터 API(:8000) 전용: process(정비 수행 모사) · portal(같은 출처 /svc/plant-sim/) ↔ plant-sim 만. OT 통로(emqx)는 DMZ 만 넘는다. 이 망은 실습장 조작(결함 주입 · 초기화 · 현장 패널 흉내 · 정비 수행 모사)용이고 승인된 원격 명령의 길이 아니다
 
 volumes:
   tsdb-data: {}

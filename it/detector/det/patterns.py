@@ -198,14 +198,26 @@ def compile_pattern(row):
     return Pattern(row['id'], row['code'], row['severity'], summary, rule, clear, hold, clear_hold, window, revision)
 
 
-def compile_catalog(rows, profile, time_scale):
+def compile_catalog(rows, profile, time_scale, rejected=None):
+    """패턴 목록을 검사해 {code: Pattern} 으로. `rejected`(list)를 주면 틀린 패턴 하나가 목록 전체를 막지 않는다 — 그 패턴만 빼고
+    {id, code, reason} 을 rejected 에 담는다(2026-11-14: 학생이 패턴 하나를 잘못 쓰면 수업 패턴까지 감지가 모두 멈췄다).
+    rejected 를 주지 않으면 첫 오류에서 멈춘다. 맞는 패턴이 하나도 없으면 어느 쪽이든 오류다."""
     if not isinstance(rows, list) or not 1 <= len(rows) <= 64:
         raise DefinitionError('catalog must contain 1..64 held patterns')
     result, ids = {}, set()
     for row in rows:
-        pattern = compile_pattern(row)
-        pattern.validate_reporting(profile, time_scale)
-        if pattern.code in result or pattern.id in ids:
-            raise DefinitionError('duplicate pattern id/code')
+        try:
+            pattern = compile_pattern(row)
+            pattern.validate_reporting(profile, time_scale)
+            if pattern.code in result or pattern.id in ids:
+                raise DefinitionError('duplicate pattern id/code')
+        except (DefinitionError, KeyError, TypeError, ValueError) as exc:
+            if rejected is None:
+                raise
+            known = row if isinstance(row, dict) else {}
+            rejected.append({'id': known.get('id'), 'code': known.get('code'), 'reason': f'{type(exc).__name__}: {exc}'})
+            continue
         result[pattern.code] = pattern; ids.add(pattern.id)
+    if not result:
+        raise DefinitionError('no valid pattern in the catalog: ' + '; '.join(f"{r['code'] or r['id']}: {r['reason']}" for r in rejected or []))
     return result
