@@ -2,7 +2,8 @@
 //  run()   : 구간 모듈 하나를 녹화한다(옛 판 segs/seg-*.mjs, run.sh rec — 지금 게시본 재현용).
 //  chain() : v12 구간 모듈(segs/v12-*.mjs)을 한 ego 실행 안에서 큐 파일의 단계 차례대로 녹화한다(run.sh chain12). 화면 크기를 한 번만 걸고
 //            탭 · 페이지 · 커서를 이어 쓰므로 구간 경계에서 화면이 다시 배치되지 않는다. 구간마다 녹화 · end-state.json · timing.json을 따로 남기고,
-//            구간이 끝날 때마다 실측(이동 공백)과 오류 · 업데이트 막대 검사(녹화 중 2초마다 글로 본다)를 해서 걸리면 그 구간에서 멈춘다.
+//            녹화 오류나 오류 · 업데이트 막대(녹화 중 2초마다 글로 본다)가 있으면 그 구간에서 멈춘다. 실측 숫자(이동 끊김 · 말 없는 시간 · 정지)는
+//            멈춤 조건이 아니라 구간이 끝난 뒤 먼저 볼 곳이라(영상 길 16) 결과 줄의 look에 적기만 한다.
 //            rehearsal=true(run.sh rehearse12)면 녹화 · 음성 없이 조작만 끝까지 돌린다(영상 길 16의 리허설). 큐 길이는 촬영/시간계수.json의 말 계수로
 //            어림하고 REHEARSAL_SCALE을 곱해 줄인다. 홈 제목은 「내 학습 노트 리허설」이라 녹화 페이지와 섞이지 않는다.
 // 리듬: 행동 문장 안에서 가리키고 문장 끝 약 250ms 전에 실행(gate), 결과 발화는 행동 종료 뒤. 모든 ego 호출은 한 직렬 큐.
@@ -46,7 +47,7 @@ async function grabFrame(sess){const pg=sess.cur;return sess.serial(async()=>{aw
  for(let i=0;i<100&&!f;i++){for(const e of await pg.events())if(e.method==='Page.screencastFrame'){await pg.cdp('Page.screencastFrameAck',{sessionId:e.params.sessionId});f=e;break;}if(!f)await new Promise(r=>setTimeout(r,50));}
  await pg.cdp('Page.stopScreencast');if(!f)throw Error('No screencast frame within 5s');return Buffer.from(f.params.data,'base64');});}
 
-// 이동마다 첫 프레임 뒤의 최대 프레임 공백(measure.py와 같은 셈). chain의 멈춤 기준: 0.5초 넘는 공백 3회 이상(영상 V-14).
+// 이동마다 첫 프레임 뒤의 최대 프레임 공백(measure.py와 같은 셈). chain은 0.5초 넘는 공백이 3회 이상인 구간을 결과 줄 look에 적는다(멈추지 않는다).
 function measureGaps(frames,motions,start){
  const src=frames.map(f=>f.sourceTimestamp*1000-start).sort((a,b)=>a-b);const gaps=[];
  // 재는 창은 화살표가 실제로 움직이는 동안(계획 시간 + 150ms)이다. 그 뒤는 화살표가 목표에 고정된 채 실제 입력(RPC)이 끝나기를 기다리는 정지라
@@ -209,17 +210,20 @@ export async function chain({prefix,from=null,prev=null,rehearsal=false,capture=
   const name=(rehearsal?'rehearsal-':'take-')+prefix+'-'+s.id;const first=i===0;
   const r=await record(sess,{name,segName:s.id,cues:plan.cues,cueText:plan.text,lead:first&&!prev?null:200,tail:200,watchBanner:true,prev:prevName,rehearsal,capture:rehearsal&&capture.includes(s.id)},
    async ctx=>{if(first&&prev)await resume(ctx,resumeOpts);return playSegment(ctx,s.mod);});
-  // 말 없이 화면만 굴러간 시간: 앞 큐 말이 끝난 뒤 다음 큐 말까지에서 정한 쉼(pause_before)을 뺀 몫. 4초를 넘으면 멈춘다(사용자 2026-11-13 — 2.6초쯤은 사람 강사도 하는 일이라 허용).
-  // 2.5~4초는 결과 줄 silentMax에 후보로만 남는다(녹화만 — 리허설은 말 길이가 어림이다).
-  // 리허설이 못 잡은 결함: k1 s02-10 커버 고르기 뒤 말 없이 8.8초 스크롤(사용자가 싫다고 한 「오래 멈춘 화면」과 같은 꼴).
+  // 멈추는 것은 녹화 오류(대본이 말하는 화면 없음 · 영어 화면 · 해상도 다름 · 새 상자 색이 대본과 다름 등은 모두 오류로 온다)와 오류 · 업데이트 막대뿐이다.
+  // 실측 숫자 셋은 멈추지 않고 look에 적는다(녹화만 — 리허설은 말 길이가 어림이다). 작업자는 구간이 끝난 뒤 그 자리를 먼저 보고 학생에게 끊겨 보이는 곳만 고친다.
+  //  silentMax: 말 없이 화면만 굴러간 시간 = 앞 큐 말이 끝난 뒤 다음 큐 말까지에서 정한 쉼(pause_before)을 뺀 몫. 2.5초 넘으면 look(영상 V-14 「2.5초쯤」).
+  //  stillMax : 말도 없고 화면도 그대로인 가장 긴 시간(프레임은 화면이 바뀔 때만 오므로 이웃 프레임 사이에서 말하는 구간을 뺀다). 3초 넘으면 look.
+  //  gaps500  : 이동 중 0.5초 넘는 프레임 공백 수. 3회 이상이면 look.
   let silent={ms:0,cue:null};if(!rehearsal&&!r.error){const t=JSON.parse(await fs.readFile(WORK+'/'+name+'/timing.json','utf8'));const pb=new Map(plan.cues.map(c=>[c.id,c.pause_before]));
    for(let k=1;k<t.actions.length;k++){const a=t.actions[k-1],b=t.actions[k];const ms=b.time-(a.time+a.duration)-(pb.get(b.id)??0);if(ms>silent.ms)silent={ms,cue:a.id};}}
-  // 멈추는 정지: 말도 없고 화면도 그대로인 시간이 3초를 넘는 곳(학생이 따라 하기를 기다려 주는 꼴 — 사용자 2026-11-13 「다 멈추고 그대로 따라하기를
-  // 기다려 주는 시간 같은 것만 필요 없다」). 프레임은 화면이 바뀔 때만 오므로 이웃 프레임 사이에서 말하는 구간을 뺀 연속 시간으로 잰다.
-  // 말 없이 화면이 움직이는 시간(silentMax)과 0.5초 끊김(gaps500)은 기록만 하고 멈추지 않는다.
   const still=!rehearsal&&!r.error?stillOf(JSON.parse(await fs.readFile(WORK+'/'+name+'/timing.json','utf8'))):{ms:0,at:null};
-  const stop=r.error?'error':r.banners.length?'banner':still.ms>3000?'still':null;
-  const row={name,segment:s.id,steps:s.steps,duration_s:Math.round(r.duration/100)/10,cues:r.cues,error:r.error?String(r.error).slice(0,400):null,banners:r.banners,maxGap:r.measure.maxGap,gaps500:r.measure.gaps500,silentMax:silent,stillMax:still,stop};
+  const stop=r.error?'error':r.banners.length?'banner':null;
+  const look=[];if(!rehearsal&&!r.error){
+   if(silent.ms>2500)look.push(`말 없이 화면만 ${(silent.ms/1000).toFixed(1)}초 — ${silent.cue} 뒤`);
+   if(still.ms>3000)look.push(`말도 화면 변화도 없는 ${(still.ms/1000).toFixed(1)}초 — 녹화 ${(still.at/1000).toFixed(1)}초부터`);
+   if(r.measure.gaps500>=3)look.push(`0.5초 넘는 이동 끊김 ${r.measure.gaps500}회`);}
+  const row={name,segment:s.id,steps:s.steps,duration_s:Math.round(r.duration/100)/10,cues:r.cues,error:r.error?String(r.error).slice(0,400):null,banners:r.banners,maxGap:r.measure.maxGap,gaps500:r.measure.gaps500,silentMax:silent,stillMax:still,look,stop};
   takes.push(row);await fs.appendFile(WORK+'/'+(rehearsal?'rehearsal-':'chain-')+prefix+'.jsonl',JSON.stringify(row)+'\n');
   if(stop)return {stopped:s.id,reason:stop,resume:'./run.sh '+(rehearsal?'rehearse12':'chain12')+' <새 접두어> '+s.id+(prevName?' '+prevName:''),takes};
   prevName=name;
