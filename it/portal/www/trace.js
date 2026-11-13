@@ -400,7 +400,7 @@
 
   /* ---------------------------------------------------------------- 컨트롤러: mount(host, opts) → { update(view), ingest(event), model } */
   function mount(host, opts = {}) {
-    const C = { host, opts, view: null, live: new Map(), openSteps: new Map(), model: null, raf: 0, follow: opts.follow !== false, lastTouch: 0, shown: opts.shown || 60 };
+    const C = { host, opts, view: null, live: new Map(), openSteps: new Map(), model: null, raf: 0, follow: opts.follow !== false, shown: opts.shown || 60 };
     host.classList.add('tr');
     host.innerHTML = `${opts.summary ? '<div class="tr-summary" data-tr-summary></div>' : ''}<div class="tr-loose" data-tr-loose></div><div class="tr-steps" data-tr-steps></div><div class="tr-empty" data-tr-empty></div>`;
     host.addEventListener('click', e => {
@@ -409,8 +409,6 @@
       const open = !step.classList.contains('open'); C.openSteps.set(k, open); step.classList.toggle('open', open); head.setAttribute('aria-expanded', String(open));
       if (opts.onStep) opts.onStep(k, open);
     });
-    const touch = () => { C.lastTouch = Date.now(); };
-    host.addEventListener('wheel', touch, { passive: true }); host.addEventListener('touchmove', touch, { passive: true });
     C.update = view => { C.view = view; schedule(); };
     C.ingest = e => {
       if (!e || !e.id || C.live.has(e.id)) return false;
@@ -424,6 +422,7 @@
     function draw() {
       if (!host.isConnected && !opts.detachedOk) return;
       const view = C.view;
+      const pinned = atNewest();                 // 새 줄을 붙이기 전에: 사람이 맨 아래(최신)를 보고 있었는가
       const m = C.model = build({ view, events: [...C.live.values()], onlyWorkitem: opts.workitem ? opts.workitem() : null });
       const stepsBox = host.querySelector('[data-tr-steps]');
       const sum = host.querySelector('[data-tr-summary]');
@@ -435,7 +434,8 @@
         if (s && s.live && s.waitText) items.push({ wait: s });
         patchChildren(stepsBox, items, x => x.wait ? 'wait-now' : x.r.key, x => x.wait ? waitRowHtml(x.wait) : rowHtml(x.r, x.live), (x, html) => div('tr-item', html));
         host.querySelector('[data-tr-empty]').innerHTML = items.length ? '' : UI.empty(UI.t('trace.empty'), UI.t('trace.emptySub'), 'compact');
-        followNewest(stepsBox);
+        followNewest(stepsBox, pinned);
+        if (opts.onDraw) opts.onDraw(m);
         return;
       }
       const loose = host.querySelector('[data-tr-loose]');
@@ -463,19 +463,22 @@
         const head = node.querySelector('[data-tr-head]'); if (head) head.setAttribute('aria-expanded', String(open));
       });
       host.querySelector('[data-tr-empty]').innerHTML = m.steps.length || m.loose.length ? '' : UI.empty(UI.t('trace.empty'), UI.t('trace.emptySub'), 'compact');
-      followNewest(stepsBox);
+      followNewest(stepsBox, pinned);
       if (opts.onDraw) opts.onDraw(m);
     }
-    function followNewest(box) {
-      if (!C.follow || Date.now() - C.lastTouch < 6000) return;
-      const fresh = box.querySelectorAll('.tr-new'); const last = fresh[fresh.length - 1];
-      if (!last || !C.model || !C.model.running || typeof getComputedStyle !== 'function') return;
-      // 새 줄은 처리 과정이 든 스크롤 칸 안에서만 따라간다. 화면 전체(main)를 내리지 않는다 — 진행 중인 처리 건을 열면 처리 과정의 마지막 단계로
-      // 화면이 저절로 내려가 맨 위의 「내가 할 일」이 가려지던 결함(scrollIntoView 가 바깥 스크롤까지 움직였다)
+    // 처리 과정이 든 스크롤 칸(화면 전체 main 은 아니다 — 진행 중인 처리 건을 열면 화면이 저절로 내려가 맨 위의 「내가 할 일」이 가려지던 결함)
+    function scroller() {
+      if (typeof getComputedStyle !== 'function') return null;
       let sc = host;
       while (sc && sc !== document.body && !(sc.scrollHeight > sc.clientHeight + 1 && /auto|scroll/.test(getComputedStyle(sc).overflowY))) sc = sc.parentElement;
-      if (!sc || sc === document.body || sc.tagName === 'MAIN') return;
-      sc.scrollTop = sc.scrollHeight;
+      return !sc || sc === document.body || sc.tagName === 'MAIN' ? null : sc;
+    }
+    // 사람이 최신 줄(맨 아래)을 보고 있었는가. 위로 올려 앞 줄을 읽는 중이면 false — 새 줄이 붙어도 읽던 자리를 끌어내리지 않는다
+    function atNewest() { const sc = scroller(); return !sc || sc.scrollHeight - sc.scrollTop - sc.clientHeight < 48; }
+    function followNewest(box, pinned) {
+      if (!C.follow || !pinned) return;
+      if (!box.querySelector('.tr-new') || !C.model || !C.model.running) return;
+      const sc = scroller(); if (sc) sc.scrollTop = sc.scrollHeight;
     }
     C.draw = draw;
     TR.mounted.add(C);

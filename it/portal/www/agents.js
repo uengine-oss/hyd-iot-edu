@@ -41,8 +41,9 @@
   // 두 번 눌림 막기: 같은 일이 끝날 때까지 그 단추를 끈다(복제가 두 벌 생기거나 붙이기가 409 로 보이지 않게)
   async function once(key, button, work) {
     if (st.acting.has(key)) return null;
-    st.acting.add(key); if (button) button.disabled = true;
-    try { return await work(); } finally { st.acting.delete(key); if (button && button.isConnected) button.disabled = false; }
+    // 누른 단추가 「…중 · 걸린 시간」으로 바뀐다(다시 그려져 단추가 사라졌으면 손대지 않는다)
+    st.acting.add(key); const end = button ? hydLive.busy(button, button.textContent.trim() + ' 중') : null;
+    try { return await work(); } finally { st.acting.delete(key); if (end && button.isConnected) end(false); }
   }
   // 실행 설정의 도구 서버: 서버가 계산한 servers({서버: 정해진 조회 도구 | null}) 그대로 — 교대 · 질문처럼 조회 도구가 정해진 단계는 그 도구만
   function runServersText(servers) {
@@ -275,6 +276,7 @@
     const f = st.form, d = readForm(form);
     if (f.kind === 'skill' && !f.id && d.content.includes('\nname: \n')) d.content = d.content.replace('\nname: \n', `\nname: ${d.skill_name}\n`);
     st.busy = true;
+    hydLive.busy(form.querySelector('button[type="submit"]'), '저장하는 중');      // 실패하면 폼을 다시 그리므로 따로 되돌리지 않는다. 성공하면 폼이 닫힌다
     try {
       let saved;
       if (f.kind === 'agent') saved = f.id ? await postJ(api('/api/agents/' + encodeURIComponent(f.id)), d, 'PUT') : await postJ(api('/api/agents'), d);

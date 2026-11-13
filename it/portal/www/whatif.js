@@ -32,7 +32,7 @@
 
   async function load() {
     if (W.busy) return;
-    W.busy = true; W.msg = ''; W.base = W.view = W.bounds = W.weeks = null; W.values = {}; W.policy = { weights: {}, penalties: {}, perspectives: {} }; W.perspForm = {}; render();
+    W.busy = true; W.busySince = new Date().toISOString(); W.msg = ''; W.base = W.view = W.bounds = W.weeks = null; W.values = {}; W.policy = { weights: {}, penalties: {}, perspectives: {} }; W.perspForm = {}; render();
     try {
       const asked = { asset: W.asset, pattern: W.pattern };
       W.base = W.view = await call('', asked);
@@ -40,16 +40,16 @@
       const first = W.base.cards.find(c => c.feasible);
       W.weeksForm.card = first ? first.id : '';
       W.card = W.base.top.decision || (first ? first.id : '');
-      W.boundsMsg = '경계값을 계산하는 중…';
-      call(`/${W.base.id}/boundaries`, {}).then(r => { if (W.base && r.id === W.base.id) { W.bounds = r.boundaries; W.boundsMsg = ''; render(); } })
-        .catch(e => { W.boundsMsg = '경계값을 계산하지 못했습니다: ' + e.message; render(); });
+      W.boundsMsg = ''; W.boundsSince = new Date().toISOString();
+      call(`/${W.base.id}/boundaries`, {}).then(r => { if (W.base && r.id === W.base.id) { W.bounds = r.boundaries; W.boundsSince = null; render(); } })
+        .catch(e => { W.boundsSince = null; W.boundsMsg = '경계값을 계산하지 못했습니다: ' + e.message; render(); });
     } catch (e) { W.msg = '시험 기준을 만들지 못했습니다: ' + e.message; }
     finally { W.busy = false; render(); }
   }
 
   async function retry() {
     if (!W.base || W.busy) return;
-    W.busy = true; W.msg = ''; render();
+    W.busy = true; W.busySince = new Date().toISOString(); W.msg = ''; render();
     try { W.view = await call(`/${W.base.id}/try`, { values: W.values, policy: W.policy }); }
     catch (e) { W.msg = '다시 계산하지 못했습니다: ' + e.message; }
     finally { W.busy = false; render(); }
@@ -67,7 +67,7 @@
     if (!W.base || W.busy) return;
     const f = W.weeksForm;
     if (!f.card) { W.msg = '주간 조건별 예측을 볼 카드를 고르세요'; render(); return; }
-    W.busy = true; W.msg = ''; render();
+    W.busy = true; W.busySince = new Date().toISOString(); W.msg = ''; render();
     try {
       const change = f.value === '' ? {} : { [f.variable]: Number(f.value) };
       W.weeks = await call(`/${W.base.id}/weeks`, { card: f.card, weeks: Number(f.weeks) || 4, change, policy: W.policy });
@@ -96,7 +96,7 @@
     let left = `<h2 class="rd-label">시험 기준</h2>
         <div class="field"><label for="wiAsset">설비</label><select id="wiAsset">${['HYD-01', 'HYD-02', 'HYD-03'].map(a => `<option ${a === W.asset ? 'selected' : ''}>${a}</option>`).join('')}</select></div>
         <div class="field"><label for="wiPattern">이상 패턴</label><select id="wiPattern">${pats}</select></div>
-        <div class="rd-in-actions"><button class="btn${v ? '' : ' primary'}" id="wiLoad" ${W.busy || !W.pattern ? 'disabled' : ''}>${W.busy && !W.base ? '계산 중…' : v ? '다시 불러오기' : '불러오기'}</button></div>
+        <div class="rd-in-actions"><button class="btn${v ? '' : ' primary'}" id="wiLoad" ${W.busy || !W.pattern ? 'disabled' : ''}>${W.busy && !W.base ? '계산하는 중' : v ? '다시 불러오기' : '불러오기'}</button></div>
         <p class="rd-in-note">판단을 한 번 계산해 기준으로 삼습니다. 바꾸는 값은 이 계산에만 쓰고 업무 DB · 지식 · 순위 정책은 그대로 둡니다.</p>`;
     if (stale) left += `<p class="rd-in-note" role="status">설비나 이상 패턴을 바꿨습니다. 오른쪽은 앞서 불러온 ${esc(W.loaded.asset)}의 결과이며, [다시 불러오기]를 눌러야 바뀝니다.</p>`;
     if (v) left += `<hr class="rd-rule"><h2 class="rd-label">바꿔 볼 것</h2><div class="rd-seg" role="tablist" aria-label="바꿔 볼 것">${TABS.map(([k, l]) =>
@@ -104,7 +104,7 @@
     // 오른쪽: 결과
     let right = W.patternsError && !W.patterns ? UI.errorBlock('이상 패턴 목록을 읽지 못했습니다', W.patternsError, { retry: true, cls: 'compact' }) : '';
     if (W.msg) right += `<p class="field-error" role="alert">${esc(W.msg)}</p>`;
-    right += v ? resultPane(v) : W.busy ? UI.loading('시험 기준을 계산하는 중', 'compact')
+    right += v ? resultPane(v) : W.busy ? hydLive.waitHtml('시험 기준을 계산하는 중', { since: W.busySince, hint: '고른 설비와 이상 패턴으로 판단을 한 번 계산해 기준으로 잡는 중입니다(원인 진단 → 조치 후보 → 손익).' })
       : UI.empty('아직 불러온 시험 기준이 없습니다', '왼쪽에서 설비와 이상 패턴을 고르고 [불러오기]를 누르면 카드별 손익(원), 1순위가 바뀌는 값, 몇 주 뒤 지표를 시험해 볼 수 있습니다.', 'compact');
     const html = `<p class="page-lead">판단 한 번을 기준으로 잡고 업무 값과 규칙을 시험값으로 바꿔, 조치의 순위와 손익이 어떻게 달라지는지 봅니다.</p>` +
       `<div class="rd-io"><div class="rd-in">${left}</div><div class="rd-out">${right}</div></div>`;
@@ -176,7 +176,7 @@
       kv([['판단 1순위', esc(cardName(v.top.decision))], ['손익 1순위', esc(cardName(v.top.money))], ['기준 판단', esc(cause)],
         ['시험값', n ? `<span class="rd-inline">${n}개 적용 중<button class="btn small" id="wiReset">원래대로</button></span>` : '없음 (업무 DB와 지식의 값 그대로)']]) +      // 원본이 바뀌었으면 서버(agentsvc main)가 500 으로 거절해 이 응답이 오지 않는다(W3-25)
       (v.original && v.original.note ? `<p class="rd-note rd-after">${esc(v.original.note)}</p>` : '') +
-      (W.busy ? UI.loading('다시 계산하는 중', 'compact') : '');
+      (W.busy ? hydLive.waitHtml('다시 계산하는 중', { since: W.busySince, hint: '바꾼 시험값으로 순위와 손익을 다시 계산하는 중입니다.' }) : '');
     if (W.tab === 'weeks') return html + weeksResult();
     html += group(n ? '카드별 순위와 손익 · 기준 → 시험값' : '카드별 순위와 손익', compareTable(v));
     if (W.tab === 'money') html += cardDetail(v);
@@ -201,6 +201,7 @@
   }
 
   function boundaryLines(list) {
+    if (!W.bounds && W.boundsSince) return hydLive.waitHtml('1순위가 바뀌는 경계값을 계산하는 중', { since: W.boundsSince, hint: '값을 하나씩 바꿔 가며 판단을 다시 계산해 1순위가 바뀌는 지점을 찾는 중입니다.' });
     if (!W.bounds) return `<p class="rd-note">${esc(W.boundsMsg || '경계값이 아직 없습니다')}</p>`;
     if (!list.length) return '<p class="rd-note">시험 범위 안에서 1순위를 바꾸는 값이 없습니다.</p>';
     return `<ul class="rd-lines">${list.map(b => `<li><span>${esc(kindLabel[b.kind])} · ${esc(b.label)} ${esc(num(b.base, b.unit))} → <b>${esc(num(b.value, b.unit))} ${esc(b.direction)}</b>이면 1순위가 '${esc(b.topAfterName || '없음')}'</span>

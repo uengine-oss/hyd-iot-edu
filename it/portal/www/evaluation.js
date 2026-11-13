@@ -179,6 +179,7 @@
       `<p class="rd-in-note" data-eval-ai-note>세 판단 경로 가운데 AI가 판단하는 것은 「지난 처리 건」 하나입니다. 「규칙 판단」과 「규칙 읽기 평가」는 AI 모델 없이 판단 엔진만으로 계산합니다. 채점은 처리 건, 설비 명령, 기준 데이터를 바꾸지 않습니다.</p>` +
       `<p class="rd-in-note" data-r="knowledge">${knowledgeNow()}</p>`;
     q('[data-r="cands"]').innerHTML = path === 'worker' ? renderCands() : '';
+    showRunWait();
   }
   function renderCands() {
     if (E.cands == null) return UI.loading('', 'compact');
@@ -198,6 +199,12 @@
     const h = q('[data-r="cands"]'); if (h) h.innerHTML = renderCands();
   }
 
+  // 채점이 도는 동안: 단추는 「채점하는 중 · 걸린 시간」, 그 위 줄은 무엇을 기다리는지. 실행 칸이 다시 그려져도(항목 고르기 등) 같은 시각에서 이어 보인다
+  function showRunWait() {
+    const w = E.runWait, btn = q('[data-act="run"]'), m = q('[data-msg="run"]'); if (!w || !btn || !m) return;
+    hydLive.busy(btn, '채점하는 중', w.since);
+    m.className = 'form-msg'; m.innerHTML = hydLive.waitHtml(w.text, { since: w.since, hint: w.hint });
+  }
   async function runEval() {
     if (E.busy) return;
     const path = q('[data-f="path"]').value, note = q('[data-f="runNote"]').value.trim();
@@ -210,16 +217,18 @@
       body.repeats = Math.max(1, Math.min(E.maxRepeats, Number(q('[data-f="repeats"]').value) || 1)); E.repeats = body.repeats;
       if (E.picked.size) body.items = [...E.picked];
     }
-    E.busy = true; E.busyWhy = '채점 중에는 할 수 없습니다. 채점이 끝난 뒤 다시 눌러 주세요.'; const btn = q('[data-act="run"]'); btn.disabled = true;
+    E.busy = true; E.busyWhy = '채점 중에는 할 수 없습니다. 채점이 끝난 뒤 다시 눌러 주세요.'; const btn = q('[data-act="run"]');
     const n = path === 'worker' ? body.instances.length : (body.items || E.golden).length * body.repeats;
-    msg('run', `채점 중… 판단 ${n}회`, false);
+    // 서버는 판단 n회를 모두 끝낸 뒤 결과를 한 번에 준다(항목별 진행은 내보내지 않는다) — 그래서 걸린 시간과 무엇을 기다리는지만 보인다
+    E.runWait = { since: new Date().toISOString(), text: `판단 ${n}회를 정답표와 견주는 중`, hint: path === 'worker' ? '고른 지난 처리 건의 AI 판단을 정답표 항목과 견주는 중입니다. 서버가 모두 끝낸 뒤 결과를 한 번에 줍니다.'
+      : `판단 엔진에 ${n}번 묻는 중입니다(항목 ${n / body.repeats}개 × ${body.repeats}회). 서버가 모두 끝낸 뒤 결과를 한 번에 줍니다.` };
+    E.runSaid = null; showRunWait();
     try {
       const run = await longJ(API.process + '/api/eval/runs', 'POST', body);
-      msg('run', `채점 완료. 평균 ${run.summary.score}점입니다.`, false);
-      E.sel = run.id; E.run = run;
+      E.sel = run.id; E.run = run; E.runSaid = [`채점 완료. 평균 ${run.summary.score}점입니다.`, false];
       await loadRuns(); renderDetail();
-    } catch (e) { msg('run', e.message); }
-    finally { E.busy = false; const now = q('[data-act="run"]'); if (now) now.disabled = !E.golden.length; }   // 채점 중에 실행 칸이 다시 그려졌어도 지금 단추를 켠다
+    } catch (e) { E.runSaid = [e.message, true]; }
+    finally { E.busy = false; E.runWait = null; renderRunForm(); if (E.runSaid) msg('run', E.runSaid[0], E.runSaid[1]); }      // 실행 칸을 다시 그려 단추를 원래대로 하고 결과 문장을 쓴다   // 채점 중에 실행 칸이 다시 그려졌어도 지금 단추를 켠다
   }
 
   /* ---------------------------------------------------------------- 3. 실행 기록 */

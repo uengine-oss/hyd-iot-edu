@@ -2,6 +2,9 @@
    (app.js / enterprise.js / main.js / flow.js 뒤에 실린다)
    - 조치 방법: 왼쪽 목록 · 오른쪽 상세. 읽을 내용(절차 · 연결된 지식)이 먼저이고, 고치는 칸은 [고치기]를 열었을 때 보인다.
    - 문서 등록: 맨 위 단계 줄(문서 등록 → AI 추출 → 검토 · 적재)이 지금 단계를 보이고, 등록된 문서는 표 한 장이다(줄을 누르면 그 문서로 답할 수 있는 질문).
+   - 실시간: AI 추출은 처리 건(매뉴얼 추출 흐름의 AI 에이전트 단계)으로 돈다. 2단계 자리에서 그 단계의 실행 기록(읽는 구간 · 도구 호출 · 에이전트의 말)이
+     생기는 대로 흘러나온다(liveStream.js hydLive.agentWork — 질문하기와 같은 줄 그리기). 끝나면 3단계로 넘어가고 기록은 「추출 과정 보기」에 남는다.
+     실시간 연결이 끊긴 동안만 5초마다 묻고 그 사실을 화면에 적는다. 적재 · 등록 취소 · 스키마 읽기처럼 한 번에 결과만 오는 일은 걸린 시간을 보인다.
    - 사건 → 처리 건으로 가는 길(openIncident)은 설비 회로 화면(app.js)이 쓴다. 조치 후보와 승인은 처리 건 화면 한 곳에 있다. */
 (function () {
   const H = { skills: [], catalog: null, catalogError: '', manualCatalog: null, manualCatalogError: '', skillSel: null, skillNew: false, skillDrafts: new Map(), preview: null, instByIncident: new Map() };
@@ -176,10 +179,10 @@
       if (!draft.pending && !body.approver) { $('#skMsg').textContent = '승인 역할을 선택하세요.'; $('#skRole').focus(); return; }
       if (!draft.pending && key === '__new__' && !body.failureMode) { $('#skMsg').textContent = '대상 고장 유형을 선택하세요.'; $('#skFm').focus(); return; }
       remember(); draft.pending = body; saveSkillDraft(key, draft); lockFields();
-      b.disabled = true; $('#skMsg').textContent = '저장 중…';
+      const end = hydLive.busy(b, '저장하는 중'); $('#skMsg').textContent = '';
       try {
-        const r = key === '__new__' ? await postJ(API.process + '/api/kg/skills', body)
-          : await postJ(API.process + '/api/kg/skills/' + encodeURIComponent(k.id), body, 'PUT');
+        const r = await (key === '__new__' ? postJ(API.process + '/api/kg/skills', body)
+          : postJ(API.process + '/api/kg/skills/' + encodeURIComponent(k.id), body, 'PUT')).finally(() => end(true));
         if (r.detail && !r.id) throw new Error(r.detail);
         clearSkillDraft(key);
         if (box.dataset.key === key) { H.skillSel = r.id; H.skillNew = false; box.dataset.key = ''; }
@@ -281,13 +284,28 @@
     if (g.error) body = UI.errorBlock(UI.t('golden.err.load'), g.error, { cls: 'compact' }) + goldenForm(batch, g);
     else if (r === undefined) body = UI.loading('', 'compact');
     else if (r === null || r.status === 'CANCELLED' || r.status === 'FAILED') body = `<p class="rd-note">이 문서를 읽은 뒤 답할 수 있어야 하는 질문을 적어, 넣은 지식만으로 답이 되는지 확인합니다.</p>` + goldenForm(batch, g);
-    else if (!goldenFinal(r)) body = UI.loading(UI.t('golden.checking', { n: r.questions }), 'compact') + `<p class="rd-note">${esc(UI.t('golden.checkingSub'))}${r.corrections ? ' · ' + esc(UI.t('golden.corrections', { n: r.corrections.attempts })) : ''}</p>`;
+    else if (!goldenFinal(r)) body = (r.workitem ? '<div data-golden-live></div>' : hydLive.waitHtml(UI.t('golden.checking', { n: r.questions }), { since: g.since })) + `<p class="rd-note">${esc(UI.t('golden.checkingSub'))}</p>`;
     else body = goldenItems(r) + `<section class="rd-group"><h4 class="rd-label">${esc(UI.t('golden.askMore'))}</h4>${goldenForm(batch, g)}</section>`;
     return `<div class="rd-title"><h3 class="rd-label">${esc(UI.t('golden.title'))}</h3>${goldenStatusChip(r)}</div>` + body;
   }
   function renderGolden(batch) {
     const box = $('#manualHistory').querySelector(`[data-golden="${CSS.escape(batch)}"]`); if (!box) return;
     box.innerHTML = goldenSection(batch); wireGolden(box); hydCourseAccess.apply(box);   // 꺼진 까닭을 단추 옆 한 줄로(W3-07)
+    goldenLive(batch, box);
+  }
+  // 질문을 확인하는 AI 단계(처리 건의 작업 행 r.workitem)의 실행 기록을 그 자리에서 흘려보낸다. 기록 칸은 다시 그려도 같은 것을 옮겨 쓴다
+  function goldenLive(batch, box) {
+    const g = H.golden[batch] || {}, r = g.report, slot = box.querySelector('[data-golden-live]');
+    if (!r || goldenFinal(r) || !r.workitem) { if (g.work) { g.work.stop(); g.work = null; g.host = null; } return; }
+    if (!slot) return;
+    if (!g.work || g.workId !== r.workitem) {
+      if (g.work) g.work.stop();
+      g.host = document.createElement('div'); g.workId = r.workitem;
+      g.work = hydLive.agentWork(g.host, { tab: 'knowledge', onChange: async () => { if (await fetchGolden(batch)) renderGolden(batch); } });
+    }
+    slot.replaceChildren(g.host);
+    g.work.set({ items: [{ id: r.workitem, instance: r.instance, state: 'run' }], running: true, since: g.since || null, headline: UI.t('golden.checking', { n: r.questions }),
+      note: r.corrections ? UI.t('golden.corrections', { n: r.corrections.attempts }) : '' });
   }
   function wireGolden(root) {
     root.querySelectorAll('[data-golden-ask]').forEach(b => b.addEventListener('click', async () => {
@@ -297,15 +315,15 @@
       if (!questions.length) { g.msg = UI.t('golden.err.empty'); renderGolden(batch); return; }
       if (questions.length > 20) { g.msg = UI.t('golden.err.many'); renderGolden(batch); return; }
       g.busy = true; g.msg = ''; renderGolden(batch);
-      try { await postJ(goldenUrl(batch, 'questions'), { questions, by: g.by, request_id: UI.uuid() }); g.draft = ''; await fetchGolden(batch); }
+      try { await postJ(goldenUrl(batch, 'questions'), { questions, by: g.by, request_id: UI.uuid() }); g.draft = ''; g.since = new Date().toISOString(); await fetchGolden(batch); }
       catch (e) { g.msg = e.message; }
       finally { g.busy = false; renderGolden(batch); }
     }));
   }
-  setInterval(async () => {                      // 2초 폴링(기존 패턴): 확인 중인 배치만 다시 읽는다
+  setInterval(async () => {                      // 작업 행 정보가 없는 확인 중 배치만 2초마다 다시 읽는다 — 작업 행이 있으면 실시간 기록(goldenLive)이 결과를 부른다
     if (state.tab !== 'knowledge') return;
     for (const [batch, g] of Object.entries(H.golden)) {
-      if (!g.report || goldenFinal(g.report) || g.polling) continue;
+      if (!g.report || goldenFinal(g.report) || g.polling || g.work) continue;
       g.polling = true;
       try { if (await fetchGolden(batch)) renderGolden(batch); } finally { g.polling = false; }
     }
@@ -343,13 +361,13 @@
       }));
       history.querySelectorAll('[data-manual-undo]').forEach(b => b.addEventListener('click', async () => {
         if (!await UI.confirm({ title: '이 판의 등록을 취소할까요?', body: '이 판이 넣은 절 · 조치 방법 · 규칙 연결이 지식 지도에서 빠집니다. 보관한 원문은 남습니다.', ok: '등록 취소', danger: true })) return;
-        b.disabled = true;
+        const end = hydLive.busy(b, '등록 취소하는 중');
         try {
           await postJ(API.process + '/api/kg/manuals/batches/' + encodeURIComponent(b.dataset.manualUndo) + '/rollback', { by: manualActor() });
           H.preview = null; renderPreview(); H.skills = [];
           await loadUploads(); if (window.hydEnt) hydEnt.loadGraph(true);
           $('#manualHistoryMsg').textContent = '등록을 취소했습니다. 지식 지도에서 이 판의 내용이 빠졌습니다.';
-        } catch (e) { const m = $('#manualHistoryMsg'); m.className = 'form-msg neg'; m.setAttribute('role', 'alert'); m.textContent = '등록을 취소하지 못했습니다: ' + e.message; b.disabled = false; }
+        } catch (e) { const m = $('#manualHistoryMsg'); m.className = 'form-msg neg'; m.setAttribute('role', 'alert'); m.textContent = '등록을 취소하지 못했습니다: ' + e.message; end(false); }
       }));
     } catch (e) {
       $('#manualHistory').innerHTML = UI.errorBlock('등록 이력을 읽지 못했습니다', e.message, { retry: true, cls: 'compact' });
@@ -466,11 +484,13 @@
     const host = $('#manualUpload'); if (!host) return;
     let bar = host.querySelector('#manualSteps');
     if (!bar) { bar = el('ol', 'rd-steps'); bar.id = 'manualSteps'; bar.setAttribute('aria-label', '문서 등록 단계'); host.prepend(bar); }
+    host.dataset.stage = String(stage);      // 2 · 3단계에서는 파일 고르기 칸을 접는다(live.css) — 다른 문서는 [다른 문서 등록]으로
     $('#manualPreview')?.classList.toggle('primary', stage === 1);      // 주 단추는 지금 단계의 것 하나: 2단계는 [AI 추출 시작], 3단계는 [검토한 내용 적재]
     bar.innerHTML = ['문서 등록', 'AI 추출', '검토 · 적재'].map((s, i) => `<li class="${i + 1 < stage ? 'done' : i + 1 === stage ? 'on' : ''}"${i + 1 === stage ? ' aria-current="step"' : ''}><span class="n">${i + 1 < stage ? '✓' : i + 1}</span>${s}</li>`).join('');
   }
   function renderPreview() {
     const r = H.preview; const box = $('#manualResult');
+    if (H.live && (!r || H.live.source_id !== r.source_id)) { H.live.work.stop(); H.live = null; }      // 다른 문서로 바뀌었다 — 앞 문서의 구독을 끝낸다
     $('#manualDocumentId').disabled = !!r;
     renderManualSteps(!r ? 1 : r.extraction ? 3 : 2);
     if (!r) { box.innerHTML = ''; return; }
@@ -481,7 +501,7 @@
     // AI가 읽기 전에 결과나 경고처럼 보이는 것을 두지 않는다(서버도 등록 응답에 절 · 절차를 싣지 않는다: manual_review.registered)
     const stage = r.extraction ? 3 : 2;
     const readWarnings = r.warnings.length ? UI.fold(`${stage === 3 ? '추출 경고' : '문서 읽기 확인'} ${r.warnings.length}건`, `<ol>${r.warnings.map(w=>`<li>${esc(w)}</li>`).join('')}</ol>`, {cls:'small'}) : '';
-    const sourceLinks = `<p class="row-wrap"><a href="${API.process}/api/kg/manuals/sources/${encodeURIComponent(r.source_id)}/original">보관한 원본 내려받기</a> <button class="btn small" id="manualFullSource">추출 원문 전체 보기</button></p><div id="manualSourceText"></div>`;
+    const sourceLinks = `<p class="row-wrap"><a href="${API.process}/api/kg/manuals/sources/${encodeURIComponent(r.source_id)}/original">보관한 원본 내려받기</a> <button class="btn small" id="manualFullSource">추출 원문 전체 보기</button> <button type="button" class="btn small ghost" id="manualAnother">다른 문서 등록</button></p><div id="manualSourceText"></div>`;
     const history = UI.fold('이 문서의 이전 추출 결과', `<div class="form-grid">${UI.field({ label: '추출 작업', input: `<select id="manualExtractionRuns"><option value="">${esc(UI.t('loading'))}</option></select>` })}</div><p class="row-wrap"><button class="btn small" id="manualAgentResult">선택한 결과 열기</button> <button class="btn small" id="manualExtractionMore" hidden>이전 추출 작업 더 보기</button></p>`, { cls: 'small' });
     // 검토 화면의 절차 한 건: 요약 줄이 먼저, 수정 칸은 접는다(칸은 접혀 있어도 그대로 적재 요청에 실린다). 고장 유형이 비어 사람이 채워야 하는 절차만 펼친다
     const needsLink = p => { const l = manualLink(r, p); return l.kind !== 'reference' && l.scope !== 'purchase' && !l.failureMode; };
@@ -494,12 +514,14 @@
       const ready = r.status === 'READY';
       box.innerHTML = `<div class="mprev">
         <div class="mstage"><p class="mstage-title"><b>${esc(r.filename)}</b> 문서를 등록했습니다 <span class="muted">· ${r.chars.toLocaleString()}자</span></p>
-          <p class="muted">${ready ? '아직 AI가 문서를 읽기 전입니다. AI 추출을 시작하면 문서에서 조치 절차 · 고장 유형 · 원인을 찾아 정리합니다. 결과는 사람이 검토한 뒤에만 지식으로 적재됩니다.' : `이 문서는 「${esc(UI.status(r.status))}」 상태라 AI 추출을 시작할 수 없습니다.`}</p>
+          <p class="muted" id="manualStageNote">${ready ? '아직 AI가 문서를 읽기 전입니다. AI 추출을 시작하면 문서에서 조치 절차 · 고장 유형 · 원인을 찾아 정리합니다. 결과는 사람이 검토한 뒤에만 지식으로 적재됩니다.' : `이 문서는 「${esc(UI.status(r.status))}」 상태라 AI 추출을 시작할 수 없습니다.`}</p>
           ${readWarnings}${sourceLinks}
           <p class="row-wrap"><button class="btn primary" id="manualAgentExtract" ${ready ? '' : 'disabled'}>AI 추출 시작</button> <span id="manualAgentStatus" role="status" class="muted"></span></p>
+          <section class="lv-card" id="manualLive" aria-label="AI 추출 과정" hidden><div data-live-host></div><div data-live-fail></div></section>
           ${history}</div></div>`;
     } else box.innerHTML = `<div class="mprev"><div class="muted">${esc(r.filename)} · ${r.chars.toLocaleString()}자 · 절 ${r.sections.length}개 · 절차 ${r.procedures.length}개</div>
       <p class="muted" id="manualAgentStatus" role="status">AI 추출 결과입니다. 원문과 대조해 검토한 뒤 적재하세요.</p>
+      <details class="fold small" id="manualProcess"><summary>추출 과정 보기 · AI가 읽은 구간과 도구 호출</summary><div class="fold-body"><div id="manualLive"><div data-live-host></div><div data-live-fail></div></div></div></details>
       ${readWarnings}
       ${manualValidationHtml(r.validation,r,{...H.catalog,...H.manualCatalog})}
       ${manualExecutionHtml(r.validation,r,{...H.catalog,...H.manualCatalog})}
@@ -520,7 +542,10 @@
       ${manualKnowledgeHtml(r, citation)}
       <label class="check"><input type="checkbox" id="manualReviewed"> 원문 · 단계 · 고장 유형 · 관계를 검토했습니다.</label>
       <p id="manualReviewChanged" class="muted" hidden>검토 내용을 바꿨습니다. 위 검사는 원래 제안 기준입니다. 원문과 바뀐 연결을 대조한 뒤 검토 완료를 표시하세요.</p>
-      <p id="manualMsg" class="form-msg" role="status"></p><div class="rd-form-actions"><button class="btn primary" id="manualCommit" ${r.status === 'READY' && r.sections.length && r.procedures.length ? '' : 'disabled'}>검토한 내용 적재</button></div><div id="manualDone"></div></div>`;
+      <div id="manualCommitSteps"></div><p id="manualMsg" class="form-msg" role="status"></p><div class="rd-form-actions"><button class="btn primary" id="manualCommit" ${r.status === 'READY' && r.sections.length && r.procedures.length ? '' : 'disabled'}>검토한 내용 적재</button></div><div id="manualDone"></div></div>`;
+    $('#manualAnother').addEventListener('click', () => {      // 1단계로: 고른 파일과 「문서 개정」 선택을 비우고 파일 고르기 칸을 다시 보인다
+      H.preview = null; $('#manualFile').value = ''; $('#manualFilename').textContent = UI.t('kn.noFile'); $('#manualDocumentId').value = ''; renderPreview();
+    });
     $('#manualFullSource').addEventListener('click', async () => {
       try {
         const source = await getJ(API.process + '/api/kg/manuals/sources/' + encodeURIComponent(r.source_id));
@@ -555,52 +580,139 @@
     $('#manualExtractionMore').addEventListener('click', () => loadExtractions(true));
     loadExtractions();
     const say = (text, bad = false) => { const s = $('#manualAgentStatus'); if (!s) return; s.textContent = text; s.className = bad ? 'neg' : 'muted'; };
+    /* ---- AI 추출의 실시간 표시. H.live = { source_id, instance, host, work(hydLive.agentWork), result(서버가 준 지금 상태), state, error, since }
+       서버 GET …/extractions/{instance} 가 주는 것: status · workitem · segments[{index,total,chars,status,instance,workitem}] · progress{done,total} ·
+       corrections · log · cache · preview(끝났을 때). 그 작업 행들의 실행 이벤트는 실시간 연결(hydStream)에서 온다. */
     const WAITING = ['TODO', 'IN_PROGRESS', 'SUBMITTED'];
-    const progressOf = result => result.progress ? ` · 구간 ${result.progress.done}/${result.progress.total} 완료` : '';
-    // 추출 결과를 연다. 아직 진행 중이면 watch 일 때 3초 뒤 다시 확인한다(같은 문서 화면이 열려 있는 동안만, 최대 10분)
-    const openResult = async (instance, watch, tries = 0) => {
-      if (H.preview !== r) return;
-      if (watch && state.tab !== 'knowledge') { setTimeout(() => openResult(instance, true, tries), 3000); return; }
+    const SEG = { TODO: ['wait', '차례를 기다리는 중'], IN_PROGRESS: ['run', '읽는 중'], SUBMITTED: ['run', '낸 결과를 검증하는 중'], DONE: ['done', '끝남'],
+      FAILED: ['fail', '실패'], CANCELLED: ['fail', '취소됨'], PENDING: ['stop', '검증에서 멈춤 — 사람 확인 필요'] };
+    const segLabel = s => `구간 ${s.index}/${s.total}${s.chars ? ` · ${Number(s.chars).toLocaleString()}자` : ''}`;
+    function liveItems(result) {
+      const one = s => { const [state, stateText] = SEG[s.status] || ['wait', UI.status(s.status)]; return { id: s.workitem, instance: s.instance, state, stateText }; };
+      if (Array.isArray(result.segments) && result.segments.length) return result.segments.map(s => ({ ...one(s), label: segLabel(s) }));
+      return result.workitem ? [{ ...one(result), label: '' }] : [];
+    }
+    function drawLive() {
+      const L = H.live, slot = $('#manualLive'); if (!L || !slot || H.preview !== r) return;
+      const hostSlot = slot.querySelector('[data-live-host]');
+      if (L.host.parentElement !== hostSlot) hostSlot.replaceChildren(L.host);        // 같은 기록 칸을 2단계 카드 → 3단계 「추출 과정 보기」로 옮긴다(다시 만들지 않는다)
+      slot.hidden = false;
+      const result = L.result;
+      const others = L.state === 'failed' && (result.segments || []).some(s => WAITING.includes(s.status));      // 한 구간이 멈췄어도 다른 구간은 계속 돈다
+      const running = L.state === 'starting' || L.state === 'running' || others;
+      const p = result && result.progress, c = result && result.corrections;
+      const headline = L.state === 'starting' ? 'AI 추출 작업을 여는 중' : L.state === 'done' ? 'AI 추출이 끝났습니다'
+        : L.state === 'failed' ? (others ? '한 구간이 멈췄습니다 — 남은 구간은 계속 읽는 중' : 'AI 추출이 끝나지 않았습니다') : p ? `AI가 문서를 읽고 있습니다 — 구간 ${p.total}개 가운데 ${p.done}개를 마쳤습니다` : 'AI가 문서를 읽고 있습니다';
+      const note = [result && result.cache ? '이 문서는 저장된 추출 결과가 있어 AI가 다시 읽지 않습니다.' : '',
+        c && c.attempts ? `낸 결과가 검증에서 ${c.attempts}번 되돌아갔습니다${(c.reasons || []).length ? ` — 마지막 사유: ${c.reasons[c.reasons.length - 1]}` : ''}` : ''].filter(Boolean).join(' ');
+      L.work.set({ items: result ? liveItems(result) : [], running, since: L.since, headline, note });
+      const fail = slot.querySelector('[data-live-fail]');
+      if (L.error) fail.innerHTML = `<div class="lv-fail" role="alert"><b>추출 상태를 확인하지 못했습니다</b><p>${esc(L.error)}</p><div class="rd-form-actions"><button type="button" class="btn small" data-live-check>다시 확인</button></div></div>`;
+      else if (L.state === 'failed') {
+        const stuck = (result.segments || []).filter(s => s.status !== 'DONE' && !WAITING.includes(s.status)).map(s => `구간 ${s.index}: ${(SEG[s.status] || [0, UI.status(s.status)])[1]}`).join(' · ');
+        fail.innerHTML = `<div class="lv-fail" role="alert"><b>AI 추출이 끝나지 않았습니다 — ${esc(UI.status(result.status))}</b>` +
+          `<p>${stuck ? esc(stuck) + '. ' : ''}멈춘 까닭은 위 기록의 마지막 줄에 있습니다. 처리 건 화면에서 이 추출 작업의 단계를 닫거나 다시 진행할 수 있습니다.</p>` +
+          (result.log ? UI.fold('추출 기록 원문', `<pre class="rd-wrap">${esc(result.log)}</pre>`, { cls: 'small' }) : '') +
+          `<div class="rd-form-actions"><button type="button" class="btn small" data-live-inst>처리 건에서 보기 →</button></div></div>`;
+      } else fail.innerHTML = '';
+      fail.querySelector('[data-live-check]')?.addEventListener('click', () => checkLive(L.instance));
+      fail.querySelector('[data-live-inst]')?.addEventListener('click', () => window.hydShell.navigate({ tab: 'instances', inst: L.instance }));
+      if (stage === 2) {
+        const b = $('#manualAgentExtract'), n = $('#manualStageNote');
+        if (n) n.hidden = true;
+        if (b && !b.classList.contains('lv-busy')) { b.hidden = running && L.state !== 'failed'; b.disabled = b.hidden || r.status !== 'READY'; b.textContent = L.state === 'failed' ? 'AI 추출 다시 시작' : 'AI 추출 시작'; }
+      }
+    }
+    // 서버에 지금 상태를 한 번 묻는다. 부르는 때: 시작 직후 · 단계가 바뀌는 이벤트가 왔을 때 · 다시 연결됐을 때 · 연결이 끊긴 동안의 5초 묻기 · [지금 확인]
+    async function checkLive(instance) {
+      const L = H.live; if (!L || L.instance !== instance || H.preview !== r) return;
+      if (L.checking) { L.again = true; return; }
+      L.checking = true; clearTimeout(L.settle);
       try {
         const result = await getJ(extractionUrl + '/' + encodeURIComponent(instance));
-        if (H.preview !== r) return;
-        if (result.preview) { await loadManualCatalog(); if (H.preview !== r) return; H.preview = result.preview; renderPreview(); return; }
-        if (WAITING.includes(result.status)) {
-          say(`AI 추출 중…${progressOf(result)} (보통 1~2분 걸립니다. 끝나면 결과가 여기에 표시됩니다)`);
-          if (watch && tries < 200) setTimeout(() => openResult(instance, true, tries + 1), 3000);
-          else if (watch) say('AI 추출이 10분 넘게 끝나지 않았습니다. 「이 문서의 이전 추출 결과」에서 나중에 다시 열 수 있습니다.', true);
-          return;
+        if (H.live !== L || H.preview !== r) return;
+        L.result = result; L.error = '';
+        if (result.preview) {
+          await loadManualCatalog(); if (H.live !== L || H.preview !== r) return;
+          L.state = 'done'; H.preview = result.preview; renderPreview(); return;      // 3단계로 — 기록 칸은 「추출 과정 보기」로 옮겨 간다
         }
-        const stuck = (result.segments || []).filter(s => s.status !== 'DONE').map(s => ` [구간 ${s.index}: ${UI.status(s.status)}]`).join('');
-        say(`AI 추출이 끝나지 않았습니다: ${UI.status(result.status)}${progressOf(result)}${stuck}. ${UI.t('nav.instances')} 화면에서 이 추출 작업의 단계와 오류를 확인할 수 있습니다.`, true);
-        const s = $('#manualAgentStatus');
-        if (s) s.insertAdjacentHTML('beforeend', ` <button type="button" class="link-btn" data-go-tab="instances">${esc(UI.t('nav.instances'))} 열기 →</button>`);
-        if (s && result.log) s.insertAdjacentHTML('beforeend', ' ' + UI.fold('추출 기록 원문', `<pre class="rd-wrap">${esc(result.log)}</pre>`, { cls: 'small' }));      // 엔진 기록 원문은 문장에 잇지 않고 접어 둔다
-      } catch (e) { if (H.preview === r) say('추출 결과를 확인하지 못했습니다: ' + e.message, true); }
-    };
+        L.state = WAITING.includes(result.status) ? 'running' : 'failed';
+        // 에이전트가 결과를 냈고 서버가 검증해 넘기는 사이(SUBMITTED)에는 이벤트가 더 오지 않는다 — 이 상태일 때만 1.5초 뒤 한 번 더 묻는다
+        if (result.status === 'SUBMITTED' || (result.segments || []).some(s => s.status === 'SUBMITTED')) L.settle = setTimeout(() => checkLive(instance), 1500);
+      } catch (e) { if (H.live === L) L.error = e.message; }
+      finally { L.checking = false; }
+      if (H.live !== L || H.preview !== r) return;
+      drawLive();
+      if (L.again) { L.again = false; checkLive(instance); }
+    }
+    function startLive(instance, since) {
+      if (H.live) H.live.work.stop();
+      const host = document.createElement('div');
+      const L = H.live = { source_id: r.source_id, instance, host, result: null, state: 'starting', error: '', since: since || null, checking: false, again: false, settle: 0 };
+      L.work = hydLive.agentWork(host, { tab: 'knowledge', pollMs: 5000, onChange: () => checkLive(instance) });
+      drawLive(); checkLive(instance);
+    }
+    // 3단계에서 이미 끝난 추출의 과정 기록: 접기를 처음 열 때 그 작업 행들을 읽어 온다(방금 지켜본 추출은 2단계의 기록 칸이 그대로 옮겨 와 있다)
+    function ensureProcess() {
+      const ex = r.extraction; if (!ex || !ex.instance) return;
+      if (H.live && H.live.instance === ex.instance) { drawLive(); return; }
+      if (H.live) H.live.work.stop();
+      const host = document.createElement('div');
+      const segs = Array.isArray(ex.segments) && ex.segments.length ? ex.segments.map((s, i) => ({ ...s, index: i + 1, total: ex.segments.length, status: 'DONE' })) : null;
+      const L = H.live = { source_id: r.source_id, instance: ex.instance, host, state: 'done', error: '', since: null, checking: false, again: false, settle: 0,
+        result: segs ? { status: 'DONE', segments: segs } : { status: 'DONE', instance: ex.instance, workitem: ex.workitem, cache: ex.cache } };
+      L.work = hydLive.agentWork(host, { tab: 'knowledge', onChange: () => {} });
+      drawLive();
+    }
+    if (stage === 3) {
+      const fold = $('#manualProcess');
+      if (H.live && H.live.instance === (r.extraction || {}).instance) { H.live.state = 'done'; drawLive(); }      // 방금 지켜본 추출 — 기록 칸을 접기 안으로 옮긴다
+      fold.addEventListener('toggle', () => { if (fold.open) ensureProcess(); });
+    }
     $('#manualAgentExtract').addEventListener('click', async () => {
       // 검토하며 고친 칸이 있으면 새 추출 결과가 그 내용을 덮는다 — 먼저 묻는다(고친 표시 = #manualReviewChanged)
       const edited = $('#manualReviewChanged') && !$('#manualReviewChanged').hidden;
       if (edited && !await UI.confirm({ title: 'AI 추출을 다시 할까요?', body: '지금 고친 검토 내용은 새 추출 결과로 바뀌어 사라집니다.', ok: '다시 추출', danger: true })) return;
-      const button = $('#manualAgentExtract'); button.disabled = true;
-      say('AI 추출을 요청하는 중…');
+      const button = $('#manualAgentExtract'); say('');
+      const end = hydLive.busy(button, 'AI 추출을 요청하는 중');
       try {
         const previous = extractionState();
         const state = previous && !previous.instance ? previous : { request_id: UI.uuid() };
         sessionStorage.setItem(extractionKey, JSON.stringify(state));
         const created = await postJ(extractionUrl, { request_id: state.request_id });
-        sessionStorage.setItem(extractionKey, JSON.stringify({ ...state, instance: created.instance }));
-        await loadExtractions();
-        if (H.preview === r) openResult(created.instance, true);
-      } catch (e) { if (H.preview === r) { say('AI 추출을 시작하지 못했습니다: ' + e.message + ' — 다시 누르면 같은 요청으로 확인합니다.', true); button.disabled = false; } }
+        const since = new Date().toISOString();
+        sessionStorage.setItem(extractionKey, JSON.stringify({ ...state, instance: created.instance, since }));
+        if (H.preview !== r) return;
+        if (stage === 3) {      // 다시 추출: 등록만 한 상태(2단계)의 화면으로 돌아가 거기서 지켜본다 — renderPreview 가 방금 요청한 작업을 이어 연다
+          const registered = await getJ(API.process + '/api/kg/manuals/sources/' + encodeURIComponent(r.source_id) + '/preview');
+          if (H.preview !== r) return;
+          if (H.live) { H.live.work.stop(); H.live = null; }
+          H.preview = registered; renderPreview(); return;
+        }
+        end(true);
+        loadExtractions();
+        startLive(created.instance, since);
+      } catch (e) { end(false); if (H.preview === r) say('AI 추출을 시작하지 못했습니다: ' + e.message + ' — 다시 누르면 같은 요청으로 확인합니다.', true); }
     });
-    $('#manualAgentResult').addEventListener('click', () => {
+    $('#manualAgentResult').addEventListener('click', async () => {
       const instance = $('#manualExtractionRuns').value;
       if (!instance) { say('열 추출 작업을 선택하세요.', true); return; }
-      openResult(instance, false);
+      const end = hydLive.busy($('#manualAgentResult'), '여는 중');
+      try {
+        const result = await getJ(extractionUrl + '/' + encodeURIComponent(instance));
+        if (H.preview !== r) return;
+        if (result.preview) { await loadManualCatalog(); if (H.preview !== r) return; if (H.live) { H.live.work.stop(); H.live = null; } H.preview = result.preview; renderPreview(); return; }
+        end(false);
+        if (stage === 2) startLive(instance, null);      // 아직 도는 중이거나 멈춘 작업 — 그 과정을 2단계 자리에서 그대로 보인다
+        else say(`이 추출 작업은 아직 결과가 없습니다: ${UI.status(result.status)}. ${UI.t('nav.instances')} 화면에서 단계와 오류를 확인할 수 있습니다.`, true);
+      } catch (e) { end(false); if (H.preview === r) say('추출 결과를 확인하지 못했습니다: ' + e.message, true); }
     });
-    // 이 브라우저가 방금 요청한 추출이 아직 결과 전이면(화면을 다시 열었을 때) 이어서 지켜본다
-    if (stage === 2 && extractionState()?.instance) openResult(extractionState().instance, true);
+    // 이 브라우저가 방금 요청한 추출이 아직 결과 전이면(화면을 다시 열었을 때 · 다시 추출을 눌렀을 때) 이어서 지켜본다
+    if (stage === 2) {
+      const mine = extractionState();
+      if (H.live && H.live.source_id === r.source_id) drawLive();
+      else if (mine && mine.instance) startLive(mine.instance, mine.since || null);
+    }
     // "sv:ts1:-, msr:maint-cost:+" → [{target, sign}] (A079: reviewed impact of an ingested SOP)
     const parseAffects = text => (text || '').split(',').map(s => s.trim()).filter(Boolean).map(s => { const m = s.match(/^(.*?):([+-])$/); return m ? { target: m[1].trim(), sign: m[2] } : { target: s, sign: '?' }; });
     const c = $('#manualCommit'); if (c) c.addEventListener('click', async () => {
@@ -635,8 +747,13 @@
       const missing = Object.entries(links).filter(([, v]) => v.kind !== 'reference' && v.scope !== 'purchase' && !v.failureMode).map(([k]) => k);
       missing.forEach(id => { const d = box.querySelector(`[data-fm="${CSS.escape(id)}"]`)?.closest('details'); if (d) d.open = true; });
       if (missing.length) { $('#manualMsg').textContent = `고장 유형을 고르세요: ${missing.join(', ')} — 고장 조치가 아닌 확인 · 참고 절차면 종류를 「일반 원문 참고 절차」로 바꾸세요`; return; }
-      c.disabled = true;
-      $('#manualMsg').className = 'form-msg'; $('#manualMsg').textContent = '적재 중…';
+      // 적재는 요청 둘 · 셋이 차례로 간다 — 지금 어느 요청을 기다리는지 단계 목록으로 보인다(서버가 주지 않는 진행률은 그리지 않는다)
+      const endCommit = hydLive.busy(c, '적재하는 중');
+      $('#manualMsg').className = 'form-msg'; $('#manualMsg').textContent = '';
+      const flow = hydLive.steps($('#manualCommitSteps'), [...(r.previous_batch ? [{ key: 'changes', label: '개정으로 빠지는 항목 확인', hint: '이전 판본과 새 판본을 견주는 중입니다.' }] : []),
+        { key: 'commit', label: '검토한 내용을 지식 지도에 적재', hint: '절 · 조치 방법 · 단계 · 규칙 연결을 한 번에 넣는 중입니다. 도중에 실패하면 아무것도 들어가지 않습니다.' },
+        { key: 'reload', label: '등록된 문서 목록과 지식 지도 다시 읽기' }], { label: '적재 단계' });
+      let at = '';
       try {
         const reviewed = structuredClone(r);
         box.querySelectorAll('[data-know-drop]:checked').forEach(input => {
@@ -663,8 +780,10 @@
         });
         const request={ ...reviewed, links: reviewedLinks, by, reviewed: true };
         if (request.previous_batch) {
+          flow.start(at = 'changes');
           const changes=await postJ(API.process + '/api/kg/manuals/changes',request);
           if (H.preview !== r) return;
+          flow.done('changes', { note: changes.removed?.length ? `빠지는 항목 ${changes.removed.length}개` : '빠지는 항목 없음' });
           if (changes.removed?.length) {
             const labels={Skill:'조치 방법',FailureMode:'고장 유형',Cause:'원인',Evidence:'진단 근거',Rule:'판단 규칙',
               Step:'절차 단계',KnowledgeSource:'이전 원문 판본 연결',ManualSection:'이전 원문 절 연결'};
@@ -672,11 +791,14 @@
             const proceed=await UI.confirm({title:'개정으로 지워지는 항목을 확인하세요',
               body:'이전 판본의 다음 항목이 새 지식 지도에서 빠집니다. 원문 보관과 적재 이력은 유지됩니다.\n\n'+names,
               ok:'변경 확인 후 적재',danger:true});
-            if (!proceed) { c.disabled=false; $('#manualMsg').textContent='적재하지 않았습니다. 빠진 내용을 검토하세요.'; return; }
+            if (!proceed) { endCommit(false); flow.skip('commit', { note: '적재하지 않았습니다' }); flow.skip('reload'); $('#manualMsg').textContent='적재하지 않았습니다. 빠진 내용을 검토하세요.'; return; }
           }
         }
+        flow.start(at = 'commit');
         const out = await postJ(API.process + '/api/kg/manuals/commit', request);
         if (H.preview !== r) return;
+        flow.done('commit', { note: `절 ${out.sections} · 조치 방법 ${out.procedures} · 단계 ${out.steps}` });
+        endCommit(true);
         const activated = out.candidate_activation && typeof out.candidate_activation === 'object' ? Object.entries(out.candidate_activation) : [];
         $('#manualMsg').textContent = `적재 완료: 절 ${out.sections} · 조치 방법 ${out.procedures} · 단계 ${out.steps}. ` + (activated.length
           ? '후보 규칙에 연결: ' + activated.map(([fm, rules]) => `${hydWords.idName(fm)} → ${rules.map(r => hydWords.idName(r)).join(', ')}`).join(' · ') + ' (되돌리면 함께 빠집니다)'
@@ -685,8 +807,10 @@
         $('#manualMsg').className = 'form-msg pos';
         $('#manualDone').innerHTML = `<div class="rd-form-actions"><button class="btn" data-go-tab="ontology">지식 지도에서 보기 →</button><button class="btn" data-go-tab="skills">조치 방법에서 보기 →</button></div>`;
         H.skills = [];
+        flow.start(at = 'reload');
         await loadUploads(); if (window.hydEnt) hydEnt.loadGraph(true);
-      } catch (e) { if (H.preview === r) { $('#manualMsg').className = 'form-msg neg'; $('#manualMsg').textContent = '적재하지 못했습니다: ' + e.message; c.disabled = false; } }
+        flow.done('reload');
+      } catch (e) { if (H.preview === r) { if (at && flow.state(at) === 'run') flow.fail(at, { note: e.message }); else if (!at) $('#manualCommitSteps').innerHTML = ''; endCommit(false); $('#manualMsg').className = 'form-msg neg'; $('#manualMsg').textContent = '적재하지 못했습니다: ' + e.message; } }
     });
     const changed = event => { if ($('#manualReviewed') && event.target.id !== 'manualReviewed' && event.target.id !== 'manualExtractionRuns') { $('#manualReviewed').checked = false; $('#manualReviewChanged').hidden = false; } };
     box.oninput = changed;
@@ -736,8 +860,8 @@
   const manualActor = () => window.hydInbox?.me?.()?.name || '';
   $('#manualPreview').addEventListener('click', async () => {
     const f = $('#manualFile').files[0]; if (!f) { $('#manualResult').innerHTML = '<p class="field-error" role="alert">등록할 파일을 먼저 선택하세요.</p>'; return; }
-    const b = $('#manualPreview'); b.disabled = true; b.textContent = '등록하는 중…'; H.preview = null;
-    $('#manualResult').innerHTML = UI.loading('문서를 등록하는 중', 'compact');
+    const b = $('#manualPreview'), end = hydLive.busy(b, '등록하는 중'); H.preview = null;
+    $('#manualResult').innerHTML = hydLive.waitHtml('문서를 등록하는 중', { hint: '서버가 파일을 받아 글자를 읽고 원문을 보관하는 중입니다. PDF는 쪽 수만큼 더 걸립니다.' });
     try {
       const b64 = await new Promise((ok, no) => { const rd = new FileReader(); rd.onload = () => ok(String(rd.result).split(',')[1] || ''); rd.onerror = () => no(new Error('파일을 읽을 수 없습니다.')); rd.readAsDataURL(f); });
       if (!H.catalog) H.catalog = await getJ(API.process + '/api/kg/catalog');
@@ -747,7 +871,7 @@
       H.preview = preview; selectManualDocument(preview.document_id, preview.filename); renderPreview();
       await loadManualSources();
     } catch (e) { if ($('#manualFile').files[0] === f) $('#manualResult').innerHTML = UI.errorBlock('문서를 등록하지 못했습니다', e.message, { cls: 'compact' }); }
-    finally { b.disabled = false; b.textContent = UI.t('kn.preview'); }
+    finally { end(false); }
   });
   // 수업 경계(서버 GET /api/course-access): 수업 단계에서는 제공 문서만 등록된다 — 미리 안내하지 않고 다른 문서를 올리면 서버 거절 까닭을
   // 미리보기 실패로 보인다(안내는 벗어난 행동에서만). 골든 질문 평가 단추는 서버 까닭으로 끈다
@@ -787,9 +911,9 @@
         + keys.map(k => `<tr><td>${esc((batches[k][0] || {}).source || '')}</td><td>${batches[k].map(r => `${esc(LABEL_KO[r.label] || r.label)} ${r.nodes}`).join(' · ')}</td><td><code>${esc(k)}</code></td><td><button class="btn small danger" data-clear="${esc(k)}">되돌리기</button></td></tr>`).join('') + '</tbody></table></div></section>' : '');
       box.querySelectorAll('[data-clear]').forEach(b => b.addEventListener('click', async () => {
         if (!await UI.confirm({ title: '이 연결을 되돌릴까요?', body: '이 스키마 파일로 넣은 시스템 · 입력 데이터를 지식 지도에서 지웁니다. 다른 연결이 함께 쓰는 항목은 남습니다.', ok: '되돌리기', danger: true })) return;
-        b.disabled = true;
+        const end = hydLive.busy(b, '되돌리는 중');
         try { const out = await postJ(API.process + '/api/kg/ingests/' + encodeURIComponent(b.dataset.clear) + '?by=' + encodeURIComponent(manualActor()), null, 'DELETE'); await loadIngests(`되돌렸습니다. 지운 항목 ${out.deleted}개 · 되살린 항목 ${out.restored || 0}개 · 남긴 항목 ${out.retained || 0}개`); if (window.hydEnt) hydEnt.loadGraph(true); }
-        catch (e) { const m = $('#ddlHistoryMsg'); m.className = 'form-msg neg'; m.setAttribute('role', 'alert'); m.textContent = '되돌리지 못했습니다: ' + e.message; b.disabled = false; }
+        catch (e) { const m = $('#ddlHistoryMsg'); m.className = 'form-msg neg'; m.setAttribute('role', 'alert'); m.textContent = '되돌리지 못했습니다: ' + e.message; end(false); }
       }));
     } catch (e) { box.innerHTML = `<p id="ddlHistoryMsg" class="muted" role="status">${esc(msg)}</p>` + UI.errorBlock('연결 이력을 읽지 못했습니다', e.message, { retry: true, cls: 'compact' }); box.querySelector('[data-retry]')?.addEventListener('click', () => loadIngests()); }
   }
@@ -816,33 +940,34 @@
       catch (err) { ddlSay('고른 원천으로 다시 읽지 못했습니다: ' + err.message, true); }
     });
     $('#ddlReplan').addEventListener('click', async () => {
+      const end = hydLive.busy($('#ddlReplan'), '다시 읽는 중');
       const selection = {}, systems = {};
       box.querySelectorAll('[data-sys]').forEach(s => { if (s.value) systems[s.dataset.sys] = s.value; });
       box.querySelectorAll('[data-col]').forEach(c => { if (c.checked && systems[c.dataset.col]) (selection[c.dataset.col] = selection[c.dataset.col] || []).push(c.value); });
       try { H.ddl = await postJ(API.process + '/api/kg/ddl/preview', { filename: p.filename, text: H.ddlText, selection, systems, datasource: p.datasource, catalog: p.catalog, meaning_review: p.meaningReview ? p.meaningReview.id : undefined }); renderDdlPreview(); }
-      catch (e) { ddlSay('고른 열로 다시 읽지 못했습니다: ' + e.message, true); }
+      catch (e) { end(false); ddlSay('고른 열로 다시 읽지 못했습니다: ' + e.message, true); }
     });
     $('#ddlCommit').addEventListener('click', async () => {
-      const c = $('#ddlCommit'); c.disabled = true; ddlSay('적재 중…');
+      const c = $('#ddlCommit'), end = hydLive.busy(c, '적재하는 중'); ddlSay('');
       try {
         const out = await postJ(API.process + '/api/kg/ddl/commit', { ...p, by: manualActor() });
         ddlSay(`적재했습니다. 시스템 ${out.systems}개 · 입력 데이터 ${out.inputs}개. 되돌리려면 아래 연결 이력에서 [되돌리기]를 누르세요.`);
-        c.textContent = '적재 완료';
+        end(true); c.textContent = '적재 완료';
         await loadIngests(); if (window.hydEnt) hydEnt.loadGraph(true);
-      } catch (e) { ddlSay('적재하지 못했습니다: ' + e.message, true); c.disabled = false; }
+      } catch (e) { end(false); ddlSay('적재하지 못했습니다: ' + e.message, true); }
     });
   }
   $('#ddlPreview').addEventListener('click', async () => {
     const f = $('#ddlFile').files[0]; if (!f) { $('#ddlResult').innerHTML = '<p class="field-error" role="alert">스키마 파일을 먼저 선택하세요.</p>'; return; }
-    const b = $('#ddlPreview'); b.disabled = true; b.textContent = '읽는 중…'; H.ddl = null;
-    $('#ddlResult').innerHTML = UI.loading('스키마 파일을 읽는 중', 'compact');
+    const b = $('#ddlPreview'), end = hydLive.busy(b, '읽는 중'); H.ddl = null;
+    $('#ddlResult').innerHTML = hydLive.waitHtml('스키마 파일을 읽는 중', { hint: '서버가 표 · 열을 읽고 고른 원천의 실제 표와 맞춰 보는 중입니다.' });
     try {
       H.ddlText = await f.text();
       const preview = await postJ(API.process + '/api/kg/ddl/preview', { filename: f.name, text: H.ddlText, catalog: $('#ddlCatalog').value.trim() });
       if ($('#ddlFile').files[0] !== f) return;
       H.ddl = preview; renderDdlPreview(); await loadIngests();
     } catch (e) { if ($('#ddlFile').files[0] === f) $('#ddlResult').innerHTML = UI.errorBlock('스키마 파일을 읽지 못했습니다', e.message, { cls: 'compact' }); }
-    finally { b.disabled = false; b.textContent = UI.t('kn.ddlPreview'); }
+    finally { end(false); }
   });
   $('#ddlFile').addEventListener('change', () => { H.ddl = null; $('#ddlFilename').textContent = $('#ddlFile').files[0]?.name || UI.t('kn.noFile'); renderDdlPreview(); });
   $('#ddlCatalog').addEventListener('input', () => { H.ddl = null; renderDdlPreview(); });

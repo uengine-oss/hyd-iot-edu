@@ -4,7 +4,7 @@
    hitl.js 의 DDL 미리보기가 window.hydLegacy.mount(el, ctx)로 부른다. ctx = {preview, text, by(), replan(reviewId|null)}. */
 (function () {
   const API_BASE = () => API.process + '/api/kg/ddl/meanings';
-  const S = { key: null, run: null, data: null, error: null, timer: null, drafts: {}, saved: null, busy: false };
+  const S = { key: null, run: null, data: null, error: null, timer: null, drafts: {}, saved: null, busy: false, work: null, host: null, workId: null, since: null };
   const EV = { name: '이름 패턴', comment: '주석', sample: '샘플 값 분포', key: '키 관계' };
   const VERDICT = { APPROVE: '승인', EDIT: '고치기', REJECT: '제외' };
   const VTONE = { APPROVE: 'success', EDIT: 'accent', REJECT: 'danger' };
@@ -26,18 +26,33 @@
   };
   const pct = v => Math.round((v || 0) * 100) + '%';
 
-  function stop() { if (S.timer) { clearInterval(S.timer); S.timer = null; } }
+  const FINAL = ['DONE', 'FAILED', 'CANCELLED'];
+  function stop() { if (S.work) { S.work.stop(); S.work = null; S.host = null; S.workId = null; } }
 
+  // 작업 상태를 한 번 읽는다. 부르는 때: 요청 직후 · 그 AI 단계가 바뀌는 이벤트가 왔을 때 · 다시 연결됐을 때 · 연결이 끊긴 동안의 5초 묻기(hydLive.agentWork)
   async function load() {
     if (!S.run) return;
-    if (state.tab !== 'knowledge' && S.timer) return;      // 문서 등록 화면을 떠나 있으면 읽지 않는다 — 타이머는 살아 있어 돌아오면 다음 차례에 이어 읽는다
     try { S.data = await getJ(API_BASE() + '/' + encodeURIComponent(S.run)); S.error = null; }
     catch (e) { S.error = '후보를 읽지 못했습니다: ' + e.message; }
-    if (!S.data || ['DONE', 'FAILED', 'CANCELLED'].includes(S.data.status) || !document.body.contains(el)) stop();
     render();
   }
+  // AI 뜻 후보 작업(처리 건의 작업 행 S.data.workitem)의 실행 기록을 그 자리에서 흘려보낸다. 기록 칸은 다시 그려도 같은 것을 옮겨 쓴다
+  function live() {
+    const d = S.data, slot = el && el.querySelector('[data-lm-live]');
+    if (!d || !d.workitem || FINAL.includes(d.status) && !S.work) return;
+    if (!S.work || S.workId !== d.workitem) {
+      stop();
+      S.host = document.createElement('div'); S.workId = d.workitem;
+      S.work = hydLive.agentWork(S.host, { tab: 'knowledge', onChange: load });
+    }
+    if (slot) slot.replaceChildren(S.host);
+    const working = !FINAL.includes(d.status);
+    S.work.set({ items: [{ id: d.workitem, instance: d.instance, state: working ? 'run' : d.status === 'DONE' ? 'done' : 'fail' }], running: working, since: S.since,
+      headline: working ? `AI 에이전트가 열 ${d.columns.length}개의 뜻 후보를 쓰는 중` : d.status === 'DONE' ? 'AI 뜻 후보 작업이 끝났습니다' : `AI 뜻 후보 작업이 끝나지 않았습니다 — ${UI.status(d.status)}`,
+      note: working ? '열 이름 조각 · 샘플 값 분포 · 키 관계를 관찰한 결과만 보고 후보를 씁니다.' : '' });
+  }
 
-  function poll() { stop(); S.timer = setInterval(load, 3000); load(); }
+  function poll() { stop(); S.since = new Date().toISOString(); load(); }
 
   async function ask() {
     if (S.busy) return; S.busy = true; S.error = null; render();
@@ -157,11 +172,12 @@
 
   function statusHtml() {
     const d = S.data;
-    if (!d) return `<p class="muted" role="status"><span class="live-dot on"></span> 작업을 여는 중…</p>`;
-    const working = !['DONE', 'FAILED', 'CANCELLED'].includes(d.status);
+    if (!d) return hydLive.waitHtml('AI 뜻 후보 작업을 여는 중', { since: S.since, hint: '처리 건을 만들고 AI 에이전트가 일을 받기를 기다립니다.' });
+    const working = !FINAL.includes(d.status);
     const corr = d.corrections ? ` · 근거 검사에서 되돌려 보냄 ${d.corrections.attempts}회${d.corrections.reasons && d.corrections.reasons.length ? ` (마지막 사유: ${esc(d.corrections.reasons[d.corrections.reasons.length - 1])})` : ''}` : '';
-    return `<p class="kv-line" role="status">${working ? '<span class="live-dot on"></span> ' : ''}<b>AI 뜻 후보 작업</b> ${UI.chip(d.status)} · 열 ${d.columns.length}개${corr}
-      ${working ? '<span class="muted"> — AI 에이전트가 관찰 결과만 보고 후보를 쓰는 중입니다.</span>' : ''}</p>`;
+    // 도는 동안에는 실행 기록이 펼쳐져 흐르고, 끝나면 「후보를 만든 과정 보기」 접기 안에 남는다
+    const process = working ? '<div data-lm-live></div>' : S.work ? UI.fold('후보를 만든 과정 보기 · 도구 호출과 에이전트의 말', '<div data-lm-live></div>', { cls: 'small' }) : '';
+    return `<p class="kv-line" role="status"><b>AI 뜻 후보 작업</b> ${UI.chip(d.status)} · 열 ${d.columns.length}개${corr}</p>${process}`;
   }
 
   function render() {
@@ -191,7 +207,7 @@
     if (S.error) body += `<p class="neg" role="alert">${esc(S.error)}</p>`;
     el.innerHTML = UI.fold(`옛 DB 뜻 복원 — ${esc(sumLine)}`, body, { open: !!(S.run || ctx.preview.meaningReview) });
     hydCourseAccess.apply(el);   // attrs 로 그린 단추: 수업 단계에서 꺼진 까닭을 단추 옆 한 줄로(W3-07)
-    wire();
+    wire(); live();
   }
 
   function wire() {

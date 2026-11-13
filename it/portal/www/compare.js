@@ -52,7 +52,7 @@
         ${UI.field({ label: '입력', input: `<select data-f="input"><option value="new" ${S.form.input === 'new' ? 'selected' : ''}>지금 원천에서 새로 읽어 고정</option><option value="latest" ${S.form.input === 'latest' ? 'selected' : ''}>이 시나리오의 직전 입력 다시 쓰기</option></select>`, hint: '두 에이전트는 항상 같은 입력으로 판단합니다' })}
         ${S.error ? `<p class="field-error" role="alert">${esc(S.error)}</p>` : ''}
         ${S.loadError ? `<p class="field-error" role="alert">시험 설정을 다시 읽지 못해 앞서 읽은 목록을 보이고 있습니다: ${esc(S.loadError)}</p>` : ''}
-        <div class="rd-in-actions"><button type="button" class="btn primary" data-act="run" ${S.busy ? 'disabled' : ''}>${S.busy ? '시험 중…' : '시험 실행'}</button></div>
+        <div class="rd-in-actions"><button type="button" class="btn primary" data-act="run" ${S.busy ? 'disabled' : ''}>${S.busy ? '시험하는 중' : '시험 실행'}</button></div>
         <p class="rd-in-note">이 시험은 AI 모델을 부르지 않습니다. 스킬 글과 판단 규칙으로 판단 단계만 모의하며, 처리 건과 설비 명령을 만들지 않습니다.</p>
         <hr class="rd-rule"><h2 class="rd-label">B를 바꿔 보기${dropped ? ` · ${dropped}개 뺌` : ''}</h2>
         <p class="rd-in-note">체크를 풀면 B에서 그 도구나 스킬을 빼고 시험합니다. 이번 시험에만 쓰고 저장하지 않습니다. 더하려면 그 에이전트를 고칩니다. <button type="button" class="link-btn" data-go-tab="agents">에이전트 · 스킬 열기 →</button></p>
@@ -164,7 +164,7 @@
         `<option value="${esc(t.id)}" ${S.pick[side] === t.id ? 'selected' : ''}>${esc(UI.dateTime(t.created_at))} · ${esc(t.agent_name || agentName(t.agent_id))} · ${esc(t.recommended || STATUS[t.status]?.[0] || t.status)}${(t.variant?.without_tools || []).length + (t.variant?.without_skills || []).length ? ' · 변형' : ''}</option>`).join('')}</select>` })).join('')}</div>`;
     return `<section class="rd-group rd-history"><h2 class="rd-sec">지난 시험과 비교</h2><p class="rd-note">규칙이나 지식을 바꾸기 전과 후에 결과가 그대로인지 봅니다.</p>` +
       rows + (S.histError ? `<p class="field-error" role="alert">${esc(S.histError)}</p>` : '') +
-      `<div class="rd-in-actions"><button type="button" class="btn" data-act="${h == null ? 'history' : 'diff'}" ${S.histBusy || (h && (!S.pick.a || !S.pick.b)) ? 'disabled' : ''}>${h == null ? '저장된 시험 불러오기' : '두 실행 비교'}</button></div></section>`;
+      `<div class="rd-in-actions"><button type="button" class="btn" data-act="${h == null ? 'history' : 'diff'}" ${S.histBusy || (h && (!S.pick.a || !S.pick.b)) ? 'disabled' : ''}>${S.histBusy ? (h == null ? '불러오는 중' : '비교하는 중') : h == null ? '저장된 시험 불러오기' : '두 실행 비교'}</button></div></section>`;
   }
 
   function render() {
@@ -172,13 +172,13 @@
     const open = new Set([...S.el.querySelectorAll('details[open] > summary')].map(x => x.textContent.trim()));      // 다시 그려도 펼친 「자세히」는 그대로 둔다
     S.el.innerHTML = `<p class="page-lead">같은 입력으로 에이전트 둘의 판단 단계를 모의해, 원인과 1순위 조치, 도구 호출이 어떻게 다른지 나란히 봅니다.</p>` +
       `<div class="cmp rd-io"><div class="rd-in">${formPane()}</div><div class="rd-out"><div class="cmp-result" aria-live="polite">${S.busy
-        ? UI.loading('시험 실행 중 — 원천을 읽고 판단 단계만 모의합니다', 'compact') : resultView(S.result)}</div>${S.opts && S.opts.agents.length ? historyPane() : ''}</div></div>`;
+        ? hydLive.waitHtml('시험 실행 중', { since: S.busySince, hint: '원천을 읽어 입력을 고정하고, 에이전트 A와 B의 판단 단계를 차례로 모의하는 중입니다. 서버가 둘 다 끝낸 뒤 결과를 한 번에 줍니다.' }) : resultView(S.result)}</div>${S.opts && S.opts.agents.length ? historyPane() : ''}</div></div>`;
     S.el.querySelectorAll('details > summary').forEach(x => { if (open.has(x.textContent.trim())) x.parentElement.open = true; });
   }
 
   async function runTrial() {
     if (!S.form.scenario) { S.error = '시나리오를 고르세요.'; render(); return; }      // 고르지 않은 시나리오로 시험하지 않는다
-    S.busy = true; S.error = null; render();
+    S.busy = true; S.busySince = new Date().toISOString(); S.error = null; render();
     try {
       S.result = await postJ(api('/api/agent-trials/run'), { scenario: S.form.scenario, reuse_latest: S.form.input === 'latest',
         a: { agent: S.form.a }, b: { agent: S.form.b, variant: { without_tools: S.dropTools, without_skills: S.dropSkills } } });

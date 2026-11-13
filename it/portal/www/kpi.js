@@ -71,7 +71,7 @@
     const t = st.trace;
     if (!t) return '';
     const head = `<header class="rd-head"><div class="rd-title"><h3>${escH(t.title)} — 미달 원인 찾기</h3></div><div class="rd-actions"><button type="button" class="btn small" data-kpi-close>닫기</button></div></header>`;
-    if (t.loading) return `<section class="card kpi-trace" id="kpiTrace">${head}${UI.loading('영향 경로와 같은 기간 처리 기록을 맞춰 보는 중', 'compact')}</section>`;
+    if (t.loading) return `<section class="card kpi-trace" id="kpiTrace">${head}${hydLive.waitHtml('미달 원인을 찾는 중', { since: t.since, hint: '지식 지도에서 이 지표에 영향을 주는 경로를 찾고, 같은 기간의 처리 기록과 맞춰 보는 중입니다.' })}</section>`;
     if (t.error) return `<section class="card kpi-trace" id="kpiTrace">${head}<p class="field-error" role="alert">미달 원인을 찾지 못했습니다: ${escH(t.error)}</p><div class="rd-actions"><button type="button" class="btn small" data-kpi-trace="${escH(t.measure)}">다시 찾기</button></div></section>`;
     const d = t.data, m = d.measure;
     const effect = v => EFFECT[String(v)] || '영향 불명';
@@ -127,7 +127,7 @@
     const tools = `<div class="page-tools">${periods.length ? `<div class="rd-seg rd-seg-inline" role="group" aria-label="기간">${periods.map(([k, l]) => `<button type="button" class="${k === st.period ? 'on' : ''}" data-kpi-period="${escH(k)}" aria-pressed="${k === st.period}">${escH(l)}</button>`).join('')}</div>` : ''}
       <button type="button" class="btn" data-kpi-reload>다시 읽기</button></div>`;
     let body;
-    if (st.loading && !st.data) body = UI.loading('성과 지표 실적을 계산하는 중 — 시계열 · 업무 DB · 처리 기록을 읽습니다');
+    if (st.loading && !st.data) body = hydLive.waitHtml('성과 지표 실적을 계산하는 중', { since: st.since, hint: '시계열 · 업무 DB · 처리 기록을 읽어 지표마다 실적을 계산합니다. 서버가 모두 끝낸 뒤 한 번에 줍니다.' });
     else if (st.error) body = UI.errorBlock('성과 지표를 불러오지 못했습니다', st.error, { retry: true });
     else {
       const d = st.data, s = d.summary;
@@ -154,7 +154,7 @@
   }
 
   async function load(st) {
-    st.loading = true; st.error = null; render(st);
+    st.loading = true; st.since = new Date().toISOString(); st.error = null; render(st);
     try {
       st.data = trialOn(st) ? await postJSON('/api/kpi/try', { period: st.period, targets: st.applied })
         : await getJSON(`/api/kpi?period=${encodeURIComponent(st.period)}`);
@@ -175,7 +175,7 @@
 
   async function openTrace(st, measure) {
     const m = st.data && st.data.perspectives.flatMap(p => p.objectives.flatMap(o => o.measures)).find(x => x.id === measure);
-    st.trace = { measure, title: m ? m.name : '지표', loading: true };
+    st.trace = { measure, title: m ? m.name : '지표', loading: true, since: new Date().toISOString() };
     render(st);
     const panel = st.el.querySelector('#kpiTrace'); if (panel && panel.scrollIntoView) panel.scrollIntoView({ block: 'nearest' });
     try {

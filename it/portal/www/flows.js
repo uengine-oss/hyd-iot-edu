@@ -83,8 +83,9 @@
   const locks = new Set();
   async function once(name, button, fn) {
     if (locks.has(name)) return;
-    locks.add(name); const was = button ? button.disabled : false; if (button) button.disabled = true;
-    try { return await fn(); } finally { locks.delete(name); if (button && button.isConnected) button.disabled = was; }
+    // 누른 단추가 「…중 · 걸린 시간」으로 바뀐다(다시 그려져 단추가 사라졌으면 손대지 않는다)
+    locks.add(name); const end = button ? hydLive.busy(button, button.textContent.trim() + ' 중') : null;
+    try { return await fn(); } finally { locks.delete(name); if (end && button.isConnected) end(); }
   }
   const partName = p => p ? ({ human: '담당자 입력', agent: 'AI 에이전트 작업' }[p.key] || UI.flowName(p.name)) : '';
   const roleOpts = (sel, human) => S.cat.roles.filter(r => !human || r.human).map(r => `<option value="${h(r.name)}" ${r.name === sel ? 'selected' : ''}>${h(r.name)}</option>`).join('');
@@ -136,7 +137,7 @@
     const msg = S.el.querySelector('#flowImportMsg');
     const file = S.el.querySelector('#flowFile').files[0];
     if (!file) { msg.textContent = '.bpmn 파일을 고르세요'; msg.className = 'form-msg neg'; return; }
-    msg.textContent = '읽는 중…'; msg.className = 'form-msg';
+    msg.className = 'form-msg'; msg.innerHTML = hydLive.waitHtml('그림을 읽는 중', { hint: '서버가 BPMN 그림에서 단계 · 갈림 · 시작과 끝을 읽고, 같은 이름으로 가져온 적이 있으면 앞서 고른 매핑과 맞춰 보는 중입니다.' });
     try {
       const xml = await file.text();
       S.view = await call('POST', '/api/flows/import', { xml, file_name: file.name, start_patterns: [], definition_id: S.el.querySelector('#flowId').value.trim() || null });
@@ -420,7 +421,7 @@
 
   async function recheck(save) {
     const msg = S.el.querySelector('#flowMsg');
-    if (save) msg.textContent = '검사 중…';
+    if (save) { msg.className = 'form-msg'; msg.innerHTML = hydLive.waitHtml('매핑을 저장하고 검사하는 중', { hint: '단계마다 고른 종류 · 담당 · 넘길 값이 흐름으로 돌 수 있는지 서버가 검사하는 중입니다.' }); }
     try {
       collect();
       const revision = S.revision, view = S.view;

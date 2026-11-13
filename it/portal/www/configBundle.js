@@ -50,7 +50,7 @@
     let pending = null;                                   // 비밀값을 기다리는 파일
 
     $('cfgExport').addEventListener('click', async () => {
-      $('cfgExport').disabled = true;
+      const end = hydLive.busy($('cfgExport'), '파일을 만드는 중');
       try {
         const { body, headers } = await call('/api/config/export');
         const name = (/filename="([^"]+)"/.exec(headers.get('Content-Disposition') || '') || [])[1] || 'hyd-starter.json';
@@ -59,7 +59,7 @@
         a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
         msg('cfgExportMsg', `받았습니다 — ${counts(body.summary)}` + (body.not_included.length ? ` · 담지 않은 것 ${body.not_included.length}건: ${body.not_included.map(x => x.what + ' — ' + x.reason).join(' / ')}` : ''));
       } catch (e) { msg('cfgExportMsg', e.message, true); }
-      finally { $('cfgExport').disabled = false; }
+      finally { end(false); }
     });
 
     function secretForm(needs) {
@@ -98,8 +98,10 @@
       if (!pending) { msg('cfgImportMsg', '출발본 파일을 고르세요', true); return; }
       if (importing) return;
       importing = true;
-      $('cfgImport').disabled = true; if ($('cfgSkip')) $('cfgSkip').disabled = true;
-      msg('cfgImportMsg', '불러오는 중입니다. 도구 서버 연결을 검사하므로 조금 걸립니다.');
+      // 서버는 「기준으로 되돌리기 → 파일 내용을 순서대로 적용 → 다시 읽어 대조」를 모두 끝낸 뒤 단계별 결과를 한 번에 준다(도중 진행은 내보내지 않는다)
+      const end = hydLive.busy($('cfgImport'), '불러오는 중'); if ($('cfgSkip')) $('cfgSkip').disabled = true;
+      $('cfgImportMsg').textContent = ''; $('cfgImportMsg').className = 'form-msg';
+      $('cfgImportResult').innerHTML = hydLive.waitHtml('출발본을 불러오는 중', { hint: '지금 구성을 기준으로 되돌리고, 파일 내용을 순서대로 적용하고, 도구 서버 연결을 검사한 뒤 다시 읽어 대조합니다. 서버가 모두 끝낸 뒤 단계별 결과를 줍니다(길면 3분).' });
       try {
         const { body } = await call('/api/config/import', { bundle: pending, secrets: secretsFromForm(), skip_missing_secrets: !!skip, by: actor() });
         msg('cfgImportMsg', body.message); $('cfgSecrets').innerHTML = ''; showResult(body);
@@ -107,7 +109,7 @@
       } catch (e) {
         msg('cfgImportMsg', e.message, true); showFailure(e.detail || {});
         if (e.detail && e.detail.needs_secrets && !e.detail.problems) secretForm(e.detail.needs_secrets);
-      } finally { importing = false; $('cfgImport').disabled = false; if ($('cfgSkip')) $('cfgSkip').disabled = false; hydCourseAccess.apply(el); why(); }
+      } finally { importing = false; end(false); if ($('cfgSkip')) $('cfgSkip').disabled = false; hydCourseAccess.apply(el); why(); }
     }
     $('cfgFile').addEventListener('change', async () => {
       pending = null; $('cfgSecrets').innerHTML = ''; $('cfgImportResult').innerHTML = '';
@@ -125,7 +127,9 @@
     $('cfgReset').addEventListener('click', async () => {
       const yes = await UI.confirm({ title: '기준으로 되돌릴까요?', body: '내가 만든 구성과 비밀 값, 끝난 질문 · 판단 채점 · 에이전트 시험 비교 기록을 모두 지웁니다. 수업 흐름(시작할 때 설치되는 A · B · C)은 남습니다. 먼저 출발본으로 받아 두면 구성은 다시 불러올 수 있습니다(비밀 값 · 기록은 파일에 없습니다).', ok: '되돌리기', danger: true });
       if (!yes) return;
-      $('cfgReset').disabled = true;
+      const end = hydLive.busy($('cfgReset'), '되돌리는 중');
+      $('cfgResetMsg').textContent = '';
+      $('cfgResetResult').innerHTML = hydLive.waitHtml('기준으로 되돌리는 중', { hint: '내가 만든 것을 종류별로 차례로 지우는 중입니다. 서버가 모두 끝낸 뒤 지운 것을 줍니다.' });
       try {
         const { body } = await call('/api/config/reset', { by: actor() });
         msg('cfgResetMsg', body.message); $('cfgResetResult').innerHTML = `<section class="rd-group"><h4 class="rd-label">지운 것</h4>${list(body.steps.map(s => `${s.label}: ${s.text}`))}</section>`;
@@ -134,7 +138,7 @@
         msg('cfgResetMsg', e.message, true);
         const d = e.detail || {};
         $('cfgResetResult').innerHTML = d.blocking ? list(d.blocking.map(b => b.reason)) : d.done ? `<p>지운 단계: ${H(d.done.map(x => x.label).join(', ') || '없음')}</p>` : '';
-      } finally { $('cfgReset').disabled = false; }
+      } finally { end(false); }
     });
   }
 

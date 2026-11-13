@@ -105,8 +105,9 @@
   // 두 번 눌림 막기: 같은 일이 끝날 때까지 그 단추를 끈다
   async function once(key, button, work) {
     if (S.acting.has(key)) return;
-    S.acting.add(key); if (button) button.disabled = true;
-    try { await work(); } finally { S.acting.delete(key); if (button && button.isConnected) button.disabled = false; }
+    // 누른 단추가 「…중 · 걸린 시간」으로 바뀐다(다시 그려져 단추가 사라졌으면 손대지 않는다)
+    S.acting.add(key); const end = button ? hydLive.busy(button, button.textContent.trim() + ' 중') : null;
+    try { await work(); } finally { S.acting.delete(key); if (end && button.isConnected) end(false); }
   }
 
   const ORIGIN = { seed: '기준 서버', user: '내가 등록한 서버', external: '포털 밖에서 추가한 서버' };
@@ -178,7 +179,7 @@
     const tasks = s.tasks.length ? `<ul class="rd-lines">${s.tasks.map(t => `<li><span>${esc(UI.flowName(t.activity_name))}</span><small>${esc(t.agent || '담당 없음')}${t.fixed_tools ? ' · 정해진 조회 도구만' : ''}</small></li>`).join('')}</ul>` : '';
     const limit = r.timeout_s || S.listTimeout;
     const status = s.config_error ? `<p class="field-error" role="alert">${esc(s.config_error)}</p>`
-      : r.loading ? `<p class="rd-note" role="status">연결 확인 중…${S.listTimeout ? ` (최대 ${esc(S.listTimeout)}초)` : ''}</p>`
+      : r.loading ? hydLive.waitHtml('연결 확인 중', { since: r.since, hint: `도구 서버가 도구 목록을 돌려주기를 기다립니다${S.listTimeout ? ` (최대 ${S.listTimeout}초)` : ''}.` })
       : r.status === 'ok' ? `<p class="rd-note">도구 ${tools.length}개 · 응답 ${esc(hydTrace.fmtMs(r.elapsed_ms))} · ${esc(UI.dateTime(r.checked_at))} 확인</p>`
       : `<p class="field-error" role="alert">${esc(r.error || '연결 실패')}</p>${r.checked_at ? `<p class="rd-note">${esc(UI.dateTime(r.checked_at) + ' 확인' + (limit ? ' · 제한 ' + limit + '초' : ''))}</p>` : ''}`;
     const settings = [['서버 식별자', s.name], ['등록한 설명 원문', s.description], ['연결 오류 원문', s.config_error || r.error], ['서버가 보고한 이름', r.server_info?.name],
@@ -280,7 +281,7 @@
   }
 
   function resultHtml(res) {
-    if (res.loading) return UI.loading('실행하는 중', 'compact');
+    if (res.loading) return hydLive.waitHtml('도구를 실행하는 중', { since: res.since, hint: '도구 서버의 응답을 기다립니다. 서버가 결과를 한 번에 줍니다.' });
     if (res.error) return `<p class="field-error" role="alert">${esc(res.error)}</p>`;
     const r = res.result;
     // 결론(받았는지 · 오류인지) → 결과 → 원문 차례. 걸린 시간 · 길이 · 보낸 입력은 둘째 줄
@@ -314,7 +315,7 @@
       if (errors.length) { out.innerHTML = `<p class="field-error" role="alert">${errors.map(esc).join('<br>')}</p>`; return; }
       const by = actor(); if (!by) return;
       const btn = S.el.querySelector('#mcpCall'); btn.disabled = true;
-      S.results[key] = { loading: true }; out.innerHTML = resultHtml(S.results[key]);
+      S.results[key] = { loading: true, since: new Date().toISOString() }; out.innerHTML = resultHtml(S.results[key]);
       try { S.results[key] = await postJ(api(`/api/mcp/servers/${encodeURIComponent(s.name)}/tools/${encodeURIComponent(t.name)}/call`), { arguments: args, by }); }
       catch (e) { S.results[key] = { error: e.message }; }
       out.innerHTML = resultHtml(S.results[key]); btn.disabled = false;
@@ -422,7 +423,7 @@
       `<div class="form rd-form rd-group">${UI.section('', fields)}${F.error ? `<p class="field-error" role="alert">${esc(F.error)}</p>` : ''}` +
       `<div class="rd-form-actions"><button class="btn primary" id="mcpSave" ${F.busy ? 'disabled' : ''}${reg()}>${F.editing ? '검사 후 저장' : '검사 후 등록'}</button>` +
       `<button class="btn" id="mcpDry" ${F.busy ? 'disabled' : ''}${reg()}>연결 검사만</button><button class="btn" id="mcpFormClose">취소</button></div></div>` +
-      `<div id="mcpFormResult" class="rd-group" aria-live="polite">${F.busy ? UI.loading('연결 검사 중', 'compact') : checkHtml(F.result)}</div>`;
+      `<div id="mcpFormResult" class="rd-group" aria-live="polite">${F.busy ? hydLive.waitHtml('연결 검사 중', { since: F.since, hint: `적은 주소의 서버에 연결해 인사를 주고받고 도구 목록을 받는 중입니다${S.listTimeout ? ` (최대 ${S.listTimeout}초)` : ''}. 통과해야 저장합니다.` }) : checkHtml(F.result)}</div>`;
     box.querySelector('#mcpFormClose').addEventListener('click', () => { S.form = null; renderForm(); renderDetail(); });
     box.querySelector('#mcpDry').addEventListener('click', () => submitForm(true));
     box.querySelector('#mcpSave').addEventListener('click', () => submitForm(false));
@@ -448,7 +449,7 @@
     let body;
     try { body = bodyFrom(readForm()); } catch (e) { F.error = e.message; renderForm(); return; }
     body.by = actor(); if (!body.by) return;
-    F.busy = true; F.error = ''; F.result = null; renderForm();
+    F.busy = true; F.since = new Date().toISOString(); F.error = ''; F.result = null; renderForm();
     try {
       const r = dry ? await postJ(api('/api/mcp/check'), body)
         : F.editing ? await postJ(api(`/api/mcp/servers/${encodeURIComponent(body.name)}`), body, 'PUT')

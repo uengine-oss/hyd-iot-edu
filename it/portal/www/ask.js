@@ -132,6 +132,11 @@
       <p class="rd-note">${r.by === 'server' ? '에이전트가 낸 답을 실제 도구 호출 기록과 대조했지만 근거를 찾지 못했습니다.' : '에이전트가 조회해 보고 답할 수 없다고 했습니다.'}</p></div>`
       + (r.claimed ? UI.fold('에이전트가 낸 답 (근거 확인 안 됨)', `<p>${esc(UI.clean(r.claimed))}</p>`, { cls: 'small' }) : '');
   }
+  // 진행 중인 질문: 실시간 연결 상태를 글자로 보이고, 끊겼으면 그 사실과 지금 어떻게 확인하는지를 말한다(줄은 연결 하나 hydStream 에서 온다)
+  function liveLine() {
+    const c = hydStream.conn();
+    return `<p class="lv-work-note"><span class="live-conn ${c.ok ? 'on' : c.state}" data-live-conn>${esc(c.text)}</span>${c.ok ? ' · 도구 호출이 생기는 대로 아래에 붙습니다' : ' · 실시간 연결이 끊겨 1.5초마다 다시 읽어 보입니다'}</p>`;
+  }
   // the agent's work as a live trace (one work item, flat rows) — fed by GET /api/todolist/{id} and the SSE bus
   function ensureTrace(v) {
     if (!window.hydTrace || !v.workitem) return null;
@@ -174,7 +179,7 @@
       <div class="ask-a card">
         <header class="rd-head"><div><div class="rd-title"><h3>${esc(v.agent ? v.agent.name : '')}</h3>${UI.chipText(label, tone)}</div>${v.message ? `<p class="rd-sub">${esc(UI.clean(v.message))}</p>` : ''}</div></header>
         ${resultHtml(v)}
-        <details class="fold small ask-process" ${live || A.processOpen ? 'open' : ''}><summary>처리 과정 · 도구 호출 ${calls.length}건 ${live && window.hydTrace ? hydTrace.spinner('sm') : ''}</summary><div class="fold-body">${A.traceErr ? `<p class="rd-note">자세한 처리 과정을 읽지 못해 도구 호출 목록만 보입니다 — ${esc(A.traceErr)}</p>` : ''}<div data-ask-trace>${staticCalls ? `<ol class="stack-list">${calls.map(callRow).join('')}</ol>` : ''}</div></div></details>
+        <details class="fold small ask-process" ${live || A.processOpen ? 'open' : ''}><summary>처리 과정 · 도구 호출 ${calls.length}건 ${live && window.hydTrace ? hydTrace.spinner('sm') : ''}${live && v.started ? ' ' + hydLive.timeHtml(v.started) : ''}</summary><div class="fold-body">${live ? liveLine() : ''}${A.traceErr ? `<p class="rd-note">자세한 처리 과정을 읽지 못해 도구 호출 목록만 보입니다 — ${esc(A.traceErr)}</p>` : ''}<div data-ask-trace>${staticCalls ? `<ol class="stack-list">${calls.map(callRow).join('')}</ol>` : ''}</div></div></details>
         ${v.state==='failed' && replay() ? '<p class="rd-note" role="status">AI 키가 없을 때 쓰는 재생 모드에서는 같은 질문을 다시 진행할 수 없습니다.</p>' : ''}
         ${v.state==='failed' && !replay() ? UI.field({label:'다시 진행할 때 반영할 내용(선택)',input:`<textarea id="askRetryNote" rows="2">${esc(A.retryNote || '')}</textarea>`}) : ''}
         <div class="rd-form-actions">${v.state==='failed' && !replay() ? `<button class="btn small" id="askRetry" ${A.sending?'disabled':''}>같은 질문 다시 진행</button>` : ''}<a class="link-btn" href="${esc(v.link)}">처리 건에서 보기 →</a></div></div></div>`;
@@ -212,7 +217,7 @@
     const thread = A.el.querySelector('[data-ask-thread]');
     const v = A.cur, trace = v ? ensureTrace(v) : null;
     const proc = thread.querySelector('.ask-process'); if (proc) A.processOpen = proc.open;
-    const tSig = JSON.stringify(v && [v.id, v.state, v.message, (v.tool_calls || []).length, v.result, (v.agent || {}).name, A.sending, A.traceErr]);
+    const tSig = JSON.stringify(v && [v.id, v.state, v.message, (v.tool_calls || []).length, v.result, (v.agent || {}).name, A.sending, A.traceErr, v && LIVE.has(v.state) && hydStream.conn().ok]);
     if (thread._sig !== tSig) {
       thread._sig = tSig;
       thread.innerHTML = threadHtml(!A.traceHost);
