@@ -47,16 +47,16 @@ function keyboardItem(item) {
 
 const state = { tab: 'main', plant: null, det: null, detError: '', incidents: [], selected: null, detail: null, incAudit: null, waves: {}, log: [], selectedAsset: null, showAll: false, incShown: 20 };
 
-/* ---------------- tabs ---------------- */
-// 탭에 들어올 때 할 일: 화면 모듈은 selectTab 을 감싸지 않고 이 표에 적는다(실린 차례대로 불린다 — 셸이 맨 마지막). fn(name)
+/* ---------------- 메뉴 · 화면 전환 ---------------- */
+// 화면에 들어올 때 할 일: 화면 모듈은 selectTab 을 감싸지 않고 이 표에 적는다(실린 차례대로 불린다 — 셸이 맨 마지막). fn(name)
 const tabHooks = [];
 window.hydTabs = { onShow(fn) { tabHooks.push(fn); } };
-/* 메뉴 표: index.html 의 주 메뉴 한 곳(button[data-menu][data-tabs])을 읽는다. 메뉴 하나에 화면이 하나 이상 딸리고, 화면이 둘 이상이면 본문 위 탭 줄로 오간다.
-   메뉴 줄의 고른 표시 · 탭 줄 · 위 막대의 위치 표시가 모두 이 표로 그려진다. 화면 이름(탭 이름 = 화면 제목)은 nav.<화면>, 메뉴 이름은 nav.menu.<메뉴>(ui.js).
-   화면은 selectTab('<화면>') · 주소 #/<화면> · [data-go-tab="<화면>"] 어느 길로 열어도 그 화면이 든 메뉴와 탭이 고른 상태가 된다. */
-const MENU = [...document.querySelectorAll('.rail nav button[data-menu]')].map(button => {
-  const noteKey = `nav.menu.${button.dataset.menu}.note`;
-  return { id: button.dataset.menu, name: UI.t('nav.menu.' + button.dataset.menu), tabs: button.dataset.tabs.split(/\s+/).filter(Boolean), button,
+/* 메뉴 표: index.html 의 메뉴 정의 한 곳(#menuList 의 button[data-menu][data-tabs][data-icon])을 읽는다. 메뉴 하나에 화면이 하나 이상 딸린다.
+   메뉴 줄(이 파일 renderMenu) · 위 막대의 위치(updateNavigation) · 화면 찾기(shell.js)가 모두 이 표로 그려진다. 화면 이름(= 화면 제목)은 nav.<화면>, 메뉴 이름은 nav.menu.<메뉴>(ui.js).
+   화면은 selectTab('<화면>') · 주소 #/<화면> · [data-go-tab="<화면>"] · 메뉴 줄 · 화면 찾기 어느 길로 열어도 그 화면이 든 메뉴가 펼쳐지고 그 화면이 고른 상태가 된다. */
+const MENU = [...document.querySelectorAll('#menuList > button[data-menu]')].map(def => {
+  const noteKey = `nav.menu.${def.dataset.menu}.note`;
+  return { id: def.dataset.menu, name: UI.t('nav.menu.' + def.dataset.menu), icon: def.dataset.icon, tabs: def.dataset.tabs.split(/\s+/).filter(Boolean),
     note: UI.t(noteKey) === noteKey ? '' : UI.t(noteKey) };
 });
 const SCREENS = MENU.flatMap(m => m.tabs);                    // 모든 화면(메뉴 표의 차례)
@@ -69,26 +69,36 @@ window.hydMenu = { list: MENU, screens: SCREENS, of: menuOf, name: tabName };
   const lost = views.filter(v => !SCREENS.includes(v)), ghost = SCREENS.filter(s => !views.includes(s));
   if (lost.length || ghost.length) throw new Error(`주 메뉴 표(index.html data-tabs)와 화면 구역이 다릅니다 — 메뉴에 없는 화면: ${lost.join(', ') || '없음'} · 화면이 없는 메뉴 항목: ${ghost.join(', ') || '없음'}`);
 }
-function renderSubTabs(name) {
-  const menu = menuOf(name), bar = $('#subTabs'), note = $('#menuNote');
-  MENU.forEach(m => {
-    const active = m === menu;
-    m.button.classList.toggle('active', active);
-    if (active) m.button.setAttribute('aria-current', 'page'); else m.button.removeAttribute('aria-current');
-  });
-  bar.hidden = menu.tabs.length < 2;
-  bar.setAttribute('aria-label', `${menu.name} 메뉴의 화면`);
-  bar.innerHTML = bar.hidden ? '' : menu.tabs.map(t => `<button type="button" role="tab" class="tab${t === name ? ' on' : ''}" data-tab="${esc(t)}" aria-selected="${t === name}">${esc(tabName(t))}</button>`).join('');
-  note.hidden = !menu.note; note.textContent = menu.note;
+/* 메뉴 줄(키트의 sidebar 마크업): 화면이 하나인 메뉴는 그 화면으로 가는 줄 하나, 둘 이상인 메뉴는 접기(details) — 펼치면 그 안의 화면이 들여쓰기로 보인다.
+   줄마다 주소(#/<화면>)를 가진 링크라 새 탭으로도 열린다. 「처리 건」 곁의 건수 점(#navTodo — 내 차례인 처리 건 수)은 refreshTodoCount 가 채우고, 비어 있으면 CSS 가 그리지 않는다.
+   이름 툴팁(data-tooltip)은 메뉴 줄을 접어 아이콘만 보일 때만 뜬다(portal-kit.css). */
+const miniRail = () => document.documentElement.dataset.rail === 'mini' && matchMedia('(min-width: 768px)').matches;
+function renderMenu() {
+  const tip = m => `data-tooltip="${esc(m.name)}" data-side="right"`;
+  $('#menuList').innerHTML = '<ul>' + MENU.map(m => m.tabs.length === 1
+    ? `<li><a href="#/${esc(m.tabs[0])}" data-menu="${esc(m.id)}" data-tab="${esc(m.tabs[0])}" ${tip(m)}>${UI.icon(m.icon)}<span>${esc(m.name)}</span>${m.id === 'instances' ? '<span class="nav-count num" id="navTodo"></span>' : ''}</a></li>`
+    : `<li><details><summary data-menu="${esc(m.id)}" ${tip(m)}>${UI.icon(m.icon)}<span>${esc(m.name)}</span></summary><ul>${
+      m.tabs.map(t => `<li><a href="#/${esc(t)}" data-tab="${esc(t)}"><span>${esc(tabName(t))}</span></a></li>`).join('')}</ul></details></li>`).join('') + '</ul>';
 }
+// 그 화면이 든 메뉴를 펼치고(다른 메뉴는 접고) 그 화면의 줄을 고른 상태로 둔다
+function markMenu(name) {
+  const menu = menuOf(name);
+  document.querySelectorAll('#menuList summary[data-menu]').forEach(s => {
+    const on = s.dataset.menu === menu.id;
+    if (on) s.dataset.active = 'true'; else delete s.dataset.active;
+    s.parentElement.open = on;
+  });
+  document.querySelectorAll('#sidebar a[data-tab]').forEach(a => { if (a.dataset.tab === name) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+}
+const lastTab = {};                                            // 메뉴 → 그 메뉴에서 마지막으로 본 화면(접은 메뉴 줄에서 아이콘을 누르면 그 화면으로 돌아간다)
 function selectTab(name) {
   if (!document.getElementById('view-' + name)) return;
   const changed = state.tab !== name;
   state.tab = name;
-  renderSubTabs(name);
-  const brand = document.getElementById('brandHome'); if (brand) brand.classList.toggle('active', name === 'main');
+  lastTab[menuOf(name).id] = name;
+  markMenu(name);
   document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + name));
-  if (changed) $('main').scrollTo(0, 0);
+  if (changed) window.scrollTo(0, 0);
   if (name === 'scenario') renderUnits();
   if (name === 'incidents') { renderScada(); renderIncList(); renderDetail(); }
   if (name === 'trends') renderTrends();
@@ -96,43 +106,55 @@ function selectTab(name) {
   tabHooks.forEach(fn => fn(name));
 }
 document.querySelectorAll('[data-term]').forEach(n => { const t = UI.t(n.dataset.term); if (t !== n.dataset.term) n.textContent = t; });
-// 메뉴 줄 단추는 그 메뉴의 첫 화면을 연다. 그 메뉴의 다른 화면은 탭 줄 단추(button[data-tab])로 연다
-MENU.forEach(m => {
-  // 「처리 건」 곁의 건수 점(내 차례인 처리 건 수)은 refreshSlow 가 채운다 — 비어 있으면 CSS 가 그리지 않는다
-  m.button.innerHTML = UI.icon(m.button.dataset.icon) + `<span>${esc(m.name)}</span>` + (m.id === 'instances' ? '<span class="nav-count num" id="navTodo"></span>' : '');
-  m.button.addEventListener('click', () => { selectTab(m.tabs[0]); $('#content').focus({ preventScroll: true }); });
-});
-$('#subTabs').addEventListener('click', e => { const b = e.target.closest('button[data-tab]'); if (b) selectTab(b.dataset.tab); });
-function setMenu(open) {
-  $('#navigation').classList.toggle('open', open);
-  $('#menuToggle').setAttribute('aria-expanded', String(open));
-  $('#menuToggle').setAttribute('aria-label', open ? '메뉴 닫기' : '메뉴 열기');
-  $('#navScrim').hidden = !open;
-  // Off-canvas items must not remain in the keyboard tab order.
-  $('#navigation').inert = matchMedia('(max-width:720px)').matches && !open;
-}
-function updateNavigation(name) {
-  const menu = menuOf(name);
-  // 위 막대의 위치: 「메뉴 / 화면」. 화면이 하나뿐인 메뉴는 이름이 같으므로 화면 이름만 보인다
-  const group = $('#pageGroup'); group.hidden = menu.tabs.length < 2; group.textContent = menu.name;
-  $('#pageLocation').textContent = tabName(name);
-  document.title = `${tabName(name)} · HYD Lab`;
-  setMenu(false);
-}
-$('#menuToggle').addEventListener('click', () => {
-  const open = $('#menuToggle').getAttribute('aria-expanded') !== 'true'; setMenu(open);
-  if (open) $('#navigation [aria-current="page"]')?.focus();
-});
-$('#navScrim').addEventListener('click', () => { setMenu(false); $('#menuToggle').focus(); });
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && $('#navigation').classList.contains('open')) { setMenu(false); $('#menuToggle').focus(); }
-  if (e.key === 'Tab' && matchMedia('(max-width:720px)').matches && $('#navigation').classList.contains('open')) {
-    const items = [...$('#navigation').querySelectorAll('button')];
-    if (e.shiftKey && document.activeElement === items[0]) { e.preventDefault(); items.at(-1).focus(); }
-    if (!e.shiftKey && document.activeElement === items.at(-1)) { e.preventDefault(); items[0].focus(); }
+renderMenu();
+UI.fillIcons();      // 틀(index.html)의 아이콘 자리([data-icon])를 채운다 — 메뉴 정의는 위에서 이미 목록으로 바뀌었다
+// 메뉴 줄의 링크(상표 포함): 그 화면을 연다. Ctrl · Shift · 가운데 단추로 누르면 브라우저가 새 탭 · 새 창으로 연다(주소가 #/<화면> 이다)
+$('#sidebar').addEventListener('click', e => {
+  const link = e.target.closest('a[data-tab]');
+  if (link) {
+    if (e.button || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    e.preventDefault(); selectTab(link.dataset.tab); $('#content').focus({ preventScroll: true });
+    return;
   }
+  const head = e.target.closest('summary[data-menu]');
+  if (!head) return;
+  // 접은 메뉴 줄(아이콘만)에서는 안의 화면 목록이 보이지 않는다 — 아이콘을 누르면 그 메뉴에서 마지막으로 본 화면(없으면 첫 화면)을 연다
+  if (miniRail()) { e.preventDefault(); const m = MENU.find(x => x.id === head.dataset.menu); selectTab(lastTab[m.id] || m.tabs[0]); return; }
+  // 메뉴 이름 줄을 누르면 그 메뉴가 펼쳐진다(브라우저의 접기 동작). 고른 메뉴만 펼친다 — 펼쳐져 있던 다른 메뉴는 접는다
+  document.querySelectorAll('#menuList details[open]').forEach(d => { if (d !== head.parentElement) d.open = false; });
 });
-matchMedia('(max-width:720px)').addEventListener('change', () => setMenu(false));
+/* 메뉴 줄 접기 · 펴기(위 막대 첫 단추): 넓은 폭에서는 아이콘만 남기고(html[data-rail="mini"] — 고른 값은 이 브라우저에 남긴다), 좁은 폭(768px 아래)에서는
+   키트가 메뉴 줄을 겹쳐 뜨는 서랍으로 바꾸므로 그 서랍을 열고 닫는다. 서랍은 화면을 고르거나 바깥을 누르거나 Esc 를 누르면 닫힌다 */
+const RAIL_KEY = 'hyd.rail';
+const wide = matchMedia('(min-width: 768px)');
+function setRail(mini) {
+  if (mini) document.documentElement.dataset.rail = 'mini'; else delete document.documentElement.dataset.rail;
+  $('#railToggle').setAttribute('aria-expanded', String(!mini));
+}
+{
+  let saved = '';
+  try { saved = localStorage.getItem(RAIL_KEY) || ''; } catch (e) { /* 저장소를 못 쓰는 브라우저 — 펼친 채로 시작한다 */ }
+  setRail(saved === 'mini');
+}
+$('#railToggle').addEventListener('click', () => {
+  const side = $('#sidebar');
+  if (!wide.matches) { side.toggle(); return; }
+  const mini = document.documentElement.dataset.rail !== 'mini';
+  setRail(mini);
+  try { localStorage.setItem(RAIL_KEY, mini ? 'mini' : 'full'); } catch (e) { /* 위와 같다 — 이번 화면에서만 접힌다 */ }
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !wide.matches && $('#sidebar').getAttribute('aria-hidden') === 'false') { $('#sidebar').close(); $('#railToggle').focus(); } });
+// 폭이 경계를 넘으면 메뉴 줄의 열림을 그 폭의 기본으로 되돌린다(넓으면 늘 보이고, 좁으면 닫힌 서랍)
+wide.addEventListener('change', () => { const side = $('#sidebar'); if (typeof side.open === 'function') { if (wide.matches) side.open(); else side.close(); } });
+function updateNavigation(name) {
+  const menu = menuOf(name), many = menu.tabs.length > 1;
+  // 위 막대의 위치: 「메뉴 › 화면」. 화면이 하나뿐인 메뉴는 이름이 같으므로 화면 이름만 보인다. 메뉴에 안내 문장이 있으면 그 옆에 한 줄
+  const group = $('#pageGroup'); group.hidden = !many; group.textContent = menu.name;
+  $('#pageSep').hidden = !many;
+  $('#pageLocation').textContent = tabName(name);
+  const note = $('#menuNote'); note.hidden = !menu.note; note.textContent = menu.note;
+  document.title = `${tabName(name)} · HYD`;
+}
 selectTab('main');
 
 /* ---------------- 시스템 구성: layer stack + health ---------------- */
@@ -197,10 +219,15 @@ async function pollHealth() {
     // F10 · A147: optional tools are not counted — off is their normal state, not a failure
     const all = LAYERS.flatMap(L => L.comps).filter(c => c.health && !c.optional);
     const down = all.filter(c => healthState[c.health] === 'down');
-    // 메뉴 줄 맨 아래 한 줄: 「서비스 14/14 정상」 또는 「서비스 11/14 — 3개 응답 없음」. 어느 서비스인지는 title 과 시스템 구성 화면(누르면 열린다)이 말한다
-    dots.innerHTML = `<i class="dot ${down.length ? 'down' : 'up'}"></i>${esc(UI.t('header.services'))} ${all.length - down.length}/${all.length}${down.length ? ` — ${down.length}개 ${esc(UI.t('header.noResponse'))}` : ' 정상'}`;
-    $('#railStatus').classList.toggle('down', down.length > 0);
-    $('#railStatus').title = (down.length ? `${UI.t('header.noResponse')}: ${down.map(c => c.name.split(' ')[0]).join(', ')}. ` : '') + '서비스 응답 확인입니다. 전체 파이프라인의 성공을 뜻하지 않습니다. 누르면 시스템 구성을 엽니다.';
+    // 메뉴 줄 맨 아래 한 줄: 「서비스 14/14」 또는 「서비스 11/14 · 3개 응답 없음」(뒤에 refreshFast 가 「· 20배속」을 붙인다). 점은 모두 응답하면 초록(살아 있는 점),
+    // 일부가 없으면 주황, 모두 없으면 빨강. 어느 서비스인지는 title 과 시스템 구성 화면(누르면 열린다)이 말한다. 접은 메뉴 줄에서는 점만 보이고 같은 글이 툴팁으로 나온다
+    const up = all.length - down.length, status = $('#railStatus'), dot = $('#healthDot');
+    dots.innerHTML = `${esc(UI.t('header.services'))} <b class="num">${up}/${all.length}</b>${down.length ? ` · ${down.length}개 ${esc(UI.t('header.noResponse'))}` : ''}`;
+    dot.dataset.tone = !down.length ? 'ok' : up ? 'warn' : 'danger';
+    dot.toggleAttribute('data-live', !down.length);
+    status.toggleAttribute('data-down', down.length > 0);
+    status.dataset.tooltip = dots.textContent;
+    status.title = (down.length ? `${UI.t('header.noResponse')}: ${down.map(c => c.name.split(' ')[0]).join(', ')}. ` : '') + '서비스 응답 확인입니다. 전체 파이프라인의 성공을 뜻하지 않습니다. 누르면 시스템 구성을 엽니다.';
   } finally { pollHealth.busy = false; }
 }
 
@@ -427,7 +454,7 @@ function renderGwLog(entries, failed = '') {
 }
 
 
-/* ---------------- 설비 회로(유압 실습장): 회로 그림 카드 + 설비 고르기. 조치 후보 · 승인은 처리 건 화면에만 있다 ----------------
+/* ---------------- 설비 회로(유압 설비): 회로 그림 카드 + 설비 고르기. 조치 후보 · 승인은 처리 건 화면에만 있다 ----------------
    회로 그림은 홈 그림의 설비 부분과 같은 결이다(디자인 기준 6-4): 어두운 캔버스, 윤곽은 밝은 선 2px, 배관은 주황 5px(운전 중이면 흐른다),
    감지기는 빨간 원 안에 이름(TS1 · PS1), 값은 그 옆의 노란 숫자. 유온이 감지기 경보 기준을 넘으면 값이 빨강이 되고 감지기 뒤에 빛이 켜진다. 모양은 canvas.css(.hc-*) */
 function unitSvg(asset) {
@@ -675,13 +702,14 @@ async function refreshFast() {
   } finally { refreshFast.busy = false; }
 }
 // 메뉴 「처리 건」 곁의 건수 점: 내 차례인 처리 건 수 — 사람 단계가 열렸거나 AI 에이전트가 질문한 건(처리 건 화면의 「내 할 일」 탭과 같은 셈).
-// 0 이면 그리지 않는다. 못 읽었으면 지난 수를 지우고 까닭을 메뉴 단추의 title 에 둔다(0 건으로 읽히지 않게 「?」를 보인다)
+// 0 이면 그리지 않는다. 못 읽었으면 지난 수를 지우고 까닭을 메뉴 줄의 title 에 둔다(0 건으로 읽히지 않게 「?」를 보인다)
 async function refreshTodoCount() {
-  const dot = $('#navTodo'), button = dot.closest('button');
+  const dot = $('#navTodo'), button = dot.closest('a');
   try {
     const rows = requireList(await getJ(API.process + '/api/todolist?status=IN_PROGRESS'), '담당 작업 목록');
     const n = new Set(rows.filter(t => UI.doerOf(t) === 'human' || t.draft_status === 'HUMAN_ASKED').map(t => t.proc_inst_id)).size;
     dot.textContent = n ? (n > 99 ? '99+' : String(n)) : ''; dot.classList.remove('unknown');
+    if (n) dot.setAttribute('aria-label', `내가 할 일 ${n}건`); else dot.removeAttribute('aria-label');
     button.title = n ? `내가 할 일 ${n}건` : '';
   } catch (e) { dot.textContent = '?'; dot.classList.add('unknown'); button.title = '내가 할 일 수를 읽지 못했습니다: ' + e.message; }
 }

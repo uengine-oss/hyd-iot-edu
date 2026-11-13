@@ -5,43 +5,43 @@
    이름은 모두 rd- 로 시작한다(다른 화면의 규칙과 겹치지 않게). */
 
 /* ---------------- 화면 머리 아래 한 문장 · 화면 맨 아래 한 줄 ---------------- */
-.rd-foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3); margin-top: var(--s8); padding-top: var(--s4); border-top: 1px solid var(--rule); font-size: 13px; line-height: 20px; color: var(--ink-3); }
+.rd-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 13px; line-height: 20px; color: var(--muted-foreground); }
 
 /* ---------------- 목록 + 상세(기준 5-1): 왼쪽 목록 320px · 오른쪽 상세 ---------------- */
-.rd-split { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: var(--s6); align-items: start; }
+.rd-split { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 24px; align-items: start; }
 .rd-split > * { min-width: 0; }
-.rd-split > .rd-side { position: sticky; top: var(--s4); display: flex; flex-direction: column; gap: var(--s3); }
+.rd-split > .rd-side { position: sticky; top: 16px; display: flex; flex-direction: column; gap: 12px; }
 .rd-side .list { max-height: calc(100vh - 240px); }
 
 /* 상세 머리: 이름 + 상태 칩 하나 · 한 줄 요약 · 오른쪽에 동작 */
-.rd-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s3) var(--s4); flex-wrap: wrap; }
-.rd-head .rd-title { display: flex; align-items: center; gap: var(--s2); flex-wrap: wrap; }
+.rd-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px 16px; flex-wrap: wrap; }
+.rd-head .rd-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .rd-head h2, .rd-head h3 { margin: 0; font-size: 16px; line-height: 24px; font-weight: 600; }
-.rd-sub { margin: var(--s1) 0 0; font-size: 13px; line-height: 20px; color: var(--ink-3); max-width: 72ch; }
-.rd-actions { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; }
+.rd-sub { margin: 4px 0 0; font-size: 13px; line-height: 20px; color: var(--muted-foreground); max-width: 72ch; }
+.rd-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 
 /* 묶음: 테두리 없이 여백 24px 과 작은 이름표로 가른다(기준 원칙 4) */
-.rd-group { margin-top: var(--s6); }
+.rd-group { margin-top: 24px; }
 .rd-group:first-child { margin-top: 0; }
-.rd-label { margin: 0 0 var(--s2); font-size: 12px; line-height: 16px; font-weight: 600; color: var(--ink-3); letter-spacing: 0; }
-.rd-sec { margin: 0 0 var(--s3); font-size: 16px; line-height: 24px; font-weight: 600; }
-.rd-sec-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); flex-wrap: wrap; margin: 0 0 var(--s3); }
+.rd-label { margin: 0 0 8px; font-size: 12px; line-height: 16px; font-weight: 600; color: var(--muted-foreground); letter-spacing: 0; }
+.rd-sec { margin: 0 0 12px; font-size: 16px; line-height: 24px; font-weight: 600; }
+.rd-sec-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 0 0 12px; }
 .rd-sec-head .rd-sec { margin: 0; }
-.rd-note { margin: 0 0 var(--s3); font-size: 13px; line-height: 20px; color: var(--ink-3); max-width: 72ch; }
-.rd-p { margin: 0 0 var(--s3); max-width: 72ch; color: var(--ink-2); }
-.rd-rule { border: 0; border-top: 1px solid var(--rule); margin: var(--s4) 0; }
-.rd-after { margin-top: var(--s3); }
+.rd-note { margin: 0 0 12px; font-size: 13px; line-height: 20px; color: var(--muted-foreground); max-width: 72ch; }
+.rd-p { margin: 0 0 12px; max-width: 72ch; color: var(--ink-2); }
+.rd-rule { border: 0; border-top: 1px solid var(--border); margin: 16px 0; }
+.rd-after { margin-top: 12px; }
 
 /* 결론 문장(기준 5-3 첫째 무게): 이름표 12px + 문장 16px · 600 */
-.rd-conclusion { margin: 0 0 var(--s3); font-size: 16px; line-height: 24px; font-weight: 600; max-width: 72ch; }
-.rd-conclusion.rd-state { margin-bottom: var(--s2); }      /* 상태 점이 붙은 결론 */
+.rd-conclusion { margin: 0 0 12px; font-size: 16px; line-height: 24px; font-weight: 600; max-width: 72ch; }
+.rd-conclusion.rd-state { margin-bottom: 8px; }      /* 상태 점이 붙은 결론 */
 
 /* 한 줄씩 놓는 글 목록(맡은 단계, 붙은 에이전트, 쓰는 곳) */
 .rd-lines { list-style: none; margin: 0; padding: 0; }
-.rd-lines > li { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); min-height: 32px; padding: var(--s1) 0; border-bottom: 1px solid var(--rule); }
+.rd-lines > li { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 32px; padding: 4px 0; border-bottom: 1px solid var(--border); }
 .rd-lines > li:last-child { border-bottom: 0; }
-.rd-lines > li > small { font-size: 13px; color: var(--ink-3); flex: none; }
-.rd-inline { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); }
+.rd-lines > li > small { font-size: 13px; color: var(--muted-foreground); flex: none; }
+.rd-inline { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .rd-inline > input, .rd-inline > select { min-width: 200px; }
 
 /* 표(기준 4절 .tbl): 머리 바탕 없음 · 줄 아래 선만 · 숫자 열 오른쪽. 전역에 .tbl 이 생기면 이 규칙은 지운다 */
@@ -54,28 +54,28 @@ table.tbl tr[data-row-open] { cursor: pointer; }
 
 /* 폼(기준 5-6): 한 열 · 폭 720px 까지 · 단추 줄은 맨 아래 왼쪽에 주 단추 먼저 */
 .rd-form { max-width: 720px; }
-.rd-form-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); margin-top: var(--s6); }
+.rd-form-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 24px; }
 .rd-form-actions .rd-end { margin-left: auto; }
-.rd-checks { display: flex; flex-direction: column; gap: var(--s2); }
+.rd-checks { display: flex; flex-direction: column; gap: 8px; }
 
 /* ---------------- 입력 → 결과(기준 5-8): 왼쪽 조건 360px · 오른쪽 결과 ---------------- */
-.rd-io { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: var(--s6); align-items: start; }
+.rd-io { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 24px; align-items: start; }
 .rd-io > * { min-width: 0; }
-.rd-io > .rd-in { position: sticky; top: var(--s4); display: flex; flex-direction: column; gap: var(--s4); }
+.rd-io > .rd-in { position: sticky; top: 16px; display: flex; flex-direction: column; gap: 16px; }
 .rd-in .field { margin: 0; }
-.rd-in .rd-in-note { margin: 0; font-size: 13px; line-height: 20px; color: var(--ink-3); }
-.rd-in .rd-in-actions { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; }
+.rd-in .rd-in-note { margin: 0; font-size: 13px; line-height: 20px; color: var(--muted-foreground); }
+.rd-in .rd-in-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .rd-out > .rd-group:first-child { margin-top: 0; }
 
 /* ---------------- 단계 줄(기준 5-5): 번호 점 셋을 선으로 잇는다 ---------------- */
-.rd-steps { display: flex; align-items: center; gap: var(--s3); list-style: none; margin: 0 0 var(--s4); padding: 0; font-size: 14px; line-height: 22px; color: var(--ink-3); }
-.rd-steps li { display: flex; align-items: center; gap: var(--s2); white-space: nowrap; }
-.rd-steps li + li::before { content: ""; width: 48px; height: 1px; background: var(--rule-strong); margin-right: var(--s1); }
-.rd-steps .n { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--rule-strong); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; flex: none; }
-.rd-steps li.on { color: var(--ink); font-weight: 600; }
-.rd-steps li.on .n { background: var(--accent); border-color: var(--accent); color: var(--panel); }
+.rd-steps { display: flex; align-items: center; gap: 12px; list-style: none; margin: 0 0 16px; padding: 0; font-size: 14px; line-height: 22px; color: var(--muted-foreground); }
+.rd-steps li { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.rd-steps li + li::before { content: ""; width: 48px; height: 1px; background: var(--input); margin-right: 4px; }
+.rd-steps .n { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--input); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; flex: none; }
+.rd-steps li.on { color: var(--foreground); font-weight: 600; }
+.rd-steps li.on .n { background: var(--brand); border-color: var(--brand); color: var(--card); }
 .rd-steps li.done { color: var(--ink-2); }
-.rd-steps li.done .n { background: var(--chip-success-bg); border-color: var(--chip-success-bg); color: var(--chip-success-fg); }
+.rd-steps li.done .n { background: var(--ok-soft); border-color: var(--ok-soft); color: var(--ok-ink); }
 
 /* ---------------- 좁은 화면: 두 칸을 한 칸으로 쌓는다(기준 3절) ---------------- */
 @media (max-width: 1100px) {
@@ -91,65 +91,65 @@ table.tbl tr[data-row-open] { cursor: pointer; }
 
 /* ---------------- 도구 연결: 도구 한 줄 아래에 열리는 설명 · 입력 형식, 호출 기록의 거르기, 맨 아래 「고급」 ---------------- */
 [data-mcp-why]:empty, [data-mcp-missing]:empty { display: none; }
-.rd-tool-more { margin-top: var(--s3); padding-top: var(--s3); border-top: 1px solid var(--rule); }
-.rd-tool-more .rd-label { margin-top: var(--s3); }
+.rd-tool-more { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+.rd-tool-more .rd-label { margin-top: 12px; }
 .rd-tool-more .rd-label:first-child { margin-top: 0; }
-.rd-call-filter { margin: 0 0 var(--s3); }
+.rd-call-filter { margin: 0 0 12px; }
 .rd-call-filter .rd-note { margin: 0; }
-.rd-advanced { margin-top: var(--s8); }
-.rd-advanced .rd-foot { margin-top: var(--s6); }
+.rd-advanced { margin-top: 32px; }
+.rd-advanced .rd-foot { margin-top: 24px; }
 .mcp-calls li > .link-btn { font-size: 13px; }
 .mcp-call-head .muted { margin-left: auto; font-size: 13px; }
 
 /* ---------------- 데이터 원천: 지금 상태 줄 · 표 고르기 ---------------- */
-.rd-status { list-style: none; margin: 0 0 var(--s6); padding: 0; }
-.rd-status .rd-state { margin: 0 0 var(--s1); max-width: none; }
+.rd-status { list-style: none; margin: 0 0 24px; padding: 0; }
+.rd-status .rd-state { margin: 0 0 4px; max-width: none; }
 .rd-status b { font-weight: 600; }
-.rd-picks { display: flex; flex-wrap: wrap; gap: var(--s1); margin: var(--s3) 0; }
-.rd-source + .rd-source { margin-top: var(--s8); padding-top: var(--s6); border-top: 1px solid var(--rule); }
+.rd-picks { display: flex; flex-wrap: wrap; gap: 4px; margin: 12px 0; }
+.rd-source + .rd-source { margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border); }
 
 /* ---------------- 시험 비교: A · B 나란히 · 호출 줄의 「A에만」 표시 · 지난 시험 ---------------- */
-.cmp-side { display: flex; flex-direction: column; gap: var(--s3); padding: var(--s4) var(--s6); }
+.cmp-side { display: flex; flex-direction: column; gap: 12px; padding: 16px 24px; }
 .rd-mark { margin-left: auto; font-size: 12px; line-height: 16px; font-weight: 600; color: var(--ink-2); }
-.cmp-args { margin: var(--s1) 0 0; font-size: 13px; overflow-wrap: anywhere; }
-.rd-history { margin-top: var(--s8); padding-top: var(--s6); border-top: 1px solid var(--rule); }
-table.tbl tr.cmp-changed td { background: var(--accent-bg, var(--surface-soft)); }
+.cmp-args { margin: 4px 0 0; font-size: 13px; overflow-wrap: anywhere; }
+.rd-history { margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border); }
+table.tbl tr.cmp-changed td { background: var(--accent-bg, var(--muted)); }
 
 /* ---------------- 판단 채점: 항목별 결과 · 검사 네 줄 ---------------- */
-.rd-item { padding-top: var(--s4); border-top: 1px solid var(--rule); }
-.rd-item .rd-head { margin-bottom: var(--s2); }
+.rd-item { padding-top: 16px; border-top: 1px solid var(--border); }
+.rd-item .rd-head { margin-bottom: 8px; }
 .rd-score { font-size: 16px; line-height: 24px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.rd-checklist { list-style: none; margin: 0 0 var(--s2); padding: 0; }
-.rd-checklist .rd-state { margin: 0 0 var(--s1); max-width: none; }
+.rd-checklist { list-style: none; margin: 0 0 8px; padding: 0; }
+.rd-checklist .rd-state { margin: 0 0 4px; max-width: none; }
 [data-view][hidden] { display: none; }
 [data-r="knowledge"]:empty { display: none; }
 
 /* ---------------- 성과 지표: 기간 고르기 · 지표 표 · 줄 아래에 열리는 계산 근거 ---------------- */
 .rd-kpi-table td:last-child { width: 1%; white-space: nowrap; }
 .rd-kpi-table .rd-actions { flex-wrap: nowrap; justify-content: flex-end; }
-table.tbl tr.rd-row-more > td { background: var(--surface-soft); padding: var(--s3) var(--s4); }
+table.tbl tr.rd-row-more > td { background: var(--muted); padding: 12px 16px; }
 .rd-num-input { width: 8em; }
-.rd-persp + .rd-persp { margin-top: var(--s8); }
+.rd-persp + .rd-persp { margin-top: 32px; }
 .kpi-insts > li { align-items: flex-start; }
 
 /* ---------------- 질문하기: 질문 칸 · 답 카드 ---------------- */
-.ask-compose { margin-bottom: var(--s6); }
-.ask-a.card { display: flex; flex-direction: column; gap: var(--s3); padding: var(--s4) var(--s6); }
-.ask-answer .rd-label { margin-bottom: var(--s1); }
-.ask-answer > p { margin: 0 0 var(--s2); max-width: 72ch; }
-.ask-side .rd-foot { margin-top: var(--s4); }
+.ask-compose { margin-bottom: 24px; }
+.ask-a.card { display: flex; flex-direction: column; gap: 12px; padding: 16px 24px; }
+.ask-answer .rd-label { margin-bottom: 4px; }
+.ask-answer > p { margin: 0 0 8px; max-width: 72ch; }
+.ask-side .rd-foot { margin-top: 16px; }
 
 /* 실행 중인 AI 에이전트(처리 건 화면의 접기 안): 단계 한 줄이 단추다 */
 .agent-tasks button.item { width: 100%; text-align: left; font: inherit; cursor: pointer; }
-.agents-service { margin-bottom: var(--s3); }
+.agents-service { margin-bottom: 12px; }
 
 /* ---------------- 문서 등록 · 조치 방법 ---------------- */
 .rd-wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
-#manualSteps { padding-bottom: var(--s4); margin-bottom: var(--s4); border-bottom: 1px solid var(--rule); }
+#manualSteps { padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
 .golden-item h4 { margin: 0; font-size: 14px; line-height: 22px; font-weight: 600; }
 
 /* ---------------- 관리: 출발본 세 가지 일 · 접수 목록 ---------------- */
-.rd-part + .rd-part { padding-top: var(--s6); border-top: 1px solid var(--rule); }
+.rd-part + .rd-part { padding-top: 24px; border-top: 1px solid var(--border); }
 .rd-part .form-msg { font-size: 13px; }
 #sourceEventList button.item { width: 100%; text-align: left; font: inherit; cursor: pointer; }
-#sourceEventDetail .rd-label { margin-top: var(--s4); }
+#sourceEventDetail .rd-label { margin-top: 16px; }

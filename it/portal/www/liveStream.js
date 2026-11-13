@@ -270,6 +270,8 @@
    - waitHtml(글, {since, hint, late})  한 번에 결과만 오는 일: 「글 · 걸린 시간」, late 초(기본 3)가 지나면 「아직 하는 중입니다 — hint」 한 줄.
    - busy(단추, 글, since)              누른 단추가 「글 · 걸린 시간」으로 바뀐다. 돌려준 함수를 부르면 원래대로. 다시 그린 단추에는 since 를 넘겨 시간을 잇는다.
    - steps(자리, [{key, label}])        여러 단계인 일: 단계 목록이 하나씩 채워진다(start · done · fail · skip).
+   - track({글, hint})                  서버가 단계를 적어 주는 일(판단 채점 · 시험 비교 · 출발본 · 도구 서버 연결 검사): 요청에 request_id 를 싣고,
+                                        도는 동안 서버의 진행 기록(GET /api/progress/{id})을 1초마다 읽어 단계 목록을 채운다. 요청이 끝나면 stop().
    - follow(자리, 단계들)               다른 화면에서 이어지는 일(결함 주입 → 경보 → 처리 건): 다음 사실을 기다려 한 줄씩 그린다.
    - agentWork(자리, 설정)              AI 에이전트가 처리 건의 한 단계로 하는 일(문서 추출 · 질문 확인 · 뜻 후보): 도구 호출 · 에이전트의 말이
                                         생기는 대로 흘러나온다. 연결이 끊긴 동안만 묻기(폴링)로 바꾸고 그 사실을 적는다. 가려지면 멈추고 돌아오면 이어 받는다.
@@ -321,6 +323,8 @@
     function set(key, state, more = {}) {
       const s = find(key); if (!s) throw new Error(`단계 목록에 없는 단계입니다: ${key}`);
       if (state === 'run') { s.t0 = iso(); s.t1 = null; } else if (state !== 'wait') { s.t0 = s.t0 || iso(); s.t1 = iso(); }
+      if (more.t0) s.t0 = more.t0;                                   // 서버가 적은 시각(track) — 화면이 읽은 때가 아니라 일이 시작 · 끝난 때
+      if (more.t1 && state !== 'run') s.t1 = more.t1;
       Object.assign(s, { state }, more.label != null ? { label: more.label } : {}, more.note != null ? { note: more.note } : {}, more.hint != null ? { hint: more.hint } : {});
       if (more.link) { s.link = more.link; C.go.set(key, more.link); }
       draw();
@@ -330,6 +334,57 @@
       note: (k, note) => { const s = find(k); if (s && s.note !== note) { s.note = note; draw(); } }, state: k => (find(k) || {}).state, since: k => (find(k) || {}).t0 });
     draw();
     return C;
+  }
+
+  /* ---------------------------------------------------------------- 서버가 적는 진행 기록 따라 읽기
+     서버는 일의 실제 경계에서만 단계의 시작 · 끝 · 실패를 적는다(procsvc/progress.py). 화면은 그 기록을 읽어 그대로 그린다 — 진행률을 지어내지 않는다.
+       const T = hydLive.track({ text: '기준으로 되돌리는 중', hint });   T.mount(자리);
+       try { await postJ(url, { …, request_id: T.id }); } finally { T.stop(); }
+     - 요청이 서버에 닿기 전(기록 없음)에는 「글 · 걸린 시간」만 보이고, 기록이 생기면 그 아래에 단계 목록이 채워진다. 일하다 알게 된 단계는 뒤에 붙는다.
+     - 화면이 다시 그려져 자리가 바뀌면 새 자리에 다시 mount 한다(같은 목록이 옮겨 간다). 자리가 화면에 없거나 화면이 가려진 동안은 읽지 않는다.
+     - 기록을 읽지 못하면 그 사실을 한 줄로 적고 다시 읽는다 — 본 요청은 그대로 돌고, 결과는 부른 화면이 그대로 보인다.
+     - 읽기는 stop() 이나 서버 기록의 끝(done · failed)에서 멈춘다. 부른 화면은 요청이 끝나는 자리(finally)에서 stop() 을 부른다. */
+  function track(o = {}) {
+    const T = { id: UI.uuid(), since: o.since || iso(), stopped: false, ended: false, reading: false, timer: 0, keys: null, list: null, seen: {}, reads: 0 };
+    const root = document.createElement('div'); root.className = 'lv-track';
+    root.innerHTML = waitHtml(o.text || '', { since: T.since, hint: o.hint }) + '<div data-lv-track-steps></div><p class="lv-work-conn" data-lv-track-err role="status" hidden></p>';
+    const box = root.querySelector('[data-lv-track-steps]'), err = root.querySelector('[data-lv-track-err]');
+    function apply(rec) {
+      const keys = rec.steps.map(s => s.key).join('\n');
+      if (keys !== T.keys) {                                         // 단계가 생겼거나 늘었다 — 목록을 다시 세우고 지금까지의 상태를 다시 적는다
+        T.keys = keys; T.seen = {};
+        const inner = document.createElement('div'); box.replaceChildren(inner);
+        T.list = rec.steps.length ? steps(inner, rec.steps.map(s => ({ key: s.key, label: s.label })), { label: o.label || '진행 단계' }) : null;
+      }
+      rec.steps.forEach(s => {
+        const sig = [s.state, s.label, s.note, s.started_at, s.ended_at].join('|');
+        if (T.seen[s.key] === sig) return;
+        T.seen[s.key] = sig;
+        const more = { label: s.label, note: s.note || '', t0: s.started_at, t1: s.ended_at };
+        if (s.state === 'run') T.list.start(s.key, more); else if (s.state === 'ok') T.list.done(s.key, more); else if (s.state === 'fail') T.list.fail(s.key, more);
+      });
+      if (rec.state === 'done' || rec.state === 'failed') { T.ended = true; clearInterval(T.timer); T.timer = 0; }
+    }
+    async function read() {
+      if (T.stopped || T.ended || T.reading || !root.isConnected || document.visibilityState === 'hidden') return;
+      T.reading = true;
+      try {
+        const rec = await getJ(API.process + '/api/progress/' + encodeURIComponent(T.id));
+        T.reads += 1;
+        if (!T.stopped) apply(rec);
+        err.hidden = true; err.textContent = '';
+      } catch (e) {
+        err.hidden = false; err.textContent = `진행 상황을 읽지 못했습니다(${e.message}). 요청은 그대로 진행 중이고, 끝나면 결과가 보입니다.`;
+      } finally { T.reading = false; }
+    }
+    T.mount = host => {
+      if (!host) return T;
+      host.replaceChildren(root);
+      if (!T.timer && !T.stopped && !T.ended) { T.timer = setInterval(read, o.every_ms || 1000); read(); }
+      return T;
+    };
+    T.stop = () => { T.stopped = true; clearInterval(T.timer); T.timer = 0; };
+    return T;
   }
 
   /* ---------------------------------------------------------------- 이어지는 일 따라가기
@@ -482,5 +537,5 @@
   document.addEventListener('visibilitychange', () => WORKS.forEach(W => W.wake()));
   if (window.hydTabs) hydTabs.onShow(() => WORKS.forEach(W => W.wake()));
 
-  window.hydLive = { waitHtml, busy, steps, follow, agentWork, timeHtml, WORKS };
+  window.hydLive = { waitHtml, busy, steps, track, follow, agentWork, timeHtml, WORKS };
 })();

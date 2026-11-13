@@ -1,5 +1,5 @@
 /* 수업 경계 — 정본은 서버다(GET /api/course-access = it/process/procsvc/course_policy.py 의 Policy.view()). 화면은 그 표를 읽기만 한다.
-   ① 상단 한 줄: 지금 단계(수업 / PBL, PBL 기한이 지났으면 그 사실).
+   ① 메뉴 줄 맨 아래 한 줄(#courseStatus): 지금 단계(수업 / PBL, PBL 기한이 지났으면 그 사실).
    ② 막힌 행동: 행동 키를 단 요소(data-course-action="tool_servers.register" 등)만 끄고 서버가 준 까닭을 보인다. 메뉴는 잠그지 않는다.
       화면 모듈은 그릴 때 attrs(키)로 속성을 달고, 표가 늦게 오거나 바뀌면 apply()가 그 요소들만 다시 맞춘다(문서 전체 관찰자 없음).
    ③ 값마다 갈리는 판정: 배정할 수 있는 정의 · 시작할 수 있는 정의 · 가져올 수 있는 흐름 · 수업 모델 · 제공 문서만 받는지. 막힌 까닭은
@@ -49,7 +49,7 @@
       const line = next && next.hasAttribute('data-course-why') ? next : null;
       if (why) {
         node.disabled = true; node.dataset.courseOff = '1'; node.title = why;
-        const hint = line || node.insertAdjacentElement('afterend', Object.assign(document.createElement('span'), { className: 'field-hint' }));
+        const hint = line || node.insertAdjacentElement('afterend', Object.assign(document.createElement('span'), { className: 'muted' }));
         hint.setAttribute('data-course-why', ''); hint.textContent = why;
       } else {
         if (node.dataset.courseOff) { node.disabled = false; delete node.dataset.courseOff; node.removeAttribute('title'); }
@@ -63,8 +63,8 @@
     if (!box) return;
     const a = C.access;
     if (!a) {
-      // 상단 줄은 좁다 — 보이는 글은 짧게, 서버 사유는 title 로
-      box.innerHTML = C.error ? `${UI.chipText('수업 단계 정보 읽기 실패', 'danger')}<button type="button" class="btn small" data-course-retry>다시 시도</button>` : '';
+      // 메뉴 줄 아래는 좁다 — 보이는 글은 짧게, 서버 사유는 title 로. 색 면을 두지 않고 글자색으로만 말한다(portal-kit.css .course-status)
+      box.innerHTML = C.error ? `<span data-tone="danger">수업 단계 정보 읽기 실패</span> <button type="button" class="btn" data-variant="link" data-size="sm" data-course-retry>다시 시도</button>` : '';
       box.title = C.error ? `수업 단계 정보를 읽지 못했습니다: ${C.error}${C.timer ? ' — 잠시 뒤 다시 읽습니다' : ''}` : '';
       box.querySelector('[data-course-retry]')?.addEventListener('click', () => { C.tries = 0; refresh(); });
       return;
@@ -72,9 +72,9 @@
     const until = a.expires ? UI.dateTime(a.expires) : '';
     const label = a.phase === 'pbl' ? `지금 단계: ${a.label}${until ? ` (${until}까지)` : ''}`
       : a.expired ? `지금 단계: ${a.label} (PBL 기한 지남)` : `지금 단계: ${a.label}`;
-    const tone = a.phase === 'pbl' ? 'accent' : a.expired ? 'warning' : 'neutral';
+    const tone = a.phase === 'pbl' ? 'brand' : a.expired ? 'warn' : '';
     const closed = Object.values(a.actions || {}).filter(x => x && x.allowed === false).map(x => x.reason);
-    box.innerHTML = UI.chipText(label, tone);
+    box.innerHTML = `<span${tone ? ` data-tone="${tone}"` : ''}>${esc(label)}</span>`;
     box.title = [a.note, a.expired && until ? `PBL 기한(${until})이 지나 수업 단계로 돌아왔습니다.` : '', ...closed].filter(Boolean).join('\n');
   }
 

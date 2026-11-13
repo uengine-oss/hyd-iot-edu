@@ -2,92 +2,92 @@
    토큰만 쓴다(tokens.css). 색은 상태에만: 지금 = 파랑, 끝남 = 초록, 주의 = 노랑, 실패 = 빨강. 글자는 12 · 13 · 14 · 16px, 굵기 400 · 600. */
 
 /* 걸린 시간: 폭이 같은 숫자로 — 올라가도 옆 글이 흔들리지 않는다 */
-.lv-time { color: var(--ink-3); font-size: var(--fs-sub); line-height: var(--lh-sub); font-weight: 400; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lv-time { color: var(--muted-foreground); font-size: 13px; line-height: 20px; font-weight: 400; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 /* 한 번에 결과만 오는 일: 「글 · 걸린 시간」, 3초 뒤 「아직 하는 중입니다 — 무엇을 기다리는지」 */
-.lv-wait { display: grid; gap: var(--s1); padding: var(--s2) 0; font-size: var(--fs-body); line-height: var(--lh-body); color: var(--ink-2); }
-.lv-wait-line { display: flex; align-items: center; gap: var(--s2); flex-wrap: wrap; }
-.lv-wait-line b { font-weight: 600; color: var(--ink); }
-.lv-late { display: block; color: var(--ink-3); font-size: var(--fs-sub); line-height: var(--lh-sub); font-weight: 400; }
+.lv-wait { display: grid; gap: 4px; padding: 8px 0; font-size: 14px; line-height: 22px; color: var(--ink-2); }
+.lv-wait-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.lv-wait-line b { font-weight: 600; color: var(--foreground); }
+.lv-late { display: block; color: var(--muted-foreground); font-size: 13px; line-height: 20px; font-weight: 400; }
 .lv-late[hidden] { display: none; }
 
 /* 누른 단추가 「…하는 중 · 걸린 시간」으로 */
 .btn.lv-busy { display: inline-flex; align-items: center; gap: 6px; opacity: 1; cursor: progress; }
 .btn.lv-busy .lv-time { font-size: inherit; line-height: inherit; color: inherit; opacity: .7; }
 .btn.lv-busy .tr-spin { vertical-align: 0; }
-.btn.primary.lv-busy .tr-spin { border-color: rgb(255 255 255 / .35); border-top-color: var(--primary-ink); }
+.btn.primary.lv-busy .tr-spin { border-color: rgb(255 255 255 / .35); border-top-color: var(--primary-foreground); }
 
 /* 단계 목록: 하나씩 채워진다 */
 .lv-steps { list-style: none; margin: 0; padding: 0; display: grid; }
-.lv-step { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: var(--s3); align-items: start; padding: var(--s2) 0; font-size: var(--fs-body); line-height: var(--lh-body); color: var(--ink-3); position: relative; }
-.lv-step + .lv-step::before { content: ""; position: absolute; left: 11px; top: -8px; height: 16px; width: 1px; background: var(--rule-strong); }
-.lv-mark { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--rule-strong); background: var(--panel); font-size: var(--fs-cap); font-weight: 600; font-variant-numeric: tabular-nums; }
+.lv-step { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 8px 0; font-size: 14px; line-height: 22px; color: var(--muted-foreground); position: relative; }
+.lv-step + .lv-step::before { content: ""; position: absolute; left: 11px; top: -8px; height: 16px; width: 1px; background: var(--input); }
+.lv-mark { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--input); background: var(--card); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .lv-mark i { font-style: normal; }
 .lv-mark .tr-ic { width: 14px; height: 14px; }
-.lv-mark .tr-spin { vertical-align: 0; border-color: var(--accent-rule); border-top-color: var(--accent); }
+.lv-mark .tr-spin { vertical-align: 0; border-color: var(--brand-line); border-top-color: var(--brand); }
 .lv-step-main { display: grid; gap: 2px; min-width: 0; }
 .lv-step-main b { font-weight: 400; overflow-wrap: anywhere; }
 .lv-step-main .link-btn { justify-self: start; }
-.lv-note { color: var(--ink-3); font-size: var(--fs-sub); line-height: var(--lh-sub); overflow-wrap: anywhere; }
-.lv-step.run { color: var(--ink); }
+.lv-note { color: var(--muted-foreground); font-size: 13px; line-height: 20px; overflow-wrap: anywhere; }
+.lv-step.run { color: var(--foreground); }
 .lv-step.run .lv-step-main b { font-weight: 600; }
-.lv-step.run .lv-mark { border-color: var(--accent); }
+.lv-step.run .lv-mark { border-color: var(--brand); }
 .lv-step.ok { color: var(--ink-2); }
-.lv-step.ok .lv-mark { background: var(--chip-success-bg); border-color: var(--chip-success-bg); color: var(--chip-success-fg); }
-.lv-step.fail { color: var(--ink); }
-.lv-step.fail .lv-mark { background: var(--chip-danger-bg); border-color: var(--chip-danger-bg); color: var(--chip-danger-fg); }
-.lv-step.fail .lv-note { color: var(--alarm); }
-.lv-step.skip .lv-mark { background: var(--surface-soft); border-color: var(--surface-soft); color: var(--ink-3); }
+.lv-step.ok .lv-mark { background: var(--ok-soft); border-color: var(--ok-soft); color: var(--ok-ink); }
+.lv-step.fail { color: var(--foreground); }
+.lv-step.fail .lv-mark { background: var(--danger-soft); border-color: var(--danger-soft); color: var(--danger-ink); }
+.lv-step.fail .lv-note { color: var(--danger-ink); }
+.lv-step.skip .lv-mark { background: var(--muted); border-color: var(--muted); color: var(--muted-foreground); }
 
 /* AI 에이전트가 하는 일: 머리(지금 무엇 · 걸린 시간 · 연결 상태) → 작업 행마다 흘러나오는 기록 */
-.lv-work { display: grid; gap: var(--s3); }
-.lv-work-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s4); flex-wrap: wrap; }
-.lv-now { display: inline-flex; align-items: center; gap: var(--s2); flex-wrap: wrap; font-size: var(--fs-body); line-height: var(--lh-body); color: var(--ink); min-width: 0; }
+.lv-work { display: grid; gap: 12px; }
+.lv-work-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.lv-now { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 14px; line-height: 22px; color: var(--foreground); min-width: 0; }
 .lv-now b { font-weight: 600; }
-.lv-now .tr-spin, .lv-wait .tr-spin { border-color: var(--accent-rule); border-top-color: var(--accent); vertical-align: 0; }
-.lv-work-tools { display: inline-flex; align-items: center; gap: var(--s3); }
-.lv-work-note { margin: 0; color: var(--ink-3); font-size: var(--fs-sub); line-height: var(--lh-sub); }
-.lv-work-conn { margin: 0; padding: var(--s2) var(--s3); border: 1px solid var(--chip-warning-bg); background: var(--chip-warning-bg); color: var(--chip-warning-fg); border-radius: var(--radius-sm); font-size: var(--fs-sub); line-height: var(--lh-sub); }
+.lv-now .tr-spin, .lv-wait .tr-spin { border-color: var(--brand-line); border-top-color: var(--brand); vertical-align: 0; }
+.lv-work-tools { display: inline-flex; align-items: center; gap: 12px; }
+.lv-work-note { margin: 0; color: var(--muted-foreground); font-size: 13px; line-height: 20px; }
+.lv-work-conn { margin: 0; padding: 8px 12px; border: 1px solid var(--warn-soft); background: var(--warn-soft); color: var(--warn-ink); border-radius: 8px; font-size: 13px; line-height: 20px; }
 .lv-work-note[hidden], .lv-work-conn[hidden] { display: none; }
-.lv-work-body { display: grid; gap: var(--s3); }
+.lv-work-body { display: grid; gap: 12px; }
 .lv-seg { min-width: 0; }
-.lv-seg[open] > .lv-seg-head { margin-bottom: var(--s2); }
-.lv-seg > .field-error, .lv-seg > .lv-work-note { margin-bottom: var(--s2); }
-.lv-seg + .lv-seg { border-top: 1px solid var(--rule); padding-top: var(--s3); }
-.lv-seg-head { display: flex; align-items: baseline; gap: var(--s3); font-size: var(--fs-sub); line-height: var(--lh-sub); cursor: pointer; list-style: none; border-radius: var(--radius-xs); }
+.lv-seg[open] > .lv-seg-head { margin-bottom: 8px; }
+.lv-seg > .field-error, .lv-seg > .lv-work-note { margin-bottom: 8px; }
+.lv-seg + .lv-seg { border-top: 1px solid var(--border); padding-top: 12px; }
+.lv-seg-head { display: flex; align-items: baseline; gap: 12px; font-size: 13px; line-height: 20px; cursor: pointer; list-style: none; border-radius: 6px; }
 .lv-seg-head::-webkit-details-marker { display: none; }
-.lv-seg-head::before { content: ""; width: 6px; height: 6px; border-right: 1.5px solid var(--ink-3); border-bottom: 1.5px solid var(--ink-3); transform: rotate(-45deg); flex: none; align-self: center; transition: transform .15s var(--ease); }
+.lv-seg-head::before { content: ""; width: 6px; height: 6px; border-right: 1.5px solid var(--muted-foreground); border-bottom: 1.5px solid var(--muted-foreground); transform: rotate(-45deg); flex: none; align-self: center; transition: transform .15s var(--ease); }
 .lv-seg[open] > .lv-seg-head::before { transform: rotate(45deg); }
-.lv-seg-head:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.lv-seg-head:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .lv-seg-head[hidden] { display: none; }
-.lv-seg-head b { font-weight: 600; color: var(--ink); }
-.lv-seg-state { color: var(--ink-3); }
-.lv-seg-state.run { color: var(--accent-ink); font-weight: 600; }
-.lv-seg-state.done { color: var(--ok); }
-.lv-seg-state.fail, .lv-seg-state.stop { color: var(--alarm); font-weight: 600; }
+.lv-seg-head b { font-weight: 600; color: var(--foreground); }
+.lv-seg-state { color: var(--muted-foreground); }
+.lv-seg-state.run { color: var(--brand-ink); font-weight: 600; }
+.lv-seg-state.done { color: var(--ok-ink); }
+.lv-seg-state.fail, .lv-seg-state.stop { color: var(--danger-ink); font-weight: 600; }
 .lv-seg-head .lv-time { margin-left: auto; }
 /* 기록 칸: 새 줄은 아래에 붙는다. 맨 아래를 보고 있을 때만 따라 내려간다(trace.js atNewest) */
-.lv-log { max-height: 320px; overflow-y: auto; overscroll-behavior: contain; border: 1px solid var(--rule); border-radius: var(--radius-sm); padding: var(--s2) var(--s3); background: var(--panel); }
-.lv-log:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-.lv-log .empty { padding: var(--s2) 0; }
+.lv-log { max-height: 320px; overflow-y: auto; overscroll-behavior: contain; border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; background: var(--card); }
+.lv-log:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.lv-log .empty { padding: 8px 0; }
 
 /* 연결 상태: 색 점과 글자를 함께(trace.css 의 .live-conn 에 두 상태를 더한다) */
-.live-conn.retry::before, .live-conn.connecting::before { background: var(--warn); }
-.live-conn.off::before { background: var(--alarm); }
+.live-conn.retry::before, .live-conn.connecting::before { background: var(--warn-ink); }
+.live-conn.off::before { background: var(--danger-ink); }
 .live-conn.off, .live-conn.retry { color: var(--ink-2); }
 
 /* 문서 등록 2단계: AI 추출이 도는 자리 */
-.lv-card { border-top: 1px solid var(--rule); padding-top: var(--s4); margin-top: var(--s2); display: grid; gap: var(--s3); }      /* 등록 칸(카드) 안이라 테두리 상자를 또 두지 않고 선 하나로 가른다 */
+.lv-card { border-top: 1px solid var(--border); padding-top: 16px; margin-top: 8px; display: grid; gap: 12px; }      /* 등록 칸(카드) 안이라 테두리 상자를 또 두지 않고 선 하나로 가른다 */
 .lv-card[hidden], .lv-log[hidden], .btn[hidden] { display: none; }
 /* 2 · 3단계에서는 1단계의 파일 고르기 칸을 접는다 — 지금 단계의 내용 하나만 보인다(디자인 기준 5-5) */
 #manualUpload[data-stage="2"] > .form-grid, #manualUpload[data-stage="3"] > .form-grid, #manualUpload[data-stage="2"] > .form-actions, #manualUpload[data-stage="3"] > .form-actions { display: none; }
 #manualUpload[data-stage="2"] .mprev, #manualUpload[data-stage="3"] .mprev { border-top: 0; margin-top: 0; padding-top: 0; }
-.lv-card-title { margin: 0; font-size: var(--fs-h3); line-height: var(--lh-h3); font-weight: 600; color: var(--ink); }
-.lv-card-sub { margin: 0; color: var(--ink-3); font-size: var(--fs-sub); line-height: var(--lh-sub); }
-.lv-fail { border: 1px solid var(--danger-rule); background: var(--danger-bg); border-radius: var(--radius); padding: var(--s3) var(--s4); display: grid; gap: var(--s1); }
-.lv-fail b { color: var(--alarm); font-size: var(--fs-body); line-height: var(--lh-body); font-weight: 600; }
-.lv-fail p { margin: 0; color: var(--ink-2); font-size: var(--fs-body); line-height: var(--lh-body); }
-.lv-fail .rd-form-actions { margin-top: var(--s2); }
+.lv-card-title { margin: 0; font-size: 16px; line-height: 24px; font-weight: 600; color: var(--foreground); }
+.lv-card-sub { margin: 0; color: var(--muted-foreground); font-size: 13px; line-height: 20px; }
+.lv-fail { border: 1px solid var(--danger-line); background: var(--danger-soft); border-radius: var(--radius); padding: 12px 16px; display: grid; gap: 4px; }
+.lv-fail b { color: var(--danger-ink); font-size: 14px; line-height: 22px; font-weight: 600; }
+.lv-fail p { margin: 0; color: var(--ink-2); font-size: 14px; line-height: 22px; }
+.lv-fail .rd-form-actions { margin-top: 8px; }
 
 @media (prefers-reduced-motion: reduce) { .lv-mark .tr-spin { animation: none; } }
 @media (max-width: 720px) {

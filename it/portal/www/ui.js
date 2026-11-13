@@ -60,7 +60,7 @@ const UI = {
   /* ---------- 명칭표 (UIUX_PLAN §4) — 화면 문구만. 코드·API·DB 이름은 그대로다. ---------- */
   terms: {
     // 메뉴 · 헤더
-    // 화면 이름 nav.<화면>: 위쪽 탭 이름이자 화면 제목(h1)이다 — 한 곳에서 정해 둘이 어긋나지 않게 한다. 메뉴 이름은 nav.menu.<메뉴>(index.html 의 주 메뉴 표)
+    // 화면 이름 nav.<화면>: 메뉴 줄 · 위 막대 · 화면 찾기에 보이는 이름이자 화면 제목(h1)이다 — 한 곳에서 정해 서로 어긋나지 않게 한다. 메뉴 이름은 nav.menu.<메뉴>(index.html 의 주 메뉴 표)
     'nav.main': '홈', 'nav.home': '시스템 구성', 'nav.scenario': '결함 시뮬레이션', 'nav.incidents': '설비 회로', 'nav.trends': '실시간 모니터링',
     'nav.ontology': '지식 지도', 'nav.skills': '조치 방법', 'nav.decision': '규칙 판단', 'nav.process': '업무 시스템 기록', 'nav.instances': '처리 건',
     'nav.knowledge': '문서 등록', 'nav.admin': '관리', 'nav.mcp': '도구 연결',
@@ -199,7 +199,7 @@ const UI = {
   toolName(t) { return window.hydWords.toolName(t); },
   toolIdentityFold(raw) {
     if (!raw || window.hydWords.knownTool(raw)) return '';
-    return this.fold('호출 도구 원문',`<pre>${esc(raw)}</pre>`,{cls:'small'});
+    return this.fold('호출 도구 원문',`<pre class="code">${esc(raw)}</pre>`);
   },
 
   /* ---------- A141 원문 id → 이름 (names.json: workspace/개발/scripts/portal_names.py 가 Neo4j 실제 이름으로 생성) ----------
@@ -298,7 +298,7 @@ const UI = {
   metaFold(items, label = 'fold.meta') {
     const rows = (items || []).filter(([, v]) => v != null && v !== '' && v !== '–');
     if (!rows.length) return '';
-    return this.fold(esc(this.t(label)), `<dl class="meta-list">${rows.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${v}</dd></div>`).join('')}</dl>`, { cls: 'small' });
+    return this.fold(esc(this.t(label)), `<dl class="kv">${rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${v}</dd>`).join('')}</dl>`);
   },
 
   /* ---------- 상태 이름 (UIUX_PLAN §5 + 사건 상태) ---------- */
@@ -340,11 +340,12 @@ const UI = {
   deliveryChip(value) { return this.chip(value, this.deliveryStates[value] || this.status(value), { PENDING: 'warning', DELIVERED: 'success', FAILED: 'danger', DISCARDED: 'neutral' }[value]); },
   status(value) { return this.states[value] || value || "–"; },
   toneOf(value) { for (const [tone, list] of Object.entries(this.tones)) if (list.includes(value)) return tone; return 'neutral'; },
+  // 상태 뱃지(키트에 더한 .tag — 점 + 글). tone 은 지금 이름(neutral · accent · success · warning · danger)으로 받아 키트의 data-tone 으로 바꾼다. 보통(neutral)은 속성이 없다
+  toneAttr(tone) { const t = { accent: 'brand', success: 'ok', warning: 'warn', danger: 'danger' }[tone]; return t ? ` data-tone="${t}"` : ''; },
   chip(value, label, tone) {
-    const t = tone || this.toneOf(value);
-    return `<span class="chip tone-${t}" data-status="${esc(value || '')}">${esc(label != null ? label : this.status(value))}</span>`;
+    return `<span class="tag"${this.toneAttr(tone || this.toneOf(value))} data-status="${esc(value || '')}">${esc(label != null ? label : this.status(value))}</span>`;
   },
-  chipText(label, tone = 'neutral') { return `<span class="chip tone-${tone}">${esc(label)}</span>`; },
+  chipText(label, tone = 'neutral') { return `<span class="tag"${this.toneAttr(tone)}>${esc(label)}</span>`; },
 
   /* ---------- 경보 패턴 이름(감지기 · 업무 경보 · 인터록 트립 코드 → 사람 말). 포털 전체가 이 표 하나를 쓴다 ---------- */
   // 경보 패턴 코드 → 이름: 그래프(AnomalyPattern.name)가 정본 — agent /api/ontology/patterns 를 한 번 읽어 채운다(화면 사본 없음, G3b-8)
@@ -384,7 +385,7 @@ const UI = {
     const m = window.hydInbox?.me?.();
     if (m) return `<input type="hidden" ${attrs} value="${esc(m.id)}">`;      // 화면에 칸을 그리지 않는다 — 쓰는 사람이 한 명이라 보일 정보가 없다
     // 서버는 사람 행동을 등록된 담당자(user:…)로만 받는다 — 자유 글 칸을 두지 않는다(W1-08)
-    return `<input type="hidden" ${attrs} value=""><span class="form-msg neg" data-pick-me>담당자 정보를 읽지 못했습니다. 화면을 새로 고치세요.</span>`;
+    return `<input type="hidden" ${attrs} value=""><span class="muted" data-tone="danger" role="alert" data-pick-me>담당자 정보를 읽지 못했습니다. 화면을 새로 고치세요.</span>`;
   },
   // 요청 id(같은 요청을 다시 보낼 때 서버가 알아보는 번호). 포털은 127.0.0.1 에만 열리므로(compose.yaml) 늘 보안 문맥 — randomUUID 가 있다
   uuid() { return window.crypto.randomUUID(); },
@@ -440,32 +441,46 @@ const UI = {
   // chips: optional pre-rendered small chips after the actor (A132: `결과 파일로 제출` on a task_completed whose result_source is file)
   // extra: optional pre-rendered fold before the raw fold (A147: 기업 거래의 `변경 전·후`)
   eventRecord({ time, name, actor = '', detail = '', raw, chips = '', extra = '' }) {
-    return `<article class="event-record"><header><time title="${esc(this.dateTime(time))}">${esc(this.time(time))}</time><strong>${esc(this.eventName(name))}</strong><span>${esc(this.who(actor))}</span>${chips}</header>${detail ? `<p>${esc(detail)}</p>` : ''}${extra}${raw ? `<details class="fold small"><summary>${esc(this.t('raw'))}</summary><pre>${esc(JSON.stringify(raw, null, 2))}</pre></details>` : ''}</article>`;
+    // 실시간 줄(.line)과 같은 모양: 아이콘 + 굵은 한 문장 + 보조 줄(누가 · 무엇) + 오른쪽 시각. 원문은 그 아래 접기
+    const sub = [actor ? esc(this.who(actor)) : '', detail ? esc(detail) : ''].filter(Boolean).join(' · ');
+    return `<article class="event-record"><div class="line">${this.icon('circle-dot')}<span class="line-text"><b>${esc(this.eventName(name))}</b>${chips ? `<span class="line-chips">${chips}</span>` : ''}${sub ? `<span class="line-sub">${sub}</span>` : ''}</span><time class="line-time num" title="${esc(this.dateTime(time))}">${esc(this.time(time))}</time></div>${extra}${raw ? `<details class="fold"><summary>${esc(this.t('raw'))}</summary><div class="fold-body"><pre class="code">${esc(JSON.stringify(raw, null, 2))}</pre></div></details>` : ''}</article>`;
   },
-  /* ---------- 공통 컴포넌트 (UIUX_PLAN §1) ---------- */
-  // card: 제목 · 칩 · 핵심 값 · 보조 1줄 · 본문
+  /* ---------- 공통 부품 — 키트(vendor/basecoat)와 portal-kit.css 의 마크업을 낸다(디자인 기준 8-2). 함수 이름 · 인자 · 반환 꼴은 화면 모듈이 부르던 그대로다 ---------- */
+  // card: 제목 · 보조 한 줄 · (오른쪽) 뱃지와 단추 · 핵심 값 · 본문
   card({ title, chips = '', value = '', sub = '', body = '', cls = '', actions = '', attrs = '' }) {
-    return `<section class="card ${cls}" ${attrs}>` +
-      (title || chips || actions ? `<header class="card-head"><div class="card-title">${title ? `<h3>${title}</h3>` : ''}${chips ? `<span class="card-chips">${chips}</span>` : ''}</div>${actions ? `<div class="card-actions">${actions}</div>` : ''}</header>` : '') +
-      (value ? `<div class="card-value">${value}</div>` : '') + (sub ? `<p class="card-sub">${sub}</p>` : '') + (body ? `<div class="card-body">${body}</div>` : '') + '</section>';
+    const side = chips || actions ? `<div class="card-action">${chips}${actions}</div>` : '';
+    return `<div class="card${cls ? ' ' + cls : ''}" ${attrs}>` +
+      (title || sub || side ? `<header>${title ? `<h3>${title}</h3>` : ''}${sub ? `<p>${sub}</p>` : ''}${side}</header>` : '') +
+      (value || body ? `<section>${value ? `<div class="stat-value num">${value}</div>` : ''}${body}</section>` : '') + '</div>';
   },
-  // field: 라벨 위 · 입력 아래 · 필수 * · 도움말 1줄
+  // field: 이름표 위 · 입력 아래 · 필수 * · 도움말 또는 오류 한 줄. 입력 요소에 클래스가 없으면 키트의 것(input · textarea · select)을 붙인다
+  kitInput(html) {
+    return String(html).replace(/<(input|textarea|select)\b(?![^>]*\bclass=)([^>]*)>/, (all, tag, rest) =>
+      tag === 'input' && /\btype="(checkbox|radio|range|file|hidden)"/.test(rest) ? all : `<${tag} class="${tag}"${rest}>`);
+  },
   field({ label, input, hint = '', required = false, cls = '', error = '' }) {
     const inputId = /\bid="([^"]+)"/.exec(input)?.[1];
-    return `<div class="field ${cls}"><label${inputId ? ` for="${inputId}"` : ''}>${esc(label)}${required ? ' <i class="req" aria-hidden="true">*</i>' : ''}</label>${input}${error ? `<p class="field-error" role="alert">${esc(error)}</p>` : hint ? `<p class="field-hint">${esc(hint)}</p>` : ''}</div>`;
+    // 도움말 · 오류 줄의 field-hint · field-error 는 모양이 아니라 찾는 이름이다(flows.js idField 가 도움말을 바꿔 쓴다)
+    return `<div role="group" class="field${cls ? ' ' + cls : ''}"${error ? ' data-invalid' : ''}><label${inputId ? ` for="${inputId}"` : ''}>${esc(label)}${required ? ' <span aria-hidden="true">*</span>' : ''}</label>${this.kitInput(input)}${error ? `<p class="field-error" role="alert">${esc(error)}</p>` : hint ? `<p class="field-hint">${esc(hint)}</p>` : ''}</div>`;
   },
-  // form section: 제목 + 필드 격자
-  section(title, body, cls = '') { return `<section class="form-section ${cls}">${title ? `<h4>${esc(title)}</h4>` : ''}<div class="form-grid">${body}</div></section>`; },
-  actions(body, msg = '') { return `<div class="form-actions">${msg ? `<span class="form-msg neg" role="status">${esc(msg)}</span>` : ''}${body}</div>`; },
-  // fold: 요약 한 줄 + 꺾쇠
-  fold(summary, body, { open = false, cls = '' } = {}) { return `<details class="fold ${cls}" ${open ? 'open' : ''}><summary>${summary}</summary><div class="fold-body">${body}</div></details>`; },
-  // empty: 굵은 한 줄 + 보조 한 줄
-  empty(title, sub = '', cls = '') { return `<div class="empty ${cls}"><b>${esc(title)}</b>${sub ? `<span>${esc(sub)}</span>` : ''}</div>`; },
+  // 폼의 한 묶음: 제목(legend) + 입력 격자
+  section(title, body, cls = '') { return `<fieldset class="fieldset${cls ? ' ' + cls : ''}">${title ? `<legend>${esc(title)}</legend>` : ''}<div role="group">${body}</div></fieldset>`; },
+  // 폼 아래의 단추 줄: (왼쪽) 못 한 까닭 한 줄 · (오른쪽) 단추
+  actions(body, msg = '') { return `<footer class="form-foot">${msg ? `<span class="muted" data-tone="danger" role="status">${esc(msg)}</span>` : ''}${body}</footer>`; },
+  // fold: 요약 한 줄 + 꺾쇠. 옛 크기 이름(small)은 받지 않는다 — 접기의 모양은 하나다
+  fold(summary, body, { open = false, cls = '' } = {}) {
+    const extra = cls.split(/\s+/).filter(c => c && c !== 'small').join(' ');
+    return `<details class="fold${extra ? ' ' + extra : ''}" ${open ? 'open' : ''}><summary>${summary}</summary><div class="fold-body">${body}</div></details>`;
+  },
+  // empty: 제목 한 줄 + 보조 한 줄(무엇을 하면 채워지는지)
+  empty(title, sub = '', cls = '') { return `<section class="empty${cls ? ' ' + cls : ''}"><header><h3>${esc(title)}</h3>${sub ? `<p>${esc(sub)}</p>` : ''}</header></section>`; },
   // emptyGo: 빈 화면 + 다음 할 일로 가는 단추 하나(tab = 화면 이름, index.html 의 view-<이름>). 「없음」에서 끝나지 않고 무엇을 하면 채워지는지로 잇는다
-  emptyGo(title, sub, tab, label, cls = '') { return `<div class="empty ${cls}"><b>${esc(title)}</b>${sub ? `<span>${esc(sub)}</span>` : ''}<button type="button" class="btn small" data-go-tab="${esc(tab)}">${esc(label)} →</button></div>`; },
-  // tabs: 밑줄형. items = [[key, label, count?]]
+  emptyGo(title, sub, tab, label, cls = '') {
+    return `<section class="empty${cls ? ' ' + cls : ''}"><header><h3>${esc(title)}</h3>${sub ? `<p>${esc(sub)}</p>` : ''}</header><footer><button type="button" class="btn" data-variant="outline" data-size="sm" data-go-tab="${esc(tab)}">${esc(label)}${this.icon('arrow-right')}</button></footer></section>`;
+  },
+  // tabs: 같은 대상의 보기를 바꾸는 묶음 단추(.seg). items = [[key, label, count?]]
   tabs(items, active, attr = 'data-tab-key') {
-    return `<div class="tabs" role="tablist">${items.map(([k, l, n]) => `<button type="button" role="tab" class="tab${k === active ? ' on' : ''}" ${attr}="${esc(k)}" aria-selected="${k === active}">${esc(l)}${n != null ? ` <span class="chip tone-neutral sm">${esc(n)}</span>` : ''}</button>`).join('')}</div>`;
+    return `<div class="seg" role="group">${items.map(([k, l, n]) => `<button type="button" aria-pressed="${k === active}" ${attr}="${esc(k)}">${esc(l)}${n != null ? `<span class="num">${esc(n)}</span>` : ''}</button>`).join('')}</div>`;
   },
   // paged list (A122 coordinator request): first `shown` rows, the selected row pinned on top when it is beyond them, one 더 보기 button
   PAGE: 20,
@@ -474,9 +489,9 @@ const UI = {
     const pinned = items.slice(shown).find(isSelected);
     return { rows: pinned ? [pinned, ...head] : head, rest: Math.max(0, items.length - shown), pinned: !!pinned };
   },
-  moreButton(rest, attr = 'data-more') { return rest > 0 ? `<button type="button" class="btn small more" ${attr}>${esc(this.t('btn.more'))} (남은 ${rest}건)</button>` : ''; },
-  // read-only labelled value (이전 단계 입력 · 변수)
-  readonly(label, value, sub = '') { return `<div class="field ro"><label>${esc(label)}</label><div class="ro-value">${value}</div>${sub ? `<p class="field-hint">${esc(sub)}</p>` : ''}</div>`; },
+  moreButton(rest, attr = 'data-more') { return rest > 0 ? `<button type="button" class="btn more" data-variant="ghost" data-size="sm" ${attr}>${esc(this.t('btn.more'))} (남은 ${rest}건)</button>` : ''; },
+  // 읽기만 하는 이름–값 한 줄(이전 단계 입력 · 변수). 여럿이 이어지면 줄이 맞게 놓인다(portal-kit.css dl.kv + dl.kv)
+  readonly(label, value, sub = '') { return `<dl class="kv"><dt>${esc(label)}</dt><dd>${value}${sub ? `<p class="muted">${esc(sub)}</p>` : ''}</dd></dl>`; },
 
   // Human-readable labels belong to the UI; API step names and raw records stay intact.
   steps: {
@@ -503,21 +518,55 @@ const UI = {
     const split = detail.closest(".split");
     if (split && getComputedStyle(split).gridTemplateColumns.split(" ").length === 1) detail.scrollIntoView({ block: "start" });
   },
-  icon(name) {
-    const paths = {
-      home: "M3 10 12 3l9 7v11h-6v-7H9v7H3Z",
-      map: "M4 4h6v6H4Zm10 10h6v6h-6ZM7 10v7h7M10 7h7v7",
-      play: "m8 5 11 7-11 7Z",
-      alert: "m12 3 10 18H2Zm0 6v5m0 3v1",
-      chart: "M4 3v17h17M7 15l4-5 4 2 5-7",
-      nodes: "M9 6h6M7 8v8m10-8v8M9 18h6M4 3h5v5H4Zm11 0h5v5h-5ZM4 16h5v5H4Zm11 0h5v5h-5Z",
-      skills: "M5 3h14v18H5Zm4 5h6m-6 4h6m-6 4h4",
-      decision: "M5 4h14v16H5Zm3 4 1 1 2-2m2 1h3M8 13l1 1 2-2m2 1h3",
-      process: "M3 4h6v6H3Zm12 10h6v6h-6ZM9 7h9v7M6 10v7h9",
-      gear: "M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm8 4-2-1 1-2-2-2-2 1-1-2h-4l-1 2-2-1-2 2 1 2-2 1v4l2 1-1 2 2 2 2-1 1 2h4l1-2 2 1 2-2-1-2 2-1Z",
-      book: "M4 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4Zm16 0h-7a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h8Z",
+  /* ---------- 아이콘: Lucide(vendor/lucide/icons.svg — 쓰는 것만 묶은 한 파일). 이름 목록은 vendor/lucide/icons.txt, 없는 이름은 workspace/개발/scripts/portal_vendor.sh 의 ICONS 에 더한다 ---------- */
+  // 옛 이름(이 포털이 손으로 그리던 아이콘) → Lucide 이름. 새로 쓰는 코드는 Lucide 이름을 그대로 적는다
+  iconNames: { home: 'house', map: 'network', alert: 'triangle-alert', chart: 'chart-line', nodes: 'network', skills: 'list-checks', decision: 'scale', process: 'workflow',
+    gear: 'settings', book: 'book-open', agent: 'bot', tool: 'plug', compare: 'git-compare', score: 'clipboard-check', whatif: 'calculator', kpi: 'gauge', fabric: 'database' },
+  icon(name, cls = '') {
+    return `<svg class="ic${cls ? ' ' + cls : ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="vendor/lucide/icons.svg#${esc(this.iconNames[name] || name)}"/></svg>`;
+  },
+  // HTML 에 적어 둔 아이콘 자리([data-icon="<이름>"])에 아이콘을 그린다 — 틀(index.html)과 화면 모듈이 문자열로 svg 를 적지 않아도 된다. 같은 자리를 두 번 그리지 않는다
+  fillIcons(root = document) {
+    root.querySelectorAll('[data-icon]').forEach(n => { if (n.dataset.iconDone) return; n.dataset.iconDone = '1'; n.insertAdjacentHTML('afterbegin', this.icon(n.dataset.icon)); });
+  },
+
+  /* ---------- 큰 부품은 필요할 때 싣는다: await UI.need('bpmn') → 전역 BpmnJS 를 쓸 수 있다 ----------
+     이름: bpmn(흐름 그림 보기 — BpmnJS) · bpmn-layout(배치 정보가 없는 BPMN 자동 배치 — BpmnAutoLayout) · graph(지식 지도 — cytoscape + fcose) · chart(시계열 차트 — uPlot)
+          · markdown(마크다운 → 소독한 HTML — marked + DOMPurify) · code(구문 강조 — Prism).
+     같은 부품은 한 번만 싣고(부르는 곳이 여럿이어도 같은 Promise), 못 실으면 어느 파일을 왜 못 실었는지와 함께 실패한다(조용히 넘어가지 않는다). 실패한 뒤 다시 부르면 다시 싣는다. */
+  parts: {
+    bpmn: { css: ['vendor/bpmn-js/diagram-js.css', 'vendor/bpmn-js/bpmn-js.css', 'vendor/bpmn-js/bpmn-font/css/bpmn.css'], js: ['vendor/bpmn-js/bpmn-navigated-viewer.production.min.js'], global: 'BpmnJS' },
+    'bpmn-layout': { js: ['vendor/bpmn-auto-layout/bpmn-auto-layout.min.js'], global: 'BpmnAutoLayout' },
+    graph: { js: ['vendor/cytoscape/cytoscape.min.js', 'vendor/cytoscape-fcose/layout-base.js', 'vendor/cytoscape-fcose/cose-base.js', 'vendor/cytoscape-fcose/cytoscape-fcose.js'], global: 'cytoscape' },
+    chart: { css: ['vendor/uplot/uPlot.min.css'], js: ['vendor/uplot/uPlot.iife.min.js'], global: 'uPlot' },
+    markdown: { js: ['vendor/marked/marked.umd.js', 'vendor/dompurify/purify.min.js'], global: 'marked' },
+    code: { js: ['vendor/prism/prism.min.js'], attrs: { 'data-manual': '' }, global: 'Prism' },
+  },
+  needing: {},
+  need(name) {
+    const part = this.parts[name];
+    if (!part) return Promise.reject(new Error(`UI.need: 모르는 부품 이름 '${name}' — ${Object.keys(this.parts).join(' · ')} 중 하나`));
+    if (this.needing[name]) return this.needing[name];
+    const css = href => new Promise((ok, fail) => {
+      const link = Object.assign(document.createElement('link'), { rel: 'stylesheet', href });
+      link.onload = ok; link.onerror = () => { link.remove(); fail(new Error(`부품 ${name} 의 모양 파일을 싣지 못했습니다: ${href}`)); };
+      // 화면별 CSS 보다 앞(키트 바로 뒤)에 둔다 — 포털의 값(portal-kit.css)이 부품의 기본 모양을 이기게
+      document.head.insertBefore(link, document.head.querySelector('link[href="portal-kit.css"]'));
+    });
+    const js = src => new Promise((ok, fail) => {
+      const script = Object.assign(document.createElement('script'), { src, async: false });
+      Object.entries(part.attrs || {}).forEach(([k, v]) => script.setAttribute(k, v));
+      script.onload = ok; script.onerror = () => { script.remove(); fail(new Error(`부품 ${name} 의 파일을 싣지 못했습니다: ${src}`)); };
+      document.head.append(script);
+    });
+    // 스크립트는 적힌 차례대로 하나씩(뒤 파일이 앞 파일의 전역을 쓴다 — fcose 는 layout-base → cose-base 차례)
+    const load = async () => {
+      await Promise.all((part.css || []).map(css));
+      for (const src of part.js) await js(src);
+      if (typeof window[part.global] === 'undefined') throw new Error(`부품 ${name} 을 실었지만 전역 ${part.global} 이 없습니다 — vendor/ 의 파일이 다른 판일 수 있습니다`);
+      return window[part.global];
     };
-    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${paths[name] || paths.home}"/></svg>`;
+    return this.needing[name] = load().catch(e => { delete this.needing[name]; throw e; });
   },
 };
 
@@ -535,55 +584,37 @@ Object.assign(UI.terms, {
   'nav.agents': '에이전트 · 스킬', 'nav.compare': '에이전트 시험 비교', 'nav.flows': '흐름', 'nav.oil': '오일 분석 입력', 'nav.eval': '판단 채점',
   'nav.whatif': '조건별 손익', 'nav.kpi': '성과 지표', 'nav.fabric': '데이터 원천',
   'nav.ask': '질문하기',   // B5
-  // 메뉴 여덟(index.html 주 메뉴의 data-menu). 「강의용 실습장」 은 유압 실습장 · 판단 실험 두 메뉴 위의 묶음 이름 줄이다. nav.menu.<메뉴>.note 는 그 메뉴의 화면마다 탭 줄 아래에 보이는 한 줄
+  // 메뉴 여덟(index.html 주 메뉴의 data-menu). nav.menu.<메뉴>.note 는 그 메뉴의 화면에서 위 막대의 위치 옆에 보이는 한 문장
   'nav.menu.main': '홈', 'nav.menu.instances': '처리 건', 'nav.menu.knowledge': '지식', 'nav.menu.flows': '흐름', 'nav.menu.agents': 'AI 에이전트',
-  'nav.menu.lab': '유압 실습장', 'nav.menu.trial': '판단 실험', 'nav.menu.system': '시스템', 'nav.group.lab': '강의용 실습장',
-  'nav.menu.trial.note': '유압 실습장의 판단 엔진을 시험해 보는 화면입니다. 수업 시나리오의 설비와 경보로 계산합니다.',
+  'nav.menu.plant': '유압 설비', 'nav.menu.trial': '판단 실험', 'nav.menu.system': '시스템',
+  'nav.menu.trial.note': '판단 엔진에 조건을 넣어 결과를 미리 봅니다.',
+  'shell.find': '화면 찾기', 'shell.findEmpty': '맞는 화면이 없습니다.', 'shell.railToggle': '메뉴 줄 접기 · 펴기',
   'shell.bell': '알림', 'shell.bellCount': '새 알림 {n}건',
   'shell.mountFail': '화면을 그리지 못했습니다', 'shell.unknownRoute': '없는 화면 주소입니다. 홈으로 이동했습니다.',
   'dialog.ok': '확인', 'dialog.cancel': '취소', 'state.retry': '다시 시도',
 });
 (function () {
-  const extra = {
-    inbox: "M3 13h5l2 3h4l2-3h5M5 5h14l2 8v6H3v-6Z",
-    agent: "M12 3v3M7 6h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Zm2 5h0m6 0h0M9 15h6",
-    tool: "M14 4a4 4 0 0 0-4 5L4 15l3 3 6-6a4 4 0 0 0 5-4l-3 1-2-2 1-3Z",
-    compare: "M4 4h7v16H4Zm9 0h7v16h-7ZM6 8h3m6 0h3M6 12h3m6 0h3",
-    score: "M12 3l3 6 6 1-4.5 4 1 6-5.5-3-5.5 3 1-6L3 10l6-1Z",
-    whatif: "M4 19h16M6 15l4-4 3 3 5-6M16 8h2v2",
-    kpi: "M12 3a9 9 0 1 0 9 9h-9ZM14 3a7 7 0 0 1 7 7h-7Z",
-    fabric: "M5 6c0-1.7 3.1-3 7-3s7 1.3 7 3-3.1 3-7 3-7-1.3-7-3Zm0 0v12c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3",
-    bell: "M6 16V11a6 6 0 0 1 12 0v5l2 2H4Zm4 4h4",
-    user: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 9a7 7 0 0 1 14 0",
-  };
-  const base = UI.icon;
-  UI.icon = function (name) {
-    if (!extra[name]) return base.call(this, name);
-    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${extra[name]}"/></svg>`;
-  };
-
-  // 로딩 블록: 빈 블록(UI.empty)과 같은 자리·크기, 문구만 다르다.
+  // 읽는 중: 내용이 놓일 자리에 스켈레톤 줄 셋. 무엇을 읽는지 글을 받았으면 그 아래 한 줄로 보인다(받지 않았으면 낭독기만 읽는다).
+  // 1초 안에 끝나는 읽기에만 쓴다 — 오래 걸리는 일은 과정이 흘러나오는 실시간 상자(hydLive)로 보인다(디자인 기준 7절)
   UI.loading = function (text, cls = '') {
-    return `<div class="empty state-loading ${cls}" role="status" aria-live="polite"><i class="spin" aria-hidden="true"></i><b>${esc(text || this.t('loading'))}</b></div>`;
+    return `<div class="loading${cls ? ' ' + cls : ''}" role="status" aria-live="polite"><div class="skeleton sk-line" style="width:38%"></div><div class="skeleton sk-line" style="width:72%"></div><div class="skeleton sk-line" style="width:54%"></div>${text ? `<p>${esc(text)}</p>` : `<span class="sr-only">${esc(this.t('loading'))}</span>`}</div>`;
   };
-  // 오류 블록: 무엇을 못 했는지 + 사람이 읽을 사유 한 줄 + (선택) 다시 시도 버튼. 버튼은 data-retry 로 찾아 붙인다.
+  // 오류 판: 무엇을 못 했는지 + 사람이 읽을 까닭 한 줄 + (선택) 다시 시도 단추. 단추는 data-retry 로 찾아 붙인다.
   UI.errorBlock = function (title, reason = '', { retry = false, cls = '' } = {}) {
-    return `<div class="empty state-error ${cls}" role="alert"><b>${esc(title || this.t('error.load'))}</b>${reason ? `<span>${esc(reason)}</span>` : ''}${retry ? `<button type="button" class="btn small" data-retry>${esc(this.t('state.retry'))}</button>` : ''}</div>`;
+    return `<div class="alert${cls ? ' ' + cls : ''}" data-variant="destructive" role="alert">${this.icon('circle-alert')}<h2>${esc(title || this.t('error.load'))}</h2>${reason ? `<section>${esc(reason)}</section>` : ''}${retry ? `<footer><button type="button" class="btn" data-variant="outline" data-size="sm" data-retry>${esc(this.t('state.retry'))}</button></footer>` : ''}</div>`;
   };
 
-  // 토스트: 화면 아래쪽에 잠깐 뜨는 한 줄. tone = 'ok' | 'neg' | 'neutral'. 같은 문구가 겹치면 하나만 둔다.
+  // 알림 한 줄(키트의 토스트 — index.html 의 #toaster): 오른쪽 아래에 잠깐 뜬다. tone = 'ok' | 'neg' | 'neutral'. 같은 문구가 겹치면 하나만 둔다.
+  // 성공 · 실패의 결과만 알린다 — 진행은 토스트로 알리지 않는다(디자인 기준 4절). 돌려주는 값은 그 토스트 노드(.close() 로 닫는다)
   UI.toast = function (message, { tone = 'neutral', timeout = 4000 } = {}) {
     if (!['ok', 'neg', 'neutral'].includes(tone)) console.error(`UI.toast: 모르는 tone '${tone}' — ok · neg · neutral 중 하나`, message);   // 색이 빠진 채 조용히 지나가지 않게(W3-22)
-    let host = document.getElementById('toastHost');
-    if (!host) { host = document.createElement('div'); host.id = 'toastHost'; host.className = 'toast-host'; host.setAttribute('aria-live', 'polite'); document.body.append(host); }
+    const host = document.getElementById('toaster');
+    if (host && typeof host.toast !== 'function') window.basecoat.init('toaster');      // 문서가 다 읽히기 전에 불렸다 — 키트가 스스로 준비하기 전이라 지금 준비시킨다
+    if (!host || typeof host.toast !== 'function') throw new Error('알림 자리(#toaster)가 준비되지 않았습니다 — index.html 이 vendor/basecoat/basecoat.min.js 를 ui.js 보다 먼저 싣는지 확인');
     const text = String(message ?? '');
-    [...host.children].filter(n => n.dataset.text === text).forEach(n => n.remove());
-    const node = document.createElement('div');
-    node.className = 'toast tone-' + tone; node.dataset.text = text; node.setAttribute('role', tone === 'neg' ? 'alert' : 'status');
-    node.innerHTML = `<span>${esc(text)}</span><button type="button" class="toast-x" aria-label="닫기">×</button>`;
-    node.querySelector('.toast-x').addEventListener('click', () => node.remove());
-    host.append(node);
-    if (timeout > 0) setTimeout(() => node.remove(), timeout);
+    [...host.querySelectorAll('.toast')].filter(n => n.dataset.text === text).forEach(n => n.remove());
+    const node = host.toast({ category: { ok: 'success', neg: 'error' }[tone] || 'info', title: text, duration: timeout > 0 ? timeout : -1 });
+    node.dataset.text = text;
     return node;
   };
 
@@ -594,7 +625,7 @@ Object.assign(UI.terms, {
       if (input.closest('.file-picker') || input.dataset.enhanced) return;
       input.dataset.enhanced = '1';
       const wrap = document.createElement('label'); wrap.className = 'file-picker';
-      const btn = document.createElement('span'); btn.className = 'btn small'; btn.textContent = '파일 선택';
+      const btn = document.createElement('span'); btn.className = 'btn'; btn.dataset.variant = 'outline'; btn.dataset.size = 'sm'; btn.textContent = '파일 선택';
       const name = document.createElement('span'); name.className = 'file-name'; name.textContent = '선택한 파일 없음';
       input.parentNode.insertBefore(wrap, input); wrap.append(btn, input, name);
       if (!input.getAttribute('aria-label')) input.setAttribute('aria-label', '파일 선택');
@@ -606,18 +637,17 @@ Object.assign(UI.terms, {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else if (document.body) boot();
   }
 
-  // 확인 대화상자: Promise<boolean>. 위험한 행동(danger)은 확인 버튼이 빨강이고, 기본 초점은 취소에 둔다.
+  // 확인 대화상자(키트의 alert-dialog): Promise<boolean>. 위험한 행동(danger)은 확인 단추가 빨강이고, 기본 초점은 취소에 둔다. Esc 는 취소다.
+  // confirm-dialog 는 모양이 아니라 찾는 이름이다(시험 · 확인 도구가 이 창을 이 이름으로 찾는다)
   UI.confirm = function ({ title = '', body = '', ok, cancel, danger = false } = {}) {
     return new Promise(resolve => {
       const dlg = document.createElement('dialog');
-      dlg.className = 'confirm-dialog';
-      dlg.innerHTML = `<form method="dialog"><h3>${esc(title)}</h3>${body ? `<p>${esc(body)}</p>` : ''}
-        <div class="form-actions"><button value="cancel" class="btn" autofocus>${esc(cancel || this.t('dialog.cancel'))}</button><button value="ok" class="btn ${danger ? 'danger' : 'primary'}">${esc(ok || this.t('dialog.ok'))}</button></div></form>`;
+      dlg.className = 'alert-dialog confirm-dialog';
+      dlg.innerHTML = `<form method="dialog"><header><h2>${esc(title)}</h2>${body ? `<p>${esc(body)}</p>` : ''}</header>
+        <footer><button value="cancel" class="btn" data-variant="outline" autofocus>${esc(cancel || this.t('dialog.cancel'))}</button><button value="ok" class="btn" data-variant="${danger ? 'destructive' : 'primary'}">${esc(ok || this.t('dialog.ok'))}</button></footer></form>`;
       document.body.append(dlg);
-      const done = v => { dlg.remove(); resolve(v); };
-      dlg.addEventListener('close', () => done(dlg.returnValue === 'ok'));
-      if (typeof dlg.showModal === 'function') dlg.showModal();
-      else { dlg.remove(); resolve(window.confirm(`${title}${body ? '\n' + body : ''}`)); }
+      dlg.addEventListener('close', () => { dlg.remove(); resolve(dlg.returnValue === 'ok'); });
+      dlg.showModal();
     });
   };
   // A work item may remain PENDING after its execution has ended. Match the
@@ -733,7 +763,7 @@ Object.assign(UI.terms, {
     const io=UI.fullToolIO(ev,direction,true), label=direction==='input' ? '전달한 입력 전문' : '보관된 결과 전문';
     const raw=io.text || (io.state==='complete' && io.raw!=null ? typeof io.raw==='string' ? io.raw : JSON.stringify(io.raw,null,2) : '');
     const key=payloadKey(ev,direction);
-    return `<div class="tr-code" data-tool-payload data-tool-ref="${esc(fo.ref || '')}" data-tool-direction="${esc(direction)}" data-tool-payload-state="${esc(io.state)}"><div class="tr-code-h">${esc(label)} · ${esc(fo.chars ?? '길이 미확인')}자</div>${io.error ? `<p class="muted">${esc(io.error)}</p>` : ''}${raw ? `<details class="fold small" data-k="payload:${esc(key)}"><summary>원문</summary><pre>${esc(raw)}</pre></details>` : ''}${['unavailable','invalid'].includes(io.state) && fo.stored ? `<button type="button" class="btn small" data-tool-payload-retry="${esc(key)}">원문 다시 읽기</button>` : ''}</div>`;
+    return `<div class="tr-code" data-tool-payload data-tool-ref="${esc(fo.ref || '')}" data-tool-direction="${esc(direction)}" data-tool-payload-state="${esc(io.state)}"><div class="tr-code-h">${esc(label)} · ${esc(fo.chars ?? '길이 미확인')}자</div>${io.error ? `<p class="muted">${esc(io.error)}</p>` : ''}${raw ? `<details class="fold" data-k="payload:${esc(key)}"><summary>원문</summary><div class="fold-body"><pre class="code">${esc(raw)}</pre></div></details>` : ''}${['unavailable','invalid'].includes(io.state) && fo.stored ? `<button type="button" class="btn" data-variant="outline" data-size="sm" data-tool-payload-retry="${esc(key)}">원문 다시 읽기</button>` : ''}</div>`;
   };
   if(typeof document!=='undefined' && document.addEventListener) document.addEventListener('click',event=>{
     const button=event.target.closest('[data-tool-payload-retry]'); if(!button)return;

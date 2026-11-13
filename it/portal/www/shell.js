@@ -1,4 +1,4 @@
-/* A5 (U7) 포털 셸 — 위 막대의 알림 종 · 해시 주소 · 새 화면 자리(mount). 메뉴 줄 · 위쪽 탭 줄 · 위 막대의 위치 표시는 app.js 가 주 메뉴 표(index.html)로 그린다.
+/* A5 (U7) 포털 셸 — 위 막대의 알림 종 · 화면 찾기(Ctrl K) · 해시 주소 · 새 화면 자리(mount). 메뉴 줄 · 위 막대의 위치 표시는 app.js 가 주 메뉴 표(index.html)로 그린다.
    맨 마지막에 읽힌다 — 탭 진입 표(app.js hydTabs.onShow)의 마지막 일로 새 화면 자리 · 주소를 맞춘다.
    주소(해시)를 읽고 쓰는 곳은 이 파일 하나다 — 처리 건 화면은 hydInstances.openTask · route 로만 잇는다.
    새 화면을 그리는 길도 여기 하나다(MOUNTS → mount 한 번, 다시 열 때 show). 처음 읽기에 실패한 화면은 failed() 가 참이면 다시 연 때 새로 그린다.
@@ -132,13 +132,46 @@
     if (!applying) writeHash('push');
   });
 
+  /* ------------------------------------------------ 화면 찾기(Ctrl K) — 키트의 명령 팔레트(dialog.command-dialog)
+     화면 22개를 메뉴별로 묶어 보여 주고 이름으로 거른다(거르기 · 위아래 화살표 · Enter 는 키트가 한다). 목록은 메뉴 표(app.js hydMenu) 그대로라 메뉴 줄과 어긋나지 않는다.
+     거르는 글: 「메뉴 이름 + 화면 이름」(data-filter)과 띄어쓰기를 뺀 이름 · 주소 이름(data-keywords — 「지식지도」 · 「skills」로도 찾는다).
+     다른 코드가 열 때: hydShell.find() */
+  function fillFinder() {
+    const strip = s => s.replace(/[\s·]+/g, '');
+    document.getElementById('kbarMenu').innerHTML = hydMenu.list.map(m => `<div role="group" aria-labelledby="kbarGroup-${esc(m.id)}"><span role="heading" id="kbarGroup-${esc(m.id)}">${esc(m.name)}</span>${
+      m.tabs.map(t => `<div role="menuitem" id="kbarItem-${esc(t)}" data-tab="${esc(t)}" data-filter="${esc(m.name + ' ' + hydMenu.name(t))}" data-keywords="${esc([strip(hydMenu.name(t)), strip(m.name + hydMenu.name(t)), t].join(' '))}">${UI.icon(m.icon)}<span>${esc(hydMenu.name(t))}</span></div>`).join('')}</div>`).join('');
+    const command = document.querySelector('#kbar .command');
+    if (typeof command.refresh === 'function') command.refresh();      // 키트가 이미 이 팔레트를 준비했으면(문서가 다 읽힌 뒤) 새 목록을 다시 읽게 한다
+  }
+  function openFinder() {
+    const dlg = document.getElementById('kbar'), input = document.getElementById('kbarInput');
+    if (dlg.open) return;
+    input.value = '';
+    dlg.querySelectorAll('[role="menuitem"]').forEach(n => n.toggleAttribute('data-here', n.dataset.tab === state.tab));
+    dlg.showModal();
+    input.dispatchEvent(new Event('input'));      // 지난번에 거른 것을 풀고 첫 줄을 고른 상태로(키트가 input 이벤트에 목록을 다시 거른다)
+    input.focus();
+  }
+  function startFinder() {
+    const dlg = document.getElementById('kbar');
+    fillFinder();
+    document.getElementById('kbarOpen').addEventListener('click', openFinder);
+    document.addEventListener('keydown', e => {
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'k') { e.preventDefault(); if (dlg.open) dlg.close(); else openFinder(); }
+    });
+    // 고른 줄(눌렀거나 Enter): 그 화면으로 간다. 대화상자는 키트가 닫는다
+    dlg.addEventListener('click', e => { const item = e.target.closest('[role="menuitem"][data-tab]'); if (item) window.hydShell.navigate({ tab: item.dataset.tab }); });
+    // 바깥(어두운 바탕)을 누르면 닫는다 — 안에서 누르기 시작해 바깥에서 뗀 것은 닫지 않는다
+    let pressedOutside = false;
+    dlg.addEventListener('pointerdown', e => { pressedOutside = e.target === dlg; });
+    dlg.addEventListener('click', e => { if (e.target === dlg && pressedOutside) dlg.close(); });
+  }
+
   function start() {
+    startFinder();
     const bell = document.getElementById('shellBell');
-    if (bell) {
-      bell.insertAdjacentHTML('afterbegin', UI.icon('bell'));
-      // 종 = 알림: 처리 건 화면으로 가서 「알림」 접기를 펼쳐 보인다(inbox.js openNotices)
-      bell.addEventListener('click', () => { selectTab('instances'); window.hydInbox.openNotices(); });
-    }
+    // 종 = 알림: 처리 건 화면으로 가서 「알림」 접기를 펼쳐 보인다(inbox.js openNotices)
+    if (bell) bell.addEventListener('click', () => { selectTab('instances'); window.hydInbox.openNotices(); });
     refreshBadge();
     setInterval(refreshBadge, 5000);
     window.addEventListener('hyd:badge', refreshBadge);              // 알림 모듈(inbox.js)이 읽음 처리 뒤 바로 갱신하려면 이 이벤트를 쏜다
@@ -157,6 +190,7 @@
     // 링크로 이동: 같은 주소를 다시 눌러도(해시 변화 없음) 그 화면을 다시 연다
     navigate(target) { const h = typeof target === 'string' ? target : format(target); if (location.hash === h) apply(parse(h)); else location.hash = h; },
     route: currentRoute,
+    find: openFinder,
     refreshBadge, show,
     mounted,
   };
