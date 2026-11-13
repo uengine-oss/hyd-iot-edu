@@ -26,36 +26,35 @@
 <aside class="rail" id="navigation" aria-label="메뉴">
   <button class="brand active" id="brandHome" title="홈"><span class="brand-mark" aria-hidden="true">H</span><span><strong>HYD Lab</strong><small>유압설비 조치 포탈</small></span></button>
   <nav aria-label="주 메뉴">
-    <!-- A5 (U7): 수강생 동선 묶음. 순서가 곧 이전/다음 화면 순서다. 화면 규칙: workspace/개발/문서/UIUX_PLAN.md -->
-    <div class="navgroup" data-term="nav.group.work">작업</div>
+    <!-- 묶음의 순서가 곧 이전/다음 화면 순서다. 뼈대(업무 · 지식 · 만들기)와 강의용 유압 실습장을 가른다(2026-11-14 개편, 화면 규칙: workspace/개발/문서/UIUX_PLAN.md) -->
+    <div class="navgroup" data-term="nav.group.start">시작</div>
+    <button data-tab="main" data-icon="home" data-term="nav.main">홈</button>
+    <button data-tab="home" data-icon="map" data-term="nav.home">시스템 구성</button>
+    <div class="navgroup" data-term="nav.group.work">업무</div>
     <button data-tab="inbox" data-icon="inbox" data-term="nav.inbox">내 작업함</button>
     <button data-tab="instances" data-icon="process" data-term="nav.instances">처리 건</button>
-    <div class="navgroup" data-term="nav.group.plant">설비</div>
-    <button data-tab="scenario" data-icon="play" data-term="nav.scenario">결함 시뮬레이션</button>
-    <button data-tab="oil" data-icon="alert">오일 분석 입력</button>
-    <button data-tab="incidents" data-icon="alert" data-term="nav.incidents">이상 확인 · 조치</button>
-    <button data-tab="trends" data-icon="chart" data-term="nav.trends">실시간 모니터링</button>
-    <div class="navgroup" data-term="nav.group.judge">판단</div>
-    <button data-tab="decision" data-icon="decision" data-term="nav.decision">조치 판단 규칙</button>
-    <button data-tab="whatif" data-icon="whatif" data-term="nav.whatif">조건별 손익</button>
-    <button data-tab="process" data-icon="process" data-term="nav.process">판단 · 실행 기록</button>
-    <button data-tab="flows" data-icon="process">흐름 가져오기</button>
+    <button data-tab="ask" data-icon="agent" data-term="nav.ask">AI 에이전트에게 질문</button>
     <div class="navgroup" data-term="nav.group.knowledge">지식</div>
     <button data-tab="ontology" data-icon="nodes" data-term="nav.ontology">지식 지도</button>
     <button data-tab="skills" data-icon="skills" data-term="nav.skills">조치 방법</button>
     <button data-tab="knowledge" data-icon="book" data-term="nav.knowledge">지식 관리</button>
-    <button data-tab="fabric" data-icon="fabric" data-term="nav.fabric">데이터 원천</button>
-    <div class="navgroup" data-term="nav.group.ai">인공지능 설정</div>
-    <button data-tab="ask" data-icon="agent" data-term="nav.ask">에이전트에게 질문</button>
-    <button data-tab="agents" data-icon="agent" data-term="nav.agents">에이전트</button>
+    <div class="navgroup" data-term="nav.group.build">만들기</div>
+    <button data-tab="flows" data-icon="process" data-term="nav.flows">흐름 가져오기</button>
+    <button data-tab="agents" data-icon="agent" data-term="nav.agents">AI 에이전트</button>
     <button data-tab="mcp" data-icon="tool" data-term="nav.mcp">도구 연결</button>
-    <button data-tab="compare" data-icon="compare" data-term="nav.compare">시험 비교</button>
+    <div class="navgroup" data-term="nav.group.lab">유압 실습장</div>
+    <button data-tab="scenario" data-icon="play" data-term="nav.scenario">결함 시뮬레이션</button>
+    <button data-tab="oil" data-icon="alert" data-term="nav.oil">오일 분석 입력</button>
+    <button data-tab="incidents" data-icon="alert" data-term="nav.incidents">이상 확인</button>
+    <button data-tab="trends" data-icon="chart" data-term="nav.trends">실시간 모니터링</button>
+    <button data-tab="decision" data-icon="decision" data-term="nav.decision">조치 판단 규칙</button>
+    <button data-tab="whatif" data-icon="whatif" data-term="nav.whatif">조건별 손익</button>
+    <button data-tab="process" data-icon="process" data-term="nav.process">판단 · 실행 기록</button>
     <button data-tab="eval" data-icon="score" data-term="nav.eval">판단 채점</button>
-    <div class="navgroup" data-term="nav.group.kpi">성과</div>
+    <button data-tab="compare" data-icon="compare" data-term="nav.compare">에이전트 시험 비교</button>
     <button data-tab="kpi" data-icon="kpi" data-term="nav.kpi">성과 지표</button>
-    <div class="navgroup" data-term="nav.group.system">시스템</div>
-    <button data-tab="main" data-icon="home" data-term="nav.main">홈</button>
-    <button data-tab="home" data-icon="map" data-term="nav.home">시스템 구성</button>
+    <button data-tab="fabric" data-icon="fabric" data-term="nav.fabric">데이터 원천</button>
+    <div class="navgroup" data-term="nav.group.admin">관리</div>
     <button data-tab="admin" data-icon="gear" data-term="nav.admin">관리</button>
   </nav>
   <div class="foot"><span class="env-dot"></span><div><strong>시뮬레이션</strong></div></div>

@@ -110,6 +110,11 @@
   fill: #fff3cd;
   stroke-width: 2;
 }
+/* 고른 요소가 이름 검색에도 걸리면 고른 색이 이긴다 — 검색 강조(연노랑)가 뒤 규칙이라 덮어써서, 고른 요소의 흰 글자가 연노랑 위에 남아 안 보였다 */
+.o-node.sel.match rect {
+  fill: var(--c);
+  stroke-width: 3;
+}
 .o-node.dim {
   opacity: 0.28;
 }

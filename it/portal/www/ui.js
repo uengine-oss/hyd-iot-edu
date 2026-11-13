@@ -60,10 +60,9 @@ const UI = {
   /* ---------- 명칭표 (UIUX_PLAN §4) — 화면 문구만. 코드·API·DB 이름은 그대로다. ---------- */
   terms: {
     // 메뉴 · 헤더
-    'nav.main': '홈', 'nav.home': '시스템 구성', 'nav.scenario': '결함 시뮬레이션', 'nav.incidents': '이상 확인 · 조치', 'nav.trends': '실시간 모니터링',
+    'nav.main': '홈', 'nav.home': '시스템 구성', 'nav.scenario': '결함 시뮬레이션', 'nav.incidents': '이상 확인', 'nav.trends': '실시간 모니터링',
     'nav.ontology': '지식 지도', 'nav.skills': '조치 방법', 'nav.decision': '조치 판단 규칙', 'nav.process': '판단 · 실행 기록', 'nav.instances': '처리 건',
     'nav.knowledge': '지식 관리', 'nav.admin': '관리', 'nav.mcp': '도구 연결',
-    'nav.group.plant': '설비', 
     'header.services': '서비스', 'header.noResponse': '응답 없음', 'header.connected': '연결됨', 'header.connecting': '연결 중', 'header.waiting': '연결됨 · 대기', 'header.disconnected': '끊김 · 재연결 중',
     
     // 공통 단위
@@ -539,10 +538,10 @@ UI.loadNames();   // A141: 원문 id → 이름 사전(정적 names.json). 읽�
    덧붙이기만 한다(위 UI 객체는 그대로). 화면 규칙: workspace/개발/문서/UIUX_PLAN.md */
 Object.assign(UI.terms, {
   'var.approval': '승인 여부', 'var.approval_reason': '결정 사유', 'var.result_report': '결과 보고', 'var.request_id': '요청 번호', 'var.approved_option': '승인한 안',
-  'nav.inbox': '내 작업함', 'nav.agents': '에이전트', 'nav.mcp': '도구 연결', 'nav.compare': '시험 비교', 'nav.eval': '판단 채점',
+  'nav.inbox': '내 작업함', 'nav.agents': 'AI 에이전트', 'nav.mcp': '도구 연결', 'nav.compare': '에이전트 시험 비교', 'nav.flows': '흐름 가져오기', 'nav.oil': '오일 분석 입력', 'nav.eval': '판단 채점',
   'nav.whatif': '조건별 손익', 'nav.kpi': '성과 지표', 'nav.fabric': '데이터 원천',
-  'nav.ask': '에이전트에게 질문',   // B5
-  'nav.group.work': '작업', 'nav.group.judge': '판단', 'nav.group.knowledge': '지식', 'nav.group.ai': '인공지능 설정', 'nav.group.kpi': '성과', 'nav.group.system': '시스템',
+  'nav.ask': 'AI 에이전트에게 질문',   // B5
+  'nav.group.start': '시작', 'nav.group.work': '업무', 'nav.group.knowledge': '지식', 'nav.group.build': '만들기', 'nav.group.lab': '유압 실습장', 'nav.group.admin': '관리',
   'shell.bell': '알림', 'shell.bellCount': '새 알림 {n}건',
   'shell.mountFail': '화면을 그리지 못했습니다', 'shell.unknownRoute': '없는 화면 주소입니다. 홈으로 이동했습니다.',
   'dialog.ok': '확인', 'dialog.cancel': '취소', 'state.retry': '다시 시도',
