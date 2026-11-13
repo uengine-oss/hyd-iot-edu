@@ -4,7 +4,7 @@
 - 상태: 작업/_훅/<세션>__<에이전트>.json(git 밖). 서브에이전트는 따로 센다. 남이 바꾼 문서 · 요약 뒤에는 다시 읽어야 하고, 요약 뒤에는 이 세션이 편집한 작업 폴더의 스펙 · 기록도 요구한다.
 - 자기 편집: 고치기 전 판을 끝까지 읽은 문서를 Edit · Write로 고치면 고친 판을 다 읽은 것으로 옮긴다(덜 읽었으면 옮기지 않는다).
 - 작업 폴더는 이 PC에서 작업/<날짜>_<제목>/, 클라우드에서 workspace/강의제작/제작도구/근거/<날짜>_<제목>/이다(CLAUDE.md 7절) — 둘 다 같은 꼴로 세고, 상태 · 오래됨은 동기화.py `tasks` · `state` · `STALE_DAYS`와 같은 기준이다.
-- 막는 것: 산출물 · 제작 재료 편집, 직접 부른 덱 · 영상 빌드(`--dry` 등 읽기 전용 제외), fable 모델. 지침 문서 자체 편집 · 셸 변수 · sed · 리다이렉션 쓰기는 막지 않는다.
+- 막는 것: 산출물 · 제작 재료 편집, 직접 부른 덱 · 영상 빌드(`--dry` 등 읽기 전용 제외). 지침 문서 자체 편집 · 셸 변수 · sed · 리다이렉션 쓰기는 막지 않는다.
 """
 import hashlib, json, os, re, subprocess, sys, tempfile, time, unicodedata
 from pathlib import Path
@@ -173,9 +173,7 @@ def on_read(root, ev):
 def on_gate(root, ev):
     tool, inp = ev.get("tool_name", ""), ev.get("tool_input") or {}
     if tool == "Agent":
-        if "fable" in str(inp.get("model", "")).lower():
-            print("fable 모델은 쓰지 않는다(CLAUDE.md 4절). 다른 모델로 호출한다.", file=sys.stderr); return 2
-        return 0
+        return 0      # 모델은 일의 무게로 고른다(CLAUDE.md 4절) — 훅은 모델을 막지 않는다
     if tool in ("Bash", "PowerShell"):
         need = [GUIDE.format(d) for part in re.split(r"[;&|\n]+", inp.get("command", "")) for rx, d in BUILD if rx.search(part) and not READ_ONLY.search(part)]
         what = "이 빌드 명령"
@@ -337,7 +335,7 @@ def selftest():
         call("read", rd(CLOUD), 0, "요약 뒤 클라우드 기록")
         call("read", rd(CLOUD.replace("기록", "스펙")), 0, "요약 뒤 클라우드 스펙")
         call("gate", ed(pptx), 0, "요약 뒤 다 읽으면 통과(지운 폴더 기록은 요구 안 함)")
-        call("gate", {"tool_name": "Agent", "tool_input": {"model": "fable", "prompt": "x"}}, 2, "fable 호출")
+        call("gate", {"tool_name": "Agent", "tool_input": {"model": "fable", "prompt": "x"}}, 0, "fable 호출")
         call("gate", {"tool_name": "Agent", "tool_input": {"model": "opus", "prompt": "x"}}, 0, "opus 호출")
     print("\n".join(bad) if bad else "자가시험 통과")
     return 1 if bad else 0
