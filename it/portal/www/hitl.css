@@ -299,3 +299,24 @@ details.golden > summary { font-size: 14px; font-weight: 600; }
 /* 업무 데이터 연결(DDL) 열 고르기 — hitl.js */
 .ddlcols { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: .85em; margin-top: 4px; }
 .ddlcols label { white-space: nowrap; }
+
+/* 매뉴얼 등록 3단계(문서 등록 → AI 추출 → 검토 · 적재) */
+.steps3 { display: flex; flex-wrap: wrap; gap: 6px 28px; list-style: none; margin: 0 0 var(--s3); padding: 0 0 var(--s3); border-bottom: 1px solid var(--rule); }
+.steps3 li { display: flex; align-items: center; gap: 8px; color: var(--ink-3); font-size: 13.5px; }
+.steps3 li .n { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--rule-strong); font-size: 12px; font-weight: 600; }
+.steps3 li.on { color: var(--ink); font-weight: 600; }
+.steps3 li.on .n { background: var(--accent); border-color: var(--accent); color: #fff; }
+.steps3 li.done { color: var(--ink-2); }
+.steps3 li.done .n { background: var(--surface-soft); color: var(--ink-2); }
+.mstage { display: grid; gap: var(--s2); }
+.mstage-title { margin: 0; font-size: 15px; }
+.mstage p { margin: 0; }
+
+/* 승인 대기 안내 — 어디서 결정하는지와 그 화면으로 가는 단추가 한 줄에 */
+.await-approval { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s3); padding: 14px 16px; margin: var(--s3) 0; border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--rule)); border-radius: var(--radius-sm); background: color-mix(in srgb, var(--accent) 5%, var(--panel)); }
+.await-approval > div:first-child { display: grid; gap: 2px; }
+.await-approval span { color: var(--ink-2); font-size: 13px; }
+.await-approval .form-actions { margin: 0; }
+.mproc-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-bottom: var(--s2); }
+.mproc-head > span:first-child { font-size: 14.5px; }
+.mproc .mproc-edit { margin: 0; }

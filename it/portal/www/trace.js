@@ -19,7 +19,7 @@
     'trace.failed': '실패', 'trace.running': '실행 중', 'trace.waitHuman': '담당자의 입력을 기다리는 중', 'trace.waitAgent': 'AI 에이전트가 일을 받기를 기다리는 중',
     'trace.working': 'AI 에이전트가 작업하는 중', 'trace.thinking': '다음 행동을 정하는 중', 'trace.waitSystem': '시스템이 처리하는 중', 'trace.waitTimer': '정해진 시간까지 기다리는 중',
     'trace.submitted': '결과를 받아 다음 단계로 넘기는 중', 'trace.pending': '조건이 맞을 때까지 보류', 'trace.asked': '사람에게 묻는 중', 'trace.left': '남음', 'trace.overdue': '기한 지남',
-    'trace.picked': '맡음', 'trace.outputs': '넘긴 값', 'trace.stepsDone': '마친 단계', 'trace.tools': '도구 호출', 'trace.status': '상태', 'trace.elapsed': '걸린 시간',
+    'trace.picked': '담당 배정', 'trace.outputs': '넘긴 값', 'trace.stepsDone': '마친 단계', 'trace.tools': '도구 호출', 'trace.status': '상태', 'trace.elapsed': '걸린 시간',
     'trace.gen': '회차', 'trace.detail': '단계 자세히', 
     
     'trace.act.command': '설비 명령', 'trace.act.mail': '메일', 'trace.act.order': '발주', 'trace.act.receipt': '입고 확인', 'trace.act.schedule': '일정', 'trace.act.workorder': '정비 요청',

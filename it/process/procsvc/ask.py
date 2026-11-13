@@ -1,7 +1,7 @@
 """B5 — 에이전트에게 질문하기 (ProcessGPT의 대표 상호작용: 질문 하나 = 처리 건 하나).
 
     POST /api/ask {question, agent?, by?, request_id?}   질문 → 정식 정의 ask_agent(판본은 정의 파일의 version)의 처리 건 하나(답할 에이전트 = 고른 에이전트)
-    GET  /api/ask/status                                답할 수 있나(AI 일꾼 상태) + 고를 수 있는 에이전트(그 에이전트가 질문에 쓰는 도구 서버)
+    GET  /api/ask/status                                답할 수 있나(AI 에이전트 상태) + 고를 수 있는 에이전트(그 에이전트가 질문에 쓰는 도구 서버)
     GET  /api/ask                                       지난 질문 목록(최근 것 먼저)
     GET  /api/ask/{proc_inst_id}                        한 질문: 진행 상태 · 도구 호출(실시간) · 답 + 근거 또는 답할 수 없음 + 이유 · 처리 과정 링크
     POST /api/ask/{proc_inst_id}/retry                  실패해 멈춘 같은 질문을 같은 작업으로 다시 진행(질문한 사람만, 2회까지)
@@ -44,7 +44,7 @@ WAIT_PROBE_AFTER_S = 10        # 아무도 집지 않은 지 이만큼 지나면
 
 
 class WorkerUnavailable(RuntimeError):
-    """답할 AI 일꾼이 없다 — 처리 건을 만들지 않았다(사유는 사람이 읽을 문장)."""
+    """답할 AI 에이전트가 없다 — 처리 건을 만들지 않았다(사유는 사람이 읽을 문장)."""
 
 
 # ---------------------------------------------------------------- 정의
@@ -116,10 +116,10 @@ def agents(repo, tenant_id) -> list[dict]:
     return sorted(out, key=lambda a: (not a['default'], a['mine'], a['name']))
 
 
-NOT_READY = 'AI 일꾼이 아직 켜지는 중이거나 꺼져 있어 질문을 보내지 않았습니다. 1분 뒤 다시 보내고, 계속되면 시작.bat을 다시 실행하세요.'
-NOT_PICKED = ('{age}초째 답할 AI 일꾼이 질문을 맡지 않았습니다 — AI 일꾼에 연결할 수 없습니다. 시작.bat을 다시 실행하면 이어서 답합니다'
+NOT_READY = 'AI 에이전트가 아직 켜지는 중이거나 꺼져 있어 질문을 보내지 않았습니다. 1분 뒤 다시 보내고, 계속되면 시작.bat을 다시 실행하세요.'
+NOT_PICKED = ('{age}초째 답할 AI 에이전트가 질문을 맡지 않았습니다 — AI 에이전트에 연결할 수 없습니다. 시작.bat을 다시 실행하면 이어서 답합니다'
               '(처리 과정 보기에서 닫을 수도 있습니다).')
-BUSY = '{age}초째 대기 중 — AI 일꾼은 켜져 있습니다(앞 작업을 처리하는 중일 수 있습니다).'
+BUSY = '{age}초째 대기 중 — AI 에이전트는 켜져 있습니다(앞 작업을 처리하는 중일 수 있습니다).'
 RUNTIME_NOT_READY = '질문을 받을 처리 흐름 서비스가 아직 켜지는 중입니다. 1분 뒤 다시 보내세요.'
 BAD_REQUEST_ID = '요청 번호의 형식이 올바르지 않습니다 — 화면을 새로 고친 뒤 다시 보내세요.'
 
@@ -133,7 +133,7 @@ def request_uuid(value) -> str:
 
 
 def readiness(worker_probe) -> dict:
-    """질문을 받을 수 있나 — AI 일꾼(워커)이 상태 확인(/health)에 「켜짐」으로 답하는가(켜지는 중 · 오류면 503 이라 닿지 않음으로 온다)."""
+    """질문을 받을 수 있나 — AI 에이전트 실행 서비스이 상태 확인(/health)에 「켜짐」으로 답하는가(켜지는 중 · 오류면 503 이라 닿지 않음으로 온다)."""
     w = worker_probe()
     health = w.get('health') or {}
     ready = bool(w.get('reachable'))
@@ -543,7 +543,7 @@ def _state(inst, wi, events, now=None) -> tuple[str, str]:
         return 'submitted', '에이전트가 답을 냈습니다 — 처리 흐름이 받는 중입니다'
     if ds == 'STARTED':
         return 'running', '에이전트가 조회하는 중'
-    return 'waiting', '답할 AI 일꾼이 아직 질문을 맡지 않았습니다'
+    return 'waiting', '답할 AI 에이전트가 아직 질문을 맡지 않았습니다'
 
 
 def view(rt, proc_inst_id, *, worker_probe=None, now=None) -> dict:

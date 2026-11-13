@@ -1,21 +1,12 @@
-"""L9 지식 관리(순수 함수): 조치 방법(스킬 = SOP) 고치기 · 새로 만들기의 검사와, 문서 넣기가 같이 쓰는 줄 모양 · SOP 번호 · 영향 연결 규칙.
+"""L9 지식 관리(순수 함수): 조치 방법(스킬 = SOP) 고치기 · 새로 만들기의 검사와, 문서 넣기가 같이 쓰는 SOP 번호 · 영향 연결 규칙.
 
 사람이 process 서비스로 지식 지도(온톨로지 v2)를 고친다(에이전트는 읽기만):
-  - 조치 방법 고치기(이름 · 설명 · 승인 역할 · 영향) 또는 고장 유형에 맞춘 새 SOP 조치 방법 만들기(validate_skill),
-  - 매뉴얼 줄 구조 읽기(manual_review.proposal)가 쓰는 절 제목 · SOP 제목 줄 모양(SECTION_RE · SOP_RE)과 이름 낱말(_tokens).
+  - 조치 방법 고치기(이름 · 설명 · 승인 역할 · 영향) 또는 고장 유형에 맞춘 새 SOP 조치 방법 만들기(validate_skill).
 검사 문장은 학생에게 그대로 보인다(합니다체, 화면 말).
 """
 from __future__ import annotations
 
 import re
-
-SECTION_RE = re.compile(r"^\s*#{0,4}\s*([A-Z]{1,6}-\d+(?:\.\d+)*)\s+(.+?)\s*$")
-SOP_RE = re.compile(r"^\s*#{0,4}\s*(SOP-[A-Z0-9]+(?:-[A-Z0-9]+)*)\s+(.+?)\s*$")
-
-
-def _tokens(s: str) -> set[str]:
-    return {t for t in re.split(r"[\s·,()/\-]+", s or "") if t and t not in {"절차", "작업지시", "매뉴얼", "및"}}   # one-syllable words (팬, 핀) matter
-
 
 SOP_ID_RE = re.compile(r"^SOP-[A-Z0-9]+(?:-[A-Z0-9]+)*$")
 

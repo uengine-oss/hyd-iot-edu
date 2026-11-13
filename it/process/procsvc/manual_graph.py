@@ -417,7 +417,7 @@ def revision_preview(session, plan):
     row = session.run('MATCH (d:ManualIngestionDocument {id:$id, tenant:$tenant}) '
                       'RETURN d.head AS head, d.snapshot AS snapshot', id=plan['document'], tenant=plan['tenant']).single()
     if (row['head'] if row else None) != plan['previous_batch']:
-        raise Conflict('현재 문서 판본이 미리보기 이후 변경됐습니다. 다시 검토하세요')
+        raise Conflict('현재 문서 판본이 문서 등록 이후 변경됐습니다. 문서를 다시 등록해 검토하세요')
     before = json.loads(row['snapshot']) if row else {'nodes': [], 'edges': []}
     return dict(previous_batch=plan['previous_batch'], removed=removed_nodes(before, desired(plan)))
 
@@ -460,7 +460,7 @@ def commit(session, plan):
         head = tx.run('MATCH (d:ManualIngestionDocument {id:$id}) RETURN d.head AS head, d.snapshot AS snapshot',
                       id=plan['document']).single()
         if (head['head'] if head else None) != plan['previous_batch']:
-            raise Conflict('현재 문서 판본이 미리보기 이후 변경됐습니다. 다시 검토하세요')
+            raise Conflict('현재 문서 판본이 문서 등록 이후 변경됐습니다. 문서를 다시 등록해 검토하세요')
         expected = json.loads(head['snapshot']) if head else {'nodes': [], 'edges': []}
         foreign = _foreign_references(tx, plan['document'], owned_keys(expected))
         before, history = _snapshot(tx, plan['document'], owned_keys(expected), foreign)

@@ -61,7 +61,7 @@ const UI = {
   terms: {
     // 메뉴 · 헤더
     'nav.main': '홈', 'nav.home': '시스템 구성', 'nav.scenario': '결함 시뮬레이션', 'nav.incidents': '이상 확인 · 조치', 'nav.trends': '실시간 모니터링',
-    'nav.ontology': '지식 지도', 'nav.skills': '조치 방법', 'nav.decision': '조치 판단 규칙', 'nav.process': '승인과 실행', 'nav.instances': '처리 건',
+    'nav.ontology': '지식 지도', 'nav.skills': '조치 방법', 'nav.decision': '조치 판단 규칙', 'nav.process': '판단 · 실행 기록', 'nav.instances': '처리 건',
     'nav.knowledge': '지식 관리', 'nav.admin': '관리', 'nav.mcp': '도구 연결',
     'nav.group.plant': '설비', 
     'header.services': '서비스', 'header.noResponse': '응답 없음', 'header.connected': '연결됨', 'header.connecting': '연결 중', 'header.waiting': '연결됨 · 대기', 'header.disconnected': '끊김 · 재연결 중',
@@ -74,8 +74,8 @@ const UI = {
     // 버튼
     'btn.approve': '승인', 'btn.reject': '반려', 'btn.submit': '제출', 'btn.answer': '답변', 'btn.rework': '다시 수행', 'btn.confirm': '확인',
     'btn.preview': '예측 다시 보기', 'btn.effects': '영향 보기', 'btn.reassess': '다시 평가', 'btn.reload': '다시 읽기', 'btn.save': '저장', 'btn.cancel': '변경 취소',
-    'btn.run': '판단 실행', 'btn.running': '판단 중…', 'btn.fit': '전체 흐름 보기', 'btn.unfit': '읽기 편한 크기로 보기', 'btn.more': '더 보기',
-    'btn.retry': '같은 내용 다시 전달', 'btn.closeTask': '단계 닫기', 'btn.cancelTask': '실행 취소', 'btn.goInstance': '처리 건에서 선택하기 →',
+    'btn.run': '모의 판단', 'btn.running': '판단 중…', 'btn.fit': '전체 흐름 보기', 'btn.unfit': '읽기 편한 크기로 보기', 'btn.more': '더 보기',
+    'btn.retry': '같은 내용 다시 전달', 'btn.closeTask': '단계 닫기', 'btn.cancelTask': '실행 취소', 'btn.goInstance': '승인 화면으로 이동 →',
     // 폼 라벨
     'form.by': '담당자', 'form.role': '역할', 'form.reason': '사유', 'form.note': '메모', 'form.answer': '답변', 'form.fan': '팬 속도', 'form.load': '펌프 부하', 'form.pump': '운전 펌프',
     'form.section.who': '사유 · 담당', 
@@ -97,15 +97,15 @@ const UI = {
     'dec.col.rule': '규칙', 'dec.col.target': '대상', 'dec.col.result': '결과', 'dec.col.input': '입력 데이터', 'dec.col.source': '출처', 'dec.col.value': '값', 'dec.col.how': '가져온 방법',
     'dec.failed': '판단 실패', 'dec.noPatterns': '이상 패턴을 불러오지 못했습니다',
     // 이상 확인 · 조치
-    'inc.select': '설비를 선택하세요', 'inc.selectSub': '위 설비 카드를 누르면 사건과 조치 과정이 보입니다', 'inc.noAlert': '경보 없음', 'inc.noAlertSub': '결함을 주입하면 여기에 나타납니다',
+    'inc.select': '설비를 선택하세요', 'inc.selectSub': '위 설비 카드를 누르면 사건과 조치 과정이 보입니다', 'inc.noAlert': '경보 없음', 'inc.noAlertSub': '결함 시뮬레이션에서 결함을 주입하면 경보가 나고 여기에 표시됩니다',
     'inc.noCase': '사건 없음', 'inc.list': '사건', 'inc.listAll': '전체 사건', 'inc.progress': '조치 과정', 'inc.evidence': '분석 근거', 'inc.agentTrace': '에이전트 처리 과정', 'inc.log': '기록',
     'inc.waiting': '조치 후보를 만드는 중…', 'inc.noCandidates': '고를 조치 후보가 없습니다', 'inc.alertAt': '경보', 'inc.approvedBy': '승인',
     'inc.noGuide': '아직 분석 결과가 없습니다', 'inc.freshness': '데이터 상태', 'inc.fresh': '정상', 'inc.stale': '신뢰 불가',
     'inc.causes': '가능한 원인', 'inc.recommended': '권장 조치', 'inc.noEvidence': '증거 규칙 없음', 'inc.unknown': '판정 미확인', 'inc.pass': '조건 충족', 'inc.fail': '조건 미충족',
     'inc.observed': '관측', 'inc.woPending': '정비 요청 발행 대기', 'inc.reasonLabel': '사유',
     // 처리 건
-    'inst.running': '진행 중', 'inst.myTurn': '내 차례', 'inst.asked': '질문', 
-    'inst.empty': '아직 처리 건이 없습니다', 'inst.emptySub': '경보가 나면 여기에 나타납니다', 'inst.select': '처리 건을 선택하세요', 'inst.selectSub': '결과 · 흐름 · 기록을 볼 수 있습니다',
+    'inst.running': '진행 중', 'inst.myTurn': '내 차례', 'inst.humanTurn': '사람 단계', 'inst.asked': '질문', 
+    'inst.empty': '아직 처리 건이 없습니다', 'inst.emptySub': '설비에 경보가 나면 처리 건이 생깁니다. 결함 시뮬레이션에서 결함을 주입해 보세요', 'inst.select': '처리 건을 선택하세요', 'inst.selectSub': '결과 · 흐름 · 기록을 볼 수 있습니다',
     'inst.noTodo': '지금 할 일이 없습니다', 'inst.noTodoSub': '차례가 오면 여기에 나타납니다', 'inst.noConn': '처리 서비스에 연결할 수 없습니다',
     'inst.tab.result': '결과', 'inst.tab.flow': '진행 상황', 'inst.tab.log': '단계 표', 'inst.tab.record': '처리 기록', 'inst.started': '시작', 'inst.ended': '종료', 'inst.justStarted': '방금 시작', 'inst.elapsed': '분 경과', 'inst.took': '분 만에',
     'inst.initial': '시작 값', 'inst.steps': '단계', 'inst.events': '에이전트 활동', 'inst.graph': '지식 반영', 
@@ -123,7 +123,7 @@ const UI = {
     'inst.stepTable.step': '단계', 'inst.stepTable.status': '상태', 'inst.stepTable.who': '누가', 'inst.stepTable.when': '시각', 'inst.stepTable.result': '결과',
     'inst.closeReason': '이 단계를 닫는 사유', 'inst.cancelReason': '실행을 취소하는 사유',
     // 승인과 실행
-    'proc.flow': '업무 흐름', 'proc.empty': '아직 제출된 판단이 없습니다', 'proc.emptySub': '경보가 나면 에이전트가 조치 후보를 제출합니다', 'proc.select': '판단을 선택하세요',
+    'proc.flow': '업무 흐름', 'proc.empty': '아직 제출된 판단이 없습니다', 'proc.emptySub': '설비에 경보가 나면 AI 에이전트가 조치 안을 제출합니다', 'proc.select': '판단을 선택하세요',
     'proc.manual': '수동 실행', 'proc.override': '추천과 다른 선택', 'proc.submitted': '제출', 'proc.executions': '실행 결과', 'proc.history': '이력', 
     'proc.noChange': '변경 없음', 'proc.noTx': '아직 실행 이력이 없습니다', 'tx.beforeAfter': '변경 전·후', 'tx.col.field': '항목', 'tx.col.before': '변경 전', 'tx.col.after': '변경 후', 'tx.noDiff': '바뀐 값 없음', 'tx.created': '새로 만듦', 'proc.noEnt': '기업 시스템에 연결할 수 없습니다', 'proc.listError': '판단 목록을 갱신할 수 없습니다. 마지막으로 받은 목록입니다.',
     'proc.flowEmpty': '판단을 고르면 그 처리 건의 흐름이 보입니다', 
@@ -143,8 +143,8 @@ const UI = {
     // 지식 지도 · 지식 관리 · 조치 방법
     'onto.stats': '항목 {n} · 연결 {e} · 조치 방법 {s} · 규칙 {r} · 성과 지표 {k}', 'onto.path': '강조 경로 {n}개', 'onto.found': '검색 결과 {n}개', 'onto.scroll': '지도 안에서 좌우로 이동',
     'onto.hint': '항목을 누르면 연결된 관계가 강조됩니다', 'onto.out': '나가는 관계', 'onto.in': '들어오는 관계', 'onto.loadFail': '지식을 불러올 수 없습니다', 'onto.loadFailSub': '연결을 확인하고 다시 읽기를 누르세요',
-    'kn.noFile': '선택한 파일 없음', 'kn.preview': '미리보기', 
-    'kn.docs': '등록된 매뉴얼', 'kn.docsEmpty': '등록된 매뉴얼이 없습니다', 'kn.docsEmptySub': '위에서 매뉴얼 파일을 골라 미리보기 뒤 적재하면 여기에 나타납니다', 'kn.history': '매뉴얼 등록 이력',
+    'kn.noFile': '선택한 파일 없음', 'kn.preview': '문서 등록', 
+    'kn.docs': '등록된 매뉴얼', 'kn.docsEmpty': '등록된 매뉴얼이 없습니다', 'kn.docsEmptySub': '위에서 매뉴얼 파일을 등록하고 AI 추출 결과를 검토해 적재하면 여기에 표시됩니다', 'kn.history': '매뉴얼 등록 이력',
     'kn.current': '현재 판본', 'kn.previous': '이전 판본', 'kn.rolledBack': '되돌림', 'kn.revise': '이 문서 개정', 'kn.undo': '이 판본 되돌리기', 'kn.sections': '절', 'kn.procedures': '조치 방법', 'kn.steps': '단계',
     // 이 문서로 답할 수 있는 질문 (A118 골든 퀘스천 — 화면 문구만)
     'golden.title': '이 문서로 답할 수 있는 질문', 'golden.questions': '질문', 'golden.questionsHint': '한 줄에 하나 · 최대 20개 · 이 문서를 읽은 뒤 답할 수 있어야 하는 질문을 적습니다',
@@ -178,7 +178,7 @@ const UI = {
     'flow.name.즉시 제어 포함?': '설비 제어가 있나?', 'flow.name.회복?': '회복됐나?',
     // A6: 끝 이벤트 id가 이름 없이 오는 자리(처리 건 목록 end_event · 로그 "instance ended (ev:…)") — 정의 events[].name과 같은 말
     'flow.name.start': '시작', 'flow.name.alert': '설비 경보', 'flow.name.select-timeout': '선택 시간 초과', 'flow.name.unhandled-alert': '미지원 경보 접수', 'flow.name.review-recorded': '현장 검토 기록 완료',
-    'flow.name.escalate': '책임자 확인', 'flow.name.triage': '현장 검토', 'flow.name.end': '종료', 'flow.name.closed': '종결', 'flow.name.escalated': '책임자 확인으로 종료', 'flow.name.rejected': '반려', 'flow.name.accepted': '승인',
+    'flow.name.escalate': '책임자 확인', 'flow.name.triage': '현장 검토', 'flow.name.end': '종료', 'flow.name.끝': '처리 완료', 'flow.name.closed': '종결', 'flow.name.escalated': '책임자 확인으로 종료', 'flow.name.rejected': '반려', 'flow.name.accepted': '승인',
     'flow.seq.선택 스킬 kind == control': '설비 제어', 'flow.seq.선택 스킬 kind == work_order': '정비 요청만', 'flow.seq.TS1 < 55 and 경보 해제': '회복', 'flow.seq.미회복': '미회복',
     // 일반
     // A161-U1: 결과 값(영문 코드) → 화면 말 (판단 · 출력 칸)
@@ -333,7 +333,7 @@ const UI = {
   },
   // 처리 건 값(variables_data 행 목록) → {키: 값} — 화면 모듈이 같은 펼치기를 따로 두지 않는다(W1-11)
   valuesOf(inst) { return Object.fromEntries(((inst && inst.variables_data) || []).map(r => [r.key, r.value])); },
-  // 작업 행의 주체: AI 일꾼(워커 단계) · 사람(사람 단계) · 시스템(그 밖 — 서비스 · 설비 · 타이머)
+  // 작업 행의 주체: AI 에이전트(워커 단계) · 사람(사람 단계) · 시스템(그 밖 — 서비스 · 설비 · 타이머)
   doerOf(w) { return w.agent_orch === 'cliagents' || w.agent_mode ? 'agent' : !w.agent_orch && !w.agent_mode ? 'human' : 'system'; },
   // 처리 건 작업 행을 일어난 차례로: 시작 시각 → 끝 시각 → 같은 순간이면 흐름 순서(서버 view.flow_order = 정의의 흐름 차례 — 단계 id → 순번).
   // 한 트랜잭션에서 연달아 끝난 시스템 단계(정비 오더 등록 → 결과 보고)는 시각이 같다 — 시각만으로는 순서가 거꾸로 보일 수 있다(W1-01).
@@ -385,13 +385,13 @@ const UI = {
     return /^user:/.test(id) ? '담당자 (이름 확인 안 됨)' : /^agent:/.test(id) ? 'AI 에이전트' : id;
   },
   roleName(id, definition) { return (definition?.roles || []).find(r => r.endpoint === id)?.name || this.who(id); },
-  // 담당자 칸: 값이 고른 "나"(user:*)면 이름을 읽기 전용으로 보이고 id 는 숨은 칸에 실어 보낸다(원문 id 를 학생에게 보이지 않는다).
+  // 담당자 칸: 값이 선택한 사용자(user:*)면 이름을 읽기 전용으로 보이고 id 는 숨은 칸에 실어 보낸다(원문 id 를 학생에게 보이지 않는다).
   // attrs 는 입력 요소의 속성 원문(id="rwBy" · data-retry-by 등) — 읽는 코드는 그대로 .value 를 읽는다.
   actorInput(attrs, value, extra = '') {
     const m = window.hydInbox?.me?.();
-    if (m) return `<input type="hidden" ${attrs} value="${esc(m.id)}"><span class="ro-value">${esc(m.name)} <span class="muted">(나)</span></span>`;
-    // 서버는 사람 행동을 등록된 「나」(user:…)로만 받는다 — 자유 글 칸을 두지 않는다(W1-08)
-    return `<input type="hidden" ${attrs} value=""><span class="field-hint" data-pick-me>먼저 위의 [나 고르기]에서 나를 고르세요 — 누가 했는지 기록에 남습니다.</span>`;
+    if (m) return `<input type="hidden" ${attrs} value="${esc(m.id)}"><span class="ro-value">${esc(window.hydInbox.meLabel?.() || m.name)}</span>`;
+    // 서버는 사람 행동을 등록된 사용자(user:…)로만 받는다 — 자유 글 칸을 두지 않는다(W1-08)
+    return `<input type="hidden" ${attrs} value="">${window.hydInbox?.pickInline ? window.hydInbox.pickInline() : '<span class="field-hint" data-pick-me>화면 오른쪽 위에서 사용자를 선택하세요.</span>'}`;
   },
   // 요청 id(같은 요청을 다시 보낼 때 서버가 알아보는 번호). 포털은 127.0.0.1 에만 열리므로(compose.yaml) 늘 보안 문맥 — randomUUID 가 있다
   uuid() { return window.crypto.randomUUID(); },
@@ -468,6 +468,8 @@ const UI = {
   fold(summary, body, { open = false, cls = '' } = {}) { return `<details class="fold ${cls}" ${open ? 'open' : ''}><summary>${summary}</summary><div class="fold-body">${body}</div></details>`; },
   // empty: 굵은 한 줄 + 보조 한 줄
   empty(title, sub = '', cls = '') { return `<div class="empty ${cls}"><b>${esc(title)}</b>${sub ? `<span>${esc(sub)}</span>` : ''}</div>`; },
+  // emptyGo: 빈 화면 + 다음 할 일로 가는 단추 하나(메뉴 id = index.html data-tab). 「없음」에서 끝나지 않고 무엇을 하면 채워지는지로 잇는다
+  emptyGo(title, sub, tab, label, cls = '') { return `<div class="empty ${cls}"><b>${esc(title)}</b>${sub ? `<span>${esc(sub)}</span>` : ''}<button type="button" class="btn small" data-go-tab="${esc(tab)}">${esc(label)} →</button></div>`; },
   // tabs: 밑줄형. items = [[key, label, count?]]
   tabs(items, active, attr = 'data-tab-key') {
     return `<div class="tabs" role="tablist">${items.map(([k, l, n]) => `<button type="button" role="tab" class="tab${k === active ? ' on' : ''}" ${attr}="${esc(k)}" aria-selected="${k === active}">${esc(l)}${n != null ? ` <span class="chip tone-neutral sm">${esc(n)}</span>` : ''}</button>`).join('')}</div>`;
@@ -538,10 +540,10 @@ UI.loadNames();   // A141: 원문 id → 이름 사전(정적 names.json). 읽�
 Object.assign(UI.terms, {
   'var.approval': '승인 여부', 'var.approval_reason': '결정 사유', 'var.result_report': '결과 보고', 'var.request_id': '요청 번호', 'var.approved_option': '승인한 안',
   'nav.inbox': '내 작업함', 'nav.agents': '에이전트', 'nav.mcp': '도구 연결', 'nav.compare': '시험 비교', 'nav.eval': '판단 채점',
-  'nav.whatif': '조건별 손익', 'nav.kpi': '성과 지표', 'nav.fabric': '데이터 연결',
+  'nav.whatif': '조건별 손익', 'nav.kpi': '성과 지표', 'nav.fabric': '데이터 원천',
   'nav.ask': '에이전트에게 질문',   // B5
   'nav.group.work': '작업', 'nav.group.judge': '판단', 'nav.group.knowledge': '지식', 'nav.group.ai': '인공지능 설정', 'nav.group.kpi': '성과', 'nav.group.system': '시스템',
-  'shell.me': '나', 'shell.meNone': '선택 안 함', 'shell.bell': '알림', 'shell.bellCount': '새 알림 {n}건',
+  'shell.bell': '알림', 'shell.bellCount': '새 알림 {n}건',
   'shell.mountFail': '화면을 그리지 못했습니다', 'shell.unknownRoute': '없는 화면 주소입니다. 홈으로 이동했습니다.',
   'dialog.ok': '확인', 'dialog.cancel': '취소', 'state.retry': '다시 시도',
 });
@@ -765,3 +767,6 @@ Object.assign(UI.terms, {
       terminal: terminal || null };
   };
 })();
+
+// [data-go-tab="메뉴 id"] 단추: 다음 할 일이 있는 화면으로 옮긴다(빈 화면 · 완료 안내가 함께 쓴다 — UI.emptyGo)
+if (typeof document !== 'undefined') document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-go-tab]'); if (b && typeof selectTab === 'function') selectTab(b.dataset.goTab); });

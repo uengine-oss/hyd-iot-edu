@@ -1134,3 +1134,5 @@ body.present #caption {
 /* 관리 › 원천 이벤트 접수(sourceEvents.js) */
 #sourceEventRetry input, #sourceEventRetry textarea { width: 100%; min-width: 0; box-sizing: border-box; }
 #sourceEventList .btn { text-align: left; overflow-wrap: anywhere; }
+.unit .unit-more { margin-top: var(--s3); }
+.unit .unit-more .ctl { margin-top: var(--s2); }

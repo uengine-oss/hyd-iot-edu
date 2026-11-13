@@ -23,15 +23,16 @@
     });
   }
   const panel = hydDefinitions.task($d('definitionDeployPanel'), $d('deployMessage'), syncButtons), action = panel.run, message = panel.say;
-  // 담당자 = 포털의 「나」(사용자 표의 사람) — 자유 입력은 배포 이력에 지어낸 이름을 남겼다. 서버도 사람만 받는다(inbox.require_person)
+  // 담당자 = 선택한 사용자(사용자 표의 사람) — 자유 입력은 배포 이력에 지어낸 이름을 남겼다. 서버도 사람만 받는다(inbox.require_person)
   function showMe() {
     const m = window.hydInbox?.me?.(), el = $d('deployBy');
-    el.readOnly = true; el.value = m ? `${m.name} (나)` : ''; el.placeholder = '내 작업함에서 나를 고르세요';
+    el.readOnly = true; el.value = m ? (window.hydInbox.meLabel?.() || m.name) : ''; el.placeholder = '화면 오른쪽 위에서 사용자를 선택하세요';
     return m;
   }
+  window.addEventListener('hyd:me', () => { if ($d('deployBy')) showMe(); });
   function meId() {
     const m = showMe();
-    if (!m) throw Error("담당자는 '나'입니다 — 내 작업함에서 나를 먼저 고르세요");
+    if (!m) throw Error('화면 오른쪽 위에서 사용자를 선택하세요 — 배포 이력에 담당자로 남습니다');
     return m.id;
   }
   function who() {

@@ -38,13 +38,13 @@
     <div class="navgroup" data-term="nav.group.judge">판단</div>
     <button data-tab="decision" data-icon="decision" data-term="nav.decision">조치 판단 규칙</button>
     <button data-tab="whatif" data-icon="whatif" data-term="nav.whatif">조건별 손익</button>
-    <button data-tab="process" data-icon="process" data-term="nav.process">승인과 실행</button>
+    <button data-tab="process" data-icon="process" data-term="nav.process">판단 · 실행 기록</button>
     <button data-tab="flows" data-icon="process">흐름 가져오기</button>
     <div class="navgroup" data-term="nav.group.knowledge">지식</div>
     <button data-tab="ontology" data-icon="nodes" data-term="nav.ontology">지식 지도</button>
     <button data-tab="skills" data-icon="skills" data-term="nav.skills">조치 방법</button>
     <button data-tab="knowledge" data-icon="book" data-term="nav.knowledge">지식 관리</button>
-    <button data-tab="fabric" data-icon="fabric" data-term="nav.fabric">데이터 연결</button>
+    <button data-tab="fabric" data-icon="fabric" data-term="nav.fabric">데이터 원천</button>
     <div class="navgroup" data-term="nav.group.ai">인공지능 설정</div>
     <button data-tab="ask" data-icon="agent" data-term="nav.ask">에이전트에게 질문</button>
     <button data-tab="agents" data-icon="agent" data-term="nav.agents">에이전트</button>
@@ -66,8 +66,8 @@
   <div class="breadcrumb"><span id="pageGroup">시스템</span><b id="pageLocation">홈</b></div>
   <div class="strip-status"><span id="courseStatus" class="course-status" aria-live="polite"></span><span class="env-badge">시뮬레이션</span><span>진행 중 사건 <b id="openCount" class="num">–</b></span><details class="stream-ticker" id="streamTicker" aria-live="polite"><summary><i class="live-dot off"></i><span>연결 중</span></summary></details><div class="dots" id="healthDots"></div></div>
   <details class="clock-pop"><summary aria-label="시뮬레이션 시각">시뮬레이션 시각</summary><div><span>시뮬레이션 시각 <b id="simT" class="num">–</b></span><span>시간 배율 <b id="scale" class="num">–</b>×</span></div></details>
-  <!-- 「나」 자리 · 알림 종 — 한 벌(inbox.js mountMe · 셸의 종). -->
-  <div class="shell-me" id="shellMe" aria-label="나"></div>
+  <!-- 사용자 선택(계정 자리) · 알림 종 — 한 벌(inbox.js mountMe · 셸의 종). -->
+  <div class="shell-me" id="shellMe" aria-label="사용자 선택"></div>
   <button type="button" class="shell-bell" id="shellBell" aria-label="알림"><span class="shell-badge" id="shellBadge" hidden></span></button>
 </header>
 <button class="nav-scrim" id="navScrim" aria-label="메뉴 닫기" hidden></button>
@@ -132,14 +132,14 @@
         <div class="field"><label for="decStandby">예비 펌프</label><select id="decStandby"><option value="">현재 값 사용</option><option value="true">가용</option><option value="false">정비 중</option></select></div>
         <div class="field"><label for="decFan">팬 100 % 연속 운전 (시간)</label><input id="decFan" type="number" min="0" step="1" placeholder="현재 값 사용"></div>
       </div>
-      <div class="form-actions"><button class="btn primary" id="decRun">판단 실행</button></div>
+      <div class="form-actions"><button class="btn primary" id="decRun">모의 판단</button><span class="field-hint">규칙을 시험해 보는 기능입니다. 승인이나 설비 실행으로 이어지지 않습니다.</span></div>
     </section>
     <div id="decResult"></div>
   </section>
 
   <!-- ───────── 승인과 실행 ───────── -->
   <section class="view" id="view-process">
-    <div class="page-head"><h1>승인과 실행</h1></div>
+    <div class="page-head"><h1>판단 · 실행 기록</h1></div>
     <h2 class="sec">업무 흐름</h2>
     <div class="flow-wrap" id="procBpmn"></div>
     <div class="sec-head"><h2>판단 결과</h2></div>
@@ -166,7 +166,7 @@
     </div>
     <!-- A161-U1: 선택한 처리 건의 실시간 처리 과정은 상세(진행 탭)에 있다. 여기는 모든 처리 건을 한꺼번에 보는 보조 정보라 접어 둔다 -->
     <details class="fold stream-fold" id="streamFold"><summary>모든 처리 건의 실시간 활동 <span class="chip tone-neutral sm" id="streamFoldCount"></span></summary><div class="fold-body"><section class="stream-panel" id="streamPanel"></section></div></details>
-    <details class="fold stream-fold" id="agentsFold"><summary><i class="live-dot off" id="agentsFoldDot"></i> 지금 일하는 AI 일꾼 <span class="chip tone-neutral sm" id="agentsFoldCount"></span></summary><div class="fold-body"><div id="agentsPanel"></div></div></details><!-- U1: agentsPanel.js -->
+    <details class="fold stream-fold" id="agentsFold"><summary><i class="live-dot off" id="agentsFoldDot"></i> 실행 중인 AI 에이전트 <span class="chip tone-neutral sm" id="agentsFoldCount"></span></summary><div class="fold-body"><div id="agentsPanel"></div></div></details><!-- U1: agentsPanel.js -->
   </section>
 
 
@@ -213,11 +213,11 @@
     <h2 class="sec">매뉴얼 등록</h2>
     <div class="upload card" id="manualUpload">
       <div class="form-grid">
-        <div class="field"><label>매뉴얼 파일</label><label class="file-picker"><span class="btn small">파일 선택</span><input type="file" id="manualFile" accept=".md,.txt,.pdf" aria-label="매뉴얼 파일 선택"><span class="file-name" id="manualFilename">선택한 파일 없음</span></label><p class="field-hint">절 제목과 번호 매긴 단계가 있는 문서 · 제공 문서(받기): <span id="providedDocs">읽는 중…</span></p></div>
-        <div class="field"><label for="manualBy">담당자</label><input id="manualBy" value="지식 관리자"></div>
-        <div class="field"><label for="manualDocumentId">등록할 문서</label><select id="manualDocumentId" aria-describedby="manualDocumentHelp"><option value="">새 문서 등록</option></select><p id="manualDocumentHelp" class="muted">파일을 미리보기 전에 등록할 문서를 선택하세요.</p></div>
+        <div class="field"><label>매뉴얼 파일</label><label class="file-picker"><span class="btn small">파일 선택</span><input type="file" id="manualFile" accept=".md,.txt,.pdf" aria-label="매뉴얼 파일 선택"><span class="file-name" id="manualFilename">선택한 파일 없음</span></label><p class="field-hint">수업 제공 문서(누르면 받습니다): <span id="providedDocs">읽는 중…</span></p></div>
+        <div class="field"><label for="manualBy">담당자</label><input id="manualBy" readonly placeholder="화면 오른쪽 위에서 사용자를 선택하세요"></div>
+        <div class="field"><label for="manualDocumentId">등록할 문서</label><select id="manualDocumentId" aria-describedby="manualDocumentHelp"><option value="">새 문서 등록</option></select><p id="manualDocumentHelp" class="muted">이미 등록한 문서의 개정판이면 그 문서를 선택하세요. 처음 올리는 문서는 그대로 둡니다.</p></div>
       </div>
-      <div class="form-actions"><button class="btn" id="manualPreview">미리보기</button></div>
+      <div class="form-actions"><button class="btn primary" id="manualPreview">문서 등록</button></div>
       <div id="manualResult"></div>
       <div id="manualSources"></div>
     </div>
@@ -227,7 +227,7 @@
       <div class="form-grid">
         <div class="field"><label>스키마 파일</label><label class="file-picker"><span class="btn small">파일 선택</span><input type="file" id="ddlFile" accept=".sql,.txt,.ddl" aria-label="스키마 파일 선택"><span class="file-name" id="ddlFilename">선택한 파일 없음</span></label><p class="field-hint">업무 DB의 테이블 정의(CREATE TABLE) · <a href="samples/legacy-plant-db.sql" download>옛 설비 DB 예시</a></p></div>
         <div class="field"><label for="ddlCatalog">데이터베이스</label><input id="ddlCatalog" value="postgres"><p class="field-hint">그 연결 안의 데이터베이스 이름 — 제공 실습은 그대로 둡니다</p></div>
-        <div class="field"><label for="ddlBy">담당자</label><input id="ddlBy" value="지식 관리자"></div>
+        <div class="field"><label for="ddlBy">담당자</label><input id="ddlBy" readonly placeholder="화면 오른쪽 위에서 사용자를 선택하세요"></div>
       </div>
       <div class="form-actions"><button class="btn" id="ddlPreview">미리보기</button></div>
       <div id="ddlResult"></div>
@@ -334,7 +334,7 @@
     <div class="shell-mount" id="kpiView"></div>
   </section>
   <section class="view" id="view-fabric">
-    <div class="page-head"><h1>데이터 연결</h1></div>
+    <div class="page-head"><h1>데이터 원천</h1></div>
     <div class="shell-mount" id="fabricView"></div>
   </section>
   <section class="view" id="view-flows">

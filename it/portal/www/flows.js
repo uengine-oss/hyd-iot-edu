@@ -417,7 +417,7 @@
 
   // 누가 했는지: 판본 등록 · 되돌리기는 고른 「나」로 기록한다(서버 flows_api 가 by 를 요구한다) — 없으면 그 자리에서 안내하고 보내지 않는다
   const meId = () => window.hydInbox?.me?.()?.id || '';
-  const NEED_ME = '누가 했는지 기록에 남기 때문에 먼저 위의 [나 고르기]에서 나를 고르세요.';
+  const NEED_ME = '화면 오른쪽 위에서 사용자를 선택하세요(누가 했는지 기록에 남습니다).';
   async function doRegister() {
     const msg = S.el.querySelector('#flowMsg');
     if (!meId()) { msg.textContent = '판본을 등록하려면 ' + NEED_ME; msg.className = 'form-msg neg'; return; }

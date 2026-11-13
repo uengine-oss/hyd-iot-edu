@@ -1,15 +1,15 @@
-/* U1 — 지금 일하는 AI 일꾼 (처리 건 탭, 접힘). GET /api/agents/status (일꾼 서비스의 /health · 설치된 CLI) 와
+/* U1 — 지금 일하는 AI 에이전트 (처리 건 탭, 접힘). GET /api/agents/status (일꾼 서비스의 /health · 설치된 CLI) 와
    GET /api/todolist?status=IN_PROGRESS&agent_orch=cliagents (일꾼이 잡고 있는 단계: consumer 가 임대한 행) 를 5초마다 읽는다.
    vue3 에는 전역 일꾼 현황 화면이 없다(단계별 agent-monitor 탭뿐) — 회의 L434 "어떤 에이전트들이 지금 동작하고 있다" 를 위해 둔다.
    누르면 그 처리 건의 흐름 탭을 열고 task 상세 패널(taskDetail.js)로 이어진다. 폴백 없음: 일꾼이 안 닿으면 그 사유를 그대로 보인다. */
 (function () {
   const A = { status: null, rows: [], err: null, sig: null };
   Object.assign(UI.terms, {
-    'agents.title': '지금 일하는 AI 일꾼', 'agents.service': '일꾼 서비스', 'agents.up': '연결됨', 'agents.down': '연결 안 됨', 'agents.inFlight': '실행 중',
+    'agents.title': '실행 중인 AI 에이전트', 'agents.service': 'AI 에이전트 실행 서비스', 'agents.up': '연결됨', 'agents.down': '연결 안 됨', 'agents.inFlight': '실행 중',
     'agents.handled': '처리', 'agents.lastLook': '마지막으로 일을 찾은 시각', 'agents.never': '아직 없음', 'agents.clis': '설치된 코딩 에이전트',
-    'agents.worker': '일꾼', 'agents.holding': '잡고 있는 단계', 'agents.waiting': '일꾼을 기다리는 단계', 'agents.none': '지금 일하는 일꾼이 없습니다', 'agents.noneSub': '에이전트 단계가 시작되면 여기에 나타납니다',
+    'agents.worker': '실행 서비스', 'agents.holding': '수행 중인 단계', 'agents.waiting': 'AI 에이전트 차례를 기다리는 단계', 'agents.none': '실행 중인 AI 에이전트가 없습니다', 'agents.noneSub': '에이전트 단계가 시작되면 여기에 나타납니다',
     'agents.open': '처리 과정 보기', 'agents.rowsFail': '단계 목록을 읽지 못했습니다', 'agents.installed': '설치됨', 'agents.missing': '없음',
-    'agents.downWhy': 'AI 일꾼이 꺼져 있거나 켜지는 중입니다. 1분 뒤에도 같으면 시작.bat을 다시 실행하세요.', 'agents.raw': '연결 오류 원문',
+    'agents.downWhy': 'AI 에이전트 실행 서비스가 꺼져 있거나 켜지는 중입니다. 1분 뒤에도 같으면 시작.bat을 다시 실행하세요.', 'agents.raw': '연결 오류 원문',
   });
   const instName = pid => { const I = window.hydInstances && window.hydInstances.I; const inst = I && I.instances.find(x => x.proc_inst_id === pid); return (inst && inst.proc_inst_name) || UI.defName(pid); };
 

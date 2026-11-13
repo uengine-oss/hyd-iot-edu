@@ -140,3 +140,45 @@
 .inbox-body a.item { display: block; color: inherit; text-decoration: none; }
 .inbox-body a.item.unread strong { font-weight: 700; }
 .inbox-body a.item:not(.unread) { opacity: .78; }
+
+/* 사용자 선택 — 계정 자리(로그인 대신)와 폼 안의 그 자리(inbox.js selectHtml · pickInline · switchInline) */
+.shell-me { max-width: 240px; overflow: visible; }
+.shell-me-select {
+  min-width: 0;
+  max-width: 200px;
+  height: 32px;
+  padding: 0 28px 0 10px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sm);
+  background-color: var(--panel);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.shell-me-select:hover { border-color: var(--ink-3, var(--ink-2)); }
+.shell-me.needs-pick .shell-me-select { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent); }
+.pick-user {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--rule));
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--accent) 5%, var(--panel));
+  text-align: left;
+}
+.pick-user .pick-user-lead { font-weight: 600; color: var(--ink); }
+.pick-user select { height: 34px; min-width: 200px; max-width: 100%; }
+.pick-user .field-hint { flex-basis: 100%; margin: 0; }
+.pick-user.warn { border-color: color-mix(in srgb, var(--warn) 45%, var(--rule)); background: color-mix(in srgb, var(--warn) 6%, var(--panel)); margin-top: var(--s3); }
+.pick-user.warn .pick-user-lead { flex: 1 1 320px; font-weight: 500; }
+.empty .pick-user { margin-top: var(--s3); justify-content: center; }
+.inbox-owner { margin: 0 0 var(--s3); color: var(--ink-2); }
+.inbox-owner b { color: var(--ink); }
+.todo-others { grid-column: 1 / -1; }
+@media (max-width: 1200px) { .shell-me-select { max-width: 150px; } }

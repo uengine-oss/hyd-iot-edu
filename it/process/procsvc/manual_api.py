@@ -110,14 +110,9 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
 
     def preview(source):
         app.state.course.document(source['sha256'])
-        def with_catalog(session):
-            modes = session.run('MATCH (f:FailureMode) OPTIONAL MATCH (f)-[:OCCURS_IN]->(c:Component) '
-                                "RETURN f.id AS id, f.name + ' ' + coalesce(c.name, '') AS name").data()
-            result = manual_review.proposal(source, modes)
-            result['previous_batch'] = manual_graph.head(session, tenant, source['document_id'])
-            result['validation'] = preflight(session, result)
-            return result
-        return graph(with_catalog)
+        result = manual_review.registered(source)
+        result['previous_batch'] = graph(lambda session: manual_graph.head(session, tenant, source['document_id']))
+        return result
 
     @app.post('/api/kg/manuals/preview')
     async def upload(body: dict):

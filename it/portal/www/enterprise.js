@@ -473,7 +473,7 @@ function renderProcess() {
     list.dataset.sig = sig;
     const focused = list.contains(document.activeElement) ? document.activeElement.dataset.itemId : null;
     const scroll = list.scrollTop;
-    list.innerHTML = ent.decisions.length ? '' : UI.empty(UI.t('proc.empty'), UI.t('proc.emptySub'), 'compact');
+    list.innerHTML = ent.decisions.length ? '' : UI.emptyGo(UI.t('proc.empty'), UI.t('proc.emptySub'), 'scenario', UI.t('nav.scenario'), 'compact');
     if (ent.decisionsError) list.innerHTML = `<div class="neg" role="status">${esc(UI.t('proc.listError'))}</div>`;
     const paged = UI.page(ent.decisions, ent.decShown, d => d.id === ent.decSel);
     for (const d of paged.rows) {
@@ -516,8 +516,8 @@ function renderDecisionApproval() {
   // 판단은 처리 건의 승인 단계에서만 승인 · 거절한다(서버에 판단 단독 승인 길이 없다 — test_main.test_처리_건_밖의_옛_승인_경로는_없다).
   // 사건(경보)에서 나온 판단은 처리 건으로 가는 버튼 하나, 사건 없이 들어온 판단은 승인할 길이 없음을 그대로 알린다(서버도 접수를 거절한다 — FA2 넘김).
   if (pending && (d.origin || {}).incident) {
-    html += `<div class="hitl-opts">${opts.map(o => cardHtml(o, { rec: d.recommended, chosen: d.chosen, maxAbs, decision: d })).join('')}</div>` +
-      `<p class="field-hint">이 판단은 처리 건의 승인 단계에서 승인하거나 거절합니다.</p>` + UI.actions(`<button class="btn primary" id="decGoInstance">처리 건에서 승인하기 →</button>`, ent.form.msg || '');
+    html += `<div class="await-approval" role="status"><div><b>담당자 승인을 기다리는 중입니다</b><span>이 판단은 처리 건의 승인 단계에서 승인하거나 반려합니다. 이 화면은 기록을 보는 곳입니다.</span></div>${UI.actions(`<button class="btn primary" id="decGoInstance">승인 화면으로 이동 →</button>`, ent.form.msg || '')}</div>` +
+      UI.fold(`AI가 제안한 조치 안 <span class="chip tone-neutral sm">${opts.length}</span> <span class="muted">— 보기 전용</span>`, `<div class="hitl-opts">${opts.map(o => cardHtml(o, { rec: d.recommended, chosen: d.chosen, maxAbs, decision: d })).join('')}</div>`, { cls: 'plain' });
   } else if (pending) {
     html += `<div class="hitl-opts">${opts.map(o => cardHtml(o, { rec: d.recommended, chosen: d.chosen, maxAbs, decision: d })).join('')}</div>` +
       `<p class="neg" role="status">이 판단은 경보로 열린 처리 건 없이 제출돼 승인하거나 거절할 수 없습니다. 판단은 처리 건 안에서만 승인합니다 — 설비 경보(결함 시뮬레이션)로 처리 건을 열고 그 승인 단계에서 고르세요.</p>`;
@@ -530,7 +530,7 @@ function renderDecisionApproval() {
   box.innerHTML = html;
   $('#decGoInstance')?.addEventListener('click', async e => {
     const b = e.currentTarget; b.disabled = true;
-    try { if (!(await window.hydHitl?.openIncident(d.origin.incident))) { ent.form.msg = '이 판단의 처리 건을 찾지 못했습니다 — 「처리 건」 화면에서 직접 고르세요.'; ent.lastDetailSig = null; renderDecisionApproval(); } }
+    try { if (!(await window.hydHitl?.openIncident(d.origin.incident))) { ent.form.msg = '이 판단의 처리 건을 찾지 못했습니다. 왼쪽 메뉴 「처리 건」에서 같은 설비의 건을 여세요.'; ent.lastDetailSig = null; renderDecisionApproval(); } }
     catch (err) { ent.form.msg = err.message; ent.lastDetailSig = null; renderDecisionApproval(); }
     finally { b.disabled = false; }
   });

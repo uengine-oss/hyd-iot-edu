@@ -37,7 +37,7 @@ PATH_NOTES = {
               '여러 번 돌리면 지금 설비 값이 바뀔 때 결과가 달라지는지만 봅니다. 정답표의 가정 사실을 그대로 넣습니다.',
     'evaluate': '규칙 읽기 평가 — AI 모델 없이 경보 한 건을 근거 조회 → 원인 → 조치 카드 → 안전 규칙 검사까지 실제로 돌리되 판단을 등록하지는 않습니다. '
                 '사실은 지금 설비 · 업무 DB 값이며, 정답표의 가정과 다르면 항목에 표시합니다.',
-    'worker': '지난 처리 건 — 실제 처리 건에서 AI 일꾼이 낸 원인 · 근거와 등록된 조치 판단을 채점합니다. 같은 항목에 맞는 처리 건 여러 개는 '
+    'worker': '지난 처리 건 — 실제 처리 건에서 AI 에이전트가 낸 원인 · 근거와 등록된 조치 판단을 채점합니다. 같은 항목에 맞는 처리 건 여러 개는 '
               '반복으로 묶어 결과가 흔들리는지 봅니다.',
 }
 BOOKKEEPING_LABELS = ['ManualIngestionBatch', 'ManualIngestionDocument', 'IngestionBatch', 'IngestionControl', 'KnowledgeEdit']

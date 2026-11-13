@@ -5,8 +5,8 @@
    원본 대응: process-gpt-vue3 ui/WorkItemChat.vue(도구 입력 · 결과 접기), apps/todolist/InstanceTimeline.vue(작업 하나 = 메시지 하나). */
 (function () {
   const LIVE = new Set(['waiting', 'running', 'submitted', 'correcting', 'asking']);
-  const STATE = { waiting: ['대기', 'neutral'], running: ['조회 중', 'accent'], submitted: ['정리 중', 'accent'], correcting: ['형식 고치는 중', 'warning'],
-    asking: ['사람에게 질문', 'warning'], done: ['끝', 'success'], failed: ['실패', 'danger'], closed: ['닫힘', 'neutral'], broken: ['오류', 'danger'] };
+  const STATE = { waiting: ['대기 중', 'neutral'], running: ['조회 중', 'accent'], submitted: ['정리 중', 'accent'], correcting: ['형식 고치는 중', 'warning'],
+    asking: ['사람에게 질문', 'warning'], done: ['답변 완료', 'success'], failed: ['실패', 'danger'], closed: ['닫힘', 'neutral'], broken: ['오류', 'danger'] };
   const A = { el: null, status: null, statusErr: '', agents: [], agent: '', draft: '', sending: false, err: '', cur: null, history: [], timer: null, histErr: '' };
   const api = path => API.process + '/api/ask' + path;
   const uuid = () => UI.uuid();   // 비보안 문맥(IP 주소로 연 포털)에서도 같은 공용 생성기
@@ -95,8 +95,8 @@
     if (A.statusErr) return `<p class="neg" role="status">질문 기능 상태를 읽지 못했습니다: ${esc(A.statusErr)}</p>`;
     const s = A.status;
     if (!s) return '<p class="muted">상태를 확인하는 중…</p>';
-    if (s.ready) return `<span class="live-conn on">답할 AI 일꾼 연결됨</span>`;
-    return `<div class="ask-warn" role="status">${UI.chipText('지금은 답할 AI 일꾼이 없습니다', 'warning')} <span>${esc(s.reason || '')}</span></div>`;
+    if (s.ready) return `<span class="live-conn on">답할 AI 에이전트 연결됨</span>`;
+    return `<div class="ask-warn" role="status">${UI.chipText('지금은 답할 AI 에이전트이 없습니다', 'warning')} <span>${esc(s.reason || '')}</span></div>`;
   }
   function agentOptions() {
     return A.agents.map(a => `<option value="${esc(a.id)}" ${a.id === A.agent ? 'selected' : ''}>${esc(a.name)}${a.default ? ' (기본)' : a.mine ? ' (내가 만든 것)' : ''}</option>`).join('');
@@ -154,7 +154,7 @@
   }
   function callRow(c) {
     const tone = c.running ? 'accent' : c.ok ? 'success' : c.ok === false ? 'danger' : 'neutral';
-    const label = c.running ? '실행 중' : c.ok ? '성공' : c.ok === false ? '실패' : '끝';
+    const label = c.running ? '실행 중' : c.ok ? '성공' : c.ok === false ? '실패' : '완료';
     return `<li>${UI.chipText(label, tone)} <b>${esc(toolName(c))}</b> <span class="muted">${esc(UI.clean(c.input_text || ''))}</span>${c.problem ? `<div class="neg">${esc(UI.clean(c.problem))}</div>` : ''}</li>`;
   }
   function threadHtml(staticCalls) {

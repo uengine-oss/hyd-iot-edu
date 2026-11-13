@@ -1,18 +1,17 @@
-"""Source-backed proposals and validated, human-reviewed ontology plans.
+"""Registered sources and validated, human-reviewed ontology plans.
 
-The structured parser is a convenience for explicitly numbered manuals, not an
-LLM extractor. Both it and reviewed agent proposals use the same citation checks.
+Registering a document only stores the source and reports how it was read. Sections and
+procedures come from the agent extraction (manual_extraction) and nowhere else: a parser that
+read numbered lines was removed 2026-11-13 because it only fit documents written in one layout
+and showed a result and warnings before any extraction had run. Reviewed plans are checked here.
 """
 from __future__ import annotations
 
 import hashlib
 import json
-import re
 from uuid import uuid4, UUID
 
 from . import kgadmin, manual_knowledge, manual_references
-
-STEP_RE = re.compile(r'^\s*(\d+)[.)]\s+(.+?)\s*$')
 
 
 def document_key(tenant, document_id):
@@ -25,61 +24,13 @@ def canonical(value):
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
 
 
-def proposal(source, failure_modes=()):
-    sections, procedures = [], []
-    sec, proc = None, None
-    warnings = list(source['warnings'])
-    for page in source['pages']:
-        offset = 0
-        for raw in page['text'].splitlines(keepends=True):
-            line = raw.rstrip('\r\n')
-            anchor = dict(source_id=source['source_id'], page=page['page'],
-                          start=offset, end=offset + len(line), quote=line)
-            offset += len(raw)
-            if not line.strip():
-                continue
-            sop = kgadmin.SOP_RE.match(line)
-            heading = kgadmin.SECTION_RE.match(line)
-            step = STEP_RE.match(line)
-            if sop:
-                if sec is None:
-                    warnings.append(f'{sop[1]}: 먼저 원문 절을 지정해야 합니다')
-                    proc = None
-                    continue
-                proc = {'id': sop[1], 'name': sop[2], 'section': sec['ref'],
-                        'anchor': anchor, 'steps': []}
-                procedures.append(proc)
-            elif heading and not step:
-                sec = {'ref': heading[1], 'title': heading[2], 'excerpt': '', 'anchor': anchor}
-                sections.append(sec)
-                proc = None
-            elif step:
-                if sec is None:
-                    warnings.append('절 제목 없는 단계는 자동 적재하지 않습니다. 원문을 검토하세요')
-                    continue
-                if proc is None:
-                    proc = {'id': 'SOP-' + sec['ref'].replace('.', '-'), 'name': sec['title'],
-                            'section': sec['ref'], 'anchor': sec['anchor'], 'steps': []}
-                    procedures.append(proc)
-                if int(step[1]) != len(proc['steps']) + 1:
-                    warnings.append(f"{proc['id']}: 원문 단계 번호 {step[1]}의 순서를 검토하세요")
-                proc['steps'].append({'order': len(proc['steps']) + 1, 'text': step[2],
-                                      'manual': sec['ref'], 'anchor': anchor})
-            elif sec is not None:
-                sec['excerpt'] += ('\n' if sec['excerpt'] else '') + line
-    for p in procedures:
-        p['stepCount'] = len(p['steps'])
-        tokens = kgadmin._tokens(p['name'])
-        scores = [(len(tokens & kgadmin._tokens(f['name'])), f['id']) for f in failure_modes]
-        scores.sort(reverse=True)
-        p['suggestedFailureMode'] = scores[0][1] if scores and scores[0][0] else None
-    if not procedures:
-        warnings.append('구조화된 SOP를 찾지 못했습니다. 일반 문서의 에이전트 추출은 별도 단계입니다')
+def registered(source):
+    """등록한 원문 한 판의 요약 — 화면의 「문서 등록」 응답이자 시작 파일(scripts/class_knowledge.py)이 적재 요청에 쓰는 값.
+    절 · 절차는 싣지 않는다(AI 추출 결과가 싣는다). warnings 는 원문을 읽으며 생긴 것(글자 없는 쪽 등)뿐이다."""
     return {'source_id': source['source_id'], 'document_id': source['document_id'],
             'filename': source['filename'], 'batch': str(uuid4()), 'previous_batch': None,
-            'method': 'structured-lines-v2', 'status': source['status'],
-            'chars': sum(len(p['text']) for p in source['pages']),
-            'sections': sections, 'procedures': procedures, 'warnings': warnings,
+            'status': source['status'], 'chars': sum(len(p['text']) for p in source['pages']),
+            'pages': len(source['pages']), 'warnings': list(source['warnings']),
             **({'text_missing_pages': list(source['text_missing_pages'])} if source.get('text_missing_pages') else {})}
 
 
@@ -95,7 +46,7 @@ def validate(archive, tenant, body):
     try:
         batch = str(UUID(body['batch']))
     except (KeyError, ValueError, TypeError, AttributeError) as exc:
-        raise ValueError('미리보기의 배치 UUID가 필요합니다') from exc
+        raise ValueError('문서 등록 응답의 배치 UUID가 필요합니다') from exc
     sections, procedures = body.get('sections'), body.get('procedures')
     if not isinstance(sections, list) or not sections or not isinstance(procedures, list) or not procedures:
         raise ValueError('인용이 있는 절과 SOP가 각각 하나 이상 필요합니다')

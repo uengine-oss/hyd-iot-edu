@@ -4,7 +4,7 @@
 (function () {
   const E = { el: null, golden: [], storage: '', paths: {}, maxRepeats: 10, assets: [], facts: {}, runs: [], sel: null, run: null, editing: null,
     knowledge: null, cands: null, patterns: null, cmp: null, busy: false, picked: new Set() };
-  const PATH = { decide: '규칙 판단', evaluate: '규칙 읽기 평가', worker: '지난 처리 건 (실제 AI 일꾼)' };
+  const PATH = { decide: '규칙 판단', evaluate: '규칙 읽기 평가', worker: '지난 처리 건 (실제 AI 에이전트)' };
   const CHECK = { cause: '원인 적중', top: '1위 허용', forbidden: '빠질 조치 미추천', evidence: '근거 포함' };
   const EXPECT = { excluded: '제외돼야 함', not_recommended: '1위면 안 됨' };
   // 설비 목록 · 가정 사실(이름 · 선택지)은 서버가 준다(GET /api/eval/golden 의 assets · facts — judgment_eval.FACT_CHOICES)
@@ -151,7 +151,7 @@
     if (E.cands == null) return `<p class="field-hint">${esc(UI.t('loading'))}</p>`;
     if (E.cands.error) return `<p class="form-msg neg" role="alert">${esc(E.cands.error)}</p>`;
     if (!E.cands.length) return UI.empty('채점할 지난 처리 건이 없습니다', '원인 진단과 조치 후보 단계까지 끝난 처리 건이 여기에 나타납니다');
-    return `<div class="table-scroll"><table><thead><tr><th>채점</th><th>처리 건</th><th>AI 일꾼의 판단</th><th>맞는 정답표 항목</th></tr></thead><tbody>${E.cands.map(c => {
+    return `<div class="table-scroll"><table><thead><tr><th>채점</th><th>처리 건</th><th>AI 에이전트의 판단</th><th>맞는 정답표 항목</th></tr></thead><tbody>${E.cands.map(c => {
       const item = E.golden.find(it => it.id === c.item);
       return `<tr><td><input type="checkbox" data-cand="${esc(c.instance)}" ${item ? '' : 'disabled'} aria-label="${esc(c.name || '처리 건')} 채점에 포함"></td>
         <td>${esc(c.name || UI.defName(c.instance))}<br><small>${esc(UI.dateTime(c.started))} · ${esc(UI.status(c.status))}</small></td>
@@ -264,7 +264,7 @@
     const rel = (x) => `${nm(x.from)} —${esc(x.type)}→ ${nm(x.to)}`;
     const know = !kd.comparable ? `<p class="field-hint">${esc(kd.note || '')}</p>` : !kd.changed ? '<p>두 실행 사이에 지식 그래프가 바뀌지 않았습니다.</p>' :
       `<p>노드 ${esc(kd.nodes[0])} → ${esc(kd.nodes[1])} · 관계 ${esc(kd.relationships[0])} → ${esc(kd.relationships[1])}</p>` +
-      (kd.counts ? `<ul class="plain">${(kd.removed_rels || []).map(x => `<li>${UI.chipText('끊김', 'danger')} ${rel(x)}</li>`).join('')}${(kd.added_rels || []).map(x => `<li>${UI.chipText('생김', 'success')} ${rel(x)}</li>`).join('')}` +
+      (kd.counts ? `<ul class="plain">${(kd.removed_rels || []).map(x => `<li>${UI.chipText('연결 삭제', 'danger')} ${rel(x)}</li>`).join('')}${(kd.added_rels || []).map(x => `<li>${UI.chipText('연결 추가', 'success')} ${rel(x)}</li>`).join('')}` +
         `${(kd.added_nodes || []).length ? `<li>${UI.chipText('새 항목', 'success')} ${kd.added_nodes.map(nm).join(', ')}</li>` : ''}${(kd.removed_nodes || []).length ? `<li>${UI.chipText('없어진 항목', 'danger')} ${kd.removed_nodes.map(nm).join(', ')}</li>` : ''}` +
         `${(kd.changed_nodes || []).length ? `<li>${UI.chipText('속성 바뀜', 'warning')} ${kd.changed_nodes.map(nm).join(', ')}</li>` : ''}</ul>` : `<p class="field-hint">${esc(kd.note || '')}</p>`);
     const verdict = { improved: ['좋아짐', 'success'], regressed: ['나빠짐', 'danger'], same: ['같음', 'neutral'] };

@@ -24,10 +24,10 @@
     'td.from': '에서 받음', 'td.start': '시작', 'td.assigned': '배정', 'td.result': '결과', 
     
     
-    'td.delivered': '넘김', 'td.superseded': '다른 차수의 값으로 대체됨', 'td.notYet': '아직 넘기지 않음', 'td.consumers': '받는 단계', 
+    'td.delivered': '전달 완료', 'td.superseded': '다른 차수의 값으로 대체됨', 'td.notYet': '아직 넘기지 않음', 'td.consumers': '받는 단계', 
     'td.cards': '받은 조치 카드', 'td.chosen': '고른 조치', 'td.reason': '사유', 'td.approver': '승인자', 'td.delivery': '승인 전달', 'td.sent': '보낸 명령', 'td.response': '설비 응답',
     'td.prose': '서술 결과',
-    'td.planned': '아직 시작하지 않은 단계', 'td.plannedSub': '정의에 적힌 입력과 출력입니다', 'td.expects': '읽을 값', 'td.produces': '만들 값', 'td.who': '수행',
+    'td.planned': '아직 시작하지 않은 단계', 'td.plannedSub': '정의에 적힌 입력과 출력입니다', 'td.expects': '읽을 값', 'td.produces': '만들 값', 'td.who': '담당',
     'td.otherRound': '다음 회차 값', 'td.otherRoundSub': '이 단계는 다시 수행됐습니다. 아래는 이 회차가 받은 값이 아니라 처리 건의 지금 값입니다.',
     'td.loadFail': '단계 상세를 읽지 못했습니다', 'td.liveOn': '실시간', 
     // U1 추가: 판단 근거 · 사람 · 시스템 · 매뉴얼 · 지금
@@ -35,15 +35,15 @@
     'td.cause': '원인', 'td.prior': '사전확률', 'td.causeScore': '점수', 'td.conditions': '근거 조건', 'td.passedOf': '통과 근거',
     'td.causeFormula': '원인 점수 = 사전확률 × (통과한 근거 가중치 ÷ 전체 근거 가중치). 확인되지 않은 근거가 있으면 점수를 매기지 않습니다.',
     'td.rank': '순위', 'td.card': '카드', 'td.parts': '점수 구성', 'td.verdict': '판정', 'td.formula': '점수 식', 'td.rankRule': '순위 규칙', 'td.selectedBy': '선정 규칙',
-    'td.recommended': '권고', 'td.differs': '권고와 다름', 'td.decState': '판단 결과 상태', 'td.wait': '대기', 'td.waitFor': '경과', 'td.dueLeft': '기한까지', 'td.overdue': '기한 지남',
+    'td.recommended': '권고', 'td.differs': '권고와 다름', 'td.decState': '판단 결과 상태', 'td.wait': '대기 시간', 'td.waitFor': '경과', 'td.dueLeft': '기한까지', 'td.overdue': '기한 지남',
     'td.timeout': '선택 기한이 지나 책임자 확인 단계로 넘어갔습니다', 'td.decFail': '조치 카드를 읽지 못했습니다',
     'td.cmdId': '명령 번호', 'td.ackWait': '설비 응답을 기다리는 중', 'td.ackDone': '설비가 실행함', 'td.ackRejected': '설비가 거부함', 'td.interlock': '안전 연동',
     'td.criterion': '회복 기준', 'td.remeasure': '재측정', 'td.remeasureIn': '재측정까지', 'td.remeasureDue': '재측정 시각 지남 · 판정 대기', 'td.extensions': '연장',
     'td.cleared': '경보 해제', 'td.recoveryBasis': '회복 근거', 'td.incFail': '사건 상태를 읽지 못했습니다', 'td.scaleNote': '설비 시간 {sim} 창',
     'td.pages': '쪽', 'td.chars': '자', 'td.sections': '절', 'td.procedures': '절차', 'td.warnings': '주의',
     'td.steps': '단계', 'td.pageReviews': '페이지 검토',
-    'td.now': '지금', 'td.ended': '끝', 'td.nowTool': '도구 {tool} 호출 중', 'td.nowNote': '판단을 정리하는 중', 'td.nowBasis': '판단 근거를 기록함', 'td.nowStarted': '작업을 시작함',
-    'td.nowClaimed': 'AI 일꾼이 작업 중', 'td.nowQueued': 'AI 일꾼이 집어 가기를 기다리는 중', 'td.nowAsk': '사람의 답변을 기다리는 중', 'td.nowSubmitted': '결과 제출 · 다음 단계로 넘기는 중',
+    'td.now': '현재 단계', 'td.ended': '처리 완료', 'td.nowTool': '도구 {tool} 호출 중', 'td.nowNote': '판단을 정리하는 중', 'td.nowBasis': '판단 근거를 기록함', 'td.nowStarted': '작업을 시작함',
+    'td.nowClaimed': 'AI 에이전트가 수행 중', 'td.nowQueued': 'AI 에이전트 차례를 기다리는 중', 'td.nowAsk': '사람의 답변을 기다리는 중', 'td.nowSubmitted': '결과 제출 · 다음 단계로 넘기는 중',
     'td.nowHuman': '선택을 기다리는 중', 'td.nowCmd': '설비 응답을 기다리는 중', 'td.nowReobs': '효과를 확인하는 중', 'td.nowWo': '정비 시스템에 요청하는 중', 'td.nowPending': '보류 · 사람 확인 필요',
     'td.nowSystem': '처리하는 중', 'td.nothing': '지금 진행 중인 단계가 없습니다', 'td.seeOutput': '위 판단 · 출력의 값 그대로',
   });

@@ -156,12 +156,20 @@
     b.innerHTML = `<div class="stat-cards">
       <div class="card"><span>${esc(UI.t('inst.running'))}</span><b class="num">${running}</b></div>${stuck.length ? `
       <div class="card hot"><span>${esc(stuck[0].attention.label)}</span><b class="num">${stuck.length}</b></div>` : ''}
-      <div class="card${I.todo.length ? ' hot' : ''}"${I.todoError ? ` title="${esc(I.todoError)}"` : ''}><span>${esc(UI.t('inst.myTurn'))}</span><b class="num">${I.todoError ? '읽기 실패' : I.todo.length}</b></div>
+      <div class="card${myTurn().mine.length ? ' hot' : ''}"${I.todoError ? ` title="${esc(I.todoError)}"` : ''}><span>${esc(myTurn().me ? UI.t('inst.myTurn') : UI.t('inst.humanTurn'))}</span><b class="num">${I.todoError ? '읽기 실패' : myTurn().mine.length}</b></div>
       <div class="card${I.asked.length ? ' hot' : ''}"><span>${esc(UI.t('inst.asked'))}</span><b class="num">${I.asked.length}</b></div>
     </div>`;
   }
 
   /* ------------------------------------------------ 내 차례 (human IN_PROGRESS rows) + agent questions */
+  // 선택한 사용자의 단계만 「내 차례」다(서버 inbox.py: 본인 id 또는 그 사용자의 역할에 배정된 단계). 나머지는 「다른 담당자의 단계」로 접는다.
+  // 사용자를 고르지 않았으면 가를 기준이 없어 사람 단계 전체를 보이고, 카드 이름도 「사람 단계」로 둔다.
+  function myTurn() {
+    const m = window.hydInbox?.me?.() || null;
+    if (!m) return { me: null, mine: I.todo, others: [] };
+    const own = new Set([m.id, ...m.roles]);
+    return { me: m, mine: I.todo.filter(t => own.has(t.user_id)), others: I.todo.filter(t => !own.has(t.user_id)) };
+  }
   function renderTodo(withPanel = true) {
     const box = $('#todoList');
     box.innerHTML = '';
@@ -169,7 +177,7 @@
       box.innerHTML = UI.errorBlock('내 차례를 읽지 못했습니다', I.todoError + (I.todo.length || I.asked.length ? ' — 아래는 마지막으로 읽은 목록입니다' : ''), { retry: true, cls: 'compact' });
       box.querySelector('[data-retry]')?.addEventListener('click', () => load(true));
     }
-    if (!I.todo.length && !I.asked.length) { if (!I.todoError) box.innerHTML = UI.empty(UI.t('inst.noTodo'), UI.t('inst.noTodoSub'), 'compact'); if (withPanel) renderTodoPanel(); return; }
+    if (!I.todo.length && !I.asked.length) { if (!I.todoError) box.innerHTML = I.instances.length ? UI.empty(UI.t('inst.noTodo'), UI.t('inst.noTodoSub'), 'compact') : ''; if (withPanel) renderTodoPanel(); return; }   // 처리 건이 하나도 없으면 빈 안내는 아래 목록의 하나로 충분하다
     I.asked.forEach(t => {
       const inst = I.instances.find(x => x.proc_inst_id === t.proc_inst_id) || {};
       const it = el('div', 'item ask' + (t.proc_inst_id === I.sel ? ' sel' : ''), `<div class="row"><strong>${esc(UI.t('inst.askTitle'))} — ${esc(t.activity_name)}</strong>${UI.chip('HUMAN_ASKED')}</div><span class="sub">${esc(inst.proc_inst_name || t.proc_inst_id)}</span>`);
@@ -177,16 +185,26 @@
       it.addEventListener('click', () => pick(t.proc_inst_id, t.id));
       box.appendChild(it);
     });
-    // A141: 처음 6건 + 더 보기 (선택된 건은 위로 고정) — 한 화면에 많이 보이지 않게
-    const paged = UI.page(I.todo, I.todoShown, t => t.proc_inst_id === I.sel);
-    paged.rows.forEach(t => {
+    const turn = myTurn();
+    const row = t => {
       const inst = I.instances.find(x => x.proc_inst_id === t.proc_inst_id) || {};
-      const it = el('div', 'item' + (t.proc_inst_id === I.sel ? ' sel' : ''), `<div class="row"><strong>${esc(UI.flowName(t.activity_name))}</strong>${UI.chip(t.status)}</div><span class="sub">${esc(inst.proc_inst_name || UI.defName(t.proc_inst_id))} · ${esc(who(t.user_id))}</span>`);
+      const it = el('div', 'item' + (t.proc_inst_id === I.sel ? ' sel' : ''), `<div class="row"><strong>${esc(UI.flowName(t.activity_name))}</strong>${UI.chip(t.status)}</div><span class="sub">${esc(inst.proc_inst_name || UI.defName(t.proc_inst_id))} · 담당 ${esc(who(t.user_id))}</span>`);
       keyboardItem(it);
       it.addEventListener('click', () => pick(t.proc_inst_id, t.id));
-      box.appendChild(it);
-    });
+      return it;
+    };
+    if (turn.me && !turn.mine.length && !I.asked.length) box.insertAdjacentHTML('beforeend', UI.empty(`${turn.me.name} 님이 처리할 단계가 없습니다`, turn.others.length ? '다른 담당자의 단계는 아래에서 볼 수 있습니다' : UI.t('inst.noTodoSub'), 'compact'));
+    // A141: 처음 6건 + 더 보기 (선택된 건은 위로 고정) — 한 화면에 많이 보이지 않게
+    const paged = UI.page(turn.mine, I.todoShown, t => t.proc_inst_id === I.sel);
+    paged.rows.forEach(t => box.appendChild(row(t)));
     if (paged.rest) { const more = el('div', 'todo-more', UI.moreButton(paged.rest)); more.querySelector('button').addEventListener('click', () => { I.todoShown += UI.PAGE; renderTodo(false); }); box.appendChild(more); }
+    if (turn.others.length) {
+      // 다른 담당자의 단계: 접어 둔다(지금 열어 둔 단계가 그 안에 있으면 펼친다). 열면 그 단계의 담당 역할과 사용자를 바꾸는 칸이 패널에 나온다
+      const fold = el('details', 'fold todo-others', `<summary>다른 담당자의 단계 <span class="chip tone-neutral sm">${turn.others.length}</span></summary><div class="fold-body list"></div>`);
+      if (turn.others.some(t => t.id === I.taskSel)) fold.open = true;
+      turn.others.forEach(t => fold.lastElementChild.appendChild(row(t)));
+      box.appendChild(fold);
+    }
     if (withPanel) renderTodoPanel();
   }
   // 다른 처리 건 · 단계를 고르면 지난 단계의 오류 · "이미 처리됨" 안내를 지운다
@@ -250,9 +268,9 @@
     const inline = fields.length + 1 <= 2;      // C3: 입력 2개 이하는 카드 안 인라인
     const byMe = window.hydInbox?.byField('td', I.form);   // 제출 · 답은 고른 「나」로만(서버 require_task_actor) — 없으면 안내만, 단추는 꺼 둔다
     box.innerHTML = `<section class="todo-panel"><div class="detail-head"><div class="row"><h3 style="margin:0">${esc(title)}</h3>${UI.chip(task.status)}<span class="chip tone-neutral sm">${esc(who(task.user_id))}</span></div><div class="sub">${esc(why)}</div></div>
-      ${inputs.length ? UI.fold(esc(UI.t('inst.prevTask')), String(task.form?.contract || '').startsWith('shift-handover-') ? handoverInputs(task.inputs) : `<div class="ro-grid">${inputs.map(([k, v]) => UI.readonly(k, v !== null && typeof v === 'object' ? `<pre>${esc(JSON.stringify(v, null, 2).slice(0, 1500))}</pre>` : esc(String(v)))).join('')}</div>`, { cls: 'plain' }) : ''}
+      ${inputs.length ? UI.fold(esc(UI.t('inst.prevTask')), String(task.form?.contract || '').startsWith('shift-handover-') ? handoverInputs(task.inputs) : `<div class="ro-grid">${inputs.map(([k, v]) => UI.readonly(varLabel(k), prevValue(v))).join('')}</div>`, { cls: 'plain' }) : ''}
       <div class="form ${inline ? 'inline-form' : ''}">${inline ? `<div class="form-grid">` : `<section class="form-section"><h4>${esc(UI.t('form.section.who'))}</h4><div class="form-grid">`}
-        ${byMe || `<p class="field-hint" data-pick-me>${esc(pickMeHint(who(task.user_id), '제출'))}</p>`}${fields.map(control).join('')}
+        ${byMe || pickMe(who(task.user_id), '제출')}${fields.map(control).join('')}
       ${inline ? '</div>' : '</div></section>'}
       ${UI.actions(`<button class="btn primary" id="tdDone" ${byMe && !I.busy ? '' : 'disabled'}>${esc(isEscalate ? UI.t('btn.confirm') : UI.t('btn.submit'))}</button>`, I.msg)}</div></section>`;
     fields.forEach((f, i) => $('#tdField' + i).addEventListener('input', e => I.fieldValues[f.key] = e.target.value));
@@ -293,8 +311,19 @@
     const next = nextId ? ([...(def.activities || []), ...(def.events || [])].find(a => a.id === nextId) || {}).name : '';
     return `<span class="chip tone-warning" data-approval-until="${esc(timer.due_date)}" data-approval-cut="${esc(next ? UI.flowName(next) : '')}"></span>`;
   }
-  // 「나」가 없으면 사람 행동(승인 · 거절 · 제출 · 답)을 막을 때의 안내 — 모든 단계 패널이 이 한 문장을 쓴다
-  const pickMeHint = (roleLabel, what = '승인 · 거절') => `${what}하려면 먼저 나를 고르세요 — 위의 [나 고르기]에서 ${roleLabel ? `이 역할(${roleLabel})의` : '이 역할의'} 사람을 고르세요. 누가 했는지 모르는 ${what}은 받지 않습니다.`;
+  // 「이전 단계」가 넘긴 값: 이름은 화면 이름 사전(var.*)으로, 묶음 값은 항목별 한 줄로 읽는다. 더 깊은 값과 긴 글은 접어 둔다
+  const varLabel = k => { const n = UI.t('var.' + k); return n === 'var.' + k ? String(k).replace(/_/g, ' ') : n; };
+  function prevValue(v) {
+    const scalar = x => x === null || x === undefined || x === '' ? '–' : typeof x === 'boolean' ? (x ? '예' : '아니요') : esc(UI.idText(String(x)));
+    if (v === null || typeof v !== 'object') return scalar(v);
+    const entries = Array.isArray(v) ? v.map((x, i) => [String(i + 1), x]) : Object.entries(v);
+    if (!entries.length) return '–';
+    const flat = entries.filter(([, x]) => x === null || typeof x !== 'object'), deep = entries.filter(([, x]) => x !== null && typeof x === 'object');
+    const rows = flat.map(([k, x]) => `<div class="kv-line"><span class="muted">${esc(Array.isArray(v) ? k : varLabel(k))}</span> ${scalar(x)}</div>`).join('');
+    return rows + (deep.length ? UI.fold(`세부 값 ${deep.length}개`, `<pre>${esc(JSON.stringify(Object.fromEntries(deep), null, 2).slice(0, 1500))}</pre>`, { cls: 'small' }) : '');
+  }
+  // 사용자를 선택하지 않았으면 사람 행동(승인 · 반려 · 제출 · 답)의 그 자리에서 고르게 한다 — 모든 단계 패널이 inbox.js pickInline 하나를 쓴다
+  const pickMe = (roleLabel, what = '승인 · 반려') => window.hydInbox ? window.hydInbox.pickInline(what, roleLabel) : '';
 
   function renderAskPanel(task) {
     const box = $('#todoPanel');
@@ -310,7 +339,7 @@
       ${options.length ? `<div class="row-wrap" style="margin-bottom:var(--s3)">${options.map((o, i) => `<button class="btn small" type="button" data-human-option="${i}">${esc(o)}</button>`).join(' ')}</div>` : ''}
       <div class="form inline-form"><div class="form-grid">
         ${UI.field({ label: UI.t('form.answer'), required: true, cls: 'wide', hint: UI.t('form.hint.answer'), input: `<textarea id="tdAnswer" rows="2">${esc(I.form.reason)}</textarea>` })}
-        ${byMe || `<p class="field-hint" data-pick-me>${esc(pickMeHint(who(task.user_id), '답'))}</p>`}</div>
+        ${byMe || pickMe(who(task.user_id), '답변')}</div>
       ${UI.actions(`<button class="btn primary" id="tdAnswerGo" ${byMe && !I.busy ? '' : 'disabled'}>${esc(UI.t('btn.answer'))}</button>`, I.msg)}</div></section>`;
     box.querySelectorAll('[data-human-option]').forEach(button => button.addEventListener('click', () => {
       I.form.reason = options[Number(button.dataset.humanOption)]; $('#tdAnswer').value = I.form.reason;
@@ -355,7 +384,7 @@
     const needName = need?.id ? (roleTable[need.id]?.name || need.name || UI.who(need.id)) : '';
     const meSigns = !!meNow && signs(I.form.role, reviewed || chosen);
     const meRejects = !!meNow && (!opts.length || opts.some(o => signs(I.form.role, o)));
-    const roleHint = meNow && !meSigns ? `${meNow.name} 님의 역할(${roleTable[I.form.role]?.name || UI.who(I.form.role) || '없음'})로는 이 안을 승인할 수 없습니다 — 이 안은 ${needName} 역할(또는 더 높은 역할)이 승인합니다. 위의 [나 고르기]에서 이 역할의 사람을 고르세요.` : '';
+    const roleHint = meNow && !meSigns ? `이 안은 ${needName} 역할(또는 상위 역할)이 승인합니다. 현재 사용자 ${meNow.name}(${roleTable[I.form.role]?.name || UI.who(I.form.role) || '역할 없음'})은 승인할 수 없습니다. ${needName} 역할의 사용자로 바꾸면 승인할 수 있습니다.` : '';
     const maxAbs = Math.max(1, ...opts.map(x => Math.abs(x.score || 0)));
     const timer = timerFor(task);
     const activity = (I.view?.definition?.activities || []).find(a => a.id === task.activity_id);
@@ -378,10 +407,10 @@
     const caseInfo = UI.metaFold([[UI.t('dec.asset'), esc(d.asset || vars(inst).asset || '')], ['고장 유형', esc(UI.idText(sc.failureMode || ''))], [UI.t('dec.cause'), esc(UI.idText(sc.cause || ''))], [UI.t('form.deadline'), timer && timer.due_date ? esc(UI.dateTime(timer.due_date)) : ''], [UI.t('inst.followWo'), hasWorkOrder ? esc(maintenanceText) : '']], 'fold.case');
     box.innerHTML = `<section class="todo-panel approve" aria-busy="${I.busy}"><div class="detail-head"><div class="row"><h3 style="margin:0">승인 요청</h3>${UI.chip(d.state)}<span class="chip tone-neutral sm">${esc(who(task.user_id))}</span>${clockChip(task)}</div><div class="sub">${esc(inst.proc_inst_name || '')} · ${esc(UI.flowName(task.activity_name || '').replace(/\s*\((?:HITL|hitl)\)\s*/g, ''))}</div></div>
       ${window.hydApprove.html(d, I.form.option, { pending: true, adjust, extra: caseInfo })}
-      ${delayed ? '<p class="approval-delay" role="status">승인 지연 알림을 보냈습니다. 담당자가 승인하거나 거절할 때까지 기다립니다.</p>' : ''}
+      ${delayed ? '<p class="approval-delay" role="status">승인 지연 알림을 보냈습니다. 담당자가 승인하거나 반려할 때까지 기다립니다.</p>' : ''}
       <div class="form">
-      ${meNow ? hydInbox.whoFields('td', I.form, roles, canReject ? { reasonHint: '거절할 때는 사유를 1~2000자로 적으세요. 반려 결과와 처리 기록에 남습니다.' } : {}) : `<p class="field-hint" data-pick-me>${esc(pickMeHint(needName))}</p>`}
-      ${UI.actions(`${canReject ? `<button class="btn danger" id="tdRejectCard" ${meRejects && !I.busy ? '' : 'disabled'}>거절</button>` : ''}${previewNow}<button class="btn primary" id="tdGo" ${canApprove && meSigns && !I.busy ? '' : 'disabled'}>${esc(UI.t('btn.approve'))}</button>`, roleHint || I.msg || hint)}
+      ${meNow ? hydInbox.whoFields('td', I.form, roles, canReject ? { reasonHint: '반려할 때는 사유를 1~2000자로 적으세요. 반려 결과와 처리 기록에 남습니다.' } : {}) : pickMe(needName)}${roleHint ? window.hydInbox.switchInline(roleHint) : ''}
+      ${UI.actions(`${canReject ? `<button class="btn outline" id="tdRejectCard" ${meRejects && !I.busy ? '' : 'disabled'}>${esc(UI.t('btn.reject'))}</button>` : ''}${previewNow}<button class="btn primary" id="tdGo" ${canApprove && meSigns && !I.busy ? '' : 'disabled'}>${esc(UI.t('btn.approve'))}</button>`, I.msg || (roleHint ? '' : hint))}
       </div></section>`;
     box.querySelector('[data-ap-back]')?.addEventListener('click', ev => { I.form.option = ev.currentTarget.dataset.apBack; I.form.review = null; I.form.needPreview = false; I.msg = ''; const o = opts.find(x => x.id === I.form.option); if (o && o.approver) I.form.role = o.approver.id; renderTodoPanel(); });
     box.querySelectorAll('input[name=hopt]').forEach(r => r.addEventListener('change', () => { I.form.option = r.value; I.form.review = null; I.form.needPreview = false; I.msg = ''; const o = opts.find(x => x.id === r.value); if (o && o.approver) I.form.role = o.approver.id; renderTodoPanel(); }));
@@ -434,12 +463,12 @@
     const who = window.hydInbox && window.hydInbox.whoFields('td', I.form, [[endpoint, { name: UI.roleName(endpoint, I.view.definition) }]], { reasonHint: '반려할 때는 사유가 꼭 필요합니다. 결과 보고에 남습니다.' });
     const meFits = !me || (String(endpoint).startsWith('user:') ? me.id === endpoint : I.form.role === endpoint);
     const ready = !!who && !I.busy && meFits;
-    const fitHint = me && !meFits ? `${me.name} 님은 이 승인의 담당(${UI.roleName(endpoint, I.view.definition)})이 아니어서 승인 · 반려할 수 없습니다 — ${String(endpoint).startsWith('user:') ? '배정된 사람을' : '역할 칸에서 그 역할을 고르거나 위의 [나 고르기]에서 그 역할의 사람을'} 고르세요.` : '';
+    const fitHint = me && !meFits ? `이 단계는 ${UI.roleName(endpoint, I.view.definition)}${String(endpoint).startsWith('user:') ? '에게 배정되어' : ' 역할이 승인하므로'} 현재 사용자 ${me.name}은 승인 · 반려할 수 없습니다. ${String(endpoint).startsWith('user:') ? '배정된 사용자로' : '위 역할 칸에서 그 역할을 고르거나 그 역할의 사용자로'} 바꾸세요.` : '';
     box.innerHTML = `<section class="todo-panel approve"><div class="detail-head"><div class="row"><h3 style="margin:0">승인 요청</h3>${UI.chip(task.status)}<span class="chip tone-neutral sm">${esc(who ? UI.roleName(endpoint, I.view.definition) : UI.roleName(task.user_id, I.view.definition))}</span>${clockChip(task)}</div><div class="sub">${esc((I.view.instance || {}).proc_inst_name || '')} · ${esc(UI.flowName(task.activity_name))}</div></div>
       ${window.hydApprove.proposalHtml(m, I.form.option, { pending: true })}
-      <div class="form">${who || `<p class="field-hint" data-pick-me>${esc(pickMeHint(UI.roleName(endpoint, I.view.definition)))}</p>`}
-      ${UI.actions(`<button class="btn ghost" id="tdReject" ${ready ? '' : 'disabled'}>${esc(UI.t('btn.reject'))}</button><button class="btn primary" id="tdGo" ${ready && m.usable ? '' : 'disabled'}>${esc(UI.t('btn.approve'))}</button>`,
-        I.msg || fitHint || (!m.usable ? '고를 안이 약속과 달라 승인할 수 없습니다 — 반려하거나 에이전트 단계를 다시 하세요' : ''))}</div></section>`;
+      <div class="form">${who || pickMe(UI.roleName(endpoint, I.view.definition))}${fitHint ? window.hydInbox.switchInline(fitHint) : ''}
+      ${UI.actions(`<button class="btn outline" id="tdReject" ${ready ? '' : 'disabled'}>${esc(UI.t('btn.reject'))}</button><button class="btn primary" id="tdGo" ${ready && m.usable ? '' : 'disabled'}>${esc(UI.t('btn.approve'))}</button>`,
+        I.msg || (!m.usable ? '고를 안이 약속과 달라 승인할 수 없습니다 — 반려하거나 에이전트 단계를 다시 하세요' : ''))}</div></section>`;
     box.querySelector('[data-ap-back]')?.addEventListener('click', ev => { I.form.option = ev.currentTarget.dataset.apBack; I.msg = ''; renderTodoPanel(); });
     box.querySelectorAll('input[name=hopt]').forEach(r => r.addEventListener('change', () => { I.form.option = r.value; I.msg = ''; renderTodoPanel(); }));
     $('#tdRole')?.addEventListener('change', e => { I.form.role = e.target.value; I.msg = ''; renderTodoPanel(); });
@@ -477,7 +506,7 @@
   async function rejectCard(task) {
     if (I.busy || !window.hydInbox?.me?.()) return;   // P5: 「나」 없이는 거절하지 않는다(버튼도 꺼져 있다)
     const reason = I.form.reason.trim();
-    if (!reason || Array.from(reason).length > 2000) { I.msg = '거절 사유를 1~2000자로 적으세요.'; renderTodoPanel(); $('#tdReason')?.focus(); return; }
+    if (!reason || Array.from(reason).length > 2000) { I.msg = '반려 사유를 1~2000자로 적으세요.'; renderTodoPanel(); $('#tdReason')?.focus(); return; }
     if (!I.form.by.trim() || !I.form.role) { I.msg = '담당자와 역할을 고르세요.'; renderTodoPanel(); return; }
     return act(task, '승인', () => postJ(API.process + `/api/todolist/${encodeURIComponent(task.id)}/reject-card`, {
       decision: I.decId, by: I.form.by.trim(), role: I.form.role, reason }), () => { I.dec = null; });
@@ -505,7 +534,7 @@
   function renderList() {
     const box = $('#instList');
     if (I.listError) { box.innerHTML = UI.errorBlock('처리 건 목록을 읽지 못했습니다', I.listError, { retry: true, cls: 'compact' }); box.querySelector('[data-retry]')?.addEventListener('click', () => load(true)); return; }
-    if (!I.instances.length) { box.innerHTML = UI.empty(UI.t('inst.empty'), UI.t('inst.emptySub'), 'compact'); return; }
+    if (!I.instances.length) { box.innerHTML = UI.emptyGo(UI.t('inst.empty'), UI.t('inst.emptySub'), 'scenario', UI.t('nav.scenario'), 'compact'); return; }
     box.innerHTML = '';
     const paged = UI.page(I.instances, I.listShown, x => x.proc_inst_id === I.sel);
     paged.rows.forEach(x => {
@@ -559,7 +588,7 @@
     if (I.view && I.trace && I.traceFor === I.view.instance.proc_inst_id) { hydTrace.TR.mounted.add(I.trace); I.trace.update(I.view); }
     if (I.view && I.record && I.recordFor === I.view.instance.proc_inst_id) I.record.update(I.view);   // A161 처리 기록도 2초 다시 읽기를 받는다
   }
-  /* A161 처리 기록: 처리 건 하나 = 시작 → AI 일꾼 → 승인 → 시스템 처리 → 확인 → 결과 보고 이야기 (caseRecord.js). 처리 과정(trace)과 같이 DOM 을 옮겨 붙여 펼친 칸을 지킨다 */
+  /* A161 처리 기록: 처리 건 하나 = 시작 → AI 에이전트 → 승인 → 시스템 처리 → 확인 → 결과 보고 이야기 (caseRecord.js). 처리 과정(trace)과 같이 DOM 을 옮겨 붙여 펼친 칸을 지킨다 */
   function ensureRecord(view) {
     if (!window.hydRecord) return null;
     if (!I.record || I.recordFor !== view.instance.proc_inst_id) {
@@ -783,7 +812,7 @@
       if (e.target.closest('[data-close-abort]')) { I.closing = null; I.trace?.draw(); return; }
       const go = e.target.closest('[data-close-go]'); if (!go || I.busy || !I.closing) return;
       const reason = (I.closing.reason || '').trim(), by = (I.closing.by || '').trim();
-      if (!by) { I.pmsg.close = '먼저 위의 [나 고르기]에서 나를 고르세요.'; I.trace?.draw(); return; }
+      if (!by) { I.pmsg.close = '사용자를 선택하세요.'; I.trace?.draw(); return; }
       if (!reason) { I.pmsg.close = UI.t('form.err.reason'); I.trace?.draw(); return; }
       I.busy = true; go.disabled = true;
       try { await postJ(API.process + `/api/todolist/${encodeURIComponent(I.closing.id)}/${I.closing.kind}`, { by, reason }); I.pmsg.close = ''; I.closing = null; }

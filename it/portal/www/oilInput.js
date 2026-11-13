@@ -10,6 +10,7 @@
 
   function meNow() { return (window.hydInbox && window.hydInbox.me && window.hydInbox.me()) || null; }
 
+  window.addEventListener('hyd:me', () => { if (O.el && O.el.isConnected) render(); });
   async function mount(el) {
     O.el = el; render();
     try { O.form = await getJ(api('/api/human-alerts/form')); O.err = ''; }
@@ -28,7 +29,7 @@
     if (!p || O.sending) return;
     const by = m ? m.id : d.by.trim();
     if (d.out === null) { O.err = '기준 이탈 여부를 고르세요'; render(); return; }
-    if (!by) { O.err = '입력자를 적거나 내 작업함에서 "나"를 고르세요'; render(); return; }
+    if (!by) { O.err = '화면 오른쪽 위에서 사용자를 선택하거나 입력자를 적으세요'; render(); return; }
     O.sending = true; O.err = ''; render();
     try {
       O.last = await postJ(api('/api/human-alerts'), {
@@ -69,8 +70,8 @@
         ${UI.field({ label: '기준 이탈 여부', required: true, input: `<div class="chk-row">
             <label class="chk"><input type="radio" name="oilOut" value="1" ${d.out === true ? 'checked' : ''}> 예 (기준 이탈)</label>
             <label class="chk"><input type="radio" name="oilOut" value="0" ${d.out === false ? 'checked' : ''}> 아니요 (기준 안)</label></div>` })}
-        ${m ? UI.field({ label: '입력자', input: `<p style="margin:0">${esc(m.name || m.id)} <span class="muted">(내 작업함의 "나")</span></p>` })
-            : UI.field({ label: '입력자', required: true, hint: '내 작업함에서 "나"를 고르면 자동으로 들어갑니다', input: `<input id="oilBy" maxlength="120" value="${esc(d.by)}">` })}
+        ${m ? UI.field({ label: '입력자', input: `<p style="margin:0">${esc(window.hydInbox.meLabel?.() || m.name || m.id)}</p>` })
+            : UI.field({ label: '입력자', required: true, hint: '화면 오른쪽 위에서 사용자를 선택하면 자동으로 들어갑니다', input: `<input id="oilBy" maxlength="120" value="${esc(d.by)}">` })}
       </div>
       ${UI.field({ label: '메모', input: `<textarea id="oilMemo" rows="2" maxlength="2000">${esc(d.memo)}</textarea>` })}`;
     O.el.innerHTML = UI.card({ title: '오일 분석 결과 입력', body,

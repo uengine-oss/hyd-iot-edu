@@ -128,7 +128,7 @@ def register(app, *, driver_factory, tenant, audit, runtime_factory, store_facto
                              by=body.get('by'))
             worker = worker_probe()
             if not worker.get('reachable'):
-                raise HTTPException(503, f"AI 일꾼(워커)에 연결할 수 없어 후보를 요청하지 않았습니다: {worker.get('url')} — "
+                raise HTTPException(503, f"AI 에이전트 실행 서비스에 연결할 수 없어 후보를 요청하지 않았습니다: {worker.get('url')} — "
                                          f"{worker.get('error') or '응답 없음'}. 워커를 켠 뒤 다시 요청하세요")
             inst = lm.start(rt, req, request_id)
             audit('-', req['by'] or '-', 'DDL_MEANING_REQUESTED', dict(instance=inst['proc_inst_id'], filename=req['source']['filename'],

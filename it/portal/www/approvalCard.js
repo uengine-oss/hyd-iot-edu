@@ -115,7 +115,7 @@
     const said = UI.idText(sentenceAbout(explanation, o.name).replace(/^\s*\d+순위\s*/, ''));
     const why = out && (o.violations || [])[0] ? `제외 — ${e(UI.idText(o.violations[0].annotation || o.violations[0].message || o.violations[0].rule || ''))}`
       : e(partDiff(o, rec, d.options) || (rec && Number.isFinite(+o.score) && Number.isFinite(+rec.score) ? `추천안보다 점수가 ${num(rec.score - o.score)} 낮습니다` : ''));
-    const pick = pending && o.feasible && !UI.executionBlocked(o,d) ? `<label class="ap-switch"><input type="radio" name="hopt" value="${e(o.id)}" ${o.id === chosenId ? 'checked' : ''}> 이 안으로 바꾸기</label>` : '';
+    const pick = pending && o.feasible && !UI.executionBlocked(o,d) ? `<label class="ap-switch"><input type="radio" name="hopt" value="${e(o.id)}" ${o.id === chosenId ? 'checked' : ''}> 이 안으로 변경</label>` : '';
     return `<li class="ap-lost ${out ? 'out' : ''}"><div class="ap-lost-head"><b>${e(UI.idText(o.name))}</b>${out ? UI.chipText(UI.t('chip.excluded'), 'danger') : `<span class="muted num">${e(scoreText(o))}</span>`}${pick}</div>${UI.evaluationHtml(o,d)}${window.hydWords?.purchaseContextHtml(o,d) || ''}${window.hydWords?.maintenanceHtml(o) || ''}${why ? `<p>${why}</p>` : ''}${said && !out ? `<p class="muted">${e(said)}</p>` : ''}</li>`;
   }
 
@@ -145,17 +145,17 @@
     const actions = (cur.actions || []).map(a => window.hydCards ? hydCards.actionLabel(a, cur) : a.name).filter(Boolean);
     const evaluation=UI.evaluationInfo(cur,d), blocked=UI.executionBlocked(cur,d);
     return `<div class="ap-card ${changed ? 'changed' : ''}">
-      <div class="ap-head"><span class="ap-kicker">${changed ? '담당자가 바꾼 안' : evaluation.state==='analysis' ? '규칙 비교 · 모의 1순위' : evaluation.state==='execution' ? '판단 엔진 1순위 (AI가 고른 원인 · 근거로 계산)' : '1순위 · 실행 검사 확인 안 됨'}</span>${changed && !blocked ? `<button type="button" class="btn small ghost" data-ap-back="${e(rec.id)}">추천안으로 되돌리기</button>` : ''}</div>
+      <div class="ap-head"><span class="ap-kicker">${changed ? '담당자가 바꾼 안' : evaluation.state==='analysis' ? '모의 판단 1순위' : evaluation.state==='execution' ? '판단 엔진 1순위 (AI가 고른 원인 · 근거로 계산)' : '1순위 (실행 가능 여부 미검증)'}</span>${changed && !blocked ? `<button type="button" class="btn small ghost" data-ap-back="${e(rec.id)}">추천안으로 되돌리기</button>` : ''}</div>
       ${UI.evaluationHtml(cur,d,{raw:false})}
       <h4 class="ap-title">${e(UI.idText(cur.name || '–'))}</h4>
       ${cur.description ? `<p class="ap-desc">${e(UI.idText(cur.description))}</p>` : ''}
       ${businessContext(cur, d)}
       ${window.hydWords?.maintenanceHtml(cur) || ''}
       ${rs.length ? `<ul class="ap-reasons">${rs.map(r => `<li>${r}</li>`).join('')}</ul>` : ''}
-      ${actions.length ? `<p class="ap-do"><span class="ap-label">${evaluation.state==='execution' ? '승인하면 시스템이' : '비교에 포함된 시스템 조치 · 승인 · 실행 아님'}</span> ${actions.map(a => `<span class="chip tone-neutral sm">${e(a)}</span>`).join(' ')}</p>` : ''}
+      ${actions.length ? `<p class="ap-do"><span class="ap-label">${evaluation.state==='execution' ? '승인하면 시스템이' : '모의 판단에 포함된 조치(승인 · 실행되지 않음)'}</span> ${actions.map(a => `<span class="chip tone-neutral sm">${e(a)}</span>`).join(' ')}</p>` : ''}
       ${evidence(cur)}
       ${opt.adjust || ''}
-      ${others.length ? UI.fold(`다른 안 ${others.length}개는 왜 졌나`, `<ul class="ap-lost-list">${others.map(o => lostRow(o, rec, d, chosenId, opt.pending)).join('')}</ul>`, { cls: 'small' }) : ''}
+      ${others.length ? UI.fold(`다른 조치 안 ${others.length}개 비교`, `<ul class="ap-lost-list">${others.map(o => lostRow(o, rec, d, chosenId, opt.pending)).join('')}</ul>`, { cls: 'small' }) : ''}
       ${d.explanation ? UI.fold('판단 엔진 설명 전문 (규칙 문장)', `<p class="prose" style="margin:0">${e(UI.idText(d.explanation))}</p>`, { cls: 'small' }) : ''}
       ${opt.extra || ''}
       ${UI.evaluationRawHtml(cur,d)}
@@ -231,7 +231,7 @@
     const cur = m.options.find(o => String(o[key]) === String(chosenId)) || rec;
     const changed = !!(cur && rec && cur !== rec);
     const others = m.options.filter(o => o !== cur);
-    const pick = o => opt.pending && m.usable ? `<label class="ap-switch"><input type="radio" name="hopt" value="${e(o[key])}"> 이 안으로 바꾸기</label>` : '';
+    const pick = o => opt.pending && m.usable ? `<label class="ap-switch"><input type="radio" name="hopt" value="${e(o[key])}"> 이 안으로 변경</label>` : '';
     const otherRows = others.map(o => `<li class="ap-lost"><div class="ap-lost-head"><b>${e(o[key])}</b><span class="muted num">${e(scoreText(o))}</span>${pick(o)}</div>${o.reason ? `<p>${e(o.reason)}</p>` : ''}${optionFacts(o, key) ? `<p class="row-wrap">${optionFacts(o, key)}</p>` : ''}</li>`);
     const loserRows = m.losers.map(x => `<li class="ap-lost out"><div class="ap-lost-head"><b>${e(x[key])}</b>${UI.chipText(UI.t('chip.excluded'), 'danger')}</div><p>${e(x.why)}</p></li>`);
     const docs = m.docs.map(d => `<a class="chip tone-neutral sm" href="${e(d.link)}" target="_blank" rel="noopener noreferrer">${e(d.title)}</a>`).join(' ');
@@ -243,7 +243,7 @@
     const lost = otherRows.length + loserRows.length;
     return `<div class="ap-card ${changed ? 'changed' : ''}">${head}
       ${docs ? `<div class="ap-evidence"><div class="ap-row"><span class="ap-label">근거 자료</span><span class="row-wrap">${docs}</span></div></div>` : ''}
-      ${lost ? UI.fold(`다른 안 ${otherRows.length}개 · 빠진 안 ${loserRows.length}개는 왜 졌나`, `<ul class="ap-lost-list">${[...otherRows, ...loserRows].join('')}</ul>`, { cls: 'small' }) : ''}
+      ${lost ? UI.fold(`다른 안 ${otherRows.length}개 · 제외된 안 ${loserRows.length}개 비교`, `<ul class="ap-lost-list">${[...otherRows, ...loserRows].join('')}</ul>`, { cls: 'small' }) : ''}
       ${off}${opt.extra || ''}</div>`;
   }
 

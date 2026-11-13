@@ -160,7 +160,7 @@
     const working = !['DONE', 'FAILED', 'CANCELLED'].includes(d.status);
     const corr = d.corrections ? ` · 근거 검사에서 되돌려 보냄 ${d.corrections.attempts}회${d.corrections.reasons && d.corrections.reasons.length ? ` (마지막 사유: ${esc(d.corrections.reasons[d.corrections.reasons.length - 1])})` : ''}` : '';
     return `<p class="kv-line" role="status">${working ? '<span class="live-dot on"></span> ' : ''}<b>AI 뜻 후보 작업</b> ${UI.chip(d.status)} · 열 ${d.columns.length}개${corr}
-      ${working ? '<span class="muted"> — AI 일꾼이 관찰 결과만 보고 후보를 쓰는 중입니다.</span>' : ''}</p>`;
+      ${working ? '<span class="muted"> — AI 에이전트이 관찰 결과만 보고 후보를 쓰는 중입니다.</span>' : ''}</p>`;
   }
 
   function render() {
@@ -177,7 +177,7 @@
     if (!L.targets) body += UI.empty('뜻을 복원할 열이 없습니다', '모든 열에 주석(업무 뜻)이 있습니다');
     else if (!S.run) body += UI.card({
       title: '코드 이름 열의 뜻 후보 받기',
-      body: `<p class="muted">열 이름 조각 · 샘플 값 분포 · 키 관계를 관찰해 AI 일꾼에게 넘깁니다. 후보는 사람이 승인한 것만 미리보기와 적재에 들어갑니다.</p>
+      body: `<p class="muted">열 이름 조각 · 샘플 값 분포 · 키 관계를 관찰해 AI 에이전트에게 넘깁니다. 후보는 사람이 승인한 것만 미리보기와 적재에 들어갑니다.</p>
         ${(L.notes || []).map(n => `<p class="muted">${esc(n)}</p>`).join('')}`,
       actions: `<button class="btn primary" id="lmAsk" ${S.busy ? 'disabled' : ''}${hydCourseAccess.attrs('ddl.meanings')}>AI에게 뜻 후보 묻기</button>`,
     });

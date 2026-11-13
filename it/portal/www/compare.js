@@ -78,7 +78,7 @@
     const v = t.variant || {}, cut = [...(v.without_tools || []).map(serverName), ...(v.without_skills || [])];
     const skills = (r.agent?.skills || []).map(k => `${esc(k.name)} ${k.applied ? UI.chipText(`절차 ${k.steps}개 따름`, 'accent') : UI.chipText('따르지 않음', 'neutral')}${k.reason ? ` <small class="muted">${esc(k.reason)}</small>` : ''}`);
     const body = UI.evaluationHtml(r) + `<dl class="cmp-dl">
-        <div><dt>도구</dt><dd>${(r.agent?.tools || []).map(x => esc(serverName(x))).join(' · ') || '없음'}${cut.length ? ` ${UI.chipText('뺌: ' + cut.join(', '), 'warning')}` : ''}</dd></div>
+        <div><dt>도구</dt><dd>${(r.agent?.tools || []).map(x => esc(serverName(x))).join(' · ') || '없음'}${cut.length ? ` ${UI.chipText('제외한 도구: ' + cut.join(', '), 'warning')}` : ''}</dd></div>
         <div><dt>스킬</dt><dd>${skills.join('<br>') || '없음'}</dd></div>
         <div><dt>원인</dt><dd>${top ? `<b>${nm(top.id)}</b> <small class="muted">${esc(UI.name(top.failureModeId))}</small>` : esc(r.reason || '없음')}</dd></div>
         <div><dt>1순위</dt><dd>${rec ? `<b>${esc(rec.sopId)} ${nm(rec.id)}</b>` : esc(r.status === 'EVALUATED' ? '없음' : (r.reason || '없음'))}</dd></div>

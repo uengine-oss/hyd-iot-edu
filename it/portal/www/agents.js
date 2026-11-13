@@ -173,7 +173,7 @@
       html += UI.fold(`단계별 실제 실행 설정 <span class="chip tone-neutral sm">${(run.steps || []).length}</span>`,
         stepRows ? `<div class="table-scroll"><table class="compact-table"><thead><tr><th>단계</th><th>모델</th><th>도구 서버</th><th>스킬 파일</th></tr></thead><tbody>${stepRows}</tbody></table></div>`
           : UI.empty('맡은 단계가 없습니다', '처리 건에서는 불리지 않습니다.', 'compact'));
-      html += UI.fold('실행 지시문에 더해지는 내용', run.instructions ? `<pre>${esc(run.instructions)}</pre><p class="muted">AI 일꾼이 이 내용을 지시문에 넣고, 스킬은 실행 작업 폴더에 SKILL.md 파일로 씁니다.</p>`
+      html += UI.fold('실행 지시문에 더해지는 내용', run.instructions ? `<pre>${esc(run.instructions)}</pre><p class="muted">AI 에이전트이 이 내용을 지시문에 넣고, 스킬은 실행 작업 폴더에 SKILL.md 파일로 씁니다.</p>`
         : UI.empty('더해지는 내용이 없습니다', '이름·목표·성격·스킬이 비어 있습니다.', 'compact'));
     }
     html += UI.metaFold([['식별자', `<span class="mono">${esc(d.id)}</span>`],

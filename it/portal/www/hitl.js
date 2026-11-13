@@ -87,9 +87,11 @@
     html += `<div class="detail-head"><div class="row"><h2 style="font-size:16px">${esc(pending ? UI.t('select') : UI.t('decision'))}</h2>${UI.chip(d.state)}</div><div class="sub">${esc(UI.idText(sc.failureMode || ''))}${sc.cause ? ' · ' + esc(UI.idText(sc.cause)) : ''}</div></div>`;
     html += summaryBlock(d.explanation);
     if (pending) {
-      // 고르기 · 승인은 처리 건 화면에서 한다 — 여기는 카드와 링크 하나(UIUX_PLAN §1)
-      html += '<div class="hitl-opts">' + opts.map(o => hydCards.cardHtml(o, { rec: d.recommended, chosen: d.chosen, maxAbs, decision: d })).join('') + '</div>';
-      html += UI.actions(`<button class="btn primary" id="hGoInstance">${esc(UI.t('btn.goInstance'))}</button>`);
+      // 고르기 · 승인은 처리 건의 승인 단계 한 곳에서 한다. 여기는 「승인 대기 + 그 화면으로 가는 단추」가 먼저이고,
+      // 조치 안은 여기서 고를 수 없으므로 읽기 전용으로 접어 둔다(눌러서 고르려다 실패하지 않게)
+      const recName = (opts.find(o => o.id === d.recommended) || {}).name;
+      html += `<div class="await-approval" role="status"><div><b>담당자 승인을 기다리는 중입니다</b><span>${recName ? `판단 엔진 1순위: ${esc(UI.idText(recName))}. ` : ''}승인 전에는 설비에 명령이 나가지 않습니다.</span></div>${UI.actions(`<button class="btn primary" id="hGoInstance">${esc(UI.t('btn.goInstance'))}</button>`)}</div>`;
+      html += UI.fold(`AI가 제안한 조치 안 <span class="chip tone-neutral sm">${opts.length}</span> <span class="muted">— 보기 전용</span>`, '<div class="hitl-opts">' + opts.map(o => hydCards.cardHtml(o, { rec: d.recommended, chosen: d.chosen, maxAbs, decision: d })).join('') + '</div>', { cls: 'plain' });
     } else {
       html += decidedCard(d, inc);
       html += UI.fold(`${esc(UI.t('candidate'))} <span class="chip tone-neutral sm">${opts.length}</span>`, '<div class="hitl-opts">' + opts.map(o => hydCards.cardHtml(o, { rec: d.recommended, chosen: d.chosen, maxAbs, decision: d })).join('') + '</div>', { cls: 'plain' });
@@ -99,7 +101,7 @@
     box.querySelector('#hGoInstance')?.addEventListener('click', async () => {
       const b = $('#hGoInstance'); b.disabled = true;
       const say = text => { b.closest('.form-actions').querySelector('.form-msg')?.remove(); if (text) b.insertAdjacentHTML('beforebegin', `<span class="form-msg neg" role="status">${esc(text)}</span>`); };
-      try { say(await openIncident(inc.id) ? '' : '이 사건의 처리 건을 찾지 못했습니다 — 「처리 건」 화면에서 직접 고르세요.'); }
+      try { say(await openIncident(inc.id) ? '' : '이 사건의 처리 건을 찾지 못했습니다. 왼쪽 메뉴 「처리 건」에서 같은 설비의 건을 여세요.'); }
       catch (e) { say('처리 건을 열지 못했습니다: ' + e.message); }
       finally { b.disabled = false; }
     });
@@ -208,7 +210,7 @@
         UI.field({ label: UI.t('skill.name'), required: true, input: `<input id="skName" value="${esc(k.name)}" maxlength="80">` }) +
         UI.field({ label: UI.t('skill.approver'), input: sel('skRole', c.roles || [], (k.approver || {}).id || 'role:maint-mgr') }) +
         UI.field({ label: UI.t('skill.desc'), cls: 'wide', input: `<textarea id="skDesc" rows="2">${esc(k.description || '')}</textarea>` })) + newForm +
-      UI.section(UI.t('form.section.who'), UI.field({ label: UI.t('form.by'), input: `<input id="skBy" value="지식 관리자">` })) +
+      UI.section(UI.t('form.section.who'), UI.field({ label: UI.t('form.by'), input: `<input id="skBy" readonly value="${esc(window.hydInbox?.me?.()?.name || '')}" placeholder="화면 오른쪽 위에서 사용자를 선택하세요">` })) +
       UI.actions(`<button class="btn outline" id="skReload">${esc(UI.t('btn.cancel'))}</button><button class="btn primary" id="skSave">${esc(H.skillNew ? UI.t('skill.add') : UI.t('btn.save'))}</button>`) +
       `<span id="skMsg" class="muted" role="status"></span></div>
       ${k.source_document ? `<p class="kv-line">${esc(UI.t('skill.fromDoc'))} <button class="btn small" id="skSource">${esc(UI.t('skill.openDoc'))}</button></p>` : ''}${linked}`;
@@ -296,7 +298,7 @@
     const box = $('#manualSources');
     try {
       const page = await getJ(API.process + '/api/kg/manuals/sources?offset=' + offset);
-      box.innerHTML = UI.fold(`보관 원문 <span class="chip tone-neutral sm">${page.total}</span>`, `<p class="muted">${page.total ? offset + 1 : 0}–${offset + page.items.length} / ${page.total}</p>` + page.items.map(s => `<p><a href="${API.process}/api/kg/manuals/sources/${encodeURIComponent(s.source_id)}/original">${esc(s.filename)}</a> · ${esc(UI.dateTime(s.created_at))} · ${s.status === 'READY' ? '텍스트 추출됨' : '페이지/OCR 검토 필요'} <button class="btn small" data-manual-reopen="${esc(s.source_id)}">다시 검토</button></p>`).join('') + `<div class="row-wrap">${offset ? '<button class="btn small" id="manualSourcesPrev">이전</button>' : ''}${page.next_offset !== null ? '<button class="btn small" id="manualSourcesNext">다음</button>' : ''}</div><p id="manualSourcesMsg" class="muted"></p>`, { cls: 'plain' });
+      box.innerHTML = UI.fold(`등록한 원문 <span class="chip tone-neutral sm">${page.total}</span>`, `<p class="muted">${page.total ? offset + 1 : 0}–${offset + page.items.length} / ${page.total}</p>` + page.items.map(s => `<p><a href="${API.process}/api/kg/manuals/sources/${encodeURIComponent(s.source_id)}/original">${esc(s.filename)}</a> · ${esc(UI.dateTime(s.created_at))} · ${s.status === 'READY' ? '텍스트 추출됨' : '페이지/OCR 검토 필요'} <button class="btn small" data-manual-reopen="${esc(s.source_id)}">다시 열기</button></p>`).join('') + `<div class="row-wrap">${offset ? '<button class="btn small" id="manualSourcesPrev">이전</button>' : ''}${page.next_offset !== null ? '<button class="btn small" id="manualSourcesNext">다음</button>' : ''}</div><p id="manualSourcesMsg" class="muted"></p>`, { cls: 'plain' });
       box.querySelectorAll('[data-manual-reopen]').forEach(b => b.addEventListener('click', async () => {
         b.disabled = true;
         try {
@@ -420,7 +422,7 @@
       current.forEach(u => fetchGolden(u.batch).then(() => renderGolden(u.batch)));
       history.querySelectorAll('[data-manual-revise]').forEach(b => b.addEventListener('click', () => {
         selectManualDocument(b.dataset.manualRevise);
-        $('#manualHistoryMsg').textContent = '개정할 문서를 선택했습니다. 새 판본 파일을 선택하고 미리보기에서 다시 검토하세요.';
+        $('#manualHistoryMsg').textContent = '개정할 문서를 선택했습니다. 새 판본 파일을 선택하고 [문서 등록]을 누르세요.';
         H.preview = null; renderPreview();
       }));
       history.querySelectorAll('[data-manual-undo]').forEach(b => b.addEventListener('click', async () => {
@@ -467,12 +469,12 @@
     return text;
   }
   function manualValidationHtml(v, preview, catalog) {
-    if (!v) return UI.card({title:'현재 지식 기준 검사', body:'기계 검사 결과가 없습니다. 검토 완료나 적재 승인으로 판단할 수 없습니다.'});
-    if (v.checked !== true || typeof v.technical_ready !== 'boolean' || v.needs_human_review !== true || v.can_commit !== false || !Array.isArray(v.issues)) return UI.card({title:'현재 지식 기준 검사', chips:UI.chipText('검사 정보 읽기 실패','danger'), body:'기계 검사 응답 형식이 올바르지 않습니다. 검토 완료나 적재 승인으로 판단할 수 없습니다.'});
+    if (!v) return UI.card({title:'자동 검증', body:'자동 검증 결과가 없습니다. 원문과 직접 대조해 검토하세요.'});
+    if (v.checked !== true || typeof v.technical_ready !== 'boolean' || v.needs_human_review !== true || v.can_commit !== false || !Array.isArray(v.issues)) return UI.card({title:'자동 검증', chips:UI.chipText('검증 결과 읽기 실패','danger'), body:'자동 검증 응답 형식이 올바르지 않습니다. 원문과 직접 대조해 검토하세요.'});
     const issues=v.issues;
     const values=(v.source_value_warnings || []).filter(w => !(preview.warnings || []).includes(w));
-    return UI.card({title:'현재 지식 기준 검사', chips:UI.chipText(v.technical_ready === true ? '기계 검사 통과' : '수정할 항목 있음',v.technical_ready === true ? 'neutral' : 'warning'),
-      body:`<p>원문 보관을 위한 연결 구조 검사입니다. 사람 검토는 별도로 필요합니다. 이 검사는 검토 완료나 적재 승인이 아닙니다. 실제 견적 · 재고 · 카운터 · 인력은 실행 판단 시 확인합니다. 받은 제안 기준이며, 편집한 연결은 적재할 때 다시 검사합니다.</p>` +
+    return UI.card({title:'자동 검증', chips:UI.chipText(v.technical_ready === true ? '자동 검증 통과' : `검토 필요 ${issues.length}건`,v.technical_ready === true ? 'neutral' : 'warning'),
+      body:`<p>AI 추출 결과의 연결 구조를 자동으로 검증한 결과입니다. ${v.technical_ready === true ? '구조에는 문제가 없습니다. 내용이 원문과 맞는지는 아래에서 직접 검토하세요.' : '아래 항목은 문서가 틀렸다는 뜻이 아니라, AI가 채우지 못했거나 사람이 확인해야 하는 곳입니다. 해당 절차에서 값을 고르거나 고친 뒤 적재하세요.'} 고친 연결은 적재할 때 다시 검증합니다.</p>` +
         (values.length ? UI.fold(`원문 수치 확인 필요 ${values.length}개`, `<ul>${values.map(w=>`<li>${esc(w)}</li>`).join('')}</ul>`, {cls:'small', open:true}) : '') +
         (issues.length ? `<ul>${issues.map(x=>`<li>${esc(manualIssueMessage(x,preview,catalog))}${UI.fold('검사 항목 원문',`<pre>${esc(JSON.stringify(x,null,2))}</pre>`,{cls:'small'})}</li>`).join('')}</ul>` : '<p class="muted">현재 지식에서 기계가 찾은 수정 항목은 없습니다.</p>')});
   }
@@ -543,16 +545,39 @@
     const known = (H.catalog || {}).failureModes || [];
     const fms = known.concat(((r.knowledge || {}).failure_modes || []).filter(f => f && f.id && !known.some(k => k.id === f.id)).map(f => ({ id: f.id, name: `${f.name || f.id} (이 문서에서 새로)` })));
     const citation = a => a ? UI.fold(`원문 인용 · ${a.page}쪽${a.located === 'loose' ? ' · 대략 일치 — 문맥 확인 필요' : a.located === 'normalized' ? ' · 공백·기호를 맞춰 찾음' : ''}`, `<pre style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(a.quote)}</pre>`, { cls: 'small' }) : '';
-    box.innerHTML = `<div class="mprev"><div class="muted">${esc(r.filename)} · ${r.chars}자 · 절 ${r.sections.length}개 · 절차 ${r.procedures.length}개${r.warnings.length ? ' · 추출 경고 ' + r.warnings.length + '개' : ''}</div>
-      ${r.warnings.length ? `<p class="muted">추출 경고를 원문과 대조하고 제안의 단계 · 연결을 검토하세요.</p>${UI.fold(`추출 경고 원문 ${r.warnings.length}개`, `<ol>${r.warnings.map(w=>`<li>${esc(w)}</li>`).join('')}</ol>`, {cls:'small'})}` : ''}
+    // 진행 단계: ① 문서 등록 → ② AI 추출 → ③ 검토 · 적재. 등록만 한 문서(r.extraction 없음)에는 절 · 절차 · 검증 칸이 없다 —
+    // AI가 읽기 전에 결과나 경고처럼 보이는 것을 두지 않는다(서버도 등록 응답에 절 · 절차를 싣지 않는다: manual_review.registered)
+    const stage = r.extraction ? 3 : 2;
+    const stepper = `<ol class="steps3" aria-label="매뉴얼 등록 단계">${['문서 등록', 'AI 추출', '검토 · 적재'].map((s, i) => `<li class="${i + 1 < stage ? 'done' : i + 1 === stage ? 'on' : ''}"${i + 1 === stage ? ' aria-current="step"' : ''}><span class="n">${i + 1 < stage ? '✓' : i + 1}</span>${s}</li>`).join('')}</ol>`;
+    const readWarnings = r.warnings.length ? UI.fold(`${stage === 3 ? '추출 경고' : '문서 읽기 확인'} ${r.warnings.length}건`, `<ol>${r.warnings.map(w=>`<li>${esc(w)}</li>`).join('')}</ol>`, {cls:'small'}) : '';
+    const sourceLinks = `<p class="row-wrap"><a href="${API.process}/api/kg/manuals/sources/${encodeURIComponent(r.source_id)}/original">보관한 원본 내려받기</a> <button class="btn small" id="manualFullSource">추출 원문 전체 보기</button></p><div id="manualSourceText"></div>`;
+    const history = UI.fold('이 문서의 이전 추출 결과', `<div class="form-grid">${UI.field({ label: '추출 작업', input: `<select id="manualExtractionRuns"><option value="">${esc(UI.t('loading'))}</option></select>` })}</div><p class="row-wrap"><button class="btn small" id="manualAgentResult">선택한 결과 열기</button> <button class="btn small" id="manualExtractionMore" style="display:none">이전 추출 작업 더 보기</button></p>`, { cls: 'small' });
+    // 검토 화면의 절차 한 건: 요약 줄이 먼저, 수정 칸은 접는다(칸은 접혀 있어도 그대로 적재 요청에 실린다). 고장 유형이 비어 사람이 채워야 하는 절차만 펼친다
+    const needsLink = p => { const l = manualLink(r, p); return l.kind !== 'reference' && l.scope !== 'purchase' && !l.failureMode; };
+    const procHead = p => {
+      const l = manualLink(r, p), fm = fms.find(f => f.id === l.failureMode);
+      const what = l.kind === 'reference' ? '참고 절차(실행 대상 아님)' : l.scope === 'purchase' ? '구매 절차' : fm ? `${fm.name} · ${REL_KO[l.relation || 'REMEDIED_BY'] || ''}` : '고장 유형 미지정';
+      return `<div class="mproc-head"><span><b>${esc(p.id)}</b> ${esc(p.name)}</span><span class="muted">${esc(what)} · 단계 ${p.steps.length}</span>${needsLink(p) ? UI.chipText('검토 필요', 'warning') : ''}</div>`;
+    };
+    if (stage === 2) {
+      const ready = r.status === 'READY';
+      box.innerHTML = `<div class="mprev">${stepper}
+        <div class="mstage"><p class="mstage-title"><b>${esc(r.filename)}</b> 문서를 등록했습니다 <span class="muted">· ${r.chars.toLocaleString()}자</span></p>
+          <p class="muted">${ready ? '아직 AI가 문서를 읽기 전입니다. AI 추출을 시작하면 문서에서 조치 절차 · 고장 유형 · 원인을 찾아 정리합니다. 결과는 사람이 검토한 뒤에만 지식으로 적재됩니다.' : `이 문서는 「${esc(UI.status(r.status))}」 상태라 AI 추출을 시작할 수 없습니다.`}</p>
+          ${readWarnings}${sourceLinks}
+          <p class="row-wrap"><button class="btn primary" id="manualAgentExtract" ${ready ? '' : 'disabled'}>AI 추출 시작</button> <span id="manualAgentStatus" role="status" class="muted"></span></p>
+          ${history}</div></div>`;
+    } else box.innerHTML = `<div class="mprev">${stepper}<div class="muted">${esc(r.filename)} · ${r.chars.toLocaleString()}자 · 절 ${r.sections.length}개 · 절차 ${r.procedures.length}개</div>
+      <p class="muted" id="manualAgentStatus" role="status">AI 추출 결과입니다. 원문과 대조해 검토한 뒤 적재하세요.</p>
+      ${readWarnings}
       ${manualValidationHtml(r.validation,r,{...H.catalog,...H.manualCatalog})}
       ${manualExecutionHtml(r.validation,r,{...H.catalog,...H.manualCatalog})}
-      <p class="row-wrap"><a href="${API.process}/api/kg/manuals/sources/${encodeURIComponent(r.source_id)}/original">보관한 원본 내려받기</a> <button class="btn small" id="manualFullSource">추출 원문 전체 보기</button></p><div id="manualSourceText"></div>
-      <p class="row-wrap"><button class="btn small" id="manualAgentExtract" ${r.status === 'READY' ? '' : 'disabled'}>추출 제안 준비</button> <button class="btn small" id="manualAgentResult">추출 진행 · 결과 확인</button> <span id="manualAgentStatus" role="status" class="muted">${r.extraction ? '추출 제안입니다. 원문을 대조하고 검토 후 적재하세요.' : '현재 결과는 구조화된 줄 파서입니다. 원문에 근거한 추출 제안을 준비할 수 있습니다.'}</span></p>
-      <div class="form-grid">${UI.field({ label: '이 문서의 추출 작업', input: `<select id="manualExtractionRuns"><option value="">${esc(UI.t('loading'))}</option></select>` })}</div><button class="btn small" id="manualExtractionMore" style="display:none">이전 추출 작업 더 보기</button>
+      ${sourceLinks}
+      <p class="row-wrap"><button class="btn small" id="manualAgentExtract">AI 추출 다시 하기</button></p>
+      ${history}
       ${r.page_reviews ? UI.fold('페이지별 추출 검토 기록', r.page_reviews.map(p => `<p>${esc(p.page)}쪽: ${esc(p.note)}</p>`).join(''), { cls: 'small' }) : ''}
       <div class="mcols"><div><h3>매뉴얼 절</h3>${r.sections.map(s => `<div class="msec"><b>${esc(s.ref)}</b> ${esc(s.title)}${UI.fold('절 본문 전체', `<div class="muted" style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(s.excerpt)}</div>`, { cls: 'small' })}${citation(s.anchor)}</div>`).join('') || `<div class="muted">${esc(UI.t('skill.none'))}</div>`}</div>
-      <div><h3>등록할 조치 방법</h3>${r.procedures.map(p => `<div class="mproc"><div class="form-grid">${UI.field({ label: UI.t('skill.sop'), input: `<input aria-label="절차 번호" data-manual-id="${esc(p.id)}" value="${esc(p.id)}">` })}${UI.field({ label: UI.t('skill.name'), input: `<input aria-label="이름" data-manual-name="${esc(p.id)}" value="${esc(p.name)}">` })}
+      <div><h3>등록할 조치 방법</h3><p class="muted">절차마다 요약을 보고, 원문과 다르면 「연결 · 단계 수정」을 열어 고치세요.</p>${r.procedures.map(p => `<div class="mproc">${procHead(p)}<details class="fold small mproc-edit" ${needsLink(p) ? 'open' : ''}><summary>연결 · 단계 수정</summary><div class="fold-body"><div class="form-grid">${UI.field({ label: UI.t('skill.sop'), input: `<input aria-label="절차 번호" data-manual-id="${esc(p.id)}" value="${esc(p.id)}">` })}${UI.field({ label: UI.t('skill.name'), input: `<input aria-label="이름" data-manual-name="${esc(p.id)}" value="${esc(p.name)}">` })}
         ${manualPurchaseFields(p,r)}
         ${UI.field({ label: UI.t('skill.fm'), hint:'고장 조치는 필수입니다. 구매 절차와 일반 원문 참고 절차에는 고장 유형을 연결하지 않습니다.', input: `<select data-fm="${esc(p.id)}"><option value="">(고르세요)</option>${fms.map(f => `<option value="${esc(f.id)}" ${f.id === manualLink(r,p).failureMode ? 'selected' : ''}>${esc(f.name)}</option>`).join('')}</select>` })}
         ${UI.field({ label: UI.t('skill.relation'), input: `<select data-rel="${esc(p.id)}"><option value="" ${manualLink(r,p).scope === 'purchase' && !manualLink(r,p).relation ? 'selected' : ''}>고장 유형 관계 없음</option>${['REMEDIED_BY', 'MITIGATED_BY', 'PREVENTED_BY'].map(v => `<option value="${v}" ${(manualLink(r,p).relation || (manualLink(r,p).scope === 'purchase' ? '' : 'REMEDIED_BY')) === v ? 'selected' : ''}>${esc(REL_KO[v])}</option>`).join('')}</select>` })}
@@ -560,11 +585,11 @@
         ${manualReferenceFields(p,r)}
         ${UI.field({ label: UI.t('skill.affects'), hint: '상태 변수 또는 성과 지표 id와 방향(+/-)을 쉼표로. 비우면 득실 0', input: `<input aria-label="영향" data-affects="${esc(p.id)}" value="${esc((manualLink(r,p).affects || []).map(a=>a.target+':'+a.sign).join(', '))}" placeholder="예: sv:bearing-wear:- , msr:maint-cost:+">` })}</div>${citation(p.anchor)}
         ${UI.fold('절차 연결 원문',`<pre>${esc(JSON.stringify({inline:p.link,override:r.links && Object.prototype.hasOwnProperty.call(r.links,p.id) ? r.links[p.id] : undefined,suggestedFailureMode:p.suggestedFailureMode,existing_skill_id:p.existing_skill_id,reference_contract_sha256:p.reference_contract_sha256},null,2))}</pre>`,{cls:'small'})}
-        <ol>${p.steps.map(s => `<li><textarea aria-label="단계 ${s.order}" data-manual-step="${esc(p.id)}" data-order="${s.order}" rows="2">${esc(s.text)}</textarea> <span class="muted">${esc(s.manual || '')}</span>${citation(s.anchor)}</li>`).join('')}</ol></div>`).join('') || `<div class="muted">${esc(UI.t('skill.none'))}</div>`}</div></div>
+        <ol>${p.steps.map(s => `<li><textarea aria-label="단계 ${s.order}" data-manual-step="${esc(p.id)}" data-order="${s.order}" rows="2">${esc(s.text)}</textarea> <span class="muted">${esc(s.manual || '')}</span>${citation(s.anchor)}</li>`).join('')}</ol></div></details></div>`).join('') || `<div class="muted">${esc(UI.t('skill.none'))}</div>`}</div></div>
       ${manualKnowledgeHtml(r, citation)}
       <label class="check"><input type="checkbox" id="manualReviewed"> 원문 · 단계 · 고장 유형 · 관계를 검토했습니다.</label>
       <p id="manualReviewChanged" class="muted" hidden>검토 내용을 바꿨습니다. 위 검사는 원래 제안 기준입니다. 원문과 바뀐 연결을 대조한 뒤 검토 완료를 표시하세요.</p>
-      ${UI.actions(`<button class="btn primary" id="manualCommit" ${r.status === 'READY' && r.sections.length && r.procedures.length ? '' : 'disabled'}>검토한 내용 적재</button>`)}<span id="manualMsg" class="muted"></span></div>`;
+      ${UI.actions(`<button class="btn primary" id="manualCommit" ${r.status === 'READY' && r.sections.length && r.procedures.length ? '' : 'disabled'}>검토한 내용 적재</button>`)}<p id="manualMsg" class="form-msg" role="status"></p><div id="manualDone"></div></div>`;
     $('#manualFullSource').addEventListener('click', async () => {
       try {
         const source = await getJ(API.process + '/api/kg/manuals/sources/' + encodeURIComponent(r.source_id));
@@ -594,12 +619,33 @@
         else if (!select.value && select.options.length > 1) select.selectedIndex = 1;
         extractionOffset = page.next_offset;
         $('#manualExtractionMore').style.display = page.next_offset === null ? 'none' : '';
-      } catch (e) { if (H.preview === r) $('#manualAgentStatus').textContent = '추출 이력 조회 실패: ' + e.message; }
+      } catch (e) { if (H.preview === r && $('#manualAgentStatus')) $('#manualAgentStatus').textContent = '추출 이력 조회 실패: ' + e.message; }
     };
     $('#manualExtractionMore').addEventListener('click', () => loadExtractions(true));
     loadExtractions();
+    const say = (text, bad = false) => { const s = $('#manualAgentStatus'); if (!s) return; s.textContent = text; s.className = bad ? 'neg' : 'muted'; };
+    const WAITING = ['TODO', 'IN_PROGRESS', 'SUBMITTED'];
+    const progressOf = result => result.progress ? ` · 구간 ${result.progress.done}/${result.progress.total} 완료` : '';
+    // 추출 결과를 연다. 아직 진행 중이면 watch 일 때 3초 뒤 다시 확인한다(같은 문서 화면이 열려 있는 동안만, 최대 10분)
+    const openResult = async (instance, watch, tries = 0) => {
+      if (H.preview !== r) return;
+      try {
+        const result = await getJ(extractionUrl + '/' + encodeURIComponent(instance));
+        if (H.preview !== r) return;
+        if (result.preview) { await loadManualCatalog(); if (H.preview !== r) return; H.preview = result.preview; renderPreview(); return; }
+        if (WAITING.includes(result.status)) {
+          say(`AI 추출 중…${progressOf(result)} (보통 1~2분 걸립니다. 끝나면 결과가 여기에 표시됩니다)`);
+          if (watch && tries < 200) setTimeout(() => openResult(instance, true, tries + 1), 3000);
+          else if (watch) say('AI 추출이 10분 넘게 끝나지 않았습니다. 「이 문서의 이전 추출 결과」에서 나중에 다시 열 수 있습니다.', true);
+          return;
+        }
+        const stuck = (result.segments || []).filter(s => s.status !== 'DONE').map(s => ` [구간 ${s.index}: ${UI.status(s.status)}]`).join('');
+        say(`AI 추출이 완료되지 않았습니다: ${UI.status(result.status)}${progressOf(result)}${stuck}${result.log ? ' · ' + result.log : ''} — ${UI.t('nav.instances')} 화면에서 이 추출 작업의 단계와 오류를 확인할 수 있습니다.`, true);
+      } catch (e) { if (H.preview === r) say('추출 결과를 확인하지 못했습니다: ' + e.message, true); }
+    };
     $('#manualAgentExtract').addEventListener('click', async () => {
       const button = $('#manualAgentExtract'); button.disabled = true;
+      say('AI 추출을 요청하는 중…');
       try {
         const previous = extractionState();
         const state = previous && !previous.instance ? previous : { request_id: UI.uuid() };
@@ -607,26 +653,21 @@
         const created = await postJ(extractionUrl, { request_id: state.request_id });
         sessionStorage.setItem(extractionKey, JSON.stringify({ ...state, instance: created.instance }));
         await loadExtractions();
-        if (H.preview === r) $('#manualAgentStatus').textContent = '추출 요청을 접수했습니다. 진행 · 결과 확인을 누르세요.';
-      } catch (e) { if (H.preview === r) $('#manualAgentStatus').textContent = '접수 확인 실패: ' + e.message + ' 같은 요청으로 다시 확인할 수 있습니다.'; }
-      finally { if (H.preview === r) button.disabled = false; }
+        if (H.preview === r) openResult(created.instance, true);
+      } catch (e) { if (H.preview === r) { say('AI 추출을 시작하지 못했습니다: ' + e.message + ' — 다시 누르면 같은 요청으로 확인합니다.', true); button.disabled = false; } }
     });
-    $('#manualAgentResult').addEventListener('click', async () => {
-      try {
-        const instance = $('#manualExtractionRuns').value;
-        if (!instance) { $('#manualAgentStatus').textContent = '추출 작업을 선택하세요. 응답을 받지 못한 요청은 추출 요청 버튼으로 접수를 재확인하세요.'; return; }
-        const result = await getJ(extractionUrl + '/' + encodeURIComponent(instance));
-        if (H.preview !== r) return;
-        if (result.preview) { await loadManualCatalog(); H.preview = result.preview; renderPreview(); }
-        else {
-          const seg = result.progress ? ` · 구간 ${result.progress.done}/${result.progress.total} 완료` + (result.segments || []).filter(s => s.status !== 'DONE').map(s => ` [${s.index}: ${UI.status(s.status)}]`).join('') : '';
-          $('#manualAgentStatus').textContent = '추출 상태: ' + UI.status(result.status) + seg + (result.log ? ' · ' + result.log : '') + (` — ${UI.t('nav.instances')} 화면에서 단계 · 오류를 확인할 수 있습니다.`);
-        }
-      } catch (e) { if (H.preview === r) $('#manualAgentStatus').textContent = '결과 확인 실패: ' + e.message; }
+    $('#manualAgentResult').addEventListener('click', () => {
+      const instance = $('#manualExtractionRuns').value;
+      if (!instance) { say('열 추출 작업을 선택하세요.', true); return; }
+      openResult(instance, false);
     });
+    // 이 브라우저가 방금 요청한 추출이 아직 결과 전이면(화면을 다시 열었을 때) 이어서 지켜본다
+    if (stage === 2 && extractionState()?.instance) openResult(extractionState().instance, true);
     // "sv:ts1:-, msr:maint-cost:+" → [{target, sign}] (A079: reviewed impact of an ingested SOP)
     const parseAffects = text => (text || '').split(',').map(s => s.trim()).filter(Boolean).map(s => { const m = s.match(/^(.*?):([+-])$/); return m ? { target: m[1].trim(), sign: m[2] } : { target: s, sign: '?' }; });
     const c = $('#manualCommit'); if (c) c.addEventListener('click', async () => {
+      $('#manualMsg').className = 'form-msg neg';      // 아래 검사에서 멈춘 까닭은 오류로 보인다(진행 · 완료는 그 자리에서 색을 바꾼다)
+      const by = manualActor(); if (!by) { $('#manualMsg').textContent = '화면 오른쪽 위에서 사용자를 선택하세요 — 적재 이력에 담당자로 남습니다.'; return; }
       if (!$('#manualReviewed').checked) { $('#manualMsg').textContent = '원문을 대조하고 검토 완료를 표시하세요.'; return; }
       const links = {};
       for (const s of box.querySelectorAll('[data-fm]')) {
@@ -654,9 +695,10 @@
         else { $('#manualMsg').textContent = `${p.name}: 절차의 업무 범위를 확인하세요.`; return; }
       }
       const missing = Object.entries(links).filter(([, v]) => v.kind !== 'reference' && v.scope !== 'purchase' && !v.failureMode).map(([k]) => k);
+      missing.forEach(id => { const d = box.querySelector(`[data-fm="${CSS.escape(id)}"]`)?.closest('details'); if (d) d.open = true; });
       if (missing.length) { $('#manualMsg').textContent = `고장 유형을 고르세요: ${missing.join(', ')} — 고장 조치가 아닌 확인 · 참고 절차면 종류를 「일반 원문 참고 절차」로 바꾸세요`; return; }
       c.disabled = true;
-      $('#manualMsg').textContent = '적재 중…';
+      $('#manualMsg').className = 'form-msg'; $('#manualMsg').textContent = '적재 중…';
       try {
         const reviewed = structuredClone(r);
         box.querySelectorAll('[data-know-drop]:checked').forEach(input => {
@@ -681,7 +723,7 @@
           const p = reviewed.procedures.find(p => p.id === input.dataset.manualId);
           p.id = input.value.trim(); reviewedLinks[p.id] = links[input.dataset.manualId];
         });
-        const request={ ...reviewed, links: reviewedLinks, by: $('#manualBy').value, reviewed: true };
+        const request={ ...reviewed, links: reviewedLinks, by, reviewed: true };
         if (request.previous_batch) {
           const changes=await postJ(API.process + '/api/kg/manuals/changes',request);
           if (H.preview !== r) return;
@@ -702,11 +744,13 @@
           ? '후보 규칙에 연결: ' + activated.map(([fm, rules]) => `${hydWords.idName(fm)} → ${rules.map(r => hydWords.idName(r)).join(', ')}`).join(' · ') + ' (되돌리면 함께 빠집니다)'
           : '연결된 후보 규칙이 없어 판단 후보는 바뀌지 않았습니다.');
         c.textContent = '적재 완료';
+        $('#manualMsg').className = 'form-msg pos';
+        $('#manualDone').innerHTML = UI.actions(`<button class="btn" data-go-tab="ontology">지식 지도에서 보기 →</button><button class="btn" data-go-tab="skills">조치 방법에서 보기 →</button>`);
         H.skills = [];
         await loadUploads(); if (window.hydEnt) hydEnt.loadGraph(true);
-      } catch (e) { if (H.preview === r) { $('#manualMsg').textContent = '실패: ' + e.message; c.disabled = false; } }
+      } catch (e) { if (H.preview === r) { $('#manualMsg').className = 'form-msg neg'; $('#manualMsg').textContent = '적재하지 못했습니다: ' + e.message; c.disabled = false; } }
     });
-    const changed = event => { if (event.target.id !== 'manualReviewed') { $('#manualReviewed').checked = false; $('#manualReviewChanged').hidden = false; } };
+    const changed = event => { if ($('#manualReviewed') && event.target.id !== 'manualReviewed' && event.target.id !== 'manualExtractionRuns') { $('#manualReviewed').checked = false; $('#manualReviewChanged').hidden = false; } };
     box.oninput = changed;
     box.querySelectorAll('[data-manual-scope]').forEach(select => select.addEventListener('change', () => {
       box.querySelector(`[data-purchase-fields="${CSS.escape(select.dataset.manualScope)}"]`).hidden = select.value !== 'purchase';
@@ -750,9 +794,15 @@
       select.addEventListener('change',update); usage.addEventListener('change',update); update();
     });
   }
+  // 담당자 = 선택한 사용자(이름으로 적재 이력에 남는다). 자유 입력 칸은 두지 않는다
+  const manualActor = () => window.hydInbox?.me?.()?.name || '';
+  function showManualActor() {
+    ['manualBy', 'ddlBy', 'skBy'].forEach(id => { const el = document.getElementById(id); if (el) { el.readOnly = true; el.value = manualActor(); el.placeholder = '화면 오른쪽 위에서 사용자를 선택하세요'; } });
+  }
+  window.addEventListener('hyd:me', showManualActor); showManualActor();
   $('#manualPreview').addEventListener('click', async () => {
-    const f = $('#manualFile').files[0]; if (!f) { $('#manualResult').innerHTML = '<div class="neg">파일을 먼저 선택해 주세요.</div>'; return; }
-    const b = $('#manualPreview'); b.disabled = true; b.textContent = '읽는 중…'; H.preview = null;
+    const f = $('#manualFile').files[0]; if (!f) { $('#manualResult').innerHTML = '<div class="neg" role="alert">등록할 파일을 먼저 선택하세요.</div>'; return; }
+    const b = $('#manualPreview'); b.disabled = true; b.textContent = '등록하는 중…'; H.preview = null;
     $('#manualResult').innerHTML = `<div class="muted" role="status">${esc(UI.t('loading'))}</div>`;
     try {
       const b64 = await new Promise((ok, no) => { const rd = new FileReader(); rd.onload = () => ok(String(rd.result).split(',')[1] || ''); rd.onerror = () => no(new Error('파일을 읽을 수 없습니다.')); rd.readAsDataURL(f); });
@@ -762,7 +812,7 @@
       if ($('#manualFile').files[0] !== f) return;
       H.preview = preview; selectManualDocument(preview.document_id, preview.filename); renderPreview();
       await loadManualSources();
-    } catch (e) { if ($('#manualFile').files[0] === f) $('#manualResult').innerHTML = `<div class="neg">미리보기 실패: ${esc(e.message)}</div>`; }
+    } catch (e) { if ($('#manualFile').files[0] === f) $('#manualResult').innerHTML = `<div class="neg" role="alert">문서를 등록하지 못했습니다: ${esc(e.message)}</div>`; }
     finally { b.disabled = false; b.textContent = UI.t('kn.preview'); }
   });
   // 수업 경계(서버 GET /api/course-access): 수업 단계에서는 제공 문서만 등록된다 — 미리 안내하지 않고 다른 문서를 올리면 서버 거절 까닭을

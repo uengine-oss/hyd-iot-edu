@@ -220,6 +220,12 @@ function renderUnits() {
       card.innerHTML = `<header><strong>${asset}</strong><span class="biz-alert"></span><span class="mode"></span></header>
         <div class="big num"><span class="v"></span><small>℃ ${esc(UI.t('plant.ts1'))}</small></div>
         <div class="bar"><i></i><b style="left:65%"></b></div><div class="threshold-note">${esc(UI.t('plant.trip'))}</div>
+        <div class="fault"></div><div class="repeat-guide field-hint" role="status"></div>
+        <div class="ctl">
+          <fieldset class="ctl-group"><legend>${esc(UI.t('plant.faults'))}${EXPERIMENT[asset] ? ` · ${esc(EXPERIMENT[asset].title)}` : ''}</legend><div>
+          ${(EXPERIMENT[asset] ? EXPERIMENT[asset].buttons : []).map(([act, label, cls]) => `<button class="btn ${cls}" data-act="${act}">${esc(label)}</button>`).join('\n          ')}
+          </div><p class="muted small biz-press" aria-live="polite"></p></fieldset>
+        </div>
         <div class="kv"><span>${tagLabel('plant.ce', 'CE')}</span><em class="num ce"></em><span>${tagLabel('plant.cp', 'CP')}</span><em class="num cp"></em>
           <span>${esc(UI.t('plant.fan'))}</span><em class="num fan"></em><span>${esc(UI.t('plant.load'))}</span><em class="num load"></em>
           <span>${tagLabel('plant.ps1', 'PS1')}</span><em class="num ps1"></em><span>${tagLabel('plant.fs1', 'FS1')}</span><em class="num fs1"></em>
@@ -227,12 +233,9 @@ function renderUnits() {
           <span>${esc(UI.t('plant.health'))}</span><em class="num health"></em><span>${esc(UI.t('plant.phase'))}</span><em class="phase"></em>
           <span>${esc(UI.t('plant.state'))}</span><em class="plc"></em><span>${esc(UI.t('plant.lastCmd'))}</span><em class="ack"></em></div>
         <svg class="spark" role="img" aria-label="압력 추이"></svg><div class="muted">${esc(UI.t('plant.spark'))}</div>
-        <div class="fault"></div><div class="repeat-guide field-hint" role="status"></div>
-        <div class="ctl">
-          <fieldset class="ctl-group"><legend>${esc(UI.t('plant.faults'))}${EXPERIMENT[asset] ? ` · ${esc(EXPERIMENT[asset].title)}` : ''}</legend><div>
-          ${(EXPERIMENT[asset] ? EXPERIMENT[asset].buttons : []).map(([act, label, cls]) => `<button class="btn ${cls}" data-act="${act}">${esc(label)}</button>`).join('\n          ')}
-          </div><p class="muted small biz-press" aria-live="polite"></p></fieldset><fieldset class="ctl-group"><legend>${esc(UI.t('plant.modes'))}</legend><div>
-          <button class="btn" data-act="mode" data-mode="REMOTE_AUTO">원격 자동</button>
+        <details class="fold small unit-more"><summary>${esc(UI.t('plant.modes'))} · ${esc(UI.t('plant.manual'))}</summary><div class="fold-body ctl">
+          <fieldset class="ctl-group"><legend>${esc(UI.t('plant.modes'))}</legend><div>
+          <button class="btn" data-act="mode" data-mode="REMOTE_AUTO" title="승인된 원격 명령을 설비가 수신하는 운전 모드입니다. 명령은 사람 승인 뒤에만 나갑니다.">원격 자동</button>
           <button class="btn" data-act="mode" data-mode="REMOTE_MANUAL">원격 수동</button>
           <button class="btn" data-act="mode" data-mode="LOCAL">현장 제어</button>
           </div></fieldset><fieldset class="ctl-group"><legend>${esc(UI.t('plant.manual'))}</legend><div>
@@ -240,12 +243,13 @@ function renderUnits() {
           <button class="btn" data-act="load">부하 70 %</button>
           <button class="btn" data-act="reset">보호 정지 해제</button>
           </div></fieldset>
-        </div>`;
+        </div></details>`;
       card.querySelectorAll('button').forEach(b => b.addEventListener('click', () => unitAction(asset, b.dataset.act, b.dataset.mode, b)));
       box.append(card);
     }
     const t = u.tags, s = u.status, d = (state.det && state.det.assets && state.det.assets[asset]) || {};
     card.querySelector('.mode').textContent = UI.status(s.mode);
+    card.querySelector('.mode').title = s.mode === 'REMOTE_AUTO' ? '원격 자동 — 승인된 원격 명령을 설비가 수신하는 운전 모드입니다. 저절로 조치하지 않으며, 명령은 사람 승인 뒤에만 나갑니다.' : '';
     card.querySelector('.big .v').textContent = fmt(t.TS1, 1);
     const bar = card.querySelector('.bar i'); bar.style.width = Math.min(100, t.TS1) + '%'; bar.className = tsColor(t.TS1);
     card.querySelector('.ce').textContent = fmt(t.CE, 0) + ' %';
@@ -481,7 +485,7 @@ function renderIncList() {
   box.scrollTop = scroll;
 }
 // 사건 상세 = 사건 하나 + 그 사건의 처리 기록(서버가 사건으로 거른 감사 기록 — 전체 최근 100건에서 거르지 않는다, W2-06).
-// AI 일꾼의 처리 과정은 처리 건 기록이 정본이다 — 옛 agent 실행 목록(/api/agent/runs, 지금은 판단 채점 실행만 남는다)을 읽지 않는다(W2-05 · G1-07)
+// AI 에이전트의 처리 과정은 처리 건 기록이 정본이다 — 옛 agent 실행 목록(/api/agent/runs, 지금은 판단 채점 실행만 남는다)을 읽지 않는다(W2-05 · G1-07)
 async function loadDetail() {
   if (!state.selected) return;
   const selected = state.selected;
@@ -544,7 +548,7 @@ function guideCardHtml(card) {
     }).join('');
     html += UI.card({ title: esc(c.name), chips: i === 0 ? UI.chipText(UI.t('dec.causeTop'), 'accent') : '', value: `<span class="kv">${esc(UI.t('card.score'))} <small></small>${fmt(c.score, 2)}</span>`, sub: esc(c.description || ''), body: ev || `<span class="muted">${esc(UI.t('inc.noEvidence'))}</span>`, cls: 'soft' });
   });
-  html += `</div><p class="field-hint" style="margin-top:var(--s3)">조치는 이 원인을 바탕으로 AI 일꾼이 낸 판단 카드(처리 건의 승인 단계)에서 고르고 승인합니다.</p>`;
+  html += `</div><p class="field-hint" style="margin-top:var(--s3)">조치는 이 원인을 바탕으로 AI 에이전트이 낸 판단 카드(처리 건의 승인 단계)에서 고르고 승인합니다.</p>`;
   return html;
 }
 function renderDetail() {
@@ -557,7 +561,7 @@ function renderDetail() {
     if (state.selectedAsset && state.plant && state.plant.units[state.selectedAsset]) {
       const u = state.plant.units[state.selectedAsset], t = u.tags, s = u.status, d = (state.det && state.det.assets && state.det.assets[state.selectedAsset]) || {};
       box.innerHTML = `<div class="detail-head"><div class="row"><h2>${esc(state.selectedAsset)}</h2>${UI.chip(s.mode)}${UI.chip(s.state)}${phaseChip(d)}</div><div class="sub">${esc(UI.t('plant.ts1'))} ${fmt(t.TS1, 1)} ℃ · ${esc(UI.t('plant.ce'))} ${fmt(t.CE, 0)} % · ${esc(UI.t('plant.fan'))} ${fmt(t.FanSpeedSP, 0)} % · ${esc(UI.t('plant.load'))} ${fmt(t.LoadSP, 0)} %</div></div>` +
-        UI.empty(UI.t('inc.noAlert'), UI.t('inc.noAlertSub'), 'compact');
+        UI.emptyGo(UI.t('inc.noAlert'), UI.t('inc.noAlertSub'), 'scenario', UI.t('nav.scenario'), 'compact');
     } else {
       box.innerHTML = UI.empty(UI.t('inc.select'), UI.t('inc.selectSub'));
     }
@@ -579,8 +583,8 @@ function renderDetail() {
   const card = inc.card;
   html += '<div class="stack-list" style="margin-top:var(--s4)">';
   html += UI.fold(esc(UI.t('inc.evidence')), guideCardHtml(card));
-  // AI 일꾼이 무엇을 조회 · 판단했는지는 이 사건의 처리 건 「처리 기록」에 있다 — 여기서는 그리로 가는 길 하나
-  html += UI.fold(esc(UI.t('inc.agentTrace')), `<p class="muted">AI 일꾼의 조회 · 판단 과정은 이 사건의 처리 건 「처리 기록」 탭에 단계별로 남습니다.</p>${UI.actions('<button class="btn small" id="btnIncInstance">처리 건에서 보기 →</button>', state.woMsg?.inc === inc.id ? state.woMsg.text : '')}`);
+  // AI 에이전트이 무엇을 조회 · 판단했는지는 이 사건의 처리 건 「처리 기록」에 있다 — 여기서는 그리로 가는 길 하나
+  html += UI.fold(esc(UI.t('inc.agentTrace')), `<p class="muted">AI 에이전트의 조회 · 판단 과정은 이 사건의 처리 건 「처리 기록」 탭에 단계별로 남습니다.</p>${UI.actions('<button class="btn small" id="btnIncInstance">처리 건에서 보기 →</button>', state.woMsg?.inc === inc.id ? state.woMsg.text : '')}`);
   {
     const audit = state.incAudit?.id === inc.id ? state.incAudit.rows : [], auditError = state.incAudit?.id === inc.id ? state.incAudit.error : '';
     const auditFail = auditError ? `<div class="neg" role="status">처리 기록을 읽지 못했습니다: ${esc(auditError)}${audit.length ? ' — 마지막으로 읽은 기록입니다' : ''}</div>` : '';
