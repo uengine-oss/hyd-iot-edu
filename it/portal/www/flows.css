@@ -1,40 +1,39 @@
-/* B3 흐름 가져오기 — 돌아갈 만큼만(다듬기는 실라버스 뒤). 기존 components.css 의 form · card · compact-table 을 쓴다. */
+/* 흐름 가져오기 · 매핑(flows.js) — form · card · 표는 components.css · styles.css, 여기는 단계 매핑 폼의 격자만 */
 .flow-map td { vertical-align: top; }
-.flow-map td textarea, .flow-map td input, .flow-map td select { width: 100%; margin-bottom: 4px; }
-.flow-map code, .flow-versions code { font-size: 12px; }
-.chk { display: inline-flex; gap: 6px; align-items: center; margin-right: 12px; font-weight: 400; }
-.chk-row { margin: 4px 0 4px 22px; }
-.flow-problems { border-left: 3px solid var(--alarm); padding: 10px 14px; margin: 8px 0; }
-.flow-problems ul { margin: 6px 0 0 18px; }
+.flow-map td textarea, .flow-map td input, .flow-map td select { width: 100%; margin-bottom: var(--s1); }
+.chk { margin-right: var(--s3); }
+.chk-row { margin: var(--s1) 0 var(--s1) var(--s6); }
+/* 문제 목록 = 오류 블록(4절) */
+.flow-problems { margin: var(--s2) 0; padding: var(--s3) var(--s4); border: 1px solid var(--danger-rule); border-radius: var(--radius); background: var(--danger-bg); }
+.flow-problems ul { margin: 6px 0 0 var(--s4); padding: 0; }
 .flow-problems li[data-goto] { cursor: pointer; }
 .flow-versions { list-style: none; padding: 0; margin: 0; }
-.flow-versions li { padding: 4px 0; border-top: 1px solid var(--rule); }
-[data-row].flash { outline: 2px solid var(--accent, #2f6fed); outline-offset: 2px; }
-/* PgCard/PgField: each step is one card; labels precede controls. */
-#flowEditor .flow-map { display:block; width:100%; }
-#flowEditor .flow-map thead { display:none; }
-#flowEditor .flow-map tbody { display:grid; gap:16px; }
-#flowEditor .flow-map tr { display:grid; grid-template-columns:minmax(180px,1fr) minmax(180px,1fr); gap:16px; padding:20px; border:1px solid var(--rule); border-radius:12px; background:var(--panel); }
-#flowEditor .flow-map td { display:block; padding:0; border:0; min-width:0; }
-#flowEditor .flow-map td:first-child { grid-column:1/-1; }
-#flowEditor .flow-map td:last-child { grid-column:1/-1; }
-#flowEditor .flow-map td[data-label='부품']::before, #flowEditor .flow-map td[data-label='담당']::before { content:attr(data-label); display:block; color:var(--ink-3); font-size:13px; margin-bottom:6px; }
-#flowEditor .flow-service-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
-#flowEditor .flow-service-fields .field { min-width:0; margin:0; }
-#flowEditor .flow-mail { grid-column:1/-1; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; border:1px solid var(--rule); padding:16px; border-radius:8px; }
-#flowEditor .flow-mail legend { font-size:14px; padding:0 8px; }
-#flowEditor input, #flowEditor select, #flowEditor textarea { max-width:100%; box-sizing:border-box; }
-#flowEditor .flow-map code { overflow-wrap:anywhere; }
-#flowEditor .form-grid > .flow-map { grid-column:1/-1; }
-@media(max-width:700px) { #flowEditor .flow-service-fields, #flowEditor .flow-mail, #flowEditor .flow-map tr { grid-template-columns:minmax(0,1fr); } }
-
-#flowEditor .flow-service-fields .field:has([data-cfg="summary"]), #flowEditor .flow-mail .field:has([data-mail-key="body"]) { grid-column:1/-1; }
-#flowEditor .field.wide > .compact-table { width:100%; table-layout:fixed; }
-#flowEditor .field.wide > .compact-table td { padding:8px; }
-#flowEditor .field.wide > .compact-table td:nth-child(1) { width:24%; }
-#flowEditor .field.wide > .compact-table td:nth-child(2) { width:18%; }
-#flowEditor .field.wide > .compact-table td:nth-child(3) { width:24%; }
-#flowEditor .field.wide > .compact-table td:nth-child(4) { width:15%; }
-#flowEditor .field.wide > .compact-table td:nth-child(5) { width:19%; }
-#flowEditor .field.wide > .compact-table select, #flowEditor .field.wide > .compact-table input:not([type="checkbox"]) { width:100%; }
-#flowEditor .flow-contract { color:var(--ink-3); font-size:13px; margin-bottom:12px; }
+.flow-versions li { padding: var(--s2) 0; border-top: 1px solid var(--rule); }
+.flow-versions li:first-child { border-top: 0; }
+[data-row].flash { outline: 2px solid var(--focus); outline-offset: 2px; }
+/* 단계마다 한 묶음: 표를 풀어 줄 사이 1px 선으로 가른 폼으로 그린다. 이름표는 입력 위 */
+#flowEditor .flow-map { display: block; width: 100%; }
+#flowEditor .flow-map thead { display: none; }
+#flowEditor .flow-map tbody { display: grid; }
+#flowEditor .flow-map tr { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr); gap: var(--s4); padding: var(--s4) 0; border-bottom: 1px solid var(--rule); }
+#flowEditor .flow-map tr:last-child { border-bottom: 0; }
+#flowEditor .flow-map td { display: block; padding: 0; border: 0; min-width: 0; }
+#flowEditor .flow-map td:first-child, #flowEditor .flow-map td:last-child { grid-column: 1 / -1; }
+#flowEditor .flow-map td[data-label='부품']::before, #flowEditor .flow-map td[data-label='담당']::before { content: attr(data-label); display: block; margin-bottom: 6px; font-size: var(--fs-sub); font-weight: 600; color: var(--ink); }
+#flowEditor .flow-map code { overflow-wrap: anywhere; }
+#flowEditor .flow-service-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s4); }
+#flowEditor .flow-service-fields .field { min-width: 0; margin: 0; }
+#flowEditor .flow-mail { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s4); margin: 0; padding: var(--s4) 0 0; border: 0; border-top: 1px solid var(--rule); }
+#flowEditor .flow-mail legend { padding: 0 var(--s2) 0 0; font-size: var(--fs-cap); font-weight: 600; color: var(--ink-3); }
+#flowEditor .form-grid > .flow-map { grid-column: 1 / -1; }
+#flowEditor .flow-service-fields .field:has([data-cfg="summary"]), #flowEditor .flow-mail .field:has([data-mail-key="body"]) { grid-column: 1 / -1; }
+#flowEditor .field.wide > .compact-table { width: 100%; table-layout: fixed; }
+#flowEditor .field.wide > .compact-table td { padding: var(--s2); }
+#flowEditor .field.wide > .compact-table td:nth-child(1) { width: 24%; }
+#flowEditor .field.wide > .compact-table td:nth-child(2) { width: 18%; }
+#flowEditor .field.wide > .compact-table td:nth-child(3) { width: 24%; }
+#flowEditor .field.wide > .compact-table td:nth-child(4) { width: 15%; }
+#flowEditor .field.wide > .compact-table td:nth-child(5) { width: 19%; }
+#flowEditor .field.wide > .compact-table select, #flowEditor .field.wide > .compact-table input:not([type="checkbox"]) { width: 100%; }
+#flowEditor .flow-contract { margin-bottom: var(--s3); font-size: var(--fs-sub); color: var(--ink-3); }
+@media (max-width: 720px) { #flowEditor .flow-service-fields, #flowEditor .flow-mail, #flowEditor .flow-map tr { grid-template-columns: minmax(0, 1fr); } }

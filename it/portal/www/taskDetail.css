@@ -1,38 +1,31 @@
-/* U1 — task 상세 패널 · 지금 일하는 AI 일꾼 (taskDetail.js · agentsPanel.js). 기존 컴포넌트(card · fold · timeline · ro-grid · chip)를 쓰고 여기서는 붙이는 자리만 정한다. */
-#instDetail .f-node[data-node] { cursor: pointer; }
-#instDetail .f-node[data-node]:hover rect { stroke-width: 2.4; }
-#instDetail .f-node.picked rect { stroke: var(--it, #2f6fed); stroke-width: 3; filter: drop-shadow(0 0 3px rgba(47, 111, 237, .45)); }
-
-.task-detail { margin: var(--s4) 0; border-left: 4px solid var(--accent); }
-.task-detail.human { border-left-color: var(--warn); }
-.task-detail.system { border-left-color: var(--ink-4); }
-.task-detail.live { border-left-color: var(--ok); }
+/* 단계 상세 · 지금 일하는 AI 에이전트(taskDetail.js · agentsPanel.js) — 부품(card · fold · timeline · ro-grid · chip)은 components.css, 여기서는 붙이는 자리만 정한다 */
+.task-detail { margin: var(--s4) 0; }
 .task-detail .card-chips .live-dot { margin-right: 2px; }
-.td-sections { display: flex; flex-direction: column; gap: var(--s2); margin-top: var(--s2); }
-.td-section > summary .chip { margin-left: 4px; }
-.td-kv > div { grid-template-columns: 110px minmax(0, 1fr); }
-.td-table { margin-bottom: var(--s2); font-size: 13px; }
-.td-list { margin: 4px 0 0; padding-left: 20px; font-size: 13px; }
+.td-sections { display: flex; flex-direction: column; gap: var(--s1); margin-top: var(--s2); }
+.td-section > summary .chip { margin-left: var(--s1); }
+.td-kv > div { grid-template-columns: 7em minmax(0, 1fr); }
+.td-table { margin-bottom: var(--s2); }
+.td-table th { white-space: nowrap; }
+.td-table tr.rec td { background: var(--accent-bg); }
+.td-table tr.rec td:first-child { box-shadow: inset 2px 0 0 var(--accent); }
+.td-list { margin: var(--s1) 0 0; padding-left: var(--s6); }
 .td-list li { margin: 2px 0; }
-.td-prose { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 260px; overflow: auto; font-size: 13px; line-height: 1.6; margin: 0; }
-
-.agents-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: var(--s4); align-items: start; padding: var(--s3) var(--s4) var(--s4); }
-@media (max-width: 1100px) { .agents-grid { grid-template-columns: 1fr; } }
-.agent-tasks { display: flex; flex-direction: column; gap: var(--s2); }
-.agent-tasks .item { cursor: default; }
-.agent-tasks .item .row-wrap { margin-top: 4px; }
-
-/* 지금: <단계> — <누가> <무엇을 하는 중> (처리 건 머리글) */
-.td-now { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; font-size: 13px; padding: 6px 10px; margin-top: 4px; border-radius: 8px; background: #eef6ef; border: 1px solid #cfe5d2; color: var(--ink-2); }
-.td-now.done { background: var(--surface-soft); border-color: var(--rule); }
-.td-now > b { color: var(--ink); }
-.td-now .linkish { background: none; border: 0; padding: 0; font: inherit; font-weight: 600; color: var(--accent); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
-
-/* 판단 근거 · 에이전트 판단 메시지 · 조건 · 점수 구성 */
-.td-basis { margin-bottom: var(--s3); padding: var(--s2) var(--s3); border-radius: var(--radius-sm); background: var(--surface-soft); border: 1px solid var(--rule); }
-.td-basis-title { margin: 0 0 4px; font-size: 13px; font-weight: 600; color: var(--ink-2); }
-.td-note { margin: 4px 0; padding: 6px 10px; border-left: 3px solid var(--accent); background: #fff; font-size: 13px; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink); }
-.td-cond { font-size: 13px; margin: 2px 0; }
-.td-part { display: inline-block; margin: 0 8px 2px 0; font-size: 13px; white-space: nowrap; }
-.td-table tr.rec td { background: #f3f8ff; }
+.td-prose { margin: 0; max-height: 260px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
 .td-count { font-variant-numeric: tabular-nums; }
+
+/* 지금: <단계> — <누가> <무엇을 하는 중> (처리 건 머리글의 한 줄) */
+.td-now { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s1) var(--s2); margin-top: var(--s1); font-size: var(--fs-sub); line-height: var(--lh-sub); color: var(--ink-3); }
+.td-now > b { color: var(--ink); }
+
+/* 판단 근거 · 에이전트 판단 메시지 · 조건 · 점수 구성 — 상자를 겹치지 않고 이름표와 1px 선으로 가른다 */
+.td-basis { margin-bottom: var(--s3); padding-bottom: var(--s3); border-bottom: 1px solid var(--rule); }
+.td-basis-title { margin: 0 0 var(--s1); font-size: var(--fs-cap); line-height: var(--lh-cap); font-weight: 600; color: var(--ink-3); }
+.td-note { margin: var(--s1) 0; padding: var(--s2) var(--s3); border-radius: var(--radius-sm); background: var(--surface-soft); white-space: pre-wrap; overflow-wrap: anywhere; }
+.td-cond { margin: 2px 0; font-size: var(--fs-sub); }
+.td-part { display: inline-block; margin: 0 var(--s2) 2px 0; font-size: var(--fs-sub); white-space: nowrap; }
+
+.agents-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: var(--s6); align-items: start; padding: var(--s3) 0 var(--s4); }
+@media (max-width: 1100px) { .agents-grid { grid-template-columns: 1fr; } }
+.agent-tasks { display: flex; flex-direction: column; }
+.agent-tasks .item { cursor: default; }
+.agent-tasks .item .row-wrap { margin-top: var(--s1); }

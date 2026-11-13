@@ -1,5 +1,17 @@
-/* Shared visual contract: component styles consume semantic spacing and colors. */
+/* 토큰 — 디자인 기준 2절의 값. 색 · 글자 · 간격 · 모양의 숫자는 이 파일에만 둔다.
+   밝은 틀(글 · 표)은 무채색 한 계열과 강조색 하나, 그림 캔버스는 --cv-* 만 쓴다. */
 :root {
+  /* 글자 (2-1): 크기 다섯 단계 + 큰 숫자, 굵기는 400 · 600 둘 */
+  --font: "Pretendard", "Pretendard Variable", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: ui-monospace, "Cascadia Mono", Consolas, "Malgun Gothic", monospace;
+  --fs-cap: 12px;  --lh-cap: 16px;
+  --fs-sub: 13px;  --lh-sub: 20px;
+  --fs-body: 14px; --lh-body: 22px;
+  --fs-h3: 16px;   --lh-h3: 24px;
+  --fs-h1: 20px;   --lh-h1: 28px;
+  --fs-num: 28px;  --lh-num: 32px;
+
+  /* 간격 (2-2): 눈금 일곱. 부품 안의 6px 만 예외 */
   --s1: 4px;
   --s2: 8px;
   --s3: 12px;
@@ -10,35 +22,94 @@
   --page-pad: 32px;
   --panel-pad: 24px;
   --row-pad: 16px;
+  --card-pad: 16px;
+
+  /* 밝은 틀의 색 (2-3) */
+  --paper: #ffffff;
+  --panel: #ffffff;
+  --surface-soft: #f4f4f5;
+  --rail-bg: #fafafa;
+  --rule: #e4e4e7;
+  --rule-strong: #d4d4d8;
+  --ink: #09090b;
+  --ink-2: #3f3f46;
+  --ink-3: #6b6b76;
+  --ink-4: #a1a1aa;          /* 글자에 쓰지 않는다 — 자리표시 글 · 꺼진 아이콘 · 구분 점 */
+  --primary: #18181b;
+  --primary-hover: #27272a;
+  --primary-ink: #fafafa;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-ink: #1d4ed8;
+  --accent-bg: #eff6ff;
+  --accent-rule: #bfdbfe;
+  --focus: #2563eb;
+  --ok: #15803d;
+  --warn: #b45309;
+  --alarm: #b91c1c;
+  --danger-bg: #fef2f2;      /* 오류 블록 · 위험 단추를 올렸을 때 */
+  --danger-rule: #fecaca;
+  --chip-neutral-bg: #f4f4f5;
+  --chip-neutral-fg: #3f3f46;
+  --chip-accent-bg: #dbeafe;
+  --chip-accent-fg: #1e40af;
+  --chip-success-bg: #dcfce7;
+  --chip-success-fg: #166534;
+  --chip-warning-bg: #fef3c7;
+  --chip-warning-fg: #92400e;
+  --chip-danger-bg: #fee2e2;
+  --chip-danger-fg: #991b1b;
+  --toast-ok: #4ade80;
+  --toast-fail: #f87171;
+  --scrim: rgb(0 0 0 / .5);
+  /* 시스템 구성 화면의 영역 표시에만 쓴다 */
   --ot: #b14329;
   --ot-bg: #fff1ec;
   --dmz: #986000;
   --dmz-bg: #fff6df;
-  /* A122 chip tones — process-gpt-vue3 src/ds/styles/tokens.css:49-69 */
-  --chip-neutral-bg: rgba(11, 11, 11, 0.05);
-  --chip-neutral-fg: #52514e;
-  --chip-accent-bg: #cde2fb;
-  --chip-accent-fg: #184f95;
-  --chip-success-bg: #caeac7;
-  --chip-success-fg: #006300;
-  --chip-warning-bg: #f9dca4;
-  --chip-warning-fg: #734500;
-  --chip-danger-bg: #fad6d6;
-  --chip-danger-fg: #8e2626;
-  --card-pad: 16px;    /* PgCard.vue:77-119 */
-  --field-h: 34px;     /* PgTextField.vue:81-125 */
-  --btn-h: 32px;       /* PgButton.vue:72-95 */
-  --prose-max: 768px;  /* --app-content-max */
+
+  /* 모양 (2-4) */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius: 10px;
+  --radius-lg: 12px;
+  --radius-pill: 999px;
+  --shadow: 0 1px 2px rgb(0 0 0 / .05);
+  --shadow-md: 0 10px 24px -6px rgb(0 0 0 / .12), 0 2px 6px rgb(0 0 0 / .06);
+  --btn-h: 36px;
+  --btn-h-sm: 32px;
+  --field-h: 36px;
+  --prose-max: 720px;
+  --ease: cubic-bezier(.165, .84, .44, 1);
+
+  /* 틀의 치수 (2-5) */
+  --rail-w: 256px;
+  --top-h: 48px;
+  --page-max: 1280px;
+
+  /* 그림 캔버스 (2-6 · 6절) — 홈 그림(main.css)의 실제 값 */
+  --cv-bg: #16202d;
+  --cv-grid: #27354a;
+  --cv-border: #29394c;
+  --cv-node: #1b2430;
+  --cv-node-now: #1d2c44;    /* 지금 상자의 채움 */
+  --cv-edge: #53637a;
+  --cv-hi: #ffffff;          /* 고른 항목 · 지금 상자의 글자와 테두리 */
+  --cv-ink: #e8edf3;
+  --cv-ink-2: #9aa7b5;
+  --cv-steel: #cfd8e3;       /* 설비 윤곽 */
+  --cv-value: #f5c46b;       /* 감지기 옆의 값 */
+  --cv-blue: #7aa2ff;
+  --cv-green: #4ade80;
+  --cv-amber: #f5a623;
+  --cv-red: #f07167;
+  --cv-violet: #b794f6;
+  --cv-teal: #2dd4bf;
+  --cv-tool-bg: rgba(27, 36, 48, .9);
 }
 @media (max-width: 1100px) {
-  :root {
-    --page-pad: 24px;
-    --panel-pad: 20px;
-  }
+  :root { --page-pad: 24px; }
 }
 @media (max-width: 640px) {
-  :root {
-    --page-pad: 16px;
-    --panel-pad: 16px;
-  }
+  :root { --page-pad: 16px; --panel-pad: 16px; }
 }

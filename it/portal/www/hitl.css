@@ -1,242 +1,62 @@
-/* BPMN · HITL · skill catalog · manual upload */
-.rightcol {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  min-width: 0;
-}
+/* 조치 방법 · 문서 등록(hitl.js) — 붙이는 자리와 격자만 정한다. 조치 후보 카드(.hitl · .hopt)와 그 밖의 부품은 components.css 가 갖는다 */
+.rightcol { display: flex; flex-direction: column; gap: var(--s4); min-width: 0; }
+#hitlPanel:empty { display: none; }
+#hitlPanel { margin: var(--s4) 0; }
 
-/* HITL panel */
-#hitlPanel:empty {
-  display: none;
-}
-#hitlPanel {
-  margin: 14px 0;
-}
-.hitl-opts {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--s3);
-}
-@media (max-width: 1100px) {
-  .hitl-opts {
-    grid-template-columns: 1fr;
-  }
-}
-/* .hitl · .hopt 의 틀(격자 · 테두리 · 안쪽 여백)은 components.css 가 정한다 */
-.hopt {
-  cursor: pointer;
-}
-.hopt:hover {
-  border-color: var(--rule-strong);
-}
-.hopt.sel {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--it-bg);
-}
-.hopt.out {
-  cursor: not-allowed;
-  background: repeating-linear-gradient(
-    135deg,
-    #fff,
-    #fff 6px,
-    #fbf3f3 6px,
-    #fbf3f3 12px
-  );
-  color: var(--ink-3);
-}
-.hopt.chosen {
-  border-color: var(--ok);
-  box-shadow: 0 0 0 2px #dff3e8;
-}
-.hopt input {
-  margin-top: 4px;
-}
-.hrank {
-  font-size: 22px;
-  font-weight: 600;
-  color: var(--accent);
-  line-height: 1;
-}
-.hopt.out .hrank {
-  color: #c4cdd6;
-}
-.hbody {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  min-width: 0;
-}
-.hbar i {
-  max-width: 60%;
-}
-.hbar i.neg {
-  background: #f4a9b2;
-}
-.hbar i.pos {
-  background: #8fd3b0;
-}
-.hkpi {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
+/* ---------------- 조치 방법: 목록 + 상세(5-1) ---------------- */
+.skill-edit { display: flex; flex-direction: column; gap: var(--s4); }
+.skill-edit textarea.mono { font-family: var(--mono); font-size: var(--fs-sub); line-height: var(--lh-sub); }
+.skill-edit h3 { margin: var(--s2) 0 0; }
+@media (max-width: 1100px) { .skills-split .list { max-height: 260px; } }
+/* 상세: 읽을 내용(절차 · 연결된 지식)이 먼저, 고치는 칸은 접기 안(hitl.js renderSkillDetail) */
+#skillDetail ol.steps { display: grid; gap: 6px; margin: 0 0 var(--s4); padding-left: 1.4em; }
+#skillDetail ol.steps .muted { font-size: var(--fs-sub); }
+#skillDetail .sub-head { margin: var(--s6) 0 var(--s2); font-size: var(--fs-cap); line-height: var(--lh-cap); font-weight: 600; color: var(--ink-3); }
+#skillDetail [data-skill-edit] { margin-top: var(--s4); }
+#skillDetail .rule-list { display: grid; gap: var(--s2); margin: 0; padding: 0; list-style: none; }
+#skillDetail .rule-list li { display: grid; grid-template-columns: max-content 1fr; gap: var(--s2); align-items: start; }
 
-.hmeta {
-  font-size: 12px;
-  color: var(--ink-3);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  align-items: center;
-}
+/* ---------------- 문서 등록(5-5): 단계 줄 → 지금 단계의 카드 하나 → 등록된 문서 ---------------- */
+/* 단계 줄: 번호 점 24px. 끝난 단계는 초록 면, 지금은 파랑 채움 */
+.steps3 { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s6); margin: 0 0 var(--s4); padding: 0; list-style: none; }
+.steps3 li { display: flex; align-items: center; gap: var(--s2); color: var(--ink-3); }
+.steps3 li .n { display: inline-grid; place-items: center; flex: none; width: 24px; height: 24px; border-radius: 50%; box-shadow: inset 0 0 0 1px var(--rule-strong); font-size: var(--fs-cap); font-weight: 600; }
+.steps3 li.on { color: var(--ink); font-weight: 600; }
+.steps3 li.on .n { background: var(--accent); box-shadow: none; color: var(--paper); }
+.steps3 li.done .n { background: var(--chip-success-bg); box-shadow: none; color: var(--chip-success-fg); }
+.mstage { display: grid; gap: var(--s2); }
+.mstage-title { margin: 0; font-size: var(--fs-h3); line-height: var(--lh-h3); }
+.mstage p { margin: 0; }
+.mprev { border-top: 1px solid var(--rule); margin-top: var(--s4); padding-top: var(--s4); }
+.mcols { display: grid; grid-template-columns: 1fr 1.3fr; gap: var(--s6); }
+.mcols h3 { margin: 0 0 var(--s2); font-size: var(--fs-cap); line-height: var(--lh-cap); color: var(--ink-3); }
+/* 뽑은 절 · 조치 방법: 줄 사이 1px 선으로만 가른다(줄마다 상자를 그리지 않는다) */
+.msec, .mproc { padding: var(--s3) 0; border-bottom: 1px solid var(--rule); }
+.msec:last-child, .mproc:last-child { border-bottom: 0; }
+.mproc ol { margin: var(--s2) 0 0 var(--s4); padding: 0; }
+.mproc label { display: block; margin-top: var(--s1); }
+.mproc-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s1) var(--s3); margin-bottom: var(--s2); }
+.mproc-head > span:first-child { font-weight: 600; }
+.mproc .mproc-edit { margin: 0; }
+@media (max-width: 1000px) { .mcols { grid-template-columns: 1fr; } }
+/* 업무 데이터 연결(DDL) 열 고르기 */
+.ddlcols { display: flex; flex-wrap: wrap; gap: 6px var(--s4); margin-top: var(--s2); font-size: var(--fs-sub); }
+.ddlcols label { display: inline-flex; align-items: center; gap: 6px; margin-top: 0; white-space: nowrap; }
+/* 승인 대기 안내 — 사람이 지금 해야 하는 것이라 파란 면을 쓴다 */
+.await-approval { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s3); padding: var(--s3) var(--s4); margin: var(--s3) 0; border: 1px solid var(--accent-rule); border-radius: var(--radius); background: var(--accent-bg); }
+.await-approval > div:first-child { display: grid; gap: 2px; }
+.await-approval span { color: var(--ink-2); font-size: var(--fs-sub); }
+.await-approval .form-actions { margin: 0; padding: 0; }
 
-/* skill catalog */
-.skills-split {
-  grid-template-columns: 300px minmax(0, 1fr);
-}
-.list .item .d {
-  display: block;
-  font-size: 12px;
-  color: var(--ink-2);
-  margin-top: 3px;
-}
-.skill-edit {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s4);
-}
-.skill-edit textarea.mono {
-  font-family: ui-monospace, Consolas, monospace;
-  font-size: 13px;
-  line-height: 1.6;
-}
-
-.skill-edit input,
-.skill-edit select,
-.skill-edit textarea {
-  min-width: 0;
-  max-width: 100%;
-}
-
-@media (max-width: 1100px) {
-  .skills-split {
-    grid-template-columns: 260px minmax(0, 1fr);
-  }
-  
-}
-@media (max-width: 900px) {
-  .skills-split {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .skills-split .list {
-    max-height: 260px;
-  }
-}
-.skill-edit h3 {
-  margin: 10px 0 0;
-  font-size: 14px;
-}
-
-/* manual upload */
-.mprev {
-  border-top: 1px solid var(--rule);
-  margin-top: var(--s3);
-  padding-top: var(--s3);
-}
-.mcols {
-  display: grid;
-  grid-template-columns: 1fr 1.3fr;
-  gap: var(--s4);
-}
-.mcols h3 {
-  font-size: 14px;
-  margin: var(--s2) 0;
-}
-.msec,
-.mproc {
-  border: 1px solid var(--rule);
-  border-radius: var(--radius-sm);
-  padding: var(--s3) var(--s4);
-  margin-bottom: var(--s2);
-  font-size: 14px;
-  line-height: 1.6;
-  background: var(--panel);
-}
-.mproc ol {
-  margin: 6px 0 0 18px;
-  padding: 0;
-}
-.mproc label {
-  display: block;
-  margin-top: 4px;
-}
-@media (max-width: 980px) {
-  .mcols {
-    grid-template-columns: 1fr;
-  }
-}
-
-.upload > p { max-width: 90ch; }
-.file-picker { position: relative; display: inline-flex; align-items: center; gap: var(--s3); flex-wrap: wrap; }
-.file-picker input[type=file] { position: absolute; width: 1px; height: 1px; min-width: 0; min-height: 0; padding: 0; border: 0; margin: 0; clip-path: inset(50%); overflow: hidden; }
-.file-picker:has(input:focus-visible) .btn { outline: 2px solid var(--focus); outline-offset: 2px; }
-.file-picker .file-name { max-width: 240px; overflow-wrap: anywhere; font-size: 13px; }
-
-/* ontology v2 action cards (shared by the HITL panel and the 조치 판단 규칙 view) */
-
-.hkpi span.pos { border-color: #8fd3b0; background: #effaf4; }
-.hkpi span.neg { border-color: #f4a9b2; background: #fdf1f2; }
-.hkpi.cond { opacity: .8; }
-.hkpi.cond .muted { font-size: 12px; margin-right: 2px; }
-
-div.hopt { cursor: default; }
-/* 조치 방법 상세(#skillDetail)의 절차 목록 · 연결된 지식 표 */
-#skillDetail ol.steps { margin: 0 0 var(--s4); padding-left: 1.4em; display: grid; gap: 6px; font-size: 14px; line-height: 1.6; }
-#skillDetail ol.steps .muted { font-size: 12px; }
-#skillDetail .kvt td .hard, #skillDetail .kvt td .soft { margin: 0 4px 4px 0; }
-
-/* A132 — 지식 관리: 매뉴얼 배치 카드 + 이 문서로 답할 수 있는 질문 */
+/* ---------------- 등록된 문서 · 이 문서로 답할 수 있는 질문 ---------------- */
 .manual-docs { grid-template-columns: 1fr; margin-bottom: var(--s4); }
 .manual-doc .card-title a { color: inherit; text-decoration: none; }
 .manual-doc .card-title a:hover { text-decoration: underline; }
-.manual-doc .card-body { margin-top: var(--s3); }
-details.golden > summary { font-size: 14px; font-weight: 600; }
-.golden-items { grid-template-columns: 1fr; margin-top: var(--s3); }
-.golden-item { background: var(--surface-soft); }
-.golden-answer { margin: 0 0 var(--s2); line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
-.golden-cited { margin: 0; padding-left: 18px; }
-.golden-cited li { overflow-wrap: anywhere; }
-.golden-cited code { font-size: 12px; overflow-wrap: anywhere; }
+details.golden > summary { font-weight: 600; color: var(--ink); }
+.golden-items { grid-template-columns: 1fr; margin-top: var(--s2); }
+.golden-counts { margin-bottom: var(--s2); }
+.golden-answer { margin: 0 0 var(--s2); white-space: pre-wrap; overflow-wrap: anywhere; }
+.golden-cited { margin: 0; padding-left: var(--s4); }
+.golden-cited li, .golden-cited code { overflow-wrap: anywhere; }
 .golden-form { margin-top: var(--s2); }
 .golden-form textarea { white-space: pre-wrap; }
-/* 업무 데이터 연결(DDL) 열 고르기 — hitl.js */
-.ddlcols { display: flex; flex-wrap: wrap; gap: 6px var(--s4); font-size: 13px; margin-top: var(--s2); }
-.ddlcols label { display: inline-flex; align-items: center; gap: 6px; margin-top: 0; white-space: nowrap; }
-
-/* 매뉴얼 등록 3단계(문서 등록 → AI 추출 → 검토 · 적재) */
-.steps3 { display: flex; flex-wrap: wrap; gap: 6px 28px; list-style: none; margin: 0 0 var(--s3); padding: 0 0 var(--s3); border-bottom: 1px solid var(--rule); }
-.steps3 li { display: flex; align-items: center; gap: 8px; color: var(--ink-3); font-size: 14px; }
-.steps3 li .n { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--rule-strong); font-size: 12px; font-weight: 600; }
-.steps3 li.on { color: var(--ink); font-weight: 600; }
-.steps3 li.on .n { background: var(--accent); border-color: var(--accent); color: #fff; }
-.steps3 li.done { color: var(--ink-2); }
-.steps3 li.done .n { background: var(--surface-soft); color: var(--ink-2); }
-.mstage { display: grid; gap: var(--s2); }
-.mstage-title { margin: 0; font-size: 15px; }
-.mstage p { margin: 0; }
-
-/* 승인 대기 안내 — 어디서 결정하는지와 그 화면으로 가는 단추가 한 줄에 */
-.await-approval { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s3); padding: 14px 16px; margin: var(--s3) 0; border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--rule)); border-radius: var(--radius-sm); background: color-mix(in srgb, var(--accent) 5%, var(--panel)); }
-.await-approval > div:first-child { display: grid; gap: 2px; }
-.await-approval span { color: var(--ink-2); font-size: 13px; }
-.await-approval .form-actions { margin: 0; }
-.mproc-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-bottom: var(--s2); }
-.mproc-head > span:first-child { font-size: 15px; font-weight: 600; }
-.mproc .mproc-edit { margin: 0; }
-
-/* 조치 방법 상세: 읽을 내용(절차 · 연결된 지식)이 먼저, 고치는 칸은 접기 안(hitl.js renderSkillDetail) */
-#skillDetail .sub-head { font-size: 14px; font-weight: 600; margin: var(--s4) 0 var(--s2); }
-#skillDetail [data-skill-edit] { margin-top: var(--s4); }
-#skillDetail .rule-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s2); }
-#skillDetail .rule-list li { display: grid; grid-template-columns: max-content 1fr; gap: var(--s2); align-items: start; line-height: 1.55; }
