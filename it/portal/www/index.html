@@ -22,6 +22,8 @@
 <link rel="stylesheet" href="theme.css">
 <link rel="stylesheet" href="reading.css">
 <link rel="stylesheet" href="structure.css">
+<link rel="stylesheet" href="canvas.css">
+<link rel="stylesheet" href="case.css">
 </head>
 <body>
 <a class="skip-link" href="#content">본문으로 건너뛰기</a>
@@ -61,36 +63,44 @@
   <p class="menu-note" id="menuNote" hidden></p>
   <!-- ───────── 홈 ───────── -->
   <section class="view active" id="view-main">
-    <div class="page-head"><h1 data-term="nav.main">홈</h1><div class="page-tools"><button class="btn small primary" id="mainOperate">설비 회로 보기</button><button class="btn small" id="mainArch">시스템 구성 보기</button></div></div>
-    <div class="stat-cards" id="mainStats"></div>
-    <div class="sec-head"><h2>설비 · 데이터 · AI 연결</h2><button class="btn small" id="heroZoom" aria-pressed="false">도식 확대</button></div>
-    <div class="m-hero" id="mainHero" tabindex="0" role="region" aria-label="설비와 AI 흐름도"></div>
-    <div class="sec-head"><h2>처음이라면 이 순서로 해 보세요</h2></div>
-    <div class="m-go" id="mainStages"></div>
+    <!-- 홈(디자인 기준 5-9): 이야기 한 줄 → 그림 한 장(어두운 캔버스) → 지금 상태 · 처음이라면 이 순서로. 그리는 코드는 main.js, 모양은 canvas.css -->
+    <div class="page-head"><div><h1 data-term="nav.main">홈</h1><p>지식을 넣는다 → 사건이 생긴다 → AI가 판단한다 → 사람이 승인한다 → 결과가 남는다</p></div></div>
+    <div class="m-hero hm-hero" id="mainHero" tabindex="0" role="region" aria-label="설비 · 데이터 · AI 연결 그림"></div>
+    <p class="hm-more">계층별 부품과 서비스 상태는 시스템 구성에서 봅니다. <button type="button" class="link-btn" id="mainArch">시스템 구성 보기 →</button></p>
+    <div class="hm-below">
+      <section aria-labelledby="hmNow"><h2 class="hm-sec" id="hmNow">지금 상태</h2><div class="hm-stats" id="mainStats"></div></section>
+      <section aria-labelledby="hmStart"><h2 class="hm-sec" id="hmStart">처음이라면 이 순서로</h2><ol class="hm-steps" id="mainStages"></ol></section>
+    </div>
   </section>
 
   <!-- ───────── 시스템 구성 ───────── -->
   <section class="view" id="view-home">
-    <div class="page-head"><h1 data-term="nav.home">시스템 구성</h1></div>
-    <div class="stack" id="stack"></div>
-    <div class="legend"><span><i class="z ot">OT</i> 설비 · 실시간 운전</span><span><i class="z dmz">DMZ</i> 유일한 통로</span><span><i class="z it">IT</i> 기록 · 분석 · 지식 · 처리</span></div>
+    <!-- 층 그림: 줄 = 계층(위가 업무, 아래가 현장), 칸 = 영역(OT · DMZ · IT). app.js renderStack 이 layers.js 의 표로 그린다. 모양은 canvas.css(.sys-*) -->
+    <div class="page-head"><div><h1 data-term="nav.home">시스템 구성</h1><p>위가 업무, 아래가 현장입니다. 값은 아래에서 위로 올라오고, 승인된 명령은 DMZ의 명령 관문을 거쳐 내려갑니다.</p></div></div>
+    <div class="stack sys" id="stack"></div>
+    <p class="sys-note">포털의 결함 주입 · 초기화 · 현장 패널 버튼과 정비 수행 모사는 실습용 통로로 가상 설비에 직접 닿습니다. 승인된 원격 명령의 길(명령 관문)과는 다릅니다.</p>
   </section>
 
   <!-- ───────── 지식 지도 ───────── -->
   <section class="view" id="view-ontology">
-    <div class="page-head"><h1 data-term="nav.ontology">지식 지도</h1></div>
-    <div class="toolbar">
+    <div class="page-head"><div><h1 data-term="nav.ontology">지식 지도</h1><p>AI가 판단할 때 읽는 온톨로지입니다. 항목을 누르면 무엇과 이어져 있는지 보입니다.</p></div><div class="page-tools"><button class="btn" id="ontoReload">다시 읽기</button></div></div>
+    <div class="toolbar kg-toolbar">
       <label>설비 <select id="ontoAsset"><option>HYD-01</option><option>HYD-02</option><option>HYD-03</option></select></label>
       <label>지식 묶음 <select id="ontoNs"><option value="">기본 지식</option></select></label>
       <label>이상 패턴 경로 <select id="ontoFocus"><option value="">전체 보기</option></select></label>
-      <input type="search" id="ontoSearch" placeholder="이름 검색" aria-label="항목 검색">
-      <button class="btn small" id="ontoReload">다시 읽기</button>
+      <span class="kg-search"><input type="search" id="ontoSearch" placeholder="이름 검색" aria-label="항목 이름 검색"><button type="button" class="btn small" id="ontoNext" hidden>다음 찾기</button></span>
+      <span class="kg-stats num" id="ontoStats" role="status"></span>
     </div>
-    <div class="chips" id="ontoLayers"></div>
-    <div class="muted" id="ontoStats"></div>
-    <div class="onto">
-      <div class="onto-map" id="ontoMap"></div>
-      <aside class="onto-node" id="ontoNode"></aside>
+    <p class="form-msg neg" id="ontoNote" role="alert" hidden></p>
+    <div id="ontoError"></div>
+    <!-- 어두운 캔버스(안내 한 줄 · 확대 도구 · 점과 선 · 층 칩) + 오른쪽 상세 칸. 그리는 코드는 enterprise.js, 모양은 canvas.css -->
+    <div class="onto kg">
+      <div class="canvas kg-canvas">
+        <div class="cv-bar"><span id="ontoHint"></span><span class="cv-tools"><button type="button" id="ontoZoomOut" aria-label="축소">−</button><button type="button" id="ontoZoomIn" aria-label="확대">+</button><button type="button" id="ontoFit" aria-label="화면에 맞춤" title="화면에 맞춤">⤢</button></span></div>
+        <div class="kg-map" id="ontoMap" tabindex="0" role="region" aria-label="지식 지도. 끌어서 옮기고 휠이나 + − 로 확대합니다. 탭으로 항목을 돌고 Enter 로 고릅니다."></div>
+        <div class="kg-chips" id="ontoLayers" role="group" aria-label="묶음 켜고 끄기"></div>
+      </div>
+      <aside class="kg-panel" id="ontoNode" aria-label="고른 항목"></aside>
     </div>
   </section>
 
@@ -105,31 +115,30 @@
 
   <!-- ───────── 규칙 판단(판단 실험) ───────── -->
   <section class="view" id="view-decision">
-    <div class="page-head"><h1 data-term="nav.decision">규칙 판단</h1></div>
-    <section class="card dec-form" aria-label="판단 조건">
-      <header class="card-head"><div class="card-title"><h3>판단 조건</h3></div></header>
-      <div class="form-grid">
+    <!-- 입력 → 결과(디자인 기준 5-8): 왼쪽에 조건, 오른쪽에 결과. 그리는 코드는 enterprise.js renderDecision, 모양은 canvas.css(.dc-*)와 reading.css(.rd-io) -->
+    <div class="page-head"><div><h1 data-term="nav.decision">규칙 판단</h1><p>설비와 이상 패턴, 가정할 조건을 골라 판단 규칙을 시험합니다. 승인이나 설비 실행으로 이어지지 않습니다.</p></div></div>
+    <div class="rd-io dc-io">
+      <section class="rd-in dc-in" aria-label="판단 조건">
         <div class="field"><label for="decAsset">설비</label><select id="decAsset"><option>HYD-01</option><option>HYD-02</option><option>HYD-03</option></select></div>
-        <div class="field wide-2"><label for="decPattern">이상 패턴</label><select id="decPattern"></select></div>
-      </div>
-      <div class="form-grid">
+        <div class="field"><label for="decPattern">이상 패턴</label><select id="decPattern"></select></div>
+        <p class="label">가정할 조건</p>
         <div class="field"><label for="decMode">운전 모드</label><select id="decMode"><option value="">현재 값 사용</option><option value="REMOTE_AUTO">원격 자동</option><option value="REMOTE_MANUAL">원격 수동</option><option value="LOCAL">현장 제어</option></select></div>
         <div class="field"><label for="decState">설비 상태</label><select id="decState"><option value="">현재 값 사용</option><option value="RUN">운전 중</option><option value="TRIP">보호 정지</option></select></div>
         <div class="field"><label for="decStandby">예비 펌프</label><select id="decStandby"><option value="">현재 값 사용</option><option value="true">가용</option><option value="false">정비 중</option></select></div>
         <div class="field"><label for="decFan">팬 100 % 연속 운전 (시간)</label><input id="decFan" type="number" min="0" step="1" placeholder="현재 값 사용"></div>
-      </div>
-      <div class="form-actions"><button class="btn primary" id="decRun">모의 판단</button><span class="field-hint">규칙을 시험해 보는 기능입니다. 승인이나 설비 실행으로 이어지지 않습니다.</span></div>
-    </section>
-    <div id="decResult"></div>
+        <div class="rd-in-actions"><button type="button" class="btn primary" id="decRun">모의 판단</button></div>
+        <p class="rd-in-note">가정할 조건을 「현재 값 사용」으로 두면 설비의 지금 값으로 판단합니다.</p>
+      </section>
+      <div class="rd-out dc-out" id="decResult"></div>
+    </div>
   </section>
 
   <!-- ───────── 업무 시스템 기록(유압 실습장): 모의 업무 시스템의 표와 거래 전 · 후 값. 판단 · 승인 · 실행 결과는 처리 건 화면 한 곳에 있다 ───────── -->
   <section class="view" id="view-process">
-    <div class="page-head"><h1 data-term="nav.process">업무 시스템 기록</h1></div>
-    <p class="page-lead">승인된 조치가 생산 관리, 정비 관리, 구매 · 재고 관리 시스템에 남긴 기록을 봅니다. 실습장의 모의 업무 시스템입니다. AI 판단과 승인, 실행 결과는 처리 건에서 봅니다. <button type="button" class="link-btn" data-go-tab="instances">처리 건 열기 →</button></p>
-    <h2 class="sec">업무 시스템 현황</h2>
-    <div class="boards" id="sysBoards"></div>
-    <details class="fold" id="txFold" open><summary>업무 시스템이 실행한 거래와 변경 전 · 후 값</summary><div class="fold-body"><div class="audit" id="txList"></div></div></details>
+    <div class="page-head"><div><h1 data-term="nav.process">업무 시스템 기록</h1><p>승인된 조치가 실습장의 모의 업무 시스템(생산 관리 · 정비 관리 · 구매 · 재고 관리)에 남긴 기록입니다.</p></div><div class="page-tools"><button type="button" class="btn" data-go-tab="instances">처리 건에서 판단 · 승인 보기 →</button></div></div>
+    <div class="boards bz-boards" id="sysBoards"></div>
+    <h2 class="bz-sec">거래 기록</h2>
+    <details class="fold bz-tx" id="txFold" open><summary>업무 시스템이 실행한 거래와 변경 전 · 후 값</summary><div class="fold-body"><div class="audit" id="txList"></div></div></details>
     <!-- 처리 건 없이 제출된 판단: 지금 서버는 받지 않는다(process main.py 판단 접수 — 사건과 처리 건이 있어야 받는다). 옛 판에서 남은 것이 있을 때만 이 절이 보인다(enterprise.js) -->
     <section id="decOrphans" hidden>
       <h2 class="sec">처리 건 없이 제출된 판단</h2>
@@ -143,59 +152,71 @@
 
   <!-- ───────── 처리 건 ───────── -->
   <section class="view" id="view-instances">
-    <div class="page-head"><h1 data-term="nav.instances">처리 건</h1></div>
+    <!-- 처리 건 한 화면(디자인 기준 5-1 · 5-2): 머리 → 상태 탭(같은 목록을 거른다) → 왼쪽 목록 + 오른쪽 한 건. 한 건은 탭 없이 한 장이다(instances.js · caseRecord.js · flow.js). -->
+    <div class="page-head case-page-head"><div><h1 data-term="nav.instances">처리 건</h1><p class="page-lead">사건이 생기면 한 건으로 열리고, AI 판단과 내 승인, 실행 결과가 이 한 곳에 남습니다.</p></div><div class="page-tools"><button type="button" class="btn" id="instReload">다시 읽기</button></div></div>
     <div id="instBanner"></div>
-    <!-- A141: 행동(내가 할 일 → 선택 · 승인 · 입력)이 먼저. 옛 「내 작업함」 화면의 처리할 단계 목록이 이 절이다(역할별 보기 포함) -->
-    <section class="todo-wrap"><div class="sec-head" style="margin-top:0"><h2 data-term="inst.myTurn">내가 할 일</h2></div>
-      <div id="todoRoles"></div>
-      <div class="list todo-grid" id="todoList"></div></section>
-    <div id="todoPanel"></div>
-    <div class="split inst-split">
-      <div><div class="listhead"><span>처리 건</span><span class="row-wrap"><select id="instStatus" aria-label="상태"><option value="">최근 50건</option><option value="RUNNING">진행 중</option><option value="COMPLETED">완료</option></select><button class="btn small" id="instReload">다시 읽기</button></span></div><div class="list" id="instList"></div></div>
-      <div class="detail" id="instDetail"></div>
+    <div class="tabs case-tabs" id="instTabs" role="tablist" aria-label="처리 건 거르기"></div>
+    <div class="split case-split">
+      <div class="case-side">
+        <div id="todoRoles"></div>
+        <div class="list" id="instList" aria-label="처리 건 목록"></div>
+        <!-- 알림(읽음 처리): inbox.js 가 그린다. 위 막대의 종을 누르면 이 접기가 열린다 -->
+        <details class="fold" id="noticeFold"><summary>알림 <span class="muted" id="noticeFoldCount"></span></summary><div class="fold-body"><div id="noticeView"></div></div></details>
+      </div>
+      <div class="case-col">
+        <article class="case" id="instDetail" aria-live="off"></article>
+        <!-- 개발 · 운영용 기록은 한 건의 맨 아래 접기 하나에 모은다: 단계 표 원문 · 처리 건 값 · 지식 지도 반영 · 복구 · 실시간 활동 · 실행 중인 AI 에이전트 -->
+        <details class="fold case-more" id="caseMore"><summary>자세한 기록 <span class="muted">· 단계 표 원문 · 처리 건 값 · 다시 수행과 복구 · 실시간 활동</span></summary><div class="fold-body">
+          <div class="seg" id="caseMoreTabs" role="group" aria-label="자세한 기록 보기"><button type="button" data-more-tab="log" class="on" aria-pressed="true">단계 표</button><button type="button" data-more-tab="values" aria-pressed="false">처리 건 값</button><button type="button" data-more-tab="recover" aria-pressed="false">다시 수행 · 복구</button><button type="button" data-more-tab="graph" aria-pressed="false">지식 지도 반영</button><button type="button" data-more-tab="stream" aria-pressed="false">모든 처리 건의 실시간 활동 <span class="n" id="streamFoldCount"></span></button><button type="button" data-more-tab="agents" aria-pressed="false"><i class="live-dot off" id="agentsFoldDot"></i>실행 중인 AI 에이전트 <span class="n" id="agentsFoldCount"></span></button></div>
+          <div class="case-more-pane" data-more="log" id="caseLog"></div>
+          <div class="case-more-pane" data-more="values" id="caseValues"></div>
+          <div class="case-more-pane" data-more="recover" id="caseRecoverHome"></div>
+          <div class="case-more-pane" data-more="graph" id="caseGraph"></div>
+          <div class="case-more-pane" data-more="stream"><section class="stream-panel" id="streamPanel"></section></div>
+          <div class="case-more-pane" data-more="agents"><div id="agentsPanel"></div></div><!-- agentsPanel.js -->
+        </div></details>
+      </div>
     </div>
-    <!-- A161-U1: 선택한 처리 건의 실시간 처리 과정은 상세(진행 탭)에 있다. 여기는 모든 처리 건을 한꺼번에 보는 보조 정보라 접어 둔다 -->
-    <!-- 알림(옛 「내 작업함」의 알림 탭 · 읽음 처리): inbox.js 가 그린다. 위 막대의 종을 누르면 이 접기가 열린다 -->
-    <details class="fold" id="noticeFold"><summary>알림 <span class="chip tone-neutral sm" id="noticeFoldCount"></span></summary><div class="fold-body"><div id="noticeView"></div></div></details>
-    <details class="fold stream-fold" id="streamFold"><summary>모든 처리 건의 실시간 활동 <span class="chip tone-neutral sm" id="streamFoldCount"></span></summary><div class="fold-body"><section class="stream-panel" id="streamPanel"></section></div></details>
-    <details class="fold stream-fold" id="agentsFold"><summary><i class="live-dot off" id="agentsFoldDot"></i> 실행 중인 AI 에이전트 <span class="chip tone-neutral sm" id="agentsFoldCount"></span></summary><div class="fold-body"><div id="agentsPanel"></div></div></details><!-- U1: agentsPanel.js -->
   </section>
 
 
   <!-- ───────── 결함 시뮬레이션 ───────── -->
   <section class="view" id="view-scenario">
-    <div class="page-head"><h1 data-term="nav.scenario">결함 시뮬레이션</h1><div class="page-tools"><span class="row-wrap" id="scaleFixed" title="수업은 20배 고정입니다. 설비 · 감지 · 처리 · 에이전트가 같은 배율로 돌아야 해서 화면에서 바꾸지 않습니다">시간 배율 <b id="scaleNow">20</b>× (수업 고정)</span><button class="btn small" id="btnReset">전체 초기화</button></div></div>
-    <div id="scenarioMsg" class="muted" role="status" aria-live="polite"></div>
+    <!-- 설비 카드 셋(디자인 기준 5-7). 그리는 코드는 app.js renderUnits, 모양은 canvas.css(.lab-*) -->
+    <div class="page-head"><div><h1 data-term="nav.scenario">결함 시뮬레이션</h1><p>가상 설비에 결함을 넣어 경보를 냅니다. 경보가 나면 처리 건이 열립니다.</p></div>
+      <div class="page-tools"><span class="lab-clock" id="scaleFixed" title="수업은 20배 고정입니다. 설비 · 감지 · 처리 · 에이전트가 같은 배율로 돌아야 해서 화면에서 바꾸지 않습니다">시뮬레이션 시각 <b id="labSimT" class="num">–</b> · <b id="scaleNow" class="num">20</b>배속</span><button type="button" class="btn danger" id="btnReset">전체 초기화</button></div></div>
+    <p class="form-msg neg" id="scaleWhy" role="alert" hidden></p>
+    <p id="scenarioMsg" class="lab-msg" role="status" aria-live="polite"></p>
     <div class="units" id="units"></div>
-    <details class="fold" style="margin-top:var(--s6)"><summary>최근 제어 요청 결과</summary><div class="fold-body"><div class="log" id="gwLog"></div></div></details>
+    <details class="fold lab-log"><summary>최근 제어 요청 결과</summary><div class="fold-body"><div class="log" id="gwLog"></div></div></details>
   </section>
 
   <!-- ───────── 설비 회로(유압 실습장): 회로 그림 · 사건 경과 · 사건 감사 기록. 조치 후보와 승인은 처리 건 화면 한 곳에 있다 ───────── -->
   <section class="view" id="view-incidents">
-    <div class="page-head"><h1 data-term="nav.incidents">설비 회로</h1></div>
-    <p class="page-lead">설비마다 유압 회로와 지금 값을 봅니다. 설비를 고르면 그 설비에서 난 사건의 경과와 감사 기록이 아래에 나옵니다. 조치를 고르고 승인하는 일은 처리 건에서 합니다.</p>
+    <!-- 회로 그림 카드 셋(어두운 캔버스 — 디자인 기준 6-4) → 사건 목록 + 사건 경과. 그리는 코드는 app.js renderScada · renderDetail, 모양은 canvas.css(.hc-*) -->
+    <div class="page-head"><div><h1 data-term="nav.incidents">설비 회로</h1><p>설비마다 유압 회로와 지금 값을 봅니다. 설비를 누르면 그 설비에서 난 사건의 경과가 아래에 나옵니다.</p></div></div>
     <div class="scada" id="scada"></div>
     <div class="split scada-split">
       <div>
-        <div class="listhead"><span id="incListTitle">사건</span><button class="btn small" id="btnAllInc">전체 보기</button></div>
+        <div class="listhead"><span id="incListTitle">사건</span><button type="button" class="btn small" id="btnAllInc" hidden>전체 보기</button></div>
         <div class="list" id="incList"></div>
       </div>
-      <div class="rightcol">
-        <div class="detail" id="incDetail"></div>
-      </div>
+      <div class="hc-detail" id="incDetail"></div>
     </div>
   </section>
 
   <!-- ───────── 실시간 모니터링 ───────── -->
   <section class="view" id="view-trends">
-    <div class="page-head"><h1 data-term="nav.trends">실시간 모니터링</h1><div class="page-tools"><label class="row-wrap">설비 <select id="selAsset"><option>HYD-01</option><option>HYD-02</option><option>HYD-03</option></select></label><a id="grafanaLink" class="btn small" target="_blank" rel="noopener">전체 대시보드 ↗</a></div></div>
-    <div id="trendsNotice" class="inst-banner off" hidden></div>
-    <div class="wide"><iframe id="pTs1" height="330" title="유온"></iframe></div>
-    <div class="grid2">
-      <iframe id="pScore" height="240" title="이상 점수"></iframe>
-      <iframe id="pCe" height="240" title="냉각 효율"></iframe>
-      <iframe id="pSp" height="240" style="grid-column:1/-1" title="설정값"></iframe>
-      <iframe id="pAlerts" height="320" title="경보"></iframe>
+    <!-- Grafana 패널 다섯(밝은 테마 그대로 카드 안에 — 디자인 기준 5-7). 주소는 app.js renderTrends 가 고른 설비로 채운다. 모양은 canvas.css(.mon-*) -->
+    <div class="page-head"><div><h1 data-term="nav.trends">실시간 모니터링</h1><p>고른 설비의 지난 10분 추이를 Grafana 패널로 봅니다. 5초마다 새로 그려집니다.</p></div>
+      <div class="page-tools"><label class="mon-pick">설비 <select id="selAsset"><option>HYD-01</option><option>HYD-02</option><option>HYD-03</option></select></label><a id="grafanaLink" class="btn" target="_blank" rel="noopener">전체 대시보드 ↗</a></div></div>
+    <div id="trendsNotice" hidden></div>
+    <div class="mon-grid">
+      <div class="mon-panel wide tall"><iframe id="pTs1" title="유온"></iframe></div>
+      <div class="mon-panel"><iframe id="pScore" title="이상 점수"></iframe></div>
+      <div class="mon-panel"><iframe id="pCe" title="냉각 효율"></iframe></div>
+      <div class="mon-panel wide"><iframe id="pSp" title="설정값"></iframe></div>
+      <div class="mon-panel wide tall"><iframe id="pAlerts" title="경보"></iframe></div>
     </div>
   </section>
 
@@ -338,7 +359,7 @@
       <div id="flowsStart"></div>
     </section>
   </section>
-  <section class="view" id="view-oil"><div class="page-head"><h1 data-term="nav.oil">오일 분석 입력</h1></div><p class="page-lead">센서가 아니라 사람이 넣는 값으로 경보를 만드는 예입니다.</p><div class="shell-mount" id="oilView"></div></section>
+  <section class="view" id="view-oil"><div class="page-head"><div><h1 data-term="nav.oil">오일 분석 입력</h1><p>센서가 아니라 사람이 넣는 값으로 경보를 만드는 예입니다. 기준 이탈이면 센서 경보와 같은 길로 처리 건이 열립니다.</p></div></div><div class="shell-mount" id="oilView"></div></section>
 </main>
   <nav class="page-navigation" aria-label="화면 순서대로 이동">
     <button id="pagePrev" class="page-direction" type="button"></button>

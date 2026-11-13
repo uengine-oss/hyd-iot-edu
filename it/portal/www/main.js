@@ -1,8 +1,9 @@
-/* 홈: one picture of the whole idea — a hydraulic power unit feeding an IIoT/SCADA backbone, and the knowledge map an agent
-   walks to decide what to do. Live values come from state.plant (app.js polling). A122: no layer numbers, no lecture copy. */
+/* 홈: 이 시스템의 이야기를 그림 한 장으로 — 유압 파워유닛(OT)의 값이 MQTT · DMZ · Kafka · 탐지를 지나 지식 지도와 AI 에이전트(IT)에 닿고,
+   사람이 승인한 조치는 명령 관문(DMZ)을 거쳐 PLC 로 내려간다(PLC 가 받을지 정한다). 실시간 값은 app.js 가 읽은 state.plant 를 쓴다.
+   그림 아래: 지금 상태(큰 숫자 셋) · 처음이라면 이 순서로(네 걸음). 모양은 main.css(그림)와 canvas.css(.hm-*). 디자인 기준 5-9. */
 (function () {
   const G = { asset: '#9aa7b5', obs: '#9aa7b5', failure: '#f07167', action: '#f5a623', org: '#b794f6', sys: '#2dd4bf', decision: '#7aa2ff', agent: '#ffffff' };
-  // knowledge-map nodes (a readable subset of the real ontology — it/neo4j/v2/instances.cypher 구조판 + 수업 매뉴얼 HM-8 의 절차)
+  // 지식 지도의 항목(실제 온톨로지에서 읽기 좋게 고른 일부 — it/neo4j/v2/instances.cypher 구조판 + 수업 매뉴얼 HM-8 의 절차)
   const N = [
     ['asset', 'HYD-01', 'asset', 700, 318], ['ts1', '센서 TS1', 'asset', 690, 226], ['ce', '센서 CE', 'asset', 706, 410],
     ['sym', '증상 · 유온 상승', 'obs', 800, 176], ['fm', '고장 유형 · 냉각 상실', 'failure', 822, 288], ['cause', '원인 · 쿨러 핀 오염', 'failure', 912, 200],
@@ -19,7 +20,7 @@
   function nodeSvg([id, label, g, x, y]) {
     if (id === 'agent') {
       const [first, ...rest] = String(label).split(/\s+/);
-      // Same node geometry and colors; wrap its actual display label inside the circle.
+      // 원 안에 두 줄로 쓴다: 세 글자를 넘으면 원 폭에 맞춘다
       const fit = text => Array.from(text).length > 3 ? ' textLength="46" lengthAdjust="spacingAndGlyphs"' : '';
       const second = rest.join(' ');
       return `<g class="m-agent"><circle cx="${x}" cy="${y}" r="44" class="m-halo"/><circle cx="${x}" cy="${y}" r="30" fill="#1b2430" stroke="#fff" stroke-width="2"/>` +
@@ -30,6 +31,16 @@
       `<circle cx="${x - w / 2 + 12}" cy="${y}" r="4" fill="${G[g]}"/><text x="${x - w / 2 + 22}" y="${y + 4.5}" class="m-node-t">${label}</text></g>`;
   }
 
+  // 가운데 줄: 값이 지나는 길. 칸마다 영역(OT · DMZ · IT)을 적는다 — 관제(운전 화면)와 MQTT 는 OT, 수집 중계는 DMZ, Kafka 와 탐지는 IT
+  const BUS = [
+    { y: 142, t: '관제', s: '운전 화면', zone: 'OT' },
+    { y: 218, t: 'MQTT', s: '메시지 중계' },
+    { y: 296, t: 'DMZ', s: '수집 중계', zone: 'DMZ' },
+    { y: 374, t: 'Kafka', s: '이벤트 저장', zone: 'IT' },
+    { y: 452, t: '탐지', s: '이상 판정' },
+  ];
+  const ZONE_FILL = { OT: '#f07167', DMZ: '#f5a623', IT: '#7aa2ff' };
+
   function heroSvg() {
     const pos = Object.fromEntries(N.map(n => [n[0], n]));
     const edges = E.map(([a, b]) => {
@@ -37,11 +48,13 @@
       const agent = a === 'agent' || b === 'agent';
       return `<line x1="${A[3]}" y1="${A[4]}" x2="${B[3]}" y2="${B[4]}" class="m-edge${agent ? ' m-edge-agent' : ''}"/>`;
     }).join('');
+    const bus = BUS.map(c => `${c.zone ? `<text x="548" y="${c.y - 16}" class="hm-zone-tag" fill="${ZONE_FILL[c.zone]}">${c.zone}</text>` : ''}` +
+      `<text x="580" y="${c.y}" text-anchor="middle" class="m-bus-t">${c.t}</text><text x="580" y="${c.y + 18}" text-anchor="middle" class="m-bus-s">${c.s}</text>`).join('');
     return `<svg viewBox="0 0 1200 580" role="img" aria-labelledby="mainHeroTitle mainHeroDesc" class="m-hero-svg">
   <title id="mainHeroTitle">유압설비와 지식 지도 기반 에이전트 조치 흐름</title>
-  <desc id="mainHeroDesc">왼쪽은 유압 파워유닛과 센서, 가운데는 수집·관제 경로, 오른쪽은 지식 지도와 AI 에이전트이고, 승인된 조치가 다시 설비로 돌아간다.</desc>
+  <desc id="mainHeroDesc">왼쪽은 OT 영역의 유압 파워유닛과 센서와 PLC, 가운데는 값이 MQTT, DMZ의 수집 중계, Kafka, 탐지를 지나는 길, 오른쪽은 IT 영역의 지식 지도와 AI 에이전트다. 사람이 승인한 조치는 DMZ의 명령 관문을 거쳐 PLC로 내려가고, PLC가 받을지 정한다.</desc>
   <defs>
-    <pattern id="mGrid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#27354a" stroke-width="1"/></pattern>
+    <pattern id="mGrid" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="12" cy="12" r="1" fill="#27354a"/></pattern>
     <marker id="mArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#f5a623"/></marker>
     <marker id="mArrowB" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#7aa2ff"/></marker>
     <linearGradient id="mOil" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#f5a623" stop-opacity=".55"/><stop offset="1" stop-color="#b86e00" stop-opacity=".75"/></linearGradient>
@@ -49,13 +62,13 @@
   </defs>
   <rect width="1200" height="580" fill="#16202d"/><rect width="1200" height="580" fill="url(#mGrid)"/>
 
-  <!-- zone bands -->
-  <text x="40" y="48" class="m-zone" fill="#f07167">현장 설비</text>
-  <text x="538" y="48" class="m-zone" fill="#7aa2ff">관제 · 데이터</text>
-  <text x="660" y="86" class="m-zone" fill="#b794f6">지식 지도 · 에이전트 조치</text>
+  <!-- 영역 이름 -->
+  <text x="40" y="48" class="m-zone" fill="#f07167">OT · 현장 설비</text>
+  <text x="580" y="92" text-anchor="middle" class="m-zone" fill="#7aa2ff">값이 지나는 길</text>
+  <text x="660" y="86" class="m-zone" fill="#b794f6">IT · 지식 지도 · AI 에이전트</text>
   <line x1="520" y1="60" x2="520" y2="556" class="m-sep"/><line x1="640" y1="60" x2="640" y2="556" class="m-sep"/>
 
-  <!-- hydraulic power unit (ISO-style line art) -->
+  <!-- 유압 파워유닛 -->
   <g class="m-hpu">
     <rect x="70" y="360" width="330" height="140" rx="6" class="m-steel"/>
     <rect x="72" y="398" width="326" height="100" rx="4" fill="url(#mOil)" id="mOilBody"/>
@@ -81,7 +94,11 @@
     <g class="m-fan" style="transform-origin:470px 452px"><circle cx="470" cy="452" r="22" class="m-steel"/><path d="M470 452 l0 -18 M470 452 l16 9 M470 452 l-16 9" stroke="#cfd8e3" stroke-width="3" stroke-linecap="round"/></g>
     <text x="366" y="330" class="m-lbl">오일 쿨러</text>
     <path d="M430 400 H400" class="m-pipe m-flow m-flow-ret"/>
-    <!-- sensors -->
+    <!-- PLC: 승인된 명령을 받을지 정하고 밸브를 움직인다 -->
+    <path d="M230 128 H404 V180" class="hm-ctl"/>
+    <rect x="116" y="104" width="114" height="48" rx="8" class="hm-plc"/>
+    <text x="173" y="124" text-anchor="middle" class="m-bus-t">PLC</text><text x="173" y="142" text-anchor="middle" class="m-bus-s">제어 · 보호 정지</text>
+    <!-- 센서 -->
     <g class="m-sensor"><circle cx="118" cy="430" r="15"/><text x="118" y="434" text-anchor="middle">TS1</text></g>
     <g class="m-sensor"><circle cx="300" cy="238" r="13"/><text x="300" y="242" text-anchor="middle">PS1</text></g>
     <g class="m-sensor"><circle cx="496" cy="300" r="13"/><text x="496" y="304" text-anchor="middle">CE</text></g>
@@ -90,48 +107,45 @@
     <text x="70" y="552" class="m-live" id="mLive">실시간 값 불러오는 중…</text>
   </g>
 
-  <!-- IIoT / SCADA backbone -->
-  <path d="M133 430 C 200 470, 470 520, 540 470" class="m-data"/>
-  <path d="M313 238 C 380 250, 470 260, 540 300" class="m-data"/>
-  <path d="M509 300 C 520 300, 530 300, 540 300" class="m-data"/>
+  <!-- 값이 지나는 길: 센서 → MQTT(관제가 지금 값을 받는다) → DMZ 수집 중계 → Kafka → 탐지 → 경보 -->
+  <path d="M133 430 C 230 506, 500 440, 540 232" class="m-data"/>
+  <path d="M313 238 C 380 236, 480 228, 540 220" class="m-data"/>
+  <path d="M509 298 C 522 282, 530 252, 540 226" class="m-data"/>
   <g class="m-bus">
     <rect x="540" y="110" width="80" height="420" rx="10"/>
-    <text x="580" y="140" text-anchor="middle" class="m-bus-t">MQTT</text>
-    <text x="580" y="158" text-anchor="middle" class="m-bus-s">메시지 중계</text>
-    <path d="M580 170 v34" stroke="#7aa2ff" stroke-width="2" marker-end="url(#mArrowB)"/>
-    <text x="580" y="226" text-anchor="middle" class="m-bus-t">DMZ</text>
-    <text x="580" y="244" text-anchor="middle" class="m-bus-s">수집 ↑</text>
-    <path d="M580 254 v34" stroke="#7aa2ff" stroke-width="2" marker-end="url(#mArrowB)"/>
-    <text x="580" y="310" text-anchor="middle" class="m-bus-t">Kafka</text>
-    <text x="580" y="328" text-anchor="middle" class="m-bus-s">이벤트 저장</text>
-    <path d="M580 338 v34" stroke="#7aa2ff" stroke-width="2" marker-end="url(#mArrowB)"/>
-    <text x="580" y="394" text-anchor="middle" class="m-bus-t">탐지</text>
-    <text x="580" y="412" text-anchor="middle" class="m-bus-s">이상 판정</text>
-    <text x="580" y="462" text-anchor="middle" class="m-bus-t">관제</text>
-    <text x="580" y="480" text-anchor="middle" class="m-bus-s">모니터링</text>
+    <line x1="540" y1="262" x2="620" y2="262" class="m-sep"/><line x1="540" y1="340" x2="620" y2="340" class="m-sep"/>
+    ${bus}
+    <path d="M580 196 v-22" stroke="#7aa2ff" stroke-width="2" marker-end="url(#mArrowB)"/>
+    <path d="M580 246 v24" stroke="#7aa2ff" stroke-width="2" marker-end="url(#mArrowB)"/>
+    <path d="M580 324 v24" stroke="#7aa2ff" stroke-width="2" marker-end="url(#mArrowB)"/>
+    <path d="M580 402 v24" stroke="#7aa2ff" stroke-width="2" marker-end="url(#mArrowB)"/>
   </g>
-  <path d="M620 318 H652" class="m-data m-data-solid" marker-end="url(#mArrowB)"/>
+  <path d="M620 452 H654" class="m-data m-data-solid" marker-end="url(#mArrowB)"/>
+  <text x="637" y="442" text-anchor="middle" class="m-bus-s">경보</text>
 
-  <!-- knowledge map -->
+  <!-- 지식 지도 -->
   <circle cx="960" cy="326" r="120" fill="url(#mHalo)"/>
   ${edges}
   ${N.map(nodeSvg).join('')}
 
-  <!-- closed loop: approved action goes back to the plant through the gateway -->
-  <path d="M1010 104 C 900 18, 620 12, 454 38" class="m-loop" marker-end="url(#mArrow)"/>
-  <rect x="690" y="8" width="236" height="26" rx="13" fill="#16202d" stroke="#f5a623"/>
-  <text x="808" y="26" text-anchor="middle" class="m-loop-t">승인된 조치 → 검증 → 설비</text>
+  <!-- 닫힌 고리: 사람이 승인한 조치 → 명령 관문(DMZ) → PLC. PLC 가 받을지 정한다 -->
+  <path d="M1010 100 C 930 14, 700 6, 580 26 S 270 10, 180 98" class="m-loop" marker-end="url(#mArrow)"/>
+  <rect x="744" y="6" width="150" height="26" rx="13" class="hm-tag"/>
+  <text x="819" y="24" text-anchor="middle" class="m-loop-t">사람이 승인한 조치</text>
+  <rect x="520" y="14" width="120" height="26" rx="13" class="hm-tag"/>
+  <text x="580" y="32" text-anchor="middle" class="m-loop-t">명령 관문 · DMZ</text>
+  <text x="246" y="96" class="m-bus-s">PLC가 받을지 정한다</text>
 </svg>`;
   }
 
+  // 처음이라면 이 순서로: 이 시스템의 이야기 순서 — 지식을 넣는다 → 사건이 생긴다 → AI가 판단하고 사람이 승인한다 → (자기 것) 흐름을 만든다.
+  // 제목은 메뉴 표의 이름 그대로다(메뉴 › 화면 — app.js hydMenu) — 눌러서 열리는 화면의 제목과 같다
   function stagesHtml() {
-    // 이 시스템의 이야기 순서: 지식을 넣는다 → 사건이 생긴다 → AI가 판단하고 사람이 승인한다 → (자기 것) 흐름을 만든다.
-    // 카드 제목은 메뉴 표의 이름 그대로다(메뉴 › 화면 — app.js hydMenu) — 눌러서 열리는 화면의 제목과 같다
     const st = [['knowledge', '설비 매뉴얼을 올려 AI 에이전트가 판단에 쓸 지식을 만듭니다.'], ['scenario', '설비에 결함을 넣어 경보를 냅니다. 경보가 나면 처리 건이 열립니다.'],
       ['instances', 'AI 에이전트의 판단을 읽고 승인하거나 반려한 뒤 실행 결과를 확인합니다.'], ['flows', '직접 그린 흐름을 가져와 등록하고 배포해 처리 건으로 돌립니다.']];
     return st.map(([tab, text], i) => {
       const menu = hydMenu.of(tab), title = menu.tabs.length > 1 ? `${menu.name} › ${hydMenu.name(tab)}` : hydMenu.name(tab);
-      return `<button class="card" data-go="${tab}"><header class="card-head"><div class="card-title"><h3>${i + 1}. ${esc(title)}</h3></div></header><p class="card-sub">${esc(text)}</p><span class="go">열기 →</span></button>`;
+      return `<li><button type="button" data-go="${tab}"><span class="n num">${i + 1}</span><b>${esc(title)}</b><span class="what">${esc(text)}</span><span class="go" aria-hidden="true">→</span></button></li>`;
     }).join('');
   }
 
@@ -144,25 +158,28 @@
 
   function renderLive() {
     const live = document.getElementById('mLive'); if (!live) return;
+    const box = document.getElementById('mainStats');
     const u = state.plant && state.plant.units;
-    if (!u) { live.textContent = UI.t('main.noConn');
-      document.getElementById('mainStats').innerHTML = UI.empty(UI.t('main.noConn'), UI.t('plant.noConnSub'), 'compact'); return; }
+    if (!u) { live.textContent = UI.t('main.noConn'); box.innerHTML = UI.empty(UI.t('main.noConn'), UI.t('plant.noConnSub'), 'compact'); box.dataset.sig = ''; return; }
     const parts = Object.entries(u).map(([a, x]) => `${a} ${Number(x.tags.TS1).toFixed(1)} ℃ ${x.status.state === 'TRIP' ? UI.status('TRIP') : x.status.mode === 'REMOTE_AUTO' ? '' : '(' + UI.status(x.status.mode) + ')'}`.trim());
     live.textContent = UI.t('main.liveTs1') + '  ·  ' + parts.join('   ');
     const hot = Object.values(u).some(x => x.tags.TS1 >= TS_HOT || x.status.state === 'TRIP');      // 기준은 app.js TS_HOT 한 곳
     document.getElementById('mOilBody')?.classList.toggle('hot', hot);
-    const box = document.getElementById('mainStats'); if (!box) return;
     const open = (state.incidents || []).filter(i => !i.terminal).length;
     const alarms = Object.values(u).filter(x => x.tags.TS1 >= TS_HOT || x.status.state === 'TRIP').length;
     const n = v => Number(v).toLocaleString('ko-KR');
-    box.innerHTML = [
-      [UI.t('main.assets'), `${Object.keys(u).length}기`, alarms ? `${UI.t('main.hot')} ${alarms}기` : UI.t('main.cool'), alarms ? 'hot' : ''],
+    // 큰 숫자 셋: [이름, 값, 한 줄, 주의인가, 까닭(title)]. 배율은 여기 두지 않는다(결함 시뮬레이션 화면 머리에 있다)
+    const rows = [
+      [UI.t('main.assets'), `${Object.keys(u).length}기`, alarms ? `${UI.t('main.hot')} ${alarms}기` : UI.t('main.cool'), !!alarms],
       // 사건 목록을 못 읽었으면 「0 · 없음」이 아니다(app.js 의 사건 목록 사유)
-      state.incidentError ? [UI.t('main.openCases'), '읽기 실패', state.incidentError, 'hot']
-        : [UI.t('main.openCases'), $('#openCount').textContent === '–' ? '–' : String(open), open ? `「${UI.t('nav.menu.instances')}」에서 처리합니다` : UI.t('main.none'), open ? 'hot' : ''],
-      [UI.t('main.knowledge'), graphCount ? n(graphCount.n) : '–', graphCount ? `${UI.t('main.links')} ${n(graphCount.e)}` : graphError ? '지식 수를 읽지 못했습니다. 30초 뒤 다시 읽습니다.' : UI.t('loading'), graphError ? 'hot' : '', graphError],      // 서버 사유는 길어 카드 높이를 흔든다 — title 로
-      [UI.t('main.scale'), `${state.plant.time_scale ?? '–'}×`, `실제 1초 = 시뮬레이션 ${state.plant.time_scale ?? '–'}초`, ''],
-    ].map(([k, v, s, cls, why]) => `<div class="card ${cls}"${why ? ` title="${esc(why)}"` : ''}><span>${esc(k)}</span><b class="num">${esc(v)}</b><small>${esc(s)}</small></div>`).join('');
+      state.incidentError ? [UI.t('main.openCases'), '읽기 실패', state.incidentError, true]
+        : [UI.t('main.openCases'), $('#openCount').textContent === '–' ? '–' : String(open), open ? `「${UI.t('nav.menu.instances')}」에서 처리합니다` : UI.t('main.none'), false],
+      [UI.t('main.knowledge'), graphCount ? n(graphCount.n) : '–', graphCount ? `${UI.t('main.links')} ${n(graphCount.e)}` : graphError ? '지식 수를 읽지 못했습니다. 30초 뒤 다시 읽습니다.' : UI.t('loading'), !!graphError, graphError],      // 서버 사유는 길어 줄 높이를 흔든다 — title 로
+    ];
+    const sig = JSON.stringify(rows);
+    if (box.dataset.sig === sig) return;      // 1초마다 불리지만 값이 같으면 다시 그리지 않는다
+    box.dataset.sig = sig;
+    box.innerHTML = rows.map(([k, v, s, warn, why]) => `<div class="hm-stat${warn ? ' warn' : ''}"${why ? ` title="${esc(why)}"` : ''}><span>${esc(k)}</span><b class="num">${esc(v)}</b><small>${esc(s)}</small></div>`).join('');
   }
 
   function init() {
@@ -177,16 +194,11 @@
       dot.setAttribute('cx', cx - w / 2 + 12); t.setAttribute('x', cx - w / 2 + 23);
     });
     fitNodes(); document.fonts.ready.then(fitNodes);
-    document.getElementById('mainStages').innerHTML = stagesHtml();
-    document.querySelectorAll('.m-go [data-go]').forEach(b => b.addEventListener('click', () => selectTab(b.dataset.go)));
+    const stages = document.getElementById('mainStages');
+    stages.innerHTML = stagesHtml();
+    stages.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { selectTab(b.dataset.go); $('#content').focus({ preventScroll: true }); }));
     document.getElementById('brandHome').addEventListener('click', () => { selectTab('main'); $('#content').focus({ preventScroll: true }); });
     document.getElementById('mainArch').addEventListener('click', () => selectTab('home'));
-    document.getElementById('mainOperate').addEventListener('click', () => selectTab('incidents'));
-    document.getElementById('heroZoom').addEventListener('click', e => {
-      const zoomed = box.classList.toggle('zoomed');
-      e.currentTarget.setAttribute('aria-pressed', String(zoomed));
-      e.currentTarget.textContent = zoomed ? UI.t('main.unzoom') : UI.t('main.zoom');
-    });
     loadCounts().then(renderLive);
     setInterval(renderLive, 1000);
   }

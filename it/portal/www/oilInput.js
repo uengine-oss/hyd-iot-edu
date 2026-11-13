@@ -43,12 +43,12 @@
   function resultHtml() {
     const r = O.last;
     if (!r) return '';
-    if (!r.raised) return `<div class="summary prose" role="status"><p style="margin:0">${UI.chipText('경보 없음', 'neutral')} ${esc(r.reason)}</p></div>`;
+    // 결과: 결론 한 줄(경보를 만들었는가) → 서버가 준 까닭 → 어느 흐름이 여는가 → 처리 건으로 가는 길
+    if (!r.raised) return `<section class="oil-result" role="status"><h2>경보를 만들지 않았습니다</h2><p>${esc(r.reason)}</p></section>`;
     const target = r.definition || {};
-    return `<div class="summary prose" role="status"><p style="margin:0 0 var(--s2)">${UI.chipText('경보를 만들었습니다', 'warning')} ${esc(r.reason)}</p>
-      <p style="margin:0 0 var(--s2)">${UI.chipText(r.route === 'response' ? '배포된 흐름' : '사람 검토', r.route === 'response' ? 'success' : 'neutral')}
-        ${esc(r.route_text)} — ${esc(target.name || '흐름')} (판본 ${esc(target.version || '')})</p>
-      ${r.instance ? `<div class="form-actions"><a class="btn small" href="#/instances/${encodeURIComponent(r.instance)}">처리 건 보기 →</a></div>` : ''}</div>`;
+    return `<section class="oil-result" role="status"><h2>경보를 만들었습니다</h2><p>${esc(r.reason)}</p>
+      <p>${esc(r.route === 'response' ? '배포된 흐름' : '사람 검토')} · ${esc(r.route_text)} — ${esc(target.name || '흐름')} (판본 ${esc(target.version || '')})</p>
+      ${r.instance ? `<a class="btn" href="#/instances/${encodeURIComponent(r.instance)}">처리 건 보기 →</a>` : ''}</section>`;
   }
 
   function render() {
@@ -62,19 +62,18 @@
     if (!p) { O.el.innerHTML = UI.empty('오일 분석 입력 칸이 서버에 없습니다', '처리 서비스가 이 화면과 다른 판일 수 있습니다. 강사에게 알리세요.'); return; }
     const opt = (v, t, sel) => `<option value="${esc(v)}" ${v === sel ? 'selected' : ''}>${esc(t)}</option>`;
     const unit = (p.items.find(i => i.key === d.item) || {}).unit || '';
-    const body = `<p class="field-hint">작동유는 실시간 센서가 없어 정기 오일 분석 결과를 사람이 넣습니다. 기준 이탈이면 센서 경보와 같은 길로 처리 건이 열립니다.</p>
-      <div class="form-grid">
+    // 폼(디자인 기준 5-6): 한 열 · 폭 720px 까지, 이름표는 입력 위, 단추 줄은 맨 아래 왼쪽. 꺼진 단추의 까닭과 오류는 단추 옆에 글로
+    const why = !m ? '담당자 정보를 읽지 못해 보낼 수 없습니다. 화면을 새로 고친 뒤 다시 해 주세요.' : O.err;
+    O.el.innerHTML = `<div class="oil-form"><div class="form-grid">
         ${UI.field({ label: '설비', required: true, input: `<select id="oilAsset"><option value="">설비 선택</option>${O.form.assets.map(a => opt(a, a, d.asset)).join('')}</select>` })}
         ${UI.field({ label: '분석 항목', required: true, input: `<select id="oilItem"><option value="">항목 선택</option>${p.items.map(i => opt(i.key, i.text, d.item)).join('')}</select>` })}
         ${UI.field({ label: `측정값${unit ? ' (' + unit + ')' : ''}`, hint: '없으면 비워 둡니다', input: `<input id="oilValue" type="number" step="any" value="${esc(d.value)}">` })}
-        ${UI.field({ label: '기준 이탈 여부', required: true, input: `<div class="chk-row">
-            <label class="chk"><input type="radio" name="oilOut" value="1" ${d.out === true ? 'checked' : ''}> 예 (기준 이탈)</label>
-            <label class="chk"><input type="radio" name="oilOut" value="0" ${d.out === false ? 'checked' : ''}> 아니요 (기준 안)</label></div>` })}
+        ${UI.field({ label: '기준 이탈 여부', required: true, input: `<div class="oil-choice" role="radiogroup" aria-label="기준 이탈 여부">
+            <label><input type="radio" name="oilOut" value="1" ${d.out === true ? 'checked' : ''}> 예 (기준 이탈)</label>
+            <label><input type="radio" name="oilOut" value="0" ${d.out === false ? 'checked' : ''}> 아니요 (기준 안)</label></div>` })}
+        ${UI.field({ label: '메모', input: `<textarea id="oilMemo" rows="3" maxlength="2000">${esc(d.memo)}</textarea>` })}
       </div>
-      ${UI.field({ label: '메모', input: `<textarea id="oilMemo" rows="2" maxlength="2000">${esc(d.memo)}</textarea>` })}`;
-    O.el.innerHTML = UI.card({ title: '오일 분석 결과 입력', body,
-      actions: `<button class="btn primary" id="oilSend" ${O.sending || !m ? 'disabled' : ''}>${O.sending ? '보내는 중…' : '입력 보내기'}</button>` })
-      + (!m ? `<p class="form-msg neg" role="alert">담당자 정보를 읽지 못해 보낼 수 없습니다. 화면을 새로 고친 뒤 다시 해 주세요.</p>` : O.err ? `<p class="form-msg neg" role="alert">${esc(O.err)}</p>` : '') + resultHtml();
+      <div class="oil-actions"><button type="button" class="btn primary" id="oilSend" ${O.sending || !m ? 'disabled' : ''}>${O.sending ? '보내는 중…' : '입력 보내기'}</button>${why ? `<p class="form-msg neg" role="alert">${esc(why)}</p>` : ''}</div></div>` + resultHtml();
     wire();
   }
   function wire() {
