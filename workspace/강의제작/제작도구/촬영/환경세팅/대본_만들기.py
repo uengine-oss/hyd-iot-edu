@@ -14,7 +14,7 @@ TAB = {'inbox': '내 작업함', 'instances': '처리 건', 'scenario': '결함 
        'decision': '조치 판단 규칙', 'whatif': '조건별 손익', 'process': '승인과 실행', 'flows': '흐름 가져오기', 'ontology': '지식 지도', 'skills': '조치 방법', 'knowledge': '지식 관리',
        'fabric': '데이터 연결', 'ask': '에이전트에게 질문', 'agents': '에이전트', 'mcp': '도구 연결', 'compare': '시험 비교', 'eval': '판단 채점', 'kpi': '성과 지표', 'main': '홈', 'home': '시스템 구성', 'admin': '관리'}
 # 글로 찾지 않는(선택자만 있는) 대상의 이름 — 녹화 화면에서 확인한 것
-CSS = {'#openCount': '맨 위 막대의 진행 중 사건', '#healthDots': '맨 위 막대의 서비스 수', '#shellMe': '맨 위 막대의 「나」', '#shellBell': '알림 종',
+CSS = {'#openCount': '맨 위 막대의 진행 중 사건', '#courseStatus': '맨 위 막대의 「지금 단계」', '#healthDots': '맨 위 막대의 서비스 수', '#shellMe': '맨 위 막대의 「나」', '#shellBell': '알림 종',
        '#view-main svg.m-hero-svg': '홈의 연결 그림', '#view-scenario span.v': '설비 칸의 숫자', '#view-scenario .threshold-note': '숫자 밑 기준 막대',
        '#view-scenario span.chip.tone-success': '설비 상태 표시', '#pTs1': '유온 그래프', '#view-skills span.sub': '조치 방법 줄의 괄호',
        '#view-ask textarea': '질문 칸', '#view-ask button.btn.small': '저장된 질문 단추', '#view-mcp span.chip.tone-success': '연결 상태 표시',
