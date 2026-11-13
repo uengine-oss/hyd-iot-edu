@@ -20,7 +20,8 @@
 <!-- 틀(디자인 기준 3절): 메뉴 줄(키트 aside.sidebar) + 본문(위 막대 · 화면). 아이콘은 [data-icon="<Lucide 이름>"] 자리에 ui.js(UI.fillIcons)가 그린다 -->
 <aside class="sidebar" id="sidebar" data-side="left" aria-label="메뉴">
   <nav aria-label="주 메뉴">
-    <header><a class="brand" id="brandHome" href="#/main" data-tab="main" aria-label="홈으로"><span class="brand-mark" data-icon="droplets"></span><span class="brand-text"><span class="brand-name">HYD</span><br><span class="brand-sub">설비 · 프로세스 · AI</span></span></a></header>
+    <!-- 상표: 마크(24px)의 왼쪽 선이 아래 메뉴 아이콘 열과 같고, 제품 이름은 한 줄이다. 이 줄의 높이는 위 막대와 같다 -->
+    <header><a class="brand" id="brandHome" href="#/main" data-tab="main" aria-label="HYD 홈으로"><span class="brand-mark" data-icon="droplets"></span><span class="brand-name">HYD</span></a></header>
     <section class="scrollbar-sm"><div role="group" aria-label="메뉴" id="menuList">
       <!-- 메뉴 정의는 이 자리 한 곳이다. data-menu = 메뉴, data-tabs = 그 메뉴에 딸린 화면(view-… 의 이름, 차례대로), data-icon = Lucide 아이콘 이름.
            app.js 가 이 표를 읽어(MENU) 이 자리를 메뉴 목록으로 바꿔 그린다: 화면이 하나인 메뉴는 곧바로 그 화면으로 가고, 둘 이상인 메뉴는 고른 것만 펼쳐져
@@ -46,12 +47,11 @@
   <!-- 위 막대에는 메뉴 줄 접기 · 위치(메뉴 › 화면) · 실시간 연결 상태 · 화면 찾기 · 알림 종만 둔다(디자인 기준 3절). 서비스 상태 · 배속 · 지금 단계는 메뉴 줄 맨 아래,
        내 할 일 건수는 메뉴 「처리 건」 곁, 시뮬레이션 시각은 결함 시뮬레이션 화면 머리에 있다 -->
   <header class="topbar">
-    <button type="button" class="btn" data-variant="ghost" data-size="icon-sm" id="railToggle" data-icon="panel-left" aria-label="메뉴 줄 접기 · 펴기" aria-controls="sidebar"></button>
+    <button type="button" class="btn" data-variant="ghost" data-size="icon-sm" id="railToggle" data-icon="panel-left" aria-label="메뉴 줄 접기" aria-controls="sidebar"></button>
     <nav class="crumb" aria-label="위치"><span id="pageGroup" hidden></span><span id="pageSep" data-icon="chevron-right" aria-hidden="true" hidden></span><b id="pageLocation">홈</b></nav>
-    <span class="crumb-note" id="menuNote" hidden></span>
     <span class="topbar-space"></span>
-    <!-- 실시간 연결 상태(liveStream.js): 점 + 「실시간 연결됨」/「다시 잇는 중」/「끊김」, 방금 한 일이 있으면 그 이름 — 누르면 그 내용이 펼쳐진다 -->
-    <details class="live-pill" id="streamTicker" aria-live="polite"><summary><i class="live-dot off"></i><span>연결 중</span></summary></details>
+    <!-- 실시간 연결 상태(liveStream.js paintTicker): 점 + 「실시간 연결됨」/「다시 연결 중」/「끊김」 — 누르면 방금 받은 활동이 펼쳐진다 -->
+    <details class="live-pill" id="streamTicker" aria-live="polite"><summary><i class="dot"></i><span>연결 중</span></summary></details>
     <!-- 화면 찾기(shell.js): Ctrl K 로 열어 화면 22개를 이름으로 찾아간다 -->
     <button type="button" class="kbar-btn" id="kbarOpen" data-icon="search" aria-label="화면 찾기" aria-keyshortcuts="Control+K" aria-haspopup="dialog"><span>화면 찾기</span><kbd>Ctrl K</kbd></button>
     <!-- 알림 종(shell.js): 누르면 처리 건 화면의 「알림」 절이 열린다. 사람을 고르는 자리는 없다 — 쓰는 사람은 늘 담당자다(inbox.js 머리말). -->

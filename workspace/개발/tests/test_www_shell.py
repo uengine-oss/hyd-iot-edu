@@ -160,7 +160,9 @@ def test_위_막대에는_접기와_위치와_연결_상태와_화면_찾기와_
     assert page.evaluate('() => hydMenu.screens') == SCREENS
     assert page.locator('#subTabs, .page-navigation, #pagePrev, #pageNext, #pagePosition').count() == 0
     shown = "ns => ns.filter(n => n.checkVisibility() && !n.matches('.topbar-space')).map(n => n.id || n.className)"      # .topbar-space 는 사이를 벌리는 빈 칸이다
-    assert page.eval_on_selector_all('.topbar > *', shown) == ['railToggle', 'crumb', 'streamTicker', 'kbarOpen', 'shellBell']
+    for tab in ('main', 'decision', 'instances'):                                    # 어느 메뉴의 화면에서도 위 막대에 놓이는 것은 이 다섯뿐이다(메뉴마다 붙는 안내 문장 같은 것이 없다)
+        page.evaluate('([t]) => selectTab(t)', [tab])
+        assert page.eval_on_selector_all('.topbar > *', shown) == ['railToggle', 'crumb', 'streamTicker', 'kbarOpen', 'shellBell'], tab
     assert page.locator('#simT, #openCount, .topbar #healthDots, .topbar #courseStatus, .topbar #scale').count() == 0
     page.evaluate("() => selectTab('skills')")
     assert page.inner_text('.crumb').split() == ['지식', '조치', '방법']          # 메뉴 › 화면 — 사이의 꺾쇠는 그림이라 글에 없다
@@ -196,13 +198,14 @@ def test_메뉴는_고른_것만_펼쳐지고_다른_메뉴를_펼치면_앞의_
 
 def test_메뉴_줄을_접으면_아이콘만_남고_아이콘을_누르면_그_메뉴의_화면이_열린다(portal):
     """위 막대 첫 단추로 메뉴 줄을 접는다(폭 56px, 고른 값은 브라우저에 남는다). 접힌 채로는 안의 화면 목록이 보이지 않으므로 아이콘을 누르면 그 메뉴에서
-    마지막으로 본 화면(없으면 첫 화면)이 열린다. 다시 누르면 펴진다."""
+    마지막으로 본 화면(없으면 첫 화면)이 열린다. 다시 누르면 펴진다. 단추의 이름은 누르면 일어날 일을 말한다(펴져 있으면 「접기」, 접혀 있으면 「펴기」)."""
     page = portal
     page.evaluate("() => { selectTab('compare'); selectTab('main'); }")
+    assert page.get_attribute('#railToggle', 'aria-label') == '메뉴 줄 접기'
     page.click('#railToggle')
     try:
         page.wait_for_function("() => Math.round(document.querySelector('#sidebar > nav').getBoundingClientRect().width) === 56")
-        assert page.evaluate("() => [document.documentElement.dataset.rail, localStorage.getItem('hyd.rail'), railToggle.getAttribute('aria-expanded')]") == ['mini', 'mini', 'false']
+        assert page.evaluate("() => [document.documentElement.dataset.rail, localStorage.getItem('hyd.rail'), railToggle.getAttribute('aria-label')]") == ['mini', 'mini', '메뉴 줄 펴기']
         assert page.eval_on_selector_all('#menuList ul ul a, #menuList a > span, #menuList summary > span', 'ns => ns.filter(n => n.checkVisibility()).length') == 0
         page.click("#menuList summary[data-menu='trial']")
         assert page.evaluate('() => state.tab') == 'compare'              # 그 메뉴에서 마지막으로 본 화면
@@ -210,7 +213,7 @@ def test_메뉴_줄을_접으면_아이콘만_남고_아이콘을_누르면_그_
         assert page.evaluate('() => state.tab') == 'home'                 # 본 적이 없으면 첫 화면
     finally:
         page.click('#railToggle')
-    assert page.evaluate("() => [document.documentElement.dataset.rail || '', localStorage.getItem('hyd.rail')]") == ['', 'full']
+    assert page.evaluate("() => [document.documentElement.dataset.rail || '', localStorage.getItem('hyd.rail'), railToggle.getAttribute('aria-label')]") == ['', 'full', '메뉴 줄 접기']
     page.locator("#menuList a[data-tab='kpi']").wait_for(state='visible', timeout=3000)      # 펴면 펼쳐진 메뉴 안의 화면 이름이 다시 보인다
 
 
@@ -250,11 +253,78 @@ def test_옛_내_작업함_주소는_처리_건_화면으로_가고_종은_그_�
     assert page.evaluate("() => [state.tab, document.getElementById('noticeFold').open]") == ['instances', True]
 
 
-def test_판단_실험_화면들에만_위치_옆에_안내_한_문장이_보인다(portal):
+def test_상표의_마크는_메뉴_아이콘_열과_왼쪽_선이_같고_이름은_한_줄이다(portal):
+    """왼쪽 위 상표(디자인 기준 3절): 마크는 24~28px 이고 그 왼쪽 선이 아래 메뉴 항목의 아이콘 열과 같다. 제품 이름은 한 줄이고 부제 줄이 없다.
+    상표 줄의 높이는 위 막대와 같아 두 줄의 아랫선이 한 선으로 이어진다. 메뉴 줄을 접어도 마크는 아이콘 열의 가운데에 남는다."""
     page = portal
-    notes = {}
-    for tab in SCREENS:
-        page.evaluate('([t]) => selectTab(t)', [tab])
-        notes[tab] = page.inner_text('#menuNote') if page.is_visible('#menuNote') else ''
-    said = '판단 엔진에 조건을 넣어 결과를 미리 봅니다.'
-    assert notes == {tab: (said if tab in dict(WANT)['trial'] else '') for tab in SCREENS}
+    page.evaluate("() => selectTab('main')")
+    settled = "() => !document.getAnimations().some(a => a.effect && a.effect.target && a.effect.target.closest('#sidebar'))"      # 메뉴 줄을 접고 펴는 움직임(0.2초)이 끝난 뒤에 잰다
+    page.wait_for_function(settled)
+    box = "s => { const r = document.querySelector(s).getBoundingClientRect(); return { left: r.left, top: r.top, w: r.width, h: r.height, mid: r.left + r.width / 2, bottom: r.bottom }; }"
+    mark, icon, name = (page.evaluate(box, s) for s in ('#brandHome .brand-mark', "#menuList a[data-tab='main'] > svg", '#brandHome .brand-name'))
+    assert abs(mark['left'] - icon['left']) < 0.5, (mark, icon)
+    assert 24 <= mark['w'] <= 28 and mark['w'] == mark['h']
+    line = page.evaluate("() => parseFloat(getComputedStyle(document.querySelector('#brandHome .brand-name')).lineHeight)")
+    assert name['h'] <= line + 0.5, '제품 이름이 두 줄로 놓였다'
+    assert page.eval_on_selector_all('#brandHome > *', 'ns => ns.filter(n => n.checkVisibility()).length') == 2          # 마크와 이름뿐 — 부제 줄이 없다
+    assert abs(page.evaluate(box, '#sidebar > nav > header')['bottom'] - page.evaluate(box, '.topbar')['bottom']) <= 1
+    page.click('#brandHome')
+    assert page.evaluate("() => [state.tab, document.querySelectorAll('#sidebar a[aria-current=page]').length]") == ['main', 1]      # 상표는 홈으로 가는 링크이고 메뉴 항목이 아니다
+    page.click('#railToggle')
+    try:
+        page.wait_for_function("() => Math.round(document.querySelector('#sidebar > nav').getBoundingClientRect().width) === 56")
+        page.wait_for_function(settled)
+        mark, icon = (page.evaluate(box, s) for s in ('#brandHome .brand-mark', "#menuList a[data-tab='main'] > svg"))
+        assert abs(mark['mid'] - icon['mid']) < 0.5 and page.is_visible('#brandHome .brand-name') is False
+    finally:
+        page.click('#railToggle')
+
+
+def test_연결_상태_알약은_연결_상태만_말하고_다시_이어지면_연결됨으로_돌아온다(portal):
+    """위 막대의 알약(liveStream.js paintTicker): 점과 글은 실시간 연결 상태만 말한다 — 활동을 받아도 그 이름으로 바뀌지 않고, 받은 활동은 누르면 펼쳐지는 판에 있다.
+    끊긴 뒤 활동을 한 번이라도 받았던 화면도 다시 이어지면 「실시간 연결됨」(살아 있는 초록 점)으로 돌아온다(앞 판은 다음 활동이 올 때까지 「끊김」이 남았다)."""
+    page = portal
+    pill = """() => { const t = document.getElementById('streamTicker'), d = t.querySelector('summary .dot');
+      return { text: t.querySelector('summary').innerText.trim(), tone: d.dataset.tone || '', live: d.hasAttribute('data-live'), detail: t.querySelector('.ticker-detail').textContent }; }"""
+    page.wait_for_function("() => ['retry', 'off'].includes(hydStream.conn().state)", timeout=20000)      # 이 포털은 서비스 요청이 모두 끊겨 있다
+    down = page.evaluate(pill)
+    assert down['text'] == page.evaluate('() => hydStream.conn().text') and down['text'] in ('다시 연결 중', '끊김 · 다시 연결을 시도하는 중') and down['live'] is False
+    page.evaluate("() => hydStream.push({ id: 'pill-probe', event_type: 'human_asked', timestamp: new Date().toISOString(), data: { text: '팬 속도를 올려도 됩니까?' } }, true)")
+    got = page.evaluate(pill)
+    assert (got['text'], got['live']) == (down['text'], False)                    # 알약의 글과 점은 연결 상태 그대로
+    assert '사람에게 질문' in got['detail'] and '팬 속도를 올려도 됩니까?' in got['detail'] and got['detail'].count('사람에게 질문') == 1
+    # 실시간 통로만 이어 준다: 이어진 순간의 알약을 적어 둔다(이 대역은 답을 보내고 곧 끊으므로 그 뒤에는 다시 「다시 연결 중」이 된다)
+    page.evaluate(f"() => {{ window.pillSeen = []; hydStream.onConn(c => window.pillSeen.push([c.state, ({pill})()])); }}")
+    stream = '**/svc/process/api/events/stream**'
+    page.route(stream, lambda route: route.fulfill(status=200, content_type='text/event-stream', body=': 이어짐\n\n'))
+    try:
+        page.evaluate('() => hydStream.connect()')
+        page.wait_for_function("() => window.pillSeen.some(([s]) => s === 'on')", timeout=20000)
+    finally:
+        page.unroute(stream)
+    on = next(seen for state, seen in page.evaluate('() => window.pillSeen') if state == 'on')
+    assert (on['text'], on['tone'], on['live']) == ('실시간 연결됨', 'ok', True)
+    assert '팬 속도를 올려도 됩니까?' in on['detail']                              # 받은 활동은 펼친 판에 남아 있다
+
+
+def test_처리_건_곁의_건수는_내_차례인_처리_건_수이고_없으면_그리지_않는다(portal):
+    """메뉴 「처리 건」 곁의 동그라미(app.js refreshTodoCount): 사람 단계가 열렸거나 AI 에이전트가 질문한 처리 건을 건 단위로 센다(한 건에 단계가 둘이어도 1).
+    AI 에이전트나 시스템이 일하는 중인 건은 세지 않는다. 0 이면 동그라미를 그리지 않는다."""
+    page = portal
+    todo = '**/svc/process/api/todolist**'
+    rows = [{'proc_inst_id': 'inst-a', 'agent_orch': None, 'agent_mode': None},                                      # 사람 단계
+            {'proc_inst_id': 'inst-a', 'agent_orch': None, 'agent_mode': None},                                      # 같은 건의 사람 단계 하나 더
+            {'proc_inst_id': 'inst-b', 'agent_orch': 'cliagents', 'agent_mode': 'draft', 'draft_status': 'HUMAN_ASKED'},   # AI 에이전트가 사람에게 물은 건
+            {'proc_inst_id': 'inst-c', 'agent_orch': 'cliagents', 'agent_mode': 'draft', 'draft_status': 'STARTED'},       # AI 에이전트가 일하는 중
+            {'proc_inst_id': 'inst-d', 'agent_orch': 'service', 'agent_mode': None}]                                 # 시스템 단계
+    seen = "() => { const n = document.getElementById('navTodo'); return [n.textContent, n.getAttribute('aria-label'), n.checkVisibility()]; }"
+    try:
+        page.route(todo, lambda route: route.fulfill(json=rows))
+        page.evaluate('() => refreshTodoCount()')
+        assert page.evaluate(seen) == ['2', '내가 할 일 2건', True]
+        page.unroute(todo)
+        page.route(todo, lambda route: route.fulfill(json=rows[3:]))
+        page.evaluate('() => refreshTodoCount()')
+        assert page.evaluate(seen) == ['', None, False]
+    finally:
+        page.unroute(todo)

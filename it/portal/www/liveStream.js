@@ -107,25 +107,34 @@
     S.reloadTimer = setTimeout(() => { const force = S.reloadForce; S.reloadForce = false; if (window.hydInstances && state.tab === 'instances') window.hydInstances.load(force); }, 200);
   }
 
-  function ticker(e) {
+  /* 위 막대의 연결 상태 알약(#streamTicker): 점과 글은 연결 상태만 말한다 — 이어져 있으면 살아 있는 초록 점과 「실시간 연결됨」, 아니면 회색 점(끊김은 빨강)과 그 상태.
+     방금 받은 활동은 알약을 누르면 펼쳐지는 판에 있다(알약의 글이 활동 이름으로 바뀌면 연결 상태가 가려지고, 다시 이어진 뒤에도 「끊김」이 남았다). */
+  function paintTicker() {
     const t = document.getElementById('streamTicker'); if (!t) return;
+    const { state, ok, text } = connOf(), last = S.lastSeen;
+    const dot = ok ? ' data-tone="ok" data-live' : state === 'off' ? ' data-tone="danger"' : '';
+    t.innerHTML = `<summary><i class="dot"${dot}></i><span>${esc(ok ? UI.t('header.waiting') : text)}</span></summary><div class="ticker-detail">${
+      last ? `<p class="ticker-head">방금 받은 활동 · <span class="num">${esc(UI.time(last.at))}</span></p><p class="ticker-what"><b>${esc(last.label)}</b>${last.name ? ` · ${esc(last.name)}` : ''}</p>${last.body}`
+        : `<p class="ticker-head">${esc(ok ? '아직 받은 활동이 없습니다. AI 에이전트나 시스템이 일하면 여기에 가장 최근 것이 보입니다.' : '연결되면 AI 에이전트와 시스템의 활동이 실시간으로 들어옵니다.')}</p>`}</div>`;
+  }
+  function ticker(e) {
     S.lastKey = e.id;
     const kind = KIND[e.event_type];
-    const { title } = describe(e);
+    const { title, text } = describe(e);
     const isTool=e.event_type==='tool_usage_started'||e.event_type==='tool_usage_finished';
     const raw=(e.data||{}).tool||'';
-    const name=isTool ? UI.toolName(raw) : '';   // 도구 이름은 포털 사전 하나(hydWords) — 사전에 없으면 서버 등록 이름 · 그 상태
     const label=isTool ? (e.event_type==='tool_usage_started'?'도구 실행 중':(e.data?.is_error||e.data?.attempt_failed)?'도구 호출 실패':'도구 호출 완료') : kind ? UI.t(kind[1]) : UI.eventName(e.event_type);
-    const body=isTool ? `<p>${esc(window.hydWords.toolSystem(raw) || '')}</p>${UI.toolIdentityFold(raw)}` : `<p>${esc(title)}</p>`;   // 원래 이름은 사전에 없는 도구일 때만 접어서
-    t.innerHTML = `<summary><i class="live-dot ${kind ? kind[0] : ''}"></i><span>${esc(label)}</span><b>${esc(isTool ? name : title)}</b></summary><div class="ticker-detail">${body}</div>`;
+    // 한 줄: 「종류 · 이름」(도구 이름은 포털 사전 하나(hydWords) — 사전에 없으면 서버 등록 이름. 종류와 이름이 같은 말이면 한 번만), 그 아래 보조 한 줄. 원래 도구 이름은 사전에 없는 도구일 때만 접어서
+    const name=isTool ? UI.toolName(raw) : title !== label ? title : '';
+    const more=isTool ? window.hydWords.toolSystem(raw) || '' : text || '';
+    S.lastSeen = { at: e.timestamp || new Date().toISOString(), label, name, body: `${more ? `<p>${esc(more)}</p>` : ''}${isTool ? UI.toolIdentityFold(raw) : ''}` };
+    paintTicker();
     if(isTool&&!window.hydWords.knownTool(raw)&&window.hydToolNames){
       window.hydToolNames.load().then(()=>{if(S.lastKey===e.id && S.connected) tickerNameRefresh(e);});
     }
-    t.classList.remove('flash'); void t.offsetWidth; t.classList.add('flash');
   }
   function tickerNameRefresh(e) {
-    const t=document.getElementById('streamTicker');if(!t)return;
-    const title=t.querySelector('summary b');if(title)title.textContent=UI.toolName((e.data||{}).tool);
+    if (S.lastSeen) { S.lastSeen.name = UI.toolName((e.data||{}).tool); paintTicker(); }
   }
   /* 연결 상태는 이 한 곳이 정한다 — 색만이 아니라 글자로: 연결 중 · 연결됨 · 다시 연결 중 · 끊김 · 쉬는 중(화면이 가려짐).
      「다시 연결 중」이 10초를 넘기거나 세 번 실패하면 「끊김」이라고 말한다(그래도 다시 연결은 계속 시도한다). 화면은 onConn 으로 받아
@@ -140,8 +149,7 @@
     else if (state === 'retry' && !S.downTimer) S.downTimer = setTimeout(() => { S.downTimer = 0; if (S.conn === 'retry') setConn('off'); }, 10000);
     const { text, ok } = connOf();
     const c = document.getElementById('streamConn'); if (c) { c.textContent = text; c.className = 'stream-conn ' + (ok ? 'on' : 'off'); }
-    const t = document.getElementById('streamTicker');
-    if (t && !ok) t.innerHTML = `<summary><i class="live-dot off"></i><span>${esc(text)}</span></summary>`;
+    paintTicker();
     document.querySelectorAll('[data-live-conn]').forEach(n => { n.textContent = text; n.className = 'live-conn ' + (ok ? 'on' : state); });
     if (changed) S.connSubs.forEach(fn => { try { fn(connOf()); } catch (err) { console.error('[hydStream] 연결 상태 구독 화면 오류', fn.name || '(이름 없는 구독)', state, err); } });
   }
@@ -198,8 +206,6 @@
     S.es = es;
     es.onopen = () => {
       S.backoff = 0; S.openedAt = Date.now(); setConn('on');
-      const t = document.getElementById('streamTicker');
-      if (t && !S.lastKey) t.innerHTML = `<summary><i class="live-dot on"></i><span>${esc(UI.t('header.waiting'))}</span></summary>`;
     };
     // 깨진 기록 줄 하나가 나머지를 막지 않게 건너뛰되, 건너뛴 줄은 개발자 도구에 남긴다
     es.addEventListener('history', ev => { try { push(JSON.parse(ev.data), false); } catch (err) { console.error('[hydStream] 지난 기록 줄을 읽지 못해 건너뜁니다', err, ev.data); } renderSoon(); });

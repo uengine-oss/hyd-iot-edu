@@ -584,11 +584,10 @@ Object.assign(UI.terms, {
   'nav.agents': '에이전트 · 스킬', 'nav.compare': '에이전트 시험 비교', 'nav.flows': '흐름', 'nav.oil': '오일 분석 입력', 'nav.eval': '판단 채점',
   'nav.whatif': '조건별 손익', 'nav.kpi': '성과 지표', 'nav.fabric': '데이터 원천',
   'nav.ask': '질문하기',   // B5
-  // 메뉴 여덟(index.html 주 메뉴의 data-menu). nav.menu.<메뉴>.note 는 그 메뉴의 화면에서 위 막대의 위치 옆에 보이는 한 문장
+  // 메뉴 여덟(index.html 주 메뉴의 data-menu)
   'nav.menu.main': '홈', 'nav.menu.instances': '처리 건', 'nav.menu.knowledge': '지식', 'nav.menu.flows': '흐름', 'nav.menu.agents': 'AI 에이전트',
   'nav.menu.plant': '유압 설비', 'nav.menu.trial': '판단 실험', 'nav.menu.system': '시스템',
-  'nav.menu.trial.note': '판단 엔진에 조건을 넣어 결과를 미리 봅니다.',
-  'shell.find': '화면 찾기', 'shell.findEmpty': '맞는 화면이 없습니다.', 'shell.railToggle': '메뉴 줄 접기 · 펴기',
+  'shell.railFold': '메뉴 줄 접기', 'shell.railOpen': '메뉴 줄 펴기',
   'shell.bell': '알림', 'shell.bellCount': '새 알림 {n}건',
   'shell.mountFail': '화면을 그리지 못했습니다', 'shell.unknownRoute': '없는 화면 주소입니다. 홈으로 이동했습니다.',
   'dialog.ok': '확인', 'dialog.cancel': '취소', 'state.retry': '다시 시도',

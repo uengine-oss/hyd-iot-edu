@@ -113,7 +113,7 @@ table.tbl tr[data-row-open] { cursor: pointer; }
 .rd-mark { margin-left: auto; font-size: 12px; line-height: 16px; font-weight: 600; color: var(--ink-2); }
 .cmp-args { margin: 4px 0 0; font-size: 13px; overflow-wrap: anywhere; }
 .rd-history { margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border); }
-table.tbl tr.cmp-changed td { background: var(--accent-bg, var(--muted)); }
+table.tbl tr.cmp-changed td { background: var(--brand-soft); }
 
 /* ---------------- 판단 채점: 항목별 결과 · 검사 네 줄 ---------------- */
 .rd-item { padding-top: 16px; border-top: 1px solid var(--border); }

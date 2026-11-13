@@ -54,11 +54,8 @@ window.hydTabs = { onShow(fn) { tabHooks.push(fn); } };
 /* 메뉴 표: index.html 의 메뉴 정의 한 곳(#menuList 의 button[data-menu][data-tabs][data-icon])을 읽는다. 메뉴 하나에 화면이 하나 이상 딸린다.
    메뉴 줄(이 파일 renderMenu) · 위 막대의 위치(updateNavigation) · 화면 찾기(shell.js)가 모두 이 표로 그려진다. 화면 이름(= 화면 제목)은 nav.<화면>, 메뉴 이름은 nav.menu.<메뉴>(ui.js).
    화면은 selectTab('<화면>') · 주소 #/<화면> · [data-go-tab="<화면>"] · 메뉴 줄 · 화면 찾기 어느 길로 열어도 그 화면이 든 메뉴가 펼쳐지고 그 화면이 고른 상태가 된다. */
-const MENU = [...document.querySelectorAll('#menuList > button[data-menu]')].map(def => {
-  const noteKey = `nav.menu.${def.dataset.menu}.note`;
-  return { id: def.dataset.menu, name: UI.t('nav.menu.' + def.dataset.menu), icon: def.dataset.icon, tabs: def.dataset.tabs.split(/\s+/).filter(Boolean),
-    note: UI.t(noteKey) === noteKey ? '' : UI.t(noteKey) };
-});
+const MENU = [...document.querySelectorAll('#menuList > button[data-menu]')].map(def =>
+  ({ id: def.dataset.menu, name: UI.t('nav.menu.' + def.dataset.menu), icon: def.dataset.icon, tabs: def.dataset.tabs.split(/\s+/).filter(Boolean) }));
 const SCREENS = MENU.flatMap(m => m.tabs);                    // 모든 화면(메뉴 표의 차례)
 const tabName = tab => UI.t('nav.' + tab);
 const menuOf = tab => MENU.find(m => m.tabs.includes(tab)) || null;
@@ -88,7 +85,7 @@ function markMenu(name) {
     if (on) s.dataset.active = 'true'; else delete s.dataset.active;
     s.parentElement.open = on;
   });
-  document.querySelectorAll('#sidebar a[data-tab]').forEach(a => { if (a.dataset.tab === name) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+  document.querySelectorAll('#menuList a[data-tab]').forEach(a => { if (a.dataset.tab === name) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });      // 상표(홈으로 가는 링크)는 메뉴 항목이 아니라 고른 표시를 받지 않는다
 }
 const lastTab = {};                                            // 메뉴 → 그 메뉴에서 마지막으로 본 화면(접은 메뉴 줄에서 아이콘을 누르면 그 화면으로 돌아간다)
 function selectTab(name) {
@@ -129,7 +126,9 @@ const RAIL_KEY = 'hyd.rail';
 const wide = matchMedia('(min-width: 768px)');
 function setRail(mini) {
   if (mini) document.documentElement.dataset.rail = 'mini'; else delete document.documentElement.dataset.rail;
-  $('#railToggle').setAttribute('aria-expanded', String(!mini));
+  // 단추의 이름이 누르면 일어날 일을 말한다(접혀 있으면 「펴기」). 눌린 모양(aria-expanded · aria-pressed)은 주지 않는다 — 키트가 그 상태의 글자 단추에 바탕색을 칠해 늘 눌려 있는 것처럼 보인다
+  const label = UI.t(mini ? 'shell.railOpen' : 'shell.railFold'), button = $('#railToggle');
+  button.setAttribute('aria-label', label); button.dataset.tooltip = label; button.dataset.side = 'bottom'; button.dataset.align = 'start';
 }
 {
   let saved = '';
@@ -148,11 +147,10 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && !wide.matc
 wide.addEventListener('change', () => { const side = $('#sidebar'); if (typeof side.open === 'function') { if (wide.matches) side.open(); else side.close(); } });
 function updateNavigation(name) {
   const menu = menuOf(name), many = menu.tabs.length > 1;
-  // 위 막대의 위치: 「메뉴 › 화면」. 화면이 하나뿐인 메뉴는 이름이 같으므로 화면 이름만 보인다. 메뉴에 안내 문장이 있으면 그 옆에 한 줄
+  // 위 막대의 위치: 「메뉴 › 화면」. 화면이 하나뿐인 메뉴는 이름이 같으므로 화면 이름만 보인다
   const group = $('#pageGroup'); group.hidden = !many; group.textContent = menu.name;
   $('#pageSep').hidden = !many;
   $('#pageLocation').textContent = tabName(name);
-  const note = $('#menuNote'); note.hidden = !menu.note; note.textContent = menu.note;
   document.title = `${tabName(name)} · HYD`;
 }
 selectTab('main');
@@ -299,7 +297,7 @@ function renderUnits() {
           <button type="button" class="btn small" data-act="fan">팬 80 %</button>
           <button type="button" class="btn small" data-act="load">부하 70 %</button>
           <button type="button" class="btn small" data-act="reset">보호 정지 해제</button></div>
-          <p class="lab-note">설비 앞 현장 패널을 흉내 낸 실습 버튼입니다. 사람 승인과 명령 관문을 거치지 않고 설비에 바로 씁니다. AI가 권고한 조치는 이 길이 아니라 처리 건 승인 뒤 명령 관문으로만 나갑니다.</p>
+          <p class="lab-note">설비 곁 현장 패널에서 하는 조작입니다. 사람 승인과 명령 관문을 거치지 않고 설비에 바로 씁니다. AI가 권고한 조치는 이 길이 아니라 처리 건에서 승인한 뒤 명령 관문으로만 나갑니다.</p>
         </div></details>`;
       card.querySelectorAll('button').forEach(b => b.addEventListener('click', () => unitAction(asset, b.dataset.act, b.dataset.mode, b)));
       box.append(card);

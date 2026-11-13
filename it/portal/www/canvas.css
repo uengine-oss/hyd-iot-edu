@@ -1,4 +1,4 @@
-/* 그림 화면의 모양 — 어두운 캔버스 공통 · 지식 지도 · 흐름 그림(진행 길 · 전체 흐름 대화상자) · 홈 · 유압 실습장(결함 시뮬레이션 · 설비 회로 · 실시간 모니터링 · 오일 분석 입력 · 업무 시스템 기록) · 시스템 구성 · 규칙 판단.
+/* 그림 화면의 모양 — 어두운 캔버스 공통 · 지식 지도 · 흐름 그림(진행 길 · 전체 흐름 대화상자) · 홈 · 유압 설비(결함 시뮬레이션 · 설비 회로 · 실시간 모니터링 · 오일 분석 입력 · 업무 시스템 기록) · 시스템 구성 · 규칙 판단.
    기준: 디자인기준.md 5-7 ~ 5-10 · 6절. 값은 tokens.css 의 토큰만 쓴다. 그림 자리는 홈 그림과 같은 어두운 캔버스(--cv-*)다.
    그리는 코드: enterprise.js(지식 지도 · 규칙 판단 · 업무 시스템 기록) · main.js(홈 그림) · flow.js(흐름 그림) · app.js(설비 카드 · 회로 · 시스템 구성) */
 
@@ -373,7 +373,7 @@ pre.tpl { max-height: 320px; }
   .kg-search input { flex: 1; width: auto; }
 }
 
-/* ================================================================= 유압 실습장 — 결함 시뮬레이션 (5-7)
+/* ================================================================= 유압 설비 — 결함 시뮬레이션 (5-7)
    설비 한 기 = 카드 하나: 이름 · 상태 하나 → 큰 숫자(유온) · 기준 막대 → 결함 실험 → 값 여섯 줄 → 압력 추이 → 접기 둘 */
 .lab-clock { font-size: 13px; line-height: 20px; color: var(--muted-foreground); white-space: nowrap; }
 .lab-clock b { font-weight: 600; color: var(--foreground); }
@@ -418,7 +418,7 @@ pre.tpl { max-height: 320px; }
 #units .unit-more .label:first-child { margin-top: 0; }
 .lab-log { margin-top: 24px; }
 
-/* ================================================================= 유압 실습장 — 설비 회로 (6-4)
+/* ================================================================= 유압 설비 — 설비 회로 (6-4)
    회로 그림은 어두운 캔버스: 윤곽 --cv-steel 2px · 배관 --cv-amber 5px(운전 중이면 흐른다) · 감지기는 --cv-red 원 · 값은 --cv-value */
 #scada { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin: 0 0 24px; }
 #scada .ucard { display: flex; flex-direction: column; gap: 12px; padding: 16px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); cursor: pointer; min-width: 0; box-shadow: none; }
@@ -481,7 +481,7 @@ pre.tpl { max-height: 320px; }
 .hc-steps time { font-size: 13px; color: var(--muted-foreground); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .hc-steps .note { display: block; color: var(--ink-2); }
 
-/* ================================================================= 유압 실습장 — 실시간 모니터링 · 오일 분석 입력 · 업무 시스템 기록 */
+/* ================================================================= 유압 설비 — 실시간 모니터링 · 오일 분석 입력 · 업무 시스템 기록 */
 .mon-pick { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted-foreground); }
 #trendsNotice[hidden] { display: none; }
 #trendsNotice { margin: 0 0 16px; }

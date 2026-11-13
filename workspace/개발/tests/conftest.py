@@ -1136,7 +1136,8 @@ def open_screen(page, tab):
     메뉴 이름 줄(summary[data-menu])을 눌러 펼친 뒤 그 안의 화면을 누른다. 메뉴 표는 화면이 index.html 에서 읽은 것(app.js hydMenu)을 그대로 쓴다."""
     menu = page.evaluate('tab => { const m = hydMenu.of(tab); if (!m) throw new Error(`주 메뉴 표에 없는 화면: ${tab}`); return m.id; }', tab)
     link = page.locator(f"#menuList a[data-tab='{tab}']")
-    if page.locator('#menuList details[open]', has=link).count() == 0 and page.locator('#menuList details', has=link).count():      # 접혀 있는 메뉴
+    # 그 화면의 줄이 접힌 메뉴 안에 있으면 먼저 펼친다(화면이 하나뿐인 메뉴의 줄은 접기 안에 있지 않다)
+    if page.evaluate("tab => { const fold = document.querySelector(`#menuList a[data-tab='${tab}']`).closest('details'); return !!fold && !fold.open; }", tab):
         page.locator(f"#menuList summary[data-menu='{menu}']").click()
     link.click()
     assert page.evaluate('() => state.tab') == tab, f'{tab} 화면이 열리지 않았다'
