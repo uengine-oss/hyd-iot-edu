@@ -6,8 +6,8 @@
 //   한 번의 실행은 45초 안에 끝나야 하므로 자료 3개 정도씩 나눠 부른다.
 // 드라이브 파일은 addLink에 드라이브 파일 주소(https://drive.google.com/file/d/<id>/view)를 넣으면 드라이브 첨부로 붙는다 — 배포 길 5.
 const sleep = ms => new Promise(r => setTimeout(r, ms)); window.sleep = sleep;
-// 열려 있는 자료 편집 창
-window.mdlg = () => [...document.querySelectorAll('[role=dialog]')].find(x => x.offsetParent && /저장 옵션|게시|저장/.test(x.innerText) && x.querySelector('textarea'));
+// 열려 있는 자료 편집 창(닫힌 창이 화면에 남는 때가 있어 마지막 것을 고른다 — 배포 함정)
+window.mdlg = () => [...document.querySelectorAll('[role=dialog]')].filter(x => x.offsetParent && /저장 옵션|게시|저장/.test(x.innerText) && x.querySelector('textarea')).pop();
 // 편집 창에 붙은 파일(zip · pptx · html · xlsx) 이름, 붙은 순서대로
 window.fileList = () => [...mdlg().querySelectorAll('a')].map(a => a.innerText.trim().split('\n')[0]).filter(t => /\.(zip|pptx|html|xlsx)$/.test(t));
 // 편집 창에 붙은 유튜브 영상 제목
