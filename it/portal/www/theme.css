@@ -6,11 +6,12 @@
    색은 토큰만 바꾼다(브랜드 로고 · 그림은 쓰지 않음). 화면 구조는 그대로, 간격 · 위계 · 정렬을 한 규칙으로. */
 :root {
   --brand: #d97757;
+  --brand-ink: #a8452a;   /* 브랜드 주황을 글자색으로 쓸 때(흰 바탕 5.92:1). 바탕 · 테두리 · 막대는 --brand 그대로 */
   --focus: #3b78c4;
   --ease: cubic-bezier(.165, .84, .44, 1);
   --ink: #0b0b0b;
   --ink-2: #52514e;
-  --ink-3: #76746e;      /* tokens.css text-muted #898781 을 흰 바탕 4.5:1 로 한 단계 진하게 */
+  --ink-3: #6b6964;      /* 보조 글. 흰 카드 5.48 · 화면 바탕(--paper) 5.2 · 옅은 상자(--surface-soft) 4.94 로 모두 4.5:1 이상 */
   --ink-4: #a3a19a;
   --paper: #f9f9f7;
   --panel: #ffffff;
@@ -100,7 +101,7 @@ a {
   font-weight: 650;
 }
 .brand small {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--ink-3);
   display: block;
 }
@@ -141,7 +142,7 @@ a {
 }
 .rail nav button.active svg { color: var(--ink); }
 .rail nav .navgroup {
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--ink-3);
   padding: 14px 8px 4px;
@@ -203,6 +204,7 @@ h3 {
   font-weight: 600;
 }
 .sec-head h2, h2.sec { font-size: 15px; }
+small { font-size: 12px; }   /* 크기를 따로 정하지 않은 <small>(표 칸의 위치 · 사유 · 시각 등)이 브라우저 기본 약 10.8px 로 줄지 않게 */
 .page-navigation {
   grid-column: 2;
   display: grid;
@@ -216,7 +218,7 @@ h3 {
 }
 
 /* ---------------- 카드 (PgCard · Dify panel) ---------------- */
-.card, .detail, .todo-panel, .upload.card { background: var(--panel); border: 1px solid var(--rule); border-radius: var(--radius); box-shadow: var(--shadow); }
+.card, .detail, .todo-panel { background: var(--panel); border: 1px solid var(--rule); border-radius: var(--radius); box-shadow: var(--shadow); }
 .card {
   background: var(--panel);
   border: 1px solid var(--rule);
@@ -268,7 +270,7 @@ h3 {
 .stat-cards .card.todo { border-color: color-mix(in srgb, var(--accent) 45%, var(--rule)); background: color-mix(in srgb, var(--accent) 5%, var(--panel)); }
 .stat-cards .card.todo b { color: var(--accent); }
 .stat-cards .card.hot b {
-  color: var(--brand);
+  color: var(--brand-ink);
 }
 
 /* ---------------- 버튼 (PgButton.vue) ---------------- */
@@ -307,10 +309,15 @@ h3 {
   border-color: #2a2a29;
 }
 .btn.primary:disabled { background: #b9b8b3; border-color: #b9b8b3; opacity: 1; }
+/* 위험 동작은 빨간 테두리 보조 단추(글자 6.57:1, 올렸을 때 6.05:1) — 빨강 채움 위 흰 글자가 올리면 사라지던 것을 고쳤다 */
 .btn.danger {
-  background: #b42318;
-  border-color: #b42318;
-  color: #fff;
+  background: #fff;
+  border-color: color-mix(in srgb, var(--alarm) 45%, #fff);
+  color: var(--alarm);
+}
+.btn.danger:hover {
+  background: #fef3f2;
+  border-color: var(--alarm);
 }
 .btn.outline {
   background: #fff;
@@ -327,12 +334,11 @@ h3 {
 button:disabled, .btn:disabled { opacity: .45; }
 
 /* ---------------- 칩 (overrides.css .v-chip) ---------------- */
-.chip,
-.state { height: auto; min-height: 22px; padding: 3px 8px; line-height: 1.35; border-radius: 6px; font-size: 12px; font-weight: 500; }
+.chip { height: auto; min-height: 22px; padding: 3px 8px; line-height: 1.35; border-radius: 6px; font-size: 12px; font-weight: 500; }
 .chip.sm {
-  height: 20px;
-  padding: 3px 6px;
-  font-size: 11px;
+  height: auto;
+  padding: 1px 6px;
+  font-size: 12px;
   min-height: 20px;
 }
 
@@ -373,7 +379,7 @@ button:disabled, .btn:disabled { opacity: .45; }
 /* ---------------- 접기 ---------------- */
 details.fold {
   border: 1px solid var(--rule);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   background: var(--panel);
 }
 details.fold > summary {
@@ -387,7 +393,7 @@ details.fold > summary {
   align-items: center;
   gap: var(--s2);
   min-height: 40px;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
 }
 details.fold > summary:hover { background: rgba(11, 11, 11, .025); }
 details.fold.small {
@@ -410,7 +416,7 @@ details.fold.plain {
 
 /* ---------------- 폼 (PgField · PgTextField) ---------------- */
 input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]), select, textarea {
-  border: 1px solid #d8d7d3; border-radius: 8px; background: #fff; color: var(--ink); font-size: 14px; transition: border-color .12s var(--ease), box-shadow .12s var(--ease); }
+  border: 1px solid var(--rule-strong); border-radius: var(--radius-sm); background: #fff; color: var(--ink); font-size: 14px; transition: border-color .12s var(--ease), box-shadow .12s var(--ease); }
 input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]), select { min-height: 34px; padding: 0 10px; }
 textarea {
   resize: vertical;
@@ -457,7 +463,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--f
 }
 .list .item {
   border: 1px solid var(--rule);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   background: #fff;
   padding: 10px 12px;
   margin-bottom: var(--s2);
@@ -477,7 +483,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--f
 }
 .list .item .sub {
   display: block;
-  font-size: 12px;
+  font-size: 12.5px;
   color: var(--ink-3);
   margin-top: 4px;
 }
@@ -514,7 +520,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--f
 .empty.compact {
   padding: 16px;
 }
-table th { font-size: 12px; font-weight: 500; color: var(--ink-3); }
+table th { font-size: 12.5px; font-weight: 600; color: var(--ink-2); }   /* 표 머리: 옅은 바탕(--surface-soft) 위 7.15:1 */
 .inst-table td, .inst-table th { border-color: var(--rule); }
 pre {
   font-size: 12px;
@@ -564,13 +570,13 @@ pre {
 /* 흐름 가져오기 · 입력 칸 행 편집 (flows.js fieldEditors) */
 .field-rows { display: flex; flex-direction: column; gap: 6px; }
 .field-row { display: grid; grid-template-columns: minmax(90px, 1fr) minmax(90px, 1fr) 96px minmax(90px, 1fr) 20px; gap: 6px; align-items: center; }
-.field-row.head span { font-size: 11.5px; color: var(--ink-3); font-weight: 500; }
+.field-row.head span { font-size: 12px; color: var(--ink-3); font-weight: 500; }
 .field-row input:disabled { background: var(--surface-soft); }
 .field-rows [data-add] { align-self: flex-start; }
 @media (max-width: 640px) { .field-row { grid-template-columns: 1fr 1fr; } .field-row.head { display: none; } }
 /* A161-U1 결함 2: 표 숫자 · 코드가 글자 단위로 쪼개지지 않게(좁으면 표만 가로로 밀림) */
 .inst-table td, .inst-table th, .compact-table td, .compact-table th, .td-table td, .td-table th { overflow-wrap: normal; word-break: keep-all; }
-.td-table td:not(:last-child), .td-table th { white-space: nowrap; }
+.td-table th { white-space: nowrap; }   /* 칸 글은 줄을 바꾼다 — 긴 규칙 · 입력 이름이 표를 옆으로 밀어 숫자 칸을 가리지 않게 */
 .table-scroll {
   max-width: 100%;
   overflow: auto;
@@ -581,10 +587,10 @@ pre {
 .task-detail { scroll-margin-top: 16px; }
 /* ---------------- A161-U1 승인 요약 카드 (approvalCard.js · Camunda Tasklist 작업 상세 + PgCard) ---------------- */
 .todo-panel.approve { padding: 18px 20px; border-radius: var(--radius); box-shadow: var(--shadow-md); }
-.ap-card { border: 1px solid var(--rule); border-radius: 12px; background: #fff; padding: 16px 18px; margin: 12px 0 16px; display: flex; flex-direction: column; gap: 10px; box-shadow: inset 3px 0 0 var(--brand); }
+.ap-card { border: 1px solid var(--rule); border-radius: var(--radius); background: #fff; padding: 16px 18px; margin: 12px 0 16px; display: flex; flex-direction: column; gap: 10px; box-shadow: inset 3px 0 0 var(--brand); }
 .ap-card.changed { box-shadow: inset 3px 0 0 var(--warn); }
 .ap-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.ap-kicker { font-size: 12px; font-weight: 600; color: var(--brand); letter-spacing: .01em; }
+.ap-kicker { font-size: 12px; font-weight: 600; color: var(--brand-ink); letter-spacing: .01em; }
 .ap-card.changed .ap-kicker { color: var(--warn); }
 .ap-title { margin: 0; font-size: 18px; line-height: 24px; font-weight: 650; letter-spacing: -.01em; }
 .ap-desc { margin: 0; color: var(--ink-2); }
@@ -606,7 +612,7 @@ pre {
 .ap-switch { margin-left: auto; font-size: 12px; color: var(--ink-2); display: inline-flex; gap: 4px; align-items: center; cursor: pointer; }
 @media (max-width: 640px) { .ap-card { padding: 12px 14px; } .ap-label { min-width: 0; width: 100%; } }
 /* ---------------- A161-U1 결과 보고 카드 (resultReport.js · Dify run status 카드 + n8n 실행 배지) ---------------- */
-.rr-card { border: 1px solid var(--rule); border-radius: 12px; background: #fff; padding: 14px 16px; margin: 14px 0; display: grid; gap: 10px; }
+.rr-card { border: 1px solid var(--rule); border-radius: var(--radius); background: #fff; padding: 14px 16px; margin: 14px 0; display: grid; gap: 10px; }
 .rr-head { display: flex; gap: 12px; align-items: flex-start; }
 .rr-head h4 { margin: 0; font-size: 15px; font-weight: 600; }
 .rr-head p { margin: 2px 0 0; color: var(--ink-2); font-size: 13px; }

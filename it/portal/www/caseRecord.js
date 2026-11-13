@@ -85,7 +85,7 @@
       } else if (ev.event_type === 'human_asked') {
         rows.push({ key: 'a:' + ev.id, kind: 'note', t0: ev.timestamp, text: '사람에게 물음: ' + UI.clean(d.text || d.question || '') });
       } else if (ev.event_type === 'human_response') {
-        rows.push({ key: 'r:' + ev.id, kind: 'note', t0: ev.timestamp, text: `사람의 답: ${d.answer || ''}${d.by ? ' — ' + d.by : ''}` });
+        rows.push({ key: 'r:' + ev.id, kind: 'note', t0: ev.timestamp, text: `사람의 답: ${d.answer || ''}` });   // 답한 사람은 늘 담당자 한 명 — 담당자 id(user:…) 꼬리를 붙이지 않는다
       }
     }
     return rows;
@@ -156,7 +156,8 @@
     gapsOf(ctx, steps);
     const t0 = inst.start_date, t1 = inst.end_date;
     return { inst, v, steps, gaps: ctx.gaps, running, t0, t1, tools: steps.reduce((n, s) => n + (s.rows || []).filter(r => r.kind === 'tool').length, 0),
-      outcome: window.hydResultReport ? hydResultReport.fromValues(v) : null, decision: d };
+      outcome: window.hydResultReport ? hydResultReport.fromValues(v) : null, decision: d,
+      namesUnread: read.agents.state === 'error' || read.people.state === 'error' };   // 이름 목록(AI 에이전트 · 사람)을 못 읽음 — 머리 요약에 한 줄(사유는 「기록에 없는 것」)
   }
 
   // 이 처리 건이 이미 아는 이름: 판단의 대안 · 승인 역할 · 시나리오(원인 · 고장 유형), 진단 카드의 원인 · 조치, AI 에이전트 이름
@@ -217,7 +218,7 @@
     }
     const init = inst.initial_variables || {};
     const rows = Object.entries(init).filter(([, x]) => x != null && typeof x !== 'object').slice(0, 8);
-    return { key: 'start', type: 'start', lane: 'person', icon: 'flag', title: '시작', actor: '시작한 사람 · 화면', t0: inst.start_date, t1: inst.start_date,
+    return { key: 'start', type: 'start', lane: 'person', icon: 'flag', title: '시작', actor: '경보 없이 직접 시작', t0: inst.start_date, t1: inst.start_date,
       sentence: `‘${ctx.view.definition?.processDefinitionName || inst.proc_inst_name || UI.defName(inst.proc_def_id)}’ 처리 건이 시작됐습니다.`, chips: rows.slice(0, 4).map(([k, x]) => chip(`${W().fieldName(k)} ${W().startValue(k,x)}`)),
       sections: [rows.length ? sec('시작 값', kvTable(rows.map(([k, x]) => [W().fieldName(k), W().startValue(k,x), k])), { open: true }) : '', sec('시작 값 원문', rawBlock(init), { raw: true })], state: 'ok' };
   }
@@ -261,18 +262,18 @@
         const skills = Array.isArray(sd.skills) ? sd.skills : null;
         const head = `<h6>실행 ${i + 1} · 스킬 전달 기록${event.timestamp ? ` <span class="muted">${e(UI.dateTime(event.timestamp))}</span>` : ''}</h6>`;
         if (!skills) return head + '<p class="cr-gapline">스킬 전달 기록이 없습니다. 전달 여부를 확인할 수 없습니다.</p>';
-        const table = skills.length ? `<div class="cr-scroll"><table class="cr-table"><thead><tr><th>스킬 · 전달 상태</th><th>판(본문 해시)</th><th>어디서 왔나</th><th>길이</th><th>설명</th></tr></thead><tbody>${skills.map(k => {
+        const table = skills.length ? `<div class="cr-scroll"><table class="cr-table"><thead><tr><th>스킬 · 전달 상태</th><th>저장본</th><th>어디서 왔나</th><th>길이</th><th>설명</th></tr></thead><tbody>${skills.map(k => {
           const status = UI.skillDelivery(k);
           const name=UI.skillLabel(k,true);
-          return `<tr><td><b>${e(name.label)}</b>${name.note ? ` <span class="muted">(${e(name.note)})</span>` : ''} ${UI.chipText(status.label, status.tone)}${k.error ? ` <span class="muted">${e(k.error)}</span>` : ''}${status.kind === 'prompt' ? `<span class="muted"> · ${k.verified_registered_content === true ? '등록 본문 확인됨' : '등록 본문 확인 기록 없음'}</span>` : ''}${UI.fold('스킬 식별자 · 전달 원문',rawBlock(k),{cls:'small'})}</td><td><code class="cr-ver" title="${e(k.sha256 || '')}">${e(k.version || '')}</code>${k.updated_at ? ` <span class="muted">${e(UI.dateTime(k.updated_at))} 저장본</span>` : ''}</td><td>${e(src(k.source))}</td><td class="num">${k.chars != null ? e(W().num(k.chars)) + '자' : ''}</td><td class="muted">${e(UI.clean(k.description || ''))}</td></tr>`;
+          return `<tr><td><b>${e(name.label)}</b>${name.note ? ` <span class="muted">(${e(name.note)})</span>` : ''} ${UI.chipText(status.label, status.tone)}${k.error ? ` <span class="muted">${e(k.error)}</span>` : ''}${status.kind === 'prompt' ? `<span class="muted"> · ${k.verified_registered_content === true ? '등록 본문 확인됨' : '등록 본문 확인 기록 없음'}</span>` : ''}${UI.fold('스킬 식별자 · 전달 원문',rawBlock(k),{cls:'small'})}</td><td>${k.updated_at ? `${e(UI.dateTime(k.updated_at))} 저장` : '<span class="muted">저장 시각 기록 없음</span>'}${W().showIds && k.version ? ` <code class="cr-ver" title="${e(k.sha256 || '')}">${e(k.version)}</code>` : ''}</td><td>${e(src(k.source))}</td><td class="num">${k.chars != null ? e(W().num(k.chars)) + '자' : ''}</td><td class="muted">${e(UI.clean(k.description || ''))}</td></tr>`;
         }).join('')}</tbody></table></div>` : '';
         const note = skills.some(k => UI.skillDelivery(k).kind === 'prompt') ? '<p class="muted">프롬프트로 본문을 전달했습니다. 파일 읽기 없이 작업 지시에서 본문을 받을 수 있습니다.</p>' : '';
         const miss = (sd.skills_missing || []).length ? `<p class="cr-gapline">배정됐지만 본문이 없어 넣지 못한 스킬: ${e(sd.skills_missing.join(', '))}</p>` : '';
         return head + `<p>${e(UI.skillDeliverySummary(skills))}</p>` + table + note + miss;
       }).join('');
-      const read = used.length ? `<ul class="cr-list">${used.map(r => { const x = r.data; return `<li>${e(hhmmss(r.t0))} <b>${e(x.recorded ? `스킬 ${x.skill}` : UI.skillLabel(x,true).label)}</b> — ${e(W().toolName(x.via))} 요청${x.known === false ? ` ${UI.chipText('제공 목록에 없는 스킬', 'warning')}` : x.version ? ` <span class="muted">판 ${e(x.version)}</span>` : ''}${UI.fold('읽기 요청 원문',rawBlock(x),{cls:'small'})}${W().id(r.job)}</li>`; }).join('')}</ul>` : '<p class="muted">파일 읽기 기록 없음</p>';
+      const read = used.length ? `<ul class="cr-list">${used.map(r => { const x = r.data; return `<li>${e(hhmmss(r.t0))} <b>${e(x.recorded ? `스킬 ${x.skill}` : UI.skillLabel(x,true).label)}</b> — ${e(W().toolName(x.via))} 요청${x.known === false ? ` ${UI.chipText('제공 목록에 없는 스킬', 'warning')}` : W().showIds && x.version ? ` <code class="cr-ver">${e(x.version)}</code>` : ''}${UI.fold('읽기 요청 원문',rawBlock(x),{cls:'small'})}${W().id(r.job)}</li>`; }).join('')}</ul>` : '<p class="muted">파일 읽기 기록 없음</p>';
       sections.push(sec('스킬 전달 · 파일 읽기 기록', `${delivery}<h6>이 단계의 파일 읽기 요청 ${used.length}건 <span class="muted">(모든 실행의 도구 호출 기록)</span></h6>${read}
-        <p class="muted">파일 읽기 요청은 읽기 성공을 뜻하지 않습니다. 본문을 업무에 적용했는지는 이 기록만으로 확인할 수 없습니다.</p>
+        <p class="muted">스킬 파일을 읽으라고 요청한 기록입니다. 실제로 읽어서 일에 썼는지는 이 기록에 남지 않습니다.</p>
         ${ag ? `<dl class="cr-kv"><div><dt>AI 에이전트</dt><dd>${named(ag.name || W().who(w.user_id), w.user_id)}</dd></div><div><dt>쓸 수 있는 도구</dt><dd>${servers.map(x => `<span class="chip tone-neutral sm">${e(W().system(x))}</span>`).join(' ') || '–'}</dd></div></dl>` : ''}`, { open: true }));
       const skills = runs.flatMap(r => Array.isArray(r.data.skills) ? r.data.skills : []);
       if (skills.length) chips.push(chip(UI.skillDeliverySummary(skills), skills.some(k=>k.written === false) ? 'danger' : 'neutral'));
@@ -293,13 +294,13 @@
     if (prov.length || dataCalls.length) {
       const provRows = prov.map(p => `<tr><td>${named(provName(p), p.variable)}</td><td class="num">${e(W().value(p.variable, p.value))}</td><td>${e((p.source && W().system(p.source)) || p.sourceName || '')}${W().id(p.source)}</td><td class="muted">${e(UI.clean(p.how || ''))}</td></tr>`).join('');
       sections.push(sec(`가져온 데이터 ${prov.length ? prov.length + '건' : ''}`, `${prov.length ? `<div class="cr-scroll"><table class="cr-table"><thead><tr><th>값</th><th>읽은 값</th><th>어느 시스템</th><th>어떻게</th></tr></thead><tbody>${provRows}</tbody></table></div>` : ''}
-        ${dataCalls.length ? `<p class="muted">도구로 직접 읽은 곳: ${[...new Set(dataCalls.map(r => W().toolSystem(r.tool)))].map(x => e(x)).join(' · ')} (아래 도구 호출에 물음 · 받음)</p>` : ''}`, { open: !!prov.length }));
+        ${dataCalls.length ? `<p class="muted">도구로 직접 읽은 곳: ${[...new Set(dataCalls.map(r => W().toolSystem(r.tool)))].map(x => e(x)).join(' · ')} (요청과 결과는 아래 도구 호출에 있습니다)</p>` : ''}`, { open: !!prov.length }));
       chips.push(chip(`데이터 ${prov.length || dataCalls.length}건`));
     }
     // 지식 경로 (진단: 경보 → 증상 → 고장 유형 ← 원인 · 증거, 판단: 원인 → 조치 → 규칙 · 출처 절 · 득실 경로)
     const kg = knowledgeHtml(ctx, owns('guide_card') || owns('cause') ? v.guide_card : null, owns('decision') ? d : null);
     if (kg) sections.push(sec('지식 경로 · 출처', kg, { open: true }));
-    // 도구 호출 — 물음 → 받음 한 줄씩, 보조 작업(도구 불러오기 · 파일 · 명령)은 접어 둔다
+    // 도구 호출 — 요청 → 결과 한 줄씩, 보조 작업(도구 불러오기 · 파일 · 명령)은 접어 둔다
     if (b.rows.length) {
       const minor = b.rows.filter(r => r.minor).length;
       sections.push(sec(`도구 호출 ${tools.length}회${minor ? ` · 보조 작업 ${minor}건 포함` : ''}`, toolListHtml(b.rows, b.live, b.key), { open: b.live, cls: 'cr-tools' }));
@@ -326,7 +327,7 @@
     // 끝맺는 말이 산문이면 그대로, 출력 계약(JSON — SQL · 적재 통계가 든다)이면 산문 칸에 흘리지 않고 원문 접기로(W1-13)
     if (done && done.data && done.data.text) {
       const said = String(done.data.text).trim();
-      sections.push(/^[{[]/.test(said) ? sec('AI 에이전트이 낸 결과 원문', `<pre>${e(said)}</pre>`) : sec('AI 에이전트이 남긴 말', `<p class="prose">${e(UI.clean(W().text(said)).replace(/`/g, ''))}</p>`));
+      sections.push(/^[{[]/.test(said) ? sec('AI 에이전트가 낸 결과 원문', `<pre>${e(said)}</pre>`) : sec('AI 에이전트가 남긴 말', `<p class="prose">${e(UI.clean(W().text(said)).replace(/`/g, ''))}</p>`));
     }
     sections.push(sec('결과 값 원문', rawBlock(out), { raw: true }));
     // 한 문장
@@ -339,7 +340,7 @@
       : `${parts.join(' ')} 대안 ${d.options.length}개를 비교해 ‘${W().text(rec.name)}’${W().josa(W().text(rec.name), '을/를')} 추천했습니다.`;
     else if (cause) sentence = `${parts.join(' ')} 판단을 넘겼습니다.`;
     else if (done && done.data && done.data.text) sentence = (parts.length ? parts.join(' ') + ' ' : '') + firstSentence(done.data.text);
-    else sentence = b.terminal?.event_type === 'task_deferred' ? `도구를 ${tools.length}번 쓴 실행은 평가를 보류했습니다. 다시 평가할 때까지 기다립니다.` : b.awaiting ? 'AI 에이전트이 일을 받기를 기다리는 중입니다.' : b.live ? (tools.length ? `도구를 ${tools.length}번 썼고, 지금 일하는 중입니다.` : 'AI 에이전트이 실행을 시작했습니다.') : '기록된 결과 문장이 없습니다.';
+    else sentence = b.terminal?.event_type === 'task_deferred' ? `도구를 ${tools.length}번 쓴 실행은 평가를 보류했습니다. 다시 평가할 때까지 기다립니다.` : b.awaiting ? 'AI 에이전트가 일을 받기를 기다리는 중입니다.' : b.live ? (tools.length ? `도구를 ${tools.length}번 썼고, 지금 일하는 중입니다.` : 'AI 에이전트가 실행을 시작했습니다.') : '기록된 결과 문장이 없습니다.';
     if (recorded && d && d!==ctx.d) sentence = `당시 ${sentence}`;
     const lastOpen = b.live ? [...b.rows].reverse().find(r => r.kind === 'tool' && r.status === 'running') : null;
     return Object.assign(b, { type: 'agent', lane: 'agent', icon: 'agent', title: b.name, actor: ag ? ag.name : W().who(w.user_id) || 'AI 에이전트', sentence, chips, sections,
@@ -370,7 +371,7 @@
         if (rules) out.push(`<ul class="cr-list">${rules}</ul>`);
         if (steps) out.push(`<h6>추천안의 작업 순서와 출처 문서 절</h6><ol class="cr-list">${steps}</ol>`);
         const paths = (rec.tradeoffEvaluation || []).filter(p => (p.edges || []).length || (p.nodes || []).length).slice(0, 4);
-        if (paths.length) out.push(`<h6>회사 성과 지표에 미치는 길 (득 · 실)</h6><ul class="cr-list">${paths.map(p => `<li>${UI.chipText(p.good === false ? '실' : '득', p.good === false ? 'danger' : 'success')} <b>${e(p.name || '')}</b> <span class="cr-chain">${chainText(p, rec)}</span>${(p.conds || []).length ? ` <span class="muted">(조건: ${e(p.conds.join(', '))})</span>` : ''}</li>`).join('')}</ul>`);
+        if (paths.length) out.push(`<h6>회사 성과 지표에 미치는 길 (이득과 손실)</h6><ul class="cr-list">${paths.map(p => `<li>${UI.chipText(p.good === false ? '손실' : '이득', p.good === false ? 'danger' : 'success')} <b>${e(p.name || '')}</b> <span class="cr-chain">${chainText(p, rec)}</span>${(p.conds || []).length ? ` <span class="muted">(조건: ${e(p.conds.join(', '))})</span>` : ''}</li>`).join('')}</ul>`);
       }
       if (d.rankRule && d.rankRule.annotation) out.push(UI.fold('점수를 매기는 법', `<p class="prose">${e(W().text(d.rankRule.annotation))}</p>${(d.rankRule.sources || []).length ? `<p class="muted">출처 ${d.rankRule.sources.map(x => e(x)).join(', ')}</p>` : ''}`, { cls: 'small' }));
     }
@@ -410,7 +411,7 @@
     };
     const rows = opts.map(o => {
       const tag = o.id === rec.id ? UI.chipText(UI.evaluationInfo(o,d).state==='analysis' ? '모의 1순위' : '추천', 'success') : !o.feasible ? UI.chipText('제외', 'danger') : UI.chipText('미채택', 'neutral');
-      return `<li class="cr-alt ${o.id === rec.id ? 'win' : !o.feasible ? 'out' : ''}"><div class="cr-alt-head">${tag}<b>${e(W().text(o.name))}</b>${W().id(o.id)}<span class="num muted">${W().purchaseEconomics(o) ? e(W().purchaseCostLabel(o)) : Number.isFinite(+o.score) && o.score !== null ? e(W().num(+o.score)) + '점' : ''}</span>${o.approver && o.approver.name ? `<span class="muted">승인 ${e(o.approver.name)}</span>` : ''}</div>
+      return `<li class="cr-alt ${o.id === rec.id ? 'win' : !o.feasible ? 'out' : ''}"><div class="cr-alt-head">${tag}<b>${e(W().text(o.name))}</b>${W().id(o.id)}<span class="num muted">${W().purchaseEconomics(o) ? e(W().purchaseCostLabel(o)) : Number.isFinite(+o.score) && o.score !== null ? e(W().num(+o.score)) + '점' : ''}</span>${o.approver && o.approver.name ? `<span class="muted">승인 역할: ${e(o.approver.name)}</span>` : ''}</div>
         ${UI.evaluationHtml(o,d)}${W().purchaseContextHtml(o,d)}${W().maintenanceHtml(o)}${fc(o) ? `<p class="muted">예측 ${e(fc(o))}</p>` : ''}${own(o) ? `<p class="muted">이 안의 값 ${e(own(o))}</p>` : ''}<p>${o.id === rec.id ? why(o) : e(why(o))}</p>${o.id !== rec.id && said(o) ? `<p class="cr-said">AI 에이전트: “${e(said(o))}”</p>` : ''}</li>`;
     }).join('');
     return `<ol class="cr-alts">${rows}</ol>${d.explanation ? UI.fold('판단 엔진 설명 전문 (규칙 문장)', `<p class="prose">${e(W().text(d.explanation))}</p>`, { cls: 'small' }) : ''}`;
@@ -424,8 +425,8 @@
       const data = rejected?.data || {}, reason = data.reason || w.output?.approval_reason || '';
       const person = W().who(data.by || w.user_id);
       return Object.assign(b, { type: 'approve', lane: 'person', icon: 'human', title: '승인 요청 반려', actor: person,
-        sentence: `${person}${W().josa(person, '이/가')} 요청을 거절했습니다. 승인 뒤 조치는 실행하지 않았습니다.`,
-        chips: [chip('반려', 'danger')], sections: [sec('거절 사유', `<p>${e(reason)}</p>`, { open: true })] });
+        sentence: `${person}${W().josa(person, '이/가')} 요청을 반려했습니다. 승인 뒤 조치는 실행하지 않았습니다.`,
+        chips: [chip('반려', 'danger')], sections: [sec('반려 사유', `<p>${e(reason)}</p>`, { open: true })] });
     }
     const appr = (view.approvals || []).find(a => a.todo_id === w.id) || null;
     const accepted = [...(ctx.byTodo.get(w.id) || [])].reverse().find(x => x.job_id === 'APPROVAL_ACCEPTED');
@@ -447,7 +448,7 @@
         sections: [sec('입력한 값', rawBlock(out), { raw: true })] });
     }
     const byId = (hist && hist.by) || (appr && appr.payload && appr.payload.by) || v.approved_by || '';
-    const by = byId ? W().who(byId) : '';        // 승인 화면에서 고른 "나"는 user:… id 로 남는다 → 사람 이름
+    const by = byId ? W().who(byId) : '';        // 승인한 담당자는 user:… id 로 남는다 → 사람 이름
     const role = (hist && hist.role) || (appr && appr.payload && appr.payload.role) || v.approved_role || '';
     const when = (hist && hist.t) || (appr && appr.created_at) || w.end_date;
     const optId = (hist && hist.option) || v.chosen_skill || (appr && appr.payload && appr.payload.option);
@@ -465,7 +466,7 @@
     if (acts.length) sections.push(sec('승인으로 시스템에 넘긴 일', `<ul class="cr-list">${acts.map(a => `<li>${e(W().action({ code: a.code, value: a.value }))} <span class="muted">→ ${e(W().system(a.system || a.target))}</span>${W().id(a.code)}</li>`).join('')}</ul>`, { open: true }));
     const cc = appr && appr.payload && appr.payload.current_check;
     if (cc) sections.push(sec('승인 순간 다시 확인한 값', `<p>${cc.allowed ? UI.chipText('그대로 실행해도 됨', 'success') : UI.chipText('실행 불가', 'danger')} ${(cc.reasons || []).map(r => e(W().text(r.annotation || r.rule || r))).join(' · ')}${cc.checked_at ? ` <span class="muted">${e(hhmmss(cc.checked_at))}</span>` : ''}</p>
-      ${kvTable(Object.entries(cc.facts || {}).filter(([k, x]) => W().known(k) && x != null && typeof x !== 'object').map(([k, x]) => [W().fieldName(k,cc.facts), W().value(k, x), k]))}${(cc.unknown || []).length ? `<p class="cr-gapline">모르는 값: ${e(cc.unknown.join(', '))}</p>` : ''}`));
+      ${kvTable(Object.entries(cc.facts || {}).filter(([k, x]) => W().known(k) && x != null && typeof x !== 'object').map(([k, x]) => [W().fieldName(k,cc.facts), W().value(k, x), k]))}${(cc.unknown || []).length ? `<p class="cr-gapline">그 순간 읽지 못한 값: ${e(cc.unknown.map(k => W().fieldName(k, cc.facts)).join(', '))}</p>` : ''}`));
     if (appr) sections.push(sec('승인 전달 기록', `<ul class="cr-list">${(appr.history || []).map(h => `<li>${e(hhmmss(h.t))} ${e(UI.deliveryStates[h.status] || UI.status(h.status))}${h.by ? ` · ${e(W().who(h.by))}` : ''}</li>`).join('')}</ul><p class="muted">전달 시도 ${e(appr.attempts)}회 · 지금 ${e(UI.deliveryStates[appr.status] || UI.status(appr.status))}</p>`));
     sections.push(sec('승인 원문', rawBlock(appr ? appr.payload : w.output), { raw: true }));
     const chips = [chip(`${by || '–'}${role ? ' · ' + W().who(role) : ''}`, 'accent'), chip(W().text(opt.name || nm(optId) || '–'), changed ? 'warning' : d ? 'success' : 'neutral')];
@@ -476,7 +477,7 @@
     const sentence = w.status === 'DONE' ? `${subject}${role && by ? `(${W().who(role)})` : ''}${W().josa(subject, '이/가')} ${when ? hhmmss(when) + '에 ' : ''}‘${optName}’${W().josa(optName, '을/를')} ${how}승인했습니다.`
       : b.live ? `${W().who(w.user_id)}의 승인을 기다리는 중입니다.` : UI.logText(w.log);
     return Object.assign(b, { type: 'approve', lane: 'person', icon: 'human', title: b.name, actor: by ? `${by}${role ? ' · ' + W().who(role) : ''}` : W().who(w.user_id), sentence, chips, sections,
-      now: b.live ? '담당자가 승인 카드를 보고 있습니다' : '', ids: [w.activity_id, role] });
+      now: b.live ? '승인을 기다리는 중입니다 — 내 작업함에서 처리하세요' : '', ids: [w.activity_id, role] });
   }
 
   /* ---------------------------------------------------------------- 시스템 처리 */
@@ -504,7 +505,7 @@
       const wo = out.work_order || (w.status === 'CANCELLED' ? {} : v.work_order) || {};
       const win = (wo.after && wo.after.window) || '';
       const scoped=W().maintenanceReceiptHtml(wo);
-      sentence = scoped ? W().maintenanceReceiptSummary(wo) : /WO_RESCHEDULE/.test(tool) || wo.skill==='skill:reschedule-maintenance' ? (wo.ref ? `${target}의 기존 정비 오더 ${wo.ref} 일정 변경 영수증이 기록되었습니다. 정비 완료와 별도로 확인합니다.` : '기존 정비 오더 일정 변경 결과 기록을 확인할 수 없습니다.') : wo.ref ? `${target}에 정비 오더 ${wo.ref}${W().josa(wo.ref, '을/를')} 등록했습니다${win ? ` — ${UI.words(win)}` : ''}.` : b.live ? `${target}에 정비 오더를 등록하는 중입니다.` : `${target}의 정비 요청 등록 결과가 없습니다.${w.status === 'CANCELLED' ? ' 이 단계는 취소되었습니다.' : ''}`;
+      sentence = scoped ? W().maintenanceReceiptSummary(wo) : /WO_RESCHEDULE/.test(tool) || wo.skill==='skill:reschedule-maintenance' ? (wo.ref ? `${target}의 기존 정비 오더 ${wo.ref} 일정 변경 영수증이 기록됐습니다. 정비를 마쳤는지는 정비 수행 단계에서 확인합니다.` : '기존 정비 오더 일정 변경 결과 기록을 확인할 수 없습니다.') : wo.ref ? `${target}에 정비 오더 ${wo.ref}${W().josa(wo.ref, '을/를')} 등록했습니다${win ? ` — ${UI.words(win)}` : ''}.` : b.live ? `${target}에 정비 오더를 등록하는 중입니다.` : `${target}의 정비 요청 등록 결과가 없습니다.${w.status === 'CANCELLED' ? ' 이 단계는 취소되었습니다.' : ''}`;
       if (wo.ref) chips.push(chip(wo.ref, 'accent'));
       if (win) chips.push(chip(UI.words(win)));
       if(scoped) sections.push(sec('설비별 정비 범위 · 오더 영수증',scoped,{open:true}));
@@ -544,7 +545,7 @@
     if (b.rows.length) sections.push(sec(`시스템 기록 ${b.rows.length}줄`, sysRowsHtml(b), { open: b.live }));
     if (w.log) sections.push(sec('처리 메모', `<p class="muted">${e(UI.logText(w.log))}</p>`));
     sections.push(sec('결과 값 원문', rawBlock(out), { raw: true }));
-    if (w.status === 'PENDING') sentence = `멈춤 — ${UI.logText(w.log) || '조건이 맞지 않아 보류'}`;
+    if (w.status === 'PENDING') sentence = `조건 대기 — ${UI.logText(w.log) || '조건이 맞을 때까지 기다립니다'}`;
     return Object.assign(b, { type: 'system', lane: 'system', icon, title: b.name, actor: target || '시스템', sentence, chips, sections,
       now: b.live ? (b.rows.length ? b.rows[b.rows.length - 1].text || '' : '시스템이 처리하는 중') : '', ids: [w.tool] });
   }
@@ -707,7 +708,7 @@
     const end = inst.end_label || '';   // 끝난 곳의 이름은 서버가 정한다(engine.end_label — P1-08)
     const label = rep ? (rep.label || (rep.verdict === 'ok' ? '정상' : rep.verdict === 'fail' ? '미달' : '확인 결과')) : UI.status(inst.status);
     return { key: 'end', type: 'end', lane: 'system', icon: 'flag', title: '처리 완료', actor: W().system('sys:process'), t0: inst.end_date, t1: inst.end_date,
-      sentence: `${rep && rep.title ? rep.title + ': ' : ''}${label}${rep && rep.summary ? ' — ' + W().text(rep.summary) : ''}${end ? ` (끝: ${end})` : ''}.`,
+      sentence: `${rep && rep.title ? rep.title + ': ' : ''}${label}${rep && rep.summary ? ' — ' + W().text(rep.summary) : ''}${end ? ` (끝난 곳: ${end})` : ''}.`,
       chips: [chip(label, rep && rep.verdict === 'ok' ? 'success' : rep && rep.verdict === 'fail' ? 'danger' : 'neutral')], sections: [], state: rep && rep.verdict === 'fail' ? 'bad' : 'ok' };
   }
 
@@ -716,7 +717,7 @@
     const G = ctx.gaps;
     const tools = steps.flatMap(s => (s.rows || []).filter(r => r.kind === 'tool'));
     const cut = tools.filter(r => r.status === 'warn' && !(r.full && r.full.stored)), blocked = tools.filter(r => r.status === 'blocked');
-    if (cut.length) G.push({ key: 'cut', strong: true, text: `도구 결과 ${cut.length}건이 너무 커서 잘렸습니다 (${[...new Set(cut.map(r => W().toolName(r.tool)))].join(', ')}). AI 에이전트은 그 결과를 다 보지 못했고, 잘린 뒤의 원래 결과는 처리 건에 남지 않습니다. 그 뒤 판단은 판단 엔진이 저장한 값(아래 대안 · 데이터)으로 확인할 수 있습니다.` });
+    if (cut.length) G.push({ key: 'cut', strong: true, text: `도구 결과 ${cut.length}건이 너무 커서 잘렸습니다 (${[...new Set(cut.map(r => W().toolName(r.tool)))].join(', ')}). AI 에이전트는 그 결과를 다 보지 못했고, 잘린 뒤의 원래 결과는 처리 건에 남지 않습니다. 그 뒤 판단은 판단 엔진이 저장한 값(아래 대안 · 데이터)으로 확인할 수 있습니다.` });
     if (blocked.length) G.push({ key: 'blocked', text: `안전 장치가 막은 명령 ${blocked.length}건 — 실행되지 않았고, 막힌 명령의 결과는 없습니다.` });
     const skillsRecorded = steps.filter(s => s.type === 'agent').every(s => {
       const evs = ctx.byTodo.get(s.key) || [], starts = evs.filter(x=>x.event_type === 'task_started');
@@ -726,14 +727,14 @@
     if (steps.some(s => s.type === 'agent')) {
       if (ctx.read.agents.state === 'error') G.push({ key: 'agents', strong: true, text: `AI 에이전트 설정(목표 · 스킬 · 쓸 수 있는 도구)을 읽지 못했습니다 — ${ctx.read.agents.error}. 다시 읽는 중입니다.` });
       if (!skillsRecorded) G.push({ key: 'skill', strong: true, text: '일부 실행의 스킬 전달 상태가 기록되지 않았습니다. 현재 AI 에이전트 설정으로 누락된 실행의 전달 여부를 확인할 수 없습니다.' });
-      G.push({ key: 'think', text: 'AI 모델 안쪽의 생각은 기록되지 않습니다. 남는 것은 AI 에이전트이 쓴 말 · 부른 도구 · 받은 결과 · 낸 결과 값입니다. (모델 사용량 줄은 일부러 숨김)' });
+      G.push({ key: 'think', text: 'AI 모델 안쪽의 생각은 기록되지 않습니다. 남는 것은 AI 에이전트가 쓴 말과 부른 도구, 받은 결과, 낸 결과 값입니다.' });
       steps.filter(s => s.type === 'agent' && !(s.rows || []).length && !s.live).forEach(s => G.push({ key: 'noev:' + s.key, strong: true, text: `‘${s.title}’ 단계는 도구 호출 기록이 없습니다 (결과 값만 남음).` }));
     }
     const start = steps[0];
     if (start && start.pressed && !(start.rows || []).some(r => r.kind === 'sys')) G.push({ key: 'button', strong: true, text: '수업 버튼 기록(누른 사람 · 시각)이 처리 건 기록에 없습니다 — 시작 경보의 근거 값에만 남았습니다.' });
     if (start && (start.rows || []).some(r => r.kind === 'error')) G.push({ key: 'link', strong: true, text: '수업 버튼 누름을 이 처리 건에 붙이지 못했습니다(시작 단계의 오류 줄). 누가 · 언제 눌렀는지는 감사 기록에만 있습니다.' });
     if (ctx.read.people.state === 'error' && steps.some(s => s.lane === 'person' && s.type !== 'start')) G.push({ key: 'people', strong: true, text: `사람 이름 목록을 읽지 못해 승인 · 입력한 사람이 원래 이름(id)으로 보일 수 있습니다 — ${ctx.read.people.error}` });
-    if (steps.some(s => s.type === 'approve' && s.w && s.w.status === 'DONE')) G.push({ key: 'who', text: '승인한 사람은 포털에서 고른 「나」입니다. 로그인으로 본인 확인을 하지 않습니다.' });
+    if (steps.some(s => s.type === 'approve' && s.w && s.w.status === 'DONE')) G.push({ key: 'who', text: '승인은 이 PC의 담당자 이름으로 기록됩니다. 로그인으로 본인 확인을 하지는 않습니다.' });
     const pg = ctx.view.events_page;
     if (pg && pg.has_more && !ctx.olderDone) G.push({ key: 'cap', strong: true, text: '이 처리 건은 기록이 많아 가장 최근 줄부터 받았습니다. 맨 위 "이전 기록 더 보기"로 앞쪽 기록을 더 받을 수 있습니다.' });
     if (ctx.read.decision.state === 'error') G.push({ key: 'dec', strong: true, text: `판단 기록을 읽지 못해 대안 · 가져온 데이터 · 지식 경로를 보이지 못했습니다 — ${ctx.read.decision.error}` });
@@ -777,10 +778,10 @@
       const mark = r.status === 'running' ? (live && TR() ? TR().spinner('sm') : icon('event')) : icon(r.status === 'ok' ? 'check' : r.status === 'fail' ? 'x' : 'warn');
       const dur = r.t0 && r.t1 ? `<span class="cr-dur">${e(fmtMs(ts(r.t1) - ts(r.t0)))}</span>` : '';
       const full = (r.fullInput && r.inputEvent ? UI.fullToolIOHtml(r.inputEvent,'input') : '') + (fo && r.ioEvent ? UI.fullToolIOHtml(r.ioEvent) : '');
-      const io = `<div class="cr-io"><span>도구 식별자</span><code>${e(r.tool)}</code></div>` + full + `${r.input != null ? `<div class="cr-io"><span>물은 원문</span><pre class="cr-pre">${e(pretty(r.input))}</pre></div>` : ''}${r.output != null ? `<div class="cr-io"><span>${fo ? '화면 이벤트 미리보기' : '받은 원문'}</span><pre class="cr-pre">${e(pretty(r.output))}</pre></div>` : ''}`;
+      const io = `<div class="cr-io"><span>도구 식별자</span><code>${e(r.tool)}</code></div>` + full + `${r.input != null ? `<div class="cr-io"><span>요청 원문</span><pre class="cr-pre">${e(pretty(r.input))}</pre></div>` : ''}${r.output != null ? `<div class="cr-io"><span>${fo ? '결과 미리보기' : '결과 원문'}</span><pre class="cr-pre">${e(pretty(r.output))}</pre></div>` : ''}`;
       return `<li class="cr-r tool ${e(r.status)}${r.minor ? ' minor' : ''}">${time}<span class="cr-rm ${e(r.status)}">${mark}</span><div>
         <details class="cr-call" data-k="${e(stepKey + ':' + r.key)}"><summary><b>${e(W().toolName(r.tool))}</b>${sys ? `<span class="cr-sys">${e(sys)}</span>` : ''}${r.badge ? UI.chipText(r.badge, r.status === 'fail' ? 'danger' : 'warning') : ''}${dur}${W().id(r.tool)}
-        <div class="cr-qa">${ask ? `<span class="cr-q">물음</span> ${e(ask)}` : ''}${fo && fo.stored ? ` ${UI.chipText('원문 보관', 'success')}` : ''}${got || r.status !== 'running' ? `<br><span class="cr-a">받음</span> ${e(got || '결과 받음 (펼쳐서 보기)')}` : ''}</div></summary>${io}</details>${UI.toolIdentityFold(r.tool)}</div></li>`;
+        <div class="cr-qa">${ask ? `<span class="cr-q">요청</span> ${e(ask)}` : ''}${fo && fo.stored ? ` ${UI.chipText('원문 보관', 'success')}` : ''}${got || r.status !== 'running' ? `<br><span class="cr-a">결과</span> ${e(got || '결과를 받았습니다(펼쳐서 보기)')}` : ''}</div></summary>${io}</details>${UI.toolIdentityFold(r.tool)}</div></li>`;
     }).join('');
     return `${minor ? `<label class="cr-minor-toggle"><input type="checkbox" data-cr-minor> 보조 작업 ${minor}건도 보기 <span class="muted">(쓸 도구 불러오기 · 파일 쓰기 · 명령 실행)</span></label>` : ''}<ol class="cr-rows">${items}</ol>`;
   }
@@ -798,7 +799,7 @@
     return '';
   }
 
-  const STATE_MARK = { ok: ['check', 'ok', '끝남'], bad: ['warn', 'bad', '기준 밖'], fail: ['x', 'fail', '실패'], stop: ['x', 'stop', '멈춤'], wait: ['pause', 'wait', '기다림'], idle: ['event', 'idle', '아직'] };
+  const STATE_MARK = { ok: ['check', 'ok', '완료'], bad: ['warn', 'bad', '기준 밖'], fail: ['x', 'fail', '실패'], stop: ['x', 'stop', '멈춤'], wait: ['pause', 'wait', '대기 중'], idle: ['event', 'idle', '시작 전'] };
   function stateHtml(s) {
     if (s.state === 'run') return `<span class="cr-state run">${TR() ? TR().spinner('sm') : ''}<span>진행 중</span></span>`;
     const [k, cls, label] = STATE_MARK[s.state] || STATE_MARK.idle;
@@ -837,6 +838,7 @@
         <span>단계 <b>${m.steps.length}</b></span><span>AI 도구 호출 <b>${m.tools}</b></span></div>
       <div class="cr-legend"><span class="lane-person">사람 ${people}</span><span class="lane-agent">AI 에이전트 ${ai}</span><span class="lane-system">시스템 ${sys}</span>
         <span class="cr-tools-bar"><button type="button" class="btn small ghost" data-cr-all>${'모두 펼치기'}</button><label class="cr-ids"><input type="checkbox" data-cr-ids ${W().showIds ? 'checked' : ''}> 원래 이름(id) 보기</label></span></div>
+      ${m.namesUnread ? '<p class="cr-gapline" role="status">이름 목록을 읽지 못해 일부 사람 · AI 에이전트의 이름이 보이지 않습니다. 다시 읽는 중입니다.</p>' : ''}
       <nav class="cr-strip" aria-label="처리 순서">${strip}</nav>
     </div>`;
   }

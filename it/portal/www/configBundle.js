@@ -6,8 +6,9 @@
 (function () {
   const H = esc;                                        // 포털 공용 이스케이프(ui.js)
   const IMPORT = 'config.import';                        // 수업 경계 행동 키 — 수업 단계에서는 서버가 막고 까닭을 준다(courseAccess.js)
-  const COUNT_WORDS = { mcp_servers: 'MCP 서버', skills: '스킬', agents: '에이전트', role_members: '업무분장', flows: '흐름',
-    flow_versions: '흐름 판본', assignments: '단계 배정', deployments: '배포', secrets_needed: '입력할 비밀값' };
+  // [이름, 세는 말] — 도구 서버는 도구 연결 화면(mcp.js)과 같은 이름
+  const COUNT_WORDS = { mcp_servers: ['도구 서버', '개'], skills: ['스킬', '개'], agents: ['AI 에이전트', '개'], role_members: ['업무분장', '건'], flows: ['흐름', '개'],
+    flow_versions: ['흐름 판본', '개'], assignments: ['단계 배정', '건'], deployments: ['배포', '건'], secrets_needed: ['입력할 비밀값', '개'] };
 
   // 공용 요청 함수 하나(requestJ) — 불러오기는 MCP 연결 검사를 하므로 3분, 내보내기는 파일 이름 머리글이 필요하다. 서버 사유 칸(detail)은 그대로 쓴다
   async function call(path, body) {
@@ -18,7 +19,7 @@
   }
 
   const list = items => items && items.length ? `<ul>${items.map(x => `<li>${H(x)}</li>`).join('')}</ul>` : '';
-  const counts = s => Object.entries(COUNT_WORDS).filter(([k]) => s && s[k]).map(([k, w]) => `${w} ${s[k]}`).join(' · ') || '내가 만든 것 없음(기준 그대로)';
+  const counts = s => Object.entries(COUNT_WORDS).filter(([k]) => s && s[k]).map(([k, [w, unit]]) => `${w} ${s[k]}${unit}`).join(' · ') || '내가 만든 것 없음(기준 그대로)';
 
   function render(el) {
     el.innerHTML = '<div id="studentCasesView"></div>' +
@@ -30,7 +31,7 @@
           <p class="field-hint" id="cfgImportWhy"></p>
           <div class="form-actions"><span class="form-msg" id="cfgImportMsg" role="status"></span><button type="button" class="btn primary" id="cfgImport"${hydCourseAccess.attrs(IMPORT)}>불러오기</button></div>
           <div id="cfgImportResult"></div>` }) +
-      UI.card({ title: '기준으로 되돌리기', sub: '내가 만든 에이전트 · 스킬 · 역할 · 배정 · 업무분장 · MCP 서버 · 비밀 값 · 흐름 · 배포와 끝난 질문 · 판단 채점 · 시험 비교 기록을 지웁니다. 기준은 그대로입니다.',
+      UI.card({ title: '기준으로 되돌리기', sub: '내가 만든 AI 에이전트 · 스킬 · 역할 · 배정 · 업무분장 · 도구 서버 · 비밀 값 · 흐름 · 배포와 끝난 질문 · 판단 채점 · 시험 비교 기록을 지웁니다. 기준은 그대로입니다.',
         body: `<div class="form-actions"><span class="form-msg" id="cfgResetMsg" role="status"></span><button type="button" class="btn danger" id="cfgReset">기준으로 되돌리기</button></div>
           <div id="cfgResetResult"></div>` });
     const $ = id => el.querySelector('#' + id);
@@ -55,7 +56,7 @@
 
     function secretForm(needs) {
       $('cfgSecrets').innerHTML = UI.section('비밀값 입력', needs.map(n => n.slots.map(s =>
-        UI.field({ label: `${n.server} · ${s.label}`, input: `<input type="password" autocomplete="off" data-server="${H(n.server)}" data-slot="${H(s.slot)}">`,
+        UI.field({ label: `${hydWords.serverName(n.server)} — ${s.label}`, input: `<input type="password" autocomplete="off" data-server="${H(n.server)}" data-slot="${H(s.slot)}">`,
           hint: '파일에는 담지 않은 값입니다' })).join('')).join('')) +
         `<div class="form-actions"><button type="button" class="btn" id="cfgSkip"${hydCourseAccess.attrs(IMPORT)}>비밀값이 없는 서버만 건너뛰고 불러오기</button></div>`;
       $('cfgSkip').addEventListener('click', () => run(true));
@@ -90,7 +91,7 @@
       if (importing) return;
       importing = true;
       $('cfgImport').disabled = true; if ($('cfgSkip')) $('cfgSkip').disabled = true;
-      msg('cfgImportMsg', '불러오는 중 — MCP 서버 연결 검사를 하므로 조금 걸립니다');
+      msg('cfgImportMsg', '불러오는 중입니다. 도구 서버 연결을 검사하므로 조금 걸립니다.');
       try {
         const { body } = await call('/api/config/import', { bundle: pending, secrets: secretsFromForm(), skip_missing_secrets: !!skip });
         msg('cfgImportMsg', body.message); $('cfgSecrets').innerHTML = ''; showResult(body);
@@ -104,9 +105,9 @@
       pending = null; $('cfgSecrets').innerHTML = ''; $('cfgImportResult').innerHTML = '';
       const f = $('cfgFile').files[0]; if (!f) return;
       try {
-        pending = JSON.parse(await f.text());
+        pending = hydDefinitions.readObject(await f.text(), '출발본 파일');   // 틀린 자리를 한국어로(줄 · 글자) — 브라우저의 영문 오류 문장을 붙이지 않는다
         msg('cfgImportMsg', `${f.name} — ${counts(pending.summary)}`);
-      } catch (e) { msg('cfgImportMsg', `JSON 파일이 아닙니다: ${e.message}`, true); }
+      } catch (e) { msg('cfgImportMsg', `${e.message} — [파일 받기]로 받은 출발본 파일 그대로인지 확인하세요.`, true); }
     });
     $('cfgImport').addEventListener('click', async () => {
       if (!pending) { msg('cfgImportMsg', '출발본 파일을 고르세요', true); return; }

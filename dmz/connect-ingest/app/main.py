@@ -18,7 +18,7 @@ from hydcommon import schemas, topics
 from hydcommon.kafka import Delivery, producer as make_producer
 from hydcommon.metrics import Registry
 from hydcommon.mqtt import Link
-from hydcommon.service import make_app
+from hydcommon.service import _stop_process, make_app
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 log = logging.getLogger("connect-ingest")
@@ -123,10 +123,13 @@ app = make_app("connect-ingest (L3 DMZ: OT MQTT -> Kafka)", reg, health)
 
 def _watch(task):
     """If the Kafka pump ever exits, /healthz reports it (503) instead of looking healthy while replicating nothing."""
+    if task.cancelled():          # 서비스 끄기
+        return
     state["pump_dead"] = True
     state["kafka"] = False
-    state["pump_error"] = repr(task.exception()) if not task.cancelled() and task.exception() else "exited"
-    log.error("kafka pump task ended: %s", state["pump_error"])
+    state["pump_error"] = repr(task.exception()) if task.exception() else "exited"
+    log.error("kafka pump task ended: %s — stopping the process so it is restarted", state["pump_error"])
+    _stop_process()      # compose 가 다시 켠다(hydcommon.service.stop_after_loop_end 와 같은 까닭)
 
 
 @app.on_event("startup")

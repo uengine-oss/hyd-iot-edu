@@ -78,14 +78,14 @@ const UI = {
     'btn.retry': '같은 내용 다시 전달', 'btn.closeTask': '단계 닫기', 'btn.cancelTask': '실행 취소', 'btn.goInstance': '승인 화면으로 이동 →',
     // 폼 라벨
     'form.by': '담당자', 'form.role': '역할', 'form.reason': '사유', 'form.note': '메모', 'form.answer': '답변', 'form.fan': '팬 속도', 'form.load': '펌프 부하', 'form.pump': '운전 펌프',
-    'form.section.who': '사유 · 담당', 
+    'form.section.who': '사유', 
     'form.hint.reason': '왜 이 조치를 고르는지 한 줄로 적습니다', 'form.hint.preview': '조치값을 바꿨으면 예측을 다시 본 뒤 결정합니다',
     'form.hint.answer': '답변은 같은 단계에서 이어서 반영됩니다', 'form.pickRole': '역할 선택',
     'form.deadline': '기한',
-    'form.err.required': '필수 항목을 입력하세요', 'form.err.reason': '사유를 입력하세요', 'form.err.byRole': '담당자와 역할을 입력하세요', 'form.err.byRoleReason': '담당자 · 역할 · 사유를 입력하세요',
+    'form.err.required': '필수 항목을 입력하세요', 'form.err.reason': '사유를 입력하세요', 'form.err.byRole': '담당자 정보나 승인 기록의 역할을 읽지 못해 보낼 수 없습니다. 화면을 새로 고친 뒤 다시 해 주세요.', 'form.err.byRoleReason': '사유를 입력하세요. 사유를 적었는데도 이 안내가 보이면 화면을 새로 고친 뒤 다시 해 주세요.',
     // 카드 칩
     'chip.recommended': '추천', 'chip.chosen': '결정', 'chip.excluded': '제외', 'chip.control': '설비 제어', 'chip.workOrder': '정비 요청',
-    'card.score': '점수', 'card.approver': '승인', 'card.precedent': '과거 같은 선택', 'card.precedentFixed': '미리 넣은 사례 기준', 'card.forecastTs1': '예상 유온', 'card.evidence': '근거 보기', 'card.expected': '예상 영향',
+    'card.score': '점수', 'card.approver': '승인 역할', 'card.precedent': '과거 같은 선택', 'card.precedentFixed': '미리 넣은 사례 기준', 'card.forecastTs1': '예상 유온', 'card.evidence': '근거 보기', 'card.expected': '예상 영향',
     'card.scoreHow': '점수 계산 방법', 'card.reviewed': '검토한 조치값', 'card.baseSop': '기준 절차', 'card.forecastLimits': '예측 조건과 한계', 'card.steps': '절차',
     'card.penalty': '감점', 'card.warn': '경고', 'card.noAction': '세부 동작 없음',
     'score.bsc': '성과 지표', 'score.forecast': '예측', 'score.warn': '경고', 'score.penalty': '감점', 'score.precedent': '과거 선택', 'score.delivery': '납기', 'score.quality': '품질',
@@ -99,7 +99,7 @@ const UI = {
     // 이상 확인 · 조치
     'inc.select': '설비를 선택하세요', 'inc.selectSub': '위 설비 카드를 누르면 사건과 조치 과정이 보입니다', 'inc.noAlert': '경보 없음', 'inc.noAlertSub': '결함 시뮬레이션에서 결함을 주입하면 경보가 나고 여기에 표시됩니다',
     'inc.noCase': '사건 없음', 'inc.list': '사건', 'inc.listAll': '전체 사건', 'inc.progress': '조치 과정', 'inc.evidence': '분석 근거', 'inc.agentTrace': '에이전트 처리 과정', 'inc.log': '기록',
-    'inc.waiting': '조치 후보를 만드는 중…', 'inc.noCandidates': '고를 조치 후보가 없습니다', 'inc.alertAt': '경보', 'inc.approvedBy': '승인',
+    'inc.waiting': '조치 후보를 만드는 중…', 'inc.noCandidates': '고를 조치 후보가 없습니다', 'inc.alertAt': '경보 시각', 'inc.approvedBy': '승인자',
     'inc.noGuide': '아직 분석 결과가 없습니다', 'inc.freshness': '데이터 상태', 'inc.fresh': '정상', 'inc.stale': '신뢰 불가',
     'inc.causes': '가능한 원인', 'inc.recommended': '권장 조치', 'inc.noEvidence': '증거 규칙 없음', 'inc.unknown': '판정 미확인', 'inc.pass': '조건 충족', 'inc.fail': '조건 미충족',
     'inc.observed': '관측', 'inc.woPending': '정비 요청 발행 대기', 'inc.reasonLabel': '사유',
@@ -142,8 +142,8 @@ const UI = {
     'main.liveTs1': '실시간 유온', 'main.zoom': '도식 확대', 'main.unzoom': '화면에 맞추기', 
     // 지식 지도 · 지식 관리 · 조치 방법
     'onto.stats': '항목 {n} · 연결 {e} · 조치 방법 {s} · 규칙 {r} · 성과 지표 {k}', 'onto.path': '강조 경로 {n}개', 'onto.found': '검색 결과 {n}개', 'onto.scroll': '지도 안에서 좌우로 이동',
-    'onto.hint': '항목을 누르면 연결된 관계가 강조됩니다', 'onto.out': '나가는 관계', 'onto.in': '들어오는 관계', 'onto.loadFail': '지식을 불러올 수 없습니다', 'onto.loadFailSub': '연결을 확인하고 다시 읽기를 누르세요',
-    'kn.noFile': '선택한 파일 없음', 'kn.preview': '문서 등록', 
+    'onto.hint': '항목을 누르면 연결된 관계가 강조됩니다', 'onto.loadFail': '지식을 불러올 수 없습니다',
+    'kn.noFile': '선택한 파일 없음', 'kn.preview': '문서 등록', 'kn.ddlPreview': '미리보기', 
     'kn.docs': '등록된 매뉴얼', 'kn.docsEmpty': '등록된 매뉴얼이 없습니다', 'kn.docsEmptySub': '위에서 매뉴얼 파일을 등록하고 AI 추출 결과를 검토해 적재하면 여기에 표시됩니다', 'kn.history': '매뉴얼 등록 이력',
     'kn.current': '현재 판본', 'kn.previous': '이전 판본', 'kn.rolledBack': '되돌림', 'kn.revise': '이 문서 개정', 'kn.undo': '이 판본 되돌리기', 'kn.sections': '절', 'kn.procedures': '조치 방법', 'kn.steps': '단계',
     // 이 문서로 답할 수 있는 질문 (A118 골든 퀘스천 — 화면 문구만)
@@ -385,11 +385,11 @@ const UI = {
     return /^user:/.test(id) ? '담당자 (이름 확인 안 됨)' : /^agent:/.test(id) ? 'AI 에이전트' : id;
   },
   roleName(id, definition) { return (definition?.roles || []).find(r => r.endpoint === id)?.name || this.who(id); },
-  // 담당자 칸: 쓰는 사람은 늘 담당자 한 명이다(inbox.js 머리말). 담당자 id 는 숨은 칸에 실어 보내고, 화면에는 「이 PC의 담당자」로만 보인다.
+  // 담당자 값: 쓰는 사람은 늘 담당자 한 명이다(inbox.js 머리말). 담당자 id 는 숨은 칸에 실어 보내고 화면에는 아무것도 그리지 않는다(못 읽었을 때만 까닭 한 줄).
   // attrs 는 입력 요소의 속성 원문(id="rwBy" · data-retry-by 등) — 읽는 코드는 그대로 .value 를 읽는다.
   actorInput(attrs, value, extra = '') {
     const m = window.hydInbox?.me?.();
-    if (m) return `<input type="hidden" ${attrs} value="${esc(m.id)}"><span class="ro-value">이 PC의 담당자</span>`;
+    if (m) return `<input type="hidden" ${attrs} value="${esc(m.id)}">`;      // 화면에 칸을 그리지 않는다 — 쓰는 사람이 한 명이라 보일 정보가 없다
     // 서버는 사람 행동을 등록된 담당자(user:…)로만 받는다 — 자유 글 칸을 두지 않는다(W1-08)
     return `<input type="hidden" ${attrs} value=""><span class="form-msg neg" data-pick-me>담당자 정보를 읽지 못했습니다. 화면을 새로 고치세요.</span>`;
   },

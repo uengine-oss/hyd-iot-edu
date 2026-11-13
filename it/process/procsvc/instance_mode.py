@@ -709,7 +709,7 @@ class ReviewReq(BaseModel):
 class HumanResponseReq(BaseModel):
     job_id: str
     answer: str
-    by: str = "담당자"
+    by: str
 
 
 class ReassessmentReq(BaseModel):

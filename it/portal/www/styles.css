@@ -30,7 +30,6 @@ a:hover {
 }
 button:disabled {
   cursor: not-allowed;
-  opacity: 0.55;
 }
 
 main:focus {
@@ -73,26 +72,11 @@ h3,
 p {
   overflow-wrap: break-word;
 }
-h1 {
-  font-size: 30px;
-  line-height: 1.3;
-  letter-spacing: -0.035em;
-  margin: var(--s2) 0 var(--s3);
-  font-weight: 700;
-}
-
 h2 small {
   font-size: 12px;
   font-weight: 500;
   color: var(--ink-3);
   margin-left: var(--s2);
-}
-
-.eyebrow {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  color: var(--accent);
 }
 
 .rail > * {
@@ -110,7 +94,7 @@ h2 small {
 }
 .foot small {
   color: var(--ink-3);
-  font-size: 11px;
+  font-size: 12px;
 }
 .env-dot {
   width: 7px;
@@ -133,7 +117,7 @@ h2 small {
 .breadcrumb > span:after {
   content: "/";
   margin-left: var(--s3);
-  color: #bac4d3;
+  color: var(--ink-4);
 }
 
 .strip-status {
@@ -143,7 +127,7 @@ h2 small {
   gap: var(--s4);
 }
 .env-badge {
-  font-size: 11px;
+  font-size: 12px;
   border: 1px solid var(--rule);
   border-radius: 5px;
   padding: 2px 7px;
@@ -152,7 +136,7 @@ h2 small {
 }
 .dots {
   white-space: nowrap;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--ink-3);
 }
 .dot {
@@ -160,7 +144,7 @@ h2 small {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #b4bfd0;
+  background: var(--ink-4);
   margin-right: 6px;
 }
 .dot.up {
@@ -204,9 +188,6 @@ h2 small {
   display: block;
 }
 
-.btn.danger:hover {
-  background: #fbe1e6;
-}
 .btn.warn {
   background: var(--dmz-bg);
   border-color: #e8d5a7;
@@ -220,13 +201,8 @@ textarea {
   min-height: var(--control-height);
   max-width: 100%;
   min-width: 0;
-  padding: var(--s2) var(--s3);
-  border: 1px solid #cbd5e3;
-  border-radius: var(--radius-sm);
-  background: var(--panel);
-  color: var(--ink);
   line-height: 1.5;
-}
+}   /* 테두리 · 안쪽 여백 · 모서리 · 색은 theme.css 「폼」 한 곳이 정한다 */
 
 input[type="range"],
 input[type="checkbox"],
@@ -238,7 +214,7 @@ input[type="file"] {
 }
 input::placeholder,
 textarea::placeholder {
-  color: #7c899d;
+  color: var(--ink-3);
 }
 .toolbar {
   display: flex;
@@ -269,13 +245,10 @@ td {
   vertical-align: top;
 }
 th {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--ink-2);
   background: var(--surface-soft);
-}
+}   /* 표 머리 글자 크기 · 굵기 · 색은 theme.css `table th` */
 tbody tr:hover {
-  background: #fafbff;
+  background: rgba(11, 11, 11, .025);
 }
 td.num {
   text-align: right;
@@ -283,38 +256,6 @@ td.num {
 tr:last-child td {
   border-bottom: 0;
 }
-.table-scroll .opts {
-  min-width: 0;
-}
-.chip,
-.state {
-  display: inline-flex;
-  align-items: center;
-  max-width: 100%;
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1.5;
-  border-radius: 5px;
-  padding: 3px 8px;
-  background: #edf0f5;
-  color: var(--ink-2);
-  white-space: nowrap;
-}
-.state.CLEARING {
-  background: var(--dmz-bg);
-  color: var(--dmz);
-}
-.state.RUN {
-  background: var(--ok-bg);
-  color: var(--ok);
-}
-.state.TRIP,
-.state.RAISED,
-.state.CANDIDATE {
-  background: #fff0f2;
-  color: var(--alarm);
-}
-
 .pos {
   color: var(--ok);
 }
@@ -392,7 +333,7 @@ tr:last-child td {
   .comp { grid-template-columns: minmax(0, 1fr); gap: var(--s1); }
 }
 .z {
-  font-size: 10px;
+  font-size: 12px;
   font-style: normal;
   padding: 2px 5px;
   border-radius: 4px;
@@ -464,7 +405,7 @@ tr:last-child td {
 .unit .bar {
   position: relative;
   height: 6px;
-  background: #edf0f5;
+  background: var(--chip-neutral-bg);
   border-radius: 8px;
   margin: var(--s3) 0 var(--s1);
   overflow: hidden;
@@ -526,7 +467,7 @@ tr:last-child td {
   margin: var(--s4) 0 var(--s1);
 }
 .log {
-  font: 12px/1.8 var(--font);
+  font: 13px/1.7 var(--font);
   color: var(--ink-2);
   background: var(--panel);
   border: 1px solid var(--rule);
@@ -551,11 +492,11 @@ tr:last-child td {
 
 .list .item strong {
   display: block;
-  font-size: 13px;
+  font-size: 14px;
 }
 .list .item > span,
 .list .item > .muted {
-  font-size: 12px;
+  font-size: 12.5px;
   color: var(--ink-3);
 }
 
@@ -564,41 +505,6 @@ tr:last-child td {
 .audit,
 .summary {
   overflow-wrap: anywhere;
-}
-.lane {
-  display: flex;
-  gap: var(--s2);
-  overflow: auto;
-  margin: var(--s4) 0;
-}
-.lane .st {
-  padding: var(--s3);
-  min-width: 105px;
-  flex: 1;
-  border: 1px solid var(--rule);
-  border-radius: var(--radius-sm);
-  font-size: 12px;
-  text-align: center;
-  background: var(--surface-soft);
-  color: var(--ink-3);
-}
-.lane .st.done {
-  background: var(--ok-bg);
-  color: var(--ok);
-  border-color: #bbdfcd;
-}
-.lane .st.now {
-  background: var(--it-bg);
-  color: var(--accent);
-  border-color: var(--accent);
-}
-.lane .st.fail {
-  color: var(--alarm);
-  background: #fff0f2;
-}
-.lane small {
-  display: block;
-  font-size: 10px;
 }
 .trace {
   border-left: 2px solid var(--rule);
@@ -617,7 +523,7 @@ tr:last-child td {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #b6c2d4;
+  background: var(--ink-4);
 }
 .trace .step.DONE:before {
   background: var(--ok);
@@ -640,50 +546,9 @@ tr:last-child td {
   color: var(--accent);
 }
 
-.action {
-  border: 1px solid var(--rule);
-  border-radius: var(--radius-sm);
-  padding: var(--s4);
-  margin: var(--s3) 0;
-}
-.action header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--s2);
-}
-.action header strong {
-  font-size: 14px;
-}
-.action .code {
-  font-size: 11px;
-  color: var(--ink-3);
-}
-.action .param {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--s3);
-  margin: var(--s4) 0;
-  font-size: 13px;
-}
-.action input[type="range"] {
-  flex: 1;
-  min-width: 80px;
-}
-.action ol {
-  padding-left: var(--s6);
-  font-size: 13px;
-}
-.action ol li {
-  margin: var(--s2) 0;
-}
-.action ol span {
-  color: var(--ink-3);
-}
 .summary {
   background: var(--it-bg);
-  border: 1px solid #dce4ff;
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
   border-radius: var(--radius-sm);
   padding: var(--s4);
   margin: var(--s4) 0;
@@ -692,7 +557,7 @@ tr:last-child td {
 }
 
 .audit {
-  font-size: 12px;
+  font-size: 13px;
 }
 .audit > div {
   padding: var(--s3) 0;
@@ -715,19 +580,7 @@ tr:last-child td {
   margin-bottom: var(--s6);
 }
 #caption {
-  display: none;
-  position: fixed;
-  left: 236px;
-  right: 0;
-  bottom: 0;
-  padding: var(--s4) var(--page-pad);
-  background: #18243bee;
-  color: white;
-  font-size: 20px;
-  z-index: 50;
-}
-body.present #caption {
-  display: block;
+  display: none;   /* 켜는 코드가 없다. index.html 의 빈 <div id="caption"> 이 body 격자에 칸을 차지하지 않게 이 한 줄만 둔다 */
 }
 
 .page-direction {
@@ -762,7 +615,7 @@ body.present #caption {
   justify-content: flex-end;
 }
 .page-position {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--ink-3);
   font-variant-numeric: tabular-nums;
 }
@@ -791,7 +644,6 @@ body.present #caption {
     white-space: nowrap;
   }
   .stream-ticker {
-    max-width: 200px;
     min-width: 0;
     flex: 0 1 auto;
   }
@@ -832,9 +684,6 @@ body.present #caption {
   }
   .env-badge {
     display: none;
-  }
-  .dots {
-    font-size: 10px;
   }
   .split:not(.skills-split) {
     grid-template-columns: minmax(0, 1fr);
@@ -906,9 +755,6 @@ body.present #caption {
   .strip-status > .dots {
     display: none;
   }
-  .strip-status > span:not(.env-badge) {
-    font-size: 11px;
-  }
   .breadcrumb {
     font-size: 12px;
   }
@@ -926,22 +772,9 @@ body.present #caption {
   .toolbar input[type="search"] {
     width: 100%;
   }
-  h1 {
-    font-size: 26px;
-  }
-  
   .layer .name,
   .layer .comps {
     padding: var(--s4);
-  }
-  .legend {
-    font-size: 11px;
-  }
-  #caption {
-    left: 0;
-  }
-  .scada {
-    grid-template-columns: 1fr !important;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -957,15 +790,15 @@ body.present #caption {
 /* 설비 SCADA: unit schematics */
 
 .ucard:hover {
-  border-color: #b8c2cc;
+  border-color: var(--rule-strong);
 }
 .ucard:focus-visible {
-  outline: 2px solid #f5a623;
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
 .ucard.sel {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.15);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent);
 }
 .ucard.alarm {
   border-color: var(--alarm);
@@ -1003,23 +836,6 @@ body.present #caption {
   flex-wrap: wrap;
   justify-content: flex-end;
 }
-.chip {
-  font-size: 11px;
-  padding: 3px 8px;
-  border-radius: 3px;
-  background: #eef1f4;
-  color: var(--ink-2);
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.chip.trip,
-.chip.raised,
-.chip.candidate {
-  background: #fde2e5;
-  color: var(--alarm);
-}
-
 .ucard svg {
   width: 100%;
   height: auto;
@@ -1101,12 +917,6 @@ body.present #caption {
 @media (prefers-reduced-motion: reduce) {
   .ucard svg .fan {
     animation: none;
-  }
-}
-
-@media (max-width: 900px) {
-  .scada {
-    grid-template-columns: 1fr;
   }
 }
 

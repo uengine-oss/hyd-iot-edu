@@ -58,8 +58,9 @@ function Ensure-WSL {
         if ($action -eq 'keep') { Record 'WSL' '있음' "$found — 기준 $($Versions.WSL_MIN) 이상, 유지"; return }
         Say "  현재: $found / 최소 기준: $($Versions.WSL_MIN) / 작업: $action (내려받는 동안 몇 분간 화면이 조용할 수 있습니다)"
         $ErrorActionPreference = 'Continue'
-        if ($action -eq 'install') { & wsl.exe --install --no-distribution }
-        else { & wsl.exe --update }
+        # --web-download: Microsoft Store 가 아니라 GitHub 에서 받는다 — 인증서를 가로채는 망(학교)에서 Store 원본이 막힌다(winget msstore 와 같은 까닭, 2026-11-13)
+        if ($action -eq 'install') { & wsl.exe --install --no-distribution --web-download }
+        else { & wsl.exe --update --web-download }
         $code = $LASTEXITCODE
         $ErrorActionPreference = 'Stop'
         if ($code -in @(1641, 3010)) { $script:restart = $true }

@@ -9,10 +9,11 @@ back while the Incident stays reopened. The portal then re-sends the same reques
 """
 from copy import deepcopy
 
-from . import engine, rework
+from . import effect_parts, engine, rework
 from . import effect_compensation as effects_mod
 
-RUNTIME_CONSENT = {'commands', 'chosen_option', 'approved_by', 'approved_by_name', 'approved_role'}
+#: 승인 경로(instances._commit_select)가 처리 건에 넣는 값 — 그쪽의 approved 와 같은 목록이어야 한다
+RUNTIME_CONSENT = {'commands', 'chosen_option', 'approved_by', 'approved_by_name', 'approved_role', *effect_parts.PURCHASE_VALUES}
 
 
 def no_effects(evidence, approvals):
@@ -151,8 +152,11 @@ def admit(proposal, defn, inst, work, approvals, evidence, receipts=()):
         if approval['todo_id'] not in retire:
             continue
         p = approval['payload']; option = deepcopy(p['plan']['option'])
-        option['kind'] = 'control' if any(a.get('kind') == 'command' for a in option.get('actions', [])) else 'work_order'
+        from .instances import action_kind      # 지연 읽기 — instances 가 이 모듈을 읽는다. 조치 종류의 정본은 그 함수 하나다
+        option['kind'] = action_kind(option)
         owned.update(commands=p['commands'], chosen_option=option, approved_by=p['by'], approved_by_name=p['by_name'], approved_role=p['role'])
+        if p.get('purchase'):
+            owned.update({k: p['purchase'][k] for k in effect_parts.PURCHASE_VALUES})
     clear = {k for k in RUNTIME_CONSENT if k in owned and values.get(k) == owned[k]
              and (inst.get('variable_sources') or {}).get(k, {}).get('kind') == 'runtime'}
     # Started services whose external effect the receipts settle (command → PLC ack, work order → ledger) clear with them;

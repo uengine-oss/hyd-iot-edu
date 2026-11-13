@@ -132,9 +132,10 @@ function renderStack() {
       const key = c.health || c.url;
       const comp = el('div', 'comp');
       const optionalEntry = c.entryHealth || c.optional;
-      comp.innerHTML = `<span class="comp-name"><i class="dot ${healthState[key] || 'unknown'}" data-h="${esc(key)}"></i><i class="z ${c.zone}">${c.zone.toUpperCase()}</i>` +
+      // 상태를 재지 않는 칸(health 없음)은 회색 점을 두지 않는다 — 「꺼짐」처럼 읽힌다. 글자로 「상태 확인 대상 아님」을 붙인다
+      comp.innerHTML = `<span class="comp-name">${c.health ? `<i class="dot ${healthState[key] || 'unknown'}" data-h="${esc(key)}"></i>` : ''}<i class="z ${c.zone}">${c.zone.toUpperCase()}</i>` +
         `<a href="${c.url}" data-entry="${esc(c.url)}" target="_blank" rel="noopener"${optionalEntry ? ' title="선택 도구 — 누르면 켜져 있는지 확인하고 엽니다."' : ''}>${esc(c.name)} ↗</a></span><span class="role-desc">${esc(c.role)}` +
-        (optionalEntry ? ` <span class="role" data-entry-status="${esc(c.url)}">(선택 도구)</span>` : '') + '</span>';
+        (optionalEntry ? ` <span class="role" data-entry-status="${esc(c.url)}">(선택 도구)</span>` : '') + (c.health ? '' : ' <span class="role">(상태 확인 대상 아님)</span>') + '</span>';
       if (optionalEntry) comp.querySelector('a').addEventListener('click', e => openOptional(e, c));
       comps.append(comp);
     }
@@ -199,7 +200,9 @@ function phaseHtml(d) {
   if (!busy.length) return UI.chip('IDLE');
   return busy.map(([code, p]) => `${UI.chip(p.phase)} <span class="muted">${esc(UI.patternName(code))}</span>`).join('<br>');
 }
-function tsColor(t) { return t >= 65 ? 'trip' : t >= 60 ? 'hot' : ''; }
+// 유온 기준 한 곳: 주의 55 ℃(감지기 경보 · 회복 기준) · 보호 정지 65 ℃ — 막대 · 회로도 전구 · 홈(main.js)이 같이 쓴다
+const TS_HOT = 55, TS_TRIP = 65;
+function tsColor(t) { return t >= TS_TRIP ? 'trip' : t >= TS_HOT ? 'hot' : ''; }
 function sparkline(svg, values, min, max) {
   if (!values || values.length < 2) { svg.setAttribute('viewBox', '0 0 300 36'); svg.innerHTML = '<text x="0" y="24" fill="#65748b" font-size="12">압력 추이를 수집하고 있습니다…</text>'; return; }
   const w = 300, h = 36, n = values.length;
@@ -217,7 +220,7 @@ function renderUnits() {
     let card = box.querySelector(`[data-asset="${asset}"]`);
     if (!card) {
       card = el('div', 'unit'); card.dataset.asset = asset;
-      card.innerHTML = `<header><strong>${asset}</strong><span class="biz-alert"></span><span class="mode"></span></header>
+      card.innerHTML = `<header><strong>${esc(asset)}</strong><span class="biz-alert"></span><span class="mode"></span></header>
         <div class="big num"><span class="v"></span><small>℃ ${esc(UI.t('plant.ts1'))}</small></div>
         <div class="bar"><i></i><b style="left:65%"></b></div><div class="threshold-note">${esc(UI.t('plant.trip'))}</div>
         <div class="fault"></div><div class="repeat-guide field-hint" role="status"></div>
@@ -263,12 +266,13 @@ function renderUnits() {
     card.querySelector('.health').textContent = fmt(s.cooler_health * 100, 0) + ' %';
     card.querySelector('.phase').innerHTML = phaseHtml(d);
     const repeat = card.querySelector('.repeat-guide');
-    if (asset === 'HYD-01') {
-      const phase = d.patterns?.COOLER_DEGRADATION?.phase;
+    const guidePattern = (EXPERIMENT[asset] || {}).guide;      // 다시 주입 안내를 보일 감지기 패턴 — 결함 실험 표(EXPERIMENT)가 정한다
+    if (guidePattern) {
+      const phase = d.patterns?.[guidePattern]?.phase;
       repeat.textContent = !phase ? '감지기 상태를 읽지 못했습니다. 다시 주입하기 전에 연결 상태를 확인하세요.'
         : phase === 'IDLE' ? (s.cooler_health < 1 ? `쿨러 성능 ${fmt(s.cooler_health * 100, 0)} % — 유온이 기준을 넘으면 감지기가 경보를 올립니다. 새 실험은 쿨러 복구 뒤 열화 주입으로 시작합니다.`
           : '감지기가 다음 경보를 기다립니다. 새 실험은 쿨러 열화 주입으로 시작합니다.')
-        : '거절 후 다시 시작하려면 쿨러 복구를 누르고 감지기가 대기 상태가 된 뒤 다시 주입하세요. 승인 대기 중에는 같은 처리 건에서 결정하세요.';
+        : '경보가 났습니다. 처리 건의 승인 단계에서 승인하거나 반려하세요. 반려한 뒤 다시 해 보려면 [쿨러 복구]를 누르고 감지기가 대기 상태가 된 뒤 다시 주입하세요.';
     }
     card.querySelector('.plc').innerHTML = UI.chip(s.state, UI.status(s.state) + (s.trip_text ? ' · ' + s.trip_text : ''));
     card.querySelector('.ack').textContent = s.cmdId ? UI.status(s.result) + (s.reason ? ' · ' + s.reason : '') : UI.t('plant.none');
@@ -293,7 +297,7 @@ function renderUnits() {
    버튼이 처리 건을 바로 열고(POST /api/scenario/{B|C}/start), 처리가 끝나면 카드 머리의 표시(정기 점검 도래 · 재고 보충 필요)가 꺼진다.
    [초기화]는 그 시나리오의 업무 데이터를 수업 시작값으로 되돌려 표시를 다시 켠다. 표시 · 근거 값은 GET /api/scenario/status. */
 const EXPERIMENT = {
-  'HYD-01': { title: 'A 긴급 대응', buttons: [['degrade', '쿨러 열화 주입', 'danger'], ['restore', '쿨러 복구', '']] },
+  'HYD-01': { title: 'A 긴급 대응', guide: 'COOLER_DEGRADATION', buttons: [['degrade', '쿨러 열화 주입', 'danger'], ['restore', '쿨러 복구', '']] },
   'HYD-02': { title: 'B 정기 점검', key: 'B', buttons: [['biz-start', '정기 점검', 'primary'], ['biz-reset', '초기화', '']] },
   'HYD-03': { title: 'C 재고 보충', key: 'C', buttons: [['biz-start', '재고 보충', 'primary'], ['biz-reset', '초기화', '']] },
 };
@@ -318,7 +322,7 @@ function bizAlertHtml(asset) {
 // 마지막 수업 버튼(감사 기록 — 처리 건이 없는 [초기화]도 여기서 보인다)
 function bizPressLine(asset) {
   const p = state.biz && state.biz.presses && state.biz.presses[asset];
-  return p ? `마지막: [${p.button}] ${p.by} · ${UI.time ? UI.time(p.at) : p.at}` : '';
+  return p ? `최근에 누른 단추: [${p.button}] · ${UI.time ? UI.time(p.at) : p.at}` : '';
 }
 function bizFactLine(b) {
   const f = b.facts || {};
@@ -339,6 +343,8 @@ async function refreshBiz() {
 }
 const anchorNote = r => r && r.reanchored === false ? ' · 시나리오 시각 기준점은 그대로(진행 중인 처리 건이 있음)' : '';
 async function unitAction(asset, act, mode, button) {
+  // [초기화]는 그 시나리오의 업무 데이터를 수업 시작값으로 되돌린다 — 되돌릴 수 없으므로 먼저 묻는다
+  if (act === 'biz-reset' && !await UI.confirm({ title: `${EXPERIMENT[asset].title.replace(/^[A-Z]\s+/, '')} 업무 데이터를 수업 시작값으로 되돌릴까요?`, body: '이 시나리오의 업무 데이터가 수업을 시작할 때의 값으로 돌아갑니다. 이미 열린 처리 건은 그대로 남습니다.', ok: '초기화', danger: true })) return;
   if (button) button.disabled = true;
   scenarioMessage(`${asset} 처리 중…`);
   try {
@@ -367,7 +373,9 @@ async function unitAction(asset, act, mode, button) {
 function logLine(s) { state.log.unshift(`${UI.time(new Date())}  ${s}`); state.log = state.log.slice(0, 30); if (state.tab === 'scenario') scenarioMessage(s, s.startsWith('실패:') || s.includes('REJECTED')); }
 function scenarioMessage(text, failed = false) { const box = $('#scenarioMsg'); box.textContent = text; box.classList.toggle('neg', failed); }
 $('#btnReset').addEventListener('click', async (e) => {
-  const b = e.currentTarget; b.disabled = true; scenarioMessage('초기화 중…');
+  const b = e.currentTarget;
+  if (!await UI.confirm({ title: '설비 3기를 정상 운전점으로 되돌릴까요?', body: '진행 중인 결함과 보호 정지가 모두 풀립니다. 열린 처리 건은 그대로 남고, 그 처리 건의 재관측 결과가 달라질 수 있습니다.', ok: '전체 초기화', danger: true })) return;
+  b.disabled = true; scenarioMessage('초기화 중…');
   try { await postJ(API.plant + '/api/reset'); logLine('전체 초기화'); scenarioMessage('설비를 정상 운전점으로 초기화했습니다.'); }
   catch (err) { scenarioMessage('초기화 실패: ' + err.message, true); }
   finally { b.disabled = false; await refreshFast(); }
@@ -377,19 +385,22 @@ $('#btnReset').addEventListener('click', async (e) => {
 // failed: 제어 게이트웨이 기록을 못 읽은 사유 — 「아직 명령 기록이 없습니다」로 보이지 않는다
 function renderGwLog(entries, failed = '') {
   const box = $('#gwLog'); box.innerHTML = '';
-  const mine = state.log.map(l => `<div>${esc(l)}</div>`).join('');
-  const gw = (entries || []).slice(0, 12).map(e => UI.eventRecord({ time: e.t, name: e.ok ? '명령 검증 통과' : '명령 거절', actor: e.asset, detail: e.reason || '', raw: e })).join('');
+  // 두 기록은 출처가 다르다 — 이 화면에서 누른 것과 제어 게이트웨이가 남긴 것을 이름을 붙여 나눠 보인다
+  const mineRows = state.log.map(l => `<div>${esc(l)}</div>`).join('');
+  const gwRows = (entries || []).slice(0, 12).map(e => UI.eventRecord({ time: e.t, name: e.ok ? '명령 검증 통과' : '명령 거절', actor: e.asset, detail: e.reason || '', raw: e })).join('');
+  const mine = mineRows ? `<div class="muted">이 화면에서 누른 단추의 결과</div>${mineRows}` : '';
+  const gw = gwRows ? `<div class="muted">제어 게이트웨이가 검증한 명령</div>${gwRows}` : '';
   const why = failed ? `<div class="neg" role="status">제어 게이트웨이 기록을 읽지 못했습니다: ${esc(failed)}</div>` : '';
   box.innerHTML = why + ((mine + gw) || (failed ? '' : `<div class="muted">${esc(UI.t('plant.noCmd'))}</div>`));
 }
 
 
 /* ---------------- 이상 확인 · 조치: unit schematics + selection ---------------- */
-function tsColor2(t) { return t >= 65 ? '#d7263d' : t >= 55 ? '#c77700' : '#1e8e5a'; }
+function tsColor2(t) { return t >= TS_TRIP ? '#d7263d' : t >= TS_HOT ? '#c77700' : '#1e8e5a'; }
 function unitSvg(asset) {
   const fins = [270, 279, 288, 297, 306, 315, 324].map(x => `<line class="fin" x1="${x}" y1="60" x2="${x}" y2="100"/>`).join('');
   const blade = 'M350 80 L350 66 A14 14 0 0 1 362 74 Z';
-  return `<svg viewBox="0 0 400 200" role="img" aria-label="${asset} 유압 회로">
+  return `<svg viewBox="0 0 400 200" role="img" aria-label="${esc(asset)} 유압 회로">
     <path class="pipe" d="M106 152 H170"/>
     <path class="pipe" d="M186 137 V80 H262"/>
     <path class="pipe ret" d="M297 107 V172 H106"/>
@@ -419,16 +430,16 @@ function renderScada() {
   for (const [asset, u] of Object.entries(state.plant.units)) {
     let card = box.querySelector(`[data-asset="${asset}"]`);
     if (!card) {
-      card = el('div', 'ucard'); card.dataset.asset = asset; card.tabIndex = 0;
+      card = el('div', 'ucard'); card.dataset.asset = asset; keyboardItem(card);
       card.innerHTML = `<header><strong>${esc(asset)}</strong><span class="chips"></span></header>${unitSvg(asset)}<div class="foot"><span class="f-phase"></span><span class="f-inc"></span></div>`;
       card.addEventListener('click', () => selectAsset(asset));
-      card.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectAsset(asset); } });
       box.append(card);
     }
     const t = u.tags, s = u.status, d = (state.det && state.det.assets && state.det.assets[asset]) || {};
     const inc = openIncidentFor(asset);
     const alarm = worstPhase(d) !== 'IDLE' || s.state === 'TRIP';
     card.classList.toggle('alarm', alarm); card.classList.toggle('trip', s.state === 'TRIP'); card.classList.toggle('sel', state.selectedAsset === asset);
+    card.setAttribute('aria-pressed', String(state.selectedAsset === asset));
     card.querySelector('.chips').innerHTML = UI.chip(s.mode) + UI.chip(s.state, UI.status(s.state) + (s.trip_text ? ' · ' + s.trip_text : '')) + bizAlertHtml(asset);
     const set = (cls, v) => { const n = card.querySelector('.' + cls); if (n) n.textContent = v; };
     set('v-ts1', fmt(t.TS1, 1) + ' ℃'); set('v-ts3', fmt(t.TS3, 0)); set('v-ce', fmt(t.CE, 0)); set('v-fan', fmt(t.FanSpeedSP, 0));
@@ -548,7 +559,7 @@ function guideCardHtml(card) {
     }).join('');
     html += UI.card({ title: esc(c.name), chips: i === 0 ? UI.chipText(UI.t('dec.causeTop'), 'accent') : '', value: `<span class="kv">${esc(UI.t('card.score'))} <small></small>${fmt(c.score, 2)}</span>`, sub: esc(c.description || ''), body: ev || `<span class="muted">${esc(UI.t('inc.noEvidence'))}</span>`, cls: 'soft' });
   });
-  html += `</div><p class="field-hint" style="margin-top:var(--s3)">조치는 이 원인을 바탕으로 AI 에이전트이 낸 판단 카드(처리 건의 승인 단계)에서 고르고 승인합니다.</p>`;
+  html += `</div><p class="field-hint" style="margin-top:var(--s3)">조치는 이 원인을 바탕으로 AI 에이전트가 낸 판단 카드(처리 건의 승인 단계)에서 고르고 승인합니다.</p>`;
   return html;
 }
 function renderDetail() {
@@ -583,7 +594,7 @@ function renderDetail() {
   const card = inc.card;
   html += '<div class="stack-list" style="margin-top:var(--s4)">';
   html += UI.fold(esc(UI.t('inc.evidence')), guideCardHtml(card));
-  // AI 에이전트이 무엇을 조회 · 판단했는지는 이 사건의 처리 건 「처리 기록」에 있다 — 여기서는 그리로 가는 길 하나
+  // AI 에이전트가 무엇을 조회 · 판단했는지는 이 사건의 처리 건 「처리 기록」에 있다 — 여기서는 그리로 가는 길 하나
   html += UI.fold(esc(UI.t('inc.agentTrace')), `<p class="muted">AI 에이전트의 조회 · 판단 과정은 이 사건의 처리 건 「처리 기록」 탭에 단계별로 남습니다.</p>${UI.actions('<button class="btn small" id="btnIncInstance">처리 건에서 보기 →</button>', state.woMsg?.inc === inc.id ? state.woMsg.text : '')}`);
   {
     const audit = state.incAudit?.id === inc.id ? state.incAudit.rows : [], auditError = state.incAudit?.id === inc.id ? state.incAudit.error : '';

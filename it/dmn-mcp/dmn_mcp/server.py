@@ -55,8 +55,8 @@ WRITE = {"readOnlyHint": False, "destructiveHint": False}     # submit_decision 
 
 Asset = Annotated[str, Field(description="설비 코드 (HYD-01 | HYD-02 | HYD-03)")]
 Pattern = Annotated[str, Field(description="이상 패턴 코드 (예: COOLER_DEGRADATION, PUMP_LEAKAGE, FAN_VIBRATION)")]
-Cause = Annotated[str, Field(description="원인 노드 id (예: cause:cooler-fin-fouling)")]
-FailureMode = Annotated[str, Field(description="고장 유형 노드 id (예: fm:cooler-cooling-loss)")]
+Cause = Annotated[str, Field(description="원인 노드 id (cause:… 꼴 — diagnose 가 준 causeId 를 그대로)")]
+FailureMode = Annotated[str, Field(description="고장 유형 노드 id (fm:… 꼴 — diagnose 가 준 failureModeId 를 그대로)")]
 Overrides = Annotated[dict | None, Field(description="가정 실험용 사실 덮어쓰기 (예: {\"plc_mode\": \"REMOTE_MANUAL\"}). 보통 비움")]
 
 

@@ -34,16 +34,16 @@
     ts1: ['유온', '℃'], ts2: ['유온 2', '℃'], ts4: ['캐비닛 온도', '℃'], t_amb: ['주변 온도', '℃'], ce: ['냉각 효율', '%'], ps1: ['토출 압력', 'bar'], fs1: ['유량', 'L/min'],
     vs1: ['진동', 'mm/s'], load: ['펌프 부하', '%'], loadsp: ['펌프 부하 설정', '%'], fanspeedsp: ['쿨러 팬 속도 설정', '%'], load_pct: ['펌프 부하', '%'], fan_pct: ['팬 속도', '%'], score: ['경보 점수', ''], ts1_slope: ['유온 상승 속도', '℃/설비 초']   /* 감지기 기울기는 설비 시간(TIME_SCALE 배속) 1초당 — G3b-25 */,
     vs1_slope: ['진동 상승 속도', '(mm/s)/설비 초'], cooler_health: ['쿨러 상태', ''], plc_mode: ['운전 모드', ''], plc_state: ['설비 상태', ''], hot_lot_qty: ['출하 대기 로트', '개'],
-    order_due_h: ['납기까지', 'h'], fan100_hours: ['팬 100 % 운전 누적', 'h'], standby_ready: ['예비 설비 준비', ''], order_customer_tier: ['고객 등급', ''],
-    order_penalty_per_h: ['지연 보상', '만원/h'], hot_lot_claim: ['출하 로트 클레임', '만원'], oil_analysis_out_of_spec: ['오일 분석 기준 밖', ''],
+    order_due_h: ['납기까지', '시간'], fan100_hours: ['팬 100 % 운전 누적', '시간'], standby_ready: ['예비 설비 준비', ''], order_customer_tier: ['고객 등급', ''],
+    order_penalty_per_h: ['지연 보상', '만원/시간'], hot_lot_claim: ['출하 로트 클레임', '만원'], oil_analysis_out_of_spec: ['오일 분석 기준 밖', ''],
     cause: ['판정 원인', ''], pattern: ['경보 패턴', ''], failure_mode: ['고장 유형', ''],
     // 정기 정비 (CMMS 계수기 · 계획)
-    hours_since_pm: ['마지막 정비 뒤 운전시간', 'h'], pm_since_h: ['마지막 정비 뒤 운전시간', 'h'], pm_interval_h: ['정비 주기', 'h'], pm_tolerance_pct: ['허용 오차', '%'],
-    pm_notice_h: ['사전 알림', 'h'], pm_due_in_h: ['정비 기한까지', 'h'], pm_limit_in_h: ['허용 한도까지', 'h'], hours_at_next_window: ['이번 정비 시간의 운전시간', 'h'],
-    hours_at_following_window: ['다음 정비 시간의 운전시간', 'h'], pm_crew_available: ['정비 가능 인원', '명'], spare_available: ['정비 키트 재고', '개'],
-    next_window_at: ['다음 정비 시간', ''], next_window_in_h: ['다음 정비 시간까지', 'h'], next_window_label: ['다음 정비 시간 구분', ''], next_window_crew_size: ['다음 정비 시간의 작업 인원', '명'],
-    night_window_in_h: ['야간 정비 시간까지', 'h'], night_window_at: ['야간 정비 시간', ''], cycle: ['정비 회차', '회'], package: ['정비 묶음', ''], kit_qty: ['키트 수량', '개'],
-    kit_part_no: ['키트 부품', ''], bundle_peer: ['함께 정비할 설비', ''], bundle_peer_since_h: ['함께 정비할 설비 운전시간', 'h'], pm_window_open: ['정비 시간 열림', ''],
+    hours_since_pm: ['마지막 정비 뒤 운전시간', '시간'], pm_since_h: ['마지막 정비 뒤 운전시간', '시간'], pm_interval_h: ['정비 주기', '시간'], pm_tolerance_pct: ['허용 오차', '%'],
+    pm_notice_h: ['사전 알림', '시간'], pm_due_in_h: ['정비 기한까지', '시간'], pm_limit_in_h: ['허용 한도까지', '시간'], hours_at_next_window: ['이번 정비 시간의 운전시간', '시간'],
+    hours_at_following_window: ['다음 정비 시간의 운전시간', '시간'], pm_crew_available: ['정비 가능 인원', '명'], spare_available: ['정비 키트 재고', '개'],
+    next_window_at: ['다음 정비 시간', ''], next_window_in_h: ['다음 정비 시간까지', '시간'], next_window_label: ['다음 정비 시간 구분', ''], next_window_crew_size: ['다음 정비 시간의 작업 인원', '명'],
+    night_window_in_h: ['야간 정비 시간까지', '시간'], night_window_at: ['야간 정비 시간', ''], cycle: ['정비 회차', '회'], package: ['정비 묶음', ''], kit_qty: ['키트 수량', '개'],
+    kit_part_no: ['키트 부품', ''], bundle_peer: ['함께 정비할 설비', ''], bundle_peer_since_h: ['함께 정비할 설비 운전시간', '시간'], pm_window_open: ['정비 시간 열림', ''],
     configured_base_package: ['등록된 기본 정비 내용', ''], package_semantics: ['정비 내용의 기록 의미', ''],
     // 예비품 (구매 · 재고 관리 재고 · 견적)
     part_no: ['부품 번호', ''], name: ['이름', ''], on_hand: ['현재고', '개'], reserved: ['정비 예약', '개'], available: ['가용 재고', '개'], on_order: ['입고 예정', '개'],
@@ -52,8 +52,8 @@
     supplier_fail_rate: ['공급사 불량률(비율)', ''], supplier_avl: ['승인 공급사(AVL)', ''], approved_amount: ['승인 금액', '만원'], approved_qty: ['수량', '개'], approved_supplier: ['공급사', ''], approved_supplier_name: ['공급사 이름', ''],
     approved_unit_price: ['단가', '만원'], approved_part_no: ['부품', ''], lead_d: ['리드타임', '일'], delay_d: ['공급사 지연', '일'],
     // 업무 사실 (MES · 구매 · 재고 관리)
-    due_in_h: ['납기까지', 'h'], remaining_qty: ['남은 수량', '개'], rate_per_h: ['시간당 생산', '개/h'], alt_rate_per_h: ['대체 설비 시간당', '개/h'], alt_free_h: ['대체 설비 빌 때까지', 'h'],
-    changeover_h: ['전환 시간', 'h'], fg_stock: ['완제품 재고', '개'], ship_in_h: ['출하까지', 'h'], penalty_per_h: ['지연 보상', '만원/h'], failure_cost: ['고장 비용', '만원'],
+    due_in_h: ['납기까지', '시간'], remaining_qty: ['남은 수량', '개'], rate_per_h: ['시간당 생산', '개/시간'], alt_rate_per_h: ['대체 설비 시간당', '개/시간'], alt_free_h: ['대체 설비 빌 때까지', '시간'],
+    changeover_h: ['전환 시간', '시간'], fg_stock: ['완제품 재고', '개'], ship_in_h: ['출하까지', '시간'], penalty_per_h: ['지연 보상', '만원/시간'], failure_cost: ['고장 비용', '만원'],
     claim_cost: ['클레임 비용', '만원'], customer_tier: ['고객 등급', ''], order_id: ['생산 주문', ''], sales_order: ['판매 계약', ''],
   };
   W.fieldName = (key, context) => { const k = String(key || ''); if(k==='package' && context?.package_semantics==='base_interval_configuration') return '등록된 기본 정비 내용'; const f = F[k] || F[k.toLowerCase()]; return f ? f[0] : UI.terms['var.' + k] || W.caseFields?.[k] || k.replace(/_/g, ' '); };   // 화면 사전이 이긴다 — 처리 건 정의의 칸 설명(caseFields)은 사전에 없는 칸(학생 흐름의 칸)에만
@@ -65,8 +65,14 @@
   };
   W.effectText = (job, d) => {
     if (!['EFFECT_COMPENSATION', 'EFFECT_REVIEW'].includes(job)) return '';
-    const results = (d.results || []).map(r => `${r.ok ? '되돌림 완료' : '되돌림 실패'}${r.error ? ': ' + r.error : ''}`).join(' · ');
-    return `${W.who(d.by)}${d.role ? ' · ' + W.who(d.role) : ''} · 사유: ${d.reason || '기록 없음'}${results ? ' · ' + results : ''}${job === 'EFFECT_REVIEW' ? ' · 되돌릴 수 없는 기존 조치의 영향을 확인했습니다. 조치를 되돌린 것은 아닙니다.' : ''}`;
+    // 한 문장씩: 누가(기록에 있을 때만) 무엇을 했나 → 사유 → 결과 건수. 기록에 없는 사람을 지어 넣지 않는다
+    const actor = d.by ? `${W.who(d.by)}${d.role ? `(${W.who(d.role)})` : ''}` : '';
+    const subject = actor ? `${actor}${W.josa(actor, '이/가')} ` : '';
+    const reason = ` 사유: ${d.reason || '기록 없음'}.`;
+    if (job === 'EFFECT_REVIEW') return `${subject}되돌릴 수 없는 이전 조치의 영향을 확인했습니다. 조치를 되돌린 것은 아닙니다.${reason}`;
+    const results = d.results || [], failed = results.filter(r => !r.ok);
+    const outcome = results.length ? ` 되돌림 ${results.length - failed.length}건 완료${failed.length ? `, ${failed.length}건 실패${failed.some(r => r.error) ? `(${failed.map(r => r.error).filter(Boolean).join(' / ')})` : ''}` : ''}.` : '';
+    return `${subject}이전 조치를 되돌리도록 요청했습니다.${reason}${outcome}`;
   };
   W.deferralReason = record => {
     const assessment=record?.assessment || record || {};
@@ -76,62 +82,105 @@
     const e=UI.esc || esc, assessment=record?.assessment || record || {};
     const response=assessment.evidence?.evaluate_cards, evaluated=response?.result==='ok' ? response.document : null;
     const options=Array.isArray(evaluated?.options) ? evaluated.options : null;
-    const body=options ? `<p>보류 당시 평가한 대안 ${options.length}개 · 판단 등록 · 승인 · 실행 기록이 아닙니다.</p>`+
-      options.map(option=>`<section data-deferral-option><h4>${e(option?.name && option.name!==option.id ? W.text(option.name) : '대안 표시 이름 기록 없음')}</h4><p>${option?.feasible===false ? '후보 제외' : option?.feasible===true ? '평가 당시 후보 · 승인 여부와 별도' : '후보 가능 여부 확인 기록 없음'}</p>${W.maintenanceHtml(option)}${!option?.maintenancePlan && !option?.maintenanceDiagnostics ? (option?.violations || []).map(v=>`<p>${e(v.annotation ? W.text(v.annotation) : '제외 사유 설명 기록 없음 · 원문 확인')}</p>`).join('') : ''}</section>`).join('')
-      : '<p>구조화된 대안 평가 근거를 확인할 수 없습니다. 조회되지 않은 사실은 재고 0이나 실행 가능을 뜻하지 않습니다.</p>';
-    return `<div data-deferral-evidence><p><b>평가 보류 · 업무 완료 아님</b></p><p>${e(W.deferralReason(record))}</p>${body}`+
+    // 「실행 기록이 아니다」는 이 머리 한 곳에서만 말한다 — 대안마다 되풀이하지 않는다
+    const body=options ? `<p>보류할 때 평가한 대안은 ${options.length}개입니다. 평가만 했고, 판단으로 등록하거나 승인 · 실행하지는 않았습니다.</p>`+
+      options.map(option=>`<section data-deferral-option><h4>${e(option?.name && option.name!==option.id ? W.text(option.name) : '대안 표시 이름 기록 없음')}</h4><p>${option?.feasible===false ? '후보에서 제외된 안입니다.' : option?.feasible===true ? '평가할 때 후보였던 안입니다.' : '후보가 될 수 있는지 확인한 기록이 없습니다.'}</p>${W.maintenanceHtml(option)}${!option?.maintenancePlan && !option?.maintenanceDiagnostics ? (option?.violations || []).map(v=>`<p>${e(v.annotation ? W.text(v.annotation) : '제외 사유 설명이 기록에 없습니다.')}</p>`).join('') : ''}</section>`).join('')
+      : '<p>대안을 평가한 근거가 기록에 없습니다. 조회하지 못한 값을 재고 0이나 실행 가능으로 읽으면 안 됩니다.</p>';
+    return `<div data-deferral-evidence><p><b>평가를 보류했습니다.</b> 이 단계의 일은 아직 끝나지 않았습니다.</p><p>${e(W.deferralReason(record))}</p>${body}`+
       UI.fold('보류 평가 근거 원문',`<pre>${e(JSON.stringify(assessment,null,2))}</pre>`,{cls:'small'}).replace('<details','<details data-deferral-raw')+'</div>';
   };
+  /* 정기 정비 안 한 장(승인 카드 · 처리 기록 · 보류 근거가 함께 쓴다). 읽는 차례:
+     ① 이 안을 고르면 무엇이 일어나는가 한 문장(서버가 준 계획 값으로만 만든다 — 없는 값은 「기록에 없습니다」) ② 판단에 걸리는 것(제외 · 실행 불가 · 인력 부족)
+     ③ 수치 근거는 「설비별 근거」 접기 ④ 원문 접기. */
+  const pmCount = (v, unit = '시간') => typeof v === 'number' && Number.isFinite(v) ? `${W.num(v)}${unit}` : '기록 없음';
+  const pmAsset = a => typeof a === 'string' && /^HYD-\d+$/.test(a) ? a : UI.names?.[a] || '설비 표시 이름 기록 없음';
+  const pmAssets = plan => (Array.isArray(plan?.assets) ? plan.assets : []).filter(row => row && typeof row === 'object').map(row => pmAsset(row.asset));
+  // 부품을 어떻게 다루는가 한 문장 — 서버 계획의 stock_effect 세 값만 안다
+  function pmStockSentence(plan) {
+    const totals = (Array.isArray(plan.parts_totals) ? plan.parts_totals : []).filter(p => p && typeof p.qty === 'number')
+      .map(p => `${p.name || p.part_no || '부품'} ${W.num(p.qty)}개`).join(', ');
+    const parts = totals ? `필요한 부품(${totals})` : '필요한 부품';
+    if (plan.stock_effect === 'reserve') return `${parts}은 예약해 둡니다.`;
+    if (plan.stock_effect === 'issue') return `${parts}은 창고에서 출고합니다.`;
+    if (plan.stock_effect === 'preserve') return '기존 오더에 잡아 둔 부품을 그대로 씁니다.';
+    return '부품을 어떻게 처리하는지는 기록에 없습니다.';
+  }
+  // 이 안을 고르면 일어나는 일 한 문장: 대상 설비 · 정비 시간 · 오더(새로 등록 / 기존 오더 일정 변경)
+  function pmPlanSentence(plan) {
+    const assets = pmAssets(plan), who = assets.join(' · ');
+    const window = plan.window, start = window?.starts_at ? UI.dateTime(window.starts_at) : '';
+    const together = plan.scope === 'bundle' && assets.length > 1 ? '함께 ' : '';
+    if (plan.code === 'WO_RESCHEDULE') {
+      const order = `${who ? who + '의 ' : ''}기존 정기 정비 오더${plan.ref ? ' ' + plan.ref : '(번호 기록 없음)'}`;
+      const to = window?.immediate === true ? '지금으로 ' : start ? `${start}${W.josa(start, '으로/로')} ` : '';
+      return `${order}의 정비 시간을 ${to}바꾸는 안입니다. 새 오더는 만들지 않습니다.${to ? '' : ' 바꿀 정비 시간은 기록에 없습니다.'}`;
+    }
+    if (plan.code === 'WO_CREATE') {
+      const when = window?.immediate === true ? '지금 바로 ' : start ? `${start}에 ` : '';
+      return `${who ? `${who}${W.josa(who, '을/를')} ` : ''}${when}${together}정비하는 안입니다. 새 정기 정비 오더를 등록합니다.${when ? '' : ' 정비 시간은 기록에 없습니다.'}`;
+    }
+    return '정비 계획의 종류가 기록에 없어, 이 안이 무엇을 실행하는지 말할 수 없습니다.';
+  }
   W.maintenanceHtml = option => {
     const plan=option?.maintenancePlan, diagnostics=option?.maintenanceDiagnostics, excluded=(option?.violations || []).filter(v=>v.rule==='execution:pm-plan');
     if (!plan && !diagnostics && !excluded.length) return '';
     const e=UI.esc || esc;
-    let text='정비 실행 계획 기록 없음 · 새 오더나 다음 정비 시간을 대신 만들지 않습니다.';
-    if(!plan && diagnostics) text='검사 도중 확보한 정비 근거입니다. 실행 가능한 계획은 확정되지 않았습니다.';
-    if (plan?.code==='WO_RESCHEDULE') text=`기존 정기 정비 오더 일정 변경 · ${plan.ref || '기존 오더 미상'} · 새 오더 생성 아님`;
-    else if (plan?.code==='WO_CREATE') text='새 정기 정비 오더 생성 계획 · 기존 오더 일정 변경 아님';
-    else if(plan) text='정비 실행 계획 형식 확인 필요 · 실행 가능 여부를 추정하지 않습니다.';
-    const window=plan?.window;
-    const time=window?.immediate===true ? '즉시 정비 시간' : window?.starts_at ? UI.dateTime(window.starts_at) : '정비 시간 미상';
-    const hours=typeof plan?.hours_at_window==='number' ? `해당 시간의 운전시간 ${W.num(plan.hours_at_window)} h` : '';
-    const limit=typeof plan?.limit_hours==='number' ? `허용 한도 ${W.num(plan.limit_hours)} h` : '';
-    return `<p><b>${e(excluded.length ? '정비 실행 계획 불가 · 후보 제외' : text)}</b>${excluded.length ? '<br>'+e(text) : ''}${plan ? '<br>'+e([time,hours,limit].filter(Boolean).join(' · ')) : ''}</p>`+
-      W.maintenanceScopeHtml(plan || diagnostics)+
-      excluded.map(v=>`<p>${e(v.annotation ? W.text(v.annotation) : '제외 사유 설명 기록 없음 · 원문 확인 필요')}</p>`).join('')+
+    const lead=plan ? pmPlanSentence(plan) : diagnostics ? '실행할 정비 계획이 정해지지 않았습니다. 아래는 검사하면서 확인한 근거입니다.' : '정비 실행 계획이 기록에 없습니다.';
+    const numbers=[typeof plan?.hours_at_window==='number' ? `정비 시점의 운전시간은 ${W.num(plan.hours_at_window)}시간` : '', typeof plan?.limit_hours==='number' ? `허용 한도는 ${W.num(plan.limit_hours)}시간` : ''].filter(Boolean).join(', ');
+    return (excluded.length ? `<p><b>정비 계획을 실행할 수 없어 후보에서 제외된 안입니다.</b></p><p>${e(lead)}</p>` : `<p><b>${e(lead)}</b></p>`)+
+      excluded.map(v=>`<p>${e(v.annotation ? W.text(v.annotation) : '제외 사유 설명이 기록에 없습니다.')}</p>`).join('')+
+      (plan && ['WO_CREATE','WO_RESCHEDULE'].includes(plan.code) && Object.prototype.hasOwnProperty.call(plan,'stock_effect') ? `<p>${e(pmStockSentence(plan))}</p>` : '')+
+      (numbers ? `<p class="muted">${e(numbers)}입니다.</p>` : '')+
+      W.maintenanceScopeHtml(plan || diagnostics,{lead:false})+
       UI.fold('정비 실행 계획 · 제외 근거 원문',`<pre>${e(JSON.stringify({maintenancePlan:plan,maintenanceDiagnostics:diagnostics,violations:excluded},null,2))}</pre>`,{cls:'small'});
   };
-  W.maintenanceScopeHtml = plan => {
+  // 정비 범위(대상 설비 · 부품 · 인력)의 근거. lead: 대상과 부품 처리를 문장으로 먼저 말할지 — maintenanceHtml 은 위에서 이미 말했으므로 끈다
+  W.maintenanceScopeHtml = (plan, { lead = true } = {}) => {
     if (!plan || !Object.prototype.hasOwnProperty.call(plan,'scope') && !Object.prototype.hasOwnProperty.call(plan,'assets')) return '';
-    const e=UI.esc || esc, n=(v,unit='시간')=>typeof v==='number' && Number.isFinite(v) ? `${W.num(v)}${unit}` : '기록 없음';
-    const assetName=a=>typeof a==='string' && /^HYD-\d+$/.test(a) ? a : UI.names?.[a] || '설비 표시 이름 기록 없음';
+    const e=UI.esc || esc, n=pmCount;
     const assets=Array.isArray(plan.assets) ? plan.assets : [];
-    const label=plan.scope==='bundle' && assets.length===2 ? '두 설비 동시 정비 계획 · 설비별 근거' : plan.scope==='single' && assets.length===1 ? '단일 설비 정비 계획 · 이번 차례 근거' : '정비 대상 범위 기록 확인 필요';
-    let html=`<p><b>${e(plan.ready===false ? '실행 불가 정비 검사 · 관측한 설비별 근거' : label)}</b> · 대상 ${assets.length}대</p>`;
-    const effects={reserve:'부품 예약 계획 · 실물 출고와 별도',issue:'부품 실물 출고 계획 · 정비 완료와 별도',preserve:'기존 오더 부품 할당 보존 · 새 예약이나 재출고 아님'};
-    html+=`<p>${e(Object.prototype.hasOwnProperty.call(effects,plan.stock_effect) ? effects[plan.stock_effect] : '부품 처리 방식 기록 없음 · 예약이나 출고를 추정하지 않습니다.')}</p>`;
-    if (plan.scope==='bundle') html+='<p>같은 정비 시간에 시행하는 계획입니다. 동종 설비 · 상대 설비 운전시간 · 공통 정비 시간 · 부품 범위는 서버 검사 근거를 확인하세요. 계획은 오더 생성이나 정비 완료가 아닙니다.</p>';
-    html+=assets.map(row=>{
-      if(!row || typeof row!=='object') return '<p>설비별 정비 근거 형식 확인 필요</p>';
-      const service=row.service || {}, parts=Array.isArray(row.parts) ? row.parts : [];
-      const a=row.applicability;
+    const yes=(v,ok,no,none)=>v===true ? ok : v===false ? no : none;
+    const rows=list=>'<ul>'+list.filter(Boolean).map(([k,v])=>`<li>${e(k)}: ${e(v)}</li>`).join('')+'</ul>';
+    let html='';
+    if (lead) {
+      const names=pmAssets(plan).join(' · ');
+      html+=`<p><b>${e(plan.scope==='bundle' && assets.length>1 ? `${names} ${assets.length}대를 같은 정비 시간에 함께 정비하는 계획입니다.` : names ? `${names} 정비 계획입니다.` : '정비 대상 설비가 기록에 없습니다.')}</b> ${e(pmStockSentence(plan))}</p>`;
+    }
+    // 판단에 걸리는 것만 접기 밖에 둔다
+    if (plan.ready===false) html+='<p class="neg">검사 결과 지금은 실행할 수 없는 계획입니다. 까닭은 설비별 근거에 있습니다.</p>';
+    else if (!(plan.scope==='bundle' && assets.length===2) && !(plan.scope==='single' && assets.length===1)) html+='<p class="neg">정비 대상 범위 기록이 계획과 맞지 않습니다. 설비별 근거를 확인하세요.</p>';
+    const staff=plan.staffing && typeof plan.staffing==='object' ? plan.staffing : null;
+    if (staff?.arrangement_required===true && staff.confirmed!==true) html+=`<p class="neg">정비 인력을 더 확보해야 합니다${typeof staff.shortfall==='number' ? ` (${W.num(staff.shortfall)}명 부족)` : ''}.</p>`;
+    let detail=assets.map(row=>{
+      if(!row || typeof row!=='object') return '<p>이 설비의 정비 근거를 읽지 못했습니다.</p>';
+      const service=row.service || {}, parts=Array.isArray(row.parts) ? row.parts : [], a=row.applicability;
       const name=service.package_name || (typeof service.package_interval_h==='number' ? n(service.package_interval_h)+' 정비 묶음' : '이번 차례 정비 묶음 기록 없음');
-      return `<div data-pm-asset="${e(row.asset)}"><h4>${e(assetName(row.asset))} · ${e(name)}</h4><p>${service.package_sop ? '원문 절차 '+e(service.package_sop)+' · ' : ''}정비 간격 ${e(n(service.interval_h))} · 마지막 정비 뒤 ${e(n(service.since_pm_h))}</p><p>누적 운전시간 ${e(n(service.total_h))} · 마지막 정비의 누적 기준 ${e(n(service.last_service_total_h))} · 이번 정비 차례 누적 기준 ${e(n(service.next_due_total_h))} · 정비 차례 ${e(n(service.service_position,'번째'))}</p>`+
-        (typeof service.package_interval_h==='number' ? `<p>이번 차례 패키지 간격 ${e(n(service.package_interval_h))} · 기본 정비 간격과 구분합니다.</p>` : '')+
-        (a && typeof a==='object' ? `<p>원문 동종 설비 범위 ${a.source_model_member===true ? '확인됨' : a.source_model_member===false ? '불일치' : '확인 기록 없음'} · 운전시간 하한 ${e(n(a.lower_hours))} · 실제 ${e(n(a.observed_hours))} · ${a.lower_hours_met===true ? '하한 충족 확인됨' : a.lower_hours_met===false ? '하한 미달' : '하한 판정 기록 없음'}</p><p>목표 시점 운전시간 ${e(n(a.target_hours))} · 허용 상한 ${e(n(a.limit_hours))} · ${a.within_limit===true ? '상한 이내 확인됨' : a.within_limit===false ? '상한 초과' : '상한 판정 기록 없음'} · ${a.common_window_verified===true ? '공통 정비 시간 확인됨' : a.common_window_verified===false ? '공통 정비 시간 불일치' : '공통 정비 시간 확인 기록 없음'}${a.common_start ? ' · '+e(UI.dateTime(a.common_start)) : ''}</p>` : '<p>동종 설비 · 운전시간 하한 · 공통 정비 시간 검사 기록 없음</p>')+
-        (parts.length ? '<ul>'+parts.map(p=>`<li>${e(p?.name || p?.part_no || '부품 표시 이름 기록 없음')}${p?.name && p?.part_no ? ' · '+e(p.part_no) : ''} · 필요 ${e(n(p?.qty,'개'))} · 가용 ${e(n(p?.available,'개'))} · ${p?.verified===true ? '부품 근거 확인됨' : p?.verified===false ? '부품 근거 확인 안 됨' : '부품 근거 검증 기록 없음'}${plan.stock_effect==='issue' ? '<p>현재고 '+e(n(p?.on_hand,'개'))+' · 이미 예약한 수량 '+e(n(p?.reserved,'개'))+' · 입고 예정과 실물 출고 가능 여부를 구분합니다.</p>' : plan.stock_effect==='preserve' ? '<p>기존 오더의 확인된 할당 '+e(n(p?.owned_qty,'개'))+' · 새 부품을 자동 할당하지 않습니다.</p>' : ''}</li>`).join('')+'</ul>' : '<p>설비별 부품 근거 기록 없음</p>')+'</div>';
+      const check=a && typeof a==='object' ? [
+        ['같은 기종 범위(원문 기준)',yes(a.source_model_member,'확인됨','범위 밖','확인 기록 없음')],
+        ['운전시간 하한',`${n(a.lower_hours)} (실제 ${n(a.observed_hours)}) — ${yes(a.lower_hours_met,'충족','미달','판정 기록 없음')}`],
+        ['정비 시점 운전시간',`${n(a.target_hours)} (허용 상한 ${n(a.limit_hours)}) — ${yes(a.within_limit,'상한 이내','상한 초과','판정 기록 없음')}`],
+        ['공통 정비 시간',yes(a.common_window_verified,'확인됨','맞지 않음','확인 기록 없음')+(a.common_start ? ` (${UI.dateTime(a.common_start)})` : '')],
+      ] : [['같은 기종 · 운전시간 · 공통 정비 시간 검사','기록 없음']];
+      const partRows=parts.length ? '<p>부품</p><ul>'+parts.map(p=>`<li>${e(p?.name || p?.part_no || '부품 표시 이름 기록 없음')}${p?.name && p?.part_no ? ` (${e(p.part_no)})` : ''}: 필요 ${e(n(p?.qty,'개'))}, 가용 ${e(n(p?.available,'개'))}, ${yes(p?.verified,'근거 확인됨','근거 확인 안 됨','근거 검증 기록 없음')}${plan.stock_effect==='issue' ? `, 현재고 ${e(n(p?.on_hand,'개'))}, 이미 예약한 수량 ${e(n(p?.reserved,'개'))}` : plan.stock_effect==='preserve' ? `, 기존 오더에 잡아 둔 수량 ${e(n(p?.owned_qty,'개'))}` : ''}</li>`).join('')+'</ul>' : '<p>이 설비의 부품 근거는 기록에 없습니다.</p>';
+      return `<div data-pm-asset="${e(row.asset)}"><h4>${e(pmAsset(row.asset))} — ${e(name)}</h4>`+rows([
+        service.package_sop ? ['원문 절차',service.package_sop] : null,
+        ['정비 간격',n(service.interval_h)],['마지막 정비 뒤 운전시간',n(service.since_pm_h)],['누적 운전시간',n(service.total_h)],
+        ['마지막 정비 때의 누적 운전시간',n(service.last_service_total_h)],['이번 정비 기준 누적 운전시간',n(service.next_due_total_h)],['정비 차례',n(service.service_position,'번째')],
+        typeof service.package_interval_h==='number' ? ['이번 차례 정비 묶음의 간격',n(service.package_interval_h)] : null,
+        ...check])+partRows+'</div>';
     }).join('');
-    const staff=plan.staffing;
-    if(staff && typeof staff==='object') html+=`<p><b>정비 인력</b> · 필요 ${e(n(staff.required,'명'))} · 가용 ${e(n(staff.available,'명'))} · 부족 ${e(n(staff.shortfall,'명'))}</p><p>${staff.confirmed===true ? '인력 확보 확인 기록 있음 · 정비 완료와 별도입니다.' : staff.arrangement_required===true ? '인력 확보 필요 · 확보 완료로 확인되지 않았습니다.' : '인력 확보 완료 확인 기록 없음'}</p>`;
-    if(Array.isArray(plan.parts_totals) && plan.parts_totals.length) html+='<p><b>전체 대상 설비의 부품 필요량</b></p><ul>'+plan.parts_totals.map(p=>`<li>${e(p?.name || p?.part_no || '부품 번호 기록 없음')} · 총 필요 ${e(n(p?.qty,'개'))} · 실제 가용 ${e(n(p?.available,'개'))}</li>`).join('')+'</ul>'+UI.fold('전체 부품 근거 원문',`<pre>${e(JSON.stringify(plan.parts_totals,null,2))}</pre>`,{cls:'small'});
-    return html;
+    if (staff) detail+='<h4>정비 인력</h4>'+rows([['필요',n(staff.required,'명')],['가용',n(staff.available,'명')],['부족',n(staff.shortfall,'명')],
+      ['확보 여부',staff.confirmed===true ? '확보를 확인한 기록 있음' : staff.arrangement_required===true ? '더 확보해야 함' : '확보를 확인한 기록 없음']]);
+    if (Array.isArray(plan.parts_totals) && plan.parts_totals.length) detail+='<h4>전체 대상 설비의 부품 필요량</h4><ul>'+plan.parts_totals.map(p=>`<li>${e(p?.name || p?.part_no || '부품 번호 기록 없음')}: 필요 ${e(n(p?.qty,'개'))}, 가용 ${e(n(p?.available,'개'))}</li>`).join('')+'</ul>'+UI.fold('전체 부품 근거 원문',`<pre>${e(JSON.stringify(plan.parts_totals,null,2))}</pre>`,{cls:'small'});
+    return html+(detail ? UI.fold(`설비별 근거 (대상 ${assets.length}대)`,detail,{cls:'small'}) : '');
   };
   W.maintenanceReceiptSummary = receipt => {
     const after=receipt?.after, plan=after?.plan, orders=Array.isArray(after?.orders) ? after.orders : [];
     const complete=orders.length && orders.every(o=>o && typeof o.asset==='string' && typeof o.ref==='string' && o.ref && typeof o.status==='string');
-    if(!complete) return '설비별 정비 오더 영수증 기록을 확인할 수 없습니다. 계획만으로 생성이나 정비 완료를 판단하지 않습니다.';
-    if(plan?.scope==='bundle' && (!Array.isArray(plan.assets) || plan.assets.length!==2 || orders.length!==2 || !plan.assets.every(a=>orders.some(o=>o.asset===a.asset)))) return '두 설비 계획과 실제 오더 영수증 범위가 다릅니다. 두 대의 등록 완료로 판단하지 않습니다.';
-    if(orders.every(o=>['취소됨','취소'].includes(o.status))) return `대상 ${orders.length}대의 정비 오더 취소 상태가 영수증에 기록되었습니다. 정비 수행 완료와는 별도입니다.`;
-    return `정비 시스템에 대상 ${orders.length}대의 오더 영수증이 기록되었습니다. 오더 등록과 정비 완료는 별도로 확인합니다.`;
+    if(!complete) return '설비별 정비 오더 영수증이 기록에 없어, 오더가 등록됐는지 알 수 없습니다.';
+    if(plan?.scope==='bundle' && (!Array.isArray(plan.assets) || plan.assets.length!==2 || orders.length!==2 || !plan.assets.every(a=>orders.some(o=>o.asset===a.asset)))) return '두 설비를 함께 정비하는 계획인데 오더 영수증의 설비 범위가 다릅니다. 두 대 모두 등록됐다고 볼 수 없습니다.';
+    if(orders.every(o=>['취소됨','취소'].includes(o.status))) return `대상 ${orders.length}대의 정비 오더가 취소된 것으로 영수증에 기록됐습니다.`;
+    return `정비 시스템에 대상 ${orders.length}대의 정비 오더 영수증이 기록됐습니다. 정비를 마쳤는지는 정비 수행 단계에서 확인합니다.`;
   };
   W.maintenanceReceiptHtml = receipt => {
     const after=receipt?.after;
@@ -139,14 +188,14 @@
     const e=UI.esc || esc, orders=Array.isArray(after.orders) ? after.orders : [];
     const states={'배정됨':'배정됨','완료':'완료','취소됨':'취소됨','취소':'취소',DONE:'처리 완료',FAILED:'처리 실패',PENDING:'대기 중'};
     return `<p><b>${e(W.maintenanceReceiptSummary(receipt))}</b></p>`+
-      (after.plan ? `<h4>실행 영수증에 남긴 정비 계획</h4>${W.maintenanceScopeHtml(after.plan)}` : '<p>영수증의 정비 계획 기록 없음</p>')+
+      (after.plan ? `<h4>실행 영수증에 남긴 정비 계획</h4>${W.maintenanceScopeHtml(after.plan)}` : '<p>영수증에 정비 계획이 기록돼 있지 않습니다.</p>')+
       (orders.length ? '<div data-pm-orders><h4>설비별 실제 오더 기록</h4><ul>'+orders.map(o=>{
         if(!o || typeof o!=='object') return '<li>설비별 영수증 정보 읽기 실패</li>';
         const name=typeof o.asset==='string' && /^HYD-\d+$/.test(o.asset) ? o.asset : UI.names?.[o.asset] || '설비 표시 이름 기록 없음';
         const status=Object.prototype.hasOwnProperty.call(states,o.status) ? states[o.status] : '오더 상태 표시 정보 없음';
         const p=o.package, n=v=>typeof v==='number' && Number.isFinite(v) ? `${W.num(v)}시간` : '기록 없음';
-        const modes={reserve:'예약 · 실물 출고와 별도',issue:'실물 출고 · 정비 완료와 별도',preserve:'기존 할당 유지 · 새 예약이나 재출고 아님'}, mode=after.plan?.stock_effect;
-        return `<li><b>${e(name)} · ${e(o.ref || '오더 번호 기록 없음')} · ${e(status)}</b>${p ? '<p>'+e(p.package_name || '정비 묶음 이름 기록 없음')+' · 이번 정비 차례 누적 기준 '+e(n(p.next_due_total_h))+' · 패키지 간격 '+e(n(p.package_interval_h))+'</p>' : '<p>오더별 패키지 근거 기록 없음</p>'}<p>영수증에 기록된 부품 처리 방식: ${e(Object.prototype.hasOwnProperty.call(modes,mode) ? modes[mode] : '기록 없음 · 예약이나 출고를 추정하지 않습니다.')}</p>${o.window_starts_at ? '<p>정비 시작 시각 '+e(UI.dateTime(o.window_starts_at))+'</p>' : '<p>정비 시작 시각 기록 없음</p>'}</li>`;
+        const modes={reserve:'예약',issue:'창고 출고',preserve:'기존 오더에 잡아 둔 부품을 그대로 씀'}, mode=after.plan?.stock_effect;
+        return `<li><b>${e(name)} · ${e(o.ref || '오더 번호 기록 없음')} · ${e(status)}</b>${p ? '<p>'+e(p.package_name || '정비 묶음 이름 기록 없음')+' — 이번 정비 기준 누적 운전시간 '+e(n(p.next_due_total_h))+', 정비 묶음 간격 '+e(n(p.package_interval_h))+'</p>' : '<p>이 오더의 정비 묶음 근거는 기록에 없습니다.</p>'}<p>부품 처리 방식: ${e(Object.prototype.hasOwnProperty.call(modes,mode) ? modes[mode] : '기록 없음')}</p>${o.window_starts_at ? '<p>정비 시작 시각: '+e(UI.dateTime(o.window_starts_at))+'</p>' : '<p>정비 시작 시각은 기록에 없습니다.</p>'}</li>`;
       }).join('')+'</ul></div>' : '<p>설비별 실제 오더 기록 없음</p>')+
       UI.fold('정비 오더 영수증 원문',`<pre>${e(JSON.stringify(receipt,null,2))}</pre>`,{cls:'small'});
   };
@@ -165,7 +214,7 @@
     if (v === false) return '아니요';
     if (typeof v === 'number') { const u = W.unit(key); return `${W.num(v)}${u ? ' ' + u : ''}`; }
     if (typeof v === 'string') {
-      if(key==='package_semantics' && v==='base_interval_configuration') return '등록된 기본 정비 설정 · 이번 차례 패키지 선택 아님';
+      if(key==='package_semantics' && v==='base_interval_configuration') return '등록된 기본 정비 설정(이번 차례에 고른 정비 묶음은 아님)';
       if (/^\d{4}-\d\d-\d\dT/.test(v)) return UI.dateTime(v);
       if (STATES[v]) return STATES[v];
       if (key === 'pattern' || /^[A-Z][A-Z_]+$/.test(v) && W.pattern(v) !== v) return W.pattern(v);
@@ -195,8 +244,9 @@
   };
   W.startValue = (key,value) => {
     if (value==null || value==='') return '값 없음';
-    if (['incident','alert_id','alertId'].includes(key)) return `${key==='incident' ? '사건' : '경보'} 식별값 있음 · 원문 확인`;
-    if (key==='pattern') { const label=W.pattern(value); return label===value ? '경보 패턴 표시 이름 기록 없음 · 원문 확인' : label; }
+    // 사건 · 경보 번호는 내부 번호라 값 자리에 그대로 내지 않는다 — 연결돼 있다는 사실만(번호 원문은 그 화면의 원문 접기에). 이 문장은 여기 한 곳(taskDetail 도 이 함수를 쓴다)
+    if (['incident','alert_id','alertId'].includes(key)) return '연결됨';
+    if (key==='pattern') { const label=W.pattern(value); return label===value ? '경보 패턴 표시 이름 미등록' : label; }
     return W.value(key,value);
   };
   W.pattern = code => UI.patternName(code);   // 경보 패턴 이름표는 ui.js 하나
@@ -263,11 +313,11 @@
   function purchaseQuote(option) {
     const resolved=option?.resolvedSupplier;
     if (!resolved || typeof resolved!=='object') return '';
-    const policies={oem:'정본 순정 견적',lowest_approved:'승인된 비순정 최저가',fastest_quote:'전체 견적 최단 납기'};
-    const policy=Object.prototype.hasOwnProperty.call(policies,resolved.policy) ? policies[resolved.policy] : '선정 정책 기록 확인 필요';
+    const policies={oem:'순정품 견적',lowest_approved:'승인된 대체품 중 최저가',fastest_quote:'가장 빠른 납기'};
+    const policy=Object.prototype.hasOwnProperty.call(policies,resolved.policy) ? policies[resolved.policy] : '선정 기준 기록 없음';
     const quote=resolved.quote || {}, label=quote.name;
     const supplier=label && label!==resolved.id ? label : '공급사 표시 이름 기록 없음';
-    return [policy,supplier,typeof quote.price==='number' ? `단가 ${W.num(quote.price)}만원` : '',typeof quote.lead_d==='number' ? `납기 ${W.num(quote.lead_d)}일` : '',quote.avl===true ? '등록 AVL 통과' : quote.avl===false ? '등록 AVL 미통과' : 'AVL 기록 미확인'].filter(Boolean).join(' · ');
+    return [policy,supplier,typeof quote.price==='number' ? `단가 ${W.num(quote.price)}만원` : '',typeof quote.lead_d==='number' ? `납기 ${W.num(quote.lead_d)}일` : '',quote.avl===true ? '승인 공급사(AVL) 검사 통과' : quote.avl===false ? '승인 공급사(AVL) 검사 미통과' : '승인 공급사(AVL) 검사 기록 없음'].filter(Boolean).join(' · ');   // AVL 문장은 여기 한 곳
   }
   W.purchaseQuote = purchaseQuote;
   W.purchaseEconomics = option => {
@@ -292,18 +342,18 @@
     const values={...(decision.facts || {}),...(option.facts || {})}, part=decision.origin?.part, comparison=W.purchaseEconomics(option);
     const rows=[['구매 대상 부품',purchasePart(part) || (values.part_no || values.spare_part_no ? `부품 번호 ${values.part_no || values.spare_part_no}` : '부품 근거 기록 없음')],
       ...['need_qty','po_amount','lead_slack_days'].filter(k=>values[k]!=null && !(comparison && ['po_amount','need_qty'].includes(k))).map(k=>[W.fieldName(k),W.value(k,values[k])]),
-      ['공급사 선정 근거',purchaseQuote(option).replace('등록 AVL 통과','등록 승인 공급사 검사 통과').replace('등록 AVL 미통과','등록 승인 공급사 검사 미통과').replace('AVL 기록 미확인','승인 공급사 검사 기록 미확인') || '공급사 선정 근거 기록 없음 · 현재 값으로 추정하지 않습니다.']];
+      ['공급사 선정 근거',purchaseQuote(option) || '공급사 선정 근거가 기록에 없습니다.']];
     if (comparison) {
       rows.push(['필요 수량',typeof comparison.quantity==='number' ? `${W.num(comparison.quantity)}개` : '수량 기록 미확인'],['견적 단가',costValue(comparison.unit_price)]);
       rows.push(...[['발주 금액','purchase_amount'],['기대 불량 비용','expected_failure_cost'],['전수 검사 비용','inspection_cost'],['비교 총비용','total_cost']].map(([label,key])=>[label,costValue(comparison[key])]));
       rows.push(['견적 불량률',typeof comparison.fail_rate==='number' && Number.isFinite(comparison.fail_rate) ? `${W.num(comparison.fail_rate*100)} %` : '기록 미확인']);
       const policy=comparison.policy || {};
       rows.push(['원문 비용 기준',`불량 1개당 손실 ${costValue(policy.loss_per_failure)} · 검사 기준 ${typeof policy.inspection_threshold==='number' ? W.num(policy.inspection_threshold*100)+' % 초과' : '기록 미확인'} · 전수 검사비 ${costValue(policy.inspection_cost)}`]);
-    } else rows.push(['구매 총비용 비교','비교 기록 없음 · 발주 금액만으로 총비용을 추정하지 않습니다.']);
-    return `<section class="ap-business" aria-label="구매 요청"><b>구매 요청</b><dl class="meta-list">${rows.map(([label,value])=>`<div><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`).join('')}</dl><p class="muted">구매요청 계획 · 승인 · 발주 완료 아님</p>${UI.fold('구매요청 근거 원문',`<pre>${esc(JSON.stringify({part:part || null,facts:values,resolvedSupplier:option.resolvedSupplier || null,economicComparison:option.economicComparison || null,actions:option.actions},null,2))}</pre>`,{cls:'small'})}</section>`;
+    } else rows.push(['구매 총비용 비교','비교한 기록이 없습니다.']);
+    return `<section class="ap-business" aria-label="구매 요청"><b>구매 요청</b><dl class="meta-list">${rows.map(([label,value])=>`<div><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`).join('')}</dl><p class="muted">구매 요청 계획입니다. 승인 전이라 발주하지 않았습니다.</p>${UI.fold('구매 요청 근거 원문',`<pre>${esc(JSON.stringify({part:part || null,facts:values,resolvedSupplier:option.resolvedSupplier || null,economicComparison:option.economicComparison || null,actions:option.actions},null,2))}</pre>`,{cls:'small'})}</section>`;
   };
   W.purchaseAsk = (name, input) => {
-    const i=parse(input) || {}, use=name==='purchase_context' ? '부족 재고와 원문 구매 절차 확인' : name==='evaluate_purchase' ? '구매 후보 비교 · 조회와 계산만' : '현재 처리 건에 구매 판단 등록 요청 · 승인과 실행 아님';
+    const i=parse(input) || {}, use=name==='purchase_context' ? '부족 재고와 원문 구매 절차 확인' : name==='evaluate_purchase' ? '구매 후보 비교(조회와 계산만)' : '이 처리 건에 구매 판단 등록 요청(승인 전)';
     return [i.asset,i.part_no ? `부품 번호 ${i.part_no}` : '부품 번호 기록 없음',use,name==='evaluate_purchase' && i.overrides && Object.keys(i.overrides).length ? '가정값을 넣은 비교' : ''].filter(Boolean).join(' · ');
   };
   W.purchaseGot = (name, output) => {
@@ -316,7 +366,7 @@
       const execution=d.procedures.filter(p=>p?.executable===true).length, reference=d.procedures.filter(p=>p?.executable===false).length;
       const unknown=d.procedures.length-execution-reference;
       const titles=list(d.procedures.map(p=>p?.name && p.name!==p.id ? p.name : '절차 표시 이름 기록 없음'),3);
-      return [purchasePart(d.part),`원문 구매 절차 ${d.procedures.length}개`,titles,`실행 후보 검토 대상 ${execution}개`,`참고 보관 ${reference}개`,unknown ? `사용 방식 기록 미확인 ${unknown}개` : '', '부족 부품과 등록 부품의 근거 조회 · 판단 등록 없음'].filter(Boolean).join(' · ');
+      return [purchasePart(d.part),`원문 구매 절차 ${d.procedures.length}개`,titles,`실행 후보 검토 대상 ${execution}개`,`참고 보관 ${reference}개`,unknown ? `사용 방식 기록 없음 ${unknown}개` : '', '근거만 조회했습니다(판단 등록 전)'].filter(Boolean).join(' · ');
     }
     const options=d.options ?? d.result?.options, recommended=d.recommended ?? d.result?.recommended;
     if (!Array.isArray(options) || options.some(o=>!o || typeof o!=='object' || Array.isArray(o))) return '구매 후보 · 판단 결과 형식을 확인하세요. 원문은 상세에 보존되어 있습니다.';
@@ -325,10 +375,10 @@
     const evidence=[purchasePart(d.part ?? d.origin?.part) || '부품 근거 기록 없음',typeof d.facts?.need_qty==='number' ? `필요 수량 ${W.num(d.facts.need_qty)}개` : '',`구매 후보 ${options.length}개`,options.some(o=>o.feasible===false) ? `규정 등으로 제외 ${options.filter(o=>o.feasible===false).length}개` : '',label ? `추천 ‘${label}’` : '추천 기록 없음',quotes].filter(Boolean);
     if (name==='evaluate_purchase') {
       const state=d.status==='NO_FEASIBLE_OPTION' ? '추천 가능한 구매 후보 없음' : d.status==='REJECTED_BY_GUARDRAIL' ? '검사 규칙으로 구매 판단 중단' : d.status==='EVALUATED' ? '후보 비교 완료' : '후보 비교 상태 기록 확인 필요';
-      return [state,'조회 · 계산 결과이며 판단 등록 · 승인 · 실행 아님',...evidence].join(' · ');
+      return [state,'조회와 계산만 한 결과입니다(판단 등록 전)',...evidence].join(' · ');
     }
     const registered=d.status==='SUBMITTED' && typeof d.id==='string' && !!d.id;
-    return [registered ? '구매 판단 등록됨' : '구매 판단 등록 완료 기록 없음','사람 승인 · 구매 실행 완료 아님',...evidence].join(' · ');
+    return [registered ? '구매 판단을 등록했습니다(승인 전)' : '구매 판단을 등록했다는 기록이 없습니다',...evidence].join(' · ');
   };
   // 지식 그래프 질의 → 사람 말 (무엇과 연결된 무엇을 찾았나)
   function cypherAsk(q) {
@@ -342,7 +392,7 @@
     if (ids.length) return `‘${list(ids, 2)}’와 연결된 것`;
     if (/\$ids|\$id/.test(s) && labels.length) return `${list(labels.map(l => LBL[l]).filter(Boolean), 2)}${rels.length ? '의 ' + list(rels.map(r => REL[r]).filter(Boolean), 2) : ''}`;
     if (labels.length) return list(labels.map(l => LBL[l]).filter(Boolean), 3);
-    return '지식 그래프 조회 · 조회 목적 기록 없음 · 원문 확인';
+    return '지식 그래프 조회';   // 무엇을 찾는지 읽어 내지 못한 질의 — 질의 원문은 그 줄을 펼치면 있다
   }
   function rowsGot(o) {
     const v = doc(purchaseRecord(o));
@@ -353,12 +403,12 @@
     }
     return '';
   }
-  const purposeLabel = label => `${label} · 조회 목적 기록 없음 · 원문 확인`;
-  function sqlAsk() { return purposeLabel('업무 자료 조회'); }
+  // 질의 · 명령의 목적은 기록에 없다 — 줄마다 같은 꼬리를 붙이지 않고 종류만 말한다(원문은 그 줄을 펼치면 있다)
+  function sqlAsk() { return '업무 자료 조회'; }
   function shellAsk(i) {
     if (typeof i==='object' && typeof i.description==='string' && /[가-힣]/.test(i.description) && !/\b(?:SELECT|MATCH|CALL)\b|[A-Za-z]+_[A-Za-z_]+/.test(i.description)) return i.description;
     const original=typeof i==='string' ? i : i?.command;
-    if(typeof original!=='string')return purposeLabel('명령 실행');
+    if(typeof original!=='string')return '명령 실행';
     let command=original.trim();
     const wrapper=/^"[^"]*powershell\.exe"\s+-Command\s+"([\s\S]*)"$/i.exec(command);
     if(wrapper)command=wrapper[1];
@@ -366,27 +416,27 @@
     // scripts remain unknown; parsing never executes or rewrites the original.
     if (/^Get-Content\b/i.test(command) && !/[\r\n;|`]|&&|\$\(/.test(command)) {
       const path=/-LiteralPath\s+['"]([^'"]+)['"]/i.exec(command)?.[1];
-      const purpose=path==='context/task.json' ? '처리 건의 작업 입력' : path?.endsWith('/SKILL.md') ? '스킬 문서 · 등록 여부는 전달 기록 확인' : '파일 목적 기록 없음 · 원문 확인';
-      return '파일 본문 읽기 요청 · '+purpose;
+      const purpose=path==='context/task.json' ? ' — 처리 건의 작업 입력' : path?.endsWith('/SKILL.md') ? ' — 스킬 문서' : '';
+      return '파일 읽기 요청'+purpose;
     }
-    return purposeLabel('명령 실행');
+    return '명령 실행';
   }
   function genericGot(output) {
     const v=doc(purchaseRecord(output)), rows=rowsGot(output);
     if (rows) return rows;
-    if (v==null) return '반환값 없음 · 조회 결과 건수 미확인';
-    if (typeof v==='string') return v.length ? `반환 본문 ${v.length}자` : '반환 본문 없음 · 조회 결과 건수 미확인';
+    if (v==null) return '반환값 없음';
+    if (typeof v==='string') return v.length ? `반환 본문 ${v.length}자` : '반환 본문 없음';
     if (typeof v==='number') return `반환값 ${W.num(v)}`;
     if (typeof v==='boolean') return `반환값 ${v ? '참' : '거짓'}`;
     const known=factsLine(v?.facts || v);
-    return known || '결과 형식의 표시 정보 없음 · 원문 확인';
+    return known || '결과를 받았습니다';
   }
   const TOOLS = {
     'mcp__codex__list_mcp_resources': {name:'참고 자료 목록 조회', minor:true},
     'mcp__codex__list_mcp_resource_templates': {name:'참고 자료 형식 조회', minor:true},
     ToolSearch: { name: '쓸 도구 불러오기', minor: true, ask: i => list(String(i.query || '').replace(/^select:/, '').split(',').map(t => W.toolName(t.trim())), 4), got: o => Array.isArray(o) ? `${o.length}개 준비됨` : '' },
-    Write: { name: '파일 쓰기', minor: true, ask: i => UI.baseName(i.file_path || ''), got: () => '썼음' },
-    Edit: { name: '파일 고치기', minor: true, ask: i => UI.baseName(i.file_path || ''), got: () => '고침' },
+    Write: { name: '파일 쓰기', minor: true, ask: i => UI.baseName(i.file_path || ''), got: () => '파일을 썼습니다' },
+    Edit: { name: '파일 고치기', minor: true, ask: i => UI.baseName(i.file_path || ''), got: () => '파일을 고쳤습니다' },
     Read: { name: '파일 읽기', minor: true, ask: i => UI.baseName(i.file_path || '') },
     Bash: { name: '명령 실행', minor: true, ask: shellAsk },
     Glob: { name: '파일 찾기', minor: true, ask: i => i.pattern || '' }, Grep: { name: '내용 찾기', minor: true, ask: i => i.pattern || '' },
@@ -402,15 +452,15 @@
       got: o => { const d = doc(parse(o)) || {}; return [d.cause && `원인 ‘${nm(d.cause)}’`, d.failure_mode && `고장 유형 ‘${nm(d.failure_mode)}’`, d.part && `부품 ${nm(d.part)}`].filter(Boolean).join(' · '); } },
     'mcp__hyd-dmn__purchase_context': {name:'구매 부품 근거 조회',sys:'판단 시스템 · 구매 · 재고 관리 · 지식 그래프',ask:i=>W.purchaseAsk('purchase_context',i),got:o=>W.purchaseGot('purchase_context',o)},
     'mcp__hyd-dmn__evaluate_purchase': {name:'구매 후보 비교',sys:'판단 시스템',ask:i=>W.purchaseAsk('evaluate_purchase',i),got:o=>W.purchaseGot('evaluate_purchase',o)},
-    'mcp__hyd-dmn__submit_purchase': {name:'구매 판단 등록 (승인 · 실행 아님)',sys:'판단 시스템 → 처리 건',ask:i=>W.purchaseAsk('submit_purchase',i),got:o=>W.purchaseGot('submit_purchase',o)},
+    'mcp__hyd-dmn__submit_purchase': {name:'구매 판단 등록 (승인 전)',sys:'판단 시스템 → 처리 건',ask:i=>W.purchaseAsk('submit_purchase',i),got:o=>W.purchaseGot('submit_purchase',o)},
     'mcp__hyd-dmn__timeseries_query': { name: '센서 기록 조회', sys: '센서 기록', ask: sqlAsk },
     'mcp__hyd-dmn__timeseries_schema': { name: '센서 기록 구조 보기', sys: '센서 기록' },
     'mcp__hyd-dmn__dmn_rules': { name: '판단 규칙표 보기', sys: '판단 시스템', ask: i => nm(i.decision || ''),
       got: o => { const d = doc(parse(o)); return Array.isArray(d) && d[0] ? `‘${d[0].decisionName || nm(d[0].decision)}’ 규칙 ${(d[0].rules || []).length || d.length}개` : ''; } },
     'mcp__hyd-dmn__evaluate_cards': { name: '대안 평가 (후보 · 규정 · 득실 · 순위)', sys: '판단 시스템', ask: i => [i.asset, nm(i.failure_mode || ''), nm(i.cause || '')].filter(Boolean).join(' · '),
-      got:o=>{const d=doc(parse(o)), options=d?.options; if(!d || !Array.isArray(options)) return '대안 평가 결과 형식을 확인할 수 없습니다 · 원문 확인';   // 판단 시스템 read_outcome 꼴: 맨 위 options · recommended
+      got:o=>{const d=doc(parse(o)), options=d?.options; if(!d || !Array.isArray(options)) return '대안 평가 결과를 읽지 못했습니다(펼쳐서 원문 보기)';   // 판단 시스템 read_outcome 꼴: 맨 위 options · recommended
         const chosen=options.find(x=>x.id===d.recommended);
-        return [d.status==='NO_FEASIBLE_OPTION' ? '추천 가능한 대안 없음' : d.status==='EVALUATED' ? '대안 비교 완료' : '평가 상태 기록 확인 필요',`대안 ${options.length}개`,options.some(x=>x.feasible===false) ? `제외 ${options.filter(x=>x.feasible===false).length}개` : '',chosen?.name ? `당시 추천 ‘${chosen.name}’` : '', '조회 · 계산 결과이며 판단 등록 · 승인 · 실행 아님'].filter(Boolean).join(' · '); } },
+        return [d.status==='NO_FEASIBLE_OPTION' ? '추천 가능한 대안 없음' : d.status==='EVALUATED' ? '대안 비교 완료' : '평가 상태 기록 확인 필요',`대안 ${options.length}개`,options.some(x=>x.feasible===false) ? `제외 ${options.filter(x=>x.feasible===false).length}개` : '',chosen?.name ? `당시 추천 ‘${chosen.name}’` : '', '조회와 계산만 한 결과입니다(판단 등록 전)'].filter(Boolean).join(' · '); } },
     'mcp__hyd-dmn__gather_facts': { name: '판단 사실 모으기', sys: '판단 시스템', ask: i => [i.asset, nm(i.failure_mode || '')].filter(Boolean).join(' · '),
       got: o => factsLine((doc(parse(o)) || {}).facts) },
     'mcp__hyd-dmn__precedents': { name: '과거 선택 조회', sys: '판단 시스템', ask: i => nm(i.failure_mode || ''),
@@ -461,7 +511,7 @@
     // 사전이 모양을 모르면 아래 일반 요약(원래 값은 화면의 "물은 원문"에 그대로 있다). 사전 결함은 콘솔에 도구 이름과 함께 남긴다
     try { if (s.ask) { const a = s.ask(i); if (a) return UI.clean(a); } } catch (err) { console.warn('[hydWords] 물음 요약 실패', raw, err); }
     const facts=typeof i==='object' ? factsLine(i,3) : '';
-    return facts || '도구 요청 목적 기록 없음 · 원문 확인';
+    return facts || '요청 내용 요약 없음';
   };
   // 받은 것 한 줄 (잘림 · 막힘 · 실패는 상태로 따로)
   W.got = (raw, output) => {

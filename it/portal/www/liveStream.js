@@ -44,7 +44,7 @@
     if (Array.isArray(v)) return `${v.length}건`;
     if (typeof v === 'object') {
       for (const k of ['query', 'sql', 'command', 'description', 'file_path', 'path']) if (typeof v[k] === 'string') return brief(v[k], n);
-      return Object.keys(v).slice(0, 3).map(k => `${k} ${typeof v[k] === 'object' ? '…' : UI.clean(String(v[k])).slice(0, 40)}`).join(' · ').slice(0, n);
+      return Object.keys(v).slice(0, 3).map(k => `${hydWords.fieldName(k)} ${typeof v[k] === 'object' ? '…' : UI.clean(String(v[k])).slice(0, 40)}`).join(' · ').slice(0, n);
     }
     return String(v).slice(0, n);
   }
@@ -52,15 +52,15 @@
   function describe(e) {
     const d = e.data || {};
     switch (e.event_type) {
-      case 'tool_usage_started': return { title: UI.toolName(d.tool), text: brief(d.input), dur: S.finished.has(d.tool_use_id) ? '' : UI.t('inst.running'), running: !S.finished.has(d.tool_use_id) };
+      case 'tool_usage_started': return { title: UI.toolName(d.tool), text: hydWords.ask(d.tool, d.input), dur: S.finished.has(d.tool_use_id) ? '' : UI.t('inst.running'), running: !S.finished.has(d.tool_use_id) };
       case 'tool_usage_finished': {
         const started = S.starts.get(d.tool_use_id), o = UI.outcome(d.output, d.is_error);
         return { title: UI.toolName(d.tool), text: o.text || brief(d.output), dur: started ? fmtMs(new Date(e.timestamp) - started) : '', tone: o.tone };
       }
-      case 'task_working': return { title: ['text','public_text'].includes(d.type) ? '에이전트 판단' : d.type === 'file_artifact' ? UI.t('trace.file') : UI.clean(UI.logText(d.name || '')) || UI.t('stream.working'),
+      case 'task_working': return { title: ['text','public_text'].includes(d.type) ? 'AI 에이전트 판단' : d.type === 'file_artifact' ? UI.t('trace.file') : UI.clean(UI.logText(d.name || '')) || UI.t('stream.working'),
         text: d.type === 'file_artifact' ? UI.baseName(d.path || '') : brief(d.content || d.message || '', 160) };
       case 'task_started': return { title: activityOf(e) || UI.t('step'), text: UI.t('trace.picked') };
-      case 'task_completed': return { title: activityOf(e) || UI.t('step'), text: (d.output_keys || []).length ? UI.t('trace.outputs') + ' ' + d.output_keys.map(k => UI.terms['var.' + k] || k).join(', ') : brief(d.text) };
+      case 'task_completed': return { title: activityOf(e) || UI.t('step'), text: (d.output_keys || []).length ? UI.t('trace.outputs') + ' ' + d.output_keys.map(k => UI.terms['var.' + k] || hydWords.fieldName(k)).join(', ') : brief(d.text) };
       case 'task_cancelled': {
         if (e.job_id === 'TASK_CANCEL_REQUESTED') return { title: UI.t('stream.cancelReq'), text: UI.logText(brief(d.goal, 160)) };
         if (e.job_id === 'TASK_CLOSED') return { title: UI.t('stream.closed'), text: UI.logText(brief(d.goal || d.reason, 160)) };
@@ -90,7 +90,8 @@
     if (!noise(e)) { S.rows.unshift({ e, fresh }); if (S.rows.length > MAX) S.rows.pop(); }
     // every subscriber gets every event (history too: a trace mounted after the event still wants it)
     if (window.hydTrace) hydTrace.onEvent(e);
-    S.subs.forEach(fn => { try { fn(e, fresh); } catch (_) { /* one screen's bug must not stop the stream */ } });
+    // 한 화면의 오류가 스트림을 멈추게 두지 않는다 — 다만 삼키지 않고 어느 구독 화면 · 어느 이벤트였는지 개발자 도구에 남긴다
+    S.subs.forEach(fn => { try { fn(e, fresh); } catch (err) { console.error('[hydStream] 구독 화면 오류', fn.name || '(이름 없는 구독)', e.event_type, e.id, err); } });
     if (fresh && RELOAD_ON.has(e.event_type)) scheduleReload(e);
     if (fresh && !noise(e)) ticker(e);
     if (fresh && window.hydTaskDetail) window.hydTaskDetail.onEvent(e);   // U1: the open task panel takes its own task's events at once
@@ -113,7 +114,7 @@
     const isTool=e.event_type==='tool_usage_started'||e.event_type==='tool_usage_finished';
     const raw=(e.data||{}).tool||'';
     const name=isTool ? UI.toolName(raw) : '';   // 도구 이름은 포털 사전 하나(hydWords) — 사전에 없으면 서버 등록 이름 · 그 상태
-    const label=isTool ? (e.event_type==='tool_usage_started'?'도구 실행 중':(e.data?.is_error||e.data?.attempt_failed)?'도구 호출 실패':'도구 호출 끝남') : kind ? UI.t(kind[1]) : UI.eventName(e.event_type);
+    const label=isTool ? (e.event_type==='tool_usage_started'?'도구 실행 중':(e.data?.is_error||e.data?.attempt_failed)?'도구 호출 실패':'도구 호출 완료') : kind ? UI.t(kind[1]) : UI.eventName(e.event_type);
     const body=isTool ? `<p>${esc(window.hydWords.toolSystem(raw) || '')}</p>${UI.toolIdentityFold(raw)}` : `<p>${esc(title)}</p>`;   // 원래 이름은 사전에 없는 도구일 때만 접어서
     t.innerHTML = `<summary><i class="live-dot ${kind ? kind[0] : ''}"></i><span>${esc(label)}</span><b>${esc(isTool ? name : title)}</b></summary><div class="ticker-detail">${body}</div>`;
     if(isTool&&!window.hydWords.knownTool(raw)&&window.hydToolNames){
@@ -186,8 +187,9 @@
       const t = document.getElementById('streamTicker');
       if (t && !S.lastKey) t.innerHTML = `<summary><i class="live-dot on"></i><span>${esc(UI.t('header.waiting'))}</span></summary>`;
     };
-    es.addEventListener('history', ev => { try { push(JSON.parse(ev.data), false); } catch (e) { /* ignore a bad frame */ } renderSoon(); });
-    es.onmessage = ev => { let e; try { e = JSON.parse(ev.data); } catch (_) { return; } if (push(e, true)) renderSoon(); };
+    // 깨진 기록 줄 하나가 나머지를 막지 않게 건너뛰되, 건너뛴 줄은 개발자 도구에 남긴다
+    es.addEventListener('history', ev => { try { push(JSON.parse(ev.data), false); } catch (err) { console.error('[hydStream] 지난 기록 줄을 읽지 못해 건너뜁니다', err, ev.data); } renderSoon(); });
+    es.onmessage = ev => { let e; try { e = JSON.parse(ev.data); } catch (err) { console.error('[hydStream] 실시간 기록 줄을 읽지 못해 건너뜁니다', err, ev.data); return; } if (push(e, true)) renderSoon(); };
     // A147: a dropped connection (readyState CONNECTING) is retried by the browser itself (Last-Event-ID resumes it).
     // A non-200 answer (서버가 아직 준비 안 됨 503 · 프록시 502 …) closes the EventSource for good → our own backoff.
     es.onerror = () => {

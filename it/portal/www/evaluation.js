@@ -16,6 +16,11 @@
   const factsText = (f) => Object.entries(f || {}).map(([k, v]) => `${factLabel(k)} ${factVal(k, v)}`).join(' · ') || '가정 사실 없음 (지금 값 사용)';
   const pct = (x) => Math.round((x || 0) * 100) + ' %';
   const ok = (b) => UI.chipText(b ? '맞음' : '틀림', b ? 'success' : 'danger');
+  // 누가 적고 실행했는지 = 이 PC의 담당자 id(서버 eval_api.by_of 는 빈 값만 거절한다). 담당자를 못 읽으면 다른 값으로 대신하지 않고 막는다
+  const NEED_ME = '담당자 정보를 읽지 못해 보낼 수 없습니다. 화면을 새로 고친 뒤 다시 해 주세요.';
+  function meId() { const id = window.hydInbox?.me?.()?.id; if (!id) throw new Error(NEED_ME); return id; }
+  // 그래프 관계 종류(영문) → 지식 지도와 같은 이름(enterprise.js RELATION_KO 한 곳). 그 표에 없는 종류만 원문 그대로
+  const relName = (type) => (typeof RELATION_KO === 'object' && RELATION_KO[type]) || type;
 
   // 채점 실행은 N회 판단이라 30초를 넘길 수 있다 — 공용 요청 함수에 시간 제한 없이(끊김 · 거절 문구는 공용 함수가 학생 말로 바꾼다)
   const longJ = (url, method, body) => postJ(url, body, method, { timeout: 0 });
@@ -25,7 +30,7 @@
   function skeleton() {
     E.el.innerHTML = `
       <div class="page-head"><h1>판단 채점</h1><div class="page-tools"><button type="button" class="btn small" data-act="reload">${esc(UI.t('btn.reload'))}</button></div></div>
-      <p class="card-sub">경보 상황마다 기대하는 원인 · 1위로 허용되는 조치 · 빠져야 할 조치 · 있어야 할 근거를 정답표에 적고, 판단을 대어 점수를 냅니다(세 경로 가운데 AI가 판단하는 것은 「지난 처리 건」 하나 — 규칙 판단 · 읽기 평가는 AI 모델 없이 판단 엔진만 돕니다). 지식을 고치기 전과 후에 한 번씩 채점해 두 실행을 비교합니다. 채점은 처리 건 · 설비 명령 · 기준 데이터를 바꾸지 않습니다.</p>
+      <p class="card-sub">경보 상황마다 기대하는 원인, 1위로 허용되는 조치, 빠져야 할 조치, 있어야 할 근거를 정답표에 적고, 판단을 대어 점수를 냅니다. 세 판단 경로 가운데 AI가 판단하는 것은 「지난 처리 건」 하나입니다. 「규칙 판단」과 「규칙 읽기 평가」는 AI 모델 없이 판단 엔진만으로 계산합니다. 지식을 고치기 전과 후에 한 번씩 채점해 두 실행을 비교합니다. 채점은 처리 건, 설비 명령, 기준 데이터를 바꾸지 않습니다.</p>
       <div class="stat-cards" data-r="stats"></div>
       <div class="sec-head"><h2>1. 정답표</h2><button type="button" class="btn small" data-act="new">새 항목 적기</button></div>
       <div data-r="golden"></div>
@@ -46,10 +51,10 @@
     const last = E.runs[0], k = E.knowledge;
     const card = (label, value, sub = '') => `<section class="card"><span>${esc(label)}</span><b>${value}</b>${sub ? `<small>${sub}</small>` : ''}</section>`;
     q('[data-r="stats"]').innerHTML =
-      card('정답표 항목', esc(E.golden.length), E.golden.length ? '' : '비어 있음 — 먼저 적으세요') +
-      card('채점 실행', esc(E.runs.length), last ? esc(UI.dateTime(last.created)) : '아직 없음') +
+      (E.goldenError ? card('정답표 항목', '읽지 못함', esc(E.goldenError)) : card('정답표 항목', esc(E.golden.length) + '개', E.golden.length ? '' : '비어 있습니다. 먼저 정답표를 적으세요.')) +
+      (E.runsError ? card('채점 실행', '읽지 못함', esc(E.runsError)) : card('채점 실행', esc(E.runs.length) + '회', last ? esc(UI.dateTime(last.created)) : '아직 없습니다')) +
       card('최근 평균 점수', last ? esc(last.summary.score) + '점' : '–', last ? esc(PATH[last.path] || last.path) : '') +
-      card('지금 지식', k ? `노드 ${esc(k.nodes)} · 관계 ${esc(k.relationships)}` : '–',
+      card('지금 지식', k ? `지식 항목 ${esc(k.nodes)}개 · 연결 ${esc(k.relationships)}개` : '–',
         k ? esc(k.last_change ? '마지막 변경 ' + UI.dateTime(k.last_change) : k.last_change_note || '') : esc(E.knowledgeError || ''));
   }
 
@@ -80,7 +85,12 @@
   }
   function datalists() {
     const by = (prefix) => Object.entries(UI.names || {}).filter(([k]) => k.startsWith(prefix)).map(([k, v]) => `<option value="${esc(k)}">${esc(v)}</option>`).join('');
-    return `<datalist id="evalDlCause">${by('cause:')}</datalist><datalist id="evalDlFm">${by('fm:')}</datalist>`;
+    return `<datalist id="evalDlCause">${by('cause:')}</datalist><datalist id="evalDlFm">${by('fm:')}</datalist>` +
+      `<datalist id="evalDlSkill">${by('skill:')}</datalist><datalist id="evalDlEvidence">${by('evd:')}${by('rule:')}${by('ks:')}</datalist>`;
+  }
+  // 조치 · 근거 칸 아래의 「이름으로 찾아 넣기」: 이름 사전에서 고르면 그 항목의 id 를 위 칸에 한 줄 더한다(id 를 외워 적지 않게)
+  function picker(field, list, label) {
+    return `<input data-add-to="${field}" list="${list}" placeholder="이름으로 찾아 넣기" aria-label="${esc(label)} 이름으로 찾아 넣기" autocomplete="off">`;
   }
 
   function renderForm() {
@@ -88,7 +98,7 @@
     if (!E.editing) { host.innerHTML = ''; return; }
     const it = E.editing.item || { facts: {}, expected: {}, allowed_top: [], forbidden: [], required_evidence: [] };
     const isNew = !E.editing.item;
-    const sel = (id, opts, cur) => `<select data-f="${id}">${opts.map(([v, l]) => `<option value="${esc(v)}" ${String(cur ?? '') === String(v) ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
+    const sel = (id, opts, cur, blank) => `<select data-f="${id}">${blank ? `<option value="">${esc(blank)}</option>` : ''}${opts.map(([v, l]) => `<option value="${esc(v)}" ${String(cur ?? '') === String(v) ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
     const pats = (E.patterns || []).map(p => [p.code, p.name]);
     const f = it.facts || {};
     const forbiddenText = (it.forbidden || []).map(x => `${x.skill} = ${x.expect === 'excluded' ? '제외' : '1위 아님'}${x.rule ? ` (${x.rule})` : ''}`).join('\n');
@@ -96,20 +106,21 @@
       datalists() +
       UI.section('경보 상황',
         UI.field({ label: '제목', required: true, input: `<input data-f="title" value="${esc(it.title || '')}" placeholder="예: 쿨러 성능 저하 · 원격 자동 운전">` }) +
-        UI.field({ label: '항목 이름 (영문 소문자 · 숫자 · 하이픈)', required: true, hint: '저장한 뒤에는 바꿀 수 없습니다', input: `<input data-f="id" value="${esc(it.id || '')}" ${isNew ? '' : 'disabled'} placeholder="예: cooler-auto">` }) +
-        UI.field({ label: '설비', required: true, input: sel('asset', E.assets.map(a => [a, a]), it.asset || E.assets[0]) }) +
-        UI.field({ label: '이상 패턴', required: true, error: E.patterns ? '' : E.patternError || '', input: pats.length ? sel('pattern', pats, it.pattern || pats[0][0]) : `<input data-f="pattern" value="${esc(it.pattern || '')}">` })) +
-      UI.section('가정 사실 (비우면 지금 값)', Object.entries(E.facts).map(([k, spec]) => UI.field({ label: spec.label,
+        UI.field({ label: '항목 이름(영문)', required: true, hint: '영문 소문자, 숫자, 하이픈만 씁니다. 저장한 뒤에는 바꿀 수 없습니다.', input: `<input data-f="id" value="${esc(it.id || '')}" ${isNew ? '' : 'disabled'} placeholder="예: cooler-auto">` }) +
+        UI.field({ label: '설비', required: true, input: sel('asset', E.assets.map(a => [a, a]), it.asset || '', '설비 선택') }) +
+        UI.field({ label: '이상 패턴', required: true, error: E.patterns ? '' : E.patternError || '', input: pats.length ? sel('pattern', pats, it.pattern || '', '이상 패턴 선택') : '<select data-f="pattern" disabled><option value="">목록을 읽지 못함</option></select>' })) +
+      UI.section('가정 사실(비우면 지금 값을 씁니다)', Object.entries(E.facts).map(([k, spec]) => UI.field({ label: spec.label,
         input: spec.number ? `<input data-f="${esc(k)}" data-fact="number" type="number" min="0" step="1" value="${esc(f[k] ?? '')}" placeholder="지금 값">`
           : sel(k, [['', '지금 값'], ...spec.choices.map(([v, l]) => [JSON.stringify(v), l])], f[k] == null ? '' : JSON.stringify(f[k])) })).join('')) +
       UI.section('기대하는 판단',
         UI.field({ label: '기대 원인', required: true, input: `<input data-f="cause" list="evalDlCause" value="${esc(it.expected.cause || '')}">`, hint: '지식 지도의 원인 이름을 고르세요' }) +
         UI.field({ label: '고장 유형', required: true, input: `<input data-f="failure_mode" list="evalDlFm" value="${esc(it.expected.failure_mode || '')}">` }) +
-        UI.field({ label: '1위로 허용되는 조치 — 한 줄에 하나', required: true, cls: 'wide', input: `<textarea data-f="allowed_top" rows="2">${esc((it.allowed_top || []).join('\n'))}</textarea><p class="field-hint" data-preview="allowed_top">${namePreview((it.allowed_top || []).join('\n'))}</p>` }) +
-        UI.field({ label: '빠져야 할 조치 — "조치 = 제외" 또는 "조치 = 1위 아님", 근거 규칙은 괄호', cls: 'wide', input: `<textarea data-f="forbidden" rows="3">${esc(forbiddenText)}</textarea><p class="field-hint" data-preview="forbidden">${namePreview(forbiddenText.replace(/=.*$/gm, ''))}</p>` }) +
-        UI.field({ label: '근거에 있어야 할 지식 — 한 줄에 하나 (증거 · 규칙 · 매뉴얼 절)', required: true, cls: 'wide', input: `<textarea data-f="required_evidence" rows="3">${esc((it.required_evidence || []).join('\n'))}</textarea><p class="field-hint" data-preview="required_evidence">${namePreview((it.required_evidence || []).join('\n'))}</p>` })) +
-      UI.section('', UI.field({ label: UI.t('form.by'), required: true, input: `<input data-f="by" value="${esc(E.by || '')}">` }) + UI.field({ label: UI.t('form.note'), input: `<input data-f="note" value="${esc(it.note || '')}">` })) +
-      UI.actions(`<span class="form-msg" data-msg="form" role="status"></span><button type="button" class="btn" data-act="cancel">${esc(UI.t('btn.cancel'))}</button><button type="button" class="btn primary" data-act="save">${esc(UI.t('btn.save'))}</button>`) +
+        UI.field({ label: '1위로 허용되는 조치', required: true, cls: 'wide', hint: '한 줄에 하나씩 적습니다. 아래 칸에서 조치 방법 이름을 찾아 고르면 한 줄이 더해집니다.', input: `<textarea data-f="allowed_top" rows="2">${esc((it.allowed_top || []).join('\n'))}</textarea>${picker('allowed_top', 'evalDlSkill', '1위로 허용되는 조치')}<p class="field-hint" data-preview="allowed_top">${namePreview((it.allowed_top || []).join('\n'))}</p>` }) +
+        UI.field({ label: '빠져야 할 조치', cls: 'wide', hint: '한 줄에 하나씩 「조치 = 제외」 또는 「조치 = 1위 아님」으로 적습니다. 근거 규칙이 있으면 줄 끝 괄호 안에 적습니다. 아래 칸에서 조치 방법 이름을 고르면 「= 제외」 줄이 더해집니다.', input: `<textarea data-f="forbidden" rows="3">${esc(forbiddenText)}</textarea>${picker('forbidden', 'evalDlSkill', '빠져야 할 조치')}<p class="field-hint" data-preview="forbidden">${namePreview(forbiddenText.replace(/=.*$/gm, ''))}</p>` }) +
+        UI.field({ label: '근거에 있어야 할 지식', required: true, cls: 'wide', hint: '증거, 규칙, 매뉴얼 절을 한 줄에 하나씩 적습니다. 아래 칸에서 이름을 찾아 고르면 한 줄이 더해집니다.', input: `<textarea data-f="required_evidence" rows="3">${esc((it.required_evidence || []).join('\n'))}</textarea>${picker('required_evidence', 'evalDlEvidence', '근거에 있어야 할 지식')}<p class="field-hint" data-preview="required_evidence">${namePreview((it.required_evidence || []).join('\n'))}</p>` })) +
+      UI.section('', UI.field({ label: UI.t('form.note'), input: `<input data-f="note" value="${esc(it.note || '')}">` })) +
+      UI.actions(`<span class="form-msg" data-msg="form" role="status"></span><button type="button" class="btn" data-act="cancel">${esc(UI.t('btn.cancel'))}</button><button type="button" class="btn primary" data-act="save" ${pats.length ? '' : 'disabled'}>${esc(UI.t('btn.save'))}</button>`) +
+      (pats.length ? '' : '<p class="form-msg neg" role="alert">이상 패턴 목록을 읽지 못해 지금은 저장할 수 없습니다. 위의 [다시 읽기]를 눌러 주세요.</p>') +
       (isNew ? '' : UI.fold('이 항목 지우기', `<p class="field-hint">지워도 지난 채점 실행 기록은 남습니다.</p><button type="button" class="btn small" data-act="delete">지우기</button>`)) });
     host.scrollIntoView({ block: 'start', behavior: 'smooth' });
   }
@@ -124,9 +135,9 @@
       if (!m) throw new Error(`빠져야 할 조치 ${i + 1}번째 줄: "조치 = 제외" 또는 "조치 = 1위 아님" 형식으로 적으세요`);
       return { skill: m[1], expect: m[2] === '제외' ? 'excluded' : 'not_recommended', ...(m[3] ? { rule: m[3] } : {}) };
     });
-    const by = v('by');
-    if (!by) throw new Error(UI.t('form.err.required') + ': ' + UI.t('form.by'));
-    E.by = by;
+    if (!v('asset')) throw new Error('설비를 고르세요');
+    if (!v('pattern')) throw new Error('이상 패턴을 고르세요');
+    const by = meId();
     return { by, item: { id: E.editing.item ? E.editing.item.id : v('id'), title: v('title'), asset: v('asset'), pattern: v('pattern'), facts,
       expected: { cause: v('cause'), failure_mode: v('failure_mode') }, allowed_top: lines(q('[data-f="allowed_top"]').value),
       forbidden, required_evidence: lines(q('[data-f="required_evidence"]').value), note: v('note') } };
@@ -142,10 +153,9 @@
       UI.field({ label: '판단 경로', input: `<select data-f="path">${Object.entries(PATH).map(([k, l]) => `<option value="${k}" ${k === path ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`, hint: String(E.paths[path] || ''), cls: 'wide' }) + // 경로 안내는 서버 문장(judgment_eval.PATH_NOTES) 그대로
       (path === 'worker' ? '' : UI.field({ label: '반복 횟수', input: `<input data-f="repeats" type="number" min="1" max="${E.maxRepeats}" value="${esc(E.repeats || 1)}">`,
         hint: '같은 항목을 여러 번 판단해 결과가 흔들리는지 봅니다. 모두 같으면 「N회 모두 같음」으로 보입니다.' })) +
-      UI.field({ label: UI.t('form.by'), required: true, input: `<input data-f="runBy" value="${esc(E.by || '')}">` }) +
       UI.field({ label: UI.t('form.note'), input: `<input data-f="runNote" placeholder="예: 관계 하나 끊기 전">` }) +
       `</div>` + target + (path === 'worker' ? `<div data-r="cands">${renderCands()}</div>` : '') +
-      UI.actions(`<span class="form-msg" data-msg="run" role="status"></span><button type="button" class="btn primary" data-act="run" ${E.golden.length ? '' : 'disabled'}>채점 실행</button>`);
+      UI.actions(`<span class="form-msg" data-msg="run" role="status"></span><button type="button" class="btn primary" data-act="run" ${E.golden.length && !E.busy ? '' : 'disabled'}>채점 실행</button>`);
   }
   function renderCands() {
     if (E.cands == null) return `<p class="field-hint">${esc(UI.t('loading'))}</p>`;
@@ -154,7 +164,7 @@
     return `<div class="table-scroll"><table><thead><tr><th>채점</th><th>처리 건</th><th>AI 에이전트의 판단</th><th>맞는 정답표 항목</th></tr></thead><tbody>${E.cands.map(c => {
       const item = E.golden.find(it => it.id === c.item);
       return `<tr><td><input type="checkbox" data-cand="${esc(c.instance)}" ${item ? '' : 'disabled'} aria-label="${esc(c.name || '처리 건')} 채점에 포함"></td>
-        <td>${esc(c.name || UI.defName(c.instance))}<br><small>${esc(UI.dateTime(c.started))} · ${esc(UI.status(c.status))}</small></td>
+        <td>${esc(c.name || '이름 없는 처리 건')}<br><small>${esc(UI.dateTime(c.started))} · ${esc(UI.status(c.status))}</small></td>
         <td>${nm(c.cause)} → ${nm(c.chosen_skill)}<br><small>${esc(factsText(c.facts))}</small></td>
         <td>${item ? esc(item.title) : `<small class="neg">${esc(c.match_note || '맞는 항목 없음')}</small>`}</td></tr>`;
     }).join('')}</tbody></table></div>`;
@@ -167,9 +177,8 @@
 
   async function runEval() {
     if (E.busy) return;
-    const path = q('[data-f="path"]').value, by = q('[data-f="runBy"]').value.trim(), note = q('[data-f="runNote"]').value.trim();
-    if (!by) { msg('run', UI.t('form.err.required') + ': ' + UI.t('form.by')); return; }
-    E.by = by;
+    const path = q('[data-f="path"]').value, note = q('[data-f="runNote"]').value.trim();
+    let by; try { by = meId(); } catch (e) { msg('run', e.message); return; }
     const body = { path, by, note: note || null };
     if (path === 'worker') {
       body.instances = [...E.el.querySelectorAll('[data-cand]:checked')].map(n => ({ instance: n.dataset.cand }));
@@ -178,16 +187,16 @@
       body.repeats = Math.max(1, Math.min(E.maxRepeats, Number(q('[data-f="repeats"]').value) || 1)); E.repeats = body.repeats;
       if (E.picked.size) body.items = [...E.picked];
     }
-    E.busy = true; const btn = q('[data-act="run"]'); btn.disabled = true;
+    E.busy = true; E.busyWhy = '채점 중에는 할 수 없습니다. 채점이 끝난 뒤 다시 눌러 주세요.'; const btn = q('[data-act="run"]'); btn.disabled = true;
     const n = path === 'worker' ? body.instances.length : (body.items || E.golden).length * body.repeats;
     msg('run', `채점 중… 판단 ${n}회`, false);
     try {
       const run = await longJ(API.process + '/api/eval/runs', 'POST', body);
-      msg('run', `채점 완료 — 평균 ${run.summary.score}점`, false);
+      msg('run', `채점 완료. 평균 ${run.summary.score}점입니다.`, false);
       E.sel = run.id; E.run = run;
       await loadRuns(); renderDetail();
     } catch (e) { msg('run', e.message); }
-    finally { E.busy = false; btn.disabled = false; }
+    finally { E.busy = false; const now = q('[data-act="run"]'); if (now) now.disabled = !E.golden.length; }   // 채점 중에 실행 칸이 다시 그려졌어도 지금 단추를 켠다
   }
 
   /* ---------------------------------------------------------------- 3. 실행 기록 */
@@ -195,7 +204,7 @@
     const host = q('[data-r="runs"]');
     if (!E.runs.length) { host.innerHTML = UI.empty('아직 채점 실행이 없습니다', '정답표를 적고 채점을 실행하면 여기에 남습니다'); return; }
     host.innerHTML = E.runs.map(r => `<div class="item${r.id === E.sel ? ' sel' : ''}" data-run="${esc(r.id)}" tabindex="0" role="button">
-      <div class="row"><strong>평균 ${esc(r.summary.score)}점 · 항목 ${esc(r.summary.items)}</strong>${UI.chipText(PATH[r.path] || r.path, r.path === 'worker' ? 'accent' : 'neutral')}</div>
+      <div class="row"><strong>평균 ${esc(r.summary.score)}점 · 항목 ${esc(r.summary.items)}개</strong>${UI.chipText(PATH[r.path] || r.path, r.path === 'worker' ? 'accent' : 'neutral')}</div>
       <span class="sub">${esc(UI.dateTime(r.created))} · ${esc(UI.who(r.by))}${r.note ? ' · ' + esc(r.note) : ''}</span></div>`).join('');
   }
   function checkLine(key, c) {
@@ -219,7 +228,7 @@
       : `<p class="form-msg neg">흔들림: ${esc(r.repeats)}회 중 가장 많은 결과 ${pct(r.stability)} · 점수 ${esc(r.min)}~${esc(r.max)}</p>` +
         UI.fold('회차별 결과', `<ul class="plain">${Object.entries(r.outcomes).map(([o, n]) => `<li>${esc(outcomeText(o))} — ${esc(n)}회</li>`).join('')}</ul>`)) : '';
     const mismatch = (r.facts_mismatch || []).length ? `<p class="form-msg neg">정답표의 가정과 판단 때 사실이 다릅니다: ${r.facts_mismatch.map(m => `${esc(factLabel(m.key))} 정답표 ${esc(factVal(m.key, m.want))} / 판단 때 ${esc(factVal(m.key, m.got))}`).join(' · ')}</p>` : '';
-    const inst = (r.instances || []).length ? UI.fold(`채점한 처리 건 ${r.instances.length}건`, `<ul class="plain">${r.instances.map(i => `<li>${esc(i.name || UI.defName(i.instance))} · ${esc(UI.dateTime(i.started))} · 고른 조치 ${nm(i.chosen_skill)}</li>`).join('')}</ul>`) : '';
+    const inst = (r.instances || []).length ? UI.fold(`채점한 처리 건 ${r.instances.length}건`, `<ul class="plain">${r.instances.map(i => `<li>${esc(i.name || '이름 없는 처리 건')} · ${esc(UI.dateTime(i.started))} · 고른 조치 ${nm(i.chosen_skill)}</li>`).join('')}</ul>`) : '';
     return UI.card({ title: esc(title), chips: r.status && r.status !== 'EVALUATED' ? UI.chip(r.status) : '', value: `${esc(r.score)}점`,
       sub: `${esc(r.asset)} · ${esc(patternName(r.pattern))} · ${esc(factsText(r.facts))}`,
       body: `<p><b>판단</b> ${esc(outcomeText(r.modal_outcome))}</p>` + (r.reason ? `<p class="form-msg neg">${esc(UI.idText(r.reason))}</p>` : '') +
@@ -228,8 +237,9 @@
   }
   function knowledgeLine(k) {
     if (!k) return '';
-    return `노드 ${esc(k.nodes)} · 관계 ${esc(k.relationships)} · 조치 방법 ${esc(k.skills ?? '–')} · 규칙 ${esc(k.rules ?? '–')} · ` +
-      esc(k.last_change ? '마지막 변경 ' + UI.dateTime(k.last_change) : k.last_change_note || '') + (k.fingerprint ? ` <small title="그래프 지문">· 지문 ${esc(k.fingerprint)}</small>` : '');
+    // 그래프 지문(해시)은 화면 글로 보이지 않는다 — 마우스를 올리면 뜨는 설명에만 둔다
+    return `<span${k.fingerprint ? ` title="지식 그래프 지문 ${esc(k.fingerprint)}"` : ''}>지식 항목 ${esc(k.nodes)}개 · 연결 ${esc(k.relationships)}개 · 조치 방법 ${esc(k.skills ?? '–')}개 · 규칙 ${esc(k.rules ?? '–')}개 · ` +
+      esc(k.last_change ? '마지막 변경 ' + UI.dateTime(k.last_change) : k.last_change_note || '') + '</span>';
   }
   function renderDetail() {
     const host = q('[data-r="detail"]'), r = E.run;
@@ -251,19 +261,20 @@
   /* ---------------------------------------------------------------- 4. 전 · 후 비교 */
   function renderCmpForm() {
     const opts = (cur) => E.runs.map(r => `<option value="${esc(r.id)}" ${r.id === cur ? 'selected' : ''}>${esc(UI.dateTime(r.created))} · ${esc(UI.who(r.by))} · ${esc(r.summary.score)}점${r.note ? ' · ' + esc(r.note) : ''}</option>`).join('');
+    if (E.runsError) { q('[data-r="cmpform"]').innerHTML = `<p class="form-msg neg" role="alert">실행 기록을 읽지 못해 비교할 수 없습니다: ${esc(E.runsError)}</p>`; return; }
     if (E.runs.length < 2) { q('[data-r="cmpform"]').innerHTML = UI.empty('비교하려면 채점 실행이 두 개 필요합니다', '지식을 고치기 전에 한 번, 고친 뒤에 한 번 채점하세요 (예: Neo4j Browser에서 관계 하나 끊기 · 매뉴얼 하나 더 넣기)'); return; }
     q('[data-r="cmpform"]').innerHTML = `<div class="form-grid">` +
-      UI.field({ label: '전 (고치기 전 실행)', input: `<select data-f="before">${opts(E.cmpBefore || E.runs[1].id)}</select>` }) +
-      UI.field({ label: '후 (고친 뒤 실행)', input: `<select data-f="after">${opts(E.cmpAfter || E.runs[0].id)}</select>` }) + `</div>` +
+      UI.field({ label: '고치기 전 실행', input: `<select data-f="before">${opts(E.cmpBefore || E.runs[1].id)}</select>` }) +
+      UI.field({ label: '고친 뒤 실행', input: `<select data-f="after">${opts(E.cmpAfter || E.runs[0].id)}</select>` }) + `</div>` +
       UI.actions(`<span class="form-msg" data-msg="cmp" role="status"></span><button type="button" class="btn primary" data-act="compare">두 실행 비교</button>`);
   }
   function renderCmp() {
     const host = q('[data-r="cmp"]'), c = E.cmp;
     if (!c) { host.innerHTML = ''; return; }
     const kd = c.knowledge || {};
-    const rel = (x) => `${nm(x.from)} —${esc(x.type)}→ ${nm(x.to)}`;
+    const rel = (x) => `${nm(x.from)} → <span class="muted">${esc(relName(x.type))}</span> → ${nm(x.to)}`;
     const know = !kd.comparable ? `<p class="field-hint">${esc(kd.note || '')}</p>` : !kd.changed ? '<p>두 실행 사이에 지식 그래프가 바뀌지 않았습니다.</p>' :
-      `<p>노드 ${esc(kd.nodes[0])} → ${esc(kd.nodes[1])} · 관계 ${esc(kd.relationships[0])} → ${esc(kd.relationships[1])}</p>` +
+      `<p>지식 항목 ${esc(kd.nodes[0])}개 → ${esc(kd.nodes[1])}개 · 연결 ${esc(kd.relationships[0])}개 → ${esc(kd.relationships[1])}개</p>` +
       (kd.counts ? `<ul class="plain">${(kd.removed_rels || []).map(x => `<li>${UI.chipText('연결 삭제', 'danger')} ${rel(x)}</li>`).join('')}${(kd.added_rels || []).map(x => `<li>${UI.chipText('연결 추가', 'success')} ${rel(x)}</li>`).join('')}` +
         `${(kd.added_nodes || []).length ? `<li>${UI.chipText('새 항목', 'success')} ${kd.added_nodes.map(nm).join(', ')}</li>` : ''}${(kd.removed_nodes || []).length ? `<li>${UI.chipText('없어진 항목', 'danger')} ${kd.removed_nodes.map(nm).join(', ')}</li>` : ''}` +
         `${(kd.changed_nodes || []).length ? `<li>${UI.chipText('속성 바뀜', 'warning')} ${kd.changed_nodes.map(nm).join(', ')}</li>` : ''}</ul>` : `<p class="field-hint">${esc(kd.note || '')}</p>`);
@@ -276,7 +287,7 @@
           <td>${esc(r.title)}</td><td>${esc(r.before)}</td><td>${esc(r.after)}</td><td>${UI.chipText((r.delta > 0 ? '+' : '') + r.delta + ' · ' + verdict[r.verdict][0], verdict[r.verdict][1])}</td>
           <td>${r.changed.map(x => `${esc(CHECK[x.check])} ${x.before ? '맞음' : '틀림'}→${x.after ? '맞음' : '틀림'}`).join('<br>') || '–'}${r.evidence_lost.length ? `<br><small>잃은 근거 ${r.evidence_lost.map(nm).join(', ')}</small>` : ''}${r.evidence_gained.length ? `<br><small>얻은 근거 ${r.evidence_gained.map(nm).join(', ')}</small>` : ''}</td>
           <td><small>${esc(outcomeText(r.outcome_before))}<br>→ ${esc(outcomeText(r.outcome_after))}</small></td></tr>`).join('')}</tbody></table></div>` +
-        (c.only_before.length || c.only_after.length ? `<p class="field-hint">한쪽에만 있는 항목: ${[...c.only_before, ...c.only_after].map(esc).join(', ')}</p>` : '') });
+        (c.only_before.length || c.only_after.length ? `<p class="field-hint">한쪽 실행에만 있는 항목: ${[...c.only_before, ...c.only_after].map(i => esc((E.golden.find(it => it.id === i) || {}).title || i)).join(', ')}</p>` : '') });
   }
   async function compare() {
     E.cmpBefore = q('[data-f="before"]').value; E.cmpAfter = q('[data-f="after"]').value;
@@ -290,7 +301,9 @@
   /* ---------------------------------------------------------------- 이벤트 · 읽기 */
   async function onClick(e) {
     const t = e.target.closest('[data-act],[data-edit],[data-run]');
-    if (!t || E.busy && t.dataset.act !== 'cancel') return;
+    if (!t) return;
+    // 채점 실행은 오래 걸린다 — 그동안에도 실행 기록 고르기와 [변경 취소]는 되고, 나머지는 왜 안 되는지 알린다(말없이 먹지 않게)
+    if (E.busy && !t.dataset.run && t.dataset.act !== 'cancel') { UI.toast(E.busyWhy, { tone: 'neutral' }); return; }
     if (t.dataset.edit) { E.editing = { item: E.golden.find(it => it.id === t.dataset.edit) }; renderForm(); return; }
     if (t.dataset.run) { selectRun(t.dataset.run); return; }
     const act = t.dataset.act;
@@ -300,15 +313,15 @@
     if (act === 'run') return runEval();
     if (act === 'compare') return compare();
     if (act === 'save' || act === 'delete') {
-      E.busy = true;
+      if (act === 'delete' && !await UI.confirm({ title: '이 정답표 항목을 지울까요?', body: '지난 채점 실행 기록은 남습니다. 지운 항목은 되살릴 수 없습니다.', ok: '지우기', danger: true })) return;
+      E.busy = true; E.busyWhy = '저장하는 중입니다. 끝난 뒤 다시 눌러 주세요.';
       try {
         if (act === 'save') {
           const { by, item } = readForm();
           const url = API.process + '/api/eval/golden/items' + (E.editing.item ? '/' + encodeURIComponent(item.id) : '');
           await postJ(url, { item, by }, E.editing.item ? 'PUT' : 'POST');
         } else {
-          const by = (q('[data-f="by"]').value || '').trim();
-          if (!by) throw new Error(UI.t('form.err.required') + ': ' + UI.t('form.by'));
+          const by = meId();
           await requestJ(API.process + '/api/eval/golden/items/' + encodeURIComponent(E.editing.item.id) + '?by=' + encodeURIComponent(by), { method: 'DELETE' });
           E.picked.delete(E.editing.item.id);
         }
@@ -320,6 +333,16 @@
   function onChange(e) {
     const t = e.target;
     if (t.dataset.pick) { t.checked ? E.picked.add(t.dataset.pick) : E.picked.delete(t.dataset.pick); renderRunForm(); return; }
+    if (t.dataset.addTo) {      // 이름으로 찾아 넣기: 사전에 있는 id 만 위 칸에 더한다
+      const id = t.value.trim(), area = q(`[data-f="${t.dataset.addTo}"]`);
+      if (!id || !area) return;
+      if (!UI.names[id]) { msg('form', `「${id}」: 목록에 있는 이름을 고르세요`); return; }
+      const line = t.dataset.addTo === 'forbidden' ? `${id} = 제외` : id;
+      area.value = (area.value.trim() ? area.value.replace(/\s+$/, '') + '\n' : '') + line;
+      t.value = ''; msg('form', '');
+      area.dispatchEvent(new Event('input', { bubbles: true }));      // 이름 미리 보기를 다시 그린다(onInput)
+      return;
+    }
     if (t.dataset.f === 'path') { E.path = t.value; renderRunForm(); if (t.value === 'worker') loadCands(); }
   }
   function onInput(e) {
@@ -333,13 +356,14 @@
       const g = await getJ(API.process + '/api/eval/golden');
       E.golden = g.items || []; E.storage = g.storage; E.paths = g.paths || {}; E.maxRepeats = g.max_repeats; E.assets = g.assets || []; E.facts = g.facts || {};
       for (const id of [...E.picked]) if (!E.golden.some(it => it.id === id)) E.picked.delete(id);
+      E.goldenError = '';
       renderGolden();
-    } catch (e) { E.golden = []; q('[data-r="golden"]').innerHTML = `<p class="form-msg neg" role="alert">정답표를 읽지 못했습니다: ${esc(e.message)}</p>`; }
+    } catch (e) { E.golden = []; E.goldenError = e.message; q('[data-r="golden"]').innerHTML = `<p class="form-msg neg" role="alert">정답표를 읽지 못했습니다: ${esc(e.message)}</p>`; }
     renderRunForm(); renderStats();
   }
   async function loadRuns() {
-    try { E.runs = await getJ(API.process + '/api/eval/runs?limit=50'); renderRuns(); }
-    catch (e) { E.runs = []; q('[data-r="runs"]').innerHTML = `<p class="form-msg neg" role="alert">실행 기록을 읽지 못했습니다: ${esc(e.message)}</p>`; }
+    try { E.runs = await getJ(API.process + '/api/eval/runs?limit=50'); E.runsError = ''; renderRuns(); }
+    catch (e) { E.runs = []; E.runsError = e.message; q('[data-r="runs"]').innerHTML = `<p class="form-msg neg" role="alert">실행 기록을 읽지 못했습니다: ${esc(e.message)}</p>`; }
     renderCmpForm(); renderStats();
   }
   async function load() {

@@ -112,8 +112,9 @@
     return st;
   }
 
+  // caption 은 호출하는 쪽이 이미 esc 한 HTML 조각이다(hitl.js: 처리 건 이름 + 상태 칩) — 여기서 다시 esc 하지 않는다
   function render(def, { workitems = null, instance = null, caption = '', vertical = false } = {}) {
-    if (!def || !(def.activities || []).length) return `<div class="flow-cap"><span>${esc(caption)}</span></div>`;
+    if (!def || !(def.activities || []).length) return `<div class="flow-cap"><span>${caption}</span></div>`;
     const M = vertical ? METRICS.vertical : METRICS.horizontal;
     const g = build(def, M), st = states(def, g, workitems, instance);
     const primary = vertical ? g.primary : Math.max(g.primary, M.HEAD + 3 * M.PITCH);

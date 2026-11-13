@@ -8,7 +8,7 @@
 (function () {
   const TONE = { met: 'success', missed: 'danger', no_target: 'neutral', incomparable: 'neutral', partial: 'warning', no_data: 'neutral', unavailable: 'neutral', error: 'danger' };
   let STATUS = {};                                     // 서버 summary.labels (첫 응답에서 받는다)
-  const ROLE = { lagging: ['후행 · 결과', 'accent'], leading: ['선행 · 동인', 'neutral'] };
+  const ROLE = { lagging: ['후행 지표', 'accent', '결과를 재는 지표'], leading: ['선행 지표', 'neutral', '결과를 움직이는 지표'] };
   const EFFECT = { '-1': ['나쁜 쪽', 'danger'], '0': ['경로마다 다름', 'warning'], '1': ['좋은 쪽', 'success'] };
   const escH = esc;                                    // 포털 공용 이스케이프(ui.js)
   const chip = (label, tone = 'neutral') => UI.chipText(label, tone);
@@ -61,7 +61,7 @@
     return parts.join('');
   }
   function card(m) {
-    const [roleLabel, roleTone] = ROLE[m.kpiRole] || ['역할 없음', 'neutral'];
+    const [roleLabel, roleTone, roleHelp] = ROLE[m.kpiRole] || ['역할 없음', 'neutral', ''];
     const status = chip(STATUS[m.status] || m.status, TONE[m.status]);
     const reason = m.reason ? `<p class="card-sub kpi-reason">${escH(m.reason)}</p>` : '';
     const o = m.original;          // B5: 시험 목표가 걸린 지표 — 원래 목표 · 원래 판정을 옆에
@@ -69,7 +69,7 @@
     const action = m.status === 'missed' ? `<button type="button" class="btn small primary" data-kpi-trace="${escH(m.id)}">원인 찾기</button>` : '';
     const body = (m.status === 'unavailable' ? '' : fold('계산 근거', basis(m)));
     const html = `<section class="card kpi-card${m.status === 'missed' ? ' kpi-missed' : ''}" data-kpi="${escH(m.id)}">
-      <header class="card-head"><div class="card-title"><h3>${escH(m.name)}</h3><span class="card-chips">${status}${chip(roleLabel, roleTone)}</span></div>
+      <header class="card-head"><div class="card-title"><h3>${escH(m.name)}</h3><span class="card-chips">${status}<span title="${escH(roleHelp)}">${chip(roleLabel, roleTone)}</span></span></div>
       ${action ? `<div class="card-actions">${action}</div>` : ''}</header>
       <div class="card-value">${valueLine(m)}</div>${rateBar(m)}${trial}${reason}${body ? `<div class="card-body">${body}</div>` : ''}</section>`;
     return html;
@@ -81,7 +81,7 @@
     if (!t) return '';
     const head = `<header class="card-head"><div class="card-title"><h3>${escH(t.title)} — 미달 원인 찾기</h3></div><div class="card-actions"><button type="button" class="btn small" data-kpi-close>닫기</button></div></header>`;
     if (t.loading) return `<section class="card kpi-trace" id="kpiTrace">${head}<p class="card-sub">영향 경로와 같은 기간 처리 기록을 맞춰 보는 중…</p></section>`;
-    if (t.error) return `<section class="card kpi-trace" id="kpiTrace">${head}<p class="card-sub kpi-reason">역추적 실패: ${escH(t.error)}</p></section>`;
+    if (t.error) return `<section class="card kpi-trace" id="kpiTrace">${head}<p class="form-msg neg" role="alert">미달 원인을 찾지 못했습니다: ${escH(t.error)}</p><div class="form-actions"><button type="button" class="btn small" data-kpi-trace="${escH(t.measure)}">다시 찾기</button></div></section>`;
     const d = t.data, m = d.measure;
     const summary = `<p class="kv-line">실적 <b>${num(m.value)} ${escH(unitText(m.displayUnit || m.unit))}</b> · 목표 ${num(m.target)} ${escH(unitText(m.unit))} · ${escH(d.window.label)} · 처리 건 ${num(d.instancesRead)}건 중 관련 ${num(d.instanceTotal)}건</p>`;
     const assets = d.assets.length ? `<ol class="stack-list kpi-list">${d.assets.map(a => `<li><b>${escH(a.asset)}</b> ${a.value == null ? '' : num(a.value) + ' ' + escH(unitText(m.unit))} ${a.met === false ? chip('미달', 'danger') : a.met === true ? chip('달성', 'success') : ''}
@@ -98,7 +98,7 @@
     const drivers = d.drivers.map(x => `<li>${effectChip(x.effect)} ${escH(x.path)}${x.condition ? ` <small>(${escH(x.condition)})</small>` : ''}${
       x.effect === 0 && (x.paths || []).length > 1 ? `<ul class="kpi-why">${x.paths.map(pp => `<li>${effectChip(pp.effect)} ${escH(pp.path)}</li>`).join('')}</ul>` : ''}</li>`).join('');
     const objectives = d.objectives.map(o => `<li><b>${escH(o.name)}</b>${o.supports.length ? ' → ' + o.supports.map(s => escH(s.name)).join(' → ') : ''}</li>`).join('');
-    const skills = d.skills.map(s => `<li>${escH(s.name)} ${chip(EFFECT[String(s.effect)][0], EFFECT[String(s.effect)][1])}${s.harm.length ? ` <small>나쁜 경로: ${s.harm.map(escH).join(' / ')}</small>` : ''}</li>`).join('');
+    const skills = d.skills.map(s => `<li>${escH(s.name)} ${chip(EFFECT[String(s.effect)]?.[0] || '영향 불명', EFFECT[String(s.effect)]?.[1] || 'neutral')}${s.harm.length ? ` <small>나쁜 경로: ${s.harm.map(escH).join(' / ')}</small>` : ''}</li>`).join('');
     return `<section class="card kpi-trace" id="kpiTrace">${head}${summary}${errorsHtml(d.sourceErrors)}
       <h4>원인 처리 건</h4>${insts}${actions}
       <h4>설비</h4>${assets}
@@ -136,14 +136,14 @@
       <button type="button" class="btn small" data-kpi-reload>다시 읽기</button></div>`;
     let body;
     if (st.loading && !st.data) body = empty('성과 지표 실적을 계산하는 중…', '시계열 · 업무 DB · 처리 기록을 읽습니다');
-    else if (st.error) body = empty('성과 지표를 불러오지 못했습니다', st.error);
+    else if (st.error) body = UI.errorBlock('성과 지표를 불러오지 못했습니다', st.error, { retry: true });
     else {
       const d = st.data, s = d.summary;
       STATUS = s.labels;
       const all = d.perspectives.flatMap(p => p.objectives.flatMap(o => o.measures));
       const stat = (label, n, sub, hot) => `<div class="card${hot ? ' hot' : ''}"><span>${label}</span><b>${n}</b><small>${sub}</small></div>`;
       const stats = `<div class="stat-cards">${stat('미달', s.missed, '원인 찾기를 누르세요', s.missed > 0)}${stat('달성', s.met, '목표 이상')}
-        ${stat('실적만', s.no_target + s.incomparable + s.partial, `목표 없음 ${s.no_target} · 단위 달라 판정 안 함 ${s.incomparable} · 부분 실적 ${s.partial}`)}${stat('계산 불가 · 기록 없음', s.unavailable + s.no_data + s.error, `원천 없음 ${s.unavailable} · 기록 없음 ${s.no_data} · 조회 실패 ${s.error}`)}</div>`;
+        ${stat('목표 판정 없음', s.no_target + s.incomparable + s.partial, `목표 없음 ${s.no_target} · 단위 달라 판정 안 함 ${s.incomparable} · 부분 실적 ${s.partial}`)}${stat('계산 불가 · 기록 없음', s.unavailable + s.no_data + s.error, `원천 없음 ${s.unavailable} · 기록 없음 ${s.no_data} · 조회 실패 ${s.error}`)}</div>`;
       const win = `<p class="kv-line">${escH(d.window.label)}${d.window.start ? ` (${when(d.window.start)} ~ ${when(d.window.end)})` : ''} · 지표 ${s.total}개</p>`;
       const persp = d.perspectives.map(p => `<h2 class="sec">${escH(p.name)}</h2>${p.objectives.map(o => `
         <div class="kpi-obj"><h3>${escH(o.name)}</h3>${o.supports.length ? `<small>받치는 목표 → ${o.supports.map(x => escH(x.name)).join(' · ')}</small>` : ''}</div>
@@ -151,7 +151,7 @@
       const defs = `<table class="compact-table"><thead><tr><th>지표</th><th>목표</th><th>원천 (표 · 열)</th><th>식 또는 계산 불가 사유</th></tr></thead><tbody>${all.map(m => {
         const df = m.definition || {};
         const src = (df.sources || []).map(x => `${escH(x.system)} <code>${escH(x.table)}</code> ${escH(x.columns)}`).join('<br>') || '–';
-        return `<tr><td>${escH(m.name)}</td><td>${m.target == null ? '–' : num(m.target) + ' ' + escH(unitText(m.unit))}</td><td>${src}</td><td>${df.kind === 'unavailable' ? '계산 불가 — ' + escH(df.reason) : escH(df.formula)}</td></tr>`;
+        return `<tr><td>${escH(m.name)}</td><td>${m.target == null ? '–' : num(m.target) + ' ' + escH(unitText(m.unit))}</td><td>${src}</td><td>${df.kind === 'unavailable' ? '계산 불가: ' + escH(df.reason) : escH(df.formula)}</td></tr>`;
       }).join('')}</tbody></table>`;
       body = stats + win + errorsHtml(d.sourceErrors) + trialPanel(st, all, d) + tracePanel(st) + persp + `<h2 class="sec">계산 정의</h2>` + fold(`지표별 계산 정의 표 (${all.length}개)`, defs);
     }
@@ -167,7 +167,11 @@
       if (trialOn(st)) st.trialError = null;
     } catch (e) {
       if (trialOn(st)) { st.trialError = '시험 판정을 하지 못했습니다: ' + (e.message || String(e)); st.applied = {}; st.loading = false; return load(st); }
-      if (e.status === 400 && st.period !== '24h') { st.period = '24h'; try { localStorage.removeItem('hydKpi.period'); } catch (x) { /* 무시 */ } st.loading = false; return load(st); }
+      if (e.status === 400 && st.period !== '24h') {      // 저장해 둔 기간을 서버가 모른다 — 기본 기간으로 바꾸고 그 사실을 알린다(말없이 바꾸지 않는다)
+        st.period = '24h'; try { localStorage.removeItem('hydKpi.period'); } catch (x) { /* 저장소가 없는 브라우저 — 지울 것이 없다 */ }
+        UI.toast('저장해 둔 기간을 서버가 알지 못해 기본 기간(24시간)으로 바꿨습니다.', { tone: 'neutral', timeout: 8000 });
+        st.loading = false; return load(st);
+      }
       st.error = e.message || String(e); st.data = null;
     }
     st.loading = false; render(st);
@@ -198,7 +202,7 @@
     el.addEventListener('click', e => {
       const p = e.target.closest('[data-kpi-period]');
       if (p) { st.period = p.dataset.kpiPeriod; try { localStorage.setItem('hydKpi.period', st.period); } catch (x) { /* 무시 */ } load(st); return; }
-      if (e.target.closest('[data-kpi-reload]')) { load(st); return; }
+      if (e.target.closest('[data-kpi-reload]') || e.target.closest('[data-retry]')) { load(st); return; }
       const t = e.target.closest('[data-kpi-trace]');
       if (t) { openTrace(st, t.dataset.kpiTrace); return; }
       if (e.target.closest('[data-kpi-close]')) { st.trace = null; render(st); return; }

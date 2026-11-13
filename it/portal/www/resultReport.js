@@ -16,7 +16,8 @@
     const s = String(raw ?? '').trim().toLowerCase();
     return ['rejected', '반려'].includes(s) ? 'rejected' : OK.has(s) ? 'ok' : FAIL.has(s) ? 'fail' : s ? 'other' : '';
   }
-  const num = x => (typeof x === 'number' && Number.isFinite(x) ? x.toLocaleString('ko-KR', { maximumFractionDigits: 2 }) : x == null || x === '' ? '–' : x === true ? '예' : x === false ? '아니오' : x);
+  const num = x => (typeof x === 'number' && Number.isFinite(x) ? x.toLocaleString('ko-KR', { maximumFractionDigits: 2 }) : x == null || x === '' ? '–' : x === true ? '예' : x === false ? '아니요' : x);
+  const orderWarned = new Set();   // 흐름 순서 없음 경고를 이미 남긴 처리 건
   const LABEL = { ok: '정상', fail: '미달', rejected: '반려', other: '확인 결과', wait: '확인 중' };
 
   // Stored receipt and report remain immutable; derive only this known system receipt's display.
@@ -92,11 +93,17 @@
     const done = inst.status === 'COMPLETED';
     const verdict = rep ? rep.verdict || 'other' : done ? 'other' : 'wait';
     const tone = verdict === 'ok' ? 'ok' : ['fail', 'rejected'].includes(verdict) ? 'fail' : verdict === 'wait' ? 'wait' : 'other';
-    const label = (rep && rep.label) || (verdict === 'other' && done && !rep ? '처리 끝' : LABEL[verdict]);
+    const label = (rep && rep.label) || (verdict === 'other' && done && !rep ? '처리 완료' : LABEL[verdict]);
     const approvalKey = (view.definition?.activities || []).find(a => a.tool === 'formHandler:approve')?.approval?.key || 'slot';
     const chosen = (v.chosen_option && v.chosen_option.name) || v.approved_option?.[approvalKey] || '';
     // 승인자 이름은 승인 경로가 처리 건 값에 넣은 approved_by_name(서버가 사람 목록에서 고른 이름) — 화면이 따로 찾지 않는다
-    const approver = v.approved_by_name || v.approved_by;
+    // 이름 칸이 없는 옛 기록은 담당자 id(user:…)를 그대로 내지 않고 사람 이름 사전으로 바꾼다
+    const approver = v.approved_by_name || (v.approved_by ? UI.who(v.approved_by) : '');
+    // 흐름 순서가 응답에 없으면 같은 시각에 끝난 단계의 앞뒤를 가를 수 없다 — 학생이 고칠 일이 아니므로 화면이 아니라 개발자 도구에, 처리 건마다 한 번
+    if (!view.flow_order && sys.length > 1 && !orderWarned.has(inst.proc_inst_id)) {
+      orderWarned.add(inst.proc_inst_id);
+      console.error('[hydResultReport] 처리 건 응답에 flow_order 가 없어 같은 시각에 끝난 단계의 순서를 가를 수 없습니다', inst.proc_inst_id);
+    }
     const values = (rep && rep.values || []).map(x => `<div class="rr-val ${x.ok === false ? 'bad' : x.ok === true ? 'good' : ''}"><span>${e(UI.idText(x.name))}</span><b class="num">${e(num(x.value))}${x.unit ? ' ' + e(x.unit) : ''}</b>${x.limit != null ? `<small>기준 ${e(x.limit)}</small>` : ''}</div>`).join('');
     const steps = sys.map(w => {
       const st = w.status === 'DONE' ? 'done' : 'run';
@@ -107,7 +114,6 @@
       <div class="rr-head"><span class="rr-badge">${e(label)}</span><div><h4>${e((rep && rep.title) || '결과 보고')}</h4>${rep && rep.summary ? `<p>${e(UI.idText(rep.summary))}</p>` : !done ? '<p>시스템이 실행하고 확인하는 중입니다. 끝나면 여기에 결과가 올라옵니다.</p>' : ''}</div></div>
       ${values ? `<div class="rr-vals">${values}</div>` : ''}
       ${rep && rep.valuesError ? `<p class="neg">${e(rep.valuesError)}</p>` : ''}
-      ${!view.flow_order && sys.length > 1 ? '<p class="neg">처리 서비스 응답에 흐름 순서(flow_order)가 없어 같은 시각에 끝난 단계의 앞뒤를 가를 수 없습니다</p>' : ''}
       ${chosen || v.approved_by ? `<p class="rr-who"><span class="ap-label">승인한 안</span> <b>${e(UI.idText(chosen || '–'))}</b>${approver ? ` · ${e(approver)}${v.approved_role ? ` (${e(UI.roleName(v.approved_role, view.definition))})` : ''}` : ''}</p>` : ''}
       ${steps ? `<div class="rr-steps-wrap"><span class="ap-label">시스템이 한 일</span><ol class="rr-steps">${steps}</ol></div>` : ''}
       ${window.hydRecord ? `<div class="rr-foot"><button type="button" class="btn small" data-open-record>처리 기록 보기</button><span class="muted">시작부터 담당자의 결정과 시스템 처리까지 단계별로</span></div>` : ''}

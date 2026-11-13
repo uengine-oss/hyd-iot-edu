@@ -226,8 +226,8 @@
             break;
           }
           if (d.type === 'skill_used') {
-            rows.push({key:'w:' + e.id, kind:'system', status:'idle', t0:e.timestamp, title:'스킬 파일 읽기 요청',
-              text:`${d.recorded ? `스킬 ${d.skill}` : UI.skillLabel(d,true).label} · ${window.hydWords ? hydWords.toolName(d.via) : UI.toolName(d.via || '') || '도구'} · 읽기 성공 여부는 이 기록만으로 확인할 수 없습니다`, raw:d});
+            rows.push({key:'w:' + e.id, kind:'system', status:'idle', t0:e.timestamp, title:'스킬 읽기 요청',
+              text:`${d.recorded ? `스킬 ${d.skill}` : UI.skillLabel(d,true).label} · ${window.hydWords ? hydWords.toolName(d.via) : UI.toolName(d.via || '') || '도구'} · 실제로 읽었는지는 이 기록에 남지 않습니다`, raw:d});
             break;
           }
           if (e.job_id === 'MCP_RESULT_VALUES') {
@@ -242,21 +242,21 @@
             break;
           }
           if (e.job_id === 'APPROVAL_REJECTED') {
-            rows.push({ key: 'w:' + e.id, kind: 'system', status: 'ok', t0: e.timestamp, title: '거절 접수', text: `${UI.who(d.by)} · 사유: ${d.reason || ''} · ${d.effects || '승인 뒤 조치 없음'}`, raw: d });
+            rows.push({ key: 'w:' + e.id, kind: 'system', status: 'ok', t0: e.timestamp, title: '반려 접수', text: `${UI.who(d.by)} · 사유: ${d.reason || ''} · ${d.effects || '승인 뒤 조치 없음'}`, raw: d });
             break;
           }
           if (HIDDEN(d)) break;
           if (d.type === 'text') { rows.push({ key: 'note:' + e.id, kind: 'note', status: 'ok', t0: e.timestamp, title: UI.t('td.note'), note: UI.clean(UI.idText(d.content || '')) }); break; }
           if (d.type === 'file_artifact') { rows.push({ key: 'file:' + e.id, kind: 'file', status: 'ok', t0: e.timestamp, title: UI.t('trace.file'), text: UI.baseName(d.path || '') || '', fold: [UI.t('trace.response'), pretty(d.content)] }); break; }
           if (d.type === 'evidence') { rows.push({ key: 'ev:' + e.id, kind: 'note', status: 'ok', t0: e.timestamp, title: d.name || UI.t('td.basis') || '판단 근거', note: UI.clean(UI.idText(d.content || d.method || '')) }); break; }
-          rows.push({ key: 'w:' + e.id, kind: 'system', status: 'ok', t0: e.timestamp, title: UI.clean(UI.logText(d.name || '')) || UI.t('stream.working'), text: brief(d.content || d.message || (d.by ? `${d.by}${d.role ? ' · ' + UI.who(d.role) : ''}` : ''), 160), raw: d.content || d.message ? null : d });
+          rows.push({ key: 'w:' + e.id, kind: 'system', status: 'ok', t0: e.timestamp, title: UI.clean(UI.logText(d.name || '')) || UI.t('stream.working'), text: brief(d.content || d.message || (d.by ? `${UI.who(d.by)}${d.role ? ' · ' + UI.who(d.role) : ''}` : ''), 160), raw: d.content || d.message ? null : d });
           break;
         case 'human_asked':
           rows.push({ key: 'ask:' + e.id, kind: 'ask', status: 'wait', t0: e.timestamp, job: e.job_id, title: UI.t('stream.asked'), note: typeof humanQuestionText === 'function' ? humanQuestionText(d) : (d.text || d.question || ''), options: Array.isArray(d.options) ? d.options.filter(x => typeof x === 'string') : [] });
           break;
         case 'human_response': {
           const ask = rows.find(r => r.kind === 'ask' && r.job === e.job_id); if (ask) ask.status = 'ok';
-          rows.push({ key: 'ans:' + e.id, kind: 'answer', status: 'ok', t0: e.timestamp, title: UI.t('stream.answered'), text: `${d.answer || ''}${d.by ? ' — ' + d.by : ''}` });
+          rows.push({ key: 'ans:' + e.id, kind: 'answer', status: 'ok', t0: e.timestamp, title: UI.t('stream.answered'), text: d.answer || '' });      // 답하는 사람은 늘 이 PC의 담당자 한 명 — 담당자 id(user:…)를 꼬리에 붙이지 않는다
           break;
         }
         case 'task_completed':
@@ -343,7 +343,7 @@
       const sec = (title, body) => body ? `<div class="tr-code"><div class="tr-code-h">${esc(title)}</div><pre>${esc(body)}</pre></div>` : '';
       const purchase=window.hydWords?.purchaseTool(r.tool);
       const original=value=>value==null ? '' : typeof value==='string' ? value : JSON.stringify(value,null,2);
-      const io = sec('도구 식별자', r.tool) + sec(UI.t('trace.request'), original(r.input)) + (r.inputEvent ? UI.fullToolIOHtml(r.inputEvent,'input') : '') + sec(r.ioEvent?.data.full_output ? '화면 이벤트 미리보기' : UI.t('trace.response'), original(r.output)) + (r.ioEvent ? UI.fullToolIOHtml(r.ioEvent) : '');
+      const io = UI.toolIdentityFold(r.tool) + sec(UI.t('trace.request'), original(r.input)) + (r.inputEvent ? UI.fullToolIOHtml(r.inputEvent,'input') : '') + sec(r.ioEvent?.data.full_output ? '도구 응답 (앞부분)' : UI.t('trace.response'), original(r.output)) + (r.ioEvent ? UI.fullToolIOHtml(r.ioEvent) : '');
       const mark = r.status === 'running' && live ? spinner('sm') : stateMark(r.status === 'running' ? 'idle' : r.status);
       const line = `<b>${esc(r.title)}</b>${r.text ? `<span class="tr-txt">${esc(r.text)}</span>` : ''}${r.badge ? `<span class="chip tone-${r.status === 'fail' ? 'danger' : 'warning'} sm">${esc(r.badge)}</span>` : ''}${r.t1 ? durHtml(r.t0, r.t1) : r.status === 'running' && live ? durHtml(r.t0, null, true) : ''}`;
       return `<div class="tr-row tr-k-tool ${esc(r.status)}">${time}<span class="tr-mark">${mark}</span><div class="tr-main">

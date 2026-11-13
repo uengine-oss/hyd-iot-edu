@@ -15,3 +15,10 @@ if errorlevel 1 (
   exit /b
 )
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0..\scripts\install_windows.ps1"
+set HYD_INSTALL_CODE=%errorlevel%
+if not "%HYD_INSTALL_CODE%"=="0" if not "%HYD_INSTALL_CODE%"=="3010" (
+  echo.
+  echo 설치가 끝까지 진행되지 않았습니다 ^(종료 코드 %HYD_INSTALL_CODE%^). 위에 보이는 오류 문장을 사진으로 찍어 두고 README의 「실행 환경」 절을 따라 직접 설치하세요.
+  pause
+)
+exit /b %HYD_INSTALL_CODE%

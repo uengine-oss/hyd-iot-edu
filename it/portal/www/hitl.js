@@ -189,35 +189,36 @@
     const k = H.skillNew ? { id: '', name: '', description: '', sopId: '', steps: [], failureModes: [], actions: [], rules: [], affects: [], causes: [], performers: [] }
       : H.skills.find(x => x.id === H.skillSel);
     if (!k) { box.innerHTML = UI.empty(UI.t('skill.select')); return; }
-    const sel = (id, items, cur) => `<select id="${id}">${items.map(x => `<option value="${esc(x.id)}" ${cur === x.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>`;
+    const sel = (id, items, cur, blank) => `<select id="${id}"><option value="">${esc(blank)}</option>${items.map(x => `<option value="${esc(x.id)}" ${cur === x.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>`;
     const newForm = H.skillNew ? UI.section('대상과 종류',
       UI.field({ label: UI.t('skill.sop'), required: true, input: `<input id="skSop" placeholder="SOP-FAN-05" maxlength="40">` }) +
-      UI.field({ label: UI.t('skill.fm'), required: true, input: sel('skFm', c.failureModes || [], '') }) +
+      UI.field({ label: UI.t('skill.fm'), required: true, input: sel('skFm', c.failureModes || [], '', '고장 유형 선택') }) +
       UI.field({ label: UI.t('skill.relation'), input: `<select id="skRel"><option value="REMEDIED_BY">${esc(UI.t('skill.rel.remedy'))}</option><option value="MITIGATED_BY">${esc(UI.t('skill.rel.mitigate'))}</option><option value="PREVENTED_BY">${esc(UI.t('skill.rel.prevent'))}</option></select>` }) +
       UI.field({ label: UI.t('skill.kind'), input: `<select id="skKind"><option value="work_order">${esc(UI.t('skill.kind.workOrder'))}</option><option value="control">${esc(UI.t('skill.kind.control'))}</option></select>` }) +
       UI.field({ label: UI.t('skill.steps'), required: true, cls: 'wide', input: `<textarea id="skSteps" rows="5" placeholder="현장 제어로 전환하고 잠근다.&#10;벨트를 교체한다.&#10;재가동 후 진동 0.9 mm/s 미만을 확인한다."></textarea>` })) : '';
-    const linked = H.skillNew ? '' : `<h3 style="font-size:14px;margin:var(--s4) 0 var(--s2)">${esc(UI.t('skill.stepsTitle'))}</h3><ol class="steps">${(k.steps || []).map(s => `<li>${esc(s.text)} ${s.manual ? `<span class="muted">[${esc(s.manual)}]</span>` : ''}</li>`).join('') || `<li class="muted">${esc(UI.t('skill.noSteps'))}</li>`}</ol>
-      <h3 style="font-size:14px;margin:var(--s4) 0 var(--s2)">${esc(UI.t('skill.linked'))}</h3><table class="kvt">
+    const linked = H.skillNew ? '' : `<h3 class="sub-head">${esc(UI.t('skill.stepsTitle'))}</h3><ol class="steps">${(k.steps || []).map(s => `<li>${esc(s.text)} ${s.manual ? `<span class="muted">[${esc(s.manual)}]</span>` : ''}</li>`).join('') || `<li class="muted">${esc(UI.t('skill.noSteps'))}</li>`}</ol>
+      <h3 class="sub-head">${esc(UI.t('skill.linked'))}</h3><table class="kvt">
         <tr><th>${esc(UI.t('skill.fm'))}</th><td>${(k.failureModes || []).map(f => `${esc(f.name)} <span class="muted">(${esc(REL_KO[f.relation] || f.relation)})</span>`).join('<br>') || esc(UI.t('skill.none'))}</td></tr>
         <tr><th>${esc(UI.t('skill.causes'))}</th><td>${(k.causes || []).map(x => esc(x.name)).join(', ') || esc(UI.t('skill.allCauses'))}</td></tr>
         <tr><th>${esc(UI.t('skill.actions'))}</th><td>${(k.actions || []).map(a => `${esc(hydCards.actionLabel(a))} <span class="muted">${esc(a.name)}</span>`).join('<br>') || esc(UI.t('skill.none'))}</td></tr>
-        <tr><th>${esc(UI.t('skill.rules'))}</th><td>${(k.rules || []).map(r => `<span class="${r.effect === 'EXCLUDE' ? 'hard' : r.effect === 'SELECT' ? '' : 'soft'}">${esc({ EXCLUDE: UI.t('chip.excluded'), SELECT: '후보', PENALTY: UI.t('card.penalty'), WARN: UI.t('card.warn') }[r.effect] || r.effect)} · ${esc(UI.ruleLabel(r))}${UI.fold('규칙 원문',`<pre>${esc(JSON.stringify(r,null,2))}</pre>`,{cls:'small'})}</span>`).join(' ') || esc(UI.t('skill.none'))}</td></tr>
+        <tr><th>${esc(UI.t('skill.rules'))}</th><td>${(k.rules || []).length ? `<ul class="rule-list">${k.rules.map(r => `<li>${UI.chipText({ EXCLUDE: UI.t('chip.excluded'), SELECT: '후보', PENALTY: UI.t('card.penalty'), WARN: UI.t('card.warn') }[r.effect] || r.effect, { EXCLUDE: 'danger', PENALTY: 'warning', WARN: 'warning' }[r.effect] || 'neutral')}<span>${esc(UI.ruleLabel(r))}</span></li>`).join('')}</ul>` : esc(UI.t('skill.none'))}</td></tr>
         <tr><th>${esc(UI.t('skill.affects'))}</th><td>${(k.affects || []).map(a => `${esc(a.name)} ${a.sign > 0 ? '↑' : '↓'}`).join(', ') || esc(UI.t('skill.none'))}</td></tr></table>`;
     box.innerHTML = `<div class="detail-head"><div class="row"><h2>${esc(H.skillNew ? UI.t('skill.new') : k.name)}</h2>${k.kind ? UI.chipText(k.kind === 'control' ? UI.t('skill.kind.control') : UI.t('skill.kind.workOrder'), k.kind === 'control' ? 'accent' : 'warning') : ''}</div></div>${H.skillNew ? '' : UI.metaFold([['조치 식별자',esc(k.id)],['절차 번호',esc(k.sopId || '')]])}
-      ${H.catalogError ? `<p class="neg" role="status">승인 역할 · 고장 유형 목록을 읽지 못해 고를 칸이 비어 있습니다 — ${esc(H.catalogError)}. [취소]를 누르면 다시 읽습니다.</p>` : ''}
-      <div class="form skill-edit">` +
+      ${H.catalogError ? `<p class="neg" role="status">승인 역할 · 고장 유형 목록을 읽지 못해 고를 칸이 비어 있습니다 — ${esc(H.catalogError)}. [변경 취소]를 누르면 다시 읽습니다.</p>` : ''}
+      ${H.skillNew ? '' : (k.source_document ? `<p class="kv-line">${esc(UI.t('skill.fromDoc'))} <button class="btn small" id="skSource">${esc(UI.t('skill.openDoc'))}</button></p>` : '') + linked}
+      ${H.skillNew ? '' : '<details class="fold" data-skill-edit><summary>이름 · 승인 역할 · 설명 고치기</summary>'}<div class="form skill-edit">` +
       UI.section(UI.t('method'),
         UI.field({ label: UI.t('skill.name'), required: true, input: `<input id="skName" value="${esc(k.name)}" maxlength="80">` }) +
-        UI.field({ label: UI.t('skill.approver'), input: sel('skRole', c.roles || [], (k.approver || {}).id || 'role:maint-mgr') }) +
+        UI.field({ label: UI.t('skill.approver'), required: true, input: sel('skRole', c.roles || [], (k.approver || {}).id || '', '승인 역할 선택') }) +
         UI.field({ label: UI.t('skill.desc'), cls: 'wide', input: `<textarea id="skDesc" rows="2">${esc(k.description || '')}</textarea>` })) + newForm +
       
       UI.actions(`<button class="btn outline" id="skReload">${esc(UI.t('btn.cancel'))}</button><button class="btn primary" id="skSave">${esc(H.skillNew ? UI.t('skill.add') : UI.t('btn.save'))}</button>`) +
-      `<span id="skMsg" class="muted" role="status"></span></div>
-      ${k.source_document ? `<p class="kv-line">${esc(UI.t('skill.fromDoc'))} <button class="btn small" id="skSource">${esc(UI.t('skill.openDoc'))}</button></p>` : ''}${linked}`;
+      `<span id="skMsg" class="muted" role="status"></span></div>${H.skillNew ? '' : '</details>'}`;
     const fields = [...box.querySelectorAll('input, textarea, select')];
     let draft = H.skillDrafts.get(key), draftError = '';
     if (!draft) { try { draft = JSON.parse(sessionStorage.getItem(draftKey(key)) || 'null'); } catch (_) { draftError = '저장한 초안을 읽을 수 없습니다.'; } }
     if (draft && (typeof draft !== 'object' || !draft.fields || typeof draft.fields !== 'object' || Array.isArray(draft.fields))) draftError = '저장한 초안의 형식이 올바르지 않습니다.';
+    if (draft || draftError) box.querySelector('[data-skill-edit]')?.setAttribute('open', '');      // 고치던 것이 있으면 펼쳐서 보인다
     if (draftError) {
       fields.forEach(n => { n.disabled = true; });
       $('#skSave').disabled = true;
@@ -235,7 +236,7 @@
     const lockFields = () => {
       fields.forEach(e => { e.disabled = !!draft.pending || !!k.source_document; });
       $('#skSave').disabled = !!k.source_document && !draft.pending;
-      $('#skSave').textContent = draft.pending ? '같은 요청 결과 다시 확인' : key === '__new__' ? UI.t('skill.add') : UI.t('btn.save');
+      $('#skSave').textContent = draft.pending ? '저장 결과 확인' : key === '__new__' ? UI.t('skill.add') : UI.t('btn.save');
       $('#skReload').disabled = !!draft.pending;
     };
     lockFields();
@@ -261,6 +262,8 @@
       const body = draft.pending || { name: $('#skName').value.trim(), description: $('#skDesc').value, approver: $('#skRole').value, by: manualActor(), revision: draft.revision, request_id: UI.uuid() };
       if (!draft.pending && key === '__new__') Object.assign(body, { sopId: $('#skSop').value.trim(), failureMode: $('#skFm').value, relation: $('#skRel').value, kind: $('#skKind').value, steps: $('#skSteps').value });
       if (!body.name) { $('#skMsg').textContent = UI.t('skill.nameRequired'); $('#skName').focus(); return; }
+      if (!draft.pending && !body.approver) { $('#skMsg').textContent = '승인 역할을 선택하세요.'; $('#skRole').focus(); return; }
+      if (!draft.pending && key === '__new__' && !body.failureMode) { $('#skMsg').textContent = '대상 고장 유형을 선택하세요.'; $('#skFm').focus(); return; }
       remember(); draft.pending = body; saveSkillDraft(key, draft); lockFields();
       b.disabled = true; $('#skMsg').textContent = '저장 중…';
       try {
@@ -273,7 +276,7 @@
       } catch (e) {
         if (e.status >= 400 && e.status < 500) { draft.pending = null; saveSkillDraft(key, draft); }
         if (box.dataset.key === key) {
-          lockFields(); $('#skMsg').textContent = '저장하지 못했습니다: ' + e.message + (draft.pending ? ' 같은 요청으로 결과를 다시 확인하세요.' : e.status === 409 ? ' 다른 곳에서 먼저 고쳤을 수 있습니다 — [취소]로 저장본을 다시 읽은 뒤 고치세요.' : '');
+          lockFields(); $('#skMsg').textContent = '저장하지 못했습니다: ' + e.message + (draft.pending ? ' 응답을 받지 못했습니다. [저장 결과 확인]을 눌러 저장됐는지 확인하세요.' : e.status === 409 ? ' 다른 곳에서 먼저 고쳤을 수 있습니다 — [변경 취소]로 저장본을 다시 읽은 뒤 고치세요.' : '');
         }
       } finally { if (box.contains(b)) b.disabled = !!k.source_document && !draft.pending; }
     });
@@ -288,7 +291,7 @@
       if (!catalog || !Array.isArray(catalog.parts) || !Array.isArray(catalog.roles)) throw new Error('부품 · 담당 역할 목록 응답 형식이 올바르지 않습니다.');
       if (catalog.skills !== undefined && !Array.isArray(catalog.skills)) throw new Error('기존 절차 등록 목록 응답 형식이 올바르지 않습니다.');
       H.manualCatalog = catalog;
-    } catch (e) { H.manualCatalogError = '구매 검토 목록 읽기 실패: ' + e.message; }
+    } catch (e) { H.manualCatalogError = '구매 부품 · 담당 역할 목록을 읽지 못했습니다: ' + e.message; }
   }
   function manualLink(preview, procedure) {
     if (preview.links && Object.prototype.hasOwnProperty.call(preview.links, procedure.id)) return preview.links[procedure.id] || {};
@@ -311,7 +314,10 @@
       }));
       $('#manualSourcesPrev')?.addEventListener('click', () => loadManualSources(Math.max(0, offset - page.limit)));
       $('#manualSourcesNext')?.addEventListener('click', () => loadManualSources(page.next_offset));
-    } catch (e) { box.textContent = '보관 원문을 읽지 못했습니다: ' + e.message; }
+    } catch (e) {
+      box.innerHTML = UI.errorBlock('보관한 원문 목록을 읽지 못했습니다', e.message, { retry: true, cls: 'compact' });
+      box.querySelector('[data-retry]')?.addEventListener('click', () => loadManualSources(offset));
+    }
   }
   /* ---- 이 문서로 답할 수 있는 질문 (A118 골든 퀘스천 → A132 화면). API 그대로:
      POST /api/kg/manuals/batches/{batch}/golden-questions {questions, by, request_id} · GET …/golden-report (없으면 404). 현재 판본(head) 배치만 가능. */
@@ -353,7 +359,7 @@
       return UI.card({ title: esc(it.question), cls: 'golden-item', chips: UI.chipText(UI.t(key), tone),
         body: `<p class="golden-answer">${esc(it.answer || '')}</p>`
           + (it.claimed_answer ? UI.fold('근거를 확인하지 못한 에이전트의 답', `<p>${esc(it.claimed_answer)}</p>`, { cls: 'small' }) : '')
-          + UI.fold(`${esc(UI.t('golden.evidence'))} <span class="chip tone-neutral sm">${cited.length}</span>`, conf + (cited.length ? `<p class="muted">${esc(UI.t('golden.cited'))}</p><ul class="golden-cited">${cited.map(c => `<li><code>${esc(c)}</code> ${esc(UI.name(c) !== c ? UI.name(c) : '')}</li>`).join('')}</ul>` : `<p class="muted">${esc(UI.t('golden.noCited'))}</p>`)
+          + UI.fold(`${esc(UI.t('golden.evidence'))} <span class="chip tone-neutral sm">${cited.length}</span>`, conf + (cited.length ? `<p class="muted">${esc(UI.t('golden.cited'))}</p><ul class="golden-cited">${cited.map(c => `<li title="${esc(c)}">${UI.name(c) !== c ? esc(UI.name(c)) : `<code>${esc(c)}</code>`}</li>`).join('')}</ul>` : `<p class="muted">${esc(UI.t('golden.noCited'))}</p>`)
           + (it.cypher ? UI.fold(esc(UI.t('golden.query')), `<pre>${esc(it.cypher)}</pre>`, { cls: 'small' }) : ''), { cls: 'small' }) });
     }).join('');
     return `<div class="cards golden-items">${cards}</div>` + UI.fold(esc(UI.t('golden.summary')), counts + summary, { cls: 'plain' });
@@ -425,14 +431,19 @@
         H.preview = null; renderPreview();
       }));
       history.querySelectorAll('[data-manual-undo]').forEach(b => b.addEventListener('click', async () => {
+        if (!await UI.confirm({ title: '이 판의 등록을 취소할까요?', body: '이 판이 넣은 절 · 조치 방법 · 규칙 연결이 지식 지도에서 빠집니다. 보관한 원문은 남습니다.', ok: '등록 취소', danger: true })) return;
         b.disabled = true;
         try {
           await postJ(API.process + '/api/kg/manuals/batches/' + encodeURIComponent(b.dataset.manualUndo) + '/rollback', { by: manualActor() });
           H.preview = null; renderPreview(); H.skills = [];
           await loadUploads(); if (window.hydEnt) hydEnt.loadGraph(true);
-        } catch (e) { $('#manualHistoryMsg').textContent = '되돌리기 실패: ' + e.message; b.disabled = false; }
+          $('#manualHistoryMsg').textContent = '등록을 취소했습니다. 지식 지도에서 이 판의 내용이 빠졌습니다.';
+        } catch (e) { const m = $('#manualHistoryMsg'); m.className = 'form-msg neg'; m.setAttribute('role', 'alert'); m.textContent = '등록을 취소하지 못했습니다: ' + e.message; b.disabled = false; }
       }));
-    } catch (e) { $('#manualHistory').textContent = '등록 이력을 읽지 못했습니다: ' + e.message; }
+    } catch (e) {
+      $('#manualHistory').innerHTML = UI.errorBlock('등록 이력을 읽지 못했습니다', e.message, { retry: true, cls: 'compact' });
+      $('#manualHistory').querySelector('[data-retry]')?.addEventListener('click', loadUploads);
+    }
   }
   function manualIssueMessage(issue, preview, catalog) {
     const names = new Map();
@@ -451,7 +462,7 @@
     (preview.procedures || []).forEach(p => {
       if (typeof p.name === 'string' && /[가-힣]/.test(p.name) && p.name !== p.id) names.set(p.id, `${p.name} (${p.id})`);
     });
-    const kinds = {fm:'고장 유형',cause:'원인',skill:'조치 방법',rule:'규칙',action:'원자 조치',comp:'부품',part:'부품',sup:'공급사',role:'담당 역할',sv:'상태 변수',msr:'성과 지표',dt:'결정표',dec:'판단',in:'입력',sym:'증상',pat:'이상 유형',evidence:'근거'};
+    const kinds = {fm:'고장 유형',cause:'원인',skill:'조치 방법',rule:'규칙',action:'세부 동작',comp:'부품',part:'부품',sup:'공급사',role:'담당 역할',sv:'상태 변수',msr:'성과 지표',dt:'결정표',dec:'판단',in:'입력',sym:'증상',pat:'이상 유형',evidence:'근거'};
     const labelOf = id => names.get(id) || `${kinds[String(id).split(':')[0]] || '검사 대상'} 표시 이름 미등록`;
     let text = String(issue.message || '검사 설명 기록 없음');
     // Exact metadata keys only: labels never change the stored issue or proposal.
@@ -462,7 +473,7 @@
     const fields = {'link.scope':'절차 업무 범위','link.parts':'구매 대상 부품','link.executable':'절차 사용 방식','link.failureMode':'고장 유형 연결','link.approver':'승인 담당자 연결','link.addresses':'관련 원인 연결','link.affects':'영향 연결','knowledge.rules.table':'규칙의 결정표','knowledge.rules.tests':'규칙 입력 조건','failure_mode':'고장 유형','leads_to':'이어지는 고장 유형','component':'대상 부품','symptoms':'증상','disturbs':'상태 영향','penalizes':'감점 지표','applies_to':'적용 대상','outputs':'출력 대상','parts':'부품','cause':'원인'};
     if (fields[issue.field]) text = text.split(issue.field).join(fields[issue.field]);
     text = text.replace(/\b(?:failureMode|approver|relation|addresses|affects|executable|Part|Supplier)\b/g, key => ({failureMode:'고장 유형',approver:'승인 담당자',relation:'고장 유형 관계',addresses:'관련 원인',affects:'영향',executable:'실행 후보 여부',Part:'부품',Supplier:'공급사'})[key]);
-    text = text.replace(/\b(?:control|work_order|Action|REQUIRES_INPUT)\b/g, key => ({control:'설비 제어',work_order:'정비 요청',Action:'원자 조치',REQUIRES_INPUT:'필수 입력 연결'})[key]);
+    text = text.replace(/\b(?:control|work_order|Action|REQUIRES_INPUT)\b/g, key => ({control:'설비 제어',work_order:'정비 요청',Action:'세부 동작',REQUIRES_INPUT:'필수 입력 연결'})[key]);
     // Action codes in diagnostic sentences resolve through the same real catalog.
     text = text.replace(/\b[A-Z][A-Z0-9_]+\b/g, key => names.get(key) || key);
     return text;
@@ -491,11 +502,11 @@
   }
   function manualPurchaseFields(p, r) {
     const link = manualLink(r,p), purchase = link.scope === 'purchase', catalog = H.manualCatalog;
-    const policies={oem:'정본 순정 라벨 견적',lowest_approved:'승인된 비순정 견적 중 최저가',fastest_quote:'전체 견적 중 최단 납기 · 승인 여부 별도 검사'};
+    const policies={oem:'순정품 견적',lowest_approved:'승인된 대체품 견적 중 최저가',fastest_quote:'납기가 가장 빠른 견적(승인 여부는 따로 검사)'};
     const fixed=(link.actions || []).find(a=>a.action==='action:purchase-request')?.value;
     const fixedName=(catalog?.suppliers || []).find(s=>s.id===fixed)?.name;
     const knownPolicy=Object.prototype.hasOwnProperty.call(policies,link.supplier_policy);
-    const supplierState=link.supplier_policy ? `원문 선정 정책: ${knownPolicy ? policies[link.supplier_policy] : '선정 정책 기록 확인 필요'}` : fixed ? `원문 고정 공급사: ${fixedName || '등록 이름 확인 필요'}` : '원문 고정 공급사 값 미상 · 자동으로 추정하지 않습니다.';
+    const supplierState=link.supplier_policy ? `원문이 정한 공급사 선정 기준: ${knownPolicy ? policies[link.supplier_policy] : '기록을 확인해야 합니다'}.` : fixed ? `원문에 적힌 공급사: ${fixedName || '등록된 이름을 확인해야 합니다'}.` : '원문에 공급사가 적혀 있지 않습니다. 공급사를 자동으로 추정하지 않습니다.';
     const options = (rows, selected, missing) => {
       const ids = Array.isArray(selected) ? selected : selected ? [selected] : [];
       return (rows || []).map(row=>`<option value="${esc(row.id)}" ${ids.includes(row.id) ? 'selected' : ''}>${esc(row.name || '등록 이름 없음')}${row.partNo ? ' · '+esc(row.partNo) : ''}</option>`).join('') + ids.filter(id=>!(rows || []).some(row=>row.id===id)).map(id=>`<option value="${esc(id)}" selected>${esc(missing)}</option>`).join('');
@@ -505,15 +516,15 @@
       UI.field({label:'원문 절차의 사용 방식',required:true,input:`<select id="manualExecutable-${esc(p.id)}" data-manual-executable="${esc(p.id)}"><option value="">원문을 확인하고 선택하세요</option><option value="false" ${link.executable === false ? 'selected' : ''}>원문 참고 보관 · 실행 후보 제외</option><option value="true" ${link.executable === true ? 'selected' : ''}>실행 후보로 검토 · 구매요청 연결 검사</option></select>`}) +
       UI.field({label:'구매 대상 부품',required:true,hint:'원문이 명시한 실제 등록 부품을 선택하세요. 여러 부품은 Ctrl 또는 Command를 누르고 선택합니다.',input:`<select id="manualParts-${esc(p.id)}" multiple data-manual-parts="${esc(p.id)}" ${catalog ? '' : 'disabled'}>${options(catalog?.parts,link.parts,'부품 등록 목록에서 확인되지 않음')}</select>`}) +
       UI.field({label:'구매 승인 담당 역할',hint:'실행 후보는 원문에 명시된 구매 승인 담당자가 필요합니다. 참고 보관은 미지정을 그대로 둘 수 있습니다.',input:`<select id="manualApprover-${esc(p.id)}" data-manual-approver="${esc(p.id)}" ${catalog ? '' : 'disabled'}><option value="">원문에 담당 역할 미지정</option>${options(catalog?.roles,link.approver,'담당 역할 등록 목록에서 확인되지 않음')}</select>`}) +
-      UI.field({label:'원문 공급사 선정 기준',hint:'원문에 명시한 정책만 고르세요. 정책은 현재 부품별 견적에서 계산하며 실제 승인 · 발주 완료를 뜻하지 않습니다. 정책 선택 시 고정 공급사 값을 보내지 않습니다.',input:`<select id="manualSupplierPolicy-${esc(p.id)}" data-manual-supplier-policy="${esc(p.id)}"><option value="">정책 미지정 · 원문 고정 공급사 값 사용</option>${Object.entries(policies).map(([key,label])=>`<option value="${key}" ${link.supplier_policy===key ? 'selected' : ''}>${esc(label)}</option>`).join('')}${link.supplier_policy!=null && !knownPolicy ? `<option value="${esc(link.supplier_policy)}" selected>선정 정책 기록 확인 필요</option>` : ''}</select>`}) + `<p class="muted wide">${esc(supplierState)} 참고 보관에는 공급사 선정 정책을 지정하지 않습니다.</p><p class="muted wide" data-supplier-review="${esc(p.id)}"></p></div></div>`;
+      UI.field({label:'원문 공급사 선정 기준',hint:'원문에 적힌 기준만 고르세요. 기준을 고르면 지금의 부품별 견적으로 공급사를 계산하고, 원문에 적힌 공급사는 쓰지 않습니다. 실제 승인이나 발주가 끝났다는 뜻은 아닙니다.',input:`<select id="manualSupplierPolicy-${esc(p.id)}" data-manual-supplier-policy="${esc(p.id)}"><option value="">지정하지 않음(원문에 적힌 공급사를 씁니다)</option>${Object.entries(policies).map(([key,label])=>`<option value="${key}" ${link.supplier_policy===key ? 'selected' : ''}>${esc(label)}</option>`).join('')}${link.supplier_policy!=null && !knownPolicy ? `<option value="${esc(link.supplier_policy)}" selected>선정 기준 기록을 확인해야 합니다</option>` : ''}</select>`}) + `<p class="muted wide">${esc(supplierState)} 참고 보관에는 공급사 선정 기준을 지정하지 않습니다.</p><p class="muted wide" data-supplier-review="${esc(p.id)}"></p></div></div>`;
   }
   function manualReferenceFields(p, r) {
     const link=manualLink(r,p), sid=p.existing_skill_id || link.existing_skill_id || '', pin=p.reference_contract_sha256 || link.reference_contract_sha256 || '';
     const rows=H.manualCatalog?.skills || [];
-    return `<div class="wide" data-reference-fields="${esc(p.id)}" ${link.kind==='reference' ? '' : 'hidden'}><p>일반 원문 참고 절차입니다. 고장 유형 · 담당 역할 · 부품 · 실행 조치를 지정하지 않고 원문 단계를 보관합니다. 기존 실행 절차를 재참조해도 그 절차의 실행 단계나 소유권을 바꾸지 않습니다.</p>`+
-      (H.manualCatalogError ? `<p class="neg">기존 절차 재참조 목록 읽기 실패: ${esc(H.manualCatalogError)}</p>` : !Array.isArray(H.manualCatalog?.skills) ? '<p class="muted">기존 절차 재참조 목록 기록 없음 · 일치하는 실행 계약을 추정하지 않습니다.</p>' : '')+
+    return `<div class="wide" data-reference-fields="${esc(p.id)}" ${link.kind==='reference' ? '' : 'hidden'}><p>이 절차는 원문만 보관하고 실행 후보에는 넣지 않습니다. 고장 유형 · 담당 역할 · 부품 · 실행 조치는 지정하지 않습니다. 이미 등록된 같은 절차와 연결해도 그 절차의 실행 단계는 바뀌지 않습니다.</p>`+
+      (H.manualCatalogError ? `<p class="neg">이미 등록된 절차 목록을 읽지 못했습니다. ${esc(H.manualCatalogError)}</p>` : !Array.isArray(H.manualCatalog?.skills) ? '<p class="muted">이미 등록된 절차 목록이 없습니다. 같은 절차를 자동으로 짐작해 연결하지 않습니다.</p>' : '')+
       UI.field({label:'참고 절차의 사용 방식',required:true,input:`<select data-reference-executable="${esc(p.id)}"><option value="">원문을 확인하고 선택하세요</option><option value="false" ${link.executable===false ? 'selected' : ''}>원문 참고 보관 · 실행 후보 제외</option></select>`})+
-      UI.field({label:'기존 실행 절차 재참조',hint:'원문 번호와 전체 단계가 정확히 같은 등록 절차만 재참조할 수 있습니다. 선택하면 조회한 실행 계약의 판본을 고정합니다.',input:`<select data-reference-target="${esc(p.id)}"><option value="">기존 절차 재참조 없음 · 독립 원문 보관</option>${rows.filter(x=>x.reference_contract).map(x=>`<option value="${esc(x.id)}" ${x.id===sid ? 'selected' : ''}>${esc(x.name || '등록 이름 없음')} · ${esc(x.reference_contract.sopId || '원문 번호 미상')}</option>`).join('')}${sid && !rows.some(x=>x.id===sid && x.reference_contract) ? `<option value="${esc(sid)}" selected>참조 대상 등록 정보 읽기 실패</option>` : ''}</select>`})+
+      UI.field({label:'이미 등록된 같은 절차와 연결',hint:'원문 번호와 모든 단계가 정확히 같은 등록 절차만 연결할 수 있습니다. 고르면 지금 등록된 그 절차의 내용을 기준으로 고정합니다.',input:`<select data-reference-target="${esc(p.id)}"><option value="">연결하지 않음(이 문서의 원문만 보관)</option>${rows.filter(x=>x.reference_contract).map(x=>`<option value="${esc(x.id)}" ${x.id===sid ? 'selected' : ''}>${esc(x.name || '등록 이름 없음')} · ${esc(x.reference_contract.sopId || '원문 번호 미상')}</option>`).join('')}${sid && !rows.some(x=>x.id===sid && x.reference_contract) ? `<option value="${esc(sid)}" selected>연결한 절차의 등록 내용을 읽지 못했습니다</option>` : ''}</select>`})+
       `<input type="hidden" data-reference-pin="${esc(p.id)}" value="${esc(pin)}"><div data-reference-comparison="${esc(p.id)}" role="status"></div></div>`;
   }
   // 2026-10-25 수업 한 바퀴: 검토 화면이 절차 · 단계 · 고장 유형 연결만 보이고 AI가 뽑은 원인 · 증거 · 규칙은 보이지 않아 학생이 원문과 대조해
@@ -628,6 +639,7 @@
     // 추출 결과를 연다. 아직 진행 중이면 watch 일 때 3초 뒤 다시 확인한다(같은 문서 화면이 열려 있는 동안만, 최대 10분)
     const openResult = async (instance, watch, tries = 0) => {
       if (H.preview !== r) return;
+      if (watch && state.tab !== 'knowledge') { setTimeout(() => openResult(instance, true, tries), 3000); return; }
       try {
         const result = await getJ(extractionUrl + '/' + encodeURIComponent(instance));
         if (H.preview !== r) return;
@@ -639,10 +651,14 @@
           return;
         }
         const stuck = (result.segments || []).filter(s => s.status !== 'DONE').map(s => ` [구간 ${s.index}: ${UI.status(s.status)}]`).join('');
-        say(`AI 추출이 완료되지 않았습니다: ${UI.status(result.status)}${progressOf(result)}${stuck}${result.log ? ' · ' + result.log : ''} — ${UI.t('nav.instances')} 화면에서 이 추출 작업의 단계와 오류를 확인할 수 있습니다.`, true);
+        say(`AI 추출이 끝나지 않았습니다: ${UI.status(result.status)}${progressOf(result)}${stuck}. ${UI.t('nav.instances')} 화면에서 이 추출 작업의 단계와 오류를 확인할 수 있습니다.`, true);
+        const s = $('#manualAgentStatus'); if (s && result.log) s.insertAdjacentHTML('beforeend', ' ' + UI.fold('추출 기록 원문', `<pre style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(result.log)}</pre>`, { cls: 'small' }));      // 엔진 기록 원문은 문장에 잇지 않고 접어 둔다
       } catch (e) { if (H.preview === r) say('추출 결과를 확인하지 못했습니다: ' + e.message, true); }
     };
     $('#manualAgentExtract').addEventListener('click', async () => {
+      // 검토하며 고친 칸이 있으면 새 추출 결과가 그 내용을 덮는다 — 먼저 묻는다(고친 표시 = #manualReviewChanged)
+      const edited = $('#manualReviewChanged') && !$('#manualReviewChanged').hidden;
+      if (edited && !await UI.confirm({ title: 'AI 추출을 다시 할까요?', body: '지금 고친 검토 내용은 새 추출 결과로 바뀌어 사라집니다.', ok: '다시 추출', danger: true })) return;
       const button = $('#manualAgentExtract'); button.disabled = true;
       say('AI 추출을 요청하는 중…');
       try {
@@ -685,8 +701,8 @@
           if (!links[id].parts.length) { $('#manualMsg').textContent = `${p.name}: 원문에 명시한 구매 대상 부품을 선택하세요.`; return; }
           if (links[id].executable && !links[id].approver) { $('#manualMsg').textContent = `${p.name}: 원문에 명시한 구매 승인 담당 역할을 선택하세요.`; return; }
           const policy=field('manual-supplier-policy').value;
-          if (policy && !['oem','lowest_approved','fastest_quote'].includes(policy)) { $('#manualMsg').textContent = `${p.name}: 원문 공급사 선정 정책을 확인하세요.`; return; }
-          if (!links[id].executable && policy) { $('#manualMsg').textContent = `${p.name}: 원문 참고 보관에는 공급사 선정 정책을 지정하지 않습니다. 정책 선택을 해제하세요.`; return; }
+          if (policy && !['oem','lowest_approved','fastest_quote'].includes(policy)) { $('#manualMsg').textContent = `${p.name}: 원문 공급사 선정 기준을 확인하세요.`; return; }
+          if (!links[id].executable && policy) { $('#manualMsg').textContent = `${p.name}: 원문 참고 보관에는 공급사 선정 기준을 지정하지 않습니다. 기준을 「지정하지 않음」으로 바꾸세요.`; return; }
           if (policy) { links[id].supplier_policy=policy; links[id].actions=(links[id].actions || []).map(a=>({...a,value:null})); }
           else delete links[id].supplier_policy;
           if (!links[id].executable) links[id].actions = []; // The explicit reference choice makes no ERP request; original actions stay in the source snapshot.
@@ -713,7 +729,7 @@
             const target=H.manualCatalog?.skills?.find(x=>x.id===select.value)?.reference_contract;
             const pin=box.querySelector(`[data-reference-pin="${CSS.escape(id)}"]`).value;
             const number=box.querySelector(`[data-manual-id="${CSS.escape(id)}"]`).value.trim();
-            if (!target || target.id!==select.value || !/^[a-f0-9]{64}$/.test(pin) || pin!==target.contract_sha256 || number!==target.sopId || JSON.stringify(p.steps.map(s=>({order:s.order,text:s.text})))!==JSON.stringify(target.steps)) throw new Error(`${p.name}: 원문 번호 · 전체 단계 · 고정한 실행 계약이 일치하지 않습니다. 대조 내용을 다시 확인하세요.`);
+            if (!target || target.id!==select.value || !/^[a-f0-9]{64}$/.test(pin) || pin!==target.contract_sha256 || number!==target.sopId || JSON.stringify(p.steps.map(s=>({order:s.order,text:s.text})))!==JSON.stringify(target.steps)) throw new Error(`${p.name}: 원문 번호나 단계가 연결할 등록 절차와 다릅니다. 대조 내용을 다시 확인하세요.`);
             p.existing_skill_id=select.value; p.reference_contract_sha256=pin;
           } else { delete p.existing_skill_id; delete p.reference_contract_sha256; }
         }
@@ -763,9 +779,9 @@
         const p=r.procedures.find(p=>p.id===id), registered=H.manualCatalog?.skills?.find(x=>x.id===target.value), contract=registered?.reference_contract;
         const sourceSteps=[...box.querySelectorAll(`[data-manual-step="${CSS.escape(id)}"]`)].map(x=>({order:Number(x.dataset.order),text:x.value}));
         const lines=steps=>`<ol>${steps.map(s=>`<li value="${esc(s.order)}">${esc(s.text)}</li>`).join('')}</ol>`;
-        let state='기존 실행 절차 재참조 없음 · 원문 단계만 보관합니다.';
+        let state='이미 등록된 절차와 연결하지 않고, 이 문서의 원문 단계만 보관합니다.';
         const typed=contract && contract.id===target.value && typeof contract.sopId==='string' && /^[a-f0-9]{64}$/.test(contract.contract_sha256) && Array.isArray(contract.steps) && contract.steps.every(s=>s && Number.isInteger(s.order) && typeof s.text==='string');
-        if(target.value) state=!typed ? '참조 대상 실행 계약 읽기 실패 · 적재할 수 없습니다.' : field('manual-id').value.trim()!==contract.sopId ? '원문 번호 불일치 · 재참조할 수 없습니다.' : JSON.stringify(sourceSteps)!==JSON.stringify(contract.steps) ? '원문 전체 단계와 현재 실행 단계가 다릅니다 · 재참조할 수 없습니다.' : pin.value!==contract.contract_sha256 ? '고정한 실행 계약과 현재 판본이 다릅니다 · 다시 선택하고 검토하세요.' : '원문 번호 · 전체 단계 · 고정한 실행 계약 일치 · 실행 단계 변경 없음';
+        if(target.value) state=!typed ? '연결할 절차의 등록 내용을 읽지 못해 적재할 수 없습니다.' : field('manual-id').value.trim()!==contract.sopId ? '원문 번호가 등록된 절차와 달라 연결할 수 없습니다.' : JSON.stringify(sourceSteps)!==JSON.stringify(contract.steps) ? '원문의 단계가 등록된 절차의 단계와 달라 연결할 수 없습니다.' : pin.value!==contract.contract_sha256 ? '고른 뒤에 등록된 절차가 바뀌었습니다. 연결할 절차를 다시 고르고 검토하세요.' : '원문 번호와 모든 단계가 등록된 절차와 같습니다. 등록된 절차의 실행 단계는 바뀌지 않습니다.';
         const role=manualLink(r,p).approver, roleName=H.manualCatalog?.roles?.find(x=>x.id===role)?.name;
         const sourceSections=r.sections.filter(s=>s.ref===p.section || p.steps.some(step=>step.manual===s.ref));
         comparison.innerHTML=`<p><b>${esc(state)}</b></p><p>원문 담당 역할: ${esc(roleName ? roleName+' · 참고 보관에는 사용하지 않습니다.' : '미상 · 자동으로 채우지 않습니다.')}</p><h4>이 문서의 원문 단계</h4>${lines(sourceSteps)}`+
@@ -789,7 +805,7 @@
     });
     box.querySelectorAll('[data-manual-supplier-policy]').forEach(select => {
       const id=select.dataset.manualSupplierPolicy, usage=box.querySelector(`[data-manual-executable="${CSS.escape(id)}"]`);
-      const update=()=>{box.querySelector(`[data-supplier-review="${CSS.escape(id)}"]`).textContent=usage.value==='false' ? (select.value ? '참고 보관에는 선정 정책을 지정할 수 없습니다. 정책 선택을 해제하세요.' : '참고 보관 · 공급사 선택과 구매요청을 하지 않습니다.') : select.value ? '선택한 정책으로 현재 부품별 견적을 계산합니다. 고정 공급사 값을 함께 보내지 않으며, 사람 승인과 구매 실행은 별도입니다.' : '정책 미지정 · 원문 고정 공급사 값으로 검토합니다. 미상인 값을 추정하지 않습니다.';};
+      const update=()=>{box.querySelector(`[data-supplier-review="${CSS.escape(id)}"]`).textContent=usage.value==='false' ? (select.value ? '참고 보관에는 공급사 선정 기준을 지정할 수 없습니다. 기준을 「지정하지 않음」으로 바꾸세요.' : '참고 보관은 공급사를 고르지 않고 구매 요청도 만들지 않습니다.') : select.value ? '고른 기준으로 지금의 부품별 견적에서 공급사를 계산합니다. 원문에 적힌 공급사는 쓰지 않으며, 사람 승인과 구매 실행은 따로 진행됩니다.' : '기준을 지정하지 않으면 원문에 적힌 공급사로 검토합니다. 원문에 없는 값은 추정하지 않습니다.';};
       select.addEventListener('change',update); usage.addEventListener('change',update); update();
     });
   }
@@ -844,55 +860,57 @@
       const batches = {};
       rows.forEach(r => { (batches[r.batch] = batches[r.batch] || []).push(r); });
       const keys = Object.keys(batches);
-      box.innerHTML = `<p id="ddlHistoryMsg" class="muted" role="status">${esc(msg)}</p>` + (keys.length ? UI.fold(`연결 배치 <span class="chip tone-neutral sm">${keys.length}</span>`, `<div class="table-scroll"><table class="prov"><thead><tr><th>배치</th><th>사용 항목</th><th>출처</th><th></th></tr></thead><tbody>`
+      box.innerHTML = `<p id="ddlHistoryMsg" class="muted" role="status">${esc(msg)}</p>` + (keys.length ? UI.fold(`연결 이력 <span class="chip tone-neutral sm">${keys.length}</span>`, `<div class="table-scroll"><table class="prov"><thead><tr><th>연결 번호</th><th>넣은 항목</th><th>스키마 파일</th><th>되돌리기</th></tr></thead><tbody>`
         + keys.map(k => `<tr><td><code>${esc(k)}</code></td><td>${batches[k].map(r => `${esc(LABEL_KO[r.label] || r.label)} ${r.nodes}`).join(' · ')}</td><td class="muted">${esc((batches[k][0] || {}).source || '')}</td><td><button class="btn small" data-clear="${esc(k)}">되돌리기</button></td></tr>`).join('') + '</tbody></table></div>', { cls: 'plain', open: true }) : '');
       box.querySelectorAll('[data-clear]').forEach(b => b.addEventListener('click', async () => {
-        if (!confirm(`${b.dataset.clear} 배치의 변경을 되돌립니다. 다른 배치가 사용하는 항목은 유지합니다. 계속할까요?`)) return;
+        if (!await UI.confirm({ title: '이 연결을 되돌릴까요?', body: '이 스키마 파일로 넣은 시스템 · 입력 데이터를 지식 지도에서 지웁니다. 다른 연결이 함께 쓰는 항목은 남습니다.', ok: '되돌리기', danger: true })) return;
         b.disabled = true;
-        try { const out = await postJ(API.process + '/api/kg/ingests/' + encodeURIComponent(b.dataset.clear) + '?by=' + encodeURIComponent(manualActor()), null, 'DELETE'); await loadIngests(`되돌리기 완료: ${out.deleted} 삭제 · ${out.restored || 0} 복원 · ${out.retained || 0} 유지`); if (window.hydEnt) hydEnt.loadGraph(true); }
-        catch (e) { $('#ddlHistoryMsg').textContent = '되돌리기 실패: ' + e.message; b.disabled = false; }
+        try { const out = await postJ(API.process + '/api/kg/ingests/' + encodeURIComponent(b.dataset.clear) + '?by=' + encodeURIComponent(manualActor()), null, 'DELETE'); await loadIngests(`되돌렸습니다. 지운 항목 ${out.deleted}개 · 되살린 항목 ${out.restored || 0}개 · 남긴 항목 ${out.retained || 0}개`); if (window.hydEnt) hydEnt.loadGraph(true); }
+        catch (e) { const m = $('#ddlHistoryMsg'); m.className = 'form-msg neg'; m.setAttribute('role', 'alert'); m.textContent = '되돌리지 못했습니다: ' + e.message; b.disabled = false; }
       }));
-    } catch (e) { box.innerHTML = `<p id="ddlHistoryMsg" class="muted" role="status">${esc(msg)}</p><p class="neg" role="status">연결 이력을 읽지 못했습니다: ${esc(e.message)}</p>`; }
+    } catch (e) { box.innerHTML = `<p id="ddlHistoryMsg" class="muted" role="status">${esc(msg)}</p><p class="form-msg neg" role="alert">연결 이력을 읽지 못했습니다: ${esc(e.message)}</p>`; }
   }
   function renderDdlPreview() {
     const p = H.ddl; const box = $('#ddlResult');
     if (!p) { box.innerHTML = ''; return; }
     const existing = (p.existingSystems || []).map(s => s.id);
-    const sysOptions = sel => [...new Set([...existing, ...p.systems.map(s => s.id), sel].filter(Boolean))].map(id => `<option value="${esc(id)}" ${id === sel ? 'selected' : ''}>${esc(id)}</option>`).join('');
+    const sysName = id => [...(p.existingSystems || []), ...p.systems].find(s => s.id === id && s.name && s.name !== id)?.name || hydWords.system(id);      // 응답에 이름이 있으면 그것, 없으면 시스템 이름 사전(plainWords.js)
+    const sysOptions = sel => [...new Set([...existing, ...p.systems.map(s => s.id), sel].filter(Boolean))].map(id => `<option value="${esc(id)}" title="${esc(id)}" ${id === sel ? 'selected' : ''}>${esc(sysName(id))}</option>`).join('');
     box.innerHTML = `<div class="mprev"><div class="muted">${esc(p.filename)} · ${p.chars}자 · 테이블 ${p.tables.length}개${p.warnings.length ? ' · <span class="neg">' + p.warnings.map(esc).join(' ') + '</span>' : ''}</div>
       <div class="mcols"><div><h3>테이블 → 출처 시스템</h3>${p.tables.map(t => `<div class="msec"><b>${esc(t.table)}</b> <span class="muted">${esc(t.comment || '')}</span>
         ${UI.field({ label: '출처 시스템', input: `<select data-sys="${esc(t.table)}"><option value="">(없음 · 적재 안 함)</option>${sysOptions(t.system)}</select>` })}
         <div class="ddlcols">${t.columns.map(c => `<label><input type="checkbox" data-col="${esc(t.table)}" value="${esc(c)}" ${t.selected.includes(c) ? 'checked' : ''}> ${esc(c)}</label>`).join('')}</div></div>`).join('')}</div>
       <div><h3>입력 데이터와 실제 위치</h3>${UI.field({ label: '원천 연결', input: `<select id="ddlSource">${(p.sourceOptions || []).map(o => `<option value="${esc(o.id)}" ${o.id === p.datasource ? 'selected' : ''}>${esc(o.label)} (${esc(o.schema)} 스키마)</option>`).join('')}</select>`,
-        hint: (p.sourceNotes || []).join(' ') || '고른 원천의 표 · 열로 잇습니다' })}<p class="muted">${esc(p.datasource)} / ${esc(p.catalog)}</p><div class="table-scroll"><table class="prov"><thead><tr><th>이름</th><th>형</th><th>스키마 · 표 · 열</th><th>업무 시스템</th></tr></thead><tbody>${p.inputs.map(i => `<tr><td>${esc(i.name)}</td><td>${esc(i.typeRef)}</td><td>${esc(i.schema)}<br>${esc(i.table)}<br>${esc(i.column)}</td><td>${esc(i.system)}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">고른 열이 없습니다</td></tr>'}</tbody></table></div>${UI.fold('식별자와 규칙 변수', p.inputs.map(i => `<p>${esc(i.schema)} · ${esc(i.table)} · ${esc(i.column)}<br><code>${esc(i.id)}</code> <code>${esc(i.variable)}</code></p>`).join(''), { cls: 'small' })}</div></div>
+        hint: (p.sourceNotes || []).join(' ') || '고른 원천의 표 · 열로 잇습니다' })}<div class="table-scroll"><table class="prov"><thead><tr><th>이름</th><th>데이터 형식</th><th>스키마 · 표 · 열</th><th>업무 시스템</th></tr></thead><tbody>${p.inputs.map(i => `<tr><td>${esc(i.name)}</td><td>${esc(i.typeRef)}</td><td>${esc(i.schema)}<br>${esc(i.table)}<br>${esc(i.column)}</td><td title="${esc(i.system)}">${esc(sysName(i.system))}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">고른 열이 없습니다</td></tr>'}</tbody></table></div>${UI.fold('식별자와 규칙 변수', p.inputs.map(i => `<p>${esc(i.schema)} · ${esc(i.table)} · ${esc(i.column)}<br><code>${esc(i.id)}</code> <code>${esc(i.variable)}</code></p>`).join(''), { cls: 'small' })}</div></div>
       <div id="legacyMeaning"></div>
-      ${UI.actions(`<button class="btn outline" id="ddlReplan">선택 반영</button><button class="btn primary" id="ddlCommit" ${p.inputs.length ? '' : 'disabled'}>적재</button>`)}<span id="ddlMsg" class="muted"></span></div>`;
+      ${UI.actions(`<button class="btn outline" id="ddlReplan">고른 열로 다시 읽기</button><button class="btn primary" id="ddlCommit" ${p.inputs.length ? '' : 'disabled'}>적재</button>`)}<span id="ddlMsg" class="muted" role="status"></span></div>`;
+    const ddlSay = (text, bad = false) => { const m = $('#ddlMsg'); if (!m) return; m.textContent = text; m.className = bad ? 'form-msg neg' : 'muted'; m.setAttribute('role', bad ? 'alert' : 'status'); };
     if (window.hydLegacy) hydLegacy.mount($('#legacyMeaning'), { preview: p, text: H.ddlText, by: () => manualActor(),   // A9 옛 DB 뜻 복원
       replan: async review => { const sel = {}, sys = {}; p.tables.forEach(t => { sel[t.table] = t.selected; if (t.system) sys[t.table] = t.system; });
         H.ddl = await postJ(API.process + '/api/kg/ddl/preview', { filename: p.filename, text: H.ddlText, selection: sel, systems: sys, datasource: p.datasource, catalog: p.catalog, meaning_review: review || undefined }); renderDdlPreview(); } });
     $('#ddlSource').addEventListener('change', async e => {   // 원천을 바꾸면 그 원천의 스키마로 다시 해석한다(서버 ddl_sync.place)
       try { H.ddl = await postJ(API.process + '/api/kg/ddl/preview', { filename: p.filename, text: H.ddlText, datasource: e.target.value, catalog: p.catalog }); renderDdlPreview(); }
-      catch (err) { $('#ddlMsg').textContent = '실패: ' + err.message; }
+      catch (err) { ddlSay('고른 원천으로 다시 읽지 못했습니다: ' + err.message, true); }
     });
     $('#ddlReplan').addEventListener('click', async () => {
       const selection = {}, systems = {};
       box.querySelectorAll('[data-sys]').forEach(s => { if (s.value) systems[s.dataset.sys] = s.value; });
       box.querySelectorAll('[data-col]').forEach(c => { if (c.checked && systems[c.dataset.col]) (selection[c.dataset.col] = selection[c.dataset.col] || []).push(c.value); });
       try { H.ddl = await postJ(API.process + '/api/kg/ddl/preview', { filename: p.filename, text: H.ddlText, selection, systems, datasource: p.datasource, catalog: p.catalog, meaning_review: p.meaningReview ? p.meaningReview.id : undefined }); renderDdlPreview(); }
-      catch (e) { $('#ddlMsg').textContent = '실패: ' + e.message; }
+      catch (e) { ddlSay('고른 열로 다시 읽지 못했습니다: ' + e.message, true); }
     });
     $('#ddlCommit').addEventListener('click', async () => {
-      const c = $('#ddlCommit'); c.disabled = true; $('#ddlMsg').textContent = '적재 중…';
+      const c = $('#ddlCommit'); c.disabled = true; ddlSay('적재 중…');
       try {
         const out = await postJ(API.process + '/api/kg/ddl/commit', { ...p, by: manualActor() });
-        $('#ddlMsg').textContent = `적재 완료: 시스템 ${out.systems} · 입력 데이터 ${out.inputs}. 되돌리려면 아래 이력에서 "되돌리기".`;
+        ddlSay(`적재했습니다. 시스템 ${out.systems}개 · 입력 데이터 ${out.inputs}개. 되돌리려면 아래 연결 이력에서 [되돌리기]를 누르세요.`);
         c.textContent = '적재 완료';
         await loadIngests(); if (window.hydEnt) hydEnt.loadGraph(true);
-      } catch (e) { $('#ddlMsg').textContent = '실패: ' + e.message; c.disabled = false; }
+      } catch (e) { ddlSay('적재하지 못했습니다: ' + e.message, true); c.disabled = false; }
     });
   }
   $('#ddlPreview').addEventListener('click', async () => {
-    const f = $('#ddlFile').files[0]; if (!f) { $('#ddlResult').innerHTML = '<div class="neg">파일을 먼저 선택해 주세요.</div>'; return; }
+    const f = $('#ddlFile').files[0]; if (!f) { $('#ddlResult').innerHTML = '<div class="form-msg neg" role="alert">스키마 파일을 먼저 선택하세요.</div>'; return; }
     const b = $('#ddlPreview'); b.disabled = true; b.textContent = '읽는 중…'; H.ddl = null;
     $('#ddlResult').innerHTML = `<div class="muted" role="status">${esc(UI.t('loading'))}</div>`;
     try {
@@ -900,8 +918,8 @@
       const preview = await postJ(API.process + '/api/kg/ddl/preview', { filename: f.name, text: H.ddlText, catalog: $('#ddlCatalog').value.trim() });
       if ($('#ddlFile').files[0] !== f) return;
       H.ddl = preview; renderDdlPreview(); await loadIngests();
-    } catch (e) { if ($('#ddlFile').files[0] === f) $('#ddlResult').innerHTML = `<div class="neg">미리보기 실패: ${esc(e.message)}</div>`; }
-    finally { b.disabled = false; b.textContent = UI.t('kn.preview'); }
+    } catch (e) { if ($('#ddlFile').files[0] === f) $('#ddlResult').innerHTML = `<div class="form-msg neg" role="alert">스키마 파일을 읽지 못했습니다: ${esc(e.message)}</div>`; }
+    finally { b.disabled = false; b.textContent = UI.t('kn.ddlPreview'); }
   });
   $('#ddlFile').addEventListener('change', () => { H.ddl = null; $('#ddlFilename').textContent = $('#ddlFile').files[0]?.name || UI.t('kn.noFile'); renderDdlPreview(); });
   $('#ddlCatalog').addEventListener('input', () => { H.ddl = null; renderDdlPreview(); });

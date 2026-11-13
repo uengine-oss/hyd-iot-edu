@@ -687,7 +687,8 @@ class PgAuthoring:
                                     (tenant_id,)).rowcount
             agents = c.execute("delete from users where tenant_id=%s and is_agent and origin='user'", (tenant_id,)).rowcount
             skills = c.execute("delete from tenant_skills where tenant_id=%s and origin='user'", (tenant_id,)).rowcount
-            members = c.execute("delete from role_members where tenant_id=%s and origin='user'", (tenant_id,)).rowcount
+            members = c.execute("delete from role_members where tenant_id=%s and origin='user' and not (role_id = any(%s))",
+                                (tenant_id, list(keep_roles))).rowcount      # 남기는 역할의 구성원(담당자)은 남긴다 — 역할만 남고 맡을 사람이 없어지지 않게
             roles = c.execute("delete from users where tenant_id=%s and not is_agent and id like 'role:%%' and origin='user' and not (id = any(%s))",
                               (tenant_id, list(keep_roles))).rowcount
         return {"agents": agents, "skills": skills, "attachments": attachments, "assignments": maps, "role_members": members, "roles": roles}

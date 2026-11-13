@@ -39,7 +39,7 @@
     }).join('');
     return `<svg viewBox="0 0 1200 580" role="img" aria-labelledby="mainHeroTitle mainHeroDesc" class="m-hero-svg">
   <title id="mainHeroTitle">유압설비와 지식 지도 기반 에이전트 조치 흐름</title>
-  <desc id="mainHeroDesc">왼쪽은 유압 파워유닛과 센서, 가운데는 수집·관제 경로, 오른쪽은 지식 지도와 AI 에이전트이며, 승인된 조치가 다시 설비로 돌아간다.</desc>
+  <desc id="mainHeroDesc">왼쪽은 유압 파워유닛과 센서, 가운데는 수집·관제 경로, 오른쪽은 지식 지도와 AI 에이전트이고, 승인된 조치가 다시 설비로 돌아간다.</desc>
   <defs>
     <pattern id="mGrid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#27354a" stroke-width="1"/></pattern>
     <marker id="mArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#f5a623"/></marker>
@@ -143,20 +143,20 @@
       document.getElementById('mainStats').innerHTML = UI.empty(UI.t('main.noConn'), UI.t('plant.noConnSub'), 'compact'); return; }
     const parts = Object.entries(u).map(([a, x]) => `${a} ${Number(x.tags.TS1).toFixed(1)} ℃ ${x.status.state === 'TRIP' ? UI.status('TRIP') : x.status.mode === 'REMOTE_AUTO' ? '' : '(' + UI.status(x.status.mode) + ')'}`.trim());
     live.textContent = UI.t('main.liveTs1') + '  ·  ' + parts.join('   ');
-    const hot = Object.values(u).some(x => x.tags.TS1 >= 55 || x.status.state === 'TRIP');
+    const hot = Object.values(u).some(x => x.tags.TS1 >= TS_HOT || x.status.state === 'TRIP');      // 기준은 app.js TS_HOT 한 곳
     document.getElementById('mOilBody')?.classList.toggle('hot', hot);
     const box = document.getElementById('mainStats'); if (!box) return;
     const open = (state.incidents || []).filter(i => !i.terminal).length;
-    const alarms = Object.values(u).filter(x => x.tags.TS1 >= 55 || x.status.state === 'TRIP').length;
+    const alarms = Object.values(u).filter(x => x.tags.TS1 >= TS_HOT || x.status.state === 'TRIP').length;
     const n = v => Number(v).toLocaleString('ko-KR');
     box.innerHTML = [
       [UI.t('main.assets'), `${Object.keys(u).length}기`, alarms ? `${UI.t('main.hot')} ${alarms}기` : UI.t('main.cool'), alarms ? 'hot' : ''],
       // 사건 목록을 못 읽었으면 「0 · 없음」이 아니다(app.js 의 사건 목록 사유)
       state.incidentError ? [UI.t('main.openCases'), '읽기 실패', state.incidentError, 'hot']
         : [UI.t('main.openCases'), $('#openCount').textContent === '–' ? '–' : String(open), open ? UI.t('nav.incidents') : UI.t('main.none'), open ? 'hot' : ''],
-      [UI.t('main.knowledge'), graphCount ? n(graphCount.n) : '–', graphCount ? `${UI.t('main.links')} ${n(graphCount.e)}` : graphError ? `읽지 못함 — ${graphError} (30초 뒤 다시 읽음)` : UI.t('loading'), graphError ? 'hot' : ''],
+      [UI.t('main.knowledge'), graphCount ? n(graphCount.n) : '–', graphCount ? `${UI.t('main.links')} ${n(graphCount.e)}` : graphError ? '지식 수를 읽지 못했습니다. 30초 뒤 다시 읽습니다.' : UI.t('loading'), graphError ? 'hot' : '', graphError],      // 서버 사유는 길어 카드 높이를 흔든다 — title 로
       [UI.t('main.scale'), `${state.plant.time_scale ?? '–'}×`, `실제 1초 = 시뮬레이션 ${state.plant.time_scale ?? '–'}초`, ''],
-    ].map(([k, v, s, cls]) => `<div class="card ${cls}"><span>${esc(k)}</span><b class="num">${esc(v)}</b><small>${esc(s)}</small></div>`).join('');
+    ].map(([k, v, s, cls, why]) => `<div class="card ${cls}"${why ? ` title="${esc(why)}"` : ''}><span>${esc(k)}</span><b class="num">${esc(v)}</b><small>${esc(s)}</small></div>`).join('');
   }
 
   function init() {

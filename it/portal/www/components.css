@@ -2,12 +2,11 @@
    One card, one chip, one field. Change here and every screen follows. Loaded after styles.css. */
 .prose { max-width: var(--prose-max); }
 
-.page-head h1 { margin: 0; font-size: 24px; }
 .page-head .page-tools { display: flex; gap: var(--s2); align-items: center; flex-wrap: wrap; }
-h2.sec { font-size: 16px; margin: var(--s6) 0 var(--s3); display: flex; align-items: center; gap: var(--s2); }
+h2.sec { margin: var(--s6) 0 var(--s3); display: flex; align-items: center; gap: var(--s2); }
 h2.sec small { font-weight: 400; margin: 0; }
 .sec-head { display: flex; justify-content: space-between; align-items: center; gap: var(--s3); flex-wrap: wrap; margin: var(--s6) 0 var(--s3); }
-.sec-head h2 { margin: 0; font-size: 16px; }
+.sec-head h2 { margin: 0; }
 
 /* card: title 15/600 · chips · value · sub 13 muted · body */
 
@@ -24,7 +23,7 @@ h2.sec small { font-weight: 400; margin: 0; }
 .card-body > :first-child { margin-top: 0; }
 .card.sel { border-color: var(--accent); box-shadow: 0 0 0 2px var(--it-bg); }
 .card.clickable { cursor: pointer; }
-.card.clickable:hover { border-color: #b8c5e1; }
+.card.clickable:hover { border-color: var(--rule-strong); }
 
 .cards { display: grid; gap: var(--s3); align-items: stretch; }
 .cards.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -34,38 +33,20 @@ h2.sec small { font-weight: 400; margin: 0; }
 
 .stat-cards .card small { font-size: 12px; color: var(--ink-2); }
 
-/* chip: 24px · radius 6 · five tones. .pill/.state stay as aliases for untouched markup */
-.chip,
-.state { display: inline-flex; align-items: center; height: 24px; padding: 0 8px; border-radius: 6px; font-size: 12px; font-weight: 600; line-height: 1; white-space: nowrap; max-width: 100%; background: var(--chip-neutral-bg); color: var(--chip-neutral-fg); }
+/* chip: 24px · radius 6 · five tones */
+.chip { display: inline-flex; align-items: center; height: 24px; padding: 0 8px; border-radius: 6px; font-size: 12px; font-weight: 600; line-height: 1; white-space: nowrap; max-width: 100%; background: var(--chip-neutral-bg); color: var(--chip-neutral-fg); }
 
 .chip.tone-neutral { background: var(--chip-neutral-bg); color: var(--chip-neutral-fg); }
 .chip.tone-accent { background: var(--chip-accent-bg); color: var(--chip-accent-fg); }
 .chip.tone-success { background: var(--chip-success-bg); color: var(--chip-success-fg); }
 .chip.tone-warning { background: var(--chip-warning-bg); color: var(--chip-warning-fg); }
 .chip.tone-danger { background: var(--chip-danger-bg); color: var(--chip-danger-fg); }
-.chip.auto {
-  background: var(--chip-accent-bg);
-  color: var(--chip-accent-fg);
-}
-.chip.manual {
-  background: var(--chip-warning-bg);
-  color: var(--chip-warning-fg);
-}
-.chip.run {
-  background: var(--chip-success-bg);
-  color: var(--chip-success-fg);
-}
-.chip.trip, .chip.raised, .chip.candidate { background: var(--chip-danger-bg); color: var(--chip-danger-fg); }
-.chip.inc {
-  background: var(--ink);
-  color: #fff;
-}
 
 /* field: label 13/500 above · input 34px · hint 12 · error danger */
 
 .field > label { display: flex; flex-direction: row; align-items: baseline; gap: 4px; margin: 0; font-size: 13px; font-weight: 500; color: var(--ink-2); }
 .field .req { font-style: normal; color: var(--alarm); }
-.field input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]), .field select, .field textarea { width: 100%; min-height: var(--field-h); padding: 6px 10px; border-radius: var(--radius-sm); border: 1px solid #cbd5e3; }
+.field input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]), .field select, .field textarea { width: 100%; min-height: var(--field-h); padding: 6px 10px; border-radius: var(--radius-sm); border: 1px solid var(--rule-strong); }
 .field textarea { min-height: 64px; }
 
 .field-error { margin: 0; font-size: 12px; color: var(--alarm); }
@@ -83,6 +64,8 @@ h2.sec small { font-weight: 400; margin: 0; }
 
 .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: var(--s3) var(--s4); align-items: start; }
 .form-grid .field.wide, .form-grid .wide { grid-column: 1 / -1; }
+.form-grid .wide-2 { grid-column: span 2; }
+@media (max-width: 640px) { .form-grid .wide-2 { grid-column: 1 / -1; } }
 
 .form-actions .form-msg { margin-right: auto; font-size: 13px; }
 .form-actions .btn { min-height: var(--btn-h); }
@@ -119,7 +102,7 @@ details.fold.plain > .fold-body { padding: 0 0 var(--s2); }
 .timeline { display: flex; flex-direction: column; }
 .timeline .tl { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 0 var(--s3); }
 .timeline .tl .dot { position: relative; }
-.timeline .tl .dot::before { content: ""; position: absolute; left: 4px; top: 14px; width: 8px; height: 8px; border-radius: 50%; background: #b6c2d4; border: 2px solid #fff; box-shadow: 0 0 0 1px #b6c2d4; }
+.timeline .tl .dot::before { content: ""; position: absolute; left: 4px; top: 14px; width: 8px; height: 8px; border-radius: 50%; background: var(--ink-4); border: 2px solid #fff; box-shadow: 0 0 0 1px var(--ink-4); }
 .timeline .tl .dot::after { content: ""; position: absolute; left: 8px; top: 26px; bottom: -2px; width: 2px; background: var(--rule); }
 .timeline .tl:last-child .dot::after { display: none; }
 .timeline .tl.done .dot::before { background: var(--ok); box-shadow: 0 0 0 1px var(--ok); }
@@ -137,7 +120,7 @@ details.fold.plain > .fold-body { padding: 0 0 var(--s2); }
 .detail-head .row { display: flex; align-items: center; gap: var(--s2); flex-wrap: wrap; }
 .detail-head h2 { margin: 0; font-size: 18px; }
 .detail-head .sub { font-size: 13px; color: var(--ink-3); }
-.detail-head .sub .mono { font-size: 11px; color: var(--ink-3); }
+.detail-head .sub .mono { font-size: 12px; color: var(--ink-3); }
 
 /* layout helpers */
 .row-wrap { display: flex; gap: var(--s2); flex-wrap: wrap; align-items: center; }
@@ -146,7 +129,7 @@ details.fold.plain > .fold-body { padding: 0 0 var(--s2); }
 .kv-line { font-size: 13px; color: var(--ink-2); }
 .kv-line b { color: var(--ink); }
 .compact-table { width: 100%; font-size: 13px; }
-.compact-table th, .compact-table td { padding: 6px 10px; }
+.compact-table th, .compact-table td { padding: 8px 12px; }
 .layer .zone { display: grid; place-items: center; border-right: 1px solid var(--rule); background: var(--surface-soft); }
 
 /* decision screen: conditions card as one form (C4) */
@@ -190,14 +173,14 @@ details.fold.plain > .fold-body { padding: 0 0 var(--s2); }
 .hopt { display: grid; grid-template-columns: 22px 34px minmax(0, 1fr); gap: 8px; align-items: start; border: 1px solid var(--rule); border-radius: var(--radius-sm); padding: var(--card-pad); background: #fff; }
 .hopt .hbody { gap: 6px; }
 .htitle { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 15px; font-weight: 600; }
-.htitle .chip { height: 20px; font-size: 11px; padding: 0 6px; }
+.htitle .chip { min-height: 20px; font-size: 12px; padding: 1px 6px; }
 .hsub { font-size: 12px; color: var(--ink-3); }
 .hbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s2); align-items: center; }
 .hbar i { display: block; height: 8px; border-radius: 4px; }
 .hbar b { font-size: 13px; white-space: nowrap; }
 .hline { font-size: 13px; color: var(--ink-2); display: flex; gap: var(--s3); flex-wrap: wrap; }
 .hline b { color: var(--ink); }
-.hkpi span { font-size: 12px; border: 1px solid var(--rule); border-radius: 6px; padding: 1px 6px; background: #fafbfc; }
+.hkpi span { font-size: 12px; border: 1px solid var(--rule); border-radius: 6px; padding: 1px 6px; background: var(--paper); }
 .hopt .fold-body dl, .hopt .fold-body ol { margin: var(--s2) 0; }
 .hopt .fold-body dl > div { display: grid; grid-template-columns: 120px 1fr; gap: var(--s2); padding: 2px 0; }
 .hopt .fold-body dt { color: var(--ink-3); }
@@ -215,11 +198,10 @@ details.fold.plain > .fold-body { padding: 0 0 var(--s2); }
 
 .stream-panel { border-radius: var(--radius-sm); box-shadow: none; }
 .stream-row .txt { font-family: var(--font); white-space: normal; overflow: visible; }
-.inst-card .step-chip { height: 20px; font-size: 11px; }
+.inst-card .step-chip { min-height: 20px; font-size: 12px; padding: 1px 6px; }
 
-.todo-panel { background: var(--panel); border: 1px solid var(--rule); border-radius: var(--radius-sm); padding: var(--card-pad); margin: 0 0 var(--s6); }
+.todo-panel { padding: var(--card-pad); margin: 0 0 var(--s6); }   /* 바탕 · 테두리 · 모서리는 theme.css 「카드」 */
 .todo-panel h3 { margin: 0 0 var(--s2); font-size: 15px; }
-.box { border-radius: var(--radius-sm); }
 .inst-detail-tabs .tab-pane > .card { margin-bottom: var(--s3); }
 .inst-table { font-size: 13px; }
 
@@ -227,7 +209,7 @@ details.fold.plain > .fold-body { padding: 0 0 var(--s2); }
 .skill-edit { gap: var(--s3); }
 
 /* scenario units */
-.unit .kv span small { color: var(--ink-3); font-size: 11px; margin-left: 4px; }
+.unit .kv span small { color: var(--ink-3); font-size: 12px; margin-left: 4px; }
 .ucard {
   background: var(--panel);
   border: 2px solid var(--rule);
@@ -257,7 +239,7 @@ details.fold.plain > .fold-body { padding: 0 0 var(--s2); }
 /* home */
 .m-go { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s3); }
 .m-go .card { cursor: pointer; text-align: left; font: inherit; color: inherit; }
-.m-go .card:hover { border-color: #9eafea; }
+.m-go .card:hover { border-color: var(--rule-strong); }
 .m-go .card .card-sub { color: var(--ink-2); }
 .m-go .card .go { color: var(--accent); font-weight: 600; font-size: 13px; margin-top: auto; }
 @media (max-width: 900px) { .m-go { grid-template-columns: 1fr; } }
@@ -285,7 +267,7 @@ details.fold.plain > .fold-body { padding: 0 0 var(--s2); }
 .flow-scroll.vert { overflow-x: hidden; }
 .flow-scroll.vert svg { min-width: 0; width: 100%; margin: 0 auto; }
 /* 조치 후보 카드: 제외 사유 한 줄만, 나머지 칩은 근거 접기 안 */
-.hopt .hmeta .muted { font-size: 11.5px; }
+.hopt .hmeta .muted { font-size: 12px; }
 .hopt .fold-body .hmeta { display: inline-flex; flex-wrap: wrap; gap: 4px; }
 /* 지식 관리: 질문 카드 답은 한 단락 */
 .golden-item .golden-answer { margin: 0 0 var(--s2); }
@@ -298,6 +280,8 @@ details.fold.plain > .fold-body { padding: 0 0 var(--s2); }
   gap: var(--s6);
   margin-bottom: var(--s6);
 }
+/* 900px 아래는 설비 카드를 한 줄에 한 장 — styles.css 의 같은 규칙은 이 3열 규칙에 덮여 일하지 않았다 */
+@media (max-width: 900px) { .scada { grid-template-columns: 1fr; gap: var(--s4); } }
 .ucard header .chips {
   flex: 1 1 100px;
   min-width: 0;
@@ -318,3 +302,11 @@ details.fold.plain > .fold-body { padding: 0 0 var(--s2); }
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* 데이터 원천 (fabric.js) — 카드 사이 간격, 카드 안 작은 머리, 표 칸의 보조 글 · 열 이름 */
+.fab-body, #fabResult { display: flex; flex-direction: column; gap: var(--s4); }
+.fab-body h4 { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); margin: var(--s4) 0 var(--s2); font-size: 14px; font-weight: 600; }
+.compact-table small { color: var(--ink-3); line-height: 1.45; }
+.compact-table code { background: var(--surface-soft); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; word-break: normal; }
+#fabricView .stat-cards .card b { font-size: 18px; line-height: 24px; }
+#fabricView .stat-cards .card small { line-height: 1.45; }

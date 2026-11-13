@@ -17,7 +17,7 @@
         try { request = JSON.parse(sessionStorage.getItem(key)); } catch (_) { continue; }
         if (!request?.request_id) continue;
         const panel = document.createElement('div');
-        panel.innerHTML = UI.fold(`${esc(UI.t('inst.reassess'))} · 접수 확인 — ${esc(w.activity_name)}`, `<p>${esc(UI.who(request.by))} · ${esc(request.reason)}</p>${UI.actions('<button class="btn" data-reassess-receipt>같은 요청의 접수 결과 확인</button>')}<p role="status"></p>`, { open: true });
+        panel.innerHTML = UI.fold(`${esc(UI.t('inst.reassess'))} 요청 확인 — ${esc(UI.flowName(w.activity_name))}`, `<p>앞서 보낸 다시 평가 요청의 응답을 받지 못했습니다. 눌러서 처리됐는지 확인하세요.</p><p class="muted">요청 사유: ${esc(request.reason)}</p>${UI.actions('<button class="btn" data-reassess-receipt>요청 결과 확인</button>')}<p role="status"></p>`, { open: true });
         panel.querySelector('button').addEventListener('click', async e => {
           e.target.disabled = true;
           try {
@@ -44,13 +44,14 @@
       panel.dataset.deferralTask = w.id;
       const draw = () => {
         const locked = s.busy || s.pending ? 'disabled' : '';
-        panel.innerHTML = UI.fold(`${esc(UI.t('inst.reassess'))} — ${esc(w.activity_name)} ${UI.chipText('보류', 'warning')}`, `<p>${esc(d.reason)}</p>
-          <p class="muted">${esc(UI.dateTime(d.at))} · ${d.assessment.status === 'UNKNOWN' ? '근거 확인 불가' : '현재 근거가 조건에 맞지 않음'}</p>
-          ${UI.fold('관측 근거와 보류 기록', `<pre style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(JSON.stringify(d.assessment.evidence, null, 2))}</pre>`, { cls: 'small' })}
+        // 보류 사유와 근거는 다른 화면(처리 기록 · 처리 과정)과 같은 그리기 하나(hydWords.deferralEvidenceHtml) — 원문은 그 안의 접기에 있다
+        panel.innerHTML = UI.fold(`${esc(UI.t('inst.reassess'))} — ${esc(UI.flowName(w.activity_name))} ${UI.chipText('보류', 'warning')}`, `
+          <p class="muted">${esc(UI.dateTime(d.at))}에 보류했습니다. ${d.assessment.status === 'UNKNOWN' ? '근거를 확인하지 못했습니다.' : '지금 근거가 조건에 맞지 않습니다.'}</p>
+          ${hydWords.deferralEvidenceHtml(d)}
           <div class="form"><section class="form-section"><h4>${esc(UI.t('form.section.who'))}</h4><div class="form-grid">
-            ${UI.field({ label: UI.t('form.by'), required: true, input: UI.actorInput('data-reassess-by', s.by, locked) })}
+            ${UI.actorInput('data-reassess-by', s.by, locked)}
             ${UI.field({ label: UI.t('form.reason'), required: true, cls: 'wide', hint: '원천을 다시 조회해 평가합니다. 조치가 제안되면 별도 선택 단계에서 확인합니다.', input: `<textarea data-reassess-reason rows="2" ${locked}>${esc(s.reason)}</textarea>` })}
-          </div></section>${UI.actions(`<button class="btn primary" data-reassess ${s.busy ? 'disabled' : ''}>${s.pending ? '같은 요청의 접수 결과 확인' : esc(UI.t('btn.reassess'))}</button>`, s.error)}</div>`, { open: true });
+          </div></section>${s.pending ? '<p>앞 요청의 응답을 받지 못했습니다. 눌러서 처리됐는지 확인하세요.</p>' : ''}${UI.actions(`<button class="btn primary" data-reassess ${s.busy ? 'disabled' : ''}>${s.pending ? '요청 결과 확인' : esc(UI.t('btn.reassess'))}</button>`, s.error)}</div>`, { open: true });
         panel.querySelector('[data-reassess-by]').addEventListener('input', e => s.by = e.target.value);
         panel.querySelector('[data-reassess-reason]').addEventListener('input', e => s.reason = e.target.value);
         panel.querySelector('[data-reassess]').addEventListener('click', async () => {

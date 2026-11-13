@@ -9,7 +9,7 @@
     ruleForm: { target: '', value: '' } };
   const won = v => v == null ? '미확인' : `${v < 0 ? '−' : v > 0 ? '+' : ''}${Math.abs(v).toLocaleString('ko-KR')}원`;
   const num = (v, unit) => v == null ? '–' : `${Number(v).toLocaleString('ko-KR', { maximumFractionDigits: 3 })}${unit ? ' ' + unit : ''}`;
-  const tone = { '데이터': 'success', '문서': 'accent', '가정': 'warning', '시험값': 'danger' };
+  const tone = { '데이터': 'success', '문서': 'accent', '가정': 'warning', '시험값': 'accent' };   // 빨강은 실패 · 정지에만 쓴다 — 학생이 넣은 시험값은 강조색
   const kindLabel = { decision: '판단 순위', money: '손익 순위' };
   const ruleCount = () => Object.keys(W.policy.weights).length + Object.keys(W.policy.penalties).length + Object.keys(W.policy.perspectives || {}).length;
   const trialCount = () => Object.keys(W.values).length + ruleCount();
@@ -30,7 +30,9 @@
     if (W.busy) return;
     W.busy = true; W.msg = ''; W.base = W.view = W.bounds = W.weeks = null; W.values = {}; W.policy = { weights: {}, penalties: {}, perspectives: {} }; W.perspForm = {}; render();
     try {
-      W.base = W.view = await call('', { asset: W.asset, pattern: W.pattern });
+      const asked = { asset: W.asset, pattern: W.pattern };
+      W.base = W.view = await call('', asked);
+      W.loaded = asked;      // 아래 결과가 어느 설비 · 이상 패턴의 것인지(고르기 칸을 바꾸면 render 가 어긋남을 알린다)
       const first = W.base.cards.find(c => c.feasible);
       W.weeksForm.card = first ? first.id : '';
       W.boundsMsg = '경계값을 계산하는 중…';
@@ -88,6 +90,8 @@
       actions: `<button class="btn primary" id="wiLoad" ${W.busy || !W.pattern ? 'disabled' : ''}>${W.busy && !W.base ? '계산 중…' : '불러오기'}</button>` });
     if (W.msg) html += `<p class="neg" role="status">${esc(W.msg)}</p>`;
     const v = W.view;
+    if (v && W.loaded && (W.loaded.asset !== W.asset || W.loaded.pattern !== W.pattern))
+      html += `<p class="form-msg" role="status">설비나 이상 패턴을 바꿨습니다. 아래는 앞서 불러온 ${esc(W.loaded.asset)}의 결과이며, [불러오기]를 눌러야 바뀝니다.</p>`;
     if (!v) { W.el.innerHTML = html + UI.empty('설비와 이상 패턴을 고르고 불러오기를 누르세요', '카드별 손익(원), 1순위가 바뀌는 값, 몇 주 뒤 지표를 시험해 봅니다'); wire(); return; }
     html += UI.evaluationHtml(v) + summaryHtml(v);
     html += UI.tabs([['money', '카드별 손익'], ['values', '값 바꿔 보기', Object.keys(W.values).length || null], ['weeks', '주간 조건별 예측'],
@@ -113,7 +117,7 @@
   function summaryHtml(v) {
     const n = trialCount();
     const chips = UI.chipText(`판단 1순위 · ${cardName(v.top.decision)}`, 'accent') + ' ' + UI.chipText(`손익 1순위 · ${cardName(v.top.money)}`, 'success')
-      + ' ' + UI.chipText('원본 그대로', 'neutral')   // 원본이 바뀌었으면 서버(agentsvc main)가 500 으로 거절해 이 응답이 오지 않는다(W3-25)
+      + ' ' + UI.chipText('업무 DB와 지식은 원본 그대로', 'neutral')   // 원본이 바뀌었으면 서버(agentsvc main)가 500 으로 거절해 이 응답이 오지 않는다(W3-25)
       + (n ? ' ' + UI.chipText(`시험값 ${n}개 적용 중`, 'warning') : '') + (W.busy ? ' ' + UI.chipText('다시 계산하는 중…', 'neutral') : '');
     return `<div class="summary prose" style="margin-top:var(--s4)"><p style="margin:0 0 var(--s2)">${esc(v.summary)}</p><div class="card-chips">${chips}</div>`
       + `${n ? `<div class="form-actions" style="margin-top:var(--s2)"><button class="btn" id="wiReset">원래대로</button></div>` : ''}`
@@ -127,7 +131,7 @@
       <td>${esc(i.formula || i.missing || '')}</td>
       <td>${(i.sources || []).map(s => `<div>${UI.chipText(s.kind, tone[s.kind] || 'neutral')} ${esc(s.where)}</div>`).join('') || '<span class="neg">출처 없음</span>'}
         ${(i.sources || []).some(s => s.ref) ? UI.fold('원천 위치', (i.sources || []).filter(s => s.ref).map(s => `<div class="muted">${esc(s.ref)}</div>`).join(''), { cls: 'small' }) : ''}</td></tr>`).join('')}</tbody></table>
-      <p class="field-hint">${esc(m.basis || '')}${m.hours != null ? ` · 기간 ${num(m.hours, 'h')}` : ''}</p>`;
+      <p class="field-hint">${esc(m.basis || '')}${m.hours != null ? ` · 기간 ${num(m.hours, '시간')}` : ''}</p>`;
   }
 
   function boundaryLines(list) {
@@ -203,7 +207,7 @@
     html += UI.actions(`<button class="btn primary" id="wiPersp" ${W.busy ? 'disabled' : ''}>관점 비중으로 다시 계산</button>`);
     const names = Object.fromEntries(pv.perspectives.map(p => [p.id, p.name]));
     const base = Object.fromEntries((W.base.cards || []).map(c => [c.id, c]));
-    const cell = (c, pid) => { const x = (c.bscByPerspective || []).find(y => y.perspective === pid); return x ? `득 ${num(x.gain)} · 실 ${num(x.loss)}` : '–'; };
+    const cell = (c, pid) => { const x = (c.bscByPerspective || []).find(y => y.perspective === pid); return x ? `이득 ${num(x.gain)} · 손실 ${num(x.loss)}` : '–'; };
     const used = pv.perspectives.filter(p => p.inUse);
     html += UI.fold('카드별 관점 득실 (시험 비중 적용)', `<table class="compact-table"><thead><tr><th>카드</th>${used.map(p => `<th>${esc(p.name)}</th>`).join('')}<th>성과 지표 점수</th></tr></thead><tbody>${v.cards.map(c => {
       const b = base[c.id] || {}, b0 = (b.scoreParts || {}).bsc, b1 = (c.scoreParts || {}).bsc;
@@ -231,7 +235,7 @@
     const cell = (r0, r1, k, f) => !r1 || r1[k] === r0[k] ? esc(f(r0[k])) : `<span class="muted">${esc(f(r0[k]))}</span> → <b>${esc(f(r1[k]))}</b>`;
     html += `<table class="compact-table"><thead><tr><th>주</th><th>가동률</th><th>생산량</th><th>매출</th><th>비용</th><th>이익</th><th>누적 이익</th></tr></thead><tbody>${w.base.map((r0, i) => {
       const r1 = w.changed && w.changed[i];
-      return `<tr><td style="white-space:nowrap">${r0.week}주</td><td>${cell(r0, r1, 'availability', x => num(x, '%'))}</td><td>${cell(r0, r1, 'output', x => num(x, 'ea'))}</td>
+      return `<tr><td style="white-space:nowrap">${r0.week}주</td><td>${cell(r0, r1, 'availability', x => num(x, '%'))}</td><td>${cell(r0, r1, 'output', x => num(x, '개'))}</td>
         <td class="num">${cell(r0, r1, 'revenue_won', won)}</td><td class="num">${cell(r0, r1, 'cost_won', x => x == null ? '미확인' : `${x.toLocaleString('ko-KR')}원`)}</td>
         <td class="num">${cell(r0, r1, 'profit_won', won)}</td><td class="num">${cell(r0, r1, 'cum_profit_won', won)}</td></tr>`;
     }).join('')}</tbody></table>`;
@@ -245,8 +249,9 @@
 
   function wire() {
     const el = W.el, q = s => el.querySelector(s);
-    q('#wiAsset')?.addEventListener('change', e => { W.asset = e.target.value; });
-    q('#wiPattern')?.addEventListener('change', e => { W.pattern = e.target.value; });
+    // 결과가 떠 있는 동안 설비 · 이상 패턴을 바꾸면 다시 그려, 아래 결과가 앞서 불러온 것임을 알린다
+    q('#wiAsset')?.addEventListener('change', e => { W.asset = e.target.value; if (W.view) render(); });
+    q('#wiPattern')?.addEventListener('change', e => { W.pattern = e.target.value; if (W.view) render(); });
     q('#wiLoad')?.addEventListener('click', load);
     q('#wiReset')?.addEventListener('click', reset);
     el.querySelectorAll('[data-wi-tab]').forEach(b => b.addEventListener('click', () => { W.tab = b.dataset.wiTab; render(); }));
@@ -282,7 +287,7 @@
       + `<div class="muted">${esc(i.formula || i.missing || '')}</div>`
       + UI.fold(`출처 ${(i.sources || []).length}`, (i.sources || []).map(x => `<div>${UI.chipText(x.kind, tone[x.kind] || 'neutral')} ${esc(x.where)}</div>`).join('') || '<span class="neg">출처 없음</span>', { cls: 'small' }) + '</div>').join('');
     return UI.fold(`예상 손익 <b class="${m.total_won < 0 ? 'neg' : ''}">${esc(won(m.total_won))}</b>${m.complete || m.total_won == null ? '' : ' <span class="chip tone-warning sm">일부 미확인</span>'}`,
-      rows + `<p class="field-hint">${esc(m.basis || '')} · 값 바꿔 보기와 경계값은 '조건별 손익' 화면에서</p>`, { cls: 'small' });
+      rows + `<p class="field-hint">${esc(m.basis || '')} <a href="#/whatif">조건별 손익에서 값 바꿔 보기 →</a></p>`, { cls: 'small' });
   }
 
   window.hydWhatif = { mount, failed, moneyFold };

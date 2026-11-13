@@ -28,7 +28,7 @@ from psycopg.types.json import Jsonb
 from hydcommon import schemas, topics
 from hydcommon.kafka import consumer as make_consumer, replay_verdict
 from hydcommon.metrics import Registry
-from hydcommon.service import make_app
+from hydcommon.service import make_app, stop_after_loop_end
 from hydcommon.timeutil import parse_iso
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
@@ -282,10 +282,7 @@ app = make_app("connect-sink (L5: Kafka -> TimescaleDB)", reg,
 
 
 def _watch(task):
-    """If the consume loop ever exits, /healthz reports it (503) instead of looking healthy while doing nothing."""
-    state["consumer_dead"] = True
-    state["consumer_error"] = repr(task.exception()) if not task.cancelled() and task.exception() else "exited"
-    log.error("consumer task ended: %s", state["consumer_error"])
+    stop_after_loop_end(task, state, log)
 
 
 @app.on_event("startup")

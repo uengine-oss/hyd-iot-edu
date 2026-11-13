@@ -63,6 +63,8 @@
     const current = selected || $r('definitionChoice').value;
     definitions = await getJ(API.process+'/api/process/definitions');
     const select=$r('definitionChoice');select.replaceChildren();
+    // 빈 항목을 먼저 둔다 — 고르지 않은 첫 판본이 [실행] · [고친 판본 불러오기]로 나가지 않게(choice() 가 빈 값을 막는다)
+    const blank=document.createElement('option');blank.value='';blank.textContent='정의 판본 선택';select.appendChild(blank);
     definitions.forEach(d => {
       const option=document.createElement('option');option.value=JSON.stringify([d.id,d.version]);
       option.textContent=optionLabel(d);
@@ -76,8 +78,13 @@
     if (!value) throw Error('등록된 정의 판본을 고르세요');
     return JSON.parse(value);
   }
+  // 시작 요청 번호: 학생이 지어 적지 않게 폼을 열 때 채워 둔다(flows.js 직접 시작과 같은 UI.uuid). 응답을 잃고 다시 눌러도 같은 번호라 두 번 시작되지 않고,
+  // 시작에 성공한 뒤에만 새 번호로 바꾼다. 학생이 고쳐 적은 번호는 건드리지 않는다
+  function newEvent(force) { const input=$r('definitionEvent'); if (force || !input.value.trim()) input.value='manual-'+UI.uuid(); }
   $r('definitionEditor').addEventListener('toggle', () => {
-    if ($r('definitionEditor').open && !definitions.length) action(() => refresh());
+    if (!$r('definitionEditor').open) return;
+    newEvent(false);
+    if (!definitions.length) action(() => refresh());
   });
   $r('definitionRefresh').addEventListener('click', () => action(() => refresh()));
   $r('definitionChoice').addEventListener('change', syncStart);
@@ -109,6 +116,7 @@
     const data={definition_id:id,version,event_id:event,variables:readObject($r('definitionValues').value,'시작 변수'),name:$r('definitionRunName').value.trim() || null};
     if (alertText) data.alert=readObject(alertText,'경보');
     const inst=await postJ(API.process+'/api/instances/start',data);
+    newEvent(true);
     message('처리 건을 시작했습니다 — 처리 건 화면에서 이어 봅니다');
     selectTab('instances'); window.hydInstancesSelect(inst.proc_inst_id);
   }));

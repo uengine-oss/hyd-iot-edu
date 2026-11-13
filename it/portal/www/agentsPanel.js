@@ -7,7 +7,7 @@
   Object.assign(UI.terms, {
     'agents.title': '실행 중인 AI 에이전트', 'agents.service': 'AI 에이전트 실행 서비스', 'agents.up': '연결됨', 'agents.down': '연결 안 됨', 'agents.inFlight': '실행 중',
     'agents.handled': '처리', 'agents.lastLook': '마지막으로 일을 찾은 시각', 'agents.never': '아직 없음', 'agents.clis': '설치된 코딩 에이전트',
-    'agents.worker': '실행 서비스', 'agents.holding': '수행 중인 단계', 'agents.waiting': 'AI 에이전트 차례를 기다리는 단계', 'agents.none': '실행 중인 AI 에이전트가 없습니다', 'agents.noneSub': '에이전트 단계가 시작되면 여기에 나타납니다',
+    'agents.worker': '실행 서비스', 'agents.holding': '수행 중인 단계', 'agents.waiting': 'AI 에이전트 차례를 기다리는 단계', 'agents.none': '실행 중인 AI 에이전트가 없습니다', 'agents.noneSub': 'AI 에이전트 단계가 시작되면 여기에 나타납니다',
     'agents.open': '처리 과정 보기', 'agents.rowsFail': '단계 목록을 읽지 못했습니다', 'agents.installed': '설치됨', 'agents.missing': '없음',
     'agents.downWhy': 'AI 에이전트 실행 서비스가 꺼져 있거나 켜지는 중입니다. 1분 뒤에도 같으면 시작.bat을 다시 실행하세요.', 'agents.raw': '연결 오류 원문',
   });

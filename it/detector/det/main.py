@@ -29,7 +29,7 @@ from hydcommon import graphdb, schemas, topics
 from hydcommon.daq_contract import OBSERVATION_GRACE_S, TAGS, profile_from_env
 from hydcommon.kafka import Delivery, consumer as make_consumer, producer as make_producer, replay_verdict
 from hydcommon.metrics import Registry
-from hydcommon.service import make_app
+from hydcommon.service import make_app, stop_after_loop_end
 from hydcommon.timeutil import parse_iso, time_scale
 from . import cep, features
 from .pattern_runtime import PatternRuntime
@@ -330,10 +330,7 @@ app = make_app("detector (L4: 1 s features + anomaly score + CEP)", reg, health)
 
 
 def _watch(task):
-    """If the consume loop ever exits, /healthz reports it (503) instead of looking healthy while doing nothing."""
-    state["consumer_dead"] = True
-    state["consumer_error"] = repr(task.exception()) if not task.cancelled() and task.exception() else "exited"
-    log.error("consumer task ended: %s", state["consumer_error"])
+    stop_after_loop_end(task, state, log)
 
 
 @app.on_event("startup")

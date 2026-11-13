@@ -1,9 +1,9 @@
 /* AI 에이전트 · 스킬 · 담당 배정 (U2 보기 + B1 직접 만들기).
    원천 하나: 에이전트 = users 표(is_agent), 스킬 = tenant_skills 표, 붙이기 = agent_skills 표, 단계 → 에이전트 = activity_agent_map,
-   역할 → 사람 = role_members. 워커는 실행마다 같은 행을 읽는다(procsvc/agents_store.agent_settings) — 여기서 고친 것이 다음 실행에 쓰인다.
+   역할의 구성원 = role_members(늘 이 PC의 담당자 한 명 — 화면에서 사람을 넣고 빼지 않는다). 워커는 실행마다 같은 행을 읽는다(procsvc/agents_store.agent_settings) — 여기서 고친 것이 다음 실행에 쓰인다.
    기본(시드) 에이전트 · 스킬 · 업무분장은 보호: 고치기 · 지우기 대신 "복제해서 고치기". 내가 만든 것은 "내가 만든" 표시, "기준으로 되돌리기"로 지움.
    API: 읽기 GET /api/agents · /api/agents/{id} · /api/skills · /api/skills/{name} (agents_api.py),
-        쓰기 POST·PUT·DELETE /api/agents · /api/skills · /api/agent-assignments · /api/role-members · POST /api/agents/reset (agent_authoring_api.py).
+        쓰기 POST·PUT·DELETE /api/agents · /api/skills · /api/agent-assignments · /api/roles · POST /api/agents/reset (agent_authoring_api.py).
    레이아웃: process-gpt-vue3 AgentChatInfo.vue(목표 → 성격 → 도구 → 스킬 → 모델) · AgentField.vue:64-170(편집 폼) · SkillDetail.vue(사용 중 에이전트).
    셸(U7)은 window.hydAgents.mount(el) 로 아무 컨테이너에나 그릴 수 있다. */
 (function () {
@@ -109,7 +109,7 @@
   function agentItem(a) {
     const sel = a.id === st.pick.agents && !st.form ? ' sel' : '';
     const agentSteps = a.steps.filter(s => s.agent).length;
-    const count = a.kind === 'agent' ? `맡은 단계 ${agentSteps} · 도구 ${a.tools.length || '전부'} · 스킬 ${a.skills.length}` : `맡은 단계 ${a.steps.length}`;
+    const count = a.kind === 'agent' ? `맡은 단계 ${agentSteps}개 · 도구 서버 ${a.tools.length ? a.tools.length + '개' : '모두'} · 스킬 ${a.skills.length}개` : `맡은 단계 ${a.steps.length}개`;
     return `<div class="item${sel}" role="button" tabindex="0" data-pick-agent="${esc(a.id)}" title="${esc(a.name)}">` +
       `<div class="row"><strong>${esc(a.name)}</strong>${a.kind === 'agent' ? mineChip(a.origin) : UI.chipText('시스템 수행자', 'neutral')}</div>` +
       `<span class="sub">${esc(clip(a.goal || a.role || '목표가 적혀 있지 않습니다'))}</span><span class="sub">${esc(count)}</span></div>`;
@@ -137,13 +137,13 @@
   function agentActions(d) {
     if (d.kind !== 'agent') return '';
     if (!d.editable) return `<button type="button" class="btn primary small" data-clone="${esc(d.id)}">복제해서 고치기</button>`;
-    return `<button type="button" class="btn primary small" data-edit-agent>고치기</button> <button type="button" class="btn small" data-clone="${esc(d.id)}">복제</button> ` +
+    return `<button type="button" class="btn primary small" data-edit-agent>고치기</button> <button type="button" class="btn small" data-clone="${esc(d.id)}">복제해서 고치기</button> ` +
       `<button type="button" class="btn danger small" data-del-agent>지우기</button>`;
   }
   function agentDetail(d) {
     const isAgent = d.kind === 'agent';
     const toolChips = d.tools.length ? d.tools.map(t => `<span class="chip tone-${t.registered ? 'success' : 'danger'}" title="${esc(t.name)}">${esc(serverName(t.name, t.description))}${t.registered ? '' : ' · 등록 안 됨'}</span>`).join(' ')
-      : `<span class="muted">${isAgent ? '지정 없음 — 등록된 도구 서버를 모두 씁니다' : '없음'}</span>`;
+      : `<span class="muted">${isAgent ? '지정하지 않아 등록된 도구 서버를 모두 씁니다' : '없음'}</span>`;
     const skillBtns = d.skills.length ? d.skills.map(s => s.found
       ? `<button type="button" class="btn small" data-goto-skill="${esc(s.skill_name)}" title="${esc(s.description)}">${esc(s.title)}</button>`
       : `<span class="chip tone-danger" title="${esc(s.skill_name)}">본문 없는 스킬</span>`).join(' ') : '<span class="muted">없음</span>';
@@ -173,7 +173,7 @@
       html += UI.fold(`단계별 실제 실행 설정 <span class="chip tone-neutral sm">${(run.steps || []).length}</span>`,
         stepRows ? `<div class="table-scroll"><table class="compact-table"><thead><tr><th>단계</th><th>모델</th><th>도구 서버</th><th>스킬 파일</th></tr></thead><tbody>${stepRows}</tbody></table></div>`
           : UI.empty('맡은 단계가 없습니다', '처리 건에서는 불리지 않습니다.', 'compact'));
-      html += UI.fold('실행 지시문에 더해지는 내용', run.instructions ? `<pre>${esc(run.instructions)}</pre><p class="muted">AI 에이전트이 이 내용을 지시문에 넣고, 스킬은 실행 작업 폴더에 SKILL.md 파일로 씁니다.</p>`
+      html += UI.fold('실행 지시문에 더해지는 내용', run.instructions ? `<pre>${esc(run.instructions)}</pre><p class="muted">AI 에이전트가 이 내용을 지시문에 넣고, 스킬은 실행 작업 폴더에 SKILL.md 파일로 씁니다.</p>`
         : UI.empty('더해지는 내용이 없습니다', '이름·목표·성격·스킬이 비어 있습니다.', 'compact'));
     }
     html += UI.metaFold([['식별자', `<span class="mono">${esc(d.id)}</span>`],
@@ -188,11 +188,11 @@
     const agents = s.agents.length ? s.agents.map(a => {
       const own = mineAgents.some(m => m.id === a.id);
       return `<span class="row" style="display:inline-flex;gap:4px"><button type="button" class="btn small" data-goto-agent="${esc(a.id)}">${esc(a.name)}</button>` +
-        (own ? `<button type="button" class="btn small" data-detach="${esc(a.id)}" title="이 에이전트에서 떼기">떼기</button>` : '') + '</span>';
+        (own ? `<button type="button" class="btn small" data-detach="${esc(a.id)}" title="이 에이전트에서 스킬을 뗍니다">스킬 떼기</button>` : '') + '</span>';
     }).join(' ') : '<span class="muted">붙은 에이전트가 없습니다. 붙이지 않은 스킬은 어떤 실행에도 들어가지 않습니다.</span>';
     const can = mineAgents.filter(a => !attachedIds.has(a.id));
-    const attach = can.length ? `<div class="row" style="gap:var(--s2);margin-top:var(--s2)"><select data-attach-to aria-label="붙일 에이전트">${can.map(a => `<option value="${esc(a.id)}">${esc(a.name)}</option>`).join('')}</select>` +
-      `<button type="button" class="btn small" data-attach>내 에이전트에 붙이기</button></div>`
+    const attach = can.length ? `<div class="row" style="gap:var(--s2);margin-top:var(--s2)"><select data-attach-to aria-label="붙일 에이전트"><option value="">에이전트 선택</option>${can.map(a => `<option value="${esc(a.id)}">${esc(a.name)}</option>`).join('')}</select>` +
+      `<button type="button" class="btn small" data-attach disabled title="붙일 에이전트를 먼저 고르세요">내 에이전트에 붙이기</button></div>`
       : `<p class="muted">붙일 수 있는 내 에이전트가 없습니다. 기본 에이전트에는 붙일 수 없으니 복제해서 붙이세요.</p>`;
     const steps = s.steps.length ? chips(s.steps.map(stepLabel)) : '<span class="muted">없음</span>';
     const summary = `<dl class="meta-list" style="grid-template-columns:1fr">` +
@@ -229,7 +229,7 @@
           `<span>${esc(serverName(s.name, s.description))}${s.selectable ? '' : ` ${UI.chipText('붙일 수 없음', 'warning')} <small class="muted">${esc(s.reason || '')}</small>`}</span></label>`; }).join('')
         : '<span class="muted">등록된 도구 서버가 없습니다</span>';
       const skills = o.skills.length ? o.skills.map(s => `<label class="check"><input type="checkbox" data-f-skill value="${esc(s.skill_name)}" ${d.skills.includes(s.skill_name) ? 'checked' : ''}> ` +
-        `<span>${esc(UI.skillLabel(s).label)} ${mineChip(s.origin)}</span></label>`).join('') : '<span class="muted">아직 스킬이 없습니다 — 스킬 탭에서 먼저 만드세요</span>';
+        `<span>${esc(UI.skillLabel(s).label)} ${mineChip(s.origin)}</span></label>`).join('') : '<span class="muted">아직 스킬이 없습니다. 스킬 탭에서 먼저 만드세요.</span>';
       return `<div class="detail-head"><div class="row"><h2>${f.id ? '에이전트 고치기' : '새 에이전트'}</h2>${UI.chipText('내가 만든', 'success')}</div>` +
         `<div class="sub">저장하면 다음 실행부터 이 설정으로 실행됩니다. 단계를 맡기려면 저장 뒤 "담당 배정" 탭에서 고르세요.</div></div>` +
         `<form data-ag-form>` +
@@ -237,7 +237,7 @@
           UI.field({ label: '역할', input: `<input data-f="role" maxlength="200" value="${esc(d.role)}" placeholder="예: 쿨러 열화를 먼저 본다">` }) +
           UI.field({ label: '목표', required: true, input: `<textarea data-f="goal" maxlength="500">${esc(d.goal)}</textarea>`, hint: '이 에이전트가 무엇을 해내야 하는지 한 문장' }) +
           UI.field({ label: '성격 · 말투', input: `<textarea data-f="persona" maxlength="2000">${esc(d.persona)}</textarea>` }) +
-          UI.readonly('모델', esc(modelText('')), '두 단계(수업 · PBL) 모두 수업 모델 하나를 씁니다')) +
+          UI.readonly('모델', esc(modelText('')), '수업용 모델 하나를 씁니다. 바꿀 수 없습니다.')) +
         UI.section('쓸 도구 (등록된 MCP 서버)', `<div>${tools}<p class="field-hint">하나도 고르지 않으면 등록된 서버를 모두 씁니다.</p></div>`) +
         UI.section('스킬', `<div>${skills}</div>`) +
         UI.section('업무 규칙', UI.field({ label: '적용할 업무 규칙', input: `<select data-f="work_rules"><option value="">공통 안전 규칙만 적용</option>${d.work_rules && !(o.work_rules || []).some(r => r.key === d.work_rules) ? `<option value="${esc(d.work_rules)}" selected>등록되지 않은 업무 규칙 — 다시 선택하세요</option>` : ''}${(o.work_rules || []).map(r => `<option value="${esc(r.key)}" ${d.work_rules === r.key ? 'selected' : ''}>${esc(r.label)}</option>`).join('')}</select>` }) +
@@ -246,7 +246,7 @@
         `</form>`;
     }
     return `<div class="detail-head"><div class="row"><h2>${f.id ? '스킬 고치기' : '새 스킬'}</h2>${UI.chipText('내가 만든', 'success')}</div>` +
-      `<div class="sub">SKILL.md 한 장 = 에이전트의 작업 요령. 붙은 에이전트가 실행될 때 작업 폴더에 이 문서가 들어갑니다.</div></div>` +
+      `<div class="sub">SKILL.md 한 장이 에이전트의 작업 요령입니다. 붙은 에이전트가 실행될 때 작업 폴더에 이 문서가 들어갑니다.</div></div>` +
       `<form data-ag-form>` +
       UI.section('', UI.field({ label: '폴더 이름', required: true, input: `<input data-f="skill_name" class="mono" maxlength="64" value="${esc(d.skill_name)}" ${f.id ? 'disabled' : ''} placeholder="예: cooler-check">`,
         hint: '영문 소문자 · 숫자 · 하이픈. 문서 머리의 name 과 같아야 합니다' }) +
@@ -285,7 +285,7 @@
     } finally { st.busy = false; }
   }
 
-  /* ---------- 담당 배정 (단계 → 에이전트, 역할 → 사람) ---------- */
+  /* ---------- 담당 배정 (단계별 담당 에이전트, 역할 목록) ---------- */
   function assignHtml() {
     if (st.boardError) return `<div class="neg" role="status">${esc(st.boardError)}</div>`;
     const b = st.board;
@@ -300,30 +300,25 @@
         `<td><select data-map="${esc(s.definition_id)}|${esc(s.activity_id)}" aria-label="${esc(s.name)} 담당"${closed ? ` disabled title="${esc(closed)}"` : ''}>${opts}</select></td>` +
         `<td>${s.assigned ? UI.chipText('배정됨', 'accent') : UI.chipText('기본', 'neutral')}</td></tr>`;
     }).join('');
-    const steps = UI.card({ title: '단계 → 담당 에이전트',
+    const steps = UI.card({ title: '단계별 담당 AI 에이전트',
       body: `<p class="muted">흐름 정의는 그대로 두고, 이 단계가 열릴 때 고른 에이전트가 맡습니다. 기본 담당으로 되돌리면 다음에 열리는 단계부터 기본으로 실행됩니다.</p>` +
         closedWhy.map(w => `<p class="field-hint">${esc(w)}</p>`).join('') +
-        (rows ? `<div class="table-scroll"><table class="compact-table"><thead><tr><th>단계</th><th>기본 담당</th><th>지금 담당</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`
+        (rows ? `<div class="table-scroll"><table class="compact-table"><thead><tr><th>단계</th><th>기본 담당</th><th>지금 담당</th><th>상태</th></tr></thead><tbody>${rows}</tbody></table></div>`
           : UI.empty('에이전트가 맡는 단계가 없습니다', '', 'compact')) });
+    // 쓰는 사람은 늘 이 PC의 담당자 한 명이고 모든 역할을 맡는다(새 역할도 서버 agent_authoring.create_role 이 담당자를 넣는다) — 사람을 넣고 빼는 칸이 없다.
+    // 구성원이 한 명도 없는 역할은 그 사실을 그대로 보인다(그 역할의 사람 단계가 작업함에 뜨지 않는다)
     const roles = (b.roles || []).map(r => {
-      const ids = new Set(r.members.map(m => m.id));
-      const members = r.members.length ? r.members.map(m => `<span class="chip tone-${m.origin === 'user' ? 'success' : 'neutral'}">${esc(m.name)}${m.origin === 'user'
-        ? `<button type="button" class="chip-x" data-unmember="${esc(r.id)}|${esc(m.id)}" aria-label="${esc(m.name)} 빼기" title="빼기">×</button>` : ''}</span>`).join(' ')
-        : '<span class="neg">아무도 없음 — 이 역할의 사람 단계는 누구의 작업함에도 뜨지 않습니다</span>';
-      const can = (b.people || []).filter(p => !ids.has(p.id));
-      const add = can.length ? `<select data-member-pick="${esc(r.id)}" aria-label="${esc(UI.performers[r.id] || r.name)}에 넣을 사람">${can.map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')}</select>` +
-        ` <button type="button" class="btn small" data-member-add="${esc(r.id)}">넣기</button>` : '';
-      const rule = r.members.length === 1 ? '한 명 → 그 사람에게 바로 배정' : r.members.length > 1 ? '여러 명 → 역할 공용' : '';
       // G10: 포털에서 만든 역할은 표시하고 지울 수 있다(흐름 정의가 쓰면 서버가 사유와 함께 거절)
       const mine = r.origin === 'user' ? ` ${UI.chipText('내가 만든', 'accent')} <button type="button" class="btn small" data-role-del="${esc(r.id)}">지우기</button>` : '';
-      return `<tr><td>${esc(UI.performers[r.id] || r.name)}${mine}</td><td>${members}${rule ? `<br><span class="muted">${esc(rule)}</span>` : ''}</td><td>${add}</td></tr>`;
+      const none = r.members.length ? '' : '<br><span class="neg">이 역할에 담당자가 연결되어 있지 않아, 이 역할의 사람 단계가 내 작업함에 뜨지 않습니다. 시작 파일을 다시 실행해 업무 DB를 최신 판으로 맞추세요.</span>';
+      return `<li>${esc(UI.performers[r.id] || r.name)}${mine}${none}</li>`;
     }).join('');
     const newRole = `<div class="row-wrap" role="group" aria-label="역할 만들기"><input data-role-name placeholder="역할 이름 (내 흐름의 레인 이름과 같게)" aria-label="새 역할 이름">` +
       `<input data-role-key placeholder="키 (선택, 예: s01-organizer)" aria-label="새 역할 키"><button type="button" class="btn small" data-role-add>역할 만들기</button></div>` +
-      `<p class="muted">흐름 가져오기는 레인 이름이 역할 이름과 같으면 그 역할로 잇습니다. 만든 역할에 사람을 넣어야 그 사람 작업함에 뜹니다.</p>`;
-    const people = UI.card({ title: '역할 → 사람 (업무분장)',
-      body: `<p class="muted">기본 업무분장은 뺄 수 없고, 넣은 사람만 뺄 수 있습니다. 사람 단계는 이 표로 담당자가 정해집니다.</p>` +
-        (roles ? `<div class="table-scroll"><table class="compact-table"><thead><tr><th>역할</th><th>사람</th><th>넣기</th></tr></thead><tbody>${roles}</tbody></table></div>` : UI.empty('역할이 없습니다', '', 'compact')) +
+      `<p class="muted">흐름 가져오기는 그림의 레인 이름이 역할 이름과 같으면 그 역할로 잇습니다. 새로 만든 역할도 이 PC의 담당자가 맡습니다.</p>`;
+    const people = UI.card({ title: '역할',
+      body: `<p class="muted">모든 역할은 이 PC의 담당자가 맡습니다. 사람 단계는 그 단계의 역할 이름으로 내 작업함에 뜹니다.</p>` +
+        (roles ? `<ul class="plain">${roles}</ul>` : UI.empty('역할이 없습니다', '', 'compact')) +
         UI.fold('역할 만들기', newRole, { cls: 'plain' }) });
     return steps + people;
   }
@@ -332,20 +327,12 @@
     try {
       if (sel.value) await postJ(api('/api/agent-assignments'), { definition_id, activity_id, agent_id: sel.value }, 'PUT');
       else await del(api(`/api/agent-assignments/${encodeURIComponent(definition_id)}/${encodeURIComponent(activity_id)}`));
-      UI.toast(sel.value ? '담당을 바꿨습니다 — 다음에 열리는 단계부터 적용됩니다' : '기본 담당으로 되돌렸습니다', { tone: 'ok' });
+      UI.toast(sel.value ? '담당을 바꿨습니다. 다음에 열리는 단계부터 적용됩니다.' : '기본 담당으로 되돌렸습니다.', { tone: 'ok' });
     } catch (e) { UI.toast(reason(e), { tone: 'neg', timeout: 8000 }); }
     await loadBoard(); await refreshAgents(); render();
   }
   async function refreshAgents() {
     try { st.agents = await getJ(api('/api/agents')); registerNames(st.agents); st.error = ''; } catch (e) { st.error = reason(e); }
-  }
-  async function member(role_id, user_id, add) {
-    try {
-      if (add) await postJ(api('/api/role-members'), { role_id, user_id });
-      else await del(api(`/api/role-members?role_id=${encodeURIComponent(role_id)}&user_id=${encodeURIComponent(user_id)}`));
-      UI.toast(add ? '역할에 넣었습니다' : '역할에서 뺐습니다', { tone: 'ok' });
-    } catch (e) { UI.toast(reason(e), { tone: 'neg', timeout: 8000 }); }
-    await loadBoard(); render();
   }
 
   /* ---------- 행동 ---------- */
@@ -354,7 +341,7 @@
     catch (e) { UI.toast(reason(e), { tone: 'neg', timeout: 8000 }); return null; }
   }
   async function cloneAgent(id, button) {
-    const copy = await once('clone:' + id, button, () => act(() => postJ(api('/api/agents/' + encodeURIComponent(id) + '/clone'), {}), c => `'${c.username}'${window.hydWords.josa(c.username, '을/를')} 만들었습니다 — 고친 뒤 저장하세요`));
+    const copy = await once('clone:' + id, button, () => act(() => postJ(api('/api/agents/' + encodeURIComponent(id) + '/clone'), {}), c => `'${c.username}'${window.hydWords.josa(c.username, '을/를')} 만들었습니다. 고친 뒤 저장하세요.`));
     if (!copy) return;
     st.pick.agents = copy.id;
     await load();
@@ -364,7 +351,7 @@
   }
   async function deleteAgent(d) {
     if (!await UI.confirm({ title: `'${d.name}'${window.hydWords.josa(d.name, '을/를')} 지울까요?`, body: '단계 배정도 함께 지워지고, 열려 있는 그 에이전트의 단계는 기본 담당으로 돌아갑니다.', ok: '지우기', danger: true })) return;
-    const out = await act(() => del(api('/api/agents/' + encodeURIComponent(d.id))), o => `지웠습니다${o.returned_tasks.length ? ` · 열린 단계 ${o.returned_tasks.length}건은 기본 담당으로` : ''}`);
+    const out = await act(() => del(api('/api/agents/' + encodeURIComponent(d.id))), o => `지웠습니다.${o.returned_tasks.length ? ` 열려 있던 단계 ${o.returned_tasks.length}건은 기본 담당으로 돌아갔습니다.` : ''}`);
     if (out) { st.pick.agents = null; await load(); }
   }
   async function deleteSkill(s) {
@@ -373,10 +360,14 @@
     if (out) { st.pick.skills = null; await load(); }
   }
   async function resetAll() {
-    if (!await UI.confirm({ title: '기준으로 되돌릴까요?', body: '내가 만든 에이전트 · 스킬 · 스킬 붙이기 · 역할(흐름이 쓰는 역할은 남김) · 단계 배정 · 넣은 업무분장을 모두 지웁니다. 기본 에이전트와 기본 업무분장은 그대로입니다.', ok: '되돌리기', danger: true })) return;
+    if (!await UI.confirm({ title: '기준으로 되돌릴까요?', body: '내가 만든 에이전트와 스킬, 스킬 붙이기, 역할, 단계 배정을 모두 지웁니다. 흐름이 쓰는 역할은 남깁니다. 기본 에이전트와 기본 역할은 그대로입니다.', ok: '되돌리기', danger: true })) return;
     const out = await act(() => postJ(api('/api/agents/reset'), {}),
-      o => `되돌렸습니다 — 에이전트 ${o.agents} · 스킬 ${o.skills} · 스킬 붙이기 ${o.attachments} · 역할 ${o.roles} · 단계 배정 ${o.assignments} · 업무분장 ${o.role_members}`
-        + (o.kept_roles.length ? ` · 흐름이 쓰는 역할 ${o.kept_roles.length}개는 남김` : '') + (o.returned_tasks.length ? ` · 열린 단계 ${o.returned_tasks.length}건 기본 담당으로` : ''));
+      o => {      // 지운 것만 문장으로(0인 것은 뺀다)
+        const removed = [['에이전트', o.agents, '개'], ['스킬', o.skills, '개'], ['스킬 붙이기', o.attachments, '건'], ['역할', o.roles, '개'], ['단계 배정', o.assignments, '건']]
+          .filter(([, n]) => n > 0).map(([name, n, unit]) => `${name} ${n}${unit}`);
+        return (removed.length ? `되돌렸습니다. 내가 만든 ${removed.join(', ')}${window.hydWords.josa(removed[removed.length - 1], '을/를')} 지웠습니다.` : '되돌렸습니다. 지울 것이 없었습니다.')
+          + (o.kept_roles.length ? ` 흐름이 쓰는 역할 ${o.kept_roles.length}개는 남겼습니다.` : '') + (o.returned_tasks.length ? ` 열려 있던 단계 ${o.returned_tasks.length}건은 기본 담당으로 돌아갔습니다.` : '');
+      });
     if (out) { st.form = null; st.pick = { agents: null, skills: null }; st.board = null; await load(); }
   }
 
@@ -389,7 +380,7 @@
     st.host.innerHTML =
       `<div class="page-head"><h1>AI 에이전트</h1><div class="page-tools"><button type="button" class="btn small" data-ag-reload>다시 읽기</button>` +
       `<button type="button" class="btn small" data-ag-reset title="내가 만든 것만 지웁니다">기준으로 되돌리기</button></div></div>` +
-      `<p class="muted">에이전트 · 스킬을 만들고 단계에 맡겨 보세요. 기본 에이전트는 보호되어 복제해서 고칩니다. 코딩 랩에서 만든 것도 다시 읽으면 함께 보입니다.</p>` +
+      `<p class="muted">AI 에이전트와 스킬을 만들고 단계에 맡겨 보세요. 기본 에이전트는 고칠 수 없어 복제해서 고칩니다. 코딩 랩에서 만든 것도 다시 읽으면 함께 보입니다.</p>` +
       (st.error ? `<div class="neg" role="status">${esc(st.error)}</div>` : '') +
       UI.tabs([['agents', '에이전트', n], ['skills', '스킬', m], ['assign', '담당 배정']], st.tab, 'data-ag-tab') + body;
   }
@@ -418,6 +409,7 @@
     if (t.hasAttribute('data-f-cancel')) { st.form = null; render(); return loadDetail(); }
     if (t.hasAttribute('data-attach') && st.detail) {
       const sel = st.host.querySelector('[data-attach-to]'), skill = st.detail.skill_name;
+      if (sel && !sel.value) { UI.toast('스킬을 붙일 에이전트를 고르세요', { tone: 'neg' }); return; }      // 고르지 않은 첫 항목에 붙지 않게
       if (sel && await once('attach:' + skill, t, () => act(() => postJ(api('/api/agents/' + encodeURIComponent(sel.value) + '/skills'), { skill_name: skill }), '붙였습니다'))) await load();
       return;
     }
@@ -426,17 +418,16 @@
       if (await once('detach:' + t.dataset.detach + '/' + skill, t, () => act(() => del(api('/api/agents/' + encodeURIComponent(t.dataset.detach) + '/skills/' + encodeURIComponent(skill))), '뗐습니다'))) await load();
       return;
     }
-    if (t.dataset.memberAdd) { const sel = st.host.querySelector(`[data-member-pick="${CSS.escape(t.dataset.memberAdd)}"]`); return sel && once('member:' + t.dataset.memberAdd, t, () => member(t.dataset.memberAdd, sel.value, true)); }
-    if (t.dataset.unmember) { const [r, u] = t.dataset.unmember.split('|'); return once('unmember:' + t.dataset.unmember, t, () => member(r, u, false)); }
     if (t.hasAttribute('data-role-add')) {
       const name = (st.host.querySelector('[data-role-name]') || {}).value || '', key = (st.host.querySelector('[data-role-key]') || {}).value || '';
-      if (await once('role-add', t, () => act(() => postJ(api('/api/roles'), { name: name.trim(), key: key.trim() || null }), r => `역할 '${r.name}'을 만들었습니다 — 아래 표에서 사람을 넣으세요`))) { await loadBoard(); render(); }
+      if (await once('role-add', t, () => act(() => postJ(api('/api/roles'), { name: name.trim(), key: key.trim() || null }), r => `역할 '${r.name}'${window.hydWords.josa(r.name, '을/를')} 만들었습니다. 이 역할도 이 PC의 담당자가 맡습니다.`))) { await loadBoard(); render(); }
       return;
     }
     if (t.dataset.roleDel) {
       const role = ((st.board && st.board.roles) || []).find(r => r.id === t.dataset.roleDel) || {};
-      if (!await UI.confirm({ title: `역할 '${role.name || UI.performers[t.dataset.roleDel] || t.dataset.roleDel}'을 지울까요?`,
-        body: '넣어 둔 사람 배정도 함께 지워집니다. 흐름 정의가 이 역할을 쓰거나 끝나지 않은 작업이 있으면 서버가 사유와 함께 거절합니다.', ok: '지우기', danger: true })) return;
+      const roleName = role.name || UI.performers[t.dataset.roleDel] || '이름 없는 역할';
+      if (!await UI.confirm({ title: `역할 '${roleName}'${window.hydWords.josa(roleName, '을/를')} 지울까요?`,
+        body: '흐름 정의가 이 역할을 쓰거나 이 역할에 끝나지 않은 작업이 있으면 지울 수 없고, 그 까닭을 알려 줍니다. 지운 역할은 되살릴 수 없습니다.', ok: '지우기', danger: true })) return;
       if (await act(() => del(api('/api/roles/' + encodeURIComponent(t.dataset.roleDel))), '역할을 지웠습니다')) { await loadBoard(); render(); }
       return;
     }
@@ -448,6 +439,10 @@
   }
   function onChange(e) {
     if (e.target.matches('select[data-map]')) setMap(e.target);
+    if (e.target.matches('select[data-attach-to]')) {      // 붙일 에이전트를 골라야 [내 에이전트에 붙이기]가 켜진다
+      const b = st.host.querySelector('[data-attach]');
+      if (b) { b.disabled = !e.target.value; b.title = e.target.value ? '' : '붙일 에이전트를 먼저 고르세요'; }
+    }
   }
   function onSubmit(e) {
     if (!e.target.matches('[data-ag-form]')) return;

@@ -145,7 +145,7 @@
     const actions = (cur.actions || []).map(a => window.hydCards ? hydCards.actionLabel(a, cur) : a.name).filter(Boolean);
     const evaluation=UI.evaluationInfo(cur,d), blocked=UI.executionBlocked(cur,d);
     return `<div class="ap-card ${changed ? 'changed' : ''}">
-      <div class="ap-head"><span class="ap-kicker">${changed ? '담당자가 바꾼 안' : evaluation.state==='analysis' ? '모의 판단 1순위' : evaluation.state==='execution' ? '판단 엔진 1순위 (AI가 고른 원인 · 근거로 계산)' : '1순위 (실행 가능 여부 미검증)'}</span>${changed && !blocked ? `<button type="button" class="btn small ghost" data-ap-back="${e(rec.id)}">추천안으로 되돌리기</button>` : ''}</div>
+      <div class="ap-head"><span class="ap-kicker">${changed ? '직접 고른 안' : evaluation.state==='analysis' ? '모의 판단 1순위' : evaluation.state==='execution' ? '판단 엔진 1순위 (AI가 고른 원인 · 근거로 계산)' : '1순위 (실행 가능 여부 미검증)'}</span>${changed && !blocked ? `<button type="button" class="btn small ghost" data-ap-back="${e(rec.id)}">추천안으로 되돌리기</button>` : ''}</div>
       ${UI.evaluationHtml(cur,d,{raw:false})}
       <h4 class="ap-title">${e(UI.idText(cur.name || '–'))}</h4>
       ${cur.description ? `<p class="ap-desc">${e(UI.idText(cur.description))}</p>` : ''}
@@ -237,7 +237,7 @@
     const docs = m.docs.map(d => `<a class="chip tone-neutral sm" href="${e(d.link)}" target="_blank" rel="noopener noreferrer">${e(d.title)}</a>`).join(' ');
     const off = m.problems.length ? `<div class="ap-off" role="alert"><p class="field-error"><b>에이전트 제안이 칸 약속과 다릅니다</b> — 아래에 받은 값을 그대로 보입니다.</p><ul>${m.problems.map(p => `<li>${e(p)}</li>`).join('')}</ul></div>`
       + UI.fold('받은 값 그대로 (JSON)', `<pre class="mono">${e(JSON.stringify(m.raw, null, 2))}</pre>`, { cls: 'small', open: true }) : '';
-    const head = cur ? `<div class="ap-head"><span class="ap-kicker">${changed ? '담당자가 바꾼 안' : m.rec ? 'AI 에이전트 추천' : '첫 번째 안 (추천 표시 없음)'}</span>${changed && opt.pending ? `<button type="button" class="btn small ghost" data-ap-back="${e(rec[key])}">추천안으로 되돌리기</button>` : ''}</div>
+    const head = cur ? `<div class="ap-head"><span class="ap-kicker">${changed ? '직접 고른 안' : m.rec ? 'AI 에이전트 추천' : '첫 번째 안 (추천 표시 없음)'}</span>${changed && opt.pending ? `<button type="button" class="btn small ghost" data-ap-back="${e(rec[key])}">추천안으로 되돌리기</button>` : ''}</div>
       <h4 class="ap-title">${e(cur[key])}</h4>${cur.reason ? `<p class="ap-desc">${e(cur.reason)}</p>` : ''}
       <ul class="ap-reasons">${Number.isFinite(cur.score) ? `<li>점수 <b class="num">${e(scoreText(cur))}</b></li>` : ''}${optionFacts(cur, key) ? `<li class="row-wrap">${optionFacts(cur, key)}</li>` : ''}</ul>` : `<p class="muted">고를 안이 없습니다.</p>`;
     const lost = otherRows.length + loserRows.length;

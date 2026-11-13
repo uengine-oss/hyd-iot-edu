@@ -1,12 +1,12 @@
 /* A9 옛 DB 뜻 복원 — 지식 관리 › 업무 데이터 연결 안의 접기 섹션.
-   흐름: DDL 미리보기 → "AI에게 뜻 후보 묻기"(에이전트 작업 한 건) → 열마다 후보 · 근거 · 확신도 → 사람이 승인 · 고치기 · 거부
+   흐름: DDL 미리보기 → "AI에게 뜻 후보 묻기"(에이전트 작업 한 건) → 열마다 후보 · 근거 · 확신도 → 사람이 승인 · 고치기 · 제외
    → 검토 저장(감사 기록) → 미리보기에 그 검토만 반영 → 기존 "적재". AI 후보는 승인 전에는 미리보기 · 그래프 어디에도 들어가지 않는다.
    hitl.js 의 DDL 미리보기가 window.hydLegacy.mount(el, ctx)로 부른다. ctx = {preview, text, by(), replan(reviewId|null)}. */
 (function () {
   const API_BASE = () => API.process + '/api/kg/ddl/meanings';
   const S = { key: null, run: null, data: null, error: null, timer: null, drafts: {}, saved: null, busy: false };
   const EV = { name: '이름 패턴', comment: '주석', sample: '샘플 값 분포', key: '키 관계' };
-  const VERDICT = { APPROVE: '승인', EDIT: '고치기', REJECT: '거부' };
+  const VERDICT = { APPROVE: '승인', EDIT: '고치기', REJECT: '제외' };
   const VTONE = { APPROVE: 'success', EDIT: 'accent', REJECT: 'danger' };
   let el = null, ctx = null;
 
@@ -30,6 +30,7 @@
 
   async function load() {
     if (!S.run) return;
+    if (state.tab !== 'knowledge' && S.timer) return;      // 지식 관리 탭을 떠나 있으면 읽지 않는다 — 타이머는 살아 있어 돌아오면 다음 차례에 이어 읽는다
     try { S.data = await getJ(API_BASE() + '/' + encodeURIComponent(S.run)); S.error = null; }
     catch (e) { S.error = '후보를 읽지 못했습니다: ' + e.message; }
     if (!S.data || ['DONE', 'FAILED', 'CANCELLED'].includes(S.data.status) || !document.body.contains(el)) stop();
@@ -61,13 +62,13 @@
 
   async function save() {
     const list = decisions();
-    if (!list.length) { S.error = '승인 · 고치기 · 거부 중 하나라도 고른 뒤 저장하세요'; render(); return; }
+    if (!list.length) { S.error = '열 하나 이상에서 승인 · 고치기 · 제외 가운데 하나를 고른 뒤 저장하세요.'; render(); return; }
     if (S.busy) return; S.busy = true; S.error = null; render();
     try {
       S.saved = await postJ(API_BASE() + '/' + encodeURIComponent(S.run) + '/reviews', { by: ctx.by(), decisions: list });
       await ctx.replan(S.saved.id);                                          // the preview now carries only this review's approvals
       await load();
-    } catch (e) { S.error = '검토 저장 실패: ' + e.message; }
+    } catch (e) { S.error = '검토를 저장하지 못했습니다: ' + e.message; }
     finally { S.busy = false; render(); }
   }
 
@@ -97,7 +98,7 @@
   function decisionHtml(c) {
     const d = S.drafts[c.column] || {};
     const opts = ['', 'APPROVE', 'EDIT', 'REJECT'].filter(v => v !== 'APPROVE' || c.status === 'proposed')
-      .map(v => `<option value="${v}" ${d.verdict === v ? 'selected' : ''}>${v ? VERDICT[v] : '보류'}</option>`).join('');
+      .map(v => `<option value="${v}" ${d.verdict === v ? 'selected' : ''}>${v ? VERDICT[v] : '결정 안 함'}</option>`).join('');
     let edit = '';
     if (d.verdict === 'EDIT') {
       const t = targets();
@@ -125,10 +126,10 @@
     const chosen = decisions();
     const counts = ['APPROVE', 'EDIT', 'REJECT'].map(v => `${VERDICT[v]} ${chosen.filter(d => d.verdict === v).length}`).join(' · ');
     return `${data.summary ? `<p class="kv-line"><b>AI 요약</b> ${esc(data.summary)}</p>` : ''}
-      ${proposed.length ? table(proposed) : UI.empty('AI가 뜻을 제안한 열이 없습니다', '모두 근거 없음으로 냈습니다 — 아래에서 직접 고치거나 거부할 수 있습니다')}
+      ${proposed.length ? table(proposed) : UI.empty('AI가 뜻을 제안한 열이 없습니다', '모두 근거 없음으로 냈습니다 — 아래에서 직접 고치거나 제외할 수 있습니다')}
       ${blank.length ? UI.fold(`AI가 근거 없음으로 낸 열 <span class="chip tone-warning sm">${blank.length}</span>`, table(blank), { cls: 'small', open: blank.some(c => S.drafts[c.column] && S.drafts[c.column].verdict) }) : ''}
       ${UI.actions(`<button class="btn primary" id="lmSave" ${S.busy ? 'disabled' : ''}>검토 저장 · 미리보기에 반영</button>`, '')}
-      <p class="muted">고른 결정: ${counts} · 보류 ${data.candidates.length - chosen.length}. 보류 · 거부한 열은 반영되지 않습니다. AI가 낸 후보는 저장해도 회사 DB에 쓰지 않습니다.</p>`;
+      <p class="muted">고른 결정: ${counts} · 결정 안 함 ${data.candidates.length - chosen.length}. 결정하지 않았거나 제외한 열은 반영되지 않습니다. AI가 낸 후보는 저장해도 회사 DB에 쓰지 않습니다.</p>`;
   }
 
   function appliedHtml() {
@@ -136,7 +137,7 @@
     if (!r) return '';
     const sql = (r.commentSql || []).join('\n');
     return UI.card({
-      title: '미리보기에 반영된 뜻 검토', chips: UI.chipText(`승인 ${r.approved} · 고치기 ${r.edited} · 거부 ${r.rejected}`, 'success'),
+      title: '미리보기에 반영된 뜻 검토', chips: UI.chipText(`승인 ${r.approved} · 고치기 ${r.edited} · 제외 ${r.rejected}`, 'success'),
       body: `<p class="kv-line"><b>${esc(UI.who(r.by))}</b> · ${esc(UI.dateTime(r.createdAt))} · 반영한 입력 ${r.applied.length}개</p>
         ${r.reflected.map(x => `<div class="kv-line"><b>${esc(short(x.column))}</b> → ${esc(x.comment)} · ${linkText(x.link)}</div>`).join('')}
         ${sql ? UI.fold('DB 담당자에게 줄 열 주석 SQL (실행하지 않음)', `<pre>${esc(sql)}</pre>`, { cls: 'small' }) : ''}`,
@@ -149,7 +150,7 @@
     if (!list.length) return '';
     const cur = ctx.preview.meaningReview && ctx.preview.meaningReview.id;
     return UI.fold(`이 후보에 대한 검토 기록 <span class="chip tone-neutral sm">${list.length}</span>`, list.map(r => `<div class="kv-line">
-        <b>${esc(UI.who(r.by))}</b> · ${esc(UI.dateTime(r.createdAt))} · 승인 ${r.approved} · 고치기 ${r.edited} · 거부 ${r.rejected}
+        <b>${esc(UI.who(r.by))}</b> · ${esc(UI.dateTime(r.createdAt))} · 승인 ${r.approved} · 고치기 ${r.edited} · 제외 ${r.rejected}
         ${r.id === cur ? UI.chipText('지금 반영 중', 'success') : `<button class="btn small" data-use-review="${esc(r.id)}">이 검토로 미리보기</button>`}
         ${UI.fold('결정', r.decisions.map(d => `<div>${esc(short(d.column))} ${UI.chipText(VERDICT[d.verdict], VTONE[d.verdict])} ${d.after ? esc(d.after.meaning) : ''}${d.note ? ` <span class="muted">— ${esc(d.note)}</span>` : ''}</div>`).join(''), { cls: 'small' })}</div>`).join(''), { cls: 'small' });
   }
@@ -160,7 +161,7 @@
     const working = !['DONE', 'FAILED', 'CANCELLED'].includes(d.status);
     const corr = d.corrections ? ` · 근거 검사에서 되돌려 보냄 ${d.corrections.attempts}회${d.corrections.reasons && d.corrections.reasons.length ? ` (마지막 사유: ${esc(d.corrections.reasons[d.corrections.reasons.length - 1])})` : ''}` : '';
     return `<p class="kv-line" role="status">${working ? '<span class="live-dot on"></span> ' : ''}<b>AI 뜻 후보 작업</b> ${UI.chip(d.status)} · 열 ${d.columns.length}개${corr}
-      ${working ? '<span class="muted"> — AI 에이전트이 관찰 결과만 보고 후보를 쓰는 중입니다.</span>' : ''}</p>`;
+      ${working ? '<span class="muted"> — AI 에이전트가 관찰 결과만 보고 후보를 쓰는 중입니다.</span>' : ''}</p>`;
   }
 
   function render() {
@@ -188,7 +189,7 @@
       if (done || (S.data && ['FAILED', 'CANCELLED'].includes(S.data.status))) body += `<p><button class="btn small" id="lmAgain" ${S.busy ? 'disabled' : ''}${hydCourseAccess.attrs('ddl.meanings')}>후보 다시 받기</button></p>`;
     }
     if (S.error) body += `<p class="neg" role="alert">${esc(S.error)}</p>`;
-    el.innerHTML = UI.fold(`옛 DB 뜻 복원 <span class="chip tone-neutral sm">${esc(sumLine)}</span>`, body, { open: !!(S.run || ctx.preview.meaningReview) });
+    el.innerHTML = UI.fold(`옛 DB 뜻 복원 <span class="muted" style="font-weight:400">— ${esc(sumLine)}</span>`, body, { open: !!(S.run || ctx.preview.meaningReview) });
     hydCourseAccess.apply(el);   // attrs 로 그린 단추: 수업 단계에서 꺼진 까닭을 단추 옆 한 줄로(W3-07)
     wire();
   }

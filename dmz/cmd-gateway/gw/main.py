@@ -22,7 +22,7 @@ from hydcommon import schemas, topics
 from hydcommon.kafka import Delivery, consumer as make_consumer, producer as make_producer
 from hydcommon.metrics import Registry
 from hydcommon.mqtt import Link
-from hydcommon.service import make_app
+from hydcommon.service import make_app, stop_after_loop_end
 from hydcommon.timeutil import now, now_iso
 from . import validate as gw
 
@@ -119,16 +119,27 @@ async def _skip_poison(cons) -> None:
 async def run_ledger():
     """A148: process's approval records (audit topic) feed check ⑤. Its own consumer so a command waiting for its record
     never blocks the record it is waiting for."""
-    cons = await make_consumer([topics.K_AUDIT], group="cmd-gateway-ledger", from_latest=True)
-    log.info("consuming audit for approval ledger records")
-    async for rec in cons:
-        result = gw.record_approval(gstate, rec.value)
-        if result == "kept":
-            state["approvals_recorded"] += 1
-        elif result == "conflict":
-            state["approval_conflicts"] += 1
-            log.warning("approval record for %s differs from the one already kept; the first stays",
-                        (rec.value.get("detail") or {}).get("cmdId"))
+    while True:
+        cons = await make_consumer([topics.K_AUDIT], group="cmd-gateway-ledger", from_latest=True)
+        log.info("consuming audit for approval ledger records")
+        try:
+            async for rec in cons:
+                result = gw.record_approval(gstate, rec.value)
+                if result == "kept":
+                    state["approvals_recorded"] += 1
+                elif result == "conflict":
+                    state["approval_conflicts"] += 1
+                    log.warning("approval record for %s differs from the one already kept; the first stays",
+                                (rec.value.get("detail") or {}).get("cmdId"))
+        except Exception as e:  # noqa: BLE001 — 명령 루프(run)와 같은 처리: 읽을 수 없는 기록 하나가 장부 루프를 끝내면 그 뒤 모든 승인 명령이
+            # 「승인 기록과 맞지 않음」으로 거절된다. 그 기록을 건너뛰고 건강 상태에 센 뒤 이어서 읽는다(그 기록의 명령은 승인 기록 없음으로 거절된다 — 조용히 통과시키지 않는다).
+            state["ledger_errors"] = state.get("ledger_errors", 0) + 1
+            state["ledger_last_error"] = repr(e)[:200]
+            log.error("approval ledger loop failed (%s); dropping the record and resuming", e)
+            await _skip_poison(cons)
+        finally:
+            await cons.stop()
+        await asyncio.sleep(1)
 
 
 async def relay_alert(value) -> None:
@@ -194,10 +205,7 @@ app = make_app("cmd-gateway (L3 DMZ: validated downlink IT -> OT)", reg, health)
 
 
 def _watch(task):
-    """If a consume loop ever exits, /healthz reports it (503) instead of looking healthy while doing nothing."""
-    state["consumer_dead"] = True
-    state["consumer_error"] = repr(task.exception()) if not task.cancelled() and task.exception() else "exited"
-    log.error("consumer task ended: %s", state["consumer_error"])
+    stop_after_loop_end(task, state, log)
 
 
 async def _main():

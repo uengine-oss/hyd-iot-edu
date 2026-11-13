@@ -4,11 +4,11 @@
 .flow-map code, .flow-versions code { font-size: 12px; }
 .chk { display: inline-flex; gap: 6px; align-items: center; margin-right: 12px; font-weight: 400; }
 .chk-row { margin: 4px 0 4px 22px; }
-.flow-problems { border-left: 3px solid var(--neg, #c0392b); padding: 10px 14px; margin: 8px 0; }
+.flow-problems { border-left: 3px solid var(--alarm); padding: 10px 14px; margin: 8px 0; }
 .flow-problems ul { margin: 6px 0 0 18px; }
 .flow-problems li[data-goto] { cursor: pointer; }
 .flow-versions { list-style: none; padding: 0; margin: 0; }
-.flow-versions li { padding: 4px 0; border-top: 1px solid var(--line, #e5e5e5); }
+.flow-versions li { padding: 4px 0; border-top: 1px solid var(--rule); }
 [data-row].flash { outline: 2px solid var(--accent, #2f6fed); outline-offset: 2px; }
 /* PgCard/PgField: each step is one card; labels precede controls. */
 #flowEditor .flow-map { display:block; width:100%; }

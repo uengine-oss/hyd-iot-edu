@@ -1,11 +1,11 @@
 /* B7 오일 분석 결과 입력 — window.hydOilInput.mount(el). 주소 #/oil
    작동유에는 실시간 센서가 없다. 정기 오일 분석 결과(설비 · 분석 항목 · 측정값 · 기준 이탈 여부 · 메모)를 사람이 넣으면 서버가
-   센서 경보와 같은 모양의 경보(OIL_ANALYSIS, 출처 = 사람 입력, 입력자)를 만들어 같은 경보 경로로 보낸다. 기준 안이면 경보 없음 + 사유.
+   센서 경보와 같은 모양의 경보(OIL_ANALYSIS, 출처 = 사람 입력, 입력자 = 이 PC의 담당자)를 만들어 같은 경보 경로로 보낸다. 기준 안이면 경보 없음 + 사유.
    어느 흐름이 여는지는 경보 정책(배포된 흐름)이 정한다 — 배포 흐름이 없으면 사람 검토(경보 분류).
    서버: process GET /api/human-alerts/form · POST /api/human-alerts (it/process/procsvc/human_alert.py). */
 (function () {
   const O = { el: null, form: null, err: '', sending: false, last: null,
-              draft: { asset: '', item: '', value: '', out: null, memo: '', by: '' } };      // 설비 · 항목은 사람이 고른다(미리 골라 두면 고르지 않은 설비로 경보가 열린다)
+              draft: { asset: '', item: '', value: '', out: null, memo: '' } };      // 설비 · 항목은 사람이 고른다(미리 골라 두면 고르지 않은 설비로 경보가 열린다)
   const api = p => API.process + p;
 
   function meNow() { return (window.hydInbox && window.hydInbox.me && window.hydInbox.me()) || null; }
@@ -15,7 +15,6 @@
     O.el = el; render();
     try { O.form = await getJ(api('/api/human-alerts/form')); O.err = ''; }
     catch (e) { O.err = '입력 칸을 읽지 못했습니다: ' + e.message; }
-    const p = pattern();
     render();
   }
   function show() { render(); }
@@ -26,16 +25,16 @@
   async function send() {
     const p = pattern(), d = O.draft, m = meNow();
     if (!p || O.sending) return;
-    const by = m ? m.id : d.by.trim();
     if (!d.asset) { O.err = '설비를 고르세요'; render(); return; }
     if (!d.item) { O.err = '분석 항목을 고르세요'; render(); return; }
     if (d.out === null) { O.err = '기준 이탈 여부를 고르세요'; render(); return; }
-    if (!by) { O.err = '입력자를 적으세요'; render(); return; }
+    // 입력자는 늘 이 PC의 담당자다. 못 읽었으면 다른 이름으로 대신하지 않고 막는다(자유 글 칸 없음)
+    if (!m) { O.err = '담당자 정보를 읽지 못해 보낼 수 없습니다. 화면을 새로 고친 뒤 다시 해 주세요.'; render(); return; }
     O.sending = true; O.err = ''; render();
     try {
       O.last = await postJ(api('/api/human-alerts'), {
         pattern: p.code, asset: d.asset, item: d.item, out_of_spec: d.out, memo: d.memo,
-        value: d.value === '' ? null : Number(d.value), by, by_name: m ? (m.name || m.id) : by, role: m && (m.roles || [])[0] || null });
+        value: d.value === '' ? null : Number(d.value), by: m.id, by_name: m.name || m.id });      // 역할은 보내지 않는다 — 사람이 고르지 않은 값이고 서버도 선택 칸이다(human_alert.py)
       if (O.last.raised) { d.memo = ''; d.value = ''; d.out = null; }
     } catch (e) { O.err = e.message; }
     finally { O.sending = false; render(); }
@@ -46,7 +45,7 @@
     if (!r) return '';
     if (!r.raised) return `<div class="summary prose" role="status"><p style="margin:0">${UI.chipText('경보 없음', 'neutral')} ${esc(r.reason)}</p></div>`;
     const target = r.definition || {};
-    return `<div class="summary prose" role="status"><p style="margin:0 0 var(--s2)">${UI.chipText('경보 만듦', 'warning')} ${esc(r.reason)}</p>
+    return `<div class="summary prose" role="status"><p style="margin:0 0 var(--s2)">${UI.chipText('경보를 만들었습니다', 'warning')} ${esc(r.reason)}</p>
       <p style="margin:0 0 var(--s2)">${UI.chipText(r.route === 'response' ? '배포된 흐름' : '사람 검토', r.route === 'response' ? 'success' : 'neutral')}
         ${esc(r.route_text)} — ${esc(target.name || '흐름')} (판본 ${esc(target.version || '')})</p>
       ${r.instance ? `<div class="form-actions"><a class="btn small" href="#/instances/${encodeURIComponent(r.instance)}">처리 건 보기 →</a></div>` : ''}</div>`;
@@ -71,13 +70,11 @@
         ${UI.field({ label: '기준 이탈 여부', required: true, input: `<div class="chk-row">
             <label class="chk"><input type="radio" name="oilOut" value="1" ${d.out === true ? 'checked' : ''}> 예 (기준 이탈)</label>
             <label class="chk"><input type="radio" name="oilOut" value="0" ${d.out === false ? 'checked' : ''}> 아니요 (기준 안)</label></div>` })}
-        ${m ? UI.field({ label: '입력자', input: `<p style="margin:0">${esc(m.name || m.id)}</p>` })
-            : UI.field({ label: '입력자', required: true, hint: '담당자 정보를 읽지 못해 직접 적습니다', input: `<input id="oilBy" maxlength="120" value="${esc(d.by)}">` })}
       </div>
       ${UI.field({ label: '메모', input: `<textarea id="oilMemo" rows="2" maxlength="2000">${esc(d.memo)}</textarea>` })}`;
     O.el.innerHTML = UI.card({ title: '오일 분석 결과 입력', body,
-      actions: `<button class="btn primary" id="oilSend" ${O.sending ? 'disabled' : ''}>${O.sending ? '보내는 중…' : '입력 보내기'}</button>` })
-      + (O.err ? `<p class="neg" role="status">${esc(O.err)}</p>` : '') + resultHtml();
+      actions: `<button class="btn primary" id="oilSend" ${O.sending || !m ? 'disabled' : ''}>${O.sending ? '보내는 중…' : '입력 보내기'}</button>` })
+      + (!m ? `<p class="form-msg neg" role="alert">담당자 정보를 읽지 못해 보낼 수 없습니다. 화면을 새로 고친 뒤 다시 해 주세요.</p>` : O.err ? `<p class="form-msg neg" role="alert">${esc(O.err)}</p>` : '') + resultHtml();
     wire();
   }
   function wire() {
@@ -86,7 +83,6 @@
     q('#oilItem')?.addEventListener('change', e => { d.item = e.target.value; render(); });
     q('#oilValue')?.addEventListener('input', e => { d.value = e.target.value; });
     q('#oilMemo')?.addEventListener('input', e => { d.memo = e.target.value; });
-    q('#oilBy')?.addEventListener('input', e => { d.by = e.target.value; });
     O.el.querySelectorAll('input[name="oilOut"]').forEach(r => r.addEventListener('change', e => { d.out = e.target.value === '1'; }));
     q('#oilSend')?.addEventListener('click', send);
   }

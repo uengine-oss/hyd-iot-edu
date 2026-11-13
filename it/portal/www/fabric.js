@@ -7,12 +7,12 @@
   const SRC_TONE = { 'hyd-enterprise': 'accent', 'hyd-timeseries': 'success' };
   const KLASS = { Asset: '설비', Sensor: '센서', Actuator: '구동기 설정값', InputData: '판단 입력', Part: '부품', Supplier: '공급사' };
   const STATE = { OK: ['연결됨', 'success'], MISSING: ['원천에 없음', 'danger'], SOURCE_DOWN: ['원천 연결 실패', 'danger'],
-    UNBOUND: ['표 · 열 미연결', 'warning'], DERIVED: ['계산하는 값', 'neutral'], OUTSIDE: ['DB 밖 값', 'neutral'], UNREGISTERED: ['등록 안 된 원천', 'danger'],
-    NOT_ONE_ROW: ['설비별 1행 아님', 'warning'], NO_DATA: ['기록 없음', 'warning'], TYPE_CHANGED: ['형식 바뀜', 'danger'], COMMENT_CHANGED: ['뜻 바뀜', 'warning'] };
+    UNBOUND: ['표 · 열 미연결', 'warning'], DERIVED: ['계산으로 정하는 값', 'neutral'], OUTSIDE: ['DB에 없는 값(입력 · 계산)', 'neutral'], UNREGISTERED: ['등록 안 된 원천', 'danger'],
+    NOT_ONE_ROW: ['설비마다 한 행이 아님', 'warning'], NO_DATA: ['기록 없음', 'warning'], TYPE_CHANGED: ['형식 바뀜', 'danger'], COMMENT_CHANGED: ['뜻 바뀜', 'warning'] };
   const chip = (state) => { const [l, t] = STATE[state] || [state || '–', 'neutral']; return UI.chipText(l, t); };
   const srcChip = (id, label) => UI.chipText(label || id, SRC_TONE[id] || 'neutral');
   const srcLabel = id => ((S.sources || []).find(s => s.id === id) || {}).label || id;   // 원천 이름은 서버(fabric.SOURCES) 한 곳
-  const val = (v, unit) => v == null ? '<span class="field-hint">값 없음</span>' : `<b>${esc(typeof v === 'number' ? (Number.isInteger(v) ? v : v.toFixed(v < 10 ? 3 : 1)) : v)}</b>${unit ? ` <small>${esc(unit)}</small>` : ''}`;
+  const val = (v, unit) => v == null ? '<span class="field-hint">값 없음</span>' : `<b>${esc(typeof v === 'number' ? window.hydWords.num(v) : v)}</b>${unit ? ` <small>${esc(unit)}</small>` : ''}`;
   const code = (t) => t ? `<code>${esc(t)}</code>` : '';
   const when = (t) => t ? esc(UI.dateTime ? UI.dateTime(t) : t) : '';
 
@@ -26,7 +26,7 @@
   /* ---------- 요약 ---------- */
   function summary() {
     const cards = (S.sources || []).map(s => `<section class="card${s.ok ? '' : ' hot'}"><span>${esc(s.label)} · ${esc(s.engine)}</span>` +
-      `<b>${s.ok ? '연결됨' : '연결 실패'}</b><small>${s.ok ? `표 ${s.tables.length}개 · 읽기 전용 ${s.read_only ? '확인' : '아님'}` : esc(s.reason)}</small></section>`);
+      `<b>${s.ok ? '연결됨' : '연결 실패'}</b><small>${s.ok ? `표 ${s.tables.length}개 · ${s.read_only ? '읽기 전용 확인됨' : '읽기 전용이 아님'}` : esc(s.reason)}</small></section>`);
     // 응답 전에는 읽는 중(옆 카드와 같은 꼴), 실제로 못 읽었을 때만 확인 실패 — 화면을 열 때마다 0.1초씩 실패 카드가 보였다(1회차 04 촬영 검토)
     if (!S.sources) cards.push(S.errors.sources ? `<section class="card hot"><span>원천</span><b>확인 실패</b><small>${esc(S.errors.sources)}</small></section>` : '<section class="card"><span>원천</span><b>–</b><small>읽는 중…</small></section>');
     const cls = S.links ? S.links.classes : [];
@@ -34,7 +34,7 @@
     const unbound = S.links ? S.links.inputs.filter(i => i.state === 'UNBOUND').length : 0;
     cards.push(`<section class="card"><span>클래스 ↔ 표 · 열</span><b>${S.links ? `${ok} / ${cls.length}` : '–'}</b><small>${S.links ?
       (S.links.graph.ok ? `판단 입력 중 표 · 열 미연결 ${unbound}개` : esc(S.links.graph.reason)) : esc(S.errors.links || '읽는 중…')}</small></section>`);
-    cards.push(`<section class="card"><span>쓰기</span><b>없음</b><small>전용 읽기 계정 · 읽기 전용 트랜잭션 · 5초 · 행 제한</small></section>`);
+    cards.push(`<section class="card"><span>쓰기 권한</span><b>없음</b><small>읽기 전용 계정으로만 조회합니다(한 번에 5초, 행 수 제한)</small></section>`);
     return `<div class="stat-cards">${cards.join('')}</div>`;
   }
 
@@ -48,7 +48,7 @@
     const q = S.queries.find(x => x.id === S.query);
     const form = `<div class="card">${UI.section('', UI.field({ label: '설비', input: `<input id="fabAsset" list="fabAssets" value="${esc(S.asset)}"><datalist id="fabAssets">${assetCodes().map(c => `<option value="${esc(c)}">`).join('')}</datalist>` }) +
       UI.field({ label: '질문', input: `<select id="fabQuery">${opts.map(([k, l]) => `<option value="${esc(k)}"${k === S.query ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>`,
-                 hint: S.errors.queries ? `준비된 질문 목록을 읽지 못했습니다 — ${S.errors.queries}` : q ? q.question : '업무 DB에서 설비 코드로 이어진 표와 시계열 DB의 태그별 최신값을 출처와 함께 모읍니다' }))}` +
+                 hint: S.errors.queries ? `준비된 질문 목록을 읽지 못했습니다 — ${S.errors.queries}` : q ? q.question : '업무 DB에서 설비 코드로 이어진 표와 시계열 DB의 태그별 최신값을, 어느 원천에서 왔는지와 함께 모읍니다' }))}` +
       UI.actions(`<button class="btn primary" id="fabRun"${S.busy ? ' disabled' : ''}>${S.busy ? '읽는 중…' : '묶어 보기'}</button>`) + '</div>';
     return form + `<div id="fabResult">${result()}</div>`;
   }
@@ -59,11 +59,11 @@
     const down = Object.entries(r.sources || {}).filter(([, s]) => !s.ok);
     const warn = down.length ? `<p class="form-msg neg" role="status">일부 원천을 읽지 못했습니다 — ${down.map(([id, s]) => `${esc(srcLabel(id))}: ${esc(s.reason)}`).join(' · ')}</p>` : '';
     const notes = (r.notes || []).map(n => `<p class="field-hint">${esc(n)}</p>`).join('');
-    const answer = r.query === 'asset' ? assetAnswer(r) : `<div class="table-scroll"><table class="compact-table"><thead><tr><th>항목</th><th>값</th><th>출처</th><th>위치</th></tr></thead><tbody>${
+    const answer = r.query === 'asset' ? assetAnswer(r) : `<div class="table-scroll"><table class="compact-table"><thead><tr><th>항목</th><th>값</th><th>원천</th><th>위치</th></tr></thead><tbody>${
       r.answer.map(a => `<tr><td>${esc(a.label)}</td><td>${a.value == null ? chip(a.state) + ` <small>${esc(a.reason || '')}</small>` : val(a.value, a.unit)}</td>` +
         `<td>${srcChip(a.source, a.source_label)}</td><td>${code(partTable(r, a))}${a.where ? ` <small>${esc(a.where)}</small>` : ''}${a.at ? ` <small>${when(a.at)}</small>` : ''}</td></tr>`).join('')}</tbody></table></div>`;
     const parts = r.parts.map(p => `<section class="form-section"><h4>${srcChip(p.source, p.source_label)} ${esc(p.purpose)}</h4>` +
-      (p.ok ? `<pre>${esc(p.statement)}</pre>${Object.keys(p.params || {}).length ? `<p class="field-hint">값: ${esc(JSON.stringify(p.params))}</p>` : ''}` +
+      (p.ok ? `<pre>${esc(p.statement)}</pre>${Object.keys(p.params || {}).length ? `<p class="field-hint">조회 조건: ${Object.entries(p.params).map(([k, v]) => `${esc(window.hydWords.fieldName(k))} ${esc(v !== null && typeof v === 'object' ? JSON.stringify(v) : v)}`).join(' · ')}</p>` : ''}` +
               rowsTable(p.columns, p.rows) + (p.at_row_limit ? '<p class="field-hint">행 제한에 닿았습니다 — 일부만 보입니다</p>' : '')
             : `<p class="form-msg neg">${esc(p.reason)}</p><pre>${esc(p.statement)}</pre>`) + '</section>').join('');
     return UI.card({ title: esc(r.question || r.title), chips: srcSummary(r) + (r.partial ? UI.chipText('일부만', 'warning') : ''),
@@ -101,7 +101,7 @@
       const list = `<div class="toolbar">${s.tables.map(t => `<button class="btn small${t.name === picked ? ' primary' : ''}" data-fab-table="${esc(s.id)}|${esc(t.name)}">${esc(t.name)}</button>`).join('')}</div>`;
       const detail = picked ? tableDetail(s.id, picked) : '<p class="field-hint">표를 누르면 열과 최신 샘플이 보입니다</p>';
       return UI.card({ title: esc(s.label), chips: srcChip(s.id, s.engine) + UI.chipText(s.read_only ? '읽기 전용' : '읽기 전용 아님', s.read_only ? 'success' : 'danger'),
-        sub: `${esc(s.about)} · 계정 ${esc(s.user)} · 스키마 ${esc(s.schema)}`, body: list + detail });
+        sub: esc(s.about), body: list + detail + UI.fold('연결 정보', `<p class="field-hint">DB 계정 ${esc(s.user)} · 스키마 ${esc(s.schema)}</p>`, { cls: 'small' }) });
     }).join('');
   }
   function tableDetail(sid, name) {
@@ -132,11 +132,11 @@
       const reasons = new Set(list.map(i => i.reason || ''));
       const shared = reasons.size === 1 ? (list[0].reason || (st === 'OK' ? '원천 표 · 열에서 바로 읽음' : '')) : '항목마다 사유가 다릅니다(아래 표)';
       return UI.fold(`${chip(st)} ${list.length}개 — ${esc(shared)}`,
-      `<div class="table-scroll"><table class="compact-table"><thead><tr><th>판단 입력</th><th>출처</th><th>원천 위치</th>${reasons.size > 1 ? '<th>사유</th>' : ''}</tr></thead><tbody>${list.map(i =>
+      `<div class="table-scroll"><table class="compact-table"><thead><tr><th>판단 입력</th><th>지식 지도 출처</th><th>원천 위치</th>${reasons.size > 1 ? '<th>사유</th>' : ''}</tr></thead><tbody>${list.map(i =>
         `<tr><td>${esc(i.name)}</td><td>${esc(UI.name(i.source) || i.sourceName || '')}</td><td>${i.datasource ? srcChip(i.datasource, i.source_label || srcLabel(i.datasource)) : ''} ${code(i.table ? i.table + '.' + i.column : '')} <small>${esc(i.where || (i.key ? i.key + ' = 설비' : ''))}</small></td>${reasons.size > 1 ? `<td>${esc(i.reason || '')}</td>` : ''}</tr>`).join('')}</tbody></table></div>`,
       { open: st !== 'OUTSIDE' && st !== 'DERIVED' && list.length <= 8 }); }).join('');
-    return UI.card({ title: '클래스 ↔ 표 · 열', sub: '온톨로지 클래스의 식별 키가 원천의 어느 열과 같은 것을 가리키는지, 살아 있는 카탈로그에 대어 확인합니다', body: graph + classes }) +
-      UI.card({ title: '판단 입력의 원천', sub: '지식 그래프의 SOURCED_FROM 링크와 업무 데이터 연결(DDL 적재)로 생긴 표 · 열 바인딩', body: inputs || UI.empty('판단 입력이 없습니다') });
+    return UI.card({ title: '클래스 ↔ 표 · 열', sub: '온톨로지 클래스의 식별 키가 원천의 어느 열과 같은 것을 가리키는지, 지금 DB의 표 목록과 대조해 확인합니다.', body: graph + classes }) +
+      UI.card({ title: '판단 입력의 원천', sub: '지식 지도의 「데이터 출처」 연결과 지식 관리의 업무 데이터 연결(DDL 적재)로 정해진 표와 열입니다.', body: inputs || UI.empty('판단 입력이 없습니다') });
   }
 
   /* ---------- 그리기 · 이벤트 ---------- */

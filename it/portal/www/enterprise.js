@@ -19,6 +19,16 @@ const LABEL_KO = { Perspective: '관점', Objective: '전략 목표', Measure: '
   Part: '부품', Supplier: '공급사', AnomalyPattern: '이상 패턴', Symptom: '증상', FailureMode: '고장 유형', Cause: '원인', Evidence: '증거', ManualSection: '매뉴얼 절',
   Skill: '조치 방법', Step: '절차 단계', Action: '세부 동작', Decision: '판단', DecisionTable: '결정표', Rule: '규칙', InputData: '입력 데이터',
   KnowledgeSource: '지식 출처', ExternalVariable: '외부 변수', Forecast: '예측', Incident: '사건', DecisionCase: '판단 사례' };
+// 지식 지도 상세 칸의 속성 이름(그래프 속성 키 → 화면 이름). 여기에 없는 키(적재 출처 · 해시 · 정책 원문 같은 내부 값)는 「그 밖의 속성」 접기에 원래 이름으로 둔다
+const PROP_KO = { description: '설명', annotation: '풀이', text: '내용', title: '제목', excerpt: '원문 발췌', citation: '인용 위치', ref: '참조 번호', order: '순서',
+  aliases: '다른 이름', kind: '종류', code: '코드', unit: '단위', variable: '변수', tag: '태그', zone: '구역', level: '수준', scope: '범위', source: '출처',
+  kpiRole: '지표 성격', frequency: '측정 주기', direction: '좋은 방향', target: '목표', normal: '정상 범위', min: '최소', max: '최대', limit: '한도',
+  rule: '규칙 식', formula: '계산식', when: '조건', effect: '효과', expect: '기대 값', hitPolicy: '적용 방식', weight: '가중치', prior: '사전 확률', penalty: '감점',
+  threshold: '임계값', thresholdWarn: '경고 임계값', thresholdCrit: '위험 임계값', detectionMode: '감지 방식', holdSeconds: '지속 시간(초)',
+  windowSeconds: '관찰 구간(초)', slopeWindowSeconds: '기울기 구간(초)', clearRule: '해제 규칙', clearHoldSeconds: '해제 지속 시간(초)', severity: '심각도',
+  sopId: '절차 번호', executable: '실행 가능', isExecutable: '실행 가능', partNo: '부품 번호', avl: '승인 공급사', oem: '순정품', resource: '자원',
+  question: '질문', note: '비고', virtual: '가상 값' };
+const PROP_VALUE_KO = { kpiRole: { lagging: '후행 지표(결과)', leading: '선행 지표(결과를 움직이는 요인)' }, direction: { UP: '높을수록 좋음', DOWN: '낮을수록 좋음' } };
 const RELATION_KO = {
   IN_PERSPECTIVE: '속한 관점', SUPPORTS: '받쳐 주는 목표', MEASURES: '측정하는 목표', OWNED_BY: '담당 부서', INFLUENCES: '영향 (+/−)',
   ACHIEVES: '달성하는 조직 목표', HAS_NODE: '흐름 노드', SEQUENCE_FLOW: '다음 단계', ATTACHED_TO: '경계 이벤트', PERFORMED_BY: '수행자', READS: '읽는 데이터',
@@ -88,7 +98,8 @@ async function loadGraph(force) {
     ent.graph = null; // A reopened tab must retry, not present cached data as recovered.
     $('#ontoNode').innerHTML = '';
     $('#ontoStats').textContent = UI.t('error.load');
-    $('#ontoMap').innerHTML = `<div role="alert" title="${esc(e.message)}">${UI.empty(UI.t('onto.loadFail'), UI.t('onto.loadFailSub'))}</div>`;
+    $('#ontoMap').innerHTML = UI.errorBlock(UI.t('onto.loadFail'), e.message, { retry: true });      // 사유를 보이게(전에는 title 에만 있었다)
+    $('#ontoMap').querySelector('[data-retry]')?.addEventListener('click', () => loadGraph(true));
     return;
   }
   // Relational definitions own user-created flow names; a graph id is not a display name.
@@ -103,7 +114,7 @@ async function loadGraph(force) {
     ent.definitionNames = names; ent.definitionNamesError = '';
   } catch (e) {
     if (current() !== asset) return;
-    ent.definitionNames = {}; ent.definitionNamesError = '흐름 이름 조회 실패: ' + e.message;
+    ent.definitionNames = {}; ent.definitionNamesError = '흐름 이름을 읽지 못했습니다: ' + e.message;
   }
   const pats = await loadPatterns();
   const sel = $('#ontoFocus');
@@ -233,23 +244,41 @@ function drawGraph() {
   const matches = [...box.querySelectorAll('.o-node.match')];
   const fmtN = n => Number(n).toLocaleString('ko-KR');
   $('#ontoStats').textContent = UI.t('onto.stats', { n: fmtN(g.nodes.length), e: fmtN(g.edges.length), s: counts.Skill || 0, r: counts.Rule || 0, k: counts.Measure || 0 })
-    + (focus ? ' · ' + UI.t('onto.path', { n: focus.size }) : '') + (q ? ' · ' + UI.t('onto.found', { n: matches.length }) : '') + (box.scrollWidth > box.clientWidth ? ' · ' + UI.t('onto.scroll') : '')
-    + (ent.definitionNamesError ? ' · ' + ent.definitionNamesError : '');
+    + (focus ? ' · ' + UI.t('onto.path', { n: focus.size }) : '') + (q ? ' · ' + UI.t('onto.found', { n: matches.length }) : '') + (box.scrollWidth > box.clientWidth ? ' · ' + UI.t('onto.scroll') : '');
+  ontoNote(ent.definitionNamesError ? ent.definitionNamesError + ' 흐름 항목의 이름이 「흐름 이름 확인 불가」로 보입니다. [다시 읽기]를 누르세요.' : '');
   if (q && matches.length) { const r = matches[0].getBBox(); box.scrollLeft = Math.max(0, r.x - 20); box.scrollTop = Math.max(0, r.y - 60); }
   renderNodePanel();
+}
+// 통계 줄 아래의 오류 한 줄(흐름 이름 읽기 실패) — 회색 통계 글에 이어 붙이지 않는다
+function ontoNote(text) {
+  let n = $('#ontoNote');
+  if (!n) { n = el('p', 'form-msg neg'); n.id = 'ontoNote'; n.setAttribute('role', 'alert'); $('#ontoStats').after(n); }
+  n.textContent = text; n.hidden = !text;
 }
 function renderNodePanel() {
   const box = $('#ontoNode');
   const g = ent.graph; if (!g || !ent.sel) { box.innerHTML = `<div class="muted">${esc(UI.t('onto.hint'))}</div>`; return; }
   const n = g.nodes.find(x => x.id === ent.sel); if (!n) return;
   const props = Object.entries(n.props || {}).filter(([k]) => !['id', 'name'].includes(k));
-  const outE = g.edges.filter(e => e.from === n.id), inE = g.edges.filter(e => e.to === n.id);
-  const nm = id => nodeName(g.nodes.find(y => y.id === id) || { id });
-  const rel = (list, dir) => list.map(e => { const other = dir === 'out' ? e.to : e.from; return `<li><span>${dir === 'out' ? '→' : '←'} ${esc(RELATION_KO[e.type] || e.type)}</span> <a href="#" data-go="${esc(other)}">${esc(nm(other))}</a></li>`; }).join('');
-  box.innerHTML = `<div class="col"><div class="o-kind">${esc(LABEL_KO[n.label] || n.label)}</div><h3>${esc(nodeName(n))}</h3>` +
+  const named = props.filter(([k]) => PROP_KO[k]), other = props.filter(([k]) => !PROP_KO[k]);
+  const byId = id => g.nodes.find(y => y.id === id) || { id };
+  // 이어진 것을 뜻으로 묶는다. 관계 이름표(RELATION_KO)는 나가는 쪽에서 본 말이라(증상 → 고장 「나타내는 고장」) 들어오는 쪽에 그대로 붙이면
+  // 거꾸로 읽힌다 — 나가는 관계는 관계 이름으로, 들어오는 관계는 상대의 종류(증상 · 원인 …)로 묶고 관계 이름은 작게 곁들인다.
+  const groups = new Map();
+  const add = (dir, title, other, note) => { const key = dir + title; if (!groups.has(key)) groups.set(key, { title, items: [] }); groups.get(key).items.push({ other, note }); };      // 방향이 다르면 이름이 같아도 다른 묶음(공급사 · 설비 · 규칙처럼 관계 이름과 종류 이름이 같은 낱말인 것이 있다)
+  g.edges.filter(e => e.from === n.id).forEach(e => add('out:', RELATION_KO[e.type] || e.type, byId(e.to), ''));
+  g.edges.filter(e => e.to === n.id).forEach(e => { const o = byId(e.from); add('in:', LABEL_KO[o.label] || o.label || '이어진 항목', o, RELATION_KO[e.type] || e.type); });
+  const groupHtml = [...groups.values()].map(({ title, items }) => {
+    const notes = [...new Set(items.map(i => i.note).filter(Boolean))];
+    return `<section class="rel-group"><h4>${esc(title)} <span class="n">${items.length}</span>${notes.length === 1 ? ` <span class="rel-note">${esc(notes[0])}</span>` : ''}</h4>
+      <ul class="rels">${items.map(i => `<li><a href="#" data-go="${esc(i.other.id)}">${esc(nodeName(i.other))}</a>${notes.length > 1 && i.note ? ` <span class="rel-note">${esc(i.note)}</span>` : ''}</li>`).join('')}</ul></section>`;
+  }).join('');
+  const value = v => { const text = typeof v === 'string' ? v : typeof v === 'boolean' ? (v ? '예' : '아니요') : Array.isArray(v) && v.every(x => typeof x !== 'object') ? v.join(', ') : typeof v === 'number' ? String(v) : JSON.stringify(v); return text.length > 160 ? UI.fold(esc(text.slice(0, 60)) + '…', `<div class="kv-long">${esc(text)}</div>`, { cls: 'small' }) : esc(text); };
+  box.innerHTML = `<div class="col node-head"><div class="o-kind">${esc(LABEL_KO[n.label] || n.label)}</div><h3>${esc(nodeName(n))}</h3>` +
     (['Process', 'ProcessVersion'].includes(n.label) ? UI.metaFold([['흐름 식별자', esc(n.id)]]) : '') +
-    (props.length ? '<table class="kvt">' + props.map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(typeof v === 'string' ? v : JSON.stringify(v))}</td></tr>`).join('') + '</table>' : '') + '</div><div class="col">' +
-    (outE.length ? `<h4>${esc(UI.t('onto.out'))} ${outE.length}</h4><ul class="rels">${rel(outE, 'out')}</ul>` : '') + (inE.length ? `<h4>${esc(UI.t('onto.in'))} ${inE.length}</h4><ul class="rels">${rel(inE, 'in')}</ul>` : '') + '</div>';
+    (named.length ? '<table class="kvt">' + named.map(([k, v]) => `<tr><th>${esc(PROP_KO[k])}</th><td>${value((PROP_VALUE_KO[k] || {})[v] || v)}</td></tr>`).join('') + '</table>' : '') +
+    (other.length ? UI.fold(`그 밖의 속성 ${other.length}개 (원래 이름)`, '<table class="kvt">' + other.map(([k, v]) => `<tr><th>${esc(k)}</th><td>${value(v)}</td></tr>`).join('') + '</table>', { cls: 'small' }) : '') + '</div>' +
+    `<div class="col node-rels">${groupHtml || `<p class="muted">이어진 항목이 없습니다</p>`}</div>`;
   box.querySelectorAll('[data-go]').forEach(a => a.addEventListener('click', ev => { ev.preventDefault(); ent.sel = a.dataset.go; drawGraph(); renderNodePanel(); const node = [...$('#ontoMap').querySelectorAll('.o-node')].find(n => n.dataset.id === ent.sel); if (node) { const r = node.getBBox(); $('#ontoMap').scrollTo({ left: Math.max(0, r.x - 20), top: Math.max(0, r.y - 60) }); } }));
 }
 function initOntology() {
@@ -345,7 +374,7 @@ function cardHtml(o, opt = {}) {
     ${o.precedent && o.precedent.reasons && o.precedent.reasons.length ? `<div><dt>${esc(UI.t('card.precedent'))}</dt><dd>${o.precedent.reasons.map(esc).join(' / ')}</dd></div>` : ''}</dl>
     ${o.forecastContext ? UI.fold(esc(UI.t('card.forecastLimits')), forecastContextHtml(o.forecastContext), { cls: 'small' }) : ''}
     ${ranking ? UI.fold(esc(UI.t('card.scoreHow')), `${Object.entries(ranking.policy?.components || {}).map(([key, expr]) => `<div>${esc(scoreLabels[key] || key)}: <code>${esc(expr)}</code> = ${esc(sp[key])}</div>`).join('')}<div class="muted">${esc(ranking.conditionMode || '')}</div>`, { cls: 'small' }) : ''}
-    ${(o.tradeoffEvaluation || []).length ? UI.fold(`${esc(UI.t('kpi'))} 경로와 조건 판정 ${o.tradeoffEvaluation.length}건`, o.tradeoffEvaluation.map(p => `<div><b>${esc({ TRUE: '적용', FALSE: '미적용', UNKNOWN: '미확인' }[p.status] || p.status)}</b> ${esc(p.name)} · 강도 ${esc(p.weight)}<br><span class="muted">${esc((p.nodes || []).join(' → '))}</span>${(p.checks || []).filter(c => c.description || c.status !== 'TRUE').map(c => `<p>${esc(c.description)} · ${esc(c.status)}<br>${Object.entries(c.inputs || {}).map(([alias, v]) => `${esc(alias)}: ${esc(v.source === 'forecast' ? '후보 예측' : '현재 사실')} ${esc(v.variable)} = ${esc(v.value ?? '미확인')}`).join(' · ')}${c.error ? `<br>${esc(c.error)}` : ''}</p>`).join('')}</div>`).join(''), { cls: 'small' }) : ''}`;
+    ${(o.tradeoffEvaluation || []).length ? UI.fold(`${esc(UI.t('kpi'))} 경로와 조건 판정 ${o.tradeoffEvaluation.length}건`, o.tradeoffEvaluation.map(p => `<div><b>${esc(CHECK_STATUS[p.status] || p.status)}</b> ${esc(p.name)} · 강도 ${esc(p.weight)}<br><span class="muted">${esc((p.nodes || []).join(' → '))}</span>${(p.checks || []).filter(c => c.description || c.status !== 'TRUE').map(c => `<p>${esc(c.description)} · ${esc(CHECK_STATUS[c.status] || c.status)}<br>${Object.entries(c.inputs || {}).map(([alias, v]) => `<span title="${esc(alias)} · ${esc(v.variable)}">${esc(v.source === 'forecast' ? '후보 예측' : '현재 사실')} ${esc(window.hydWords.fieldName(v.variable))} = ${esc(v.value == null ? '미확인' : factValue(v.variable, v.value))}</span>`).join(' · ')}${c.error ? `<br>${esc(c.error)}` : ''}</p>`).join('')}</div>`).join(''), { cls: 'small' }) : ''}`;
   const head = `<span class="hrank">${o.feasible ? o.rank : '–'}</span>
     <span class="hbody"><span class="htitle">${esc(UI.idText(o.name))} ${chips}</span>
       ${o.description ? `<span class="hsub">${esc(UI.idText(o.description))}</span>` : ''}
@@ -397,8 +426,9 @@ async function runDecision() {
   if ($('#decStandby').value) facts.standby_ready = $('#decStandby').value === 'true';
   $('#decResult').innerHTML = UI.empty(UI.t('dec.loading'));
   try { ent.result = await postJ(API.agent + '/api/agent/decide', { asset: $('#decAsset').value, pattern: $('#decPattern').value, facts }); ent.facts = facts; renderDecision(); }
-  catch (e) { $('#decResult').innerHTML = UI.empty(UI.t('dec.failed'), e.message); }
+  catch (e) { $('#decResult').innerHTML = UI.errorBlock(UI.t('dec.failed'), e.message, { retry: true }); }
   finally { ent.busy = false; b.disabled = false; b.textContent = UI.t('btn.run'); }
+  $('#decResult').querySelector('[data-retry]')?.addEventListener('click', runDecision);
 }
 // first sentence = up to a period followed by whitespace or the end ("점수 3.87" must not cut)
 const firstSentence = text => { const m = String(text || '').match(/^[\s\S]*?[.。](?=\s|$)/); return m ? m[0] : String(text || ''); };
@@ -407,6 +437,9 @@ function summaryBlock(raw) {
   const first = firstSentence(text), rest = String(text || '').slice(first.length).trim();
   return `<div class="summary prose"><p style="margin:0">${esc(first)}</p>${rest ? UI.fold(esc(UI.t('dec.summaryMore')), `<p style="margin:0">${esc(rest)}</p>`, { cls: 'small' }) : ''}</div>`;
 }
+// 판단에 쓴 값 한 칸: 문자열 코드는 화면 말, 참거짓은 예 · 아니요, 숫자는 단위와 함께(plainWords.js value). 묶음 값만 원문
+const factValue = (key, v) => v !== null && typeof v === 'object' ? JSON.stringify(v) : window.hydWords.value(key, v);
+const CHECK_STATUS = { TRUE: '적용', FALSE: '미적용', UNKNOWN: '미확인' };
 const FACT_LABEL = { plc_mode: 'dec.mode', plc_state: 'dec.state', standby_ready: 'dec.standby', fan100_hours: 'dec.fan' };
 /** 학생이 바꾼 판단 조건 가운데 이번 판단의 어떤 규칙 조건(when)에도 나오지 않는 것 */
 function unusedFacts(facts, trace) {
@@ -428,7 +461,8 @@ function renderDecision() {
   // 원인: 1위 큰 글씨 + 고장 유형 칩 + 증거, 2위 이하 접기 (C2)
   const causes = d.causes || [];
   const evidenceHtml = c => (c.evidence || []).map(e => { const unknown = e.status === 'UNKNOWN' || e.passed == null || e.value == null || !!e.error;
-    return `<div class="kv-line"><span class="${unknown ? 'muted' : e.passed ? 'pos' : 'neg'}">${esc(e.name)}</span> = ${esc(fmt(e.value, 3))}${unknown ? ` · ${esc(UI.t('inc.unknown'))}` : ''}</div>`; }).join('') || `<span class="muted">${esc(UI.t('inc.noEvidence'))}</span>`;
+    const unit = window.hydWords.unit(e.tag);      // 이상 확인 화면(app.js guideCardHtml)과 같은 꼴 — 충족 여부를 색만이 아니라 글자로
+    return `<div class="kv-line"><span class="${unknown ? 'muted' : e.passed ? 'pos' : 'neg'}">${esc(e.name)}</span> — ${esc(UI.t(unknown ? 'inc.unknown' : e.passed ? 'inc.pass' : 'inc.fail'))} · ${esc(UI.t('inc.observed'))} ${esc(fmt(e.value, 3))}${unit ? ' ' + esc(unit) : ''}</div>`; }).join('') || `<span class="muted">${esc(UI.t('inc.noEvidence'))}</span>`;
   if (causes.length) {
     const top = causes[0];
     html += `<h2 class="sec">${esc(UI.t('dec.cause'))}</h2>` + UI.card({ title: esc(UI.idText(top.name)), chips: UI.chipText(UI.t('dec.causeTop'), 'accent') + (top.failureMode ? UI.chipText(UI.idText(top.failureMode), 'neutral') : ''), value: `<span class="kv">${esc(UI.t('card.score'))} ${esc(top.score)}</span>`, body: evidenceHtml(top) +
@@ -446,7 +480,7 @@ function renderDecision() {
       `<td>${t.fired ? `<b>${esc(UI.t('dec.fired'))}</b>` : (t.unknown && t.unknown.length ? `<span class="muted">${esc(UI.t('dec.noFact'))}: ${esc(t.unknown.join(', '))}</span>` : esc(UI.t('dec.notApplicable')))}</td></tr>`).join('') + '</tbody></table>');
   html += UI.fold(`${esc(UI.t('dec.inputs'))} <span class="chip tone-neutral sm">${(d.provenance || []).length}</span>`,
     `<table class="compact-table"><thead><tr><th>${esc(UI.t('dec.col.input'))}</th><th>${esc(UI.t('dec.col.source'))}</th><th>${esc(UI.t('dec.col.value'))}</th><th>${esc(UI.t('dec.col.how'))}</th></tr></thead><tbody>` +
-    (d.provenance || []).map(p => `<tr><td>${esc(p.name)}</td><td>${esc(p.sourceName || p.source)}</td><td>${p.error ? '<span class="neg">' + esc(p.error) + '</span>' : esc(JSON.stringify(p.value))}</td><td class="muted">${esc(p.how || '')}</td></tr>`).join('') + '</tbody></table>');
+    (d.provenance || []).map(p => `<tr><td>${esc(p.name)}</td><td>${esc(p.sourceName || p.source)}</td><td>${p.error ? '<span class="neg">' + esc(p.error) + '</span>' : esc(factValue(p.variable, p.value))}</td><td class="muted">${esc(p.how || '')}</td></tr>`).join('') + '</tbody></table>');
   html += UI.fold(esc(UI.t('dec.trace')), traceHtml({ id: d.id, status: d.status, started: d.created, steps: d.steps || [] })) + '</div>';
   box.innerHTML = html;
 }
@@ -455,7 +489,7 @@ $('#decRun').addEventListener('click', runDecision);
 /* ================================================= 승인과 실행 */
 async function refreshProcess() {
   if (state.tab !== 'process') return;
-  try { ent.decisions = await getJ(API.process + '/api/decisions'); ent.decisionsError = false; } catch (e) { ent.decisionsError = true; }
+  try { ent.decisions = await getJ(API.process + '/api/decisions'); ent.decisionsError = ''; } catch (e) { ent.decisionsError = e.message; }
   try { [ent.entState, ent.tx] = await Promise.all([getJ(API.ent + '/api/state'), getJ(API.ent + '/api/transactions?limit=12')]); ent.entError = ''; } catch (e) { ent.entState = null; ent.tx = []; ent.entError = e.message; }
   if (!ent.decSel && ent.decisions.length) ent.decSel = ent.decisions[0].id;
   const selected = ent.decSel;
@@ -474,7 +508,7 @@ function renderProcess() {
     const focused = list.contains(document.activeElement) ? document.activeElement.dataset.itemId : null;
     const scroll = list.scrollTop;
     list.innerHTML = ent.decisions.length ? '' : UI.emptyGo(UI.t('proc.empty'), UI.t('proc.emptySub'), 'scenario', UI.t('nav.scenario'), 'compact');
-    if (ent.decisionsError) list.innerHTML = `<div class="neg" role="status">${esc(UI.t('proc.listError'))}</div>`;
+    if (ent.decisionsError) list.innerHTML = `<div class="form-msg neg" role="alert">${esc(UI.t('proc.listError'))} (${esc(ent.decisionsError)})</div>`;
     const paged = UI.page(ent.decisions, ent.decShown, d => d.id === ent.decSel);
     for (const d of paged.rows) {
       const it = el('div', 'item' + (d.id === ent.decSel ? ' sel' : ''));
@@ -520,7 +554,7 @@ function renderDecisionApproval() {
       UI.fold(`AI가 제안한 조치 안 <span class="chip tone-neutral sm">${opts.length}</span> <span class="muted">— 보기 전용</span>`, `<div class="hitl-opts">${opts.map(o => cardHtml(o, { rec: d.recommended, chosen: d.chosen, maxAbs, decision: d })).join('')}</div>`, { cls: 'plain' });
   } else if (pending) {
     html += `<div class="hitl-opts">${opts.map(o => cardHtml(o, { rec: d.recommended, chosen: d.chosen, maxAbs, decision: d })).join('')}</div>` +
-      `<p class="neg" role="status">이 판단은 경보로 열린 처리 건 없이 제출돼 승인하거나 거절할 수 없습니다. 판단은 처리 건 안에서만 승인합니다 — 설비 경보(결함 시뮬레이션)로 처리 건을 열고 그 승인 단계에서 고르세요.</p>`;
+      `<p class="neg" role="status">이 판단은 경보로 열린 처리 건 없이 제출돼 승인하거나 반려할 수 없습니다. 판단은 처리 건 안에서만 승인합니다 — 설비 경보(결함 시뮬레이션)로 처리 건을 열고 그 승인 단계에서 고르세요.</p>`;
   } else {
     html += `<h3 style="font-size:14px;margin:var(--s4) 0 var(--s2)">${esc(UI.t('decisions'))}</h3><div class="hitl-opts">` + opts.map(o => cardHtml(o, { rec: d.recommended, chosen: d.chosen, maxAbs, decision: d })).join('') + '</div>';
   }
@@ -548,7 +582,7 @@ function systemBoards(s) {
 function renderSystems() {
   const box = $('#sysBoards'); const s = ent.entState;
   if (!s) { box.innerHTML = ent.entError ? UI.errorBlock(UI.t('proc.noEnt'), ent.entError + ' — 2.5초마다 다시 읽습니다', { cls: 'compact' }) : UI.empty(UI.t('loading'), '', 'compact'); $('#txList').innerHTML = ''; return; }
-  const t = (rows, cols, labels) => rows.length ? '<div class="table-scroll" tabindex="0"><table><thead><tr>' + labels.map(x => `<th>${esc(x)}</th>`).join('') + '</tr></thead><tbody>' + rows.slice(0, 6).map(r => '<tr>' + cols.map(c => `<td>${esc(r[c] ?? '–')}</td>`).join('') + '</tr>').join('') + '</tbody></table></div>' : UI.empty(UI.t('proc.noChange'), '', 'compact');
+  const t = (rows, cols, labels) => rows.length ? '<div class="table-scroll" tabindex="0"><table><thead><tr>' + labels.map(x => `<th>${esc(x)}</th>`).join('') + '</tr></thead><tbody>' + rows.slice(0, 6).map(r => '<tr>' + cols.map(c => `<td>${esc(r[c] ?? '–')}</td>`).join('') + '</tr>').join('') + '</tbody></table></div>' + (rows.length > 6 ? `<p class="field-hint">${rows.length}건 가운데 6건만 보입니다(외 ${rows.length - 6}건).</p>` : '') : UI.empty(UI.t('proc.noChange'), '', 'compact');
   const boards = systemBoards(s).map(([sys, rows, cols, labels]) => [sys, t(rows, cols, labels)]);
   box.innerHTML = boards.map(([sys, body]) => `<div class="board"><header><b>${esc(sys)}</b></header>${body}</div>`).join('');
   $('#txList').innerHTML = ent.tx.length ? ent.tx.slice(0, 12).map(x => UI.eventRecord({ time: x.t, name: UI.who(x.system), actor: x.by, detail: x.detail, raw: x, extra: txDiffFold(x) })).join('') : `<div class="muted">${esc(UI.t('proc.noTx'))}</div>`;
@@ -561,7 +595,7 @@ function txDiffFold(x) {
   const keys = [...new Set([...Object.keys(b || {}), ...Object.keys(a || {})])].filter(k => JSON.stringify((b || {})[k] ?? null) !== JSON.stringify((a || {})[k] ?? null));
   const body = !keys.length ? `<p class="muted">${esc(UI.t('tx.noDiff'))}</p>`
     : `${b ? '' : `<p class="muted">${esc(UI.t('tx.created'))}</p>`}<div class="table-scroll"><table class="compact-table"><thead><tr><th>${esc(UI.t('tx.col.field'))}</th><th>${esc(UI.t('tx.col.before'))}</th><th>${esc(UI.t('tx.col.after'))}</th></tr></thead><tbody>` +
-      keys.map(k => `<tr><td class="mono">${esc(k)}</td><td>${esc(show((b || {})[k]))}</td><td><b>${esc(show((a || {})[k]))}</b></td></tr>`).join('') + '</tbody></table></div>';
+      keys.map(k => `<tr><td title="${esc(k)}">${esc(window.hydWords.fieldName(k))}</td><td>${esc(show((b || {})[k]))}</td><td><b>${esc(show((a || {})[k]))}</b></td></tr>`).join('') + '</tbody></table></div>';
   return UI.fold(`${esc(UI.t('tx.beforeAfter'))} <span class="chip tone-neutral sm">${keys.length}</span>`, body, { cls: 'small' });
 }
 

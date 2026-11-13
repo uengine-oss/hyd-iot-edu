@@ -1,12 +1,12 @@
 /* B5 에이전트에게 질문하기 — window.hydAsk.mount(el). 주소 #/ask
    질문 하나 = 처리 건 하나(정식 정의 ask_agent). 답할 에이전트를 고르고 보내면, 진행 중에는 도구 호출이 한 줄씩 나타나고(1.5초마다 다시 읽음),
-   끝나면 답 + 근거(실행한 질의 · 조회 결과 · 실행 기록에서 확인됐는지) 또는 "답할 수 없음 + 이유"와 "처리 과정 보기" 링크.
+   끝나면 답 + 근거(실행한 질의 · 조회 결과 · 실행 기록에서 확인됐는지) 또는 "답할 수 없음 + 이유"와 "처리 건에서 보기" 링크.
    한 질문 → 한 답(이전 질문을 기억하지 않음). 지난 질문 목록. 서버: process GET/POST /api/ask* (it/process/procsvc/ask.py).
    원본 대응: process-gpt-vue3 ui/WorkItemChat.vue(도구 입력 · 결과 접기), apps/todolist/InstanceTimeline.vue(작업 하나 = 메시지 하나). */
 (function () {
   const LIVE = new Set(['waiting', 'running', 'submitted', 'correcting', 'asking']);
-  const STATE = { waiting: ['대기 중', 'neutral'], running: ['조회 중', 'accent'], submitted: ['정리 중', 'accent'], correcting: ['형식 고치는 중', 'warning'],
-    asking: ['사람에게 질문', 'warning'], done: ['답변 완료', 'success'], failed: ['실패', 'danger'], closed: ['닫힘', 'neutral'], broken: ['오류', 'danger'] };
+  const STATE = { waiting: ['대기 중', 'neutral'], running: ['조회 중', 'accent'], submitted: ['정리 중', 'accent'], correcting: ['답 형식 확인 중', 'warning'],
+    asking: ['사람에게 질문', 'warning'], done: ['답변 완료', 'success'], failed: ['실패', 'danger'], closed: ['종료', 'neutral'], broken: ['오류', 'danger'] };
   const A = { el: null, status: null, statusErr: '', agents: [], agent: '', draft: '', sending: false, err: '', cur: null, history: [], timer: null, histErr: '' };
   const api = path => API.process + '/api/ask' + path;
   const uuid = () => UI.uuid();   // 비보안 문맥(IP 주소로 연 포털)에서도 같은 공용 생성기
@@ -96,7 +96,7 @@
     const s = A.status;
     if (!s) return '<p class="muted">상태를 확인하는 중…</p>';
     if (s.ready) return `<span class="live-conn on">답할 AI 에이전트 연결됨</span>`;
-    return `<div class="ask-warn" role="status">${UI.chipText('지금은 답할 AI 에이전트이 없습니다', 'warning')} <span>${esc(s.reason || '')}</span></div>`;
+    return `<div class="ask-warn" role="status">${UI.chipText('지금은 답할 AI 에이전트가 없습니다', 'warning')} <span>${esc(s.reason || '')}</span></div>`;
   }
   function agentOptions() {
     return A.agents.map(a => `<option value="${esc(a.id)}" ${a.id === A.agent ? 'selected' : ''}>${esc(a.name)}${a.default ? ' (기본)' : a.mine ? ' (내가 만든 것)' : ''}</option>`).join('');
@@ -119,7 +119,7 @@
           <div class="muted">실제 조회 결과: ${esc(e.actual_result || '원문 없음')}</div>
           ${e.result_check ? `<p class="field-hint">${esc(e.result_check.note)}${e.result_check.missing?.length ? `: ${esc(e.result_check.missing.join(', '))}` : ''}</p>` : ''}</li>`).join('');
       return `<div class="ask-answer"><p>${esc(UI.clean(r.answer))}</p>
-        <div class="card-chips">${UI.chipText(`조회 기록 ${r.verified}개 확인`, 'neutral')} ${UI.chipText(`성공한 조회 ${r.queried}건`, 'neutral')}</div>
+        <div class="card-chips">${UI.chipText(`실행 기록과 맞은 근거 ${r.verified}건`, 'neutral')} ${UI.chipText(`성공한 조회 ${r.queried}건`, 'neutral')}</div>
         ${r.answer_check ? `<p class="field-hint">${esc(r.answer_check.note)}${r.answer_check.missing?.length ? `: ${esc(r.answer_check.missing.join(', '))}` : ''}</p>` : ''}</div>`
         + UI.fold(`근거 — 실행한 질의 · 조회 결과 <span class="chip tone-neutral sm">${(r.evidence || []).length}</span>`, `<ol class="stack-list">${ev}</ol>`
           + (r.note ? `<p class="field-hint">고른 근거: ${esc(UI.clean(r.note))}</p>` : ''), { cls: 'small' });
@@ -171,8 +171,9 @@
           <span class="muted">${esc(UI.clean(v.message || ''))}</span><span class="ask-count">${window.hydTrace ? hydTrace.icon('tool') : ''}${calls.length}</span></div>
         <details class="fold small ask-process" ${live || A.processOpen ? 'open' : ''}><summary>처리 과정 · 도구 호출 ${calls.length} ${live && window.hydTrace ? hydTrace.spinner('sm') : ''}</summary><div class="fold-body">${A.traceErr ? `<p class="field-hint">자세한 처리 과정을 읽지 못해 도구 호출 목록만 보입니다 — ${esc(A.traceErr)}</p>` : ''}<div data-ask-trace>${staticCalls ? `<ol class="stack-list">${calls.map(callRow).join('')}</ol>` : ''}</div></div></details>
         ${resultHtml(v)}
+        ${v.state==='failed' && replay() ? '<p class="field-hint" role="status">AI 키가 없을 때 쓰는 재생 모드에서는 같은 질문을 다시 진행할 수 없습니다.</p>' : ''}
         ${v.state==='failed' && !replay() ? UI.field({label:'다시 진행할 때 반영할 내용(선택)',input:`<textarea id="askRetryNote" rows="2">${esc(A.retryNote || '')}</textarea>`}) : ''}
-        <div class="form-actions">${v.state==='failed' && !replay() ? `<button class="btn small" id="askRetry" ${A.sending?'disabled':''}>같은 질문 다시 진행</button>` : ''}<a class="btn small ghost" href="${esc(v.link)}">처리 과정 보기 →</a></div></div></div>`;
+        <div class="form-actions">${v.state==='failed' && !replay() ? `<button class="btn small" id="askRetry" ${A.sending?'disabled':''}>같은 질문 다시 진행</button>` : ''}<a class="btn small ghost" href="${esc(v.link)}">처리 건에서 보기 →</a></div></div></div>`;
   }
   function historyHtml() {
     if (A.histErr) return `<p class="neg">${esc('지난 질문을 읽지 못했습니다: ' + A.histErr)}</p>`;

@@ -229,7 +229,7 @@ def agent_outcome(view: dict, ai_mode: str):
 
 
 def pick_approval(decision: dict, people: list[dict]) -> tuple[str, str, str]:
-    """추천 카드(option) · 그 승인 역할 · 그 역할을 가진 첫 사람 — 포털에서 「나」를 그 사람으로 고르고 [승인]을 누르는 것과 같다."""
+    """추천 카드(option) · 그 승인 역할 · 그 역할을 가진 사람(이 PC의 담당자) — 포털에서 [승인]을 누르는 것과 같다."""
     option = next((o for o in decision.get('options') or [] if o.get('id') == decision.get('recommended')), None)
     if option is None:
         raise CheckError('AI 판단에 추천 카드가 없습니다 — 포털 「처리 건」에서 판단 · 제안 단계의 기록을 확인하세요.')
@@ -359,9 +359,15 @@ def cleanup(process, plant, pid, approval, view, record) -> None:
                     task_id, decision_id, role, person = approval
                     http('POST', f'{process}/api/todolist/{task_id}/reject-card',
                          {'decision': decision_id, 'by': person, 'role': role, 'reason': f'{BY}이 연 처리 건 정리'})
-                for w in rows.values():
-                    if w.get('status') == 'PENDING' and w.get('agent_mode'):
-                        http('POST', f'{process}/api/todolist/{w["id"]}/close', {'by': BY, 'reason': f'{BY}이 연 처리 건 정리'})
+                stuck = [w for w in rows.values() if w.get('status') == 'PENDING' and w.get('agent_mode')]
+                if stuck:
+                    # 닫기는 사람 사용자만 할 수 있다(서버가 점검 이름 같은 글은 거절한다) — 승인 때와 같이 업무 DB 의 사람으로 닫는다
+                    closer = approval[3] if approval else next(
+                        (p['id'] for p in http('GET', f'{process}/api/inbox/users') if str(p.get('id') or '').startswith('user:')), None)
+                    if not closer:
+                        raise CheckError('닫을 사람 사용자가 업무 DB에 없습니다')
+                    for w in stuck:
+                        http('POST', f'{process}/api/todolist/{w["id"]}/close', {'by': closer, 'reason': f'{BY}이 연 처리 건 정리'})
                 wait_for(180, lambda: (lambda v: v['instance']['status'] if v['instance']['status'] != 'RUNNING' else None)(view(pid)),
                          f'점검이 연 처리 건 {pid} 이 아직 열려 있습니다 — 포털 「처리 건」에서 닫으세요', every=5)
         except (CheckError, urllib.error.URLError, OSError, KeyError) as exc:

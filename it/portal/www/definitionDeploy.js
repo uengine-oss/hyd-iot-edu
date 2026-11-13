@@ -23,7 +23,7 @@
     });
   }
   const panel = hydDefinitions.task($d('definitionDeployPanel'), $d('deployMessage'), syncButtons), action = panel.run, message = panel.say;
-  // 담당자 = 선택한 사용자(사용자 표의 사람) — 자유 입력은 배포 이력에 지어낸 이름을 남겼다. 서버도 사람만 받는다(inbox.require_person)
+  // 담당자 = 이 PC의 담당자(inbox.js me). 화면에 담당자 칸은 없고 숨은 칸(deployBy)에 이름만 둔다 — 자유 입력은 배포 이력에 지어낸 이름을 남겼다. 서버도 사람만 받는다(inbox.require_person)
   function showMe() {
     const m = window.hydInbox?.me?.(), el = $d('deployBy');
     el.readOnly = true; el.value = m ? m.name : ''; el.placeholder = '담당자 정보를 읽는 중…';
@@ -130,7 +130,9 @@
   $d('deployChoice').addEventListener('change', () => action(() => loadStatus()));
   $d('deployRefresh').addEventListener('click', () => action(() => loadDefinitions()));
   $d('deployRollback').addEventListener('click', () => action(async () => {
-    const out = await postJ(base(status.id) + '/rollback', who());
+    const body = who();      // 담당자 · 사유가 없으면 묻기 전에 멈춘다
+    if (!await UI.confirm({ title: `이전 배포 판본(${status.rollback_version})으로 되돌릴까요?`, body: '다음 경보부터 그 판본으로 처리 건이 열립니다. 이미 열린 처리 건은 자기 판본으로 끝납니다.', ok: '되돌리기', danger: true })) return;
+    const out = await postJ(base(status.id) + '/rollback', body);
     await loadDefinitions(status.id);
     message(doneText(out, status.name, '되돌림'));
   }));

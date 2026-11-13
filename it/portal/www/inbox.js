@@ -23,7 +23,7 @@
 
   /* ------------------------------------------------ load */
   async function loadPeople() {
-    try { X.people = await getJ(url('/api/inbox/users')); X.err = ''; }
+    try { X.people = requireList(await getJ(url('/api/inbox/users')), '담당자 목록'); X.err = ''; }      // 목록이 아닌 응답을 그대로 두면 me() 가 다른 화면의 제출에서 터진다
     catch (e) {
       X.people = null;
       X.err = `담당자 정보를 읽지 못했습니다: ${e.message}`;
@@ -85,7 +85,7 @@
     const label = t.kind === 'question' ? `AI 질문 — ${UI.flowName(t.activity_name)}` : UI.flowName(t.activity_name);
     const whom = UI.chipText(roleName(t.user_id), 'neutral');
     const kind = t.kind === 'approve' || t.kind === 'select' ? ' ' + UI.chipText('승인 요청', 'accent') : '';
-    const due = t.due_date ? ` · 기한 ${UI.time(t.due_date)}` : '';
+    const due = t.due_date ? ` · 기한 ${UI.dateTime(t.due_date)}` : '';
     return `<a class="item" href="${esc(t.link)}" data-inbox-link="${esc(t.link)}"><div class="row"><strong>${esc(label)}</strong>${t.kind === 'question' ? UI.chip('HUMAN_ASKED') : whom + kind}</div>
       <span class="sub">${esc(t.proc_inst_name || UI.defName(t.proc_def_id))} · ${esc(ago(t.elapsed_s))}${esc(due)}</span></a>`;
   }
@@ -103,7 +103,8 @@
 
   function tasksHtml() {
     const b = X.box;
-    if (!b) return UI.empty('읽는 중…', '', 'compact');
+    // 첫 읽기가 실패했으면 「읽는 중…」으로 두지 않는다 — 사유와 [다시 시도]
+    if (!b) return X.err ? UI.errorBlock('내 작업함을 읽지 못했습니다', X.err.replace(/^내 작업함을 읽지 못했습니다: /, ''), { retry: true, cls: 'compact' }) : UI.empty('읽는 중…', '', 'compact');
     const shown = X.role ? b.tasks.filter(t => t.user_id === X.role) : b.tasks;
     const rows = [...(X.role ? [] : b.asked), ...shown];
     const list = rows.length ? `<div class="list">${rows.map(taskRow).join('')}</div>`
@@ -138,9 +139,9 @@
     if (!X.people) { root.innerHTML = UI.empty('읽는 중…', '', 'compact'); return; }
     const unread = (X.box && X.box.unread) || 0;
     const nTasks = X.box ? X.box.tasks.length + X.box.asked.length : null;
-    const live = { on: '새 알림 실시간 받는 중', connecting: '실시간 연결 중', off: '실시간 꺼짐 — 화면을 다시 열면 새로 읽습니다' }[X.live];
+    const live = { on: '새 알림 실시간 받는 중', connecting: '실시간 연결 중', off: '실시간 연결이 끊겼습니다. 15초 뒤 다시 연결합니다.' }[X.live];
     root.innerHTML = `<p class="inbox-owner">사람이 승인하거나 입력해야 하는 단계가 여기에 모입니다. 줄마다 그 일을 맡는 역할이 붙어 있습니다.</p>` +
-      (X.err ? `<p class="form-msg neg" role="status">${esc(X.err)}</p>` : '') +
+      (X.err && (X.box || X.tab !== 'tasks') ? `<p class="form-msg neg" role="alert">${esc(X.err)}${X.box ? ' 아래는 마지막으로 읽은 목록입니다.' : ''}</p>` : '') +
       UI.tabs([['tasks', '처리할 단계', nTasks], ['notes', '알림', unread]], X.tab, 'data-inbox-tab') +
       `<div class="inbox-body">${X.tab === 'tasks' ? tasksHtml() : notesHtml()}</div><p class="field-hint" aria-live="polite">${esc(live)}</p>`;
     root.querySelectorAll('[data-inbox-tab]').forEach(b => b.addEventListener('click', () => { X.tab = b.dataset.inboxTab; render(); }));
@@ -152,6 +153,7 @@
       if (link) go(link);
     }));
     root.querySelector('[data-inbox-readall]')?.addEventListener('click', () => markRead(null));
+    root.querySelector('.inbox-body [data-retry]')?.addEventListener('click', () => refresh());
   }
 
   const unread = () => (me() && X.box && X.box.unread) || 0;   // 상단 종(shell.js)이 읽는 안 읽은 알림 수(숫자)
@@ -174,7 +176,7 @@
     form.by = m.id;
     const known = Object.fromEntries(roles || []);
     const name = (known[form.role] && known[form.role].name) || roleName(form.role);
-    return UI.section(UI.t('form.section.who'),
+    return UI.section('승인 역할 · 사유',
       UI.readonly('승인 역할', esc(name), '이 단계를 맡는 역할입니다. 처리 기록에 이 역할로 남습니다') +
       UI.field({ label: UI.t('form.reason'), cls: 'wide', hint: reasonHint, input: `<textarea id="${prefix}Reason" rows="2">${esc(form.reason || '')}</textarea>` }));
   }

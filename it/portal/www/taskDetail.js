@@ -31,7 +31,7 @@
     'td.otherRound': '다음 회차 값', 'td.otherRoundSub': '이 단계는 다시 수행됐습니다. 아래는 이 회차가 받은 값이 아니라 처리 건의 지금 값입니다.',
     'td.loadFail': '단계 상세를 읽지 못했습니다', 'td.liveOn': '실시간', 
     // U1 추가: 판단 근거 · 사람 · 시스템 · 매뉴얼 · 지금
-    'td.note': '에이전트 판단', 'td.noteMore': '판단 전문', 'td.basis': '판단 근거', 
+    'td.note': 'AI 에이전트 판단', 'td.noteMore': '판단 전문', 'td.basis': '판단 근거', 
     'td.cause': '원인', 'td.prior': '사전확률', 'td.causeScore': '점수', 'td.conditions': '근거 조건', 'td.passedOf': '통과 근거',
     'td.causeFormula': '원인 점수 = 사전확률 × (통과한 근거 가중치 ÷ 전체 근거 가중치). 확인되지 않은 근거가 있으면 점수를 매기지 않습니다.',
     'td.rank': '순위', 'td.card': '카드', 'td.parts': '점수 구성', 'td.verdict': '판정', 'td.formula': '점수 식', 'td.rankRule': '순위 규칙', 'td.selectedBy': '선정 규칙',
@@ -39,7 +39,7 @@
     'td.timeout': '선택 기한이 지나 책임자 확인 단계로 넘어갔습니다', 'td.decFail': '조치 카드를 읽지 못했습니다',
     'td.cmdId': '명령 번호', 'td.ackWait': '설비 응답을 기다리는 중', 'td.ackDone': '설비가 실행함', 'td.ackRejected': '설비가 거부함', 'td.interlock': '안전 연동',
     'td.criterion': '회복 기준', 'td.remeasure': '재측정', 'td.remeasureIn': '재측정까지', 'td.remeasureDue': '재측정 시각 지남 · 판정 대기', 'td.extensions': '연장',
-    'td.cleared': '경보 해제', 'td.recoveryBasis': '회복 근거', 'td.incFail': '사건 상태를 읽지 못했습니다', 'td.scaleNote': '설비 시간 {sim} 창',
+    'td.cleared': '경보 해제', 'td.recoveryBasis': '회복 근거', 'td.incFail': '사건 상태를 읽지 못했습니다', 'td.scaleNote': '설비 시간으로 {sim} 동안 지켜봄',
     'td.pages': '쪽', 'td.chars': '자', 'td.sections': '절', 'td.procedures': '절차', 'td.warnings': '주의',
     'td.steps': '단계', 'td.pageReviews': '페이지 검토',
     'td.now': '현재 단계', 'td.ended': '처리 완료', 'td.nowTool': '도구 {tool} 호출 중', 'td.nowNote': '판단을 정리하는 중', 'td.nowBasis': '판단 근거를 기록함', 'td.nowStarted': '작업을 시작함',
@@ -78,11 +78,11 @@
     }
     if (Array.isArray(x) && x.length && x.every(y => y && typeof y === 'object' && typeof y.tool_name === 'string'))     // 도구 검색 결과: 찾은 도구 목록
       return `${x.length}건 · ` + x.map(y => UI.toolName(y.tool_name)).join(', ').slice(0, n);
-    if (Array.isArray(x)) return `${x.length}건` + (x.length && typeof x[0] !== 'object' ? ' · ' + x.slice(0, 5).map(y => UI.idText(String(y))).join(', ') : x.length ? ' · ' + Object.keys(x[0]).slice(0, 4).join(', ') : '');
+    if (Array.isArray(x)) return `${x.length}건` + (x.length && typeof x[0] !== 'object' ? ' · ' + x.slice(0, 5).map(y => UI.idText(String(y))).join(', ') : x.length ? ' · ' + Object.keys(x[0]).slice(0, 4).map(k => hydWords.fieldName(k)).join(', ') : '');
     if (typeof x === 'object') {
       if (typeof x.query === 'string') return brief(x.query, n);
       if (typeof x.sql === 'string') return brief(x.sql, n);
-      return Object.keys(x).slice(0, 4).map(k => `${k}: ${typeof x[k] === 'object' && x[k] !== null ? (Array.isArray(x[k]) ? x[k].length + '건' : '…') : UI.idText(String(x[k])).slice(0, 40)}`).join(' · ').slice(0, n);
+      return Object.keys(x).slice(0, 4).map(k => `${hydWords.fieldName(k)}: ${typeof x[k] === 'object' && x[k] !== null ? (Array.isArray(x[k]) ? x[k].length + '건' : '…') : UI.idText(String(x[k])).slice(0, 40)}`).join(' · ').slice(0, n);
     }
     return String(x).slice(0, n);
   }
@@ -105,7 +105,7 @@
     if (typeof value === 'boolean') return esc(value ? UI.t('yes') : UI.t('no'));
     if (typeof value === 'number') return esc(hydWords.num(value));
     if (key === 'chosen_skill_kind' && (value === 'control' || value === 'work_order')) return esc(value === 'control' ? UI.t('chip.control') : UI.t('chip.workOrder'));
-    if (typeof value==='string' && ['incident','alert_id','alertId'].includes(key)) return esc(`${key==='incident' ? '사건' : '경보'} 식별값 있음 · 원문 확인`)+rawFold(value,'raw:'+key);
+    if (typeof value==='string' && ['incident','alert_id','alertId'].includes(key)) return esc(hydWords.startValue(key,value))+rawFold(value,'raw:'+key);   // 문장은 plainWords 한 곳
     if (typeof value==='string' && key==='pattern') {
       const label=window.hydWords ? hydWords.startValue(key,value) : UI.patternName(value);
       return esc(label)+rawFold(value,'raw:'+key);
@@ -116,12 +116,12 @@
       if (!value.length) return `<span class="muted">${esc(UI.t('empty.noData'))}</span>`;
       if (value.every(x => typeof x !== 'object' || x === null)) return `<span class="row-wrap">${value.slice(0, 12).map(x => `<span class="chip tone-neutral sm">${esc(UI.name(String(x)) || UI.idText(String(x)))}</span>`).join('')}${value.length > 12 ? `<span class="muted">+${value.length - 12}</span>` : ''}</span>`;
       const cols = [...new Set(value.slice(0, 20).flatMap(x => Object.keys(x || {})))].slice(0, 6);
-      const headers=cols.map(c=>c==='package' && value.every(x=>x?.package_semantics==='base_interval_configuration') ? '등록된 기본 정비 내용' : ['package_semantics','configured_base_package'].includes(c) ? UI.terms['var.'+c] : c);
+      const headers=cols.map(c=>c==='package' && value.every(x=>x?.package_semantics==='base_interval_configuration') ? '등록된 기본 정비 내용' : ['package_semantics','configured_base_package'].includes(c) ? UI.terms['var.'+c] : hydWords.fieldName(c));
       return `${table(headers, value.slice(0, 20).map(x => `<tr>${cols.map(c => `<td>${esc(c==='package_semantics' && UI.terms['val.'+x[c]] ? UI.terms['val.'+x[c]] : brief(x[c], 60))}</td>`).join('')}</tr>`))}${value.length > 20 ? `<p class="muted">… ${value.length - 20}건 더</p>` : ''}${rawFold(value, 'raw:' + key)}`;
     }
     const entries = Object.entries(value);
     if (!entries.length) return `<span class="muted">${esc(UI.t('empty.noData'))}</span>`;
-    const dl = `<dl class="meta-list td-kv">${entries.slice(0, 16).map(([k, x]) => `<div><dt title="${esc(k)}">${esc(k==='package' && value.package_semantics==='base_interval_configuration' ? '등록된 기본 정비 내용' : UI.terms['var.' + k] || k)}</dt><dd>${x !== null && typeof x === 'object' ? (depth < 1 ? valueHtml(k, x, v, depth + 1) : esc(brief(x, 100))) : esc(k==='package_semantics' && UI.terms['val.'+x] ? UI.terms['val.'+x] : brief(x, 120) || UI.t('inst.noValue'))}</dd></div>`).join('')}</dl>`;
+    const dl = `<dl class="meta-list td-kv">${entries.slice(0, 16).map(([k, x]) => `<div><dt title="${esc(k)}">${esc(k==='package' && value.package_semantics==='base_interval_configuration' ? '등록된 기본 정비 내용' : UI.terms['var.' + k] || hydWords.fieldName(k))}</dt><dd>${x !== null && typeof x === 'object' ? (depth < 1 ? valueHtml(k, x, v, depth + 1) : esc(brief(x, 100))) : esc(k==='package_semantics' && UI.terms['val.'+x] ? UI.terms['val.'+x] : brief(x, 120) || UI.t('inst.noValue'))}</dd></div>`).join('')}</dl>`;
     return dl + (depth === 0 ? rawFold(value, 'raw:' + key) : '');
   }
   const optionName = o => (o && UI.idText(o.name || (window.hydWords ? hydWords.idName(o.id) : UI.name(o.id)) || '대안 표시 이름 기록 없음')) || '';
@@ -156,7 +156,7 @@
       if (!opts.length && !d.recommended && !(d.order || []).length) return '';
       const list = opts.length ? `<ol class="td-list">${opts.map(o => `<li>${esc(optionName(o))} ${o.id === d.recommended ? UI.chipText(UI.t('chip.recommended'), 'accent') : ''}${o.id === d.chosen ? UI.chipText(UI.t('chip.chosen'), 'success') : ''}${o.feasible === false ? UI.chipText(UI.t('chip.excluded'), 'danger') : ''}${window.hydWords?.purchaseEconomics(o) ? `<span class="muted"> · ${esc(hydWords.purchaseCostLabel(o))}</span>` : o.score != null ? `<span class="muted"> · ${esc(UI.t('card.score'))} ${esc(num(o.score))}</span>` : ''}</li>`).join('')}</ol>`
         : (d.order || []).length ? `<ol class="td-list">${d.order.map(o=>orderItem({...o,name:o.name || boundDecision(v)?.options?.find(x=>x.id===o.id)?.name})).join('')}</ol>` : '';
-      return `<p class="field-hint">이 단계가 기록한 당시 추천 · 현재 승인 선택과 별도</p>${d.explanation ? `<p class="kv-line">${esc(UI.idText(d.explanation))}</p>` : ''}${list}`;
+      return `<p class="field-hint">이 단계가 그때 낸 추천입니다. 나중에 승인에서 고른 안과는 다를 수 있습니다.</p>${d.explanation ? `<p class="kv-line">${esc(UI.idText(d.explanation))}</p>` : ''}${list}`;
     },
     guide_card(g) {
       const causes = g.causes || [];
@@ -184,7 +184,7 @@
     },
     // C1: 추출이 가리킬 수 있는 기존 온톨로지 id 목록 — 전부 쏟지 않고 종류별 개수만
     ontology_catalog(c) {
-      const kinds = { components: '구성 요소', symptoms: '증상', parts: '부품', actions: '원자 조치', roles: '역할', decision_tables: '결정표', failure_modes: '고장 유형', skills: '스킬' };
+      const kinds = { components: '구성 요소', symptoms: '증상', parts: '부품', actions: '세부 동작', roles: '역할', decision_tables: '결정표', failure_modes: '고장 유형', skills: '조치 방법' };
       const rows = Object.entries(kinds).filter(([k]) => Array.isArray(c[k]));
       return rows.length ? `<span class="row-wrap">${rows.map(([k, n]) => `<span class="chip tone-neutral sm">${esc(n)} ${esc(c[k].length)}</span>`).join('')}</span>` : '';
     },
@@ -474,7 +474,7 @@
     const toolCount = evs.filter(e => e.event_type === 'tool_usage_started').length;
     host.innerHTML = `<section class="card task-detail ${esc(k)}${live ? ' live' : ''}" data-task-detail>
       <header class="card-head"><div class="card-title"><h3>${esc(UI.flowName(w.activity_name))}</h3><span class="card-chips">${UI.chip(w.status)}${w.draft_status && w.status !== 'DONE' ? UI.chip(w.draft_status) : ''}${UI.chipText(k === 'agent' ? UI.t('agent') : k === 'human' ? UI.who(w.user_id) : UI.t('system'), k === 'agent' ? 'accent' : 'neutral')}${live ? `<span class="chip tone-success sm"><i class="live-dot on"></i> ${esc(UI.t('td.liveOn'))}</span>` : ''}</span></div><div class="card-actions"><button type="button" class="btn small" data-td-close>${esc(UI.t('td.close'))}</button></div></header>
-      <p class="card-sub">${esc(UI.dateTime(w.start_date))}${w.end_date ? ' → ' + esc(UI.time(w.end_date)) : ''}${dur ? ' · ' + esc(dur) : ''}${w.generation ? ` · ${esc(w.generation)}${esc(UI.t('inst.gen'))}` : ''}${w.due_date && !w.end_date ? ` · ${esc(UI.t('inst.due'))} ${esc(UI.time(w.due_date))}` : ''}</p>
+      <p class="card-sub">${esc(UI.dateTime(w.start_date))}${w.end_date ? ' → ' + esc(UI.time(w.end_date)) : ''}${dur ? ' · ' + esc(dur) : ''}${w.generation ? ` · ${esc(w.generation)}${esc(UI.t('inst.gen'))}` : ''}${w.due_date && !w.end_date ? ` · ${esc(UI.t('inst.due'))} ${esc(UI.dateTime(w.due_date))}` : ''}</p>
       ${T.error ? `<p class="neg">${esc(UI.t('td.loadFail'))}: ${esc(T.error)}</p>` : ''}
       <div class="td-sections">
         ${section('inputs', UI.t('td.inputs'), inputsHtml(w, item, v), inputCount, first ? inputCount > 0 : wasOpen.has('inputs'))}
@@ -671,8 +671,18 @@
       const node = e.target.closest('.f-node[data-node]');
       if (node) openActivity(node.dataset.node);
     });
+    // 흐름도의 단계 상자를 키보드로도 연다: 처리 건 화면의 상자에만 초점과 단추 역할을 붙이고(다른 화면의 흐름도는 누르는 것이 아니다) Enter · Space 로 연다
+    const reachable = () => document.querySelectorAll('#instDetail .f-node[data-node]:not([tabindex])').forEach(g => {
+      const name = g.querySelector('title')?.textContent || [...g.querySelectorAll('text.f-t')].map(t => t.textContent).join(' ');
+      g.setAttribute('tabindex', '0'); g.setAttribute('role', 'button'); g.setAttribute('aria-label', `${name} 단계 상세 열기`);
+    });
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      const node = e.target.closest && e.target.closest('#instDetail .f-node[data-node]');
+      if (node) { e.preventDefault(); openActivity(node.dataset.node); }
+    });
     // the instance detail is redrawn by instances.js every few seconds: re-apply the highlight after each redraw
-    const observe = () => { const box = document.getElementById('instDetail'); if (!box) return; new MutationObserver(() => { if (T.wid || T.act) requestAnimationFrame(highlight); }).observe(box, { childList: true, subtree: true }); };
+    const observe = () => { const box = document.getElementById('instDetail'); if (!box) return; reachable(); new MutationObserver(() => { reachable(); if (T.wid || T.act) requestAnimationFrame(highlight); }).observe(box, { childList: true, subtree: true }); };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', observe); else observe();
   }
 

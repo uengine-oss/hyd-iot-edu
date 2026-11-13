@@ -14,7 +14,7 @@ def build(row: dict[str, Any], extras: dict[str, Any], *, workdir: str) -> str:
     """The prompt for one work item: 업무 · 지시사항(입력 [InputData] 포함) · 참여자 · 앞서 낸 결과 · 피드백 · 작업 공간 · 결과 제출 형식."""
     sections: list[str] = ["당신은 ProcessGPT 업무 프로세스의 담당 에이전트입니다. 아래 업무를 끝까지 수행하고, 마지막에 결과를 제시하세요. "
                            "진행 중에 남기는 설명과 마지막 메시지는 한국어로 쓰세요 — 포털 처리 과정에 그대로 보입니다. "
-                           "설명 문장에는 노드 id(예: skill:sop-cool-11) 대신 이름(예: 팬 최대 운전)을 쓰세요. 결과 필드의 id 값은 형식대로 둡니다."]
+                           "설명 문장에는 노드 id(skill:… · cause:… 꼴) 대신 그 항목의 이름을 쓰세요. 결과 필드의 id 값은 형식대로 둡니다."]
     activity = (row.get("activity_name") or "").strip()
     query = (row.get("query") or "").strip()
     if activity:
