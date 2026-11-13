@@ -93,7 +93,7 @@ document.querySelectorAll('pre').forEach((pre)=>{
 });
 """
     extra = '.pending{border:2px dashed #a36b16;padding:18px;background:#fff8e9}pre{white-space:pre-wrap;overflow-wrap:anywhere;padding:18px;border-radius:8px}.terminal-input{background:#edf3ee;border-left:4px solid #216953}.ai-input{background:#eef0ff;border-left:4px solid #5a4eb2}.copy-label{display:flex;flex-wrap:wrap;gap:12px;align-items:center;font-size:14px}.copy-label button{padding:6px 14px}table{display:block;overflow-x:auto}header table{background:white}nav{max-height:90vh;overflow:auto}'
-    page = f'''<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>실습 환경을 시작하고 HYD 포털 둘러보기</title><style>{css}{extra}</style></head><body><div class="shell"><header><div class="eyebrow">1회차 · 통합반 / 실전반 공통</div><h1>실습 환경을 시작하고<br>HYD 포털 둘러보기</h1>{md.render(intro)}</header><div class="layout"><nav aria-label="실습 단계"><span>진행 순서</span>{''.join(links)}</nav><main>{''.join(sections)}<a class="top" href="#">맨 위로</a></main></div></div><script>{scripts}</script></body></html>'''
+    page = f'''<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>실습 환경을 설치하고 시작하기</title><style>{css}{extra}</style></head><body><div class="shell"><header><div class="eyebrow">1회차 · 통합반 / 실전반 공통</div><h1>실습 환경을 시작하고<br>HYD 포털 둘러보기</h1>{md.render(intro)}</header><div class="layout"><nav aria-label="실습 단계"><span>진행 순서</span>{''.join(links)}</nav><main>{''.join(sections)}<a class="top" href="#">맨 위로</a></main></div></div><script>{scripts}</script></body></html>'''
     return page, assets, unresolved
 
 

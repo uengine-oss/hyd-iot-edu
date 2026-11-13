@@ -1,1 +1,1 @@
-{"id": "C024", "text": "확인은 PowerShell에서 할 거예요. 아까 말씀드린, 글자로 명령을 쳐서 컴퓨터에 일을 시키는 창을 터미널이라고 하는데요, PowerShell은 Windows에 처음부터 들어 있는 터미널이에요. 그래서 Windows 검색에서 바로 찾아 열 수 있어요.", "duration_ms": 15520, "credits": 69}
+{"id": "C024", "text": "설치가 끝나면 버전을 PowerShell에서 확인할게요. 글자로 명령을 치는 창을 터미널이라고 하는데, PowerShell은 Windows에 처음부터 들어 있는 터미널이에요.", "duration_ms": 10400, "credits": 47}

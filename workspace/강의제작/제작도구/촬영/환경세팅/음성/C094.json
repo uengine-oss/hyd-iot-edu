@@ -1,1 +1,1 @@
-{"id": "C094", "text": "단계가 이렇게 차례로 이어져요. 마지막 줄에 포털 주소가 나올 때까지 이 창은 닫지 말고 그대로 두세요. 다음에 켤 때는 Docker Desktop을 먼저 열고, 받은 폴더에서 bash scripts/start_all.sh만 다시 치시면 됩니다.", "duration_ms": 18720, "credits": 66}
+{"id": "C094", "text": "마지막 줄에 주소가 나올 때까지 이 창은 닫지 말고 두세요. 다음에 켤 때도 Docker Desktop을 먼저 열고, 받은 폴더에서 bash scripts/start_all.sh만 다시 치시면 됩니다.", "duration_ms": 15360, "credits": 54}

@@ -1,1 +1,1 @@
-{"id": "O093", "text": "그 전에 Docker가 켜져 있는지부터 볼게요.", "duration_ms": 2880, "credits": 13}
+{"id": "O093", "text": "그런데 그 전에 Docker부터 켜야 해요. 우리 수업 시스템의 프로그램들은 Docker 이미지로 준비돼 있어서, Docker가 켜져 있어야 그 이미지로 컨테이너를 띄울 수 있거든요. 바탕 화면에 생긴 Docker Desktop 아이콘을 두 번 눌러 열게요.", "duration_ms": 15520, "credits": 70}

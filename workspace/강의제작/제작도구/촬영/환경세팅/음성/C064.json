@@ -1,1 +1,1 @@
-{"id": "C064", "text": "WSL은 PowerShell에서 준비합니다.", "duration_ms": 2720, "credits": 12}
+{"id": "C064", "text": "표의 설치 링크를 누르면 이 Microsoft 안내 페이지가 열려요. 여기 적힌 명령은 필요 없는 것까지 같이 설치해서 쓰지 않을 거예요. WSL은 PowerShell을 관리자 권한으로 열어서 설치해요. 시작 메뉴에서 PowerShell을 찾아 마우스 오른쪽 버튼을 누르고, 관리자 권한으로 실행을 고르시면 돼요. 허락을 묻는 창이 뜨면 예를 눌러 주세요.", "duration_ms": 23920, "credits": 96}
