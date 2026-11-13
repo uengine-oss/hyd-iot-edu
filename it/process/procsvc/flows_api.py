@@ -22,6 +22,8 @@ import json
 from pathlib import Path
 
 from fastapi import HTTPException
+
+from .inbox import NOT_A_PERSON
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
@@ -67,7 +69,7 @@ def _who(rt, by) -> str:
     (사람 확인은 inbox.require_person 한 곳)."""
     who = by.strip() if isinstance(by, str) else ""
     if not who:
-        raise HTTPException(400, {"reason": "누가 했는지 모릅니다 — 포털 위쪽에서 '나'(사람 사용자)를 고른 뒤 다시 누르세요"})
+        raise HTTPException(400, {"reason": NOT_A_PERSON})
     from .inbox import require_person
     try:
         require_person(rt.repo, rt.tenant_id, who)

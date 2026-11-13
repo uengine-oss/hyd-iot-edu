@@ -186,8 +186,8 @@
       const ev = alert.evidence || {};
       const biz = !!alert.source && alert.source !== 'detector' && /erp|cmms|mes|scm/i.test(alert.source);
       const pressed = biz && !!ev.trigger;                           // 업무 감시가 아니라 수업 버튼이 연 처리 건(근거 값은 감시와 같은 칸)
-      // 누른 사람: 포털에서 고른 「나」(requested_user)가 있을 때만 이름 — 없으면 서버가 남긴 자리표(나 미선택)를 이름처럼 쓰지 않는다
-      const presser = ev.requested_user ? ev.requested_by : '나를 고르지 않은 사람';
+      // 누른 사람: 담당자(requested_user)가 있을 때만 이름. 옛 판이 자리표로 남긴 기록은 「담당자 기록 없음」으로 보인다
+      const presser = ev.requested_user ? ev.requested_by : '담당자 기록 없음';
       const who = pressed ? presser : (alert.observedBy && alert.observedBy.name) || (biz ? `${String(alert.source).toUpperCase()} 감시` : W().system('detector'));
       const defn = ev.definition || {};
       // 버튼 기록 줄의 시각은 누른 때(data.at)다 — 기록 줄의 timestamp 는 처리 건에 붙인 때라 센서 경보로 열린 A 에서는 경보 뒤 시각이 된다

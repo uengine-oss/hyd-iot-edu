@@ -89,7 +89,7 @@
     (o.selectedBy || []).forEach(r => (r.sources || []).forEach(src => { if (!refs.has(src)) refs.set(src, ''); }));
     const refHtml = [...refs].slice(0, 4).map(([ref, title]) => `<span class="chip tone-neutral sm" title="${e(title)}">${e(ref)}${title ? ' ' + e(title) : ''}</span>`).join(' ');
     if (!pathHtml && !refHtml) return '';
-    return `<div class="ap-evidence">${pathHtml ? `<div class="ap-row"><span class="ap-label">지식 그래프 근거</span><span class="ap-path">${pathHtml}</span></div>` : ''}
+    return `<div class="ap-evidence">${pathHtml ? `<div class="ap-row"><span class="ap-label">지식 지도 근거</span><span class="ap-path">${pathHtml}</span></div>` : ''}
       ${refHtml ? `<div class="ap-row"><span class="ap-label">출처</span><span class="row-wrap">${refHtml}</span></div>` : ''}</div>`;
   }
 

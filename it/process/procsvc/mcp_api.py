@@ -137,6 +137,8 @@ def register(app, *, runtime_factory, audit):
     async def call_tool(name: str, tool: str, body: dict | None = None):
         rt = runtime()
         body = body or {}
+        from .inbox import actor_or_400
+        by = actor_or_400(body.get("by"))      # 도구를 부르기 전에 확인한다(부른 뒤 거절하지 않는다)
         arguments = body.get("arguments", {})
         if not isinstance(arguments, dict):
             raise HTTPException(400, "arguments: 이름→값 객체여야 합니다")
@@ -148,7 +150,7 @@ def register(app, *, runtime_factory, audit):
             return mcp_secrets.redact(in_slot(limit, lambda: mcp_check.call(spec, tool, arguments, limit, max_chars=CALL_RESULT_CHARS,
                                                                             confirmed=confirmed)), used)
         result = await run(work)
-        audit("-", str(body.get("by") or "포털"), "MCP_TOOL_TRIED",
+        audit("-", by, "MCP_TOOL_TRIED",
               {"server": name, "tool": tool, "status": result["status"], "error": result.get("error"),
                "arguments": mcp_calls.brief(mcp_check.mask_value(arguments), 300)})
         if result["status"] == "refused":

@@ -291,7 +291,8 @@ def mount(app, *, runtime_factory, audit):
     async def put_secret(key: str, body: dict | None = None):
         rt = runtime()
         body = body or {}
-        by = str(body.get("by") or "포털")[:60]
+        from .inbox import actor_or_400
+        by = actor_or_400(body.get("by"))[:60]
 
         def work():
             out = put(rt.repo, rt.tenant_id, key, body.get("value"), by, mcp_check._now_z())
@@ -300,7 +301,9 @@ def mount(app, *, runtime_factory, audit):
         return await run(work)
 
     @app.delete("/api/mcp/secrets/{key}")
-    async def delete_secret(key: str, by: str = "포털"):
+    async def delete_secret(key: str, by: str = ""):
+        from .inbox import actor_or_400
+        by = actor_or_400(by)[:60]
         rt = runtime()
 
         def work():

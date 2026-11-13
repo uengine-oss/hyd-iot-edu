@@ -116,11 +116,7 @@
     const box = document.getElementById('pageGroup');
     if (box) { box.textContent = group ? group.textContent : ''; box.hidden = !group; }
   }
-  function renderMe() {
-    const box = document.getElementById('shellMe');
-    if (!box) return;
-    box.innerHTML = ''; window.hydInbox.mountMe(box);   // inbox.js 가 먼저 실린다(index.html)
-  }
+
   async function refreshBadge() {
     const badge = document.getElementById('shellBadge'), bell = document.getElementById('shellBell');
     if (!badge || !bell) return;
@@ -149,7 +145,6 @@
       bell.insertAdjacentHTML('afterbegin', UI.icon('bell'));
       bell.addEventListener('click', () => { selectTab('inbox'); document.getElementById('content')?.focus({ preventScroll: true }); });
     }
-    renderMe();
     refreshBadge();
     setInterval(refreshBadge, 5000);
     window.addEventListener('hyd:badge', refreshBadge);              // 작업함이 읽음 처리 뒤 바로 갱신하려면 이 이벤트를 쏜다
@@ -168,7 +163,7 @@
     // 링크로 이동: 같은 주소를 다시 눌러도(해시 변화 없음) 그 화면을 다시 연다
     navigate(target) { const h = typeof target === 'string' ? target : format(target); if (location.hash === h) apply(parse(h)); else location.hash = h; },
     route: currentRoute,
-    refreshBadge, renderMe, show,
+    refreshBadge, show,
     mounted,
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);

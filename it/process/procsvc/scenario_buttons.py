@@ -189,10 +189,11 @@ def status(read: Callable[[str, dict], dict], rt=None, last_press: Callable[[str
 
 
 def who(body: dict | None) -> dict:
-    """포털이 보낸 누름 주체(지금 고른 '나' — 로그인 없음). 없으면 '나 미선택'이라고 남긴다(지어내지 않는다)."""
+    """포털이 보낸 누름 주체(이 PC의 담당자 — 로그인 없음). 비어 있으면 자리표를 남기지 않고 400 으로 거절한다(inbox.actor_or_400)."""
+    from .inbox import actor_or_400
     body = body or {}
     roles = body.get("roles") if isinstance(body.get("roles"), list) else ([body["role"]] if body.get("role") else [])
-    return {"by": str(body.get("by") or "나 미선택")[:80], "user_id": str(body.get("user_id") or "")[:80] or None,
+    return {"by": actor_or_400(body.get("by"))[:80], "user_id": str(body.get("user_id") or "")[:80] or None,
             "roles": [str(r)[:60] for r in roles][:5]}
 
 

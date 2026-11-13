@@ -329,10 +329,10 @@ document.addEventListener('click', e => {
   const a = e.target.closest('[data-open-inst]'); if (!a) return;
   e.preventDefault(); selectTab('instances'); if (window.hydInstancesSelect) window.hydInstancesSelect(a.dataset.openInst);
 });
-// 누가 눌렀나: 포털에서 고른 '나'(로그인 없음 — inbox.js). 처리 건 기록(SCENARIO_BUTTON)과 시작 경보 근거에 남는다
+// 누가 눌렀나: 이 PC의 담당자(로그인 없음 — inbox.js me). 처리 건 기록(SCENARIO_BUTTON)과 시작 경보 근거에 남는다
 function pressedBy() {
   const me = window.hydInbox && window.hydInbox.me && window.hydInbox.me();
-  return { by: me ? me.name : null, user_id: me ? me.id : null, roles: me ? me.roles : [] };   // 「나」가 없으면 이름을 지어 보내지 않는다(서버가 미선택으로 남긴다)
+  return { by: me ? me.name : null, user_id: me ? me.id : null, roles: me ? me.roles : [] };   // 담당자를 못 읽었으면 이름을 지어 보내지 않는다(서버가 400 으로 거절한다)
 }
 async function refreshBiz() {
   try { state.biz = await getJ(API.process + '/api/scenario/status'); } catch (e) { state.biz = { failed: e.message }; }
@@ -342,7 +342,7 @@ async function unitAction(asset, act, mode, button) {
   if (button) button.disabled = true;
   scenarioMessage(`${asset} 처리 중…`);
   try {
-    if (act === 'degrade') { const r = await postJ(API.process + '/api/scenario/A/degrade', pressedBy()); logLine(`${asset} 쿨러 열화 시작 · ${pressedBy().by || '나 미선택'} · ${UI.time(r.at)}${anchorNote(r)}`); await refreshBiz(); }
+    if (act === 'degrade') { const r = await postJ(API.process + '/api/scenario/A/degrade', pressedBy()); logLine(`${asset} 쿨러 열화 시작 · ${pressedBy().by} · ${UI.time(r.at)}${anchorNote(r)}`); await refreshBiz(); }
     else if (act === 'restore') { const r = await postJ(API.process + '/api/scenario/A/restore', pressedBy()); logLine(`${asset} 쿨러 복구${r.instance ? ' · 열화로 열린 처리 건에 기록' : ' · 연결된 처리 건 없음(감사 기록에 남김)'}`); await refreshBiz(); }
     else if (act === 'biz-start') {
       const exp = EXPERIMENT[asset];

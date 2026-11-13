@@ -320,7 +320,7 @@ def _reset_text(step: str, r: dict) -> str:
     return r.get("note") or ""
 
 
-def reset_all(rt, *, by: str = "포털", audit=None) -> dict:
+def reset_all(rt, *, by: str, audit=None) -> dict:
     """하나의 '기준으로 되돌리기'. 먼저 409 조건을 모두 점검하고, 하나라도 있으면 아무것도 지우지 않는다."""
     if not _LOCK.acquire(blocking=False):
         raise BundleError(409, "다른 되돌리기 · 불러오기가 진행 중입니다 — 끝난 뒤 다시 누르세요")
@@ -826,7 +826,8 @@ def _verify(rt, base_loader, bundle_content: dict, plan: dict) -> list[str]:
 def import_bundle(rt, base_loader, body: dict, *, audit=None) -> dict:
     body = body if isinstance(body, dict) else {}
     bundle = body if "format" in body else body.get("bundle")
-    by = str(body.get("by") or "포털")[:60]
+    from .inbox import actor_or_400
+    by = actor_or_400(body.get("by"))[:60]
     if not _LOCK.acquire(blocking=False):
         raise BundleError(409, "다른 되돌리기 · 불러오기가 진행 중입니다 — 끝난 뒤 다시 누르세요")
     try:
@@ -933,5 +934,6 @@ def register(app, *, runtime_factory, audit=lambda *a, **k: None, base_loader=No
     @app.post("/api/config/reset")
     async def config_reset(body: dict | None = None):
         rt = runtime()
-        by = str((body or {}).get("by") or "포털")[:60]
+        from .inbox import actor_or_400
+        by = actor_or_400((body or {}).get("by"))[:60]
         return await run(lambda: reset_all(rt, by=by, audit=audit))

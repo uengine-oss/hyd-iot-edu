@@ -199,7 +199,9 @@ def start(rt, question, agent_id=None, by=None, request_id=None, *, definitions_
         if previous_binding != binding:
             raise ValueError('이 요청 ID는 다른 에이전트 조건에 사용됐거나 기존 조건을 확인할 수 없습니다. 기존 질문을 확인하거나 새 질문을 보내세요')
         return view(rt,previous['proc_inst_id'])
-    inst = rt.start_definition(DEFINITION_ID, version, event_id, values={'question': q, 'asked_by': str(by or '수강생').strip()[:120]},
+    from .inbox import actor_or_400
+    asked_by = actor_or_400(by)[:120]
+    inst = rt.start_definition(DEFINITION_ID, version, event_id, values={'question': q, 'asked_by': asked_by},
                                name='질문 · ' + (q if len(q) <= 40 else q[:40] + '…'), role_endpoints={ROLE: agent['id']},
                                _coalesce_key=binding)
     inst = inst or rt.repo.find_event_instance(rt.tenant_id, DEFINITION_ID, event_id)

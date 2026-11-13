@@ -210,7 +210,7 @@
         UI.field({ label: UI.t('skill.name'), required: true, input: `<input id="skName" value="${esc(k.name)}" maxlength="80">` }) +
         UI.field({ label: UI.t('skill.approver'), input: sel('skRole', c.roles || [], (k.approver || {}).id || 'role:maint-mgr') }) +
         UI.field({ label: UI.t('skill.desc'), cls: 'wide', input: `<textarea id="skDesc" rows="2">${esc(k.description || '')}</textarea>` })) + newForm +
-      UI.section(UI.t('form.section.who'), UI.field({ label: UI.t('form.by'), input: `<input id="skBy" readonly value="${esc(window.hydInbox?.me?.()?.name || '')}" placeholder="화면 오른쪽 위에서 사용자를 선택하세요">` })) +
+      
       UI.actions(`<button class="btn outline" id="skReload">${esc(UI.t('btn.cancel'))}</button><button class="btn primary" id="skSave">${esc(H.skillNew ? UI.t('skill.add') : UI.t('btn.save'))}</button>`) +
       `<span id="skMsg" class="muted" role="status"></span></div>
       ${k.source_document ? `<p class="kv-line">${esc(UI.t('skill.fromDoc'))} <button class="btn small" id="skSource">${esc(UI.t('skill.openDoc'))}</button></p>` : ''}${linked}`;
@@ -258,7 +258,7 @@
     });
     $('#skSave').addEventListener('click', async (ev) => {
       const b = ev.currentTarget;
-      const body = draft.pending || { name: $('#skName').value.trim(), description: $('#skDesc').value, approver: $('#skRole').value, by: $('#skBy').value.trim(), revision: draft.revision, request_id: UI.uuid() };
+      const body = draft.pending || { name: $('#skName').value.trim(), description: $('#skDesc').value, approver: $('#skRole').value, by: manualActor(), revision: draft.revision, request_id: UI.uuid() };
       if (!draft.pending && key === '__new__') Object.assign(body, { sopId: $('#skSop').value.trim(), failureMode: $('#skFm').value, relation: $('#skRel').value, kind: $('#skKind').value, steps: $('#skSteps').value });
       if (!body.name) { $('#skMsg').textContent = UI.t('skill.nameRequired'); $('#skName').focus(); return; }
       remember(); draft.pending = body; saveSkillDraft(key, draft); lockFields();
@@ -339,7 +339,6 @@
     const dis = g.busy ? 'disabled' : '';
     return `<div class="form golden-form" data-golden-form="${esc(batch)}"><div class="form-grid">
       ${UI.field({ label: UI.t('golden.questions'), required: true, hint: UI.t('golden.questionsHint'), cls: 'wide', input: `<textarea rows="4" data-golden-q aria-label="${esc(UI.t('golden.questions'))}" ${dis}>${esc(g.draft || '')}</textarea>` })}
-      ${UI.field({ label: UI.t('form.by'), input: `<input data-golden-by value="${esc(g.by != null ? g.by : $('#manualBy').value)}" ${dis}>` })}
     </div>${UI.actions(`<button type="button" class="btn primary" data-golden-ask ${dis}${hydCourseAccess.attrs('documents.golden')}>${esc(g.busy ? UI.t('golden.asking') : UI.t('golden.ask'))}</button>`, g.msg || '')}</div>`;
   }
   // A141 다이어트: 질문 카드 = 질문 · 판정 칩 · 답 한 단락. 집계 칩 묶음 · 요약 문단 · 확신도 · 근거 · 질의는 접기 안.
@@ -380,7 +379,7 @@
   function wireGolden(root) {
     root.querySelectorAll('[data-golden-ask]').forEach(b => b.addEventListener('click', async () => {
       const form = b.closest('[data-golden-form]'); const batch = form.dataset.goldenForm; const g = H.golden[batch] = H.golden[batch] || {};
-      g.draft = form.querySelector('[data-golden-q]').value; g.by = form.querySelector('[data-golden-by]').value.trim();
+      g.draft = form.querySelector('[data-golden-q]').value; g.by = manualActor();      // 누가 = 이 PC의 담당자(자유 글 칸 없음)
       const questions = [...new Set(g.draft.split('\n').map(s => s.trim()).filter(Boolean))];
       if (!questions.length) { g.msg = UI.t('golden.err.empty'); renderGolden(batch); return; }
       if (questions.length > 20) { g.msg = UI.t('golden.err.many'); renderGolden(batch); return; }
@@ -428,7 +427,7 @@
       history.querySelectorAll('[data-manual-undo]').forEach(b => b.addEventListener('click', async () => {
         b.disabled = true;
         try {
-          await postJ(API.process + '/api/kg/manuals/batches/' + encodeURIComponent(b.dataset.manualUndo) + '/rollback', { by: $('#manualBy').value });
+          await postJ(API.process + '/api/kg/manuals/batches/' + encodeURIComponent(b.dataset.manualUndo) + '/rollback', { by: manualActor() });
           H.preview = null; renderPreview(); H.skills = [];
           await loadUploads(); if (window.hydEnt) hydEnt.loadGraph(true);
         } catch (e) { $('#manualHistoryMsg').textContent = '되돌리기 실패: ' + e.message; b.disabled = false; }
@@ -667,7 +666,7 @@
     const parseAffects = text => (text || '').split(',').map(s => s.trim()).filter(Boolean).map(s => { const m = s.match(/^(.*?):([+-])$/); return m ? { target: m[1].trim(), sign: m[2] } : { target: s, sign: '?' }; });
     const c = $('#manualCommit'); if (c) c.addEventListener('click', async () => {
       $('#manualMsg').className = 'form-msg neg';      // 아래 검사에서 멈춘 까닭은 오류로 보인다(진행 · 완료는 그 자리에서 색을 바꾼다)
-      const by = manualActor(); if (!by) { $('#manualMsg').textContent = '화면 오른쪽 위에서 사용자를 선택하세요 — 적재 이력에 담당자로 남습니다.'; return; }
+      const by = manualActor(); if (!by) { $('#manualMsg').textContent = '담당자 정보를 읽지 못했습니다. 화면을 새로 고친 뒤 다시 해 주세요.'; return; }
       if (!$('#manualReviewed').checked) { $('#manualMsg').textContent = '원문을 대조하고 검토 완료를 표시하세요.'; return; }
       const links = {};
       for (const s of box.querySelectorAll('[data-fm]')) {
@@ -794,12 +793,8 @@
       select.addEventListener('change',update); usage.addEventListener('change',update); update();
     });
   }
-  // 담당자 = 선택한 사용자(이름으로 적재 이력에 남는다). 자유 입력 칸은 두지 않는다
+  // 담당자 = 이 PC의 담당자(inbox.js me — 이름으로 적재 이력에 남는다). 화면에 담당자 칸은 없다
   const manualActor = () => window.hydInbox?.me?.()?.name || '';
-  function showManualActor() {
-    ['manualBy', 'ddlBy', 'skBy'].forEach(id => { const el = document.getElementById(id); if (el) { el.readOnly = true; el.value = manualActor(); el.placeholder = '화면 오른쪽 위에서 사용자를 선택하세요'; } });
-  }
-  window.addEventListener('hyd:me', showManualActor); showManualActor();
   $('#manualPreview').addEventListener('click', async () => {
     const f = $('#manualFile').files[0]; if (!f) { $('#manualResult').innerHTML = '<div class="neg" role="alert">등록할 파일을 먼저 선택하세요.</div>'; return; }
     const b = $('#manualPreview'); b.disabled = true; b.textContent = '등록하는 중…'; H.preview = null;
@@ -854,7 +849,7 @@
       box.querySelectorAll('[data-clear]').forEach(b => b.addEventListener('click', async () => {
         if (!confirm(`${b.dataset.clear} 배치의 변경을 되돌립니다. 다른 배치가 사용하는 항목은 유지합니다. 계속할까요?`)) return;
         b.disabled = true;
-        try { const out = await postJ(API.process + '/api/kg/ingests/' + encodeURIComponent(b.dataset.clear) + '?by=' + encodeURIComponent($('#ddlBy').value), null, 'DELETE'); await loadIngests(`되돌리기 완료: ${out.deleted} 삭제 · ${out.restored || 0} 복원 · ${out.retained || 0} 유지`); if (window.hydEnt) hydEnt.loadGraph(true); }
+        try { const out = await postJ(API.process + '/api/kg/ingests/' + encodeURIComponent(b.dataset.clear) + '?by=' + encodeURIComponent(manualActor()), null, 'DELETE'); await loadIngests(`되돌리기 완료: ${out.deleted} 삭제 · ${out.restored || 0} 복원 · ${out.retained || 0} 유지`); if (window.hydEnt) hydEnt.loadGraph(true); }
         catch (e) { $('#ddlHistoryMsg').textContent = '되돌리기 실패: ' + e.message; b.disabled = false; }
       }));
     } catch (e) { box.innerHTML = `<p id="ddlHistoryMsg" class="muted" role="status">${esc(msg)}</p><p class="neg" role="status">연결 이력을 읽지 못했습니다: ${esc(e.message)}</p>`; }
@@ -872,7 +867,7 @@
         hint: (p.sourceNotes || []).join(' ') || '고른 원천의 표 · 열로 잇습니다' })}<p class="muted">${esc(p.datasource)} / ${esc(p.catalog)}</p><div class="table-scroll"><table class="prov"><thead><tr><th>이름</th><th>형</th><th>스키마 · 표 · 열</th><th>업무 시스템</th></tr></thead><tbody>${p.inputs.map(i => `<tr><td>${esc(i.name)}</td><td>${esc(i.typeRef)}</td><td>${esc(i.schema)}<br>${esc(i.table)}<br>${esc(i.column)}</td><td>${esc(i.system)}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">고른 열이 없습니다</td></tr>'}</tbody></table></div>${UI.fold('식별자와 규칙 변수', p.inputs.map(i => `<p>${esc(i.schema)} · ${esc(i.table)} · ${esc(i.column)}<br><code>${esc(i.id)}</code> <code>${esc(i.variable)}</code></p>`).join(''), { cls: 'small' })}</div></div>
       <div id="legacyMeaning"></div>
       ${UI.actions(`<button class="btn outline" id="ddlReplan">선택 반영</button><button class="btn primary" id="ddlCommit" ${p.inputs.length ? '' : 'disabled'}>적재</button>`)}<span id="ddlMsg" class="muted"></span></div>`;
-    if (window.hydLegacy) hydLegacy.mount($('#legacyMeaning'), { preview: p, text: H.ddlText, by: () => $('#ddlBy').value,   // A9 옛 DB 뜻 복원
+    if (window.hydLegacy) hydLegacy.mount($('#legacyMeaning'), { preview: p, text: H.ddlText, by: () => manualActor(),   // A9 옛 DB 뜻 복원
       replan: async review => { const sel = {}, sys = {}; p.tables.forEach(t => { sel[t.table] = t.selected; if (t.system) sys[t.table] = t.system; });
         H.ddl = await postJ(API.process + '/api/kg/ddl/preview', { filename: p.filename, text: H.ddlText, selection: sel, systems: sys, datasource: p.datasource, catalog: p.catalog, meaning_review: review || undefined }); renderDdlPreview(); } });
     $('#ddlSource').addEventListener('change', async e => {   // 원천을 바꾸면 그 원천의 스키마로 다시 해석한다(서버 ddl_sync.place)
@@ -889,7 +884,7 @@
     $('#ddlCommit').addEventListener('click', async () => {
       const c = $('#ddlCommit'); c.disabled = true; $('#ddlMsg').textContent = '적재 중…';
       try {
-        const out = await postJ(API.process + '/api/kg/ddl/commit', { ...p, by: $('#ddlBy').value });
+        const out = await postJ(API.process + '/api/kg/ddl/commit', { ...p, by: manualActor() });
         $('#ddlMsg').textContent = `적재 완료: 시스템 ${out.systems} · 입력 데이터 ${out.inputs}. 되돌리려면 아래 이력에서 "되돌리기".`;
         c.textContent = '적재 완료';
         await loadIngests(); if (window.hydEnt) hydEnt.loadGraph(true);

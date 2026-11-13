@@ -10,11 +10,11 @@
     },
     {
       "name": "인계자",
-      "endpoint": "user:kim-op"
+      "endpoint": "role:shift-out"
     },
     {
       "name": "인수자",
-      "endpoint": "user:choi-op"
+      "endpoint": "role:shift-in"
     }
   ],
   "startForm": {

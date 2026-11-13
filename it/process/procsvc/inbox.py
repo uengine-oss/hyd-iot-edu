@@ -52,16 +52,16 @@ def roles_of(repo, tenant_id: str, user_id: str) -> list[str]:
 
 
 def resolve(repo, tenant_id: str, endpoint: str | None) -> dict:
-    """역할 바인딩 하나를 사람으로 해석한다. {'kind': 'person'|'role'|'none', 'user_id': 배정할 user_id, 'members': [...]}.
-    사람 한 명이면 person(그 사람), 여럿이면 role(역할 공용), 없으면 none(역할 그대로, 작업함에 안 뜸)."""
+    """역할 바인딩 하나의 구성원을 읽는다. {'kind': 'person'|'role'|'none', 'user_id': 단계에 적을 user_id, 'members': [...]}.
+    역할에 묶인 단계는 역할 그대로 둔다(role) — 화면과 기록이 「어느 역할의 일인가」를 보여야 하기 때문이다. 구성원이 한 명일 때
+    사람으로 바꿔 적던 규칙은 2026-11-13 에 없앴다(사람은 담당자 한 명이고 모든 역할의 구성원이다 — migration 000072).
+    구성원이 없으면 none(작업함에 안 뜸). 정의가 사람(user:*)을 직접 가리키면 person 이다."""
     if not endpoint:
         return {"kind": "none", "user_id": endpoint, "members": []}
     if endpoint.startswith(PERSON):
         return {"kind": "person", "user_id": endpoint, "members": [endpoint]}
     if endpoint.startswith(ROLE):
         members = members_of(repo, tenant_id, endpoint)
-        if len(members) == 1:
-            return {"kind": "person", "user_id": members[0], "members": members}
         return {"kind": "role" if members else "none", "user_id": endpoint, "members": members}
     return {"kind": "none", "user_id": endpoint, "members": []}
 
@@ -78,7 +78,7 @@ def notification_targets(repo, tenant_id: str, endpoint: str | None) -> list[str
 
 # ---------------------------------------------------------------- 엔진 훅
 def apply_advance(rt, inst: dict, adv) -> None:
-    """흐름이 닿은 사람 단계를 업무분장으로 해석해 user_id 를 쓰고(저장 전, 같은 트랜잭션), 알림을 커밋 뒤에 예약한다."""
+    """흐름이 닿은 사람 단계의 알림을 커밋 뒤에 예약한다(단계의 user_id 는 정의가 적은 역할 그대로다 — resolve)."""
     tenant = rt.tenant_id
     from .agent_authoring import apply_agent_map
     apply_agent_map(rt, inst, adv)        # B1: 에이전트 단계 → 배정 표(activity_agent_map)의 에이전트(없으면 정의의 역할 담당 그대로)
@@ -86,15 +86,6 @@ def apply_advance(rt, inst: dict, adv) -> None:
         if row.get("status") != "IN_PROGRESS" or not is_human_row(row):
             continue
         endpoint = row.get("user_id")
-        r = resolve(rt.repo, tenant, endpoint)
-        if r["kind"] == "person" and r["user_id"] != endpoint:
-            row["user_id"] = r["user_id"]
-            row["assignees"] = list(row.get("assignees") or []) + [{"endpoint": r["user_id"], "kind": "person", "via": endpoint, "resolution": "sole-member"}]
-            rt.repo.insert_assignment({"tenant_id": tenant, "proc_inst_id": row["proc_inst_id"], "todo_id": row["id"], "from_user_id": endpoint, "to_user_id": r["user_id"],
-                                       "kind": "auto", "by_user": "sys:process", "reason": f"업무분장: {endpoint} 에 사람이 한 명"})
-            participants = inst.setdefault("participants", [])
-            if r["user_id"] not in participants:
-                participants.append(r["user_id"])
         rt._after_commit(_notify_task, rt.repo, tenant, inst, dict(row), endpoint)
     if adv.ended:
         try:
@@ -112,10 +103,9 @@ def task_url(proc_inst_id: str, todo_id: str) -> str:
 def _notify_task(repo, tenant, inst, row, endpoint):
     name = inst.get("proc_inst_name") or inst.get("proc_inst_id")
     targets = notification_targets(repo, tenant, endpoint)
-    shared = len(targets) > 1
     for user_id in targets:
         repo.insert_notification({"title": row.get("activity_name") or row.get("activity_id"), "type": TYPE_TASK,   # 제목 = 단계 이름(포털이 화면 이름으로 바꾼다)
-                                  "description": f"{name} · " + ("역할 공용 작업이 열렸습니다" if shared else "내 차례입니다"),
+                                  "description": f"{name} · 승인 · 입력을 기다립니다",
                                   "user_id": user_id, "tenant_id": tenant, "url": task_url(row["proc_inst_id"], row["id"]), "from_user_id": "sys:process"})
 
 
@@ -152,7 +142,18 @@ def _notify_end(repo, tenant, inst, end_name):
 
 
 # ---------------------------------------------------------------- 승인자 = "나"
-NOT_A_PERSON = "이 일은 포털에서 '나'(사람 사용자)를 고른 뒤 합니다 — 누가 했는지 모르는 처리는 받지 않습니다"
+NOT_A_PERSON = "담당자 정보 없이 온 요청이라 처리하지 않았습니다 — 포털 화면을 새로 고친 뒤 다시 해 주세요"
+
+
+def actor_or_400(by) -> str:
+    """기록에 남길 「누가」(담당자 이름이나 id). 비어 있으면 이름을 지어 넣지 않고 400 으로 거절한다 —
+    「지식 관리자」 · 「수강생」 · 「포털」 · 「나 미선택」 같은 자리표가 감사 · 처리 기록에 사람처럼 남지 않게(2026-11-13).
+    포털은 늘 담당자를 실어 보낸다(www/inbox.js me). 사람인지까지 보는 자리는 require_person 을 쓴다."""
+    who = str(by or "").strip()
+    if not who:
+        from fastapi import HTTPException
+        raise HTTPException(400, NOT_A_PERSON)
+    return who
 
 
 def require_person(repo, tenant_id: str, by: str | None) -> dict:

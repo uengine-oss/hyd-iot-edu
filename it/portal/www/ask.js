@@ -38,7 +38,7 @@
     if (!q || A.sending) return;
     A.sending = true; A.err = ''; render();
     try {
-      A.cur = await postJ(api(''), { question: q, agent: A.agent || null, by: ((window.hydInbox && window.hydInbox.me && window.hydInbox.me()) || {}).name || '수강생', request_id: uuid() });
+      A.cur = await postJ(api(''), { question: q, agent: A.agent || null, by: ((window.hydInbox && window.hydInbox.me && window.hydInbox.me()) || {}).name || '', request_id: uuid() });
       A.draft = '';
       poll();
       loadHistory().then(render);

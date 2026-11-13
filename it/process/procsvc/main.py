@@ -27,6 +27,7 @@ from hydcommon.timeutil import now, now_iso
 from . import decisions as declib, definition, ingest, graph_ingest, instance_mode, kgadmin, machine, current_approval, engine, reobs_series
 from .store import Store
 from . import skill_graph
+from .inbox import actor_or_400
 from .knowledge_projection import KnowledgeReconciler
 from .case_projection import CaseProjector
 from .source_inbox import PgSourceInbox, kafka_record, source_record
@@ -979,7 +980,7 @@ def _author_skill(sid, values, body, create=False):
     with _shared_graph().session() as session:
         return skill_graph.write(session, SKILL_Q, sid, values, create=create,
             expected_revision=body.get('revision'), request_id=body.get('request_id'),
-            by=str(body.get('by') or '지식 관리자'))
+            by=actor_or_400(body.get('by')))
 
 
 @app.put("/api/kg/skills/{sid}")
@@ -993,7 +994,7 @@ async def kg_update_skill(sid: str, body: dict):
         raise HTTPException(409, str(error))
     except ValueError as error:
         raise HTTPException(400, str(error))
-    _audit('-', str(body.get('by') or '지식 관리자'), 'SKILL_EDITED', {'skill': sid, 'name': values['name']})
+    _audit('-', actor_or_400(body.get('by')), 'SKILL_EDITED', {'skill': sid, 'name': values['name']})
     return out
 
 
@@ -1007,7 +1008,7 @@ async def kg_create_skill(body: dict):
         raise HTTPException(409, str(error))
     except ValueError as error:
         raise HTTPException(400, str(error))
-    _audit('-', str(body.get('by') or '지식 관리자'), 'SKILL_CREATED', {'skill': sid, 'sop': values['sopId']})
+    _audit('-', actor_or_400(body.get('by')), 'SKILL_CREATED', {'skill': sid, 'sop': values['sopId']})
     return out
 
 
@@ -1355,7 +1356,7 @@ async def kg_ddl_commit(body: dict):
     """body = the preview plan (possibly edited: selection/systems) + {by}. Applies the ownership journal and nodes in one transaction."""
     if not body.get("inputs") and not body.get("systems"):
         raise HTTPException(400, "적재할 시스템 · 입력 데이터가 없습니다 — 미리보기에서 표 · 열을 하나 이상 고르세요")
-    by = str(body.get("by") or "지식 관리자")
+    by = actor_or_400(body.get("by"))
     plan = {"batch": body.get("batch") or ingest.new_batch_id("ddl"), "filename": body.get("filename", "schema.sql"),
             "systems": body.get("systems") or [], "inputs": body.get("inputs") or []}
 
@@ -1404,8 +1405,9 @@ async def kg_ingests():
 
 
 @app.delete("/api/kg/ingests/{batch}")
-async def kg_ingest_clear(batch: str, by: str = "지식 관리자"):
+async def kg_ingest_clear(batch: str, by: str = ""):
     """Release one batch's claims and restore the latest remaining revision atomically."""
+    by = actor_or_400(by)
     def run():
         with _shared_graph().session() as session:
             return graph_ingest.clear(session, batch)

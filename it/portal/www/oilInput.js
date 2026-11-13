@@ -5,7 +5,7 @@
    서버: process GET /api/human-alerts/form · POST /api/human-alerts (it/process/procsvc/human_alert.py). */
 (function () {
   const O = { el: null, form: null, err: '', sending: false, last: null,
-              draft: { asset: 'HYD-01', item: '', value: '', out: null, memo: '', by: '' } };
+              draft: { asset: '', item: '', value: '', out: null, memo: '', by: '' } };      // 설비 · 항목은 사람이 고른다(미리 골라 두면 고르지 않은 설비로 경보가 열린다)
   const api = p => API.process + p;
 
   function meNow() { return (window.hydInbox && window.hydInbox.me && window.hydInbox.me()) || null; }
@@ -16,7 +16,6 @@
     try { O.form = await getJ(api('/api/human-alerts/form')); O.err = ''; }
     catch (e) { O.err = '입력 칸을 읽지 못했습니다: ' + e.message; }
     const p = pattern();
-    if (p && !O.draft.item) O.draft.item = p.items[0].key;
     render();
   }
   function show() { render(); }
@@ -28,8 +27,10 @@
     const p = pattern(), d = O.draft, m = meNow();
     if (!p || O.sending) return;
     const by = m ? m.id : d.by.trim();
+    if (!d.asset) { O.err = '설비를 고르세요'; render(); return; }
+    if (!d.item) { O.err = '분석 항목을 고르세요'; render(); return; }
     if (d.out === null) { O.err = '기준 이탈 여부를 고르세요'; render(); return; }
-    if (!by) { O.err = '화면 오른쪽 위에서 사용자를 선택하거나 입력자를 적으세요'; render(); return; }
+    if (!by) { O.err = '입력자를 적으세요'; render(); return; }
     O.sending = true; O.err = ''; render();
     try {
       O.last = await postJ(api('/api/human-alerts'), {
@@ -64,14 +65,14 @@
     const unit = (p.items.find(i => i.key === d.item) || {}).unit || '';
     const body = `<p class="field-hint">작동유는 실시간 센서가 없어 정기 오일 분석 결과를 사람이 넣습니다. 기준 이탈이면 센서 경보와 같은 길로 처리 건이 열립니다.</p>
       <div class="form-grid">
-        ${UI.field({ label: '설비', required: true, input: `<select id="oilAsset">${O.form.assets.map(a => opt(a, a, d.asset)).join('')}</select>` })}
-        ${UI.field({ label: '분석 항목', required: true, input: `<select id="oilItem">${p.items.map(i => opt(i.key, i.text, d.item)).join('')}</select>` })}
+        ${UI.field({ label: '설비', required: true, input: `<select id="oilAsset"><option value="">설비 선택</option>${O.form.assets.map(a => opt(a, a, d.asset)).join('')}</select>` })}
+        ${UI.field({ label: '분석 항목', required: true, input: `<select id="oilItem"><option value="">항목 선택</option>${p.items.map(i => opt(i.key, i.text, d.item)).join('')}</select>` })}
         ${UI.field({ label: `측정값${unit ? ' (' + unit + ')' : ''}`, hint: '없으면 비워 둡니다', input: `<input id="oilValue" type="number" step="any" value="${esc(d.value)}">` })}
         ${UI.field({ label: '기준 이탈 여부', required: true, input: `<div class="chk-row">
             <label class="chk"><input type="radio" name="oilOut" value="1" ${d.out === true ? 'checked' : ''}> 예 (기준 이탈)</label>
             <label class="chk"><input type="radio" name="oilOut" value="0" ${d.out === false ? 'checked' : ''}> 아니요 (기준 안)</label></div>` })}
-        ${m ? UI.field({ label: '입력자', input: `<p style="margin:0">${esc(window.hydInbox.meLabel?.() || m.name || m.id)}</p>` })
-            : UI.field({ label: '입력자', required: true, hint: '화면 오른쪽 위에서 사용자를 선택하면 자동으로 들어갑니다', input: `<input id="oilBy" maxlength="120" value="${esc(d.by)}">` })}
+        ${m ? UI.field({ label: '입력자', input: `<p style="margin:0">${esc(m.name || m.id)}</p>` })
+            : UI.field({ label: '입력자', required: true, hint: '담당자 정보를 읽지 못해 직접 적습니다', input: `<input id="oilBy" maxlength="120" value="${esc(d.by)}">` })}
       </div>
       ${UI.field({ label: '메모', input: `<textarea id="oilMemo" rows="2" maxlength="2000">${esc(d.memo)}</textarea>` })}`;
     O.el.innerHTML = UI.card({ title: '오일 분석 결과 입력', body,

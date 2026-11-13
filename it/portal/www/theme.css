@@ -264,6 +264,9 @@ h3 {
   line-height: 28px;
 }
 .stat-cards .card.hot { border-color: rgba(217, 119, 87, .45); background: #fffaf7; }
+/* 사람이 할 일이 있다는 표시 — 이상 · 멈춤(.hot, 주황)과 색을 가른다 */
+.stat-cards .card.todo { border-color: color-mix(in srgb, var(--accent) 45%, var(--rule)); background: color-mix(in srgb, var(--accent) 5%, var(--panel)); }
+.stat-cards .card.todo b { color: var(--accent); }
 .stat-cards .card.hot b {
   color: var(--brand);
 }
@@ -541,8 +544,9 @@ pre {
 @media (max-width: 1100px) { .inst-split { grid-template-columns: minmax(0, 1fr); } .inst-split > div:first-child { position: static; } }
 
 /* 흐름도: 진행 중 단계는 테두리가 흐른다 (process-gpt-vue3 assets/css/globalStyle.css running-animation 1.5s linear, 색만 brand) */
-.f-node.current rect, .f-node.current path, .f-node.current circle { stroke: var(--brand) !important; stroke-width: 2.4 !important; stroke-dasharray: 10 6; animation: f-run 1.5s linear infinite; fill: #fff7f3 !important; }
-.f-node.current text { fill: #8a3c22; font-weight: 600; }
+/* 진행 중 단계는 범례(.f-legend i.current)와 같은 색으로 그린다 — 붉은 주황 점선은 범례의 「중단」으로 읽혔다(2026-11-13) */
+.f-node.current rect, .f-node.current path, .f-node.current circle { stroke: var(--accent) !important; stroke-width: 2.4 !important; stroke-dasharray: 10 6; animation: f-run 1.5s linear infinite; fill: var(--chip-accent-bg) !important; }
+.f-node.current text { fill: var(--accent); font-weight: 600; }
 @keyframes f-run { to { stroke-dashoffset: -32; } }
 @media (prefers-reduced-motion: reduce) { .f-node.current rect, .f-node.current path, .f-node.current circle { animation: none; } }
 

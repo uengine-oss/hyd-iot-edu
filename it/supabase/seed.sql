@@ -78,6 +78,8 @@ insert into public.users (id, email, username, role, is_agent, agent_type, goal,
   ('role:maint-mgr', 'maintmgr@hyd.local',  '설비보전팀장', 'manager', false, null,     null, null, 'hyd'),
   ('role:purchasing',     'purchasing@hyd.local',    '구매 담당', 'manager', false, null, null, null, 'hyd'),
   ('role:purchasing-mgr', 'purchasingmgr@hyd.local', '구매팀장',  'manager', false, null, null, null, 'hyd'),
+  ('role:shift-out', 'shiftout@hyd.local', '인계자', 'operator', false, null, null, null, 'hyd'),   -- 교대 인수인계(definitions/shift_handover_v1.json)
+  ('role:shift-in',  'shiftin@hyd.local',  '인수자', 'operator', false, null, null, null, 'hyd'),
   ('sys:agent',      null, '인공지능 에이전트', 'agent', true, 'agent',  '경보의 원인을 진단하고 조치 카드를 올린다', 'neo4j,enterprise,hyd-dmn', 'hyd'),
   ('sys:scada',      null, 'SCADA',        'system',    true,  'system', 'PLC 명령 발행 (Incident 경로)', null, 'hyd'),
   ('sys:process',    null, '프로세스',     'system',    true,  'system', '타이머 · 재관측', null, 'hyd'),
@@ -107,25 +109,23 @@ insert into public.form_def (id, tenant_id, proc_def_id, activity_id, fields_jso
 on conflict (id, tenant_id) do update set proc_def_id = excluded.proc_def_id, activity_id = excluded.activity_id, fields_json = excluded.fields_json;
 
 -- ============================================================================
--- U5 (2026-10-08) 사람 사용자 · 업무분장 (migration 000029 role_members). 역할 사용자(role:*)는 위 users 에 있다.
--- 운전원은 2명이라 조치 선택 단계는 역할 공용으로 남고, 생산관리자·설비보전팀장·구매 담당은 1명이라 그 사람에게 바로 배정된다(procsvc/inbox.py).
+-- 사람 사용자 · 업무분장 (migration 000029 role_members · 000072 single_owner). 역할 사용자(role:*)는 위 users 에 있다.
+-- 로그인이 없고 한 사람이 자기 PC에서 쓰는 포털이라 사람은 담당자 한 명이고, 모든 역할의 구성원이다(2026-11-13).
+-- 역할마다 구성원이 한 명이므로 사람 단계는 모두 담당자에게 바로 배정되고(procsvc/inbox.py resolve), 승인 기록에는 승인한 역할이 남는다.
+-- 이미 만든 DB는 migration 000072 가 같은 모습으로 바꾼다.
 -- ============================================================================
 insert into public.users (id, email, username, role, is_agent, agent_type, tenant_id) values
-  ('user:kim-op',     'kim.op@hyd.local',     '김운전', 'operator', false, null, 'hyd'),
-  ('user:choi-op',    'choi.op@hyd.local',    '최운전', 'operator', false, null, 'hyd'),
-  ('user:lee-prod',   'lee.prod@hyd.local',   '이생산', 'manager',  false, null, 'hyd'),
-  ('user:park-maint', 'park.maint@hyd.local', '박정비', 'manager',  false, null, 'hyd'),
-  ('user:jung-buy',   'jung.buy@hyd.local',   '정구매', 'manager',  false, null, 'hyd'),
-  ('user:han-buymgr', 'han.buymgr@hyd.local', '한구매', 'manager',  false, null, 'hyd')
+  ('user:me', 'me@hyd.local', '담당자', 'manager', false, null, 'hyd')
 on conflict (id) do update set email = excluded.email, username = excluded.username, role = excluded.role;
 
 insert into public.role_members (tenant_id, role_id, user_id) values
-  ('hyd', 'role:operator',  'user:kim-op'),
-  ('hyd', 'role:operator',  'user:choi-op'),
-  ('hyd', 'role:prod-mgr',  'user:lee-prod'),
-  ('hyd', 'role:maint-mgr', 'user:park-maint'),
-  ('hyd', 'role:purchasing', 'user:jung-buy'),
-  ('hyd', 'role:purchasing-mgr', 'user:han-buymgr')
+  ('hyd', 'role:operator',       'user:me'),
+  ('hyd', 'role:prod-mgr',       'user:me'),
+  ('hyd', 'role:maint-mgr',      'user:me'),
+  ('hyd', 'role:purchasing',     'user:me'),
+  ('hyd', 'role:purchasing-mgr', 'user:me'),
+  ('hyd', 'role:shift-out',      'user:me'),
+  ('hyd', 'role:shift-in',       'user:me')
 on conflict do nothing;
 
 -- ============================================================================

@@ -24,6 +24,8 @@
 from __future__ import annotations
 
 from fastapi import FastAPI, HTTPException
+
+from .inbox import NOT_A_PERSON
 from pydantic import BaseModel, Field
 
 from . import engine
@@ -236,7 +238,7 @@ def mount(app: FastAPI, runtime_factory) -> None:
         rt = _rt()
         by = req.by.strip()
         if not by:
-            raise HTTPException(400, "누가 되돌렸는지 모릅니다 — 포털 위쪽에서 '나'(사람 사용자)를 고른 뒤 다시 누르세요")
+            raise HTTPException(400, NOT_A_PERSON)
         try:                                                     # 되돌린 사람 = 포털의 「나」(사용자 표의 사람) — 지어낸 이름이 배포 이력에 남지 않게
             from .inbox import require_person
             require_person(rt.repo, rt.tenant_id, by)

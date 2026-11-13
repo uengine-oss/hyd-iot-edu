@@ -104,7 +104,7 @@ const UI = {
     'inc.causes': '가능한 원인', 'inc.recommended': '권장 조치', 'inc.noEvidence': '증거 규칙 없음', 'inc.unknown': '판정 미확인', 'inc.pass': '조건 충족', 'inc.fail': '조건 미충족',
     'inc.observed': '관측', 'inc.woPending': '정비 요청 발행 대기', 'inc.reasonLabel': '사유',
     // 처리 건
-    'inst.running': '진행 중', 'inst.myTurn': '내 차례', 'inst.humanTurn': '사람 단계', 'inst.asked': '질문', 
+    'inst.running': '진행 중', 'inst.myTurn': '내 차례', 'inst.asked': '질문', 
     'inst.empty': '아직 처리 건이 없습니다', 'inst.emptySub': '설비에 경보가 나면 처리 건이 생깁니다. 결함 시뮬레이션에서 결함을 주입해 보세요', 'inst.select': '처리 건을 선택하세요', 'inst.selectSub': '결과 · 흐름 · 기록을 볼 수 있습니다',
     'inst.noTodo': '지금 할 일이 없습니다', 'inst.noTodoSub': '차례가 오면 여기에 나타납니다', 'inst.noConn': '처리 서비스에 연결할 수 없습니다',
     'inst.tab.result': '결과', 'inst.tab.flow': '진행 상황', 'inst.tab.log': '단계 표', 'inst.tab.record': '처리 기록', 'inst.started': '시작', 'inst.ended': '종료', 'inst.justStarted': '방금 시작', 'inst.elapsed': '분 경과', 'inst.took': '분 만에',
@@ -325,11 +325,11 @@ const UI = {
     PROCESS_RESTART_REVIEW: "서비스 재시작 후 재검토", MITIGATION_FAILED: "완화 실패", ACK_TIMEOUT: "설비 응답 시간 초과", PASS: "통과", INTERLOCK: "안전 연동",
   },
   tones: {
-    neutral: ['TODO', 'NEW', 'SKIPPED', 'IDLE', 'STOP', 'NOT_APPLICABLE', 'GUIDE_RECEIVED', 'LOCAL', 'DISCARDED', 'CLOSED_UNAPPROVED'],
+    neutral: ['TODO', 'NEW', 'SKIPPED', 'IDLE', 'STOP', 'NOT_APPLICABLE', 'GUIDE_RECEIVED', 'LOCAL', 'DISCARDED', 'CLOSED_UNAPPROVED', 'CANCELLED'],
     accent: ['IN_PROGRESS', 'SUBMITTED', 'RUNNING', 'STARTED', 'FB_REQUESTED', 'APPROVED', 'CMD_ISSUED', 'AWAITING_ACK', 'REMOTE_AUTO', 'RE_OBSERVING', 'DELIVERED'],
     success: ['DONE', 'COMPLETED', 'CLOSED', 'EXECUTED', 'RESOLVED', 'RESOLVED_WITHOUT_ACTION', 'RUN', 'ACKED', 'WORK_ORDER_CREATED', 'EVALUATED', 'CLEAR', 'OK'],
-    warning: ['PENDING', 'HUMAN_ASKED', 'PENDING_APPROVAL', 'AWAITING_APPROVAL', 'PARTIAL', 'VIA_HITL', 'WITHHELD', 'REMOTE_MANUAL', 'CLEARING', 'CANDIDATE'],
-    danger: ['ESCALATED', 'CANCELLED', 'FAILED', 'REJECTED', 'REJECTED_BY_OPERATOR', 'REJECTED_BY_GUARDRAIL', 'NO_FEASIBLE_OPTION', 'TRIP', 'RAISED', 'RAISE'],
+    warning: ['PENDING', 'HUMAN_ASKED', 'PENDING_APPROVAL', 'AWAITING_APPROVAL', 'PARTIAL', 'VIA_HITL', 'WITHHELD', 'REMOTE_MANUAL', 'CLEARING', 'CANDIDATE', 'ESCALATED'],
+    danger: ['FAILED', 'REJECTED', 'REJECTED_BY_OPERATOR', 'REJECTED_BY_GUARDRAIL', 'NO_FEASIBLE_OPTION', 'TRIP', 'RAISED', 'RAISE'],
   },
   // 처리 건 값(variables_data 행 목록) → {키: 값} — 화면 모듈이 같은 펼치기를 따로 두지 않는다(W1-11)
   valuesOf(inst) { return Object.fromEntries(((inst && inst.variables_data) || []).map(r => [r.key, r.value])); },
@@ -385,13 +385,13 @@ const UI = {
     return /^user:/.test(id) ? '담당자 (이름 확인 안 됨)' : /^agent:/.test(id) ? 'AI 에이전트' : id;
   },
   roleName(id, definition) { return (definition?.roles || []).find(r => r.endpoint === id)?.name || this.who(id); },
-  // 담당자 칸: 값이 선택한 사용자(user:*)면 이름을 읽기 전용으로 보이고 id 는 숨은 칸에 실어 보낸다(원문 id 를 학생에게 보이지 않는다).
+  // 담당자 칸: 쓰는 사람은 늘 담당자 한 명이다(inbox.js 머리말). 담당자 id 는 숨은 칸에 실어 보내고, 화면에는 「이 PC의 담당자」로만 보인다.
   // attrs 는 입력 요소의 속성 원문(id="rwBy" · data-retry-by 등) — 읽는 코드는 그대로 .value 를 읽는다.
   actorInput(attrs, value, extra = '') {
     const m = window.hydInbox?.me?.();
-    if (m) return `<input type="hidden" ${attrs} value="${esc(m.id)}"><span class="ro-value">${esc(window.hydInbox.meLabel?.() || m.name)}</span>`;
-    // 서버는 사람 행동을 등록된 사용자(user:…)로만 받는다 — 자유 글 칸을 두지 않는다(W1-08)
-    return `<input type="hidden" ${attrs} value="">${window.hydInbox?.pickInline ? window.hydInbox.pickInline() : '<span class="field-hint" data-pick-me>화면 오른쪽 위에서 사용자를 선택하세요.</span>'}`;
+    if (m) return `<input type="hidden" ${attrs} value="${esc(m.id)}"><span class="ro-value">이 PC의 담당자</span>`;
+    // 서버는 사람 행동을 등록된 담당자(user:…)로만 받는다 — 자유 글 칸을 두지 않는다(W1-08)
+    return `<input type="hidden" ${attrs} value=""><span class="form-msg neg" data-pick-me>담당자 정보를 읽지 못했습니다. 화면을 새로 고치세요.</span>`;
   },
   // 요청 id(같은 요청을 다시 보낼 때 서버가 알아보는 번호). 포털은 127.0.0.1 에만 열리므로(compose.yaml) 늘 보안 문맥 — randomUUID 가 있다
   uuid() { return window.crypto.randomUUID(); },

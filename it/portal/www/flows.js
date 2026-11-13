@@ -417,7 +417,7 @@
 
   // 누가 했는지: 판본 등록 · 되돌리기는 고른 「나」로 기록한다(서버 flows_api 가 by 를 요구한다) — 없으면 그 자리에서 안내하고 보내지 않는다
   const meId = () => window.hydInbox?.me?.()?.id || '';
-  const NEED_ME = '화면 오른쪽 위에서 사용자를 선택하세요(누가 했는지 기록에 남습니다).';
+  const NEED_ME = '담당자 정보를 읽지 못했습니다. 화면을 새로 고친 뒤 다시 해 주세요.';
   async function doRegister() {
     const msg = S.el.querySelector('#flowMsg');
     if (!meId()) { msg.textContent = '판본을 등록하려면 ' + NEED_ME; msg.className = 'form-msg neg'; return; }
@@ -481,8 +481,8 @@
       if (d.alertPolicy) { slot.innerHTML = '<p class="field-hint">경보로 시작하는 흐름입니다 — 배포한 뒤 경보가 들어오면 시작됩니다.</p>'; return; }
       const fields = (d.startForm && d.startForm.fields_json) || [];
       slot.innerHTML = `<div class="form-grid">${fields.map(f => UI.field({ label: f.text || f.key, input: f.type === 'select'
-        ? `<select data-sv="${h(f.key)}">${(f.items || []).map(i => `<option>${h(typeof i === 'string' ? i : Object.keys(i)[0])}</option>`).join('')}</select>`
-        : f.type === 'boolean' ? `<select data-sv="${h(f.key)}" data-bool="1"><option value="true">예</option><option value="false">아니요</option></select>`
+        ? `<select data-sv="${h(f.key)}" data-choose="${h(f.text || f.key)}"><option value="">선택</option>${(f.items || []).map(i => `<option>${h(typeof i === 'string' ? i : Object.keys(i)[0])}</option>`).join('')}</select>`
+        : f.type === 'boolean' ? `<select data-sv="${h(f.key)}" data-bool="1" data-choose="${h(f.text || f.key)}"><option value="">선택</option><option value="true">예</option><option value="false">아니요</option></select>`
         : f.type === 'textarea' ? `<textarea data-sv="${h(f.key)}" data-kind="textarea" rows="4"></textarea>`
         : `<input data-sv="${h(f.key)}" data-kind="${h(f.type)}">` })).join('')}</div>
         <div class="form-actions"><button class="btn primary small" data-go="1">시작</button></div>`;
@@ -494,6 +494,7 @@
         try {
           slot.querySelectorAll('[data-sv]').forEach(x => {
             const k = x.dataset.sv, kind = x.dataset.kind;
+            if (x.dataset.choose && x.value === '') throw new Error(`${x.dataset.choose}: 값을 고르세요`);      // 고르지 않은 값(첫 항목 · 「예」)이 시작 값으로 들어가지 않게
             if (x.dataset.bool) variables[k] = x.value === 'true';
             else if (kind === 'number' || kind === 'integer') { if (x.value.trim() === '' || !isFinite(Number(x.value))) throw new Error(`${k}: 숫자를 넣으세요`); variables[k] = Number(x.value); }
             else if (kind === 'object' || kind === 'array') variables[k] = JSON.parse(x.value || (kind === 'array' ? '[]' : '{}'));

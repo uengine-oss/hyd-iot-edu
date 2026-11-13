@@ -391,7 +391,7 @@ def _require_pass(record: dict, verb: str) -> None:
         raise RegistryError(422, f"연결 검사 실패로 {verb} 않았습니다 — {record.get('error') or '사유 없음'}", check=record)
 
 
-def register(store, tenant_id: str, body: dict, by: str = "포털") -> dict:
+def register(store, tenant_id: str, body: dict, by: str) -> dict:
     name = _validate_name((body or {}).get("name"))
     if name in BASE_SERVERS:
         raise RegistryError(409, f"'{name}' 는 기준(기본 제공) 서버 이름입니다 — 다른 이름을 쓰세요")
@@ -408,7 +408,7 @@ def register(store, tenant_id: str, body: dict, by: str = "포털") -> dict:
     return {"name": name, "check": record, "gate": entry[META_KEY]["gate"], "warnings": warnings_of(entry)}
 
 
-def update(store, tenant_id: str, name: str, body: dict, by: str = "포털") -> dict:
+def update(store, tenant_id: str, name: str, body: dict, by: str) -> dict:
     if name in BASE_SERVERS:
         raise RegistryError(403, f"'{name}' 는 기준(기본 제공) 서버라 고칠 수 없습니다 — 새 이름으로 등록해 쓰세요")
     servers = store.servers(tenant_id)
@@ -446,7 +446,7 @@ def remove(store, repo, tenant_id: str, name: str, *, force: bool = False) -> di
     return {"name": name, "deleted": True, "agents_still_naming_it": users}
 
 
-def check_saved(store, tenant_id: str, name: str, *, timeout=None, by: str = "포털") -> dict:
+def check_saved(store, tenant_id: str, name: str, *, timeout=None, by: str) -> dict:
     """등록된 서버 검사: 기록을 남기고, 학생 서버면 워커 도장(hyd.gate)을 고친다. 기준 서버 설정(tenants.mcp)은 바꾸지 않는다."""
     entry = store.servers(tenant_id).get(name)
     if entry is None:
@@ -576,7 +576,8 @@ def mount(app, *, runtime_factory, audit):
             raise HTTPException(e.status, e.reason) from e
 
     def by_of(body) -> str:
-        return str((body or {}).get("by") or "포털")[:60]
+        from .inbox import actor_or_400
+        return actor_or_400((body or {}).get("by"))[:60]
 
     def note(action, name, by, extra):
         audit("-", by, action, dict({"server": name}, **extra))
@@ -623,7 +624,9 @@ def mount(app, *, runtime_factory, audit):
         return await run(work)
 
     @app.delete("/api/mcp/servers/{name}")
-    async def delete_route(name: str, force: bool = False, by: str = "포털"):
+    async def delete_route(name: str, force: bool = False, by: str = ""):
+        from .inbox import actor_or_400
+        by = actor_or_400(by)[:60]
         rt = runtime()
 
         def work():

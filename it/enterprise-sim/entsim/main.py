@@ -86,37 +86,37 @@ def _read(system: str, name: str, **params):
 
 
 @app.get("/mes/orders")
-def mes_orders(asset: str = Query("HYD-01")):
+def mes_orders(asset: str = Query(...)):
     return _read("MES", "mes_orders", asset=asset)
 
 
 @app.get("/erp/contract")
-def erp_contract(asset: str = Query("HYD-01")):
+def erp_contract(asset: str = Query(...)):
     return _read("ERP", "erp_contract", asset=asset)
 
 
 @app.get("/erp/inventory")
-def erp_inventory(asset: str = Query("HYD-01")):
+def erp_inventory(asset: str = Query(...)):
     return _read("ERP", "erp_inventory", asset=asset)
 
 
 @app.get("/cmms/history")
-def cmms_history(asset: str = Query("HYD-01")):
+def cmms_history(asset: str = Query(...)):
     return _read("CMMS", "cmms_history", asset=asset)
 
 
 @app.get("/cmms/tasks")
-def cmms_tasks(asset: str = Query("HYD-01")):
+def cmms_tasks(asset: str = Query(...)):
     return _read("CMMS", "cmms_tasks", asset=asset)
 
 
 @app.get("/qms/lots")
-def qms_lots(asset: str = Query("HYD-01")):
+def qms_lots(asset: str = Query(...)):
     return _read("QMS", "qms_lots", asset=asset)
 
 
 @app.get("/scm/suppliers")
-def scm_suppliers(part: str = Query("P-CLR-CORE")):
+def scm_suppliers(part: str = Query(...)):
     return _read("SCM", "scm_suppliers", part=part)
 
 
@@ -133,13 +133,13 @@ def spare_stock(part: str | None = Query(default=None)):
 
 
 @app.get("/scm/quotes")
-def part_quotes(part: str = Query("P-PMP-SEAL")):
+def part_quotes(part: str = Query(...)):
     """SCM: 부품별 공급사 견적(단가 · 불량률 · 리드타임 · AVL)."""
     return _read("SCM", "part_quotes", part=part)
 
 
 @app.get("/cmms/windows")
-def maintenance_windows(asset: str = Query("HYD-02")):
+def maintenance_windows(asset: str = Query(...)):
     """CMMS: 다가오는 예정된 정비 시간(야간 · 주말)과 등록된 일정."""
     return _read("CMMS", "maintenance_windows", asset=asset)
 

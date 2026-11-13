@@ -12,6 +12,7 @@
         procsvc/mcp_registry.py (POST /api/mcp/servers · PUT/DELETE /api/mcp/servers/{name} · POST …/{name}/check · POST /api/mcp/check ·
         POST …/{name}/read-confirm · POST /api/mcp/reset), procsvc/mcp_secrets.py (/api/mcp/secrets). */
 (function () {
+  const actor = () => window.hydInbox?.me?.()?.name || '';   // 누가 했나 = 이 PC의 담당자(비면 서버가 400 으로 거절한다 — 자리표를 보내지 않는다)
   // ---------------------------------------------------------------- 입력 형식(JSON Schema) → 폼 칸
   const SCALAR = ['string', 'number', 'integer', 'boolean'];
   function baseType(prop) {
@@ -240,7 +241,7 @@
   }
 
   function readConfirm(s, tool, on, button) {
-    const by = on ? (S.el.querySelector('#mcpConfirmBy') || {}).value : '포털';
+    const by = on ? (S.el.querySelector('#mcpConfirmBy') || {}).value : actor();
     const reason = on ? (S.el.querySelector('#mcpConfirmReason') || {}).value : '';
     return once('confirm:' + s.name + '/' + tool, button, async () => {
       try {
@@ -304,7 +305,7 @@
       if (errors.length) { out.innerHTML = `<p class="field-error" role="alert">${errors.map(esc).join('<br>')}</p>`; return; }
       const btn = S.el.querySelector('#mcpCall'); btn.disabled = true;
       S.results[key] = { loading: true }; out.innerHTML = resultHtml(S.results[key]);
-      try { S.results[key] = await postJ(api(`/api/mcp/servers/${encodeURIComponent(s.name)}/tools/${encodeURIComponent(t.name)}/call`), { arguments: args, by: '포털' }); }
+      try { S.results[key] = await postJ(api(`/api/mcp/servers/${encodeURIComponent(s.name)}/tools/${encodeURIComponent(t.name)}/call`), { arguments: args, by: actor() }); }
       catch (e) { S.results[key] = { error: e.message }; }
       out.innerHTML = resultHtml(S.results[key]); btn.disabled = false;
     });
@@ -357,7 +358,7 @@
     return once('check:' + name, button, async () => {
       S.tools[name] = { loading: true }; renderServers(); if (S.sel === name) renderDetail();
       try {
-        const r = await postJ(api(`/api/mcp/servers/${encodeURIComponent(name)}/check`), { by: '포털' });
+        const r = await postJ(api(`/api/mcp/servers/${encodeURIComponent(name)}/check`), { by: actor() });
         UI.toast(r.check.status === 'ok' ? `${serverLabel(name)}: 연결 검사 통과 · 도구 ${r.check.tools.length}개` : `${serverLabel(name)}: 연결 검사 실패 — ${r.check.error || ''}`, { tone: r.check.status === 'ok' ? 'ok' : 'neg' });
       } catch (e) { UI.toast(`${serverLabel(name)}: ${e.message}`, { tone: 'neg' }); }
       await load();
@@ -420,7 +421,7 @@
     if (F.busy) return;
     let body;
     try { body = bodyFrom(readForm()); } catch (e) { F.error = e.message; renderForm(); return; }
-    body.by = '포털';
+    body.by = actor();
     F.busy = true; F.error = ''; F.result = null; renderForm();
     try {
       const r = dry ? await postJ(api('/api/mcp/check'), body)
@@ -444,7 +445,7 @@
     if (!ok) return;
     return once('delete:' + s.name, button, async () => {
       try {
-        await requestJ(api(`/api/mcp/servers/${encodeURIComponent(s.name)}?force=${using.length ? 'true' : 'false'}&by=${encodeURIComponent('포털')}`), { method: 'DELETE' });
+        await requestJ(api(`/api/mcp/servers/${encodeURIComponent(s.name)}?force=${using.length ? 'true' : 'false'}&by=${encodeURIComponent(actor())}`), { method: 'DELETE' });
         UI.toast(`${serverLabel(s.name)}: 지웠습니다`, { tone: 'ok' }); S.sel = null;
       } catch (e) { UI.toast(`${serverLabel(s.name)}: ${e.message}`, { tone: 'neg' }); }
       await load();
@@ -475,7 +476,7 @@
     box.querySelector('#mcpSecretSave')?.addEventListener('click', e => once('secret:save', e.currentTarget, async () => {
       const key = box.querySelector('#mcpSecretKey').value.trim(), value = box.querySelector('#mcpSecretValue').value;
       if (!key) { UI.toast('비밀 값 이름을 적으세요 (대문자 · 숫자 · 밑줄)', { tone: 'neg' }); return; }
-      try { await postJ(api(`/api/mcp/secrets/${encodeURIComponent(key)}`), { value, by: '포털' }, 'PUT'); UI.toast(`${key}: 저장했습니다`, { tone: 'ok' }); }
+      try { await postJ(api(`/api/mcp/secrets/${encodeURIComponent(key)}`), { value, by: actor() }, 'PUT'); UI.toast(`${key}: 저장했습니다`, { tone: 'ok' }); }
       catch (err) { UI.toast(err.message, { tone: 'neg' }); return; }
       await loadSecrets();
     }));
@@ -484,7 +485,7 @@
       if (!await UI.confirm({ title: `비밀 값 ${key} 을 지울까요?`, ok: '지우기', danger: true,
         body: users.length ? `이 값을 쓰는 서버(${users.map(n => serverLabel(n)).join(', ')})는 다시 넣을 때까지 연결 · 호출이 실패합니다. 지운 값은 되살릴 수 없습니다.` : '지운 값은 되살릴 수 없습니다.' })) return;
       await once('secret:del:' + key, b, async () => {
-        try { await requestJ(api(`/api/mcp/secrets/${encodeURIComponent(key)}?by=${encodeURIComponent('포털')}`), { method: 'DELETE' }); UI.toast(`${key}: 지웠습니다`, { tone: 'ok' }); }
+        try { await requestJ(api(`/api/mcp/secrets/${encodeURIComponent(key)}?by=${encodeURIComponent(actor())}`), { method: 'DELETE' }); UI.toast(`${key}: 지웠습니다`, { tone: 'ok' }); }
         catch (err) { UI.toast(err.message, { tone: 'neg' }); return; }
         await loadSecrets();
       });
@@ -496,7 +497,7 @@
     if (!ok) return;
     return once('reset', button, async () => {
       try {
-        const r = await postJ(api('/api/mcp/reset'), { by: '포털' });
+        const r = await postJ(api('/api/mcp/reset'), { by: actor() });
         UI.toast(`기준으로 되돌림 — 서버 ${r.removed_servers.length}개 · 검사 기록 ${r.removed_checks}개 · 비밀 값 ${r.removed_secrets}개 지움`, { tone: 'ok' }); S.sel = null; S.form = null; renderForm();
       } catch (e) { UI.toast(e.message, { tone: 'neg' }); }
       await load(); await loadSecrets();

@@ -59,7 +59,7 @@ def _relation_refused(rel):
     return f"고장 유형과 조치 방법의 관계 '{rel}' 은(는) 쓸 수 없습니다 — 근본 조치 · 즉시 완화 · 예방 조치 가운데 고르세요"
 
 
-def write(session, query, sid, values, *, create=False, expected_revision=None, request_id=None, by='지식 관리자'):
+def write(session, query, sid, values, *, create=False, expected_revision=None, request_id=None, by):
     """The receipt, properties, steps and all relationships commit together.
 
     Manual-owned skills must be revised through their source review, preserving

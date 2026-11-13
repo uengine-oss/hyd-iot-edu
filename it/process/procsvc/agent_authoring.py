@@ -513,8 +513,13 @@ def create_role(repo, tenant_id: str, body: dict, *, by: str | None = None) -> d
         raise AuthoringError(f"같은 이름의 역할이 이미 있습니다: {_name(same)} ({same['id']}) — 흐름 가져오기는 레인 이름으로 역할을 잇습니다", 409)
     row = {"id": rid, "username": name, "role": kind, "is_agent": False, "agent_type": None, "tenant_id": tenant_id, "origin": USER}
     repo.write_role(row)
+    # 사람은 담당자 한 명이고 모든 역할의 구성원이다(migration 000072) — 새 역할에도 넣어야 그 역할의 사람 단계가 작업함에 뜨고 승인된다
+    from . import inbox
+    members = [u["id"] for u in inbox.person_users(repo, tenant_id)]
+    for user_id in members:
+        repo.put_role_member(tenant_id, rid, user_id, USER)
     log.info("role %s (%s) created by %s", rid, name, by)
-    return {"id": rid, "name": name, "kind": kind, "origin": USER, "members": []}
+    return {"id": rid, "name": name, "kind": kind, "origin": USER, "members": members}
 
 
 def delete_role(rt, role_id: str, *, by: str | None = None) -> dict:
