@@ -161,6 +161,38 @@
       ${UI.evaluationRawHtml(cur,d)}
     </div>`;
   }
+  /* ---------------- 처리 건 화면의 「내가 할 일」 카드(디자인 기준 5-4)가 쓰는 두 조각 ----------------
+     카드의 첫 화면은 물음 하나 · 승인하면 일어나는 일 · 단추뿐이다. 왜 이것이 1순위인지와 다른 안은 바로 아래 단계 기록의 AI 단계가 보이고,
+     [다른 안 고르기]를 눌렀을 때만 이 표(choicesHtml)가 카드 안에 펼쳐진다. */
+  // 지금 승인할 안과 추천안 · 승인하면 시스템이 하는 일(서버가 준 조치 목록) · 평가 상태
+  function pick(d, chosenId) {
+    const opts = d.options || [];
+    const rec = opts.find(o => o.id === d.recommended) || opts.find(o => o.feasible) || opts[0] || {};
+    const cur = opts.find(o => o.id === chosenId) || rec;
+    const actions = (cur.actions || []).map(a => window.hydCards ? hydCards.actionLabel(a, cur) : a.name).filter(Boolean);
+    return { rec, cur, changed: cur.id !== rec.id, actions, state: UI.evaluationInfo(cur, d).state, blocked: UI.executionBlocked(cur, d),
+             none: opts.length > 0 && !d.recommended && !opts.some(o => o.feasible) };
+  }
+  // 고를 수 있는 안 전부를 표 한 장으로: 고르기 · 조치(둘째 줄에 고른 까닭 또는 진 까닭) · 점수. opt: { pending, adjust(html), extra(html) }
+  function choicesHtml(d, chosenId, opt = {}) {
+    const { rec, cur } = pick(d, chosenId);
+    const opts = [...(d.options || [])].sort((a, b) => (b.id === rec.id) - (a.id === rec.id) || (b.feasible - a.feasible) || ((a.rank || 99) - (b.rank || 99)));
+    const rows = opts.map(o => {
+      const out = !o.feasible, can = opt.pending && o.feasible && !UI.executionBlocked(o, d);
+      const said = UI.idText(sentenceAbout(d.explanation, o.name).replace(/^\s*\d+순위\s*/, ''));
+      const why = o.id === rec.id ? reasons(o, d).join(' · ')
+        : out ? `제외 — ${e(excludedWhy(o).join(' · ') || '실행 검사를 통과하지 못했습니다')}`
+        : e(partDiff(o, rec, d.options) || (Number.isFinite(+o.score) && Number.isFinite(+rec.score) ? `추천안보다 점수가 ${num(rec.score - o.score)} 낮습니다` : '')) + (said ? `<br>${e(said)}` : '');
+      return `<tr class="${o.id === cur.id ? 'pick' : ''}${out ? ' out' : ''}"><td class="ap-radio"><input type="radio" name="hopt" id="hopt-${e(o.id)}" value="${e(o.id)}" ${o.id === cur.id ? 'checked' : ''} ${can ? '' : 'disabled'} aria-label="${e(UI.idText(o.name))} 안 고르기"></td>
+        <td><label for="hopt-${e(o.id)}"><b>${e(UI.idText(o.name))}</b>${o.id === rec.id ? ' <span class="muted">· 1순위</span>' : ''}</label>${why ? `<small>${why}</small>` : ''}${UI.evaluationHtml(o, d, { raw: false })}${window.hydWords?.purchaseContextHtml(o, d) || ''}${window.hydWords?.maintenanceHtml(o) || ''}</td>
+        <td class="r">${out ? '제외' : e(scoreText(o))}</td></tr>`;
+    }).join('');
+    return `<table class="tbl ap-choices"><thead><tr><th><span class="sr-only">고르기</span></th><th>조치</th><th class="r">점수</th></tr></thead><tbody>${rows}</tbody></table>
+      ${evidence(cur)}${opt.adjust || ''}
+      ${d.explanation ? UI.fold('판단 엔진 설명 전문 (규칙 문장)', `<p class="prose" style="margin:0">${e(UI.idText(d.explanation))}</p>`) : ''}
+      ${opt.extra || ''}${UI.evaluationRawHtml(cur, d)}`;
+  }
+
   /* ---------------- 캡스톤 G7: 일반 사람 승인(formHandler:approve)의 "추천 1 + 지는 안 펼치기" 카드 ----------------
      에이전트 task 가 낸 처리 건 값(예: proposal)을 승인 부품 설정(approval: options · key · recommended · losers · docs)으로 읽는다.
      칸 약속(출발본 T6 요령): options[{<key, 기본 slot>, reason, score, …}] · recommended = 추천 안의 key 값 · losers[{<key>, why}] · docs[{title, link}].
@@ -247,5 +279,5 @@
       ${off}${opt.extra || ''}</div>`;
   }
 
-  window.hydApprove = { html, reasons, partDiff, forecastDecides, ownValues, sentenceAbout, proposal, proposalHtml };
+  window.hydApprove = { html, reasons, partDiff, forecastDecides, ownValues, sentenceAbout, proposal, proposalHtml, pick, choicesHtml };
 })();

@@ -1,4 +1,5 @@
-/* U1 — task 상세 패널 (처리 건 · 흐름 탭). 흐름도의 task 노드나 단계 행을 누르면 그 단계가 한 일을 네 칸으로 보여 준다:
+/* U1 — 단계 상세 패널 (처리 건 한 건). 단계 기록의 「이 단계가 받은 값과 다음 단계로 넘긴 값 보기」나 알림 · 주소로 열면 그 단계 줄 아래에 그 단계가 한 일을 네 칸으로 보여 준다
+   (진행 길에서 아직 시작하지 않은 상자를 누르면 정의에 적힌 입력 · 출력):
      ① 받은 입력(값과 어느 단계에서 왔는지) ② 처리 과정 타임라인(시작 · 에이전트 판단 메시지 · 도구 호출 · 판단 근거 · 사람 질문 · 완료/실패)
      ③ 판단 · 출력(판단 근거 요지 + 읽기 쉬운 표, 원문은 접기) ④ 다음 단계로 넘긴 값 ⑤ 진행 중이면 그 단계만의 실시간 흐름.
    단계 종류별: 에이전트(원인 점수 · 조건 / 카드 점수 구성 / 판단 메시지), 사람(받은 카드 · 권고 · 고른 것 · 사유 · 승인자 · 대기 경과),
@@ -491,7 +492,7 @@
     if (typeof document === 'undefined' || !document.querySelectorAll) return;
     const w = T.wid && workitemOf(T.wid);
     const actId = T.act || (w && w.activity_id);
-    document.querySelectorAll('#instDetail .f-node[data-node]').forEach(g => g.classList.toggle('picked', !!actId && g.dataset.node === actId));
+    document.querySelectorAll('#instDetail [data-path-node]').forEach(g => g.classList.toggle('picked', !!actId && g.dataset.pathNode === actId));
   }
 
   /* ---------- 지금: <단계> — <누가> <무엇을 하는 중> ---------- */
@@ -623,21 +624,31 @@
     if (!wid) return;
     T.act = null;
     if (T.wid !== wid) { T.wid = wid; T.item = null; T.error = null; }
+    place();
     render();
     await refresh(); render();
     const panel = T.host && T.host.querySelector('[data-task-detail]');
     if (panel && panel.scrollIntoView) panel.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }
+  // 단계 상세는 단계 기록의 그 단계 줄 아래에 놓는다(「자세히」를 누른 자리에서 값 표가 열린다). 그 줄이 아직 그려지지 않았으면 단계 기록 아래(처음 자리)에 둔다 —
+  // 단계 기록이 그려진 뒤 처리 건 화면이 이 함수를 다시 부른다
+  function place() {
+    if (typeof document === 'undefined' || !T.host || !document.querySelector) return;
+    const slot = T.wid ? document.querySelector(`#instDetail li[data-step="${CSS.escape(T.wid)}"] [data-step-slot]`) : null;
+    const home = T.home || (T.home = T.host.parentElement);
+    const target = slot || home;
+    if (target && T.host.parentElement !== target && !(T.host.contains(document.activeElement))) target.appendChild(T.host);
+  }
   function openActivity(actId) {
     const v = view(); const w = v && latestFor(v, actId);
     if (w) return open(w.id);
-    T.wid = null; T.item = null; T.act = actId; render();
+    T.wid = null; T.item = null; T.act = actId; place(); render();
     const panel = T.host && T.host.querySelector('[data-task-detail]');
     if (panel && panel.scrollIntoView) panel.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }
-  function close() { T.wid = null; T.act = null; T.item = null; T.rendered = null; render(); }
+  function close() { T.wid = null; T.act = null; T.item = null; T.rendered = null; render(); place(); }
   function mount(host) {
-    T.host = host || null;
+    T.host = host || null; T.home = host ? host.parentElement : null;
     const v = view();
     if (T.pending && v && v.instance.proc_inst_id === T.pending.pid) {        // a #/instances/<id>/task/<id> link: open once the instance is on screen
       const wid = T.pending.wid; T.pending = null;
@@ -666,26 +677,13 @@
     document.addEventListener('click', e => {
       if (e.target.closest('[data-td-close]')) { close(); return; }
       const now = e.target.closest('[data-td-open]');
-      if (now) { const tab = document.querySelector('#instDetail [data-inst-tab="flow"]'); if (tab && !tab.classList.contains('on')) tab.click(); open(now.dataset.tdOpen); return; }
-      if (!e.target.closest('#instDetail')) return;
-      const node = e.target.closest('.f-node[data-node]');
-      if (node) openActivity(node.dataset.node);
+      if (now) open(now.dataset.tdOpen);
     });
-    // 흐름도의 단계 상자를 키보드로도 연다: 처리 건 화면의 상자에만 초점과 단추 역할을 붙이고(다른 화면의 흐름도는 누르는 것이 아니다) Enter · Space 로 연다
-    const reachable = () => document.querySelectorAll('#instDetail .f-node[data-node]:not([tabindex])').forEach(g => {
-      const name = g.querySelector('title')?.textContent || [...g.querySelectorAll('text.f-t')].map(t => t.textContent).join(' ');
-      g.setAttribute('tabindex', '0'); g.setAttribute('role', 'button'); g.setAttribute('aria-label', `${name} 단계 상세 열기`);
-    });
-    document.addEventListener('keydown', e => {
-      if (e.key !== 'Enter' && e.key !== ' ') return;
-      const node = e.target.closest && e.target.closest('#instDetail .f-node[data-node]');
-      if (node) { e.preventDefault(); openActivity(node.dataset.node); }
-    });
-    // the instance detail is redrawn by instances.js every few seconds: re-apply the highlight after each redraw
-    const observe = () => { const box = document.getElementById('instDetail'); if (!box) return; reachable(); new MutationObserver(() => { reachable(); if (T.wid || T.act) requestAnimationFrame(highlight); }).observe(box, { childList: true, subtree: true }); };
+    // the instance detail is redrawn by instances.js: re-apply the highlight after each redraw (진행 길의 상자는 instances.js 가 누름 · 키보드를 맡는다)
+    const observe = () => { const box = document.getElementById('instDetail'); if (!box) return; new MutationObserver(() => { if (T.wid || T.act) requestAnimationFrame(highlight); }).observe(box, { childList: true, subtree: true }); };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', observe); else observe();
   }
 
-  window.hydTaskDetail = { open, openActivity, close, mount, onEvent, render, renderNow, nowHtml, valueHtml, refresh, T };
+  window.hydTaskDetail = { open, openActivity, close, mount, place, onEvent, render, renderNow, nowHtml, valueHtml, refresh, T };
   window.addEventListener('hyd-tool-payload',()=>{if(T.host?.isConnected)render();});
 })();

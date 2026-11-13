@@ -469,7 +469,13 @@
     function followNewest(box) {
       if (!C.follow || Date.now() - C.lastTouch < 6000) return;
       const fresh = box.querySelectorAll('.tr-new'); const last = fresh[fresh.length - 1];
-      if (last && last.scrollIntoView && C.model && C.model.running) last.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      if (!last || !C.model || !C.model.running || typeof getComputedStyle !== 'function') return;
+      // 새 줄은 처리 과정이 든 스크롤 칸 안에서만 따라간다. 화면 전체(main)를 내리지 않는다 — 진행 중인 처리 건을 열면 처리 과정의 마지막 단계로
+      // 화면이 저절로 내려가 맨 위의 「내가 할 일」이 가려지던 결함(scrollIntoView 가 바깥 스크롤까지 움직였다)
+      let sc = host;
+      while (sc && sc !== document.body && !(sc.scrollHeight > sc.clientHeight + 1 && /auto|scroll/.test(getComputedStyle(sc).overflowY))) sc = sc.parentElement;
+      if (!sc || sc === document.body || sc.tagName === 'MAIN') return;
+      sc.scrollTop = sc.scrollHeight;
     }
     C.draw = draw;
     TR.mounted.add(C);

@@ -18,6 +18,9 @@
    - Dify 실행 추적 web/app/components/workflow/run/tracing-panel.tsx · node.tsx — 노드 행 = 색 블록 아이콘 · 이름 · 오른쪽 걸린 시간 · 상태,
      누르면 입력 · 출력 펼침; status.tsx — 맨 위 상태 · 걸린 시간 · 단계 수 요약 (github.com/langgenius/dify)
    - n8n 실행 화면 https://docs.n8n.io/workflows/executions/ — 실행 한 건의 노드 순서 · 노드마다 성공 표시 · 들어간 값 / 나온 값(표 ↔ 원문 JSON 전환) */
+/* 2026-11-14 한 장으로: 이 파일이 처리 건 한 건의 하나뿐인 「단계 기록」을 그린다(디자인 기준 5-2 · 5-3). 탭 넷과 요약 띠 · 단계 순서 칩 줄 ·
+   「원래 이름(id) 보기」 체크 칸은 없앴다. 단계는 번호 붙은 세로 줄이고, AI 단계는 결론 → 근거(판단을 가른 값 · 비교한 조치) → 「자세한 실행 기록」 접기,
+   사람 · 시스템 단계는 한 문장 + 「자세히」 접기다. 세는 숫자 칩 · 스킬 전달 표 · 해시 · 단서 조항 · 원문 JSON · 「기록에 없는 것」은 모두 그 단계의 접기 안에 있다. */
 (function () {
   const W = () => window.hydWords;
   const TR = () => window.hydTrace;
@@ -34,7 +37,7 @@
   const CHECK = /^(incident:reobserve|plant:test-run|enterprise:GR_CONFIRM)$/;
   const PLANT = /^(plant:|incident:(command|reobserve)$)/;          // 설비에 닿는 단계(설비 명령 · 재관측 · 정비 모사 · 시운전)
   const CASE_LEVEL = new Set(['SCENARIO_BUTTON', 'CASE_LINK_FAILED']);   // 단계(todo)가 아니라 처리 건에 붙는 기록 — 시작 단계에 보인다
-  const LANE = { person: '사람', agent: 'AI 에이전트', system: '시스템' };
+  const LANE = { person: '담당자', agent: 'AI 에이전트', system: '시스템' };
   const firstSentence = t => { const s = UI.clean(W().text(String(t || ''))).replace(/`[^`]*`에?/g, '').replace(/\*\*/g, '').trim(); const m = s.match(/^[^\n]*?[.。](?=\s|$)/); return (m ? m[0] : s.split('\n')[0]).slice(0, SENTENCE_MAX_CHARS); };
   const isoDur = s => { const m = /^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/.exec(String(s || '')); if (!m) return s || ''; return [m[1] && `${m[1]}일`, m[2] && `${m[2]}시간`, m[3] && `${m[3]}분`, m[4] && `${m[4]}초`].filter(Boolean).join(' '); };
   // 설비 시간(TIME_SCALE 배속 — 설비 · 감지 · 재관측이 쓰는 시계)과 실제 시간을 한 형식으로: 「설비 시간 20분 (실제 1분)」. 사람 단계 시한은 실제 시간만
@@ -477,7 +480,7 @@
     const sentence = w.status === 'DONE' ? `${subject}${role && by ? `(${W().who(role)})` : ''}${W().josa(subject, '이/가')} ${when ? hhmmss(when) + '에 ' : ''}‘${optName}’${W().josa(optName, '을/를')} ${how}승인했습니다.`
       : b.live ? `${W().who(w.user_id)}의 승인을 기다리는 중입니다.` : UI.logText(w.log);
     return Object.assign(b, { type: 'approve', lane: 'person', icon: 'human', title: b.name, actor: by ? `${by}${role ? ' · ' + W().who(role) : ''}` : W().who(w.user_id), sentence, chips, sections,
-      now: b.live ? '승인을 기다리는 중입니다 — 내 작업함에서 처리하세요' : '', ids: [w.activity_id, role] });
+      now: b.live ? '위의 「내가 할 일」에서 승인하거나 반려하면 다음 단계로 넘어갑니다.' : '', ids: [w.activity_id, role] });
   }
 
   /* ---------------------------------------------------------------- 시스템 처리 */
@@ -760,30 +763,44 @@
   // Full original retrieval and integrity state are shared with Trace/TaskDetail in UI.
   function redrawAll() { mounted.forEach(C => C.draw && C.draw(true)); }
 
+  /* 도구 호출 목록: 같은 도구는 한 줄로 묶고 횟수를 붙인다(Langfuse 「조회 (3/3)」 — 여섯 번 부른 것을 여섯 줄로 늘어놓지 않는다).
+     줄을 누르면 그 도구를 부른 요청 · 결과와 원문이 차례대로 열린다. 말 · 스킬 읽기 · 시스템 기록 · 오류는 그 아래에 시각 순으로 둔다. */
+  function callHtml(r, live) {
+    const ask = r.inputEvent ? UI.toolAsk(r.inputEvent, true).summary : W().ask(r.tool, r.input);
+    const fo = r.full;
+    const result = r.ioEvent ? UI.toolResult(r.ioEvent, true) : null;
+    if (result) { r.status = result.status; r.badge = result.badge; }
+    const got = r.status === 'running' ? '' : result ? result.summary : W().got(r.tool, r.output);
+    const dur = r.t0 && r.t1 ? fmtMs(ts(r.t1) - ts(r.t0)) : '';
+    const full = (r.fullInput && r.inputEvent ? UI.fullToolIOHtml(r.inputEvent, 'input') : '') + (fo && r.ioEvent ? UI.fullToolIOHtml(r.ioEvent) : '');
+    const io = full + `${r.input != null ? `<div class="cr-io"><span>요청 원문</span><pre class="cr-pre">${e(pretty(r.input))}</pre></div>` : ''}${r.output != null ? `<div class="cr-io"><span>${fo ? '결과 미리보기' : '결과 원문'}</span><pre class="cr-pre">${e(pretty(r.output))}</pre></div>` : ''}`;
+    return { ask, got, dur, io, stored: !!(fo && fo.stored),
+      line: `<div class="tg-call"><div class="tg-line"><time>${e(hhmmss(r.t0))}</time><span>${ask ? `<span class="cr-q">요청</span> ${e(ask)}` : ''}${got || r.status !== 'running' ? ` <span class="cr-a">→</span> ${e(got || '결과를 받았습니다')}` : live ? ' <span class="muted">실행 중</span>' : ''}${r.badge ? ` <span class="tg-warn ${e(r.status)}">${e(r.badge)}</span>` : ''}${fo && fo.stored ? ' <span class="muted">· 원문 보관</span>' : ''}</span>${dur ? `<span class="cr-dur num">${e(dur)}</span>` : ''}</div>${io}</div>` };
+  }
   function toolListHtml(rows, live, stepKey) {
-    const minor = rows.filter(r => r.minor).length;
-    const items = rows.map(r => {
-      const time = `<time>${e(hhmmss(r.t0))}</time>`;
-      if (r.kind === 'note') return `<li class="cr-r note">${time}<span class="cr-rm">${icon('note')}</span><div><q>${e(r.text.slice(0, NOTE_MAX_CHARS))}${r.text.length > NOTE_MAX_CHARS ? '…' : ''}</q>${r.data ? UI.fold('원문', `<pre class="cr-pre">${e(JSON.stringify(r.data,null,2))}</pre>`, {cls:'small'}) : ''}</div></li>`;
-      if (r.kind === 'skill') return `<li class="cr-r skill">${time}<span class="cr-rm">${icon('file')}</span><div><b>스킬 파일 읽기 요청</b> ${e(UI.skillLabel(r.data,true).label)} <span class="muted">(${e(W().toolName(r.data.via))})</span>${UI.fold('원문', rawBlock(r.data), {cls:'small'})}</div></li>`;
-      if (r.kind === 'file') return `<li class="cr-r minor">${time}<span class="cr-rm">${icon('file')}</span><div>결과 파일 ${e(r.text)}</div></li>`;
-      if (r.kind === 'sys') return `<li class="cr-r sys">${time}<span class="cr-rm">${icon('system')}</span><div><b>${e(r.text)}</b>${sysDetail(r)}</div></li>`;
-      if (r.kind === 'error') return `<li class="cr-r err">${time}<span class="cr-rm">${icon('warn')}</span><div><b>${e(r.text)}</b>${UI.fold('원문', `<pre class="cr-pre">${e(pretty(r.data))}</pre>`, { cls: 'small' })}</div></li>`;
-      const sys = W().toolSystem(r.tool);
-      const ask = r.inputEvent ? UI.toolAsk(r.inputEvent,true).summary : W().ask(r.tool, r.input);
-      const fo = r.full;
-      const result = r.ioEvent ? UI.toolResult(r.ioEvent,true) : null;
-      if(result) {r.status=result.status;r.badge=result.badge;}
-      const got = r.status === 'running' ? '' : result ? result.summary : W().got(r.tool, r.output);
-      const mark = r.status === 'running' ? (live && TR() ? TR().spinner('sm') : icon('event')) : icon(r.status === 'ok' ? 'check' : r.status === 'fail' ? 'x' : 'warn');
-      const dur = r.t0 && r.t1 ? `<span class="cr-dur">${e(fmtMs(ts(r.t1) - ts(r.t0)))}</span>` : '';
-      const full = (r.fullInput && r.inputEvent ? UI.fullToolIOHtml(r.inputEvent,'input') : '') + (fo && r.ioEvent ? UI.fullToolIOHtml(r.ioEvent) : '');
-      const io = `<div class="cr-io"><span>도구 식별자</span><code>${e(r.tool)}</code></div>` + full + `${r.input != null ? `<div class="cr-io"><span>요청 원문</span><pre class="cr-pre">${e(pretty(r.input))}</pre></div>` : ''}${r.output != null ? `<div class="cr-io"><span>${fo ? '결과 미리보기' : '결과 원문'}</span><pre class="cr-pre">${e(pretty(r.output))}</pre></div>` : ''}`;
-      return `<li class="cr-r tool ${e(r.status)}${r.minor ? ' minor' : ''}">${time}<span class="cr-rm ${e(r.status)}">${mark}</span><div>
-        <details class="cr-call" data-k="${e(stepKey + ':' + r.key)}"><summary><b>${e(W().toolName(r.tool))}</b>${sys ? `<span class="cr-sys">${e(sys)}</span>` : ''}${r.badge ? UI.chipText(r.badge, r.status === 'fail' ? 'danger' : 'warning') : ''}${dur}${W().id(r.tool)}
-        <div class="cr-qa">${ask ? `<span class="cr-q">요청</span> ${e(ask)}` : ''}${fo && fo.stored ? ` ${UI.chipText('원문 보관', 'success')}` : ''}${got || r.status !== 'running' ? `<br><span class="cr-a">결과</span> ${e(got || '결과를 받았습니다(펼쳐서 보기)')}` : ''}</div></summary>${io}</details>${UI.toolIdentityFold(r.tool)}</div></li>`;
+    const tools = rows.filter(r => r.kind === 'tool'), rest = rows.filter(r => r.kind !== 'tool');
+    const groups = new Map();
+    tools.forEach(r => { if (!groups.has(r.tool)) groups.set(r.tool, []); groups.get(r.tool).push(r); });
+    const minor = [...groups.values()].filter(g => g.every(r => r.minor)).reduce((n, g) => n + g.length, 0) + rest.filter(r => r.minor).length;
+    const groupHtml = [...groups].map(([tool, list]) => {
+      const calls = list.map(r => callHtml(r, live));
+      const sys = W().toolSystem(tool);
+      const total = list.reduce((n, r) => n + (r.t0 && r.t1 ? ts(r.t1) - ts(r.t0) : 0), 0);
+      const bad = list.filter(r => r.status === 'fail').length, warn = list.filter(r => r.status === 'warn' || r.status === 'blocked').length, running = list.some(r => r.status === 'running');
+      const state = bad ? `<span class="tg-warn fail">실패 ${bad}회</span>` : warn ? `<span class="tg-warn warn">${e(list.find(r => r.badge)?.badge || '확인 필요')}${warn > 1 ? ` ${warn}회` : ''}</span>` : '';
+      return `<li class="tg${list.every(r => r.minor) ? ' minor' : ''}"><details class="cr-call" data-k="${e(stepKey + ':g:' + tool)}"><summary><span class="tg-name"><b>${e(W().toolName(tool))}</b>${sys ? `<span class="muted">${e(sys)}</span>` : ''}</span><span class="tg-meta">${state}${running && live && TR() ? TR().spinner('sm') : ''}<span class="num">${list.length}회</span>${total ? `<span class="cr-dur num">${e(fmtMs(total))}</span>` : ''}</span></summary>
+        <div class="tg-body"><div class="cr-io"><span>도구 식별자</span><code>${e(tool)}</code></div>${UI.toolIdentityFold(tool)}${calls.map(c => c.line).join('')}</div></details></li>`;
     }).join('');
-    return `${minor ? `<label class="cr-minor-toggle"><input type="checkbox" data-cr-minor> 보조 작업 ${minor}건도 보기 <span class="muted">(쓸 도구 불러오기 · 파일 쓰기 · 명령 실행)</span></label>` : ''}<ol class="cr-rows">${items}</ol>`;
+    const items = rest.map(r => {
+      const time = `<time>${e(hhmmss(r.t0))}</time>`;
+      if (r.kind === 'note') return `<li class="cr-r note${r.minor ? ' minor' : ''}">${time}<div><q>${e(r.text.slice(0, NOTE_MAX_CHARS))}${r.text.length > NOTE_MAX_CHARS ? '…' : ''}</q>${r.data ? `<details class="cr-raw" data-k="${e(stepKey + ':' + r.key)}"><summary>원문</summary><pre class="cr-pre">${e(JSON.stringify(r.data, null, 2))}</pre></details>` : ''}</div></li>`;
+      if (r.kind === 'skill') return `<li class="cr-r skill">${time}<div><b>스킬 파일 읽기 요청</b> ${e(UI.skillLabel(r.data, true).label)} <span class="muted">(${e(W().toolName(r.data.via))}) · 읽기 요청은 읽기 성공을 뜻하지 않습니다</span><details class="cr-raw" data-k="${e(stepKey + ':' + r.key)}"><summary>원문</summary>${rawBlock(r.data)}</details></div></li>`;
+      if (r.kind === 'file') return `<li class="cr-r minor">${time}<div>결과 파일 ${e(r.text)}</div></li>`;
+      if (r.kind === 'sys') return `<li class="cr-r sys">${time}<div><b>${e(r.text)}</b>${sysDetail(r)}</div></li>`;
+      if (r.kind === 'error') return `<li class="cr-r err">${time}<div><b>${e(r.text)}</b><details class="cr-raw" data-k="${e(stepKey + ':' + r.key)}"><summary>원문</summary><pre class="cr-pre">${e(pretty(r.data))}</pre></details></div></li>`;
+      return '';
+    }).join('');
+    return `${minor ? `<label class="cr-minor-toggle"><input type="checkbox" data-cr-minor> 보조 작업 ${minor}건도 보기 <span class="muted">(쓸 도구 불러오기 · 파일 쓰기 · 명령 실행)</span></label>` : ''}${groupHtml ? `<ul class="tg-list">${groupHtml}</ul>` : ''}${items ? `<ol class="cr-rows">${items}</ol>` : ''}`;
   }
   function sysDetail(r) {
     const d = r.data || {};
@@ -799,57 +816,137 @@
     return '';
   }
 
-  const STATE_MARK = { ok: ['check', 'ok', '완료'], bad: ['warn', 'bad', '기준 밖'], fail: ['x', 'fail', '실패'], stop: ['x', 'stop', '멈춤'], wait: ['pause', 'wait', '대기 중'], idle: ['event', 'idle', '시작 전'] };
-  function stateHtml(s) {
-    if (s.state === 'run') return `<span class="cr-state run">${TR() ? TR().spinner('sm') : ''}<span>진행 중</span></span>`;
-    const [k, cls, label] = STATE_MARK[s.state] || STATE_MARK.idle;
-    return `<span class="cr-state ${cls}">${icon(k)}<span>${s.state === 'stop' && s.stopNote ? e(s.stopNote) : label}</span></span>`;
+  /* ---------------------------------------------------------------- 단계 한 줄 (디자인 기준 5-2 · 5-3)
+     번호 점 · 이름 · 맡은 쪽 · 시각과 걸린 시간 한 줄 + 한 문장 결과. AI 단계만 「결론 → 근거 → 자세한 실행 기록」 카드가 처음부터 펼쳐져 있고,
+     사람 · 시스템 단계는 「자세히」 안에 값이 있다. 세는 숫자 · 값 · 내부 id · 원문은 모두 접기 안이다. */
+  const PIN = { ok: 'done', run: 'now', wait: 'now', idle: 'idle', bad: 'bad', fail: 'bad', stop: 'bad' };
+  const PREFIX = { bad: '기준 밖 — ', fail: '실패 — ' };
+  // 접기 안의 구획들: 원문(JSON)만 한 번 더 접는다(접기 안의 접기는 한 번까지)
+  function sectionsHtml(s, secs) {
+    return secs.filter(Boolean).map((x, j) => x.raw ? `<details class="cr-raw" data-k="${e(s.key + ':raw' + j)}"><summary>${e(x.title)}</summary>${x.body}</details>`
+      : `<section class="cr-sec ${x.cls || ''}"><h6 class="label">${e(x.title)}</h6><div class="cr-sec-body">${x.body}</div></section>`).join('');
   }
-  function stepHtml(s, i, n, open) {
-    const dur = s.t0 && s.t1 && s.type !== 'start' && s.type !== 'timer' ? fmtMs(ts(s.t1) - ts(s.t0)) : '';
-    const liveDur = s.live && s.t0 && !s.t1 ? `<span class="cr-dur live" data-since="${e(s.t0)}">${e(fmtMs(Date.now() - ts(s.t0)))}</span>` : '';
-    const chips = (s.chips || []).filter(c => c && c.label).map(c => `<span class="chip tone-${c.tone} sm">${e(c.label)}</span>`).join('');
+  // 단계마다 모아 두던 칩(세는 숫자 · 값)은 접기 안의 한 줄로 — 칩에는 상태 낱말만 넣는다(디자인 기준 4절)
+  const factsLine = s => { const f = (s.chips || []).filter(c => c && c.label).map(c => e(c.label)); return f.length ? `<p class="cr-facts">${f.join(' <span class="sep">·</span> ')}</p>` : ''; };
+  function gapLines(gaps) {
+    return gaps.length ? `<section class="cr-sec cr-gap"><h6 class="label">기록에 없는 것</h6><ul class="cr-gaps">${gaps.map(g => `<li class="${g.strong ? 'strong' : ''}">${e(g.text)}</li>`).join('')}</ul></section>` : '';
+  }
+  function idsLine(s) {
+    const ids = [...new Set([s.w && s.w.id, ...(s.ids || [])].filter(Boolean))];
+    const extra = s.w ? [s.gen ? `${s.gen + 1}회차` : '', s.w.status ? `단계 상태 ${s.w.status}${s.w.draft_status ? ' · ' + s.w.draft_status : ''}` : ''].filter(Boolean) : [];
+    return ids.length || extra.length ? `<p class="cr-ids"><span class="label">내부 값</span> ${ids.map(id => `<code>${e(id)}</code>`).join(' ')}${extra.length ? ` <span class="muted">${e(extra.join(' · '))}</span>` : ''}</p>` : '';
+  }
+  const stepLink = s => s.w ? `<p class="cr-more"><button type="button" class="linkish" data-td-open="${e(s.w.id)}">이 단계가 받은 값과 다음 단계로 넘긴 값 보기</button></p>` : '';
+
+  // AI 단계의 첫 화면에 놓을 것(5-3): 결론 문장 · 원인 / 추천 / 까닭 · 판단을 가른 값 · 비교한 조치. 모두 서버가 준 값에서만 뽑는다 — 없으면 그 줄을 그리지 않는다
+  function agentFront(s, m) {
+    const v = m.v || {}, w = s.w, sources = (m.inst.variable_sources || {});
+    const produced = Object.entries(sources).filter(([, x]) => x && x.kind === 'workitem' && x.id === w.id).map(([k]) => k);
+    const agentCount = m.steps.filter(x => x.type === 'agent').length;
+    const owns = k => produced.includes(k) || (agentCount === 1 && !produced.length);
+    const recorded = w.output?.decision || w.draft?.decision;
+    const recordedId = w.output?.decision_id || w.draft?.decision_id || (produced.includes('decision_id') ? m.decision?.id : null);
+    const d = owns('decision') ? (recorded ? UI.recordedDecision(m.decision, recorded, recordedId) : m.decision) : null;
+    const gc = owns('guide_card') || owns('cause') ? v.guide_card : null;
+    const top = gc && typeof gc === 'object' ? ((gc.causes || []).find(c => c.id === (v.cause || gc.topCause)) || (gc.causes || []).find(c => c.id === gc.topCause) || (gc.causes || [])[0]) : null;
+    const cause = owns('cause') && v.cause ? (top && top.id === v.cause ? top.name : nm(v.cause)) : '';
+    const opts = d && (d.options || []).length ? [...d.options].sort((a, b) => (b.id === d.recommended) - (a.id === d.recommended) || (b.feasible - a.feasible) || ((a.rank || 99) - (b.rank || 99))) : [];
+    const rec = opts.find(o => o.id === d.recommended) || null;
+    const recName = rec ? W().text(rec.name) : '';
+    const mock = rec && UI.evaluationInfo(rec, d).state === 'analysis';
+    const kv = [];
+    if (cause) kv.push(['원인', `${e(cause)}${top && top.failureMode ? ` <span class="muted">— ${e(top.failureMode)}</span>` : ''}`]);
+    if (rec) {
+      const ref = rec.sopId || (((rec.steps || []).find(x => x.manual && x.manual.ref) || {}).manual || {}).ref;
+      kv.push([mock ? '모의 1순위' : '추천', `${e(recName)}${ref ? ` <span class="muted">· ${e(ref)}</span>` : ''}`]);
+      const said = window.hydApprove ? W().text(hydApprove.sentenceAbout(d.explanation, rec.name)) : '';
+      if (said) kv.push(['까닭', e(said)]);
+    }
+    let verdict = '';
+    if (rec && cause) verdict = `원인은 ${cause}${W().josa(cause, '으로/로')} 보고, 「${recName}」${W().josa(recName, '을/를')} ${mock ? '모의 1순위로 계산했습니다' : '추천합니다'}.`;
+    else if (rec) verdict = `조치 ${opts.length}개를 비교해 「${recName}」${W().josa(recName, '을/를')} ${mock ? '모의 1순위로 계산했습니다' : '추천합니다'}.`;
+    else if (cause) verdict = `원인을 ${cause}${W().josa(cause, '으로/로')} 판단했습니다.`;
+    // 판단을 가른 값: 원인 판정에 쓴 증거(잰 값과 기준) — 여섯 줄까지
+    const ev = top ? (top.evidence || []).filter(x => x && x.name && x.value != null).slice(0, 6) : [];
+    const tagOf = x => x.tag || (x.coverage && x.coverage.tag) || '';      // 증거가 읽은 시계열 태그(단위를 여기서 찾는다)
+    const unit = x => tagOf(x) ? W().unit(String(tagOf(x)).toLowerCase()) : '';
+    const facts = ev.length ? `<div><span class="label">판단을 가른 값</span><table class="tbl"><thead><tr><th>관측</th><th class="r">값</th></tr></thead><tbody>${ev.map(x => `<tr><td>${e(x.name)}${x.threshold != null ? `<small>기준 ${e(W().sym(x.expect))} ${e(W().num(x.threshold))}${unit(x) ? ' ' + e(unit(x)) : ''}</small>` : ''}</td><td class="r">${e(W().num(x.value))}${unit(x) ? ' ' + e(unit(x)) : ''}</td></tr>`).join('')}</tbody></table></div>` : '';
+    // 비교한 조치: 고른 줄이 맨 위(파란 면). 탈락 · 감점 까닭은 그 줄의 둘째 줄
+    let alts = '';
+    if (opts.length) {
+      const KIND = { control: UI.t('chip.control'), work_order: UI.t('chip.workOrder') };
+      const kind = o => KIND[o.kind] || '';
+      const score = o => !o.feasible ? '제외' : W().purchaseEconomics(o) ? W().purchaseCostLabel(o) : Number.isFinite(+o.score) && o.score !== null ? `${W().num(+o.score)}점` : '';
+      const why = o => {
+        if (rec && o.id === rec.id) return '';
+        if (!o.feasible) return W().text(((o.violations || [])[0] || {}).annotation || ((o.violations || [])[0] || {}).rule || '규정 위반');
+        const pen = [...(o.penalties || []), ...(o.warnings || [])].map(x => W().text(x.annotation || x.message || '')).filter(Boolean)[0];
+        return [window.hydApprove && rec ? hydApprove.partDiff(o, rec, opts) : '', pen ? `감점 · 경고: ${pen}` : ''].filter(Boolean).join(' / ');
+      };
+      const cols = [['조치', o => `${rec && o.id === rec.id ? `<b>${e(W().text(o.name))}</b>` : e(W().text(o.name))}${why(o) ? `<small>${e(why(o))}</small>` : ''}`, ''],
+        ['구분', o => e(kind(o)), 'nw'], ['점수', o => e(score(o)), 'r'], ['승인 역할', o => e((o.approver && o.approver.name) || ''), 'nw']]
+        .filter(([, cell], i) => i === 0 || opts.some(o => cell(o)));
+      alts = `<div><span class="label">비교한 조치</span><table class="tbl"><thead><tr>${cols.map(([h, , c]) => `<th${c ? ` class="${c}"` : ''}>${h}</th>`).join('')}</tr></thead><tbody>${opts.map(o => `<tr class="${rec && o.id === rec.id ? 'pick' : ''}">${cols.map(([, cell, c]) => `<td${c ? ` class="${c}"` : ''}>${cell(o)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+    }
+    return { verdict, kv, facts, alts };
+  }
+  function agentCard(s, m, gaps) {
+    const f = agentFront(s, m);
+    const tools = (s.rows || []).filter(r => r.kind === 'tool').length;
+    const done = [...(s.sections || [])].filter(Boolean);
+    let top;
+    if (f.verdict || f.kv.length) {
+      top = `<section><span class="label">결론</span>${f.verdict ? `<p class="verdict">${e(f.verdict)}</p>` : ''}${f.kv.length ? `<dl class="kv">${f.kv.map(([k, x]) => `<dt>${e(k)}</dt><dd>${x}</dd>`).join('')}</dl>` : ''}</section>`;
+    } else if (s.live && !['fail', 'stop', 'bad'].includes(s.state)) {
+      // 결론이 아직 없다(실행 중): 그 자리에 한 줄과 고리만 두고 근거 칸은 그리지 않는다
+      top = `<section><span class="label">결론</span><p class="cr-wait">${TR() ? TR().spinner('sm') : ''}<span>${e(s.awaiting ? 'AI 에이전트가 일을 받기를 기다리는 중입니다.' : `판단하는 중${tools ? ` — 도구를 ${tools}번 불렀습니다` : ''}`)}</span></p>${s.now ? `<p class="cr-now muted">${e(s.now)}</p>` : ''}</section>`;
+    } else {
+      // 실패 · 멈춤: 서버가 남긴 오류 문장(없으면 단계 문장)을 그대로
+      const err = [...(s.rows || [])].reverse().find(r => r.kind === 'error');
+      const failed = ['fail', 'stop'].includes(s.state);
+      top = `<section><span class="label">결론</span><p class="verdict">${e((PREFIX[s.state] || (s.state === 'stop' ? `${s.stopNote || '멈춤'} — ` : '')) + (failed && err ? err.text : failed ? '결론을 내지 못하고 끝났습니다.' : s.sentence || ''))}</p></section>`;
+    }
+    const grid = f.facts || f.alts ? `<section class="${f.facts && f.alts ? 'ai-grid' : ''}">${f.facts}${f.alts}</section>` : '';
+    const fold = `<section class="raw"><details class="fold" data-k="${e(s.key + ':more')}"><summary>자세한 실행 기록 <span class="muted">· 도구 호출 · 스킬 전달 · 원문</span></summary><div class="fold-body cr-detail">${factsLine(s)}${sectionsHtml(s, done)}${stepLink(s)}${idsLine(s)}${gapLines(gaps)}</div></details></section>`;
+    return `<div class="ai">${top}${grid}${fold}</div>`;
+  }
+  function stepHtml(s, i, m, gaps, mine) {
+    const dur = s.t0 && s.t1 && s.type !== 'start' && s.type !== 'timer' && ts(s.t1) - ts(s.t0) >= 0 ? fmtMs(ts(s.t1) - ts(s.t0)) : '';
+    const when = s.t0 ? `<time title="${e(UI.dateTime(s.t0))}">${e(hhmmss(s.t0))}</time>${s.live && !s.t1 && !['fail', 'stop'].includes(s.state) ? '부터' : dur ? ` · ${e(dur)}` : ''}` : '';
+    const who = [...new Set([LANE[s.lane], ...String(s.actor || '').split(' · ')].filter(Boolean))].join(' · ');
+    const turn = mine && s.w && mine.has(s.w.id) ? '<span class="chip tone-accent">내 차례</span>' : s.state === 'wait' && s.w && s.w.status === 'PENDING' ? '<span class="chip tone-warning">보류</span>' : '';
+    const head = `<div class="step-head"><strong>${e(s.title)}</strong><span class="who">${e(who)}${s.gen ? ` · ${e(s.gen + 1)}회차` : ''}</span>${turn}<span class="when">${when}</span></div>`;
+    if (s.type === 'agent') return head + agentCard(s, m, gaps);
+    const pre = PREFIX[s.state] || (s.state === 'stop' ? `${s.stopNote || '멈춤'} — ` : '');
     const secs = (s.sections || []).filter(Boolean);
-    const body = secs.map((x, j) => x.raw ? `<details class="cr-sec raw" data-k="${e(s.key + ':raw' + j)}"><summary>${e(x.title)}</summary>${x.body}</details>`
-      : `<details class="cr-sec ${x.cls || ''}" data-k="${e(s.key + ':' + j)}" ${x.open ? 'data-open-default' : ''}><summary>${e(x.title)}</summary><div class="cr-sec-body">${x.body}</div></details>`).join('');
-    const next = i < n - 1 ? `<button type="button" class="btn small ghost cr-next" data-cr-next="${i + 1}">다음 단계 ▸</button>` : '';
-    return `<div class="cr-rail lane-${e(s.lane)}"><span class="cr-dot">${icon(s.icon)}</span></div>
-      <div class="cr-card">
-        <button type="button" class="cr-head" data-cr-toggle aria-expanded="${open}">
-          <span class="cr-no">${i + 1}</span>
-          <span class="cr-title"><b>${e(s.title)}</b><span class="cr-actor lane-${e(s.lane)}">${e(LANE[s.lane])} · ${e(s.actor || '')}</span>${(s.ids || []).filter(Boolean).map(id => W().id(id)).join('')}</span>
-          <span class="cr-meta"><time title="${e(s.t0 ? UI.dateTime(s.t0) : '')}">${e(s.t0 ? hhmmss(s.t0) : '')}</time>${dur ? `<span class="cr-dur">${e(dur)}</span>` : liveDur}${stateHtml(s)}</span>
-        </button>
-        <p class="cr-sentence">${e(s.sentence || '')}</p>
-        ${s.live && s.now ? `<p class="cr-now">${TR() ? TR().spinner('sm') : ''}<span class="tr-shimmer">${e(s.now)}</span></p>` : ''}
-        ${chips ? `<div class="cr-chips">${chips}</div>` : ''}
-        ${body ? `<div class="cr-detail">${body}${next}</div>` : `<div class="cr-detail">${next}</div>`}
-      </div>`;
+    const inside = factsLine(s) + sectionsHtml(s, secs) + stepLink(s) + idsLine(s) + gapLines(gaps);
+    const waitsMe = s.live && s.now && s.lane === 'person';      // 사람을 기다리는 단계는 문장 하나(무엇을 하면 넘어가는지). 고리는 AI · 시스템이 도는 단계에만
+    return `${head}<p class="step-line">${e(waitsMe ? s.now : pre + (s.sentence || ''))}</p>${s.live && s.now && !waitsMe ? `<p class="step-now">${s.state === 'run' && TR() ? TR().spinner('sm') : ''}<span>${e(s.now)}</span></p>` : ''}
+      ${inside ? `<details class="fold" data-k="${e(s.key + ':more')}"><summary>자세히</summary><div class="fold-body cr-detail">${inside}</div></details>` : ''}`;
   }
-  function headHtml(m) {
-    const inst = m.inst, rep = m.outcome;
-    const el = m.t0 ? (m.t1 ? fmtMs(ts(m.t1) - ts(m.t0)) : null) : null;
-    const tone = m.running ? 'accent' : rep && rep.verdict === 'ok' ? 'success' : rep && ['fail', 'rejected'].includes(rep.verdict) ? 'danger' : inst.status === 'COMPLETED' ? 'success' : 'neutral';
-    const label = m.running ? '진행 중' : rep ? (rep.label || (rep.verdict === 'ok' ? '정상' : rep.verdict === 'fail' ? '미달' : '완료')) : UI.status(inst.status);
-    const people = m.steps.filter(s => s.lane === 'person' && s.type !== 'start').length, ai = m.steps.filter(s => s.lane === 'agent').length, sys = m.steps.filter(s => s.lane === 'system' && s.type !== 'start').length;
-    const strip = m.steps.map((s, i) => `<button type="button" class="cr-pill lane-${e(s.lane)} st-${e(s.state)}" data-cr-go="${i}" title="${e(s.sentence || '')}">${icon(s.icon)}<span>${e(s.title)}</span></button>`).join('<span class="cr-pill-arrow" aria-hidden="true">›</span>');
-    return `<div class="cr-summary">
-      <div class="cr-sum-row"><span class="chip tone-${tone}">${e(label)}</span><span>시작 <b>${e(m.t0 ? UI.dateTime(m.t0) : '–')}</b></span><span>걸린 시간 <b ${el ? '' : `data-since="${e(m.t0 || '')}"`}>${e(el || (m.t0 ? fmtMs(Date.now() - ts(m.t0)) : '–'))}</b></span>
-        <span>단계 <b>${m.steps.length}</b></span><span>AI 도구 호출 <b>${m.tools}</b></span></div>
-      <div class="cr-legend"><span class="lane-person">사람 ${people}</span><span class="lane-agent">AI 에이전트 ${ai}</span><span class="lane-system">시스템 ${sys}</span>
-        <span class="cr-tools-bar"><button type="button" class="btn small ghost" data-cr-all>${'모두 펼치기'}</button><label class="cr-ids"><input type="checkbox" data-cr-ids ${W().showIds ? 'checked' : ''}> 원래 이름(id) 보기</label></span></div>
-      ${m.namesUnread ? '<p class="cr-gapline" role="status">이름 목록을 읽지 못해 일부 사람 · AI 에이전트의 이름이 보이지 않습니다. 다시 읽는 중입니다.</p>' : ''}
-      <nav class="cr-strip" aria-label="처리 순서">${strip}</nav>
-    </div>`;
-  }
-  function gapsHtml(m) {
-    if (!m.gaps.length) return '';
+  // 「기록에 없는 것」을 그 단계의 접기 안으로 보낸다: 종류별로 그 말이 가리키는 단계(없으면 마지막 단계)
+  function gapsByStep(m) {
     const uniq = [...new Map(m.gaps.map(g => [g.key, g])).values()].sort((a, b) => (b.strong ? 1 : 0) - (a.strong ? 1 : 0));
-    return UI.fold(`기록에 없는 것 <span class="chip tone-warning sm">${uniq.length}</span> <span class="muted">— 이 처리 건에서 화면이 보여 줄 수 없는 부분</span>`,
-      `<ul class="cr-gaps">${uniq.map(g => `<li class="${g.strong ? 'strong' : ''}">${e(g.text)}</li>`).join('')}</ul>`, { cls: 'cr-gapfold' });
+    const steps = m.steps, last = t => [...steps].reverse().find(t);
+    const home = g => {
+      const k = g.key;
+      if (k.startsWith('noev:')) return k.slice(5);
+      if (k === 'button' || k === 'link') return 'start';
+      if (['cut', 'blocked', 'agents', 'skill', 'think', 'dec', 'prov'].includes(k)) return (last(s => s.type === 'agent') || {}).key;
+      if (k === 'people' || k === 'who') return (last(s => s.type === 'approve') || last(s => s.lane === 'person' && s.type !== 'start') || {}).key;
+      if (k === 'mail') return (last(s => s.type === 'system' && /메일/.test(s.sentence || '')) || {}).key;
+      if (k === 'reobs') return (last(s => s.type === 'check') || {}).key;
+      if (k === 'inc') return (last(s => s.w && /^incident:/.test(s.w.tool || '')) || {}).key;
+      return null;
+    };
+    const out = new Map();
+    uniq.forEach(g => { const key = (steps.find(s => s.key === home(g)) || steps[steps.length - 1] || {}).key; if (!key) return; if (!out.has(key)) out.set(key, []); out.get(key).push(g); });
+    return out;
   }
 
-  /* ================================================================ 컨트롤러: mount(host) → { update(view), ingest(event) } */
+  /* ================================================================ 컨트롤러: mount(host, opts) → { update(view), ingest(event) }
+     opts.mine()  — 지금 내가 처리할 작업 id 묶음(그 단계에 「내 차례」를 붙인다)
+     opts.onDraw(model, host) — 그린 뒤 부른다. 단계마다 [data-step-slot] 칸이 있고 그 안은 부른 쪽이 채운다(멈춘 단계의 복구 단추 등) — 다시 그려도 그 칸은 건드리지 않는다 */
   // 같은 목록은 처리 기록 여럿이 같이 쓴다(1분 보관). 실패는 던져서 처리 기록이 "기록에 없는 것"에 사유를 보인다
   const SHARED = {};
   async function sharedList(key) {
@@ -859,33 +956,17 @@
     return c.rows;
   }
   const mounted = new Set();
-  function mount(host) {
-    const C = { host, view: null, live: new Map(), older: new Map(), ext: {}, open: new Set(), userTouched: new Set(), raf: 0, fetching: false, pid: null };
+  function mount(host, opts = {}) {
+    const C = { host, opts, view: null, live: new Map(), older: new Map(), ext: {}, raf: 0, fetching: false, pid: null };
     host.classList.add('cr');
-    host.innerHTML = '<div data-cr-head></div><div data-cr-older></div><ol class="cr-story" data-cr-steps></ol><div data-cr-gaps></div>';
-    host.addEventListener('click', ev => {
-      const t = ev.target;
-      const tog = t.closest('[data-cr-toggle]');
-      if (tog && host.contains(tog)) { const li = tog.closest('[data-key]'); setOpen(li, !li.classList.contains('open'), true); return; }
-      const go = t.closest('[data-cr-go],[data-cr-next]');
-      if (go) { const i = +(go.dataset.crGo ?? go.dataset.crNext); const li = host.querySelectorAll('[data-cr-steps] > li')[i]; if (li) { setOpen(li, true, true); li.scrollIntoView({ block: 'start', behavior: 'smooth' }); li.querySelector('[data-cr-toggle]')?.focus({ preventScroll: true }); } return; }
-      if (t.closest('[data-cr-older-btn]')) { loadOlder(); return; }
-      if (t.closest('[data-cr-all]')) { const lis = [...host.querySelectorAll('[data-cr-steps] > li')]; const openAll = lis.some(li => !li.classList.contains('open')); lis.forEach(li => setOpen(li, openAll, true)); t.closest('[data-cr-all]').textContent = openAll ? '모두 접기' : '모두 펼치기'; }
-    });
+    host.innerHTML = '<div data-cr-older></div><p class="cr-gapline" data-cr-names hidden role="status">이름 목록을 읽지 못해 일부 사람 · AI 에이전트의 이름이 보이지 않습니다. 다시 읽는 중입니다.</p><ol class="steps" data-cr-steps></ol>';
+    host.addEventListener('click', ev => { if (ev.target.closest('[data-cr-older-btn]')) loadOlder(); });
     host.addEventListener('change', ev => {
-      if (ev.target.matches('[data-cr-ids]')) { W().setShowIds(ev.target.checked); C.lastHtml = {}; draw(true); }
       if (ev.target.matches('[data-cr-minor]')) ev.target.closest('.cr-sec-body, .cr-detail')?.classList.toggle('show-minor', ev.target.checked);
     });
-    function setOpen(li, open, user) {
-      if (!li) return;
-      li.classList.toggle('open', open); li.querySelector('[data-cr-toggle]')?.setAttribute('aria-expanded', String(open));
-      if (open) C.open.add(li.dataset.key); else C.open.delete(li.dataset.key);
-      if (user) C.userTouched.add(li.dataset.key);
-      if (open) li.querySelectorAll('details[data-open-default]:not([data-seen])').forEach(d => { d.open = true; d.dataset.seen = '1'; });
-    }
     C.update = view => {
       if (!view || !view.instance) return;
-      if (C.pid !== view.instance.proc_inst_id) { C.pid = view.instance.proc_inst_id; C.live.clear(); C.older.clear(); C.ext = {}; C.open.clear(); C.userTouched.clear(); C.lastHtml = {}; C.olderBefore = undefined; C.olderCount = 0; C.olderErr = null; }
+      if (C.pid !== view.instance.proc_inst_id) { C.pid = view.instance.proc_inst_id; C.live.clear(); C.older.clear(); C.ext = {}; C.olderBefore = undefined; C.olderCount = 0; C.olderErr = null; host.querySelector('[data-cr-steps]').innerHTML = ''; }
       C.view = view; fetchExt(); schedule();
     };
     C.ingest = ev => {
@@ -907,6 +988,7 @@
         C.olderCount = (C.olderCount || 0) + rows.length;
         C.olderBefore = Array.isArray(r) ? null : (r.has_more ? r.before : null);
         if (!C.olderBefore) C.ext.olderDone = true;
+        C.olderErr = null;
       } catch (err) { C.olderErr = err.message; }
       finally { C.olderBusy = false; draw(true); }
     }
@@ -943,40 +1025,60 @@
     function schedule() { if (C.raf) return; C.raf = requestAnimationFrame(() => { C.raf = 0; draw(); }); }
     function draw(force) {
       if (!C.view) return;
+      const box = host.querySelector('[data-cr-steps]');
       let m;
       try { m = C.model = build(C.view, C.ext, [...C.older.values(), ...C.live.values()]); }
       catch (err) {
-        console.error('처리 기록 그리기 실패', C.view?.instance?.proc_inst_id, err);   // 좌표(처리 건 · 줄)는 개발자 도구에
-        host.querySelector('[data-cr-steps]').innerHTML = `<li class="cr-error">처리 기록을 그리지 못했습니다 — 화면 프로그램 오류입니다. 화면을 새로 고쳐도 같으면 강사에게 알리세요.${UI.fold('오류 원문', `<pre>${e(err.stack || err.message)}</pre>`, { cls: 'small' })}</li>`;
+        console.error('단계 기록 그리기 실패', C.view?.instance?.proc_inst_id, err);   // 좌표(처리 건 · 줄)는 개발자 도구에
+        box.innerHTML = `<li class="cr-error">단계 기록을 그리지 못했습니다 — 화면 프로그램 오류입니다. 화면을 새로 고쳐도 같으면 강사에게 알리세요.${UI.fold('오류 원문', `<pre>${e(err.stack || err.message)}</pre>`)}</li>`;
         return;
       }
       drawOlder();
-      const head = headHtml(m);
-      const headBox = host.querySelector('[data-cr-head]');
-      if (force || headBox._html !== head) { headBox.innerHTML = head; headBox._html = head; }
-      const box = host.querySelector('[data-cr-steps]');
-      const want = m.steps.map(s => s.key);
+      host.querySelector('[data-cr-names]').hidden = !m.namesUnread;
+      // 아직 울리지 않은 기한 타이머는 일어난 일이 아니다 — 단계 줄로 그리지 않는다(기한은 「내가 할 일」 카드와 「자세한 기록」의 단계 표에 있다)
+      const shown = m.steps.filter(s => !(s.type === 'timer' && s.w && s.w.status !== 'DONE'));
+      const gaps = gapsByStep(m), mine = opts.mine ? opts.mine() : null;
+      // 남은 단계는 이름만 한 줄(진행 길의 남은 상자와 같은 차례)
+      const rest = m.running && window.hydFlow ? hydFlow.pathModel(C.view.definition || {}, C.view.workitems, m.inst).nodes.filter(n => n.state === 'todo') : [];
+      const want = shown.map(s => s.key).concat(rest.length ? ['next'] : []);
       [...box.children].forEach(li => { if (!want.includes(li.dataset.key)) li.remove(); });
-      m.steps.forEach((s, i) => {
-        let li = [...box.children].find(x => x.dataset.key === s.key);
-        const open = C.userTouched.has(s.key) ? C.open.has(s.key) : (s.live || C.open.has(s.key));
-        const html = stepHtml(s, i, m.steps.length, open);
-        if (!li) { li = document.createElement('li'); li.dataset.key = s.key; li.className = 'cr-step cr-new'; setTimeout(() => li.classList.remove('cr-new'), 900); }
-        if (force || li._html !== html) {
-          const openK = new Set([...li.querySelectorAll('details[data-k][open]')].map(d => d.dataset.k));
-          const seen = new Set([...li.querySelectorAll('details[data-k][data-seen]')].map(d => d.dataset.k));
-          const minorOn = new Set([...li.querySelectorAll('[data-cr-minor]:checked')].map(x => x.closest('details[data-k]')?.dataset.k));
-          li.innerHTML = html; li._html = html;
-          li.querySelectorAll('details[data-k]').forEach(d => { if (openK.has(d.dataset.k)) d.open = true; if (seen.has(d.dataset.k)) d.dataset.seen = '1'; if (minorOn.has(d.dataset.k)) { const c = d.querySelector('[data-cr-minor]'); if (c) { c.checked = true; d.querySelector('.cr-sec-body')?.classList.add('show-minor'); } } });
+      const place = (key, i, cls, html) => {
+        let li = [...box.children].find(x => x.dataset.key === key);
+        if (!li) {
+          li = document.createElement('li'); li.dataset.key = key;
+          li.innerHTML = '<span class="pin"></span><div class="step-body"><div class="step-main"></div><div class="step-slot" data-step-slot></div></div>';
+          li.classList.add('cr-new'); setTimeout(() => li.classList.remove('cr-new'), 900);
         }
-        li.dataset.lane = s.lane; li.dataset.state = s.state; li.classList.toggle('live', !!s.live);
+        const fresh = li.classList.contains('cr-new');
+        li.className = `step ${cls}${fresh ? ' cr-new' : ''}`;
+        li.querySelector('.pin').textContent = String(i + 1);
+        const main = li.querySelector('.step-main');
+        if (force || main._html !== html) {
+          // 펼친 접기 · 「보조 작업도 보기」 · 원문 칸의 스크롤 자리를 지킨다. 그 안에서 글을 쓰는 중이면 바꾸지 않는다(다음 그리기에서 반영)
+          if (main.contains(document.activeElement) && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) { schedule(); }
+          else {
+            const openK = new Set([...main.querySelectorAll('details[data-k][open]')].map(d => d.dataset.k));
+            const minorOn = !!main.querySelector('[data-cr-minor]:checked');
+            const scroll = new Map([...main.querySelectorAll('details[data-k][open] pre')].map((p, j) => [j, p.scrollTop]));
+            main.innerHTML = html; main._html = html;
+            main.querySelectorAll('details[data-k]').forEach(d => { if (openK.has(d.dataset.k)) d.open = true; });
+            if (minorOn) { const c = main.querySelector('[data-cr-minor]'); if (c) { c.checked = true; c.closest('.cr-sec-body, .cr-detail')?.classList.add('show-minor'); } }
+            [...main.querySelectorAll('details[data-k][open] pre')].forEach((p, j) => { if (scroll.get(j)) p.scrollTop = scroll.get(j); });
+          }
+        }
         if (box.children[i] !== li) box.insertBefore(li, box.children[i] || null);
-        if (open && !li.classList.contains('open')) setOpen(li, true, false);
-        else if (open) li.querySelectorAll('details[data-open-default]:not([data-seen])').forEach(x => { x.open = true; x.dataset.seen = '1'; });   // 실행 중에 새로 생긴 칸(도구 호출 등)도 펼친다
-        else if (!open && li.classList.contains('open') && !C.userTouched.has(s.key)) setOpen(li, false, false);
+        return li;
+      };
+      shown.forEach((s, i) => {
+        const li = place(s.key, i, `${PIN[s.state] || 'idle'}${s.type === 'agent' ? ' is-ai' : ''}${s.live ? ' live' : ''}`, stepHtml(s, i, m, gaps.get(s.key) || [], mine));
+        li.dataset.state = s.state; li.dataset.lane = s.lane;
+        if (s.w) li.dataset.step = s.w.id; else delete li.dataset.step;
       });
-      const gaps = gapsHtml(m), gbox = host.querySelector('[data-cr-gaps]');
-      if (gbox._html !== gaps) { const wasOpen = !!gbox.querySelector('details[open]'); gbox.innerHTML = gaps; gbox._html = gaps; if (wasOpen) gbox.querySelector('details')?.setAttribute('open', ''); }
+      if (rest.length) {
+        const who = [...new Set(rest.map(n => n.who === 'agent' ? 'AI 에이전트' : n.who === 'human' ? (n.role || '담당자') : '시스템'))].join(' · ');
+        place('next', shown.length, 'next', `<div class="step-head"><strong>${e(rest.map(n => UI.flowName(n.name)).join(' · '))}</strong><span class="who">${e(who)}</span></div>`);
+      }
+      if (opts.onDraw) opts.onDraw(m, host);
     }
     C.draw = draw;
     mounted.add(C);
@@ -988,5 +1090,5 @@
   wireBus();
   window.addEventListener('hyd-tool-payload',redrawAll);
 
-  window.hydRecord = { mount, build, rowsOf, mounted, altHtml, knowledgeHtml, pretty };   // altHtml · knowledgeHtml: 판단 한 건만으로 그리는 부분(시험 · 다른 화면)
+  window.hydRecord = { mount, build, rowsOf, mounted, altHtml, knowledgeHtml, pretty, agentFront };   // altHtml · knowledgeHtml: 판단 한 건만으로 그리는 부분(시험 · 다른 화면)
 })();

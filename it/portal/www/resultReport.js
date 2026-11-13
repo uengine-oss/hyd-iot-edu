@@ -104,20 +104,19 @@
       orderWarned.add(inst.proc_inst_id);
       console.error('[hydResultReport] 처리 건 응답에 flow_order 가 없어 같은 시각에 끝난 단계의 순서를 가를 수 없습니다', inst.proc_inst_id);
     }
-    const values = (rep && rep.values || []).map(x => `<div class="rr-val ${x.ok === false ? 'bad' : x.ok === true ? 'good' : ''}"><span>${e(UI.idText(x.name))}</span><b class="num">${e(num(x.value))}${x.unit ? ' ' + e(x.unit) : ''}</b>${x.limit != null ? `<small>기준 ${e(x.limit)}</small>` : ''}</div>`).join('');
-    const steps = sys.map(w => {
-      const st = w.status === 'DONE' ? 'done' : 'run';
-      const ref = refOf(w.output);
-      return `<li class="${st}"><span class="rr-dot" aria-hidden="true"></span><span class="rr-step">${e(UI.flowName ? UI.flowName(w.activity_name) : w.activity_name)}</span>${ref ? `<span class="mono rr-ref">${e(ref)}</span>` : ''}<span class="muted rr-time">${w.end_date ? e(UI.time(w.end_date)) : e(UI.t('trace.running'))}</span></li>`;
-    }).join('');
-    return `<section class="rr-card tone-${tone}" aria-label="결과 보고">
-      <div class="rr-head"><span class="rr-badge">${e(label)}</span><div><h4>${e((rep && rep.title) || '결과 보고')}</h4>${rep && rep.summary ? `<p>${e(UI.idText(rep.summary))}</p>` : !done ? '<p>시스템이 실행하고 확인하는 중입니다. 끝나면 여기에 결과가 올라옵니다.</p>' : ''}</div></div>
-      ${values ? `<div class="rr-vals">${values}</div>` : ''}
+    // 결과 한 장(디자인 기준 5-2): 결과 문장 하나(판정 — 요약)와 그 아래 값 · 승인한 안. 흰 바탕, 왼쪽에 상태색 점 하나.
+    // 시스템이 한 일의 목록은 바로 아래 단계 기록이 보이므로 여기에 다시 그리지 않는다(한 가지는 한 곳에서)
+    const summary = rep && rep.summary ? UI.idText(rep.summary) : !done && inst.status === 'RUNNING' ? '시스템이 실행하고 확인하는 중입니다. 끝나면 결과가 여기에 올라옵니다.' : '';
+    const end = inst.end_label && inst.end_label !== label ? inst.end_label : '';
+    const values = (rep && rep.values || []).map(x => `<dt>${e(UI.idText(x.name))}</dt><dd class="num${x.ok === false ? ' bad' : ''}">${e(num(x.value))}${x.unit ? ' ' + e(x.unit) : ''}${x.limit != null ? ` <span class="muted">· 기준 ${e(x.limit)}</span>` : ''}${x.ok === false ? ' <span class="rr-flag">기준 밖</span>' : ''}</dd>`).join('');
+    const who = chosen || v.approved_by ? `<dt>승인한 안</dt><dd>${e(UI.idText(chosen || '–'))}${approver ? ` <span class="muted">· ${e(approver)}${v.approved_role ? ` (${e(UI.roleName(v.approved_role, view.definition))})` : ''}</span>` : ''}</dd>` : '';
+    return `<section class="case-result tone-${tone}" aria-label="결과"><span class="dot" aria-hidden="true"></span><div>
+      <span class="label">${e((rep && rep.title) || '결과')}</span>
+      <p class="verdict">${e(label)}${summary ? ` — ${e(summary)}` : ''}</p>
+      ${end ? `<p class="muted">끝난 곳: ${e(end)}</p>` : ''}
+      ${values || who ? `<dl class="kv">${values}${who}</dl>` : ''}
       ${rep && rep.valuesError ? `<p class="neg">${e(rep.valuesError)}</p>` : ''}
-      ${chosen || v.approved_by ? `<p class="rr-who"><span class="ap-label">승인한 안</span> <b>${e(UI.idText(chosen || '–'))}</b>${approver ? ` · ${e(approver)}${v.approved_role ? ` (${e(UI.roleName(v.approved_role, view.definition))})` : ''}` : ''}</p>` : ''}
-      ${steps ? `<div class="rr-steps-wrap"><span class="ap-label">시스템이 한 일</span><ol class="rr-steps">${steps}</ol></div>` : ''}
-      ${window.hydRecord ? `<div class="rr-foot"><button type="button" class="btn small" data-open-record>처리 기록 보기</button><span class="muted">시작부터 담당자의 결정과 시스템 처리까지 단계별로</span></div>` : ''}
-    </section>`;
+    </div></section>`;
   }
   window.hydResultReport = { html, fromValues, receiptDetail, incidentMeaning };
 })();

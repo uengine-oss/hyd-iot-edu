@@ -5,12 +5,14 @@
    Nothing here changes the definition or calls the engine.
    A141 — the same diagram in two orientations. Layout is computed on an abstract (primary = depth, secondary = lane) grid and
    mapped to the screen: horizontal (1440, unchanged look) or vertical (narrow widths such as 1024: lanes become columns,
-   depth runs downward, so the diagram fits the width and never scrolls sideways). */
+   depth runs downward, so the diagram fits the width and never scrolls sideways).
+   2026-11-14 — 보기는 둘이다(디자인 기준 6-2): 전체 흐름(render — 레인 · 모든 분기)과 진행 길(renderPath — 처리 건 한 건이 지나온 길과 남은 길만 한 줄).
+   그림은 줄여서 끼워 맞추지 않는다. 제 크기로 놓고 넘치면 옆으로 밀며, [전체 흐름 보기]는 큰 판(openFull)을 연다. */
 (function () {
   const LANES = [['agent', 'flow.lane.agent'], ['human', 'flow.lane.human'], ['system', 'flow.lane.system']];
-  const TW = 120, TH = 44, GW = 18, EV = 15;
-  // 상자 안 글자 폭(12px 글꼴, 한글 1칸 · 영문 · 숫자 · 기호 0.6칸)으로 나눈다 — 상자 안쪽 104px ≈ 8.5칸
-  const MAXW = 8.5, width = t => [...t].reduce((w, c) => w + (/[ㄱ-힣]/.test(c) ? 1 : 0.6), 0);
+  const TW = 132, TH = 48, GW = 18, EV = 12;
+  // 상자 안 글자 폭(12px 글꼴, 한글 1칸 · 영문 · 숫자 · 기호 0.6칸)으로 나눈다 — 상자 안쪽 116px ≈ 9칸(디자인 기준 6-2)
+  const MAXW = 9, width = t => [...t].reduce((w, c) => w + (/[ㄱ-힣]/.test(c) ? 1 : 0.6), 0);
   function fitLines(name, max) {
     if (width(name) <= MAXW) return [name];
     const parts = name.split(' · ');                     // 「원인 진단 · 냉각 조치 제안」은 가운뎃점에서 먼저 나눈다
@@ -29,8 +31,8 @@
   }
   // PITCH: distance between depths on the primary axis · ROW: distance between stacked nodes on the secondary axis · HEAD: lane header size on the primary axis
   const METRICS = {
-    horizontal: { PITCH: 142, HEAD: 96, TOP: 8, LANE_MIN: 88, ROW: 62, vertical: false },
-    vertical: { PITCH: 72, HEAD: 30, TOP: 8, LANE_MIN: 150, ROW: TW + 14, vertical: true },
+    horizontal: { PITCH: 168, HEAD: 96, TOP: 8, LANE_MIN: 96, ROW: 72, vertical: false },
+    vertical: { PITCH: 76, HEAD: 30, TOP: 8, LANE_MIN: 160, ROW: TW + 14, vertical: true },
   };
 
   function laneOf(node, roleEndpoint) {
@@ -124,7 +126,7 @@
     const mv = (p, s) => `M${X(p, s)} ${Y(p, s)}`, lp = p => (vertical ? 'V' : 'H') + p, ls = s => (vertical ? 'H' : 'V') + s;
     const halfP = n => n.kind === 'task' ? (vertical ? TH / 2 : TW / 2) : n.kind === 'gateway' ? GW : EV;
     const halfS = n => n.kind === 'task' ? (vertical ? TW / 2 : TH / 2) : n.kind === 'gateway' ? GW : EV;
-    let s = `<svg viewBox="0 0 ${w} ${h}" ${vertical ? `style="max-width:${w}px"` : ''} role="img" aria-label="${esc(UI.t('proc.flow'))}"><defs><marker id="fArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#6b7a8c"/></marker><marker id="fArrD" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#2e9e6a"/></marker></defs>`;
+    let s = `<svg viewBox="0 0 ${w} ${h}" data-flow-w="${w}" style="${vertical ? `max-width:${w}px` : `width:${w}px;min-width:0;max-width:none`}" role="img" aria-label="${esc(UI.t('proc.flow'))}"><defs><marker id="fArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#6b7a8c"/></marker><marker id="fArrD" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#2e9e6a"/></marker></defs>`;
     LANES.forEach(([l, term], i) => {
       const s0 = g.laneS0[l], size = g.laneSize[l];
       if (vertical) s += `<rect x="${s0}" y="4" width="${size}" height="${h - 8}" class="f-lane ${i % 2 ? 'alt' : ''}"/><rect x="${s0}" y="4" width="${size}" height="${M.HEAD - 8}" class="f-lanehead"/><text x="${s0 + size / 2}" y="${4 + (M.HEAD - 8) / 2 + 4}" text-anchor="middle" class="f-lanet">${esc(UI.t(term))}</text>`;
@@ -168,7 +170,7 @@
         const roleName = g.lane.get(n.id) === 'human' ? n.role : '';
         const lines = fitLines(name, roleName ? 1 : 2), y0 = cy + (roleName ? -2 : lines.length > 1 ? -3 : 4);
         const title = lines.some(l => l.endsWith('…')) ? `<title>${esc(name)}</title>` : '';     // 줄여 쓴 이름은 마우스를 올리면 전체
-        s += `<g class="${cls}" data-node="${esc(n.id)}">${title}<rect x="${cx - TW / 2}" y="${cy - TH / 2}" width="${TW}" height="${TH}" rx="8"/>`
+        s += `<g class="${cls}" data-node="${esc(n.id)}">${title}<rect x="${cx - TW / 2}" y="${cy - TH / 2}" width="${TW}" height="${TH}" rx="10"/>`
           + lines.map((l, i) => `<text x="${cx}" y="${y0 + i * 14}" text-anchor="middle" class="f-t">${esc(l)}</text>`).join('')
           + `${roleName ? `<text x="${cx}" y="${cy + 13}" text-anchor="middle" class="f-s">${esc(roleName)}</text>` : ''}</g>`;
       } else if (n.kind === 'gateway') {
@@ -189,32 +191,219 @@
     });
     s += '</svg>';
     const legend = `<span class="f-legend"><span><i class="done"></i>${esc(UI.t('proc.legend.done'))}</span><span><i class="current"></i>${esc(UI.t('proc.legend.now'))}</span><span><i class="fail"></i>${esc(UI.t('proc.legend.stop'))}</span><span><i class="skipped"></i>${esc(UI.t('proc.legend.skipped'))}</span></span>`;
-    const fitButton = vertical ? '' : `<button type="button" class="btn small" data-flow-fit aria-pressed="false">${esc(UI.t('btn.fit'))}</button>`;
+    // [전체 흐름 보기]: 이 그림을 큰 판(openFull)에 제 크기로 연다 — 확대 · 축소 · 맞춤 · 닫기. 세로 배치(좁은 폭)에서도 같다
+    const fitButton = `<button type="button" class="btn small" data-flow-full>${esc(UI.t('btn.fit'))}</button>`;
     return `<div class="flow-cap"><span>${caption}</span><span class="row-wrap">${legend}${fitButton}</span></div><div class="flow-scroll${vertical ? ' vert' : ''}" tabindex="0" role="region" aria-label="${esc(UI.t('proc.flow'))}">${s}</div>`;
   }
 
-  // Keep scroll position and the fit toggle across redraws of the same diagram.
+  // 같은 그림을 다시 그릴 때 옆으로 민 자리를 지킨다.
   // A141: `fold` = summary html → the diagram sits inside a closed details (narrow widths: the action stays near the top); open state survives redraws
   function mount(box, html, key, { fold = '' } = {}) {
     const old = box.querySelector('.flow-scroll');
     const same = box.dataset.flowKey === key;
-    const left = same && old ? old.scrollLeft : 0, fit = same && old?.classList.contains('fit');
+    const left = same && old ? old.scrollLeft : 0;
     const wasOpen = same && !!box.querySelector('details.flow-fold[open]');
     box.innerHTML = fold ? `<details class="fold flow-fold" ${wasOpen ? 'open' : ''}><summary>${fold}</summary><div class="fold-body">${html}</div></details>` : html;
     box.dataset.flowKey = key;
-    const region = box.querySelector('.flow-scroll'), button = box.querySelector('[data-flow-fit]');
-    if (!region || !button) return;
-    region.classList.toggle('fit', !!fit); region.scrollLeft = left;
-    button.setAttribute('aria-pressed', String(!!fit)); button.textContent = fit ? UI.t('btn.unfit') : UI.t('btn.fit');
+    const region = box.querySelector('.flow-scroll');
+    if (region) region.scrollLeft = left;
+  }
+
+  /* ---------------------------------------------------------------- 진행 길 (디자인 기준 6-2 1번 · 견본 sample_instances)
+     처리 건 한 건이 실제로 지나온 단계와, 지금 단계에서 끝까지 가는 기본 길만 한 줄로 놓는다. 레인 · 분기 마름모 · 가지 않은 가지는 그리지 않는다
+     (그것은 전체 흐름 그림의 몫이다). 맡은 쪽은 상자의 둘째 줄에 글로 쓴다. 상태는 색만이 아니라 선 모양(실선 · 굵은 선과 빛 · 점선)과 표시 · 글자로도 가른다. */
+  const PW = 132, PGAP = 28, PEV = 9, PPAD = 24, PTOP = 44;   // 상자 폭 · 상자 사이 · 이벤트 원 반지름 · 좌우 여백 · 위 도구 줄 자리
+  function pathModel(def, workitems, instance) {
+    const roles = new Map((def.roles || []).map(r => [r.name, r.endpoint]));
+    const acts = new Map((def.activities || []).map(a => [a.id, a]));
+    const events = new Map((def.events || []).map(e => [e.id, e]));
+    const gateways = new Set((def.gateways || []).map(g => g.id));
+    const next = new Map();
+    (def.sequences || []).forEach(q => { if (!next.has(q.source)) next.set(q.source, []); next.get(q.source).push(q); });
+    // 지나온 단계: 활동마다 가장 최근 작업 행 하나(다시 수행하면 마지막 회차), 시작한 차례대로. 예정(TODO)과 엔진이 시작 전에 취소한 가지는 지나온 것이 아니다
+    const latest = new Map();
+    (workitems || []).forEach(w => {
+      if (!acts.has(w.activity_id) || w.status === 'TODO') return;
+      if (w.status === 'CANCELLED' && /^cancelled:/i.test(String(w.log || '').trim())) return;
+      const o = latest.get(w.activity_id);
+      if (!o || (w.generation || 0) > (o.generation || 0) || ((w.generation || 0) === (o.generation || 0) && String(w.start_date || '') >= String(o.start_date || ''))) latest.set(w.activity_id, w);
+    });
+    const order = Object.fromEntries((def.activities || []).map((a, i) => [a.id, i]));
+    const passed = [...latest.values()].sort((a, b) => String(a.start_date || '').localeCompare(String(b.start_date || '')) || order[a.activity_id] - order[b.activity_id]);
+    const finished = !!instance && ['COMPLETED', 'CANCELLED'].includes(instance.status);
+    const stateOf = w => w.draft_status === 'FAILED' || w.status === 'FAILED' || w.status === 'CANCELLED' ? 'fail' : hydSteps.stepStateOf(w.status) === 'current' ? (w.status === 'PENDING' ? 'hold' : 'now') : 'done';
+    const who = a => { const ep = a.agent || roles.get(a.role) || ''; return ep === 'sys:agent' || a.orchestration === 'cliagents' ? 'agent' : /^role:|^user:/.test(ep) ? 'human' : 'system'; };
+    const nodes = passed.map(w => ({ id: w.activity_id, wid: w.id, name: acts.get(w.activity_id).name, state: stateOf(w), who: who(acts.get(w.activity_id)), role: acts.get(w.activity_id).role || '' }));
+    // 남은 길: 지금 단계(없으면 마지막으로 지나온 단계)에서 끝 이벤트까지. 갈림에서는 조건이 붙은 가지 가운데 정의에 먼저 적힌 것(일이 진행되는 가지 — 「승인」 「예」)을 따라간다.
+    // 조건 없는 가지는 그 밖의 경우(반려 · 미달 · 그 밖)의 길이라 남은 길로 보이지 않는다. 실제로 그 가지를 타면 지나온 길에 그대로 나온다
+    let end = null;
+    if (finished) end = events.get(instance.end_event) || null;
+    else {
+      const live = nodes.filter(n => n.state === 'now' || n.state === 'hold');
+      let cur = (live[live.length - 1] || nodes[nodes.length - 1] || {}).id || ((def.events || []).find(e => e.type === 'startEvent') || {}).id;
+      const seen = new Set(nodes.map(n => n.id));
+      for (let guard = 0; cur && guard < 200; guard++) {
+        const outs = (next.get(cur) || []).filter(q => !(events.get(q.target) || {}).attachedTo);
+        const q = outs.find(x => x.condition && !seen.has(x.target)) || outs.find(x => !seen.has(x.target));
+        if (!q) break;
+        cur = q.target; seen.add(cur);
+        if (acts.has(cur)) { const a = acts.get(cur); nodes.push({ id: cur, name: a.name, state: 'todo', who: who(a), role: a.role || '' }); }
+        else if (!gateways.has(cur) && (events.get(cur) || {}).type === 'endEvent') { end = events.get(cur); break; }
+      }
+    }
+    const start = (def.events || []).find(e => e.type === 'startEvent') || null;
+    return { nodes, start, end, finished, started: latest.size > 0 };
+  }
+  const WHO = { agent: 'AI 에이전트', system: '시스템' };
+  const PSTATE = { done: '끝남', now: '지금', hold: '보류', fail: '멈춤', todo: '남음' };
+  // mine: 지금 내가 처리할 단계의 활동 id 들(「담당자 · 내 차례」로 쓴다)
+  function renderPath(def, { workitems = null, instance = null, mine = [] } = {}) {
+    if (!def || !(def.activities || []).length) return '';
+    const m = pathModel(def, workitems, instance);
+    const lines = m.nodes.map(n => fitLines(UI.flowName(n.name), 2));
+    const two = lines.some(l => l.length > 1), BH = two ? 62 : 48;
+    const cy = PTOP + 20 + BH / 2, h = cy + BH / 2 + 34;
+    const edge = (x1, x2, cls) => `<path class="cv-edge ${cls}" d="M${x1} ${cy}H${x2 - 2}" marker-end="url(#pArr${cls === 'done' ? 'D' : ''})"/>`;
+    const parts = [];
+    const sx = PPAD + PEV;
+    let x = sx + PEV;
+    let prevState = m.started || m.finished ? 'done' : 'todo';
+    const startName = UI.flowName((m.start || {}).name || '시작');
+    parts.push(`<circle class="cv-ev ${prevState === 'done' ? 'done' : ''}" cx="${sx}" cy="${cy}" r="${PEV}"/><text class="cv-cap" x="${PPAD}" y="${cy + BH / 2 + 20}">${esc(startName)}</text>`);
+    let nowX = null;
+    m.nodes.forEach((n, i) => {
+      const bx = x + PGAP, cx = bx + PW / 2, top = cy - BH / 2;
+      parts.push(edge(x, bx, prevState === 'done' && n.state !== 'todo' ? 'done' : 'todo'));
+      const live = n.state === 'now' || n.state === 'hold';
+      const whoText = n.who === 'human' ? (mine.includes(n.id) && live ? '담당자 · 내 차례' : n.role || '담당자') : WHO[n.who];
+      const tail = n.state === 'fail' ? ' · 멈춤' : n.state === 'hold' ? ' · 보류' : '';
+      const l = lines[i], y0 = top + (two ? (l.length > 1 ? 19 : 26) : 20);
+      const halo = live ? `<rect class="cv-halo" x="${bx}" y="${top}" width="${PW}" height="${BH}" rx="10"/>` : '';
+      const mark = n.state === 'done' ? `<path class="cv-tick" d="M${bx + PW - 17} ${top + 10}l3 3 5-6"/>` : n.state === 'fail' ? `<path class="cv-tick" d="M${bx + PW - 16} ${top + 7}l6 6m0-6l-6 6"/>` : '';
+      parts.push(`<g class="cv-node ${n.state === 'hold' ? 'now hold' : n.state}" data-path-node="${esc(n.id)}"${n.wid ? ` data-path-step="${esc(n.wid)}" tabindex="0" role="button" aria-label="${esc(`${UI.flowName(n.name)} — ${PSTATE[n.state]}. 단계 기록에서 보기`)}"` : ''}><title>${esc(`${UI.flowName(n.name)} — ${PSTATE[n.state]}`)}</title>${halo}<rect x="${bx}" y="${top}" width="${PW}" height="${BH}" rx="10"/>${mark}`
+        + l.map((t, j) => `<text class="t" x="${cx}" y="${y0 + j * 15}" text-anchor="middle">${esc(t)}</text>`).join('')
+        + `<text class="who" x="${cx}" y="${cy + BH / 2 - 9}" text-anchor="middle">${esc(whoText + tail)}</text></g>`);
+      if (nowX == null && (live || n.state === 'fail')) nowX = cx;
+      prevState = n.state === 'done' ? 'done' : 'todo';
+      x = bx + PW;
+    });
+    const ex = x + PGAP + PEV, w = ex + PEV + PPAD;
+    const ended = m.finished;
+    parts.push(edge(x, ex - PEV, ended ? 'done' : 'todo'));
+    const endName = UI.flowName((ended && instance && instance.end_label) || (m.end || {}).name || '끝');
+    parts.push(`<circle class="cv-ev end ${ended ? 'done' : ''}" cx="${ex}" cy="${cy}" r="${PEV}"/><text class="cv-cap" x="${w - PPAD}" y="${cy + BH / 2 + 20}" text-anchor="end">${esc(endName)}</text>`);
+    const glow = nowX != null ? `<ellipse cx="${nowX}" cy="${cy}" rx="120" ry="58" fill="url(#pGlow)"/>` : '';
+    const label = `진행 길: ${[startName, ...m.nodes.map(n => `${UI.flowName(n.name)}(${PSTATE[n.state]})`), endName].join(', ')}`;
+    const svg = `<svg viewBox="0 0 ${w} ${h}" data-flow-w="${w}" style="width:${w}px" role="img" aria-label="${esc(label)}"><defs>
+      <marker id="pArrD" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="cv-arr done" d="M0 1 9 5 0 9z"/></marker>
+      <marker id="pArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="cv-arr" d="M0 1 9 5 0 9z"/></marker>
+      <radialGradient id="pGlow"><stop offset="0" class="cv-glow-0"/><stop offset="1" class="cv-glow-1"/></radialGradient></defs>${glow}${parts.join('')}</svg>`;
+    const has = st => m.nodes.some(n => n.state === st);
+    const legend = `<span class="cv-legend"><span class="lg-done"><i></i>끝남</span><span class="lg-now"><i></i>지금</span>${has('fail') ? '<span class="lg-fail"><i></i>멈춤</span>' : ''}<span class="lg-todo"><i></i>남음</span></span>`;
+    return `<div class="canvas path-canvas" data-path data-path-now="${nowX == null ? '' : nowX}"><div class="cv-bar">${legend}<span class="cv-tools" role="group" aria-label="그림 크기"><button type="button" data-path-zoom="-1" aria-label="축소" title="축소">−</button><button type="button" data-path-zoom="1" aria-label="확대" title="확대">+</button><button type="button" data-path-fit aria-label="화면에 맞춤" aria-pressed="false" title="화면에 맞춤">⤢</button></span></div><div class="cv-scroll" tabindex="0" role="region" aria-label="진행 길">${svg}</div></div>`;
+  }
+  // 같은 처리 건의 진행 길을 다시 그릴 때: 배율과 옆으로 민 자리를 지킨다. 처음 그리거나 지금 단계가 바뀌면 지금 상자가 가운데 오게 민다
+  function mountPath(box, html, key) {
+    const same = box.dataset.flowKey === key;
+    if (same && box._pathHtml === html) return;
+    const old = box.querySelector('.cv-scroll'), oldNow = box.querySelector('[data-path]')?.dataset.pathNow;
+    const left = old ? old.scrollLeft : 0, zoom = same ? +(box.dataset.zoomNow || 1) : 1, fit = same && box.dataset.fitNow === '1';
+    box.innerHTML = html; box._pathHtml = html; box.dataset.flowKey = key; box.dataset.zoomNow = String(zoom); box.dataset.fitNow = fit ? '1' : '';
+    const region = box.querySelector('.cv-scroll'), now = box.querySelector('[data-path]')?.dataset.pathNow;
+    if (!region) return;
+    if (!region._drag) { region._drag = true; drag(region); }
+    applyPathZoom(box);
+    const z = +(box.dataset.zoomShown || 1);
+    if (same && old && oldNow === now) region.scrollLeft = left;
+    else if (now) region.scrollLeft = Math.max(0, +now * z - region.clientWidth / 2);
+    else region.scrollLeft = region.scrollWidth;                  // 끝난 건: 끝 쪽(결과)이 보이게
+  }
+  const ZMIN = 0.5, ZMAX = 2, FIT_MIN = 0.85;                     // 맞춤은 글자가 11px 아래로 내려가지 않는 배율에서 멈춘다(6-2 2번)
+  function applyPathZoom(box) {
+    const svg = box.querySelector('.cv-scroll svg'), region = box.querySelector('.cv-scroll'); if (!svg || !region) return;
+    const natural = +svg.dataset.flowW, fit = box.dataset.fitNow === '1';
+    const z = fit ? Math.min(1, Math.max(FIT_MIN, (region.clientWidth - 2) / natural)) : +(box.dataset.zoomNow || 1);
+    svg.style.width = Math.round(natural * z) + 'px';
+    box.dataset.zoomShown = String(z);
+    const b = box.querySelector('[data-path-fit]'); if (b) { b.setAttribute('aria-pressed', String(fit)); b.title = fit ? '원래 크기로' : '화면에 맞춤'; b.setAttribute('aria-label', b.title); }
+  }
+
+  /* ---------------------------------------------------------------- 전체 흐름 큰 판: 확대 · 축소 · 맞춤 · 닫기
+     전에는 [전체 흐름 보기]가 그림 칸의 svg 최소 폭(980px)만 풀었다. 칸이 980px 보다 넓으면 아무것도 바뀌지 않았고, 좁으면 이미 줄어든 그림이
+     조금 더 줄 뿐이었다(폭 1,700px 그림이 700px 칸에서 12px 글자가 5px). 좁은 폭(세로 배치)에서는 단추 자체가 없었다.
+     이제 그림을 제 크기로 큰 판에 띄우고, 판 안에서 끌어 옮기고 확대 · 축소한다. html = render(...) 가 돌려준 조각 또는 그 안의 svg. */
+  function openFull(html, title = '') {
+    document.querySelector('dialog.flow-dialog')?.remove();
+    const holder = document.createElement('div'); holder.innerHTML = html;
+    const src = holder.querySelector('svg');
+    const dlg = document.createElement('dialog');
+    dlg.className = 'flow-dialog';
+    dlg.setAttribute('aria-label', title ? `${title} — ${UI.t('btn.fit')}` : UI.t('btn.fit'));
+    const legend = holder.querySelector('.f-legend');
+    dlg.innerHTML = `<header class="fd-head"><div class="fd-title"><h3>${esc(UI.t('proc.flow'))}</h3>${title ? `<p>${esc(title)}</p>` : ''}</div>
+      <span class="fd-tools"><span class="fd-zoom num" data-fd-pct aria-live="polite"></span><span class="seg" role="group" aria-label="그림 크기"><button type="button" data-fd-zoom="-1" aria-label="축소">−</button><button type="button" data-fd-zoom="1" aria-label="확대">+</button><button type="button" data-fd-fit>화면에 맞춤</button><button type="button" data-fd-one>100 %</button></span><button type="button" class="btn small" data-fd-close>닫기</button></span></header>
+      ${legend ? `<div class="fd-legend">${legend.outerHTML}<span class="muted">끌어서 옮기고 휠로 확대합니다</span></div>` : ''}
+      <div class="fd-stage flow-scroll" tabindex="0" role="region" aria-label="${esc(UI.t('proc.flow'))}">${src ? src.outerHTML : UI.empty('그릴 흐름이 없습니다', '흐름 정의에 단계가 없습니다.')}</div>`;
+    document.body.append(dlg);
+    const stage = dlg.querySelector('.fd-stage'), svg = stage.querySelector('svg');
+    const natural = svg ? +(svg.dataset.flowW || svg.viewBox.baseVal.width) : 0;
+    let z = 1;
+    const set = (nz, keep) => {
+      if (!svg) return;
+      const hh = () => Math.max(1, svg.getBoundingClientRect().height);
+      const rx = keep ? (stage.scrollLeft + stage.clientWidth / 2) / (natural * z) : 0, ry = keep ? (stage.scrollTop + stage.clientHeight / 2) / hh() : 0;
+      z = Math.min(ZMAX, Math.max(ZMIN, Math.round(nz * 100) / 100));
+      svg.style.cssText = `width:${Math.round(natural * z)}px;min-width:0;max-width:none`;
+      dlg.querySelector('[data-fd-pct]').textContent = `${Math.round(z * 100)} %`;
+      if (keep) { stage.scrollLeft = rx * natural * z - stage.clientWidth / 2; stage.scrollTop = ry * hh() - stage.clientHeight / 2; }
+    };
+    const fit = () => { if (!svg) return; const vb = svg.viewBox.baseVal, pad = 26; set(Math.min((stage.clientWidth - pad) / vb.width, (stage.clientHeight - pad) / vb.height) * (vb.width / natural)); stage.scrollLeft = 0; stage.scrollTop = 0; };
+    dlg.addEventListener('click', e => {
+      if (e.target === dlg || e.target.closest('[data-fd-close]')) { dlg.close(); return; }
+      const zb = e.target.closest('[data-fd-zoom]'); if (zb) { set(z + 0.1 * +zb.dataset.fdZoom, true); return; }
+      if (e.target.closest('[data-fd-fit]')) { fit(); return; }
+      if (e.target.closest('[data-fd-one]')) set(1, true);
+    });
+    stage.addEventListener('wheel', e => { if (!svg) return; e.preventDefault(); set(z + (e.deltaY < 0 ? 0.1 : -0.1), true); }, { passive: false });
+    drag(stage);
+    dlg.addEventListener('close', () => dlg.remove());
+    dlg.showModal();
+    set(1);
+    const cur = stage.querySelector('.f-node.current');           // 지금 단계(없으면 그림의 처음)가 보이게
+    if (cur) { const r = cur.getBoundingClientRect(), sr = stage.getBoundingClientRect(); stage.scrollLeft += r.left - sr.left - stage.clientWidth / 2 + r.width / 2; stage.scrollTop += r.top - sr.top - stage.clientHeight / 2 + r.height / 2; }
+    dlg.querySelector('[data-fd-close]').focus();
+    return dlg;
+  }
+  // 캔버스를 끌어서 옮긴다(단추를 누른 것은 끌기가 아니다 — 4px 넘게 움직였을 때만). 끈 직후의 click 은 data-dragged 로 가려 상자가 눌리지 않게 한다
+  function drag(region) {
+    let from = null;
+    region.addEventListener('pointerdown', e => { if (e.button !== 0 || e.target.closest('button')) return; from = { x: e.clientX, y: e.clientY, l: region.scrollLeft, t: region.scrollTop, moved: false }; });
+    region.addEventListener('pointermove', e => {
+      if (!from) return;
+      const dx = e.clientX - from.x, dy = e.clientY - from.y;
+      if (!from.moved && Math.abs(dx) + Math.abs(dy) < 4) return;
+      if (!from.moved) { from.moved = true; region.classList.add('dragging'); if (region.setPointerCapture) region.setPointerCapture(e.pointerId); }
+      region.scrollLeft = from.l - dx; region.scrollTop = from.t - dy;
+    });
+    const stop = () => { if (from && from.moved) { region.dataset.dragged = '1'; setTimeout(() => { delete region.dataset.dragged; }, 0); } from = null; region.classList.remove('dragging'); };
+    region.addEventListener('pointerup', stop); region.addEventListener('pointercancel', stop);
   }
   document.addEventListener('click', e => {
-    const b = e.target.closest('[data-flow-fit]'); if (!b) return;
-    const region = b.closest('.flow-cap').nextElementSibling; if (!region) return;
-    const fit = region.classList.toggle('fit');
-    b.setAttribute('aria-pressed', String(fit)); b.textContent = fit ? UI.t('btn.unfit') : UI.t('btn.fit');
+    const full = e.target.closest('[data-flow-full]');
+    if (full) {                       // 흐름 그림 위의 [전체 흐름 보기]: 바로 아래 그림을 큰 판으로
+      const cap = full.closest('.flow-cap'), region = cap && cap.nextElementSibling;
+      if (region && region.querySelector('svg')) openFull(cap.outerHTML + region.outerHTML, full.dataset.flowTitle || '');
+      return;
+    }
+    const zb = e.target.closest('[data-path-zoom]'), fb = e.target.closest('[data-path-fit]');
+    if (!zb && !fb) return;
+    const box = (zb || fb).closest('[data-path]').parentElement;
+    if (zb) { const z = Math.min(ZMAX, Math.max(ZMIN, Math.round((+(box.dataset.zoomShown || box.dataset.zoomNow || 1) + 0.1 * +zb.dataset.pathZoom) * 10) / 10)); box.dataset.zoomNow = String(z); box.dataset.fitNow = ''; }
+    else box.dataset.fitNow = box.dataset.fitNow === '1' ? '' : '1';
+    applyPathZoom(box);
   });
   // A141: narrow viewport (≤ 1100 px, the same breakpoint as the rest of the shell) → vertical orientation. 1440 keeps the horizontal diagram.
   function narrow() { return window.innerWidth <= 1100; }
 
-  window.hydFlow = { render, mount, narrow };
+  window.hydFlow = { render, mount, narrow, renderPath, mountPath, pathModel, openFull, drag };
 })();
