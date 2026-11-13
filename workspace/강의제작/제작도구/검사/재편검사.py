@@ -1,4 +1,5 @@
 """지침 여덟(공통 + 일 일곱)의 꼴과 규칙 문서 전체(DOCS · 스킬)의 끊긴 경로를 잰다. 오류마다 파일:줄, 하나라도 있으면 종료 1.
+글자 수 · 규칙 수 · 세부 줄 수 · 한 줄 길이는 오류가 아니라 경고다 — 문서가 부풀었는지 알려 줄 뿐, 그 숫자에 맞추려고 문장을 전보체로 줄이거나 새 기준을 한 줄에 끼워 넣지 않는다.
 언제: 지침 · CLAUDE.md · AGENTS.md · workspace/README.md · 스킬을 고친 뒤(`동기화.py commit`이 그런 커밋마다 부른다).
 - 백틱 안 `작업/…` 경로(이 PC의 git 밖 작업 자료)도 없으면 오류다. 클라우드(`CLAUDE_CODE_REMOTE=true`, 또는 작업/ 폴더가 없는 곳)에서는 오류 대신 미검증 목록을 찍는다.
   클라우드도 큰 중간 파일을 작업/에 두므로(CLAUDE.md 7절) 폴더가 있는지만으로는 이 PC인지 모른다.
@@ -17,9 +18,10 @@ GUIDES = "workspace/강의제작/지침"
 LETTER = {"공통": "C", "실라버스": "L", "덱": "D", "대본": "S", "영상": "V", "코딩랩": "K", "가이드": "P", "배포": "B"}
 WORKS = tuple(d for d in LETTER if d != "공통")
 SECTIONS = ["반드시", "길", "자료", "함정"]
-LIMIT = {"공통": 9000, "영상": 26000}          # 그 밖의 일 문서는 20,000자 — 읽기 쉬운 문장이 먼저, 상한은 다시 부풀지 않게만
-MAX_RULES = 15
-WEAK = re.compile(r"가능하면|적절히|충분히|필요 ?시(?:에)?(?![가-힣])")
+LIMIT = {"공통": 9000, "영상": 26000}          # 경고 기준. 그 밖의 일 문서는 20,000자 — 넘으면 줄일 곳(겹친 문장 · 사례 · 경위)을 찾으라는 신호다
+MAX_RULES = 15                                # 경고 기준
+MAX_DETAILS = 5                               # 경고 기준
+MAX_LINE = 700                                # 경고 기준 — 한 줄에 여러 기준이 끼워 넣어졌다는 신호다
 OLD_NO = re.compile(r"[A-Z]규-\d+|[A-Z](?:요|목|맥)-\d+")
 BT_OLD = re.compile(r"`[A-Z]-\d+`")
 NEW_REF = re.compile(r"(?<![A-Za-z0-9_\-:./])([CLDSVKPB])-(\d+)(?![0-9A-Za-z\-_]|\.\d)")
@@ -65,7 +67,7 @@ def rule_ids(guide_dir, work):
     return list(rule_texts(guide_dir, work))
 
 
-def check_guide(p, d, errs):
+def check_guide(p, d, errs, warns):
     text = p.read_text(encoding="utf-8")
     lines = text.splitlines()
     if not lines or not lines[0].startswith("# "):
@@ -79,12 +81,12 @@ def check_guide(p, d, errs):
         errs.append(f"{p}: 절이 정확히 {SECTIONS}가 아님 — {names}")
     limit = LIMIT.get(d, 20000)
     if len(text) > limit:
-        errs.append(f"{p}: {len(text):,}자 — 상한 {limit:,}자")
+        warns.append(f"{p}: {len(text):,}자 — 기준 {limit:,}자")
     found = rules(p)
     if not found:
         errs.append(f"{p}: `## 반드시`에 번호 규칙이 없음")
     if len(found) > MAX_RULES:
-        errs.append(f"{p}: 규칙 {len(found)}개 — 상한 {MAX_RULES}개")
+        warns.append(f"{p}: 규칙 {len(found)}개 — 기준 {MAX_RULES}개")
     for k, (n, i, body, details) in enumerate(found, 1):
         if n is None:
             errs.append(f"{p}:{i}: `## 반드시`에 번호 규칙 밖의 줄 — 「{body[:40]}」")
@@ -96,16 +98,16 @@ def check_guide(p, d, errs):
             errs.append(f"{p}:{i}: 규칙 꼴이 `{n}. **{LETTER[d]}-{n}. 규칙** — 판정: …`이 아님")
         elif (m[1], int(m[2])) != (LETTER[d], n):
             errs.append(f"{p}:{i}: 규칙 ID {m[1]}-{m[2]} — 목록 번호 · 문서 글자로 {LETTER[d]}-{n}이어야 한다")
-        if len(details) > 5:
-            errs.append(f"{p}:{i}: 세부 {len(details)}줄 — 5줄까지")
+        if len(details) > MAX_DETAILS:
+            warns.append(f"{p}:{i}: 세부 {len(details)}줄 — 기준 {MAX_DETAILS}줄")
         for j, l in details:
             if l.startswith("#"):
                 errs.append(f"{p}:{j}: `## 반드시` 안 소제목 — 규칙 목록만 둔다")
             elif not l.startswith(("   ", "\t")):
                 errs.append(f"{p}:{j}: 규칙 세부가 들여쓰지 않음")
     for i, l in enumerate(lines, 1):
-        for m in WEAK.finditer(l):
-            errs.append(f"{p}:{i}: 약한 말 「{m[0]}」")
+        if len(l) > MAX_LINE:
+            warns.append(f"{p}:{i}: 한 줄 {len(l):,}자 — 기준 {MAX_LINE}자(기준 하나에 한 문장으로 나눈다)")
         for m in OLD_NO.finditer(l):
             errs.append(f"{p}:{i}: 옛 번호 「{m[0]}」")
         for m in BT_OLD.finditer(l):
@@ -140,15 +142,16 @@ def check_paths(p, root, errs, unchecked):
                 errs.append(f"{p}:{i}: 없는 경로 {t}")
 
 
-def run(root, unchecked=None):
+def run(root, unchecked=None, warns=None):
     errs, guide_dir = [], root / GUIDES
     unchecked = [] if unchecked is None else unchecked
+    warns = [] if warns is None else warns
     for d in LETTER:
         p = guide_dir / f"{d}.md"
         if not p.exists():
             errs.append(f"{p}: 문서 없음")
             continue
-        check_guide(p, d, errs)
+        check_guide(p, d, errs, warns)
         check_paths(p, root, errs, unchecked)
     check_refs(guide_dir, errs)
     for n in DOCS:
@@ -188,10 +191,15 @@ def selftest():
 
     cases = []
 
-    def check(name, change, expect):
+    def check(name, change, expect, warn=None):
+        """expect: 그 글이 든 오류가 있어야 한다(None이면 오류 0). warn: 오류는 0이고 그 글이 든 경고가 있어야 한다."""
         write_all()
         change()
-        e = run(tmp)
+        w = []
+        e = run(tmp, warns=w)
+        if warn:
+            cases.append((name, not e and any(warn in x for x in w), (e or w)[:2]))
+            return
         hit = [x for x in e if expect in x] if expect else e
         cases.append((name, bool(hit) if expect else not e, (hit or e)[:2]))
 
@@ -217,15 +225,14 @@ def selftest():
     check("굵게 안 ID가 빠짐", sub(D, "**D-2. 덱", "**덱"), "규칙 꼴이")
     check("굵게 안 ID가 목록 번호와 다름", sub(D, "**D-2. 덱", "**D-3. 덱"), "규칙 ID D-3")
     check("굵게 안 ID 글자가 문서와 다름", sub(D, "**D-2. 덱", "**S-2. 덱"), "규칙 ID S-2")
-    check("세부 6줄", sub(D, "   세부", "   가\n   나\n   다\n   라\n   마\n   세부"), "세부 6줄")
+    check("세부 6줄은 경고", sub(D, "   세부", "   가\n   나\n   다\n   라\n   마\n   세부"), None, warn="세부 6줄")
     check("세부를 들여쓰지 않음", sub(D, "   세부", "세부"), "들여쓰지 않음")
-    check("규칙 16개", lambda: (g / "가이드.md").write_text(doc("가이드", 16), encoding="utf-8"), "규칙 16개")
-    check("일 문서 20,000자 넘음", sub(D, "## 함정\n- 한 줄", "## 함정\n- " + "가" * 20000), "상한 20,000자")
-    check("영상은 26,000자까지", sub(f"{GUIDES}/영상.md", "## 함정\n- 한 줄", "## 함정\n- " + "가" * 25000), None)
-    check("공통 9,000자 넘음", sub(f"{GUIDES}/공통.md", "   세부", "   " + "가" * 9000), "상한 9,000자")
-    for w in ("가능하면", "적절히", "충분히", "필요시", "필요 시"):
-        check(f"약한 말 {w}", sub(D, "- 한 줄", f"- {w} 본다"), "약한 말")
-    check("「필요 시간」은 약한 말이 아님", lambda: None, None)
+    check("규칙 16개는 경고", lambda: (g / "가이드.md").write_text(doc("가이드", 16), encoding="utf-8"), None, warn="규칙 16개")
+    check("일 문서 20,000자 넘음은 경고", sub(D, "## 함정\n- 한 줄", "## 함정\n- 한 줄\n" + "- 가나다라마\n" * 3000), None, warn="기준 20,000자")
+    check("공통 9,000자 넘음은 경고", sub(f"{GUIDES}/공통.md", "   세부", ("   " + "가나다라마 " * 110 + "\n") * 14 + "   세부"), None, warn="기준 9,000자")
+    check("한 줄 700자 넘음은 경고", sub(D, "- 한 줄", "- " + "가" * 700), None, warn="한 줄 702자")
+    for w in ("가능하면", "적절히", "충분히", "필요 시"):
+        check(f"판단을 맡기는 말 「{w}」은 막지 않음", sub(D, "- 한 줄", f"- {w} 본다"), None)
     check("옛 규칙 번호 S규-2", sub(D, "- 한 줄", "- S규-2를 본다"), "옛 번호 「S규-2」")
     check("옛 요령 번호 V요-3", sub(D, "- 한 줄", "- V요-3 그대로"), "옛 번호 「V요-3」")
     check("백틱 안 옛 번호", sub(D, "- 한 줄", "- 본다 `S-37`"), "백틱 안 옛 번호")
@@ -268,8 +275,10 @@ if __name__ == "__main__":
         sys.exit(0 if selftest() else 1)
     if sys.argv[1:]:
         sys.exit(__doc__)
-    left = []
-    found = run(ROOT, left)
+    left, warned = [], []
+    found = run(ROOT, left, warned)
+    if warned:
+        print(f"경고 {len(warned)}(오류 아님 — 줄일 곳을 찾으라는 신호):\n  " + "\n  ".join(warned))
     if left:
         print(f"이 PC의 작업/ 자료가 없어 재지 못한 작업/ 경로 {len(left)}개(이 PC에서 다시 잰다):\n  " + "\n  ".join(left[:20]))
     print("\n".join(found + [f"오류 {len(found)}"]))
