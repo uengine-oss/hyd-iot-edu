@@ -1,4 +1,4 @@
-/* 지식 지도 · 조치 판단 규칙 · 승인과 실행 (enterprise.js) — ontology v2.
+/* 지식 지도 · 규칙 판단 · 업무 시스템 기록 (enterprise.js) — ontology v2.
    Loaded after app.js and reuses its helpers ($, el, esc, fmt, getJ, postJ, state, selectTab).
    Data: agent for the ontology and the decision engine, process for approval, enterprise-sim for ERP/MES/… — all through the same-origin table API (layers.js).
    A122: wording from UI.terms; action-candidate card = title · chips · score · one line · evidence folded. */
@@ -405,7 +405,7 @@ function rangeField(id, label, a, value) {
 }
 window.hydCards = { cardHtml, reviewMatches, rangeField, actionLabel };
 
-/* ================================================= 조치 판단 규칙 */
+/* ================================================= 규칙 판단(판단 실험) */
 async function loadDecisionView() {
   const sel = $('#decPattern');
   if (!$('#decResult').innerHTML) $('#decResult').innerHTML = UI.empty(UI.t('dec.empty'));
@@ -461,7 +461,7 @@ function renderDecision() {
   // 원인: 1위 큰 글씨 + 고장 유형 칩 + 증거, 2위 이하 접기 (C2)
   const causes = d.causes || [];
   const evidenceHtml = c => (c.evidence || []).map(e => { const unknown = e.status === 'UNKNOWN' || e.passed == null || e.value == null || !!e.error;
-    const unit = window.hydWords.unit(e.tag);      // 이상 확인 화면(app.js guideCardHtml)과 같은 꼴 — 충족 여부를 색만이 아니라 글자로
+    const unit = window.hydWords.unit(e.tag);      // 충족 여부를 색만이 아니라 글자로
     return `<div class="kv-line"><span class="${unknown ? 'muted' : e.passed ? 'pos' : 'neg'}">${esc(e.name)}</span> — ${esc(UI.t(unknown ? 'inc.unknown' : e.passed ? 'inc.pass' : 'inc.fail'))} · ${esc(UI.t('inc.observed'))} ${esc(fmt(e.value, 3))}${unit ? ' ' + esc(unit) : ''}</div>`; }).join('') || `<span class="muted">${esc(UI.t('inc.noEvidence'))}</span>`;
   if (causes.length) {
     const top = causes[0];
@@ -486,12 +486,16 @@ function renderDecision() {
 }
 $('#decRun').addEventListener('click', runDecision);
 
-/* ================================================= 승인과 실행 */
+/* ================================================= 업무 시스템 기록(유압 실습장)
+   이 화면의 몫은 모의 업무 시스템의 표와 거래 전 · 후 값이다. AI 판단 · 조치 후보 · 승인 · 실행 결과는 처리 건 화면 한 곳에서 본다 — 여기에 그 사본(판단 목록 · 흐름 그림 · 조치 카드)을 두지 않는다.
+   예외 하나: 처리 건 없이 제출된 판단. 지금 서버는 사건과 처리 건이 있는 판단만 받지만(process main.py 판단 접수), 옛 판에서 남은 것은 처리 건 화면에 나오지 않아
+   이 화면이 유일한 길이다 — 그런 판단이 있을 때만 「처리 건 없이 제출된 판단」 절(#decOrphans)이 보인다. */
+const orphan = d => !(d.origin || {}).incident;
 async function refreshProcess() {
   if (state.tab !== 'process') return;
-  try { ent.decisions = await getJ(API.process + '/api/decisions'); ent.decisionsError = ''; } catch (e) { ent.decisionsError = e.message; }
+  try { ent.decisions = requireList(await getJ(API.process + '/api/decisions'), '판단 목록').filter(orphan); ent.decisionsError = ''; } catch (e) { ent.decisionsError = e.message; }
   try { [ent.entState, ent.tx] = await Promise.all([getJ(API.ent + '/api/state'), getJ(API.ent + '/api/transactions?limit=12')]); ent.entError = ''; } catch (e) { ent.entState = null; ent.tx = []; ent.entError = e.message; }
-  if (!ent.decSel && ent.decisions.length) ent.decSel = ent.decisions[0].id;
+  if (!ent.decisions.some(d => d.id === ent.decSel)) { ent.decSel = ent.decisions.length ? ent.decisions[0].id : null; ent.decDetail = null; }
   const selected = ent.decSel;
   if (selected) {
     // 고른 판단을 못 읽으면 「판단을 선택하세요」(안 고른 것)로 보이지 않는다 — 사유를 두고 2.5초마다 다시 읽는다
@@ -501,13 +505,17 @@ async function refreshProcess() {
   renderProcess();
 }
 function renderProcess() {
+  renderSystems();
+  // 처리 건 없이 남은 판단이 없으면 그 절을 보이지 않는다(목록을 못 읽었으면 까닭을 보인다)
+  $('#decOrphans').hidden = !ent.decisions.length && !ent.decisionsError;
+  if ($('#decOrphans').hidden) return;
   const list = $('#decList');
   const sig = JSON.stringify([ent.decisions, ent.decSel, ent.decisionsError, ent.decShown, UI.namesVersion]);
   if (list.dataset.sig !== sig) {
     list.dataset.sig = sig;
     const focused = list.contains(document.activeElement) ? document.activeElement.dataset.itemId : null;
     const scroll = list.scrollTop;
-    list.innerHTML = ent.decisions.length ? '' : UI.emptyGo(UI.t('proc.empty'), UI.t('proc.emptySub'), 'scenario', UI.t('nav.scenario'), 'compact');
+    list.innerHTML = '';
     if (ent.decisionsError) list.innerHTML = `<div class="form-msg neg" role="alert">${esc(UI.t('proc.listError'))} (${esc(ent.decisionsError)})</div>`;
     const paged = UI.page(ent.decisions, ent.decShown, d => d.id === ent.decSel);
     for (const d of paged.rows) {
@@ -530,7 +538,6 @@ function renderProcess() {
     list.scrollTop = scroll;
   }
   renderDecisionApproval();
-  renderSystems();
 }
 function renderDecisionApproval() {
   const box = $('#decDetail'); const d = ent.decDetail;
@@ -547,14 +554,11 @@ function renderDecisionApproval() {
   let html = `<div class="detail-head"><div class="row"><h2>${esc(UI.idText(sc.name || ''))}</h2>${UI.chip(d.state)}</div><div class="sub">${esc(d.asset || '')}${d.approvedBy ? ` · ${esc(UI.t('inc.approvedBy'))} ${esc(UI.who(d.approvedBy))}` : ''}</div></div>`;
   html += UI.evaluationHtml(d) + summaryBlock(d.explanation);
   html += UI.metaFold([[UI.t('dec.asset'), esc(d.asset || '')], ['고장 유형', esc(UI.idText(sc.failureMode || ''))], [UI.t('dec.cause'), esc(UI.idText(sc.cause || ''))], [UI.t('proc.submitted'), esc(UI.dateTime(d.created))], ['ID', `<span class="mono">${esc(d.id)}</span>`]], 'fold.case');
-  // 판단은 처리 건의 승인 단계에서만 승인 · 거절한다(서버에 판단 단독 승인 길이 없다 — test_main.test_처리_건_밖의_옛_승인_경로는_없다).
-  // 사건(경보)에서 나온 판단은 처리 건으로 가는 버튼 하나, 사건 없이 들어온 판단은 승인할 길이 없음을 그대로 알린다(서버도 접수를 거절한다 — FA2 넘김).
-  if (pending && (d.origin || {}).incident) {
-    html += `<div class="await-approval" role="status"><div><b>담당자 승인을 기다리는 중입니다</b><span>이 판단은 처리 건의 승인 단계에서 승인하거나 반려합니다. 이 화면은 기록을 보는 곳입니다.</span></div>${UI.actions(`<button class="btn primary" id="decGoInstance">승인 화면으로 이동 →</button>`, ent.form.msg || '')}</div>` +
-      UI.fold(`AI가 제안한 조치 안 <span class="chip tone-neutral sm">${opts.length}</span> <span class="muted">— 보기 전용</span>`, `<div class="hitl-opts">${opts.map(o => cardHtml(o, { rec: d.recommended, chosen: d.chosen, maxAbs, decision: d })).join('')}</div>`, { cls: 'plain' });
-  } else if (pending) {
+  // 판단은 처리 건의 승인 단계에서만 승인 · 반려한다(서버에 판단 단독 승인 길이 없다 — test_main.test_처리_건_밖의_옛_승인_경로는_없다).
+  // 이 절에 오는 것은 처리 건 없이 남은 판단뿐이라, 승인을 기다리는 것이면 승인할 길이 없음을 그대로 알린다
+  if (pending) {
     html += `<div class="hitl-opts">${opts.map(o => cardHtml(o, { rec: d.recommended, chosen: d.chosen, maxAbs, decision: d })).join('')}</div>` +
-      `<p class="neg" role="status">이 판단은 경보로 열린 처리 건 없이 제출돼 승인하거나 반려할 수 없습니다. 판단은 처리 건 안에서만 승인합니다 — 설비 경보(결함 시뮬레이션)로 처리 건을 열고 그 승인 단계에서 고르세요.</p>`;
+      `<p class="neg" role="status">이 판단은 경보로 열린 처리 건 없이 제출돼 승인하거나 반려할 수 없습니다. 판단은 처리 건 안에서만 승인합니다. 결함 시뮬레이션으로 경보를 내어 처리 건을 열고 그 승인 단계에서 고르세요.</p>`;
   } else {
     html += `<h3 style="font-size:14px;margin:var(--s4) 0 var(--s2)">${esc(UI.t('decisions'))}</h3><div class="hitl-opts">` + opts.map(o => cardHtml(o, { rec: d.recommended, chosen: d.chosen, maxAbs, decision: d })).join('') + '</div>';
   }
@@ -562,12 +566,6 @@ function renderDecisionApproval() {
     d.executions.map(x => UI.card({ title: esc(UI.who(x.system) + (x.code ? ' · ' + actionLabel({ code: x.code }) : '')), chips: UI.chip(x.status), value: x.ref ? `<span class="kv mono">${esc(x.ref)}</span>` : '', sub: esc(x.detail || ''), cls: 'soft' })).join('') + '</div>';
   html += `<div style="margin-top:var(--s4)">` + UI.fold(`${esc(UI.t('proc.history'))} <span class="chip tone-neutral sm">${(d.history || []).length}</span>`, '<div class="audit">' + (d.history || []).map(h => UI.eventRecord({ time: h.t, name: h.state, actor: h.by, detail: h.reason || '', raw: h })).join('') + '</div>') + '</div>';
   box.innerHTML = html;
-  $('#decGoInstance')?.addEventListener('click', async e => {
-    const b = e.currentTarget; b.disabled = true;
-    try { if (!(await window.hydHitl?.openIncident(d.origin.incident))) { ent.form.msg = '이 판단의 처리 건을 찾지 못했습니다. 왼쪽 메뉴 「처리 건」에서 같은 설비의 건을 여세요.'; ent.lastDetailSig = null; renderDecisionApproval(); } }
-    catch (err) { ent.form.msg = err.message; ent.lastDetailSig = null; renderDecisionApproval(); }
-    finally { b.disabled = false; }
-  });
 }
 // 업무 시스템 보드: 업무 상태(/api/state — 생산 주문 · 정비 오더 · 구매 요청 · 입고)에 있는 표만 그린다.
 // 품질 처분 · 전력 · 대체 출하는 쓰는 거래가 없어 업무 DB에서 지웠다(FE 070) — 없는 칸을 읽지 않는다

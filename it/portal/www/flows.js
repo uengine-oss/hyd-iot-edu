@@ -1,5 +1,7 @@
-/* B3 흐름 가져오기 — bpmn.io 에서 그린 .bpmn → task 별 부품 · 담당 → 시작 조건 → 분기 조건 → 사전 검사 → 판본 등록.
-   window.hydFlows.mount(el) 이 그린다(셸 MOUNTS.flows). UI 는 돌아갈 만큼만(다듬기는 실라버스 뒤).
+/* B3 흐름 — bpmn.io 에서 그린 .bpmn → task 별 부품 · 담당 → 시작 조건 → 분기 조건 → 사전 검사 → 판본 등록 → (배포) → 시작.
+   화면은 위에서 아래로 다섯 단계다(index.html view-flows): ① 그림 가져오기 ② 단계 종류 붙이기 · 검사 ③ 판본 등록 — 이 파일이 #flowsView 에 그린다,
+   ④ 배포 — definitionDeploy.js 가 #definitionDeployPanel 에 그린다, ⑤ 시작 — 이 파일이 #flowsStart 에 그린다(등록한 흐름과 판본 · 직접 시작).
+   맨 위 단계 표시(#flowSteps)는 지금 연 흐름이 어디까지 왔는지를 보인다. window.hydFlows.mount(el) 이 그린다(셸 MOUNTS.flows).
    API: procsvc/flows_api.py (/api/flows/catalog · import · {id} · {id}/mapping · {id}/check · {id}/register ·
         {id}/versions/{v}/bpmn · reset), 직접 시작은 기존 POST /api/instances/start.
    원본 대조: process-gpt-vue3 ProcessGPTBackend.ts:573-685(proc_def.bpmn · 판본 snapshot) — 화면 모델러는 만들지 않는다(bpmn.io 에서 그린다). */
@@ -56,6 +58,20 @@
   // ---------------------------------------------------------------- 화면
   const S = { el: null, cat: null, view: null, mapping: null, list: null, busy: false, timer: null, result: null };
   const api = p => API.process + p;
+  const startBox = () => document.getElementById('flowsStart');      // ⑤ 시작 — 등록한 흐름과 판본 목록의 자리(④ 배포 패널 아래, index.html)
+  const stageHead = (n, title) => `<h2 class="flow-stage-h" id="flowStage${n}"><span class="n">${n}</span>${esc(title)}</h2>`;
+  // 단계 표시: 지금 연 흐름이 끝낸 단계는 ✓, 다음에 할 단계 하나를 강조한다(지식 문서 등록의 3단계 진행줄 hitl.js 와 같은 꼴). 배포 여부는 배포 패널이 읽은 값
+  const STEPS = ['그림 가져오기', '단계 종류 붙이기 · 검사', '판본 등록', '배포', '시작'];
+  function drawSteps() {
+    const box = document.getElementById('flowSteps'), v = S.view;
+    const done = [!!v, !!(v && v.check && v.check.ok), !!(v && (v.versions || []).length), !!(v && window.hydDefinitionDeploy.deployed(v.definition_id)), false];
+    const stage = done.indexOf(false);
+    box.innerHTML = STEPS.map((name, i) => `<li class="${i < stage ? 'done' : i === stage ? 'on' : ''}"${i === stage ? ' aria-current="step"' : ''}><span class="n">${i < stage ? '✓' : i + 1}</span>${esc(name)}</li>`).join('');
+  }
+  window.addEventListener('hyd:deployed', () => { if (S.el) drawSteps(); });   // 배포 패널이 배포 상태를 다시 읽었다
+  // ② 자리에 아직 연 흐름이 없을 때: 무엇을 하면 채워지는지
+  const EDITOR_EMPTY = '<p class="field-hint flow-empty">1단계에서 그림을 가져오거나, 아래 5단계의 목록에서 [매핑 열기]로 가져와 둔 흐름을 열면 단계 표가 여기에 나옵니다.</p>';
+  function clearEditor(html) { S.el.querySelector('#flowEditor').innerHTML = html || EDITOR_EMPTY; drawSteps(); }
   const h = s => esc(s);
   // 공용 요청 함수 하나(requestJ) — 고칠 곳 목록(problems)은 서버 사유 칸(error.detail)에서 꺼낸다
   async function call(method, path, body) {
@@ -78,20 +94,21 @@
   function mount(el) {
     S.el = el;
     el.innerHTML = `
-      <section class="card form" aria-label="그림 가져오기">
-        <header class="card-head"><div class="card-title"><h3>그림 가져오기</h3></div></header>
+      <section class="flow-stage" aria-labelledby="flowStage1">${stageHead(1, STEPS[0])}
+      <div class="card form">
         <p class="field-hint">제공된 교대 인수인계 흐름을 demo.bpmn.io 에서 열어 고친 뒤 왼쪽 아래 <b>Download BPMN diagram</b> 으로 받은 .bpmn 파일을 고릅니다. 수업에서는 이 흐름만 등록됩니다. 같은 흐름 구분 이름으로 다시 가져오면 앞서 고른 매핑이 남습니다.</p>
         <div class="form-grid">
           ${UI.field({ label: '.bpmn 파일', input: '<input type="file" id="flowFile" accept=".bpmn,.xml,application/xml,text/xml">', required: true })}
           ${UI.field({ label: '흐름 구분 이름(영문)', input: '<input id="flowId" placeholder="예: oil_check" autocomplete="off">', hint: ID_HINT })}
         </div>
         <div class="form-actions"><span class="form-msg" id="flowImportMsg" role="status"></span><button class="btn primary" id="flowImport">가져오기</button></div>
-      </section>
-      <div id="flowEditor"></div>
-      ${UI.fold('가져온 흐름 · 판본', '<div id="flowList"></div><div class="form-actions"><button class="btn small danger" id="flowReset">기준으로 되돌리기</button></div>', { open: true })}`;
+      </div></section>
+      <section class="flow-stage" aria-labelledby="flowStage2">${stageHead(2, STEPS[1])}
+      <div id="flowEditor">${EDITOR_EMPTY}</div></section>`;
+    startBox().innerHTML = '<div id="flowList"></div><div class="form-actions"><span class="field-hint">가져온 흐름과 판본, 매핑 초안을 모두 지우려면 누릅니다. 기준 흐름과 지금 배포된 흐름은 남습니다.</span><button class="btn small danger" id="flowReset">가져온 흐름을 기준으로 되돌리기</button></div>';
     el.querySelector('#flowImport').addEventListener('click', e => once('import', e.currentTarget, doImport));
-    el.querySelector('#flowReset').addEventListener('click', doReset);
-    idField();
+    startBox().querySelector('#flowReset').addEventListener('click', doReset);
+    idField(); drawSteps();
     return Promise.all([loadCatalog(), loadList()]);
   }
   // 수업 경계(서버 GET /api/course-access 의 importable_flow): 수업 단계에서는 제공 흐름 하나만 가져온다 — 흐름 id 칸을 그 흐름으로 고정해
@@ -109,7 +126,7 @@
 
   async function loadCatalog() { S.cat = await call('GET', '/api/flows/catalog'); }
   async function loadList() {
-    const box = S.el.querySelector('#flowList');
+    const box = startBox().querySelector('#flowList');
     try { S.list = await call('GET', '/api/flows'); }
     catch (e) { box.innerHTML = UI.errorBlock('목록을 불러오지 못했습니다', e.message); return; }
     renderList();
@@ -130,7 +147,7 @@
       renderEditor(); loadList();
     } catch (e) {
       msg.textContent = e.message; msg.className = 'form-msg neg';
-      S.el.querySelector('#flowEditor').innerHTML = e.problems ? problemsBlock(e.problems) : '';
+      S.view = null; S.mapping = null; clearEditor(e.problems ? problemsBlock(e.problems) : '');
     }
   }
 
@@ -160,9 +177,12 @@
         ${UI.section('단계별 종류와 담당, 설정', `<table class="compact-table flow-map"><thead><tr><th>그림의 단계</th><th>단계 종류</th><th>담당</th><th>설정</th></tr></thead><tbody>${p.tasks.map(taskRow).join('')}</tbody></table>`)}
         ${p.boundaries.length ? UI.section('알림 기한', p.boundaries.map(timerRow).join('')) : ''}
         ${branchSection()}
+        ${v.class_flow ? '' : '<div class="form-actions"><button class="btn" id="flowCheck">저장 · 검사</button></div>'}
         <div id="flowProblems">${resultBlock(v.check)}</div>
+        ${stageHead(3, STEPS[2])}
         <div class="form-actions" id="flowActions">${actionsHtml()}</div>
       </section>`;
+    drawSteps();
     wire(box);
     fieldEditors(box);
     // 잠금은 칸 줄 편집기(fieldEditors)가 줄 · 단추를 그린 뒤에 건다 — 전에는 그 앞이라 시작 입력 · 출력 칸 줄이 잠기지 않았다(한바퀴3)
@@ -318,7 +338,7 @@
     const count = dependencies.attention_count || 0;
     return `<div class="card flow-dependencies" role="status"><b>${count ? `연결 도구 준비가 필요한 단계 ${count}개` : '연결 도구의 저장된 검사 확인'}</b><ul>${dependencies.items.map(item => `<li><b>${h(item.node_name)}</b> — ${h(item.reason)}</li>`).join('')}</ul><p class="field-hint">${h(dependencies.note)}</p><p class="field-hint">구조 검사 통과는 실제 연결을 보장하지 않습니다.</p></div>`;
   }
-  const resultBlock = c => (c && c.ok ? `<p class="kv-line pos" role="status">구조 검사를 통과했습니다. 판본으로 등록할 수 있습니다. 외부 도구에 실제로 연결되는지는 이 검사로 알 수 없습니다. 경보에 쓰려면 등록한 뒤 관리 화면에서 배포해야 합니다.</p>` : problemsBlock(c && c.problems)) + dependenciesBlock(c && c.dependencies);
+  const resultBlock = c => (c && c.ok ? `<p class="kv-line pos" role="status">구조 검사를 통과했습니다. 판본으로 등록할 수 있습니다. 외부 도구에 실제로 연결되는지는 이 검사로 알 수 없습니다. 경보에 쓰려면 등록한 뒤 아래 4단계에서 배포해야 합니다.</p>` : problemsBlock(c && c.problems)) + dependenciesBlock(c && c.dependencies);
 
   function collect() {
     const box = S.el.querySelector('#flowEditor'), m = structuredClone(S.mapping);
@@ -371,9 +391,9 @@
   // 매핑 아래 행동: 수업 흐름(강사 설치)은 읽기만, 서버가 지금 등록할 수 없다고 하면(register.allowed=false — 수업 경계 · 기준 id) [판본 등록] 대신 그 까닭(W3-08)
   function actionsHtml() {
     const v = S.view || {};
-    if (v.class_flow) return '<p class="field-hint">수업 흐름이라 매핑은 읽기만 할 수 있습니다(저장 · 등록 없음).</p>';
+    if (v.class_flow) return '<p class="field-hint">수업 흐름이라 매핑은 읽기만 할 수 있습니다. 저장과 등록은 하지 않습니다.</p>';
     const reg = v.register || null;
-    return `<span class="form-msg" id="flowMsg" role="status"></span><button class="btn" id="flowCheck">저장 · 검사</button>` +
+    return `<span class="form-msg" id="flowMsg" role="status"></span>` +
       (reg && reg.allowed === false ? `<span class="field-hint" data-register-why>${h(reg.reason || '지금은 판본으로 등록할 수 없습니다')}</span>` : '<button class="btn primary" id="flowRegister">판본 등록</button>');
   }
   function wire(box) {
@@ -389,6 +409,7 @@
     on('click', e => {
       const check = e.target.closest('#flowCheck'), reg = e.target.closest('#flowRegister');
       if (check) once('check', check, () => recheck(true)); else if (reg) once('register', reg, doRegister);
+      else if (e.target.closest('[data-goto-deploy]')) document.getElementById('definitionDeployPanel').scrollIntoView({ block: 'start', behavior: 'smooth' });
     });
     on('click', e => {
       const li = e.target.closest('[data-goto]'); if (!li) return;
@@ -419,6 +440,7 @@
       else {
         S.el.querySelector('#flowProblems').innerHTML = resultBlock(v.check);
         if (JSON.stringify(v.register ?? null) !== regBefore) S.el.querySelector('#flowActions').innerHTML = actionsHtml();
+        drawSteps();
       }
       if (save) { S.el.querySelector('#flowMsg').textContent = '매핑을 저장했습니다'; S.el.querySelector('#flowMsg').className = 'form-msg pos'; }
     } catch (e) { msg.textContent = e.message; msg.className = 'form-msg neg'; }
@@ -437,9 +459,12 @@
       const r = await call('POST', `/api/flows/${encodeURIComponent(S.view.definition_id)}/register`, { mapping: S.mapping, by: meId() });
       const registered = `${r.name} 판본 ${r.version}${window.hydWords.josa(String(r.version), '을/를')} 등록했습니다.`;
       UI.toast(`${registered} 운영 판본은 그대로입니다.`, { tone: 'ok' });
-      // 다음 할 일: 등록만으로는 경보에 쓰이지 않는다 — 배포하는 자리(관리 화면)로 가는 길을 함께 보인다
-      msg.innerHTML = `${h(registered)} 경보에 쓰려면 관리 화면의 「흐름 판본 배포」에서 이 판본을 배포하세요. <a href="#/admin">관리 화면으로 이동 →</a>`; msg.className = 'form-msg pos';
+      // 다음 할 일: 등록만으로는 경보에 쓰이지 않는다 — 바로 아래 ④ 배포가 이 흐름을 골라 새 판본을 보이게 하고, 그리로 가는 길을 함께 보인다
+      const defId = S.view.definition_id;
       await recheck(false); loadList();
+      await window.hydDefinitionDeploy.reload(defId);
+      const msgNow = S.el.querySelector('#flowMsg');
+      msgNow.innerHTML = `${h(registered)} 경보에 쓰려면 아래 4단계에서 이 판본을 배포하세요. <button type="button" class="link-btn" data-goto-deploy>4단계 배포로 이동 →</button>`; msgNow.className = 'form-msg pos';
     } catch (e) {
       msg.textContent = e.message; msg.className = 'form-msg neg';
       if (e.problems) S.el.querySelector('#flowProblems').innerHTML = problemsBlock(e.problems);
@@ -448,8 +473,8 @@
 
   // ------------------------------------------------ 목록 · 그림 받기 · 직접 시작 · 되돌리기
   function renderList() {
-    const box = S.el.querySelector('#flowList'), L = S.list || { drafts: [], versions: [] };
-    if (!L.drafts.length && !L.versions.length) { box.innerHTML = UI.empty('가져온 흐름이 없습니다', '위에서 .bpmn 파일을 가져오면 여기 남습니다', 'compact'); return; }
+    const box = startBox().querySelector('#flowList'), L = S.list || { drafts: [], versions: [] };
+    if (!L.drafts.length && !L.versions.length) { box.innerHTML = UI.empty('가져온 흐름이 없습니다', '위 1단계에서 .bpmn 파일을 가져오면 여기에 남습니다', 'compact'); return; }
     const ids = [...new Set([...L.drafts.map(d => d.proc_def_id), ...L.versions.map(v => v.id)])];
     box.innerHTML = ids.map(id => {
       const vs = L.versions.filter(v => v.id === id), d = L.drafts.find(x => x.proc_def_id === id);
@@ -470,7 +495,7 @@
   }
 
   function deleteForm(id) {
-    const box = S.el.querySelector(`[data-delete-box="${CSS.escape(id)}"]`);
+    const box = startBox().querySelector(`[data-delete-box="${CSS.escape(id)}"]`);
     box.innerHTML = `<div class="form"><p class="field-hint">이 흐름의 모든 판본과 초안을 지웁니다. 진행 중인 처리 건이나 기준 흐름은 지울 수 없습니다.</p><div class="form-actions"><span class="form-msg" role="status"></span><button class="btn small" data-delete-cancel>취소</button><button class="btn small danger" data-delete-confirm>이 흐름 지우기</button></div></div>`;
     box.querySelector('[data-delete-cancel]').onclick = () => { box.innerHTML = ''; };
     box.querySelector('[data-delete-confirm]').onclick = async ev => {
@@ -481,7 +506,7 @@
       S.deleting = true; box.querySelectorAll('button,input').forEach(n => { n.disabled = true; });
       try {
         const result = await call('DELETE', '/api/flows/' + encodeURIComponent(id) + '?by=' + encodeURIComponent(by));
-        if (S.view?.definition_id === id) { S.view = null; S.mapping = null; S.el.querySelector('#flowEditor').innerHTML = ''; }
+        if (S.view?.definition_id === id) { S.view = null; S.mapping = null; clearEditor(''); }
         UI.toast(result.projection_pending ? `흐름을 지웠습니다. 그래프 기록 ${result.projection_pending}건은 정리를 다시 시도하고 있습니다.` : '선택한 흐름을 지웠습니다.', { tone: result.projection_pending ? 'neutral' : 'ok' }); await loadList();
       } catch (e) { msg.textContent = e.message; box.querySelectorAll('button,input').forEach(n => { n.disabled = false; }); }
       finally { S.deleting = false; }
@@ -489,10 +514,10 @@
   }
 
   async function startForm(id, version) {
-    const slot = S.el.querySelector(`[data-startbox="${CSS.escape(id + '@' + version)}"]`);
+    const slot = startBox().querySelector(`[data-startbox="${CSS.escape(id + '@' + version)}"]`);
     try {
       const d = await call('GET', `/api/process/definitions/${encodeURIComponent(id)}?version=${encodeURIComponent(version)}`);
-      if (d.alertPolicy) { slot.innerHTML = '<p class="field-hint">경보로 시작하는 흐름입니다 — 배포한 뒤 경보가 들어오면 시작됩니다.</p>'; return; }
+      if (d.alertPolicy) { slot.innerHTML = '<p class="field-hint">경보로 시작하는 흐름입니다. 위 4단계에서 배포한 뒤 경보가 들어오면 시작됩니다.</p>'; return; }
       const fields = (d.startForm && d.startForm.fields_json) || [];
       slot.innerHTML = `<div class="form-grid">${fields.map(f => UI.field({ label: f.text || f.key, input: f.type === 'select'
         ? `<select data-sv="${h(f.key)}" data-choose="${h(f.text || f.key)}"><option value="">선택</option>${(f.items || []).map(i => `<option>${h(typeof i === 'string' ? i : Object.keys(i)[0])}</option>`).join('')}</select>`
@@ -536,11 +561,11 @@
       const r = await call('POST', '/api/flows/reset', { by: meId() });
       const kept = r.kept || [];      // 서버가 흐름 이름으로 준다(flows_api.flows_reset)
       UI.toast(`되돌렸습니다. 판본 ${r.versions}개와 초안 ${r.drafts}개를 지웠습니다.` + (kept.length ? ` 배포 중인 흐름 ${kept.length}개(${kept.join(', ')})는 남겼습니다.` : ''), { tone: 'ok', timeout: 8000 });
-      S.view = null; S.mapping = null; S.el.querySelector('#flowEditor').innerHTML = ''; loadList();
+      S.view = null; S.mapping = null; clearEditor(''); loadList(); window.hydDefinitionDeploy.reload();
     } catch (e) { UI.toast(e.message, { tone: 'neg', timeout: 8000 }); }
   }
 
-  // 다시 열 때(셸 show): 카탈로그(에이전트 · 역할 · 부품)와 목록을 새로 읽는다. 한 번 읽고 굳으면 [에이전트] 화면에서 새로 만든 에이전트가
+  // 다시 열 때(셸 show): 카탈로그(에이전트 · 역할 · 부품)와 목록을 새로 읽는다. 한 번 읽고 굳으면 「에이전트 · 스킬」 화면에서 새로 만든 에이전트가
   // 단계의 에이전트 고르기에 없었다(한바퀴3 17 — 실라버스 118행에서 만든 인수인계 에이전트를 119행에서 고를 수 없음). 펼친 매핑은 지금 칸 값을
   // 담아(collect) 다시 그린다.
   async function show() {

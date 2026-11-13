@@ -1,11 +1,13 @@
 /* U4: 흐름 판본 배포 · 비교 · 되돌리기 — 경보가 여는 "운영 판본"을 바꾼다. 열린 처리 건은 자기 판본으로 끝난다.
+   자리: 흐름 화면의 ④ 배포(index.html view-flows 의 #definitionDeployPanel — 접기가 아니라 늘 보이는 단계다. 옛 자리는 관리 화면의 접기였다).
+   읽는 때: 흐름 화면에 들어올 때마다(hydTabs.onShow) 정의 · 배포 상태를 새로 읽는다. 다른 화면에 있을 때는 읽지 않는다. 흐름 화면이 판본을 등록하면 reload(정의)를 부른다.
    API: GET /api/process/definitions · GET …/{id}/versions · GET …/{id}/compare?from_version&to_version · POST …/{id}/deploy · POST …/{id}/rollback
    화면 기준: process-gpt-vue3 ProcessDefinitionVersionManager(판본 목록 · 반영 버전 표시 · 반영 요청) · VersionComparison(바뀐 요소 목록).
    B4: 경보 → 흐름 표(GET /api/flows/deployments) · 기준 흐름으로 되돌리기(POST /api/flows/deploy-reset) · 기준과 비교(GET /api/flows/deploy-compare). */
 (function () {
   const $d = id => document.getElementById(id);
   const base = id => API.process + '/api/process/definitions/' + encodeURIComponent(id);
-  let status = null, compareWith = null;
+  let status = null, compareWith = null, deployedIds = new Set();
   const patName = p => UI.patternName(p), nameOf = hydDefinitions.name;   // 패널 일 · 흐름 이름은 definitionRegistry.js 의 한 벌(W3-28)
   function box(id, before) { let el = $d(id); if (!el) { el = document.createElement('div'); el.id = id; $d(before).before(el); } return el; }
   async function loadRoutes() {
@@ -47,6 +49,8 @@
   async function loadDefinitions(selected) {
     const rows = await getJ(API.process + '/api/process/definitions');
     const ids = [...new Set(rows.map(r => r.id))];
+    deployedIds = new Set(rows.filter(r => r.deployed_version).map(r => r.id));
+    window.dispatchEvent(new Event('hyd:deployed'));      // 흐름 화면의 단계 표시가 배포 여부를 다시 그린다(flows.js drawSteps)
     const select = $d('deployChoice'); const current = selected || select.value; select.replaceChildren();
     ids.forEach(id => {
       const row = rows.find(r => r.id === id), option = document.createElement('option');
@@ -56,7 +60,7 @@
     });
     if (ids.includes(current)) select.value = current;
     await loadRoutes();
-    if (!ids.length) { $d('deployStatus').innerHTML = UI.empty('등록된 정의가 없습니다', '먼저 위 패널에서 정의 판본을 등록하세요'); return; }
+    if (!ids.length) { $d('deployStatus').innerHTML = UI.empty('등록된 흐름이 없습니다', '먼저 위 3단계에서 판본을 등록하세요'); return; }
     await loadStatus();
   }
   async function loadStatus() {
@@ -72,9 +76,9 @@
   function render() {
     const s = status, deployed = s.versions.find(v => v.deployed);
     $d('deployStatus').innerHTML = UI.card({
-      title: esc(nameOf(s.id, s.name)), chips: s.alert_entry ? UI.chipText('경보 진입 정의', 'accent') : UI.chipText('직접 시작 전용', 'neutral'),
+      title: esc(nameOf(s.id, s.name)), chips: s.alert_entry ? UI.chipText('경보로 시작하는 흐름', 'accent') : UI.chipText('직접 시작하는 흐름', 'neutral'),
       value: s.deployed_version ? `운영 판본 <b>${esc(s.deployed_version)}</b>` : '배포된 판본 없음',
-      sub: s.alert_entry ? '다음 경보부터 운영 판본으로 처리 건이 열립니다. 이미 열린 처리 건은 자기 판본으로 끝납니다.' : '이 정의는 경보가 아니라 직접 시작으로만 실행됩니다.',
+      sub: s.alert_entry ? '다음 경보부터 운영 판본으로 처리 건이 열립니다. 이미 열린 처리 건은 자기 판본으로 끝납니다.' : '이 흐름은 경보가 아니라 직접 시작으로만 실행됩니다. 배포하지 않아도 5단계의 [직접 시작]으로 엽니다.',
       body: deployed && deployed.registered_at ? `<p class="muted">운영 판본 등록 ${esc(UI.dateTime(deployed.registered_at))}${deployed.message ? ' · ' + esc(deployed.message) : ''}</p>` : ''
     });
     $d('deployVersions').innerHTML = [...s.versions].reverse().map(v => `<div class="item"><div class="row"><strong>판본 ${esc(v.version)}</strong>${versionChip(v)}</div>` +
@@ -101,7 +105,9 @@
     const when = out.patterns.length ? `다음 경보(${out.patterns.map(patName).join(' · ')})부터` : out.applies_to;
     return `「${nameOf(out.definition, name)}」 운영 판본 ${out.previous_version || '없음'} → ${out.version} ${verb}. ${when} 적용됩니다.`;
   }
-  window.hydDefinitionDeploy = { refComparable, doneText };   // 시험(test_www_definitionDeploy)이 부른다
+  // refComparable · doneText 는 시험(test_www_definitionDeploy)이, deployed · reload 는 흐름 화면(flows.js)이 부른다.
+  // deployed(정의): 그 흐름에 운영 판본이 있는가(마지막으로 읽은 값). reload(정의): 판본 등록 · 되돌리기 뒤 목록을 새로 읽고, 정의를 주면 그 흐름을 고른다
+  window.hydDefinitionDeploy = { refComparable, doneText, deployed: id => deployedIds.has(id), reload: selected => action(() => loadDefinitions(selected)) };
   const actionName = a => ({ seed: '처음 설치', deploy: '배포', rollback: '되돌리기', reset: '기준으로 되돌리기', withdraw: '경보 경로에서 내림' }[a] || a);
   async function runRefCompare(version) {
     const d = await getJ(API.process + `/api/flows/deploy-compare?definition=${encodeURIComponent(status.id)}&version=${encodeURIComponent(version)}`);
@@ -122,10 +128,7 @@
         (ch.fields && ch.fields.length ? UI.fold(`바뀐 항목 ${ch.fields.length}`, `<table class="compact-table"><tbody>${ch.fields.map(f => `<tr><th>${esc(UI.plain(f.label))}</th><td>${esc(UI.plain(f.before))}</td><td>→ ${esc(UI.plain(f.after))}</td></tr>`).join('')}</tbody></table>`, { cls: 'small', open: ch.change === '변경' }) : '') +
         '</div>').join('')}</div>`;
   }
-  $d('definitionDeployPanel').addEventListener('toggle', () => {
-    if ($d('definitionDeployPanel').open) showMe();
-    if ($d('definitionDeployPanel').open && !status) action(() => loadDefinitions());
-  });
+  hydTabs.onShow(name => { if (name === 'flows') { showMe(); action(() => loadDefinitions()); } });
   showMe();
   $d('deployChoice').addEventListener('change', () => action(() => loadStatus()));
   $d('deployRefresh').addEventListener('click', () => action(() => loadDefinitions()));

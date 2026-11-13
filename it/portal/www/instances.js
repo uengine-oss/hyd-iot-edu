@@ -1,11 +1,12 @@
-/* 처리 건 · 내 차례 (loaded after hitl.js and instanceSteps.js).
+/* 처리 건 · 내가 할 일 (loaded after hitl.js and instanceSteps.js). 옛 「내 작업함」 화면의 처리할 단계 목록(역할별 보기 · 기한)이 이 화면의 「내가 할 일」이다 —
+   사람이 처리할 열린 단계는 GET /api/todolist 하나로 읽는다(알림은 inbox.js 가 이 화면의 「알림」 접기에 그린다).
    process 서비스를 읽는다(주소는 layers.js API — 같은 출처):
      GET  /api/process/mode · /api/process/definitions/{id} · /api/instances · /api/instances/{id}(+/graph) · /api/graph-projections · /api/todolist… · /api/decisions/{id}
      POST /api/todolist/{id}/select · reject-card · decision-preview (조치 카드) · approve (일반 승인) · submit (폼) · human-response (질문 답) · 승인 전달 재전달 · 폐기 · 단계 닫기 · 실행 취소
-   상태 의미는 ProcessGPT 와 같다: TODO 예정 → IN_PROGRESS 진행 중(내 차례) → SUBMITTED 제출됨(엔진 차례) → DONE · CANCELLED · PENDING.
-   화면: 요약 카드 → 내 차례 → 단계 패널(카드 하나에 행동 하나) → 목록 + 상세 4탭(진행 상황 · 처리 기록 · 결과 · 단계 표). */
+   상태 의미는 ProcessGPT 와 같다: TODO 예정 → IN_PROGRESS 진행 중(내가 할 일) → SUBMITTED 제출됨(엔진 차례) → DONE · CANCELLED · PENDING.
+   화면: 요약 카드 → 내가 할 일 → 단계 패널(카드 하나에 행동 하나) → 목록 + 상세 4탭(진행 상황 · 처리 기록 · 결과 · 단계 표) → 알림. */
 (function () {
-  const I = { defNames: {}, mode: null, taskSel: null, taskView: null, fieldValues: {}, fieldTask: null, instances: [], sel: null, view: null, todo: [], dec: null, decId: null, asked: [],
+  const I = { defNames: {}, defTimers: {}, timers: [], role: '', mode: null, taskSel: null, taskView: null, fieldValues: {}, fieldTask: null, instances: [], sel: null, view: null, todo: [], dec: null, decId: null, asked: [],
               form: { option: null, role: null, by: '', reason: '', fan: null, load: null }, msg: '', busy: false, sig: null, listSig: null, tab: 'flow', closing: null, listShown: 20, todoShown: 6, eventsShown: 20,
               retryForm: {}, discardPreview: {}, gone: null,
               pmsg: {} };   // 상세 패널(단계 닫기 'close' · 승인 재전달 · 폐기 · 정비 요청 재전달 = 그 작업 id)마다 따로 두는 오류 글 — 단계 패널의 I.msg 와 섞이지 않는다(W1-24)
@@ -42,7 +43,12 @@
     const defKey = x => `${x.proc_def_id}@${x.proc_def_version}`;
     await Promise.all([...new Set(I.instances.filter(x => !(defKey(x) in I.defNames)).map(defKey))].map(async k => {
       const [id, version] = k.split('@');
-      try { const d = await getJ(API.process + `/api/process/definitions/${encodeURIComponent(id)}?version=${encodeURIComponent(version)}`); I.defNames[k] = Object.fromEntries([...(d.activities || []), ...(d.events || [])].filter(a => a.name).map(a => [a.id, a.name])); }
+      try {
+        const d = await getJ(API.process + `/api/process/definitions/${encodeURIComponent(id)}?version=${encodeURIComponent(version)}`);
+        I.defNames[k] = Object.fromEntries([...(d.activities || []), ...(d.events || [])].filter(a => a.name).map(a => [a.id, a.name]));
+        // 기한 타이머(경계 이벤트) → 그 타이머가 붙은 단계. 「내가 할 일」 줄의 기한을 이 표로 찾는다(timerFor 와 같은 규칙)
+        I.defTimers[k] = Object.fromEntries([...(d.events || []).filter(e => e.attachedTo).map(e => [e.id, e.attachedTo]), ...(d.activities || []).flatMap(a => (a.attachedEvents || []).map(e => [e, a.id]))]);
+      }
       catch (e) { loadErr = `흐름 정의 ${id} ${version}을(를) 읽지 못했습니다: ${e.message}`; }
     }));
     // 담당 작업 목록을 못 읽으면 「지금 할 일이 없습니다」가 아니다 — 사유를 I.todoError 에 두고 지난 목록은 그대로 보인다
@@ -58,7 +64,7 @@
       } catch (e) { todoError = e.message; }
     }
     I.todoError = todoError;
-    if (!todoError) { I.todo = todoRows.filter(isHuman); I.asked = todoRows.filter(t => t.draft_status === 'HUMAN_ASKED'); }
+    if (!todoError) { I.todo = todoRows.filter(isHuman); I.asked = todoRows.filter(t => t.draft_status === 'HUMAN_ASKED'); I.timers = todoRows.filter(t => t.due_date && !isHuman(t)); }
     // Polling must not erase the snapshot used by an already visible action.
     // A click can render synchronously while any of these requests is waiting.
     let nextView = null, nextViewErr = null;
@@ -88,10 +94,10 @@
     // 조치 후보를 못 읽으면 「불러오는 중」으로 남지 않는다 — 사유를 I.decError 에 둔다(다음 다시 읽기에서 또 시도)
     if (I.decId && !I.dec) { try { I.dec = await getJ(API.process + '/api/decisions/' + encodeURIComponent(I.decId)); I.decError = ''; } catch (e) { I.dec = null; I.decError = e.message; } }
     else if (!I.decId) I.decError = decIdError;
-    // 변경 서명은 화면에 쓰는 값만 담는다. 목록(요약 · 내 차례 · 처리 건 목록)과 고른 처리 건(작업 패널 · 상세)을 나눠,
+    // 변경 서명은 화면에 쓰는 값만 담는다. 목록(요약 · 내가 할 일 · 처리 건 목록)과 고른 처리 건(작업 패널 · 상세)을 나눠,
     // 다른 처리 건만 바뀌면 목록만 다시 그린다 — 지금 쓰고 있는 폼은 그대로 둔다(결함: 15초마다 · 다른 처리 건 이벤트마다 폼이 지워짐).
-    const listSig = JSON.stringify([I.status, I.listShown, I.instances.map(x => [x.proc_inst_id, x.status, x.current_activity_ids, x.proc_inst_name, x.attention]), I.todo.map(t => [t.id, t.proc_inst_id, t.status]),
-      I.asked.map(t => [t.id, t.draft_status]), I.sel, I.todoShown, I.todoError, UI.namesVersion]);
+    const listSig = JSON.stringify([I.status, I.listShown, I.instances.map(x => [x.proc_inst_id, x.status, x.current_activity_ids, x.proc_inst_name, x.attention]), I.todo.map(t => [t.id, t.proc_inst_id, t.status, dueOf(t)]),
+      I.asked.map(t => [t.id, t.draft_status]), I.sel, I.todoShown, I.todoError, I.role, UI.namesVersion]);
     const sig = JSON.stringify([I.sel, I.taskSel, I.taskView, I.asked.filter(t => t.proc_inst_id === I.sel).map(t => [t.id, t.draft_status]),
       I.view && I.view.workitems.map(w => [w.id, w.status, w.draft_status, w.log]),
       I.view && (I.view.approvals || []).map(a => [a.todo_id, a.status, a.attempts, a.error]), I.dec && I.dec.state, I.decError, I.taskViewError, I.msg, I.pmsg, I.gone,
@@ -143,7 +149,7 @@
     return vars((await getJ(API.process + '/api/instances/' + encodeURIComponent(task.proc_inst_id))).instance).decision_id || null;   // 실패는 부르는 쪽이 I.decError 로 보인다
   }
 
-  /* ------------------------------------------------ summary cards (UIUX_PLAN §1: 진행 중 · 내 차례 · 질문 only) */
+  /* ------------------------------------------------ summary cards (UIUX_PLAN §1: 진행 중 · 내가 할 일 · 질문 only) */
   // H-10: 진행 중(RUNNING)이어도 사람의 조치를 기다리며 멈춘 처리 건(서버 attention)은 「진행 중」에 세지 않고 따로 센다 — 카드 이름은 서버 문장
   function counts(instances) {
     return { running: instances.filter(x => x.status === 'RUNNING' && !x.attention).length,
@@ -161,17 +167,36 @@
     </div>`;
   }
 
-  /* ------------------------------------------------ 내 차례 (human IN_PROGRESS rows) + agent questions */
-  // 쓰는 사람은 늘 담당자 한 명이고 모든 역할을 맡는다(inbox.js 머리말) — 사람 단계는 전부 내 차례다. 줄마다 그 일을 맡는 역할을 보인다.
+  /* ------------------------------------------------ 내가 할 일 (human IN_PROGRESS rows) + agent questions */
+  // 그 단계에 붙은 기한 타이머 가운데 가장 이른 기한(없으면 null) — 타이머도 진행 중 작업 행으로 같은 목록에 온다
+  function dueOf(t) {
+    const inst = I.instances.find(x => x.proc_inst_id === t.proc_inst_id);
+    const attached = inst ? I.defTimers[`${inst.proc_def_id}@${inst.proc_def_version}`] || {} : {};
+    const dues = I.timers.filter(r => r.proc_inst_id === t.proc_inst_id && attached[r.activity_id] === t.activity_id).map(r => r.due_date).sort();
+    return dues[0] || null;
+  }
+  // 역할별 보기: 전체 + 지금 열린 일이 있는 역할. 「이 일은 어느 역할의 일인가」를 가려 본다(쓰는 사람은 한 명이고 모든 역할을 맡는다 — 보기만 가른다)
+  function renderRoles() {
+    const box = $('#todoRoles'), count = {};
+    I.todo.forEach(t => { count[t.user_id] = (count[t.user_id] || 0) + 1; });
+    const ids = Object.keys(count).sort((a, b) => who(a).localeCompare(who(b)));
+    if (I.role && !ids.includes(I.role)) ids.push(I.role);
+    if (ids.length < 2 && !I.role) { box.innerHTML = ''; return; }
+    const chip = (id, label, n) => `<button type="button" class="chip-btn${I.role === id ? ' on' : ''}" data-todo-role="${esc(id)}" aria-pressed="${I.role === id}">${esc(label)} <span class="n">${n}</span></button>`;
+    box.innerHTML = `<div class="role-filter" role="group" aria-label="역할별 보기">${chip('', '전체', I.todo.length)}${ids.map(id => chip(id, who(id), count[id] || 0)).join('')}</div>`;
+    box.querySelectorAll('[data-todo-role]').forEach(b => b.addEventListener('click', () => { I.role = b.dataset.todoRole; I.todoShown = 6; renderTodo(false); }));
+  }
+  // 쓰는 사람은 늘 담당자 한 명이고 모든 역할을 맡는다(inbox.js 머리말) — 사람 단계는 전부 내가 할 일이다. 줄마다 그 일을 맡는 역할을 보인다.
   function renderTodo(withPanel = true) {
     const box = $('#todoList');
     box.innerHTML = '';
+    renderRoles();
     if (I.todoError) {
-      box.innerHTML = UI.errorBlock('내 차례를 읽지 못했습니다', I.todoError + (I.todo.length || I.asked.length ? ' — 아래는 마지막으로 읽은 목록입니다' : ''), { retry: true, cls: 'compact' });
+      box.innerHTML = UI.errorBlock('내가 할 일을 읽지 못했습니다', I.todoError + (I.todo.length || I.asked.length ? ' — 아래는 마지막으로 읽은 목록입니다' : ''), { retry: true, cls: 'compact' });
       box.querySelector('[data-retry]')?.addEventListener('click', () => load(true));
     }
-    if (!I.todo.length && !I.asked.length) { if (!I.todoError) box.innerHTML = I.instances.length ? UI.empty(UI.t('inst.noTodo'), UI.t('inst.noTodoSub'), 'compact') : ''; if (withPanel) renderTodoPanel(); return; }   // 처리 건이 하나도 없으면 빈 안내는 아래 목록의 하나로 충분하다
-    I.asked.forEach(t => {
+    if (!I.todo.length && !I.asked.length) { if (!I.todoError) box.innerHTML = UI.empty(UI.t('inst.noTodo'), UI.t('inst.noTodoSub'), 'compact'); if (withPanel) renderTodoPanel(); return; }   // 「내가 할 일」 제목 아래가 비어 보이지 않게 늘 한 줄을 둔다(처리 건이 하나도 없을 때도)
+    (I.role ? [] : I.asked).forEach(t => {
       const inst = I.instances.find(x => x.proc_inst_id === t.proc_inst_id) || {};
       const it = el('div', 'item ask' + (t.proc_inst_id === I.sel ? ' sel' : ''), `<div class="row"><strong>${esc(UI.t('inst.askTitle'))} — ${esc(UI.flowName(t.activity_name))}</strong>${UI.chip('HUMAN_ASKED')}</div><span class="sub">${esc(inst.proc_inst_name || '이름 없는 처리 건')}</span>`);
       keyboardItem(it);
@@ -180,14 +205,20 @@
     });
     const row = t => {
       const inst = I.instances.find(x => x.proc_inst_id === t.proc_inst_id) || {};
-      const it = el('div', 'item' + (t.proc_inst_id === I.sel ? ' sel' : ''), `<div class="row"><strong>${esc(UI.flowName(t.activity_name))}</strong>${UI.chip(t.status)}</div><span class="sub">${esc(inst.proc_inst_name || '이름 없는 처리 건')} · 담당 ${esc(who(t.user_id))}</span>`);
+      // 한 줄 = 사람이 처리할 단계 하나. 칩은 그 일을 맡는 역할(단계의 user_id 는 역할 그대로다 — procsvc/inbox.py resolve)과 승인 단계 표시, 아래 줄은 처리 건 이름과 기한
+      const approval = ['formHandler:select_card', 'formHandler:approve'].includes(t.tool) ? UI.chipText('승인 요청', 'accent') : '';
+      const due = dueOf(t);
+      const it = el('div', 'item' + (t.proc_inst_id === I.sel ? ' sel' : ''), `<div class="row"><strong>${esc(UI.flowName(t.activity_name))}</strong>${UI.chipText(who(t.user_id), 'neutral')}${approval}</div><span class="sub">${esc(inst.proc_inst_name || '이름 없는 처리 건')}${due ? ` · 기한 ${esc(UI.dateTime(due))}` : ''}</span>`);
+      it.dataset.todoTask = t.id;
       keyboardItem(it);
       it.addEventListener('click', () => pick(t.proc_inst_id, t.id));
       return it;
     };
 
     // A141: 처음 6건 + 더 보기 (선택된 건은 위로 고정) — 한 화면에 많이 보이지 않게
-    const paged = UI.page(I.todo, I.todoShown, t => t.proc_inst_id === I.sel);
+    const shown = I.role ? I.todo.filter(t => t.user_id === I.role) : I.todo;
+    if (I.role && !shown.length) box.insertAdjacentHTML('beforeend', UI.empty(`${who(I.role)} 역할로 처리할 단계가 없습니다`, '다른 역할의 일은 「전체」에서 볼 수 있습니다', 'compact'));
+    const paged = UI.page(shown, I.todoShown, t => t.proc_inst_id === I.sel);
     paged.rows.forEach(t => box.appendChild(row(t)));
     if (paged.rest) { const more = el('div', 'todo-more', UI.moreButton(paged.rest)); more.querySelector('button').addEventListener('click', () => { I.todoShown += UI.PAGE; renderTodo(false); }); box.appendChild(more); }
 
@@ -226,7 +257,7 @@
     }
     if (!task) {
       const g = I.gone && I.gone.inst === I.sel ? I.gone : null;
-      box.innerHTML = g ? `<section class="todo-panel" data-gone><h3 style="margin:0">${esc(g.title)}</h3><p class="field-hint">이 단계는 이미 처리됐거나 닫혀서 내 차례 목록에서 빠졌습니다. 결과는 아래 처리 건 상세의 진행 상황과 처리 기록에서 확인하세요.</p><p class="muted">서버 응답: ${esc(g.text)}</p></section>` : '';
+      box.innerHTML = g ? `<section class="todo-panel" data-gone><h3 style="margin:0">${esc(g.title)}</h3><p class="field-hint">이 단계는 이미 처리됐거나 닫혀서 「내가 할 일」 목록에서 빠졌습니다. 결과는 아래 처리 건 상세의 진행 상황과 처리 기록에서 확인하세요.</p><p class="muted">서버 응답: ${esc(g.text)}</p></section>` : '';
       return;
     }
     if (task.tool === 'formHandler:select_card') { renderSelectPanel(task); return; }
@@ -371,7 +402,7 @@
     const needName = need?.id ? (roleTable[need.id]?.name || need.name || UI.who(need.id)) : '';
     const meSigns = !!meNow && signs(I.form.role, reviewed || chosen);
     const meRejects = !!meNow && (!opts.length || opts.some(o => signs(I.form.role, o)));
-    const roleHint = meNow && !meSigns ? `이 안은 ${needName} 역할이 승인하는데, 이 PC의 담당자가 그 역할에 들어 있지 않아 승인할 수 없습니다. 에이전트 화면의 업무분장에서 역할을 확인하세요.` : '';
+    const roleHint = meNow && !meSigns ? `이 안은 ${needName} 역할이 승인하는데, 이 PC의 담당자가 그 역할에 들어 있지 않아 승인할 수 없습니다. 메뉴 「AI 에이전트」의 「${UI.t('nav.agents')}」 화면에서 담당 배정을 확인하세요.` : '';
     const maxAbs = Math.max(1, ...opts.map(x => Math.abs(x.score || 0)));
     const timer = timerFor(task);
     const activity = (I.view?.definition?.activities || []).find(a => a.id === task.activity_id);
@@ -615,6 +646,7 @@
     if (record) record.update(view);
     const showTab = k => { I.tab = k; box.querySelectorAll('[data-inst-tab]').forEach(x => { x.classList.toggle('on', x.dataset.instTab === k); x.setAttribute('aria-selected', String(x.dataset.instTab === k)); }); box.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('on', p.dataset.pane === I.tab)); if (I.tab === 'flow') mountFlow(view); if (I.tab === 'log') load(true); };
     box.querySelectorAll('[data-inst-tab]').forEach(b => b.addEventListener('click', () => showTab(b.dataset.instTab)));
+    box.querySelector('[data-open-result]')?.addEventListener('click', () => { showTab('result'); box.querySelector('.inst-detail-tabs')?.scrollIntoView({ block: 'start', behavior: 'smooth' }); });
     // A161: 결과 보고 카드의 "처리 기록 보기" → 처리 기록 탭
     box.querySelectorAll('[data-open-record]').forEach(b => b.addEventListener('click', () => { showTab('record'); box.querySelector('.inst-detail-tabs')?.scrollIntoView({ block: 'start', behavior: 'smooth' }); }));
     box.querySelector('[data-events-more]')?.addEventListener('click', () => { I.eventsShown += 40; renderDetail(); });
@@ -679,7 +711,8 @@
       const reason = missingInitial.length ? `시작 값 ${missingInitial.join(', ')}이 없습니다. 입력을 확인해 새 처리 건을 시작하세요.`
         : (spec.waiting_for || []).some(x => x.reason === 'fresh_output_unavailable') ? '필요한 결과값이 없어 대기 중입니다.' : `${producers.map(UI.flowName.bind(UI)).join(', ')}의 결과가 확정되면 시작합니다.`;
       return `<p><b>${esc(UI.flowName(task?.activity_name || spec.activity))}</b>: ${esc(reason)}</p>`; }).join('') });
-    html += window.hydResultReport ? hydResultReport.html(view) : '';   // A161-U1: 승인 뒤 시스템 실행 · 확인 → 결과 보고(보기만)
+    // 결과 보고 카드(승인 뒤 시스템 실행 · 확인 → 결과 보고)는 「결과」 탭 한 곳에만 그린다 — 여기는 그리로 가는 길 하나
+    if (window.hydResultReport && hydResultReport.html(view)) html += `<p class="kv-line see-result">승인 뒤의 실행과 확인, 결과 보고는 「${esc(UI.t('inst.tab.result'))}」 탭에 있습니다. <button type="button" class="link-btn" data-open-result>${esc(UI.t('inst.tab.result'))} 탭 열기 →</button></p>`;
     html += `<div class="sec-row"><h3>${esc(UI.t('trace.title'))}</h3>${inst.status === 'RUNNING' ? `<span class="live-conn ${window.hydStream && hydStream.connected() ? 'on' : 'off'}" data-live-conn>${esc(UI.t(window.hydStream && hydStream.connected() ? 'header.connected' : 'header.connecting'))}</span>` : ''}</div><div id="instTrace"></div>`;
     html += `<div class="stack-list" style="margin-top:var(--s4)">${approvalHtml(view)}${workOrderRetryHtml(view)}<div id="taskDeferralPanel"></div><div id="effectsPanel"></div><div id="reworkPanel"></div>` +
       ((view.reworks || []).length ? UI.fold(`${esc(UI.t('inst.reworkHistory'))} <span class="chip tone-neutral sm">${view.reworks.length}</span>`, view.reworks.map(r => `<p>${esc(r.generation)}${esc(UI.t('inst.gen'))} · ${esc(UI.who(r.request.by))} (${esc(who(r.request.role))}) · ${esc(r.request.reason)}</p>`).join('')) : '') + '</div>';
@@ -899,7 +932,7 @@
   $('#instStatus').addEventListener('change', e => { I.status = e.target.value || null; I.sel = null; I.listShown = UI.PAGE; load(true); });
   setInterval(() => load(false), 2000);
   setInterval(updateApprovalClock, 1000);
-  // 셸이 주소에 적는 지금 화면: 처리 건 + 열어 둔 단계(단계 상세가 열려 있으면 그 단계, 아니면 내 차례에서 고른 단계)
+  // 셸이 주소에 적는 지금 화면: 처리 건 + 열어 둔 단계(단계 상세가 열려 있으면 그 단계, 아니면 「내가 할 일」에서 고른 단계)
   const route = () => ({ inst: I.sel || null, task: (window.hydTaskDetail && hydTaskDetail.T.wid) || I.taskSel || null });
   window.hydInstances = { I, load, openTask, route, counts };
 })();

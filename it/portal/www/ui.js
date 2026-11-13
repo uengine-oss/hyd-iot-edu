@@ -60,9 +60,10 @@ const UI = {
   /* ---------- 명칭표 (UIUX_PLAN §4) — 화면 문구만. 코드·API·DB 이름은 그대로다. ---------- */
   terms: {
     // 메뉴 · 헤더
-    'nav.main': '홈', 'nav.home': '시스템 구성', 'nav.scenario': '결함 시뮬레이션', 'nav.incidents': '이상 확인', 'nav.trends': '실시간 모니터링',
-    'nav.ontology': '지식 지도', 'nav.skills': '조치 방법', 'nav.decision': '조치 판단 규칙', 'nav.process': '판단 · 실행 기록', 'nav.instances': '처리 건',
-    'nav.knowledge': '지식 관리', 'nav.admin': '관리', 'nav.mcp': '도구 연결',
+    // 화면 이름 nav.<화면>: 위쪽 탭 이름이자 화면 제목(h1)이다 — 한 곳에서 정해 둘이 어긋나지 않게 한다. 메뉴 이름은 nav.menu.<메뉴>(index.html 의 주 메뉴 표)
+    'nav.main': '홈', 'nav.home': '시스템 구성', 'nav.scenario': '결함 시뮬레이션', 'nav.incidents': '설비 회로', 'nav.trends': '실시간 모니터링',
+    'nav.ontology': '지식 지도', 'nav.skills': '조치 방법', 'nav.decision': '규칙 판단', 'nav.process': '업무 시스템 기록', 'nav.instances': '처리 건',
+    'nav.knowledge': '문서 등록', 'nav.admin': '관리', 'nav.mcp': '도구 연결',
     'header.services': '서비스', 'header.noResponse': '응답 없음', 'header.connected': '연결됨', 'header.connecting': '연결 중', 'header.waiting': '연결됨 · 대기', 'header.disconnected': '끊김 · 재연결 중',
     
     // 공통 단위
@@ -96,16 +97,16 @@ const UI = {
     'dec.col.rule': '규칙', 'dec.col.target': '대상', 'dec.col.result': '결과', 'dec.col.input': '입력 데이터', 'dec.col.source': '출처', 'dec.col.value': '값', 'dec.col.how': '가져온 방법',
     'dec.failed': '판단 실패', 'dec.noPatterns': '이상 패턴을 불러오지 못했습니다',
     // 이상 확인 · 조치
-    'inc.select': '설비를 선택하세요', 'inc.selectSub': '위 설비 카드를 누르면 사건과 조치 과정이 보입니다', 'inc.noAlert': '경보 없음', 'inc.noAlertSub': '결함 시뮬레이션에서 결함을 주입하면 경보가 나고 여기에 표시됩니다',
+    'inc.select': '설비를 선택하세요', 'inc.selectSub': '위 설비 카드를 누르면 그 설비에서 난 사건의 경과와 감사 기록이 보입니다', 'inc.noAlert': '경보 없음', 'inc.noAlertSub': '결함 시뮬레이션에서 결함을 주입하면 경보가 나고 여기에 표시됩니다',
     'inc.noCase': '사건 없음', 'inc.list': '사건', 'inc.listAll': '전체 사건', 'inc.progress': '조치 과정', 'inc.evidence': '분석 근거', 'inc.agentTrace': '에이전트 처리 과정', 'inc.log': '기록',
     'inc.waiting': '조치 후보를 만드는 중…', 'inc.noCandidates': '고를 조치 후보가 없습니다', 'inc.alertAt': '경보 시각', 'inc.approvedBy': '승인자',
     'inc.noGuide': '아직 분석 결과가 없습니다', 'inc.freshness': '데이터 상태', 'inc.fresh': '정상', 'inc.stale': '신뢰 불가',
     'inc.causes': '가능한 원인', 'inc.recommended': '권장 조치', 'inc.noEvidence': '증거 규칙 없음', 'inc.unknown': '판정 미확인', 'inc.pass': '조건 충족', 'inc.fail': '조건 미충족',
     'inc.observed': '관측', 'inc.woPending': '정비 요청 발행 대기', 'inc.reasonLabel': '사유',
     // 처리 건
-    'inst.running': '진행 중', 'inst.myTurn': '내 차례', 'inst.asked': '질문', 
+    'inst.running': '진행 중', 'inst.myTurn': '내가 할 일', 'inst.asked': '질문', 
     'inst.empty': '아직 처리 건이 없습니다', 'inst.emptySub': '설비에 경보가 나면 처리 건이 생깁니다. 결함 시뮬레이션에서 결함을 주입해 보세요', 'inst.select': '처리 건을 선택하세요', 'inst.selectSub': '결과 · 흐름 · 기록을 볼 수 있습니다',
-    'inst.noTodo': '지금 할 일이 없습니다', 'inst.noTodoSub': '차례가 오면 여기에 나타납니다', 'inst.noConn': '처리 서비스에 연결할 수 없습니다',
+    'inst.noTodo': '지금 할 일이 없습니다', 'inst.noTodoSub': '승인이나 입력이 필요한 단계가 열리면 여기에 나타나고 알림이 옵니다', 'inst.noConn': '처리 서비스에 연결할 수 없습니다',
     'inst.tab.result': '결과', 'inst.tab.flow': '진행 상황', 'inst.tab.log': '단계 표', 'inst.tab.record': '처리 기록', 'inst.started': '시작', 'inst.ended': '종료', 'inst.justStarted': '방금 시작', 'inst.elapsed': '분 경과', 'inst.took': '분 만에',
     'inst.initial': '시작 값', 'inst.steps': '단계', 'inst.events': '에이전트 활동', 'inst.graph': '지식 반영', 
     'inst.waitingResult': '새 결과를 기다리는 단계', 'inst.endWaiting': '일부 경로가 종료 지점에 닿았습니다. 남은 단계가 끝나면 처리 건이 종료됩니다.',
@@ -135,8 +136,7 @@ const UI = {
     'plant.noConn': '설비 시뮬레이터에 연결할 수 없습니다', 'plant.noConnSub': '연결되면 자동으로 다시 표시됩니다', 
     'plant.standby': '예비', 'plant.none': '아직 없음', 'plant.faultOn': '결함 진행 중', 'plant.current': '현재 상태',
     // 홈
-    'main.assets': '설비', 'main.openCases': '열린 사건', 'main.knowledge': '지식 항목', 'main.scale': '시간 배율', 'main.go.scenario': '결함 시뮬레이션', 'main.go.incidents': '이상 확인 · 조치', 'main.go.instances': '처리 건',
-    'main.go.scenario.sub': '설비에 결함을 넣고 경보를 봅니다', 'main.go.incidents.sub': '사건의 원인과 조치 과정을 봅니다', 'main.go.instances.sub': '내 차례와 처리 흐름을 봅니다',
+    'main.assets': '설비', 'main.openCases': '열린 사건', 'main.knowledge': '지식 항목', 'main.scale': '시간 배율',
     'main.hot': '고온 · 정지', 'main.cool': '모든 설비 유온 55 ℃ 미만', 'main.noConn': '설비 연결 끊김', 'main.none': '없음', 'main.links': '연결', 
     'main.liveTs1': '실시간 유온', 'main.zoom': '도식 확대', 'main.unzoom': '화면에 맞추기', 
     // 지식 지도 · 지식 관리 · 조치 방법
@@ -467,7 +467,7 @@ const UI = {
   fold(summary, body, { open = false, cls = '' } = {}) { return `<details class="fold ${cls}" ${open ? 'open' : ''}><summary>${summary}</summary><div class="fold-body">${body}</div></details>`; },
   // empty: 굵은 한 줄 + 보조 한 줄
   empty(title, sub = '', cls = '') { return `<div class="empty ${cls}"><b>${esc(title)}</b>${sub ? `<span>${esc(sub)}</span>` : ''}</div>`; },
-  // emptyGo: 빈 화면 + 다음 할 일로 가는 단추 하나(메뉴 id = index.html data-tab). 「없음」에서 끝나지 않고 무엇을 하면 채워지는지로 잇는다
+  // emptyGo: 빈 화면 + 다음 할 일로 가는 단추 하나(tab = 화면 이름, index.html 의 view-<이름>). 「없음」에서 끝나지 않고 무엇을 하면 채워지는지로 잇는다
   emptyGo(title, sub, tab, label, cls = '') { return `<div class="empty ${cls}"><b>${esc(title)}</b>${sub ? `<span>${esc(sub)}</span>` : ''}<button type="button" class="btn small" data-go-tab="${esc(tab)}">${esc(label)} →</button></div>`; },
   // tabs: 밑줄형. items = [[key, label, count?]]
   tabs(items, active, attr = 'data-tab-key') {
@@ -538,10 +538,13 @@ UI.loadNames();   // A141: 원문 id → 이름 사전(정적 names.json). 읽�
    덧붙이기만 한다(위 UI 객체는 그대로). 화면 규칙: workspace/개발/문서/UIUX_PLAN.md */
 Object.assign(UI.terms, {
   'var.approval': '승인 여부', 'var.approval_reason': '결정 사유', 'var.result_report': '결과 보고', 'var.request_id': '요청 번호', 'var.approved_option': '승인한 안',
-  'nav.inbox': '내 작업함', 'nav.agents': 'AI 에이전트', 'nav.mcp': '도구 연결', 'nav.compare': '에이전트 시험 비교', 'nav.flows': '흐름 가져오기', 'nav.oil': '오일 분석 입력', 'nav.eval': '판단 채점',
+  'nav.agents': '에이전트 · 스킬', 'nav.compare': '에이전트 시험 비교', 'nav.flows': '흐름', 'nav.oil': '오일 분석 입력', 'nav.eval': '판단 채점',
   'nav.whatif': '조건별 손익', 'nav.kpi': '성과 지표', 'nav.fabric': '데이터 원천',
-  'nav.ask': 'AI 에이전트에게 질문',   // B5
-  'nav.group.start': '시작', 'nav.group.work': '업무', 'nav.group.knowledge': '지식', 'nav.group.build': '만들기', 'nav.group.lab': '유압 실습장', 'nav.group.admin': '관리',
+  'nav.ask': '질문하기',   // B5
+  // 메뉴 여덟(index.html 주 메뉴의 data-menu). 「강의용 실습장」 은 유압 실습장 · 판단 실험 두 메뉴 위의 묶음 이름 줄이다. nav.menu.<메뉴>.note 는 그 메뉴의 화면마다 탭 줄 아래에 보이는 한 줄
+  'nav.menu.main': '홈', 'nav.menu.instances': '처리 건', 'nav.menu.knowledge': '지식', 'nav.menu.flows': '흐름', 'nav.menu.agents': 'AI 에이전트',
+  'nav.menu.lab': '유압 실습장', 'nav.menu.trial': '판단 실험', 'nav.menu.system': '시스템', 'nav.group.lab': '강의용 실습장',
+  'nav.menu.trial.note': '유압 실습장의 판단 엔진을 시험해 보는 화면입니다. 수업 시나리오의 설비와 경보로 계산합니다.',
   'shell.bell': '알림', 'shell.bellCount': '새 알림 {n}건',
   'shell.mountFail': '화면을 그리지 못했습니다', 'shell.unknownRoute': '없는 화면 주소입니다. 홈으로 이동했습니다.',
   'dialog.ok': '확인', 'dialog.cancel': '취소', 'state.retry': '다시 시도',
@@ -767,5 +770,5 @@ Object.assign(UI.terms, {
   };
 })();
 
-// [data-go-tab="메뉴 id"] 단추: 다음 할 일이 있는 화면으로 옮긴다(빈 화면 · 완료 안내가 함께 쓴다 — UI.emptyGo)
+// [data-go-tab="화면 이름"] 단추: 다음 할 일이 있는 화면으로 옮긴다(빈 화면 · 완료 안내 · 사본을 지운 자리의 「이제 어디서 하는가」 링크가 함께 쓴다 — UI.emptyGo)
 if (typeof document !== 'undefined') document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-go-tab]'); if (b && typeof selectTab === 'function') selectTab(b.dataset.goTab); });

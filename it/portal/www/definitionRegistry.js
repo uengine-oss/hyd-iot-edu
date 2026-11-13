@@ -1,5 +1,6 @@
-/* 관리 › 흐름 정의 등록 · 판본 고르기 · 직접 실행(GET · POST /api/process/definitions, POST /api/instances/start). 시작할 때 정의를 심지 않는다.
-   두 관리 패널(이 파일 · 뒤에 실리는 definitionDeploy.js)이 쓰는 것은 여기 한 벌(window.hydDefinitions): 패널 일(task) · 흐름 이름(name). */
+/* 시스템 › 관리 › 흐름 정의를 JSON 으로 등록 · 판본 고르기 · 직접 실행(GET · POST /api/process/definitions, POST /api/instances/start). 시작할 때 정의를 심지 않는다.
+   개발자용 길이다 — 그림으로 만드는 길(가져오기 → 등록 → 배포 → 시작)은 흐름 화면에 있다.
+   두 패널(이 파일 · 뒤에 실리는 definitionDeploy.js — 흐름 화면의 ④ 배포)이 쓰는 것은 여기 한 벌(window.hydDefinitions): 패널 일(task) · 흐름 이름(name). */
 (function () {
   const $r = id => document.getElementById(id);
 
@@ -107,7 +108,7 @@
     await refresh(key);
     if ($r('definitionChoice').value!==key) throw Error('등록은 됐지만 목록에 그 판본이 보이지 않습니다 — [목록 새로 읽기]를 누르세요');
     const row=definitions.find(x => x.id===d.processDefinitionId && x.version===d.version);
-    message(`「${name(row.id,row.name)}」의 새 판본(${row.version})을 등록하고 골라 두었습니다. 아래 [실행]으로 시작할 수 있습니다.`);
+    message(`「${name(row.id,row.name)}」의 새 판본(${row.version})을 등록하고 골라 두었습니다. 아래 [실행]으로 시작할 수 있습니다. 경보에 쓰려면 메뉴 「흐름」의 4단계 배포에서 이 판본을 배포합니다.`);
   }));
   $r('definitionStart').addEventListener('click', () => action(async () => {
     const [id,version]=choice(),event=$r('definitionEvent').value.trim();

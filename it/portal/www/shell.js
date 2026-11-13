@@ -1,5 +1,5 @@
-/* A5 (U7) 포털 셸 — 수강생 동선 메뉴 · 상단바("나" · 알림 배지) · 해시 주소 · 새 화면 자리(mount).
-   맨 마지막에 읽힌다 — 탭 진입 표(app.js hydTabs.onShow)의 마지막 일로 메뉴 묶음 · 새 화면 자리 · 주소를 맞춘다.
+/* A5 (U7) 포털 셸 — 상단바(알림 종) · 해시 주소 · 새 화면 자리(mount). 메뉴 줄과 위쪽 탭 줄은 app.js 가 주 메뉴 표(index.html)로 그린다.
+   맨 마지막에 읽힌다 — 탭 진입 표(app.js hydTabs.onShow)의 마지막 일로 새 화면 자리 · 주소를 맞춘다.
    주소(해시)를 읽고 쓰는 곳은 이 파일 하나다 — 처리 건 화면은 hydInstances.openTask · route 로만 잇는다.
    새 화면을 그리는 길도 여기 하나다(MOUNTS → mount 한 번, 다시 열 때 show). 처음 읽기에 실패한 화면은 failed() 가 참이면 다시 연 때 새로 그린다.
    참고: process-gpt-vue3 src/router/MainRoutes.ts(경로 → 화면, /todolist/:taskId · /instancelist/:instId),
@@ -7,23 +7,26 @@
          src/layouts/full/vertical-sidebar/VerticalSidebar.vue:115-117(머리글 묶음 + 항목).
    화면 규칙: workspace/개발/문서/UIUX_PLAN.md
 
-   주소: #/<화면>                         예) #/decision · #/inbox
+   주소: #/<화면>                         예) #/decision · #/skills (화면 이름은 index.html 의 view-<이름>. 그 화면이 든 메뉴와 탭이 고른 상태가 된다)
          #/instances/<처리 건 id>
          #/instances/<처리 건 id>/task/<task id>
+         #/inbox                           옛 「내 작업함」 주소 — 처리 건 화면으로 보낸다(작업함은 처리 건 화면의 「내가 할 일」 · 「알림」으로 합쳤다)
    '#/'로 시작하지 않는 해시(#content 같은 본문 건너뛰기)는 주소로 보지 않는다. */
 (function () {
   // 새 화면: 메뉴 키 → 전역 이름. 컨테이너는 <section id="view-<키>"> 안의 <div id="<키>View">.
-  const MOUNTS = { inbox: 'hydInbox', agents: 'hydAgents', mcp: 'hydMcp', compare: 'hydCompare', eval: 'hydEval', whatif: 'hydWhatif', kpi: 'hydKpi',
+  const MOUNTS = { agents: 'hydAgents', mcp: 'hydMcp', compare: 'hydCompare', eval: 'hydEval', whatif: 'hydWhatif', kpi: 'hydKpi',
     fabric: 'hydFabric', ask: 'hydAsk', flows: 'hydFlows', oil: 'hydOilInput' };
   const mounted = {};
   let applying = false;
+  // 옮긴 화면의 옛 주소 → 지금 화면. 알림 · 즐겨찾기에 남은 옛 링크가 「없는 화면」으로 떨어지지 않게 한다
+  const MOVED = { inbox: 'instances' };
 
   /* ------------------------------------------------ 주소 ↔ 화면 */
   function parse(hash) {
     const raw = String(hash || '');
     if (raw && !raw.startsWith('#/')) return null;                       // 일반 앵커 — 주소 아님
     const parts = raw.replace(/^#\/?/, '').split('/').filter(Boolean).map(p => { try { return decodeURIComponent(p); } catch (e) { return p; } });
-    const route = { tab: parts[0] || 'main' };
+    const route = { tab: MOVED[parts[0]] || parts[0] || 'main' };
     if (route.tab === 'instances' && parts[1]) {
       route.inst = parts[1];
       if (parts[2] === 'task' && parts[3]) route.task = parts[3];
@@ -108,15 +111,7 @@
     }
   }
 
-  /* ------------------------------------------------ 상단바 */
-  function setGroup(name) {
-    const button = document.querySelector(`.rail nav button[data-tab="${name}"]`);
-    let group = button && button.previousElementSibling;
-    while (group && !group.classList.contains('navgroup')) group = group.previousElementSibling;
-    const box = document.getElementById('pageGroup');
-    if (box) { box.textContent = group ? group.textContent : ''; box.hidden = !group; }
-  }
-
+  /* ------------------------------------------------ 상단바 (머리줄의 「메뉴 › 화면」 위치 표시는 app.js updateNavigation 이 주 메뉴 표로 쓴다) */
   async function refreshBadge() {
     const badge = document.getElementById('shellBadge'), bell = document.getElementById('shellBell');
     if (!badge || !bell) return;
@@ -134,7 +129,6 @@
 
   /* ------------------------------------------------ 탭 진입(셸은 맨 마지막에 실려 표의 마지막 일이다) */
   hydTabs.onShow(name => {
-    setGroup(name);
     show(name);
     if (!applying) writeHash('push');
   });
@@ -143,17 +137,18 @@
     const bell = document.getElementById('shellBell');
     if (bell) {
       bell.insertAdjacentHTML('afterbegin', UI.icon('bell'));
-      bell.addEventListener('click', () => { selectTab('inbox'); document.getElementById('content')?.focus({ preventScroll: true }); });
+      // 종 = 알림: 처리 건 화면으로 가서 「알림」 접기를 펼쳐 보인다(inbox.js openNotices)
+      bell.addEventListener('click', () => { selectTab('instances'); window.hydInbox.openNotices(); });
     }
     refreshBadge();
     setInterval(refreshBadge, 5000);
-    window.addEventListener('hyd:badge', refreshBadge);              // 작업함이 읽음 처리 뒤 바로 갱신하려면 이 이벤트를 쏜다
-    const onHash = () => { const route = parse(location.hash); if (route && format(route) !== format(currentRoute())) apply(route); };
+    window.addEventListener('hyd:badge', refreshBadge);              // 알림 모듈(inbox.js)이 읽음 처리 뒤 바로 갱신하려면 이 이벤트를 쏜다
+    const onHash = () => { const route = parse(location.hash); if (route && format(route) !== format(currentRoute())) apply(route); if (route && location.hash !== format(currentRoute())) writeHash('replace'); };
     window.addEventListener('hashchange', onHash);
     window.addEventListener('popstate', onHash);
     const first = parse(location.hash);
-    if (first && location.hash) apply(first);
-    else { setGroup(state.tab); show(state.tab); writeHash('replace'); }
+    if (first && location.hash) { apply(first); writeHash('replace'); }      // 옛 주소(#/inbox)로 들어왔으면 지금 주소로 바꿔 적는다
+    else { show(state.tab); writeHash('replace'); }
     // 처리 건 화면 안에서 고른 처리 건 · task 를 주소에 반영(새로고침 · 링크 유지). 기록을 쌓지 않고 바꿔 쓴다.
     setInterval(() => { if (state.tab === 'instances') writeHash('replace'); }, 1000);
   }

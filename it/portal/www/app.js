@@ -51,15 +51,41 @@ const state = { tab: 'main', plant: null, det: null, detError: '', incidents: []
 // 탭에 들어올 때 할 일: 화면 모듈은 selectTab 을 감싸지 않고 이 표에 적는다(실린 차례대로 불린다 — 셸이 맨 마지막). fn(name)
 const tabHooks = [];
 window.hydTabs = { onShow(fn) { tabHooks.push(fn); } };
+/* 메뉴 표: index.html 의 주 메뉴 한 곳(button[data-menu][data-tabs])을 읽는다. 메뉴 하나에 화면이 하나 이상 딸리고, 화면이 둘 이상이면 본문 위 탭 줄로 오간다.
+   메뉴 줄의 고른 표시 · 탭 줄 · 이전/다음 순서 · 머리줄 위치 표시가 모두 이 표로 그려진다. 화면 이름(탭 이름 = 화면 제목)은 nav.<화면>, 메뉴 이름은 nav.menu.<메뉴>(ui.js).
+   화면은 selectTab('<화면>') · 주소 #/<화면> · [data-go-tab="<화면>"] 어느 길로 열어도 그 화면이 든 메뉴와 탭이 고른 상태가 된다. */
+const MENU = [...document.querySelectorAll('.rail nav button[data-menu]')].map(button => {
+  const noteKey = `nav.menu.${button.dataset.menu}.note`;
+  return { id: button.dataset.menu, name: UI.t('nav.menu.' + button.dataset.menu), tabs: button.dataset.tabs.split(/\s+/).filter(Boolean), button,
+    note: UI.t(noteKey) === noteKey ? '' : UI.t(noteKey) };
+});
+const SCREENS = MENU.flatMap(m => m.tabs);                    // 이전 · 다음 단추가 도는 차례
+const tabName = tab => UI.t('nav.' + tab);
+const menuOf = tab => MENU.find(m => m.tabs.includes(tab)) || null;
+window.hydMenu = { list: MENU, screens: SCREENS, of: menuOf, name: tabName };
+// 메뉴 표와 화면 구역(view-…)이 어긋나면 그 화면은 어느 메뉴로도 갈 수 없다 — 조용히 두지 않는다
+{
+  const views = [...document.querySelectorAll('main .view')].map(v => v.id.replace(/^view-/, ''));
+  const lost = views.filter(v => !SCREENS.includes(v)), ghost = SCREENS.filter(s => !views.includes(s));
+  if (lost.length || ghost.length) throw new Error(`주 메뉴 표(index.html data-tabs)와 화면 구역이 다릅니다 — 메뉴에 없는 화면: ${lost.join(', ') || '없음'} · 화면이 없는 메뉴 항목: ${ghost.join(', ') || '없음'}`);
+}
+function renderSubTabs(name) {
+  const menu = menuOf(name), bar = $('#subTabs'), note = $('#menuNote');
+  MENU.forEach(m => {
+    const active = m === menu;
+    m.button.classList.toggle('active', active);
+    if (active) m.button.setAttribute('aria-current', 'page'); else m.button.removeAttribute('aria-current');
+  });
+  bar.hidden = menu.tabs.length < 2;
+  bar.setAttribute('aria-label', `${menu.name} 메뉴의 화면`);
+  bar.innerHTML = bar.hidden ? '' : menu.tabs.map(t => `<button type="button" role="tab" class="tab${t === name ? ' on' : ''}" data-tab="${esc(t)}" aria-selected="${t === name}">${esc(tabName(t))}</button>`).join('');
+  note.hidden = !menu.note; note.textContent = menu.note;
+}
 function selectTab(name) {
   if (!document.getElementById('view-' + name)) return;
   const changed = state.tab !== name;
   state.tab = name;
-  document.querySelectorAll('.rail nav button').forEach(b => {
-    const active = b.dataset.tab === name;
-    b.classList.toggle('active', active);
-    if (active) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
-  });
+  renderSubTabs(name);
   const brand = document.getElementById('brandHome'); if (brand) brand.classList.toggle('active', name === 'main');
   document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + name));
   if (changed) $('main').scrollTo(0, 0);
@@ -70,12 +96,12 @@ function selectTab(name) {
   tabHooks.forEach(fn => fn(name));
 }
 document.querySelectorAll('[data-term]').forEach(n => { const t = UI.t(n.dataset.term); if (t !== n.dataset.term) n.textContent = t; });
-const navButtons = [...document.querySelectorAll('.rail nav button[data-tab]')];
-navButtons.forEach(b => {
-  b.dataset.label = b.textContent;
-  b.innerHTML = UI.icon(b.dataset.icon) + `<span>${esc(b.dataset.label)}</span>`;
-  b.addEventListener('click', () => { selectTab(b.dataset.tab); $('#content').focus({ preventScroll: true }); });
+// 메뉴 줄 단추는 그 메뉴의 첫 화면을 연다. 그 메뉴의 다른 화면은 탭 줄 단추(button[data-tab])로 연다
+MENU.forEach(m => {
+  m.button.innerHTML = UI.icon(m.button.dataset.icon) + `<span>${esc(m.name)}</span>`;
+  m.button.addEventListener('click', () => { selectTab(m.tabs[0]); $('#content').focus({ preventScroll: true }); });
 });
+$('#subTabs').addEventListener('click', e => { const b = e.target.closest('button[data-tab]'); if (b) selectTab(b.dataset.tab); });
 function setMenu(open) {
   $('#navigation').classList.toggle('open', open);
   $('#menuToggle').setAttribute('aria-expanded', String(open));
@@ -85,18 +111,20 @@ function setMenu(open) {
   $('#navigation').inert = matchMedia('(max-width:720px)').matches && !open;
 }
 function updateNavigation(name) {
-  const index = navButtons.findIndex(b => b.dataset.tab === name);
-  $('#pageLocation').textContent = navButtons[index]?.dataset.label || UI.t('nav.main');
-  document.title = `${$('#pageLocation').textContent} · HYD Lab`;
-  const prev = navButtons[index - 1], next = navButtons[index + 1];
+  const index = SCREENS.indexOf(name), menu = menuOf(name);
+  // 머리줄 위치: 「메뉴 › 화면」. 화면이 하나뿐인 메뉴는 이름이 같으므로 화면 이름만 보인다
+  const group = $('#pageGroup'); group.hidden = menu.tabs.length < 2; group.textContent = menu.name;
+  $('#pageLocation').textContent = tabName(name);
+  document.title = `${tabName(name)} · HYD Lab`;
+  const prev = SCREENS[index - 1], next = SCREENS[index + 1];
   for (const [id, target, direction] of [['pagePrev', prev, '이전'], ['pageNext', next, '다음']]) {
     const button = $('#' + id); if (!button) continue;
     button.disabled = !target;
-    button.dataset.target = target?.dataset.tab || '';
-    button.innerHTML = `<span>${direction}${direction === '다음' ? ' →' : ''}</span><b>${esc(target?.dataset.label || (direction === '이전' ? '첫 화면' : '마지막 화면'))}</b>`;
-    button.setAttribute('aria-label', `${direction} 화면: ${target?.dataset.label || '없음'}`);
+    button.dataset.target = target || '';
+    button.innerHTML = `<span>${direction}${direction === '다음' ? ' →' : ''}</span><b>${esc(target ? tabName(target) : (direction === '이전' ? '첫 화면' : '마지막 화면'))}</b>`;
+    button.setAttribute('aria-label', `${direction} 화면: ${target ? tabName(target) : '없음'}`);
   }
-  const count = $('#pagePosition'); if (count) count.textContent = `${index + 1} / ${navButtons.length}`;
+  const count = $('#pagePosition'); if (count) count.textContent = `${index + 1} / ${SCREENS.length}`;
   setMenu(false);
 }
 $('#menuToggle').addEventListener('click', () => {
@@ -398,7 +426,7 @@ function renderGwLog(entries, failed = '') {
 }
 
 
-/* ---------------- 이상 확인 · 조치: unit schematics + selection ---------------- */
+/* ---------------- 설비 회로(유압 실습장): 회로 그림 카드 + 설비 고르기. 조치 후보 · 승인은 처리 건 화면에만 있다 ---------------- */
 function tsColor2(t) { return t >= TS_TRIP ? '#d7263d' : t >= TS_HOT ? '#c77700' : '#1e8e5a'; }
 function unitSvg(asset) {
   const fins = [270, 279, 288, 297, 306, 315, 324].map(x => `<line class="fin" x1="${x}" y1="60" x2="${x}" y2="100"/>`).join('');
@@ -468,7 +496,7 @@ async function selectAsset(asset) {
   if (!pick) { state.detail = null; state.incAudit = null; }
   renderScada(); renderIncList();
   if (pick) await loadDetail(); else renderDetail();
-  const det = $('#hitlPanel'); if (det) det.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  $('#incDetail').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 $('#btnAllInc').addEventListener('click', () => { state.showAll = true; state.incShown = UI.PAGE; renderIncList(); });
 
@@ -545,26 +573,6 @@ function traceHtml(run) {
   }
   return html + '</div>';
 }
-/* 분석 근거 (C1: no summarySource · citation ids · prior probabilities on screen) */
-function guideCardHtml(card) {
-  if (!card) return `<div class="muted">${esc(UI.t('inc.noGuide'))}</div>`;
-  // 요약은 원인까지만 — 권장 조치는 판단 카드(SOP 하나 단위, 처리 건 승인 단계)가 정한다(G1-04: 가이드 카드의 조치 목록은 여러 절차를 섞었다)
-  const top = card.causes?.[0], alert = card.alert || {};
-  const summary = `${alert.asset || ''} · ${UI.patternName(alert.pattern) || '설비 이상'}.` + (top ? ` 가장 유력한 원인은 ‘${top.name}’입니다.` : '');
-  let html = `<p class="prose" style="margin:0 0 var(--s3)">${esc(summary)}</p>`;
-  html += `<div class="kv-line">${esc(UI.t('inc.freshness'))}: ${card.freshness && card.freshness.ok ? esc(UI.t('inc.fresh')) : esc(UI.t('inc.stale'))} (${fmt(card.freshness && card.freshness.age_s, 1)} s)</div>`;
-  html += `<h4 style="margin:var(--s4) 0 var(--s2);font-size:13px">${esc(UI.t('inc.causes'))}</h4><div class="stack-list">`;
-  (card.causes || []).forEach((c, i) => {
-    const ev = (c.evidence || []).map(e => {
-      const unknown = e.status === 'UNKNOWN' || e.passed == null || e.value == null || !!e.error;
-      const unit = window.hydWords.unit(e.tag);          // 값 단위 사전 한 곳(plainWords.js) — 「관측 46.20」만으로는 무엇인지 읽히지 않았다
-      return `<div class="kv-line"><span class="${unknown ? 'muted' : e.passed ? 'pos' : 'neg'}">${esc(e.name)}</span> — ${unknown ? esc(UI.t('inc.unknown')) : e.passed ? esc(UI.t('inc.pass')) : esc(UI.t('inc.fail'))} · ${esc(UI.t('inc.observed'))} ${esc(fmt(e.value, 2))}${unit ? ' ' + esc(unit) : ''}${unknown ? ` <span class="muted">${esc(e.error || e.reason || '')}</span>` : ''}</div>`;
-    }).join('');
-    html += UI.card({ title: esc(c.name), chips: i === 0 ? UI.chipText(UI.t('dec.causeTop'), 'accent') : '', value: `<span class="kv">${esc(UI.t('card.score'))} <small></small>${fmt(c.score, 2)}</span>`, sub: esc(c.description || ''), body: ev || `<span class="muted">${esc(UI.t('inc.noEvidence'))}</span>`, cls: 'soft' });
-  });
-  html += `</div><p class="field-hint" style="margin-top:var(--s3)">조치는 이 원인을 바탕으로 AI 에이전트가 낸 판단 카드(처리 건의 승인 단계)에서 고르고 승인합니다.</p>`;
-  return html;
-}
 function renderDetail() {
   const box = $('#incDetail');
   const inc = state.detail;
@@ -587,18 +595,13 @@ function renderDetail() {
     // A141: 경보 · 승인자 · 종결 시각 · id 는 상세 정보 접기로
     html += `<div class="detail-head"><div class="row"><h2>${esc(inc.asset)} ${esc(UI.t('case'))}${pattern ? ' · ' + esc(pattern) : ''}</h2>${UI.chip(inc.state)}</div></div>`;
     html += UI.metaFold([[UI.t('inc.alertAt'), esc(UI.dateTime(inc.created))], [UI.t('inc.approvedBy'), esc(inc.approvedBy ? UI.who(inc.approvedBy) : '')], [UI.t('closed'), inc.closed ? esc(UI.dateTime(inc.closed)) : ''], ['ID', `<span class="mono">${esc(inc.id)}</span>`]]);
+    // 원인 판단 · 조치 후보 · 승인 · 실행 결과는 이 사건의 처리 건 한 곳에 있다 — 여기에는 그리로 가는 길 하나만 둔다(사본 없음)
+    html += `<div class="see-instance"><p>AI 에이전트가 판단한 원인과 조치 후보, 승인, 실행 결과는 이 사건의 처리 건에 있습니다.</p>${UI.actions('<button class="btn small primary" id="btnIncInstance">이 사건의 처리 건 보기 →</button>', state.woMsg?.inc === inc.id ? state.woMsg.text : '')}</div>`;
     html += `<h3 style="font-size:14px;margin:var(--s3) 0 var(--s2)">${esc(UI.t('inc.progress'))}</h3>` + timelineHtml(inc);
     // 정비 요청 전달은 처리 건의 승인 전달이 한다 — 실패하면 그 처리 건의 「정비 요청 전달 실패」에서 같은 내용으로 다시 전달한다(instances.js)
-    if (inc.workOrderRequest && !inc.workOrder) {
-      html += `<p class="kv-line">${esc(UI.t('inc.woPending'))}: ${esc(inc.workOrderRequest.item.value || inc.workOrderRequest.item.name || '')}</p>` +
-        UI.actions(`<button class="btn small" id="btnWorkOrderInstance">처리 건에서 전달 상태 보기 →</button>`, state.woMsg?.inc === inc.id ? state.woMsg.text : '');
-    }
+    if (inc.workOrderRequest && !inc.workOrder) html += `<p class="kv-line">${esc(UI.t('inc.woPending'))}: ${esc(inc.workOrderRequest.item.value || inc.workOrderRequest.item.name || '')} — 전달 상태는 처리 건에서 봅니다.</p>`;
   }
-  const card = inc.card;
   html += '<div class="stack-list" style="margin-top:var(--s4)">';
-  html += UI.fold(esc(UI.t('inc.evidence')), guideCardHtml(card));
-  // AI 에이전트가 무엇을 조회 · 판단했는지는 이 사건의 처리 건 「처리 기록」에 있다 — 여기서는 그리로 가는 길 하나
-  html += UI.fold(esc(UI.t('inc.agentTrace')), `<p class="muted">AI 에이전트의 조회 · 판단 과정은 이 사건의 처리 건 「처리 기록」 탭에 단계별로 남습니다.</p>${UI.actions('<button class="btn small" id="btnIncInstance">처리 건에서 보기 →</button>', state.woMsg?.inc === inc.id ? state.woMsg.text : '')}`);
   {
     const audit = state.incAudit?.id === inc.id ? state.incAudit.rows : [], auditError = state.incAudit?.id === inc.id ? state.incAudit.error : '';
     const auditFail = auditError ? `<div class="neg" role="status">처리 기록을 읽지 못했습니다: ${esc(auditError)}${audit.length ? ' — 마지막으로 읽은 기록입니다' : ''}</div>` : '';
@@ -606,13 +609,14 @@ function renderDetail() {
   }
   html += '</div>';
   box.innerHTML = html;
-  // 처리 건으로 가는 단추(정비 요청 전달 상태 · AI 처리 과정) — 못 찾거나 실패하면 그 자리에 까닭을 남긴다
-  box.querySelectorAll('#btnWorkOrderInstance, #btnIncInstance').forEach(b => b.addEventListener('click', async () => {
+  // 처리 건으로 가는 단추 — 못 찾거나 실패하면 그 자리에 까닭을 남긴다
+  box.querySelector('#btnIncInstance').addEventListener('click', async e => {
+    const b = e.currentTarget;
     b.disabled = true; state.woMsg = null;
-    try { if (!(await window.hydHitl.openIncident(inc.id))) state.woMsg = { inc: inc.id, text: '이 사건의 처리 건을 찾지 못했습니다 — 「처리 건」 화면에서 직접 고르세요.' }; }
-    catch (e) { state.woMsg = { inc: inc.id, text: '처리 건을 열지 못했습니다: ' + e.message }; }
+    try { if (!(await window.hydHitl.openIncident(inc.id))) state.woMsg = { inc: inc.id, text: '이 사건의 처리 건을 찾지 못했습니다. 메뉴 「처리 건」의 목록에서 같은 설비의 건을 여세요.' }; }
+    catch (err) { state.woMsg = { inc: inc.id, text: '처리 건을 열지 못했습니다: ' + err.message }; }
     finally { b.disabled = false; if (state.woMsg) renderDetail(); }
-  }));
+  });
 }
 
 /* ---------------- 실시간 모니터링 ---------------- */
@@ -620,7 +624,7 @@ async function trendsNotice() {
   const n = $('#trendsNotice'); if (!n) return;
   // Grafana sends no CORS headers: an opaque (no-cors) response means reachable, a network error means it is down
   try { await fetch(P(3000) + '/api/health', { mode: 'no-cors', cache: 'no-store' }); n.hidden = true; }
-  catch (e) { n.hidden = false; n.innerHTML = '<b>그래프 서비스가 응답하지 않습니다.</b> 센서값은 결함 시뮬레이션 · 이상 확인 화면에서 1초마다 갱신됩니다.'; }
+  catch (e) { n.hidden = false; n.innerHTML = `<b>그래프 서비스가 응답하지 않습니다.</b> 센서값은 「${esc(tabName('scenario'))}」과 「${esc(tabName('incidents'))}」 탭에서 1초마다 갱신됩니다.`; }
 }
 function renderTrends() {
   trendsNotice();

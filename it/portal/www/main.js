@@ -125,8 +125,14 @@
   }
 
   function stagesHtml() {
-    const st = [['scenario', 'main.go.scenario', 'main.go.scenario.sub'], ['incidents', 'main.go.incidents', 'main.go.incidents.sub'], ['instances', 'main.go.instances', 'main.go.instances.sub']];
-    return st.map(([tab, t, d]) => `<button class="card" data-go="${tab}"><header class="card-head"><div class="card-title"><h3>${esc(UI.t(t))}</h3></div></header><p class="card-sub">${esc(UI.t(d))}</p><span class="go">열기 →</span></button>`).join('');
+    // 이 시스템의 이야기 순서: 지식을 넣는다 → 사건이 생긴다 → AI가 판단하고 사람이 승인한다 → (자기 것) 흐름을 만든다.
+    // 카드 제목은 메뉴 표의 이름 그대로다(메뉴 › 화면 — app.js hydMenu) — 눌러서 열리는 화면의 제목과 같다
+    const st = [['knowledge', '설비 매뉴얼을 올려 AI 에이전트가 판단에 쓸 지식을 만듭니다.'], ['scenario', '설비에 결함을 넣어 경보를 냅니다. 경보가 나면 처리 건이 열립니다.'],
+      ['instances', 'AI 에이전트의 판단을 읽고 승인하거나 반려한 뒤 실행 결과를 확인합니다.'], ['flows', '직접 그린 흐름을 가져와 등록하고 배포해 처리 건으로 돌립니다.']];
+    return st.map(([tab, text], i) => {
+      const menu = hydMenu.of(tab), title = menu.tabs.length > 1 ? `${menu.name} › ${hydMenu.name(tab)}` : hydMenu.name(tab);
+      return `<button class="card" data-go="${tab}"><header class="card-head"><div class="card-title"><h3>${i + 1}. ${esc(title)}</h3></div></header><p class="card-sub">${esc(text)}</p><span class="go">열기 →</span></button>`;
+    }).join('');
   }
 
   // 지식 수: 처음 한 번 읽고, 실패하면 사유를 두고 30초 뒤 다시 읽는다(시작 직후 Neo4j 가 늦게 떠도 새로 고침 없이 채워진다)
@@ -153,7 +159,7 @@
       [UI.t('main.assets'), `${Object.keys(u).length}기`, alarms ? `${UI.t('main.hot')} ${alarms}기` : UI.t('main.cool'), alarms ? 'hot' : ''],
       // 사건 목록을 못 읽었으면 「0 · 없음」이 아니다(app.js 의 사건 목록 사유)
       state.incidentError ? [UI.t('main.openCases'), '읽기 실패', state.incidentError, 'hot']
-        : [UI.t('main.openCases'), $('#openCount').textContent === '–' ? '–' : String(open), open ? UI.t('nav.incidents') : UI.t('main.none'), open ? 'hot' : ''],
+        : [UI.t('main.openCases'), $('#openCount').textContent === '–' ? '–' : String(open), open ? `「${UI.t('nav.menu.instances')}」에서 처리합니다` : UI.t('main.none'), open ? 'hot' : ''],
       [UI.t('main.knowledge'), graphCount ? n(graphCount.n) : '–', graphCount ? `${UI.t('main.links')} ${n(graphCount.e)}` : graphError ? '지식 수를 읽지 못했습니다. 30초 뒤 다시 읽습니다.' : UI.t('loading'), graphError ? 'hot' : '', graphError],      // 서버 사유는 길어 카드 높이를 흔든다 — title 로
       [UI.t('main.scale'), `${state.plant.time_scale ?? '–'}×`, `실제 1초 = 시뮬레이션 ${state.plant.time_scale ?? '–'}초`, ''],
     ].map(([k, v, s, cls, why]) => `<div class="card ${cls}"${why ? ` title="${esc(why)}"` : ''}><span>${esc(k)}</span><b class="num">${esc(v)}</b><small>${esc(s)}</small></div>`).join('');

@@ -11,6 +11,12 @@
     flow_versions: ['흐름 판본', '개'], assignments: ['단계 배정', '건'], deployments: ['배포', '건'], secrets_needed: ['입력할 비밀값', '개'] };
 
   // 공용 요청 함수 하나(requestJ) — 불러오기는 MCP 연결 검사를 하므로 3분, 내보내기는 파일 이름 머리글이 필요하다. 서버 사유 칸(detail)은 그대로 쓴다
+  // 누가 했나 = 이 PC의 담당자. 서버는 비어 있으면 400 으로 거절한다(inbox.actor_or_400) — 못 읽었으면 보내지 않고 까닭을 말한다
+  function actor() {
+    const id = window.hydInbox?.me?.()?.id;
+    if (!id) throw Object.assign(new Error('담당자 정보를 읽지 못해 보낼 수 없습니다. 화면을 새로 고친 뒤 다시 해 주세요.'), { detail: {} });
+    return id;
+  }
   async function call(path, body) {
     try {
       return await requestJ(API.process + path, { timeout: 180000, withHeaders: true,
@@ -93,7 +99,7 @@
       $('cfgImport').disabled = true; if ($('cfgSkip')) $('cfgSkip').disabled = true;
       msg('cfgImportMsg', '불러오는 중입니다. 도구 서버 연결을 검사하므로 조금 걸립니다.');
       try {
-        const { body } = await call('/api/config/import', { bundle: pending, secrets: secretsFromForm(), skip_missing_secrets: !!skip });
+        const { body } = await call('/api/config/import', { bundle: pending, secrets: secretsFromForm(), skip_missing_secrets: !!skip, by: actor() });
         msg('cfgImportMsg', body.message); $('cfgSecrets').innerHTML = ''; showResult(body);
         UI.toast(body.message, { tone: 'ok' });
       } catch (e) {
@@ -119,7 +125,7 @@
       if (!yes) return;
       $('cfgReset').disabled = true;
       try {
-        const { body } = await call('/api/config/reset', {});
+        const { body } = await call('/api/config/reset', { by: actor() });
         msg('cfgResetMsg', body.message); $('cfgResetResult').innerHTML = UI.fold('지운 것', list(body.steps.map(s => `${s.label}: ${s.text}`)));
         UI.toast(body.message, { tone: 'ok' });
       } catch (e) {

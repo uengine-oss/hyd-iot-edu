@@ -1,0 +1,56 @@
+/* 구조 개편(2026-11-14) — 메뉴 여덟 · 위쪽 탭 줄 · 합친 화면의 배치만 둔다. 색 · 글자 크기 · 여백의 세부는 디자인 기준(다른 CSS)이 입힌다.
+   tokens.css · theme.css 의 값만 쓴다(색을 새로 박지 않는다). 화면 규칙: workspace/개발/문서/UIUX_PLAN.md */
+
+/* ---------------- 메뉴 줄: 뼈대 다섯 / 「강의용 실습장」 둘 / 시스템 ---------------- */
+.rail nav .navgroup { border-top: 1px solid var(--rule); margin-top: var(--s2); }      /* 묶음 이름 줄 = 구분선 + 이름 */
+.rail nav .navgroup.navrule { padding: 0; margin: var(--s2) 0; height: 0; }             /* 이름 없는 구분선(실습장 묶음이 끝나는 자리) */
+
+/* ---------------- 위쪽 탭 줄: 한 메뉴에 딸린 화면들(app.js renderSubTabs). 모양은 theme.css 의 .tabs 그대로 ---------------- */
+.subtabs { margin: 0 0 var(--s4); flex-wrap: wrap; overflow-x: visible; }
+.subtabs[hidden], .menu-note[hidden] { display: none; }
+.menu-note { margin: calc(-1 * var(--s2)) 0 var(--s4); color: var(--ink-2); font-size: 13px; }
+
+/* ---------------- 화면 머리의 한 줄 안내 · 글 속 이동 단추 ---------------- */
+.page-lead { margin: calc(-1 * var(--s2)) 0 var(--s4); color: var(--ink-2); max-width: var(--prose-max); }
+.link-btn { border: 0; background: none; padding: 0; font: inherit; color: var(--accent); cursor: pointer; }
+.link-btn:hover { text-decoration: underline; }
+
+/* ---------------- 홈: 처음 할 일 네 장 ---------------- */
+.m-go { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 1200px) { .m-go { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 900px) { .m-go { grid-template-columns: 1fr; } }
+
+/* ---------------- 처리 건: 내가 할 일(역할별 보기) · 알림 접기 ---------------- */
+#todoRoles:empty { display: none; }
+#noticeFold { margin-top: var(--s6); }
+#noticeFoldCount[hidden] { display: none; }
+
+/* ---------------- 설비 회로: 사건 상세의 「처리 건에서 본다」 한 줄 ---------------- */
+.see-instance { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s2) var(--s4); padding: var(--s3) 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); margin: var(--s3) 0; }
+.see-instance p { margin: 0; color: var(--ink-2); }
+.see-instance .form-actions { margin: 0; }
+
+/* ---------------- 흐름: 다섯 단계 표시(지식 문서 등록의 .steps3 와 같은 꼴 — hitl.css) · 단계 구역 ---------------- */
+.flow-steps { display: flex; flex-wrap: wrap; gap: 6px 28px; list-style: none; margin: 0 0 var(--s4); padding: 0 0 var(--s3); border-bottom: 1px solid var(--rule); }
+.flow-steps li { display: flex; align-items: center; gap: 8px; color: var(--ink-3); font-size: 14px; }
+.flow-steps li .n, .flow-stage-h .n { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--rule-strong); font-size: 12px; font-weight: 600; flex-shrink: 0; }
+.flow-steps li.on { color: var(--ink); font-weight: 600; }
+.flow-steps li.on .n { background: var(--accent); border-color: var(--accent); color: #fff; }
+.flow-steps li.done { color: var(--ink-2); }
+.flow-steps li.done .n { background: var(--surface-soft); color: var(--ink-2); }
+.flow-stage { margin: 0 0 var(--s6); }
+.flow-stage-h { display: flex; align-items: center; gap: 8px; margin: 0 0 var(--s3); }
+.card .flow-stage-h { margin-top: var(--s6); padding-top: var(--s4); border-top: 1px solid var(--rule); }
+.flow-stage > .card { margin: 0; }
+.flow-empty { margin: 0; }
+#flowsStart > .form-actions { margin-top: var(--s3); }
+
+/* ---------------- 좁은 폭(900px 아래): 탭 줄은 줄바꿈, 탭은 손가락으로 누를 높이 ---------------- */
+@media (max-width: 900px) {
+  .subtabs .tab { height: 40px; }
+  .flow-steps { gap: 6px 16px; }
+}
+
+/* ---------------- 업무 시스템 기록: 표 아래 거래 접기 ---------------- */
+#txFold { margin-top: var(--s4); }
+#decOrphans[hidden] { display: none; }
