@@ -1,0 +1,6 @@
+패키지: cytoscape-fcose (+ cose-base, layout-base)
+버전: 2.2.0 (cose-base 2.2.0, layout-base 2.0.1)
+라이선스: MIT
+받은 곳: https://registry.npmjs.org/cytoscape-fcose
+받은 날: 2026-11-14
+넣은 파일: layout-base.js → cose-base.js → cytoscape-fcose.js (이 차례로 싣는다)

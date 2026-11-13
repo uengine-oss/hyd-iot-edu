@@ -1,0 +1,6 @@
+패키지: bpmn-js
+버전: 18.31.1
+라이선스: bpmn.io 라이선스(MIT 본문 + 그림 오른쪽 아래의 bpmn.io 표시를 지우거나 가리지 않는다는 조건)
+받은 곳: https://registry.npmjs.org/bpmn-js
+받은 날: 2026-11-14
+넣은 파일: dist/bpmn-navigated-viewer.production.min.js, dist/assets/{bpmn-js.css,diagram-js.css,bpmn-font/css/bpmn.css,bpmn-font/font/bpmn.woff2,bpmn.woff}

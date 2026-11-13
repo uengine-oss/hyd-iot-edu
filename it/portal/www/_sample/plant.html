@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>실시간 모니터링 — 견본</title>
+<link rel="stylesheet" href="../vendor/basecoat/basecoat.min.css">
+<link rel="stylesheet" href="../vendor/uplot/uPlot.min.css">
+<link rel="stylesheet" href="portal-kit.css">
+<style>
+  .units { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .unit { border: 1px solid var(--border); border-radius: 12px; background: #fff; text-align: left; cursor: pointer; transition: border-color .15s, box-shadow .15s; display: block; width: 100%; overflow: hidden; }
+  .unit:hover { border-color: var(--input); box-shadow: var(--shadow-sm); }
+  .unit[aria-pressed="true"] { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+  .unit[data-state="TRIP"] { border-color: var(--danger-line); }
+  .unit-head { display: flex; align-items: center; gap: 8px; padding: 14px 16px 0; }
+  .unit-head b { font-size: 15px; font-weight: 650; }
+  .unit-head .muted { font-size: 12.5px; margin-left: auto; }
+  .unit-main { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: end; padding: 10px 16px 4px; }
+  .unit-big { font-size: 34px; line-height: 40px; font-weight: 650; letter-spacing: -0.03em; }
+  .unit-big small { font-size: 14px; font-weight: 500; color: var(--muted-foreground); margin-left: 4px; letter-spacing: 0; }
+  .unit-cap { font-size: 12.5px; color: var(--muted-foreground); }
+  .spark { height: 44px; min-width: 0; }
+  .gauge { position: relative; height: 6px; border-radius: 3px; margin: 10px 16px 6px; background: linear-gradient(90deg, #dfe3ea 0 62.5%, var(--warn-line) 62.5% 87.5%, var(--danger-line) 87.5%); }
+  .gauge i { position: absolute; top: -4px; width: 4px; height: 14px; border-radius: 2px; background: var(--foreground); box-shadow: 0 0 0 2px #fff; transform: translateX(-50%); transition: left .6s var(--ease); }
+  .gauge-scale { position: relative; height: 18px; margin: 0 16px 12px; font-size: 11.5px; color: var(--muted-foreground); }
+  .gauge-scale span { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; }
+  .gauge-scale span:nth-child(1) { left: 0; transform: none; } .gauge-scale span:nth-child(2) { left: 62.5%; color: var(--warn-ink); } .gauge-scale span:nth-child(3) { left: 87.5%; color: var(--danger-ink); } .gauge-scale span:nth-child(4) { left: auto; right: 0; transform: none; }
+  .unit-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--border); background: #fcfcfd; }
+  .unit-grid > div { padding: 10px 16px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .unit-grid > div:nth-child(3n) { border-right: 0; } .unit-grid > div:nth-last-child(-n+3) { border-bottom: 0; }
+  .unit-grid dt { font-size: 12px; color: var(--muted-foreground); }
+  .unit-grid dd { font-size: 14.5px; font-weight: 600; margin-top: 1px; }
+  .unit-grid dd small { font-size: 11.5px; font-weight: 450; color: var(--muted-foreground); margin-left: 2px; }
+  .trend { margin-top: 20px; }
+  .trend-head { display: flex; align-items: center; gap: 12px; padding: 16px 20px 6px; flex-wrap: wrap; }
+  .trend-head h2 { font-size: 15px; font-weight: 650; }
+  .trend-legend { display: flex; gap: 16px; padding: 0 20px 4px; font-size: 13px; color: var(--ink-2); flex-wrap: wrap; }
+  .trend-legend span { display: inline-flex; align-items: center; gap: 7px; }
+  .trend-legend i { width: 12px; height: 3px; border-radius: 2px; }
+  .trend-legend b { font-weight: 600; color: var(--foreground); }
+  .trend-legend .th { color: var(--muted-foreground); } .trend-legend .th i { height: 0; border-top: 2px dashed; background: none; }
+  #chart { padding: 4px 8px 12px 6px; height: 320px; overflow: hidden; }
+  .trend { min-width: 0; overflow: hidden; }
+  .u-legend { display: none; }
+  .uplot, .uplot * { font-family: var(--font-sans); }
+  @media (max-width: 1000px) { .units { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body data-menu="plant" data-view="trends">
+<main>
+  <div class="page">
+    <div class="page-head">
+      <div><h1>실시간 모니터링</h1><p>유압 파워유닛 3기의 지금 값과 추이입니다. 유온이 55 ℃를 넘으면 경보가 나고 65 ℃에서 설비가 스스로 멈춥니다.</p></div>
+      <div class="page-tools"><span class="live-pill"><i class="dot" data-tone="ok" data-live></i><span>1초마다 갱신 · <span class="num" id="scale">–</span>배속</span></span><a class="btn" data-variant="outline" id="grafana" href="#" target="_blank" rel="noopener"></a></div>
+    </div>
+    <div class="units" id="units" role="group" aria-label="설비 고르기"></div>
+    <section class="panel trend">
+      <div class="trend-head"><h2 id="trendTitle">HYD-01 추이</h2><div class="seg" role="group" aria-label="볼 값" id="metric"></div><span class="muted" style="margin-left:auto;font-size:12.5px" id="range"></span></div>
+      <div class="trend-legend" id="legend"></div>
+      <div id="chart"></div>
+    </section>
+  </div>
+</main>
+<script src="../vendor/basecoat/basecoat.min.js" defer></script>
+<script src="../vendor/uplot/uPlot.iife.min.js"></script>
+<script type="module">
+import { mountShell, icon, esc } from './shell.js';
+mountShell();
+document.getElementById('grafana').innerHTML = 'Grafana에서 열기' + icon('external-link');
+const css = getComputedStyle(document.documentElement), v = (n) => css.getPropertyValue(n).trim();
+const C = { brand: v('--brand'), teal: '#0d9488', amber: v('--warn'), red: v('--danger'), ink: v('--muted-foreground'), grid: '#eef0f4', slate: '#64748b' };
+
+const METRICS = {
+  temp: { name: '유온', series: [{ tag: 'TS1', name: '유온', unit: '℃', color: C.brand, scale: 'y' }], y: [40, 70], lines: [[55, C.amber, '경보 55 ℃'], [65, C.red, '정지 65 ℃']] },
+  cool: { name: '냉각 효율', series: [{ tag: 'CE', name: '냉각 효율', unit: '%', color: C.brand, scale: 'y' }], y: [0, 100], lines: [[70, C.amber, '경보 조건 70 % 미만']] },
+  press: { name: '압력 · 유량', series: [{ tag: 'PS1', name: '토출 압력', unit: 'bar', color: C.brand, scale: 'y' }, { tag: 'FS1', name: '유량', unit: 'L/min', color: C.teal, scale: 'y2' }], y: [120, 200], y2: [0, 12], lines: [[165, C.amber, '누설 경보 165 bar'], [130, C.red, '정지 130 bar']] },
+  vib: { name: '진동', series: [{ tag: 'VS1', name: '진동', unit: 'mm/s', color: C.brand, scale: 'y' }], y: [0, 2.5], lines: [[1.2, C.amber, '경보 1.2 mm/s'], [2.0, C.red, '정지 2.0 mm/s']] },
+};
+const ASSETS = ['HYD-01', 'HYD-02', 'HYD-03'];
+const hist = Object.fromEntries(ASSETS.map((a) => [a, { t: [], TS1: [], CE: [], PS1: [], FS1: [], VS1: [] }]));
+let asset = 'HYD-01', metric = 'temp', chart, sparks = {}, opened = Date.now();
+document.getElementById('metric').innerHTML = Object.entries(METRICS).map(([k, m]) => `<button type="button" data-m="${k}" aria-pressed="${k === metric}">${m.name}</button>`).join('');
+
+const fmt = (x, d = 1) => Number(x).toFixed(d);
+function cards(state) {
+  const box = document.getElementById('units');
+  if (!box.children.length) {
+    box.innerHTML = ASSETS.map((a) => `<button type="button" class="unit" data-a="${a}" aria-pressed="${a === asset}">
+      <div class="unit-head"><b>${a}</b><span class="tag" data-f="state"></span><span class="muted" data-f="mode"></span></div>
+      <div class="unit-main"><div><div class="unit-cap">유온</div><div class="unit-big num"><span data-f="TS1"></span><small>℃</small></div></div><div class="spark" data-f="spark"></div></div>
+      <div class="gauge" aria-hidden="true"><i data-f="pin"></i></div><div class="gauge-scale" aria-hidden="true"><span>30</span><span>경보 55</span><span>정지 65</span><span>70</span></div>
+      <dl class="unit-grid"><div><dt>토출 압력</dt><dd class="num"><span data-f="PS1"></span><small>bar</small></dd></div><div><dt>유량</dt><dd class="num"><span data-f="FS1"></span><small>L/min</small></dd></div><div><dt>진동</dt><dd class="num"><span data-f="VS1"></span><small>mm/s</small></dd></div>
+        <div><dt>냉각 효율</dt><dd class="num"><span data-f="CE"></span><small>%</small></dd></div><div><dt>팬 속도</dt><dd class="num"><span data-f="FanSpeedSP"></span><small>%</small></dd></div><div><dt>부하</dt><dd class="num"><span data-f="LoadSP"></span><small>%</small></dd></div></dl></button>`).join('');
+    box.addEventListener('click', (e) => { const b = e.target.closest('.unit'); if (!b) return; asset = b.dataset.a; box.querySelectorAll('.unit').forEach((u) => u.setAttribute('aria-pressed', u === b)); build(); });
+    ASSETS.forEach((a) => { const el = box.querySelector(`[data-a="${a}"] [data-f="spark"]`);
+      sparks[a] = new uPlot({ width: el.clientWidth || 160, height: 44, cursor: { show: false }, legend: { show: false }, select: { show: false }, padding: [4, 0, 4, 0], scales: { x: { time: false }, y: { range: [40, 70] } }, axes: [{ show: false }, { show: false }],
+        series: [{}, { stroke: C.brand, width: 1.6, points: { show: false }, fill: (u) => { const g = u.ctx.createLinearGradient(0, 0, 0, u.bbox.height); g.addColorStop(0, 'rgba(79,70,229,.18)'); g.addColorStop(1, 'rgba(79,70,229,0)'); return g; } }] }, [[], []], el); });
+  }
+  ASSETS.forEach((a) => { const u = state.units[a], el = box.querySelector(`[data-a="${a}"]`), set = (f, t) => { el.querySelector(`[data-f="${f}"]`).textContent = t; };
+    const st = u.status.state, warn = u.tags.TS1 >= 55;
+    el.dataset.state = st; const tag = el.querySelector('[data-f="state"]'); tag.textContent = warn && st === 'RUN' ? '유온 경보' : u.status.state_text; tag.dataset.tone = st === 'TRIP' ? 'danger' : warn ? 'warn' : st === 'RUN' ? 'ok' : '';
+    set('mode', u.status.mode_text); set('TS1', fmt(u.tags.TS1)); set('PS1', fmt(u.tags.PS1)); set('FS1', fmt(u.tags.FS1, 2)); set('VS1', fmt(u.tags.VS1, 2)); set('CE', fmt(u.tags.CE, 0)); set('FanSpeedSP', fmt(u.tags.FanSpeedSP, 0)); set('LoadSP', fmt(u.tags.LoadSP, 0));
+    el.querySelector('[data-f="pin"]').style.left = Math.max(0, Math.min(100, (u.tags.TS1 - 30) / 40 * 100)) + '%';
+    const h = hist[a]; sparks[a].setData([h.t.slice(-90), h.TS1.slice(-90)]); });
+}
+
+function build() {
+  const m = METRICS[metric], el = document.getElementById('chart');
+  document.getElementById('trendTitle').textContent = `${asset} 추이`;
+  chart?.destroy(); el.innerHTML = '';
+  const axis = { stroke: C.ink, font: '12px Pretendard Variable', grid: { stroke: C.grid, width: 1 }, ticks: { show: false }, gap: 8 };
+  chart = new uPlot({ width: Math.floor(el.getBoundingClientRect().width) - 16, height: 300, legend: { show: false }, padding: [14, 8, 0, 4],
+    cursor: { points: { size: 8, width: 2 }, y: false, drag: { x: false, y: false } },
+    scales: { x: { time: true }, y: { range: m.y }, ...(m.y2 ? { y2: { range: m.y2 } } : {}) },
+    axes: [{ ...axis, values: (u, ts) => ts.map((t) => { const d = new Date(t * 1000); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`; }), space: 90 },
+      { ...axis, scale: 'y', size: 46, values: (u, vs) => vs.map((x) => x + '') }, ...(m.y2 ? [{ ...axis, scale: 'y2', side: 1, size: 44, grid: { show: false }, stroke: C.teal }] : [])],
+    series: [{}, ...m.series.map((s, i) => ({ label: s.name, scale: s.scale, stroke: s.color, width: 2, points: { show: false }, spanGaps: true,
+      fill: i === 0 ? (u) => { const g = u.ctx.createLinearGradient(0, u.bbox.top, 0, u.bbox.top + u.bbox.height); g.addColorStop(0, 'rgba(79,70,229,.16)'); g.addColorStop(1, 'rgba(79,70,229,0)'); return g; } : undefined }))],
+    hooks: { draw: [(u) => { const ctx = u.ctx; ctx.save(); m.lines.forEach(([val, color]) => { const y = Math.round(u.valToPos(val, 'y', true)); ctx.strokeStyle = color; ctx.lineWidth = 1.5 * devicePixelRatio; ctx.setLineDash([6 * devicePixelRatio, 5 * devicePixelRatio]); ctx.beginPath(); ctx.moveTo(u.bbox.left, y); ctx.lineTo(u.bbox.left + u.bbox.width, y); ctx.stroke(); }); ctx.restore(); }] },
+  }, data(), el);
+  legend();
+}
+const data = () => { const h = hist[asset], m = METRICS[metric]; return [h.t, ...m.series.map((s) => h[s.tag])]; };
+function legend() {
+  const h = hist[asset], m = METRICS[metric];
+  document.getElementById('legend').innerHTML = m.series.map((s) => `<span><i style="background:${s.color}"></i>${s.name} <b class="num">${h[s.tag].length ? fmt(h[s.tag].at(-1), s.tag === 'CE' ? 0 : s.tag.startsWith('TS') || s.tag === 'PS1' ? 1 : 2) : '–'}</b> ${s.unit}</span>`).join('') + m.lines.map(([, color, text]) => `<span class="th"><i style="border-color:${color}"></i>${text}</span>`).join('');
+  const sec = Math.round((Date.now() - opened) / 1000);
+  document.getElementById('range').textContent = `이 화면을 연 뒤 ${sec >= 60 ? Math.floor(sec / 60) + '분 ' : ''}${sec % 60}초 · 더 긴 기간은 Grafana에서 봅니다`;
+}
+document.getElementById('metric').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; metric = b.dataset.m; document.querySelectorAll('#metric button').forEach((x) => x.setAttribute('aria-pressed', x === b)); build(); });
+
+async function tick() {
+  let s; try { s = await fetch('/svc/plant-sim/api/state', { cache: 'no-store' }).then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); }); } catch (e) {
+    document.querySelector('.page-tools .live-pill').innerHTML = `<i class="dot" data-tone="danger"></i><span>설비 값을 읽지 못했습니다 — 다시 시도하는 중</span>`; return; }
+  document.getElementById('scale').textContent = Math.round(s.time_scale);
+  const now = Date.now() / 1000;
+  ASSETS.forEach((a) => { const h = hist[a], t = s.units[a].tags; h.t.push(now); ['TS1', 'CE', 'PS1', 'FS1', 'VS1'].forEach((k) => h[k].push(t[k])); if (h.t.length > 1800) Object.values(h).forEach((arr) => arr.shift()); });
+  cards(s);
+  if (!chart) build(); else { chart.setData(data()); legend(); }
+}
+await tick(); setInterval(tick, 1000);
+// 차트는 담긴 칸의 너비를 따라간다(메뉴 줄을 접거나 창 크기를 바꿀 때)
+new ResizeObserver(() => { const el = document.getElementById('chart'); if (chart) chart.setSize({ width: Math.floor(el.getBoundingClientRect().width) - 16, height: 300 });
+  ASSETS.forEach((a) => { const sp = document.querySelector(`[data-a="${a}"] [data-f="spark"]`); if (sp && sparks[a]) sparks[a].setSize({ width: Math.floor(sp.getBoundingClientRect().width), height: 44 }); }); }).observe(document.querySelector('.page'));
+</script>
+</body>
+</html>

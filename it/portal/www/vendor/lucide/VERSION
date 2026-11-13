@@ -1,0 +1,6 @@
+패키지: lucide-static
+버전: 1.72.0
+라이선스: ISC
+받은 곳: https://registry.npmjs.org/lucide-static
+받은 날: 2026-11-14
+넣은 파일: icons/<이름>.svg 가운데 icons.txt 의 것만 icons.svg 한 파일로 묶음(<svg><use href="vendor/lucide/icons.svg#이름">)

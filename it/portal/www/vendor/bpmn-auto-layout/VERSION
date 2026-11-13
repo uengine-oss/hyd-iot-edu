@@ -1,0 +1,6 @@
+패키지: bpmn-auto-layout
+버전: 1.3.0
+라이선스: MIT
+받은 곳: https://registry.npmjs.org/bpmn-auto-layout
+받은 날: 2026-11-14
+만든 법: esbuild 0.28.2 로 dist/index.js 와 그 의존을 한 파일(IIFE, 전역 BpmnAutoLayout.layoutProcess)로 묶음

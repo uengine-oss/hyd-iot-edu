@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>에이전트 · 스킬 — 견본</title>
+<link rel="stylesheet" href="../vendor/basecoat/basecoat.min.css">
+<link rel="stylesheet" href="portal-kit.css">
+<style>
+  .ag-head { display: flex; gap: 14px; align-items: flex-start; padding: 20px; }
+  .ag-avatar { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; flex: none; color: #fff; background: linear-gradient(140deg, #8b5cf6, #4f46e5); box-shadow: inset 0 1px 0 rgb(255 255 255 / .25); }
+  .ag-avatar[data-kind="system"] { background: var(--muted); color: var(--ink-2); box-shadow: none; border: 1px solid var(--border); }
+  .ag-head h2 { font-size: 18px; line-height: 26px; font-weight: 650; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .ag-head p { color: var(--ink-2); margin-top: 4px; max-width: 64ch; }
+  .ag-head .acts { margin-left: auto; display: flex; gap: 8px; flex: none; }
+  .ag-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ag-grid > .panel-sec:nth-child(odd) { border-right: 1px solid var(--border); }
+  .use { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 9px; font-size: 13.5px; }
+  .use + .use { margin-top: 6px; }
+  .use .ic { color: var(--muted-foreground); }
+  .use b { font-weight: 600; }
+  .use .muted { font-size: 12.5px; margin-left: auto; white-space: nowrap; }
+  a.use:hover, button.use:hover { border-color: var(--brand-line); background: var(--brand-soft); }
+  button.use { width: 100%; text-align: left; cursor: pointer; }
+  button.use[aria-expanded="true"] { border-color: var(--brand-line); background: var(--brand-soft); }
+  .doc { margin-top: 10px; padding: 16px 18px; border: 1px solid var(--border); border-radius: 10px; background: #fcfcfd; max-height: 420px; overflow: auto; }
+  .doc-bar { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted-foreground); margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+  .doc-bar .mono { color: var(--ink-2); }
+  @media (max-width: 900px) { .ag-grid { grid-template-columns: 1fr; } .ag-grid > .panel-sec:nth-child(odd) { border-right: 0; } .ag-head { flex-wrap: wrap; } .ag-head .acts { margin-left: 58px; } }
+</style>
+</head>
+<body data-menu="agents" data-view="agents">
+<main>
+  <div class="page">
+    <div class="page-head">
+      <div><h1>에이전트 · 스킬</h1><p>에이전트는 흐름의 한 단계를 맡아 판단합니다. 무엇을 어떻게 할지는 스킬 문서가, 무엇을 읽고 부를 수 있는지는 도구 연결이 정합니다.</p></div>
+      <div class="page-tools"><button type="button" class="btn" data-variant="outline" id="newSkill"></button><button type="button" class="btn" id="newAgent"></button></div>
+    </div>
+    <div class="split">
+      <div>
+        <div class="seg" role="group" aria-label="보기" id="kind" style="margin-bottom:12px"></div>
+        <div class="rows" id="list" aria-label="에이전트 목록"></div>
+      </div>
+      <section class="panel" id="detail" aria-live="polite"></section>
+    </div>
+  </div>
+</main>
+<script src="../vendor/basecoat/basecoat.min.js" defer></script>
+<script src="../vendor/marked/marked.umd.js"></script>
+<script src="../vendor/dompurify/purify.min.js"></script>
+<script type="module">
+import { mountShell, icon, esc, toast } from './shell.js';
+mountShell();
+document.getElementById('newAgent').innerHTML = icon('plus') + '새 에이전트';
+document.getElementById('newSkill').innerHTML = icon('file-text') + '스킬 만들기';
+const md = (text) => DOMPurify.sanitize(marked.parse(text || ''));
+const api = (p) => fetch('/svc/process/api' + p).then((r) => { if (!r.ok) throw new Error(`${p} 를 읽지 못했습니다 (${r.status})`); return r.json(); });
+
+const list = document.getElementById('list'), detail = document.getElementById('detail');
+list.innerHTML = Array.from({ length: 5 }, () => `<div class="sk-row"><div class="skeleton sk-line" style="width:55%"></div><div class="skeleton sk-line" style="width:35%"></div></div>`).join('');
+let agents, skills, servers, current;
+try {
+  [agents, skills, servers] = await Promise.all([api('/agents'), api('/skills'), api('/mcp/servers').then((r) => r.servers)]);
+} catch (e) {
+  list.innerHTML = ''; detail.innerHTML = `<div style="padding:20px"><div class="alert" data-variant="destructive">${icon('circle-alert')}<h2>에이전트를 읽지 못했습니다</h2><section>${esc(e.message)}</section></div></div>`; throw e;
+}
+const ai = agents.filter((a) => a.kind === 'agent'), sys = agents.filter((a) => a.kind !== 'agent');
+document.getElementById('kind').innerHTML = `<button type="button" aria-pressed="true">에이전트<span class="num">${ai.length}</span></button><button type="button" aria-pressed="false">스킬<span class="num">${skills.length}</span></button><button type="button" aria-pressed="false">시스템 수행자<span class="num">${sys.length}</span></button>`;
+const row = (a) => `<button type="button" class="row" data-id="${esc(a.id)}"><span class="row-ic">${icon('bot')}</span><span class="row-title">${esc(a.name)}</span>${a.origin === 'seed' ? '<span class="tag" data-plain>기본 제공</span>' : '<span class="tag" data-tone="brand" data-plain>내가 만든 것</span>'}
+  <span class="row-meta">스킬 ${a.skills.length} · 도구 서버 ${a.tools.length}${a.steps.length ? ` · 맡은 단계 ${a.steps.length}` : ' · 맡은 단계 없음'}</span></button>`;
+list.innerHTML = ai.map(row).join('');
+
+async function show(id) {
+  current = id; const a = agents.find((x) => x.id === id);
+  list.querySelectorAll('.row').forEach((r) => r.toggleAttribute('aria-current', false)); list.querySelector(`[data-id="${CSS.escape(id)}"]`)?.setAttribute('aria-current', 'true');
+  const sk = a.skills.map((n) => skills.find((s) => s.skill_name === n) || { skill_name: n, title: n, chars: 0 });
+  detail.innerHTML = `<div class="ag-head fade-in"><span class="ag-avatar">${icon('bot', 'ic-lg')}</span>
+      <div><h2>${esc(a.name)}${a.steps.length ? '<span class="tag" data-tone="ok">단계를 맡고 있음</span>' : '<span class="tag">맡은 단계 없음</span>'}</h2><p>${esc(a.goal)}</p></div>
+      <div class="acts"><button type="button" class="btn" data-variant="outline" id="try">${icon('play')}시험해 보기</button>
+        <div class="dropdown-menu" id="agMore"><button type="button" class="btn" data-variant="outline" data-size="icon" id="agMore-trigger" aria-haspopup="menu" aria-controls="agMore-menu" aria-expanded="false" aria-label="더 보기">${icon('ellipsis')}</button>
+          <div id="agMore-popover" data-popover aria-hidden="true" data-align="end"><div role="menu" id="agMore-menu" aria-labelledby="agMore-trigger"><div role="menuitem">${icon('copy')}복제해서 고치기</div><div role="menuitem">${icon('download')}설정 내보내기</div></div></div></div></div></div>
+    <div class="ag-grid" style="border-top:1px solid var(--border)">
+      <div class="panel-sec" style="border-top:0"><h3>${icon('file-text', 'ic-sm')}스킬<span class="muted">무엇을 어떻게 할지</span></h3>
+        ${sk.length ? sk.map((s, i) => `<button type="button" class="use" data-skill="${esc(s.skill_name)}" aria-expanded="${i === 0}">${icon('file-text')}<span><b>${esc((s.title || s.skill_name).replace(/\s*\(시나리오 [A-Z]\)/, ''))}</b></span><span class="muted mono">${esc(s.skill_name)}</span></button>`).join('') : '<p class="muted">붙은 스킬이 없습니다. 스킬이 없으면 작업 규칙만으로 판단합니다.</p>'}</div>
+      <div class="panel-sec" style="border-top:0"><h3>${icon('plug', 'ic-sm')}도구 서버<span class="muted">무엇을 읽고 부를 수 있는지</span></h3>
+        ${a.tools.map((t) => { const s = servers.find((x) => x.name === t); return `<a class="use" href="#">${icon('plug')}<span><b>${esc(t)}</b></span><span class="muted" style="display:inline-flex;align-items:center;gap:6px"><i class="dot" data-tone="${s && !s.config_error ? 'ok' : 'danger'}"></i>${s ? (s.config_error ? '설정 오류' : '연결됨') : '등록 안 됨'}</span></a>`; }).join('')}</div>
+    </div>
+    <div class="panel-sec" id="docSec"></div>
+    <div class="panel-sec"><h3>${icon('workflow', 'ic-sm')}맡은 단계<span class="muted">흐름에서 이 에이전트가 일하는 자리</span></h3>
+      ${a.steps.length ? a.steps.map((s) => `<a class="use" href="#">${icon('workflow')}<span><b>${esc(s.definition_name)}</b> <span class="muted">v${esc(s.version)}</span></span>${icon('chevron-right', 'ic-sm')}<span>${esc(s.name)}</span><span class="muted">흐름에서 보기</span></a>`).join('') : `<section class="empty" style="padding:20px"><header><h3>맡은 단계가 없습니다</h3><p>흐름 화면에서 단계의 수행자로 이 에이전트를 고르면 여기에 보입니다.</p></header></section>`}</div>
+    <div class="panel-sec" style="padding-block:6px"><details class="fold" style="border:0"><summary>작업 규칙<span class="muted">${esc(a.work_rules_detail?.label || '없음')} · 모든 판단에 공통으로 적용</span></summary><div class="fold-body" style="padding-left:0"><div class="doc prose" style="margin-top:0">${md(a.work_rules_detail?.content)}</div></div></details></div>`;
+  detail.querySelector('#try').addEventListener('click', () => toast('견본 화면입니다', '「질문하기」로 넘어가 이 에이전트에게 묻는 자리입니다.', 'info'));
+  detail.querySelectorAll('[data-skill]').forEach((b) => b.addEventListener('click', () => { detail.querySelectorAll('[data-skill]').forEach((x) => x.setAttribute('aria-expanded', x === b)); doc(b.dataset.skill); }));
+  if (sk.length) doc(sk[0].skill_name); else document.getElementById('docSec').remove();
+}
+async function doc(name) {
+  const sec = document.getElementById('docSec');
+  sec.innerHTML = `<h3>${icon('book-open', 'ic-sm')}스킬 문서</h3><div class="doc"><div class="skeleton sk-line" style="width:40%;height:16px"></div><div class="skeleton sk-line" style="margin-top:12px"></div><div class="skeleton sk-line" style="margin-top:8px;width:80%"></div></div>`;
+  const s = await api('/skills/' + encodeURIComponent(name));
+  if (current && sec.isConnected) sec.innerHTML = `<h3>${icon('book-open', 'ic-sm')}스킬 문서<span class="muted">에이전트가 일을 시작할 때 읽습니다</span></h3><div class="doc fade-in"><div class="doc-bar">${icon('file-text', 'ic-sm')}<span class="mono">${esc(name)}/SKILL.md</span><span style="margin-left:auto" class="num">${s.content.length.toLocaleString()}자</span></div><div class="prose">${md(s.content.replace(/^# (.+?)\s*\(시나리오 [A-Z]\)/m, '# $1'))}</div></div>`;
+}
+list.addEventListener('click', (e) => { const r = e.target.closest('.row'); if (r) show(r.dataset.id); });
+show((ai.find((a) => a.id === 'agent:cooling') || ai[0]).id);
+</script>
+</body>
+</html>

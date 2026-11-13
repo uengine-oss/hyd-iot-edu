@@ -1,0 +1,6 @@
+패키지: prismjs
+버전: 1.30.0
+라이선스: MIT
+받은 곳: https://registry.npmjs.org/prismjs
+받은 날: 2026-11-14
+만든 법: components/prism-{core,markup,clike,javascript,json,yaml,python,bash,sql,cypher}.min.js 를 이 차례로 이어 붙임. 색은 포털 CSS 가 정한다(Prism 테마 파일은 넣지 않는다)
