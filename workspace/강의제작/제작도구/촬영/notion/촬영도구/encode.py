@@ -1,7 +1,8 @@
 """구간 합성·측정. 구간별 원본 시간 유지(배속·중간 컷 없음), 구간 경계만 이어 붙인다.
 사용: python encode.py <출력이름> <구간[@빼낼시작ms-끝ms …][:여기까지 쓸 ms]> ...   (구간 = config.json work 아래 폴더)
    @a-b: 그 구간 안 [a, b) ms를 화면 · 소리 함께 들어낸다(이미 찍은 구간에서 문장을 뺄 때). 그 사이에 조작 · 커서 이동이 있으면 멈춘다.
-   ~x: 앞 구간 끝 화면에서 이 구간 화면으로 0.4초 교차 전환한다(다른 실행에서 이어 찍어 스크롤 · 사이드바가 달라진 이음새). 소리는 그대로.
+         큐의 끝 문장을 들어낸 큐도 음성 교체를 받는다(새 음성이 남긴 앞부분을 대신한다 — 그 큐 글은 남긴 앞부분이어야 한다). 큐 가운데를 들어낸 큐는 교체하면 멈춘다.
+   ~x: 앞 구간 끝 화면에서 이 구간 화면으로 0.4초 교차 전환하고, 0.4초에 이 구간 화면 원본을 둔다(다른 실행에서 이어 찍어 스크롤 · 사이드바가 달라진 이음새). 소리는 그대로.
    ~hold=ms: 이 구간 머리 ms까지는 앞 구간 끝 화면을 멈춰 보여 준다(그 동안의 말이 앞 화면을 설명할 때 — 27b 머리의 압축 파일 설명).
 음성 교체(자동): 녹화한 큐 글과 지금 음성(audio_play)의 글이 다르면 지금 음성을 쓴다. 새 음성이 길면 그 큐가 시작하는 자리의 화면을 그만큼 멈춰
 늘리고(뒤 화면 · 말 · 조작이 함께 밀린다), 짧으면 앞에 무음을 둬 큐 끝(조작 자리)을 지킨다. 바꾼 큐는 verification.json의 replaced에 남는다.
@@ -44,13 +45,15 @@ for spec in specs:
                 raise RuntimeError(f'{seg}: removal {r0}-{r1} overlaps a pointer motion at {m["start"]}')
     cutout = lambda x: any(r0 <= x < r1 for r0, r1 in R)
     # 음성 교체: 지금 음성 글이 녹화한 글과 다르면 그 큐를 새 음성으로 바꾼다. 늘어난 몫은 큐 시작에 화면을 멈춰 넣는다(INS).
+    # 큐의 끝을 들어냈으면(@a-b가 큐 안에서 시작해 큐 끝 너머까지) 그 큐가 실제로 말하는 길이는 남긴 앞부분이다.
+    kept_ms = lambda a: next((r0 - a['time'] for r0, r1 in R if a['time'] < r0 < a['time'] + a['duration'] <= r1), a['duration'])
     INS, NEWV = [], {}
     for a in t['actions']:
         jv = json.loads((audio / (a['id'] + '.json')).read_text(encoding='utf-8'))
         if jv['text'] != a['text']:
             NEWV[a['id']] = jv
-            if jv['duration_ms'] > a['duration']:
-                INS.append((a['time'], jv['duration_ms'] - a['duration']))
+            if jv['duration_ms'] > kept_ms(a):
+                INS.append((a['time'], jv['duration_ms'] - kept_ms(a)))
     removed = lambda x: sum(max(0.0, min(x, r1) - r0) for r0, r1 in R if x > r0)
     pre = lambda x: x - removed(x) + sum(d for t0, d in INS if t0 < x)     # 그 자리에서 멈추기 전 시각
     shift = lambda x: x - removed(x) + sum(d for t0, d in INS if t0 <= x)  # 멈춘 뒤 시각
@@ -82,7 +85,13 @@ for spec in specs:
             b_file = cur[-1]['file'] if cur else keep[0][0]['file']
             b_img = Image.open(b_file if Path(b_file).is_absolute() else base / seg / b_file).convert('RGB')
             out = xd / f'{seg}_{k:02}.jpg'; Image.blend(a_img, b_img, (k + 1) / 13).save(out, quality=90); xs.append(({'file': str(out)}, tk))
-        keep = xs + [(f, x) for f, x in keep if x >= 400]
+        # 섞은 마지막 장에도 앞 화면이 8% 남는다. 녹화는 화면이 바뀔 때만 프레임을 남기므로, 0.4초에 뒤 화면 원본을 두지 않으면
+        # 정적인 화면에서는 그 잔상이 다음 프레임까지 이어진다(v12d 10:06에서 10초, 25:22에서 1.9초 동안 글자가 두 겹).
+        tail = [(f, x) for f, x in keep if x >= 400]
+        if not tail or tail[0][1] > 400:
+            cur = [f for f, x in keep if x <= 400]
+            tail.insert(0, (cur[-1] if cur else keep[0][0], 400.0))
+        keep = xs + tail
     # 들어낸 자리 바로 뒤 첫 프레임이 없으면 들어내기 직전 화면이 이어진다(화면이 바뀌지 않은 때). 그 위치는 shift로 맞춘다.
     for i, (f, x) in enumerate(keep):
         nxt = keep[i + 1][1] if i + 1 < len(keep) else shift(end_ms)
@@ -94,10 +103,13 @@ for spec in specs:
             if sp and sp[0][0] <= 0 and sp[-1][1] >= a['duration']:
                 continue   # 큐 전체를 들어냈다
             nv = NEWV.get(a['id'])
-            if nv and sp:
-                raise RuntimeError(f"{seg}: {a['id']} is both replaced and cut")
-            cues.append({**a, 'segment': seg, 'g': offset + pre(a['time']), 'drop': sp, 'duration': a['duration'] - sum(b - x for x, b in sp),
-                         'new_voice': nv, 'rec_duration': a['duration'], 'o_act': offset + shift(a['time'] + 1) - (a['time'] + 1)})
+            rec = a['duration']
+            if nv and sp:   # 끝을 들어낸 큐만 바꿀 수 있다: 새 음성은 남긴 앞부분을 대신한다(그 큐의 글은 남긴 앞부분이어야 한다)
+                if kept_ms(a) >= a['duration']:
+                    raise RuntimeError(f"{seg}: {a['id']} is replaced and cut in the middle (only a cut tail can be replaced)")
+                rec, sp = kept_ms(a), []
+            cues.append({**a, 'segment': seg, 'g': offset + pre(a['time']), 'drop': sp, 'duration': rec - sum(b - x for x, b in sp),
+                         'new_voice': nv, 'rec_duration': rec, 'o_act': offset + shift(a['time'] + 1) - (a['time'] + 1)})
     for m in t['motions']:
         if m['end'] <= end_ms:
             m = {**m, 'start': shift(m['start']), 'end': shift(m['end'])}
