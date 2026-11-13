@@ -71,6 +71,56 @@ def markup(s):
     s = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', s)
     return re.sub(r'`([^`]+)`', r'<code>\1</code>', s).replace('\n', '<br>')
 
+# 사진 위 꼬리표: 그 사진이 조작하는 순간인지, 조작한 뒤의 화면인지, 볼 곳만 짚는 화면인지(학생이 네모의 뜻을 바로 알게)
+KIND_LABEL = {'조작': '이렇게 합니다', '결과': '이렇게 됩니다', '볼 곳': '여기를 봅니다'}
+
+def render_photo(p, frames, images, provenance):
+    if p.get('kind') not in KIND_LABEL:
+        raise ValueError(f"{p['id']} kind가 {list(KIND_LABEL)} 가운데 하나가 아니다: {p.get('kind')}")
+    if len(p['targets']) != 1:
+        raise ValueError(f"{p['id']} 네모가 {len(p['targets'])}개다(사진마다 지금 누를 곳 · 볼 곳 하나)")
+    raw = frames/(p['id']+'.png')
+    if not raw.is_file(): raise FileNotFoundError(raw)
+    im = Image.open(raw).convert('RGB')
+    for m in p.get('masks', []):
+        check_rect(p['id'], '가림', m, im)
+        # 이메일은 @부터 뒤를 그 글자 자리에서 가린다(공통 C-7).
+        ImageDraw.Draw(im).rectangle([m[0], m[1], m[2]-1, m[3]-1], fill=MASK_COLOR)
+    gaps = draw_boxes(p['id'], p['targets'], im, p.get('cursor'))
+    if 'crop' in p:
+        check_rect(p['id'], '자르기', p['crop'], im)
+        im = im.crop(tuple(p['crop']))
+    scale = PHOTO_WIDTH/1920   # 자른 사진도 화면 전체 사진과 같은 배율로 줄여 글자 크기를 맞춘다
+    im = im.resize((round(im.width*scale), round(im.height*scale)), Image.LANCZOS)
+    dest = images/(p['id']+'.jpg'); im.save(dest, 'JPEG', quality=85)
+    caption = html.escape(p['caption'])
+    provenance.append({**p, 'box_gaps': gaps, 'raw_sha256': sha(raw), 'output_sha256': sha(dest),
+                       'raw': raw.relative_to(ROOT).as_posix(), 'output': dest.relative_to(ROOT).as_posix()})
+    return (f'<figure><figcaption><span class="kind">{KIND_LABEL[p["kind"]]}</span>{caption}</figcaption>'
+            f'<a href="images/{dest.name}" target="_blank"><img src="images/{dest.name}" width="{im.width}" height="{im.height}" alt="{caption}" loading="lazy"></a></figure>')
+
+def render_step(n, s, frames, images, provenance):
+    """한 단계 = 까닭 한두 문장 + 번호 붙은 할 일(그 할 일의 입력 글과 사진이 바로 아래) + 확인."""
+    photos = {p['id']: p for p in s['photos']}
+    used = [i for d in s['do'] for i in d['photos']]
+    if sorted(used) != sorted(photos) or len(set(used)) != len(used):
+        raise ValueError(f"{s['id']} do가 가리키는 사진 {used}와 photos {list(photos)}가 하나씩 맞지 않는다")
+    block = [f'<div class="substep" id="{s["id"]}"><h3><span class="step-no">{n}단계</span>{html.escape(s["title"])}</h3>']
+    if s.get('why'): block.append(f'<p class="why">{markup(s["why"])}</p>')
+    block.append('<ol class="do">'); k = 0
+    for d in s['do']:
+        inputs = []
+        for value in d['inputs']:
+            k += 1; ident = f'{s["id"]}-input{k}'
+            inputs.append(f'<div class="input"><label for="{ident}">Notion에 입력할 글</label><button type="button" data-copy="{ident}">복사</button><pre id="{ident}" tabindex="0">{html.escape(value)}</pre></div>')
+        figs = [render_photo(photos[pid], frames, images, provenance) for pid in d['photos']]
+        # 사진이 입력하기 전의 빈 칸(새로 열린 페이지 · 빈 상자)이면 사진을 먼저, 입력한 뒤의 화면이면 입력 글을 먼저 둔다
+        body = figs + inputs if d.get('photo_first') else inputs + figs
+        block.append(f'<li><p>{markup(d["text"])}</p>' + ''.join(body) + '</li>')
+    block.append('</ol>')
+    block.append(f'<p class="check"><strong>확인</strong>{markup(s["check"])}</p>')
+    return block
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--draft', type=Path, required=True)
@@ -82,31 +132,10 @@ def main():
         raise SystemExit('검수 출력은 작업 폴더 안에만 생성합니다.')
     data = json.loads(SOURCE.read_text(encoding='utf-8'))
     images = out/'images'; images.mkdir(parents=True, exist_ok=True)
+    for old in images.glob('*.jpg'): old.unlink()   # 지난 빌드의 사진이 남아 사진 수가 틀리지 않게
     sections=[]; provenance=[]; group_content={}
     for n, s in enumerate(data['steps'], 1):
-        block = [f'<div class="substep" id="{s["id"]}"><h3>{html.escape(s["title"])}</h3>',f'<p>{markup(s["body"])}</p>']
-        for j, value in enumerate(s['inputs'], 1):
-            ident=f'{s["id"]}-input{j}'
-            block.append(f'<div class="input"><label for="{ident}">Notion에 입력할 글 {j}</label><button type="button" data-copy="{ident}">복사</button><pre id="{ident}" tabindex="0">{html.escape(value)}</pre></div>')
-        for p in s['photos']:
-            raw=args.frames/(p['id']+'.png')
-            if not raw.is_file(): raise FileNotFoundError(raw)
-            im=Image.open(raw).convert('RGB')
-            for m in p.get('masks', []):
-                check_rect(p['id'], '가림', m, im)
-                # 이메일은 @부터 뒤를 그 글자 자리에서 가린다(공통 C-7).
-                ImageDraw.Draw(im).rectangle([m[0], m[1], m[2]-1, m[3]-1], fill=MASK_COLOR)
-            gaps=draw_boxes(p['id'], p['targets'], im, p.get('cursor'))
-            if 'crop' in p:
-                check_rect(p['id'], '자르기', p['crop'], im)
-                im=im.crop(tuple(p['crop']))
-            scale=PHOTO_WIDTH/1920   # 자른 사진도 화면 전체 사진과 같은 배율로 줄여 글자 크기를 맞춘다
-            im=im.resize((round(im.width*scale), round(im.height*scale)), Image.LANCZOS)
-            dest=images/(p['id']+'.jpg'); im.save(dest, 'JPEG', quality=85)
-            caption=html.escape(p['caption'])
-            block.append(f'<figure><a href="images/{dest.name}" target="_blank"><img src="images/{dest.name}" width="{im.width}" height="{im.height}" alt="{caption}" loading="lazy"></a><figcaption>{caption}</figcaption></figure>')
-            provenance.append({**p,'box_gaps':gaps,'raw_sha256':sha(raw),'output_sha256':sha(dest),'raw':raw.relative_to(ROOT).as_posix(),'output':dest.relative_to(ROOT).as_posix()})
-        block.append(f'<p class="check"><strong>확인</strong>{markup(s["check"])}</p>')
+        block = render_step(n, s, args.frames, images, provenance)
         if n<len(data['steps']):block.append(f'<a class="next" href="#{data["steps"][n]["id"]}">다음 단계 →</a>')
         block.append('</div>'); group_content.setdefault(s['section'], []).append(''.join(block))
     for group in data['sections']:
@@ -116,9 +145,18 @@ def main():
     css+='img{width:auto;max-width:100%;height:auto}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-family:inherit;font-size:16px;line-height:1.7;margin:12px 0}.input{border-left:4px solid #3974a4;background:#edf5fc;padding:14px 18px;margin:18px 0}.input label{font-size:14px;color:#245e8c}.input button{float:right;font:inherit;border:1px solid #8ba9bd;border-radius:6px;background:white;padding:2px 14px;cursor:pointer}h2,.substep{scroll-margin-top:20px}.substep{margin-top:32px;padding-top:12px;border-top:1px solid #dbe5de}.substep h3{font-size:21px;margin:12px 0}.next{display:inline-block;margin-top:16px}#copy-status{position:fixed;bottom:12px;right:12px;background:#213330;color:white;padding:8px 14px;border-radius:8px}#copy-status:empty{display:none}'
     # 진행 순서 목차는 화면에 붙어 있어, 낮은 화면(864px)에서는 뒤 장이 화면 밖으로 밀려 목차로 갈 수 없었다 — 목차 안에서 스크롤한다.
     css+='@media(min-width:851px){nav{max-height:calc(100vh - 60px);overflow-y:auto}}'
+    # 따라 하기 쉽게: 단계 번호 꼬리표, 까닭은 흐린 한 문단, 할 일은 번호 원 + 그 할 일의 입력 글 · 사진을 바로 아래에, 사진 위에 꼬리표와 설명
+    css+=('.substep h3{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}.step-no{flex:none;font-size:14px;font-weight:700;color:white;background:var(--green);border-radius:999px;padding:2px 12px}'
+          '.why{color:var(--muted);font-size:16px;margin:8px 0 4px}'
+          'ol.do{list-style:none;counter-reset:do;padding:0;margin:8px 0 0}ol.do>li{counter-increment:do;position:relative;margin:0 0 10px 15px;padding:4px 0 8px 31px;border-left:2px solid var(--line)}'
+          'ol.do>li::before{content:counter(do);position:absolute;left:-16px;top:12px;width:30px;height:30px;box-sizing:border-box;border-radius:50%;background:white;border:2px solid var(--green);color:var(--green);font-weight:700;font-size:15px;line-height:26px;text-align:center}'
+          'ol.do>li>p{margin:12px 0 10px}ol.do figure{margin:12px 0 22px}ol.do figcaption{font-size:15px;color:var(--ink);margin:0 0 8px}'
+          '.kind{display:inline-block;font-size:13px;font-weight:700;color:var(--green);background:#e6eee6;border-radius:5px;padding:1px 8px;margin-right:8px}'
+          '@media(max-width:850px){ol.do>li{margin-left:13px;padding-left:24px}ol.do>li::before{left:-14px;width:26px;height:26px;line-height:22px;font-size:13px}}')
     nav=''.join(f'<a href="#part{s["number"]:02}">{s["number"]:02} {html.escape(s["title"])}</a>' for s in data['sections'])
-    intro='지식 자산화에서 살펴본 개념·출처·실습 기록을 다시 찾을 수 있게 학습노트를 만듭니다. 홈과 주제 카드 → 하위 페이지 → 주제마다 칸과 카드 그림 → 표로 찾기 → 템플릿 → 내보내기와 다시 열기 순서로 갑니다.'
-    doc=f'<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{html.escape(data["title"])} · 실습 가이드</title><style>{css}</style></head><body><div class="shell"><header><div class="eyebrow">NOTION · 통합반 / 실전반 공통</div><h1>{html.escape(data["title"])}</h1><p>{intro}</p><p>Notion은 공식 홈페이지에서 Windows 앱을 받아 설치해도 되고, 앱 없이 웹브라우저에서 써도 같습니다. 만든 것은 계정에 저장되니 같은 계정으로 열면 어디서든 이어서 할 수 있습니다. 구글 계정처럼 편한 계정으로 로그인한 화면에서 시작하세요. 입력 글은 사진과 같은 글이 들어가도록 직접 치지 말고 <strong>복사</strong>를 눌러 붙여넣으세요. 사진을 누르면 원래 크기로 보입니다.</p><div class="actions"><a class="button" href="https://www.notion.so" target="_blank" rel="noopener">Notion 열기</a><a class="button secondary" href="#n01">첫 단계</a></div></header><div class="layout"><nav aria-label="실습 단계"><span>진행 순서</span>{nav}</nav><main>{"".join(sections)}<a class="top" href="#">맨 위로</a></main></div><footer>학습노트 만들기 · 통합반 / 실전반 공통</footer></div><div id="copy-status" role="status" aria-live="polite"></div><script>document.querySelectorAll("[data-copy]").forEach(b=>b.addEventListener("click",async()=>{{let e=document.getElementById(b.dataset.copy);try{{await navigator.clipboard.writeText(e.textContent);document.getElementById("copy-status").textContent="복사했습니다. Notion의 해당 입력칸에 붙여넣으세요."}}catch{{let r=document.createRange();r.selectNodeContents(e);let s=window.getSelection();s.removeAllRanges();s.addRange(r);document.getElementById("copy-status").textContent="선택된 글을 Ctrl+C로 복사해 Notion에 붙여넣으세요."}}}}));</script></body></html>'
+    intro='지식 자산화에서 살펴본 개념·출처·실습 기록을 다시 찾을 수 있게 학습노트를 만듭니다. 홈 페이지와 안내 상자 → 주제를 모으는 카드 목록 → 주제 안의 하위 페이지 → 분야 · 이해도 · 카드 그림 → 표 보기와 검색 → 템플릿 → 공유 · 내보내기 순서로 갑니다.'
+    how='단계마다 할 일이 번호 차례로 있고, 할 일 바로 아래 사진의 빨간 네모가 그때 누를 곳이나 볼 곳입니다. 사진 위 <span class="kind">이렇게 합니다</span>는 누르기 직전 화면, <span class="kind">이렇게 됩니다</span>는 그 조작을 한 뒤의 화면입니다.'
+    doc=f'<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{html.escape(data["title"])} · 실습 가이드</title><style>{css}</style></head><body><div class="shell"><header><div class="eyebrow">NOTION · 통합반 / 실전반 공통</div><h1>{html.escape(data["title"])}</h1><p>{intro}</p><p>Notion은 공식 홈페이지에서 Windows 앱을 받아 설치해도 되고, 앱 없이 웹브라우저에서 써도 같습니다. 만든 것은 계정에 저장되니 같은 계정으로 열면 어디서든 이어서 할 수 있습니다. 구글 계정처럼 편한 계정으로 로그인한 화면에서 시작하세요.</p><p>{how} 입력 글은 사진과 같은 글이 들어가도록 직접 치지 말고 <strong>복사</strong>를 눌러 붙여넣으세요. 사진을 누르면 원래 크기로 보입니다.</p><div class="actions"><a class="button" href="https://www.notion.so" target="_blank" rel="noopener">Notion 열기</a><a class="button secondary" href="#n01">첫 단계</a></div></header><div class="layout"><nav aria-label="실습 단계"><span>진행 순서</span>{nav}</nav><main>{"".join(sections)}<a class="top" href="#">맨 위로</a></main></div><footer>학습노트 만들기 · 통합반 / 실전반 공통</footer></div><div id="copy-status" role="status" aria-live="polite"></div><script>document.querySelectorAll("[data-copy]").forEach(b=>b.addEventListener("click",async()=>{{let e=document.getElementById(b.dataset.copy);try{{await navigator.clipboard.writeText(e.textContent);document.getElementById("copy-status").textContent="복사했습니다. Notion의 해당 입력칸에 붙여넣으세요."}}catch{{let r=document.createRange();r.selectNodeContents(e);let s=window.getSelection();s.removeAllRanges();s.addRange(r);document.getElementById("copy-status").textContent="선택된 글을 Ctrl+C로 복사해 Notion에 붙여넣으세요."}}}}));</script></body></html>'
     (out/'가이드.html').write_text(doc,encoding='utf-8')
     report={'source_sha256':sha(SOURCE),'builder_sha256':sha(Path(__file__)),'video':data['video'],'video_sha256':data['video_sha256'],'srt_sha256':data['srt_sha256'],'html_sha256':sha(out/'가이드.html'),'sections':len(sections),'steps':len(data['steps']),'photos':provenance,'status':'검수 출력, 정본 미적용'}
     (out.parent/'학생가이드_사진근거.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
