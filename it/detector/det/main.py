@@ -10,7 +10,9 @@ check is not the only gate). A record outside it is counted and logged with its 
 also invalidates that observation (the hold is interrupted, it is never filled in). A record whose processing still raises
 is counted the same way and /healthz is 503 for a minute — one record never stops detection.
 Checkpoint: written at once when an alert is emitted (with its outbox entry) and otherwise every CHECKPOINT_S together with
-the Kafka commit; a restart replays at most that much, which the stored offsets and the restored runtime absorb.
+the Kafka commit; a restart replays at most that much, which the stored offsets and the restored runtime absorb. A commit
+the group refuses after a rebalance (the loop missed its heartbeat while the host was busy) is counted and the loop goes
+on — the SQLite checkpoint already holds those offsets, so records the reassigned partitions deliver again are skipped.
 """
 import asyncio
 import logging
@@ -19,6 +21,7 @@ import time
 from contextlib import AsyncExitStack
 from dataclasses import asdict, dataclass, field
 
+from aiokafka.errors import CommitFailedError
 from aiokafka.structs import TopicPartition
 from fastapi import HTTPException
 
@@ -64,7 +67,8 @@ class AssetState:
 
 
 state = {"kafka": False, "tags": 0, "waves": 0, "statuses": 0, "alerts": 0, "rejected": 0, "last_rejected": None,
-         "record_errors": 0, "last_record_error": None, "last_record_error_at": None, "offset_resets": 0}
+         "record_errors": 0, "last_record_error": None, "last_record_error_at": None, "offset_resets": 0,
+         "commit_refused": 0, "last_commit_refused": None}
 delivery = Delivery()
 assets: dict[str, AssetState] = {}
 
@@ -302,7 +306,12 @@ async def run():
                     if done:
                         async with mutation_lock:
                             checkpoint(done)
-                        await cons.commit({TopicPartition(t, p): o + 1 for (t, p), (o, _) in done.items()})
+                        try:
+                            await cons.commit({TopicPartition(t, p): o + 1 for (t, p), (o, _) in done.items()})
+                        except CommitFailedError as exc:
+                            state['commit_refused'] += 1
+                            state['last_commit_refused'] = time.strftime('%Y-%m-%dT%H:%M:%S')
+                            log.warning('rebalance before offset commit (%s); SQLite checkpoint retained', type(exc).__name__)
                         done = {}
                     last_checkpoint = time.monotonic()
     finally:
