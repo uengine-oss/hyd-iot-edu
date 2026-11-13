@@ -1,8 +1,8 @@
 {
   "video": {
     "file": "Release 영상 통합반_01회차_08_실습_관계그림.mp4",
-    "duration": "00:34:04.20",
-    "sha256": "1ec21a6ce40d1ee153c47337797252aff5efa466ec66e7d93fe1b7a1227e11de"
+    "duration": "00:38:14.27",
+    "sha256": "c71ddd4ad29f29a5f59dc61cfcbbd4b1682a76b8614a7ee15a4985e2db523d1c"
   },
   "box": {
     "color": "#e60000",
@@ -11,149 +11,289 @@
   },
   "ui_frames": [
     {
-      "file": "images/ui-01-radius.png",
-      "seconds": 135.7,
-      "frame_sha256": "6160aeae1377026980ffd079da9a66f499974073d7935568eed90cd858540899",
-      "crop": null,
+      "file": "images/ui-01-search.png",
+      "seconds": 47.5,
+      "frame_sha256": "a087942d65893d01eb231003af8e62d7d2be86be6ca7ca67b064d82471833781",
+      "crop": [
+        60,
+        470,
+        1060,
+        700
+      ],
       "boxes": [
         {
           "target": [
-            1674,
-            262,
-            1792,
-            299
+            142,
+            492,
+            640,
+            580
           ],
           "margin": 4,
           "outer": [
-            1664,
-            252,
-            1802,
-            309
+            132,
+            482,
+            650,
+            590
+          ],
+          "dark_px_under_line": 0
+        }
+      ],
+      "sha256": "84f1cdaf0e83b521f7e538f577adf13b379c21f3b6fcb08654cb80e16b2a6180"
+    },
+    {
+      "file": "images/ui-02-radius.png",
+      "seconds": 100.0,
+      "frame_sha256": "8f29b8e5ad8e0be54738c7015292e4ae7ca4997edf37085a96664b595f5d8362",
+      "crop": [
+        1000,
+        0,
+        1920,
+        640
+      ],
+      "boxes": [
+        {
+          "target": [
+            1718,
+            213,
+            1816,
+            244
+          ],
+          "margin": [
+            2,
+            4,
+            4,
+            4
+          ],
+          "outer": [
+            1710,
+            203,
+            1826,
+            254
           ],
           "dark_px_under_line": 0
         },
         {
           "target": [
-            1626,
-            674,
-            1712,
-            700
+            1670,
+            546,
+            1760,
+            568
           ],
-          "margin": 4,
+          "margin": [
+            4,
+            4,
+            4,
+            2
+          ],
           "outer": [
+            1660,
+            536,
+            1770,
+            576
+          ],
+          "dark_px_under_line": 0
+        }
+      ],
+      "sha256": "55b919fb25f5a8c23e5774a79b7961b3a5296171af339af47eba6a90b84822b5"
+    },
+    {
+      "file": "images/ui-03-orientation.png",
+      "seconds": 120.0,
+      "frame_sha256": "e9cf2312a5d7bbeae2d7a2a4025204f006231c24eb72062ebf40a05f745350f6",
+      "crop": [
+        1000,
+        0,
+        1920,
+        760
+      ],
+      "boxes": [
+        {
+          "target": [
             1616,
-            664,
-            1722,
-            710
-          ],
-          "dark_px_under_line": 0
-        }
-      ],
-      "sha256": "a243841792a1d65d5612d8d2f6b6f38b9466e6891ba4bda4256f3a953078187d"
-    },
-    {
-      "file": "images/ui-02-caption.png",
-      "seconds": 205.8,
-      "frame_sha256": "66a319b8c2e2d1a8af4cc97104ada921a5621b65771286935ff4381acdda3cbe",
-      "crop": null,
-      "boxes": [
-        {
-          "target": [
-            1468,
-            287,
-            1904,
-            328
-          ],
-          "margin": 2,
-          "outer": [
-            1460,
-            279,
-            1912,
-            336
-          ],
-          "dark_px_under_line": 0
-        },
-        {
-          "target": [
-            1815,
-            388,
-            1904,
-            421
-          ],
-          "margin": 4,
-          "outer": [
-            1805,
-            378,
-            1914,
-            431
-          ],
-          "dark_px_under_line": 0
-        }
-      ],
-      "sha256": "c142cb0e32d6c029c3b9c51fed9aa3a06a45d0ffeb9a5074096e01188005fd3c"
-    },
-    {
-      "file": "images/ui-03-type.png",
-      "seconds": 319.8,
-      "frame_sha256": "c44c62ffb8d6daa08c1023896585981fc8a9d8b26fbb8dd96b816bb5f7bdefc0",
-      "crop": null,
-      "boxes": [
-        {
-          "target": [
-            1468,
-            323,
-            1903,
-            365
-          ],
-          "margin": 2,
-          "outer": [
-            1460,
-            315,
-            1911,
-            373
-          ],
-          "dark_px_under_line": 0
-        }
-      ],
-      "sha256": "67b6f186ae294e0bd63461fe94d5cd40bcd137183bcd9abb3aca08f82567c52b"
-    },
-    {
-      "file": "images/ui-04-reverse.png",
-      "seconds": 466.8,
-      "frame_sha256": "798276417b3730fa302510f546f142d9c989ac7aa87c999633fce40d011624a0",
-      "crop": null,
-      "boxes": [
-        {
-          "target": [
-            1552,
-            138,
-            1666,
-            174
+            636,
+            1804,
+            658
           ],
           "margin": 3,
           "outer": [
-            1543,
-            129,
-            1675,
-            183
+            1607,
+            627,
+            1813,
+            667
           ],
           "dark_px_under_line": 0
         }
       ],
-      "sha256": "2c6614702c73d4f80c95de03897f285e6c897f0568f8dea9da28012fe1c339a8"
+      "sha256": "83975928010336f6ef55c55fd61edb8933f402dc21c01a86edf9891e876cfcc5"
     },
     {
-      "file": "images/ui-05-property.png",
-      "seconds": 774.9,
-      "frame_sha256": "950e67166da245364b7210fc6707313cf8a05b82fca87ddf1ccedc3c753ed269",
-      "crop": null,
+      "file": "images/ui-04-caption.png",
+      "seconds": 188.0,
+      "frame_sha256": "0f2ccf6733bf79a249ebeddd215620c8ba5ece8583a7e8a0784e3e150b50fd76",
+      "crop": [
+        1000,
+        0,
+        1920,
+        640
+      ],
       "boxes": [
         {
           "target": [
-            1468,
-            487,
-            1908,
-            566
+            1550,
+            236,
+            1906,
+            268
+          ],
+          "margin": [
+            2,
+            0,
+            2,
+            2
+          ],
+          "outer": [
+            1542,
+            230,
+            1914,
+            276
+          ],
+          "dark_px_under_line": 0
+        },
+        {
+          "target": [
+            1834,
+            348,
+            1907,
+            375
+          ],
+          "margin": 4,
+          "outer": [
+            1824,
+            338,
+            1917,
+            385
+          ],
+          "dark_px_under_line": 0
+        }
+      ],
+      "sha256": "3d528e5dcc42e074e8d9f90b192371c7237c004e8fc0c05c91e66c249dba9901"
+    },
+    {
+      "file": "images/ui-05-ring.png",
+      "seconds": 222.0,
+      "frame_sha256": "831c0ce5c11f712ede6246f6c622293e72c22056552807a3192c3820bad4ea52",
+      "crop": [
+        0,
+        430,
+        1000,
+        660
+      ],
+      "boxes": [
+        {
+          "target": [
+            48,
+            476,
+            187,
+            614
+          ],
+          "margin": 12,
+          "outer": [
+            30,
+            458,
+            205,
+            632
+          ],
+          "dark_px_under_line": 0
+        }
+      ],
+      "sha256": "724e92e0cdb58e31ab8ccc8ebebd18648fe24ade4bb6ecac0bfc513d7824b68d"
+    },
+    {
+      "file": "images/ui-06-type.png",
+      "seconds": 287.0,
+      "frame_sha256": "221bac4760404b907c572806a7063f8cc3435b42e047fa68434fef34718cf8eb",
+      "crop": [
+        1000,
+        0,
+        1920,
+        640
+      ],
+      "boxes": [
+        {
+          "target": [
+            1550,
+            266,
+            1906,
+            298
+          ],
+          "margin": [
+            2,
+            0,
+            2,
+            2
+          ],
+          "outer": [
+            1542,
+            260,
+            1914,
+            306
+          ],
+          "dark_px_under_line": 0
+        }
+      ],
+      "sha256": "bbb56535f401dc1af8e02fa2dd03e1b9adadb6c438ab258d06ae4b50fabfef36"
+    },
+    {
+      "file": "images/ui-07-reverse.png",
+      "seconds": 538.3,
+      "frame_sha256": "ef8a112c12b20abdfdf188d6db1a9196cd7e2ed7090e9eb777ea5ccd7b16e171",
+      "crop": [
+        1000,
+        0,
+        1920,
+        640
+      ],
+      "boxes": [
+        {
+          "target": [
+            1619,
+            112,
+            1712,
+            141
+          ],
+          "margin": [
+            3,
+            3,
+            1,
+            3
+          ],
+          "outer": [
+            1610,
+            103,
+            1719,
+            150
+          ],
+          "dark_px_under_line": 0
+        }
+      ],
+      "sha256": "db9a237657e2e5a1ce7be5ed8918b2a57658a3ca115be092d9ce07943a25fdd3"
+    },
+    {
+      "file": "images/ui-08-property.png",
+      "seconds": 890.0,
+      "frame_sha256": "a7ba714851e30f896cd1fb347e9a5348273b74243f03bde48e17af5c9d6f537c",
+      "crop": [
+        1000,
+        0,
+        1920,
+        640
+      ],
+      "boxes": [
+        {
+          "target": [
+            1550,
+            399,
+            1906,
+            459
           ],
           "margin": [
             2,
@@ -162,19 +302,19 @@
             0
           ],
           "outer": [
-            1460,
-            479,
-            1916,
-            572
+            1542,
+            391,
+            1914,
+            465
           ],
           "dark_px_under_line": 0
         },
         {
           "target": [
-            1795,
-            582,
-            1904,
-            615
+            1817,
+            475,
+            1907,
+            502
           ],
           "margin": [
             4,
@@ -183,577 +323,768 @@
             4
           ],
           "outer": [
-            1785,
-            574,
-            1914,
-            625
+            1807,
+            467,
+            1917,
+            512
           ],
           "dark_px_under_line": 0
         }
       ],
-      "sha256": "d0b87559ef859760cbb727060073b792399aba35bcf4b4b17a25212cbaabc884"
+      "sha256": "155a1f772f276752e0e52853c5f8efe7dda23fb42b78d81364d5a7be7b0e1415"
     },
     {
-      "file": "images/ui-06-color.png",
-      "seconds": 1643.0,
-      "frame_sha256": "04d27ed0d0e50c98276d9590578933a76aa45af29b76dde1bf14643bdb0707ac",
-      "crop": null,
-      "boxes": [
-        {
-          "target": [
-            1468,
-            88,
-            1596,
-            122
-          ],
-          "margin": 3,
-          "outer": [
-            1459,
-            79,
-            1605,
-            131
-          ],
-          "dark_px_under_line": 0
-        },
-        {
-          "target": [
-            1598,
-            810,
-            1758,
-            842
-          ],
-          "margin": 4,
-          "outer": [
-            1588,
-            800,
-            1768,
-            852
-          ],
-          "dark_px_under_line": 0
-        }
+      "file": "images/ui-09-procedure.png",
+      "seconds": 1874.0,
+      "frame_sha256": "62e463bdd5315a73ef6812d4aeb749789c5d7cf382025118d2ce90f9a0ea067d",
+      "crop": [
+        860,
+        0,
+        1920,
+        640
       ],
-      "sha256": "32cc1d4ebece97b96658ab4e5b4a1692f13268efd327b9bbfa31ebc51ebbc62a"
-    },
-    {
-      "file": "images/ui-07-export-png.png",
-      "seconds": 1822.1,
-      "frame_sha256": "ca49b752026a5d183f11baaaf4fbf72c6559e789067db7c75eb7f47b6abf260a",
-      "crop": null,
       "boxes": [
         {
           "target": [
-            390,
-            167,
-            450,
-            205
-          ],
-          "margin": 4,
-          "outer": [
-            380,
-            157,
-            460,
-            215
-          ],
-          "dark_px_under_line": 0
-        },
-        {
-          "target": [
-            407,
-            448,
-            600,
-            470
-          ],
-          "margin": 4,
-          "outer": [
-            397,
-            438,
-            610,
-            480
-          ],
-          "dark_px_under_line": 49
-        }
-      ],
-      "sha256": "5108d5be71e99d65d0ed2df5af24814378d71f635b5c342eb0ab5caa9c51c80c"
-    },
-    {
-      "file": "images/ui-08-export-json.png",
-      "seconds": 1830.4,
-      "frame_sha256": "256275764245f78bac8205e02f4642dda7c814911f0bd35c3ae4e2d47f9338ce",
-      "crop": null,
-      "boxes": [
-        {
-          "target": [
-            620,
-            167,
-            687,
-            205
-          ],
-          "margin": 4,
-          "outer": [
-            610,
-            157,
-            697,
-            215
-          ],
-          "dark_px_under_line": 0
-        },
-        {
-          "target": [
-            406,
-            240,
-            544,
-            278
-          ],
-          "margin": 4,
-          "outer": [
-            396,
-            230,
-            554,
-            288
-          ],
-          "dark_px_under_line": 44
-        }
-      ],
-      "sha256": "3a02acfacf11553f43d3586e107c1bb3cff67f6ae11d21e115e383ffdfd75143"
-    },
-    {
-      "file": "images/ui-09-menu.png",
-      "seconds": 1850.8,
-      "frame_sha256": "b6348d96eee535dad35bdd6d22b29febaa1d4ba82c37e5ac67899c1476c3736a",
-      "crop": null,
-      "boxes": [
-        {
-          "target": [
-            12,
-            6,
-            48,
-            40
+            1550,
+            333,
+            1906,
+            366
           ],
           "margin": 2,
           "outer": [
+            1542,
+            325,
+            1914,
+            374
+          ],
+          "dark_px_under_line": 2
+        },
+        {
+          "target": [
+            895,
+            228,
+            1029,
+            272
+          ],
+          "margin": 3,
+          "outer": [
+            886,
+            219,
+            1038,
+            281
+          ],
+          "dark_px_under_line": 98
+        }
+      ],
+      "sha256": "09278f6322e0390ac383d3e019a29c853c88d971c20a257fd32d6f04b84dea85"
+    },
+    {
+      "file": "images/ui-10-color.png",
+      "seconds": 1916.6,
+      "frame_sha256": "c81e99bd48f8fc47b52d68eb439117ffa1e7eed89c75b434ee0aaa06470b6130",
+      "crop": [
+        860,
+        0,
+        1920,
+        800
+      ],
+      "boxes": [
+        {
+          "target": [
+            1550,
+            72,
+            1653,
+            98
+          ],
+          "margin": [
             4,
             0,
-            56,
-            48
+            4,
+            4
+          ],
+          "outer": [
+            1540,
+            66,
+            1663,
+            108
           ],
           "dark_px_under_line": 0
         },
         {
           "target": [
-            94,
-            130,
-            300,
-            168
+            1652,
+            662,
+            1800,
+            686
           ],
           "margin": [
             3,
             3,
             3,
-            0
+            1
           ],
           "outer": [
-            85,
-            121,
-            309,
+            1643,
+            653,
+            1809,
+            693
+          ],
+          "dark_px_under_line": 0
+        }
+      ],
+      "sha256": "d4dd3cf5c4569d5d2095c02b5d0fbaa88c087bdf6328210480f53e447664b4c5"
+    },
+    {
+      "file": "images/ui-11-judge.png",
+      "seconds": 2099.0,
+      "frame_sha256": "09e2bec703c242ce410d3ed0b00d28891ec8a3136ec04e726512956fa7cc348a",
+      "crop": [
+        0,
+        38,
+        1537,
+        1053
+      ],
+      "boxes": [
+        {
+          "target": [
+            1195,
+            260,
+            1497,
+            398
+          ],
+          "margin": 6,
+          "outer": [
+            1183,
+            248,
+            1509,
+            410
+          ],
+          "dark_px_under_line": 60
+        },
+        {
+          "target": [
+            188,
+            280,
+            474,
+            400
+          ],
+          "margin": 6,
+          "outer": [
+            176,
+            268,
+            486,
+            412
+          ],
+          "dark_px_under_line": 62
+        },
+        {
+          "target": [
+            731,
+            882,
+            1021,
+            1010
+          ],
+          "margin": 6,
+          "outer": [
+            719,
+            870,
+            1033,
+            1022
+          ],
+          "dark_px_under_line": 62
+        }
+      ],
+      "sha256": "78fd6d5c620b8c5a847a4b36f6090009116c75ca9f2a975ace2b74c86598d167"
+    },
+    {
+      "file": "images/ui-12-export-png.png",
+      "seconds": 2118.5,
+      "frame_sha256": "f2cdb02f81d8b7a1be82b0a31a90cecab5ffb75068ff2f91eedea52728ef00b3",
+      "crop": [
+        430,
+        55,
+        1490,
+        850
+      ],
+      "boxes": [
+        {
+          "target": [
+            465,
+            146,
+            515,
+            178
+          ],
+          "margin": 3,
+          "outer": [
+            456,
+            137,
+            524,
+            187
+          ],
+          "dark_px_under_line": 0
+        },
+        {
+          "target": [
+            488,
+            377,
+            647,
+            397
+          ],
+          "margin": 4,
+          "outer": [
+            478,
+            367,
+            657,
+            407
+          ],
+          "dark_px_under_line": 0
+        }
+      ],
+      "sha256": "4d5b6b719392399c296812989ae5153aebe835973164ac80816494c45a57f606"
+    },
+    {
+      "file": "images/ui-13-export-json.png",
+      "seconds": 2123.0,
+      "frame_sha256": "d3893374c8a75093ba8e5d8ad04f71b4fca15aeff9f5df387790cc3aa0cdb0ff",
+      "crop": [
+        430,
+        55,
+        1490,
+        810
+      ],
+      "boxes": [
+        {
+          "target": [
+            654,
+            146,
+            709,
+            178
+          ],
+          "margin": 3,
+          "outer": [
+            645,
+            137,
+            718,
+            187
+          ],
+          "dark_px_under_line": 0
+        },
+        {
+          "target": [
+            479,
+            207,
+            592,
+            238
+          ],
+          "margin": 4,
+          "outer": [
+            469,
+            197,
+            602,
+            248
+          ],
+          "dark_px_under_line": 0
+        }
+      ],
+      "sha256": "98b491ed2532cafd716c64ba05840eda7179afceac2068ec7f539079298eee98"
+    },
+    {
+      "file": "images/ui-14-menu.png",
+      "seconds": 2141.0,
+      "frame_sha256": "877924d6e771fdfe454e2f22528e48854fc641c89059f9b2c01d25deb21f6653",
+      "crop": [
+        0,
+        0,
+        1000,
+        420
+      ],
+      "boxes": [
+        {
+          "target": [
+            10,
+            6,
+            38,
+            34
+          ],
+          "margin": 2,
+          "outer": [
+            2,
+            0,
+            46,
+            42
+          ],
+          "dark_px_under_line": 0
+        },
+        {
+          "target": [
+            86,
+            110,
+            238,
+            134
+          ],
+          "margin": 3,
+          "outer": [
+            77,
+            101,
+            247,
+            143
+          ],
+          "dark_px_under_line": 109
+        },
+        {
+          "target": [
+            12,
+            154,
+            58,
             174
           ],
-          "dark_px_under_line": 61
+          "margin": 3,
+          "outer": [
+            3,
+            145,
+            67,
+            183
+          ],
+          "dark_px_under_line": 0
+        }
+      ],
+      "sha256": "26b5380414108fc319f766a82eb4544a160d9e9358c3f3b4e87f63c226804614"
+    },
+    {
+      "file": "images/ui-15-import.png",
+      "seconds": 2165.1,
+      "frame_sha256": "26c624158d86939a0d9334bc0ebf36634b338712e457a705d1ca693ffa169765",
+      "crop": [
+        430,
+        55,
+        1490,
+        682
+      ],
+      "boxes": [
+        {
+          "target": [
+            465,
+            273,
+            600,
+            305
+          ],
+          "margin": 4,
+          "outer": [
+            455,
+            263,
+            610,
+            315
+          ],
+          "dark_px_under_line": 0
         },
         {
           "target": [
-            4,
-            185,
-            95,
-            215
+            1382,
+            622,
+            1458,
+            654
+          ],
+          "margin": 4,
+          "outer": [
+            1372,
+            612,
+            1468,
+            664
+          ],
+          "dark_px_under_line": 0
+        }
+      ],
+      "sha256": "ed63ba43af0af226e50e4e4b70200134f192da993bb3541cbc84692210a21034"
+    },
+    {
+      "file": "images/ui-16-imported.png",
+      "seconds": 2169.0,
+      "frame_sha256": "b345746e874a2e1040576ceec70c14f5a62f150e47acf1b6f6577f76d6c264ec",
+      "crop": null,
+      "boxes": [
+        {
+          "target": [
+            1550,
+            72,
+            1815,
+            98
           ],
           "margin": [
-            3,
-            1,
-            3,
-            3
-          ],
-          "outer": [
+            4,
             0,
-            178,
-            104,
-            224
+            4,
+            4
           ],
-          "dark_px_under_line": 0
-        }
-      ],
-      "sha256": "8a561fd18a23dc568707f2dd16996f3f8b49871f2fa04318c44ceaadf8106495"
-    },
-    {
-      "file": "images/ui-10-import.png",
-      "seconds": 1884.4,
-      "frame_sha256": "eb61c4be80932a2ede3cb902a0218ef43e63f89453ad88c90e52e490b636bd2b",
-      "crop": null,
-      "boxes": [
-        {
-          "target": [
-            390,
-            343,
-            555,
-            381
-          ],
-          "margin": 4,
           "outer": [
-            380,
-            333,
-            565,
-            391
+            1540,
+            66,
+            1825,
+            108
           ],
           "dark_px_under_line": 0
         },
         {
           "target": [
-            1442,
-            768,
-            1536,
-            806
+            44,
+            117,
+            136,
+            208
           ],
-          "margin": 4,
+          "margin": [
+            4,
+            1,
+            1,
+            4
+          ],
           "outer": [
-            1432,
-            758,
-            1546,
-            816
+            34,
+            110,
+            143,
+            218
           ],
-          "dark_px_under_line": 0
+          "dark_px_under_line": 35
         }
       ],
-      "sha256": "322260e47565192ebed0da8bf628ff405518cf81c1dfc791b534b7f15cc65812"
+      "sha256": "2df512a8621d01afbe1b20900837e0bd838ae0213dd1eee37c51d2f1ffe1b3a8"
     },
     {
-      "file": "images/ui-11-imported.png",
-      "seconds": 1902.5,
-      "frame_sha256": "000a69fdc7c23cd675cc5a56be0421f65f2c06f49048ad3e45ddb88b471595d4",
-      "crop": null,
+      "file": "images/ui-17-cypher.png",
+      "seconds": 2246.0,
+      "frame_sha256": "978e7f92156fcbf6a4a8ff2a6b89a703b440ade3910d4b188ae70e9527a61d80",
+      "crop": [
+        430,
+        55,
+        1490,
+        838
+      ],
       "boxes": [
         {
           "target": [
-            1468,
-            88,
-            1793,
-            122
+            580,
+            146,
+            645,
+            178
           ],
-          "margin": 4,
+          "margin": 3,
           "outer": [
-            1458,
-            78,
-            1803,
-            132
-          ],
-          "dark_px_under_line": 0
-        }
-      ],
-      "sha256": "d7b75203307afd1370c3b5cfccc01ef9412745f28601b49afb52b91b135e25f3"
-    },
-    {
-      "file": "images/ui-12-cypher.png",
-      "seconds": 1973.0,
-      "frame_sha256": "fbec111621e11592702b15686b0c2216f5f6a362f7e636d8a4a874b22cab3e3e",
-      "crop": null,
-      "boxes": [
-        {
-          "target": [
-            530,
-            166,
-            610,
-            204
-          ],
-          "margin": 4,
-          "outer": [
-            520,
-            156,
-            620,
-            214
+            571,
+            137,
+            654,
+            187
           ],
           "dark_px_under_line": 0
         },
         {
           "target": [
-            430,
-            350,
-            515,
-            378
+            498,
+            301,
+            567,
+            319
           ],
-          "margin": 4,
+          "margin": 3,
           "outer": [
-            420,
-            340,
-            525,
-            388
+            489,
+            292,
+            576,
+            328
           ],
-          "dark_px_under_line": 53
+          "dark_px_under_line": 55
         }
       ],
-      "sha256": "8346e1a1b9d88bdaa03795a76314edc6e15b3dd2460995f57b72c26f6236307e"
+      "sha256": "3e97d807152e7e97d47f2537bb84bc704b350744d6433dcb785292d343f2e830"
     }
   ],
   "stage_frames": [
     {
       "file": "images/stage-01.png",
-      "seconds": 419.0,
-      "frame_sha256": "9cc1996200b65c12fdb892072829028197ad994529c44661ae48f3769ee55101",
+      "seconds": 439.8,
+      "frame_sha256": "a93f9e5494613161153abb90c3ac49f1b1a2501c6c7f80da940b6b553b3ff44c",
       "crop": [
         0,
-        45,
-        1455,
-        1045
+        38,
+        1537,
+        1053
       ],
       "boxes": [
         {
           "target": [
-            50,
-            523,
-            518,
-            958
+            58,
+            486,
+            474,
+            802
           ],
           "margin": 6,
           "outer": [
-            38,
-            511,
-            530,
-            970
+            46,
+            474,
+            486,
+            814
           ],
           "dark_px_under_line": 0
         }
       ],
-      "sha256": "8f486ea262939fca8c9c62f47ef1bc535ed71d2cb610d3c552757d279d7638e3"
+      "sha256": "46aa720922e305ccbcbb9b126dd35c637ea4c8070aabcd71a0591bf178e8c2fe"
     },
     {
       "file": "images/stage-02.png",
-      "seconds": 599.4,
-      "frame_sha256": "5f75052319d5f1068bab2b7a287cb11e23710fe1032437ffadcd095cf64d8eaa",
+      "seconds": 674.4,
+      "frame_sha256": "3e1bb4e2814324adf5589429d93036fe65db04bf95f69cf5e8732a69040c8a1e",
       "crop": [
         0,
-        45,
-        1455,
-        1045
+        38,
+        1537,
+        1053
       ],
       "boxes": [
         {
           "target": [
-            657,
-            523,
-            805,
-            958
+            484,
+            486,
+            745,
+            802
           ],
           "margin": 6,
           "outer": [
-            645,
-            511,
-            817,
-            970
+            472,
+            474,
+            757,
+            814
           ],
-          "dark_px_under_line": 64
+          "dark_px_under_line": 34
         }
       ],
-      "sha256": "e87696911cce7b8bb5c48e849e36060e202002c1094a90063302f2b2df3c0bc2"
+      "sha256": "2b7f64c417294372efdcd3bd62b6408cf8fcccdf6ff2b2017e28475c4ae84204"
     },
     {
       "file": "images/stage-03.png",
-      "seconds": 800.5,
-      "frame_sha256": "4c2b8467be2b3eb5ceb5d6a761c3f21512c1af5ec6ddc0f88294e90a396ca736",
+      "seconds": 884.4,
+      "frame_sha256": "54927054afa6356e77cd45af56ca652193a224928ff48d008233e1b9d48ea8e5",
       "crop": [
         0,
-        45,
-        1455,
-        1045
+        38,
+        1537,
+        1053
       ],
       "boxes": [
         {
           "target": [
-            1092,
-            715,
-            1430,
-            895
+            1195,
+            260,
+            1520,
+            398
           ],
           "margin": 6,
           "outer": [
-            1080,
-            703,
-            1442,
-            907
+            1183,
+            248,
+            1532,
+            410
           ],
-          "dark_px_under_line": 59
+          "dark_px_under_line": 30
         }
       ],
-      "sha256": "80a93d67ce877612113117a04fd4102f9dff48558cf6d6247a100a756c7bae64"
+      "sha256": "39e8c49794acb3b489832f3bce753e00500ce03d2b4c2619faa5f4b106bd5dc2"
     },
     {
       "file": "images/stage-04.png",
-      "seconds": 1025.0,
-      "frame_sha256": "c1465f4067bb23c859c4ef4c19c497291200812ff73a1b2d15fa8e98ff9e0af9",
+      "seconds": 1207.6,
+      "frame_sha256": "62c73d62908093b18a00294b4fbf585fb8607de155d6f0987e22ba4a9c377155",
       "crop": [
         0,
-        45,
-        1455,
-        1045
+        38,
+        1537,
+        1053
       ],
       "boxes": [
         {
           "target": [
-            964,
-            523,
-            1422,
-            671
+            903,
+            78,
+            1021,
+            398
           ],
           "margin": 6,
           "outer": [
-            952,
-            511,
-            1434,
-            683
+            891,
+            66,
+            1033,
+            410
           ],
-          "dark_px_under_line": 77
+          "dark_px_under_line": 70
         },
         {
           "target": [
-            860,
-            876,
-            1416,
-            1024
+            1195,
+            486,
+            1313,
+            802
           ],
           "margin": 6,
           "outer": [
-            848,
-            864,
-            1428,
-            1036
+            1183,
+            474,
+            1325,
+            814
           ],
-          "dark_px_under_line": 385
+          "dark_px_under_line": 52
         }
       ],
-      "sha256": "594d8a1d7403c5293eb74447567eea588130e514dadd3e5b9198569d8ad9c4e7"
+      "sha256": "2536e4e8f7c43d85ca85ed8bbdaa157142494c6b0fdfa55502b9fa03dd4b7037"
     },
     {
       "file": "images/stage-05.png",
-      "seconds": 1187.0,
-      "frame_sha256": "edfabf49a65542fceb1d3e8210dabb3636bc9262280bddaedd1cd565f91e3600",
+      "seconds": 1390.5,
+      "frame_sha256": "e186c89b439cb591cb1fa140f26436522f9ba4d6481c5e2f0dddfaa66ec02cb8",
       "crop": [
         0,
-        45,
-        1455,
-        1045
+        38,
+        1537,
+        1053
       ],
       "boxes": [
         {
           "target": [
-            420,
-            98,
-            772,
-            263
+            58,
+            78,
+            474,
+            402
           ],
           "margin": 6,
           "outer": [
-            408,
-            86,
-            784,
-            275
+            46,
+            66,
+            486,
+            414
           ],
-          "dark_px_under_line": 73
-        },
-        {
-          "target": [
-            928,
-            56,
-            1422,
-            198
-          ],
-          "margin": [
-            6,
-            3,
-            6,
-            6
-          ],
-          "outer": [
-            916,
-            47,
-            1434,
-            210
-          ],
-          "dark_px_under_line": 98
+          "dark_px_under_line": 85
         }
       ],
-      "sha256": "7a9f8cd039e5206ea6f9fd2176dda788424ae7efcd05b7aff23860c25f462b92"
+      "sha256": "8a4d8c49ac7fd73556ddb1e9a472e87822f749320ddc981c98d0ce550fdca62c"
     },
     {
       "file": "images/stage-06.png",
-      "seconds": 1335.6,
-      "frame_sha256": "f4dc64cf0c84a28e9f29bdf0ea5866e2739e930f66981344fd13dc2b6c1bf220",
+      "seconds": 1579.2,
+      "frame_sha256": "6829f77cf4ebe62e320f5e164373378cd9717ef97c0d011a606188a942cd6414",
       "crop": [
         0,
-        45,
-        1455,
-        1045
+        38,
+        1537,
+        1053
       ],
       "boxes": [
         {
           "target": [
-            772,
-            214,
-            1108,
-            399
+            731,
+            882,
+            1313,
+            1012
           ],
           "margin": 6,
           "outer": [
-            760,
-            202,
-            1120,
-            411
+            719,
+            870,
+            1325,
+            1024
           ],
-          "dark_px_under_line": 370
-        },
-        {
-          "target": [
-            1282,
-            205,
-            1414,
-            337
-          ],
-          "margin": 6,
-          "outer": [
-            1270,
-            193,
-            1426,
-            349
-          ],
-          "dark_px_under_line": 169
+          "dark_px_under_line": 118
         }
       ],
-      "sha256": "a065248b5c577b5c25f44262d0def024cc731b913b040a1ca089014ae3cbfaa4"
+      "sha256": "a10f6f1e21f7233e7c3f78c54b6f54a2b4562f9e878d237bcedab2385ddf2988"
     },
     {
       "file": "images/stage-07.png",
-      "seconds": 1591.3,
-      "frame_sha256": "5911635be082cb8c0107dc8b2851a37edc360a2253df28ff84ea2a7b680561f1",
+      "seconds": 1874.0,
+      "frame_sha256": "62e463bdd5315a73ef6812d4aeb749789c5d7cf382025118d2ce90f9a0ea067d",
       "crop": [
         0,
-        45,
-        1455,
-        1045
+        38,
+        1537,
+        1053
       ],
       "boxes": [
         {
           "target": [
-            50,
-            279,
-            518,
-            427
+            627,
+            78,
+            745,
+            444
           ],
           "margin": 6,
           "outer": [
-            38,
-            267,
-            530,
-            439
+            615,
+            66,
+            757,
+            456
           ],
-          "dark_px_under_line": 45
+          "dark_px_under_line": 119
+        },
+        {
+          "target": [
+            215,
+            120,
+            340,
+            158
+          ],
+          "margin": 4,
+          "outer": [
+            205,
+            110,
+            350,
+            168
+          ],
+          "dark_px_under_line": 60
+        },
+        {
+          "target": [
+            895,
+            228,
+            1029,
+            272
+          ],
+          "margin": 3,
+          "outer": [
+            886,
+            219,
+            1038,
+            281
+          ],
+          "dark_px_under_line": 98
+        },
+        {
+          "target": [
+            1187,
+            611,
+            1324,
+            656
+          ],
+          "margin": 3,
+          "outer": [
+            1178,
+            602,
+            1333,
+            665
+          ],
+          "dark_px_under_line": 94
+        },
+        {
+          "target": [
+            1187,
+            832,
+            1324,
+            877
+          ],
+          "margin": 3,
+          "outer": [
+            1178,
+            823,
+            1333,
+            886
+          ],
+          "dark_px_under_line": 178
         }
       ],
-      "sha256": "1541f103de6040a9c1e20b9af9d582614613a2d97dcf25a8ecc5be3c7614f87d"
+      "sha256": "7cf60d9d3009bedfe14fd821a439fe2ae2a7e9fcd79005bfe3b051bcdb5cc5be"
     }
   ]
 }

@@ -359,6 +359,7 @@ def write_all():
     dur = rec['duration_s'] - cut_s
     segs = [g for g in rec['segments']]
     rows = ''.join(f"| {n} · {SEGMENT_TITLE[n]} | {g['segment']} | {g['used_ms'] / 1000:.1f} |\n" for n, g in enumerate(segs, 1))
+    gaim = ' 낸 판은 검색 결과 맨 위 광고 칸을 흐리게 가렸다(합성기록 「가림」).' if rec.get('가림') else ''
     timing = f'''# ARROWS 실습 시간 — 실측
 
 대상: [수업원고](수업원고.md). **실측 영상 길이 {dur / 60:.1f}분({dur:.1f}초)**, 음성 {len(cs)}큐(음성만 합하면 {spoken / 60:.1f}분). 쉼은 이어지는 말 0.6초 · 큐 사이 1.3초 · 결과 뒤 2.0초 · 구간 사이 2.3초다.
@@ -368,7 +369,7 @@ def write_all():
 ''' + rows + f'''
 합성한 뒤 말 없이 화면이 서 있는 곳 {len(cuts)}곳에서 쉼 기준을 넘는 {cut_s:.1f}초를 잘라 냈다(`잘라냄_통합1-08.json`, 구간 길이는 잘라 내기 전 값).
 
-측정: 구간마다 `measure.py`의 0.5초 넘는 이동 공백 0, 튐은 모두 클릭이 만든 변화(오른쪽 칸 접기 · 내보내기 · 불러오기 창 · 지우기), 합성의 최대 프레임 간격 {rec['motion_summary']['max_gap_ms_max']}ms.
+측정: `measure.py`의 0.5초 넘는 이동 공백은 5구간(0.9초)과 6구간(1.2초)에 한 번씩이고, 둘 다 커서가 오른쪽 칸에서 미끄러지다 잠깐 멈춘 것이다. 조작 없이 화면 전체가 바뀐 곳은 1구간(검색 결과 → arrows.app)과 11구간(내보내기 · 새 그림 · 불러오기 창)뿐이고, 모두 클릭이 연 화면이다. 합성의 최대 프레임 간격은 {rec['motion_summary']['max_gap_ms_max']}ms다.{gaim}
 '''
     (ROOT / '예상시간.md').write_text(timing, encoding='utf-8')
     screens = f'''# 화면 — 촬영 완료
