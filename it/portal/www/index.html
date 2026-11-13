@@ -6,33 +6,22 @@
 <title>유압설비 모니터링 · 조치 포탈</title>
 <link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="styles.css">
-<link rel="stylesheet" href="enterprise.css">
-<link rel="stylesheet" href="main.css">
-<link rel="stylesheet" href="hitl.css">
-<link rel="stylesheet" href="instances.css">
 <link rel="stylesheet" href="components.css">
-<link rel="stylesheet" href="taskDetail.css">
-<link rel="stylesheet" href="mcp.css">
 <link rel="stylesheet" href="shell.css">
-<link rel="stylesheet" href="kpi.css">
-<link rel="stylesheet" href="flows.css">
-<link rel="stylesheet" href="compare.css">
-<link rel="stylesheet" href="trace.css">
-<link rel="stylesheet" href="caseRecord.css">
-<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="screens.css">
 <link rel="stylesheet" href="reading.css">
-<link rel="stylesheet" href="structure.css">
 <link rel="stylesheet" href="canvas.css">
 <link rel="stylesheet" href="case.css">
+<link rel="stylesheet" href="live.css">
 </head>
 <body>
 <a class="skip-link" href="#content">본문으로 건너뛰기</a>
 <aside class="rail" id="navigation" aria-label="메뉴">
-  <button class="brand active" id="brandHome" title="홈"><span class="brand-mark" aria-hidden="true">H</span><span><strong>HYD Lab</strong><small>유압설비 조치 포탈</small></span></button>
+  <button class="brand active" id="brandHome" title="홈"><span class="brand-mark" aria-hidden="true">H</span><strong>HYD Lab</strong></button>
   <nav aria-label="주 메뉴">
     <!-- 메뉴 정의는 이 자리 한 곳이다(2026-11-14 구조 개편 — 화면 규칙: workspace/개발/문서/UIUX_PLAN.md).
          data-menu = 메뉴, data-tabs = 그 메뉴에 딸린 화면(view-… 의 이름, 차례대로). 화면이 둘 이상인 메뉴는 본문 위 탭 줄(#subTabs)로 오간다.
-         메뉴 줄 · 탭 줄 · 이전/다음 순서 · 머리줄 위치 표시가 모두 이 표를 읽는다(app.js MENU). 메뉴 이름은 nav.menu.<메뉴>, 탭과 화면 제목은 nav.<화면>(ui.js). -->
+         메뉴 줄 · 탭 줄 · 위 막대의 위치 표시가 모두 이 표를 읽는다(app.js MENU). 메뉴 이름은 nav.menu.<메뉴>, 탭과 화면 제목은 nav.<화면>(ui.js). -->
     <button data-menu="main" data-tabs="main" data-icon="home" data-term="nav.menu.main">홈</button>
     <button data-menu="instances" data-tabs="instances" data-icon="inbox" data-term="nav.menu.instances">처리 건</button>
     <button data-menu="knowledge" data-tabs="ontology skills knowledge fabric" data-icon="book" data-term="nav.menu.knowledge">지식</button>
@@ -44,14 +33,18 @@
     <div class="navgroup navrule" aria-hidden="true"></div>
     <button data-menu="system" data-tabs="home kpi admin" data-icon="gear" data-term="nav.menu.system">시스템</button>
   </nav>
-  <div class="foot"><span class="env-dot"></span><div><strong>시뮬레이션</strong></div></div>
+  <!-- 메뉴 줄 맨 아래: 수업 단계(courseAccess.js 가 #courseStatus 에 쓴다) → 서비스 상태와 배속 한 줄(app.js pollHealth · refreshFast). 누르면 시스템 구성 화면 -->
+  <div class="rail-foot">
+    <span id="courseStatus" class="course-status" aria-live="polite"></span>
+    <button type="button" class="rail-status" id="railStatus" data-go-tab="home"><span id="healthDots"><i class="dot"></i>서비스 확인 중</span><span id="railScale" hidden> · <b id="scale" class="num">–</b>배속</span></button>
+  </div>
 </aside>
 
 <header class="strip">
   <button class="menu-toggle" id="menuToggle" aria-label="메뉴 열기" aria-expanded="false" aria-controls="navigation">☰</button>
   <div class="breadcrumb"><span id="pageGroup" hidden></span><b id="pageLocation">홈</b></div>
-  <div class="strip-status"><span id="courseStatus" class="course-status" aria-live="polite"></span><span class="env-badge">시뮬레이션</span><span>진행 중 사건 <b id="openCount" class="num">–</b></span><details class="stream-ticker" id="streamTicker" aria-live="polite"><summary><i class="live-dot off"></i><span>연결 중</span></summary></details><div class="dots" id="healthDots"></div></div>
-  <details class="clock-pop"><summary aria-label="시뮬레이션 시각">시뮬레이션 시각</summary><div><span>시뮬레이션 시각 <b id="simT" class="num">–</b></span><span>시간 배율 <b id="scale" class="num">–</b>×</span></div></details>
+  <!-- 위 막대에는 위치 · 실시간 연결 상태 · 알림 종만 둔다(디자인 기준 3절). 서비스 상태 · 배속 · 수업 단계는 메뉴 줄 맨 아래, 내 할 일 건수는 메뉴 「처리 건」 곁, 시뮬레이션 시각은 결함 시뮬레이션 화면 머리에 있다 -->
+  <details class="stream-ticker" id="streamTicker" aria-live="polite"><summary><i class="live-dot off"></i><span>연결 중</span></summary></details>
   <!-- 알림 종(셸): 누르면 처리 건 화면의 「알림」 절이 열린다. 사람을 고르는 자리는 없다 — 쓰는 사람은 늘 담당자다(inbox.js 머리말). -->
   <button type="button" class="shell-bell" id="shellBell" aria-label="알림"><span class="shell-badge" id="shellBadge" hidden></span></button>
 </header>
@@ -106,9 +99,9 @@
 
   <!-- ───────── 조치 방법 ───────── -->
   <section class="view" id="view-skills">
-    <div class="page-head"><h1 data-term="nav.skills">조치 방법</h1></div>
+    <div class="page-head"><div><h1 data-term="nav.skills">조치 방법</h1><p>고장 유형마다 무엇을 어떤 절차로 조치하는지 적은 지식입니다. AI가 조치 후보를 낼 때 이 목록에서 고릅니다.</p></div><div class="page-tools"><button type="button" class="btn" id="skillNew">새 조치 방법</button></div></div>
     <div class="split skills-split">
-      <div><div class="listhead"><span>조치 방법</span><button class="btn small" id="skillNew">새 조치 방법</button></div><div class="list" id="skillList"></div></div>
+      <div><div class="list" id="skillList" aria-label="조치 방법 목록"></div></div>
       <div class="detail" id="skillDetail"></div>
     </div>
   </section>
@@ -153,7 +146,7 @@
   <!-- ───────── 처리 건 ───────── -->
   <section class="view" id="view-instances">
     <!-- 처리 건 한 화면(디자인 기준 5-1 · 5-2): 머리 → 상태 탭(같은 목록을 거른다) → 왼쪽 목록 + 오른쪽 한 건. 한 건은 탭 없이 한 장이다(instances.js · caseRecord.js · flow.js). -->
-    <div class="page-head case-page-head"><div><h1 data-term="nav.instances">처리 건</h1><p class="page-lead">사건이 생기면 한 건으로 열리고, AI 판단과 내 승인, 실행 결과가 이 한 곳에 남습니다.</p></div><div class="page-tools"><button type="button" class="btn" id="instReload">다시 읽기</button></div></div>
+    <div class="page-head case-page-head"><div><h1 data-term="nav.instances">처리 건</h1><p>사건이 생기면 한 건으로 열리고, AI 판단과 내 승인, 실행 결과가 이 한 곳에 남습니다.</p></div><div class="page-tools"><button type="button" class="btn" id="instReload">다시 읽기</button></div></div>
     <div id="instBanner"></div>
     <div class="tabs case-tabs" id="instTabs" role="tablist" aria-label="처리 건 거르기"></div>
     <div class="split case-split">
@@ -222,7 +215,7 @@
 
   <!-- ───────── 문서 등록(지식) ───────── -->
   <section class="view" id="view-knowledge">
-    <div class="page-head"><h1 data-term="nav.knowledge">문서 등록</h1></div>
+    <div class="page-head"><div><h1 data-term="nav.knowledge">문서 등록</h1><p>매뉴얼을 올리면 AI가 조치 방법과 절차를 뽑고, 검토한 것만 지식 지도에 적재합니다. 업무 DB의 표 정의도 여기서 연결합니다.</p></div></div>
     <h2 class="sec">매뉴얼 등록</h2>
     <div class="upload card" id="manualUpload">
       <div class="form-grid">
@@ -260,8 +253,8 @@
 
   <!-- ───────── 관리 ───────── -->
   <section class="view" id="view-admin">
-    <div class="page-head"><h1 data-term="nav.admin">관리</h1></div>
-    <p class="page-lead">수업 운영과 문제 해결에 쓰는 도구입니다. 흐름을 경보에 쓰는 배포는 흐름 화면에 있습니다. <button type="button" class="link-btn" data-go-tab="flows">흐름 열기 →</button></p>
+    <div class="page-head"><div><h1 data-term="nav.admin">관리</h1><p>수업 운영과 문제 해결에 쓰는 도구입니다. 흐름을 경보에 쓰는 배포는 흐름 화면에 있습니다. <button type="button" class="link-btn" data-go-tab="flows">흐름 열기 →</button></p></div></div>
+    <details class="fold admin-panel" id="configBundlePanel" open><summary>내가 만든 설정을 파일로 내보내거나 불러오고 기준으로 되돌립니다</summary><div class="fold-body" id="configBundleView"></div></details>
     <details class="fold admin-panel" id="sourceEventsPanel">
       <summary>들어온 경보와 명령 응답의 접수 기록을 보고 실패한 접수를 다시 처리합니다</summary>
       <div class="fold-body">
@@ -289,17 +282,16 @@
         <div class="field"><label for="definitionFile">정의 JSON 파일</label><input type="file" id="definitionFile" accept=".json,application/json"></div>
         <div class="field wide"><label for="definitionJson">정의 JSON</label><textarea id="definitionJson" rows="10" spellcheck="false" placeholder="흐름 정의 JSON(이름 · 판본 · 단계 · 이벤트 · 연결 · 입력 양식)"></textarea><p class="field-hint">같은 판본은 바꿀 수 없습니다. 변경할 때는 새 판본을 씁니다.</p></div>
       </div>
-      <div class="form-actions"><button class="btn small" id="definitionRefresh">목록 새로 읽기</button><button class="btn small" id="definitionCopy">선택한 정의 가져오기</button><button class="btn" id="definitionPublish">이 정의 판본 등록</button></div></section>
+      <div class="form-actions"><button class="btn" id="definitionPublish">이 정의 판본 등록</button><button class="btn small" id="definitionCopy">선택한 정의 가져오기</button><button class="btn small" id="definitionRefresh">목록 새로 읽기</button></div></section>
       <section class="form-section"><h4>실행</h4><div class="form-grid">
         <div class="field"><label for="definitionEvent">시작 요청 번호 <i class="req">*</i></label><input id="definitionEvent" placeholder="같은 요청의 중복 실행을 막는 고유 ID"></div>
         <div class="field"><label for="definitionRunName">실행 이름</label><input id="definitionRunName"></div>
         <div class="field wide"><label for="definitionValues">시작 변수 JSON</label><textarea id="definitionValues" rows="3" spellcheck="false">{}</textarea></div>
         <div class="field wide"><label for="definitionAlert">경보 JSON</label><textarea id="definitionAlert" rows="3" spellcheck="false" placeholder="설비 경보로 시작할 때만"></textarea></div>
       </div>
-      <div class="form-actions"><span id="definitionMessage" role="status" class="form-msg"></span><button class="btn primary" id="definitionStart">선택한 정의 판본으로 실행</button></div></section>
+      <div class="form-actions"><button class="btn primary" id="definitionStart">선택한 정의 판본으로 실행</button><span id="definitionMessage" role="status" class="form-msg"></span></div></section>
       </div>
     </details>
-    <details class="fold admin-panel" id="configBundlePanel"><summary>내가 만든 설정을 파일로 내보내거나 불러오고 기준으로 되돌립니다</summary><div class="fold-body" id="configBundleView"></div></details>
   </section>
 
   <!-- ───────── A5 (U7) 새 화면 자리: 각 단위가 window.hyd<X>.mount(<컨테이너>) 로 채운다 ───────── -->
@@ -333,8 +325,7 @@
   </section>
   <!-- ───────── 흐름: ① 그림 가져오기 → ② 단계 종류 붙이기 · 검사 → ③ 판본 등록(flows.js, #flowsView) → ④ 배포(definitionDeploy.js) → ⑤ 시작(flows.js, #flowsStart) ───────── -->
   <section class="view" id="view-flows">
-    <div class="page-head"><h1 data-term="nav.flows">흐름</h1></div>
-    <p class="page-lead">bpmn.io에서 그린 흐름을 가져와 처리 건으로 돌리기까지의 다섯 단계가 위에서 아래로 이어집니다.</p>
+    <div class="page-head"><div><h1 data-term="nav.flows">흐름</h1><p>bpmn.io에서 그린 흐름을 가져와 처리 건으로 돌리기까지의 다섯 단계가 위에서 아래로 이어집니다.</p></div></div>
     <ol class="flow-steps" id="flowSteps" aria-label="흐름을 만들어 돌리는 단계"></ol>
     <div class="shell-mount" id="flowsView"></div>
     <section class="flow-stage" id="definitionDeployPanel" aria-labelledby="flowStage4">
@@ -346,7 +337,7 @@
         <input type="hidden" id="deployBy"><!-- 배포 이력에 남는 이름 = 이 PC의 담당자(definitionDeploy.js showMe) — 고칠 수 없는 칸을 화면에 두지 않는다 -->
         <div class="field wide"><label for="deployReason">사유 <i class="req">*</i></label><textarea id="deployReason" rows="2" placeholder="왜 이 판본을 운영에 올리는지(되돌릴 때도 같은 칸)"></textarea><p class="field-hint">검사를 통과한 판본만 배포됩니다. 열린 처리 건은 자기 판본으로 끝나고, 새 경보부터 운영 판본으로 열립니다.</p></div>
       </div>
-      <div class="form-actions"><span id="deployMessage" role="status" class="form-msg"></span><button class="btn small" id="deployRefresh">다시 읽기</button><button class="btn" id="deployRollback" disabled>이전 배포 판본으로 되돌리기</button></div></section>
+      <div class="form-actions"><button class="btn danger" id="deployRollback" disabled>이전 배포 판본으로 되돌리기</button><button class="btn small" id="deployRefresh">다시 읽기</button><span id="deployMessage" role="status" class="form-msg"></span></div></section>
       <div id="deployStatus"></div>
       <div id="deployVersions" class="list"></div>
       <div id="deployCompare"></div>
@@ -361,13 +352,7 @@
   </section>
   <section class="view" id="view-oil"><div class="page-head"><div><h1 data-term="nav.oil">오일 분석 입력</h1><p>센서가 아니라 사람이 넣는 값으로 경보를 만드는 예입니다. 기준 이탈이면 센서 경보와 같은 길로 처리 건이 열립니다.</p></div></div><div class="shell-mount" id="oilView"></div></section>
 </main>
-  <nav class="page-navigation" aria-label="화면 순서대로 이동">
-    <button id="pagePrev" class="page-direction" type="button"></button>
-    <span id="pagePosition" class="page-position" aria-label="현재 화면 위치"></span>
-    <button id="pageNext" class="page-direction next" type="button"></button>
-  </nav>
 
-<div id="caption"></div>
 <script src="ui.js"></script>
 <script src="layers.js"></script>
 <script src="app.js"></script>

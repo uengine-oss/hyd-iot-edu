@@ -109,12 +109,6 @@ td code { background: var(--surface-soft); padding: 0 var(--s1); border-radius: 
   .split > div:first-child > .list { max-height: 240px; }
 }
 
-.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s4); }
-.grid2 iframe, .wide iframe { display: block; width: 100%; border: 1px solid var(--rule); border-radius: var(--radius); background: var(--panel); }
-.wide { margin-bottom: var(--s4); }
-.grid2 #pAlerts { grid-column: 1 / -1; }
-#caption { display: none; }   /* 켜는 코드가 없다. index.html 의 빈 <div id="caption"> 이 body 격자에 칸을 차지하지 않게 이 한 줄만 둔다 */
-
 /* 요약 문단 · 기록 상자 · 옛 단계 추적 */
 .summary { background: var(--surface-soft); border-radius: var(--radius); padding: var(--s3) var(--s4); margin: var(--s4) 0; }
 .log { font-size: var(--fs-sub); line-height: var(--lh-sub); color: var(--ink-2); border: 1px solid var(--rule); border-radius: var(--radius); padding: var(--s2) var(--s4); max-height: 240px; overflow: auto; }
@@ -131,7 +125,6 @@ td code { background: var(--surface-soft); padding: 0 var(--s1); border-radius: 
 .trace .step strong { display: block; }
 .trace .step span { font-size: var(--fs-sub); color: var(--ink-3); }
 .trace details summary { font-size: var(--fs-sub); cursor: pointer; color: var(--ink-3); }
-.threshold-note { text-align: right; margin: 0 0 var(--s4); font-size: var(--fs-sub); color: var(--ink-3); }
 
 .event-record { padding: var(--s3) 0; border-bottom: 1px solid var(--rule); }
 .event-record:last-child { border-bottom: 0; }
@@ -141,105 +134,13 @@ td code { background: var(--surface-soft); padding: 0 var(--s1); border-radius: 
 .event-record p { margin: var(--s1) 0; color: var(--ink-2); }
 
 /* ---------------- 시스템 구성: 계층 표 ---------------- */
-.stack { border: 1px solid var(--rule); border-radius: var(--radius); overflow: hidden; background: var(--panel); }
-.layer { display: grid; grid-template-columns: 64px 232px minmax(0, 1fr); border-bottom: 1px solid var(--rule); }
-.layer:last-child { border-bottom: 0; }
-.layer .zone { display: grid; place-items: center; border-right: 1px solid var(--rule); background: var(--rail-bg); }
-.layer .name { padding: var(--row-pad); display: flex; flex-direction: column; justify-content: center; gap: var(--s1); min-width: 0; }
-.layer .name strong { font-size: var(--fs-body); }
-.layer .name span { color: var(--ink-3); font-size: var(--fs-sub); line-height: var(--lh-sub); }
-.layer .comps { display: flex; flex-direction: column; gap: var(--s2); padding: var(--row-pad); border-left: 1px solid var(--rule); min-width: 0; }
-.comp { display: grid; grid-template-columns: 192px minmax(0, 1fr); align-items: baseline; gap: var(--s3); min-width: 0; }
-.comp-name { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
-.comp .role { font-size: var(--fs-sub); color: var(--ink-3); }
-.comp a { font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
-.comp a[aria-disabled="true"] { color: var(--ink-2); text-decoration: none; cursor: default; }
-.comp .role-desc { color: var(--ink-2); overflow-wrap: anywhere; }
+
 .z { display: inline-flex; align-items: center; height: 22px; padding: 0 var(--s2); border-radius: var(--radius-pill); font-size: var(--fs-cap); font-weight: 600; font-style: normal; white-space: nowrap; }
 .z.ot { background: var(--ot-bg); color: var(--ot); }
 .z.dmz { background: var(--dmz-bg); color: var(--dmz); }
 .z.it { background: var(--chip-accent-bg); color: var(--chip-accent-fg); }
-.legend { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s4); font-size: var(--fs-sub); color: var(--ink-3); margin: var(--s4) 0; }
-.legend > span { display: inline-flex; align-items: center; gap: 6px; }
-@media (max-width: 1100px) {
-  .layer { grid-template-columns: 56px 200px minmax(0, 1fr); }
-  .comp { grid-template-columns: minmax(0, 1fr); gap: var(--s1); }
-}
-@media (max-width: 900px) {
-  .layer { grid-template-columns: 48px minmax(0, 1fr); }
-  .layer .comps { grid-column: 2; border-left: 0; border-top: 1px solid var(--rule); }
-  .grid2 { grid-template-columns: 1fr; }
-}
-
-/* ---------------- 유압 실습장: 설비 카드 (5-7) — 한 기가 한 카드, 큰 숫자는 유온 하나 ---------------- */
-.units { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s4); }
-.unit { display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--rule); border-radius: var(--radius); padding: var(--s4) var(--s6); min-width: 0; }
-.unit header { display: flex; justify-content: space-between; gap: var(--s2); align-items: center; flex-wrap: wrap; }
-.unit header strong { font-size: var(--fs-h3); line-height: var(--lh-h3); }
-.unit header .biz-alert { margin-left: auto; margin-right: var(--s2); }
-.unit header .biz-alert a.chip { text-decoration: none; }
-.unit .mode { font-size: var(--fs-sub); color: var(--ink-3); }
-.unit .big { font-size: var(--fs-num); line-height: var(--lh-num); font-weight: 600; letter-spacing: -.02em; margin: var(--s4) 0 var(--s2); }
-.unit .big small { font-size: var(--fs-sub); font-weight: 400; letter-spacing: 0; color: var(--ink-3); margin-left: var(--s2); }
-.unit .bar { position: relative; height: 6px; background: var(--surface-soft); border-radius: var(--radius-pill); margin: var(--s2) 0 var(--s1); overflow: hidden; }
-.unit .bar i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--ok); }
-.unit .bar i.hot { background: var(--warn); }
-.unit .bar i.trip { background: var(--alarm); }
-.unit .bar b { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--alarm); }
-.unit .kv { display: grid; grid-template-columns: 1fr 1fr; gap: 6px var(--s2); font-size: var(--fs-body); }
-.unit .kv span { color: var(--ink-3); font-size: var(--fs-sub); }
-.unit .kv span small { color: var(--ink-3); margin-left: var(--s1); }
-.unit .kv em { font-style: normal; text-align: right; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
-.unit .fault { font-size: var(--fs-sub); color: var(--alarm); margin: var(--s3) 0; }
-.unit .ctl { display: grid; gap: var(--s3); border-top: 1px solid var(--rule); padding-top: var(--s4); margin-top: auto; }
-.unit .unit-more { margin-top: var(--s3); }
-.unit .unit-more .ctl { margin-top: var(--s2); }
-.ctl-group { margin: 0; padding: 0; border: 0; min-width: 0; }
-.ctl-group legend { padding: 0; color: var(--ink-3); font-size: var(--fs-cap); line-height: var(--lh-cap); font-weight: 600; margin-bottom: var(--s2); }
-.ctl-group > div { display: flex; flex-wrap: wrap; gap: var(--s2); }
-.ctl-group [aria-pressed="true"] { background: var(--surface-soft); border-color: var(--ink); }
-.spark { display: block; width: 100%; height: 44px; margin: var(--s4) 0 var(--s1); }
-@media (max-width: 1100px) { .units { grid-template-columns: 1fr; } }
 
 /* ---------------- 설비 회로 (6-4): 카드 안의 회로 그림이 어두운 캔버스다 ---------------- */
-.scada { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s4); margin-bottom: var(--s6); }
-@media (max-width: 900px) { .scada { grid-template-columns: 1fr; } }
-.ucard { position: relative; display: flex; flex-direction: column; gap: var(--s2); background: var(--panel); border: 1px solid var(--rule); border-radius: var(--radius); padding: var(--s4); cursor: pointer; min-width: 0; }
-.ucard:hover { border-color: var(--rule-strong); }
-.ucard.sel { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
-.ucard.alarm { border-color: var(--alarm); }
-.ucard.sel.alarm { box-shadow: inset 0 0 0 1px var(--alarm); }
-.ucard header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; }
-.ucard header strong { font-size: var(--fs-h3); line-height: var(--lh-h3); white-space: nowrap; flex-shrink: 0; }
-.ucard .chips { display: flex; gap: var(--s1); flex-wrap: wrap; justify-content: flex-end; flex: 1 1 100px; min-width: 0; }
-.ucard .readings { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s4); font-size: var(--fs-sub); color: var(--ink-3); margin-top: auto; }
-.ucard .readings b { color: var(--ink); font-variant-numeric: tabular-nums; }
-.ucard .foot { display: flex; justify-content: space-between; gap: var(--s2); min-width: 0; font-size: var(--fs-sub); color: var(--ink-3); }
-.ucard .f-inc { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ucard .f-phase { flex-shrink: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ucard svg {
-  display: block; width: 100%; height: auto;
-  background-color: var(--cv-bg);
-  background-image: radial-gradient(circle, var(--cv-grid) 1px, transparent 1.2px);
-  background-size: 24px 24px;
-  border: 1px solid var(--cv-border);
-  border-radius: var(--radius-lg);
-}
-.ucard svg text { font-family: var(--font); fill: var(--cv-ink-2); font-size: 12px; }
-.ucard svg tspan { fill: var(--cv-value); font-variant-numeric: tabular-nums; }
-.ucard svg .sym { fill: var(--cv-ink); font-weight: 600; font-size: 12px; }
-.ucard svg .ts1 { font-size: 16px; font-weight: 600; fill: var(--cv-value); }
-.ucard svg .pipe { fill: none; stroke: var(--cv-amber); stroke-width: 5; stroke-linejoin: round; stroke-linecap: round; }
-.ucard svg .pipe.ret { stroke: var(--cv-amber); stroke-opacity: .6; }
-.ucard svg .tank, .ucard svg .gauge, .ucard svg .cooler, .ucard svg .fanring, .ucard svg .motor { fill: var(--cv-node); stroke: var(--cv-steel); stroke-width: 2; }
-.ucard svg .oil { fill: var(--cv-amber); opacity: .8; }
-.ucard svg .pump { fill: var(--cv-node); stroke: var(--cv-green); stroke-width: 2; }
-.ucard.trip svg .pump { stroke: var(--cv-edge); }
-.ucard svg .ts1-bulb { stroke: var(--cv-bg); stroke-width: 2; }
-.ucard svg .fin { stroke: var(--cv-edge); stroke-width: 1.5; }
-.ucard svg .blade { fill: var(--cv-blue); }
-.ucard svg .fan { transform-origin: 350px 80px; animation: shell-spin var(--spin, 2s) linear infinite; }   /* 돌기 정의는 shell.css 하나 */
-.ucard svg .fan.stop { animation-play-state: paused; }
 
 /* 관리 › 원천 이벤트 접수(sourceEvents.js) */
 #sourceEventRetry input, #sourceEventRetry textarea { width: 100%; }
@@ -250,7 +151,7 @@ td code { background: var(--surface-soft); padding: 0 var(--s1); border-radius: 
   .toolbar { align-items: stretch; }
   .toolbar label { flex-wrap: wrap; }
   .toolbar input[type="search"] { width: 100%; }
-  .layer .name, .layer .comps { padding: var(--s3) var(--s4); }
+
 }
 @media (prefers-reduced-motion: reduce) {
   /* 움직임 줄이기는 화면별 규칙보다 늘 이겨야 해서, 포털 CSS 에서 여기 한 곳만 !important 를 쓴다 */

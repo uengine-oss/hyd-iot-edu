@@ -7,19 +7,11 @@
 /* ---------------- 화면 머리 아래 한 문장 · 화면 맨 아래 한 줄 ---------------- */
 .rd-foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3); margin-top: var(--s8); padding-top: var(--s4); border-top: 1px solid var(--rule); font-size: 13px; line-height: 20px; color: var(--ink-3); }
 
-/* ---------------- 조각 탭: 탭 줄 아래에서 같은 화면의 보기를 바꾼다(기준 4절) ---------------- */
-.rd-seg { display: inline-flex; flex-wrap: wrap; gap: 0; padding: 3px; margin: 0 0 var(--s6); border-radius: var(--radius-sm); background: var(--surface-soft); }
-.rd-seg button { height: 30px; padding: 0 var(--s3); border: 0; border-radius: 6px; background: none; font: inherit; font-size: 13px; color: var(--ink-2); cursor: pointer; white-space: nowrap; }
-.rd-seg button:hover { color: var(--ink); }
-.rd-seg button.on { background: var(--panel); color: var(--ink); font-weight: 600; box-shadow: var(--shadow); }
-.rd-seg button .n { margin-left: var(--s1); font-size: 12px; font-weight: 400; color: var(--ink-3); font-variant-numeric: tabular-nums; }
-
 /* ---------------- 목록 + 상세(기준 5-1): 왼쪽 목록 320px · 오른쪽 상세 ---------------- */
 .rd-split { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: var(--s6); align-items: start; }
 .rd-split > * { min-width: 0; }
 .rd-split > .rd-side { position: sticky; top: var(--s4); display: flex; flex-direction: column; gap: var(--s3); }
 .rd-side .list { max-height: calc(100vh - 240px); }
-.rd-list-label { margin: 0; font-size: 12px; line-height: 16px; font-weight: 600; color: var(--ink-3); }
 
 /* 상세 머리: 이름 + 상태 칩 하나 · 한 줄 요약 · 오른쪽에 동작 */
 .rd-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s3) var(--s4); flex-wrap: wrap; }
@@ -42,36 +34,18 @@
 
 /* 결론 문장(기준 5-3 첫째 무게): 이름표 12px + 문장 16px · 600 */
 .rd-conclusion { margin: 0 0 var(--s3); font-size: 16px; line-height: 24px; font-weight: 600; max-width: 72ch; }
-.rd-state { display: flex; align-items: flex-start; gap: var(--s2); margin: 0 0 var(--s2); max-width: 72ch; }
-.rd-state::before { content: ""; width: 8px; height: 8px; margin-top: 7px; border-radius: 50%; background: var(--ink-4); flex: none; }
-.rd-state.ok::before { background: var(--ok); }
-.rd-state.warn::before { background: var(--warn); }
-.rd-state.bad::before { background: var(--alarm); }
-.rd-state.now::before { background: var(--accent); }
-
-/* 키-값(기준 4절 .kv): 이름 칸 13px 셋째 글 · 값 칸 14px. 전역에 dl.kv 가 생기면 이 규칙은 지운다 */
-dl.kv { display: grid; grid-template-columns: minmax(6em, max-content) minmax(0, 1fr); gap: 6px var(--s6); margin: 0; font-size: 14px; line-height: 22px; }
-dl.kv > dt { color: var(--ink-3); font-size: 13px; line-height: 22px; }
-dl.kv > dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
-dl.kv > dd > p { margin: 0; max-width: 72ch; }
+.rd-conclusion.rd-state { margin-bottom: var(--s2); }      /* 상태 점이 붙은 결론 */
 
 /* 한 줄씩 놓는 글 목록(맡은 단계, 붙은 에이전트, 쓰는 곳) */
 .rd-lines { list-style: none; margin: 0; padding: 0; }
 .rd-lines > li { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); min-height: 32px; padding: var(--s1) 0; border-bottom: 1px solid var(--rule); }
 .rd-lines > li:last-child { border-bottom: 0; }
-.rd-lines > li > small, .rd-lines > li > .rd-side-note { font-size: 13px; color: var(--ink-3); flex: none; }
+.rd-lines > li > small { font-size: 13px; color: var(--ink-3); flex: none; }
 .rd-inline { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); }
 .rd-inline > input, .rd-inline > select { min-width: 200px; }
 
 /* 표(기준 4절 .tbl): 머리 바탕 없음 · 줄 아래 선만 · 숫자 열 오른쪽. 전역에 .tbl 이 생기면 이 규칙은 지운다 */
-table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 22px; }
-table.tbl th { height: 36px; padding: 0 var(--s3); text-align: left; font-size: 13px; font-weight: 600; color: var(--ink-3); background: none; border-bottom: 1px solid var(--rule); white-space: nowrap; }
-table.tbl td { padding: var(--s2) var(--s3); border-bottom: 1px solid var(--rule); vertical-align: top; }
-table.tbl tr:last-child td { border-bottom: 0; }
-table.tbl .r, table.tbl td.num, table.tbl th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-table.tbl tr.pick td { background: var(--accent-bg, var(--surface-soft)); }
-table.tbl tr.pick td:first-child { box-shadow: inset 2px 0 0 var(--accent); }
-table.tbl td small { display: block; font-size: 13px; line-height: 20px; color: var(--ink-3); }
+
 table.tbl tr[data-row-open] { cursor: pointer; }
 .rd-scroll { max-width: 100%; overflow-x: auto; }
 
@@ -151,7 +125,6 @@ table.tbl tr.cmp-changed td { background: var(--accent-bg, var(--surface-soft));
 [data-r="knowledge"]:empty { display: none; }
 
 /* ---------------- 성과 지표: 기간 고르기 · 지표 표 · 줄 아래에 열리는 계산 근거 ---------------- */
-.rd-seg.rd-seg-inline { margin: 0; }
 .rd-kpi-table td:last-child { width: 1%; white-space: nowrap; }
 .rd-kpi-table .rd-actions { flex-wrap: nowrap; justify-content: flex-end; }
 table.tbl tr.rd-row-more > td { background: var(--surface-soft); padding: var(--s3) var(--s4); }

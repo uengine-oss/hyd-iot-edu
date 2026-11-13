@@ -9,12 +9,11 @@
    승인할 때는 담당자 id 와 그 단계가 요구하는 역할이 들어가고, 서버가 담당자가 그 역할의 구성원인지 · 역할 등급이 카드 승인 역할
    이상인지 검사한다(아니면 403). 기록에는 승인한 역할이 남는다.
    공개: window.hydInbox.unread() — 상단 종(shell.js)이 읽는 안 읽은 알림 수, openNotices() — 처리 건 화면의 「알림」 접기를 펼쳐 보인다(종이 부른다),
-         me() — 담당자 행({id, name, roles}), whoFields(prefix, form, roles) · byField(prefix, form) — 승인 · 제출 폼의 역할 · 사유 칸.
+         me() — 담당자 행({id, name, roles}), byField(prefix, form) — 제출 폼에 담당자 id 를 싣는다.
          담당자를 읽고 나면 window 에 'hyd:me' 이벤트를 낸다(담당자 id 가 필요한 폼이 다시 그린다). */
 (function () {
   const X = { people: null, notes: null, unread: 0, es: null, live: 'off', err: '', loading: false, timer: null };
 
-  const roleName = id => UI.who(id);
   const me = () => (X.people || []).find(p => p.id === 'user:me') || null;      // 담당자 행이 없으면 다른 사람으로 대신하지 않는다(loadPeople 이 까닭을 보인다)
   const url = (path, params) => API.process + path + (params ? '?' + new URLSearchParams(params) : '');
 
@@ -122,17 +121,7 @@
     refresh();
   }
 
-  /* ------------------------------------------------ 승인 · 제출 폼의 역할 · 사유 칸 (instances.js 가 부른다 — 담당자를 아직 못 읽었으면 null)
-     담당자 id 는 폼 상태(form.by)에만 싣고 화면에는 보이지 않는다. 화면에 보이는 것은 승인하는 역할이다. */
-  function whoFields(prefix, form, roles, { reasonHint = UI.t('form.hint.reason') } = {}) {
-    const m = me(); if (!m) return null;
-    form.by = m.id;
-    const known = Object.fromEntries(roles || []);
-    const name = (known[form.role] && known[form.role].name) || roleName(form.role);
-    return UI.section('승인 역할 · 사유',
-      UI.readonly('승인 역할', esc(name), '이 단계를 맡는 역할입니다. 처리 기록에 이 역할로 남습니다') +
-      UI.field({ label: UI.t('form.reason'), cls: 'wide', hint: reasonHint, input: `<textarea id="${prefix}Reason" rows="2">${esc(form.reason || '')}</textarea>` }));
-  }
+  /* ------------------------------------------------ 제출 · 답변 폼의 담당자(instances.js 가 부른다 — 담당자를 아직 못 읽었으면 null) */
   // 제출 · 답변 폼: 보일 칸은 없고 담당자 id 만 폼 상태에 싣는다. 담당자가 있으면 참(빈 표식), 없으면 null
   function byField(prefix, form) {
     const m = me(); if (!m) return null;
@@ -140,7 +129,7 @@
     return '<span hidden data-by-owner></span>';
   }
 
-  window.hydInbox = { unread, me, whoFields, byField, refresh, openNotices };
+  window.hydInbox = { unread, me, byField, refresh, openNotices };
 
   async function boot() {
     render();

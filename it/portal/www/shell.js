@@ -1,4 +1,4 @@
-/* A5 (U7) 포털 셸 — 상단바(알림 종) · 해시 주소 · 새 화면 자리(mount). 메뉴 줄과 위쪽 탭 줄은 app.js 가 주 메뉴 표(index.html)로 그린다.
+/* A5 (U7) 포털 셸 — 위 막대의 알림 종 · 해시 주소 · 새 화면 자리(mount). 메뉴 줄 · 위쪽 탭 줄 · 위 막대의 위치 표시는 app.js 가 주 메뉴 표(index.html)로 그린다.
    맨 마지막에 읽힌다 — 탭 진입 표(app.js hydTabs.onShow)의 마지막 일로 새 화면 자리 · 주소를 맞춘다.
    주소(해시)를 읽고 쓰는 곳은 이 파일 하나다 — 처리 건 화면은 hydInstances.openTask · route 로만 잇는다.
    새 화면을 그리는 길도 여기 하나다(MOUNTS → mount 한 번, 다시 열 때 show). 처음 읽기에 실패한 화면은 failed() 가 참이면 다시 연 때 새로 그린다.
@@ -116,9 +116,8 @@
     const badge = document.getElementById('shellBadge'), bell = document.getElementById('shellBell');
     if (!badge || !bell) return;
     try {
-      const n = Math.max(0, Number(window.hydInbox.unread()) || 0);   // 안 읽은 알림 수(숫자)
-      badge.hidden = n === 0;
-      badge.textContent = n > 99 ? '99+' : String(n);
+      const n = Math.max(0, Number(window.hydInbox.unread()) || 0);   // 안 읽은 알림 수
+      badge.hidden = n === 0;                                         // 점만 찍는다 — 몇 건인지는 종의 이름표(aria-label · title)가 말한다
       const label = n ? UI.t('shell.bellCount', { n }) : UI.t('shell.bell');
       bell.setAttribute('aria-label', label); bell.title = label;
     } catch (e) {

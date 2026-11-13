@@ -1,17 +1,250 @@
-/* 그림 화면의 모양 — 지식 지도 · 유압 실습장(결함 시뮬레이션 · 설비 회로 · 실시간 모니터링 · 오일 분석 입력 · 업무 시스템 기록) · 홈 · 시스템 구성 · 규칙 판단.
+/* 그림 화면의 모양 — 어두운 캔버스 공통 · 지식 지도 · 흐름 그림(진행 길 · 전체 흐름 대화상자) · 홈 · 유압 실습장(결함 시뮬레이션 · 설비 회로 · 실시간 모니터링 · 오일 분석 입력 · 업무 시스템 기록) · 시스템 구성 · 규칙 판단.
    기준: 디자인기준.md 5-7 ~ 5-10 · 6절. 값은 tokens.css 의 토큰만 쓴다. 그림 자리는 홈 그림과 같은 어두운 캔버스(--cv-*)다.
-   index.html 에서 맨 뒤에 실린다 — 같은 화면을 그리던 옛 규칙(enterprise.css · main.css · styles.css · theme.css)보다 이 파일이 이긴다. */
+   그리는 코드: enterprise.js(지식 지도 · 규칙 판단 · 업무 시스템 기록) · main.js(홈 그림) · flow.js(흐름 그림) · app.js(설비 카드 · 회로 · 시스템 구성) */
 
-:root {
-  --cv-pink: #f472b6;          /* 6-3: 「내 업무 개념」 층 */
-  /* 6-3: 밝은 상세 칸에서 같은 층을 가리키는 점의 짝 색 */
-  --kg-violet: #7c3aed;
-  --kg-blue: #2563eb;
-  --kg-gray: #6b6b76;
-  --kg-red: #dc2626;
-  --kg-teal: #0d9488;
-  --kg-amber: #b45309;
-  --kg-pink: #db2777;
+/* ================================================================= 지식 지도의 상세 칸 · 이력 표 · 판단 실험(enterprise.js) */
+
+/* ---------------- 지식 지도: 상세 칸의 이어진 항목 ---------------- */
+
+/* 선: 보통 선은 흐리게, 고른 항목에 닿은 선만 밝게 */
+
+/* 항목: 어두운 상자 + 층 색 테두리. 층 색(--c)은 흰 바탕용 진한 값이라 테두리에는 밝게 섞어 쓴다.
+   글자 대비(상자 채움 위, WCAG 식): 보통 13.3 · 이어진 것 11.9 · 흐림 6.7 · 검색 9.4 · 고름 4.8(자원) ~ 7.1(전략 목표) */
+
+/* 상세 칸(밝은 틀): 종류 이름표 → 항목 이름 20px → 설명 → 키-값 → 이어진 항목을 종류별로 */
+
+.o-kind { font-size: var(--fs-cap); line-height: var(--lh-cap); font-weight: 600; color: var(--ink-3); }
+
+.rel-group { margin: 0; }
+.rel-group h4 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; margin: 0 0 var(--s1); font-size: var(--fs-cap); line-height: var(--lh-cap); font-weight: 600; color: var(--ink-3); }
+.rel-group h4 .n { font-weight: 400; font-variant-numeric: tabular-nums; }
+.rel-group .rels { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
+.rel-group .rels li { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); min-height: 32px; }
+.rel-group .rels a { color: var(--ink); text-decoration: none; }
+.rel-group .rels a:hover { text-decoration: underline; }
+.rel-note { font-size: var(--fs-sub); font-weight: 400; color: var(--ink-3); }
+pre.tpl { max-height: 320px; }
+
+/* ---------------- 이력 · 출처 표: 전역 표 모양 그대로, 칸 폭만 내용에 맞춘다 ---------------- */
+.prov { table-layout: auto; }
+.prov td { overflow-wrap: anywhere; }
+.prov code { display: inline-block; margin: 0 2px 2px 0; }
+@media (max-width: 720px) { .prov { min-width: 640px; } }
+
+/* ---------------- 판단 실험: 조건 카드 ---------------- */
+#view-decision { container-type: inline-size; }
+
+/* ================================================================= 홈 그림(main.js) */
+.m-hero {
+  border-radius: var(--radius-lg);
+  overflow: auto;
+  padding: var(--s6);
+  background: var(--cv-bg);
+  border: 1px solid var(--cv-border);
+}
+
+@media (max-width: 900px) {
+
+  
+  .m-hero {
+    padding: var(--s3);
+  }
+}
+@media (max-width: 480px) {
+
+  
+  .m-hero svg {
+    min-width: 900px;
+  }
+  
+}
+.m-hero-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  font-family: var(--font);
+}
+.m-zone {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.m-sep {
+  stroke: #2f3f55;
+  stroke-dasharray: 3 5;
+}
+.m-steel {
+  fill: var(--cv-node);
+  stroke: var(--cv-steel);
+  stroke-width: 2;
+}
+.m-steel-l {
+  stroke: var(--cv-steel);
+  stroke-width: 6;
+}
+.m-fin {
+  stroke: #6b7a8c;
+  stroke-width: 1.5;
+  fill: none;
+}
+.m-sym {
+  fill: none;
+  stroke: var(--cv-steel);
+  stroke-width: 2;
+}
+.m-lbl {
+  font-size: 12.5px;
+  fill: var(--cv-ink-2);
+}
+.m-cap {
+  font-size: 13px;
+  fill: var(--cv-steel);
+  font-weight: 600;
+}
+.m-live {
+  font-size: 12.5px;
+  fill: var(--cv-value);
+  font-variant-numeric: tabular-nums;
+}
+.m-pipe {
+  fill: none;
+  stroke: var(--cv-amber);
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.m-flow {
+  stroke-dasharray: 10 8;
+  animation: mFlow 1.1s linear infinite;
+}
+.m-flow-ret {
+  stroke: #d08a1c;
+}
+.m-wave {
+  fill: none;
+  stroke: #ffd58a;
+  stroke-width: 1.5;
+  opacity: 0.7;
+}
+#mOilBody.hot {
+  fill: #d7263d;
+  opacity: 0.7;
+  transition: fill 0.6s;
+}
+.m-fan {
+  animation: mSpin 1.6s linear infinite;
+  transform-box: view-box;
+}
+.m-sensor circle {
+  fill: var(--cv-bg);
+  stroke: var(--cv-red);
+  stroke-width: 2;
+}
+.m-sensor text {
+  font-size: 10px;
+  fill: #ffd2cc;
+  font-weight: 600;
+}
+.m-data {
+  fill: none;
+  stroke: var(--cv-blue);
+  stroke-width: 1.6;
+  stroke-dasharray: 3 6;
+  animation: mFlow 1.6s linear infinite;
+  opacity: 0.85;
+}
+.m-data-solid {
+  stroke-dasharray: none;
+  animation: none;
+  stroke-width: 2.4;
+}
+.m-bus rect {
+  fill: #1b2638;
+  stroke: var(--cv-blue);
+  stroke-width: 1.5;
+}
+.m-bus-t {
+  font-size: 13px;
+  fill: #e6eefc;
+  font-weight: 600;
+}
+.m-bus-s {
+  font-size: 10.5px;
+  fill: #9fb4d9;
+}
+.m-edge {
+  stroke: var(--cv-edge);
+  stroke-width: 1.3;
+}
+.m-edge-agent {
+  stroke: var(--cv-violet);
+  stroke-width: 1.6;
+  stroke-dasharray: 4 4;
+  animation: mFlow 2.2s linear infinite;
+}
+.m-node-t {
+  font-size: 12px;
+  fill: var(--cv-ink);
+}
+.m-halo {
+  fill: none;
+  stroke: var(--cv-violet);
+  stroke-width: 2;
+  opacity: 0.6;
+  animation: mPulse 2.4s ease-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.m-agent-t {
+  font-size: 15px;
+  font-weight: 600;
+  fill: #fff;
+}
+.m-agent-s {
+  font-size: 10.5px;
+  fill: #d9ccff;
+}
+.m-loop {
+  fill: none;
+  stroke: var(--cv-amber);
+  stroke-width: 2.4;
+  stroke-dasharray: 8 6;
+  animation: mFlow 1.4s linear infinite reverse;
+}
+.m-loop-t {
+  font-size: 12.5px;
+  fill: #ffd58a;
+  font-weight: 600;
+}
+@keyframes mFlow {
+  to {
+    stroke-dashoffset: -36;
+  }
+}
+@keyframes mSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes mPulse {
+  0% {
+    transform: scale(0.75);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.25);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .m-flow,
+  .m-data,
+  .m-edge-agent,
+  .m-loop,
+  .m-fan,
+  .m-halo {
+    animation: none;
+  }
 }
 
 /* ================================================================= 지식 지도 (5-10 · 6-3) */
@@ -151,7 +384,7 @@
 #view-scenario .page-head { margin-bottom: var(--s3); }
 #units { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--s4); align-items: start; }
 #units .unit { display: block; padding: var(--s4) var(--s6); border: 1px solid var(--rule); border-radius: var(--radius); background: var(--panel); min-width: 0; }
-.lab-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); }
+.lab-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s2); }
 .lab-head h2 { margin: 0; font-size: var(--fs-h3); line-height: var(--lh-h3); font-weight: 600; }
 .lab-state { display: inline-flex; flex: none; }
 .lab-temp { display: flex; align-items: baseline; gap: var(--s2); margin: var(--s3) 0 var(--s2); }
@@ -222,6 +455,8 @@
 .hc-foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s1) var(--s4); min-height: 22px; margin: 0; font-size: var(--fs-sub); line-height: var(--lh-sub); color: var(--ink-3); }
 .hc-foot b { font-weight: 600; color: var(--ink); }
 .hc-foot span:empty { display: none; }
+.hc-foot .f-phase, .hc-foot .f-inc { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }      /* 긴 경보 · 사건 글은 한 줄에서 줄인다(전체는 title) */
+.hc-foot .f-phase { flex-shrink: 0; }
 .hc-foot .biz-alert { margin-left: auto; }
 .hc-foot .biz-alert a.chip { text-decoration: none; }
 #btnAllInc[hidden] { display: none; }
@@ -368,3 +603,69 @@
 .dc-evidence .unknown { color: var(--ink-3); }
 
 #units .lab-kv dd.mode { font-size: var(--fs-body); color: var(--ink); }
+
+/* ---------------- 설비 회로: 사건 상세의 「처리 건에서 본다」 한 줄 ---------------- */
+.see-instance { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s2) var(--s4); padding: var(--s3) 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); margin: var(--s3) 0; }
+.see-instance p { margin: 0; color: var(--ink-2); }
+.see-instance .form-actions { margin: 0; }
+
+/* ---------------- 업무 시스템 기록: 표 아래 거래 접기 ---------------- */
+#txFold { margin-top: var(--s4); }
+#decOrphans[hidden] { display: none; }
+
+/* ---------------- 진행 길(6-1 · 6-2): 어두운 캔버스 위 한 줄. 줄이지 않고 옆으로 민다 ---------------- */
+.path-canvas .cv-scroll { overflow-x: auto; overflow-y: hidden; cursor: grab; }
+.path-canvas .cv-scroll.dragging, .flow-dialog .fd-stage.dragging { cursor: grabbing; user-select: none; }
+.path-canvas .cv-scroll svg { max-width: none; }
+.path-canvas .cv-tools button[aria-pressed="true"] { color: var(--cv-ink); background: var(--cv-node-now); }
+.cv-legend .lg-done { color: var(--cv-green); }
+.cv-legend .lg-now { color: var(--cv-blue); }
+.cv-legend .lg-fail { color: var(--cv-red); }
+.cv-legend .lg-todo i { background: none; border: 1px dashed currentColor; }
+.cv-edge { fill: none; stroke: var(--cv-edge); stroke-width: 1.4; }
+.cv-edge.done { stroke: var(--cv-green); stroke-width: 1.6; opacity: .75; }
+.cv-edge.todo { stroke-dasharray: 4 5; }
+.cv-arr { fill: var(--cv-edge); }
+.cv-arr.done { fill: var(--cv-green); }
+.cv-glow-0 { stop-color: var(--cv-blue); stop-opacity: .32; }
+.cv-glow-1 { stop-color: var(--cv-blue); stop-opacity: 0; }
+.cv-node rect { fill: var(--cv-node); stroke: var(--cv-edge); stroke-width: 1.4; }
+.cv-node text { fill: var(--cv-ink); font-size: 13px; }
+.cv-node text.who { fill: var(--cv-ink-2); font-size: 11px; }
+.cv-node.done rect { stroke: var(--cv-green); }
+.cv-node.now rect { fill: var(--cv-node-now); stroke: var(--cv-blue); stroke-width: 2; }
+.cv-node.now text.t { font-weight: 600; fill: var(--cv-hi); }
+.cv-node.now.hold rect { stroke: var(--cv-amber); }
+.cv-node.fail rect { stroke: var(--cv-red); stroke-width: 2; }
+.cv-node.todo rect { stroke-dasharray: 4 4; }
+.cv-node.todo text { fill: var(--cv-ink-2); }
+.cv-node .cv-tick { fill: none; stroke: var(--cv-green); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.cv-node.fail .cv-tick { stroke: var(--cv-red); }
+.cv-node[data-path-node] { cursor: pointer; }
+.cv-node[data-path-node]:hover > rect:not(.cv-halo), .cv-node.picked > rect:not(.cv-halo) { stroke-width: 2.4; }
+.cv-node:focus-visible { outline: 2px solid var(--cv-blue); outline-offset: 2px; }
+.cv-ev { fill: var(--cv-node); stroke: var(--cv-edge); stroke-width: 1.6; }
+.cv-ev.end { stroke-width: 3; }
+.cv-ev.done { stroke: var(--cv-green); }
+.cv-cap { fill: var(--cv-ink-2); font-size: 11px; }
+.cv-node.now rect.cv-halo { fill: none; stroke: var(--cv-blue); stroke-width: 2; opacity: .55; transform-box: fill-box; transform-origin: center; animation: casePulse 2.4s ease-out infinite; }
+.cv-node.now.hold rect.cv-halo { stroke: var(--cv-amber); }
+@keyframes casePulse { 0% { transform: scale(.96); opacity: .7; } 100% { transform: scale(1.12, 1.35); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .cv-node.now rect.cv-halo { animation: none; } }
+
+/* 전체 흐름 큰 판(flow.js openFull) — 다른 화면의 [전체 흐름 보기]도 이 판을 쓴다 */
+.flow-dialog { width: min(1400px, calc(100vw - var(--s12))); height: min(860px, calc(100dvh - var(--s12))); max-width: none; max-height: none; padding: 0; overflow: hidden; border: 1px solid var(--rule); border-radius: var(--radius); background: var(--panel); color: var(--ink); box-shadow: var(--shadow-md); }
+.flow-dialog[open] { display: flex; flex-direction: column; }
+.flow-dialog::backdrop { background: var(--scrim); }
+.fd-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s4); padding: var(--s3) var(--s6); border-bottom: 1px solid var(--rule); flex-wrap: wrap; }
+.fd-title h3 { font-size: var(--fs-h3); line-height: var(--lh-h3); }
+.fd-title p { margin: 0; font-size: var(--fs-sub); line-height: var(--lh-sub); color: var(--ink-3); }
+.fd-tools { display: inline-flex; align-items: center; gap: var(--s3); }
+.fd-zoom { min-width: var(--s12); text-align: right; font-size: var(--fs-sub); color: var(--ink-3); }
+.fd-legend { display: flex; align-items: center; justify-content: space-between; gap: var(--s4); padding: var(--s2) var(--s6); font-size: var(--fs-sub); }
+.fd-legend .flow-cap, .fd-legend [data-flow-full] { display: none; }
+.flow-dialog .fd-stage { flex: 1; min-height: 0; overflow: auto; border: 0; border-radius: 0; cursor: grab; }
+.flow-dialog .fd-stage .empty { padding: var(--s6); color: var(--cv-ink); }
+
+/* 규칙 판단: 조치 후보의 절차 목록(번호가 칸 안에 들어오게) */
+.dc-steps { margin: 0; padding-left: var(--s4); }

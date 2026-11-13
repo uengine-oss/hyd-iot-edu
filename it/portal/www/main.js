@@ -1,6 +1,6 @@
 /* 홈: 이 시스템의 이야기를 그림 한 장으로 — 유압 파워유닛(OT)의 값이 MQTT · DMZ · Kafka · 탐지를 지나 지식 지도와 AI 에이전트(IT)에 닿고,
    사람이 승인한 조치는 명령 관문(DMZ)을 거쳐 PLC 로 내려간다(PLC 가 받을지 정한다). 실시간 값은 app.js 가 읽은 state.plant 를 쓴다.
-   그림 아래: 지금 상태(큰 숫자 셋) · 처음이라면 이 순서로(네 걸음). 모양은 main.css(그림)와 canvas.css(.hm-*). 디자인 기준 5-9. */
+   그림 아래: 지금 상태(큰 숫자 셋) · 처음이라면 이 순서로(네 걸음). 모양은 canvas.css(그림 .m-* 와 아래쪽 .hm-*). 디자인 기준 5-9. */
 (function () {
   const G = { asset: '#9aa7b5', obs: '#9aa7b5', failure: '#f07167', action: '#f5a623', org: '#b794f6', sys: '#2dd4bf', decision: '#7aa2ff', agent: '#ffffff' };
   // 지식 지도의 항목(실제 온톨로지에서 읽기 좋게 고른 일부 — it/neo4j/v2/instances.cypher 구조판 + 수업 매뉴얼 HM-8 의 절차)
@@ -173,7 +173,7 @@
       [UI.t('main.assets'), `${Object.keys(u).length}기`, alarms ? `${UI.t('main.hot')} ${alarms}기` : UI.t('main.cool'), !!alarms],
       // 사건 목록을 못 읽었으면 「0 · 없음」이 아니다(app.js 의 사건 목록 사유)
       state.incidentError ? [UI.t('main.openCases'), '읽기 실패', state.incidentError, true]
-        : [UI.t('main.openCases'), $('#openCount').textContent === '–' ? '–' : String(open), open ? `「${UI.t('nav.menu.instances')}」에서 처리합니다` : UI.t('main.none'), false],
+        : [UI.t('main.openCases'), state.incidentsRead ? String(open) : '–', open ? `「${UI.t('nav.menu.instances')}」에서 처리합니다` : UI.t('main.none'), false],
       [UI.t('main.knowledge'), graphCount ? n(graphCount.n) : '–', graphCount ? `${UI.t('main.links')} ${n(graphCount.e)}` : graphError ? '지식 수를 읽지 못했습니다. 30초 뒤 다시 읽습니다.' : UI.t('loading'), !!graphError, graphError],      // 서버 사유는 길어 줄 높이를 흔든다 — title 로
     ];
     const sig = JSON.stringify(rows);

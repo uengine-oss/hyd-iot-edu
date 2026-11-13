@@ -1,5 +1,16 @@
 /* 토큰 — 디자인 기준 2절의 값. 색 · 글자 · 간격 · 모양의 숫자는 이 파일에만 둔다.
-   밝은 틀(글 · 표)은 무채색 한 계열과 강조색 하나, 그림 캔버스는 --cv-* 만 쓴다. */
+   밝은 틀(글 · 표)은 무채색 한 계열과 강조색 하나, 그림 캔버스는 --cv-* 만 쓴다.
+
+   포털의 CSS 파일(index.html 이 싣는 차례 — 뒤 파일이 앞 파일을 이긴다)과 책임:
+     tokens.css      값(토큰)
+     styles.css      바탕 — 초기화 · 글자 · 링크 · 표와 입력의 기본
+     components.css  부품 — 단추 · 입력과 폼 · 표 · 키-값 · 카드 · 목록 · 칩 · 접기 · 탭과 조각 탭 · 빈 상태
+     shell.css       틀 — 메뉴 줄 · 위 막대 · 본문 머리와 탭 줄 · 알림 · 확인 대화상자 · 불러오는 중 / 오류 블록
+     screens.css     화면별 — 조치 방법 · 문서 등록 · 단계 상세 · 도구 연결 · 성과 지표 · 흐름 · 시험 비교 · 실행 기록(질문하기)
+     reading.css     읽는 화면의 짜임 — 목록과 상세 · 입력과 결과 · 절 · 상태 줄(rd-*)
+     canvas.css      그림 — 어두운 캔버스 공통 · 지식 지도 · 흐름 그림(진행 길 · 전체 흐름) · 홈 · 유압 실습장 · 시스템 구성 · 규칙 판단
+     case.css        처리 건 — 목록 · 한 건(내가 할 일 · 단계 기록 · AI 단계) · 자세한 기록
+     live.css        실시간 과정 표시 */
 :root {
   /* 글자 (2-1): 크기 다섯 단계 + 큰 숫자, 굵기는 400 · 600 둘 */
   --font: "Pretendard", "Pretendard Variable", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -21,7 +32,6 @@
   --s12: 48px;
   --page-pad: 32px;
   --panel-pad: 24px;
-  --row-pad: 16px;
   --card-pad: 16px;
 
   /* 밝은 틀의 색 (2-3) */
@@ -87,7 +97,7 @@
   --top-h: 48px;
   --page-max: 1280px;
 
-  /* 그림 캔버스 (2-6 · 6절) — 홈 그림(main.css)의 실제 값 */
+  /* 그림 캔버스 (2-6 · 6절) — 홈 그림의 실제 값 */
   --cv-bg: #16202d;
   --cv-grid: #27354a;
   --cv-border: #29394c;
@@ -105,7 +115,16 @@
   --cv-red: #f07167;
   --cv-violet: #b794f6;
   --cv-teal: #2dd4bf;
+  --cv-pink: #f472b6;          /* 지식 지도의 「내 업무 개념」 층 */
   --cv-tool-bg: rgba(27, 36, 48, .9);
+  /* 밝은 상세 칸에서 지식 지도의 층을 가리키는 점의 짝 색 (2-6 · 6-3) */
+  --kg-violet: #7c3aed;
+  --kg-blue: #2563eb;
+  --kg-gray: #6b6b76;
+  --kg-red: #dc2626;
+  --kg-teal: #0d9488;
+  --kg-amber: #b45309;
+  --kg-pink: #db2777;
 }
 @media (max-width: 1100px) {
   :root { --page-pad: 24px; }

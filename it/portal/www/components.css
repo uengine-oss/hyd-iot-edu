@@ -5,8 +5,7 @@
 .prose { max-width: var(--prose-max); }
 h2.sec { margin: var(--s6) 0 var(--s3); display: flex; align-items: center; gap: var(--s2); }
 h2.sec small { margin: 0; }
-.sec-head { display: flex; justify-content: space-between; align-items: center; gap: var(--s3); flex-wrap: wrap; margin: var(--s6) 0 var(--s3); }
-.sec-head h2 { margin: 0; }
+
 .sec-row { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); margin: var(--s6) 0 var(--s3); }
 .sec-row h3 { font-size: var(--fs-h3); line-height: var(--lh-h3); }
 /* 묶음 이름표: 12px · 600 · 셋째 글 */
@@ -53,12 +52,15 @@ button:disabled, .btn:disabled { opacity: .5; }
 .tabs .tab:hover { color: var(--ink); }
 .tabs .tab.on { color: var(--ink); font-weight: 600; box-shadow: inset 0 -2px 0 var(--ink); }
 .tabs .tab .chip, .tabs .tab .n { height: auto; padding: 0; background: none; border-radius: 0; font-size: var(--fs-cap); font-weight: 400; color: var(--ink-3); }
-.tab-pane { display: none; }
-.tab-pane.on { display: block; }
+
 /* 조각 탭: 탭 줄 아래에서 같은 대상의 보기를 바꿀 때만 */
-.seg { display: inline-flex; padding: 3px; border-radius: var(--radius-sm); background: var(--surface-soft); }
-.seg > button, .seg > .seg-item { height: 30px; padding: 0 var(--s3); border: 0; border-radius: var(--radius-xs); background: none; font-size: var(--fs-sub); color: var(--ink-3); }
-.seg > button.on, .seg > .seg-item.on, .seg > button[aria-pressed="true"] { background: var(--paper); color: var(--ink); box-shadow: var(--shadow); }
+.seg, .rd-seg { display: inline-flex; flex-wrap: wrap; padding: 3px; border-radius: var(--radius-sm); background: var(--surface-soft); }
+.seg > button, .rd-seg button { height: 30px; padding: 0 var(--s3); border: 0; border-radius: var(--radius-xs); background: none; font: inherit; font-size: var(--fs-sub); color: var(--ink-3); cursor: pointer; white-space: nowrap; }
+.seg > button:hover, .rd-seg button:hover { color: var(--ink); }
+.seg > button.on, .seg > button[aria-pressed="true"], .rd-seg button.on { background: var(--paper); color: var(--ink); box-shadow: var(--shadow); }
+.seg > button .n, .rd-seg button .n { margin-left: var(--s1); font-size: var(--fs-cap); font-weight: 400; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.rd-seg { margin: 0 0 var(--s6); }                 /* 화면 머리 아래에 혼자 놓이는 조각 탭 */
+.rd-seg.rd-seg-inline { margin: 0; }
 
 /* ---------------- 칩: 22px 알약 · 12px 굵게 · 색 다섯 ---------------- */
 .chip {
@@ -101,8 +103,7 @@ span.soft { background: var(--chip-warning-bg); color: var(--chip-warning-fg); }
 .card-sub { margin: 0; font-size: var(--fs-sub); line-height: var(--lh-sub); color: var(--ink-3); }
 .card-body > :first-child { margin-top: 0; }
 .card.sel { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
-.card.clickable { cursor: pointer; }
-.card.clickable:hover { border-color: var(--rule-strong); }
+
 .cards { display: grid; gap: var(--s4); align-items: stretch; }
 .cards.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .cards.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -110,15 +111,6 @@ span.soft { background: var(--chip-warning-bg); color: var(--chip-warning-fg); }
 .upload > p { max-width: 72ch; }
 .admin-panel { margin-bottom: var(--s4); }
 .table-scroll { max-width: 100%; overflow-x: auto; }
-
-/* 요약 숫자 줄: 테두리 없는 이름 + 숫자(카드로 싸지 않는다) */
-.stat-cards { display: flex; flex-wrap: wrap; gap: var(--s4) var(--s12); margin-bottom: var(--s6); }
-.stat-cards .card { gap: 0; padding: 0; border: 0; border-radius: 0; background: none; }
-.stat-cards .card span { font-size: var(--fs-sub); line-height: var(--lh-sub); color: var(--ink-3); }
-.stat-cards .card b { font-size: var(--fs-h1); line-height: var(--lh-h1); font-weight: 600; font-variant-numeric: tabular-nums; }
-.stat-cards .card small { font-size: var(--fs-sub); color: var(--ink-3); }
-.stat-cards .card.todo b { color: var(--accent); }
-.stat-cards .card.hot b { color: var(--warn); }
 
 /* ---------------- 목록: 목록 전체가 테두리 하나, 줄 사이는 1px 선 ---------------- */
 .list { display: flex; flex-direction: column; max-height: 70vh; overflow: auto; border: 1px solid var(--rule); border-radius: var(--radius); background: var(--panel); }
@@ -132,33 +124,21 @@ span.soft { background: var(--chip-warning-bg); color: var(--chip-warning-fg); }
 .list .item .row { display: flex; justify-content: space-between; align-items: center; gap: var(--s2); }
 .list .item .row strong { display: inline; }
 .list .item .sub, .list .item .d, .list .item > span, .list .item > .muted { display: block; margin-top: 2px; font-size: var(--fs-sub); line-height: var(--lh-sub); color: var(--ink-3); }
-/* 두 열로 놓는 줄 묶음(내가 할 일): 줄마다 떨어져 있으므로 줄이 테두리를 갖는다 */
-.todo-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s3); max-height: none; overflow: visible; border: 0; background: none; }
-.todo-grid .item { border: 1px solid var(--rule); border-radius: var(--radius); }
-.todo-grid .item:last-child { border-bottom: 1px solid var(--rule); }
-.todo-grid .todo-more { grid-column: 1 / -1; }
-@media (max-width: 900px) { .todo-grid { grid-template-columns: 1fr; } }
 
 /* ---------------- 키-값: 이름 13px 셋째 글 · 값 14px, 칸 사이 24px · 줄 사이 6px ---------------- */
-dl.kv, .mcp-kv { display: grid; grid-template-columns: minmax(6em, max-content) minmax(0, 1fr); gap: 6px var(--s6); margin: 0; }
-.meta-list, .cmp-dl { display: grid; gap: 6px var(--s6); margin: 0; }
+dl.kv { display: grid; grid-template-columns: minmax(6em, max-content) minmax(0, 1fr); gap: 6px var(--s6); margin: 0; }
+.meta-list { display: grid; gap: 6px var(--s6); margin: 0; }
 .meta-list { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
-.meta-list > div, .cmp-dl > div, .hopt .fold-body dl > div { display: grid; grid-template-columns: 7em minmax(0, 1fr); gap: var(--s4); }
-dl.kv dt, .mcp-kv dt, .meta-list dt, .cmp-dl dt, .cr-kv dt, .hopt .fold-body dt { font-size: var(--fs-sub); line-height: var(--lh-body); color: var(--ink-3); }
-dl.kv dd, .mcp-kv dd, .meta-list dd, .cmp-dl dd, .cr-kv dd, .hopt .fold-body dd { margin: 0; min-width: 0; color: var(--ink); overflow-wrap: anywhere; }
-/* 이름 : 값을 표로 그린 것(지식 지도 상세 칸 · 조치 방법의 연결된 지식)도 같은 값 */
-.kvt { margin-top: var(--s2); }
-.kvt th, .kvt td { height: auto; padding: 3px 0; border-bottom: 0; vertical-align: top; }
-.kvt th { width: 9em; padding-right: var(--s6); font-weight: 400; white-space: normal; overflow-wrap: anywhere; line-height: var(--lh-body); }
-.kvt td { overflow-wrap: anywhere; }
+.meta-list > div, .hopt .fold-body dl > div { display: grid; grid-template-columns: 7em minmax(0, 1fr); gap: var(--s4); }
+dl.kv dt, .meta-list dt, .cr-kv dt, .hopt .fold-body dt { font-size: var(--fs-sub); line-height: var(--lh-body); color: var(--ink-3); }
+dl.kv dd, .meta-list dd, .cr-kv dd, .hopt .fold-body dd { margin: 0; min-width: 0; color: var(--ink); overflow-wrap: anywhere; }
 
 /* ---------------- 폼: 이름표는 입력 위 13px 굵게, 줄 사이 16px, 절 사이 24px 과 1px 선 ---------------- */
 .form { display: flex; flex-direction: column; gap: var(--s6); }
-.inline-form { display: flex; flex-direction: column; gap: var(--s4); }
+
 .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: var(--s4); align-items: start; }
 .form-grid .field.wide, .form-grid .wide { grid-column: 1 / -1; }
-.form-grid .wide-2 { grid-column: span 2; }
-@media (max-width: 640px) { .form-grid .wide-2 { grid-column: 1 / -1; } }
+
 .form-section { border-top: 1px solid var(--rule); padding-top: var(--s6); }
 .form-section:first-child { border-top: 0; padding-top: 0; }
 .form-section h4 { margin: 0 0 var(--s3); font-size: var(--fs-cap); line-height: var(--lh-cap); font-weight: 600; color: var(--ink-3); }
@@ -216,21 +196,6 @@ details.fold > .fold-body, .fold-body { padding: var(--s2) 0 var(--s3); }
 .detail-head .sub { font-size: var(--fs-sub); line-height: var(--lh-sub); color: var(--ink-3); }
 .detail-head .sub .mono { color: var(--ink-3); }
 
-/* ---------------- 시간줄: 번호 자리의 점을 1px 선이 잇는다. 줄마다 카드를 그리지 않는다 ---------------- */
-.timeline { display: flex; flex-direction: column; }
-.timeline .tl { display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 0 var(--s3); }
-.timeline .tl .dot { position: relative; width: auto; height: auto; margin: 0; border-radius: 0; background: none; }
-.timeline .tl .dot::before { content: ""; position: absolute; left: 3px; top: 7px; width: 10px; height: 10px; border-radius: 50%; background: var(--paper); box-shadow: inset 0 0 0 1.5px var(--ink-4); }
-.timeline .tl .dot::after { content: ""; position: absolute; left: 7.5px; top: 20px; bottom: -4px; width: 1px; background: var(--rule); }
-.timeline .tl:last-child .dot::after { display: none; }
-.timeline .tl.done .dot::before { background: var(--ok); box-shadow: none; }
-.timeline .tl.current .dot::before { background: var(--accent); box-shadow: none; }
-.timeline .tl.fail .dot::before { background: var(--alarm); box-shadow: none; }
-.timeline .tl .card { gap: var(--s1); margin: 0; padding: 0 0 var(--s4); border: 0; border-radius: 0; background: none; }
-.timeline .tl .card .card-title h3 { font-size: var(--fs-body); line-height: var(--lh-body); }
-.timeline .tl.skipped .card { color: var(--ink-3); }
-.timeline .tl .meta { display: flex; gap: var(--s3); flex-wrap: wrap; font-size: var(--fs-sub); color: var(--ink-3); }
-
 /* ---------------- 그림 캔버스 공통(6-1): 어두운 바탕 · 24px 점 격자 · 범례와 도구는 캔버스 안 ---------------- */
 .canvas { position: relative; overflow: hidden; background-color: var(--cv-bg); background-image: radial-gradient(circle, var(--cv-grid) 1px, transparent 1.2px); background-size: 24px 24px; border: 1px solid var(--cv-border); border-radius: var(--radius-lg); color: var(--cv-ink); }
 .canvas svg { display: block; width: 100%; height: auto; font-family: var(--font); }
@@ -249,7 +214,7 @@ details.fold > .fold-body, .fold-body { padding: var(--s2) 0 var(--s3); }
 .flow-cap { display: flex; justify-content: space-between; align-items: center; gap: var(--s2) var(--s4); flex-wrap: wrap; margin-bottom: var(--s2); font-size: var(--fs-sub); color: var(--ink-3); }
 .flow-scroll { overflow-x: auto; padding: var(--s3); background-color: var(--cv-bg); background-image: radial-gradient(circle, var(--cv-grid) 1px, transparent 1.2px); background-size: 24px 24px; border: 1px solid var(--cv-border); border-radius: var(--radius-lg); }
 .flow-scroll svg { display: block; width: 100%; min-width: 980px; height: auto; font-family: var(--font); }
-.flow-scroll.fit svg { min-width: 0; }
+
 .flow-scroll.vert { overflow-x: hidden; }
 .flow-scroll.vert svg { min-width: 0; width: 100%; margin: 0 auto; }
 .f-lane { fill: none; stroke: var(--cv-border); }
@@ -275,10 +240,7 @@ details.fold > .fold-body, .fold-body { padding: var(--s2) 0 var(--s3); }
 .f-timer circle { fill: var(--cv-node); stroke: var(--cv-edge); stroke-width: 1.4; }
 .f-timer.done circle { stroke: var(--cv-green); }
 .f-timer path { fill: none; stroke: var(--cv-ink-2); stroke-width: 1.2; }
-/* 처리 건의 흐름 그림: 상자를 누르면 그 단계의 상세가 열린다(taskDetail.js) */
-#instDetail .f-node[data-node] { cursor: pointer; }
-#instDetail .f-node[data-node]:hover rect { stroke-width: 2.4; }
-#instDetail .f-node.picked rect { stroke: var(--cv-hi); stroke-width: 2.4; }
+
 /* 범례는 캔버스 위 한 줄: 캔버스의 상자와 같은 채움 · 테두리 색 */
 .f-legend { display: inline-flex; gap: var(--s3); flex-wrap: wrap; font-size: var(--fs-cap); color: var(--ink-3); }
 .f-legend > span { display: inline-flex; align-items: center; gap: 6px; }
@@ -331,14 +293,23 @@ div.hopt { cursor: default; }
 .board td { overflow-wrap: anywhere; }
 .board td:first-child { min-width: 112px; }
 
-/* ---------------- 홈: 다음에 할 일 ---------------- */
-.m-go { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s4); }
-.m-go .card { cursor: pointer; text-align: left; font: inherit; color: inherit; }
-.m-go .card:hover { border-color: var(--rule-strong); background: var(--rail-bg); }
-.m-go .card .card-sub { color: var(--ink-3); }
-.m-go .card .go { margin-top: auto; font-size: var(--fs-sub); font-weight: 600; color: var(--ink); }
-@media (max-width: 900px) { .m-go { grid-template-columns: 1fr; } }
-
 /* ---------------- 데이터 원천 (fabric.js) ---------------- */
 .fab-body, #fabResult { display: flex; flex-direction: column; gap: var(--s4); }
 .fab-body h4 { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); margin: var(--s4) 0 var(--s2); font-size: var(--fs-body); line-height: var(--lh-body); }
+
+/* ---------------- 표 칸의 둘째 줄(탈락 · 감점 까닭 등): 13px 셋째 글 ---------------- */
+.tbl td small { display: block; font-size: var(--fs-sub); line-height: var(--lh-sub); color: var(--ink-3); }
+
+/* ---------------- 목록 아래의 [더 보기]: 목록 폭을 다 쓴다(ui.js moreButton) ---------------- */
+.btn.more { width: 100%; margin-top: var(--s2); }
+
+/* ---------------- 상태 한 줄: 앞에 8px 점 + 글(색은 상태에만) ---------------- */
+.rd-state { display: flex; align-items: flex-start; gap: var(--s2); margin: 0 0 var(--s2); max-width: 72ch; }
+.rd-state::before { content: ""; width: 8px; height: 8px; margin-top: 7px; border-radius: 50%; background: var(--ink-4); flex: none; }
+.rd-state.ok::before { background: var(--ok); }
+.rd-state.warn::before { background: var(--warn); }
+.rd-state.bad::before { background: var(--alarm); }
+.rd-state.now::before { background: var(--accent); }
+
+/* ---------------- 화면에는 없고 낭독기만 읽는 글 ---------------- */
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }

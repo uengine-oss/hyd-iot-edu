@@ -52,14 +52,14 @@ const state = { tab: 'main', plant: null, det: null, detError: '', incidents: []
 const tabHooks = [];
 window.hydTabs = { onShow(fn) { tabHooks.push(fn); } };
 /* 메뉴 표: index.html 의 주 메뉴 한 곳(button[data-menu][data-tabs])을 읽는다. 메뉴 하나에 화면이 하나 이상 딸리고, 화면이 둘 이상이면 본문 위 탭 줄로 오간다.
-   메뉴 줄의 고른 표시 · 탭 줄 · 이전/다음 순서 · 머리줄 위치 표시가 모두 이 표로 그려진다. 화면 이름(탭 이름 = 화면 제목)은 nav.<화면>, 메뉴 이름은 nav.menu.<메뉴>(ui.js).
+   메뉴 줄의 고른 표시 · 탭 줄 · 위 막대의 위치 표시가 모두 이 표로 그려진다. 화면 이름(탭 이름 = 화면 제목)은 nav.<화면>, 메뉴 이름은 nav.menu.<메뉴>(ui.js).
    화면은 selectTab('<화면>') · 주소 #/<화면> · [data-go-tab="<화면>"] 어느 길로 열어도 그 화면이 든 메뉴와 탭이 고른 상태가 된다. */
 const MENU = [...document.querySelectorAll('.rail nav button[data-menu]')].map(button => {
   const noteKey = `nav.menu.${button.dataset.menu}.note`;
   return { id: button.dataset.menu, name: UI.t('nav.menu.' + button.dataset.menu), tabs: button.dataset.tabs.split(/\s+/).filter(Boolean), button,
     note: UI.t(noteKey) === noteKey ? '' : UI.t(noteKey) };
 });
-const SCREENS = MENU.flatMap(m => m.tabs);                    // 이전 · 다음 단추가 도는 차례
+const SCREENS = MENU.flatMap(m => m.tabs);                    // 모든 화면(메뉴 표의 차례)
 const tabName = tab => UI.t('nav.' + tab);
 const menuOf = tab => MENU.find(m => m.tabs.includes(tab)) || null;
 window.hydMenu = { list: MENU, screens: SCREENS, of: menuOf, name: tabName };
@@ -98,7 +98,8 @@ function selectTab(name) {
 document.querySelectorAll('[data-term]').forEach(n => { const t = UI.t(n.dataset.term); if (t !== n.dataset.term) n.textContent = t; });
 // 메뉴 줄 단추는 그 메뉴의 첫 화면을 연다. 그 메뉴의 다른 화면은 탭 줄 단추(button[data-tab])로 연다
 MENU.forEach(m => {
-  m.button.innerHTML = UI.icon(m.button.dataset.icon) + `<span>${esc(m.name)}</span>`;
+  // 「처리 건」 곁의 건수 점(내 차례인 처리 건 수)은 refreshSlow 가 채운다 — 비어 있으면 CSS 가 그리지 않는다
+  m.button.innerHTML = UI.icon(m.button.dataset.icon) + `<span>${esc(m.name)}</span>` + (m.id === 'instances' ? '<span class="nav-count num" id="navTodo"></span>' : '');
   m.button.addEventListener('click', () => { selectTab(m.tabs[0]); $('#content').focus({ preventScroll: true }); });
 });
 $('#subTabs').addEventListener('click', e => { const b = e.target.closest('button[data-tab]'); if (b) selectTab(b.dataset.tab); });
@@ -111,20 +112,11 @@ function setMenu(open) {
   $('#navigation').inert = matchMedia('(max-width:720px)').matches && !open;
 }
 function updateNavigation(name) {
-  const index = SCREENS.indexOf(name), menu = menuOf(name);
-  // 머리줄 위치: 「메뉴 › 화면」. 화면이 하나뿐인 메뉴는 이름이 같으므로 화면 이름만 보인다
+  const menu = menuOf(name);
+  // 위 막대의 위치: 「메뉴 / 화면」. 화면이 하나뿐인 메뉴는 이름이 같으므로 화면 이름만 보인다
   const group = $('#pageGroup'); group.hidden = menu.tabs.length < 2; group.textContent = menu.name;
   $('#pageLocation').textContent = tabName(name);
   document.title = `${tabName(name)} · HYD Lab`;
-  const prev = SCREENS[index - 1], next = SCREENS[index + 1];
-  for (const [id, target, direction] of [['pagePrev', prev, '이전'], ['pageNext', next, '다음']]) {
-    const button = $('#' + id); if (!button) continue;
-    button.disabled = !target;
-    button.dataset.target = target || '';
-    button.innerHTML = `<span>${direction}${direction === '다음' ? ' →' : ''}</span><b>${esc(target ? tabName(target) : (direction === '이전' ? '첫 화면' : '마지막 화면'))}</b>`;
-    button.setAttribute('aria-label', `${direction} 화면: ${target ? tabName(target) : '없음'}`);
-  }
-  const count = $('#pagePosition'); if (count) count.textContent = `${index + 1} / ${SCREENS.length}`;
   setMenu(false);
 }
 $('#menuToggle').addEventListener('click', () => {
@@ -141,9 +133,6 @@ document.addEventListener('keydown', e => {
   }
 });
 matchMedia('(max-width:720px)').addEventListener('change', () => setMenu(false));
-document.querySelectorAll('#pagePrev,#pageNext').forEach(b => b.addEventListener('click', () => {
-  if (b.dataset.target) { selectTab(b.dataset.target); $('#content').focus({ preventScroll: true }); }
-}));
 selectTab('main');
 
 /* ---------------- 시스템 구성: layer stack + health ---------------- */
@@ -208,7 +197,10 @@ async function pollHealth() {
     // F10 · A147: optional tools are not counted — off is their normal state, not a failure
     const all = LAYERS.flatMap(L => L.comps).filter(c => c.health && !c.optional);
     const down = all.filter(c => healthState[c.health] === 'down');
-    dots.innerHTML = `<span title="서비스 응답 확인입니다. 전체 파이프라인의 성공을 뜻하지 않습니다."><i class="dot ${down.length ? 'down' : 'up'}"></i>${esc(UI.t('header.services'))} ${all.length - down.length}/${all.length}${down.length ? ` — ${esc(UI.t('header.noResponse'))}: ` + esc(down.map(c => c.name.split(' ')[0]).join(', ')) : ''}</span>`;
+    // 메뉴 줄 맨 아래 한 줄: 「서비스 14/14 정상」 또는 「서비스 11/14 — 3개 응답 없음」. 어느 서비스인지는 title 과 시스템 구성 화면(누르면 열린다)이 말한다
+    dots.innerHTML = `<i class="dot ${down.length ? 'down' : 'up'}"></i>${esc(UI.t('header.services'))} ${all.length - down.length}/${all.length}${down.length ? ` — ${down.length}개 ${esc(UI.t('header.noResponse'))}` : ' 정상'}`;
+    $('#railStatus').classList.toggle('down', down.length > 0);
+    $('#railStatus').title = (down.length ? `${UI.t('header.noResponse')}: ${down.map(c => c.name.split(' ')[0]).join(', ')}. ` : '') + '서비스 응답 확인입니다. 전체 파이프라인의 성공을 뜻하지 않습니다. 누르면 시스템 구성을 엽니다.';
   } finally { pollHealth.busy = false; }
 }
 
@@ -665,8 +657,8 @@ async function refreshFast() {
     if (state.plant) {
       const st = Math.floor(state.plant.sim_t);
       const simText = `${st >= 3600 ? Math.floor(st / 3600) + '시간 ' : ''}${Math.floor(st % 3600 / 60)}분 ${st % 60}초`;
-      $('#simT').textContent = simText; $('#labSimT').textContent = simText;      // 위 막대의 펼침과 결함 시뮬레이션 화면 머리
-      $('#scale').textContent = state.plant.time_scale;
+      $('#labSimT').textContent = simText;      // 결함 시뮬레이션 화면 머리
+      $('#scale').textContent = state.plant.time_scale; $('#railScale').hidden = false;      // 메뉴 줄 맨 아래 「· 20배속」
       $('#scaleNow').textContent = state.plant.time_scale;
       // 수업은 20배 고정이다(설비 · 감지 · 처리 · 에이전트가 같은 배율로 돈다). 다르면 그 사실을 글로 보인다
       const off = Number(state.plant.time_scale) !== 20;
@@ -676,19 +668,29 @@ async function refreshFast() {
       for (const [a, u] of Object.entries(state.plant.units)) {
         const arr = state.waves[a] || []; arr.push(u.tags.PS1); state.waves[a] = arr.slice(-100);
       }
-    } else { $('#simT').textContent = '설비 상태 읽기 실패'; $('#labSimT').textContent = '읽기 실패'; $('#scale').textContent = '–'; }
-    $('#simT').title = state.plantError || ''; $('#labSimT').title = state.plantError || '';
+    } else { $('#labSimT').textContent = '읽기 실패'; $('#scale').textContent = '–'; $('#railScale').hidden = true; }      // 배속을 모르면 그 조각을 그리지 않는다
+    $('#labSimT').title = state.plantError || '';
     if (state.tab === 'scenario') { renderUnits(); try { renderGwLog(await getJ(API.gateway + '/api/gateway/log')); } catch (e) { renderGwLog([], e.message); } }
     if (state.tab === 'incidents') renderScada();
   } finally { refreshFast.busy = false; }
 }
+// 메뉴 「처리 건」 곁의 건수 점: 내 차례인 처리 건 수 — 사람 단계가 열렸거나 AI 에이전트가 질문한 건(처리 건 화면의 「내 할 일」 탭과 같은 셈).
+// 0 이면 그리지 않는다. 못 읽었으면 지난 수를 지우고 까닭을 메뉴 단추의 title 에 둔다(0 건으로 읽히지 않게 「?」를 보인다)
+async function refreshTodoCount() {
+  const dot = $('#navTodo'), button = dot.closest('button');
+  try {
+    const rows = requireList(await getJ(API.process + '/api/todolist?status=IN_PROGRESS'), '담당 작업 목록');
+    const n = new Set(rows.filter(t => UI.doerOf(t) === 'human' || t.draft_status === 'HUMAN_ASKED').map(t => t.proc_inst_id)).size;
+    dot.textContent = n ? (n > 99 ? '99+' : String(n)) : ''; dot.classList.remove('unknown');
+    button.title = n ? `내가 할 일 ${n}건` : '';
+  } catch (e) { dot.textContent = '?'; dot.classList.add('unknown'); button.title = '내가 할 일 수를 읽지 못했습니다: ' + e.message; }
+}
 async function refreshSlow() {
   if (refreshSlow.busy) return; refreshSlow.busy = true;
   try {
-    try { state.incidents = requireList(await getJ(API.process + '/api/incidents'), '사건 목록'); state.incidentError = ''; } catch (e) { state.incidentError = e.message; }
+    try { state.incidents = requireList(await getJ(API.process + '/api/incidents'), '사건 목록'); state.incidentError = ''; state.incidentsRead = true; } catch (e) { state.incidentError = e.message; }
     if (state.tab === 'scenario' || state.tab === 'incidents' || !state.biz || state.biz.failed) await refreshBiz();
-    $('#openCount').textContent = state.incidentError ? '읽기 실패' : state.incidents.filter(i => !i.terminal).length;
-    $('#openCount').title = state.incidentError || '';
+    await refreshTodoCount();
     if (state.tab === 'incidents') { renderScada(); renderIncList(); if (state.selected) await loadDetail(); else if (state.selectedAsset) { const o = openIncidentFor(state.selectedAsset); if (o) { state.selected = o.id; await loadDetail(); } else renderDetail(); } }
   } finally { refreshSlow.busy = false; }
 }
