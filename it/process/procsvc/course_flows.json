@@ -105,7 +105,8 @@
         },
         "T_fix": {
           "config": {
-            "component": "cooler"
+            "component": "cooler",
+            "until": "work_order.after.window_starts_at"
           },
           "part": "svc:maintenance"
         },

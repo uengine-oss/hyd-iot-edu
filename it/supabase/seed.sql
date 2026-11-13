@@ -99,19 +99,21 @@ update public.users set work_rules = 'hyd-plant'
  where tenant_id = 'hyd' and id in ('sys:agent', 'agent:cooling', 'agent:pm-plan', 'agent:spare-buy');
 
 -- 폼 = 작업의 결과 계약 (에이전트의 JSON 제출 형식 · 사람의 입력 폼). key 는 정의의 outputData 와 같다.
+-- 흐름의 단계는 자기 정의 판본 안의 폼을 쓴다(it/process/definitions/anomaly_response_v22.json 의 forms 가 정본). 이 표는 정의에 묶이지 않은
+-- 작업 행이 폼 이름으로 찾는 자리이고, 내용은 기준 정의의 폼과 같다(workspace/개발/tests/test_migrations.py 가 대조한다).
 insert into public.form_def (id, tenant_id, proc_def_id, activity_id, fields_json) values
-  ('diagnose',   'hyd', 'anomaly_response', 'task:diagnose',   '[{"key":"cause","type":"text","text":"판정한 원인 노드 id (예: cause:cooler-fin-fouling)"},{"key":"failure_mode","type":"text","text":"고장 유형 노드 id (예: fm:cooler-cooling-loss)"},{"key":"guide_card","type":"object","text":"hyd-dmn diagnose 도구가 돌려준 가이드 카드 객체 그대로 (alert · causes · recommended · skills · citations · summary)"}]'),
+  ('diagnose',   'hyd', 'anomaly_response', 'task:diagnose',   '[{"key":"cause","text":"판정한 원인 노드 id (cause:… 꼴 — hyd-dmn diagnose 가 돌려준 top_cause 그대로)","type":"text"},{"key":"failure_mode","text":"고장 유형 노드 id (fm:… 꼴 — hyd-dmn diagnose 가 돌려준 failure_mode 그대로)","type":"text"},{"key":"guide_card","text":"hyd-dmn diagnose 도구가 돌려준 가이드 카드 객체 그대로 (alert · causes · recommended · skills · citations · summary)","type":"object"}]'),
   ('candidates', 'hyd', 'anomaly_response', 'task:candidates', '[{"key":"candidates","type":"array","text":"후보 스킬 id 목록 (dec:action-candidates 결과)"}]'),
   ('compliance', 'hyd', 'anomaly_response', 'task:compliance', '[{"key":"compliance","type":"object","text":"스킬 id → {feasible, excluded[], penalties[], warnings[]} (dec:compliance 결과)"}]'),
   ('rank',       'hyd', 'anomaly_response', 'task:rank',       '[{"key":"decision","type":"object","text":"순위 결과 요약 {recommended, explanation, order[]} — hyd-dmn evaluate_cards · submit_decision 결과"},{"key":"decision_id","type":"text","text":"submit_decision 이 돌려준 조치 카드 묶음 id"}]'),
-  ('select_card','hyd', 'anomaly_response', 'task:select',     '[{"key":"chosen_skill","type":"text","text":"고른 스킬(SOP) id"},{"key":"chosen_skill_kind","type":"select","text":"스킬 종류","items":[{"control":"즉시 제어"},{"work_order":"작업지시만"}]}]'),
+  ('select_card','hyd', 'anomaly_response', 'task:select',     '[{"key":"chosen_skill","text":"승인한 스킬(SOP) id — 거절하면 비운다","type":"text","required":false},{"key":"chosen_skill_kind","text":"승인한 카드의 조치 종류 — 거절하면 비운다","type":"select","items":[{"control":"즉시 제어"},{"work_order":"작업지시만"},{"purchase":"발주만"},{"other":"실행할 조치 없음"}],"required":false},{"key":"approval","text":"승인 / 반려","type":"select","items":["승인","반려"]},{"key":"approval_reason","text":"사유","type":"textarea","required":false}]'),
   ('escalate',   'hyd', 'anomaly_response', 'task:escalate',   '[{"key":"note","type":"textarea","text":"생산관리자 확인 메모"}]')
 on conflict (id, tenant_id) do update set proc_def_id = excluded.proc_def_id, activity_id = excluded.activity_id, fields_json = excluded.fields_json;
 
 -- ============================================================================
 -- 사람 사용자 · 업무분장 (migration 000029 role_members · 000072 single_owner). 역할 사용자(role:*)는 위 users 에 있다.
 -- 로그인이 없고 한 사람이 자기 PC에서 쓰는 포털이라 사람은 담당자 한 명이고, 모든 역할의 구성원이다(2026-11-13).
--- 역할마다 구성원이 한 명이므로 사람 단계는 모두 담당자에게 바로 배정되고(procsvc/inbox.py resolve), 승인 기록에는 승인한 역할이 남는다.
+-- 사람 단계의 작업 행은 정의가 적은 역할 그대로 열리고(procsvc/inbox.py resolve), 담당자가 그 역할의 구성원으로서 처리한다. 승인 기록에는 승인한 역할이 남는다.
 -- 이미 만든 DB는 migration 000072 가 같은 모습으로 바꾼다.
 -- ============================================================================
 insert into public.users (id, email, username, role, is_agent, agent_type, tenant_id) values

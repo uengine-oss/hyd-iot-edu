@@ -1,9 +1,7 @@
-"""U5 HTTP routes: 나(사람 사용자) · 내 작업함 · 알림 · 업무분장(읽기). 로직은 inbox.py, 저장은 procdb.
+"""U5 HTTP routes: 나(사람 사용자) · 내 작업함 · 알림. 로직은 inbox.py, 저장은 procdb.
 
     GET  /api/inbox/users                         사람 사용자(포털의 "나" 선택지)와 각자의 역할
     GET  /api/inbox?user_id=                      내 작업함: tasks(me | role) · asked(에이전트 질문) · unassigned_roles · unread
-    GET  /api/inbox/assignments                   업무분장(역할 → 사람, 읽기 전용 — 바꾸는 곳은 seed/랩업)
-    GET  /api/todolist/{wid}/assignments          담당자 해석 이력(업무분장으로 사람에게 바로 배정된 것)
     GET  /api/inbox/notifications?user_id=&unread=1&limit=   알림 목록(나 + 내 역할 앞으로 온 것, 각 행에 포털 link)
     GET  /api/inbox/notifications/unread-count?user_id=
     POST /api/inbox/notifications/read            {user_id, ids?}  읽음 처리(ids 없으면 모두)
@@ -49,19 +47,6 @@ def mount(app: FastAPI) -> None:
             return await _in_executor(inbox.inbox_view, rt, user_id)
         except LookupError as e:
             raise HTTPException(404, str(e))
-
-    @app.get("/api/inbox/assignments")
-    async def assignments():
-        rt = _rt()
-        return await _in_executor(inbox.assignment_board, rt.repo, rt.tenant_id)
-
-    @app.get("/api/todolist/{wid}/assignments")
-    async def task_assignments(wid: str):
-        rt = _rt()
-        wi = await _in_executor(rt.repo.get_workitem, wid)
-        if not wi or wi.get("tenant_id") != rt.tenant_id:
-            raise HTTPException(404, "no such work item")
-        return await _in_executor(rt.repo.list_assignments, wid, rt.tenant_id)
 
     @app.get("/api/inbox/notifications")
     async def notifications(user_id: str, unread: bool = False, limit: int = 100):

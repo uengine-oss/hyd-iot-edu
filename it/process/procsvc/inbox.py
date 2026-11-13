@@ -1,19 +1,23 @@
-"""U5 (mini ProcessGPT TODO 5): 역할 → 사람 배정 · 내 작업함 · 알림.
+"""U5 (mini ProcessGPT TODO 5): 역할 → 사람 · 내 작업함 · 알림.
 
-HYD 에는 로그인이 없다. 작업(todolist)의 user_id 는 정의의 역할 바인딩(role:operator …, engine.new_workitem)이고 포털은
-"나"를 브라우저에서 고른다. 이 모듈이 그 사이를 잇는다(vue3 의 /work-assignment · delegation_history · /my-inbox · /notifications 에 해당):
+HYD 에는 로그인이 없다. 이 PC 를 쓰는 사람은 늘 담당자(user:me) 한 명이고 모든 역할의 구성원이다(migration 000072). 포털은 그 사람 id 를
+요청마다 실어 보내고, 이 모듈이 흐름 정의의 역할 바인딩과 그 사람 사이를 잇는다.
 
-    업무분장  role_members(역할 → 사람). 역할에 사람이 **한 명**이면 단계가 열릴 때 그 사람(user:*)에게 바로 배정하고,
-             **여럿**이면 역할 공용(user_id 는 역할 그대로)으로 남긴다. 아무도 없으면 역할 그대로(누구의 작업함에도 안 뜬다 — 조용한 성공 금지,
-             작업함 응답의 unassigned_roles 로 알린다).
-    배정 이력 task_assignments(auto). 업무분장으로 사람에게 바로 배정된 것만 남는다. 수동 재배정·위임은 범위 밖(TODO A3).
-    승인자   승인은 포털의 "나"(user:*)로만 한다 — check_actor 가 그 사람이 내세운 역할의 구성원인지 본다(아니면 403). 역할 등급 검사
-             (Skill -APPROVED_BY-> Role, hooks.approve_decision)는 그대로 — 권한이 낮은 역할의 승인은 여전히 403.
-    알림      notifications. 사람 단계가 열리면 배정된 사람(역할 공용이면 역할 구성원 모두)에게, 처리 건이 끝나면 참여자에게 쓴다.
+    업무분장  role_members(역할 → 사람). 사람 단계의 작업 행 user_id 는 정의가 적은 역할 바인딩 그대로다(role:operator …,
+             engine.new_workitem) — 화면과 기록이 「어느 역할의 일인가」를 보여야 하므로 구성원이 한 명이어도 사람 id 로 바꿔 적지 않는다
+             (resolve). 정의가 사람(user:*)을 직접 가리키면 그 사람이다. 역할에 구성원이 없으면 누구의 작업함에도 뜨지 않고, 작업함 응답의
+             unassigned_roles 가 그 역할과 열린 일의 수를 알린다(조용한 성공 금지).
+    내 작업함 inbox_view 는 user_id 가 나인 단계, 내가 구성원인 역할의 단계, 내 역할 · 참여 처리 건에 온 에이전트 질문을 모은다.
+    사람 확인 사람이 한 일(승인 · 거절 · 제출 · 닫기 · 다시 전달 · 폐기 · 다시 수행 · 오일 분석 입력)은 등록된 사람 사용자(user:*)만 한다 —
+             require_person 이 사람인지, check_actor 가 그 사람이 내세운 역할의 구성원인지 본다(아니면 PermissionError → 403). 요청에
+             「누가」가 비어 있으면 actor_or_400 이 400(NOT_A_PERSON)으로 거절한다. 조치 카드의 역할 등급 검사(Skill -APPROVED_BY-> Role,
+             hooks.approve_decision)는 따로 그대로다.
+    알림      notifications. 사람 단계가 열리면 그 역할의 구성원 모두(정의가 사람을 가리키면 그 사람)에게, 처리 건이 끝나면 참여자에게 쓴다.
              에이전트의 질문 알림은 워커가 쓴다(agent-worker runner._asker_of → role:operator). 역할 id 로 온 알림은 그 역할 사람이 모두 본다.
 
 엔진 훅: 흐름이 단계에 닿는 다섯 자리(process_workitem · _fire_timeout · _abort_before_action · start_definition · rework)에서
-apply_advance(rt, inst, adv) 를 저장 전에 부른다 — 배정은 같은 트랜잭션에 쓰이고 알림은 커밋 뒤(_after_commit) 쓴다.
+apply_advance(rt, inst, adv) 를 저장 전에 부른다 — 에이전트 단계의 담당 배정(agent_authoring.apply_agent_map)은 같은 트랜잭션에 쓰이고
+알림은 커밋 뒤(_after_commit) 쓴다.
 """
 from __future__ import annotations
 

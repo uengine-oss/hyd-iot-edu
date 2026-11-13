@@ -63,9 +63,10 @@ SELECT_SERVER_VALUES = tuple(sorted(PROTECTED_OUTPUTS - {"incident", "approved_o
 # 부품 성질은 tool 계약으로 판정한다(이름 · id 로 판정하지 않음).
 APPROVAL_TOOL = "formHandler:select_card"                 # 역할 검사가 있는 /select 경로로만 제출되는 사람 승인
 ESCALATE_TOOL = "formHandler:escalate"                    # 기준 흐름의 책임자 확인(instances.InstanceRuntime.ESCALATE_TOOL 과 같음)
-# 조치 카드 승인 · 거절(실라버스 92 · 101 · 102 · 104행): 조치 카드 승인(task:select) 계약에 일반 사람 승인과 같은 값(approval '승인'|'반려' ·
-# approval_reason)을 더한 부품. 승인은 /select, 거절은 /reject-card 로만 제출된다(둘 다 역할 검사). task:select(승인만) 계약과 그것으로
-# 등록한 흐름은 그대로다 — 거절 값을 내지 않으므로 거절 요청을 받지 않는다.
+# 조치 카드 승인 · 거절(실라버스 92 · 101 · 102 · 104행): 기준 흐름의 승인 단계(task:select) 계약 그대로 — 조치 카드 계약(chosen_skill ·
+# chosen_skill_kind)에 일반 사람 승인과 같은 값(approval '승인'|'반려' · approval_reason)이 있다. 승인은 /select, 거절은 /reject-card 로만
+# 제출된다(둘 다 역할 검사). 기준 흐름 2.3 까지는 승인 단계가 거절 값을 내지 않았다 — 그 판본과 그것으로 등록한 흐름의 처리 건은 자기 판본대로
+# 끝나고 거절 요청을 받지 않는다(instances.reject_card 가 까닭을 말한다). 2.4 부터 거절 값 없는 조치 카드 승인 부품은 없다.
 SELECT_PART, REJECTABLE_SELECT_PART = "task:select", "task:select-or-reject"
 REJECTABLE_SELECT_NAME = "조치 카드 승인 · 거절"
 REJECTABLE_SELECT_HELP = ("담당자가 조치 카드 하나를 승인하거나 거절합니다. 승인하면 approval 값이 '승인', 거절하면 '반려'(사유는 approval_reason)가 되고 "
@@ -300,6 +301,8 @@ def catalog(base: dict, users: list[dict] | None = None, *, include_handover=Tru
     parts = []
     for a in base.get("activities") or []:
         tool = a.get("tool") or ""
+        if tool in effect_parts.BY_TOOL:        # 기준 흐름이 쓰는 승인 뒤 실행 부품(결과 보고 등)은 아래 일반 부품 목록이 설정과 함께 싣는다
+            continue
         form_id = tool.split(":", 1)[1] if tool.startswith("formHandler:") else None
         contract = {k: deepcopy(v) for k, v in a.items() if k not in ("id", "name", "attachedEvents")}
         timers = [e.get("timer") for e in events if e.get("type") == "boundaryEvent" and e.get("attachedTo") == a["id"]
@@ -1033,15 +1036,17 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
 
 
 def _rejectable(select: dict) -> dict:
-    """조치 카드 승인(task:select) 부품 → 거절 값을 함께 내는 부품. 결과 = 기준 계약(chosen_skill · chosen_skill_kind) + approval ·
-    approval_reason. 거절에는 고른 조치가 없으므로 기준 칸은 선택으로 바뀌고 approval 은 반드시 있어야 한다. 도구는 같은
-    formHandler:select_card(승인 경로 · 받은 일 화면 계약 그대로)라 폼 id 도 같다 — 한 흐름에 두 부품을 섞으면 check 가 거절한다."""
+    """기준 흐름의 조치 카드 승인 단계(task:select) → 일반 부품 「조치 카드 승인 · 거절」(task:select-or-reject). 계약 · 폼은 기준 흐름 그대로다:
+    결과 = chosen_skill · chosen_skill_kind + approval · approval_reason(거절에는 고른 조치가 없으므로 앞의 둘은 선택 칸, approval 은 필수).
+    기준 흐름의 승인 단계가 거절 값을 내지 않으면(2.3 까지의 모양) 부품으로 싣지 않고 ValueError — 거절 값을 지어 붙이지 않는다."""
     part = deepcopy(select)
-    fields = [dict(f, required=False) for f in part["form"].get("fields_json") or []] + deepcopy(approval_part.FORM["fields_json"])
-    outputs = [*part["outputs"], *approval_part.OUTPUTS]
-    part.update(key=REJECTABLE_SELECT_PART, group="general", name=REJECTABLE_SELECT_NAME, form={"fields_json": fields}, outputs=outputs,
-                help=REJECTABLE_SELECT_HELP)
-    part["contract"].update(name=REJECTABLE_SELECT_NAME, description=REJECTABLE_SELECT_NAME, outputData=list(outputs))
+    keys = [f.get("key") for f in part["form"].get("fields_json") or []]
+    missing = [k for k in approval_part.OUTPUTS if k not in part["outputs"] or k not in keys]
+    if missing:
+        raise ValueError(f"기준 흐름의 조치 카드 승인 단계({SELECT_PART})가 거절 값({', '.join(missing)})을 내지 않습니다 — "
+                         "기준 정의 파일의 승인 단계 결과(outputData)와 폼(select_card)을 확인하세요")
+    part.update(key=REJECTABLE_SELECT_PART, group="general", name=REJECTABLE_SELECT_NAME, help=REJECTABLE_SELECT_HELP)
+    part["contract"].update(name=REJECTABLE_SELECT_NAME, description=REJECTABLE_SELECT_NAME)
     return part
 
 

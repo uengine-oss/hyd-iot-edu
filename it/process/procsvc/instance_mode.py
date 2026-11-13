@@ -36,7 +36,10 @@ log = logging.getLogger("process.instance_mode")
 
 #: 정의 파일 폴더 — 수업 경계 정본(course_policy.DEFINITIONS, 이 패키지 옆 definitions/) 하나를 가리킨다(P5-15 — 환경 변수 판이 따로 있었다)
 DEFINITIONS_DIR = course_policy.DEFINITIONS
-DEFINITION_FILE = "anomaly_response_v22.json"   # 기준 흐름 파일(A116: 2.2 = 2.1 in the product's agent-task shape)
+#: 기준 흐름 파일. 이름의 v22 는 이 모양(ProcessGPT 의 에이전트 단계 모양, A116)을 처음 낸 판본이고, 판본 번호는 파일 안의 version 이 정한다.
+#: 내용을 바꾸면 version 을 올린다 — 이미 쓰던 DB 에서 기동이 무엇을 하는지는 _bootstrap_definition · _register_reference 가 정한다
+#: (workspace/개발/tests/test_definition_upgrade.py 가 그 길을 잰다).
+DEFINITION_FILE = "anomaly_response_v22.json"
 POLL_INTERVAL_S = 2.0                            # the product polls every 5 s; faster here for the classroom
 WORKER_URL = os.getenv("WORKER_URL", "http://agent-worker:8097")       # the cliagents worker's /health · /agents (monitoring, 회의 L434)
 LEASE_SWEEP_EVERY = 30                                                 # × POLL_INTERVAL_S ≈ 1 min: 임대가 세 번 끝난 워커 실행 → FAILED (A-10)
@@ -213,9 +216,11 @@ def _bootstrap_definition(repo, tenant_id: str) -> engine.Definition:
     seed = engine.Definition.load(DEFINITIONS_DIR / DEFINITION_FILE)
     deployed = repo.deployed_version(seed.id, tenant_id)
     last = repo.list_deployments(seed.id, tenant_id, limit=1)
-    if last and last[0].get('action') == 'seed':
+    if last and last[0].get('action') in ('seed', 'reset'):
         # B4: nobody deployed this id through the API (only a boot seed or the migration backfill of the old "last registered"
-        # pointer) — the file is still the reference, as before U4. A person's deploy/rollback/reset is what survives restarts.
+        # pointer) — the file is still the reference, as before U4. A person's deploy/rollback is what survives restarts.
+        # 「기준 흐름으로 되돌리기」(reset)는 「기준 판본을 쓴다」는 요청이다 — 그 뒤 기준 파일의 판본이 올라가면 새 기준 판본을 따른다. 전에는 되돌린 적
+        # 있는 PC 만 옛 기준 판본에 머물렀다(화면은 「기준 흐름의 다른 판본」 — 한 번 더 되돌려야 새 기준이 됐다).
         return seed
     if deployed and deployed != seed.raw.get('version'):
         row = repo.get_proc_def(seed.id, tenant_id, version=deployed)
@@ -709,7 +714,7 @@ class ReviewReq(BaseModel):
 class HumanResponseReq(BaseModel):
     job_id: str
     answer: str
-    by: str
+    by: str | None = None      # 비어 있으면 이름을 지어 넣지 않고 400(inbox.NOT_A_PERSON)으로 거절한다 — 다른 사람 행동과 같은 사유
 
 
 class ReassessmentReq(BaseModel):
@@ -1190,8 +1195,10 @@ def mount(app: FastAPI, *, admit_alert: Callable) -> None:
     @app.post("/api/todolist/{wid}/human-response")
     async def human_response(wid: str, req: HumanResponseReq):
         """A person answers the agent's question (human_asked → human_response); the worker resumes the task."""
+        from .inbox import actor_or_400
+        by = actor_or_400(req.by)
         try:
-            return await _in_executor(_rt().answer_human, wid, req.job_id, req.answer, req.by)
+            return await _in_executor(_rt().answer_human, wid, req.job_id, req.answer, by)
         except KeyError:
             raise HTTPException(404, '그 단계가 없습니다 — 처리 건 화면을 새로 고치세요')
         except PermissionError as e:

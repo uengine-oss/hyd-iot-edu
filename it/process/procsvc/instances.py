@@ -164,8 +164,8 @@ def _utc_now() -> datetime:
 
 
 #: 승인한 카드의 실제 조치 종류(카드의 actions) — 카드 승인 단계의 결과 chosen_skill_kind(기준 정의의 계약 · 폼 select)와 화면 칩 chosen_option.kind 가
-#: 이 값이다. 흐름이 승인 뒤 길을 이 값으로 가른다(흐름 A: 명령이 있으면 명령 → 재관측 → 작업지시, 작업지시만이면 작업지시, 그 밖이면 까닭과 함께
-#: 멈춤 — 메인 결정 2026-10-31).
+#: 이 값이다. 흐름이 승인 뒤 길을 이 값으로 가른다(기준 흐름 · 흐름 A: 명령이 있으면 명령 → 재관측 → 작업지시, 작업지시만이면 작업지시, 그 밖이면
+#: 실행하지 않은 사실을 결과 보고로 남기고 끝 — 멈춘 채 두지 않는다).
 ACTION_KINDS = ("control", "work_order", "purchase", "other")
 
 
@@ -1021,7 +1021,8 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
     # ---------------------------------------------------------------- 조치 카드 승인의 거절 (실라버스 92 · 101 · 102 · 104행)
     @staticmethod
     def _card_step_rejects(defn, wi) -> bool:
-        """이 승인 단계가 거절 값(approval)을 내는가 — 흐름 가져오기가 만든 조치 카드 승인. 기준 정의 · 전에 등록한 정의는 내지 않는다."""
+        """이 승인 단계가 거절 값(approval)을 내는가 — 기준 흐름 2.4 부터와 그 부품으로 가져온 흐름의 조치 카드 승인은 모두 낸다. 그 전에 등록한
+        판본(기준 흐름 2.3 까지 · 거절 값 없는 승인 부품으로 가져온 흐름)은 내지 않고, 그 판본으로 열린 처리 건은 그 판본대로 끝난다."""
         return approval_part.OUTPUTS[0] in ((defn.activities.get(wi['activity_id']) or {}).get('outputData') or [])
 
     @workitem_transition
@@ -1039,8 +1040,8 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         defn = self.definition_for(inst)
         self._check_deadline(wi, inst, defn, now)
         if not self._card_step_rejects(defn, wi):
-            raise ValueError(f"이 흐름({inst.get('proc_def_id')} {inst.get('proc_def_version')})의 승인 단계는 거절 값을 내지 않아 거절 뒤 갈 길이 없습니다 — "
-                             "거절 경로가 있는 흐름(흐름 가져오기에서 승인 뒤 분기에 approval 조건)을 배포한 뒤 연 처리 건에서 거절하세요")
+            raise ValueError(f"이 처리 건은 승인 단계에 거절 길이 없던 흐름 판본({inst.get('proc_def_id')} {inst.get('proc_def_version')})으로 열려 "
+                             "거절을 받을 수 없습니다 — 지금 배포된 판본으로 새로 열리는 처리 건부터 거절할 수 있습니다")
         reason = (reason or '').strip()
         if not reason:
             raise ValueError('거절 사유를 적으세요 — 결과 보고와 처리 기록에 남습니다')

@@ -587,11 +587,6 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
                                        (row.get("tenant_id", "hyd"), row["proc_inst_id"], row["todo_id"], row.get("from_user_id"), row["to_user_id"], row["kind"],
                                         row.get("by_user"), row.get("reason"))).fetchone())
 
-    def list_assignments(self, todo_id: str, tenant_id: str) -> list[dict]:
-        with self._conn() as c:
-            return [self._row(r) for r in c.execute("select * from task_assignments where todo_id=%s and tenant_id=%s order by created_at, id",
-                                                    (todo_id, tenant_id)).fetchall()]
-
     def list_notifications(self, tenant_id, user_ids, unread_only=False, limit=100) -> list[dict]:
         with self._conn() as c:
             return [self._row(r) for r in c.execute("select * from notifications where tenant_id=%s and user_id = any(%s) and (not %s or not is_read) "

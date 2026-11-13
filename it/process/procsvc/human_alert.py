@@ -1,7 +1,7 @@
 """B7 (확정 TODO B7, DECISIONS 110 ⑤) — 사람 입력 경보: 사람이 입력한 분석 결과를 센서 경보와 같은 계약의 경보로 만든다.
 
 작동유 열화에는 실시간 센서가 없다(지식 `sym:oil-analysis-out-of-spec` note — 정기 오일 분석 결과를 사람이 입력한다).
-그래서 "오일 분석 결과 입력"(설비 · 분석 항목 · 측정값 · 기준 이탈 여부 · 메모 · 입력자)을 서버가 감지기 경보와 **같은 모양**
+그래서 "오일 분석 결과 입력"(설비 · 분석 항목 · 측정값 · 기준 이탈 여부 · 메모 · 입력자 — 등록된 사람 사용자)을 서버가 감지기 경보와 **같은 모양**
 (`alertId · asset · pattern · severity · state=RAISE · t · evidence`, det/cep.py `_alert`)으로 만들고 출처를 표시해
 (`source: "human_input"`, `enteredBy`) 기존 경보 경로(원천 접수 → `alert_policy` → `start_definition` → Incident)로 보낸다.
 
@@ -75,8 +75,16 @@ def _text(body: dict, key: str, label: str, limit: int, required: bool = True) -
     return v
 
 
-def build_alert(body: dict, now: datetime | None = None) -> tuple[dict | None, str]:
-    """입력 하나 → (경보 또는 None, 사유). 형식이 틀리면 ValueError(칸 이름 포함)."""
+def entered_by(repo, tenant_id: str, body) -> dict:
+    """입력자 = 등록된 사람 사용자 한 명(inbox.require_person — 아니면 PermissionError). 돌려줌 = {id, name}: 이름은 사용자 표에서 읽는다.
+    요청이 적어 보낸 이름 · 역할은 받지 않는다 — 경보 근거(enteredBy)와 감사 기록에 확인하지 않은 글이 사람처럼 남지 않게."""
+    from . import inbox
+    by = body.get("by") if isinstance(body, dict) else None
+    return {"id": inbox.require_person(repo, tenant_id, by)["id"], "name": inbox.person_name(repo, tenant_id, by)}
+
+
+def build_alert(body: dict, entered: dict, now: datetime | None = None) -> tuple[dict | None, str]:
+    """입력 하나 → (경보 또는 None, 사유). entered = 확인된 입력자 {id, name}(entered_by). 형식이 틀리면 ValueError(칸 이름 포함)."""
     if not isinstance(body, dict):
         raise ValueError("입력은 객체여야 합니다")
     code = _text(body, "pattern", "입력 종류", 64)
@@ -96,9 +104,6 @@ def build_alert(body: dict, now: datetime | None = None) -> tuple[dict | None, s
     value = body.get("value")
     if value is not None and (isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value)):
         raise ValueError("측정값은 숫자여야 합니다 (value)")
-    by = _text(body, "by", "입력자", 120)
-    by_name = _text(body, "by_name", "입력자 이름", 120, required=False) or by
-    role = _text(body, "role", "입력자 역할", 120, required=False) or None
     memo = _text(body, "memo", "메모", 2000, required=False)
     if not out_of_spec:
         return None, (f"{item['text']}이(가) 기준 안이라 경보를 만들지 않았습니다 — 기준 이탈을 「예」로 고른 입력만 경보가 됩니다. "
@@ -114,7 +119,7 @@ def build_alert(body: dict, now: datetime | None = None) -> tuple[dict | None, s
         evidence["memo"] = memo
     alert = {"alertId": alert_id, "asset": asset, "pattern": code, "severity": spec["severity"], "state": "RAISE", "t": t,
              "evidence": evidence, "source": HUMAN_SOURCE,
-             "enteredBy": {"id": by, "name": by_name, **({"role": role} if role else {})}}
+             "enteredBy": {"id": entered["id"], "name": entered["name"]}}
     return alert, f"{item['text']} 기준 이탈 — 센서 경보와 같은 경로로 경보를 보냈습니다"
 
 
@@ -145,11 +150,19 @@ def register(app, *, runtime_factory, admit, open_alerts=lambda: [], audit=lambd
     async def raise_human_alert(body: dict):
         """오일 분석 결과 입력 → 기준 이탈이면 센서 경보와 같은 경로(원천 접수 → 경보 정책 → 처리 건 · 사건), 아니면 경보 없음 + 사유."""
         rt = runtime()
+        from .inbox import actor_or_400
+        loop = asyncio.get_running_loop()
+        actor_or_400(body.get("by") if isinstance(body, dict) else None)      # 입력자가 비어 있으면 400(담당자 정보 없음)
         try:
-            alert, reason = build_alert(body)
+            entered = await loop.run_in_executor(None, entered_by, rt.repo, rt.tenant_id, body)
+        except PermissionError as e:
+            raise HTTPException(403, str(e)) from e
+        except LookupError as e:                  # 사용자 표에 그 사람의 이름이 없다(좌표: 사람 id)
+            raise HTTPException(409, str(e)) from e
+        try:
+            alert, reason = build_alert(body, entered)
         except ValueError as e:
             raise HTTPException(400, str(e)) from e
-        loop = asyncio.get_running_loop()
         if alert is not None:
             # 같은 설비 · 같은 종류의 사람 입력 경보로 연 처리 건이 아직 진행 중인가(대응 흐름이든 사람 검토든 — 사람 검토는 사건이 없어 처리 건으로 본다)
             from . import engine
@@ -160,7 +173,7 @@ def register(app, *, runtime_factory, admit, open_alerts=lambda: [], audit=lambd
                 raise HTTPException(409, f"{alert['asset']}의 {PATTERNS[alert['pattern']]['name']} 처리 건이 아직 진행 중입니다 — 같은 이상을 다시 "
                                          "입력하지 않습니다. 처리 건 화면에서 그 처리 건을 끝낸 뒤 새 결과를 입력하세요")
         if alert is None:
-            await loop.run_in_executor(None, lambda: audit(body.get("asset") or "-", str(body.get("by") or "-"), "HUMAN_INPUT_IN_SPEC",
+            await loop.run_in_executor(None, lambda: audit(body.get("asset") or "-", entered["id"], "HUMAN_INPUT_IN_SPEC",
                                                            {"pattern": body.get("pattern"), "item": body.get("item"), "reason": reason}))
             return {"raised": False, "reason": reason}
         policy = await loop.run_in_executor(None, rt.alert_policy, alert["pattern"])

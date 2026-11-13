@@ -34,7 +34,7 @@
     try {
       O.last = await postJ(api('/api/human-alerts'), {
         pattern: p.code, asset: d.asset, item: d.item, out_of_spec: d.out, memo: d.memo,
-        value: d.value === '' ? null : Number(d.value), by: m.id, by_name: m.name || m.id });      // 역할은 보내지 않는다 — 사람이 고르지 않은 값이고 서버도 선택 칸이다(human_alert.py)
+        value: d.value === '' ? null : Number(d.value), by: m.id });      // 입력자는 담당자 id 만 보낸다 — 이름은 서버가 사용자 표에서 읽는다(human_alert.py entered_by)
       if (O.last.raised) { d.memo = ''; d.value = ''; d.out = null; }
     } catch (e) { O.err = e.message; }
     finally { O.sending = false; render(); }

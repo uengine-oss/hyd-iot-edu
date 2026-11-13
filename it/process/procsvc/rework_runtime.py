@@ -64,6 +64,8 @@ class ReworkRuntime:
             human_roles = {defn.role_endpoint(a.get('role')) for a in defn.activities.values() if engine.is_human(a)}
             if role not in human_roles:
                 raise PermissionError('고정 정의의 사람 업무 담당 역할로 요청하세요')
+            from . import inbox
+            inbox.check_actor(self.repo, self.tenant_id, by, role)     # 등록된 사람 사용자이고 그 역할의 구성원(영수증의 「누가」)
             prior = self.repo.get_rework(self.tenant_id, proc_inst_id, request_id)
             if prior:
                 if prior['request'] != request:
@@ -90,7 +92,6 @@ class ReworkRuntime:
                 self.hooks.reopen_incident(engine.variables(inst)['incident'], request_id, by, role, reason,
                                            deepcopy(proposal.get('effects_resolution') or {}))
             adv = rework.new_generation(defn, inst, work, proposal, request_id, now, self.time_scale)
-            from . import inbox
             inbox.apply_advance(self, inst, adv)
             for row in adv.updated:
                 self.repo.update_workitem(row)

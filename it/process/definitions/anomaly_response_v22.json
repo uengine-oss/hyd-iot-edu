@@ -1,8 +1,8 @@
 {
   "processDefinitionId": "anomaly_response",
   "processDefinitionName": "설비 이상 조치",
-  "version": "2.3",
-  "description": "경보(alerts RAISE)가 프로세스 인스턴스를 열고, AI 에이전트가 네 개의 판단 작업(원인 진단 · 조치 후보 · 규정 검토 · 우선순위)을 맡아 조치 카드를 올리면, 사람이 카드 하나를 고르고(승인, 폼 select_card 제출), 프로세스가 PLC 명령 · 재관측 · 작업지시를 실행해 종결한다. AI 에이전트 작업은 ProcessGPT와 같은 모양(userTask + agentMode COMPLETE + orchestration cliagents)으로 적는다. 온톨로지 v2 proc:anomaly-response 의 흐름 노드와 1:1 대응한다 (it/neo4j/v2/instances.cypher 5절).",
+  "version": "2.4",
+  "description": "경보(alerts RAISE)가 프로세스 인스턴스를 열고, AI 에이전트가 네 개의 판단 작업(원인 진단 · 조치 후보 · 규정 검토 · 우선순위)을 맡아 조치 카드를 올리면, 사람이 카드 하나를 승인하거나 거절한다(폼 select_card 제출). 승인하면 프로세스가 고른 카드의 조치 종류대로 PLC 명령 · 재관측 · 작업지시를 실행해 종결하고, 설비 명령도 작업지시도 없는 카드(발주만 · 실행할 조치 없음)는 설비에 아무것도 하지 않은 사실을 결과 보고로 남기고 책임자 확인으로 끝낸다. 거절하면 설비 · 업무에 아무것도 하지 않고 결과 보고(반려)로 끝낸다. AI 에이전트 작업은 ProcessGPT와 같은 모양(userTask + agentMode COMPLETE + orchestration cliagents)으로 적는다. 온톨로지 v2 proc:anomaly-response 가 이 흐름의 객체(역할 · 시스템 · 판단)를 갖고, 단계 순서의 정본은 이 정의다.",
   "ontologyRef": "proc:anomaly-response",
   "megaProcessId": "설비 운영",
   "majorProcessId": "설비 이상 대응",
@@ -65,7 +65,7 @@
     {
       "name": "chosen_skill",
       "type": "Text",
-      "description": "사람이 고른 스킬(= SOP) id"
+      "description": "사람이 승인한 스킬(= SOP) id — 거절하면 없다"
     },
     {
       "name": "chosen_skill_kind",
@@ -86,6 +86,21 @@
       "name": "note",
       "type": "Text",
       "description": "상급자 확인 메모"
+    },
+    {
+      "name": "approval",
+      "type": "Text",
+      "description": "조치 카드 승인 단계의 결정: 승인 | 반려"
+    },
+    {
+      "name": "approval_reason",
+      "type": "Text",
+      "description": "승인 · 반려 사유 (반려는 반드시 적는다)"
+    },
+    {
+      "name": "result_report",
+      "type": "Object",
+      "description": "결과 보고 (outcome · title · summary · facts · refs) — 반려 · 실행하지 않음으로 끝난 처리 건이 남긴다"
     }
   ],
   "roles": [
@@ -97,7 +112,7 @@
     {
       "name": "운전원",
       "endpoint": "role:operator",
-      "resolutionRule": "온톨로지 Role role:operator (level 1). 조치 카드 선택"
+      "resolutionRule": "온톨로지 Role role:operator (level 1). 조치 카드 승인 · 거절"
     },
     {
       "name": "생산관리자",
@@ -112,7 +127,7 @@
     {
       "name": "프로세스",
       "endpoint": "sys:process",
-      "resolutionRule": "process 서비스 자체 (타이머 · 재관측)"
+      "resolutionRule": "process 서비스 자체 (타이머 · 재관측 · 결과 보고)"
     },
     {
       "name": "CMMS",
@@ -137,7 +152,7 @@
       "eventDefinition": "timer",
       "timer": "PT10M",
       "attachedTo": "task:select",
-      "description": "운전원이 10분 안에 카드를 고르지 않으면 생산관리자에게 넘어간다(사람이 읽고 고르는 시간이라 벽시계 — 배속을 곱하지 않는다)."
+      "description": "운전원이 10분 안에 카드를 승인하거나 거절하지 않으면 생산관리자에게 넘어간다(사람이 읽고 고르는 시간이라 벽시계 — 배속을 곱하지 않는다)."
     },
     {
       "id": "ev:closed",
@@ -150,6 +165,18 @@
       "name": "에스컬레이션 종료",
       "type": "endEvent",
       "eventDefinition": "escalation"
+    },
+    {
+      "id": "ev:rejected",
+      "name": "거절 종결",
+      "type": "endEvent",
+      "eventDefinition": "none"
+    },
+    {
+      "id": "ev:not-executed",
+      "name": "실행하지 않음",
+      "type": "endEvent",
+      "eventDefinition": "none"
     }
   ],
   "activities": [
@@ -250,28 +277,31 @@
     },
     {
       "id": "task:select",
-      "name": "조치 카드 선택 (HITL)",
+      "name": "조치 카드 승인 · 거절",
       "type": "userTask",
       "role": "운전원",
       "tool": "formHandler:select_card",
       "agent": null,
-      "instruction": "에이전트가 올린 카드 중 하나를 고른다(이 흐름의 승인 단계는 거절 값을 내지 않는다). 고른 카드의 승인 역할보다 낮은 역할이면 process 가 거절한다(403).",
+      "instruction": "에이전트가 올린 카드 중 하나를 승인하거나, 어느 카드도 실행하지 않기로 하고 사유와 함께 거절한다. 승인은 고른 카드의 승인 역할 이상만 할 수 있고(아니면 process 가 403 으로 거절한다), 거절하면 설비 명령 · 업무 거래를 하나도 내지 않고 결과 보고(반려)로 끝난다.",
       "inputData": [
         "decision"
       ],
       "outputData": [
         "chosen_skill",
-        "chosen_skill_kind"
+        "chosen_skill_kind",
+        "approval",
+        "approval_reason"
       ],
       "checkpoints": [
         "규정상 제외된 카드는 고를 수 없음",
-        "승인 역할 ≥ 카드의 APPROVED_BY"
+        "승인 역할 ≥ 카드의 APPROVED_BY",
+        "거절에는 사유를 적는다"
       ],
       "duration": 1,
       "attachedEvents": [
         "ev:select-timeout"
       ],
-      "description": "조치 카드 선택 (HITL)"
+      "description": "조치 카드 승인 · 거절"
     },
     {
       "id": "task:escalate",
@@ -345,12 +375,83 @@
       ],
       "duration": 1,
       "description": "정비 작업지시"
+    },
+    {
+      "id": "task:report-rejected",
+      "name": "결과 보고: 거절",
+      "type": "serviceTask",
+      "role": "프로세스",
+      "agent": null,
+      "orchestration": "hyd-process",
+      "tool": "process:report",
+      "service": {
+        "outcome": "반려",
+        "title": "{asset} 설비 이상 조치 결과",
+        "summary": "담당자가 조치 카드를 거절했습니다 — 사유: {approval_reason}. 설비 명령 · 업무 거래는 내지 않았습니다"
+      },
+      "inputData": [],
+      "outputData": [
+        "result_report"
+      ],
+      "checkpoints": [],
+      "duration": 1,
+      "description": "결과 보고: 거절"
+    },
+    {
+      "id": "task:report-purchase-only",
+      "name": "결과 보고: 발주만 등록",
+      "type": "serviceTask",
+      "role": "프로세스",
+      "agent": null,
+      "orchestration": "hyd-process",
+      "tool": "process:report",
+      "service": {
+        "outcome": "실행하지 않음",
+        "title": "{asset} 설비 이상 조치 결과",
+        "summary": "승인한 카드는 발주만 있는 카드입니다. 구매요청은 승인을 전달할 때 구매 · 재고 관리에 등록했고(승인 기록의 전달 결과), 설비에는 명령도 작업지시도 내지 않았습니다. 설비 이상은 그대로이므로 책임자가 설비 조치를 따로 정해야 합니다 — 승인자 {approved_by_name}"
+      },
+      "inputData": [],
+      "outputData": [
+        "result_report"
+      ],
+      "checkpoints": [],
+      "duration": 1,
+      "description": "결과 보고: 발주만 등록"
+    },
+    {
+      "id": "task:report-no-action",
+      "name": "결과 보고: 조치 종류 확인 필요",
+      "type": "serviceTask",
+      "role": "프로세스",
+      "agent": null,
+      "orchestration": "hyd-process",
+      "tool": "process:report",
+      "service": {
+        "outcome": "실행하지 않음",
+        "title": "{asset} 설비 이상 조치 결과",
+        "summary": "승인한 카드에는 설비 명령도 작업지시도 발주도 없어 이 흐름이 실행한 것이 없습니다. 설비 이상은 그대로이므로 조치 방법의 조치 구성을 확인하고 다시 판단해 다른 카드를 고르세요 — 승인자 {approved_by_name}"
+      },
+      "inputData": [],
+      "outputData": [
+        "result_report"
+      ],
+      "checkpoints": [],
+      "duration": 1,
+      "description": "결과 보고: 조치 종류 확인 필요"
     }
   ],
   "gateways": [
     {
+      "id": "gw:approved",
+      "name": "승인?",
+      "type": "exclusiveGateway",
+      "conditionData": [
+        "approval"
+      ]
+    },
+    {
       "id": "gw:control",
-      "name": "즉시 제어 포함?",
+      "name": "조치 종류?",
       "type": "exclusiveGateway",
       "conditionData": [
         "chosen_skill_kind"
@@ -394,21 +495,53 @@
     {
       "id": "seq:select-gw",
       "source": "task:select",
-      "target": "gw:control"
+      "target": "gw:approved"
+    },
+    {
+      "id": "seq:approved",
+      "source": "gw:approved",
+      "target": "gw:control",
+      "name": "승인",
+      "condition": "approval == '승인'"
+    },
+    {
+      "id": "seq:rejected",
+      "source": "gw:approved",
+      "target": "task:report-rejected",
+      "name": "거절",
+      "properties": {
+        "default": true
+      }
     },
     {
       "id": "seq:gw-command",
       "source": "gw:control",
       "target": "task:command",
-      "name": "선택 스킬 kind == control",
+      "name": "설비 명령 있음",
       "condition": "chosen_skill_kind == 'control'"
     },
     {
       "id": "seq:gw-workorder",
       "source": "gw:control",
       "target": "task:work-order",
-      "name": "선택 스킬 kind == work_order",
+      "name": "작업지시만",
       "condition": "chosen_skill_kind == 'work_order'"
+    },
+    {
+      "id": "seq:gw-purchase",
+      "source": "gw:control",
+      "target": "task:report-purchase-only",
+      "name": "발주만",
+      "condition": "chosen_skill_kind == 'purchase'"
+    },
+    {
+      "id": "seq:gw-other",
+      "source": "gw:control",
+      "target": "task:report-no-action",
+      "name": "그 밖",
+      "properties": {
+        "default": true
+      }
     },
     {
       "id": "seq:command-reobserve",
@@ -448,6 +581,21 @@
       "id": "seq:escalate-end",
       "source": "task:escalate",
       "target": "ev:escalated"
+    },
+    {
+      "id": "seq:rejected-end",
+      "source": "task:report-rejected",
+      "target": "ev:rejected"
+    },
+    {
+      "id": "seq:purchase-end",
+      "source": "task:report-purchase-only",
+      "target": "ev:not-executed"
+    },
+    {
+      "id": "seq:other-end",
+      "source": "task:report-no-action",
+      "target": "ev:not-executed"
     }
   ],
   "forms": {
@@ -473,12 +621,12 @@
       "fields_json": [
         {
           "key": "cause",
-          "text": "판정한 원인 노드 id (예: cause:cooler-fin-fouling)",
+          "text": "판정한 원인 노드 id (cause:… 꼴 — hyd-dmn diagnose 가 돌려준 top_cause 그대로)",
           "type": "text"
         },
         {
           "key": "failure_mode",
-          "text": "고장 유형 노드 id (예: fm:cooler-cooling-loss)",
+          "text": "고장 유형 노드 id (fm:… 꼴 — hyd-dmn diagnose 가 돌려준 failure_mode 그대로)",
           "type": "text"
         },
         {
@@ -515,12 +663,13 @@
       "fields_json": [
         {
           "key": "chosen_skill",
-          "text": "고른 스킬(SOP) id",
-          "type": "text"
+          "text": "승인한 스킬(SOP) id — 거절하면 비운다",
+          "type": "text",
+          "required": false
         },
         {
           "key": "chosen_skill_kind",
-          "text": "스킬 종류",
+          "text": "승인한 카드의 조치 종류 — 거절하면 비운다",
           "type": "select",
           "items": [
             {
@@ -535,7 +684,23 @@
             {
               "other": "실행할 조치 없음"
             }
+          ],
+          "required": false
+        },
+        {
+          "key": "approval",
+          "text": "승인 / 반려",
+          "type": "select",
+          "items": [
+            "승인",
+            "반려"
           ]
+        },
+        {
+          "key": "approval_reason",
+          "text": "사유",
+          "type": "textarea",
+          "required": false
         }
       ]
     }

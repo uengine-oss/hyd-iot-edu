@@ -7,7 +7,7 @@ under the saved decision/skill key. PLC commands are reached only afterwards.
 from copy import deepcopy
 import logging
 
-from . import decisions, engine, rework_effects
+from . import decisions, engine, inbox, rework_effects
 
 log = logging.getLogger(__name__)
 #: 전달 바깥(트랜잭션 · 저장소)에서 같은 승인이 연달아 이만큼 실패하면 FAILED 로 멈춘다 — 2초마다 끝없이 다시 보내지 않고 화면에 실패를 보인다
@@ -16,14 +16,15 @@ DELIVERY_STOP_AFTER = 3
 
 class ApprovalDelivery:
     def _discard_owner(self, wid, by, role):
+        """승인 폐기(미리보기 · 실행)와 다시 수행의 승인 물리기를 요청한 사람 확인. 요청자는 등록된 사람 사용자이고 내세운 역할의 구성원이어야
+        한다(inbox.check_actor — 아니면 PermissionError). 그 역할이 승인 원문의 그 안을 승인할 수 있는 역할인지는 decisions.approve 가 본다."""
         wi = self.repo.get_workitem(wid)
         if not wi or wi.get('tenant_id') != self.tenant_id:
             raise KeyError('no such approval work item')
         row = self.repo.get_approval(wid, self.tenant_id)
         if not row:
             raise KeyError('no such approval')
-        if not isinstance(by, str) or not by.strip() or not isinstance(role, str) or not role.strip():
-            raise ValueError('요청자와 역할을 입력하세요')
+        inbox.check_actor(self.repo, self.tenant_id, by, role)
         snapshot = deepcopy(row['payload']['plan'].get('_snapshot'))
         if not snapshot or role not in (snapshot.get('roles') or {}):
             raise PermissionError('승인 원문의 복구 역할을 확인할 수 없습니다')
@@ -220,11 +221,14 @@ class ApprovalDelivery:
         except Exception as error:  # noqa: BLE001 — 엔진의 보통 실패 길
             self._fail(wi, error, now)
 
-    def retry_approval(self, wid, by, role=None, now=None):
+    def retry_approval(self, wid, by, role, now=None):
+        """전달에 실패한 승인을 사람이 다시 전달한다. 요청자는 등록된 사람 사용자이고 내세운 역할의 구성원이어야 한다(inbox.check_actor —
+        아니면 PermissionError). 승인 기록의 「누가 다시 전달했나」에 그 사람 id 와 역할이 남는다."""
         now = self._now(now)
         wi = self.repo.get_workitem(wid)
         if not wi or wi.get('tenant_id') != self.tenant_id:
             raise KeyError('no such approval work item')
+        inbox.check_actor(self.repo, self.tenant_id, by, role)
         with self._transition(wi['proc_inst_id']):
             row = self.repo.get_approval(wid, self.tenant_id)
             inst = self.repo.get_instance(wi['proc_inst_id'])
@@ -235,12 +239,10 @@ class ApprovalDelivery:
                 raise ValueError('현재 조건이 달라 기존 동의를 다시 전달할 수 없습니다. 판단 단계에서 다시 수행하여 새 판단과 승인을 받으세요')
             if inst['status'] != 'RUNNING' or inst.get('is_deleted') or wi['status'] != 'SUBMITTED':
                 raise ValueError('이 인스턴스는 승인을 재전달할 수 없습니다')
-            if not by or not str(by).strip():
-                raise ValueError('복구 요청자를 입력하세요')
             snapshot = deepcopy(row['payload']['plan'].get('_snapshot'))
             if snapshot:
                 snapshot['state'] = 'PENDING_APPROVAL'
-                decisions.approve(snapshot, row['payload']['option'], by, role or '', 'retry same approval')
+                decisions.approve(snapshot, row['payload']['option'], by, role, 'retry same approval')
             row.update(status='PENDING', error=None)
             row['history'].append({'status':'PENDING', 't':engine.now_iso(now), 'by':by, 'role':role, 'reason':'manual retry'})
             self.repo.update_approval(row)
