@@ -90,7 +90,7 @@ export async function makeUI(ctx){
    if(name==='addNode')es=[...document.querySelectorAll('button')].filter(e=>vis(e)&&e.textContent.trim()==='Add Node');
    else if(name==='customize')es=btn('Customize');
    else if(name==='reverse')es=btn('Reverse');
-   else if(name==='cypherText')es=[...document.querySelectorAll('.modal textarea, .modal pre, .modal code')].filter(vis).slice(0,1);
+   else if(name==='cypherText'||name==='cypherHead')es=[...document.querySelectorAll('.modal textarea, .modal pre, .modal code')].filter(vis).slice(0,1);
    else if(name==='panelToggle')es=[...document.querySelectorAll('a.item')].filter(e=>{const r=e.getBoundingClientRect();return vis(e)&&r.x>innerWidth-80&&r.y<45;}).slice(-1);
    else if(name==='labelPlus')es=btn('Label');
    else if(name==='propPlus')es=btn('Property');
@@ -104,8 +104,14 @@ export async function makeUI(ctx){
    else if(name==='selCount')es=[...document.querySelectorAll('*')].filter(e=>vis(e)&&e.childElementCount<=3&&/^nodes:\s*\d+$/.test(e.textContent.replace(/\s+/g,' ').trim())).slice(0,1);
    // 화면 글자 그대로 찾는 단추(쿠키 안내 · 도움말 창처럼 이름표를 따로 두지 않은 것). 글이 같은 단추가 둘 이상이면 오류.
    else if(name.startsWith('text:'))es=btn(name.slice(5));
+   // 검색 화면처럼 arrows 밖의 쪽에서 쓰는 대상: sel:<CSS 선택자>는 보이는 첫 요소(검색 칸), link:<글>은 제목 글이 그 글과 같은 보이는 첫 링크(검색 결과 줄 — 같은 제목이 여럿이면 맨 위 것).
+   else if(name.startsWith('sel:'))es=[...document.querySelectorAll(name.slice(4))].filter(vis).slice(0,1);
+   else if(name.startsWith('link:')){const t=name.slice(5);es=[...document.querySelectorAll('a')].filter(a=>vis(a)&&(a.textContent.trim()===t||[...a.querySelectorAll('h2,h3')].some(h=>h.textContent.trim()===t))).map(a=>[...a.querySelectorAll('h2,h3')].find(h=>h.textContent.trim()===t)||a).slice(0,1);}
    else if(name.startsWith('tab:'))es=[...document.querySelectorAll('a,button,.item')].filter(e=>vis(e)&&e.textContent.trim()===name.slice(4)&&!e.closest('[role=listbox]'));
    else if(name==='logo')es=[...document.querySelectorAll('[role=listbox]')].filter(vis).slice(0,1);
+   // 검색 결과 가운데 화면에 적힌 주소가 그 주소인 첫 줄의 제목(result:arrows.app). 광고 줄(주소가 다르거나 광고 묶음)은 건너뛴다 — 결과 제목은 날마다 달라도 주소는 같다.
+   else if(name.startsWith('result:')){const host=name.slice(7);es=[...document.querySelectorAll('li')].filter(li=>!/b_ad/.test(li.className)&&[...li.querySelectorAll('cite')].some(c=>c.textContent.trim().replace(/^https?:\/\//,'').replace(/\/$/,'')===host)).map(li=>li.querySelector('h2 a')||li.querySelector('a')).filter(a=>a&&vis(a)).slice(0,1);}
+   else if(name==='menu:Open')es=[...document.querySelectorAll('[role=option]')].filter(e=>vis(e)&&e.textContent.startsWith('OpenRecently'));
    else if(name==='menu:New')es=[...document.querySelectorAll('[role=option]')].filter(e=>vis(e)&&e.textContent.startsWith('NewStore'));
    else if(name==='menu:newLocal'){const n=[...document.querySelectorAll('[role=option]')].find(e=>e.textContent.startsWith('NewStore'));es=n?[...n.querySelectorAll('[role=option]')].filter(e=>vis(e)&&e.textContent.trim()==='Web Browser storage'):[];}
    else if(name==='menu:Import')es=[...document.querySelectorAll('[role=option]')].filter(e=>vis(e)&&e.textContent.trim()==='Import');
@@ -114,19 +120,23 @@ export async function makeUI(ctx){
    else if(name==='labelInput')es=field('Labels',a=>a.slice(-1));
    else if(name==='propKey')es=field('Properties',a=>a.slice(-2,-1));
    else if(name==='propVal')es=field('Properties',a=>a.slice(-1));
+   // Customize의 고르는 칸(드롭다운): styleSel:<값 이름>은 그 줄의 고르는 칸, styleOpt:<값 이름>=<값>은 펼친 목록의 그 값(예: styleSel:detail-orientation → styleOpt:detail-orientation=horizontal).
+   else if(name.startsWith('styleSel:')||name.startsWith('styleOpt:')){const [k,v]=name.slice(9).split('=');const row=[...document.querySelectorAll('form tr')].find(r=>r.querySelector('td')?.textContent.trim()===k+':');
+    es=!row?[]:name.startsWith('styleSel:')?[...row.querySelectorAll('[role=listbox]')].filter(vis):[...row.querySelectorAll('[role=option]')].filter(e=>vis(e)&&e.textContent.trim()===v);}
    else if(name.startsWith('style:')){const row=[...document.querySelectorAll('form tr')].find(r=>vis(r)&&r.querySelector('td')?.textContent.trim()===name.slice(6)+':');es=row?[...row.querySelectorAll('input')].slice(0,1):[];}
    else return{error:'unknown target '+name};
    if(!es||es.length!==1)return{error:'target '+name+' matched '+(es?es.length:0)};
    const b=es[0].getBoundingClientRect();const inp=es[0].tagName==='INPUT';
+   if(name==='cypherHead')return{x:b.x+14,y:b.y+34};   // Cypher 글 첫 줄의 첫 낱말 바로 아래
    return{x:inp?b.x+Math.min(40,b.width/3):b.x+b.width/2,y:b.y+b.height/2,input:inp,bottom:b.bottom,left:b.x};
   },name));
   if(r.error)throw Error(r.error);return r;
  }
- // 고정 자리(CSS 1744×981 화면 기준, 포인터가 글자를 덮지 않는 빈 곳 · 단추 아래 테두리 — 110 % 화면에 점을 찍어 확인): 그림판 가운데 · 오른쪽 칸 · 테마 견본 · 주황 Save to Google Drive.
- const FIXED={canvasMid:{x:420,y:330},panelMid:{x:1343,y:150},samples:{x:1518,y:430},orange:{x:1578,y:37}};   // CSS 1744×981(config cloud metrics)
+ // 넓은 자리 둘(화면 값에 매이지 않게 그림판 테두리에서 잰다): canvasMid = 그림판 왼쪽 위 3분의 1 지점(새 그림의 빈 원은 한가운데라 비어 있다), panelMid = 오른쪽 칸의 개수 줄과 STYLE 사이 빈 자리(가로 가운데 · 그림판 위에서 135px — Add Node 단추는 오른쪽 끝에 있다).
+ const wide=name=>q1(()=>raw.evaluate(name=>{const b=document.querySelector('canvas').getBoundingClientRect();return name==='canvasMid'?{x:b.left+b.width*0.3,y:b.top+b.height*0.33}:{x:b.right+(innerWidth-b.right)/2,y:b.top+135};},name));
  // 그림판에 그린 글자(관계 이름 · Label 띠 · 화살표 속성)를 그 글로 찾는다. 같은 글이 둘 이상이면 오류.
  async function ctext(want){
-  const r=await q1(()=>raw.evaluate(w=>{const c=document.querySelector('canvas');if(!(c.__texts||[]).length)window.__redraw();const T=(c.__texts||[]).filter(t=>t.at>0),lt=Math.max(0,...T.map(t=>t.at));const hit=T.filter(t=>t.at>=lt-20&&t.t.includes(w));const u=[];for(const h of hit)if(!u.some(q=>Math.hypot(q.x-h.x,q.y-h.y)<4))u.push(h);return u.length===1?{x:u[0].x,y:u[0].y}:{error:'canvas text '+w+' matched '+u.length};},want));
+  const r=await q1(()=>raw.evaluate(w=>{const c=document.querySelector('canvas');if(!(c.__texts||[]).length)window.__redraw();const T=(c.__texts||[]).filter(t=>t.at>0),lt=Math.max(0,...T.map(t=>t.at));const hit=T.filter(t=>t.at>=lt-20&&t.t.includes(w));const u=[];for(const h of hit)if(!u.some(q=>Math.hypot(q.x-h.x,q.y-h.y)<4))u.push(h);return u.length===1?{x:u[0].x,y:u[0].y,w:u[0].w}:{error:'canvas text '+w+' matched '+u.length};},want));
   if(r.error)throw Error(r.error);return r;
  }
  // 빈 곳: 고정 좌표는 배치가 바뀌면 원·화살표에 맞아 선택이 풀리지 않는다(10구간 radius가 원 하나에만 들어간 원인).
@@ -151,17 +161,30 @@ export async function makeUI(ctx){
  }
  async function point(name){
   if(name==='blank')return blank();
-  if(FIXED[name])return FIXED[name];
+  if(name==='canvasMid'||name==='panelMid')return wide(name);
   if(name.startsWith('node:'))return node(name.slice(5));
-  if(name.startsWith('look:')){const n=await node(name.slice(5));return{x:n.x+n.r*0.78,y:n.y+n.r*0.78};}
+  // 원을 짚을 때는 테두리에서 18px 떨어진 오른쪽 아래를 짚는다(테두리 바깥 4~12px는 띠라서, 거기에 커서를 대면 띠가 진해져 끌어낼 자리처럼 보인다).
+  if(name.startsWith('look:')){const n=await node(name.slice(5)),d=(n.r+18)*Math.SQRT1_2;return{x:n.x+d,y:n.y+d};}
+  // 원 둘레의 하늘색 띠(테두리 바로 바깥 — 새 원을 끌어낼 때 잡는 자리)를 오른쪽 아래에서 짚는다.
+  if(name.startsWith('ring:')){const n=await node(name.slice(5));return{x:n.x+n.r*1.09*Math.SQRT1_2,y:n.y+n.r*1.09*Math.SQRT1_2};}
+  // 화살표의 두 끝: edgeFrom:가>나는 가 원의 테두리에서 나가는 자리, edgeTo:가>나는 나 원의 테두리에 닿는 자리(화살표를 따라 짚을 때 앞뒤로 쓴다 — 가운데의 관계 이름은 덮지 않는다).
+  if(name.startsWith('edgeFrom:')||name.startsWith('edgeTo:')){const from=name.startsWith('edgeFrom:');const [a,b]=name.slice(from?9:7).split('>');const p=await node(a),t=await node(b);const d=Math.hypot(t.x-p.x,t.y-p.y),ux=(t.x-p.x)/d,uy=(t.y-p.y)/d;
+   return from?{x:p.x+ux*(p.r+18),y:p.y+uy*(p.r+18)}:{x:t.x-ux*(t.r+18),y:t.y-uy*(t.r+18)};}
+  // 글상자(ctrl의 note)의 n째 줄: 글상자 왼쪽 바깥에서 그 줄 높이를 짚는다(글을 덮지 않는다).
+  if(name.startsWith('noteLine:')){const r=await q1(()=>raw.evaluate(i=>{const e=document.getElementById('recording-note');if(!e)return null;const b=e.getBoundingClientRect(),cs=getComputedStyle(e),lh=parseFloat(cs.lineHeight),pt=parseFloat(cs.paddingTop);return{x:b.left-30,y:b.top+pt+lh*(i-0.5)-8};},Number(name.slice(9))));
+   if(!r)throw Error('noteLine: 글상자가 떠 있지 않다');return r;}
   // 증거(속성) 줄: 그 원 둘레에 그려진 「키: 값」 글자(관계의 「절차:」는 뺀다)를 찾아, 첫 줄 바로 왼쪽을 짚는다(포인터가 글자를 덮지 않게).
-  if(name.startsWith('props:')){const n=await node(name.slice(6));
+  // props:<원>#2처럼 줄 번호를 붙이면 그 줄(위에서부터)을 짚는다.
+  if(name.startsWith('props:')){const [cap,nth]=name.slice(6).split('#');const n=await node(cap);n.nth=nth?Number(nth):0;
    const r=await q1(()=>raw.evaluate(n=>{const c=document.querySelector('canvas');const T=(c.__texts||[]).filter(t=>t.at>0),lt=Math.max(0,...T.map(t=>t.at));
     const L=T.filter(t=>t.at>=lt-20&&t.t.includes(':')&&!t.t.startsWith('절차')&&Math.hypot(t.x-n.x,t.y-n.y)<n.r+190);if(!L.length)return null;
-    return{left:Math.min(...L.map(t=>t.x-t.w/2)),top:Math.min(...L.map(t=>t.y))};},n));
+    const rows=[...new Set(L.map(t=>Math.round(t.y)))].sort((a,b)=>a-b);if(n.nth&&!rows[n.nth-1])return null;
+    return{left:Math.min(...L.map(t=>t.x-t.w/2)),top:n.nth?rows[n.nth-1]:rows[0]};},n));
    if(!r)throw Error('props '+name.slice(6)+': no property text near the node');return{x:r.left-30,y:r.top-6};}
   // 캔버스 글자(관계 이름 · 절차 번호 · Label 띠)는 글자 한가운데가 아니라 오른쪽 아래를 짚는다 — 포인터 몸통이 아래 · 오른쪽으로 뻗으므로 가로 · 세로 글자 모두 가리지 않는다(t13-s1 a019 「Asset」을 덮음).
   if(name.startsWith('ctext:')){const c=await ctext(name.slice(6));return{x:c.x+10,y:c.y+14};}
+  // 글자의 왼쪽 끝 · 오른쪽 끝 아래(글자를 처음부터 끝까지 따라 짚을 때).
+  if(name.startsWith('ctextL:')||name.startsWith('ctextR:')){const c=await ctext(name.slice(7));return{x:c.x+(name[5]==='L'?-1:1)*c.w/2,y:c.y+14};}
   // 두 원 사이 화살표의 가운데(화살표를 짚을 때).
   if(name.startsWith('edgeMid:')){const [a,b]=name.slice(8).split('>');const p=await node(a),t=await node(b);return{x:(p.x+t.x)/2,y:(p.y+t.y)/2};}
   return dom(name);
@@ -169,6 +192,7 @@ export async function makeUI(ctx){
  const ui={raw,install,gate,node,dom,circles,
   pos:()=>lastPos,
   move:async(x,y)=>{await moveCore(x,y);},
+  move2:async(x,y)=>{await moveCore(x,y);},   // 포인터를 화면 좌표로 옮기기(move는 아래의 원 옮기기가 같은 이름으로 덮는다)
   point:async name=>{const q=await point(name);await moveCore(q.x,q.y);},
   click:async name=>{
    for(let i=0;i<4;i++){
@@ -265,20 +289,12 @@ export async function makeUI(ctx){
    await moveCore(sx,sy);await gate();await q1(()=>raw.mouse.down());await moveCore(pick.x,pick.y);await q1(()=>raw.mouse.up());await sleep(300);
    const n1=(await circles()).list.length;if(n1!==n0+1)throw Error(`grow from ${source}: circles ${n0} -> ${n1}`);
   },
-  // 정한 자리로 끌기: 그림 좌표 (gx,gy)를 지금 보기(확대율 · 위치)로 화면 좌표로 바꿔, 원 테두리에서 그쪽으로 끌어 새 원 + 화살표를 만든다.
-  // 녹화 내내 보기를 한 번 정해 두므로(촬영준비 길 4) 끝 그림의 자리를 녹화 전에 정할 수 있다. 놓을 자리가 원과 겹치면 멈춘다(자리 표가 틀린 것).
-  // 휠로 그림판 옮기기: 지금 보기 위치(offset)를 (tx,ty)로, 24번에 나눠 휠을 굴린다(arrows 휠은 확대 없이 옮기기만 한다 — offset -= delta).
-  wheelTo:async(tx,ty)=>{
-   const cur=()=>q1(()=>raw.evaluate(()=>{if(!window.__arrowsStore)window.__redraw();const t=window.__arrowsStore.getState().viewTransformation;return{dx:t.offset.dx,dy:t.offset.dy};}));
-   await moveCore(FIXED.canvasMid.x,FIXED.canvasMid.y);let w=await cur();
-   // 남은 몫이 있으면 다시 굴린다. arrows는 그림이 그림판 밖으로 나가게는 옮기지 않으므로(원 하나일 때 x 124까지) 그 밖의 목표는 멈춘다.
-   for(let pass=0;pass<4&&(Math.abs(w.dx-tx)>1||Math.abs(w.dy-ty)>1);pass++){const N=pass?4:24,ddx=(w.dx-tx)/N,ddy=(w.dy-ty)/N;
-    for(let i=0;i<N;i++){await q1(()=>raw.mouse.wheel(ddx,ddy));await sleep(45);}await sleep(300);w=await cur();}if(Math.abs(w.dx-tx)>1||Math.abs(w.dy-ty)>1)throw Error(`wheelTo ${tx},${ty}: view ${w.dx},${w.dy}`);
-  },
-  growTo:async(source,gx,gy)=>{
-   const s=await node(source);await ui.click('node:'+source);
-   const v=await q1(()=>raw.evaluate(()=>{if(!window.__arrowsStore)window.__redraw();const st=window.__arrowsStore;const t=st.getState().viewTransformation;const c=document.querySelector('canvas').getBoundingClientRect();return{k:t.scale,dx:t.offset.dx,dy:t.offset.dy,l:c.left,t:c.top};}));
-   const x=v.l+gx*v.k+v.dx,y=v.t+gy*v.k+v.dy;
+  // 정한 자리로 끌기: 기준 원(anchor — 첫 원)에서 잰 그림 좌표 (gx,gy)를 지금 보기 배율로 화면 좌표로 바꿔, source 원의 띠에서 그쪽으로 끌어 새 원 + 화살표를 만든다.
+  // 첫 원을 끌어 옮긴 뒤에도 자리 표가 맞도록 보기 위치 대신 기준 원의 화면 자리에서 잰다. 놓을 자리가 원과 겹치면 멈춘다(자리 표가 틀린 것). 원을 누르는 것은 큐가 따로 한다(click node:).
+  growTo:async(source,gx,gy,anchor)=>{
+   const s=await node(source),o=await node(anchor);
+   const k=await q1(()=>raw.evaluate(()=>{if(!window.__arrowsStore)window.__redraw();return window.__arrowsStore.getState().viewTransformation.scale;}));
+   const x=o.x+gx*k,y=o.y+gy*k;
    const {list}=await circles();if(list.some(c=>Math.hypot(c.x-x,c.y-y)<c.r+s.r))throw Error(`growTo ${source}: target ${gx},${gy} overlaps a circle`);
    const rels=await q1(()=>raw.evaluate(()=>{const id=location.hash.split('id=')[1];const g=JSON.parse(localStorage.getItem('GRAPH|'+id)).graph;const by=Object.fromEntries(g.nodes.map(n=>[n.id,n.caption]));return g.relationships.map(r=>[by[r.fromId],by[r.toId]]);}));
    const pos={};for(const [a,b] of rels)for(const c of [a,b])if(c&&!pos[c])pos[c]=await node(c);
@@ -302,10 +318,14 @@ export async function makeUI(ctx){
    const m=await node(caption);const others=(await circles()).list.filter(c=>Math.hypot(c.x-m.x,c.y-m.y)>4);
    if(others.some(c=>Math.hypot(c.x-m.x,c.y-m.y)<c.r+m.r))throw Error('After move '+caption+' overlaps another node');
   },
-  drag:async(caption,x,y)=>{
-   const n=await node(caption);await moveCore(n.x,n.y);await gate();
-   await q1(()=>raw.mouse.down());await moveCore(x,y);await q1(()=>raw.mouse.up());await sleep(200);
-   const m=await node(caption);if(Math.hypot(m.x-x,m.y-y)>12)throw Error(`Drag ${caption}: at ${Math.round(m.x)},${Math.round(m.y)} expected ${x},${y}`);
+  // 있는 원의 안쪽을 잡아 그림판 안 자리 (cx,cy)로 옮긴다(그림판 왼쪽 위에서 잰 CSS px, cy가 null이면 높이는 그대로). 가장자리에서 (반지름 + 54)px 안으로 끌면 arrows가 그림 전체를 줄이므로, 그런 자리는 끌기 전에 멈추고 끈 뒤에도 보기 배율이 그대로인지 본다.
+  drag:async(caption,cx,cy)=>{
+   const n=await node(caption);const c=await q1(()=>raw.evaluate(()=>{if(!window.__arrowsStore)window.__redraw();const b=document.querySelector('canvas').getBoundingClientRect();return{l:b.left,t:b.top,w:b.width,h:b.height,k:window.__arrowsStore.getState().viewTransformation.scale};}));
+   const x=c.l+cx,y=cy==null?n.y:c.t+cy,m0=n.r+54;if(x-c.l<m0||c.l+c.w-x<m0||y-c.t<m0||c.t+c.h-y<m0)throw Error(`drag ${caption}: 놓을 자리 ${cx},${cy}가 그림판 가장자리 ${Math.round(m0)}px 안이다(그림이 줄어든다)`);
+   await moveCore(n.x,n.y);await gate();
+   await q1(()=>raw.mouse.down());await moveCore(x,y);await q1(()=>raw.mouse.up());await sleep(300);
+   const m=await node(caption);if(Math.hypot(m.x-x,m.y-y)>12)throw Error(`drag ${caption}: at ${Math.round(m.x)},${Math.round(m.y)} expected ${Math.round(x)},${Math.round(y)}`);
+   const k=await q1(()=>raw.evaluate(()=>window.__arrowsStore.getState().viewTransformation.scale));if(k!==c.k)throw Error(`drag ${caption}: 보기 배율이 ${c.k} → ${k}로 바뀌었다`);
   },
   connect:async(a,b)=>{
    const p=await node(a),t=await node(b);const base=Math.atan2(t.y-p.y,t.x-p.x);

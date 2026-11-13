@@ -1,0 +1,1 @@
+{"id": "e104", "text": "그런데 이 화살표에는 CAUSES를 못 써요. CAUSES는 원인에서 고장으로만 긋기로 약속했는데, 이건 양쪽이 다 고장이에요. 여기에 CAUSES를 쓰면 나중에 거꾸로 따라갔을 때 원인하고 고장이 섞여서 나오거든요. 그래서 고장이 고장으로 이어질 때는 LEADS_TO라는 이름을 씁니다.", "duration_ms": 21120, "voice_id": "1PdAOcPlPTz12RwMyFVp", "model_id": "eleven_v4", "character_cost": 78}

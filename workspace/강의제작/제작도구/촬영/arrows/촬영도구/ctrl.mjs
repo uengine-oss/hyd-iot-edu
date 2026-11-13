@@ -8,8 +8,8 @@ const fs0=await import('node:fs/promises');const {fileURLToPath}=await import('n
 const here=path.dirname(fileURLToPath(import.meta.url));const conf=JSON.parse(await fs0.readFile(path.join(here,'config.json'),'utf8'));
 const base=path.resolve(here,conf.work).split(path.sep).join('/');const audio=path.resolve(here,process.env.HYD_AUDIO||conf.audio).split(path.sep).join('/');
 // 브라우저 앞부분: ego에서는 전역 taskSpace, 클라우드에서는 pw.mjs(Playwright, run.sh up이 띄운 browser.mjs에 붙음). 화면 값도 그 갈래의 config 값을 쓴다.
-const ego=typeof globalThis.taskSpace==='function';const taskSpace=ego?globalThis.taskSpace:(await import('./pw.mjs')).taskSpace;
-const M=(ego?conf.ego:conf.cloud).metrics;const metrics=(dw=0)=>({width:M.width+dw,height:M.height,deviceScaleFactor:M.deviceScaleFactor,mobile:false});
+const ego=typeof globalThis.taskSpace==='function';const pw=ego?null:await import('./pw.mjs');const taskSpace=ego?globalThis.taskSpace:pw.taskSpace;
+const M=(ego?conf.ego:pw.PROFILE).metrics;const metrics=(dw=0)=>({width:M.width+dw,height:M.height,deviceScaleFactor:M.deviceScaleFactor,mobile:false});
 const boot=m=>fs0.appendFile(base+'/boot.log',new Date().toISOString().slice(11,23)+' '+SEG.name+' '+m+String.fromCharCode(10));await boot('enter');
 const {makeUI}=await import('./ui.mjs?'+SEG.name);
 const fs=await import('node:fs/promises');
@@ -109,11 +109,11 @@ async function exec(o){
  // 짚기 뒤 끝 조작: 말 끝 0.9초 전에 출발해(커서 이동) 끝 0.25초 전에 누른다(시간표 큐의 마지막 누르기 · 적기).
  if(op==='atend'){const w=ctx.cueT0+ctx.cueDur-900-Date.now();if(w>0)await sleep(w);ctx.commitAt=ctx.cueT0+ctx.cueDur-250;return;}
  if(op==='point')return ui.point(a[0]);
- // 글상자: 화면에 없는 값(판단할 사건 값 등)을 그림 아래에 띄운다(note 글) · 지운다(note null). 페이지 위에 얹는 표시일 뿐 클릭을 받지 않는다.
+ // 글상자: 화면에 없는 값(판단할 사건 값 등)을 그림판 위에 띄운다(note 글 자리) · 지운다(note null). 자리는 두 글자다: 첫 글자 t(위) · b(아래), 둘째 글자 l(왼쪽) · c(가운데) · r(오른쪽) — 그 배치에서 원 · 글이 없는 구석을 준다. 페이지 위에 얹는 표시일 뿐 클릭을 받지 않는다.
  if(op==='note')return serial(()=>p.evaluate(([t,at])=>{let e=document.getElementById('recording-note');if(t===null){e?.remove();return;}
   if(!e){e=document.createElement('div');e.id='recording-note';e.setAttribute('aria-hidden','true');document.documentElement.append(e);}
   const c=document.querySelector('canvas').getBoundingClientRect();
-  const hz=at[1]==='l'?`left:${c.left+24}px;`:`left:${c.left+c.width/2}px;transform:translateX(-50%);`;const vt=at[0]==='t'?`top:${c.top+20}px;`:`bottom:${innerHeight-c.bottom+24}px;`;
+  const hz=at[1]==='l'?`left:${c.left+24}px;`:at[1]==='r'?`right:${innerWidth-c.right+24}px;`:`left:${c.left+c.width/2}px;transform:translateX(-50%);`;const vt=at[0]==='t'?`top:${c.top+20}px;`:`bottom:${innerHeight-c.bottom+24}px;`;
   e.style.cssText=`position:fixed;${hz}${vt}max-width:${c.width-80}px;padding:10px 22px;border-radius:10px;background:rgba(17,24,39,.86);color:#fff;font:600 21px/1.45 'Malgun Gothic',sans-serif;white-space:pre;text-align:center;pointer-events:none;z-index:2147483646`;
   e.textContent=t;},[a[0]??null,a[1]||'bc']));
  if(op==='click')return ui.click(a[0]);
@@ -125,8 +125,7 @@ async function exec(o){
  // 사람처럼 그 자리에서 다시 시도: 끌어내기는 방향을 바꿔, 화살표 선택·잇기는 한 번 더. 녹화는 멈추지 않는다.
  if(op==='grow'){for(const d of [0,60]){try{return await ui.grow(a[0],a[1]+d);}catch(e){await log('retry grow '+a[0]+' '+String(e).slice(0,80));}}throw Error('grow failed 3 times from '+a[0]);}
  if(op==='move')return ui.move(a[0],a[1],a[2]);
- if(op==='growTo')return ui.growTo(a[0],a[1],a[2]);
- if(op==='wheelTo')return ui.wheelTo(a[0],a[1]);
+ if(op==='growTo'){if(!a[3])throw Error('growTo '+a[0]+': 기준 원(넷째 값)이 없다 — build_ontology.py gt()');return ui.growTo(a[0],a[1],a[2],a[3]);}
  // 사용자가 직접 조작하는 동안 녹화만 유지한다. DONE 파일이 생기면 끝(최대 15분). 포인터는 사용자 마우스 이동을 따라간다.
  if(op==='manual'){await log('manual start');const t0=Date.now();while(!(await fs.stat(base+'/DONE').then(()=>true).catch(()=>false))){if(Date.now()-t0>900000)throw Error('manual timeout');await sleep(300);}await log('manual done');return;}
  if(op==='place'){const r=await ui.place(a[0]);await log('place '+r.join(' '));return;}
@@ -136,11 +135,30 @@ async function exec(o){
  if(op==='spread')return ui.spread(a[0],a[1]);
  if(op==='arrange'){const r=await ui.arrange(a[0]);await log('arrange '+r.join(' '));return;}
  if(op==='edge'){try{return await ui.edge(a[0],a[1]);}catch(e){await log('retry edge');await ui.click('blank');return ui.edge(a[0],a[1]);}}
+ // 오른쪽 칸 굴리기(사람 손의 휠): panelScroll <대상>은 그 대상이 화면에 들어올 때까지 오른쪽 칸 위에서 휠을 아래로 굴리고, 대상 없이 부르면 맨 위로 되돌린다. Customize 목록 아래쪽의 값(Arrows 묶음)을 바꿀 때 쓴다.
+ if(op==='panelScroll'){
+  const cb=await serial(()=>p.evaluate(()=>{const b=document.querySelector('canvas').getBoundingClientRect();return{x:b.right+(innerWidth-b.right)/2,y:b.top+110,lim:innerHeight*0.6};}));   // 칸 위쪽 빈 자리에서 굴린다(radius 줄 밑에 뜨는 슬라이더 위에서는 휠이 칸을 굴리지 않는다)
+  await ui.move2(cb.x,cb.y);await ui.gate();
+  if(a[0]){for(let i=0;i<30;i++){try{const q=await ui.dom(a[0]);if(q.y<cb.lim)break;}catch(e){}await serial(()=>p.mouse.wheel(0,100));await sleep(110);}await ui.dom(a[0]);}
+  else{for(let i=0;i<30;i++){await serial(()=>p.mouse.wheel(0,-100));await sleep(60);}}
+  await sleep(300);return;
+ }
+ // 쪽이 바뀐 뒤(검색 → 결과 쪽): 새 쪽이 다 뜨기를 기다려 표시 포인터를 다시 심는다(쪽이 바뀌면 심어 둔 포인터가 사라진다).
+ if(op==='reinstall'){await serial(()=>p.waitForLoadState('load',{timeout:30000}));await sleep(a[0]??800);await ui.install();await sleep(200);return;}
+ // 검색 결과 줄을 눌러 arrows.app으로 들어간다: openLink <대상>(대상은 ui의 result:<화면에 적힌 주소> · link:<제목 글> · sel:<선택자>).
+ // 검색 사이트가 결과를 새 탭으로 열면(Bing · 네이버) 녹화 탭은 따라가지 못하므로, 새 탭을 닫고 녹화 탭을 https://arrows.app으로 옮긴다 — 녹화 화면에는 탭 줄이 없어 학생이 보는 것(새 탭이 앞에 뜸)과 같은 화면이다. Playwright 길(cloud · pc)에서만 된다.
  if(op==='openLink'){
-  const q=await serial(()=>p.evaluate(()=>{const h=[...document.querySelectorAll('a h3')].find(e=>e.textContent.trim()==='Arrows.app');if(!h)return null;const b=h.getBoundingClientRect();return{x:b.x+Math.min(60,b.width/2),y:b.y+b.height/2};}));
-  if(!q)throw Error('Arrows.app link not on page');
-  await ui.move(q.x,q.y);await ui.gate();await serial(()=>p.mouse.click(q.x,q.y));
-  await serial(()=>p.waitForURL(/arrows\.app/,{timeout:15000}));await serial(()=>p.waitForSelector('canvas',{timeout:15000}));
+  const isArrows=u=>/^https:\/\/(www\.)?arrows\.app\//.test(u);
+  const target=a[0];if(!target)throw Error('openLink: 대상이 없다');await ui.point(target);await ui.gate();const q=await ui.dom(target);   // ui.move는 원 옮기기라 쓰지 않는다(포인터 옮기기는 ui.point)
+  const ctxp=typeof p.context==='function'?p.context():null;const before=ctxp?ctxp.pages().length:0;
+  await serial(()=>p.mouse.click(q.x,q.y));
+  let moved=false;for(const t0=Date.now();Date.now()-t0<15000&&!moved;await sleep(100)){
+   if(isArrows(await serial(()=>p.url()))){moved=true;break;}
+   if(ctxp&&ctxp.pages().length>before){const np=ctxp.pages().at(-1);await np.waitForURL(isArrows,{timeout:15000,waitUntil:'commit'}).catch(()=>{});const u=np.url();await np.close();if(!isArrows(u))throw Error('openLink '+target+': new tab opened '+u.slice(0,80));
+    await log('openLink: new tab '+u.slice(0,80)+' → 녹화 탭을 arrows.app으로');await serial(()=>p.goto('https://arrows.app',{waitUntil:'domcontentloaded',timeout:60000}));moved=true;}
+  }
+  if(!moved)throw Error('openLink '+target+': arrows.app did not open (same tab or new tab) within 15s');
+  await serial(()=>p.waitForSelector('canvas',{timeout:15000}));await serial(()=>p.waitForLoadState('load',{timeout:30000}));
   await ui.install();await sleep(300);return;
  }
  if(op==='download'){

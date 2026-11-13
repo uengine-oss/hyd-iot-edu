@@ -5,7 +5,7 @@
 export async function restore({take, edge, space}){
  const fs=await import('node:fs/promises');const {fileURLToPath}=await import('node:url');const path=await import('node:path');
  const here=path.dirname(fileURLToPath(import.meta.url));const conf=JSON.parse(await fs.readFile(path.join(here,'config.json'),'utf8'));
- const ego=typeof globalThis.taskSpace==='function';const taskSpace=ego?globalThis.taskSpace:(await import('./pw.mjs')).taskSpace;const M=(ego?conf.ego:conf.cloud).metrics;const metrics=(dw=0)=>({width:M.width+dw,height:M.height,deviceScaleFactor:M.deviceScaleFactor,mobile:false});
+ const ego=typeof globalThis.taskSpace==='function';const pw=ego?null:await import('./pw.mjs');const taskSpace=ego?globalThis.taskSpace:pw.taskSpace;const M=(ego?conf.ego:pw.PROFILE).metrics;const metrics=(dw=0)=>({width:M.width+dw,height:M.height,deviceScaleFactor:M.deviceScaleFactor,mobile:false});
  const base=path.resolve(here,conf.work);
  const end=JSON.parse(await fs.readFile(path.join(base,take,'end-state.json'),'utf8')).graph.graph;
  const t=await taskSpace(space||conf.space);
@@ -54,7 +54,7 @@ export async function restore({take, edge, space}){
 export async function coords({space}={}){
  const fs=await import('node:fs/promises');const {fileURLToPath}=await import('node:url');const path=await import('node:path');
  const here=path.dirname(fileURLToPath(import.meta.url));const conf=JSON.parse(await fs.readFile(path.join(here,'config.json'),'utf8'));
- const ego=typeof globalThis.taskSpace==='function';const taskSpace=ego?globalThis.taskSpace:(await import('./pw.mjs')).taskSpace;const M=(ego?conf.ego:conf.cloud).metrics;const metrics=(dw=0)=>({width:M.width+dw,height:M.height,deviceScaleFactor:M.deviceScaleFactor,mobile:false});
+ const ego=typeof globalThis.taskSpace==='function';const pw=ego?null:await import('./pw.mjs');const taskSpace=ego?globalThis.taskSpace:pw.taskSpace;const M=(ego?conf.ego:pw.PROFILE).metrics;const metrics=(dw=0)=>({width:M.width+dw,height:M.height,deviceScaleFactor:M.deviceScaleFactor,mobile:false});
  const p=(await taskSpace(space||conf.space)).page('p1');
  if(!(await p.url()).includes('arrows.app')){await p.goto('https://arrows.app');await p.waitForSelector('canvas');}
  return p.evaluate(()=>{const cur=location.hash.split('id=')[1];const res=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(!k.startsWith('GRAPH|'))continue;try{const g=JSON.parse(localStorage.getItem(k)).graph;res.push({id:k.slice(6),current:k.slice(6)===cur,nodes:g.nodes.map(n=>[n.caption,Math.round(n.position.x),Math.round(n.position.y)]),rels:g.relationships.length,radius:g.style.radius});}catch(e){}}return res;});

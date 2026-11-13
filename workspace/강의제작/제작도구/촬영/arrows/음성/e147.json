@@ -1,0 +1,1 @@
+{"id": "e147", "text": "여기 나온 글이 이 그림을 Neo4j에 넣는 명령이에요. Neo4j가 알아듣는 Cypher라는 말로 적혀 있고, 맨 앞 CREATE가 만들라는 뜻입니다. 그 뒤로 원이랑 화살표, 속성까지 다 들어 있어요. Done으로 닫아 주세요", "duration_ms": 16400, "voice_id": "1PdAOcPlPTz12RwMyFVp", "model_id": "eleven_v4", "character_cost": 62}

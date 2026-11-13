@@ -2,16 +2,12 @@
 // browser.mjs가 띄워 둔 헤드리스 Chromium(기본 문맥 하나, 페이지 하나)에 CDP로 붙는다. 구간 사이에도 같은 페이지 · 그림 · 저장소가 남는다(ego 작업 공간 역할).
 // ego와 다른 것: p.cdp(메서드, 값)은 페이지 CDP 세션의 send, p.events()는 그 세션에서 받은 screencast 프레임 이벤트를 꺼내 준다(ego처럼 {method, params}).
 // waitForFileChooser는 Playwright의 waitForEvent('filechooser')다. 나머지(evaluate · mouse · keyboard · waitFor* · url · goto · click · fill)는 Playwright 페이지 그대로다.
-import {createRequire} from 'node:module';
-import fs from 'node:fs';
-import {fileURLToPath} from 'node:url';
-const require=createRequire(import.meta.url);
-const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'/opt/node22/lib/node_modules/playwright');
-const HERE=fileURLToPath(new URL('.',import.meta.url));
-const CFG=JSON.parse(fs.readFileSync(HERE+'config.json','utf8'));
+import {PROFILE,playwright} from './env.mjs';
+export {PROFILE};
+const {chromium}=playwright();
 let browser=null;
 export async function taskSpace(){
- browser??=await chromium.connectOverCDP(`http://127.0.0.1:${CFG.cloud.cdp}`);
+ browser??=await chromium.connectOverCDP(`http://127.0.0.1:${PROFILE.cdp}`);
  const page=browser.contexts()[0]?.pages()[0];if(!page)throw Error('browser.mjs page missing (run.sh up 먼저)');
  const cdp=await page.context().newCDPSession(page);const buf=[];
  cdp.on('Page.screencastFrame',params=>buf.push({method:'Page.screencastFrame',params}));
