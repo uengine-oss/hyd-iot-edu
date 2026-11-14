@@ -1716,7 +1716,194 @@ def cause_to_action() -> str:
     return svg(o)
 
 
-NEW_ONLY: set = {"경로2_1.svg", "경로2_2.svg", "데이터_명령_두경로.svg", "온톨로지_모양.svg", "온톨로지_문장읽기.svg", "약속_채움_두층.svg", "온톨로지_네가지.svg"}
+# ───────────────────────── 03편 새 차례: 메모 한 줄을 처음부터 끝까지 들고 간다 ─────────────────────────
+
+def _node(P, kind, hot=False, grey=False, k=1.0):
+    """실제 대상 하나를 그린 원과 그 안의 그림. P = (x, y, r). kind: rise · fm · pin · wash · fanmax · fanbad · amb · equip · cooler · sensor · doc."""
+    x, y, r = P
+    if grey:
+        o = [circle(x, y, r, fill=LIGHT, stroke=GREY, sw=3)]
+        st = OFF
+    elif hot:
+        o = [circle(x, y, r, fill=SKY, stroke=NAVY, sw=4)]
+        st = NORM
+    else:
+        o = [circle(x, y, r, fill=PALE, stroke=BLUE, sw=3.5)]
+        st = NORM
+    s = r / 56 * k
+    if kind == "rise":
+        o += thermo(x - 12 * s, y + 24 * s, st, s=0.62 * s, level=0.7) + [arrow([(x + 18 * s, y + 20 * s), (x + 18 * s, y - 26 * s)], GREY if grey else BLUE, sw=4, size=11)]
+    elif kind == "fm":
+        o += g(x, y, 0.6 * s, broken_cooler(0, 0, st))
+    elif kind == "pin":
+        o += g(x, y, 0.6 * s, dusty_cooler(0, 0, st))
+    elif kind == "wash":
+        o += g(x, y, 0.66 * s, radiator(-44, -34, 88, 68, ON if not grey else OFF, fins=8, r=7))
+    elif kind == "fanmax":
+        o += fan(x, y, 0.62 * r, st, rot=20, hot=not grey)
+    elif kind == "fanbad":
+        o += _shaky_fan(x, y, 0.38 * r, st)
+    elif kind == "amb":
+        o += g(x, y, 0.6 * s, cabinet(0, 0, st))
+    elif kind == "equip":
+        o += g(x, y - 2 * s, 0.72 * s, equip_mini(0, 0, st))
+    elif kind == "cooler":
+        o += g(x, y, 0.66 * s, radiator(-44, -34, 88, 68, st, fins=8, r=7))
+    elif kind == "sensor":
+        o += gauge(x, y, st, r=0.52 * r, hot=not grey)
+    elif kind == "doc":
+        o += g(x, y, 0.6 * s, book_icon(0, 0, st))
+    return o
+
+
+def same_reading() -> str:
+    """49장: 까닭이 달라도(위 먼지 낀 쿨러 · 아래 떨리는 팬) 온도계의 숫자는 똑같이 오른다. 오른쪽 세 칸은 값만으로는 알 수 없는 것."""
+    o: list[str] = []
+    A, B = (150, 135, 62), (150, 385, 62)
+    o += [arrow([(222, 150), (398, 232)], NAVY, sw=4.5), arrow([(222, 370), (398, 288)], NAVY, sw=4.5)]
+    o += _node(A, "pin") + _node(B, "fanbad")
+    o.append(circle(490, 260, 86, fill=SKY, stroke=NAVY, sw=4))
+    o += thermo(470, 305, NORM, s=1.25, level=0.78) + [arrow([(522, 300), (522, 215)], BLUE, sw=6, size=16)]
+    o.append(arrow([(590, 260), (668, 260)], GREY, sw=5, size=16))
+    for i in range(3):
+        o.append(rect(690, 40 + i * 152, 490, 136, 14, fill=LIGHT, stroke="none", sw=0))
+    return svg(o)
+
+
+MEMO4 = {"Y": (190, 345, 60), "F": (480, 345, 68), "C": (770, 345, 60), "K": (1050, 345, 60)}
+
+
+def _memo_row(P, hot_edges=(), tags=True):
+    """메모를 다시 적은 한 줄: 증상 Y → 고장 유형 F ← 원인 C ← 조치 K. 원 위의 연하늘 칸은 종류 이름표 자리."""
+    Y, F, C, K = P["Y"], P["F"], P["C"], P["K"]
+    o: list[str] = []
+    for key, (a, b) in (("YF", (Y, F)), ("CF", (C, F)), ("KC", (K, C))):
+        o += _edge_arrow(a, b, BLUE if key in hot_edges else NAVY, sw=5 if key in hot_edges else 4.5)
+    o += _node(Y, "rise") + _node(F, "fm", hot=True) + _node(C, "pin") + _node(K, "wash")
+    if tags:
+        for (x, y, r) in (Y, F, C, K):
+            o.append(rect(x - 78, y - r - 58, 156, 40, 20, fill=PALE, stroke="none", sw=0))
+    return o
+
+
+def memo_rewritten() -> str:
+    """52장: 위 왼쪽 메모 한 장(글은 라벨), 아래는 같은 내용을 종류 이름표와 이름 붙은 화살표로 다시 적은 한 줄."""
+    o: list[str] = []
+    o += g(120, 92, 0.72, note_doc(0, 0, ON))
+    o.append(arrow([(600, 150), (600, 200)], GREY, sw=5, size=16))
+    o += _memo_row(MEMO4)
+    return svg(o)
+
+
+ASK4 = {"Y": (330, 330, 58), "F": (600, 330, 66), "C": (870, 330, 58), "K": (1110, 330, 58)}
+
+
+def ask_and_follow() -> str:
+    """53장: 왼쪽 프로그램이 증상에서 출발해 이름 붙은 화살표를 따라 원인과 조치에 닿는다. 위 칸은 물음과 답 자리."""
+    o: list[str] = [rect(230, 14, 960, 116, 14, fill=LIGHT, stroke="none", sw=0)]
+    o += g(95, 335, 1.15, agent_icon(0, 0, ON))
+    o.append(arrow([(165, 330), (258, 330)], BLUE, sw=5, size=15))
+    o += _memo_row(ASK4, hot_edges=("YF", "CF", "KC"))
+    return svg(o)
+
+
+def line_vs_named() -> str:
+    """56장: 왼쪽은 이름 없는 선으로 이은 두 원, 오른쪽은 같은 두 원을 이름 붙은 화살표로 이은 것."""
+    o: list[str] = [rect(15, 40, 540, 440, 14, fill=LIGHT, stroke="none", sw=0), rect(645, 40, 540, 440, 14, fill=PALE, stroke="none", sw=0)]
+    a, b = (150, 290, 62), (420, 290, 68)
+    o.append(line(a[0] + a[2] + 6, 290, b[0] - b[2] - 6, 290, stroke=NAVY, sw=4.5))
+    o += _node(a, "pin") + _node(b, "fm", hot=True)
+    a2, b2 = (780, 290, 62), (1050, 290, 68)
+    o += _edge_arrow(a2, b2, BLUE, sw=5.5, size=17)
+    o += _node(a2, "pin") + _node(b2, "fm", hot=True)
+    return svg(o)
+
+
+def two_actions() -> str:
+    """57장: 완화 조치(왼쪽 팬)는 고장 유형으로, 근본 조치(오른쪽 세척)는 원인으로 — 이름이 다른 두 화살표. 가운데는 원인 → 고장 유형."""
+    M, F, C, R = (140, 270, 62), (440, 270, 70), (760, 270, 62), (1060, 270, 62)
+    o: list[str] = []
+    o += _edge_arrow(M, F, BLUE, sw=5.5, size=17) + _edge_arrow(C, F) + _edge_arrow(R, C, BLUE, sw=5.5, size=17)
+    o += _node(M, "fanmax") + _node(F, "fm", hot=True) + _node(C, "pin") + _node(R, "wash")
+    return svg(o)
+
+
+def property_card() -> str:
+    """58장: 왼쪽 원(부품 하나)과 그 원에 달아 둔 항목 네 줄(오른쪽 카드). 줄마다 왼쪽이 항목 이름, 오른쪽이 값 자리."""
+    o: list[str] = []
+    P = (210, 270, 96)
+    o.append(rect(132, 110, 156, 40, 20, fill=PALE, stroke="none", sw=0))
+    o.append(line(312, 270, 452, 270, stroke=NAVY, sw=4))
+    o += _node(P, "cooler")
+    o.append(rect(460, 40, 700, 440, 16, fill=WHITE, stroke=NAVY, sw=3.5))
+    for i in range(4):
+        y = 60 + i * 102
+        o.append(rect(480, y, 240, 86, 10, fill=PALE, stroke="none", sw=0))
+        o.append(rect(736, y, 404, 86, 10, fill=LIGHT, stroke="none", sw=0))
+    return svg(o)
+
+
+def schema_and_graph() -> str:
+    """61장: 위 띠 = 온톨로지(빈 원 셋: 조치 → 원인 → 고장 유형, 화살표 이름만). 아래 띠 = 지식 그래프(같은 자리의 실제 대상).
+    아래 띠에 원인 하나(떨리는 팬)를 더해 같은 고장 유형으로 잇는다(굵은 파란 화살표). 띠 왼쪽 끝은 띠 이름 자리."""
+    xs, yt, yb = (400, 690, 980), 118, 300
+    o: list[str] = [rect(15, 10, 1170, 196, 16, fill=PALE, stroke="none", sw=0), rect(15, 222, 1170, 292, 16, fill=WHITE, stroke=GREY, sw=3)]
+    for x in xs:
+        o += dash_line(x, yt + 52, x, yb - 62, GREY, 3, 8, 7)
+    o += [arrow([(xs[0] + 52, yt), (xs[1] - 56, yt)], NAVY, sw=4.5, size=15), arrow([(xs[1] + 52, yt), (xs[2] - 56, yt)], NAVY, sw=4.5, size=15)]
+    for x in xs:
+        o.append(circle(x, yt, 46, fill=WHITE, stroke=NAVY, sw=3.5))
+    K, C, F, E = (xs[0], yb, 52), (xs[1], yb, 52), (xs[2], yb, 58), (690, 455, 42)
+    o += _edge_arrow(K, C) + _edge_arrow(C, F) + _edge_arrow(E, F, BLUE, sw=6, size=17)
+    o += _node(K, "wash") + _node(C, "pin") + _node(F, "fm", hot=True)
+    o.append(circle(E[0], E[1], E[2], fill=SKY, stroke=BLUE, sw=4))
+    o += _shaky_fan(E[0], E[1], 17, NORM)
+    return svg(o)
+
+
+FMAP = {"E": (90, 135, 46), "P": (300, 135, 46), "S": (510, 135, 46), "Y": (510, 385, 46), "F": (720, 385, 54),
+        "C": (720, 135, 46), "R": (930, 135, 46), "D": (1120, 135, 42)}
+FMAP_EDGES = (("E", "P"), ("S", "P"), ("S", "Y"), ("Y", "F"), ("C", "F"), ("R", "C"), ("R", "D"))
+FMAP_KIND = {"E": "equip", "P": "cooler", "S": "sensor", "Y": "rise", "F": "fm", "C": "pin", "R": "wash", "D": "doc"}
+
+
+def fault_map(on=None, hot=()) -> str:
+    """63장: 설비 고장을 다룰 때의 지도 — 설비 E · 부품 P · 센서 S · 증상 Y · 고장 유형 F · 원인 C · 조치 R · 근거 문서 D.
+    on이 있으면 그 원과 hot 화살표만 밝히고 나머지는 회색으로 둔다."""
+    o: list[str] = []
+    for a, b in FMAP_EDGES:
+        lit = on is None or (a, b) in hot
+        o += _edge_arrow(FMAP[a], FMAP[b], (BLUE if (a, b) in hot else NAVY) if lit else GREY, sw=4.5 if lit else 3, size=14)
+    for k, P in FMAP.items():
+        o += _node(P, FMAP_KIND[k], hot=(k == "F"), grey=(on is not None and k not in on))
+    return svg(o)
+
+
+def walk_to_causes() -> str:
+    """64장: 값을 낸 센서 S에서 부품 P로(아래), 증상 Y → 고장 유형 F로(오른쪽), F로 들어오는 화살표를 반대로 따라 원인 후보 셋으로."""
+    S, P, Y, F = (120, 200, 52), (120, 400, 52), (390, 200, 52), (670, 200, 62)
+    Cs = ((1000, 80, 50), (1000, 260, 50), (1000, 440, 50))
+    o: list[str] = []
+    o += _edge_arrow(S, P, BLUE, sw=5) + _edge_arrow(S, Y, BLUE, sw=5) + _edge_arrow(Y, F, BLUE, sw=5)
+    for c in Cs:
+        o += _edge_arrow(c, F, NAVY, sw=4.5)
+    o += _node(S, "sensor") + _node(P, "cooler") + _node(Y, "rise") + _node(F, "fm", hot=True)
+    o += _node(Cs[0], "pin") + _node(Cs[1], "fanbad") + _node(Cs[2], "amb")
+    return svg(o)
+
+
+def cause_to_actions() -> str:
+    """66장: 남은 원인 C(왼쪽 위)를 없애는 근본 조치 R, 고장 유형 F(왼쪽 아래)를 완화하는 완화 조치 M, 두 조치가 근거로 하는 문서 D."""
+    C, F, R, M, D = (240, 140, 62), (240, 385, 64), (640, 140, 62), (640, 385, 62), (1040, 262, 66)
+    o: list[str] = []
+    o += _edge_arrow(C, F) + _edge_arrow(R, C, BLUE, sw=5.5, size=17) + _edge_arrow(M, F, BLUE, sw=5.5, size=17) + _edge_arrow(R, D) + _edge_arrow(M, D)
+    o += _node(C, "pin") + _node(F, "fm", hot=True) + _node(R, "wash") + _node(M, "fanmax") + _node(D, "doc")
+    return svg(o)
+
+
+NEW_ONLY: set = {"경로2_1.svg", "경로2_2.svg", "데이터_명령_두경로.svg", "온톨로지_모양.svg", "온톨로지_문장읽기.svg", "약속_채움_두층.svg", "온톨로지_네가지.svg",
+                 "값_같은숫자.svg", "메모_다시적기.svg", "물음_따라가기.svg", "관계_선과화살표.svg", "조치_두화살표.svg", "속성_항목.svg",
+                 "정한것_적은것.svg", "고장지도.svg", "따라가기_원인후보.svg", "따라가기_조치.svg"}
 
 
 def main():
@@ -1738,7 +1925,11 @@ def main():
            "온톨로지_모양.svg": ontology_shape(), "온톨로지_문장읽기.svg": ontology_sentences(), "약속_채움_두층.svg": promise_fill_layers(),
            "온톨로지_네가지.svg": ontology_four(),
            "메모_두읽기.svg": memo_two_readings(), "온톨로지_틀.svg": ontology_frame(), "제약_걸러내기.svg": constraint_check(),
-           "원인에서_조치로.svg": cause_to_action()}
+           "원인에서_조치로.svg": cause_to_action(),
+           "값_같은숫자.svg": same_reading(), "메모_다시적기.svg": memo_rewritten(), "물음_따라가기.svg": ask_and_follow(),
+           "관계_선과화살표.svg": line_vs_named(), "조치_두화살표.svg": two_actions(), "속성_항목.svg": property_card(),
+           "정한것_적은것.svg": schema_and_graph(), "고장지도.svg": fault_map(), "따라가기_원인후보.svg": walk_to_causes(),
+           "따라가기_조치.svg": cause_to_actions()}
     for name, text in out.items():
         assert "<text" not in text
         if (HERE / name).exists() and name not in NEW_ONLY:
