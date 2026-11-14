@@ -9,7 +9,9 @@ import class_knowledge
 from procsvc import manual_extraction as mx, manual_segments
 from procsvc.manual_sources import ManualSources
 
-DOCS = {item['doc']: item for item in class_knowledge.reviewed()}
+#: 강사 서명 묶음의 문서 넷 — 시작이 넣는 셋과, 학생이 실습에서 넣는 교대 인계 문서(HI-01, 실행 후보가 아닌 참고 절차). HI-01 을 빼고 돌면 참고
+#: 절차 갈래의 인용 계약 · 내용 검사가 깨져도 초록이다(전수검사 13B-1).
+DOCS = {item['doc']: item for item in class_knowledge.reviewed(order=class_knowledge.ORDER + ('HI-01',))}
 
 
 @pytest.fixture

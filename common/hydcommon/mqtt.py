@@ -69,8 +69,22 @@ class Link:
         return {"mqtt": self.connected, "mqtt_handler_errors": self.handler_errors, "mqtt_last_error": self.last_error}
 
     def publish(self, topic: str, payload: str, qos: int = 0, retain: bool = False) -> bool:
-        """True when paho accepted the message for sending (not a delivery receipt)."""
-        return self.client.publish(topic, payload, qos=qos, retain=retain).rc == mqtt.MQTT_ERR_SUCCESS
+        """True when paho accepted the message for sending (not a delivery receipt).
+
+        False means the message is NOT sent — now or later. paho 2.1 keeps a QoS 1/2 message it could not send
+        (MQTT_ERR_NO_CONN) in its outgoing queue and sends it by itself after the next reconnect. A caller that was told
+        "not sent" has already recorded the refusal (cmd-gateway writes CMD_REJECTED and process closes the case), so a
+        late delivery would move the plant behind a record that says nothing was sent — and a second approval would run
+        the command twice. So a disconnected link refuses before handing the message to paho, and a message paho refused
+        anyway (the socket went away before the disconnect event) is taken back out of its queue."""
+        if not self.connected:
+            return False
+        info = self.client.publish(topic, payload, qos=qos, retain=retain)
+        if info.rc == mqtt.MQTT_ERR_SUCCESS:
+            return True
+        with self.client._out_message_mutex:        # paho-mqtt is pinned to 2.1.0 (requirements.txt) — this is its queue
+            self.client._out_messages.pop(info.mid, None)
+        return False
 
     def start(self) -> None:
         self.client.loop_start()

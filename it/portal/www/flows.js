@@ -105,8 +105,9 @@
       const given = (files[files.length - 1] || {}).name || (draft && draft.mapping && draft.mapping.name) || (rows[0] || {}).name;
       const versions = [...new Set([...files.map(v => String(v.version)), ...rows.map(r => String(r.version))])];
       return { id, name: hydDefinitions.name(id, given), draft, files, mine, versions, deployed: (rows.find(r => r.deployed_version) || {}).deployed_version || null };
-    }).sort((a, b) => Number(b.mine) - Number(a.mine));
+    }).sort((a, b) => rank(a) - rank(b));      // 내가 가져온 것 → 그림과 함께 들어 있는 기본 제공 흐름 → 정의로만 등록된 기본 흐름
   }
+  const rank = x => (x.mine ? 0 : x.draft || x.files.length ? 1 : 2);
   const itemOf = id => items().find(x => x.id === id) || null;
   function renderList() {
     const all = items(), shown = all.filter(x => S.kind === 'all' || (S.kind === 'mine') === x.mine);
@@ -302,7 +303,7 @@
       UI.revealDetail($('flowPanel'));
     } catch (e) {
       // 무엇이 왜 안 됐는지: 서버의 까닭 한 문장, 그림에서 고칠 곳이 있으면 그 목록
-      msg.innerHTML = failBox('그림을 가져오지 못했습니다', e.message) + (e.problems ? problemsBlock(e.problems, '그림에서 고칠 곳') : '');
+      msg.innerHTML = failBox('그림을 가져오지 못했습니다', e.message) + (e.problems ? problemsBlock(e.problems, '그림에서 고칠 곳', false) : '');
     }
   }
   async function loadListOnly() {
@@ -500,12 +501,12 @@
   }
 
   // 고칠 곳: 무엇(어느 단계 · 갈림)이 왜 안 되는지 한 줄씩. 줄을 누르면 그 칸으로 간다
-  function problemsBlock(problems, title) {
+  function problemsBlock(problems, title, linked = true) {
     if (!problems || !problems.length) return '';
     return `<div class="alert" data-variant="destructive" role="alert">${icon('circle-alert')}<h2>${h(title || '고칠 곳')} ${problems.length}건</h2><section><ul class="flow-issues">${problems.map(x => {
       const w = x.where || {};
       const text = `${w.kind_label ? `<b>${h(w.kind_label)} ${h(w.name || w.id)}</b> — ` : ''}${h(x.reason)}`;
-      return w.id ? `<li><button type="button" class="btn" data-variant="link" data-goto="${h(w.id)}">${text}</button></li>` : `<li>${text}</li>`;
+      return w.id && linked ? `<li><button type="button" class="btn" data-variant="link" data-goto="${h(w.id)}">${text}</button></li>` : `<li>${text}</li>`;
     }).join('')}</ul></section></div>`;
   }
   function dependencyLine(item) {

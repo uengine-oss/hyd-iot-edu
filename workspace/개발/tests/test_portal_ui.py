@@ -192,7 +192,7 @@ def test_상단에_지금_단계가_한_줄로_보인다(tours):
     t = tours(SIZES[0])
     assert t.access is not None, f'수업 단계 정보(GET /api/course-access)를 읽지 못했다: {t.access_error}'
     line = t.page.inner_text('#courseStatus')
-    expected = f"지금 단계: {t.access['label']}"
+    expected = '지금 단계: 자유 구성 (PBL)' if t.access['phase'] == 'pbl' else '지금 단계: 제공 자료만 사용'      # 화면은 단계를 무엇을 쓸 수 있는지로 말한다(courseAccess.js banner)
     assert line.startswith(expected), line
     if t.access.get('expired'):
         assert 'PBL 기한 지남' in line
@@ -207,7 +207,7 @@ def test_수업_단계_정보를_못_읽으면_잠그지_않고_다시_시도를
         page.goto(portal_url, wait_until='domcontentloaded')
         page.wait_for_function("() => window.hydCourseAccess && window.hydCourseAccess.error", timeout=30000)
         assert page.inner_text('#courseStatus [data-course-retry]') == '다시 시도'
-        assert page.get_attribute('#courseStatus', 'title').startswith('수업 단계 정보를 읽지 못했습니다')
+        assert page.get_attribute('#courseStatus', 'title').startswith('지금 단계를 읽지 못했습니다')
         assert page.locator('#menuList a[data-tab]').count() == 22 and page.locator("#menuList [aria-disabled='true'], #menuList :disabled").count() == 0
         open_screen(page, 'mcp')
         page.wait_for_selector('#mcpAdd', state='attached')       # 접어 둔 운영자 칸 안에 있다

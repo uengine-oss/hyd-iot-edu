@@ -96,6 +96,66 @@ def test_쓰기_자리는_녹화의_쓰기_도구를_이_PC_서버로_다시_불
     assert scope['instance'] == pid and scope['workitem'] == world.row(pid, 'T_agent')['id']
 
 
+def test_녹화와_수량만_다른_지금_계산은_멈추지_않고_어느_값이_준비_당시_값인지_처리_과정에_말한다(world):
+    """전수검사 04-D3: 재고 보충 녹화는 정기 정비를 먼저 승인한 뒤(예약 3 · 필요 7개 · 총비용 420)에 떠졌다. 시작 상태(예약 2 · 필요 6개)에서
+    재생하면 AI 설명은 7개 · 420만 원, 승인 카드는 6개 · 360만 원인데 아무 말이 없었다. 권장 조치는 같으므로 멈추지 않고 그 차이를 말한다."""
+    pid, did = _scenario('C')(world)
+    card = next(o for o in world.main.book[did]['options'] if o['id'] == world.main.book[did]['recommended'])
+    now = card['economicComparison']
+    assert (now['quantity'], now['total_cost']) == (6, 360)                                 # 이 PC의 지금 계산(시작 상태)
+    said = [e['data']['content'] for e in world.events(pid) if (e.get('data') or {}).get('type') == 'notice']
+    line = next((text for text in said if '준비 당시 값' in text), None)
+    assert line and line.startswith(ai_replay.REPLAY) and '수량 7 → 6개' in line and '비교 총비용 420 → 360만 원' in line, said
+    assert '「순정(OEM) 공급사 표준 발주」' in line and not FORBIDDEN.search(line) and '강사' not in line and '녹화' not in line
+
+
+@pytest.mark.parametrize('slot, start', [
+    ('c3_cooling/T_agent', lambda world: world.start_cooling()[1:]),
+    ('c3_pm/T_agent', _scenario('B')),
+], ids=['냉각 경보', '정기 점검'])
+def test_지금_계산이_녹화와_같은_판단이면_재생_안내를_남기지_않는다(world, slot, start):
+    """평소 실행의 화면은 실제 AI 실행과 같다(CLAUDE.md 5절) — 점수 · 예측처럼 측정값을 따라 조금씩 달라지는 값으로는 안내하지 않는다."""
+    pid, _ = start(world)
+    assert [e['data']['content'] for e in world.events(pid) if (e.get('data') or {}).get('type') == 'notice' and '재생 모드' in e['data']['content']] == []
+
+
+def _replay_recorded_under_another_state(tmp_path, slot, change):
+    """시험이 만든 녹화 묶음: 저장소 녹화를 복사하되 그 자리의 녹화가 등록했던 판단 문서만 바꾼다(change) — 다른 설비 · 업무 상태에서 뜬 녹화의 대역."""
+    import shutil
+    out = tmp_path / 'replay-other-state'
+    shutil.copytree(REPLAY_DIR, out)
+    doc = next(d for key, d in docs().items() if key.startswith(slot + '|'))
+    run = doc['runs'][0]
+    for e in run['events']:
+        if e['kind'] == 'tool_end' and (e.get('tool') or '').endswith(('submit_decision', 'submit_purchase')) and not e.get('is_error'):
+            full = run.setdefault('tool_outputs_full', {})
+            body = ai_replay._as_json(full.get(e['tool_use_id']) or e.get('tool_output'))
+            if ai_replay._failed(body):
+                continue
+            change(body['document'])
+            full[e['tool_use_id']] = json.dumps(body, ensure_ascii=False)
+    Library(out, COURSE).file_of(ai_replay.course_key(doc['slot'], doc['case'])).write_bytes(gzip.compress(json.dumps(doc, ensure_ascii=False).encode('utf8')))
+    return out
+
+
+def test_지금_계산의_권장_조치가_녹화와_다르면_그_설명을_이_처리_건에_쓰지_않고_까닭을_말하며_멈춘다(world, tmp_path):
+    """전수검사 02-1: 재생은 녹화의 AI 설명 · 결과 글을 그대로 내고 승인 카드만 지금 계산이라, 둘이 다른 조치를 권해도 대조하지 않았다."""
+    def other_card_recommended(document):
+        document['recommended'] = 'skill:sop-cool-13'
+    made = _replay_recorded_under_another_state(tmp_path, 'c3_cooling/T_agent', other_card_recommended)
+    world.plant.inject('HYD-01', 'cooler_degradation', severity='moderate')
+    world.settle(1800)
+    tags = world.plant.tags('HYD-01')
+    _, pid = world.raise_alert('COOLER_DEGRADATION', 'HYD-01', ts1=tags['TS1'], ce=tags['CE'])
+    world.report()
+    assert world.runner('replay', replay_dir=made).poll_once() == 1
+    row = world.row(pid, 'T_agent')
+    text = json.dumps(world._failure(row), ensure_ascii=False)
+    assert row['status'] not in ('SUBMITTED', 'DONE'), row['status']
+    assert ai_replay.REPLAY in text and '권장 조치가 준비된 판단은 「부하 70 %와 야간 핀 세척」인데 지금 계산은 「팬 최대 운전」입니다' in text, text
+    assert not FORBIDDEN.search(text) and '강사' not in text and '녹화' not in text
+
+
 @pytest.mark.parametrize('slot, skills, said', [
     ('question', ['cooler-check'], True), ('question', [], False),
     ('handover/draft-1', ['my-shift-handover-review'], False), ('handover/draft-1', [], True),
@@ -354,6 +414,20 @@ def test_저장소_녹화는_모두_지금_형식과_열쇠_규칙의_파일_이
         doc = json.loads(gzip.decompress(path.read_bytes()))
         assert doc['format'] == ai_replay.FORMAT
         assert path.name == ai_replay.course_key(doc['slot'], doc['case']) + '.json.gz'
+
+
+def test_저장소_녹화에_나오는_사람은_이_시스템의_담당자뿐이다():
+    """재생은 녹화의 도구 결과 · 입력을 화면에 그대로 낸다. 지금은 없는 직원(사람 고르기를 없애기 전의 여섯)이 남아 있으면 키 없는 PC 의
+    처리 기록에 없는 사람이 「요청자」로 보인다(전수검사 12 — 네 자리). 시작 버튼이 넣는 이름 · id(requested_by · requested_user)도 같다."""
+    from conftest import OPERATOR
+    for path in sorted(Path(REPLAY_DIR).glob('*.json.gz')):
+        text = gzip.decompress(path.read_bytes()).decode('utf8')
+        assert set(re.findall(r'user:[a-z][a-z0-9-]*', text)) <= {OPERATOR['by']}, path.name
+        for run in json.loads(text)['runs']:
+            evidence = ((run['context'].get('inputs') or {}).get('alert') or {}).get('evidence') or {}
+            if 'requested_by' in evidence:
+                assert (evidence['requested_by'], evidence['requested_user']) == ('담당자', OPERATOR['by']), path.name
+                assert re.findall(r'requested_by\\*": \\*"([^"\\]+)', text) and set(re.findall(r'requested_by\\*": \\*"([^"\\]+)', text)) == {'담당자'}, path.name
 
 
 @pytest.mark.parametrize('todo_exists, age_h, kept', [

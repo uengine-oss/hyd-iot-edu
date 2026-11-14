@@ -9,7 +9,7 @@ import pytest
 import class_knowledge
 from procsvc import manual_knowledge, manual_preflight
 
-DOCS = {i['doc']: i for i in class_knowledge.reviewed()}
+DOCS = {i['doc']: i for i in class_knowledge.reviewed(order=class_knowledge.ORDER + ('HI-01',))}     # 서명 묶음의 문서 넷(HI-01 = 참고 절차)
 
 
 @pytest.fixture

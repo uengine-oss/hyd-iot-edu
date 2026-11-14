@@ -914,7 +914,7 @@ def unit_button(r: Round, asset: str, act: str) -> str:
     r.page.locator(f"#units .unit[data-asset='{asset}'] button[data-act='{act}']").first.click()
     if act == "biz-reset" and not confirm_ok(r):                          # [초기화]는 되돌릴 수 없어 화면이 먼저 묻는다(app.js — UI.confirm)
         raise ScreenMissing(f"{asset} [초기화]의 확인 창이 뜨지 않음")
-    r.wait(30, lambda: (t := r.page.locator("#scenarioMsg").inner_text().strip()) and t != before and not t.endswith("처리 중…"), every=0.5)
+    r.wait(30, lambda: (t := r.page.locator("#scenarioMsg").inner_text().strip()) and t != before and not t.endswith("보내는 중"), every=0.5)
     return r.page.locator("#scenarioMsg").inner_text().strip()
 
 
@@ -1363,12 +1363,13 @@ def lab_01_runtime(r: Round):
     r.page.locator("#mainArch").click()
     r.page.wait_for_selector("#stack .comp", timeout=10_000)
     r.page.wait_for_timeout(6000)                                         # 상태 점은 pollHealth 가 채운다(5초 주기)
-    comps = r.page.eval_on_selector_all("#stack .comp", "cs => cs.map(c => ({dot: (c.querySelector('.dot') || {className: 'unknown'}).className, text: c.innerText.replace(/\\n/g, ' ')}))")   # 상태를 재지 않는 칸은 점이 없다(app.js renderStack)
-    checked = [c for c in comps if "unknown" not in c["dot"]]
-    down = [c["text"][:40] for c in checked if "up" not in c["dot"]]
+    # 구조 그림의 부품 상자(SVG): data-st = ok · down · wait · opt(선택 도구) · none(상태를 재지 않는 부품), 이름과 하는 일은 <title>(app.js renderStack)
+    comps = r.page.eval_on_selector_all("#stack .comp", "cs => cs.map(c => ({st: c.dataset.st, text: c.querySelector('title').textContent}))")
+    checked = [c for c in comps if c["st"] in ("ok", "down", "wait")]
+    down = [c["text"][:40] for c in checked if c["st"] != "ok"]
     r.check("시스템 구성: 응답 확인 대상이 모두 초록 · 수 = 상단 「서비스 n/n」", bool(checked) and not down and len(checked) == total, f"확인 {len(checked)} · 상단 {total} · 꺼짐 {down}")
-    opt = [c["text"][:40] for c in comps if "선택 도구" in c["text"]]
-    r.check("시스템 구성의 선택 도구 칸은 빨간 점(down)이 아니고 「선택 도구」로 표시", bool(opt) and not any("down" in c["dot"] for c in comps if "선택 도구" in c["text"]),
+    opt = [c["text"][:40] for c in comps if c["st"] == "opt"]
+    r.check("시스템 구성의 선택 도구는 빨간 점(down)이 아니라 선택 도구(점선 상자)로 표시", bool(opt) and "선택 도구" in txt(r, "#view-home .sys-bar"),
             "; ".join(opt), kind="quality")
     status = r.get(r.process + "/api/agents/status")
     shown_worker = "AI 에이전트 실행 서비스" in all_txt(r, "#view-main") + all_txt(r, "#view-home") + text          # layers.js agent-worker 칸의 설명

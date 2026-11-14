@@ -56,7 +56,7 @@ def test_수업_단계의_막힌_까닭은_서버_문장_그대로다(page):
         assert got == {'assign': reasons['assign'], 'start': reasons['start'], 'importing': reasons['import_flow'], 'document': reasons['document'],
                        'golden': cp.Policy.ACTIONS['documents.golden'], 'open': '', 'question': cp.question_max_chars(),
                        'editable': {'flow_name': True, 'agent_tasks': list(cp.HANDOVER_AGENT_TASKS)}}
-        assert '지금 단계: 수업' in page.inner_text('#courseStatus')
+        assert page.inner_text('#courseStatus').strip() == '지금 단계: 제공 자료만 사용'      # 단계 이름은 무엇을 쓸 수 있는지로 말한다(「수업」이라는 말을 쓰지 않는다)
     finally:
         served.close()
 
@@ -66,7 +66,7 @@ def test_켜_둔_화면도_PBL_기한이_지나면_다시_읽어_수업_단계�
     served = portal(cp.Phase('pbl', note='1기 PBL', expires=until.isoformat()))
     try:
         opened(page, served)
-        assert page.evaluate('hydCourseAccess.access.phase') == 'pbl' and 'PBL' in page.inner_text('#courseStatus')
+        assert page.evaluate('hydCourseAccess.access.phase') == 'pbl' and page.inner_text('#courseStatus').startswith('지금 단계: 자유 구성 (PBL)')
         page.wait_for_function("hydCourseAccess.access && hydCourseAccess.access.phase === 'course'", timeout=15000)
         assert 'PBL 기한 지남' in page.inner_text('#courseStatus')
         assert page.evaluate("hydCourseAccess.assignBlocked('c3_cooling')") == cp.Policy.REASONS['assign']
@@ -80,7 +80,7 @@ def test_표를_못_읽으면_잠그지_않고_수업_단계_정보_읽기_실�
         page.route('**/svc/process/api/course-access', lambda route: route.abort('connectionrefused'))
         opened(page, served)
         text = page.inner_text('#courseStatus')
-        assert '수업 단계 정보 읽기 실패' in text and '다시 시도' in text and '범위' not in text
+        assert '단계 정보 읽기 실패' in text and '다시 시도' in text and '범위' not in text and '수업' not in text
         assert page.evaluate("hydCourseAccess.assignBlocked('c3_cooling')") == ''        # 모르면 막지 않는다(서버가 판정)
     finally:
         served.close()

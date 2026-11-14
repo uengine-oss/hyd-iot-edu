@@ -339,6 +339,9 @@ code.inline { padding: 1px 5px; border-radius: 5px; background: var(--muted); bo
 .phase[data-state="done"] i::after { content: ""; width: 10px; height: 10px; background: #fff; -webkit-mask: var(--check) center / contain no-repeat; mask: var(--check) center / contain no-repeat; }
 .phase[data-state="now"] { color: var(--brand-ink); font-weight: 600; }
 .phase[data-state="now"] i { border: 2px solid var(--brand-line); border-top-color: var(--brand); animation: spin .8s linear infinite; }
+/* 사람이 할 차례인 단계(기계가 도는 중이 아니다): 도는 고리 대신 제품색 점 — 흐름 화면의 단계 줄이 쓴다 */
+.phase[data-state="now"][data-idle] i { animation: none; border: 2px solid var(--brand); }
+.phase[data-state="now"][data-idle] i::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--brand); }
 .phase + .phase::before { content: ""; width: 28px; height: 1px; background: var(--border); margin: 0 10px; }
 .phase[data-state="done"] + .phase::before { background: var(--ok-line); }
 :root { --check: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>'); }

@@ -125,6 +125,36 @@ def test_MQTT_가_경보판을_받지_않으면_전달로_세지_않고_실패�
     assert (gw.state['alerts_relayed'], gw.state['alert_relay_failed']) == (0, 1)
 
 
+def test_끊긴_동안의_경보판은_다시_붙으면_올리고_못_보냄으로_적은_명령은_올리지_않는다(monkeypatch):
+    """끊긴 동안: 명령은 「못 보냄」으로 닫혔으므로 뒤늦게 설비에 닿으면 안 되고(06-3), 경보판은 지금 상태이므로 다시 붙으면 올라가야 한다."""
+    from conftest import MqttRecorder, until
+    broker = MqttRecorder()
+    monkeypatch.setenv('CMD_FINGERPRINT_KEY', KEY)
+    monkeypatch.setenv('MQTT_HOST', '127.0.0.1')
+    monkeypatch.setenv('MQTT_PORT', str(broker.port))
+    import gw.main as main
+    gw = importlib.reload(main)
+    cmd = _cmd()
+    gw.gw.record_approval(gw.gstate, {'actor': 'process', 'event': schemas.CMD_APPROVAL_LEDGER_EVENT,
+                                      'detail': schemas.approval_ledger_record(cmd, KEY)})
+    _status(gw, 'hyd01', {'t': '2026-10-30T05:00:00Z', 'mode': 'REMOTE_AUTO', 'state': 'RUN'})
+    prod = KafkaRecorder()
+    assert asyncio.run(gw.handle_command(prod, cmd)).check == 'MQTT'
+    asyncio.run(gw.relay_alert({'alertId': 'A1', 'asset': 'HYD-03', 'pattern': 'FAN_VIBRATION', 'name': 'fan',
+                                'severity': 'HIGH', 'state': 'RAISE', 't': '2026-10-30T05:00:00Z', 'evidence': {}}))
+    asyncio.run(gw.relay_alert({'alertId': 'A1', 'asset': 'HYD-03', 'pattern': 'FAN_VIBRATION', 'name': 'fan',
+                                'severity': 'HIGH', 'state': 'CLEAR', 't': '2026-10-30T05:01:00Z', 'evidence': {}}))
+    broker.serve()
+    gw.link.start()
+    try:
+        until(lambda: broker.published, '다시 붙은 뒤 경보판')
+        until(lambda: not gw.unsent_boards, '올리지 못한 경보판 비우기')
+    finally:
+        gw.link.stop()
+    ((topic, body),) = broker.published
+    assert topic == 'plant/hyd03/alert' and json.loads(body)['count'] == 0      # 마지막 판(해제) 하나만, 명령 토픽은 없음
+
+
 def test_지문_키가_없으면_관문이_켜지지_않는다(monkeypatch):
     monkeypatch.delenv('CMD_FINGERPRINT_KEY', raising=False)
     sys.modules.pop('gw.main', None)

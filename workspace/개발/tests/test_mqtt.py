@@ -8,6 +8,7 @@ from types import SimpleNamespace
 from paho.mqtt.packettypes import PacketTypes
 from paho.mqtt.reasoncodes import ReasonCode
 
+from conftest import MqttRecorder, until
 from hydcommon.mqtt import ERROR_WINDOW_S, Link
 
 
@@ -54,3 +55,34 @@ def test_연결_상태는_실제_연결_끊김_거절_사건을_따른다():
 
 def test_연결되지_않았을_때의_발행은_거짓이다():
     assert _link(lambda c, m: None).publish('plant/hyd01/status', '{}') is False
+
+
+def _publishes_after_reconnect(link, broker):
+    """브로커를 열어 연결을 붙이고 표식 하나를 보낸 뒤, 브로커가 받은 PUBLISH 토픽을 돌려준다(표식보다 먼저 온 것이 「뒤늦게 나간」 것)."""
+    broker.serve()
+    link.start()
+    try:
+        until(lambda: link.connected, '대역 브로커에 연결')
+        assert link.publish('marker', '{}', qos=1) is True
+        until(lambda: ('marker', '{}') in broker.published, '표식 도착')
+    finally:
+        link.stop()
+    return [topic for topic, _ in broker.published]
+
+
+def test_끊긴_동안_못_보냄으로_답한_명령은_다시_붙은_뒤에도_나가지_않는다():
+    """관문은 발행이 거짓이면 「못 보냄」(CMD_REJECTED)을 적고 process 가 처리 건을 닫는다. 그 명령이 재연결 뒤 설비에 닿으면 기록과 설비가 어긋난다."""
+    broker = MqttRecorder()
+    link = Link('unit-test', lambda c, m: None, host='127.0.0.1', port=broker.port)
+    assert link.publish('plant/hyd01/cmd/auto', '{"cmdId":"c-1"}', qos=1) is False
+    assert _publishes_after_reconnect(link, broker) == ['marker']
+
+
+def test_끊김_사건보다_먼저_소켓이_사라진_순간의_발행도_거짓이고_나가지_않는다():
+    """connected 가 아직 참인데 paho 가 연결 없음으로 답하는 틈 — paho 는 그 QoS 1 메시지를 보낼 줄에 남겨 재연결 때 보낸다."""
+    broker = MqttRecorder()
+    link = Link('unit-test', lambda c, m: None, host='127.0.0.1', port=broker.port)
+    link.connected = True
+    assert link.publish('plant/hyd01/cmd/auto', '{"cmdId":"c-2"}', qos=1) is False
+    link.connected = False                       # 뒤따라 온 끊김 사건
+    assert _publishes_after_reconnect(link, broker) == ['marker']

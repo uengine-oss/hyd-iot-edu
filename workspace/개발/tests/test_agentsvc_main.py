@@ -66,6 +66,10 @@ class BoltLine:
 
     def cut(self):
         import socket
+        # 리눅스에서는 듣는 소켓을 닫기만 하면 accept 에서 기다리던 스레드가 그 소켓을 쥔 채 남아 다음 연결 하나를 그대로 받는다(끊은 뒤의 상태
+        # 확인이 200 이었다). shutdown 이 그 accept 를 깨워 끝낸다. 윈도우는 듣는 소켓의 shutdown 을 거절하고 close 만으로 끝난다.
+        with contextlib.suppress(OSError):
+            self.server.shutdown(socket.SHUT_RDWR)
         self.server.close()
         for pair in self.pairs:
             for sock in pair:

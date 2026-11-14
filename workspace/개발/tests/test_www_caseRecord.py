@@ -71,3 +71,17 @@ def test_처리_기록의_원문_칸은_코드_값을_이름으로_바꾸지_않
               {'asset': 'HYD-01', 'pattern': 'COOLER_DEGRADATION'})
     assert '"pattern": "COOLER_DEGRADATION"' in got[0] and '쿨러 성능 저하' not in got[0]
     assert got[1] == '쿨러 성능 저하 경보', '설명 문장(UI.clean)은 그대로 이름으로 바꾼다'
+
+
+def test_결과_카드는_끝_이벤트_이름이_끝이면_끝난_곳을_따로_적지_않고_반려는_실패_색으로_칠하지_않는다():
+    """「끝난 곳: 끝」처럼 뜻 없는 줄이 결과 카드에 나왔다. 끝 이벤트에 뜻 있는 이름(거절 종결)이 있을 때만 한 문장으로 적는다."""
+    def card(report, end_label):
+        v = view([{'id': 'w1', 'activity_id': 'R', 'activity_name': '결과 보고', 'start_date': T, 'end_date': T}], ['R'], variables=[('result_report', report)])
+        v['instance']['end_label'] = end_label
+        return run(FILES, "out(hydResultReport.html(DATA))", v)
+    ok = card({'outcome': '정상', 'level': 'ok', 'title': 'HYD-01 긴급 대응 결과', 'summary': '유온 정상 · 경보 해제'}, '끝')
+    assert '끝난 곳' not in ok and '에서 끝났습니다' not in ok
+    assert '<div class="result-main">유온 정상 · 경보 해제</div>' in ok and 'data-tone="ok">정상</span>' in ok
+    rejected = card({'outcome': '반려', 'verdict': 'rejected', 'title': 'HYD-01 냉각 조치 결과', 'summary': '담당자가 거절했습니다'}, '거절 종결')
+    assert '처리 건은 「거절 종결」에서 끝났습니다.' in rejected
+    assert 'data-tone="danger"' not in rejected and '<span class="tag">반려</span>' in rejected

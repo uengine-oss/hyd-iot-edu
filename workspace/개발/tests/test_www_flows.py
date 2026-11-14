@@ -12,7 +12,7 @@ from conftest import WWW, Served, open_screen
 from procsvc.course_policy import HANDOVER
 
 FLOW = 'ShiftHandover'
-ME = 'user:kim-op'
+ME = 'user:me'
 
 
 def test_다른_화면에서_만든_에이전트가_흐름_화면을_다시_열면_단계의_에이전트_고르기에_나온다(world):
@@ -88,7 +88,7 @@ def test_수업_단계의_제공_교대_매핑은_칸_줄_더하기_빼기도_�
             page.locator("#flowEditor select[data-agent='task_draft']").wait_for(timeout=15000)
             adds = page.locator("#flowEditor section button[data-add], #flowEditor section button[data-del]")
             assert adds.count() > 0 and all(adds.nth(i).is_disabled() for i in range(adds.count()))
-            assert page.locator("#flowEditor select[data-agent='task_draft']").is_enabled() and page.locator('#flowEditor #flowCheck').is_enabled()
+            assert page.locator("#flowEditor select[data-agent='task_draft']").is_enabled() and page.locator('#flowCheck').is_enabled()
             b.close()
     finally:
         served.close()

@@ -66,7 +66,9 @@
     $d('definitionDeployPanel').hidden = !registered;
     if (!status || status.id !== chosen) message('');      // 다른 흐름을 골랐다 — 앞 흐름의 알림 줄을 지운다
     if (!registered) { status = null; window.dispatchEvent(new Event('hyd:deploy-status')); return; }
-    status = await getJ(base(chosen) + '/versions'); compareWith = null;
+    const want = chosen, got = await getJ(base(want) + '/versions');
+    if (want !== chosen) return;      // 읽는 사이 다른 흐름을 골랐다 — 이 응답은 그 흐름의 것이 아니다
+    status = got; compareWith = null;
     render();
   }
   function versionTag(v) {
@@ -113,7 +115,7 @@
   // deployed(정의): 그 흐름에 운영 판본이 있는가(마지막으로 읽은 값). rows(): 등록된 정의 판본 목록(마지막으로 읽은 값). status(): 고른 흐름의 판본 · 배포 상태.
   // select(정의): 흐름 화면이 목록에서 고른 흐름 — 그 흐름의 판본 · 배포를 읽어 그린다. reload(정의): 판본 등록 · 되돌리기 뒤 목록을 새로 읽고, 정의를 주면 그 흐름을 고른다
   window.hydDefinitionDeploy = { refComparable, doneText, deployed: id => deployedIds.has(id), rows: () => rows, status: () => (status && status.id === chosen ? status : null),
-    select: id => { chosen = id || ''; return action(() => loadStatus()); }, reload: selected => action(() => loadDefinitions(selected)) };
+    select: id => { chosen = id || ''; return loadStatus().catch(e => message(e.message, true)); }, reload: selected => action(() => loadDefinitions(selected)) };
   const actionName = a => ({ seed: '처음 설치', deploy: '배포', rollback: '되돌리기', reset: '기준으로 되돌리기', withdraw: '경보 경로에서 내림' }[a] || a);
   const diffTag = change => tag(change, { '추가': 'ok', '삭제': 'danger', '변경': 'warn' }[change]);
   async function runRefCompare(version) {

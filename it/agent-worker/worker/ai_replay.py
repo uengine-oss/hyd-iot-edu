@@ -364,6 +364,36 @@ def _created(result) -> dict | None:
     return result if isinstance(result, dict) else None
 
 
+def _cards(doc: dict) -> dict[str, dict]:
+    """등록된 판단 문서의 카드(submit_decision 은 cards, submit_purchase 는 options) — id 로."""
+    return {c["id"]: c for c in (doc.get("options") or doc.get("cards") or []) if isinstance(c, dict) and isinstance(c.get("id"), str)}
+
+
+def decision_gap(old, new) -> tuple[list[str], list[str]]:
+    """녹화 때 등록된 판단(old)과 이 PC가 방금 다시 계산해 등록한 판단(new)의 차이 → (판단이 달라진 것, 수치만 달라진 것). 녹화의 AI 설명 ·
+    결과 글은 old 를 말하고 승인 카드는 new 다. 판단이 달라졌으면(권장 카드 · 실행할 수 있는 카드) 그 설명은 이 처리 건의 것이 아니다. 수치는
+    업무 값으로 정해지는 구매 수량 · 비교 총비용만 견준다 — 점수 · 예측은 설비 측정값을 따라 실행마다 조금씩 달라 같은 판단에서도 다르다."""
+    a, b = _created(old), _created(new)
+    if not (isinstance(a, dict) and isinstance(b, dict) and "recommended" in a and "recommended" in b):
+        return [], []
+    ca, cb = _cards(a), _cards(b)
+    name = lambda i: f"「{(ca.get(i) or cb.get(i) or {}).get('name') or i}」"   # noqa: E731
+    changed, numbers = [], []
+    if a["recommended"] != b["recommended"]:
+        changed.append(f"권장 조치가 준비된 판단은 {name(a['recommended'])}인데 지금 계산은 {name(b['recommended'])}입니다")
+    ok_a, ok_b = {i for i, c in ca.items() if c.get("feasible")}, {i for i, c in cb.items() if c.get("feasible")}
+    if ok_a != ok_b:
+        changed.append("실행할 수 있는 후보가 준비된 판단은 " + (", ".join(map(name, sorted(ok_a))) or "없음") + "인데 지금 계산은 "
+                       + (", ".join(map(name, sorted(ok_b))) or "없음") + "입니다")
+    for i in sorted(ca.keys() & cb.keys(), key=lambda i: ca[i].get("rank") or 0):
+        ea, eb = ca[i].get("economicComparison") or {}, cb[i].get("economicComparison") or {}
+        parts = [f"{label} {ea[k]:g} → {eb[k]:g}{unit}" for k, label, unit in (("quantity", "수량", "개"), ("total_cost", "비교 총비용", "만 원"))
+                 if isinstance(ea.get(k), (int, float)) and isinstance(eb.get(k), (int, float)) and ea[k] != eb[k]]
+        if parts:
+            numbers.append(f"{name(i)} " + " · ".join(parts))
+    return changed, numbers
+
+
 _ERROR_TEXT = re.compile(r"\A\s*(error\b|mcp error|http [45]\d\d\b)", re.I)
 
 
@@ -448,7 +478,7 @@ def play(library: Library, key: str, doc: dict, i: int, request, check_stop, las
     swaps.pair_case(saved.get("context") or {}, _task_context(request.workdir), step)
     tools = _Tools(request.workdir, step)
     session = library.session(key, i)
-    last.update(step=step, recorded_at=doc.get("recorded_at"), rerun=[], kept_errors=0, attempt=_attempt_label(_attempt(saved)),
+    last.update(step=step, recorded_at=doc.get("recorded_at"), rerun=[], kept_errors=0, differs=[], attempt=_attempt_label(_attempt(saved)),
                 library=library.prefix, skills=sorted({name for d in saved["events"] if d["kind"] == ExecEventKind.TOOL_START.value
                                                        for name, _ in skill_files(d.get("tool"), d.get("tool_input"))}))
     events = [d for d in saved["events"] if not partial_chunk(d)]
@@ -484,6 +514,14 @@ def play(library: Library, key: str, doc: dict, i: int, request, check_stop, las
                 raise NotRecorded(f"「{step}」의 준비된 쓰기 결과를 읽을 수 없어 새로 만든 id 를 바꿔 끼우지 못했습니다. README 「새 판 받기」대로 새 판을 받으세요"
                                   + (f"(이 PC에는 이미 등록됐습니다 — id {made}, 승인 대기 목록에서 확인하세요)." if made else "."))
             swaps.pair_created(old, new)
+            changed, numbers = decision_gap(old, new)
+            if changed and library.prefix == COURSE:
+                made = (_created(new) or {}).get("id")
+                raise NotRecorded(f"{REPLAY} 「{step}」의 준비된 AI 판단을 이 처리 건에 쓸 수 없습니다. " + " · ".join(changed) + ". "
+                                  "설비 · 업무 상태가 준비된 판단 때와 달라 AI 설명과 승인 카드가 서로 다른 조치를 말하게 됩니다. "
+                                  "설비 · 업무 상태를 시작 상태로 되돌린 뒤 다시 시작하거나, AI 키를 넣어 실제 AI로 실행해 주세요"
+                                  + (f"(지금 계산으로 등록된 판단 {made}은(는) 승인 단계로 넘어가지 않습니다)." if made else "."))
+            last["differs"] += numbers
             done[d["tool_use_id"]] = result["text"]
             # 바로 남긴다 — Runner 는 결과를 받으면 이 생성기를 끝까지 돌리지 않고 닫을 수 있고, 워커가 그 사이 죽을 수도 있다
             carried.parent.mkdir(parents=True, exist_ok=True)
@@ -522,6 +560,9 @@ def notice(last: dict | None, skills: list[str] | None = None) -> str | None:
         kept = (f" 저장 때 오류였던 쓰기 호출 {last['kept_errors']}건은 다시 부르지 않고 그 오류를 그대로 보였습니다." if last.get("kept_errors") else "")
         return (f"같은 설정 · 같은 입력의 앞선 실행 결과를 다시 썼습니다(새로 추론하지 않음 — {korea_time(last.get('recorded_at'))} 실행).{rerun}{kept} "
                 "새로 추론하게 하려면 입력이나 에이전트 설정을 바꿔 실행하세요.")
+    if last.get("differs"):
+        return (f"{REPLAY} AI 설명과 결과 글은 준비된 것을 그대로 보입니다. 그 안의 다음 값은 준비 당시 값이고, 승인 카드의 값이 이 PC의 지금 "
+                f"계산입니다: {'; '.join(last['differs'])}.")
     if skills is not None and set(skills) != set(last.get("skills") or ()):
         return (f"{REPLAY} 스킬을 붙이거나 떼어도 같은 답을 냅니다(이번 실행의 스킬: {', '.join(skills) or '없음'}). "
                 "스킬을 붙이고 뗀 차이는 실제 AI로 실행할 때 확인할 수 있습니다.")

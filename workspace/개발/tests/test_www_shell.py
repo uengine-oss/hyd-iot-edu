@@ -78,7 +78,7 @@ def test_주_메뉴는_여덟이고_화면_22개가_빠짐없이_딸려_있다()
 @pytest.mark.parametrize('broken, said', [
     (lambda h: h.replace('data-tabs="agents mcp ask"', 'data-tabs="agents mcp"'), "메뉴에 없는 화면 ['ask']"),          # 화면 하나가 메뉴에서 빠짐 — 갈 길이 없는 화면
     (lambda h: h.replace('id="noticeView"', 'id="noticeGone"'), '#noticeView 은(는) instances 화면에 있어야 한다'),          # 알림 자리가 처리 건 화면에서 사라짐
-    (lambda h: h.replace('<div class="scada" id="scada"></div>', '<div class="scada" id="scada"></div><div id="hitlPanel"></div>'), '#hitlPanel 구역이 남아 있다'),
+    (lambda h: h.replace('<div id="incList"></div>', '<div id="incList"></div><div id="hitlPanel"></div>'), '#hitlPanel 구역이 남아 있다'),
 ])
 def test_구조가_어긋나면_잡는다(broken, said):
     """위 판정을 일부러 깨뜨려 본다 — 잡지 못하면 없는 검사다."""

@@ -170,13 +170,12 @@ def test_의미_검사를_거치지_않은_계획으로는_목표_모습을_만�
 
 # ---------------------------------------------------------------- 교대 인계 문서(HI-01): 실행 후보가 아닌 참고 절차
 @pytest.fixture
-def handover_doc(monkeypatch):
+def handover_doc():
     """강사 서명 묶음의 교대 인계 문서(HI-01) 검토본 한 건 — 시작의 적재 순서(class_knowledge.ORDER)에는 없고 학생이 실습에서 넣는 문서다.
     시작이 넣는 문서와 같은 함수(reviewed: 묶음 → 원문 sha256 대조 → 검토본)로 읽고, 학생이 포털에서 제안 그대로 검토 완료하는 것과 같은
     요청으로 만든다: 담당자 이름으로, 검토 방식 칸 없이(포털은 그 칸을 보내지 않는다). 묶음이 적어 둔 이 문서의 검토 방식
     (origin.review_method)은 검토 검증(manual_review.validate)이 받는 값이 아니라서, 시작의 적재처럼 그 값을 그대로 실으면 거절된다."""
-    monkeypatch.setattr(class_knowledge, 'ORDER', ('HI-01',))
-    [item] = class_knowledge.reviewed()
+    [item] = class_knowledge.reviewed(order=('HI-01',))
     return dict(item, by='user:me', review_method=None)
 
 

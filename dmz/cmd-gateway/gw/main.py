@@ -40,6 +40,7 @@ gstate = gw.GatewayState()
 board = gw.AlertBoard()
 delivery = Delivery()
 decisions: deque = deque(maxlen=200)
+unsent_boards: dict[str, dict] = {}
 
 
 def _malformed(where: str, reason) -> None:
@@ -50,6 +51,8 @@ def _malformed(where: str, reason) -> None:
 
 def _on_connect(client):
     client.subscribe([("plant/+/status", 1), ("plant/+/alert", 1)])
+    for asset in sorted(unsent_boards):      # 끊긴 동안 올리지 못한 경보판은 다시 붙으면 그 설비의 마지막 판으로 올린다(link.publish 는 못 보낸 것을 남겨 두지 않는다)
+        _publish_board(asset, unsent_boards[asset])
 
 
 def _on_message(client, msg):
@@ -142,6 +145,16 @@ async def run_ledger():
         await asyncio.sleep(1)
 
 
+def _publish_board(asset: str, display: dict) -> bool:
+    """The asset's alert display to plant/{a}/alert (retained). A display the broker did not take is kept for the reconnect."""
+    sent = link.publish(topics.mqtt_alert(topics.asset_key(asset)), json.dumps(display, ensure_ascii=False), qos=1, retain=True)
+    if sent:
+        unsent_boards.pop(asset, None)
+    else:
+        unsent_boards[asset] = display
+    return sent
+
+
 async def relay_alert(value) -> None:
     try:
         alert = schemas.alert_record(value)
@@ -149,7 +162,7 @@ async def relay_alert(value) -> None:
         _malformed("alerts", exc)
         return
     display = board.apply(alert)
-    if not link.publish(topics.mqtt_alert(topics.asset_key(alert["asset"])), json.dumps(display, ensure_ascii=False), qos=1, retain=True):
+    if not _publish_board(alert["asset"], display):
         state["alert_relay_failed"] += 1     # 건강(/healthz)에 보인다 — 끊긴 MQTT 는 link 가 503
         log.error("alert %s %s %s was not published to the plant board: mqtt not connected", alert["asset"], alert["state"], alert["alertId"])
         return

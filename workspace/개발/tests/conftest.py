@@ -1268,6 +1268,54 @@ class KafkaRecorder:
         self.stopped = True
 
 
+class MqttRecorder:
+    """MQTT 브로커 자리: 받은 PUBLISH 를 (토픽, 본문)으로 적는 최소 MQTT 3.1.1 브로커. CONNECT · SUBSCRIBE · QoS 1 PUBLISH 에만 답한다.
+    serve() 전에는 포트만 잡혀 있어 연결이 거절된다."""
+
+    def __init__(self):
+        self.sock = socket.socket()
+        self.sock.bind(('127.0.0.1', 0))
+        self.port = self.sock.getsockname()[1]
+        self.published = []
+
+    def serve(self):
+        self.sock.listen(1)
+        threading.Thread(target=self._run, daemon=True).start()
+
+    def _run(self):
+        conn, _ = self.sock.accept()
+        buf = b''
+        while True:
+            data = conn.recv(4096)
+            if not data:
+                return
+            buf += data
+            while True:
+                size, shift, at = 0, 0, 1                     # 남은 길이(7비트씩 이어지는 수)
+                while at < len(buf):
+                    size, shift, at = size | (buf[at] & 127) << shift, shift + 7, at + 1
+                    if not buf[at - 1] & 128:
+                        break
+                else:
+                    break
+                if len(buf) < at + size:
+                    break
+                packet, buf = bytes([buf[0], 0]) + buf[at:at + size], buf[at + size:]      # 아래는 머리 2바이트 뒤가 본문인 꼴로 읽는다
+                kind, qos = packet[0] >> 4, (packet[0] >> 1) & 3
+                if kind == 1:
+                    conn.sendall(b'\x20\x02\x00\x00')
+                elif kind == 3:
+                    n = int.from_bytes(packet[2:4], 'big')
+                    self.published.append((packet[4:4 + n].decode(), packet[4 + n + (2 if qos else 0):].decode()))
+                    if qos:
+                        conn.sendall(b'\x40\x02' + packet[4 + n:6 + n])
+                elif kind == 8:
+                    topics, rest = 0, packet[4:]
+                    while rest:
+                        rest, topics = rest[3 + int.from_bytes(rest[:2], 'big'):], topics + 1
+                    conn.sendall(b'\x90' + bytes([2 + topics]) + packet[2:4] + b'\x01' * topics)
+
+
 def _run_async(coro):
     """process 의 비동기 경로 하나를 새 스레드의 새 이벤트 루프에서 끝까지 돌린다(서버의 요청 처리 스레드 자리). 시험 스레드에 이미 다른 루프가
     돌고 있어도(세션 동안 열린 동기 playwright 브라우저 등) 같은 길이다 — 예외는 그대로 시험으로 올린다."""

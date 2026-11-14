@@ -48,11 +48,11 @@ def by_of(revision: str) -> str:
     return f"{BY_PREFIX}({revision})"
 
 
-def reviewed(bundle: Path = BUNDLE, originals: Path = ORIGINALS) -> list[dict]:
-    """묶음에서 적재 순서대로 [{doc, filename, sha256, raw, proposal, review_method, by}]."""
+def reviewed(bundle: Path = BUNDLE, originals: Path = ORIGINALS, order: tuple = ORDER) -> list[dict]:
+    """묶음에서 적재 순서대로 [{doc, filename, sha256, raw, proposal, review_method, by}]. order = 읽을 문서(기본은 시작이 넣는 셋)."""
     payload = json.loads(bundle.read_text(encoding="utf-8"))["payload"]
     out = []
-    for doc in ORDER:
+    for doc in order:
         entries = [(sha, e) for sha, e in payload["documents"].items() if e["filename"].split("_")[0] == doc]
         if len(entries) != 1:
             raise Stop(f"{doc}: 강사 서명 묶음({bundle.name})에 이 문서의 검토본이 {len(entries)}개입니다(하나여야 합니다)")
