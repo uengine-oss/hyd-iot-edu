@@ -61,6 +61,18 @@ A_BUTTONS: dict[str, dict] = {
 }
 
 
+def fault_scope() -> dict:
+    """설비 결함 주입이 지원하는 범위 — 화면이 설비 · 결함 · 단추를 손으로 적지 않고 이 값으로 그리고, 지원 범위를 그대로 말한다
+    (가상 설비 한 대의 결함 한 종류다. 다른 설비 · 다른 결함은 이 단추로 일으킬 수 없다)."""
+    return {"asset": A_ASSET, "fault": A_BUTTONS["degrade"]["fault"]["type"], "severity": A_SEVERITY,
+            "buttons": {act: spec["button"] for act, spec in A_BUTTONS.items()}}
+
+
+def unknown_act(act: str) -> str:
+    buttons = " · ".join(f"[{spec['button']}]({a})" for a, spec in A_BUTTONS.items())
+    return f"결함 시뮬레이션의 설비 결함 주입은 {A_ASSET}의 {buttons}만 지원합니다 — 요청한 동작 {act!r} 은(는) 없습니다"
+
+
 class Refused(Exception):
     """사람이 읽는 거절 사유(HTTP 409)."""
 
@@ -185,7 +197,7 @@ def status(read: Callable[[str, dict], dict], rt=None, last_press: Callable[[str
             item["last"] = _brief(rt, _run(rt, spec))
         out[key] = item
     presses = {a: last_press(a) for a in (A_ASSET, *(sp["asset"] for sp in SCENARIOS.values()))} if last_press else {}
-    return {"scenarios": out, "presses": presses, "as_of": datetime.now(timezone.utc).isoformat(timespec="seconds")}
+    return {"scenarios": out, "fault": fault_scope(), "presses": presses, "as_of": datetime.now(timezone.utc).isoformat(timespec="seconds")}
 
 
 def who(body: dict | None) -> dict:

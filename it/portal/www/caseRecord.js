@@ -206,7 +206,7 @@
       const chips = [chip(W().pattern(alert.pattern), 'danger')].concat(shown.slice(0, 6).map(([k, x]) => chip(`${W().fieldName(k)} ${W().value(k, x)}`)));
       const sentence = pressed ? `${who}${W().josa(who, '이/가')} ${ev.trigger}${W().josa(ev.trigger, '을/를')} 눌러 ${alert.asset || ''} ‘${W().pattern(alert.pattern)}’ 처리 건을 열었습니다. 근거는 그때의 업무 데이터 값입니다.`
         : biz ? `${who}${W().josa(who, '이/가')} ${alert.asset || ''} 업무 데이터에서 ‘${W().pattern(alert.pattern)}’${W().josa(W().pattern(alert.pattern), '을/를')} 발견해 처리 건을 열었습니다.`
-        : `${alert.asset || ''} 센서 값이 경보 규칙에 걸려 ‘${W().pattern(alert.pattern)}’ 경보가 났고, 처리 건이 열렸습니다.`;
+        : `${alert.asset || ''}의 ${shown.length ? shown.slice(0, 2).map(([k, x]) => `${W().fieldName(k)} ${W().value(k, x)}`).join(' · ') + ' 값이' : '센서 값이'} 경보 규칙에 걸려 ‘${W().pattern(alert.pattern)}’ 경보가 났고, 처리 건이 열렸습니다.`;
       const pressRows = pressed ? [['누른 사람', presser, ''], ['누른 시각', UI.dateTime ? UI.dateTime(ev.requested_at) : ev.requested_at, '']] : [];
       const table = shown.length || pressRows.length ? kvTable(pressRows.concat(shown.map(([k, x]) => [W().fieldName(k), W().value(k, x), k]))) : '';
       if (biz && !plantBound) chips.push(chip('설비 명령 없음'));
@@ -870,12 +870,12 @@
   }
   // 단계 줄(키트 .stream-phases): 실제 사건에서만 나온다 — 일 받기 → (부른 도구들, 부른 차례대로) → 결과 제출. 시간으로 넘기지 않는다
   function phasesOf(s) {
-    const list = [{ name: '일 받기', state: s.awaiting ? 'now' : 'done' }];
+    const list = s.awaiting ? [{ name: '일 받기', state: 'now' }] : [];
     lineRows(s).filter(r => r.kind !== 'error').forEach(r => {
-      const name = r.kind === 'tool' ? W().toolName(r.tool) : r.kind === 'skill' ? '스킬 읽기' : '결과 작성';
+      const name = r.kind === 'tool' ? W().toolName(r.tool).replace(/\s*\(.*\)\s*$/, '') : r.kind === 'skill' ? '스킬 읽기' : '결과 작성';      // 단계 줄에는 짧은 이름만(괄호 설명은 아래 줄에 있다)
       const state = r.kind === 'tool' && r.status === 'running' ? 'now' : 'done';
       const last = list[list.length - 1];
-      if (last.name === name) last.state = state; else list.push({ name, state });
+      if (last && last.name === name) last.state = state; else list.push({ name, state });
     });
     if (!s.awaiting && !list.some(x => x.state === 'now')) list.push({ name: '다음 행동 정하기', state: 'now' });
     list.push({ name: '결과 제출', state: 'todo' });

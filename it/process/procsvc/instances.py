@@ -1462,7 +1462,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
             self.on_incident_update(snap['state'],inc_id,False,now)
 
     def _run_work_order(self, inst: dict, wi: dict, now) -> None:
-        from .work_orders import request_for_option
+        from .work_orders import request_for_option, no_maintenance_time as work_orders_no_time
         v = engine.variables(inst)
         opt = v.get("chosen_option") or {}
         item = request_for_option(opt)
@@ -1481,6 +1481,11 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
             window = {k: card_window[k] for k in ('id', 'label', 'starts_at') if card_window.get(k)} or None
         if window not in (None, ''):
             item['window'] = deepcopy(window)
+        elif item.get('source') == 'approved-action' and item.get('code') == 'WO_CREATE':
+            # 카드가 스스로 내는 작업지시인데 카드에도 흐름에도 정비 시점이 없다 — 「즉시」로 등록하면 사람이 승인하지 않은 시점을 시스템이 정한다
+            # (다음 예정된 정비 시간에 작업하는 카드를 지금 정비로 등록). 판단 엔진은 이런 카드를 실행 후보에서 뺀다(agentsvc.cards
+            # execution:maintenance-window) — 그래도 온 카드는 등록하지 않고 까닭으로 멈춘다. 「정비 수행」(service_parts)도 같은 문장으로 멈춘다.
+            raise ValueError(work_orders_no_time(opt))
         res = self.hooks.exec_enterprise(v.get("decision_id") or inst["proc_inst_id"], item)
         self._after_commit(self.hooks.audit,v.get("asset", "-"), "process", "SKILL_EXECUTED" if res.get("ok") else "SKILL_FAILED",
                          {"instance": inst["proc_inst_id"], "code": item['code'], "ref": res.get("ref"), "detail": res.get("detail") or res.get("error")},

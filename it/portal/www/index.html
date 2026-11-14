@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>홈 · HYD</title>
+<title>홈 · HYD 포털</title>
 <!-- 싣는 차례(디자인 기준 8-1): 화면 키트(vendor/basecoat) → 포털의 값과 틀(portal-kit.css) → 화면별 배치.
      바깥 주소(CDN · 글꼴 서버)는 하나도 부르지 않는다 — 부품은 모두 vendor/ 에 있다(vendor/README.md).
      흐름 그림 · 지식 지도 · 차트 · 마크다운 · 구문 강조 같은 큰 부품은 그 화면이 UI.need('<이름>') 으로 필요할 때 싣는다(ui.js). -->
@@ -21,7 +21,7 @@
 <aside class="sidebar" id="sidebar" data-side="left" aria-label="메뉴">
   <nav aria-label="주 메뉴">
     <!-- 상표: 마크(24px)의 왼쪽 선이 아래 메뉴 아이콘 열과 같고, 제품 이름은 한 줄이다. 이 줄의 높이는 위 막대와 같다 -->
-    <header><a class="brand" id="brandHome" href="#/main" data-tab="main" aria-label="HYD 홈으로"><span class="brand-mark" data-icon="droplets"></span><span class="brand-name">HYD</span></a></header>
+    <header><a class="brand" id="brandHome" href="#/main" data-tab="main" aria-label="HYD 포털 홈으로"><span class="brand-mark" data-icon="droplets"></span><span class="brand-name">HYD 포털</span></a></header>
     <section class="scrollbar-sm"><div role="group" aria-label="메뉴" id="menuList">
       <!-- 메뉴 정의는 이 자리 한 곳이다. data-menu = 메뉴, data-tabs = 그 메뉴에 딸린 화면(view-… 의 이름, 차례대로), data-icon = Lucide 아이콘 이름.
            app.js 가 이 표를 읽어(MENU) 이 자리를 메뉴 목록으로 바꿔 그린다: 화면이 하나인 메뉴는 곧바로 그 화면으로 가고, 둘 이상인 메뉴는 고른 것만 펼쳐져

@@ -742,7 +742,9 @@ def _window_params(window, opt: dict) -> dict:
         return out or {"window": "즉시"}
     if isinstance(window, str) and window.strip():
         return {"window_id": window.strip()} if window.strip().startswith("MW-") else {"window": window.strip()}
-    # 카드 · 흐름이 정비 시점을 싣지 않은 작업지시(센서 경보 조치)는 즉시다 — 카드 id 글자로 시점을 짐작하지 않는다(G2-09)
+    # 흐름이 조치 뒤에 내는 점검 작업지시(카드의 동작이 아닌 것 — work_orders.request_for_option 의 process-definition-followup)는 정비 시점이
+    # 없고 즉시다 — 카드 id 글자로 시점을 짐작하지 않는다(G2-09). 카드가 스스로 내는 작업지시는 정비 시점 없이 여기까지 오지 않는다
+    # (instances._run_work_order 가 까닭으로 멈춘다).
     return {"window": "즉시"}
 
 
@@ -1247,7 +1249,7 @@ async def scenario_a_button(act: str, body: dict | None = None):
     복구는 팬 · 부하 지령도 평소 운전점으로 되돌린다 — 바뀐 값(setpoints 전 · 후)을 그 기록과 감사 기록에 남긴다."""
     rt = _scenario_rt()
     if act not in scenario_buttons.A_BUTTONS:
-        raise HTTPException(404, f"모르는 A 버튼 {act}")
+        raise HTTPException(404, scenario_buttons.unknown_act(act))
     spec = scenario_buttons.A_BUTTONS[act]
     asset = scenario_buttons.A_ASSET
     person = scenario_buttons.who(body)

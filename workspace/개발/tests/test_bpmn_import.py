@@ -209,3 +209,17 @@ def test_기준_흐름의_승인_단계가_거절_값을_내지_않으면_거절
     old = json.loads((Path(__file__).resolve().parent / 'data' / 'definitions' / 'anomaly_response_2.3.json').read_text(encoding='utf8'))
     with pytest.raises(ValueError, match='거절 값\\(approval, approval_reason\\)을 내지 않습니다'):
         bpmn_import.catalog(old, [])
+
+
+def test_회복_기준이_없는_경보_패턴으로_시작하려_하면_까닭과_고를_수_있는_경보와_그_경보가_가는_곳을_말한다(world):
+    """전수검사 10-G9: 지식 지도에 새로 그린 경보 패턴(회복 기준 없음)을 흐름의 시작으로 고르면 「경보 정책에 없습니다」 한마디뿐이었다 — 무엇이
+    정책이고 무엇을 고를 수 있는지, 그 경보가 감지되면 어떻게 되는지 알 수 없었다."""
+    mapping = copy.deepcopy(HANDOVER['mapping'])
+    mapping['start'] = {'kind': 'alert', 'patterns': ['PRESSURE_DROP']}
+    said = next(p['reason'] for p in _check(world, HANDOVER['xml'], mapping)['problems'] if p.get('field') == 'start.patterns')
+    assert '경보 패턴 PRESSURE_DROP (으)로는 이 흐름을 시작할 수 없습니다' in said and '회복 기준' in said
+    for offered in ('COOLER_DEGRADATION', 'PUMP_LEAKAGE', 'FAN_VIBRATION', 'OIL_ANALYSIS', 'SPARE_BELOW_MIN', 'PM_DUE'):
+        assert offered in said, (offered, said)
+    assert '「미지원 경보 → 현장 검토」' in said and '경보 정책에 없습니다' not in said
+    mapping['start'] = {'kind': 'alert', 'patterns': ['PUMP_LEAKAGE']}
+    assert not [p for p in _check(world, HANDOVER['xml'], mapping)['problems'] if p.get('field') == 'start.patterns']

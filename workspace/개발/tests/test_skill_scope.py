@@ -62,3 +62,19 @@ def test_최저가_정책은_AVL_밖과_순정을_빼고_동률이면_고르지_
 def test_구매_후보_규칙은_구매_경보_조건이_있어야_한다(tests, ok):
     problem = ss.purchase_rule_problem(tests)
     assert (problem is None) is ok and (ok or ss.PURCHASE_PATTERN in problem)
+
+
+PURCHASE_SOP = dict(scope='purchase', kind='work_order', parts=['part:pump-seal'], executable=True, supplier_policy='oem',
+                    actions=[{'action': 'action:purchase-request', 'value': None}])
+
+
+@pytest.mark.parametrize('approver', ['role:purchasing', 'role:purchasing-mgr', 'role:my-buyer'], ids=['구매 담당', '구매 팀장', '학생이 만든 구매 역할'])
+def test_실행_구매_절차의_승인_역할은_원문이_정한_역할이면_된다(approver):
+    """전수검사 10-G5: 승인 역할이 구매 담당 하나로 고정돼, 「발주 승인: 구매 팀장」인 문서는 적재가 거절되거나 판단 후보에서 조용히 빠졌다."""
+    assert ss.purchase_shape(dict(PURCHASE_SOP, approver=approver), source_backed=True)['executable'] is True
+
+
+@pytest.mark.parametrize('approver', [None, '', '구매 팀장'], ids=['없음', '빈 값', '역할 id 가 아닌 글'])
+def test_승인_역할이_없는_실행_구매_절차는_무엇이_필요한지_말하고_거절한다(approver):
+    with pytest.raises(ValueError, match='원문에 명시된 승인 역할'):
+        ss.purchase_shape(dict(PURCHASE_SOP, approver=approver), source_backed=True)

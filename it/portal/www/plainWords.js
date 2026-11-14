@@ -147,10 +147,10 @@
       html+=`<p><b>${e(plan.scope==='bundle' && assets.length>1 ? `${names} ${assets.length}대를 같은 정비 시간에 함께 정비하는 계획입니다.` : names ? `${names} 정비 계획입니다.` : '정비 대상 설비가 기록에 없습니다.')}</b> ${e(pmStockSentence(plan))}</p>`;
     }
     // 판단에 걸리는 것만 접기 밖에 둔다
-    if (plan.ready===false) html+='<p class="neg">검사 결과 지금은 실행할 수 없는 계획입니다. 까닭은 설비별 근거에 있습니다.</p>';
-    else if (!(plan.scope==='bundle' && assets.length===2) && !(plan.scope==='single' && assets.length===1)) html+='<p class="neg">정비 대상 범위 기록이 계획과 맞지 않습니다. 설비별 근거를 확인하세요.</p>';
+    if (plan.ready===false) html+='<p class="muted" data-tone="danger">검사 결과 지금은 실행할 수 없는 계획입니다. 까닭은 설비별 근거에 있습니다.</p>';
+    else if (!(plan.scope==='bundle' && assets.length===2) && !(plan.scope==='single' && assets.length===1)) html+='<p class="muted" data-tone="danger">정비 대상 범위 기록이 계획과 맞지 않습니다. 설비별 근거를 확인하세요.</p>';
     const staff=plan.staffing && typeof plan.staffing==='object' ? plan.staffing : null;
-    if (staff?.arrangement_required===true && staff.confirmed!==true) html+=`<p class="neg">정비 인력을 더 확보해야 합니다${typeof staff.shortfall==='number' ? ` (${W.num(staff.shortfall)}명 부족)` : ''}.</p>`;
+    if (staff?.arrangement_required===true && staff.confirmed!==true) html+=`<p class="muted" data-tone="danger">정비 인력을 더 확보해야 합니다${typeof staff.shortfall==='number' ? ` (${W.num(staff.shortfall)}명 부족)` : ''}.</p>`;
     let detail=assets.map(row=>{
       if(!row || typeof row!=='object') return '<p>이 설비의 정비 근거를 읽지 못했습니다.</p>';
       const service=row.service || {}, parts=Array.isArray(row.parts) ? row.parts : [], a=row.applicability;

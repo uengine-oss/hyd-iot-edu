@@ -33,6 +33,12 @@ def request_for_option(option):
             **({'schedule_plan':deepcopy(option['maintenancePlan'])} if option.get('maintenancePlan') else {})}
 
 
+def no_maintenance_time(option) -> str:
+    """승인한 카드가 즉시 시행이 아닌데 정비 시점이 없을 때의 까닭 — 작업지시 등록(instances._run_work_order)과 정비 수행(service_parts)이 같이 쓴다."""
+    return (f"승인한 카드 「{(option or {}).get('name') or (option or {}).get('id') or '?'}」는 즉시 시행이 아닌데 정비를 언제 할지 정한 시각이 없습니다 — "
+            "시점을 지어내 정비하지 않습니다. 정비 시스템(CMMS)의 예정된 정비 시간을 확인한 뒤 판단을 다시 받으세요")
+
+
 def prepare(ctx, decision, item):
     """Save exactly the request that will be retried before calling CMMS."""
     inc_id = (decision.get('origin') or {}).get('incident')

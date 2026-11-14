@@ -149,3 +149,34 @@ def test_비교에_필요한_실제_사실이_없거나_어긋나면_거절한�
     with pytest.raises(ValueError) as caught:
         compare(_skill('sup:a', **skill_change), _facts(**facts_change))
     assert word in str(caught.value)
+
+
+OTHER_WORDING = [
+    ('1건당 불량 손실비용은 60만원으로 본다. 불량률 15% 초과 공급사는 전수검사를 하고 검사비 12만원을 더한다.', (60, 0.15, 12)),
+    ('불량 한 건의 손실은 2,500,000원이다. 불량률이 10퍼센트를 넘으면 전수 검사비 200,000원을 더해 비교한다.', (250, 0.1, 20)),
+    ('Loss per defect: 600,000 KRW. Suppliers above a 12.5 % defect rate need full inspection (150,000 KRW).', (60, 0.125, 15)),
+    ('불량 1건 손실은 0.3억 원, 전수 검사 비용은 1.5백만 원으로 보고, 기준 불량률은 8 %다.', (3000, 0.08, 150)),
+]
+
+
+@pytest.mark.parametrize('quote, numbers', OTHER_WORDING, ids=['붙여 쓴 만원 · 다른 낱말', '원 단위 · 퍼센트', '영문 · KRW', '억 · 백만'])
+def test_수업_문서와_다른_문장으로_적은_구매_기준도_인용에_그_수치가_있으면_받는다(quote, numbers):
+    """전수검사 10-G6 · 13C-2: 수치 대조가 PR-07 의 문장 모양만 받아, 같은 기준을 다른 말로 적은 구매 문서는 정책이 빠지고 구매 판단이 「검토된 원문
+    정책이 없습니다」로 보류됐다."""
+    loss, threshold, cost = numbers
+    given = _with(loss_per_failure=loss, inspection_threshold=threshold, inspection_cost=cost, anchor=dict(POLICY['anchor'], quote=quote))
+    assert policy(given) == given
+    one = compare({'purchase_comparison_policy': given, 'source_id': given['anchor']['source_id'], 'parts': ['part:x'],
+                   'actions': [{'code': 'PR_CREATE', 'value': 'sup:a'}]},
+                  {'purchase_part': 'part:x', 'spare_quotes': QUOTES, 'need_qty': 2, 'need_by_days': 6})
+    assert one['total_cost'] == pytest.approx(180 * 2 + 2 * 0.12 * loss + (cost if 0.12 > threshold else 0))
+
+
+def test_인용에_없는_수치는_어느_칸의_무엇이_없고_인용에는_무엇이_있는지_말한다():
+    quote = OTHER_WORDING[0][0]
+    with pytest.raises(ValueError) as caught:
+        policy(_with(loss_per_failure=250, inspection_threshold=0.15, inspection_cost=12, anchor=dict(POLICY['anchor'], quote=quote)))
+    assert str(caught.value) == ('구매 비교 수치가 원문 인용과 다릅니다: loss_per_failure — 불량 1건 손실 250만 원이(가) 인용에 없습니다'
+                                 '(인용에서 읽은 금액: 12만 원 · 60만 원)')
+    with pytest.raises(ValueError, match='inspection_threshold — 전수 검사 불량률 기준 10 %이\\(가\\) 인용에 없습니다\\(인용에서 읽은 비율: 15 %\\)'):
+        policy(_with(loss_per_failure=60, inspection_threshold=0.1, inspection_cost=12, anchor=dict(POLICY['anchor'], quote=quote)))

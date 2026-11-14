@@ -11,7 +11,6 @@ from copy import deepcopy
 PURCHASE = 'purchase'
 PART_ID = re.compile(r'^part:[a-z0-9]+(?:-[a-z0-9.]+)*$')
 PURCHASE_ACTION = 'action:purchase-request'
-PURCHASE_ROLE = 'role:purchasing'
 PURCHASE_SYSTEM = 'sys:erp'
 SUPPLIER_POLICIES = ('oem', 'lowest_approved', 'fastest_quote')
 PURCHASE_PATTERN = 'SPARE_BELOW_MIN'     # the business alert that starts a purchase decision (business_monitor · scenario C)
@@ -118,8 +117,10 @@ def purchase_shape(body, *, source_backed):
     else:
         if len(actions) != 1 or not isinstance(actions[0], dict) or actions[0].get('action') != PURCHASE_ACTION:
             raise ValueError('실행 구매 SOP는 PR_CREATE 구매요청 Action 하나만 명시해야 합니다')
-        if body.get('approver') != PURCHASE_ROLE:
-            raise ValueError('실행 구매 SOP에는 원문에 명시된 구매 담당 승인 역할(role:purchasing)이 필요합니다')
+        # 승인 역할은 원문이 정한다(구매 담당 · 구매 팀장 · 학생이 만든 구매 역할). 역할이 지식에 있는지는 적재 전 검사가 본다
+        # (manual_knowledge PURCHASE_ROLE_NOT_FOUND) — 여기서 한 역할로 고정하면 다른 승인 체계의 구매 문서가 적재되지 않는다
+        if not isinstance(body.get('approver'), str) or not body['approver'].startswith('role:'):
+            raise ValueError('실행 구매 SOP에는 원문에 명시된 승인 역할(role:… — 발주를 승인하는 역할)이 필요합니다')
         value = actions[0].get('value')
         if policy is not None and value is not None:
             raise ValueError('동적 공급사 정책과 고정 Supplier 값을 동시에 지정할 수 없습니다')

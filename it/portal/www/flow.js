@@ -147,11 +147,10 @@
     if (state === 'fail') return '멈춤';
     if (state === 'hold') return '보류';
     if ((mine || []).includes(id)) return '지금 · 내 차례';
-    if ((view.workitems || []).some(w => w.activity_id === id && w.status === 'SUBMITTED')) return '지금 · 다음 단계로 넘기는 중';
     const def = view.definition || {}, a = (def.activities || []).find(x => x.id === id) || {};
     const ep = a.agent || ((def.roles || []).find(r => r.name === a.role) || {}).endpoint || '';
     if (ep === 'sys:agent' || /^agent:/.test(ep) || a.orchestration === 'cliagents') return '지금 · AI 판단 중';
-    if (/^role:|^user:/.test(ep)) return '지금 · 담당자 차례';
+    if (/^role:|^user:/.test(ep)) return (view.workitems || []).some(w => w.activity_id === id && w.status === 'SUBMITTED') ? '지금 · 다음 단계로 넘기는 중' : '지금 · 담당자 차례';
     return '지금 · 시스템 처리 중';
   }
   function paint(D, view, mine) {

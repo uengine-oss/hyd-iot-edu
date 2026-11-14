@@ -151,7 +151,7 @@ function updateNavigation(name) {
   const group = $('#pageGroup'); group.hidden = !many; group.textContent = menu.name;
   $('#pageSep').hidden = !many;
   $('#pageLocation').textContent = tabName(name);
-  document.title = `${tabName(name)} · HYD`;
+  document.title = `${tabName(name)} · HYD 포털`;
 }
 selectTab('main');
 
@@ -163,12 +163,12 @@ const healthState = {};
 // 선택 도구: 서비스 자체가 선택(optional)이거나, 서비스는 기본인데 사람이 여는 화면만 선택 도구(entryHealth — Redpanda 는 기본, Console 은 tools 프로필)인 것
 const optionalOf = c => c.entryHealth || c.optional;
 const SYS = {
-  W: 1160, NW: 134, NH: 44, y0: 98, dy: 58,
+  W: 1160, NW: 134, NH: 44, y0: 110, dy: 56,
   band: { ot: [152, 196, 'OT', '현장 · 실시간 제어', 'cv-red'], dmz: [358, 316, 'DMZ', '경계망 · 검증된 것만 지나간다', 'cv-amber'], it: [684, 460, 'IT', '업무 · 분석 · 지식 · AI', 'cv-blue'] },
   col: { ot: 250, d1: 440, d2: 592, a: 766, b: 914, c: 1062 },
   // 부품(layers.js 이름의 첫 낱말) → [화면 이름, 아이콘, 칸, 폭]
   node: {
-    process: ['흐름 엔진', 'workflow', 'a'], 'enterprise-sim': ['업무 시스템', 'receipt-text', 'b'], portal: ['포털', 'layout-grid', 'c'],
+    process: ['흐름 엔진', 'workflow', 'a'], portal: ['포털', 'layout-grid', 'b'], 'enterprise-sim': ['업무 시스템', 'receipt-text', 'c'],
     'agent-worker': ['AI 에이전트', 'bot', 'b'], agent: ['판단 서비스', 'scale', 'c'], Neo4j: ['지식 그래프', 'network', 'c'],
     FUXA: ['관제 화면', 'gauge', 'ot'], Grafana: ['추이 화면', 'chart-line', 'b'], Prometheus: ['서비스 감시', 'signal', 'c'],
     TimescaleDB: ['시계열 저장소', 'database', 'b'], 'connect-sink': ['시계열 기록', 'download', 'c'], detector: ['이상 탐지', 'activity', 'b'],
@@ -230,8 +230,8 @@ function renderStack() {
     ['ai', [Bp('agent'), Tp('Neo4j')]],
     // 그 밖의 연결
     ['plain', [Bp('FUXA'), Tp('EMQX')], '감시 · 수동 조작', [at.FUXA.x + 10, mid('FUXA', 'EMQX') + 4], 'start'],
-    ['plain', [Rp('process'), Lp('enterprise-sim')]],
-    ['plain', [Tp('portal'), [at.portal.x, gap('portal') + 6], [at.process.x, gap('portal') + 6], Tp('process')], '승인 · 조회', [at['enterprise-sim'].x, gap('portal') + 1], 'middle'],
+    ['plain', [Lp('portal'), Rp('process')]],      // 사람은 포털에서 승인한다
+    ['plain', [Tp('process', 30), [at.process.x + 30, at.process.y - NH / 2 - 12], [at['enterprise-sim'].x, at.process.y - NH / 2 - 12], Tp('enterprise-sim')], '작업지시 · 구매', [at.portal.x, at.process.y - NH / 2 - 18], 'middle'],
   ];
   const COLOR = { data: 'var(--cv-blue)', cmd: 'var(--cv-amber)', ai: 'var(--cv-violet)', plain: 'var(--cv-edge)' };
   const node = c => {
@@ -247,7 +247,8 @@ function renderStack() {
     <defs>${Object.entries(COLOR).map(([k, c]) => `<marker id="sysAh-${k}" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M1,1.5 L9,5 L1,8.5" fill="none" stroke="${c}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></marker>`).join('')}</defs>
     ${Object.values(SYS.band).map(([x, w, name, what, color]) => `<rect class="sys-band" x="${x}" y="16" width="${w}" height="${H - 32}" rx="14" style="fill:color-mix(in srgb, var(--${color}) 4%, transparent)"/>` +
       `<text class="sys-band-t" x="${x + 18}" y="46" style="fill:var(--${color})">${name}</text><text class="sys-band-s" x="${x + 18 + name.length * 11 + 10}" y="46">${esc(what)}</text>`).join('')}
-    ${LAYERS.map((L, i) => `${i ? `<line class="sys-row-line" x1="16" x2="${W - 16}" y1="${y0 + i * dy - dy / 2}" y2="${y0 + i * dy - dy / 2}"/>` : ''}` +
+    <text class="sys-row-t" x="20" y="40">계층</text><text class="sys-row-cap" x="20" y="57">위가 업무, 아래가 현장</text>
+    ${LAYERS.map((L, i) => `${i % 2 ? '' : `<rect class="sys-row-bg" x="12" y="${y0 + i * dy - dy / 2}" width="${W - 24}" height="${dy}" rx="8"/>`}` +
       `<text class="sys-row-t" x="20" y="${y0 + i * dy + 4}">${esc(L.name)}</text>`).join('')}
     ${P.map(([k, pts]) => `<path class="sys-p" data-k="${k}" d="${path(pts)}" marker-end="url(#sysAh-${k})"/>`).join('')}
     ${P.filter(p => p[2]).map(([k, , t, [x, y], anchor]) => `<text class="sys-p-t" x="${x}" y="${y}" text-anchor="${anchor}" style="fill:${k === 'plain' ? 'var(--cv-ink-2)' : COLOR[k]}">${esc(t)}</text>`).join('')}

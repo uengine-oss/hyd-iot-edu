@@ -277,14 +277,16 @@ class ServicePartsRuntime:
         if cfg.get("until"):                       # 예정된 정비 시간까지 먼저 기다린다(시간 대기와 같은 계산 · 같은 수업 압축)
             clock = self._now(now)
             if "wait" not in state:
+                # 즉시 시행 카드가 아닌데 그 값이 없거나 비었거나 시각이 아니다 — 언제 정비할지 모르는 채로 바로 정비하지 않는다(시점을 지어내지 않음).
+                # 값이 아예 없을 때와 비어 있을 때 모두 같은 까닭을 말한다(작업지시 등록 단계와 같은 문장 — work_orders.no_maintenance_time)
+                from .work_orders import no_maintenance_time
                 try:
                     plan = effect_parts.wait_for({"until": cfg["until"], "label": "예정된 정비 시간까지"}, v, clock, self.time_scale)
                 except KeyError as e:
-                    raise ValueError(f"예정된 정비 시간 값 {e.args[0]} 이(가) 처리 건에 없습니다") from e
+                    raise ValueError(f"예정된 정비 시간 값 {e.args[0]} 이(가) 처리 건에 없습니다. " + no_maintenance_time(v.get("chosen_option"))) from e
                 except ValueError as e:
-                    # 즉시 시행 카드가 아닌데 그 값이 비었거나 시각이 아니다 — 언제 정비할지 모르는 채로 바로 정비하지 않는다(시점을 지어내지 않음)
-                    raise ValueError(f"예정된 정비 시간 값 {cfg['until']} 을(를) 시각으로 읽지 못했습니다({e}) — 승인한 카드는 즉시 시행이 아닌데 "
-                                     "정비를 언제 할지 정한 시각이 없습니다. 카드의 정비 시점과 작업지시의 예정된 정비 시간을 확인하세요") from e
+                    raise ValueError(f"예정된 정비 시간 값 {cfg['until']} 을(를) 시각으로 읽지 못했습니다({e}). "
+                                     + no_maintenance_time(v.get("chosen_option"))) from e
                 wi["due_date"] = plan["due_at"]
                 state = self._save_state(wi, wait=plan)
                 self._event(wi, "WAIT_STARTED", "예정된 정비 시간까지 대기", {"plan": plan})

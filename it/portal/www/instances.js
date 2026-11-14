@@ -10,7 +10,7 @@
    복구용 기능(단계 닫기 · 실행 취소 · 승인 재전달과 폐기 · 다시 수행 · 이전 조치의 영향 · 다시 평가)은 평소에는 「자세한 기록」의 「다시 수행 · 복구」에 있고,
    멈춘 단계가 있을 때(서버 attention)만 그 단계 아래로 올라온다. 쓰는 사람은 늘 담당자 한 명이고 모든 역할을 맡는다(inbox.js 머리말). */
 (function () {
-  const I = { defNames: {}, defTimers: {}, timers: [], role: '', mode: null, taskSel: null, taskView: null, fieldValues: {}, fieldTask: null, instances: [], all: [], sel: null, view: null, todo: [], dec: null, decId: null, asked: [],
+  const I = { defNames: {}, defTimers: {}, defAgents: {}, timers: [], role: '', mode: null, taskSel: null, taskView: null, fieldValues: {}, fieldTask: null, instances: [], all: [], sel: null, view: null, todo: [], dec: null, decId: null, asked: [],
               form: { option: null, role: null, by: '', reason: '', fan: null, load: null, mode: null }, msg: '', busy: false, sig: null, listSig: null, filter: 'all', more: 'log', closing: null, listShown: 20, eventsShown: 20,
               retryForm: {}, discardPreview: {}, gone: null,
               pmsg: {} };   // 복구 패널(단계 닫기 'close' · 승인 재전달 · 폐기 · 정비 요청 재전달 = 그 작업 id)마다 따로 두는 오류 글 — 「내가 할 일」의 I.msg 와 섞이지 않는다(W1-24)
@@ -40,7 +40,7 @@
     if (x.attention) return UI.chipText(String(x.attention.label || '멈춤').split(' — ')[0], 'danger');
     const t = x.status === 'RUNNING' ? mineOf(x.proc_inst_id) : null;
     if (t) return UI.chipText(turnWord(t), 'warning');
-    if (x.status === 'RUNNING') return UI.chipText(UI.status(x.status), 'accent');
+    if (x.status === 'RUNNING') return UI.chipText(aiNow(x) ? 'AI 판단 중' : UI.status(x.status), 'accent');
     const o = outcomeOf(x);
     return UI.chipText(o.label, o.tone);
   }
@@ -49,7 +49,7 @@
     if (x.attention) return 'triangle-alert';
     const t = task || (x.status === 'RUNNING' ? mineOf(x.proc_inst_id) : null);
     if (t) return t.draft_status === 'HUMAN_ASKED' ? 'message-circle-question' : 'user-check';
-    if (x.status === 'RUNNING') return isSystemJob(x) ? 'file-text' : 'bot';
+    if (x.status === 'RUNNING') return isSystemJob(x) ? 'file-text' : aiNow(x) ? 'bot' : 'cog';
     const o = outcomeOf(x);
     return isSystemJob(x) ? 'file-text' : o.tone === 'danger' || o.verdict === 'rejected' || x.status === 'CANCELLED' ? 'circle-x' : 'circle-check';
   }
@@ -61,6 +61,8 @@
     const word = !o.verdict && !PLAIN_END.has(end) && end !== o.label ? end : o.label;      // 결과 보고가 없는 건만 끝 이벤트의 이름으로 말한다
     return `${word}${josa(word, '으로/로')} 끝남`;
   }
+  // 지금 단계가 AI 에이전트의 단계인가(그 흐름 정의에서 읽은 것 — 이름으로 짐작하지 않는다)
+  const aiNow = x => { const ag = I.defAgents[`${x.proc_def_id}@${x.proc_def_version}`]; return !!ag && (x.current_activity_ids || []).some(id => ag.has(String(id).replace(/^task:/, ''))); };
   const typingIn = node => { const a = document.activeElement; return !!a && !!node && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && node.contains(a); };
   const moreOpen = () => !!document.getElementById('caseMore')?.open;
 
@@ -96,6 +98,8 @@
         const d = await getJ(API.process + `/api/process/definitions/${encodeURIComponent(id)}?version=${encodeURIComponent(version)}`);
         I.defNames[k] = Object.fromEntries([...(d.activities || []), ...(d.events || [])].filter(a => a.name).map(a => [a.id, a.name]));
         // 기한 타이머(경계 이벤트) → 그 타이머가 붙은 단계. 「내 할 일」 줄의 기한을 이 표로 찾는다(timerFor 와 같은 규칙)
+        const eps = Object.fromEntries((d.roles || []).map(r => [r.name, r.endpoint]));
+        I.defAgents[k] = new Set((d.activities || []).filter(a => { const ep = a.agent || eps[a.role] || ''; return ep === 'sys:agent' || /^agent:/.test(ep) || a.orchestration === 'cliagents'; }).map(a => a.id));
         I.defTimers[k] = Object.fromEntries([...(d.events || []).filter(e => e.attachedTo).map(e => [e.id, e.attachedTo]), ...(d.activities || []).flatMap(a => (a.attachedEvents || []).map(e => [e, a.id]))]);
       }
       catch (e) { loadErr = `흐름 정의 ${id} ${version}을(를) 읽지 못했습니다: ${e.message}`; }
@@ -657,9 +661,13 @@
     try { await send(); I.msg = ''; if (done) done(); }
     catch (e) { failed = e; refused(task, e, what); }
     try { await load(true); } finally { I.busy = false; renderTodoPanel(); }
+    // 결과만 한 줄로 알린다(오른쪽 아래). 실패의 까닭은 판 안에 남는다
+    if (!failed && UI.toast) UI.toast(I.doneText || '처리했습니다. 다음 단계로 넘어갑니다.', { tone: 'ok' });
+    I.doneText = '';
     return failed;
   }
   function approveTask(task, decision) {
+    I.doneText = decision === '승인' ? '승인했습니다. 다음 단계로 넘어갑니다.' : '반려했습니다. 승인 뒤 조치는 실행하지 않습니다.';
     return act(task, '승인', () => postJ(API.process + `/api/todolist/${encodeURIComponent(task.id)}/approve`, { decision, option: decision === '승인' ? I.form.option : null,
       by: I.form.by, role: I.form.role, reason: I.form.reason }), () => { I.form.approveFor = null; });
   }
@@ -679,12 +687,14 @@
     const reason = I.form.reason.trim();
     if (!reason || Array.from(reason).length > 2000) { I.msg = '반려 사유를 1~2000자로 적으세요.'; renderTodoPanel(); $('#tdReason')?.focus(); return; }
     if (!I.form.by.trim() || !I.form.role) { I.msg = '담당자 정보를 읽지 못해 보낼 수 없습니다. 화면을 새로 고친 뒤 다시 해 주세요.'; renderTodoPanel(); return; }
+    I.doneText = '반려했습니다. 승인 뒤 조치는 실행하지 않습니다.';
     return act(task, '승인', () => postJ(API.process + `/api/todolist/${encodeURIComponent(task.id)}/reject-card`, {
       decision: I.decId, by: I.form.by.trim(), role: I.form.role, reason }), () => { I.dec = null; });
   }
 
   async function selectCard(task) {
     if (!window.hydInbox?.me?.()) return;   // P5: 「나」 없이는 승인하지 않는다(버튼도 꺼져 있다)
+    I.doneText = '승인했습니다. 시스템이 실행하고 결과를 확인합니다.';
     const e = await act(task, '승인', () => postJ(API.process + `/api/todolist/${encodeURIComponent(task.id)}/select`, { decision: I.decId, option: I.form.option, by: I.form.by, role: I.form.role,
       reason: I.form.reason, fan_pct: I.form.fan, load_pct: I.form.load, review_id: matchingReviewId(task) }), () => { I.form.needPreview = false; });
     // 검토한 예측이 오래됐다는 거절: 승인 전에 [미리 보기]로 지금 조건을 다시 확인해야 한다 — 미리 보기 버튼을 승인 옆에 꺼내 보인다
@@ -818,6 +828,8 @@
     const n = hydFlow.pathModel(view.definition || {}, view.workitems, view.instance).nodes.filter(x => x.state === 'now').pop();
     if (!n || n.who === 'human') return '';
     const name = UI.flowName(n.name);
+    const step = n.who !== 'agent' && I.record && I.record.model ? I.record.model.steps.find(s => s.w && s.w.id === n.wid) : null;
+    if (step && step.live && step.sentence) return `<div class="wait-note">${UI.icon('cog', 'ic-lg')}<span><b>시스템이 「${esc(name)}」 단계를 처리하는 중입니다.</b> ${esc(step.sentence)}</span></div>`;
     return n.who === 'agent' ? `<div class="wait-note">${UI.icon('bot', 'ic-lg')}<span><b>AI 에이전트가 「${esc(name)}」 단계를 처리하는 중입니다.</b> 사람의 승인이 필요해지면 요청이 이 자리에 뜹니다.</span></div>`
       : `<div class="wait-note">${UI.icon('cog', 'ic-lg')}<span><b>시스템이 「${esc(name)}」 단계를 처리하는 중입니다.</b> 끝나면 결과가 아래 단계 기록에 붙습니다.</span></div>`;
   }

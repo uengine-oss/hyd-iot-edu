@@ -166,7 +166,7 @@ def test_위_막대에는_접기와_위치와_연결_상태와_화면_찾기와_
     assert page.locator('#simT, #openCount, .topbar #healthDots, .topbar #courseStatus, .topbar #scale').count() == 0
     page.evaluate("() => selectTab('skills')")
     assert page.inner_text('.crumb').split() == ['지식', '조치', '방법']          # 메뉴 › 화면 — 사이의 꺾쇠는 그림이라 글에 없다
-    assert page.title() == '조치 방법 · HYD'
+    assert page.title() == '조치 방법 · HYD 포털'
     page.evaluate("() => selectTab('main')")
     assert page.inner_text('.crumb').strip() == '홈'                                  # 화면이 하나뿐인 메뉴는 화면 이름만
     assert page.eval_on_selector_all('#sidebar > nav > footer > *', "ns => ns.map(n => n.id)") == ['courseStatus', 'railStatus']

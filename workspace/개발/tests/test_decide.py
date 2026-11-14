@@ -140,3 +140,19 @@ def test_원천에서_새로_읽은_센서_사실은_학생이_읽는_센서_이
     facts, prov = decide.gather_facts(inputs, asset, {}, tsdb, variables={'ts1'})
     (row,) = prov
     assert facts['ts1'] == 51.5 and re.fullmatch(r'설비 센서 「유온」 최신값\(\d+초 전\)', row['how']), row
+
+
+def test_승인_역할이_구매_담당이_아닌_구매_절차도_재고_보충_판단의_후보가_된다(world, course_graph):
+    """전수검사 10-G5: 판단 엔진이 구매 후보를 승인 역할 = 구매 담당(role:purchasing)인 절차로만 걸러, 구매 팀장이 승인하는 구매 문서는 후보에서
+    조용히 빠지고 판단이 「구매 후보 지식이 없습니다: PR_CREATE만 수행하는 work_order 스킬과 후보 규칙을 확인하세요」로 실패했다 — 진짜 까닭(승인
+    역할)과 다른 말이다. 수업 구매 문서(PR-07)의 절차 셋을 구매 팀장 승인으로 바꾼 지식에서 같은 재고 보충 판단을 돌린다."""
+    moved = course_graph.query(
+        "MATCH (k:Skill {scope:'purchase'})-[old:APPROVED_BY]->(:Role {id:'role:purchasing'}) WHERE k.executable = true "
+        "MATCH (mgr:Role {id:'role:purchasing-mgr'}) CREATE (k)-[new:APPROVED_BY]->(mgr) SET new = properties(old) DELETE old RETURN k.id AS id")
+    assert len(moved) == 3, moved
+    status, out = world.api('POST', '/api/scenario/C/start', {'by': '담당자', 'user_id': 'user:me', 'roles': ['role:purchasing']}, source_loop=True)
+    assert status == 200, out
+    did = world.agent(out['instance'], 'T_agent')
+    cards = world.main.book[did]['options']
+    assert {o['id'] for o in cards} == {m['id'] for m in moved} and world.main.book[did]['recommended'] == 'skill:sop-pur-11'
+    assert {o['approver']['id'] for o in cards} == {'role:purchasing-mgr'}

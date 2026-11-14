@@ -789,19 +789,52 @@ def test_흐름A의_즉시_시행_카드는_정비를_기다리지_않는다(wor
     assert fix['status'] == 'DONE' and any(e['job_id'] == 'WAIT_SKIPPED' for e in world.events(todo=fix['id']))
 
 
-def test_흐름A의_정비는_즉시_시행도_아니고_정비_시각도_없는_카드면_바로_정비하지_않고_그_까닭으로_멈춘다(world):
-    """판단 엔진은 예정된 정비 시간을 모르면 카드에 정비 시점을 싣지 않는다(agentsvc.cards.option_window — 지어내지 않음, window 없음). 그런 카드의
-    작업지시에는 예정된 정비 시각이 없다 — 「정비 수행」이 그것을 「지금」으로 읽어 설비 결함을 지우면 하지 않은 정비가 한 것으로 남는다."""
+def test_흐름A는_즉시_시행도_아니고_정비_시각도_없는_카드의_작업지시를_즉시로_등록하지_않고_그_까닭으로_멈춘다(world):
+    """판단 엔진은 예정된 정비 시간을 모르면 카드에 정비 시점을 싣지 않고 그 카드를 실행 후보에서 뺀다(agentsvc.cards — test_cards). 그래도 그런 카드가
+    승인돼 오면: 전에는 작업지시가 업무 시스템에 「즉시」로 등록되고(사람이 승인하지 않은 시점) 그 뒤 「정비 수행」이 「언제 할지 모른다」로 멈춰,
+    두 단계가 서로 다른 말을 했다. 작업지시 단계가 등록 전에 같은 까닭으로 멈춘다 — 등록된 작업지시 · 정비 · 재관측이 없다."""
     alert, pid, decision = world.start_cooling()
     card = next(o for o in world.main.book[decision]['options'] if o['id'] == 'skill:sop-cool-14')
     card['window'] = None
+    with psycopg.connect(world.dsn) as db:
+        before = db.execute("SELECT count(*) FROM ent.transactions WHERE asset = 'HYD-01'").fetchone()[0]
     world.approve(pid, decision, 'skill:sop-cool-14', MAINT)
     world.poll(3)
-    assert world.values(pid)['work_order']['ref'], '작업지시는 등록됐다'
+    with psycopg.connect(world.dsn) as db:
+        after = db.execute("SELECT count(*) FROM ent.transactions WHERE asset = 'HYD-01'").fetchone()[0]
+    assert world.values(pid).get('work_order') is None and after == before, '정비 시점이 없는데 작업지시를 등록했다'
+    order = world.row(pid, 'T_wo_only')
+    said = json.dumps([e['data'] for e in world.events(pid) if e['event_type'] == 'error'], ensure_ascii=False) + (order.get('log') or '')
+    assert order['status'] != 'DONE' and '즉시 시행이 아닌데 정비를 언제 할지 정한 시각이 없습니다' in said and '「쿨러 핀 세척」' in said, said
+    assert all(w['status'] == 'TODO' for w in world.rows(pid) if w['activity_id'] in ('T_fix', 'T_reobs_wo')), '작업지시 없이 정비 · 재관측이 돌았다'
+    assert world.values(pid).get('maintenance') is None
+
+
+def test_정비_수행은_작업지시에_예정된_정비_시각이_없으면_바로_정비하지_않고_작업지시_단계와_같은_까닭으로_멈춘다(world):
+    """작업지시는 창과 함께 등록됐는데 그 영수증에 시작 시각이 없는 경우(정비 시스템이 창의 시각을 돌려주지 않음) — 「정비 수행」이 그것을 「지금」으로
+    읽어 설비 결함을 지우면 하지 않은 정비가 한 것으로 남는다."""
+    alert, pid, decision = world.start_cooling()
+    window = _next_window(world, 'HYD-01')
+    card = next(o for o in world.main.book[decision]['options'] if o['id'] == 'skill:sop-cool-14')
+    card['window'] = dict(window, name='이번 예정된 정비 시간', basis='hours_at_next_window')
+    real = world.rt.hooks.exec_enterprise
+
+    def without_start(decision_id, item):
+        res = real(decision_id, item)
+        if item.get('code') == 'WO_CREATE':
+            res = dict(res, after={k: v for k, v in (res.get('after') or {}).items() if k != 'window_starts_at'})
+        return res
+    world.rt.hooks.exec_enterprise = without_start
+    try:
+        world.approve(pid, decision, 'skill:sop-cool-14', MAINT)
+        world.poll(3)
+    finally:
+        world.rt.hooks.exec_enterprise = real
+    assert world.values(pid)['work_order']['ref']
     fix = world.row(pid, 'T_fix')
     said = json.dumps([e['data'] for e in world.events(pid) if e['event_type'] == 'error'], ensure_ascii=False) + (fix.get('log') or '')
     assert fix['status'] != 'DONE' and world.values(pid).get('maintenance') is None, '정비 시각을 모르는데 정비를 끝냈다'
-    assert '예정된 정비 시간 값 work_order.after.window_starts_at' in said and '즉시 시행이 아닌데' in said, said
+    assert '예정된 정비 시간 값 work_order.after.window_starts_at' in said and '즉시 시행이 아닌데 정비를 언제 할지 정한 시각이 없습니다' in said, said
     assert not any(e['job_id'] in ('WAIT_STARTED', 'WAIT_SKIPPED') for e in world.events(todo=fix['id'])), '기다림을 지어내지 않는다'
     assert all(w['status'] == 'TODO' for w in world.rows(pid) if w['activity_id'] == 'T_reobs_wo'), '정비 전에 재관측이 돌았다'
 

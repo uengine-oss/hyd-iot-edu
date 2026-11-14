@@ -133,6 +133,8 @@ MAINTENANCE_ORDER = "WO_CREATE"      # 정비 작업지시 — 이 동작이 있
 #: 다음 예정된 정비 시간(CMMS 정비 계획 · 운전시간 계수기 한 행의 이번 야간 창) — 완화 조치 카드의 작업지시가 가는 창
 NEXT_WINDOW = "hours_at_next_window"
 IMMEDIATE = {"immediate": True, "name": "즉시 (지금 정지하고 시행)", "label": "즉시"}
+NO_MAINTENANCE_WINDOW = ("이 조치의 정비 작업지시를 시행할 다음 예정된 정비 시간을 정비 시스템(CMMS)에서 찾지 못했습니다 — 정비 시점을 정할 수 없어 "
+                         "실행 후보에서 뺍니다")
 
 
 def _commands(skill: dict) -> list[dict]:
@@ -273,7 +275,7 @@ def scoped_skills(pattern: str, skills: dict[str, dict], purchase_part: str | No
             if skill.get('kind') == 'work_order'
             and (skill.get('scope') == 'purchase' and skill.get('executable') is True and purchase_part in (skill.get('parts') or [])
                  and (bool(skill.get('supplier_policy')) or purchase_part in (skill.get('supplierParts') or []))
-                 and (skill.get('approver') or {}).get('id') == 'role:purchasing'
+                 and bool((skill.get('approver') or {}).get('id'))
                  and skill.get('performers') == ['sys:erp'] and bool(skill.get('source_id'))
                  and bool(skill.get('citation')) and bool(skill.get('steps'))
                  and all(s.get('source_id') == skill['source_id'] and s.get('citation') and s.get('manual') for s in skill['steps'])
@@ -422,6 +424,12 @@ def evaluate(dmn: list[dict], skills: dict[str, dict], base_facts: dict, forecas
         window = option_window(tables.get("dec:compliance", []), sid, k, base_facts.get("windows_by_variable"))
         if window:
             o["window"] = window
+        elif any(a.get("code") == MAINTENANCE_ORDER for a in k.get("actions") or []):
+            # 작업지시를 내는 카드인데 언제 시행할지 모른다(완화 조치 뒤 다음 예정된 정비 시간에 작업하는 카드 — 그 시간을 업무 시스템에서 찾지
+            # 못함). 승인하면 작업지시가 「즉시」로 등록되거나 정비 단계가 멈춘다 — 사람이 승인 전에 알고 다른 카드를 고르게 실행 후보에서 뺀다.
+            o["violations"].append({"rule": "execution:maintenance-window", "effect": "EXCLUDE", "annotation": NO_MAINTENANCE_WINDOW,
+                                    "sources": [k["source_id"]] if k.get("source_id") else []})
+            o["feasible"] = False
         o["production"] = production_effect(o)
         if base_facts.get('pattern') == PM_PATTERN and evaluation_mode == 'execution':
             from hydcommon.maintenance_plan import plan

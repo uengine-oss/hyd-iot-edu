@@ -649,7 +649,13 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
         if not cat["alert_start"] or not cat["patterns"]:
             problems.append(problem(start_node, "start", "기준 정의에 경보 시작 계약이 없어 경보로 시작할 수 없습니다"))
         elif unknown:
-            problems.append(problem(start_node, "start.patterns", f"경보 패턴 {', '.join(unknown)} 은(는) 경보 정책에 없습니다"))
+            # 흐름이 경보로 시작하려면 그 경보가 「풀렸다」를 판정할 회복 기준(태그 · 비교 · 임계값)이 있어야 한다. 그 기준은 기준 흐름의 경보 정책과
+            # 사람 입력 · 업무 경보 정의에만 있다 — 지식에 새로 그린 경보 패턴은 회복 기준이 없어 여기서 고를 수 없다(무엇이 왜 안 되는지와
+            # 그 경보가 실제로 어디로 가는지, 고를 수 있는 것을 말한다)
+            problems.append(problem(start_node, "start.patterns",
+                                    f"경보 패턴 {', '.join(unknown)} (으)로는 이 흐름을 시작할 수 없습니다 — 흐름 가져오기는 회복 기준(경보가 풀렸다고 "
+                                    f"볼 태그 · 임계값)이 정해진 경보만 받습니다: {', '.join(cat['patterns'])}. 지식 지도에 새로 만든 경보 패턴은 회복 "
+                                    "기준이 없어 감지되면 「미지원 경보 → 현장 검토」 흐름으로 갑니다"))
         elif not chosen:
             problems.append(problem(start_node, "start.patterns", "이 흐름을 시작할 경보 패턴을 하나 이상 고르세요"))
         else:

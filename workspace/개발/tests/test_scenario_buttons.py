@@ -90,3 +90,12 @@ def test_시나리오_상태는_진행_중_처리_건과_마지막_처리_건을
     c = status['scenarios']['C']
     assert c['running']['instance'] == pid and c['last']['instance'] == pid and c['alert'] is True
     assert status['scenarios']['B']['running'] is None
+
+
+def test_시나리오_상태는_설비_결함_주입이_지원하는_설비와_결함과_단추를_말한다():
+    """전수검사 10-G12: 설비 결함 주입은 가상 설비 한 대의 결함 한 종류인데 서버가 그 범위를 내지 않아 화면이 설비 · 결함을 손으로 적었다."""
+    status = sb.status(lambda name, params: {'records': []})
+    assert status['fault'] == {'asset': 'HYD-01', 'fault': 'cooler_degradation', 'severity': 'moderate',
+                               'buttons': {'degrade': '쿨러 열화 주입', 'restore': '쿨러 복구'}}
+    said = sb.unknown_act('pump_leakage')
+    assert 'HYD-01' in said and '[쿨러 열화 주입](degrade)' in said and '[쿨러 복구](restore)' in said and "'pump_leakage'" in said

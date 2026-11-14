@@ -518,9 +518,9 @@
 .sys-band { stroke: var(--cv-border); stroke-dasharray: 3 6; }
 .sys-band-t { font-size: 15px; font-weight: 650; letter-spacing: -0.01em; }
 .sys-band-s { font-size: 12px; fill: var(--cv-ink-2); }
-.sys-row-line { stroke: var(--cv-grid); stroke-dasharray: 2 6; }
-.sys-row-t { font-size: 11.5px; fill: var(--cv-ink-2); }
-.sys-row-n { font-size: 10.5px; fill: var(--cv-ink-3); font-variant-numeric: tabular-nums; }
+.sys-row-bg { fill: rgb(255 255 255 / .028); }      /* 계층 하나 걸러 옅은 띠 — 아홉 계층이 세 영역을 가로지르는 줄로 읽힌다 */
+.sys-row-t { font-size: 12px; font-weight: 550; fill: var(--cv-ink); }
+.sys-row-cap { font-size: 12px; fill: var(--cv-ink-3); }
 .sys-nd { cursor: pointer; }
 .sys-nd:focus-visible { outline: none; }
 .sys-nd .box { fill: var(--cv-node); stroke: #3a4a60; stroke-width: 1.2; transition: stroke .15s, fill .15s; }
