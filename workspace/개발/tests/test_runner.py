@@ -204,9 +204,10 @@ def test_실행_도중_멈추면_누가_왜_멈췄는지를_작업_행대로_적
 
 
 # ---------------------------------------------------------------- 키 없는 PC(재생)
-def test_키_없는_PC의_교대_초안은_녹화를_재생해_제출하고_스킬_구성이_다를_때만_재생을_알린다(course, worker, relay):
-    """재생 화면은 실제 AI 실행과 같다 — 처리 과정의 재생 안내는 재생이 지원하지 않는 행동에서만(CLAUDE.md 5절). 여기서는 기본 교대
-    에이전트의 스킬(shift-handover-review)이 저장된 실행이 연 스킬(my-shift-handover-review)과 달라 그 한 줄만 남는다."""
+def test_키_없는_PC의_교대_초안은_녹화를_재생해_제출하고_이_PC와_다른_것만_한_줄로_알린다(course, worker, relay):
+    """재생 화면은 실제 AI 실행과 같다 — 처리 과정의 재생 안내는 재생이 지원하지 않는 행동에서만(CLAUDE.md 5절). 여기서는 한 줄에 둘이 남는다:
+    저장된 인계안의 조회 결과가 이 PC의 지금 값과 다르다는 것(읽기 조회 견주기 — 무엇이 다른지는 test_ai_replay.py 가 잰다)과, 기본 교대
+    에이전트의 스킬(shift-handover-review)이 저장된 실행이 연 스킬(my-shift-handover-review)과 다르다는 것."""
     inst = start_handover(course.rt)
     worker('replay').poll_once()
     task = task_of(course.rt, inst['proc_inst_id'], DRAFT)
@@ -214,6 +215,7 @@ def test_키_없는_PC의_교대_초안은_녹화를_재생해_제출하고_스�
     notes = [str(e['data'].get('content')) for e in events_of(course.rt, task['id'], 'task_working')]
     said = [n for n in notes if '재생' in n or '강사' in n]
     assert len(said) == 1 and '같은 답을 냅니다' in said[0] and 'shift-handover-review' in said[0] and '강사' not in said[0], said
+    assert '조회 결과는 준비 당시 값' in said[0], said
     assert relay.requests == [] and ledger_runs(course.dsn) == []        # 재생은 관문 · 중계를 부르지 않는다
 
 

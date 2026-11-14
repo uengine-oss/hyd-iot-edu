@@ -2877,11 +2877,12 @@ def lab_17_shift_handover(r: Round):
         if ai_source(session_of(draft)) == '강사 녹화 재생':
             # 재생은 강사 PC 에서 저장한 답이라 작업지시 번호 · 수치가 이 PC 와 다르다(설계 — 새로 추론하지 않음). 업무 DB 대조 대신 그 사실을
             # 학생에게 말하는지 본다(2026-11-01 무키 최종 한 바퀴: 녹화 때 번호로 「열린 작업지시를 빠뜨림」을 결함으로 셌다)
-            # 재생 안내는 그 처리 건의 처리 기록(이벤트 task_working · notice — 처리 건 화면이 그리는 것)으로 남는다
+            # 재생 안내는 그 처리 건의 처리 기록(이벤트 task_working · notice — 처리 건 화면이 그리는 것)으로 남는다. 문장은 워커가 같은 조회를
+            # 이 PC에서 다시 해 견준 결과다(ai_replay.reads_said — 설비 측정값 조회가 있어 교대 인계안에는 늘 붙는다)
             notices = [str((e.get('data') or {}).get('content') or '') for e in r.get(f'{r.process}/api/events?proc_inst_id={pid}&limit=500')
                        if e.get('event_type') == 'task_working' and (e.get('data') or {}).get('type') == 'notice']
-            told = any('이 PC의 업무 데이터와 다를 수 있습니다' in n for n in notices)
-            r.check('키 없는 PC: 재생한 인계안은 번호 · 수치가 이 PC 와 다를 수 있다고 알린다' + suffix, told, (notices[-1] if notices else '재생 안내 없음')[-200:])
+            told = any('조회 결과는 준비 당시 값' in n for n in notices)
+            r.check('키 없는 PC: 재생한 인계안의 조회 결과가 준비 당시 값이고 이 PC 와 무엇이 다른지 알린다' + suffix, told, (notices[-1] if notices else '재생 안내 없음')[-200:])
         else:
             open_orders, arriving = handover_facts(r, 'HYD-01')
             bad = handover_findings(data.get('checks') or [], open_orders, True, True, arriving)

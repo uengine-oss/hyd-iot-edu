@@ -28,6 +28,8 @@
 응답 · 결과 파일에 바꿔 끼운다. 녹화 때 오류였던 쓰기 호출은 다시 부르지 않는다. 녹화가 쓴 도구 서버 · 도구가 지금 단계에 없으면 멈춘다.
 다시 부른 쓰기가 「아직 값을 받지 못함」(도구 봉투의 error_kind UNAVAILABLE)이나 「서버에 닿지 못함」으로 안 됐으면 같은 실행 안에서
 WRITE_RETRY_WAITS_S 간격으로 다시 부른다 — 아무것도 등록되지 않은 것이 분명한 오류만이다. 그래도 안 되면 지어내지 않고 실패로 둔다.
+읽기 도구의 결과는 저장된 것을 그대로 보인다(AI 설명 · 결과 글이 그 결과로 쓰였다). 그 가운데 표(열 이름과 행)를 돌려준 조회는 이 PC의 서버로
+다시 불러 저장된 결과와 견주고(「읽기 조회 견주기」 절 — read_gap), 다르거나 견주지 못했으면 멈추지 않고 처리 과정 한 줄로 알린다(notice).
 
 없는 녹화는 지어내지 않고 학생이 알아듣는 말로 멈춘다(NotRecorded — 무엇이 없고 무엇을 하면 되는지). 저장 직전 비밀값은 가린다(diagnostics.hide).
 """
@@ -45,6 +47,7 @@ from pathlib import Path
 from typing import Callable, Iterable
 
 from cliagents import ExecEvent, ExecEventKind
+from hydcommon.fabric import SOURCES as DATA_SOURCES
 from hydcommon.tool_result import UNAVAILABLE
 from hydcommon.words import josa
 from procsvc import mcp_check
@@ -439,6 +442,102 @@ def decision_gap(old, new) -> tuple[list[str], list[str]]:
     return changed, numbers
 
 
+# ---------------------------------------------------------------- 읽기 조회 견주기
+#: 저장된 실행이 한 조회의 결과는 그 실행을 뜬 PC의 그때 값이다. AI 설명 · 결과 글은 그 값을 사실로 적으므로(교대 인계안의 「작업지시 두 건
+#: 배정됨」), 이 PC의 지금 값이 다르면 글이 이 PC에 없는 것을 말한다. 그래서 같은 조회를 이 PC에서 다시 불러 견준다. 정한 것:
+#:   무엇을  HTTP 도구 서버의 읽기 도구 호출 가운데 저장된 결과가 표(열 이름 columns + 행 rows — HYD 도구 봉투의 document 또는 맨 위)인 것.
+#:          구조 설명(스키마 · 목록)은 사실을 적는 값이 아니라 견주지 않는다. 지식 그래프 조회처럼 결과가 표 꼴이 아닌 조회와, 워커 자신의
+#:          조회 창구(명령형 — 실행 밖에서 다시 부르는 길이 없다)도 견주지 않는다(한계 — 재생모드.md 3절 4번).
+#:   같다    열 이름이 같고, 행의 순서를 무시하고, 시각 칸을 뺀 나머지 값이 모두 같다. 순서는 시각으로 정렬한 조회에서 PC마다 다르고, 시각
+#:          (만든 때 · 고친 때 · 측정한 때)은 같은 일을 한 PC끼리도 늘 다르다 — 그것으로 「다름」을 내면 늘 뜨는 거짓 알림이 된다. 번호(정비
+#:          요청 번호 등)는 뺄 수 없다: 글이 그 번호를 적고, 이 PC에는 그 번호가 없다.
+#:   설비 측정값처럼 늘 달라지는 조회는 따로 가르지 않는다 — 다시 부르면 값이 다르고, 「글 속의 측정값은 준비 당시 값」이라는 알림이 그대로 참이다.
+_MOMENT = re.compile(r"\A\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?\Z")
+_SQL_SOURCE = re.compile(r"\b(from|join)\s+([A-Za-z_][\w.]*)(\s*\()?", re.I)
+_SQL_TEXT = re.compile(r"'(?:[^']|'')*'")
+_SQL_NAMED = re.compile(r"\b([A-Za-z_]\w*)\s+as\s*(?:not\s+materialized\s*|materialized\s*)?\(", re.I)
+_SQL_FROM_INSIDE = ("extract", "substring", "trim", "overlay")     # 이 함수의 괄호 안 FROM 은 자료를 읽는 FROM 이 아니다
+MOMENT = "(시각)"
+
+
+def _table(content) -> tuple[list, list] | None:
+    """도구 결과가 표이면 (열 이름, 행). 표가 아니거나 오류 봉투면 None."""
+    body = _as_json(content)
+    doc = body.get("document") if isinstance(body, dict) and isinstance(body.get("document"), dict) else body
+    if not isinstance(doc, dict) or (isinstance(body, dict) and body.get("result") == "error"):
+        return None
+    columns, rows = doc.get("columns"), doc.get("rows")
+    if isinstance(columns, list) and isinstance(rows, list) and all(isinstance(r, list) for r in rows):
+        return columns, rows
+    return None
+
+
+def _row_keys(rows: list) -> list[str]:
+    """행마다 견줄 글 — 시각 칸은 한 표시로 바꾸고, 순서를 무시하게 정렬한다."""
+    return sorted(json.dumps([MOMENT if isinstance(c, str) and _MOMENT.match(c) else c for c in row], ensure_ascii=False, sort_keys=True, default=str)
+                  for row in rows)
+
+
+def read_gap(old: tuple[list, list], new: tuple[list, list]) -> tuple[int, int] | None:
+    """저장된 조회 결과(old)와 이 PC에서 방금 다시 조회한 결과(new)가 다르면 (저장된 행 수, 지금 행 수). 같으면(머리의 「같다」) None."""
+    (old_columns, old_rows), (new_columns, new_rows) = old, new
+    if len(old_rows) != len(new_rows) or old_columns != new_columns or _row_keys(old_rows) != _row_keys(new_rows):
+        return len(old_rows), len(new_rows)
+    return None
+
+
+def _inside_function(sql: str, at: int) -> str:
+    """sql[at] 을 감싼 가장 안쪽 괄호 바로 앞의 낱말(소문자) — 괄호 밖이거나 낱말이 없으면 빈 글."""
+    depth = 0
+    for i in range(at - 1, -1, -1):
+        if sql[i] == ")":
+            depth += 1
+        elif sql[i] == "(":
+            if depth == 0:
+                word = re.search(r"([A-Za-z_]\w*)\s*\Z", sql[:i])
+                return word.group(1).lower() if word else ""
+            depth -= 1
+    return ""
+
+
+def sql_sources(sql: str) -> list[str]:
+    """조회문이 읽은 자료 이름(FROM · JOIN 뒤의 표 이름)을 나온 차례로. 자료가 아닌 것은 뺀다: 글 값 안의 낱말, 함수 안의 FROM
+    (EXTRACT(EPOCH FROM 칸) — 칸 이름이 자료 이름으로 잡혔다), 함수를 읽는 FROM(generate_series(…)), 조회문이 스스로 지은 이름(WITH 이름 AS (…))."""
+    sql = _SQL_TEXT.sub("''", sql)
+    own = {name.lower() for name in _SQL_NAMED.findall(sql)}
+    found = []
+    for m in _SQL_SOURCE.finditer(sql):
+        word, name, call = m.groups()
+        if call or name.lower() in own or (word.lower() == "from" and _inside_function(sql, m.start()) in _SQL_FROM_INSIDE):
+            continue
+        found.append(name)
+    return list(dict.fromkeys(found))
+
+
+def source_label(name: str) -> str | None:
+    """자료 이름 <스키마>.<표> 가 기본 제공 데이터 원천의 것이면 그 원천의 이름(「업무 DB」 · 「시계열 DB」 · 「옛 설비 DB」 — 정본
+    hydcommon.fabric.SOURCES, 데이터 원천 화면이 보이는 이름). 표마다의 한국어 이름은 정본이 없다(표 설명이 달린 업무 표는 셋뿐이다)."""
+    schema, _, table = name.rpartition(".")
+    for source in DATA_SOURCES.values():
+        if schema == source["schema"] and table in (source.get("tables") or (table,)):
+            return source["label"]
+    return None
+
+
+def read_subject(server: str, arguments) -> str:
+    """알림에서 그 조회를 가리키는 말. 조회문이 입력에 있으면 그 조회가 읽은 자료: 기본 제공 데이터 원천의 표는 원천 이름을 앞에 두고 표 이름을
+    괄호에(「업무 DB 조회(ent.work_orders)」 — 처리 과정의 그 조회에 같은 표 이름이 보인다), 그 밖의 표는 표 이름만. 조회문이 없거나 읽은
+    자료를 찾지 못하면 도구 서버 이름. 도구의 내부 이름은 쓰지 않는다."""
+    texts = [v for v in arguments.values() if isinstance(v, str)] if isinstance(arguments, dict) else []
+    names = list(dict.fromkeys(name for text in texts for name in sql_sources(text)))
+    if not names:
+        return f"「{server}」 조회"
+    labels = list(dict.fromkeys(source_label(name) for name in names))
+    if len(labels) == 1 and labels[0]:
+        return f"{labels[0]} 조회({' · '.join(names)})"
+    return " · ".join(names) + " 조회"
+
+
 _ERROR_TEXT = re.compile(r"\A\s*(error\b|mcp error|http [45]\d\d\b)", re.I)
 
 
@@ -474,6 +573,7 @@ class _Tools:
     def __init__(self, workdir, step: str, check_stop=None):
         self.servers = (_read_json(Path(workdir) / MCP_CONFIG_FILENAME) or {}).get("mcpServers") or {}
         self.step, self.listed, self.check_stop = step, {}, check_stop
+        self.unreached: set[str] = set()         # 읽기 조회를 다시 부르다 닿지 못한 서버 — 그 실행의 남은 조회는 기다리지 않고 「견주지 못함」
 
     def writes(self, server: str, tool: str) -> bool:
         if server not in self.servers:
@@ -504,6 +604,27 @@ class _Tools:
             raise NotRecorded(f"「{self.step}」의 결과를 등록할 도구가 지금 도구 서버에 없어 진행하지 못했습니다. README 「새 판 받기」대로 "
                               "새 판을 받은 뒤 시작.bat을 다시 실행하세요.", raw=f"{server}/{tool}")
         return not meta["callable"]
+
+    def remote(self, server: str) -> bool:
+        """실행 밖에서 다시 부를 수 있는 서버인가 — 워커 자신의 조회 창구(명령형)는 아니다."""
+        return not self.servers[server].get("command")
+
+    def read(self, server: str, tool: str, arguments: dict) -> tuple[list, list] | None:
+        """읽기 도구 하나를 이 PC의 서버로 다시 부른다(써 보기와 같은 함수 — 그 자리에서 읽기 전용 판정을 다시 한다) → 표, 못 받았으면 None.
+        견주려는 것일 뿐이라 다시 시도하지 않고 멈추지도 않는다. 닿지 못한 서버는 그 실행에서 다시 부르지 않는다."""
+        if server in self.unreached:
+            return None
+        out = mcp_check.call(mcp_check.normalize(self.servers[server]), tool, arguments, max_chars=1_000_000)
+        if out["status"] != "ok":
+            if out["status"] == "failed":
+                self.unreached.add(server)
+            log.info("「%s」 읽기 조회 %s/%s 를 다시 부르지 못했습니다 — %s (%s)", self.step, server, tool, out.get("error"), out.get("error_kind"))
+            return None
+        result = out["result"]
+        if result["is_error"] or result["truncated"]:
+            log.info("「%s」 읽기 조회 %s/%s 가 지금은 오류이거나 너무 커서 견주지 못했습니다", self.step, server, tool)
+            return None
+        return _table(result["text"])
 
     def call(self, server: str, tool: str, arguments: dict) -> dict:
         """쓰기 도구 하나를 이 PC의 서버로 부른다 → 성공한 결과. 다시 시도할 만한 오류(머리의 WRITE_RETRY_WAITS_S)면 같은 실행 안에서 기다렸다
@@ -559,7 +680,7 @@ def play(library: Library, key: str, doc: dict, i: int, request, check_stop, las
     swaps.pair_case(saved.get("context") or {}, _task_context(request.workdir), step)
     tools = _Tools(request.workdir, step, check_stop)
     session = library.session(key, i)
-    last.update(step=step, recorded_at=doc.get("recorded_at"), rerun=[], kept_errors=0, differs=[], attempt=_attempt_label(_attempt(saved)),
+    last.update(step=step, recorded_at=doc.get("recorded_at"), rerun=[], kept_errors=0, differs=[], reads=[], attempt=_attempt_label(_attempt(saved)),
                 library=library.prefix, skills=sorted({name for d in saved["events"] if d["kind"] == ExecEventKind.TOOL_START.value
                                                        for name, _ in skill_files(d.get("tool"), d.get("tool_input"))}))
     events = [d for d in saved["events"] if not partial_chunk(d)]
@@ -605,6 +726,16 @@ def play(library: Library, key: str, doc: dict, i: int, request, check_stop, las
             # 바로 남긴다 — Runner 는 결과를 받으면 이 생성기를 끝까지 돌리지 않고 닫을 수 있고, 워커가 그 사이 죽을 수도 있다
             carried.parent.mkdir(parents=True, exist_ok=True)
             carried.write_text(json.dumps({"exact": swaps.exact, "results": done}, ensure_ascii=False), encoding="utf-8")
+        elif d["kind"] == ExecEventKind.TOOL_START.value and target and tools.remote(target[0]):
+            # 읽기 조회: 저장된 결과를 그대로 보이되, 표를 돌려준 조회는 이 PC에서 다시 불러 견준다(머리의 「읽기 조회 견주기」)
+            recorded = next((e for e in events[n + 1:] if e["kind"] == ExecEventKind.TOOL_END.value
+                             and e.get("tool_use_id") == d.get("tool_use_id")), None)
+            old = (saved.get("tool_outputs_full") or {}).get(d.get("tool_use_id")) or (recorded.get("tool_output") if recorded else None)
+            was = None if recorded is None or _failed(old, recorded.get("is_error")) else _table(swaps.apply(old))
+            if was is not None:
+                arguments = d["tool_input"] if isinstance(d["tool_input"], dict) else {}
+                now = tools.read(*target, arguments)
+                last["reads"].append((read_subject(target[0], arguments), read_gap(was, now) if now is not None else False))
         if d["kind"] == ExecEventKind.TOOL_END.value and d.get("tool_use_id") in live:
             d.update(text=live[d["tool_use_id"]]["text"], tool_output=live[d["tool_use_id"]]["text"], is_error=False)
         else:
@@ -627,9 +758,31 @@ def korea_time(recorded_at: str | None) -> str:
     return (t + timedelta(hours=9)).strftime("%Y-%m-%d %H:%M")
 
 
+def _counted(lines: list[str]) -> list[str]:
+    """같은 줄은 한 번만(몇 번인지 붙여)."""
+    return [line + (f"({lines.count(line)}번)" if lines.count(line) > 1 else "") for line in dict.fromkeys(lines)]
+
+
+def reads_said(last: dict, when: str) -> str:
+    """다시 부른 읽기 조회가 저장된 결과와 다르거나 견주지 못했을 때의 말(when: 「준비 당시」 · 「앞선 실행 때」). 모두 같으면 빈 글."""
+    reads = last.get("reads") or []      # (가리키는 말, 차이): 차이 = None 같음 · False 견주지 못함 · (저장된 행 수, 지금 행 수) 다름
+    gaps = _counted([f"{subject} — " + (f"{when} {gap[0]}건 · 지금 {gap[1]}건" if gap[0] != gap[1] else f"{gap[0]}건으로 같고 값이 다름")
+                     for subject, gap in reads if gap])
+    unseen = sum(1 for _, gap in reads if gap is False)
+    if not gaps and not unseen:
+        return ""
+    said = f"결과 글 안의 조회 결과는 {when} 값입니다."
+    if gaps:
+        differing = sum(1 for _, gap in reads if gap)
+        said += (f" 같은 조회 {len(reads)}개를 이 PC에서 다시 해 보니 {differing}개가 지금 값과 다릅니다: " + "; ".join(gaps) + ".")
+    if unseen:
+        said += f" 조회 {unseen}개는 이 PC에서 다시 조회하지 못해 지금 값과 견주지 못했습니다."
+    return said + " 결과 글의 값을 쓰기 전에 지금 값을 확인해 주세요."
+
+
 def notice(last: dict | None, skills: list[str] | None = None) -> str | None:
     """처리 과정에 남길 한 줄. 재생 모드의 평소 실행에는 남기지 않는다 — 화면은 실제 AI 실행과 같고, 안내는 재생 모드가 지원하지 않는
-    행동에서만 한다. skills: 이번 실행에 붙인 스킬 — 저장된 실행이 연 스킬(last["skills"])과 다를 때만 같은 답임을 말한다(스킬을 붙이고
+    행동에서만 한다(준비된 글이 이 PC의 지금 값과 다른 것을 적는 것도 그 하나다 — differs · reads_said). skills: 이번 실행에 붙인 스킬 — 저장된 실행이 연 스킬(last["skills"])과 다를 때만 같은 답임을 말한다(스킬을 붙이고
     뗀 차이를 보려는 실습이 같은 답을 보고 「스킬이 아무 일도 하지 않는다」로 배우지 않게, 실라버스 포털 실습 3번). 수업 기본 스킬
     그대로면 저장된 실행과 같은 구성이라 말하지 않는다."""
     if not last:
@@ -637,15 +790,19 @@ def notice(last: dict | None, skills: list[str] | None = None) -> str | None:
     if last.get("library") == REUSE:
         rerun = f" 쓰기 도구({', '.join(dict.fromkeys(last['rerun']))})는 이 PC에서 다시 실행했습니다." if last.get("rerun") else ""
         kept = (f" 저장 때 오류였던 쓰기 호출 {last['kept_errors']}건은 다시 부르지 않고 그 오류를 그대로 보였습니다." if last.get("kept_errors") else "")
+        reads = reads_said(last, "앞선 실행 때")
         return (f"같은 설정 · 같은 입력의 앞선 실행 결과를 다시 썼습니다(새로 추론하지 않음 — {korea_time(last.get('recorded_at'))} 실행).{rerun}{kept} "
-                "새로 추론하게 하려면 입력이나 에이전트 설정을 바꿔 실행하세요.")
-    if last.get("differs"):
-        return (f"{REPLAY} AI 설명과 결과 글은 준비된 것을 그대로 보입니다. 그 안의 다음 값은 준비 당시 값이고, 승인 카드의 값이 이 PC의 지금 "
-                f"계산입니다: {'; '.join(last['differs'])}.")
+                + (reads + " " if reads else "") + "새로 추론하게 하려면 입력이나 에이전트 설정을 바꿔 실행하세요.")
+    said, reads = [], reads_said(last, "준비 당시")
+    if last.get("differs") or reads:
+        line = f"{REPLAY} AI 설명과 결과 글은 준비된 것을 그대로 보입니다."
+        if last.get("differs"):
+            line += f" 그 안의 다음 값은 준비 당시 값이고, 승인 카드의 값이 이 PC의 지금 계산입니다: {'; '.join(last['differs'])}."
+        said.append(line + (" " + reads if reads else ""))
     if skills is not None and set(skills) != set(last.get("skills") or ()):
-        return (f"{REPLAY} 스킬을 붙이거나 떼어도 같은 답을 냅니다(이번 실행의 스킬: {', '.join(skills) or '없음'}). "
-                "스킬을 붙이고 뗀 차이는 실제 AI로 실행할 때 확인할 수 있습니다.")
-    return None
+        said.append(f"{REPLAY} 스킬을 붙이거나 떼어도 같은 답을 냅니다(이번 실행의 스킬: {', '.join(skills) or '없음'}). "
+                    "스킬을 붙이고 뗀 차이는 실제 AI로 실행할 때 확인할 수 있습니다.")
+    return " ".join(said) or None
 
 
 # ---------------------------------------------------------------- 점유 하나의 AI 응답

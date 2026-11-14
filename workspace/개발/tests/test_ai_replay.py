@@ -164,7 +164,8 @@ def test_지금_계산의_권장_조치가_녹화와_다르면_그_설명을_이
 def test_스킬_구성이_저장된_실행과_다를_때만_같은_답이라고_말한다(tmp_path, tool_servers, slot, skills, said):
     """실라버스 포털 실습 3번(스킬을 붙이고 같은 질문 → 떼고 같은 질문): 재생은 같은 답을 내므로 「스킬이 아무 일도 안 한다」로 배우지
     않게, 스킬 구성이 저장된 실행(그 실행이 연 스킬)과 다를 때만 처리 과정 한 줄로 말한다. 수업 기본 구성 그대로인 평소 실행에는
-    재생 안내를 남기지 않는다(화면은 실제 AI 실행과 같다, CLAUDE.md 5절)."""
+    재생 안내를 남기지 않는다(화면은 실제 AI 실행과 같다, CLAUDE.md 5절). 교대 초안은 조회 결과가 이 PC와 달라 다른 안내(읽기 조회 견주기)가
+    붙을 수 있다 — 여기서는 스킬 말만 본다."""
     doc = next(d for key, d in docs().items() if key.startswith(slot + '|'))
     wd, _ = workdir_for(tmp_path, doc['runs'][0], tool_servers)
     c = Responses('replay', course=COURSE_LIB).claim(cli=None, slot=slot, case=doc['case'], attempt=(0, 0), request_key=None,
@@ -174,7 +175,117 @@ def test_스킬_구성이_저장된_실행과_다를_때만_같은_답이라고_
     if said:
         assert '같은 답을 냅니다' in text and (', '.join(skills) or '없음') in text and '강사' not in text
     else:
-        assert text is None
+        assert '같은 답을 냅니다' not in (text or '')
+    if slot == 'question':                      # 표를 돌려준 조회가 없는 저장분 — 견줄 것이 없어 조회 말이 없다
+        assert '조회 결과' not in (text or '')
+
+
+# ---------------------------------------------------------------- 읽기 조회 견주기
+# 조회문 안의 EXTRACT(… FROM 칸)은 자료를 읽는 FROM 이 아니다 — 알림이 칸 이름을 자료 이름으로 말하면 안 된다
+STOCK_SQL = 'SELECT part_no, on_hand, reserved, on_order, updated_at, extract(year FROM updated_at) AS y FROM ent.spare_stock ORDER BY part_no'
+ORDERS_SQL = "SELECT id, asset, status, created_at FROM ent.work_orders WHERE asset = 'HYD-03' ORDER BY created_at DESC"
+SLOT = 'handover/draft-1'
+
+
+def _asked(url, sql):
+    """이 PC의 업무 자료 조회 도구를 실제로 불러 받은 표(document)."""
+    from procsvc import mcp_check
+    out = mcp_check.call(mcp_check.normalize({'url': url}), 'query', {'sql': sql}, max_chars=1_000_000)
+    assert out['status'] == 'ok' and not out['result']['is_error'], out
+    return json.loads(out['result']['text'])['document']
+
+
+def _recording_of_reads(tmp_path, reads):
+    """시험이 만든 저장분: 업무 자료 조회(reads = [(조회문, 그때 받은 표)])만 한 실행 하나 — 다른 때 · 다른 PC에서 뜬 저장분의 대역.
+    이벤트의 꼴은 저장소 저장분의 조회 한 쌍을 본뜬다."""
+    real = next(d for key, d in docs().items() if key.startswith(SLOT + '|'))['runs'][0]
+    start = next(e for e in real['events'] if e['kind'] == 'tool_start' and e['tool'] == 'mcp__enterprise__query')
+    end = next(e for e in real['events'] if e['kind'] == 'tool_end' and e['tool_use_id'] == start['tool_use_id'])
+    events = []
+    for n, (sql, document) in enumerate(reads):
+        text = json.dumps({'result': 'ok', 'document': document}, ensure_ascii=False)
+        events += [dict(start, tool_input={'sql': sql}, tool_use_id=f'call_{n}'), dict(end, text=text, tool_output=text, tool_use_id=f'call_{n}')]
+    run = {'session_id': start['session_id'], 'events': events, 'result_file': '{"note": "조회만 한 실행"}', 'context': real['context'],
+           'tool_outputs_full': {}}
+    doc = {'format': ai_replay.FORMAT, 'slot': SLOT, 'case': '', 'step': '인계안 작성', 'provider': 'claude-code',
+           'recorded_at': '2026-11-01 05:35 UTC', 'runs': [run]}
+    library = Library(tmp_path / ('reads-' + uuid.uuid4().hex), COURSE)
+    library.root.mkdir(parents=True)
+    library.file_of(ai_replay.course_key(SLOT, '')).write_bytes(gzip.compress(json.dumps(doc, ensure_ascii=False).encode('utf8')))
+    return library, run
+
+
+def _said_after_replay(tmp_path, tool_servers, library, run):
+    wd, _ = workdir_for(tmp_path, run, tool_servers)
+    c = Responses('replay', course=library).claim(cli=None, slot=SLOT, case='', attempt=(0, 0), request_key=None, step='인계안 작성',
+                                                  provider='claude-code', source={}, accepted=lambda s: True, skills=[])
+    events = play(c, wd)
+    return c.notice(), events
+
+
+def test_저장된_조회가_이_PC의_지금_값과_같으면_말이_없고_다르면_무엇이_다른지_말한다(tmp_path, tool_servers, pg_dsn):
+    """교대 인계안의 저장된 응답은 뜬 PC의 조회 결과(「작업지시 두 건 배정됨」 · 재고 수치)를 그대로 적는데, 읽기 조회는 다시 부르지 않아 이 PC에
+    없는 것을 사실로 적어도 아무 말이 없었다. 같은 조회를 이 PC의 실제 업무 DB에 다시 해 견준다. 행의 순서와 시각만 다른 것은 같은 것이다."""
+    import psycopg
+    stock, orders = _asked(tool_servers['enterprise'], STOCK_SQL), _asked(tool_servers['enterprise'], ORDERS_SQL)
+    assert len(stock['rows']) >= 2
+    at = stock['columns'].index('updated_at')
+    # 뜬 PC가 지금 이 PC와 같은 상태였던 저장분: 값은 같고 행의 순서와 고친 시각만 다르다
+    moved = [row[:at] + ['2026-11-01T05:02:42.691270Z'] + row[at + 1:] for row in reversed(stock['rows'])]
+    library, run = _recording_of_reads(tmp_path, [(STOCK_SQL, dict(stock, rows=moved)), (ORDERS_SQL, orders)])
+    said, events = _said_after_replay(tmp_path, tool_servers, library, run)
+    assert said is None, said
+    shown = [json.loads(ev.tool_output)['document']['rows'] for ev in events if ev.kind is ExecEventKind.TOOL_END]
+    assert shown == [moved, orders['rows']]                    # 처리 과정에는 저장된 조회 결과 그대로(AI 글이 그 결과로 쓰였다)
+
+    part, order = stock['rows'][0][0], 'WO-TEST-' + uuid.uuid4().hex[:8].upper()
+    with psycopg.connect(pg_dsn, autocommit=True) as db:        # 이 PC의 업무 상태가 달라졌다: 정비 요청 한 건이 생기고 재고 한 줄이 바뀜
+        db.execute("INSERT INTO ent.work_orders (id, asset, task, window_label) VALUES (%s, 'HYD-03', '시험 정비', '즉시')", (order,))
+        db.execute('UPDATE ent.spare_stock SET on_hand = on_hand + 1 WHERE part_no = %s', (part,))
+    try:
+        said, _ = _said_after_replay(tmp_path, tool_servers, library, run)
+    finally:
+        with psycopg.connect(pg_dsn, autocommit=True) as db:
+            db.execute('DELETE FROM ent.work_orders WHERE id = %s', (order,))
+            db.execute('UPDATE ent.spare_stock SET on_hand = on_hand - 1 WHERE part_no = %s', (part,))
+    n = len(orders['rows'])
+    assert said and said.startswith(ai_replay.REPLAY) and '결과 글 안의 조회 결과는 준비 당시 값입니다' in said, said
+    assert '같은 조회 2개를 이 PC에서 다시 해 보니 2개가 지금 값과 다릅니다' in said, said
+    # 조회를 가리키는 말: 데이터 원천의 이름(정본 hydcommon.fabric.SOURCES — 데이터 원천 화면의 이름)이 앞, 표 이름은 괄호
+    assert f'업무 DB 조회(ent.work_orders) — 준비 당시 {n}건 · 지금 {n + 1}건' in said, said
+    assert f"업무 DB 조회(ent.spare_stock) — {len(stock['rows'])}건으로 같고 값이 다름" in said and 'updated_at 조회' not in said, said
+    assert '견주지 못했습니다' not in said
+    assert not FORBIDDEN.search(said) and not WORKER_TALK.search(said) and 'mcp__' not in said and '{' not in said and 'query' not in said, said
+
+
+def test_이_PC에서_다시_조회하지_못한_조회는_다르다고_지어내지_않고_견주지_못했다고_말한다(tmp_path, tool_servers):
+    """다시 부른 조회가 지금은 오류로 답하면(뜬 PC에는 있던 자료가 이 PC에 없음) 견줄 지금 값이 없다 — 「다르다」도 「같다」도 아니다."""
+    stock = _asked(tool_servers['enterprise'], STOCK_SQL)
+    gone = 'SELECT part_no, on_hand FROM ent.spare_stock_of_another_pc'
+    library, run = _recording_of_reads(tmp_path, [(STOCK_SQL, stock), (gone, {'columns': ['part_no', 'on_hand'], 'rows': [['P-X', 1]]})])
+    said, _ = _said_after_replay(tmp_path, tool_servers, library, run)
+    assert said and said.startswith(ai_replay.REPLAY) and '조회 1개는 이 PC에서 다시 조회하지 못해 지금 값과 견주지 못했습니다' in said, said
+    assert '다릅니다' not in said and '지금 0건' not in said, said
+    assert not FORBIDDEN.search(said) and not WORKER_TALK.search(said), said
+
+
+def test_교대_인계안의_조회가_이_PC의_지금과_다르면_멈추지_않고_처리_과정에_알린다(course, worker):
+    """끝까지: 키 없는 PC의 교대 인수인계. 저장된 인계안은 정비 요청 두 건을 적는다. 이 PC의 정비 요청 수가 그와 달라도 인계안 작성은 제출까지 가고,
+    처리 과정에 조회 결과가 준비 당시 값이라는 것과 지금 이 PC와 다른 조회가 남는다."""
+    import psycopg
+    from conftest import events_of, start_handover, task_of
+    inst = start_handover(course.rt)
+    assert worker('replay').poll_once() == 1
+    task = task_of(course.rt, inst['proc_inst_id'], 'task:draft')
+    assert task['status'] == 'SUBMITTED', events_of(course.rt, task['id'], 'error')
+    with psycopg.connect(course.dsn) as db:
+        now = db.execute("SELECT count(*) FROM ent.work_orders WHERE asset = 'HYD-01'").fetchone()[0]
+    said = [e['data']['content'] for e in events_of(course.rt, task['id']) if (e.get('data') or {}).get('type') == 'notice']
+    line = next((text for text in said if '조회 결과는 준비 당시 값' in text), None)
+    assert line and line.startswith(ai_replay.REPLAY), said
+    assert ('업무 DB 조회(ent.work_orders) — ' + (f'준비 당시 2건 · 지금 {now}건' if now != 2 else '2건으로 같고 값이 다름')) in line, line
+    assert '시계열 DB 조회(public.tag_1s) — ' in line, line
+    assert not FORBIDDEN.search(line) and not WORKER_TALK.search(line) and 'mcp__' not in line and '{' not in line, line
 
 
 def test_녹화_열쇠는_흐름_id_와_작업_이름이_아니라_수업_자리다():
@@ -339,16 +450,22 @@ def test_쓰기_도구_서버에_끝내_닿지_못하면_그_까닭으로_멈추
     assert not (wd / 'output' / 'result.json').exists()
 
 
-def test_다시_시도할_오류가_아닌_거절은_기다리지_않고_바로_그_까닭으로_멈춘다(tmp_path, tool_servers, monkeypatch):
+def test_다시_시도할_오류가_아닌_거절은_기다리지_않고_바로_그_까닭으로_멈춘다(world, tmp_path, tool_servers, monkeypatch):
     """이 PC 처리 엔진에 없는 처리 건의 판단 등록은 거절된다(처리 범위가 다름) — 다시 불러도 같은 답이라 기다리지 않는다. 학생 문장에는 도구의
-    내부 이름 · 응답 원문(JSON)이 없고 원문 칸에 남는다."""
+    내부 이름 · 응답 원문(JSON)이 없고 원문 칸에 남는다.
+    판단 서비스가 판단을 끝까지 계산해 처리 엔진의 거절까지 가도록 시작 상태를 이 시험이 만든다(world: 수업 지식이 든 그래프 · 켜진 처리 엔진,
+    쿨러가 오염돼 값을 보고하는 HYD-01). 전에는 앞 시험이 남긴 상태에 기댔다 — 혼자 돌리면 그래프에 수업 지식이 없어 「진단 지식에 없는 원인」
+    으로, 묶음에서는 설비 값이 끊겨 「값을 아직 받지 못함」(다시 시도하는 것이 맞는 오류)으로 끝나 이 시험이 보려는 거절이 아니었다."""
     doc = COURSE_LIB.load(ai_replay.course_key('c3_cooling/T_agent', 'COOLER_DEGRADATION'))
+    world.plant.inject('HYD-01', 'cooler_degradation', severity='moderate')
+    world.settle(1800)
+    world.reported_for('HYD-01')
     wd, _ = workdir_for(tmp_path, doc['runs'][0], tool_servers)
 
     def no_wait(seconds, check_stop):
         raise AssertionError('다시 시도할 오류가 아닌데 기다렸다')
     monkeypatch.setattr(ai_replay, '_wait', no_wait)
-    with pytest.raises(ai_replay.WriteFailed) as caught:
+    with world.reporting('HYD-01'), pytest.raises(ai_replay.WriteFailed) as caught:
         play(claim(slot='c3_cooling/T_agent', case='COOLER_DEGRADATION', step=doc['step']), wd)
     said, raw = str(caught.value), caught.value.raw
     assert '등록하지 못했습니다' in said and doc['step'] in said, said
