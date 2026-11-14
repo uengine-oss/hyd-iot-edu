@@ -420,3 +420,16 @@ def test_끄기는_송신기를_보낸_뒤_닫고_폴링을_멈추고_사건_저
     assert recorder.stopped is True and world.main.producer is None and instance_mode._poll_task is None
     with pytest.raises(sqlite3.ProgrammingError):
         world.main.store.db.execute('SELECT 1')
+
+
+def test_설비의_일이_아닌_감사_기록은_HYD_01_의_키로_보내지_않는다(world):
+    """가짜 · 해피패스 조사 8: 설비 코드가 아닌 감사 기록(조치 방법 편집 · 설정 되돌리기 — asset '-')을 HYD-01 의 Kafka 키로 바꿔 보냈다."""
+    from conftest import until
+    from hydcommon import topics
+    world.main._audit('-', 'user:me', 'KEY_TEST_NO_ASSET', {})
+    world.main._audit('HYD-02', 'user:me', 'KEY_TEST_ASSET', {})
+
+    def keys():
+        return {v['event']: k for t, k, v in world.kafka.sent if t == topics.K_AUDIT and v['event'].startswith('KEY_TEST')}
+    until(lambda: len(keys()) == 2, '감사 기록 둘이 송신기에 닿음')
+    assert keys() == {'KEY_TEST_NO_ASSET': None, 'KEY_TEST_ASSET': 'hyd02'}

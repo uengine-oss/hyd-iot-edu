@@ -717,7 +717,9 @@ def _audit(asset: str, actor: str, event: str, detail: dict, incident: str | Non
     del audit_log[AUDIT_PAGE_MAX:]
     persist()
     # callable from worker threads too (instance hooks); a send failure is logged, never silent (A-07)
-    _send_logged(topics.K_AUDIT, topics.asset_key(asset if asset in ("HYD-01", "HYD-02", "HYD-03") else "HYD-01"), evt, f"audit {event}")
+    # 설비의 일이 아닌 감사 기록(조치 방법 편집 · 설정 되돌리기 등 — asset 이 설비 코드가 아님)은 키 없이 보낸다. 전에는 HYD-01 의 키로 보내
+    # 그 설비의 기록 줄에 섞였다(명령 관문도 설비를 모르는 거절은 키 없이 보낸다 — gw/main.handle_command)
+    _send_logged(topics.K_AUDIT, topics.asset_key(asset) if asset in topics.ASSETS else None, evt, f"audit {event}")
 
 
 # atomic system transactions of an SOP skill -> the enterprise-sim job that performs them

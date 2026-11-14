@@ -160,8 +160,8 @@ async def _startup():
 # ---------------------------------------------------------------- L7/L8 endpoints for the portal
 class DecideReq(BaseModel):
     """Manual run of the action-card decision (portal '조치 판단 규칙' view). facts: what-if values a person sets."""
-    asset: str = "HYD-01"
-    pattern: str = "COOLER_DEGRADATION"
+    asset: str                          # 설비 · 경보 패턴은 부르는 쪽이 정한다 — 빠지면 수업 사례(HYD-01 쿨러 열화)로 대신 돌지 않고 422
+    pattern: str
     facts: dict | None = None
 
 
@@ -175,7 +175,7 @@ _NS_RE = re.compile(r"^[a-z][a-z0-9-]{0,31}$")
 
 
 @app.get("/api/ontology/graph")
-def ontology_graph(asset: str = "HYD-01", ns: str = ""):
+def ontology_graph(asset: str, ns: str = ""):
     """ns (G4 전체 과정 랩업): 학생 이름 공간. 비면 수업 기준 — 학생 노드는 섞이지 않는다."""
     if ns and not _NS_RE.match(ns):
         raise HTTPException(422, "ns: 소문자로 시작하는 소문자 · 숫자 · 하이픈 32자 이내")
@@ -264,8 +264,8 @@ async def decide(req: DecideReq):
 
 # ---------------------------------------------------------------- A7 손익 · What-if · 규칙 바꿔 보기 (시험 실행만)
 class WhatifStartReq(BaseModel):
-    asset: str = "HYD-01"
-    pattern: str = "COOLER_DEGRADATION"
+    asset: str                          # 기본값 없음 — DecideReq 와 같다
+    pattern: str
 
 
 class WhatifTryReq(BaseModel):

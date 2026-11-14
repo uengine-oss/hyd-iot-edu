@@ -72,7 +72,7 @@ def caller_headers() -> dict:
 
 ENTERPRISE_READS = {"part_quotes": ("/scm/quotes", "part"), "purchase_order": ("/erp/purchase_orders/{ref}", None),
                     "spare_stock": ("/erp/spare_stock", "part"), "maintenance_windows": ("/cmms/windows", "asset"),
-                    "pm_status": ("/cmms/pm_status", "asset")}
+                    "pm_status": ("/cmms/pm_status", "asset"), "task_standards": ("/cmms/tasks", "asset")}
 
 
 @dataclass

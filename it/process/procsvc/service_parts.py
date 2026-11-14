@@ -295,8 +295,14 @@ class ServicePartsRuntime:
         wo = v.get(cfg.get("work_order_var") or "work_order")
         opt = v.get("chosen_option") or {}
         if isinstance(wo, dict) and wo.get("ref") and "completed" not in state:
+            sop = cfg.get("sop") or opt.get("sopId")
+            if "standard" not in state and self.hooks.enterprise_read is not None:
+                # 작업지시 완료는 그 SOP 의 표준 작업(정비 시스템 CMMS 의 부품 · 수량)만큼 부품을 소모한다. 표준 작업이 없는 SOP(수업 문서 밖의 새
+                # 절차)는 소모 없이 완료된다 — 완료하기 전에 읽어 두고, 없으면 그 사실을 정비 완료 공지 · 처리 기록 · 결과 값에 남긴다(말없이 넘기지 않는다)
+                rows = (self.hooks.enterprise_read("task_standards", {"asset": v.get("asset")}) or {}).get("records") or []
+                state = self._save_state(wi, standard={"sop": sop, "found": any(isinstance(r, dict) and r.get("sop") == sop for r in rows)})
             item = {"skill": opt.get("id"), "code": "WO_COMPLETE", "name": "작업지시 완료", "system": "sys:cmms", "ref": wo["ref"],
-                    "sop": cfg.get("sop") or opt.get("sopId"), "source": "approved-maintenance"}
+                    "sop": sop, "source": "approved-maintenance"}
             state = self._save_state(wi, completed=self._exec(inst, v, item, "정비 수행 모사"))
         if "restored" not in state:
             res = self.hooks.plant_restore(v.get("asset"), cfg.get("component") or None)
@@ -304,10 +310,14 @@ class ServicePartsRuntime:
                 from .instances import ServiceExecutionError
                 raise ServiceExecutionError(res if isinstance(res, dict) else {"error": "설비 시뮬레이터 응답이 없습니다"})
             state = self._save_state(wi, restored=res)
+        standard = state.get("standard") or {}
+        parts_note = (f"정비 시스템(CMMS)에 {standard.get('sop') or '이 절차'}의 표준 작업(부품 · 수량)이 없어 부품 소모를 기록하지 않았습니다 — "
+                      "이 정비에 쓴 부품이 있으면 재고가 실제와 다릅니다") if state.get("completed") and standard.get("found") is False else None
         notice = (f"{v.get('asset')} 정비 완료 — " + ((state.get("completed") or {}).get("detail") or "설비 시뮬레이터 복구")
-                  + (f", 대상 {cfg['component']}" if cfg.get("component") else ""))
+                  + (f", 대상 {cfg['component']}" if cfg.get("component") else "") + (f". {parts_note}" if parts_note else ""))
         out = {"asset": v.get("asset"), "component": cfg.get("component") or "all", "work_order": (wo or {}).get("ref") if isinstance(wo, dict) else None,
                "completed": state.get("completed"), "restored": state.get("restored"), "notice": notice,
+               **({"parts_note": parts_note} if parts_note else {}),
                "done_at": engine.now_iso(self._now(now))}
         self._event(wi, "MAINTENANCE_DONE", "정비 완료 공지", {"notice": notice})
         self._after_commit(inbox.notify_participants, self.repo, self.tenant_id, dict(inst), "정비 완료", notice)

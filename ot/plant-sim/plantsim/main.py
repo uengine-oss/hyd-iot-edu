@@ -42,8 +42,8 @@ app = make_app("plant-sim (L1 hydraulic units + soft-PLC)", reg, lambda: {**edge
 
 
 class FaultReq(BaseModel):
-    asset: str = "HYD-01"
-    type: str = "cooler_degradation"     # cooler_degradation | pump_leakage | fan_vibration | restore
+    asset: str                           # 어느 설비에 무엇을 넣는지는 부르는 쪽이 정한다 — 빠지면 HYD-01 쿨러 열화로 대신 넣지 않고 422
+    type: str                            # cooler_degradation | pump_leakage | fan_vibration | restore
     target: float | None = None          # ramp target of the fault's disturbance variable (default per kind; domain plant.DOMAIN)
     severity: str | None = None          # named strength when no target is given: "high" (default, trips) | "moderate" (cooler only, alarm without trip)
     ramp_sim_s: float | None = None     # None = the kind's default ramp (plant.DEFAULT_RAMP_S)

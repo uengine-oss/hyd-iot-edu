@@ -117,3 +117,17 @@ def test_검사는_제안을_고치지_않는다(catalog):
     before = deepcopy(p)
     manual_preflight.validate(p, catalog)
     assert p == before
+
+
+def test_다른_분야_문서가_지금_지식에_없는_구성_요소와_증상을_가리키면_새로_만들_수_없다는_것과_할_일을_말한다(catalog):
+    """전수검사 10-G7: 유압 밸브 블록 매뉴얼처럼 지금 지식에 없는 구성 요소 · 증상을 쓰는 문서는 적재가 막히는데, 「지금 지식에 없습니다」만으로는
+    문서를 고칠지 지식에 먼저 넣을지 알 수 없었다. 문서가 만들 수 있는 것(고장 유형)과 고를 수만 있는 것(구성 요소 · 증상)을 갈라 말한다."""
+    p = proposal('HM-8')
+    mode = p['knowledge']['failure_modes'][0]
+    mode['component'], mode['symptoms'] = 'comp:valve-block', ['sym:valve-response-lag']
+    p['procedures'][0]['link']['failureMode'] = 'fm:no-such-mode'
+    said = {i['field']: i['message'] for i in manual_preflight.validate(p, catalog)['issues'] if i['code'] == 'REFERENCE_NOT_FOUND'}
+    assert '구성 요소 칸에 적은 comp:valve-block이(가) 지금 지식에 없습니다 — 문서 적재는 구성 요소을(를) 새로 만들지 않습니다' in said['component']
+    assert '지금 지식에 있는 구성 요소 가운데' in said['component'] and '적재할 수 없습니다' in said['component']
+    assert '문서 적재는 증상을(를) 새로 만들지 않습니다' in said['symptoms']
+    assert '이 문서의 고장 유형 목록에 넣거나' in said['link.failureMode'] and '새로 만들지 않습니다' not in said['link.failureMode']

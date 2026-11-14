@@ -81,14 +81,14 @@ def test_화면에서_고장_유형에_연결한_작업지시_조치_방법은_�
     assert problems(course_graph) == [], '만든 규칙이 다음 시작의 지식 되읽기 검사(seed_checks)를 지나야 한다 — 걸리면 시스템이 켜지지 않는다'
     world.plant.inject('HYD-01', 'cooler_degradation', severity='moderate')
     world.settle(1800)
-    world.report('HYD-01')
-    alert = {'alertId': 'EVAL-MY-21', 'asset': 'HYD-01', 'pattern': 'COOLER_DEGRADATION', 'state': 'RAISE'}
-    req = urllib.request.Request(world.stack.services['agent'].url + '/api/agent/evaluate', data=json.dumps({'alert': alert}).encode(),
+    world.reported_for('HYD-01')
+    req = urllib.request.Request(world.stack.services['agent'].url + '/api/agent/decide',
+                                 data=json.dumps({'asset': 'HYD-01', 'pattern': 'COOLER_DEGRADATION'}).encode(),
                                  headers={'Content-Type': 'application/json'}, method='POST')
     with urllib.request.urlopen(req, timeout=120) as r:
-        run = json.loads(r.read())
-    assert run['status'] == 'EVALUATED', run
-    cards = {o['id']: o for o in run['evaluation']['options']}
+        judged = json.loads(r.read())
+    assert judged['status'] == 'EVALUATED', judged.get('error') or judged.get('explanation')
+    cards = {o['id']: o for o in judged['result']['options']}
     mine = cards.get('skill:sop-my-21')
     assert mine, f"화면에서 만든 조치 방법이 후보에 없다: {sorted(cards)}"
     assert {'skill:sop-cool-11', 'skill:sop-cool-14'} <= set(cards), '수업 문서의 후보는 그대로다'

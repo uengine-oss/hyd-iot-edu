@@ -119,8 +119,9 @@ def test_읽기_평가는_원천_RAISE_경보만_받는다(stack, alert):
 
 @pytest.mark.parametrize('path, status', [
     ('/api/ontology/template/drop_all', 404),
-    ('/api/ontology/graph?ns=Bad_NS', 422),
-], ids=['허용 밖 템플릿', '이름 공간 형식'])
+    ('/api/ontology/graph?asset=HYD-01&ns=Bad_NS', 422),
+    ('/api/ontology/graph', 422),
+], ids=['허용 밖 템플릿', '이름 공간 형식', '설비 없음 — HYD-01 로 대신 답하지 않는다'])
 def test_온톨로지_읽기는_정한_템플릿과_이름_공간_형식만_받는다(stack, path, status):
     assert call(stack.services['agent'].url + path)[0] == status
 
@@ -133,3 +134,16 @@ def test_같은_경보를_두_번_평가하면_서로_다른_실행이고_서비
     (s1, a), (s2, b) = call(url + '/api/agent/evaluate', {'alert': alert}, 120), call(url + '/api/agent/evaluate', {'alert': alert}, 120)
     assert s1 == s2 == 200 and a['id'] != b['id'] and a['status'] and b['status']
     assert call(url + '/api/runs')[0] == 404
+
+
+@pytest.mark.parametrize('path, body, missing', [
+    ('/api/agent/decide', {'pattern': 'COOLER_DEGRADATION'}, 'asset'),
+    ('/api/agent/decide', {'asset': 'HYD-02'}, 'pattern'),
+    ('/api/agent/decide', {}, 'asset'),
+    ('/api/agent/whatif', {'asset': 'HYD-02'}, 'pattern'),
+    ('/api/agent/whatif', {}, 'asset'),
+], ids=['판단 — 설비 없음', '판단 — 경보 패턴 없음', '판단 — 빈 본문', '조건별 손익 — 경보 패턴 없음', '조건별 손익 — 빈 본문'])
+def test_설비나_경보_패턴이_빠진_판단_요청은_수업_사례로_대신_돌지_않고_빠진_칸을_말한다(stack, path, body, missing):
+    """가짜 · 해피패스 조사 8: 인자가 빠진 호출이 오류 대신 HYD-01 · 쿨러 열화로 돌아, 다른 설비를 물은 쪽이 그 답을 자기 설비의 것으로 읽었다."""
+    status, out = call(stack.services['agent'].url + path, body)
+    assert status == 422 and any(missing in (d.get('loc') or []) for d in out['detail']), out

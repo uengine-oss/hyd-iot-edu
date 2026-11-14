@@ -110,24 +110,38 @@
 
   /* ---------------------------------------------------------------- 그림 원본 */
   const xa = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  /* 정의의 id ↔ 그림(XML)의 id — 대응은 이 한 곳이다.
+     정의로만 등록된 흐름의 id 는 task:draft · seq:0 처럼 쌍점을 품는다. XML 의 id 에는 쌍점을 쓸 수 없어(접두사가 붙은 이름으로 읽힌다) 그대로 쓰면
+     bpmn-js 가 선의 양 끝을 찾지 못해 선이 하나도 그려지지 않고, 자동 배치 부품도 멈춘다. XML 에 쓸 수 없는 글자를 _x<코드>_ 로 바꾼다.
+     XML 에 그대로 쓸 수 있는 id(가져온 그림의 id)는 바뀌지 않는다. 그림을 만드는 쪽(defToXml)과 상태 표시 · 누름을 잇는 쪽(paint · focus · onPick)이 모두 이 둘을 쓴다 */
+  const DEF_ID = new Map();
+  function xid(id) {
+    const s = String(id ?? '');
+    if (/^[A-Za-z_][A-Za-z0-9_.-]*$/.test(s)) return s;
+    const x = (/^[A-Za-z_]/.test(s) ? '' : '_') + s.replace(/[^A-Za-z0-9_.-]/g, c => `_x${c.codePointAt(0).toString(16)}_`);
+    DEF_ID.set(x, s);
+    return x;
+  }
+  const defIdOf = x => (DEF_ID.has(x) ? DEF_ID.get(x) : x);
   // 정의(JSON) → BPMN XML(배치 정보 없음). 이름은 화면 이름 사전(UI.flowName)을 거친다. 경계 이벤트는 붙은 단계와 멈춤 여부를 그대로 싣는다
   function defToXml(def) {
     const pid = 'Process_' + String(def.processDefinitionId || 'flow').replace(/[^A-Za-z0-9_]/g, '_');
     const name = n => n ? ` name="${xa(UI.flowName(n))}"` : '';
+    const xa_id = id => xa(xid(id));
     const TASK = { userTask: 'userTask', serviceTask: 'serviceTask', scriptTask: 'scriptTask', manualTask: 'manualTask', task: 'task' };
     const evDef = x => x.eventDefinition === 'timer' ? '<bpmn:timerEventDefinition/>' : x.eventDefinition === 'message' ? '<bpmn:messageEventDefinition/>' : '';
     const parts = [];
     (def.events || []).forEach(x => {
-      if (x.type === 'boundaryEvent' || x.attachedTo) parts.push(`<bpmn:boundaryEvent id="${xa(x.id)}"${name(x.name)} attachedToRef="${xa(x.attachedTo)}"${x.cancelActivity === false ? ' cancelActivity="false"' : ''}>${evDef(x)}</bpmn:boundaryEvent>`);
-      else if (x.type === 'endEvent') parts.push(`<bpmn:endEvent id="${xa(x.id)}"${name(x.name)}/>`);
-      else if (x.type === 'startEvent') parts.push(`<bpmn:startEvent id="${xa(x.id)}"${name(x.name)}>${evDef(x)}</bpmn:startEvent>`);
-      else parts.push(`<bpmn:intermediateCatchEvent id="${xa(x.id)}"${name(x.name)}>${evDef(x)}</bpmn:intermediateCatchEvent>`);
+      if (x.type === 'boundaryEvent' || x.attachedTo) parts.push(`<bpmn:boundaryEvent id="${xa_id(x.id)}"${name(x.name)} attachedToRef="${xa_id(x.attachedTo)}"${x.cancelActivity === false ? ' cancelActivity="false"' : ''}>${evDef(x)}</bpmn:boundaryEvent>`);
+      else if (x.type === 'endEvent') parts.push(`<bpmn:endEvent id="${xa_id(x.id)}"${name(x.name)}/>`);
+      else if (x.type === 'startEvent') parts.push(`<bpmn:startEvent id="${xa_id(x.id)}"${name(x.name)}>${evDef(x)}</bpmn:startEvent>`);
+      else parts.push(`<bpmn:intermediateCatchEvent id="${xa_id(x.id)}"${name(x.name)}>${evDef(x)}</bpmn:intermediateCatchEvent>`);
     });
-    (def.activities || []).forEach(a => { const t = TASK[a.type] || 'task'; parts.push(`<bpmn:${t} id="${xa(a.id)}"${name(a.name)}/>`); });
-    (def.gateways || []).forEach(g => { const t = /^(exclusive|parallel|inclusive|eventBased)Gateway$/.test(g.type || '') ? g.type : 'exclusiveGateway'; parts.push(`<bpmn:${t} id="${xa(g.id)}"${name(g.name)}/>`); });
+    (def.activities || []).forEach(a => { const t = TASK[a.type] || 'task'; parts.push(`<bpmn:${t} id="${xa_id(a.id)}"${name(a.name)}/>`); });
+    (def.gateways || []).forEach(g => { const t = /^(exclusive|parallel|inclusive|eventBased)Gateway$/.test(g.type || '') ? g.type : 'exclusiveGateway'; parts.push(`<bpmn:${t} id="${xa_id(g.id)}"${name(g.name)}/>`); });
     const ids = new Set([...(def.events || []), ...(def.activities || []), ...(def.gateways || [])].map(x => x.id));
     (def.sequences || []).filter(q => ids.has(q.source) && ids.has(q.target)).forEach((q, i) =>
-      parts.push(`<bpmn:sequenceFlow id="${xa(q.id || `Flow_${i}`)}"${q.name ? ` name="${xa(UI.flowSeq(q.name) || q.name)}"` : ''} sourceRef="${xa(q.source)}" targetRef="${xa(q.target)}"/>`));
+      parts.push(`<bpmn:sequenceFlow id="${xa_id(q.id || `Flow_${i}`)}"${q.name ? ` name="${xa(UI.flowSeq(q.name) || q.name)}"` : ''} sourceRef="${xa_id(q.source)}" targetRef="${xa_id(q.target)}"/>`));
     return `<?xml version="1.0" encoding="UTF-8"?><bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="D_${pid}" targetNamespace="http://bpmn.io/schema/bpmn"><bpmn:process id="${pid}"${name(def.processDefinitionName)} isExecutable="false">${parts.join('')}</bpmn:process></bpmn:definitions>`;
   }
   // 그림 원문 하나({ xml, source, note? }) → 배치 정보가 없으면 자동으로 놓은 것({ …, laidOut: true }). 이미 놓인 것은 그대로 돌려준다
@@ -181,11 +195,11 @@
     reg.forEach(el => {
       if (skip(el)) return;
       MARKERS.forEach(k => canvas.removeMarker(el.id, k));
-      const s = m.st[el.id];
+      const s = m.st[defIdOf(el.id)];
       canvas.addMarker(el.id, s === 'done' ? 'is-done' : s === 'now' ? 'is-now' : s === 'hold' ? 'is-hold' : s === 'fail' ? 'is-fail' : 'is-todo');
       if (s === 'done' && isBox(el)) overlays.add(el.id, { position: { top: -8, right: 10 }, html: '<div class="bpmn-check"></div>' });
     });
-    m.now.forEach(id => { const el = reg.get(id); if (!el || skip(el)) return; const s = m.st[id]; overlays.add(id, { position: { top: -12, left: el.width / 2 }, html: `<div class="bpmn-tip" data-state="${e(s)}"><i></i>${e(tipText(view, id, s, mine))}</div>` }); });
+    m.now.forEach(id => { const el = reg.get(xid(id)); if (!el || skip(el)) return; const s = m.st[id]; overlays.add(el.id, { position: { top: -12, left: el.width / 2 }, html: `<div class="bpmn-tip" data-state="${e(s)}"><i></i>${e(tipText(view, id, s, mine))}</div>` }); });
     D.marks = m;
     return m;
   }
@@ -196,7 +210,8 @@
     const vb = canvas.viewbox(), o = vb.outer, inner = vb.inner;
     if (!o.width || !o.height || !inner.width) return;
     const m = D.marks || { now: [] };
-    const target = reg.get(m.now[m.now.length - 1]) || (m.finished && (reg.get(m.lastDone) || reg.get(m.end))) || null;
+    const at = id => (id ? reg.get(xid(id)) : null);
+    const target = at(m.now[m.now.length - 1]) || (m.finished && (at(m.lastDone) || at(m.end))) || null;
     const bar = 44;                                                   // 캔버스 위 도구 줄 자리
     const z = Math.min(1, Math.max(zmin, (o.height - bar - 16) / inner.height));
     const w = o.width / z, h = o.height / z, pad = 24;
@@ -224,7 +239,7 @@
     const D = { viewer, src, marks: null };
     if (!opts.plain) paint(D, view, opts.mine);      // plain: 상태 표시 없이 그림만(흐름 화면)
     if (opts.fit) openAt(D, opts.plain); else if (opts.plain) fitReadable(D); else focus(D);
-    if (opts.onPick) viewer.get('eventBus').on('element.click', ev => { const el = ev.element; if (!skip(el) && isBox(el)) opts.onPick(el.id); });
+    if (opts.onPick) viewer.get('eventBus').on('element.click', ev => { const el = ev.element; if (!skip(el) && isBox(el)) opts.onPick(defIdOf(el.id)); });
     return D;
   }
   const LEGEND = '<span><i style="background:var(--cv-green)"></i>끝남</span><span><i style="background:var(--cv-now)"></i>지금</span><span><i></i>남음</span>';

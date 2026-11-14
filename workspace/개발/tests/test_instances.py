@@ -789,6 +789,33 @@ def test_흐름A의_즉시_시행_카드는_정비를_기다리지_않는다(wor
     assert fix['status'] == 'DONE' and any(e['job_id'] == 'WAIT_SKIPPED' for e in world.events(todo=fix['id']))
 
 
+@pytest.mark.parametrize('standard', [True, False], ids=['표준 작업이 있는 SOP', '표준 작업이 없는 SOP'])
+def test_정비_수행은_표준_작업이_없는_SOP면_부품_소모를_기록하지_않았다고_공지와_결과에_남긴다(world, standard):
+    """전수검사 10-G13: 작업지시 완료는 SOP 의 표준 작업(정비 시스템의 부품 · 수량)만큼 부품을 소모한다. 수업 문서 밖의 새 SOP 는 표준 작업 행이 없어
+    소모 없이 완료되는데 아무 말이 없었다 — 재고가 그대로라 다음 구매 판단 · 성과 지표가 틀린다. 표준 작업이 있는 SOP(쿨러 핀 세척 — 부품 없음)는
+    그 말을 하지 않는다."""
+    with psycopg.connect(world.dsn) as db:
+        kept = db.execute("SELECT sop, name, from_profile, stop_h, labor_cost, part_no, part_qty FROM ent.task_standards WHERE sop = 'SOP-COOL-14'").fetchone()
+        if not standard:
+            db.execute("DELETE FROM ent.task_standards WHERE sop = 'SOP-COOL-14'")
+    try:
+        alert, pid, decision = world.start_cooling()
+        world.approve(pid, decision, 'skill:sop-cool-14', MAINT)
+        world.poll(3)
+        done = world.values(pid)['maintenance']
+        said = [e['data'].get('notice') for e in world.events(todo=world.row(pid, 'T_fix')['id']) if e['job_id'] == 'MAINTENANCE_DONE']
+    finally:
+        if not standard:
+            with psycopg.connect(world.dsn) as db:
+                db.execute('INSERT INTO ent.task_standards (sop, name, from_profile, stop_h, labor_cost, part_no, part_qty) VALUES (%s,%s,%s,%s,%s,%s,%s)', kept)
+    assert done['completed']['ref'] == world.values(pid)['work_order']['ref']
+    if standard:
+        assert 'parts_note' not in done and '표준 작업' not in done['notice'] and '표준 작업' not in said[0]
+    else:
+        assert 'SOP-COOL-14의 표준 작업(부품 · 수량)이 없어 부품 소모를 기록하지 않았습니다' in done['parts_note']
+        assert done['parts_note'] in done['notice'] and done['parts_note'] in said[0]
+
+
 def test_흐름A는_즉시_시행도_아니고_정비_시각도_없는_카드의_작업지시를_즉시로_등록하지_않고_그_까닭으로_멈춘다(world):
     """판단 엔진은 예정된 정비 시간을 모르면 카드에 정비 시점을 싣지 않고 그 카드를 실행 후보에서 뺀다(agentsvc.cards — test_cards). 그래도 그런 카드가
     승인돼 오면: 전에는 작업지시가 업무 시스템에 「즉시」로 등록되고(사람이 승인하지 않은 시점) 그 뒤 「정비 수행」이 「언제 할지 모른다」로 멈춰,
