@@ -192,7 +192,7 @@ def test_상단에_지금_단계가_한_줄로_보인다(tours):
     t = tours(SIZES[0])
     assert t.access is not None, f'수업 단계 정보(GET /api/course-access)를 읽지 못했다: {t.access_error}'
     line = t.page.inner_text('#courseStatus')
-    expected = '지금 단계: 자유 구성 (PBL)' if t.access['phase'] == 'pbl' else '지금 단계: 제공 자료만 사용'      # 화면은 단계를 무엇을 쓸 수 있는지로 말한다(courseAccess.js banner)
+    expected = '제한 없이 쓰는 단계 (PBL)' if t.access['phase'] == 'pbl' else '제공된 문서 · 흐름 · 모델만 쓰는 단계'      # 화면은 단계를 무엇이 정해져 있는지로 말한다(courseAccess.js banner)
     assert line.startswith(expected), line
     if t.access.get('expired'):
         assert 'PBL 기한 지남' in line
