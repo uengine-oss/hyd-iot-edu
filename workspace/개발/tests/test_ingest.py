@@ -75,6 +75,11 @@ def test_학생이_고른_출처_시스템으로_표를_잇는다():
 def test_시스템을_알_수_없는_표는_확인하라고_경고한다():
     plan = ingest.plan(ingest.parse_ddl(LEGACY), filename='legacy-plant-db.sql', batch='b', selection={'T_EQP01': ['C_TMP_O']})
     assert plan['inputs'][0]['system'] == 'sys:db-hyd-enterprise' and any('T_EQP01' in w for w in plan['warnings'])
+    assert '출처 시스템' in plan['warnings'][0] and 'sys:' not in plan['warnings'][0], '무엇을 확인하라는지 말하고 내부 id 를 내밀지 않는다'
+    # 사람이 그 표의 출처 시스템을 고르면(같은 값이어도) 확인한 것이다 — 적재 뒤까지 「확인할 것」이 남았다
+    picked = ingest.plan(ingest.parse_ddl(LEGACY), filename='legacy-plant-db.sql', batch='b', selection={'T_EQP01': ['C_TMP_O']},
+                         systems={'T_EQP01': 'sys:db-hyd-enterprise'})
+    assert picked['inputs'][0]['system'] == 'sys:db-hyd-enterprise' and picked['warnings'] == []
 
 
 @pytest.mark.parametrize('kwargs, says', [

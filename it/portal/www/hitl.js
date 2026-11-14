@@ -1113,7 +1113,7 @@
     box.innerHTML = `<div class="mprev" data-doc-stage="2">
       <div class="panel-sec"><div class="result"><div class="result-label">올린 표 정의</div><div class="result-main">${esc(p.filename)} <span class="muted num">${Number(p.chars).toLocaleString()}자</span></div>
         <p class="result-sub">표 ${p.tables.length}개를 읽었습니다. 표마다 출처 시스템과 판단 입력으로 쓸 열을 고른 뒤 적재합니다.</p></div>
-        ${p.warnings.length ? `<div class="alert" data-variant="destructive" role="alert">${icon('circle-alert')}<h2>확인할 것 ${p.warnings.length}건</h2><section><ul class="doc-issues">${p.warnings.map(w => `<li>${esc(w)}</li>`).join('')}</ul></section></div>` : ''}</div>
+        ${p.warnings.length ? `<div class="alert" data-ddl-warnings>${icon('info')}<h2>확인할 것 ${p.warnings.length}건</h2><section><ul class="doc-issues">${p.warnings.map(w => `<li>${esc(w)}</li>`).join('')}</ul></section></div>` : ''}</div>
       <div class="panel-sec"><h3>표 → 출처 시스템<span class="muted num">${p.tables.length}</span></h3><div class="ddl-tables">${p.tables.map(t => `<div class="ddl-table"><p class="ddl-name"><b class="mono">${esc(t.table)}</b>${t.comment ? `<span class="muted">${esc(t.comment)}</span>` : ''}</p>
         ${UI.field({ label: '출처 시스템', input: `<select data-sys="${esc(t.table)}"><option value="">(없음 · 적재 안 함)</option>${sysOptions(t.system)}</select>` })}
         <div class="ddl-cols" role="group" aria-label="${esc(t.table)}의 열">${t.columns.map(c => `<label><input type="checkbox" class="input" data-col="${esc(t.table)}" value="${esc(c)}" ${t.selected.includes(c) ? 'checked' : ''}><span class="mono">${esc(c)}</span></label>`).join('')}</div></div>`).join('')}</div></div>

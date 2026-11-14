@@ -207,8 +207,9 @@ def plan(tables: list[Table], *, filename: str, batch: str, selection: dict[str,
         if not sid or not isinstance(sid, str):
             raise ValueError(f"출처 시스템이 없습니다: {t.qualified}")
         sname = hint[1] if hint and sid == hint[0] else sid.split(":", 1)[-1].upper()
-        if not hint and sid.startswith("sys:db-"):
-            warnings.append(f"{t.qualified}: 업무 시스템을 확인하세요 ({sid})")
+        # 파일에 출처 시스템 표시(표 주석 '-- MES: …')가 없어 원천 연결 이름으로 채운 표만 알린다 — 사람이 출처 시스템을 고른 표는 이미 확인한 것이다
+        if not hint and sid.startswith("sys:db-") and _table_option(systems, t, tables, None) is None:
+            warnings.append(f"{t.qualified}: 파일에 출처 시스템 표시가 없어 원천 연결 이름으로 채웠습니다 — 아래 「출처 시스템」이 맞는지 확인하세요")
         out_systems.setdefault(sid, {"id": sid, "name": sname, "zone": "IT", "source_id": f"{filename}#{t.qualified}"})
         by_name = {c.name: c for c in t.columns}
         for cname in cols:
