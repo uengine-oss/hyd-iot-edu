@@ -11,8 +11,10 @@
   let status = null, compareWith = null, deployedIds = new Set(), rows = [], chosen = '', resetNeeded = false;
   const patName = p => UI.patternName(p), nameOf = hydDefinitions.name;   // 패널 일 · 흐름 이름은 definitionRegistry.js 의 한 벌(W3-28)
   const tag = (label, tone) => `<span class="tag"${tone ? ` data-tone="${tone}"` : ''}>${esc(label)}</span>`;
-  // 경보 → 흐름 한 줄의 구분: 서버가 준 표시(기준 판본인가 · 처음부터 들어 있던 흐름인가)로 가른다
-  const routeKind = x => x.reference ? tag('기준 흐름', 'ok') : x.class_flow ? tag('기본 제공') : /기준 흐름/.test(x.source || '') ? tag(x.source, 'warn') : tag('내가 배포한 흐름', 'brand');
+  // 경보 → 흐름 한 줄의 구분: 흐름 목록과 같은 말(기본 제공 / 내가 배포한 흐름)로, 서버가 준 표시로 가른다. 종류 표시라 상태색(초록)을 쓰지 않는다.
+  // 주황은 상태다 — 기본 제공 흐름의 운영 판본이 처음 판본에서 바뀌어 있을 때
+  const kindTag = (label, tone) => `<span class="tag" data-plain${tone ? ` data-tone="${tone}"` : ''}>${esc(label)}</span>`;
+  const routeKind = x => x.reference || x.class_flow ? kindTag('기본 제공') : /기준 흐름/.test(x.source || '') ? tag('기본 제공 · 운영 판본 바뀜', 'warn') : kindTag('내가 배포한 흐름', 'brand');
 
   async function loadRoutes() {
     const r = await getJ(API.process + '/api/flows/deployments');
@@ -20,7 +22,7 @@
     const shadow = r.flows.filter(f => f.shadowed.length).map(f => `<p class="muted">${esc(nameOf(f.definition, f.name))}: ${f.shadowed.map(patName).map(esc).join(', ')}는 더 최근에 배포한 흐름이 엽니다.</p>`).join('');
     $d('deployRoutes').innerHTML = (body ? `<div class="table-container"><table class="table"><thead><tr><th>경보</th><th>여는 흐름</th><th class="num">운영 판본</th><th>구분</th></tr></thead><tbody>${body}</tbody></table></div>`
       : UI.empty('경보로 시작하는 흐름이 없습니다', '경보로 시작하는 흐름을 배포하면 어느 경보가 어느 흐름을 여는지 여기에 보입니다.')) + shadow;
-    $d('deployRoutesNote').textContent = r.at_reference ? '모든 경보가 기준 흐름으로 열립니다' : r.reset_needed ? '내가 배포한 흐름이 경보를 엽니다' : '다음 경보부터 이 표대로 열립니다';
+    $d('deployRoutesNote').textContent = r.reset_needed ? '내가 배포한 흐름이 경보를 엽니다' : '다음 경보부터 이 표대로 열립니다';
     // [기준 흐름으로 되돌리기]는 처음부터 들어 있던 흐름을 남긴다 — 내가 바꾼 것이 없으면 되돌릴 것이 없다(서버 reset_needed)
     resetNeeded = !!r.reset_needed; syncReset();
     $d('deployResetWhy').textContent = r.reset_needed ? '' : '지금은 되돌릴 것이 없습니다. 내가 배포한 흐름이 없고 기준 흐름의 운영 판본도 기준 판본입니다.';
@@ -81,14 +83,15 @@
     $d('deploySummary').textContent = s.deployed_version ? `운영 판본 ${s.deployed_version}` : '배포한 판본 없음';
     $d('deployStatus').innerHTML = `<p class="muted">${esc(s.alert_entry
       ? `경보(${(s.alert_patterns || []).map(patName).join(' · ') || '시작 조건의 경보'})로 시작하는 흐름입니다. 배포하면 다음 경보부터 그 판본으로 처리 건이 열리고, 이미 열린 처리 건은 자기 판본으로 끝납니다.`
-      : '직접 시작하는 흐름입니다. 배포하지 않아도 아래 「시작」에서 판본을 골라 엽니다.')}</p>`;
-    // 주 단추는 이 절에 하나: 아직 배포하지 않은 가장 새 판본의 [이 판본 배포]
-    const next = [...s.versions].reverse().find(v => !v.deployed && v.deployable);
+      : '직접 시작하는 흐름입니다. 배포는 경보로 시작하는 흐름에만 필요합니다 — 이 흐름은 아래 「시작」에서 등록한 판본을 골라 엽니다.')}</p>`;
+    // 다음에 배포할 판본(아직 배포하지 않은 가장 새 판본)에 표시만 단다 — 주 단추로 할지는 흐름 화면이 단계 줄에 맞춰 정한다(flows.js markPrimary).
+    // 직접 시작하는 흐름에는 배포를 권하지 않는다(표시를 달지 않는다)
+    const next = s.alert_entry ? [...s.versions].reverse().find(v => !v.deployed && v.deployable) : null;
     $d('deployVersions').innerHTML = `<ul class="flow-vers">${[...s.versions].reverse().map(v => `<li><div class="flow-ver"><b>판본 <span class="num">${esc(v.version)}</span></b>${versionTag(v)}` +
       `<span class="muted">${v.registered_at ? '등록 ' + esc(UI.dateTime(v.registered_at)) : '등록 시각 없음'}</span><span class="flow-ver-acts">` +
       (s.deployed_version && !v.deployed ? `<button type="button" class="btn" data-variant="ghost" data-size="sm" data-compare="${esc(v.version)}">운영 판본과 비교</button>` : '') +
       (refComparable(s, v) ? `<button type="button" class="btn" data-variant="ghost" data-size="sm" data-refcompare="${esc(v.version)}">기준과 비교</button>` : '') +
-      (v.deployed ? '' : `<button type="button" class="btn"${v === next ? '' : ' data-variant="outline"'} data-size="sm" data-deploy="${esc(v.version)}" ${v.deployable ? '' : 'disabled'}>${UI.icon('upload')}이 판본 배포</button>`) +
+      (v.deployed ? '' : `<button type="button" class="btn" data-variant="outline" data-size="sm" data-deploy="${esc(v.version)}"${v === next ? ' data-deploy-next' : ''} ${v.deployable ? '' : 'disabled'}>${UI.icon('upload')}이 판본 배포</button>`) +
       `</span></div>${v.problem ? `<div class="alert" data-variant="destructive" role="alert">${UI.icon('circle-alert')}<h2>이 판본은 검사에 실패해 배포할 수 없습니다</h2><section>${esc(v.problem)}</section></div>` : ''}</li>`).join('')}</ul>`;
     $d('deployReasonField').hidden = !s.versions.some(v => !v.deployed && v.deployable) && !s.rollback_version;
     $d('deployCompare').innerHTML = s.versions.length > 1 ? UI.fold('판본 비교<span class="muted">두 판본에서 바뀐 단계 · 연결 · 조건</span>', `<div class="flow-compare">` +

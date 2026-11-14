@@ -97,7 +97,11 @@
     if (!ok) return;
     try { const r = await postJ(api('/reset'), {}); UI.toast(r.note, { tone: 'ok' }); if (A.cur && !LIVE.has(A.cur.state)) A.cur = null; }
     catch (e) { A.err = '지우지 못했습니다: ' + e.message; }
-    await loadHistory(); render();
+    await loadHistory();
+    // 서버는 처리 건이 끝난 질문만 지운다. 화면에는 「실패」인데 처리 건이 아직 끝나지 않은 질문은 남는다 — 지워진 것처럼 보이지 않게 그 사실을 말한다
+    const left = A.history.filter(h => !LIVE.has(h.state)).length;
+    A.keptNote = left ? `질문 ${left}건은 지워지지 않았습니다. 처리 건이 아직 끝나지 않은 질문입니다 — 그 질문을 열어 [처리 건에서 보기]로 확인하세요.` : '';
+    render();
   }
 
   /* ---------------------------------------------------------------- 그리기
@@ -194,7 +198,7 @@
         <footer class="form-foot"><span class="muted" role="status" data-ask-why>${A.draft.trim() ? '' : '질문을 적으면 보낼 수 있습니다.'}</span><button type="button" class="btn" id="askSend" ${off ? 'disabled' : ''}>${icon('send')}보내기</button></footer></div>`;
   }
   const layout = () => `<div class="ask-layout"><div class="ask-main"><section class="panel" data-ask-form aria-label="질문 보내기"></section><div data-ask-err class="pane-msg"></div><div class="ask-thread" data-ask-thread></div></div>
-        <aside class="ask-side pane-side"><div class="sec-head"><h2>지난 질문</h2><button type="button" class="btn" data-variant="ghost" data-size="sm" id="askReset" hidden>${icon('trash-2')}끝난 기록 지우기</button></div><div class="rows" data-ask-history></div></aside></div>`;
+        <aside class="ask-side pane-side"><div class="sec-head"><h2>지난 질문</h2><button type="button" class="btn" data-variant="ghost" data-size="sm" id="askReset" hidden>${icon('trash-2')}끝난 기록 지우기</button></div><div class="rows" data-ask-history></div><div data-ask-kept class="pane-msg"></div></aside></div>`;
   async function renderMarkdown(root) {
     const nodes = [...root.querySelectorAll('[data-md]')]; if (!nodes.length) return;
     try { await UI.need('markdown'); nodes.forEach(n => { n.innerHTML = DOMPurify.sanitize(marked.parse(n.dataset.md)); n.removeAttribute('data-md'); }); }
@@ -203,7 +207,9 @@
   const syncSend = form => {
     const b = form.querySelector('#askSend'), why = form.querySelector('[data-ask-why]');
     if (b) b.disabled = A.sending || !A.draft.trim();
-    if (why) why.textContent = A.draft.trim() ? '' : '질문을 적으면 보낼 수 있습니다.';
+    const q = A.draft.trim();
+    if (why) why.textContent = !q ? '질문을 적으면 보낼 수 있습니다.'
+      : replay() && recorded().length && !recorded().includes(q) ? 'AI 키가 없을 때 쓰는 재생 모드에서는 위의 질문에만 답합니다. 이 질문은 보내도 답을 받지 못합니다.' : '';
   };
   function render() {
     if (!A.el) return;
@@ -240,6 +246,7 @@
     const hSig = JSON.stringify([A.history, A.histErr, A.cur && A.cur.id]);
     if (hist._sig !== hSig) { hist._sig = hSig; hist.innerHTML = historyHtml(); }
     A.el.querySelector('#askReset').hidden = !A.history.length;
+    A.el.querySelector('[data-ask-kept]').innerHTML = A.keptNote && A.history.length ? alertBox('info', '지워지지 않은 질문이 있습니다', esc(A.keptNote)) : '';
   }
   function wireForm(form) {
     const q = s => form.querySelector(s);

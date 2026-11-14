@@ -23,15 +23,19 @@
     if (!window.BpmnAutoLayout) throw new Error('자동 배치 부품(BpmnAutoLayout)이 실리지 않았습니다 — UI.need(\'bpmn-layout\') 으로 싣습니다');
     try { return { xml: await window.BpmnAutoLayout.layoutProcess(new XMLSerializer().serializeToString(doc)), laidOut: true }; }
     catch (e) {
-      // bpmn-auto-layout 1.3.0 은 한 단계에 길이가 다른 두 길이 모이는 흐름(다시 수행 · 되돌아가는 가지가 있는 흐름)에서 내부 오류로 멈춘다
-      // (기준 흐름 「설비 이상 조치」와 제공 교대 인수인계 그림으로 실측). 그림을 못 보이는 대신 단순한 층 배치로 놓는다
-      console.warn('[hydBpmnLayout] 자동 배치 부품이 이 흐름을 놓지 못해 단순 배치로 그립니다:', e.message);
+      // bpmn-auto-layout 1.3.0 의 한계: 여러 갈림에서 나온 가지가 같은 단계 · 같은 끝으로 다시 모이는 흐름(기준 흐름 「설비 이상 조치」, 교대 인수인계)을
+      // 놓다가 내부 오류(Cannot read properties of undefined (reading 'splice'))로 멈춘다. id 가 바른 XML 로도 같다(2026-11-14 실측 — 최소 재현은
+      // 「갈림 → 명령 / 정비 요청 / 보고」 + 「효과 확인 → 갈림 → 정비 요청」처럼 한 단계에 두 갈림의 가지가 모이는 꼴). 그런 흐름은 이 파일의 층 배치로 놓는다.
+      // 조용히 바꾸지 않는다: 콘솔에 까닭을 남기고, 그림 위 알림은 어느 쪽이든 「자동으로 놓았습니다」다
+      console.warn('[hydBpmnLayout] 자동 배치 부품이 이 흐름을 놓지 못해 층 배치로 그립니다:', e.message);
       return { xml: simpleLayout(doc), laidOut: true };
     }
   }
 
-  /* 단순 층 배치(자동 배치 부품이 실패한 흐름에만): 시작에서 왼쪽 → 오른쪽으로 층을 나누고(되돌아가는 선은 층 계산에서 뺀다), 층 안에서는 앞 단계의 줄에 가깝게 놓는다.
-     선은 직각으로: 같은 줄은 곧게, 줄이 다르면 줄 사이 통로로, 되돌아가는 선은 그림 아래로 돌아간다. 경계 이벤트는 붙은 단계의 아래 변에 둔다. 차선은 그리지 않는다. */
+  /* 층 배치(자동 배치 부품이 놓지 못하는 흐름에만): 시작에서 왼쪽 → 오른쪽으로 층(칸)을 나누고(되돌아가는 선은 층 계산에서 뺀다), 층 안에서는 앞 단계의 줄에 가깝게 놓는다.
+     상자는 격자의 칸 하나에 하나라 겹치지 않는다. 선은 상자가 없는 통로로만 다닌다: 칸과 칸 사이의 세로 통로, 줄과 줄 사이의 가로 통로.
+     바로 옆 칸의 같은 줄(사이에 상자가 없을 때)만 곧게 잇고, 그 밖에는 「오른쪽 세로 통로 → 가로 통로 → 받는 상자 왼쪽 세로 통로」로 돌아간다 — 선이 다른 상자 안을 지나지 않는다.
+     경계 이벤트는 붙은 단계의 아래 변에 두고, 거기서 나가는 선은 그 줄 아래의 가로 통로로 내려간다. 차선은 그리지 않는다. */
   const SIZE = el => /Task$|^task$|subProcess|callActivity|transaction/i.test(el.localName) ? [100, 80] : /Gateway$/.test(el.localName) ? [50, 50] : [36, 36];
   function simpleLayout(doc) {
     const DI = 'http://www.omg.org/spec/BPMN/20100524/DI', DC = 'http://www.omg.org/spec/DD/20100524/DC', DDI = 'http://www.omg.org/spec/DD/20100524/DI';
@@ -64,10 +68,15 @@
       let r = want; for (let d = 0; taken.has(r); d += 1) { r = want + d + 1; if (!taken.has(r)) break; r = want - d - 1; if (r >= 0 && !taken.has(r)) break; r = want + d + 1; }
       row[n] = r; taken.add(r);
     });
-    const COL = 180, ROW = 120, box = {};
-    main.forEach(n => { const [w, h] = SIZE(n), k = id(n); box[k] = { x: 60 + layer[k] * COL + (100 - w) / 2, y: 60 + (row[k] || 0) * ROW + (80 - h) / 2, w, h }; });
-    nodes.filter(host).forEach((n, i) => { const hb = box[host(n)]; if (hb) box[id(n)] = { x: hb.x + hb.w - 46 - (i % 2) * 40, y: hb.y + hb.h - 18, w: 36, h: 36 }; });
-    const bottom = Math.max(...Object.values(box).map(b => b.y + b.h)) + 40;
+    // 격자: 칸 = 상자 자리 100 × 80 + 오른쪽 세로 통로 100, 줄 = 상자 자리 80 + 아래 가로 통로 70
+    const COL = 200, ROW = 150, X0 = 80, Y0 = 60, box = {}, cell = {};
+    main.forEach(n => { const [w, h] = SIZE(n), k = id(n); cell[k] = [layer[k], row[k] || 0]; box[k] = { x: X0 + layer[k] * COL + (100 - w) / 2, y: Y0 + (row[k] || 0) * ROW + (80 - h) / 2, w, h }; });
+    nodes.filter(host).forEach((n, i) => { const hb = box[host(n)]; if (hb) { cell[id(n)] = cell[host(n)]; box[id(n)] = { x: hb.x + hb.w - 46 - (i % 2) * 40, y: hb.y + hb.h - 18, w: 36, h: 36 }; } });
+    const filled = new Set(main.map(n => cell[id(n)].join(',')));
+    // 통로의 자리: 세로 통로 c 는 칸 c 의 오른쪽(c = -1 이면 첫 칸의 왼쪽), 가로 통로 r 는 줄 r 의 아래. 같은 통로를 쓰는 선은 옆 자리로 비켜 놓는다
+    const vUse = {}, hUse = {};
+    const vLane = c => X0 + c * COL + 116 + ((vUse[c] = (vUse[c] || 0) + 1) - 1) % 8 * 9;
+    const hLane = r => Y0 + r * ROW + 108 + ((hUse[r] = (hUse[r] || 0) + 1) - 1) % 4 * 8;
     const el = (ns, name, attrs) => { const e = doc.createElementNS(ns, name); Object.entries(attrs || {}).forEach(([k, v]) => e.setAttribute(k, v)); return e; };
     const diagram = el(DI, 'bpmndi:BPMNDiagram', { id: 'BPMNDiagram_1' }), plane = el(DI, 'bpmndi:BPMNPlane', { id: 'BPMNPlane_1', bpmnElement: id(proc) });
     root.setAttribute('xmlns:bpmndi', DI); root.setAttribute('xmlns:dc', DC); root.setAttribute('xmlns:di', DDI);
@@ -75,17 +84,16 @@
       const shape = el(DI, 'bpmndi:BPMNShape', { id: k + '_di', bpmnElement: k, ...(byId[k].localName === 'exclusiveGateway' ? { isMarkerVisible: 'true' } : {}) });
       shape.appendChild(el(DC, 'dc:Bounds', { x: b.x, y: b.y, width: b.w, height: b.h })); plane.appendChild(shape);
     });
-    let lane = 0;
     flows.forEach(f => {
-      const s = box[f.getAttribute('sourceRef')], t = box[f.getAttribute('targetRef')]; if (!s || !t) return;
-      const e = edges.find(x => x.f === f), fromBoundary = byId[f.getAttribute('sourceRef')] && host(byId[f.getAttribute('sourceRef')]);
+      const sk = f.getAttribute('sourceRef'), tk = f.getAttribute('targetRef'), s = box[sk], t = box[tk]; if (!s || !t) return;
+      const [cs, rs] = cell[sk], [ct, rt] = cell[tk], fromBoundary = !!host(byId[sk]);
       const sy = s.y + s.h / 2, ty = t.y + t.h / 2, sx = s.x + s.w, tx = t.x;
+      const clear = () => { for (let c = cs + 1; c < ct; c++) if (filled.has(c + ',' + rs)) return false; return true; };      // 같은 줄의 사이 칸이 비었는가
       let pts;
-      if (e && back.has(e) || tx < sx) { const y = bottom + (lane++ % 6) * 14; pts = [[s.x + s.w / 2, s.y + s.h], [s.x + s.w / 2, y], [t.x + t.w / 2, y], [t.x + t.w / 2, t.y + t.h]]; }      // 되돌아가는 선: 그림 아래로
-      else if (fromBoundary) { const y = s.y + s.h + 26; pts = [[s.x + s.w / 2, s.y + s.h], [s.x + s.w / 2, y], [tx - 20, y], [tx - 20, ty], [tx, ty]]; }      // 경계 이벤트에서 나가는 선: 붙은 단계 아래의 줄 사이 통로로
-      else if (Math.abs(sy - ty) < 1) pts = [[sx, sy], [tx, ty]];
-      else if (tx - sx < COL) pts = [[sx, sy], [sx + (tx - sx) / 2, sy], [sx + (tx - sx) / 2, ty], [tx, ty]];
-      else { const y = Math.min(sy, ty) + ROW / 2 + (sy < ty ? 6 : -6); pts = [[sx, sy], [sx + 20, sy], [sx + 20, y], [tx - 20, y], [tx - 20, ty], [tx, ty]]; }      // 여러 층을 건너는 선: 줄 사이 통로로
+      if (fromBoundary) { const y = hLane(rs), g = vLane(ct - 1); pts = [[s.x + s.w / 2, s.y + s.h], [s.x + s.w / 2, y], [g, y], [g, ty], [tx, ty]]; }      // 경계 이벤트: 붙은 단계 아래의 가로 통로로
+      else if (rs === rt && ct > cs && clear()) pts = [[sx, sy], [tx, ty]];                                    // 같은 줄, 사이에 상자 없음: 곧게
+      else if (ct === cs + 1) { const g = vLane(cs); pts = [[sx, sy], [g, sy], [g, ty], [tx, ty]]; }          // 바로 옆 칸의 다른 줄: 사이 세로 통로 하나로
+      else { const g1 = vLane(cs), y = hLane(rt > rs ? rs : rt < rs ? rs - 1 : rs), g2 = vLane(ct - 1); pts = [[sx, sy], [g1, sy], [g1, y], [g2, y], [g2, ty], [tx, ty]]; }      // 건너뛰거나 되돌아가는 선: 세로 통로 → 가로 통로 → 세로 통로
       const edge = el(DI, 'bpmndi:BPMNEdge', { id: id(f) + '_di', bpmnElement: id(f) });
       pts.forEach(([x, y]) => edge.appendChild(el(DDI, 'di:waypoint', { x: Math.round(x), y: Math.round(y) }))); plane.appendChild(edge);
     });

@@ -65,7 +65,7 @@
       const [agents, skills] = await Promise.all([getJ(api('/api/agents')), getJ(api('/api/skills'))]);
       if (seq !== st.seq) return;
       requireList(agents, '에이전트 목록'); requireList(skills, '스킬 목록');
-      st.agents = agents; st.skills = skills; st.error = '';
+      st.agents = agents; st.skills = skills; st.error = ''; st.loaded = true;
       registerNames(agents);
       if (st.pick.skills && !skills.some(s => s.skill_name === st.pick.skills)) st.pick.skills = null;
       const ai = agents.filter(a => a.kind === 'agent'), sys = agents.filter(a => a.kind !== 'agent');
@@ -141,6 +141,7 @@
   }
   function listHtml() {
     if (!st.agents) return ROW_SKELETON;
+    if (st.error && !st.loaded) return '';      // 목록을 한 번도 못 읽었다 — 위의 오류 판만 보인다(「없습니다」가 아니다)
     const note = html => `<div class="pane-list-note">${html}</div>`;
     if (st.tab === 'skills') return (st.skills || []).length ? st.skills.map(skillRow).join('')
       : note(UI.empty('아직 스킬이 없습니다', '화면 위의 [스킬 만들기]로 작업 요령 문서(SKILL.md)를 쓰면 여기에 나타납니다.'));
@@ -282,7 +283,7 @@
         : '<p class="muted">등록된 도구 서버가 없습니다.</p>';
       const skills = o.skills.length ? o.skills.map(s => check('data-f-skill', s.skill_name, d.skills.includes(s.skill_name), false, esc(plainName(UI.skillLabel(s).label)) + (s.origin === 'user' ? ' <span class="muted">내가 만든 것</span>' : ''))).join('')
         : '<p class="muted">아직 스킬이 없습니다. 먼저 [스킬 만들기]로 만든 뒤 이 에이전트를 고쳐 붙입니다.</p>';
-      return head(f.id ? '에이전트 고치기' : '새 에이전트', '저장하면 다음 실행부터 이 설정으로 실행됩니다. 단계를 맡기려면 저장한 뒤 [담당 배정]에서 고릅니다.') +
+      return head(f.id ? '에이전트 고치기' : '새 에이전트', (f.cloned ? '기본 제공 에이전트를 복제한 사본입니다. 저장하지 않고 취소하면 사본은 지워집니다. ' : '') + '저장하면 다음 실행부터 이 설정으로 실행됩니다. 단계를 맡기려면 저장한 뒤 [담당 배정]에서 고릅니다.') +
         `<form data-ag-form class="panel-sec ag-form">${o.error ? UI.errorBlock('도구 서버 · 스킬 목록을 읽지 못했습니다', o.error) : ''}` +
         UI.section('기본', UI.field({ label: '이름', required: true, input: `<input data-f="name" maxlength="60" value="${esc(d.name)}">` }) +
           UI.field({ label: '역할', input: `<input data-f="role" maxlength="200" value="${esc(d.role)}" placeholder="예: 쿨러 열화를 먼저 본다">` }) +
@@ -351,9 +352,10 @@
         b.agents.filter(a => !s.default_agents.includes(a.id)).map(a => `<option value="${esc(a.id)}" ${a.id === cur ? 'selected' : ''}>${esc(a.name)}${a.origin === 'user' ? ' · 내가 만든 것' : ''}</option>`)).join('');
       const closed = course().assignBlocked(s.definition_id);
       return `<tr${s.assigned ? ' data-pick' : ''}><td>${esc(stepLabel(s))}</td><td>${esc(s.default_names.join(', '))}</td>` +
-        `<td><select class="select" data-map="${esc(s.definition_id)}|${esc(s.activity_id)}" aria-label="${esc(s.name)} 담당"${closed ? ' disabled' : ''}>${opts}</select></td></tr>`;
+        `<td><span class="ag-map"><select class="select" data-map="${esc(s.definition_id)}|${esc(s.activity_id)}" aria-label="${esc(s.name)} 담당"${closed ? ' disabled' : ''}>${opts}</select>` +
+        `${st.savedMap === s.definition_id + '|' + s.activity_id ? tag(st.savedNote, st.savedTone) : ''}</span></td></tr>`;
     }).join('');
-    const steps = `<div class="panel-head"><div><h2>단계별 담당 AI 에이전트</h2><p>흐름 정의는 그대로 두고, 이 단계가 열릴 때 고른 에이전트가 맡습니다. 기본 담당으로 되돌리면 다음에 열리는 단계부터 기본으로 실행됩니다.</p></div></div>` +
+    const steps = `<div class="panel-head"><div><h2>단계별 담당 AI 에이전트</h2><p>흐름 정의는 그대로 두고, 이 단계가 열릴 때 고른 에이전트가 맡습니다. 기본 담당으로 되돌리면 다음에 열리는 단계부터 기본으로 실행됩니다. <b>고르면 바로 저장됩니다.</b></p></div></div>` +
       `<div class="panel-sec">${closedWhy.map(w => `<div class="alert" role="status">${icon('lock')}<h2>지금은 일부 단계의 담당을 바꿀 수 없습니다</h2><section>${esc(w)}</section></div>`).join('')}` +
       (rows ? `<div class="table-container"><table class="table"><thead><tr><th>단계</th><th>기본 담당</th><th>지금 담당</th></tr></thead><tbody>${rows}</tbody></table></div>`
         : UI.empty('에이전트가 맡는 단계가 없습니다', '흐름을 등록하면 그 흐름의 AI 단계가 여기에 나옵니다.')) + `</div>`;
@@ -371,7 +373,7 @@
       (roles ? `<ul class="flow-vers">${roles}</ul>` : UI.empty('역할이 없습니다', '아래에서 역할을 만듭니다.')) +
       `<fieldset class="fieldset ag-role-new"><legend>역할 만들기</legend><div role="group">` +
       UI.field({ label: '역할 이름', input: '<input data-role-name placeholder="내 흐름의 레인 이름과 같게">', hint: '흐름 화면에서 가져온 그림은 레인 이름이 역할 이름과 같으면 그 역할로 이어집니다.' }) +
-      UI.field({ label: '키 (선택)', input: '<input data-role-key placeholder="예: s01-organizer">' }) +
+      UI.field({ label: '키 (선택)', input: '<input data-role-key placeholder="예: s01-organizer">', hint: '흐름 정의가 이 역할을 가리킬 때 쓰는 영문 이름입니다. 비우면 자동으로 정해집니다.' }) +
       `</div><footer class="form-foot"><button type="button" class="btn" data-variant="outline" data-role-add>${icon('plus')}역할 만들기</button></footer></fieldset></div>`;
     return steps + people;
   }
@@ -381,7 +383,8 @@
       if (sel.value) await postJ(api('/api/agent-assignments'), { definition_id, activity_id, agent_id: sel.value, by: me() }, 'PUT');
       else await del(api(`/api/agent-assignments/${encodeURIComponent(definition_id)}/${encodeURIComponent(activity_id)}`));
       UI.toast(sel.value ? '담당을 바꿨습니다. 다음에 열리는 단계부터 적용됩니다.' : '기본 담당으로 되돌렸습니다.', { tone: 'ok' });
-    } catch (e) { UI.toast(reason(e), { tone: 'neg', timeout: 8000 }); }
+      st.savedMap = sel.dataset.map; st.savedNote = `저장됨 ${UI.time(new Date().toISOString())}`; st.savedTone = 'ok';      // 그 줄에 「저장됨」을 남긴다 — 고르는 순간 값이 조용히 바뀌지 않게
+    } catch (e) { UI.toast(reason(e), { tone: 'neg', timeout: 8000 }); st.savedMap = sel.dataset.map; st.savedNote = '저장 안 됨'; st.savedTone = 'danger'; }
     await loadBoard(); await refreshAgents(); render();
   }
   async function refreshAgents() {
@@ -401,6 +404,8 @@
     await loadOptions();
     const d = await getJ(api('/api/agents/' + encodeURIComponent(copy.id)));
     openForm('agent', d);
+    st.form.cloned = copy.id;      // 복제는 누르는 순간 사본이 저장된다 — 이 폼을 저장하지 않고 취소하면 그 사본을 지운다(목록에 「…사본」이 남지 않게)
+    loadDetail();
   }
   async function deleteAgent(d) {
     if (!await UI.confirm({ title: `'${d.name}'${window.hydWords.josa(d.name, '을/를')} 지울까요?`, body: '단계 배정도 함께 지워지고, 열려 있는 그 에이전트의 단계는 기본 담당으로 돌아갑니다.', ok: '지우기', danger: true })) return;
@@ -428,8 +433,8 @@
   // 차례: 제목 · 한 문장 · 도구(주 단추 하나) → 왼쪽에 묶음 단추와 목록, 오른쪽에 상세 판(담당 배정은 판 하나) → 맨 아래 「처음 상태로 되돌리기」
   function render() {
     if (!st.host) return;
-    const count = fn => (st.agents ? st.agents.filter(fn).length : null);
-    const seg = [['agents', '에이전트', count(a => a.kind === 'agent')], ['skills', '스킬', st.skills ? st.skills.length : null], ['systems', '시스템 수행자', count(a => a.kind !== 'agent')], ['assign', '담당 배정', null]]
+    const count = fn => (st.agents && st.loaded ? st.agents.filter(fn).length : null);      // 못 읽었으면 「0」을 적지 않는다
+    const seg = [['agents', '에이전트', count(a => a.kind === 'agent')], ['skills', '스킬', st.skills && st.loaded ? st.skills.length : null], ['systems', '시스템 수행자', count(a => a.kind !== 'agent')], ['assign', '담당 배정', null]]
       .map(([k, l, c]) => `<button type="button" aria-pressed="${k === st.tab}" data-ag-tab="${k}">${esc(l)}${c != null ? `<span class="num">${c}</span>` : ''}</button>`).join('');
     // 주 단추는 화면에 하나: 폼을 쓰는 동안에는 폼의 [저장]이 주 단추라 새로 만들기 단추를 그리지 않는다
     const make = st.form ? '' : `<button type="button" class="btn" data-variant="outline" data-new-skill>${icon('file-text')}스킬 만들기</button><button type="button" class="btn" data-new-agent>${icon('plus')}새 에이전트</button>`;
@@ -475,7 +480,12 @@
     if (t.dataset.clone) return cloneAgent(t.dataset.clone, t);
     if (t.hasAttribute('data-del-agent') && st.detail) return deleteAgent(st.detail);
     if (t.hasAttribute('data-del-skill') && st.detail) return deleteSkill(st.detail);
-    if (t.hasAttribute('data-f-cancel')) { st.form = null; render(); return loadDetail(); }
+    if (t.hasAttribute('data-f-cancel')) {
+      const cloned = st.form && st.form.cloned;
+      st.form = null;
+      if (cloned) { await act(() => del(api('/api/agents/' + encodeURIComponent(cloned) + '?by=' + encodeURIComponent(me()))), '저장하지 않아 사본을 지웠습니다'); st.pick.agents = null; return load(); }
+      render(); return loadDetail();
+    }
     if (t.hasAttribute('data-attach') && st.detail) {
       const sel = st.host.querySelector('[data-attach-to]'), skill = st.detail.skill_name;
       if (!sel || !sel.value) return;      // 고르지 않은 첫 항목에 붙지 않게(단추는 고르기 전까지 꺼져 있다)

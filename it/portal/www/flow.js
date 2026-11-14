@@ -226,8 +226,10 @@
   function fitReadable(D) {
     fit(D);
     const canvas = D.viewer.get('canvas'), vb = canvas.viewbox(), o = vb.outer, inner = vb.inner;
-    if (canvas.zoom() >= 0.62 || !o.width || !inner.width) return;
-    const z = Math.min(0.8, Math.max(0.62, (o.height - 60) / inner.height)), w = o.width / z, h = o.height / z;
+    D.partial = false;
+    if (canvas.zoom() >= 0.8 || !o.width || !inner.width) return;      // 0.8 아래로 줄면 상자 글자(13px)가 10px 밑으로 내려가 읽히지 않는다
+    D.partial = true;                                                  // 시작 쪽만 보인다 — 그림 위 알림이 그 사실과 나머지를 보는 길을 말한다
+    const z = Math.min(1, Math.max(0.8, (o.height - 60) / inner.height)), w = o.width / z, h = o.height / z;
     canvas.viewbox({ x: inner.x - 24, y: inner.y + inner.height / 2 - h / 2 - 12 / z, width: w, height: h });
   }
   async function draw(container, view, opts = {}) {
@@ -311,7 +313,8 @@
     draw(host.querySelector('[data-flow-stage]'), null, { plain: true, src: o.load }).then(D => {
       if (host._flow !== F) { D.viewer.destroy(); return; }
       F.D = D; wait.remove();
-      const note = host.querySelector('[data-flow-note]'), text = noticeText(D.src);
+      // 그림 위 알림: 어떻게 놓은 그림인지 + (길어서 시작 쪽만 열었으면) 나머지를 보는 길
+      const note = host.querySelector('[data-flow-note]'), text = [noticeText(D.src), D.partial ? '긴 흐름이라 시작 쪽을 읽을 크기로 열었습니다 — 끌어서 옮기거나 [전체 흐름 보기]로 한 번에 봅니다' : ''].filter(Boolean).join(' · ');
       note.hidden = !text; note.textContent = text;
     }).catch(err => {
       if (host._flow !== F) return;
@@ -325,10 +328,12 @@
   /* 전체 흐름: 큰 대화상자. 전체가 글자를 읽을 만한 크기로 들어가면 전체를 맞추고, 작아지면 읽을 만한 크기로 지금 단계 둘레(상태 표시가 없는 그림은 시작 쪽)를 연다 —
      넘치는 쪽은 끌어서 보고, [화면에 맞춤]을 누르면 전체가 한 번에 보인다. 닫으면 그림을 치운다 */
   const READABLE = 0.85;
+  // 상태 표시가 없는 그림(흐름 화면의 [전체 흐름 보기])은 이름대로 늘 전체를 맞춰 연다 — 글자가 작아지면 그림 위 알림이 키우는 길을 말한다(D.small)
   function openAt(D, plain) {
     fit(D);
-    if (D.viewer.get('canvas').zoom() >= READABLE) return;
-    if (plain) fitReadable(D); else focus(D, READABLE);
+    D.small = !!plain && D.viewer.get('canvas').zoom() < 0.7;
+    if (plain || D.viewer.get('canvas').zoom() >= READABLE) return;
+    focus(D, READABLE);
   }
   function openFull(view, opts = {}) {
     document.querySelector('dialog.flow-dialog')?.remove();
@@ -354,7 +359,7 @@
     draw(dlg.querySelector('[data-fd-stage]'), view, { mine: opts.mine, fit: true, plain: opts.plain, src: opts.src }).then(d => {
       if (!dlg.isConnected) { d.viewer.destroy(); return; }
       D = d; dlg.querySelector('[data-flow-wait]').remove();
-      const note = dlg.querySelector('[data-flow-note]'), text = noticeText(d.src);
+      const note = dlg.querySelector('[data-flow-note]'), text = [noticeText(d.src), d.small ? '전체를 한 화면에 맞췄습니다 — 글자가 작으면 [+]로 키우고 끌어서 봅니다' : ''].filter(Boolean).join(' · ');
       note.hidden = !text; note.textContent = text;
     }).catch(err => { console.error('[hydFlow] 전체 흐름을 그리지 못했습니다', err); const w = dlg.querySelector('[data-flow-wait]'); if (w) w.innerHTML = UI.errorBlock('흐름 그림을 그리지 못했습니다', err.message); });
     dlg.querySelector('[data-fd-close]').focus();

@@ -830,7 +830,7 @@ window.hydCards = { cardHtml, reviewMatches, rangeField, actionLabel };
 /* ================================================= 규칙 판단(판단 실험)
    짜임(디자인 기준 5-6): 왼쪽 조건 판(index.html #decForm) → 오른쪽 결과(#decResult). 결과는 결론 한 줄과 숫자 넷 → 조치 후보 비교(.opts) → 근거(원인 · 증거) → 원문 접기.
    판단 한 번은 1초 안에 끝난다 — 그동안은 결과 자리에 읽는 중 줄(스켈레톤)을 두고 단추가 「판단하는 중 · 걸린 시간」으로 바뀐다 */
-const decEmpty = () => `<section class="empty"><header><figure>${UI.icon('scale')}</figure><h3>아직 모의 판단을 하지 않았습니다</h3><p>왼쪽에서 설비와 이상 패턴을 고르고 [모의 판단]을 누르면 1순위 조치와 그 근거가 여기에 보입니다.</p></header></section>`;
+const decEmpty = () => `<section class="empty"><header><figure>${UI.icon('scale')}</figure><h3>아직 모의 판단을 하지 않았습니다</h3><p>왼쪽에서 설비와 이상 패턴을 고르고 <span style="white-space:nowrap">[모의 판단]을</span> 누르면 1순위 조치와 그 근거가 여기에 보입니다.</p></header></section>`;
 async function loadDecisionView() {
   const sel = $('#decPattern'), box = $('#decResult');
   if (!box.innerHTML) box.innerHTML = decEmpty();
@@ -861,10 +861,45 @@ async function runDecision() {
   if ($('#decStandby').value) facts.standby_ready = $('#decStandby').value === 'true';
   box.innerHTML = `<section class="panel"><div class="panel-head">${UI.loading()}</div></section>`;
   try { ent.result = await postJ(API.agent + '/api/agent/decide', { asset: $('#decAsset').value, pattern: $('#decPattern').value, facts }); ent.facts = facts; renderDecision(); }
-  catch (e) { box.innerHTML = UI.errorBlock(UI.t('dec.failed'), e.message, { retry: true }); }
+  catch (e) {
+    // 판단 엔진의 답은 세 갈래다. 보류(409 — 지금 관측 값으로 뒷받침되는 원인이 없어 판단하지 않음)는 정상 결과라 실패로 그리지 않는다.
+    // 판단할 수 없는 이상 패턴(404 — 원인 지식이 없거나 고장 진단 대상이 아님)은 다시 눌러도 같으므로 [다시 시도]를 붙이지 않는다. 그 밖(연결 · 서버 오류)만 「판단 실패」다
+    const held = e.status === 409 && e.detail && typeof e.detail === 'object';
+    box.innerHTML = held ? decWithheld(e.detail, facts)
+      : e.status === 404 ? UI.errorBlock('이 설비와 이상 패턴으로는 판단할 수 없습니다', e.message)
+      : UI.errorBlock(UI.t('dec.failed'), e.message, { retry: true });
+  }
   finally { ent.busy = false; end(false); }
   box.querySelector('[data-retry]')?.addEventListener('click', runDecision);
 }
+// 원인 한 줄과 그 증거 줄(충족 여부는 상태 뱃지와 글로) — 판단 결과의 「근거」와 판단 보류 판이 함께 쓴다
+const decEvidenceLines = c => (c.evidence || []).map(e => { const unknown = e.status === 'UNKNOWN' || e.passed == null || e.value == null || !!e.error;
+  const unit = window.hydWords.unit(e.tag);
+  return `<li>${UI.icon(unknown ? 'circle-dashed' : e.passed ? 'check' : 'x')}<span><b>${esc(e.name)}</b> ${UI.chipText(UI.t(unknown ? 'inc.unknown' : e.passed ? 'inc.pass' : 'inc.fail'), unknown ? 'neutral' : e.passed ? 'success' : 'danger')} ${esc(UI.t('inc.observed'))} <span class="num">${esc(fmt(e.value, 3))}</span>${unit ? ' ' + esc(unit) : ''}</span></li>`; }).join('')
+  || `<li>${UI.icon('info')}<span>${esc(UI.t('inc.noEvidence'))}</span></li>`;
+const decCauseLine = c => `<li>${UI.icon('search')}<span><b>${esc(UI.idText(c.name))}</b>${c.failureMode ? ' · 고장 유형 ' + esc(UI.idText(c.failureMode)) : ''} · ${esc(UI.t('card.score'))} <span class="num">${esc(c.score)}</span></span></li>`;
+const decAssumed = facts => Object.entries(facts || {}).filter(([k]) => FACT_LABEL[k]).map(([k, v]) => `${UI.t(FACT_LABEL[k])} ${k === 'standby_ready' ? (v ? '쓸 수 있음' : '정비 중') : factValue(k, v)}`);      // 예비 펌프는 고르기 칸의 말 그대로
+// 판단 보류: 실패가 아니라 「판단하지 않음」이다. 무엇을 확인했고 왜 원인으로 삼지 않았는지(원인 후보와 관측 값)를 보인다
+function decWithheld(detail, facts) {
+  const causes = detail.causes || [], assumed = decAssumed(facts);
+  return `<section class="panel"><div class="panel-head"><div><div class="result-label">${UI.icon('sparkles')}결론 ${UI.chipText('판단 보류', 'warning')}</div>` +
+    `<h2>판단을 보류했습니다 — 지금 관측 값으로 뒷받침되는 원인이 없습니다.</h2>` +
+    `<p>실패가 아닙니다. 이 설비의 지금 값에서 이 이상 패턴의 증거가 확인되지 않아 판단 엔진이 원인을 가리지 않았고, 조치 후보도 견주지 않았습니다. 「유압 설비」 화면에서 이 이상을 일으킨 뒤 다시 판단하면 원인과 조치 순위가 나옵니다.</p></div></div>` +
+    `<div class="panel-sec"><p class="muted"><b>가정한 조건</b> ${assumed.length ? esc(assumed.join(' · ')) : '없음 — 설비의 지금 값으로 판단했습니다.'}</p></div>` +
+    `<div class="panel-sec"><h3>확인한 증거<span class="muted">원인 후보 ${causes.length}개</span></h3>` +
+      (causes.length ? causes.map(c => `<ul class="evid">${decCauseLine(c)}${decEvidenceLines(c)}</ul>`).join('<br>') : `<p class="muted">${esc(UI.idText(detail.reason || ''))}</p>`) + `</div></section>`;
+}
+// 서버 설명문에서 글자까지 같은 문장 · 구절이 되풀이되면 처음 것만 남긴다(같은 제외 사유가 후보마다 달려 한 문단에 세 번 나온다)
+// 「'A' — 사유; 'B' — 사유; 'C' — 사유.」를 「'A', 'B', 'C' — 사유.」로 묶는다. 내용은 빼지 않는다
+const dedupeText = text => {
+  const out = [];
+  for (const part of String(text || '').split('; ')) {
+    const m = part.match(/^([\s\S]*'[^']*') — ([\s\S]*)$/), prev = out[out.length - 1];      // 주어는 따옴표로 끝난다('조치 이름' — 사유)
+    if (m && prev && prev.reason && (m[2] === prev.reason || m[2].startsWith(prev.reason + '.'))) { prev.subjects.push(m[1]); prev.tail = m[2].slice(prev.reason.length); }
+    else out.push(m ? { subjects: [m[1]], reason: m[2], tail: '' } : { text: part });
+  }
+  return out.map(o => o.text != null ? o.text : `${o.subjects.join(', ')} — ${o.reason}${o.tail}`).join('; ');
+};
 // first sentence = up to a period followed by whitespace or the end ("점수 3.87" must not cut)
 const firstSentence = text => { const m = String(text || '').match(/^[\s\S]*?[.。](?=\s|$)/); return m ? m[0] : String(text || ''); };
 function summaryBlock(raw) {
@@ -916,8 +951,14 @@ function renderDecision() {
   // 2026-10-25 수업 점검: 바꾼 판단 조건을 읽는 규칙이 지금 지식에 없으면 결과가 그대로라 학생이 고장으로 오해했다(HM-8에는 보호 정지 규칙이 없다)
   const unused = unusedFacts(ent.facts, trace);
   // 무엇을 가정하고 낸 결론인지 결론 바로 아래에 적는다 — 조건을 바꿔 가며 견줄 때 지금 보는 결과가 어느 조건의 것인지 헷갈리지 않게
-  const assumed = Object.entries(ent.facts || {}).filter(([k]) => FACT_LABEL[k]).map(([k, v]) => `${UI.t(FACT_LABEL[k])} ${k === 'standby_ready' ? (v ? '쓸 수 있음' : '정비 중') : factValue(k, v)}`);      // 예비 펌프는 고르기 칸의 말 그대로
-  const notes = `<p class="muted"><b>가정한 조건</b> ${assumed.length ? esc(assumed.join(' · ')) : '없음 — 설비의 지금 값으로 판단했습니다.'}</p>` + (rest ? `<p class="result-sub">${esc(rest)}</p>` : '') +
+  const assumed = decAssumed(ent.facts);
+  // 바로 앞 판단과 무엇이 달라졌는지 한 줄(같은 설비 · 같은 이상 패턴에서 조건만 바꿔 다시 판단했을 때) — 앞 결과를 학생 기억에 맡기지 않는다
+  const prev = ent.prevDecision, now = { key: `${d.asset}|${$('#decPattern').value}`, top: top ? UI.idText(top.name) : '', assumed: assumed.join(' · ') || '지금 값 그대로' };
+  const changed = prev && prev.key === now.key && prev.assumed !== now.assumed
+    ? `<p class="muted" data-dec-change><b>앞 판단과 견주면</b> ${prev.top === now.top ? `1순위는 그대로 ${esc(now.top || '없음')}입니다` : `1순위가 ${esc(prev.top || '없음')}에서 ${esc(now.top || '없음')}(으)로 바뀌었습니다`} <span class="muted">(앞 판단의 가정: ${esc(prev.assumed)})</span></p>` : '';
+  ent.prevDecision = now;
+  // 서버 설명문의 나머지는 첫 화면에 줄글로 펼치지 않는다 — 결론 한 줄과 숫자 넷, 후보 비교 표가 먼저이고 설명문은 접기 안이다
+  const notes = `<p class="muted"><b>가정한 조건</b> ${assumed.length ? esc(assumed.join(' · ')) : '없음 — 설비의 지금 값으로 판단했습니다.'}</p>` + changed +
     (unused.length ? `<p class="muted" role="status">${esc(unused.map(k => UI.t(FACT_LABEL[k])).join(', '))}: 지금 지식의 규칙 가운데 이 조건을 읽는 규칙이 없어 결과에 영향이 없습니다.</p>` : '') +
     (d.moneyError ? `<p class="muted" data-tone="danger" role="status">손익(원)을 계산하지 못했습니다: ${esc(d.moneyError)}</p>` : '');
   if (notes) html += `<div class="panel-sec">${notes}</div>`;
@@ -941,11 +982,7 @@ function renderDecision() {
       '</tbody></table></div>' : UI.empty(UI.t('inc.noCandidates'), '이 설비와 이상 패턴에 맞는 조치 방법이 지식에 없습니다.', 'compact')) + '</div>';
 
   // 근거: 판정 원인 한 줄과 그 증거(충족 여부는 상태 뱃지와 글로), 다른 원인 후보는 접기
-  const evidenceLines = c => (c.evidence || []).map(e => { const unknown = e.status === 'UNKNOWN' || e.passed == null || e.value == null || !!e.error;
-    const unit = window.hydWords.unit(e.tag);
-    return `<li>${UI.icon(unknown ? 'circle-dashed' : e.passed ? 'check' : 'x')}<span><b>${esc(e.name)}</b> ${UI.chipText(UI.t(unknown ? 'inc.unknown' : e.passed ? 'inc.pass' : 'inc.fail'), unknown ? 'neutral' : e.passed ? 'success' : 'danger')} ${esc(UI.t('inc.observed'))} <span class="num">${esc(fmt(e.value, 3))}</span>${unit ? ' ' + esc(unit) : ''}</span></li>`; }).join('')
-    || `<li>${UI.icon('info')}<span>${esc(UI.t('inc.noEvidence'))}</span></li>`;
-  const causeLine = c => `<li>${UI.icon('search')}<span><b>${esc(UI.idText(c.name))}</b>${c.failureMode ? ' · 고장 유형 ' + esc(UI.idText(c.failureMode)) : ''} · ${esc(UI.t('card.score'))} <span class="num">${esc(c.score)}</span></span></li>`;
+  const evidenceLines = decEvidenceLines, causeLine = decCauseLine;
   if (c0) html += `<div class="panel-sec"><h3>근거<span class="muted">${esc(UI.t('dec.causeTop'))} 원인과 관측 값</span></h3><ul class="evid">${causeLine(c0)}${evidenceLines(c0)}</ul>` +
     (causes.length > 1 ? UI.fold(`${esc(UI.t('dec.causeMore'))}<span class="muted">${causes.length - 1}개</span>`, causes.slice(1).map(c => `<ul class="evid">${causeLine(c)}${evidenceLines(c)}</ul>`).join('<br>')) : '') + '</div>';
 
@@ -954,6 +991,7 @@ function renderDecision() {
   const tr = trace.slice().sort((a, b) => (b.fired ? 1 : 0) - (a.fired ? 1 : 0) || (b.skill ? 1 : 0) - (a.skill ? 1 : 0));      // 발동한 규칙이 위로
   const target = t => t.skill ? UI.idText((opts.find(o => o.id === t.skill) || {}).name || t.skill) : '';
   html += '<div class="panel-sec">' +
+    (text ? UI.fold('판단 엔진 설명 전문<span class="muted">같은 사유가 달린 조치는 한 번으로 묶음</span>', `<p class="result-sub">${esc(dedupeText(text))}</p>`) : '') +
     UI.fold(`${esc(UI.t('dec.inputs'))}<span class="muted">${prov.length}개 · 출처와 가져온 방법</span>`, prov.length
       ? `<div class="table-container"><table class="table"><thead><tr><th>${esc(UI.t('dec.col.input'))}</th><th>${esc(UI.t('dec.col.value'))}</th><th>${esc(UI.t('dec.col.source'))}</th><th>${esc(UI.t('dec.col.how'))}</th></tr></thead><tbody>` +
         prov.map(p => `<tr><td>${esc(p.name)}</td><td>${p.error ? `<span class="muted" data-tone="danger">${esc(p.error)}</span>` : esc(factValue(p.variable, p.value))}</td><td>${esc(p.sourceName || UI.who(p.source))}</td><td class="muted">${esc(p.how || '')}</td></tr>`).join('') + '</tbody></table></div>'

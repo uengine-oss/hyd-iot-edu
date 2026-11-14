@@ -43,8 +43,15 @@
 }
 @media (max-width: 700px) {
   .io-two { grid-template-columns: minmax(0, 1fr); }
-  .io-out .table-container > :is(.table, .opts) { min-width: 600px; }      /* 좁은 폭에서는 표를 찌그러뜨리지 않고 표 칸 안에서 옆으로 민다 */
+  .io-out .table-container > :is(.table, .opts):not(.io-even) { min-width: 600px; }      /* 좁은 폭에서는 표를 찌그러뜨리지 않고 표 칸 안에서 옆으로 민다 */
+  /* A · B 나란히 표는 좁은 폭에서 옆으로 밀면 B가 화면 밖이라, 한 줄의 A 칸과 B 칸을 위아래로 쌓고 칸마다 어느 쪽인지 적는다 */
+  .io-out .table.io-even :is(tbody, tr, td) { display: block; }
+  .io-out .table.io-even thead { display: none; }
+  .io-out .table.io-even td, .io-out .table.io-even td + td { padding-left: 0; padding-right: 0; }
+  .io-out .table.io-even td:first-child { border-bottom: 0; }
+  .io-out .table.io-even .io-side { display: inline-block; }
 }
+.io-side { display: none; margin-right: 6px; font-weight: 600; }
 
 /* ---------------- 화면 머리 아래 한 문장 · 화면 맨 아래 한 줄 ---------------- */
 .rd-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 13px; line-height: 20px; color: var(--muted-foreground); }

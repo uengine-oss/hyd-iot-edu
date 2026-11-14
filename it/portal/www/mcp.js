@@ -100,7 +100,7 @@
   // 도구 이름은 이름 사전 하나 — 서버가 준 설명(에이전트가 읽는 지시문)을 이름 자리에 쓰지 않는다(H-9: 설명 속 낱말이 이름처럼 보였다)
   const toolLabel = (srv, name) => hydWords.toolName(`mcp__${srv}__${name}`);
   const fieldLabel = f => {
-    return [f.label,f.description,window.hydWords?.fieldName(f.key),UI.terms['var.'+f.key]].find(label=>label && /[가-힣]/.test(label)) || `입력 칸(원래 이름 ${f.key})`;
+    return [f.label,f.description,window.hydWords?.fieldName(f.key),UI.terms['var.'+f.key]].find(label=>label && /[가-힣]/.test(label)) || ({ query: '질의문', params: '질의에 넣을 값', limit: '가져올 수', name: '이름', id: '식별자' }[f.key] || `입력 칸(원래 이름 ${f.key})`);
   };
   // 두 번 눌림 막기: 같은 일이 끝날 때까지 그 단추를 끈다
   async function once(key, button, work) {
@@ -297,12 +297,13 @@
     const r = res.result;
     // 결론(받았는지 · 오류인지) → 결과 → 원문 차례. 걸린 시간 · 길이 · 보낸 입력은 둘째 줄
     return `<div class="result"><div class="result-label">결과</div><div class="result-main">${r.is_error ? '도구가 오류를 돌려줬습니다' : '결과를 받았습니다'}${r.truncated ? ` — ${r.limit_chars.toLocaleString()}자에서 잘렸습니다` : ''}</div>` +
-      `<div class="result-sub">${esc(hydTrace.fmtMs(res.elapsed_ms))} · ${r.size_chars.toLocaleString()}자 · 보낸 입력 <code class="inline">${esc(JSON.stringify(res.arguments))}</code></div></div>` +
-      readable(r.text);
+      `<div class="result-sub">${esc(hydTrace.fmtMs(res.elapsed_ms))} · ${r.size_chars.toLocaleString()}자</div></div>` +
+      readable(r.text, res.arguments);
   }
   // 도구 결과는 {"result": "<JSON 글>"}처럼 한 번 더 감싸여 온다 — 풀어서 행이면 표로, 아니면 들여 쓴 JSON 으로. 원문은 접어 둔다
-  function readable(text) {
-    let v; try { v = JSON.parse(text); if (v && typeof v.result === 'string') v = JSON.parse(v.result); } catch (_) { return `<pre class="code">${esc(text)}</pre>`; }
+  function readable(text, sent) {
+    const raw = UI.fold('원문<span class="muted">보낸 입력 · 받은 결과</span>', `<h4>보낸 입력</h4><pre class="code">${esc(JSON.stringify(sent ?? {}, null, 2))}</pre><h4>받은 결과</h4><pre class="code">${esc(text)}</pre>`);
+    let v; try { v = JSON.parse(text); if (v && typeof v.result === 'string') v = JSON.parse(v.result); } catch (_) { return `<pre class="code">${esc(text)}</pre>` + raw; }
     const rows = Array.isArray(v) ? v : Array.isArray(v?.rows) ? v.rows : null;
     const flat = rows && rows.length && rows.every(r => r && typeof r === 'object' && !Array.isArray(r));
     const cols = flat ? [...new Set(rows.flatMap(r => Object.keys(r)))] : [];
@@ -312,7 +313,7 @@
         + `<tbody>${rows.slice(0, 100).map(r => `<tr>${cols.map(c => `<td>${cell(r[c])}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`
         + (rows.length > 100 ? `<p class="muted">${rows.length}행 중 100행만 표로 보입니다. 나머지는 원문에 있습니다.</p>` : '')
       : `<pre class="code">${esc(JSON.stringify(v, null, 2))}</pre>`;
-    return body + UI.fold('원문', `<pre class="code">${esc(text)}</pre>`);
+    return body + raw;
   }
 
   function wireTry(s, t) {

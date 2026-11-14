@@ -58,7 +58,6 @@
       </div>`;
     E.el.addEventListener('click', onClick);
     E.el.addEventListener('change', onChange);
-    E.el.addEventListener('input', onInput);
     E.el.addEventListener('submit', e => e.preventDefault());      // 칸에서 Enter 를 눌러도 화면이 새로 열리지 않게
     setView(E.view);
   }
@@ -97,21 +96,34 @@
       note('채점에 포함할 항목에 표시합니다. 아무것도 표시하지 않으면 전체를 채점합니다. 제목을 누르면 고칠 수 있습니다.');
   }
 
-  function lines(text) { return String(text || '').split(/\n|,/).map(s => s.trim()).filter(Boolean); }
-  function namePreview(text) {
-    const ids = lines(text);
-    if (!ids.length) return '';
-    return ids.map(id => UI.names[id] ? `${esc(UI.names[id])}` : `<span data-tone="danger" class="muted" title="이름 사전에 없음 — 저장할 때 지식 그래프에서 다시 확인합니다">${esc(id)} ?</span>`).join(' · ');
+  // 정답표 폼의 고르기: 칸에는 지식의 이름이 보이고, 서버에는 그 항목의 id 를 보낸다(학생이 cause:… · skill:… 같은 id 를 보거나 적지 않는다).
+  // 이름 사전(UI.names — 지식 그래프에서 읽은 것)에서 종류별로 「보이는 이름 → id」 표를 만든다. 같은 이름이 둘이면 뒤에 구분 글을 붙인다
+  const KINDS = { cause: ['cause:'], fm: ['fm:'], skill: ['skill:'], evidence: ['evd:', 'rule:', 'ks:'], rule: ['rule:'] };
+  const KIND_WORD = { 'evd:': '증거', 'rule:': '규칙', 'ks:': '매뉴얼 절' };
+  function nameMap(kind) {
+    const all = Object.entries(UI.names || {}).filter(([id, name]) => name && KINDS[kind].some(p => id.startsWith(p)));
+    const count = {}; all.forEach(([, name]) => { count[name] = (count[name] || 0) + 1; });
+    return new Map(all.map(([id, name]) => [count[name] > 1 ? `${name} (${id.split(':').pop()})` : name, id]));
   }
-  function datalists() {
-    const by = (prefix) => Object.entries(UI.names || {}).filter(([k]) => k.startsWith(prefix)).map(([k, v]) => `<option value="${esc(k)}">${esc(v)}</option>`).join('');
-    return `<datalist id="evalDlCause">${by('cause:')}</datalist><datalist id="evalDlFm">${by('fm:')}</datalist>` +
-      `<datalist id="evalDlSkill">${by('skill:')}</datalist><datalist id="evalDlEvidence">${by('evd:')}${by('rule:')}${by('ks:')}</datalist>`;
+  const labelOf = (kind, id) => { for (const [label, i] of nameMap(kind)) if (i === id) return label; return ''; };
+  const shown = (kind, id) => labelOf(kind, id) ? esc(labelOf(kind, id)) : `<span class="muted" data-tone="danger">지식에서 이름을 찾지 못한 항목 (${esc(id)})</span>`;
+  const datalists = () => Object.keys(KINDS).map(kind => `<datalist id="evalDl-${kind}">${[...nameMap(kind)].map(([label, id]) =>
+    `<option value="${esc(label)}">${kind === 'evidence' ? esc(KIND_WORD[Object.keys(KIND_WORD).find(p => id.startsWith(p))] || '') : ''}</option>`).join('')}</datalist>`).join('');
+  // 이름으로 찾아 넣는 칸: 글자를 치면 목록이 좁혀지고, 고르면 아래 「고른 것」 목록에 한 줄이 더해진다
+  const picker = (field, kind, label) => `<input class="input" data-add-to="${field}" data-kind="${kind}" list="evalDl-${kind}" placeholder="이름으로 찾아 넣기" aria-label="${esc(label)} 이름으로 찾아 넣기" autocomplete="off">`;
+  // 고른 것 목록(이름으로 보이고 줄마다 [빼기]). 빠져야 할 조치는 줄마다 기대(제외돼야 함 · 1위면 안 됨)와 근거 규칙(선택)을 고른다
+  function picksHtml(field) {
+    const d = E.editing.draft, xs = d[field], kind = field === 'required_evidence' ? 'evidence' : 'skill';
+    const drop = i => `<button type="button" class="btn" data-variant="ghost" data-size="sm" data-unpick="${field}" data-i="${i}">${UI.icon('x')}빼기</button>`;
+    if (!xs.length) return note('아직 고른 것이 없습니다.');
+    if (field !== 'forbidden') return `<ul class="evid">${xs.map((id, i) => `<li>${UI.icon('check')}<span><b>${shown(kind, id)}</b> ${drop(i)}</span></li>`).join('')}</ul>`;
+    return `<ul class="evid">${xs.map((x, i) => `<li>${UI.icon('x')}<span><b>${shown('skill', x.skill)}</b> ` +
+      `<select class="select" data-size="sm" data-forbid="${i}" aria-label="기대">${Object.entries(EXPECT).map(([v, l]) => `<option value="${v}" ${x.expect === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select> ` +
+      `<input class="input" data-size="sm" data-forbid-rule="${i}" list="evalDl-rule" value="${esc(labelOf('rule', x.rule) || '')}" placeholder="근거 규칙(선택)" aria-label="근거 규칙" autocomplete="off"> ${drop(i)}</span></li>`).join('')}</ul>`;
   }
-  // 조치 · 근거 칸 아래의 「이름으로 찾아 넣기」: 이름 사전에서 고르면 그 항목의 id 를 위 칸에 한 줄 더한다(id 를 외워 적지 않게)
-  function picker(field, list, label) {
-    return `<input class="input" data-add-to="${field}" list="${list}" placeholder="이름으로 찾아 넣기" aria-label="${esc(label)} 이름으로 찾아 넣기" autocomplete="off">`;
-  }
+  const paintPicks = field => { const host = q(`[data-picks="${field}"]`); if (host) host.innerHTML = picksHtml(field); };
+  // 항목의 열쇠(서버 계약: 영문 소문자 · 숫자 · 하이픈 2~64자, 저장 뒤 바뀌지 않음 — judgment_eval.ITEM_ID). 화면에 보이지 않는 안쪽 이름이라 학생이 짓지 않고 화면이 만든다
+  const newItemId = () => 'item-' + Date.now().toString(36);
 
   function renderForm() {
     const host = q('[data-r="form"]');
@@ -121,25 +133,26 @@
     const sel = (id, opts, cur, blank) => `<select data-f="${id}">${blank ? `<option value="">${esc(blank)}</option>` : ''}${opts.map(([v, l]) => `<option value="${esc(v)}" ${String(cur ?? '') === String(v) ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
     const pats = (E.patterns || []).map(p => [p.code, p.name]);
     const f = it.facts || {};
-    const forbiddenText = (it.forbidden || []).map(x => `${x.skill} = ${x.expect === 'excluded' ? '제외' : '1위 아님'}${x.rule ? ` (${x.rule})` : ''}`).join('\n');
+    // 고르는 동안의 값(id)은 여기에 둔다 — 칸에는 이름만 보인다
+    const d = E.editing.draft = E.editing.draft || { cause: it.expected.cause || '', failure_mode: it.expected.failure_mode || '', allowed_top: [...(it.allowed_top || [])],
+      forbidden: (it.forbidden || []).map(x => ({ ...x })), required_evidence: [...(it.required_evidence || [])] };
     // 고치는 폼은 정답표 아래의 판 하나: 절마다 fieldset → 맨 아래에 [지우기] · 못 한 까닭 · [취소] · [저장](주 단추)
     host.innerHTML = `<form class="panel" aria-label="정답표 항목"><div class="panel-head"><div><h2>${isNew ? '새 정답표 항목' : '정답표 항목 고치기'}</h2></div></div><div class="panel-sec">` +
       datalists() +
       UI.section('경보 상황',
         UI.field({ label: '제목', required: true, input: `<input data-f="title" value="${esc(it.title || '')}" placeholder="예: 쿨러 성능 저하 · 원격 자동 운전">` }) +
-        UI.field({ label: '항목 이름(영문)', required: true, hint: '영문 소문자, 숫자, 하이픈만 씁니다. 저장한 뒤에는 바꿀 수 없습니다.', input: `<input data-f="id" value="${esc(it.id || '')}" ${isNew ? '' : 'disabled'} placeholder="예: cooler-auto">` }) +
         UI.field({ label: '설비', required: true, input: sel('asset', E.assets.map(a => [a, a]), it.asset || '', '설비 선택') }) +
         UI.field({ label: '이상 패턴', required: true, error: E.patterns ? '' : E.patternError || '', input: pats.length ? sel('pattern', pats, it.pattern || '', '이상 패턴 선택') : '<select data-f="pattern" disabled><option value="">목록을 읽지 못함</option></select>' })) +
       UI.section('가정 사실(비우면 지금 값을 씁니다)', Object.entries(E.facts).map(([k, spec]) => UI.field({ label: spec.label,
         input: spec.number ? `<input data-f="${esc(k)}" data-fact="number" type="number" min="0" step="1" value="${esc(f[k] ?? '')}" placeholder="지금 값">`
           : sel(k, [['', '지금 값'], ...spec.choices.map(([v, l]) => [JSON.stringify(v), l])], f[k] == null ? '' : JSON.stringify(f[k])) })).join('')) +
       UI.section('기대하는 판단',
-        UI.field({ label: '기대 원인', required: true, input: `<input data-f="cause" list="evalDlCause" value="${esc(it.expected.cause || '')}">`, hint: '지식 지도의 원인 이름을 고르세요' }) +
-        UI.field({ label: '고장 유형', required: true, input: `<input data-f="failure_mode" list="evalDlFm" value="${esc(it.expected.failure_mode || '')}">` }) +
-        UI.field({ label: '1위로 허용되는 조치', required: true, cls: 'wide', hint: '한 줄에 하나씩 적습니다. 아래 칸에서 조치 방법 이름을 찾아 고르면 한 줄이 더해집니다.', input: `<textarea data-f="allowed_top" rows="2">${esc((it.allowed_top || []).join('\n'))}</textarea>${picker('allowed_top', 'evalDlSkill', '1위로 허용되는 조치')}<p data-preview="allowed_top">${namePreview((it.allowed_top || []).join('\n'))}</p>` }) +
-        UI.field({ label: '빠져야 할 조치', cls: 'wide', hint: '한 줄에 하나씩 「조치 = 제외」 또는 「조치 = 1위 아님」으로 적습니다. 근거 규칙이 있으면 줄 끝 괄호 안에 적습니다. 아래 칸에서 조치 방법 이름을 고르면 「= 제외」 줄이 더해집니다.', input: `<textarea data-f="forbidden" rows="3">${esc(forbiddenText)}</textarea>${picker('forbidden', 'evalDlSkill', '빠져야 할 조치')}<p data-preview="forbidden">${namePreview(forbiddenText.replace(/=.*$/gm, ''))}</p>` }) +
-        UI.field({ label: '근거에 있어야 할 지식', required: true, cls: 'wide', hint: '증거, 규칙, 매뉴얼 절을 한 줄에 하나씩 적습니다. 아래 칸에서 이름을 찾아 고르면 한 줄이 더해집니다.', input: `<textarea data-f="required_evidence" rows="3">${esc((it.required_evidence || []).join('\n'))}</textarea>${picker('required_evidence', 'evalDlEvidence', '근거에 있어야 할 지식')}<p data-preview="required_evidence">${namePreview((it.required_evidence || []).join('\n'))}</p>` })) +
-      UI.section('메모', UI.field({ label: UI.t('form.note'), cls: 'wide', input: `<input data-f="note" value="${esc(it.note || '')}">` })) +
+        UI.field({ label: '기대 원인', required: true, input: `<input data-f="cause" list="evalDl-cause" value="${esc(labelOf('cause', d.cause) || '')}" placeholder="원인 이름으로 찾기" autocomplete="off">`, hint: '지식의 원인 이름 가운데 고릅니다.' }) +
+        UI.field({ label: '고장 유형', required: true, input: `<input data-f="failure_mode" list="evalDl-fm" value="${esc(labelOf('fm', d.failure_mode) || '')}" placeholder="고장 유형 이름으로 찾기" autocomplete="off">` }) +
+        UI.field({ label: '1위로 허용되는 조치', required: true, cls: 'wide', hint: '조치 방법 이름을 찾아 고르면 아래에 더해집니다. 여러 개를 고를 수 있습니다.', input: `${picker('allowed_top', 'skill', '1위로 허용되는 조치')}<div data-picks="allowed_top">${picksHtml('allowed_top')}</div>` }) +
+        UI.field({ label: '빠져야 할 조치', cls: 'wide', hint: '판단에서 제외돼야 하거나 1위가 되면 안 되는 조치 방법을 고릅니다. 줄마다 어느 쪽인지 고르고, 그 근거가 되는 규칙이 있으면 함께 고릅니다.', input: `${picker('forbidden', 'skill', '빠져야 할 조치')}<div data-picks="forbidden">${picksHtml('forbidden')}</div>` }) +
+        UI.field({ label: '근거에 있어야 할 지식', required: true, cls: 'wide', hint: '판단의 근거에 들어 있어야 할 증거, 규칙, 매뉴얼 절을 이름으로 찾아 고릅니다.', input: `${picker('required_evidence', 'evidence', '근거에 있어야 할 지식')}<div data-picks="required_evidence">${picksHtml('required_evidence')}</div>` })) +
+      UI.section('', UI.field({ label: UI.t('form.note'), cls: 'wide', input: `<input data-f="note" value="${esc(it.note || '')}" placeholder="이 항목을 왜 적었는지(선택)">` })) +
       (pats.length ? '' : UI.errorBlock('이상 패턴 목록을 읽지 못해 지금은 저장할 수 없습니다', '화면 위의 [다시 읽기]를 눌러 주세요.')) +
       `<footer class="form-foot">${isNew ? '' : `<button type="button" class="btn" data-variant="destructive" data-act="delete" data-tooltip="지워도 지난 채점 실행 기록은 남습니다">${UI.icon('trash-2')}이 항목 지우기</button>`}` +
       `<span class="muted" data-msg="form" role="status" hidden></span>` +
@@ -153,17 +166,18 @@
     const facts = {};
     Object.entries(E.facts).forEach(([k, spec]) => { const raw = v(k);           // 선택지 값은 JSON 글로 담아 종류(글 · 참/거짓)를 그대로 되살린다
       if (raw !== '') facts[k] = spec.number ? Number(raw) : JSON.parse(raw); });
-    const forbidden = String(q('[data-f="forbidden"]').value || '').split('\n').map(s => s.trim()).filter(Boolean).map((line, i) => {
-      const m = line.match(/^(\S+)\s*=\s*(제외|1위\s*아님)\s*(?:\((\S+)\))?$/);
-      if (!m) throw new Error(`빠져야 할 조치 ${i + 1}번째 줄: "조치 = 제외" 또는 "조치 = 1위 아님" 형식으로 적으세요`);
-      return { skill: m[1], expect: m[2] === '제외' ? 'excluded' : 'not_recommended', ...(m[3] ? { rule: m[3] } : {}) };
-    });
+    const d = E.editing.draft;
+    // 이름 칸에 적힌 글 → id. 목록에 없는 글이면 보내지 않고 말한다(빈 정답이나 엉뚱한 id 로 저장되지 않게)
+    const pick = (kind, text, what) => { if (!text) throw new Error(`${what} 칸이 비어 있습니다`); const id = nameMap(kind).get(text); if (!id) throw new Error(`${what} 「${text}」: 목록에 있는 이름을 고르세요`); return id; };
+    const cause = pick('cause', v('cause'), '기대 원인'), failure_mode = pick('fm', v('failure_mode'), '고장 유형');
+    if (!d.allowed_top.length) throw new Error('1위로 허용되는 조치를 하나 이상 고르세요');
+    if (!d.required_evidence.length) throw new Error('근거에 있어야 할 지식을 하나 이상 고르세요');
+    const forbidden = d.forbidden.map(x => ({ skill: x.skill, expect: x.expect, ...(x.rule ? { rule: x.rule } : {}), ...(x.why ? { why: x.why } : {}) }));
     if (!v('asset')) throw new Error('설비를 고르세요');
     if (!v('pattern')) throw new Error('이상 패턴을 고르세요');
     const by = meId();
-    return { by, item: { id: E.editing.item ? E.editing.item.id : v('id'), title: v('title'), asset: v('asset'), pattern: v('pattern'), facts,
-      expected: { cause: v('cause'), failure_mode: v('failure_mode') }, allowed_top: lines(q('[data-f="allowed_top"]').value),
-      forbidden, required_evidence: lines(q('[data-f="required_evidence"]').value), note: v('note') } };
+    return { by, item: { id: E.editing.item ? E.editing.item.id : (E.editing.newId = E.editing.newId || newItemId()), title: v('title'), asset: v('asset'), pattern: v('pattern'), facts,
+      expected: { cause, failure_mode }, allowed_top: [...d.allowed_top], forbidden, required_evidence: [...d.required_evidence], note: v('note') } };
   }
 
   /* ---------------------------------------------------------------- 2. 채점 실행 */
@@ -352,17 +366,32 @@
     const host = q('[data-r="cmp"]'), c = E.cmp;
     if (!c) { host.innerHTML = `<section class="empty"><header><figure>${UI.icon('git-compare')}</figure><h3>아직 비교한 결과가 없습니다</h3><p>왼쪽에서 고치기 전 실행과 고친 뒤 실행을 고르고 [두 실행 비교]를 누릅니다.</p></header></section>`; return; }
     const kd = c.knowledge || {};
+    // 지식 변화: 지식 지도에 이름이 있는 항목과 연결만 첫 화면에 이름으로 보인다. 이름이 없는 것(에이전트 실행 기록처럼 그래프에 함께 저장되는 기록 — id 가 UUID)은 수만 말하고 원문은 접기에 둔다.
+    // 서버의 항목 수 · 연결 수는 그 기록까지 센 그래프 전체 수다(judgment_eval.KNOWLEDGE_Q) — 「지식이 바뀌었다」로 읽히지 않게 그렇게 적는다
+    const named = id => !!UI.names[id];
     const rel = (x) => `${nm(x.from)} → <span class="muted">${esc(relName(x.type))}</span> → ${nm(x.to)}`;
     const line = (icon, label, body) => `<li>${UI.icon(icon)}<span><b>${label}</b> ${body}</span></li>`;
+    const split = (xs, ok) => [(xs || []).filter(ok), (xs || []).filter(x => !ok(x))];
+    const relOk = x => named(x.from) && named(x.to);
+    const [remR, remRx] = split(kd.removed_rels, relOk), [addR, addRx] = split(kd.added_rels, relOk);
+    const [addN, addNx] = split(kd.added_nodes, named), [remN, remNx] = split(kd.removed_nodes, named), [chgN, chgNx] = split(kd.changed_nodes, named);
+    const shownN = remR.length + addR.length + addN.length + remN.length + chgN.length, restN = remRx.length + addRx.length + addNx.length + remNx.length + chgNx.length;
+    const rawRel = x => `${x.from} -[${x.type}]-> ${x.to}`;
+    const rest = restN ? UI.fold(`이름이 없는 기록 항목의 변화<span class="muted">${restN}개 · 원문</span>`, `<pre class="code">${esc([
+      ...addNx.map(x => '새 항목  ' + x), ...remNx.map(x => '없어진 항목  ' + x), ...chgNx.map(x => '속성 바뀜  ' + x), ...addRx.map(x => '연결 추가  ' + rawRel(x)), ...remRx.map(x => '연결 삭제  ' + rawRel(x))].join('\n'))}</pre>`) : '';
     const know = !kd.comparable ? note(esc(kd.note || '')) : !kd.changed ? note('두 실행 사이에 지식 그래프가 바뀌지 않았습니다.') :
-      `<p>지식 항목 ${esc(kd.nodes[0])}개 → ${esc(kd.nodes[1])}개 · 연결 ${esc(kd.relationships[0])}개 → ${esc(kd.relationships[1])}개</p>` +
-      (kd.counts ? `<ul class="evid">${(kd.removed_rels || []).map(x => line('unlink', '연결 삭제', rel(x))).join('')}${(kd.added_rels || []).map(x => line('link', '연결 추가', rel(x))).join('')}` +
-        `${(kd.added_nodes || []).length ? line('plus', '새 항목', kd.added_nodes.map(nm).join(', ')) : ''}${(kd.removed_nodes || []).length ? line('minus', '없어진 항목', kd.removed_nodes.map(nm).join(', ')) : ''}` +
-        `${(kd.changed_nodes || []).length ? line('pencil', '속성 바뀜', kd.changed_nodes.map(nm).join(', ')) : ''}</ul>` : note(esc(kd.note || '')));
+      (kd.counts ? `<p>${shownN ? `지식 지도에 이름이 있는 항목과 연결 ${shownN}곳이 바뀌었습니다.` : '지식 지도에 이름이 있는 항목과 연결(원인 · 증거 · 규칙 · 조치 방법 · 매뉴얼)은 바뀌지 않았습니다.'}` +
+          `${restN ? ` 그 밖에 이름이 없는 기록 항목(에이전트에게 한 질문이나 처리 건이 그래프에 남기는 실행 기록 등) ${restN}개가 달라졌습니다 — 판단에 쓰는 지식이 아닙니다.` : ''}</p>` +
+        (shownN ? `<ul class="evid">${remR.map(x => line('unlink', '연결 삭제', rel(x))).join('')}${addR.map(x => line('link', '연결 추가', rel(x))).join('')}` +
+          `${addN.length ? line('plus', '새 항목', addN.map(nm).join(', ')) : ''}${remN.length ? line('minus', '없어진 항목', remN.map(nm).join(', ')) : ''}` +
+          `${chgN.length ? line('pencil', '속성 바뀜', chgN.map(nm).join(', ')) : ''}</ul>` : '') + rest : note(esc(kd.note || ''))) +
+      note(`그래프 전체 수(실행 기록 포함): 항목 ${esc(kd.nodes[0])}개 → ${esc(kd.nodes[1])}개 · 연결 ${esc(kd.relationships[0])}개 → ${esc(kd.relationships[1])}개`);
     const verdict = { improved: ['좋아짐', 'success'], regressed: ['나빠짐', 'danger'], same: ['같음', 'neutral'] };
     const delta = c.delta == null ? '–' : (c.delta > 0 ? '+' : '') + c.delta;
     const title = i => esc((E.golden.find(it => it.id === i) || {}).title || i);
-    const says = c.delta == null ? '평균 점수를 견줄 수 없습니다.' : c.delta === 0 ? '평균 점수가 그대로입니다.' : `평균 점수가 ${Math.abs(c.delta)}점 ${c.delta > 0 ? '올랐습니다' : '내렸습니다'}.`;
+    // 한쪽에만 있는 항목의 이름: 지금 정답표 → 그 실행이 채점할 때 적어 둔 제목 → 둘 다 없으면(지워진 항목) 그렇게 말한다
+    const runTitle = (cmp, i) => { const g = E.golden.find(it => it.id === i), r = [...(cmp.before.items || []), ...(cmp.after.items || [])].find(x => (x.id || x.item) === i); return esc((g && g.title) || (r && r.title) || '지금은 정답표에 없는 항목'); };
+    const says = c.delta == null ? '두 실행에 함께 채점한 항목이 없어 평균 점수를 견줄 수 없습니다.' : c.delta === 0 ? '평균 점수가 그대로입니다.' : `평균 점수가 ${Math.abs(c.delta)}점 ${c.delta > 0 ? '올랐습니다' : '내렸습니다'}.`;
     host.innerHTML = `<section class="panel"><div class="panel-head"><div><div class="result-label">${UI.icon('sparkles')}결론</div><h2>${esc(says)}</h2>` +
       `<p>전 ${esc(UI.dateTime(c.before.created))} ${esc(c.before.note || '')} → 후 ${esc(UI.dateTime(c.after.created))} ${esc(c.after.note || '')}</p></div></div>` +
       `<dl class="turn-facts">${fact('평균 변화', `<span class="num">${esc(delta)}</span><small>점</small>`)}${fact('좋아짐', `<span class="num">${esc(c.improved)}</span><small>개</small>`)}${fact('나빠짐', `<span class="num">${esc(c.regressed)}</span><small>개</small>`)}${fact('같음', `<span class="num">${esc(c.same)}</span><small>개</small>`)}</dl>` +
@@ -372,7 +401,7 @@
           <td>${esc(r.title)}</td><td class="num">${esc(r.before)}</td><td class="num">${esc(r.after)}</td><td><span class="num">${(r.delta > 0 ? '+' : '') + esc(r.delta)}</span> ${UI.chipText(verdict[r.verdict][0], verdict[r.verdict][1])}</td>
           <td>${r.changed.map(x => `${esc(CHECK[x.check])} ${x.before ? '맞음' : '틀림'} → ${x.after ? '맞음' : '틀림'}`).join('<br>') || '–'}${r.evidence_lost.length ? `<p class="muted">잃은 근거 ${r.evidence_lost.map(nm).join(', ')}</p>` : ''}${r.evidence_gained.length ? `<p class="muted">얻은 근거 ${r.evidence_gained.map(nm).join(', ')}</p>` : ''}</td>
           <td>${esc(outcomeText(r.outcome_before))}<p class="muted">→ ${esc(outcomeText(r.outcome_after))}</p></td></tr>`).join('')) +
-        (c.only_before.length || c.only_after.length ? note(`한쪽 실행에만 있는 항목: ${[...c.only_before, ...c.only_after].map(title).join(', ')}`) : '')) + `</section>`;
+        (c.only_before.length || c.only_after.length ? note(`한쪽 실행에서만 채점한 항목(견주지 않음): ${[...c.only_before, ...c.only_after].map(i => runTitle(c, i)).join(', ')}`) : '')) + `</section>`;
   }
   async function compare() {
     E.cmpBefore = q('[data-f="before"]').value; E.cmpAfter = q('[data-f="after"]').value;
@@ -387,8 +416,9 @@
 
   /* ---------------------------------------------------------------- 이벤트 · 읽기 */
   async function onClick(e) {
-    const t = e.target.closest('[data-act],[data-edit],[data-run],[data-retry]');
+    const t = e.target.closest('[data-act],[data-edit],[data-run],[data-retry],[data-unpick]');
     if (!t) return;
+    if (t.dataset.unpick) { E.editing.draft[t.dataset.unpick].splice(+t.dataset.i, 1); paintPicks(t.dataset.unpick); return; }
     // 채점 실행은 오래 걸린다 — 그동안에도 실행 기록 고르기와 [변경 취소]는 되고, 나머지는 왜 안 되는지 알린다(말없이 먹지 않게)
     if (E.busy && !t.dataset.run && !['cancel', 'view'].includes(t.dataset.act)) { UI.toast(E.busyWhy, { tone: 'neutral' }); return; }
     if (t.hasAttribute('data-retry')) return load();
@@ -424,23 +454,26 @@
   function onChange(e) {
     const t = e.target;
     if (t.dataset.pick) { t.checked ? E.picked.add(t.dataset.pick) : E.picked.delete(t.dataset.pick); renderRunForm(); return; }
-    if (t.dataset.addTo) {      // 이름으로 찾아 넣기: 사전에 있는 id 만 위 칸에 더한다
-      const id = t.value.trim(), area = q(`[data-f="${t.dataset.addTo}"]`);
-      if (!id || !area) return;
-      if (!UI.names[id]) { msg('form', `「${id}」: 목록에 있는 이름을 고르세요`); return; }
-      const line = t.dataset.addTo === 'forbidden' ? `${id} = 제외` : id;
-      area.value = (area.value.trim() ? area.value.replace(/\s+$/, '') + '\n' : '') + line;
-      t.value = ''; msg('form', '');
-      area.dispatchEvent(new Event('input', { bubbles: true }));      // 이름 미리 보기를 다시 그린다(onInput)
+    if (t.dataset.addTo) {      // 이름으로 찾아 넣기: 목록에 있는 이름만 받아 「고른 것」에 한 줄 더한다(값은 그 항목의 id)
+      const field = t.dataset.addTo, text = t.value.trim(), d = E.editing.draft;
+      if (!text) return;
+      const id = nameMap(t.dataset.kind).get(text);
+      if (!id) { msg('form', `「${text}」: 목록에 있는 이름을 고르세요`); return; }
+      const has = field === 'forbidden' ? d.forbidden.some(x => x.skill === id) : d[field].includes(id);
+      if (has) { msg('form', `「${text}」은(는) 이미 골랐습니다`); t.value = ''; return; }
+      d[field].push(field === 'forbidden' ? { skill: id, expect: 'excluded' } : id);
+      t.value = ''; msg('form', ''); paintPicks(field);
+      return;
+    }
+    if (t.dataset.forbid) { E.editing.draft.forbidden[+t.dataset.forbid].expect = t.value; return; }
+    if (t.dataset.forbidRule != null) {      // 근거 규칙(선택): 비우면 없앤다
+      const row = E.editing.draft.forbidden[+t.dataset.forbidRule], text = t.value.trim(), id = text ? nameMap('rule').get(text) : '';
+      if (text && !id) { msg('form', `근거 규칙 「${text}」: 목록에 있는 이름을 고르세요`); return; }
+      if (id) row.rule = id; else delete row.rule; msg('form', '');
       return;
     }
     if (t.dataset.f === 'path') { E.path = t.value; renderRunForm(); if (t.value === 'worker') loadCands(); }
   }
-  function onInput(e) {
-    const f = e.target.dataset.f, p = f && q(`[data-preview="${f}"]`);
-    if (p) p.innerHTML = namePreview(f === 'forbidden' ? e.target.value.replace(/=.*$/gm, '') : e.target.value);
-  }
-
   async function loadGolden() {
     try {
       const g = await getJ(API.process + '/api/eval/golden');

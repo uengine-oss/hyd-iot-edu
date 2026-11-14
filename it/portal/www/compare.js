@@ -5,6 +5,8 @@
      ② 스킬 문서는 뜻을 읽는 것이 아니라 문서에 적힌 도구 이름을 등장 순서대로 찾아 보조 조회로 부른다(다른 설비 · 이상 패턴만 가리키는 문서는 따르지 않는다).
      그래서 같은 입력 + 같은 구성이면 결과가 늘 같고, 두 결과의 차이는 구성의 차이에서만 나온다. 실제 AI 에이전트의 판단(처리 건)은 이 화면이 재지 않는다 — 그것은 판단 채점의 「지난 처리 건」 경로가 잰다.
    화면은 이 사실을 머리 문장 · 조건 판 · 결론 줄에서 그대로 말한다(「AI를 돌려 시험했다」고 읽히는 말을 쓰지 않는다).
+   결론은 두 구성이 같은 원인 · 같은 1순위 조치에 이르렀는가, 한쪽만 판단에 이르지 못했는가, 둘 다 판단을 보류했는가로 말한다(verdict). 서버의 same_result(호출 기록 지문)는 결론에 쓰지 않는다.
+   판단 보류(그 설비에 지금 이상 값이 없음)는 실패가 아니라 정상 결과이고, 시나리오가 다른 시험 둘은 견주지 않는다.
    에이전트 설정은 읽기만 한다(「에이전트 · 스킬」 화면에서 만든 에이전트 · 스킬이 그대로 목록에 나온다). B 에서 '빼 보기'는 이번 시험에만 쓰고 저장하지 않는다.
    짜임(디자인 기준 5-6 「조건 → 결과」): 왼쪽 조건 판과 [시험 실행], 오른쪽에 실시간 상자(도는 동안 — 서버가 적는 단계가 하나씩) → 결과 판(결론 한 줄과 숫자 넷 → 무엇이 다른가 →
    A · B 나란히 → 도구 호출 순서 → 조치 순위 → 다른 점과 원본 기록 접기) → 지난 시험과 비교. 부품은 키트의 것이고 격자는 reading.css(.io · .io-two)다.
@@ -40,7 +42,38 @@
     return nm(s);
   };
   // 이 시험이 무엇을 재는지 — 조건 판 아래와 결과의 결론 줄 아래에 같은 말로 적는다
-  const WHAT = 'AI 모델은 돌리지 않습니다. 에이전트의 구성(쓸 수 있는 도구 서버와 붙인 스킬 문서)만 달리해, 같은 입력에서 판단 엔진이 계산한 원인과 조치 순위, 도구 호출이 어떻게 달라지는지 견줍니다.';
+  const WHAT = 'AI 모델은 돌리지 않습니다. 에이전트의 구성(쓸 수 있는 도구 서버와 붙인 스킬 문서)만 달리해, 같은 입력에서 판단 엔진이 계산한 원인과 조치 순위, 도구 호출이 어떻게 달라지는지 견줍니다. ' +
+    '스킬 문서는 뜻을 읽지 않습니다. 문서에 적힌 도구 이름만 찾아 적힌 차례대로 부르고, 나머지 절차 글은 계산에 쓰지 않습니다.';
+  // 이 시험의 범위와, 판단을 보류하는 것이 실패가 아니라는 것 — 시나리오 칸 아래와 보류 결론 아래에 같은 말로 적는다
+  const HOLD = '이 시험은 그 설비의 지금 값으로 계산합니다. 그 설비에 지금 이상 값이 없으면 어느 구성이든 원인 진단을 보류합니다(실패가 아니라 판단하지 않은 것입니다). 「유압 설비」 화면에서 그 이상을 일으킨 뒤 시험하면 판단까지 갑니다.';
+  const scenarioOf = t => (S.opts?.scenarios || []).find(s => s.asset === t.asset && s.pattern === t.pattern);
+  const scenarioLabel = t => scenarioOf(t)?.label || `${UI.name(t.pattern)} · ${t.asset}`;
+  const skillShow = name => { for (const a of S.opts?.agents || []) { const k = (a.skills || []).find(x => x.name === name); if (k) return UI.skillLabel(k).label; } return name; };      // 스킬은 등록한 설명으로 부른다(없으면 등록 이름)
+  const plainReason = s => UI.idText(String(s || '').replaceAll('판단 엔진 도구(hyd-dmn)', '판단 시스템 도구 서버').replace(/hyd-dmn 가/g, '판단 시스템 도구 서버가').replaceAll('hyd-dmn', serverName('hyd-dmn')));      // 서버 문구 속의 도구 서버 id 는 이름표로
+  // 한쪽이 판단에 이르렀는가: ok = 원인과 1순위 조치까지 / hold = 근거가 없어 판단하지 않음(정상 결과) / none = 판단에 이르지 못함
+  const reach = t => t.status === 'EVALUATED' ? 'ok' : t.status === 'WITHHELD' ? 'hold' : 'none';
+  const whyNot = t => t.status === 'NO_ENGINE_TOOL' ? '구성에 판단 시스템 도구 서버가 없어 원인 진단부터 하지 못했습니다'
+    : t.status === 'NO_FEASIBLE_OPTION' ? '원인은 가렸지만 규정상 실행할 수 있는 조치가 없습니다'
+    : t.status === 'WITHHELD' ? '지금 관측 값으로 뒷받침되는 원인이 없어 판단을 보류했습니다'
+    : plainReason(t.result?.reason) || (STATUS[t.status] || [t.status])[0];
+
+  // 결론: 학생이 알고 싶은 것 — 두 구성이 같은 원인 · 같은 1순위 조치에 이르렀는가, 한쪽만 못 이르렀는가(무엇이 없어서), 둘 다 판단하지 않았는가.
+  // 서버의 same_result 는 호출 기록 전체의 지문이라(막힌 호출 한 줄만 달라도 「다름」, 둘 다 보류여도 「같음」) 결론에 쓰지 않는다 — 호출 차이는 그 아래 한 줄이다
+  function verdict(r) {
+    const d = r.diff, a = r.a, b = r.b, ka = reach(a), kb = reach(b);
+    const got = t => `원인 ${UI.name(t.result.diagnosis?.top?.id)}, 1순위 조치 ${UI.name(t.result.recommended?.id)}`;
+    if (a.asset !== b.asset || a.pattern !== b.pattern) return { apart: true, title: '서로 다른 시나리오의 시험이라 견줄 수 없습니다.',
+      sub: `A는 「${scenarioLabel(a)}」, B는 「${scenarioLabel(b)}」의 시험입니다. 설비와 경보가 달라 결과의 차이가 구성에서 온 것인지 가릴 수 없습니다. 같은 시나리오의 시험 둘을 고르세요.` };
+    if (ka === 'ok' && kb === 'ok') {
+      if (d.cause.same && d.recommended.same) return { title: `두 구성이 같은 원인(${UI.name(d.cause.a)})과 같은 1순위 조치(${UI.name(d.recommended.a)})에 이르렀습니다.`, sub: '' };
+      if (!d.cause.same) return { title: `두 구성이 가린 원인이 다릅니다 — A는 ${UI.name(d.cause.a)}, B는 ${UI.name(d.cause.b)}.`, sub: '' };
+      return { title: `원인은 같고 1순위 조치가 다릅니다 — A는 ${UI.name(d.recommended.a)}, B는 ${UI.name(d.recommended.b)}.`, sub: `두 구성 모두 원인은 ${UI.name(d.cause.a)}입니다.` };
+    }
+    if (ka === 'hold' && kb === 'hold') return { title: '두 구성 모두 판단을 보류했습니다 — 지금 그 설비의 관측 값으로 뒷받침되는 원인이 없습니다.', sub: HOLD };
+    if (ka === 'ok' || kb === 'ok') { const [miss, hit, m, h] = ka === 'ok' ? ['B', 'A', b, a] : ['A', 'B', a, b];
+      return { title: `${miss}만 판단에 이르지 못했습니다 — ${whyNot(m)}.`, sub: `${hit}는 ${got(h)}에 이르렀습니다.` }; }
+    return { title: '두 구성 모두 판단에 이르지 못했습니다.', sub: whyNot(a) === whyNot(b) ? `${whyNot(a)}.` : `A: ${whyNot(a)}. B: ${whyNot(b)}.` };
+  }
 
   async function load() {
     try { S.opts = await getJ(api('/api/agent-trials/options')); S.error = null; S.loadError = null; }
@@ -63,7 +96,7 @@
     const dropped = S.dropTools.length + S.dropSkills.length;
     return head + `<div class="panel-sec">` +
       UI.section('무엇을 견주나',
-        UI.field({ label: '시나리오', input: `<select data-f="scenario"><option value="">시나리오 선택</option>${opt(o.scenarios, s => s.key, s => s.label, S.form.scenario)}</select>`, required: true, hint: '가상 설비 3기의 경보 상황 셋 가운데 고릅니다.' }) +
+        UI.field({ label: '시나리오', input: `<select data-f="scenario"><option value="">시나리오 선택</option>${opt(o.scenarios, s => s.key, s => s.label, S.form.scenario)}</select>`, required: true, hint: '시험할 수 있는 상황은 가상 설비 3기의 경보 셋으로 정해져 있습니다. ' + HOLD }) +
         UI.field({ label: '에이전트 A', input: `<select data-f="a">${opt(o.agents, a => a.id, a => a.name, S.form.a)}</select>`, hint: hint(S.form.a) }) +
         UI.field({ label: '에이전트 B', input: `<select data-f="b">${opt(o.agents, a => a.id, a => a.name, S.form.b)}</select>`, hint: hint(S.form.b) }) +
         UI.field({ label: '입력', input: `<select data-f="input"><option value="new" ${S.form.input === 'new' ? 'selected' : ''}>지금 값을 새로 읽어 고정</option><option value="latest" ${S.form.input === 'latest' ? 'selected' : ''}>이 시나리오의 직전 입력 다시 쓰기</option></select>`, hint: '두 에이전트는 늘 같은 입력으로 계산합니다.' })) +
@@ -73,7 +106,7 @@
       `<div class="panel-sec"><fieldset class="fieldset"><legend>B에서 빼 보기${dropped ? ` · ${dropped}개 뺌` : ''}</legend><div role="group">` +
         note('체크를 풀면 B의 구성에서 그 도구 서버나 스킬을 빼고 계산합니다. 이번 시험에만 쓰고 저장하지 않습니다.') +
         `<div class="field"><label>도구 서버</label>${b.tools.length ? b.tools.map((t, i) => box('tool', t, esc(serverName(t) || t), S.dropTools.includes(t), i)).join('') : note('없음')}</div>` +
-        `<div class="field"><label>스킬</label>${b.skills.length ? b.skills.map((k, i) => box('skill', k.name, esc(k.description || k.name), S.dropSkills.includes(k.name), i)).join('') : note('없음')}</div>` +
+        `<div class="field"><label>스킬</label>${b.skills.length ? b.skills.map((k, i) => box('skill', k.name, esc(UI.skillLabel(k).label), S.dropSkills.includes(k.name), i)).join('') : note('없음')}</div>` +
       `</div></fieldset><footer class="form-foot"><button type="button" class="btn" data-variant="outline" data-size="sm" data-act="reset" ${dropped ? '' : 'disabled'}>${UI.icon('rotate-ccw')}원래대로</button>` +
         `<button type="button" class="btn" data-variant="link" data-go-tab="agents">에이전트 · 스킬 열기${UI.icon('arrow-right')}</button></footer></div>` +
       `<div class="panel-sec">${note(WHAT + ' 처리 건과 설비 명령을 만들지 않습니다.', ' data-cmp-what')}</div>`;
@@ -81,36 +114,52 @@
 
   // 무엇이 다른가: 한 줄씩(아이콘 + 문장). 접지 않는다
   function headlineLines(r) {
-    const d = r.diff, a = r.a, lines = [];
-    lines.push(['lock', d.same_input ? `같은 입력(${esc(UI.dateTime(r.snapshot?.created_at || a.created_at))}에 고정)으로 계산했습니다.`
-      : '두 실행의 입력이 다릅니다(서로 다른 시각에 고정했습니다). 아래 차이에는 입력 변화가 섞여 있습니다.']);
-    if (!d.cause.same) lines.push(['search', `<b>원인</b> A ${nm(d.cause.a) || '없음'} · B ${nm(d.cause.b) || '없음'}`]);
-    lines.push(['scale', d.recommended.same ? `<b>1순위는 같습니다</b> ${esc(d.recommended.a_sop || '')} ${d.recommended.a ? nm(d.recommended.a) : '없음'}`
-      : `<b>1순위가 다릅니다</b> A ${esc(d.recommended.a_sop || '')} ${d.recommended.a ? nm(d.recommended.a) : '없음'} · B ${esc(d.recommended.b_sop || '')} ${d.recommended.b ? nm(d.recommended.b) : '없음'}`]);
-    if (!d.order_same) lines.push(['plug', `<b>도구 호출 순서가 다릅니다</b> A에만 ${esc(d.calls_only_a)}회 · B에만 ${esc(d.calls_only_b)}회`]);
-    if (d.facts.length) lines.push(['database', `<b>판단 사실 ${d.facts.length}개가 다릅니다</b> 도구 구성에 따라 받지 못한 값을 포함합니다.`]);
-    if (d.citations.only_a.length + d.citations.only_b.length) lines.push(['file-text', `<b>근거 인용</b> A에만 ${d.citations.only_a.length}개 · B에만 ${d.citations.only_b.length}개`]);
-    if (d.rules.only_a.length + d.rules.only_b.length) lines.push(['list-checks', `<b>판단 규칙 차이</b> A에만 ${d.rules.only_a.length}개 · B에만 ${d.rules.only_b.length}개 (지식을 바꾸기 전과 후에 시험한 경우)`]);
+    const d = r.diff, a = r.a, b = r.b, lines = [], both = reach(a) === 'ok' && reach(b) === 'ok';
+    const one = (id, sop) => id ? `${esc(sop || '')} ${nm(id)}` : '없음';
+    lines.push(['lock', d.same_input ? `같은 입력(${esc(UI.dateTime(r.snapshot?.created_at || a.created_at))}에 고정)으로 계산했습니다. 차이는 구성에서만 나옵니다.`
+      : `두 시험의 입력이 다릅니다 — A는 ${esc(UI.dateTime(a.created_at))}, B는 ${esc(UI.dateTime(b.created_at))}에 읽은 값입니다. 아래 차이에는 그 사이 설비 값과 지식의 변화가 섞여 있습니다.`]);
+    if (both && !d.cause.same) lines.push(['search', `<b>원인이 다릅니다</b> A ${one(d.cause.a)} · B ${one(d.cause.b)}`]);
+    if (both) lines.push(['scale', d.recommended.same ? `<b>1순위는 같습니다</b> ${one(d.recommended.a, d.recommended.a_sop)}`
+      : `<b>1순위가 다릅니다</b> A ${one(d.recommended.a, d.recommended.a_sop)} · B ${one(d.recommended.b, d.recommended.b_sop)}`]);
+    // 호출 차이: 한쪽에만 있는 호출 가운데 실제로 부른 것과 부르지 못한 것을 갈라 말한다(막힌 제출 호출 한 줄을 「다른 판단」으로 읽지 않게)
+    const only = (t, key) => d.calls.filter(row => row[key] != null && row[key === 'a' ? 'b' : 'a'] == null).map(row => t.result.calls[row[key]]);
+    const cnt = xs => { const miss = xs.filter(c => c.status !== 'DONE').length; return `${xs.length}회${miss ? `(부르지 못한 호출 ${miss}회 포함)` : ''}`; };
+    lines.push(['plug', d.order_same ? '<b>도구 호출 순서는 같습니다</b>' : `<b>도구 호출이 다릅니다</b> A에만 ${cnt(only(a, 'a'))} · B에만 ${cnt(only(b, 'b'))}. 아래 「도구 호출 순서」에서 줄마다 봅니다.`]);
+    if (both && d.facts.length) lines.push(['database', `<b>판단 사실 ${d.facts.length}개가 다릅니다</b> 도구 구성에 따라 받지 못한 값을 포함합니다.`]);
+    if (both && d.citations.only_a.length + d.citations.only_b.length) lines.push(['file-text', `<b>근거 인용</b> A에만 ${d.citations.only_a.length}개 · B에만 ${d.citations.only_b.length}개`]);
+    // 읽은 규칙의 차이는 두 쪽이 모두 판단까지 갔을 때만 뜻이 있다(한쪽이 판단하지 않았으면 그쪽은 규칙을 읽지 않은 것이다). 같은 입력이면 지식이 같으므로 차이가 나지 않는다
+    if (both && !d.same_input && d.rules.only_a.length + d.rules.only_b.length) lines.push(['list-checks', `<b>읽은 판단 규칙이 다릅니다</b> A에만 ${d.rules.only_a.length}개 · B에만 ${d.rules.only_b.length}개 — 두 시험 사이에 지식의 규칙이 바뀌었습니다.`]);
     return `<ul class="evid">${lines.map(([ic, l]) => `<li>${UI.icon(ic)}<span>${l}</span></li>`).join('')}</ul>`;
   }
 
   // 한쪽의 계산: 이름 + 상태 뱃지 하나 → 원인 · 1순위 → 쓴 도구 서버 · 스킬 → 설명. 시험 번호 · 결과 지문은 접기 안에
   function sideCard(label, t) {
     const r = t.result, top = r.diagnosis?.top, rec = r.recommended;
-    const v = t.variant || {}, cut = [...(v.without_tools || []).map(serverName), ...(v.without_skills || [])];
-    const skills = (r.agent?.skills || []).map(k => `${esc(k.name)} <span class="muted">${k.applied ? `문서에 적힌 도구 호출 ${esc(k.steps)}개를 순서대로 따름` : '따르지 않음'}${k.reason ? ' — ' + esc(k.reason) : ''}</span>`);
+    const v = t.variant || {}, cutTools = (v.without_tools || []).map(serverName), cutSkills = (v.without_skills || []).map(skillShow);
+    const cutNote = xs => xs.length ? ` <span class="muted">(이번 시험에서 뺀 것: ${esc(xs.join(', '))})</span>` : '';
+    // 스킬 줄: 문서에서 알아본 도구 호출 수, 실제로 부른 수, 부르지 못한 수와 까닭(서버가 적은 호출 기록에서 센다). 「따랐다」고 뭉뚱그리지 않는다
+    const skillLine = k => {
+      if (!k.applied) return `이 시험에서는 쓰지 않음${k.reason ? ' — ' + esc(k.reason) : ''}`;
+      const mine = (r.calls || []).filter(c => c.by === `스킬 ${k.name}`), miss = mine.filter(c => c.status !== 'DONE');
+      if (!mine.length) return '문서에서 따로 부를 도구 이름을 찾지 못했습니다. 절차 글은 계산에 쓰지 않습니다.';
+      const whys = [...new Set(miss.map(c => plainReason(c.reason)).filter(Boolean))];
+      return `문서에서 알아본 도구 호출 ${mine.length}개 · 실제로 부른 것 ${mine.length - miss.length}개` + (miss.length ? ` · 부르지 못한 것 ${miss.length}개(${esc(whys.join(' / '))})` : '');
+    };
+    const ran = r.agent?.skills || [], has = (t.setting?.skills || []).length;
+    const skills = ran.length ? ran.map(k => `${esc(skillShow(k.name))} <span class="muted">${skillLine(k)}</span>`).join('<br>')
+      : has ? `<span class="muted">붙인 스킬 ${has}개 — 원인 진단에서 멈춰 스킬 문서의 도구 호출까지 가지 않았습니다.</span>` : '없음';
     return UI.card({ title: `${label} · ${esc(t.setting?.name || agentName(t.agent_id))}`, chips: statusChip(t.status), body:
-      kv([['원인', top ? `<b>${nm(top.id)}</b> <span class="muted">${esc(UI.name(top.failureModeId))}</span>` : esc(r.reason || '없음')],
-        ['1순위', rec ? `<b>${esc(rec.sopId)} ${nm(rec.id)}</b>` : esc(!top || r.status === 'EVALUATED' ? '없음' : (r.reason || '없음'))],      // 원인을 못 가린 까닭은 원인 줄에 한 번만 쓴다
-        ['도구 서버', ((r.agent?.tools || []).map(x => esc(serverName(x))).join(' · ') || '없음') + (cut.length ? ` <span class="muted">(이번 시험에서 뺀 것: ${esc(cut.join(', '))})</span>` : '')],
-        ['스킬', skills.join('<br>') || '없음']]) +
-      (r.explanation ? note(esc(UI.idText(r.explanation))) : '') +
+      kv([['원인', top ? `<b>${nm(top.id)}</b> <span class="muted">${esc(UI.name(top.failureModeId))}</span>` : esc(whyNot(t))],
+        ['1순위', rec ? `<b>${esc(rec.sopId)} ${nm(rec.id)}</b>` : top ? esc(whyNot(t)) : '원인을 가리지 않아 조치를 견주지 않았습니다'],      // 원인을 못 가린 까닭은 원인 줄에 한 번만 쓴다
+        ['도구 서버', ((r.agent?.tools || []).map(x => esc(serverName(x))).join(' · ') || '없음') + cutNote(cutTools)],
+        ['스킬', skills + cutNote(cutSkills)]]) +
+      (r.explanation ? UI.fold('판단 엔진 설명 전문', note(esc(UI.idText(r.explanation)))) : '') +
       UI.fold('시험 번호 · 결과 지문', kv([['시험 번호', `<span class="mono">${esc(t.id)}</span>`], ['입력', `<span class="mono">${esc(t.snapshot_id)}</span>`], ['결과 지문', `<span class="mono">${esc(String(t.fingerprint).slice(0, 12))}</span>`]]) + UI.evaluationHtml(r, undefined, { raw: false })) });
   }
 
   // 호출 한 칸: 번호 · 도구 이름 · 서버 → 무엇이 나왔나. mark = 이 줄이 어떻게 다른지(「A에만」 · 「B에만」 · 「결과 다름」) — 글로 적는다
-  function callCell(c, n, mark = '') {
-    if (!c) return '<td class="muted">—</td>';
+  function callCell(c, n, mark = '', side = '') {
+    if (!c) return `<td class="muted"><span class="io-side">${side}</span>—</td>`;
     const diff = mark ? ' ' + badge(mark) : '';
     const st = c.status === 'DONE' ? '' : ' ' + chip(CALL[c.status] || ['호출 상태 기록 확인 필요', 'neutral']);      // 끝난 호출에는 상태 뱃지를 붙이지 않는다
     const purchase = window.hydWords?.purchaseTool(c.tool);
@@ -121,18 +170,21 @@
       const reason = String(c.reason || '').replace(/\b(?:purchase_context|evaluate_purchase|submit_purchase)\b/g, key => toolName(key, 'hyd-dmn')).replaceAll('hyd-dmn', serverName('hyd-dmn'));
       const why = reason && /[가-힣]/.test(reason) && !/[A-Za-z]+_[A-Za-z_]+/.test(reason) ? ' · ' + words.text(reason) : '';
       const state = c.status === 'BLOCKED' ? '구매 도구 요청을 부르지 못했습니다.' + (why || ' 사유는 아래 원본 기록에 있습니다.') : c.status === 'FAILED' ? '구매 도구 호출에 실패했습니다.' + (why || ' 사유는 아래 원본 기록에 있습니다.') : result;
-      return `<td><span class="num muted">${n}</span> <b>${esc(toolName(purchase, 'hyd-dmn'))}</b> <span class="muted">${esc(serverName('hyd-dmn'))}</span>${purchaseError ? ' ' + chip(['구매 요청 처리 실패', 'danger']) : st}${diff}<p>${esc(words.purchaseAsk(purchase, c.args))}</p><p class="muted">${esc(state)}</p></td>`;
+      return `<td><span class="io-side">${side}</span><span class="num muted">${n}</span> <b>${esc(toolName(purchase, 'hyd-dmn'))}</b> <span class="muted">${esc(serverName('hyd-dmn'))}</span>${purchaseError ? ' ' + chip(['구매 요청 처리 실패', 'danger']) : st}${diff}<p>${esc(words.purchaseAsk(purchase, c.args))}</p><p class="muted">${esc(state)}</p></td>`;
     }
-    const args = Object.keys(c.args || {}).length ? `<p class="muted">입력 <code>${esc(JSON.stringify(c.args))}</code></p>` : '';
-    return `<td><span class="num muted">${n}</span> <b>${esc(toolName(c.tool, c.server))}</b> <span class="muted">${esc(serverName(c.server))}${c.by && c.by !== 'engine' ? ' · ' + esc(UI.who(c.by)) : ''}</span>${st}${diff}` +
-      `<p>${esc(UI.idText(c.summary || c.reason || ''))}</p>${c.status === 'DONE' && c.reason ? `<p class="muted">${esc(c.reason)}</p>` : ''}${args}</td>`;
+    // 호출 입력의 원문(JSON)은 칸에 펼치지 않는다 — 맨 아래 「원본 기록」 접기에 호출마다 들어 있다. 스킬이 부른 호출은 스킬의 등록 설명으로 적는다
+    const by = String(c.by || '').startsWith('스킬 ') ? `스킬 「${skillShow(c.by.slice(3))}」의 문서에 적힌 호출` : '';
+    return `<td><span class="io-side">${side}</span><span class="num muted">${n}</span> <b>${esc(toolName(c.tool, c.server))}</b> <span class="muted">${esc(serverName(c.server))}</span>${st}${diff}` +
+      `<p>${esc(callSummary(c))}</p>${by ? `<p class="muted">${esc(by)}</p>` : ''}${c.status === 'DONE' && c.reason ? `<p class="muted">${esc(plainReason(c.reason))}</p>` : ''}</td>`;
   }
+  // 호출 결과 한 줄: 서버 요약의 내부 말(「후보 4장 · 제외 0장」, id)을 화면 말로
+  const callSummary = c => plainReason(c.summary || c.reason || '').replace(/후보 (\d+)장/g, '조치 후보 $1개').replace(/제외 (\d+)장/g, '제외 $1개');
 
   function callTable(r) {
     const A = r.a.result.calls, B = r.b.result.calls;
     const rows = r.diff.calls.map(row => {
       const changed = row.a != null && row.b != null && !row.same ? '결과 다름' : '';
-      return `<tr>${callCell(row.a == null ? null : A[row.a], row.a == null ? '' : row.a + 1, row.b == null ? 'A에만' : changed)}${callCell(row.b == null ? null : B[row.b], row.b == null ? '' : row.b + 1, row.a == null ? 'B에만' : changed)}</tr>`;
+      return `<tr>${callCell(row.a == null ? null : A[row.a], row.a == null ? '' : row.a + 1, row.b == null ? 'A에만' : changed, 'A')}${callCell(row.b == null ? null : B[row.b], row.b == null ? '' : row.b + 1, row.a == null ? 'B에만' : changed, 'B')}</tr>`;
     }).join('');
     return sec('도구 호출 순서', r.diff.order_same ? '두 구성이 같은 순서로 불렀습니다' : '두 구성의 호출 순서가 다릅니다',
       table('<th>A</th><th>B</th>', rows).replace('<table class="table"', '<table class="table io-even"') + note('한쪽에만 있는 호출에는 「A에만」이나 「B에만」이, 같은 호출인데 결과 요약이 다르면 「결과 다름」이 붙습니다.'));
@@ -157,7 +209,7 @@
     const cites = (citeDiff ? two(d.citations.only_a, d.citations.only_b) : '') + note(`${citeDiff ? '' : '두 구성이 인용한 근거가 같습니다. '}같은 인용 ${esc(d.citations.shared)}개`);
     const comp = d.compliance.length ? table('<th>조치</th><th>A 제외 사유</th><th>B 제외 사유</th>', d.compliance.map(c =>
       `<tr><td>${nm(c.id)}</td><td>${esc(UI.idText((c.a || []).join(' / ') || '없음'))}</td><td>${esc(UI.idText((c.b || []).join(' / ') || '없음'))}</td></tr>`).join('')) : note('규정 판정이 같습니다.');
-    const rules = d.rules.only_a.length + d.rules.only_b.length ? `<p><b>한쪽에만 있는 규칙</b></p>` + two(d.rules.only_a, d.rules.only_b) : '';
+    const rules = reach(r.a) === 'ok' && reach(r.b) === 'ok' && d.rules.only_a.length + d.rules.only_b.length ?`<p><b>한쪽에만 있는 규칙</b></p>` + two(d.rules.only_a, d.rules.only_b) : '';
     const count = n => `<span class="muted">${n ? n + '개' : '같음'}</span>`;
     return `<div class="panel-sec"><h3>다른 점</h3>` +
       UI.fold(`판단 사실 차이${count(d.facts.length)}`, facts, { open: !!d.facts.length }) +
@@ -169,12 +221,15 @@
   function resultView(r) {
     if (!r) return `<section class="empty"><header><figure>${UI.icon('git-compare')}</figure><h3>아직 시험한 결과가 없습니다</h3><p>왼쪽에서 시나리오와 에이전트 둘을 고르고 [시험 실행]을 누르면, 같은 입력에서 두 구성이 계산한 결과가 나란히 보입니다.</p></header></section>`;
     if (!r.b) return `<section class="panel"><div class="panel-sec">${sideCard('A', r.a)}</div></section>`;
-    const d = r.diff;
-    return `<section class="panel"><div class="panel-head"><div><div class="result-label">${UI.icon('sparkles')}결론</div>` +
-      `<h2>${d.same_result ? '두 구성의 계산 결과가 같습니다.' : '두 구성의 계산 결과가 다릅니다.'}</h2>` +
-      `<p>AI 모델을 돌린 결과가 아닙니다. 에이전트의 구성(도구 서버 · 스킬 문서)에 따라 판단 엔진이 계산한 결과를 같은 입력으로 견줬습니다.</p></div></div>` +
-      `<dl class="turn-facts">${fact('원인', d.cause.same ? (d.cause.a ? nm(d.cause.a) : '없음') : UI.chipText('다름', 'warning'))}` +
-        `${fact('1순위 조치', d.recommended.same ? (d.recommended.a ? nm(d.recommended.a) : '없음') : UI.chipText('다름', 'warning'))}` +
+    const d = r.diff, v = verdict(r), head = `<section class="panel"><div class="panel-head"><div><div class="result-label">${UI.icon('sparkles')}결론</div>` +
+      `<h2>${esc(v.title)}</h2>${v.sub ? `<p>${esc(v.sub)}</p>` : ''}`;
+    // 서로 다른 시나리오의 시험 둘은 견주지 않는다 — 차이 표를 그리면 설비가 다른 것을 구성의 차이로 읽게 된다. 두 시험을 따로 보이기만 한다
+    if (v.apart) return head + `</div></div><div class="panel-sec"><div class="io-two">${sideCard(`A · ${esc(scenarioLabel(r.a))}`, r.a)}${sideCard(`B · ${esc(scenarioLabel(r.b))}`, r.b)}</div></div></section>`;
+    const none = t => reach(t) === 'hold' ? '판단 보류' : '없음';
+    const same = (x, name) => x.same ? (x.a ? nm(x.a) : esc(none(r.a))) : x.a && x.b ? UI.chipText('다름', 'warning') : `${UI.chipText(x.a ? 'A만 ' + name : 'B만 ' + name, 'warning')}`;
+    return head + `<p>AI 모델을 돌린 결과가 아닙니다. 에이전트의 구성(도구 서버 · 스킬 문서)에 따라 판단 엔진이 계산한 결과를 견줬습니다.</p></div></div>` +
+      `<dl class="turn-facts">${fact('원인', same(d.cause, '가림'))}` +
+        `${fact('1순위 조치', same(d.recommended, '정함'))}` +
         `${fact('도구 호출 순서', d.order_same ? '같음' : `${UI.chipText('다름', 'warning')}<small>A에만 ${esc(d.calls_only_a)}회 · B에만 ${esc(d.calls_only_b)}회</small>`)}` +
         `${fact('판단 사실 차이', `<span class="num">${d.facts.length}</span><small>개</small>`)}</dl>` +
       `<div class="panel-sec">${headlineLines(r)}</div>` +
@@ -187,11 +242,13 @@
     const h = S.history;
     const rows = h == null ? '' : h.length < 2 ? UI.empty('저장된 시험이 둘 이상 있어야 비교할 수 있습니다', '위에서 시험을 한 번 더 실행하면 비교할 수 있습니다.', 'compact') : UI.section('', ['a', 'b'].map(side =>
       UI.field({ label: side === 'a' ? '바꾸기 전 시험' : '바꾼 뒤 시험', input: `<select data-pick="${side}"><option value="">시험 선택</option>${h.map(t =>
-        `<option value="${esc(t.id)}" ${S.pick[side] === t.id ? 'selected' : ''}>${esc(UI.dateTime(t.created_at))} · ${esc(t.agent_name || agentName(t.agent_id))} · ${esc(t.recommended || STATUS[t.status]?.[0] || t.status)}${(t.variant?.without_tools || []).length + (t.variant?.without_skills || []).length ? ' · 빼 본 구성' : ''}</option>`).join('')}</select>` })).join(''));
+        `<option value="${esc(t.id)}" ${S.pick[side] === t.id ? 'selected' : ''}>${esc(scenarioLabel(t))} · ${esc(t.agent_name || agentName(t.agent_id))} · ${esc(UI.dateTime(t.created_at))} · ${esc(t.recommended ? '1순위 ' + UI.name(t.recommended) : STATUS[t.status]?.[0] || t.status)}${(t.variant?.without_tools || []).length + (t.variant?.without_skills || []).length ? ' · 빼 본 구성' : ''}</option>`).join('')}</select>` })).join(''));
     const label = h == null ? '저장된 시험 불러오기' : '두 시험 비교';
-    return `<section class="panel"><div class="panel-head"><div><h2>지난 시험과 비교</h2><p>규칙이나 지식을 바꾸기 전과 후에 계산 결과가 그대로인지 봅니다.</p></div></div><div class="panel-sec">` +
-      rows + (S.histError ? UI.errorBlock(h == null ? '저장된 시험을 불러오지 못했습니다' : '두 시험을 비교하지 못했습니다', S.histError) : '') +
-      `<footer class="form-foot"><button type="button" class="btn" data-variant="outline" data-act="${h == null ? 'history' : 'diff'}" ${S.histBusy || (h && (h.length < 2 || !S.pick.a || !S.pick.b)) ? 'disabled' : ''}>${UI.icon(h == null ? 'history' : 'git-compare')}${esc(label)}</button></footer></div></section>`;
+    // 고른 둘이 서로 다른 시나리오면 누르기 전에 말한다(견줄 수 없는 까닭)
+    const pa = h?.find(t => t.id === S.pick.a), pb = h?.find(t => t.id === S.pick.b), apart = pa && pb && (pa.asset !== pb.asset || pa.pattern !== pb.pattern);
+    return `<section class="panel"><div class="panel-head"><div><h2>지난 시험과 비교</h2><p>규칙이나 지식을 바꾸기 전과 후에, 같은 시나리오의 계산 결과가 그대로인지 봅니다.</p></div></div><div class="panel-sec">` +
+      rows + (apart ? note(`고른 두 시험의 시나리오가 다릅니다(「${esc(scenarioLabel(pa))}」와 「${esc(scenarioLabel(pb))}」). 설비와 경보가 다른 시험은 견줄 수 없습니다 — 같은 시나리오의 시험 둘을 고르세요.`, ' data-tone="danger" role="status"') : '') + (S.histError ? UI.errorBlock(h == null ? '저장된 시험을 불러오지 못했습니다' : '두 시험을 비교하지 못했습니다', S.histError) : '') +
+      `<footer class="form-foot"><button type="button" class="btn" data-variant="outline" data-act="${h == null ? 'history' : 'diff'}" ${S.histBusy || (h && (h.length < 2 || !S.pick.a || !S.pick.b || apart)) ? 'disabled' : ''}>${UI.icon(h == null ? 'history' : 'git-compare')}${esc(label)}</button></footer></div></section>`;
   }
 
   function render() {
