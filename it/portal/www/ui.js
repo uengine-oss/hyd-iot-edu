@@ -23,7 +23,7 @@ const UI = {
   evaluationRawHtml(record, parent) {
     const info=this.evaluationInfo(record,parent);
     if(info.state==='execution') return '';
-    return this.fold('평가 범위 원문',`<pre>${esc(JSON.stringify(info.raw,null,2))}</pre>`,{cls:'small'}).replace('<details','<details data-evaluation-raw');
+    return this.raw(info.raw, { title: '평가 범위 원문' }).replace('<details','<details data-evaluation-raw');
   },
   evaluationHtml(record, parent, opt = {}) {
     const info=this.evaluationInfo(record,parent);
@@ -72,7 +72,7 @@ const UI = {
     'alert': '설비 경보', 'closed': '종결', 'done': '완료', 'knowledge': '지식', 'kpi': '성과 지표',
     // 버튼
     'btn.approve': '승인', 'btn.reject': '반려', 'btn.submit': '제출', 'btn.answer': '답변', 'btn.rework': '다시 수행', 'btn.confirm': '확인',
-    'btn.preview': '예측 다시 보기', 'btn.effects': '영향 보기', 'btn.reassess': '다시 평가', 'btn.reload': '다시 읽기', 'btn.save': '저장', 'btn.cancel': '변경 취소',
+    'btn.preview': '예측 다시 보기', 'btn.effects': '영향 보기', 'btn.reassess': '다시 평가', 'btn.reload': '다시 읽기', 'btn.save': '저장', 'btn.cancel': '취소',
     'btn.run': '모의 판단', 'btn.running': '판단 중…', 'btn.fit': '전체 흐름 보기', 'btn.more': '더 보기',
     'btn.retry': '같은 내용 다시 전달', 'btn.closeTask': '단계 닫기', 'btn.cancelTask': '실행 취소',
     // 폼 라벨
@@ -198,7 +198,7 @@ const UI = {
   toolName(t) { return window.hydWords.toolName(t); },
   toolIdentityFold(raw) {
     if (!raw || window.hydWords.knownTool(raw)) return '';
-    return this.fold('호출 도구 원문',`<pre class="code">${esc(raw)}</pre>`);
+    return this.raw(raw, { title: '호출 도구 원문' });
   },
 
   /* ---------- A141 원문 id → 이름 (names.json: workspace/개발/scripts/portal_names.py 가 Neo4j 실제 이름으로 생성) ----------
@@ -317,9 +317,9 @@ const UI = {
     PROCESS_RESTART_REVIEW: "서비스 재시작 후 재검토", MITIGATION_FAILED: "완화 실패", ACK_TIMEOUT: "설비 응답 시간 초과", PASS: "통과", INTERLOCK: "안전 연동",
   },
   tones: {
-    neutral: ['TODO', 'NEW', 'SKIPPED', 'IDLE', 'STOP', 'NOT_APPLICABLE', 'GUIDE_RECEIVED', 'LOCAL', 'DISCARDED', 'CLOSED_UNAPPROVED', 'CANCELLED'],
+    neutral: ['EVALUATED', 'TODO', 'NEW', 'SKIPPED', 'IDLE', 'STOP', 'NOT_APPLICABLE', 'GUIDE_RECEIVED', 'LOCAL', 'DISCARDED', 'CLOSED_UNAPPROVED', 'CANCELLED'],
     accent: ['IN_PROGRESS', 'SUBMITTED', 'RUNNING', 'STARTED', 'FB_REQUESTED', 'APPROVED', 'CMD_ISSUED', 'AWAITING_ACK', 'REMOTE_AUTO', 'RE_OBSERVING', 'DELIVERED'],
-    success: ['DONE', 'COMPLETED', 'CLOSED', 'EXECUTED', 'RESOLVED', 'RESOLVED_WITHOUT_ACTION', 'RUN', 'ACKED', 'WORK_ORDER_CREATED', 'EVALUATED', 'CLEAR', 'OK'],
+    success: ['DONE', 'COMPLETED', 'CLOSED', 'EXECUTED', 'RESOLVED', 'RESOLVED_WITHOUT_ACTION', 'RUN', 'ACKED', 'WORK_ORDER_CREATED', 'CLEAR', 'OK'],      // 초록은 정상 · 끝남 · 연결됨에만 — 계산이 끝났다는 것(EVALUATED)은 상태색을 쓰지 않는다
     warning: ['PENDING', 'HUMAN_ASKED', 'PENDING_APPROVAL', 'AWAITING_APPROVAL', 'PARTIAL', 'VIA_HITL', 'WITHHELD', 'REMOTE_MANUAL', 'CLEARING', 'CANDIDATE', 'ESCALATED'],
     danger: ['FAILED', 'REJECTED', 'REJECTED_BY_OPERATOR', 'REJECTED_BY_GUARDRAIL', 'NO_FEASIBLE_OPTION', 'TRIP', 'RAISED', 'RAISE'],
   },
@@ -442,7 +442,7 @@ const UI = {
   eventRecord({ time, name, actor = '', detail = '', raw, chips = '', extra = '' }) {
     // 실시간 줄(.line)과 같은 모양: 아이콘 + 굵은 한 문장 + 보조 줄(누가 · 무엇) + 오른쪽 시각. 원문은 그 아래 접기
     const sub = [actor ? esc(this.who(actor)) : '', detail ? esc(detail) : ''].filter(Boolean).join(' · ');
-    return `<article class="event-record"><div class="line">${this.icon('circle-dot')}<span class="line-text"><b>${esc(this.eventName(name))}</b>${chips ? `<span class="line-chips">${chips}</span>` : ''}${sub ? `<span class="line-sub">${sub}</span>` : ''}</span><time class="line-time num" title="${esc(this.dateTime(time))}">${esc(this.time(time))}</time></div>${extra}${raw ? `<details class="fold"><summary>${esc(this.t('raw'))}</summary><div class="fold-body"><pre class="code">${esc(JSON.stringify(raw, null, 2))}</pre></div></details>` : ''}</article>`;
+    return `<article class="event-record"><div class="line">${this.icon('circle-dot')}<span class="line-text"><b>${esc(this.eventName(name))}</b>${chips ? `<span class="line-chips">${chips}</span>` : ''}${sub ? `<span class="line-sub">${sub}</span>` : ''}</span><time class="line-time num" title="${esc(this.dateTime(time))}">${esc(this.time(time))}</time></div>${extra}${raw ? this.raw(raw) : ''}</article>`;
   },
   /* ---------- 공통 부품 — 키트(vendor/basecoat)와 portal-kit.css 의 마크업을 낸다(디자인 기준 8-2). 함수 이름 · 인자 · 반환 꼴은 화면 모듈이 부르던 그대로다 ---------- */
   // card: 제목 · 보조 한 줄 · (오른쪽) 뱃지와 단추 · 핵심 값 · 본문
@@ -471,16 +471,127 @@ const UI = {
     const extra = cls.split(/\s+/).filter(c => c && c !== 'small').join(' ');
     return `<details class="fold${extra ? ' ' + extra : ''}" ${open ? 'open' : ''}><summary>${summary}</summary><div class="fold-body">${body}</div></details>`;
   },
-  // empty: 제목 한 줄 + 보조 한 줄(무엇을 하면 채워지는지)
-  empty(title, sub = '', cls = '') { return `<section class="empty${cls ? ' ' + cls : ''}"><header><h3>${esc(title)}</h3>${sub ? `<p>${esc(sub)}</p>` : ''}</header></section>`; },
+  // empty: 빈 상태 하나(키트 .empty). 두 가지로 부른다
+  //   empty({ icon, title, sub, action, cls, attrs }) — 화면 · 판의 빈 상태: 아이콘 + 제목 + 설명(두 줄까지) + 채울 단추 하나.
+  //     action = { label, tab }(그 화면으로 간다) | { label, attrs, icon }(그 화면이 받는 단추) | 이미 만든 단추 HTML
+  //   empty(제목, 설명, cls) — 목록 · 절 안의 「아직 없음」 한 줄(아이콘 없음)
+  empty(title, sub = '', cls = '') {
+    const o = title && typeof title === 'object' ? title : { title, sub, cls };
+    const a = o.action;
+    const button = !a ? '' : typeof a === 'string' ? a
+      : `<button type="button" class="btn" data-variant="outline" data-size="sm" ${a.tab ? `data-go-tab="${esc(a.tab)}"` : a.attrs || ''}>${a.icon ? this.icon(a.icon) : ''}${esc(a.label)}${a.tab ? this.icon('arrow-right') : ''}</button>`;
+    return `<section class="empty${o.cls ? ' ' + o.cls : ''}"${o.attrs ? ' ' + o.attrs : ''}><header>${o.icon ? `<figure>${this.icon(o.icon)}</figure>` : ''}<h3>${esc(o.title)}</h3>${o.sub ? `<p>${esc(o.sub)}</p>` : ''}</header>${button ? `<footer>${button}</footer>` : ''}</section>`;
+  },
   // emptyGo: 빈 화면 + 다음 할 일로 가는 단추 하나(tab = 화면 이름, index.html 의 view-<이름>). 「없음」에서 끝나지 않고 무엇을 하면 채워지는지로 잇는다
-  emptyGo(title, sub, tab, label, cls = '') {
-    return `<section class="empty${cls ? ' ' + cls : ''}"><header><h3>${esc(title)}</h3>${sub ? `<p>${esc(sub)}</p>` : ''}</header><footer><button type="button" class="btn" data-variant="outline" data-size="sm" data-go-tab="${esc(tab)}">${esc(label)}${this.icon('arrow-right')}</button></footer></section>`;
+  emptyGo(title, sub, tab, label, cls = '') { return this.empty({ title, sub, cls, action: { label, tab } }); },
+
+  /* ---------- 날것의 데이터를 보이는 한 가지 방식 — 화면은 JSON.stringify 와 <pre> 를 직접 쓰지 않고 이 셋만 쓴다 ----------
+     raw(값)  원문 판: 늘 접힌 한 줄(「원문 · JSON · 7,357자」), 펼치면 어두운 판에 들여쓴 JSON + 구문 강조 + 높이 한도(판 안 스크롤) + 복사 단추.
+     id(값)   번호 · 해시 조각: 고정폭 조각, 누르면 복사. 해시 · UUID 는 앞 8자만 보이고 전체는 툴팁에. 본문 문장 안에 넣지 않는다(줄 끝이나 이름–값 줄에 둔다).
+     code(글) 조건식 · 질의문 · 파일 이름: 꺾지 않는 한 줄(넘치면 가로 스크롤). */
+  rawText(value) {
+    if (value == null) return { text: '', lang: '' };
+    if (typeof value !== 'string') return { text: JSON.stringify(value, null, 2), lang: 'json' };
+    const t = value.trim();
+    if (/^[\[{]/.test(t)) { try { return { text: JSON.stringify(JSON.parse(t), null, 2), lang: 'json' }; } catch (_) { /* JSON 이 아니면 받은 글 그대로 */ } }
+    return { text: value, lang: '' };
+  },
+  rawLangs: { json: 'JSON', cypher: 'Cypher', sql: 'SQL', xml: 'XML', yaml: 'YAML', python: 'Python', bash: '명령' },
+  // title: 접기 머리의 이름(글). lang: json 이 아닌 글의 종류(cypher · sql …). mask: 이 PC 경로 · 모델 이름을 가린다. attrs: details 에 붙일 속성(data-k 등)
+  raw(value, { title, lang, open = false, attrs = '', mask = false } = {}) {
+    const r = this.rawText(value), kind = lang || r.lang, text = mask ? this.mask(r.text) : r.text;
+    if (!text) return '';
+    return `<details class="fold raw"${attrs ? ' ' + attrs : ''}${open ? ' open' : ''}><summary>${esc(title || this.t('raw'))}<span class="muted num">${kind ? esc(this.rawLangs[kind] || kind) + ' · ' : ''}${Array.from(text).length.toLocaleString('ko-KR')}자</span></summary>` +
+      `<div class="fold-body raw-body"><button type="button" class="btn raw-copy" data-variant="ghost" data-size="icon-sm" data-raw-copy aria-label="${esc(this.acts.copy[0])}" data-tooltip="${esc(this.acts.copy[0])}" data-side="left">${this.icon(this.acts.copy[1])}</button>` +
+      `<pre class="code"${kind ? ` data-lang="${esc(kind)}"` : ''}><code>${esc(text)}</code></pre></div></details>`;
+  },
+  // 해시 · UUID(사람이 읽을 수 없는 번호)는 앞 8자 + …, 사람이 읽는 번호(WO-1114-… · ALT-…)는 그대로
+  idShort(value) {
+    const s = String(value ?? '').replace(/^sha256:/, '');
+    return /^[0-9a-f]{16,}$/i.test(s) || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-/i.test(s) ? s.slice(0, 8) + '…' : s;
+  },
+  id(value, { label = '' } = {}) {
+    const s = String(value ?? ''); if (!s) return '';
+    return `<button type="button" class="idc" data-id-copy="${esc(s)}" title="${esc(s)}" aria-label="${esc((label ? label + ' ' : '') + s + ' ' + this.acts.copy[0])}">${label ? `<span>${esc(label)}</span>` : ''}${esc(this.idShort(s))}</button>`;
+  },
+  code(text) { return text == null || text === '' ? '' : `<code class="codeline">${esc(text)}</code>`; },
+
+  /* ---------- 동작 이름과 아이콘의 사전 — 같은 동작은 모든 화면에서 같은 이름 · 같은 아이콘이다 ----------
+     reload 서버에서 다시 읽는다 · reset 내가 만든 것을 지우고 기준으로(관리 › 내 설정 한 곳) · revert 시험값을 비우고 기준 결과로 · cancel 폼을 닫는다 · save 저장
+     · remove 지운다 · run 실행 · 계산 · send 사람이 적은 것을 보낸다 · load 파일을 불러온다 · export 파일로 받는다 · add 새로 만든다 · copy 복사 · repair 설비 복구 · plantReset 가상 설비를 정상 운전점으로 */
+  acts: {
+    reload: ['다시 읽기', 'refresh-cw'], reset: ['기준으로 되돌리기', 'rotate-ccw'], revert: ['원래대로', 'rotate-ccw'], cancel: ['취소', ''], save: ['저장', 'check'],
+    remove: ['지우기', 'trash-2'], run: ['실행', 'play'], send: ['보내기', 'send'], load: ['불러오기', 'upload'], export: ['파일 받기', 'download'], add: ['추가', 'plus'],
+    copy: ['복사', 'copy'], repair: ['복구', 'wrench'], plantReset: ['설비 초기화', 'power'], more: ['더 보기', 'ellipsis'],
+  },
+  // 단추 속 내용(아이콘 + 이름). label 을 주면 이름만 바꾼다(「채점 실행」 · 「파일 받기」처럼 무엇을 하는지 붙일 때) — 아이콘은 사전의 것이다
+  actHtml(key, label) { const a = this.acts[key]; if (!a) throw new Error(`UI.actHtml: 모르는 동작 '${key}' — ${Object.keys(this.acts).join(' · ')} 중 하나`); return (a[1] ? this.icon(a[1]) : '') + esc(label || a[0]); },
+  // 단추 하나: variant 를 주지 않으면 주 단추. attrs 는 id · data-* · disabled 등 속성 원문
+  btn(key, { label, variant = '', size = '', attrs = '' } = {}) {
+    return `<button type="button" class="btn"${variant ? ` data-variant="${variant}"` : ''}${size ? ` data-size="${size}"` : ''}${attrs ? ' ' + attrs : ''}>${this.actHtml(key, label)}</button>`;
+  },
+  // 「내가 만든 것을 지운다」(되돌리기)는 관리 › 내 설정 한 곳에만 있다 — 다른 화면은 단추의 사본을 두지 않고 이 한 줄로 그곳에 보낸다(configBundle.js 가 범위를 골라 연다)
+  resetLink(scope, what) { return `<p class="muted pane-foot reset-link">${esc(what)} 지우려면 <a href="#/admin" data-go-reset="${esc(scope)}">관리 › 내 설정에서 ${esc(this.acts.reset[0])}</a></p>`; },
+  // 폼 끝: 늘 [취소 outline] [저장 주 단추] 오른쪽 맞춤. primary 는 주 단추 HTML(UI.btn), cancelAttrs 는 취소 단추의 속성 원문(주지 않으면 취소 단추 없음), msg 는 왼쪽 한 줄
+  formFoot(primary, { cancelAttrs = '', cancelLabel, msg = '', msgAttrs = '' } = {}) {
+    return `<footer class="form-foot"><span class="muted" role="status"${msgAttrs ? ' ' + msgAttrs : ''}>${msg}</span>${cancelAttrs ? this.btn('cancel', { label: cancelLabel, variant: 'outline', attrs: cancelAttrs }) : ''}${primary}</footer>`;
+  },
+  // 더 보기 메뉴(키트 dropdown-menu): 자주 쓰지 않는 동작을 넣는다. items = [{ act, label, icon, attrs, danger }] — act 를 주면 이름 · 아이콘은 사전의 것
+  moreMenu(id, items, { size = 'icon', side = 'left' } = {}) {
+    const rows = items.filter(Boolean).map(it => { const a = it.act ? this.acts[it.act] : null;
+      return `<div role="menuitem" tabindex="-1"${it.attrs ? ' ' + it.attrs : ''}>${this.icon(it.icon || (a && a[1]) || 'circle')}${esc(it.label || (a && a[0]) || '')}</div>`; }).join('');
+    if (!rows) return '';
+    return `<div class="dropdown-menu" id="${esc(id)}"><button type="button" class="btn" data-variant="outline" data-size="${size}" id="${esc(id)}-trigger" aria-haspopup="menu" aria-controls="${esc(id)}-menu" aria-expanded="false" aria-label="${esc(this.acts.more[0])}" data-tooltip="${esc(this.acts.more[0])}" data-side="${side}">${this.icon(this.acts.more[1])}</button>` +
+      `<div id="${esc(id)}-popover" data-popover aria-hidden="true" data-align="end"><div role="menu" id="${esc(id)}-menu" aria-labelledby="${esc(id)}-trigger">${rows}</div></div></div>`;
+  },
+  /* ---------- 화면 머리 정본: 제목 + 한 문장(한 줄) | 오른쪽에 보조 outline 0~1 · 주 단추 0~1 · ⋯ 더 보기 ----------
+     tab = 화면 이름(제목은 nav.<tab> 한 곳에서 온다). sub = 이 화면에서 무엇을 하는지 한 문장. tools = 오른쪽 도구 HTML. more = 더 보기 메뉴 항목(다시 읽기는 여기에 둔다).
+     거르기 묶음 단추와 상태 알약은 머리에 두지 않는다(거르기는 목록 바로 위, 살아 있음 표시는 위 막대와 메뉴 줄 아래).
+     index.html 의 화면은 자리만 적는다: <div data-page-head="화면" data-sub="한 문장" data-head-more="동작:단추 id, …">도구 HTML</div> — 아래 fillPageHeads 가 같은 함수로 그린다. */
+  pageHead(tab, { sub = '', tools = '', more = [] } = {}) {
+    const menu = this.moreMenu(tab + 'HeadMore', more);
+    return `<div class="page-head"><div><h1>${esc(this.t('nav.' + tab))}</h1>${sub ? `<p>${esc(sub)}</p>` : ''}</div>${tools || menu ? `<div class="page-tools">${tools}${menu}</div>` : ''}</div>`;
+  },
+  fillPageHeads(root = document) {
+    root.querySelectorAll('[data-page-head]').forEach(n => {
+      const more = (n.dataset.headMore || '').split(',').map(s => s.trim()).filter(Boolean).map(s => { const [act, id] = s.split(':'); return { act, attrs: `id="${esc(id)}"` }; });
+      n.outerHTML = this.pageHead(n.dataset.pageHead, { sub: n.dataset.sub || '', tools: n.innerHTML.trim(), more });
+    });
+  },
+  /* ---------- 조치 후보 표 한 부품(.opts) — 처리 건 · 규칙 판단 · 조건별 손익 · 시험 비교가 같은 표를 쓴다 ----------
+     칸: 순위 · 조치(이름 굵게, 코드는 뒤에 작게, 둘째 줄에 진 까닭) · 종류 · 점수(소수 둘째, + 부호 없음) · 막대 · 승인 역할 + 화면마다 더하는 칸(opt.extra — 손익 · A/B).
+     값이 하나도 없는 칸(종류 · 점수 · 승인 역할)은 그리지 않는다.
+     rows = [{ rank, name, code, kind, score, role, note, pick(고른 줄), out(제외된 줄), attrs, extra: [칸 HTML…],
+               lead(순위 칸 대신 넣을 HTML — 고르기 칸), forId(이름을 누르면 고를 입력의 id), nameHtml(이름 뒤에 붙일 HTML), noteHtml(둘째 줄 HTML), scoreHtml(점수 칸 HTML — 「제외」 · 바뀐 값) }] */
+  optionsTable(rows, { extra = [], lead = '', scoreLabel, cls = '', attrs = '' } = {}) {
+    const has = k => rows.some(r => r[k] != null && r[k] !== '');
+    const kind = has('kind'), score = has('score') || has('scoreHtml'), role = has('role');
+    const nums = rows.filter(r => !r.out).map(r => Math.abs(Number(r.score))).filter(Number.isFinite), max = Math.max(0, ...nums), bar = score && max > 0;
+    const fmt = v => Number.isFinite(Number(v)) ? Number(v).toFixed(2) : esc(v);
+    const th = (label, c = '') => `<th${c ? ` class="${c}"` : ''}>${label}</th>`;
+    const head = th(lead ? `<span class="sr-only">${esc(lead)}</span>` : '<span class="sr-only">순위</span>', 'opts-rank') + th(esc(this.t('candidate'))) + (kind ? th(esc(this.t('skill.kind'))) : '') +
+      (score ? th(esc(scoreLabel || this.t('card.score')), 'num') + (bar ? th('', 'opts-bar') : '') : '') + (role ? th(esc(this.t('card.approver'))) : '') + extra.map(x => th(esc(x.label), x.num ? 'num' : '')).join('');
+    const body = rows.map(r => {
+      const n = Math.abs(Number(r.score)), w = bar && !r.out && r.score != null && r.score !== '' && Number.isFinite(n) ? Math.min(100, Math.round(n / max * 100)) : 0;
+      return `<tr${r.pick ? ' data-pick' : ''}${r.out ? ' data-out' : ''}${r.attrs ? ' ' + r.attrs : ''}><td class="opts-rank">${r.lead != null ? r.lead : `<span class="rank num">${esc(r.rank ?? '–')}</span>`}</td>` +
+        `<td class="opts-name">${r.forId ? `<label for="${esc(r.forId)}"><b>${esc(r.name)}</b></label>` : `<b>${esc(r.name)}</b>`}${r.code ? `<span class="opts-code">${esc(r.code)}</span>` : ''}${r.nameHtml || ''}${r.noteHtml ? `<span class="opts-why">${r.noteHtml}</span>` : r.note ? `<span class="opts-why">${esc(r.note)}</span>` : ''}</td>` +
+        (kind ? `<td>${r.kind ? `<span class="badge" data-variant="secondary">${esc(r.kind)}</span>` : ''}</td>` : '') +
+        (score ? `<td class="num">${r.scoreHtml != null ? r.scoreHtml : r.score == null || r.score === '' ? '–' : fmt(r.score)}</td>` + (bar ? `<td class="opts-bar"><span class="bar"><i style="width:${w}%"></i></span></td>` : '') : '') +
+        (role ? `<td class="opts-role">${esc(r.role ?? '')}</td>` : '') + (r.extra || []).map((x, k) => `<td${extra[k] && extra[k].num ? ' class="num"' : ''}>${x}</td>`).join('') + '</tr>';
+    }).join('');
+    return `<div class="table-container"${attrs ? ' ' + attrs : ''}><table class="opts${cls ? ' ' + cls : ''}"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
   },
   // tabs: 같은 대상의 보기를 바꾸는 묶음 단추(.seg). items = [[key, label, count?]]
   tabs(items, active, attr = 'data-tab-key') {
     return `<div class="seg" role="group">${items.map(([k, l, n]) => `<button type="button" aria-pressed="${k === active}" ${attr}="${esc(k)}">${esc(l)}${n != null ? `<span class="num">${esc(n)}</span>` : ''}</button>`).join('')}</div>`;
   },
+  // viewTabs: 화면이나 판의 하위 보기를 바꾸는 밑줄 탭(키트 .tabs — 고른 탭 표시와 화살표 키는 키트가 한다). 목록을 거르는 것은 tabs(.seg)다
+  viewTabs(items, active, attr = 'data-tab-key', { label = '보기', id = '', small = false } = {}) {
+    return `<div class="tabs view-tabs"${id ? ` id="${esc(id)}"` : ''}${small ? ' data-size="sm"' : ''}><nav role="tablist" aria-orientation="horizontal" aria-label="${esc(label)}">${items.map(([k, l, n]) =>
+      `<button type="button" role="tab" aria-selected="${k === active}" tabindex="${k === active ? 0 : -1}" ${attr}="${esc(k)}">${esc(l)}${n != null ? `<span class="num">${esc(n)}</span>` : ''}</button>`).join('')}</nav></div>`;
+  },
+  // 코드에서 보기를 바꿨을 때(다른 화면이 이 보기를 열 때) 탭의 고른 표시를 맞춘다
+  markViewTab(box, isActive) { box.querySelectorAll('[role="tab"]').forEach(b => { const on = !!isActive(b); b.setAttribute('aria-selected', String(on)); b.setAttribute('tabindex', on ? '0' : '-1'); }); },
   // paged list (A122 coordinator request): first `shown` rows, the selected row pinned on top when it is beyond them, one 더 보기 button
   PAGE: 20,
   page(items, shown, isSelected) {
@@ -759,9 +870,10 @@ Object.assign(UI.terms, {
   UI.fullToolIOHtml = (ev,direction='output') => {
     const fo=payloadReference(ev,direction); if(!fo)return '';
     const io=UI.fullToolIO(ev,direction,true), label=direction==='input' ? '전달한 입력 전문' : '보관된 결과 전문';
-    const raw=io.text || (io.state==='complete' && io.raw!=null ? typeof io.raw==='string' ? io.raw : JSON.stringify(io.raw,null,2) : '');
+    const raw=io.text || (io.state==='complete' && io.raw!=null ? io.raw : '');
     const key=payloadKey(ev,direction);
-    return `<div class="tr-code" data-tool-payload data-tool-ref="${esc(fo.ref || '')}" data-tool-direction="${esc(direction)}" data-tool-payload-state="${esc(io.state)}"><div class="tr-code-h">${esc(label)} · ${esc(fo.chars ?? '길이 미확인')}자</div>${io.error ? `<p class="muted">${esc(io.error)}</p>` : ''}${raw ? `<details class="fold" data-k="payload:${esc(key)}"><summary>원문</summary><div class="fold-body"><pre class="code">${esc(raw)}</pre></div></details>` : ''}${['unavailable','invalid'].includes(io.state) && fo.stored ? `<button type="button" class="btn" data-variant="outline" data-size="sm" data-tool-payload-retry="${esc(key)}">원문 다시 읽기</button>` : ''}</div>`;
+    // 보관된 전문은 원문 판 하나(UI.raw)로 — 아직 읽지 못했거나 읽기에 실패했으면 그 까닭 한 줄과 [다시 읽기]
+    return `<div class="tool-payload" data-tool-payload data-tool-ref="${esc(fo.ref || '')}" data-tool-direction="${esc(direction)}" data-tool-payload-state="${esc(io.state)}">${raw ? UI.raw(raw,{title:label,attrs:`data-k="payload:${esc(key)}"`}) : `<p class="muted">${esc(label)} · ${esc(io.error || '읽는 중입니다')}</p>`}${raw && io.error ? `<p class="muted">${esc(io.error)}</p>` : ''}${['unavailable','invalid'].includes(io.state) && fo.stored ? `<button type="button" class="btn" data-variant="outline" data-size="sm" data-tool-payload-retry="${esc(key)}">${UI.actHtml('reload','원문 다시 읽기')}</button>` : ''}</div>`;
   };
   if(typeof document!=='undefined' && document.addEventListener) document.addEventListener('click',event=>{
     const button=event.target.closest('[data-tool-payload-retry]'); if(!button)return;
@@ -791,6 +903,30 @@ Object.assign(UI.terms, {
       terminal: terminal || null };
   };
 })();
+
+// 원문 판 · 번호 조각의 동작(문서 하나에 한 번): 복사 단추, 펼칠 때 구문 강조(Prism 은 처음 펼칠 때 싣는다 — 못 실으면 강조 없이 글 그대로 보인다)
+if (typeof document !== 'undefined' && document.addEventListener) {
+  const copy = async (text, what) => {
+    try { await navigator.clipboard.writeText(text); UI.toast(`${what} 복사했습니다`, { tone: 'ok', timeout: 2000 }); }
+    catch (e) { UI.toast(`복사하지 못했습니다(${e.message}) — 글을 끌어서 고른 뒤 복사하세요`, { tone: 'neg', timeout: 6000 }); }
+  };
+  document.addEventListener('click', e => {
+    const raw = e.target.closest && e.target.closest('[data-raw-copy]');
+    if (raw) { e.preventDefault(); return copy(raw.parentElement.querySelector('pre.code').textContent, '원문을'); }
+    const id = e.target.closest && e.target.closest('[data-id-copy]');
+    if (id) { e.preventDefault(); e.stopPropagation(); return copy(id.dataset.idCopy, '번호를'); }
+  });
+  document.addEventListener('toggle', e => {
+    const d = e.target; if (!d.matches || !d.matches('details.raw[open]')) return;
+    const pre = d.querySelector('pre.code[data-lang]'); if (!pre || pre.dataset.lit) return;
+    pre.dataset.lit = '1';
+    const code = pre.firstElementChild, text = code.textContent;
+    if (text.length > 200000) return;                                   // 아주 긴 원문은 강조하지 않는다(화면이 멈춘다)
+    UI.need('code').then(Prism => { const g = Prism.languages[pre.dataset.lang]; if (g && code.isConnected) code.innerHTML = Prism.highlight(text, g, pre.dataset.lang); })
+      .catch(err => console.error('구문 강조 부품을 싣지 못해 원문을 강조 없이 보입니다', err));
+  }, true);
+  if (document.querySelectorAll) UI.fillPageHeads();                    // index.html 의 화면 머리 자리 — 화면 모듈이 실리기 전에 그려 둔다(머리의 단추를 id 로 찾는다)
+}
 
 // [data-go-tab="화면 이름"] 단추: 다음 할 일이 있는 화면으로 옮긴다(빈 화면 · 완료 안내 · 사본을 지운 자리의 「이제 어디서 하는가」 링크가 함께 쓴다 — UI.emptyGo)
 if (typeof document !== 'undefined') document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-go-tab]'); if (b && typeof selectTab === 'function') selectTab(b.dataset.goTab); });

@@ -101,10 +101,15 @@ def test_단계_배정_지우기_되돌리기_요청은_담당자_id_를_싣고_
             page.locator("select[data-map='my_flow|T_judge']").select_option(MINE['id'])
             assert _sent(page, seen, 'assigned') == ME
 
-            page.locator('[data-ag-reset]').click()                                 # 기준으로 되돌리기
+            # 기준으로 되돌리기: 이 화면에는 단추의 사본이 없다 — 맨 아래 한 줄이 관리 › 내 설정으로 보내고, 그곳에 「AI 에이전트 …」 범위가 골라져 있다
+            page.locator('#view-agents [data-go-reset]').click()
+            assert page.evaluate('() => state.tab') == 'admin' and page.locator('#cfgResetScope').input_value() == 'agents'
+            page.locator('#cfgReset').click()
             page.locator("dialog.confirm-dialog button[value='ok']").click()
             assert _sent(page, seen, 'reset') == ME
             page.wait_for_function('() => !document.querySelector("dialog.confirm-dialog[open]")')
+            page.wait_for_function("() => document.getElementById('cfgResetMsg').textContent.startsWith('되돌렸습니다. 내가 만든 에이전트 1개, 단계 배정 1건을 지웠습니다.')")
+            page.evaluate('selectTab("agents")')
 
             page.locator("[data-ag-tab='agents']").click()                          # 지우기
             page.locator('[data-del-agent]').click()

@@ -125,8 +125,8 @@
   function render(st) {
     const el = st.el;
     const periods = Object.entries((st.data && st.data.periods) || st.periods || {});
-    const tools = `<div class="page-tools">${periods.length ? `<div class="seg" role="group" aria-label="기간">${periods.map(([k, l]) => `<button type="button" data-kpi-period="${escH(k)}" aria-pressed="${k === st.period}">${escH(l)}</button>`).join('')}</div>` : ''}
-      <button type="button" class="btn" data-variant="outline" data-kpi-reload>${UI.icon('refresh-cw')}다시 읽기</button></div>`;
+    // 기간은 화면 머리 아래 · 내용 바로 위의 묶음 단추(거르기)다 — 머리에는 두지 않는다. 다시 읽기는 머리의 더 보기 안
+    const tools = `<div class="kpi-bar">${periods.length ? `<div class="seg" role="group" aria-label="기간">${periods.map(([k, l]) => `<button type="button" data-kpi-period="${escH(k)}" aria-pressed="${k === st.period}">${escH(l)}</button>`).join('')}</div>` : ''}</div>`;
     let body;
     if (st.loading && !st.data) body = hydLive.waitHtml('성과 지표 실적을 계산하는 중', { since: st.since, hint: '시계열 · 업무 DB · 처리 기록을 읽어 지표마다 실적을 계산합니다. 서버가 모두 끝낸 뒤 한 번에 줍니다.' });
     else if (st.error) body = UI.errorBlock('성과 지표를 불러오지 못했습니다', st.error, { retry: true });
@@ -152,7 +152,7 @@
       body = head + errorsHtml(d.sourceErrors) + trialNotice(st, d) + tracePanel(st) + persp + trialPanel(st, all) +
         UI.fold(`지표별 계산 정의 표 <span class="muted">${all.length}개 · 원천과 식</span>`, defs);
     }
-    el.innerHTML = `<div class="page-head kpi-head"><div><h1>${escH(UI.t('nav.kpi'))}</h1><p>지식 그래프의 관점과 목표마다 지표의 실적 · 목표 · 달성 여부를 보고, 미달 지표의 원인을 처리 건까지 따라갑니다.</p></div>${tools}</div>${body}`;
+    el.innerHTML = UI.pageHead('kpi', { sub: '관점과 목표마다 지표의 실적 · 목표 · 달성 여부를 보고, 미달의 원인을 처리 건까지 따라갑니다.', more: [{ act: 'reload', attrs: 'data-kpi-reload' }] }) + tools + body;
   }
 
   async function load(st) {

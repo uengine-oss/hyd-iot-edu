@@ -66,7 +66,7 @@
   function result() {
     if (S.resultError) return UI.errorBlock('조회하지 못했습니다', S.resultError);
     const r = S.result;
-    if (!r) return UI.empty('아직 묶어 본 결과가 없습니다', '조건에서 설비와 질문을 고르고 [묶어 보기]를 누르면, 두 DB에서 읽은 값이 어느 원천 · 표 · 열에서 왔는지와 함께 보입니다.');
+    if (!r) return UI.empty({ icon: 'database', title: '아직 묶어 본 결과가 없습니다', sub: '조건에서 설비와 질문을 고르고 [묶어 보기]를 누르면, 두 DB에서 읽은 값이 어느 원천 · 표 · 열에서 왔는지와 함께 보입니다.' });
     const down = Object.entries(r.sources || {}).filter(([, s]) => !s.ok);
     const warn = down.length ? `<div class="alert" data-variant="destructive" role="alert">${UI.icon('circle-alert')}<h2>일부 원천을 읽지 못했습니다</h2><section>${down.map(([id, s]) => `${esc(srcLabel(id))}: ${esc(s.reason)}`).join(' · ')}</section></div>` : '';
     const notes = (r.notes || []).map(n => `<p class="muted">${esc(n)}</p>`).join('');
@@ -115,7 +115,7 @@
     return S.sources.map(s => {
       const head = `<header class="panel-head"><div><h2>${esc(s.label)}${s.ok ? (s.read_only ? '' : UI.chipText('읽기 전용 아님', 'danger')) : UI.chipText('연결 실패', 'danger')}</h2>` +
         `<p>${esc([s.about, s.engine, s.ok && s.read_only ? '읽기 전용' : ''].filter(Boolean).join(' · '))}</p></div></header>`;
-      if (!s.ok) return `<section class="panel">${head}<div class="panel-sec">${UI.errorBlock('이 원천에 연결하지 못했습니다', s.reason)}${UI.fold('오류 원문', `<pre class="code">${esc(s.detail)}</pre>`)}</div></section>`;
+      if (!s.ok) return `<section class="panel">${head}<div class="panel-sec">${UI.errorBlock('이 원천에 연결하지 못했습니다', s.reason)}${UI.raw(s.detail, { title: '오류 원문' })}</div></section>`;
       const picked = S.table[s.id];
       const list = `<div class="chips fab-picks" role="group" aria-label="${esc(s.label)}의 표">${s.tables.map(t => `<button type="button" class="chip" aria-pressed="${t.name === picked}" data-fab-table="${esc(s.id)}|${esc(t.name)}">${esc(t.name)}</button>`).join('')}</div>`;
       const sm = picked ? S.sample[s.id + '|' + picked] : null;
@@ -171,7 +171,7 @@
   /* ---------- 그리기 · 이벤트 ---------- */
   function render() {
     if (!S.el) return;
-    S.el.innerHTML = summary() + UI.tabs([['join', '두 DB 묶어 보기'], ['sources', '원천과 표', S.sources ? S.sources.length : null], ['links', '지식 지도 ↔ 표 · 열']], S.tab, 'data-fab-tab') +
+    S.el.innerHTML = summary() + UI.viewTabs([['join', '두 DB 묶어 보기'], ['sources', '원천과 표', S.sources ? S.sources.length : null], ['links', '지식 지도 ↔ 표 · 열']], S.tab, 'data-fab-tab') +
       `<div class="fab-body">${S.tab === 'join' ? joinTab() : S.tab === 'sources' ? sourcesTab() : linksTab()}</div>`;
   }
   async function load() {

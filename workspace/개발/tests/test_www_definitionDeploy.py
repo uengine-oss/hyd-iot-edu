@@ -67,13 +67,13 @@ for (const [id, v] of Object.entries(DATA.values)) $(id).value = v;
 window.hydInbox = { me: () => DATA.me };   // 「나」는 inbox.js 가 쥔다 — 여기서는 고른 사람만 대역
 UI.confirm = async () => false;            // 확인 창에서 [취소] — 서버를 부르기 직전에 멈춘다
 FETCHED.length = 0;   // 실릴 때 읽는 이름 사전(names.json)은 빼고
-await $('deployRoutesBox').fire('click', { target: $('deployResetRef') });   // 화면 아래 「경보별 운영 흐름」의 [기준 흐름으로 되돌리기]
-const msg = $('deployResetMessage'), box = msg.parentElement;   // 그 자리의 알림 판(alert) — 실패면 destructive 로 바뀌고 보인다
+await $('deployRollback').fire('click', { target: $('deployRollback') });   // 고른 흐름의 [이전 배포 판본으로 되돌리기] — 담당자가 없으면 묻기 전에 멈춘다
+const msg = $('deployMessage'), box = msg.parentElement;   // 그 자리의 알림 판(alert) — 실패면 destructive 로 바뀌고 보인다
 out({ text: msg.textContent, failed: box.dataset.variant === 'destructive', hidden: box.hidden, fetched: FETCHED, by: $('deployBy').value, readOnly: $('deployBy').readOnly });
 """
 
 
-def test_기준_흐름으로_되돌리기는_담당자를_못_읽었으면_서버를_부르지_않고_멈춘다():
+def test_이전_배포_판본으로_되돌리기는_담당자를_못_읽었으면_서버를_부르지_않고_멈춘다():
     """담당자 칸에 적은 글은 쓰지 않는다 — 자유 입력이 배포 이력에 지어낸 이름으로 남던 것(FW2 → FA2)."""
     got = js(PANEL, {'values': {'deployBy': '아무 이름'}, 'me': None})
     assert got == {'text': '담당자 정보를 읽지 못했습니다. 화면을 새로 고친 뒤 다시 해 주세요', 'failed': True, 'hidden': False, 'fetched': [], 'by': '', 'readOnly': True}

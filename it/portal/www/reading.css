@@ -31,14 +31,14 @@
 .io-out .table.io-even td + td { padding-left: 16px; }
 .io-out .table :is(td, th):first-child { padding-left: 0; }
 .io-out .table :is(td, th):last-child { padding-right: 0; }
-.io-out .opts td small { display: block; font-size: 12.5px; line-height: 18px; color: var(--muted-foreground); }
+.io-out .opts td small { display: block; font-size: var(--fs-xs); line-height: 18px; color: var(--muted-foreground); }
 .io-out .opts td.num, .io-out .opts th.num, .io-out .table td.num, .io-out .table th.num { text-align: right; white-space: nowrap; }
 .io-out .panel-sec > .fold:first-child > summary { padding-top: 0; }
 .io-out .panel-sec > .fold:last-child > .fold-body { padding-bottom: 0; }
 .io-out .panel-sec > .fold:last-child:not([open]) > summary { padding-bottom: 0; }
 .io-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }      /* 둘을 나란히(에이전트 A · B) */
 .io-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin: -4px 0 16px; }      /* 보기 바꾸기 줄 */
-.io-progress { display: grid; gap: 6px; padding: 4px 14px 12px; font-size: 12.5px; color: var(--muted-foreground); }      /* 센 값이 있는 진행 막대(12개 가운데 5개) */
+.io-progress { display: grid; gap: 6px; padding: 4px 14px 12px; font-size: var(--fs-xs); color: var(--muted-foreground); }      /* 센 값이 있는 진행 막대(12개 가운데 5개) */
 @media (max-width: 1000px) {
   .io { grid-template-columns: minmax(0, 1fr); }
   .io > .io-in { position: static; }
@@ -57,20 +57,20 @@
 .confirm-dialog header p { white-space: pre-line; }      /* 확인 창 글의 줄바꿈(지우는 것 / 남는 것 목록)을 그대로 보인다 */
 
 /* ---------------- 화면 머리 아래 한 문장 · 화면 맨 아래 한 줄 ---------------- */
-.rd-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 13px; line-height: 20px; color: var(--muted-foreground); }
+.rd-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); font-size: var(--fs-sm); line-height: 20px; color: var(--muted-foreground); }
 
 /* 상세 머리: 이름 + 상태 칩 하나 · 한 줄 요약 · 오른쪽에 동작 */
 .rd-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px 16px; flex-wrap: wrap; }
 .rd-head .rd-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.rd-head h2, .rd-head h3 { margin: 0; font-size: 16px; line-height: 24px; font-weight: 600; }
-.rd-sub { margin: 4px 0 0; font-size: 13px; line-height: 20px; color: var(--muted-foreground); max-width: 72ch; }
+.rd-head h2, .rd-head h3 { margin: 0; font-size: var(--fs-md); line-height: 24px; font-weight: 600; }
+.rd-sub { margin: 4px 0 0; font-size: var(--fs-sm); line-height: 20px; color: var(--muted-foreground); max-width: 72ch; }
 
 /* 묶음: 테두리 없이 여백 24px 과 작은 이름표로 가른다(기준 원칙 4) */
 .rd-group { margin-top: 24px; }
 .rd-group:first-child { margin-top: 0; }
-.rd-label { margin: 0 0 8px; font-size: 12px; line-height: 16px; font-weight: 600; color: var(--muted-foreground); letter-spacing: 0; }
-.rd-sec { margin: 0 0 12px; font-size: 16px; line-height: 24px; font-weight: 600; }
-.rd-note { margin: 0 0 12px; font-size: 13px; line-height: 20px; color: var(--muted-foreground); max-width: 72ch; }
+.rd-label { margin: 0 0 8px; font-size: var(--fs-xs); line-height: 16px; font-weight: 600; color: var(--muted-foreground); letter-spacing: 0; }
+.rd-sec { margin: 0 0 12px; font-size: var(--fs-md); line-height: 24px; font-weight: 600; }
+.rd-note { margin: 0 0 12px; font-size: var(--fs-sm); line-height: 20px; color: var(--muted-foreground); max-width: 72ch; }
 
 /* 폼(기준 5-6): 한 열 · 폭 720px 까지 · 단추 줄은 맨 아래 왼쪽에 주 단추 먼저 */
 .rd-form { max-width: 720px; }

@@ -277,9 +277,9 @@ function paintHealth() {
   // 머리 오른쪽 요약: 선택 도구는 세지 않는다(꺼져 있는 것이 보통이다)
   const need = comps.filter(c => c.health && !c.optional), bad = need.filter(c => healthState[c.health] === 'down'), wait = need.filter(c => !healthState[c.health]);
   const sum = $('#sysSum');
-  if (wait.length === need.length) { sum.removeAttribute('data-tone'); sum.textContent = '서비스 확인 중'; }
-  else if (bad.length) { sum.dataset.tone = 'danger'; sum.textContent = `응답 없음 ${bad.length} — ${bad.map(c => c.key).join(', ')}`; }
-  else { sum.dataset.tone = 'ok'; sum.textContent = `서비스 ${need.length - wait.length}/${need.length} 정상`; }
+  // 머리에는 응답 없는 서비스가 있을 때만 적는다 — 정상일 때의 「서비스 14/14」는 메뉴 줄 아래 한 곳에 있다
+  sum.hidden = !bad.length;
+  if (bad.length) { sum.dataset.tone = 'danger'; sum.textContent = sum.title = `응답 없음 ${bad.length} — ${bad.map(c => c.key).join(', ')}`; }
   if (sysPicked) sysShow(sysPicked);
 }
 // 선택 도구(Prometheus · Redpanda Console)는 5초 상태 확인에서 뺀다 — 꺼진 포트에 보내는 요청은 어느 방식이든 브라우저가 콘솔에 연결 거부 오류를 남긴다.
@@ -475,13 +475,13 @@ function bizFactLine(b) {
 function expHtml(asset) {
   const btn = (act, label, variant, icon, tip) => `<button type="button" class="btn"${variant ? ` data-variant="${variant}"` : ''} data-size="sm" data-act="${act}" data-tooltip="${esc(tip)}" data-side="top" data-align="start">${icon ? UI.icon(icon) : ''}${esc(label)}</button>`;
   if (asset === FAULT_UNIT.asset) return `<h3>설비 결함 · ${esc(UI.patternName(FAULT_UNIT.pattern))}</h3><p class="lab-fact"></p>
-    <div class="lab-buttons">${btn('degrade', '쿨러 열화 주입', '', 'zap', '쿨러 성능을 서서히 떨어뜨립니다. 유온이 오르면 경보가 납니다')}${btn('restore', '쿨러 복구', 'outline', 'rotate-ccw', '쿨러 성능을 처음 값으로 되돌립니다')}</div>`;
+    <div class="lab-buttons">${btn('degrade', '쿨러 열화 주입', '', 'zap', '쿨러 성능을 서서히 떨어뜨립니다. 유온이 오르면 경보가 납니다')}${btn('restore', '쿨러 복구', 'outline', UI.acts.repair[1], '쿨러 성능을 처음 값으로 되돌립니다')}</div>`;
   if (state.biz === undefined) return '<h3>업무 사건</h3><div class="skeleton" style="height:32px"></div>';
   if (state.biz && state.biz.failed) return `<h3>업무 사건 <span class="biz-alert"></span></h3><p>업무 사건의 상태를 읽지 못했습니다: ${esc(state.biz.failed)} — 잠시 뒤 다시 읽습니다.</p>`;
   const b = bizOf(asset);
   if (!b) return '<h3>업무 사건</h3><p>이 설비에 걸린 업무 사건이 없습니다.</p>';
   return `<h3>업무 사건 · ${esc(b.title)} <span class="biz-alert"></span></h3><p>${esc(bizFactLine(b))}</p>
-    <div class="lab-buttons">${btn('biz-start', `${b.title} 시작`, 'outline', 'play', '설비를 거치지 않고 처리 건이 바로 열립니다')}${btn('biz-reset', '초기화', 'ghost', 'rotate-ccw', '업무 데이터를 처음 값으로 되돌립니다')}</div>`;
+    <div class="lab-buttons">${btn('biz-start', `${b.title} 시작`, 'outline', 'play', '설비를 거치지 않고 처리 건이 바로 열립니다')}${btn('biz-reset', '업무 데이터 초기화', 'ghost', 'rotate-ccw', '업무 데이터를 처음 값으로 되돌립니다')}</div>`;
 }
 function renderUnits() {
   const box = $('#units');
@@ -647,7 +647,7 @@ $('#btnReset').addEventListener('click', async (e) => {
   if (!await UI.confirm({ title: '설비 3기를 정상 운전점으로 되돌릴까요?', body: '진행 중인 결함과 보호 정지가 모두 풀립니다. 열린 처리 건은 그대로 남고, 그 처리 건의 효과 확인 결과가 달라질 수 있습니다.', ok: '전체 초기화', danger: true })) return;
   b.disabled = true; scenarioMessage('설비를 되돌리는 중');
   try { await postJ(API.plant + '/api/reset'); logLine('설비 3기를 정상 운전점으로 되돌렸습니다'); }
-  catch (err) { logLine('전체 초기화 실패: ' + err.message, true); }
+  catch (err) { logLine('설비 3기 초기화 실패: ' + err.message, true); }
   finally { b.disabled = false; await refreshFast(); }
 });
 // 조작 기록: 출처가 다른 두 기록을 이름을 붙여 나눠 보인다 — 이 화면에서 누른 것과 명령 관문이 검증한 것. failed 는 명령 관문 기록을 못 읽은 사유(「기록 없음」으로 보이지 않는다)
@@ -734,7 +734,7 @@ function renderScada() {
   if (info._html !== html) { info.innerHTML = html; info._html = html; }
 }
 $('#btnAllInc').addEventListener('click', () => { state.showAll = true; state.incShown = UI.PAGE; renderIncList(); });
-// 이 설비의 경보로 열린 처리 건으로 가는 줄(또는 모든 설비). 줄은 「열림 / 끝남」만 말하고 누르면 그 처리 건이 열린다 —
+// 이 설비의 경보로 열린 처리 건으로 가는 줄(또는 모든 설비). 줄은 처리 건 화면의 거르기와 같은 말(진행 중 / 처리 완료)만 하고 누르면 그 처리 건이 열린다 —
 // 처리 건의 상태 이름 · 색은 처리 건 화면이 정본이라 여기서 따로 부르지 않는다(같은 것을 두 이름으로 보이지 않는다)
 function renderIncList() {
   const box = $('#incList');
@@ -744,7 +744,7 @@ function renderIncList() {
   const narrowed = !!state.selectedAsset && !state.showAll;
   const rows = narrowed ? incidentsFor(state.selectedAsset) : state.incidents;
   const openN = rows.filter(i => !i.terminal).length;
-  $('#incListTitle').textContent = `${narrowed ? `${state.selectedAsset}의 경보로` : '모든 설비의 경보로'} 열린 처리 건 ${rows.length}건${rows.length ? ` · 열림 ${openN} · 끝남 ${rows.length - openN}` : ''}`;
+  $('#incListTitle').textContent = `${narrowed ? `${state.selectedAsset}의 경보로` : '모든 설비의 경보로'} 열린 처리 건 ${rows.length}건${rows.length ? ` · ${UI.t('inst.running')} ${openN} · 처리 완료 ${rows.length - openN}` : ''}`;
   $('#btnAllInc').hidden = !narrowed || rows.length === state.incidents.length;      // 눌러도 바뀌는 것이 없으면 단추를 두지 않는다
   const error = state.incidentError ? UI.errorBlock('처리 건 목록을 읽지 못했습니다', `${state.incidentError}${state.incidents.length ? ' — 마지막으로 읽은 목록입니다.' : ''}`) : '';
   if (!rows.length) {
@@ -754,8 +754,8 @@ function renderIncList() {
   }
   const paged = UI.page(rows, state.incShown, () => false);
   box.innerHTML = error + `<div class="rows">${paged.rows.map(inc => `<button type="button" class="row" data-open-incident="${esc(inc.id)}" title="${esc(inc.id)}"><span class="row-ic">${UI.icon(inc.terminal ? 'circle-check' : 'triangle-alert')}</span>` +
-    `<span class="row-title">${esc(inc.asset)} 처리 건 · 경보 ${esc(UI.dateTime(inc.created))}</span><span class="tag"${inc.terminal ? '' : ' data-tone="brand"'}>${inc.terminal ? '끝남' : '열림'}</span>` +
-    `<span class="row-meta">${inc.closed ? `${esc(UI.dateTime(inc.closed))}에 끝남 · ` : ''}경보 번호 <span class="mono">${esc(inc.alertId || '–')}</span></span></button>`).join('')}</div>` +
+    `<span class="row-title">${esc(inc.asset)} 처리 건 · 경보 ${esc(UI.dateTime(inc.created))}</span><span class="tag"${inc.terminal ? '' : ' data-tone="brand"'}>${inc.terminal ? '처리 완료' : esc(UI.t('inst.running'))}</span>` +
+    `<span class="row-meta">${inc.closed ? `${esc(UI.dateTime(inc.closed))} 처리 완료` : '처리 건에서 이어서 봅니다'}</span></button>`).join('')}</div>` +
     (paged.rest ? `<p>${UI.moreButton(paged.rest)}</p>` : '');
   box.querySelector('[data-more]')?.addEventListener('click', () => { state.incShown += UI.PAGE; renderIncList(); });
 }
@@ -843,16 +843,13 @@ const trendResize = new ResizeObserver(() => {
 });
 trendResize.observe($('#trendChart'));
 function renderTrends() {
-  const box = $('#monUnits'), pill = $('#monLive'), notice = $('#trendsNotice');
+  const box = $('#monUnits'), notice = $('#trendsNotice');
   if (!state.plant) {
-    pill.innerHTML = '<i class="dot" data-tone="danger"></i><span>설비 값을 읽지 못했습니다 — 다시 읽는 중</span>';
     notice.hidden = !state.plantError; notice.innerHTML = state.plantError ? UI.errorBlock(UI.t('plant.noConn'), `${state.plantError} ${UI.t('plant.noConnSub')}`) : '';
     if (!box.children.length) box.innerHTML = '<div class="skeleton" style="height:228px"></div>'.repeat(3);
     return;
   }
   notice.hidden = true;
-  const live = `<i class="dot" data-tone="ok" data-live></i><span>1초마다 갱신 · <b class="num">${esc(String(Math.round(state.plant.time_scale)))}</b>배속</span>`;
-  if (pill._html !== live) { pill.innerHTML = live; pill._html = live; }
   const units = state.plant.units, cells = Object.keys(VALUE_CELLS);
   if (!box.querySelector('.unit')) {
     box.innerHTML = Object.keys(units).map(a => `<article class="unit" data-asset="${esc(a)}">${unitCardHtml(a, { cells, spark: true, pick: true })}<a class="unit-go" href="#/instances" hidden><span>처리 건에서 보기</span>${UI.icon('arrow-right')}</a></article>`).join('');
@@ -898,19 +895,13 @@ async function refreshFast() {
       state.plant = plant; state.plantError = ''; trendPush(plant);
     } catch (e) { state.plant = null; state.plantError = e.message; }
     try { state.det = await getJ(API.detector + '/api/detector/state'); state.detError = ''; } catch (e) { state.det = null; state.detError = e.message; }
-    const dot = $('#labDot');
     if (state.plant) {
-      const st = Math.floor(state.plant.sim_t);
-      $('#labSimT').textContent = `${st >= 3600 ? Math.floor(st / 3600) + '시간 ' : ''}${Math.floor(st % 3600 / 60)}분 ${st % 60}초`;      // 결함 시뮬레이션 화면 머리
       $('#scale').textContent = state.plant.time_scale; $('#railScale').hidden = false;      // 메뉴 줄 맨 아래 「· 20배속」
-      $('#scaleNow').textContent = state.plant.time_scale;
-      dot.dataset.tone = 'ok'; dot.setAttribute('data-live', '');
       // 설비와 감지기는 같은 배율로 돌아야 한다. 다르면 감지 · 처리와 시간이 어긋난다 — 그 사실과 고칠 곳을 글로 보인다
       const det = state.det && Number(state.det.time_scale), off = !!det && det !== Number(state.plant.time_scale), why = $('#scaleWhy');
       const html = off ? `<div class="alert" role="alert">${UI.icon('triangle-alert')}<h2>설비와 감지기의 시간 배율이 다릅니다 (설비 ${esc(String(state.plant.time_scale))}배 · 감지기 ${esc(String(det))}배)</h2><section>경보가 나는 때와 처리 시간이 어긋납니다. compose.yaml 의 TIME_SCALE 값이 서비스마다 같은지 확인한 뒤 스택을 다시 시작하세요.</section></div>` : '';
       if (why._html !== html) { why.innerHTML = html; why._html = html; why.hidden = !off; }
-    } else { $('#labSimT').textContent = '읽기 실패'; $('#scale').textContent = '–'; $('#railScale').hidden = true; dot.dataset.tone = 'danger'; dot.removeAttribute('data-live'); }      // 배속을 모르면 그 조각을 그리지 않는다
-    $('#scaleFixed').title = state.plantError || '설비 · 감지 · 처리 · AI 에이전트가 같은 배율로 돕니다. 화면에서는 바꾸지 않습니다.';
+    } else { $('#scale').textContent = '–'; $('#railScale').hidden = true; }      // 배속을 모르면 그 조각을 그리지 않는다
     if (state.tab === 'scenario') { renderUnits(); try { renderGwLog(await getJ(API.gateway + '/api/gateway/log')); } catch (e) { renderGwLog([], e.message); } }
     if (state.tab === 'incidents') renderScada();
     if (state.tab === 'trends') renderTrends();

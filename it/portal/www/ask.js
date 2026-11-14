@@ -163,8 +163,8 @@
   }
   function threadHtml() {
     const v = A.cur;
-    if (!v) return `<section class="empty"><header><figure>${icon('message-circle-question')}</figure><h3>아직 보낸 질문이 없습니다</h3><p>${replay() ? '위의 질문 단추를 누르면 질문 칸에 들어갑니다. [보내기]를 누르면 에이전트가 조회하는 과정과 답이 여기에 나옵니다.'
-      : '위 칸에 질문을 적고 [보내기]를 누르면 에이전트가 조회하는 과정과 답이 여기에 나옵니다. 예: 완제품 재고가 가장 적은 설비와 그 수량은? · HYD-01 팬 진동 최근 최대값은?'}</p></header></section>`;
+    if (!v) return `${UI.empty({ icon: 'message-circle-question', title: `아직 보낸 질문이 없습니다`, sub: `${replay() ? '위의 질문 단추를 누르면 질문 칸에 들어갑니다. [보내기]를 누르면 에이전트가 조회하는 과정과 답이 여기에 나옵니다.'
+      : '위 칸에 질문을 적고 [보내기]를 누르면 에이전트가 조회하는 과정과 답이 여기에 나옵니다. 예: 완제품 재고가 가장 적은 설비와 그 수량은? · HYD-01 팬 진동 최근 최대값은?'}` })}`;
     const [label, tone] = STATE[v.state] || [v.state, ''];
     const live = LIVE.has(v.state), calls = (v.tool_calls || []).length;
     // 차례: 질문 → 누가 · 상태 → (도는 동안) 실시간 상자 / (끝난 뒤) 답 → 근거 → 처리 과정(접기)

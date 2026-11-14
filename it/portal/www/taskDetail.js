@@ -93,7 +93,7 @@
     try { return JSON.stringify(JSON.parse(s), null, 2); }
     catch (_) { return s.replace(/\\u([0-9a-fA-F]{4})/g, (m, h) => String.fromCharCode(parseInt(h, 16))); }   // the stored answer is cut at 2,000 chars
   }
-  const rawFold = (v, k) => v == null ? '' : `<details class="fold" data-k="${esc(k)}"><summary>${esc(UI.t('raw'))}</summary><pre class="code">${esc(JSON.stringify(v, null, 2))}</pre></details>`;
+  const rawFold = (v, k) => v == null ? '' : UI.raw(v, { attrs: `data-k="${esc(k)}"` });
   const table = (head, rows) => `<div class="table-container"><table class="table td-table"><thead><tr>${head.map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
   const scoreLabel = k => UI.terms['score.' + k] || k;
 

@@ -67,9 +67,11 @@ def test_발주_단계의_공급사는_승인_때_확정한_업무_DB_공급사_
 
 def test_처리_기록의_원문_칸은_코드_값을_이름으로_바꾸지_않고_경로만_가린다():
     """한바퀴3: 「물은 원문」의 "pattern": "COOLER_DEGRADATION" 이 설명용 이름 바꾸기(UI.words)로 "쿨러 성능 저하"가 돼, 원문이 실제 호출과 달랐다."""
-    got = run(FILES, "UI.patterns = {COOLER_DEGRADATION: '쿨러 성능 저하'}; out([hydRecord.pretty(DATA), UI.clean('COOLER_DEGRADATION 경보')])",
-              {'asset': 'HYD-01', 'pattern': 'COOLER_DEGRADATION'})
-    assert '"pattern": "COOLER_DEGRADATION"' in got[0] and '쿨러 성능 저하' not in got[0]
+    # 원문 칸은 원문 판 하나(UI.raw — 이 PC 경로 · 모델 이름만 가린다)로 그린다
+    got = run(FILES, "UI.patterns = {COOLER_DEGRADATION: '쿨러 성능 저하'}; out([UI.raw(DATA, { mask: true }), UI.clean('COOLER_DEGRADATION 경보')])",
+              {'asset': 'HYD-01', 'pattern': 'COOLER_DEGRADATION', 'file': '/home/user/work/result.json'})
+    assert '&quot;pattern&quot;: &quot;COOLER_DEGRADATION&quot;' in got[0] and '쿨러 성능 저하' not in got[0]
+    assert '&quot;file&quot;: &quot;result.json&quot;' in got[0] and '/home/user' not in got[0]
     assert got[1] == '쿨러 성능 저하 경보', '설명 문장(UI.clean)은 그대로 이름으로 바꾼다'
 
 

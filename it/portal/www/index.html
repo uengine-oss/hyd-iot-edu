@@ -61,8 +61,7 @@
   <!-- ───────── 홈 ───────── -->
   <section class="view active" id="view-main" data-kit>
     <!-- 홈(디자인 기준 5-7): 이야기 한 줄 → 그림 한 장(어두운 캔버스) → 숫자 타일 한 줄 → 처음이라면 이 순서로. 그리는 코드는 main.js, 모양은 canvas.css -->
-    <div class="page-head"><div><h1 data-term="nav.main">홈</h1><p>지식을 넣으면, 사건이 생겼을 때 AI가 그 지식으로 판단하고, 사람이 승인한 조치만 실행되어 결과가 남습니다.</p></div>
-      <div class="page-tools"><button type="button" class="btn" data-variant="outline" id="mainArch"><span data-icon="network"></span>시스템 구성 보기</button></div></div>
+    <div data-page-head="main" data-sub="지식을 넣으면 AI가 그 지식으로 판단하고, 사람이 승인한 조치만 실행됩니다."><button type="button" class="btn" data-variant="outline" id="mainArch"><span data-icon="network"></span>시스템 구성 보기</button></div>
     <div class="canvas hm-hero" id="mainHero" tabindex="0" role="region" aria-label="설비 · 데이터 · AI 연결 그림"></div>
     <div class="stats hm-stats" id="mainStats" aria-label="지금 상태"></div>
     <div class="sec-head"><h2 id="hmStart">처음이라면 이 순서로</h2></div>
@@ -73,8 +72,7 @@
   <section class="view" id="view-home" data-kit>
     <!-- 구조 그림(디자인 기준 5-8): 어두운 캔버스 하나에 세로 띠 셋(OT · DMZ · IT) × 계층 아홉(위가 업무, 아래가 현장), 부품 상자, 길 셋. 부품에 올리거나 초점을 주면 아래 정보 띠가 바뀐다.
          app.js renderStack 이 layers.js 의 표(역할 · 현업 대응 · 주소 · 상태 확인 주소)로 그린다. 모양은 canvas.css(.sys-*) -->
-    <div class="page-head"><div><h1 data-term="nav.home">시스템 구성</h1><p>현장의 값은 DMZ를 거쳐 올라오고, 사람이 승인한 명령만 명령 관문을 거쳐 내려갑니다.</p></div>
-      <div class="page-tools"><span class="tag" id="sysSum" role="status">서비스 확인 중</span></div></div>
+    <div data-page-head="home" data-sub="현장 값은 DMZ를 거쳐 올라오고, 사람이 승인한 명령만 명령 관문으로 내려갑니다."><span class="tag" id="sysSum" role="status" hidden></span></div>
     <div class="canvas sys-arch">
       <div class="canvas-bar sys-bar">
         <span class="cv-legend"><span><i class="sys-lg" data-k="data"></i>값이 올라가는 길</span><span><i class="sys-lg" data-k="cmd"></i>승인된 명령이 내려가는 길</span><span><i class="sys-lg" data-k="ai"></i>AI가 지식을 읽는 길</span></span>
@@ -96,12 +94,7 @@
   <!-- ───────── 지식 지도 ───────── -->
   <section class="view" id="view-ontology" data-kit>
     <!-- 왼쪽 큰 캔버스(Cytoscape — enterprise.js) + 오른쪽 348px 밝은 칸(고른 항목). 찾기 · 이상 패턴 경로 · 확대 도구 · 묶음 켜고 끄기는 캔버스 안에 있다(디자인 기준 5-9 · 6-3). 모양은 canvas.css -->
-    <div class="page-head"><div><h1 data-term="nav.ontology">지식 지도</h1><p>AI가 판단할 때 읽는 온톨로지입니다. 항목을 누르면 무엇과 이어져 있는지 보입니다.</p></div>
-      <div class="page-tools">
-        <select class="select" id="ontoAsset" aria-label="설비"></select><!-- 설비 목록은 서버가 준다(enterprise.js ontoAssets) -->
-        <select class="select" id="ontoNs" aria-label="지식 묶음" hidden><option value="">기본 지식</option></select>
-        <button type="button" class="btn" data-variant="outline" id="ontoReload" data-icon="refresh-cw">다시 읽기</button>
-      </div></div>
+    <div data-page-head="ontology" data-sub="AI가 판단할 때 읽는 온톨로지입니다. 항목을 누르면 이어진 것이 보입니다." data-head-more="reload:ontoReload"><select class="select" id="ontoAsset" aria-label="설비"></select><select class="select" id="ontoNs" aria-label="지식 묶음" hidden><option value="">기본 지식</option></select></div>
     <p class="muted" data-tone="danger" id="ontoNote" role="alert" hidden></p>
     <div class="kg">
       <div class="canvas kg-canvas">
@@ -124,7 +117,7 @@
   <!-- ───────── 조치 방법 ───────── -->
   <section class="view" id="view-skills" data-kit>
     <!-- 목록 + 상세(디자인 기준 5-4): 왼쪽 목록(위에 종류로 거르는 묶음 단추) · 오른쪽 상세 판. 그리는 코드는 hitl.js, 배치는 screens.css -->
-    <div class="page-head"><div><h1 data-term="nav.skills">조치 방법</h1><p>고장 유형마다 무엇을 어떤 절차로 조치하는지 적은 지식입니다. AI가 조치 후보를 낼 때 이 목록에서 고릅니다.</p></div><div class="page-tools"><button type="button" class="btn" id="skillNew" data-icon="plus">새 조치 방법</button></div></div>
+    <div data-page-head="skills" data-sub="고장 유형별 조치와 절차입니다. AI가 조치 후보를 이 목록에서 고릅니다."><button type="button" class="btn" id="skillNew" data-icon="plus">새 조치 방법</button></div>
     <div class="split sk-split">
       <div class="sk-side"><div id="skillKinds"></div><div class="rows" id="skillList" aria-label="조치 방법 목록"></div></div>
       <div class="panel" id="skillDetail"></div>
@@ -134,7 +127,7 @@
   <!-- ───────── 규칙 판단(판단 실험) ───────── -->
   <section class="view" id="view-decision" data-kit>
     <!-- 조건 → 결과(디자인 기준 5-6): 왼쪽에 조건 판, 오른쪽에 결과(결론 → 근거 → 원문 접기). 결과는 enterprise.js renderDecision 이 그리고, 격자는 reading.css(.io) -->
-    <div class="page-head"><div><h1 data-term="nav.decision">규칙 판단</h1><p>설비와 이상 패턴, 가정할 조건을 골라 판단 규칙을 시험합니다. 가상 설비 3기의 지금 값으로 계산하며, 승인이나 설비 실행으로 이어지지 않습니다.</p></div></div>
+    <div data-page-head="decision" data-sub="조건을 골라 판단 규칙을 시험합니다. 가상 설비 3기의 지금 값으로 계산만 하고 실행하지 않습니다."></div>
     <div class="io">
       <form class="panel io-in" id="decForm" aria-label="판단 조건">
         <div class="panel-head"><div><h2>판단 조건</h2></div></div>
@@ -159,7 +152,7 @@
   <!-- ───────── 업무 시스템 기록(유압 설비): 업무 시스템의 표와 거래 전 · 후 값. 판단 · 승인 · 실행 결과는 처리 건 화면 한 곳에 있다 ───────── -->
   <section class="view" id="view-process" data-kit>
     <!-- 결론(#bzSummary: 조치가 남긴 거래 수 · 시스템마다 지금 있는 기록 수) → 거래 기록(한 줄 = 무엇을 · 어느 설비에 · 어느 조치 방법으로 · 언제 · 누가, 변경 전 · 후와 원문은 접기) → 업무 시스템마다 표 한 장. 그리는 코드는 enterprise.js renderSystems -->
-    <div class="page-head"><div><h1 data-term="nav.process">업무 시스템 기록</h1><p>승인한 조치가 업무 시스템에 남긴 거래와, 업무 시스템의 지금 기록입니다.</p></div><div class="page-tools"><button type="button" class="btn" data-variant="outline" data-go-tab="instances"><span data-icon="inbox"></span>처리 건 열기</button></div></div>
+    <div data-page-head="process" data-sub="승인한 조치가 업무 시스템에 남긴 거래와, 업무 시스템의 지금 기록입니다."><button type="button" class="btn" data-variant="outline" data-go-tab="instances"><span data-icon="inbox"></span>처리 건 열기</button></div>
     <div class="stats bz-stats" id="bzSummary" role="status"></div>
     <div class="sec-head"><h2>거래 기록</h2><span class="muted">최근 12건</span></div>
     <div class="panel bz-tx" id="txFold"><div class="stream-log" id="txList"></div></div>
@@ -179,11 +172,11 @@
   <section class="view" id="view-instances" data-kit>
     <!-- 처리 건 한 화면(디자인 기준 5-1 · 5-2, 견본 case.html): 머리(제목 · 한 문장 · 상태로 거르는 묶음 단추) → 왼쪽 목록 + 오른쪽 한 건.
          한 건은 탭 없이 한 장이다: 머리 → 내가 할 일 → 진행 길(bpmn-js) → 단계 기록(instances.js · caseRecord.js · flow.js). -->
-    <div class="page-head"><div><h1 data-term="nav.instances">처리 건</h1><p>사건 하나가 한 건으로 열리고, AI 판단 · 내 승인 · 실행 결과가 이 한 곳에 남습니다.</p></div>
-      <div class="page-tools"><div class="seg" id="instTabs" role="group" aria-label="상태로 거르기"></div></div></div>
+    <div data-page-head="instances" data-sub="사건 하나가 한 건으로 열리고, AI 판단 · 내 승인 · 실행 결과가 이 한 곳에 남습니다."></div>
     <div id="instBanner"></div>
     <div class="split case-split">
       <div class="case-side">
+        <div class="seg" id="instTabs" role="group" aria-label="상태로 거르기"></div>
         <div id="todoRoles"></div>
         <div class="rows" id="instList" aria-label="처리 건 목록"></div>
         <!-- 알림(읽음 처리): inbox.js 가 그린다. 위 막대의 종을 누르면 이 접기가 열린다 -->
@@ -193,7 +186,7 @@
         <article class="case" id="instDetail" aria-live="off"></article>
         <!-- 개발 · 운영용 기록은 한 건의 맨 아래 접기 하나에 모은다: 단계 표 원문 · 처리 건 값 · 지식 지도 반영 · 복구 · 실시간 활동 · 실행 중인 AI 에이전트 -->
         <details class="fold case-more" id="caseMore"><summary>자세한 기록<span class="muted">단계 표 원문 · 처리 건 값 · 다시 수행과 복구 · 실시간 활동</span></summary><div class="fold-body">
-          <div class="seg" id="caseMoreTabs" role="group" aria-label="자세한 기록 보기"><button type="button" data-more-tab="log" aria-pressed="true">단계 표</button><button type="button" data-more-tab="values" aria-pressed="false">처리 건 값</button><button type="button" data-more-tab="recover" aria-pressed="false">다시 수행 · 복구</button><button type="button" data-more-tab="graph" aria-pressed="false">지식 지도 반영</button><button type="button" data-more-tab="stream" aria-pressed="false">모든 처리 건의 실시간 활동<span class="num" id="streamFoldCount"></span></button><button type="button" data-more-tab="agents" aria-pressed="false"><i class="live-dot off" id="agentsFoldDot"></i>실행 중인 AI 에이전트<span class="num" id="agentsFoldCount"></span></button></div>
+          <div class="tabs view-tabs" id="caseMoreTabs" data-size="sm"><nav role="tablist" aria-orientation="horizontal" aria-label="자세한 기록 보기"><button type="button" role="tab" data-more-tab="log" aria-selected="true" tabindex="0">단계 표</button><button type="button" role="tab" data-more-tab="values" aria-selected="false" tabindex="-1">처리 건 값</button><button type="button" role="tab" data-more-tab="recover" aria-selected="false" tabindex="-1">다시 수행 · 복구</button><button type="button" role="tab" data-more-tab="graph" aria-selected="false" tabindex="-1">지식 지도 반영</button></nav></div>
           <div class="case-more-pane" data-more="log" id="caseLog"></div>
           <div class="case-more-pane" data-more="values" id="caseValues"></div>
           <div class="case-more-pane" data-more="recover" id="caseRecoverHome"></div>
@@ -210,8 +203,7 @@
   <section class="view" id="view-scenario" data-kit>
     <!-- 결함을 넣고 경보가 날 때까지를 본다: 머리 → 주입 뒤의 과정(#labFollow — hydLive.follow, 실제 사건이 올 때만 넘어간다) → 설비 카드 셋 → 범위 한 문장 → 조작 기록 접기.
          그리는 코드는 app.js renderUnits · followFault, 모양은 canvas.css(.unit* · .lab-*) -->
-    <div class="page-head"><div><h1 data-term="nav.scenario">결함 시뮬레이션</h1><p>가상 설비 3기에 결함을 넣어 경보를 내고 처리 건을 엽니다.</p></div>
-      <div class="page-tools"><span class="live-pill" id="scaleFixed"><i class="dot" id="labDot"></i><span>설비 시각 <b id="labSimT" class="num">–</b> · <b id="scaleNow" class="num">20</b>배속</span></span><button type="button" class="btn" data-variant="outline" id="btnReset"><span data-icon="rotate-ccw"></span>전체 초기화</button></div></div>
+    <div data-page-head="scenario" data-sub="가상 설비 3기에 결함을 넣어 경보를 내고 처리 건을 엽니다."><button type="button" class="btn" data-variant="outline" id="btnReset"><span data-icon="rotate-ccw"></span>설비 3기 초기화</button></div>
     <div id="scaleWhy" hidden></div>
     <section class="panel lab-follow" id="labFollowPanel" aria-label="결함 주입 뒤의 과정" hidden>
       <div class="panel-head"><div><h2 id="labFollowTitle"></h2><p id="labFollowNote" hidden></p></div><button type="button" class="btn" data-variant="ghost" data-size="icon-sm" id="labFollowClose" aria-label="과정 닫기" data-tooltip="닫기" data-side="left"><span data-icon="x"></span></button></div>
@@ -228,7 +220,7 @@
   <section class="view" id="view-incidents" data-kit>
     <!-- 어두운 캔버스 하나에 회로 그림 셋(디자인 기준 6-4) + 캔버스 아래 정보 띠(고른 설비의 상태와 처리 건으로 가는 길) → 고른 설비에서 난 사건 목록(누르면 처리 건).
          그리는 코드는 app.js renderScada · renderIncList, 모양은 canvas.css(.hc-*) -->
-    <div class="page-head"><div><h1 data-term="nav.incidents">설비 회로</h1><p>가상 설비 3기의 유압 회로와 지금 값입니다. 설비를 고르면 그 설비의 처리 건이 아래에 나옵니다.</p></div></div>
+    <div data-page-head="incidents" data-sub="가상 설비 3기의 유압 회로입니다. 설비를 고르면 그 설비의 처리 건이 아래에 나옵니다."></div>
     <div class="canvas hc-canvas">
       <div class="canvas-bar hc-bar"><span class="cv-legend"><span><i class="hc-lg pipe"></i>작동유가 흐르는 배관</span><span><i class="hc-lg sensor"></i>센서</span><span><i class="hc-lg hot"></i>경보 기준을 넘은 값</span></span></div>
       <div class="hc-grid" id="scada" role="group" aria-label="설비 고르기"></div>
@@ -242,8 +234,7 @@
   <section class="view" id="view-trends" data-kit>
     <!-- 설비 카드 셋(큰 값 · 작은 추이 선 · 눈금 막대 · 작은 값 여섯) → 추이 판(uPlot, 한 차트에 값 하나, 기준선 점선) — 디자인 기준 5-5.
          값은 포털이 1초마다 읽는 설비 상태(app.js refreshFast)를 이 창을 연 뒤부터 모은 것이다. 더 긴 기간은 Grafana 에서 본다. 그리는 코드는 app.js renderTrends, 모양은 canvas.css(.unit* · .trend*) -->
-    <div class="page-head"><div><h1 data-term="nav.trends">실시간 모니터링</h1><p>가상 설비 3기의 지금 값과 추이입니다.</p></div>
-      <div class="page-tools"><span class="live-pill" id="monLive"><i class="dot"></i><span>설비 값 읽는 중</span></span><a id="grafanaLink" class="btn" data-variant="outline" target="_blank" rel="noopener">Grafana에서 열기<span data-icon="external-link"></span></a></div></div>
+    <div data-page-head="trends" data-sub="가상 설비 3기의 지금 값과 추이입니다."><a id="grafanaLink" class="btn" data-variant="outline" target="_blank" rel="noopener">Grafana에서 열기<span data-icon="external-link"></span></a></div>
     <div id="trendsNotice" hidden></div>
     <div class="units" id="monUnits" role="group" aria-label="설비 고르기"></div>
     <section class="panel trend" aria-labelledby="trendTitle">
@@ -257,8 +248,8 @@
   <section class="view" id="view-knowledge" data-kit>
     <!-- 문서 → 지식(디자인 기준 5-3): 위에 단계 줄(올리기 → AI 추출 → 검토 → 적재), 그 아래에 지금 단계의 내용만. 올릴 것(매뉴얼 · 업무 DB 표 정의)은 머리의 묶음 단추로 고른다.
          그리는 코드는 hitl.js(업무 DB 표의 뜻 후보는 legacyMeaning.js), 배치는 screens.css -->
-    <div class="page-head"><div><h1 data-term="nav.knowledge">문서 등록</h1><p>문서를 올리면 AI가 조치 방법과 절차를 뽑고, 사람이 검토한 것만 지식 지도에 적재합니다.</p></div>
-      <div class="page-tools"><div class="seg" id="docKinds" role="group" aria-label="올릴 것"><button type="button" aria-pressed="true" data-doc-kind="manual">매뉴얼</button><button type="button" aria-pressed="false" data-doc-kind="ddl">업무 DB 표 정의</button></div></div></div>
+    <div data-page-head="knowledge" data-sub="문서를 올리면 AI가 조치 방법을 뽑고, 사람이 검토한 것만 지식 지도에 적재합니다."></div>
+    <div class="tabs view-tabs" id="docKinds"><nav role="tablist" aria-orientation="horizontal" aria-label="올릴 것"><button type="button" role="tab" aria-selected="true" tabindex="0" data-doc-kind="manual">매뉴얼</button><button type="button" role="tab" aria-selected="false" tabindex="-1" data-doc-kind="ddl">업무 DB 표 정의</button></nav></div>
     <div data-doc-pane="manual">
       <div class="panel doc-panel" id="manualUpload">
         <div class="stream-phases doc-phases" id="manualSteps" role="list" aria-label="문서 등록 단계"></div>
@@ -306,8 +297,7 @@
   <section class="view" id="view-admin">
     <!-- 목록 + 상세(디자인 기준 5-4): 왼쪽에 도구 셋, 오른쪽에 고른 도구. 오른쪽 판은 details 셋이고 왼쪽 줄이 그 열림을 바꾼다(app.js 「관리」) —
          딸린 모듈(configBundle.js · sourceEvents.js · definitionRegistry.js)은 자기 판이 열릴 때(toggle) 읽는다. -->
-    <div class="page-head"><div><h1 data-term="nav.admin">관리</h1><p>내 설정을 파일로 옮기고, 실패한 접수를 다시 처리하고, 흐름 정의를 JSON으로 다룹니다.</p></div>
-      <div class="page-tools"><button type="button" class="btn" data-variant="outline" data-go-tab="flows"><span data-icon="workflow"></span>흐름 열기</button></div></div>
+    <div data-page-head="admin" data-sub="내 설정을 옮기거나 되돌리고, 접수 기록과 흐름 정의 JSON을 다룹니다."><button type="button" class="btn" data-variant="outline" data-go-tab="flows"><span data-icon="workflow"></span>흐름 열기</button></div>
     <div class="split admin-split">
       <div class="rows" id="adminList" role="group" aria-label="관리 도구">
         <button type="button" class="row" data-admin="configBundlePanel"><span class="row-ic" data-icon="file-json"></span><span class="row-title">내 설정</span><span class="row-meta">파일로 내보내기 · 불러오기 · 기준으로 되돌리기 · 내 사례</span></button>
@@ -326,7 +316,7 @@
         <option value="WAITING">연결 대기</option><option value="PENDING">처리 대기</option><option value="CLAIMED">처리 중</option>
         <option value="HANDLED">처리 완료</option><option value="DUPLICATE">중복 접수</option><option value="">전체</option>
       </select></div>
-              <button type="button" class="btn" data-variant="outline" data-size="sm" id="sourceEventRefresh">새로 고침</button><button type="button" class="btn" data-variant="outline" data-size="sm" id="sourceEventMore">더 보기</button><button type="button" class="btn" data-variant="outline" data-size="sm" id="sourceEventDetailRefresh" disabled>고른 접수 새로 고침</button></div>
+              <button type="button" class="btn" data-variant="outline" data-size="sm" id="sourceEventRefresh">다시 읽기</button><button type="button" class="btn" data-variant="outline" data-size="sm" id="sourceEventMore">더 보기</button><button type="button" class="btn" data-variant="outline" data-size="sm" id="sourceEventDetailRefresh" disabled>고른 접수 다시 읽기</button></div>
             <p id="sourceEventMessage" role="status" class="muted"></p><div id="sourceEventList" class="rows"></div>
           </div>
           <div class="panel-sec" id="sourceEventDetail"></div>
@@ -345,7 +335,7 @@
               <div role="group" class="field"><label for="definitionFile">정의 JSON 파일</label><input class="input" type="file" id="definitionFile" accept=".json,application/json"></div>
               <div role="group" class="field admin-wide"><label for="definitionJson">정의 JSON</label><textarea class="textarea mono" id="definitionJson" rows="10" spellcheck="false" placeholder="흐름 정의 JSON(이름 · 판본 · 단계 · 이벤트 · 연결 · 입력 양식)"></textarea><p>같은 판본은 바꿀 수 없습니다. 변경할 때는 새 판본을 씁니다.</p></div>
             </div></fieldset>
-            <footer class="form-foot"><button type="button" class="btn" data-variant="ghost" data-size="sm" id="definitionRefresh">목록 새로 읽기</button><button type="button" class="btn" data-variant="outline" data-size="sm" id="definitionCopy">선택한 정의 가져오기</button><button type="button" class="btn" data-variant="outline" id="definitionPublish">이 정의 판본 등록</button></footer>
+            <footer class="form-foot"><button type="button" class="btn" data-variant="ghost" data-size="sm" id="definitionRefresh">다시 읽기</button><button type="button" class="btn" data-variant="outline" data-size="sm" id="definitionCopy">선택한 정의 가져오기</button><button type="button" class="btn" data-variant="outline" id="definitionPublish">이 정의 판본 등록</button></footer>
           </div>
           <div class="panel-sec">
             <fieldset class="fieldset"><legend>실행</legend><div role="group" class="admin-grid">
@@ -363,7 +353,7 @@
 
   <!-- ───────── A5 (U7) 새 화면 자리: 각 단위가 window.hyd<X>.mount(<컨테이너>) 로 채운다 ───────── -->
   <section class="view" id="view-ask" data-kit>
-    <div class="page-head"><div><h1 data-term="nav.ask">질문하기</h1><p>AI 에이전트에게 질문 하나를 보내면 처리 건 하나로 돌고, 에이전트는 자기 도구로 실제 조회한 결과만으로 답합니다.</p></div></div>
+    <div data-page-head="ask" data-sub="AI 에이전트에게 질문하면 처리 건 하나로 돌고, 도구로 조회한 결과만으로 답합니다."></div>
     <div class="shell-mount" id="askView"></div>
   </section>
   <section class="view" id="view-agents" data-kit>
@@ -374,29 +364,28 @@
   </section>
   <!-- 판단 실험의 나머지 셋도 「조건 → 결과」(디자인 기준 5-6): 왼쪽 조건 판, 오른쪽 결과. 격자는 reading.css(.io), 그리는 코드는 compare.js · evaluation.js · whatif.js -->
   <section class="view" id="view-compare" data-kit>
-    <div class="page-head"><div><h1 data-term="nav.compare">에이전트 시험 비교</h1><p>에이전트 둘의 구성(도구 서버와 스킬 문서)을 같은 입력에 대어, 판단 엔진이 계산한 원인과 1순위 조치, 도구 호출이 어떻게 달라지는지 나란히 봅니다. AI 모델은 돌리지 않습니다.</p></div></div>
+    <div data-page-head="compare" data-sub="에이전트 구성 둘을 같은 입력에 대어 판단과 도구 호출의 차이를 봅니다. AI 모델은 돌리지 않습니다."></div>
     <div class="shell-mount" id="compareView"></div>
   </section>
   <section class="view" id="view-eval" data-kit>
     <div class="shell-mount" id="evalView"></div>   <!-- 제목은 evaluation.js 가 그린다(오른쪽에 다시 읽기 단추가 붙는다) -->
   </section>
   <section class="view" id="view-whatif" data-kit>
-    <div class="page-head"><div><h1 data-term="nav.whatif">조건별 손익</h1><p>판단 한 번을 기준으로 잡고 업무 값과 규칙을 시험값으로 바꿔, 조치의 순위와 손익이 어떻게 달라지는지 봅니다.</p></div></div>
+    <div data-page-head="whatif" data-sub="판단 한 번을 기준으로 업무 값과 규칙을 바꿔, 순위와 손익이 달라지는지 봅니다."></div>
     <div class="shell-mount" id="whatifView"></div>
   </section>
   <section class="view" id="view-kpi" data-kit>
     <div class="shell-mount" id="kpiView"></div><!-- 화면 제목은 kpi.js 가 그린다(기간 고르기와 한 줄) — 여기에 또 두면 제목이 두 번 보인다 -->
   </section>
   <section class="view" id="view-fabric" data-kit>
-    <div class="page-head"><div><h1 data-term="nav.fabric">데이터 원천</h1><p>업무 DB와 시계열 DB의 값을 설비 하나로 묶어 보고, AI가 판단에 쓰는 값이 실제로 어느 표와 열에서 오는지 확인합니다. 읽기만 합니다.</p></div></div>
+    <div data-page-head="fabric" data-sub="AI가 판단에 쓰는 값이 업무 DB와 시계열 DB의 어느 표 · 열에서 오는지 봅니다. 읽기만 합니다."></div>
     <div class="shell-mount" id="fabricView"></div><!-- fabric.js 가 그린다: 지금 상태(숫자 타일) → 보기 셋 -->
   </section>
   <!-- ───────── 흐름: 목록 + 상세(디자인 기준 5-4). 왼쪽 흐름 목록, 오른쪽에 고른 흐름 하나 —
        머리 · 단계 줄(가져오기 → 단계 설정 · 검사 → 판본 등록 → 배포 → 시작) · 그림(bpmn-js) · 단계 설정 · 판본 등록은 flows.js 가 #flowsView 에,
        판본 · 배포는 definitionDeploy.js 가 #definitionDeployPanel 에, 시작은 flows.js 가 #flowsStart 에 그린다. 아래는 경보별 운영 흐름(definitionDeploy.js) ───────── -->
   <section class="view" id="view-flows" data-kit>
-    <div class="page-head"><div><h1 data-term="nav.flows">흐름</h1><p>bpmn.io에서 그린 흐름을 가져와 단계마다 누가 무엇을 할지 정하고, 판본으로 등록 · 배포해 처리 건으로 돌립니다.</p></div>
-      <div class="page-tools"><button type="button" class="btn" data-variant="outline" id="flowReload" data-icon="refresh-cw">다시 읽기</button><button type="button" class="btn" id="flowImportOpen" data-icon="file-up">흐름 가져오기</button></div></div>
+    <div data-page-head="flows" data-sub="bpmn.io에서 그린 흐름을 가져와 단계의 수행자를 정하고, 배포해 처리 건으로 돌립니다." data-head-more="reload:flowReload"><button type="button" class="btn" id="flowImportOpen" data-icon="file-up">흐름 가져오기</button></div>
     <div class="split">
       <div class="pane-side"><div class="seg" role="group" aria-label="흐름 구분" id="flowKind"></div><div class="rows" id="flowList" aria-label="흐름 목록"></div></div>
       <section class="panel flow-panel" id="flowPanel" aria-label="고른 흐름">
@@ -419,16 +408,10 @@
     <section id="deployRoutesBox" aria-labelledby="flowRoutesTitle">
       <div class="sec-head"><h2 id="flowRoutesTitle">경보별 운영 흐름</h2><span class="muted" id="deployRoutesNote"></span></div>
       <div id="deployRoutes"></div>
-      <details class="fold flow-resets"><summary>기준으로 되돌리기<span class="muted">내가 배포한 흐름 내리기 · 가져온 흐름 지우기</span></summary><div class="fold-body">
-        <div class="pane-reset"><div><b>기준 흐름으로 되돌리기</b><p class="muted">내가 배포한 흐름을 경보 경로에서 내리고, 기준 흐름의 운영 판본을 기준 판본으로 돌립니다. 등록한 판본과 열린 처리 건은 그대로입니다.</p><p class="muted" id="deployResetWhy"></p></div>
-          <button type="button" class="btn" data-variant="outline" id="deployResetRef" data-deploy-reset disabled>기준 흐름으로 되돌리기</button></div>
-        <div class="pane-reset"><div><b>가져온 흐름을 기준으로 되돌리기</b><p class="muted">내가 가져온 흐름과 그 판본, 단계 설정 초안을 모두 지웁니다. 기준 흐름과 지금 배포된 흐름은 남습니다.</p></div>
-          <button type="button" class="btn" data-variant="destructive" id="flowReset">가져온 흐름을 기준으로 되돌리기</button></div>
-        <div class="alert" hidden><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="vendor/lucide/icons.svg#info"/></svg><h2 id="deployResetMessage"></h2></div>
-      </div></details>
+      <p class="muted pane-foot reset-link">내가 가져온 흐름과 배포를 지우려면 <a href="#/admin" data-go-reset="flows">관리 › 내 설정에서 기준으로 되돌리기</a></p>
     </section>
   </section>
-  <section class="view" id="view-oil" data-kit><div class="page-head"><div><h1 data-term="nav.oil">오일 분석 입력</h1><p>작동유는 센서가 없어 정기 분석 결과를 사람이 넣습니다. 기준을 벗어난 값이면 센서 경보와 같은 길로 처리 건이 열립니다.</p></div></div><div class="shell-mount" id="oilView"></div></section>
+  <section class="view" id="view-oil" data-kit><div data-page-head="oil" data-sub="센서가 없는 작동유는 분석 결과를 사람이 넣습니다. 기준을 벗어나면 처리 건이 열립니다."></div><div class="shell-mount" id="oilView"></div></section>
   </div>
 </main>
 

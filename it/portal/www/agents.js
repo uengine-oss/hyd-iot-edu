@@ -119,7 +119,7 @@
     if (st.tab !== 'skills') drawSkillDoc();
   }
   function emptyDetail() {
-    const none = (name, title, sub) => `<div class="pane-none"><section class="empty"><header><figure>${icon(name)}</figure><h3>${esc(title)}</h3><p>${esc(sub)}</p></header></section></div>`;
+    const none = (name, title, sub) => `<div class="pane-none">${UI.empty({ icon: name, title: `${title}`, sub: `${sub}` })}</div>`;
     if (st.error) return '';
     return st.tab === 'skills' ? none('file-text', '아직 스킬이 없습니다', '화면 위의 [스킬 만들기]로 작업 요령 문서(SKILL.md)를 쓰면 여기에 나타납니다.')
       : st.tab === 'systems' ? none('cog', '시스템 수행자가 없습니다', '흐름의 시스템 단계를 맡는 수행자가 등록되어 있지 않습니다.')
@@ -174,15 +174,15 @@
         : `<div class="use">${icon('circle-alert')}<span><b>본문 없는 스킬</b></span><span class="muted mono">${esc(s.skill_name)}</span></div>`).join('')
         : '<p class="muted">붙은 스킬이 없습니다. 스킬이 없으면 목표와 작업 규칙만으로 판단합니다.</p>';
       const tools = d.tools.length ? d.tools.map(t => `<button type="button" class="use" data-goto-server="${esc(t.name)}">${icon('plug')}<span><b>${esc(serverName(t.name, t.description))}</b></span>` +
-        `<span class="muted"><i class="dot" data-tone="${t.registered ? 'ok' : 'danger'}"></i>${t.registered ? '등록됨' : '등록 안 됨'}</span></button>`).join('')
+        `<span class="muted"><i class="dot" data-tone="${t.registered ? 'ok' : 'danger'}"></i>${t.registered ? '연결됨' : '등록 안 됨'}</span></button>`).join('')
         : '<p class="muted">도구 서버를 정하지 않아, 등록된 도구 서버를 모두 씁니다.</p>';
-      html += `<div class="pane-grid"><div class="panel-sec"><h3>${icon('file-text', 'ic-sm')}스킬<span class="muted">무엇을 어떻게 할지</span></h3>${skills}</div>` +
-        `<div class="panel-sec"><h3>${icon('plug', 'ic-sm')}도구 서버<span class="muted">무엇을 읽고 부를 수 있는지</span></h3>${tools}</div></div>` +
+      html += `<div class="pane-grid"><div class="panel-sec"><h3>${icon('file-text', 'ic-sm')}스킬<span class="muted num">${d.skills ? d.skills.length : ''}</span></h3>${skills}</div>` +
+        `<div class="panel-sec"><h3>${icon('plug', 'ic-sm')}도구 서버<span class="muted num">${d.tools.length || ''}</span></h3>${tools}</div></div>` +
         (docSkill(d) ? `<div class="panel-sec" data-skill-doc-box></div>` : '');
     }
-    html += `<div class="panel-sec"><h3>${icon('workflow', 'ic-sm')}맡은 단계<span class="muted">흐름에서 이 ${isAgent ? '에이전트' : '수행자'}가 일하는 자리</span></h3>` +
-      (d.steps.length ? d.steps.map(stepUse).join('') : `<section class="empty"><header><h3>맡은 단계가 없습니다</h3><p>${isAgent ? '[담당 배정]에서 단계를 맡기거나, 흐름 화면의 단계 설정에서 이 에이전트를 고르면 여기에 보입니다.' : '이 수행자를 쓰는 흐름 단계가 없습니다.'}</p></header>` +
-        (isAgent ? `<footer><button type="button" class="btn" data-variant="outline" data-size="sm" data-goto-assign>담당 배정 열기${icon('arrow-right')}</button></footer>` : '') + '</section>') + '</div>';
+    html += `<div class="panel-sec"><h3>${icon('workflow', 'ic-sm')}맡은 단계<span class="muted num">${d.steps.length || ''}</span></h3>` +
+      (d.steps.length ? d.steps.map(stepUse).join('') : UI.empty({ title: '맡은 단계가 없습니다', sub: isAgent ? '[담당 배정]에서 단계를 맡기거나, 흐름 화면의 단계 설정에서 이 에이전트를 고르면 여기에 보입니다.' : '이 수행자를 쓰는 흐름 단계가 없습니다.', cls: 'compact',
+          action: isAgent ? { label: '담당 배정 열기', attrs: 'data-goto-assign', icon: 'arrow-right' } : null })) + '</div>';
     if (isAgent) {
       const rules = d.work_rules_detail?.error ? d.work_rules_detail.error : d.work_rules_detail ? d.work_rules_detail.label : d.work_rules ? '작업 규칙 내용을 읽지 못했습니다' : '공통 안전 규칙만 적용';
       html += `<div class="panel-sec"><h3>${icon('sliders-horizontal', 'ic-sm')}설정<span class="muted">${d.editable ? '고친 내용은 다음 실행부터 쓰입니다' : '기본 제공 에이전트는 고칠 수 없습니다. 복제해서 내 것으로 고칩니다'}</span></h3>` +
@@ -222,7 +222,7 @@
   async function drawSkillDoc() {
     const box = st.host.querySelector('[data-skill-doc-box]'), d = st.detail; if (!box || !d) return;
     const name = docSkill(d);
-    box.innerHTML = `<h3>${icon('book-open', 'ic-sm')}스킬 문서<span class="muted">에이전트가 일을 시작할 때 읽습니다</span></h3><div class="doc"><div class="skeleton sk-line" style="width:40%;height:16px"></div><div class="skeleton sk-line" style="margin-top:12px"></div><div class="skeleton sk-line" style="margin-top:8px;width:80%"></div></div>`;
+    box.innerHTML = `<h3>${icon('book-open', 'ic-sm')}스킬 문서</h3><div class="doc"><div class="skeleton sk-line" style="width:40%;height:16px"></div><div class="skeleton sk-line" style="margin-top:12px"></div><div class="skeleton sk-line" style="margin-top:8px;width:80%"></div></div>`;
     try {
       const s = await getJ(api('/api/skills/' + encodeURIComponent(name)));
       if (!box.isConnected || st.detail !== d || docSkill(d) !== name) return;
@@ -251,8 +251,8 @@
       `<p>${esc(plainName(s.description) || (mine ? '설명이 적혀 있지 않습니다.' : ''))}</p></div><div class="pane-acts">${acts}</div></div>` +
       `<div class="panel-sec"><h3>${icon('book-open', 'ic-sm')}스킬 문서<span class="muted">${mine ? '붙은 에이전트가 실행될 때 작업 폴더에 SKILL.md로 들어갑니다' : '기본 제공 스킬은 고칠 수 없습니다. 새 스킬을 만들어 씁니다'}</span></h3>` +
       `<div class="doc"><div class="doc-bar">${icon('file-text', 'ic-sm')}<span class="mono">${esc(s.skill_name)}/SKILL.md</span><span class="num">${(s.content || '').length.toLocaleString('ko-KR')}자</span></div><div class="prose" data-md="${esc(s.content || '')}"></div></div></div>` +
-      `<div class="panel-sec"><h3>${icon('bot', 'ic-sm')}붙은 에이전트<span class="muted">이 스킬을 읽고 일하는 에이전트</span></h3>${agents}${attach}</div>` +
-      (s.steps.length ? `<div class="panel-sec"><h3>${icon('workflow', 'ic-sm')}선언한 단계<span class="muted">흐름의 단계가 이 스킬을 쓰겠다고 적은 자리</span></h3>${s.steps.map(stepUse).join('')}</div>` : '') +
+      `<div class="panel-sec"><h3>${icon('bot', 'ic-sm')}붙은 에이전트</h3>${agents}${attach}</div>` +
+      (s.steps.length ? `<div class="panel-sec"><h3>${icon('workflow', 'ic-sm')}선언한 단계<span class="muted num">${s.steps.length}</span></h3>${s.steps.map(stepUse).join('')}</div>` : '') +
       `<div class="panel-sec pane-fold"><details class="fold"><summary>자세히<span class="muted">폴더 이름 · 고친 시각</span></summary><div class="fold-body">${kv([['폴더 이름', `<span class="mono">${esc(s.skill_name)}</span>`],
         ['고친 시각', s.updated_at ? esc(UI.dateTime(s.updated_at)) : '']])}</div></details></div>`;
   }
@@ -417,20 +417,9 @@
     const out = await act(() => del(api('/api/skills/' + encodeURIComponent(s.skill_name))), '지웠습니다');
     if (out) { st.pick.skills = null; await load(); }
   }
-  async function resetAll() {
-    if (!await UI.confirm({ title: '처음 상태로 되돌릴까요?', body: '내가 만든 에이전트와 스킬, 스킬 붙이기, 역할, 단계 배정을 모두 지웁니다. 흐름이 쓰는 역할은 남깁니다. 기본 제공 에이전트와 역할은 그대로입니다.', ok: '되돌리기', danger: true })) return;
-    const out = await act(() => postJ(api('/api/agents/reset'), { by: me() }),
-      o => {      // 지운 것만 문장으로(0인 것은 뺀다)
-        const removed = [['에이전트', o.agents, '개'], ['스킬', o.skills, '개'], ['스킬 붙이기', o.attachments, '건'], ['역할', o.roles, '개'], ['단계 배정', o.assignments, '건']]
-          .filter(([, n]) => n > 0).map(([name, n, unit]) => `${name} ${n}${unit}`);
-        return (removed.length ? `되돌렸습니다. 내가 만든 ${removed.join(', ')}${window.hydWords.josa(removed[removed.length - 1], '을/를')} 지웠습니다.` : '되돌렸습니다. 지울 것이 없었습니다.')
-          + (o.kept_roles.length ? ` 흐름이 쓰는 역할 ${o.kept_roles.length}개는 남겼습니다.` : '') + (o.returned_tasks.length ? ` 열려 있던 단계 ${o.returned_tasks.length}건은 기본 담당으로 돌아갔습니다.` : '');
-      });
-    if (out) { st.form = null; st.pick = { agents: null, skills: null, systems: null }; st.board = null; await load(); }
-  }
 
   /* ---------- 화면 ---------- */
-  // 차례: 제목 · 한 문장 · 도구(주 단추 하나) → 왼쪽에 묶음 단추와 목록, 오른쪽에 상세 판(담당 배정은 판 하나) → 맨 아래 「처음 상태로 되돌리기」
+  // 차례: 제목 · 한 문장 · 도구(주 단추 하나) → 왼쪽에 묶음 단추와 목록, 오른쪽에 상세 판(담당 배정은 판 하나) → 맨 아래 「관리에서 되돌리기」 한 줄(되돌리기는 관리 › 내 설정 한 곳)
   function render() {
     if (!st.host) return;
     const count = fn => (st.agents && st.loaded ? st.agents.filter(fn).length : null);      // 못 읽었으면 「0」을 적지 않는다
@@ -441,11 +430,9 @@
     const body = st.tab === 'assign' ? `<div class="seg ag-seg" role="group" aria-label="보기">${seg}</div><section class="panel">${assignHtml()}</section>`
       : `<div class="split"><div class="pane-side"><div class="seg" role="group" aria-label="보기">${seg}</div><div class="rows" aria-label="목록">${listHtml()}</div></div><section class="panel" data-ag-detail aria-label="고른 항목"></section></div>`;
     st.host.innerHTML =
-      `<div class="page-head"><div><h1>${esc(UI.t('nav.agents'))}</h1><p>에이전트는 흐름의 한 단계를 맡아 판단합니다. 무엇을 어떻게 할지는 스킬 문서가, 무엇을 읽고 부를 수 있는지는 도구 서버가 정합니다.</p></div>` +
-      `<div class="page-tools"><button type="button" class="btn" data-variant="ghost" data-size="icon" data-ag-reload aria-label="다시 읽기" data-tooltip="다시 읽기 — 코딩 랩에서 만든 것도 함께 보입니다" data-side="bottom">${icon('refresh-cw')}</button>${make}</div></div>` +
+      UI.pageHead('agents', { sub: '에이전트는 흐름의 한 단계를 맡아 판단합니다. 방법은 스킬 문서가, 읽고 부를 것은 도구 서버가 정합니다.', tools: make, more: [{ act: 'reload', attrs: 'data-ag-reload' }] }) +
       (st.error ? `<div class="ag-error">${errBox('에이전트와 스킬 목록을 읽지 못했습니다', st.error)}</div>` : '') + body +
-      `<div class="pane-foot"><div class="pane-reset"><div><b>처음 상태로 되돌리기</b><p class="muted">내가 만든 에이전트 · 스킬 · 역할 · 담당 배정을 모두 지웁니다. 기본 제공 에이전트와 스킬, 흐름이 쓰는 역할은 남습니다.</p></div>` +
-      `<button type="button" class="btn" data-variant="destructive" data-ag-reset>처음 상태로 되돌리기</button></div></div>`;
+      UI.resetLink('agents', '내가 만든 에이전트 · 스킬 · 역할 · 담당 배정을');
   }
   function pick(tab, key) {
     st.tab = tab; st.pick[tab] = key; st.form = null;
@@ -459,7 +446,6 @@
     if (!t || !st.host.contains(t)) return;
     if (t.hasAttribute('data-ag-reload')) { st.form = null; return load(); }
     if (t.hasAttribute('data-retry')) return t.closest('[data-ag-detail]') ? loadDetail() : load();      // 오류 판의 [다시 시도]: 상세만 못 읽었으면 상세만 다시 읽는다
-    if (t.hasAttribute('data-ag-reset')) return resetAll();
     if (t.hasAttribute('data-goto-assign')) { st.tab = 'assign'; st.form = null; render(); await loadBoard(); return render(); }
     if (t.dataset.agTab) { st.tab = t.dataset.agTab; st.form = null; if (st.tab === 'assign') { render(); await loadBoard(); } render(); return loadDetail(); }
     if (t.dataset.pickAgent) return pick(st.tab === 'systems' ? 'systems' : 'agents', t.dataset.pickAgent);
@@ -541,6 +527,8 @@
   }
   // 메뉴를 다시 열 때마다 다시 읽는다(셸 show) — 쓰는 중인 폼은 mount 가 그대로 둔다
   // pick(탭, 키): 다른 화면(도구 연결 · 질문하기)이 이 화면의 에이전트 · 스킬 하나를 고른 채 열 때 부른다
+  // 관리 › 내 설정에서 되돌렸으면(이 화면이 그려져 있을 때) 고른 것 · 폼을 비우고 목록을 새로 읽는다
+  window.addEventListener('hyd-config-reset', e => { if (!st.host || !['all', 'agents'].includes(e.detail.scope)) return; st.form = null; st.pick = { agents: null, skills: null, systems: null }; st.board = null; load(); });
   window.hydAgents = { mount, show: mount, pick: (tab, key) => { st.tab = tab; st.pick[tab] = key; st.form = null; } };
   // 학생이 만든 에이전트의 이름을 처리 건 · 작업함 화면에도 (화면을 열지 않아도). 실패하면 그 화면들은 이름 대신 식별자를 보인다 —
   // 이 화면(에이전트)을 열면 같은 목록을 다시 읽어 실패 사유가 화면에 보인다. 여기서는 콘솔에 남긴다(삼키지 않는다)

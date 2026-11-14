@@ -337,7 +337,7 @@
     // 끝맺는 말이 산문이면 그대로, 출력 계약(JSON — SQL · 적재 통계가 든다)이면 산문 칸에 흘리지 않고 원문 접기로(W1-13)
     if (done && done.data && done.data.text) {
       const said = String(done.data.text).trim();
-      sections.push(/^[{[]/.test(said) ? sec('AI 에이전트가 낸 결과 원문', `<pre class="code">${e(said)}</pre>`) : sec('AI 에이전트가 남긴 말', `<p class="prose">${e(UI.clean(W().text(said)).replace(/`/g, ''))}</p>`));
+      sections.push(/^[{[]/.test(said) ? sec('AI 에이전트가 낸 결과 원문', rawBlock(said), { raw: true }) : sec('AI 에이전트가 남긴 말', `<p class="prose">${e(UI.clean(W().text(said)).replace(/`/g, ''))}</p>`));
     }
     sections.push(sec('결과 값 원문', rawBlock(out), { raw: true }));
     // 한 문장
@@ -814,12 +814,10 @@
     if (!rows.length) return '';
     return `<dl class="cr-kv">${rows.map(([k, x, id]) => `<div><dt>${e(k)}${W().id(id)}</dt><dd class="num">${e(x)}</dd></div>`).join('')}</dl>`;
   }
-  function pretty(x) {
-    if (x == null) return '';
-    let o = x; if (typeof x === 'string') { try { o = JSON.parse(x); } catch (_) { return UI.mask(x); } }
-    return UI.mask(JSON.stringify(o, null, 2));          // 원문 칸 — 코드 값을 이름으로 바꾸지 않는다(UI.mask)
-  }
-  const rawBlock = x => x == null || (typeof x === 'object' && !Object.keys(x).length) ? '' : `<pre class="code">${e(pretty(x))}</pre>`;
+  // 원문 구획의 내용: 값 그대로 들고 있다가 그릴 때 원문 판(UI.raw) 하나로 낸다 — sec(제목, rawBlock(값), { raw: true })
+  const rawBlock = x => x == null || x === '' || (typeof x === 'object' && !Object.keys(x).length) ? '' : { rawValue: x };
+  // 원문 판 하나(UI.raw) — 이 PC 경로 · 모델 이름은 가린다. k 는 다시 그려도 펼친 채로 두는 열쇠
+  const rawFold = (x, title, k) => x == null || (typeof x === 'object' && !Object.keys(x).length) ? '' : UI.raw(x, { title, mask: true, attrs: k ? `data-k="${e(k)}"` : '' });
   // Full original retrieval and integrity state are shared with Trace/TaskDetail in UI.
   function redrawAll() { mounted.forEach(C => C.draw && C.draw(true)); }
 
@@ -833,7 +831,8 @@
     const got = r.status === 'running' ? '' : result ? result.summary : W().got(r.tool, r.output);
     const dur = r.t0 && r.t1 ? fmtMs(ts(r.t1) - ts(r.t0)) : '';
     const full = (r.fullInput && r.inputEvent ? UI.fullToolIOHtml(r.inputEvent, 'input') : '') + (fo && r.ioEvent ? UI.fullToolIOHtml(r.ioEvent) : '');
-    const io = full + `${r.input != null ? `<div class="cr-io"><span>요청 원문</span><pre class="code">${e(pretty(r.input))}</pre></div>` : ''}${r.output != null ? `<div class="cr-io"><span>${fo ? '결과 미리보기' : '결과 원문'}</span><pre class="code">${e(pretty(r.output))}</pre></div>` : ''}`;
+    // 같은 것의 「전문」과 「미리보기」를 둘 다 두지 않는다: 보관된 전문이 있으면 그것 하나, 없으면 받은 그대로의 원문 하나
+    const io = full + (r.fullInput && r.inputEvent ? '' : rawFold(r.input, '요청 원문', 'in:' + r.key)) + (fo && r.ioEvent ? '' : rawFold(r.output, '결과 원문', 'out:' + r.key));
     return { ask, got, dur, io, stored: !!(fo && fo.stored),
       line: `<div class="tg-call"><div class="tg-line"><time>${e(hhmmss(r.t0))}</time><span>${ask ? `<span class="cr-q">요청</span> ${e(ask)}` : ''}${got || r.status !== 'running' ? ` <span class="cr-a">→</span> ${e(got || '결과를 받았습니다')}` : live ? ' <span class="muted">실행 중</span>' : ''}${r.badge ? ` <span class="tg-warn" data-state="${e(r.status)}">${e(r.badge)}</span>` : ''}${fo && fo.stored ? ' <span class="muted">· 원문 보관</span>' : ''}</span>${dur ? `<span class="cr-dur num">${e(dur)}</span>` : ''}</div>${io}</div>` };
   }
@@ -849,15 +848,15 @@
       const bad = list.filter(r => r.status === 'fail').length, warn = list.filter(r => r.status === 'warn' || r.status === 'blocked').length, running = list.some(r => r.status === 'running');
       const state = bad ? `<span class="tg-warn" data-state="fail">실패 ${bad}회</span>` : warn ? `<span class="tg-warn" data-state="warn">${e(list.find(r => r.badge)?.badge || '확인 필요')}${warn > 1 ? ` ${warn}회` : ''}</span>` : '';
       return `<li class="tg"${list.every(r => r.minor) ? ' data-minor' : ''}><details class="cr-call" data-k="${e(stepKey + ':g:' + tool)}"><summary><span class="tg-name"><b>${e(W().toolName(tool))}</b>${sys ? `<span class="muted">${e(sys)}</span>` : ''}</span><span class="tg-meta">${state}${running && live ? '<i class="dot" data-tone="brand" data-live></i>' : ''}<span class="num">${list.length}회</span>${total ? `<span class="cr-dur num">${e(fmtMs(total))}</span>` : ''}</span></summary>
-        <div class="tg-body"><div class="cr-io"><span>도구 식별자</span><code>${e(tool)}</code></div>${UI.toolIdentityFold(tool)}${calls.map(c => c.line).join('')}</div></details></li>`;
+        <div class="tg-body"><p class="cr-toolid">${UI.id(tool, { label: '도구 식별자' })}</p>${UI.toolIdentityFold(tool)}${calls.map(c => c.line).join('')}</div></details></li>`;
     }).join('');
     const items = rest.map(r => {
       const time = `<time>${e(hhmmss(r.t0))}</time>`;
-      if (r.kind === 'note') return `<li class="cr-r"${r.minor ? ' data-minor' : ''}>${time}<div><q>${e(r.text.slice(0, NOTE_MAX_CHARS))}${r.text.length > NOTE_MAX_CHARS ? '…' : ''}</q>${r.data ? `<details class="cr-raw" data-k="${e(stepKey + ':' + r.key)}"><summary>원문</summary><pre class="code">${e(JSON.stringify(r.data, null, 2))}</pre></details>` : ''}</div></li>`;
+      if (r.kind === 'note') return `<li class="cr-r"${r.minor ? ' data-minor' : ''}>${time}<div><q>${e(r.text.slice(0, NOTE_MAX_CHARS))}${r.text.length > NOTE_MAX_CHARS ? '…' : ''}</q>${rawFold(r.data, '', stepKey + ':' + r.key)}</div></li>`;
       if (r.kind === 'skill') return `<li class="cr-r">${time}<div><b>스킬 파일 읽기 요청</b> ${e(UI.skillLabel(r.data, true).label)} <span class="muted">(${e(W().toolName(r.data.via))}) · 읽기 요청은 읽기 성공을 뜻하지 않습니다</span><details class="cr-raw" data-k="${e(stepKey + ':' + r.key)}"><summary>원문</summary>${rawBlock(r.data)}</details></div></li>`;
       if (r.kind === 'file') return `<li class="cr-r" data-minor>${time}<div>결과 파일 ${e(r.text)}</div></li>`;
       if (r.kind === 'sys') return `<li class="cr-r">${time}<div><b>${e(r.text)}</b>${sysDetail(r)}</div></li>`;
-      if (r.kind === 'error') return `<li class="cr-r" data-err>${time}<div><b>${e(r.text)}</b><details class="cr-raw" data-k="${e(stepKey + ':' + r.key)}"><summary>원문</summary><pre class="code">${e(pretty(r.data))}</pre></details></div></li>`;
+      if (r.kind === 'error') return `<li class="cr-r" data-err>${time}<div><b>${e(r.text)}</b>${rawFold(r.data, '', stepKey + ':' + r.key)}</div></li>`;
       return '';
     }).join('');
     return `${minor ? `<label class="cr-minor-toggle"><input type="checkbox" data-cr-minor> 보조 작업 ${minor}건도 보기 <span class="muted">(쓸 도구 불러오기 · 파일 쓰기 · 명령 실행)</span></label>` : ''}${groupHtml ? `<ul class="tg-list">${groupHtml}</ul>` : ''}${items ? `<ol class="cr-rows">${items}</ol>` : ''}`;
@@ -886,11 +885,11 @@
   const markIcon = s => { const st = PIN[s.state] || 'todo'; return st === 'done' ? 'check' : st === 'fail' ? 'x' : st === 'todo' ? 'circle-dashed' : s.lane === 'agent' ? 'bot' : s.lane === 'person' ? 'user-check' : 'cog'; };
   // 「자세히」 접기 안의 구획: 작은 머리글과 내용. 원문(JSON)만 한 번 더 접는다
   function sectionsHtml(s, secs) {
-    return secs.filter(Boolean).map((x, j) => x.raw ? `<details class="fold" data-k="${e(s.key + ':raw' + j)}"><summary>${e(x.title)}</summary><div class="fold-body">${x.body}</div></details>`
+    return secs.filter(Boolean).map((x, j) => x.raw ? rawFold(x.body.rawValue, x.title, s.key + ':raw' + j)
       : `<section class="cr-sec ${x.cls || ''}"><h4 class="cr-h">${e(x.title)}</h4><div class="cr-sec-body">${x.body}</div></section>`).join('');
   }
   // AI 단계의 「실행 기록」 안: 구획마다 접기 하나(원문 포함) — 줄들 아래에 놓인다
-  const foldsHtml = (s, secs) => secs.filter(Boolean).map((x, j) => `<details class="fold" data-k="${e(s.key + ':sec' + j)}"><summary>${e(x.title)}</summary><div class="fold-body ${x.cls || ''}">${x.body}</div></details>`).join('');
+  const foldsHtml = (s, secs) => secs.filter(Boolean).map((x, j) => x.raw ? rawFold(x.body.rawValue, x.title, s.key + ':sec' + j) : `<details class="fold" data-k="${e(s.key + ':sec' + j)}"><summary>${e(x.title)}</summary><div class="fold-body ${x.cls || ''}">${x.body}</div></details>`).join('');
   // 단계마다 모아 두던 값(세는 숫자 · 값)은 접기 안의 한 줄로 — 뱃지에는 상태 낱말만 넣는다(디자인 기준 4절)
   const factsLine = s => { const f = (s.chips || []).filter(c => c && c.label && !/^[–\-\s·]+$/.test(c.label)).map(c => e(c.label)); return f.length ? `<p class="cr-facts">${f.join(' <span class="sep">·</span> ')}</p>` : ''; };
   function gapLines(gaps) {
@@ -996,18 +995,15 @@
     const KIND = { control: UI.t('chip.control'), work_order: UI.t('chip.workOrder') };
     const cost = o => W().purchaseEconomics(o);
     const score = o => !o.feasible ? '제외' : cost(o) ? W().purchaseCostLabel(o) : Number.isFinite(+o.score) && o.score !== null ? W().num(+o.score) : '';
-    const max = Math.max(0, ...opts.filter(o => o.feasible && !cost(o) && Number.isFinite(+o.score)).map(o => +o.score));
     const why = o => {
       if (rec && o.id === rec.id) return '';
       if (!o.feasible) return W().text(((o.violations || [])[0] || {}).annotation || ((o.violations || [])[0] || {}).rule || '규정 위반');
       const pen = [...(o.penalties || []), ...(o.warnings || [])].map(x => W().text(x.annotation || x.message || '')).filter(Boolean)[0];
       return [window.hydApprove && rec ? hydApprove.partDiff(o, rec, opts) : '', pen ? `감점 · 경고: ${pen}` : ''].filter(Boolean).join(' / ');
     };
-    const has = { kind: opts.some(o => KIND[o.kind]), bar: max > 0, role: opts.some(o => o.approver && o.approver.name) };
-    const rows = opts.map((o, i) => `<tr${rec && o.id === rec.id ? ' data-pick' : ''}${o.feasible ? '' : ' data-out'}><td><span class="rank num">${e(o.rank || i + 1)}</span></td>
-      <td><b>${e(W().text(o.name))}</b>${o.sopId ? ` <span class="muted mono">${e(o.sopId)}</span>` : ''}${why(o) ? `<span class="opts-why">${e(why(o))}</span>` : ''}</td>
-      ${has.kind ? `<td>${e(KIND[o.kind] || '')}</td>` : ''}<td class="num">${e(score(o))}</td>${has.bar ? `<td>${o.feasible && !cost(o) && Number.isFinite(+o.score) ? `<div class="bar"><i style="width:${Math.max(0, Math.round(+o.score / max * 100))}%"></i></div>` : ''}</td>` : ''}${has.role ? `<td>${e((o.approver && o.approver.name) || '')}</td>` : ''}</tr>`).join('');
-    return `<div class="table-container"><table class="opts"><thead><tr><th></th><th>후보</th>${has.kind ? '<th>종류</th>' : ''}<th>점수</th>${has.bar ? '<th></th>' : ''}${has.role ? '<th>승인 역할</th>' : ''}</tr></thead><tbody>${rows}</tbody></table></div>`;
+    // 구매 안은 점수 대신 비용을 견준다(막대 없음) — 그 칸의 글은 scoreHtml 로 넘긴다
+    return UI.optionsTable(opts.map((o, i) => ({ rank: o.rank || i + 1, name: W().text(o.name), code: o.sopId, kind: KIND[o.kind], note: why(o), pick: !!(rec && o.id === rec.id), out: !o.feasible,
+      score: o.feasible && !cost(o) && Number.isFinite(+o.score) && o.score !== null ? +o.score : null, scoreHtml: !o.feasible || cost(o) ? e(score(o)) : null, role: o.approver && o.approver.name })));
   }
   function agentCard(s, m, gaps, seen) {
     const failed = ['fail', 'stop', 'bad'].includes(s.state);
@@ -1174,7 +1170,7 @@
       try { m = C.model = build(C.view, C.ext, [...C.older.values(), ...C.live.values()]); }
       catch (err) {
         console.error('단계 기록 그리기 실패', C.view?.instance?.proc_inst_id, err);   // 좌표(처리 건 · 줄)는 개발자 도구에
-        box.innerHTML = `<div class="alert" data-variant="destructive">${UI.icon('circle-alert')}<h2>단계 기록을 그리지 못했습니다</h2><section>화면 프로그램 오류입니다. 화면을 새로 고쳐도 같으면 아래 오류 원문과 함께 시스템 관리자에게 알리세요.${UI.fold('오류 원문', `<pre class="code">${e(err.stack || err.message)}</pre>`)}</section></div>`;
+        box.innerHTML = `<div class="alert" data-variant="destructive">${UI.icon('circle-alert')}<h2>단계 기록을 그리지 못했습니다</h2><section>화면 프로그램 오류입니다. 화면을 새로 고쳐도 같으면 아래 오류 원문과 함께 시스템 관리자에게 알리세요.${UI.raw(err.stack || err.message, { title: '오류 원문' })}</section></div>`;
         return;
       }
       drawOlder();
@@ -1240,5 +1236,5 @@
   wireBus();
   window.addEventListener('hyd-tool-payload',redrawAll);
 
-  window.hydRecord = { mount, build, rowsOf, mounted, altHtml, knowledgeHtml, pretty, agentFront };   // altHtml · knowledgeHtml: 판단 한 건만으로 그리는 부분(시험 · 다른 화면)
+  window.hydRecord = { mount, build, rowsOf, mounted, altHtml, knowledgeHtml, agentFront };   // altHtml · knowledgeHtml: 판단 한 건만으로 그리는 부분(시험 · 다른 화면)
 })();

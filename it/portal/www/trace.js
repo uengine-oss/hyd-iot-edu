@@ -155,7 +155,7 @@
     if (typeof v === 'string') { try { s = JSON.parse(v); } catch (_) { return UI.clean(v).replace(/\\u([0-9a-fA-F]{4})/g, (m, h) => String.fromCharCode(parseInt(h, 16))); } }
     return UI.clean(JSON.stringify(s, null, 2));
   }
-  const codeBlock = (title, body, k) => body ? `<details class="tr-code" data-k="${esc(k)}"><summary>${esc(title)}</summary><pre>${esc(body)}</pre></details>` : '';
+  const codeBlock = (title, body, k) => body ? UI.raw(body, { title, attrs: `data-k="${esc(k)}"` }) : '';
 
   // events of one work item → rows (chronological). tool start/end pair by tool_use_id (EventTimeline.vue 와 같은 짝짓기)
   function publicNotes(evs) {
@@ -340,10 +340,12 @@
       if(r.ioEvent) {const result=UI.toolResult(r.ioEvent,true);r={...r,status:result.status,badge:result.badge,result:result.summary};}
       if(r.inputEvent) r={...r,text:UI.toolAsk(r.inputEvent,true).summary};
       // Dify tool-detail: the line is the toggle; open it for 요청 · 응답 (원문은 여기에만)
-      const sec = (title, body) => body ? `<div class="tr-code"><div class="tr-code-h">${esc(title)}</div><pre>${esc(body)}</pre></div>` : '';
+      const sec = (title, body) => body ? UI.raw(body, { title, attrs: `data-k="${esc(r.key + ':' + title)}"` }) : '';
       const purchase=window.hydWords?.purchaseTool(r.tool);
       const original=value=>value==null ? '' : typeof value==='string' ? value : JSON.stringify(value,null,2);
-      const io = UI.toolIdentityFold(r.tool) + sec(UI.t('trace.request'), original(r.input)) + (r.inputEvent ? UI.fullToolIOHtml(r.inputEvent,'input') : '') + sec(r.ioEvent?.data.full_output ? '도구 응답 (앞부분)' : UI.t('trace.response'), original(r.output)) + (r.ioEvent ? UI.fullToolIOHtml(r.ioEvent) : '');
+      // 같은 것의 「앞부분」과 「전문」을 둘 다 두지 않는다: 보관된 전문이 있으면 그것 하나
+      const fullIn = r.inputEvent ? UI.fullToolIOHtml(r.inputEvent,'input') : '', fullOut = r.ioEvent ? UI.fullToolIOHtml(r.ioEvent) : '';
+      const io = UI.toolIdentityFold(r.tool) + (fullIn || sec(UI.t('trace.request'), original(r.input))) + (fullOut || sec(UI.t('trace.response'), original(r.output)));
       const mark = r.status === 'running' && live ? spinner('sm') : stateMark(r.status === 'running' ? 'idle' : r.status);
       const line = `<b>${esc(r.title)}</b>${r.text ? `<span class="tr-txt">${esc(r.text)}</span>` : ''}${r.badge ? `<span class="tag" data-tone="${r.status === 'fail' ? 'danger' : 'warn'}">${esc(r.badge)}</span>` : ''}${r.t1 ? durHtml(r.t0, r.t1) : r.status === 'running' && live ? durHtml(r.t0, null, true) : ''}`;
       return `<div class="tr-row tr-k-tool ${esc(r.status)}">${time}<span class="tr-mark">${mark}</span><div class="tr-main">

@@ -109,14 +109,14 @@
       foot(`<button type="button" class="btn"${loadMain ? '' : ' data-variant="outline"'} id="wiLoad" ${W.busy || !W.pattern || !W.asset ? 'disabled' : ''}>${UI.icon(v ? 'refresh-cw' : 'play')}${v ? '다시 불러오기' : '불러오기'}</button>`) +
       (stale ? note(`설비나 이상 패턴을 바꿨습니다. 오른쪽은 앞서 불러온 ${esc(W.loaded.asset)}의 결과이며, [다시 불러오기]를 눌러야 바뀝니다.`, ' role="status"') : '') + `</div>`;
     if (v) left += `<div class="panel-sec"><fieldset class="fieldset"><legend>바꿔 볼 것</legend><div role="group">` +
-      `<div class="seg" role="group" aria-label="바꿔 볼 것">${TABS.map(([k, l]) => `<button type="button" data-wi-tab="${k}" aria-pressed="${k === W.tab}">${esc(l)}${count[k] ? `<span class="num">${count[k]}</span>` : ''}</button>`).join('')}</div>` +
+      UI.viewTabs(TABS.map(([k, l]) => [k, l, count[k] || null]), W.tab, 'data-wi-tab', { label: '바꿔 볼 것', small: true }) +
       note(esc(TAB_SAYS[W.tab])) + `</div></fieldset>` + inputsPane(v) + `</div>`;
     // 오른쪽: 결과
     let right = W.patternsError && !W.patterns ? UI.errorBlock('이상 패턴 목록을 읽지 못했습니다', W.patternsError, { retry: true })
       : W.assetsError && !(W.assets && W.assets.length) ? UI.errorBlock('설비 목록을 읽지 못했습니다', W.assetsError, { retry: true }) : '';
     if (W.msg) right += UI.errorBlock('계산하지 못했습니다', W.msg);
     right += v ? resultPane(v) : W.busy ? hydLive.waitHtml('시험 기준을 계산하는 중', { since: W.busySince, hint: '고른 설비와 이상 패턴으로 판단을 한 번 계산해 기준으로 잡는 중입니다(원인 진단 → 조치 후보 → 손익).' })
-      : right ? '' : `<section class="empty"><header><figure>${UI.icon('calculator')}</figure><h3>아직 불러온 시험 기준이 없습니다</h3><p>왼쪽에서 설비와 이상 패턴을 고르고 [불러오기]를 누르면 조치 후보별 손익(원), 1순위가 바뀌는 값, 몇 주 뒤 지표를 시험해 볼 수 있습니다.</p></header></section>`;
+      : right ? '' : `${UI.empty({ icon: 'calculator', title: `아직 불러온 시험 기준이 없습니다`, sub: `왼쪽에서 설비와 이상 패턴을 고르고 [불러오기]를 누르면 조치 후보별 손익(원), 1순위가 바뀌는 값, 몇 주 뒤 지표를 시험해 볼 수 있습니다.` })}`;
     const html = `<div class="io"><form class="panel io-in" id="wiForm" aria-label="시험 조건">${left}</form><div class="io-out" aria-live="polite">${right}</div></div>`;
     // 다시 그리기(1순위가 바뀌는 값 도착 · 다시 계산 결과)가 치던 칸의 포커스 · 커서와 펼친 접기를 지우지 않게(값은 input 이벤트로 이미 상태에 있다)
     const a = document.activeElement, key = a && W.el.contains(a) ? focusKey(a) : null, typed = key && /^(INPUT|TEXTAREA)$/.test(a.tagName) ? a.value : null;
@@ -249,14 +249,12 @@
     const arrow = (a, b, f) => a === b ? esc(f(b)) : `<span class="muted">${esc(f(a))}</span> → <b>${esc(f(b))}</b>`;
     const rank = r => r ? r + '위' : '–';
     const list = v.cards.slice().sort((a, b) => (a.decisionRank || 99) - (b.decisionRank || 99));      // 1순위가 맨 위
-    const maxAbs = Math.max(1, ...list.map(c => Math.abs(c.score || 0)));
-    return `<div class="table-container"><table class="opts"><thead><tr><th></th><th>조치</th><th class="num">정책 점수</th><th></th><th>손익 순위</th><th class="num">예상 손익</th></tr></thead><tbody>${list.map(c => {
-      const b = base[c.id] || {};
-      return `<tr${c.id === v.top.decision ? ' data-pick' : ''}><td><span class="rank num">${c.feasible && c.decisionRank ? esc(c.decisionRank) : '–'}</span></td>
-        <td><b>${esc(UI.idText(c.name))}</b>${c.sopId ? ` <span class="muted mono">${esc(c.sopId)}</span>` : ''}${c.feasible ? '' : ' ' + UI.chipText('제외', 'danger')}${b.decisionRank !== c.decisionRank ? `<small>판단 순위 ${esc(rank(b.decisionRank))} → ${esc(rank(c.decisionRank))}</small>` : ''}</td>
-        <td class="num">${arrow(b.score, c.score, x => x == null ? '–' : String(x))}</td><td><div class="bar"><i style="width:${c.feasible ? Math.min(100, Math.round(Math.abs(c.score || 0) / maxAbs * 100)) : 0}%"></i></div></td>
-        <td>${arrow(b.moneyRank, c.moneyRank, rank)}</td><td class="num">${arrow(b.money && b.money.total_won, c.money.total_won, won)}</td></tr>`;
-    }).join('')}</tbody></table></div>`;
+    return UI.optionsTable(list.map(c => { const b = base[c.id] || {};
+      return { rank: c.feasible && c.decisionRank ? c.decisionRank : '–', name: UI.idText(c.name), code: c.sopId, pick: c.id === v.top.decision, out: !c.feasible,
+        note: b.decisionRank !== c.decisionRank ? `판단 순위 ${rank(b.decisionRank)} → ${rank(c.decisionRank)}` : '',
+        score: c.score, scoreHtml: !c.feasible ? esc(UI.t('chip.excluded')) : b.score !== c.score ? arrow(b.score, c.score, x => x == null ? '–' : Number(x).toFixed(2)) : null,
+        extra: [arrow(b.moneyRank, c.moneyRank, rank), arrow(b.money && b.money.total_won, c.money.total_won, won)] }; }),
+      { scoreLabel: '정책 점수', extra: [{ label: '손익 순위' }, { label: '예상 손익', num: true }] });
   }
 
   function perspectiveTable(v) {

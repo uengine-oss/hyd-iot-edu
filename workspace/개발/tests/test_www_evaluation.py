@@ -32,7 +32,7 @@ def test_판단_채점_화면은_AI가_판단하는_경로가_지난_처리_건_
             open_screen(page, 'eval')
             page.wait_for_selector('#evalView [data-eval-ai-note]', timeout=15000)      # 판단 경로 고르기 아래의 안내(채점 조건 칸) — 화면 머리 한 문장과 따로 있다
             sub = page.inner_text('#evalView [data-eval-ai-note]')
-            lead = page.inner_text('#evalView .page-lead')
+            lead = page.inner_text('#evalView .page-head p')
             b.close()
     finally:
         served.close()

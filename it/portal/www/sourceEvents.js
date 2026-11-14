@@ -23,7 +23,7 @@
   function rowHtml(row){return `<span class="row-ic">${UI.icon(ICON[row.kind]||'circle-dot')}</span><span class="row-title">${esc((kinds[row.kind]||row.kind)+' · '+(row.asset||'설비 미상'))}</span>${UI.chipText(labels[row.status]||row.status,TONE[row.status]||'neutral')}`+
     `<span class="row-meta">접수 ${esc(row.id)}${row.error?' · '+esc(UI.logText(row.error)):''}</span>`;}
   const kv=rows=>`<dl class="kv">${rows.filter(([,v])=>v!=null&&v!=='').map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(typeof v==='string'?v:String(v))}</dd>`).join('')}</dl>`;
-  const raw=value=>`<pre class="code">${esc(typeof value==='string'?value:JSON.stringify(value,null,2))}</pre>`;
+  const raw=(value,title)=>UI.raw(value,{title})||`<p class="muted">${esc(title)} 없음</p>`;
   function mark(){q('sourceEventList').querySelectorAll('.row').forEach(n=>{if(selected&&n.dataset.receipt===String(selected.id))n.setAttribute('aria-current','true');else n.removeAttribute('aria-current');});}
   // 고른 접수: 머리(종류 · 설비 · 상태) → 요약(이름–값) → 다시 처리(실패한 접수만, 같은 판 안의 폼) → 원문 · 처리 정의 · 이력 · 전송 원문(접기)
   async function detail(id){
@@ -35,7 +35,7 @@
       q('sourceEventDetail').innerHTML=`<h3>${esc((kinds[row.kind]||row.kind)+' · '+(row.asset||'설비 미상'))}${UI.chipText(labels[row.status]||row.status,TONE[row.status]||'neutral')}<span class="muted num">접수 ${esc(row.id)}</span></h3>
         ${kv([['접수 시각',row.received_at?UI.dateTime(row.received_at):''],['받은 방식',sources[row.source]||row.source],['처리 시도',row.attempts!=null?row.attempts+'회':''],['실패 횟수',row.failures!=null?row.failures+'회':''],['원본 접수 번호',row.parent_id],
           ['오류',row.error],['처리 결과',row.result==null?'':typeof row.result==='string'?row.result:JSON.stringify(row.result)]])}
-        <div class="se-folds">${UI.fold('접수 원문',raw(row.payload))}${UI.fold('접수 당시 처리 정의',raw(row.policy))}${UI.fold('처리 이력',raw(row.history))}
+        <div class="se-folds">${raw(row.payload,'접수 원문')}${raw(row.policy,'접수 당시 처리 정의')}${raw(row.history,'처리 이력')}
           ${UI.fold('전송 원문과 무결성 확인',kv([['형식',wires[row.wire_kind]||row.wire_kind],['지문(SHA-256)',row.wire_sha],['원문(base64)',row.wire_base64],['토픽',row.topic],['파티션',row.partition_no],['위치(offset)',row.offset_no]]))}</div>`;
       q('sourceEventRetry').hidden=row.status!=='FAILED';
       message(row.status==='FAILED'?'원인을 확인한 뒤 같은 접수를 다시 처리할 수 있습니다.':'접수 '+row.id+'번을 읽었습니다.');

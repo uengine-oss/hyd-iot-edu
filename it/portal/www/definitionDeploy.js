@@ -4,33 +4,29 @@
    읽는 때: 흐름 화면에 들어올 때마다(hydTabs.onShow) 정의 · 배포 상태를 새로 읽는다. 다른 화면에 있을 때는 읽지 않는다. 흐름 화면이 판본을 등록하면 reload(정의)를 부른다.
    API: GET /api/process/definitions · GET …/{id}/versions · GET …/{id}/compare?from_version&to_version · POST …/{id}/deploy · POST …/{id}/rollback
    화면 기준: process-gpt-vue3 ProcessDefinitionVersionManager(판본 목록 · 반영 버전 표시 · 반영 요청) · VersionComparison(바뀐 요소 목록).
-   B4: 경보 → 흐름 표(GET /api/flows/deployments) · 기준 흐름으로 되돌리기(POST /api/flows/deploy-reset) · 기준과 비교(GET /api/flows/deploy-compare). */
+   B4: 경보 → 흐름 표(GET /api/flows/deployments) · 기준과 비교(GET /api/flows/deploy-compare). */
 (function () {
   const $d = id => document.getElementById(id);
   const base = id => API.process + '/api/process/definitions/' + encodeURIComponent(id);
-  let status = null, compareWith = null, deployedIds = new Set(), rows = [], chosen = '', resetNeeded = false;
+  let status = null, compareWith = null, deployedIds = new Set(), rows = [], chosen = '';
   const patName = p => UI.patternName(p), nameOf = hydDefinitions.name;   // 패널 일 · 흐름 이름은 definitionRegistry.js 의 한 벌(W3-28)
   const tag = (label, tone) => `<span class="tag"${tone ? ` data-tone="${tone}"` : ''}>${esc(label)}</span>`;
   // 경보 → 흐름 한 줄의 구분: 흐름 목록과 같은 말(기본 제공 / 내가 배포한 흐름)로, 서버가 준 표시로 가른다. 종류 표시라 상태색(초록)을 쓰지 않는다.
   // 주황은 상태다 — 기본 제공 흐름의 운영 판본이 처음 판본에서 바뀌어 있을 때
   const kindTag = (label, tone) => `<span class="tag" data-plain${tone ? ` data-tone="${tone}"` : ''}>${esc(label)}</span>`;
-  const routeKind = x => x.reference || x.class_flow ? kindTag('기본 제공') : /기준 흐름/.test(x.source || '') ? tag('기본 제공 · 운영 판본 바뀜', 'warn') : kindTag('내가 배포한 흐름', 'brand');
+  // 기본 제공 흐름은 표시하지 않는다(모든 줄이 같은 값인 뱃지는 정보가 없다) — 내가 배포했거나 운영 판본이 바뀐 줄만 말한다
+  const routeKind = x => x.reference || x.class_flow ? '' : /기준 흐름/.test(x.source || '') ? tag('기본 제공 · 운영 판본 바뀜', 'warn') : kindTag('내가 배포한 흐름', 'brand');
 
   async function loadRoutes() {
     const r = await getJ(API.process + '/api/flows/deployments');
-    const body = r.routes.map(x => `<tr><th scope="row">${esc(patName(x.pattern))}</th><td>${esc(nameOf(x.definition, x.name))}</td><td class="num">${esc(x.version)}</td><td>${routeKind(x)}</td></tr>`).join('');
+    const marked = r.routes.some(x => routeKind(x));
+    const body = r.routes.map(x => `<tr><th scope="row">${esc(patName(x.pattern))}</th><td>${esc(nameOf(x.definition, x.name))}</td><td class="num">${esc(x.version)}</td>${marked ? `<td>${routeKind(x)}</td>` : ''}</tr>`).join('');
     const shadow = r.flows.filter(f => f.shadowed.length).map(f => `<p class="muted">${esc(nameOf(f.definition, f.name))}: ${f.shadowed.map(patName).map(esc).join(', ')}는 더 최근에 배포한 흐름이 엽니다.</p>`).join('');
-    $d('deployRoutes').innerHTML = (body ? `<div class="table-container"><table class="table"><thead><tr><th>경보</th><th>여는 흐름</th><th class="num">운영 판본</th><th>구분</th></tr></thead><tbody>${body}</tbody></table></div>`
+    $d('deployRoutes').innerHTML = (body ? `<div class="table-container"><table class="table"><thead><tr><th>경보</th><th>여는 흐름</th><th class="num">운영 판본</th>${marked ? '<th>구분</th>' : ''}</tr></thead><tbody>${body}</tbody></table></div>`
       : UI.empty('경보로 시작하는 흐름이 없습니다', '경보로 시작하는 흐름을 배포하면 어느 경보가 어느 흐름을 여는지 여기에 보입니다.')) + shadow;
     $d('deployRoutesNote').textContent = r.reset_needed ? '내가 배포한 흐름이 경보를 엽니다' : '다음 경보부터 이 표대로 열립니다';
-    // [기준 흐름으로 되돌리기]는 처음부터 들어 있던 흐름을 남긴다 — 내가 바꾼 것이 없으면 되돌릴 것이 없다(서버 reset_needed)
-    resetNeeded = !!r.reset_needed; syncReset();
-    $d('deployResetWhy').textContent = r.reset_needed ? '' : '지금은 되돌릴 것이 없습니다. 내가 배포한 흐름이 없고 기준 흐름의 운영 판본도 기준 판본입니다.';
   }
-  const syncReset = () => { $d('deployResetRef').disabled = routes.busy || !resetNeeded; };
   const panel = hydDefinitions.task($d('definitionDeployPanel'), $d('deployMessage'), syncButtons), action = panel.run, message = panel.say;
-  // 화면 아래 「경보별 운영 흐름」의 일([기준 흐름으로 되돌리기])은 그 자리의 알림 줄(#deployResetMessage)에 결과 · 까닭을 적는다 — 고른 흐름의 절이 숨어 있어도 보인다
-  const routes = hydDefinitions.task($d('deployRoutesBox'), $d('deployResetMessage'), syncReset);
   // 담당자 = 이 PC의 담당자(inbox.js me). 화면에 담당자 칸은 없고 숨은 칸(deployBy)에 이름만 둔다 — 자유 입력은 배포 이력에 지어낸 이름을 남겼다. 서버도 사람만 받는다(inbox.require_person)
   function showMe() {
     const m = window.hydInbox?.me?.(), el = $d('deployBy');
@@ -152,13 +148,6 @@
   // 고른 흐름의 절(#definitionDeployPanel)과 화면 아래의 경보별 운영 흐름(#deployRoutesBox) 두 자리의 누름을 한 곳에서 받는다
   function onClick(ev) {
     const deploy = ev.target.closest('[data-deploy]'), compare = ev.target.closest('[data-compare]'), refCompare = ev.target.closest('[data-refcompare]');
-    if (ev.target.closest('[data-deploy-reset]')) return routes.run(async () => {
-      const by = meId();
-      if (!await UI.confirm({ title: '기준 흐름으로 되돌릴까요?', body: '내가 배포한 흐름만 경보 경로에서 내립니다. 기본 제공 흐름은 남습니다. 기준 흐름의 운영 판본은 기준 판본으로 돌리고, 등록한 판본과 열린 처리 건은 그대로입니다.', ok: '되돌리기', danger: true })) return;
-      const out = await postJ(API.process + '/api/flows/deploy-reset', { by, reason: $d('deployReason').value.trim() || null });
-      await loadDefinitions(status && status.id);
-      routes.say(out.message);   // 남긴 흐름의 이름은 서버 문장이 말한다(flow_deploy.deploy_reset — kept 가 있으면 늘 이름까지)
-    });
     if (refCompare) return action(() => runRefCompare(refCompare.dataset.refcompare));
     if (deploy) action(async () => {
       const out = await postJ(base(status.id) + '/deploy', { ...who(), version: deploy.dataset.deploy });

@@ -201,11 +201,11 @@
       const why = o.id === rec.id ? reasons(o, d).join(' · ')
         : out ? `제외 — ${e(excludedWhy(o).join(' · ') || '실행 검사를 통과하지 못했습니다')}`
         : e(partDiff(o, rec, d.options) || (Number.isFinite(+o.score) && Number.isFinite(+rec.score) ? `추천안보다 점수가 ${num(rec.score - o.score)} 낮습니다` : '')) + (said ? `<br>${e(said)}` : '');
-      return `<tr${o.id === cur.id ? ' data-pick' : ''}${out ? ' data-out' : ''}><td><input type="radio" class="input" name="hopt" id="hopt-${e(o.id)}" value="${e(o.id)}" ${o.id === cur.id ? 'checked' : ''} ${can ? '' : 'disabled'} aria-label="${e(UI.idText(o.name))} 안 고르기"></td>
-        <td><label for="hopt-${e(o.id)}"><b>${e(UI.idText(o.name))}</b>${o.id === rec.id ? ' <span class="muted">· 1순위</span>' : ''}</label>${why ? `<span class="opts-why">${why}</span>` : ''}${UI.evaluationHtml(o, d, { raw: false })}${window.hydWords?.purchaseContextHtml(o, d) || ''}${window.hydWords?.maintenanceHtml(o) || ''}</td>
-        <td class="num">${out ? '제외' : e(scoreText(o))}</td></tr>`;
-    }).join('');
-    return `<div class="table-container"><table class="opts ap-choices"><thead><tr><th><span class="sr-only">고르기</span></th><th>조치</th><th>점수</th></tr></thead><tbody>${rows}</tbody></table></div>
+      return { pick: o.id === cur.id, out, name: UI.idText(o.name), forId: `hopt-${o.id}`, noteHtml: why, score: out ? null : Number.isFinite(+o.score) ? +o.score : null, scoreHtml: out ? '제외' : Number.isFinite(+o.score) ? null : e(scoreText(o)),
+        lead: `<input type="radio" class="input" name="hopt" id="hopt-${e(o.id)}" value="${e(o.id)}" ${o.id === cur.id ? 'checked' : ''} ${can ? '' : 'disabled'} aria-label="${e(UI.idText(o.name))} 안 고르기">`,
+        nameHtml: (o.id === rec.id ? ' <span class="muted">· 1순위</span>' : '') + UI.evaluationHtml(o, d, { raw: false }) + (window.hydWords?.purchaseContextHtml(o, d) || '') + (window.hydWords?.maintenanceHtml(o) || '') };
+    });
+    return `${UI.optionsTable(rows, { lead: '고르기', cls: 'ap-choices' })}
       ${evidence(cur)}${opt.adjust || ''}
       ${d.explanation ? UI.fold('판단 엔진 설명 전문 (규칙 문장)', `<p class="prose" style="margin:0">${e(UI.idText(d.explanation))}</p>`) : ''}
       ${opt.extra || ''}${UI.evaluationRawHtml(cur, d)}`;
@@ -286,7 +286,7 @@
     const loserRows = m.losers.map(x => `<li class="ap-lost" data-out><div class="ap-lost-head"><b>${e(x[key])}</b>${UI.chipText(UI.t('chip.excluded'), 'danger')}</div><p>${e(x.why)}</p></li>`);
     const docs = m.docs.map(d => `<a class="chip" href="${e(d.link)}" target="_blank" rel="noopener noreferrer">${e(d.title)}</a>`).join(' ');
     const off = m.problems.length ? `<div class="alert ap-off" data-variant="destructive" role="alert">${UI.icon('circle-alert')}<h2>에이전트 제안이 칸 약속과 다릅니다</h2><section>아래에 받은 값을 그대로 보입니다.<ul>${m.problems.map(p => `<li>${e(p)}</li>`).join('')}</ul></section></div>`
-      + UI.fold('받은 값 그대로 (JSON)', `<pre class="code">${e(JSON.stringify(m.raw, null, 2))}</pre>`, { open: true }) : '';
+      + UI.raw(m.raw, { title: '받은 값 그대로', open: true }) : '';
     const head = cur ? `<div class="ap-head"><span class="ap-kicker">${changed ? '직접 고른 안' : m.rec ? 'AI 에이전트 추천' : '첫 번째 안 (추천 표시 없음)'}</span>${changed && opt.pending ? `<button type="button" class="btn" data-variant="ghost" data-size="sm" data-ap-back="${e(rec[key])}">추천안으로 되돌리기</button>` : ''}</div>
       <h4 class="ap-title">${e(cur[key])}</h4>${cur.reason ? `<p class="ap-desc">${e(cur.reason)}</p>` : ''}
       <ul class="ap-reasons">${Number.isFinite(cur.score) ? `<li>점수 <b class="num">${e(scoreText(cur))}</b></li>` : ''}${optionFacts(cur, key) ? `<li class="chips">${optionFacts(cur, key)}</li>` : ''}</ul>` : `<p class="muted">고를 안이 없습니다.</p>`;

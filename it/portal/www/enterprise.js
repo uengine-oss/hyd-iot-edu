@@ -570,7 +570,7 @@ function kgApplyState() {
     : path ? `「${cy.getElementById(ent.focus).data('name') || ''}」 경보에서 증상 · 고장 유형 · 원인 · 조치 방법으로 가는 길입니다. 항목을 누르면 그 항목에 이어진 것이 보입니다`
     : q ? (match.size ? `이름에 「${word}」이 든 항목 ${fmtN(match.size)}개가 밝게 보입니다. Enter 를 누르면 차례로 고릅니다` : `이름에 「${word}」이 든 항목이 없습니다`)
     : ent.group ? `「${ONTO_GROUPS.find(x => x.key === ent.group).title}」 묶음만 밝게 보입니다. 확대하면 이름이 더 보이고, 묶음 이름을 다시 누르면 전체로 돌아갑니다`
-    : '점을 누르면 이어진 항목이 그 둘레에 모입니다. 묶음 이름을 누르면 그 묶음을 크게 봅니다';
+    : '';      // 무엇을 누르면 되는지는 오른쪽 칸의 빈 상태가 말한다(같은 말을 캔버스 안에 또 두지 않는다)
   $('#ontoStats').textContent = `항목 ${fmtN(kg.of.nodes.length)} · 연결 ${fmtN(kg.of.edges.length)}` + (path ? ` · 강조 경로 ${fmtN(path.size)}개` : '') + (q ? ` · 검색 결과 ${fmtN(match.size)}개` : '');
   const next = $('#ontoNext'); next.hidden = match.size < 2;
   next.querySelector('.num').textContent = `${Math.min(kg.matchAt + 1, match.size)} / ${match.size}`;
@@ -621,23 +621,22 @@ function renderNodePanel() {
     [...kg.home.keys()].forEach(id => { const l = kg.raw.get(id).label; (byLabel.get(l) || byLabel.set(l, []).get(l)).push(id); });
     const nameOf = id => kg.cy.getElementById(id).data('name');
     byLabel.forEach(ids => ids.sort((a, b) => kgCollator.compare(nameOf(a), nameOf(b)) || (a < b ? -1 : 1)));
-    let groupsN = 0;
-    const index = ONTO_GROUPS.map((gr, gi) => {
-      const labels = gr.other ? [...byLabel.keys()].filter(l => groupOf(l) === gi).sort() : gr.labels.filter(l => byLabel.has(l));
-      if (!labels.length) return '';
-      groupsN++;
-      const total = labels.reduce((sum, l) => sum + byLabel.get(l).length, 0), open = ent.group === gr.key;
-      // 항목 이름은 펼친 묶음에만 그린다(닫힌 묶음까지 다 그리면 조각이 수백 개다)
-      const body = open ? labels.map(l => { const ids = byLabel.get(l);
-        return `<section class="rel-group"><h4>${esc(LABEL_KO[l] || l)} <span class="num">${ids.length}</span></h4><div class="chips">${ids.slice(0, 12).map(id => chip(id)).join('')}` +
-          (ids.length > 12 ? `<details class="rel-more"><summary class="chip">+${ids.length - 12}</summary><div class="chips">${ids.slice(12).map(id => chip(id)).join('')}</div></details>` : '') + `</div></section>`; }).join('') : '';
-      return `<details class="fold kg-group" data-group="${gr.key}"${open ? ' open' : ''}><summary><span class="gtag" style="--c:${gr.color}"><i></i>${esc(gr.title)}</span><span class="muted num">${total}</span>` +
-        `<span class="kg-kinds">${labels.map(l => `${esc(LABEL_KO[l] || l)} ${byLabel.get(l).length}`).join(' · ')}</span></summary><div class="fold-body">${body}</div></details>`;
-    }).join('');
-    box.innerHTML = `<div class="node-head kg-index-head"><h2>이 지도에 들어 있는 것</h2><p>항목 ${kg.home.size.toLocaleString('ko-KR')}개가 묶음 ${groupsN}개에 들어 있습니다. 묶음을 펼치면 항목 이름이 보이고, 이름이나 지도의 점을 누르면 그 항목의 속성과 이어진 항목이 나옵니다.</p></div>` +
-      `<div class="kg-index">${index}</div>` +
-      (top.length ? `<div class="node-sec"><h3>가장 많이 이어진 항목</h3><div class="chips">${top.map(id => chip(id, `<span class="num muted">${kg.deg.get(id) || 0}</span>`)).join('')}</div></div>` : '');
-    box.querySelectorAll('details.kg-group > summary').forEach(sum => sum.addEventListener('click', ev => { ev.preventDefault(); const key = sum.parentElement.dataset.group; kgGroup(ent.group === key ? null : key); }));
+    // 묶음의 목록(이름 · 수)은 캔버스 아래 조각 한 곳에만 있다 — 이 칸은 고른 것 전용이다: 묶음을 골랐으면(지도의 묶음 이름을 누른다) 그 묶음의 항목 이름을 종류별로,
+    // 아무것도 고르지 않았으면 무엇을 누르면 되는지 한 줄과 가장 많이 이어진 항목
+    const gi = ONTO_GROUPS.findIndex(gr => gr.key === ent.group), gr = gi >= 0 ? ONTO_GROUPS[gi] : null;
+    const labels = !gr ? [] : gr.other ? [...byLabel.keys()].filter(l => groupOf(l) === gi).sort() : gr.labels.filter(l => byLabel.has(l));
+    if (gr && labels.length) {
+      const total = labels.reduce((sum, l) => sum + byLabel.get(l).length, 0);
+      box.innerHTML = `<div class="node-head kg-group" data-group="${gr.key}"><h2><span class="gtag" style="--c:${gr.color}"><i></i>${esc(gr.title)}</span> <span class="num muted">${total}</span></h2>` +
+        `<button type="button" class="btn" data-variant="ghost" data-size="sm" data-kg-group-close>묶음 닫기</button></div>` +
+        labels.map(l => { const ids = byLabel.get(l);
+          return `<section class="rel-group"><h4>${esc(LABEL_KO[l] || l)} <span class="num">${ids.length}</span></h4><div class="chips">${ids.slice(0, 12).map(id => chip(id)).join('')}` +
+            (ids.length > 12 ? `<details class="rel-more"><summary class="chip">+${ids.length - 12}</summary><div class="chips">${ids.slice(12).map(id => chip(id)).join('')}</div></details>` : '') + `</div></section>`; }).join('');
+      box.querySelector('[data-kg-group-close]').addEventListener('click', () => kgGroup(null));
+    } else {
+      box.innerHTML = UI.empty({ icon: 'network', title: '항목을 고르세요', sub: '지도의 점을 누르면 속성과 이어진 항목이, 묶음 이름을 누르면 그 묶음의 항목 이름이 여기에 나옵니다.', cls: 'kg-index-head' }) +
+        (top.length ? `<div class="node-sec"><h3>가장 많이 이어진 항목</h3><div class="chips">${top.map(id => chip(id, `<span class="num muted">${kg.deg.get(id) || 0}</span>`)).join('')}</div></div>` : '');
+    }
   } else {
     const group = ONTO_GROUPS[groupOf(n.label)], id = String(n.id);
     const lead = n.props?.description || '';                 // 한 줄 설명은 서버가 준 값이 있을 때만(화면이 지어 붙이지 않는다)
@@ -731,7 +730,7 @@ function effChip(x, cls) {
   return `<span class="${cls}" title="영향 강도 ${x.weight}${x.conds && x.conds.length ? ' · 조건: ' + x.conds.join(', ') : ''}">${esc(t)}</span>`;
 }
 function ruleChip(r, cls, label) {
-  return `<span class="${cls}" title="${esc((r.when || '') + (r.sources && r.sources.length ? ' · 근거 ' + r.sources.join(', ') : ''))}">${esc(label)} · ${esc(UI.ruleLabel(r))}${r.annotation || UI.names[r.rule] ? '' : UI.fold('규칙 원문',`<pre>${esc(JSON.stringify(r,null,2))}</pre>`,{cls:'small'})}</span>`;
+  return `<span class="${cls}" title="${esc((r.when || '') + (r.sources && r.sources.length ? ' · 근거 ' + r.sources.join(', ') : ''))}">${esc(label)} · ${esc(UI.ruleLabel(r))}${r.annotation || UI.names[r.rule] ? '' : UI.raw(r, { title: '규칙 원문' })}</span>`;
 }
 // FAN_SET=100 → "팬 100 %" (명칭표 "카드"): the action code and target stay in the evidence fold
 const ACTION_KO = { FAN_SET: ['팬', ' %'], LOAD_SET: ['부하', ' %'], PUMP_SELECT: ['펌프', ''], WO_CREATE: [null, ''], PR_CREATE: ['구매 요청', ''] };
@@ -791,7 +790,7 @@ function cardHtml(o, opt = {}) {
     <div><dt>${esc(UI.t('skill.actions'))}</dt><dd>${(o.actions || []).map(a => `${esc(actionLabel(a, o))} <span class="muted">(${esc(a.code)}${a.value != null ? '=' + esc(a.value) : ''}${a.targetName ? ' → ' + esc(a.targetName) : ''})</span>`).join(' · ') || esc(UI.t('card.noAction'))}</dd></div>
     ${(o.forecast || []).length ? `<div><dt>${esc(UI.t('score.forecast'))}</dt><dd>${(o.forecast || []).map(f => `<span title="계산 방법: ${esc(f.method)}">${esc(f.name)} ${esc(f.value)}${esc(f.unit || '')}</span>`).join(' · ')}</dd></div>` : ''}
     ${(o.gains || []).some(cond) || (o.losses || []).some(cond) ? `<div><dt>${esc(UI.t('card.expected'))}</dt><dd><span class="hkpi">${(o.gains || []).filter(cond).map(x => effChip(x, 'pos')).join('')}${(o.losses || []).filter(cond).map(x => effChip(x, 'neg')).join('')}</span></dd></div>` : ''}
-    ${(o.selectedBy || []).length ? `<div><dt>${esc(UI.t('skill.rules'))}</dt><dd>${(o.selectedBy || []).map(r => `${esc(UI.ruleLabel(r))}${(r.sources || []).length ? ` <span class="muted">(${esc(r.sources.join(', '))})</span>` : ''}${r.annotation || UI.names[r.rule] ? '' : UI.fold('규칙 원문',`<pre>${esc(JSON.stringify(r,null,2))}</pre>`,{cls:'small'})}`).join('<br>')}</dd></div>` : ''}
+    ${(o.selectedBy || []).length ? `<div><dt>${esc(UI.t('skill.rules'))}</dt><dd>${(o.selectedBy || []).map(r => `${esc(UI.ruleLabel(r))}${(r.sources || []).length ? ` <span class="muted">(${esc(r.sources.join(', '))})</span>` : ''}${r.annotation || UI.names[r.rule] ? '' : UI.raw(r, { title: '규칙 원문' })}`).join('<br>')}</dd></div>` : ''}
     ${(o.steps || []).length ? `<div><dt>${esc(UI.t('card.steps'))}</dt><dd><ol class="dc-steps">${(o.steps || []).map(s => `<li>${esc(UI.idText(s.text))}${s.manual ? ` <span class="muted" title="${esc(s.manual.excerpt || '')}">[${esc(s.manual.ref)} ${esc(s.manual.title || '')}]</span>` : ''}</li>`).join('')}</ol></dd></div>` : ''}
     ${o.precedent && o.precedent.reasons && o.precedent.reasons.length ? `<div><dt>${esc(UI.t('card.precedent'))}</dt><dd>${o.precedent.reasons.map(esc).join(' / ')}</dd></div>` : ''}</dl>
     ${o.forecastContext ? UI.fold(esc(UI.t('card.forecastLimits')), forecastContextHtml(o.forecastContext), { cls: 'small' }) : ''}
@@ -830,7 +829,7 @@ window.hydCards = { cardHtml, reviewMatches, rangeField, actionLabel };
 /* ================================================= 규칙 판단(판단 실험)
    짜임(디자인 기준 5-6): 왼쪽 조건 판(index.html #decForm) → 오른쪽 결과(#decResult). 결과는 결론 한 줄과 숫자 넷 → 조치 후보 비교(.opts) → 근거(원인 · 증거) → 원문 접기.
    판단 한 번은 1초 안에 끝난다 — 그동안은 결과 자리에 읽는 중 줄(스켈레톤)을 두고 단추가 「판단하는 중 · 걸린 시간」으로 바뀐다 */
-const decEmpty = () => `<section class="empty"><header><figure>${UI.icon('scale')}</figure><h3>아직 모의 판단을 하지 않았습니다</h3><p>왼쪽에서 설비와 이상 패턴을 고르고 <span style="white-space:nowrap">[모의 판단]을</span> 누르면 1순위 조치와 그 근거가 여기에 보입니다.</p></header></section>`;
+const decEmpty = () => `${UI.empty({ icon: 'scale', title: `아직 모의 판단을 하지 않았습니다`, sub: `왼쪽에서 설비와 이상 패턴을 고르고 [모의 판단]을 누르면 1순위 조치와 그 근거가 여기에 보입니다.` })}`;
 async function loadDecisionView() {
   const sel = $('#decPattern'), box = $('#decResult');
   if (!box.innerHTML) box.innerHTML = decEmpty();
@@ -923,9 +922,9 @@ const DEC_STEPS = { ontology: ['판단 규칙 읽기', '지식에서 이 판단�
 function decTrace(steps) {
   return `<div class="stream-log" style="max-height:none;padding:0">` + steps.map(s => {
     const [name, note] = DEC_STEPS[s.name] || UI.steps[s.name] || [s.name, s.note || ''];
-    const ok = s.status === 'DONE', raw = [s.note ? `설명: ${s.note}` : '', s.output == null ? '' : JSON.stringify(s.output, null, 1)].filter(Boolean).join('\n\n');
+    const ok = s.status === 'DONE';
     return `<div class="line" data-kind="${ok ? 'ok' : 'fail'}">${UI.icon(ok ? 'check' : 'x')}<span class="line-text"><b>${esc(name)}</b><span class="line-sub">${esc(ok ? note : UI.status(s.status) + (note ? ' · ' + note : ''))}</span></span><span class="line-time num">${esc(UI.time(s.t))}</span></div>` +
-      UI.fold(esc(UI.t('raw')), raw ? `<pre class="code">${esc(raw)}</pre>` : '<p class="muted">출력 데이터가 없습니다.</p>');
+      UI.raw(s.output);
   }).join('') + '</div>';
 }
 // 결과(디자인 기준 5-6): 결론 한 줄 + 숫자 넷 → 조치 후보 비교(.opts — 1순위와 진 안이 왜 졌는지) → 근거(판정 원인과 증거) → 접기(판단에 쓴 값 · 후보별 근거 · 점수 계산 · 적용한 규칙 · 처리 과정 원문)
@@ -975,11 +974,8 @@ function renderDecision() {
   };
   const ordered = opts.slice().sort((a, b) => (b.id === r.recommended) - (a.id === r.recommended) || (b.feasible ? 1 : 0) - (a.feasible ? 1 : 0) || (a.rank || 99) - (b.rank || 99));
   html += `<div class="panel-sec"><h3>${esc(UI.t('dec.candidates'))} 비교<span class="muted">${opts.length}개${top ? ' 가운데 1순위' : ''}</span></h3>` + (opts.length
-    ? `<div class="table-container"><table class="opts"><thead><tr><th></th><th>조치</th><th>구분</th><th class="num">${esc(UI.t('card.score'))}</th><th></th><th>${esc(UI.t('card.approver'))}</th></tr></thead><tbody>` +
-      ordered.map(o => `<tr${o.id === r.recommended ? ' data-pick' : ''}><td><span class="rank num">${o.feasible ? esc(o.rank) : '–'}</span></td>` +
-        `<td><b>${esc(UI.idText(o.name))}</b>${o.sopId ? ` <span class="muted mono">${esc(o.sopId)}</span>` : ''}${o.feasible ? '' : ' ' + UI.chipText(UI.t('chip.excluded'), 'danger')}${why(o)}</td><td>${esc(kind(o))}</td>` +
-        `<td class="num">${Number.isFinite(o.score) ? signNum(o.score) : '–'}</td><td><div class="bar"><i style="width:${o.feasible ? Math.min(100, Math.round(Math.abs(o.score || 0) / maxAbs * 100)) : 0}%"></i></div></td><td>${esc((o.approver || {}).name || '–')}</td></tr>`).join('') +
-      '</tbody></table></div>' : UI.empty(UI.t('inc.noCandidates'), '이 설비와 이상 패턴에 맞는 조치 방법이 지식에 없습니다.', 'compact')) + '</div>';
+    ? UI.optionsTable(ordered.map(o => ({ rank: o.feasible ? o.rank : '–', name: UI.idText(o.name), code: o.sopId, kind: kind(o), noteHtml: why(o), pick: o.id === r.recommended, out: !o.feasible,
+        score: Number.isFinite(o.score) ? o.score : null, scoreHtml: o.feasible ? null : esc(UI.t('chip.excluded')), role: (o.approver || {}).name || '–' }))) : UI.empty(UI.t('inc.noCandidates'), '이 설비와 이상 패턴에 맞는 조치 방법이 지식에 없습니다.', 'compact')) + '</div>';
 
   // 근거: 판정 원인 한 줄과 그 증거(충족 여부는 상태 뱃지와 글로), 다른 원인 후보는 접기
   const evidenceLines = decEvidenceLines, causeLine = decCauseLine;
@@ -1115,7 +1111,7 @@ function txRecordHtml(x) {
   return `<article class="event-record"><div class="line">${UI.icon(x.compensates ? 'rotate-ccw' : 'receipt-text')}<span class="line-text"><b>${esc(what)}${x.compensates ? ' 되돌림' : ''}</b>` +
     `<span class="line-sub">${esc(system)}${product !== system ? ` (${esc(product)})` : ''}</span></span><time class="line-time num" title="${esc(UI.dateTime(x.t))}">${esc(UI.dateTime(x.t))}</time></div>` +
     `<dl class="bz-kv">${rows.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${v}</dd></div>`).join('')}</dl>${txDiffFold(x)}` +
-    UI.fold(esc(UI.t('raw')), `<pre class="code">${esc(JSON.stringify(x, null, 2))}</pre>`) + '</article>';
+    UI.raw(x) + '</article>';
 }
 function renderSystems() {
   const box = $('#sysBoards'); const s = ent.entState;

@@ -70,7 +70,7 @@
           ${Object.values(p.reasons || {}).some(items => items.some(x => x.kind === 'condition_recheck')) ? '<p>바뀐 입력을 쓰는 분기 앞의 검토 단계도 다시 수행합니다.</p>' : ''}
           ${inc ? `<p>연결된 사건: ${UI.chip(inc.state)} · 설비 명령 ${inc.cmdId ? '보냄' : '보내지 않음'} · 업무 실행 기록 ${esc(receipts)}건 · 폐기할 이전 승인 ${esc((p.retire_approvals || []).length)}건</p>` : '<p>연결된 설비 사건이 없는 처리 건입니다.</p>'}
           ${p.blockers.length ? `<div class="rework-blocked"><b>추가 검토가 필요합니다</b><ul>${p.blockers.map(b => `<li>${esc(b.text)}${b.variable ? ` <span class="muted">(값: ${esc(valueName(b.variable))})</span>` : b.workitem ? ` <span class="muted">(단계: ${esc(taskName(b.workitem))})</span>` : ''}</li>`).join('')}</ul></div>` : '<p>새 차수를 요청할 수 있습니다. 접수 시 상태와 효과를 다시 확인합니다.</p>'}
-          ${UI.fold(esc(UI.t('raw')), `<pre>${esc(JSON.stringify({ workitems: p.affected_workitems, reasons: p.reasons, candidate_variables: p.candidate_variables, blockers: p.blockers, effects: p.effects }, null, 2))}</pre>`)}` });
+          ${UI.raw({ workitems: p.affected_workitems, reasons: p.reasons, candidate_variables: p.candidate_variables, blockers: p.blockers, effects: p.effects })}` });
       }
       const finished = view.instance.status !== 'RUNNING' && !s.pending;   // A091: a finished instance folds this panel to one line
       const body = `${s.success ? `<p class="rework-done" role="status">${esc(s.success.generation)}${esc(UI.t('inst.gen'))} 요청이 접수됐습니다. 새 단계의 진행과 사람 선택을 확인하세요.</p>` : ''}

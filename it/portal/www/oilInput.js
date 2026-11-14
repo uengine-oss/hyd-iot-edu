@@ -44,7 +44,7 @@
   // 결과(결론 먼저): 경보를 만들었는가 → 서버가 준 까닭 → 어느 흐름이 여는가 → 처리 건으로 가는 길
   function resultHtml() {
     const r = O.last;
-    if (!r) return UI.empty('아직 보낸 입력이 없습니다', '기준을 벗어난 분석 결과를 보내면 경보가 만들어지고, 그 경보를 맡은 흐름이 처리 건을 엽니다.');
+    if (!r) return UI.empty({ icon: 'droplets', title: '아직 보낸 입력이 없습니다', sub: '기준을 벗어난 분석 결과를 보내면 경보가 만들어지고, 그 경보를 맡은 흐름이 처리 건을 엽니다.' });
     const head = (tone, text) => `<div class="panel-sec result"><p class="result-label">결과</p><p class="result-main">${UI.chipText(text, tone)}</p><p class="result-sub">${esc(r.reason)}</p></div>`;
     if (!r.raised) return `<section class="panel" role="status">${head('neutral', '경보를 만들지 않았습니다')}</section>`;
     const target = r.definition || {};

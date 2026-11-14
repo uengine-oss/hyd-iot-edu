@@ -87,7 +87,7 @@
       options.map(option=>`<section data-deferral-option><h4>${e(option?.name && option.name!==option.id ? W.text(option.name) : '대안 표시 이름 기록 없음')}</h4><p>${option?.feasible===false ? '후보에서 제외된 안입니다.' : option?.feasible===true ? '평가할 때 후보였던 안입니다.' : '후보가 될 수 있는지 확인한 기록이 없습니다.'}</p>${W.maintenanceHtml(option)}${!option?.maintenancePlan && !option?.maintenanceDiagnostics ? (option?.violations || []).map(v=>`<p>${e(v.annotation ? W.text(v.annotation) : '제외 사유 설명이 기록에 없습니다.')}</p>`).join('') : ''}</section>`).join('')
       : '<p>대안을 평가한 근거가 기록에 없습니다. 조회하지 못한 값을 재고 0이나 실행 가능으로 읽으면 안 됩니다.</p>';
     return `<div data-deferral-evidence><p><b>평가를 보류했습니다.</b> 이 단계의 일은 아직 끝나지 않았습니다.</p><p>${e(W.deferralReason(record))}</p>${body}`+
-      UI.fold('보류 평가 근거 원문',`<pre>${e(JSON.stringify(assessment,null,2))}</pre>`,{cls:'small'}).replace('<details','<details data-deferral-raw')+'</div>';
+      UI.raw(assessment, { title: '보류 평가 근거 원문' }).replace('<details','<details data-deferral-raw')+'</div>';
   };
   /* 정기 정비 안 한 장(승인 카드 · 처리 기록 · 보류 근거가 함께 쓴다). 읽는 차례:
      ① 이 안을 고르면 무엇이 일어나는가 한 문장(서버가 준 계획 값으로만 만든다 — 없는 값은 「기록에 없습니다」) ② 판단에 걸리는 것(제외 · 실행 불가 · 인력 부족)
@@ -132,7 +132,7 @@
       (plan && ['WO_CREATE','WO_RESCHEDULE'].includes(plan.code) && Object.prototype.hasOwnProperty.call(plan,'stock_effect') ? `<p>${e(pmStockSentence(plan))}</p>` : '')+
       (numbers ? `<p class="muted">${e(numbers)}입니다.</p>` : '')+
       W.maintenanceScopeHtml(plan || diagnostics,{lead:false})+
-      UI.fold('정비 실행 계획 · 제외 근거 원문',`<pre>${e(JSON.stringify({maintenancePlan:plan,maintenanceDiagnostics:diagnostics,violations:excluded},null,2))}</pre>`,{cls:'small'});
+      UI.raw({maintenancePlan:plan,maintenanceDiagnostics:diagnostics,violations:excluded}, { title: '정비 실행 계획 · 제외 근거 원문' });
   };
   // 정비 범위(대상 설비 · 부품 · 인력)의 근거. lead: 대상과 부품 처리를 문장으로 먼저 말할지 — maintenanceHtml 은 위에서 이미 말했으므로 끈다
   W.maintenanceScopeHtml = (plan, { lead = true } = {}) => {
@@ -171,7 +171,7 @@
     }).join('');
     if (staff) detail+='<h4>정비 인력</h4>'+rows([['필요',n(staff.required,'명')],['가용',n(staff.available,'명')],['부족',n(staff.shortfall,'명')],
       ['확보 여부',staff.confirmed===true ? '확보를 확인한 기록 있음' : staff.arrangement_required===true ? '더 확보해야 함' : '확보를 확인한 기록 없음']]);
-    if (Array.isArray(plan.parts_totals) && plan.parts_totals.length) detail+='<h4>전체 대상 설비의 부품 필요량</h4><ul>'+plan.parts_totals.map(p=>`<li>${e(p?.name || p?.part_no || '부품 번호 기록 없음')}: 필요 ${e(n(p?.qty,'개'))}, 가용 ${e(n(p?.available,'개'))}</li>`).join('')+'</ul>'+UI.fold('전체 부품 근거 원문',`<pre>${e(JSON.stringify(plan.parts_totals,null,2))}</pre>`,{cls:'small'});
+    if (Array.isArray(plan.parts_totals) && plan.parts_totals.length) detail+='<h4>전체 대상 설비의 부품 필요량</h4><ul>'+plan.parts_totals.map(p=>`<li>${e(p?.name || p?.part_no || '부품 번호 기록 없음')}: 필요 ${e(n(p?.qty,'개'))}, 가용 ${e(n(p?.available,'개'))}</li>`).join('')+'</ul>'+UI.raw(plan.parts_totals, { title: '전체 부품 근거 원문' });
     return html+(detail ? UI.fold(`설비별 근거 (대상 ${assets.length}대)`,detail,{cls:'small'}) : '');
   };
   W.maintenanceReceiptSummary = receipt => {
@@ -197,7 +197,7 @@
         const modes={reserve:'예약',issue:'창고 출고',preserve:'기존 오더에 잡아 둔 부품을 그대로 씀'}, mode=after.plan?.stock_effect;
         return `<li><b>${e(name)} · ${e(o.ref || '오더 번호 기록 없음')} · ${e(status)}</b>${p ? '<p>'+e(p.package_name || '정비 묶음 이름 기록 없음')+' — 이번 정비 기준 누적 운전시간 '+e(n(p.next_due_total_h))+', 정비 묶음 간격 '+e(n(p.package_interval_h))+'</p>' : '<p>이 오더의 정비 묶음 근거는 기록에 없습니다.</p>'}<p>부품 처리 방식: ${e(Object.prototype.hasOwnProperty.call(modes,mode) ? modes[mode] : '기록 없음')}</p>${o.window_starts_at ? '<p>정비 시작 시각: '+e(UI.dateTime(o.window_starts_at))+'</p>' : '<p>정비 시작 시각은 기록에 없습니다.</p>'}</li>`;
       }).join('')+'</ul></div>' : '<p>설비별 실제 오더 기록 없음</p>')+
-      UI.fold('정비 오더 영수증 원문',`<pre>${e(JSON.stringify(receipt,null,2))}</pre>`,{cls:'small'});
+      UI.raw(receipt, { title: '정비 오더 영수증 원문' });
   };
   W.unit = key => { const k = String(key || ''); const f = F[k] || F[k.toLowerCase()]; return f ? f[1] : ''; };
   W.known = key => !!(F[key] || F[String(key || '').toLowerCase()]);
@@ -350,7 +350,7 @@
       const policy=comparison.policy || {};
       rows.push(['원문 비용 기준',`불량 1개당 손실 ${costValue(policy.loss_per_failure)} · 검사 기준 ${typeof policy.inspection_threshold==='number' ? W.num(policy.inspection_threshold*100)+' % 초과' : '기록 미확인'} · 전수 검사비 ${costValue(policy.inspection_cost)}`]);
     } else rows.push(['구매 총비용 비교','비교한 기록이 없습니다.']);
-    return `<section class="ap-business" aria-label="구매 요청"><b>구매 요청</b><dl class="meta-list">${rows.map(([label,value])=>`<div><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`).join('')}</dl><p class="muted">구매 요청 계획입니다. 승인 전이라 발주하지 않았습니다.</p>${UI.fold('구매 요청 근거 원문',`<pre>${esc(JSON.stringify({part:part || null,facts:values,resolvedSupplier:option.resolvedSupplier || null,economicComparison:option.economicComparison || null,actions:option.actions},null,2))}</pre>`,{cls:'small'})}</section>`;
+    return `<section class="ap-business" aria-label="구매 요청"><b>구매 요청</b><dl class="meta-list">${rows.map(([label,value])=>`<div><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`).join('')}</dl><p class="muted">구매 요청 계획입니다. 승인 전이라 발주하지 않았습니다.</p>${UI.raw({part:part || null,facts:values,resolvedSupplier:option.resolvedSupplier || null,economicComparison:option.economicComparison || null,actions:option.actions}, { title: '구매 요청 근거 원문' })}</section>`;
   };
   W.purchaseAsk = (name, input) => {
     const i=parse(input) || {}, use=name==='purchase_context' ? '부족 재고와 원문 구매 절차 확인' : name==='evaluate_purchase' ? '구매 후보 비교(조회와 계산만)' : '이 처리 건에 구매 판단 등록 요청(승인 전)';

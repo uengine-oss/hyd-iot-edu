@@ -155,7 +155,7 @@
       title: '미리보기에 반영된 뜻 검토', chips: UI.chipText(`승인 ${r.approved} · 고치기 ${r.edited} · 제외 ${r.rejected}`, 'success'),
       body: `<p class="muted">${esc(UI.who(r.by))} · ${esc(UI.dateTime(r.createdAt))} · 반영한 입력 ${r.applied.length}개</p>
         <ul class="lm-applied">${r.reflected.map(x => `<li><b class="mono">${esc(short(x.column))}</b> → ${esc(x.comment)} · ${linkText(x.link)}</li>`).join('')}</ul>
-        ${sql ? UI.fold('DB 담당자에게 줄 열 주석 SQL (실행하지 않음)', `<pre class="code">${esc(sql)}</pre>`) : ''}`,
+        ${sql ? UI.raw(sql, { title: 'DB 담당자에게 줄 열 주석 SQL (실행하지 않음)' }) : ''}`,
       actions: `<button type="button" class="btn" data-variant="outline" data-size="sm" id="lmUnapply">검토 빼고 미리보기 (원래대로)</button>`,
     });
   }

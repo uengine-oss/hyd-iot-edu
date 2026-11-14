@@ -107,7 +107,7 @@
     list.innerHTML = shown.map(k => {
       const fm = (k.failureModes || []).map(f => f.name).join(', ');
       return `<button type="button" class="row" data-skill="${esc(k.id)}"${k.id === H.skillSel && !H.skillNew ? ' aria-current="true"' : ''}><span class="row-ic">${kindIcon(k)}</span><span class="row-title">${esc(k.name)}</span>` +
-        `${badge(k.source_document ? '문서에서' : '직접 추가')}<span class="row-meta">${esc(kindName(k))} · ${esc(fm || UI.t('skill.noFm'))}</span></button>`;
+        `${k.source_document ? '' : badge('직접 추가')}<span class="row-meta">${esc(kindName(k))} · ${esc(fm || UI.t('skill.noFm'))}</span></button>`;      // 문서에서 온 것이 보통이라 표시하지 않는다 — 손으로 더한 것만 말한다
     }).join('') || `<div class="sk-row">${UI.empty('이 종류의 조치 방법이 없습니다', '위에서 「전체」를 고르면 모두 보입니다.')}</div>`;
   }
   $('#skillKinds').addEventListener('click', ev => { const b = ev.target.closest('[data-skill-kind]'); if (!b) return; H.skillKind = b.dataset.skillKind; renderSkillList(); });
@@ -152,7 +152,7 @@
         [UI.t('skill.affects'), (k.affects || []).map(a => `${esc(a.name)} ${a.sign > 0 ? '↑' : '↓'}`).join(', ')],
         [UI.t('skill.approver'), esc((k.approver || {}).name || '')]].filter(([, v]) => v);
       const steps = k.steps || [];
-      box.innerHTML = `<header class="panel-head sk-head" data-skill-body><span class="sk-ic">${kindIcon(k)}</span><div><h2>${esc(k.name)}${UI.chipText(kindName(k), 'neutral')}${badge(fromDoc ? '문서에서' : '직접 추가')}</h2>` +
+      box.innerHTML = `<header class="panel-head sk-head" data-skill-body><span class="sk-ic">${kindIcon(k)}</span><div><h2>${esc(k.name)}${badge(kindName(k))}${badge(fromDoc ? '문서에서' : '직접 추가')}</h2>` +
         `<p>${esc(k.description || (k.sopId ? '절차 번호 ' + k.sopId : ''))}</p></div></header>` +
         `<div class="panel-sec"><h3>${esc(UI.t('skill.stepsTitle'))}<span class="muted num">${steps.length ? '단계 ' + steps.length : ''}</span></h3>` +
           (steps.length ? `<ol class="sk-steps">${steps.map(s => `<li>${esc(s.text)}${s.manual ? ` <span class="badge" data-variant="outline">${esc(s.manual)}</span>` : ''}</li>`).join('')}</ol>` : `<p class="muted">${esc(UI.t('skill.noSteps'))}</p>`) + `</div>` +
@@ -235,7 +235,7 @@
   // 올릴 것 고르기(매뉴얼 · 업무 DB 표 정의): 한 번에 한 가지 일만 보인다
   function showDocKind(kind) {
     H.docKind = kind;
-    document.querySelectorAll('#docKinds [data-doc-kind]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.docKind === kind)));
+    UI.markViewTab($('#docKinds'), b => b.dataset.docKind === kind);
     document.querySelectorAll('#view-knowledge [data-doc-pane]').forEach(p => { p.hidden = p.dataset.docPane !== kind; });
   }
   $('#docKinds').addEventListener('click', ev => { const b = ev.target.closest('[data-doc-kind]'); if (b) showDocKind(b.dataset.docKind); });
@@ -321,7 +321,7 @@
       const more = `<dl class="kv">${it.confidence ? `<dt>${esc(UI.t('golden.confidence'))}</dt><dd>${esc(UI.t('golden.conf.' + it.confidence))}</dd>` : ''}` +
         `<dt>${esc(UI.t('golden.cited'))}</dt><dd>${cited.length ? cited.map(c => UI.name(c) !== c ? `<span title="${esc(c)}">${esc(UI.name(c))}</span>` : `<code class="inline">${esc(c)}</code>`).join(' · ') : esc(UI.t('golden.noCited'))}</dd>` +
         (it.claimed_answer ? `<dt>근거를 확인하지 못한 에이전트의 답</dt><dd>${esc(it.claimed_answer)}</dd>` : '') + `</dl>` +
-        (it.cypher ? `<p class="muted">${esc(UI.t('golden.query'))}</p><pre class="code">${esc(it.cypher)}</pre>` : '');
+        (it.cypher ? UI.raw(it.cypher, { title: UI.t('golden.query'), lang: 'cypher' }) : '');
       return `<article class="doc-q"><h4>${esc(it.question)}${UI.chipText(UI.t(key), tone)}</h4><p class="doc-q-answer">${esc(it.answer || '')}</p>${UI.fold(`${esc(UI.t('golden.evidence'))}<span class="muted num">${cited.length}건</span>`, more)}</article>`;
     }).join('');
   }
@@ -469,7 +469,7 @@
     const more = (issues.length ? `<ul class="doc-issues">${issues.map(x => `<li>${esc(manualIssueMessage(x, preview, catalog))}</li>`).join('')}</ul>` : '') +
       (values.length ? UI.fold(`원문 수치 확인 필요<span class="muted num">${values.length}개</span>`, `<ul class="doc-issues">${values.map(w => `<li>${esc(w)}</li>`).join('')}</ul>`, { open: true }) : '') +
       (Array.isArray(v.notices) && v.notices.length ? UI.fold(`참고<span class="muted">고칠 곳이 아니라 알고 넘어갈 것 · ${v.notices.length}건</span>`, `<ul class="doc-issues">${v.notices.map(n => `<li>${esc(n.message)}</li>`).join('')}</ul>`) : '') +
-      (issues.length ? UI.fold('검사 항목 원문', `<pre class="code">${esc(JSON.stringify(issues, null, 2))}</pre>`) : '');
+      (issues.length ? UI.raw(issues, { title: '검사 항목 원문' }) : '');
     return v.technical_ready === true
       ? { tone: 'ok', tag: '자동 검증 통과', line: '연결 구조에는 문제가 없습니다. 내용이 원문과 맞는지는 아래에서 직접 검토하세요. 고친 연결은 적재할 때 다시 검증합니다.', more }
       : { tone: 'warn', tag: `검토 필요 ${issues.length}건`, line: '문서가 틀렸다는 뜻이 아니라, AI가 채우지 못했거나 사람이 확인해야 하는 곳입니다. 해당 조치 방법에서 값을 고르거나 고친 뒤 적재하세요. 고친 연결은 적재할 때 다시 검증합니다.', more };
@@ -484,7 +484,7 @@
       const label = !valid ? '연결 구조 검사 정보 읽기 실패' : row.executable === false ? '원문 참고 보관 · 실행 후보 제외' : row.ready ? '실행 후보 기계 검사 통과 · 연결 구조 검사 통과' : '실행 후보 연결 확인 필요';
       const scope=UI.evaluationInfo(row), about=scope.state==='structural' ? '실제 견적 · 재고는 실행 판단 시 확인 · 현재 실제 승인 · 실행 준비는 확인하지 않음' : scope.state==='execution' ? '실제 실행 검사 기록 있음 · 승인 · 실행 완료 아님' : '실제 승인 · 실행 준비 검사 기록 확인 안 됨';
       return `<li><b>${esc(name)}</b> · ${esc(label)}<p class="muted">${esc(about)}</p>${valid && row.issues.length ? '<ul class="doc-issues">'+row.issues.map(x=>`<li>${esc(manualIssueMessage(x,preview,catalog))}</li>`).join('')+'</ul>' : ''}</li>`;
-    }).join('')+'</ul>' + UI.fold('실행 후보 검사 원문',`<pre class="code">${esc(JSON.stringify(v.execution,null,2))}</pre>`));
+    }).join('')+'</ul>' + UI.raw(v.execution, { title: '실행 후보 검사 원문' }));
   }
   function manualPurchaseFields(p, r) {
     const link = manualLink(r,p), purchase = link.scope === 'purchase', catalog = H.manualCatalog;
@@ -587,7 +587,7 @@
           manualReferenceFields(p, r) +
           UI.field({ label: UI.t('skill.affects'), cls: 'wide', hint: '상태 변수 또는 성과 지표 id와 방향(+/-)을 쉼표로. 비우면 득실 0', input: `<input aria-label="영향" data-affects="${esc(p.id)}" value="${esc((manualLink(r,p).affects || []).map(a=>a.target+':'+a.sign).join(', '))}" placeholder="예: sv:bearing-wear:- , msr:maint-cost:+">` }))}</div>
         <div class="panel-sec"><h3>단계<span class="muted num">${p.steps.length}</span></h3><ol class="doc-steps">${p.steps.map(s => `<li><textarea class="textarea" aria-label="단계 ${s.order}" data-manual-step="${esc(p.id)}" data-order="${s.order}" rows="2">${esc(s.text)}</textarea>${s.manual ? `<span class="badge" data-variant="outline">${esc(s.manual)}</span>` : ''}${citation(s.anchor)}</li>`).join('')}</ol></div>
-        <div class="panel-sec sk-fold">${UI.fold('절차 연결 원문',`<pre class="code">${esc(JSON.stringify({inline:p.link,override:r.links && Object.prototype.hasOwnProperty.call(r.links,p.id) ? r.links[p.id] : undefined,suggestedFailureMode:p.suggestedFailureMode,existing_skill_id:p.existing_skill_id,reference_contract_sha256:p.reference_contract_sha256},null,2))}</pre>`)}</div></section>`).join('');
+        <div class="panel-sec sk-fold">${UI.raw({inline:p.link,override:r.links && Object.prototype.hasOwnProperty.call(r.links,p.id) ? r.links[p.id] : undefined,suggestedFailureMode:p.suggestedFailureMode,existing_skill_id:p.existing_skill_id,reference_contract_sha256:p.reference_contract_sha256}, { title: '절차 연결 원문' })}</div></section>`).join('');
       const knowPanes = groups.map(([g, title]) => k[g].map(x => `<section class="panel doc-pane" data-pane="${esc(`know:${g}:${x.id}`)}" hidden>
         <header class="panel-head"><div><h2>${esc(x.name || x.annotation || x.id)}</h2><p>${esc(title)}${manualKnowledgeSummary(g, x, own) ? ' · ' + esc(manualKnowledgeSummary(g, x, own)) : ''}</p></div></header>
         <div class="panel-sec"><h3>원문 인용</h3>${quote(x.anchor)}</div>
@@ -718,7 +718,7 @@
         const stuck = (result.segments || []).filter(s => s.status !== 'DONE' && !WAITING.includes(s.status)).map(s => `구간 ${s.index}: ${(SEG[s.status] || [0, UI.status(s.status)])[1]}`).join(' · ');
         fail.innerHTML = `<div class="alert" data-variant="destructive" role="alert">${icon('circle-alert')}<h2>AI 추출이 끝나지 않았습니다 — ${esc(UI.status(result.status))}</h2>` +
           `<section>${stuck ? esc(stuck) + '. ' : ''}멈춘 까닭은 위 기록의 마지막 줄에 있습니다. 처리 건 화면에서 이 추출 작업의 단계를 닫거나 다시 진행할 수 있습니다.` +
-          (result.log ? UI.fold('추출 기록 원문', `<pre class="code">${esc(result.log)}</pre>`) : '') + `</section>` +
+          (result.log ? UI.raw(result.log, { title: '추출 기록 원문' }) : '') + `</section>` +
           `<footer><button type="button" class="btn" data-variant="outline" data-size="sm" data-live-inst>처리 건에서 보기${icon('arrow-right')}</button></footer></div>`;
       } else fail.innerHTML = '';
       fail.querySelector('[data-live-check]')?.addEventListener('click', () => checkLive(L.instance));
@@ -961,7 +961,7 @@
         comparison.innerHTML=`<p><b>${esc(state)}</b></p><p class="muted">원문 담당 역할: ${esc(roleName ? roleName+' · 참고 보관에는 사용하지 않습니다.' : '미상 · 자동으로 채우지 않습니다.')}</p><h4>이 문서의 원문 단계</h4>${lines(sourceSteps)}`+
           (target.value ? `<h4>이 문서의 원문 절 · 판본 대조</h4>${sourceSections.length ? sourceSections.map(s=>`<p><b>${esc(s.ref)} ${esc(s.title || '')}</b></p><p>${esc(s.excerpt || '원문 절 본문 없음')}</p>`).join('') : '<p>연결된 원문 절 기록 없음</p>'}<p class="muted">원문 절과 기존 등록 설명의 기준값이 같다고 추정하지 않습니다. 재참조는 기존 실행 기준을 바꾸는 작업이 아닙니다.</p>` : '')+
           (contract ? `<h4>현재 등록된 실행 단계 · ${esc(registered.name || '등록 이름 없음')} (${esc(contract.sopId || '원문 번호 미상')})</h4>${Array.isArray(contract.steps) ? lines(contract.steps) : '<p>실행 단계 정보 읽기 실패</p>'}<p class="muted">대상 원문 소유 문서: ${contract.owner ? '등록됨 · 식별자는 원문에서 확인하세요.' : '소유 문서 기록 없음'}</p><h4>현재 실행 단계가 참조하는 등록 설명</h4>${Array.isArray(contract.sections) && contract.sections.length ? contract.sections.map(s=>`<p><b>${esc(s.ref || '절 번호 미상')} ${esc(s.title || '')}</b></p><p>${esc(s.excerpt || '등록 설명 본문 없음')}</p><p class="muted">${s.source_id && s.citation ? '등록된 출처 식별 · 인용 정보는 판본 원문에서 확인하세요.' : '등록된 기존 설명 · 원본 인용 기록 없음'}</p>`).join('') : '<p>등록 설명 기록 없음 · 원문 기준값과 같은 판본이라고 판단할 수 없습니다.</p>'}` : '')+
-          UI.fold('참조 대상 · 고정 판본 원문',`<pre class="code">${esc(JSON.stringify({existing_skill_id:target.value || null,reference_contract_sha256:pin.value || null,current_contract:contract || null},null,2))}</pre>`);
+          UI.raw({existing_skill_id:target.value || null,reference_contract_sha256:pin.value || null,current_contract:contract || null}, { title: '참조 대상 · 고정 판본 원문' });
       };
       const update=()=>{
         const reference=kind.value==='reference'; field('reference-fields').hidden=!reference;

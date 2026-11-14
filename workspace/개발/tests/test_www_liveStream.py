@@ -117,7 +117,7 @@ def test_문서_AI_추출은_이벤트가_오는_대로_줄이_붙고_연결된_
             world.finished()
             page.evaluate('e => __sse.push(e)', world.event('task_completed', dict(output_keys=['proposal'], text='결과 파일 작성 완료: 절 1, 절차 0')))
             page.wait_for_selector('#manualCommit', timeout=8000)
-            assert page.inner_text('#manualSteps li.on').endswith('검토 · 적재')
+            assert page.inner_text('#manualSteps .phase[data-state="now"]') == '검토'      # 단계 넷(올리기 · AI 추출 · 검토 · 적재) 가운데 셋째
             assert page.locator('#manualProcess .tr-row.tr-k-tool').count() == 1, '추출 과정 기록이 「추출 과정 보기」에 남지 않았다'
             assert not page.locator('#manualProcess .tr-row').first.is_visible()               # 접혀 있다 — 결과가 먼저
             page.locator('#manualProcess > summary').click()

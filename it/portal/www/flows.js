@@ -184,7 +184,7 @@
     if (!item) markPrimary();
     if (!item) {
       S.drawn = null; $('definitionDeployPanel').hidden = true; $('flowsStart').hidden = true;
-      box.innerHTML = S.listError ? '' : `<div class="pane-none">${S.list ? `<section class="empty"><header><figure>${icon('workflow')}</figure><h3>흐름을 고르세요</h3><p>왼쪽 목록에서 흐름을 고르면 그림과 단계 설정, 판본이 여기에 보입니다. 새 흐름은 화면 위의 [흐름 가져오기]로 가져옵니다.</p></header></section>` : UI.loading('')}</div>`;
+      box.innerHTML = S.listError ? '' : `<div class="pane-none">${S.list ? `${UI.empty({ icon: 'workflow', title: `흐름을 고르세요`, sub: `왼쪽 목록에서 흐름을 고르면 그림과 단계 설정, 판본이 여기에 보입니다. 새 흐름은 화면 위의 [흐름 가져오기]로 가져옵니다.` })}` : UI.loading('')}</div>`;
       return;
     }
     if (S.drawn !== item.id) {
@@ -192,7 +192,7 @@
       box.innerHTML = `<div class="panel-head pane-head" id="flowHead"></div>
         <div class="stream-phases flow-phases" id="flowSteps" role="list" aria-label="이 흐름이 어디까지 왔는지"></div>
         <div id="flowNote"></div>
-        <div class="panel-sec"><h3>${icon('workflow', 'ic-sm')}흐름 그림<span class="muted">그림은 bpmn.io에서 그립니다 — 여기서는 보기만 합니다</span></h3><div id="flowPicture"></div></div>
+        <div class="panel-sec"><h3>${icon('workflow', 'ic-sm')}흐름 그림</h3><div id="flowPicture"></div></div>
         <div class="panel-sec pane-fold" id="flowEditorSec" hidden><details class="fold" id="flowEditorFold"><summary>단계 설정<span class="muted" id="flowEditorSum"></span></summary><div class="fold-body"><div id="flowEditor"></div></div></details></div>
         <div class="panel-sec" id="flowRegisterSec" hidden><h3>${icon('clipboard-check', 'ic-sm')}검사 · 판본 등록<span class="muted" id="flowNextVersion"></span></h3><div id="flowProblems"></div><div id="flowMsg" aria-live="polite"></div><footer class="form-foot" id="flowActions"></footer></div>`;
       wire();
@@ -272,7 +272,7 @@
     }
     window.hydFlow.show(host, {
       key: `${item.id}|${fresh ? 'file' + fresh.length : version ? 'v' + version : 'draft' + (item.draft.updated_at || '')}`,
-      title: `${item.name} · ${fresh ? '방금 가져온 그림' : version ? '판본 ' + version : '등록 전 초안'}`,
+      title: item.name, cap: fresh ? '방금 가져온 그림' : version ? '판본 ' + version : '등록 전 초안', mine: !!item.mine,
       load: async () => {
         if (fresh) return { xml: fresh, source: 'file' };
         if (version) {
@@ -802,25 +802,11 @@
     } catch (e) { if (slot.isConnected) slot.innerHTML = UI.errorBlock('시작 폼을 읽지 못했습니다', e.message); }
   }
 
-  async function doReset() {
-    if (!meId()) { UI.toast('되돌리려면 담당자 정보가 필요합니다. ' + NEED_ME, { tone: 'neg', timeout: 8000 }); return; }   // 확인을 묻기 전에 막는다
-    const ok = await UI.confirm({ title: '가져온 흐름을 기준으로 되돌릴까요?', body: '내가 가져온 흐름과 판본, 단계 설정 초안을 지웁니다. 기준 흐름과, 지금 경보에 배포된 흐름(기본 제공 포함)은 남깁니다.', ok: '되돌리기', danger: true });
-    if (!ok) return;
-    try {
-      const r = await call('POST', '/api/flows/reset', { by: meId() });
-      const kept = r.kept || [];      // 서버가 흐름 이름으로 준다(flows_api.flows_reset)
-      UI.toast(`되돌렸습니다. 판본 ${r.versions}개와 초안 ${r.drafts}개를 지웠습니다.` + (kept.length ? ` 배포 중인 흐름 ${kept.length}개(${kept.join(', ')})는 남겼습니다.` : ''), { tone: 'ok', timeout: 8000 });
-      S.xml = {}; S.defCache.clear(); S.sel = null; S.view = null; S.mapping = null; S.importing = false;
-      await loadList(); window.hydDefinitionDeploy.reload();
-    } catch (e) { UI.toast(e.message, { tone: 'neg', timeout: 8000 }); }
-  }
-
   // ---------------------------------------------------------------- 올리기
   function mount(el) {
     S.el = el;
     $('flowImportOpen').addEventListener('click', openImport);
-    $('flowReload').addEventListener('click', e => once('reload', e.currentTarget, async () => { S.defCache.clear(); await Promise.all([loadCatalog(), loadList()]); await window.hydDefinitionDeploy.reload(); }));
-    $('flowReset').addEventListener('click', doReset);
+    $('flowReload').addEventListener('click', () => once('reload', null, async () => { S.defCache.clear(); await Promise.all([loadCatalog(), loadList()]); await window.hydDefinitionDeploy.reload(); }));
     $('flowKind').addEventListener('click', e => { const b = e.target.closest('[data-flow-kind]'); if (b) { S.kind = b.dataset.flowKind; renderList(); } });
     $('flowList').addEventListener('click', e => {
       const row = e.target.closest('[data-open]');
@@ -839,6 +825,12 @@
     if (!S.importing && S.view && S.mapping && $('flowEditor') && JSON.stringify(S.cat.agents) !== before) { collect(); renderEditor(); }
   }
 
+  // 관리 › 내 설정에서 되돌렸으면(이 화면이 그려져 있을 때) 고른 흐름 · 초안을 비우고 목록과 배포를 새로 읽는다
+  window.addEventListener('hyd-config-reset', async e => {
+    if (!S.el || !['all', 'flows', 'deploy'].includes(e.detail.scope)) return;
+    if (e.detail.scope !== 'deploy') { S.xml = {}; S.defCache.clear(); S.sel = null; S.view = null; S.mapping = null; S.importing = false; }
+    await loadList(); window.hydDefinitionDeploy.reload();
+  });
   // pick(흐름 id): 다른 화면이 이 화면을 그 흐름을 고른 채 열 때 부른다(화면을 여는 것은 셸 — 열릴 때 목록을 읽고 고른다)
   window.hydFlows = { mount, show, pick: id => { S.wanted = id; } };
 })();

@@ -45,6 +45,26 @@
     ['기본 제공 흐름과 그 처리 건, 처리 건 기록', '그대로 둡니다'],
   ];
   const RESET_NOTE = '이 단추만으로 처음 상태가 되지는 않습니다.';
+  // 되돌리는 범위 — 「내가 만든 것을 지운다」는 포털에서 이 한 곳뿐이다(흐름 · 에이전트 · 도구 연결 화면은 여기로 보낸다). 종류 하나만 되돌리는 것은 그 종류의 서버 API 를 그대로 부른다.
+  // [키, 이름, 지우는 것과 남는 것, 요청, 결과 문장(응답 → 글), 수업 경계 행동 키(막힌 단계면 단추가 꺼지고 까닭이 보인다)]
+  const josa = (word, pair) => window.hydWords.josa(word, pair);
+  const SCOPES = [
+    ['all', '전체', RESET_REMOVES],
+    ['agents', 'AI 에이전트 · 스킬 · 역할 · 단계 배정', '내가 만든 에이전트와 스킬, 스킬 붙이기, 역할, 단계 배정을 지웁니다. 흐름이 쓰는 역할과 기본 제공 에이전트 · 역할은 남습니다.',
+      by => postJ(API.process + '/api/agents/reset', { by }),
+      o => { const removed = [['에이전트', o.agents, '개'], ['스킬', o.skills, '개'], ['스킬 붙이기', o.attachments, '건'], ['역할', o.roles, '개'], ['단계 배정', o.assignments, '건']].filter(([, n]) => n > 0).map(([name, n, unit]) => `${name} ${n}${unit}`);
+        return (removed.length ? `되돌렸습니다. 내가 만든 ${removed.join(', ')}${josa(removed[removed.length - 1], '을/를')} 지웠습니다.` : '되돌렸습니다. 지울 것이 없었습니다.')
+          + ((o.kept_roles || []).length ? ` 흐름이 쓰는 역할 ${o.kept_roles.length}개는 남겼습니다.` : '') + ((o.returned_tasks || []).length ? ` 열려 있던 단계 ${o.returned_tasks.length}건은 기본 담당으로 돌아갔습니다.` : ''); }],
+    ['mcp', '도구 서버 · 비밀 값', '내가 등록한 서버와 포털 밖에서 추가한 서버, 모든 연결 검사 기록(기본 제공 서버의 것 포함), 비밀 값을 지웁니다. 기본 제공 서버는 남고, 지운 서버를 도구로 붙였던 에이전트는 그 서버 없이 실행됩니다.',
+      by => postJ(API.process + '/api/mcp/reset', { by }),
+      r => `되돌렸습니다. 서버 ${r.removed_servers.length}개, 검사 기록 ${r.removed_checks}개, 비밀 값 ${r.removed_secrets}개를 지웠습니다.`, 'tool_servers.register'],
+    ['flows', '가져온 흐름 · 판본', '내가 가져온 흐름과 판본, 단계 설정 초안을 지웁니다. 기준 흐름과, 지금 경보에 배포된 흐름(기본 제공 포함)은 남습니다.',
+      by => postJ(API.process + '/api/flows/reset', { by }),
+      r => `되돌렸습니다. 판본 ${r.versions}개와 초안 ${r.drafts}개를 지웠습니다.` + ((r.kept || []).length ? ` 배포 중인 흐름 ${r.kept.length}개(${r.kept.join(', ')})는 남겼습니다.` : '')],
+    ['deploy', '경보에 배포한 흐름', '내가 배포한 흐름만 경보 경로에서 내립니다. 기본 제공 흐름은 남고 그 운영 판본은 기준 판본으로 돌아갑니다. 등록한 판본과 열린 처리 건은 그대로입니다.',
+      by => postJ(API.process + '/api/flows/deploy-reset', { by, reason: null }),
+      r => r.message],
+  ];
 
   function render(el) {
     // 세 가지 일을 위에서 아래로: 받기 → 불러오기 → 되돌리기. 일마다 판의 한 절(키트 .panel-sec) — 제목 · 한 문장 · 단추 하나, 그 아래에 진행(실시간 상자)과 결과
@@ -58,10 +78,11 @@
           <div id="cfgSecrets"></div>` +
           foot(`<button type="button" class="btn" id="cfgImport"${hydCourseAccess.attrs(IMPORT)}>${UI.icon('upload')}불러오기</button>`, 'cfgImportMsg') +
           `<div id="cfgImportResult" aria-live="polite"></div>`) +
-      part('rotate-ccw', '기준으로 되돌리기', `<b>지우는 것</b> ${H(RESET_REMOVES)}.`,
-        `<p class="muted"><b>남는 것</b> ${H(RESET_NOTE)}</p><ul class="evid" data-reset-keeps>${RESET_KEEPS.map(([what, where]) => `<li>${UI.icon('circle-dashed')}<span><b>${H(what)}</b> ${H(where)}</span></li>`).join('')}</ul>` +
-        foot(`<button type="button" class="btn" data-variant="destructive" id="cfgReset">${UI.icon('rotate-ccw')}기준으로 되돌리기</button>`, 'cfgResetMsg') +
-          `<div id="cfgResetResult" aria-live="polite"></div>`);
+      `<div class="panel-sec" id="cfgResetSec"><h3>${UI.icon(UI.acts.reset[1])}${H(UI.acts.reset[0])}</h3>` +
+        `<div role="group" class="field"><label for="cfgResetScope">되돌릴 범위</label><select class="select" id="cfgResetScope">${SCOPES.map(([k, name]) => `<option value="${k}">${H(name)}</option>`).join('')}</select></div>` +
+        `<div id="cfgResetWhat"></div>` +
+        foot(UI.btn('reset', { variant: 'destructive', attrs: 'id="cfgReset"' }), 'cfgResetMsg') +
+          `<div id="cfgResetResult" aria-live="polite"></div></div>`;
     const $ = id => el.querySelector('#' + id);
     hydCourseAccess.apply(el);                            // 막힌 단계면 [불러오기] 바로 뒤에 서버가 준 까닭 한 줄이 붙는다(courseAccess.js)
     window.hydStudentCases?.mount($('studentCasesView'));
@@ -147,7 +168,32 @@
       const yes = await UI.confirm({ title: '출발본을 불러올까요?', body: '지금 내가 만든 구성(AI 에이전트 · 스킬 · 역할 · 단계 배정 · 도구 서버 · 흐름 · 배포)을 지우고 파일 내용으로 다시 세웁니다. 기본 제공 흐름(시작할 때 설치되는 흐름)도 지우고 파일 내용대로 다시 세웁니다. 지운 흐름으로 끝난 처리 건은 [처리 건] 목록에서 숨겨집니다. 진행 중인 처리 건이 있으면 아무것도 바꾸지 않고 멈춥니다. 기준 구성, 비밀 값, 질문 · 판단 채점 · 에이전트 시험 비교 기록은 그대로입니다.', ok: '불러오기' });
       if (yes) run(false);
     });
+    // 고른 범위가 지우는 것과 남기는 것(전체는 남는 것의 목록까지). 수업 경계에 막힌 범위는 단추가 꺼지고 서버가 준 까닭이 보인다
+    const scopeOf = () => SCOPES.find(x => x[0] === $('cfgResetScope').value) || SCOPES[0];
+    const paintScope = ev => {
+      const [key, , what, , , action] = scopeOf(), why = action ? hydCourseAccess.blocked(action) : '';
+      $('cfgResetWhat').innerHTML = key === 'all'
+        ? `<p class="muted"><b>지우는 것</b> ${H(what)}.</p><p class="muted"><b>남는 것</b> ${H(RESET_NOTE)}</p><ul class="evid" data-reset-keeps>${RESET_KEEPS.map(([w, where]) => `<li>${UI.icon('circle-dashed')}<span><b>${H(w)}</b> ${H(where)}</span></li>`).join('')}</ul>`
+        : `<p class="muted">${H(what)}</p>` + (why ? `<p class="muted" data-tone="danger" role="status">${H(why)}</p>` : '');
+      $('cfgReset').disabled = !!why;
+      if (ev) { msg('cfgResetMsg', ''); $('cfgResetResult').innerHTML = ''; }      // 범위를 바꿨을 때만 앞 결과를 비운다(수업 단계 정보가 다시 읽힐 때는 그대로 둔다)
+    };
+    $('cfgResetScope').addEventListener('change', paintScope); paintScope();
+    hydCourseAccess.onChange(() => paintScope());
     $('cfgReset').addEventListener('click', async () => {
+      const [key, name, what, send, say] = scopeOf();
+      if (key !== 'all') {      // 종류 하나만: 그 종류의 되돌리기 API 하나
+        try { actor(); } catch (e) { msg('cfgResetMsg', e.message, true); return; }      // 담당자를 못 읽었으면 묻기 전에 멈춘다
+        if (!await UI.confirm({ title: `${name}${josa(name, '을/를')} 기준으로 되돌릴까요?`, body: what, ok: '되돌리기', danger: true })) return;
+        const end = hydLive.busy($('cfgReset'), '되돌리는 중');
+        try {
+          const text = say(await send(actor()));
+          msg('cfgResetMsg', text); UI.toast(text, { tone: 'ok', timeout: 8000 });
+          window.dispatchEvent(new CustomEvent('hyd-config-reset', { detail: { scope: key } }));      // 그 화면이 열려 있었으면 목록을 새로 읽는다
+        } catch (e) { msg('cfgResetMsg', e.message, true); }
+        finally { end(false); }
+        return;
+      }
       const yes = await UI.confirm({ title: '기준으로 되돌릴까요?', ok: '되돌리기', danger: true,
         body: `지우는 것: ${RESET_REMOVES}. 내가 가져온 흐름으로 끝난 처리 건은 [처리 건] 목록에서 숨겨집니다.\n\n남는 것 — ${RESET_NOTE}\n${RESET_KEEPS.map(([what, where]) => `· ${what} — ${where}`).join('\n')}\n\n먼저 출발본으로 받아 두면 구성은 다시 불러올 수 있습니다(비밀 값과 기록은 파일에 없습니다).` });
       if (!yes) return;
@@ -159,6 +205,7 @@
         const { body } = await call('/api/config/reset', { by: actor(), request_id: track.id });
         msg('cfgResetMsg', body.message); $('cfgResetResult').innerHTML = block('지운 것', lines('check', body.steps.map(s => [s.label, s.text])));
         UI.toast(body.message, { tone: 'ok' });
+        window.dispatchEvent(new CustomEvent('hyd-config-reset', { detail: { scope: 'all' } }));
       } catch (e) {
         msg('cfgResetMsg', e.message, true);
         const d = e.detail || {};
@@ -167,6 +214,16 @@
     });
   }
 
+  // 다른 화면의 「관리에서 되돌리기」 링크([data-go-reset="범위"]): 관리 › 내 설정을 열고 그 범위를 골라 둔다(누르는 것은 사람이 한다)
+  document.addEventListener('click', e => {
+    const a = e.target.closest && e.target.closest('[data-go-reset]'); if (!a) return;
+    e.preventDefault();
+    selectTab('admin');
+    document.querySelector('#adminList [data-admin="configBundlePanel"]')?.click();
+    const pick = document.getElementById('cfgResetScope'); if (!pick) return;
+    pick.value = a.dataset.goReset; pick.dispatchEvent(new Event('change'));
+    document.getElementById('cfgResetSec').scrollIntoView({ block: 'center' });
+  });
   window.hydConfig = { mount: render };
   document.addEventListener('DOMContentLoaded', () => {
     const el = document.getElementById('configBundleView'); if (!el) return;

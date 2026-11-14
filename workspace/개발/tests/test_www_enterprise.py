@@ -223,18 +223,20 @@ def test_지식_지도를_눌러_고르면_이웃이_모이고_겹친_상태에�
     assert set(marks(page).values()) == {''} and not low() and page.inner_text('#ontoStats') == '항목 10 · 연결 9'
     # 설비 고르기는 서버가 준 설비 목록이다(화면에 적어 둔 이름이 아니다)
     assert page.locator('#ontoAsset option').all_inner_texts() == ['HYD-01', 'HYD-02']
-    # 안 골랐을 때 오른쪽 칸은 목차다: 묶음마다 종류와 수가 보이고, 묶음을 펼치면 그 묶음의 항목 이름이 다 보이며 지도는 그 묶음만 밝게 크게 보인다
+    # 안 골랐을 때 오른쪽 칸은 무엇을 누르면 되는지와 가장 많이 이어진 항목만 보인다 — 묶음의 목록(이름 · 수)은 캔버스 아래 조각 한 곳에만 있다(같은 목록을 두 곳에 두지 않는다)
     index = page.inner_text('#ontoNode')
-    assert '이 지도에 들어 있는 것' in index and '증상 2' in index and '조치 방법 2' in index and '가장 많이 이어진 항목' in index
-    assert page.locator('#ontoNode .kg-group[open]').count() == 0
+    assert '항목을 고르세요' in index and '가장 많이 이어진 항목' in index and '설비 진단' not in index
+    assert page.locator('#ontoNode .kg-group').count() == 0
+    assert len([t for t in page.locator('#view-ontology .cv-chip').all_inner_texts() if '설비 진단' in t]) == 1, '묶음 목록은 캔버스 아래 조각에 있다'
     z0 = page.evaluate('hydEnt.kg.cy.zoom()')
-    page.click("#ontoNode .kg-group[data-group='diagnosis'] > summary")
+    # 지도의 묶음 이름을 누르면 그 묶음의 항목 이름이 종류별로 다 보이고 지도는 그 묶음만 밝게 크게 보인다
+    page.evaluate("() => hydEnt.kg.cy.nodes('.gtitle').filter(n => n.data('g') === 'diagnosis').emit('tap')")
     page.wait_for_timeout(500)
-    opened = page.inner_text("#ontoNode .kg-group[data-group='diagnosis']")
-    assert all(name in opened for name in ('쿨러 성능 저하', '유온 상승', '냉각 효율 저하', '쿨러 냉각 성능 상실', '쿨러 핀 오염'))
+    opened = page.inner_text("#ontoNode")
+    assert '증상\n2' in opened and all(name in opened for name in ('쿨러 성능 저하', '유온 상승', '냉각 효율 저하', '쿨러 냉각 성능 상실', '쿨러 핀 오염'))
     got = marks(page)
     assert got['fm:cool'] == '' and got['skill:fan'] == 'dim' and got['obj:up'] == 'dim' and page.evaluate('hydEnt.kg.cy.zoom()') > z0
-    page.click("#ontoNode .kg-group[data-group='diagnosis'] > summary")      # 다시 누르면 전체로
+    page.click("#ontoNode [data-kg-group-close]")      # 닫으면 전체로
     page.wait_for_timeout(500)
     assert set(marks(page).values()) == {''} and abs(page.evaluate('hydEnt.kg.cy.zoom()') - z0) < 1e-6
     # 눌러서 고름: 고른 것 · 바로 이어진 것만 밝고 나머지는 흐리다. 오른쪽 칸에 묶음 · 종류 → 이름 → ID → 속성 → 이어진 것이 나온다
@@ -302,7 +304,9 @@ def test_지식_지도를_눌러_고르면_이웃이_모이고_겹친_상태에�
     assert page.evaluate(POS_JS) == home
     # 묶음 끄기: 그 묶음의 항목이 사라지고, 다시 켜면 돌아온다
     page.click("#ontoLayers [data-layer='skill']")
-    assert marks(page)['skill:fan'] == 'off' and page.evaluate("() => hydEnt.kg.cy.nodes().filter(n => !n.hasClass('gtitle') && !n.visible()).length") == 2
+    assert marks(page)['skill:fan'] == 'off'
+    # 끈 묶음의 항목은 그림에서 사라진다 — Cytoscape 는 표시(.off)의 모양을 다음 그리기 때 계산하므로 누른 직후가 아니라 그려진 뒤에 센다
+    page.wait_for_function("() => hydEnt.kg.cy.nodes().filter(n => !n.hasClass('gtitle') && !n.visible()).length === 2", timeout=5000)
     assert page.get_attribute("#ontoLayers [data-layer='skill']", 'aria-pressed') == 'false'
     page.click("#ontoLayers [data-layer='skill']")
     assert set(marks(page).values()) == {''}
@@ -362,12 +366,17 @@ def test_보이는_이름은_서로_겹치지_않고_점과_캔버스_안_도구
     def reload(graph):
         HOLDER['graph'] = graph
         page.evaluate("() => { hydEnt.kg.cy.scratch('old', true); }")
+        page.click('#ontologyHeadMore-trigger')      # 다시 읽기는 화면 머리의 더 보기 안에 있다
         page.click('#ontoReload')
         page.wait_for_function("() => hydEnt.kg.cy && !hydEnt.kg.cy.scratch('old')")
         page.wait_for_timeout(400)
 
     def clean(said):
-        page.wait_for_timeout(700)                                          # 옮겨 가기 0.38초 + 이름 다시 고르기
+        # 화면과 항목이 옮겨 가기를 다 마친 뒤(정해 둔 시간이 아니라 움직임이 실제로 멎은 뒤) 이름을 다시 고를 틈(화면이 멎고 0.09초 뒤에 고른다)을 두고 잰다 —
+        # 0.7초로 정해 두었을 때는 찾기가 화면을 옮기는 동안(0.38초 + 그동안 미뤄지는 이름 고르기) 재서 「찾기에 걸린 이름 0개」로 읽혔다
+        page.wait_for_timeout(150)
+        page.wait_for_function("() => !hydEnt.kg.cy.animated() && !hydEnt.kg.cy.nodes().some(n => n.animated())")
+        page.wait_for_timeout(450)
         got = page.evaluate(OVERLAP_JS)
         assert not got['pairs'] and not got['covered'] and not got['tools'], (said, got)
         return got
@@ -390,10 +399,10 @@ def test_보이는_이름은_서로_겹치지_않고_점과_캔버스_안_도구
         found = clean('찾기')
         assert found['plain'] > 0
         page.fill('#ontoSearch', '')
-        page.click("#ontoNode .kg-group[data-group='skill'] > summary")     # 묶음을 펼쳐 크게 본 때
+        page.evaluate("() => hydEnt.kg.cy.nodes('.gtitle').filter(n => n.data('g') === 'skill').emit('tap')")     # 지도의 묶음 이름을 눌러 그 묶음을 크게 본 때
         opened = clean('묶음 펼침')
-        assert opened['plain'] > 0 and page.locator("#ontoNode .kg-group[data-group='skill'] [data-go]").count() == 182      # 그 묶음의 항목 이름은 오른쪽 칸에 다 있다
-        page.click("#ontoNode .kg-group[data-group='skill'] > summary")
+        assert opened['plain'] > 0 and page.locator("#ontoNode .kg-group[data-group='skill']").count() == 1 and page.locator("#ontoNode [data-go]").count() == 182      # 그 묶음의 항목 이름은 오른쪽 칸에 다 있다
+        page.click("#ontoNode [data-kg-group-close]")
         tap(page, 'decision:000')                                           # 고른 때(이웃을 모은 줄 + 그 밖의 이름)
         clean('고름')
         # 고른 항목의 속성 값: 열거 값은 한국어로, 식은 식 그대로, 식별자 성격의 코드는 「그 밖의 속성」 접기 안에
@@ -419,6 +428,7 @@ def test_같은_그래프는_서버가_준_차례가_달라도_늘_같은_자리
     def reload(graph):
         HOLDER['graph'] = graph
         page.evaluate("() => { hydEnt.kg.cy.scratch('old', true); }")
+        page.click('#ontologyHeadMore-trigger')      # 다시 읽기는 화면 머리의 더 보기 안에 있다
         page.click('#ontoReload')
         page.wait_for_function("() => hydEnt.kg.cy && !hydEnt.kg.cy.scratch('old')")      # 새로 그린 지도
         return page.evaluate(POS_JS)

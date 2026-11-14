@@ -19,7 +19,7 @@ DEFS = {name: json.loads((ROOT / 'it' / 'process' / 'definitions' / file).read_t
 DRAW = """async def => {
   const host = document.createElement('div'); host.style.cssText = 'width:1200px;height:600px'; document.body.append(host);
   const xml = hydFlow.defToXml(def);
-  hydFlow.show(host, { key: 'k', title: 't', load: async () => ({ xml, source: 'definition' }) });
+  hydFlow.show(host, { key: 'k', title: 't', mine: true, load: async () => ({ xml, source: 'definition' }) });      // mine: 내가 가져온 흐름 — 자동 배치 알림은 여기에만 뜬다
   for (let i = 0; i < 100 && !host._flow.D; i++) { if (host.querySelector('.alert')) throw new Error(host.querySelector('.alert').innerText); await new Promise(r => setTimeout(r, 100)); }
   const D = host._flow.D, reg = D.viewer.get('elementRegistry');
   const doc = new DOMParser().parseFromString(D.src.xml, 'application/xml');

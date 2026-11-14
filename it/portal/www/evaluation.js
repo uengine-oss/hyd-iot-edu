@@ -39,9 +39,8 @@
   /* ---------------------------------------------------------------- 뼈대 */
   function skeleton() {
     E.el.innerHTML = `
-      <div class="page-head"><div><h1>${esc(UI.t('nav.eval'))}</h1><p class="page-lead">사람이 적은 정답표에 판단을 대어 점수를 내고, 지식을 고치기 전과 후의 채점을 비교합니다.</p></div>
-        <div class="page-tools"><button type="button" class="btn" data-variant="outline" data-act="reload">${UI.icon('refresh-cw')}${esc(UI.t('btn.reload'))}</button></div></div>
-      <div class="io-bar"><div class="seg" role="group" aria-label="보기" data-r="seg"></div><span class="muted" data-r="knowledge"></span></div>
+      ${UI.pageHead('eval', { sub: '사람이 적은 정답표에 판단을 대어 점수를 내고, 지식을 고치기 전과 후를 비교합니다.', more: [{ act: 'reload', attrs: 'data-act="reload"' }] })}
+      <div class="io-bar"><div class="tabs view-tabs"><nav role="tablist" aria-orientation="horizontal" aria-label="보기" data-r="seg"></nav></div><span class="muted" data-r="knowledge"></span></div>
       <div data-view="run">
         <div class="io"><form class="panel io-in" data-r="runform" aria-label="채점 조건"></form>
           <div class="io-out" aria-live="polite"><div data-r="live" hidden></div><div data-r="cands" hidden></div><div data-r="detail"></div>
@@ -71,7 +70,7 @@
   function renderStats() {
     const seg = [['run', '채점', E.runsError ? null : E.runs.length], ['golden', '정답표', E.goldenError ? null : E.golden.length], ['cmp', '전 · 후 비교', null]];
     q('[data-r="seg"]').innerHTML = seg.map(([k, l, n]) =>
-      `<button type="button" data-act="view" data-to="${k}" aria-pressed="${k === E.view}">${esc(l)}${n != null ? `<span class="num">${esc(n)}</span>` : ''}</button>`).join('');
+      `<button type="button" role="tab" data-act="view" data-to="${k}" aria-selected="${k === E.view}" tabindex="${k === E.view ? 0 : -1}">${esc(l)}${n != null ? `<span class="num">${esc(n)}</span>` : ''}</button>`).join('');
     const k = E.knowledge, host = q('[data-r="knowledge"]');
     if (!k) { host.textContent = E.knowledgeError || ''; if (E.knowledgeError) host.dataset.tone = 'danger'; else delete host.dataset.tone; return; }
     delete host.dataset.tone;
@@ -82,7 +81,7 @@
   function renderGolden() {
     const host = q('[data-r="golden"]');
     if (!E.golden.length) {
-      host.innerHTML = `<section class="empty"><header><figure>${UI.icon('clipboard-check')}</figure><h3>정답표가 비어 있습니다</h3><p>[새 항목 적기]로 경보 상황 하나와 기대하는 판단을 적습니다. 미리 들어 있는 정답은 없습니다.</p></header></section>`;
+      host.innerHTML = `${UI.empty({ icon: 'clipboard-check', title: `정답표가 비어 있습니다`, sub: `[새 항목 적기]로 경보 상황 하나와 기대하는 판단을 적습니다. 미리 들어 있는 정답은 없습니다.` })}`;
       return;
     }
     host.innerHTML = table('<th>채점</th><th>경보 상황</th><th>기대 원인</th><th>1위 허용</th><th>빠질 조치</th><th>있어야 할 근거</th>',
@@ -330,7 +329,7 @@
   // 결과의 차례: 평균 점수(결론) → 검사 네 가지의 맞은 수 → 항목별
   function renderDetail() {
     const host = q('[data-r="detail"]'), r = E.run;
-    if (!r) { host.innerHTML = `<section class="empty"><header><figure>${UI.icon('clipboard-check')}</figure><h3>아직 고른 채점 실행이 없습니다</h3><p>왼쪽에서 [채점 실행]을 누르거나 아래 「지난 실행」에서 한 줄을 고르면 항목별 점수와 검사 네 가지가 보입니다.</p></header></section>`; return; }
+    if (!r) { host.innerHTML = `${UI.empty({ icon: 'clipboard-check', title: `아직 고른 채점 실행이 없습니다`, sub: `왼쪽에서 [채점 실행]을 누르거나 아래 「지난 실행」에서 한 줄을 고르면 항목별 점수와 검사 네 가지가 보입니다.` })}`; return; }
     const s = r.summary, of = k => `<span class="num">${esc(s[k])}</span><small>/ ${esc(s.items)}</small>`;
     const extra = [s.withheld ? `판단 없음(보류 · 오류) ${esc(s.withheld)}개` : '', s.unstable ? `흔들림 ${esc(s.unstable)}개` : ''].filter(Boolean).join(' · ');
     host.innerHTML = `<section class="panel"><div class="panel-head"><div><div class="result-label">${UI.icon('sparkles')}결론</div><h2>평균 ${esc(s.score)}점 — 항목 ${esc(s.items)}개 · ${esc(PATH[r.path] || r.path)}</h2>` +
@@ -367,7 +366,7 @@
   // 비교 결과의 차례: 평균이 얼마나 바뀌었나(결론) → 좋아짐 · 나빠짐 · 같음의 수 → 두 실행 사이 지식 변화 → 항목별 변화 표
   function renderCmp() {
     const host = q('[data-r="cmp"]'), c = E.cmp;
-    if (!c) { host.innerHTML = `<section class="empty"><header><figure>${UI.icon('git-compare')}</figure><h3>아직 비교한 결과가 없습니다</h3><p>왼쪽에서 고치기 전 실행과 고친 뒤 실행을 고르고 [두 실행 비교]를 누릅니다.</p></header></section>`; return; }
+    if (!c) { host.innerHTML = `${UI.empty({ icon: 'git-compare', title: `아직 비교한 결과가 없습니다`, sub: `왼쪽에서 고치기 전 실행과 고친 뒤 실행을 고르고 [두 실행 비교]를 누릅니다.` })}`; return; }
     const kd = c.knowledge || {};
     // 지식 변화: 지식 지도에 이름이 있는 항목과 연결만 첫 화면에 이름으로 보인다. 이름이 없는 것(에이전트 실행 기록처럼 그래프에 함께 저장되는 기록 — id 가 UUID)은 수만 말하고 원문은 접기에 둔다.
     // 서버의 항목 수 · 연결 수는 그 기록까지 센 그래프 전체 수다(judgment_eval.KNOWLEDGE_Q) — 「지식이 바뀌었다」로 읽히지 않게 그렇게 적는다
@@ -380,8 +379,8 @@
     const [addN, addNx] = split(kd.added_nodes, named), [remN, remNx] = split(kd.removed_nodes, named), [chgN, chgNx] = split(kd.changed_nodes, named);
     const shownN = remR.length + addR.length + addN.length + remN.length + chgN.length, restN = remRx.length + addRx.length + addNx.length + remNx.length + chgNx.length;
     const rawRel = x => `${x.from} -[${x.type}]-> ${x.to}`;
-    const rest = restN ? UI.fold(`이름이 없는 기록 항목의 변화<span class="muted">${restN}개 · 원문</span>`, `<pre class="code">${esc([
-      ...addNx.map(x => '새 항목  ' + x), ...remNx.map(x => '없어진 항목  ' + x), ...chgNx.map(x => '속성 바뀜  ' + x), ...addRx.map(x => '연결 추가  ' + rawRel(x)), ...remRx.map(x => '연결 삭제  ' + rawRel(x))].join('\n'))}</pre>`) : '';
+    const rest = restN ? UI.raw([
+      ...addNx.map(x => '새 항목  ' + x), ...remNx.map(x => '없어진 항목  ' + x), ...chgNx.map(x => '속성 바뀜  ' + x), ...addRx.map(x => '연결 추가  ' + rawRel(x)), ...remRx.map(x => '연결 삭제  ' + rawRel(x))].join('\n'), { title: `이름이 없는 기록 항목의 변화 ${restN}개` }) : '';
     const know = !kd.comparable ? note(esc(kd.note || '')) : !kd.changed ? note('두 실행 사이에 지식 그래프가 바뀌지 않았습니다.') :
       (kd.counts ? `<p>${shownN ? `지식 지도에 이름이 있는 항목과 연결 ${shownN}곳이 바뀌었습니다.` : '지식 지도에 이름이 있는 항목과 연결(원인 · 증거 · 규칙 · 조치 방법 · 매뉴얼)은 바뀌지 않았습니다.'}` +
           `${restN ? ` 그 밖에 이름이 없는 기록 항목(에이전트에게 한 질문이나 처리 건이 그래프에 남기는 실행 기록 등) ${restN}개가 달라졌습니다 — 판단에 쓰는 지식이 아닙니다.` : ''}</p>` +

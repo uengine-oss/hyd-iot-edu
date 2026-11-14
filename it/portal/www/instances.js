@@ -36,7 +36,8 @@
   // 이 처리 건에서 내가 할 일(질문 답 먼저, 그다음 승인 · 입력)
   const mineOf = pid => I.asked.find(t => t.proc_inst_id === pid) || I.todo.find(t => t.proc_inst_id === pid) || null;
   const isApprovalTool = tool => ['formHandler:select_card', 'formHandler:approve'].includes(tool);
-  const turnWord = t => t.draft_status === 'HUMAN_ASKED' ? '질문' : isApprovalTool(t.tool) ? '승인 대기' : '내 차례';
+  // 내가 할 일이 있는 처리 건의 상태 이름은 하나다 — 「내 차례」(질문 · 승인 · 입력을 「승인 대기」 · 「질문」으로 갈라 부르지 않는다. 무엇을 할 차례인지는 그 건의 「내가 할 일」 판이 말한다)
+  const turnWord = () => '내 차례';
   /* 처리 건 한 건의 상태 이름과 색 — 정본은 여기 하나다(window.hydInstances.stateOf). 다른 화면이 같은 사건의 상태를 보일 때 이 함수를 쓴다(다른 이름 · 다른 색의 사본을 만들지 않는다).
      x: 처리 건 행(GET /api/instances 의 한 줄 또는 GET /api/instances/{id} 의 instance — status · attention · variables_data · current_activity_ids · proc_def_id · proc_def_version)
      돌려주는 값: { label, tone } — tone 은 UI.chipText 의 것(danger 멈춤 · 미달 / warning 내 차례 / accent 진행 중 / success 정상 / neutral 반려 · 그 밖). 그리기: UI.chipText(s.label, s.tone)
@@ -341,7 +342,7 @@
     const states = {observed:'조회 확인',needs_check:'확인 필요',conflict:'기록 불일치'};
     const rows = Object.entries(values || {}).filter(([k]) => !['checks','evidence'].includes(k)).map(([k,v]) => UI.readonly(names[k] || k,esc(typeof v==='string' ? v : JSON.stringify(v)))).join('');
     const checks = (Array.isArray(values?.checks) ? values.checks : []).map(c => `<section class="turn-check"><h4>${esc(areas[c.area] || c.area)} · ${esc(states[c.state] || c.state)}</h4><p>${esc(c.finding || '')}</p><p><b>다음 근무자가 확인할 일</b> ${esc(c.next_action || '')}</p><p class="muted">조회 근거 ${(c.evidence_indices || []).map(i=>esc(String(i+1))).join(', ') || '없음 · 확인 필요'}</p></section>`).join('');
-    const evidence = (Array.isArray(values?.evidence) ? values.evidence : []).map((e,i) => UI.fold(`조회 근거 ${i+1} · ${esc(UI.toolName(e.tool) || e.tool || '도구 기록 없음')}`,`<pre class="code">${esc(JSON.stringify(e,null,2))}</pre>`)).join('');
+    const evidence = (Array.isArray(values?.evidence) ? values.evidence : []).map((e,i) => UI.raw(e, { title: `조회 근거 ${i+1} · ${UI.toolName(e.tool) || e.tool || '도구 기록 없음'}` })).join('');
     return `${rows}${checks}${evidence}`;
   }
   // 판의 틀(키트 .turn): 머리(아이콘 칸 · 「내가 할 일 · 승인」 · 기한 · 물음 한 문장 · 까닭) → 판단에 쓸 숫자(최대 넷) → (펼친 것) → 단추 줄(오른쪽 끝에 어느 역할로 기록되는지) → 까닭 한 줄
@@ -472,7 +473,7 @@
     if (!entries.length) return '–';
     const flat = entries.filter(([, x]) => x === null || typeof x !== 'object'), deep = entries.filter(([, x]) => x !== null && typeof x === 'object');
     const rows = flat.map(([k, x]) => `<div><span class="muted">${esc(Array.isArray(v) ? k : varLabel(k))}</span> ${scalar(x)}</div>`).join('');
-    return rows + (deep.length ? UI.fold(`세부 값 ${deep.length}개`, `<pre class="code">${esc(JSON.stringify(Object.fromEntries(deep), null, 2).slice(0, 1500))}</pre>`) : '');
+    return rows + (deep.length ? UI.raw(Object.fromEntries(deep), { title: `세부 값 ${deep.length}개` }) : '');
   }
   // 담당자 정보를 아직 못 읽었으면(업무 DB 연결 문제) 사람 행동의 자리에 그 까닭을 보인다 — 모든 단계 패널이 이 한 줄을 쓴다
   const pickMe = () => `<div class="alert" data-variant="destructive" role="alert" data-pick-me>${UI.icon('circle-alert')}<h2>담당자 정보를 읽지 못해 지금은 처리할 수 없습니다</h2><section>화면을 새로 고친 뒤 다시 해 주세요.</section></div>`;
@@ -741,6 +742,7 @@
     if (I.view && window.hydStream) hydStream.fromPoll(I.view.events);
     if (I.view && I.record && I.recordFor === I.view.instance.proc_inst_id) I.record.update(I.view);
   }
+  const alertIdOf = inst => { const v = vars(inst); return v.alert_id || (v.alert || {}).alertId || ''; };
   // 머리의 한 줄: 무슨 사건 · 언제 시작 · 몇 단계 가운데 어디(끝난 건은 언제 끝났고 얼마나 걸렸나)
   function metaLine(view) {
     const inst = view.instance, v = vars(inst), bits = [];
@@ -757,9 +759,7 @@
       const span = inst.start_date && inst.end_date ? Date.parse(inst.end_date) - Date.parse(inst.start_date) : NaN;
       if (inst.end_date) bit('circle-check', `${UI.time(inst.end_date)} 처리 완료${span >= 0 && window.hydTrace ? ` · ${hydTrace.fmtMs(span)} 걸림` : ''}`);
     }
-    const alertId = v.alert_id || (v.alert || {}).alertId;
-    if (alertId) bit('', alertId, 'mono');
-    return bits.join('');
+    return bits.join('');      // 경보 번호는 읽는 값이 아니라 찾을 때 쓰는 번호다 — 머리 줄에 두지 않고 더 보기 메뉴의 「경보 번호 복사」로 낸다
   }
   // 끝난 건은 맨 위에 결과 한 장. 진행 중인데 멈춘 단계가 있으면 그 자리에 무엇이 멈췄고 어디서 조치하는지
   function topCardHtml(view) {
@@ -806,7 +806,7 @@
     if (I.skelFor !== pid || !box.querySelector('#casePath')) {
       box.innerHTML = `<header class="case-head"><div><h2 class="case-title"></h2><div class="case-meta"></div></div>
           <div class="dropdown-menu" id="caseMenu"><button type="button" class="btn" data-variant="outline" data-size="icon-sm" id="caseMenu-trigger" aria-haspopup="menu" aria-controls="caseMenu-menu" aria-expanded="false" aria-label="더 보기" data-tooltip="더 보기" data-side="left">${UI.icon('ellipsis')}</button>
-            <div id="caseMenu-popover" data-popover aria-hidden="true" data-align="end"><div role="menu" id="caseMenu-menu" aria-labelledby="caseMenu-trigger"><div role="menuitem" id="instReload" data-case-act="reload">${UI.icon('refresh-cw')}다시 읽기</div><div role="menuitem" data-case-act="flow">${UI.icon('maximize-2')}전체 흐름 보기</div><div role="menuitem" data-case-act="more">${UI.icon('file-json')}자세한 기록 펼치기</div></div></div></div></header>
+            <div id="caseMenu-popover" data-popover aria-hidden="true" data-align="end"><div role="menu" id="caseMenu-menu" aria-labelledby="caseMenu-trigger"><div role="menuitem" id="instReload" data-case-act="reload">${UI.actHtml('reload')}</div>${alertIdOf(inst) ? `<div role="menuitem" data-id-copy="${esc(alertIdOf(inst))}">${UI.actHtml('copy', '경보 번호 복사')}</div>` : ''}<div role="menuitem" data-case-act="flow">${UI.icon('maximize-2')}전체 흐름 보기</div><div role="menuitem" data-case-act="more">${UI.icon('file-json')}자세한 기록 펼치기</div></div></div></div></header>
         <div id="todoPanel"></div><div id="caseTop"></div>
         <section aria-label="진행 길"><div class="sec-head"><h2>진행 길</h2><span class="muted" data-path-side></span></div><div id="casePath"></div><div id="caseNotes"></div></section>
         <section aria-label="단계 기록"><div class="sec-head"><h2>단계 기록</h2><span class="muted case-live" data-record-side></span></div><div id="instRecord"></div><div id="taskDetailPanel"></div></section>`;
@@ -984,9 +984,9 @@
         ${UI.field({ label: '폐기 ' + UI.t('form.reason'), cls: 'wide', hint: '사건이 종료되고 실제 조치가 없음을 확인한 경우에만 승인을 폐기하고 처리 건을 취소할 수 있습니다.', input: `<input data-discard-reason="${esc(a.todo_id)}" value="${esc(f.reason)}" placeholder="후속 조치를 진행하지 않고 종료하는 이유">` })}`)}
         ${UI.actions(`${a.status === 'FAILED' && !reviewRequired ? `<button type="button" class="btn" data-size="sm" data-approval-retry="${esc(a.todo_id)}" ${I.busy ? 'disabled' : ''}>${esc(UI.t('btn.retry'))}</button>` : ''}<button type="button" class="btn" data-variant="outline" data-size="sm" data-approval-discard-preview="${esc(a.todo_id)}" ${I.busy ? 'disabled' : ''}>${esc(UI.t('btn.effects'))}</button>`, I.pmsg[a.todo_id] || '')}
         <div data-discard-preview role="status">${dp ? discardPreviewHtml(dp) : ''}</div>` : '';
-      const discarded = a.status === 'DISCARDED' ? `<p class="muted">${(a.history || []).at(-1)?.via === 'rework' ? '다시 수행 요청으로 이전 승인을 폐기했습니다. 새 판단과 새 승인이 필요합니다.' : '처리 건을 취소했습니다.'} 이전 승인·오류는 보존됩니다.</p>${UI.fold(esc(UI.t('raw')), `<pre class="code">${esc(JSON.stringify((a.history || []).at(-1), null, 2))}</pre>`)}` : '';
+      const discarded = a.status === 'DISCARDED' ? `<p class="muted">${(a.history || []).at(-1)?.via === 'rework' ? '다시 수행 요청으로 이전 승인을 폐기했습니다. 새 판단과 새 승인이 필요합니다.' : '처리 건을 취소했습니다.'} 이전 승인·오류는 보존됩니다.</p>${UI.raw((a.history || []).at(-1))}` : '';
       return UI.fold(`${esc(UI.t('inst.approval'))} ${UI.deliveryChip(a.status)}`, `<div data-approval-panel="${esc(a.todo_id)}"><p>${esc(option.name || p.option)} · ${esc(UI.t('card.approver'))} <b>${esc(who(p.role))}</b> · 전달 시도 ${esc(a.attempts)}회</p>
-        ${a.error ? UI.fold('오류 기록', `<pre class="code">${esc(a.error)}</pre>`, { open: true }) : ''}${retry}${discarded}</div>`, { open: reviewable || a.status === 'FAILED' || !!lost });
+        ${a.error ? UI.raw(a.error, { title: '오류 기록', open: true }) : ''}${retry}${discarded}</div>`, { open: reviewable || a.status === 'FAILED' || !!lost });
     }).join('');
   }
 
@@ -994,7 +994,7 @@
      접혀 있거나 고르지 않은 보기는 그리지 않는다. */
   function renderMore() {
     const fold = $('#caseMore'); if (!fold) return;
-    document.querySelectorAll('#caseMoreTabs [data-more-tab]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.moreTab === I.more)));
+    UI.markViewTab($('#caseMoreTabs'), b => b.dataset.moreTab === I.more);
     fold.querySelectorAll('.case-more-pane').forEach(p => { p.hidden = p.dataset.more !== I.more; });
     if (!fold.open) return;
     const view = I.view, none = UI.empty('고른 처리 건이 없습니다', '왼쪽 목록에서 처리 건을 고르면 여기에 보입니다', 'compact');
@@ -1013,7 +1013,7 @@
         : row.key === 'cause' ? (((v.guide_card || {}).causes || []).find(c => c.id === value) || (v.guide_card || {}).topCause || {}).name || UI.name(value)
         : row.key === 'failure_mode' ? UI.idText((typeof (v.guide_card || {}).failureMode === 'object' ? (v.guide_card.failureMode || {}).name : (v.decision || {}).failureMode) || UI.name(value))
         : row.key === 'chosen_skill' ? ((v.chosen_option || {}).name || UI.name(value)) : row.key === 'approved_role' ? who(value) : typeof value === 'string' ? UI.idText(value) : value;
-      const body = value !== null && typeof value === 'object' ? UI.fold(esc(UI.t('inst.structured')), `<pre class="code">${esc(JSON.stringify(value, null, 2))}</pre>`) : esc(shown === true ? UI.t('yes') : shown === false ? UI.t('no') : shown ?? UI.t('inst.noValue'));
+      const body = value !== null && typeof value === 'object' ? UI.raw(value, { title: UI.t('inst.structured') }) : esc(shown === true ? UI.t('yes') : shown === false ? UI.t('no') : shown ?? UI.t('inst.noValue'));
       const source = (inst.variable_sources || {})[row.key];
       const producer = source?.kind === 'workitem' ? view.workitems.find(w => w.id === source.id) : null;
       const origin = source?.kind === 'input' ? UI.t('inst.source.input') : source?.kind === 'workitem' ? UI.flowName(producer?.activity_name || source.activity) : source?.kind === 'runtime' ? UI.t('inst.source.runtime') : UI.t('inst.source.none');
@@ -1028,7 +1028,7 @@
     const rows = view.workitems.map(w => `<tr data-status="${esc(w.status)}"><td>${esc(UI.flowName(w.activity_name))}${w.generation ? `<br><span class="muted">${esc(w.generation)}${esc(UI.t('inst.gen'))}</span>` : ''}</td><td>${esc(UI.status(w.status))}${w.draft_status && w.status !== 'DONE' ? `<br><span class="muted">${esc(UI.status(w.draft_status))}</span>` : ''}</td>
       <td>${esc(who(w.user_id))}</td>
       <td class="num">${esc(UI.time(w.start_date))}${w.end_date ? ' → ' + esc(UI.time(w.end_date)) : ''}${w.due_date && !w.end_date ? `<br><span class="muted">${esc(UI.t('inst.due'))} ${esc(UI.time(w.due_date))}</span>` : ''}</td>
-      <td class="case-memo">${esc(UI.logText(w.log || ''))}${w.output && Object.keys(w.output).length ? UI.fold(`${esc(UI.t('inst.output'))} ${esc(Object.keys(w.output).filter(k => k !== 'text').join(', ') || 'text')}`, `<pre class="code">${esc(JSON.stringify(w.output, null, 1).slice(0, 1500))}</pre>`) : ''}${UI.fold(esc(UI.t('raw')), `<pre class="code">${esc(JSON.stringify({ id: w.id, activity_id: w.activity_id, log: w.log, generation: w.generation, agent_orch: w.agent_orch, agent_mode: w.agent_mode, consumer: w.consumer, draft_status: w.draft_status, supersedes_id: w.supersedes_id, gateway_decisions: w.gateway_decisions }, null, 1))}</pre>`)}</td></tr>`).join('');
+      <td class="case-memo">${esc(UI.logText(w.log || ''))}${w.output && Object.keys(w.output).length ? UI.raw(w.output, { title: `${UI.t('inst.output')} ${Object.keys(w.output).filter(k => k !== 'text').join(', ') || 'text'}` }) : ''}${UI.raw({ id: w.id, activity_id: w.activity_id, log: w.log, generation: w.generation, agent_orch: w.agent_orch, agent_mode: w.agent_mode, consumer: w.consumer, draft_status: w.draft_status, supersedes_id: w.supersedes_id, gateway_decisions: w.gateway_decisions })}</td></tr>`).join('');
     // a tool call and its result become one record with the duration
     const evs = view.events.slice();
     const started = new Map(); evs.forEach(e => { if (e.event_type === 'tool_usage_started' && e.data?.tool_use_id) started.set(e.data.tool_use_id, e); });
@@ -1052,12 +1052,12 @@
       ${cases && cases.worker_running === false ? `<div class="alert" data-variant="destructive" role="status">${UI.icon('circle-alert')}<h2>지식 지도에 반영하는 작업이 멈춰 있습니다</h2><section>반영이 늦어집니다. 잠시 뒤에도 그대로면 시스템 › 시스템 구성에서 처리 서비스의 상태를 확인하세요.</section></div>` : ''}
       ${cases && cases.error ? `<p class="muted" data-tone="danger">반영 상태 조회 실패: ${esc(cases.error)}</p>` : ''}
       ${cases?.knowledge ? `<p class="muted">지식 연결 변경 확인: <span data-knowledge-checked>${esc(knowledgeChecked(cases))}</span>${cases.knowledge.last_error ? '<br><span class="muted" data-tone="danger">연결 재확인 실패: ' + esc(cases.knowledge.last_error) + '</span>' : ''}</p>` : ''}
-      ${pending && pending.last_error ? UI.fold(pending.last_error.startsWith('ProjectionConflict:') ? '반영이 멈춘 까닭 (오류 원문)' : '반영을 다시 시도하는 중 (오류 원문)', `<pre class="code">${esc(pending.last_error)}</pre>`) : ''}
+      ${pending && pending.last_error ? UI.raw(pending.last_error, { title: pending.last_error.startsWith('ProjectionConflict:') ? '반영이 멈춘 까닭 (오류 원문)' : '반영을 다시 시도하는 중 (오류 원문)' }) : ''}
       ${pending?.last_error?.startsWith('ProjectionConflict:') || cases?.items?.some(x => x.last_error?.startsWith('ProjectionConflict:')) ? `<div class="alert" data-variant="destructive" role="status">${UI.icon('circle-alert')}<h2>지식 지도 자동 반영이 멈췄습니다</h2><section>이 처리 건의 기록과 지식 지도의 내용이 서로 달라 자동 반영을 멈췄습니다. 화면에서 고칠 수 없습니다 — 아래 오류 원문과 함께 시스템 관리자에게 알리세요.</section></div>` : ''}
-      ${cases && (cases.items || []).some(x => x.last_error) ? UI.fold('사건 · 판단 반영 오류', `<pre class="code">${esc(JSON.stringify(cases.items.filter(x => x.last_error), null, 2))}</pre>`) : ''}`;
+      ${cases && (cases.items || []).some(x => x.last_error) ? UI.raw(cases.items.filter(x => x.last_error), { title: '사건 · 판단 반영 오류' }) : ''}`;
     if (!g) return sync + `<p class="muted">${esc(UI.t('loading'))}</p>`;
     if (g.error) return sync + `<p class="muted">${esc(UI.t('error.load'))}: ${esc(g.error)}</p>`;
-    const cy = UI.fold(esc(UI.t('inst.query')), `<pre class="code">${esc(g.cypher)}</pre><pre class="code">${esc(JSON.stringify(g.params))}</pre>`);
+    const cy = UI.raw(g.cypher, { title: UI.t('inst.query'), lang: 'cypher' }) + UI.raw(g.params, { title: '질의 조건 값' });
     const x = g.graph;
     if (!x) return sync + '<p class="muted">조회 가능한 반영 내역이 없습니다.</p>' + cy;
     const rows = (x.workitems || []).map(w => `<tr data-status="${esc(w.status)}"><td>${esc(UI.flowName(w.activity_name || w.activity_id || ''))}</td><td>${UI.chip(w.status)}</td><td>${w.executes ? `${esc(w.executes_name || '')}<br><span class="muted">${esc(w.executes_type || '')}</span>` : '–'}</td><td>${w.assigned_to ? w.assigned_to.split(',').map(id => esc(who(id))).join(', ') : '–'}</td></tr>`).join('');

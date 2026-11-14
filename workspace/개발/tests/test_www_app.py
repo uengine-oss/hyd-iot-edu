@@ -140,9 +140,9 @@ def test_구조_그림은_부품_표의_부품을_모두_놓고_응답_없는_�
         assert ('응답 없음' if key == 'detector' else '정상') in info
     # 다시 응답하면 요약이 정상으로 돌아온다
     w.down = set()
-    page.wait_for_function("document.getElementById('sysSum').textContent.endsWith('정상')", timeout=15000)
-    need = sum(1 for c in table if c['health'] and not c['optional'])
-    assert page.inner_text('#sysSum') == f'서비스 {need}/{need} 정상'
+    # 머리의 요약은 응답 없는 서비스가 있을 때만 보인다 — 정상일 때의 「서비스 n/n」은 메뉴 줄 아래 한 곳에 있다
+    page.wait_for_function("document.getElementById('sysSum').hidden", timeout=15000)
+    assert not page.is_visible('#sysSum')
 
 
 def test_추이의_기준선은_감지기_조건식에서_태그와_숫자를_바로_견주는_항만_읽는다(world):
@@ -157,7 +157,7 @@ def test_추이의_기준선은_감지기_조건식에서_태그와_숫자를_�
 
 
 def test_설비_회로는_처리_건으로_보내는_줄만_갖고_상태_이름을_따로_부르지_않는다(world):
-    """같은 것을 두 이름 · 두 색으로 보이지 않는다: 줄은 「열림 / 끝남」만 말하고, 처리 건의 상태 이름(반려 · 종결 · 효과 확인 중 …)은 처리 건 화면에만 있다."""
+    """같은 것을 두 이름 · 두 색으로 보이지 않는다: 줄은 처리 건 화면의 거르기와 같은 말(진행 중 / 처리 완료)만 하고, 처리 건의 상태 이름(반려 · 종결 · 효과 확인 중 …)은 처리 건 화면에만 있다."""
     w, page = world, world.page
     w.incidents = [
         {'id': 'INC-a', 'asset': 'HYD-01', 'alertId': 'ALT-a', 'state': 'REJECTED_BY_OPERATOR', 'terminal': True, 'created': '2026-01-01T00:00:00Z', 'closed': '2026-01-01T00:05:00Z'},
@@ -165,7 +165,7 @@ def test_설비_회로는_처리_건으로_보내는_줄만_갖고_상태_이름
         {'id': 'INC-c', 'asset': 'HYD-02', 'alertId': 'ALT-c', 'state': 'CLOSED', 'terminal': True, 'created': '2026-01-01T02:00:00Z', 'closed': '2026-01-01T02:05:00Z'}]
     page.goto(w.base + '/index.html#/incidents')
     page.wait_for_selector('#incList .row')
-    assert page.eval_on_selector_all('#incList .row .tag', 'ns => ns.map(n => n.textContent)') == ['끝남', '열림']      # 고른 설비(HYD-01)의 것만
+    assert page.eval_on_selector_all('#incList .row .tag', 'ns => ns.map(n => n.textContent)') == ['처리 완료', '진행 중']      # 고른 설비(HYD-01)의 것만
     text = page.inner_text('#view-incidents')
     assert not any(word in text for word in ('반려', '종결', '효과 확인', '재관측', '사건'))
     assert '열린 처리 건이 있습니다' in page.inner_text('#scadaInfo') and page.get_attribute('#scadaInfo .open', 'data-open-incident') == 'INC-b'
