@@ -170,7 +170,11 @@ def mount(app: FastAPI) -> None:
     async def create_role(req: RoleReq):
         """G10: 학생 흐름의 레인을 받을 역할 만들기 — users role:<키>(origin user). 흐름 가져오기 역할 목록에 바로 보인다."""
         rt = _rt()
-        return await _call(A.create_role, rt.repo, rt.tenant_id, req.model_dump(), by=req.by)
+
+        def work():
+            out = A.create_role(rt.repo, rt.tenant_id, req.model_dump(), by=req.by)
+            return dict(out, knowledge=A.sync_roles(rt))       # 지식 그래프의 Role 로 바로 옮긴다 — 문서 · 조치 방법의 승인 역할로 곧 고를 수 있게
+        return await _call(work)
 
     @app.delete("/api/roles/{role_id}")
     async def delete_role(role_id: str, by: str | None = None):

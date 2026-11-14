@@ -11,8 +11,13 @@
                   프로필을 읽으므로(agent-worker context.prepare) 배정 = 실제 실행 담당. 적용 기록은 task_assignments(kind='agent_map').
   reset           포털에서 만든 것(origin='user' 에이전트 · 스킬 · 스킬 붙이기 · 업무분장 · 역할, 모든 단계 배정)만 지운다. 기본은 그대로.
   역할 만들기     G10(전체 과정 랩업): users 의 role:<키> 행(사람 아님, origin='user'). 흐름 가져오기는 레인 이름 = 역할 이름이면 그 역할로
-                  잇는다(bpmn_import.merge_mapping) — 그래서 역할 이름은 테넌트 안에서 겹치지 않게 받는다. 흐름 정의가 쓰는 역할은
-                  지우지 않는다(지우기 · 되돌리기 모두).
+                  잇는다(bpmn_import.merge_mapping) — 그래서 역할 이름은 테넌트 안에서 겹치지 않게 받는다. 흐름 정의나 조치 방법(지식)이
+                  쓰는 역할은 지우지 않는다(지우기 · 되돌리기 모두).
+  역할의 정본     어떤 역할이 있고 누가 그 역할인지는 업무 DB(users 의 role:* 행 · role_members) 한 곳이 정한다. 지식 그래프의 Role 노드는 그
+                  투영이다(project_roles — 업무 DB 의 공급사 · 견적을 그래프로 옮기는 scm_sync 와 같은 방식): DB 에 있는 역할은 그래프에 있고,
+                  DB 에 없는 역할은 그래프에도 없다. 전에는 두 목록이 따로여서 포털에서 만든 역할은 문서의 승인 역할로 쓸 수 없었고(문서 적재 검사 ·
+                  조치 방법 화면이 그래프를 본다), 문서가 말하는 그래프의 역할(품질팀장 · 공장장)은 DB 에 없어 승인이 「구성원 아님」으로 막혔다.
+                  그래프가 아는 것은 역할의 지식 속성뿐이다: 승인 권한의 크기(level)와 소속 부서(MEMBER_OF — 시드가 넣는다).
 
 원본(process-gpt-vue3@867e8cf): AgentField.vue:64-170(이름 · 역할 · 목표 · 성격 · 도구(등록된 MCP 서버) · 스킬 · 모델),
 ProcessGPTBackend.ts:4250-4306(putAgent · deleteAgent), :4393-4441(replaceAgentSkills · deleteAgentSkill · deleteAgentSkillsBySkill),
@@ -91,7 +96,7 @@ def _protect(row: dict, what: str) -> None:
     if origin_of(row) != USER:
         kind = "시스템 수행자" if (row.get("agent_type") or "agent") == "system" else "기본 에이전트"
         tail = " '복제해서 고치기'로 사본을 만들어 고치세요." if kind == "기본 에이전트" else ""
-        raise AuthoringError(f"{kind} '{_name(row)}'은(는) {what} 수 없습니다 — 수업 기준이라 보호합니다.{tail}", 403)
+        raise AuthoringError(f"{kind} '{_name(row)}'은(는) {what} 수 없습니다 — 기본 제공 구성이라 보호합니다.{tail}", 403)
 
 
 # ---------------------------------------------------------------- 에이전트
@@ -305,7 +310,7 @@ def update_skill(repo, tenant_id: str, name: str, body: dict, *, by: str | None 
     if row is None:
         raise AuthoringError(f"그런 스킬이 없습니다: {name}", 404)
     if origin_of(row) != USER:
-        raise AuthoringError(f"기본 스킬 '{name}'은(는) 고칠 수 없습니다 — 수업 기준이라 보호합니다. 새 이름으로 스킬을 만들어 쓰세요.", 403)
+        raise AuthoringError(f"기본 스킬 '{name}'은(는) 고칠 수 없습니다 — 기본 제공 스킬이라 보호합니다. 새 이름으로 스킬을 만들어 쓰세요.", 403)
     f = skill_fields(name, body)
     repo.write_skill({**row, **f}, create=False)
     return repo.get_skill(tenant_id, name)
@@ -316,7 +321,7 @@ def delete_skill(repo, tenant_id: str, name: str, *, by: str | None = None) -> d
     if row is None:
         raise AuthoringError(f"그런 스킬이 없습니다: {name}", 404)
     if origin_of(row) != USER:
-        raise AuthoringError(f"기본 스킬 '{name}'은(는) 지울 수 없습니다 — 수업 기준이라 보호합니다.", 403)
+        raise AuthoringError(f"기본 스킬 '{name}'은(는) 지울 수 없습니다 — 기본 제공 스킬이라 보호합니다.", 403)
     attached = [r["user_id"] for r in repo.list_agent_skills(tenant_id) if r["skill_name"] == name]
     repo.remove_skill(tenant_id, name)
     from .student_cases import Store
@@ -511,7 +516,8 @@ def role_fields(body: dict) -> tuple[str, str, str]:
 
 def create_role(repo, tenant_id: str, body: dict, *, by: str | None = None) -> dict:
     """학생 흐름의 레인(담당자)을 받을 역할을 만든다: users 행 role:<키>, 사람 아님, origin='user'.
-    키를 비우면 role:u-<6자리>. 이름은 테넌트 안 역할끼리 겹치면 거절 — 흐름 가져오기가 레인 이름으로 역할을 잇기 때문."""
+    키를 비우면 role:u-<6자리>. 이름은 테넌트 안 역할끼리 겹치면 거절 — 흐름 가져오기가 레인 이름으로 역할을 잇기 때문.
+    지식 그래프에는 부른 쪽이 옮긴다(sync_roles — HTTP 경로 · 출발본 불러오기)."""
     name, key, kind = role_fields(body)
     existing = _role_rows(repo, tenant_id)
     taken = {u["id"] for u in repo.list_users(None, tenant_id)}
@@ -542,16 +548,78 @@ def delete_role(rt, role_id: str, *, by: str | None = None) -> dict:
     if row is None:
         raise AuthoringError(f"그런 역할이 없습니다: {role_id}", 404)
     if origin_of(row) != USER:
-        raise AuthoringError(f"기본 역할({_name(row)})은 지울 수 없습니다 — 수업 기준이라 보호합니다", 403)
+        raise AuthoringError(f"기본 역할({_name(row)})은 지울 수 없습니다 — 기본 제공 역할이라 보호합니다", 403)
     used = roles_in_definitions(rt).get(role_id)
     if used:
         raise AuthoringError(f"흐름 정의 {', '.join(used)} 가 이 역할을 담당자로 씁니다 — 흐름을 먼저 지우거나 바꾸세요", 409)
+    try:
+        skills = roles_in_knowledge(rt.hooks.query_cypher, [role_id]).get(role_id)
+    except Exception as e:  # noqa: BLE001 — 지식이 이 역할을 쓰는지 모르는 채로 지우지 않는다
+        raise AuthoringError(f"지식 그래프를 읽지 못해 이 역할을 쓰는 조치 방법이 있는지 확인하지 못했습니다({str(e)[:160]}) — 지우지 않았습니다", 503) from e
+    if skills:
+        from hydcommon.words import josa
+        raise AuthoringError(f"조치 방법 {josa(', '.join(skills), '가')} 이 역할을 승인 역할로 씁니다 — 그 조치 방법의 승인 역할을 바꾸거나 "
+                             "그 문서의 적재를 되돌린 뒤 지우세요", 409)
     open_rows = role_open_rows(repo, tenant_id, role_id)
     if open_rows:
         raise AuthoringError(f"이 역할에 끝나지 않은 작업이 {len(open_rows)}건 있습니다 — 끝난 뒤 지우세요", 409)
     repo.remove_role(tenant_id, role_id)
     log.info("role %s deleted by %s", role_id, by)
-    return {"id": role_id, "deleted": True}
+    return {"id": role_id, "deleted": True, "knowledge": sync_roles(rt)}
+
+
+# ---------------------------------------------------------------- 역할 → 지식 그래프(Role 노드) 투영
+#: 그래프 Role.level(승인 권한의 크기 — 판단 카드 승인에서 다른 역할이 대신 승인하려면 등급이 더 높아야 한다)의 기본값. 시드의 역할은 시드가
+#: 정한 등급을 그대로 두고, 포털에서 만든 역할 · 시드가 등급을 넣지 않은 역할만 종류에서 정한다
+ROLE_LEVEL = {"operator": 1, "manager": 2}
+GRAPH_ROLES_Q = "MATCH (r:Role) RETURN r.id AS id, r.name AS name, r.level AS level"
+SET_ROLE_Q = ("UNWIND $rows AS x MERGE (r:Role {id: x.id}) SET r.name = x.name, r.level = coalesce(r.level, x.level) "
+              "RETURN count(r) AS n")
+DROP_ROLE_Q = "UNWIND $ids AS id MATCH (r:Role {id: id}) DETACH DELETE r RETURN count(*) AS n"
+ROLE_SKILLS_Q = ("MATCH (k:Skill)-[:APPROVED_BY]->(r:Role) WHERE $ids IS NULL OR r.id IN $ids "
+                 "RETURN r.id AS role, coalesce(k.name, k.sopId, k.id) AS skill ORDER BY role, skill")
+
+
+def project_roles(repo, tenant_id: str, q) -> dict:
+    """업무 DB 의 역할을 지식 그래프의 Role 노드로 옮긴다(q = 그래프 질의 함수 q(cypher, **params) → 행 목록). 바뀐 것만 쓴다.
+      * DB 에 있고 그래프에 없는 역할 → 만든다(이름, 등급은 종류에서: operator 1 · manager 2).
+      * 이름이 다른 역할 → DB 의 이름으로(등급 · 소속 부서는 그래프의 것을 둔다 — 지식 속성).
+      * 그래프에만 있는 역할 → 지운다. 조치 방법(Skill)이 승인 역할로 쓰는 것은 지우지 않고 kept 로 알린다 — 역할 지우기(delete_role ·
+        reset)가 그 전에 거절하므로 남는 것은 포털 밖에서 DB 행을 지운 경우뿐이다.
+    돌려줌 = {created, renamed, removed, kept}(역할 id 목록)."""
+    want = {u["id"]: {"id": u["id"], "name": _name(u), "level": ROLE_LEVEL.get(u.get("role"), ROLE_LEVEL["manager"])}
+            for u in _role_rows(repo, tenant_id)}
+    have = {r["id"]: r for r in q(GRAPH_ROLES_Q)}
+    created = [w for rid, w in want.items() if rid not in have]
+    renamed = [w for rid, w in want.items() if rid in have and (have[rid].get("name") != w["name"] or have[rid].get("level") is None)]
+    gone = sorted(set(have) - set(want))
+    used = {r["role"] for r in q(ROLE_SKILLS_Q, ids=gone)} if gone else set()
+    removed = [rid for rid in gone if rid not in used]
+    if created or renamed:
+        q(SET_ROLE_Q, rows=created + renamed)
+    if removed:
+        q(DROP_ROLE_Q, ids=removed)
+    return {"created": sorted(w["id"] for w in created), "renamed": sorted(w["id"] for w in renamed), "removed": removed,
+            "kept": sorted(used)}
+
+
+def roles_in_knowledge(q, role_ids: list[str] | None = None) -> dict[str, list[str]]:
+    """역할 id → 그 역할을 승인 역할로 쓰는 조치 방법 이름(지식 그래프의 Skill -APPROVED_BY-> Role). 쓰는 역할은 지우지 않는다."""
+    out: dict[str, list[str]] = {}
+    for r in q(ROLE_SKILLS_Q, ids=role_ids):
+        out.setdefault(r["role"], []).append(r["skill"])
+    return out
+
+
+def sync_roles(rt) -> dict:
+    """이 런타임의 그래프 연결로 project_roles 를 한 번 — 역할을 만들고 지운 직후에 부른다(60초 주기 반복을 기다리지 않고 바로 문서 · 조치 방법의
+    승인 역할로 고를 수 있게). 그래프에 닿지 못하면 역할 변경은 그대로 두고 그 까닭을 돌려준다 — 주기 반복(main._role_sync_once)이 다시 맞춘다."""
+    try:
+        return dict(project_roles(rt.repo, rt.tenant_id, rt.hooks.record_cypher), synced=True)
+    except Exception as e:  # noqa: BLE001 — 그래프가 꺼져 있어도 DB 의 역할 변경은 유효하다(정본은 DB)
+        log.warning("role projection to the knowledge graph failed: %s", e)
+        return {"synced": False, "reason": f"지식 그래프에 이 역할 변경을 아직 반영하지 못했습니다({str(e)[:160]}) — 1분 안에 다시 반영합니다. "
+                                           "그동안 문서 · 조치 방법의 승인 역할 목록에는 옛 목록이 보입니다"}
 
 
 # ---------------------------------------------------------------- 되돌리기
@@ -566,14 +634,18 @@ def reset(rt, *, by: str) -> dict:
     if busy:
         raise AuthoringError(f"내가 만든 에이전트가 지금 실행 중인 작업이 {len(busy)}건 있습니다 — 끝난 뒤 다시 되돌리세요(아무것도 지우지 않았습니다)", 409)
     moved = return_open_rows(rt, ids, "기준으로 되돌리기 — 기본 담당으로", by)
-    used = roles_in_definitions(rt)                       # G10: 흐름 정의가 쓰는 역할은 남긴다(흐름을 지우면 다음 되돌리기에서 지워진다)
+    used = set(roles_in_definitions(rt))                  # G10: 흐름 정의가 쓰는 역할은 남긴다(흐름을 지우면 다음 되돌리기에서 지워진다)
+    try:                                                  # 조치 방법(지식)이 승인 역할로 쓰는 역할도 남긴다 — 지우면 그 조치의 승인 역할이 사라진다
+        used |= set(roles_in_knowledge(rt.hooks.query_cypher))
+    except Exception as e:  # noqa: BLE001 — 지식이 쓰는 역할을 모르는 채로 역할을 지우지 않는다
+        raise AuthoringError(f"지식 그래프를 읽지 못해 조치 방법이 쓰는 역할을 확인하지 못했습니다({str(e)[:160]}) — 아무것도 지우지 않았습니다", 503) from e
     kept_roles = [u["id"] for u in _role_rows(repo, tenant_id) if origin_of(u) == USER and u["id"] in used]
     counts = repo.reset_user_authoring(tenant_id, keep_roles=kept_roles)
     from .student_cases import Store
     Store(repo, tenant_id).remove('agents')
     Store(repo, tenant_id).remove('skills')
     log.info("agents reset by %s: %s", by, counts)
-    return {**counts, "kept_roles": kept_roles, "returned_tasks": moved}
+    return {**counts, "kept_roles": kept_roles, "returned_tasks": moved, "knowledge": sync_roles(rt)}
 
 
 # ---------------------------------------------------------------- 저장소 (PostgreSQL)

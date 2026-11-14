@@ -98,7 +98,21 @@ def test_설명_문장은_이어_붙인_사유의_마침표를_겹치지_않고_
     out = [dict(rec, id='b', name='미루기', feasible=False, violations=[{'annotation': '2,200 h를 넘으면 미루지 않는다.'}]),
            dict(rec, id='c', name='묶어 시행', feasible=False, violations=[{'annotation': '씰 키트가 2개 이상 있어야 한다.'}])]
     text = cards.explain([rec, *out], rec, {'failure_mode_name': '주 펌프 체적 효율 저하'})
-    assert '.;' not in text and '..' not in text and '예측 유온 48.0 ℃.' in text and '(점수 1.54)' in text
+    assert '.;' not in text and '..' not in text and '예측 유온은 48.0 ℃입니다.' in text and '(점수 1.54)' in text
+
+
+def test_설명_문장은_같은_제외_까닭을_한_번만_적고_권장하는_조치를_첫_문장에서_말한다():
+    """규칙 판단 · 처리 건 · 시험 비교의 설명문이 「… 후보 4장 중 'SOP-COOL-14 쿨러 핀 세척'을 권한다」였고, 같은 규칙이 세 후보를 막으면
+    그 까닭 문장(「PLC 운전 모드가 …가 아니면 원격 조치 …을 쓰지 않는다」)이 한 문단에 세 번 되풀이됐다."""
+    why = '운전 모드가 원격 자동이 아니면 원격 조치를 쓰지 않는다.'
+    rec = {'id': 'd', 'sopId': 'SOP-COOL-14', 'name': '쿨러 핀 세척', 'score': 2.16, 'feasible': True, 'gains': [], 'losses': [], 'forecast': [],
+           'precedent': None, 'scoreParts': {}, 'production': 'stop'}
+    out = [dict(rec, id=i, name=name, feasible=False, violations=[{'annotation': why}]) for i, name in (('a', '팬 최대 운전'), ('b', '부하 70 %'), ('c', '부하 70 %와 야간 핀 세척'))]
+    text = cards.explain([rec, *out], rec, {'failure_mode_name': '쿨러 냉각 성능 상실'})
+    assert text.startswith("쿨러 냉각 성능 상실 — 조치 후보 4개 가운데 'SOP-COOL-14 쿨러 핀 세척'을 권장합니다(점수 2.16)."), text
+    assert text.count(why.rstrip('.')) == 1 and all(name in text for _, name in (('a', '팬 최대 운전'), ('b', '부하 70 %'), ('c', '부하 70 %와 야간 핀 세척'))), text
+    none = cards.explain(out, None, {'failure_mode_name': '쿨러 냉각 성능 상실'})
+    assert none.startswith('쿨러 냉각 성능 상실 — 조치 후보 3개 모두 규정상 제외됐습니다:') and none.count(why.rstrip('.')) == 1, none
 
 
 def test_구매_카드_설명은_점수가_아니라_비교_총비용으로_말한다():

@@ -107,7 +107,7 @@ def test_다른_PC의_출발본이_이_PC_비밀_값에_없는_이름을_참조�
 @pytest.mark.parametrize('change, says', [
     ({'name': '가' * 61}, '이름 칸이 너무 깁니다'),
     ({'goal': ''}, '목표 칸을 채워야 합니다'),
-    ({'model': 'gpt-9-ultra'}, '수업 모델'),
+    ({'model': 'gpt-9-ultra'}, '연결된 모델(coding) 하나만'),
 ], ids=['이름 61자', '목표 없음', '수업 밖 모델'])
 def test_에이전트_칸_규칙은_불러오기_전_검증에서_저장과_같은_규칙으로_거절한다(world, change, says):
     from procsvc.flows_api import default_base_loader
@@ -128,7 +128,7 @@ def test_기준으로_되돌리기는_비밀_값과_채점_시험_기록까지_�
     je_store.golden_put(item, ME, create=True)
     out = cb.reset_all(world.rt, by=ME)
     steps = {s['step']: s for s in out['steps']}
-    assert set(steps) == {'deploy_reset', 'flows_reset', 'agents_reset', 'mcp_reset', 'ask_reset', 'eval_reset', 'trials_reset'}
+    assert set(steps) == {'knowledge_reset', 'deploy_reset', 'flows_reset', 'agents_reset', 'mcp_reset', 'ask_reset', 'eval_reset', 'trials_reset'}
     assert steps['mcp_reset']['text'].endswith('비밀 값 1') and steps['eval_reset']['text'] == '정답표 항목 1 · 채점 실행 0'
     assert mcp_secrets.load(world.rt.repo, TENANT) == {} and je_store.golden_list() == []
     assert agent_trials.store_for(world.rt.repo).list_trials(TENANT) == []
@@ -211,7 +211,7 @@ def test_되돌리기_전_확인은_되돌리기가_지울_흐름의_처리_건�
         assert flows['reason'].startswith('내가 가져온 흐름으로 진행 중인 처리 건 1건') and isinstance(flows['items'][0]['start_date'], str)
         # 출발본 불러오기는 수업 흐름도 지우고 다시 세우므로 둘 다 세고, 그렇다고 말한다
         [both] = [b for b in cb.blocking(world.rt, keep_class=False) if b['step'] == 'flows_reset']
-        assert {i['proc_inst_id'] for i in both['items']} == {cooling, mine} and '수업 흐름' in both['reason']
+        assert {i['proc_inst_id'] for i in both['items']} == {cooling, mine} and '기본 제공 흐름' in both['reason']
     finally:
         with psycopg.connect(world.dsn) as db, db.transaction():                      # 내 흐름의 처리 건을 닫는다(집히지 않은 AI 단계를 닫는 제품 길은 없다)
             db.execute("UPDATE todolist SET status='CANCELLED' WHERE proc_inst_id=%s AND status NOT IN ('DONE','CANCELLED')", (mine,))
@@ -377,3 +377,103 @@ def test_출발본의_역할_칸은_만들기와_같은_규칙으로_불러오�
     with pytest.raises(cb.BundleError) as refused:
         cb.validate(world.rt, default_base_loader, bundle)
     assert refused.value.status == 422 and says in refused.value.reason
+
+
+# ---------------------------------------------------------------- 한 번에 처음 상태로: 지식까지(전수검사 10-G17 · G18 · S6, 요청문 7)
+def _knowledge(world):
+    """지금 지식의 모습: 문서마다 맨 위 판의 묶음, 화면에서 만든 조치 방법, 업무 DB 표 정의 묶음."""
+    heads = {r['filename']: r['batch'] for r in world.api('GET', '/api/kg/manuals')[1] if r.get('current')}
+    screen = sorted(k['sopId'] for k in world.api('GET', '/api/kg/skills')[1] if not k['source_document'])
+    return heads, screen, sorted({r['batch'] for r in world.api('GET', '/api/kg/ingests')[1]})
+
+
+def test_기준으로_되돌리기는_내가_적재한_문서_판과_표_정의와_화면에서_만든_조치_방법까지_처음_지식으로_되돌린다(world):
+    """전에는 [기준으로 되돌리기]가 지식을 남겼다 — 학생이 다시 적재한 문서 판, 연결한 업무 DB 표 정의, 화면에서 만든 조치 방법(지우는 길 자체가
+    없었다)이 다음 실습의 판단에 그대로 섞였다. 이미 있는 묶음별 되돌리기를 전체 되돌리기가 부른다."""
+    import class_knowledge
+    from conftest import SAMPLES
+    from test_class_knowledge import portal_commit
+    start = _knowledge(world)
+    assert start[1] == [] and start[2] == [], start                       # 시작 상태: 기본 제공 문서의 지식만
+    hm8 = next(i for i in class_knowledge.reviewed() if i['doc'] == 'HM-8')
+    portal_commit(world, hm8, by=ME)                                      # 기본 제공 문서를 포털에서 다시 적재(문서 개정 실습)
+    fm = world.stack.graph._run('MATCH (f:FailureMode) RETURN f.id AS id ORDER BY f.id LIMIT 1')[0]['id']
+    status, made = world.api('POST', '/api/kg/skills', {'sopId': 'SOP-RESET-01', 'name': '되돌리기 시험 조치', 'description': '시험', 'kind': 'work_order',
+                                                         'failureMode': fm, 'relation': 'REMEDIED_BY', 'steps': '본다\n적는다',
+                                                         'approver': 'role:maint-mgr', 'by': ME, 'request_id': str(uuid.uuid4())})
+    assert status == 200, made
+    text = (SAMPLES / 'legacy-plant-db.sql').read_text(encoding='utf8')
+    status, plan = world.api('POST', '/api/kg/ddl/preview', {'filename': 'legacy-plant-db.sql', 'text': text,
+                                                             'systems': {'T_EQP00': 'sys:cmms', 'T_EQP01': 'sys:cmms', 'T_MNT10': 'sys:cmms'}})
+    assert status == 200, plan
+    status, ddl = world.api('POST', '/api/kg/ddl/commit', dict(plan, by=ME))
+    assert status == 200, ddl
+    changed = _knowledge(world)
+    assert changed[0][hm8['filename']] != start[0][hm8['filename']] and changed[1] == ['SOP-RESET-01'] and changed[2] == [ddl['batch']]
+
+    out = cb.reset_all(world.rt, by=ME)
+    done = next(s for s in out['steps'] if s['step'] == 'knowledge_reset')['result']
+    assert [(d['filename'], d['restored_batch']) for d in done['documents']] == [(hm8['filename'], start[0][hm8['filename']])]   # 앞 판(기본 제공 판)으로
+    assert [k['sopId'] for k in done['skills']] == ['SOP-RESET-01'] and done['ddl_batches'] == [ddl['batch']]
+    assert _knowledge(world) == start
+    assert world.stack.graph._run("MATCH (r:Rule) WHERE r.id STARTS WITH 'rule:cand-' RETURN count(r) AS n")[0]['n'] == 0   # 화면이 만든 후보 규칙도 없다
+    # 응답은 실제로 한 일과 남긴 것을 말한다(화면이 「지우는 것 · 남는 것」을 이 목록으로 그린다)
+    assert '적재한 문서 판 1개' in out['removed'] and '화면에서 만든 조치 방법 1개' in out['removed'] and '업무 DB 표 정의 묶음 1개' in out['removed']
+    assert any('처리 건 기록' in line for line in out['kept']) and any('[초기화]' in line for line in out['kept'])
+    assert out['base_missing'] == []                                          # 기본 제공 문서의 지식은 모두 제자리다
+
+
+def test_문서의_규칙이_가리키는_조치_방법이_있어_지식을_되돌리지_못하면_구성을_지우기_전에_멈추고_무엇이_왜인지_말한다(world, mine):
+    """지식 되돌리기는 맨 앞 단계다 — 여기서 멈추면 에이전트 · 도구 서버 · 흐름은 손대지 않은 채이고, 그때까지 되돌린 것이 응답에 실린다."""
+    fm = world.stack.graph._run('MATCH (f:FailureMode) RETURN f.id AS id ORDER BY f.id LIMIT 1')[0]['id']
+    status, made = world.api('POST', '/api/kg/skills', {'sopId': 'SOP-RESET-02', 'name': '규칙이 가리키는 조치', 'description': '시험', 'kind': 'work_order',
+                                                         'failureMode': fm, 'relation': 'REMEDIED_BY', 'steps': '본다', 'approver': 'role:maint-mgr',
+                                                         'by': ME, 'request_id': str(uuid.uuid4())})
+    assert status == 200, made
+    # 다른 문서의 규칙이 이 조치 방법을 적용 대상으로 쓴다(그 문서를 되돌리기 전에는 지울 수 없다) — 포털 밖에서 넣은 규칙이라 되돌릴 묶음이 없다
+    world.stack.graph._run("MATCH (k:Skill {sopId:'SOP-RESET-02'}) CREATE (:Rule {id:'rule:outside-doc', effect:'WARN'})-[:APPLIES_TO]->(k)")
+    try:
+        with pytest.raises(cb.BundleError) as stopped:
+            cb.reset_all(world.rt, by=ME)
+        assert stopped.value.status == 409 and stopped.value.extra['failed_step'] == 'knowledge_reset'
+        assert '「규칙이 가리키는 조치」' in stopped.value.reason and 'rule:outside-doc' in stopped.value.reason and '문서 등록' in stopped.value.reason
+        assert stopped.value.extra['done'] == [] and 'my-rows' in mine.servers(TENANT)          # 구성은 그대로
+    finally:
+        world.stack.graph._run("MATCH (r:Rule {id:'rule:outside-doc'}) DETACH DELETE r")
+        assert world.api('DELETE', f"/api/kg/skills/{made['id']}?by={ME}")[0] == 200
+
+
+def test_내_도구_서버를_만들_수_없는_단계의_전체_되돌리기는_서버와_비밀_값을_남기고_그렇게_말한다(world, mine):
+    """도구 서버는 만들 수 있는 단계에서만 지운다 — 전체 되돌리기도 같다(지우면 되살릴 길이 없다). 포털의 요청 그대로(지금 단계 = 제공된 것만 쓰는 단계)."""
+    from procsvc import course_policy as cp
+    status, out = world.api('POST', '/api/config/reset', {'by': ME})
+    assert status == 200, out
+    step = next(s for s in out['steps'] if s['step'] == 'mcp_reset')
+    assert step['result']['kept_servers'] == ['my-rows'] and step['result']['removed_servers'] == []
+    assert 'my-rows' in step['text'] and cp.Policy.ACTIONS['tool_servers.register'] in step['text']
+    assert 'my-rows' in mine.servers(TENANT) and mcp_secrets.load(world.rt.repo, TENANT) == {'MY_TOKEN': 'sk-live-0001'}
+    assert any('내 도구 서버 1개와 비밀 값 1개' in line for line in out['kept']) and not any('도구 서버' in line for line in out['removed'])
+
+
+def test_출발본_요약은_내가_만든_흐름만_세고_함께_담긴_기본_제공_흐름은_따로_센다(world, authored):
+    """전에는 아무것도 만들지 않은 PC 의 출발본도 「흐름 3 · 배포 3」으로 셌고(시작할 때 설치되는 흐름을 내 것으로 셈), 파일 안 설명은 흐름을 담지
+    않는다고 했다."""
+    from procsvc import student_cases
+    from procsvc.flows_api import default_base_loader
+    bundle = cb.export_bundle(world.rt, default_base_loader)
+    provided = cb.class_flow_ids(world.rt)
+    assert provided and {f['definition_id'] for f in bundle['content']['flows']} == provided | {LANE_FLOW}      # 파일에는 둘 다 담긴다
+    assert (bundle['summary']['flows'], bundle['summary']['flow_versions'], bundle['summary']['deployments']) == (1, 1, 0)
+    assert bundle['summary']['provided_flows'] == len(provided)
+    assert '기본 제공 흐름은 지금 배포된 판본을 함께 담습니다' in bundle['note']
+    picked = student_cases.select_bundle(world.rt, dict(bundle, case_tags=[{'kind': 'flows', 'asset_id': LANE_FLOW, 'label': '칸 시험 사례'}]), '칸 시험 사례')
+    assert (picked['summary']['flows'], picked['summary']['provided_flows']) == (1, 0)          # 사례 하나만 고른 묶음도 같은 셈
+
+
+def test_내_사례_목록은_자산마다_기본_제공인지_알려_준다(world, authored):
+    """화면이 흐름 목록을 한 번 더 읽어 가르지 않게 — 시작할 때 설치되는 흐름만 기본 제공이고, 출발본에 담기는 그 밖의 것은 모두 내가 만든 것이다."""
+    from procsvc import student_cases
+    from procsvc.flows_api import default_base_loader
+    rows = {a['asset_id']: a['builtin'] for a in student_cases.catalog(cb.export_bundle(world.rt, default_base_loader))['assets']}
+    provided = cb.class_flow_ids(world.rt)
+    assert provided and all(rows[d] for d in provided) and rows[LANE_FLOW] is False and rows['lane-check'] is False and rows['my-rows'] is False

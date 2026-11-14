@@ -16,6 +16,7 @@ from urllib.parse import quote
 from fastapi import HTTPException
 from pydantic import BaseModel
 
+from hydcommon.words import josa
 from hydcommon.maintenance_policy import PM_PATTERN
 from hydcommon.metrics import Registry
 from hydcommon.skill_scope import PURCHASE_PATTERN
@@ -200,7 +201,14 @@ def ontology_template(name: str):
 
 @app.get("/api/ontology/patterns")
 def ontology_patterns():
-    return _kg().patterns()
+    """이상 패턴 목록. 줄마다 judgeable(규칙 판단 · 조건별 손익 · 시험 비교가 이 패턴으로 원인을 진단해 조치를 판단할 수 있는가)과, 없으면 그
+    까닭(reason)을 싣는다 — 판단을 돌린 뒤에야 「원인 지식이 아직 없습니다」를 보던 것. 판정은 판단이 쓰는 것과 같은 질의다(t1_causes)."""
+    k = _kg()
+    rows = k.patterns()
+    for row in rows:
+        row["judgeable"] = bool(k.t1_causes(row["code"]))
+        row["reason"] = None if row["judgeable"] else _no_cause_message(k, row["code"])
+    return rows
 
 
 #: 설비 센서가 아니라 업무 표 감시가 내는 경보(it/neo4j/v2/scenario_structure.cypher — detectionMode · Symptom 없음). 원인 진단 대상이 아니다
@@ -213,8 +221,9 @@ def _no_cause_message(k, pattern: str) -> str:
     meta = next((p for p in k.patterns() if p.get("code") == pattern), {})
     name = meta.get("name") or pattern
     if pattern in BUSINESS_PATTERNS:
-        return f"'{name}'은(는) 고장 원인을 진단하는 이상 패턴이 아닙니다 — 업무 흐름(정기 정비 · 예비품 구매)의 에이전트가 판단합니다. 쿨러 성능 저하 같은 설비 이상 패턴을 고르세요"
-    return f"'{name}'의 원인 지식이 아직 없습니다 — [지식 관리]에서 이 고장을 다루는 매뉴얼을 적재한 뒤 다시 실행하세요"
+        quoted = f"'{name}'"
+        return f"{josa(quoted, '은')} 고장 원인을 진단하는 이상 패턴이 아닙니다 — 업무 흐름(정기 정비 · 예비품 구매)의 에이전트가 판단합니다. 쿨러 성능 저하 같은 설비 이상 패턴을 고르세요"
+    return f"'{name}'의 원인 지식이 아직 없습니다 — 지식 › 문서 등록에서 이 고장을 다루는 매뉴얼을 적재한 뒤 다시 실행하세요"
 
 
 def _manual_decide(k, req: DecideReq, capture: dict | None = None) -> dict:

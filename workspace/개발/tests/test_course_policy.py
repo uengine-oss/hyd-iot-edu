@@ -367,7 +367,7 @@ def test_수업_단계의_교대_등록은_흐름_이름과_세_초안_에이전
 @pytest.mark.parametrize('name, mapping, says', [
     ('흐름 이름이 빔', _mapping(name=''), '흐름 이름'),
     ('흐름 이름이 161자', _mapping(name='가' * 161), '흐름 이름'),
-    ('에이전트 칸이 에이전트 id 모양이 아님', _mapping(agent='user:kim-op'), '에이전트'),
+    ('에이전트 칸이 에이전트 id 모양이 아님', _mapping(agent='user:me'), '에이전트'),
     ('시작 조건을 바꿈', _mapping(start={'kind': 'alert', 'patterns': ['PUMP_LEAKAGE']}), '시작 입력 항목'),
     ('분기 조건을 바꿈', _mapping(flows={}), '분기 조건'),
     ('사람 단계의 부품을 바꿈', _sender_part_changed(), '인계자 검토'),
@@ -387,7 +387,7 @@ def test_PBL_단계의_교대_등록은_어느_칸을_바꿔도_받는다(name, 
 def test_대용량_연결은_두_단계_모두_등록에서_거절된다(policy):
     mapping = _mapping(name='가')
     mapping['tasks']['task_draft']['note'] = '가' * cp.TEXT_MAX
-    with pytest.raises(cp.AccessDenied, match='흐름 연결'):
+    with pytest.raises(cp.AccessDenied, match='흐름의 단계 설정은 '):
         policy.register_flow('ShiftHandover', HANDOVER_XML, mapping)
 
 
@@ -490,6 +490,8 @@ GATE_CASES = [
     ('POST', '/api/mcp/servers/neo4j/read-confirm', {'tool': 'submit_decision'}, False, True),
     ('POST', '/api/mcp/check', {'url': 'https://x.example/mcp'}, False, True),
     ('PUT', '/api/mcp/secrets/k', {'value': 'x'}, False, True),
+    ('DELETE', '/api/mcp/servers/my-rows', {}, False, True),             # 만들 수 없는 단계에서는 지울 수도 없다(지우면 되살릴 길이 없다)
+    ('POST', '/api/mcp/reset', {}, False, True),                         # 도구 서버 되돌리기 = 내 서버 · 비밀 값을 모두 지우는 일
     ('POST', '/api/mcp/servers/neo4j/check', {}, True, True),            # 준비된 서버 연결 검사는 수업에서도 된다
     ('POST', '/api/mcp/servers/neo4j/tools/read_neo4j_cypher/call', {}, True, True),
     ('POST', '/api/kg/manuals/batches/b1/golden-questions', {}, False, True),
@@ -635,8 +637,19 @@ def test_흐름_A의_실행하지_않는_조치_종류_보고는_코드_값을_�
     assert out and not any(k in out for k in ACTION_KINDS), out
 
 
-@pytest.mark.parametrize('action', sorted(cp.Policy.REASONS))
+@pytest.mark.parametrize('action', sorted(cp.Policy.REASONS) + sorted(cp.Policy.ACTIONS))
 def test_수업_단계의_막힌_까닭은_학생이_읽는_말로_쓴다(action):
-    """한바퀴 화면 순회: 흐름 화면의 막힌 까닭에 「흐름 id」가 그대로 보였다 — 서버가 내는 까닭 문장 전부를 학생 화면 말로 본다."""
-    text = cp.Policy.REASONS[action]
+    """한바퀴 화면 순회: 흐름 화면의 막힌 까닭에 「흐름 id」가 그대로 보였다 — 서버가 내는 까닭 문장 전부를 학생 화면 말로 본다.
+    까닭은 무엇이 언제 열리는지를 대상으로 말한다(화면이 그 단계를 부르는 이름으로). 이 제품을 연습용이라 부르는 말(「수업」 · 「실습」)과
+    「강사」 · 「녹화」는 쓰지 않는다(요청문 18 · 23)."""
+    text = {**cp.Policy.REASONS, **cp.Policy.ACTIONS}[action]
     assert not any(w in text for w in ('흐름 id', ' id ', 'id)')), text
+    assert not any(w in text for w in ('수업', '실습', '강사', '녹화')), text
+    assert cp.OPEN_PHASE in text, text
+
+
+def test_제공_그림과_다른_곳을_말하는_문장은_낱말에_맞는_조사를_쓴다():
+    """전에는 「단계이(가) 원본과 다릅니다 · 시작이(가) …」처럼 조사 자리표시가 학생 화면에 그대로 보였다."""
+    changed = cp.handover_structure_changes(HANDOVER_XML.replace('ShiftHandover', 'MyFlow').replace('<bpmn:userTask id="task_draft"', '<bpmn:task id="task_draft"'))
+    assert changed and all('이(가)' not in line for line in changed), changed
+    assert '흐름 식별 이름이 원본과 다릅니다' in changed and '단계가 원본과 다릅니다' in changed, changed

@@ -92,7 +92,7 @@ def test_정기_정비_에이전트의_질문도_수업이_고른_서버만으�
 @pytest.mark.parametrize('reads, text', [
     ({'enterprise': ['fgb_no_such_tool']}, '도구 서버 enterprise에 질문에 쓸 수 있는 조회 도구가 없습니다'),
     ({'fgb-no-such-server': ['query']}, "질문에 쓸 도구 서버 fgb-no-such-server의 도구 목록을 받지 못했습니다 — MCP 서버 'fgb-no-such-server' 가 설정(tenants.mcp)에 없습니다"),
-    (['neo4j'], '수업 조회 서버 설정을 확인하세요'),
+    (['neo4j'], '질문 조회 서버 설정을 확인하세요'),
 ], ids=['열 도구 없음', '설정에 없는 서버', '목록이 아님'])
 def test_열_조회_도구가_없거나_서버가_설정에_없으면_까닭과_함께_멈춘다(world, tmp_path, reads, text):
     with pytest.raises(RuntimeConnectionError) as e:
@@ -117,7 +117,7 @@ def test_process_주소가_계약_밖이면_요청_없이_멈춘다(tmp_path, ur
 def test_process_에_닿지_않으면_연결_확인_필요다(tmp_path):
     with pytest.raises(RuntimeConnectionError) as e:
         question_tools.attach({'neo4j': ['read_neo4j_cypher']}, tmp_path, closed_url())
-    assert str(e.value) == '수업 조회 도구 연결이나 결과를 확인할 수 없습니다'
+    assert str(e.value) == '질문 조회 도구 연결이나 결과를 확인할 수 없습니다'
 
 
 # ---------------------------------------------------------------- 호출(Transport.call — process 도구 실행 API)
@@ -147,7 +147,7 @@ def test_도구나_process_가_거절한_호출은_모델이_고칠_수_있게_�
 def test_질문_조회_목록_밖의_도구는_process_를_부르기_전에_거절한다(qualified):
     with pytest.raises(RuntimeConnectionError) as e:
         question_tools.Transport('http://127.0.0.1:1').call(qualified, {})      # 닿지 않는 주소 — 부르지 않으니 연결 오류가 아니다
-    assert str(e.value) == '허용되지 않은 수업 조회 도구입니다'
+    assert str(e.value) == '질문에 허용되지 않은 조회 도구입니다'
 
 
 # ---------------------------------------------------------------- 창구 서버(FastMCP) — 목록 · 인자 검사 · 실패 글

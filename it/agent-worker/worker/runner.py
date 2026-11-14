@@ -48,7 +48,7 @@ _PERMISSION_KEYS = ("agent_permission", "agentPermission", "permission")
 # G9: said on the case when the agent has no business part — the student sees which rules the agent ran under
 NO_WORK_RULES_NOTICE = ("이 에이전트에는 업무 규칙이 붙어 있지 않아 공통 규칙만 넣었습니다 — 작업 폴더 밖 금지 · 도구로 확인 · "
                         "지어내지 않기 · 승인 전 쓰기 금지 · 근거 인용. 업무 고유 규칙은 에이전트 목표 · 스킬에 적으세요.")
-GENERIC_FAILURE = "에이전트 실행이 실패했습니다. 처리 과정의 원문을 강사에게 보여 주면 원인을 확인할 수 있습니다."
+GENERIC_FAILURE = "에이전트 실행이 실패했습니다. 처리 과정의 원문을 시스템 관리자에게 보여 주면 원인을 확인할 수 있습니다."
 REQUEST_FORMAT = 1          # 같은 요청 판정 재료의 판(바꾸면 앞선 저장을 다시 쓰지 않는다)
 
 
@@ -226,7 +226,7 @@ class Runner:
             log.warning("%s %s declares MCP tools the tenant does not have: %s", row.get("proc_inst_id"), row.get("activity_id"), ", ".join(missing_tools))
             self._event(row, job_id, "task_working", {"type": "notice", "content": "등록되지 않은 도구 서버는 연결하지 못했습니다: " + ", ".join(missing_tools)}, crew_type="agent")
         if outside:
-            self._event(row, job_id, "task_working", {"type": "notice", "content": "이 단계는 수업이 정한 조회 도구만 씁니다 — 그 목록에 없는 도구 서버는 "
+            self._event(row, job_id, "task_working", {"type": "notice", "content": "이 단계는 정해진 조회 도구만 씁니다 — 그 목록에 없는 도구 서버는 "
                                                       "붙이지 않았습니다: " + ", ".join(outside)}, crew_type="agent")
         if agent.tools == [] or (declared and not plan):
             self._event(row, job_id, "task_working", {"type": "notice", "content": "에이전트의 도구와 이 단계가 허용한 도구가 겹치지 않아 도구 서버 없이 실행합니다."}, crew_type="agent")
@@ -645,7 +645,8 @@ class Runner:
             self.repo.release_worker_claim(row['id'],row['consumer'])
             self._event(row,job_id,'task_cancelled',{'name':'실행 결과 폐기','goal':'작업 취소 또는 점유 변경 후 도착한 오류'},crew_type='agent')
             return False
-        raw = diagnostics.excerpt(f"{type(err).__name__}: {err}", secrets=self._secrets)
+        detail = getattr(err, "raw", None)       # Stop 이 원문 칸에만 남기려고 실어 온 것(도구 내부 이름 · 응답 원문)
+        raw = diagnostics.excerpt(f"{type(err).__name__}: {err}" + (f"\n{detail}" if detail else ""), secrets=self._secrets)
         log.warning("%s %s failed: %s", row.get("proc_inst_id"), row.get("activity_id"), raw)
         relay = None if isinstance(err, Stop) else reason_in(str(err))      # B-05: CLI 오류 글 안의 관문 거절 코드
         if isinstance(err, Stop):

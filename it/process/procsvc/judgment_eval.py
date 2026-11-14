@@ -40,7 +40,14 @@ PATH_NOTES = {
     'worker': '지난 처리 건 — 실제 처리 건에서 AI 에이전트가 낸 원인 · 근거와 등록된 조치 판단을 채점합니다. 같은 항목에 맞는 처리 건 여러 개는 '
               '반복으로 묶어 결과가 흔들리는지 봅니다.',
 }
-BOOKKEEPING_LABELS = ['ManualIngestionBatch', 'ManualIngestionDocument', 'IngestionBatch', 'IngestionControl', 'KnowledgeEdit']
+#: 지식으로 세지 않는 노드 — 실행 기록(배포 판본 · 처리 건 · 작업 · 실행 담당자)과 내부 기록(투영 잠금 · 편집 영수증 · 적재 이력). 지식 지도가
+#: 그리지 않는 것과 같은 목록이다(it/neo4j/templates/t0_graph_nodes.cypher · t0_graph_edges.cypher 의 hidden — 같은 목록인지는 실제 그래프로
+#: 재는 시험이 지킨다: test_judgment_eval.py). 전에는 적재 이력 다섯만 빼서, 질문 하나만 해도 그 실행 기록 노드가 「지식 항목 647 → 651」로
+#: 세어지고 전 · 후 비교에 지식 변화로 나왔다(홈 · 지식 지도는 같은 그래프를 349로 말했다).
+NOT_KNOWLEDGE_LABELS = ['FlowNode', 'ProcessVersion', 'ProcessInstance', 'WorkItem', 'ExecutionActor', 'IngestionControl', 'IngestionBatch',
+                        'ExecutionProjection', 'CaseProjection', 'KnowledgeEdit', 'ManualIngestionDocument', 'ManualIngestionBatch']
+#: 이 수가 세는 범위 — 지식 지도는 고른 설비 하나로 보이므로 수가 다르다(같은 정의, 다른 범위). 화면이 수 옆에 이 말을 붙인다.
+KNOWLEDGE_SCOPE = '지식 지도에 보이는 항목과 연결 — 가상 설비 3기 전체(실행 기록 · 적재 이력은 세지 않음)'
 SNAPSHOT_CAP = 50000
 
 
@@ -284,8 +291,8 @@ def new_run(*, path: str, by: str, repeats: int, knowledge: dict, results: list[
 
 # ---------------------------------------------------------------- 지식 상태 (E5: 관계 하나 끊기 · 매뉴얼 하나 더 넣기)
 KNOWLEDGE_Q = '''
-MATCH (n) WITH count(n) AS nodes
-OPTIONAL MATCH ()-[r]->() WITH nodes, count(r) AS rels
+MATCH (n) WHERE NONE(l IN labels(n) WHERE l IN $skip) WITH count(n) AS nodes
+OPTIONAL MATCH (a)-[r]->(b) WHERE NONE(l IN labels(a) + labels(b) WHERE l IN $skip) WITH nodes, count(r) AS rels
 OPTIONAL MATCH (k:Skill) WITH nodes, rels, count(k) AS skills
 OPTIONAL MATCH (ru:Rule) WITH nodes, rels, skills, count(ru) AS rules
 OPTIONAL MATCH (mb:ManualIngestionBatch) WITH nodes, rels, skills, rules, max(mb.createdAt) AS manual_at, count(mb) AS manual_batches
@@ -294,7 +301,7 @@ OPTIONAL MATCH (e:KnowledgeEdit) WITH nodes, rels, skills, rules, manual_at, man
 RETURN nodes, rels, skills, rules, manual_at, manual_batches, ddl_at, edit_at, edits
 '''
 KNOWLEDGE_RELS_Q = '''
-MATCH (a)-[r]->(b) WHERE a.id IS NOT NULL AND b.id IS NOT NULL
+MATCH (a)-[r]->(b) WHERE a.id IS NOT NULL AND b.id IS NOT NULL AND NONE(l IN labels(a) + labels(b) WHERE l IN $skip)
 RETURN a.id AS a, type(r) AS t, b.id AS b
 '''
 KNOWLEDGE_NODES_Q = '''
@@ -313,14 +320,23 @@ def knowledge_state(rows: list[dict], rels: list[dict] | None = None, nodes: lis
     stamps = [str(r[k]) for k in ('manual_at', 'ddl_at', 'edit_at') if r.get(k)]
     rel_keys = sorted({f"{x['a']}|{x['t']}|{x['b']}" for x in rels or []})
     node_fp = {str(x['id']): _digest([sorted(x.get('labels') or []), x.get('props') or {}], 10) for x in nodes or []}
-    out = {'nodes': r.get('nodes'), 'relationships': r.get('rels'), 'skills': r.get('skills'), 'rules': r.get('rules'),
+    names = {str(x['id']): _node_name(x.get('props') or {}) for x in nodes or []}
+    out = {'nodes': r.get('nodes'), 'relationships': r.get('rels'), 'scope': KNOWLEDGE_SCOPE, 'skills': r.get('skills'), 'rules': r.get('rules'),
            'manual_batches': r.get('manual_batches'), 'edits': r.get('edits'),
            'last_change': max(stamps) if stamps else None, 'last_change_note': None if stamps else '기록된 변경 없음 (초기 적재본 또는 기록 없는 직접 수정)',
            'fingerprint': _digest([rel_keys, sorted(node_fp.items())]) if rels is not None and nodes is not None else None,
            'read_at': _now()}
     if rels is not None and nodes is not None and len(rel_keys) + len(node_fp) <= SNAPSHOT_CAP:
-        out['snapshot'] = {'rels': rel_keys, 'nodes': node_fp}
+        out['snapshot'] = {'rels': rel_keys, 'nodes': node_fp, 'names': {k: v for k, v in names.items() if v}}
     return out
+
+
+def _node_name(props: dict) -> str | None:
+    """항목의 이름(지식 지도와 같은 차례: name · title · text · ref) — 없으면 None(화면이 id 를 보인다)."""
+    for key in ('name', 'title', 'text', 'ref'):
+        if isinstance(props.get(key), str) and props[key].strip():
+            return props[key].strip()[:120]
+    return None
 
 
 def public_knowledge(k: dict | None) -> dict:
@@ -348,11 +364,15 @@ def knowledge_diff(a: dict | None, b: dict | None, limit: int = 50) -> dict:
         x, t, y = s.split('|', 2)
         return {'from': x, 'type': t, 'to': y}
     removed, added = sorted(ra - rb), sorted(rb - ra)
+    known = dict(sa.get('names') or {}, **(sb.get('names') or {}))        # 바뀐 내용을 id 가 아니라 이름으로 보이게(이름이 있는 항목만)
     out.update(removed_rels=[rel(s) for s in removed[:limit]], added_rels=[rel(s) for s in added[:limit]],
                removed_nodes=sorted(set(na) - set(nb))[:limit], added_nodes=sorted(set(nb) - set(na))[:limit],
                changed_nodes=sorted(k for k in set(na) & set(nb) if na[k] != nb[k])[:limit],
                counts={'removed_rels': len(removed), 'added_rels': len(added), 'removed_nodes': len(set(na) - set(nb)),
                        'added_nodes': len(set(nb) - set(na)), 'changed_nodes': sum(1 for k in set(na) & set(nb) if na[k] != nb[k])})
+    shown = {x for row in out['removed_rels'] + out['added_rels'] for x in (row['from'], row['to'])} \
+        | set(out['removed_nodes']) | set(out['added_nodes']) | set(out['changed_nodes'])
+    out['names'] = {i: known[i] for i in sorted(shown) if i in known}
     return out
 
 
@@ -382,6 +402,7 @@ def compare(a: dict, b: dict) -> dict:
     return {'before': {**{k: a.get(k) for k in RUN_HEAD}, 'knowledge': public_knowledge(a.get('knowledge'))},
             'after': {**{k: b.get(k) for k in RUN_HEAD}, 'knowledge': public_knowledge(b.get('knowledge'))},
             'rows': rows, 'only_before': sorted(set(ia) - set(ib)), 'only_after': sorted(set(ib) - set(ia)),
+            'item_titles': {key: (ia.get(key) or ib.get(key) or {}).get('title') for key in sorted(set(ia) ^ set(ib))},   # 한쪽에만 있는 항목의 제목
             'improved': sum(r['verdict'] == 'improved' for r in rows), 'regressed': sum(r['verdict'] == 'regressed' for r in rows),
             'same': sum(r['verdict'] == 'same' for r in rows), 'golden_changed': [r['item'] for r in rows if r['golden_changed']],
             'delta': round(statistics.fmean([r['after'] for r in rows]) - statistics.fmean([r['before'] for r in rows]), 1) if rows else None,
@@ -393,7 +414,7 @@ def compare(a: dict, b: dict) -> dict:
 FACT_CHOICES = {
     'plc_mode': {'label': '운전 모드', 'choices': [['REMOTE_AUTO', '원격 자동'], ['REMOTE_MANUAL', '원격 수동'], ['LOCAL', '현장 제어']]},
     'plc_state': {'label': '설비 상태', 'choices': [['RUN', '운전 중'], ['TRIP', '보호 정지']]},
-    'standby_ready': {'label': '예비 펌프', 'choices': [[True, '가용'], [False, '정비 중']]},
+    'standby_ready': {'label': '예비 펌프', 'choices': [[True, '쓸 수 있음'], [False, '정비 중']]},
     'fan100_hours': {'label': '팬 100 % 연속 운전 (시간)', 'number': True},
 }
 FACT_KEYS = tuple(FACT_CHOICES)
@@ -422,8 +443,10 @@ def match_item(items: list[dict], candidate: dict) -> dict:
     if len(hits) == 1:
         return hits[0]
     if not hits:
-        raise ValueError(f"처리 건 {candidate.get('instance')} ({candidate.get('asset')} · {candidate.get('pattern')})에 맞는 정답표 항목이 없습니다 — 정답표에 먼저 적으세요")
-    raise ValueError(f"처리 건 {candidate.get('instance')} 에 맞는 정답표 항목이 {len(hits)}개입니다 ({', '.join(h['id'] for h in hits)}) — 항목을 직접 고르세요")
+        # 처리 건 번호 · 설비 · 경보는 후보 줄의 칸(instance · name · asset · pattern)에 있다 — 문장에 내부 번호와 경보 코드를 되풀이하지 않는다
+        raise ValueError('이 처리 건의 설비 · 경보 · 판단 당시 조건에 맞는 정답표 항목이 없습니다 — 정답표에 먼저 적으세요')
+    raise ValueError(f"이 처리 건에 맞는 정답표 항목이 {len(hits)}개입니다(" + ', '.join(f"「{h.get('title') or h['id']}」" for h in hits)
+                     + ') — 항목을 직접 고르세요')
 
 
 def worker_judgement(candidate: dict, decision: dict | None, guide_card: dict | None = None) -> dict:

@@ -12,7 +12,7 @@
 원문 판본 id(source_id)는 PC마다 새로 생긴다. 원문 sha256이 같으면 글자 위치도 같으므로 인용의 판본 id만 이 PC의 것으로 바꿔 넣는다
 (서버가 인용 글자 · 위치를 다시 대조한다 — manual_review.validate).
 
-이미 적재된 문서: 지금 판이 이 스크립트가 넣은 판이고 담당(by)이 지금 묶음 판(강사 검토본(<판>))이면 그대로 둔다. 옛 묶음 판 · 지운 시작
+이미 적재된 문서: 지금 판의 판 표시(provided_revision — 이 스크립트만 싣는다)가 지금 묶음 판이면 그대로 둔다. 옛 묶음 판 · 지운 시작
 사본(옛 it/neo4j/class-knowledge)이 넣은 판이면 개정으로 지금 묶음을 넣는다. 학생이 다시 넣은 판(다른 담당)은 그대로 둔다.
 """
 from __future__ import annotations
@@ -31,7 +31,9 @@ ROOT = Path(__file__).resolve().parents[1]
 BUNDLE = ROOT / "it" / "process" / "procsvc" / "course_extractions.json"
 ORIGINALS = ROOT / "it" / "portal" / "www" / "samples"   # 포털이 학생에게 내주는 수업 문서와 같은 파일
 ORDER = ("HM-8", "PM-02", "PR-07")                   # 적재 순서: 쿨러 → 정기 정비 → 구매(뒤 문서가 앞 문서의 고장 유형 · 부품을 쓴다)
-BY_PREFIX = "강사 검토본"
+#: 문서 등록 이력의 담당자 칸에 보이는 글 — 사람 이름이 아니라 「시작할 때 들어 있는 판」이라는 대상을 말한다. 어느 판인지는 이 글이 아니라
+#: 적재 기록의 판 표시(provided_revision = 서명 묶음의 revision)가 가린다.
+PROVIDED_BY = "기본 제공"
 # 지운 시작 지식 사본(it/neo4j/class-knowledge, 2026-10-25 판)이 넣은 판의 담당 — 그 판은 다음 시작 때 묶음으로 바꿔 넣는다
 OLD_SEED_BY = "수업용 기본 지식 검토 — 사용자가 위임한 AI(2026-10-25, 원문 대조)"
 
@@ -42,10 +44,6 @@ class Stop(RuntimeError):
     def __init__(self, text: str, status: int | None = None):
         super().__init__(text)
         self.status = status
-
-
-def by_of(revision: str) -> str:
-    return f"{BY_PREFIX}({revision})"
 
 
 def reviewed(bundle: Path = BUNDLE, originals: Path = ORIGINALS, order: tuple = ORDER) -> list[dict]:
@@ -61,7 +59,7 @@ def reviewed(bundle: Path = BUNDLE, originals: Path = ORIGINALS, order: tuple = 
         if hashlib.sha256(raw).hexdigest() != sha:
             raise Stop(f"{doc}: 원문 {entry['filename']} 이 강사 서명 묶음의 판과 다릅니다 — 강사가 새 원문으로 묶음을 다시 만들어야 합니다")
         out.append(dict(doc=doc, filename=entry["filename"], sha256=sha, raw=raw, proposal=entry["proposal"],
-                        review_method=entry["origin"]["review_method"], by=by_of(payload["revision"])))
+                        review_method=entry["origin"]["review_method"], by=PROVIDED_BY, revision=payload["revision"]))
     return out
 
 
@@ -83,17 +81,21 @@ def commit_body(item: dict, preview: dict) -> dict:
             "sections": proposal["sections"],
             "procedures": [{k: v for k, v in p.items() if k != "link"} for p in proposal["procedures"]],
             "links": {p["id"]: p["link"] for p in proposal["procedures"] if p.get("link") is not None},
-            "knowledge": proposal.get("knowledge"), "by": item["by"], "review_method": item["review_method"], "reviewed": True}
+            "knowledge": proposal.get("knowledge"), "by": item["by"], "review_method": item["review_method"],
+            # 판 표시는 시작의 적재(검토 방식을 싣는 적재)에만 — 같은 묶음 제안을 포털의 검토처럼 넣는 요청(검토 방식 없음)은 기본 제공 판이 아니다
+            **({"provided_revision": item["revision"]} if item.get("review_method") else {}), "reviewed": True}
 
 
 def decide(item: dict, current: dict | None) -> str:
-    """'load'(처음) · 'revise'(옛 시작 판 → 지금 묶음) · 'keep'(지금 묶음 판) · 'student'(학생이 다시 넣은 판 — 건드리지 않음)."""
+    """'load'(처음) · 'revise'(옛 기본 제공 판 → 지금 묶음) · 'keep'(지금 묶음 판) · 'student'(학생이 다시 넣은 판 — 건드리지 않음).
+    기본 제공 판인가는 적재 기록의 칸으로 가린다: 판 표시(provided_revision)가 지금 묶음 판이면 keep, 판 표시가 다르거나 없는데 검토 방식
+    (review_method — 포털의 검토 화면은 보내지 않는다)이 실려 있으면 앞 판의 기본 제공 판이라 revise. 담당자 칸의 글로 가르지 않는다 —
+    학생이 담당자 칸에 같은 글을 적으면 기본 제공 판으로 읽혔다. 예외 하나: 지운 시작 사본(2026-10-25 판)은 칸 없이 담당 글만 남겼다."""
     if current is None:
         return "load"
-    by = str(current.get("by") or "")
-    if by == item["by"]:
+    if current.get("provided_revision") == item["revision"]:
         return "keep"
-    if by == OLD_SEED_BY or by.startswith(BY_PREFIX + "("):
+    if current.get("provided_revision") or current.get("review_method") or str(current.get("by") or "") == OLD_SEED_BY:
         return "revise"
     return "student"
 
@@ -112,10 +114,10 @@ def ensure(call) -> list[str]:
                         if row.get("current") and row.get("filename") == item["filename"]), None)
         what = decide(item, current)
         if what == "keep":
-            lines.append(f"{item['doc']}: 지금 강사 검토본이 적재돼 있음 — 그대로 둠 (배치 {current.get('batch')})")
+            lines.append(f"{item['doc']}: 지금 기본 제공 판이 적재돼 있음 — 그대로 둠 (배치 {current.get('batch')})")
             continue
         if what == "student":
-            lines.append(f"{item['doc']}: 수강생이 다시 적재한 판(담당 {current.get('by')})이라 그대로 둠 (배치 {current.get('batch')})")
+            lines.append(f"{item['doc']}: 이 PC에서 다시 적재한 판(담당 {current.get('by')})이라 그대로 둠 (배치 {current.get('batch')})")
             continue
         upload = {"filename": item["filename"], "data": base64.b64encode(item["raw"]).decode()}
         if what == "revise":
@@ -129,10 +131,10 @@ def ensure(call) -> list[str]:
             if what != "revise" or exc.status != 409:
                 raise
             # 옛 시작 판 뒤에 이 문서의 지식이 바뀌었다(수강생의 고치기 등) — 그 변경을 덮지 않는다. 시작은 이어 간다(지식은 옛 판)
-            lines.append(f"{item['doc']}: [주의] 옛 시작 판을 강사 검토본으로 바꾸지 못해 옛 판을 그대로 둠 — {exc}. "
-                         "지식 관리에서 이 문서를 다시 적재하면 강사 검토본이 됩니다")
+            lines.append(f"{item['doc']}: [주의] 앞 판의 기본 제공 판을 지금 판으로 바꾸지 못해 앞 판을 그대로 둠 — {exc}. "
+                         "포털의 지식 › 문서 등록에서 이 문서를 다시 올려 적재하면 지금 판의 내용이 됩니다")
             continue
-        how = "옛 시작 판을 강사 검토본으로 바꿈" if what == "revise" else "수업용 기본 지식 적재"
+        how = "앞 판의 기본 제공 판을 지금 판으로 바꿈" if what == "revise" else "기본 제공 지식 적재"
         lines.append(f"{item['doc']}: {how} — 절차 {out.get('procedures')} · 단계 {out.get('steps')} (배치 {out.get('batch')})")
     return lines
 

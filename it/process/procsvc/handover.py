@@ -71,7 +71,7 @@ def validate_result(form, inst, output):
             raise ValueError('인수인계 검토 선택이 올바르지 않습니다')
         note = output.get(prefix+'_notes')
         if not isinstance(note, str) or not note.strip() or len(note)>2000:
-            raise ValueError('확인 사항 또는 보완·거절 사유를 적으세요')
+            raise ValueError('확인 사항 또는 보완·반려 사유를 적으세요')
         if contract == RECEIVER and decision == 'confirm' and output.get('communication_only') is not True:
             raise ValueError('인계 확인은 설비 조치·발주·정비 완료가 아님을 확인하세요')
 

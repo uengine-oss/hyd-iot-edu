@@ -14,6 +14,7 @@ from agentsvc.tools import mcp_ent, mcp_kg, mcp_prom, mcp_tsdb
 from hydcommon.fabric import CROSS_QUERIES, ENT, TS, Fabric
 from hydcommon.maintenance_policy import PM_PATTERN
 from hydcommon.skill_scope import PURCHASE_PATTERN
+from hydcommon.tool_result import UNAVAILABLE
 
 
 #: Recorded in a decision's origin: where the cause argument of evaluate_cards/submit_decision was checked against.
@@ -44,8 +45,10 @@ def ok(document) -> dict:
 
 
 def error(kind: str, message: str) -> dict:
-    """kind: INVALID (bad input) | UNKNOWN (engine / graph / network). KeyError · TypeError 는 엔진 · 그래프 결함이라 UNKNOWN 이다 —
-    INVALID 로 내면 에이전트가 자기 인자 탓으로 알고 인자를 바꿔 되풀이했다(검진 G2-18)."""
+    """kind: INVALID (bad input) | UNAVAILABLE (판단에 쓸 값을 원천에서 아직 받지 못했다 — 아무것도 등록하지 않았고, 같은 인자로 잠시 뒤
+    다시 부르면 된다) | UNKNOWN (engine / graph / network). KeyError · TypeError 는 엔진 · 그래프 결함이라 UNKNOWN 이다 —
+    INVALID 로 내면 에이전트가 자기 인자 탓으로 알고 인자를 바꿔 되풀이했다(검진 G2-18). UNAVAILABLE 을 UNKNOWN 으로 내면 부른 쪽이 잠깐의
+    미수신과 엔진 결함을 가르지 못해, 재생 워커가 한 번의 미수신을 그 단계의 실패로 굳혔다(2026-11-14)."""
     return {"result": "error", "error_kind": kind, "message": message}
 
 
@@ -71,6 +74,8 @@ def failure(rec: dict, what: str) -> NotRegistered:
                              f'판단을 등록하지 못했습니다 — {reason}')
     if code == 'SUBMIT_FAILED':
         return NotRegistered('UNKNOWN', f'판단을 등록하지 못했습니다 — process 에 연결하거나 응답을 읽지 못했습니다: {reason}')
+    if code == 'SOURCE_UNAVAILABLE' and rec.get('retryable'):
+        return NotRegistered(UNAVAILABLE, reason)       # 까닭 문장은 판단 엔진이 학생 말로 썼다(decide.FactUnavailable) — 머리말을 덧대지 않는다
     return NotRegistered('INVALID' if code in BUSINESS_ERRORS else 'UNKNOWN', f'{what}을(를) 완료하지 못했습니다 — {reason}')
 
 
@@ -102,9 +107,9 @@ def read_outcome(rec: dict, what: str, detail_option: str | None = None) -> dict
     elif not options:
         outcome, notice = 'no_candidates', '조치 후보 0개 — ' + str(rec.get('explanation') or '후보 선택 규칙이 맞지 않음')
     elif not rec.get('recommended'):
-        outcome, notice = 'no_feasible_option', '후보 ' + str(len(options)) + '장 모두 규정상 제외됐습니다'
+        outcome, notice = 'no_feasible_option', '조치 후보 ' + str(len(options)) + '개 모두 규정상 제외됐습니다'
     else:
-        outcome, notice = 'ranked', '후보 ' + str(len(options)) + '장 순위 계산'
+        outcome, notice = 'ranked', '조치 후보 ' + str(len(options)) + '개 순위 계산'
     return dict(agent_view(rec, detail_option), outcome=outcome, notice=notice + ' (읽기 평가 — 저장되지 않은 ' + str(rec.get('id')) + ', decision_id 로 쓰지 않습니다)')
 
 
@@ -188,6 +193,8 @@ def enveloped(fn):
             return error('INVALID' if (e.sqlstate or '').startswith('42') else 'UNKNOWN',
                          f"{type(e).__name__}: {str(e)[:300]}")
         except Exception as e:  # noqa: BLE001
+            if getattr(e, 'transient', False):      # decide.FactUnavailable · mcp_ent.SourceUnavailable 의 곧 풀릴 수 있는 미수신
+                return error(UNAVAILABLE, str(e)[:800])
             return error("UNKNOWN", f"{type(e).__name__}: {str(e)[:300]}")
     run.__name__, run.__doc__ = fn.__name__, fn.__doc__
     return run

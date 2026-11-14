@@ -2,7 +2,8 @@
 
 설정 원천은 public.tenants.mcp 하나다(워커 bridge.py 가 읽는 제품 형태 — mcp_registry.PgMcpStore.servers 로 읽는다).
 
-  GET  /api/mcp/servers                         서버 → 설정(비밀값 가림) → 이 서버로 실제로 도는 에이전트 단계 · 담당. 네트워크 연결 없음.
+  GET  /api/mcp/servers                         서버 → 설정(비밀값 가림) → 이 서버로 실제로 도는 에이전트 단계 · 담당 · 이 서버를 부르는 흐름 단계.
+                                                네트워크 연결 없음.
   GET  /api/mcp/servers/{name}/tools?timeout=   지금 연결해 상태 · 도구 목록(이름 · 설명 · 입력 형식 · 읽기 전용 판정). 저장 없음.
   POST /api/mcp/servers/{name}/tools/{tool}/call {arguments, timeout?}
                                                 읽기 전용 도구만 실제 호출. 쓰기 · 표시 없음 → 403 사유, 연결 실패 → 502 사유.
@@ -38,12 +39,16 @@ def _timeout(raw, bounds) -> float:
 
 
 def usage(rt, server_names: list[str]) -> dict[str, dict]:
-    """서버 이름 → {agents: [{id, name, goal}], tasks: [{definition, definition_name, version, activity_id, activity_name, agent, fixed_tools}]}.
+    """서버 이름 → {agents: [{id, name, goal}], tasks: [{definition, definition_name, version, activity_id, activity_name, agent, fixed_tools}],
+    flow_steps: [{definition, definition_name, version, activity_id, activity_name, tool, read_check, latest, running}]}.
     tasks: 이 서버로 실제로 도는 에이전트 단계 — agents_api.step_runs(배정 반영 + 워커와 같은 agent_settings · run_servers)를 그대로 읽는다.
-    agents: 에이전트 자신의 설정(단계 밖)이 이 서버를 쓰는 에이전트(도구를 적지 않은 에이전트는 등록된 서버 전부)."""
+    agents: 에이전트 자신의 설정(단계 밖)이 이 서버를 쓰는 에이전트(도구를 적지 않은 에이전트는 등록된 서버 전부).
+    flow_steps: 이 서버의 도구를 부르는 흐름 단계(「승인 뒤 MCP 호출」 · 읽기 확인) — mcp_dependencies.steps_using(지우기 전 확인과 같은 판정)."""
+    from . import mcp_dependencies
     from .agents_api import step_runs
     from .agents_store import agent_settings, run_servers
-    out = {n: {"agents": [], "tasks": []} for n in server_names}
+    steps = mcp_dependencies.steps_using(rt.repo, rt.tenant_id, server_names)
+    out = {n: {"agents": [], "tasks": [], "flow_steps": steps[n]} for n in server_names}
     for u in rt.repo.list_users(None, rt.tenant_id):
         if not u.get("is_agent") or (u.get("agent_type") or "agent") != "agent":
             continue

@@ -65,7 +65,7 @@ def test_제공_문서가_아닌_원문은_덮지_않는다(archive):
     source = archive.save('hyd', 'mine.md', '# 우리 매뉴얼\n1. 멈춘다.\n'.encode())
     cache = ApprovedExtractions()
     assert not cache.covers(source)
-    with pytest.raises(ValueError, match='제공된 수업 문서'):
+    with pytest.raises(ValueError, match='제공된 문서만'):
         cache.authorize(source)
 
 

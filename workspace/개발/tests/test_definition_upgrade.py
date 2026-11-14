@@ -14,10 +14,12 @@ from pathlib import Path
 import pytest
 
 from conftest import DEFINITIONS, OPERATOR, new_database
-from procsvc import engine, flow_deploy, instance_mode, procdb
+from procsvc import bpmn_store, engine, flow_deploy, instance_mode, procdb
 
 DATA = Path(__file__).resolve().parent / 'data' / 'definitions'
 OLD = {'anomaly_response_v22.json': 'anomaly_response_2.3.json', 'shift_handover_v1.json': 'shift_handover_1.3.json'}
+#: 바로 앞 판본(이름만 화면 용어로 바꾸고 그림을 붙이기 전) — 학생 PC 에 지금 등록돼 있는 판이다
+PREVIOUS = {'anomaly_response_v22.json': 'anomaly_response_2.4.json', 'shift_handover_v1.json': 'shift_handover_1.4.json'}
 ME = OPERATOR['by']
 
 
@@ -28,21 +30,23 @@ def _raw(path):
 def test_옛_판본_자료는_그_판본을_낼_때의_원문_그대로다():
     """시험이 쓰는 옛 정의가 학생 PC 에 실제로 등록돼 있는 원문과 같은지 — 판본 잠금 파일의 지문으로 대조한다."""
     lock = _raw(Path(__file__).resolve().parent / 'definition_versions.lock.json')
-    for name in OLD.values():
+    for name in [*OLD.values(), *PREVIOUS.values()]:
         raw = _raw(DATA / name)
         digest = hashlib.sha256(json.dumps(raw, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode('utf-8')).hexdigest()
         assert lock[f"{raw['processDefinitionId']}@{raw['version']}"] == digest, name
-    for name, old in OLD.items():
+    for name, old in [*OLD.items(), *PREVIOUS.items()]:
         assert _raw(DEFINITIONS / name)['version'] != _raw(DATA / old)['version'], f'{name}: 지금 파일이 옛 판본 번호 그대로다'
 
 
 @pytest.fixture
 def boot(pg_dsn, tmp_path, monkeypatch):
     """boot(old=True|False) → 그 정의 파일들로 켠 런타임. 같은 버릴 DB · 같은 사건 사전을 이어 쓴다(process 를 껐다 켠 것과 같다)."""
-    old_dir = tmp_path / 'definitions-old'
-    shutil.copytree(DEFINITIONS, old_dir)
-    for name, old in OLD.items():
-        shutil.copyfile(DATA / old, old_dir / name)
+    dirs = {}
+    for key, files in (('old', OLD), ('previous', PREVIOUS)):
+        dirs[key] = tmp_path / f'definitions-{key}'
+        shutil.copytree(DEFINITIONS, dirs[key])
+        for name, old in files.items():
+            shutil.copyfile(DATA / old, dirs[key] / name)
 
     def not_wired(what):
         def call(*a, **k):
@@ -57,7 +61,8 @@ def boot(pg_dsn, tmp_path, monkeypatch):
     compression = engine.wait_compression()
     with new_database(pg_dsn, schema=True) as dsn:
         def start(old):
-            monkeypatch.setattr(instance_mode, 'DEFINITIONS_DIR', old_dir if old else DEFINITIONS)
+            """old: True = 2.3 · 1.3 판(거절 길이 생기기 전), 'previous' = 바로 앞 판, False = 지금 정의 파일."""
+            monkeypatch.setattr(instance_mode, 'DEFINITIONS_DIR', dirs['previous' if old == 'previous' else 'old'] if old else DEFINITIONS)
             return instance_mode.build(ctx, repo=procdb.PgRepo(dsn))
         try:
             yield start
@@ -159,3 +164,70 @@ def test_기준_흐름으로_되돌려_둔_DB는_새_파일로_켜면_새_기준
     assert rt.repo.deployed_version('anomaly_response', 'hyd') == old
     rt = boot(old=False)
     assert rt.repo.deployed_version('anomaly_response', 'hyd') == new and flow_deploy.routes(rt)['reference']['changed'] is False
+
+
+# ---------------------------------------------------------------- 그림(정의 옆 .bpmn)과 이름만 바꾼 판본
+def _picture(rt, did, version):
+    from procsvc.bpmn_store import FlowStore
+    return FlowStore(rt.repo, rt.tenant_id).bpmn_of(did, version)
+
+
+def test_바로_앞_판으로_돌던_DB에서_새_파일로_켜면_정상으로_켜지고_진행_중_처리_건은_앞_판의_이름과_길로_끝까지_간다(boot):
+    """2026-11-14: 단계 · 선 · 끝의 이름을 화면 용어로 바꾸고 그림을 붙이며 판본을 올렸다(2.4 → 2.5, 1.4 → 1.5). 같은 번호로 냈다면 이 PC 에서
+    process 가 시작하지 못한다. 앞 판으로 열린 처리 건은 앞 판의 정의로 끝나고(이름도 그때 이름), 새로 열리는 처리 건은 새 판이다."""
+    previous, new = _raw(DATA / PREVIOUS['anomaly_response_v22.json']), _raw(DEFINITIONS / 'anomaly_response_v22.json')
+    rt = boot(old='previous')
+    assert rt.repo.deployed_version('anomaly_response', 'hyd') == previous['version']
+    running = _open(rt)
+    rt = boot(old=False)
+    assert rt.base_problem is None and rt.repo.deployed_version('anomaly_response', 'hyd') == new['version']
+    assert rt.repo.get_proc_def('shift_handover', 'hyd', version=_raw(DATA / PREVIOUS['shift_handover_v1.json'])['version'])['definition'] \
+        == _raw(DATA / PREVIOUS['shift_handover_v1.json'])
+    fresh = _open(rt)
+    assert fresh['proc_def_version'] == new['version']
+    assert {a['id']: a['name'] for a in rt.definition_for(fresh).raw['activities']}['task:work-order'] == '정비 요청 등록'
+    # 진행 중이던 처리 건: 앞 판의 정의 그대로 끝까지 — 진단부터 반려(앞 판에도 있는 길)로 끝낸다
+    still = rt.repo.get_instance(running['proc_inst_id'])
+    assert still['proc_def_version'] == previous['version'] and rt.definition_for(still).raw == previous
+    consumer = 'upgrade-test:' + uuid.uuid4().hex[:8]
+    outputs = {'task:diagnose': {'cause': 'cause:x', 'failure_mode': 'fm:x', 'guide_card': {'summary': '시험'}}}
+    [wi] = rt.repo.fetch_pending_task('cliagents', consumer, limit=1, tenant_id='hyd', proc_inst_id=still['proc_inst_id'])
+    assert (wi['activity_id'], wi['version'], wi['activity_name']) == ('task:diagnose', previous['version'], '원인 진단')
+    assert rt.repo.save_task_result(wi['id'], outputs['task:diagnose'], True, consumer)
+    rt.poll_once()
+    rows = {w['activity_id']: w for w in rt.repo.list_workitems(proc_inst_id=still['proc_inst_id'], limit=None)}
+    assert (rows['task:diagnose']['status'], rows['task:candidates']['status'], rows['task:candidates']['version']) == ('DONE', 'IN_PROGRESS', previous['version'])
+    old_names = {a['id']: a['name'] for a in previous['activities']}
+    assert rows['task:candidates']['activity_name'] == old_names['task:candidates']
+
+
+def test_새_판본에는_그림이_붙고_그림_파일과_어긋나는_앞_판에는_붙지_않는다(boot):
+    """그림 파일(definitions/<정의 id>.bpmn)은 지금 정의의 그림이다. 앞 판(이름이 다르다)과는 어긋나므로 앞 판에는 붙이지 않는다 —
+    그 판의 처리 건은 화면이 정의에서 그림을 만든다. 기동은 그림 때문에 멈추지 않는다."""
+    rt = boot(old='previous')
+    for did, name in (('anomaly_response', 'anomaly_response_v22.json'), ('shift_handover', 'shift_handover_v1.json')):
+        assert _picture(rt, did, _raw(DATA / PREVIOUS[name])['version']) is None, '앞 판의 이름과 다른 그림은 붙지 않는다'
+    rt = boot(old=False)
+    for did, name in (('anomaly_response', 'anomaly_response_v22.json'), ('shift_handover', 'shift_handover_v1.json')):
+        raw = _raw(DEFINITIONS / name)
+        xml = _picture(rt, did, raw['version'])
+        assert xml and 'BPMNDiagram' in xml and '<bpmn:lane ' in xml, did
+        assert f'id="{bpmn_store.xid(raw["activities"][0]["id"])}"' in xml and ':draft' not in xml and 'task:' not in xml
+        assert _picture(rt, did, _raw(DATA / PREVIOUS[name])['version']) is None
+    assert _picture(rt, 'alert_triage', '1.0') is None, '그림 파일을 두지 않은 흐름'
+    # 다시 켜도 그대로(같은 그림을 다시 쓰지 않는다)
+    from procsvc.bpmn_store import FlowStore
+    raw = _raw(DEFINITIONS / 'anomaly_response_v22.json')
+    same = bpmn_store.provided_diagram(raw, (DEFINITIONS / 'anomaly_response.bpmn').read_text(encoding='utf-8'))
+    assert FlowStore(rt.repo, rt.tenant_id).attach_diagram('anomaly_response', raw['version'], same) is False
+
+
+def test_학생이_가져온_판본의_그림은_기본_제공_그림으로_덮이지_않는다(boot):
+    rt = boot(old=False)
+    from procsvc.bpmn_store import FlowStore
+    store = FlowStore(rt.repo, rt.tenant_id)
+    with rt.repo._conn() as c:
+        c.execute("""insert into proc_def_version (arcv_id, proc_def_id, version, version_tag, tenant_id, definition, snapshot, message, origin)
+                     values ('mine_1', 'mine', '1', 'hyd-immutable', 'hyd', '{}'::jsonb, '<mine/>', 'test', 'user')""")
+    assert store.attach_diagram('mine', '1', '<other/>') is False and store.bpmn_of('mine', '1') == '<mine/>'
+

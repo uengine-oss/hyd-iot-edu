@@ -15,28 +15,10 @@ import json
 from hydcommon import ranking, bsc
 from hydcommon.maintenance_policy import PM_PATTERN
 from hydcommon.skill_scope import PURCHASE_PATTERN, purchase_rule_problem
+from hydcommon.words import josa
 
 STOP_MEASURES, REDUCE_MEASURES = {"msr:availability"}, {"msr:throughput", "msr:tp"}
 LOAD_DESIGN = 90.0                                                      # 정상 운전 부하 (thermal.py 설계점): 이보다 낮게 설정하면 감산
-
-
-_DIGIT_FINAL = {'0': 21, '1': 8, '2': 0, '3': 16, '4': 0, '5': 0, '6': 1, '7': 8, '8': 8, '9': 0}
-
-
-def _obj(word: str) -> str:
-    """목적격 조사 — 끝소리로 고른다(포털 plainWords.josa 와 같은 규칙). 「팬 최대 운전을」 · 「부하 70 %를」."""
-    c = str(word).rstrip(" '\")]")[-1:]
-    if '가' <= c <= '힣':
-        final = (ord(c) - 0xAC00) % 28
-    elif c.isdigit():
-        final = _DIGIT_FINAL[c]
-    elif c.isascii() and c.isalpha():
-        final = {'L': 8, 'M': 16, 'N': 4, 'R': 8}.get(c.upper(), 0)
-    elif c in '%℃':
-        final = 0
-    else:
-        return '을(를)'
-    return '을' if final else '를'
 
 
 def _num(v):
@@ -397,8 +379,11 @@ def evaluate(dmn: list[dict], skills: dict[str, dict], base_facts: dict, forecas
                 # but the human must see its uncertainty before choosing a card.
                 # A known-false AND term makes the remaining unknown irrelevant.
                 if unknown and not any(test_ok(t, cf) is False for t in r.get('tests') or []):
+                    # 사람이 읽는 문장에는 판단 입력의 이름(지식의 InputData.name — t3_dmn 이 싣는다), 변수 id 는 unknown 칸에
+                    named = {t.get('variable'): t.get('name') for t in r.get('tests') or []}
                     pending = dict(_cite(r), unknown=unknown,
-                                   annotation='확인되지 않은 조건 (' + ', '.join(unknown) + '): ' + (r.get('annotation') or r['rule']))
+                                   annotation='아직 확인되지 않은 값(' + ', '.join(str(named.get(v) or v) for v in unknown) + ')이 있는 조건: '
+                                              + (r.get('annotation') or r['rule']))
                     (warnings if r['effect'] == 'WARN' else violations).append(pending)
                 continue
             {"EXCLUDE": violations, "PENALTY": penalties, "WARN": warnings}.get(r["effect"], []).append(_cite(r))
@@ -514,52 +499,67 @@ def _names(xs: list[dict], n: int = 3) -> str:
     return ", ".join(f"{x['name']} {'↑' if x['dir'] == 1 else '↓'}" + (f" [{x['owner']}]" if x.get("owner") else "") for x in xs[:n])
 
 
+def _excluded(options: list[dict]) -> str:
+    """제외된 조치 후보와 그 까닭 — 같은 까닭은 한 번만 적는다(같은 규칙이 세 후보를 막으면 그 문장이 세 번 되풀이됐다)."""
+    by_reason: dict[str, list[str]] = {}
+    for o in options:
+        by_reason.setdefault(_clause(o['violations'][0]['annotation']), []).append(f"'{o['name']}'")
+    return "; ".join(f"{' · '.join(names)} — {reason}" for reason, names in by_reason.items())
+
+
+_PRODUCTION = {'keep': '유지', 'reduce': '감산'}
+
+
 def explain(options: list[dict], rec: dict | None, facts: dict, fired: list[str] | None = None) -> str:
+    """판단 설명 한 문단(사람이 읽는 글 — 화면 용어: 조치 후보 · 권장). 결론 · 숫자 · 근거는 응답의 칸에도 그대로 있다: recommended,
+    options[](rank · score · feasible · forecast · gains · losses · violations · precedent · scoreParts · economicComparison · production) —
+    화면은 그 칸으로 짜고 이 글은 한 문단으로 보인다. 첫 문장이 결론이다."""
     subject = facts.get('purchase_part_name') or facts.get('purchase_part_no') if facts.get('purchase_part') else facts.get('failure_mode_name') or facts.get('failure_mode')
     if not options:
         if fired:
             # B7: the rule matched but outputs no skill yet (e.g. rule:cand-oil before the oil manual is ingested)
-            return (f"{facts.get('failure_mode_name') or facts.get('failure_mode')} — 후보 선택 규칙 {', '.join(fired)} 은(는) 맞았지만 "
-                    "내놓는 조치(SOP)가 없다. 이 고장 유형의 조치는 아직 지식에 없다 (매뉴얼을 적재해 조치를 고장 유형에 연결하면 후보가 된다).")
-        return "이 고장 유형에 맞는 조치 후보가 없다 (후보 선택 규칙이 맞지 않음)."
-    head = f"{subject} — 후보 {len(options)}장"
+            return (f"{facts.get('failure_mode_name') or facts.get('failure_mode')} — 후보 선택 규칙 {', '.join(fired)}의 조건은 맞았지만 "
+                    "그 규칙이 내놓는 조치 방법이 없습니다. 이 고장 유형의 조치 방법이 아직 지식에 없습니다(매뉴얼을 적재해 조치 방법을 고장 유형에 "
+                    "연결하면 조치 후보가 됩니다).")
+        return "이 고장 유형에 맞는 조치 후보가 없습니다(후보 선택 규칙의 조건이 맞지 않음)."
+    head = f"{subject} — 조치 후보 {len(options)}개"
     if not rec:
-        return head + " 모두 규정상 제외됐다: " + "; ".join(f"{o['sopId']} {o['name']} ({_clause(o['violations'][0]['annotation'])})" for o in options) + "."
+        return head + " 모두 규정상 제외됐습니다: " + _excluded(options) + "."
     fc = next((x for x in rec["forecast"] if x["variable"] == "sv:ts1"), None)
     label = rec['name'] if str(rec['name']).startswith(str(rec['sopId'])) else f"{rec['sopId']} {rec['name']}"   # 변경안 이름은 절차 번호로 시작한다
     basis = (f"비교 총비용 {rec['economicComparison']['total_cost']:g}만 원" if rec.get('economicComparison')
-             else f"점수 {rec['score']:g}")       # 구매 카드의 점수는 총비용의 음수다 — 「점수 -420.0」 대신 그 뜻으로
-    parts = [f"{head} 중 '{label}'{_obj(rec['name'])} 권한다 ({basis})."]
+             else f"점수 {rec['score']:g}")       # 구매 후보의 점수는 총비용의 음수다 — 「점수 -420.0」 대신 그 뜻으로
+    quoted = f"'{label}'"
+    parts = [f"{head} 가운데 {josa(quoted, '을')} 권장합니다({basis})."]
     if rec.get('economicComparison'):
         e=rec['economicComparison']
-        parts.append(f"구매금액 {e['purchase_amount']:g} + 기대 불량비용 {e['expected_failure_cost']:g} + 전수 검사비용 {e['inspection_cost']:g} = 비교 총비용 {e['total_cost']:g}만 원. 실제 부품별 총비용이 낮은 순서로 비교했다.")
+        parts.append(f"구매금액 {e['purchase_amount']:g} + 기대 불량비용 {e['expected_failure_cost']:g} + 전수 검사비용 {e['inspection_cost']:g} = 비교 총비용 {e['total_cost']:g}만 원입니다. 실제 부품별 총비용이 낮은 순서로 비교했습니다.")
         told = set()
         for o in options:
             if o.get('sameOrderAs') and o['id'] not in told:
                 group = [o['id']] + [x['id'] for x in o['sameOrderAs']]
                 told.update(group)
                 names = ' · '.join(str(x.get('sopId') or x['id']) for x in options if x['id'] in group)
-                parts.append(f"{names}은 같은 공급사({o['economicComparison']['supplier']}) · 같은 수량 · 같은 총비용의 같은 발주다"
-                             "(절차 단계만 다르다). 이 카드들의 앞뒤는 총비용 차이가 아니라 승인 수준과 후보 규칙에 적힌 순서다.")
+                parts.append(f"{josa(names, '은')} 같은 공급사({o['economicComparison']['supplier']}) · 같은 수량 · 같은 총비용의 같은 발주입니다"
+                             "(절차 단계만 다릅니다). 이 후보들의 순서는 총비용 차이가 아니라 승인 수준과 후보 규칙에 적힌 순서입니다.")
     if fc:
-        parts.append(f"예측 유온 {fc['value']:.1f} {fc['unit']}" + (" (지금 정지한 설비)." if stops_now(rec.get('window')) else "."))
+        parts.append(f"예측 유온은 {fc['value']:.1f} {fc['unit']}입니다" + ("(지금 정지한 설비)." if stops_now(rec.get('window')) else "."))
     if rec["gains"]:
-        parts.append("득: " + _names(sorted(rec["gains"], key=lambda g: -g["weight"])) + ".")
+        parts.append("좋아지는 지표: " + _names(sorted(rec["gains"], key=lambda g: -g["weight"])) + ".")
     if rec["losses"]:
-        parts.append("실: " + _names(sorted(rec["losses"], key=lambda g: -g["weight"])) + ".")
+        parts.append("나빠지는 지표: " + _names(sorted(rec["losses"], key=lambda g: -g["weight"])) + ".")
     out = [o for o in options if not o["feasible"]]
     if out:
-        parts.append("제외: " + "; ".join(f"'{o['name']}' — {_clause(o['violations'][0]['annotation'])}" for o in out) + ".")
+        parts.append("제외한 후보: " + _excluded(out) + ".")
     if rec["precedent"]:
-        parts.append(f"같은 고장 유형에서 사람이 이 안을 고른 선례 {rec['precedent']['n']}건 ({int(rec['precedent']['share'] * 100)} %, 미리 넣은 사례 기준 — 승인해도 늘지 않음).")
+        parts.append(f"같은 고장 유형에서 사람이 이 조치를 고른 선례는 {rec['precedent']['n']}건입니다({int(rec['precedent']['share'] * 100)} %, 미리 넣은 사례 기준 — 승인해도 늘지 않음).")
     delivery = rec['scoreParts'].get('delivery', 0)
     if delivery:
         tier = f"{facts['order_customer_tier']} " if facts.get("order_customer_tier") else ""
-        parts.append(f"납기: {tier}오더 납기까지 {facts.get('order_due_h')} h, 지연 시 {facts.get('order_penalty_per_h')}만원/h — "
-                     f"생산을 {'유지' if rec.get('production') == 'keep' else '감산' if rec.get('production') == 'reduce' else '정지'}하는 카드"
-                     f"의 실행 순위 식 결과 {delivery:+g}점.")
+        parts.append(f"납기: {tier}오더 납기까지 {facts.get('order_due_h')}시간, 늦으면 시간당 {facts.get('order_penalty_per_h')}만 원 — "
+                     f"생산을 {_PRODUCTION.get(rec.get('production'), '정지')}하는 조치라 순위 점수에 {delivery:+g}점이 반영됐습니다.")
     risky = [o for o in options if (o["scoreParts"].get("quality") or 0) < 0]
     if risky:
-        parts.append(f"품질: 출하 대기 로트 {facts.get('hot_lot_qty')}개(클레임 {facts.get('hot_lot_claim')}만원) — 실행 순위 식에 따라 "
-                     + ", ".join(f"'{o['name']}'" for o in risky) + " 감산.")
+        parts.append(f"품질: 출하 대기 로트 {facts.get('hot_lot_qty')}개(클레임 {facts.get('hot_lot_claim')}만 원)가 있어 "
+                     + ", ".join(f"'{o['name']}'" for o in risky) + "의 순위 점수가 깎였습니다.")
     return " ".join(parts)

@@ -31,11 +31,11 @@ def _request(method, url, *, body=None, transport=None):
         result = json.loads(raw)
         if not isinstance(result, dict):raise ValueError()
     except Exception:
-        raise RuntimeConnectionError('수업 조회 도구 연결이나 결과를 확인할 수 없습니다') from None
+        raise RuntimeConnectionError('질문 조회 도구 연결이나 결과를 확인할 수 없습니다') from None
     if 400 <= status < 500 and isinstance(result.get('detail'), str) and result['detail'].strip():
         raise Refused(result['detail'].strip()[:2000])
     if status != 200:
-        raise RuntimeConnectionError('수업 조회 도구 연결이나 결과를 확인할 수 없습니다')
+        raise RuntimeConnectionError('질문 조회 도구 연결이나 결과를 확인할 수 없습니다')
     return result
 
 
@@ -46,7 +46,7 @@ def attach(reads, workdir, url, *, transport=None):
     않은 도구 서버」로 멈췄다, 검진 G1-02)."""
     base = _base(url)
     if not isinstance(reads, dict):
-        raise RuntimeConnectionError('수업 조회 서버 설정을 확인하세요')
+        raise RuntimeConnectionError('질문 조회 서버 설정을 확인하세요')
     catalog, names = [], {}
     for server in sorted(reads):
         allowed = {t for t in reads[server] or () if question_read(server, t)}
@@ -55,12 +55,12 @@ def attach(reads, workdir, url, *, transport=None):
         if payload.get('status') != 'ok' or not isinstance(payload.get('tools'), list):
             raise RuntimeConnectionError(f'질문에 쓸 도구 서버 {server}이(가) 연결되지 않았습니다 — 도구 연결 화면에서 연결 상태를 확인하세요')
         for tool in payload['tools']:
-            if not isinstance(tool, dict):raise RuntimeConnectionError('수업 조회 도구 목록이 올바르지 않습니다')
+            if not isinstance(tool, dict):raise RuntimeConnectionError('질문 조회 도구 목록이 올바르지 않습니다')
             name = tool.get('name')
             if name not in allowed or not tool.get('callable'):continue
             schema = tool.get('input_schema')
             if not isinstance(schema, dict) or schema.get('type') != 'object':
-                raise RuntimeConnectionError('수업 조회 도구 입력 형식이 올바르지 않습니다')
+                raise RuntimeConnectionError('질문 조회 도구 입력 형식이 올바르지 않습니다')
             catalog.append({'server':server, 'name':name, 'description':tool.get('description') or '', 'inputSchema':schema})
             names.setdefault(server, []).append(name)
         if server not in names:raise RuntimeConnectionError(f'도구 서버 {server}에 질문에 쓸 수 있는 조회 도구가 없습니다')
@@ -73,14 +73,21 @@ def attach(reads, workdir, url, *, transport=None):
     return {'mcpServers':servers}, names
 
 
+#: 이 창구가 process 의 도구 실행 API 를 부를 때 밝히는 「누가」 — 사람이 아니라 AI 에이전트 실행(사용자 표의 시스템 행 sys:agent)이다.
+#: 그 API 는 호출 기록에 남길 「누가」가 없는 요청을 받지 않는다(procsvc.inbox.actor_or_400 — 사람 이름을 지어 넣지 않게). 이 길에는 작업 토큰이
+#: 없다: 창구는 CLI 가 띄운 프로세스이고, 읽기 판정(읽기 도구만)은 process 가 호출마다 다시 한다. 비우면 「담당자 정보 없이 온 요청」으로
+#: 거절돼 키 있는 PC 의 질문하기에서 AI 의 조회가 모두 실패했다.
+CALLER = 'sys:agent'
+
+
 class Transport:
     def __init__(self, url, *, transport=None):self.url,self.transport = _base(url),transport
     def call(self, qualified, arguments):
         server, sep, name = qualified.partition('/')
-        if not sep or not question_read(server, name):raise RuntimeConnectionError('허용되지 않은 수업 조회 도구입니다')
+        if not sep or not question_read(server, name):raise RuntimeConnectionError('질문에 허용되지 않은 조회 도구입니다')
         try:
             result = _request('POST',self.url+'/api/mcp/servers/'+quote(server,safe='')+'/tools/'+quote(name,safe='')+'/call',
-                              body={'arguments':arguments,'timeout':25},transport=self.transport).get('result')
+                              body={'arguments':arguments,'timeout':25,'by':CALLER},transport=self.transport).get('result')
         except Refused as refused:
             return {'state':'FAILED','result':str(refused)}
         if not isinstance(result,dict):raise RuntimeConnectionError('조회 결과 형식이 올바르지 않습니다')

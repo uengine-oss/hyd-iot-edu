@@ -62,7 +62,7 @@ def test_시나리오_처리_건이_진행_중이면_초기화를_거절한다(w
     _press(world, 'C')
     with pytest.raises(sb.Refused, match='아직 진행 중이라 초기화하지 않았습니다') as caught:
         sb.reset_refusal(world.rt, 'C')
-    assert '조치 카드를 승인하거나 거절해 끝낸 뒤 [초기화]를 누르세요' in str(caught.value), '아직 멈춘 단계가 없는 처리 건'
+    assert '조치 후보를 승인하거나 반려해 끝낸 뒤 [초기화]를 누르세요' in str(caught.value), '아직 멈춘 단계가 없는 처리 건'
 
 
 def test_시나리오_처리_건이_없으면_초기화를_받는다(world):

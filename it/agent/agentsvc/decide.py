@@ -21,6 +21,7 @@ import urllib.request
 from datetime import datetime, timezone
 
 from . import cards, guardrail
+from hydcommon.words import josa
 from hydcommon.maintenance_policy import PM_PATTERN
 from hydcommon.skill_scope import PURCHASE_PATTERN
 from .tools import mcp_ent
@@ -38,11 +39,13 @@ MAX_APPROVAL_FACT_AGE_S = 15.0       # 승인 · 예측에 쓰는 설비 값의 
 
 
 class FactUnavailable(RuntimeError):
-    """판단 변수를 원천에서 읽지 못했다 — 문장은 학생이 읽는다(무엇 · 어디 · 왜 · 다시 시도). variable · source 는 기록용."""
+    """판단 변수를 원천에서 읽지 못했다 — 문장은 학생이 읽는다(무엇 · 어디 · 왜 · 다시 시도). variable · source 는 기록용.
+    transient: 곧 풀릴 수 있는 까닭(값이 아직 없음 · 낡음 · 원천에 닿지 못함 · 원천의 5xx)인가. 그럴 때만 부른 쪽이 같은 인자로 다시 부를 만하다 —
+    계약 위반 · 지식 결함은 다시 불러도 같다(판단 기록의 retryable → 판단 도구의 error_kind UNAVAILABLE)."""
 
-    def __init__(self, variable: str, name: str | None, source: str | None, reason: str):
-        self.variable, self.source = variable, source
-        super().__init__(f"판단 사실 「{name or variable}」을(를) 원천({source or '출처 미상'})에서 읽지 못해 판단을 멈췄습니다 — {reason}")
+    def __init__(self, variable: str, name: str | None, source: str | None, reason: str, *, transient: bool = False):
+        self.variable, self.source, self.transient = variable, source, transient
+        super().__init__(f"판단 사실 {josa(f'「{name or variable}」', '을')} 원천({source or '출처 미상'})에서 읽지 못해 판단을 멈췄습니다 — {reason}")
 
 
 def _now() -> str:
@@ -254,10 +257,10 @@ def gather_facts(inputs: list[dict], asset: str, known: dict, tsdb, *, variables
         except FactUnavailable:
             raise
         except mcp_ent.SourceUnavailable as e:
-            raise FactUnavailable(var, i.get('name'), i.get('sourceName') or src, str(e)) from e
+            raise FactUnavailable(var, i.get('name'), i.get('sourceName') or src, str(e), transient=e.transient) from e
         except (OSError, urllib.error.URLError) as e:
             raise FactUnavailable(var, i.get('name'), i.get('sourceName') or src,
-                                  f'원천에 닿지 못했습니다({type(e).__name__}: {str(e)[:160]}) — 잠시 뒤 다시 시도하세요') from e
+                                  f'원천에 닿지 못했습니다({type(e).__name__}: {str(e)[:160]}) — 잠시 뒤 다시 시도하세요', transient=True) from e
         except Exception as e:  # noqa: BLE001 — 계약 위반 · 지식 결함도 그 변수의 까닭으로(조용히 None 으로 두지 않는다)
             raise FactUnavailable(var, i.get('name'), i.get('sourceName') or src, str(e)[:300] or type(e).__name__) from e
         prov.append(row)
@@ -408,7 +411,7 @@ def decide(kg, registry: DecisionRegistry, tsdb, asset: str, pattern: str, cause
             if pattern == PM_PATTERN:
                 facts['pm_context'] = pm_context(asset)
         except (FactUnavailable, mcp_ent.SourceUnavailable) as exc:
-            rec['error_code'] = 'SOURCE_UNAVAILABLE'
+            rec['error_code'], rec['retryable'] = 'SOURCE_UNAVAILABLE', bool(exc.transient)
             step("facts", {"error": str(exc)}, "판단 사실을 원천에서 읽지 못해 판단을 멈췄다", status="FAILED")
             raise
         if overrides:
@@ -430,7 +433,7 @@ def decide(kg, registry: DecisionRegistry, tsdb, asset: str, pattern: str, cause
             forecasts, forecast_contexts = ({}, None) if purchase_part is not None else forecasting.candidates(kg, asset, skills, stopping)
         except FactUnavailable as exc:
             # 예측에 쓸 설비 상태를 받지 못했다 — 판단 사실을 못 읽은 것과 같은 길로 멈춘다(모든 안을 「예측 미확인」 제외로 채운 판단을 내지 않는다)
-            rec['error_code'] = 'SOURCE_UNAVAILABLE'
+            rec['error_code'], rec['retryable'] = 'SOURCE_UNAVAILABLE', bool(exc.transient)
             step('forecast', {"error": str(exc)}, "예측에 쓸 설비 상태를 받지 못해 판단을 멈췄다", status="FAILED")
             raise
         step('forecast', forecast_contexts, '구매는 물리 예측을 사용하지 않고 검토된 원문 총비용과 실제 부품 견적을 비교한다' if purchase_part is not None

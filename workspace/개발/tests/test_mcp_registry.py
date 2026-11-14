@@ -79,7 +79,7 @@ def test_고칠_때_가린_값은_같은_이름_칸의_옛_값을_그대로_쓴�
 
 # ---------------------------------------------------------------- 등록 = 실제 연결 검사 통과
 def test_등록은_실제_연결_검사를_통과해야_하고_읽기_도구만_도장에_든다(store, student_url):
-    out = mcp_registry.register(store, TENANT, {'name': 'my-rows', 'url': student_url}, by='수강생')
+    out = mcp_registry.register(store, TENANT, {'name': 'my-rows', 'url': student_url}, by='user:me')
     entry = store.servers(TENANT)['my-rows']
     assert out['check']['status'] == 'ok'
     assert (entry['hyd']['gate']['read_tools'], sorted(entry['hyd']['gate']['blocked_tools'])) == (['find_rows'], ['save_row', 'search_docs'])
@@ -88,7 +88,7 @@ def test_등록은_실제_연결_검사를_통과해야_하고_읽기_도구만_
 
 def test_연결_검사에_실패한_서버는_저장하지_않는다(store):
     with pytest.raises(RegistryError) as refused:
-        mcp_registry.register(store, TENANT, {'name': 'my-down', 'url': f'http://{STUDENT_HOST}:9/mcp', 'timeout': 8}, by='수강생')
+        mcp_registry.register(store, TENANT, {'name': 'my-down', 'url': f'http://{STUDENT_HOST}:9/mcp', 'timeout': 8}, by='user:me')
     assert refused.value.status == 422 and refused.value.check['error_kind'] == 'refused'
     assert 'my-down' not in store.servers(TENANT)
 
@@ -97,7 +97,7 @@ def test_연결_검사에_실패한_서버는_저장하지_않는다(store):
                          ids=['localhost', '127.0.0.1', '숫자로 적은 메타데이터 주소'])
 def test_학생이_루프백이나_링크로컬을_등록하면_연결하지_않고_까닭과_함께_거절한다(store, url):
     with pytest.raises(RegistryError) as refused:
-        mcp_registry.register(store, TENANT, {'name': 'my-self', 'url': url, 'timeout': 8}, by='수강생')
+        mcp_registry.register(store, TENANT, {'name': 'my-self', 'url': url, 'timeout': 8}, by='user:me')
     assert refused.value.status == 422 and refused.value.check is None
     assert ('host.docker.internal' in refused.value.reason) or ('링크로컬' in refused.value.reason)
     assert 'my-self' not in store.servers(TENANT)
@@ -105,7 +105,7 @@ def test_학생이_루프백이나_링크로컬을_등록하면_연결하지_않
 
 # ---------------------------------------------------------------- 붙일 수 있음 — 한 판정
 def test_도구_지도와_저장_검사는_같은_붙일_수_있음_판정을_쓴다(store, student_url):
-    mcp_registry.register(store, TENANT, {'name': 'my-rows', 'url': student_url}, by='수강생')
+    mcp_registry.register(store, TENANT, {'name': 'my-rows', 'url': student_url}, by='user:me')
     store.replace_server(TENANT, 'my-rows', dict(store.servers(TENANT)['my-rows'], description='고친 설명'))   # 검사 뒤 설정이 바뀜
     view = {s['name']: s for s in mcp_registry.selectable(store, TENANT)['servers']}
     marks = mcp_registry.annotate(store, TENANT)
@@ -117,11 +117,11 @@ def test_도구_지도와_저장_검사는_같은_붙일_수_있음_판정을_�
 
 
 def test_읽기_표시가_없는_도구는_강사가_읽기로_확인해야_도장에_든다(store, student_url):
-    mcp_registry.register(store, TENANT, {'name': 'my-rows', 'url': student_url}, by='수강생')
-    out = mcp_registry.confirm_read(store, TENANT, 'my-rows', 'search_docs', by='강사', reason='검색 결과만 돌려준다')
+    mcp_registry.register(store, TENANT, {'name': 'my-rows', 'url': student_url}, by='user:me')
+    out = mcp_registry.confirm_read(store, TENANT, 'my-rows', 'search_docs', by='user:me', reason='검색 결과만 돌려준다')
     assert sorted(out['gate']['read_tools']) == ['find_rows', 'search_docs'] and out['gate']['confirmed_tools'] == ['search_docs']
     with pytest.raises(RegistryError) as refused:
-        mcp_registry.confirm_read(store, TENANT, 'my-rows', 'save_row', by='강사', reason='x')
+        mcp_registry.confirm_read(store, TENANT, 'my-rows', 'save_row', by='user:me', reason='x')
     assert refused.value.status == 422
 
 
@@ -129,14 +129,14 @@ def test_읽기_표시가_없는_도구는_강사가_읽기로_확인해야_도�
 @pytest.mark.parametrize('secrets, left', [(True, {}), (False, {'MY_TOKEN': 'sk-1234'})], ids=['관리 되돌리기', '출발본 불러오기 안'])
 def test_되돌리기는_학생_서버를_지우고_비밀_값은_불러오기_안에서는_남긴다(store, student_url, secrets, left):
     mcp_secrets.put(store.repo, TENANT, 'MY_TOKEN', 'sk-1234', '강사', 'now')
-    mcp_registry.register(store, TENANT, {'name': 'my-rows', 'url': student_url}, by='수강생')
+    mcp_registry.register(store, TENANT, {'name': 'my-rows', 'url': student_url}, by='user:me')
     out = mcp_registry.reset(store, TENANT, secrets=secrets)
     assert out['removed_servers'] == ['my-rows'] and sorted(store.servers(TENANT)) == sorted(mcp_registry.BASE_SERVERS)
     assert mcp_secrets.load(store.repo, TENANT) == left
 
 
 def test_보관한_MCP_행은_서버가_꺼져_있어도_검사_없이_그대로_다시_쓴다(store, student_url):
-    mcp_registry.register(store, TENANT, {'name': 'my-rows', 'url': student_url}, by='수강생')
+    mcp_registry.register(store, TENANT, {'name': 'my-rows', 'url': student_url}, by='user:me')
     before = store.servers(TENANT)['my-rows']
     snap = mcp_registry.snapshot(store, TENANT)
     mcp_registry.reset(store, TENANT, secrets=False)
@@ -149,7 +149,7 @@ def test_보관한_MCP_행은_서버가_꺼져_있어도_검사_없이_그대로
 
 
 def test_학생_서버가_남은_채로는_보관본을_다시_쓰지_않는다(store, student_url):
-    mcp_registry.register(store, TENANT, {'name': 'my-rows', 'url': student_url}, by='수강생')
+    mcp_registry.register(store, TENANT, {'name': 'my-rows', 'url': student_url}, by='user:me')
     with pytest.raises(RegistryError) as refused:
         mcp_registry.restore(store, TENANT, mcp_registry.snapshot(store, TENANT), '포털')
     assert refused.value.status == 409
@@ -189,7 +189,7 @@ def _tracked(kind, work):
 
 
 def test_등록이_도는_동안의_진행_기록에_인사_도구_목록_저장이_차례로_남는다(store, student_url):
-    rid, work = _tracked('mcp_register', lambda p: mcp_registry.register(store, TENANT, {'name': 'my-rows', 'url': student_url}, by='수강생', progress=p))
+    rid, work = _tracked('mcp_register', lambda p: mcp_registry.register(store, TENANT, {'name': 'my-rows', 'url': student_url}, by='user:me', progress=p))
     out = work()
     state, steps = _steps(rid)
     assert state == 'done' and [(k, s) for k, s, _ in steps] == [('initialize', 'ok'), ('tools', 'ok'), ('save', 'ok')]
@@ -206,7 +206,7 @@ def test_저장하지_않는_연결_검사는_저장_단계를_적지_않는다(
 
 def test_연결되지_않는_서버의_등록은_멈춘_단계에_사유가_남고_그_뒤_단계는_하지_않은_채다(store):
     rid, work = _tracked('mcp_register', lambda p: mcp_registry.register(store, TENANT, {'name': 'my-down', 'url': f'http://{STUDENT_HOST}:9/mcp', 'timeout': 8},
-                                                                        by='수강생', progress=p))
+                                                                        by='user:me', progress=p))
     with pytest.raises(RegistryError):
         work()
     state, steps = _steps(rid)
@@ -215,8 +215,8 @@ def test_연결되지_않는_서버의_등록은_멈춘_단계에_사유가_남�
 
 
 def test_등록된_서버_검사는_검사_기록을_저장한_것까지_적는다(store, student_url):
-    mcp_registry.register(store, TENANT, {'name': 'my-rows', 'url': student_url}, by='수강생')
-    rid, work = _tracked('mcp_check_saved', lambda p: mcp_registry.check_saved(store, TENANT, 'my-rows', by='수강생', progress=p))
+    mcp_registry.register(store, TENANT, {'name': 'my-rows', 'url': student_url}, by='user:me')
+    rid, work = _tracked('mcp_check_saved', lambda p: mcp_registry.check_saved(store, TENANT, 'my-rows', by='user:me', progress=p))
     work()
     assert [(k, s) for k, s, _ in _steps(rid)[1]] == [('initialize', 'ok'), ('tools', 'ok'), ('save', 'ok')]
 

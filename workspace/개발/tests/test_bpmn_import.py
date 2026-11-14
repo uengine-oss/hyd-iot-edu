@@ -57,10 +57,10 @@ def test_이름이나_배치만_바꾼_그림도_같은_흐름으로_통과하�
 
 def _chained_gateway(xml):
     """인계자 승인 뒤에 분기를 하나 더 — 조건 선만 있고 「그 밖의 경우」가 없다(#16)."""
-    xml = xml.replace('<bpmn:exclusiveGateway id="gw_sender" name="검토 결정" />',
-                      '<bpmn:exclusiveGateway id="gw_sender" name="검토 결정" /><bpmn:exclusiveGateway id="gw_extra" name="긴급 분기" />')
-    xml = xml.replace("<bpmn:sequenceFlow id=\"seq_3\" sourceRef=\"gw_sender\" targetRef=\"task_receiver\" name=\"sender_decision == 'approve'\" />",
-                      "<bpmn:sequenceFlow id=\"seq_3\" sourceRef=\"gw_sender\" targetRef=\"gw_extra\" name=\"sender_decision == 'approve'\" />"
+    xml = xml.replace('<bpmn:exclusiveGateway id="gw_sender" name="인계자 결정" />',
+                      '<bpmn:exclusiveGateway id="gw_sender" name="인계자 결정" /><bpmn:exclusiveGateway id="gw_extra" name="긴급 분기" />')
+    xml = xml.replace('<bpmn:sequenceFlow id="seq_3" name="전달" sourceRef="gw_sender" targetRef="task_receiver" />',
+                      '<bpmn:sequenceFlow id="seq_3" name="전달" sourceRef="gw_sender" targetRef="gw_extra" />'
                       "<bpmn:sequenceFlow id=\"seq_extra\" sourceRef=\"gw_extra\" targetRef=\"task_receiver\" name=\"sender_notes == '긴급'\" />"
                       "<bpmn:sequenceFlow id=\"seq_extra2\" sourceRef=\"gw_extra\" targetRef=\"ev_followup\" name=\"sender_notes == '보통'\" />")
     mapping = copy.deepcopy(HANDOVER['mapping'])
@@ -70,18 +70,18 @@ def _chained_gateway(xml):
 
 
 def _cut_receiver(xml):
-    return xml.replace("<bpmn:sequenceFlow id=\"seq_3\" sourceRef=\"gw_sender\" targetRef=\"task_receiver\" name=\"sender_decision == 'approve'\" />", ''), None
+    return xml.replace('<bpmn:sequenceFlow id="seq_3" name="전달" sourceRef="gw_sender" targetRef="task_receiver" />', ''), None
 
 
 def _parallel_sender(xml):
     """P5-11: 인계자 검토 뒤 배타 분기를 병렬 분기로 — 매핑의 세 선 조건(승인 · 보완 · 거절)이 그대로 남아 있다."""
-    return xml.replace('<bpmn:exclusiveGateway id="gw_sender" name="검토 결정" />', '<bpmn:parallelGateway id="gw_sender" name="검토 결정" />'), None
+    return xml.replace('<bpmn:exclusiveGateway id="gw_sender" name="인계자 결정" />', '<bpmn:parallelGateway id="gw_sender" name="인계자 결정" />'), None
 
 
 def _broken_condition(xml):
     """P5-19: 그림의 조건식이 틀렸고 매핑에는 그 선의 조건이 없다."""
-    xml = xml.replace("<bpmn:sequenceFlow id=\"seq_5\" sourceRef=\"gw_sender\" targetRef=\"ev_rejected\" name=\"sender_decision == 'reject'\" />",
-                      "<bpmn:sequenceFlow id=\"seq_5\" sourceRef=\"gw_sender\" targetRef=\"ev_rejected\" name=\"sender_decision == 'reject'\">"
+    xml = xml.replace('<bpmn:sequenceFlow id="seq_5" name="반려" sourceRef="gw_sender" targetRef="ev_rejected" />',
+                      '<bpmn:sequenceFlow id="seq_5" name="반려" sourceRef="gw_sender" targetRef="ev_rejected">'
                       "<bpmn:conditionExpression>sender_decision ==== 'reject'</bpmn:conditionExpression></bpmn:sequenceFlow>")
     mapping = copy.deepcopy(HANDOVER['mapping'])
     del mapping['flows']['seq_5']

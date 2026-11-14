@@ -139,7 +139,7 @@ def test_수업_밖_흐름의_AI_단계는_process_가_쓴_학생_문장_그대�
     for call in (access(course).decide, access(course).permit):
         with pytest.raises(CourseDenied) as e:
             call(row, TENANT)
-        assert (str(e.value), e.value.title) == (course_policy.Policy.REASONS['ai_slot'], '수업 권한 확인 필요')
+        assert (str(e.value), e.value.title) == (course_policy.Policy.REASONS['ai_slot'], 'AI 실행 범위 확인 필요')
         assert not isinstance(e.value, LedgerDenied)
     assert runs(course.dsn, row['id']) == []                  # 거절된 실행은 장부에 열리지 않았다
 

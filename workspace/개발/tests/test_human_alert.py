@@ -39,7 +39,7 @@ def test_기준_안이면_경보를_만들지_않고_학생이_읽는_까닭을_
     """W2-20: 전에는 「패턴 검사(오일 분석 결과 기준 이탈 == 예)를 충족하지 않습니다」 같은 지식 내부 말이 화면에 그대로 나왔다."""
     alert, reason = ha.build_alert(dict(BODY, out_of_spec=False), ENTERED)
     assert alert is None
-    assert reason == '수분 함량이(가) 기준 안이라 경보를 만들지 않았습니다 — 기준 이탈을 「예」로 고른 입력만 경보가 됩니다. 처리 건은 열리지 않습니다'
+    assert reason == '수분 함량이 기준 안이라 경보를 만들지 않았습니다 — 기준 이탈을 「예」로 고른 입력만 경보가 됩니다. 처리 건은 열리지 않습니다'
 
 
 def test_사람_입력_패턴의_지식_id는_실제_시드_그래프에_있다(seeded_graph):

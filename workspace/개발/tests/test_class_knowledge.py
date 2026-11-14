@@ -17,11 +17,14 @@ RULE = 'rule:cooler-forecast-temperature-warning'
 
 
 # ---------------------------------------------------------------- 묶음에서 읽기
-def test_묶음에서_세_문서를_적재_순서대로_강사_검토본으로_읽는다():
+def test_묶음에서_세_문서를_적재_순서대로_읽고_담당자_칸에는_사람_이름이_아니라_기본_제공이라고_적는다():
+    """문서 등록 이력의 담당자 칸에 「강사 검토본(2026-10-27-reviewed-1)」이 보였다(화면에 「강사」가 없어야 한다). 어느 판인지는 담당자 글이
+    아니라 판 표시(provided_revision)가 싣는다."""
+    from student_words import WORKER_TALK
     items = ck.reviewed()
     assert [i['doc'] for i in items] == ['HM-8', 'PM-02', 'PR-07']
     revision = json.loads(ck.BUNDLE.read_text(encoding='utf8'))['payload']['revision']
-    assert {i['by'] for i in items} == {f'강사 검토본({revision})'}
+    assert {(i['by'], i['revision']) for i in items} == {(ck.PROVIDED_BY, revision)} and not WORKER_TALK.search(ck.PROVIDED_BY)
 
 
 def test_원문이_묶음의_판과_다르면_넣지_않고_멈춘다(tmp_path):
@@ -43,15 +46,21 @@ def test_적재_요청은_묶음_제안과_검토한_연결을_이_PC의_원문_
 
 
 @pytest.mark.parametrize('current, what', [
-    (None, 'load'), ({'by': ck.OLD_SEED_BY}, 'revise'), ({'by': '강사 검토본(옛 판)'}, 'revise'), ({'by': '지식 관리자'}, 'student'),
-], ids=['처음', '지운 시작 사본이 넣은 판', '옛 묶음 판', '학생이 다시 넣은 판'])
-def test_이미_적재된_문서를_어떻게_할지는_지금_판의_담당으로_정한다(current, what):
+    (None, 'load'), ({'by': ck.OLD_SEED_BY}, 'revise'),
+    ({'by': '강사 검토본(2026-10-27-reviewed-1)', 'review_method': 'user-delegated-ai-review'}, 'revise'),
+    ({'by': ck.PROVIDED_BY, 'review_method': 'user-delegated-ai-review', 'provided_revision': '옛 판'}, 'revise'),
+    ({'by': '지식 관리자'}, 'student'),
+    ({'by': '강사 검토본(2026-10-27-reviewed-1)'}, 'student'), ({'by': ck.PROVIDED_BY}, 'student'),
+], ids=['처음', '지운 시작 사본이 넣은 판', '판 표시가 없던 앞 판의 기본 제공 판', '옛 묶음 판', '학생이 다시 넣은 판',
+        '학생이 담당자 칸에 옛 기본 제공 글을 적은 판', '학생이 담당자 칸에 기본 제공이라고 적은 판'])
+def test_이미_적재된_문서를_어떻게_할지는_담당자_글이_아니라_적재_기록의_판_표시로_정한다(current, what):
+    """장부 11-#15: 시작 판과 학생이 다시 넣은 판을 담당자 칸의 자유 글로 갈라, 학생이 그 글을 적으면 기본 제공 판으로 읽혔다."""
     assert ck.decide(ck.reviewed()[0], current) == what
 
 
 def test_지금_묶음_판이_적재돼_있으면_그대로_둔다():
     item = ck.reviewed()[0]
-    assert ck.decide(item, {'by': item['by']}) == 'keep'
+    assert ck.decide(item, {'by': '아무 글', 'review_method': item['review_method'], 'provided_revision': item['revision']}) == 'keep'
 
 
 # ---------------------------------------------------------------- 실제 학생 PC
@@ -67,11 +76,14 @@ def rules_of(world, filename):
     return set(current['knowledge']['rules'])
 
 
-def test_시작이_끝난_PC에는_세_문서가_강사_검토본으로_있고_냉각_경고_규칙도_있다(world):
-    """G3a-1 · P2-02: 지운 시작 사본으로 시작한 PC에는 예측 유온 55 ℃ 경고 규칙이 없었다."""
+def test_시작이_끝난_PC에는_세_문서가_기본_제공_판으로_있고_냉각_경고_규칙도_있다(world):
+    """G3a-1 · P2-02: 지운 시작 사본으로 시작한 PC에는 예측 유온 55 ℃ 경고 규칙이 없었다. 화면의 문서 등록 이력이 읽는 실제 응답의 담당자 칸에
+    작업자끼리 쓰는 말이 없다."""
+    from student_words import WORKER_TALK
     current = manuals(world)
     items = {i['filename']: i for i in ck.reviewed()}
     assert set(items) <= set(current) and all(current[f]['by'] == items[f]['by'] for f in items)
+    assert all(current[f]['provided_revision'] == items[f]['revision'] and not WORKER_TALK.search(current[f]['by']) for f in items)
     assert RULE in rules_of(world, items['HM-8_cooler-fan-manual.md']['filename'])
 
 
@@ -147,7 +159,7 @@ def test_옛_시작_판이_있는_PC는_다음_시작_때_강사_검토본으로
     portal_commit(world, item, by=ck.OLD_SEED_BY, drop_rule=RULE)
     assert RULE not in rules_of(world, item['filename'])
     lines = ck.ensure(ck.http_call(world.url))
-    assert any(line.startswith('HM-8: 옛 시작 판을 강사 검토본으로 바꿈') for line in lines)
+    assert any(line.startswith('HM-8: 앞 판의 기본 제공 판을 지금 판으로 바꿈') for line in lines)
     assert RULE in rules_of(world, item['filename']) and manuals(world)[item['filename']]['by'] == item['by']
 
 
@@ -155,7 +167,7 @@ def test_학생이_다시_넣은_판은_시작이_건드리지_않는다(world):
     item = next(i for i in ck.reviewed() if i['doc'] == 'PR-07')
     _, out = portal_commit(world, item, by='지식 관리자')
     lines = ck.ensure(ck.http_call(world.url))
-    assert any(line.startswith('PR-07: 수강생이 다시 적재한 판') for line in lines)
+    assert any(line.startswith('PR-07: 이 PC에서 다시 적재한 판') for line in lines)
     assert manuals(world)[item['filename']]['batch'] == out['batch']
 
 

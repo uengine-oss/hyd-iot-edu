@@ -175,8 +175,8 @@ def may_reanchor(rt) -> bool:
 def reanchor_event(proc_inst_id: str, at: str, button: str | None) -> dict:
     """승인 지연 중인 처리 건 기록: 기준점이 옮겨졌다 — 지금 승인하면 바뀐 업무 값으로 다시 확인한다."""
     return {"job_id": "SCENARIO_REANCHOR", "todo_id": None, "proc_inst_id": proc_inst_id, "crew_type": "result", "event_type": "task_working",
-            "data": {"name": "시나리오 시각 기준점 옮김(승인 지연 중)", "at": at, "button": button,
-                     "goal": "승인 지연 중에 수업 버튼이 시나리오 시각 기준점(납기 · 예정된 정비 시간)을 지금으로 옮겼습니다 — 지금 승인하면 "
+            "data": {"name": "업무 시각 기준점 옮김(승인 지연 중)", "at": at, "button": button,
+                     "goal": "승인 지연 중에 결함 시뮬레이션의 조작이 업무 시각 기준점(납기 · 예정된 정비 시간)을 지금으로 옮겼습니다 — 지금 승인하면 "
                              "바뀐 업무 값으로 다시 확인해 새 판단이 필요할 수 있습니다"}}
 
 
@@ -259,7 +259,7 @@ def press_event(proc_inst_id: str, button: str, asset: str, person: dict, at: st
     """처리 건 자체에 남는 '버튼을 누른 사람 · 때' 기록(처리 기록 화면 · 실시간 기록이 읽는 events 표).
     name 은 무엇을 눌렀나만, 누른 사람은 by 한 칸에만 싣는다 — 다른 기록 줄처럼 화면이 name 옆에 by 를 붙인다(이름 두 번 금지)."""
     return {"job_id": "SCENARIO_BUTTON", "todo_id": None, "proc_inst_id": proc_inst_id, "crew_type": "human", "event_type": "task_working",
-            "data": dict(extra or {}, name=f"수업 버튼 [{button}]", button=button, asset=asset, by=person["by"],
+            "data": dict(extra or {}, name=f"결함 시뮬레이션의 [{button}]", button=button, asset=asset, by=person["by"],
                          user_id=person.get("user_id"), roles=person.get("roles"), at=at)}
 
 
@@ -295,7 +295,7 @@ def build_alert(key: str, row: dict, now: datetime | None = None, person: dict |
     clock = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
     source = pat["source"]
     person = person or who(None)
-    evidence = dict(rule.evidence(row), trigger=f"포털 결함 실험 · [{spec['button']}] 버튼", requested_by=person["by"],
+    evidence = dict(rule.evidence(row), trigger=f"결함 시뮬레이션의 [{spec['button']}]", requested_by=person["by"],
                     requested_user=person.get("user_id"), requested_roles=person.get("roles"),
                     requested_at=clock.isoformat(timespec="seconds"))
     return {"alertId": event_prefix(spec) + clock.strftime("%Y%m%d%H%M%S"), "asset": spec["asset"], "pattern": spec["pattern"],
@@ -312,7 +312,7 @@ def refusal(key: str, read: Callable[[str, dict], dict], rt, route: Callable[[st
     spec = SCENARIOS[key]
     row = _row(read, spec)
     if not row.get(spec["flag"]):
-        raise Refused(f"{spec['asset']}에 '{spec['label']}' 표시가 없습니다 — 이미 처리됐습니다. [초기화]로 수업 시작 상태로 되돌린 뒤 누르세요")
+        raise Refused(f"{spec['asset']}에 '{spec['label']}' 표시가 없습니다 — 이미 처리됐습니다. [초기화]로 처음 상태로 되돌린 뒤 누르세요")
     if _run(rt, spec, "RUNNING"):
         raise Refused(f"{spec['asset']} {spec['title']} 처리 건이 이미 진행 중입니다 — 카드의 '처리 중' 표시를 눌러 그 처리 건을 보세요")
     if not route(spec["pattern"]):
@@ -334,8 +334,8 @@ def reset_refusal(rt, key: str) -> None:
     if running:
         stuck = rt.repo.stuck_workitems(rt.tenant_id, [running["proc_inst_id"]])
         how = (f"멈춘 단계({', '.join(dict.fromkeys(w.get('activity_name') or w['activity_id'] for w in stuck))})가 있습니다 — 처리 건 화면에서 [닫기]로 "
-               "끝내거나 다시 수행한 뒤" if stuck else "처리 건 화면에서 조치 카드를 승인하거나 거절해 끝낸 뒤")
-        raise Refused(f"{spec['asset']} {spec['title']} 처리 건이 아직 진행 중이라 초기화하지 않았습니다 — 초기화하면 그 처리 건이 낸 발주 · 정비 오더 기록이 "
+               "끝내거나 다시 수행한 뒤" if stuck else "처리 건 화면에서 조치 후보를 승인하거나 반려해 끝낸 뒤")
+        raise Refused(f"{spec['asset']} {spec['title']} 처리 건이 아직 진행 중이라 초기화하지 않았습니다 — 초기화하면 그 처리 건이 낸 발주 · 정비 요청 기록이 "
                       f"바뀌어 처리 건이 어긋납니다. {how} [초기화]를 누르세요")
 
 

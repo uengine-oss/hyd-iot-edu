@@ -37,7 +37,7 @@ def full_body(row, **change):
 def test_기본_에이전트는_모두_도구와_스킬과_업무_규칙을_그대로_복제한다(authoring, agent_id):
     repo, made = authoring
     source = A.get_agent(repo, TENANT, agent_id)
-    copy = A.clone_agent(repo, TENANT, agent_id, by='user:kim-op')
+    copy = A.clone_agent(repo, TENANT, agent_id, by='user:me')
     made.append(copy['id'])
     assert (A.origin_of(copy), tools_of(copy), copy.get('work_rules')) == (A.USER, tools_of(source), source.get('work_rules'))
     assert [r['skill_name'] for r in repo.list_agent_skills(TENANT, copy['id'])] == [r['skill_name'] for r in repo.list_agent_skills(TENANT, agent_id)]
@@ -46,7 +46,7 @@ def test_기본_에이전트는_모두_도구와_스킬과_업무_규칙을_그�
 @pytest.mark.parametrize('agent_id', SEED_AGENTS)
 def test_복제한_에이전트는_모든_칸을_보내_고칠_수_있다(authoring, agent_id):
     repo, made = authoring
-    copy = A.clone_agent(repo, TENANT, agent_id, by='user:kim-op')
+    copy = A.clone_agent(repo, TENANT, agent_id, by='user:me')
     made.append(copy['id'])
     edited = A.update_agent(repo, TENANT, copy['id'], full_body(copy, goal='내가 고친 목표'))
     assert (edited['goal'], tools_of(edited)) == ('내가 고친 목표', tools_of(copy))
@@ -54,7 +54,7 @@ def test_복제한_에이전트는_모든_칸을_보내_고칠_수_있다(author
 
 def test_고치기에_빠진_칸이_있으면_빈_값으로_지우지_않고_거절한다(authoring):
     repo, made = authoring
-    copy = A.clone_agent(repo, TENANT, 'agent:cooling', by='user:kim-op')
+    copy = A.clone_agent(repo, TENANT, 'agent:cooling', by='user:me')
     made.append(copy['id'])
     body = full_body(copy, goal='바꿈')
     del body['tools'], body['persona']
@@ -67,7 +67,7 @@ def test_고치기에_빠진_칸이_있으면_빈_값으로_지우지_않고_거
 
 @pytest.mark.parametrize('body, says', [
     (dict(name='내 에이전트', goal='점검', tools=['neo4j', 'no-such-server']), '등록되지 않은 도구 서버'),
-    (dict(name='내 에이전트', goal='점검', model='gpt-9-ultra'), '수업 모델'),
+    (dict(name='내 에이전트', goal='점검', model='gpt-9-ultra'), '연결된 모델(coding) 하나만'),
     (dict(name='냉각 긴급 대응 에이전트', goal='기본과 같은 이름'), '같은 이름'),
     (dict(name='', goal='이름 없음'), '이름'),
     (dict(name='가' * 61, goal='점검'), '이름 칸이 너무 깁니다'),
@@ -77,7 +77,7 @@ def test_받을_수_없는_에이전트는_까닭과_함께_거절되고_만들�
     repo, _ = authoring
     before = {u['id'] for u in repo.list_users(None, TENANT)}
     with pytest.raises(AuthoringError) as refused:
-        A.create_agent(repo, TENANT, body, by='user:kim-op')
+        A.create_agent(repo, TENANT, body, by='user:me')
     assert says in str(refused.value)
     assert {u['id'] for u in repo.list_users(None, TENANT)} == before
 
@@ -177,3 +177,91 @@ def test_기본_담당을_찾을_수_없는_열린_단계가_있으면_에이전
                 db.execute("UPDATE todolist SET status='CANCELLED' WHERE proc_inst_id=%s AND status NOT IN ('DONE','CANCELLED')", (inst['proc_inst_id'],))
                 db.execute("UPDATE bpm_proc_inst SET status='CANCELLED' WHERE proc_inst_id=%s", (inst['proc_inst_id'],))
         A.delete_agent(rt, agent['id'], by='수강생')
+
+
+# ---------------------------------------------------------------- 역할의 정본은 업무 DB 하나 — 지식 그래프의 Role 은 그 투영(전수검사 11-#8)
+def _graph_roles(world):
+    return {r['id']: (r['name'], r['level']) for r in world.stack.graph._run('MATCH (r:Role) RETURN r.id AS id, r.name AS name, r.level AS level')}
+
+
+def _db_roles(world):
+    from procsvc import inbox
+    return {u['id']: u.get('username') for u in inbox.role_users(world.rt.repo, TENANT) if not u.get('is_agent')}
+
+
+def test_업무_DB의_역할과_지식_지도의_역할은_같은_목록이고_지식이_아는_등급은_그대로다(world):
+    """전에는 두 목록이 따로였다: 지식에는 품질팀장 · 공장장이 있고 인계자 · 인수자가 없었으며, 업무 DB 는 그 반대였다."""
+    A.project_roles(world.rt.repo, TENANT, world.stack.graph._run)
+    graph, db = _graph_roles(world), _db_roles(world)
+    assert {rid: name for rid, (name, _) in graph.items()} == db
+    assert {'role:quality-mgr', 'role:plant-mgr', 'role:shift-out', 'role:shift-in'} <= set(db)
+    # 지식(시드)이 정한 등급은 덮지 않고, 지식에 없던 역할은 종류에서 정한다(운전원 종류 = 1)
+    assert (graph['role:plant-mgr'][1], graph['role:purchasing'][1], graph['role:shift-out'][1]) == (3, 1, 1)
+    assert A.project_roles(world.rt.repo, TENANT, world.stack.graph._run) == {'created': [], 'renamed': [], 'removed': [], 'kept': []}   # 같으면 쓰지 않는다
+    # 이름은 업무 DB 가 정한다: DB 에서 바뀐 이름은 지식의 역할로 옮기되, 지식이 아는 등급(공장장 3)은 종류에서 온 값(2)으로 덮지 않는다
+    with psycopg.connect(world.dsn, autocommit=True) as db:
+        db.execute("UPDATE users SET username='공장 총괄' WHERE id='role:plant-mgr'")
+    try:
+        assert A.project_roles(world.rt.repo, TENANT, world.stack.graph._run)['renamed'] == ['role:plant-mgr']
+        assert _graph_roles(world)['role:plant-mgr'] == ('공장 총괄', 3)
+    finally:
+        with psycopg.connect(world.dsn, autocommit=True) as db:
+            db.execute("UPDATE users SET username='공장장' WHERE id='role:plant-mgr'")
+        A.project_roles(world.rt.repo, TENANT, world.stack.graph._run)
+
+
+def test_지식이_아는_역할은_모두_담당자가_그_역할로_승인할_수_있다(world):
+    """문서가 「품질팀장 승인」을 쓰면 적재는 됐는데 승인이 「구성원 아님」으로 막혔다 — 지식의 역할이 업무 DB 에 없었다."""
+    from procsvc import inbox
+    A.project_roles(world.rt.repo, TENANT, world.stack.graph._run)
+    for role in _graph_roles(world):
+        assert inbox.check_actor(world.rt.repo, TENANT, 'user:me', role) == 'user:me', role
+
+
+@pytest.fixture
+def my_role(world):
+    """포털에서 만든 역할 하나(HTTP — 지식 그래프로 바로 옮겨진다)와, 그 역할을 승인 역할로 쓰는 화면 조치 방법을 만드는 함수. 끝나면 둘 다 지운다."""
+    from procsvc import skill_graph
+    from procsvc.main import SKILL_Q
+    status, role = world.api('POST', '/api/roles', {'name': '역할 정본 시험 담당', 'key': 'u-source-test', 'by': 'user:me'})
+    assert status == 201 and role['id'] in role['knowledge']['created'], role
+
+    def skill():
+        fm = world.stack.graph._run('MATCH (f:FailureMode) RETURN f.id AS id ORDER BY f.id LIMIT 1')[0]['id']
+        with world.stack.graph.driver.session() as session:
+            return skill_graph.write(session, SKILL_Q, 'skill:sop-role-01', {
+                'name': '역할 시험 조치', 'description': '시험', 'kind': 'work_order', 'sopId': 'SOP-ROLE-01', 'failureMode': fm,
+                'relation': 'REMEDIED_BY', 'steps': ['본다'], 'approver': role['id'], 'affects': None}, create=True, by='user:me')
+    yield role, skill
+    world.stack.graph._run("MATCH (k:Skill {id:'skill:sop-role-01'}) OPTIONAL MATCH (k)-[:HAS_STEP]->(s) DETACH DELETE k, s")
+    if role['id'] in _db_roles(world):
+        A.delete_role(world.rt, role['id'], by='user:me')
+
+
+def test_포털에서_만든_역할은_문서_적재_검사와_조치_방법의_승인_역할로_쓸_수_있다(world, my_role):
+    """포털에서 만든 역할은 업무 DB 에만 생겨, 그 역할을 승인 역할로 쓰는 문서는 「지금 지식에 없습니다」로 적재할 수 없었다."""
+    from procsvc import manual_knowledge
+    role, skill = my_role
+    with world.stack.graph.driver.session() as session:
+        assert role['id'] in {r['id'] for r in manual_knowledge.catalog(session)['roles']}        # 문서 적재 전 검사가 읽는 지금 지식
+    assert skill()['approver'] == {'id': role['id'], 'name': '역할 정본 시험 담당', 'level': 2}
+
+
+def test_조치_방법이_승인_역할로_쓰는_역할은_지우지_않고_무엇이_쓰는지_말한다(world, my_role):
+    role, skill = my_role
+    skill()
+    with pytest.raises(AuthoringError) as refused:
+        A.delete_role(world.rt, role['id'], by='user:me')
+    assert refused.value.status == 409 and '역할 시험 조치' in refused.value.message and role['id'] in _graph_roles(world)
+
+
+def test_기준으로_되돌리기도_조치_방법이_쓰는_역할은_남긴다(world, my_role):
+    role, skill = my_role
+    skill()
+    assert role['id'] in A.reset(world.rt, by='user:me')['kept_roles'] and role['id'] in _db_roles(world) and role['id'] in _graph_roles(world)
+
+
+def test_역할을_지우면_지식_지도의_역할도_없어진다(world, my_role):
+    role, _ = my_role
+    gone = A.delete_role(world.rt, role['id'], by='user:me')
+    assert gone['knowledge']['removed'] == [role['id']] and role['id'] not in _graph_roles(world)

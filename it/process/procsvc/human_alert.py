@@ -25,6 +25,7 @@ from copy import deepcopy
 from datetime import datetime, timezone
 
 from hydcommon import topics
+from hydcommon.words import josa
 
 HUMAN_SOURCE = "human_input"
 
@@ -106,7 +107,7 @@ def build_alert(body: dict, entered: dict, now: datetime | None = None) -> tuple
         raise ValueError("측정값은 숫자여야 합니다 (value)")
     memo = _text(body, "memo", "메모", 2000, required=False)
     if not out_of_spec:
-        return None, (f"{item['text']}이(가) 기준 안이라 경보를 만들지 않았습니다 — 기준 이탈을 「예」로 고른 입력만 경보가 됩니다. "
+        return None, (f"{josa(item['text'], '이')} 기준 안이라 경보를 만들지 않았습니다 — 기준 이탈을 「예」로 고른 입력만 경보가 됩니다. "
                       "처리 건은 열리지 않습니다")
     clock = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
     t = clock.isoformat(timespec="milliseconds").replace("+00:00", "Z")

@@ -905,6 +905,15 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
         missing = [v for v in a.get("inputData") or [] if v not in have and v not in optional]
         if missing and start_node:
             problems.append(problem(t, "inputs", f"받을 값 {', '.join(missing)} 을(를) 앞 단계(또는 시작)가 내지 않습니다"))
+        if a.get("tool") == effect_parts.MCP_TOOL and start_node:
+            # 「승인 뒤 MCP 호출」의 인자 틀이 쓰는 {값}: 앞 단계(또는 시작 · 승인 경로)가 내는 값이어야 한다. 틀린 이름(오타)은 실행 때에야
+            # 「처리 건에 없습니다」로 멈췄다 — 등록 전에 그 칸에서 알린다. 처리 건 이름 등은 실행이 늘 넣는 값이다(service_parts._call_mcp)
+            given = have | set(effect_parts.MCP_CONTEXT_VALUES)
+            unknown = sorted({name for name in effect_parts.placeholders((a.get("service") or {}).get("arguments") or {})
+                              if name.split(".", 1)[0] not in given})
+            if unknown:
+                problems.append(problem(t, "config", "인자 틀의 " + ", ".join("{" + n + "}" for n in unknown) + " 값을 앞 단계(또는 시작)가 내지 "
+                                                     "않습니다 — 값 이름을 확인하세요(이 단계에서 쓸 수 있는 값: " + ", ".join(sorted(have)) + ")"))
     for f in parsed["flows"]:
         c = cond_of.get(f["id"])
         if not c or not c.get("condition") or not start_node:

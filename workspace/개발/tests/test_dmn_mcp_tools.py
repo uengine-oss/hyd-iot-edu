@@ -53,9 +53,14 @@ def test_도구가_성공하면_ok_봉투다(dmn):
     ({'status': 'FAILED', 'error_code': 'SUBMIT_REFUSED', 'submit_status': 409, 'error': '처리 범위가 다릅니다'}, 'INVALID', '처리 범위가 다릅니다'),
     ({'status': 'FAILED', 'error_code': 'SUBMIT_REFUSED', 'submit_status': 503, 'error': '잠시 뒤'}, 'UNKNOWN', '잠시 뒤'),
     ({'status': 'FAILED', 'error_code': 'SUBMIT_FAILED', 'error': 'timeout'}, 'UNKNOWN', 'process 에 연결하거나'),
+    # 판단에 쓸 값을 아직 받지 못함(곧 풀릴 수 있다) — 엔진 결함(UNKNOWN)과 갈라야 부른 쪽이 같은 인자로 다시 부를지 정한다
+    ({'status': 'FAILED', 'error_code': 'SOURCE_UNAVAILABLE', 'retryable': True, 'error': '설비 상태가 16초 전 값에서 새로 들어오지 않았습니다'},
+     'UNAVAILABLE', '새로 들어오지 않았습니다'),
+    ({'status': 'FAILED', 'error_code': 'SOURCE_UNAVAILABLE', 'retryable': False, 'error': '설비 상태 응답이 HYD-01의 것이 아닙니다'},
+     'UNKNOWN', 'HYD-01의 것이 아닙니다'),
     ({'status': 'REJECTED_BY_GUARDRAIL', 'steps': [{'name': 'guardrail', 'output': {'violations': ['V1']}}]}, 'UNKNOWN', 'V1'),
     ({'status': 'EVALUATED', 'result': {'options': []}, 'explanation': '규칙 불일치'}, 'INVALID', '후보가 0개'),
-], ids=['process_거절_4xx', 'process_거절_5xx', '연결_실패', '가드레일', '후보_0개'])
+], ids=['process_거절_4xx', 'process_거절_5xx', '연결_실패', '값_아직_못_받음', '값을_읽을_수_없는_결함', '가드레일', '후보_0개'])
 def test_쓰기_도구는_process가_저장한_판단만_성공으로_돌려준다(dmn, rec, kind, phrase):
     with pytest.raises(dmn.NotRegistered) as err:
         dmn.registered(rec, '조치 카드 판단')

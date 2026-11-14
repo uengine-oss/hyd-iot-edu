@@ -375,14 +375,14 @@ class Fabric:
         if i.get('table') and i.get('column'):
             sid = i.get('datasource')
             row.update(binding='physical', datasource=sid, source_label=SOURCES[sid]['label'] if sid in SOURCES else sid,
-                       table=i['table'], column=i['column'], key=i.get('assetColumn'), derive=i.get('derive'), how='DDL 적재로 연결된 열')
+                       table=i['table'], column=i['column'], key=i.get('assetColumn'), derive=i.get('derive'), how='업무 DB 표 정의를 적재해 연결된 열')
             src = live.get(sid)
             if sid not in DDL_SOURCES or i.get('schema') != SOURCES[sid]['schema']:
                 row.update(state='UNREGISTERED', reason=f"등록된 원천({' · '.join(f"{SOURCES[d]['label']} {SOURCES[d]['schema']}" for d in DDL_SOURCES)} 스키마)이 아닌 연결입니다")
             elif not src['ok']:
                 row.update(state='SOURCE_DOWN', reason=src['reason'])
             elif i['column'] not in src['tables'].get(i['table'], {}):
-                row.update(state='MISSING', reason='원천에 이 열이 없습니다 (DDL이 바뀌었으면 다시 적재)')
+                row.update(state='MISSING', reason='원천에 이 열이 없습니다 (표 정의가 바뀌었으면 「업무 DB 표 정의」를 다시 적재)')
             else:
                 row.update(state='OK' if i.get('sourceState') in (None, 'OK') else i['sourceState'])
         elif i.get('sourceKind') == 'Sensor' and i.get('tag'):
@@ -394,7 +394,7 @@ class Fabric:
             owner = next((sid for sid, s in SOURCES.items() if i.get('source') in s['systems']), None)
             if owner == ENT:
                 row.update(binding='system', datasource=ENT, state='UNBOUND',
-                           reason='출처 시스템만 연결돼 있습니다 — 표 · 열은 지식 관리 "업무 데이터 연결"(DDL 적재)로 정합니다')
+                           reason='출처 시스템만 연결돼 있습니다 — 표 · 열은 지식 › 문서 등록의 「업무 DB 표 정의」를 적재해 정합니다')
             elif owner == TS:
                 row.update(binding='system', datasource=TS, state='DERIVED', reason='시계열에서 계산하는 값입니다 (표 · 열 하나로 정하지 않음)')
             else:

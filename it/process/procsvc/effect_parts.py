@@ -48,6 +48,8 @@ REPORT_OUTCOMES = {"정상": "ok", "입고 완료": "ok", "정비 요청 등록"
                    "알림": "info", "승인 지연": "info", "반려": "rejected"}
 
 NAME_RE = re.compile(r"^[a-z0-9](?:[a-z0-9]|-(?!-)){0,39}$")         # mcp_registry.NAME_RE 와 같음
+#: 「승인 뒤 MCP 호출」의 인자 틀이 처리 건 값 말고도 쓸 수 있는 값 — 실행이 늘 넣는다(service_parts._call_mcp 의 context)
+MCP_CONTEXT_VALUES = ("proc_inst_id", "proc_inst_name", "task_name")
 TOOL_RE = re.compile(r"^[A-Za-z0-9_.-]{1,64}$")
 IDENT_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 PATH_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)*$")
@@ -61,9 +63,10 @@ PURCHASE_VALUES = ("approved_amount", "approved_qty", "approved_supplier", "appr
 PARTS = {
     "svc:mcp-call": {
         "tool": MCP_TOOL, "name": "승인 뒤 MCP 호출 (메일 등)", "outputs": ["mcp_receipt"],
-        "help": "등록된 MCP 서버의 도구 하나를 사람 승인 뒤에 부릅니다(쓰기 도구도 됨, 에이전트에게는 보이지 않음). "
-                "인자 값의 {값 이름}은 처리 건 값으로 바뀝니다. 수업 기본 서버 hyd-effects: send_mail(메일 → 수업 메일함 Inbucket, 실제 발송 없음).",
-        "config": {"server": "MCP 서버 이름 (예: hyd-effects)", "tool": "도구 이름 (예: send_mail)",
+        "help": "등록된 도구 서버의 도구 하나를 사람 승인 뒤에 부릅니다(쓰기 도구도 됨, 에이전트에게는 보이지 않음). 내 시스템에 값을 쓰는 "
+                "자리는 이 단계 하나입니다 — [도구 연결]에 등록해 연결 검사를 통과한 내 서버의 이름을 적습니다. "
+                "인자 값의 {값 이름}은 처리 건 값으로 바뀝니다. 기본 제공 서버 hyd-effects: send_mail(메일 → 모의 메일함 Inbucket, 실제 발송 없음).",
+        "config": {"server": "도구 서버 이름 — [도구 연결]에 등록한 이름 (예: my-stock, 기본 제공은 hyd-effects)", "tool": "도구 이름 (예: send_mail)",
                    "arguments": "인자 틀 {이름: 값} — 문자열 안 {asset} · {approved_amount} · {work_order.ref} 처럼 처리 건 값을 넣는다",
                    "output": "결과를 담을 값 이름 (기본 mcp_receipt)",
                    "extract": "결과(JSON)에서 꺼내 처리 건 값으로 낼 것 {값 이름: {path: 'attendees.0.status', type: Boolean · Number · Text}} — "
@@ -75,7 +78,7 @@ PARTS = {
         "tool": PR_TOOL, "name": "ERP 발주", "outputs": ["purchase_order"], "inputs": ["approved_amount"],
         "help": "사람이 승인한 카드의 공급사 · 수량 · 금액(approved_supplier · approved_qty · approved_amount)으로 ERP 발주를 냅니다. "
                 "ERP 가 견적 · 승인 공급사(AVL) · 금액을 다시 확인하고 입고 예정을 올립니다. mail 을 정하면 발주 뒤 공급사 · 입고 부서에 메일을 보냅니다.",
-        "config": {"mail": "발주 뒤 보낼 메일 {to, subject, body} (선택, 수업 메일함 Inbucket — 실제 발송 없음). {purchase_order.ref} 같은 값을 넣는다"},
+        "config": {"mail": "발주 뒤 보낼 메일 {to, subject, body} (선택, 이 PC의 시험 메일함으로만 간다 — 실제 발송 없음). {purchase_order.ref} 같은 값을 넣는다"},
     },
     "svc:wait": {
         "tool": WAIT_TOOL, "name": "시간 대기", "outputs": ["waited"],
@@ -93,7 +96,7 @@ PARTS = {
         "config": {"component": "되돌릴 부품을 흐름이 직접 정할 때만: cooler · pump · fan (비우면 승인한 조치 방법이 지식 지도에서 다루는 것)",
                    "sop": "작업지시 완료 때 부품 소모 기준이자 고칠 대상을 찾는 SOP (예: SOP-COOL-14 — 비우면 승인한 카드의 SOP)",
                    "work_order_var": "작업지시 영수증 값 이름 (기본 work_order)",
-                   "until": "먼저 기다릴 시각이 든 처리 건 값 (예: work_order.after.window_starts_at — 예정된 정비 시간, 수업 압축 적용)"},
+                   "until": "먼저 기다릴 시각이 든 처리 건 값 (예: work_order.after.window_starts_at — 예정된 정비 시간, 대기 압축 적용)"},
     },
     "svc:goods-receipt": {
         "tool": GR_TOOL, "name": "입고 확인", "outputs": ["goods_receipt", "received"], "inputs": ["purchase_order"],

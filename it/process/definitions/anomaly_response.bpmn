@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="anomaly_response_definitions" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="anomaly_response" name="설비 이상 조치">
+    <bpmn:laneSet id="anomaly_response_lanes">
+      <bpmn:lane id="lane_agent" name="AI 에이전트">
+        <bpmn:flowNodeRef>ev_alert</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_diagnose</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_candidates</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_compliance</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_rank</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_operator" name="운전원">
+        <bpmn:flowNodeRef>task_select</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ev_select_timeout</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw_approved</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_system" name="시스템">
+        <bpmn:flowNodeRef>gw_control</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_command</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_reobserve</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw_recovered</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_work_order</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ev_closed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_report_rejected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ev_rejected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_report_purchase_only</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ev_not_executed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_report_no_action</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_manager" name="생산관리자">
+        <bpmn:flowNodeRef>task_escalate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ev_escalated</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="ev_alert" name="설비 경보"><bpmn:messageEventDefinition id="ev_alert_message" /></bpmn:startEvent>
+    <bpmn:task id="task_diagnose" name="원인 진단" />
+    <bpmn:task id="task_candidates" name="조치 후보 조회" />
+    <bpmn:task id="task_compliance" name="규정 검토" />
+    <bpmn:task id="task_rank" name="조치 후보 정리" />
+    <bpmn:userTask id="task_select" name="조치 선택 · 승인" />
+    <bpmn:boundaryEvent id="ev_select_timeout" name="선택 시간 초과" attachedToRef="task_select"><bpmn:timerEventDefinition id="ev_select_timeout_timer" /></bpmn:boundaryEvent>
+    <bpmn:exclusiveGateway id="gw_approved" name="승인?" />
+    <bpmn:exclusiveGateway id="gw_control" name="조치 종류?" />
+    <bpmn:serviceTask id="task_command" name="설비에 명령" />
+    <bpmn:serviceTask id="task_reobserve" name="효과 확인 (15분)" />
+    <bpmn:exclusiveGateway id="gw_recovered" name="회복?" />
+    <bpmn:serviceTask id="task_work_order" name="정비 요청 등록" />
+    <bpmn:endEvent id="ev_closed" name="처리 완료" />
+    <bpmn:serviceTask id="task_report_rejected" name="결과 보고: 반려" />
+    <bpmn:endEvent id="ev_rejected" name="반려 종결" />
+    <bpmn:serviceTask id="task_report_purchase_only" name="결과 보고: 발주만 등록" />
+    <bpmn:endEvent id="ev_not_executed" name="실행하지 않음" />
+    <bpmn:serviceTask id="task_report_no_action" name="결과 보고: 조치 종류 확인 필요" />
+    <bpmn:userTask id="task_escalate" name="책임자 확인" />
+    <bpmn:endEvent id="ev_escalated" name="책임자 확인 종결" />
+    <bpmn:sequenceFlow id="seq_alert_diagnose" sourceRef="ev_alert" targetRef="task_diagnose" />
+    <bpmn:sequenceFlow id="seq_diagnose_candidates" sourceRef="task_diagnose" targetRef="task_candidates" />
+    <bpmn:sequenceFlow id="seq_candidates_compliance" sourceRef="task_candidates" targetRef="task_compliance" />
+    <bpmn:sequenceFlow id="seq_compliance_rank" sourceRef="task_compliance" targetRef="task_rank" />
+    <bpmn:sequenceFlow id="seq_rank_select" sourceRef="task_rank" targetRef="task_select" />
+    <bpmn:sequenceFlow id="seq_select_gw" sourceRef="task_select" targetRef="gw_approved" />
+    <bpmn:sequenceFlow id="seq_approved" name="승인" sourceRef="gw_approved" targetRef="gw_control" />
+    <bpmn:sequenceFlow id="seq_rejected" name="반려" sourceRef="gw_approved" targetRef="task_report_rejected" />
+    <bpmn:sequenceFlow id="seq_rejected_end" sourceRef="task_report_rejected" targetRef="ev_rejected" />
+    <bpmn:sequenceFlow id="seq_gw_command" name="설비 명령" sourceRef="gw_control" targetRef="task_command" />
+    <bpmn:sequenceFlow id="seq_command_reobserve" sourceRef="task_command" targetRef="task_reobserve" />
+    <bpmn:sequenceFlow id="seq_reobserve_gw" sourceRef="task_reobserve" targetRef="gw_recovered" />
+    <bpmn:sequenceFlow id="seq_gw_recovered_wo" name="회복" sourceRef="gw_recovered" targetRef="task_work_order" />
+    <bpmn:sequenceFlow id="seq_workorder_closed" sourceRef="task_work_order" targetRef="ev_closed" />
+    <bpmn:sequenceFlow id="seq_gw_workorder" name="정비 요청만" sourceRef="gw_control" targetRef="task_work_order" />
+    <bpmn:sequenceFlow id="seq_gw_purchase" name="발주만" sourceRef="gw_control" targetRef="task_report_purchase_only" />
+    <bpmn:sequenceFlow id="seq_gw_other" name="그 밖" sourceRef="gw_control" targetRef="task_report_no_action" />
+    <bpmn:sequenceFlow id="seq_purchase_end" sourceRef="task_report_purchase_only" targetRef="ev_not_executed" />
+    <bpmn:sequenceFlow id="seq_other_end" sourceRef="task_report_no_action" targetRef="ev_not_executed" />
+    <bpmn:sequenceFlow id="seq_gw_recovered_escalate" name="미회복" sourceRef="gw_recovered" targetRef="task_escalate" />
+    <bpmn:sequenceFlow id="seq_timeout_escalate" sourceRef="ev_select_timeout" targetRef="task_escalate" />
+    <bpmn:sequenceFlow id="seq_escalate_end" sourceRef="task_escalate" targetRef="ev_escalated" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="anomaly_response_diagram">
+    <bpmndi:BPMNPlane id="anomaly_response_plane" bpmnElement="anomaly_response">
+      <bpmndi:BPMNShape id="lane_agent_di" bpmnElement="lane_agent" isHorizontal="true"><dc:Bounds x="14" y="40" width="1583" height="116" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="lane_operator_di" bpmnElement="lane_operator" isHorizontal="true"><dc:Bounds x="14" y="156" width="1583" height="140" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="lane_system_di" bpmnElement="lane_system" isHorizontal="true"><dc:Bounds x="14" y="296" width="1583" height="366" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="lane_manager_di" bpmnElement="lane_manager" isHorizontal="true"><dc:Bounds x="14" y="662" width="1583" height="128" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ev_alert_di" bpmnElement="ev_alert"><dc:Bounds x="88" y="80" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="74" y="121" width="63" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_diagnose_di" bpmnElement="task_diagnose"><dc:Bounds x="164" y="58" width="112" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_candidates_di" bpmnElement="task_candidates"><dc:Bounds x="304" y="58" width="112" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_compliance_di" bpmnElement="task_compliance"><dc:Bounds x="444" y="58" width="112" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_rank_di" bpmnElement="task_rank"><dc:Bounds x="584" y="58" width="112" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_select_di" bpmnElement="task_select"><dc:Bounds x="584" y="186" width="112" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ev_select_timeout_di" bpmnElement="ev_select_timeout"><dc:Bounds x="594" y="248" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="633" y="270" width="92" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="gw_approved_di" bpmnElement="gw_approved"><dc:Bounds x="731" y="201" width="50" height="50" /><bpmndi:BPMNLabel><dc:Bounds x="736" y="182" width="39" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="gw_control_di" bpmnElement="gw_control"><dc:Bounds x="875" y="371" width="50" height="50" /><bpmndi:BPMNLabel><dc:Bounds x="822" y="418" width="68" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_command_di" bpmnElement="task_command"><dc:Bounds x="989" y="356" width="112" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_reobserve_di" bpmnElement="task_reobserve"><dc:Bounds x="1129" y="356" width="112" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="gw_recovered_di" bpmnElement="gw_recovered"><dc:Bounds x="1275" y="371" width="50" height="50" /><bpmndi:BPMNLabel><dc:Bounds x="1255" y="417" width="39" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_work_order_di" bpmnElement="task_work_order"><dc:Bounds x="1369" y="356" width="112" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ev_closed_di" bpmnElement="ev_closed"><dc:Bounds x="1512" y="378" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="1498" y="419" width="63" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_report_rejected_di" bpmnElement="task_report_rejected"><dc:Bounds x="700" y="460" width="112" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ev_rejected_di" bpmnElement="ev_rejected"><dc:Bounds x="738" y="586" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="779" y="597" width="63" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_report_purchase_only_di" bpmnElement="task_report_purchase_only"><dc:Bounds x="989" y="460" width="112" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ev_not_executed_di" bpmnElement="ev_not_executed"><dc:Bounds x="1167" y="482" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="1141" y="463" width="88" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_report_no_action_di" bpmnElement="task_report_no_action"><dc:Bounds x="989" y="564" width="112" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_escalate_di" bpmnElement="task_escalate"><dc:Bounds x="1244" y="686" width="112" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ev_escalated_di" bpmnElement="ev_escalated"><dc:Bounds x="1392" y="708" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="1362" y="749" width="96" height="28" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="seq_alert_diagnose_di" bpmnElement="seq_alert_diagnose"><di:waypoint x="124" y="98" /><di:waypoint x="164" y="98" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_diagnose_candidates_di" bpmnElement="seq_diagnose_candidates"><di:waypoint x="276" y="98" /><di:waypoint x="304" y="98" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_candidates_compliance_di" bpmnElement="seq_candidates_compliance"><di:waypoint x="416" y="98" /><di:waypoint x="444" y="98" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_compliance_rank_di" bpmnElement="seq_compliance_rank"><di:waypoint x="556" y="98" /><di:waypoint x="584" y="98" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_rank_select_di" bpmnElement="seq_rank_select"><di:waypoint x="640" y="138" /><di:waypoint x="640" y="186" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_select_gw_di" bpmnElement="seq_select_gw"><di:waypoint x="696" y="226" /><di:waypoint x="731" y="226" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_approved_di" bpmnElement="seq_approved"><di:waypoint x="781" y="226" /><di:waypoint x="830" y="226" /><di:waypoint x="830" y="396" /><di:waypoint x="875" y="396" /><bpmndi:BPMNLabel><dc:Bounds x="789" y="207" width="35" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_rejected_di" bpmnElement="seq_rejected"><di:waypoint x="756" y="251" /><di:waypoint x="756" y="460" /><bpmndi:BPMNLabel><dc:Bounds x="762" y="259" width="35" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_rejected_end_di" bpmnElement="seq_rejected_end"><di:waypoint x="756" y="540" /><di:waypoint x="756" y="586" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_gw_command_di" bpmnElement="seq_gw_command"><di:waypoint x="925" y="396" /><di:waypoint x="989" y="396" /><bpmndi:BPMNLabel><dc:Bounds x="933" y="377" width="63" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_command_reobserve_di" bpmnElement="seq_command_reobserve"><di:waypoint x="1101" y="396" /><di:waypoint x="1129" y="396" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_reobserve_gw_di" bpmnElement="seq_reobserve_gw"><di:waypoint x="1241" y="396" /><di:waypoint x="1275" y="396" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_gw_recovered_wo_di" bpmnElement="seq_gw_recovered_wo"><di:waypoint x="1325" y="396" /><di:waypoint x="1369" y="396" /><bpmndi:BPMNLabel><dc:Bounds x="1333" y="377" width="35" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_workorder_closed_di" bpmnElement="seq_workorder_closed"><di:waypoint x="1481" y="396" /><di:waypoint x="1512" y="396" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_gw_workorder_di" bpmnElement="seq_gw_workorder"><di:waypoint x="900" y="371" /><di:waypoint x="900" y="336" /><di:waypoint x="1425" y="336" /><di:waypoint x="1425" y="356" /><bpmndi:BPMNLabel><dc:Bounds x="914" y="317" width="76" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_gw_purchase_di" bpmnElement="seq_gw_purchase"><di:waypoint x="900" y="421" /><di:waypoint x="900" y="500" /><di:waypoint x="989" y="500" /><bpmndi:BPMNLabel><dc:Bounds x="910" y="481" width="47" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_gw_other_di" bpmnElement="seq_gw_other"><di:waypoint x="900" y="421" /><di:waypoint x="900" y="604" /><di:waypoint x="989" y="604" /><bpmndi:BPMNLabel><dc:Bounds x="911" y="585" width="38" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_purchase_end_di" bpmnElement="seq_purchase_end"><di:waypoint x="1101" y="500" /><di:waypoint x="1167" y="500" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_other_end_di" bpmnElement="seq_other_end"><di:waypoint x="1101" y="604" /><di:waypoint x="1185" y="604" /><di:waypoint x="1185" y="518" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_gw_recovered_escalate_di" bpmnElement="seq_gw_recovered_escalate"><di:waypoint x="1300" y="421" /><di:waypoint x="1300" y="686" /><bpmndi:BPMNLabel><dc:Bounds x="1306" y="429" width="47" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_timeout_escalate_di" bpmnElement="seq_timeout_escalate"><di:waypoint x="612" y="284" /><di:waypoint x="612" y="726" /><di:waypoint x="1244" y="726" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_escalate_end_di" bpmnElement="seq_escalate_end"><di:waypoint x="1356" y="726" /><di:waypoint x="1392" y="726" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

@@ -26,8 +26,12 @@
         실패하면 어디서 왜 실패했는지 + 적용된 것 · 안 된 것, 그리고 3)의 보관본으로 적용 전 상태를 다시 세운다(rolled_back).
         MCP 보관본은 행 그대로 다시 쓴다 — 실시간 연결 검사를 다시 하지 않아 그 순간 외부 서버가 꺼져 있어도 학생 구성이 사라지지 않는다.
         같은 파일을 두 번 가져와도 되돌리기 → 적용이라 같은 결과다.
-  POST /api/config/reset    하나의 "기준으로 되돌리기": B4 deploy-reset → B3 flows reset → B1 agents reset → B2 mcp reset(비밀 값 포함) →
-        B5 ask reset → 판단 채점(정답표 · 실행 기록) → 시험 비교 기록.
+  POST /api/config/reset    하나의 "기준으로 되돌리기" — 학생이 만든 것을 한 번에 처음 상태로: 지식(포털에서 적재한 문서 판 · 업무 DB 표 정의 묶음 ·
+        화면에서 만든 조치 방법 — 이미 있는 묶음별 되돌리기를 그대로 부른다, knowledge_reset) → B4 deploy-reset → B3 flows reset →
+        B1 agents reset → B2 mcp reset(비밀 값 포함) → B5 ask reset → 판단 채점(정답표 · 실행 기록) → 시험 비교 기록.
+        남는 것: 기본 제공 것(에이전트 · 스킬 · 역할 · 도구 서버 · 흐름 · 기본 제공 문서의 지식), 처리 건과 그 기록, 모의 업무 시스템 · 가상 설비의
+        상태(그것은 결함 시뮬레이션의 [초기화]가 되돌린다). 응답의 removed · kept 가 실제로 한 일을 말한다.
+        도구 서버를 만들 수 없는 단계(course_policy 의 tool_servers.register)에서는 내 도구 서버 · 비밀 값을 지우지 않는다 — 지우면 되살릴 길이 없다.
         강사가 배포한 수업 흐름은 남긴다(흐름 배포 화면의 [기준 흐름으로 되돌리기]와 같다). 불러오기 3)의 되돌리기는 수업 흐름까지 지운다.
         먼저 409 조건을 모두 점검한다(되돌리기가 지울 판본을 쓰는 진행 중 처리 건 — 남기는 수업 흐름의 처리 건은 세지 않는다 ·
         학생 에이전트가 실행 중인 작업). 하나라도 있으면 아무것도 지우지 않고 사유.
@@ -65,13 +69,14 @@ ROLE_ID_PREFIX = "role:"
 SECRET_RE = re.compile(r"\$\{HYD_SECRET:([^}]+)\}")
 AGENT_ID_RE = re.compile(r"^agent:u-[0-9a-f]{4,32}$")
 CONTENT_KEYS = ("mcp_servers", "skills", "agents", "roles", "flows", "assignments", "deployments")
-STEPS = (("mcp", "MCP 서버"), ("skills", "스킬"), ("agents", "에이전트"), ("roles", "역할"),
+STEPS = (("mcp", "도구 서버"), ("skills", "스킬"), ("agents", "에이전트"), ("roles", "역할"),
          ("flows", "흐름 등록"), ("assignments", "단계 배정"), ("deployments", "배포"))
 STEP_LABEL = dict(STEPS) | {"reset": "적용 전 되돌리기", "verify": "적용 뒤 대조"}
 CHECK_STEP = ("check", "진행 중인 처리 건 확인")
-RESET_STEPS = (("deploy_reset", "배포 되돌리기(경보 → 기준 흐름)"), ("flows_reset", "가져온 흐름 지우기"),
+RESET_STEPS = (("knowledge_reset", "적재한 문서 · 업무 DB 표 정의 · 화면에서 만든 조치 방법 되돌리기"),
+               ("deploy_reset", "배포 되돌리기(경보 → 기준 흐름)"), ("flows_reset", "가져온 흐름 지우기"),
                ("agents_reset", "내가 만든 에이전트 · 스킬 · 역할 · 배정 지우기"),
-               ("mcp_reset", "내가 등록한 MCP 서버 · 비밀 값 지우기"),
+               ("mcp_reset", "내가 등록한 도구 서버 · 비밀 값 지우기"),
                ("ask_reset", "끝난 질문 기록 지우기"), ("eval_reset", "판단 채점 정답표 · 실행 기록 지우기"),
                ("trials_reset", "시험 비교 기록 지우기"))
 _LOCK = threading.Lock()          # 되돌리기 · 불러오기는 한 번에 하나(두 번 누름 · 두 탭)
@@ -182,7 +187,7 @@ def export_bundle(rt, base_loader, *, include_secrets: bool = False) -> dict:
         try:
             servers.append(server_item(name, entry, include_secrets=include_secrets))
         except ValueError as e:
-            not_included.append({"what": f"MCP 서버 '{name}'", "reason": f"설정을 읽을 수 없어 담지 않았습니다 — {e}"})
+            not_included.append({"what": f"도구 서버 '{name}'", "reason": f"설정을 읽을 수 없어 담지 않았습니다 — {e}"})
     skills = [{"skill_name": s["skill_name"], "description": s.get("description") or "", "content": s.get("content") or ""}
               for s in repo.list_skills(tenant) if A.origin_of(s) == A.USER]
     agents = []
@@ -227,14 +232,21 @@ def export_bundle(rt, base_loader, *, include_secrets: bool = False) -> dict:
     content = {"mcp_servers": servers, "skills": skills, "agents": agents, "roles": roles,
                "flows": [flows[k] for k in sorted(flows)], "assignments": assignments,
                "deployments": {"flows": deployed, "reference": reference}}
+    # 기본 제공 흐름(시작할 때 설치되는 흐름 — 배포의 주인 표시 class_flow)도 지금 배포된 판본이 파일에 담긴다: 불러오기가 흐름을 모두 내리고 파일대로
+    # 다시 세우기 때문이다. 요약은 내가 만든 것과 그것을 갈라 센다 — 전에는 아무것도 만들지 않은 PC 도 「흐름 3 · 배포 3」으로 셌다.
+    provided = class_flow_ids(rt) & set(flows)
+    mine = [f for k, f in flows.items() if k not in provided]
     return {"format": FORMAT, "format_version": FORMAT_VERSION, "created_at": _now(), "tenant": tenant,
             "base": {"definition": rt.defn.id, "version": getattr(rt, "base_version", None) or rt.defn.raw.get("version"),
                      "parts_from": {"id": base.get("processDefinitionId"), "version": base.get("version")}},
-            "note": "학생이 만든 것만 담은 출발본입니다. 기준(기본 에이전트 · 스킬 · 역할 · MCP 서버 · 흐름)은 담지 않습니다. "
-                    "MCP 비밀값은 담지 않고 ${HYD_SECRET:칸} 자리표시로 남깁니다 — 불러올 때 입력합니다.",
+            "note": "내가 만든 것을 담은 출발본입니다. 기본 제공 에이전트 · 스킬 · 역할 · 도구 서버는 담지 않습니다. 기본 제공 흐름은 지금 배포된 "
+                    "판본을 함께 담습니다(불러오기가 흐름을 모두 내리고 이 파일대로 다시 세웁니다). "
+                    "도구 서버의 비밀값은 담지 않고 ${HYD_SECRET:칸} 자리표시로 남깁니다 — 불러올 때 입력합니다.",
             "summary": {"mcp_servers": len(servers), "skills": len(skills), "agents": len(agents), "roles": len(roles),
-                        "flows": len(flows), "flow_versions": sum(len(f["versions"]) for f in flows.values()),
-                        "assignments": len(assignments), "deployments": len(deployed) + (1 if reference else 0),
+                        "flows": len(mine), "flow_versions": sum(len(f["versions"]) for f in mine),
+                        "assignments": len(assignments),
+                        "deployments": sum(1 for d in deployed if not d.get("class_flow")) + (1 if reference else 0),
+                        "provided_flows": len(provided),
                         "secrets_needed": sum(len(s["secrets"]) for s in servers)},
             "not_included": not_included, "content": content, "case_tags": student_cases.live_tags(rt, content)}
 
@@ -253,7 +265,7 @@ def blocking(rt, *, keep_class: bool) -> list[dict]:
     out = []
     running = FlowStore(rt.repo, rt.tenant_id).running(keep=class_flow_ids(rt) if keep_class else frozenset())
     if running:
-        whose = "내가 가져온 흐름" if keep_class else "내가 가져온 흐름이나 수업 흐름(불러오기는 수업 흐름도 파일 내용으로 다시 세웁니다)"
+        whose = "내가 가져온 흐름" if keep_class else "내가 가져온 흐름이나 기본 제공 흐름(불러오기는 기본 제공 흐름도 파일 내용으로 다시 세웁니다)"
         out.append({"step": "flows_reset", "reason": f"{whose}으로 진행 중인 처리 건 {len(running)}건 — 끝내거나 닫은 뒤 다시 하세요",
                     "items": running})
     mine = [u["id"] for u in rt.repo.list_users(None, rt.tenant_id) if u.get("is_agent") and A.origin_of(u) == A.USER]
@@ -276,9 +288,97 @@ def reset_plan(records: bool) -> list[tuple[str, str]]:
     return [s for s in RESET_STEPS if records or s[0] in ("deploy_reset", "flows_reset", "agents_reset", "mcp_reset")]
 
 
-def _reset_steps(rt, by: str, *, records: bool, keep_class: bool, progress=progress_log.SILENT) -> list[dict]:
-    """records=True(관리 탭 [기준으로 되돌리기]): 구성과 함께 학생 기록(비밀 값 · 끝난 질문 · 판단 채점 · 시험 비교)도 지운다.
-    records=False(출발본 불러오기 · 그 실패 복원): 구성만 — 비밀 값은 이 PC 의 자격 증명이라 남긴다(불러온 서버의 ${SECRET:이름} 이 쓴다).
+def _graph_session(fn):
+    """지식 그래프 세션 하나로 fn(session) — 문서 등록 · 데이터 원천 API 와 같은 연결(hydcommon.graphdb, 설정은 그 한 곳)."""
+    from hydcommon import graphdb
+    with graphdb.connect() as driver, driver.session() as session:
+        return fn(session)
+
+
+class KnowledgeResetStopped(Exception):
+    """지식 되돌리기가 멈춘 까닭(학생이 읽는 문장)과 그때까지 되돌린 것."""
+
+    def __init__(self, reason: str, partial: dict):
+        super().__init__(reason)
+        self.reason, self.partial = reason, partial
+
+
+def knowledge_reset(graph, tenant: str, by: str) -> dict:
+    """학생이 넣은 지식을 처음 상태로 — 새 되돌리기 장치를 두지 않고 이미 있는 묶음별 되돌리기를 부른다(graph(fn) = fn(session)):
+      ① 포털의 검토 화면으로 적재한 문서 판(manual_graph.rollback) — 문서마다 최신 판부터, 기본 제공 판(시작할 때 넣는 판)이 맨 위가 될 때까지.
+         기본 제공 판은 서명 묶음의 검토 방식(review_method)을 실어 적재한 판이다(scripts/class_knowledge.py). 포털의 검토 화면은 그 칸을 보내지
+         않는다 — 이름(누가 넣었나)으로 가르지 않는다.
+      ② 화면(조치 방법)에서 만든 조치 방법(skill_graph.remove).
+      ③ 업무 DB 표 정의 묶음(graph_ingest.clear — 시작 상태에는 없다).
+    ① · ② 는 서로 기댄다: 화면에서 만든 조치 방법이 문서의 고장 유형에 이어져 있으면 그 문서는 조치 방법을 지운 뒤에야 되돌려지고, 문서의
+    규칙이 화면의 조치 방법을 가리키면 그 문서를 되돌린 뒤에야 조치 방법이 지워진다. 문서끼리도 쓰는 쪽부터 되돌려야 한다. 그래서 되돌릴
+    수 있는 것부터 되돌리고, 막힌 것은 다른 것이 되돌려진 뒤 다시 해 본다. 한 바퀴 동안 아무것도 되돌려지지 않으면 KnowledgeResetStopped
+    (무엇이 왜, 그때까지 되돌린 것) — 조용히 건너뛰지 않는다.
+    돌려줌 = {documents: [{filename, batch, restored_batch}], skills: [{id, sopId, name, decision_cases}], ddl_batches: [묶음 id],
+    base_missing: [파일 이름]}. base_missing = 기본 제공 판이 있었는데 지금은 맨 위 판이 없는 문서(학생이 기본 제공 판까지 되돌린 뒤 자기 판을
+    넣었던 문서) — 시작 파일을 다시 실행하면 기본 제공 판이 다시 적재된다(scripts/class_knowledge.py)."""
+    from hydcommon.words import josa
+    from . import graph_ingest, manual_graph, skill_graph
+    out = {"documents": [], "skills": [], "ddl_batches": [], "base_missing": []}
+
+    def stop(what: str, reason: str):
+        raise KnowledgeResetStopped(f"{josa(what, '을')} 되돌리지 못했습니다 — {reason}", out)
+
+    def one_pass(session) -> tuple[bool, list[tuple[str, str]]]:
+        progressed, blocked = False, []
+        heads = [r for r in manual_graph.history(session, tenant)             # 최신 적재부터(history 의 차례)
+                 if r.get("current") and r.get("status") == "ACTIVE" and not r.get("review_method")]
+        for r in heads:
+            try:
+                done = manual_graph.rollback(session, tenant, r["batch"], by)
+            except manual_graph.Conflict as e:
+                blocked.append((f"적재한 문서 「{r.get('filename') or r['batch']}」", f"{e} (「지식 › 문서 등록」의 등록 이력에서 그 문서를 확인하세요)"))
+                continue
+            out["documents"].append({"filename": r.get("filename"), "batch": r["batch"], "restored_batch": done.get("restored_batch")})
+            progressed = True
+        for k in skill_graph.screen_skills(session):
+            try:
+                done = skill_graph.remove(session, k["id"], by=by)
+            except skill_graph.Conflict as e:
+                blocked.append((f"화면에서 만든 조치 방법 「{k.get('name') or k['id']}」", str(e)))
+                continue
+            out["skills"].append({"id": k["id"], "sopId": k.get("sopId"), "name": k.get("name"), "decision_cases": done.get("decision_cases", 0)})
+            progressed = True
+        return progressed, blocked
+
+    def authored(session):
+        while True:
+            progressed, blocked = one_pass(session)
+            if not progressed:
+                if blocked:
+                    stop(*blocked[0])
+                break
+        rows = manual_graph.history(session, tenant)
+        live = {r.get("document_id") for r in rows if r.get("current")}
+        out["base_missing"] = sorted({r.get("filename") for r in rows if r.get("review_method") and r.get("document_id") not in live} - {None})
+
+    def ddl(session):
+        graph_ingest.ensure_schema(session)
+        for batch in [r["batch"] for r in session.run("MATCH (b:IngestionBatch {status:'ACTIVE'}) RETURN b.id AS batch ORDER BY b.createdAt DESC").data()]:
+            try:
+                graph_ingest.clear(session, batch)
+            except graph_ingest.Conflict as e:
+                stop(f"업무 DB 표 정의 묶음 {batch}", str(e))
+            out["ddl_batches"].append(batch)
+
+    for part in (authored, ddl):
+        graph(part)
+    return out
+
+
+def _reset_steps(rt, by: str, *, records: bool, keep_class: bool, progress=progress_log.SILENT, graph=None,
+                 servers_locked: str | None = None) -> list[dict]:
+    """records=True(관리 탭 [기준으로 되돌리기]): 지식 · 구성과 함께 학생 기록(비밀 값 · 끝난 질문 · 판단 채점 · 시험 비교)도 지운다.
+    records=False(출발본 불러오기 · 그 실패 복원): 구성만 — 지식은 건드리지 않고, 비밀 값은 이 PC 의 자격 증명이라 남긴다(불러온 서버의
+    ${SECRET:이름} 이 쓴다).
+    graph: 지식 그래프 세션을 여는 함수 graph(fn) = fn(session)(기본은 _graph_session).
+    servers_locked: 지금 단계에서 내 도구 서버를 지울 수 없는 까닭(course_policy 의 tool_servers.register 가 막힌 단계) — 있으면 도구 서버 ·
+    비밀 값을 지우지 않고 그 까닭을 단계 결과로 남긴다(만들 수 없는 단계에서 지우면 되살릴 길이 없다).
     progress: 진행 기록(reset_plan(records) 의 단계가 적혀 있어야 한다) — 단계마다 시작 · 끝(지운 것 한 줄) · 실패를 적는다."""
     from . import agent_trials, judgment_eval
     from . import ask as ask_mod
@@ -294,11 +394,21 @@ def _reset_steps(rt, by: str, *, records: bool, keep_class: bool, progress=progr
         kept.update(k["definition"] for k in out.get("kept") or [])
         return out
 
+    def mcp_reset():
+        store = mcp_registry.store_for(rt.repo)
+        if servers_locked:
+            mine = [n for n in store.servers(rt.tenant_id) if n not in mcp_registry.BASE_SERVERS]
+            return {"removed_servers": [], "removed_checks": 0, "removed_secrets": 0, "kept_servers": mine,
+                    "kept_secrets": len(mcp_secrets.load(rt.repo, rt.tenant_id)), "locked": servers_locked}
+        return mcp_registry.reset(store, rt.tenant_id, secrets=records)
+
     work = [("deploy_reset", deploy_reset),
             ("flows_reset", lambda: FlowStore(rt.repo, rt.tenant_id).reset(keep=kept)),
             ("agents_reset", lambda: A.reset(rt, by=by)),
-            ("mcp_reset", lambda: mcp_registry.reset(mcp_registry.store_for(rt.repo), rt.tenant_id, secrets=records))]
+            ("mcp_reset", mcp_reset)]
     if records:
+        # 지식을 먼저 되돌린다: 조치 방법이 승인 역할로 쓰던 내 역할이 그 뒤의 역할 지우기에서 함께 지워지고, 여기서 멈추면 구성은 손대지 않은 채다
+        work.insert(0, ("knowledge_reset", lambda: knowledge_reset(graph or _graph_session, rt.tenant_id, by)))
         work += [("ask_reset", lambda: ask_mod.reset(rt)),
                  ("eval_reset", lambda: judgment_eval.PgEvalStore(rt.repo.dsn, rt.tenant_id).reset()),
                  ("trials_reset", lambda: agent_trials.store_for(rt.repo).reset(rt.tenant_id))]
@@ -310,8 +420,10 @@ def _reset_steps(rt, by: str, *, records: bool, keep_class: bool, progress=progr
         except Exception as e:  # noqa: BLE001 — 어느 단계에서 왜 멈췄는지 사람이 읽을 사유로(빈 성공 금지)
             reason = getattr(e, "message", None) or getattr(e, "reason", None) or str(e)
             progress.fail(step, reason)
-            raise BundleError(409 if getattr(e, "status", None) == 409 or type(e).__name__ == "FlowBusy" else 500,
+            conflict = getattr(e, "status", None) == 409 or type(e).__name__ in ("FlowBusy", "KnowledgeResetStopped")
+            raise BundleError(409 if conflict else 500,
                               f"되돌리기가 '{labels[step]}' 단계에서 멈췄습니다 — {reason}", done=done, failed_step=step,
+                              partial=getattr(e, "partial", None),          # 멈춘 단계가 그때까지 한 일(지식: 이미 되돌린 문서 · 조치 방법 · 묶음)
                               not_done=[s for s, _ in work if s not in {d['step'] for d in done} and s != step]) from e
         if step == "deploy_reset":
             result = {k: result.get(k) for k in ("changes", "already_reference", "message")}
@@ -326,6 +438,11 @@ def _reset_steps(rt, by: str, *, records: bool, keep_class: bool, progress=progr
 
 def _reset_text(step: str, r: dict) -> str:
     """되돌리기 단계 결과를 사람이 읽는 한 줄로(화면에 영문 칸 이름을 보이지 않게)."""
+    if step == "knowledge_reset":
+        docs = r.get("documents") or []
+        back = sum(1 for d in docs if d.get("restored_batch"))
+        return (f"적재한 문서 판 {len(docs)}개" + (f"(그 가운데 {back}개는 앞 판으로 돌아감)" if back else "")
+                + f" · 화면에서 만든 조치 방법 {len(r.get('skills') or [])}개 · 업무 DB 표 정의 묶음 {len(r.get('ddl_batches') or [])}개")
     if step == "deploy_reset":
         return r.get("message") or ""
     if step == "flows_reset":
@@ -335,6 +452,10 @@ def _reset_text(step: str, r: dict) -> str:
                 f"역할 {r.get('roles', 0)}" + (f"(흐름이 쓰는 역할 {len(r['kept_roles'])}개는 남김)" if r.get('kept_roles') else '')
                 + f" · 기본 담당으로 돌린 열린 단계 {len(r.get('returned_tasks') or [])}")
     if step == "mcp_reset":
+        if r.get("locked"):
+            kept = r.get("kept_servers") or []
+            return ((f"내 도구 서버 {len(kept)}개({', '.join(kept)})와 비밀 값 {r.get('kept_secrets', 0)}개는 지우지 않고 남겼습니다" if kept or r.get("kept_secrets")
+                     else "지울 내 도구 서버 · 비밀 값이 없습니다") + f" — {r['locked']}")
         return (f"서버 {len(r.get('removed_servers') or [])}({', '.join(r.get('removed_servers') or []) or '없음'}) · 검사 기록 {r.get('removed_checks', 0)} · "
                 f"비밀 값 {r.get('removed_secrets', 0)}")
     if step == "eval_reset":
@@ -344,8 +465,42 @@ def _reset_text(step: str, r: dict) -> str:
     return r.get("note") or ""
 
 
-def reset_all(rt, *, by: str, audit=None, progress=progress_log.SILENT) -> dict:
-    """하나의 '기준으로 되돌리기'. 먼저 409 조건을 모두 점검하고, 하나라도 있으면 아무것도 지우지 않는다."""
+#: 되돌리기가 손대지 않는 것 — 응답의 kept 에 그대로 싣는다(화면이 「남는 것」을 이 목록으로 말할 수 있다)
+RESET_KEPT = (
+    "기본 제공 에이전트 · 스킬 · 역할 · 도구 서버 · 흐름과 기본 제공 문서에서 넣은 지식",
+    "처리 건과 처리 건 기록(지운 흐름으로 끝난 처리 건은 목록에서 숨깁니다)",
+    "모의 업무 시스템에 생긴 발주 · 정비 요청과 가상 설비의 상태 — 「유압 설비 › 결함 시뮬레이션」의 [초기화]로 되돌립니다",
+)
+
+
+def reset_summary(steps: list[dict]) -> dict:
+    """되돌리기가 실제로 한 일 → {removed: [지운 것 한 줄씩], kept: [남긴 것 한 줄씩]}. 단계 결과에서 만든다(하지 않은 일을 말하지 않는다)."""
+    by_step = {s["step"]: s["result"] for s in steps}
+    k, a, m = by_step.get("knowledge_reset") or {}, by_step.get("agents_reset") or {}, by_step.get("mcp_reset") or {}
+    f = by_step.get("flows_reset") or {}
+    removed = [text for n, text in (
+        (len(k.get("documents") or []), f"적재한 문서 판 {len(k.get('documents') or [])}개"),
+        (len(k.get("skills") or []), f"화면에서 만든 조치 방법 {len(k.get('skills') or [])}개"),
+        (len(k.get("ddl_batches") or []), f"업무 DB 표 정의 묶음 {len(k.get('ddl_batches') or [])}개"),
+        (f.get("definitions", 0), f"내가 가져온 흐름 {f.get('definitions', 0)}개(판본 {f.get('versions', 0)}개)"),
+        (a.get("agents", 0), f"내가 만든 AI 에이전트 {a.get('agents', 0)}개"),
+        (a.get("skills", 0), f"내가 만든 스킬 {a.get('skills', 0)}개"),
+        (a.get("roles", 0), f"내가 만든 역할 {a.get('roles', 0)}개"),
+        (a.get("assignments", 0), f"단계 배정 {a.get('assignments', 0)}건"),
+        (len(m.get("removed_servers") or []), f"내 도구 서버 {len(m.get('removed_servers') or [])}개"),
+        (m.get("removed_secrets", 0), f"비밀 값 {m.get('removed_secrets', 0)}개"),
+    ) if n]
+    kept = list(RESET_KEPT)
+    if a.get("kept_roles"):
+        kept.append(f"흐름이나 조치 방법이 쓰는 내 역할 {len(a['kept_roles'])}개")
+    if m.get("locked") and (m.get("kept_servers") or m.get("kept_secrets")):
+        kept.append(f"내 도구 서버 {len(m.get('kept_servers') or [])}개와 비밀 값 {m.get('kept_secrets', 0)}개 — {m['locked']}")
+    return {"removed": removed, "kept": kept, "base_missing": list(k.get("base_missing") or [])}
+
+
+def reset_all(rt, *, by: str, audit=None, progress=progress_log.SILENT, graph=None, servers_locked: str | None = None) -> dict:
+    """하나의 '기준으로 되돌리기'. 먼저 409 조건을 모두 점검하고, 하나라도 있으면 아무것도 지우지 않는다.
+    graph · servers_locked 는 _reset_steps 의 것(지식 그래프 세션 · 도구 서버를 지울 수 없는 단계의 까닭)."""
     if not _LOCK.acquire(blocking=False):
         raise BundleError(409, "다른 되돌리기 · 불러오기가 진행 중입니다 — 끝난 뒤 다시 누르세요")
     try:
@@ -353,13 +508,18 @@ def reset_all(rt, *, by: str, audit=None, progress=progress_log.SILENT) -> dict:
         progress.start("check")
         _refuse_if_busy(rt, "되돌리지", keep_class=True)
         progress.done("check", "막는 처리 건 없음")
-        steps = _reset_steps(rt, by, records=True, keep_class=True, progress=progress)
+        steps = _reset_steps(rt, by, records=True, keep_class=True, progress=progress, graph=graph, servers_locked=servers_locked)
     finally:
         _LOCK.release()
     if audit:
         audit("-", by, "CONFIG_RESET", {"steps": [s["step"] for s in steps]})
-    return {"steps": steps, "message": "기준으로 되돌렸습니다 — 내가 만든 에이전트 · 스킬 · 역할 · 배정 · MCP 서버 · 비밀 값 · 흐름 · 배포와 "
-                                       "끝난 질문 · 판단 채점 · 시험 비교 기록을 지웠고, 기준과 수업 흐름은 그대로입니다"}
+    from hydcommon.words import josa
+    summary = reset_summary(steps)
+    return {"steps": steps, **summary,
+            "message": ("기준으로 되돌렸습니다 — " + (josa(", ".join(summary["removed"]), "을") + " 지웠습니다" if summary["removed"] else "지울 것이 없었습니다")
+                        + ". 끝난 질문 기록, 판단 채점의 정답표와 실행 기록, 에이전트 시험 비교 기록도 비웠습니다. 기본 제공 것과 처리 건 기록은 그대로입니다"
+                        + (f". 기본 제공 문서 {', '.join(summary['base_missing'])}의 지식이 지금 없습니다 — 시작 파일을 다시 실행하면 다시 적재됩니다"
+                           if summary["base_missing"] else ""))}
 
 
 # ---------------------------------------------------------------- 검증(아무것도 바꾸지 않음)
@@ -406,11 +566,11 @@ def validate(rt, base_loader, bundle, secrets: dict | None = None, skip_missing_
     plan_servers, skipped, needs = [], [], []
     seen = set()
     for i, item in enumerate(content.get("mcp_servers") or []):
-        where = f"MCP 서버 {i + 1}번째"
+        where = f"도구 서버 {i + 1}번째"
         if not isinstance(item, dict):
             problems.append(_problem(where, "객체여야 합니다")); continue
         name = _text(item.get("name")).strip()
-        where = f"MCP 서버 '{name or i + 1}'"
+        where = f"도구 서버 '{name or i + 1}'"
         if not mcp_registry.NAME_RE.match(name):
             problems.append(_problem(where, "이름은 소문자 · 숫자 · 하이픈 1~40자여야 합니다")); continue
         if name in mcp_registry.BASE_SERVERS:
@@ -424,7 +584,7 @@ def validate(rt, base_loader, bundle, secrets: dict | None = None, skip_missing_
         labels = {s.get("slot"): s.get("label") for s in item.get("secrets") or [] if isinstance(s, dict)}
         if missing:
             if skip_missing_secrets:
-                skipped.append({"what": f"MCP 서버 '{name}'", "server": name,
+                skipped.append({"what": f"도구 서버 '{name}'", "server": name,
                                 "reason": "비밀값(" + ", ".join(labels.get(s) or s for s in missing) + ")을 넣지 않아 이 서버만 건너뛰었습니다"})
                 continue
             needs.append({"server": name, "slots": [{"slot": s, "label": labels.get(s) or s} for s in missing]})
@@ -660,7 +820,7 @@ def validate(rt, base_loader, bundle, secrets: dict | None = None, skip_missing_
         raise BundleError(422, f"출발본 파일을 받을 수 없습니다 ({len(problems)}건) — {problems[0]['where']}: {problems[0]['reason']}",
                           problems=problems, needs_secrets=needs or None)
     if needs:
-        raise BundleError(422, "비밀값이 필요한 MCP 서버가 있습니다 — " + ", ".join(f"{n['server']}({', '.join(s['label'] for s in n['slots'])})" for n in needs)
+        raise BundleError(422, "비밀값이 필요한 도구 서버가 있습니다 — " + ", ".join(f"{n['server']}({', '.join(s['label'] for s in n['slots'])})" for n in needs)
                           + ". 값을 넣어 다시 불러오거나 '그 서버만 건너뛰기'를 고르세요(아무것도 바꾸지 않았습니다)", needs_secrets=needs)
     case_tags = student_cases.validate_tags(bundle.get('case_tags', []), content)
     return {"mcp": plan_servers, "skills": plan_skills, "agents": plan_agents, "roles": plan_roles, "flows": plan_flows,
@@ -721,6 +881,8 @@ def _apply(rt, base_loader, plan: dict, by: str, *, mcp_rows: dict | None = None
                 continue
             A.create_role(repo, tenant, {"name": r["name"], "key": r["id"][len(ROLE_ID_PREFIX):], "kind": r["kind"]}, by=by)
             current["items"].append(r["name"])
+        if plan["roles"]:
+            A.sync_roles(rt)              # 다시 세운 역할을 지식 그래프의 Role 로(못 옮기면 주기 반복이 맞춘다 — 불러오기를 멈추지 않는다)
         done()
         begin("flows")
         fstore = FlowStore(repo, tenant)
@@ -849,7 +1011,7 @@ def _diff_paths(a, b, path="") -> list[str]:
     return [] if a == b else [path.lstrip(".")]
 
 
-CONTENT_WORDS = {"mcp_servers": "MCP 서버", "skills": "스킬", "agents": "에이전트", "roles": "역할", "flows": "흐름",
+CONTENT_WORDS = {"mcp_servers": "도구 서버", "skills": "스킬", "agents": "에이전트", "roles": "역할", "flows": "흐름",
                  "assignments": "단계 배정", "deployments": "배포"}
 
 
@@ -1010,4 +1172,12 @@ def register(app, *, runtime_factory, audit=lambda *a, **k: None, base_loader=No
         rt = runtime()
         from .inbox import actor_or_400
         by = actor_or_400((body or {}).get("by"))[:60]
-        return await run(tracked(body, "config_reset", lambda p: reset_all(rt, by=by, audit=audit, progress=p)))
+        locked = None
+        policy = getattr(app.state, "course", None)            # 수업 경계 정본(course_policy) — 도구 서버를 만들 수 없는 단계면 지우지도 않는다
+        if policy is not None:
+            from .course_policy import AccessDenied
+            try:
+                policy.action("tool_servers.register")
+            except AccessDenied as e:
+                locked = str(e)
+        return await run(tracked(body, "config_reset", lambda p: reset_all(rt, by=by, audit=audit, progress=p, servers_locked=locked)))

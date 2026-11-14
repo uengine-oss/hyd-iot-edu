@@ -1,8 +1,8 @@
 {
   "processDefinitionId": "anomaly_response",
   "processDefinitionName": "설비 이상 조치",
-  "version": "2.4",
-  "description": "경보(alerts RAISE)가 프로세스 인스턴스를 열고, AI 에이전트가 네 개의 판단 작업(원인 진단 · 조치 후보 · 규정 검토 · 우선순위)을 맡아 조치 카드를 올리면, 사람이 카드 하나를 승인하거나 거절한다(폼 select_card 제출). 승인하면 프로세스가 고른 카드의 조치 종류대로 PLC 명령 · 재관측 · 작업지시를 실행해 종결하고, 설비 명령도 작업지시도 없는 카드(발주만 · 실행할 조치 없음)는 설비에 아무것도 하지 않은 사실을 결과 보고로 남기고 책임자 확인으로 끝낸다. 거절하면 설비 · 업무에 아무것도 하지 않고 결과 보고(반려)로 끝낸다. AI 에이전트 작업은 ProcessGPT와 같은 모양(userTask + agentMode COMPLETE + orchestration cliagents)으로 적는다. 온톨로지 v2 proc:anomaly-response 가 이 흐름의 객체(역할 · 시스템 · 판단)를 갖고, 단계 순서의 정본은 이 정의다.",
+  "version": "2.5",
+  "description": "경보가 처리 건을 열고, AI 에이전트가 네 단계(원인 진단 · 조치 후보 조회 · 규정 검토 · 조치 후보 정리)로 조치 후보를 올리면, 담당자가 후보 하나를 승인하거나 반려한다(폼 select_card 제출). 승인하면 고른 후보의 조치 종류대로 설비에 명령 · 효과 확인 · 정비 요청 등록을 실행해 처리 완료로 끝내고, 설비 명령도 정비 요청도 없는 후보(발주만 · 실행할 조치 없음)는 설비에 아무것도 하지 않은 사실을 결과 보고로 남기고 끝낸다. 효과 확인에서 회복되지 않았거나 담당자가 제때 고르지 않으면 책임자 확인으로 넘긴다. 반려하면 설비 · 업무에 아무것도 하지 않고 결과 보고(반려)로 끝낸다. AI 에이전트 단계는 ProcessGPT와 같은 모양(userTask + agentMode COMPLETE + orchestration cliagents)으로 적는다. 온톨로지 v2 proc:anomaly-response 가 이 흐름의 객체(역할 · 시스템 · 판단)를 갖고, 단계 순서의 정본은 이 정의다.",
   "ontologyRef": "proc:anomaly-response",
   "megaProcessId": "설비 운영",
   "majorProcessId": "설비 이상 대응",
@@ -65,27 +65,27 @@
     {
       "name": "chosen_skill",
       "type": "Text",
-      "description": "사람이 승인한 스킬(= SOP) id — 거절하면 없다"
+      "description": "사람이 승인한 조치 방법 id — 반려하면 없다"
     },
     {
       "name": "chosen_skill_kind",
       "type": "Text",
-      "description": "고른 카드의 조치 종류: control(설비 명령 있음) | work_order(작업지시만) | purchase(발주만) | other(명령 · 작업지시 · 발주 없음 — 흐름이 실행하지 않음)"
+      "description": "고른 카드의 조치 종류: control(설비 명령) | work_order(정비 요청만) | purchase(발주만) | other(명령 · 정비 요청 · 발주 없음 — 흐름이 실행하지 않음)"
     },
     {
       "name": "recovered",
       "type": "Boolean",
-      "description": "재관측 결과 — 경보 해제 and 경보 패턴별 회복 기준(이 정의의 alertPolicy) 충족"
+      "description": "효과 확인 결과 — 경보 해제 and 경보 패턴별 회복 기준(이 정의의 alertPolicy) 충족"
     },
     {
       "name": "work_order",
       "type": "Object",
-      "description": "CMMS 작업지시 결과"
+      "description": "정비 요청 등록 결과"
     },
     {
       "name": "note",
       "type": "Text",
-      "description": "상급자 확인 메모"
+      "description": "책임자 확인 메모"
     },
     {
       "name": "approval",
@@ -112,12 +112,12 @@
     {
       "name": "운전원",
       "endpoint": "role:operator",
-      "resolutionRule": "온톨로지 Role role:operator (level 1). 조치 카드 승인 · 거절"
+      "resolutionRule": "온톨로지 Role role:operator (level 1). 조치 후보 승인 · 반려"
     },
     {
       "name": "생산관리자",
       "endpoint": "role:prod-mgr",
-      "resolutionRule": "온톨로지 Role role:prod-mgr (level 2). 상급 승인 · 에스컬레이션"
+      "resolutionRule": "온톨로지 Role role:prod-mgr (level 2). 책임자 확인"
     },
     {
       "name": "SCADA",
@@ -127,18 +127,18 @@
     {
       "name": "프로세스",
       "endpoint": "sys:process",
-      "resolutionRule": "process 서비스 자체 (타이머 · 재관측 · 결과 보고)"
+      "resolutionRule": "process 서비스 자체 (타이머 · 효과 확인 · 결과 보고)"
     },
     {
       "name": "CMMS",
       "endpoint": "sys:cmms",
-      "resolutionRule": "enterprise 시스템 (작업지시)"
+      "resolutionRule": "enterprise 시스템 (정비 요청)"
     }
   ],
   "events": [
     {
       "id": "ev:alert",
-      "name": "경보 수신",
+      "name": "설비 경보",
       "type": "startEvent",
       "eventDefinition": "message",
       "messageRef": "alerts (state=RAISE)",
@@ -152,23 +152,23 @@
       "eventDefinition": "timer",
       "timer": "PT10M",
       "attachedTo": "task:select",
-      "description": "운전원이 10분 안에 카드를 승인하거나 거절하지 않으면 생산관리자에게 넘어간다(사람이 읽고 고르는 시간이라 벽시계 — 배속을 곱하지 않는다)."
+      "description": "운전원이 10분 안에 조치 후보를 승인하거나 반려하지 않으면 생산관리자에게 넘어간다(사람이 읽고 고르는 시간이라 벽시계 — 배속을 곱하지 않는다)."
     },
     {
       "id": "ev:closed",
-      "name": "종결",
+      "name": "처리 완료",
       "type": "endEvent",
       "eventDefinition": "none"
     },
     {
       "id": "ev:escalated",
-      "name": "에스컬레이션 종료",
+      "name": "책임자 확인 종결",
       "type": "endEvent",
       "eventDefinition": "escalation"
     },
     {
       "id": "ev:rejected",
-      "name": "거절 종결",
+      "name": "반려 종결",
       "type": "endEvent",
       "eventDefinition": "none"
     },
@@ -253,7 +253,7 @@
     },
     {
       "id": "task:rank",
-      "name": "우선순위 · 카드 작성",
+      "name": "조치 후보 정리",
       "type": "userTask",
       "role": "AI 에이전트",
       "agent": "sys:agent",
@@ -273,16 +273,16 @@
         "decision_id"
       ],
       "duration": 2,
-      "description": "우선순위 · 카드 작성"
+      "description": "조치 후보 정리"
     },
     {
       "id": "task:select",
-      "name": "조치 카드 승인 · 거절",
+      "name": "조치 선택 · 승인",
       "type": "userTask",
       "role": "운전원",
       "tool": "formHandler:select_card",
       "agent": null,
-      "instruction": "에이전트가 올린 카드 중 하나를 승인하거나, 어느 카드도 실행하지 않기로 하고 사유와 함께 거절한다. 승인은 고른 카드의 승인 역할 이상만 할 수 있고(아니면 process 가 403 으로 거절한다), 거절하면 설비 명령 · 업무 거래를 하나도 내지 않고 결과 보고(반려)로 끝난다.",
+      "instruction": "에이전트가 올린 카드 중 하나를 승인하거나, 어느 카드도 실행하지 않기로 하고 사유와 함께 반려한다. 승인은 고른 카드의 승인 역할 이상만 할 수 있고(아니면 process 가 403 으로 막는다), 반려하면 설비 명령 · 업무 거래를 하나도 내지 않고 결과 보고(반려)로 끝난다.",
       "inputData": [
         "decision"
       ],
@@ -295,17 +295,17 @@
       "checkpoints": [
         "규정상 제외된 카드는 고를 수 없음",
         "승인 역할 ≥ 카드의 APPROVED_BY",
-        "거절에는 사유를 적는다"
+        "반려에는 사유를 적는다"
       ],
       "duration": 1,
       "attachedEvents": [
         "ev:select-timeout"
       ],
-      "description": "조치 카드 승인 · 거절"
+      "description": "조치 선택 · 승인"
     },
     {
       "id": "task:escalate",
-      "name": "상급자 호출",
+      "name": "책임자 확인",
       "type": "userTask",
       "role": "생산관리자",
       "tool": "formHandler:escalate",
@@ -320,11 +320,11 @@
         "note"
       ],
       "duration": 1,
-      "description": "상급자 호출"
+      "description": "책임자 확인"
     },
     {
       "id": "task:command",
-      "name": "PLC 명령 발행",
+      "name": "설비에 명령",
       "type": "serviceTask",
       "role": "SCADA",
       "agent": null,
@@ -337,17 +337,17 @@
       ],
       "outputData": [],
       "duration": 1,
-      "description": "PLC 명령 발행"
+      "description": "설비에 명령"
     },
     {
       "id": "task:reobserve",
-      "name": "재관측 (15분)",
+      "name": "효과 확인 (15분)",
       "type": "serviceTask",
       "role": "프로세스",
       "agent": null,
       "orchestration": "hyd-process",
       "tool": "incident:reobserve",
-      "instruction": "ACK 뒤 15분(시간 배율 적용) 재관측한다. 경보 CLEAR와 사건에 고정된 정의의 패턴별 회복 기준을 함께 확인한다. 기준이 없으면 회복으로 판정하지 않는다.",
+      "instruction": "ACK 뒤 15분(시간 배율 적용) 효과를 확인한다. 경보 CLEAR와 사건에 고정된 정의의 패턴별 회복 기준을 함께 확인한다. 기준이 없으면 회복으로 판정하지 않는다.",
       "inputData": [
         "incident"
       ],
@@ -355,11 +355,11 @@
         "recovered"
       ],
       "duration": 1,
-      "description": "재관측 (15분)"
+      "description": "효과 확인 (15분)"
     },
     {
       "id": "task:work-order",
-      "name": "정비 작업지시",
+      "name": "정비 요청 등록",
       "type": "serviceTask",
       "role": "CMMS",
       "agent": null,
@@ -374,11 +374,11 @@
         "work_order"
       ],
       "duration": 1,
-      "description": "정비 작업지시"
+      "description": "정비 요청 등록"
     },
     {
       "id": "task:report-rejected",
-      "name": "결과 보고: 거절",
+      "name": "결과 보고: 반려",
       "type": "serviceTask",
       "role": "프로세스",
       "agent": null,
@@ -387,7 +387,7 @@
       "service": {
         "outcome": "반려",
         "title": "{asset} 설비 이상 조치 결과",
-        "summary": "담당자가 조치 카드를 거절했습니다 — 사유: {approval_reason}. 설비 명령 · 업무 거래는 내지 않았습니다"
+        "summary": "담당자가 반려했습니다. 설비 명령 · 업무 거래는 내지 않았습니다 — 사유: {approval_reason}"
       },
       "inputData": [],
       "outputData": [
@@ -395,7 +395,7 @@
       ],
       "checkpoints": [],
       "duration": 1,
-      "description": "결과 보고: 거절"
+      "description": "결과 보고: 반려"
     },
     {
       "id": "task:report-purchase-only",
@@ -408,7 +408,7 @@
       "service": {
         "outcome": "실행하지 않음",
         "title": "{asset} 설비 이상 조치 결과",
-        "summary": "승인한 카드는 발주만 있는 카드입니다. 구매요청은 승인을 전달할 때 구매 · 재고 관리에 등록했고(승인 기록의 전달 결과), 설비에는 명령도 작업지시도 내지 않았습니다. 설비 이상은 그대로이므로 책임자가 설비 조치를 따로 정해야 합니다 — 승인자 {approved_by_name}"
+        "summary": "승인한 카드는 발주만 있는 카드입니다. 구매요청은 승인을 전달할 때 구매 · 재고 관리에 등록했고(승인 기록의 전달 결과), 설비에는 명령도 정비 요청도 내지 않았습니다. 설비 이상은 그대로이므로 책임자가 설비 조치를 따로 정해야 합니다 — 승인자 {approved_by_name}"
       },
       "inputData": [],
       "outputData": [
@@ -429,7 +429,7 @@
       "service": {
         "outcome": "실행하지 않음",
         "title": "{asset} 설비 이상 조치 결과",
-        "summary": "승인한 카드에는 설비 명령도 작업지시도 발주도 없어 이 흐름이 실행한 것이 없습니다. 설비 이상은 그대로이므로 조치 방법의 조치 구성을 확인하고 다시 판단해 다른 카드를 고르세요 — 승인자 {approved_by_name}"
+        "summary": "승인한 조치 후보에는 설비 명령도 정비 요청도 발주도 없어 이 흐름이 실행한 것이 없습니다. 설비 이상은 그대로이므로 조치 방법의 조치 구성을 확인하고 다시 판단해 다른 카드를 고르세요 — 승인자 {approved_by_name}"
       },
       "inputData": [],
       "outputData": [
@@ -508,7 +508,7 @@
       "id": "seq:rejected",
       "source": "gw:approved",
       "target": "task:report-rejected",
-      "name": "거절",
+      "name": "반려",
       "properties": {
         "default": true
       }
@@ -517,14 +517,14 @@
       "id": "seq:gw-command",
       "source": "gw:control",
       "target": "task:command",
-      "name": "설비 명령 있음",
+      "name": "설비 명령",
       "condition": "chosen_skill_kind == 'control'"
     },
     {
       "id": "seq:gw-workorder",
       "source": "gw:control",
       "target": "task:work-order",
-      "name": "작업지시만",
+      "name": "정비 요청만",
       "condition": "chosen_skill_kind == 'work_order'"
     },
     {
@@ -557,7 +557,7 @@
       "id": "seq:gw-recovered-wo",
       "source": "gw:recovered",
       "target": "task:work-order",
-      "name": "회복 기준 충족 and 경보 해제",
+      "name": "회복",
       "condition": "recovered == True"
     },
     {

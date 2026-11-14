@@ -190,10 +190,10 @@ UNWIND [['ks:sr-04','설비안전규정 SR-04','regulation','SR-04'],
         ['ks:monitoring-standard','감시 임계값 회사 설정값','policy','MON-SET'],
         // 수업 문서에 있는 감지 기준은 그 문서의 절 번호(ref)로 가리킨다. 적재가 만드는 절 노드에 바로 잇지 못하는 까닭: 절 · 문서 노드 id 가
         // PC 마다 다르고(manual:<테넌트 해시>:<적재 uuid>:…), 적재 때 서명 묶음 밖의 관계를 더하면 강사 서명 지식이 아니게 된다(재서명 = 사용자 결정, RUNBOOK §7).
-        ['ks:monitoring-hm-8','쿨러 감시 기준 — 수업 문서 HM-8 「HM-8.3 냉각 성능 판정 기준」의 값 (경보 55 ℃ · 냉각 효율 70 % · 정상 52 ℃ · 인터록 65 ℃)','policy','HM-8.3'],
-        ['ks:monitoring-pm-02','펌프 누설 감시 기준 — 토출 압력 165 bar · 유량 8.0 l/min 은 수업 문서 PM-02 「PM-2.10 정기 정비가 막는 고장」의 값','policy','PM-2.10'],
-        ['ks:monitoring-pm-02-fan','팬 진동 감시 기준 — 1.2 mm/s 는 수업 문서 PM-02 「PM-2.9 시운전 확인」의 정상 경계(팬 진동 VS1 1.2 mm/s 미만)','policy','PM-2.9'],
-        ['ks:monitoring-pr-07','예비품 재고 경보 기준 — 수업 문서 PR-07 「PR-7.2 적정 재고와 재주문점」 (가용 재고가 재주문점 아래)','policy','PR-7.2']] AS r
+        ['ks:monitoring-hm-8','쿨러 감시 기준 — HM-8 「HM-8.3 냉각 성능 판정 기준」의 값 (경보 55 ℃ · 냉각 효율 70 % · 정상 52 ℃ · 인터록 65 ℃)','policy','HM-8.3'],
+        ['ks:monitoring-pm-02','펌프 누설 감시 기준 — 토출 압력 165 bar · 유량 8.0 l/min 은 PM-02 「PM-2.10 정기 정비가 막는 고장」의 값','policy','PM-2.10'],
+        ['ks:monitoring-pm-02-fan','팬 진동 감시 기준 — 1.2 mm/s 는 PM-02 「PM-2.9 시운전 확인」의 정상 경계(팬 진동 VS1 1.2 mm/s 미만)','policy','PM-2.9'],
+        ['ks:monitoring-pr-07','예비품 재고 경보 기준 — PR-07 「PR-7.2 적정 재고와 재주문점」 (가용 재고가 재주문점 아래)','policy','PR-7.2']] AS r
 MERGE (n:KnowledgeSource {id: r[0]}) SET n.name = r[1], n.kind = r[2], n.ref = r[3];
 
 // ============================================================== 3. 판단 입력
@@ -209,8 +209,8 @@ UNWIND [['in:pattern','경보 패턴','string','pattern','sys:cep',null],
         ['in:plc-mode','PLC 운전 모드','enum','plc_mode','sys:scada',null],['in:plc-state','PLC 상태','enum','plc_state','sys:scada',null],
         ['in:forecast-ts1','조치 후 예측 유온','number','forecast_ts1','sys:agent','sv:ts1'],
         ['in:forecast-ps1','조치 후 예측 토출 압력','number','forecast_ps1','sys:agent','sv:ps1'],
-        ['in:skill-kind','후보 스킬 종류','enum','skill_kind','sys:agent',null],
-        ['in:skill-code','후보 스킬의 명령 코드','string','skill_code','sys:agent',null],
+        ['in:skill-kind','조치 후보의 종류','enum','skill_kind','sys:agent',null],
+        ['in:skill-code','조치 후보의 명령 코드','string','skill_code','sys:agent',null],
         ['in:fan100-hours','팬 100 % 연속 운전 시간','number','fan100_hours','sys:historian','sv:fan-speed'],
         ['in:standby-ready','예비 펌프 가용','boolean','standby_ready','sys:cmms',null],
         ['in:order-due','긴급 오더 남은 시간','number','order_due_h','sys:mes','msr:otd'],
@@ -306,8 +306,8 @@ WITH n, r MATCH (t {id: r[7]}) MERGE (n)-[:TARGETS]->(t);
 // 판단 정의: [id, name, question, table, hitPolicy, inputs, knowledge sources]. 정기 정비 · 구매 판단의 입력은 scenario_structure.cypher가 더한다.
 UNWIND [
   ['dec:diagnose-cause','고장 유형 · 원인 판정','이 경보의 고장 유형과 근본 원인은 무엇인가?','dt:diagnose-cause','PRIORITY',['in:pattern','in:ts1','in:ce','in:ps1'],[]],
-  ['dec:action-candidates','조치 후보 선택','이 고장 유형에 쓸 수 있는 조치 방법(스킬 = SOP)은 무엇인가? (원인 한정 스킬은 원인으로 거른다)','dt:action-candidates','COLLECT',['in:failure-mode','in:cause','in:plc-state','in:pattern'],[]],
-  ['dec:compliance','규정 적합성','후보 스킬 중 규정상 쓸 수 없거나 감점할 것은 무엇인가?','dt:compliance','COLLECT',['in:skill-kind','in:skill-code','in:failure-mode','in:plc-mode','in:plc-state','in:forecast-ts1','in:forecast-ps1','in:fan100-hours','in:standby-ready','in:supplier-avl'],['ks:sr-04']],
+  ['dec:action-candidates','조치 후보 선택','이 고장 유형에 쓸 수 있는 조치 방법은 무엇인가? (원인이 정해진 조치 방법은 원인으로 거른다)','dt:action-candidates','COLLECT',['in:failure-mode','in:cause','in:plc-state','in:pattern'],[]],
+  ['dec:compliance','규정 적합성','조치 후보 가운데 규정상 쓸 수 없거나 감점할 것은 무엇인가?','dt:compliance','COLLECT',['in:skill-kind','in:skill-code','in:failure-mode','in:plc-mode','in:plc-state','in:forecast-ts1','in:forecast-ps1','in:fan100-hours','in:standby-ready','in:supplier-avl'],['ks:sr-04']],
   ['dec:rank-actions','조치 우선순위','남은 후보 중 회사 가치(영업이익)에 가장 유리한 순서는?','dt:rank-actions','UNIQUE',['in:forecast-ts1','in:order-due','in:order-penalty','in:order-tier','in:hot-lot-claim','in:hot-lot-qty'],['ks:strategy-map']]
 ] AS r
 MERGE (d:Decision {id: r[0]}) SET d.name = r[1], d.question = r[2]

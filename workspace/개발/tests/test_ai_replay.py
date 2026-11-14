@@ -12,6 +12,7 @@ import pytest
 from cliagents import ExecEvent, ExecEventKind, ExecRequest
 
 from conftest import rejected_first_replay, REPLAY_DIR
+from student_words import WORKER_TALK
 from procsvc import course_policy
 from worker import ai_replay
 from worker.ai_replay import COURSE, REUSE, Library, NotRecorded, Responses
@@ -186,18 +187,39 @@ def test_녹화_열쇠는_흐름_id_와_작업_이름이_아니라_수업_자리
 # ---------------------------------------------------------------- 녹화 밖 행동 = 쉬운 말 실패
 @pytest.mark.parametrize('slot, case, attempt, has', [
     ('handover/draft-3', '', (0, 0), '보완 요청은 1번까지'),
-    ('c3_cooling/T_agent', 'COOLER_DEGRADATION', (1, 0), '재작업'),
     ('c3_cooling/T_agent', 'COOLER_DEGRADATION', (0, 1), '다시 평가'),
-    ('c3_cooling/T_agent', 'PUMP_LEAK', (0, 0), '이 종류의 처리 건'),
-    (None, '', (0, 0), '수업에서 준비한 흐름'),
-    ('question', ai_replay.question_case('다른 질문'), (0, 0), '수업에서 다룬 질문에만'),
-], ids=['교대 보완 2', '재작업 세대 1', '보류 뒤 재평가', '녹화 없는 경보 종류', 'PBL 단계의 수업 밖 단계', '다루지 않은 질문'])
+    ('c3_cooling/T_agent', 'COOLER_DEGRADATION', (1, 1), '다시 평가'),
+    ('c3_cooling/T_agent', 'PUMP_LEAK', (0, 0), '이 경보로 시작한 처리 건'),
+    (None, '', (0, 0), '재생 모드에서 진행되는 AI 단계'),
+    ('question', ai_replay.question_case('다른 질문'), (0, 0), '준비된 질문에만'),
+], ids=['교대 보완 2', '보류 뒤 재평가', '다시 수행 뒤의 재평가', '저장된 응답이 없는 경보 종류', '저장된 응답이 없는 단계', '준비되지 않은 질문'])
 def test_녹화에_없는_행동은_무엇이_없고_무엇을_하면_되는지_말하고_멈춘다(tmp_path, slot, case, attempt, has):
-    """#9 · #23: 「API 키를 넣으면」(키 없는 학생이 할 수 없는 안내) · 경보 코드 · 「시스템 오류」 없이."""
+    """#9 · #23: 「API 키를 넣으면」(키 없는 학생이 할 수 없는 안내) · 경보 코드 · 「시스템 오류」 없이. 작업자끼리 쓰는 말(강사 · 녹화 · 수업 ·
+    실습 — student_words.WORKER_TALK)도 없이: 무엇이 안 되고 무엇이 되는지를 대상으로 말한다."""
     with pytest.raises(NotRecorded) as caught:
         play(claim(slot=slot, case=case, attempt=attempt, step='인계안 작성 · 보완 2'), tmp_path)
-    assert has in str(caught.value)
-    assert not FORBIDDEN.search(str(caught.value))
+    said = str(caught.value)
+    assert has in said and said.startswith(ai_replay.REPLAY), said
+    assert not FORBIDDEN.search(said) and not WORKER_TALK.search(said), said
+
+
+def test_다시_수행한_단계는_저장된_첫_실행을_이_처리_건의_값으로_다시_낸다(tmp_path, tool_servers):
+    """재생 모드의 [다시 수행]은 「재작업으로 다시 하는 것을 지원하지 않습니다 … 새 처리 건으로」로 멈췄다 — AI 단계가 한 번 실패한 학생은
+    그 건을 다시 해 볼 길이 없었다. 다시 수행은 같은 단계를 같은 입력으로 새로 하는 것이라(새 작업 행 — 사유는 AI 입력이 아니다) 첫 실행의
+    저장된 응답이 그 답이다. 차례가 저장돼 있으면(재작업 세대를 따로 뜬 녹화) 그 실행이 앞선다."""
+    doc = COURSE_LIB.load(ai_replay.course_key('handover/draft-1', ''))
+    wd, _ = workdir_for(tmp_path, doc['runs'][0], tool_servers)
+    first = play(claim(slot='handover/draft-1', step=doc['step']), wd)
+    wd2, _ = workdir_for(tmp_path, doc['runs'][0], tool_servers)
+    again = play(claim(slot='handover/draft-1', attempt=(2, 0), step=doc['step']), wd2)
+    assert [(e.kind, e.tool) for e in again] == [(e.kind, e.tool) for e in first] and (wd2 / 'output' / 'result.json').exists()
+    own = dict(doc, runs=[doc['runs'][0], dict(doc['runs'][0], attempt={'generation': 2, 'reassessment': 0}, result_file='{"draft": "둘째 차수의 저장된 응답"}')])
+    lib = Library(tmp_path / 'with-rework-run', COURSE)
+    lib.root.mkdir()
+    lib.file_of(ai_replay.course_key('handover/draft-1', '')).write_bytes(gzip.compress(json.dumps(own, ensure_ascii=False).encode('utf8')))
+    wd3, _ = workdir_for(tmp_path, doc['runs'][0], tool_servers)
+    play(claim(slot='handover/draft-1', attempt=(2, 0), step=doc['step'], course=lib), wd3)
+    assert '둘째 차수의 저장된 응답' in (wd3 / 'output' / 'result.json').read_text(encoding='utf8')
 
 
 def test_녹화와_다른_설비의_처리_건은_바꿔_끼우지_않고_멈춘다(tmp_path, tool_servers):
@@ -236,8 +258,103 @@ def test_녹화가_쓴_도구_서버가_지금_단계에_없으면_녹화_결과
     wd, _ = workdir_for(tmp_path, doc['runs'][0], servers)
     with pytest.raises(NotRecorded) as caught:
         play(claim(slot='c3_cooling/T_agent', case='COOLER_DEGRADATION', step=doc['step']), wd)
-    assert 'hyd-dmn' in str(caught.value)
+    assert 'hyd-dmn' in str(caught.value) and not WORKER_TALK.search(str(caught.value)), str(caught.value)
     assert not (wd / 'output' / 'result.json').exists()
+
+
+class _Forward:
+    """닫혀 있던 주소에 뒤늦게 뜨는 서버의 대역: 받은 연결을 실제 도구 서버로 그대로 넘긴다(TCP)."""
+    def __init__(self, port, target):
+        import socket
+        import socketserver
+        import threading
+        from urllib.parse import urlsplit
+        to = urlsplit(target)
+
+        class Pipe(socketserver.BaseRequestHandler):
+            def handle(self):
+                with socket.create_connection((to.hostname, to.port)) as far:
+                    def pump(src, dst):
+                        try:
+                            while data := src.recv(65536):
+                                dst.sendall(data)
+                        except OSError:
+                            pass
+                        finally:
+                            try:
+                                dst.shutdown(socket.SHUT_WR)
+                            except OSError:
+                                pass
+                    back = threading.Thread(target=pump, args=(far, self.request), daemon=True)
+                    back.start()
+                    pump(self.request, far)
+                    back.join(5)
+
+        socketserver.ThreadingTCPServer.allow_reuse_address = True
+        self.server = socketserver.ThreadingTCPServer(('127.0.0.1', port), Pipe)
+        self.server.daemon_threads = True
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+
+    def close(self):
+        self.server.shutdown()
+        self.server.server_close()
+
+
+def _closed_port():
+    import socket
+    with socket.socket() as s:
+        s.bind(('127.0.0.1', 0))
+        return s.getsockname()[1]
+
+
+def test_쓰기_도구_서버가_잠깐_닿지_않다가_뜨면_같은_실행_안에서_다시_연결해_진행한다(tmp_path, tool_servers, monkeypatch):
+    """잠깐의 연결 실패 한 번이 그 단계의 실패로 굳었다(재생 모드는 다시 수행도 막혀 있었다). 요청이 서버에 가지 않은 것이 분명한 연결
+    실패(연결 거부)는 정해진 간격으로 다시 본다 — 그 사이 서버가 뜬다."""
+    from urllib.parse import urlsplit
+    real = tool_servers['hyd-dmn']
+    port = _closed_port()
+    doc = COURSE_LIB.load(ai_replay.course_key('c3_cooling/T_agent', 'COOLER_DEGRADATION'))
+    wd, _ = workdir_for(tmp_path, doc['runs'][0], dict(tool_servers, **{'hyd-dmn': f'http://127.0.0.1:{port}{urlsplit(real).path}'}))
+    up = []
+    monkeypatch.setattr(ai_replay, '_wait', lambda seconds, check_stop: up or up.append(_Forward(port, real)))
+    try:
+        tools = ai_replay._Tools(wd, doc['step'])
+        assert tools.writes('hyd-dmn', 'submit_decision') is True and tools.writes('hyd-dmn', 'diagnose') is False
+    finally:
+        for server in up:
+            server.close()
+    assert up, '첫 연결이 실패하지 않았다 — 이 시험이 보려는 길이 아니다'
+
+
+def test_쓰기_도구_서버에_끝내_닿지_못하면_그_까닭으로_멈추고_학생_문장에_내부_이름을_싣지_않는다(tmp_path, tool_servers, monkeypatch):
+    doc = COURSE_LIB.load(ai_replay.course_key('c3_cooling/T_agent', 'COOLER_DEGRADATION'))
+    wd, _ = workdir_for(tmp_path, doc['runs'][0], dict(tool_servers, **{'hyd-dmn': f'http://127.0.0.1:{_closed_port()}/mcp'}))
+    monkeypatch.setattr(ai_replay, 'WRITE_RETRY_WAITS_S', (0.05, 0.05))
+    with pytest.raises(ai_replay.WriteFailed) as caught:
+        play(claim(slot='c3_cooling/T_agent', case='COOLER_DEGRADATION', step=doc['step']), wd)
+    said, raw = str(caught.value), caught.value.raw
+    assert '닿지 못해' in said and '다시 수행' in said and doc['step'] in said, said
+    assert 'hyd-dmn' not in said and '{' not in said and not WORKER_TALK.search(said) and not FORBIDDEN.search(said), said
+    assert 'hyd-dmn' in raw, raw
+    assert not (wd / 'output' / 'result.json').exists()
+
+
+def test_다시_시도할_오류가_아닌_거절은_기다리지_않고_바로_그_까닭으로_멈춘다(tmp_path, tool_servers, monkeypatch):
+    """이 PC 처리 엔진에 없는 처리 건의 판단 등록은 거절된다(처리 범위가 다름) — 다시 불러도 같은 답이라 기다리지 않는다. 학생 문장에는 도구의
+    내부 이름 · 응답 원문(JSON)이 없고 원문 칸에 남는다."""
+    doc = COURSE_LIB.load(ai_replay.course_key('c3_cooling/T_agent', 'COOLER_DEGRADATION'))
+    wd, _ = workdir_for(tmp_path, doc['runs'][0], tool_servers)
+
+    def no_wait(seconds, check_stop):
+        raise AssertionError('다시 시도할 오류가 아닌데 기다렸다')
+    monkeypatch.setattr(ai_replay, '_wait', no_wait)
+    with pytest.raises(ai_replay.WriteFailed) as caught:
+        play(claim(slot='c3_cooling/T_agent', case='COOLER_DEGRADATION', step=doc['step']), wd)
+    said, raw = str(caught.value), caught.value.raw
+    assert '등록하지 못했습니다' in said and doc['step'] in said, said
+    assert all(word not in said for word in ('hyd-dmn', 'submit_decision', 'error_kind', '{', '"result"')), said
+    assert not WORKER_TALK.search(said) and not FORBIDDEN.search(said), said
+    assert 'hyd-dmn/submit_decision' in raw and 'error_kind' in raw, raw
 
 
 # ---------------------------------------------------------------- 이어 하기 · 재시작

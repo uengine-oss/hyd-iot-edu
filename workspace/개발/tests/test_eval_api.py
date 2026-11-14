@@ -88,3 +88,27 @@ def test_없는_항목을_채점하라는_요청은_진행_기록에도_실패�
     seen = world.api('GET', f'/api/progress/{rid}')[1]
     assert seen['state'] == 'failed' and 'no-such-item' in seen['error']
     assert [(s['key'], s['state']) for s in seen['steps']] == [('golden', 'ok'), ('knowledge', 'ok')]      # 항목 단계는 시작하지 않았다
+
+
+# ---------------------------------------------------------------- 지식 수의 정의(지식 지도와 같은 것을 센다)
+def _map(world, asset):
+    import json
+    import urllib.request
+    with urllib.request.urlopen(f"{world.stack.services['agent'].url}/api/ontology/graph?asset={asset}", timeout=60) as r:
+        return json.loads(r.read())
+
+
+def test_채점이_말하는_지식_항목_수는_지식_지도가_그리는_항목을_설비_3기에_걸쳐_센_것이고_처리_건을_돌려도_실행_기록은_세지_않는다(world, course_graph):
+    """판단 채점은 「지금 지식: 항목 651개」, 홈 · 지식 지도는 349개라고 했다 — 채점이 실행 기록(처리 건 · 작업 · 실행 담당자) 노드까지 세어,
+    질문 하나만 해도 「지식 항목 647 → 651」이 되고 전 · 후 비교에 지식 변화로 나왔다. 두 화면이 같은 정의로 센다: 지식 지도가 그리는 것."""
+    world.start_cooling()                                   # 실행 기록이 그래프에 생긴다(처리 건 · 작업 · 실행 담당자 투영)
+    (records,) = course_graph.query('MATCH (n) WHERE n:ProcessInstance OR n:WorkItem OR n:ExecutionActor RETURN count(n) AS n')
+    assert records['n'] > 0, '실행 기록 노드가 없으면 이 시험이 성립하지 않는다'
+    status, now = world.api('GET', '/api/eval/knowledge')
+    assert status == 200, now
+    maps = [_map(world, asset) for asset in ('HYD-01', 'HYD-02', 'HYD-03')]
+    shown = {n['id'] for m in maps for n in m['nodes']}
+    assert now['nodes'] == len(shown), (now['nodes'], len(shown))
+    assert now['scope'] and '설비 3기' in now['scope']
+    status, later = world.api('GET', '/api/eval/knowledge')
+    assert later['fingerprint'] == now['fingerprint']       # 아무것도 고치지 않았다 — 같은 지식이다

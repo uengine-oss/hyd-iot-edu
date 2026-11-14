@@ -27,7 +27,7 @@ class ApprovedExtractions:
             Ed25519PublicKey.from_public_bytes(rules.decode64(public_key)).verify(
                 rules.decode64(envelope['signature']), DOMAIN + rules.canonical(payload))
         except Exception:
-            raise ValueError('제공 문서 추출 묶음의 강사 서명을 확인할 수 없습니다') from None
+            raise ValueError('제공 문서 추출 묶음의 서명을 확인할 수 없습니다') from None
         if payload.get('contract') != 'hyd-approved-extractions-v1' or payload.get('extraction_version') != extraction.VERSION:
             raise ValueError('제공 문서 추출 묶음의 계약·판본이 다릅니다')
         self.payload = payload
@@ -40,7 +40,7 @@ class ApprovedExtractions:
     def authorize(self, source):
         entry = self.payload['documents'].get(source['sha256'])
         if entry is None:
-            raise ValueError('제공된 수업 문서만 추출할 수 있습니다')
+            raise ValueError('제공된 문서만 추출할 수 있습니다')
         if manual_cache.source_fingerprint(source) != entry['source_fingerprint']:
             raise ValueError('제공 문서와 내용은 같지만 파일 형식(확장자)이나 글 읽는 방식이 달라 검토를 마친 추출본을 쓸 수 없습니다 — 포털에서 받은 제공 문서 파일 이름(확장자) 그대로 올리세요')
         return entry

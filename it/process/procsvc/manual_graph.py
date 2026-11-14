@@ -386,6 +386,7 @@ def _receipt(plan, at, replayed=False):
     return dict(batch=plan['batch'], document_id=plan['document_id'], source_id=plan['source_id'],
                 filename=plan['filename'], by=plan['by'], t=at, status='ACTIVE', replayed=replayed,
                 **({'review_method': plan['review_method']} if plan.get('review_method') else {}),
+                **({'provided_revision': plan['provided_revision']} if plan.get('provided_revision') else {}),
                 sections=len(plan['sections']), procedures=len(plan['procedures']),
                 steps=sum(len(p['steps']) for p in plan['procedures']),
                 knowledge={kind: [i['id'] for i in k.get(kind) or []] for kind in manual_knowledge.KINDS},
@@ -530,8 +531,19 @@ def history(session, tenant):
                        'OPTIONAL MATCH (d:ManualIngestionDocument {id:b.document}) '
                        'RETURN b.receipt AS receipt, b.status AS status, d.head=b.id AS current '
                        'ORDER BY b.createdAt DESC', tenant=tenant).data()
-    return [dict(json.loads(r['receipt']), status=('SUPERSEDED' if r['status'] == 'ACTIVE' and not r['current'] else r['status']),
+    return [dict(_plain_by(json.loads(r['receipt'])), status=('SUPERSEDED' if r['status'] == 'ACTIVE' and not r['current'] else r['status']),
                  current=r['current']) for r in rows]
+
+
+#: 앞 판의 시작 스크립트가 기본 제공 판의 담당자 칸에 적던 글(「강사 검토본(<묶음 판>)」)과 지금 적는 글(scripts/class_knowledge.PROVIDED_BY).
+#: 적재 기록(receipt)은 고치지 않는 기록이라, 이미 쓰던 PC의 옛 기록은 읽을 때 지금 글로 보인다 — 문서 등록 이력의 담당자 칸에 「강사」가 나왔다.
+LEGACY_PROVIDED_BY, PROVIDED_BY = '강사 검토본(', '기본 제공'
+
+
+def _plain_by(receipt: dict) -> dict:
+    if receipt.get('review_method') and str(receipt.get('by') or '').startswith(LEGACY_PROVIDED_BY):
+        return dict(receipt, by=PROVIDED_BY)
+    return receipt
 
 
 def head(session, tenant, document_id):

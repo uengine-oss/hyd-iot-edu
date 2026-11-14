@@ -455,19 +455,34 @@ def update(store, tenant_id: str, name: str, body: dict, by: str, *, progress=pr
     return {"name": name, "check": record, "gate": entry[META_KEY]["gate"], "warnings": warnings_of(entry)}
 
 
+def flow_step_text(step: dict) -> str:
+    """흐름 단계 한 줄(지우기 거절 문장 · 감사): 「흐름 이름」 판본 n 의 「단계 이름」(도구 x) + 진행 중인 처리 건 수."""
+    live = f" · 진행 중인 처리 건 {step['running']}건" if step.get("running") else ""
+    return f"「{step['definition_name']}」 판본 {step['version']}의 「{step['activity_name']}」(도구 {step['tool'] or '미정'}{live})"
+
+
 def remove(store, repo, tenant_id: str, name: str, *, force: bool = False) -> dict:
+    """학생 서버 하나를 지운다. 이 서버를 쓰는 것이 있으면 force 없이는 지우지 않는다(409 — 쓰는 에이전트와 흐름 단계를 함께 말한다):
+    에이전트의 도구 목록, 그리고 흐름의 「승인 뒤 MCP 호출」 단계(mcp_dependencies.steps_using — 도구 지도의 쓰임과 같은 판정).
+    전에는 에이전트만 봐서, 흐름 단계가 부르는 서버를 지우면 그 흐름이 실행 때에야 멈췄다."""
     if name in BASE_SERVERS:
         raise RegistryError(403, f"'{name}' 는 기준(기본 제공) 서버라 지울 수 없습니다")
     if name not in store.servers(tenant_id):
         raise RegistryError(404, f"MCP 서버 '{name}' 가 없습니다")
+    from . import mcp_dependencies
     users = agents_using(repo, tenant_id, name)
-    if users and not force:
-        raise RegistryError(409, f"에이전트 {', '.join(users)} 가 이 서버를 도구로 쓰고 있습니다 — 에이전트에서 먼저 빼거나 강제로 지우세요")
+    steps = mcp_dependencies.steps_using(repo, tenant_id, [name])[name]
+    if (users or steps) and not force:
+        from hydcommon.words import josa
+        uses = ([f"에이전트 {josa(', '.join(users), '가')} 이 서버를 도구로 쓰고"] if users else []) + \
+               ([f"흐름 단계 {josa(' · '.join(flow_step_text(s) for s in steps), '가')} 이 서버의 도구를 부르고"] if steps else [])
+        raise RegistryError(409, f"{', '.join(uses)} 있습니다 — 에이전트 · 흐름에서 먼저 빼거나 강제로 지우세요"
+                                 "(강제로 지우면 그 흐름 단계는 실행될 때 서버가 없다는 까닭으로 멈춥니다)")
     store.delete_server(tenant_id, name)
     store.delete_checks(tenant_id, [name])
     from .student_cases import Store
     Store(repo, tenant_id).remove('mcp_servers', name)
-    return {"name": name, "deleted": True, "agents_still_naming_it": users}
+    return {"name": name, "deleted": True, "agents_still_naming_it": users, "flow_steps_still_calling_it": steps}
 
 
 def check_saved(store, tenant_id: str, name: str, *, timeout=None, by: str, progress=progress_log.SILENT) -> dict:

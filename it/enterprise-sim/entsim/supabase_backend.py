@@ -123,7 +123,7 @@ class SupabaseEnterprise:
                     raise
                 # 시작(scripts/start_all.sh)이 마이그레이션을 적용한다 — 그 단계를 건너뛰고 컨테이너만 켠 PC 는 여기서 멈춘다
                 raise RuntimeError("업무 DB 가 이 코드보다 오래됐습니다(ent.scenario_times_stale 없음 — 마이그레이션 20261023000061 미적용). "
-                                   "수업 시스템을 끈 뒤 시작 파일(시작.bat · 시작.command)로 다시 켜면 업무 DB 업데이트(마이그레이션)를 함께 합니다") from e
+                                   "시스템을 끈 뒤 시작 파일(시작.bat · 시작.command)로 다시 켜면 업무 DB 업데이트(마이그레이션)를 함께 합니다") from e
             return bool(cur.fetchone()[0])
 
     def health(self) -> dict:

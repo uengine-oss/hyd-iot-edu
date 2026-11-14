@@ -324,7 +324,7 @@ def test_정기_정비_흐름B는_승인하면_정비_오더와_생산팀_공지
     sent = len(world.stack.smtp.messages)
     world.approve(pid, decision, world.main.book[decision]['recommended'], MAINT)
     report = _report(world, pid)
-    assert report['outcome'] == '정상' and report['refs']['work_order'].startswith('WO-')
+    assert report['outcome'] == '정비 요청 등록' and report['refs']['work_order'].startswith('WO-')      # 이 흐름은 정비 요청을 등록하고 끝난다 — 정비가 끝난 것이 아니다
     mails = world.stack.smtp.messages[sent:]
     assert len(mails) == 1 and 'production@hyd.local' in mails[0], '정비 공지 메일 한 통'
 
@@ -836,7 +836,7 @@ def test_기준_흐름은_발주만_있는_카드의_승인을_받아도_멈추�
                     by=ME)
     world.poll()
     report = _report(world, pid)
-    assert report['outcome'] == '실행하지 않음' and '구매요청' in report['summary'] and '설비에는 명령도 작업지시도 내지 않았습니다' in report['summary']
+    assert report['outcome'] == '실행하지 않음' and '구매요청' in report['summary'] and '설비에는 명령도 정비 요청도 내지 않았습니다' in report['summary']
     assert world.inst(pid)['end_event'] == 'ev:not-executed' and world.rt.instance_view(pid)['attention'] is None
     assert world.row(pid, 'task:report-purchase-only')['status'] == 'DONE'
     assert world.kafka.of(topics.K_CMD) == []

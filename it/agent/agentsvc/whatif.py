@@ -44,10 +44,10 @@ DOC_FAN = {'kind': '문서', 'where': '설비 모델의 정상 팬 60 %, 팬 최
 DOC_TS1 = {'kind': '문서', 'where': '매뉴얼 유온 55 ℃ 기준 (순위 정책 품질 항목과 같은 선)', 'ref': 'HM-7.5 · 순위 정책 rule:rank-value 의 quality'}
 ASSUME_FX = {'kind': '가정', 'where': '환율 1 % → 수입 부품값 1 % (부품 전량 수입 가정). 방향은 지식 지도의 환율 → 부품 단가 (+, 강함)',
              'ref': 'ext:fx -INFLUENCES(+1, high)-> msr:part-price'}
-ASSUME_RISK = {'kind': '가정', 'where': '원인이 남아 있는 동안 고장 확률 = 운전 시간 ÷ MTBF, 근본 조치 카드(작업지시 포함)는 그 작업을 시작할 때 원인을 없앤다',
+ASSUME_RISK = {'kind': '가정', 'where': '원인이 남아 있는 동안 고장 확률 = 운전 시간 ÷ MTBF, 근본 조치(정비 요청 포함)는 그 작업을 시작할 때 원인을 없앤다',
                'ref': 'Skill relation REMEDIED_BY · WO_CREATE'}
 ASSUME_WEEK = {'kind': '가정', 'where': '주 운전 시간 120 h (주 5일 × 24 h 연속 운전)'}
-ASSUME_RESTORE = {'kind': '가정', 'where': '근본 조치 뒤에는 정상 부하 90 % · 팬 60 %로 돌아간다. 완화 카드의 설정은 기간 내내 유지된다'}
+ASSUME_RESTORE = {'kind': '가정', 'where': '근본 조치 뒤에는 정상 부하 90 % · 팬 60 %로 돌아간다. 완화 조치의 설정은 기간 내내 유지된다'}
 ASSUME_REPAIR = {'kind': '가정', 'where': '고장이 나면 이 원인의 근본 조치 표준 작업 시간만큼 멈춘다 (CMMS 표준 작업)'}
 
 # ---------------------------------------------------------------- 업무 DB 값 (읽기 전용 GET)
@@ -130,7 +130,7 @@ VARIABLES = {
     'energy_rate': {'label': '전력 단가', 'unit': '만원/kWh', 'money': 'ems.energy_rate', 'kinds': ('money', 'weeks')},
     'week_hours': {'label': '주 운전 시간', 'unit': 'h', 'base': WEEK_HOURS, 'lo': 0.0, 'hi': 168.0, 'kinds': ('weeks',), 'where': ASSUME_WEEK['where']},
     'load_pct': {'label': '조치 부하 설정', 'unit': '%', 'lo': 60.0, 'hi': 100.0, 'kinds': ('weeks',),
-                 'where': '고른 카드의 부하 명령(LOAD_SET, 없으면 설계 부하 90 %)을 바꿔 본다 — 조치 → 설비 값'},
+                 'where': '고른 조치의 부하 명령(LOAD_SET, 없으면 설계 부하 90 %)을 바꿔 본다 — 조치 → 설비 값'},
 }
 
 
@@ -192,7 +192,7 @@ def work_start_h(shape: dict, mf: dict) -> tuple[float | None, str]:
     if shape['stop_cmd'] or cards.stops_now(w):
         return 0.0, '지금 정지하고 시행'
     if not isinstance(w, dict) or not w.get('starts_at'):
-        return None, '작업지시를 언제 시행하는지(예정된 정비 시간) 판단에 없음'
+        return None, '정비 요청을 언제 시행하는지(예정된 정비 시간) 판단에 없음'
     try:
         start = datetime.fromisoformat(str(w['starts_at']).replace('Z', '+00:00'))
         now = datetime.fromisoformat(str(mf['read_at']).replace('Z', '+00:00'))
@@ -264,15 +264,15 @@ def card_money(o: dict, mf: dict, trial: dict | None = None, hours: float | None
     tasks, tmiss = _tasks_of(s, mf)
     stop_h = sum(t['stop_h'] for t in tasks)
     stop_src = [_task_src(t) for t in tasks]
-    load_src = {'kind': '문서', 'where': f"카드의 부하 명령 {s['load']:g} %", 'ref': '온톨로지 Skill -CONSISTS_OF-> LOAD_SET'} if s['load_cmd'] else \
+    load_src = {'kind': '문서', 'where': f"조치의 부하 명령 {s['load']:g} %", 'ref': '온톨로지 Skill -CONSISTS_OF-> LOAD_SET'} if s['load_cmd'] else \
         {'kind': '문서', 'where': '부하 명령 없음 → 설계 부하 90 % 유지'}
     r = s['load'] / cards.LOAD_DESIGN
     stop_unknown = bool(tmiss) or (s['stop_cmd'] and not tasks)
-    why_stop = ('업무 DB CMMS 표준 작업에 이 카드 작업지시(' + ', '.join(t['sop'] for t in tmiss) + ')의 정지 시간 · 작업비가 없음') if tmiss else \
+    why_stop = ('업무 DB CMMS 표준 작업에 이 조치의 정비 요청(' + ', '.join(t['sop'] for t in tmiss) + ')의 정지 시간 · 작업비가 없음') if tmiss else \
         '정지 명령의 정지 시간을 업무 DB에서 찾을 수 없음 (CMMS 표준 작업 없음)'
     t0, when = work_start_h(s, mf)
     timing_src = {'kind': '데이터' if t0 is not None else '문서', 'where': f"작업 시점: {when}" + (f" — 지금부터 {t0:g} h 뒤" if t0 else ''),
-                  'ref': '카드의 정비 시점(window) · CMMS 예정된 정비 시간'}
+                  'ref': '조치의 정비 시점(window) · CMMS 예정된 정비 시간'}
     timing_unknown = (bool(s['wos']) or s['stop_cmd']) and t0 is None
     # 근본 조치(원인을 없앤 작업)가 끝나면 정상 부하로 돌아간다(ASSUME_RESTORE). 완화 카드의 설정은 그 전까지 유지된다.
     r_after = 1.0 if s['remedy'] and s['wos'] else r
@@ -325,7 +325,7 @@ def card_money(o: dict, mf: dict, trial: dict | None = None, hours: float | None
     claim, claim_src = ins.get('qms.auto_claim')
     p, p_src = ins.get('qms.auto_defect_p')
     if s['ts1'] is None:
-        items.append(_item('quality', '품질 클레임 위험', 0.0, '유온 예측이 없는 카드 — 고온 로트 위험을 더하지 않음 (순위 정책과 같은 처리)', [DOC_TS1]))
+        items.append(_item('quality', '품질 클레임 위험', 0.0, '유온 예측이 없는 조치 — 고온 로트 위험을 더하지 않음 (순위 정책과 같은 처리)', [DOC_TS1]))
     elif None in (qty, claim, p):
         items.append(_missing('quality', '품질 클레임 위험', 'QMS 고온 로트 수량 · 클레임 · 불량 확률 중 없는 값이 있음', [qty_src, claim_src, p_src]))
     else:
@@ -333,14 +333,14 @@ def card_money(o: dict, mf: dict, trial: dict | None = None, hours: float | None
         items.append(_item('quality', '품질 클레임 위험', p * claim if hot else 0.0,
                            (f"불량 확률 {p:g} × 클레임 {claim:g}만원 (예측 유온 {s['ts1']:g} ℃ ≥ 55 ℃, 출하 대기 로트 {qty:g} ea)" if hot else
                             f"예측 유온 {s['ts1']:g} ℃ < 55 ℃ 또는 출하 대기 로트 {qty:g} ea → 0"),
-                           [p_src, claim_src, qty_src, DOC_TS1, {'kind': '문서', 'where': f"카드의 예측 유온 {s['ts1']:g} ℃ (설비 모델 예측)"}]))
+                           [p_src, claim_src, qty_src, DOC_TS1, {'kind': '문서', 'where': f"조치의 예측 유온 {s['ts1']:g} ℃ (설비 모델 예측)"}]))
     # 4. 고장 위험 — 원인이 남아 있는 동안(작업지시로 근본 조치하는 카드는 그 작업을 시작할 때까지)
     fc, fc_src = ins.get('erp.failure_cost')
     mtbf, mtbf_src = ins.get('cmms.mtbf_h')
     if s['remedy'] and not s['wos']:
-        items.append(_item('failure', '고장 위험', 0.0, '근본 조치 카드 — 원인을 없애므로 고장 위험을 더하지 않음', [ASSUME_RISK]))
+        items.append(_item('failure', '고장 위험', 0.0, '근본 조치 — 원인을 없애므로 고장 위험을 더하지 않음', [ASSUME_RISK]))
     elif s['remedy'] and t0 == 0:
-        items.append(_item('failure', '고장 위험', 0.0, '지금 근본 조치하는 카드 — 원인을 없애므로 고장 위험을 더하지 않음', [ASSUME_RISK, timing_src]))
+        items.append(_item('failure', '고장 위험', 0.0, '지금 근본 조치하는 안 — 원인을 없애므로 고장 위험을 더하지 않음', [ASSUME_RISK, timing_src]))
     else:
         exposure = None if H is None else (min(t0, H) if s['remedy'] and t0 is not None else (None if s['remedy'] else H))
         if None in (fc, mtbf, exposure) or mtbf <= 0:
@@ -356,7 +356,7 @@ def card_money(o: dict, mf: dict, trial: dict | None = None, hours: float | None
         items.append(_missing('work', '정비 작업비', why_stop))
     else:
         items.append(_item('work', '정비 작업비', sum(t['labor_cost'] for t in tasks),
-                           ' + '.join(f"{t['name']} {t['labor_cost']:g}만원" for t in tasks) or '작업지시 없음 → 0', stop_src or [{'kind': '문서', 'where': '카드에 작업지시 없음'}]))
+                           ' + '.join(f"{t['name']} {t['labor_cost']:g}만원" for t in tasks) or '정비 요청 없음 → 0', stop_src or [{'kind': '문서', 'where': '이 조치에 정비 요청 없음'}]))
     part_total, part_src, part_formula, part_missing = 0.0, [], [], []
     k = (1 + ins.pct('part_price_pct') / 100) * (1 + ins.pct('fx_pct') * FX_TO_PART / 100)
     for t in tasks:
@@ -381,7 +381,7 @@ def card_money(o: dict, mf: dict, trial: dict | None = None, hours: float | None
             pct_note = f" × (1 {ins.pct('part_price_pct'):+g} %) × (1 {ins.pct('fx_pct'):+g} % × {FX_TO_PART:g})"
             part_src += [{'kind': '시험값', 'where': f"부품값 {ins.pct('part_price_pct'):+g} % · 환율 {ins.pct('fx_pct'):+g} %"}, ASSUME_FX]
         items.append(_item('parts', '부품비', part_total, (' + '.join(part_formula) or '필요 부품 없음 → 0') + pct_note,
-                           part_src or [{'kind': '데이터', 'where': '업무 DB CMMS 표준 작업에 필요 부품 없음'} if tasks else {'kind': '문서', 'where': '카드에 작업지시 없음'}]))
+                           part_src or [{'kind': '데이터', 'where': '업무 DB CMMS 표준 작업에 필요 부품 없음'} if tasks else {'kind': '문서', 'where': '이 조치에 정비 요청 없음'}]))
     # 7. 에너지비 (팬 전력)
     kw, kw_src = ins.get('ems.fan_boost_kw')
     er, er_src = ins.get('ems.energy_rate')
@@ -617,7 +617,7 @@ def boundary_axes(bundle: dict, mf: dict, policy: dict | None = None, variables:
         view = policy_view(bundle['dmn'])
         for c in view['components']:
             w0 = ((policy or {}).get('weights') or {}).get(c['key'], 1.0)
-            axes.append({'id': 'w:' + c['key'], 'label': f"순위 항목 '{c['label']}' 가중치", 'unit': '배', 'base': w0, 'lo': min(-2.0, w0), 'hi': max(5.0, w0),
+            axes.append({'id': 'w:' + c['key'], 'label': f"순위 항목 '{c['label']}' 가중치", 'unit': '배', 'base': w0, 'lo': min(0.0, w0), 'hi': max(5.0, w0),
                          'kinds': ['decision'], 'apply': (lambda x, k=c['key']: (None, _merge_policy(policy, weights={k: x})))})
         for r in view['penalties']:
             p0 = ((policy or {}).get('penalties') or {}).get(r['rule'], _finite(r['penalty']) or 0.0)
@@ -638,6 +638,8 @@ def find_boundaries(bundle: dict, mf: dict, variables: list[str] | None = None, 
     names = {c['id']: c['name'] for c in base_eval['cards']}
     out = []
     for ax in boundary_axes(bundle, mf, policy, variables):
+        # 가중치의 경계는 0배(그 항목을 순위에 쓰지 않음) 아래로 찾지 않는다 — 음수 배수는 그 항목의 뜻을 뒤집는 값이라(늦을수록 가점) 「−1.068배
+        # 이하에서 1순위가 바뀜」 같은 줄이 학생에게 뜻이 없었다. 사람이 직접 넣는 시험값의 한도(LIMITS)는 그대로다.
         base, lo, hi = ax['base'], ax['lo'], ax['hi']
         for kind in ax['kinds']:
             t0 = base_eval['top'][kind]
@@ -705,7 +707,7 @@ def weeks(bundle: dict, mf: dict, card_id: str, weeks_n: int = 4, change: dict |
         raise ValueError(f'기간은 {lo} ~ {hi}주입니다')
     opts = {o['id']: o for o in _feasible_cache(bundle, policy)}
     if card_id not in opts:
-        raise ValueError(f'이 판단에 없는 카드입니다: {card_id}')
+        raise ValueError(f'이 판단에 없는 조치 후보입니다: {card_id}')
     o = opts[card_id]
     change = change or {}
     if len(change) > 1:
@@ -760,15 +762,15 @@ def _week_series(bundle, mf, o, n, trial):
     tasks, _ = _tasks_of(s, mf)
     stop_h = sum(t['stop_h'] for t in tasks)
     repair_h, repair_task = _repair_hours(bundle, mf, o)
-    load_src = {'kind': '시험값', 'where': f'부하 {L:g} % (카드 값 {s["load"]:g} %)'} if 'load_pct' in trial else \
-        {'kind': '문서', 'where': f"카드의 부하 명령 {L:g} %" if s['load_cmd'] else '부하 명령 없음 → 설계 부하 90 %'}
+    load_src = {'kind': '시험값', 'where': f'부하 {L:g} % (조치의 값 {s["load"]:g} %)'} if 'load_pct' in trial else \
+        {'kind': '문서', 'where': f"조치의 부하 명령 {L:g} %" if s['load_cmd'] else '부하 명령 없음 → 설계 부하 90 %'}
     week_src = {'kind': '시험값', 'where': f'주 운전 시간 {W:g} h'} if 'week_hours' in trial else ASSUME_WEEK
     coefficients = [
         _coef('load', '조치 부하 (조치 → 설비 값)', L, '%', load_src),
-        _coef('fan', '조치 팬 변화 (조치 → 설비 값)', s['fan_delta'], '%p', {'kind': '문서', 'where': '카드의 팬 명령 − 정상 팬 60 %', 'ref': '온톨로지 Skill FAN_SET · thermal.py'}),
+        _coef('fan', '조치 팬 변화 (조치 → 설비 값)', s['fan_delta'], '%p', {'kind': '문서', 'where': '조치의 팬 명령 − 정상 팬 60 %', 'ref': '온톨로지 Skill FAN_SET · thermal.py'}),
         _coef('throughput', '부하 1 %당 생산 수량 (설비 값 → 생산량)', None if rate is None else round(rate / cards.LOAD_DESIGN, 4), 'ea/h per %', rate_src | {'where': rate_src['where'] + ' ÷ 설계 부하 90 %'}),
         _coef('value', '수량 1개당 생산 가치 (생산량 → 매출)', None if None in (hv, rate) or not rate else round(hv / rate, 6), '만원/ea', hv_src | {'where': hv_src['where'] + ' ÷ ' + rate_src['where']}),
-        _coef('stop', '작업 정지 시간 (첫 주, 조치 → 가동률)', stop_h, 'h', _task_src(tasks[0]) if tasks else {'kind': '문서', 'where': '카드에 작업지시 없음'}),
+        _coef('stop', '작업 정지 시간 (첫 주, 조치 → 가동률)', stop_h, 'h', _task_src(tasks[0]) if tasks else {'kind': '문서', 'where': '이 조치에 정비 요청 없음'}),
         _coef('mtbf', 'MTBF (원인 → 고장 확률)', mtbf, 'h', mtbf_src),
         _coef('risk', '원인 유지 시 주별 고장 확률', None if not mtbf else round(min(1.0, W / mtbf), 6), '확률/주', ASSUME_RISK),
         _coef('failure_cost', '고장 1회 비용 (고장 → 비용)', fc, '만원', fc_src),
@@ -834,11 +836,11 @@ def summary(ev: dict, base_top: dict | None = None) -> str:
     names = {c['id']: c['name'] for c in ev['cards']}
     d, m = ev['top']['decision'], ev['top']['money']
     parts = [f"판단 1순위 '{names.get(d, '없음')}'" if d else '판단 1순위 없음 (모두 규정상 제외)',
-             f"손익 1순위 '{names.get(m)}'" if m else '손익 1순위 없음 (손익을 끝까지 계산한 카드가 없음)']
+             f"손익 1순위 '{names.get(m)}'" if m else '손익 1순위 없음 (손익을 끝까지 계산한 조치 후보가 없음)']
     if base_top:
         for kind, label in (('decision', '판단'), ('money', '손익')):
             if base_top.get(kind) != ev['top'][kind]:
                 parts.append(f"{label} 1순위가 '{names.get(base_top.get(kind), '없음')}'에서 바뀌었습니다")
     if d and m and d != m:
-        parts.append('정책 점수와 돈 기준이 다른 카드를 고릅니다 — 가치의 상충')
+        parts.append('판단 순위(규정 · 순위 점수)와 손익 순위가 서로 다른 조치를 1순위로 고릅니다')
     return ' · '.join(parts) + '.'

@@ -1,8 +1,8 @@
 {
   "processDefinitionId": "shift_handover",
   "processDefinitionName": "교대 인수인계",
-  "version": "1.4",
-  "description": "보충 매뉴얼 추가 적재 후 작업 메모·설비·정비·부품을 대조하고 인계자 검토와 인수자 확인을 기록한다. 실제 설비 조치·발주·정비 완료는 수행하지 않는다. 보완 요청은 두 번까지 회차마다 인계안 작성 · 인계자 검토 · 인수자 확인 단계로 펼쳐 받고(회차마다 강사 녹화 자리가 따로다), 세 번째 보완 요청은 인수 미확정(후속 확인)으로 끝낸다. 인계자 검토와 인수자 확인에는 시한을 두지 않는다 — 인계는 사람이 읽고 확인해 남기는 기록이라, 시간이 지났다고 대신 확인하거나 끝내지 않고 그 단계가 담당자의 작업함에 열린 채 기다린다(설비 경보를 다루는 흐름의 승인 지연 알림과 달리 이 흐름이 기다리는 동안 나빠지는 설비 상태가 없다).",
+  "version": "1.5",
+  "description": "보충 매뉴얼 추가 적재 후 작업 메모·설비·정비·부품을 대조하고 인계자 검토와 인수자 확인을 기록한다. 실제 설비 조치·발주·정비 완료는 수행하지 않는다. 보완 요청은 두 번까지 회차마다 인계안 작성 · 인계자 검토 · 인수자 확인 단계로 펼쳐 받고, 세 번째 보완 요청은 인수 미확정(후속 확인)으로 끝낸다. 인계자 검토와 인수자 확인에는 시한을 두지 않는다 — 인계는 사람이 읽고 확인해 남기는 기록이라, 시간이 지났다고 대신 확인하거나 끝내지 않고 그 단계가 담당자의 작업함에 열린 채 기다린다(설비 경보를 다루는 흐름의 승인 지연 알림과 달리 이 흐름이 기다리는 동안 나빠지는 설비 상태가 없다).",
   "roles": [
     {
       "name": "인계안 에이전트",
@@ -302,7 +302,7 @@
     {
       "id": "ev:rejected",
       "type": "endEvent",
-      "name": "인계 거절 기록"
+      "name": "인계 반려 기록"
     },
     {
       "id": "ev:followup",
@@ -314,7 +314,7 @@
     {
       "id": "gw:sender",
       "type": "exclusiveGateway",
-      "name": "검토 결정",
+      "name": "인계자 결정",
       "conditionData": [
         "sender_decision"
       ]
@@ -322,7 +322,7 @@
     {
       "id": "gw:receiver",
       "type": "exclusiveGateway",
-      "name": "검토 결정",
+      "name": "인수자 결정",
       "conditionData": [
         "receiver_decision"
       ]
@@ -330,7 +330,7 @@
     {
       "id": "gw:sender-r2",
       "type": "exclusiveGateway",
-      "name": "검토 결정",
+      "name": "인계자 결정 · 보완 1",
       "conditionData": [
         "sender_decision"
       ]
@@ -338,7 +338,7 @@
     {
       "id": "gw:receiver-r2",
       "type": "exclusiveGateway",
-      "name": "검토 결정",
+      "name": "인수자 결정 · 보완 1",
       "conditionData": [
         "receiver_decision"
       ]
@@ -346,7 +346,7 @@
     {
       "id": "gw:sender-r3",
       "type": "exclusiveGateway",
-      "name": "검토 결정",
+      "name": "인계자 결정 · 보완 2",
       "conditionData": [
         "sender_decision"
       ]
@@ -354,7 +354,7 @@
     {
       "id": "gw:receiver-r3",
       "type": "exclusiveGateway",
-      "name": "검토 결정",
+      "name": "인수자 결정 · 보완 2",
       "conditionData": [
         "receiver_decision"
       ]
@@ -378,18 +378,21 @@
     },
     {
       "id": "seq:3",
+      "name": "전달",
       "source": "gw:sender",
       "target": "task:receiver",
       "condition": "sender_decision == 'approve'"
     },
     {
       "id": "seq:4",
+      "name": "보완 요청",
       "source": "gw:sender",
       "target": "task:draft-r2",
       "condition": "sender_decision == 'revise'"
     },
     {
       "id": "seq:5",
+      "name": "반려",
       "source": "gw:sender",
       "target": "ev:rejected",
       "condition": "sender_decision == 'reject'"
@@ -401,12 +404,14 @@
     },
     {
       "id": "seq:7",
+      "name": "확인 완료",
       "source": "gw:receiver",
       "target": "ev:confirmed",
       "condition": "receiver_decision == 'confirm'"
     },
     {
       "id": "seq:8",
+      "name": "보완 요청",
       "source": "gw:receiver",
       "target": "task:draft-r2",
       "condition": "receiver_decision == 'revise'"
@@ -423,18 +428,21 @@
     },
     {
       "id": "seq:11",
+      "name": "전달",
       "source": "gw:sender-r2",
       "target": "task:receiver-r2",
       "condition": "sender_decision == 'approve'"
     },
     {
       "id": "seq:12",
+      "name": "보완 요청",
       "source": "gw:sender-r2",
       "target": "task:draft-r3",
       "condition": "sender_decision == 'revise'"
     },
     {
       "id": "seq:13",
+      "name": "반려",
       "source": "gw:sender-r2",
       "target": "ev:rejected",
       "condition": "sender_decision == 'reject'"
@@ -446,12 +454,14 @@
     },
     {
       "id": "seq:15",
+      "name": "확인 완료",
       "source": "gw:receiver-r2",
       "target": "ev:confirmed",
       "condition": "receiver_decision == 'confirm'"
     },
     {
       "id": "seq:16",
+      "name": "보완 요청",
       "source": "gw:receiver-r2",
       "target": "task:draft-r3",
       "condition": "receiver_decision == 'revise'"
@@ -468,18 +478,21 @@
     },
     {
       "id": "seq:19",
+      "name": "전달",
       "source": "gw:sender-r3",
       "target": "task:receiver-r3",
       "condition": "sender_decision == 'approve'"
     },
     {
       "id": "seq:20",
+      "name": "보완 요청",
       "source": "gw:sender-r3",
       "target": "ev:followup",
       "condition": "sender_decision == 'revise'"
     },
     {
       "id": "seq:21",
+      "name": "반려",
       "source": "gw:sender-r3",
       "target": "ev:rejected",
       "condition": "sender_decision == 'reject'"
@@ -491,12 +504,14 @@
     },
     {
       "id": "seq:23",
+      "name": "확인 완료",
       "source": "gw:receiver-r3",
       "target": "ev:confirmed",
       "condition": "receiver_decision == 'confirm'"
     },
     {
       "id": "seq:24",
+      "name": "보완 요청",
       "source": "gw:receiver-r3",
       "target": "ev:followup",
       "condition": "receiver_decision == 'revise'"
@@ -538,14 +553,14 @@
               "revise": "보완 요청"
             },
             {
-              "reject": "인계 거절"
+              "reject": "인계 반려"
             }
           ]
         },
         {
           "key": "sender_notes",
           "type": "textarea",
-          "text": "확인 사항 또는 보완·거절 사유"
+          "text": "확인 사항 또는 보완·반려 사유"
         }
       ]
     },

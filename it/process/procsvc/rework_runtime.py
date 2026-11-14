@@ -25,6 +25,12 @@ class ReworkRuntime:
                         and row['status'] == 'CANCELLED' and not row.get('output')
                         and row.get('log') == f"rework superseded: {receipt['request_id']}; "):
                     never_started.add(prior['id'])
+        # 「승인 뒤 MCP 호출」이 쓰기 요청을 서버에 한 번도 보내지 못하고 멈춘 단계(등록 없는 서버 · 꺼진 서버 · 없는 도구 · 맞지 않는 입력)는
+        # 바깥에 낸 일이 없다 — 「이미 실행된 시스템 단계」로 막지 않는다(원인을 고친 뒤 그 단계부터 다시 수행할 수 있어야 한다).
+        # 보낸 적이 있는 단계는 그대로 막힌다(썼는지 사람이 확인해야 한다).
+        from . import effect_parts
+        never_started |= {w['id'] for w in work if w['status'] == 'PENDING' and not w.get('output')
+                          and self._tool_of(w) == effect_parts.MCP_TOOL and self._nothing_sent(w)}
         proposal['started_services'] = [wid for wid in proposal['started_services'] if wid not in never_started]
         proposal['blockers'] = [b for b in proposal['blockers']
             if not (b['code'] == 'service_effects_require_review' and b.get('workitem') in never_started)]

@@ -272,7 +272,7 @@ def test_키_없는_PC의_질문은_강의에서_다룬_질문에만_답한다(c
         assert after['state'] in ('submitted', 'done'), after['message']
     else:
         assert after['state'] == 'failed'
-        assert '수업에서 다룬 질문' in after['message'] and 'RuntimeError' not in after['message']
+        assert '준비된 질문에만 답합니다' in after['message'] and 'RuntimeError' not in after['message']
 
 
 def test_워커가_다시_켜지면_끊긴_재생_실행을_처음부터_다시_낸다(course, worker):

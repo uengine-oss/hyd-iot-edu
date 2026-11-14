@@ -137,8 +137,71 @@ def test_예비품_구매_기준_스킬이_053_판이면_seed_본문으로_바�
     db_before_069.execute("INSERT INTO tenant_skills(tenant_id, skill_name, description, content, origin) VALUES ('hyd', 'spare-purchase-planning', 'd', %s, %s)",
                           (old, origin))
     apply_069(db_before_069)
+    apply_between(db_before_069, HEALTH_FIXES, SKILL_PLAIN_NAMES)        # 069 가 올린 본문의 제목 꼬리표는 078 이 뗀다 — 그 뒤가 지금 seed 본문이다
     (now,) = db_before_069.execute("SELECT content FROM tenant_skills WHERE skill_name='spare-purchase-planning'").fetchone()
     assert now == (seed_text('spare-purchase-planning') if changed else old)
+
+
+# ---------------------------------------------------------------- 078 기본 제공 스킬의 설명 · 문서 제목
+SKILL_PLAIN_NAMES = '20261114000078'
+OLD_SKILL_NAMES = {      # 077 까지의 seed.sql 이 넣던 설명과 문서 제목(작업자끼리 쓰던 꼬리표가 붙어 있었다)
+    'cooling-emergency-response': ('쿨러 과열 경보 — 원인 진단 · 냉각 조치 카드 (시나리오 A)', '# 냉각 긴급 대응 (시나리오 A)'),
+    'pm-schedule-planning': ('정기 정비 도래 — 언제 정비할지 카드 (시나리오 B)', '# 정기 정비 계획 (시나리오 B)'),
+    'spare-purchase-planning': ('예비품 재고 기준 이탈 — 발주 카드 (시나리오 C)', '# 예비품 구매 (시나리오 C)'),
+}
+
+
+def apply_between(conn, after, upto):
+    """after 판 다음부터 upto 판까지의 마이그레이션을 차례로 넣는다."""
+    for sql in sorted(MIGRATIONS.glob('*.sql')):
+        if after < sql.name[:len(after)] <= upto:
+            conn.execute(sql.read_text(encoding='utf8'))
+
+
+def seed_skill(skill):
+    """seed.sql 의 그 스킬 행 → (설명, 문서)."""
+    import re
+    seed = (MIGRATIONS.parent / 'seed.sql').read_text(encoding='utf8')
+    m = re.search(r"'" + skill + r"', '([^']*)', \$skill\$(.*?)\$skill\$", seed, re.S)
+    return m.group(1), m.group(2)
+
+
+def test_새_DB의_기본_제공_스킬_설명과_문서에는_작업자끼리_쓰던_꼬리표가_없다(pg_dsn):
+    import psycopg
+    from student_words import WORKER_TALK
+    with psycopg.connect(pg_dsn) as db:
+        rows = db.execute("SELECT skill_name, description, content FROM tenant_skills WHERE tenant_id='hyd' AND origin='seed'").fetchall()
+    assert {name for name, _, _ in rows} >= set(OLD_SKILL_NAMES)
+    for name, description, content in rows:
+        assert not WORKER_TALK.search(description) and '카드' not in description, (name, description)
+        assert not WORKER_TALK.search(content.split('\n', 1)[0]), (name, content.split('\n', 1)[0])
+
+
+def test_이미_쓰던_DB의_기본_제공_스킬은_지금_seed와_같아지고_고친_설명과_내가_만든_스킬은_그대로다(scratch_db):
+    """seed.sql 은 새로 만든 DB 에만 들어간다 — 쓰던 DB 는 078 이 같은 내용으로 맞춘다."""
+    import psycopg
+    with psycopg.connect(scratch_db, autocommit=True) as conn:
+        for sql in sorted(MIGRATIONS.glob('*.sql')):
+            if sql.name >= SKILL_PLAIN_NAMES:
+                break
+            conn.execute(sql.read_text(encoding='utf8'))
+        conn.execute("INSERT INTO tenants(id, name) VALUES ('hyd', '시험 공장'), ('other', '다른 공장')")
+        for skill, (old_description, old_title) in OLD_SKILL_NAMES.items():
+            _, body = seed_skill(skill)
+            old_body = old_title + body[body.index('\n'):]
+            for tenant, name, description, origin in (('hyd', skill, old_description, 'seed'), ('other', skill, old_description, 'seed'),
+                                                      ('hyd', skill + '-mine', old_description, 'user')):
+                conn.execute('INSERT INTO tenant_skills(tenant_id, skill_name, description, content, origin) VALUES (%s, %s, %s, %s, %s)',
+                             (tenant, name, description, old_body, origin))
+        conn.execute("UPDATE tenant_skills SET description='내가 고친 설명' WHERE tenant_id='hyd' AND skill_name='pm-schedule-planning'")
+        conn.execute(next(MIGRATIONS.glob(SKILL_PLAIN_NAMES + '_*.sql')).read_text(encoding='utf8'))
+        now = {(t, n): (d, c) for t, n, d, c in conn.execute('SELECT tenant_id, skill_name, description, content FROM tenant_skills').fetchall()}
+    for skill, (old_description, old_title) in OLD_SKILL_NAMES.items():
+        description, body = seed_skill(skill)
+        want_description = '내가 고친 설명' if skill == 'pm-schedule-planning' else description
+        assert now[('hyd', skill)] == (want_description, body), skill
+        assert now[('other', skill)][0] == old_description and now[('other', skill)][1].startswith(old_title), '다른 테넌트의 스킬은 건드리지 않는다'
+        assert now[('hyd', skill + '-mine')][0] == old_description and now[('hyd', skill + '-mine')][1].startswith(old_title), '내가 만든 스킬은 건드리지 않는다'
 
 
 def outbox(conn, pid, decision):
@@ -326,3 +389,45 @@ def test_이미_쓰던_DB의_진단_폼과_승인_폼은_지금_기준_흐름의
     assert 'cooler-fin-fouling' not in str(now[('hyd', 'diagnose')]) and 'fm:cooler' not in str(now[('hyd', 'diagnose')])
     assert now[('hyd', 'escalate')] == OLD_FORMS['escalate'], '바뀌지 않은 폼은 건드리지 않는다'
     assert {i: now[('other', i)] for i in OLD_FORMS} == OLD_FORMS, '다른 테넌트의 폼은 건드리지 않는다'
+
+
+# ---------------------------------------------------------------- 076 역할의 정본을 업무 DB 하나로
+ROLES_ONE_SOURCE = '20261114000076'
+
+
+def _db_before_076(scratch_db):
+    import psycopg
+    conn = psycopg.connect(scratch_db, autocommit=True)
+    for sql in sorted(MIGRATIONS.glob('*.sql')):
+        if sql.name >= ROLES_ONE_SOURCE:
+            break
+        conn.execute(sql.read_text(encoding='utf8'))
+    return conn
+
+
+def _roles(conn):
+    return (sorted(r for (r,) in conn.execute("SELECT id FROM users WHERE id LIKE 'role:%' AND NOT is_agent").fetchall()),
+            sorted(r for (r,) in conn.execute("SELECT role_id FROM role_members WHERE user_id='user:me'").fetchall()))
+
+
+def test_이미_쓰던_DB에_지식이_가리키는_두_역할이_생기고_담당자가_그_구성원이_된다(scratch_db):
+    """지식 그래프에는 있는데 업무 DB 에 없던 역할(품질팀장 · 공장장) — 문서가 그 역할의 승인을 말하면 승인이 「구성원 아님」으로 막혔다.
+    새 DB 는 시드가 같은 모습을 넣는다(시드 ↔ 지식 그래프의 대조는 test_agent_authoring 의 역할 목록 시험)."""
+    with _db_before_076(scratch_db) as conn:
+        conn.execute("INSERT INTO tenants(id, name) VALUES ('hyd', '시험 공장')")
+        conn.execute("INSERT INTO users(id, username, role, is_agent, tenant_id) VALUES ('role:operator', '운전원', 'operator', false, 'hyd'), "
+                     "('user:me', '담당자', 'manager', false, 'hyd'), ('role:u-mine', '내가 만든 역할', 'manager', false, 'hyd')")
+        conn.execute("INSERT INTO role_members(tenant_id, role_id, user_id) VALUES ('hyd', 'role:operator', 'user:me'), ('hyd', 'role:u-mine', 'user:me')")
+        path = next(MIGRATIONS.glob(ROLES_ONE_SOURCE + '_*.sql'))
+        conn.execute(path.read_text(encoding='utf8'))
+        roles, mine = _roles(conn)
+        assert roles == mine == ['role:operator', 'role:plant-mgr', 'role:quality-mgr', 'role:u-mine']       # 있던 역할 · 구성원은 그대로
+        conn.execute(path.read_text(encoding='utf8'))                                                        # 다시 적용해도 같다
+        assert _roles(conn) == (roles, mine)
+
+
+def test_테넌트가_없는_새_DB에서는_역할_마이그레이션이_아무것도_넣지_않는다(scratch_db):
+    """새 DB 에서는 마이그레이션이 시드보다 먼저 돈다 — 테넌트 없이 사용자 행을 넣으면 그 자리에서 멈춘다(시드가 같은 모습을 넣는다)."""
+    with _db_before_076(scratch_db) as conn:
+        conn.execute(next(MIGRATIONS.glob(ROLES_ONE_SOURCE + '_*.sql')).read_text(encoding='utf8'))
+        assert _roles(conn) == ([], [])

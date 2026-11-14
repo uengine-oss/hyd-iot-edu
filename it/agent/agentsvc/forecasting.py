@@ -134,7 +134,8 @@ def source(asset):
                               'asset':asset, 'observed_at':snapshot['t'], 'age_seconds':found}
         if time.monotonic() + SOURCE_REREAD_EVERY_S > deadline:
             raise decide.FactUnavailable('plant_status', SOURCE_NAME, SOURCE_SYSTEM,
-                                         f'{found}. {SOURCE_REREAD_FOR_S:g}초 동안 다시 읽어도 같았습니다 — 잠시 뒤 다시 시도하세요')
+                                         f'{found}. {SOURCE_REREAD_FOR_S:g}초 동안 다시 읽어도 같았습니다 — 잠시 뒤 다시 시도하세요',
+                                         transient=True)
         time.sleep(SOURCE_REREAD_EVERY_S)
 
 

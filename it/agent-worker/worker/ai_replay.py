@@ -9,6 +9,9 @@
   수업 녹화(AI_REPLAY_DIR — 저장소 it/agent-worker/replay/): 서버가 준 수업 AI 자리(정본 procsvc/course_policy, 워커는 process 의 판정 ·
     GET /api/course-access 로만 읽는다 — c3_cooling/T_agent · handover/draft-1~3 · question)와 무엇에 대한 처리 건인가(경보 종류 · 질문 글). 학생이 바꿀 수 있는 작업 이름 · 흐름 id 는 열쇠가 아니다 —
     이름을 바꾼 교대 흐름도 같은 녹화를 낸다. 같은 작업을 새로 하는 실행(재작업 세대 · 보류 뒤 재평가)은 실행 차례 runs[].attempt 로 가린다.
+    그 차례의 녹화가 없는 다시 수행(재작업 세대)은 첫 실행을 다시 낸다(Claim._run_for) — 다시 수행은 같은 단계를 같은 입력으로 새로 하는
+    것이고(다시 수행의 사유는 AI 입력에 들어가지 않는다 — 새 작업 행), 저장된 응답은 입력이 같으면 같은 답을 내는 것이 본뜻이다. 쓰기 도구는
+    이 PC에서 다시 부르므로 등록되는 판단은 지금 값으로 계산된다. 보류 뒤 재평가는 그렇지 않다(조건이 바뀌어 다시 보는 것이라 입력이 다르다).
   같은 요청 저장(이 PC의 <작업 공간>/.ai-cache): 실행에 영향을 주는 것 전부의 해시(정의 · 단계 · 지시 · 입력 · 피드백 · 폼 · 에이전트 설정 ·
     업무 규칙 · 스킬 본문 · 도구 서버 · 모델 — runner._request_key). 하나라도 다르면 새로 실행한다. 결과 검사를 통과해 제출한 실행만
     저장하고, 그 실행의 작업이 지금도 끝남(DONE — 처리 흐름이 결과를 받아들임)일 때만 다시 쓴다. 질문(「에이전트에게 질문」)은 저장하지
@@ -23,6 +26,8 @@
 입력(설비 · 부품 · 정비 계획 같은 기준 값)이 녹화와 다르면 바꿔 끼우지 않고 멈춘다 — 다른 설비의 실측을 이 설비 것처럼 보이지 않게.
 쓰기 도구(서버가 읽기 전용으로 표시하지 않은 도구 — 판단 등록 submit_decision · submit_purchase)는 이 PC 서버로 다시 부르고, 돌려받은 새 id 를
 응답 · 결과 파일에 바꿔 끼운다. 녹화 때 오류였던 쓰기 호출은 다시 부르지 않는다. 녹화가 쓴 도구 서버 · 도구가 지금 단계에 없으면 멈춘다.
+다시 부른 쓰기가 「아직 값을 받지 못함」(도구 봉투의 error_kind UNAVAILABLE)이나 「서버에 닿지 못함」으로 안 됐으면 같은 실행 안에서
+WRITE_RETRY_WAITS_S 간격으로 다시 부른다 — 아무것도 등록되지 않은 것이 분명한 오류만이다. 그래도 안 되면 지어내지 않고 실패로 둔다.
 
 없는 녹화는 지어내지 않고 학생이 알아듣는 말로 멈춘다(NotRecorded — 무엇이 없고 무엇을 하면 되는지). 저장 직전 비밀값은 가린다(diagnostics.hide).
 """
@@ -40,6 +45,8 @@ from pathlib import Path
 from typing import Callable, Iterable
 
 from cliagents import ExecEvent, ExecEventKind
+from hydcommon.tool_result import UNAVAILABLE
+from hydcommon.words import josa
 from procsvc import mcp_check
 
 from .bridge import MCP_CONFIG_FILENAME
@@ -62,11 +69,49 @@ UNCACHED_SLOTS = ("question",)                  # 지금의 지식 · 업무 상
 #: 다시 부르는 쓰기 도구(submit_decision · submit_purchase)는 판단 전체를 계산한다 — 원천 읽기 한도(agent mcp_ent 15초) · process 제출
 #: 한도(10초)보다 길게 기다린다. 연결 확인용 기본 10초로는 바쁜 PC에서 정상 판단이 「응답하지 않았습니다」로 멈췄다(2026-10-30 테스트 실측).
 WRITE_CALL_TIMEOUT_S = 60.0
+#: 다시 부른 쓰기 도구가 「다시 시도할 만한 오류」로 안 됐을 때 다음 시도까지 기다리는 벽시계 초(첫 시도 + 이 수만큼 다시). 다시 시도할 만한
+#: 오류는 아무것도 등록되지 않은 것이 분명한 둘뿐이다: ① 도구가 UNAVAILABLE 로 답함(판단에 쓸 값을 원천에서 아직 받지 못함 — 판단 서비스는
+#: 값을 8초 동안 다시 읽고 나서야 이렇게 답한다, agentsvc/forecasting.SOURCE_REREAD_FOR_S) ② 도구 서버에 닿지 못함(연결 거부 · 주소 못 찾음 ·
+#: 연결 자리 없음 — 요청이 서버에 가지 않았다). 시간 초과 · 끊김은 다시 부르지 않는다 — 등록됐는데 답만 못 받았을 수 있고, 그때 다시 부르면
+#: process 가 「이 작업의 판단이 이미 있다」로 거절해 엉뚱한 까닭이 남는다. 수집이 잠깐 밀린 한 번이 그 단계의 실패로 굳던 것(2026-11-14
+#: 01:01 처리 건)을 막는 값이다: 가장 길게 8 + 5 + 8 + 10 + 8 = 39초 동안 세 번 본다.
+WRITE_RETRY_WAITS_S = (5.0, 10.0)
+UNREACHED_KINDS = ("refused", "unreachable", "busy")      # mcp_check 의 연결 오류 종류 가운데 요청이 서버에 가지 않은 것
 
 
 class NotRecorded(Stop):
     """녹화(저장)에 없는 실행 — 문장은 학생이 할 일까지 쓴다(「강사」 · 「녹화」라는 말 없이, 재생 모드가 지원하지 않는 행동으로)."""
     title = "재생 모드에서 지원하지 않는 AI 단계"
+
+
+class WriteFailed(Stop):
+    """AI가 고른 결과를 이 PC에 등록(쓰기 도구)하지 못했다 — 재생 모드가 지원하지 않는 행동이 아니라 이 PC의 지금 상태 때문이다. 문장은 무엇을
+    하다가 · 왜 · 다음에 무엇을. 도구의 내부 이름과 응답 원문은 raw(원문 칸)에만 싣는다."""
+    title = "AI 판단 등록 실패"
+
+
+RETRY_STEP = "이 단계 아래의 「다시 수행」으로 이 단계를 다시 실행해 주세요."     # 처리 건 화면의 멈춘 단계 아래 복구 묶음
+
+
+def _wait(seconds: float, check_stop) -> None:
+    """다음 시도까지 기다린다 — 그동안에도 취소 · 임대 갱신(check_stop)은 1초마다 본다."""
+    import time
+    until = time.monotonic() + seconds
+    while (left := until - time.monotonic()) > 0:
+        if check_stop:
+            check_stop()
+        time.sleep(min(1.0, left))
+
+
+_ERROR_NAME = re.compile(r"\A\s*[A-Za-z_][\w.]*(?:Error|Exception)\s*:\s*")
+
+
+def _tool_reason(text) -> str:
+    """도구가 돌려준 오류 응답에서 사람이 읽는 까닭만(봉투의 message — 판단 서비스가 한국어로 쓴다). 봉투가 아니거나 까닭이 없으면 빈 글."""
+    body = _as_json(text)
+    reason = body.get("message") if isinstance(body, dict) else None
+    reason = _ERROR_NAME.sub("", reason).strip() if isinstance(reason, str) else ""
+    return reason.rstrip(" .") if reason else ""
 
 
 REPLAY = "AI 키가 없을 때 쓰는 재생 모드에서는"   # 벗어난 행동의 안내 첫머리 — 화면에 재생 모드를 밝히는 곳은 이 안내뿐이다
@@ -315,8 +360,8 @@ class _Swaps:
             return
         if key in FIELD_NAMES:
             label = FIELD_NAMES[key]
-            raise NotRecorded(f"{REPLAY} 「{step}」을 {label} {old or '(빈 값)'}인 처리 건으로만 진행할 수 있습니다(지금은 {new or '(빈 값)'}). "
-                              f"{label}을(를) {old or '(빈 값)'}(으)로 바꿔 다시 시작해 주세요.")
+            raise NotRecorded(f"{REPLAY} {josa(f'「{step}」', '을')} {label} {old or '(빈 값)'}인 처리 건으로만 진행할 수 있습니다(지금은 {new or '(빈 값)'}). "
+                              f"{josa(label, '을')} {josa(old or '(빈 값)', '으로')} 바꿔 다시 시작해 주세요.")
         if isinstance(old, str) and isinstance(new, str) and old and new:
             # 처리 건마다 달라지는 값(경보 · 사건 id · 시각)과 데이터를 고르지 않는 값(누른 사람 · 보완 요청 글)은 녹화 글 속의 그 값만
             # 이 처리 건의 값으로 바꾼다(글 속 부분 바꾸기는 id 모양 값만 — _Swaps.text)
@@ -426,37 +471,73 @@ def _as_json(content):
 class _Tools:
     """다시 낼 때 쓰기 도구를 이 PC의 서버로 부른다. 서버 설정은 이번 실행의 작업 폴더 .mcp.json(실제 실행이면 CLI 가 읽을 그 파일)."""
 
-    def __init__(self, workdir, step: str):
+    def __init__(self, workdir, step: str, check_stop=None):
         self.servers = (_read_json(Path(workdir) / MCP_CONFIG_FILENAME) or {}).get("mcpServers") or {}
-        self.step, self.listed = step, {}
+        self.step, self.listed, self.check_stop = step, {}, check_stop
 
     def writes(self, server: str, tool: str) -> bool:
         if server not in self.servers:
-            raise NotRecorded(f"{REPLAY} 「{self.step}」을 진행하려면 이 단계 에이전트의 도구에 「{server}」이(가) 있어야 합니다. "
-                              f"[에이전트] 화면에서 이 에이전트의 도구에 「{server}」을(를) 다시 고른 뒤 실행해 주세요.")
+            raise NotRecorded(f"{REPLAY} {josa(f'「{self.step}」', '을')} 진행하려면 이 단계 에이전트의 도구 서버에 {josa(f'「{server}」', '이')} 있어야 합니다. "
+                              f"AI 에이전트 화면에서 이 에이전트의 도구 서버에 {josa(f'「{server}」', '을')} 다시 고른 뒤 {RETRY_STEP}")
         if self.servers[server].get("command"):  # 워커 자신의 조회 창구(질문 · 결과 검사) — 쓰기 도구가 없다
             return False
         try:
             spec = mcp_check.normalize(self.servers[server])
         except ValueError as e:
-            raise NotRecorded(f"도구 서버 「{server}」의 설정이 올바르지 않아 「{self.step}」을 진행하지 못했습니다: {e}") from None
+            raise NotRecorded(f"이 단계 에이전트의 도구 서버 「{server}」 설정이 올바르지 않아 {josa(f'「{self.step}」', '을')} 진행하지 못했습니다 — "
+                              "AI 에이전트 › 도구 연결 화면에서 그 서버의 연결 검사를 해 보세요.", raw=f"{server}: {e}") from None
         if server not in self.listed:
-            out = mcp_check.check(spec)
+            tries = len(WRITE_RETRY_WAITS_S) + 1
+            for n in range(tries):
+                out = mcp_check.check(spec)
+                if out["status"] == "ok" or out.get("error_kind") not in UNREACHED_KINDS or n + 1 == tries:
+                    break
+                log.info("「%s」 도구 서버 %s 연결 다시 시도 %d/%d — %s", self.step, server, n + 1, tries - 1, out.get("error_kind"))
+                _wait(WRITE_RETRY_WAITS_S[n], self.check_stop)
             if out["status"] != "ok":
-                raise NotRecorded(f"도구 서버 {server}에 닿지 않아 「{self.step}」을 진행하지 못했습니다. 시작.bat을 다시 실행한 뒤 다시 하세요.")
+                tried = f"{tries}번 시도해도 " if out.get("error_kind") in UNREACHED_KINDS else ""
+                raise WriteFailed(f"결과를 등록할 도구 서버에 {tried}닿지 못해 {josa(f'「{self.step}」', '을')} 진행하지 못했습니다. 시작.bat을 다시 실행한 뒤 "
+                                  f"{RETRY_STEP}", raw=f"{server}: {out.get('error')} ({out.get('error_kind')})")
             self.listed[server] = {t["name"]: t for t in out["tools"]}
         meta = self.listed[server].get(tool)
         if meta is None:
-            raise NotRecorded(f"「{self.step}」에 필요한 도구 {server}/{tool}이(가) 지금 서버에 없어 진행하지 못했습니다. README 「새 판 받기」대로 새 판을 받은 뒤 시작.bat을 다시 실행하세요.")
+            raise NotRecorded(f"「{self.step}」의 결과를 등록할 도구가 지금 도구 서버에 없어 진행하지 못했습니다. README 「새 판 받기」대로 "
+                              "새 판을 받은 뒤 시작.bat을 다시 실행하세요.", raw=f"{server}/{tool}")
         return not meta["callable"]
 
     def call(self, server: str, tool: str, arguments: dict) -> dict:
-        # 승인 뒤 시스템 작업의 쓰기 호출과 같은 함수(입력 형식 검사 포함)
-        out = mcp_check.call_effect(mcp_check.normalize(self.servers[server]), tool, arguments, max_chars=1_000_000,
-                                    timeout=WRITE_CALL_TIMEOUT_S)
-        if out["status"] != "ok":
-            raise NotRecorded(f"「{self.step}」에서 녹화된 AI가 부른 {server}/{tool}을(를) 이 PC에서 다시 부르지 못했습니다: {out.get('error')}")
-        return out["result"]
+        """쓰기 도구 하나를 이 PC의 서버로 부른다 → 성공한 결과. 다시 시도할 만한 오류(머리의 WRITE_RETRY_WAITS_S)면 같은 실행 안에서 기다렸다
+        다시 부르고, 그 밖의 오류와 끝내 안 된 것은 WriteFailed(지어낸 결과로 메우지 않는다)."""
+        spec, where = mcp_check.normalize(self.servers[server]), f"{server}/{tool}"
+        tries = len(WRITE_RETRY_WAITS_S) + 1
+        for n in range(tries):
+            # 승인 뒤 시스템 작업의 쓰기 호출과 같은 함수(입력 형식 검사 포함)
+            out = mcp_check.call_effect(spec, tool, arguments, max_chars=1_000_000, timeout=WRITE_CALL_TIMEOUT_S)
+            if out["status"] != "ok":
+                again, raw = out.get("error_kind") in UNREACHED_KINDS, f"{where}: {out.get('error')} ({out.get('error_kind')})"
+            else:
+                result = out["result"]
+                if not _failed(result["text"], result["is_error"]):
+                    return result
+                body = _as_json(result["text"])
+                again, raw = isinstance(body, dict) and body.get("error_kind") == UNAVAILABLE, f"{where}: {result['text'][:600]}"
+            if again and n + 1 < tries:
+                log.info("「%s」 쓰기 도구 %s 다시 시도 %d/%d — %s", self.step, where, n + 1, tries - 1, raw[:200])
+                _wait(WRITE_RETRY_WAITS_S[n], self.check_stop)
+                continue
+            tried = f" {tries}번 시도해도 같았습니다." if again else ""
+            if out["status"] != "ok":
+                if again:
+                    raise WriteFailed(f"「{self.step}」의 결과를 등록할 도구 서버에 닿지 못했습니다.{tried} 시작.bat을 다시 실행한 뒤 {RETRY_STEP}",
+                                      raw=raw)
+                raise WriteFailed(f"「{self.step}」의 결과를 등록하는 동안 도구 서버가 제대로 답하지 않았습니다. 잠시 뒤 "
+                                  f"{RETRY_STEP} 같은 일이 되풀이되면 처리 과정의 원문을 시스템 관리자에게 보여 주세요.", raw=raw)
+            reason = _tool_reason(result["text"])
+            if again:
+                raise WriteFailed(f"「{self.step}」의 결과를 등록하지 못했습니다 — {reason or '판단에 쓸 값을 아직 받지 못했습니다'}.{tried} "
+                                  f"값이 다시 들어온 뒤 {RETRY_STEP}", raw=raw)
+            raise WriteFailed(f"「{self.step}」의 결과를 이 PC에 등록하지 못했습니다" + (f" — {reason}." if reason else ". 처리 과정의 원문을 시스템 관리자에게 "
+                              "보여 주세요."), raw=raw)
 
 
 def play(library: Library, key: str, doc: dict, i: int, request, check_stop, last: dict, *, reclaimed: bool = False) -> Iterable[ExecEvent]:
@@ -476,7 +557,7 @@ def play(library: Library, key: str, doc: dict, i: int, request, check_stop, las
     elif not resumed:
         carried.unlink(missing_ok=True)
     swaps.pair_case(saved.get("context") or {}, _task_context(request.workdir), step)
-    tools = _Tools(request.workdir, step)
+    tools = _Tools(request.workdir, step, check_stop)
     session = library.session(key, i)
     last.update(step=step, recorded_at=doc.get("recorded_at"), rerun=[], kept_errors=0, differs=[], attempt=_attempt_label(_attempt(saved)),
                 library=library.prefix, skills=sorted({name for d in saved["events"] if d["kind"] == ExecEventKind.TOOL_START.value
@@ -506,13 +587,11 @@ def play(library: Library, key: str, doc: dict, i: int, request, check_stop, las
                 result = tools.call(*target, d["tool_input"] if isinstance(d["tool_input"], dict) else {})
             live[d.get("tool_use_id")] = result
             last["rerun"].append(f"{target[0]}/{target[1]}")
-            if _failed(result["text"], result["is_error"]):
-                raise NotRecorded(f"「{step}」에서 AI가 부른 {target[0]}/{target[1]}이(가) 이 PC에서 거절됐습니다: {result['text'][:300]}")
             old, new = _as_json(old), _as_json(result["text"])
             if old is None and new is not None:
                 made = (_created(new) or {}).get("id")
-                raise NotRecorded(f"「{step}」의 준비된 쓰기 결과를 읽을 수 없어 새로 만든 id 를 바꿔 끼우지 못했습니다. README 「새 판 받기」대로 새 판을 받으세요"
-                                  + (f"(이 PC에는 이미 등록됐습니다 — id {made}, 승인 대기 목록에서 확인하세요)." if made else "."))
+                raise NotRecorded(f"「{step}」의 준비된 결과를 읽을 수 없어 이 처리 건의 값으로 바꾸지 못했습니다. README 「새 판 받기」대로 새 판을 받으세요"
+                                  + (f"(이 PC에 등록된 판단 {made}은 승인 단계로 넘어가지 않습니다)." if made else "."))
             swaps.pair_created(old, new)
             changed, numbers = decision_gap(old, new)
             if changed and library.prefix == COURSE:
@@ -520,7 +599,7 @@ def play(library: Library, key: str, doc: dict, i: int, request, check_stop, las
                 raise NotRecorded(f"{REPLAY} 「{step}」의 준비된 AI 판단을 이 처리 건에 쓸 수 없습니다. " + " · ".join(changed) + ". "
                                   "설비 · 업무 상태가 준비된 판단 때와 달라 AI 설명과 승인 카드가 서로 다른 조치를 말하게 됩니다. "
                                   "설비 · 업무 상태를 시작 상태로 되돌린 뒤 다시 시작하거나, AI 키를 넣어 실제 AI로 실행해 주세요"
-                                  + (f"(지금 계산으로 등록된 판단 {made}은(는) 승인 단계로 넘어가지 않습니다)." if made else "."))
+                                  + (f"(지금 계산으로 등록된 판단 {made}은 승인 단계로 넘어가지 않습니다)." if made else "."))
             last["differs"] += numbers
             done[d["tool_use_id"]] = result["text"]
             # 바로 남긴다 — Runner 는 결과를 받으면 이 생성기를 끝까지 돌리지 않고 닫을 수 있고, 워커가 그 사이 죽을 수도 있다
@@ -634,8 +713,7 @@ class Claim:
                 return ("play", None, None, None, self.r.course)
             key = course_key(self.slot, self.case) if self.slot else None
             doc = self.r.course.load(key) if key else None
-            i = next((n for n, run in enumerate(doc["runs"]) if _attempt(run) == self.attempt), None) if doc else None
-            return ("play", key, doc, i, self.r.course)
+            return ("play", key, doc, self._run_for(doc) if doc else None, self.r.course)
         if resume:
             return ("live",)
         if self.r.cache is not None and self.request_key:
@@ -647,6 +725,18 @@ class Claim:
                 log.info("같은 요청 저장 %s: 그 실행의 작업이 지금은 끝남이 아니라(돌려보냄 · 재작업 · 초기화) 버리고 새로 실행합니다", self.request_key)
                 self.r.cache.delete(self.request_key)
         return ("live",)
+
+    def _run_for(self, doc: dict) -> int | None:
+        """이 점유의 실행 차례에 낼 저장된 실행의 순번. 그 차례의 실행이 저장돼 있으면 그것. 없는데 다시 수행(재작업 세대, 보류는 없음)이면 첫
+        실행 — 다시 수행은 같은 단계를 같은 입력으로 새로 하는 것이라(새 작업 행 · 사유는 AI 입력이 아니다), 입력이 같으면 같은 답을 내는
+        저장된 응답의 본뜻 그대로다. 데이터를 고르는 입력이 달라졌으면 play 가 멈추고(FIELD_NAMES), 쓰기 도구는 이 PC에서 다시 불러 지금 값으로
+        판단을 등록하며, 그 판단이 저장된 설명과 다르면 그 까닭으로 멈춘다(decision_gap). 보류 뒤 재평가(조건이 바뀌어 다시 보는 것)는
+        입력이 다른 실행이라 첫 실행으로 메우지 않는다."""
+        runs = [_attempt(run) for run in doc["runs"]]
+        if self.attempt in runs:
+            return runs.index(self.attempt)
+        generation, reassessment = self.attempt
+        return runs.index((0, 0)) if generation and not reassessment and (0, 0) in runs else None
 
     def __call__(self, provider, request, env, *, check_stop=None) -> Iterable[ExecEvent]:
         source = self._source(request)
@@ -680,25 +770,27 @@ class Claim:
         if request.resume_session:
             return (f"{REPLAY} 「{step}」에 이어지는 응답(결과를 고쳐 다시 낸 응답 · 사람 답 뒤 이어 한 응답)을 지원하지 않습니다. "
                     "이 처리 건은 닫고 새로 시작해 주세요.")
+        # 재생 모드가 답하는 AI 단계의 이름(저장된 응답의 업무 이름 — 질문 자리는 따로 말한다). 손으로 적은 흐름 목록을 두지 않는다
+        steps = " · ".join(f"「{name}」" for name in dict.fromkeys(str(d.get("step") or "") for _, d in library.docs() if d.get("slot") != "question") if name)
         if not self.slot:
-            return (f"{REPLAY} 「{step}」을 지원하지 않습니다. "
-                    "수업에서 준비한 흐름(냉각 · 정기 정비 · 예비품 구매 · 교대 인수인계)과 질문으로 실습해 주세요.")
+            return (f"{REPLAY} {josa(f'「{step}」', '을')} 지원하지 않습니다. 재생 모드에서 진행되는 AI 단계는 기본 제공 흐름과 교대 인수인계의 "
+                    f"{steps or '(없음)'}, 그리고 질문하기의 준비된 질문입니다.")
         if self.slot == "question":
             asked = library.questions()
-            return (f"{REPLAY} 수업에서 다룬 질문에만 답합니다. 다룬 질문: " + (" / ".join(f"「{q}」" for q in asked) if asked else "없음")
+            return (f"{REPLAY} 준비된 질문에만 답합니다. 준비된 질문: " + (" / ".join(f"「{q}」" for q in asked) if asked else "없음")
                     + ". 질문 칸 아래의 질문 단추를 눌러 넣고 보내 주세요.")
         g, n = self.attempt
         if doc is not None and n:
-            return (f"{REPLAY} 「{step}」을 보류 뒤 다시 평가하는 것을 지원하지 않습니다(첫 평가까지 지원합니다). "
+            return (f"{REPLAY} {josa(f'「{step}」', '을')} 보류 뒤 다시 평가하는 것을 지원하지 않습니다(첫 평가까지 지원합니다). "
                     "보류 사유를 확인하고 사람이 처리해 주세요.")
         if doc is not None and g:
-            return (f"{REPLAY} 「{step}」을 재작업으로 다시 하는 것을 지원하지 않습니다(첫 작업까지 지원합니다). "
-                    "새 처리 건으로 다시 시작해 주세요.")
+            return (f"{REPLAY} {josa(f'「{step}」', '을')} 다시 수행하는 데 쓸 첫 실행의 응답이 없습니다. 새 처리 건으로 다시 시작해 주세요.")
         if self.slot.startswith("handover/draft-"):
             drafts = sorted({d["slot"] for _, d in library.docs() if str(d.get("slot") or "").startswith("handover/draft-")})
-            return (f"{REPLAY} 「{step}」을 지원하지 않습니다 — 교대 인계안의 보완 요청은 {max(0, len(drafts) - 1)}번까지 지원합니다. "
+            return (f"{REPLAY} {josa(f'「{step}」', '을')} 지원하지 않습니다 — 교대 인계안의 보완 요청은 {max(0, len(drafts) - 1)}번까지 지원합니다. "
                     "그 뒤로는 보완 요청 대신 [확인]으로 넘겨 주세요.")
-        return f"{REPLAY} 이 종류의 처리 건에서는 「{step}」을 지원하지 않습니다. 수업에서 다룬 경보로 실습해 주세요."
+        return (f"{REPLAY} 이 경보로 시작한 처리 건에서는 {josa(f'「{step}」', '을')} 지원하지 않습니다. 재생 모드에서 진행되는 AI 단계는 "
+                f"{steps or '(없음)'}입니다.")
 
     def notice(self) -> str | None:
         if self.dropped and not self.last:

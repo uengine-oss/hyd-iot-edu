@@ -100,7 +100,8 @@ class Incident:
                    recovery_policy=deepcopy(recovery_policy))
 
     def to_dict(self) -> dict:
-        return {"id": self.id, "asset": self.asset, "alertId": self.alert_id, "state": self.state, "reason": self.reason,
+        # pattern: 이 사건을 연 경보의 종류(이상 패턴 코드) — 목록 응답은 card 를 싣지 않으므로(크다) 화면이 이름을 쓰려면 이 칸이 있어야 한다
+        return {"id": self.id, "asset": self.asset, "alertId": self.alert_id, "pattern": self.pattern, "state": self.state, "reason": self.reason,
                 "history": self.history, "cmdId": self.cmd_id, "approvalId": self.approval_id, "expiresAt": self.expires_at,
                 "ackDueAt": self.ack_due_at, "approvedBy": self.approved_by,
                 "actions": self.actions, "ack": self.ack, "cleared": self.cleared, "workOrder": self.work_order,

@@ -84,7 +84,7 @@ def _recipients(to) -> list[str]:
             addr = addr.strip()
             if addr:
                 if not _ADDRESS.fullmatch(addr):
-                    raise ValueError(f"받는 주소 '{addr}' 가 수업 메일 주소(이름@{CLASS_DOMAIN})가 아닙니다")
+                    raise ValueError(f"받는 주소 '{addr}' 가 이 시스템의 시험 메일 주소(이름@{CLASS_DOMAIN})가 아닙니다")
                 out.append(addr)
     if not out:
         raise ValueError("받는 사람(to)이 없습니다")

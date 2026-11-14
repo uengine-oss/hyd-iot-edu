@@ -16,7 +16,7 @@ from . import engine
 BLOCKER_TEXT = {
     'instance_not_running': '처리 건이 이미 끝났습니다 — 끝난 처리 건은 다시 수행하지 않습니다. 새 경보 · 새 처리 건으로 진행하세요.',
     'initial_inputs_unavailable': '처리 건의 시작 값 원문이 없어 어디까지 되돌릴지 정할 수 없습니다 — 새 처리 건으로 다시 시작하세요.',
-    'ambiguous_workitem_order': '같은 단계의 최신 기록이 둘 이상이라 어느 것부터 다시 할지 정할 수 없습니다 — 강사에게 이 처리 건 기록을 보여 주세요.',
+    'ambiguous_workitem_order': '같은 단계의 최신 기록이 둘 이상이라 어느 것부터 다시 할지 정할 수 없습니다 — 시스템 관리자에게 이 처리 건 기록을 보여 주세요.',
     'start_workitem_superseded': '이 단계는 이미 다음 차수로 다시 수행됐습니다 — 목록에서 그 단계의 최신 차수를 고르세요.',
     'start_workitem_not_reached': '이 단계는 아직 시작되지 않았습니다 — 이미 시작된 단계를 고르세요.',
     'ambiguous_previous_producer': '이 값을 만든 앞 단계가 둘 이상이라 어느 결과를 다시 쓸지 정할 수 없습니다 — 더 앞 단계부터 다시 수행하세요.',
@@ -25,22 +25,22 @@ BLOCKER_TEXT = {
                                 '(전달에 실패한 승인은 처리 건 화면에서 폐기할 수 있습니다).',
     'service_effects_require_review': '이 처리 건에서 이미 실행된 시스템 단계가 있습니다 — 그 단계가 바깥(설비 · 업무 시스템)에 낸 일을 먼저 '
                                       '정리해야 합니다. 사건이 있는 처리 건은 「실행 효과」 칸에서 보상하거나 확인하세요.',
-    'incident_rework_effect_contract_pending': '사건의 실행 효과를 조회하는 기능이 연결되지 않아 다시 수행할 수 없습니다 — 강사에게 알리세요.',
+    'incident_rework_effect_contract_pending': '사건의 실행 효과를 조회하는 기능이 연결되지 않아 다시 수행할 수 없습니다 — 시스템 관리자에게 알리세요.',
     'condition_replay_requires_arrival': '분기 조건을 다시 판단할 앞 단계가 실제로 지나간 기록이 없습니다 — 그 분기 앞 단계부터 다시 수행하세요.',
     'ambiguous_dependency_producer': '새 입력을 만드는 단계가 둘 이상이라 하나로 정할 수 없습니다 — 그 입력을 만드는 단계부터 다시 수행하세요.',
     'dependency_reference_requires_review': '다른 단계가 참조하는 결과가 바뀌었거나 없어졌습니다 — 그 결과를 참조하는 단계를 포함해 앞에서부터 다시 수행하세요.',
     'dependency_control_arrival_unavailable': '이전 단계가 실제로 시작된 기록이 없어 자동으로 다시 열 수 없습니다 — 더 앞 단계부터 다시 수행하세요.',
     'rework_root_dependency_requires_review': '고른 시작 단계가 이번 다시 수행에서 새로 만들어질 다른 단계의 결과를 입력으로 받습니다 — '
                                               '그 결과를 만드는 단계부터 다시 수행하세요.',
-    'dependency_cycle_requires_review': '서로의 새 결과를 기다리는 단계들이 있어 다시 수행할 순서를 정할 수 없습니다 — 강사에게 흐름 그림을 보여 주세요.',
+    'dependency_cycle_requires_review': '서로의 새 결과를 기다리는 단계들이 있어 다시 수행할 순서를 정할 수 없습니다 — 시스템 관리자에게 흐름 그림을 보여 주세요.',
     'incident_not_active_for_rework': '사건이 이미 해제됐거나 끝나 다시 판단할 것이 없습니다 — 새 경보가 나면 새 처리 건으로 진행됩니다.',
     'incident_command_in_flight': '설비 명령의 응답(ACK)을 기다리는 중입니다 — 응답이 온 뒤 영향 확인을 다시 누르세요.',
     'effects_require_compensation_or_review': '이 사건이 이미 낸 실행 효과(설비 명령 · 작업지시 · 발주)가 아직 정리되지 않았습니다 — 「실행 효과」 칸에서 '
                                               '되돌릴 수 있는 거래는 보상 요청하고, 나머지는 확인한 뒤 영향 확인을 다시 누르세요.',
-    'untracked_decision_consent': '승인 기록과 맞지 않는 판단(고른 안)이 있어 출처를 확인해야 합니다 — 강사에게 이 처리 건 기록을 보여 주세요.',
-    'current_decision_original_missing': '지금 판단의 원문(판단 기록)을 찾을 수 없어 다시 수행할 수 없습니다 — 강사에게 알리세요.',
+    'untracked_decision_consent': '승인 기록과 맞지 않는 판단(고른 안)이 있어 출처를 확인해야 합니다 — 시스템 관리자에게 이 처리 건 기록을 보여 주세요.',
+    'current_decision_original_missing': '지금 판단의 원문(판단 기록)을 찾을 수 없어 다시 수행할 수 없습니다 — 시스템 관리자에게 알리세요.',
     'rework_requires_new_decision': '사건이 있는 처리 건은 새 판단부터 다시 해야 합니다 — 판단을 만드는 에이전트 단계(또는 그 앞)를 고르세요.',
-    'approval_decision_original_missing': '승인에 연결된 판단 원문을 찾을 수 없어 다시 수행할 수 없습니다 — 강사에게 알리세요.',
+    'approval_decision_original_missing': '승인에 연결된 판단 원문을 찾을 수 없어 다시 수행할 수 없습니다 — 시스템 관리자에게 알리세요.',
     'approval_effects_require_review': '전달된 승인이 낸 효과가 아직 정리되지 않았거나, 고른 단계 밖의 승인입니다 — 「실행 효과」 칸에서 정리하거나 '
                                        '승인 단계를 포함하도록 더 앞 단계를 고르세요.',
 }
@@ -59,6 +59,15 @@ def blocked_message(blockers) -> str:
 def fingerprint(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True, ensure_ascii=False,
                                     separators=(',', ':'), default=str).encode()).hexdigest()
+
+
+def server_consent(activity, key) -> bool:
+    """일반 사람 승인 단계(approval_part)의 서버 승인 경로가 그 단계에서 넣는 값(승인자 · 역할 · 고른 안)인가. 그 값은 승인 작업 행의 폼 결과에는
+    없고 처리 건 값에만 있으며, 출처는 그 승인 작업 행이다(instances.approve). 전에는 「누가 만들었는지 모르는 값」으로 보아, 사람 승인이 있는
+    흐름은 승인한 뒤로 어느 단계에서도 다시 수행할 수 없었다. 승인 단계를 다시 수행하면 그 값은 지워지고(출처 단계가 다시 수행 범위에 든다),
+    그 뒤 단계만 다시 수행하면 끝난 최신 승인의 값으로 남는다."""
+    from . import approval_part
+    return (activity or {}).get('tool') == approval_part.TOOL and key in approval_part.SERVER_VALUES
 
 
 def ancestors(defn, node):
@@ -189,8 +198,10 @@ def plan(defn, inst, workitems, workitem_id, approvals=()):
                 and latest[producer['activity_id']]['id'] == producer['id']
                 and source.get('activity') == producer['activity_id']
                 and source.get('version') == producer.get('version')
-                and key in defn.activities.get(producer['activity_id'], {}).get('outputData', [])
-                and key in (producer.get('output') or {}) and producer['output'][key] == value):
+                and ((key in defn.activities.get(producer['activity_id'], {}).get('outputData', [])
+                      and key in (producer.get('output') or {}) and producer['output'][key] == value)
+                     # 끝난 최신 승인 단계가 넣은 승인 값(다른 단계는 이 값을 낼 수 없다 — definition_registry.PROTECTED_OUTPUTS)
+                     or server_consent(defn.activities.get(producer['activity_id']), key))):
             values[key] = deepcopy(value)
             retained.append({'variable': key, 'workitem': producer['id']})
         else:

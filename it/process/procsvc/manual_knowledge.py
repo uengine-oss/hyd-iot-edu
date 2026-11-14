@@ -492,7 +492,8 @@ def graph_semantics(plan, catalog):
                     if not any(s.get('supplier') == supplier for s in parts[part].get('suppliers') or []):
                         issue('PURCHASE_SUPPLIER_PART_MISMATCH', p['id'], 'link.actions', f"{p['id']}: {supplier} 공급사와 {part}의 실제 SUPPLIED_BY 관계가 없습니다")
             if p.get('executable') and not any(r['id'] == p.get('approver') for r in catalog['roles']):
-                issue('PURCHASE_ROLE_NOT_FOUND', p['id'], 'link.approver', f"{p['id']}: 명시한 구매 승인 역할이 없습니다")
+                issue('PURCHASE_ROLE_NOT_FOUND', p['id'], 'link.approver', f"{p['id']}: 명시한 구매 승인 역할이 역할 목록에 없습니다 — 있는 역할을 고르거나 "
+                                                                        "「AI 에이전트」 화면의 담당 배정에서 [역할 만들기]로 먼저 만드세요")
         for seq, a in enumerate(p.get('actions') or [], 1):
             act = actions.get(a['action'])
             where = f"{p['id']} 원자 조치 {seq}"

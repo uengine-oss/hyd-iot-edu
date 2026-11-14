@@ -17,13 +17,18 @@ from pathlib import Path
 
 
 class Stop(RuntimeError):
-    """학생에게 그대로 보일 까닭으로 단계를 멈춘다(내부어 · 예외 이름 없는 문장)."""
+    """학생에게 그대로 보일 까닭으로 단계를 멈춘다(내부어 · 예외 이름 없는 문장). raw: 원문 칸에만 남길 것(도구의 내부 이름 · 응답 원문) —
+    처리 기록의 friendly 는 문장만, raw_error 는 문장 뒤에 이것을 붙여 남긴다(runner._fail)."""
     title = 'AI 단계 멈춤'
+
+    def __init__(self, text: str, *, raw: str | None = None):
+        super().__init__(text)
+        self.raw = raw
 
 
 class CourseDenied(Stop):
     """수업 경계 밖의 AI 단계 · 관문이 연 실행의 거절 — 문장은 process 가 정한 학생용 까닭."""
-    title = '수업 권한 확인 필요'
+    title = 'AI 실행 범위 확인 필요'
 
 
 class LedgerDenied(Stop):
@@ -111,9 +116,9 @@ class CourseAccess:
 
     def decide(self, row, tenant_id) -> dict:
         reply = self._post('/internal/worker/course-decision', dict(tenant_id=tenant_id, todo_id=row['id'], consumer=row['consumer']),
-                           '수업 판정')
+                           'AI 단계 실행 판정')
         if reply.get('allowed') is not True or reply.get('phase') not in ('course', 'pbl'):
-            raise RuntimeConnectionError('수업 판정 응답 형식이 올바르지 않습니다')
+            raise RuntimeConnectionError('AI 단계 실행 판정 응답 형식이 올바르지 않습니다')
         return {'slot': reply.get('slot'), 'phase': reply['phase']}
 
     def permit(self, row, tenant_id) -> dict:

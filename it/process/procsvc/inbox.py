@@ -141,8 +141,18 @@ def _notify_end(repo, tenant, inst, end_name):
             if user_id not in seen:
                 seen.append(user_id)
     for user_id in seen:
-        repo.insert_notification({"title": f"{name} 종료", "type": TYPE_END, "description": f"끝난 곳: {end_name}",
+        repo.insert_notification({"title": f"{name} 처리 완료", "type": TYPE_END, "description": _end_words(end_name),
                                   "user_id": user_id, "tenant_id": tenant, "url": f"/instances/{inst['proc_inst_id']}", "from_user_id": "sys:process"})
+
+
+#: 끝 이벤트의 이름이 이런 말이면 결과로 따로 말할 것이 없다(「끝난 곳: 끝」이 알림에 나갔다 — 화면 resultReport.js 의 PLAIN_END 와 같은 뜻)
+PLAIN_END = frozenset({"", "끝", "종료", "완료", "end"})
+
+
+def _end_words(end_name) -> str:
+    """처리 완료 알림의 설명 한 줄: 끝 이벤트의 이름이 결과를 말하면 그 결과, 아니면 끝났다는 사실만."""
+    name = str(end_name or "").strip()
+    return "처리 건이 끝났습니다" if name.lower() in PLAIN_END else f"결과: {name}"
 
 
 # ---------------------------------------------------------------- 승인자 = "나"

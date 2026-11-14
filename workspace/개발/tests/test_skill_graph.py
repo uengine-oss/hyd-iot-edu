@@ -23,8 +23,8 @@ def fm_id(graph):
 def test_같은_요청을_다시_보내면_같은_결과를_돌려주고_두_번_만들지_않는다(session):
     s, graph = session
     rid, values = str(uuid.uuid4()), dict(VALUES, failureMode=fm_id(graph))
-    first = skill_graph.write(s, SKILL_Q, 'skill:test-once', values, create=True, request_id=rid, by='강사')
-    again = skill_graph.write(s, SKILL_Q, 'skill:test-once', values, create=True, request_id=rid, by='강사')
+    first = skill_graph.write(s, SKILL_Q, 'skill:test-once', values, create=True, request_id=rid, by='user:me')
+    again = skill_graph.write(s, SKILL_Q, 'skill:test-once', values, create=True, request_id=rid, by='user:me')
     assert first == again
     assert graph.query("MATCH (k:Skill {id:'skill:test-once'}) RETURN count(k) AS n")[0]['n'] == 1
 
@@ -125,3 +125,55 @@ def test_화면에서_만들_수_없는_조치_방법은_저장하지_않고_까
     assert status == 400 and says in out['detail'], out
     assert course_graph.query("MATCH (k:Skill {sopId:'SOP-MY-21'}) RETURN k.id AS id") == []
     assert course_graph.query("MATCH (r:Rule {id:'rule:cand-cooler-cooling-loss'}) RETURN r.id AS id") == [], '거절한 저장이 규칙을 남겼다'
+
+
+# ---------------------------------------------------------------- 화면에서 만든 조치 방법 지우기
+def _shape(graph):
+    """조치 방법 둘레의 그래프 모양(영수증 · 잠금 노드는 뺀다): 종류별 노드 수와 관계 수."""
+    nodes = graph.query('MATCH (n) WHERE n:Skill OR n:Step OR n:Rule OR n:FailureMode UNWIND labels(n) AS l RETURN l, count(*) AS n ORDER BY l')
+    rels = graph.query('MATCH (a)-[r]->(b) WHERE a:Skill OR b:Skill OR a:Rule OR b:Rule RETURN type(r) AS t, count(*) AS n ORDER BY t')
+    return nodes, rels
+
+
+def test_화면에서_만든_조치_방법을_지우면_그_단계와_화면이_만든_후보_규칙까지_없어져_만들기_전_지식으로_돌아간다(session):
+    """전에는 화면에서 만든 조치 방법을 지우는 길이 없어 목록과 판단 후보에 영구히 남았다."""
+    s, graph = session
+    before = _shape(graph)
+    made = skill_graph.write(s, SKILL_Q, 'skill:sop-test-01', dict(VALUES, failureMode=fm_id(graph)), create=True, by='user:me')
+    assert made['rules'] and _shape(graph) != before
+    rid = str(uuid.uuid4())
+    out = skill_graph.remove(s, 'skill:sop-test-01', by='user:me', request_id=rid)
+    assert (out['deleted'], out['sopId'], out['decision_cases']) == (True, 'SOP-TEST-01', 0) and out['removed_rules']
+    assert _shape(graph) == before
+    assert skill_graph.remove(s, 'skill:sop-test-01', by='user:me', request_id=rid) == out           # 같은 요청을 다시 보내도 같은 결과(영수증)
+    with pytest.raises(KeyError):
+        skill_graph.remove(s, 'skill:sop-test-01', by='user:me')                                     # 이미 없는 것은 없다고 말한다
+
+
+def test_같은_고장_유형에_다른_화면_조치_방법이_남아_있으면_후보_규칙은_남긴다(session):
+    s, graph = session
+    fm = fm_id(graph)
+    skill_graph.write(s, SKILL_Q, 'skill:sop-test-01', dict(VALUES, failureMode=fm), create=True, by='user:me')
+    skill_graph.write(s, SKILL_Q, 'skill:sop-test-02', dict(VALUES, sopId='SOP-TEST-02', name='둘째 조치', failureMode=fm), create=True, by='user:me')
+    out = skill_graph.remove(s, 'skill:sop-test-01', by='user:me')
+    assert out['removed_rules'] == []
+    assert graph.query("MATCH (r:Rule)-[:OUTPUTS]->(k:Skill) WHERE r.id STARTS WITH 'rule:cand-' RETURN k.id AS id") == [{'id': 'skill:sop-test-02'}]
+
+
+def test_문서에서_적재한_조치_방법과_문서의_규칙이_가리키는_조치_방법은_지우지_않고_그_문서를_되돌리라고_말한다(session):
+    s, graph = session
+    owned = graph.query('MATCH (k:Skill) WHERE k._manual_document IS NOT NULL RETURN k.id AS id ORDER BY k.id LIMIT 1')[0]['id']
+    with pytest.raises(skill_graph.Conflict, match='문서 등록'):
+        skill_graph.remove(s, owned, by='user:me')
+    skill_graph.write(s, SKILL_Q, 'skill:sop-test-01', dict(VALUES, failureMode=fm_id(graph)), create=True, by='user:me')
+    graph.query("MATCH (k:Skill {id:'skill:sop-test-01'}) CREATE (:Rule {id:'rule:doc-warns', effect:'WARN'})-[:APPLIES_TO]->(k)")
+    with pytest.raises(skill_graph.Conflict, match='rule:doc-warns'):
+        skill_graph.remove(s, 'skill:sop-test-01', by='user:me')
+    assert graph.query("MATCH (k:Skill) WHERE k.id IN [$a, 'skill:sop-test-01'] RETURN count(k) AS n", a=owned)[0]['n'] == 2
+
+
+def test_화면에서_만든_조치_방법_목록은_문서에서_온_것을_빼고_준다(session):
+    s, graph = session
+    assert skill_graph.screen_skills(s) == []                                    # 시작 지식의 조치 방법은 모두 문서의 것이다
+    skill_graph.write(s, SKILL_Q, 'skill:sop-test-01', dict(VALUES, failureMode=fm_id(graph)), create=True, by='user:me')
+    assert skill_graph.screen_skills(s) == [{'id': 'skill:sop-test-01', 'sopId': 'SOP-TEST-01', 'name': '시험 조치'}]

@@ -76,14 +76,18 @@ def live_tags(rt, content):
 
 
 def catalog(bundle):
+    """내 사례 목록의 자산 줄. builtin = 기본 제공(시작할 때 설치되는 흐름 — 출발본에 지금 판본이 함께 담긴다, 배포 줄의 class_flow 표시).
+    출발본은 그 밖의 기본 제공 것(에이전트 · 스킬 · 도구 서버)을 담지 않으므로 그 종류는 늘 내가 만든 것이다."""
     tags = {(r['kind'],r['asset_id']):r['label'] for r in bundle.get('case_tags', [])}
+    builtin = {d.get('definition_id') for d in ((bundle['content'].get('deployments') or {}).get('flows') or []) if d.get('class_flow')}
     rows = []
     for (kind, aid), row in assets(bundle['content']).items():
         if kind == 'flows':
             mapping = (row.get('draft') or {}).get('mapping') or next((v.get('mapping') for v in reversed(row.get('versions', [])) if v.get('mapping')), {})
             name = mapping.get('name') or '이름 없는 가져온 흐름'
         else: name = row.get('description') if kind in ('skills','mcp_servers') else row.get('name')
-        rows.append({'kind':kind,'asset_id':aid,'kind_name':KINDS[kind], 'name':name or ('이름 없는 '+KINDS[kind]), 'label':tags.get((kind,aid),'')})
+        rows.append({'kind':kind,'asset_id':aid,'kind_name':KINDS[kind], 'name':name or ('이름 없는 '+KINDS[kind]), 'label':tags.get((kind,aid),''),
+                     'builtin': kind == 'flows' and aid in builtin})
     return {'assets':rows, 'labels':sorted(set(tags.values()))}
 
 
@@ -147,8 +151,14 @@ def select_bundle(rt, bundle, label):
     out['case_tags'] = [r for r in out.get('case_tags',[]) if (r['kind'],r['asset_id']) in chosen]
     out['case_selection'] = {'label':label, 'direct_count':len(direct), 'dependency_count':len(chosen-direct),
                              'dependencies':[{'kind_name':KINDS[k], 'name':next(a['name'] for a in catalog(bundle)['assets'] if a['kind']==k and a['asset_id']==aid)} for k,aid in sorted(chosen-direct)]}
-    out['summary'] = {k:len(content[k]) for k in ('mcp_servers','skills','agents','roles','flows','assignments')}
-    out['summary'].update(flow_versions=sum(len(f['versions']) for f in content['flows']), deployments=len(content['deployments']['flows']), secrets_needed=sum(len(s['secrets']) for s in content['mcp_servers']))
+    # 요약은 전체 내보내기(config_bundle.export_bundle)와 같은 셈: 내가 만든 것과 함께 담긴 기본 제공 흐름을 갈라 센다
+    provided = {d['definition_id'] for d in content['deployments']['flows'] if d.get('class_flow')}
+    mine = [f for f in content['flows'] if f['definition_id'] not in provided]
+    out['summary'] = {k:len(content[k]) for k in ('mcp_servers','skills','agents','roles','assignments')}
+    out['summary'].update(flows=len(mine), flow_versions=sum(len(f['versions']) for f in mine),
+                          deployments=sum(1 for d in content['deployments']['flows'] if not d.get('class_flow')),
+                          provided_flows=len(provided & {f['definition_id'] for f in content['flows']}),
+                          secrets_needed=sum(len(s['secrets']) for s in content['mcp_servers']))
     return out
 
 

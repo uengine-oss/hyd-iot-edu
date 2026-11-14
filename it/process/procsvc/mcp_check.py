@@ -67,8 +67,8 @@ MAX_WIRE_BYTES = 2_000_000                       # 서버 응답 한 개의 상�
 MAX_RESULT_CHARS = 20_000                        # 화면에 돌려주는 결과 글자 수 상한 — 넘으면 잘라 truncated 로 알린다
 PORTAL_SLOTS = 3                                 # 포털이 여는 연결(목록 · 써 보기 · 연결 검사 · 등록)은 동시에 이만큼 — 스레드 · 메모리(A131)
 ADDRESS_REFUSED = "링크로컬 · 미지정 · 멀티캐스트 주소라 도구 서버 주소가 될 수 없습니다"
-LOOPBACK_REFUSED = ("이 컴퓨터 자신(루프백)을 가리켜 process 컨테이너 자신에 닿습니다 — 내 PC에서 띄운 서버는 localhost · 127.0.0.1 대신 "
-                    "host.docker.internal 로 적으세요")
+LOOPBACK_REFUSED = ("포털 서버 안에서는 포털 서버 자신을 가리키는 주소(루프백)라 내 PC의 서버에 닿지 않습니다 — 내 PC에서 띄운 서버는 "
+                    "localhost · 127.0.0.1 대신 host.docker.internal 로 적으세요")
 _SLOTS = threading.BoundedSemaphore(PORTAL_SLOTS)
 
 
@@ -240,7 +240,7 @@ def _parse_message(raw, *, where: str) -> dict:
     try:
         msg = json.loads(raw) if not isinstance(raw, (dict, list)) else raw
     except (TypeError, ValueError):
-        raise CheckError("protocol", f"프로토콜 오류 — {where}이(가) MCP(JSON-RPC 2.0) 형식이 아닙니다. 주소가 도구 서버의 MCP 끝점인지 확인하세요")
+        raise CheckError("protocol", f"프로토콜 오류 — {where} 내용이 MCP(JSON-RPC 2.0) 형식이 아닙니다. 주소가 도구 서버의 MCP 끝점인지 확인하세요")
     if not isinstance(msg, dict) or msg.get("jsonrpc") != "2.0":
         raise CheckError("protocol", f"프로토콜 오류 — {where}에 jsonrpc 2.0 봉투가 없습니다. 주소가 도구 서버의 MCP 끝점인지 확인하세요")
     return msg
@@ -768,9 +768,12 @@ def call_effect(spec: dict, tool: str, arguments: dict, *, idempotency_key: str 
     """C2: 사람 승인 뒤 시스템 task(effect_parts 'mcp:call')만 부르는 쓰기 호출. 포털 써 보기 · 에이전트 도구 목록과는 다른 길이다 —
     읽기 전용 판정(read_only_verdict)을 하지 않는 대신 이 함수는 process 의 승인 뒤 부품에서만 불린다(instances._run_mcp_call).
     도구의 입력 형식에 idempotency_key 가 있으면 처리 건 · 작업 키를 넣어, 재시도해도 서버가 같은 호출로 알아보게 한다.
-    status: ok(결과 — 도구 오류도 result.is_error 로) · refused(없는 도구) · failed(연결 · 프로토콜)."""
+    status: ok(결과 — 도구 오류도 result.is_error 로) · refused(없는 도구) · failed(연결 · 프로토콜).
+    sent: 쓰기 요청(tools/call)을 서버에 보냈는가. False 면 서버에 아무것도 쓰지 않은 것이 확실하다(연결 · 인사 · 도구 목록에서 실패했거나
+    없는 도구 · 맞지 않는 입력) — 부르는 쪽(service_parts)이 「외부 쓰기가 됐는지 모른다」와 갈라 다시 시도할 수 있게 한다."""
     if not isinstance(arguments, dict):
-        return {"status": "refused", "error": "입력은 이름→값 객체여야 합니다", "error_kind": "input", "result": None, "tool": tool}
+        return {"status": "refused", "error": "입력은 이름→값 객체여야 합니다", "error_kind": "input", "result": None, "tool": tool, "sent": False}
+    sent = []
 
     def work(session):
         tools = {t["name"]: t for t in _list_tools(session)}
@@ -784,11 +787,13 @@ def call_effect(spec: dict, tool: str, arguments: dict, *, idempotency_key: str 
         invalid = _argument_problem(meta, args)
         if invalid:
             return invalid
+        sent.append(True)                          # 여기서부터는 서버가 쓰기를 했을 수 있다(응답을 못 받아도)
         res = session.request("tools/call", {"name": tool, "arguments": args})
         return {"status": "ok", "result": shape_result(res, max_chars), "arguments": mask_value(args),
                 "idempotent": IDEMPOTENCY_ARG in args, "annotations": meta.get("annotations") or {}}
 
     out = _with_session(spec, _clamp(timeout), work)
     out["tool"] = tool
+    out["sent"] = bool(sent)
     out.setdefault("result", None)
     return out

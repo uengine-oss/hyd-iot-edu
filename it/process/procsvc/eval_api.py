@@ -128,8 +128,9 @@ def register(app, *, driver_factory, store_factory, agent_url: str, book: dict, 
 
     def knowledge() -> dict:
         def read(tx):
-            return ([r.data() for r in tx.run(je.KNOWLEDGE_Q)], [r.data() for r in tx.run(je.KNOWLEDGE_RELS_Q)],
-                    [r.data() for r in tx.run(je.KNOWLEDGE_NODES_Q, skip=je.BOOKKEEPING_LABELS)])
+            skip = je.NOT_KNOWLEDGE_LABELS
+            return ([r.data() for r in tx.run(je.KNOWLEDGE_Q, skip=skip)], [r.data() for r in tx.run(je.KNOWLEDGE_RELS_Q, skip=skip)],
+                    [r.data() for r in tx.run(je.KNOWLEDGE_NODES_Q, skip=skip)])
         rows, rels, nodes = graph_read(read)
         return je.knowledge_state(rows, rels, nodes)
 

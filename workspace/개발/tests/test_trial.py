@@ -93,14 +93,18 @@ def test_같은_입력_묶음이면_A_B_가_같은_관측으로_판단하고_도
     assert status == 200 and second['added'] == {}                          # 새로 읽은 것 없음 = 같은 입력
     assert second['trial']['diagnosis'] == first['trial']['diagnosis']
     blocked = [c for c in second['trial']['calls'] if c['by'] == '스킬 order-check']
-    assert blocked and blocked[0]['status'] == 'BLOCKED' and 'enterprise' in blocked[0]['reason']
+    # 어느 서버가 없는지는 줄의 server 칸에, 문장에는 서버 id 를 되풀이하지 않는다(화면이 그 칸을 이름으로 보인다)
+    assert blocked and blocked[0]['status'] == 'BLOCKED' and blocked[0]['server'].startswith('enterprise'), blocked[0]
+    assert '도구 서버 구성에' in blocked[0]['reason'] and 'enterprise' not in blocked[0]['reason'], blocked[0]['reason']
 
 
 def test_판단_엔진_도구가_없는_에이전트는_원인_진단을_할_수_없다고_말한다(cooling):
     status, body = post(cooling.stack.services['agent'].url + '/api/agent/trial',
                         {'scenario': SCENARIO, 'agent': {'id': 'c', 'name': 'C', 'tools': ['enterprise'], 'skills': []},
                          'tenant_servers': list(cooling.stack.tools)})
-    assert status == 200 and body['trial']['status'] == 'NO_ENGINE_TOOL' and 'hyd-dmn' in body['trial']['reason']
+    assert status == 200 and body['trial']['status'] == 'NO_ENGINE_TOOL', body['trial']
+    assert '판단 시스템이 없어' in body['trial']['reason'] and 'hyd-dmn' not in body['trial']['reason'], body['trial']['reason']
+    assert body['trial']['calls'][0]['server'] == 'hyd-dmn' and body['trial']['calls'][0]['status'] == 'BLOCKED'
 
 
 @pytest.mark.parametrize('content, status, part, reason', [

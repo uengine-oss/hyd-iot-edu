@@ -21,11 +21,12 @@ TIMEOUT_S = 15.0
 
 
 class SourceUnavailable(RuntimeError):
-    """업무 시스템 읽기 실패 — 문장은 무엇(경로) · 왜 · 다음에 무엇을. status: HTTP 상태(닿지 못했으면 None)."""
+    """업무 시스템 읽기 실패 — 문장은 무엇(경로) · 왜 · 다음에 무엇을. status: HTTP 상태(닿지 못했으면 None).
+    transient: 곧 풀릴 수 있는 까닭(닿지 못함 · 시간 초과 · 5xx)인가 — 거절(4xx)과 꼴이 틀린 응답은 다시 읽어도 같다."""
 
-    def __init__(self, message: str, status: int | None = None):
+    def __init__(self, message: str, status: int | None = None, *, transient: bool = False):
         super().__init__(message)
-        self.status = status
+        self.status, self.transient = status, transient
 
 
 def _detail(error: urllib.error.HTTPError) -> str:
@@ -51,12 +52,13 @@ def fetch(endpoint: str, asset: str, timeout: float = TIMEOUT_S) -> dict:
     except urllib.error.HTTPError as e:
         detail = _detail(e)
         hint = " 잠시 뒤 다시 시도하세요." if e.code >= 500 and "다시 시도" not in detail else ""      # 서버 까닭에 이미 있으면 한 번만
-        raise SourceUnavailable(f"{where}을(를) 읽지 못했습니다(HTTP {e.code}){' — ' + detail if detail else ''}.{hint}", e.code) from None
+        raise SourceUnavailable(f"{where}을(를) 읽지 못했습니다(HTTP {e.code}){' — ' + detail if detail else ''}.{hint}", e.code,
+                                transient=e.code >= 500) from None
     except (TimeoutError, socket.timeout):
-        raise SourceUnavailable(f"{where}이(가) {timeout:g}초 안에 답하지 않았습니다 — 업무 시스템 · 업무 DB 연결을 확인하고 잠시 뒤 다시 시도하세요.") from None
+        raise SourceUnavailable(f"{where}이(가) {timeout:g}초 안에 답하지 않았습니다 — 업무 시스템 · 업무 DB 연결을 확인하고 잠시 뒤 다시 시도하세요.", transient=True) from None
     except (urllib.error.URLError, OSError) as e:
         reason = getattr(e, "reason", e)
-        raise SourceUnavailable(f"{where}에 닿지 못했습니다({reason}) — 시작.bat 으로 서비스를 다시 켠 뒤 다시 시도하세요.") from None
+        raise SourceUnavailable(f"{where}에 닿지 못했습니다({reason}) — 시작.bat 으로 서비스를 다시 켠 뒤 다시 시도하세요.", transient=True) from None
     try:
         out = json.loads(body)
     except ValueError:

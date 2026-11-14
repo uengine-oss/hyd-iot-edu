@@ -8,7 +8,8 @@
   PUT  /api/flows/{id}/mapping {mapping}         매핑 저장 + 사전 검사(수업 흐름 · 기준 흐름의 매핑은 저장하지 않는다)
   POST /api/flows/{id}/check {mapping?}          사전 검사만(저장 없음)
   POST /api/flows/{id}/register {mapping?, by}   검사 통과 시 새 판본 등록(정의 JSON + .bpmn 원본). 운영 판본 포인터는 그대로(배포는 B4)
-  GET  /api/flows/{id}/versions/{v}/bpmn         그 판본의 그림(.bpmn) 내려받기
+  GET  /api/flows/{id}/versions/{v}/bpmn         그 판본의 그림(.bpmn) 내려받기 — 가져온 흐름은 등록한 원본, 기본 제공 흐름은 정의 옆의 그림 파일.
+                                                 그림이 없는 판본은 204(내용 없음), 없는 판본은 404
   POST /api/flows/reset {by}                     기준으로 되돌리기: 내가 가져온 정의 · 판본 · 초안만 지움
   DELETE /api/flows/{id}?by=                     학생 흐름 하나 지우기
 
@@ -23,6 +24,7 @@ from pathlib import Path
 
 from fastapi import HTTPException
 
+from hydcommon.words import josa
 from .inbox import NOT_A_PERSON
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
@@ -31,7 +33,7 @@ from . import bpmn_import, course_policy, mcp_dependencies
 from .bpmn_store import FlowBusy, FlowStore
 
 #: 수업 흐름 설치(course_bootstrap — 시작 스크립트의 서버 안 호출, 수업 흐름 표시는 그 길만 보낼 수 있다)의 등록 행위자
-BOOTSTRAP_ACTOR = "시작 스크립트(수업 흐름 설치)"
+BOOTSTRAP_ACTOR = "시작 스크립트(기본 제공 흐름 설치)"
 
 
 class ImportReq(BaseModel):
@@ -116,8 +118,8 @@ def register(app, *, runtime_factory, audit=lambda *a, **k: None, base_loader=de
         if store.is_protected(def_id):
             return {"allowed": False, "reason": f"'{def_id}'은(는) 기준 흐름 id 입니다 — 기준은 바꾸지 않습니다"}
         if def_id in class_flow_ids:
-            return {"allowed": False, "reason": f"「{class_flow_ids[def_id]}」은(는) 수업 흐름이라 읽기만 할 수 있습니다 — 내 판본은 "
-                                                "[흐름 가져오기]에서 다른 흐름 id(예: my_cooling)로 가져와 등록하세요"}
+            return {"allowed": False, "reason": f"{josa(f'「{class_flow_ids[def_id]}」', '은')} 기본 제공 흐름이라 읽기만 할 수 있습니다 — 내 판본은 "
+                                                "흐름 화면의 [가져오기]에서 다른 흐름 id(예: my_cooling)로 가져와 등록하세요"}
         try:
             app.state.course.register_flow(def_id, draft['bpmn'], mapping)
         except course_policy.AccessDenied as exc:
@@ -159,13 +161,13 @@ def register(app, *, runtime_factory, audit=lambda *a, **k: None, base_loader=de
             raise HTTPException(409, {"reason": f"'{def_id}'은(는) 기준 흐름 id 입니다 — 기준은 바꾸지 않습니다"})
         classes = class_flows(rt)
         if def_id in classes:
-            raise HTTPException(409, {"reason": f"「{classes[def_id]}」은(는) 수업 흐름이라 읽기만 할 수 있습니다 — 매핑을 고쳐 보려면 "
-                                                "[흐름 가져오기]에서 같은 그림을 다른 흐름 id(예: my_cooling)로 가져오세요"})
+            raise HTTPException(409, {"reason": f"{josa(f'「{classes[def_id]}」', '은')} 기본 제공 흐름이라 읽기만 할 수 있습니다 — 매핑을 고쳐 보려면 "
+                                                "흐름 화면의 [가져오기]에서 같은 그림을 다른 흐름 id(예: my_cooling)로 가져오세요"})
 
     def mapping_of(req: MappingReq, draft) -> dict:
         mapping = req.mapping if isinstance(req.mapping, dict) else (draft.get("mapping") or {})
         try:                                   # 두 단계 공통 대용량 한도(P5-21) — 등록뿐 아니라 저장 · 검사에서도, 수업 경계 정본의 함수 하나
-            course_policy.within_text_max(mapping, '흐름 연결(매핑)')
+            course_policy.within_text_max(mapping, '흐름의 단계 설정')
         except course_policy.AccessDenied as e:
             raise HTTPException(400, {"reason": str(e)}) from None
         return mapping
@@ -194,7 +196,7 @@ def register(app, *, runtime_factory, audit=lambda *a, **k: None, base_loader=de
             # 2026-10-25 학생 행위 점검: 수업 흐름 id 로 가져오면 강사 초안을 덮고, 등록 · 배포하면 수업 흐름 표시가 없는 판본이
             # 경보를 가져가 [기준 흐름으로 되돌리기]가 그 흐름을 내렸다(B · C 버튼 멈춤). 판정은 지금 배포의 수업 흐름 표시로 한다.
             if not req.class_flow and def_id in class_flows(rt):
-                raise HTTPException(409, {"reason": f"'{def_id}'은(는) 수업 흐름 id 입니다 — 내 흐름 id 를 따로 쓰세요(예: my_{def_id.split('_')[-1]})"})
+                raise HTTPException(409, {"reason": f"'{def_id}'은(는) 기본 제공 흐름의 id 입니다 — 내 흐름 id 를 따로 쓰세요(예: my_{def_id.split('_')[-1]})"})
             cat = catalog_of(rt)
             old = store.get_draft(def_id)
             mapping, report = bpmn_import.merge_mapping(parsed, (old or {}).get("mapping"), cat)
@@ -248,12 +250,12 @@ def register(app, *, runtime_factory, audit=lambda *a, **k: None, base_loader=de
         def work():
             store = FlowStore(rt.repo, rt.tenant_id)
             if store.is_protected(def_id):
-                raise HTTPException(403, {"reason": "수업 기준 흐름은 삭제할 수 없습니다"})
+                raise HTTPException(403, {"reason": "기준 흐름은 지울 수 없습니다"})
             classes = class_flows(rt)
             if def_id in classes:
-                raise HTTPException(409, {"reason": f"「{classes[def_id]}」은(는) 수업 흐름이라 지울 수 없습니다(수업 버튼 · 경보가 이 흐름을 씁니다)"})
+                raise HTTPException(409, {"reason": f"{josa(f'「{classes[def_id]}」', '은')} 기본 제공 흐름이라 지울 수 없습니다(결함 시뮬레이션과 경보가 이 흐름을 씁니다)"})
             if not store.get_draft(def_id) and not store.versions(def_id):
-                raise HTTPException(404, {"reason": "삭제할 학생 흐름이 없습니다"})
+                raise HTTPException(404, {"reason": "지울 내 흐름이 없습니다"})
             # [기준으로 되돌리기](flows_reset)의 keep 과 같은 기준: 경보 경로에 배포된 흐름은 지우지 않는다.
             # 지우면 경보가 조용히 기준 흐름으로 돌아가고 그 흐름의 시나리오 버튼이 '배포되어 있지 않습니다'로 멈춘다.
             from .flow_deploy import routes
@@ -293,7 +295,7 @@ def register(app, *, runtime_factory, audit=lambda *a, **k: None, base_loader=de
             draft = draft_of(store, def_id)
             editable(rt, store, def_id)
             if not isinstance(req.mapping, dict):
-                raise HTTPException(400, {"reason": "저장할 연결(매핑)이 객체로 없습니다"})
+                raise HTTPException(400, {"reason": "저장할 단계 설정이 없습니다 — 화면을 새로 고친 뒤 다시 저장하세요"})
             mapping = mapping_of(req, draft)
             store.save_mapping(def_id, mapping)
             return view(rt, store, catalog_of(rt), def_id, draft, mapping)
@@ -321,7 +323,7 @@ def register(app, *, runtime_factory, audit=lambda *a, **k: None, base_loader=de
             # 2026-10-25 수업 한 바퀴: 수업 흐름(강사 배포)의 [매핑 열기] → [판본 등록]이 통과해 강사 흐름에 학생 판본이 쌓였다(배포만 막혔다)
             classes = class_flows(rt)
             if not req.class_flow and def_id in classes:
-                raise HTTPException(409, {"reason": f"「{classes[def_id]}」은(는) 수업 흐름입니다 — 내 판본은 [흐름 가져오기]에서 "
+                raise HTTPException(409, {"reason": f"{josa(f'「{classes[def_id]}」', '은')} 기본 제공 흐름입니다 — 내 판본은 흐름 화면의 [가져오기]에서 "
                                                     "다른 흐름 id(예: my_cooling)로 가져와 등록하세요"})
             if not req.class_flow:
                 course(lambda policy: policy.register_flow(def_id, draft['bpmn'], mapping))
@@ -351,10 +353,12 @@ def register(app, *, runtime_factory, audit=lambda *a, **k: None, base_loader=de
         rt = runtime()
         def work():
             xml = FlowStore(rt.repo, rt.tenant_id).bpmn_of(def_id, version)
-            if not xml:
-                raise HTTPException(404, {"reason": f"{def_id} 판본 {version} 의 그림 원본이 없습니다 (포털로 가져와 등록한 판본만 그림이 있습니다)"})
+            if not xml and rt.repo.get_proc_def(def_id, rt.tenant_id, version=version) is None:
+                raise HTTPException(404, {"reason": f"{def_id} 판본 {version} 이(가) 없습니다 — 판본 목록을 새로 고치세요"})
             return xml
         xml = await run(work)
+        if not xml:      # 판본은 있는데 그림이 없다(그림 파일 없이 정의로만 등록된 흐름) — 오류가 아니라 「내용 없음」이다. 화면은 정의에서 그림을 만든다
+            return Response(status_code=204)
         safe = "".join(ch if ch.isalnum() or ch in "._-" else "_" for ch in f"{def_id}-v{version}")
         return Response(content=xml, media_type="application/xml",
                         headers={"Content-Disposition": f'attachment; filename="{safe}.bpmn"'})

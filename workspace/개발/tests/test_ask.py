@@ -108,3 +108,23 @@ def test_아무도_맡지_않은_질문은_그_시간과_AI_일꾼_상태로_까
 def test_맡기_전_질문의_상태_문장에는_내부어가_없다(course):
     view = ask_question(course.rt, '설비 HYD-01 의 최근 경보는?')
     assert (view['state'], view['message']) == ('waiting', '답할 AI 에이전트가 아직 질문을 맡지 않았습니다')
+
+
+def test_재생_모드에서_저장된_답이_없는_질문은_실패로_남고_끝난_기록_지우기가_그_처리_건을_닫아_지운다(course, worker):
+    """화면은 「실패」인데 그 질문의 처리 건은 진행 중으로 남아 [끝난 기록 지우기]를 눌러도 목록에 그대로였다(눌러도 아무 일이 없음) — 처리 건
+    목록에도 끝나지 않은 질문으로 남았다. 실제 재생 워커가 낸 실패를, 실제 지우기 경로(POST /api/ask/reset)로 지운다. 아직 도는 질문은 남는다."""
+    from student_words import JARGON, WORKER_TALK
+    failed = ask_question(course.rt, '저장된 답이 없는 질문 하나')
+    assert worker('replay').poll_once() == 1
+    said = ask.view(course.rt, failed['id'])
+    assert said['state'] == 'failed' and said['message'].startswith('AI 키가 없을 때 쓰는 재생 모드에서는'), said
+    assert not WORKER_TALK.search(said['message']) and not JARGON.search(said['message']), said['message']
+    assert course.rt.repo.get_instance(failed['id'])['status'] == 'RUNNING'           # 실패는 자동으로 닫지 않는다(다시 시도할 수 있다)
+    waiting = ask_question(course.rt, '아직 아무도 맡지 않은 질문')
+    status, out = course.world.api('POST', '/api/ask/reset')
+    assert status == 200 and (out['closed_stopped'], out['kept_running']) == (1, 1), out
+    assert course.rt.repo.get_instance(failed['id'])['status'] != 'RUNNING'
+    status, left = course.world.api('GET', '/api/ask')
+    assert status == 200 and [q['id'] for q in left] == [waiting['id']], left
+    closed = [e for e in course.rt.repo.list_events(proc_inst_id=failed['id']) if e['job_id'] == 'TASK_CLOSED']
+    assert closed and closed[-1]['data']['by'] == 'user:me' and closed[-1]['data']['reason'] == ask.STOPPED_CLOSE_REASON, closed

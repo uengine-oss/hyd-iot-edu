@@ -220,7 +220,7 @@ def mount(app, *, policy, runtime_factory, settings):
         runtime = runtime_factory()
         dsn = getattr(getattr(runtime, 'repo', None), 'dsn', None)
         if not dsn:
-            raise HTTPException(503, '수업 실행 장부가 준비되지 않았습니다')
+            raise HTTPException(503, 'AI 사용 장부가 준비되지 않았습니다')
         return psycopg.connect(dsn, row_factory=dict_row, connect_timeout=5)
 
     ledger = CourseLedger(connect, POLICY)
@@ -228,7 +228,7 @@ def mount(app, *, policy, runtime_factory, settings):
     def runtime_of(tenant):
         value = runtime_factory()
         if value is None or value.tenant_id != tenant:
-            raise HTTPException(503, '현재 수업의 실행 서비스를 확인하세요')
+            raise HTTPException(503, '처리 서비스가 아직 준비되지 않았습니다')
         return value
 
     @app.on_event('startup')

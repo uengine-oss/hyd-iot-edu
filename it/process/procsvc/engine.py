@@ -740,10 +740,10 @@ def finish(defn: Definition, inst: dict, workitems: list[dict], end_event: str, 
     inst.update(status="COMPLETED", end_event=end_event, end_date=stamp, current_activity_ids=[])
     changed = []
     # 작업 행 기록은 학생이 읽는다 — 끝은 id 가 아니라 끝 이름(end_label 과 같은 정본, E3: 전에는 「처리 건 끝(closed-by-human)」)
-    why = reason or f"처리 건 끝 — {end_label(defn, inst)}"
+    why = reason or f"처리 건이 끝남 — {end_label(defn, inst)}"
     for row in workitems:
         if row["status"] == "TODO" or (row["status"] == "IN_PROGRESS" and row["activity_id"] in defn.events):
-            row.update(status="CANCELLED", end_date=stamp, log=(row.get("log") or "") + f"cancelled: {why}; ")
+            row.update(status="CANCELLED", end_date=stamp, log=(row.get("log") or "") + f"취소: {why}; ")
             changed.append(row)
     return changed
 

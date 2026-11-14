@@ -13,14 +13,16 @@ FIELD_LABELS = {'link.failureMode': '고장 유형', 'link.approver': '승인 �
                 'applies_to': '규칙 적용 대상', 'penalizes': '감점 지표'}
 
 #: 없는 것을 가리켰을 때 할 일 — 문서가 새로 만들 수 있는 것(고장 유형 · 원인 · 절차)과 지금 지식에 있는 것에서만 고를 수 있는 것(설비의 구성 요소 ·
-#: 증상 · 경보 패턴 · 부품 · 공급사 · 상태 변수 · 성과 지표 · 승인 역할 — 문서 적재는 이것들을 새로 만들지 않는다)을 갈라 말한다. 다른 분야의 문서가 여기서
+#: 증상 · 경보 패턴 · 부품 · 공급사 · 상태 변수 · 성과 지표 — 문서 적재는 이것들을 새로 만들지 않는다), 포털에서 만들 수 있는 것(승인 역할)을 갈라 말한다. 다른 분야의 문서가 여기서
 #: 막히면 「지금 지식에 없습니다」만으로는 문서를 고칠지 지식을 고칠지 알 수 없다(전수검사 10-G7).
 _PICK = '문서 적재는 {what}을(를) 새로 만들지 않습니다. 지금 지식에 있는 {what} 가운데 이 문서의 내용에 맞는 것을 고르세요(맞는 것이 없으면 이 항목은 적재할 수 없습니다)'
+ROLE_HELP = '역할 목록에 있는 승인 역할을 고르세요. 맞는 역할이 없으면 「AI 에이전트」 화면의 담당 배정에서 [역할 만들기]로 먼저 만든 뒤 다시 검사하세요'
 REFERENCE_HELP = {
     'components': _PICK.format(what='구성 요소'), 'symptoms': _PICK.format(what='증상'), 'patterns': _PICK.format(what='경보 패턴'),
     'parts': _PICK.format(what='부품'), 'suppliers': _PICK.format(what='공급사'), 'state_variables': _PICK.format(what='상태 변수'),
     'measures': _PICK.format(what='성과 지표'),
-    'roles': _PICK.format(what='승인 역할'),
+    # 승인 역할만은 포털에서 만들 수 있다(역할의 정본은 업무 DB — agent_authoring.project_roles 가 지식 그래프로 옮긴다)
+    'roles': ROLE_HELP,
     'failure_modes': '이 문서의 고장 유형 목록에 넣거나 지금 지식에 있는 고장 유형을 고르세요',
     'causes': '이 문서의 원인 목록에 넣거나 지금 지식에 있는 원인을 고르세요',
     'skills': '이 문서의 절차(SOP)이거나 지금 지식에 있는 조치 방법이어야 합니다',

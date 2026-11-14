@@ -24,6 +24,8 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+from hydcommon.words import josa
+
 from .course_ledger import POLICY as LEDGER_POLICY
 
 # 수업 내용(흐름 A · B · C, 서명 추출 묶음, 단계 선언)은 이 규칙 옆에, 제공 교대 그림 · 정의는 정의 폴더(definitions)에 둔다 — 읽는 서비스는 process 뿐이다
@@ -178,6 +180,12 @@ COURSE_DEFINITIONS = frozenset(COURSE_FLOWS) | HANDOVER_DEFINITIONS     # 수업
 DOCUMENTS = frozenset(EXTRACTIONS['payload']['documents'])
 # 제공 문서 파일 이름(서명 묶음의 차례 — 적재 순서 A · B · C, 교대 실습 D). 포털은 이 목록으로 samples/<파일> 링크를 그린다(W2-21)
 DOCUMENT_FILES = [d['filename'] for d in EXTRACTIONS['payload']['documents'].values()]
+# 학생에게 보이는 까닭 문장이 쓰는 이름 — 화면이 두 단계를 부르는 말(courseAccess.js: 「제공된 문서 · 흐름 · 모델만 쓰는 단계」 · 「제한 없이 쓰는
+# 단계 (PBL)」)과 기본 제공 흐름의 이름(제공 흐름 자료에서 읽는다 — 흐름 이름을 바꾸면 문장이 따라간다). 문장은 무엇이 지금 되고 무엇이 언제
+# 열리는지를 대상으로 말하고, 이 제품을 연습용이라 부르는 말(「수업」 · 「실습」 · 「강사」 · 「녹화」)을 쓰지 않는다.
+OPEN_PHASE = '제한 없이 쓰는 단계(PBL)'
+PROVIDED_FLOWS = '기본 제공 흐름(' + ' · '.join([m['name'] for _, _, m in COURSE_FLOWS.values()] + [HANDOVER['mapping']['name']]) + ')'
+HANDOVER_NAME = HANDOVER['mapping']['name']
 
 
 def within_text_max(value, what: str) -> None:
@@ -185,7 +193,7 @@ def within_text_max(value, what: str) -> None:
     글이 아닌 값(매핑)은 JSON 글로 잰다. process 의 흐름 가져오기 · 등록 · DDL 미리보기가 같이 부른다."""
     size = len(value) if isinstance(value, str) else len(canonical(value).decode('utf8'))
     if size > TEXT_MAX:
-        raise AccessDenied(f'{what}은(는) {TEXT_MAX:,}자 이하여야 합니다(지금 {size:,}자).')
+        raise AccessDenied(f"{josa(what, '은')} {TEXT_MAX:,}자 이하여야 합니다(지금 {size:,}자).")
 
 
 def provided_document(sha256) -> bool:
@@ -198,16 +206,18 @@ class Policy:
 
     # 값마다 갈리는 판정의 까닭(수업 단계) — 거절 응답과 화면(view 의 reasons)이 같은 문장을 쓴다
     REASONS = {
-        'ai_slot': ('수업에서는 준비된 흐름(냉각 · 정기 정비 · 예비품 구매 · 교대 인수인계)의 AI 단계와 질문만 실행합니다. '
-                    '다른 흐름의 AI 단계는 PBL 단계에서 실행됩니다.'),
-        'assign': '수업에서는 교대 인수인계 단계에만 내 에이전트를 배정합니다(다른 단계는 PBL 단계에서 엽니다).',
-        'start': '수업에서는 준비된 흐름(냉각 · 정기 정비 · 예비품 구매 · 교대 인수인계)만 시작합니다(다른 흐름은 PBL 단계에서 엽니다).',
-        'import_flow': ('수업에서 가져오는 흐름은 제공한 교대 인수인계 BPMN 하나입니다(파일 안의 흐름 식별 이름 ShiftHandover는 바꾸지 마세요). '
-                        '화면에 보이는 이름과 배치만 바꿔 가져오고, 다른 흐름은 PBL 단계에서 가져옵니다.'),
-        'edit_flow': '수업에서 연결(매핑)을 고치고 검사 · 등록하는 흐름은 제공한 교대 인수인계 하나입니다(다른 흐름은 PBL 단계에서 엽니다).',
-        'deploy_flow': '수업에서 배포하거나 되돌리는 정의는 준비된 교대 인수인계 흐름뿐입니다(다른 정의는 PBL 단계에서 엽니다).',
-        'define_flow': '수업에서는 정의 JSON 을 직접 등록하지 않습니다 — 교대 인수인계는 흐름 가져오기로 등록하고, 정의 등록은 PBL 단계에서 엽니다.',
-        'document': '수업에서는 제공된 수업 문서(내용을 고치지 않은 원문)만 등록합니다. 다른 문서는 PBL 단계에서 등록합니다.',
+        'ai_slot': (f'지금은 {PROVIDED_FLOWS}의 AI 단계와 질문하기만 AI가 실행합니다. '
+                    f'그 밖의 흐름의 AI 단계는 {OPEN_PHASE}에서 실행됩니다.'),
+        'assign': f'지금은 「{HANDOVER_NAME}」 흐름의 단계에만 내 에이전트를 배정합니다. 다른 흐름의 단계는 {OPEN_PHASE}에서 배정합니다.',
+        'start': f'지금은 {PROVIDED_FLOWS}만 시작합니다. 그 밖의 흐름은 {OPEN_PHASE}에서 시작합니다.',
+        'import_flow': (f'지금 가져올 수 있는 흐름은 제공된 「{HANDOVER_NAME}」 BPMN 하나입니다(파일 안의 흐름 식별 이름 {HANDOVER_IMPORT_ID}는 '
+                        f'바꾸지 마세요). 화면에 보이는 이름과 배치만 바꿔 가져오고, 다른 흐름은 {OPEN_PHASE}에서 가져옵니다.'),
+        'edit_flow': (f'지금 단계 설정을 고치고 검사 · 등록할 수 있는 흐름은 제공된 「{HANDOVER_NAME}」 하나입니다. '
+                      f'다른 흐름은 {OPEN_PHASE}에서 고칩니다.'),
+        'deploy_flow': f'지금 배포하거나 이전 판본으로 되돌릴 수 있는 흐름은 「{HANDOVER_NAME}」 하나입니다. 다른 흐름은 {OPEN_PHASE}에서 배포합니다.',
+        'define_flow': (f'지금은 흐름 정의(JSON)를 직접 등록하지 않습니다 — 「{HANDOVER_NAME}」 흐름은 [흐름 가져오기]로 등록하고, '
+                        f'정의 직접 등록은 {OPEN_PHASE}에서 엽니다.'),
+        'document': f'지금은 제공된 문서(내용을 고치지 않은 원문)만 등록합니다. 다른 문서는 {OPEN_PHASE}에서 등록합니다.',
     }
 
     def __init__(self, phase: Phase, clock=None):
@@ -235,7 +245,7 @@ class Policy:
     @staticmethod
     def agent_model_error(model):
         if model not in (None, '', COURSE_MODEL):
-            return '에이전트 모델은 수업 모델 하나만 씁니다 — 다른 모델 이름은 받지 않습니다(비워 두면 수업 모델).'
+            return f'에이전트 모델은 이 포털에 연결된 모델({COURSE_MODEL}) 하나만 씁니다 — 다른 모델 이름은 받지 않습니다(비워 두면 그 모델).'
         return None
 
     def assign(self, definition_id):
@@ -262,8 +272,8 @@ class Policy:
         self.edit_flow(definition_id or HANDOVER_IMPORT_ID, 'import_flow')
         changed = handover_structure_changes(xml)
         if changed:
-            raise AccessDenied('수업에서는 제공한 교대 인수인계 BPMN의 이름과 배치만 바꿔 가져옵니다 — 이 그림은 '
-                               + ' · '.join(changed) + '. 원본 파일을 다시 열어 이름 · 배치만 고치세요(구조를 바꾼 그림은 PBL 단계에서 가져옵니다).')
+            raise AccessDenied(f'지금은 제공된 「{HANDOVER_NAME}」 BPMN의 이름과 배치만 바꿔 가져옵니다 — 이 그림은 '
+                               + ' · '.join(changed) + f'. 원본 파일을 다시 열어 이름 · 배치만 고치세요(구조를 바꾼 그림은 {OPEN_PHASE}에서 가져옵니다).')
 
     def imported_mapping(self, mapping, previous=None):
         """가져온 그림의 연결(매핑). 수업 단계의 제공 교대는 화면이 흐름 이름 · 세 초안 단계 에이전트만 연다(W3-08) — 나머지 칸은 제공한
@@ -283,14 +293,15 @@ class Policy:
 
     def register_flow(self, definition_id, xml, mapping):
         """등록 · 사전 검사가 같이 쓰는 판정(검사에서 먼저 알리고 등록에서 같은 문장으로 거절)."""
-        within_text_max(mapping if mapping is not None else {}, '흐름 연결(매핑)')
+        within_text_max(mapping if mapping is not None else {}, '흐름의 단계 설정')
         if self.phase.pbl:
             return
         self.edit_flow(definition_id)
         changed = handover_structure_changes(xml) + handover_mapping_changes(mapping)
         if changed:
-            raise AccessDenied('수업에서는 제공한 교대 인수인계 그림과 연결에서 흐름 이름 · 세 초안 단계의 에이전트만 바꿔 등록합니다 — '
-                               '바뀐 곳: ' + ' · '.join(changed) + '. 그 칸을 원본대로 되돌리세요(원본은 흐름 가져오기에서 다시 받을 수 있습니다).')
+            raise AccessDenied(f'지금은 제공된 「{HANDOVER_NAME}」 그림과 단계 설정에서 흐름 이름과 초안을 쓰는 단계의 AI 에이전트만 바꿔 '
+                               '등록합니다 — 바뀐 곳: ' + ' · '.join(changed) + '. 그 칸을 원본대로 되돌리세요'
+                               f'(제공된 파일을 [흐름 가져오기]로 다시 가져오면 원본 단계 설정으로 돌아갑니다. 다른 칸은 {OPEN_PHASE}에서 고칩니다).')
 
     # -- 문서
     def document(self, sha256):
@@ -298,13 +309,16 @@ class Policy:
             raise AccessDenied(self.REASONS['document'])
 
     # -- 경로 단위로 막는 행동(악용 지점 · 수업 밖 AI)
+    # tool_servers.register = 내 도구 서버를 만들고 없애는 일 전부(등록 · 고치기 · 지우기 · 되돌리기 · 비밀 값 · 읽기로 확인). 만들 수 없는 단계에서는
+    # 지울 수도 없다 — 지우면 되살릴 길이 없기 때문이다(사용자 2026-11-14). 저장된 서버의 [연결 검사]와 읽기 도구 [써 보기]는 어느 단계에서나 된다.
     ACTIONS = {
-        'tool_servers.register': ('외부 도구 서버 등록 · 비밀값 · 쓰기 도구를 읽기로 확인하기는 PBL 단계에서 엽니다. '
-                                  '수업에서는 준비된 도구 서버를 그대로 씁니다.'),
-        'documents.golden': '골든 질문 평가(문서마다 AI가 답하는 검사)는 PBL 단계에서 엽니다. 수업에서는 검토 · 적재 · 되돌리기를 합니다.',
-        'ddl.meanings': '옛 DB 뜻 복원(AI가 표 · 열 뜻을 추정)은 PBL 단계에서 엽니다. 구조 읽기 · 적재 · 되돌리기는 수업에서도 됩니다.',
-        'config.import': '설정 불러오기는 PBL 단계에서 엽니다(수업 실습에 없는 기능 — 외부 도구 서버 · 다른 흐름이 함께 들어옵니다). '
-                         '내보내기 · 기준으로 되돌리기는 수업에서도 됩니다.',
+        'tool_servers.register': (f'내 도구 서버를 등록하고 고치고 지우는 일, 비밀 값, 표시 없는 도구를 읽기로 확인하기는 {OPEN_PHASE}에서 엽니다. '
+                                  '지금은 기본 제공 도구 서버를 그대로 쓰고, 저장된 서버의 연결 검사와 읽기 도구 써 보기는 할 수 있습니다.'),
+        'documents.golden': (f'「이 문서로 답할 수 있는 질문」 검사(질문마다 AI가 이 문서의 지식으로 답합니다)는 {OPEN_PHASE}에서 엽니다. '
+                             '지금은 문서의 검토 · 적재 · 되돌리기를 합니다.'),
+        'ddl.meanings': f'옛 DB 뜻 복원(AI가 표 · 열의 뜻을 추정합니다)은 {OPEN_PHASE}에서 엽니다. 표 정의의 구조 읽기 · 적재 · 되돌리기는 지금도 됩니다.',
+        'config.import': (f'출발본 불러오기는 {OPEN_PHASE}에서 엽니다 — 파일에 든 내 도구 서버와 흐름이 함께 들어오기 때문입니다. '
+                          '출발본 내보내기와 기준으로 되돌리기는 지금도 됩니다.'),
     }
 
     def action(self, key):
@@ -355,8 +369,9 @@ def flow_structure(xml) -> dict:
     }
 
 
-_STRUCTURE_LABELS = {'process': '흐름(프로세스) id', 'tasks': '단계', 'starts': '시작', 'ends': '끝', 'gateways': '분기',
+_STRUCTURE_LABELS = {'process': '흐름 식별 이름', 'tasks': '단계', 'starts': '시작', 'ends': '끝', 'gateways': '분기',
                      'boundaries': '시한(경계 타이머)', 'flows': '연결선 · 분기 조건', 'problems': '실행하지 않는 요소'}
+
 
 
 def handover_structure_changes(xml) -> list[str]:
@@ -366,7 +381,7 @@ def handover_structure_changes(xml) -> list[str]:
     except ValueError as exc:       # 읽을 수 없는 그림(BpmnError 포함) — 그 까닭 그대로
         return [f'읽을 수 없는 그림입니다({exc})']
     want = flow_structure(HANDOVER['xml'])
-    return [f'{_STRUCTURE_LABELS[key]}이(가) 원본과 다릅니다' for key in want if got[key] != want[key]]
+    return [f"{josa(_STRUCTURE_LABELS[key], '이')} 원본과 다릅니다" for key in want if got[key] != want[key]]      # 전에는 「단계이(가) …」
 
 
 def handover_structure_same(xml) -> bool:
@@ -376,7 +391,7 @@ def handover_structure_same(xml) -> bool:
 def handover_mapping_changes(mapping) -> list[str]:
     """제공 교대 연결(매핑)과 다른 곳 — 흐름 이름(1~160자)과 세 초안 단계의 에이전트(agent:… id)만 바꿀 수 있다."""
     if not isinstance(mapping, dict) or not isinstance(mapping.get('tasks'), dict):
-        return ['연결(매핑)이 제공한 모양이 아닙니다']
+        return ['단계 설정이 제공된 모양이 아닙니다']
     original = HANDOVER['mapping']
     changes = []
     name = mapping.get('name')
@@ -389,7 +404,7 @@ def handover_mapping_changes(mapping) -> list[str]:
         if key in ('name', 'tasks'):
             continue
         if mapping.get(key) != original.get(key):
-            changes.append(labels.get(key, f'연결 칸 {key}'))
+            changes.append(labels.get(key, f'단계 설정의 {key} 칸'))
     for task in sorted(set(original['tasks']) | set(mapping['tasks'])):
         want, got = original['tasks'].get(task), mapping['tasks'].get(task)
         label = f"단계 「{task_names.get(task, task)}」"
@@ -398,10 +413,10 @@ def handover_mapping_changes(mapping) -> list[str]:
             continue
         if want.get('agent'):
             if not re.fullmatch(r'agent:[A-Za-z0-9_.-]{1,80}', str(got.get('agent', ''))):
-                changes.append(label + '의 에이전트(agent:… 에이전트를 고르세요)')
+                changes.append(label + '의 AI 에이전트(목록에서 에이전트를 고르세요)')
             got, want = {k: v for k, v in got.items() if k != 'agent'}, {k: v for k, v in want.items() if k != 'agent'}
         if got != want:
-            changes.append(label + '의 부품 · 담당')
+            changes.append(label + '의 단계 종류 · 담당')
     return changes
 
 
@@ -448,6 +463,8 @@ def judged_claim(policy: Policy, runtime, body: dict, authorization):
 _PATH_ACTIONS = (
     ('POST', re.compile(r'/api/mcp/servers'), 'tool_servers.register'),
     ('PUT', re.compile(r'/api/mcp/servers/[^/]+'), 'tool_servers.register'),
+    ('DELETE', re.compile(r'/api/mcp/servers/[^/]+'), 'tool_servers.register'),      # 만들 수 있는 단계에서만 지운다(지우면 되살릴 길이 없다)
+    ('POST', re.compile(r'/api/mcp/reset'), 'tool_servers.register'),                # 도구 서버 되돌리기 = 내 서버 · 비밀 값을 모두 지우는 일
     ('POST', re.compile(r'/api/mcp/servers/[^/]+/read-confirm'), 'tool_servers.register'),
     ('POST', re.compile(r'/api/mcp/check'), 'tool_servers.register'),
     ('PUT', re.compile(r'/api/mcp/secrets/[^/]+'), 'tool_servers.register'),
@@ -469,7 +486,7 @@ def gate_reason(policy: Policy, method: str, path: str, body: dict, internal: bo
             if method == m and pattern.fullmatch(path):
                 policy.action(key)
         if _CLASS_FLOW_PATHS.fullmatch(path) and body.get('class_flow') and not internal:
-            raise AccessDenied('수업 흐름 표시는 시작 스크립트의 제공 흐름 설치만 씁니다. 내 흐름은 표시 없이 등록하세요.')
+            raise AccessDenied('기본 제공 흐름 표시(class_flow)는 시작할 때 기본 제공 흐름을 설치하는 길만 씁니다. 내 흐름은 그 표시 없이 등록하세요.')
         if internal:
             return None
         edit = _FLOW_EDIT.fullmatch(path)

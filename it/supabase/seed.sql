@@ -78,6 +78,10 @@ insert into public.users (id, email, username, role, is_agent, agent_type, goal,
   ('role:maint-mgr', 'maintmgr@hyd.local',  '설비보전팀장', 'manager', false, null,     null, null, 'hyd'),
   ('role:purchasing',     'purchasing@hyd.local',    '구매 담당', 'manager', false, null, null, null, 'hyd'),
   ('role:purchasing-mgr', 'purchasingmgr@hyd.local', '구매팀장',  'manager', false, null, null, null, 'hyd'),
+  -- 역할의 정본은 이 표다(migration 000076) — 지식 그래프의 Role 은 process 가 이 목록으로 맞춘다(agent_authoring.project_roles). 품질팀장 · 공장장은
+  -- 지식(문서의 승인 역할 · 판단 카드)이 가리키는 역할이라 여기에도 있어야 담당자가 그 역할로 승인한다
+  ('role:quality-mgr', 'qualitymgr@hyd.local', '품질팀장', 'manager', false, null, null, null, 'hyd'),
+  ('role:plant-mgr',   'plantmgr@hyd.local',   '공장장',   'manager', false, null, null, null, 'hyd'),
   ('role:shift-out', 'shiftout@hyd.local', '인계자', 'operator', false, null, null, null, 'hyd'),   -- 교대 인수인계(definitions/shift_handover_v1.json)
   ('role:shift-in',  'shiftin@hyd.local',  '인수자', 'operator', false, null, null, null, 'hyd'),
   ('sys:agent',      null, '인공지능 에이전트', 'agent', true, 'agent',  '경보의 원인을 진단하고 조치 카드를 올린다', 'neo4j,enterprise,hyd-dmn', 'hyd'),
@@ -126,6 +130,8 @@ insert into public.role_members (tenant_id, role_id, user_id) values
   ('hyd', 'role:maint-mgr',      'user:me'),
   ('hyd', 'role:purchasing',     'user:me'),
   ('hyd', 'role:purchasing-mgr', 'user:me'),
+  ('hyd', 'role:quality-mgr',    'user:me'),
+  ('hyd', 'role:plant-mgr',      'user:me'),
   ('hyd', 'role:shift-out',      'user:me'),
   ('hyd', 'role:shift-in',       'user:me')
 on conflict do nothing;
@@ -134,7 +140,7 @@ on conflict do nothing;
 -- C3 (2026-10-09) 시나리오 에이전트의 스킬(SKILL.md 본문) — 워커가 작업 공간의 .claude/skills/<이름>/SKILL.md 로 넣는다(agents_store).
 -- ============================================================================
 insert into public.tenant_skills (tenant_id, skill_name, description, content, origin) values
-  ('hyd', 'cooling-emergency-response', '쿨러 과열 경보 — 원인 진단 · 냉각 조치 카드 (시나리오 A)', $skill$# 냉각 긴급 대응 (시나리오 A)
+  ('hyd', 'cooling-emergency-response', '쿨러 과열 경보 — 원인 진단 · 냉각 조치 제안', $skill$# 냉각 긴급 대응
 
 쿨러 과열 경보(COOLER_DEGRADATION) 한 건에서 원인을 진단하고, 냉각 조치 후보를 비교해 추천 카드 한 장과 지는 대안을 올린다.
 승인 전에는 조회 · 계산만 한다. 설비 명령은 사람 승인 뒤 시스템이 낸다.
@@ -152,7 +158,7 @@ insert into public.tenant_skills (tenant_id, skill_name, description, content, o
 cause · failure_mode · guide_card(diagnose 결과의 가이드 카드) · decision{recommended, explanation, order} · decision_id.
 explanation 은 한국어 두세 문장: 원인, 추천 안, 지는 안의 이유.
 $skill$, 'seed'),
-  ('hyd', 'pm-schedule-planning', '정기 정비 도래 — 언제 정비할지 카드 (시나리오 B)', $skill$# 정기 정비 계획 (시나리오 B)
+  ('hyd', 'pm-schedule-planning', '정기 정비 도래 — 정비 시점 제안', $skill$# 정기 정비 계획
 
 정기 정비 도래 경보(PM_DUE, CMMS 운전시간 계수기) 한 건에서 '언제 · 어떻게 정비할지'를 정한다.
 시행 방식(이번 예정된 정비 시간 단독 · 지금 정지 · 그다음 정비 시간으로 미루기 · 두 대 묶기)을 같은 판단 엔진으로 경쟁시킨다.
@@ -172,7 +178,7 @@ $skill$, 'seed'),
 cause · failure_mode · decision{recommended, explanation, order} · decision_id (guide_card 는 비워 둔다).
 explanation 은 한국어 두세 문장: 추천 시점과 이유, 지는 안의 이유.
 $skill$, 'seed'),
-  ('hyd', 'spare-purchase-planning', '예비품 재고 기준 이탈 — 발주 카드 (시나리오 C)', $skill$# 예비품 구매 (시나리오 C)
+  ('hyd', 'spare-purchase-planning', '예비품 재고 기준 이탈 — 발주안 제안', $skill$# 예비품 구매
 
 예비품 재고 기준 이탈 경보(SPARE_BELOW_MIN, ERP 재고) 한 건에서 실제 부족부품과 필요량을 확인하고 공급사를 비교해 발주 카드를 올린다.
 구매 업무는 부품이 근거다. 고장 원인·고장 유형을 구매 근거로 대신하지 않는다. 승인 전에는 조회·계산·판단 카드 등록만 한다. 발주·메일·입고는 구매 담당의 승인 뒤 시스템이 한다.

@@ -217,7 +217,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
                                       'event_type': 'error',
                                       'data': {'name': '처리 뒤 기록 실패', 'effect': name, 'raw_error': f'{type(error).__name__}: {str(error)[:300]}',
                                                'friendly': f'처리는 저장됐지만 뒤따르는 기록({_EFFECT_NAMES.get(name, name)})을 남기지 못했습니다 — '
-                                                           '화면을 새로 고쳐도 남아 있으면 강사에게 알려 주세요'}}])
+                                                           '화면을 새로 고쳐도 남아 있으면 시스템 관리자에게 알려 주세요'}}])
         except Exception:  # noqa: BLE001 — 기록 저장소마저 실패하면 로그가 마지막 증거다
             log.exception('post-commit effect failure could not be recorded for %s', pid)
 
@@ -430,8 +430,8 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
                                  {'instance':inst['proc_inst_id'],'error':str(e)[:300]},incident=values.get('incident'))
                 # 처리 기록 화면의 시작 단계에 보인다. 이 기록마저 못 쓰면(저장소 장애) 예외가 호출자에게 간다 — 경보 재전송은 같은 처리 건을 찾는다
                 self.repo.record_events([{'job_id':'CASE_LINK_FAILED','todo_id':None,'proc_inst_id':inst['proc_inst_id'],'crew_type':'result',
-                                          'event_type':'error','data':{'name':'수업 버튼 연결 실패',
-                                                                       'friendly':f'수업 버튼 누름을 이 처리 건에 붙이지 못했습니다 — {str(e)[:300]}'}}])
+                                          'event_type':'error','data':{'name':'결함 시뮬레이션 조작 연결 실패',
+                                                                       'friendly':f'결함 시뮬레이션에서 누른 조작을 이 처리 건에 붙이지 못했습니다 — {str(e)[:300]}'}}])
         return inst
 
     # ---------------------------------------------------------------- U4: deployed version · deploy · rollback · compare
@@ -495,7 +495,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
             raise ValueError(f"{self._flow_name(def_id)}의 판본 {version}은(는) 이미 운영 판본입니다")
         if not class_flow and any(h['id'] == def_id and h.get('class_flow') for h in self.repo.deployed_heads(self.tenant_id)):
             # 표시 없이 바꾸면 수업 흐름이 학생 흐름이 되어 [기준 흐름으로 되돌리기]가 내린다(2026-10-25 학생 행위 점검)
-            raise ValueError(f'{self._flow_name(def_id)}은(는) 수업 기본 흐름이라 판본을 바꿀 수 없습니다. 고친 흐름은 다른 흐름 id 로 가져와 배포하세요')
+            raise ValueError(f'{self._flow_name(def_id)}은(는) 기본 제공 흐름이라 판본을 바꿀 수 없습니다. 고친 흐름은 다른 흐름 id 로 가져와 배포하세요')
         record = self.repo.record_deployment(def_id, version, self.tenant_id, action=action, actor=by.strip(), reason=reason.strip(),
                                              class_flow=bool(class_flow))
         self.hooks.audit('-', by.strip(), {'deploy': 'DEFINITION_DEPLOYED', 'rollback': 'DEFINITION_ROLLED_BACK',
@@ -788,7 +788,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
                                           'event_type': 'error',
                                           'data': {'name': '엔진 처리 실패', 'step': what, 'raw_error': raw,
                                                    'friendly': '이 처리 건을 진행하다 오류가 나 이번 차례를 건너뛰었습니다 — 2초 뒤 다시 시도합니다. '
-                                                               '같은 기록이 계속 쌓이면 강사에게 알려 주세요'}}])
+                                                               '같은 기록이 계속 쌓이면 시스템 관리자에게 알려 주세요'}}])
             except Exception:  # noqa: BLE001 — 기록 저장소마저 실패: 로그가 마지막 증거
                 log.exception('instance %s: %s failed and the failure could not be recorded', pid, what)
             return None
@@ -1099,7 +1099,10 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
             if not reason:
                 raise ValueError("반려 사유를 적으세요 — 결과 보고와 처리 기록에 남습니다")
             chosen, consent = None, dict.fromkeys(approval_part.SERVER_VALUES)      # 앞 회차의 승인이 남아 효과를 내지 않게 비운다
-        engine.set_variables(defn, inst, consent)
+        # 승인 값의 출처 = 이 승인 단계(다시 수행이 「이 단계가 만든 값」으로 다룬다 — rework.server_consent). 승인 단계를 다시 하면 지워지고,
+        # 그 뒤 단계만 다시 하면 그대로 남는다
+        engine.set_variables(defn, inst, consent, source={'kind': 'workitem', 'id': wi['id'], 'activity': wi['activity_id'],
+                                                           'version': wi.get('version')})
         participants = inst.setdefault("participants", [])
         for who in (role, person):
             if who and who not in participants:

@@ -122,9 +122,10 @@ def resolve(entry: dict, values: dict[str, str] | None) -> tuple[dict, list[str]
 
 
 def missing_reason(name: str | None, missing: list[str]) -> str:
+    from hydcommon.words import josa
     keys = " · ".join(missing)
-    who = f"MCP 서버 '{name}' 에 필요한" if name else "이 서버에 필요한"
-    return f"{who} 비밀 값 {keys} 이(가) 없습니다 — 도구 연결 화면의 '비밀 값'에 넣은 뒤 다시 하세요"
+    who = f"도구 서버 '{name}'에 필요한" if name else "이 서버에 필요한"
+    return f"{who} 비밀 값 {josa(keys, '이')} 없습니다 — [도구 연결] 화면의 '비밀 값'에 넣은 뒤 다시 하세요"
 
 
 # ---------------------------------------------------------------- 저장소 (public.mcp_secrets)

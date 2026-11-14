@@ -21,10 +21,7 @@ SIZES = [(1366, 768), (1920, 1080)]
 LOADING_LIMIT_S = 14
 # 로딩 자리 표시: 「…중…」(말줄임표로 끝나는 진행 표시)와 말줄임표 없는 몇 가지. 「승인을 기다리는 중입니다」 같은 진행 상태 문장은 로딩이 아니다
 LOADING = re.compile(r'([가-힣]+ 중…|불러오는 중|연결 확인 중|조회 중)')
-JARGON = re.compile(r'(AI_MODE|AGENT_BRIDGE|PROCESS_MODE|LLM_API_KEY|RunFailed|Traceback|\.env\b|tenants\.mcp|tenant_\w+|is_agent|users 표|'
-                    r'Claude Code|Inbucket|provenance|API 키|undefined|NaN|\[object Object\]|\bnull\b|'
-                    r'COOLER_DEGRADATION|PUMP_LEAKAGE|FAN_VIBRATION|OIL_ANALYSIS|PM_DUE|SPARE_BELOW_MIN|HTTP \d{3}|status \d{3}|설비 시간 배율|'
-                    r'\buser:[a-z]|\b(?:sys|inst|td|proc|nav|trace|inc|dec|kn|plant|main)\.[A-Za-z가-힣]|워커|폴링|기동 시드|프로세스 id|흐름 id|인스턴스|CANCELLED)')
+from student_words import JARGON      # 내부어 목록은 한 곳(student_words.py) — 서버 응답을 훑는 시험과 같은 표
 # 수업 단계에서 그 메뉴에 반드시 있어야 하는 행동 키(막힌 단추가 꺼진 채 보이는지 볼 자리)
 EXPECTED_ACTIONS = {'mcp': ['tool_servers.register'], 'admin': ['config.import']}
 
@@ -137,7 +134,11 @@ class Tour:
           for (const el of document.querySelectorAll('main .view.active *')) {
             const cs = getComputedStyle(el);
             if (!el.offsetParent || ['auto', 'scroll', 'hidden', 'clip'].includes(cs.overflowX) || cs.textOverflow === 'ellipsis') continue;
-            if (el.children.length === 0 && el.clientWidth > 0 && el.scrollWidth > el.clientWidth + 2)
+            // 도움말(data-tooltip)이 달린 요소는 뜨는 도움말 조각(::before)의 폭이 scrollWidth 에 더해진다 — 그런 요소는 제 글자의 폭을 직접 재서 칸을 넘는지 본다
+            // (접힌 접기 안에 있어 그려지지 않은 요소는 글자 폭이 0 이다)
+            const text = () => { const r = document.createRange(); r.selectNodeContents(el); return r.getBoundingClientRect().width; };
+            if (!el.textContent.trim()) continue;      // 글자가 없는 것(상태 점 등)은 잘릴 글자가 없다 — 꾸밈 조각(::after 고리)의 폭을 글자 잘림으로 세지 않는다
+            if (el.children.length === 0 && el.clientWidth > 0 && (el.hasAttribute('data-tooltip') ? text() > el.clientWidth + 2 : el.scrollWidth > el.clientWidth + 2))
               out.push((el.tagName + '.' + (typeof el.className === 'string' ? el.className : '')).slice(0, 60) + ': ' + (el.innerText || '').slice(0, 40));
             if (out.length >= 8) break;
           }

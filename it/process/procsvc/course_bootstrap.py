@@ -43,7 +43,7 @@ async def _call(client, method, path, body=None, step=''):
             detail = response.json().get('detail')
         except ValueError:
             detail = response.text
-        raise HTTPException(503, f'기본 수업 흐름 준비에 실패했습니다({step} {method} {path} → {response.status_code}: '
+        raise HTTPException(503, f'기본 제공 흐름 준비에 실패했습니다({step} {method} {path} → {response.status_code}: '
                                  f'{str(detail)[:300]}). 기존 자료는 그대로입니다.')
     return response.json()
 
@@ -54,11 +54,11 @@ async def install(client, did, filename, xml, mapping) -> str:
     checked = await _call(client, 'POST', f'/api/flows/{did}/check', {'mapping': mapping, 'class_flow': True}, '사전 검사')
     problems = (checked.get('check') or checked).get('problems')
     if problems:
-        raise HTTPException(503, f'기본 수업 흐름 {did} 가 사전 검사를 통과하지 못해 등록하지 않았습니다: '
+        raise HTTPException(503, f'기본 제공 흐름 {did} 가 사전 검사를 통과하지 못해 등록하지 않았습니다: '
                                  + ' / '.join(str(p.get('reason')) for p in problems)[:400])
     registered = await _call(client, 'POST', f'/api/flows/{did}/register', {'mapping': mapping, 'class_flow': True}, '등록')
     await _call(client, 'POST', f'/api/process/definitions/{did}/deploy',
-                {'version': registered['version'], 'by': 'c3-assembly', 'reason': 'C3 확정 흐름 배포', 'class_flow': True}, '배포')
+                {'version': registered['version'], 'by': 'c3-assembly', 'reason': '기본 제공 흐름 설치', 'class_flow': True}, '배포')
     return registered['version']
 
 
@@ -89,7 +89,7 @@ def mount(app):
             if len(raw) > 32 or raw and json.loads(raw) != {}:
                 raise ValueError()
         except ValueError:
-            raise HTTPException(422, '기본 수업 흐름 확인에는 설정값을 받지 않습니다.') from None
+            raise HTTPException(422, '기본 제공 흐름 확인에는 설정값을 받지 않습니다.') from None
         async with lock:
             async with internal_client(app) as client:
                 return {'status': 'ok', 'flows': await ensure_flows(client)}

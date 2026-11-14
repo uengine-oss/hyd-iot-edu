@@ -98,3 +98,31 @@ def test_되돌리기는_이_테넌트의_정답표와_채점_실행을_지운�
     assert (store.golden_list(), store.list(10)) == ([], [])
     assert len(other.golden_list()) == 1 and len(other.list(10)) == 1                 # 다른 테넌트는 그대로
     other.reset()
+
+
+def test_지식_차이와_한쪽에만_있는_정답표_항목은_id_와_함께_이름을_싣는다():
+    """전 · 후 비교가 「한쪽 실행에만 있는 항목: trial-cooler, review5-cooler」 · 바뀐 지식을 id 로만 보였다 — 화면이 이름으로 말할 재료가 없었다."""
+    a = je.knowledge_state([{'nodes': 2, 'rels': 1}], [{'a': 'cause:x', 't': 'CAUSES', 'b': 'fm:y'}],
+                           [{'id': 'cause:x', 'labels': ['Cause'], 'props': {'name': '쿨러 핀 오염'}}, {'id': 'fm:y', 'labels': ['FailureMode'], 'props': {'name': '냉각 성능 상실'}}])
+    b = je.knowledge_state([{'nodes': 2, 'rels': 0}], [],
+                           [{'id': 'cause:x', 'labels': ['Cause'], 'props': {'name': '쿨러 핀 오염', 'prior': 0.2}}, {'id': 'rule:z', 'labels': ['Rule'], 'props': {}}])
+    d = je.knowledge_diff(a, b)
+    assert d['removed_rels'] == [{'from': 'cause:x', 'type': 'CAUSES', 'to': 'fm:y'}] and d['added_nodes'] == ['rule:z']
+    assert d['names'] == {'cause:x': '쿨러 핀 오염', 'fm:y': '냉각 성능 상실'}          # 이름이 없는 항목(rule:z)은 지어내지 않는다
+    before = je.new_run(path='decide', by='담당자', repeats=1, knowledge=a, results=[je.aggregate(ITEM, [judged()])])
+    other = dict(ITEM, id='pump-leak', title='펌프 내부 누설')
+    after = je.new_run(path='decide', by='담당자', repeats=1, knowledge=b, results=[je.aggregate(other, [judged()])])
+    out = je.compare(before, after)
+    assert (out['only_before'], out['only_after']) == (['cooler-auto'], ['pump-leak'])
+    assert out['item_titles'] == {'cooler-auto': ITEM['title'], 'pump-leak': '펌프 내부 누설'}
+
+
+def test_지난_처리_건에_맞는_정답표_항목이_없거나_여럿이면_처리_건_안쪽_번호와_경보_코드_없이_까닭을_말한다():
+    candidate = {'instance': 'c3_cooling.a5727cb6-0000-4000-8000-000000000000', 'asset': 'HYD-01', 'pattern': 'COOLER_DEGRADATION', 'facts': {}}
+    with pytest.raises(ValueError) as none:
+        je.match_item([], candidate)
+    with pytest.raises(ValueError) as many:
+        je.match_item([ITEM, dict(ITEM, id='cooler-auto-2', title='쿨러 성능 저하 · 둘째')], candidate)
+    for said in (str(none.value), str(many.value)):
+        assert 'c3_cooling' not in said and 'COOLER_DEGRADATION' not in said and 'cooler-auto' not in said, said
+    assert '「쿨러 성능 저하 · 둘째」' in str(many.value)

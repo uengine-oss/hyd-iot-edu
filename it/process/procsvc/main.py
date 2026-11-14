@@ -206,10 +206,22 @@ def _scm_sync_once():
     return report
 
 
+def _role_sync_once():
+    """역할의 정본은 업무 DB(users 의 role:* 행) — 지식 그래프의 Role 노드를 그 목록으로 맞춘다(agent_authoring.project_roles)."""
+    from . import agent_authoring
+    rt = instance_mode.current()
+    if rt is None:
+        return {"skipped": "runtime not ready"}
+    report = agent_authoring.project_roles(rt.repo, rt.tenant_id, _q)
+    if report["created"] or report["renamed"] or report["removed"]:
+        _audit("-", "process", "ROLE_GRAPH_SYNCED", report)
+    return report
+
+
 async def _ddl_sync_loop():
     interval = float(os.getenv("DDL_SYNC_INTERVAL_S", "60"))
     while True:
-        for name, once in (("DDL source", _ddl_sync_once), ("SCM source", _scm_sync_once)):
+        for name, once in (("DDL source", _ddl_sync_once), ("SCM source", _scm_sync_once), ("Role source", _role_sync_once)):
             try:
                 await asyncio.to_thread(once)
             except Exception:  # noqa: BLE001
@@ -1084,6 +1096,27 @@ async def kg_create_skill(body: dict):
     return out
 
 
+@app.delete("/api/kg/skills/{sid}")
+async def kg_delete_skill(sid: str, by: str = "", request_id: str | None = None):
+    """화면에서 만든 조치 방법 하나를 지운다(skill_graph.remove). 문서에서 적재한 조치 방법 · 문서의 규칙이 가리키는 조치 방법은 409 와 까닭
+    (그 문서를 먼저 되돌린다). 「기준으로 되돌리기」(config_bundle)도 같은 함수로 지운다."""
+    who = actor_or_400(by)
+
+    def run():
+        with _shared_graph().session() as session:
+            return skill_graph.remove(session, sid, by=who, request_id=request_id)
+    try:
+        out = await asyncio.get_running_loop().run_in_executor(None, run)
+    except skill_graph.Conflict as error:
+        raise HTTPException(409, str(error))
+    except KeyError:
+        raise HTTPException(404, "그런 조치 방법이 없습니다 — 목록을 새로 고치세요")
+    except ValueError as error:
+        raise HTTPException(400, str(error))
+    _audit('-', who, 'SKILL_DELETED', {'skill': sid, 'sop': out.get('sopId'), 'decision_cases': out.get('decision_cases')})
+    return out
+
+
 # Document originals are durable; source review and graph commit have distinct states.
 from pathlib import Path
 from .manual_sources import ManualSources
@@ -1306,7 +1339,7 @@ async def scenario_reset(key: str, body: dict | None = None):
         last = await asyncio.to_thread(scenario_buttons.last_instance, rt, key)
         if last:
             await asyncio.to_thread(rt.repo.record_events, [scenario_buttons.press_event(
-                last["proc_inst_id"], "초기화", spec["asset"], person, at, {"effect": f"{spec['label']} 표시를 수업 시작 상태로 되돌림"})])
+                last["proc_inst_id"], "초기화", spec["asset"], person, at, {"effect": f"{spec['label']} 표시를 처음 상태로 되돌림"})])
     _press_audit(spec["asset"], person, "초기화", key, at, instance=last["proc_inst_id"] if last else None, **_reanchor_audit(reanchor))
     return dict(await asyncio.to_thread(scenario_buttons.status, instance_mode.enterprise_read, rt, _last_press),
                 reanchored=reanchor["moved"], reanchor=reanchor)

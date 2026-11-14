@@ -185,10 +185,30 @@ def build(ctx: ProcessContext, repo: procdb.PgRepo | None = None, clock: Callabl
     _runtime.base_version, _runtime.reference_ids, _runtime.base_problem = seed.raw['version'], {seed.id, triage['id']}, base_problem
     from . import ask
     ask.register_definition(_runtime, DEFINITIONS_DIR)     # B5: 에이전트에게 질문하기 (제공 정의 ask_agent — 판본은 파일이 정한다)
-    _runtime.register_definition(json.loads((DEFINITIONS_DIR/'shift_handover_v1.json').read_text(encoding='utf-8')))
+    handover_raw = json.loads((DEFINITIONS_DIR/'shift_handover_v1.json').read_text(encoding='utf-8'))
+    _runtime.register_definition(handover_raw)
+    _attach_diagrams(repo, _runtime.tenant_id, [seed.raw, handover_raw])
     log.info("instance runtime: definition %s@%s (%d activities), repo %s", defn.id, defn.raw.get('version'),
              len(defn.activities), type(repo).__name__)
     return _runtime
+
+
+def _attach_diagrams(repo, tenant_id: str, definitions: list[dict]) -> None:
+    """기본 제공 흐름의 그림: 정의 파일 옆의 `<정의 id>.bpmn`(bpmn.io 에서 배치한 파일)을 그 정의 판본의 그림으로 붙인다 — 화면은 학생이 가져온
+    흐름과 같은 길(GET /api/flows/{id}/versions/{v}/bpmn)로 읽어 배치 그대로 그린다. 그림 파일이 없는 흐름(단계가 하나뿐인 흐름)은 화면이 정의에서
+    그림을 만든다. 그림이 정의와 어긋나면(요소 · 선 · 이름) 붙이지 않고 까닭을 남긴다 — 그림은 보이는 꼴이라 기동을 막지 않는다."""
+    from . import bpmn_store
+    store = bpmn_store.FlowStore(repo, tenant_id)
+    for raw in definitions:
+        path = DEFINITIONS_DIR / f"{raw['processDefinitionId']}.bpmn"
+        if not path.is_file():
+            continue
+        try:
+            xml = bpmn_store.provided_diagram(raw, path.read_text(encoding='utf-8'))
+        except bpmn_store.DiagramMismatch as e:
+            log.warning("흐름 그림 %s 이(가) 정의 %s@%s 와 어긋나 붙이지 않았습니다: %s", path.name, raw['processDefinitionId'], raw.get('version'), e)
+            continue
+        store.attach_diagram(raw['processDefinitionId'], raw['version'], xml)
 
 
 def _register_reference(repo, seed: engine.Definition, booted: engine.Definition, tenant_id: str) -> str | None:
@@ -526,21 +546,22 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
         return reading
 
     def _runtime_server(server: str, call) -> dict:
-        """등록 · 검사 도장 확인 → 비밀 자리표시자 채우기 → call(spec, entry) → 비밀 값 가리기. 실패는 status · error 로 답한다."""
+        """등록 · 검사 도장 확인 → 비밀 자리표시자 채우기 → call(spec, entry) → 비밀 값 가리기. 실패는 status · error 로 답한다.
+        서버에 연결하기 전에 멈춘 실패(등록 없음 · 검사 도장 없음 · 비밀 값 없음)는 sent=False 를 싣는다 — 서버에 아무것도 보내지 않았다."""
         from . import mcp_check, mcp_secrets
         try:
             entry = _effect_server(server)
             spec = mcp_check.normalize(entry)
         except (LookupError, ValueError) as e:
-            return {"status": "failed", "error": str(e), "error_kind": "config"}
+            return {"status": "failed", "error": str(e), "error_kind": "config", "sent": False}
         rt = current()
         if rt is None:
-            return {"status": "failed", "error": instances.NOT_READY, "error_kind": "config"}
+            return {"status": "failed", "error": instances.NOT_READY, "error_kind": "config", "sent": False}
         try:            # G2: ${SECRET:KEY} 는 부르기 직전에만 채운다 — 값이 없으면 빈 토큰으로 부르지 않고 사유로 멈춘다
             spec, used = mcp_secrets.runtime_spec(rt.repo, rt.tenant_id, server, entry)
             spec = mcp_check.normalize(spec)
         except mcp_secrets.SecretError as e:
-            return {"status": "failed", "error": e.reason, "error_kind": "secret"}
+            return {"status": "failed", "error": e.reason, "error_kind": "secret", "sent": False}
         # 서버가 토큰을 되돌려 줘도(오류 본문 · 에코) 영수증 · 감사 · 처리 기록에 값이 남지 않게
         return mcp_secrets.redact(call(spec, entry), used)
 
@@ -564,10 +585,14 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
         servers = mcp_registry.store_for(rt.repo).servers(rt.tenant_id) if rt is not None else {}
         entry = servers.get(name)
         if entry is None:
-            raise LookupError(f"MCP 서버 '{name}' 이(가) 없습니다 (EFFECT_MCP_SERVERS 또는 MCP 서버 등록)")
+            # 흐름 단계가 가리키는 서버가 지워졌거나 이름이 틀렸다 — 무엇을 하면 풀리는지 말한다(이 문장이 처리 건의 단계 실패 문장으로 그대로 간다)
+            from hydcommon.words import josa
+            raise LookupError(josa(f"도구 서버 '{name}'", '이') + " 등록되어 있지 않습니다 — [도구 연결]에서 같은 이름으로 등록한 뒤 이 단계를 다시 수행하세요")
         gate = ((entry.get(mcp_registry.META_KEY) or {}).get("gate") or {}) if isinstance(entry, dict) else {}
         if name not in mcp_registry.BASE_SERVERS and gate.get("fingerprint") != mcp_registry.fingerprint(entry):
-            raise LookupError(f"MCP 서버 '{name}' 은(는) 연결 검사를 통과한 설정이 아닙니다 — 포털 MCP 화면에서 다시 검사하세요")
+            from hydcommon.words import josa
+            raise LookupError(josa(f"도구 서버 '{name}'", '은') + " 지금 설정으로 연결 검사를 통과하지 않았습니다 — [도구 연결]에서 [연결 검사]를 한 뒤 "
+                              "이 단계를 다시 수행하세요")
         return entry
 
     return instances.Hooks(new_incident=open_incident, update_incident_card=update_incident_card, approve_commands=approve_commands,

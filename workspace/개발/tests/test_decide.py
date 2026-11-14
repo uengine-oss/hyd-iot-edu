@@ -58,7 +58,7 @@ def test_판단_id_는_서비스_이름을_달고_재시작해도_겹치지_않�
 
 def test_원천을_못_읽은_판단_사실은_무엇을_어디서_왜_로_말한다():
     e = decide.FactUnavailable('hours_at_next_window', '다음 정비 창까지 시간', 'sys:mes', '업무 시스템이 15초 안에 답하지 않았습니다')
-    assert str(e) == ('판단 사실 「다음 정비 창까지 시간」을(를) 원천(sys:mes)에서 읽지 못해 판단을 멈췄습니다 — '
+    assert str(e) == ('판단 사실 「다음 정비 창까지 시간」을 원천(sys:mes)에서 읽지 못해 판단을 멈췄습니다 — '
                       '업무 시스템이 15초 안에 답하지 않았습니다') and e.variable == 'hours_at_next_window'
 
 
@@ -162,7 +162,20 @@ def test_판단할_때_낡았던_설비_상태가_몇_초_뒤_새로_들어오�
 def test_설비_상태가_끝내_새로_들어오지_않으면_모든_안을_제외한_판단을_등록하지_않고_그_까닭으로_단계가_멈춘다(world, monkeypatch):
     """낡은 값으로 예측하지도, 「예측 미확인」으로 모든 안을 제외한 판단을 남기지도 않는다 — 판단 사실을 못 읽은 것과 같은 길(FactUnavailable)로
     멈추고, 그 단계는 실패로 남아 사람이 다시 수행할 수 있다(처리 건은 닫히지 않는다)."""
+    pid, handed, said = _stopped_for_stale_state(world, monkeypatch)
+    assert '설비 상태' in said and '새로 들어오지 않았습니다' in said and '판단을 멈췄습니다' in said, said
+    assert 'forecast_ts1' not in said and '시뮬레이터' not in said, said
+    status, view = world.api('GET', f'/api/instances/{pid}')
+    assert status == 200 and view['instance']['status'] == 'RUNNING', view
+    (stuck,) = view['attention']['steps']
+    assert (stuck['activity'], stuck['kind'], stuck['actions']) == ('T_agent', 'failed', ['rework', 'close']) and stuck['reason'] == said, stuck
+
+
+def _stopped_for_stale_state(world, monkeypatch):
+    """설비 상태가 끝내 새로 들어오지 않아 재생 워커의 AI 판단 단계가 실패로 멈춘 처리 건 → (처리 건 id, 관측 지점, 학생 문장)."""
     from agentsvc import forecasting
+    from worker import ai_replay
+    monkeypatch.setattr(ai_replay, 'WRITE_RETRY_WAITS_S', (0.2, 0.2))      # 시도 사이의 기다림만 줄인다(시도마다 판단 서비스가 8초를 다시 읽는다)
     pid, handed = _cooling_alert(world, monkeypatch, late_s=15.5)
     started = time.monotonic()
     handled = world.runner('replay').poll_once()
@@ -170,14 +183,58 @@ def test_설비_상태가_끝내_새로_들어오지_않으면_모든_안을_제
     assert _decisions_of(world, pid) == []
     row = world.row(pid, 'T_agent')
     assert handled == 1 and (row['status'], row['draft_status']) == ('IN_PROGRESS', 'FAILED'), (handled, row['status'], row['draft_status'])
-    assert handed.read.is_set() and waited >= forecasting.SOURCE_REREAD_FOR_S - 1, waited      # 바로 포기하지 않고 그동안 다시 읽었다
-    said = world._failure(row)['friendly']
-    assert '설비 상태' in said and '새로 들어오지 않았습니다' in said and '판단을 멈췄습니다' in said, said
-    assert 'forecast_ts1' not in said and '시뮬레이터' not in said, said
-    status, view = world.api('GET', f'/api/instances/{pid}')
-    assert status == 200 and view['instance']['status'] == 'RUNNING', view
-    (stuck,) = view['attention']['steps']
-    assert (stuck['activity'], stuck['kind'], stuck['actions']) == ('T_agent', 'failed', ['rework', 'close']) and stuck['reason'] == said, stuck
+    # 바로 포기하지 않았다: 판단 서비스가 한 번에 8초를 다시 읽고, 워커가 그 판단 등록을 세 번 불렀다
+    assert handed.read.is_set() and waited >= 3 * (forecasting.SOURCE_REREAD_FOR_S - 1), waited
+    return pid, handed, world._failure(row)['friendly']
+
+
+def test_판단_등록이_끝내_안_되면_학생_문장에_도구의_내부_이름과_응답_원문이_없고_원문_칸에_남는다(world, monkeypatch):
+    """재생 모드의 실패 문장이 「…에서 AI가 부른 hyd-dmn/submit_decision이(가) 이 PC에서 거절됐습니다: { "result": "error", "error_kind":
+    "UNKNOWN", … }」였다 — 무엇을 하다가 · 왜 · 다음에 무엇을 하는지만 말하고, 도구 이름과 응답 원문은 원문 칸(raw_error)에 둔다."""
+    from student_words import JARGON, WORKER_TALK
+    pid, _, said = _stopped_for_stale_state(world, monkeypatch)
+    failure = world._failure(world.row(pid, 'T_agent'))
+    assert '등록하지 못했습니다' in said and '3번 시도' in said and '다시 수행' in said, said
+    assert all(word not in said for word in ('hyd-dmn', 'submit_decision', 'error_kind', 'UNAVAILABLE', '{', '을(를)')), said
+    assert not WORKER_TALK.search(said) and not JARGON.search(said), said
+    assert 'hyd-dmn/submit_decision' in failure['raw_error'] and 'UNAVAILABLE' in failure['raw_error'], failure['raw_error']
+
+
+def test_판단_등록이_값을_받지_못해_안_됐다가_값이_들어오면_같은_실행_안에서_다시_불러_끝까지_간다(world, monkeypatch):
+    """판단 서비스가 8초를 다시 읽고도 설비 값을 받지 못해 판단을 멈춘 한 번이 재생 모드에서 그 단계의 실패로 굳었다. 판단 서비스가 그 까닭을
+    「아직 받지 못함」 종류로 돌려주고(옛 판은 UNKNOWN — 엔진 결함과 구별되지 않았다), 워커가 같은 실행 안에서 기다렸다 다시 부른다."""
+    from worker import ai_replay
+    pid, handed = _cooling_alert(world, monkeypatch, late_s=15.5)
+    waits = []
+
+    def state_arrives(seconds, check_stop):       # 워커가 다음 시도를 기다리는 동안 설비 보고가 다시 들어온다
+        waits.append(seconds)
+        world.report('HYD-01')
+    monkeypatch.setattr(ai_replay, '_wait', state_arrives)
+    handled = world.runner('replay').poll_once()
+    row = world.row(pid, 'T_agent')
+    assert handled == 1 and row['status'] in ('SUBMITTED', 'DONE'), (row['status'], world._failure(row))
+    assert waits == [ai_replay.WRITE_RETRY_WAITS_S[0]], waits                 # 첫 등록이 「아직 받지 못함」으로 안 됐고 한 번 기다린 뒤 됐다
+    (made,) = _decisions_of(world, pid)
+    assert made['recommended'] and world._failure(row) is None
+
+
+def test_재생_모드에서_실패한_AI_단계를_다시_수행하면_그_처리_건에서_지금_값으로_판단이_등록된다(world, monkeypatch):
+    """키 없는 PC: AI 단계가 한 번 실패하면 [다시 수행]이 「재작업으로 다시 하는 것을 지원하지 않습니다 … 새 처리 건으로」로 멈춰 그 건을 다시
+    해 볼 길이 없었다. 다시 수행은 같은 단계를 같은 입력으로 새로 하는 것이므로 저장된 첫 실행의 응답을 내고, 판단은 이 PC에서 지금 값으로 등록한다."""
+    from conftest import OPERATOR
+    import uuid
+    pid, _, _ = _stopped_for_stale_state(world, monkeypatch)
+    failed = world.row(pid, 'T_agent')
+    plan = world.rt.preview_rework(pid, failed['id'])
+    assert not plan['blockers'], plan['blockers']
+    result = world.rt.request_rework(pid, failed['id'], str(uuid.uuid4()), plan['snapshot_token'], OPERATOR['by'], OPERATOR['role'], '설비 값이 다시 들어옴')
+    world.report('HYD-01')
+    assert world.runner('replay').poll_once() == 1
+    again = world.row(pid, 'T_agent')
+    assert again['id'] == result['start_workitem'] != failed['id'] and again['status'] in ('SUBMITTED', 'DONE'), (again['status'], world._failure(again))
+    (made,) = _decisions_of(world, pid)
+    assert made['recommended'] and made['origin']['process_scope']['generation'] == 1 == world.inst(pid)['rework_generation']
 
 
 @pytest.mark.parametrize('facts, needle', [({'fan100_hours': -5}, '음수일 수 없습니다'), ({'secret_fact': 1}, '바꿔 넣을 수 없는 사실')],

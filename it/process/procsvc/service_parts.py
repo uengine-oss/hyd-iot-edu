@@ -102,7 +102,11 @@ class ServicePartsRuntime:
         self.repo.record_service_progress(self.tenant_id, wi["proc_inst_id"], wi["id"], context["consumer"], [row])
 
     def _unconfirmed_effect(self, wi):
-        """A local rollback does not roll back an external write."""
+        """A local rollback does not roll back an external write.
+        「승인 뒤 MCP 호출」을 시작했는데 그 시도가 커밋되지 않았고 서버가 같은 호출을 알아볼 열쇠(idempotency)도 없으면, 쓰기가 됐는지 알 수 없다 —
+        자동 재시도를 멈추고 사람이 외부 결과를 확인하게 한다. 쓰기 요청을 서버에 보내지 않은 것이 확실한 실패(not_sent — 등록 없는 서버 · 꺼진
+        서버 · 없는 도구 · 맞지 않는 입력)는 여기에 들지 않는다: 전에는 지워진 서버를 가리키는 단계가 「앞선 외부 쓰기가 됐는지 확인되지
+        않아」로 멈춰, 아무것도 보내지 않았는데 외부 결과를 확인하라고 했다(진짜 까닭 「도구 서버가 등록되어 있지 않습니다」가 가려졌다)."""
         rows = self.repo.list_events(todo_id=wi['id'], limit=None)
         committed = {r.get('data', {}).get('attempt_id') for r in rows
                      if r.get('job_id') == 'SYSTEM_ATTEMPT_COMMITTED'}
@@ -113,9 +117,19 @@ class ServicePartsRuntime:
             if (row.get('job_id') == 'MCP_EFFECT_CALL'
                     and row.get('event_type') == 'tool_usage_started'
                     and data.get('attempt_id') not in committed
-                    and finishes.get(data.get('tool_use_id'), {}).get('idempotent') is not True):
+                    and finishes.get(data.get('tool_use_id'), {}).get('idempotent') is not True
+                    and finishes.get(data.get('tool_use_id'), {}).get('not_sent') is not True):
                 return True
         return False
+
+    def _nothing_sent(self, wi) -> bool:
+        """이 「승인 뒤 MCP 호출」 단계의 모든 시도가 쓰기 요청을 서버에 보내지 않고 끝났는가(시도 기록이 없어도 참 — 부르기 전에 멈췄다).
+        한 번이라도 보냈거나 보냈는지 모르면 거짓. 다시 수행(rework_runtime)이 「바깥에 낸 일이 없는 단계」를 가르는 데 쓴다."""
+        rows = self.repo.list_events(todo_id=wi['id'], limit=None)
+        finishes = {r.get('data', {}).get('tool_use_id'): r.get('data', {})
+                    for r in rows if r.get('event_type') == 'tool_usage_finished'}
+        return all(finishes.get((r.get('data') or {}).get('tool_use_id'), {}).get('not_sent') is True
+                   for r in rows if r.get('job_id') == 'MCP_EFFECT_CALL' and r.get('event_type') == 'tool_usage_started')
 
     def _keep_failed_attempt_record(self) -> None:
         """실패한 시도의 기록을 전이를 되돌린 뒤 따로 남긴다 — 사건 기록과 감사 기록은 상태가 아니라 일지다
@@ -192,7 +206,7 @@ class ServicePartsRuntime:
     def _call_mcp(self, inst: dict, wi: dict, v: dict, cfg: dict, key: str, now, *, read_only: bool = False) -> tuple[dict, dict]:
         """(영수증, 도구 결과 — mcp_check.shape_result 모양). read_only 면 읽기 경로(hooks.mcp_read: 호출 직전 읽기 판정)로 부른다."""
         context = dict(v, proc_inst_id=inst["proc_inst_id"], proc_inst_name=inst.get("proc_inst_name"),
-                       task_name=wi.get("activity_name"))
+                       task_name=wi.get("activity_name"))                     # 이름은 effect_parts.MCP_CONTEXT_VALUES 와 같다(등록 검사가 읽는다)
         try:
             arguments = effect_parts.render(cfg.get("arguments") or {}, context)
         except KeyError as e:
@@ -217,7 +231,10 @@ class ServicePartsRuntime:
         result = res.get("result") or {}
         failed = res.get("status") != "ok" or result.get("is_error")
         self._event(wi, job, label + " 결과", {"tool": raw_tool, "tool_name": tool, "tool_use_id": use_id, "output": result.get("text") or res.get("error"),
-                                                                  "result": result.get("text") or res.get("error"), "idempotent": res.get("idempotent") is True, "is_error": bool(failed), "attempt_failed": bool(failed and context and context.get('owns_transition'))}, event_type="tool_usage_finished", crew="tool")
+                                                                  "result": result.get("text") or res.get("error"), "idempotent": res.get("idempotent") is True,
+                                                                  # 쓰기 요청을 서버에 보내지 않았다(mcp_check.call_effect 의 sent · instance_mode._runtime_server) — _unconfirmed_effect 가 읽는다
+                                                                  "not_sent": (not read_only) and res.get("sent") is False,
+                                                                  "is_error": bool(failed), "attempt_failed": bool(failed and context and context.get('owns_transition'))}, event_type="tool_usage_finished", crew="tool")
         self._after_commit(self.hooks.audit, v.get("asset", "-"), "process", ("MCP_READ_FAILED" if failed else "MCP_READ_CALLED") if read_only else ("MCP_EFFECT_FAILED" if failed else "MCP_EFFECT_CALLED"),
                            {"instance": inst["proc_inst_id"], "server": server, "tool": tool, "idempotency_key": key,
                             "error": res.get("error")}, incident=v.get("incident"))
@@ -507,7 +524,7 @@ class ServicePartsRuntime:
         self.submit(wi["id"], {"result_report": report}, by="process", now=now)
 
     # ---------------------------------------------------------------- 재관측 (한 벌 — 명령 뒤 · 작업지시 뒤)
-    AFTER_LABEL = {"command": "명령 뒤", "work_order": "작업지시 뒤"}
+    AFTER_LABEL = {"command": "설비 명령 뒤", "work_order": "정비 요청 뒤"}
 
     def _reobserve(self, inst: dict, wi: dict, now, inc_id: str, *, after: str, cmd_id: str | None = None) -> None:
         """재관측 규칙 하나(A-02): 창(15 시뮬레이션 분 ÷ 배속)의 마감을 이 행의 draft · due_date 에 저장하고 폴링이 판정한다 — process 가 다시
@@ -522,9 +539,9 @@ class ServicePartsRuntime:
             plan = {"kind": after, "cmd_id": cmd_id, "started_at": engine.now_iso(clock), "due_at": engine.now_iso(clock + _td(secs)),
                     "window_s": round(secs, 1), "extensions": 0}
             wi["due_date"] = plan["due_at"]
-            wi["log"] = (wi.get("log") or "") + f"re-observing {after} for {secs:.0f} s until {plan['due_at']}; "
+            wi["log"] = (wi.get("log") or "") + f"효과 확인 시작({self.AFTER_LABEL[after]}) — {secs:.0f}초 동안 설비 값을 지켜봅니다; "
             state = self._save_state(wi, reobserve=plan)
-            self._event(wi, "REOBSERVE_STARTED", f"효과 재관측 시작 ({self.AFTER_LABEL[after]})", {"plan": plan})
+            self._event(wi, "REOBSERVE_STARTED", f"효과 확인 시작 ({self.AFTER_LABEL[after]})", {"plan": plan})
         plan = state["reobserve"]
         if effect_parts.parse_time(plan["due_at"]) > clock:
             return
@@ -540,13 +557,13 @@ class ServicePartsRuntime:
                 plan = dict(plan, due_at=engine.now_iso(clock + _td(secs)), extensions=plan["extensions"] + 1)
                 wi["due_date"] = plan["due_at"]
                 self._save_state(wi, reobserve=plan)
-                self._event(wi, "REOBSERVATION_EXTENDED", "재관측 연장 (값은 기준 안, 경보 해제 대기)", {"reading": reading, "plan": plan})
+                self._event(wi, "REOBSERVATION_EXTENDED", "효과 확인 연장 (값은 기준 안, 경보 해제 대기)", {"reading": reading, "plan": plan})
                 if after == "command" and self.hooks.reobservation_extended is not None:
                     self.hooks.reobservation_extended(inc_id, plan["cmd_id"], reading, plan["extensions"], secs)
                 return
         if after == "command":
             if self.hooks.reobservation_verdict is None:
-                raise ValueError("재관측 판정을 사건에 적는 기능이 연결되지 않았습니다")
+                raise ValueError("효과 확인 판정을 사건에 적는 기능이 연결되지 않았습니다")
             if not self.hooks.reobservation_verdict(inc_id, plan["cmd_id"], recovered, reading, plan["extensions"]):
                 # 그 사이 사건이 다른 길로 갔다(재작업으로 명령이 바뀜 등) — 이 창의 판정을 쓰지 않고 사건의 지금 상태를 따른다
                 snap = self.hooks.incident_snapshot(inc_id) or {}
@@ -558,7 +575,7 @@ class ServicePartsRuntime:
             self._after_commit(self.hooks.audit, v.get("asset", "-"), "process", "REOBSERVATION",
                                {"instance": inst["proc_inst_id"], "after": "work_order", "passed": recovered, **{k: reading.get(k) for k in
                                 ("tag", "value", "criterion", "cleared")}}, incident=inc_id)
-        self._event(wi, "REOBSERVATION", f"효과 재관측 판정 ({self.AFTER_LABEL[after]})", {"recovered": recovered, "reading": reading,
+        self._event(wi, "REOBSERVATION", f"효과 확인 판정 ({self.AFTER_LABEL[after]})", {"recovered": recovered, "reading": reading,
                                                                                          "extensions": plan["extensions"]})
         self.submit(wi["id"], {"recovered": recovered}, by="process", now=now)
 

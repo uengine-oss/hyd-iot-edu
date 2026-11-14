@@ -8,12 +8,117 @@
 
 제품 대조: process-gpt-vue3 ProcessGPTBackend.ts:573-685 putRawDefinition 은 proc_def.bpmn 과 proc_def_version.snapshot 에 XML 을
 저장한다(같은 칸). 판본 번호는 HYD 규칙(학생 흐름마다 1, 2, 3 …, 같은 번호는 바꿀 수 없음).
+
+기본 제공 흐름(정의 JSON 으로 등록하는 기준 흐름 · 교대 인수인계)의 그림도 같은 칸(proc_def_version.snapshot)에 둔다 — 화면은 가져온 흐름과
+같은 길(GET /api/flows/{id}/versions/{v}/bpmn)로 읽는다. 그림의 원문은 정의 파일 옆의 `<정의 id>.bpmn`(bpmn.io 에서 배치한 파일)이고,
+기동(instance_mode.build)이 provided_diagram 으로 정의와 대조한 뒤 그 판본에 붙인다(attach_diagram). 정의와 어긋난 그림은 붙이지 않는다.
 """
 from __future__ import annotations
 
 import re
+import xml.etree.ElementTree as ET
 
 ORIGIN = "user"
+
+# ---------------------------------------------------------------- 기본 제공 흐름의 그림(정의 옆 .bpmn → 그 판본의 그림)
+BPMN_NS = "http://www.omg.org/spec/BPMN/20100524/MODEL"
+_NAMESPACES = {"bpmn": BPMN_NS, "bpmndi": "http://www.omg.org/spec/BPMN/20100524/DI",
+               "dc": "http://www.omg.org/spec/DD/20100524/DC", "di": "http://www.omg.org/spec/DD/20100524/DI"}
+_ID_ATTRS = ("id", "bpmnElement", "sourceRef", "targetRef", "attachedToRef", "default")
+_ID_TEXTS = ("flowNodeRef", "incoming", "outgoing")
+
+
+class DiagramMismatch(ValueError):
+    """그림 파일이 정의와 어긋남 — problems 는 사람이 읽을 사유 목록."""
+    def __init__(self, problems: list[str]):
+        self.problems = problems
+        super().__init__(" / ".join(problems[:6]) + (f" 외 {len(problems) - 6}건" if len(problems) > 6 else ""))
+
+
+def xid(def_id) -> str:
+    """정의의 id(task:draft · seq:0)를 그림(XML)의 id 로 — 화면(it/portal/www/flow.js 의 xid)과 같은 규칙이다. 화면은 처리 건의 상태(끝남 ·
+    지금 · 남음)를 정의의 id 로 받아 이 규칙으로 그림의 요소를 찾는다. XML id 로 쓸 수 있는 id 는 그대로, 아닌 글자는 _x<코드>_ 로 바꾼다."""
+    s = str(def_id if def_id is not None else "")
+    if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.-]*", s):
+        return s
+    return ("" if re.match(r"[A-Za-z_]", s) else "_") + re.sub(r"[^A-Za-z0-9_.-]", lambda m: f"_x{ord(m.group()):x}_", s)
+
+
+def _file_key(some_id: str) -> str:
+    """그림 파일의 id 와 정의의 id 를 맞대는 열쇠 — 글자 · 숫자가 아닌 것은 모두 밑줄(task:draft-r2 ↔ task_draft_r2)."""
+    return re.sub(r"[^A-Za-z0-9]", "_", some_id)
+
+
+def _kind(tag: str) -> str:
+    return ("task" if tag.endswith("ask") else "gateway" if tag.endswith("Gateway") else "boundary" if tag == "boundaryEvent"
+            else "start" if tag == "startEvent" else "end" if tag == "endEvent" else "event" if tag.endswith("Event") else "")
+
+
+def provided_diagram(definition: dict, xml: str) -> str:
+    """정의 옆의 그림 파일(bpmn.io 에서 배치한 .bpmn)을 그 정의 판본의 그림으로 만든다: 요소 · 선 · 이름이 정의와 같은지 대조하고(어긋나면
+    DiagramMismatch), 그림의 id 를 화면이 찾는 id(xid(정의 id))로 바꿔 돌려준다. 그림에만 있는 것은 차선과 좌표뿐이어야 한다."""
+    try:
+        root = ET.fromstring(xml.encode("utf-8"))
+    except ET.ParseError as e:
+        raise DiagramMismatch([f"그림 파일을 읽을 수 없습니다({e})"]) from None
+    process = root.find(f"{{{BPMN_NS}}}process")
+    if process is None or root.find(f".//{{{_NAMESPACES['bpmndi']}}}BPMNDiagram") is None:
+        raise DiagramMismatch(["그림 파일에 흐름(process)이나 배치 정보(BPMNDiagram)가 없습니다"])
+    drawn = {}        # 그림의 id → (종류, 이름, 선의 양 끝 또는 붙은 단계)
+    for el in process:
+        tag = el.tag.split("}")[-1]
+        if tag == "sequenceFlow":
+            drawn[el.get("id")] = ("flow", el.get("name") or "", (el.get("sourceRef"), el.get("targetRef")))
+        elif _kind(tag):
+            drawn[el.get("id")] = (_kind(tag), el.get("name") or "", el.get("attachedToRef"))
+    wanted = {}       # 정의의 id → 같은 꼴
+    for x in definition.get("events") or []:
+        kind = "boundary" if x.get("type") == "boundaryEvent" or x.get("attachedTo") else "start" if x.get("type") == "startEvent" \
+            else "end" if x.get("type") == "endEvent" else "event"
+        wanted[x["id"]] = (kind, x.get("name") or "", x.get("attachedTo"))
+    for x in definition.get("activities") or []:
+        wanted[x["id"]] = ("task", x.get("name") or "", None)
+    for x in definition.get("gateways") or []:
+        wanted[x["id"]] = ("gateway", x.get("name") or "", None)
+    for x in definition.get("sequences") or []:
+        wanted[x["id"]] = ("flow", x.get("name") or "", (x.get("source"), x.get("target")))
+    by_key, problems = {}, []
+    for file_id in drawn:
+        if by_key.setdefault(_file_key(file_id), file_id) != file_id:
+            problems.append(f"그림의 id {file_id} · {by_key[_file_key(file_id)]} 가 구별되지 않습니다")
+    to_def = {}       # 그림의 id → 정의의 id
+    for def_id, (kind, name, link) in wanted.items():
+        file_id = by_key.get(_file_key(def_id))
+        if file_id is None or file_id in to_def:
+            problems.append(f"정의의 {def_id}(「{name}」)이(가) 그림에 없습니다")
+            continue
+        to_def[file_id] = def_id
+    for file_id in drawn:
+        if file_id not in to_def:
+            problems.append(f"그림의 {file_id}(「{drawn[file_id][1]}」)이(가) 정의에 없습니다")
+    def as_file(def_id):
+        return by_key.get(_file_key(def_id)) if def_id else None
+    for file_id, def_id in to_def.items():
+        (kind, name, link), (d_kind, d_name, d_link) = wanted[def_id], drawn[file_id]
+        if kind != d_kind:
+            problems.append(f"{def_id}: 정의는 {kind} 인데 그림은 {d_kind} 입니다")
+        if name != d_name:
+            problems.append(f"{def_id}: 이름이 다릅니다(정의 「{name}」 · 그림 「{d_name}」)")
+        want_link = tuple(as_file(v) for v in link) if isinstance(link, tuple) else as_file(link)
+        if want_link != d_link:
+            problems.append(f"{def_id}: 이어진 곳이 다릅니다(정의 {link} · 그림 {d_link})")
+    if problems:
+        raise DiagramMismatch(problems)
+    rename = {file_id: xid(def_id) for file_id, def_id in to_def.items()}
+    for el in root.iter():
+        for attr in _ID_ATTRS:
+            if el.get(attr) in rename:
+                el.set(attr, rename[el.get(attr)])
+        if el.tag.split("}")[-1] in _ID_TEXTS and (el.text or "").strip() in rename:
+            el.text = rename[el.text.strip()]
+    for prefix, uri in _NAMESPACES.items():
+        ET.register_namespace(prefix, uri)
+    return '<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(root, encoding="unicode")
 
 
 class FlowBusy(ValueError):
@@ -113,6 +218,14 @@ class FlowStore:
                              updated_at=now() where proc_def.origin='user'""",
                       (def_id, self.tenant_id, raw.get("processDefinitionName"), bpmn))
         return raw
+
+    def attach_diagram(self, def_id: str, version: str, bpmn: str) -> bool:
+        """기본 제공 흐름(학생이 가져온 것이 아닌 판본)의 그림을 그 판본에 붙인다 — 정의 원문 · 운영 판본 포인터는 건드리지 않는다. 그림은 보이는 꼴일 뿐이라
+        같은 판본의 그림은 저장소의 파일이 바뀌면 새 그림으로 바뀐다(정의와 어긋나지 않는지는 provided_diagram 이 본다). 돌려줌: 바뀌었는가."""
+        with self.repo._conn() as c:
+            return bool(c.execute("""update proc_def_version set snapshot=%s where tenant_id=%s and proc_def_id=%s and version=%s
+                                     and version_tag='hyd-immutable' and coalesce(origin,'')<>'user' and snapshot is distinct from %s""",
+                                  (bpmn, self.tenant_id, def_id, version, bpmn)).rowcount)
 
     def bpmn_of(self, def_id: str, version: str | None = None) -> str | None:
         """판본의 그림 원본(.bpmn). version 이 없으면 proc_def.bpmn(마지막으로 등록한 그림)."""

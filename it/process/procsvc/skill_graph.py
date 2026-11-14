@@ -176,3 +176,65 @@ def write(session, query, sid, values, *, create=False, expected_revision=None, 
                id=rid,skill=sid,fingerprint=digest,actor=by,before=json.dumps(current,ensure_ascii=False),result=json.dumps(result,ensure_ascii=False)).consume()
         return result
     return session.execute_write(run)
+
+
+# ---------------------------------------------------------------- 화면에서 만든 조치 방법 지우기
+#: 화면(조치 방법)에서 만든 것 = 문서 소유가 아닌 Skill. 바탕 지식(시드)에는 Skill 이 없고, 문서에서 온 Skill 은 그 문서의 묶음이 소유한다
+SCREEN_SKILLS_Q = ('MATCH (k:Skill) WHERE k._manual_document IS NULL '
+                   'RETURN k.id AS id, k.sopId AS sopId, k.name AS name ORDER BY k.id')
+USES_Q = ('MATCH (k:Skill {id:$id}) '
+          'RETURN k._manual_document AS document, k.sopId AS sopId, k.name AS name, '
+          "COLLECT { MATCH (r:Rule)-[:OUTPUTS|APPLIES_TO]->(k) WHERE NOT r.id STARTS WITH 'rule:cand-' RETURN r.id } AS rules, "
+          'COLLECT { MATCH (st:Step)-[:DOCUMENTS]->(k) RETURN st.id } AS cited, '
+          'COUNT { (:DecisionCase)-[:CHOSE]->(k) } AS cases')
+
+
+def screen_skills(session):
+    """화면에서 만든 조치 방법 [{id, sopId, name}] — 「기준으로 되돌리기」가 지울 목록(문서에서 적재한 것은 그 묶음 되돌리기가 지운다)."""
+    return session.execute_read(lambda tx: tx.run(SCREEN_SKILLS_Q).data())
+
+
+def remove(session, sid, *, by, request_id=None):
+    """화면에서 만든 조치 방법 하나를 지운다(Skill · 그 단계 · 화면이 만든 후보 규칙 연결). 영수증(KnowledgeEdit)과 한 트랜잭션.
+      * 문서에서 적재한 조치 방법은 지우지 않는다 — 그 문서의 묶음 되돌리기가 지운다(소유 · 되돌리기 기록이 묶음에 있다).
+      * 문서의 규칙이 결과 · 적용 대상으로 가리키거나 다른 문서의 단계가 인용하는 조치 방법도 지우지 않는다 — 지우면 그 문서의 적재 기록과
+        그래프가 어긋나 그 문서를 되돌릴 수 없게 된다. 그 문서를 먼저 되돌리라고 말한다.
+      * 이 조치 방법을 고른 판단 기록(DecisionCase)은 남는다. 그 기록에서 이 조치 방법으로 가는 연결만 없어지고, 몇 건인지 돌려준다.
+      * 이 조치 방법만 내던 화면 후보 규칙(rule:cand-<고장 유형>)은 함께 지운다(결과 없는 규칙을 남기지 않는다).
+    돌려줌 = {id, sopId, name, deleted: True, decision_cases, removed_rules}. 없으면 KeyError."""
+    if not isinstance(by, str) or not by.strip():
+        raise ValueError('지우는 담당자가 필요합니다')
+    if request_id is not None and not isinstance(request_id, str):
+        raise ValueError('request_id는 UUID 문자열이어야 합니다')
+    rid = str(uuid.UUID(request_id)) if request_id is not None else str(uuid.uuid4())
+    digest = fingerprint({'skill': sid, 'delete': True, 'by': by})
+    manual_graph.ensure_schema(session)
+
+    def run(tx):
+        manual_graph._lock(tx)
+        receipt = tx.run('MATCH (r:KnowledgeEdit {id:$id}) RETURN r.fingerprint AS fingerprint,r.result AS result', id=rid).single()
+        if receipt:
+            if receipt['fingerprint'] != digest:
+                raise Conflict('같은 요청 ID에 다른 지식 변경을 사용할 수 없습니다')
+            return json.loads(receipt['result'])
+        found = tx.run(USES_Q, id=sid).single()
+        if not found:
+            raise KeyError(sid)
+        if found['document']:
+            raise Conflict('문서에서 적재한 조치 방법입니다 — 「지식 › 문서 등록」의 등록 이력에서 그 문서를 되돌리면 함께 지워집니다')
+        if found['rules'] or found['cited']:
+            what = ' · '.join(filter(None, [f"문서의 규칙 {len(found['rules'])}개({', '.join(found['rules'][:3])})" if found['rules'] else '',
+                                            f"다른 문서의 단계 {len(found['cited'])}개" if found['cited'] else '']))
+            from hydcommon.words import josa
+            raise Conflict(f"{josa(what, '이')} 이 조치 방법을 가리킵니다 — 그 문서를 「지식 › 문서 등록」의 등록 이력에서 먼저 되돌린 뒤 지우세요")
+        tx.run('MATCH (k:Skill {id:$id}) OPTIONAL MATCH (k)-[:HAS_STEP]->(st:Step) DETACH DELETE st', id=sid).consume()
+        rules = [r['id'] for r in tx.run("MATCH (r:Rule)-[:OUTPUTS]->(:Skill {id:$id}) WHERE r.id STARTS WITH 'rule:cand-' RETURN r.id AS id", id=sid).data()]
+        tx.run('MATCH (k:Skill {id:$id}) DETACH DELETE k', id=sid).consume()
+        removed = [r['id'] for r in tx.run('MATCH (r:Rule) WHERE r.id IN $ids AND NOT (r)-[:OUTPUTS]->() WITH r, r.id AS id DETACH DELETE r RETURN id', ids=rules).data()]
+        result = {'id': sid, 'sopId': found['sopId'], 'name': found['name'], 'deleted': True, 'decision_cases': found['cases'],
+                  'removed_rules': sorted(removed)}
+        tx.run('CREATE (r:KnowledgeEdit {id:$id,skill:$skill,fingerprint:$fingerprint,actor:$actor,created_at:datetime(),before:$before,result:$result})',
+               id=rid, skill=sid, fingerprint=digest, actor=by.strip(), before=json.dumps({'sopId': found['sopId'], 'name': found['name']}, ensure_ascii=False),
+               result=json.dumps(result, ensure_ascii=False)).consume()
+        return result
+    return session.execute_write(run)

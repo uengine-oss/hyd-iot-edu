@@ -23,6 +23,7 @@ import json
 import re
 from datetime import datetime, timezone
 
+from hydcommon.words import josa
 from . import card as cardlib, cards, guardrail
 
 ENGINE = "hyd-dmn"
@@ -305,7 +306,8 @@ def run_trial(scenario: dict, profile: dict, world, snapshot: Snapshot, tenant_s
         entry = {"seq": len(calls) + 1, "phase": phase, "server": server, "tool": tool, "args": args, "by": by}
         calls.append(entry)
         if server not in tools:
-            entry.update(status="BLOCKED", reason=f"이 에이전트의 도구 구성에 {server} 가 없어 부르지 못했습니다")
+            # 어느 서버인지는 이 줄의 server 칸에 있다 — 문장에 서버 id 를 되풀이하지 않는다(화면이 그 칸을 이름으로 보인다)
+            entry.update(status="BLOCKED", reason="이 에이전트의 도구 서버 구성에 이 도구의 서버가 없어 부르지 못했습니다")
             return None
         ok, value, source = snapshot.read(key, kind, fetch)
         entry["source"] = source
@@ -332,7 +334,7 @@ def run_trial(scenario: dict, profile: dict, world, snapshot: Snapshot, tenant_s
     if dx is None:
         last = calls[-1]
         return finish("NO_ENGINE_TOOL" if last["status"] == "BLOCKED" else "FAILED",
-                      "판단 엔진 도구(hyd-dmn)가 없어 원인 진단·조치 판단을 할 수 없습니다" if last["status"] == "BLOCKED" else last["reason"])
+                      "이 에이전트의 도구 서버 구성에 판단 시스템이 없어 원인 진단 · 조치 판단을 할 수 없습니다" if last["status"] == "BLOCKED" else last["reason"])
     causes = dx.get("causes") or []
     calls[-1]["summary"] = (f"원인 후보 {len(causes)}개" + (f" · 1위 {causes[0]['id']}" if causes and not dx.get("withheld") else "")
                             + (" · 보류" if dx.get("withheld") else ""))
@@ -378,7 +380,7 @@ def run_trial(scenario: dict, profile: dict, world, snapshot: Snapshot, tenant_s
                 server = next((t for t in tools if enterprise_family(t)), ENTERPRISE)
             if step.get("server") and step["server"] != server and not (enterprise_family(step["server"]) and enterprise_family(server)):
                 calls.append({"seq": len(calls) + 1, "phase": "스킬 절차", "server": step["server"], "tool": name, "args": {}, "by": by,
-                              "status": "FAILED", "reason": f"{name} 은(는) {server} 서버의 도구입니다(스킬이 {step['server']} 로 적음)"})
+                              "status": "FAILED", "reason": f"{josa(name, '은')} {server} 서버의 도구입니다(스킬 문서에는 {step['server']} 서버로 적혀 있습니다)"})
                 info["steps"] += 1
                 continue
             parts = sorted(set(PART_RE.findall(str(skill.get("content") or ""))))
@@ -426,7 +428,7 @@ def run_trial(scenario: dict, profile: dict, world, snapshot: Snapshot, tenant_s
         row = {k: p.get(k) for k in ("variable", "name", "source", "sourceName", "value", "how")}
         if (p.get("source") in ENTERPRISE_SOURCES or bool(p.get("binding"))) and not business:
             facts[p["variable"]] = None
-            row.update(value=None, blocked="업무 도구 서버(enterprise 계열)가 없어 이 값을 받지 못했습니다")
+            row.update(value=None, blocked="이 에이전트의 도구 서버 구성에 업무 자료 서버가 없어 이 값을 받지 못했습니다")
             blocked.append(p["variable"])
         rows.append(row)
     out["facts"] = rows
@@ -465,7 +467,7 @@ def run_trial(scenario: dict, profile: dict, world, snapshot: Snapshot, tenant_s
     out["explanation"] = result.get("explanation")
     fired = [t["rule"] for t in result["trace"] if t["fired"]]
     rank_rule = (result.get("rankRule") or {}).get("rule")
-    calls[-1]["summary"] = (f"후보 {len(result['options'])}장 · 제외 {sum(not o['feasible'] for o in result['options'])}장"
+    calls[-1]["summary"] = (f"조치 후보 {len(result['options'])}개 · 제외 {sum(not o['feasible'] for o in result['options'])}개"
                             + (f" · 1순위 {rec.get('sopId')}" if rec else " · 가능한 조치 없음"))
     calls[-1]["citations"] = fired + ([rank_rule] if rank_rule else [])
     cite(calls[-1]["citations"], "판단 규칙")

@@ -104,7 +104,7 @@ def test_닫힌_가지가_병렬_합류로_들어가면_남은_가지가_끝날_
     assert rows['after']['status'] == 'CANCELLED', '닿지 않은 다음 단계는 취소로 정리한다'
     # E3: 학생이 읽는 작업 행 기록은 끝 id 가 아니라 끝 이름(end_label 과 같은 정본)으로 까닭을 적는다
     label = engine.TECHNICAL_ENDS[end]
-    assert f'처리 건 끝 — {label}' in rows['after']['log'] and end not in rows['after']['log']
+    assert f'취소: 처리 건이 끝남 — {label}' in rows['after']['log'] and end not in rows['after']['log']
 
 
 def test_가지가_모두_끝나면_병렬_합류가_열린다():

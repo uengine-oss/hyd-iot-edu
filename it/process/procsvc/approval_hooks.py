@@ -145,7 +145,7 @@ class DecisionDelivery:
             raise ValueError('승인한 판단이 이 사건 · 설비의 판단이 아닙니다 — 처리 건 화면에서 지금 판단을 다시 고르세요')
         inc = self.ctx.incidents.get(inc_id)
         if inc is None or inc.asset != payload['asset']:
-            raise ValueError(f'승인한 사건({inc_id})을 찾을 수 없습니다 — 처리 서비스가 사건 기록을 잃었습니다. 강사에게 알리세요')
+            raise ValueError(f'승인한 사건({inc_id})을 찾을 수 없습니다 — 처리 서비스가 사건 기록을 잃었습니다. 시스템 관리자에게 알리세요')
         if inc.state != 'AWAITING_APPROVAL':
             raise ValueError(approval_refusal(inc.state, inc.reason))
         option = next(o for o in snapshot['options'] if o['id'] == payload['option'])

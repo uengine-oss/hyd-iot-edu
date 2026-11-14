@@ -20,6 +20,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -30,6 +31,8 @@ from pydantic import BaseModel
 from . import engine
 from .agents_store import QUESTION_CONTRACT
 from .instances import InstanceRuntime
+
+log = logging.getLogger('process.ask')
 
 DEFINITION_FILE = 'ask_agent_v1.json'
 DEFINITION_ID = 'ask_agent'
@@ -501,7 +504,7 @@ def retry(rt, proc_inst_id, request_id, by, reason):
             return view(rt,proc_inst_id)
         if inst['status']!='RUNNING' or wi['status']!='IN_PROGRESS' or wi.get('draft_status')!='FAILED':
             raise ValueError('실패해 멈춘 질문만 같은 작업으로 재개할 수 있습니다')
-        if len(history)>=2:raise ValueError('같은 질문의 재개는 2회까지입니다. 강사에게 실행 기록을 확인받으세요')
+        if len(history)>=2:raise ValueError('같은 질문의 재개는 2회까지입니다. 처리 과정의 원문을 시스템 관리자에게 보여 주세요')
         rt.repo.record_events([dict(job_id='ask-retry:'+request_id,todo_id=wi['id'],proc_inst_id=proc_inst_id,
             crew_type='human',event_type='task_working',data=dict(type='notice',name='실패한 질문 재개',
             ask_retry_id=request_id,by=by,reason=reason,retry_number=len(history)+1))])
@@ -523,7 +526,7 @@ def _error_reason(events) -> str | None:
 
 def _state(inst, wi, events, now=None) -> tuple[str, str]:
     if wi is None:
-        return 'broken', '이 질문의 처리 단계를 찾지 못했습니다 — 처리 과정 보기를 강사에게 보여 주세요'
+        return 'broken', '이 질문의 처리 단계를 찾지 못했습니다 — 처리 과정 보기를 시스템 관리자에게 보여 주세요'
     # P2 (audit2 2026-10-23): 사람이 [닫기]로 닫은 질문은 처리 건이 COMPLETED(기술 끝 closed-by-human)이고 작업이 CANCELLED 다 — 처리 건
     # 상태만 보고 '답이 나왔습니다'로 읽으면 답 없는 질문에 서버 판정까지 붙었다. 닫힘을 먼저 본다.
     if (wi['status'] == 'CANCELLED' or inst.get('status') in ('CANCELLED', 'TERMINATED')
@@ -536,7 +539,7 @@ def _state(inst, wi, events, now=None) -> tuple[str, str]:
     ds = wi.get('draft_status')
     fb = wi.get('feedback') if isinstance(wi.get('feedback'), dict) else {}
     if ds == 'FAILED':
-        return 'failed', _error_reason(events) or '에이전트 실행이 실패했습니다(사유 기록 없음). 처리 과정을 강사에게 보여 주세요.'
+        return 'failed', _error_reason(events) or '에이전트 실행이 실패했습니다(사유 기록 없음). 처리 과정을 시스템 관리자에게 보여 주세요.'
     if ds == 'HUMAN_ASKED':
         return 'asking', '에이전트가 사람에게 묻고 기다립니다 (처리 과정 보기에서 답할 수 있습니다)'
     if ds == 'FB_REQUESTED' and fb.get('kind') == 'validation':
@@ -589,15 +592,50 @@ def history(rt, limit=30) -> list[dict]:
     return rows
 
 
-def reset(rt) -> dict:
-    """기준으로 되돌리기(B5 영역): 끝난 질문 기록만 목록에서 지운다(행은 남기고 is_deleted). 진행 중인 질문은 남긴다.
-    질문 정의 · 에이전트 · 업무 DB · 지식은 질문으로 바뀌지 않으므로 되돌릴 것이 없다."""
+def reset(rt, by=None) -> dict:
+    """기준으로 되돌리기(B5 영역): 끝난 질문 기록만 목록에서 지운다(행은 남기고 is_deleted). 진행 중인 질문은 남긴다. 실패해 멈춘 질문은
+    닫은 뒤 지운다(_close_stopped). 질문 정의 · 에이전트 · 업무 DB · 지식은 질문으로 바뀌지 않으므로 되돌릴 것이 없다.
+    by: 지우기를 누른 담당자(사람 사용자 id). 없으면 이 PC의 담당자(사람 사용자가 한 명일 때)다."""
+    closer = by or _the_person(rt)
     runs = rt.repo.list_source_runs(rt.tenant_id, DEFINITION_ID, EVENT_PREFIX, limit=1000)
     done = [r['proc_inst_id'] for r in runs if r.get('status') != 'RUNNING']
-    hidden = rt.repo.hide_instances(rt.tenant_id, DEFINITION_ID, done) if done else 0
-    return {'hidden': hidden, 'kept_running': len(runs) - len(done),
+    closed = [r['proc_inst_id'] for r in runs if r.get('status') == 'RUNNING' and closer and _close_stopped(rt, r['proc_inst_id'], closer)]
+    hidden = rt.repo.hide_instances(rt.tenant_id, DEFINITION_ID, done + closed) if done or closed else 0
+    kept = len(runs) - len(done) - len(closed)
+    return {'hidden': hidden, 'closed_stopped': len(closed), 'kept_running': kept,
             'note': '끝난 질문 기록을 목록에서 지웠습니다. 질문 정의 · 에이전트 · 업무 DB · 지식은 질문으로 바뀌지 않아 그대로입니다'
-                    + (f' · 진행 중인 질문 {len(runs) - len(done)}건은 끝난 뒤 지울 수 있습니다' if len(runs) != len(done) else '')}
+                    + (f' · 실패해 멈춰 있던 질문 {len(closed)}건은 닫고 지웠습니다' if closed else '')
+                    + (f' · 진행 중인 질문 {kept}건은 끝난 뒤 지울 수 있습니다' if kept else '')}
+
+
+STOPPED_CLOSE_REASON = '끝난 질문 기록 지우기 — 실패해 멈춘 질문을 닫음'
+
+
+def _the_person(rt) -> str | None:
+    """이 PC의 담당자 id — 사람 사용자가 한 명일 때만(이 시스템에는 로그인이 없고 쓰는 사람은 늘 담당자 한 명이다, inbox 머리말). 여럿이면
+    누가 눌렀는지 알 수 없으므로 None(이름을 지어 넣지 않는다)."""
+    people = [u['id'] for u in rt.repo.list_users(None, rt.tenant_id) if str(u.get('id') or '').startswith('user:') and not u.get('is_agent')]
+    return people[0] if len(people) == 1 else None
+
+
+def _close_stopped(rt, proc_inst_id, by) -> bool:
+    """실패 · 취소 · 보류로 멈춘 질문(답이 나올 수 없는 채 처리 건만 진행 중으로 남은 것)을 닫는다 → 닫았는가. 화면에는 「실패」인데 처리 건이
+    진행 중이라 [끝난 기록 지우기]가 지우지 못했고, 처리 건 목록에도 끝나지 않은 건으로 남았다(재생 모드에서 저장된 응답이 없는 질문은
+    다시 물어도 같은 답이라 닫는 것 말고 할 일이 없다). 처리 건의 「단계 닫기」와 같은 함수로 닫는다(닫은 사람 · 사유가 처리 기록에 남는다).
+    아직 도는 질문(대기 · 조회 중 · 사람에게 묻는 중)은 닫지 않는다."""
+    try:
+        inst = _instance(rt, proc_inst_id)
+    except KeyError:
+        return False
+    wi = _task(rt, inst)
+    if wi is None or InstanceRuntime.stuck(wi) is None:
+        return False
+    try:
+        rt.close_agent_task(wi['id'], by, STOPPED_CLOSE_REASON)
+    except (ValueError, PermissionError, KeyError, LookupError) as exc:
+        log.warning('멈춘 질문 %s 을(를) 닫지 못해 남깁니다: %s', proc_inst_id, exc)
+        return False
+    return (rt.repo.get_instance(proc_inst_id) or {}).get('status') != 'RUNNING'
 
 
 # ---------------------------------------------------------------- HTTP
@@ -606,6 +644,10 @@ class AskReq(BaseModel):
     agent: str | None = None
     by: str | None = None
     request_id: str | None = None
+
+
+class AskResetReq(BaseModel):
+    by: str | None = None       # 지우기를 누른 담당자 — 없으면 이 PC의 담당자(reset)
 
 
 class AskRetryReq(BaseModel):
@@ -655,9 +697,12 @@ def register(app, *, runtime_factory, definitions_dir, worker_probe):
                                        worker_probe=worker_probe))
 
     @app.post('/api/ask/reset')
-    async def ask_reset():
+    async def ask_reset(req: AskResetReq | None = None):
         r = rt()
-        return await run(lambda: reset(r))
+        try:
+            return await run(lambda: reset(r, req.by if req else None))
+        except PermissionError as exc:
+            raise HTTPException(403, str(exc)) from None
 
     @app.post('/api/ask/{proc_inst_id}/retry')
     async def ask_retry(proc_inst_id: str, req: AskRetryReq):
