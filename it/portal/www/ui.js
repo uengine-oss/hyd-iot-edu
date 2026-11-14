@@ -96,11 +96,10 @@ const UI = {
     'dec.col.rule': '규칙', 'dec.col.target': '대상', 'dec.col.result': '결과', 'dec.col.input': '입력 데이터', 'dec.col.source': '출처', 'dec.col.value': '값', 'dec.col.how': '가져온 방법',
     'dec.failed': '판단 실패', 'dec.noPatterns': '이상 패턴을 불러오지 못했습니다',
     // 이상 확인 · 조치
-    'inc.select': '설비를 선택하세요', 'inc.selectSub': '위 설비 카드를 누르면 그 설비에서 난 사건의 경과와 감사 기록이 보입니다', 'inc.noAlertSub': '결함 시뮬레이션에서 결함을 주입하면 경보가 나고 여기에 표시됩니다',
-    'inc.noCase': '사건 없음', 'inc.list': '사건', 'inc.listAll': '전체 사건', 'inc.progress': '조치 과정', 'inc.log': '기록',
+    'inc.list': '사건',
     'inc.noCandidates': '고를 조치 후보가 없습니다', 'inc.alertAt': '경보 시각', 'inc.approvedBy': '승인자',
     'inc.causes': '가능한 원인', 'inc.recommended': '권장 조치', 'inc.noEvidence': '증거 규칙 없음', 'inc.unknown': '판정 미확인', 'inc.pass': '조건 충족', 'inc.fail': '조건 미충족',
-    'inc.observed': '관측', 'inc.woPending': '정비 요청 발행 대기',
+    'inc.observed': '관측',
     // 처리 건
     'inst.running': '진행 중',
     'inst.empty': '아직 처리 건이 없습니다', 'inst.emptySub': '설비에 경보가 나면 처리 건이 생깁니다. 결함 시뮬레이션에서 결함을 주입해 보세요', 'inst.select': '처리 건을 선택하세요',
@@ -126,9 +125,9 @@ const UI = {
     'proc.legend.done': '완료', 'proc.legend.now': '진행 중', 'proc.legend.stop': '중단', 'proc.legend.skipped': '건너뜀',
     // 설비
     'plant.ts1': '유온', 'plant.ce': '냉각 효율', 'plant.cp': '냉각 능력', 'plant.fan': '팬 속도', 'plant.load': '펌프 부하', 'plant.ps1': '토출 압력', 'plant.fs1': '유량', 'plant.vs1': '팬 진동', 'plant.pump': '운전 펌프',
-    'plant.health': '쿨러 성능 비율', 'plant.phase': '경보', 'plant.state': '설비 상태', 'plant.lastCmd': '최근 명령 결과', 'plant.trip': '보호 정지 기준 65 °C', 'plant.spark': '압력 추이 · 1초 간격',
-    'plant.faults': '결함 실험', 'plant.modes': '운전 모드', 'plant.manual': '수동 조작 · 적용 시 원격 수동으로 전환', 'plant.noCmd': '아직 명령 기록이 없습니다',
-    'plant.noConn': '설비 시뮬레이터에 연결할 수 없습니다', 'plant.noConnSub': '연결되면 자동으로 다시 표시됩니다',
+    'plant.health': '쿨러 성능 비율', 'plant.phase': '경보', 'plant.state': '설비 상태', 'plant.lastCmd': '최근 명령 결과',
+    'plant.modes': '운전 모드', 'plant.noCmd': '아직 누른 단추와 검증된 명령이 없습니다',
+    'plant.noConn': '설비 값을 읽지 못했습니다', 'plant.noConnSub': '가상 설비(plant-sim)가 응답하면 저절로 다시 보입니다.',
     'plant.standby': '예비', 'plant.none': '아직 없음', 'plant.faultOn': '결함 진행 중', 'plant.current': '현재 상태',
     // 홈
     'main.assets': '설비', 'main.openCases': '열린 사건', 'main.knowledge': '지식 항목',
@@ -536,7 +535,7 @@ const UI = {
      같은 부품은 한 번만 싣고(부르는 곳이 여럿이어도 같은 Promise), 못 실으면 어느 파일을 왜 못 실었는지와 함께 실패한다(조용히 넘어가지 않는다). 실패한 뒤 다시 부르면 다시 싣는다. */
   parts: {
     bpmn: { css: ['vendor/bpmn-js/diagram-js.css', 'vendor/bpmn-js/bpmn-js.css', 'vendor/bpmn-js/bpmn-font/css/bpmn.css'], js: ['vendor/bpmn-js/bpmn-navigated-viewer.production.min.js'], global: 'BpmnJS' },
-    'bpmn-layout': { js: ['vendor/bpmn-auto-layout/bpmn-auto-layout.min.js'], global: 'BpmnAutoLayout' },
+    'bpmn-layout': { js: ['vendor/bpmn-auto-layout/bpmn-auto-layout.min.js', 'bpmnLayout.js'], global: 'hydBpmnLayout' },      // bpmnLayout.js: hydBpmnLayout.ensureLayout(xml) — 선의 양 끝을 채운 뒤 BpmnAutoLayout 으로 배치한다
     graph: { js: ['vendor/cytoscape/cytoscape.min.js', 'vendor/cytoscape-fcose/layout-base.js', 'vendor/cytoscape-fcose/cose-base.js', 'vendor/cytoscape-fcose/cytoscape-fcose.js'], global: 'cytoscape' },
     chart: { css: ['vendor/uplot/uPlot.min.css'], js: ['vendor/uplot/uPlot.iife.min.js'], global: 'uPlot' },
     markdown: { js: ['vendor/marked/marked.umd.js', 'vendor/dompurify/purify.min.js'], global: 'marked' },

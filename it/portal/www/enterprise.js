@@ -4,16 +4,17 @@
    A122: wording from UI.terms; action-candidate card = title · chips · score · one line · evidence folded. */
 
 // 지식 지도의 묶음 = 온톨로지 v2 의 층(it/neo4j/v2/schema.json). 이름에 프레임워크 이름을 쓰지 않는다(명칭표).
-// at: 캔버스에서 그 묶음이 모이는 자리(0 ~ 1, 왼쪽 위가 0,0). 색은 canvas.css 의 [data-g="<key>"] 가 정한다(어두운 캔버스와 밝은 상세 칸의 짝 색).
+// at: 지도에서 그 묶음이 모이는 자리(0 ~ 1, 왼쪽 위가 0,0). color: 어두운 캔버스의 색(portal-kit.css --cv-violet · --cv-blue · --cv-ink-2 · --cv-red · --cv-teal · --cv-amber 의 값 —
+// 캔버스에 그리는 Cytoscape 는 CSS 변수를 읽지 못해 값을 적는다. 디자인 기준 2-2 · 6-3). 오른쪽 밝은 칸에서는 같은 색을 점에만 쓴다.
 const ONTO_GROUPS = [
-  { key: 'value', title: '전략 목표', at: [0.16, 0.16], labels: ['Perspective', 'Objective', 'Measure'] },
-  { key: 'process', title: '프로세스', at: [0.46, 0.06], labels: ['Process', 'Event', 'Task', 'Gateway'] },
-  { key: 'resource', title: '자원', at: [0.14, 0.72], labels: ['OrgUnit', 'Role', 'System', 'Asset', 'Component', 'Sensor', 'Actuator', 'StateVariable', 'Part', 'Supplier'] },
-  { key: 'diagnosis', title: '설비 진단', at: [0.42, 0.46], labels: ['AnomalyPattern', 'Symptom', 'FailureMode', 'Cause', 'Evidence', 'ManualSection'] },
-  { key: 'skill', title: '조치 방법과 규칙', at: [0.8, 0.4], labels: ['Skill', 'Step', 'Action', 'Decision', 'DecisionTable', 'Rule', 'InputData', 'KnowledgeSource'] },
-  { key: 'external', title: '외부 변수 · 예측 · 사례', at: [0.62, 0.94], labels: ['ExternalVariable', 'Forecast', 'Incident', 'DecisionCase'] },
+  { key: 'value', title: '전략 목표', at: [0.13, 0.2], color: '#b794f6', labels: ['Perspective', 'Objective', 'Measure'] },
+  { key: 'process', title: '프로세스', at: [0.4, 0.08], color: '#7aa2ff', labels: ['Process', 'Event', 'Task', 'Gateway'] },
+  { key: 'resource', title: '자원', at: [0.14, 0.74], color: '#9aa7b5', labels: ['OrgUnit', 'Role', 'System', 'Asset', 'Component', 'Sensor', 'Actuator', 'StateVariable', 'Part', 'Supplier'] },
+  { key: 'diagnosis', title: '설비 진단', at: [0.4, 0.5], color: '#f07167', labels: ['AnomalyPattern', 'Symptom', 'FailureMode', 'Cause', 'Evidence', 'ManualSection'] },
+  { key: 'skill', title: '조치 방법과 규칙', at: [0.76, 0.46], color: '#2dd4bf', labels: ['Skill', 'Step', 'Action', 'Decision', 'DecisionTable', 'Rule', 'InputData', 'KnowledgeSource'] },
+  { key: 'external', title: '외부 변수 · 예측 · 사례', at: [0.45, 0.93], color: '#f5a623', labels: ['ExternalVariable', 'Forecast', 'Incident', 'DecisionCase'] },
   // G4: 학생 이름 공간의 업무 고유 클래스(students/<ID>/schema.json) — v2 에 없는 레이블은 모두 이 묶음에 그린다
-  { key: 'student', title: '내 업무 개념', at: [0.38, 0.96], labels: [], other: true },
+  { key: 'student', title: '내 업무 개념', at: [0.8, 0.92], color: '#f472b6', labels: [], other: true },
 ];
 const LABEL_KO = { Perspective: '관점', Objective: '전략 목표', Measure: '성과 지표', Process: '프로세스', Event: '이벤트', Task: '단계', Gateway: '분기',
   OrgUnit: '부서', Role: '역할', System: '시스템', Asset: '설비', Component: '구성 요소', Sensor: '센서', Actuator: '구동기', StateVariable: '상태 변수',
@@ -62,7 +63,8 @@ async function loadPatterns() {
 
 /* ================================================= 지식 지도 */
 async function loadNamespaces(force) {
-  // G4: 학생 이름 공간(화면 이름 「지식 묶음」) 목록(맨 위 = 기본 지식 = ns 없는 노드). 못 읽으면 고르기 칸에 사유를 보이고 다음 "다시 읽기"에 또 읽는다
+  // G4: 학생 이름 공간(화면 이름 「지식 묶음」) 목록(맨 위 = 기본 지식 = ns 없는 노드). 더 넣은 묶음이 없으면 고르기 칸을 보이지 않는다(고를 것이 하나뿐인 칸을 두지 않는다).
+  // 못 읽으면 칸을 보이고 사유를 적는다 — 다음 [다시 읽기]에 또 읽는다
   const sel = $('#ontoNs'); if (!sel || (sel.dataset.loaded && !force)) return;
   const keep = sel.value;
   let list;
@@ -70,41 +72,44 @@ async function loadNamespaces(force) {
   catch (e) {   // 이미 받은 이름 공간은 그대로 두고 사유 한 줄만 붙인다(고른 것이 사라지지 않게)
     sel.querySelectorAll('option[data-note]').forEach(o => o.remove());
     sel.append(nsNote(`더 넣은 지식 묶음 목록을 읽지 못함 — ${e.message}`));
-    sel.title = `더 넣은 지식 묶음 목록을 읽지 못했습니다: ${e.message}`; delete sel.dataset.loaded;
+    sel.title = `더 넣은 지식 묶음 목록을 읽지 못했습니다: ${e.message}`; delete sel.dataset.loaded; sel.hidden = false;
     return;
   }
   sel.querySelectorAll('option:not([value=""]), option[data-note]').forEach(o => o.remove());
   list.forEach(x => sel.append(new Option(`${x.ns} · 항목 ${x.nodes}개`, x.ns)));
-  if (!list.length) sel.append(nsNote('더 넣은 지식 묶음 없음'));
-  sel.title = ''; sel.dataset.loaded = '1';
+  sel.title = ''; sel.dataset.loaded = '1'; sel.hidden = !list.length;
   if (list.some(x => x.ns === keep)) sel.value = keep;
   else if (keep) { sel.value = ''; UI.toast(`지식 묶음 ${keep}이(가) 그래프에 없어 기본 지식으로 돌아갑니다`, { tone: 'neg' }); loadGraph(true); }
 }
 const nsNote = text => { const o = new Option(text, ''); o.disabled = true; o.dataset.note = '1'; return o; };
+const ontoShown = () => !!$('#view-ontology')?.classList?.contains('active');
 async function loadGraph(force) {
+  // 가려진 동안에는 그리지 않는다(캔버스의 크기가 0 이라 배치할 수 없다) — 다음에 이 화면을 열 때 다시 읽는다. 문서 적재 · 되돌리기 뒤에 다른 화면이 부른다
+  if (!ontoShown()) { if (force) ent.stale = true; return; }
+  if (ent.stale) { force = true; ent.stale = false; }
   const asset = $('#ontoAsset').value + '|' + (($('#ontoNs') || {}).value || '');
   if (ent.graph && ent.graphAsset === asset && !force) { drawGraph(); return; }
   $('#ontoStats').textContent = UI.t('loading');
+  if (!ent.graph) $('#ontoNode').innerHTML = `<div class="node-sec">${UI.loading('')}</div>`;
   loadNamespaces(force);
   const [code, ns] = asset.split('|');
   const current = () => $('#ontoAsset').value + '|' + (($('#ontoNs') || {}).value || '');
   try {
-    const graph = await getJ(API.agent + '/api/ontology/graph?asset=' + encodeURIComponent(code) + (ns ? '&ns=' + encodeURIComponent(ns) : ''));
+    const [graph] = await Promise.all([getJ(API.agent + '/api/ontology/graph?asset=' + encodeURIComponent(code) + (ns ? '&ns=' + encodeURIComponent(ns) : '')), UI.need('graph')]);
     if (current() !== asset) return;
     if (!Array.isArray(graph?.nodes) || !Array.isArray(graph?.edges)) throw new Error('지식 지도 응답 형식이 올바르지 않습니다. 다시 조회하세요.');
     if (ent.graphAsset !== asset) ent.sel = null;
     ent.graph = graph; ent.graphAsset = asset;
-    $('#ontoError').innerHTML = '';
   }
   catch (e) {
     if (current() !== asset) return;
-    // 다시 연 화면은 다시 읽어야 한다 — 앞서 받은 지도를 되살아난 것처럼 보이지 않는다. 사유는 캔버스 위 밝은 자리에 보인다
-    ent.graph = null; kg.of = null; kg.state = null;
-    $('#ontoMap').innerHTML = ''; $('#ontoLayers').innerHTML = ''; $('#ontoNode').innerHTML = ''; $('#ontoNode').dataset.sig = '';
+    // 다시 연 화면은 다시 읽어야 한다 — 앞서 받은 지도를 되살아난 것처럼 보이지 않는다. 까닭과 [다시 시도]는 오른쪽 밝은 칸에 보인다
+    ent.graph = null; kgDrop();
+    $('#ontoLayers').innerHTML = ''; $('#ontoNode').dataset.sig = '';
     $('#ontoHint').textContent = '지도를 그리지 못했습니다';
     $('#ontoStats').textContent = UI.t('error.load');
-    $('#ontoError').innerHTML = UI.errorBlock(UI.t('onto.loadFail'), e.message, { retry: true });
-    $('#ontoError').querySelector('[data-retry]')?.addEventListener('click', () => loadGraph(true));
+    $('#ontoNode').innerHTML = `<div class="node-sec">${UI.errorBlock(UI.t('onto.loadFail'), e.message, { retry: true })}</div>`;
+    $('#ontoNode').querySelector('[data-retry]')?.addEventListener('click', () => loadGraph(true));
     return;
   }
   // Relational definitions own user-created flow names; a graph id is not a display name.
@@ -146,358 +151,319 @@ const nodeName = n => {
   }
   return String(UI.name(n.id));
 };
-function focusSet() {
-  // the path the agent walks for one anomaly pattern: pattern → symptoms → failure modes → causes · evidence → skills
-  // → steps · manual · atomic actions · approver, the rules that select / limit each skill, its first KPI effects and forecasts
-  if (!ent.focus || !ent.graph) return null;
+/** 이상 패턴 하나의 경로: 패턴 → 감지 증상 → 그 증상이 나타내는 고장 유형 → 그 고장을 일으키는 원인 · 그 고장의 조치 방법(디자인 기준 6-3).
+    AI가 한 경보를 판단할 때 걷는 길의 뼈대다. 절차 단계 · 근거 매뉴얼 · 규칙처럼 그 뒤에 딸린 것은 조치 방법을 눌러서 본다.
+    → null(패턴이 그래프에 없음) | { ids: Set, pattern, symptoms: [], modes: [], causes: [], skills: [] }. 선은 KG.PATH_RELS 의 관계만 길로 친다 */
+function kgPath(graph, focus) {
+  if (!focus || !graph || !(graph.nodes || []).some(n => String(n.id) === focus)) return null;
   const out = new Map(), inn = new Map();
-  for (const e of ent.graph.edges) { (out.get(e.from) || out.set(e.from, []).get(e.from)).push(e); (inn.get(e.to) || inn.set(e.to, []).get(e.to)).push(e); }
-  const keep = new Set([ent.focus]);
-  const walk = (id, types, dir = 'out') => ((dir === 'out' ? out : inn).get(id) || []).filter(e => types.includes(e.type)).map(e => dir === 'out' ? e.to : e.from);
-  const add = xs => { xs.forEach(x => keep.add(x)); return xs; };
-  add(walk(ent.focus, ['TESTS', 'DERIVED_FROM']));
-  add(walk(ent.focus, ['CORRELATES'], 'in')).forEach(ev => add(walk(ev, ['HAS_NODE'], 'in')));
-  for (const sy of add(walk(ent.focus, ['DETECTS']))) {
-    for (const fm of add(walk(sy, ['INDICATES']))) {
-      add(walk(fm, ['OCCURS_IN']));
-      for (const c of add(walk(fm, ['CAUSES'], 'in'))) add(walk(c, ['EVIDENCED_BY', 'DISTURBS']));
-      for (const s of add(walk(fm, ['MITIGATED_BY', 'REMEDIED_BY', 'PREVENTED_BY']))) {
-        add(walk(s, ['APPROVED_BY', 'CONSISTS_OF', 'ADDRESSES']));
-        for (const st of add(walk(s, ['HAS_STEP']))) add(walk(st, ['REFERS_TO']));
-        add(walk(s, ['AFFECTS']));
-        for (const r of add(walk(s, ['OUTPUTS', 'APPLIES_TO'], 'in'))) add(walk(r, ['DERIVED_FROM', 'TESTS']));
-        add(walk(s, ['ASSUMES'], 'in'));
-      }
-    }
-  }
-  return keep;
+  for (const e of graph.edges) { const a = String(e.from), b = String(e.to); (out.get(a) || out.set(a, []).get(a)).push(e); (inn.get(b) || inn.set(b, []).get(b)).push(e); }
+  const walk = (ids, types, dir = 'out') => [...new Set(ids.flatMap(id => ((dir === 'out' ? out : inn).get(id) || []).filter(e => types.includes(e.type)).map(e => String(dir === 'out' ? e.to : e.from))))];
+  const symptoms = walk([focus], ['DETECTS']), modes = walk(symptoms, ['INDICATES']);
+  const causes = walk(modes, ['CAUSES'], 'in'), skills = walk(modes, ['MITIGATED_BY', 'REMEDIED_BY', 'PREVENTED_BY']);
+  return { ids: new Set([focus, ...symptoms, ...modes, ...causes, ...skills]), pattern: focus, symptoms, modes, causes, skills };
 }
-/* ================================================= 지식 지도 그림 — 어두운 캔버스의 점과 선 (디자인 기준 5-10 · 6-3)
-   배치에는 난수가 없다. 같은 데이터면 늘 같은 자리다(항목과 연결을 id 순으로 세운 뒤 계산하므로 서버가 준 차례가 달라도 같다).
-     ① 종류(조치 방법 · 절차 단계 · 규칙 …)마다 작은 원 하나: 그 종류의 항목을 연결이 많은 것부터 가운데에서 바깥으로 해바라기 꼴로 놓는다.
-     ② 묶음(전략 목표 · 자원 …) 안에서 종류 원들을 큰 것부터, 이미 놓인 원에 닿으면서 묶음 가운데에 가장 가까운 자리에 채운다.
-     ③ 묶음을 ONTO_GROUPS.at 의 자리에 두고, 정해진 횟수만큼 종류 원을 가운데와 제 묶음 쪽으로 당기면서 겹친 원을 떼어 낸다(다른 묶음과는 더 넓게).
-   그리기: 좌표에 배율을 곱해 화면 좌표로 그린다. 글자는 확대 · 축소와 무관하게 같은 크기다(이름 12px, 묶음 · 종류 이름 11px).
-     이름은 서로 겹치지 않는 것만 보인다 — 고른 것 → 이어진 것 → 검색에 걸린 것 → 경로 → 연결이 많은 것 차례로 자리를 잡고, 확대할수록 더 많이 보인다.
-     숨은 이름은 점에 마우스를 올리거나 탭으로 가면 보인다. */
-const KG = { SP: 46, R: 5, R_SEL: 11, NAME_MAX: 18, PAD: { l: 24, r: 24, t: 92, b: 64 }, ZOOM_MAX: 2.5, HALO: 120 };
-const KG_GOLDEN = Math.PI * (3 - Math.sqrt(5));
-const kgDist = (ax, ay, bx, by) => Math.sqrt((ax - bx) * (ax - bx) + (ay - by) * (ay - by));
-
-/** 원들을 겹치지 않게 채운다: 큰 것부터, 이미 놓인 원에 닿으면서 가운데(0,0)에 가장 가까운 자리.
-    각 원에 x · y 를 적고 둘러싸는 반지름을 돌려준다(가운데는 넓이로 잰 중심) */
-function kgPack(circles) {
-  const order = circles.map((c, i) => i).sort((a, b) => circles[b].r - circles[a].r || a - b), placed = [];
-  for (const i of order) {
-    const c = circles[i];
-    if (!placed.length) { c.x = 0; c.y = 0; placed.push(c); continue; }
-    let best = null;
-    const tryAt = (x, y) => {
-      if (placed.some(p => kgDist(p.x, p.y, x, y) < p.r + c.r - 1e-6)) return;
-      const d = x * x + y * y;
-      if (!best || d < best.d - 1e-6) best = { x, y, d };
-    };
-    for (const p of placed) for (let k = 0; k < 36; k++) { const th = k * Math.PI / 18; tryAt(p.x + (p.r + c.r) * Math.cos(th), p.y + (p.r + c.r) * Math.sin(th)); }      // 놓인 원 하나에 닿는 자리
-    for (let a = 0; a < placed.length; a++) for (let b = a + 1; b < placed.length; b++) {                                                                        // 놓인 원 둘에 함께 닿는 자리
-      const p = placed[a], q = placed[b], ra = p.r + c.r, rb = q.r + c.r, d = kgDist(p.x, p.y, q.x, q.y);
-      if (d < 1e-6 || d > ra + rb) continue;
-      const along = (ra * ra - rb * rb + d * d) / (2 * d), h2 = ra * ra - along * along; if (h2 < 0) continue;
-      const h = Math.sqrt(h2), ux = (q.x - p.x) / d, uy = (q.y - p.y) / d, mx = p.x + ux * along, my = p.y + uy * along;
-      tryAt(mx - uy * h, my + ux * h); tryAt(mx + uy * h, my - ux * h);
-    }
-    c.x = best.x; c.y = best.y; placed.push(c);
-  }
-  let sw = 0, cx = 0, cy = 0;
-  for (const c of circles) { const w = c.r * c.r; sw += w; cx += c.x * w; cy += c.y * w; }
-  cx /= sw || 1; cy /= sw || 1;
-  let R = 0;
-  for (const c of circles) { c.x -= cx; c.y -= cy; R = Math.max(R, Math.sqrt(c.x * c.x + c.y * c.y) + c.r); }
-  return R;
-}
-/** 그래프 → 항목 자리. DOM 을 쓰지 않는다(시험이 node 에서 그대로 부른다).
-    돌려주는 값: { nodes: [{id, x, y, g, deg}], groups: [{key, count, capX, capY}], types: [{key, label, x, y, r, count}], bounds } — g 는 ONTO_GROUPS 의 번호 */
-function layoutGraph(graph) {
-  const SP = KG.SP, C = SP * 0.56;      // 해바라기 꼴에서 이웃 점 사이가 SP 쯤 되는 계수
-  const nodes = (graph.nodes || []).map(n => ({ id: String(n.id), label: String(n.label), g: groupOf(n.label) })).filter(n => n.g >= 0)
-    .sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
-  const at = new Map(nodes.map((n, i) => [n.id, i]));
-  const N = nodes.length, deg = new Array(N).fill(0);
-  for (const e of graph.edges || []) { const a = at.get(String(e.from)), b = at.get(String(e.to)); if (a != null && b != null && a !== b) { deg[a]++; deg[b]++; } }
-
-  // ① · ② 묶음마다: 종류 원을 만들고 묶음 안에 채운다
-  const groups = [];
-  ONTO_GROUPS.forEach((gr, gi) => {
-    const byLabel = new Map();
-    nodes.forEach((n, i) => { if (n.g === gi) (byLabel.get(n.label) || byLabel.set(n.label, []).get(n.label)).push(i); });
-    if (!byLabel.size) return;
-    const rank = l => { const k = gr.labels.indexOf(l); return k < 0 ? gr.labels.length : k; };
-    const types = [...byLabel.keys()].sort((a, b) => rank(a) - rank(b) || (a < b ? -1 : 1)).map(label => {
-      const members = byLabel.get(label).sort((p, q) => deg[q] - deg[p] || p - q);      // 연결이 많은 것부터(같으면 id 순)
-      return { label, members, r: C * Math.sqrt(members.length) + SP * 0.4, x: 0, y: 0 };
-    });
-    const r = kgPack(types);
-    groups.push({ key: gr.key, gi, types, r, count: types.reduce((s, t) => s + t.members.length, 0), x: 0, y: 0 });
-  });
-
-  // ③ 묶음을 at 자리에 두고 종류 원 단위로 모은다: 가운데와 제 묶음 중심으로 당기고, 겹친 원은 떼어 낸다(다른 묶음과는 더 넓게). 큰 원이 덜 움직인다
-  const span = Math.sqrt(groups.reduce((s, g) => s + g.r * g.r, 0)) * 1.5;
-  const discs = [];
-  groups.forEach(g => { const [ax, ay] = ONTO_GROUPS[g.gi].at; g.x = (ax - 0.5) * span * 1.3; g.y = (ay - 0.5) * span; g.types.forEach(t => { t.x += g.x; t.y += g.y; t.group = g; discs.push(t); }); });
-  for (let it = 0; it < 480; it++) {
-    if (it < 400) {
-      for (const g of groups) { let sw = 0, cx = 0, cy = 0; for (const t of g.types) { const w = t.r * t.r; sw += w; cx += t.x * w; cy += t.y * w; } g.x = cx / sw; g.y = cy / sw; }
-      for (const t of discs) { t.x += (t.group.x - t.x) * 0.03 - t.x * 0.006; t.y += (t.group.y - t.y) * 0.03 - t.y * 0.009; }      // 세로로 조금 더 당겨 가로로 긴 캔버스에 맞춘다
-    }
-    for (let i = 0; i < discs.length; i++) for (let j = i + 1; j < discs.length; j++) {      // 마지막 80번은 떼어 놓기만 한다
-      const a = discs[i], b = discs[j], need = a.r + b.r + (a.group === b.group ? SP * 0.35 : SP * 1.1);
-      let dx = b.x - a.x, dy = b.y - a.y, d = Math.sqrt(dx * dx + dy * dy);
-      if (d >= need) continue;
-      if (d < 1e-6) { dx = 1; dy = (j - i) * 0.37; d = Math.sqrt(dx * dx + dy * dy); }
-      const push = (need - d) / d, wa = b.r * b.r / (a.r * a.r + b.r * b.r), wb = 1 - wa;
-      a.x -= dx * push * wa; a.y -= dy * push * wa; b.x += dx * push * wb; b.y += dy * push * wb;
-    }
-  }
-  groups.forEach(g => { g.x = 0; g.y = 0; });      // 종류 원의 좌표가 이제 전체 좌표다
-
-  // ④ 좌표
-  const round = v => Math.round(v * 10) / 10;
-  const out = new Array(N), types = [];
-  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-  for (const g of groups) {
-    let top = null;
-    for (const t of g.types) {
-      const cx = g.x + t.x, cy = g.y + t.y, n = t.members.length;
-      t.members.forEach((i, k) => {
-        const rr = n === 1 ? 0 : C * Math.sqrt(k + 0.5), th = k * KG_GOLDEN, x = round(cx + rr * Math.cos(th)), y = round(cy + rr * Math.sin(th));
-        out[i] = { id: nodes[i].id, x, y, g: g.gi, deg: deg[i] };
-        x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y);
-      });
-      const inner = t.r - SP * 0.4;
-      const type = { key: g.key, label: t.label, x: round(cx), y: round(cy - inner), r: round(inner), count: n };
-      types.push(type);
-      if (!top || type.y < top.y) top = type;
-    }
-    g.capX = top.x; g.capY = top.y;      // 묶음 이름은 그 묶음에서 가장 위에 있는 종류 원 위에 쓴다
-  }
-  if (!N) { x0 = y0 = 0; x1 = y1 = 1; }
-  return {
-    nodes: out,
-    groups: groups.map(g => ({ key: g.key, count: g.count, capX: g.capX, capY: g.capY })),
-    types,
-    bounds: { x0: round(x0), y0: round(y0), x1: round(x1), y1: round(y1) },
+/** 경로를 왼쪽에서 오른쪽으로 놓는 자리(배율 1 에서 화면 px): 이상 패턴 | 증상 | 고장 유형 | 원인(위) · 조치 방법(아래). 패턴은 제자리(center)에 둔다.
+    앞의 세 줄은 이름을 점 아래에 쓰고(줄 사이로 선이 지나간다), 마지막 줄은 이름을 오른쪽에 쓴다. 'head:' 로 시작하는 id 는 그 줄 · 묶음의 이름 자리다.
+    → { at: Map(id → { x, y, side: 'B' | 'R' }), labelW, colW(앞 세 줄의 이름 폭), bounds } */
+function kgPathLay(center, path, box) {
+  const [sMin, sMax] = KG.STEP, availH = Math.max(120, box.h - 230);
+  const labelW = Math.round(Math.max(56, Math.min(KG.LABEL, box.w * 0.28)));
+  const gap = Math.max(96, Math.min(190, (box.w - labelW - 110) / 3)), at = new Map();
+  const col = (ids, head, k) => {      // 앞 세 줄: 세로 간격 50, 가운데 맞춤. 줄 이름은 맨 위 점의 위에
+    const H = (ids.length - 1) * 50;
+    ids.forEach((id, i) => at.set(id, { x: center.x + k * gap, y: center.y - H / 2 + i * 50, side: 'B' }));
+    at.set('head:B:' + head, { x: center.x + k * gap, y: center.y - H / 2 - 28, side: 'B' });
+    return H / 2;
   };
+  let halfH = Math.max(col([path.pattern], '이상 패턴', 0), col(path.symptoms, '증상', 1), col(path.modes, '고장 유형', 2)) + 30;
+  const last = [...(path.causes.length ? ['head:R:원인', ...path.causes] : []), ...(path.skills.length ? ['head:R:조치 방법', ...path.skills] : [])];
+  const step = last.length > 1 ? Math.max(sMin, Math.min(sMax, availH / (last.length - 1))) : 0, H = (last.length - 1) * step;
+  last.forEach((id, i) => at.set(id, { x: center.x + 3 * gap, y: Math.round((center.y - H / 2 + i * step) * 10) / 10, side: 'R' }));
+  halfH = Math.max(halfH, H / 2);
+  return { at, labelW, colW: Math.round(gap - 18), bounds: { x0: center.x - gap / 2 - 8, x1: center.x + 3 * gap + (last.length ? labelW + 24 : gap / 2), y0: center.y - halfH - 34, y1: center.y + halfH + 34 } };
 }
-/** 배치 전체가 폭 w · 높이 h 의 캔버스에 들어오는 배율과 옮김. 캔버스 안 도구 · 층 칩이 놓일 여백(pad)을 뺀다 */
-function fitView(bounds, w, h, pad = KG.PAD) {
-  const bw = Math.max(1, bounds.x1 - bounds.x0), bh = Math.max(1, bounds.y1 - bounds.y0);
-  const iw = Math.max(40, w - pad.l - pad.r), ih = Math.max(40, h - pad.t - pad.b);
-  const k = Math.min(iw / bw, ih / bh, 1.4);
-  return { k, tx: pad.l + (iw - bw * k) / 2 - bounds.x0 * k, ty: pad.t + (ih - bh * k) / 2 - bounds.y0 * k };
+
+/* ================================================= 지식 지도 그림 — 어두운 캔버스에 Cytoscape.js(vendor/cytoscape, 배치는 fcose)로 그린다 (디자인 기준 5-9 · 6-3)
+   배치: 묶음(전략 목표 · 자원 …)마다 fcose 로 안을 놓고, 묶음을 ONTO_GROUPS.at 의 자리에 둔 뒤 겹친 묶음을 밀어낸다. 난수를 고정하고 항목 · 연결을 id 순으로
+     세운 뒤 배치하므로 같은 그래프는 서버가 준 차례가 달라도 늘 같은 자리다. 배치의 크기는 항목 수로 정한다(캔버스 크기와 무관).
+   이상 패턴 경로: 그 패턴에서 증상 · 고장 유형 · 원인 · 조치 방법까지의 길(kgPath)만 밝게 하고 왼쪽에서 오른쪽으로 줄지어 놓는다(kgPathLay). 고른 것이 있으면 고름이 앞선다.
+   상태: 고름(pick) · 바로 이어짐(near) · 이상 패턴 경로(path) · 검색에 걸림(hit)이 서로 겹칠 수 있고, 어느 하나라도 켜지면 나머지는 흐리다(dim) — kgMarks.
+   고름: 고른 항목은 제자리에 두고 이어진 항목을 그 둘레로 모은다 — 고른 항목을 가리키는 것은 왼쪽 호, 고른 항목이 가리키는 것은 오른쪽 호에 관계 이름별로
+     세로로 놓고(kgGather), 이름은 호의 바깥쪽에 쓴다. 관계 묶음마다 그 위에 관계 이름(한국어, RELATION_KO)을 한 줄 적는다. 화면은 그 전체가 보이게 옮겨 간다.
+     고름을 풀면 항목과 화면이 제자리로 돌아간다.
+   글자: 캔버스 바탕 위에 바탕색 테두리와 함께 쓴다(점의 채움 위에 쓰지 않는다). 고른 것 · 이어진 것 · 검색에 걸린 것 · 경로의 뼈대는 확대 배율과 상관없이
+     화면에서 같은 크기로 보이고, 나머지 이름은 확대하면(또는 마우스를 올리면) 보인다. */
+const KG = { SEED: 20261114, HUB: 14, ZOOM_MAX: 3, ZOOM_PICK: 1.25, STEP: [17, 26], STEP_TIGHT: 15, LABEL: 180, BG: '#16202d', NOW: '#8b93ff', HIT: '#f5c46b', BLUE: '#7aa2ff',
+  PATH_RELS: ['DETECTS', 'INDICATES', 'CAUSES', 'MITIGATED_BY', 'REMEDIED_BY', 'PREVENTED_BY'],
+  nearSize: ele => 11 + ele.data('size') * 0.14 };      // 모은 이웃의 점은 화면에서 13 ~ 17px(이어진 수의 차이는 남기되 세로 간격 안에 들어오게)
+const kgCollator = new Intl.Collator('ko');
+const kgSize = deg => Math.round(14 + Math.min(26, Math.sqrt(deg) * 5.2));      // 점의 지름: 이어진 수의 제곱근에 비례(14 ~ 40)
+
+/** 항목 하나의 표시. s = { sel, near: Set, path: Set | null, match: Set, query: boolean } → ['pick' | 'near', 'path', 'hit', 'dim'] 가운데 해당하는 것.
+    밝은 것 = 고른 것(pick) · 바로 이어진 것(near) · 이상 패턴 경로(path) · 검색에 걸린 것(hit). 그 가운데 하나라도 켜져 있으면 나머지는 흐리다(dim) */
+function kgMarks(id, s) {
+  const pick = id === s.sel, near = !pick && s.near.has(id), path = !!s.path && s.path.has(id), hit = s.match.has(id);
+  const dim = !(pick || near || path || hit) && (s.sel != null || !!s.path || s.query);
+  return [pick && 'pick', near && 'near', path && 'path', hit && 'hit', dim && 'dim'].filter(Boolean);
 }
-// 이름의 화면 폭 어림: 한글 · 한자는 글자 크기만큼, 그 밖은 0.58배. 잴 요소 없이 계산해 배치와 시험이 같은 값을 쓴다
-const kgTextW = (text, size = 12) => { let w = 0; for (const ch of String(text)) w += ch.charCodeAt(0) > 0x2E7F ? size : ch === ' ' ? size * 0.32 : size * 0.58; return w; };
-const kgShort = name => { const a = Array.from(String(name)); return a.length > KG.NAME_MAX ? a.slice(0, KG.NAME_MAX - 1).join('').trimEnd() + '…' : String(name); };
-// 점의 반지름: 화면에 맞춘 작은 배율에서는 점끼리 붙지 않게 줄인다
-const kgDotR = k => k < 0.42 ? 3.5 : k < 0.62 ? 4 : KG.R;
-/** 겹치지 않게 보일 글자를 고른다(화면 좌표). 앞선 것(prio 큰 것)이 먼저 자리를 잡는다.
-    항목 이름 {id, x, y, r, w, prio, top, lit} — 점 오른쪽에 쓰고, 오른쪽 끝(maxX)을 넘거나 막히면 왼쪽에(왼쪽 끝 minX 를 넘지 않을 때), top 이면 늘 점 위에 쓴다.
-    고정 글자 {id, box: [x0, y0, x1, y1], prio, lit} — 묶음 · 종류 이름처럼 자리가 정해진 것.
-    보통 글자는 점 위에 쓰지 않는다. 돌려주는 값: Map(id → 'R' | 'L' | 'T' | 'B') */
-function pickLabels(items, minX = -Infinity, maxX = Infinity) {
-  const order = items.slice().sort((a, b) => b.prio - a.prio || (a.id < b.id ? -1 : 1));
-  const dots = items.filter(o => !o.box), placed = [], out = new Map();
-  // 밝은 글자(lit — 고른 것과 이어진 것 · 검색 · 경로 · 묶음 이름)는 흐린 점 위에 써도 된다(글자 뒤에 바탕색 테두리가 있다). 밝은 점과 다른 글자만 피한다
-  const hit = (r, self) => placed.some(p => r[0] < p[2] && p[0] < r[2] && r[1] < p[3] && p[1] < r[3])
-    || dots.some(o => o !== self && (o.lit || !self.lit) && o.x + o.r > r[0] && o.x - o.r < r[2] && o.y + o.r > r[1] && o.y - o.r < r[3]);
-  for (const it of order) {
-    if (it.top) { placed.push([it.x - it.w / 2 - 2, it.y - it.r - 28, it.x + it.w / 2 + 2, it.y - it.r - 6]); out.set(it.id, 'T'); continue; }
-    if (it.box) { if (!hit(it.box, it)) { placed.push(it.box); out.set(it.id, 'B'); } continue; }
-    const right = [it.x + it.r + 4, it.y - 9, it.x + it.r + 8 + it.w, it.y + 8], left = [it.x - it.r - 8 - it.w, it.y - 9, it.x - it.r - 4, it.y + 8];
-    const side = right[2] <= maxX && !hit(right, it) ? 'R' : left[0] >= minX && !hit(left, it) ? 'L' : null;
-    if (side) { placed.push(side === 'R' ? right : left); out.set(it.id, side); }
+/** 선의 표시: 고른 항목에 닿으면 near, 아니고 두 끝이 모두 경로 안이며 관계(type)가 경로의 관계(KG.PATH_RELS)면 path, 그 밖은 상태가 하나라도 있을 때 dim */
+function kgEdgeMarks(a, b, s, type) {
+  if (s.sel != null && (a === s.sel || b === s.sel)) return ['near'];
+  if (s.path && s.path.has(a) && s.path.has(b) && KG.PATH_RELS.includes(type)) return ['path'];
+  return s.sel != null || s.path || s.query ? ['dim'] : [];
+}
+/** 한 항목에 이어진 것을 방향 · 관계 종류로 묶는다 → { out: [[type, [id…]]…], inn: […] }. out = 이 항목이 가리키는 것, inn = 이 항목을 가리키는 것.
+    묶음은 많은 것부터(같으면 관계 종류 이름 순), 묶음 안은 받은 차례. 오른쪽 칸과 캔버스의 모으기가 같은 차례를 쓴다 */
+function kgRelGroups(edges, id) {
+  const out = new Map(), inn = new Map();
+  const put = (m, type, other) => { const list = m.get(type) || m.set(type, []).get(type); if (!list.includes(other)) list.push(other); };
+  for (const e of edges) { const a = String(e.from), b = String(e.to); if (a === b) continue; if (a === id) put(out, e.type, b); if (b === id) put(inn, e.type, a); }
+  const order = m => [...m.entries()].sort((p, q) => q[1].length - p[1].length || (p[0] < q[0] ? -1 : 1));
+  return { out: order(out), inn: order(inn) };
+}
+/** 모은 자리를 비워 주는 자리: 고른 항목 둘레의 상자(box) 안에 있던 다른 항목(at)은 상자 밖으로 나가고, 상자 가까이 있던 항목은 그만큼 물러난다.
+    고른 항목에서 본 방향은 그대로 두고 거리만 늘린다 — 상자 가장자리까지의 거리 R 에 대해 안쪽(r ≤ R)은 R + 0.35 r, 바깥쪽은 r + 0.35 R × (1 − (r − R) / R)(r ≥ 2R 이면 그대로).
+    거리의 차례가 바뀌지 않으므로 항목끼리 포개지지 않는다 */
+function kgMakeRoom(center, box, at) {
+  let dx = at.x - center.x, dy = at.y - center.y, r = Math.hypot(dx, dy);
+  if (r < 1e-6) { dx = 0; dy = 1; r = 1e-6; }
+  const ux = dx / r, uy = dy / r;
+  const R = Math.min(ux ? (ux > 0 ? box.x1 - center.x : center.x - box.x0) / Math.abs(ux) : Infinity, uy ? (uy > 0 ? box.y1 - center.y : center.y - box.y0) / Math.abs(uy) : Infinity);
+  const to = r <= R ? R + 0.35 * r : r + 0.35 * R * Math.max(0, 1 - (r - R) / R);
+  return { x: Math.round((center.x + ux * to) * 10) / 10, y: Math.round((center.y + uy * to) * 10) / 10 };
+}
+/** 고른 항목(center) 둘레에 이웃을 모으는 자리. 좌표는 배치 좌표이고 배율 1 에서 화면 px 과 같다.
+    left · right = 위에서 아래로 놓을 이웃 id 들(left = 고른 항목을 가리키는 것, right = 고른 항목이 가리키는 것). box = 캔버스 { w, h }.
+    id 가 'head:' 로 시작하는 것은 관계 이름 줄이다(그 아래 이웃들의 관계 이름을 적는 자리 — 줄의 맨 끝에 혼자 남기지 않는다).
+    한 쪽의 이웃은 세로 간격 17 ~ 26 으로 타원 호에 놓는다(이름을 바깥쪽에 한 줄씩 쓸 수 있는 간격). 한 줄에 다 못 놓으면 바깥쪽에 줄을 더해 고르게 나눈다.
+    → { at: Map(id → { x, y, side: 'L' | 'R' }), labelW(이름을 쓸 폭), bounds: { x0, y0, x1, y1 }(고른 항목 · 이웃 · 이름이 다 들어가는 상자) } */
+function kgGather(center, left, right, box) {
+  const [sMin, sMax] = KG.STEP, availH = Math.max(120, box.h - 230);
+  const rx = Math.max(96, Math.min(210, (box.w - 2 * KG.LABEL - 64) / 2));
+  const labelW = Math.round(Math.max(56, Math.min(KG.LABEL, (box.w - 2 * rx - 48) / 2)));
+  const cap = Math.floor(availH / KG.STEP_TIGHT) + 1, at = new Map();      // 한 줄에 놓는 수의 한도: 화면을 조금 줄여 맞췄을 때 줄 사이가 STEP_TIGHT 아래로 내려가지 않는 만큼
+  const split = ids => {
+    if (ids.length <= cap) return ids.length ? [ids] : [];
+    const per = Math.ceil(ids.length / Math.ceil(ids.length / cap)), cols = []; let cur = [];
+    ids.forEach((id, i) => { if (cur.length >= per && !String(ids[i - 1]).startsWith('head:')) { cols.push(cur); cur = []; } cur.push(id); });
+    cols.push(cur);
+    return cols;
+  };
+  let halfH = 0; const reach = { L: 0, R: 0 };
+  const place = (ids, side) => {
+    const sign = side === 'R' ? 1 : -1, cols = split(ids);
+    const heights = cols.map(col => (col.length - 1) * (col.length > 1 ? Math.max(sMin, Math.min(sMax, availH / (col.length - 1))) : 0));
+    const ry = Math.max(rx, Math.max(0, ...heights) / 2 / 0.72);      // 호의 끝에서도 가로로 0.69 rx 만큼은 떨어진다. 바깥 줄은 같은 호를 이름 폭만큼 옮긴 것이다
+    cols.forEach((col, c) => {
+      const n = col.length, H = heights[c], step = n > 1 ? H / (n - 1) : 0;
+      col.forEach((id, i) => {
+        const y = n > 1 ? -H / 2 + i * step : 0, x = rx * Math.sqrt(1 - (y / ry) * (y / ry)) + c * (labelW + 36);
+        at.set(id, { x: Math.round((center.x + sign * x) * 10) / 10, y: Math.round((center.y + y) * 10) / 10, side });
+      });
+      halfH = Math.max(halfH, H / 2); reach[side] = rx + c * (labelW + 36) + labelW + 16;
+    });
+  };
+  place(left, 'L'); place(right, 'R');
+  return { at, labelW, bounds: { x0: center.x - Math.max(reach.L, 90), x1: center.x + Math.max(reach.R, 90), y0: center.y - halfH - 56, y1: center.y + halfH + 28 } };
+}
+
+const kg = { cy: null, of: null, key: null, home: new Map(), raw: new Map(), deg: new Map(), labelW: KG.LABEL, colW: 120, back: null, moved: false, matches: [], matchAt: 0, state: null, raf: 0, at: null };
+const kgColor = n => ONTO_GROUPS[groupOf(n.label)].color;
+const kgKey = n => ONTO_GROUPS[groupOf(n.label)].key;
+const kgPx = px => ele => px / ele.cy().zoom();      // 화면에서 늘 같은 크기
+const kgStill = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+function kgDrop() { if (kg.cy) kg.cy.destroy(); Object.assign(kg, { cy: null, of: null, key: null, home: new Map(), back: null, state: null, at: null }); }
+
+function kgStyle() {
+  const font = 'Pretendard Variable, Pretendard, sans-serif', BG = KG.BG;
+  return [
+    { selector: 'node', style: { width: 'data(size)', height: 'data(size)', 'background-color': 'data(color)', 'background-opacity': 0.92, 'border-width': 1.5, 'border-color': BG,
+        label: 'data(name)', color: '#cfd8e3', 'font-family': font, 'font-size': 11, 'font-weight': 500, 'text-valign': 'bottom', 'text-halign': 'center', 'text-margin-y': 5, 'text-margin-x': 0,
+        'text-max-width': 110, 'text-wrap': 'ellipsis', 'min-zoomed-font-size': 10.5, 'text-outline-color': BG, 'text-outline-width': 2, 'text-outline-opacity': 0.92, 'overlay-opacity': 0,
+        'transition-property': 'opacity, border-width, border-color', 'transition-duration': 180 } },
+    { selector: 'node[?hub]', style: { 'font-size': ele => Math.max(12.5, 11 / ele.cy().zoom()), 'font-weight': 600, color: '#ffffff', 'min-zoomed-font-size': 0, 'text-max-width': ele => 200 / Math.min(1, ele.cy().zoom()) } },
+    { selector: 'edge', style: { width: 1, 'line-color': '#53637a', opacity: 0.38, 'curve-style': 'bezier', 'target-arrow-shape': 'triangle', 'target-arrow-color': '#53637a', 'arrow-scale': 0.7,
+        'font-family': font, 'font-size': kgPx(10.5), 'font-weight': 500, color: '#c5cdf8', 'text-background-color': BG, 'text-background-opacity': 0.92, 'text-background-padding': 2, 'text-background-shape': 'roundrectangle',
+        'overlay-opacity': 0, 'transition-property': 'opacity, line-color', 'transition-duration': 180 } },
+    { selector: 'node.gtitle', style: { width: 1, height: 1, 'background-opacity': 0, 'border-width': 0, label: 'data(name)', color: 'data(color)', 'font-size': kgPx(13), 'font-weight': 600, 'text-valign': 'top', 'text-margin-y': 0,
+        'text-max-width': 600, 'text-wrap': 'none', 'min-zoomed-font-size': 0, 'text-outline-width': 4, 'text-opacity': 0.95, events: 'no' } },
+    { selector: '.dim', style: { opacity: 0.1, 'text-opacity': 0 } },
+    { selector: 'edge.dim', style: { opacity: 0.04 } },
+    { selector: 'node.hover', style: { color: '#ffffff', 'font-size': kgPx(12), 'min-zoomed-font-size': 0, 'text-opacity': 1, 'text-max-width': kgPx(220), 'z-index': 70 } },
+    { selector: 'node.path', style: { 'border-color': '#ffffff', 'border-width': kgPx(1.5), color: '#ffffff', 'font-size': kgPx(12), 'min-zoomed-font-size': 0, 'text-max-width': kgPx(150), 'z-index': 40 } },
+    // 경로를 줄로 놓았을 때(고른 것이 없을 때): 앞 세 줄은 이름을 점 아래에, 마지막 줄은 오른쪽에
+    { selector: 'node.path[side = "B"]', style: { width: kgPx(18), height: kgPx(18), 'text-margin-y': kgPx(5), 'text-max-width': ele => kg.colW / ele.cy().zoom() } },
+    { selector: 'node.path[side = "R"]', style: { width: ele => KG.nearSize(ele) / ele.cy().zoom(), height: ele => KG.nearSize(ele) / ele.cy().zoom(), 'text-valign': 'center', 'text-halign': 'right', 'text-margin-x': kgPx(6), 'text-margin-y': 0,
+        'text-max-width': ele => kg.labelW / ele.cy().zoom() } },
+    { selector: 'edge.path', style: { opacity: 0.9, width: kgPx(1.4), 'line-color': KG.BLUE, 'target-arrow-color': KG.BLUE, 'arrow-scale': 0.9, 'z-index': 35 } },
+    { selector: 'node.near', style: { width: ele => KG.nearSize(ele) / ele.cy().zoom(), height: ele => KG.nearSize(ele) / ele.cy().zoom(), 'border-color': '#ffffff', 'border-width': kgPx(1.5), color: '#ffffff', 'font-size': kgPx(12), 'min-zoomed-font-size': 0, 'text-valign': 'center', 'text-margin-y': 0,
+        'text-max-width': ele => kg.labelW / ele.cy().zoom(), 'z-index': 50 } },
+    { selector: 'node.near[side = "R"]', style: { 'text-halign': 'right', 'text-margin-x': kgPx(6) } },
+    { selector: 'node.near[side = "L"]', style: { 'text-halign': 'left', 'text-margin-x': kgPx(-6) } },
+    { selector: 'edge.near', style: { opacity: 0.95, width: kgPx(1.5), 'line-color': KG.NOW, 'target-arrow-color': KG.NOW, 'arrow-scale': 0.9, 'z-index': 45 } },
+    // 관계 이름: 모은 이웃의 줄에서 관계 묶음마다 그 위에 한 줄로 적는다(선을 따라 적으면 선이 모이는 곳에서 글이 겹치고 기운다). 점은 그리지 않는다
+    { selector: 'node.rhead', style: { width: 1, height: 1, 'background-opacity': 0, 'border-width': 0, label: 'data(name)', color: '#aab2ff', 'font-size': kgPx(10.5), 'font-weight': 600, 'text-valign': 'center',
+        'text-margin-y': 0, 'text-wrap': 'none', 'text-max-width': 600, 'min-zoomed-font-size': 0, events: 'no', 'z-index': 48 } },
+    { selector: 'node.rhead[side = "R"]', style: { 'text-halign': 'right', 'text-margin-x': kgPx(-2) } },
+    { selector: 'node.rhead[side = "L"]', style: { 'text-halign': 'left', 'text-margin-x': kgPx(2) } },
+    { selector: 'node.rhead[side = "B"]', style: { 'text-halign': 'center', color: '#9aa7b5' } },
+    { selector: 'node.hit', style: { 'border-color': KG.HIT, 'border-width': 3, color: KG.HIT, 'font-size': kgPx(12.5), 'font-weight': 600, 'min-zoomed-font-size': 0, 'text-max-width': kgPx(240), 'z-index': 60 } },
+    { selector: 'node.pick', style: { width: kgPx(26), height: kgPx(26), 'border-color': '#ffffff', 'border-width': kgPx(3), 'underlay-color': KG.NOW, 'underlay-opacity': 0.35, 'underlay-padding': kgPx(8), 'underlay-shape': 'ellipse', color: '#ffffff',
+        'font-size': kgPx(14), 'font-weight': 650, 'min-zoomed-font-size': 0, 'z-index': 99, 'text-wrap': 'none', 'text-valign': 'top', 'text-halign': 'center', 'text-margin-y': kgPx(-8), 'text-margin-x': 0 } },
+    { selector: 'node.pick.hit', style: { 'border-color': KG.HIT, color: '#ffe6ad' } },      // 고른 것이 검색에도 걸렸다: 테두리는 검색의 노랑, 글자는 밝은 노랑
+    { selector: '.off', style: { display: 'none' } },
+  ];
+}
+// 묶음 안의 배치(fcose)와 묶음의 자리. 난수를 고정해 같은 그래프는 늘 같은 자리에 놓인다
+function kgLayout(cy) {
+  const rnd = Math.random; let seed = KG.SEED;
+  Math.random = () => { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; };
+  const total = cy.nodes().length, world = [80 * Math.sqrt(total), 62 * Math.sqrt(total)], boxes = [];
+  try {
+    for (const gr of ONTO_GROUPS) {
+      const ns = cy.nodes().filter(n => n.data('g') === gr.key); if (!ns.length) continue;
+      ns.union(ns.edgesWith(ns)).layout({ name: 'fcose', quality: 'proof', randomize: true, animate: false, fit: false, nodeRepulsion: 3600, idealEdgeLength: 38, edgeElasticity: 0.4, gravity: 0.8,
+        nodeSeparation: 40, packComponents: true, tile: true, numIter: 2500 }).run();
+      const bb = ns.boundingBox({ includeLabels: false });
+      boxes.push({ gr, ns, cx: gr.at[0] * world[0], cy: gr.at[1] * world[1], r: Math.max(bb.w, bb.h) / 2 + 34, ox: bb.x1 + bb.w / 2, oy: bb.y1 + bb.h / 2 });
+    }
+  } finally { Math.random = rnd; }
+  for (let k = 0; k < 80; k++) for (const a of boxes) for (const b of boxes) {
+    if (a === b) continue;
+    const dx = b.cx - a.cx, dy = b.cy - a.cy, d = Math.hypot(dx, dy) || 1, need = a.r + b.r;
+    if (d < need) { const m = (need - d) / 2 / d; a.cx -= dx * m; a.cy -= dy * m; b.cx += dx * m; b.cy += dy * m; }
   }
-  return out;
+  for (const b of boxes) {
+    b.ns.shift({ x: b.cx - b.ox, y: b.cy - b.oy });
+    cy.add({ group: 'nodes', data: { id: 'title:' + b.gr.key, name: `${b.gr.title} ${b.ns.length}`, color: b.gr.color, g: b.gr.key }, classes: 'gtitle', position: { x: b.cx, y: b.cy - b.r + 22 }, selectable: false, grabbable: false });
+  }
+  return boxes.map(b => ({ key: b.gr.key, title: b.gr.title, color: b.gr.color, count: b.ns.length }));
 }
-/** 항목 하나의 모양 클래스. s = { sel, near: Set, path: Set | null, match: Set, query: boolean }.
-    밝은 것 = 고른 것(sel) · 바로 이어진 것(near) · 이상 패턴 경로(path) · 검색에 걸린 것(match). 그 가운데 하나라도 켜져 있으면 나머지는 흐리다(far) */
-function kgNodeClass(id, s) {
-  const sel = id === s.sel, near = !sel && s.near.has(id), path = !!s.path && s.path.has(id), match = s.match.has(id);
-  const far = !(sel || near || path || match) && (s.sel != null || !!s.path || s.query);
-  return ['o-node', sel && 'sel', near && 'near', path && 'path', match && 'match', far && 'far'].filter(Boolean).join(' ');
-}
-function kgEdgeClass(a, b, s) {
-  if (s.sel != null && (a === s.sel || b === s.sel)) return 'kg-e hot';
-  if (s.path && s.path.has(a) && s.path.has(b)) return 'kg-e path';
-  return s.sel != null || s.path || s.query ? 'kg-e dim' : 'kg-e';
-}
-
-const kg = { of: null, key: null, nodes: [], byId: new Map(), edges: [], adj: new Map(), groups: [], types: [], bounds: null, state: null,
-  view: { k: 1, tx: 0, ty: 0 }, fitK: 1, moved: false, size: [0, 0], matches: [], matchAt: 0, ms: {} };
-const kgCollator = new Intl.Collator('ko');      // 이름 순 — 비교할 때마다 새로 만들면 느리다
-const kgTitle = key => ONTO_GROUPS.find(x => x.key === key).title;
-
 function kgBuild(g) {
-  const t0 = performance.now(); kg.state = null;
-  const lay = layoutGraph(g);
-  const t1 = performance.now();
-  const raw = new Map(g.nodes.map(n => [String(n.id), n]));
-  const rank = p => { const labels = ONTO_GROUPS[p.g].labels, k = labels.indexOf(raw.get(p.id).label); return k < 0 ? labels.length : k; };
-  kg.nodes = lay.nodes.map(p => { const n = raw.get(p.id), name = nodeName(n), short = kgShort(name);
-    return { ...p, n, name, short, w: kgTextW(short), kind: LABEL_KO[n.label] || n.label, key: ONTO_GROUPS[p.g].key, rank: rank(p), el: null }; })
-    .sort((a, b) => a.g - b.g || a.rank - b.rank || kgCollator.compare(a.name, b.name) || (a.id < b.id ? -1 : 1));      // 탭으로 도는 차례 = 묶음 → 종류 → 이름
-  kg.byId = new Map(kg.nodes.map(n => [n.id, n]));
-  kg.adj = new Map(kg.nodes.map(n => [n.id, new Set()]));
-  kg.edges = [];
-  for (const e of g.edges) {
-    const a = kg.byId.get(String(e.from)), b = kg.byId.get(String(e.to)); if (!a || !b || a === b) continue;
-    kg.adj.get(a.id).add(b.id); kg.adj.get(b.id).add(a.id);
-    kg.edges.push({ a, b, type: e.type, el: null });
+  kgDrop();
+  const raw = new Map(g.nodes.map(n => [String(n.id), n])), deg = new Map();
+  const edges = g.edges.map(e => ({ from: String(e.from), to: String(e.to), type: String(e.type) })).filter(e => raw.has(e.from) && raw.has(e.to) && e.from !== e.to)
+    .sort((a, b) => a.from < b.from ? -1 : a.from > b.from ? 1 : a.to < b.to ? -1 : a.to > b.to ? 1 : a.type < b.type ? -1 : a.type > b.type ? 1 : 0);
+  edges.forEach(e => { deg.set(e.from, (deg.get(e.from) || 0) + 1); deg.set(e.to, (deg.get(e.to) || 0) + 1); });
+  const elements = [...raw.keys()].sort().map(id => { const n = raw.get(id), d = deg.get(id) || 0;
+    return { data: { id, name: nodeName(n), kind: LABEL_KO[n.label] || n.label, g: kgKey(n), color: kgColor(n), size: kgSize(d), deg: d, hub: d >= KG.HUB } }; })
+    .concat(edges.map((e, i) => ({ data: { id: 'e' + i, source: e.from, target: e.to, type: e.type, rel: RELATION_KO[e.type] || e.type } })));
+  const cy = kg.cy = cytoscape({ container: $('#ontoMap'), elements, minZoom: 0.12, maxZoom: KG.ZOOM_MAX, boxSelectionEnabled: false, autoungrabify: true, style: kgStyle() });
+  const groups = kgLayout(cy);
+  kg.home = new Map(cy.nodes().not('.gtitle').map(n => [n.id(), { ...n.position() }]));
+  Object.assign(kg, { of: g, key: ent.graphAsset, raw, deg, back: null, moved: false, at: null });
+  // 묶음 조각(캔버스 아래쪽 — 범례를 겸한다): 항목이 있는 묶음만. 누르면 그 묶음이 꺼지고 켜진다
+  $('#ontoLayers').innerHTML = groups.map(gr => `<button type="button" class="cv-chip" data-layer="${gr.key}" aria-pressed="true" style="--c:${gr.color}"><i></i>${esc(gr.title)}<span class="num">${gr.count}</span></button>`).join('');
+  [...ent.hidden].forEach(key => { if (!groups.some(gr => gr.key === key)) ent.hidden.delete(key); });
+  if (ent.sel != null && !kg.home.has(ent.sel)) ent.sel = null;
+  kgFit(true);
+  cy.on('zoom', () => { if (!kg.raf) kg.raf = requestAnimationFrame(() => { kg.raf = 0; if (kg.cy === cy) cy.style().update(); }); });
+  cy.on('scrollzoom dragpan pinchzoom', () => { kg.moved = true; });
+  cy.on('tap', 'node', ev => kgPick(ev.target.id()));
+  cy.on('tap', ev => { if (ev.target === cy && ent.sel != null) kgPick(null); });      // 빈 곳을 누르면 고른 것이 풀린다
+  cy.on('mouseover', 'node', ev => { ev.target.addClass('hover'); $('#ontoMap').style.cursor = 'pointer'; });
+  cy.on('mouseout', 'node', ev => { ev.target.removeClass('hover'); $('#ontoMap').style.cursor = ''; });
+}
+// 화면을 상자(배치 좌표)가 다 보이게 옮긴다. 위의 도구 줄과 아래의 묶음 조각 자리는 비운다
+function kgShow(box, max, still = kgStill()) {
+  const cy = kg.cy, W = cy.width(), H = cy.height(), top = 58, bottom = 78, side = 16;      // 위의 도구 줄 · 아래의 안내 한 줄과 묶음 조각 자리
+  const bw = Math.max(1, box.x1 - box.x0), bh = Math.max(1, box.y1 - box.y0);
+  const zoom = Math.max(cy.minZoom(), Math.min(max, (W - 2 * side) / bw, (H - top - bottom) / bh));
+  const pan = { x: W / 2 - (box.x0 + bw / 2) * zoom, y: top + (H - top - bottom) / 2 - (box.y0 + bh / 2) * zoom };
+  cy.stop();
+  if (still) cy.viewport({ zoom, pan }); else cy.animate({ zoom, pan }, { duration: 380, easing: 'ease-out-cubic' });
+}
+const kgBoxOf = eles => { const b = eles.boundingBox({ includeLabels: false }); return { x0: b.x1 - 40, x1: b.x2 + 40, y0: b.y1 - 40, y1: b.y2 + 40 }; };
+// 전체가 보이게 맞춘다: 보이는 점들의 자리로만 잰다(이름의 크기는 배율에 따라 달라져 같은 지도가 다르게 맞춰진다)
+function kgFit(still) {
+  const cy = kg.cy; if (!cy) return;
+  kg.moved = false;
+  const shown = cy.nodes().filter(n => n.visible());
+  if (shown.length) kgShow(kgBoxOf(shown), 1.6, still === true || kgStill());
+}
+function kgZoomBy(f) { const cy = kg.cy; if (!cy) return; kg.moved = true; cy.zoom({ level: cy.zoom() * f, renderedPosition: { x: cy.width() / 2, y: cy.height() / 2 } }); }
+// 고른 항목의 이웃을 그 둘레로 모으고(kgGather) 그 자리에 있던 다른 항목은 비켜 주며(kgMakeRoom), 고름을 풀면 모두 제자리로 돌려보낸다. 모은 줄에는 관계 묶음마다 관계 이름 한 줄(rhead)을 끼운다 —
+// 나가는 쪽은 「→ 감지 증상」, 들어오는 쪽은 「경보 패턴 →」(관계 이름은 화살표를 따라 읽는 말이다)
+function kgArrange() {
+  const cy = kg.cy, sel = ent.sel, want = new Map();
+  cy.batch(() => { cy.nodes('.rhead').remove(); cy.nodes().filter(n => n.data('side')).forEach(n => n.removeData('side')); });
+  kg.at = null;
+  if (sel != null) {
+    const used = new Set([sel]);
+    const shown = id => kg.home.has(id) && !ent.hidden.has(kgKey(kg.raw.get(id))) && !used.has(id) && !!used.add(id);
+    const rel = kgRelGroups(kg.of.edges, sel);
+    const slots = (groups, side) => groups.map(([type, ids]) => [type, ids.filter(shown)]).filter(([, ids]) => ids.length).flatMap(([type, ids]) => [`head:${side}:${type}`, ...ids]);
+    const right = slots(rel.out, 'R'), left = slots(rel.inn, 'L'), home = kg.home.get(sel);
+    const lay = kgGather(home, left, right, { w: cy.width(), h: cy.height() });
+    kg.labelW = lay.labelW; kg.at = lay;
+    cy.batch(() => lay.at.forEach((p, id) => {
+      if (!id.startsWith('head:')) { want.set(id, p); cy.getElementById(id).data('side', p.side); return; }
+      const name = RELATION_KO[id.slice(7)] || id.slice(7);
+      cy.add({ group: 'nodes', data: { id, name: p.side === 'R' ? '→ ' + name : name + ' →', side: p.side }, classes: 'rhead', position: { x: home.x, y: home.y }, selectable: false, grabbable: false });
+      want.set(id, p);
+    }));
+    kg.home.forEach((at, id) => { if (id !== sel && !want.has(id)) want.set(id, kgMakeRoom(home, lay.bounds, at)); });      // 그 자리에 있던 다른 항목은 비켜 준다
+  } else if (kg.state && kg.state.route) {
+    // 이상 패턴 경로: 패턴 | 증상 | 고장 유형 | 원인 · 조치 방법의 줄로 놓는다(끈 묶음의 항목은 뺀다). 이름 순
+    const on = ids => ids.filter(id => kg.home.has(id) && !ent.hidden.has(kgKey(kg.raw.get(id)))).sort((a, b) => kgCollator.compare(cy.getElementById(a).data('name'), cy.getElementById(b).data('name')) || (a < b ? -1 : 1));
+    const r = kg.state.route, home = kg.home.get(r.pattern);
+    if (home && !ent.hidden.has(kgKey(kg.raw.get(r.pattern)))) {
+      const lay = kgPathLay(home, { pattern: r.pattern, symptoms: on(r.symptoms), modes: on(r.modes), causes: on(r.causes), skills: on(r.skills) }, { w: cy.width(), h: cy.height() });
+      kg.labelW = lay.labelW; kg.colW = lay.colW; kg.at = lay;
+      const mid = { x: (lay.bounds.x0 + lay.bounds.x1) / 2, y: (lay.bounds.y0 + lay.bounds.y1) / 2 };
+      cy.batch(() => lay.at.forEach((p, id) => {
+        if (!id.startsWith('head:')) { want.set(id, p); cy.getElementById(id).data('side', p.side); return; }
+        cy.add({ group: 'nodes', data: { id, name: id.slice(7), side: p.side }, classes: 'rhead', position: { x: home.x, y: home.y }, selectable: false, grabbable: false });
+        want.set(id, p);
+      }));
+      kg.home.forEach((at, id) => { if (!want.has(id)) want.set(id, kgMakeRoom(mid, lay.bounds, at)); });
+    }
   }
-  kg.groups = lay.groups.map(gr => ({ ...gr, text: kgTitle(gr.key), el: null }));
-  kg.types = lay.types.map(t => ({ ...t, text: `${LABEL_KO[t.label] || t.label} ${t.count}`, el: null }));
-  kg.groups.forEach(gr => { gr.w = kgTextW(gr.text, 11) + 6; });
-  kg.types.forEach(t => { t.w = kgTextW(t.text, 11) + 4; });
-  kg.bounds = lay.bounds;
-  // 선: 한 번 휘는 곡선(휨은 길이의 12 %, 최대 36). 좌표는 배치 좌표 그대로 두고 선 묶음에 배율을 건다(굵기는 배율과 무관 — CSS non-scaling-stroke)
-  const edgeHtml = kg.edges.map((e, i) => {
-    const dx = e.b.x - e.a.x, dy = e.b.y - e.a.y, len = Math.sqrt(dx * dx + dy * dy) || 1, bend = Math.min(36, len * 0.12);
-    const mx = (e.a.x + e.b.x) / 2 - dy / len * bend, my = (e.a.y + e.b.y) / 2 + dx / len * bend;
-    return `<path class="kg-e" data-i="${i}" d="M${e.a.x} ${e.a.y}Q${mx.toFixed(1)} ${my.toFixed(1)} ${e.b.x} ${e.b.y}"><title>${esc(e.a.name)} → ${esc(RELATION_KO[e.type] || e.type)} → ${esc(e.b.name)}</title></path>`;
-  }).join('');
-  // 종류마다 옅은 바탕 원(묶음 색) — 같은 종류가 한 덩어리로 읽힌다
-  const blobHtml = kg.types.map(t => `<circle class="kg-blob" data-g="${t.key}" cx="${t.x}" cy="${(t.y + t.r).toFixed(1)}" r="${(t.r + KG.SP * 0.3).toFixed(1)}"/>`).join('');
-  const capHtml = kg.types.map((t, i) => `<text class="kg-type" data-i="${i}" text-anchor="middle">${esc(t.text)}</text>`).join('') +
-    kg.groups.map(gr => `<text class="kg-group" data-g="${gr.key}" text-anchor="middle">${esc(gr.text)}</text>`).join('');
-  const nodeHtml = kg.nodes.map(n => `<g class="o-node" data-id="${esc(n.id)}" data-g="${n.key}" tabindex="0" role="button" aria-pressed="false" aria-label="${esc(n.kind)} ${esc(n.name)}">` +
-    `<circle class="kg-hit" r="8"/><circle class="kg-ring" r="9"/><circle class="kg-dot" r="${KG.R}"/><title>${esc(n.kind)}\n${esc(n.name)}</title></g>`).join('');
-  // 이름은 점과 다른 층에 둔다: 점의 묶음(g)에는 원만 있어 누르는 자리가 점 그대로이고, 이름은 모든 점 위에 그려진다
-  const labelHtml = kg.nodes.map((n, i) => `<text class="kg-lbl lo" data-i="${i}">${esc(n.short)}</text>`).join('');
-  const map = $('#ontoMap');
-  map.innerHTML = `<svg class="kg-svg" role="group" aria-label="지식 지도"><defs><radialGradient id="kgHalo"><stop offset="0" stop-opacity=".36"/><stop offset="1" stop-opacity="0"/></radialGradient></defs>` +
-    `<g class="kg-world"><circle class="kg-halo" r="${KG.HALO}" fill="url(#kgHalo)"/><g class="kg-edges">${blobHtml}${edgeHtml}</g><g class="kg-caps">${capHtml}</g><g class="kg-nodes">${nodeHtml}</g><g class="kg-labels" aria-hidden="true">${labelHtml}</g></g></svg>`;
-  map.querySelectorAll('.o-node').forEach(el => { const n = kg.byId.get(el.dataset.id); n.el = el; n.hit = el.querySelector('.kg-hit'); n.dot = el.querySelector('.kg-dot'); n.ring = el.querySelector('.kg-ring'); });
-  map.querySelectorAll('.kg-lbl').forEach(el => { kg.nodes[+el.dataset.i].lbl = el; });
-  map.querySelectorAll('.kg-e').forEach(el => { kg.edges[+el.dataset.i].el = el; });
-  map.querySelectorAll('.kg-type').forEach(el => { kg.types[+el.dataset.i].el = el; });
-  kg.groups.forEach(gr => { gr.el = map.querySelector(`.kg-group[data-g="${gr.key}"]`); });
-  // 층 칩(캔버스 아래쪽 — 범례를 겸한다): 항목이 있는 묶음만. 묶음별 개수는 오른쪽 칸에 있다
-  $('#ontoLayers').innerHTML = kg.groups.map(gr => `<button type="button" class="cv-chip" data-layer="${gr.key}" data-g="${gr.key}" aria-pressed="true"><i></i>${esc(gr.text)}</button>`).join('');
-  [...ent.hidden].forEach(key => { if (!kg.groups.some(gr => gr.key === key)) ent.hidden.delete(key); });
-  const fresh = kg.key !== ent.graphAsset;
-  kg.of = g; kg.key = ent.graphAsset;
-  kgResize(fresh || !kg.moved);
-  kg.ms = { layout: +(t1 - t0).toFixed(1), build: +(performance.now() - t1).toFixed(1), nodes: kg.nodes.length, edges: kg.edges.length };
+  const still = kgStill();
+  cy.nodes().not('.gtitle').forEach(n => {
+    const to = want.get(n.id()) || kg.home.get(n.id()), p = n.position();
+    if (Math.abs(p.x - to.x) < 0.5 && Math.abs(p.y - to.y) < 0.5 && !n.animated()) return;
+    n.stop(true, false);
+    if (still) n.position({ x: to.x, y: to.y }); else n.animate({ position: { x: to.x, y: to.y } }, { duration: 340, easing: 'ease-out-cubic' });
+  });
 }
-// 캔버스 크기에 SVG 를 맞춘다. refit 이면 전체가 보이게 다시 맞춘다(사람이 옮기거나 확대한 뒤에는 그 보기를 지킨다)
-function kgResize(refit) {
-  const map = $('#ontoMap'), svg = map.querySelector('.kg-svg'); if (!svg || !kg.bounds) return;
-  const w = map.clientWidth, h = map.clientHeight; if (!w || !h) return;
-  kg.size = [w, h];
-  svg.setAttribute('viewBox', `0 0 ${w} ${h}`); svg.setAttribute('width', w); svg.setAttribute('height', h);
-  const pad = { ...KG.PAD, b: Math.max(KG.PAD.b, ($('#ontoLayers').offsetHeight || 0) + 40) };      // 층 칩이 두 줄이 되면 그만큼 비운다
-  const fit = fitView(kg.bounds, w, h, pad);
-  kg.fitK = fit.k; kg.fit = fit;
-  if (refit) { kg.view = { ...fit }; kg.moved = false; }
-  kgApplyView();
-}
-function kgFit() { kg.moved = false; kgGlide(); kgResize(true); }
-function kgGlide() { const world = $('#ontoMap .kg-world'); if (!world) return; world.classList.add('glide'); clearTimeout(kgGlide.timer); kgGlide.timer = setTimeout(() => world.classList.remove('glide'), 320); }
-function kgZoomTo(k, cx, cy) {
-  const v = kg.view, next = Math.max(Math.min(kg.fitK, 0.5), Math.min(KG.ZOOM_MAX, k));
-  if (cx == null) { cx = kg.size[0] / 2; cy = kg.size[1] / 2; }
-  kg.view = { k: next, tx: cx - (cx - v.tx) / v.k * next, ty: cy - (cy - v.ty) / v.k * next };
-  kg.moved = true; kgApplyView();
-}
-function kgApplyView() {
-  const map = $('#ontoMap'), world = map.querySelector('.kg-world'); if (!world) return;
-  const { k, tx, ty } = kg.view;
-  world.style.transform = `translate(${tx.toFixed(1)}px, ${ty.toFixed(1)}px)`;
-  if (kgApplyView.k === k && kgApplyView.of === kg.of) return;      // 옮기기만 했으면 여기까지
-  kgApplyView.k = k; kgApplyView.of = kg.of;
-  map.querySelector('.kg-edges').setAttribute('transform', `scale(${k})`);
-  for (const n of kg.nodes) n.el.setAttribute('transform', `translate(${(n.x * k).toFixed(1)} ${(n.y * k).toFixed(1)})`);
-  for (const t of kg.types) { t.el.setAttribute('x', (t.x * k).toFixed(1)); t.el.setAttribute('y', (t.y * k - 9).toFixed(1)); }
-  for (const gr of kg.groups) { gr.el.setAttribute('x', (gr.capX * k).toFixed(1)); gr.el.setAttribute('y', (gr.capY * k - 24).toFixed(1)); }
-  kgSizes(); kgHalo(); kgPlaceLabels();
-}
-// 점의 반지름: 고른 것 11, 밝은 것은 보통보다 2 크게, 보통은 배율에 따라 3.5 ~ 5(연결이 많으면 조금 더).
-// 누르는 자리(kg-hit)는 점보다 넓되 이웃 점의 자리와 겹치지 않게 이웃 사이의 절반까지만 넓힌다
-function kgSizes() {
-  const base = kgDotR(kg.view.k), reach = Math.min(12, KG.SP * kg.view.k * 0.46);
-  for (const n of kg.nodes) {
-    const hub = n.deg >= 12 ? 1.5 : n.deg >= 6 ? 0.75 : 0;
-    const r = !n.cls ? base + hub : n.cls.includes(' sel') ? KG.R_SEL : /(near|path|match)/.test(n.cls) ? base + 2 : base + hub;
-    const hit = Math.max(r + 1, reach);
-    if (n.r !== r) { n.r = r; n.dot.setAttribute('r', r); n.ring.setAttribute('r', r + 4); }
-    if (n.hitR !== hit) { n.hitR = hit; n.hit.setAttribute('r', hit.toFixed(1)); }
-  }
-}
-function kgHalo() {
-  const halo = $('#ontoMap .kg-halo'); if (!halo) return;
-  const lit = kg.byId.get(ent.sel) || (ent.focus && kg.byId.get(ent.focus)) || null;
-  const on = !!lit && !ent.hidden.has(lit.key);
-  halo.classList.toggle('on', on);
-  if (on) { halo.setAttribute('cx', (lit.x * kg.view.k).toFixed(1)); halo.setAttribute('cy', (lit.y * kg.view.k).toFixed(1)); $('#kgHalo').dataset.g = lit.key; }
-}
-// 지금 상태(고름 · 경로 · 검색 · 끈 묶음)를 화면에 입힌다. DOM 을 다시 만들지 않고 클래스와 반지름만 바꾼다
+// 지금 상태(고름 · 경로 · 검색 · 끈 묶음)를 그림에 입힌다. 그림을 다시 만들지 않고 표시만 바꾼다
 function kgApplyState() {
-  if (!kg.of) return;
-  const q = ent.search.trim().toLowerCase();
-  if (ent.sel != null && (!kg.byId.has(ent.sel) || ent.hidden.has(kg.byId.get(ent.sel).key))) ent.sel = null;      // 끈 묶음의 항목은 고른 채로 두지 않는다
-  const path = focusSet();
-  const match = new Set(q ? kg.nodes.filter(n => !ent.hidden.has(n.key) && (n.name.toLowerCase().includes(q) || n.id.toLowerCase().includes(q))).map(n => n.id) : []);
-  const s = { sel: ent.sel, near: ent.sel != null ? kg.adj.get(ent.sel) : new Set(), path, match, query: !!q };
-  kg.state = s;
-  for (const n of kg.nodes) {
-    const cls = kgNodeClass(n.id, s) + (ent.hidden.has(n.key) ? ' off' : '');
-    if (n.cls !== cls) { n.cls = cls; n.el.setAttribute('class', cls); n.el.setAttribute('aria-pressed', String(n.id === s.sel)); }
-  }
-  const edgesBox = $('#ontoMap .kg-edges'), raise = [];
-  for (const e of kg.edges) {
-    const cls = kgEdgeClass(e.a.id, e.b.id, s) + (ent.hidden.has(e.a.key) || ent.hidden.has(e.b.key) ? ' off' : '');
-    if (e.cls !== cls) { e.cls = cls; e.el.setAttribute('class', cls); }
-    if (cls === 'kg-e hot') { e.el.dataset.g = (e.a.id === s.sel ? e.b : e.a).key; raise.push(e.el); }      // 밝은 선은 상대 항목의 묶음 색
-    else if (cls === 'kg-e path') raise.push(e.el);
-  }
-  raise.forEach(el => edgesBox.append(el));                                                                  // 밝은 선을 흐린 선 위에 그린다
-  $('#ontoMap').querySelectorAll('.kg-blob').forEach(c => c.classList.toggle('off', ent.hidden.has(c.dataset.g)));
+  const cy = kg.cy; if (!cy || !kg.of) return;
+  const q = ent.search.trim().toLowerCase(), off = id => ent.hidden.has(kgKey(kg.raw.get(id)));
+  if (ent.sel != null && (!kg.home.has(ent.sel) || off(ent.sel))) ent.sel = null;      // 끈 묶음의 항목은 고른 채로 두지 않는다
+  const route = kgPath(kg.of, ent.focus), path = route ? route.ids : null;
+  const ids = [...kg.home.keys()];
+  const match = new Set(q ? ids.filter(id => !off(id) && (cy.getElementById(id).data('name').toLowerCase().includes(q) || id.toLowerCase().includes(q))) : []);
+  const near = new Set();
+  if (ent.sel != null) cy.getElementById(ent.sel).neighborhood('node').forEach(n => near.add(n.id()));
+  const s = { sel: ent.sel, near, path, match, query: !!q };
+  const arrange = !kg.state || kg.state.sel !== s.sel || kg.state.hidden !== [...ent.hidden].sort().join('|') || kg.state.focus !== ent.focus;
+  kg.state = { ...s, route, hidden: [...ent.hidden].sort().join('|'), focus: ent.focus };
+  const ALL = 'pick near path hit dim';
+  cy.batch(() => {
+    cy.nodes().forEach(n => {
+      if (n.hasClass('rhead')) return;
+      if (n.hasClass('gtitle')) { n.toggleClass('off', ent.hidden.has(n.data('g'))).toggleClass('dim', s.sel != null || !!s.path || s.query); return; }
+      n.removeClass(ALL).addClass(kgMarks(n.id(), s).join(' ')).toggleClass('off', off(n.id()));
+    });
+    cy.edges().forEach(e => e.removeClass('near path dim').addClass(kgEdgeMarks(e.data('source'), e.data('target'), s, e.data('type')).join(' ')));
+  });
+  if (arrange) kgArrange();
   $('#ontoLayers').querySelectorAll('[data-layer]').forEach(b => b.setAttribute('aria-pressed', String(!ent.hidden.has(b.dataset.layer))));
-  kg.matches = kg.nodes.filter(n => match.has(n.id)).map(n => n.id);
+  // 검색에 걸린 것의 차례: 묶음 → 이름
+  kg.matches = ids.filter(id => match.has(id)).sort((a, b) => groupOf(kg.raw.get(a).label) - groupOf(kg.raw.get(b).label) || kgCollator.compare(cy.getElementById(a).data('name'), cy.getElementById(b).data('name')) || (a < b ? -1 : 1));
   if (kg.matchAt >= kg.matches.length) kg.matchAt = 0;
-  kgSizes(); kgHalo(); kgPlaceLabels();
   const fmtN = v => Number(v).toLocaleString('ko-KR'), word = ent.search.trim();
-  $('#ontoHint').textContent = s.sel != null ? '고른 항목과 바로 이어진 것만 밝게 보입니다'
-    : path ? `「${kg.byId.get(ent.focus)?.name || ''}」에서 조치 방법까지 가는 길의 항목 ${fmtN(path.size)}개가 밝게 보입니다`
-    : q ? (match.size ? `이름에 「${word}」이 든 항목 ${fmtN(match.size)}개가 밝게 보입니다` : `이름에 「${word}」이 든 항목이 없습니다`)
-    : '항목을 누르면 바로 이어진 것만 밝게 보입니다';
+  $('#ontoHint').textContent = s.sel != null ? '왼쪽은 고른 항목을 가리키는 것, 오른쪽은 고른 항목이 가리키는 것입니다. 빈 곳을 누르면 제자리로 돌아갑니다'
+    : path ? `「${cy.getElementById(ent.focus).data('name') || ''}」 경보에서 증상 · 고장 유형 · 원인 · 조치 방법으로 가는 길입니다. 항목을 누르면 그 항목에 이어진 것이 보입니다`
+    : q ? (match.size ? `이름에 「${word}」이 든 항목 ${fmtN(match.size)}개가 밝게 보입니다. Enter 를 누르면 차례로 고릅니다` : `이름에 「${word}」이 든 항목이 없습니다`)
+    : '점을 누르면 이어진 항목이 그 둘레에 모입니다. 끌어서 옮기고 휠로 확대합니다';
   $('#ontoStats').textContent = `항목 ${fmtN(kg.of.nodes.length)} · 연결 ${fmtN(kg.of.edges.length)}` + (path ? ` · 강조 경로 ${fmtN(path.size)}개` : '') + (q ? ` · 검색 결과 ${fmtN(match.size)}개` : '');
-  const next = $('#ontoNext'); next.hidden = match.size < 2; next.textContent = `다음 찾기 ${Math.min(kg.matchAt + 1, match.size)} / ${match.size}`;
+  const next = $('#ontoNext'); next.hidden = match.size < 2;
+  next.querySelector('.num').textContent = `${Math.min(kg.matchAt + 1, match.size)} / ${match.size}`;
   ontoNote(ent.definitionNamesError ? ent.definitionNamesError + ' 흐름 항목의 이름이 「흐름 이름 확인 불가」로 보입니다. [다시 읽기]를 누르세요.' : '');
-}
-// 보일 글자를 다시 고른다(배율 · 상태가 바뀔 때). 차례: 고른 항목 → 묶음 이름 → 이어진 것 · 검색 · 경로 → 종류 이름 → 나머지(연결이 많은 것부터)
-function kgPlaceLabels() {
-  if (!kg.of || !kg.state) return;
-  const k = kg.view.k, s = kg.state;
-  const prio = n => n.id === s.sel ? 9e6 : (s.near.has(n.id) ? 6e6 : s.match.has(n.id) ? 5e6 : s.path && s.path.has(n.id) ? 4e6 : n.cls.includes(' far') ? -1e3 : 0) + n.deg;
-  const items = kg.nodes.filter(n => !ent.hidden.has(n.key)).map(n => ({ id: n.id, x: n.x * k, y: n.y * k, r: n.r, w: n.id === s.sel ? kgTextW(n.short, 14) : n.w, prio: prio(n), top: n.id === s.sel, lit: /(sel|near|path|match)/.test(n.cls) }));
-  const caps = [];
-  kg.groups.forEach(gr => { if (!ent.hidden.has(gr.key)) caps.push({ id: 'group:' + gr.key, box: [gr.capX * k - gr.w / 2, gr.capY * k - 35, gr.capX * k + gr.w / 2, gr.capY * k - 21], prio: 8e6, lit: true }); });
-  kg.types.forEach((t, i) => { if (!ent.hidden.has(t.key)) caps.push({ id: 'type:' + i, box: [t.x * k - t.w / 2, t.y * k - 20, t.x * k + t.w / 2, t.y * k - 6], prio: 3e6 + t.count }); });
-  // 이름이 캔버스 밖으로 나가지 않게: 화면에 맞췄을 때 배치 좌우에 남는 폭 안에서만 쓴다
-  const [w] = kg.size, f = kg.fit || kg.view;
-  const sides = pickLabels(items.concat(caps), kg.bounds.x0 * k - (f.tx + kg.bounds.x0 * f.k - 8), kg.bounds.x1 * k + (w - f.tx - kg.bounds.x1 * f.k - 8));
-  for (const n of kg.nodes) {
-    const side = sides.get(n.id) || '', gap = n.r + 6, x = n.x * k, y = n.y * k;
-    // 자리를 못 잡은 이름(lo)은 숨겨 두고, 점에 마우스를 올리거나 탭으로 가면 오른쪽에 보인다(initOntology 의 hover)
-    const cls = 'kg-lbl' + n.cls.slice('o-node'.length) + (side ? '' : ' lo') + (n.hover ? ' hover' : '');
-    const at = side === 'T' ? [x, y - n.r - 9, 'middle'] : side === 'L' ? [x - gap, y + 4, 'end'] : [x + gap, y + 4, 'start'];
-    const sig = cls + '|' + at.join('|');
-    if (n.lblSig === sig) continue;
-    n.lblSig = sig;
-    n.lbl.setAttribute('class', cls); n.lbl.setAttribute('x', at[0].toFixed(1)); n.lbl.setAttribute('y', at[1].toFixed(1)); n.lbl.setAttribute('text-anchor', at[2]);
-  }
-  kg.groups.forEach(gr => gr.el.classList.toggle('off', !sides.has('group:' + gr.key)));
-  kg.types.forEach((t, i) => t.el.classList.toggle('off', !sides.has('type:' + i)));
 }
 function drawGraph() {
   const g = ent.graph; if (!g) return;
@@ -505,125 +471,84 @@ function drawGraph() {
   kgApplyState();
   renderNodePanel();
 }
+// 항목을 고르거나(같은 항목을 다시 누르면 풀린다) 푼다. 고르면 화면이 고른 것과 이웃이 다 보이게 옮겨 가고, 풀면 고르기 전의 화면으로 돌아간다
 function kgPick(id) {
+  const cy = kg.cy; if (!cy) return;
+  const was = ent.sel;
   ent.sel = id == null || ent.sel === id ? null : id;
+  if (was == null && ent.sel != null) kg.back = { zoom: cy.zoom(), pan: { ...cy.pan() } };
   kgApplyState(); renderNodePanel();
+  if (ent.sel != null && kg.at) kgShow(kg.at.bounds, KG.ZOOM_PICK);
+  else if (ent.sel == null && was != null && kg.back) { cy.stop(); if (kgStill()) cy.viewport(kg.back); else cy.animate(kg.back, { duration: 340, easing: 'ease-out-cubic' }); kg.back = null; }
 }
-// 그 항목이 캔버스 안(도구 · 칩에 가리지 않는 곳)에 보이게 지도를 옮긴다. 이미 보이면 그대로 둔다(always 면 늘 가운데로)
-function kgReveal(id, always) {
-  const n = kg.byId.get(id); if (!n) return;
-  const { k, tx, ty } = kg.view, [w, h] = kg.size, sx = n.x * k + tx, sy = n.y * k + ty;
-  if (!always && sx > 24 && sx < w - 24 && sy > 52 && sy < h - 56) return;
-  kg.view = { k, tx: w / 2 - n.x * k, ty: h / 2 - n.y * k }; kg.moved = true;
-  kgGlide(); kgApplyView();
-}
-// 통계 줄 아래의 오류 한 줄(흐름 이름 읽기 실패) — 회색 통계 글에 이어 붙이지 않는다
+// 흐름 이름을 못 읽었을 때의 한 줄(화면 머리 아래) — 통계 글에 이어 붙이지 않는다
 function ontoNote(text) { const n = $('#ontoNote'); n.textContent = text; n.hidden = !text; }
 
-/* ---------------- 오른쪽 상세 칸(밝은 틀): 종류 → 이름 → 설명 → 속성 → 이어진 것을 뜻별로 ---------------- */
+/* ---------------- 오른쪽 칸(밝은 판): 묶음 · 종류 → 이름 → ID → 속성 → 이어진 항목(관계 이름별 조각) → 그 밖의 속성 ---------------- */
 function renderNodePanel() {
   const box = $('#ontoNode');
-  const g = ent.graph; if (!g) { box.innerHTML = ''; return; }
-  const n = ent.sel != null ? g.nodes.find(x => String(x.id) === ent.sel) : null;
+  const g = ent.graph; if (!g || !kg.cy) return;
+  const n = ent.sel != null ? kg.raw.get(ent.sel) : null;
   const sig = JSON.stringify([ent.graphAsset, ent.sel, g.nodes.length, g.edges.length, UI.namesVersion, ent.definitionNamesError]);
   if (box.dataset.sig === sig && box.innerHTML) return;      // 검색 · 확대처럼 고른 항목이 그대로인 동안에는 다시 그리지 않는다(읽던 자리 · 편 접기가 유지된다)
   box.dataset.sig = sig;
+  const chip = (id, extra = '') => { const m = kg.raw.get(id); return m ? `<button type="button" class="chip" data-go="${esc(id)}" style="--c:${kgColor(m)}" title="${esc(LABEL_KO[m.label] || m.label)}"><i></i><span>${esc(nodeName(m))}</span>${extra}</button>` : ''; };
   if (!n) {
-    // 아무것도 고르지 않았을 때: 지도 읽는 법 한 줄과 묶음별 개수
+    // 아무것도 고르지 않았을 때: 무엇을 하면 채워지는지 + 가장 많이 이어진 항목 + (접어서) 묶음마다 어떤 종류가 몇 개인지
+    const top = [...kg.home.keys()].sort((a, b) => (kg.deg.get(b) || 0) - (kg.deg.get(a) || 0) || (a < b ? -1 : 1)).slice(0, 8);
     const counts = {}; g.nodes.forEach(x => { counts[x.label] = (counts[x.label] || 0) + 1; });
-    const rows = ONTO_GROUPS.map((gr, gi) => {
+    const kinds = ONTO_GROUPS.map((gr, gi) => {
       const labels = gr.other ? Object.keys(counts).filter(l => groupOf(l) === gi).sort() : gr.labels.filter(l => counts[l]);
-      const total = labels.reduce((sum, l) => sum + counts[l], 0);
-      return total ? `<li data-g="${gr.key}"><span class="kg-kind"><i></i>${esc(gr.title)}</span><b class="num">${total}</b><small>${labels.map(l => `${esc(LABEL_KO[l] || l)} ${counts[l]}`).join(' · ')}</small></li>` : '';
+      return labels.length ? `<dt><span class="gtag" style="--c:${gr.color}"><i></i>${esc(gr.title)}</span></dt><dd>${labels.map(l => `${esc(LABEL_KO[l] || l)} <span class="num">${counts[l]}</span>`).join(' · ')}</dd>` : '';
     }).join('');
-    box.innerHTML = `<section><p class="label">지도 읽는 법</p><p class="kg-lead">점 하나가 항목 하나이고 색이 묶음입니다. 같은 종류끼리 모여 있습니다. 항목을 누르면 그 항목과 바로 이어진 것만 밝게 보입니다. 빈 곳을 끌어 옮기고 휠로 확대하면 이름이 더 보입니다.</p></section>` +
-      `<section><p class="label">묶음별 항목</p><ul class="kg-counts">${rows}</ul></section>`;
-    return;
+    box.innerHTML = `<section class="empty"><header><figure>${UI.icon('network')}</figure><h3>항목을 골라 보세요</h3><p>지도에서 점을 누르면 그 항목의 속성과 이어진 항목이 여기에 보입니다.</p></header></section>` +
+      (top.length ? `<div class="node-sec"><h3>가장 많이 이어진 항목</h3><div class="chips">${top.map(id => chip(id, `<span class="num muted">${kg.deg.get(id) || 0}</span>`)).join('')}</div></div>` : '') +
+      (kinds ? `<div class="node-sec node-fold">${UI.fold('묶음마다 들어 있는 종류', `<dl class="kv">${kinds}</dl>`)}</div>` : '');
+  } else {
+    const group = ONTO_GROUPS[groupOf(n.label)], id = String(n.id);
+    const lead = n.props?.description || '';                 // 한 줄 설명은 서버가 준 값이 있을 때만(화면이 지어 붙이지 않는다)
+    const props = Object.entries(n.props || {}).filter(([k, v]) => !['id', 'name', 'description'].includes(k) && v !== '' && v != null);
+    const named = props.filter(([k]) => PROP_KO[k]), other = props.filter(([k]) => !PROP_KO[k]);
+    const value = v => { const text = typeof v === 'string' ? v : typeof v === 'boolean' ? (v ? '예' : '아니요') : Array.isArray(v) && v.every(x => typeof x !== 'object') ? v.join(', ') : typeof v === 'number' ? String(v) : JSON.stringify(v);
+      return text.length > 160 ? `<details class="kv-more"><summary>${esc(text.slice(0, 60))}…</summary><div>${esc(text)}</div></details>` : esc(text); };
+    // 이어진 것을 관계 이름별로 묶는다. 관계 이름표(RELATION_KO)는 나가는 쪽에서 본 말이라(증상 → 고장 「나타내는 고장」) 들어오는 쪽에 그대로 붙이면 거꾸로 읽힌다 —
+    // 나가는 관계는 관계 이름으로, 들어오는 관계는 상대의 종류(증상 · 원인 …)로 묶고 관계 이름은 작게 곁들인다
+    const rel = kgRelGroups(g.edges, id), groups = [];
+    rel.out.forEach(([type, ids]) => groups.push({ dir: 'out', title: RELATION_KO[type] || type, note: '', ids }));
+    const inn = new Map();
+    rel.inn.forEach(([type, ids]) => ids.forEach(o => { const kind = LABEL_KO[kg.raw.get(o)?.label] || kg.raw.get(o)?.label || '이어진 항목', key = kind + '|' + type;
+      (inn.get(key) || inn.set(key, { dir: 'in', title: kind, note: RELATION_KO[type] || type, ids: [] }).get(key)).ids.push(o); }));
+    groups.push(...inn.values());
+    const total = groups.reduce((sum, x) => sum + x.ids.length, 0);
+    const relHtml = groups.map(x => `<section class="rel-group" data-dir="${x.dir}"><h4>${UI.icon(x.dir === 'out' ? 'arrow-right' : 'arrow-left')}${esc(x.title)} <span class="num">${x.ids.length}</span>${x.note ? `<span class="rel-note">${esc(x.note)}</span>` : ''}</h4>` +
+      `<div class="chips">${x.ids.slice(0, 14).map(o => chip(o)).join('')}${x.ids.length > 14 ? `<details class="rel-more"><summary class="chip">+${x.ids.length - 14}</summary><div class="chips">${x.ids.slice(14).map(o => chip(o)).join('')}</div></details>` : ''}</div></section>`).join('');
+    box.innerHTML = `<div class="node-head fade-in"><span class="gtag" style="--c:${group.color}"><i></i>${esc(group.title)} · ${esc(LABEL_KO[n.label] || n.label)}</span><h2>${esc(nodeName(n))}</h2><p class="mono">${esc(id)}</p>` +
+      (lead ? `<p class="node-lead">${esc(UI.words(lead))}</p>` : '') + `</div>` +
+      (named.length ? `<div class="node-sec"><dl class="kv">${named.map(([k, v]) => `<dt>${esc(PROP_KO[k])}</dt><dd>${value((PROP_VALUE_KO[k] || {})[v] || v)}</dd>`).join('')}</dl></div>` : '') +
+      `<div class="node-sec"><h3>이어진 항목<span class="num">${total}</span></h3>${relHtml || '<p class="muted">이어진 항목이 없습니다.</p>'}</div>` +
+      (other.length ? `<div class="node-sec node-fold">${UI.fold(`그 밖의 속성<span class="muted num">${other.length}</span>`, `<dl class="kv">${other.map(([k, v]) => `<dt class="mono">${esc(k)}</dt><dd>${value(v)}</dd>`).join('')}</dl>`)}</div>` : '');
+    box.scrollTop = 0;
   }
-  const me = kg.byId.get(ent.sel), group = ONTO_GROUPS[groupOf(n.label)];
-  const lead = n.props?.description || '';                 // 한 줄 설명은 서버가 준 값이 있을 때만(화면이 지어 붙이지 않는다)
-  const props = Object.entries(n.props || {}).filter(([k]) => !['id', 'name', 'description'].includes(k));
-  const named = props.filter(([k]) => PROP_KO[k]), other = props.filter(([k]) => !PROP_KO[k]);
-  const byId = id => g.nodes.find(y => y.id === id) || { id };
-  // 이어진 것을 뜻으로 묶는다. 관계 이름표(RELATION_KO)는 나가는 쪽에서 본 말이라(증상 → 고장 「나타내는 고장」) 들어오는 쪽에 그대로 붙이면
-  // 거꾸로 읽힌다 — 나가는 관계는 관계 이름으로, 들어오는 관계는 상대의 종류(증상 · 원인 …)로 묶고 관계 이름은 작게 곁들인다.
-  // 방향이 다르면 이름이 같아도 다른 묶음이다(공급사 · 설비 · 규칙처럼 관계 이름과 종류 이름이 같은 낱말인 것이 있다)
-  const groups = new Map();
-  const add = (dir, title, o, note) => { const key = dir + title; if (!groups.has(key)) groups.set(key, { title, items: [] }); groups.get(key).items.push({ other: o, note }); };
-  g.edges.filter(e => e.from === n.id).forEach(e => { const o = byId(e.to); add('out:', RELATION_KO[e.type] || e.type, o, LABEL_KO[o.label] || o.label || ''); });
-  g.edges.filter(e => e.to === n.id).forEach(e => { const o = byId(e.from); add('in:', LABEL_KO[o.label] || o.label || '이어진 항목', o, RELATION_KO[e.type] || e.type); });
-  const keyOf = o => { const gi = groupOf(o.label); return gi >= 0 ? ONTO_GROUPS[gi].key : ''; };
-  const groupHtml = [...groups.values()].map(({ title, items }) => {
-    const notes = [...new Set(items.map(i => i.note).filter(Boolean))], keys = [...new Set(items.map(i => keyOf(i.other)))];
-    const one = notes.length === 1 && notes[0] !== title ? ` <span class="rel-note">${esc(notes[0])}</span>` : '';
-    return `<section class="rel-group" data-g="${keys.length === 1 ? keys[0] : ''}"><h4><i></i>${esc(title)} <span class="n">${items.length}</span>${one}</h4>
-      <ul class="rels">${items.map(i => `<li><a href="#" data-go="${esc(i.other.id)}"><span>${esc(nodeName(i.other))}</span>${notes.length > 1 && i.note ? `<small>${esc(i.note)}</small>` : ''}</a></li>`).join('')}</ul></section>`;
-  }).join('');
-  const value = v => { const text = typeof v === 'string' ? v : typeof v === 'boolean' ? (v ? '예' : '아니요') : Array.isArray(v) && v.every(x => typeof x !== 'object') ? v.join(', ') : typeof v === 'number' ? String(v) : JSON.stringify(v); return text.length > 160 ? UI.fold(esc(text.slice(0, 60)) + '…', `<div class="kv-long">${esc(text)}</div>`, { cls: 'small' }) : esc(text); };
-  box.innerHTML = `<section class="node-head" data-g="${group.key}"><span class="kg-kind o-kind"><i></i>${esc(LABEL_KO[n.label] || n.label)} · ${esc(group.title)}</span><h2>${esc(nodeName(n))}</h2>` +
-    (lead ? `<p class="kg-lead">${esc(UI.words(lead))}</p>` : '') +
-    `<dl class="kv"><dt>이어진 항목</dt><dd class="num">${me ? kg.adj.get(me.id).size : 0}</dd>${named.map(([k, v]) => `<dt>${esc(PROP_KO[k])}</dt><dd>${value((PROP_VALUE_KO[k] || {})[v] || v)}</dd>`).join('')}</dl>` +
-    (['Process', 'ProcessVersion'].includes(n.label) ? UI.metaFold([['흐름 식별자', esc(n.id)]]) : '') +
-    (other.length ? UI.fold(`그 밖의 속성 ${other.length}개 (원래 이름)`, '<dl class="kv">' + other.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${value(v)}</dd>`).join('') + '</dl>', { cls: 'small' }) : '') + '</section>' +
-    `<section class="node-rels">${groupHtml || `<p class="kg-lead">이어진 항목이 없습니다</p>`}</section>`;
-  box.scrollTop = 0;
-  box.querySelectorAll('[data-go]').forEach(a => a.addEventListener('click', ev => { ev.preventDefault(); const id = a.dataset.go; ent.sel = null; kgPick(id); kgReveal(id); }));
+  box.querySelectorAll('[data-go]').forEach(a => a.addEventListener('click', () => { const id = a.dataset.go; if (ent.sel !== id) kgPick(id); }));
 }
 function initOntology() {
   const map = $('#ontoMap');
-  new ResizeObserver(() => { if (kg.of && (map.clientWidth !== kg.size[0] || map.clientHeight !== kg.size[1])) kgResize(!kg.moved); }).observe(map);
-  // 끌어서 옮기기 · 두 손가락으로 확대(터치) · 누르면 고르기. 4px 넘게 움직였을 때만 끌기로 본다(누르기와 구분)
-  const ptr = new Map(); let drag = null, pinch = null, dragged = false;
-  map.addEventListener('pointerdown', ev => {
-    if (ev.button > 0 || !kg.of) return;
-    ptr.set(ev.pointerId, [ev.clientX, ev.clientY]);
-    if (ptr.size === 1) { drag = { id: ev.pointerId, x: ev.clientX, y: ev.clientY, tx: kg.view.tx, ty: kg.view.ty, on: false }; dragged = false; }
-    else if (ptr.size === 2) { const [p, q] = [...ptr.values()]; pinch = { d: kgDist(p[0], p[1], q[0], q[1]) || 1, k: kg.view.k }; drag = null; dragged = true; }
-  });
-  map.addEventListener('pointermove', ev => {
-    if (!ptr.has(ev.pointerId)) return;
-    ptr.set(ev.pointerId, [ev.clientX, ev.clientY]);
-    if (pinch && ptr.size === 2) { const [p, q] = [...ptr.values()], box = map.getBoundingClientRect(); kgZoomTo(pinch.k * kgDist(p[0], p[1], q[0], q[1]) / pinch.d, (p[0] + q[0]) / 2 - box.left, (p[1] + q[1]) / 2 - box.top); return; }
-    if (!drag || drag.id !== ev.pointerId) return;
-    const dx = ev.clientX - drag.x, dy = ev.clientY - drag.y;
-    if (!drag.on) { if (Math.abs(dx) + Math.abs(dy) < 4) return; drag.on = true; dragged = true; map.setPointerCapture(ev.pointerId); map.classList.add('dragging'); }
-    kg.view = { k: kg.view.k, tx: drag.tx + dx, ty: drag.ty + dy }; kg.moved = true; kgApplyView();
-  });
-  const end = ev => { ptr.delete(ev.pointerId); if (ptr.size < 2) pinch = null; if (drag && drag.id === ev.pointerId) { map.classList.remove('dragging'); drag = null; } };
-  map.addEventListener('pointerup', end); map.addEventListener('pointercancel', end);
-  map.addEventListener('click', ev => {
-    if (dragged) { dragged = false; return; }
-    const node = ev.target.closest('.o-node');
-    if (node) kgPick(node.dataset.id); else if (ent.sel != null && ev.target.closest('.kg-svg')) kgPick(null);      // 빈 곳을 누르면 고른 것이 풀린다
-  });
-  map.addEventListener('wheel', ev => {
-    if (!kg.of) return;
-    ev.preventDefault();
-    const box = map.getBoundingClientRect(), dy = ev.deltaMode === 1 ? ev.deltaY * 32 : ev.deltaY;
-    kgZoomTo(kg.view.k * Math.exp(-dy * 0.0016), ev.clientX - box.left, ev.clientY - box.top);
-  }, { passive: false });
-  // 키보드: 탭으로 항목을 돌고 Enter · 스페이스로 고른다. 화살표로 옮기고 + · − 로 확대 · 축소, 0 은 화면에 맞춤, Esc 는 고른 것 풀기
+  // 캔버스 크기가 바뀌면 그림도 따라간다. 사람이 옮기거나 확대하지 않았고 고른 것이 없으면 전체가 보이게 다시 맞춘다
+  new ResizeObserver(() => { const cy = kg.cy; if (!cy || !map.clientWidth) return; cy.resize(); if (!kg.moved && ent.sel == null && !ent.focus) kgFit(true); }).observe(map);
+  // 키보드: 화살표로 옮기고 + · − 로 확대 · 축소, 0 은 화면에 맞춤, Esc 는 고른 것 풀기. 항목은 찾기 칸에서 이름을 치고 Enter 로 고르거나 오른쪽 칸의 조각으로 고른다
   map.addEventListener('keydown', ev => {
-    if (!kg.of || ev.ctrlKey || ev.metaKey || ev.altKey) return;
-    const node = ev.target.closest('.o-node');
-    if (node && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); kgPick(node.dataset.id); return; }
+    const cy = kg.cy; if (!cy || ev.ctrlKey || ev.metaKey || ev.altKey) return;
     const move = { ArrowLeft: [48, 0], ArrowRight: [-48, 0], ArrowUp: [0, 48], ArrowDown: [0, -48] }[ev.key];
-    if (move) { ev.preventDefault(); kg.view = { k: kg.view.k, tx: kg.view.tx + move[0], ty: kg.view.ty + move[1] }; kg.moved = true; kgApplyView(); }
-    else if (ev.key === '+' || ev.key === '=') { ev.preventDefault(); kgZoomTo(kg.view.k * 1.25); }
-    else if (ev.key === '-') { ev.preventDefault(); kgZoomTo(kg.view.k / 1.25); }
+    if (move) { ev.preventDefault(); kg.moved = true; cy.panBy({ x: move[0], y: move[1] }); }
+    else if (ev.key === '+' || ev.key === '=') { ev.preventDefault(); kgZoomBy(1.25); }
+    else if (ev.key === '-') { ev.preventDefault(); kgZoomBy(1 / 1.25); }
     else if (ev.key === '0') { ev.preventDefault(); kgFit(); }
     else if (ev.key === 'Escape' && ent.sel != null) { ev.preventDefault(); kgPick(null); }
   });
-  // 숨은 이름: 점에 마우스를 올리거나 탭으로 가면 그 점의 이름을 보인다
-  const hover = (ev, on) => { const node = ev.target.closest('.o-node'), n = node && kg.byId.get(node.dataset.id); if (n && !!n.hover !== on) { n.hover = on; n.lbl.classList.toggle('hover', on); } };
-  map.addEventListener('pointerover', ev => hover(ev, true));
-  map.addEventListener('pointerout', ev => hover(ev, false));
-  map.addEventListener('focusin', ev => { const node = ev.target.closest('.o-node'); if (node && node.matches(':focus-visible')) { hover(ev, true); kgReveal(node.dataset.id); } });
-  map.addEventListener('focusout', ev => hover(ev, false));
-  $('#ontoZoomOut').addEventListener('click', () => { if (kg.of) { kgGlide(); kgZoomTo(kg.view.k / 1.25); } });
-  $('#ontoZoomIn').addEventListener('click', () => { if (kg.of) { kgGlide(); kgZoomTo(kg.view.k * 1.25); } });
-  $('#ontoFit').addEventListener('click', () => { if (kg.of) kgFit(); });
-  // 층 칩: 누르면 그 묶음을 끄고 켠다
+  $('#ontoZoomOut').addEventListener('click', () => kgZoomBy(1 / 1.25));
+  $('#ontoZoomIn').addEventListener('click', () => kgZoomBy(1.25));
+  $('#ontoFit').addEventListener('click', () => kgFit());
+  // 묶음 조각: 누르면 그 묶음을 끄고 켠다
   $('#ontoLayers').addEventListener('click', ev => {
     const b = ev.target.closest('[data-layer]'); if (!b) return;
     ent.hidden.has(b.dataset.layer) ? ent.hidden.delete(b.dataset.layer) : ent.hidden.add(b.dataset.layer);
@@ -631,15 +556,33 @@ function initOntology() {
   });
   $('#ontoAsset').addEventListener('change', () => loadGraph(true));
   $('#ontoNs').addEventListener('change', () => { ent.sel = null; loadGraph(true); });
-  $('#ontoFocus').addEventListener('change', ev => { ent.focus = ev.target.value || null; ent.sel = null; drawGraph(); if (ent.focus) kgReveal(ent.focus); });
-  // 이름 검색: 치는 대로 걸린 항목이 밝아지고 첫 항목이 보이게 옮긴다. Enter · [다음 찾기]는 다음 항목으로(Shift+Enter 는 앞 항목으로)
-  const goMatch = step => { if (!kg.matches.length) return; kg.matchAt = (kg.matchAt + step + kg.matches.length) % kg.matches.length; kgApplyState(); kgReveal(kg.matches[kg.matchAt], true); };
-  $('#ontoSearch').addEventListener('input', ev => { ent.search = ev.target.value; kg.matchAt = 0; drawGraph(); if (kg.matches.length) kgReveal(kg.matches[0]); });
+  // 이상 패턴 경로: 그 패턴에서 증상 · 고장 유형 · 원인 · 조치 방법까지 가는 길만 밝게 하고 줄로 놓은 뒤, 그 길이 다 보이게 옮긴다. 「전체」로 돌리면 제자리로
+  $('#ontoFocus').addEventListener('change', ev => {
+    ent.focus = ev.target.value || null;
+    if (ent.sel != null) kgPick(null); else { kgApplyState(); renderNodePanel(); }
+    const cy = kg.cy; if (!cy) return;
+    if (ent.focus && kg.at) kgShow(kg.at.bounds, 1.1); else if (!ent.focus) kgFit();
+  });
+  // 이름 찾기: 치는 대로 걸린 항목이 밝아지고(노란 테두리) 그것들이 보이게 옮긴다. Enter · [다음]은 걸린 항목을 차례로 고른다(Shift+Enter 는 앞 항목)
+  const goMatch = step => {
+    if (!kg.matches.length) return;
+    const at = kg.matches.indexOf(ent.sel);
+    kg.matchAt = at < 0 ? 0 : (at + step + kg.matches.length) % kg.matches.length;
+    const id = kg.matches[kg.matchAt];
+    if (ent.sel !== id) kgPick(id); else kgApplyState();
+  };
+  $('#ontoSearch').addEventListener('input', ev => {
+    ent.search = ev.target.value; kg.matchAt = 0; drawGraph();
+    const cy = kg.cy; if (!cy || ent.sel != null) return;
+    const hits = cy.nodes('.hit');
+    if (hits.length) kgShow(kgBoxOf(hits), 1.1); else if (!ent.search.trim() && !kg.moved) kgFit();
+  });
   $('#ontoSearch').addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); goMatch(ev.shiftKey ? -1 : 1); } });
   $('#ontoNext').addEventListener('click', () => goMatch(1));
   $('#ontoReload').addEventListener('click', () => loadGraph(true));
   // 질의 보기(문서 등록 화면 아래의 접기): 지식 지도를 읽는 질의문을 종류별로 보인다
   document.querySelectorAll('#ontoTpl button').forEach(b => b.addEventListener('click', async () => {
+    document.querySelectorAll('#ontoTpl button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
     try { const t = await getJ(API.agent + '/api/ontology/template/' + b.dataset.t); $('#ontoTplText').textContent = t.text; }
     catch (e) { $('#ontoTplText').textContent = UI.t('error.load') + ': ' + e.message; }
   }));
@@ -748,30 +691,34 @@ function rangeField(id, label, a, value) {
 }
 window.hydCards = { cardHtml, reviewMatches, rangeField, actionLabel };
 
-/* ================================================= 규칙 판단(판단 실험) */
+/* ================================================= 규칙 판단(판단 실험)
+   짜임(디자인 기준 5-6): 왼쪽 조건 판(index.html #decForm) → 오른쪽 결과(#decResult). 결과는 결론 한 줄과 숫자 넷 → 조치 후보 비교(.opts) → 근거(원인 · 증거) → 원문 접기.
+   판단 한 번은 1초 안에 끝난다 — 그동안은 결과 자리에 읽는 중 줄(스켈레톤)을 두고 단추가 「판단하는 중 · 걸린 시간」으로 바뀐다 */
+const decEmpty = () => `<section class="empty"><header><figure>${UI.icon('scale')}</figure><h3>아직 모의 판단을 하지 않았습니다</h3><p>왼쪽에서 설비와 이상 패턴을 고르고 [모의 판단]을 누르면 1순위 조치와 그 근거가 여기에 보입니다.</p></header></section>`;
 async function loadDecisionView() {
-  const sel = $('#decPattern');
-  if (!$('#decResult').innerHTML) $('#decResult').innerHTML = UI.empty(UI.t('dec.empty'));
+  const sel = $('#decPattern'), box = $('#decResult');
+  if (!box.innerHTML) box.innerHTML = decEmpty();
   if (sel.options.length) return;
   const pats = await loadPatterns();
   pats.forEach(p => sel.append(new Option(`${p.name}${p.failureModes && p.failureModes.length ? ' → ' + p.failureModes.join(', ') : ''}`, p.code)));
-  if (!pats.length) $('#decResult').innerHTML = UI.errorBlock(UI.t('dec.noPatterns'), ent.patternsError || '지식 그래프에 이상 패턴이 없습니다', { retry: true });
-  $('#decResult').querySelector('[data-retry]')?.addEventListener('click', () => loadDecisionView());
+  $('#decRun').disabled = !pats.length;
+  if (!pats.length) box.innerHTML = UI.errorBlock(UI.t('dec.noPatterns'), ent.patternsError || '지식 그래프에 이상 패턴이 없습니다', { retry: true });
+  box.querySelector('[data-retry]')?.addEventListener('click', () => loadDecisionView());
 }
 async function runDecision() {
   if (ent.busy) return; ent.busy = true;
   ent.result = null; // A failed new request must not retain the previous successful judgment.
-  const b = $('#decRun'); b.disabled = true; b.textContent = UI.t('btn.running');
+  const end = hydLive.busy($('#decRun'), '판단하는 중'), box = $('#decResult');
   const facts = {};
   if ($('#decMode').value) facts.plc_mode = $('#decMode').value;
   if ($('#decState').value) facts.plc_state = $('#decState').value;
   if ($('#decFan').value !== '') facts.fan100_hours = Number($('#decFan').value);
   if ($('#decStandby').value) facts.standby_ready = $('#decStandby').value === 'true';
-  $('#decResult').innerHTML = UI.empty(UI.t('dec.loading'));
+  box.innerHTML = `<section class="panel"><div class="panel-head">${UI.loading()}</div></section>`;
   try { ent.result = await postJ(API.agent + '/api/agent/decide', { asset: $('#decAsset').value, pattern: $('#decPattern').value, facts }); ent.facts = facts; renderDecision(); }
-  catch (e) { $('#decResult').innerHTML = UI.errorBlock(UI.t('dec.failed'), e.message, { retry: true }); }
-  finally { ent.busy = false; b.disabled = false; b.textContent = UI.t('btn.run'); }
-  $('#decResult').querySelector('[data-retry]')?.addEventListener('click', runDecision);
+  catch (e) { box.innerHTML = UI.errorBlock(UI.t('dec.failed'), e.message, { retry: true }); }
+  finally { ent.busy = false; end(false); }
+  box.querySelector('[data-retry]')?.addEventListener('click', runDecision);
 }
 // first sentence = up to a period followed by whitespace or the end ("점수 3.87" must not cut)
 const firstSentence = text => { const m = String(text || '').match(/^[\s\S]*?[.。](?=\s|$)/); return m ? m[0] : String(text || ''); };
@@ -788,72 +735,94 @@ const FACT_LABEL = { plc_mode: 'dec.mode', plc_state: 'dec.state', standby_ready
 function unusedFacts(facts, trace) {
   return Object.keys(facts || {}).filter(k => FACT_LABEL[k] && !(trace || []).some(t => String(t.when || '').includes(k)));
 }
-// 결과(디자인 기준 5-8 · 5-3): 결론 한 문장 → 조치 순위 표(1순위와 진 안이 왜 졌는지) → 원인 → 판단에 쓴 값 표 → 접기(후보별 근거 · 점수 계산 · 적용한 규칙 · 처리 과정 원문)
+// 처리 과정 원문: 판단 서비스가 거친 단계가 한 줄씩(키트 .line — 이름 · 한 일 · 시각). 단계 이름은 화면 말로 적고, 서버가 남긴 설명과 출력 원문은 그 아래 접기에 둔다
+const DEC_STEPS = { ontology: ['판단 규칙 읽기', '지식에서 이 판단의 결정표와 규칙을 읽습니다.'], facts: ['판단에 쓸 값 가져오기', '규칙이 검사할 값을 지식이 정한 출처(업무 시스템 · 센서)에서 가져옵니다.'],
+  forecast: ['조치별 예측', '조치마다 설비 예측 모델로 조치 뒤 값을 계산합니다.'], candidates: ['조치 후보 고르기', '고장 유형과 설비 상태 규칙으로 후보를 고릅니다.'],
+  compliance: ['규정 적합성 검사', '후보마다 규칙의 기준에 대어 제외 · 감점 · 경고를 정합니다.'], tradeoffs: ['성과 득실과 선례', '조치가 성과 지표에 주는 득실과 같은 고장 유형의 선례를 모읍니다.'],
+  rank: ['점수와 순위', '순위 규칙의 식으로 점수를 내고 순위를 정합니다.'] };
+function decTrace(steps) {
+  return `<div class="stream-log" style="max-height:none;padding:0">` + steps.map(s => {
+    const [name, note] = DEC_STEPS[s.name] || UI.steps[s.name] || [s.name, s.note || ''];
+    const ok = s.status === 'DONE', raw = [s.note ? `설명: ${s.note}` : '', s.output == null ? '' : JSON.stringify(s.output, null, 1)].filter(Boolean).join('\n\n');
+    return `<div class="line" data-kind="${ok ? 'ok' : 'fail'}">${UI.icon(ok ? 'check' : 'x')}<span class="line-text"><b>${esc(name)}</b><span class="line-sub">${esc(ok ? note : UI.status(s.status) + (note ? ' · ' + note : ''))}</span></span><span class="line-time num">${esc(UI.time(s.t))}</span></div>` +
+      UI.fold(esc(UI.t('raw')), raw ? `<pre class="code">${esc(raw)}</pre>` : '<p class="muted">출력 데이터가 없습니다.</p>');
+  }).join('') + '</div>';
+}
+// 결과(디자인 기준 5-6): 결론 한 줄 + 숫자 넷 → 조치 후보 비교(.opts — 1순위와 진 안이 왜 졌는지) → 근거(판정 원인과 증거) → 접기(판단에 쓴 값 · 후보별 근거 · 점수 계산 · 적용한 규칙 · 처리 과정 원문)
 function renderDecision() {
   const d = ent.result; const box = $('#decResult');
-  if (!d || !d.result) { box.innerHTML = UI.empty(UI.status(d && d.status) || UI.t('dec.failed'), (d && d.error) || ''); return; }
-  const r = d.result, opts = r.options || [];
+  if (!d || !d.result) { box.innerHTML = UI.errorBlock(UI.status(d && d.status) || UI.t('dec.failed'), (d && d.error) || '판단 결과가 오지 않았습니다. 조건을 바꿔 다시 눌러 보세요.'); return; }
+  const r = d.result, opts = r.options || [], causes = d.causes || [], c0 = causes[0], trace = r.trace || [];
   const maxAbs = Math.max(1, ...opts.map(o => Math.abs(o.score || 0)));
   const text = UI.idText(r.explanation), first = firstSentence(text), rest = String(text || '').slice(first.length).trim();      // 결론 문장은 서버가 준 설명의 첫 문장 그대로다(화면이 지어 붙이지 않는다)
-  let html = `<header class="dc-head"><h2>${esc(UI.idText((d.scenario || {}).name || ''))}</h2>${UI.chip(d.status)}<p>${esc(d.asset || '')} · 모의 판단 ${esc(UI.dateTime(d.created))}</p></header>`;
-  html += UI.evaluationHtml(r, d);
-  html += `<p class="label">결론</p><p class="dc-conclusion">${esc(first)}</p>` + (rest ? UI.fold(esc(UI.t('dec.summaryMore')), `<p class="dc-more">${esc(rest)}</p>`) : '');
-  // 2026-10-25 수업 점검: 바꾼 판단 조건을 읽는 규칙이 지금 지식에 없으면 결과가 그대로라 학생이 고장으로 오해했다(HM-8에는 보호 정지 규칙이 없다)
-  const unused = unusedFacts(ent.facts, r.trace);
-  if (unused.length) html += `<p class="dc-note" role="status">${esc(unused.map(k => UI.t(FACT_LABEL[k])).join(', '))}: 지금 지식의 규칙 가운데 이 조건을 읽는 규칙이 없어 결과에 영향이 없습니다.</p>`;
-  if (d.moneyError) html += `<p class="neg" role="status">손익(원)을 계산하지 못했습니다: ${esc(d.moneyError)}</p>`;
-
-  // 조치 순위: 1순위 줄이 맨 위(파란 면). 진 안은 둘째 줄에 까닭 — 제외된 안은 걸린 규칙, 남은 안은 감점 규칙과 1순위와의 점수 차
   const top = opts.find(o => o.id === r.recommended) || null;
+  const feasible = opts.filter(o => o.feasible), second = feasible.filter(o => !top || o.id !== top.id).sort((a, b) => (a.rank || 99) - (b.rank || 99))[0];
+  const gap = top && second && Number.isFinite(top.score) && Number.isFinite(second.score) ? `<small>2순위보다 ${(top.score - second.score).toFixed(2)} 높음</small>` : '';
+  const fact = (label, value) => `<div><dt>${esc(label)}</dt><dd>${value}</dd></div>`;
+
+  // 머리: 결론(큰 글) · 무엇을 언제 판단했나 · 숫자 넷
+  let html = `<section class="panel"><div class="panel-head"><div><div class="result-label">${UI.icon('sparkles')}결론 ${UI.chip(d.status)}</div><h2>${esc(first)}</h2>` +
+    `<p>${esc([d.asset, UI.idText((d.scenario || {}).name || ''), '모의 판단 ' + UI.dateTime(d.created)].filter(Boolean).join(' · '))}</p></div></div>` +
+    `<dl class="turn-facts">${fact(UI.t('dec.causeTop') + ' 원인', c0 ? esc(UI.idText(c0.name)) : '없음')}${fact('1순위 점수', top && Number.isFinite(top.score) ? `<span class="num">${signNum(top.score)}</span>${gap}` : '–')}` +
+    `${fact(UI.t('dec.candidates'), `<span class="num">${feasible.length}</span><small>개 가능${opts.length - feasible.length ? ` · ${opts.length - feasible.length}개 제외` : ''}</small>`)}` +
+    `${fact('발동한 규칙', `<span class="num">${trace.filter(t => t.fired).length}</span><small>/ ${trace.length}개</small>`)}</dl>`;
+  // 2026-10-25 수업 점검: 바꾼 판단 조건을 읽는 규칙이 지금 지식에 없으면 결과가 그대로라 학생이 고장으로 오해했다(HM-8에는 보호 정지 규칙이 없다)
+  const unused = unusedFacts(ent.facts, trace);
+  const notes = (rest ? `<p class="result-sub">${esc(rest)}</p>` : '') +
+    (unused.length ? `<p class="muted" role="status">${esc(unused.map(k => UI.t(FACT_LABEL[k])).join(', '))}: 지금 지식의 규칙 가운데 이 조건을 읽는 규칙이 없어 결과에 영향이 없습니다.</p>` : '') +
+    (d.moneyError ? `<p class="muted" data-tone="danger" role="status">손익(원)을 계산하지 못했습니다: ${esc(d.moneyError)}</p>` : '');
+  if (notes) html += `<div class="panel-sec">${notes}</div>`;
+
+  // 조치 후보 비교: 1순위 줄이 맨 위(제품색 면). 진 안은 둘째 줄에 까닭 — 제외된 안은 걸린 규칙, 남은 안은 감점 규칙과 1순위와의 점수 차
   const kind = o => [(o.actions || []).some(a => a.kind === 'command') ? UI.t('chip.control') : '', (o.actions || []).some(a => a.kind !== 'command') ? UI.t('chip.workOrder') : ''].filter(Boolean).join(' · ');
   const why = o => {
-    if (!o.feasible) return `<small class="out">제외 — ${esc((o.violations || []).map(v => UI.ruleLabel(v)).join(' · ') || '걸린 규칙 이름 없음')}</small>`;
+    if (!o.feasible) return `<small>제외 — ${esc((o.violations || []).map(v => UI.ruleLabel(v)).join(' · ') || '걸린 규칙 이름 없음')}</small>`;
     if (top && o.id === top.id) return '';
     const parts = [];
     if ((o.penalties || []).length) parts.push('감점 — ' + o.penalties.map(v => UI.ruleLabel(v)).join(' · '));
     if (top && Number.isFinite(o.score) && Number.isFinite(top.score)) parts.push(`1순위보다 ${(top.score - o.score).toFixed(2)}점 낮음`);
     return parts.length ? `<small>${esc(parts.join(' · '))}</small>` : '';
   };
-  const ordered = opts.slice().sort((a, b) => (b.id === r.recommended) - (a.id === r.recommended));
-  html += `<h3 class="dc-sec">${esc(UI.t('dec.candidates'))}<small>${opts.length}</small></h3>` + (opts.length ? `<div class="table-scroll" tabindex="0"><table class="tbl dc-table"><thead><tr><th>순위</th><th>조치</th><th>구분</th><th class="r">${esc(UI.t('card.score'))}</th></tr></thead><tbody>` +
-    ordered.map(o => `<tr class="${o.id === r.recommended ? 'pick' : o.feasible ? '' : 'out'}"><td class="num">${o.feasible ? esc(o.rank) : '–'}</td><td><b>${esc(UI.idText(o.name))}</b>${why(o)}</td><td>${esc(kind(o))}</td><td class="r">${Number.isFinite(o.score) ? signNum(o.score) : '–'}</td></tr>`).join('') +
-    '</tbody></table></div>' : UI.empty(UI.t('inc.noCandidates'), '', 'compact'));
+  const ordered = opts.slice().sort((a, b) => (b.id === r.recommended) - (a.id === r.recommended) || (b.feasible ? 1 : 0) - (a.feasible ? 1 : 0) || (a.rank || 99) - (b.rank || 99));
+  html += `<div class="panel-sec"><h3>${esc(UI.t('dec.candidates'))} 비교<span class="muted">${opts.length}개${top ? ' 가운데 1순위' : ''}</span></h3>` + (opts.length
+    ? `<div class="table-container"><table class="opts"><thead><tr><th></th><th>조치</th><th>구분</th><th class="num">${esc(UI.t('card.score'))}</th><th></th><th>${esc(UI.t('card.approver'))}</th></tr></thead><tbody>` +
+      ordered.map(o => `<tr${o.id === r.recommended ? ' data-pick' : ''}><td><span class="rank num">${o.feasible ? esc(o.rank) : '–'}</span></td>` +
+        `<td><b>${esc(UI.idText(o.name))}</b>${o.sopId ? ` <span class="muted mono">${esc(o.sopId)}</span>` : ''}${o.feasible ? '' : ' ' + UI.chipText(UI.t('chip.excluded'), 'danger')}${why(o)}</td><td>${esc(kind(o))}</td>` +
+        `<td class="num">${Number.isFinite(o.score) ? signNum(o.score) : '–'}</td><td><div class="bar"><i style="width:${o.feasible ? Math.min(100, Math.round(Math.abs(o.score || 0) / maxAbs * 100)) : 0}%"></i></div></td><td>${esc((o.approver || {}).name || '–')}</td></tr>`).join('') +
+      '</tbody></table></div>' : UI.empty(UI.t('inc.noCandidates'), '이 설비와 이상 패턴에 맞는 조치 방법이 지식에 없습니다.', 'compact')) + '</div>';
 
-  // 원인: 판정 원인 한 줄과 증거, 다른 원인 후보는 접기
-  const causes = d.causes || [];
-  const evidenceHtml = c => (c.evidence || []).length ? '<ul class="dc-evidence">' + c.evidence.map(e => { const unknown = e.status === 'UNKNOWN' || e.passed == null || e.value == null || !!e.error;
-    const unit = window.hydWords.unit(e.tag);      // 충족 여부를 색만이 아니라 글자로
-    return `<li><span>${esc(e.name)}</span><span class="${unknown ? 'unknown' : e.passed ? 'ok' : 'no'}">${esc(UI.t(unknown ? 'inc.unknown' : e.passed ? 'inc.pass' : 'inc.fail'))}</span><span>${esc(UI.t('inc.observed'))} ${esc(fmt(e.value, 3))}${unit ? ' ' + esc(unit) : ''}</span></li>`; }).join('') + '</ul>'
-    : `<p class="dc-note">${esc(UI.t('inc.noEvidence'))}</p>`;
-  if (causes.length) {
-    const c0 = causes[0];
-    html += `<h3 class="dc-sec">${esc(UI.t('dec.cause'))}</h3><dl class="kv"><dt>${esc(UI.t('dec.causeTop'))}</dt><dd><b>${esc(UI.idText(c0.name))}</b></dd>` +
-      (c0.failureMode ? `<dt>고장 유형</dt><dd>${esc(UI.idText(c0.failureMode))}</dd>` : '') + `<dt>${esc(UI.t('card.score'))}</dt><dd class="num">${esc(c0.score)}</dd></dl>` + evidenceHtml(c0) +
-      (causes.length > 1 ? UI.fold(`${esc(UI.t('dec.causeMore'))} ${causes.length - 1}`, causes.slice(1).map(c => `<p class="dc-more"><b>${esc(UI.idText(c.name))}</b> · ${esc(UI.t('card.score'))} ${esc(c.score)}${c.failureMode ? ' · ' + esc(UI.idText(c.failureMode)) : ''}</p>${evidenceHtml(c)}`).join('')) : '');
-  }
+  // 근거: 판정 원인 한 줄과 그 증거(충족 여부는 상태 뱃지와 글로), 다른 원인 후보는 접기
+  const evidenceLines = c => (c.evidence || []).map(e => { const unknown = e.status === 'UNKNOWN' || e.passed == null || e.value == null || !!e.error;
+    const unit = window.hydWords.unit(e.tag);
+    return `<li>${UI.icon(unknown ? 'circle-dashed' : e.passed ? 'check' : 'x')}<span><b>${esc(e.name)}</b> ${UI.chipText(UI.t(unknown ? 'inc.unknown' : e.passed ? 'inc.pass' : 'inc.fail'), unknown ? 'neutral' : e.passed ? 'success' : 'danger')} ${esc(UI.t('inc.observed'))} <span class="num">${esc(fmt(e.value, 3))}</span>${unit ? ' ' + esc(unit) : ''}</span></li>`; }).join('')
+    || `<li>${UI.icon('info')}<span>${esc(UI.t('inc.noEvidence'))}</span></li>`;
+  const causeLine = c => `<li>${UI.icon('search')}<span><b>${esc(UI.idText(c.name))}</b>${c.failureMode ? ' · 고장 유형 ' + esc(UI.idText(c.failureMode)) : ''} · ${esc(UI.t('card.score'))} <span class="num">${esc(c.score)}</span></span></li>`;
+  if (c0) html += `<div class="panel-sec"><h3>근거<span class="muted">${esc(UI.t('dec.causeTop'))} 원인과 관측 값</span></h3><ul class="evid">${causeLine(c0)}${evidenceLines(c0)}</ul>` +
+    (causes.length > 1 ? UI.fold(`${esc(UI.t('dec.causeMore'))}<span class="muted">${causes.length - 1}개</span>`, causes.slice(1).map(c => `<ul class="evid">${causeLine(c)}${evidenceLines(c)}</ul>`).join('<br>')) : '') + '</div>';
 
-  // 판단에 쓴 값
+  // 원문 접기: 판단에 쓴 값 · 후보별 근거 카드 · 점수 계산 방법 · 적용한 규칙 · 처리 과정 원문과 판단 번호
   const prov = d.provenance || [];
-  html += `<h3 class="dc-sec">${esc(UI.t('dec.inputs'))}<small>${prov.length}</small></h3>` + (prov.length ? `<div class="table-scroll" tabindex="0"><table class="tbl"><thead><tr><th>${esc(UI.t('dec.col.input'))}</th><th>${esc(UI.t('dec.col.value'))}</th><th>${esc(UI.t('dec.col.source'))}</th><th>${esc(UI.t('dec.col.how'))}</th></tr></thead><tbody>` +
-    prov.map(p => `<tr><td>${esc(p.name)}</td><td>${p.error ? '<span class="neg">' + esc(p.error) + '</span>' : esc(factValue(p.variable, p.value))}</td><td>${esc(p.sourceName || p.source)}</td><td class="muted">${esc(p.how || '')}</td></tr>`).join('') + '</tbody></table></div>'
-    : `<p class="dc-note">이 판단은 입력 값의 출처를 남기지 않았습니다.</p>`);
-
-  // 자세히: 후보별 근거 카드 · 점수 계산 방법 · 적용한 규칙 · 처리 과정 원문 · 판단 번호
-  const tr = (r.trace || []).slice().sort((a, b) => (b.fired ? 1 : 0) - (a.fired ? 1 : 0) || (b.skill ? 1 : 0) - (a.skill ? 1 : 0));      // 발동한 규칙이 위로
-  const target = t => t.skill ? ((opts.find(o => o.id === t.skill) || {}).name || t.skill) : '';
-  html += '<div class="dc-folds">' +
-    UI.fold(`조치 후보별 근거 · 예측 · 절차`, `<div class="hitl-opts">` + opts.map(o => cardHtml(o, { rec: r.recommended, maxAbs, decision: { ...r, facts: d.facts, origin: d.origin } })).join('') + '</div>') +
-    (r.rankRule ? UI.fold(esc(UI.t('card.scoreHow')), `<p class="dc-more">${esc(r.rankRule.annotation || '')}</p>`) : '') +
-    UI.fold(`${esc(UI.t('dec.rules'))} ${tr.length}`,
-      `<div class="table-scroll" tabindex="0"><table class="tbl"><thead><tr><th>${esc(UI.t('dec.col.rule'))}</th><th>${esc(UI.t('dec.col.target'))}</th><th>${esc(UI.t('dec.col.result'))}</th></tr></thead><tbody>` +
-      tr.map(t => `<tr class="${t.fired ? 'pick' : ''}"><td>${esc(UI.ruleLabel(t))}<small>${esc(t.decision === 'dec:action-candidates' ? UI.t('dec.ruleSelect') : UI.t('dec.ruleCompliance'))}</small>${UI.fold(esc(UI.t('raw')), `<code>${esc(t.rule)}</code> <code>${esc(t.when || '')}</code>`)}</td><td>${esc(target(t))}</td>` +
-        `<td>${t.fired ? `<b>${esc(UI.t('dec.fired'))}</b>` : (t.unknown && t.unknown.length ? `<span class="muted">${esc(UI.t('dec.noFact'))}: ${esc(t.unknown.join(', '))}</span>` : esc(UI.t('dec.notApplicable')))}</td></tr>`).join('') + '</tbody></table></div>') +
-    UI.fold(`${esc(UI.t('dec.trace'))} · 판단 번호`, `<dl class="kv"><dt>판단 번호</dt><dd class="mono">${esc(d.id)}</dd></dl>` + traceHtml({ id: d.id, status: d.status, started: d.created, steps: d.steps || [] })) +
+  const tr = trace.slice().sort((a, b) => (b.fired ? 1 : 0) - (a.fired ? 1 : 0) || (b.skill ? 1 : 0) - (a.skill ? 1 : 0));      // 발동한 규칙이 위로
+  const target = t => t.skill ? UI.idText((opts.find(o => o.id === t.skill) || {}).name || t.skill) : '';
+  html += '<div class="panel-sec">' +
+    UI.fold(`${esc(UI.t('dec.inputs'))}<span class="muted">${prov.length}개 · 출처와 가져온 방법</span>`, prov.length
+      ? `<div class="table-container"><table class="table"><thead><tr><th>${esc(UI.t('dec.col.input'))}</th><th>${esc(UI.t('dec.col.value'))}</th><th>${esc(UI.t('dec.col.source'))}</th><th>${esc(UI.t('dec.col.how'))}</th></tr></thead><tbody>` +
+        prov.map(p => `<tr><td>${esc(p.name)}</td><td>${p.error ? `<span class="muted" data-tone="danger">${esc(p.error)}</span>` : esc(factValue(p.variable, p.value))}</td><td>${esc(p.sourceName || UI.who(p.source))}</td><td class="muted">${esc(p.how || '')}</td></tr>`).join('') + '</tbody></table></div>'
+      : `<p class="muted">이 판단은 입력 값의 출처를 남기지 않았습니다.</p>`) +
+    UI.fold(`조치 후보별 근거 · 예측 · 절차<span class="muted">${opts.length}개</span>`, `<div class="hitl-opts">` + opts.map(o => cardHtml(o, { rec: r.recommended, maxAbs, decision: { ...r, facts: d.facts, origin: d.origin } })).join('') + '</div>') +
+    (r.rankRule ? UI.fold(esc(UI.t('card.scoreHow')), `<p class="muted">${esc(r.rankRule.annotation || '')}</p>`) : '') +
+    UI.fold(`${esc(UI.t('dec.rules'))}<span class="muted">${tr.filter(t => t.fired).length}개 발동 · 전체 ${tr.length}개</span>`,
+      `<div class="table-container"><table class="table"><thead><tr><th>${esc(UI.t('dec.col.rule'))}</th><th>${esc(UI.t('dec.col.target'))}</th><th>${esc(UI.t('dec.col.result'))}</th></tr></thead><tbody>` +
+      tr.map(t => `<tr><td>${esc(UI.ruleLabel(t))}<p class="muted">${esc(t.decision === 'dec:action-candidates' ? UI.t('dec.ruleSelect') : UI.t('dec.ruleCompliance'))}</p>${UI.fold(esc(UI.t('raw')), `<code>${esc(t.rule)}</code> <code>${esc(t.when || '')}</code>`)}</td><td>${esc(target(t))}</td>` +
+        `<td>${t.fired ? UI.chipText(UI.t('dec.fired'), 'accent') : (t.unknown && t.unknown.length ? `<span class="muted">${esc(UI.t('dec.noFact'))}: ${esc(t.unknown.map(k => window.hydWords.fieldName(k)).join(', '))}</span>` : `<span class="muted">${esc(UI.t('dec.notApplicable'))}</span>`)}</td></tr>`).join('') + '</tbody></table></div>') +
+    UI.fold(`${esc(UI.t('dec.trace'))} 원문<span class="muted">판단 번호 포함</span>`, `<dl class="kv"><dt>판단 번호</dt><dd class="mono">${esc(d.id)}</dd></dl>` + decTrace(d.steps || [])) +
     '</div>';
-  box.innerHTML = html;
+  const scope = UI.evaluationHtml(r, d);      // 평가 범위(모의 순위인지 실행 조건 검사인지)는 서버 기록 그대로, 맨 아래 한 줄
+  if (scope) html += `<div class="panel-sec">${scope}</div>`;
+  box.innerHTML = html + '</section>';
 }
 
-$('#decRun').addEventListener('click', runDecision);
+$('#decForm').addEventListener('submit', e => { e.preventDefault(); runDecision(); });
 
 /* ================================================= 업무 시스템 기록(유압 설비)
    이 화면의 몫은 모의 업무 시스템의 표와 거래 전 · 후 값이다. AI 판단 · 조치 후보 · 승인 · 실행 결과는 처리 건 화면 한 곳에서 본다 — 여기에 그 사본(판단 목록 · 흐름 그림 · 조치 카드)을 두지 않는다.
@@ -885,14 +854,14 @@ function renderProcess() {
     const focused = list.contains(document.activeElement) ? document.activeElement.dataset.itemId : null;
     const scroll = list.scrollTop;
     list.innerHTML = '';
-    if (ent.decisionsError) list.innerHTML = `<div class="form-msg neg" role="alert">${esc(UI.t('proc.listError'))} (${esc(ent.decisionsError)})</div>`;
+    if (ent.decisionsError) list.innerHTML = UI.errorBlock(UI.t('proc.listError'), ent.decisionsError);
     const paged = UI.page(ent.decisions, ent.decShown, d => d.id === ent.decSel);
     for (const d of paged.rows) {
-      const it = el('div', 'item' + (d.id === ent.decSel ? ' sel' : ''));
-      keyboardItem(it);
+      const it = el('button', 'row'); it.type = 'button';
+      it.setAttribute('aria-current', String(d.id === ent.decSel));
       it.dataset.itemId = d.id;
-      it.innerHTML = `<div class="row"><strong>${esc(UI.idText((d.scenario || {}).name || ''))}</strong>${UI.chip(d.state)}</div>` +
-        `<span class="sub">${esc(d.asset || '')} · ${esc(UI.dateTime(d.created))}${(d.origin || {}).kind !== 'alert' ? ' · ' + esc(UI.t('proc.manual')) : ''}${d.override ? ' · ' + esc(UI.t('proc.override')) : ''}</span>`;
+      it.innerHTML = `<span class="row-ic">${UI.icon('scale')}</span><span class="row-title">${esc(UI.idText((d.scenario || {}).name || ''))}</span>${UI.chip(d.state)}` +
+        `<span class="row-meta">${esc(d.asset || '')} · ${esc(UI.dateTime(d.created))}${(d.origin || {}).kind !== 'alert' ? ' · ' + esc(UI.t('proc.manual')) : ''}${d.override ? ' · ' + esc(UI.t('proc.override')) : ''}</span>`;
       it.addEventListener('click', async () => {
         if (ent.decSel === d.id && ent.decDetail) { UI.revealDetail($('#decDetail')); return; }
         ent.decSel = d.id; ent.decDetail = null; ent.form.msg = ''; ent.lastDetailSig = null;
@@ -920,18 +889,18 @@ function renderDecisionApproval() {
   const maxAbs = Math.max(1, ...opts.map(o => Math.abs(o.score || 0)));
   const sc = d.scenario || {};
   // A141: 제출 시각 · id · 사건 정보(설비 · 고장 유형 · 원인)는 접기로. 화면에는 제목 · 상태 · 한 줄 요약 · 선택 카드 · 사유 · 승인 버튼만
-  let html = `<div class="detail-head"><div class="row"><h2>${esc(UI.idText(sc.name || ''))}</h2>${UI.chip(d.state)}</div><div class="sub">${esc(d.asset || '')}${d.approvedBy ? ` · ${esc(UI.t('inc.approvedBy'))} ${esc(UI.who(d.approvedBy))}` : ''}</div></div>`;
+  let html = `<header class="bz-orphan-head"><h2>${esc(UI.idText(sc.name || ''))} ${UI.chip(d.state)}</h2><p class="muted">${esc(d.asset || '')}${d.approvedBy ? ` · ${esc(UI.t('inc.approvedBy'))} ${esc(UI.who(d.approvedBy))}` : ''}</p></header>`;
   html += UI.evaluationHtml(d) + summaryBlock(d.explanation);
   html += UI.metaFold([[UI.t('dec.asset'), esc(d.asset || '')], ['고장 유형', esc(UI.idText(sc.failureMode || ''))], [UI.t('dec.cause'), esc(UI.idText(sc.cause || ''))], [UI.t('proc.submitted'), esc(UI.dateTime(d.created))], ['ID', `<span class="mono">${esc(d.id)}</span>`]], 'fold.case');
   // 판단은 처리 건의 승인 단계에서만 승인 · 반려한다(서버에 판단 단독 승인 길이 없다 — test_main.test_처리_건_밖의_옛_승인_경로는_없다).
   // 이 절에 오는 것은 처리 건 없이 남은 판단뿐이라, 승인을 기다리는 것이면 승인할 길이 없음을 그대로 알린다
   if (pending) {
     html += `<div class="hitl-opts">${opts.map(o => cardHtml(o, { rec: d.recommended, chosen: d.chosen, maxAbs, decision: d })).join('')}</div>` +
-      `<p class="neg" role="status">이 판단은 경보로 열린 처리 건 없이 제출돼 승인하거나 반려할 수 없습니다. 판단은 처리 건 안에서만 승인합니다. 결함 시뮬레이션으로 경보를 내어 처리 건을 열고 그 승인 단계에서 고르세요.</p>`;
+      `<div class="alert" role="status">${UI.icon('info')}<h2>이 판단은 승인하거나 반려할 수 없습니다</h2><section>경보로 열린 처리 건 없이 제출된 판단입니다. 판단은 처리 건 안에서만 승인합니다. 결함 시뮬레이션으로 경보를 내어 처리 건을 열고 그 승인 단계에서 고르세요.</section></div>`;
   } else {
-    html += `<h3 class="dc-sec">${esc(UI.t('decisions'))}</h3><div class="hitl-opts">` + opts.map(o => cardHtml(o, { rec: d.recommended, chosen: d.chosen, maxAbs, decision: d })).join('') + '</div>';
+    html += `<h3 class="bz-orphan-sec">${esc(UI.t('decisions'))}</h3><div class="hitl-opts">` + opts.map(o => cardHtml(o, { rec: d.recommended, chosen: d.chosen, maxAbs, decision: d })).join('') + '</div>';
   }
-  if ((d.executions || []).length) html += `<h3 class="dc-sec">${esc(UI.t('proc.executions'))}</h3><div class="cards two">` +
+  if ((d.executions || []).length) html += `<h3 class="bz-orphan-sec">${esc(UI.t('proc.executions'))}</h3><div class="bz-orphan-cards">` +
     d.executions.map(x => UI.card({ title: esc(UI.who(x.system) + (x.code ? ' · ' + actionLabel({ code: x.code }) : '')), chips: UI.chip(x.status), value: x.ref ? `<span class="kv mono">${esc(x.ref)}</span>` : '', sub: esc(x.detail || ''), cls: 'soft' })).join('') + '</div>';
   html += `<div class="dc-folds">` + UI.fold(`${esc(UI.t('proc.history'))} ${(d.history || []).length}`, '<div class="audit">' + (d.history || []).map(h => UI.eventRecord({ time: h.t, name: h.state, actor: h.by, detail: h.reason || '', raw: h })).join('') + '</div>') + '</div>';
   box.innerHTML = html;
@@ -952,13 +921,22 @@ function renderSystems() {
   const sig = JSON.stringify([s, ent.tx, ent.entError, UI.namesVersion]);
   if (box.dataset.sig === sig) return;
   box.dataset.sig = sig;
-  if (!s) { box.innerHTML = ent.entError ? UI.errorBlock(UI.t('proc.noEnt'), ent.entError + ' — 2.5초마다 다시 읽습니다', { cls: 'compact' }) : UI.empty(UI.t('loading'), '', 'compact'); $('#txList').innerHTML = ''; return; }
-  // 표 한 장 = 업무 시스템 하나. 숫자 칸은 오른쪽 정렬, 여섯 줄까지 보이고 나머지는 몇 건인지 적는다
-  const cell = v => `<td${typeof v === 'number' ? ' class="r"' : ''}>${esc(v ?? '–')}</td>`;
-  const t = (rows, cols, labels) => rows.length ? '<div class="table-scroll" tabindex="0"><table class="tbl"><thead><tr>' + labels.map((x, i) => `<th${rows.every(r => typeof r[cols[i]] === 'number') ? ' class="r"' : ''}>${esc(x)}</th>`).join('') + '</tr></thead><tbody>' +
-    rows.slice(0, 6).map(r => '<tr>' + cols.map(c => cell(r[c])).join('') + '</tr>').join('') + '</tbody></table></div>' + (rows.length > 6 ? `<p class="bz-note">${rows.length}건 가운데 6건만 보입니다(외 ${rows.length - 6}건).</p>` : '') : UI.empty(UI.t('proc.noChange'), '', 'compact');
-  box.innerHTML = systemBoards(s).map(([sys, rows, cols, labels]) => `<section class="board"><h2>${esc(sys)}<small>${rows.length}건</small></h2>${t(rows, cols, labels)}</section>`).join('');
-  $('#txList').innerHTML = ent.tx.length ? ent.tx.slice(0, 12).map(x => UI.eventRecord({ time: x.t, name: UI.who(x.system), actor: x.by, detail: x.detail, raw: x, extra: txDiffFold(x) })).join('') : `<div class="muted">${esc(UI.t('proc.noTx'))}</div>`;
+  const sum = $('#bzSummary');
+  if (!s) {
+    sum.innerHTML = ''; $('#txList').innerHTML = '';
+    box.innerHTML = ent.entError ? UI.errorBlock(UI.t('proc.noEnt'), ent.entError + ' — 2.5초마다 다시 읽습니다') : '<div class="skeleton" style="height:180px"></div>'.repeat(3);
+    return;
+  }
+  const boards = systemBoards(s);
+  // 결론 먼저: 업무 시스템마다 남은 기록이 몇 건인가 → 그 아래에 시스템마다 표 한 장 → 거래 기록
+  sum.innerHTML = boards.map(([sys, rows]) => `<div class="stat"><span class="stat-label">${esc(sys)}</span><span class="stat-value num">${rows.length}<small>건</small></span></div>`).join('') +
+    `<div class="stat"><span class="stat-label">거래 기록</span><span class="stat-value num">${ent.tx.length}<small>건</small></span></div>`;
+  // 표 한 장 = 업무 시스템 하나. 숫자 칸은 오른쪽 맞춤, 여섯 줄까지 보이고 나머지는 몇 건인지 적는다
+  const cell = v => `<td${typeof v === 'number' ? ' class="num"' : ''}>${esc(v ?? '–')}</td>`;
+  const t = (rows, cols, labels) => rows.length ? '<div class="table-container" tabindex="0"><table class="table"><thead><tr>' + labels.map((x, i) => `<th${rows.every(r => typeof r[cols[i]] === 'number') ? ' class="num"' : ''}>${esc(x)}</th>`).join('') + '</tr></thead><tbody>' +
+    rows.slice(0, 6).map(r => '<tr>' + cols.map(c => cell(r[c])).join('') + '</tr>').join('') + '</tbody></table></div>' + (rows.length > 6 ? `<p class="bz-note">${rows.length}건 가운데 6건만 보입니다(외 ${rows.length - 6}건).</p>` : '') : `<p class="bz-none">${esc(UI.t('proc.noChange'))}</p>`;
+  box.innerHTML = boards.map(([sys, rows, cols, labels]) => `<section class="panel bz-board"><div class="panel-head"><h2>${esc(sys)}</h2></div>${t(rows, cols, labels)}</section>`).join('');
+  $('#txList').innerHTML = ent.tx.length ? ent.tx.slice(0, 12).map(x => UI.eventRecord({ time: x.t, name: UI.who(x.system), actor: x.by, detail: x.detail, raw: x, extra: txDiffFold(x) })).join('') : `<p class="bz-none">${esc(UI.t('proc.noTx'))}</p>`;
 }
 // A147: 거래가 바꾼 행의 변경 전·후 — 바뀐 항목만, 기본 닫힘. 기록이 없는 거래(before/after 둘 다 없음)는 접기도 없다
 function txDiffFold(x) {
@@ -967,12 +945,12 @@ function txDiffFold(x) {
   const show = v => v == null || v === '' ? '–' : typeof v === 'object' ? JSON.stringify(v) : /^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(String(v)) ? UI.dateTime(v) : String(v);
   const keys = [...new Set([...Object.keys(b || {}), ...Object.keys(a || {})])].filter(k => JSON.stringify((b || {})[k] ?? null) !== JSON.stringify((a || {})[k] ?? null));
   const body = !keys.length ? `<p class="muted">${esc(UI.t('tx.noDiff'))}</p>`
-    : `${b ? '' : `<p class="muted">${esc(UI.t('tx.created'))}</p>`}<div class="table-scroll"><table class="tbl"><thead><tr><th>${esc(UI.t('tx.col.field'))}</th><th>${esc(UI.t('tx.col.before'))}</th><th>${esc(UI.t('tx.col.after'))}</th></tr></thead><tbody>` +
+    : `${b ? '' : `<p class="muted">${esc(UI.t('tx.created'))}</p>`}<div class="table-container"><table class="table"><thead><tr><th>${esc(UI.t('tx.col.field'))}</th><th>${esc(UI.t('tx.col.before'))}</th><th>${esc(UI.t('tx.col.after'))}</th></tr></thead><tbody>` +
       keys.map(k => `<tr><td title="${esc(k)}">${esc(window.hydWords.fieldName(k))}</td><td>${esc(show((b || {})[k]))}</td><td><b>${esc(show((a || {})[k]))}</b></td></tr>`).join('') + '</tbody></table></div>';
   return UI.fold(`${esc(UI.t('tx.beforeAfter'))} ${keys.length}`, body);
 }
 
 initOntology();
 setInterval(() => { if (state.tab === 'process') refreshProcess(); }, 2500);
-// layoutGraph · fitView · pickLabels · kgNodeClass · kgEdgeClass: 지식 지도의 배치와 상태 판정(DOM 없이 도는 부분 — 시험이 그대로 부른다)
-window.hydEnt = { ent, systemBoards, runDecision, loadGraph, refreshProcess, loadDecisionView, renderDecision, layoutGraph, fitView, pickLabels, kgNodeClass, kgEdgeClass, KG };
+// kgMarks · kgEdgeMarks · kgRelGroups · kgGather · kgMakeRoom · kgPath · kgPathLay: 지식 지도의 상태 판정과 이웃을 모으고 비켜 주는 자리(DOM 없이 도는 부분 — 시험이 그대로 부른다). kg: 지금 그린 지도(kg.cy = Cytoscape)
+window.hydEnt = { ent, systemBoards, runDecision, loadGraph, refreshProcess, loadDecisionView, renderDecision, kgMarks, kgEdgeMarks, kgRelGroups, kgGather, kgMakeRoom, kgPath, kgPathLay, KG, kg, RELATION_KO };

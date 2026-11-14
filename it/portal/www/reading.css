@@ -4,6 +4,39 @@
    단추 · 칩 · 카드 · 접기 · 탭의 색과 크기는 전역 CSS 가 정한다. 여기에는 토큰(tokens.css) 값만 쓰고 색을 새로 박지 않는다.
    이름은 모두 rd- 로 시작한다(다른 화면의 규칙과 겹치지 않게). */
 
+/* ---------------- 조건 → 결과(디자인 기준 5-6): 왼쪽 조건 판 320px · 오른쪽 결과. 판단 실험 네 화면이 쓴다 ----------------
+   부품은 키트의 것이다(panel · fieldset · field · result · turn-facts · opts · evid · stream). 여기는 격자와 폭만 정한다 */
+.io { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 24px; align-items: start; }
+.io > * { min-width: 0; }
+.io > .io-in { position: sticky; top: 68px; }      /* 위 막대(52px) 아래에 붙어 따라온다 */
+.io-in :is(.select, .input, .textarea) { width: 100%; }
+.io-in .fieldset + .fieldset { margin-top: 20px; }
+.io-in .form-foot { justify-content: flex-start; }
+.io-in .form-foot > .btn:first-child { flex: 1; }
+.io-in .seg { display: flex; }
+.io-in .seg > button { flex: 1; justify-content: center; padding: 0 6px; }
+.io-out { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
+.io-out .panel-head > div:first-child { min-width: 0; }
+.io-out .panel-head h2 { max-width: 60ch; }
+.io-out .panel > .turn-facts { border-color: var(--border); }
+.io-out .turn-facts dd { overflow-wrap: anywhere; }
+.io-out .table :is(td, th) { white-space: normal; vertical-align: top; }      /* 키트의 표는 줄을 바꾸지 않는다 — 계산식 · 출처처럼 긴 글이 든 칸은 줄을 바꿔 판 폭 안에 둔다 */
+.io-out .table :is(td, th):first-child { padding-left: 0; }
+.io-out .table :is(td, th):last-child { padding-right: 0; }
+.io-out .opts td small { display: block; font-size: 12.5px; line-height: 18px; color: var(--muted-foreground); }
+.io-out .opts td.num, .io-out .opts th.num, .io-out .table td.num, .io-out .table th.num { text-align: right; white-space: nowrap; }
+.io-out .panel-sec > .fold:first-child > summary { padding-top: 0; }
+.io-out .panel-sec > .fold:last-child > .fold-body { padding-bottom: 0; }
+.io-out .panel-sec > .fold:last-child:not([open]) > summary { padding-bottom: 0; }
+.io-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }      /* 둘을 나란히(에이전트 A · B) */
+.io-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin: -4px 0 16px; }      /* 보기 바꾸기 줄 */
+.io-progress { display: grid; gap: 6px; padding: 12px 14px 0; font-size: 12.5px; color: var(--muted-foreground); }      /* 센 값이 있는 진행 막대(12개 가운데 5개) */
+@media (max-width: 1000px) {
+  .io { grid-template-columns: minmax(0, 1fr); }
+  .io > .io-in { position: static; }
+}
+@media (max-width: 700px) { .io-two { grid-template-columns: minmax(0, 1fr); } }
+
 /* ---------------- 화면 머리 아래 한 문장 · 화면 맨 아래 한 줄 ---------------- */
 .rd-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 13px; line-height: 20px; color: var(--muted-foreground); }
 

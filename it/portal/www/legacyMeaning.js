@@ -1,4 +1,4 @@
-/* A9 옛 DB 뜻 복원 — 지식 › 문서 등록 › 업무 데이터 연결 안의 접기 섹션.
+/* A9 옛 DB 뜻 복원 — 지식 › 문서 등록 › 업무 DB 표 정의 안의 접기 하나(결론 한 줄 → AI가 일하는 과정 → 후보 표 → 검토 기록). 배치는 screens.css(.lm-*).
    흐름: DDL 미리보기 → "AI에게 뜻 후보 묻기"(에이전트 작업 한 건) → 열마다 후보 · 근거 · 확신도 → 사람이 승인 · 고치기 · 제외
    → 검토 저장(감사 기록) → 미리보기에 그 검토만 반영 → 기존 "적재". AI 후보는 승인 전에는 미리보기 · 그래프 어디에도 들어가지 않는다.
    hitl.js 의 DDL 미리보기가 window.hydLegacy.mount(el, ctx)로 부른다. ctx = {preview, text, by(), replan(reviewId|null)}. */
@@ -22,7 +22,7 @@
     if (!link || link.kind === 'none') return '<span class="muted">연결 없음</span>';
     if (link.kind === 'asset_key') return '설비 식별 열';
     const t = link.name ? link : targets()[link.target];
-    return t ? `${esc(t.name)}${t.unit ? ' · ' + esc(t.unit) : ''}` : '<span class="neg">목록에 없는 대상</span>';
+    return t ? `${esc(t.name)}${t.unit ? ' · ' + esc(t.unit) : ''}` : UI.chipText('목록에 없는 대상', 'danger');
   };
   const pct = v => Math.round((v || 0) * 100) + '%';
 
@@ -90,7 +90,7 @@
   /* ---------- 그리기 */
   function evidenceHtml(c) {
     if (!c.evidence.length) return `<span class="muted">${esc(c.reason || '근거 없음')}</span>`;
-    return c.evidence.map(e => `<div class="kv-line"><b>${esc(EV[e.kind] || e.kind)}</b> ${esc(e.text)}</div>`).join('');
+    return `<dl class="kv">${c.evidence.map(e => `<dt>${esc(EV[e.kind] || e.kind)}</dt><dd>${esc(e.text)}</dd>`).join('')}</dl>`;
   }
 
   function observationHtml(col) {
@@ -107,7 +107,7 @@
         (k.inferred || []).length ? '값이 겹침(추론) ' + k.inferred.map(x => `${esc(short(x.column))} ${pct(x.overlap)}`).join(', ') : ''].filter(Boolean).join(' · ') || '없음'],
     ];
     if (col.assetTags) rows.push(['설비 태그와 겹침', `${col.assetTags.matched} / ${col.assetTags.of}`]);
-    return `<dl class="meta-list">${rows.map(([a, b]) => `<div><dt>${a}</dt><dd>${b}</dd></div>`).join('')}</dl>`;
+    return `<dl class="kv">${rows.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('')}</dl>`;
   }
 
   function decisionHtml(c) {
@@ -119,12 +119,12 @@
       const t = targets();
       const linkOpts = [['none', '연결 없음'], ['asset_key', '설비 식별 열'], ...Object.values(t).map(v => [v.id, v.name + (v.unit ? ' · ' + v.unit : '')])]
         .map(([v, l]) => `<option value="${esc(v)}" ${(d.link || 'none') === v ? 'selected' : ''}>${esc(l)}</option>`).join('');
-      edit = `<div class="form-grid">${UI.field({ label: '뜻', input: `<input data-edit="meaning" data-col="${esc(c.column)}" value="${esc(d.meaning || '')}">` })}
-        ${UI.field({ label: '단위', input: `<input data-edit="unit" data-col="${esc(c.column)}" value="${esc(d.unit || '')}">` })}
-        ${UI.field({ label: '온톨로지 연결', input: `<select data-edit="link" data-col="${esc(c.column)}">${linkOpts}</select>` })}</div>`;
+      edit = UI.field({ label: '뜻', input: `<input data-edit="meaning" data-col="${esc(c.column)}" value="${esc(d.meaning || '')}">` }) +
+        UI.field({ label: '단위', input: `<input data-edit="unit" data-col="${esc(c.column)}" value="${esc(d.unit || '')}">` }) +
+        UI.field({ label: '온톨로지 연결', input: `<select data-edit="link" data-col="${esc(c.column)}">${linkOpts}</select>` });
     }
-    const note = d.verdict === 'REJECT' || d.verdict === 'EDIT' ? `<input data-edit="note" data-col="${esc(c.column)}" placeholder="이유(선택)" value="${esc(d.note || '')}">` : '';
-    return `<select data-verdict="${esc(c.column)}" aria-label="${esc(short(c.column))} 결정">${opts}</select>${note}${edit}`;
+    const note = d.verdict === 'REJECT' || d.verdict === 'EDIT' ? `<input class="input" data-edit="note" data-col="${esc(c.column)}" placeholder="이유(선택)" aria-label="이유" value="${esc(d.note || '')}">` : '';
+    return `<div class="lm-decide"><select class="select" data-verdict="${esc(c.column)}" aria-label="${esc(short(c.column))} 결정">${opts}</select>${note}${edit}</div>`;
   }
 
   function candidatesHtml() {
@@ -132,18 +132,18 @@
     (data.columns || []).forEach(c => { cols[c.key] = c; });
     const head = `<thead><tr><th>열</th><th>AI 뜻 후보</th><th>연결</th><th>확신도</th><th>근거</th><th>결정</th></tr></thead>`;
     const row = c => `<tr>
-        <td><b>${esc(short(c.column))}</b>${UI.fold('관찰', observationHtml(cols[c.column]), { cls: 'small' })}</td>
+        <td><b class="mono">${esc(short(c.column))}</b>${UI.fold('관찰', observationHtml(cols[c.column]))}</td>
         <td>${c.status === 'proposed' ? `${esc(c.meaning)}${c.unit ? ` <span class="muted">(${esc(c.unit)})</span>` : ''}${c.alternatives.length ? `<div class="muted">다른 해석: ${c.alternatives.map(esc).join(', ')}</div>` : ''}` : UI.chipText('근거 없음', 'warning')}</td>
         <td>${linkText(c.link)}</td><td>${pct(c.confidence)}</td><td>${evidenceHtml(c)}</td><td>${decisionHtml(c)}</td></tr>`;
     const proposed = data.candidates.filter(c => c.status === 'proposed').sort((a, b) => b.confidence - a.confidence);
     const blank = data.candidates.filter(c => c.status !== 'proposed');
-    const table = list => `<div class="table-scroll"><table class="prov">${head}<tbody>${list.map(row).join('')}</tbody></table></div>`;
+    const table = list => `<div class="table-container"><table class="table">${head}<tbody>${list.map(row).join('')}</tbody></table></div>`;
     const chosen = decisions();
     const counts = ['APPROVE', 'EDIT', 'REJECT'].map(v => `${VERDICT[v]} ${chosen.filter(d => d.verdict === v).length}`).join(' · ');
-    return `${data.summary ? `<p class="kv-line"><b>AI 요약</b> ${esc(data.summary)}</p>` : ''}
+    return `${data.summary ? `<div class="result"><div class="result-label">AI 요약</div><p class="result-sub">${esc(data.summary)}</p></div>` : ''}
       ${proposed.length ? table(proposed) : UI.empty('AI가 뜻을 제안한 열이 없습니다', '모두 근거 없음으로 냈습니다 — 아래에서 직접 고치거나 제외할 수 있습니다')}
-      ${blank.length ? UI.fold(`AI가 근거 없음으로 낸 열 <span class="chip tone-warning sm">${blank.length}</span>`, table(blank), { cls: 'small', open: blank.some(c => S.drafts[c.column] && S.drafts[c.column].verdict) }) : ''}
-      ${UI.actions(`<button class="btn primary" id="lmSave" ${S.busy ? 'disabled' : ''}>검토 저장 · 미리보기에 반영</button>`, '')}
+      ${blank.length ? UI.fold(`AI가 근거 없음으로 낸 열<span class="muted num">${blank.length}</span>`, table(blank), { open: blank.some(c => S.drafts[c.column] && S.drafts[c.column].verdict) }) : ''}
+      ${UI.actions(`<button type="button" class="btn" data-variant="outline" id="lmSave" ${S.busy ? 'disabled' : ''}>검토 저장 · 미리보기에 반영</button>`, '')}
       <p class="muted">고른 결정: ${counts} · 결정 안 함 ${data.candidates.length - chosen.length}. 결정하지 않았거나 제외한 열은 반영되지 않습니다. AI가 낸 후보는 저장해도 회사 DB에 쓰지 않습니다.</p>`;
   }
 
@@ -153,10 +153,10 @@
     const sql = (r.commentSql || []).join('\n');
     return UI.card({
       title: '미리보기에 반영된 뜻 검토', chips: UI.chipText(`승인 ${r.approved} · 고치기 ${r.edited} · 제외 ${r.rejected}`, 'success'),
-      body: `<p class="kv-line"><b>${esc(UI.who(r.by))}</b> · ${esc(UI.dateTime(r.createdAt))} · 반영한 입력 ${r.applied.length}개</p>
-        ${r.reflected.map(x => `<div class="kv-line"><b>${esc(short(x.column))}</b> → ${esc(x.comment)} · ${linkText(x.link)}</div>`).join('')}
-        ${sql ? UI.fold('DB 담당자에게 줄 열 주석 SQL (실행하지 않음)', `<pre>${esc(sql)}</pre>`, { cls: 'small' }) : ''}`,
-      actions: `<button class="btn small" id="lmUnapply">검토 빼고 미리보기 (원래대로)</button>`,
+      body: `<p class="muted">${esc(UI.who(r.by))} · ${esc(UI.dateTime(r.createdAt))} · 반영한 입력 ${r.applied.length}개</p>
+        <ul class="lm-applied">${r.reflected.map(x => `<li><b class="mono">${esc(short(x.column))}</b> → ${esc(x.comment)} · ${linkText(x.link)}</li>`).join('')}</ul>
+        ${sql ? UI.fold('DB 담당자에게 줄 열 주석 SQL (실행하지 않음)', `<pre class="code">${esc(sql)}</pre>`) : ''}`,
+      actions: `<button type="button" class="btn" data-variant="outline" data-size="sm" id="lmUnapply">검토 빼고 미리보기 (원래대로)</button>`,
     });
   }
 
@@ -164,10 +164,10 @@
     const list = (S.data && S.data.reviews) || [];
     if (!list.length) return '';
     const cur = ctx.preview.meaningReview && ctx.preview.meaningReview.id;
-    return UI.fold(`이 후보에 대한 검토 기록 <span class="chip tone-neutral sm">${list.length}</span>`, list.map(r => `<div class="kv-line">
-        <b>${esc(UI.who(r.by))}</b> · ${esc(UI.dateTime(r.createdAt))} · 승인 ${r.approved} · 고치기 ${r.edited} · 제외 ${r.rejected}
-        ${r.id === cur ? UI.chipText('지금 반영 중', 'success') : `<button class="btn small" data-use-review="${esc(r.id)}">이 검토로 미리보기</button>`}
-        ${UI.fold('결정', r.decisions.map(d => `<div>${esc(short(d.column))} ${UI.chipText(VERDICT[d.verdict], VTONE[d.verdict])} ${d.after ? esc(d.after.meaning) : ''}${d.note ? ` <span class="muted">— ${esc(d.note)}</span>` : ''}</div>`).join(''), { cls: 'small' })}</div>`).join(''), { cls: 'small' });
+    return UI.fold(`이 후보에 대한 검토 기록<span class="muted num">${list.length}</span>`, list.map(r => `<div class="lm-body">
+        <p><b>${esc(UI.who(r.by))}</b> · ${esc(UI.dateTime(r.createdAt))} · 승인 ${r.approved} · 고치기 ${r.edited} · 제외 ${r.rejected}
+        ${r.id === cur ? UI.chipText('지금 반영 중', 'success') : `<button type="button" class="btn" data-variant="outline" data-size="sm" data-use-review="${esc(r.id)}">이 검토로 미리보기</button>`}</p>
+        ${UI.fold('결정', `<ul class="lm-applied">${r.decisions.map(d => `<li><span class="mono">${esc(short(d.column))}</span> ${UI.chipText(VERDICT[d.verdict], VTONE[d.verdict])} ${d.after ? esc(d.after.meaning) : ''}${d.note ? ` <span class="muted">— ${esc(d.note)}</span>` : ''}</li>`).join('')}</ul>`)}</div>`).join(''));
   }
 
   function statusHtml() {
@@ -176,8 +176,8 @@
     const working = !FINAL.includes(d.status);
     const corr = d.corrections ? ` · 근거 검사에서 되돌려 보냄 ${d.corrections.attempts}회${d.corrections.reasons && d.corrections.reasons.length ? ` (마지막 사유: ${esc(d.corrections.reasons[d.corrections.reasons.length - 1])})` : ''}` : '';
     // 도는 동안에는 실행 기록이 펼쳐져 흐르고, 끝나면 「후보를 만든 과정 보기」 접기 안에 남는다
-    const process = working ? '<div data-lm-live></div>' : S.work ? UI.fold('후보를 만든 과정 보기 · 도구 호출과 에이전트의 말', '<div data-lm-live></div>', { cls: 'small' }) : '';
-    return `<p class="kv-line" role="status"><b>AI 뜻 후보 작업</b> ${UI.chip(d.status)} · 열 ${d.columns.length}개${corr}</p>${process}`;
+    const process = working ? '<div data-lm-live></div>' : S.work ? UI.fold('후보를 만든 과정 보기<span class="muted">도구 호출과 에이전트의 말</span>', '<div data-lm-live></div>') : '';
+    return `<p role="status"><b>AI 뜻 후보 작업</b> ${UI.chip(d.status)} <span class="muted">열 ${d.columns.length}개${corr}</span></p>${process}`;
   }
 
   function render() {
@@ -189,23 +189,23 @@
       + (S.data ? ` · AI 후보 ${done ? S.data.candidates.length + '건' : UI.status(S.data.status)}` : '')
       + (ctx.preview.meaningReview ? ' · 검토 반영 중' : '');
     let body = '';
-    if (L.error) body += `<p class="neg">샘플 행을 읽지 못했습니다: ${esc(L.error)}</p>`;
+    if (L.error) body += UI.errorBlock('샘플 행을 읽지 못했습니다', L.error);
     body += appliedHtml();
     if (!L.targets) body += UI.empty('뜻을 복원할 열이 없습니다', '모든 열에 주석(업무 뜻)이 있습니다');
     else if (!S.run) body += UI.card({
       title: '코드 이름 열의 뜻 후보 받기',
       body: `<p class="muted">열 이름 조각 · 샘플 값 분포 · 키 관계를 관찰해 AI 에이전트에게 넘깁니다. 후보는 사람이 승인한 것만 미리보기와 적재에 들어갑니다.</p>
         ${(L.notes || []).map(n => `<p class="muted">${esc(n)}</p>`).join('')}`,
-      actions: `<button class="btn primary" id="lmAsk" ${S.busy ? 'disabled' : ''}${hydCourseAccess.attrs('ddl.meanings')}>AI에게 뜻 후보 묻기</button>`,
+      actions: `<button type="button" class="btn" data-variant="outline" data-size="sm" id="lmAsk" ${S.busy ? 'disabled' : ''}${hydCourseAccess.attrs('ddl.meanings')}>${UI.icon('sparkles')}AI에게 뜻 후보 묻기</button>`,
     });
     else {
       body += statusHtml();
       if (done) body += candidatesHtml();
       body += historyHtml();
-      if (done || (S.data && ['FAILED', 'CANCELLED'].includes(S.data.status))) body += `<p><button class="btn small" id="lmAgain" ${S.busy ? 'disabled' : ''}${hydCourseAccess.attrs('ddl.meanings')}>후보 다시 받기</button></p>`;
+      if (done || (S.data && ['FAILED', 'CANCELLED'].includes(S.data.status))) body += `<footer class="form-foot"><button type="button" class="btn" data-variant="outline" data-size="sm" id="lmAgain" ${S.busy ? 'disabled' : ''}${hydCourseAccess.attrs('ddl.meanings')}>후보 다시 받기</button></footer>`;
     }
-    if (S.error) body += `<p class="neg" role="alert">${esc(S.error)}</p>`;
-    el.innerHTML = UI.fold(`옛 DB 뜻 복원 — ${esc(sumLine)}`, body, { open: !!(S.run || ctx.preview.meaningReview) });
+    if (S.error) body += UI.errorBlock('뜻 후보 작업을 진행하지 못했습니다', S.error);
+    el.innerHTML = UI.fold(`옛 DB 뜻 복원<span class="muted">${esc(sumLine)}</span>`, `<div class="lm-body">${body}</div>`, { open: !!(S.run || ctx.preview.meaningReview) });
     hydCourseAccess.apply(el);   // attrs 로 그린 단추: 수업 단계에서 꺼진 까닭을 단추 옆 한 줄로(W3-07)
     wire(); live();
   }

@@ -93,8 +93,8 @@
     try { return JSON.stringify(JSON.parse(s), null, 2); }
     catch (_) { return s.replace(/\\u([0-9a-fA-F]{4})/g, (m, h) => String.fromCharCode(parseInt(h, 16))); }   // the stored answer is cut at 2,000 chars
   }
-  const rawFold = (v, k) => v == null ? '' : `<details class="fold small" data-k="${esc(k)}"><summary>${esc(UI.t('raw'))}</summary><pre>${esc(JSON.stringify(v, null, 2))}</pre></details>`;
-  const table = (head, rows) => `<div class="table-scroll"><table class="inst-table td-table"><thead><tr>${head.map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
+  const rawFold = (v, k) => v == null ? '' : `<details class="fold" data-k="${esc(k)}"><summary>${esc(UI.t('raw'))}</summary><pre class="code">${esc(JSON.stringify(v, null, 2))}</pre></details>`;
+  const table = (head, rows) => `<div class="table-container"><table class="table td-table"><thead><tr>${head.map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
   const scoreLabel = k => UI.terms['score.' + k] || k;
 
   /* ---------- 값 → 읽기 쉬운 HTML (키별 특수 렌더 → 일반 규칙) ---------- */
@@ -115,14 +115,14 @@
     if (typeof value === 'string') return value.length > 240 ? `<span class="prose">${esc(UI.idText(value.slice(0, 240)))}…</span>${rawFold(value, 'raw:' + key)}` : esc(UI.idText(value));
     if (Array.isArray(value)) {
       if (!value.length) return `<span class="muted">${esc(UI.t('empty.noData'))}</span>`;
-      if (value.every(x => typeof x !== 'object' || x === null)) return `<span class="row-wrap">${value.slice(0, 12).map(x => `<span class="chip tone-neutral sm">${esc(UI.name(String(x)) || UI.idText(String(x)))}</span>`).join('')}${value.length > 12 ? `<span class="muted">+${value.length - 12}</span>` : ''}</span>`;
+      if (value.every(x => typeof x !== 'object' || x === null)) return `<span class="chips">${value.slice(0, 12).map(x => `<span class="badge" data-variant="secondary">${esc(UI.name(String(x)) || UI.idText(String(x)))}</span>`).join('')}${value.length > 12 ? `<span class="muted">+${value.length - 12}</span>` : ''}</span>`;
       const cols = [...new Set(value.slice(0, 20).flatMap(x => Object.keys(x || {})))].slice(0, 6);
       const headers=cols.map(c=>c==='package' && value.every(x=>x?.package_semantics==='base_interval_configuration') ? '등록된 기본 정비 내용' : ['package_semantics','configured_base_package'].includes(c) ? UI.terms['var.'+c] : hydWords.fieldName(c));
       return `${table(headers, value.slice(0, 20).map(x => `<tr>${cols.map(c => `<td>${esc(c==='package_semantics' && UI.terms['val.'+x[c]] ? UI.terms['val.'+x[c]] : brief(x[c], 60))}</td>`).join('')}</tr>`))}${value.length > 20 ? `<p class="muted">… ${value.length - 20}건 더</p>` : ''}${rawFold(value, 'raw:' + key)}`;
     }
     const entries = Object.entries(value);
     if (!entries.length) return `<span class="muted">${esc(UI.t('empty.noData'))}</span>`;
-    const dl = `<dl class="meta-list td-kv">${entries.slice(0, 16).map(([k, x]) => `<div><dt title="${esc(k)}">${esc(k==='package' && value.package_semantics==='base_interval_configuration' ? '등록된 기본 정비 내용' : UI.terms['var.' + k] || hydWords.fieldName(k))}</dt><dd>${x !== null && typeof x === 'object' ? (depth < 1 ? valueHtml(k, x, v, depth + 1) : esc(brief(x, 100))) : esc(k==='package_semantics' && UI.terms['val.'+x] ? UI.terms['val.'+x] : brief(x, 120) || UI.t('inst.noValue'))}</dd></div>`).join('')}</dl>`;
+    const dl = `<dl class="cr-kv td-kv">${entries.slice(0, 16).map(([k, x]) => `<div><dt title="${esc(k)}">${esc(k==='package' && value.package_semantics==='base_interval_configuration' ? '등록된 기본 정비 내용' : UI.terms['var.' + k] || hydWords.fieldName(k))}</dt><dd>${x !== null && typeof x === 'object' ? (depth < 1 ? valueHtml(k, x, v, depth + 1) : esc(brief(x, 100))) : esc(k==='package_semantics' && UI.terms['val.'+x] ? UI.terms['val.'+x] : brief(x, 120) || UI.t('inst.noValue'))}</dd></div>`).join('')}</dl>`;
     return dl + (depth === 0 ? rawFold(value, 'raw:' + key) : '');
   }
   const optionName = o => (o && UI.idText(o.name || (window.hydWords ? hydWords.idName(o.id) : UI.name(o.id)) || '대안 표시 이름 기록 없음')) || '';
@@ -138,9 +138,9 @@
   function causesTable(causes, top) {
     if (!causes.length) return '';
     const scored = causes.some(c => c.prior != null || (c.evidence || []).length);
-    return table([UI.t('td.cause'), UI.t('td.prior'), UI.t('td.causeScore'), UI.t('td.conditions')], causes.map(c => `<tr${c.id === top ? ' class="rec"' : ''}><td>${esc(UI.idText(c.name || UI.name(c.id)))}${c.id === top ? ' ' + UI.chipText(UI.t('dec.causeTop'), 'success') : ''}</td>
+    return table([UI.t('td.cause'), UI.t('td.prior'), UI.t('td.causeScore'), UI.t('td.conditions')], causes.map(c => `<tr${c.id === top ? ' data-pick' : ''}><td>${esc(UI.idText(c.name || UI.name(c.id)))}${c.id === top ? ' ' + UI.chipText(UI.t('dec.causeTop'), 'success') : ''}</td>
       <td>${esc(num(c.prior))}</td><td>${c.score == null && c.probability == null ? `<span class="muted">미확인</span>` : esc(num(c.score != null ? c.score : c.probability))}</td>
-      <td>${(c.evidence || []).map(condText).join('') || `<span class="muted">${esc(UI.t('inc.noEvidence'))}</span>`}</td></tr>`)) + (scored ? `<p class="field-hint">${esc(UI.t('td.causeFormula'))}</p>` : '');
+      <td>${(c.evidence || []).map(condText).join('') || `<span class="muted">${esc(UI.t('inc.noEvidence'))}</span>`}</td></tr>`)) + (scored ? `<p class="muted">${esc(UI.t('td.causeFormula'))}</p>` : '');
   }
   // decision.order: 내장 경로는 "1. 이름" 문자열, 실제 워커는 {id, name, rank, score, sopId, approver} 객체 목록 — 둘 다 읽기 쉬운 줄로
   function orderItem(x) {
@@ -157,49 +157,49 @@
       if (!opts.length && !d.recommended && !(d.order || []).length) return '';
       const list = opts.length ? `<ol class="td-list">${opts.map(o => `<li>${esc(optionName(o))} ${o.id === d.recommended ? UI.chipText(UI.t('chip.recommended'), 'accent') : ''}${o.id === d.chosen ? UI.chipText(UI.t('chip.chosen'), 'success') : ''}${o.feasible === false ? UI.chipText(UI.t('chip.excluded'), 'danger') : ''}${window.hydWords?.purchaseEconomics(o) ? `<span class="muted"> · ${esc(hydWords.purchaseCostLabel(o))}</span>` : o.score != null ? `<span class="muted"> · ${esc(UI.t('card.score'))} ${esc(num(o.score))}</span>` : ''}</li>`).join('')}</ol>`
         : (d.order || []).length ? `<ol class="td-list">${d.order.map(o=>orderItem({...o,name:o.name || boundDecision(v)?.options?.find(x=>x.id===o.id)?.name})).join('')}</ol>` : '';
-      return `<p class="field-hint">이 단계가 그때 낸 추천입니다. 나중에 승인에서 고른 안과는 다를 수 있습니다.</p>${d.explanation ? `<p class="kv-line">${esc(UI.idText(d.explanation))}</p>` : ''}${list}`;
+      return `<p class="muted">이 단계가 그때 낸 추천입니다. 나중에 승인에서 고른 안과는 다를 수 있습니다.</p>${d.explanation ? `<p>${esc(UI.idText(d.explanation))}</p>` : ''}${list}`;
     },
     guide_card(g) {
       const causes = g.causes || [];
-      const rec = (g.recommended || []).map(a => `<span class="chip tone-neutral sm">${esc(window.hydCards ? hydCards.actionLabel(a) : (a.code || a.name || ''))}</span>`).join('');
+      const rec = (g.recommended || []).map(a => `<span class="badge" data-variant="secondary">${esc(window.hydCards ? hydCards.actionLabel(a) : (a.code || a.name || ''))}</span>`).join('');
       const fm = typeof g.failureMode === 'object' ? (g.failureMode || {}).name : UI.name(g.failureMode);
       if (!causes.length && !rec && !fm) return '';
-      return `${fm ? `<p class="kv-line"><b>${esc(UI.t('var.failure_mode'))}</b> ${esc(UI.idText(fm))}</p>` : ''}${g.withheld && (g.evidence_status || {}).reason ? `<p class="neg">${esc(g.evidence_status.reason)}</p>` : ''}
-        ${causes.length ? `<p class="kv-line"><b>${esc(UI.t('inc.causes'))}</b></p>${causesTable(causes, g.topCause)}` : ''}${rec ? `<p class="kv-line"><b>${esc(UI.t('inc.recommended'))}</b></p><div class="row-wrap">${rec}</div>` : ''}`;
+      return `${fm ? `<p><b>${esc(UI.t('var.failure_mode'))}</b> ${esc(UI.idText(fm))}</p>` : ''}${g.withheld && (g.evidence_status || {}).reason ? `<p class="muted" data-tone="danger">${esc(g.evidence_status.reason)}</p>` : ''}
+        ${causes.length ? `<p><b>${esc(UI.t('inc.causes'))}</b></p>${causesTable(causes, g.topCause)}` : ''}${rec ? `<p><b>${esc(UI.t('inc.recommended'))}</b></p><div class="chips">${rec}</div>` : ''}`;
     },
     compliance(c) {
       const rows = Object.entries(c).filter(([id]) => !id.startsWith('_'));    // 워커가 붙인 _basis(판정 근거 · 쓴 사실 · 출처)는 후보가 아니다
       if (!rows.length || rows.some(([, x]) => !x || typeof x !== 'object')) return '';
       const basis = c._basis && typeof c._basis === 'object' ? c._basis : null;
-      const why = basis && (basis.note || basis.engine) ? `<p class="kv-line"><b>판정 근거</b> ${esc(UI.idText([basis.note, basis.engine].filter(Boolean).join(' · ')))}</p>` : '';
+      const why = basis && (basis.note || basis.engine) ? `<p><b>판정 근거</b> ${esc(UI.idText([basis.note, basis.engine].filter(Boolean).join(' · ')))}</p>` : '';
       return why + table([UI.t('candidate'), UI.t('dec.col.result'), UI.t('fold.violations'), UI.t('fold.penalty')], rows.map(([id, x]) => `<tr><td>${esc(UI.name(id))}</td><td>${x.feasible === false ? UI.chipText(UI.t('chip.excluded'), 'danger') : UI.chipText(UI.t('inc.pass'), 'success')}</td><td>${esc((x.excluded || []).map(y => UI.idText(String(y))).join('; '))}</td><td>${esc([...(x.penalties || []), ...(x.warnings || [])].map(y => UI.idText(String(y))).join('; '))}</td></tr>`));
     },
-    chosen_option(o) { return o.name ? `<span class="kv">${esc(UI.idText(o.name))}</span>${o.kind ? ' ' + UI.chipText(o.kind === 'control' ? UI.t('chip.control') : UI.t('chip.workOrder')) : ''}` : ''; },
-    work_order(w) { const scoped=window.hydWords?.maintenanceReceiptHtml(w); return scoped || ((w.ref || w.id) ? `<span class="kv mono">${esc(w.ref || w.id)}</span>${w.detail ? `<p class="kv-line">${esc(UI.idText(w.detail))}</p>` : ''}` : ''); },
-    alert(a) { return a.alertId ? `<p class="kv-line">경보 기록 · ${esc(UI.status(a.state))}${a.pattern ? ' · ' + esc(window.hydWords ? hydWords.value('pattern',a.pattern) : '패턴 표시 이름 기록 없음') : ''}</p>` : ''; },
+    chosen_option(o) { return o.name ? `<b>${esc(UI.idText(o.name))}</b>${o.kind ? ' ' + UI.chipText(o.kind === 'control' ? UI.t('chip.control') : UI.t('chip.workOrder')) : ''}` : ''; },
+    work_order(w) { const scoped=window.hydWords?.maintenanceReceiptHtml(w); return scoped || ((w.ref || w.id) ? `<b class="mono">${esc(w.ref || w.id)}</b>${w.detail ? `<p>${esc(UI.idText(w.detail))}</p>` : ''}` : ''); },
+    alert(a) { return a.alertId ? `<p>경보 기록 · ${esc(UI.status(a.state))}${a.pattern ? ' · ' + esc(window.hydWords ? hydWords.value('pattern',a.pattern) : '패턴 표시 이름 기록 없음') : ''}</p>` : ''; },
     // 매뉴얼 추출 처리 건: 원문 전문(pages)은 쏟지 않고 문서 · 쪽 수 · 글자 수만, 원문은 접기
     manual_source(s) {
       if (!Array.isArray(s.pages)) return '';
       const chars = s.pages.reduce((n, p) => n + String(p.text || '').length, 0);
-      return `<p class="kv-line"><b>${esc(s.title || s.name || s.filename || s.source_id || '')}</b> · ${esc(s.pages.length)}${esc(UI.t('td.pages'))} · ${esc(chars.toLocaleString('ko-KR'))}${esc(UI.t('td.chars'))}</p>`;
+      return `<p><b>${esc(s.title || s.name || s.filename || s.source_id || '')}</b> · ${esc(s.pages.length)}${esc(UI.t('td.pages'))} · ${esc(chars.toLocaleString('ko-KR'))}${esc(UI.t('td.chars'))}</p>`;
     },
     // C1: 추출이 가리킬 수 있는 기존 온톨로지 id 목록 — 전부 쏟지 않고 종류별 개수만
     ontology_catalog(c) {
       const kinds = { components: '구성 요소', symptoms: '증상', parts: '부품', actions: '세부 동작', roles: '역할', decision_tables: '결정표', failure_modes: '고장 유형', skills: '조치 방법' };
       const rows = Object.entries(kinds).filter(([k]) => Array.isArray(c[k]));
-      return rows.length ? `<span class="row-wrap">${rows.map(([k, n]) => `<span class="chip tone-neutral sm">${esc(n)} ${esc(c[k].length)}</span>`).join('')}</span>` : '';
+      return rows.length ? `<span class="chips">${rows.map(([k, n]) => `<span class="badge" data-variant="secondary">${esc(n)} ${esc(c[k].length)}</span>`).join('')}</span>` : '';
     },
-    segment(s) { return s.index != null ? `<span class="kv">${esc(s.index)} / ${esc(s.total)}</span>${s.title ? ` <span class="muted">${esc(s.title)}</span>` : ''}` : ''; },
+    segment(s) { return s.index != null ? `<b>${esc(s.index)} / ${esc(s.total)}</b>${s.title ? ` <span class="muted">${esc(s.title)}</span>` : ''}` : ''; },
     review_feedback(f) {
       const items = Array.isArray(f) ? f : f.items || f.reviews || [];
       if (!Array.isArray(items) || !items.length) return '';
       const by = items.reduce((m, x) => { const k = x.verdict || x.status || '–'; m[k] = (m[k] || 0) + 1; return m; }, {});
-      return `<span class="row-wrap">${Object.entries(by).map(([k, n]) => `<span class="chip tone-neutral sm">${esc({ OK: '맞음', WRONG: '틀림', MISSING: '빠짐' }[k] || k)} ${esc(n)}</span>`).join('')}</span>`;
+      return `<span class="chips">${Object.entries(by).map(([k, n]) => `<span class="badge" data-variant="secondary">${esc({ OK: '맞음', WRONG: '틀림', MISSING: '빠짐' }[k] || k)} ${esc(n)}</span>`).join('')}</span>`;
     },
     proposal(p) {
       if (!Array.isArray(p.procedures) && !Array.isArray(p.sections)) return '';
       const procs = p.procedures || [];
-      return `<p class="kv-line">${esc(UI.t('td.sections'))} ${esc((p.sections || []).length)} · ${esc(UI.t('td.procedures'))} ${esc(procs.length)} · ${esc(UI.t('td.pageReviews'))} ${esc((p.page_reviews || []).length)} · ${esc(UI.t('td.warnings'))} ${esc((p.warnings || []).length)}${p.knowledge ? ` · 고장 유형 ${esc((p.knowledge.failure_modes || []).length)} · 원인 ${esc((p.knowledge.causes || []).length)} · 증거 ${esc((p.knowledge.evidence || []).length)} · 규칙 ${esc((p.knowledge.rules || []).length)}` : ''}</p>
+      return `<p>${esc(UI.t('td.sections'))} ${esc((p.sections || []).length)} · ${esc(UI.t('td.procedures'))} ${esc(procs.length)} · ${esc(UI.t('td.pageReviews'))} ${esc((p.page_reviews || []).length)} · ${esc(UI.t('td.warnings'))} ${esc((p.warnings || []).length)}${p.knowledge ? ` · 고장 유형 ${esc((p.knowledge.failure_modes || []).length)} · 원인 ${esc((p.knowledge.causes || []).length)} · 증거 ${esc((p.knowledge.evidence || []).length)} · 규칙 ${esc((p.knowledge.rules || []).length)}` : ''}</p>
         ${procs.length ? table([UI.t('td.procedures'), UI.t('td.sections'), UI.t('td.steps')], procs.slice(0, 30).map(x => `<tr><td>${esc(x.id || '')} ${esc(x.name || '')}</td><td>${esc(x.section || '')}</td><td>${esc((x.steps || []).length)}</td></tr>`)) : ''}
         ${(p.warnings || []).length ? `<ul class="td-list">${p.warnings.slice(0, 8).map(w => `<li>${esc(w)}</li>`).join('')}</ul>` : ''}`;
     },
@@ -207,16 +207,16 @@
   // a command is {code, <param>: value} (machine.on_approve) — the label shows the value the plant received
   const cmdLabel = c => { const value = c.value != null ? c.value : Object.entries(c).filter(([k, x]) => k !== 'code' && (typeof x === 'number' || typeof x === 'string')).map(([, x]) => x)[0];
     return window.hydCards ? hydCards.actionLabel({ ...c, value }) : `${c.code}${value != null ? ' ' + value : ''}`; };
-  SPECIAL.commands = list => Array.isArray(list) && list.length ? `<span class="row-wrap">${list.map(c => `<span class="chip tone-accent sm">${esc(cmdLabel(c))}</span>`).join('')}</span>` : '';
-  SPECIAL.candidates = list => Array.isArray(list) && list.length ? `<span class="row-wrap">${list.map(c => `<span class="chip tone-neutral sm">${esc(typeof c === 'string' ? (UI.name(c) || c) : optionName(c))}</span>`).join('')}</span>` : '';
+  SPECIAL.commands = list => Array.isArray(list) && list.length ? `<span class="chips">${list.map(c => `<span class="badge" data-variant="secondary">${esc(cmdLabel(c))}</span>`).join('')}</span>` : '';
+  SPECIAL.candidates = list => Array.isArray(list) && list.length ? `<span class="chips">${list.map(c => `<span class="badge" data-variant="secondary">${esc(typeof c === 'string' ? (UI.name(c) || c) : optionName(c))}</span>`).join('')}</span>` : '';
 
   /* ---------- 판단 근거 (내장 판단 경로의 evidence 이벤트 · 조치 카드 점수 구성) ---------- */
   function evidenceHtml(d) {
-    let h = `${d.content ? `<p class="kv-line">${esc(UI.idText(d.content))}</p>` : ''}${d.method ? `<p class="field-hint">${esc(UI.idText(d.method))}</p>` : ''}`;
+    let h = `${d.content ? `<p>${esc(UI.idText(d.content))}</p>` : ''}${d.method ? `<p class="muted">${esc(UI.idText(d.method))}</p>` : ''}`;
     if (Array.isArray(d.causes) && d.causes.length) h += table([UI.t('td.cause'), UI.t('td.prior'), UI.t('td.causeScore'), UI.t('td.passedOf')], d.causes.map(c => `<tr><td>${esc(UI.idText(c.name || UI.name(c.id)))}</td><td>${esc(num(c.prior))}</td><td>${c.score == null ? '<span class="muted">미확인</span>' : esc(num(c.score))}</td><td>${esc(c.passed)} / ${esc(c.evidence)}</td></tr>`));
     if (Array.isArray(d.cards) && d.cards.length && d.cards.some(c => c.parts)) h += cardsTable(d.cards.map(c => ({ ...c, scoreParts: c.parts })), {});
     else if (Array.isArray(d.cards) && d.cards.length) h += table([UI.t('td.card'), UI.t('td.selectedBy')], d.cards.map(c => `<tr><td>${esc(optionName(c))}</td><td>${(c.rules || []).map(r => esc(UI.idText(r))).join('<br>') || '<span class="muted">–</span>'}</td></tr>`));
-    if (d.formula && Object.keys(d.formula).length) h += UI.fold(esc(UI.t('td.formula')), Object.entries(d.formula).map(([k, expr]) => `<div>${esc(scoreLabel(k))}: <code>${esc(expr)}</code></div>`).join(''), { cls: 'small' });
+    if (d.formula && Object.keys(d.formula).length) h += UI.fold(esc(UI.t('td.formula')), Object.entries(d.formula).map(([k, expr]) => `<div>${esc(scoreLabel(k))}: <code>${esc(expr)}</code></div>`).join(''));
     return h;
   }
   // 조치 카드 점수 구성: 순위 · 카드 · 점수 · 구성(성과 지표 · 예측 · 감점 …) · 판정(권고 · 결정 · 제외 사유)
@@ -225,22 +225,22 @@
       const parts = Object.entries(o.scoreParts || {}).map(([k, x]) => `<span class="td-part">${esc(scoreLabel(k))} <b>${esc(signed(x))}</b></span>`).join('');
       const verdict = [o.id === rec ? UI.chipText(UI.t('chip.recommended'), 'accent') : '', o.id === chosen ? UI.chipText(UI.t('chip.chosen'), 'success') : '',
         o.feasible === false ? UI.chipText(UI.t('chip.excluded'), 'danger') + (o.violations && o.violations[0] ? ` <span class="muted">${esc(UI.idText(o.violations[0].annotation || ''))}</span>` : '') : ''].join(' ');
-      return `<tr${o.id === rec ? ' class="rec"' : ''}><td>${o.feasible === false ? '–' : esc(o.rank ?? '–')}</td><td>${esc(optionName(o))}${window.hydWords?.maintenanceHtml(o) || ''}</td><td>${esc(num(o.score))}</td><td>${parts || '<span class="muted">–</span>'}</td><td>${verdict}</td></tr>`;
+      return `<tr${o.id === rec ? ' data-pick' : ''}><td>${o.feasible === false ? '–' : esc(o.rank ?? '–')}</td><td>${esc(optionName(o))}${window.hydWords?.maintenanceHtml(o) || ''}</td><td>${esc(num(o.score))}</td><td>${parts || '<span class="muted">–</span>'}</td><td>${verdict}</td></tr>`;
     }));
   }
   function decisionHtml(d) {
-    if (!d) return T.decErr ? `<p class="neg">${esc(UI.t('td.decFail'))}: ${esc(T.decErr)}</p>` : '';
+    if (!d) return T.decErr ? `<p class="muted" data-tone="danger">${esc(UI.t('td.decFail'))}: ${esc(T.decErr)}</p>` : '';
     const rr = d.rankRule || {};
-    const scope = d.origin?.cause_route === 'purchase-part' ? `<p class="kv-line"><b>구매 대상 부품</b> ${esc(d.origin.part?.name || '부품 이름 기록 없음')}${d.origin.part?.partNo ? ` · ${esc(d.origin.part.partNo)}` : ''}</p>` : '';
-    return `${scope}${cardsTable(d.options || [], { rec: d.recommended, chosen: d.chosen })}${rr.annotation || rr.rule ? `<p class="field-hint">${esc(UI.t('td.rankRule'))}: ${esc(UI.idText(rr.annotation || rr.rule))}</p>` : ''}
-      ${rr.rankingPolicy && rr.rankingPolicy.components ? UI.fold(esc(UI.t('td.formula')), Object.entries(rr.rankingPolicy.components).map(([k, expr]) => `<div>${esc(scoreLabel(k))}: <code>${esc(expr)}</code></div>`).join(''), { cls: 'small' }) : ''}${rawFold(d,'raw:bound-decision')}`;
+    const scope = d.origin?.cause_route === 'purchase-part' ? `<p><b>구매 대상 부품</b> ${esc(d.origin.part?.name || '부품 이름 기록 없음')}${d.origin.part?.partNo ? ` · ${esc(d.origin.part.partNo)}` : ''}</p>` : '';
+    return `${scope}${cardsTable(d.options || [], { rec: d.recommended, chosen: d.chosen })}${rr.annotation || rr.rule ? `<p class="muted">${esc(UI.t('td.rankRule'))}: ${esc(UI.idText(rr.annotation || rr.rule))}</p>` : ''}
+      ${rr.rankingPolicy && rr.rankingPolicy.components ? UI.fold(esc(UI.t('td.formula')), Object.entries(rr.rankingPolicy.components).map(([k, expr]) => `<div>${esc(scoreLabel(k))}: <code>${esc(expr)}</code></div>`).join('')) : ''}${rawFold(d,'raw:bound-decision')}`;
   }
   const lastOf = (evs, pred) => { for (let i = evs.length - 1; i >= 0; i--) if (pred(evs[i])) return evs[i]; return null; };
   const isNote = e => e.event_type === 'task_working' && (e.data || {}).type === 'text';
   const isEvidence = e => e.event_type === 'task_working' && (e.data || {}).type === 'evidence';
   function noteHtml(text, k) {
     const s = String(text || '');
-    return `<blockquote class="td-note">${esc(UI.idText(s.slice(0, NOTE_SHOW)))}${s.length > NOTE_SHOW ? '…' : ''}</blockquote>${s.length > NOTE_SHOW ? `<details class="fold small" data-k="${esc(k)}"><summary>${esc(UI.t('td.noteMore'))}</summary><pre class="td-prose">${esc(s)}</pre></details>` : ''}`;
+    return `<blockquote class="td-note">${esc(UI.idText(s.slice(0, NOTE_SHOW)))}${s.length > NOTE_SHOW ? '…' : ''}</blockquote>${s.length > NOTE_SHOW ? `<details class="fold" data-k="${esc(k)}"><summary>${esc(UI.t('td.noteMore'))}</summary><pre class="td-prose">${esc(s)}</pre></details>` : ''}`;
   }
 
   /* ---------- ① 받은 입력 ---------- */
@@ -261,10 +261,10 @@
     const rows = keys.map(k => UI.readonly(varName(k, v), valueHtml(k, values[k], v), originText(sources[k], v))).join('');
     // A161-U1 (A160 결함 16): an earlier round of a step that ran again shows the case's current values — say so plainly
     const newer = v.workitems.some(x => x.activity_id === w.activity_id && (x.generation || 0) > (w.generation || 0));
-    const hint = newer ? `<p class="field-hint warn-hint">${UI.chipText(UI.t('td.otherRound'), 'warning')} ${esc(UI.t('td.otherRoundSub'))}</p>`
-      : `<p class="field-hint">${esc(UI.t('td.current'))}</p>`;
-    if (newer) return `<p class="field-error">이 회차가 받은 값은 저장되어 있지 않습니다.</p>${UI.fold('처리 건의 현재 값 (이 회차 입력 아님)', `${hint}<div class="ro-grid">${rows}</div>`)}`;
-    return `${hint}<div class="ro-grid">${rows}</div>`;
+    const hint = newer ? `<p class="muted">${UI.chipText(UI.t('td.otherRound'), 'warning')} ${esc(UI.t('td.otherRoundSub'))}</p>`
+      : `<p class="muted">${esc(UI.t('td.current'))}</p>`;
+    if (newer) return `<p class="muted" data-tone="danger">이 회차가 받은 값은 저장되어 있지 않습니다.</p>${UI.fold('처리 건의 현재 값 (이 회차 입력 아님)', `${hint}<div class="td-rows">${rows}</div>`)}`;
+    return `${hint}<div class="td-rows">${rows}</div>`;
   }
 
   /* ---------- ② 처리 과정 타임라인 ---------- */
@@ -309,19 +309,19 @@
     const recId = decision.recommended;
     const rec = opts.find(o => o.id === recId) || (recId ? { id: recId } : null);
     const p = (approval && approval.payload) || {};
-    const cards = d ? decisionHtml(d) : opts.length ? cardsTable(opts, { rec: recId, chosen: chosenId }) : (T.decErr ? `<p class="neg">${esc(UI.t('td.decFail'))}: ${esc(T.decErr)}</p>` : `<span class="muted">${esc(UI.t('empty.noData'))}</span>`);
+    const cards = d ? decisionHtml(d) : opts.length ? cardsTable(opts, { rec: recId, chosen: chosenId }) : (T.decErr ? `<p class="muted" data-tone="danger">${esc(UI.t('td.decFail'))}: ${esc(T.decErr)}</p>` : `<span class="muted">${esc(UI.t('empty.noData'))}</span>`);
     const timeout = w.status === 'CANCELLED' && /select-timeout/.test(w.log || '');
     const kindChip = k => k ? ' ' + UI.chipText(k === 'control' ? UI.t('chip.control') : UI.t('chip.workOrder')) : '';
     const rows = [
-      UI.readonly(UI.t('td.recommended'), rec ? `<span class="kv">${esc(optionName(rec))}</span>` : `<span class="muted">${esc(UI.t('inst.noValue'))}</span>`),
-      UI.readonly(UI.t('td.chosen'), chosen ? `<span class="kv">${esc(optionName(chosen))}</span>${kindChip((w.output || {}).chosen_skill_kind || (w.status === 'DONE' ? current.chosen_skill_kind : ''))}${recId && chosen.id !== recId ? ' ' + UI.chipText(UI.t('td.differs'), 'warning') : ''}` : timeout ? `<span class="neg">${esc(UI.t('td.timeout'))}</span>` : `<span class="muted">${esc(UI.t('inst.noValue'))}</span>`),
+      UI.readonly(UI.t('td.recommended'), rec ? `<b>${esc(optionName(rec))}</b>` : `<span class="muted">${esc(UI.t('inst.noValue'))}</span>`),
+      UI.readonly(UI.t('td.chosen'), chosen ? `<b>${esc(optionName(chosen))}</b>${kindChip((w.output || {}).chosen_skill_kind || (w.status === 'DONE' ? current.chosen_skill_kind : ''))}${recId && chosen.id !== recId ? ' ' + UI.chipText(UI.t('td.differs'), 'warning') : ''}` : timeout ? `<span class="muted" data-tone="danger">${esc(UI.t('td.timeout'))}</span>` : `<span class="muted">${esc(UI.t('inst.noValue'))}</span>`),
       UI.readonly(UI.t('td.reason'), esc(p.reason || (d && d.reason) || (w.status === 'DONE' ? current.note : '') || '') || `<span class="muted">${esc(UI.t('inst.noValue'))}</span>`),
       UI.readonly(UI.t('td.approver'), esc(UI.who(p.by || (d && d.approvedBy) || (w.status === 'DONE' ? current.approved_by : '') || '–')) + ((p.role || (d && d.approvedRole)) ? ` (${esc(UI.who(p.role || d.approvedRole))})` : '')),
       waitRow(w),
       d ? UI.readonly(UI.t('td.decState'), UI.chip(d.state)) : '',
-      approval ? UI.readonly(UI.t('td.delivery'), `${UI.deliveryChip(approval.status)} <span class="muted">· ${esc(approval.attempts)}회 시도</span>${approval.error ? `<p class="neg">${esc(approval.error)}</p>` : ''}`) : '',
+      approval ? UI.readonly(UI.t('td.delivery'), `${UI.deliveryChip(approval.status)} <span class="muted">· ${esc(approval.attempts)}회 시도</span>${approval.error ? `<p class="muted" data-tone="danger">${esc(approval.error)}</p>` : ''}`) : '',
     ];
-    return `<div class="ro-grid">${rows.join('')}</div><p class="kv-line" style="margin-top:var(--s3)"><b>${esc(UI.t('td.cards'))}</b></p>${cards}${rawFold(w.output, 'raw:output')}`;
+    return `<div class="td-rows">${rows.join('')}</div><p class="td-h"><b>${esc(UI.t('td.cards'))}</b></p>${cards}${rawFold(w.output, 'raw:output')}`;
   }
   // 캡스톤 G1 · G7 사람 승인(안 고르기): 받은 제안 카드(추천 1 + 지는 안) · 결정 · 고른 안 · 사유 · 승인자. 승인자 · 고른 안은 이 단계의 접수 기록에서 읽는다
   function approveHtml(w, item, v, evs) {
@@ -333,17 +333,17 @@
     const none = `<span class="muted">${esc(UI.t('inst.noValue'))}</span>`;
     const rows = [
       UI.readonly('결정', out.approval ? UI.chipText(out.approval, out.approval === '승인' ? 'success' : 'danger') : none),
-      UI.readonly(UI.t('td.chosen'), chosen != null ? `<span class="kv">${esc(chosen)}</span>${m.rec && String(m.rec[m.key]) !== String(chosen) ? ' ' + UI.chipText(UI.t('td.differs'), 'warning') : ''}` : none),
+      UI.readonly(UI.t('td.chosen'), chosen != null ? `<b>${esc(chosen)}</b>${m.rec && String(m.rec[m.key]) !== String(chosen) ? ' ' + UI.chipText(UI.t('td.differs'), 'warning') : ''}` : none),
       UI.readonly(UI.t('td.reason'), out.approval_reason ? esc(out.approval_reason) : none),
       UI.readonly(UI.t('td.approver'), d.by ? `${esc(UI.who(d.by))}${d.role ? ` (${esc(UI.roleName(d.role, v.definition))})` : ''}` : none),
       waitRow(w),
     ];
-    return `<div class="ro-grid">${rows.join('')}</div><p class="kv-line" style="margin-top:var(--s3)"><b>받은 제안</b></p>${window.hydApprove.proposalHtml(m, chosen, { pending: false })}${rawFold(w.output, 'raw:output')}`;
+    return `<div class="td-rows">${rows.join('')}</div><p class="td-h"><b>받은 제안</b></p>${window.hydApprove.proposalHtml(m, chosen, { pending: false })}${rawFold(w.output, 'raw:output')}`;
   }
   function incidentHtml(w, v) {
     const current = vars(v.instance);
     if (!current.incident) return '';
-    if (T.incErr && T.incId === current.incident) return `<p class="neg">${esc(UI.t('td.incFail'))}: ${esc(T.incErr)}</p>`;
+    if (T.incErr && T.incId === current.incident) return `<p class="muted" data-tone="danger">${esc(UI.t('td.incFail'))}: ${esc(T.incErr)}</p>`;
     const inc = T.inc && T.inc.id === current.incident ? T.inc : null;
     if (!inc) return `<p class="muted">${esc(UI.t('loading'))}</p>`;
     const tool = w.tool || ((activityOf(v, w.activity_id) || {}).tool) || '';
@@ -356,7 +356,7 @@
         : inc.state === 'AWAITING_ACK' ? `<span class="muted">${esc(UI.t('td.ackWait'))}</span>` : esc(UI.status(inc.state)), ack && ack.t ? UI.dateTime(ack.t) : ''));
     }
     if (tool === 'incident:reobserve') rows.push(...reobserveRows(inc, w));
-    return rows.length ? `<div class="ro-grid">${rows.join('')}</div>` : '';
+    return rows.length ? `<div class="td-rows">${rows.join('')}</div>` : '';
   }
   // 재측정까지 남은 시간: 효과 확인 단계 행이 저장한 마감(due_date — 서버 service_parts._reobserve, 연장하면 늘어남)과
   // 사건 이력 RE_OBSERVING 칸의 설비 시간 창(sim_s)
@@ -368,7 +368,7 @@
   function reobserveRows(inc, w) {
     const rows = [];
     const crit = (inc.recoveryPolicy || {}).criterion;
-    if (Array.isArray(crit)) rows.push(UI.readonly(UI.t('td.criterion'), `<span class="kv">${esc(hydWords.criterion(crit))}</span> + ${esc(UI.t('td.cleared'))}`));
+    if (Array.isArray(crit)) rows.push(UI.readonly(UI.t('td.criterion'), `<b>${esc(hydWords.criterion(crit))}</b> + ${esc(UI.t('td.cleared'))}`));
     const win = reobsWindow(inc, w);
     if (win) {
       const left = win.due - new Date();
@@ -402,18 +402,18 @@
       Object.entries(w.output || {}).filter(([key]) => !HIDDEN_OUTPUT.has(key)).forEach(([key, val]) => rows.push(UI.readonly(varName(key, v), valueHtml(key, val, v))));
       if (!rows.length && w.log) rows.push(UI.readonly(UI.t('td.result'), esc(UI.logText(w.log))));
       const inc = tool.startsWith('incident:') ? incidentHtml(w, v) : '';
-      return inc || rows.length ? `${inc}${rows.length ? `<div class="ro-grid">${rows.join('')}</div>` : ''}${rawFold(w.output, 'raw:output')}` : `<p class="muted">${esc(UI.t('td.noOutput'))}</p>`;
+      return inc || rows.length ? `${inc}${rows.length ? `<div class="td-rows">${rows.join('')}</div>` : ''}${rawFold(w.output, 'raw:output')}` : `<p class="muted">${esc(UI.t('td.noOutput'))}</p>`;
     }
     const basis = k === 'agent' ? basisHtml(w, evs) : '';
-    const cards = k === 'agent' && (boundDecision(v) || (T.decErr && T.decId===recordedDecisionId(v,w,item))) ? `<p class="kv-line"><b>${esc(UI.t('td.parts'))}</b></p>${decisionHtml(boundDecision(v))}` : '';
-    const wait = k === 'human' ? `<div class="ro-grid">${waitRow(w)}</div>` : '';
+    const cards = k === 'agent' && (boundDecision(v) || (T.decErr && T.decId===recordedDecisionId(v,w,item))) ? `<p><b>${esc(UI.t('td.parts'))}</b></p>${decisionHtml(boundDecision(v))}` : '';
+    const wait = k === 'human' ? `<div class="td-rows">${waitRow(w)}</div>` : '';
     const out = w.output && Object.keys(w.output).length ? w.output : (w.draft && typeof w.draft === 'object' && !w.draft._human_request ? w.draft : null);
     if (!out) return `${basis}${cards}${wait}<p class="muted">${esc(UI.t('td.noOutput'))}</p>`;
     const fields = Object.fromEntries((((item && item.form) || {}).fields_json || []).map(f => [f.key, f.text]));
     const keys = Object.keys(out).filter(key => !HIDDEN_OUTPUT.has(key));
     const rows = keys.map(key => UI.readonly(UI.terms['var.' + key] || fields[key] || varName(key, v), valueHtml(key, out[key], v))).join('');
     const prose = !keys.length && typeof out.text === 'string' ? UI.readonly(UI.t('td.prose'), `<pre class="td-prose">${esc(out.text.slice(0, 4000))}</pre>`) : '';
-    return `${basis}${wait}${w.draft && !w.output ? `<p class="field-hint">${esc(UI.status('FB_REQUESTED'))} · ${esc(UI.t('inst.structured'))}</p>` : ''}<div class="ro-grid">${rows}${prose}</div>${cards}${rawFold(out, 'raw:output')}`;
+    return `${basis}${wait}${w.draft && !w.output ? `<p class="muted">${esc(UI.status('FB_REQUESTED'))} · ${esc(UI.t('inst.structured'))}</p>` : ''}<div class="td-rows">${rows}${prose}</div>${cards}${rawFold(out, 'raw:output')}`;
   }
 
   /* ---------- ④ 다음 단계로 넘긴 값 ---------- */
@@ -423,7 +423,7 @@
     if (!keys.length) return `<p class="muted">${esc(UI.t('td.noNext'))}</p>`;
     const current = vars(v.instance), sources = v.instance.variable_sources || {};
     const acts = (v.definition || {}).activities || [];
-    return `<div class="ro-grid">${keys.map(key => {
+    return `<div class="td-rows">${keys.map(key => {
       const src = sources[key];
       const mine = src && src.kind === 'workitem' && src.id === w.id;
       const value = (w.output || {})[key] !== undefined ? w.output[key] : (mine ? current[key] : undefined);
@@ -442,14 +442,13 @@
   function plannedHtml(v, actId) {
     const act = activityOf(v, actId); if (!act) return '';
     const roleEp = ((v.definition || {}).roles || []).find(r => r.name === act.role);
-    return `<section class="card task-detail" data-task-detail><header class="card-head"><div class="card-title"><h3>${esc(UI.flowName(act.name))}</h3><span class="card-chips">${UI.chip('TODO')}</span></div><div class="card-actions"><button type="button" class="btn small" data-td-close>${esc(UI.t('td.close'))}</button></div></header>
-      <p class="card-sub">${esc(UI.t('td.planned'))} · ${esc(UI.t('td.plannedSub'))}</p>
-      <div class="ro-grid">${UI.readonly(UI.t('td.who'), esc(UI.who(act.agent || (roleEp && roleEp.endpoint) || act.role || '')))}${UI.readonly(UI.t('td.expects'), (act.inputData || []).map(k => `<span class="chip tone-neutral sm">${esc(varName(k, v))}</span>`).join(' ') || esc(UI.t('empty.noData')))}${UI.readonly(UI.t('td.produces'), (act.outputData || []).map(k => `<span class="chip tone-neutral sm">${esc(varName(k, v))}</span>`).join(' ') || esc(UI.t('empty.noData')))}</div>
-      ${act.description ? `<p class="kv-line" style="margin-top:var(--s3)">${esc(act.description)}</p>` : ''}</section>`;
+    return `<section class="panel task-detail" data-task-detail><div class="panel-head"><div><h2>${esc(UI.flowName(act.name))}${UI.chip('TODO')}</h2><p>${esc(UI.t('td.planned'))} · ${esc(UI.t('td.plannedSub'))}</p></div><button type="button" class="btn" data-variant="outline" data-size="sm" data-td-close>${UI.icon('x')}${esc(UI.t('td.close'))}</button></div>
+      <div class="panel-body"><div class="td-rows">${UI.readonly(UI.t('td.who'), esc(UI.who(act.agent || (roleEp && roleEp.endpoint) || act.role || '')))}${UI.readonly(UI.t('td.expects'), (act.inputData || []).map(k => `<span class="badge" data-variant="secondary">${esc(varName(k, v))}</span>`).join(' ') || esc(UI.t('empty.noData')))}${UI.readonly(UI.t('td.produces'), (act.outputData || []).map(k => `<span class="badge" data-variant="secondary">${esc(varName(k, v))}</span>`).join(' ') || esc(UI.t('empty.noData')))}</div>
+      ${act.description ? `<p>${esc(act.description)}</p>` : ''}</div></section>`;
   }
 
   /* ---------- render ---------- */
-  const section = (k, title, body, count, open) => `<details class="fold td-section" data-k="${k}" ${open ? 'open' : ''}><summary>${esc(title)}${count != null ? ` <span class="chip tone-neutral sm">${esc(count)}</span>` : ''}</summary><div class="fold-body">${body}</div></details>`;
+  const section = (k, title, body, count, open) => `<details class="fold td-section" data-k="${k}" ${open ? 'open' : ''}><summary>${esc(title)}${count != null ? ` <span class="badge" data-variant="secondary">${esc(count)}</span>` : ''}</summary><div class="fold-body">${body}</div></details>`;
   function eventsOf(w, v, item) {
     const seen = new Set();
     return [...v.events.filter(e => e.todo_id === w.id), ...((item && item.events) || [])].filter(e => e && e.id && !seen.has(e.id) && seen.add(e.id)).sort((a, b) => String(a.timestamp || '').localeCompare(String(b.timestamp || '')));
@@ -473,16 +472,16 @@
     const act = activityOf(v, w.activity_id) || {};
     const inputCount = (act.inputData || []).length, outCount = (act.outputData || []).length;
     const toolCount = evs.filter(e => e.event_type === 'tool_usage_started').length;
-    host.innerHTML = `<section class="card task-detail ${esc(k)}${live ? ' live' : ''}" data-task-detail>
-      <header class="card-head"><div class="card-title"><h3>${esc(UI.flowName(w.activity_name))}</h3><span class="card-chips">${UI.chip(w.status)}${w.draft_status && w.status !== 'DONE' ? UI.chip(w.draft_status) : ''}${UI.chipText(k === 'agent' ? UI.t('agent') : k === 'human' ? UI.who(w.user_id) : UI.t('system'), k === 'agent' ? 'accent' : 'neutral')}${live ? `<span class="chip tone-success sm"><i class="live-dot on"></i> ${esc(UI.t('td.liveOn'))}</span>` : ''}</span></div><div class="card-actions"><button type="button" class="btn small" data-td-close>${esc(UI.t('td.close'))}</button></div></header>
-      <p class="card-sub">${esc(UI.dateTime(w.start_date))}${w.end_date ? ' → ' + esc(UI.time(w.end_date)) : ''}${dur ? ' · ' + esc(dur) : ''}${w.generation ? ` · ${esc(w.generation)}${esc(UI.t('inst.gen'))}` : ''}${w.due_date && !w.end_date ? ` · ${esc(UI.t('inst.due'))} ${esc(UI.dateTime(w.due_date))}` : ''}</p>
-      ${T.error ? `<p class="neg">${esc(UI.t('td.loadFail'))}: ${esc(T.error)}</p>` : ''}
+    host.innerHTML = `<section class="panel task-detail" data-task-detail data-doer="${esc(k)}"${live ? ' data-live' : ''}>
+      <div class="panel-head"><div><h2>${esc(UI.flowName(w.activity_name))}${UI.chip(w.status)}${w.draft_status && w.status !== 'DONE' ? UI.chip(w.draft_status) : ''}${UI.chipText(k === 'agent' ? UI.t('agent') : k === 'human' ? UI.who(w.user_id) : UI.t('system'), k === 'agent' ? 'accent' : 'neutral')}${live ? `<span class="tag" data-tone="ok" data-plain><i class="dot" data-tone="ok" data-live></i>${esc(UI.t('td.liveOn'))}</span>` : ''}</h2>
+      <p>${esc(UI.dateTime(w.start_date))}${w.end_date ? ' → ' + esc(UI.time(w.end_date)) : ''}${dur ? ' · ' + esc(dur) : ''}${w.generation ? ` · ${esc(w.generation)}${esc(UI.t('inst.gen'))}` : ''}${w.due_date && !w.end_date ? ` · ${esc(UI.t('inst.due'))} ${esc(UI.dateTime(w.due_date))}` : ''}</p></div><button type="button" class="btn" data-variant="outline" data-size="sm" data-td-close>${UI.icon('x')}${esc(UI.t('td.close'))}</button></div>
+      <div class="panel-body">${T.error ? `<p class="muted" data-tone="danger">${esc(UI.t('td.loadFail'))}: ${esc(T.error)}</p>` : ''}
       <div class="td-sections">
         ${section('inputs', UI.t('td.inputs'), inputsHtml(w, item, v), inputCount, first ? inputCount > 0 : wasOpen.has('inputs'))}
         ${section('trace', UI.t('td.trace'), timelineHtml(w, evs, v, live), toolCount || null, first ? true : wasOpen.has('trace'))}
         ${section('output', UI.t('td.output'), outputHtml(w, item, v, evs), null, first ? true : wasOpen.has('output'))}
         ${section('next', UI.t('td.next'), nextHtml(w, v), outCount, first ? outCount > 0 : wasOpen.has('next'))}
-      </div></section>`;
+      </div></div></section>`;
     if (!first) host.querySelectorAll('details[data-k]:not(.td-section)').forEach(d => { if (wasOpen.has(d.dataset.k)) d.open = true; });
     T.rendered = w.id;
     const tl = host.querySelector('[data-td-timeline]'); if (tl && live) tl.scrollTop = tl.scrollHeight;
@@ -492,7 +491,7 @@
     if (typeof document === 'undefined' || !document.querySelectorAll) return;
     const w = T.wid && workitemOf(T.wid);
     const actId = T.act || (w && w.activity_id);
-    document.querySelectorAll('#instDetail [data-path-node]').forEach(g => g.classList.toggle('picked', !!actId && g.dataset.pathNode === actId));
+
   }
 
   /* ---------- 지금: <단계> — <누가> <무엇을 하는 중> ---------- */
@@ -536,7 +535,7 @@
     }
     const cur = v.workitems.filter(w => LIVE.has(w.status) && !isEventNode(v, w.activity_id));
     if (!cur.length) return `<div class="td-now" role="status"><b>${esc(UI.t('td.now'))}</b> <span class="muted">${esc(UI.t('td.nothing'))}</span></div>`;
-    return `<div class="td-now" role="status"><i class="live-dot on"></i><b>${esc(UI.t('td.now'))}</b> ${cur.map(w => { const [who, what] = doingOf(w, v); return `<span class="td-now-item"><button type="button" class="linkish" data-td-open="${esc(w.id)}">${esc(UI.flowName(w.activity_name))}</button> — ${esc(who)} ${what}</span>`; }).join('<span class="muted"> · </span>')}</div>`;
+    return `<div class="td-now" role="status"><i class="dot" data-tone="brand" data-live></i><b>${esc(UI.t('td.now'))}</b> ${cur.map(w => { const [who, what] = doingOf(w, v); return `<span class="td-now-item"><button type="button" class="btn" data-variant="link" data-td-open="${esc(w.id)}">${esc(UI.flowName(w.activity_name))}</button> — ${esc(who)} ${what}</span>`; }).join('<span class="muted"> · </span>')}</div>`;
   }
   const clockSpan = (kind, iso) => {
     const t = new Date(iso) - new Date();

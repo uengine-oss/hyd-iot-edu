@@ -1,11 +1,12 @@
 /* A4 (U6) 판단 채점 — 사람이 적은 정답표에 AI 판단을 대어 점수를 내고, 실행을 남겨 지식 고치기 전·후를 비교한다.
    API: process /api/eval/* (procsvc/eval_api.py). 정답표는 화면에서 적는 데이터이고 처음엔 비어 있다 — 이 파일에도 정답은 없다.
    화면: window.hydEval.mount(el). 포털 셸이 컨테이너(#evalView)를 주면 그 안에 전부 그린다. 채점은 처리 건 · 설비 명령 · 기준 데이터를 바꾸지 않는다.
-   짜임(디자인 기준 5-8 「입력 → 결과」): 보기 셋(채점 · 정답표 · 전 · 후 비교). 채점은 왼쪽에 조건과 [채점 실행], 오른쪽에 고른 실행의 결과(평균 → 검사 네 가지 → 항목별)와
-   그 아래 「지난 실행」 표. 맞음 · 틀림은 줄 앞의 점 색으로 보이고(칩을 줄줄이 세우지 않는다), 조치 순위 원문 · 회차별 결과는 항목의 [자세히]를 눌렀을 때 열린다. */
+   짜임(디자인 기준 5-6 「조건 → 결과」): 보기 셋(채점 · 정답표 · 전 · 후 비교). 채점은 왼쪽 조건 판과 [채점 실행], 오른쪽에 실시간 상자(도는 동안 — 서버가 적는 단계가 하나씩 채워지고,
+   항목 몇 개 가운데 몇 개가 끝났는지 진행 막대가 센다) → 고른 실행의 결과(평균 한 줄과 검사 네 가지의 맞은 수 → 항목별 검사 → 원문 접기) → 「지난 실행」 목록.
+   부품은 키트의 것(panel · fieldset · field · seg · turn-facts · evid · rows · table · fold · stream · progress)이고 격자는 reading.css(.io)다. 맞음 · 틀림은 줄 앞 아이콘과 글로 보인다. */
 (function () {
   const E = { el: null, golden: [], storage: '', paths: {}, maxRepeats: 10, assets: [], facts: {}, runs: [], sel: null, run: null, editing: null,
-    knowledge: null, cands: null, patterns: null, cmp: null, busy: false, picked: new Set(), view: 'run', openItem: null };
+    knowledge: null, cands: null, patterns: null, cmp: null, busy: false, picked: new Set(), view: 'run' };
   const PATH = { decide: '규칙 판단', evaluate: '규칙 읽기 평가', worker: '지난 처리 건 (실제 AI 에이전트)' };
   const CHECK = { cause: '원인 적중', top: '1위 허용', forbidden: '빠질 조치 미추천', evidence: '근거 포함' };
   const EXPECT = { excluded: '제외돼야 함', not_recommended: '1위면 안 됨' };
@@ -17,8 +18,10 @@
   const factVal = (k, v) => { const hit = ((E.facts[k] || {}).choices || []).find(([value]) => value === v); return hit ? hit[1] : typeof v === 'string' ? UI.status(v) : String(v); };
   const factsText = (f) => Object.entries(f || {}).map(([k, v]) => `${factLabel(k)} ${factVal(k, v)}`).join(' · ') || '가정 사실 없음 (지금 값 사용)';
   const pct = (x) => Math.round((x || 0) * 100) + ' %';
-  const group = (label, body) => body ? `<section class="rd-group"><h3 class="rd-label">${label}</h3>${body}</section>` : '';
-  const kv = rows => { const r = rows.filter(([, x]) => x != null && x !== ''); return r.length ? `<dl class="kv">${r.map(([k, x]) => `<dt>${esc(k)}</dt><dd>${x}</dd>`).join('')}</dl>` : ''; };
+  const sec = (title, side, body) => body ? `<div class="panel-sec"><h3>${title}${side ? `<span class="muted">${side}</span>` : ''}</h3>${body}</div>` : '';
+  const fact = (label, value) => `<div><dt>${esc(label)}</dt><dd>${value}</dd></div>`;
+  const note = (text, attrs = '') => text ? `<p class="muted"${attrs}>${text}</p>` : '';
+  const bad = text => `<span class="muted" data-tone="danger">${text}</span>`;
   // 누가 적고 실행했는지 = 이 PC의 담당자 id(서버 eval_api.by_of 는 빈 값만 거절한다). 담당자를 못 읽으면 다른 값으로 대신하지 않고 막는다
   const NEED_ME = '담당자 정보를 읽지 못해 보낼 수 없습니다. 화면을 새로 고친 뒤 다시 해 주세요.';
   function meId() { const id = window.hydInbox?.me?.()?.id; if (!id) throw new Error(NEED_ME); return id; }
@@ -27,7 +30,9 @@
 
   // 채점 실행은 N회 판단이라 30초를 넘길 수 있다 — 공용 요청 함수에 시간 제한 없이(끊김 · 거절 문구는 공용 함수가 학생 말로 바꾼다)
   const longJ = (url, method, body) => postJ(url, body, method, { timeout: 0 });
-  const msg = (key, text, bad = true) => { const m = q(`[data-msg="${key}"]`); if (m) { m.textContent = text || ''; m.className = 'form-msg ' + (bad ? 'neg' : 'pos'); } };
+  // 폼 아래 한 줄(못 한 까닭 · 하는 중): 빈 글이면 줄이 사라진다
+  const msg = (key, text, bad = true) => { const m = q(`[data-msg="${key}"]`); if (!m) return; m.textContent = text || ''; m.hidden = !text; if (bad && text) m.dataset.tone = 'danger'; else delete m.dataset.tone; };
+  const msgLine = key => `<p class="muted" data-msg="${key}" role="status" hidden></p>`;
 
   /* ---------------------------------------------------------------- 뼈대 */
   function skeleton() {

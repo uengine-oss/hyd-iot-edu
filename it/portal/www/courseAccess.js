@@ -1,11 +1,11 @@
 /* 수업 경계 — 정본은 서버다(GET /api/course-access = it/process/procsvc/course_policy.py 의 Policy.view()). 화면은 그 표를 읽기만 한다.
-   ① 메뉴 줄 맨 아래 한 줄(#courseStatus): 지금 단계(수업 / PBL, PBL 기한이 지났으면 그 사실).
+   ① 메뉴 줄 맨 아래 한 줄(#courseStatus): 지금 단계(제공 자료만 사용 / 자유 구성 (PBL), PBL 기한이 지났으면 그 사실).
    ② 막힌 행동: 행동 키를 단 요소(data-course-action="tool_servers.register" 등)만 끄고 서버가 준 까닭을 보인다. 메뉴는 잠그지 않는다.
       화면 모듈은 그릴 때 attrs(키)로 속성을 달고, 표가 늦게 오거나 바뀌면 apply()가 그 요소들만 다시 맞춘다(문서 전체 관찰자 없음).
    ③ 값마다 갈리는 판정: 배정할 수 있는 정의 · 시작할 수 있는 정의 · 가져올 수 있는 흐름 · 수업 모델 · 제공 문서만 받는지. 막힌 까닭은
       서버가 준 문장(표의 reasons — 거절 응답과 같은 문장)만 보인다. 화면에 규칙 문장 사본이 없다.
    ④ PBL 기한: 서버는 판정할 때마다 기한을 지금 시각과 견준다. 화면은 기한 시각에 표를 한 번 다시 읽는다.
-   조회 실패는 잠금이 아니다 — 「수업 단계 정보를 읽지 못했습니다 · 다시 시도」를 띄우고 정해진 횟수만 다시 읽는다. 그동안 단추는 그대로 두고
+   조회 실패는 잠금이 아니다 — 「단계 정보 읽기 실패 · 다시 시도」를 띄우고 정해진 횟수만 다시 읽는다. 그동안 단추는 그대로 두고
    서버가 판정한다(거절이면 서버의 학생용 까닭이 그대로 보인다). */
 (() => {
   const RETRY_S = [3, 10, 30];            // 실패 뒤 자동으로 다시 읽는 간격(초). 다 쓰면 [다시 시도] 단추만 남는다
@@ -64,18 +64,19 @@
     const a = C.access;
     if (!a) {
       // 메뉴 줄 아래는 좁다 — 보이는 글은 짧게, 서버 사유는 title 로. 색 면을 두지 않고 글자색으로만 말한다(portal-kit.css .course-status)
-      box.innerHTML = C.error ? `<span data-tone="danger">수업 단계 정보 읽기 실패</span> <button type="button" class="btn" data-variant="link" data-size="sm" data-course-retry>다시 시도</button>` : '';
-      box.title = C.error ? `수업 단계 정보를 읽지 못했습니다: ${C.error}${C.timer ? ' — 잠시 뒤 다시 읽습니다' : ''}` : '';
+      box.innerHTML = C.error ? `<span data-tone="danger">단계 정보 읽기 실패</span> <button type="button" class="btn" data-variant="link" data-size="sm" data-course-retry>다시 시도</button>` : '';
+      box.title = C.error ? `지금 단계를 읽지 못했습니다: ${C.error}${C.timer ? ' — 잠시 뒤 다시 읽습니다' : ''}` : '';
       box.querySelector('[data-course-retry]')?.addEventListener('click', () => { C.tries = 0; refresh(); });
       return;
     }
     const until = a.expires ? UI.dateTime(a.expires) : '';
-    const label = a.phase === 'pbl' ? `지금 단계: ${a.label}${until ? ` (${until}까지)` : ''}`
-      : a.expired ? `지금 단계: ${a.label} (PBL 기한 지남)` : `지금 단계: ${a.label}`;
+    // 단계 이름을 「무엇을 쓸 수 있는가」로 말한다: 제공된 문서 · 흐름 · 모델만 쓰는 단계(course)는 「제공 자료만 사용」, 제한이 풀린 단계(pbl)는 「자유 구성 (PBL)」. 막힌 행동과 까닭은 title 에
+    const label = a.phase === 'pbl' ? `지금 단계: 자유 구성 (PBL)${until ? ` · ${until}까지` : ''}`
+      : a.expired ? '지금 단계: 제공 자료만 사용 (PBL 기한 지남)' : '지금 단계: 제공 자료만 사용';
     const tone = a.phase === 'pbl' ? 'brand' : a.expired ? 'warn' : '';
     const closed = Object.values(a.actions || {}).filter(x => x && x.allowed === false).map(x => x.reason);
     box.innerHTML = `<span${tone ? ` data-tone="${tone}"` : ''}>${esc(label)}</span>`;
-    box.title = [a.note, a.expired && until ? `PBL 기한(${until})이 지나 수업 단계로 돌아왔습니다.` : '', ...closed].filter(Boolean).join('\n');
+    box.title = [a.note, a.expired && until ? `PBL 기한(${until})이 지나 제공 자료만 쓰는 단계로 돌아왔습니다.` : '', ...closed].filter(Boolean).join('\n');
   }
 
   // 서버 표가 이 화면이 읽는 모양인가 — 막힌 행동 · 목록 판정에는 서버 까닭 문장이 있어야 한다(없으면 화면이 문장을 지어내지 않고 실패로 본다)
@@ -98,7 +99,7 @@
     C.loading = true; clearTimeout(C.timer); C.timer = 0;
     try {
       const next = await getJ(API.process + '/api/course-access');
-      if (!wellFormed(next)) throw new Error('수업 단계 응답 형식이 올바르지 않습니다 — 서비스가 이 화면과 다른 판일 수 있습니다.');
+      if (!wellFormed(next)) throw new Error('단계 정보 응답 형식이 올바르지 않습니다 — 서비스가 이 화면과 다른 판일 수 있습니다.');
       C.access = next; C.error = ''; C.tries = 0;
     } catch (e) {
       C.access = null; C.error = e.message || String(e);

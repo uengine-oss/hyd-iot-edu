@@ -1,4 +1,4 @@
-"""지식 관리 화면(it/portal/www/hitl.js)의 업무 데이터 연결 이력 — 되돌리기 결과 문장이 학생에게 남는다.
+"""문서 등록 화면(it/portal/www/hitl.js)의 업무 DB 표 정의 연결 이력 — 되돌리기 결과 문장이 학생에게 남는다.
 
 실제 index.html · hitl.js 를 실제 브라우저(Playwright Chromium)로 연다. 브라우저 밖의 process 응답(연결 이력 · 되돌리기)만 이 시험이 준다
 (꼴은 procsvc GET /api/kg/ingests · DELETE /api/kg/ingests/{batch})."""
@@ -34,6 +34,7 @@ def test_연결_배치를_되돌리면_이력을_다시_그린_뒤에도_되돌�
             page.route('**/svc/**', answer)
             page.goto(served.url + '/index.html')
             open_screen(page, 'knowledge')
+            page.click("#docKinds [data-doc-kind='ddl']")      # 올릴 것: 업무 DB 표 정의(연결 이력은 그쪽 판 아래에 있다)
             page.wait_for_selector(f"#ddlHistory [data-clear='{BATCH}']", timeout=15000)
             page.locator(f"#ddlHistory [data-clear='{BATCH}']").click()
             page.locator("dialog.confirm-dialog button[value='ok']").click()      # 포털 확인 대화상자(UI.confirm)

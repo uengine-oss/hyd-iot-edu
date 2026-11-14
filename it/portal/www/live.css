@@ -1,79 +1,69 @@
-/* 실시간 표시의 공용 모양(liveStream.js 의 hydLive) — 오래 걸리는 일의 과정을 흘려보내는 자리.
-   토큰만 쓴다(tokens.css). 색은 상태에만: 지금 = 파랑, 끝남 = 초록, 주의 = 노랑, 실패 = 빨강. 글자는 12 · 13 · 14 · 16px, 굵기 400 · 600. */
+/* 실시간 표시의 공용 모양(liveStream.js 의 hydLive) — 오래 걸리는 일의 과정을 흘려보내는 자리(디자인 기준 7절).
+   상자 · 머리 · 줄의 모양은 키트의 실시간 상자(portal-kit.css .stream · .stream-head · .stream-log · .line)가 갖는다.
+   hydLive 는 그 마크업에 lv-* 이름을 함께 단다(화면과 시험이 찾는 자리). 이 파일은 그 자리의 치수만 갖는다. */
 
 /* 걸린 시간: 폭이 같은 숫자로 — 올라가도 옆 글이 흔들리지 않는다 */
-.lv-time { color: var(--muted-foreground); font-size: 13px; line-height: 20px; font-weight: 400; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lv-time { font-variant-numeric: tabular-nums; white-space: nowrap; }
 
-/* 한 번에 결과만 오는 일: 「글 · 걸린 시간」, 3초 뒤 「아직 하는 중입니다 — 무엇을 기다리는지」 */
-.lv-wait { display: grid; gap: 4px; padding: 8px 0; font-size: 14px; line-height: 22px; color: var(--ink-2); }
-.lv-wait-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.lv-wait-line b { font-weight: 600; color: var(--foreground); }
-.lv-late { display: block; color: var(--muted-foreground); font-size: 13px; line-height: 20px; font-weight: 400; }
+/* 한 번에 결과만 오는 일(waitHtml): 실시간 상자의 머리 한 줄 「무엇을 하는 중 · 걸린 시간」, 3초 뒤 「아직 하는 중입니다 — 무엇을 기다리는지」 */
+.lv-wait > .stream-head:last-child, .lv-wait > .stream-head:has(+ .lv-late[hidden]) { border-bottom: 0; }
+.lv-wait > .lv-late { padding: 8px 14px 10px 32px; }
+.lv-late { display: block; color: var(--muted-foreground); font-size: 12.5px; line-height: 18px; font-weight: 400; }
 .lv-late[hidden] { display: none; }
 
 /* 누른 단추가 「…하는 중 · 걸린 시간」으로 */
 .btn.lv-busy { display: inline-flex; align-items: center; gap: 6px; opacity: 1; cursor: progress; }
 .btn.lv-busy .lv-time { font-size: inherit; line-height: inherit; color: inherit; opacity: .7; }
 .btn.lv-busy .tr-spin { vertical-align: 0; }
-.btn.primary.lv-busy .tr-spin { border-color: rgb(255 255 255 / .35); border-top-color: var(--primary-foreground); }
+.btn.lv-busy:not([data-variant]) .tr-spin { border-color: rgb(255 255 255 / .35); border-top-color: var(--primary-foreground); }
 
-/* 단계 목록: 하나씩 채워진다 */
-.lv-steps { list-style: none; margin: 0; padding: 0; display: grid; }
-.lv-step { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 8px 0; font-size: 14px; line-height: 22px; color: var(--muted-foreground); position: relative; }
-.lv-step + .lv-step::before { content: ""; position: absolute; left: 11px; top: -8px; height: 16px; width: 1px; background: var(--input); }
-.lv-mark { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--input); background: var(--card); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.lv-mark i { font-style: normal; }
-.lv-mark .tr-ic { width: 14px; height: 14px; }
-.lv-mark .tr-spin { vertical-align: 0; border-color: var(--brand-line); border-top-color: var(--brand); }
-.lv-step-main { display: grid; gap: 2px; min-width: 0; }
-.lv-step-main b { font-weight: 400; overflow-wrap: anywhere; }
-.lv-step-main .link-btn { justify-self: start; }
-.lv-note { color: var(--muted-foreground); font-size: 13px; line-height: 20px; overflow-wrap: anywhere; }
-.lv-step.run { color: var(--foreground); }
-.lv-step.run .lv-step-main b { font-weight: 600; }
-.lv-step.run .lv-mark { border-color: var(--brand); }
-.lv-step.ok { color: var(--ink-2); }
-.lv-step.ok .lv-mark { background: var(--ok-soft); border-color: var(--ok-soft); color: var(--ok-ink); }
-.lv-step.fail { color: var(--foreground); }
-.lv-step.fail .lv-mark { background: var(--danger-soft); border-color: var(--danger-soft); color: var(--danger-ink); }
-.lv-step.fail .lv-note { color: var(--danger-ink); }
-.lv-step.skip .lv-mark { background: var(--muted); border-color: var(--muted); color: var(--muted-foreground); }
+/* 단계 목록(steps · track · follow): 단계 하나가 실시간 줄 하나 — 하나씩 채워진다 */
+.lv-steps { list-style: none; margin: 0; max-height: none; }
+.lv-step { display: block; }
+.lv-step.wait .line-text b { font-weight: 450; color: var(--muted-foreground); }
+.lv-step.skip .line-text b { font-weight: 450; color: var(--muted-foreground); text-decoration: line-through; text-decoration-color: var(--ink-4); }
+.lv-step.fail .lv-note { color: var(--danger-ink); white-space: normal; }
+.lv-step .lv-note { white-space: normal; overflow-wrap: anywhere; }
+.lv-step .line-text .btn { height: auto; padding: 0; margin-top: 2px; }
+/* 서버가 적는 진행 기록(track): 머리 한 줄과 단계 목록이 한 상자 */
+.lv-track { border: 1px solid var(--border); border-radius: 10px; background: #fff; overflow: hidden; }
+.lv-track > .stream { border: 0; border-radius: 0; }
+.lv-track > .stream > .stream-head { border-bottom: 0; }
+.lv-track > [data-lv-track-steps]:not(:empty) { border-top: 1px solid var(--border); }
+.lv-track > .stream-lost { margin: 0 14px 10px; }
+/* 이어지는 일(follow)과 단계 목록만 따로 놓일 때: 상자 하나 */
+.lv-steps { border: 1px solid var(--border); border-radius: 10px; background: #fff; }
+[data-lv-track-steps] .lv-steps { border: 0; border-radius: 0; }
 
-/* AI 에이전트가 하는 일: 머리(지금 무엇 · 걸린 시간 · 연결 상태) → 작업 행마다 흘러나오는 기록 */
-.lv-work { display: grid; gap: 12px; }
-.lv-work-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-.lv-now { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 14px; line-height: 22px; color: var(--foreground); min-width: 0; }
-.lv-now b { font-weight: 600; }
-.lv-now .tr-spin, .lv-wait .tr-spin { border-color: var(--brand-line); border-top-color: var(--brand); vertical-align: 0; }
-.lv-work-tools { display: inline-flex; align-items: center; gap: 12px; }
-.lv-work-note { margin: 0; color: var(--muted-foreground); font-size: 13px; line-height: 20px; }
-.lv-work-conn { margin: 0; padding: 8px 12px; border: 1px solid var(--warn-soft); background: var(--warn-soft); color: var(--warn-ink); border-radius: 8px; font-size: 13px; line-height: 20px; }
-.lv-work-note[hidden], .lv-work-conn[hidden] { display: none; }
-.lv-work-body { display: grid; gap: 12px; }
+/* AI 에이전트가 하는 일(agentWork): 머리(지금 무엇 · 걸린 시간 · 연결 상태 · 지금 확인) → 작업 행마다 흘러나오는 기록 */
+.lv-work-head { justify-content: space-between; flex-wrap: wrap; }
+.lv-now { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.lv-now .lv-time { font-size: 12px; color: var(--muted-foreground); }
+.lv-work-tools { display: inline-flex; align-items: center; gap: 10px; margin-left: auto; font-size: 12.5px; color: var(--muted-foreground); }
+.lv-work-note { margin: 10px 14px 0; color: var(--muted-foreground); font-size: 13px; line-height: 20px; }
+.lv-work-note[hidden] { display: none; }
+.lv-work-body { display: grid; gap: 12px; padding: 12px 14px; }
+.lv-work-body:empty { display: none; }
 .lv-seg { min-width: 0; }
 .lv-seg[open] > .lv-seg-head { margin-bottom: 8px; }
-.lv-seg > .field-error, .lv-seg > .lv-work-note { margin-bottom: 8px; }
+.lv-seg > .stream-lost, .lv-seg > .lv-work-note { margin: 0 0 8px; }
 .lv-seg + .lv-seg { border-top: 1px solid var(--border); padding-top: 12px; }
-.lv-seg-head { display: flex; align-items: baseline; gap: 12px; font-size: 13px; line-height: 20px; cursor: pointer; list-style: none; border-radius: 6px; }
+.lv-seg-head { display: flex; align-items: center; gap: 10px; font-size: 13px; line-height: 20px; cursor: pointer; list-style: none; border-radius: 6px; }
 .lv-seg-head::-webkit-details-marker { display: none; }
-.lv-seg-head::before { content: ""; width: 6px; height: 6px; border-right: 1.5px solid var(--muted-foreground); border-bottom: 1.5px solid var(--muted-foreground); transform: rotate(-45deg); flex: none; align-self: center; transition: transform .15s var(--ease); }
-.lv-seg[open] > .lv-seg-head::before { transform: rotate(45deg); }
+.lv-seg-head::before { content: ""; width: 14px; height: 14px; flex: none; background: currentColor; opacity: .6; transition: transform .15s var(--ease); -webkit-mask: var(--chev) center / contain no-repeat; mask: var(--chev) center / contain no-repeat; }
+.lv-seg[open] > .lv-seg-head::before { transform: rotate(90deg); }
 .lv-seg-head:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .lv-seg-head[hidden] { display: none; }
 .lv-seg-head b { font-weight: 600; color: var(--foreground); }
-.lv-seg-state { color: var(--muted-foreground); }
-.lv-seg-state.run { color: var(--brand-ink); font-weight: 600; }
-.lv-seg-state.done { color: var(--ok-ink); }
-.lv-seg-state.fail, .lv-seg-state.stop { color: var(--danger-ink); font-weight: 600; }
-.lv-seg-head .lv-time { margin-left: auto; }
+.lv-seg-head .lv-time { margin-left: auto; font-size: 12px; color: var(--muted-foreground); }
 /* 기록 칸: 새 줄은 아래에 붙는다. 맨 아래를 보고 있을 때만 따라 내려간다(trace.js atNewest) */
 .lv-log { max-height: 320px; overflow-y: auto; overscroll-behavior: contain; border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; background: var(--card); }
 .lv-log:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
-.lv-log .empty { padding: 8px 0; }
+.lv-log .empty { padding: 8px 0; border: 0; }
 
-/* 연결 상태: 색 점과 글자를 함께(trace.css 의 .live-conn 에 두 상태를 더한다) */
-.live-conn.retry::before, .live-conn.connecting::before { background: var(--warn-ink); }
-.live-conn.off::before { background: var(--danger-ink); }
+/* 연결 상태 글(머리의 오른쪽): 색 점과 글자를 함께 */
+.live-conn.retry::before, .live-conn.connecting::before { background: var(--warn); }
+.live-conn.off::before { background: var(--danger); }
 .live-conn.off, .live-conn.retry { color: var(--ink-2); }
 
 /* 문서 등록 2단계: AI 추출이 도는 자리 */
@@ -89,8 +79,3 @@
 .lv-fail p { margin: 0; color: var(--ink-2); font-size: 14px; line-height: 22px; }
 .lv-fail .rd-form-actions { margin-top: 8px; }
 
-@media (prefers-reduced-motion: reduce) { .lv-mark .tr-spin { animation: none; } }
-@media (max-width: 720px) {
-  .lv-step { grid-template-columns: 24px minmax(0, 1fr); }
-  .lv-step > .lv-time { grid-column: 2; }
-}

@@ -1,9 +1,9 @@
 /* 홈: 이 시스템의 이야기를 그림 한 장으로 — 유압 파워유닛(OT)의 값이 MQTT · DMZ · Kafka · 탐지를 지나 지식 지도와 AI 에이전트(IT)에 닿고,
    사람이 승인한 조치는 명령 관문(DMZ)을 거쳐 PLC 로 내려간다(PLC 가 받을지 정한다). 실시간 값은 app.js 가 읽은 state.plant 를 쓴다.
-   그림 아래: 지금 상태(큰 숫자 셋) · 처음이라면 이 순서로(네 걸음). 모양은 canvas.css(그림 .m-* 와 아래쪽 .hm-*). 디자인 기준 5-9. */
+   그림 아래: 숫자 타일 한 줄(설비 · 열린 사건 · 내가 할 일 · 지식 항목 — 누르면 그 화면) · 처음이라면 이 순서로(네 걸음). 모양은 canvas.css(그림 .m-* 와 아래쪽 .hm-*). 디자인 기준 5-7. */
 (function () {
   const G = { asset: '#9aa7b5', obs: '#9aa7b5', failure: '#f07167', action: '#f5a623', org: '#b794f6', sys: '#2dd4bf', decision: '#7aa2ff', agent: '#ffffff' };
-  // 지식 지도의 항목(실제 온톨로지에서 읽기 좋게 고른 일부 — it/neo4j/v2/instances.cypher 구조판 + 수업 매뉴얼 HM-8 의 절차)
+  // 지식 지도의 항목(실제 온톨로지에서 읽기 좋게 고른 일부 — it/neo4j/v2/instances.cypher 구조판 + 매뉴얼 HM-8 의 절차)
   const N = [
     ['asset', 'HYD-01', 'asset', 700, 318], ['ts1', '센서 TS1', 'asset', 690, 226], ['ce', '센서 CE', 'asset', 706, 410],
     ['sym', '증상 · 유온 상승', 'obs', 800, 176], ['fm', '고장 유형 · 냉각 상실', 'failure', 822, 288], ['cause', '원인 · 쿨러 핀 오염', 'failure', 912, 200],
@@ -145,7 +145,7 @@
       ['instances', 'AI 에이전트의 판단을 읽고 승인하거나 반려한 뒤 실행 결과를 확인합니다.'], ['flows', '직접 그린 흐름을 가져와 등록하고 배포해 처리 건으로 돌립니다.']];
     return st.map(([tab, text], i) => {
       const menu = hydMenu.of(tab), title = menu.tabs.length > 1 ? `${menu.name} › ${hydMenu.name(tab)}` : hydMenu.name(tab);
-      return `<li><button type="button" data-go="${tab}"><span class="n num">${i + 1}</span><b>${esc(title)}</b><span class="what">${esc(text)}</span><span class="go" aria-hidden="true">→</span></button></li>`;
+      return `<button type="button" class="row" data-go="${tab}"><span class="row-ic num">${i + 1}</span><span class="row-title">${esc(title)}</span><span class="row-meta">${esc(text)}</span>${UI.icon('chevron-right')}</button>`;
     }).join('');
   }
 
@@ -160,7 +160,7 @@
     const live = document.getElementById('mLive'); if (!live) return;
     const box = document.getElementById('mainStats');
     const u = state.plant && state.plant.units;
-    if (!u) { live.textContent = UI.t('main.noConn'); box.innerHTML = UI.empty(UI.t('main.noConn'), UI.t('plant.noConnSub'), 'compact'); box.dataset.sig = ''; return; }
+    if (!u) { live.textContent = UI.t('main.noConn'); box.innerHTML = UI.errorBlock(UI.t('main.noConn'), `${state.plantError || ''} ${UI.t('plant.noConnSub')}`.trim()); box.dataset.sig = ''; return; }
     const parts = Object.entries(u).map(([a, x]) => `${a} ${Number(x.tags.TS1).toFixed(1)} ℃ ${x.status.state === 'TRIP' ? UI.status('TRIP') : x.status.mode === 'REMOTE_AUTO' ? '' : '(' + UI.status(x.status.mode) + ')'}`.trim());
     live.textContent = UI.t('main.liveTs1') + '  ·  ' + parts.join('   ');
     const hot = Object.values(u).some(x => x.tags.TS1 >= TS_HOT || x.status.state === 'TRIP');      // 기준은 app.js TS_HOT 한 곳
@@ -168,18 +168,21 @@
     const open = (state.incidents || []).filter(i => !i.terminal).length;
     const alarms = Object.values(u).filter(x => x.tags.TS1 >= TS_HOT || x.status.state === 'TRIP').length;
     const n = v => Number(v).toLocaleString('ko-KR');
-    // 큰 숫자 셋: [이름, 값, 한 줄, 주의인가, 까닭(title)]. 배율은 여기 두지 않는다(결함 시뮬레이션 화면 머리에 있다)
+    // 숫자 타일 넷: [이름, 값, 한 줄, 주의인가, 까닭(title), 누르면 갈 화면]. 배율은 여기 두지 않는다(결함 시뮬레이션 화면 머리에 있다)
     const rows = [
-      [UI.t('main.assets'), `${Object.keys(u).length}기`, alarms ? `${UI.t('main.hot')} ${alarms}기` : UI.t('main.cool'), !!alarms],
+      [UI.t('main.assets'), `${Object.keys(u).length}기`, alarms ? `${UI.t('main.hot')} ${alarms}기` : UI.t('main.cool'), !!alarms, '', 'trends'],
       // 사건 목록을 못 읽었으면 「0 · 없음」이 아니다(app.js 의 사건 목록 사유)
-      state.incidentError ? [UI.t('main.openCases'), '읽기 실패', state.incidentError, true]
-        : [UI.t('main.openCases'), state.incidentsRead ? String(open) : '–', open ? `「${UI.t('nav.menu.instances')}」에서 처리합니다` : UI.t('main.none'), false],
-      [UI.t('main.knowledge'), graphCount ? n(graphCount.n) : '–', graphCount ? `${UI.t('main.links')} ${n(graphCount.e)}` : graphError ? '지식 수를 읽지 못했습니다. 30초 뒤 다시 읽습니다.' : UI.t('loading'), !!graphError, graphError],      // 서버 사유는 길어 줄 높이를 흔든다 — title 로
+      state.incidentError ? [UI.t('main.openCases'), '읽기 실패', '사건 목록을 읽지 못했습니다', true, state.incidentError, 'instances']
+        : [UI.t('main.openCases'), state.incidentsRead ? String(open) : '–', open ? '처리 건에서 경과를 봅니다' : UI.t('main.none'), false, '', 'instances'],
+      state.todo == null ? ['내가 할 일', state.todoError ? '읽기 실패' : '–', state.todoError ? '할 일 수를 읽지 못했습니다' : UI.t('loading'), !!state.todoError, state.todoError || '', 'instances']
+        : ['내가 할 일', String(state.todo), state.todo ? '승인하거나 답할 처리 건이 있습니다' : UI.t('main.none'), false, '', 'instances'],
+      [UI.t('main.knowledge'), graphCount ? n(graphCount.n) : '–', graphCount ? `${UI.t('main.links')} ${n(graphCount.e)}` : graphError ? '지식 수를 읽지 못했습니다. 30초 뒤 다시 읽습니다.' : UI.t('loading'), !!graphError, graphError, 'ontology'],      // 서버 사유는 길어 줄 높이를 흔든다 — title 로
     ];
     const sig = JSON.stringify(rows);
     if (box.dataset.sig === sig) return;      // 1초마다 불리지만 값이 같으면 다시 그리지 않는다
     box.dataset.sig = sig;
-    box.innerHTML = rows.map(([k, v, s, warn, why]) => `<div class="hm-stat${warn ? ' warn' : ''}"${why ? ` title="${esc(why)}"` : ''}><span>${esc(k)}</span><b class="num">${esc(v)}</b><small>${esc(s)}</small></div>`).join('');
+    box.innerHTML = rows.map(([k, v, s, warn, why, tab]) => `<button type="button" class="stat" data-go-tab="${tab}"${warn ? ' data-tone="warn"' : ''}${why ? ` title="${esc(why)}"` : ''}>` +
+      `<span class="stat-label">${esc(k)}</span><span class="stat-value num">${esc(v)}</span><span class="stat-sub">${esc(s)}</span></button>`).join('');
   }
 
   function init() {
@@ -198,7 +201,7 @@
     stages.innerHTML = stagesHtml();
     stages.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { selectTab(b.dataset.go); $('#content').focus({ preventScroll: true }); }));
     document.getElementById('brandHome').addEventListener('click', () => { selectTab('main'); $('#content').focus({ preventScroll: true }); });
-    document.getElementById('mainArch').addEventListener('click', () => selectTab('home'));
+    document.getElementById('mainArch').addEventListener('click', () => { selectTab('home'); $('#content').focus({ preventScroll: true }); });
     loadCounts().then(renderLive);
     setInterval(renderLive, 1000);
   }

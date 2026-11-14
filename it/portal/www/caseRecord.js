@@ -54,6 +54,8 @@
   const extState = (x, id) => !id ? 'none' : x === undefined ? 'loading' : x && x.error ? 'error' : 'ok';
 
   /* ================================================================ 이벤트 → 도구 호출 · 말 · 시스템 기록 행 */
+  // 서버가 기록 줄에 적어 보내는 작업자 말(「수업 버튼 [쿨러 열화 주입]」 — procsvc/instances.py · main.py)은 화면에서 「결함 시뮬레이션 [쿨러 열화 주입]」으로 읽는다. 원문 접기에는 받은 그대로 둔다
+  const noJargon = t => String(t || '').replace(/수업 버튼\s*(?=\[)/g, '결함 시뮬레이션 ').replace(/수업 버튼/g, '결함 시뮬레이션 단추');
   function rowsOf(evs) {
     if (window.hydTrace) evs=hydTrace.publicNotes(evs);
     const rows = [], byTool = new Map();
@@ -82,9 +84,10 @@
       } else if (ev.event_type === 'task_working' && (d.type === 'notice' || d.type === 'evidence')) {
         rows.push({ key: 'n:' + ev.id, kind: 'note', t0: ev.timestamp, text: UI.clean(W().text(d.content || d.name || '')) });
       } else if (ev.event_type === 'task_working' && d.name && !d.type) {
-        rows.push({ key: 's:' + ev.id, kind: 'sys', t0: ev.timestamp, job: ev.job_id, text: UI.clean(UI.logText(d.name)) + (d.attempt_failed ? ' · 실패한 시도' : ''), data: d });
+        // 서버가 기록 줄 이름에 적어 보내는 「수업 버튼 [쿨러 열화 주입]」은 화면에서 「결함 시뮬레이션 [쿨러 열화 주입]」으로 읽는다(서버 문구는 instances.py — 화면은 원문 접기에 그대로 둔다)
+        rows.push({ key: 's:' + ev.id, kind: 'sys', t0: ev.timestamp, job: ev.job_id, text: noJargon(UI.clean(UI.logText(d.name))) + (d.attempt_failed ? ' · 실패한 시도' : ''), data: d });
       } else if (ev.event_type === 'error') {
-        rows.push({ key: 'e:' + ev.id, kind: 'error', t0: ev.timestamp, text: UI.clean(d.friendly || d.message || d.name || '오류'), data: d });
+        rows.push({ key: 'e:' + ev.id, kind: 'error', t0: ev.timestamp, text: noJargon(UI.clean(d.friendly || d.message || d.name || '오류')), data: d });
       } else if (ev.event_type === 'human_asked') {
         rows.push({ key: 'a:' + ev.id, kind: 'note', t0: ev.timestamp, text: '사람에게 물음: ' + UI.clean(d.text || d.question || '') });
       } else if (ev.event_type === 'human_response') {
@@ -189,7 +192,7 @@
     if (alert && typeof alert === 'object') {
       const ev = alert.evidence || {};
       const biz = !!alert.source && alert.source !== 'detector' && /erp|cmms|mes|scm/i.test(alert.source);
-      const pressed = biz && !!ev.trigger;                           // 업무 감시가 아니라 수업 버튼이 연 처리 건(근거 값은 감시와 같은 칸)
+      const pressed = biz && !!ev.trigger;                           // 업무 감시가 아니라 사람이 화면의 단추를 눌러 연 처리 건(근거 값은 감시와 같은 칸)
       // 누른 사람: 담당자(requested_user)가 있을 때만 이름. 옛 판이 자리표로 남긴 기록은 「담당자 기록 없음」으로 보인다
       const presser = ev.requested_user ? ev.requested_by : '담당자 기록 없음';
       const who = pressed ? presser : (alert.observedBy && alert.observedBy.name) || (biz ? `${String(alert.source).toUpperCase()} 감시` : W().system('detector'));
@@ -209,13 +212,13 @@
       if (biz && !plantBound) chips.push(chip('설비 명령 없음'));
       const sections = [
         sec('들어온 값', table || '<p class="muted">값 없음</p>', { open: true }),
-        caseRows.length ? sec(`수업 버튼 기록 ${caseRows.length}줄`, toolListHtml(caseRows, false, 'start'), { open: true }) : '',
+        caseRows.length ? sec(`화면에서 누른 기록 ${caseRows.length}줄`, toolListHtml(caseRows, false, 'start'), { open: true }) : '',
         biz && !plantBound ? sec('이 흐름의 끝','<p>이 흐름은 업무 시스템에서 끝납니다 — 설비 명령 · 재관측 · 정비 수행 · 시운전 단계가 없습니다(흐름 설계). 처리되면 시작한 업무 데이터의 표시가 꺼집니다.</p>', { open: true }) : '',
         defn.rule || defn.condition ? sec('걸린 규칙', `<p>${e(W().rule(defn.rule || defn.condition))}</p>${defn.clearRule ? `<p class="muted">풀리는 조건: ${e(W().rule(defn.clearRule))}</p>` : ''}${defn.severity ? `<p class="muted">심각도 ${e(defn.severity)}</p>` : ''}`) : '',
         sec('경보 원문', rawBlock(alert), { raw: true }),
       ];
       return { key: 'start', type: 'start', lane: pressed ? 'person' : 'system', icon: biz ? 'schedule' : 'warn',
-        title: pressed ? '수업 버튼으로 시작' : biz ? '업무 데이터 감시가 시작' : '센서 경보로 시작',
+        title: pressed ? '담당자가 직접 시작' : biz ? '업무 데이터 감시가 시작' : '센서 경보로 시작',
         actor: who, t0: alert.t || inst.start_date, t1: inst.start_date, sentence, chips, sections, rows: caseRows,
         state: caseRows.some(r => r.kind === 'error') ? 'bad' : 'ok', ids: [alert.alertId, alert.pattern], biz, pressed };
     }
@@ -263,21 +266,21 @@
       const src = x => x === 'activity' ? '이 단계가 지정' : x === 'agent' ? 'AI 에이전트 설정' : (x || '');
       const delivery = runs.map(({event, data:sd}, i) => {
         const skills = Array.isArray(sd.skills) ? sd.skills : null;
-        const head = `<h6>실행 ${i + 1} · 스킬 전달 기록${event.timestamp ? ` <span class="muted">${e(UI.dateTime(event.timestamp))}</span>` : ''}</h6>`;
+        const head = `<h4 class="cr-h">실행 ${i + 1} · 스킬 전달 기록${event.timestamp ? ` <span class="muted">${e(UI.dateTime(event.timestamp))}</span>` : ''}</h4>`;
         if (!skills) return head + '<p class="cr-gapline">스킬 전달 기록이 없습니다. 전달 여부를 확인할 수 없습니다.</p>';
-        const table = skills.length ? `<div class="cr-scroll"><table class="cr-table"><thead><tr><th>스킬 · 전달 상태</th><th>저장본</th><th>어디서 왔나</th><th>길이</th><th>설명</th></tr></thead><tbody>${skills.map(k => {
+        const table = skills.length ? `<div class="table-container"><table class="table cr-table"><thead><tr><th>스킬 · 전달 상태</th><th>저장본</th><th>어디서 왔나</th><th>길이</th><th>설명</th></tr></thead><tbody>${skills.map(k => {
           const status = UI.skillDelivery(k);
           const name=UI.skillLabel(k,true);
-          return `<tr><td><b>${e(name.label)}</b>${name.note ? ` <span class="muted">(${e(name.note)})</span>` : ''} ${UI.chipText(status.label, status.tone)}${k.error ? ` <span class="muted">${e(k.error)}</span>` : ''}${status.kind === 'prompt' ? `<span class="muted"> · ${k.verified_registered_content === true ? '등록 본문 확인됨' : '등록 본문 확인 기록 없음'}</span>` : ''}${UI.fold('스킬 식별자 · 전달 원문',rawBlock(k),{cls:'small'})}</td><td>${k.updated_at ? `${e(UI.dateTime(k.updated_at))} 저장` : '<span class="muted">저장 시각 기록 없음</span>'}${W().showIds && k.version ? ` <code class="cr-ver" title="${e(k.sha256 || '')}">${e(k.version)}</code>` : ''}</td><td>${e(src(k.source))}</td><td class="num">${k.chars != null ? e(W().num(k.chars)) + '자' : ''}</td><td class="muted">${e(UI.clean(k.description || ''))}</td></tr>`;
+          return `<tr><td><b>${e(name.label)}</b>${name.note ? ` <span class="muted">(${e(name.note)})</span>` : ''} ${UI.chipText(status.label, status.tone)}${k.error ? ` <span class="muted">${e(k.error)}</span>` : ''}${status.kind === 'prompt' ? `<span class="muted"> · ${k.verified_registered_content === true ? '등록 본문 확인됨' : '등록 본문 확인 기록 없음'}</span>` : ''}${UI.fold('스킬 식별자 · 전달 원문',rawBlock(k))}</td><td>${k.updated_at ? `${e(UI.dateTime(k.updated_at))} 저장` : '<span class="muted">저장 시각 기록 없음</span>'}${W().showIds && k.version ? ` <code class="cr-ver" title="${e(k.sha256 || '')}">${e(k.version)}</code>` : ''}</td><td>${e(src(k.source))}</td><td class="num">${k.chars != null ? e(W().num(k.chars)) + '자' : ''}</td><td class="muted">${e(UI.clean(k.description || ''))}</td></tr>`;
         }).join('')}</tbody></table></div>` : '';
         const note = skills.some(k => UI.skillDelivery(k).kind === 'prompt') ? '<p class="muted">프롬프트로 본문을 전달했습니다. 파일 읽기 없이 작업 지시에서 본문을 받을 수 있습니다.</p>' : '';
         const miss = (sd.skills_missing || []).length ? `<p class="cr-gapline">배정됐지만 본문이 없어 넣지 못한 스킬: ${e(sd.skills_missing.join(', '))}</p>` : '';
         return head + `<p>${e(UI.skillDeliverySummary(skills))}</p>` + table + note + miss;
       }).join('');
-      const read = used.length ? `<ul class="cr-list">${used.map(r => { const x = r.data; return `<li>${e(hhmmss(r.t0))} <b>${e(x.recorded ? `스킬 ${x.skill}` : UI.skillLabel(x,true).label)}</b> — ${e(W().toolName(x.via))} 요청${x.known === false ? ` ${UI.chipText('제공 목록에 없는 스킬', 'warning')}` : W().showIds && x.version ? ` <code class="cr-ver">${e(x.version)}</code>` : ''}${UI.fold('읽기 요청 원문',rawBlock(x),{cls:'small'})}${W().id(r.job)}</li>`; }).join('')}</ul>` : '<p class="muted">파일 읽기 기록 없음</p>';
-      sections.push(sec('스킬 전달 · 파일 읽기 기록', `${delivery}<h6>이 단계의 파일 읽기 요청 ${used.length}건 <span class="muted">(모든 실행의 도구 호출 기록)</span></h6>${read}
+      const read = used.length ? `<ul class="cr-list">${used.map(r => { const x = r.data; return `<li>${e(hhmmss(r.t0))} <b>${e(x.recorded ? `스킬 ${x.skill}` : UI.skillLabel(x,true).label)}</b> — ${e(W().toolName(x.via))} 요청${x.known === false ? ` ${UI.chipText('제공 목록에 없는 스킬', 'warning')}` : W().showIds && x.version ? ` <code class="cr-ver">${e(x.version)}</code>` : ''}${UI.fold('읽기 요청 원문',rawBlock(x))}${W().id(r.job)}</li>`; }).join('')}</ul>` : '<p class="muted">파일 읽기 기록 없음</p>';
+      sections.push(sec('스킬 전달 · 파일 읽기 기록', `${delivery}<h4 class="cr-h">이 단계의 파일 읽기 요청 ${used.length}건 <span class="muted">(모든 실행의 도구 호출 기록)</span></h4>${read}
         <p class="muted">스킬 파일을 읽으라고 요청한 기록입니다. 실제로 읽어서 일에 썼는지는 이 기록에 남지 않습니다.</p>
-        ${ag ? `<dl class="cr-kv"><div><dt>AI 에이전트</dt><dd>${named(ag.name || W().who(w.user_id), w.user_id)}</dd></div><div><dt>쓸 수 있는 도구</dt><dd>${servers.map(x => `<span class="chip tone-neutral sm">${e(W().system(x))}</span>`).join(' ') || '–'}</dd></div></dl>` : ''}`, { open: true }));
+        ${ag ? `<dl class="cr-kv"><div><dt>AI 에이전트</dt><dd>${named(ag.name || W().who(w.user_id), w.user_id)}</dd></div><div><dt>쓸 수 있는 도구</dt><dd>${servers.map(x => `<span class="badge" data-variant="secondary">${e(W().system(x))}</span>`).join(' ') || '–'}</dd></div></dl>` : ''}`, { open: true }));
       const skills = runs.flatMap(r => Array.isArray(r.data.skills) ? r.data.skills : []);
       if (skills.length) chips.push(chip(UI.skillDeliverySummary(skills), skills.some(k=>k.written === false) ? 'danger' : 'neutral'));
       chips.push(chip(used.length ? `파일 읽기 요청 ${used.length}건` : '파일 읽기 기록 없음', 'neutral'));
@@ -285,8 +288,8 @@
       const servers = (ag && ag.tools) || [];
       sections.push(sec('스킬 전달 · 파일 읽기 기록', `<p class="cr-gapline">스킬 전달 기록이 없습니다. 전달 여부를 확인할 수 없습니다.</p>${skillCalls.length ? `<p>이 처리 건의 스킬 도구 호출: ${skillCalls.map(r => `<b>${e(W().ask(r.tool, r.input))}</b>`).join(', ')}</p>` : ''}
         ${ag ? `<dl class="cr-kv"><div><dt>AI 에이전트</dt><dd>${named(ag.name || W().who(w.user_id), w.user_id)}</dd></div>
-          <div><dt>현재 설정의 스킬</dt><dd>${(ag.skills || []).length ? ag.skills.map(s => `<span class="chip tone-neutral sm">${e(s)}</span>`).join(' ') : '<span class="muted">설정 없음</span>'}</dd></div>
-          <div><dt>쓸 수 있는 도구</dt><dd>${servers.map(s => `<span class="chip tone-neutral sm">${e(W().system(s))}</span>`).join(' ') || '–'}</dd></div></dl>
+          <div><dt>현재 설정의 스킬</dt><dd>${(ag.skills || []).length ? ag.skills.map(s => `<span class="badge" data-variant="secondary">${e(s)}</span>`).join(' ') : '<span class="muted">설정 없음</span>'}</dd></div>
+          <div><dt>쓸 수 있는 도구</dt><dd>${servers.map(s => `<span class="badge" data-variant="secondary">${e(W().system(s))}</span>`).join(' ') || '–'}</dd></div></dl>
           <p class="cr-gapline">현재 설정은 이 처리 건에 전달된 스킬의 기록이 아닙니다.</p>` : ''}`, {open:true}));
     }
     // 가져온 데이터 (판단이 쓴 사실의 출처 + 도구로 직접 읽은 값)
@@ -296,7 +299,7 @@
     const dataCalls = major.filter(r => /업무|ERP|MES|CMMS|SCM|센서|정비|구매|생산|공급/.test(W().toolSystem(r.tool)));
     if (prov.length || dataCalls.length) {
       const provRows = prov.map(p => `<tr><td>${named(provName(p), p.variable)}</td><td class="num">${e(W().value(p.variable, p.value))}</td><td>${e((p.source && W().system(p.source)) || p.sourceName || '')}${W().id(p.source)}</td><td class="muted">${e(UI.clean(p.how || ''))}</td></tr>`).join('');
-      sections.push(sec(`가져온 데이터 ${prov.length ? prov.length + '건' : ''}`, `${prov.length ? `<div class="cr-scroll"><table class="cr-table"><thead><tr><th>값</th><th>읽은 값</th><th>어느 시스템</th><th>어떻게</th></tr></thead><tbody>${provRows}</tbody></table></div>` : ''}
+      sections.push(sec(`가져온 데이터 ${prov.length ? prov.length + '건' : ''}`, `${prov.length ? `<div class="table-container"><table class="table cr-table"><thead><tr><th>값</th><th>읽은 값</th><th>어느 시스템</th><th>어떻게</th></tr></thead><tbody>${provRows}</tbody></table></div>` : ''}
         ${dataCalls.length ? `<p class="muted">도구로 직접 읽은 곳: ${[...new Set(dataCalls.map(r => W().toolSystem(r.tool)))].map(x => e(x)).join(' · ')} (요청과 결과는 아래 도구 호출에 있습니다)</p>` : ''}`, { open: !!prov.length }));
       chips.push(chip(`데이터 ${prov.length || dataCalls.length}건`));
     }
@@ -330,7 +333,7 @@
     // 끝맺는 말이 산문이면 그대로, 출력 계약(JSON — SQL · 적재 통계가 든다)이면 산문 칸에 흘리지 않고 원문 접기로(W1-13)
     if (done && done.data && done.data.text) {
       const said = String(done.data.text).trim();
-      sections.push(/^[{[]/.test(said) ? sec('AI 에이전트가 낸 결과 원문', `<pre>${e(said)}</pre>`) : sec('AI 에이전트가 남긴 말', `<p class="prose">${e(UI.clean(W().text(said)).replace(/`/g, ''))}</p>`));
+      sections.push(/^[{[]/.test(said) ? sec('AI 에이전트가 낸 결과 원문', `<pre class="code">${e(said)}</pre>`) : sec('AI 에이전트가 남긴 말', `<p class="prose">${e(UI.clean(W().text(said)).replace(/`/g, ''))}</p>`));
     }
     sections.push(sec('결과 값 원문', rawBlock(out), { raw: true }));
     // 한 문장
@@ -357,26 +360,26 @@
       const pat = (gc.alert && gc.alert.pattern) || ctx.v.pattern;
       if (top) out.push(pathHtml([['경보', W().pattern(pat), pat], ['증상', (top.symptoms || []).join(' · ')], ['고장 유형', top.failureMode, top.failureModeId], ['원인', top.name, top.id]], ['→', '→', '←']));
       const causes = (gc.causes || []);
-      if (causes.length) out.push(`<h6>원인 후보와 증거 — 센서 기록에서 잰 값</h6><div class="cr-scroll"><table class="cr-table"><thead><tr><th>원인</th><th>점수</th><th>증거</th><th>잰 값</th><th>기준</th><th>판정</th></tr></thead><tbody>${
-        causes.map(c => (c.evidence || [{}]).map((x, i) => `<tr class="${c.id === (top && top.id) ? 'win' : ''}">${i === 0 ? `<td rowspan="${(c.evidence || [{}]).length}">${named(c.name, c.id)}</td><td rowspan="${(c.evidence || [{}]).length}" class="num">${e(W().num(c.score))}</td>` : ''}<td>${e(x.name || '–')}</td><td class="num">${x.value != null ? e(W().num(x.value)) : '–'}</td><td class="num">${x.threshold != null ? `${e(W().sym(x.expect))} ${e(W().num(x.threshold))}` : '–'}</td><td>${x.status ? UI.chipText(x.passed ? '맞음' : '아님', x.passed ? 'success' : 'neutral') : ''}</td></tr>`).join('')).join('')}</tbody></table></div>`);
+      if (causes.length) out.push(`<h4 class="cr-h">원인 후보와 증거 — 센서 기록에서 잰 값</h4><div class="table-container"><table class="table cr-table"><thead><tr><th>원인</th><th>점수</th><th>증거</th><th>잰 값</th><th>기준</th><th>판정</th></tr></thead><tbody>${
+        causes.map(c => (c.evidence || [{}]).map((x, i) => `<tr${c.id === (top && top.id) ? ' data-pick' : ''}>${i === 0 ? `<td rowspan="${(c.evidence || [{}]).length}">${named(c.name, c.id)}</td><td rowspan="${(c.evidence || [{}]).length}" class="num">${e(W().num(c.score))}</td>` : ''}<td>${e(x.name || '–')}</td><td class="num">${x.value != null ? e(W().num(x.value)) : '–'}</td><td class="num">${x.threshold != null ? `${e(W().sym(x.expect))} ${e(W().num(x.threshold))}` : '–'}</td><td>${x.status ? UI.chipText(x.passed ? '맞음' : '아님', x.passed ? 'success' : 'neutral') : ''}</td></tr>`).join('')).join('')}</tbody></table></div>`);
     }
     if (d) {
       const o = d.origin || {}, rec = (d.options || []).find(x => x.id === d.recommended);
-      if (o.cause_basis) out.push(`<p class="muted">${o.cause_route === 'purchase-part' ? '구매 부품을 정한 근거' : '원인을 정한 근거'}: ${e(basisText(o.cause_basis))}</p>` + UI.fold('판단 근거 설명 원문', rawBlock({cause_basis:o.cause_basis}), {cls:'small'}));
+      if (o.cause_basis) out.push(`<p class="muted">${o.cause_route === 'purchase-part' ? '구매 부품을 정한 근거' : '원인을 정한 근거'}: ${e(basisText(o.cause_basis))}</p>` + UI.fold('판단 근거 설명 원문', rawBlock({cause_basis:o.cause_basis})));
       if (rec) {
         const REL = { MITIGATED_BY: '완화 조치', REMEDIED_BY: '근본 조치', PREVENTED_BY: '예방 조치' };
         const fm = o.failureMode, cause = o.cause, cw = W().causeWords(o.cause_route);
         const path = o.cause_route === 'purchase-part' ? [['구매 대상 부품', o.part?.name || o.part?.partNo || '부품 이름 기록 없음', o.part?.id], ['구매 절차', W().text(rec.name), rec.id]]
           : [[cw.cause, nm(cause), cause], [cw.failureMode, nm(fm), fm], [REL[rec.relation] || '조치', W().text(rec.name), rec.id]];
-        out.push(`<h6>추천안에 이른 길</h6>` + pathHtml(path, path.slice(1).map(()=>'→')));
+        out.push(`<h4 class="cr-h">추천안에 이른 길</h4>` + pathHtml(path, path.slice(1).map(()=>'→')));
         const rules = (rec.selectedBy || []).map(r => `<li>${UI.chipText('후보로 고른 규칙', 'accent')} ${e(W().text(r.annotation || nm(r.rule)))}${W().id(r.rule)}${(r.sources || []).length ? ` <span class="muted">출처 ${r.sources.map(x => e(x)).join(', ')}</span>` : ''}</li>`).join('');
         const steps = (rec.steps || []).map(s => `<li><b>${e(s.order || '')}.</b> ${e(W().text(s.text || ''))}${s.manual ? `<div class="cr-src">${UI.chipText(s.manual.ref || s.manual.id, 'neutral')} <b>${e(s.manual.title || '')}</b>${s.manual.excerpt ? ` — <span class="muted">“${e(W().text(s.manual.excerpt))}”</span>` : ''}</div>` : ''}</li>`).join('');
         if (rules) out.push(`<ul class="cr-list">${rules}</ul>`);
-        if (steps) out.push(`<h6>추천안의 작업 순서와 출처 문서 절</h6><ol class="cr-list">${steps}</ol>`);
+        if (steps) out.push(`<h4 class="cr-h">추천안의 작업 순서와 출처 문서 절</h4><ol class="cr-list">${steps}</ol>`);
         const paths = (rec.tradeoffEvaluation || []).filter(p => (p.edges || []).length || (p.nodes || []).length).slice(0, 4);
-        if (paths.length) out.push(`<h6>회사 성과 지표에 미치는 길 (이득과 손실)</h6><ul class="cr-list">${paths.map(p => `<li>${UI.chipText(p.good === false ? '손실' : '이득', p.good === false ? 'danger' : 'success')} <b>${e(p.name || '')}</b> <span class="cr-chain">${chainText(p, rec)}</span>${(p.conds || []).length ? ` <span class="muted">(조건: ${e(p.conds.join(', '))})</span>` : ''}</li>`).join('')}</ul>`);
+        if (paths.length) out.push(`<h4 class="cr-h">회사 성과 지표에 미치는 길 (이득과 손실)</h4><ul class="cr-list">${paths.map(p => `<li>${UI.chipText(p.good === false ? '손실' : '이득', p.good === false ? 'danger' : 'success')} <b>${e(p.name || '')}</b> <span class="cr-chain">${chainText(p, rec)}</span>${(p.conds || []).length ? ` <span class="muted">(조건: ${e(p.conds.join(', '))})</span>` : ''}</li>`).join('')}</ul>`);
       }
-      if (d.rankRule && d.rankRule.annotation) out.push(UI.fold('점수를 매기는 법', `<p class="prose">${e(W().text(d.rankRule.annotation))}</p>${(d.rankRule.sources || []).length ? `<p class="muted">출처 ${d.rankRule.sources.map(x => e(x)).join(', ')}</p>` : ''}`, { cls: 'small' }));
+      if (d.rankRule && d.rankRule.annotation) out.push(UI.fold('점수를 매기는 법', `<p class="prose">${e(W().text(d.rankRule.annotation))}</p>${(d.rankRule.sources || []).length ? `<p class="muted">출처 ${d.rankRule.sources.map(x => e(x)).join(', ')}</p>` : ''}`));
     }
     return out.join('');
   }
@@ -414,10 +417,10 @@
     };
     const rows = opts.map(o => {
       const tag = o.id === rec.id ? UI.chipText(UI.evaluationInfo(o,d).state==='analysis' ? '모의 1순위' : '추천', 'success') : !o.feasible ? UI.chipText('제외', 'danger') : UI.chipText('미채택', 'neutral');
-      return `<li class="cr-alt ${o.id === rec.id ? 'win' : !o.feasible ? 'out' : ''}"><div class="cr-alt-head">${tag}<b>${e(W().text(o.name))}</b>${W().id(o.id)}<span class="num muted">${W().purchaseEconomics(o) ? e(W().purchaseCostLabel(o)) : Number.isFinite(+o.score) && o.score !== null ? e(W().num(+o.score)) + '점' : ''}</span>${o.approver && o.approver.name ? `<span class="muted">승인 역할: ${e(o.approver.name)}</span>` : ''}</div>
+      return `<li class="cr-alt"${o.id === rec.id ? ' data-pick' : !o.feasible ? ' data-out' : ''}><div class="cr-alt-head">${tag}<b>${e(W().text(o.name))}</b>${W().id(o.id)}<span class="num muted">${W().purchaseEconomics(o) ? e(W().purchaseCostLabel(o)) : Number.isFinite(+o.score) && o.score !== null ? e(W().num(+o.score)) + '점' : ''}</span>${o.approver && o.approver.name ? `<span class="muted">승인 역할: ${e(o.approver.name)}</span>` : ''}</div>
         ${UI.evaluationHtml(o,d)}${W().purchaseContextHtml(o,d)}${W().maintenanceHtml(o)}${fc(o) ? `<p class="muted">예측 ${e(fc(o))}</p>` : ''}${own(o) ? `<p class="muted">이 안의 값 ${e(own(o))}</p>` : ''}<p>${o.id === rec.id ? why(o) : e(why(o))}</p>${o.id !== rec.id && said(o) ? `<p class="cr-said">AI 에이전트: “${e(said(o))}”</p>` : ''}</li>`;
     }).join('');
-    return `<ol class="cr-alts">${rows}</ol>${d.explanation ? UI.fold('판단 엔진 설명 전문 (규칙 문장)', `<p class="prose">${e(W().text(d.explanation))}</p>`, { cls: 'small' }) : ''}`;
+    return `<ol class="cr-alts">${rows}</ol>${d.explanation ? UI.fold('판단 엔진 설명 전문 (규칙 문장)', `<p class="prose">${e(W().text(d.explanation))}</p>`) : ''}`;
   }
 
   /* ---------------------------------------------------------------- 사람 */
@@ -622,7 +625,7 @@
       sentence = tr ? `${settle && settle.data && settle.data.plan ? `안정될 때까지 기다린 뒤(${virtual(settle.data.plan)}) ` : ''}${(tr.readings || []).length}개 값을 재어 ${tr.passed ? '모두 기준 안 — 통과' : '기준 밖 값이 있어 미달'}로 판정했습니다.${tr.counter && tr.counter.detail ? ` ${W().text(tr.counter.detail)}.` : ''}`
         : !b.live ? notYet(b) : settle ? `시운전 — 안정될 때까지 기다리는 중입니다 (${virtual(settle.data.plan)}).` : '시운전을 준비하는 중입니다.';
       (tr && tr.readings || []).forEach(r => chips.push(chip(`${W().fieldName(String(r.tag).toLowerCase())} ${r.value == null ? '모름' : W().num(r.value)} ${W().sym(r.op)} ${W().num(r.limit)}${W().unit(String(r.tag).toLowerCase()) ? ' ' + W().unit(String(r.tag).toLowerCase()) : ''}`, r.ok ? 'success' : 'danger')));
-      if (tr) sections.push(sec('잰 값과 기준', `<div class="cr-scroll"><table class="cr-table"><thead><tr><th>값</th><th>잰 값</th><th>기준</th><th>판정</th></tr></thead><tbody>${(tr.readings || []).map(r => `<tr><td>${named(W().fieldName(String(r.tag).toLowerCase()), r.tag)}</td><td class="num">${r.value == null ? '모름' : e(W().value(String(r.tag).toLowerCase(), r.value))}</td><td class="num">${e(W().sym(r.op))} ${e(W().num(r.limit))}</td><td>${UI.chipText(r.ok ? '통과' : '미달', r.ok ? 'success' : 'danger')}</td></tr>`).join('')}</tbody></table></div>${tr.at ? `<p class="muted">잰 시각 ${e(hhmmss(tr.at))}</p>` : ''}`, { open: true }));
+      if (tr) sections.push(sec('잰 값과 기준', `<div class="table-container"><table class="table cr-table"><thead><tr><th>값</th><th>잰 값</th><th>기준</th><th>판정</th></tr></thead><tbody>${(tr.readings || []).map(r => `<tr><td>${named(W().fieldName(String(r.tag).toLowerCase()), r.tag)}</td><td class="num">${r.value == null ? '모름' : e(W().value(String(r.tag).toLowerCase(), r.value))}</td><td class="num">${e(W().sym(r.op))} ${e(W().num(r.limit))}</td><td>${UI.chipText(r.ok ? '통과' : '미달', r.ok ? 'success' : 'danger')}</td></tr>`).join('')}</tbody></table></div>${tr.at ? `<p class="muted">잰 시각 ${e(hhmmss(tr.at))}</p>` : ''}`, { open: true }));
     } else {   // 입고 확인
       icon = 'receipt';
       const gr = out.goods_receipt || v.goods_receipt || null;
@@ -666,7 +669,7 @@
     const last = pts[pts.length - 1], tag = String(x.tag || '').toLowerCase(), u = W().unit(tag);
     const svg = `<svg class="cr-spark" viewBox="0 0 ${W0} ${H0}" role="img" aria-label="${e(seriesSentence(x))}">
       <line x1="${pad}" x2="${W0 - pad}" y1="${Y(+x.limit).toFixed(1)}" y2="${Y(+x.limit).toFixed(1)}" class="lim"/>
-      <path d="${line}" class="val"/><circle cx="${X(last.t).toFixed(1)}" cy="${Y(+last.v).toFixed(1)}" r="3" class="${x.inside_last ? 'ok' : 'bad'}"/></svg>`;
+      <path d="${line}" class="val"/><circle cx="${X(last.t).toFixed(1)}" cy="${Y(+last.v).toFixed(1)}" r="3" ${x.inside_last ? 'data-ok' : 'data-bad'}/></svg>`;
     return `<div class="cr-series">${svg}<dl class="cr-kv"><div><dt>처음 → 마지막</dt><dd class="num">${e(W().num(x.first))} → ${e(W().num(x.last))}${u ? ' ' + e(u) : ''}</dd></div>
       <div><dt>가장 낮음 · 높음</dt><dd class="num">${e(W().num(x.min))} · ${e(W().num(x.max))}${u ? ' ' + e(u) : ''}</dd></div>
       <div><dt>기준</dt><dd>${e(W().fieldName(tag))} ${e(W().sym(x.op))} ${e(W().num(x.limit))}${u ? ' ' + e(u) : ''} <span class="muted">(점선)</span></dd></div>
@@ -734,8 +737,8 @@
       steps.filter(s => s.type === 'agent' && !(s.rows || []).length && !s.live).forEach(s => G.push({ key: 'noev:' + s.key, strong: true, text: `‘${s.title}’ 단계는 도구 호출 기록이 없습니다 (결과 값만 남음).` }));
     }
     const start = steps[0];
-    if (start && start.pressed && !(start.rows || []).some(r => r.kind === 'sys')) G.push({ key: 'button', strong: true, text: '수업 버튼 기록(누른 사람 · 시각)이 처리 건 기록에 없습니다 — 시작 경보의 근거 값에만 남았습니다.' });
-    if (start && (start.rows || []).some(r => r.kind === 'error')) G.push({ key: 'link', strong: true, text: '수업 버튼 누름을 이 처리 건에 붙이지 못했습니다(시작 단계의 오류 줄). 누가 · 언제 눌렀는지는 감사 기록에만 있습니다.' });
+    if (start && start.pressed && !(start.rows || []).some(r => r.kind === 'sys')) G.push({ key: 'button', strong: true, text: '화면에서 누른 기록(누른 사람 · 시각)이 처리 건 기록에 없습니다 — 시작 경보의 근거 값에만 남았습니다.' });
+    if (start && (start.rows || []).some(r => r.kind === 'error')) G.push({ key: 'link', strong: true, text: '화면에서 누른 기록을 이 처리 건에 붙이지 못했습니다(시작 단계의 오류 줄). 누가 · 언제 눌렀는지는 감사 기록에만 있습니다.' });
     if (ctx.read.people.state === 'error' && steps.some(s => s.lane === 'person' && s.type !== 'start')) G.push({ key: 'people', strong: true, text: `사람 이름 목록을 읽지 못해 승인 · 입력한 사람이 원래 이름(id)으로 보일 수 있습니다 — ${ctx.read.people.error}` });
     if (steps.some(s => s.type === 'approve' && s.w && s.w.status === 'DONE')) G.push({ key: 'who', text: '승인은 이 PC의 담당자 이름으로 기록됩니다. 로그인으로 본인 확인을 하지는 않습니다.' });
     const pg = ctx.view.events_page;
@@ -759,7 +762,7 @@
     let o = x; if (typeof x === 'string') { try { o = JSON.parse(x); } catch (_) { return UI.mask(x); } }
     return UI.mask(JSON.stringify(o, null, 2));          // 원문 칸 — 코드 값을 이름으로 바꾸지 않는다(UI.mask)
   }
-  const rawBlock = x => x == null || (typeof x === 'object' && !Object.keys(x).length) ? '' : `<pre class="cr-pre">${e(pretty(x))}</pre>`;
+  const rawBlock = x => x == null || (typeof x === 'object' && !Object.keys(x).length) ? '' : `<pre class="code">${e(pretty(x))}</pre>`;
   // Full original retrieval and integrity state are shared with Trace/TaskDetail in UI.
   function redrawAll() { mounted.forEach(C => C.draw && C.draw(true)); }
 
@@ -773,9 +776,9 @@
     const got = r.status === 'running' ? '' : result ? result.summary : W().got(r.tool, r.output);
     const dur = r.t0 && r.t1 ? fmtMs(ts(r.t1) - ts(r.t0)) : '';
     const full = (r.fullInput && r.inputEvent ? UI.fullToolIOHtml(r.inputEvent, 'input') : '') + (fo && r.ioEvent ? UI.fullToolIOHtml(r.ioEvent) : '');
-    const io = full + `${r.input != null ? `<div class="cr-io"><span>요청 원문</span><pre class="cr-pre">${e(pretty(r.input))}</pre></div>` : ''}${r.output != null ? `<div class="cr-io"><span>${fo ? '결과 미리보기' : '결과 원문'}</span><pre class="cr-pre">${e(pretty(r.output))}</pre></div>` : ''}`;
+    const io = full + `${r.input != null ? `<div class="cr-io"><span>요청 원문</span><pre class="code">${e(pretty(r.input))}</pre></div>` : ''}${r.output != null ? `<div class="cr-io"><span>${fo ? '결과 미리보기' : '결과 원문'}</span><pre class="code">${e(pretty(r.output))}</pre></div>` : ''}`;
     return { ask, got, dur, io, stored: !!(fo && fo.stored),
-      line: `<div class="tg-call"><div class="tg-line"><time>${e(hhmmss(r.t0))}</time><span>${ask ? `<span class="cr-q">요청</span> ${e(ask)}` : ''}${got || r.status !== 'running' ? ` <span class="cr-a">→</span> ${e(got || '결과를 받았습니다')}` : live ? ' <span class="muted">실행 중</span>' : ''}${r.badge ? ` <span class="tg-warn ${e(r.status)}">${e(r.badge)}</span>` : ''}${fo && fo.stored ? ' <span class="muted">· 원문 보관</span>' : ''}</span>${dur ? `<span class="cr-dur num">${e(dur)}</span>` : ''}</div>${io}</div>` };
+      line: `<div class="tg-call"><div class="tg-line"><time>${e(hhmmss(r.t0))}</time><span>${ask ? `<span class="cr-q">요청</span> ${e(ask)}` : ''}${got || r.status !== 'running' ? ` <span class="cr-a">→</span> ${e(got || '결과를 받았습니다')}` : live ? ' <span class="muted">실행 중</span>' : ''}${r.badge ? ` <span class="tg-warn" data-state="${e(r.status)}">${e(r.badge)}</span>` : ''}${fo && fo.stored ? ' <span class="muted">· 원문 보관</span>' : ''}</span>${dur ? `<span class="cr-dur num">${e(dur)}</span>` : ''}</div>${io}</div>` };
   }
   function toolListHtml(rows, live, stepKey) {
     const tools = rows.filter(r => r.kind === 'tool'), rest = rows.filter(r => r.kind !== 'tool');
@@ -787,17 +790,17 @@
       const sys = W().toolSystem(tool);
       const total = list.reduce((n, r) => n + (r.t0 && r.t1 ? ts(r.t1) - ts(r.t0) : 0), 0);
       const bad = list.filter(r => r.status === 'fail').length, warn = list.filter(r => r.status === 'warn' || r.status === 'blocked').length, running = list.some(r => r.status === 'running');
-      const state = bad ? `<span class="tg-warn fail">실패 ${bad}회</span>` : warn ? `<span class="tg-warn warn">${e(list.find(r => r.badge)?.badge || '확인 필요')}${warn > 1 ? ` ${warn}회` : ''}</span>` : '';
-      return `<li class="tg${list.every(r => r.minor) ? ' minor' : ''}"><details class="cr-call" data-k="${e(stepKey + ':g:' + tool)}"><summary><span class="tg-name"><b>${e(W().toolName(tool))}</b>${sys ? `<span class="muted">${e(sys)}</span>` : ''}</span><span class="tg-meta">${state}${running && live && TR() ? TR().spinner('sm') : ''}<span class="num">${list.length}회</span>${total ? `<span class="cr-dur num">${e(fmtMs(total))}</span>` : ''}</span></summary>
+      const state = bad ? `<span class="tg-warn" data-state="fail">실패 ${bad}회</span>` : warn ? `<span class="tg-warn" data-state="warn">${e(list.find(r => r.badge)?.badge || '확인 필요')}${warn > 1 ? ` ${warn}회` : ''}</span>` : '';
+      return `<li class="tg"${list.every(r => r.minor) ? ' data-minor' : ''}><details class="cr-call" data-k="${e(stepKey + ':g:' + tool)}"><summary><span class="tg-name"><b>${e(W().toolName(tool))}</b>${sys ? `<span class="muted">${e(sys)}</span>` : ''}</span><span class="tg-meta">${state}${running && live ? '<i class="dot" data-tone="brand" data-live></i>' : ''}<span class="num">${list.length}회</span>${total ? `<span class="cr-dur num">${e(fmtMs(total))}</span>` : ''}</span></summary>
         <div class="tg-body"><div class="cr-io"><span>도구 식별자</span><code>${e(tool)}</code></div>${UI.toolIdentityFold(tool)}${calls.map(c => c.line).join('')}</div></details></li>`;
     }).join('');
     const items = rest.map(r => {
       const time = `<time>${e(hhmmss(r.t0))}</time>`;
-      if (r.kind === 'note') return `<li class="cr-r note${r.minor ? ' minor' : ''}">${time}<div><q>${e(r.text.slice(0, NOTE_MAX_CHARS))}${r.text.length > NOTE_MAX_CHARS ? '…' : ''}</q>${r.data ? `<details class="cr-raw" data-k="${e(stepKey + ':' + r.key)}"><summary>원문</summary><pre class="cr-pre">${e(JSON.stringify(r.data, null, 2))}</pre></details>` : ''}</div></li>`;
-      if (r.kind === 'skill') return `<li class="cr-r skill">${time}<div><b>스킬 파일 읽기 요청</b> ${e(UI.skillLabel(r.data, true).label)} <span class="muted">(${e(W().toolName(r.data.via))}) · 읽기 요청은 읽기 성공을 뜻하지 않습니다</span><details class="cr-raw" data-k="${e(stepKey + ':' + r.key)}"><summary>원문</summary>${rawBlock(r.data)}</details></div></li>`;
-      if (r.kind === 'file') return `<li class="cr-r minor">${time}<div>결과 파일 ${e(r.text)}</div></li>`;
-      if (r.kind === 'sys') return `<li class="cr-r sys">${time}<div><b>${e(r.text)}</b>${sysDetail(r)}</div></li>`;
-      if (r.kind === 'error') return `<li class="cr-r err">${time}<div><b>${e(r.text)}</b><details class="cr-raw" data-k="${e(stepKey + ':' + r.key)}"><summary>원문</summary><pre class="cr-pre">${e(pretty(r.data))}</pre></details></div></li>`;
+      if (r.kind === 'note') return `<li class="cr-r"${r.minor ? ' data-minor' : ''}>${time}<div><q>${e(r.text.slice(0, NOTE_MAX_CHARS))}${r.text.length > NOTE_MAX_CHARS ? '…' : ''}</q>${r.data ? `<details class="cr-raw" data-k="${e(stepKey + ':' + r.key)}"><summary>원문</summary><pre class="code">${e(JSON.stringify(r.data, null, 2))}</pre></details>` : ''}</div></li>`;
+      if (r.kind === 'skill') return `<li class="cr-r">${time}<div><b>스킬 파일 읽기 요청</b> ${e(UI.skillLabel(r.data, true).label)} <span class="muted">(${e(W().toolName(r.data.via))}) · 읽기 요청은 읽기 성공을 뜻하지 않습니다</span><details class="cr-raw" data-k="${e(stepKey + ':' + r.key)}"><summary>원문</summary>${rawBlock(r.data)}</details></div></li>`;
+      if (r.kind === 'file') return `<li class="cr-r" data-minor>${time}<div>결과 파일 ${e(r.text)}</div></li>`;
+      if (r.kind === 'sys') return `<li class="cr-r">${time}<div><b>${e(r.text)}</b>${sysDetail(r)}</div></li>`;
+      if (r.kind === 'error') return `<li class="cr-r" data-err>${time}<div><b>${e(r.text)}</b><details class="cr-raw" data-k="${e(stepKey + ':' + r.key)}"><summary>원문</summary><pre class="code">${e(pretty(r.data))}</pre></details></div></li>`;
       return '';
     }).join('');
     return `${minor ? `<label class="cr-minor-toggle"><input type="checkbox" data-cr-minor> 보조 작업 ${minor}건도 보기 <span class="muted">(쓸 도구 불러오기 · 파일 쓰기 · 명령 실행)</span></label>` : ''}${groupHtml ? `<ul class="tg-list">${groupHtml}</ul>` : ''}${items ? `<ol class="cr-rows">${items}</ol>` : ''}`;
@@ -816,29 +819,84 @@
     return '';
   }
 
-  /* ---------------------------------------------------------------- 단계 한 줄 (디자인 기준 5-2 · 5-3)
-     번호 점 · 이름 · 맡은 쪽 · 시각과 걸린 시간 한 줄 + 한 문장 결과. AI 단계만 「결론 → 근거 → 자세한 실행 기록」 카드가 처음부터 펼쳐져 있고,
-     사람 · 시스템 단계는 「자세히」 안에 값이 있다. 세는 숫자 · 값 · 내부 id · 원문은 모두 접기 안이다. */
-  const PIN = { ok: 'done', run: 'now', wait: 'now', idle: 'idle', bad: 'bad', fail: 'bad', stop: 'bad' };
+  /* ---------------------------------------------------------------- 단계 한 줄 (디자인 기준 5-1 4번 · 5-2, 키트 .steps > .step)
+     표시(끝남 초록 체크 · 지금 제품색 · 남음 점선 · 실패 빨강) · 이름 · 누가(아이콘 + 이름) · 오른쪽에 시각과 걸린 시간, 그 아래 한 문장.
+     AI 단계: 끝난 뒤는 결론 → 근거(펼쳐서) → 후보 비교(.opts) → 실행 기록(접힘 — 그 안에 구획마다 접기와 원문 JSON), 일하는 중은 실시간 상자(.stream — 7절).
+     사람 · 시스템 단계는 한 문장 + 「자세히」 접기. 세는 숫자 · 값 · 내부 값 · 원문은 모두 접기 안이다. */
+  const PIN = { ok: 'done', run: 'now', wait: 'now', idle: 'todo', bad: 'fail', fail: 'fail', stop: 'fail' };
   const PREFIX = { bad: '기준 밖 — ', fail: '실패 — ' };
-  // 접기 안의 구획들: 원문(JSON)만 한 번 더 접는다(접기 안의 접기는 한 번까지)
+  const WHO_ICON = { agent: 'bot', person: 'user', system: 'cog' };
+  const markIcon = s => { const st = PIN[s.state] || 'todo'; return st === 'done' ? 'check' : st === 'fail' ? 'x' : st === 'todo' ? 'circle-dashed' : s.lane === 'agent' ? 'bot' : s.lane === 'person' ? 'user-check' : 'cog'; };
+  // 「자세히」 접기 안의 구획: 작은 머리글과 내용. 원문(JSON)만 한 번 더 접는다
   function sectionsHtml(s, secs) {
-    return secs.filter(Boolean).map((x, j) => x.raw ? `<details class="cr-raw" data-k="${e(s.key + ':raw' + j)}"><summary>${e(x.title)}</summary>${x.body}</details>`
-      : `<section class="cr-sec ${x.cls || ''}"><h6 class="label">${e(x.title)}</h6><div class="cr-sec-body">${x.body}</div></section>`).join('');
+    return secs.filter(Boolean).map((x, j) => x.raw ? `<details class="fold" data-k="${e(s.key + ':raw' + j)}"><summary>${e(x.title)}</summary><div class="fold-body">${x.body}</div></details>`
+      : `<section class="cr-sec ${x.cls || ''}"><h4 class="cr-h">${e(x.title)}</h4><div class="cr-sec-body">${x.body}</div></section>`).join('');
   }
-  // 단계마다 모아 두던 칩(세는 숫자 · 값)은 접기 안의 한 줄로 — 칩에는 상태 낱말만 넣는다(디자인 기준 4절)
+  // AI 단계의 「실행 기록」 안: 구획마다 접기 하나(원문 포함) — 줄들 아래에 놓인다
+  const foldsHtml = (s, secs) => secs.filter(Boolean).map((x, j) => `<details class="fold" data-k="${e(s.key + ':sec' + j)}"><summary>${e(x.title)}</summary><div class="fold-body ${x.cls || ''}">${x.body}</div></details>`).join('');
+  // 단계마다 모아 두던 값(세는 숫자 · 값)은 접기 안의 한 줄로 — 뱃지에는 상태 낱말만 넣는다(디자인 기준 4절)
   const factsLine = s => { const f = (s.chips || []).filter(c => c && c.label).map(c => e(c.label)); return f.length ? `<p class="cr-facts">${f.join(' <span class="sep">·</span> ')}</p>` : ''; };
   function gapLines(gaps) {
-    return gaps.length ? `<section class="cr-sec cr-gap"><h6 class="label">기록에 없는 것</h6><ul class="cr-gaps">${gaps.map(g => `<li class="${g.strong ? 'strong' : ''}">${e(g.text)}</li>`).join('')}</ul></section>` : '';
+    return gaps.length ? `<section class="cr-sec cr-gap"><h4 class="cr-h">기록에 없는 것</h4><ul class="cr-gaps">${gaps.map(g => `<li${g.strong ? ' data-strong' : ''}>${e(g.text)}</li>`).join('')}</ul></section>` : '';
   }
   function idsLine(s) {
     const ids = [...new Set([s.w && s.w.id, ...(s.ids || [])].filter(Boolean))];
-    const extra = s.w ? [s.gen ? `${s.gen + 1}회차` : '', s.w.status ? `단계 상태 ${s.w.status}${s.w.draft_status ? ' · ' + s.w.draft_status : ''}` : ''].filter(Boolean) : [];
-    return ids.length || extra.length ? `<p class="cr-ids"><span class="label">내부 값</span> ${ids.map(id => `<code>${e(id)}</code>`).join(' ')}${extra.length ? ` <span class="muted">${e(extra.join(' · '))}</span>` : ''}</p>` : '';
+    const extra = s.w ? [s.gen ? `${s.gen + 1}회차` : '', s.w.status ? `단계 상태 ${UI.status(s.w.status)}${s.w.draft_status && s.w.status !== 'DONE' ? ' · ' + UI.status(s.w.draft_status) : ''}` : ''].filter(Boolean) : [];
+    return ids.length || extra.length ? `<p class="cr-ids"><span class="muted">내부 값</span> ${ids.map(id => `<code class="inline">${e(id)}</code>`).join(' ')}${extra.length ? ` <span class="muted">${e(extra.join(' · '))}</span>` : ''}</p>` : '';
   }
-  const stepLink = s => s.w ? `<p class="cr-more"><button type="button" class="linkish" data-td-open="${e(s.w.id)}">이 단계가 받은 값과 다음 단계로 넘긴 값 보기</button></p>` : '';
+  const stepLink = s => s.w ? `<p class="cr-more"><button type="button" class="btn" data-variant="link" data-td-open="${e(s.w.id)}">이 단계가 받은 값과 다음 단계로 넘긴 값 보기</button></p>` : '';
 
-  // AI 단계의 첫 화면에 놓을 것(5-3): 결론 문장 · 원인 / 추천 / 까닭 · 판단을 가른 값 · 비교한 조치. 모두 서버가 준 값에서만 뽑는다 — 없으면 그 줄을 그리지 않는다
+  /* 실시간 줄(키트 .line): AI 가 한 일 한 가지 = 한 줄. 아이콘(끝남 체크 · 하는 중은 도구 종류 · 실패 ×) + 굵은 한 문장 + 보조 줄(어느 도구 · 물음 → 받은 것) + 오른쪽 시각.
+     보조 작업(쓸 도구 불러오기 · 파일 읽기 · 명령 실행)은 줄로 세우지 않는다 — 스킬 문서 읽기와 결과 파일 작성은 그 기록 줄이 따로 온다 */
+  const TOOL_ICON = [[/diagnos|cause/i, 'network'], [/evaluat|rank|compar/i, 'scale'], [/submit|decision/i, 'send'], [/neo4j|cypher|graph/i, 'network'], [/sql|query|select|timeseries/i, 'database'], [/mail|notify/i, 'send']];
+  const toolIcon = tool => (TOOL_ICON.find(([re]) => re.test(String(tool || ''))) || [0, 'plug'])[1];
+  const lineRows = s => (s.rows || []).filter(r => (r.kind === 'tool' && !r.minor) || r.kind === 'skill' || r.kind === 'file' || r.kind === 'error');
+  function lineOf(r, live, fresh) {
+    const wrap = (kind, icon, text, sub, pending) => `<div class="line"${kind ? ` data-kind="${kind}"` : ''}${pending ? ' data-pending' : ''}${fresh ? ' data-new' : ''}>${UI.icon(icon)}<span class="line-text"><b>${e(text)}</b>${sub ? `<span class="line-sub" title="${e(sub)}">${e(sub)}</span>` : ''}</span><span class="line-time num">${e(hhmmss(r.t0))}</span></div>`;
+    if (r.kind === 'tool') {
+      const name = W().toolName(r.tool), sys = W().toolSystem(r.tool);
+      const ask = r.inputEvent ? UI.toolAsk(r.inputEvent, true).summary : W().ask(r.tool, r.input);
+      if (r.status === 'running') return live ? wrap('tool', toolIcon(r.tool), `${name} 중`, [sys, ask].filter(Boolean).join(' · '), true)
+        : wrap('', toolIcon(r.tool), `${name} — 결과 기록 없음`, [sys, ask].filter(Boolean).join(' · '));
+      const result = r.ioEvent ? UI.toolResult(r.ioEvent, true) : null;
+      const got = result ? result.summary : W().got(r.tool, r.output);
+      const bad = r.status === 'fail';
+      return wrap(bad ? 'fail' : 'ok', bad ? 'x' : 'check', bad ? `${name}에 실패했습니다` : `${name}${W().josa(name, '을/를')} 마쳤습니다${r.badge ? ` — ${r.badge}` : ''}`, [sys, [ask, got].filter(Boolean).join(' → ')].filter(Boolean).join(' · '));
+    }
+    if (r.kind === 'skill') return wrap('ok', 'check', '스킬 문서를 읽었습니다', UI.skillLabel(r.data, true).label);
+    if (r.kind === 'file') return wrap('ok', 'check', '결과를 적었습니다', r.text);
+    if (r.kind === 'error') return wrap('fail', 'x', r.text, '');
+    return '';
+  }
+  // 단계 줄(키트 .stream-phases): 실제 사건에서만 나온다 — 일 받기 → (부른 도구들, 부른 차례대로) → 결과 제출. 시간으로 넘기지 않는다
+  function phasesOf(s) {
+    const list = [{ name: '일 받기', state: s.awaiting ? 'now' : 'done' }];
+    lineRows(s).filter(r => r.kind !== 'error').forEach(r => {
+      const name = r.kind === 'tool' ? W().toolName(r.tool) : r.kind === 'skill' ? '스킬 읽기' : '결과 작성';
+      const state = r.kind === 'tool' && r.status === 'running' ? 'now' : 'done';
+      const last = list[list.length - 1];
+      if (last.name === name) last.state = state; else list.push({ name, state });
+    });
+    if (!s.awaiting && !list.some(x => x.state === 'now')) list.push({ name: '다음 행동 정하기', state: 'now' });
+    list.push({ name: '결과 제출', state: 'todo' });
+    const MAX = 5;
+    return list.length > MAX ? [{ name: `앞 단계 ${list.length - MAX + 1}개`, state: 'done' }, ...list.slice(-(MAX - 1))] : list;
+  }
+  // 일하는 중인 AI 단계: 실시간 상자(머리 · 단계 줄 · 한 줄씩 붙는 줄). seen: 이미 그린 줄(새 줄만 한 번 비친다)
+  function liveBox(s, seen) {
+    const rows = lineRows(s);
+    const lines = rows.map(r => { const fresh = seen && !seen.has(r.key); if (seen) seen.add(r.key); return lineOf(r, true, fresh); }).join('');
+    const note = [...(s.rows || [])].reverse().find(r => r.kind === 'note' && !r.minor);
+    const lastTool = rows[rows.length - 1];
+    const typing = note && (!lastTool || String(note.t0) >= String(lastTool.t1 || lastTool.t0)) ? `<div class="typing">${e(note.text.slice(0, NOTE_MAX_CHARS))}</div>` : '';
+    const actor = s.actor || 'AI 에이전트';
+    const conn = window.hydStream && !hydStream.connected() ? `<p class="stream-lost" role="status">연결이 끊겼습니다 — 다시 이으면 이어서 보입니다. 그동안은 2초마다 다시 읽습니다.</p>` : '';
+    return `<div class="stream" data-cr-live><div class="stream-head"><i class="dot" data-tone="brand" data-live></i><span><b>${e(actor)}</b><span class="muted">${e(W().josa(actor, '이/가'))} ${s.awaiting ? '일을 받기를 기다리는 중' : '일하는 중'}</span></span>${s.t0 ? `<span class="elapsed num" data-since="${e(s.t0)}">${e(fmtMs(Date.now() - ts(s.t0)))}</span>` : ''}</div>${conn}
+      <div class="stream-phases">${phasesOf(s).map(p => `<span class="phase" data-state="${p.state}"><i></i>${e(p.name)}</span>`).join('')}</div>
+      <div class="stream-log" data-cr-livelog>${lines || `<div class="line">${UI.icon('circle-dashed')}<span class="line-text muted">${s.awaiting ? 'AI 워커가 이 일을 가져가면 한 일이 여기에 한 줄씩 붙습니다.' : '아직 부른 도구가 없습니다. 도구를 부르면 한 줄씩 붙습니다.'}</span><span></span></div>`}</div>${typing}</div>`;
+  }
+
+  // AI 단계의 첫 화면에 놓을 것(5-2): 결론 문장 · 근거(원인 · 판단을 가른 값 · 까닭) · 비교한 조치. 모두 서버가 준 값에서만 뽑는다 — 없으면 그 줄을 그리지 않는다
   function agentFront(s, m) {
     const v = m.v || {}, w = s.w, sources = (m.inst.variable_sources || {});
     const produced = Object.entries(sources).filter(([, x]) => x && x.kind === 'workitem' && x.id === w.id).map(([k]) => k);
@@ -854,75 +912,87 @@
     const rec = opts.find(o => o.id === d.recommended) || null;
     const recName = rec ? W().text(rec.name) : '';
     const mock = rec && UI.evaluationInfo(rec, d).state === 'analysis';
-    const kv = [];
-    if (cause) kv.push(['원인', `${e(cause)}${top && top.failureMode ? ` <span class="muted">— ${e(top.failureMode)}</span>` : ''}`]);
-    if (rec) {
-      const ref = rec.sopId || (((rec.steps || []).find(x => x.manual && x.manual.ref) || {}).manual || {}).ref;
-      kv.push([mock ? '모의 1순위' : '추천', `${e(recName)}${ref ? ` <span class="muted">· ${e(ref)}</span>` : ''}`]);
-      const said = window.hydApprove ? W().text(hydApprove.sentenceAbout(d.explanation, rec.name)) : '';
-      if (said) kv.push(['까닭', e(said)]);
-    }
     let verdict = '';
     if (rec && cause) verdict = `원인은 ${cause}${W().josa(cause, '으로/로')} 보고, 「${recName}」${W().josa(recName, '을/를')} ${mock ? '모의 1순위로 계산했습니다' : '추천합니다'}.`;
     else if (rec) verdict = `조치 ${opts.length}개를 비교해 「${recName}」${W().josa(recName, '을/를')} ${mock ? '모의 1순위로 계산했습니다' : '추천합니다'}.`;
     else if (cause) verdict = `원인을 ${cause}${W().josa(cause, '으로/로')} 판단했습니다.`;
-    // 판단을 가른 값: 원인 판정에 쓴 증거(잰 값과 기준) — 여섯 줄까지
-    const ev = top ? (top.evidence || []).filter(x => x && x.name && x.value != null).slice(0, 6) : [];
+    // 결론 아래 한 줄: 추천안의 예측 · 좋아지는 것 · 감수할 것(승인 카드와 같은 함수 — approvalCard.js reasons)
+    const sub = rec && window.hydApprove ? hydApprove.reasons(rec, d).slice(0, 3).join(' · ') : '';
+    // 근거: 원인(고장 유형) → 원인 판정에 쓴 관측값(잰 값과 기준, 여섯 줄까지) → 판단 엔진이 그 안에 대해 한 말
+    const evid = [];
+    if (cause) evid.push(['network', `지식 지도의 원인 후보 가운데 <b>${e(cause)}</b>${W().josa(cause, '이/가')} 관측값과 맞습니다${top && top.failureMode ? ` <span class="muted">— 고장 유형: ${e(top.failureMode)}</span>` : ''}.`]);
     const tagOf = x => x.tag || (x.coverage && x.coverage.tag) || '';      // 증거가 읽은 시계열 태그(단위를 여기서 찾는다)
     const unit = x => tagOf(x) ? W().unit(String(tagOf(x)).toLowerCase()) : '';
-    const facts = ev.length ? `<div><span class="label">판단을 가른 값</span><table class="tbl"><thead><tr><th>관측</th><th class="r">값</th></tr></thead><tbody>${ev.map(x => `<tr><td>${e(x.name)}${x.threshold != null ? `<small>기준 ${e(W().sym(x.expect))} ${e(W().num(x.threshold))}${unit(x) ? ' ' + e(unit(x)) : ''}</small>` : ''}</td><td class="r">${e(W().num(x.value))}${unit(x) ? ' ' + e(unit(x)) : ''}</td></tr>`).join('')}</tbody></table></div>` : '';
-    // 비교한 조치: 고른 줄이 맨 위(파란 면). 탈락 · 감점 까닭은 그 줄의 둘째 줄
-    let alts = '';
-    if (opts.length) {
-      const KIND = { control: UI.t('chip.control'), work_order: UI.t('chip.workOrder') };
-      const kind = o => KIND[o.kind] || '';
-      const score = o => !o.feasible ? '제외' : W().purchaseEconomics(o) ? W().purchaseCostLabel(o) : Number.isFinite(+o.score) && o.score !== null ? `${W().num(+o.score)}점` : '';
-      const why = o => {
-        if (rec && o.id === rec.id) return '';
-        if (!o.feasible) return W().text(((o.violations || [])[0] || {}).annotation || ((o.violations || [])[0] || {}).rule || '규정 위반');
-        const pen = [...(o.penalties || []), ...(o.warnings || [])].map(x => W().text(x.annotation || x.message || '')).filter(Boolean)[0];
-        return [window.hydApprove && rec ? hydApprove.partDiff(o, rec, opts) : '', pen ? `감점 · 경고: ${pen}` : ''].filter(Boolean).join(' / ');
-      };
-      const cols = [['조치', o => `${rec && o.id === rec.id ? `<b>${e(W().text(o.name))}</b>` : e(W().text(o.name))}${why(o) ? `<small>${e(why(o))}</small>` : ''}`, ''],
-        ['구분', o => e(kind(o)), 'nw'], ['점수', o => e(score(o)), 'r'], ['승인 역할', o => e((o.approver && o.approver.name) || ''), 'nw']]
-        .filter(([, cell], i) => i === 0 || opts.some(o => cell(o)));
-      alts = `<div><span class="label">비교한 조치</span><table class="tbl"><thead><tr>${cols.map(([h, , c]) => `<th${c ? ` class="${c}"` : ''}>${h}</th>`).join('')}</tr></thead><tbody>${opts.map(o => `<tr class="${rec && o.id === rec.id ? 'pick' : ''}">${cols.map(([, cell, c]) => `<td${c ? ` class="${c}"` : ''}>${cell(o)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+    (top ? (top.evidence || []).filter(x => x && x.name && x.value != null).slice(0, 6) : []).forEach(x =>
+      evid.push(['activity', `<b>${e(x.name)} ${e(W().num(x.value))}${unit(x) ? ' ' + e(unit(x)) : ''}</b>${x.threshold != null ? ` — 기준 ${e(W().sym(x.expect))} ${e(W().num(x.threshold))}${unit(x) ? ' ' + e(unit(x)) : ''}${x.status ? `, ${x.passed ? '맞음' : '아님'}` : ''}` : ''}`]));
+    if (rec) {
+      const ref = rec.sopId || (((rec.steps || []).find(x => x.manual && x.manual.ref) || {}).manual || {}).ref;
+      const said = window.hydApprove ? W().text(hydApprove.sentenceAbout(d.explanation, rec.name)) : '';
+      if (said) evid.push(['scale', e(said)]);
+      else if (Number.isFinite(+rec.score) && opts.length > 1) evid.push(['scale', `조치 ${opts.length}개를 순위 식으로 견줘 <b>「${e(recName)}」</b>${ref ? ` <span class="muted mono">${e(ref)}</span>` : ''}${W().josa(recName, '이/가')} <b class="num">${e(W().num(+rec.score))}점</b>으로 가장 높았습니다.`]);
     }
-    return { verdict, kv, facts, alts };
+    return { verdict, sub, evid, opts, rec, d, mock };
   }
-  function agentCard(s, m, gaps) {
+  // 후보 비교 표(키트 .opts): 순위 · 이름(둘째 줄에 진 까닭) · 종류 · 점수 · 막대 · 승인 역할. 고른 줄은 제품색
+  function optsTable(f) {
+    const { opts, rec, d } = f;
+    const KIND = { control: UI.t('chip.control'), work_order: UI.t('chip.workOrder') };
+    const cost = o => W().purchaseEconomics(o);
+    const score = o => !o.feasible ? '제외' : cost(o) ? W().purchaseCostLabel(o) : Number.isFinite(+o.score) && o.score !== null ? W().num(+o.score) : '';
+    const max = Math.max(0, ...opts.filter(o => o.feasible && !cost(o) && Number.isFinite(+o.score)).map(o => +o.score));
+    const why = o => {
+      if (rec && o.id === rec.id) return '';
+      if (!o.feasible) return W().text(((o.violations || [])[0] || {}).annotation || ((o.violations || [])[0] || {}).rule || '규정 위반');
+      const pen = [...(o.penalties || []), ...(o.warnings || [])].map(x => W().text(x.annotation || x.message || '')).filter(Boolean)[0];
+      return [window.hydApprove && rec ? hydApprove.partDiff(o, rec, opts) : '', pen ? `감점 · 경고: ${pen}` : ''].filter(Boolean).join(' / ');
+    };
+    const has = { kind: opts.some(o => KIND[o.kind]), bar: max > 0, role: opts.some(o => o.approver && o.approver.name) };
+    const rows = opts.map((o, i) => `<tr${rec && o.id === rec.id ? ' data-pick' : ''}${o.feasible ? '' : ' data-out'}><td><span class="rank num">${e(o.rank || i + 1)}</span></td>
+      <td><b>${e(W().text(o.name))}</b>${o.sopId ? ` <span class="muted mono">${e(o.sopId)}</span>` : ''}${why(o) ? `<span class="opts-why">${e(why(o))}</span>` : ''}</td>
+      ${has.kind ? `<td>${e(KIND[o.kind] || '')}</td>` : ''}<td class="num">${e(score(o))}</td>${has.bar ? `<td>${o.feasible && !cost(o) && Number.isFinite(+o.score) ? `<div class="bar"><i style="width:${Math.max(0, Math.round(+o.score / max * 100))}%"></i></div>` : ''}</td>` : ''}${has.role ? `<td>${e((o.approver && o.approver.name) || '')}</td>` : ''}</tr>`).join('');
+    return `<div class="table-container"><table class="opts"><thead><tr><th></th><th>후보</th>${has.kind ? '<th>종류</th>' : ''}<th>점수</th>${has.bar ? '<th></th>' : ''}${has.role ? '<th>승인 역할</th>' : ''}</tr></thead><tbody>${rows}</tbody></table></div>`;
+  }
+  function agentCard(s, m, gaps, seen) {
+    const failed = ['fail', 'stop', 'bad'].includes(s.state);
+    if (s.live && !failed) return liveBox(s, seen);
     const f = agentFront(s, m);
-    const tools = (s.rows || []).filter(r => r.kind === 'tool').length;
-    const done = [...(s.sections || [])].filter(Boolean);
-    let top;
-    if (f.verdict || f.kv.length) {
-      top = `<section><span class="label">결론</span>${f.verdict ? `<p class="verdict">${e(f.verdict)}</p>` : ''}${f.kv.length ? `<dl class="kv">${f.kv.map(([k, x]) => `<dt>${e(k)}</dt><dd>${x}</dd>`).join('')}</dl>` : ''}</section>`;
-    } else if (s.live && !['fail', 'stop', 'bad'].includes(s.state)) {
-      // 결론이 아직 없다(실행 중): 그 자리에 한 줄과 고리만 두고 근거 칸은 그리지 않는다
-      top = `<section><span class="label">결론</span><p class="cr-wait">${TR() ? TR().spinner('sm') : ''}<span>${e(s.awaiting ? 'AI 에이전트가 일을 받기를 기다리는 중입니다.' : `판단하는 중${tools ? ` — 도구를 ${tools}번 불렀습니다` : ''}`)}</span></p>${s.now ? `<p class="cr-now muted">${e(s.now)}</p>` : ''}</section>`;
-    } else {
-      // 실패 · 멈춤: 서버가 남긴 오류 문장(없으면 단계 문장)을 그대로
+    const lines = lineRows(s), tools = (s.rows || []).filter(r => r.kind === 'tool').length;
+    const dur = s.t0 && s.t1 ? fmtMs(ts(s.t1) - ts(s.t0)) : '';
+    let result;
+    if (f.verdict) result = `<div class="result"><div class="result-label">${UI.icon('sparkles', 'ic-sm')}결론</div><div class="result-main">${e(f.verdict)}</div>${f.sub ? `<div class="result-sub">${f.sub}</div>` : ''}</div>`;
+    else {
+      // 결론 값이 없는 끝난 단계: 실패 · 멈춤이면 서버가 남긴 오류 문장, 아니면 그 단계의 한 문장
       const err = [...(s.rows || [])].reverse().find(r => r.kind === 'error');
-      const failed = ['fail', 'stop'].includes(s.state);
-      top = `<section><span class="label">결론</span><p class="verdict">${e((PREFIX[s.state] || (s.state === 'stop' ? `${s.stopNote || '멈춤'} — ` : '')) + (failed && err ? err.text : failed ? '결론을 내지 못하고 끝났습니다.' : s.sentence || ''))}</p></section>`;
+      const stopped = ['fail', 'stop'].includes(s.state);
+      const text = (PREFIX[s.state] || (s.state === 'stop' ? `${s.stopNote || '멈춤'} — ` : '')) + (stopped && err ? err.text : stopped ? '결론을 내지 못하고 끝났습니다.' : s.sentence || '');
+      result = `<div class="result"><div class="result-label">${UI.icon(stopped ? 'circle-alert' : 'sparkles', 'ic-sm')}${stopped ? '결론 없음' : '결론'}</div><div class="result-main">${e(text)}</div></div>`;
     }
-    const grid = f.facts || f.alts ? `<section class="${f.facts && f.alts ? 'ai-grid' : ''}">${f.facts}${f.alts}</section>` : '';
-    const fold = `<section class="raw"><details class="fold" data-k="${e(s.key + ':more')}"><summary>자세한 실행 기록 <span class="muted">· 도구 호출 · 스킬 전달 · 원문</span></summary><div class="fold-body cr-detail">${factsLine(s)}${sectionsHtml(s, done)}${stepLink(s)}${idsLine(s)}${gapLines(gaps)}</div></details></section>`;
-    return `<div class="ai">${top}${grid}${fold}</div>`;
+    const evid = f.evid.length ? `<details class="fold" open data-k="${e(s.key + ':evid')}"><summary>근거<span class="muted">${f.evid.length}가지</span></summary><div class="fold-body"><ul class="evid">${f.evid.map(([ic, html]) => `<li>${UI.icon(ic)}<span>${html}</span></li>`).join('')}</ul></div></details>` : '';
+    const alts = f.opts.length ? `<details class="fold" data-k="${e(s.key + ':opts')}"><summary>후보 비교<span class="muted">${f.opts.length}개${f.rec ? ` 가운데 ${f.mock ? '모의 ' : ''}1위` : ''}</span></summary><div class="fold-body" data-flush>${optsTable(f)}</div></details>` : '';
+    const secs = [...(s.sections || [])].filter(Boolean);
+    const exec = `<details class="fold" data-k="${e(s.key + ':more')}"><summary>실행 기록<span class="muted">도구 호출 ${tools}번${dur ? ` · ${e(dur)}` : ''}</span></summary><div class="fold-body cr-detail" data-flush>
+      ${lines.length ? `<div class="stream-log cr-lines">${lines.map(r => lineOf(r, false, false)).join('')}</div>` : '<p class="muted">도구 호출 기록이 없습니다.</p>'}
+      ${factsLine(s)}${foldsHtml(s, secs)}${stepLink(s)}${idsLine(s)}${gapLines(gaps)}</div></details>`;
+    return `<div class="step-card">${result}${evid}${alts}${exec}</div>`;
   }
-  function stepHtml(s, i, m, gaps, mine) {
+  // 한 단계의 조각 셋: 표시 아이콘 · 머리(이름 · 누가 · 시각) · 본문
+  function stepParts(s, i, m, gaps, mine, seen) {
     const dur = s.t0 && s.t1 && s.type !== 'start' && s.type !== 'timer' && ts(s.t1) - ts(s.t0) >= 0 ? fmtMs(ts(s.t1) - ts(s.t0)) : '';
-    const when = s.t0 ? `<time title="${e(UI.dateTime(s.t0))}">${e(hhmmss(s.t0))}</time>${s.live && !s.t1 && !['fail', 'stop'].includes(s.state) ? '부터' : dur ? ` · ${e(dur)}` : ''}` : '';
-    const who = [...new Set([LANE[s.lane], ...String(s.actor || '').split(' · ')].filter(Boolean))].join(' · ');
-    const turn = mine && s.w && mine.has(s.w.id) ? '<span class="chip tone-accent">내 차례</span>' : s.state === 'wait' && s.w && s.w.status === 'PENDING' ? '<span class="chip tone-warning">보류</span>' : '';
-    const head = `<div class="step-head"><strong>${e(s.title)}</strong><span class="who">${e(who)}${s.gen ? ` · ${e(s.gen + 1)}회차` : ''}</span>${turn}<span class="when">${when}</span></div>`;
-    if (s.type === 'agent') return head + agentCard(s, m, gaps);
+    const waiting = s.live && !s.t1 && !['fail', 'stop'].includes(s.state);
+    const when = s.t0 ? `<span class="step-time num" title="${e(UI.dateTime(s.t0))}">${e(hhmmss(s.t0))}${waiting ? (s.lane === 'person' ? '부터 기다림' : ' 시작') : dur ? ` · ${e(dur)}` : ''}</span>` : '';
+    const names = [...new Set(String(s.actor || '').split(' · ').filter(Boolean))];
+    const myTurn = mine && s.w && mine.has(s.w.id);
+    const who = `<span class="step-who">${UI.icon(WHO_ICON[s.lane] || 'cog')}${e((names.length ? names : [LANE[s.lane]]).join(' · '))}${myTurn ? ' · 내 차례' : ''}${s.gen ? ` · ${e(s.gen + 1)}회차` : ''}</span>`;
+    const hold = s.state === 'wait' && s.w && s.w.status === 'PENDING' ? UI.chipText('보류', 'warning') : '';
+    const head = `<span class="step-title">${e(s.title)}</span>${who}${hold}${when}`;
+    if (s.type === 'agent') return { mark: markIcon(s), head, body: agentCard(s, m, gaps, seen) };
     const pre = PREFIX[s.state] || (s.state === 'stop' ? `${s.stopNote || '멈춤'} — ` : '');
     const secs = (s.sections || []).filter(Boolean);
     const inside = factsLine(s) + sectionsHtml(s, secs) + stepLink(s) + idsLine(s) + gapLines(gaps);
-    const waitsMe = s.live && s.now && s.lane === 'person';      // 사람을 기다리는 단계는 문장 하나(무엇을 하면 넘어가는지). 고리는 AI · 시스템이 도는 단계에만
-    return `${head}<p class="step-line">${e(waitsMe ? s.now : pre + (s.sentence || ''))}</p>${s.live && s.now && !waitsMe ? `<p class="step-now">${s.state === 'run' && TR() ? TR().spinner('sm') : ''}<span>${e(s.now)}</span></p>` : ''}
-      ${inside ? `<details class="fold" data-k="${e(s.key + ':more')}"><summary>자세히</summary><div class="fold-body cr-detail">${inside}</div></details>` : ''}`;
+    const waitsMe = s.live && s.now && s.lane === 'person';      // 사람을 기다리는 단계는 문장 하나(무엇을 하면 넘어가는지)
+    const body = `<p class="step-say">${e(waitsMe ? s.now : pre + (s.sentence || ''))}</p>${s.live && s.now && !waitsMe ? `<p class="step-now"><i class="dot" data-tone="brand" data-live></i><span>${e(s.now)}</span></p>` : ''}
+      ${inside ? `<details class="fold" data-plain data-k="${e(s.key + ':more')}"><summary>자세히</summary><div class="fold-body cr-detail">${inside}</div></details>` : ''}`;
+    return { mark: markIcon(s), head, body };
   }
   // 「기록에 없는 것」을 그 단계의 접기 안으로 보낸다: 종류별로 그 말이 가리키는 단계(없으면 마지막 단계)
   function gapsByStep(m) {
@@ -959,14 +1029,15 @@
   function mount(host, opts = {}) {
     const C = { host, opts, view: null, live: new Map(), older: new Map(), ext: {}, raf: 0, fetching: false, pid: null };
     host.classList.add('cr');
-    host.innerHTML = '<div data-cr-older></div><p class="cr-gapline" data-cr-names hidden role="status">이름 목록을 읽지 못해 일부 사람 · AI 에이전트의 이름이 보이지 않습니다. 다시 읽는 중입니다.</p><ol class="steps" data-cr-steps></ol>';
+    host.innerHTML = '<div data-cr-older></div><p class="cr-gapline" data-cr-names hidden role="status">이름 목록을 읽지 못해 일부 사람 · AI 에이전트의 이름이 보이지 않습니다. 다시 읽는 중입니다.</p><div class="steps" data-cr-steps role="list"></div>';
+    C.seen = new Map();                                    // 단계마다 이미 그린 실시간 줄(새 줄만 한 번 비친다)
     host.addEventListener('click', ev => { if (ev.target.closest('[data-cr-older-btn]')) loadOlder(); });
     host.addEventListener('change', ev => {
-      if (ev.target.matches('[data-cr-minor]')) ev.target.closest('.cr-sec-body, .cr-detail')?.classList.toggle('show-minor', ev.target.checked);
+      if (ev.target.matches('[data-cr-minor]')) ev.target.closest('.cr-sec-body, .fold-body')?.toggleAttribute('data-show-minor', ev.target.checked);
     });
     C.update = view => {
       if (!view || !view.instance) return;
-      if (C.pid !== view.instance.proc_inst_id) { C.pid = view.instance.proc_inst_id; C.live.clear(); C.older.clear(); C.ext = {}; C.olderBefore = undefined; C.olderCount = 0; C.olderErr = null; host.querySelector('[data-cr-steps]').innerHTML = ''; }
+      if (C.pid !== view.instance.proc_inst_id) { C.pid = view.instance.proc_inst_id; C.live.clear(); C.older.clear(); C.ext = {}; C.olderBefore = undefined; C.olderCount = 0; C.olderErr = null; C.seen.clear(); host.querySelector('[data-cr-steps]').innerHTML = ''; }
       C.view = view; fetchExt(); schedule();
     };
     C.ingest = ev => {
@@ -995,7 +1066,7 @@
     function drawOlder() {
       const box = host.querySelector('[data-cr-older]'); const pg = C.view && C.view.events_page;
       const more = pg && pg.has_more && !C.ext.olderDone;
-      box.innerHTML = more ? `<div class="cr-older"><button type="button" class="btn small" data-cr-older-btn ${C.olderBusy ? 'disabled' : ''}>${C.olderBusy ? '받는 중…' : '이전 기록 더 보기'}</button><span class="muted">최근 ${e(W().num(pg.limit || 0))}줄${C.olderCount ? ` + 이전 ${e(W().num(C.olderCount))}줄` : ''}을 보고 있습니다. 앞쪽 기록이 더 있습니다.</span>${C.olderErr ? `<span class="neg">${e(C.olderErr)}</span>` : ''}</div>`
+      box.innerHTML = more ? `<div class="cr-older"><button type="button" class="btn" data-variant="outline" data-size="sm" data-cr-older-btn ${C.olderBusy ? 'disabled' : ''}>${C.olderBusy ? '받는 중…' : '이전 기록 더 보기'}</button><span class="muted">최근 ${e(W().num(pg.limit || 0))}줄${C.olderCount ? ` + 이전 ${e(W().num(C.olderCount))}줄` : ''}을 보고 있습니다. 앞쪽 기록이 더 있습니다.</span>${C.olderErr ? `<span class="muted" data-tone="danger">${e(C.olderErr)}</span>` : ''}</div>`
         : C.olderCount ? `<p class="muted cr-older">이전 기록 ${e(W().num(C.olderCount))}줄을 더 받아 처음부터 모두 보고 있습니다.</p>` : '';
     }
     async function fetchExt() {
@@ -1030,7 +1101,7 @@
       try { m = C.model = build(C.view, C.ext, [...C.older.values(), ...C.live.values()]); }
       catch (err) {
         console.error('단계 기록 그리기 실패', C.view?.instance?.proc_inst_id, err);   // 좌표(처리 건 · 줄)는 개발자 도구에
-        box.innerHTML = `<li class="cr-error">단계 기록을 그리지 못했습니다 — 화면 프로그램 오류입니다. 화면을 새로 고쳐도 같으면 강사에게 알리세요.${UI.fold('오류 원문', `<pre>${e(err.stack || err.message)}</pre>`)}</li>`;
+        box.innerHTML = `<div class="alert" data-variant="destructive">${UI.icon('circle-alert')}<h2>단계 기록을 그리지 못했습니다</h2><section>화면 프로그램 오류입니다. 화면을 새로 고쳐도 같으면 아래 오류 원문과 함께 시스템 관리자에게 알리세요.${UI.fold('오류 원문', `<pre class="code">${e(err.stack || err.message)}</pre>`)}</section></div>`;
         return;
       }
       drawOlder();
@@ -1042,17 +1113,18 @@
       const rest = m.running && window.hydFlow ? hydFlow.pathModel(C.view.definition || {}, C.view.workitems, m.inst).nodes.filter(n => n.state === 'todo') : [];
       const want = shown.map(s => s.key).concat(rest.length ? ['next'] : []);
       [...box.children].forEach(li => { if (!want.includes(li.dataset.key)) li.remove(); });
-      const place = (key, i, cls, html) => {
+      const place = (key, i, state, parts) => {
         let li = [...box.children].find(x => x.dataset.key === key);
         if (!li) {
-          li = document.createElement('li'); li.dataset.key = key;
-          li.innerHTML = '<span class="pin"></span><div class="step-body"><div class="step-main"></div><div class="step-slot" data-step-slot></div></div>';
-          li.classList.add('cr-new'); setTimeout(() => li.classList.remove('cr-new'), 900);
+          li = document.createElement('div'); li.dataset.key = key; li.setAttribute('role', 'listitem');
+          li.className = 'step fade-in';
+          li.innerHTML = '<span class="step-mark"></span><div class="step-head"></div><div class="step-body"><div class="step-main"></div><div class="step-slot" data-step-slot></div></div>';
         }
-        const fresh = li.classList.contains('cr-new');
-        li.className = `step ${cls}${fresh ? ' cr-new' : ''}`;
-        li.querySelector('.pin').textContent = String(i + 1);
-        const main = li.querySelector('.step-main');
+        li.dataset.state = state;
+        const mark = li.querySelector('.step-mark'), head = li.querySelector('.step-head');
+        if (mark._icon !== parts.mark) { mark.innerHTML = UI.icon(parts.mark); mark._icon = parts.mark; }
+        if (head._html !== parts.head) { head.innerHTML = parts.head; head._html = parts.head; }
+        const main = li.querySelector('.step-main'), html = parts.body;
         if (force || main._html !== html) {
           // 펼친 접기 · 「보조 작업도 보기」 · 원문 칸의 스크롤 자리를 지킨다. 그 안에서 글을 쓰는 중이면 바꾸지 않는다(다음 그리기에서 반영)
           if (main.contains(document.activeElement) && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) { schedule(); }
@@ -1060,9 +1132,12 @@
             const openK = new Set([...main.querySelectorAll('details[data-k][open]')].map(d => d.dataset.k));
             const minorOn = !!main.querySelector('[data-cr-minor]:checked');
             const scroll = new Map([...main.querySelectorAll('details[data-k][open] pre')].map((p, j) => [j, p.scrollTop]));
+            const log = main.querySelector('[data-cr-livelog]'), follow = !log || log.scrollTop + log.clientHeight >= log.scrollHeight - 8;      // 맨 아래를 보고 있을 때만 새 줄을 따라간다
+            const logTop = log ? log.scrollTop : 0;
             main.innerHTML = html; main._html = html;
+            const next = main.querySelector('[data-cr-livelog]'); if (next) next.scrollTop = follow ? next.scrollHeight : logTop;
             main.querySelectorAll('details[data-k]').forEach(d => { if (openK.has(d.dataset.k)) d.open = true; });
-            if (minorOn) { const c = main.querySelector('[data-cr-minor]'); if (c) { c.checked = true; c.closest('.cr-sec-body, .cr-detail')?.classList.add('show-minor'); } }
+            if (minorOn) { const c = main.querySelector('[data-cr-minor]'); if (c) { c.checked = true; c.closest('.cr-sec-body, .fold-body')?.setAttribute('data-show-minor', ''); } }
             [...main.querySelectorAll('details[data-k][open] pre')].forEach((p, j) => { if (scroll.get(j)) p.scrollTop = scroll.get(j); });
           }
         }
@@ -1070,14 +1145,15 @@
         return li;
       };
       shown.forEach((s, i) => {
-        const li = place(s.key, i, `${PIN[s.state] || 'idle'}${s.type === 'agent' ? ' is-ai' : ''}${s.live ? ' live' : ''}`, stepHtml(s, i, m, gaps.get(s.key) || [], mine));
-        li.dataset.state = s.state; li.dataset.lane = s.lane;
+        if (!C.seen.has(s.key)) C.seen.set(s.key, new Set());
+        const li = place(s.key, i, PIN[s.state] || 'todo', stepParts(s, i, m, gaps.get(s.key) || [], mine, C.seen.get(s.key)));
+        li.dataset.lane = s.lane;
+        if (s.live) li.dataset.live = ''; else delete li.dataset.live;
         if (s.w) li.dataset.step = s.w.id; else delete li.dataset.step;
       });
-      if (rest.length) {
-        const who = [...new Set(rest.map(n => n.who === 'agent' ? 'AI 에이전트' : n.who === 'human' ? (n.role || '담당자') : '시스템'))].join(' · ');
-        place('next', shown.length, 'next', `<div class="step-head"><strong>${e(rest.map(n => UI.flowName(n.name)).join(' · '))}</strong><span class="who">${e(who)}</span></div>`);
-      }
+      // 남은 단계는 맨 아래 한 줄에 화살표로 이어 적는다(진행 길의 남은 상자와 같은 차례)
+      if (rest.length) place('next', shown.length, 'todo', { mark: 'circle-dashed', head: '<span class="step-title">남은 단계</span>',
+        body: `<div class="rest">${rest.map(n => `<span>${e(UI.flowName(n.name))}</span>`).join(UI.icon('arrow-right'))}</div>` });
       if (opts.onDraw) opts.onDraw(m, host);
     }
     C.draw = draw;

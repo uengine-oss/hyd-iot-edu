@@ -148,7 +148,7 @@
     if (state === 'on' || state === 'paused' || state === 'connecting') { clearTimeout(S.downTimer); S.downTimer = 0; if (state === 'on') S.fails = 0; }
     else if (state === 'retry' && !S.downTimer) S.downTimer = setTimeout(() => { S.downTimer = 0; if (S.conn === 'retry') setConn('off'); }, 10000);
     const { text, ok } = connOf();
-    const c = document.getElementById('streamConn'); if (c) { c.textContent = text; c.className = 'stream-conn ' + (ok ? 'on' : 'off'); }
+    const c = document.getElementById('streamConn'); if (c) c.innerHTML = `<i class="dot"${ok ? ' data-tone="ok" data-live' : state === 'off' ? ' data-tone="danger"' : ''}></i>${esc(text)}`;
     paintTicker();
     document.querySelectorAll('[data-live-conn]').forEach(n => { n.textContent = text; n.className = 'live-conn ' + (ok ? 'on' : state); });
     if (changed) S.connSubs.forEach(fn => { try { fn(connOf()); } catch (err) { console.error('[hydStream] 연결 상태 구독 화면 오류', fn.name || '(이름 없는 구독)', state, err); } });
@@ -162,6 +162,7 @@
     const rows = publicRows.filter(r => !merged(r)).filter(r => S.filter === 'all' ? true
       : S.filter === 'work' ? (KIND[r.e.event_type] || [''])[0] === 'work'
       : (KIND[r.e.event_type] || [''])[0] === S.filter || (S.filter === 'task' && !KIND[r.e.event_type]));
+    const foldCount = document.getElementById('streamFoldCount'); if (foldCount) foldCount.textContent = rows.length ? `${rows.length}` : '';
     if (!rows.length) { box.innerHTML = UI.empty(UI.t('stream.empty'), UI.t('stream.emptySub'), 'compact'); return; }
     const limit = S.showAll ? 120 : SHOWN;
     let html = '', group = null;
@@ -170,28 +171,25 @@
       if (g !== group) {
         group = g;
         const act = activityOf(e);
-        html += `<div class="stream-group" data-inst="${esc(e.proc_inst_id || '')}" data-todo="${esc(e.todo_id || '')}" tabindex="0"><b>${esc(instName(e.proc_inst_id))}</b>${act ? `<span>${esc(act)}</span>` : ''}</div>`;
+        html += `<button type="button" class="activity-group" data-inst="${esc(e.proc_inst_id || '')}" data-todo="${esc(e.todo_id || '')}"><b>${esc(instName(e.proc_inst_id))}</b>${act ? `<span class="muted">${esc(act)}</span>` : ''}</button>`;
       }
       const kind = KIND[e.event_type] || ['task', ''];
       const label = kind[1] ? UI.t(kind[1]) : UI.eventName(e.event_type);
       const { title, text, dur, running, tone } = describe(e);
-      html += `<div class="stream-row ${kind[0]}${fresh ? ' new' : ''}${tone && tone !== 'ok' ? ' ' + esc(tone) : ''}" data-inst="${esc(e.proc_inst_id || '')}">
-        <time title="${esc(UI.dateTime(e.timestamp))}">${esc(UI.time(e.timestamp))}</time>
-        <span class="kind">${running && window.hydTrace ? hydTrace.spinner('sm') : ''}${esc(label)}</span>
-        <div class="body"><b>${esc(title)}</b>${text ? `<span class="txt">${esc(text)}</span>` : ''}</div>
-        ${dur ? `<span class="dur">${esc(dur)}</span>` : '<span></span>'}
-      </div>`;
+      const state = tone === 'fail' || kind[0] === 'error' ? 'fail' : running ? 'tool' : kind[0] === 'tool' || e.event_type === 'task_completed' ? 'ok' : '';
+      html += `<div class="line" data-activity="${kind[0]}"${state ? ` data-kind="${state}"` : ''}${running ? ' data-pending' : ''}${fresh ? ' data-new' : ''} data-inst="${esc(e.proc_inst_id || '')}">${UI.icon(ICON[kind[0]] || 'activity')}
+        <span class="line-text"><b>${esc(title)}</b><span class="line-sub">${esc([label, text].filter(Boolean).join(' · '))}</span></span>
+        <span class="line-time num" title="${esc(UI.dateTime(e.timestamp))}">${esc(UI.time(e.timestamp))}${dur && !running ? ` · ${esc(dur)}` : ''}</span></div>`;
     });
-    box.innerHTML = html + (rows.length > limit ? `<button type="button" class="btn small" id="streamMore">${esc(UI.t('stream.all'))} (${rows.length})</button>` : '');
+    box.innerHTML = html + (rows.length > limit ? `<button type="button" class="btn more" data-variant="ghost" data-size="sm" id="streamMore">${esc(UI.t('stream.all'))} (${rows.length})</button>` : '');
     S.rows.forEach(r => { r.fresh = false; });
     box.querySelectorAll('[data-inst]').forEach(row => row.addEventListener('click', () => {
       if (!row.dataset.inst) return;
       if (window.hydInstancesSelect) window.hydInstancesSelect(row.dataset.inst);
     }));
     box.querySelector('#streamMore')?.addEventListener('click', () => { S.showAll = true; render(); });
-    const count = document.getElementById('streamCount'); if (count) count.textContent = `${rows.length}`;
-    const foldCount = document.getElementById('streamFoldCount'); if (foldCount) foldCount.textContent = `${rows.length}`;
   }
+  const ICON = { tool: 'plug', task: 'workflow', work: 'bot', human: 'user', error: 'circle-alert' };
   let renderTimer = 0;
   const renderSoon = () => { if (renderTimer) return; renderTimer = setTimeout(() => { renderTimer = 0; render(); }, 120); };
 
@@ -248,14 +246,14 @@
 
   function mount() {
     const box = document.getElementById('streamPanel'); if (!box) return;
-    box.innerHTML = `<div class="stream-head"><div><h3>${esc(UI.t('stream.title'))} <small class="chip tone-neutral sm" id="streamCount"></small></h3></div>
-      <div class="stream-tools"><span id="streamConn" class="stream-conn off">${esc(UI.t('header.connecting'))}</span>
-        <div class="chips small" id="streamFilter">${[['all', 'stream.filter.all'], ['tool', 'stream.filter.tool'], ['task', 'stream.filter.task'], ['human', 'stream.filter.human'], ['error', 'stream.filter.error'], ['work', 'stream.filter.work']].map(([k, l]) => `<button class="chip${k === 'all' ? ' on' : ''}" data-f="${k}" type="button">${esc(UI.t(l))}</button>`).join('')}</div>
-        <button class="btn small" id="streamPause" type="button" aria-pressed="false">${esc(UI.t('stream.pause'))}</button></div></div>
-      <div class="stream-list" id="streamList"></div>`;
-    box.querySelectorAll('#streamFilter .chip').forEach(c => c.addEventListener('click', () => {
-      S.filter = c.dataset.f; box.querySelectorAll('#streamFilter .chip').forEach(x => x.classList.toggle('on', x === c)); render();
+    box.innerHTML = `<div class="activity-head"><div class="seg" id="streamFilter" role="group" aria-label="활동 종류로 거르기">${[['all', 'stream.filter.all'], ['tool', 'stream.filter.tool'], ['task', 'stream.filter.task'], ['human', 'stream.filter.human'], ['error', 'stream.filter.error'], ['work', 'stream.filter.work']].map(([k, l]) => `<button data-f="${k}" type="button" aria-pressed="${k === 'all'}">${esc(UI.t(l))}</button>`).join('')}</div>
+        <span class="muted activity-conn" id="streamConn"></span>
+        <button class="btn" data-variant="outline" data-size="sm" id="streamPause" type="button" aria-pressed="false">${esc(UI.t('stream.pause'))}</button></div>
+      <div class="stream-log activity-list" id="streamList"></div>`;
+    box.querySelectorAll('#streamFilter button').forEach(c => c.addEventListener('click', () => {
+      S.filter = c.dataset.f; box.querySelectorAll('#streamFilter button').forEach(x => x.setAttribute('aria-pressed', String(x === c))); render();
     }));
+    setConn(S.conn);
     const pause = document.getElementById('streamPause');
     pause.addEventListener('click', () => { S.paused = !S.paused; pause.textContent = S.paused ? UI.t('stream.resume') : UI.t('stream.pause'); pause.setAttribute('aria-pressed', String(S.paused)); if (!S.paused) render(); });
     render();
@@ -286,7 +284,7 @@
   const fmt = ms => hydTrace.fmtMs(Math.max(0, ms));
   const spin = () => hydTrace.spinner('sm');
   const iso = () => new Date().toISOString();
-  const timeHtml = since => `<span class="lv-time" data-since="${esc(since)}">${esc(fmt(Date.now() - Date.parse(since)))}</span>`;   // 글자는 trace.js 의 1초 시계가 올린다
+  const timeHtml = since => `<span class="lv-time num" data-since="${esc(since)}">${esc(fmt(Date.now() - Date.parse(since)))}</span>`;   // 글자는 trace.js 의 1초 시계가 올린다
   const lateHtml = (since, hint, late = 3) => {
     if (!hint) return '';
     const at = Date.parse(since) + late * 1000;
@@ -300,7 +298,8 @@
 
   function waitHtml(text, o = {}) {
     const since = o.since || iso();
-    return `<div class="lv-wait${o.cls ? ' ' + esc(o.cls) : ''}" role="status" aria-live="polite"><span class="lv-wait-line">${spin()}<b>${esc(text)}</b>${timeHtml(since)}</span>${lateHtml(since, o.hint, o.late)}</div>`;
+    // 실시간 상자의 머리 한 줄(키트 .stream-head): 살아 있는 점 + 무엇을 하는 중 + 흐른 시간. 그 아래에 「아직 하는 중입니다 — …」
+    return `<div class="stream lv-wait${o.cls ? ' ' + esc(o.cls) : ''}" role="status" aria-live="polite"><div class="stream-head lv-wait-line"><i class="dot" data-tone="brand" data-live></i><b>${esc(text)}</b><span class="elapsed">${timeHtml(since)}</span></div>${lateHtml(since, o.hint, o.late)}</div>`;
   }
   function busy(btn, label, since) {
     if (!btn) return () => {};
@@ -314,18 +313,19 @@
   }
 
   /* ---------------------------------------------------------------- 단계 목록 */
-  const MARK = { ok: 'check', fail: 'x', skip: 'x' };
+  // 단계 하나 = 실시간 줄 하나(키트 .line): 기다림 점선 동그라미 · 하는 중 깜박이는 점 셋 · 끝남 초록 체크 · 실패 빨간 × · 건너뜀 선
+  const MARK = { wait: 'circle-dashed', run: 'circle-dot', ok: 'check', fail: 'x', skip: 'minus' };
+  const KIND = { run: 'tool', ok: 'ok', fail: 'fail' };
   function steps(host, defs, o = {}) {
     const C = { host, list: defs.map(d => ({ key: d.key, label: d.label, note: d.note || '', state: 'wait', t0: null, t1: null, hint: d.hint || '', link: null })), go: new Map() };
     const find = key => C.list.find(s => s.key === key);
     function stepHtml(s, i) {
-      const mark = s.state === 'run' ? spin() : MARK[s.state] ? hydTrace.icon(MARK[s.state]) : `<i>${i + 1}</i>`;
-      const time = s.state === 'run' && s.t0 ? timeHtml(s.t0) : s.t0 && s.t1 ? `<span class="lv-time">${esc(fmt(Date.parse(s.t1) - Date.parse(s.t0)))}</span>` : '';
-      const link = s.link ? `<button type="button" class="link-btn" data-lv-go="${esc(s.key)}">${esc(s.link.text)}</button>` : '';
-      return `<li class="lv-step ${s.state}" data-step="${esc(s.key)}"${s.state === 'run' ? ' aria-current="step"' : ''}><span class="lv-mark">${mark}</span>` +
-        `<div class="lv-step-main"><b>${esc(s.label)}</b>${s.note ? `<span class="lv-note">${esc(s.note)}</span>` : ''}${s.state === 'run' ? lateHtml(s.t0, s.hint) : ''}${link}</div>${time}</li>`;
+      const time = s.state === 'run' && s.t0 ? timeHtml(s.t0) : s.t0 && s.t1 ? `<span class="lv-time num">${esc(fmt(Date.parse(s.t1) - Date.parse(s.t0)))}</span>` : '';
+      const link = s.link ? `<button type="button" class="btn" data-variant="link" data-lv-go="${esc(s.key)}">${esc(s.link.text)}</button>` : '';
+      return `<li class="lv-step ${s.state}" data-step="${esc(s.key)}"${s.state === 'run' ? ' aria-current="step"' : ''}><div class="line"${KIND[s.state] ? ` data-kind="${KIND[s.state]}"` : ''}${s.state === 'run' ? ' data-pending' : ''}>${UI.icon(MARK[s.state] || 'circle-dashed')}` +
+        `<span class="line-text"><b>${esc(s.label)}</b>${s.note ? `<span class="line-sub lv-note">${esc(s.note)}</span>` : ''}${s.state === 'run' ? lateHtml(s.t0, s.hint) : ''}${link}</span><span class="line-time">${time}</span></div></li>`;
     }
-    function draw() { host.innerHTML = `<ol class="lv-steps" aria-label="${esc(o.label || '진행 단계')}">${C.list.map(stepHtml).join('')}</ol>`; }
+    function draw() { host.innerHTML = `<ol class="lv-steps stream-log" aria-label="${esc(o.label || '진행 단계')}">${C.list.map(stepHtml).join('')}</ol>`; }
     function set(key, state, more = {}) {
       const s = find(key); if (!s) throw new Error(`단계 목록에 없는 단계입니다: ${key}`);
       if (state === 'run') { s.t0 = iso(); s.t1 = null; } else if (state !== 'wait') { s.t0 = s.t0 || iso(); s.t1 = iso(); }
@@ -353,7 +353,7 @@
   function track(o = {}) {
     const T = { id: UI.uuid(), since: o.since || iso(), stopped: false, ended: false, reading: false, timer: 0, keys: null, list: null, seen: {}, reads: 0 };
     const root = document.createElement('div'); root.className = 'lv-track';
-    root.innerHTML = waitHtml(o.text || '', { since: T.since, hint: o.hint }) + '<div data-lv-track-steps></div><p class="lv-work-conn" data-lv-track-err role="status" hidden></p>';
+    root.innerHTML = waitHtml(o.text || '', { since: T.since, hint: o.hint }) + '<div data-lv-track-steps></div><p class="stream-lost" data-lv-track-err role="status" hidden></p>';
     const box = root.querySelector('[data-lv-track-steps]'), err = root.querySelector('[data-lv-track-err]');
     function apply(rec) {
       const keys = rec.steps.map(s => s.key).join('\n');
@@ -438,9 +438,9 @@
   function agentWork(host, o = {}) {
     const pollMs = o.pollMs || 5000;
     const W = { host, items: [], running: false, since: null, headline: '', note: '', segs: new Map(), awake: false, poll: 0, changeTimer: 0, stopped: false };
-    host.classList.add('lv-work');
-    host.innerHTML = `<div class="lv-work-head"><span class="lv-now" data-lv-now></span><span class="lv-work-tools"><span class="live-conn" data-live-conn></span>` +
-      `<button type="button" class="btn ghost small" data-lv-refresh>지금 확인</button></span></div><p class="lv-work-note" data-lv-note hidden></p><p class="lv-work-conn" data-lv-conn role="status" hidden></p><div class="lv-work-body" data-lv-body></div>`;
+    host.classList.add('lv-work', 'stream');
+    host.innerHTML = `<div class="stream-head lv-work-head"><span class="lv-now" data-lv-now></span><span class="lv-work-tools"><span class="live-conn" data-live-conn></span>` +
+      `<button type="button" class="btn" data-variant="ghost" data-size="sm" data-lv-refresh>${UI.icon('refresh-cw')}지금 확인</button></span></div><p class="lv-work-note" data-lv-note hidden></p><p class="stream-lost" data-lv-conn role="status" hidden></p><div class="lv-work-body" data-lv-body></div>`;
     const q = sel => host.querySelector(sel);
     const awakeNow = () => !W.stopped && document.visibilityState !== 'hidden' && (!o.tab || tabNow() === o.tab);
     const live = it => W.running && !['done', 'fail', 'stop'].includes(it.state);
@@ -448,7 +448,7 @@
     function drawHead() {
       const c = hydStream.conn();
       q('[data-live-conn]').textContent = c.text; q('[data-live-conn]').className = 'live-conn ' + (c.ok ? 'on' : c.state);
-      const now = (W.running ? spin() : '') + `<b>${esc(W.headline)}</b>` + (W.since && W.running ? timeHtml(W.since) : '');
+      const now = `<i class="dot"${W.running ? ' data-tone="brand" data-live' : ' data-tone="ok"'}></i><b>${esc(W.headline)}</b>` + (W.since && W.running ? timeHtml(W.since) : '');
       const nowBox = q('[data-lv-now]'); if (nowBox._html !== now) { nowBox.innerHTML = now; nowBox._html = now; }
       const note = q('[data-lv-note]'); note.hidden = !W.note; note.textContent = W.note || '';
       const lost = W.running && W.awake && (c.state === 'retry' || c.state === 'off');
@@ -461,7 +461,7 @@
       if (seg) return seg;
       // 작업 행 하나 = 접히는 한 줄. 도는 동안과 멈췄을 때는 펼쳐 기록이 보이고, 끝나면 한 줄로 접힌다(사람이 여닫은 뒤에는 그대로 둔다)
       const node = document.createElement('details'); node.className = 'lv-seg'; node.dataset.wid = it.id; node.open = true;
-      node.innerHTML = `<summary class="lv-seg-head" data-lv-seg-head></summary><p class="field-error" data-lv-seg-err role="alert" hidden></p><p class="lv-work-note" data-lv-seg-none hidden>이 단계에는 남은 실행 기록이 없습니다.</p><div class="lv-log" data-lv-log tabindex="0" aria-label="처리 과정"></div>`;
+      node.innerHTML = `<summary class="lv-seg-head" data-lv-seg-head></summary><p class="stream-lost" data-lv-seg-err role="alert" hidden></p><p class="lv-work-note" data-lv-seg-none hidden>이 단계에는 남은 실행 기록이 없습니다.</p><div class="lv-log" data-lv-log tabindex="0" aria-label="처리 과정"></div>`;
       const traceHost = document.createElement('div');
       node.querySelector('[data-lv-log]').append(traceHost);
       node.querySelector('summary').addEventListener('click', () => { seg.byHand = true; });
@@ -480,8 +480,9 @@
         head.hidden = alone;
         if (alone) seg.node.open = true; else if (!seg.byHand) seg.node.open = live(it) && it.state !== 'wait' || it.state === 'fail' || it.state === 'stop';
         const t0 = seg.item && seg.item.start_date, t1 = seg.item && seg.item.end_date;
-        const time = live(it) && t0 ? timeHtml(t0) : t0 && t1 ? `<span class="lv-time">${esc(fmt(Date.parse(t1) - Date.parse(t0)))}</span>` : '';
-        const html = `<b>${esc(it.label || '')}</b><span class="lv-seg-state ${esc(it.state || '')}">${esc(it.stateText || SEG_STATE[it.state] || '')}</span>${time}`;
+        const time = live(it) && t0 ? timeHtml(t0) : t0 && t1 ? `<span class="lv-time num">${esc(fmt(Date.parse(t1) - Date.parse(t0)))}</span>` : '';
+        const tone = { run: 'brand', done: 'ok', fail: 'danger', stop: 'danger' }[it.state];
+        const html = `<b>${esc(it.label || '')}</b><span class="tag lv-seg-state"${tone ? ` data-tone="${tone}"` : ''}>${esc(it.stateText || SEG_STATE[it.state] || '')}</span>${time}`;
         if (head._html !== html) { head.innerHTML = html; head._html = html; }
         seg.node.dataset.state = it.state || '';
         const none = !live(it) && !!seg.item && !(seg.item.events || []).length;      // 끝난 단계인데 기록이 없다(저장된 결과로 끝난 추출 등) — 빈 기록 칸 대신 그 사실을 말한다

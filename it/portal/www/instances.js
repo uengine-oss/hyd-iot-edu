@@ -4,8 +4,8 @@
      GET  /api/process/mode · /api/process/definitions/{id} · /api/instances · /api/instances/{id}(+/graph) · /api/graph-projections · /api/todolist… · /api/decisions/{id}
      POST /api/todolist/{id}/select · reject-card · decision-preview (조치 카드) · approve (일반 승인) · submit (폼) · human-response (질문 답) · 승인 전달 재전달 · 폐기 · 단계 닫기 · 실행 취소
    상태 의미는 ProcessGPT 와 같다: TODO 예정 → IN_PROGRESS 진행 중(내가 할 일) → SUBMITTED 제출됨(엔진 차례) → DONE · CANCELLED · PENDING.
-   화면(위에서 아래로): 제목 → 탭(전체 · 내 할 일 · 진행 중 · 끝남 — 같은 목록을 거른다) → 왼쪽 목록 | 오른쪽 한 건:
-     머리(이름 · 상태 칩 하나 · 한 줄) → 내가 할 일(있을 때만, 색 있는 면은 이 카드 하나) 또는 결과 한 장(끝난 건) → 진행 길(flow.js renderPath) →
+   화면(위에서 아래로): 제목 · 묶음 단추(전체 · 내 할 일 · 진행 중 · 끝남 — 같은 목록을 거른다) → 왼쪽 목록(.rows) | 오른쪽 한 건:
+     머리(이름 · 상태 뱃지 하나 · 보조 줄 · 더 보기) → 내가 할 일(.turn — 있을 때만, 제품색 면은 이 판 하나) 또는 결과 한 장(끝난 건) → 진행 길(flow.js — bpmn-js) →
      단계 기록(caseRecord.js — 하나뿐인 기록) → 「자세한 기록」 접기(단계 표 원문 · 처리 건 값 · 복구 · 지식 지도 반영 · 실시간 활동 · 실행 중인 AI 에이전트).
    복구용 기능(단계 닫기 · 실행 취소 · 승인 재전달과 폐기 · 다시 수행 · 이전 조치의 영향 · 다시 평가)은 평소에는 「자세한 기록」의 「다시 수행 · 복구」에 있고,
    멈춘 단계가 있을 때(서버 attention)만 그 단계 아래로 올라온다. 쓰는 사람은 늘 담당자 한 명이고 모든 역할을 맡는다(inbox.js 머리말). */
@@ -29,7 +29,7 @@
     const rep = inst.status === 'COMPLETED' && window.hydResultReport ? hydResultReport.fromValues(UI.valuesOf(inst)) : null;
     if (!rep || !rep.verdict) return { label: UI.status(inst.status), tone: 'neutral' };
     return { label: rep.label || (rep.verdict === 'ok' ? '정상' : rep.verdict === 'fail' ? '미달' : rep.verdict === 'rejected' ? '반려' : UI.status(inst.status)),
-             tone: rep.verdict === 'ok' ? 'success' : ['fail', 'rejected'].includes(rep.verdict) ? 'danger' : 'neutral' };
+             tone: rep.verdict === 'ok' ? 'success' : rep.verdict === 'fail' ? 'danger' : 'neutral', verdict: rep.verdict };      // 반려는 실패가 아니라 사람이 내린 결정이다 — 무채색
   }
   // 이 처리 건에서 내가 할 일(질문 답 먼저, 그다음 승인 · 입력)
   const mineOf = pid => I.asked.find(t => t.proc_inst_id === pid) || I.todo.find(t => t.proc_inst_id === pid) || null;
@@ -39,10 +39,27 @@
   function stateChip(x) {
     if (x.attention) return UI.chipText(String(x.attention.label || '멈춤').split(' — ')[0], 'danger');
     const t = x.status === 'RUNNING' ? mineOf(x.proc_inst_id) : null;
-    if (t) return UI.chipText(turnWord(t), 'accent');
-    if (x.status === 'RUNNING') return UI.chipText(UI.status(x.status), 'neutral');
+    if (t) return UI.chipText(turnWord(t), 'warning');
+    if (x.status === 'RUNNING') return UI.chipText(UI.status(x.status), 'accent');
     const o = outcomeOf(x);
     return UI.chipText(o.label, o.tone);
+  }
+  // 목록 줄의 아이콘: 멈춤 > 내 차례(질문 · 승인 · 입력) > 진행 중 > 끝난 결과. 사건이 아닌 시스템 작업은 문서 아이콘
+  function rowIcon(x, task) {
+    if (x.attention) return 'triangle-alert';
+    const t = task || (x.status === 'RUNNING' ? mineOf(x.proc_inst_id) : null);
+    if (t) return t.draft_status === 'HUMAN_ASKED' ? 'message-circle-question' : 'user-check';
+    if (x.status === 'RUNNING') return isSystemJob(x) ? 'file-text' : 'bot';
+    const o = outcomeOf(x);
+    return isSystemJob(x) ? 'file-text' : o.tone === 'danger' || o.verdict === 'rejected' || x.status === 'CANCELLED' ? 'circle-x' : 'circle-check';
+  }
+  // 끝난 건의 보조 줄: 「정상으로 끝남」 · 「반려로 끝남」. 끝 이벤트의 이름이 「끝」 같은 뜻 없는 말이면 결과 낱말로 말한다
+  const PLAIN_END = new Set(['끝', '종료', '완료', 'end', 'End', '']);
+  function endText(x) {
+    const o = outcomeOf(x); if (!o) return '';
+    const end = String(x.end_label || '').trim();
+    const word = !o.verdict && !PLAIN_END.has(end) && end !== o.label ? end : o.label;      // 결과 보고가 없는 건만 끝 이벤트의 이름으로 말한다
+    return `${word}${josa(word, '으로/로')} 끝남`;
   }
   const typingIn = node => { const a = document.activeElement; return !!a && !!node && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && node.contains(a); };
   const moreOpen = () => !!document.getElementById('caseMore')?.open;
@@ -212,7 +229,7 @@
       running: I.filter === 'running' && I.filtered ? `${I.filtered.length}${I.filtered.length >= WINDOW ? '+' : ''}` : plus(I.all.filter(x => x.status === 'RUNNING').length),
       done: I.filter === 'done' && I.filtered ? `${I.filtered.length}${I.filtered.length >= WINDOW ? '+' : ''}` : plus(I.all.filter(x => x.status !== 'RUNNING').length),
     };
-    const tab = (k, label) => `<button type="button" role="tab" class="tab${I.filter === k ? ' on' : ''}" data-inst-filter="${k}" aria-selected="${I.filter === k}">${esc(label)}${n[k] !== '' && I.loaded && !I.listError ? ` <span class="n">${esc(n[k])}</span>` : ''}</button>`;
+    const tab = (k, label) => `<button type="button" data-inst-filter="${k}" aria-pressed="${I.filter === k}">${esc(label)}${n[k] !== '' && I.loaded && !I.listError ? `<span class="num">${esc(n[k])}</span>` : ''}</button>`;
     const html = tab('all', '전체') + tab('mine', '내 할 일') + tab('running', '진행 중') + tab('done', '끝남');
     if (box._html !== html) { box.innerHTML = html; box._html = html; }
   }
@@ -230,7 +247,7 @@
     const ids = Object.keys(count).sort((a, b) => who(a).localeCompare(who(b)));
     if (I.role && !ids.includes(I.role)) ids.push(I.role);
     if (I.filter !== 'mine' || (ids.length < 2 && !I.role)) { box.innerHTML = ''; return; }
-    const seg = (id, label, n) => `<button type="button" class="${I.role === id ? 'on' : ''}" data-todo-role="${esc(id)}" aria-pressed="${I.role === id}">${esc(label)} <span class="n">${n}</span></button>`;
+    const seg = (id, label, n) => `<button type="button" data-todo-role="${esc(id)}" aria-pressed="${I.role === id}">${esc(label)}<span class="num">${n}</span></button>`;
     box.innerHTML = `<div class="seg" role="group" aria-label="역할별 보기">${seg('', '전체', I.todo.length)}${ids.map(id => seg(id, who(id), count[id] || 0)).join('')}</div>`;
     box.querySelectorAll('[data-todo-role]').forEach(b => b.addEventListener('click', () => { I.role = b.dataset.todoRole; I.listShown = UI.PAGE; renderRoles(); renderList(); }));
   }
@@ -253,25 +270,27 @@
       : x.status === 'RUNNING' ? (x.current_activity_ids || []).map(id => UI.flowName(names[id] || id.replace(/^task:|^ev:/, ''))).join(' · ') : '';
     const due = task ? dueOf(task) : null;
     const bits = [isSystemJob(x) ? '시스템 작업' : '', x.start_date ? `${UI.dateTime(x.start_date)} 시작` : '',
-      step ? `${step} 단계` : x.status !== 'RUNNING' ? (x.end_label || '') : '', task ? who(task.user_id) : '', due ? `기한 ${UI.dateTime(due)}` : ''].filter(Boolean);
-    const chip = task ? UI.chipText(turnWord(task), 'accent') : stateChip(x);
-    return `<span class="row"><strong>${esc(x.proc_inst_name || '이름 없는 처리 건')}</strong>${chip}</span><span class="sub">${esc(bits.join(' · '))}</span>`;
+      step ? `${step} 단계` : x.status !== 'RUNNING' ? endText(x) : '', task ? who(task.user_id) : '', due ? `기한 ${UI.dateTime(due)}` : ''].filter(Boolean);
+    const chip = task ? UI.chipText(turnWord(task), 'warning') : stateChip(x);
+    return `<span class="row-ic">${UI.icon(rowIcon(x, task))}</span><span class="row-title">${esc(x.proc_inst_name || '이름 없는 처리 건')}</span>${chip}<span class="row-meta">${esc(bits.join(' · '))}</span>`;
   }
   function renderList() {
     const box = $('#instList');
     renderRoles();
-    if (!I.loaded) { box.innerHTML = UI.loading('', 'compact'); return; }
+    if (!I.loaded) { box.innerHTML = '<div class="sk-row"><div class="skeleton sk-line" style="width:60%"></div><div class="skeleton sk-line" style="width:85%"></div></div>'.repeat(3); return; }
     if (I.mode && I.mode.error) { box.innerHTML = ''; return; }
     if (I.listError) { box.innerHTML = UI.errorBlock('처리 건 목록을 읽지 못했습니다', I.listError, { retry: true, cls: 'compact' }); box.querySelector('[data-retry]')?.addEventListener('click', () => load(true)); return; }
     box.innerHTML = '';
-    const add = (cls, html, onPick, data = {}) => {
-      const it = el('div', 'item' + cls, html);
+    const add = (on, job, html, onPick, data = {}) => {
+      const it = document.createElement('button');
+      it.type = 'button'; it.className = 'row'; it.innerHTML = html;
+      if (on) it.setAttribute('aria-current', 'true');
+      if (job) it.dataset.job = '';
       Object.assign(it.dataset, data);
-      keyboardItem(it);
       it.addEventListener('click', onPick);
       box.appendChild(it);
     };
-    const more = (rest) => { if (!rest) return; const m = el('div', 'list-more', UI.moreButton(rest)); m.querySelector('button').addEventListener('click', () => { I.listShown += UI.PAGE; renderList(); }); box.appendChild(m); };
+    const more = (rest) => { if (!rest) return; const m = el('div', 'rows-more', UI.moreButton(rest)); m.querySelector('button').addEventListener('click', () => { I.listShown += UI.PAGE; renderList(); }); box.appendChild(m); };
     if (I.filter === 'mine') {
       // 「내 할 일」: 한 줄 = 사람이 처리할 단계 하나(에이전트의 질문 먼저). 그 단계의 처리 건을 열고 그 단계를 고른다
       if (I.todoError) {
@@ -283,7 +302,7 @@
       const paged = UI.page(tasks, I.listShown, t => t.proc_inst_id === I.sel && (!I.taskSel || t.id === I.taskSel));
       paged.rows.forEach(t => {
         const x = I.all.concat(I.instances).find(r => r.proc_inst_id === t.proc_inst_id) || { proc_inst_id: t.proc_inst_id, proc_inst_name: t.proc_inst_name, status: 'RUNNING' };
-        add(t.proc_inst_id === I.sel && (!I.taskView || I.taskView.id === t.id || t.draft_status === 'HUMAN_ASKED') ? ' sel' : '', rowHtml(x, t), () => pick(t.proc_inst_id, t.id), { inst: t.proc_inst_id, todoTask: t.id });
+        add(t.proc_inst_id === I.sel && (!I.taskView || I.taskView.id === t.id || t.draft_status === 'HUMAN_ASKED'), false, rowHtml(x, t), () => pick(t.proc_inst_id, t.id), { inst: t.proc_inst_id, todoTask: t.id });
       });
       more(paged.rest);
       return;
@@ -298,30 +317,55 @@
     const mine = mineIds();
     const ordered = rows.filter(x => mine.has(x.proc_inst_id) && x.status === 'RUNNING').concat(rows.filter(x => !(mine.has(x.proc_inst_id) && x.status === 'RUNNING')));
     const paged = UI.page(ordered, I.listShown, x => x.proc_inst_id === I.sel);
-    paged.rows.forEach(x => add((x.proc_inst_id === I.sel ? ' sel' : '') + (isSystemJob(x) ? ' is-job' : ''), rowHtml(x, null),
+    paged.rows.forEach(x => add(x.proc_inst_id === I.sel, isSystemJob(x), rowHtml(x, null),
       () => pick(x.proc_inst_id, x.proc_inst_id === I.sel ? I.taskSel : null), { inst: x.proc_inst_id }));   // 같은 이름의 처리 건(같은 설비 · 같은 흐름)을 처리 건 id로 구별한다
     more(paged.rest);
   }
 
-  /* ------------------------------------------------ 내가 할 일 카드 (디자인 기준 5-4): 무엇을 승인하는가 · 승인하면 무슨 일이 일어나는가 · 단추.
-     색 있는 면은 이 카드 하나뿐이다. 다른 안과 그 손익 · 점수 근거는 [다른 안 고르기]를 눌렀을 때만 카드 안에 펼친다. 사유 칸은 반려할 때와 다른 안을 고를 때만 나온다. */
+  /* ------------------------------------------------ 내가 할 일 판 (디자인 기준 5-1 2번, 키트 .turn): 물음 한 문장 · 까닭 한 문장 · 판단에 쓸 숫자 넷 · 단추 줄.
+     제품색 면은 이 판 하나뿐이다. 다른 안과 그 손익 · 점수 근거는 [다른 안 고르기]를 눌렀을 때만 판 안에 펼친다. 사유 칸은 반려할 때와 다른 안을 고를 때만 나온다. */
   function handoverInputs(values) {
     const names = {asset:'설비',as_of:'인계 기준시각',shift_label:'교대',work_notes:'작업 메모',handover_summary:'인계안 요약',sender_notes:'인계자 확인 사항',receiver_notes:'인수자 보완 요청'};
     const areas = {equipment:'설비 관측',work_orders:'정비 작업지시',parts:'부품·재고',work_notes:'작업 메모 대조'};
     const states = {observed:'조회 확인',needs_check:'확인 필요',conflict:'기록 불일치'};
     const rows = Object.entries(values || {}).filter(([k]) => !['checks','evidence'].includes(k)).map(([k,v]) => UI.readonly(names[k] || k,esc(typeof v==='string' ? v : JSON.stringify(v)))).join('');
-    const checks = (Array.isArray(values?.checks) ? values.checks : []).map(c => `<section class="form-section"><h4>${esc(areas[c.area] || c.area)} · ${esc(states[c.state] || c.state)}</h4><p>${esc(c.finding || '')}</p><p><b>다음 근무자가 확인할 일</b> ${esc(c.next_action || '')}</p><p class="field-hint">조회 근거 ${(c.evidence_indices || []).map(i=>esc(String(i+1))).join(', ') || '없음 · 확인 필요'}</p></section>`).join('');
-    const evidence = (Array.isArray(values?.evidence) ? values.evidence : []).map((e,i) => UI.fold(`조회 근거 ${i+1} · ${esc(UI.toolName(e.tool) || e.tool || '도구 기록 없음')}`,`<pre>${esc(JSON.stringify(e,null,2))}</pre>`,{cls:'plain'})).join('');
-    return `<div class="ro-grid">${rows}</div>${checks}${evidence}`;
+    const checks = (Array.isArray(values?.checks) ? values.checks : []).map(c => `<section class="turn-check"><h4>${esc(areas[c.area] || c.area)} · ${esc(states[c.state] || c.state)}</h4><p>${esc(c.finding || '')}</p><p><b>다음 근무자가 확인할 일</b> ${esc(c.next_action || '')}</p><p class="muted">조회 근거 ${(c.evidence_indices || []).map(i=>esc(String(i+1))).join(', ') || '없음 · 확인 필요'}</p></section>`).join('');
+    const evidence = (Array.isArray(values?.evidence) ? values.evidence : []).map((e,i) => UI.fold(`조회 근거 ${i+1} · ${esc(UI.toolName(e.tool) || e.tool || '도구 기록 없음')}`,`<pre class="code">${esc(JSON.stringify(e,null,2))}</pre>`)).join('');
+    return `${rows}${checks}${evidence}`;
   }
-  // 카드의 틀: 이름표 → 물음(16px · 600) → 한두 문장 → 읽기 전용 한 줄(승인 역할 · 기한) | 단추 → (펼친 것) → 까닭 한 줄
-  function todoCard({ label, title, desc = '', meta = '', acts = '', more = '', msg = '', cls = '', attrs = '' }) {
-    return `<section class="todo ${cls}" aria-label="내가 할 일" ${attrs}><div class="todo-main"><span class="label">${esc(label)}</span><h3>${esc(title)}</h3>${desc}${meta ? `<p class="todo-meta">${meta}</p>` : ''}</div>
-      ${acts ? `<div class="acts">${acts}</div>` : ''}${more ? `<div class="todo-more">${more}</div>` : ''}${msg ? `<p class="todo-msg" role="status">${esc(msg)}</p>` : ''}</section>`;
+  // 판의 틀(키트 .turn): 머리(아이콘 칸 · 「내가 할 일 · 승인」 · 기한 · 물음 한 문장 · 까닭) → 판단에 쓸 숫자(최대 넷) → (펼친 것) → 단추 줄(오른쪽 끝에 어느 역할로 기록되는지) → 까닭 한 줄
+  // facts: [[이름, 값, 단위]] · late: 기한 줄(clockLine) · who: 「운전원 역할로 기록됩니다」
+  // msg: 막힌 까닭 · 서버가 거절한 까닭(빨간 글) · note: 알아 둘 것(보통 글)
+  function todoCard({ label, icon = 'user-check', title, desc = '', late = '', facts = [], acts = '', who = '', more = '', msg = '', note = '', attrs = '' }) {
+    return `<section class="turn" aria-label="내가 할 일" ${attrs}>
+      <div class="turn-head"><span class="turn-badge">${UI.icon(icon, 'ic-lg')}</span><div><div class="turn-eyebrow">${esc(label)}${late}</div><h3>${esc(title)}</h3>${desc}</div></div>
+      ${facts.length ? `<dl class="turn-facts">${facts.map(([k, x, u]) => `<div><dt>${esc(k)}</dt><dd class="num">${esc(x)}${u ? `<small>${esc(u)}</small>` : ''}</dd></div>`).join('')}</dl>` : ''}
+      ${more ? `<div class="turn-more">${more}</div>` : ''}
+      ${acts || who ? `<div class="turn-foot">${acts}${who ? `<span class="who">${who}</span>` : ''}</div>` : ''}
+      ${note ? `<p class="turn-msg">${esc(note)}</p>` : ''}${msg ? `<p class="turn-msg" data-tone="danger" role="status">${esc(msg)}</p>` : ''}</section>`;
   }
-  const roleLine = name => name ? `승인 역할 <b>${esc(name)}</b> <span class="muted">— 처리 기록에 이 역할로 남습니다</span>` : '';
+  const roleLine = name => name ? `${esc(name)} 역할로 기록됩니다` : '';
   // 사유 칸: 반려(꼭 적는다)와 다른 안(적으면 기록에 남는다)일 때만
-  const reasonField = (label, hint) => `<div class="field todo-reason"><label for="tdReason">${esc(label)}</label><textarea id="tdReason" rows="2">${esc(I.form.reason || '')}</textarea><p class="field-hint">${esc(hint)}</p></div>`;
+  const reasonField = (label, hint) => UI.field({ label, cls: 'turn-reason', hint, input: `<textarea id="tdReason" rows="2">${esc(I.form.reason || '')}</textarea>` });
+  // 판단에 쓸 숫자(최대 넷): ① 고른 안의 예측이 고르는 근거이면 그 값의 지금 값(경보가 실어 온 관측)과 조치 뒤 예측 ② 판단이 쓴 사실 가운데 판단 엔진의 설명에 그 숫자가 나온 것 먼저.
+  // 모두 서버가 준 값이다 — 없으면 그 칸을 그리지 않는다
+  function turnFacts(d, chosen) {
+    const W = window.hydWords, out = [];
+    if (!W || !chosen) return out;
+    const now = ((vars(I.view?.instance || {}).alert || {}).evidence || {}).values || {};
+    const f = window.hydApprove.forecastDecides(chosen, d.options || []) ? (chosen.forecast || [])[0] : null;
+    if (f) {
+      const tag = String(f.variable || '').replace(/^sv:/, '');
+      const cur = now[tag.toUpperCase()];
+      if (cur != null && Number.isFinite(+cur)) out.push([`지금 ${W.fieldName(tag)}`, W.num(+cur), f.unit || W.unit(tag)]);
+      out.push([`조치 뒤 예측 ${UI.idText(f.name)}`, W.num(+f.value), f.unit || '']);
+    }
+    const said = String(d.explanation || '');
+    const facts = Object.entries({ ...(d.facts || {}), ...(chosen.facts || {}) }).filter(([k, x]) => typeof x === 'number' && Number.isFinite(x) && W.known(k));
+    const named = facts.filter(([, x]) => new RegExp(`(^|[^0-9.])${String(x).replace('.', '\\.')}([^0-9.]|$)`).test(said));
+    named.concat(facts.filter(x => !named.includes(x))).forEach(([k, x]) => { if (out.length < 4) out.push([W.fieldName(k), W.num(x), W.unit(k)]); });
+    return out;
+  }
   function setMode(mode) { I.form.mode = I.form.mode === mode ? null : mode; I.msg = ''; renderTodoPanel(); if (I.form.mode) $('#tdReason')?.focus({ preventScroll: true }); }
 
   function renderTodoPanel() {
@@ -336,7 +380,7 @@
     }
     if (!task) {
       const g = I.gone && I.gone.inst === I.sel ? I.gone : null;
-      box.innerHTML = g ? `<section class="case-result tone-other" data-gone><span class="dot" aria-hidden="true"></span><div><p class="verdict">${esc(g.title)}</p><p class="muted">이 단계는 이미 처리됐거나 닫혀서 「내 할 일」에서 빠졌습니다. 결과는 아래 단계 기록에서 확인하세요.</p><p class="muted">서버 응답: ${esc(g.text)}</p></div></section>` : '';
+      box.innerHTML = g ? `<div class="alert" data-gone>${UI.icon('info')}<h2>${esc(g.title)}</h2><section>이 단계는 이미 처리됐거나 닫혀서 「내 할 일」에서 빠졌습니다. 결과는 아래 단계 기록에서 확인하세요.<br><span class="muted">서버 응답: ${esc(g.text)}</span></section></div>` : '';
       return;
     }
     if (task.tool === 'formHandler:select_card') { renderSelectPanel(task); return; }
@@ -363,11 +407,11 @@
     const why = isEscalate ? (task.inputs?.recovered === false ? '효과 확인에서 회복되지 않아 넘어온 사건입니다' : '선택 시간이 지나 넘어온 사건입니다') : (task.description || '');
     const byMe = window.hydInbox?.byField('td', I.form);   // 제출 · 답은 이 PC의 담당자로만(서버 require_task_actor) — 못 읽었으면 안내만, 단추는 꺼 둔다
     const folds = new Map([...box.querySelectorAll('details')].map(d => [d.querySelector('summary')?.textContent, d.open]));
-    box.innerHTML = todoCard({ label: `내가 할 일 · ${isEscalate ? '확인' : '입력'}`, title, cls: 'form-task',
-      desc: why ? `<p>${esc(why)}</p>` : '', meta: `맡은 역할 <b>${esc(who(task.user_id))}</b>`,
-      more: `${inputs.length ? UI.fold(esc(UI.t('inst.prevTask')) + '에서 받은 값', String(task.form?.contract || '').startsWith('shift-handover-') ? handoverInputs(task.inputs) : `<div class="ro-grid">${inputs.map(([k, v]) => UI.readonly(varLabel(k), prevValue(v))).join('')}</div>`) : ''}
-        <div class="form"><div class="form-grid">${byMe || pickMe()}${fields.map(control).join('')}</div>
-        <div class="todo-actions"><button class="btn primary" id="tdDone" ${byMe && !I.busy ? '' : 'disabled'}>${esc(isEscalate ? UI.t('btn.confirm') : UI.t('btn.submit'))}</button></div></div>`,
+    box.innerHTML = todoCard({ label: `내가 할 일 · ${isEscalate ? '확인' : '입력'}`, icon: 'pencil', title,
+      desc: why ? `<p>${esc(why)}</p>` : '', who: roleLine(who(task.user_id)),
+      more: `${inputs.length ? UI.fold(esc(UI.t('inst.prevTask')) + '에서 받은 값', String(task.form?.contract || '').startsWith('shift-handover-') ? handoverInputs(task.inputs) : inputs.map(([k, v]) => UI.readonly(varLabel(k), prevValue(v))).join('')) : ''}
+        ${byMe || pickMe()}${UI.section('', fields.map(control).join(''))}`,
+      acts: `<button type="button" class="btn" id="tdDone" ${byMe && !I.busy ? '' : 'disabled'}>${UI.icon('check')}${esc(isEscalate ? UI.t('btn.confirm') : UI.t('btn.submit'))}</button>`,
       msg: I.msg });
     box.querySelectorAll('details').forEach(d => { const k = d.querySelector('summary')?.textContent; if (folds.has(k)) d.open = folds.get(k); });
     fields.forEach((f, i) => $('#tdField' + i).addEventListener('input', e => I.fieldValues[f.key] = e.target.value));
@@ -403,10 +447,10 @@
     if (!timer || !timer.due_date) return '';
     const def = I.view?.definition || {};
     const ev = (def.events || []).find(e => e.id === timer.activity_id) || {};
-    if (ev.cancelActivity === false) return `<span class="todo-due" data-approval-until="${esc(timer.due_date)}"></span>`;
+    if (ev.cancelActivity === false) return `<span class="late" data-approval-until="${esc(timer.due_date)}"></span>`;
     const nextId = ((def.sequences || []).find(s => s.source === ev.id) || {}).target;
     const next = nextId ? ([...(def.activities || []), ...(def.events || [])].find(a => a.id === nextId) || {}).name : '';
-    return `<span class="todo-due" data-approval-until="${esc(timer.due_date)}" data-approval-cut="${esc(next ? UI.flowName(next) : '')}"></span>`;
+    return `<span class="late" data-approval-until="${esc(timer.due_date)}" data-approval-cut="${esc(next ? UI.flowName(next) : '')}"></span>`;
   }
   // 「이전 단계」가 넘긴 값: 이름은 화면 이름 사전(var.*)으로, 묶음 값은 항목별 한 줄로 읽는다. 더 깊은 값과 긴 글은 접어 둔다
   const varLabel = k => { const n = UI.t('var.' + k); return n === 'var.' + k ? String(k).replace(/_/g, ' ') : n; };
@@ -416,11 +460,11 @@
     const entries = Array.isArray(v) ? v.map((x, i) => [String(i + 1), x]) : Object.entries(v);
     if (!entries.length) return '–';
     const flat = entries.filter(([, x]) => x === null || typeof x !== 'object'), deep = entries.filter(([, x]) => x !== null && typeof x === 'object');
-    const rows = flat.map(([k, x]) => `<div class="kv-line"><span class="muted">${esc(Array.isArray(v) ? k : varLabel(k))}</span> ${scalar(x)}</div>`).join('');
-    return rows + (deep.length ? UI.fold(`세부 값 ${deep.length}개`, `<pre>${esc(JSON.stringify(Object.fromEntries(deep), null, 2).slice(0, 1500))}</pre>`, { cls: 'small' }) : '');
+    const rows = flat.map(([k, x]) => `<div><span class="muted">${esc(Array.isArray(v) ? k : varLabel(k))}</span> ${scalar(x)}</div>`).join('');
+    return rows + (deep.length ? UI.fold(`세부 값 ${deep.length}개`, `<pre class="code">${esc(JSON.stringify(Object.fromEntries(deep), null, 2).slice(0, 1500))}</pre>`) : '');
   }
   // 담당자 정보를 아직 못 읽었으면(업무 DB 연결 문제) 사람 행동의 자리에 그 까닭을 보인다 — 모든 단계 패널이 이 한 줄을 쓴다
-  const pickMe = () => `<p class="form-msg neg" role="alert" data-pick-me>담당자 정보를 읽지 못해 지금은 처리할 수 없습니다. 화면을 새로 고친 뒤 다시 해 주세요.</p>`;
+  const pickMe = () => `<div class="alert" data-variant="destructive" role="alert" data-pick-me>${UI.icon('circle-alert')}<h2>담당자 정보를 읽지 못해 지금은 처리할 수 없습니다</h2><section>화면을 새로 고친 뒤 다시 해 주세요.</section></div>`;
 
   function renderAskPanel(task) {
     const box = $('#todoPanel');
@@ -428,15 +472,15 @@
     const answered = new Set(events.filter(e => e.event_type === 'human_response').map(e => e.job_id));
     const open = events.filter(e => e.event_type === 'human_asked' && !answered.has(e.job_id)).slice(-1)[0];
     const stepName = UI.flowName(task.activity_name);
-    if (!open) { box.innerHTML = todoCard({ label: `내가 할 일 · ${UI.t('inst.askTitle')}`, title: stepName, desc: `<p>${esc(UI.t('inst.askWait'))}</p>` }); return; }
+    if (!open) { box.innerHTML = todoCard({ label: `내가 할 일 · ${UI.t('inst.askTitle')}`, icon: 'message-circle-question', title: stepName, desc: `<p>${esc(UI.t('inst.askWait'))}</p>` }); return; }
     const d = open.data || {};
     const options = Array.isArray(d.options) ? d.options.filter(x => typeof x === 'string') : [];
     const byMe = window.hydInbox?.byField('td', I.form);
-    box.innerHTML = todoCard({ label: `내가 할 일 · ${UI.t('inst.askTitle')}`, title: humanQuestionText(d), cls: 'form-task',
+    box.innerHTML = todoCard({ label: `내가 할 일 · ${UI.t('inst.askTitle')}`, icon: 'message-circle-question', title: humanQuestionText(d),
       desc: `<p>AI 에이전트가 「${esc(stepName)}」 단계에서 묻습니다. 답하면 그 단계가 이어집니다.</p>`,
-      more: `${options.length ? `<div class="row-wrap todo-options">${options.map((o, i) => `<button class="btn small" type="button" data-human-option="${i}">${esc(o)}</button>`).join('')}</div>` : ''}
-        <div class="form"><div class="form-grid">${UI.field({ label: UI.t('form.answer'), required: true, cls: 'wide', hint: UI.t('form.hint.answer'), input: `<textarea id="tdAnswer" rows="2">${esc(I.form.reason)}</textarea>` })}${byMe || pickMe()}</div>
-        <div class="todo-actions"><button class="btn primary" id="tdAnswerGo" ${byMe && !I.busy ? '' : 'disabled'}>${esc(UI.t('btn.answer'))}</button></div></div>`,
+      more: `${options.length ? `<div class="chips">${options.map((o, i) => `<button class="btn" data-variant="outline" data-size="sm" type="button" data-human-option="${i}">${esc(o)}</button>`).join('')}</div>` : ''}
+        ${UI.field({ label: UI.t('form.answer'), required: true, cls: 'turn-reason', hint: UI.t('form.hint.answer'), input: `<textarea id="tdAnswer" rows="2">${esc(I.form.reason)}</textarea>` })}${byMe || pickMe()}`,
+      acts: `<button type="button" class="btn" id="tdAnswerGo" ${byMe && !I.busy ? '' : 'disabled'}>${UI.icon('send')}${esc(UI.t('btn.answer'))}</button>`,
       msg: I.msg });
     box.querySelectorAll('[data-human-option]').forEach(button => button.addEventListener('click', () => {
       I.form.reason = options[Number(button.dataset.humanOption)]; $('#tdAnswer').value = I.form.reason;
@@ -495,9 +539,9 @@
     const inst = I.view?.instance || {};
     const P = window.hydApprove.pick(d, I.form.option);
     // 값 조정 · 미리 보기(설비에 보내는 값이 있는 안)와 사건 정보는 [다른 안 고르기]를 편 자리에 있다
-    const adjust = fanA || loadA || pumpA || chosen.maintenancePlan || chosen.economicComparison ? UI.fold(fanA || loadA || pumpA ? '조치 값 조정 · 미리 보기' : '현재 조건 다시 확인 · 미리 보기', `<div class="form-grid">${pumpA ? UI.readonly(UI.t('form.pump'), esc(pumpA.value)) : ''}${fanA ? hydCards.rangeField('tdFan', UI.t('form.fan'), fanA, I.form.fan) : ''}${loadA ? hydCards.rangeField('tdLoad', UI.t('form.load'), loadA, I.form.load) : ''}</div>` +
-      `<div id="tdReviewed">${reviewed ? `<p class="kv-line"><b>${esc(UI.t('card.reviewed'))}</b> · ${esc(UI.dateTime(review.created))}</p>${hydCards.cardHtml(reviewed, { maxAbs, decision: review.snapshot })}` : `<p class="field-hint">${esc(UI.t('form.hint.preview'))}</p>`}</div>` +
-      `<div class="form-actions"><button class="btn small" id="tdPreview" ${I.busy || !I.form.option ? 'disabled' : ''}>${esc(UI.t('btn.preview'))}</button></div>`, { open: !!changed || !!reviewed || !!I.form.needPreview }) : '';
+    const adjust = fanA || loadA || pumpA || chosen.maintenancePlan || chosen.economicComparison ? UI.fold(fanA || loadA || pumpA ? '조치 값 조정 · 미리 보기' : '현재 조건 다시 확인 · 미리 보기', UI.section('', `${pumpA ? UI.readonly(UI.t('form.pump'), esc(pumpA.value)) : ''}${fanA ? hydCards.rangeField('tdFan', UI.t('form.fan'), fanA, I.form.fan) : ''}${loadA ? hydCards.rangeField('tdLoad', UI.t('form.load'), loadA, I.form.load) : ''}`) +
+      `<div id="tdReviewed">${reviewed ? `<p><b>${esc(UI.t('card.reviewed'))}</b> · ${esc(UI.dateTime(review.created))}</p>${hydCards.cardHtml(reviewed, { maxAbs, decision: review.snapshot })}` : `<p class="muted">${esc(UI.t('form.hint.preview'))}</p>`}</div>` +
+      UI.actions(`<button type="button" class="btn" data-variant="outline" data-size="sm" id="tdPreview" ${I.busy || !I.form.option ? 'disabled' : ''}>${esc(UI.t('btn.preview'))}</button>`), { open: !!changed || !!reviewed || !!I.form.needPreview }) : '';
     // 실행할 수 있는 안이 하나도 없으면 [승인]이 꺼진 이유와 다음 행동을 까닭 줄에 말한다
     const noneFeasible = !reviewed?.feasible && !opts.some(o => o.feasible);
     const hint = noneFeasible ? `실행할 수 있는 안이 없어 승인할 수 없습니다. 조건이 바뀌면 에이전트가 다시 판단합니다 — ${canReject ? '지금은 [반려]를 눌러 사유를 적으세요.' : '「자세한 기록」의 「다시 수행 · 복구」에서 새 판단을 요청하세요.'}`
@@ -509,22 +553,22 @@
     // 승인하면 무슨 일이 일어나는가: 서버가 준 그 안의 조치 목록 그대로(없으면 그 줄을 그리지 않는다)
     const will = P.none ? `<p>AI 에이전트가 낸 안 ${opts.length}개가 모두 실행 검사에서 제외됐습니다. 안마다 제외 사유는 아래에 있습니다.</p>`
       : P.actions.length ? `<p>${P.state === 'execution' ? `승인하면 시스템이 ${esc(P.actions.join(' · '))}${josa(P.actions[P.actions.length - 1], '을/를')} 실행합니다.` : `모의 판단에 포함된 조치입니다(승인 · 실행되지 않습니다): ${esc(P.actions.join(' · '))}`}${P.changed ? ' <span class="muted">추천안 대신 직접 고른 안입니다.</span>' : ''}</p>` : P.changed ? '<p class="muted">추천안 대신 직접 고른 안입니다.</p>' : '';
-    const previewNow = I.form.needPreview && I.form.option ? `<button class="btn" id="tdPreviewNow" ${I.busy ? 'disabled' : ''}>${esc(UI.t('btn.preview'))}</button>` : '';
+    const previewNow = I.form.needPreview && I.form.option ? `<button type="button" class="btn" data-variant="outline" id="tdPreviewNow" ${I.busy ? 'disabled' : ''}>${esc(UI.t('btn.preview'))}</button>` : '';
     const acts = mode === 'reject'
-      ? `<button class="btn danger" id="tdRejectCard" ${meRejects && !I.busy ? '' : 'disabled'}>반려 확정</button><button class="btn ghost" id="tdModeOff">취소</button>`
-      : `<button class="btn primary" id="tdGo" ${canApprove && meSigns && !I.busy ? '' : 'disabled'}>${esc(UI.t('btn.approve'))}</button>${previewNow}${canReject ? `<button class="btn danger" id="tdRejectOpen" ${meRejects && !I.busy ? '' : 'disabled'}>${esc(UI.t('btn.reject'))}</button>` : ''}${opts.length > 1 || adjust ? `<button class="btn ghost" id="tdMore" aria-expanded="${mode === 'more'}">${mode === 'more' ? '다른 안 접기' : '다른 안 고르기'}</button>` : ''}`;
+      ? `<button type="button" class="btn" data-variant="destructive" id="tdRejectCard" ${meRejects && !I.busy ? '' : 'disabled'}>반려 확정</button><button type="button" class="btn" data-variant="ghost" id="tdModeOff">취소</button>`
+      : `<button type="button" class="btn" id="tdGo" ${canApprove && meSigns && !I.busy ? '' : 'disabled'}>${UI.icon('check')}${esc(UI.t('btn.approve'))}</button>${previewNow}${canReject ? `<button type="button" class="btn" data-variant="outline" id="tdRejectOpen" ${meRejects && !I.busy ? '' : 'disabled'}>${esc(UI.t('btn.reject'))}</button>` : ''}${opts.length > 1 || adjust ? `<button type="button" class="btn" data-variant="ghost" id="tdMore" aria-expanded="${mode === 'more'}">${mode === 'more' ? '다른 안 접기' : '다른 안 고르기'}</button>` : ''}`;
     const more = mode === 'reject' ? reasonField('반려 사유 (필수)', '1~2000자로 적으세요. 반려 결과와 단계 기록에 남습니다.')
       : mode === 'more' || P.none ? (P.none ? window.hydApprove.html(d, I.form.option, { pending: true, adjust, extra: caseInfo }) : window.hydApprove.choicesHtml(d, I.form.option, { pending: true, adjust, extra: caseInfo }))
         + (P.none ? '' : reasonField('사유 (선택)', '다른 안을 고른 까닭을 적으면 단계 기록에 남습니다.')) : '';
-    box.innerHTML = todoCard({ label: '내가 할 일 · 승인', title, desc: will, cls: mode ? 'open' : '', attrs: `aria-busy="${I.busy}"`,
-      meta: [meNow ? roleLine(roleName) : '', clockLine(task)].filter(Boolean).join(' <span class="sep">·</span> '),
+    box.innerHTML = todoCard({ label: '내가 할 일 · 승인', title, desc: will, attrs: `aria-busy="${I.busy}"`,
+      late: clockLine(task), who: meNow ? roleLine(roleName) : '', facts: P.none ? [] : turnFacts(reviewed ? review.snapshot : d, reviewed || chosen),
       acts, more: (meNow && byMe ? '' : pickMe()) + more,
-      msg: (delayed ? '승인 지연 알림을 보냈습니다. 승인하거나 반려하면 다음 단계로 넘어갑니다. ' : '') + (roleHint || I.msg || hint) });
+      note: delayed ? '기한이 지나 승인 지연 알림을 보냈습니다. 승인하거나 반려하면 다음 단계로 넘어갑니다.' : '', msg: roleHint || I.msg || hint });
     const choose = id => { I.form.option = id; I.form.review = null; I.form.needPreview = false; I.msg = ''; const o = opts.find(x => x.id === id); if (o && o.approver) I.form.role = o.approver.id; renderTodoPanel(); };
     box.querySelector('[data-ap-back]')?.addEventListener('click', ev => choose(ev.currentTarget.dataset.apBack));
     box.querySelectorAll('input[name=hopt]').forEach(r => r.addEventListener('change', () => choose(r.value)));
     const on = (id, ev, fn) => { const e = document.getElementById(id); if (e) e.addEventListener(ev, fn); };
-    const invalidate = () => { I.form.review = null; const go = $('#tdGo'); if (go) go.disabled = true; $('#tdReviewed').innerHTML = `<p class="field-hint">${esc(UI.t('form.hint.preview'))}</p>`; };
+    const invalidate = () => { I.form.review = null; const go = $('#tdGo'); if (go) go.disabled = true; $('#tdReviewed').innerHTML = `<p class="muted">${esc(UI.t('form.hint.preview'))}</p>`; };
     on('tdFan', 'input', e => { I.form.fan = +e.target.value; e.target.nextElementSibling.textContent = e.target.value + ' %'; invalidate(); });
     on('tdLoad', 'input', e => { I.form.load = +e.target.value; e.target.nextElementSibling.textContent = e.target.value + ' %'; invalidate(); });
     on('tdFan', 'change', renderTodoPanel); on('tdLoad', 'change', renderTodoPanel);
@@ -549,7 +593,7 @@
       const t = left < 60 ? left + '초' : Math.ceil(left / 60) + '분', next = el.dataset.approvalCut;
       // P18: 멈추는 타이머는 기한이 지나면 이 단계가 닫힌다 — 「지연 알림」이 아니다
       if (next !== undefined) el.textContent = left ? `기한까지 ${t} — 지나면 ${next ? `「${next}」 단계로 넘어갑니다` : '이 단계가 닫힙니다'}` : `기한 지남 — ${next ? `「${next}」 단계로 넘어가는 중` : '이 단계를 닫는 중'}`;
-      else el.textContent = left ? `지연 알림까지 ${t}` : '기한 지남 · 승인 대기';
+      else el.textContent = left ? `지연 알림까지 ${t}` : '기한 지남';
     });
   }
 
@@ -580,12 +624,13 @@
     const mode = I.form.mode, name = cur ? String(cur[m.key]) : '';
     const folds = new Map([...box.querySelectorAll('details')].map(d => [d.querySelector('summary')?.textContent, d.open]));
     const acts = mode === 'reject'
-      ? `<button class="btn danger" id="tdReject" ${ready ? '' : 'disabled'}>반려 확정</button><button class="btn ghost" id="tdModeOff">취소</button>`
-      : `<button class="btn primary" id="tdGo" ${ready && m.usable ? '' : 'disabled'}>${esc(UI.t('btn.approve'))}</button><button class="btn danger" id="tdRejectOpen" ${ready ? '' : 'disabled'}>${esc(UI.t('btn.reject'))}</button><button class="btn ghost" id="tdMore" aria-expanded="${mode === 'more'}">${mode === 'more' ? '다른 안 접기' : '다른 안 고르기'}</button>`;
-    box.innerHTML = todoCard({ label: '내가 할 일 · 승인', cls: mode ? 'open' : '',
+      ? `<button type="button" class="btn" data-variant="destructive" id="tdReject" ${ready ? '' : 'disabled'}>반려 확정</button><button type="button" class="btn" data-variant="ghost" id="tdModeOff">취소</button>`
+      : `<button type="button" class="btn" id="tdGo" ${ready && m.usable ? '' : 'disabled'}>${UI.icon('check')}${esc(UI.t('btn.approve'))}</button><button type="button" class="btn" data-variant="outline" id="tdRejectOpen" ${ready ? '' : 'disabled'}>${esc(UI.t('btn.reject'))}</button><button type="button" class="btn" data-variant="ghost" id="tdMore" aria-expanded="${mode === 'more'}">${mode === 'more' ? '다른 안 접기' : '다른 안 고르기'}</button>`;
+    const numbers = cur ? Object.entries(cur).filter(([k, x]) => k !== m.key && typeof x === 'number' && Number.isFinite(x)).slice(0, 4).map(([k, x]) => [k === 'score' ? '점수' : varLabel(k), window.hydWords ? hydWords.num(x) : String(x), '']) : [];
+    box.innerHTML = todoCard({ label: '내가 할 일 · 승인',
       title: name ? `「${name}」 안을 승인할까요?` : UI.flowName(task.activity_name),
-      desc: cur && cur.reason ? `<p>${esc(cur.reason)}</p>` : '',
-      meta: [byMe ? roleLine(UI.roleName(endpoint, I.view.definition)) : '', clockLine(task)].filter(Boolean).join(' <span class="sep">·</span> '),
+      desc: cur && cur.reason ? `<p>${esc(cur.reason)}</p>` : '', facts: numbers,
+      late: clockLine(task), who: byMe ? roleLine(UI.roleName(endpoint, I.view.definition)) : '',
       acts, more: (byMe ? '' : pickMe()) + (mode === 'reject' ? reasonField('반려 사유 (필수)', '반려할 때는 사유가 꼭 필요합니다. 결과 보고에 남습니다.')
         : mode === 'more' ? window.hydApprove.proposalHtml(m, I.form.option, { pending: true }) + reasonField('사유 (선택)', '적으면 단계 기록에 남습니다.') : ''),
       msg: I.msg || fitHint || (!m.usable ? '고를 안이 약속과 달라 승인할 수 없습니다 — 반려하거나 에이전트 단계를 다시 하세요' : '') });
@@ -676,19 +721,21 @@
   // 머리의 한 줄: 무슨 사건 · 언제 시작 · 몇 단계 가운데 어디(끝난 건은 언제 끝났고 얼마나 걸렸나)
   function metaLine(view) {
     const inst = view.instance, v = vars(inst), bits = [];
-    if (isSystemJob(inst)) bits.push('시스템 작업');
-    if (v.pattern) bits.push(UI.patternName(v.pattern));
-    if (inst.start_date) bits.push(`${UI.dateTime(inst.start_date)} 시작`);
+    const bit = (icon, text, cls = '') => bits.push(`<span${cls ? ` class="${cls}"` : ''}>${icon ? UI.icon(icon) : ''}${esc(text)}</span>`);
+    if (isSystemJob(inst)) bit('file-text', '시스템 작업');
+    if (v.pattern) bit('triangle-alert', UI.patternName(v.pattern));
+    if (inst.start_date) bit('clock', `${UI.dateTime(inst.start_date)} 시작`);
     if (inst.status === 'RUNNING') {
       const nodes = window.hydFlow ? hydFlow.pathModel(view.definition || {}, view.workitems, inst).nodes : [];
       const at = nodes.findIndex(n => n.state === 'now' || n.state === 'hold' || n.state === 'fail');
-      if (at >= 0) { const n = nodes[at]; bits.push(`${nodes.length}단계 가운데 ${at + 1}번째 「${UI.flowName(n.name)}」${n.state === 'fail' ? '에서 멈춤' : n.state === 'hold' ? '에서 보류' : n.who === 'human' ? '에서 기다리는 중' : ' 진행 중'}`); }
+      if (at >= 0) { const n = nodes[at]; bit('route', `${nodes.length}단계 가운데 ${at + 1}번째 「${UI.flowName(n.name)}」${n.state === 'fail' ? '에서 멈춤' : n.state === 'hold' ? '에서 보류' : n.who === 'human' ? '에서 기다리는 중' : ' 진행 중'}`); }
     } else {
-      if (inst.end_date) bits.push(`${UI.time(inst.end_date)} 끝남`);
       const span = inst.start_date && inst.end_date ? Date.parse(inst.end_date) - Date.parse(inst.start_date) : NaN;
-      if (span >= 0 && window.hydTrace) bits.push(`${hydTrace.fmtMs(span)} 걸림`);
+      if (inst.end_date) bit('circle-check', `${UI.time(inst.end_date)} 끝남${span >= 0 && window.hydTrace ? ` · ${hydTrace.fmtMs(span)} 걸림` : ''}`);
     }
-    return bits.join(' · ');
+    const alertId = v.alert_id || (v.alert || {}).alertId;
+    if (alertId) bit('', alertId, 'mono');
+    return bits.join('');
   }
   // 끝난 건은 맨 위에 결과 한 장. 진행 중인데 멈춘 단계가 있으면 그 자리에 무엇이 멈췄고 어디서 조치하는지
   function topCardHtml(view) {
@@ -697,16 +744,16 @@
       const html = window.hydResultReport ? hydResultReport.html(view) : '';
       if (html) return html;
       const o = outcomeOf(inst);
-      return `<section class="case-result tone-other" aria-label="결과"><span class="dot" aria-hidden="true"></span><div><span class="label">결과</span><p class="verdict">${esc(o.label)}${inst.end_label && inst.end_label !== o.label ? ` — ${esc(inst.end_label)}` : ''}</p><p class="muted">결과 보고가 남지 않은 처리 건입니다. 무엇이 실행됐는지는 아래 단계 기록에 있습니다.</p></div></section>`;
+      return `<section class="step-card case-result" aria-label="결과"><div class="result"><div class="result-label">${UI.chipText(o.label, o.tone)}결과</div><div class="result-main">${esc(endText(inst))}</div><div class="result-sub">결과 보고가 남지 않은 처리 건입니다. 무엇이 실행됐는지는 아래 단계 기록에 있습니다.</div></div></section>`;
     }
     const a = view.attention;
     if (!a) return '';
-    const rows = (a.steps || []).map(s => `<li><b>${esc(UI.flowName(s.name))}</b> <span class="muted">· ${esc(s.label || '')}</span>${s.reason ? `<br>${esc(UI.logText(s.reason))}` : ''} ${s.workitem ? `<button type="button" class="linkish" data-goto-step="${esc(s.workitem)}">이 단계에서 조치하기</button>` : ''}</li>`).join('');
-    return `<section class="case-result tone-fail" aria-label="멈춘 단계"><span class="dot" aria-hidden="true"></span><div><span class="label">사람 조치 필요</span><p class="verdict">${esc(a.label || '멈춤')}</p><ul class="stuck-list">${rows}</ul></div></section>`;
+    const rows = (a.steps || []).map(s => `<li><span><b>${esc(UI.flowName(s.name))}</b> <span class="muted">· ${esc(s.label || '')}</span>${s.reason ? `<br>${esc(UI.logText(s.reason))}` : ''}</span>${s.workitem ? `<button type="button" class="btn" data-variant="outline" data-size="sm" data-goto-step="${esc(s.workitem)}">이 단계에서 조치하기</button>` : ''}</li>`).join('');
+    return `<div class="alert" data-variant="destructive" role="status" aria-label="멈춘 단계">${UI.icon('triangle-alert')}<h2>사람 조치 필요 — ${esc(a.label || '멈춤')}</h2><section><ul class="stuck-list">${rows}</ul></section></div>`;
   }
   function flowNotes(view) {
     const inst = view.instance; let html = '';
-    if (inst.status === 'RUNNING' && inst.flow_state?.end_arrivals?.length) html += `<p class="case-note">${esc(UI.t('inst.endWaiting'))}</p>`;
+    if (inst.status === 'RUNNING' && inst.flow_state?.end_arrivals?.length) html += `<p class="muted">${esc(UI.t('inst.endWaiting'))}</p>`;
     const waiting = Object.entries(inst.flow_state?.dependency_schedule || {}).filter(([id, spec]) => spec.flow_arrived && view.workitems.some(w => w.id === id && w.status === 'TODO'));
     waiting.forEach(([id, spec]) => {
       const task = view.workitems.find(w => w.id === id);
@@ -714,7 +761,7 @@
       const missingInitial = (spec.waiting_for || []).filter(x => x.reason === 'initial_input_unavailable').map(x => x.variable);
       const reason = missingInitial.length ? `시작 값 ${missingInitial.join(', ')}이 없습니다. 입력을 확인해 새 처리 건을 시작하세요.`
         : (spec.waiting_for || []).some(x => x.reason === 'fresh_output_unavailable') ? '필요한 결과값이 없어 대기 중입니다.' : `${producers.map(UI.flowName.bind(UI)).join(', ')}의 결과가 확정되면 시작합니다.`;
-      html += `<p class="case-note"><b>${esc(UI.t('inst.waitingResult'))}</b> · ${esc(UI.flowName(task?.activity_name || spec.activity))}: ${esc(reason)}</p>`;
+      html += `<p class="muted"><b>${esc(UI.t('inst.waitingResult'))}</b> · ${esc(UI.flowName(task?.activity_name || spec.activity))}: ${esc(reason)}</p>`;
     });
     return html;
   }
@@ -724,7 +771,7 @@
     const box = $('#instDetail');
     if (!I.view) {
       I.skelFor = null;
-      box.innerHTML = I.mode && I.mode.error ? '' : !I.loaded ? UI.loading() : I.sel && I.viewErr ? UI.errorBlock(UI.t('inst.cannotOpen'), String(I.viewErr).replace(/^\d{3}\s*/, ''), { retry: true })
+      box.innerHTML = I.mode && I.mode.error ? '' : !I.loaded ? '<div class="loading"><div class="skeleton sk-line" style="width:40%;height:20px"></div><div class="skeleton sk-line" style="width:70%"></div><div class="skeleton" style="height:120px;border-radius:12px"></div><div class="skeleton" style="height:240px;border-radius:12px"></div></div>' : I.sel && I.viewErr ? UI.errorBlock(UI.t('inst.cannotOpen'), String(I.viewErr).replace(/^\d{3}\s*/, ''), { retry: true })
         : !I.all.length && !I.listError ? UI.emptyGo(UI.t('inst.empty'), UI.t('inst.emptySub'), 'scenario', UI.t('nav.scenario') + ' 열기') : UI.empty(UI.t('inst.select'), '왼쪽 목록에서 처리 건을 고르면 진행 길과 단계 기록이 여기에 보입니다');
       box.querySelector('[data-retry]')?.addEventListener('click', () => load(true));
       renderRecovery(); renderMore();
@@ -733,25 +780,29 @@
     const view = I.view, inst = view.instance, pid = inst.proc_inst_id;
     const record = ensureRecord(view);
     if (I.skelFor !== pid || !box.querySelector('#casePath')) {
-      box.innerHTML = `<header class="case-head"><div class="case-title"></div><p class="case-meta"></p></header>
-        <div class="case-body"><div id="todoPanel"></div><div id="caseTop"></div>
-          <section aria-label="진행 길"><div class="sec-row"><h3 class="sec-title">진행 길</h3><span class="sec-side"><span class="muted">지나온 단계와 남은 단계</span><button type="button" class="btn small" data-full-flow>${esc(UI.t('btn.fit'))}</button></span></div><div id="casePath"></div><div id="caseNotes"></div></section>
-          <section aria-label="단계 기록"><div class="sec-row"><h3 class="sec-title">단계 기록</h3><span class="muted" data-record-side></span></div><div id="instRecord"></div><div id="taskDetailPanel"></div></section></div>`;
+      box.innerHTML = `<header class="case-head"><div><h2 class="case-title"></h2><div class="case-meta"></div></div>
+          <div class="dropdown-menu" id="caseMenu"><button type="button" class="btn" data-variant="outline" data-size="icon-sm" id="caseMenu-trigger" aria-haspopup="menu" aria-controls="caseMenu-menu" aria-expanded="false" aria-label="더 보기" data-tooltip="더 보기" data-side="left">${UI.icon('ellipsis')}</button>
+            <div id="caseMenu-popover" data-popover aria-hidden="true" data-align="end"><div role="menu" id="caseMenu-menu" aria-labelledby="caseMenu-trigger"><div role="menuitem" id="instReload" data-case-act="reload">${UI.icon('refresh-cw')}다시 읽기</div><div role="menuitem" data-case-act="flow">${UI.icon('maximize-2')}전체 흐름 보기</div><div role="menuitem" data-case-act="more">${UI.icon('file-json')}자세한 기록 펼치기</div></div></div></div></header>
+        <div id="todoPanel"></div><div id="caseTop"></div>
+        <section aria-label="진행 길"><div class="sec-head"><h2>진행 길</h2><span class="muted" data-path-side></span></div><div id="casePath"></div><div id="caseNotes"></div></section>
+        <section aria-label="단계 기록"><div class="sec-head"><h2>단계 기록</h2><span class="muted case-live" data-record-side></span></div><div id="instRecord"></div><div id="taskDetailPanel"></div></section>`;
       const slot = box.querySelector('#instRecord'); if (slot && I.recordHost) slot.replaceWith(I.recordHost);
       I.skelFor = pid; I.recoverIn = null;
       window.hydTaskDetail?.mount(box.querySelector('#taskDetailPanel'));
     }
     let held = false;
-    setHtml(box.querySelector('.case-title'), `<h2>${esc(inst.proc_inst_name || '이름 없는 처리 건')}</h2>${stateChip({ ...inst, attention: view.attention })}`);
-    setHtml(box.querySelector('.case-meta'), esc(metaLine(view)));
-    // 내가 할 일(질문 · 승인 · 입력) — 쓰는 중이면 건드리지 않는다
+    setHtml(box.querySelector('.case-title'), `${esc(inst.proc_inst_name || '이름 없는 처리 건')}${stateChip({ ...inst, attention: view.attention })}`);
+    setHtml(box.querySelector('.case-meta'), metaLine(view));
+    setHtml(box.querySelector('[data-path-side]'), `흐름 「${esc(UI.flowName(view.definition?.processDefinitionName || UI.defName(inst.proc_def_id)))}」 판 ${esc(inst.proc_def_version ?? '')} · 끌어서 옮기고 휠로 확대합니다`);
+    // 내가 할 일(질문 · 승인 · 입력) — 쓰는 중이면 건드리지 않는다. 내 차례가 아닌데 AI 가 일하는 중이면 그 자리에 점선 안내를 둔다
     const panel = box.querySelector('#todoPanel');
     if (typingIn(panel)) held = true; else renderTodoPanel();
-    setHtml(box.querySelector('#caseTop'), panel.firstElementChild && !panel.querySelector('[data-gone]') ? '' : topCardHtml(view));
+    setHtml(box.querySelector('#caseTop'), panel.firstElementChild && !panel.querySelector('[data-gone]') ? '' : topCardHtml(view) || waitNoteHtml(view));
     const side = box.querySelector('[data-record-side]');
     if (side) {
       const live = inst.status === 'RUNNING';
-      setHtml(side, live ? `새 단계가 아래에 붙습니다 · <span class="live-conn ${window.hydStream && hydStream.connected() ? 'on' : 'off'}" data-live-conn>${esc(UI.t(window.hydStream && hydStream.connected() ? 'header.connected' : 'header.connecting'))}</span>` : '');
+      const on = !!window.hydStream && hydStream.connected();
+      setHtml(side, live ? `<i class="dot"${on ? ' data-tone="ok" data-live' : ''}></i>${on ? '새 단계가 아래에 붙습니다' : `실시간 연결이 끊겼습니다 — ${esc(hydStream.conn().text)}. 2초마다 다시 읽습니다`}` : '');
     }
     mountPath(view);
     setHtml(box.querySelector('#caseNotes'), flowNotes(view));
@@ -761,19 +812,34 @@
     renderMore();
     return held;
   }
+  // 내 차례가 아니고 멈춘 것도 없는 진행 중인 건: 지금 누가 일하는지 한 줄(점선 안내 — 디자인 기준 5-1 2번)
+  function waitNoteHtml(view) {
+    if (view.instance.status !== 'RUNNING' || !window.hydFlow) return '';
+    const n = hydFlow.pathModel(view.definition || {}, view.workitems, view.instance).nodes.filter(x => x.state === 'now').pop();
+    if (!n || n.who === 'human') return '';
+    const name = UI.flowName(n.name);
+    return n.who === 'agent' ? `<div class="wait-note">${UI.icon('bot', 'ic-lg')}<span><b>AI 에이전트가 「${esc(name)}」 단계를 처리하는 중입니다.</b> 사람의 승인이 필요해지면 요청이 이 자리에 뜹니다.</span></div>`
+      : `<div class="wait-note">${UI.icon('cog', 'ic-lg')}<span><b>시스템이 「${esc(name)}」 단계를 처리하는 중입니다.</b> 끝나면 결과가 아래 단계 기록에 붙습니다.</span></div>`;
+  }
+  const mineActs = view => I.asked.concat(I.todo).filter(t => t.proc_inst_id === view.instance.proc_inst_id).map(t => t.activity_id);
+  // 진행 길의 상자를 누르면: 지나온 단계는 단계 기록의 그 단계로, 아직 시작하지 않은 단계는 정의에 적힌 입력 · 출력(단계 상세)을 연다
+  function pickNode(activityId) {
+    const view = I.view; if (!view) return;
+    const rows = view.workitems.filter(w => w.activity_id === activityId && w.status !== 'TODO').sort((a, b) => (b.generation || 0) - (a.generation || 0) || String(b.start_date || '').localeCompare(String(a.start_date || '')));
+    if (!(rows[0] && gotoStep(rows[0].id))) window.hydTaskDetail?.openActivity(activityId);
+  }
   function mountPath(view) {
     const host = $('#casePath'); if (!host || !window.hydFlow) return;
-    const mine = I.asked.concat(I.todo).filter(t => t.proc_inst_id === view.instance.proc_inst_id).map(t => t.activity_id);
-    hydFlow.mountPath(host, hydFlow.renderPath(view.definition, { workitems: view.workitems, instance: view.instance, mine }) || UI.empty('그릴 흐름이 없습니다', '이 처리 건의 흐름 정의에 단계가 없습니다.', 'compact'), view.instance.proc_inst_id);
+    hydFlow.mount(host, view, { mine: mineActs(view), onPick: pickNode });
   }
   function openFullFlow() {
     const view = I.view; if (!view || !window.hydFlow) return;
-    hydFlow.openFull(hydFlow.render(view.definition, { workitems: view.workitems, instance: view.instance, caption: '' }), view.instance.proc_inst_name || '');
+    hydFlow.openFull(view, { mine: mineActs(view) });
   }
   function gotoStep(wid) {
-    const li = document.querySelector(`#instRecord li[data-step="${CSS.escape(wid)}"]`); if (!li) return false;
+    const li = document.querySelector(`#instRecord .step[data-step="${CSS.escape(wid)}"]`); if (!li) return false;
     li.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    li.classList.add('flash'); setTimeout(() => li.classList.remove('flash'), 1600);
+    li.dataset.flash = ''; setTimeout(() => { delete li.dataset.flash; }, 1600);
     return true;
   }
 
@@ -784,19 +850,19 @@
     const inst = view.instance;
     const act = (view.definition?.activities || []).find(a => a.id === w.activity_id);
     const canClose = (w.agent_orch && w.agent_mode && (w.status === 'PENDING' || (w.status === 'IN_PROGRESS' && ['FAILED', 'CANCELLED'].includes(w.draft_status)))) || (act?.type === 'serviceTask' && w.status === 'PENDING');
-    const closeBtn = canClose && inst.status === 'RUNNING' ? `<button class="btn small danger" data-close-task="${esc(w.id)}">${esc(UI.t('btn.closeTask'))}</button>` : '';
-    const cancelBtn = w.agent_orch && w.agent_mode && inst.status === 'RUNNING' && w.status === 'IN_PROGRESS' && w.draft_status === 'STARTED' && w.consumer ? `<button class="btn small danger" data-cancel-task="${esc(w.id)}">${esc(UI.t('btn.cancelTask'))}</button>` : '';
+    const closeBtn = canClose && inst.status === 'RUNNING' ? `<button type="button" class="btn" data-variant="destructive" data-size="sm" data-close-task="${esc(w.id)}">${esc(UI.t('btn.closeTask'))}</button>` : '';
+    const cancelBtn = w.agent_orch && w.agent_mode && inst.status === 'RUNNING' && w.status === 'IN_PROGRESS' && w.draft_status === 'STARTED' && w.consumer ? `<button type="button" class="btn" data-variant="outline" data-size="sm" data-cancel-task="${esc(w.id)}">${UI.icon('square')}${esc(UI.t('btn.cancelTask'))}</button>` : '';
     const stuck = ((view.attention || {}).steps || []).filter(s => s.workitem === w.id);
-    const why = stuck.map(s => `<p class="step-stuck"><b>${esc(s.label || '멈춤')}</b>${s.reason ? ` — ${esc(UI.logText(s.reason))}` : ''}</p>`).join('');
-    const reasonForm = I.closing && I.closing.id === w.id ? `<div class="form step-form" data-reason-form><p class="field-hint">${I.closing.kind === 'close' ? '멈춘 단계를 취소로 닫습니다. 업무 실행 성공이나 설비 복구로 기록하지 않습니다.' : '실행 중인 AI 단계에 취소를 요청합니다.'}</p><div class="form-grid">${UI.field({ label: '담당자', required: true, input: UI.actorInput('data-close-by', I.closing.by || '') })}${UI.field({ label: I.closing.kind === 'close' ? UI.t('inst.closeReason') : UI.t('inst.cancelReason'), required: true, cls: 'wide', input: `<input data-close-reason value="${esc(I.closing.reason || '')}">` })}</div>${UI.actions(`<button class="btn small" data-close-abort>${esc(UI.t('btn.cancel'))}</button><button class="btn small primary" data-close-go ${I.busy ? 'disabled' : ''}>${esc(UI.t('btn.confirm'))}</button>`, I.pmsg.close || '')}</div>` : '';
-    return why || closeBtn || cancelBtn || reasonForm ? `${why}${closeBtn || cancelBtn ? `<div class="row-wrap step-acts">${closeBtn}${cancelBtn}</div>` : ''}${reasonForm}` : '';
+    const why = stuck.map(s => `<div class="alert" data-variant="destructive">${UI.icon('triangle-alert')}<h2>${esc(s.label || '멈춤')}</h2>${s.reason ? `<section>${esc(UI.logText(s.reason))}</section>` : ''}</div>`).join('');
+    const reasonForm = I.closing && I.closing.id === w.id ? `<div class="step-form" data-reason-form><p class="muted">${I.closing.kind === 'close' ? '멈춘 단계를 취소로 닫습니다. 업무 실행 성공이나 설비 복구로 기록하지 않습니다.' : '실행 중인 AI 단계에 취소를 요청합니다.'}</p>${UI.section(I.closing.kind === 'close' ? '멈춘 단계 닫기' : 'AI 단계 실행 취소', `${UI.field({ label: '담당자', required: true, input: UI.actorInput('data-close-by', I.closing.by || '') })}${UI.field({ label: I.closing.kind === 'close' ? UI.t('inst.closeReason') : UI.t('inst.cancelReason'), required: true, cls: 'wide', input: `<input data-close-reason value="${esc(I.closing.reason || '')}">` })}`)}${UI.actions(`<button type="button" class="btn" data-variant="ghost" data-size="sm" data-close-abort>${esc(UI.t('btn.cancel'))}</button><button type="button" class="btn" data-size="sm" data-close-go ${I.busy ? 'disabled' : ''}>${esc(UI.t('btn.confirm'))}</button>`, I.pmsg.close || '')}</div>` : '';
+    return why || closeBtn || cancelBtn || reasonForm ? `${why}${closeBtn || cancelBtn ? `<div class="chips step-acts">${closeBtn}${cancelBtn}</div>` : ''}${reasonForm}` : '';
   }
   function fillSlots() {
     const host = I.recordHost, view = I.view; if (!host || !view) return false;
     let held = false;
     const byId = new Map(view.workitems.map(w => [w.id, w]));
-    host.querySelectorAll('li[data-key] [data-step-slot]').forEach(slot => {
-      const li = slot.closest('li'), w = byId.get(li.dataset.step);
+    host.querySelectorAll('.step[data-key] [data-step-slot]').forEach(slot => {
+      const li = slot.closest('.step'), w = byId.get(li.dataset.step);
       let extra = slot.querySelector(':scope > [data-slot-extra]');
       if (!extra) { extra = document.createElement('div'); extra.dataset.slotExtra = ''; slot.prepend(extra); }
       if (typingIn(extra)) { held = true; return; }
@@ -809,7 +875,7 @@
   function recoverHost() {
     if (!I.recover) {
       I.recover = document.createElement('div'); I.recover.className = 'recover';
-      I.recover.innerHTML = '<p class="recover-lead" data-recover-lead></p><div data-approvals></div><div id="taskDeferralPanel"></div><div id="effectsPanel"></div><div id="reworkPanel"></div><div data-rework-history></div>';
+      I.recover.innerHTML = '<p class="muted" data-recover-lead></p><div data-approvals></div><div id="taskDeferralPanel"></div><div id="effectsPanel"></div><div id="reworkPanel"></div><div data-rework-history></div>';
     }
     return I.recover;
   }
@@ -819,12 +885,12 @@
     if (!view) { if (host.parentElement) host.remove(); home.innerHTML = UI.empty('고른 처리 건이 없습니다', '왼쪽 목록에서 처리 건을 고르면 여기에 보입니다', 'compact'); home._html = null; return false; }
     // 그 상황인가: 서버가 멈춘 단계를 알렸거나(attention), 실패한 승인 전달이 있다
     const stuck = ((view.attention || {}).steps || []).map(s => s.workitem).filter(Boolean);
-    const slot = stuck.map(wid => I.recordHost?.querySelector(`li[data-step="${CSS.escape(wid)}"] [data-step-slot]`)).find(Boolean) || null;
+    const slot = stuck.map(wid => I.recordHost?.querySelector(`.step[data-step="${CSS.escape(wid)}"] [data-step-slot]`)).find(Boolean) || null;
     const target = slot || home;
     if (typingIn(host)) return true;
     if (host.parentElement !== target) { if (target === home) { home.innerHTML = ''; home._html = null; } target.appendChild(host); }
-    if (slot) setHtml(home, `<p class="muted">멈춘 단계가 있어 복구 기능을 그 단계 아래에 놓았습니다. <button type="button" class="linkish" data-goto-step="${esc(stuck[0])}">그 단계로 가기</button></p>`);
-    host.classList.toggle('in-step', !!slot);
+    if (slot) setHtml(home, `<p class="muted">멈춘 단계가 있어 복구 기능을 그 단계 아래에 놓았습니다. <button type="button" class="btn" data-variant="link" data-goto-step="${esc(stuck[0])}">그 단계로 가기</button></p>`);
+    if (slot) host.dataset.inStep = ''; else delete host.dataset.inStep;
     setHtml(host.querySelector('[data-recover-lead]'), slot ? '이 단계에서 할 수 있는 조치입니다. 필요한 것을 펼쳐 진행하세요.' : view.instance.status === 'RUNNING' ? '조건이나 판단 근거가 바뀌었을 때 쓰는 기능입니다. 멈춘 단계가 생기면 그 단계 아래에 같은 것이 나옵니다.' : '');
     const ap = host.querySelector('[data-approvals]');
     const folds = new Map([...ap.querySelectorAll('details')].map(d => [d.querySelector('summary')?.textContent.trim(), d.open]));
@@ -838,13 +904,16 @@
     setHtml(host.querySelector('[data-rework-history]'), (view.reworks || []).length ? UI.fold(`${esc(UI.t('inst.reworkHistory'))} <span class="muted">${view.reworks.length}건</span>`, view.reworks.map(r => `<p>${esc(r.generation)}${esc(UI.t('inst.gen'))} · ${esc(UI.who(r.request.by))} (${esc(who(r.request.role))}) · ${esc(r.request.reason)}</p>`).join('')) : '');
     return false;
   }
+  // 재전달 · 폐기 폼의 승인 역할: 승인 기록에 남은 역할을 읽기 전용으로 보이고 값은 숨은 칸에 싣는다. 못 읽었으면 그 까닭
+  const roleField = (key, r) => r ? UI.readonly('승인 역할', esc(who(r))) + `<input type="hidden" data-retry-role="${esc(key)}" value="${esc(r)}">`
+    : `<input type="hidden" data-retry-role="${esc(key)}" value=""><p class="muted" data-tone="danger">승인 기록에서 승인 역할을 읽지 못했습니다.</p>`;
   function workOrderRetryHtml(view) {
     const failed = view.workitems.filter(w => w.tool === 'enterprise:WO_CREATE' && w.status === 'PENDING');
     const approval = (view.approvals || []).find(a => a.status === 'DELIVERED');
     const roles = Object.keys(approval?.payload?.plan?._snapshot?.roles || {});
-    return failed.map(w => { const f = retryForm(w.id); return UI.fold(`${esc(UI.t('inst.woFailed'))} ${UI.chipText('실패', 'danger')}`, `<div data-approval-panel="${esc(w.id)}"><p class="neg">${esc(w.log || '')}</p><p class="field-hint">자동 재시도를 마쳤습니다. 오류를 해결한 뒤 승인했던 같은 내용으로 다시 전달할 수 있습니다.</p>
-      <div class="form"><section class="form-section"><div class="form-grid">${UI.actorInput(`data-retry-by="${esc(w.id)}"`, f.by)}${(r => r ? UI.readonly('승인 역할', esc(who(r))) + `<input type="hidden" data-retry-role="${esc(w.id)}" value="${esc(r)}">` : `<input type="hidden" data-retry-role="${esc(w.id)}" value=""><p class="form-msg neg">승인 기록에서 승인 역할을 읽지 못했습니다.</p>`)(consentRole(approval, roles))}</div></section>
-      ${UI.actions(`<button class="btn primary" data-work-order-retry="${esc(w.id)}" ${I.busy || !roles.length ? 'disabled' : ''}>${esc(UI.t('btn.retry'))}</button>`, !roles.length ? '승인 원문을 확인할 수 없어 별도 검토가 필요합니다.' : I.pmsg[w.id] || '')}</div></div>`, { open: true }); }).join('');
+    return failed.map(w => { const f = retryForm(w.id); return UI.fold(`${esc(UI.t('inst.woFailed'))} ${UI.chipText('실패', 'danger')}`, `<div data-approval-panel="${esc(w.id)}"><p class="muted" data-tone="danger">${esc(w.log || '')}</p><p class="muted">자동 재시도를 마쳤습니다. 오류를 해결한 뒤 승인했던 같은 내용으로 다시 전달할 수 있습니다.</p>
+      ${UI.section('', `${UI.actorInput(`data-retry-by="${esc(w.id)}"`, f.by)}${roleField(w.id, consentRole(approval, roles))}`)}
+      ${UI.actions(`<button type="button" class="btn" data-size="sm" data-work-order-retry="${esc(w.id)}" ${I.busy || !roles.length ? 'disabled' : ''}>${esc(UI.t('btn.retry'))}</button>`, !roles.length ? '승인 원문을 확인할 수 없어 별도 검토가 필요합니다.' : I.pmsg[w.id] || '')}</div>`, { open: true }); }).join('');
   }
   // 재전달 · 폐기 폼의 칸 값은 다시 그려도 남도록 상태에 둔다(작업 id 마다). 담당자 기본값은 지금의 승인자 칸 값("나"면 그 id)
   function retryForm(key) {
@@ -873,15 +942,15 @@
       let lost = discardPending(a.todo_id);
       if (lost && a.status === 'DISCARDED') { setDiscardPending(a.todo_id, null); lost = null; }   // the server holds the outcome: nothing to replay
       const f = retryForm(a.todo_id), dp = I.discardPreview[a.todo_id];
-      const retry = lost ? `<p>앞서 보낸 폐기 요청의 응답을 받지 못했습니다. 아래 단추로 결과를 확인하세요. 같은 요청이라 두 번 처리되지 않습니다.</p>${UI.actions(`<button class="btn" data-discard-retry="${esc(a.todo_id)}" ${I.busy ? 'disabled' : ''}>폐기 결과 확인</button>`, I.pmsg[a.todo_id] || '')}`
-        : reviewable ? `<p class="field-hint">${reviewRequired ? '현재 조건이 달라 기존 동의를 전달할 수 없습니다. 판단 단계의 다시 수행으로 새 판단과 승인을 받으세요.' : a.status === 'FAILED' ? '승인한 내용은 보존됐습니다. 오류를 확인한 뒤 같은 내용을 다시 전달할 수 있습니다.' : '조건 변경으로 명령이 보류됐다면 판단 단계에서 새 검토를 시작하세요. 사건이 종료됐다면 아래에서 실행 효과를 확인하고 취소할 수 있습니다.'}</p>
-        <div class="form"><section class="form-section"><div class="form-grid">${UI.actorInput(`data-retry-by="${esc(a.todo_id)}"`, f.by)}${(r => r ? UI.readonly('승인 역할', esc(who(r))) + `<input type="hidden" data-retry-role="${esc(a.todo_id)}" value="${esc(r)}">` : `<input type="hidden" data-retry-role="${esc(a.todo_id)}" value=""><p class="form-msg neg">승인 기록에서 승인 역할을 읽지 못했습니다.</p>`)(consentRole(a, roles))}
-        ${UI.field({ label: '폐기 ' + UI.t('form.reason'), cls: 'wide', hint: '사건이 종료되고 실제 조치가 없음을 확인한 경우에만 승인을 폐기하고 처리 건을 취소할 수 있습니다.', input: `<input data-discard-reason="${esc(a.todo_id)}" value="${esc(f.reason)}" placeholder="후속 조치를 진행하지 않고 종료하는 이유">` })}</div></section>
-        ${UI.actions(`${a.status === 'FAILED' && !reviewRequired ? `<button class="btn primary" data-approval-retry="${esc(a.todo_id)}" ${I.busy ? 'disabled' : ''}>${esc(UI.t('btn.retry'))}</button>` : ''}<button class="btn outline" data-approval-discard-preview="${esc(a.todo_id)}" ${I.busy ? 'disabled' : ''}>${esc(UI.t('btn.effects'))}</button>`, I.pmsg[a.todo_id] || '')}
-        <div data-discard-preview role="status">${dp ? discardPreviewHtml(dp) : ''}</div></div>` : '';
-      const discarded = a.status === 'DISCARDED' ? `<p class="field-hint">${(a.history || []).at(-1)?.via === 'rework' ? '다시 수행 요청으로 이전 승인을 폐기했습니다. 새 판단과 새 승인이 필요합니다.' : '처리 건을 취소했습니다.'} 이전 승인·오류는 보존됩니다.</p>${UI.fold(esc(UI.t('raw')), `<pre>${esc(JSON.stringify((a.history || []).at(-1), null, 2))}</pre>`, { cls: 'small' })}` : '';
-      return UI.fold(`${esc(UI.t('inst.approval'))} ${UI.deliveryChip(a.status)}`, `<div data-approval-panel="${esc(a.todo_id)}"><p class="kv-line">${esc(option.name || p.option)} · ${esc(UI.t('card.approver'))} <b>${esc(who(p.role))}</b> · 전달 시도 ${esc(a.attempts)}회</p>
-        ${a.error ? UI.fold('오류 기록', `<pre>${esc(a.error)}</pre>`, { cls: 'small', open: true }) : ''}${retry}${discarded}</div>`, { open: reviewable || a.status === 'FAILED' || !!lost });
+      const retry = lost ? `<p>앞서 보낸 폐기 요청의 응답을 받지 못했습니다. 아래 단추로 결과를 확인하세요. 같은 요청이라 두 번 처리되지 않습니다.</p>${UI.actions(`<button type="button" class="btn" data-variant="outline" data-size="sm" data-discard-retry="${esc(a.todo_id)}" ${I.busy ? 'disabled' : ''}>폐기 결과 확인</button>`, I.pmsg[a.todo_id] || '')}`
+        : reviewable ? `<p class="muted">${reviewRequired ? '현재 조건이 달라 기존 동의를 전달할 수 없습니다. 판단 단계의 다시 수행으로 새 판단과 승인을 받으세요.' : a.status === 'FAILED' ? '승인한 내용은 보존됐습니다. 오류를 확인한 뒤 같은 내용을 다시 전달할 수 있습니다.' : '조건 변경으로 명령이 보류됐다면 판단 단계에서 새 검토를 시작하세요. 사건이 종료됐다면 아래에서 실행 효과를 확인하고 취소할 수 있습니다.'}</p>
+        ${UI.section('', `${UI.actorInput(`data-retry-by="${esc(a.todo_id)}"`, f.by)}${roleField(a.todo_id, consentRole(a, roles))}
+        ${UI.field({ label: '폐기 ' + UI.t('form.reason'), cls: 'wide', hint: '사건이 종료되고 실제 조치가 없음을 확인한 경우에만 승인을 폐기하고 처리 건을 취소할 수 있습니다.', input: `<input data-discard-reason="${esc(a.todo_id)}" value="${esc(f.reason)}" placeholder="후속 조치를 진행하지 않고 종료하는 이유">` })}`)}
+        ${UI.actions(`${a.status === 'FAILED' && !reviewRequired ? `<button type="button" class="btn" data-size="sm" data-approval-retry="${esc(a.todo_id)}" ${I.busy ? 'disabled' : ''}>${esc(UI.t('btn.retry'))}</button>` : ''}<button type="button" class="btn" data-variant="outline" data-size="sm" data-approval-discard-preview="${esc(a.todo_id)}" ${I.busy ? 'disabled' : ''}>${esc(UI.t('btn.effects'))}</button>`, I.pmsg[a.todo_id] || '')}
+        <div data-discard-preview role="status">${dp ? discardPreviewHtml(dp) : ''}</div>` : '';
+      const discarded = a.status === 'DISCARDED' ? `<p class="muted">${(a.history || []).at(-1)?.via === 'rework' ? '다시 수행 요청으로 이전 승인을 폐기했습니다. 새 판단과 새 승인이 필요합니다.' : '처리 건을 취소했습니다.'} 이전 승인·오류는 보존됩니다.</p>${UI.fold(esc(UI.t('raw')), `<pre class="code">${esc(JSON.stringify((a.history || []).at(-1), null, 2))}</pre>`)}` : '';
+      return UI.fold(`${esc(UI.t('inst.approval'))} ${UI.deliveryChip(a.status)}`, `<div data-approval-panel="${esc(a.todo_id)}"><p>${esc(option.name || p.option)} · ${esc(UI.t('card.approver'))} <b>${esc(who(p.role))}</b> · 전달 시도 ${esc(a.attempts)}회</p>
+        ${a.error ? UI.fold('오류 기록', `<pre class="code">${esc(a.error)}</pre>`, { open: true }) : ''}${retry}${discarded}</div>`, { open: reviewable || a.status === 'FAILED' || !!lost });
     }).join('');
   }
 
@@ -889,8 +958,8 @@
      접혀 있거나 고르지 않은 보기는 그리지 않는다. */
   function renderMore() {
     const fold = $('#caseMore'); if (!fold) return;
-    document.querySelectorAll('#caseMoreTabs [data-more-tab]').forEach(b => { const on = b.dataset.moreTab === I.more; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
-    fold.querySelectorAll('.case-more-pane').forEach(p => p.classList.toggle('on', p.dataset.more === I.more));
+    document.querySelectorAll('#caseMoreTabs [data-more-tab]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.moreTab === I.more)));
+    fold.querySelectorAll('.case-more-pane').forEach(p => { p.hidden = p.dataset.more !== I.more; });
     if (!fold.open) return;
     const view = I.view, none = UI.empty('고른 처리 건이 없습니다', '왼쪽 목록에서 처리 건을 고르면 여기에 보입니다', 'compact');
     if (I.more === 'log') { const box = $('#caseLog'); setHtml(box, view ? logPane(view) : none); box.querySelector('[data-events-more]')?.addEventListener('click', () => { I.eventsShown += 40; box._html = null; renderMore(); }); }
@@ -908,22 +977,22 @@
         : row.key === 'cause' ? (((v.guide_card || {}).causes || []).find(c => c.id === value) || (v.guide_card || {}).topCause || {}).name || UI.name(value)
         : row.key === 'failure_mode' ? UI.idText((typeof (v.guide_card || {}).failureMode === 'object' ? (v.guide_card.failureMode || {}).name : (v.decision || {}).failureMode) || UI.name(value))
         : row.key === 'chosen_skill' ? ((v.chosen_option || {}).name || UI.name(value)) : row.key === 'approved_role' ? who(value) : typeof value === 'string' ? UI.idText(value) : value;
-      const body = value !== null && typeof value === 'object' ? UI.fold(esc(UI.t('inst.structured')), `<pre>${esc(JSON.stringify(value, null, 2))}</pre>`) : esc(shown === true ? UI.t('yes') : shown === false ? UI.t('no') : shown ?? UI.t('inst.noValue'));
+      const body = value !== null && typeof value === 'object' ? UI.fold(esc(UI.t('inst.structured')), `<pre class="code">${esc(JSON.stringify(value, null, 2))}</pre>`) : esc(shown === true ? UI.t('yes') : shown === false ? UI.t('no') : shown ?? UI.t('inst.noValue'));
       const source = (inst.variable_sources || {})[row.key];
       const producer = source?.kind === 'workitem' ? view.workitems.find(w => w.id === source.id) : null;
       const origin = source?.kind === 'input' ? UI.t('inst.source.input') : source?.kind === 'workitem' ? UI.flowName(producer?.activity_name || source.activity) : source?.kind === 'runtime' ? UI.t('inst.source.runtime') : UI.t('inst.source.none');
       return UI.readonly(name, body, origin);
     }).join('');
-    return `<dl class="kv case-ids"><dt>${esc(UI.t('inst.started'))}</dt><dd>${esc(UI.dateTime(inst.start_date))}</dd>${inst.end_date ? `<dt>${esc(UI.t('inst.ended'))}</dt><dd>${esc(UI.dateTime(inst.end_date))}</dd>` : ''}<dt>처리 건 id</dt><dd class="mono">${esc(inst.proc_inst_id)}</dd><dt>흐름</dt><dd>${esc(UI.defName(inst.proc_def_id))} <span class="muted">· 판 ${esc(inst.proc_def_version ?? '')}</span></dd></dl>
-      <span class="label">지금 값</span><div class="ro-grid">${varRows || `<div class="muted">${esc(UI.t('empty.noData'))}</div>`}</div>
-      ${UI.fold(esc(UI.t('inst.initial')) + ' 원문', inst.initial_variables == null ? `<p class="muted">${esc(UI.t('empty.noData'))}</p>` : `<pre>${esc(JSON.stringify(inst.initial_variables, null, 2))}</pre>`)}`;
+    return `<dl class="kv"><dt>${esc(UI.t('inst.started'))}</dt><dd>${esc(UI.dateTime(inst.start_date))}</dd>${inst.end_date ? `<dt>${esc(UI.t('inst.ended'))}</dt><dd>${esc(UI.dateTime(inst.end_date))}</dd>` : ''}<dt>처리 건 ID</dt><dd class="mono">${esc(inst.proc_inst_id)}</dd><dt>흐름</dt><dd>${esc(UI.defName(inst.proc_def_id))} <span class="muted">· 판 ${esc(inst.proc_def_version ?? '')}</span></dd></dl>
+      <h3 class="case-sub">지금 값</h3>${varRows || `<p class="muted">${esc(UI.t('empty.noData'))}</p>`}
+      ${UI.fold(esc(UI.t('inst.initial')) + ' 원문', inst.initial_variables == null ? `<p class="muted">${esc(UI.t('empty.noData'))}</p>` : `<pre class="code">${esc(JSON.stringify(inst.initial_variables, null, 2))}</pre>`)}`;
   }
   /* 단계 표 원문: 작업 행마다 엔진의 상태 값 · 시각 · 메모 · 출력 원문 + 에이전트 활동(도구 호출 · 결과 묶음) */
   function logPane(view) {
-    const rows = view.workitems.map(w => `<tr class="${esc(w.status)}"><td>${esc(UI.flowName(w.activity_name))}${w.generation ? `<br><small class="muted">${esc(w.generation)}${esc(UI.t('inst.gen'))}</small>` : ''}</td><td>${esc(UI.status(w.status))}${w.draft_status && w.status !== 'DONE' ? `<br><small class="muted">${esc(UI.status(w.draft_status))}</small>` : ''}</td>
+    const rows = view.workitems.map(w => `<tr data-status="${esc(w.status)}"><td>${esc(UI.flowName(w.activity_name))}${w.generation ? `<br><span class="muted">${esc(w.generation)}${esc(UI.t('inst.gen'))}</span>` : ''}</td><td>${esc(UI.status(w.status))}${w.draft_status && w.status !== 'DONE' ? `<br><span class="muted">${esc(UI.status(w.draft_status))}</span>` : ''}</td>
       <td>${esc(who(w.user_id))}</td>
-      <td class="num">${esc(UI.time(w.start_date))}${w.end_date ? ' → ' + esc(UI.time(w.end_date)) : ''}${w.due_date && !w.end_date ? `<br><small class="muted">${esc(UI.t('inst.due'))} ${esc(UI.time(w.due_date))}</small>` : ''}</td>
-      <td class="log">${esc(UI.logText(w.log || ''))}${w.output && Object.keys(w.output).length ? UI.fold(`${esc(UI.t('inst.output'))} ${esc(Object.keys(w.output).filter(k => k !== 'text').join(', ') || 'text')}`, `<pre>${esc(JSON.stringify(w.output, null, 1).slice(0, 1500))}</pre>`) : ''}${UI.fold(esc(UI.t('raw')), `<pre>${esc(JSON.stringify({ id: w.id, activity_id: w.activity_id, log: w.log, generation: w.generation, agent_orch: w.agent_orch, agent_mode: w.agent_mode, consumer: w.consumer, draft_status: w.draft_status, supersedes_id: w.supersedes_id, gateway_decisions: w.gateway_decisions }, null, 1))}</pre>`)}</td></tr>`).join('');
+      <td class="num">${esc(UI.time(w.start_date))}${w.end_date ? ' → ' + esc(UI.time(w.end_date)) : ''}${w.due_date && !w.end_date ? `<br><span class="muted">${esc(UI.t('inst.due'))} ${esc(UI.time(w.due_date))}</span>` : ''}</td>
+      <td class="case-memo">${esc(UI.logText(w.log || ''))}${w.output && Object.keys(w.output).length ? UI.fold(`${esc(UI.t('inst.output'))} ${esc(Object.keys(w.output).filter(k => k !== 'text').join(', ') || 'text')}`, `<pre class="code">${esc(JSON.stringify(w.output, null, 1).slice(0, 1500))}</pre>`) : ''}${UI.fold(esc(UI.t('raw')), `<pre class="code">${esc(JSON.stringify({ id: w.id, activity_id: w.activity_id, log: w.log, generation: w.generation, agent_orch: w.agent_orch, agent_mode: w.agent_mode, consumer: w.consumer, draft_status: w.draft_status, supersedes_id: w.supersedes_id, gateway_decisions: w.gateway_decisions }, null, 1))}</pre>`)}</td></tr>`).join('');
     // a tool call and its result become one record with the duration
     const evs = view.events.slice();
     const started = new Map(); evs.forEach(e => { if (e.event_type === 'tool_usage_started' && e.data?.tool_use_id) started.set(e.data.tool_use_id, e); });
@@ -935,31 +1004,31 @@
       // A132: the worker says where the result came from (result_source file | message)
       const chips = e.event_type === 'task_completed' && e.data?.result_source === 'file' ? `<span class="muted">${esc(UI.t('inst.resultFile'))}</span>` : '';
       return UI.eventRecord({ time: e.timestamp, name, actor: e.crew_type || '', detail, raw: e.data, chips });
-    }).join('') + (all.length > I.eventsShown ? `<button type="button" class="btn small" data-events-more>${esc(UI.t('inst.eventsMore'))} (남은 ${all.length - I.eventsShown}건)</button>` : '');
-    return `<span class="label">${esc(UI.t('inst.steps'))} ${view.workitems.length}줄</span><div class="table-scroll"><table class="tbl inst-table"><thead><tr><th>${esc(UI.t('inst.stepTable.step'))}</th><th>${esc(UI.t('inst.stepTable.status'))}</th><th>${esc(UI.t('inst.stepTable.who'))}</th><th>${esc(UI.t('inst.stepTable.when'))}</th><th>${esc(UI.t('inst.stepTable.result'))}</th></tr></thead><tbody>${rows}</tbody></table></div>
-      <span class="label">${esc(UI.t('inst.events'))} ${view.events.length}줄</span><div class="inst-events">${events || `<div class="muted">${esc(UI.t('empty.noData'))}</div>`}</div>`;
+    }).join('') + (all.length > I.eventsShown ? `<button type="button" class="btn more" data-variant="ghost" data-size="sm" data-events-more>${esc(UI.t('inst.eventsMore'))} (남은 ${all.length - I.eventsShown}건)</button>` : '');
+    return `<h3 class="case-sub">${esc(UI.t('inst.steps'))} ${view.workitems.length}줄</h3><div class="table-container"><table class="table case-table"><thead><tr><th>${esc(UI.t('inst.stepTable.step'))}</th><th>${esc(UI.t('inst.stepTable.status'))}</th><th>${esc(UI.t('inst.stepTable.who'))}</th><th>${esc(UI.t('inst.stepTable.when'))}</th><th>${esc(UI.t('inst.stepTable.result'))}</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <h3 class="case-sub">${esc(UI.t('inst.events'))} ${view.events.length}줄</h3><div class="stream-log case-events">${events || `<p class="muted">${esc(UI.t('empty.noData'))}</p>`}</div>`;
   }
   function graphHtml(inst) {
     const g = I.graph;
     if (!g && !I.caseProjection) return `<p class="muted">${esc(UI.t('loading'))}</p>`;   // 이 탭을 연 뒤 첫 읽기가 끝나기 전
     const pending = g && g.projection, cases = I.caseProjection;
-    const sync = `<p class="kv-line">${esc(UI.t('inst.projectionPending'))}: ${pending ? esc(pending.pending) + '건' : esc(UI.t('inst.projectionNone'))} · ${esc(UI.t('inst.projectionAll'))}: ${cases && !cases.error ? esc(cases.pending) + '건' : esc(UI.t('inst.projectionNone'))}</p>
-      ${cases && cases.worker_running === false ? '<p class="neg" role="status">지식 지도에 반영하는 작업이 멈춰 있어 반영이 늦어집니다. 잠시 뒤에도 그대로면 강사에게 알리세요.</p>' : ''}
-      ${cases && cases.error ? `<p class="neg">반영 상태 조회 실패: ${esc(cases.error)}</p>` : ''}
-      ${cases?.knowledge ? `<p class="muted">지식 연결 변경 확인: <span data-knowledge-checked>${esc(knowledgeChecked(cases))}</span>${cases.knowledge.last_error ? '<br><span class="neg">연결 재확인 실패: ' + esc(cases.knowledge.last_error) + '</span>' : ''}</p>` : ''}
-      ${pending && pending.last_error ? UI.fold(pending.last_error.startsWith('ProjectionConflict:') ? '반영이 멈춘 까닭 (오류 원문)' : '반영을 다시 시도하는 중 (오류 원문)', `<pre>${esc(pending.last_error)}</pre>`, { cls: 'small' }) : ''}
-      ${pending?.last_error?.startsWith('ProjectionConflict:') || cases?.items?.some(x => x.last_error?.startsWith('ProjectionConflict:')) ? '<p class="neg" role="status">이 처리 건의 기록과 지식 지도의 내용이 서로 달라 자동 반영을 멈췄습니다. 화면에서 고칠 수 없으니 강사에게 알리세요.</p>' : ''}
-      ${cases && (cases.items || []).some(x => x.last_error) ? UI.fold('사건 · 판단 반영 오류', `<pre>${esc(JSON.stringify(cases.items.filter(x => x.last_error), null, 2))}</pre>`, { cls: 'small' }) : ''}`;
-    if (!g) return sync + `<div class="muted">${esc(UI.t('loading'))}</div>`;
-    if (g.error) return sync + `<div class="muted">${esc(UI.t('error.load'))}: ${esc(g.error)}</div>`;
-    const cy = UI.fold(esc(UI.t('inst.query')), `<pre>${esc(g.cypher)}</pre><pre>${esc(JSON.stringify(g.params))}</pre>`, { cls: 'small' });
+    const sync = `<p>${esc(UI.t('inst.projectionPending'))}: ${pending ? esc(pending.pending) + '건' : esc(UI.t('inst.projectionNone'))} · ${esc(UI.t('inst.projectionAll'))}: ${cases && !cases.error ? esc(cases.pending) + '건' : esc(UI.t('inst.projectionNone'))}</p>
+      ${cases && cases.worker_running === false ? `<div class="alert" data-variant="destructive" role="status">${UI.icon('circle-alert')}<h2>지식 지도에 반영하는 작업이 멈춰 있습니다</h2><section>반영이 늦어집니다. 잠시 뒤에도 그대로면 시스템 › 시스템 구성에서 처리 서비스의 상태를 확인하세요.</section></div>` : ''}
+      ${cases && cases.error ? `<p class="muted" data-tone="danger">반영 상태 조회 실패: ${esc(cases.error)}</p>` : ''}
+      ${cases?.knowledge ? `<p class="muted">지식 연결 변경 확인: <span data-knowledge-checked>${esc(knowledgeChecked(cases))}</span>${cases.knowledge.last_error ? '<br><span class="muted" data-tone="danger">연결 재확인 실패: ' + esc(cases.knowledge.last_error) + '</span>' : ''}</p>` : ''}
+      ${pending && pending.last_error ? UI.fold(pending.last_error.startsWith('ProjectionConflict:') ? '반영이 멈춘 까닭 (오류 원문)' : '반영을 다시 시도하는 중 (오류 원문)', `<pre class="code">${esc(pending.last_error)}</pre>`) : ''}
+      ${pending?.last_error?.startsWith('ProjectionConflict:') || cases?.items?.some(x => x.last_error?.startsWith('ProjectionConflict:')) ? `<div class="alert" data-variant="destructive" role="status">${UI.icon('circle-alert')}<h2>지식 지도 자동 반영이 멈췄습니다</h2><section>이 처리 건의 기록과 지식 지도의 내용이 서로 달라 자동 반영을 멈췄습니다. 화면에서 고칠 수 없습니다 — 아래 오류 원문과 함께 시스템 관리자에게 알리세요.</section></div>` : ''}
+      ${cases && (cases.items || []).some(x => x.last_error) ? UI.fold('사건 · 판단 반영 오류', `<pre class="code">${esc(JSON.stringify(cases.items.filter(x => x.last_error), null, 2))}</pre>`) : ''}`;
+    if (!g) return sync + `<p class="muted">${esc(UI.t('loading'))}</p>`;
+    if (g.error) return sync + `<p class="muted">${esc(UI.t('error.load'))}: ${esc(g.error)}</p>`;
+    const cy = UI.fold(esc(UI.t('inst.query')), `<pre class="code">${esc(g.cypher)}</pre><pre class="code">${esc(JSON.stringify(g.params))}</pre>`);
     const x = g.graph;
-    if (!x) return sync + '<div class="muted">조회 가능한 반영 내역이 없습니다.</div>' + cy;
-    const rows = (x.workitems || []).map(w => `<tr class="${esc(w.status)}"><td>${esc(UI.flowName(w.activity_name || w.activity_id || ''))}</td><td>${UI.chip(w.status)}</td><td>${w.executes ? `${esc(w.executes_name || '')}<br><small class="muted">${esc(w.executes_type || '')}</small>` : '–'}</td><td>${w.assigned_to ? w.assigned_to.split(',').map(id => esc(who(id))).join(', ') : '–'}</td></tr>`).join('');
-    const warnings = (x.warnings || []).map(w => `<div class="neg">확인 필요: ${esc(w)}</div>`).join('');
+    if (!x) return sync + '<p class="muted">조회 가능한 반영 내역이 없습니다.</p>' + cy;
+    const rows = (x.workitems || []).map(w => `<tr data-status="${esc(w.status)}"><td>${esc(UI.flowName(w.activity_name || w.activity_id || ''))}</td><td>${UI.chip(w.status)}</td><td>${w.executes ? `${esc(w.executes_name || '')}<br><span class="muted">${esc(w.executes_type || '')}</span>` : '–'}</td><td>${w.assigned_to ? w.assigned_to.split(',').map(id => esc(who(id))).join(', ') : '–'}</td></tr>`).join('');
+    const warnings = (x.warnings || []).map(w => `<p class="muted" data-tone="danger">확인 필요: ${esc(w)}</p>`).join('');
     const version = x.definition || {};
-    return sync + warnings + `<p class="kv-line">흐름 <b title="${esc(version.id || '')}">${esc(UI.defName(version.id || ''))}</b> · 판 ${esc(version.version || x.process.version || '')}${x.asset ? ` · ${esc(UI.t('dec.asset'))} ${esc(x.asset)}` : ''}</p>
-      <table class="inst-table"><thead><tr><th>${esc(UI.t('step'))}</th><th>${esc(UI.t('inst.stepTable.status'))}</th><th>${esc(UI.t('knowledge'))}</th><th>${esc(UI.t('inst.stepTable.who'))}</th></tr></thead><tbody>${rows}</tbody></table>${cy}`;
+    return sync + warnings + `<p>흐름 <b title="${esc(version.id || '')}">${esc(UI.defName(version.id || ''))}</b> · 판 ${esc(version.version || x.process.version || '')}${x.asset ? ` · ${esc(UI.t('dec.asset'))} ${esc(x.asset)}` : ''}</p>
+      <div class="table-container"><table class="table case-table"><thead><tr><th>${esc(UI.t('step'))}</th><th>${esc(UI.t('inst.stepTable.status'))}</th><th>${esc(UI.t('knowledge'))}</th><th>${esc(UI.t('inst.stepTable.who'))}</th></tr></thead><tbody>${rows}</tbody></table></div>${cy}`;
   }
   function eventDetail(e) {
     const d = e.data || {};
@@ -1001,9 +1070,9 @@
   }
   function discardPreviewHtml(p) {
     const evidence = p.evidence;
-    return UI.card({ title: '폐기 전 확인', cls: 'soft', body: `<p>${esc(UI.t('case'))} ${UI.chip(evidence.incident.state)} · ${esc(UI.t('command'))} 없음 · 업무 실행 기록 ${esc(evidence.enterprise_receipts.length)}건</p>
+    return UI.card({ title: '폐기 전 확인', body: `<p>${esc(UI.t('case'))} ${UI.chip(evidence.incident.state)} · ${esc(UI.t('command'))} 없음 · 업무 실행 기록 ${esc(evidence.enterprise_receipts.length)}건</p>
       <p>${esc(evidence.outcome)}</p><p>취소할 남은 단계 ${esc(evidence.cancel_workitems.length)}건 · ${esc(UI.t('form.reason'))}: ${esc(p.reason)}</p>
-      ${UI.actions(`<button class="btn danger" data-confirm-discard ${I.busy ? 'disabled' : ''}>승인 폐기 · 처리 건 취소</button>`)}` });
+      ${UI.actions(`<button type="button" class="btn" data-variant="destructive" data-size="sm" data-confirm-discard ${I.busy ? 'disabled' : ''}>승인 폐기 · 처리 건 취소</button>`)}` });
   }
   function wireApprovalButtons(box) {
     // 칸 값을 상태로(다시 그려도 남는다). 값을 바꾸면 이미 받아 둔 폐기 전 확인은 무효
@@ -1079,18 +1148,13 @@
   const detailBox = $('#instDetail');
   wireStepButtons(detailBox);
   detailBox.addEventListener('click', e => {
-    if (e.target.closest('[data-full-flow]')) { openFullFlow(); return; }
     const go = e.target.closest('[data-goto-step]'); if (go) { gotoStep(go.dataset.gotoStep); return; }
-    // 진행 길의 상자: 지나온 단계는 단계 기록의 그 단계로, 아직 시작하지 않은 단계는 정의에 적힌 입력 · 출력(단계 상세)을 연다
-    const node = e.target.closest('[data-path-node]');
-    if (node && !node.closest('.cv-scroll')?.dataset.dragged) { if (!(node.dataset.pathStep && gotoStep(node.dataset.pathStep))) window.hydTaskDetail?.openActivity(node.dataset.pathNode); }
+    // 머리의 더 보기 메뉴: 다시 읽기 · 전체 흐름 보기 · 자세한 기록 펼치기
+    const act = e.target.closest('[data-case-act]'); if (!act) return;
+    if (act.dataset.caseAct === 'reload') load(true);
+    else if (act.dataset.caseAct === 'flow') openFullFlow();
+    else if (act.dataset.caseAct === 'more') { const fold = $('#caseMore'); fold.open = true; fold.scrollIntoView({ block: 'start', behavior: 'smooth' }); }
   });
-  detailBox.addEventListener('keydown', e => {
-    if (e.key !== 'Enter' && e.key !== ' ') return;
-    const node = e.target.closest && e.target.closest('[data-path-step]');
-    if (node) { e.preventDefault(); gotoStep(node.dataset.pathStep); }
-  });
-  $('#instReload').addEventListener('click', () => load(true));
   $('#instTabs').addEventListener('click', e => {
     const b = e.target.closest('[data-inst-filter]'); if (!b || b.dataset.instFilter === I.filter) return;
     I.filter = b.dataset.instFilter; I.listShown = UI.PAGE; if (I.filter !== 'mine') I.role = '';

@@ -72,20 +72,21 @@
 
   /* ------------------------------------------------ render: 처리 건 화면의 「알림」 접기 */
   function notesHtml() {
-    if (!X.notes) return X.err ? '' : UI.empty('읽는 중…', '', 'compact');
+    if (!X.notes) return X.err ? '' : '<div class="sk-row"><div class="skeleton sk-line" style="width:55%"></div><div class="skeleton sk-line" style="width:80%"></div></div>';
     if (!X.notes.length) return UI.empty('알림이 없습니다', '승인이나 입력이 필요한 단계가 열리거나 AI가 질문하거나 처리 건이 끝나면 여기에 쌓입니다.', 'compact');
     const KIND = { task_assigned: '처리할 단계', workitem_bpm: 'AI 질문', instance_completed: '처리 건 종료' };
     // 한 줄 = 알림 하나: 제목(안 읽은 것은 굵게 + 「안 읽음」 칩 하나) · 둘째 줄에 종류 · 시각 · 설명. 종류는 칩이 아니라 글로 쓴다
-    const rows = X.notes.map(n => `<a class="item${n.is_read ? ' read' : ' unread'}" href="${esc(n.link || '#/instances')}" data-inbox-note="${esc(n.id)}" data-inbox-link="${esc(n.link || '')}">
-      <span class="row"><strong>${esc(n.type === 'task_assigned' ? UI.flowName(n.title) : n.title || '')}</strong>${n.is_read ? '' : UI.chipText('안 읽음', 'accent')}</span>
-      <span class="sub">${esc(KIND[n.type] || '알림')} · ${esc(UI.dateTime(n.created_at))}${n.type === 'workitem_bpm' ? '' : n.description ? ' · ' + esc(n.description) : ''}${n.link_error ? ' · ' + esc(n.link_error) : ''}</span></a>`).join('');
-    return `<div class="list">${rows}</div>` + `<div class="notice-actions"><button class="btn small" data-inbox-readall ${X.unread ? '' : 'disabled'}>모두 읽음</button></div>`;
+    const ICON = { task_assigned: 'user-check', workitem_bpm: 'message-circle-question', instance_completed: 'circle-check' };
+    const rows = X.notes.map(n => `<a class="row"${n.is_read ? ' data-read' : ''} href="${esc(n.link || '#/instances')}" data-inbox-note="${esc(n.id)}" data-inbox-link="${esc(n.link || '')}">
+      <span class="row-ic">${UI.icon(ICON[n.type] || 'bell')}</span><span class="row-title">${esc(n.type === 'task_assigned' ? UI.flowName(n.title) : n.title || '')}</span>${n.is_read ? '<span></span>' : UI.chipText('안 읽음', 'accent')}
+      <span class="row-meta">${esc(KIND[n.type] || '알림')} · ${esc(UI.dateTime(n.created_at))}${n.type === 'workitem_bpm' ? '' : n.description ? ' · ' + esc(n.description) : ''}${n.link_error ? ' · ' + esc(n.link_error) : ''}</span></a>`).join('');
+    return `<div class="rows">${rows}</div><footer class="form-foot"><button type="button" class="btn" data-variant="outline" data-size="sm" data-inbox-readall ${X.unread ? '' : 'disabled'}>모두 읽음</button></footer>`;
   }
 
   function render() {
     badge();
     const count = document.getElementById('noticeFoldCount');
-    if (count) { count.hidden = !X.unread; count.textContent = X.unread ? `· 안 읽음 ${X.unread}건` : ''; }
+    if (count) { count.hidden = !X.unread; count.textContent = X.unread ? `안 읽음 ${X.unread}건` : ''; }
     const root = document.getElementById('noticeView'); if (!root) return;
     // 담당자 정보를 못 읽으면 알림을 읽을 수 없다 — 까닭과 [다시 시도]
     if (X.err && !me()) {
@@ -96,7 +97,7 @@
     const live = { on: '새 알림을 실시간으로 받고 있습니다.', connecting: '실시간 연결을 맺는 중입니다.', off: '실시간 연결이 끊겼습니다. 15초 뒤 다시 연결합니다.' }[X.live];
     root.innerHTML =
       (X.err ? UI.errorBlock('알림을 읽지 못했습니다', X.err.replace(/^알림을 읽지 못했습니다: /, '') + (X.notes ? ' 아래는 마지막으로 읽은 목록입니다.' : ''), { retry: true, cls: 'compact' }) : '') +
-      `<div class="inbox-body">${notesHtml()}</div><p class="field-hint" aria-live="polite">알림 줄을 누르면 그 처리 건의 그 단계가 열리고 읽음으로 바뀝니다. ${esc(live)}</p>`;
+      `<div class="notice-body">${notesHtml()}</div><p class="muted" aria-live="polite">알림 줄을 누르면 그 처리 건의 그 단계가 열리고 읽음으로 바뀝니다. ${esc(live)}</p>`;
     root.querySelectorAll('[data-inbox-link]').forEach(a => a.addEventListener('click', e => {
       e.preventDefault();
       const note = a.dataset.inboxNote, link = a.dataset.inboxLink;

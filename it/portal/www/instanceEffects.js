@@ -65,27 +65,27 @@
         return `<tr><td>${pick}</td><td>${esc(kinds[e.kind] || '종류 표시 이름 미등록')}</td><td>${label(e)}</td><td>${how}</td><td>${state}</td></tr>`;
       }).join('');
       const reversiblePending = (d.effects || []).filter(e => pending.has(e.id) && e.reversible && !e.compensation_refused).length;
-      const receipts = (d.receipts || []).map(r => `<li>${esc(r.kind === 'review' ? '사람 확인' : '되돌림')} · ${UI.chip(r.status)} · ${esc(UI.who(r.request.by))} (${esc(roleName(r.request.role))}) · ${esc(r.request.reason)}${r.error ? ' · <span class="neg">' + esc(r.error) + '</span>' : ''}</li>`).join('');
+      const receipts = (d.receipts || []).map(r => `<li>${esc(r.kind === 'review' ? '사람 확인' : '되돌림')} · ${UI.chip(r.status)} · ${esc(UI.who(r.request.by))} (${esc(roleName(r.request.role))}) · ${esc(r.request.reason)}${r.error ? ' · <span class="muted" data-tone="danger">' + esc(r.error) + '</span>' : ''}</li>`).join('');
       /* 확인 역할: 서버는 이 흐름에서 사람이 맡는 역할 가운데 하나만 받고, 그 역할이 이전 승인을 한 역할과 같거나 높은지 본다
          (effect_compensation._authorize_review · _review_level). 후보가 하나면 고를 것이 없으므로 그 값을 쓰고 한 줄로 보인다.
          여럿이면 고른 역할에 따라 서버 판정이 달라지므로 고르게 둔다 — 첫 항목을 저절로 보내지 않는다. */
       const roles = d.review_roles || [];
       if (roles.length === 1 && !s.pending) s.role = roles[0];
-      const roleField = !roles.length ? UI.readonly('확인 역할', '<span class="neg">이 흐름에는 사람이 맡는 역할이 없어 되돌리기와 확인을 요청할 수 없습니다.</span>')
+      const roleField = !roles.length ? UI.readonly('확인 역할', '<span class="muted" data-tone="danger">이 흐름에는 사람이 맡는 역할이 없어 되돌리기와 확인을 요청할 수 없습니다.</span>')
         : roles.length === 1 ? UI.readonly('확인 역할', esc(roleName(roles[0])), '이 흐름에서 사람이 맡는 역할이 하나뿐이라 이 역할로 요청합니다.')
         : UI.field({ label: '확인 역할', required: true, hint: '어느 역할로 되돌리기와 확인을 요청하는지 고릅니다. 이전 승인을 한 역할과 같거나 더 높은 역할이어야 합니다.',
           input: `<select id="efRole" ${s.busy ? 'disabled' : ''}><option value="">${esc(UI.t('form.pickRole'))}</option>${roles.map(r => `<option value="${esc(r)}" ${r === s.role ? 'selected' : ''}>${esc(roleName(r))}</option>`).join('')}</select>` });
-      const body = `<p class="kv-line">연결된 사건: ${UI.chip(d.incident.state)} · 설비 명령 ${d.incident.cmdId ? '보냄' : '보내지 않음'}</p>
-        ${rows ? `<table class="inst-table"><thead><tr><th>확인</th><th>종류</th><th>내용</th><th>처리 방법</th><th>상태</th></tr></thead><tbody>${rows}</tbody></table>` : '<p class="muted">기록된 외부 효과가 없습니다.</p>'}
-        <div class="form"><section class="form-section"><h4>${esc(UI.t('form.section.who'))}</h4><div class="form-grid">
+      const body = `<p>연결된 사건: ${UI.chip(d.incident.state)} · 설비 명령 ${d.incident.cmdId ? '보냄' : '보내지 않음'}</p>
+        ${rows ? `<div class="table-container"><table class="table case-table"><thead><tr><th>확인</th><th>종류</th><th>내용</th><th>처리 방법</th><th>상태</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<p class="muted">기록된 외부 효과가 없습니다.</p>'}
+        <div><fieldset class="fieldset"><legend>${esc(UI.t('form.section.who'))}</legend><div role="group">
           ${UI.actorInput('id="efBy"', s.by, s.busy ? 'disabled' : '')}
           ${roleField}
           ${UI.field({ label: UI.t('form.reason'), required: true, cls: 'wide', input: `<textarea id="efReason" rows="2" ${s.busy ? 'disabled' : ''}>${esc(s.reason)}</textarea>` })}
-        </div></section>
-        ${s.pending ? `<p>앞 요청의 응답을 받지 못했습니다. 눌러서 처리됐는지 확인하세요. 같은 요청을 다시 확인하는 것이라 두 번 처리되지 않습니다.</p>${UI.actions(`<button class="btn" id="efRetry" ${s.busy ? 'disabled' : ''}>요청 결과 확인</button>`, s.error)}`
-          : UI.actions(`<button class="btn outline" id="efCompensate" ${!reversiblePending || s.busy ? 'disabled' : ''}>되돌릴 수 있는 거래 ${reversiblePending}건 되돌리기</button><button class="btn primary" id="efReview" ${!s.picked.size || s.busy ? 'disabled' : ''}>${esc(UI.t('btn.confirm'))} (${s.picked.size})</button>`, s.error)}</div>
-        ${pending.size === 0 && (d.effects || []).length ? `<p class="rework-success" role="status">모든 효과가 해결됐습니다. ${esc(UI.t('inst.rework'))}에서 새 차수를 요청할 수 있습니다.</p>` : ''}
-        ${receipts ? UI.fold(`확인 기록 ${(d.receipts || []).length}건`, `<ul>${receipts}</ul>`, { cls: 'small' }) : ''}
+        </div></fieldset>
+        ${s.pending ? `<p>앞 요청의 응답을 받지 못했습니다. 눌러서 처리됐는지 확인하세요. 같은 요청을 다시 확인하는 것이라 두 번 처리되지 않습니다.</p>${UI.actions(`<button type="button" class="btn" data-variant="outline" id="efRetry" ${s.busy ? 'disabled' : ''}>요청 결과 확인</button>`, s.error)}`
+          : UI.actions(`<button class="btn" data-variant="outline" id="efCompensate" ${!reversiblePending || s.busy ? 'disabled' : ''}>되돌릴 수 있는 거래 ${reversiblePending}건 되돌리기</button><button class="btn" id="efReview" ${!s.picked.size || s.busy ? 'disabled' : ''}>${esc(UI.t('btn.confirm'))} (${s.picked.size})</button>`, s.error)}</div>
+        ${pending.size === 0 && (d.effects || []).length ? `<p class="rework-done" role="status">모든 효과가 해결됐습니다. ${esc(UI.t('inst.rework'))}에서 새 차수를 요청할 수 있습니다.</p>` : ''}
+        ${receipts ? UI.fold(`확인 기록 ${(d.receipts || []).length}건`, `<ul>${receipts}</ul>`) : ''}
         ${s.notice ? `<p role="status">${esc(s.notice)}</p>` : ''}`;
       host.innerHTML = UI.fold(`${esc(UI.t('inst.effects'))} ${pending.size ? UI.chipText(`확인할 조치 ${pending.size}`, 'neutral') : ''}`, body, { open: !!s.pending });   // A161-U1 결함 8: 끝난 처리 건에서 폼이 펼쳐져 나오지 않게(필요할 때 연다)
       host.querySelectorAll('input[data-effect]').forEach(cb => cb.addEventListener('change', e => { e.target.checked ? s.picked.add(e.target.dataset.effect) : s.picked.delete(e.target.dataset.effect); draw(); }));

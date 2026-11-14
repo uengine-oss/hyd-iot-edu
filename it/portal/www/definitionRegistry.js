@@ -1,6 +1,6 @@
 /* 시스템 › 관리 › 흐름 정의를 JSON 으로 등록 · 판본 고르기 · 직접 실행(GET · POST /api/process/definitions, POST /api/instances/start). 시작할 때 정의를 심지 않는다.
    개발자용 길이다 — 그림으로 만드는 길(가져오기 → 등록 → 배포 → 시작)은 흐름 화면에 있다.
-   두 패널(이 파일 · 뒤에 실리는 definitionDeploy.js — 흐름 화면의 ④ 배포)이 쓰는 것은 여기 한 벌(window.hydDefinitions): 패널 일(task) · 흐름 이름(name). */
+   두 패널(이 파일 · 뒤에 실리는 definitionDeploy.js — 흐름 화면의 「판본 · 배포」)이 쓰는 것은 여기 한 벌(window.hydDefinitions): 패널 일(task) · 흐름 이름(name). */
 (function () {
   const $r = id => document.getElementById(id);
 
@@ -8,7 +8,14 @@
   // 수업 경계)가 살아나지 않게. 실패는 패널 알림 줄에 그 문장 그대로. after(): 끝난 뒤 그 패널이 단추 상태를 다시 맞추는 함수(W3-28 — 두 벌이던 것)
   function task(panel, note, after) {
     let busy = false;
-    const say = (text, error = false) => { note.textContent = text; note.className = 'form-msg ' + (error ? 'neg' : 'pos'); };
+    // 알림 줄: 글과 상태(data-tone = danger | ok)만 적는다. 알림 줄이 키트의 alert 판 안에 있으면(흐름 화면의 배포) 그 판을 실패 모양으로 바꾸고, 글이 없으면 판을 숨긴다
+    const say = (text, error = false) => {
+      note.textContent = text; (note.dataset ||= {}).tone = error ? 'danger' : 'ok';
+      const box = note.parentElement;
+      if (!box || !/(^|\s)alert(\s|$)/.test(box.className || '')) return;
+      box.hidden = !text; box.setAttribute('role', error ? 'alert' : 'status');
+      if (error) box.dataset.variant = 'destructive'; else delete box.dataset.variant;
+    };
     async function run(fn) {
       if (busy) return;
       busy = true;
@@ -57,7 +64,7 @@
     if (!panel.busy) button.disabled=!!why;
     // 까닭은 마우스를 올려야 보이는 title 이 아니라 단추 옆 한 줄로(W3-07 — 꺼진 단추는 키보드 · 터치로 초점이 가지 않는다)
     let note=button.parentElement.querySelector('[data-start-why]');
-    if (!note) { note=document.createElement('span'); note.className='field-hint'; note.dataset.startWhy=''; button.after(note); }
+    if (!note) { note=document.createElement('span'); note.className='muted'; note.dataset.startWhy=''; button.after(note); }
     note.textContent=why;
   }
   async function refresh(selected) {
@@ -108,7 +115,7 @@
     await refresh(key);
     if ($r('definitionChoice').value!==key) throw Error('등록은 됐지만 목록에 그 판본이 보이지 않습니다 — [목록 새로 읽기]를 누르세요');
     const row=definitions.find(x => x.id===d.processDefinitionId && x.version===d.version);
-    message(`「${name(row.id,row.name)}」의 새 판본(${row.version})을 등록하고 골라 두었습니다. 아래 [실행]으로 시작할 수 있습니다. 경보에 쓰려면 메뉴 「흐름」의 4단계 배포에서 이 판본을 배포합니다.`);
+    message(`「${name(row.id,row.name)}」의 새 판본(${row.version})을 등록하고 골라 두었습니다. 아래 [실행]으로 시작할 수 있습니다. 경보에 쓰려면 메뉴 「흐름」에서 이 흐름을 골라 이 판본을 배포합니다.`);
   }));
   $r('definitionStart').addEventListener('click', () => action(async () => {
     const [id,version]=choice(),event=$r('definitionEvent').value.trim();

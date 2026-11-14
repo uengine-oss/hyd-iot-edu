@@ -345,14 +345,14 @@
       const original=value=>value==null ? '' : typeof value==='string' ? value : JSON.stringify(value,null,2);
       const io = UI.toolIdentityFold(r.tool) + sec(UI.t('trace.request'), original(r.input)) + (r.inputEvent ? UI.fullToolIOHtml(r.inputEvent,'input') : '') + sec(r.ioEvent?.data.full_output ? '도구 응답 (앞부분)' : UI.t('trace.response'), original(r.output)) + (r.ioEvent ? UI.fullToolIOHtml(r.ioEvent) : '');
       const mark = r.status === 'running' && live ? spinner('sm') : stateMark(r.status === 'running' ? 'idle' : r.status);
-      const line = `<b>${esc(r.title)}</b>${r.text ? `<span class="tr-txt">${esc(r.text)}</span>` : ''}${r.badge ? `<span class="chip tone-${r.status === 'fail' ? 'danger' : 'warning'} sm">${esc(r.badge)}</span>` : ''}${r.t1 ? durHtml(r.t0, r.t1) : r.status === 'running' && live ? durHtml(r.t0, null, true) : ''}`;
+      const line = `<b>${esc(r.title)}</b>${r.text ? `<span class="tr-txt">${esc(r.text)}</span>` : ''}${r.badge ? `<span class="tag" data-tone="${r.status === 'fail' ? 'danger' : 'warn'}">${esc(r.badge)}</span>` : ''}${r.t1 ? durHtml(r.t0, r.t1) : r.status === 'running' && live ? durHtml(r.t0, null, true) : ''}`;
       return `<div class="tr-row tr-k-tool ${esc(r.status)}">${time}<span class="tr-mark">${mark}</span><div class="tr-main">
         ${io ? `<details class="tr-tool" data-k="${esc(r.key)}"><summary class="tr-sum"><div class="tr-line">${line}</div>${r.result && r.status !== 'running' ? `<div class="tr-res">${esc(r.result)}</div>` : ''}</summary><div class="tr-io">${io}</div></details>`
           : `<div class="tr-line">${line}</div>${r.result && r.status !== 'running' ? `<div class="tr-res">${esc(r.result)}</div>` : ''}`}${UI.toolIdentityFold(r.tool)}</div></div>`;
     }
     const ic = { start: 'flag', note: 'note', file: 'file', ask: 'ask', answer: 'human', done: 'check', stop: 'x', error: 'warn', system: 'system' }[r.kind] || 'event';
     const body = r.kind === 'note' ? `<blockquote class="tr-note">${esc(r.note.slice(0, 700))}${r.note.length > 700 ? '…' : ''}</blockquote>${r.note.length > 700 ? codeBlock(UI.t('more'), r.note, r.key + ':more') : ''}`
-      : r.kind === 'ask' ? `<div class="tr-hitl"><p>${esc(r.note || '')}</p>${r.options && r.options.length ? `<div class="row-wrap">${r.options.map(o => `<span class="chip tone-neutral sm">${esc(o)}</span>`).join('')}</div>` : ''}</div>` : '';
+      : r.kind === 'ask' ? `<div class="tr-hitl"><p>${esc(r.note || '')}</p>${r.options && r.options.length ? `<div class="chips">${r.options.map(o => `<span class="badge" data-variant="secondary">${esc(o)}</span>`).join('')}</div>` : ''}</div>` : '';
     return `<div class="tr-row tr-k-${esc(r.kind)} ${esc(r.status)}${r.small ? ' small' : ''}">${time}<span class="tr-mark">${icon(ic, 'k-' + r.kind)}</span><div class="tr-main">
       <div class="tr-line"><b>${esc(r.title)}</b>${r.text ? `<span class="tr-txt">${esc(r.text)}</span>` : ''}</div>${body}${r.evidenceHtml || ''}
       ${r.fold ? codeBlock(r.fold[0], r.fold[1], r.key + ':f') : ''}${r.raw ? codeBlock(UI.t('raw'), pretty(r.raw), r.key + ':raw') : ''}</div></div>`;
@@ -361,7 +361,7 @@
     const ik = s.kind === 'agent' ? 'agent' : s.kind === 'timer' ? 'timer' : s.kind === 'event' ? 'event' : ACT_ICON[s.action] || (s.kind === 'human' ? 'human' : 'system');
     const due = s.due ? (() => { const left = ts(s.due) - Date.now(); return `<span class="tr-due${left < 0 ? ' over' : ''}" data-until="${esc(s.due)}">${esc(left >= 0 ? `${fmtMs(left)} ${UI.t('trace.left')}` : UI.t('trace.overdue'))}</span>`; })() : '';
     const rejected = s.w?.output?.approval === '반려';
-    const actChip = rejected ? '<span class="chip tone-danger sm">반려</span>' : s.action ? `<span class="tr-act">${esc(UI.t('trace.act.' + s.action))}</span>` : '';
+    const actChip = rejected ? '<span class="tag" data-tone="danger">반려</span>' : s.action ? `<span class="tr-act">${esc(UI.t('trace.act.' + s.action))}</span>` : '';
     return `<span class="tr-chev">${icon('chevron')}</span><span class="tr-block k-${esc(s.kind)}${s.live ? ' live' : ''}">${icon(ik)}</span>
       <span class="tr-name"><b>${esc(s.name)}</b><span class="tr-who">${esc(s.who)}</span>${actChip}${s.gen ? `<span class="tr-gen">${esc(s.gen + 1)}${esc(UI.t('trace.gen'))}</span>` : ''}</span>
       <span class="tr-meta">${s.tools ? `<span class="tr-count">${icon('tool')}${s.tools}</span>` : ''}${due}${durHtml(s.t0, s.t1, s.live)}${stateMark(s.state)}</span>`;
