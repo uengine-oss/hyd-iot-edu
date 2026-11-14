@@ -86,10 +86,11 @@ PLAIN = {
     "sys:mes": "생산 관리", "sys:erp": "구매 · 재고 관리", "sys:cmms": "정비 관리", "sys:scm": "공급망 관리", "sys:qms": "품질 시스템",
     "ks:strategy-map": "경남유압 성과 목표", "in:plc-mode": "설비 운전 모드", "in:plc-state": "설비 상태",
     "actr:pump-drive": "펌프 구동부", "actr:fan-drive": "쿨러 팬 구동부",
+    "action:reschedule-work-order": "기존 정비 요청 일정 변경",      # 그래프 이름 「기존 PM 정비 오더 일정 변경」 — 화면 말은 「정비 요청」 하나다
 }
 #: 이름 · 설명 문장 속 낱말 바꾸기(같은 정책) — 차례대로. 바꿀 것이 하나도 없는 줄이면 build 가 멈춘다(시드 문장이 바뀌어 낡은 줄).
 WORDS = [
-    ("정비 작업지시", "정비 오더"),
+    ("정비 작업지시", "정비 요청"),
     ("high 1 · medium 0.6 · low 0.3", "높음 1 · 중간 0.6 · 낮음 0.3"),
 ]
 

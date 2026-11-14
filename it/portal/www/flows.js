@@ -311,7 +311,7 @@
         ${UI.section('가져올 그림', UI.field({ label: '.bpmn 파일', input: '<input type="file" id="flowFile" accept=".bpmn,.xml,application/xml,text/xml">', required: true }) +
           UI.field({ label: '흐름 구분 이름(영문)', input: '<input id="flowId" placeholder="예: oil_check" autocomplete="off">', hint: ID_HINT }))}
         <div id="flowImportMsg" aria-live="polite"></div>
-        <footer class="form-foot"><button type="button" class="btn" data-variant="outline" id="flowImportCancel">취소</button><button type="button" class="btn" id="flowImport">${icon('file-up')}가져오기</button></footer>
+        ${UI.formFoot(`<button type="button" class="btn" id="flowImport">${icon('file-up')}가져오기</button>`, { cancelAttrs: 'id="flowImportCancel"' })}
       </div>`;
     S.el.querySelector('#flowImport').addEventListener('click', e => once('import', e.currentTarget, doImport));
     S.el.querySelector('#flowImportCancel').addEventListener('click', closeImport);

@@ -254,7 +254,7 @@
 .kg-group .rel-more .chip, .rel-group .rel-more .chip { cursor: pointer; }
 .node-head.kg-group { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .node-head.kg-group h2 { margin: 0; display: flex; align-items: center; gap: 8px; }
-.empty.kg-index-head { flex: none; margin: 16px 18px; }
+.empty.kg-index-head { flex: none; width: auto; min-width: 0; margin: 16px 18px; }      /* 키트의 빈 상태는 폭 100% 라 옆 여백만큼 판 밖으로 넘쳤다 */
 .node-head { position: sticky; top: 0; z-index: 1; padding: 18px 18px 14px; border-bottom: 1px solid var(--border); background: var(--card); }
 .node-head h2 { margin: 8px 0 0; font-size: var(--fs-lg); line-height: 26px; font-weight: 650; overflow-wrap: anywhere; }
 .node-head p { margin: 2px 0 0; font-size: var(--fs-sm); color: var(--muted-foreground); overflow-wrap: anywhere; }
@@ -544,6 +544,7 @@
 .sys-lg { width: 26px; height: 0; border-top: 2px dotted var(--cv-blue); background: none !important; border-radius: 0 !important; }
 .sys-lg[data-k="cmd"] { border-top: 2px dashed var(--cv-amber); }
 .sys-lg[data-k="ai"] { border-top: 2px dotted var(--cv-violet); }
+.sys-lg[data-k="sim"] { border-top: 2px solid var(--cv-red); opacity: .8; }
 .sys-lg-dot { border-radius: 50% !important; }
 .sys-lg-dot.ok { background: var(--cv-green); }
 .sys-lg-dot.down { background: var(--cv-red); }
@@ -562,6 +563,9 @@
 .sys-band { stroke: var(--cv-border); stroke-dasharray: 3 6; }
 .sys-band-t { font-size: var(--fs-md); font-weight: 650; letter-spacing: -0.01em; }
 .sys-band-s { font-size: 12px; fill: var(--cv-ink-2); }
+.sys-band-n { font-size: 10.5px; fill: var(--cv-ink-3); font-family: var(--font-mono); }
+.sys-info .sys-warn { color: var(--cv-amber); } .sys-info .sys-warn b { color: var(--cv-amber); }
+.sys-info .sys-nets { color: var(--cv-ink-3); } .sys-info .sys-nets code { margin-left: 4px; padding: 1px 6px; border: 1px solid var(--cv-border); border-radius: 5px; font-size: var(--fs-xs); color: var(--cv-ink-2); }
 .sys-row-bg { fill: rgb(255 255 255 / .028); }      /* 계층 하나 걸러 옅은 띠 — 아홉 계층이 세 영역을 가로지르는 줄로 읽힌다 */
 .sys-row-t { font-size: 12px; font-weight: 550; fill: var(--cv-ink); }
 .sys-row-cap { font-size: 12px; fill: var(--cv-ink-3); }
@@ -589,18 +593,18 @@
 .sys-p[data-k="cmd"] { stroke: var(--cv-amber); stroke-dasharray: 9 7; stroke-width: 2.2; animation: sysFlow 1.4s linear infinite; }
 .sys-p[data-k="ai"] { stroke: var(--cv-violet); stroke-dasharray: 4 5; stroke-width: 1.6; animation: sysFlow 2.2s linear infinite; }
 .sys-p[data-k="plain"] { stroke: var(--cv-edge); stroke-width: 1.4; }
+.sys-p[data-k="sim"] { stroke: var(--cv-red); stroke-width: 1.4; opacity: .8; }
 .cases [data-tone="danger"] { color: var(--danger-ink); }
 .sys-p-t { font-size: 11.5px; font-weight: 550; paint-order: stroke; stroke: var(--cv-bg); stroke-width: 5px; stroke-linejoin: round; }
 @keyframes sysFlow { to { stroke-dashoffset: -40; } }
 @media (prefers-reduced-motion: reduce) { .sys-p { animation: none !important; } }
-.sys-zones { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 20px; }
-.sys-zone { padding: 16px 18px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); }
-.sys-zone h2 { display: flex; align-items: center; gap: 8px; font-size: var(--fs-base); font-weight: 650; }
-.sys-zone h2 i { width: 10px; height: 10px; border-radius: 3px; background: var(--cv-blue); }
-.sys-zone[data-zone="ot"] h2 i { background: var(--cv-red); }
-.sys-zone[data-zone="dmz"] h2 i { background: var(--cv-amber); }
-.sys-zone p { margin-top: 4px; font-size: var(--fs-sm); color: var(--muted-foreground); }
-@media (max-width: 900px) { .sys-zones { grid-template-columns: minmax(0, 1fr); } }
+.sys-diffs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 32px; margin: 0; }
+.sys-diff { display: grid; grid-template-columns: 20px 132px minmax(0, 1fr); gap: 0 10px; align-items: baseline; padding: 10px 0; border-top: 1px solid var(--border); font-size: var(--fs-sm); }
+.sys-diff .ic { width: 16px; height: 16px; align-self: start; margin-top: 3px; color: var(--muted-foreground); }
+.sys-diff dt { font-weight: 600; color: var(--foreground); }
+.sys-diff dd { margin: 0; color: var(--muted-foreground); }
+@media (max-width: 1100px) { .sys-diffs { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 640px) { .sys-diff { grid-template-columns: 20px minmax(0, 1fr); } .sys-diff dd { grid-column: 2; } }
 
 /* ================================================================= 시스템 — 관리(목록 + 상세) · 성과 지표 */
 .admin-pane > summary { display: none; }

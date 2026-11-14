@@ -249,6 +249,9 @@
     const label = h == null ? '저장된 시험 불러오기' : '두 시험 비교';
     // 고른 둘이 서로 다른 시나리오면 누르기 전에 말한다(견줄 수 없는 까닭)
     const pa = h?.find(t => t.id === S.pick.a), pb = h?.find(t => t.id === S.pick.b), apart = pa && pb && (pa.asset !== pb.asset || pa.pattern !== pb.pattern);
+    // 아직 불러오지 않았으면 판은 머리 한 줄이다(제목 · 한 문장 · 오른쪽에 [저장된 시험 불러오기]) — 빈 본문에 단추 하나만 떠 있게 두지 않는다
+    if (h == null && !S.histError) return `<section class="panel"><div class="panel-head pane-head"><div class="pane-title"><h2>지난 시험과 비교</h2><p>규칙이나 지식을 바꾸기 전과 후에, 같은 시나리오의 계산 결과가 그대로인지 봅니다.</p></div>` +
+      `<div class="pane-acts"><button type="button" class="btn" data-variant="outline" data-act="history" ${S.histBusy ? 'disabled' : ''}>${UI.icon('history')}${esc(label)}</button></div></div></section>`;
     return `<section class="panel"><div class="panel-head"><div><h2>지난 시험과 비교</h2><p>규칙이나 지식을 바꾸기 전과 후에, 같은 시나리오의 계산 결과가 그대로인지 봅니다.</p></div></div><div class="panel-sec">` +
       rows + (apart ? note(`고른 두 시험의 시나리오가 다릅니다(「${esc(scenarioLabel(pa))}」와 「${esc(scenarioLabel(pb))}」). 설비와 경보가 다른 시험은 견줄 수 없습니다 — 같은 시나리오의 시험 둘을 고르세요.`, ' data-tone="danger" role="status"') : '') + (S.histError ? UI.errorBlock(h == null ? '저장된 시험을 불러오지 못했습니다' : '두 시험을 비교하지 못했습니다', S.histError) : '') +
       `<footer class="form-foot"><button type="button" class="btn" data-variant="outline" data-act="${h == null ? 'history' : 'diff'}" ${S.histBusy || (h && (h.length < 2 || !S.pick.a || !S.pick.b || apart)) ? 'disabled' : ''}>${UI.icon(h == null ? 'history' : 'git-compare')}${esc(label)}</button></footer></div></section>`;

@@ -6,8 +6,8 @@ from __future__ import annotations
 #: 이 표가 유일한 이름 출처다. 업무 DB 함수가 받는 거래와 같은 목록이어야 한다(test_entsim_state 가 실제 DB 로 대조한다).
 SKILL_NAMES = {
     "skill:schedule-maintenance": "정비 요청 발행",
-    "skill:schedule-maintenance-scoped": "원문 패키지와 설비 범위 정비 오더 등록",
-    "skill:reschedule-maintenance": "기존 PM 오더 일정 변경",
+    "skill:schedule-maintenance-scoped": "정비 묶음 · 설비 범위별 정비 요청 등록",
+    "skill:reschedule-maintenance": "기존 정비 요청 일정 변경",
     "skill:complete-maintenance": "정비 완료 · 부품 소모",
     "skill:pm-reset": "운전시간 계수기 리셋 · 다음 기한 기록",
     "skill:procure-part": "부품 구매요청",

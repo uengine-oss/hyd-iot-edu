@@ -241,7 +241,7 @@
       done: I.filter === 'done' && I.filtered ? `${I.filtered.length}${I.filtered.length >= WINDOW ? '+' : ''}` : plus(I.all.filter(x => x.status !== 'RUNNING').length),
     };
     const tab = (k, label) => `<button type="button" data-inst-filter="${k}" aria-pressed="${I.filter === k}">${esc(label)}${n[k] !== '' && I.loaded && !I.listError ? `<span class="num">${esc(n[k])}</span>` : ''}</button>`;
-    const html = tab('all', '전체') + tab('mine', '내 할 일') + tab('running', '진행 중') + tab('done', '처리 완료');
+    const html = tab('all', '전체') + tab('mine', '내가 할 일') + tab('running', '진행 중') + tab('done', '처리 완료');
     if (box._html !== html) { box.innerHTML = html; box._html = html; }
   }
   // 그 단계에 붙은 기한 타이머 가운데 가장 이른 기한(없으면 null) — 타이머도 진행 중 작업 행으로 같은 목록에 온다
@@ -351,9 +351,9 @@
      제품색 면은 이 판 하나뿐이다. 다른 안과 그 손익 · 점수 근거는 [다른 안 고르기]를 눌렀을 때만 판 안에 펼친다. 사유 칸은 반려할 때와 다른 안을 고를 때만 나온다. */
   function handoverInputs(values) {
     const names = {asset:'설비',as_of:'인계 기준시각',shift_label:'교대',work_notes:'작업 메모',handover_summary:'인계안 요약',sender_notes:'인계자 확인 사항',receiver_notes:'인수자 보완 요청'};
-    const areas = {equipment:'설비 관측',work_orders:'정비 작업지시',parts:'부품·재고',work_notes:'작업 메모 대조'};
+    const areas = {equipment:'설비 관측',work_orders:'정비 요청',parts:'부품·재고',work_notes:'작업 메모 대조'};
     const states = {observed:'조회 확인',needs_check:'확인 필요',conflict:'기록 불일치'};
-    const rows = Object.entries(values || {}).filter(([k, v]) => !['checks','evidence'].includes(k) && v != null && v !== '').map(([k,v]) => UI.readonly(names[k] || k,esc(typeof v==='string' ? v : JSON.stringify(v)))).join('');
+    const rows = Object.entries(values || {}).filter(([k, v]) => !['checks','evidence'].includes(k) && v != null && v !== '').map(([k,v]) => UI.readonly(names[k] || k,typeof v==='string' ? esc(v) : UI.raw(v, { title: '원문' }))).join('');
     const checks = (Array.isArray(values?.checks) ? values.checks : []).map(c => `<section class="turn-check"><h4>${esc(areas[c.area] || c.area)} · ${esc(states[c.state] || c.state)}</h4><p>${esc(c.finding || '')}</p><p><b>다음 근무자가 확인할 일</b> ${esc(c.next_action || '')}</p><p class="muted">조회 근거 ${(c.evidence_indices || []).map(i=>esc(String(i+1))).join(', ') || '없음 · 확인 필요'}</p></section>`).join('');
     const evidence = (Array.isArray(values?.evidence) ? values.evidence : []).map((e,i) => UI.raw(e, { title: `조회 근거 ${i+1} · ${UI.toolName(e.tool) || e.tool || '도구 기록 없음'}` })).join('');
     return `${rows}${checks}${evidence}`;
@@ -363,14 +363,19 @@
   // msg: 막힌 까닭 · 서버가 거절한 까닭(빨간 글) · note: 알아 둘 것(보통 글)
   // 앞 AI 단계가 남긴 알림 가운데 「결과 글」에 대한 것(재생한 결과 글의 조회 값이 준비 당시 값이라는 것 · 지금 값과 다른 곳): 그 글을 읽고 결정하는 자리에도 같은 말을 보인다.
   // 가장 최근에 끝난 AI 단계의 것만 본다(단계 기록의 그 단계 결론 아래에 같은 문장이 있다)
+  // 결과 글이 지금 값과 다를 수 있음을 알리는 종류(worker ai_replay.NOTICE_KINDS) — 준비된 글 머리말은 뒤 문장이 있을 때만 서버가 붙인다
+  const RESULT_NOTICE_KINDS = ['prepared', 'typed_differs', 'values_differ', 'reads_differ', 'reads_unchecked'];
   function resultNotices() {
     const view = I.view; if (!view || !window.hydRecord) return [];
     const agentRows = (view.workitems || []).filter(w => (w.agent_orch === 'cliagents' || w.agent_mode) && w.end_date).sort((a, b) => String(b.end_date).localeCompare(String(a.end_date)));
     if (!agentRows.length) return [];
-    return hydRecord.noticeTexts(hydRecord.rowsOf((view.events || []).filter(ev => ev.todo_id === agentRows[0].id))).filter(t => /^결과 글/.test(t));
+    return hydRecord.noticeTexts(hydRecord.rowsOf((view.events || []).filter(ev => ev.todo_id === agentRows[0].id)), RESULT_NOTICE_KINDS);
   }
   function todoCard({ label, icon = 'user-check', title, desc = '', late = '', facts = [], acts = '', who = '', more = '', msg = '', note = '', attrs = '' }) {
-    const told = resultNotices().map(t => `<p class="turn-notice">${UI.icon('info')}<span>${esc(t)}</span></p>`).join('');
+    // 결정하는 자리에는 사실 한 줄만 두고(무엇이 다른지는 길다), 문장들은 접기 안에 둔다 — 같은 문장이 아래 단계 기록의 그 AI 단계 결론 밑에 펼쳐져 있다
+    const notes = resultNotices();
+    const told = notes.length ? `<div class="turn-notice">${UI.icon('info')}<span>이 결과 글에 적힌 값은 지금 넣은 입력이나 이 PC의 지금 값과 다를 수 있습니다.</span></div>` +
+      UI.fold(`무엇이 다른가<span class="muted num">${notes.length}</span>`, notes.map(t => `<p class="turn-notice-line">${esc(t)}</p>`).join('')) : '';
     if (told) desc += told;
     return `<section class="turn" aria-label="내가 할 일" ${attrs}>
       <div class="turn-head"><span class="turn-badge">${UI.icon(icon, 'ic-lg')}</span><div><div class="turn-eyebrow">${esc(label)}${late}</div><h3>${esc(title)}</h3>${desc}</div></div>
@@ -393,7 +398,10 @@
       const tag = String(f.variable || '').replace(/^sv:/, '');
       const cur = now[tag.toUpperCase()];
       if (cur != null && Number.isFinite(+cur)) out.push([`지금 ${W.fieldName(tag)}`, W.num(+cur), f.unit || W.unit(tag)]);
-      out.push([`조치 뒤 예측 ${UI.idText(f.name)}`, W.num(+f.value), f.unit || '']);
+      // 지금 세우고 정비하는 조치(window.immediate — 서버 cards.stops_now)의 예측은 「조치 뒤」가 아니라 정비하는 동안 서 있는 설비의 값이다.
+      // 서버가 그 조건을 예측 이름(forecast[].name)의 괄호에 적으므로, 머리가 같은 말을 하면 괄호를 되풀이하지 않는다
+      const during = !!(chosen.window && chosen.window.immediate === true), fname = UI.idText(f.name);
+      out.push([during ? `정비하는 동안 예측 ${fname.replace(/\s*\([^)]*\)\s*$/, '')}` : `조치 뒤 예측 ${fname}`, W.num(+f.value), f.unit || '']);
     }
     const said = String(d.explanation || '');
     const facts = Object.entries({ ...(d.facts || {}), ...(chosen.facts || {}) }).filter(([k, x]) => typeof x === 'number' && Number.isFinite(x) && W.known(k));
@@ -415,7 +423,7 @@
     }
     if (!task) {
       const g = I.gone && I.gone.inst === I.sel ? I.gone : null;
-      box.innerHTML = g ? `<div class="alert" data-gone>${UI.icon('info')}<h2>${esc(g.title)}</h2><section>이 단계는 이미 처리됐거나 닫혀서 「내 할 일」에서 빠졌습니다. 결과는 아래 단계 기록에서 확인하세요.<br><span class="muted">서버 응답: ${esc(g.text)}</span></section></div>` : '';
+      box.innerHTML = g ? `<div class="alert" data-gone>${UI.icon('info')}<h2>${esc(g.title)}</h2><section>이 단계는 이미 처리됐거나 닫혀서 「내가 할 일」에서 빠졌습니다. 결과는 아래 단계 기록에서 확인하세요.<br><span class="muted">서버 응답: ${esc(g.text)}</span></section></div>` : '';
       return;
     }
     if (task.tool === 'formHandler:select_card') { renderSelectPanel(task); return; }
@@ -1043,7 +1051,7 @@
     }).join('');
     return `<dl class="kv"><dt>${esc(UI.t('inst.started'))}</dt><dd>${esc(UI.dateTime(inst.start_date))}</dd>${inst.end_date ? `<dt>${esc(UI.t('inst.ended'))}</dt><dd>${esc(UI.dateTime(inst.end_date))}</dd>` : ''}<dt>처리 건 ID</dt><dd class="mono">${esc(inst.proc_inst_id)}</dd><dt>흐름</dt><dd>${esc(UI.defName(inst.proc_def_id))} <span class="muted">· 판 ${esc(inst.proc_def_version ?? '')}</span></dd></dl>
       <h3 class="case-sub">지금 값</h3>${varRows || `<p class="muted">${esc(UI.t('empty.noData'))}</p>`}
-      ${UI.fold(esc(UI.t('inst.initial')) + ' 원문', inst.initial_variables == null ? `<p class="muted">${esc(UI.t('empty.noData'))}</p>` : `<pre class="code">${esc(JSON.stringify(inst.initial_variables, null, 2))}</pre>`)}`;
+      ${inst.initial_variables == null ? '' : UI.raw(inst.initial_variables, { title: UI.t('inst.initial') + ' 원문' })}`;
   }
   /* 단계 표 원문: 작업 행마다 엔진의 상태 값 · 시각 · 메모 · 출력 원문 + 에이전트 활동(도구 호출 · 결과 묶음) */
   function logPane(view) {

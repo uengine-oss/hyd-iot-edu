@@ -790,8 +790,10 @@ function optionDetail(o, opt = {}) {
     [UI.t('skill.rules'), (o.selectedBy || []).map(r => `${esc(UI.ruleLabel(r))}${(r.sources || []).length ? ` <span class="muted">(${esc(r.sources.join(', '))})</span>` : ''}`).join('<br>')],
     [UI.t('card.precedent'), o.precedent && o.precedent.n ? `${o.precedent.n}건 (${Math.round(o.precedent.share * 100)} %) <span class="muted">${esc(UI.t('card.precedentFixed'))}</span>${(o.precedent.reasons || []).length ? `<p class="muted">${o.precedent.reasons.map(esc).join(' / ')}</p>` : ''}` : ''],
     [UI.t('card.steps'), (o.steps || []).length ? `<ol class="opt-steps">${o.steps.map(st => `<li>${esc(UI.idText(st.text))}${st.manual ? ` <span class="badge" data-variant="outline" title="${esc(st.manual.excerpt || '')}">${esc(st.manual.ref)}</span>` : ''}</li>`).join('')}</ol>` : ''],
-    [UI.t('card.scoreHow'), ranking ? Object.entries(ranking.policy?.components || {}).map(([key, expr]) => `<div>${esc(scoreLabels[key] || key)} ${UI.code(expr)} <span class="num">= ${esc(sp[key])}</span></div>`).join('') + (ranking.conditionMode ? `<p class="muted">${esc(ranking.conditionMode)}</p>` : '') : ''],
-    [`${UI.t('kpi')} 경로`, (o.tradeoffEvaluation || []).map(p => `<div><b>${esc(CHECK_STATUS[p.status] || p.status)}</b> ${esc(p.name)} <span class="muted">강도 ${esc(p.weight)} · ${esc((p.nodes || []).join(' → '))}</span>` +
+    // 점수 계산 방법: 항목별 점수는 위 「점수」 줄이 말한다. 순위 규칙의 식(코드)은 읽는 글이 아니라 원문이므로 원문 판 하나로 접는다
+    [UI.t('card.scoreHow'), ranking && Object.keys(ranking.policy?.components || {}).length ? (ranking.conditionMode ? `<p class="muted">${esc(ranking.conditionMode)}</p>` : '') +
+      UI.raw(Object.entries(ranking.policy.components).map(([key, expr]) => `${scoreLabels[key] || key} = ${expr}`).join('\n'), { title: '순위 규칙의 식' }) : ''],
+    [`${UI.t('kpi')} 경로`, (o.tradeoffEvaluation || []).map(p => `<div><b>${esc(CHECK_STATUS[p.status] || p.status)}</b> ${esc(p.name)} <span class="muted">강도 ${esc(p.weight)} · ${(p.nodes || []).map(n => esc(n === o.id ? UI.idText(o.name || n) : UI.idText(UI.name(n)))).join(' → ')}</span>` +
       (p.checks || []).filter(c => c.description || c.status !== 'TRUE').map(c => `<p class="muted">${esc(c.description)} · ${esc(CHECK_STATUS[c.status] || c.status)}${c.error ? ' · ' + esc(c.error) : ''}</p>`).join('') + '</div>').join('')],
     [UI.t('card.sop'), o.sopId ? `<span class="mono">${esc(o.sopId)}</span>` : ''],
   ].filter(([, v]) => v);
@@ -918,7 +920,7 @@ function unusedFacts(facts, trace) {
 // 처리 과정 원문: 판단 서비스가 거친 단계가 한 줄씩(키트 .line — 이름 · 한 일 · 시각). 단계 이름은 화면 말로 적고, 서버가 남긴 설명과 출력 원문은 그 아래 접기에 둔다
 const DEC_STEPS = { ontology: ['판단 규칙 읽기', '지식에서 이 판단의 결정표와 규칙을 읽습니다.'], facts: ['판단에 쓸 값 가져오기', '규칙이 검사할 값을 지식이 정한 출처(업무 시스템 · 센서)에서 가져옵니다.'],
   forecast: ['조치별 예측', '조치마다 설비 예측 모델로 조치 뒤 값을 계산합니다.'], candidates: ['조치 후보 고르기', '고장 유형과 설비 상태 규칙으로 후보를 고릅니다.'],
-  compliance: ['규정 적합성 검사', '후보마다 규칙의 기준에 대어 제외 · 감점 · 경고를 정합니다.'], tradeoffs: ['성과 득실과 선례', '조치가 성과 지표에 주는 득실과 같은 고장 유형의 선례를 모읍니다.'],
+  compliance: ['규정 적합성 검사', '후보마다 규칙의 기준에 대어 제외 · 감점 · 경고를 정합니다.'], tradeoffs: ['성과 득실과 선례', '조치가 성과 지표에 주는 득실을 모읍니다. 미리 넣어 둔 선례가 없어 선례 몫은 늘 0입니다.'],
   rank: ['점수와 순위', '순위 규칙의 식으로 점수를 내고 순위를 정합니다.'] };
 function decTrace(steps) {
   return `<div class="stream-log" style="max-height:none;padding:0">` + steps.map(s => {

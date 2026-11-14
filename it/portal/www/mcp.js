@@ -443,8 +443,8 @@
     box.innerHTML = `<div class="panel-head"><div><h2>${F.editing ? `서버 고치기 — ${esc(v.name)}` : '서버 등록'}</h2>` +
       `<p>연결 검사를 통과해야 저장됩니다. 저장한 서버의 읽기 전용 도구만 에이전트 도구로 고를 수 있습니다.</p></div></div>` +
       `<div class="panel-sec mcp-form">${UI.section('연결', fields)}${F.error ? failAlert(F.editing ? '서버를 고치지 못했습니다' : '서버를 등록하지 못했습니다', esc(F.error)) : ''}` +
-      `<footer class="form-foot"><button type="button" class="btn" data-variant="outline" id="mcpFormClose">취소</button><button type="button" class="btn" data-variant="outline" id="mcpDry" ${F.busy ? 'disabled' : ''}${reg()}>연결 검사만</button>` +
-      `<button type="button" class="btn" id="mcpSave" ${F.busy ? 'disabled' : ''}${reg()}>${F.editing ? '검사 후 저장' : '검사 후 등록'}</button></footer>` +
+      UI.formFoot(`<button type="button" class="btn" data-variant="outline" id="mcpDry" ${F.busy ? 'disabled' : ''}${reg()}>연결 검사만</button>` +
+        `<button type="button" class="btn" id="mcpSave" ${F.busy ? 'disabled' : ''}${reg()}>${F.editing ? '검사 후 저장' : '검사 후 등록'}</button>`, { cancelAttrs: 'id="mcpFormClose"' }) +
       `<div id="mcpFormResult" class="pane-msg" aria-live="polite">${F.busy ? '<div data-mcp-track></div>' : checkHtml(F.result)}</div></div>`;
     if (F.busy && F.track) F.track.mount(box.querySelector('[data-mcp-track]'));      // 다시 그려도 같은 진행 목록이 새 자리로 옮겨 간다
     box.querySelector('#mcpFormClose').addEventListener('click', () => { S.form = null; renderForm(); renderServers(); renderDetail(); });

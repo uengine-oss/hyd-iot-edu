@@ -1,4 +1,4 @@
-"""수업 버튼(procsvc/scenario_buttons.py) — [정기 점검] · [재고 보충]의 경보 · 거절, 진행 중 [초기화] 거절, 시나리오 시각 기준점을 붙잡는 처리 건.
+"""수업 버튼(procsvc/scenario_buttons.py) — [정기 정비 시작] · [예비품 구매 시작]의 경보 · 거절, 진행 중 [업무 데이터 초기화] 거절, 시나리오 시각 기준점을 붙잡는 처리 건.
 
 실제 업무 DB(enterprise-sim) · 실제 엔진으로 버튼과 같은 함수를 부른다. 처리 건은 에이전트 단계에서 멈춘 채(진행 중) 둔다.
 """
@@ -69,7 +69,7 @@ def test_시나리오_처리_건이_진행_중이면_초기화를_거절한다(w
     _press(world, 'C')
     with pytest.raises(sb.Refused, match='아직 진행 중이라 초기화하지 않았습니다') as caught:
         sb.reset_refusal(world.rt, 'C')
-    assert '조치 후보를 승인하거나 반려해 끝낸 뒤 [초기화]를 누르세요' in str(caught.value), '아직 멈춘 단계가 없는 처리 건'
+    assert '조치 후보를 승인하거나 반려해 끝낸 뒤 [업무 데이터 초기화]를 누르세요' in str(caught.value), '아직 멈춘 단계가 없는 처리 건'
 
 
 def test_시나리오_처리_건이_없으면_초기화를_받는다(world):
@@ -109,6 +109,12 @@ def test_시나리오_상태는_진행_중_처리_건과_마지막_처리_건을
     c = status['scenarios']['C']
     assert c['running']['instance'] == pid and c['last']['instance'] == pid and c['alert'] is True
     assert status['scenarios']['B']['running'] is None
+    # 화면 단추의 이름은 서버가 준 이 값 하나다 — 처리 건의 시작 기록(「…의 [단추]를 눌러 열었습니다」)과 거절 문장이 같은 이름을 쓴다
+    # (전에는 화면 단추가 [예비품 구매 시작]인데 기록은 [재고 보충]을 눌렀다고 했다)
+    assert (c['button'], status['scenarios']['B']['button'], status['reset_button']) == ('예비품 구매 시작', '정기 정비 시작', '업무 데이터 초기화')
+    row = {'part_no': 'P-PMP-SEAL', 'available': 1, 'reorder_point': 2, 'need_qty': 6, 'below_since': 'x', 'reserved_for': 'HYD-03'}
+    assert sb.build_alert('C', row, datetime(2026, 10, 30, 6, 0, 1, tzinfo=timezone.utc), PERSON)['evidence']['trigger'] == f"결함 시뮬레이션의 [{c['button']}]"
+    assert sb.press_event(pid, c['button'], 'HYD-03', PERSON, 'x')['data']['name'] == f"결함 시뮬레이션의 [{c['button']}]"
 
 
 def test_시나리오_상태는_설비_결함_주입이_지원하는_설비와_결함과_단추를_말한다():

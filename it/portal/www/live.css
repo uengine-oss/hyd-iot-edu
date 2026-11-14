@@ -14,8 +14,7 @@
 /* 누른 단추가 「…하는 중 · 걸린 시간」으로 */
 .btn.lv-busy { display: inline-flex; align-items: center; gap: 6px; opacity: 1; cursor: progress; }
 .btn.lv-busy .lv-time { font-size: inherit; line-height: inherit; color: inherit; opacity: .7; }
-.btn.lv-busy .tr-spin { vertical-align: 0; }
-.btn.lv-busy:not([data-variant]) .tr-spin { border-color: rgb(255 255 255 / .35); border-top-color: var(--primary-foreground); }
+.btn.lv-busy .tr-spin { color: currentColor; }
 
 /* 단계 목록(steps · track · follow): 단계 하나가 실시간 줄 하나 — 하나씩 채워진다 */
 .lv-steps { list-style: none; margin: 0; max-height: none; }
@@ -77,5 +76,5 @@
 .lv-fail { border: 1px solid var(--danger-line); background: var(--danger-soft); border-radius: var(--radius); padding: 12px 16px; display: grid; gap: 4px; }
 .lv-fail b { color: var(--danger-ink); font-size: var(--fs-base); line-height: 22px; font-weight: 600; }
 .lv-fail p { margin: 0; color: var(--ink-2); font-size: var(--fs-base); line-height: 22px; }
-.lv-fail .rd-form-actions { margin-top: 8px; }
+.lv-fail .form-foot { margin-top: 8px; }
 

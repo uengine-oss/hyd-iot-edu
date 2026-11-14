@@ -29,7 +29,7 @@ def test_값을_읽지_못한_측정은_지어내지_않고_값_없음으로_보
 def test_정비_오더_공지_메일은_도구의_중복_방지_여부와_상관없이_보냄으로만_적는다(idempotent):
     """P4-20: 전에는 idempotent=False(도구가 중복 방지 키를 받지 않음)를 「재전송 아님」으로 거꾸로 읽어 적었다."""
     rows = ep.report_values({'work_order': {'ref': 'WO-1', 'after': {'window_label': '오늘 밤'}, 'notice': {'idempotent': idempotent}}})
-    assert rows == [{'name': '정비 오더', 'value': 'WO-1'}, {'name': '정비 시점', 'value': '오늘 밤'}, {'name': '공지 메일', 'value': '보냄', 'ok': True}]
+    assert rows == [{'name': '정비 요청', 'value': 'WO-1'}, {'name': '정비 시점', 'value': '오늘 밤'}, {'name': '공지 메일', 'value': '보냄', 'ok': True}]
 
 
 @pytest.mark.parametrize('criteria, readings, passed', [

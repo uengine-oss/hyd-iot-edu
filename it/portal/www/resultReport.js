@@ -28,16 +28,16 @@
         plan?.code !== 'WO_CREATE' || !Array.isArray(plan.assets) || !plan.assets.length || !Array.isArray(orders) || orders.length !== plan.assets.length ||
         !orders.some(o => o.id === receipt.ref) || orders.some(o => !o.id || !o.asset || !plan.assets.some(a => a.asset === o.asset)) ||
         new Set(orders.map(o => o.asset)).size !== orders.length) return original;
-    return '원문 정비 범위 ' + orders.map(o => o.asset).join(', ') + ' 오더 등록';
+    return '원문 정비 범위 ' + orders.map(o => o.asset).join(', ') + ' 정비 요청 등록';
   }
   function reportSummary(report, values) {
     const original = report?.summary || report?.text;
     const receipt = values?.work_order, detail = receiptDetail(receipt);
-    const expected = receipt?.ref && `정비 오더 ${receipt.ref} 등록 · 생산팀 공지 — ${receipt.detail}`;
+    const expected = receipt?.ref && `정비 요청 ${receipt.ref} 등록 · 생산팀 공지 — ${receipt.detail}`;
     return detail !== receipt?.detail && report?.refs?.work_order === receipt?.ref && original === expected
-      ? `정비 오더 ${receipt.ref} 등록 · 생산팀 공지 — ${detail}` : original;
+      ? `정비 요청 ${receipt.ref} 등록 · 생산팀 공지 — ${detail}` : original;
   }
-  // 사건과 이 보고의 관계 한 줄: 보고가 사건을 닫았는가, 아니면 사건은 이미(앞 단계 — 작업지시 등록 · 입고 등에서) 끝났는가
+  // 사건과 이 보고의 관계 한 줄: 보고가 사건을 닫았는가, 아니면 사건은 이미(앞 단계 — 정비 요청 등록 · 입고 등에서) 끝났는가
   function incidentMeaning(report, incident, read) {
     if (read?.state === 'loading') return '사건 상태를 읽는 중입니다';
     if (read?.state === 'error') return '사건 상태를 읽지 못했습니다';
@@ -61,7 +61,7 @@
                valuesError: r.values_error || '' };
     }
     if (v.test_run && typeof v.test_run === 'object') return { verdict: verdictOf(v.test_run.ok ?? v.test_run.verdict), title: '시운전 확인', summary: v.test_run.summary || '', values: Array.isArray(v.test_run.values) ? v.test_run.values : [] };
-    if (typeof v.recovered === 'boolean') return { verdict: v.recovered ? 'ok' : 'fail', title: '재관측 확인', summary: v.recovered ? '경보가 풀리고 기준 안으로 돌아왔습니다' : '기준 안으로 돌아오지 않았습니다', values: [] };
+    if (typeof v.recovered === 'boolean') return { verdict: v.recovered ? 'ok' : 'fail', title: '효과 확인', summary: v.recovered ? '경보가 풀리고 기준 안으로 돌아왔습니다' : '기준 안으로 돌아오지 않았습니다', values: [] };
     if (typeof v.received === 'boolean' || (v.goods_receipt && typeof v.goods_receipt === 'object')) {
       const g = v.goods_receipt || {}, ok = v.received === true || g.ok === true;
       return { verdict: ok ? 'ok' : 'fail', title: '입고 확인', summary: g.detail || (ok ? '입고와 검수가 끝났습니다' : '기한 안에 입고되지 않았습니다'), values: [] };

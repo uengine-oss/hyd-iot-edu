@@ -1,6 +1,9 @@
 /* A reassessment requests fresh evidence; it never approves an action. A122: same form frame as the other panels. */
 (function () {
   const states = new Map();
+  // 사람이 접은 판은 접힌 채로 둔다 — 이 판은 처리 건을 다시 읽을 때마다 새로 그려지므로 열림 상태를 판마다 기억한다(처음은 펴서 보인다)
+  const folded = new Set();
+  const keepFold = (panel, key) => { const d = panel.querySelector('details'); if (d) d.addEventListener('toggle', () => { if (d.open) folded.delete(key); else folded.add(key); }); };
   function mount(host, { view, by, changed }) {
     if (!host) return;
     const rows = view.workitems.filter(w => view.instance.status === 'RUNNING' && w.status === 'PENDING' && w.draft?._deferral
@@ -17,7 +20,8 @@
         try { request = JSON.parse(sessionStorage.getItem(key)); } catch (_) { continue; }
         if (!request?.request_id) continue;
         const panel = document.createElement('div');
-        panel.innerHTML = UI.fold(`${esc(UI.t('inst.reassess'))} 요청 확인 — ${esc(UI.flowName(w.activity_name))}`, `<p>앞서 보낸 다시 평가 요청의 응답을 받지 못했습니다. 눌러서 처리됐는지 확인하세요.</p><p class="muted">요청 사유: ${esc(request.reason)}</p>${UI.actions('<button class="btn" data-reassess-receipt>요청 결과 확인</button>')}<p role="status"></p>`, { open: true });
+        panel.innerHTML = UI.fold(`${esc(UI.t('inst.reassess'))} 요청 확인 — ${esc(UI.flowName(w.activity_name))}`, `<p>앞서 보낸 다시 평가 요청의 응답을 받지 못했습니다. 눌러서 처리됐는지 확인하세요.</p><p class="muted">요청 사유: ${esc(request.reason)}</p>${UI.actions('<button class="btn" data-reassess-receipt>요청 결과 확인</button>')}<p role="status"></p>`, { open: !folded.has(key) });
+        keepFold(panel, key);
         panel.querySelector('button').addEventListener('click', async e => {
           e.target.disabled = true;
           try {
@@ -51,7 +55,8 @@
           <div><fieldset class="fieldset"><div role="group">
             ${UI.actorInput('data-reassess-by', s.by, locked)}
             ${UI.field({ label: UI.t('form.reason'), required: true, cls: 'wide', hint: '원천을 다시 조회해 평가합니다. 조치가 제안되면 별도 선택 단계에서 확인합니다.', input: `<textarea data-reassess-reason rows="2" ${locked}>${esc(s.reason)}</textarea>` })}
-          </div></fieldset>${s.pending ? '<p>앞 요청의 응답을 받지 못했습니다. 눌러서 처리됐는지 확인하세요.</p>' : ''}${UI.actions(`<button class="btn" data-reassess ${s.busy ? 'disabled' : ''}>${s.pending ? '요청 결과 확인' : esc(UI.t('btn.reassess'))}</button>`, s.error)}</div>`, { open: true });
+          </div></fieldset>${s.pending ? '<p>앞 요청의 응답을 받지 못했습니다. 눌러서 처리됐는지 확인하세요.</p>' : ''}${UI.actions(`<button class="btn" data-reassess ${s.busy ? 'disabled' : ''}>${s.pending ? '요청 결과 확인' : esc(UI.t('btn.reassess'))}</button>`, s.error)}</div>`, { open: !folded.has(key) });
+        keepFold(panel, key);
         panel.querySelector('[data-reassess-by]').addEventListener('input', e => s.by = e.target.value);
         panel.querySelector('[data-reassess-reason]').addEventListener('input', e => s.reason = e.target.value);
         panel.querySelector('[data-reassess]').addEventListener('click', async () => {

@@ -187,7 +187,7 @@ def test_기준으로_되돌리기_화면은_요청에_요청_번호를_싣고_�
             lost, kept = said.split('남는 것:')
             assert '내가 적재한 문서의 지식' in lost and '화면에서 만든 조치 방법' in lost and '업무 DB 표 정의' in lost
             assert '「지식 › 문서 등록」' not in said and '「지식 › 조치 방법」' not in said and '이 단추만으로 처음 상태가 되지는 않습니다' not in said
-            assert '지운 흐름으로 끝난 처리 건만 목록에서 숨깁니다' in kept and '「유압 설비 › 결함 시뮬레이션」의 [초기화]' in kept and '기본 제공 문서의 지식' in kept
+            assert '지운 흐름으로 끝난 처리 건만 목록에서 숨깁니다' in kept and '「유압 설비 › 결함 시뮬레이션」의 [설비 초기화] · [업무 데이터 초기화]' in kept and '기본 제공 문서의 지식' in kept
             assert '업무분장' not in said and 'A · B · C' not in said
             for line in config_bundle.RESET_KEPT:      # 서버가 「남긴 것」으로 돌려주는 줄마다, 화면이 미리 말하는 「남는 것」에 그 줄의 머리말이 있다
                 assert line.split(' — ')[0].split('(')[0].split(' · ')[0][:8] in kept, line

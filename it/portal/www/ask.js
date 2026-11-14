@@ -168,13 +168,14 @@
     const [label, tone] = STATE[v.state] || [v.state, ''];
     const live = LIVE.has(v.state), calls = (v.tool_calls || []).length;
     // 차례: 질문 → 누가 · 상태 → (도는 동안) 실시간 상자 / (끝난 뒤) 답 → 근거 → 처리 과정(접기)
-    // 처리 건의 단계가 이미 열려 실시간 상자가 과정을 보이는 동안에는 서버의 「아직 질문을 맡지 않았습니다」(상태 waiting 의 글)를 함께 적지 않는다 — 상자가 지금 일어나는 일을 말한다
+    // 서버의 상태 글(v.message)은 늘 그대로 보인다 — 아무도 맡지 않은 채 오래 기다리면 서버가 그 까닭(워커가 바쁨 · 닿지 않음)을 이 글에 싣는다.
+    // 전에는 확인 전에 읽은 「대기」가 뒤늦게 와서 가렸지만, 지금 서버는 확인 뒤 상태를 다시 읽어 답한다(procsvc ask.view)
     return `<div class="ask-q"><div class="ask-bubble">${esc(v.question)}</div><span class="muted">${esc(v.asked_by || '')} · ${esc(UI.dateTime(v.started))}</span></div>
       <section class="panel ask-a">
         <div class="panel-head pane-head"><span class="pane-ic" data-kind="agent">${icon('bot')}</span><div class="pane-title"><h2>${esc(v.agent ? v.agent.name : 'AI 에이전트')}${tag(label, tone)}</h2></div>
           <div class="pane-acts"><a class="btn" data-variant="outline" data-size="sm" href="${esc(v.link)}">처리 건에서 보기${icon('arrow-right')}</a></div></div>
         <div class="panel-sec ask-body">
-          ${live ? `<div data-ask-work>${v.workitem ? '' : hydLive.waitHtml('에이전트가 질문을 받는 중', { since: v.started, hint: '처리 건이 열리고 에이전트가 일을 시작하면 조회 과정이 여기에 한 줄씩 붙습니다.' })}</div>${v.message && !(v.state === 'waiting' && v.workitem) ? `<p class="typing">${esc(UI.clean(v.message))}</p>` : ''}` : ''}
+          ${live ? `<div data-ask-work>${v.workitem ? '' : hydLive.waitHtml('에이전트가 질문을 받는 중', { since: v.started, hint: '처리 건이 열리고 에이전트가 일을 시작하면 조회 과정이 여기에 한 줄씩 붙습니다.' })}</div>${v.message ? `<p class="typing">${esc(UI.clean(v.message))}</p>` : ''}` : ''}
           ${!live && v.state === 'failed' ? alertBox('circle-alert', '답을 받지 못했습니다', esc(UI.clean(v.message || '에이전트 실행이 실패했습니다.')), 'destructive') : ''}
           ${!live && v.state !== 'failed' && !v.result && v.message ? `<p class="muted">${esc(UI.clean(v.message))}</p>` : ''}
           ${resultHtml(v)}

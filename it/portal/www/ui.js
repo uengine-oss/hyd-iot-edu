@@ -218,6 +218,7 @@ const UI = {
   // 문장 속 경보 패턴 코드(그래프 규칙 설명 「COOLER_DEGRADATION 경보에서 …」 등)도 사람 이름으로 — 표에 있는 코드만 바꾼다
   // 옛 판본으로 돈 처리 건의 저장된 기록에만 남아 있는 말(「수업 버튼 [쿨러 열화 주입]」 · 「재관측」)도 여기서 지금 화면 말로 읽는다 — 단계 기록 · 실시간 기록 · 단계 표가 모두 이 한 곳을 거친다(새 서버는 이 말을 내지 않는다)
   words(text) { return String(text ?? '').replace(/수업 버튼\s*(?=\[)/g, '결함 시뮬레이션 ').replace(/수업 버튼/g, '결함 시뮬레이션 단추').replace(/효과 재관측/g, '효과 확인').replace(/재관측/g, '효과 확인')
+    .replace(/(정비 범위 [^—·\n]*?) 오더 (등록|취소)/g, '$1 정비 요청 $2')      // 업무 DB 거래가 남기는 글(「원문 정비 범위 HYD-02 오더 등록」)의 화면 말 — 문서 인용의 「정비 오더」는 원문이라 건드리지 않는다
     .replace(/야간\s*정비창/g, '야간 정비 시간').replace(/정비창/g, '예정된 정비 시간').replace(/\b[A-Z][A-Z_]{3,}[A-Z]\b/g, code => this.patterns[code] || code); },
   // 이름 사전 읽기: 실패를 삼키지 않는다 — 머리에 한 번 알리고 10초 뒤 다시 읽는다(그동안 원래 id · 「표시 이름 미등록」이 보일 수 있다, W1-28)
   async loadNames() {
@@ -339,16 +340,11 @@ const UI = {
   // 한 트랜잭션에서 연달아 끝난 시스템 단계(정비 오더 등록 → 결과 보고)는 시각이 같다 — 시각만으로는 순서가 거꾸로 보일 수 있다(W1-01).
   /* 가지 않은 길의 단계: 처리 건이 열릴 때(다시 수행이면 새 차수가 열릴 때) 예정으로 만들어졌다가 한 번도 시작되지 않은 채 닫힌 작업 행.
      처리 건이 다른 갈래로 끝났거나(반려 · 다른 조치 종류) 다시 수행이 새 차수를 열어 닫힌 것이라, 실행된 일도 실패도 아니다 — 단계 기록 · 진행 길 · 단계 표가 모두 이 한 판정을 쓴다.
-     판정: 취소됨 + 실행 기록 없음 + 워커가 가져간 적 없음 + 결과 없음 + 시작 시각이 그 차수의 줄들이 만들어진 순간 그대로(시작되면 시작 시각이 그때로 바뀐다).
-     서버가 적는 까닭 글(「cancelled: …」 · 「취소: …」)의 말에 기대지 않는다 — 그 글이 한국어로 바뀌자 옛 판정이 모두 빗나가 취소 줄이 「명령을 보냈습니다」로 읽혔다 */
-  neverReached(w, workitems, hasEvents = false) {
-    if (!w || w.status !== 'CANCELLED' || hasEvents || (w.claim_count || 0) > 0) return false;
-    const out = w.output; if (out && typeof out === 'object' ? Object.keys(out).length : out) return false;
-    const gen = w.generation || 0, at = x => Date.parse(x || '') || 0;
-    const mine = at(w.start_date); if (!mine) return true;      // 시작 시각이 없으면 시작된 적이 없다
-    const born = Math.min(...(workitems || [w]).filter(x => (x.generation || 0) === gen).map(x => at(x.start_date)).filter(Boolean));
-    return mine === born;
-  },
+     판정은 서버가 작업 행마다 싣는 reached_at 하나다(흐름이 그 단계에 닿은 시각, 닿은 적이 없으면 null — procsvc engine.reached_at).
+     취소된 줄은 둘로 갈린다: reached_at 이 null 이면 가지 않은 길, 값이 있으면 닿았다가(하다가) 취소된 단계다.
+     서버가 적는 까닭 글이나 시작 시각으로 짐작하지 않는다 — 까닭 글이 한국어로 바뀌자 옛 판정이 모두 빗나가 취소 줄이 「명령을 보냈습니다」로 읽혔다.
+     reached_at 칸이 아예 없는 행(그 칸을 싣지 않는 목록 응답)은 판정할 수 없으므로 가지 않은 길로 보지 않는다 */
+  neverReached(w) { return !!w && w.status === 'CANCELLED' && w.reached_at === null; },
   workitemOrder(view) {
     const rank = new Map(Object.entries(view?.flow_order || {}));
     const at = x => { const t = x ? Date.parse(x) : NaN; return Number.isFinite(t) ? t : 9e15; };
@@ -569,9 +565,9 @@ const UI = {
   },
   // 단추 속 내용(아이콘 + 이름). label 을 주면 이름만 바꾼다(「채점 실행」 · 「파일 받기」처럼 무엇을 하는지 붙일 때) — 아이콘은 사전의 것이다
   actHtml(key, label) { const a = this.acts[key]; if (!a) throw new Error(`UI.actHtml: 모르는 동작 '${key}' — ${Object.keys(this.acts).join(' · ')} 중 하나`); return (a[1] ? this.icon(a[1]) : '') + esc(label || a[0]); },
-  // 단추 하나: variant 를 주지 않으면 주 단추. attrs 는 id · data-* · disabled 등 속성 원문
-  btn(key, { label, variant = '', size = '', attrs = '' } = {}) {
-    return `<button type="button" class="btn"${variant ? ` data-variant="${variant}"` : ''}${size ? ` data-size="${size}"` : ''}${attrs ? ' ' + attrs : ''}>${this.actHtml(key, label)}</button>`;
+  // 단추 하나: variant 를 주지 않으면 주 단추. attrs 는 id · data-* · disabled 등 속성 원문, submit 은 폼을 보내는 단추
+  btn(key, { label, variant = '', size = '', attrs = '', submit = false } = {}) {
+    return `<button type="${submit ? 'submit' : 'button'}" class="btn"${variant ? ` data-variant="${variant}"` : ''}${size ? ` data-size="${size}"` : ''}${attrs ? ' ' + attrs : ''}>${this.actHtml(key, label)}</button>`;
   },
   // 「내가 만든 것을 지운다」(되돌리기)는 관리 › 내 설정 한 곳에만 있다 — 다른 화면은 단추의 사본을 두지 않고 이 한 줄로 그곳에 보낸다(configBundle.js 가 범위를 골라 연다)
   resetLink(scope, what) { return `<p class="muted pane-foot reset-link">${esc(what)} 지우려면 <a href="#/admin" data-go-reset="${esc(scope)}">관리 › 내 설정에서 ${esc(this.acts.reset[0])}</a></p>`; },
@@ -940,7 +936,9 @@ Object.assign(UI.terms, {
       (!latestStart || runId(ev) === runId(latestStart)) &&
       (!latestStart || String(ev.timestamp || '') >= String(latestStart.timestamp || '')));
     const eligible = instance.status === 'RUNNING' && ['IN_PROGRESS','SUBMITTED','PENDING','NEW'].includes(w.status);
-    const agent = !!(w.agent_orch || w.agent_mode);
+    // 「일을 받기를 기다리는 중」은 AI 에이전트 단계에만 있다(워커가 가져가기 전). 시스템 단계(agent_orch 가 hyd-process — 입고 대기 · 시간 대기 등)는
+    // 시작 기록(task_started)을 남기지 않으므로 여기에 넣으면 기다리는 내내 「진행 중이 아님」으로 읽혀 「결과 기록이 없습니다」가 나온다
+    const agent = UI.doerOf(w) === 'agent';
     const awaiting = eligible && agent && !latestStart && !terminal;
     return { live: eligible && !terminal && !awaiting, awaiting,
       terminal: terminal || null };

@@ -103,3 +103,14 @@ def test_담당자_값은_숨은_칸으로만_싣고_자유_글_칸을_그리지
 def test_스킬_이름은_한국어_이름이_없으면_등록된_이름을_그대로_보인다(skill, expected):
     """06 촬영 검토(2026-11-03): 처리 과정에 「스킬의 한국어 표시 이름 기록 없음」이 학생 화면에 보였다."""
     assert run(FILES, "out(UI.skillLabel(DATA).label)", skill) == expected
+
+
+def test_기다리는_시스템_단계는_진행_중이고_일을_받기를_기다리는_것은_AI_단계뿐이다():
+    """입고를 기다리는 시스템 단계(작업 행의 agent_orch 가 hyd-process, 상태 제출됨, 시작 기록 없음)를 「워커가 가져가기를 기다리는 AI 단계」로 읽어 진행 중이
+    아니라고 판정했고, 단계 기록이 기다리는 내내 「결과 기록이 없습니다 — 단계 상태: 제출됨」이라고 했다. 일을 받기를 기다리는 것은 AI 에이전트 단계뿐이다."""
+    rows = [{'id': 'gr', 'status': 'SUBMITTED', 'agent_orch': 'hyd-process'}, {'id': 'ai', 'status': 'IN_PROGRESS', 'agent_orch': 'cliagents'}, {'id': 'me', 'status': 'IN_PROGRESS'}]
+    got = run(FILES, "out(DATA.map(w => { const x = UI.taskExecution(w, [], { status: 'RUNNING' }); return [x.live, x.awaiting]; }))", rows)
+    assert got == [[True, False], [False, True], [True, False]]
+    started = [{'todo_id': 'ai', 'event_type': 'task_started', 'job_id': 'j', 'timestamp': T}]
+    assert run(FILES, "const x = UI.taskExecution(DATA.w, DATA.e, { status: 'RUNNING' }); out([x.live, x.awaiting])", {'w': rows[1], 'e': started}) == [True, False]
+    assert run(FILES, "const x = UI.taskExecution(DATA, [], { status: 'COMPLETED' }); out([x.live, x.awaiting])", rows[0]) == [False, False]      # 끝난 처리 건의 줄은 진행 중이 아니다

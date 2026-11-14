@@ -136,9 +136,10 @@
         UI.field({ label: UI.t('skill.sop'), required: true, input: `<input id="skSop" placeholder="SOP-FAN-05" maxlength="40">` }) +
         UI.field({ label: UI.t('skill.fm'), required: true, input: sel('skFm', c.failureModes || [], '', '고장 유형 선택') }) +
         UI.field({ label: UI.t('skill.relation'), input: `<select id="skRel"><option value="REMEDIED_BY">${esc(UI.t('skill.rel.remedy'))}</option><option value="MITIGATED_BY">${esc(UI.t('skill.rel.mitigate'))}</option><option value="PREVENTED_BY">${esc(UI.t('skill.rel.prevent'))}</option></select>` }) +
-        UI.field({ label: UI.t('skill.kind'), input: `<select id="skKind"><option value="work_order">${esc(UI.t('skill.kind.workOrder'))}</option><option value="control">${esc(UI.t('skill.kind.control'))}</option></select>` }) +
+        // 종류: 화면에서 만드는 조치 방법은 정비 요청뿐이다 — 설비에 명령을 내리는 조치(설비 제어)는 서버가 늘 거절하므로 고르는 칸에 두지 않는다
+        UI.field({ label: UI.t('skill.kind'), hint: '설비에 명령을 내리는 조치는 기본 제공 조치 방법에만 있습니다.', input: `<select id="skKind" disabled><option value="work_order">${esc(UI.t('skill.kind.workOrder'))}</option></select>` }) +
         UI.field({ label: UI.t('skill.steps'), required: true, cls: 'wide', input: `<textarea id="skSteps" rows="5" placeholder="현장 제어로 전환하고 잠근다.&#10;벨트를 교체한다.&#10;재가동 후 진동 0.9 mm/s 미만을 확인한다."></textarea>` })) : '') +
-      `<footer class="form-foot"><span id="skMsg" class="muted" role="status"></span><button type="button" class="btn" data-variant="outline" id="skReload">${esc(UI.t('btn.cancel'))}</button><button type="button" class="btn" id="skSave">${esc(H.skillNew ? UI.t('skill.add') : UI.t('btn.save'))}</button></footer>`;
+      UI.formFoot(UI.btn(H.skillNew ? 'add' : 'save', { attrs: 'id="skSave"' }), { cancelAttrs: 'id="skReload"', msgAttrs: 'id="skMsg"' });
     if (H.skillNew) {
       box.innerHTML = `<header class="panel-head sk-head" data-skill-body><span class="sk-ic">${icon('plus')}</span><div><h2>${esc(UI.t('skill.new'))}</h2><p>지식 지도에 조치 방법 하나를 손으로 더합니다. 대상 고장 유형과 절차를 적습니다.</p></div></header><div class="panel-sec sk-form">${form}</div>`;
     } else {
@@ -582,9 +583,17 @@
       return l.kind === 'reference' ? '참고 절차(실행 대상 아님)' : l.scope === 'purchase' ? '구매 절차' : fm ? `${fm.name} · ${REL_KO[l.relation || 'REMEDIED_BY'] || ''}` : '고장 유형 미지정'; };
     if (stage === 2) {
       const ready = r.status === 'READY';
+      // 다시 연 문서: 서버가 이 문서의 지금 적재된 판(r.loaded — 언제 · 누가 · 절차 수 · 그 판을 만든 원문이 지금 연 원문인가)을 준다.
+      // 적재된 문서를 「아직 AI가 읽기 전」이라고 말하지 않는다
+      const L = r.loaded || null, here = !!(L && L.same_source);
+      const count = x => Array.isArray(x) ? x.length : x;
+      const loadedFacts = L ? [L.at ? UI.dateTime(L.at) : '', L.provided ? '기본 제공' : L.by ? UI.who(L.by) : '', count(L.procedures) != null ? `절차 ${count(L.procedures)}개` : ''].filter(Boolean).join(' · ') : '';
       box.innerHTML = `<div class="panel-sec mprev" data-doc-stage="2">
-        <div class="result"><div class="result-label">올린 문서</div><div class="result-main">${esc(r.filename)} <span class="muted num">${r.chars.toLocaleString()}자</span></div>
-          <p class="result-sub" id="manualStageNote">${ready ? '아직 AI가 문서를 읽기 전입니다. AI 추출을 시작하면 문서에서 조치 절차 · 고장 유형 · 원인을 찾아 정리합니다. 결과는 사람이 검토한 뒤에만 지식으로 적재됩니다.' : `이 문서는 「${esc(UI.status(r.status))}」 상태라 AI 추출을 시작할 수 없습니다.`}</p></div>
+        <div class="result"><div class="result-label">${here ? '이미 적재된 문서' : '올린 문서'}</div><div class="result-main">${esc(r.filename)} <span class="muted num">${r.chars.toLocaleString()}자</span></div>
+          <p class="result-sub" id="manualStageNote">${!ready ? `이 문서는 「${esc(UI.status(r.status))}」 상태라 AI 추출을 시작할 수 없습니다.`
+            : here ? `이 원문으로 만든 판이 지식 지도에 적재돼 있습니다 — ${esc(loadedFacts)}. AI 추출을 다시 시작하면 새 결과를 검토해 이 문서를 개정합니다.`
+            : L ? `이 문서는 다른 원문${L.filename ? `(${esc(L.filename)})` : ''}으로 만든 판이 적재돼 있습니다 — ${esc(loadedFacts)}. 지금 연 원문은 AI가 아직 읽지 않았습니다. AI 추출을 시작해 검토한 뒤 적재하면 그 판을 개정합니다.`
+            : '아직 AI가 문서를 읽기 전입니다. AI 추출을 시작하면 문서에서 조치 절차 · 고장 유형 · 원인을 찾아 정리합니다. 결과는 사람이 검토한 뒤에만 지식으로 적재됩니다.'}</p></div>
         <section class="doc-live" id="manualLive" aria-label="AI 추출 과정" hidden><div class="doc-progress" data-live-progress hidden></div><div data-live-host></div><div data-live-fail></div></section>
         <footer class="form-foot"><span id="manualAgentStatus" role="status" class="muted"></span>${another}<button type="button" class="btn" id="manualAgentExtract" ${ready ? '' : 'disabled'}>${icon('sparkles')}AI 추출 시작</button></footer>
         <div class="doc-folds">${readWarnings}${sourceFold}${history}</div></div>`;

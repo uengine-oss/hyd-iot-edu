@@ -305,7 +305,7 @@
   // 폼의 단추 줄: 저장이 안 된 까닭(무엇이 왜)은 단추 줄 바로 위의 오류 판에
   function formActions(f) {
     return (f.error ? UI.errorBlock(f.kind === 'agent' ? '에이전트를 저장하지 못했습니다' : '스킬을 저장하지 못했습니다', f.error) : '') +
-      `<footer class="form-foot"><button type="button" class="btn" data-variant="outline" data-f-cancel>취소</button><button type="submit" class="btn" ${st.busy ? 'disabled' : ''}>저장</button></footer>`;
+      UI.formFoot(UI.btn('save', { submit: true, attrs: st.busy ? 'disabled' : '' }), { cancelAttrs: 'data-f-cancel' });
   }
   function readForm(form) {
     const d = st.form.draft;

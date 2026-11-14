@@ -31,7 +31,7 @@
     const nodes = passed.map(w => ({ id: w.activity_id, wid: w.id, name: acts.get(w.activity_id).name, state: rowState(w), who: who(acts.get(w.activity_id)), role: acts.get(w.activity_id).role || '' }));
     // 남은 길: 지금 단계(없으면 마지막으로 지나온 단계)에서 **정해진 데까지만** 잇는다. 길이 갈리는 곳(나가는 선이 둘 이상인 갈림)을 만나면 거기서 멈추고,
     // 그 뒤는 가지마다 따로 적는다(fork) — 어느 가지로 갈지는 아직 나지 않은 결과(승인 · 반려, 효과 확인의 판정)가 정한다. 한 길을 골라 끝까지 지어 적지 않는다
-    let end = null, fork = null;
+    let end = null, fork = null, timers = [];
     const gwName = new Map((def.gateways || []).map(g => [g.id, g.name || '']));
     const outsOf = id => (next.get(id) || []).filter(q => !(events.get(q.target) || {}).attachedTo);
     // 한 점에서 앞으로: 단계 이름을 모으다가 갈림(more) · 끝 이벤트(end) · 이미 지나온 곳에서 멈춘다
@@ -57,13 +57,16 @@
       const ahead = at ? walk(at, seen) : { steps: [], more: null, end: null };
       ahead.steps.filter(x => x.id !== at).forEach(x => nodes.push(x));
       end = ahead.end;
+      // 지금 단계에 붙은 기한(경계 타이머)이 먼저 오면 가는 길 — 남은 단계 줄이 이 가지도 말한다(납기 초과 → 결과 보고: 지연)
+      timers = (def.events || []).filter(x => x.attachedTo === at && live.length).map(x => { const b = walk(x.id, new Set(seen));
+        return { label: x.name || '기한', steps: b.steps.map(s => s.name), more: b.more ? b.more.name : null, end: b.end ? b.end.name || '' : null }; });
       if (ahead.more) fork = { name: ahead.more.name, branches: ahead.more.outs.map(q => {
         const b = walk(q.target, new Set(seen));
         return { label: q.name || (q.condition ? '' : '그 밖'), steps: b.steps.map(x => x.name), more: b.more ? b.more.name : null, end: b.end ? b.end.name || '' : null };
       }) };
     }
     const start = (def.events || []).find(x => x.type === 'startEvent') || null;
-    return { nodes, start, end, fork, finished, started: latest.size > 0 };
+    return { nodes, start, end, fork, timers, finished, started: latest.size > 0 };
   }
   function latestRows(workitems, known) {
     const latest = new Map();
@@ -72,7 +75,7 @@
     (workitems || []).forEach(w => {
       if (!known(w.activity_id) || w.status === 'TODO') return;
       if (w.status === 'CANCELLED' && (w.generation || 0) < maxGen) return;
-      if (UI.neverReached(w, workitems)) return;      // 가지 않은 길의 단계는 지나온 것이 아니다(그림에서 남음으로 흐리게)
+      if (UI.neverReached(w)) return;      // 가지 않은 길의 단계는 지나온 것이 아니다(그림에서 남음으로 흐리게)
       const o = latest.get(w.activity_id);
       if (!o || (w.generation || 0) > (o.generation || 0) || ((w.generation || 0) === (o.generation || 0) && String(w.start_date || '') >= String(o.start_date || ''))) latest.set(w.activity_id, w);
     });

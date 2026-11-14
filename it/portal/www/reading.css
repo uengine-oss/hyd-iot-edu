@@ -62,27 +62,6 @@
 .io-side { display: none; margin-right: 6px; font-weight: 600; }
 .confirm-dialog header p { white-space: pre-line; }      /* 확인 창 글의 줄바꿈(지우는 것 / 남는 것 목록)을 그대로 보인다 */
 
-/* ---------------- 화면 머리 아래 한 문장 · 화면 맨 아래 한 줄 ---------------- */
-.rd-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); font-size: var(--fs-sm); line-height: 20px; color: var(--muted-foreground); }
-
-/* 상세 머리: 이름 + 상태 칩 하나 · 한 줄 요약 · 오른쪽에 동작 */
-.rd-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px 16px; flex-wrap: wrap; }
-.rd-head .rd-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.rd-head h2, .rd-head h3 { margin: 0; font-size: var(--fs-md); line-height: 24px; font-weight: 600; }
-.rd-sub { margin: 4px 0 0; font-size: var(--fs-sm); line-height: 20px; color: var(--muted-foreground); max-width: 72ch; }
-
-/* 묶음: 테두리 없이 여백 24px 과 작은 이름표로 가른다(기준 원칙 4) */
-.rd-group { margin-top: 24px; }
-.rd-group:first-child { margin-top: 0; }
-.rd-label { margin: 0 0 8px; font-size: var(--fs-xs); line-height: 16px; font-weight: 600; color: var(--muted-foreground); letter-spacing: 0; }
-.rd-sec { margin: 0 0 12px; font-size: var(--fs-md); line-height: 24px; font-weight: 600; }
-.rd-note { margin: 0 0 12px; font-size: var(--fs-sm); line-height: 20px; color: var(--muted-foreground); max-width: 72ch; }
-
-/* 폼(기준 5-6): 한 열 · 폭 720px 까지 · 단추 줄은 맨 아래 왼쪽에 주 단추 먼저 */
-.rd-form { max-width: 720px; }
-.rd-form-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 24px; }
-
-
 /* ---------------- 문서 등록 · 조치 방법 ---------------- */
 #manualSteps { padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
 

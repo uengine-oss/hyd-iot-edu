@@ -419,7 +419,7 @@ def test_기준으로_되돌리기는_내가_적재한_문서_판과_표_정의�
     assert world.stack.graph._run("MATCH (r:Rule) WHERE r.id STARTS WITH 'rule:cand-' RETURN count(r) AS n")[0]['n'] == 0   # 화면이 만든 후보 규칙도 없다
     # 응답은 실제로 한 일과 남긴 것을 말한다(화면이 「지우는 것 · 남는 것」을 이 목록으로 그린다)
     assert '적재한 문서 판 1개' in out['removed'] and '화면에서 만든 조치 방법 1개' in out['removed'] and '업무 DB 표 정의 묶음 1개' in out['removed']
-    assert any('처리 건 기록' in line for line in out['kept']) and any('[초기화]' in line for line in out['kept'])
+    assert any('처리 건 기록' in line for line in out['kept']) and any('[업무 데이터 초기화]' in line for line in out['kept'])
     assert out['base_missing'] == []                                          # 기본 제공 문서의 지식은 모두 제자리다
 
 

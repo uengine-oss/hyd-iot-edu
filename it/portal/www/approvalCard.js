@@ -74,10 +74,12 @@
     const l = (o.losses || []).filter(x => !x.conditional).map(x => e(x.name));
     if (l.length) out.push(`감수할 것 ${l.join(' · ')}`);
     if (o.precedent && o.precedent.n) out.push(`과거 같은 선택 ${o.precedent.n}건(${e(UI.t('card.precedentFixed'))})${o.precedent.reasons && o.precedent.reasons[0] ? ` — ${e(o.precedent.reasons[0])}` : ''}`);   // 선례는 미리 넣은 예시 고정(dmn_mcp) — 실제 승인 이력처럼 읽히지 않게
-    const warn = [...(o.penalties || []), ...(o.warnings || [])].map(v => e(UI.idText(v.annotation || v.message || v.name || v.rule || '')));
+    const warn = opt.warn === false ? [] : cautions(o).map(e);
     if (warn.length) out.push(`<b>주의</b> ${warn.slice(0, 2).join(' · ')}`);
     return out.slice(0, 4);
   }
+  // 이 안에 걸린 주의(감점 · 경고 규칙의 글) — 승인 카드는 까닭 줄 끝에, 단계 기록의 AI 결론은 근거 줄 하나로 따로 보인다
+  function cautions(o) { return [...(o.penalties || []), ...(o.warnings || [])].map(v => UI.idText(v.annotation || v.message || v.name || v.rule || '')).filter(Boolean); }
 
   // 핵심 근거: 지식 그래프 경로 하나(조치 → … → 지표) + 출처 절(매뉴얼 · 규칙 근거)
   function evidence(o) {
@@ -297,5 +299,5 @@
       ${off}${opt.extra || ''}</div>`;
   }
 
-  window.hydApprove = { html, reasons, partDiff, forecastDecides, ownValues, sentenceAbout, proposal, proposalHtml, pick, choicesHtml, noneSummary };
+  window.hydApprove = { html, reasons, cautions, partDiff, forecastDecides, ownValues, sentenceAbout, proposal, proposalHtml, pick, choicesHtml, noneSummary };
 })();

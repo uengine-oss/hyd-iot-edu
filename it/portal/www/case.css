@@ -88,7 +88,11 @@
 @media (max-width: 640px) { .ap-label { min-width: 0; width: 100%; } }
 
 /* ───────── 진행 길(bpmn-js 캔버스) · 전체 흐름 대화상자 ───────── */
-.flow-canvas { height: 400px; }
+.flow-canvas { height: 440px; }
+/* 범례 · 도구 막대는 그림 위에 겹치지 않고 그림 위쪽의 제 줄에 놓인다 — 겹쳐 두면 맨 윗줄 상자(차선의 첫 단계)를 가린다 */
+:is(.flow-canvas, dialog.flow-dialog .canvas) { display: flex; flex-direction: column; }
+:is(.flow-canvas, dialog.flow-dialog .canvas) > .canvas-bar { position: static; flex: none; padding: 10px 12px 8px; border-bottom: 1px solid var(--cv-border); }
+:is(.flow-canvas, dialog.flow-dialog .canvas) > .bpmn { flex: 1; min-height: 0; height: auto; }
 /* 남은 단계의 글자도 읽히게: 키트는 남음을 62 % 로 흐리게 하는데, 어두운 캔버스의 13px 글자에는 너무 옅다 */
 :is(.flow-canvas, dialog.flow-dialog) .bpmn .djs-shape.is-todo .djs-visual { opacity: .82; }
 /* 캔버스 안의 아이콘과 bpmn-js 의 그림판은 제 치수를 지킨다(옮기는 동안의 대응 규칙 `.canvas svg { width: 100%; height: auto }` 는 옛 자체 그림용이다) */
@@ -267,3 +271,4 @@ ol.cr-list { list-style: decimal; }
 .cr-notice, .turn-notice { display: flex; gap: 8px; align-items: flex-start; margin: 0; font-size: var(--fs-sm); line-height: 20px; color: var(--ink-2); }
 .cr-notice .ic, .turn-notice .ic { width: 14px; height: 14px; flex: none; margin-top: 3px; color: var(--muted-foreground); }
 .turn-notice { margin-top: 8px; }
+.turn-notice-line { margin: 0 0 6px; font-size: var(--fs-sm); line-height: 20px; color: var(--ink-2); }

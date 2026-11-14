@@ -70,12 +70,12 @@
 
   <!-- ───────── 시스템 구성 ───────── -->
   <section class="view" id="view-home" data-kit>
-    <!-- 구조 그림(디자인 기준 5-8): 어두운 캔버스 하나에 세로 띠 셋(OT · DMZ · IT) × 계층 아홉(위가 업무, 아래가 현장), 부품 상자, 길 셋. 부품에 올리거나 초점을 주면 아래 정보 띠가 바뀐다.
+    <!-- 구조 그림(디자인 기준 5-8): 어두운 캔버스 하나에 세로 띠 셋(OT · DMZ · IT, 띠마다 그 영역의 망 이름) × 계층 아홉(위가 업무, 아래가 현장), 부품 상자, 길 셋과 영역 밖으로 도는 길 하나(가상 설비 API 망). 부품에 올리거나 초점을 주면 아래 정보 띠가 바뀐다.
          app.js renderStack 이 layers.js 의 표(역할 · 현업 대응 · 주소 · 상태 확인 주소)로 그린다. 모양은 canvas.css(.sys-*) -->
     <div data-page-head="home" data-sub="현장 값은 DMZ를 거쳐 올라오고, 사람이 승인한 명령만 명령 관문으로 내려갑니다."><span class="tag" id="sysSum" role="status" hidden></span></div>
     <div class="canvas sys-arch">
       <div class="canvas-bar sys-bar">
-        <span class="cv-legend"><span><i class="sys-lg" data-k="data"></i>값이 올라가는 길</span><span><i class="sys-lg" data-k="cmd"></i>승인된 명령이 내려가는 길</span><span><i class="sys-lg" data-k="ai"></i>AI가 지식을 읽는 길</span></span>
+        <span class="cv-legend"><span><i class="sys-lg" data-k="data"></i>값이 올라가는 길</span><span><i class="sys-lg" data-k="cmd"></i>승인된 명령이 내려가는 길</span><span><i class="sys-lg" data-k="ai"></i>AI가 지식을 읽는 길</span><span><i class="sys-lg" data-k="sim"></i>명령 길 밖의 조작</span></span>
         <span class="grow"></span>
         <span class="cv-legend"><span><i class="sys-lg-dot ok"></i>정상</span><span><i class="sys-lg-dot down"></i>응답 없음</span><span><i class="sys-lg-dot opt"></i>선택 도구</span></span>
       </div>
@@ -84,11 +84,9 @@
       <div class="sys-scroll" id="stack" tabindex="-1"></div>
       <div class="sys-info" id="sysInfo" aria-live="polite"></div>
     </div>
-    <div class="sys-zones">
-      <div class="sys-zone" data-zone="ot"><h2><i></i>OT · 현장</h2><p>설비 · PLC · 센서 · 운전 화면이 있습니다. 내려온 명령을 받을지는 PLC가 다시 정합니다.</p></div>
-      <div class="sys-zone" data-zone="dmz"><h2><i></i>DMZ · 경계망</h2><p>값은 수집 중계가 그대로 올리고, 명령은 명령 관문이 검증한 것만 내립니다. 이 시스템에서는 두 부품이 현장 브로커에 접속해 주고받습니다.</p></div>
-      <div class="sys-zone" data-zone="it"><h2><i></i>IT · 업무와 분석</h2><p>이상을 찾고, AI 에이전트가 지식 그래프를 읽어 판단하고, 흐름 엔진이 승인과 실행을 이끕니다. AI 에이전트는 설비로 가는 길이 없습니다.</p></div>
-    </div>
+    <!-- 이 구성이 현업 공장과 다른 곳: layers.js SYS_DIFFS 를 app.js renderStack 이 그린다 -->
+    <div class="sec-head"><h2 id="sysDiffHead">현업 공장과 다른 곳</h2></div>
+    <dl class="sys-diffs" id="sysDiffs" aria-labelledby="sysDiffHead"></dl>
   </section>
 
   <!-- ───────── 지식 지도 ───────── -->
@@ -203,8 +201,9 @@
   <section class="view" id="view-scenario" data-kit>
     <!-- 결함을 넣고 경보가 날 때까지를 본다: 머리 → 주입 뒤의 과정(#labFollow — hydLive.follow, 실제 사건이 올 때만 넘어간다) → 설비 카드 셋 → 범위 한 문장 → 조작 기록 접기.
          그리는 코드는 app.js renderUnits · followFault, 모양은 canvas.css(.unit* · .lab-*) -->
-    <div data-page-head="scenario" data-sub="가상 설비 3기에 결함을 넣어 경보를 내고 처리 건을 엽니다."><button type="button" class="btn" data-variant="outline" id="btnReset"><span data-icon="rotate-ccw"></span>설비 3기 초기화</button></div>
+    <div data-page-head="scenario" data-sub="가상 설비 3기에 결함을 넣어 경보를 내고 처리 건을 엽니다."><button type="button" class="btn" data-variant="outline" id="btnReset"></button></div>
     <div id="scaleWhy" hidden></div>
+    <div id="labLeftOut" hidden></div>
     <section class="panel lab-follow" id="labFollowPanel" aria-label="결함 주입 뒤의 과정" hidden>
       <div class="panel-head"><div><h2 id="labFollowTitle"></h2><p id="labFollowNote" hidden></p></div><button type="button" class="btn" data-variant="ghost" data-size="icon-sm" id="labFollowClose" aria-label="과정 닫기" data-tooltip="닫기" data-side="left"><span data-icon="x"></span></button></div>
       <div class="panel-body" id="labFollow"></div>

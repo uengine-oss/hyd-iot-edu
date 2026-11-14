@@ -41,17 +41,26 @@ class World:
     def __init__(self):
         self.units = {a: unit(a) for a in ('HYD-01', 'HYD-02', 'HYD-03')}
         self.phase, self.alert, self.incidents, self.down, self.extra = 'IDLE', None, [], set(), {}
+        self.broker, self.left_out, self.asked = {'plant-sim', 'connect-ingest', 'cmd-gateway'}, [], []      # 브로커에 붙었다고 답하는 서비스 · 감지기가 뺀 패턴 · 화면이 부른 주소
 
     def answer(self, route):
         req = route.request
         path = req.url.split('://', 1)[1].split('/', 1)[1].split('?')[0] if '/' in req.url.split('://', 1)[1] else ''
         path = '/' + path
+        self.asked.append(req.url)
         send = lambda body, status=200: route.fulfill(status=status, content_type='application/json', body=json.dumps(body))
         if not path.startswith('/svc/'):
             return route.fulfill(status=200, body='') if ':' in req.url.split('://', 1)[1].split('/')[0] and not req.url.startswith(self.base) else route.continue_()
         service = path.split('/')[2]
         if path.endswith('/healthz'):
-            return send({'ok': True}) if service not in self.down else send({'detail': 'down'}, 503)
+            if service in self.down:
+                return send({'detail': 'down'}, 503)
+            body = {'ok': True}
+            if service in ('plant-sim', 'connect-ingest', 'cmd-gateway'):
+                body['mqtt'] = service in self.broker
+            if service == 'detector':
+                body['patterns'] = {'ready': True, 'error': None, 'rejected': self.left_out}
+            return send(body)
         if path == '/svc/plant-sim/api/state':
             return send({'time_scale': 20.0, 'sim_t': 100.0, 'units': self.units})
         if path == '/svc/detector/api/detector/state':
@@ -143,6 +152,48 @@ def test_구조_그림은_부품_표의_부품을_모두_놓고_응답_없는_�
     # 머리의 요약은 응답 없는 서비스가 있을 때만 보인다 — 정상일 때의 「서비스 n/n」은 메뉴 줄 아래 한 곳에 있다
     page.wait_for_function("document.getElementById('sysSum').hidden", timeout=15000)
     assert not page.is_visible('#sysSum')
+
+
+def test_MQTT_브로커의_상태는_관리_화면이_아니라_브로커에_붙는_서비스들의_mqtt_값으로_읽는다(world):
+    """메시지 중계기의 관리 화면 · 관리 API(18083)는 꺼져 있다. 화면이 그 주소의 상태를 읽으면 늘 「1개 응답 없음」이 되어, 시작 창이 「서비스 상태 점이
+    초록이면 됩니다」라고 한 학생은 설치가 실패했다고 읽는다. 브로커의 상태는 그 브로커에 붙는 세 서비스(가상 설비 · 수집 중계 · 명령 관문)의 /healthz 가
+    말하는 mqtt 값이다: 하나라도 붙어 있으면 살아 있고, 셋 다 떨어졌다고 하면 응답 없음이다. 여는 화면은 없다."""
+    w, page = world, world.page
+    page.goto(w.base + '/index.html#/home')
+    state = lambda: page.get_attribute("#stack .sys-nd[data-key='EMQX']", 'data-st')
+    page.wait_for_function("document.querySelector(\"#stack .sys-nd[data-key='EMQX']\").dataset.st === 'ok'", timeout=15000)
+    assert '14/14' in page.inner_text('#healthDots') and page.get_attribute('#healthDot', 'data-tone') == 'ok'
+    assert page.get_attribute("#stack .sys-nd[data-key='EMQX']", 'href') is None          # 누르면 열리는 화면이 없다
+    page.hover("#stack .sys-nd[data-key='EMQX']")
+    assert '여는 화면이 없습니다' in page.inner_text('#sysInfo') and page.locator('#sysInfo [data-sys-open]').count() == 0
+    w.broker = {'cmd-gateway'}                                                            # 한 서비스만 붙어 있어도 브로커는 살아 있다
+    page.wait_for_timeout(6000)
+    assert state() == 'ok'
+    w.broker = set()                                                                      # 셋 다 「브로커에 붙지 못했다」고 답한다
+    page.wait_for_function("document.querySelector(\"#stack .sys-nd[data-key='EMQX']\").dataset.st === 'down'", timeout=15000)
+    assert page.inner_text('#sysSum') == '응답 없음 1 — EMQX' and '13/14' in page.inner_text('#healthDots')
+    assert not [u for u in w.asked if ':18083' in u], '꺼 둔 관리 화면의 주소를 부른다'
+
+
+def test_감지기가_감지에서_뺀_이상_패턴은_서비스_점이_초록인_채로_묻히지_않는다(world):
+    """조건식이 틀린 이상 패턴은 그것만 감지에서 빠지고 감지기는 정상으로 답한다(/healthz 의 patterns.rejected). 화면이 그 칸을 읽지 않으면 서비스 점은
+    초록이고, 그 패턴의 결함은 넣어도 조용히 경보가 나지 않는다. 메뉴 줄 · 시스템 구성 머리 · 결함 시뮬레이션이 빠진 패턴과 까닭을 말한다."""
+    w, page = world, world.page
+    page.goto(w.base + '/index.html#/scenario')
+    page.wait_for_function("document.getElementById('healthDots').textContent.includes('14/14')", timeout=15000)
+    assert page.is_hidden('#labLeftOut') and page.get_attribute('#healthDot', 'data-tone') == 'ok'
+    w.left_out = [{'code': 'MY_PATTERN', 'id': 'pattern:my', 'reason': "DefinitionError: unknown tag 'TS9'"}, {'code': None, 'id': 'pattern:two', 'reason': '지속 시간이 0초입니다'}]
+    page.wait_for_function("!document.getElementById('labLeftOut').hidden", timeout=15000)
+    said = page.inner_text('#labLeftOut')
+    assert '이상 패턴 2개가 감지에서 빠져 있습니다' in said and 'MY_PATTERN' in said
+    assert "조건식을 읽지 못했습니다 (원문: DefinitionError: unknown tag 'TS9')" in said      # 영문 까닭은 한국어 틀 + 원문 그대로
+    assert 'pattern:two — 지속 시간이 0초입니다' in said                                       # 한국어 까닭은 그대로
+    assert page.get_attribute('#healthDot', 'data-tone') == 'warn' and '감지에서 빠진 패턴 2' in page.inner_text('#healthDots')
+    page.goto(w.base + '/index.html#/home')
+    page.wait_for_function("!document.getElementById('sysSum').hidden", timeout=15000)
+    assert page.inner_text('#sysSum') == '감지에서 빠진 이상 패턴 2'
+    w.left_out = []
+    page.wait_for_function("document.getElementById('sysSum').hidden", timeout=15000)
 
 
 def test_추이의_기준선은_감지기_조건식에서_태그와_숫자를_바로_견주는_항만_읽는다(world):
@@ -238,7 +289,7 @@ def test_진행_중인_처리_건이_있는_업무_사건의_시작_단추는_�
     그 건으로 가는 길(카드 아래 「처리 건에서 보기」)을 둔다. 사건 줄의 pattern 으로 이 경보 종류의 사건만 잇는다."""
     w, page = world, world.page
     running = {'instance': 'c3_pm.1', 'status': 'RUNNING', 'started_at': '2026-11-14T00:08:43Z', 'ended_at': None, 'outcome': None}
-    scen = {'key': 'B', 'asset': 'HYD-02', 'pattern': 'PM_DUE', 'label': '정기 점검 도래', 'button': '정기 점검', 'title': '정기 정비', 'alert': True,
+    scen = {'key': 'B', 'asset': 'HYD-02', 'pattern': 'PM_DUE', 'label': '정기 점검 도래', 'button': '정기 정비 시작', 'title': '정기 정비', 'alert': True,
             'facts': {'pm_since_h': 1950, 'pm_interval_h': 2000, 'pm_due_in_h': 50}, 'running': running, 'last': running, 'events': []}
     posts = []
     page.on('request', lambda r: posts.append(r.url) if r.method == 'POST' else None)

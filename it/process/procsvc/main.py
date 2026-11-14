@@ -1346,17 +1346,17 @@ async def scenario_reset(key: str, body: dict | None = None):
         try:
             await asyncio.to_thread(scenario_buttons.reset_refusal, rt, key)
         except scenario_buttons.Refused as e:
-            _press_audit(spec["asset"], person, "초기화", key, datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            _press_audit(spec["asset"], person, scenario_buttons.RESET_BUTTON, key, datetime.now(timezone.utc).isoformat(timespec="seconds"),
                          instance=None, error=str(e), refused=True, reanchored=False)
             return _scenario_refused(e)
         await asyncio.to_thread(_entsim_post, *spec["reset"])
-        reanchor = await _reanchor_if_idle(rt, "초기화")
+        reanchor = await _reanchor_if_idle(rt, scenario_buttons.RESET_BUTTON)
         at = datetime.now(timezone.utc).isoformat(timespec="seconds")
         last = await asyncio.to_thread(scenario_buttons.last_instance, rt, key)
         if last:
             await asyncio.to_thread(rt.repo.record_events, [scenario_buttons.press_event(
-                last["proc_inst_id"], "초기화", spec["asset"], person, at, {"effect": f"{spec['label']} 표시를 처음 상태로 되돌림"})])
-    _press_audit(spec["asset"], person, "초기화", key, at, instance=last["proc_inst_id"] if last else None, **_reanchor_audit(reanchor))
+                last["proc_inst_id"], scenario_buttons.RESET_BUTTON, spec["asset"], person, at, {"effect": f"{spec['label']} 표시를 처음 상태로 되돌림"})])
+    _press_audit(spec["asset"], person, scenario_buttons.RESET_BUTTON, key, at, instance=last["proc_inst_id"] if last else None, **_reanchor_audit(reanchor))
     return dict(await asyncio.to_thread(scenario_buttons.status, instance_mode.enterprise_read, rt, _last_press),
                 reanchored=reanchor["moved"], reanchor=reanchor)
 

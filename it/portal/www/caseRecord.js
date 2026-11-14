@@ -83,7 +83,10 @@
         rows.push({ key: 'f:' + ev.id, kind: 'file', t0: ev.timestamp, minor: true, text: UI.baseName(d.path || '') });
       } else if (ev.event_type === 'task_working' && (d.type === 'notice' || d.type === 'evidence')) {
         // 알림(notice): 워커가 이 실행에 대해 사람에게 알리는 말(재생한 결과 글의 조회 값이 준비 당시 값이라는 것 등) — 줄이지 않고 결론 아래에 그대로 보인다
-        rows.push({ key: 'n:' + ev.id, kind: 'note', notice: d.type === 'notice', t0: ev.timestamp, text: UI.clean(W().tableWords(W().text(d.content || d.name || ''))) });
+        // 알림의 종류는 서버가 칸으로 싣는다(data.kind, 재생 알림은 문장마다 data.parts[{kind,text}] — worker runner.py · ai_replay.NOTICE_KINDS). 문장을 읽어 가르지 않는다
+        const say = t => UI.clean(W().tableWords(W().text(t || '')));
+        rows.push({ key: 'n:' + ev.id, kind: 'note', notice: d.type === 'notice', noticeKind: d.kind || '', t0: ev.timestamp, text: say(d.content || d.name),
+          parts: Array.isArray(d.parts) ? d.parts.filter(p => p && p.text).map(p => ({ kind: p.kind || '', text: say(p.text) })) : null });
       } else if (ev.event_type === 'task_working' && d.name && !d.type) {
         // 서버가 기록 줄 이름에 적어 보내는 「수업 버튼 [쿨러 열화 주입]」은 화면에서 「결함 시뮬레이션 [쿨러 열화 주입]」으로 읽는다(서버 문구는 instances.py — 화면은 원문 접기에 그대로 둔다)
         rows.push({ key: 's:' + ev.id, kind: 'sys', t0: ev.timestamp, job: ev.job_id, text: UI.clean(UI.logText(d.name)) + (d.attempt_failed ? ' · 실패한 시도' : ''), data: d });
@@ -128,8 +131,8 @@
     const ctx = { inst, v, d, inc, agents, read, view, running, byTodo, acts, evDefs, gaps: [], producedBy, olderDone: !!ext.olderDone };
     const steps = [];
     steps.push(startStep(ctx));
-    // 가지 않은 길의 단계(한 번도 시작되지 않은 채 닫힌 줄 — ui.js neverReached)는 본줄에 세우지 않고 이름만 모아 맨 아래 한 줄로 보인다(실패가 아니다)
-    const neverRan = w => UI.neverReached(w, view.workitems, byTodo.has(w.id));
+    // 가지 않은 길의 단계(흐름이 닿은 적 없이 닫힌 줄 — ui.js neverReached, 서버의 reached_at)는 본줄에 세우지 않고 이름만 모아 맨 아래 한 줄로 보인다(실패가 아니다)
+    const neverRan = w => UI.neverReached(w);
     const skipped = (view.workitems || []).filter(w => neverRan(w) && !evDefs[w.activity_id]).sort(UI.workitemOrder(view))
       .map(w => ({ id: w.id, name: UI.flowName(w.activity_name || (acts[w.activity_id] || {}).name || w.activity_id), gen: w.generation || 0 }));
     const wis = (view.workitems || []).filter(w => !(w.status === 'TODO' && !byTodo.has(w.id)) && !neverRan(w))
@@ -157,7 +160,7 @@
       // (입고 대기처럼 그 단계의 만들개가 멈춘 까닭을 스스로 적은 것은 그대로 둔다)
       if (w.status === 'CANCELLED' && !s.stopNote) {
         s.stopNote = UI.logText(w.log) || '취소됨';
-        if (!byTodo.has(w.id) && s.type !== 'approve' && s.type !== 'human') Object.assign(s, { sentence: '이 단계는 실행하지 않았습니다.', chips: [], verdict: null, sections: (s.sections || []).filter(x => x && x.raw), notRun: true });
+        if (!byTodo.has(w.id) && s.type !== 'approve' && s.type !== 'human') Object.assign(s, { sentence: '흐름이 이 단계에 닿았지만, 일을 시작하기 전에 취소됐습니다.', chips: [], verdict: null, sections: (s.sections || []).filter(x => x && x.raw), notRun: true });
         // 다시 수행으로 닫힌 앞 차수의 줄(사람이 답하기 전이던 단계 등): 실패가 아니다 — 붉은 표시 없이, 새 차수에서 다시 진행했다는 것만 말한다(까닭 글을 두 번 적지 않는다)
         if (/^rework superseded/i.test(String(w.log || '').trim())) Object.assign(s, { state: 'idle', stopNote: '', sentence: '다시 수행을 요청해 이 단계는 닫혔고, 새 차수에서 다시 진행했습니다.' });
       }
@@ -226,10 +229,19 @@
       const sections = [
         sec('들어온 값', table || '<p class="muted">값 없음</p>', { open: true }),
         caseRows.length ? sec(`화면에서 누른 기록 ${caseRows.length}줄`, toolListHtml(caseRows, false, 'start'), { open: true }) : '',
-        biz && !plantBound ? sec('이 흐름의 끝','<p>이 흐름은 업무 시스템에서 끝납니다 — 설비 명령 · 재관측 · 정비 수행 · 시운전 단계가 없습니다(흐름 설계). 처리되면 시작한 업무 데이터의 표시가 꺼집니다.</p>', { open: true }) : '',
+        biz && !plantBound ? sec('이 흐름의 끝','<p>이 흐름은 업무 시스템에서 끝납니다 — 설비 명령 · 효과 확인 · 정비 수행 · 시운전 단계가 없습니다. 처리되면 시작한 업무 데이터의 표시가 꺼집니다.</p>', { open: true }) : '',
         defn.rule || defn.condition ? sec('걸린 규칙', `<p>${e(W().rule(defn.rule || defn.condition))}</p>${defn.clearRule ? `<p class="muted">풀리는 조건: ${e(W().rule(defn.clearRule))}</p>` : ''}${defn.severity ? `<p class="muted">심각도 ${e(defn.severity)}</p>` : ''}`) : '',
         sec('경보 원문', rawBlock(alert), { raw: true }),
       ];
+      // 사람이 넣은 값으로 난 경보(오일 분석 입력 — alert.source human_input · enteredBy): 센서가 낸 경보가 아니다. 누가 무엇을 넣었는지로 말한다
+      if (alert.source === 'human_input') {
+        const by = (alert.enteredBy && alert.enteredBy.name) || '담당자 기록 없음', item = ev.item_name || ev.item || '분석 항목';
+        const val = ev.value != null ? ` ${W().num(+ev.value)}${ev.unit ? ' ' + ev.unit : ''}` : '';
+        return { key: 'start', type: 'start', lane: 'person', icon: 'warn', title: '사람이 넣은 값으로 시작', actor: by, t0: alert.t || inst.start_date, t1: inst.start_date,
+          sentence: `${by}${W().josa(by, '이/가')} ${alert.asset || ''}의 ${item}${val}${W().josa(val ? (ev.unit || String(ev.value)) : item, '을/를')} ${ev.out_of_spec ? '기준 이탈로 ' : ''}넣어 ‘${W().pattern(alert.pattern)}’ 경보가 났고, 처리 건이 열렸습니다.`,
+          chips: [chip(W().pattern(alert.pattern), 'danger'), chip(`${item}${val}`)].concat(ev.memo ? [chip(`메모: ${String(ev.memo).slice(0, 40)}`)] : []),
+          sections: [sec('경보 원문', rawBlock(alert), { raw: true })], rows: caseRows, state: 'ok', ids: [alert.alertId, alert.pattern], biz: false, pressed: true };
+      }
       return { key: 'start', type: 'start', lane: pressed ? 'person' : 'system', icon: biz ? 'schedule' : 'warn',
         title: pressed ? '담당자가 직접 시작' : biz ? '업무 데이터 감시가 시작' : '센서 경보로 시작',
         actor: who, t0: alert.t || inst.start_date, t1: inst.start_date, sentence, chips, sections, rows: caseRows,
@@ -523,11 +535,14 @@
       icon = 'workorder'; target = W().system('sys:cmms');
       const wo = out.work_order || (w.status === 'CANCELLED' ? {} : v.work_order) || {};
       const win = (wo.after && wo.after.window) || '';
-      const scoped=W().maintenanceReceiptHtml(wo);
-      sentence = scoped ? W().maintenanceReceiptSummary(wo) : /WO_RESCHEDULE/.test(tool) || wo.skill==='skill:reschedule-maintenance' ? (wo.ref ? `${target}의 기존 정비 오더 ${wo.ref} 일정 변경 영수증이 기록됐습니다. 정비를 마쳤는지는 정비 수행 단계에서 확인합니다.` : '기존 정비 오더 일정 변경 결과 기록을 확인할 수 없습니다.') : wo.ref ? `${target}에 정비 오더 ${wo.ref}${W().josa(wo.ref, '을/를')} 등록했습니다${win ? ` — ${UI.words(win)}` : ''}.` : b.live ? `${target}에 정비 오더를 등록하는 중입니다.` : `${target}의 정비 요청 등록 결과가 없습니다.${w.status === 'CANCELLED' ? ' 이 단계는 취소되었습니다.' : ''}`;
+      // 이 흐름에 정비 수행 단계(plant:restore)가 있을 때만 「정비 수행 단계에서 확인」을 말한다 — 없는 흐름(정기 정비)에서 없는 단계를 가리키지 않는다
+      const performs = { performs: (ctx.view.definition && ctx.view.definition.activities || []).some(a => a.tool === 'plant:restore') };
+      const scoped=W().maintenanceReceiptHtml(wo, performs);
+      const later = performs.performs ? ' 정비를 마쳤는지는 정비 수행 단계에서 확인합니다.' : '';
+      sentence = scoped ? W().maintenanceReceiptSummary(wo, performs) : /WO_RESCHEDULE/.test(tool) || wo.skill==='skill:reschedule-maintenance' ? (wo.ref ? `${target}의 기존 정비 요청 ${wo.ref}의 일정을 바꿨습니다.${later}` : '기존 정비 요청 일정 변경 결과 기록을 확인할 수 없습니다.') : wo.ref ? `${target}에 정비 요청 ${wo.ref}${W().josa(wo.ref, '을/를')} 등록했습니다${win ? ` — ${UI.words(win)}` : ''}.` : b.live ? `${target}에 정비 요청을 등록하는 중입니다.` : `${target}의 정비 요청 등록 결과가 없습니다.${w.status === 'CANCELLED' ? ' 이 단계는 취소되었습니다.' : ''}`;
       if (wo.ref) chips.push(chip(wo.ref, 'accent'));
       if (win) chips.push(chip(UI.words(win)));
-      if(scoped) sections.push(sec('설비별 정비 범위 · 오더 영수증',scoped,{open:true}));
+      if(scoped) sections.push(sec('설비별 정비 범위 · 정비 요청',scoped,{open:true}));
       else if (wo.detail) sections.push(sec('등록한 내용', `<p>${e(W().text(hydResultReport.receiptDetail(wo)))}</p>`, { open: true }));
       const m = mailOf(wo); if (m) { sentence += ` 그리고 ${m.arguments.to}에게 메일을 보냈습니다.`; chips.push(chip('메일 1통')); sections.push(sec('보낸 메일', mailHtml(m), { open: true })); }
     } else if (/PR_CREATE/.test(tool)) {
@@ -546,7 +561,7 @@
       const waitEv = b.rows.find(r => r.kind === 'sys' && r.data && r.data.plan);
       const skipped = b.rows.find(r => r.kind === 'sys' && r.job === 'WAIT_SKIPPED');
       // 무엇을 고쳤는지는 서버가 정한다(maintenance.notice — 승인한 조치가 지식에서 다루는 구성 요소만 고치고, 다루지 않은 결함은 남는다고 말한다). 화면이 「복구」를 지어 말하지 않는다
-      sentence = w.status === 'DONE' ? (m.notice ? `${skipped ? '' : waitEv ? '예정된 정비 시간까지 기다린 뒤: ' : ''}${W().text(m.notice)}` : `정비를 마쳤습니다${m.work_order ? ` (정비 오더 ${m.work_order} 완료)` : ''}. 무엇을 고쳤는지는 기록에 남지 않았습니다.`)
+      sentence = w.status === 'DONE' ? (m.notice ? `${skipped ? '' : waitEv ? '예정된 정비 시간까지 기다린 뒤: ' : ''}${W().text(m.notice)}` : `정비를 마쳤습니다${m.work_order ? ` (정비 요청 ${m.work_order} 완료)` : ''}. 무엇을 고쳤는지는 기록에 남지 않았습니다.`)
         : !b.live ? notYet(b) : waitEv ? `예정된 정비 시간까지 기다리는 중입니다 (${virtual(waitEv.data.plan)}).` : '정비를 하는 중입니다.';
       if (waitEv) chips.push(chip(`대기 ${virtual(waitEv.data.plan)}`));
       if (m.work_order) chips.push(chip(`${m.work_order} 완료`, 'success'));
@@ -641,7 +656,7 @@
       if (crit) chips.push(chip(`기준 ${W().criterion(crit)}`));
       if (inc && inc.cleared != null) chips.push(chip(`경보 해제 ${inc.cleared ? '예' : '아니요'}`, inc.cleared ? 'success' : 'warning'));
       if (hist.length) sections.push(sec('사건 기록', `<ul class="cr-list">${hist.filter(h => /RE_OBSERV|RESOLVED|ESCALATED|RECOVER|CLOSED/.test(h.state)).map(h => `<li>${e(hhmmss(h.t))} ${e(UI.status(h.state))}${h.note ? ` · ${e(W().rule(UI.logText(h.note)))}` : ''}</li>`).join('')}</ul>`, { open: true }));
-      if (rec != null && !b.series) ctx.gaps.push({ key: 'reobs', text: '재관측은 마지막에 잰 값 하나만 남습니다. 지켜본 동안의 값 흐름은 처리 건에 저장되지 않습니다 (센서 기록에는 있음).' });
+      if (rec != null && !b.series) ctx.gaps.push({ key: 'reobs', text: '효과 확인은 마지막에 잰 값 하나만 남습니다. 지켜본 동안의 값 흐름은 처리 건에 저장되지 않습니다 (센서 기록에는 있음).' });
     } else if (w.tool === 'plant:test-run') {
       const tr = out.test_run || v.test_run || null;
       const settle = b.rows.find(r => r.job === 'TEST_RUN_STARTED');
@@ -652,6 +667,9 @@
       if (tr) sections.push(sec('잰 값과 기준', `<div class="table-container"><table class="table cr-table"><thead><tr><th>값</th><th>잰 값</th><th>기준</th><th>판정</th></tr></thead><tbody>${(tr.readings || []).map(r => `<tr><td>${named(W().fieldName(String(r.tag).toLowerCase()), r.tag)}</td><td class="num">${r.value == null ? '모름' : e(W().value(String(r.tag).toLowerCase(), r.value))}</td><td class="num">${e(W().sym(r.op))} ${e(W().num(r.limit))}</td><td>${UI.chipText(r.ok ? '통과' : '미달', r.ok ? 'success' : 'danger')}</td></tr>`).join('')}</tbody></table></div>${tr.at ? `<p class="muted">잰 시각 ${e(hhmmss(tr.at))}</p>` : ''}`, { open: true }));
     } else {   // 입고 확인
       icon = 'receipt';
+      // 입고를 기다리는 동안: 어느 발주를 언제까지 기다리는지(서버의 입고 대기 기록 — 발주 번호 · 입고 예정 시각 · 리드타임). 공급사가 늦췄으면 늦춘 예정을 말한다
+      const receiptWaiting = (wait, delay) => { const p = (delay || wait).data.plan || {}, po = (delay || wait).data.purchase_order || '';
+        return `${po ? `발주 ${po}의 ` : ''}입고를 기다리는 중입니다 — 입고 예정 ${p.due_at ? UI.time(p.due_at) : '시각 기록 없음'} (${virtual(p)})${delay ? '. 공급사가 납기를 늦춰 예정이 뒤로 밀렸습니다' : ''}.`; };
       const gr = out.goods_receipt || v.goods_receipt || null;
       const waitR = b.rows.find(r => r.job === 'RECEIPT_WAIT'), delayR = b.rows.find(r => r.job === 'RECEIPT_DELAYED');
       // 검수에서 일부가 불합격이면 서버가 received: false 로 넘긴다(부분 입고 → 「미달」 가지) — 입고 기록이 있다는 것만으로 「정상」이라 하지 않는다
@@ -661,7 +679,7 @@
       sentence = partial ? `입고 예정까지 기다린 뒤${waitR ? `(${virtual(waitR.data.plan)})` : ''} 검수했지만 일부만 입고됐습니다${rejected ? ` — 불합격 ${W().num(rejected)}개 반품` : ''}. ${W().text(gr.detail || '')}`.trim()
         : gr ? `입고 예정까지 기다린 뒤${waitR ? `(${virtual(waitR.data.plan)})` : ''} 입고 · 검수 ${gr.ref || ''}${W().josa(gr.ref || '검수', '을/를')} 기록했습니다 — ${W().text(gr.detail || '')}.`
         : w.status === 'CANCELLED' ? `입고를 기다리던 중 ${delayR ? '공급사가 납기를 늦췄고, ' : ''}정해 둔 기한이 먼저 와서 멈췄습니다. 입고는 기록되지 않았습니다.`
-        : !b.live ? notYet(b) : waitR ? `입고 예정까지 기다리는 중입니다 (${virtual(waitR.data.plan)}${delayR ? ', 공급사 지연 반영' : ''}).` : '입고를 확인하는 중입니다.';
+        : !b.live ? notYet(b) : waitR ? receiptWaiting(waitR, delayR) : '입고를 확인하는 중입니다.';
       if (waitR) chips.push(chip(`리드타임 ${waitR.data.plan.lead_d != null ? waitR.data.plan.lead_d + '일' : ''}`));
       if (delayR) chips.push(chip(`공급사 지연 ${delayR.data.plan.delay_d}일`, 'warning'));
       if (gr) chips.push(chip(partial ? '부분 입고' : gr.ref || '입고', partial ? 'danger' : 'success'));
@@ -775,7 +793,7 @@
     const sections = [];
     if (rep) {
       sections.push(sec('보고 내용', `<p><b>${e(W().text(rep.title || ''))}</b></p>${rep.summary ? `<p>${e(W().text(vv?.summary || rep.summary))}</p>` : ''}
-        ${Object.keys(rep.refs || {}).length ? `<p class="muted">남긴 번호 ${Object.entries(rep.refs).map(([k, r]) => `${e({ work_order: '정비 오더', purchase_order: '발주', goods_receipt: '입고', mcp_receipt: '도구 영수증' }[k] || W().fieldName(k))} ${e(r)}`).join(' · ')}</p>` : ''}
+        ${Object.keys(rep.refs || {}).length ? `<p class="muted">남긴 번호 ${Object.entries(rep.refs).map(([k, r]) => `${e({ work_order: '정비 요청', purchase_order: '발주', goods_receipt: '입고', mcp_receipt: '도구 영수증' }[k] || W().fieldName(k))} ${e(r)}`).join(' · ')}</p>` : ''}
         ${rep.incident_closed != null ? `<p class="muted">${e(hydResultReport.incidentMeaning(rep, ctx.inc, ctx.read.incident))}${rep.notification_count == null ? '' : rep.notification_count > 0 ? ` · 담당자 ${e(rep.notification_count)}명에게 알림` : ' · 알림 받을 담당자 없음'}</p>` : ''}`, { open: true }));
       const facts = Object.entries(rep.facts || {}).filter(([, x]) => x != null && typeof x !== 'object');
       if (facts.length) sections.push(sec('보고에 실은 값', kvTable(facts.map(([k, x]) => [W().fieldName(k) === k.replace(/_/g, ' ') ? (UI.terms['var.' + k] || k) : W().fieldName(k), k === 'approved_role' || k === 'approved_by' ? W().who(x) : k === 'approved_supplier' ? supplierName(ctx, x) : W().value(k, x), k]))));
@@ -911,7 +929,7 @@
   }
   function idsLine(s) {
     const ids = [...new Set([s.w && s.w.id, ...(s.ids || [])].filter(Boolean))];
-    const extra = s.w ? [s.gen ? `${s.gen + 1}회차` : '', s.w.status ? `단계 상태 ${UI.status(s.w.status)}${s.w.draft_status && s.w.status !== 'DONE' ? ' · ' + UI.status(s.w.draft_status) : ''}` : ''].filter(Boolean) : [];
+    const extra = s.w ? [s.gen ? `${s.gen + 1}${UI.t('inst.gen')}` : '', s.w.status ? `단계 상태 ${UI.status(s.w.status)}${s.w.draft_status && s.w.status !== 'DONE' ? ' · ' + UI.status(s.w.draft_status) : ''}` : ''].filter(Boolean) : [];
     return ids.length || extra.length ? `<p class="cr-ids"><span class="muted">내부 값</span> ${ids.map(id => UI.id(id)).join(' ')}${extra.length ? ` <span class="muted">${e(extra.join(' · '))}</span>` : ''}</p>` : '';
   }
   /* 단계 자세히 = 옆 판 하나(.sheet). 단계 줄에는 결론 한 문장(AI 단계는 결론 · 근거 · 후보 비교)만 두고, 그 단계가 남긴 기록 · 값 · 원문은 이 판의 보기(밑줄 탭)로 나눈다 —
@@ -1036,7 +1054,8 @@
     else if (rec) verdict = `조치 ${opts.length}개를 비교해 「${recName}」${W().josa(recName, '을/를')} ${mock ? '모의 1순위로 계산했습니다' : '추천합니다'}.`;
     else if (cause) verdict = `원인을 ${cause}${W().josa(cause, '으로/로')} 판단했습니다.`;
     // 결론 아래 한 줄: 추천안의 예측 · 좋아지는 것 · 감수할 것(승인 카드와 같은 함수 — approvalCard.js reasons)
-    const sub = rec && window.hydApprove ? hydApprove.reasons(rec, d).slice(0, 3).join(' · ') : '';
+    // 주의(감점 · 경고 규칙의 글)는 문장이 길어 이 한 줄에 잇지 않고 아래 근거 줄 하나로 보인다
+    const sub = rec && window.hydApprove ? hydApprove.reasons(rec, d, { warn: false }).slice(0, 3).join(' · ') : '';
     // 근거: 원인(고장 유형) → 원인 판정에 쓴 관측값(잰 값과 기준, 여섯 줄까지) → 판단 엔진이 그 안에 대해 한 말
     const evid = [];
     if (cause) evid.push(['network', `지식 지도의 원인 후보 가운데 <b>${e(cause)}</b>${W().josa(cause, '이/가')} 관측값과 맞습니다${top && top.failureMode ? ` <span class="muted">— 고장 유형: ${e(top.failureMode)}</span>` : ''}.`]);
@@ -1048,7 +1067,8 @@
       const ref = rec.sopId || (((rec.steps || []).find(x => x.manual && x.manual.ref) || {}).manual || {}).ref;
       const said = window.hydApprove ? W().text(hydApprove.sentenceAbout(d.explanation, rec.name)) : '';
       if (said) evid.push(['scale', e(said)]);
-      else if (Number.isFinite(+rec.score) && opts.length > 1) evid.push(['scale', `조치 ${opts.length}개를 순위 식으로 견줘 <b>「${e(recName)}」</b>${ref ? ` <span class="muted mono">${e(ref)}</span>` : ''}${W().josa(recName, '이/가')} <b class="num">${e(W().num(+rec.score))}점</b>으로 가장 높았습니다.`]);
+      else if (Number.isFinite(+rec.score) && opts.length > 1) evid.push(['scale', `조치 ${opts.length}개를 순위 식으로 견줘 <b>「${e(recName)}」</b>${ref ? ` <span class="muted mono">${e(ref)}</span>` : ''}${W().josa(ref || recName, '이/가')} <b class="num">${e(W().num(+rec.score).replace(/^-/, '−'))}점</b>으로 가장 높았습니다${+rec.score < 0 ? ' (점수는 감점을 뺀 값이라 음수일 수 있습니다)' : ''}.`]);
+      if (window.hydApprove) hydApprove.cautions(rec).slice(0, 2).forEach(t => evid.push(['triangle-alert', `<b>주의</b> ${e(W().text(t))}`]));
     }
     return { verdict, sub, evid, opts, rec, d, mock };
   }
@@ -1069,7 +1089,9 @@
       score: o.feasible && !cost(o) && Number.isFinite(+o.score) && o.score !== null ? +o.score : null, scoreHtml: !o.feasible || cost(o) ? e(score(o)) : null, role: o.approver && o.approver.name })));
   }
   // 이 실행의 알림 줄(같은 말은 한 번): 결론 바로 아래, 읽히는 크기의 한 문단씩
-  const noticeTexts = rows => [...new Set((rows || []).filter(r => r.kind === 'note' && r.notice && r.text).map(r => r.text))];
+  // kinds 를 주면 그 종류의 문장만(알림 한 줄이 문장 여럿이면 parts 의 종류로, 아니면 그 줄의 종류로 가른다)
+  const noticeTexts = (rows, kinds) => [...new Set((rows || []).filter(r => r.kind === 'note' && r.notice && r.text).flatMap(r =>
+    !kinds ? [r.text] : r.parts ? r.parts.filter(p => kinds.includes(p.kind)).map(p => p.text) : kinds.includes(r.noticeKind) ? [r.text] : []))];
   const noticeHtml = rows => { const xs = noticeTexts(rows); return xs.length ? `<div class="cr-notices">${xs.map(t => `<p class="cr-notice">${UI.icon('info')}<span>${e(t)}</span></p>`).join('')}</div>` : ''; };
   function agentCard(s, m, gaps, seen) {
     const failed = ['fail', 'stop', 'bad'].includes(s.state);
@@ -1099,7 +1121,7 @@
     const when = s.t0 ? `<span class="step-time num" title="${e(UI.dateTime(s.t0))}">${e(hhmmss(s.t0))}${waiting ? (s.lane === 'person' ? '부터 기다림' : ' 시작') : dur ? ` · ${e(dur)}` : ''}</span>` : '';
     const names = [...new Set(String(s.actor || '').split(' · ').filter(Boolean))];
     const myTurn = mine && s.w && mine.has(s.w.id);
-    const who = `<span class="step-who">${UI.icon(WHO_ICON[s.lane] || 'cog')}${e((names.length ? names : [LANE[s.lane]]).join(' · '))}${myTurn ? ' · 내 차례' : ''}${s.gen ? ` · ${e(s.gen + 1)}회차` : ''}</span>`;
+    const who = `<span class="step-who">${UI.icon(WHO_ICON[s.lane] || 'cog')}${e((names.length ? names : [LANE[s.lane]]).join(' · '))}${myTurn ? ' · 내 차례' : ''}${s.gen ? ` · ${e(s.gen + 1)}${e(UI.t('inst.gen'))}` : ''}</span>`;
     const hold = s.state === 'wait' && s.w && s.w.status === 'PENDING' ? UI.chipText('보류', 'warning') : '';
     const head = `<span class="step-title">${e(s.title)}</span>${who}${hold}${when}`;
     if (s.type === 'agent') return { mark: markIcon(s), head, body: agentCard(s, m, gaps, seen) };
@@ -1111,17 +1133,21 @@
   }
   /* 남은 단계: 정해진 데까지만 화살표로 잇고, 길이 갈리는 곳부터는 가지마다 한 줄씩 적는다 — 어느 가지로 갈지는 아직 나지 않은 결과가 정하므로
      한 길(「… → 결과 보고: 정상」)을 미리 골라 적지 않는다. 가지 안에서 또 갈리면 거기까지만 적고 그 갈림의 이름을 댄다 */
-  function restHtml(rest, fork) {
+  function restHtml(rest, fork, timers = []) {
     const arrow = UI.icon('arrow-right'), chain = names => names.map(n => `<span>${e(UI.flowName(n))}</span>`).join(arrow);
     const line = rest.length ? `<div class="rest">${chain(rest.map(n => n.name))}</div>` : '';
-    if (!fork) return line;
+    // 지금 단계에 걸린 기한(경계 타이머 — 납기 초과 · 승인 지연)이 먼저 오면 가는 길: 그림에는 있는데 글에는 없던 가지다
+    const timed = timers.length ? `<p class="rest-fork">지금 단계에 걸린 기한이 먼저 오면</p><ul class="rest-branches">${timers.map(b => {
+      const tail = b.more ? `<span class="muted">「${e(UI.flowName(b.more))}」에서 다시 갈림</span>` : b.end != null ? `<span class="muted">${UI.plainEnd(b.end) ? '처리 완료' : `처리 완료(${e(UI.flowName(b.end))})`}</span>` : '';
+      return `<li><b>${e(UI.flowName(b.label))}</b>${[b.steps.length ? chain(b.steps) : '', tail].filter(Boolean).map(x => arrow + x).join('')}</li>`; }).join('')}</ul>` : '';
+    if (!fork) return line + timed;
     const q = String(fork.name || '').replace(/\?$/, '').trim();
     const branch = b => {
       const tail = b.more ? `<span class="muted">「${e(UI.flowName(b.more))}」에서 다시 갈림</span>` : b.end != null ? `<span class="muted">${UI.plainEnd(b.end) ? '처리 완료' : `처리 완료(${e(UI.flowName(b.end))})`}</span>` : '';
       const parts = [b.steps.length ? chain(b.steps) : '', tail].filter(Boolean).join(arrow);
       return `<li><b>${e(UI.flowSeq(b.label) || b.label || '조건에 맞으면')}</b>${parts ? arrow + parts : ''}</li>`;
     };
-    return `${line}<p class="rest-fork">${rest.length ? '그 뒤 ' : '이 단계가 끝나면 '}${q ? `「${e(UI.flowName(q))}」에 따라` : '결과에 따라'} 길이 갈립니다.</p><ul class="rest-branches">${fork.branches.map(branch).join('')}</ul>`;
+    return `${line}<p class="rest-fork">${rest.length ? '그 뒤 ' : '이 단계가 끝나면 '}${q ? `「${e(UI.flowName(q))}」에 따라` : '결과에 따라'} 길이 갈립니다.</p><ul class="rest-branches">${fork.branches.map(branch).join('')}</ul>${timed}`;
   }
 
   // 「기록에 없는 것」을 그 단계의 접기 안으로 보낸다: 종류별로 그 말이 가리키는 단계(없으면 마지막 단계)
@@ -1269,9 +1295,9 @@
       const gaps = gapsByStep(m), mine = opts.mine ? opts.mine() : null;
       // 남은 단계는 이름만 한 줄(진행 길의 남은 상자와 같은 차례)
       const path = m.running && window.hydFlow ? hydFlow.pathModel(C.view.definition || {}, C.view.workitems, m.inst) : null;
-      const rest = path ? path.nodes.filter(n => n.state === 'todo') : [], fork = path ? path.fork : null;
+      const rest = path ? path.nodes.filter(n => n.state === 'todo') : [], fork = path ? path.fork : null, timers = path ? path.timers || [] : [];
       const skip = m.skipped || [];
-      const want = shown.map(s => s.key).concat(rest.length || fork ? ['next'] : [], skip.length ? ['skipped'] : []);
+      const want = shown.map(s => s.key).concat(rest.length || fork || timers.length ? ['next'] : [], skip.length ? ['skipped'] : []);
       [...box.children].forEach(li => { if (!want.includes(li.dataset.key)) li.remove(); });
       const place = (key, i, state, parts) => {
         let li = [...box.children].find(x => x.dataset.key === key);
@@ -1312,7 +1338,7 @@
         if (s.w) li.dataset.step = s.w.id; else delete li.dataset.step;
       });
       // 남은 단계는 맨 아래 한 줄에 화살표로 이어 적는다(진행 길의 남은 상자와 같은 차례)
-      if (rest.length || fork) place('next', shown.length, 'todo', { mark: 'circle-dashed', head: '<span class="step-title">남은 단계</span>', body: restHtml(rest, fork) });
+      if (rest.length || fork || timers.length) place('next', shown.length, 'todo', { mark: 'circle-dashed', head: '<span class="step-title">남은 단계</span>', body: restHtml(rest, fork, timers) });
       // 가지 않은 길: 맨 아래 한 줄(수만), 펼치면 이름만. 실패가 아니므로 붉은 표시를 쓰지 않는다
       if (skip.length) {
         const names = [...new Set(skip.map(x => x.name))];

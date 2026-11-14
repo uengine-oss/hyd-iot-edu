@@ -515,7 +515,7 @@ def report_values(v: dict) -> list[dict]:
     wo = v.get("work_order")
     if isinstance(wo, dict) and wo.get("ref") and not isinstance(tr, dict) and not (isinstance(ro, dict) and ro.get("tag")):
         after = wo.get("after") if isinstance(wo.get("after"), dict) else {}
-        rows.append({"name": "정비 오더", "value": wo["ref"]})
+        rows.append({"name": "정비 요청", "value": wo["ref"]})
         when = after.get("window_label") or after.get("window")
         if when:
             rows.append({"name": "정비 시점", "value": when})

@@ -664,7 +664,6 @@ dialog.sheet .view-tabs { margin: 0; padding: 0 24px; flex: none; }
 .lv-step.fail .lv-mark { border-color: var(--danger-line); }
 .lv-wait { color: var(--ink-2); }
 .btn.lv-busy { cursor: progress; }
-.tr-spin { border-color: var(--brand-line); border-top-color: var(--brand); }
 
 /* ───────── 움직임 ───────── */
 @view-transition { navigation: auto; }
@@ -688,7 +687,6 @@ dialog.sheet .view-tabs { margin: 0; padding: 0 24px; flex: none; }
 .btn.ghost:not([data-variant]) { border-color: transparent; background: none; color: var(--ink-2); box-shadow: none; }
 .btn.ghost:not([data-variant]):hover { background: var(--muted); color: var(--foreground); }
 .btn.warn:not([data-variant]) { color: var(--warn-ink); }
-.btn.small:not([data-size]) { height: 28px; gap: 4px; padding-inline: 10px; font-size: var(--fs-sm); }
 .btn[aria-pressed="true"]:not([data-variant]) { background: var(--muted); border-color: var(--foreground); }
 a.btn:hover { text-decoration: none; }
 
@@ -697,8 +695,6 @@ a.btn:hover { text-decoration: none; }
 .chip[class*="tone-"], .chip.sm, span.chip:not(a):not(button):not(.cv-chip) { height: 22px; padding: 0 8px; border-radius: 6px; font-size: var(--fs-xs); font-weight: 550; line-height: 1; white-space: nowrap; max-width: 100%; color: var(--ink-2); background: var(--muted); border: 1px solid var(--border); }
 .chip:empty { display: none; }
 .chip.outline { background: none; font-weight: 450; }
-.chips.small .chip { cursor: pointer; }
-.chips.small .chip.on { background: var(--brand); border-color: var(--brand); color: #fff; }
 /* 상태 점(dot up · down · off) */
 .dot.up { background: var(--ok); }
 .dot.down { background: var(--danger); }

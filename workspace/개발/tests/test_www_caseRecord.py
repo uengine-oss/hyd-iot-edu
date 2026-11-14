@@ -138,16 +138,22 @@ def test_잘려_온_도구_결과는_JSON_오류로_읽지_않고_보관된_전�
 
 def test_가지_않은_길의_단계는_단계_기록의_본줄에_서지_않고_이름만_따로_모이며_한_일의_문장을_만들지_않는다():
     """반려로 끝난 건의 단계 기록에 「냉각 명령 — 취소: … — 설비 제어에 명령을 보냈고 …」(보내지 않았다)와 「효과 확인 … 회복으로 판정했습니다」가
-    붉은 ✕로 줄줄이 섰다. 한 번도 시작되지 않은 채 닫힌 줄은 일어난 일이 아니다 — 본줄에서 빼고 이름만 모은다(build().skipped)."""
+    붉은 ✕로 줄줄이 섰다. 흐름이 닿은 적 없이 닫힌 줄(서버의 reached_at 이 null)은 일어난 일이 아니다 — 본줄에서 빼고 이름만 모은다(build().skipped).
+    흐름이 닿았다가 취소된 줄(reached_at 에 시각)은 본줄에 서고 「닿았지만 시작하기 전에 취소됐다」고 말한다."""
     T0, T1 = '2026-10-30T05:40:00.000Z', T
     wis = [{'id': 'w1', 'activity_id': 'R_rej', 'activity_name': '결과 보고: 반려', 'tool': 'process:report', 'start_date': T1, 'end_date': T1},
-           {'id': 'w2', 'activity_id': 'T_cmd', 'activity_name': '냉각 명령', 'tool': 'incident:command', 'status': 'CANCELLED', 'start_date': T0, 'end_date': T1, 'log': '취소: 처리 건이 끝남 — 반려 종결; '},
-           {'id': 'w3', 'activity_id': 'T_obs', 'activity_name': '효과 확인', 'tool': 'incident:reobserve', 'status': 'CANCELLED', 'start_date': T0, 'end_date': T1, 'log': '취소: 처리 건이 끝남 — 반려 종결; '}]
+           {'id': 'w2', 'activity_id': 'T_cmd', 'activity_name': '냉각 명령', 'tool': 'incident:command', 'status': 'CANCELLED', 'start_date': T0, 'end_date': T1, 'reached_at': None, 'log': '취소: 처리 건이 끝남 — 반려 종결; '},
+           {'id': 'w3', 'activity_id': 'T_obs', 'activity_name': '효과 확인', 'tool': 'incident:reobserve', 'status': 'CANCELLED', 'start_date': T0, 'end_date': T1, 'reached_at': None, 'log': '취소: 처리 건이 끝남 — 반려 종결; '}]
     v = view(wis, ['T_cmd', 'T_obs', 'R_rej'])
     v['workitems'].append({'id': 'w0', 'activity_id': 'T_a', 'activity_name': '원인 진단', 'status': 'DONE', 'agent_orch': 'system', 'start_date': T0, 'end_date': T1})
     got = run(FILES, "const m = hydRecord.build(DATA, { agents: [], people: [] }, []); out({ titles: m.steps.map(s => s.title), skipped: m.skipped.map(x => x.name), said: m.steps.map(s => s.sentence || '').join(' ') })", v)
     assert '냉각 명령' not in got['titles'] and '효과 확인' not in got['titles'] and got['skipped'] == ['냉각 명령', '효과 확인']
     assert '명령을 보냈' not in got['said'] and '판정했습니다' not in got['said']
+    # 흐름이 닿았다가 취소된 줄: 가지 않은 길이 아니다 — 본줄에 서고, 한 일의 문장 대신 닿았지만 시작 전에 취소됐다고 말한다
+    wis[1]['reached_at'] = T0
+    got = run(FILES, "const m = hydRecord.build(DATA, { agents: [], people: [] }, []); out({ steps: m.steps.map(s => [s.title, s.sentence || '']), skipped: m.skipped.map(x => x.name) })", view(wis, ['T_cmd', 'T_obs', 'R_rej']))
+    assert got['skipped'] == ['효과 확인']
+    assert ['냉각 명령', '흐름이 이 단계에 닿았지만, 일을 시작하기 전에 취소됐습니다.'] in got['steps']
 
 
 def test_효과_확인이_늘어나면_연장됐다는_것과_까닭을_말하고_판정_전을_판정_중했습니다로_적지_않는다():
@@ -169,3 +175,34 @@ def test_효과_확인이_늘어나면_연장됐다는_것과_까닭을_말하�
     assert '판정 중했습니다' not in sentence and sentence.endswith('아직 판정하지 않았습니다.'), sentence
     assert '연장됨 — 값은 기준 안인데 경보가 아직 꺼지지 않아 더 지켜봅니다' in line and '연장됨' in box and '판정까지 (연장)' in box
     assert '>52.3</span>' in line and '판정까지 ' in line and '>–<' not in line      # 그릴 때 아는 값과 남은 시간을 바로 적는다(「– ℃ · –」로 그렸다가 채우지 않는다)
+
+
+def test_사람이_넣은_값으로_연_건의_시작은_센서_경보가_아니라_누가_무엇을_넣었는지로_말한다():
+    """오일 분석 입력(사람 입력 경보 — source human_input)으로 연 건의 시작 단계가 「센서 경보로 시작 — HYD-01의 센서 값이 경보 규칙에 걸려 …」라고 했다.
+    센서가 낸 경보가 아니다: 넣은 사람 · 항목 · 값 · 기준 이탈 여부를 말한다. 센서 경보로 연 건은 그대로 센서 경보다."""
+    def start(alert):
+        v = view([{'id': 'w1', 'activity_id': 'T', 'activity_name': '현장 검토', 'start_date': T, 'end_date': T}], ['T'], variables=[('alert', alert)])
+        return run(FILES, "const s = hydRecord.build(DATA, { agents: [], people: [] }, []).steps[0]; out([s.title, s.actor, s.sentence, s.lane])", v)
+    typed = {'t': T, 'asset': 'HYD-01', 'state': 'RAISE', 'source': 'human_input', 'alertId': 'A1', 'pattern': 'OIL_ANALYSIS', 'enteredBy': {'id': 'user:me', 'name': '담당자'},
+             'evidence': {'item': 'tan', 'item_name': '산가 TAN', 'value': 21, 'unit': 'mgKOH/g', 'out_of_spec': True, 'memo': '시료'}}
+    title, actor, sentence, lane = start(typed)
+    assert (title, actor, lane) == ('사람이 넣은 값으로 시작', '담당자', 'person')
+    assert '담당자가 HYD-01의 산가 TAN 21 mgKOH/g를 기준 이탈로 넣어' in sentence and '센서' not in sentence
+    sensor = {'t': T, 'asset': 'HYD-01', 'state': 'RAISE', 'source': 'detector', 'alertId': 'A2', 'pattern': 'COOLER_DEGRADATION', 'evidence': {'values': {'TS1': 55.6}}}
+    assert start(sensor)[0] == '센서 경보로 시작'
+
+
+def test_AI_결론의_근거_줄은_조사를_바로_앞_낱말에_맞추고_주의_글을_제_줄로_보인다():
+    """「조치 3개를 순위 식으로 견줘 「순정(OEM) 공급사 표준 발주」 SOP-PUR-11가 -420점으로 …」: 조사를 이름에 맞춰 놓고 그 사이에 절차 번호를 끼워, 번호 뒤의
+    조사가 틀렸다(십일 + 가). 조사는 바로 앞에 보이는 낱말에 맞춘다. 감점 · 경고 규칙의 글(「… 표시한다.」)은 결론 아래 한 줄에 이어 붙이지 않고 근거 줄 하나로 둔다."""
+    opts = [{'id': 'skill:a', 'name': '순정(OEM) 공급사 표준 발주', 'sopId': 'SOP-PUR-11', 'score': -420, 'feasible': True, 'rank': 1, 'penalties': [{'annotation': '발주안에 전결 기준 초과를 표시한다.'}]},
+            {'id': 'skill:b', 'name': '대체 공급사 발주', 'sopId': 'SOP-PUR-12', 'score': -475, 'feasible': True, 'rank': 2}]
+    data = {'s': {'w': {'id': 'w1', 'output': {}}, 'type': 'agent'},
+            'm': {'v': {}, 'inst': {'variable_sources': {}}, 'steps': [{'type': 'agent'}], 'decision': {'id': 'D1', 'recommended': 'skill:a', 'options': opts, 'facts': {}}}}
+    got = run(FILES, "const f = hydRecord.agentFront(DATA.s, DATA.m); out({ sub: f.sub, evid: f.evid.map(x => x[1].replace(/<[^>]+>/g, '')) })", data)
+    line = next(x for x in got['evid'] if '순위 식' in x)
+    assert 'SOP-PUR-11이 −420점으로 가장 높았습니다' in line and 'SOP-PUR-11가' not in line
+    assert '주의 발주안에 전결 기준 초과를 표시한다.' in got['evid'] and '주의' not in got['sub']
+    opts[0]['sopId'] = 'SOP-PUR-12'                                  # 번호가 「이」로 끝나면 「가」
+    got = run(FILES, "out(hydRecord.agentFront(DATA.s, DATA.m).evid.map(x => x[1].replace(/<[^>]+>/g, '')).join(' '))", data)
+    assert 'SOP-PUR-12가 −420점으로' in got

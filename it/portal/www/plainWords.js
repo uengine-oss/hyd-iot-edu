@@ -49,7 +49,7 @@
     part_no: ['부품 번호', ''], name: ['이름', ''], on_hand: ['현재고', '개'], reserved: ['정비 예약', '개'], available: ['가용 재고', '개'], on_order: ['입고 예정', '개'],
     spare_gap: ['가용 재고 − 재주문점', '개'], reorder_point: ['재주문점', '개'], target_stock: ['목표 재고', '개'], need_qty: ['필요 수량', '개'], need_by_days: ['필요일까지', '일'],
     below_since: ['기준 아래로 내려간 시각', ''], spare_quotes: ['공급사 견적', ''], po_amount: ['발주 금액', '만원'], lead_slack_days: ['납기 여유', '일'],
-    supplier_fail_rate: ['공급사 불량률(비율)', ''], supplier_avl: ['승인 공급사(AVL)', ''], approved_amount: ['승인 금액', '만원'], approved_qty: ['수량', '개'], approved_supplier: ['공급사', ''], approved_supplier_name: ['공급사 이름', ''],
+    supplier_fail_rate: ['공급사 불량률', ''], supplier_avl: ['승인 공급사(AVL)', ''], approved_amount: ['승인 금액', '만원'], approved_qty: ['수량', '개'], approved_supplier: ['공급사', ''], approved_supplier_name: ['공급사 이름', ''],
     approved_unit_price: ['단가', '만원'], approved_part_no: ['부품', ''], lead_d: ['리드타임', '일'], delay_d: ['공급사 지연', '일'],
     // 업무 사실 (MES · 구매 · 재고 관리)
     due_in_h: ['납기까지', '시간'], remaining_qty: ['남은 수량', '개'], rate_per_h: ['시간당 생산', '개/시간'], alt_rate_per_h: ['대체 설비 시간당', '개/시간'], alt_free_h: ['대체 설비 빌 때까지', '시간'],
@@ -102,22 +102,22 @@
     const parts = totals ? `필요한 부품(${totals})` : '필요한 부품';
     if (plan.stock_effect === 'reserve') return `${parts}은 예약해 둡니다.`;
     if (plan.stock_effect === 'issue') return `${parts}은 창고에서 출고합니다.`;
-    if (plan.stock_effect === 'preserve') return '기존 오더에 잡아 둔 부품을 그대로 씁니다.';
+    if (plan.stock_effect === 'preserve') return '기존 정비 요청에 잡아 둔 부품을 그대로 씁니다.';
     return '부품을 어떻게 처리하는지는 기록에 없습니다.';
   }
-  // 이 안을 고르면 일어나는 일 한 문장: 대상 설비 · 정비 시간 · 오더(새로 등록 / 기존 오더 일정 변경)
+  // 이 안을 고르면 일어나는 일 한 문장: 대상 설비 · 정비 시간 · 정비 요청(새로 등록 / 기존 요청 일정 변경)
   function pmPlanSentence(plan) {
     const assets = pmAssets(plan), who = assets.join(' · ');
     const window = plan.window, start = window?.starts_at ? UI.dateTime(window.starts_at) : '';
     const together = plan.scope === 'bundle' && assets.length > 1 ? '함께 ' : '';
     if (plan.code === 'WO_RESCHEDULE') {
-      const order = `${who ? who + '의 ' : ''}기존 정기 정비 오더${plan.ref ? ' ' + plan.ref : '(번호 기록 없음)'}`;
+      const order = `${who ? who + '의 ' : ''}기존 정기 정비 요청${plan.ref ? ' ' + plan.ref : '(번호 기록 없음)'}`;
       const to = window?.immediate === true ? '지금으로 ' : start ? `${start}${W.josa(start, '으로/로')} ` : '';
-      return `${order}의 정비 시간을 ${to}바꾸는 안입니다. 새 오더는 만들지 않습니다.${to ? '' : ' 바꿀 정비 시간은 기록에 없습니다.'}`;
+      return `${order}의 정비 시간을 ${to}바꾸는 안입니다. 새 정비 요청은 만들지 않습니다.${to ? '' : ' 바꿀 정비 시간은 기록에 없습니다.'}`;
     }
     if (plan.code === 'WO_CREATE') {
       const when = window?.immediate === true ? '지금 바로 ' : start ? `${start}에 ` : '';
-      return `${who ? `${who}${W.josa(who, '을/를')} ` : ''}${when}${together}정비하는 안입니다. 새 정기 정비 오더를 등록합니다.${when ? '' : ' 정비 시간은 기록에 없습니다.'}`;
+      return `${who ? `${who}${W.josa(who, '을/를')} ` : ''}${when}${together}정비하는 안입니다. 새 정기 정비 요청을 등록합니다.${when ? '' : ' 정비 시간은 기록에 없습니다.'}`;
     }
     return '정비 계획의 종류가 기록에 없어, 이 안이 무엇을 실행하는지 말할 수 없습니다.';
   }
@@ -161,7 +161,7 @@
         ['정비 시점 운전시간',`${n(a.target_hours)} (허용 상한 ${n(a.limit_hours)}) — ${yes(a.within_limit,'상한 이내','상한 초과','판정 기록 없음')}`],
         ['공통 정비 시간',yes(a.common_window_verified,'확인됨','맞지 않음','확인 기록 없음')+(a.common_start ? ` (${UI.dateTime(a.common_start)})` : '')],
       ] : [['같은 기종 · 운전시간 · 공통 정비 시간 검사','기록 없음']];
-      const partRows=parts.length ? '<p>부품</p><ul>'+parts.map(p=>`<li>${e(p?.name || p?.part_no || '부품 표시 이름 기록 없음')}${p?.name && p?.part_no ? ` (${e(p.part_no)})` : ''}: 필요 ${e(n(p?.qty,'개'))}, 가용 ${e(n(p?.available,'개'))}, ${yes(p?.verified,'근거 확인됨','근거 확인 안 됨','근거 검증 기록 없음')}${plan.stock_effect==='issue' ? `, 현재고 ${e(n(p?.on_hand,'개'))}, 이미 예약한 수량 ${e(n(p?.reserved,'개'))}` : plan.stock_effect==='preserve' ? `, 기존 오더에 잡아 둔 수량 ${e(n(p?.owned_qty,'개'))}` : ''}</li>`).join('')+'</ul>' : '<p>이 설비의 부품 근거는 기록에 없습니다.</p>';
+      const partRows=parts.length ? '<p>부품</p><ul>'+parts.map(p=>`<li>${e(p?.name || p?.part_no || '부품 표시 이름 기록 없음')}${p?.name && p?.part_no ? ` (${e(p.part_no)})` : ''}: 필요 ${e(n(p?.qty,'개'))}, 가용 ${e(n(p?.available,'개'))}, ${yes(p?.verified,'근거 확인됨','근거 확인 안 됨','근거 검증 기록 없음')}${plan.stock_effect==='issue' ? `, 현재고 ${e(n(p?.on_hand,'개'))}, 이미 예약한 수량 ${e(n(p?.reserved,'개'))}` : plan.stock_effect==='preserve' ? `, 기존 정비 요청에 잡아 둔 수량 ${e(n(p?.owned_qty,'개'))}` : ''}</li>`).join('')+'</ul>' : '<p>이 설비의 부품 근거는 기록에 없습니다.</p>';
       return `<div data-pm-asset="${e(row.asset)}"><h4>${e(pmAsset(row.asset))} — ${e(name)}</h4>`+rows([
         service.package_sop ? ['원문 절차',service.package_sop] : null,
         ['정비 간격',n(service.interval_h)],['마지막 정비 뒤 운전시간',n(service.since_pm_h)],['누적 운전시간',n(service.total_h)],
@@ -172,32 +172,33 @@
     if (staff) detail+='<h4>정비 인력</h4>'+rows([['필요',n(staff.required,'명')],['가용',n(staff.available,'명')],['부족',n(staff.shortfall,'명')],
       ['확보 여부',staff.confirmed===true ? '확보를 확인한 기록 있음' : staff.arrangement_required===true ? '더 확보해야 함' : '확보를 확인한 기록 없음']]);
     if (Array.isArray(plan.parts_totals) && plan.parts_totals.length) detail+='<h4>전체 대상 설비의 부품 필요량</h4><ul>'+plan.parts_totals.map(p=>`<li>${e(p?.name || p?.part_no || '부품 번호 기록 없음')}: 필요 ${e(n(p?.qty,'개'))}, 가용 ${e(n(p?.available,'개'))}</li>`).join('')+'</ul>'+UI.raw(plan.parts_totals, { title: '전체 부품 근거 원문' });
-    return html+(detail ? UI.fold(`설비별 근거 (대상 ${assets.length}대)`,detail,{cls:'small'}) : '');
+    return html+(detail ? UI.fold(`설비별 근거 (대상 ${assets.length}대)`,detail) : '');
   };
-  W.maintenanceReceiptSummary = receipt => {
+  W.maintenanceReceiptSummary = (receipt, { performs } = {}) => {
     const after=receipt?.after, plan=after?.plan, orders=Array.isArray(after?.orders) ? after.orders : [];
     const complete=orders.length && orders.every(o=>o && typeof o.asset==='string' && typeof o.ref==='string' && o.ref && typeof o.status==='string');
-    if(!complete) return '설비별 정비 오더 영수증이 기록에 없어, 오더가 등록됐는지 알 수 없습니다.';
-    if(plan?.scope==='bundle' && (!Array.isArray(plan.assets) || plan.assets.length!==2 || orders.length!==2 || !plan.assets.every(a=>orders.some(o=>o.asset===a.asset)))) return '두 설비를 함께 정비하는 계획인데 오더 영수증의 설비 범위가 다릅니다. 두 대 모두 등록됐다고 볼 수 없습니다.';
-    if(orders.every(o=>['취소됨','취소'].includes(o.status))) return `대상 ${orders.length}대의 정비 오더가 취소된 것으로 영수증에 기록됐습니다.`;
-    return `정비 시스템에 대상 ${orders.length}대의 정비 오더 영수증이 기록됐습니다. 정비를 마쳤는지는 정비 수행 단계에서 확인합니다.`;
+    if(!complete) return '설비별 정비 요청 등록 기록이 없어, 정비 요청이 등록됐는지 알 수 없습니다.';
+    if(plan?.scope==='bundle' && (!Array.isArray(plan.assets) || plan.assets.length!==2 || orders.length!==2 || !plan.assets.every(a=>orders.some(o=>o.asset===a.asset)))) return '두 설비를 함께 정비하는 계획인데 등록 기록의 설비 범위가 다릅니다. 두 대 모두 등록됐다고 볼 수 없습니다.';
+    if(orders.every(o=>['취소됨','취소'].includes(o.status))) return `대상 ${orders.length}대의 정비 요청이 취소된 것으로 기록됐습니다.`;
+    // 정비를 마쳤는지를 어디서 보는가: 이 흐름에 정비 수행 단계가 있을 때만 그 단계를 가리킨다(performs). 없는 흐름(정기 정비)은 등록까지가 이 처리 건의 일이다
+    return `정비 관리에 대상 ${orders.length}대의 정비 요청을 등록했습니다.${performs === true ? ' 정비를 마쳤는지는 정비 수행 단계에서 확인합니다.' : performs === false ? ' 이 흐름은 정비 요청 등록까지 하고, 정비 수행은 다루지 않습니다.' : ''}`;
   };
-  W.maintenanceReceiptHtml = receipt => {
+  W.maintenanceReceiptHtml = (receipt, opts) => {
     const after=receipt?.after;
     if(!after || !Object.prototype.hasOwnProperty.call(after,'plan') && !Object.prototype.hasOwnProperty.call(after,'orders')) return '';
     const e=UI.esc || esc, orders=Array.isArray(after.orders) ? after.orders : [];
     const states={'배정됨':'배정됨','완료':'완료','취소됨':'취소됨','취소':'취소',DONE:'처리 완료',FAILED:'처리 실패',PENDING:'대기 중'};
-    return `<p><b>${e(W.maintenanceReceiptSummary(receipt))}</b></p>`+
-      (after.plan ? `<h4>실행 영수증에 남긴 정비 계획</h4>${W.maintenanceScopeHtml(after.plan)}` : '<p>영수증에 정비 계획이 기록돼 있지 않습니다.</p>')+
-      (orders.length ? '<div data-pm-orders><h4>설비별 실제 오더 기록</h4><ul>'+orders.map(o=>{
+    return `<p><b>${e(W.maintenanceReceiptSummary(receipt, opts))}</b></p>`+
+      (after.plan ? `<h4>등록 기록에 남긴 정비 계획</h4>${W.maintenanceScopeHtml(after.plan)}` : '<p>등록 기록에 정비 계획이 없습니다.</p>')+
+      (orders.length ? '<div data-pm-orders><h4>설비별 정비 요청</h4><ul>'+orders.map(o=>{
         if(!o || typeof o!=='object') return '<li>설비별 영수증 정보 읽기 실패</li>';
         const name=typeof o.asset==='string' && /^HYD-\d+$/.test(o.asset) ? o.asset : UI.names?.[o.asset] || '설비 표시 이름 기록 없음';
-        const status=Object.prototype.hasOwnProperty.call(states,o.status) ? states[o.status] : '오더 상태 표시 정보 없음';
+        const status=Object.prototype.hasOwnProperty.call(states,o.status) ? states[o.status] : '상태 표시 정보 없음';
         const p=o.package, n=v=>typeof v==='number' && Number.isFinite(v) ? `${W.num(v)}시간` : '기록 없음';
-        const modes={reserve:'예약',issue:'창고 출고',preserve:'기존 오더에 잡아 둔 부품을 그대로 씀'}, mode=after.plan?.stock_effect;
-        return `<li><b>${e(name)} · ${e(o.ref || '오더 번호 기록 없음')} · ${e(status)}</b>${p ? '<p>'+e(p.package_name || '정비 묶음 이름 기록 없음')+' — 이번 정비 기준 누적 운전시간 '+e(n(p.next_due_total_h))+', 정비 묶음 간격 '+e(n(p.package_interval_h))+'</p>' : '<p>이 오더의 정비 묶음 근거는 기록에 없습니다.</p>'}<p>부품 처리 방식: ${e(Object.prototype.hasOwnProperty.call(modes,mode) ? modes[mode] : '기록 없음')}</p>${o.window_starts_at ? '<p>정비 시작 시각: '+e(UI.dateTime(o.window_starts_at))+'</p>' : '<p>정비 시작 시각은 기록에 없습니다.</p>'}</li>`;
-      }).join('')+'</ul></div>' : '<p>설비별 실제 오더 기록 없음</p>')+
-      UI.raw(receipt, { title: '정비 오더 영수증 원문' });
+        const modes={reserve:'예약',issue:'창고 출고',preserve:'기존 정비 요청에 잡아 둔 부품을 그대로 씀'}, mode=after.plan?.stock_effect;
+        return `<li><b>${e(name)} · ${e(o.ref || '정비 요청 번호 기록 없음')} · ${e(status)}</b>${p ? '<p>'+e(p.package_name || '정비 묶음 이름 기록 없음')+' — 이번 정비 기준 누적 운전시간 '+e(n(p.next_due_total_h))+', 정비 묶음 간격 '+e(n(p.package_interval_h))+'</p>' : '<p>이 정비 요청의 정비 묶음 근거는 기록에 없습니다.</p>'}<p>부품 처리 방식: ${e(Object.prototype.hasOwnProperty.call(modes,mode) ? modes[mode] : '기록 없음')}</p>${o.window_starts_at ? '<p>정비 시작 시각: '+e(UI.dateTime(o.window_starts_at))+'</p>' : '<p>정비 시작 시각은 기록에 없습니다.</p>'}</li>`;
+      }).join('')+'</ul></div>' : '<p>설비별 정비 요청 기록 없음</p>')+
+      UI.raw(receipt, { title: '정비 요청 등록 기록 원문' });
   };
   W.unit = key => { const k = String(key || ''); const f = F[k] || F[k.toLowerCase()]; return f ? f[1] : ''; };
   W.known = key => !!(F[key] || F[String(key || '').toLowerCase()]);
@@ -212,6 +213,7 @@
     if (v == null || v === '') return '–';
     if (v === true) return '예';
     if (v === false) return '아니요';
+    if (typeof v === 'number' && key === 'supplier_fail_rate') return `${W.num(Math.round(v * 1e6) / 1e4)} %`;      // 비율(0.02)은 같은 값을 백분율(2 %)로 적는다
     if (typeof v === 'number') { const u = W.unit(key); return `${W.num(v)}${u ? ' ' + u : ''}`; }
     if (typeof v === 'string') {
       if(key==='package_semantics' && v==='base_interval_configuration') return '등록된 기본 정비 설정(이번 차례에 고른 정비 묶음은 아님)';
@@ -274,7 +276,7 @@
 
   /* ---------------------------------------------------------------- 실행 코드 (승인 뒤 시스템이 하는 일) */
   const CODES = {
-    FAN_SET: ['쿨러 팬 속도', '%'], LOAD_SET: ['펌프 부하', '%'], PUMP_SELECT: ['펌프 전환', ''], WO_CREATE: ['정비 오더 등록', ''], WO_RESCHEDULE: ['기존 정비 오더 일정 변경', ''], WO_COMPLETE: ['정비 오더 완료', ''],
+    FAN_SET: ['쿨러 팬 속도', '%'], LOAD_SET: ['펌프 부하', '%'], PUMP_SELECT: ['펌프 전환', ''], WO_CREATE: ['정비 요청 등록', ''], WO_RESCHEDULE: ['기존 정비 요청 일정 변경', ''], WO_COMPLETE: ['정비 요청 완료', ''],
     PR_CREATE: ['구매 · 재고 관리 발주', ''], GR_CONFIRM: ['입고 · 검수', ''], PM_RESET: ['운전시간 계수기 리셋', ''], MAIL: ['메일', ''],
   };
   W.code = c => (CODES[c] || [c])[0];

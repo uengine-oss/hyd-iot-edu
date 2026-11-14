@@ -499,10 +499,10 @@ button.use[aria-expanded="true"] { border-color: var(--brand-line); background: 
 .tr-io { display: flex; flex-direction: column; gap: 4px; margin: 6px 0 4px; }
 
 /* ---- 움직임 ---- */
-.tr-spin { display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--border); border-top-color: var(--muted-foreground); animation: tr-rot 1s linear infinite; vertical-align: -2px; }
-.tr-spin.sm { width: 12px; height: 12px; }
+/* 하는 중 표시는 점 셋이다(디자인 기준 7절 — 도는 고리는 단계 줄의 지금 단계에만 둔다). 이름 tr-spin 은 찾는 이름으로 남긴다 */
+.tr-spin { display: inline-block; width: 14px; height: 4px; border-radius: 2px; vertical-align: middle; color: var(--brand);
+  background: radial-gradient(circle 2px, currentColor 98%, transparent) 0 0 / 5px 4px repeat-x; animation: dots 1s steps(3) infinite; }
 .tr-new { animation: tr-in .28s var(--ease) both; }
-@keyframes tr-rot { to { transform: rotate(360deg); } }
 @keyframes tr-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 @keyframes tr-blink { 50% { opacity: .55; } }
 @media (prefers-reduced-motion: reduce) { .tr-spin, .tr-shimmer, .tr-new { animation: none; } }

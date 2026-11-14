@@ -23,6 +23,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import socket
 import sys
@@ -43,7 +44,8 @@ from procsvc import engine as process_engine  # noqa: E402 — 경계 타이머 
 from procsvc.handover import AREAS as HANDOVER_AREAS, START_INPUTS as HANDOVER_START  # noqa: E402 — 교대 계약 정본
 from procsvc.mcp_registry import BASE_SERVERS  # noqa: E402 — 에이전트가 쓰는 기본 도구 서버 정본
 
-SYLLABUS = ROOT / "workspace/강의제작/산출물/실라버스/피지컬AI_실라버스_최종본.xlsx"
+# 실라버스 엑셀은 workspace 브랜치의 파일이다. 그 브랜치가 없는 체크아웃(브랜치 portal-ux 의 worktree 등)에서는 HYD_SYLLABUS 로 그 파일의 자리를 알려 준다
+SYLLABUS = Path(os.environ.get("HYD_SYLLABUS") or ROOT / "workspace/강의제작/산출물/실라버스/피지컬AI_실라버스_최종본.xlsx")
 SYLLABUS_SHEETS = {"통합": "통합반 온라인", "실전": "실전반 온라인"}        # 시트 이름 앞부분(시간 표기는 바뀔 수 있다)
 SAMPLES = ROOT / "it/portal/www/samples"
 AXES = ("① 지원", "② 끝까지 안전", "③ 키 없는 PC", "④ 여러 번 · 순서")
@@ -482,9 +484,11 @@ class Round:
         메뉴 이름 줄(summary)을 눌러 펼친 뒤 누른다(index.html 주 메뉴 · app.js MENU · renderMenu)."""
         link = self.page.locator(f"#menuList a[data-tab='{name}']")
         link.wait_for(state="attached", timeout=10_000)
-        closed = self.page.locator("#menuList details:not([open])", has=link)
-        if closed.count():                                                # 접혀 있는 메뉴 — 이름 줄을 눌러 펼친다(화면이 하나뿐인 메뉴는 접기가 없다)
-            closed.locator("summary").click()
+        # 접혀 있는 메뉴 — 이름 줄을 눌러 펼친다(화면이 하나뿐인 메뉴의 줄은 접기 안에 있지 않다). 화면 순회 시험(conftest.open_screen)과 같은 길이다.
+        # (전에는 `locator(details, has=link)` 로 찾았는데, has 안의 선택자는 그 details 안에서 다시 풀려 `#menuList …` 가 맞지 않아 늘 0이었다)
+        fold = self.page.evaluate("tab => { const d = document.querySelector(`#menuList a[data-tab='${tab}']`).closest('details'); return d && !d.open ? d.querySelector('summary').dataset.menu || '' : null; }", name)
+        if fold is not None:
+            self.page.locator(f"#menuList summary[data-menu='{fold}']" if fold else "#menuList details:not([open]) > summary").first.click()
         link.click()
         if not self.page.locator(f"#view-{name}.active").count():
             raise ScreenMissing(f"메뉴에서 화면 {name} 을(를) 열지 못함")
@@ -543,7 +547,7 @@ class Round:
                 log_failures += 1
                 bad.append(Verdict(lab_code, self.tags.get(lab_code, lab_code), "콘솔 오류 · 실패한 요청", False, "quality", AXES[1]))
         (self.out / "results.json").write_text(json.dumps({
-            "ai_mode": self.ai_mode, "ai_runs": self.ai_runs, "syllabus": str(SYLLABUS.relative_to(ROOT)),
+            "ai_mode": self.ai_mode, "ai_runs": self.ai_runs, "syllabus": str(SYLLABUS.relative_to(ROOT)) if SYLLABUS.is_relative_to(ROOT) else str(SYLLABUS),
             "labs": [{"lab": c, "rows": self.tags.get(c), "title": t} for c, t, _ in LABS if c in self.tags],
             "verdicts": [asdict(v) for v in self.verdicts], "logs": {k: asdict(v) for k, v in self.logs.items()},
             "not_measured": self.not_measured}, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -1332,22 +1336,25 @@ def known_roles(r: Round) -> set[str]:
 def header_health(r: Round) -> tuple[int, int, str, str]:
     text = txt(r, "#healthDots")
     m = re.search(r"(\d+)\s*/\s*(\d+)", text)
-    dot = r.page.locator("#healthDots .dot").first.get_attribute("class") if r.page.locator("#healthDots .dot").count() else ""
+    # 상태 점: 메뉴 줄 맨 아래 한 줄의 점(#healthDot)의 색(data-tone — ok · warn · danger). 모두 응답하면 ok(app.js pollHealth)
+    dot = r.page.locator("#healthDot").get_attribute("data-tone") if r.page.locator("#healthDot").count() else ""
     return (int(m.group(1)), int(m.group(2)), dot or "", text) if m else (-1, -1, dot or "", text)
 
 
-@lab("01", [("통합", "실습 환경을 시작하고 HYD 포털 둘러보기"), ("실전", "실습 환경을 시작하고 HYD 포털 둘러보기")])
+# 실라버스 행 제목이 「실습 환경을 설치하고 시작하기」로 바뀌었다(포털 둘러보기는 그다음 행 「… 전체 과정 경험하기」로 합쳤다 — 정본 엑셀 2026-11-13)
+@lab("01", [("통합", "실습 환경을 설치하고 시작하기"), ("실전", "실습 환경을 설치하고 시작하기")])
 def lab_01_runtime(r: Round):
     rows = resolve_rows(r, "01")
     r.tab("main")
     got = r.wait(15, lambda: (lambda h: h if h[1] > 0 and h[0] == h[1] else None)(header_health(r)), every=1)
     up, total, dot, text = got or header_health(r)
-    r.check("홈 상단 상태 점이 모두 초록(서비스 n/n)", bool(got) and "up" in dot, text)
+    r.check("메뉴 줄 아래 서비스 상태 점이 초록(서비스 n/n)", bool(got) and dot == "ok", f"{text} · 점 {dot}")
     r.wait(15, lambda: re.search(r"지식 항목\s*[\d,]+", txt(r, "#mainStats").replace("\n", " ")), every=1)
     stats = txt(r, "#mainStats", required=True)
     m = re.search(r"지식 항목\s*([\d,]+)\s*연결\s*([\d,]+)", stats.replace("\n", " "))
     g = graph(r)
-    r.check("홈 요약 카드: 설비 3기 · 시간 배율 20× · 지식 항목 · 연결 = 지식 지도 API", re.search(r"(?<!\d)3기", stats) is not None and "20×" in stats and bool(m)
+    # 시간 배율은 홈 타일에 없다(메뉴 줄 아래 한 줄에 있다 — 바로 아래 판정이 본다)
+    r.check("홈 요약 타일: 설비 3기 · 지식 항목 · 연결 = 지식 지도 API", re.search(r"(?<!\d)3기", stats) is not None and bool(m)
             and (int(m.group(1).replace(",", "")), int(m.group(2).replace(",", ""))) == (len(g["nodes"]), len(g["edges"])),
             f"{stats.replace(chr(10), ' ')[:160]} / API {(len(g['nodes']), len(g['edges']))}")
     scale = r.get(r.plant + "/api/state").get("time_scale")
@@ -1359,7 +1366,10 @@ def lab_01_runtime(r: Round):
     # 왼쪽 메뉴: 실라버스 문장이 말한 수만큼 있다(2026-11-14 구조 개편 뒤 메뉴 줄에는 묶음 이름이 아니라 메뉴 여덟이 있다 — 실라버스 문장이 옛 묶음 수면 여기서 드러난다)
     want = menu_group_count((rows.get("통합") or (0, "", "", ""))[3])
     groups = r.page.locator("#menuList [data-menu]").all_inner_texts()
-    r.check(f"왼쪽 메뉴의 수가 실라버스 문장의 수({want})와 같다", want is not None and len(groups) == want, f"메뉴 {groups}")
+    if want is None:      # 실라버스 문장이 메뉴 수를 말하지 않는다 — 견줄 수가 없으므로 실패로도 통과로도 세지 않는다
+        r.not_measure("왼쪽 메뉴의 수 = 실라버스 문장의 수", f"실라버스 문장에 「<수> 메뉴 묶음」이 없음 — 메뉴 {len(groups)}개 {groups}")
+    else:
+        r.check(f"왼쪽 메뉴의 수가 실라버스 문장의 수({want})와 같다", len(groups) == want, f"메뉴 {groups}")
     r.page.locator("#mainArch").click()
     r.page.wait_for_selector("#stack .comp", timeout=10_000)
     r.page.wait_for_timeout(6000)                                         # 상태 점은 pollHealth 가 채운다(5초 주기)

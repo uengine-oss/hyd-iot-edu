@@ -1,8 +1,8 @@
 """C3 B · C 단순화 (2026-10-09 확정 지시 — '설비까지 안 가기로 함, 처리되면 끝'): 포털 '결함 실험'의 시나리오 버튼.
 
-  [정기 점검] (B, HYD-02)  — 화면 표시 '정기 점검 도래' = CMMS ent.pm_status.pm_alert (운전시간 ≥ 1,950 h 이고 이번 회차 정비 오더 없음)
-  [재고 보충] (C, HYD-03)  — 화면 표시 '재고 보충 필요' = ERP ent.spare_stock 씰 키트 가용 < 재주문점
-  [초기화]                 — 그 시나리오의 업무 데이터를 수업 시작값으로(표시가 다시 켜진다)
+  [정기 정비 시작] (B, HYD-02)  — 화면 표시 '정기 점검 도래' = CMMS ent.pm_status.pm_alert (운전시간 ≥ 1,950 h 이고 이번 회차 정비 오더 없음)
+  [예비품 구매 시작] (C, HYD-03)  — 화면 표시 '재고 보충 필요' = ERP ent.spare_stock 씰 키트 가용 < 재주문점
+  [업무 데이터 초기화]     — 그 시나리오의 업무 데이터를 수업 시작값으로(표시가 다시 켜진다)
 
 버튼은 지금 업무 DB 한 행을 읽어, 업무 감시(business_monitor)와 **같은 계약**의 경보(alertId · asset · pattern · evidence · source)를 만들어
 같은 원천 접수 경로로 보낸다(main._admit_alert → 경보 정책 → 배포된 B · C 흐름 → 처리 건 + 사건). 처리 건 시작이 사람 버튼이라는 것만
@@ -43,14 +43,17 @@ from . import business_monitor, engine
 
 SCENARIOS: dict[str, dict] = {
     "B": {"pattern": PM_PATTERN, "asset": "HYD-02", "read": "pm_status", "params": {"asset": "HYD-02"}, "flag": "pm_alert",
-          "subject": "HYD-02", "label": "정기 점검 도래", "button": "정기 점검", "title": "정기 정비",
+          "subject": "HYD-02", "label": "정기 점검 도래", "button": "정기 정비 시작", "title": "정기 정비",
           "show": ("pm_since_h", "pm_interval_h", "pm_due_in_h", "pm_limit_in_h", "night_window_at", "pm_planned_wo", "pm_planned_window"),
           "reset": ("/cmms/pm/reset", {})},       # 세 대 모두 — 묶음 후보 HYD-03 계수기도 판단 사실이다
     "C": {"pattern": PURCHASE_PATTERN, "asset": "HYD-03", "read": "spare_stock", "params": {"part": "P-PMP-SEAL"},
-          "flag": "below_reorder_point", "subject": "P-PMP-SEAL", "label": "재고 보충 필요", "button": "재고 보충", "title": "예비품 구매",
+          "flag": "below_reorder_point", "subject": "P-PMP-SEAL", "label": "재고 보충 필요", "button": "예비품 구매 시작", "title": "예비품 구매",
           "show": ("part_no", "name", "on_hand", "reserved", "on_order", "available", "reorder_point", "target_stock", "need_qty"),
           "reset": ("/erp/spare/reset", {"part_no": "P-PMP-SEAL"})},
 }
+
+#: 업무 사건 카드의 되돌리기 단추 이름 — 화면 단추 · 감사 기록 · 거절 문장이 이 이름 하나를 쓴다
+RESET_BUTTON = "업무 데이터 초기화"
 
 #: 업무 사건 카드의 바깥 사건 단추(시나리오 → 동작 → 설정). 설비 결함 주입과 같은 성격이다 — 실습에서는 누군가 바깥세상의 일을 일으켜야 한다.
 #:   C delay: 공급사가 열린 발주의 납기를 days 일 늦춘다고 알린다(업무 거래 skill:delay-delivery — SCM). 처리 엔진의 입고 단계는 입고 예정 때
@@ -227,7 +230,7 @@ def status(read: Callable[[str, dict], dict], rt=None, last_press: Callable[[str
             item["events"] = [event_state(rt, read, key, act) for act in EVENTS.get(key, {})]
         out[key] = item
     presses = {a: last_press(a) for a in (A_ASSET, *(sp["asset"] for sp in SCENARIOS.values()))} if last_press else {}
-    return {"scenarios": out, "fault": fault_scope(), "presses": presses, "as_of": datetime.now(timezone.utc).isoformat(timespec="seconds")}
+    return {"scenarios": out, "fault": fault_scope(), "presses": presses, "reset_button": RESET_BUTTON, "as_of": datetime.now(timezone.utc).isoformat(timespec="seconds")}
 
 
 def delay_target(rt, read: Callable[[str, dict], dict], key: str) -> dict:
@@ -325,14 +328,14 @@ def build_alert(key: str, row: dict, now: datetime | None = None, person: dict |
 
 
 def refusal(key: str, read: Callable[[str, dict], dict], rt, route: Callable[[str], str | None]) -> dict:
-    """[정기 점검] · [재고 보충]을 받을지 — 기준점을 옮기기 전에 부른다(거절된 누름은 업무 시각을 바꾸지 않는다). 받으면 지금 업무 행, 아니면 Refused.
+    """[정기 정비 시작] · [예비품 구매 시작]을 받을지 — 기준점을 옮기기 전에 부른다(거절된 누름은 업무 시각을 바꾸지 않는다). 받으면 지금 업무 행, 아니면 Refused.
     route(pattern) = 그 패턴을 여는 배포 흐름 id(기준 흐름이면 None)."""
     if key not in SCENARIOS:
         raise KeyError(key)
     spec = SCENARIOS[key]
     row = _row(read, spec)
     if not row.get(spec["flag"]):
-        raise Refused(f"{spec['asset']}에 '{spec['label']}' 표시가 없습니다 — 이미 처리됐습니다. [초기화]로 처음 상태로 되돌린 뒤 누르세요")
+        raise Refused(f"{spec['asset']}에 '{spec['label']}' 표시가 없습니다 — 이미 처리됐습니다. [{RESET_BUTTON}]로 처음 상태로 되돌린 뒤 누르세요")
     running = _run(rt, spec, "RUNNING")
     if running:
         when = started_words(running)
@@ -359,7 +362,7 @@ def reset_refusal(rt, key: str) -> None:
         how = (f"멈춘 단계({', '.join(dict.fromkeys(w.get('activity_name') or w['activity_id'] for w in stuck))})가 있습니다 — 처리 건 화면에서 [닫기]로 "
                "끝내거나 다시 수행한 뒤" if stuck else "처리 건 화면에서 조치 후보를 승인하거나 반려해 끝낸 뒤")
         raise Refused(f"{spec['asset']} {spec['title']} 처리 건이 아직 진행 중이라 초기화하지 않았습니다 — 초기화하면 그 처리 건이 낸 발주 · 정비 요청 기록이 "
-                      f"바뀌어 처리 건이 어긋납니다. {how} [초기화]를 누르세요", running)
+                      f"바뀌어 처리 건이 어긋납니다. {how} [{RESET_BUTTON}]를 누르세요", running)
 
 
 class NotStarted(Exception):
