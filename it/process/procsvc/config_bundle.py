@@ -878,7 +878,7 @@ RESTORE_STEP = ("restore", "불러오기 전 상태로 되돌리기")
 
 def import_bundle(rt, base_loader, body: dict, *, audit=None, progress=progress_log.SILENT) -> dict:
     body = body if isinstance(body, dict) else {}
-    bundle = body if "format" in body else body.get("bundle")
+    bundle = body.get("bundle")
     from .inbox import actor_or_400
     by = actor_or_400(body.get("by"))[:60]
     if not _LOCK.acquire(blocking=False):

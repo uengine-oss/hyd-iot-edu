@@ -573,13 +573,6 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
             return [self._row(r) for r in c.execute("select * from role_members where tenant_id=%s and (%s::text is null or role_id=%s) order by role_id, user_id",
                                                     (tenant_id, role_id, role_id)).fetchall()]
 
-    def set_role_member(self, tenant_id: str, role_id: str, user_id: str, member: bool) -> None:
-        with self._conn() as c:
-            if member:
-                c.execute("insert into role_members (tenant_id, role_id, user_id) values (%s,%s,%s) on conflict do nothing", (tenant_id, role_id, user_id))
-            else:
-                c.execute("delete from role_members where tenant_id=%s and role_id=%s and user_id=%s", (tenant_id, role_id, user_id))
-
     def insert_assignment(self, row: dict) -> dict:
         with self._conn() as c:
             return self._row(c.execute("insert into task_assignments (tenant_id, proc_inst_id, todo_id, from_user_id, to_user_id, kind, by_user, reason) "

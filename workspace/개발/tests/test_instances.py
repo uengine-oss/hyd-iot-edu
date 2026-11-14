@@ -3,6 +3,7 @@
 경보 접수 → 처리 건 → 에이전트 단계(실제 워커 · 재생) → 사람 승인(API 와 같은 함수 — 실제 agent 의 승인 현재 조건 검사) → 설비 명령 · ACK →
 재관측 → 작업지시 · 발주 · 입고(실제 enterprise-sim) → 결과 보고까지 그대로다.
 """
+import json
 import re
 import threading
 import uuid
@@ -340,7 +341,9 @@ def test_예비품_구매_흐름C는_승인하면_발주_입고까지_하고_구
     """담당자 한 명이 구매 담당 · 구매팀장을 함께 맡으면 두 역할의 알림이 한 줄로 합쳐져 구매팀장 몫을 가를 수 없다 — 이 시험 동안만
     담당자를 구매팀장 역할에서 빼 그 몫이 역할 id 로 남게 한다(구성원 없는 역할의 알림은 역할 id 그대로 — inbox.notification_targets)."""
     repo = world.rt.repo
-    repo.set_role_member('hyd', 'role:purchasing-mgr', ME, False)
+    member = ('hyd', 'role:purchasing-mgr', ME)       # 화면 · API 에는 구성원을 빼는 길이 없다(사람은 담당자 한 명) — 이 시험만 업무 DB 행을 직접 뺐다 넣는다
+    with psycopg.connect(world.dsn, autocommit=True) as db:
+        [origin] = db.execute('DELETE FROM role_members WHERE tenant_id=%s AND role_id=%s AND user_id=%s RETURNING origin', member).fetchone()
     try:
         before = {n['id'] for n in repo.list_notifications('hyd', ['role:purchasing-mgr'])}
         alert, pid = _button(world, 'C', dict(by='담당자', user_id=ME, roles=['role:purchasing']))
@@ -355,7 +358,8 @@ def test_예비품_구매_흐름C는_승인하면_발주_입고까지_하고_구
         assert any('재고 보충 결과' in n['title'] for n in notes), '금액이 전결 기준(300만원)을 넘으면 구매팀장에게도 알린다'
         assert any('재고 보충 결과' in n['title'] for n in repo.list_notifications('hyd', [ME])), '구매 담당(처리 건 참여자)에게도 간다'
     finally:
-        repo.set_role_member('hyd', 'role:purchasing-mgr', ME, True)
+        with psycopg.connect(world.dsn, autocommit=True) as db:
+            db.execute('INSERT INTO role_members (tenant_id, role_id, user_id, origin) VALUES (%s, %s, %s, %s)', (*member, origin))
 
 
 def test_예비품_구매_흐름C에서_거절하면_발주하지_않는다(world):
@@ -783,6 +787,23 @@ def test_흐름A의_즉시_시행_카드는_정비를_기다리지_않는다(wor
     world.poll(3)
     fix = world.row(pid, 'T_fix')
     assert fix['status'] == 'DONE' and any(e['job_id'] == 'WAIT_SKIPPED' for e in world.events(todo=fix['id']))
+
+
+def test_흐름A의_정비는_즉시_시행도_아니고_정비_시각도_없는_카드면_바로_정비하지_않고_그_까닭으로_멈춘다(world):
+    """판단 엔진은 예정된 정비 시간을 모르면 카드에 정비 시점을 싣지 않는다(agentsvc.cards.option_window — 지어내지 않음, window 없음). 그런 카드의
+    작업지시에는 예정된 정비 시각이 없다 — 「정비 수행」이 그것을 「지금」으로 읽어 설비 결함을 지우면 하지 않은 정비가 한 것으로 남는다."""
+    alert, pid, decision = world.start_cooling()
+    card = next(o for o in world.main.book[decision]['options'] if o['id'] == 'skill:sop-cool-14')
+    card['window'] = None
+    world.approve(pid, decision, 'skill:sop-cool-14', MAINT)
+    world.poll(3)
+    assert world.values(pid)['work_order']['ref'], '작업지시는 등록됐다'
+    fix = world.row(pid, 'T_fix')
+    said = json.dumps([e['data'] for e in world.events(pid) if e['event_type'] == 'error'], ensure_ascii=False) + (fix.get('log') or '')
+    assert fix['status'] != 'DONE' and world.values(pid).get('maintenance') is None, '정비 시각을 모르는데 정비를 끝냈다'
+    assert '예정된 정비 시간 값 work_order.after.window_starts_at' in said and '즉시 시행이 아닌데' in said, said
+    assert not any(e['job_id'] in ('WAIT_STARTED', 'WAIT_SKIPPED') for e in world.events(todo=fix['id'])), '기다림을 지어내지 않는다'
+    assert all(w['status'] == 'TODO' for w in world.rows(pid) if w['activity_id'] == 'T_reobs_wo'), '정비 전에 재관측이 돌았다'
 
 
 # ---------------------------------------------------------------- P1-02 같은 질문 다시 보내기

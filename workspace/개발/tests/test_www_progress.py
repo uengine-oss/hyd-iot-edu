@@ -203,6 +203,80 @@ def test_기준으로_되돌리기_화면은_요청에_요청_번호를_싣고_�
         served.close()
 
 
+def test_출발본_불러오기_화면은_파일과_요청_번호를_싣고_서버가_적는_단계를_채우다가_멈추면_그_까닭을_보인다():
+    """관리 화면의 [불러오기](configBundle.js) — 길면 3분인 일이다. 도는 동안 단계가 채워지고, 서버가 멈추면 진행 목록 자리에 서버의 까닭이 남는다."""
+    from playwright.sync_api import sync_playwright
+    job, wire = Job(), Wire('/api/config/import')
+    served = _serve(job, '/api/config/import')
+    plan = [*config_bundle.IMPORT_HEAD, *config_bundle.reset_plan(False), *config_bundle.STEPS, config_bundle.VERIFY_STEP]      # 실제 불러오기가 적는 단계 그대로
+    bundle = {'format': config_bundle.FORMAT, 'format_version': config_bundle.FORMAT_VERSION, 'summary': {'roles': 1},
+              'content': {'roles': [{'id': 'role:u-x', 'name': '내 역할', 'kind': 'manager'}]}}
+    try:
+        with sync_playwright() as p:
+            b = p.chromium.launch()
+            page = b.new_page()
+            page.route('**/svc/**', wire)
+            page.goto(served.url + '/index.html')
+            _open(page, 'admin')
+            page.wait_for_function('window.hydInbox && hydInbox.me()', timeout=8000)
+            page.set_input_files('#cfgFile', {'name': '출발본.json', 'mimeType': 'application/json', 'buffer': json.dumps(bundle, ensure_ascii=False).encode()})
+            page.wait_for_function("document.querySelector('#cfgImportMsg').textContent.includes('역할 1개')", timeout=8000)
+            page.locator('#cfgImport').click()
+            page.locator("dialog.confirm-dialog button[value='ok']").click()
+            job.do(lambda p: (p.plan(plan), p.start('validate'), p.done('validate'), p.start('check')))
+            _wait_steps(page, '#cfgImportResult', ['ok:' + plan[0][1], 'run:' + plan[1][1]] + ['wait:' + label for key, label in plan[2:]])
+            [body] = job.bodies
+            assert body['bundle'] == bundle and body['by'] == 'user:me' and progress.read(body['request_id'])['state'] == 'running'
+            assert page.locator('#cfgImport').is_disabled() and page.inner_text('#cfgImport').startswith('불러오는 중')
+            job.crash('진행 중인 처리 건이 있어 불러오지 않았습니다')
+            page.wait_for_function("document.querySelector('#cfgImportMsg').textContent.trim() !== ''", timeout=8000)
+            assert page.locator('#cfgImportResult .lv-step').count() == 0 and not page.locator('#cfgImport').is_disabled()
+            seen = progress.read(body['request_id'])
+            assert seen['state'] == 'failed' and [s['state'] for s in seen['steps'][:3]] == ['ok', 'fail', 'wait']
+            _reads_stop(page, wire, '불러오기가 끝났는데도 진행을 계속 읽는다')
+            b.close()
+    finally:
+        served.close()
+
+
+def test_등록된_도구_서버의_연결_검사는_서버가_적는_연결_단계를_그_서버_상세에_채우다가_끝나면_목록을_다시_읽는다():
+    """도구 연결 화면(mcp.js)에서 등록된 서버를 골라 누르는 [연결 검사] — 단계는 실제 검사가 적는 것(mcp_check.check_steps)에 저장 단계가 붙는다."""
+    from playwright.sync_api import sync_playwright
+    from procsvc import mcp_check, mcp_registry
+    server = {'name': 'tool-wear', 'transport': 'streamable_http', 'url': 'http://host.docker.internal:8301/mcp', 'headers': {}, 'config_error': None,
+              'agents': [], 'tasks': [], 'origin': 'user', 'origin_text': '내가 등록', 'mine': True, 'editable': True, 'selectable': True, 'reason': None,
+              'description': None, 'check': {'status': 'ok', 'checked_at': '2026-11-01T09:24:23Z', 'tool_count': 1}, 'read_confirmed': [], 'secrets': []}
+    path = '/api/mcp/servers/tool-wear/check'
+    job, wire = Job(), Wire(path, {'/api/mcp/servers/tool-wear/tools': {'status': 'ok', 'tools': [{'name': 'read_tool_wear', 'read': True}]},
+                                   '/api/mcp/servers': {'servers': [server], 'list_timeout_s': 5}})
+    served = _serve(job, path)
+    plan = [*mcp_check.check_steps({'transport': 'streamable_http'}), mcp_registry.SAVE_STEP]
+    names = dict(plan)
+    try:
+        with sync_playwright() as p:
+            b = p.chromium.launch()
+            page = b.new_page()
+            page.route('**/svc/**', wire)
+            page.goto(served.url + '/index.html')
+            _open(page, 'mcp')
+            page.wait_for_function('window.hydInbox && hydInbox.me()', timeout=8000)
+            page.locator("#mcpServers [data-name='tool-wear']").click()
+            page.locator('#mcpProbe').click()
+            job.do(lambda p: (p.plan(plan), p.start('initialize')))
+            _wait_steps(page, '#mcpDetail', ['run:' + names['initialize'], 'wait:' + names['tools'], 'wait:' + names['save']])
+            [body] = job.bodies
+            assert body['by'] == 'user:me' and progress.read(body['request_id'])['state'] == 'running'
+            job.do(lambda p: (p.done('initialize', '공구 서버 1.0'), p.start('tools'), p.done('tools', '도구 1개'), p.start('save')))
+            _wait_steps(page, '#mcpDetail', ['ok:' + names['initialize'], 'ok:' + names['tools'], 'run:' + names['save']])
+            job.end({'name': 'tool-wear', 'check': {'status': 'ok', 'tools': [{'name': 'read_tool_wear'}]}, 'state': {}})
+            page.wait_for_function("document.querySelector('#mcpDetail') && !document.querySelector('#mcpDetail .lv-step') "
+                                   "&& document.querySelector('#mcpDetail').textContent.includes('도구 1개')", timeout=8000)      # 끝난 뒤 다시 읽은 서버 상태
+            _reads_stop(page, wire, '연결 검사가 끝났는데도 진행을 계속 읽는다')
+            b.close()
+    finally:
+        served.close()
+
+
 def test_도구_서버_등록_폼의_연결_검사는_서버가_적는_연결_단계를_채우다가_끝나면_검사_결과를_보인다():
     """도구 연결 화면(mcp.js)의 [연결 검사만] — 단계 이름은 실제 검사가 적는 것(mcp_check.check_steps) 그대로."""
     from playwright.sync_api import sync_playwright

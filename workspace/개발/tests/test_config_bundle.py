@@ -179,6 +179,17 @@ def test_담당자_없이_온_불러오기는_이름을_지어_넣지_않고_400
     assert _mine_kept(mine, world)
 
 
+def test_불러오기_본문은_출발본을_bundle_칸에_싣는다_본문이_곧_파일인_꼴은_받지_않는다(world, mine):
+    """옛 판은 본문에 format 칸이 있으면 본문 전체를 파일로 읽었다(「또는 파일 그대로」). 담당자(by)가 필수가 된 뒤로 그 꼴은 파일에 by 를 끼워 넣어야만
+    통과하는, 화면도 도구도 쓰지 않는 둘째 입구였다 — 입구는 {bundle, by} 하나다. 거절은 아무것도 바꾸기 전이다."""
+    from procsvc.flows_api import default_base_loader
+    bundle = cb.export_bundle(world.rt, default_base_loader)
+    with pytest.raises(cb.BundleError) as refused:
+        cb.import_bundle(world.rt, default_base_loader, {**bundle, 'by': ME})
+    assert refused.value.status == 422 and '출발본 파일이 JSON 객체가 아닙니다' in refused.value.reason
+    assert _mine_kept(mine, world)
+
+
 def test_되돌리기_전_확인은_되돌리기가_지울_흐름의_처리_건만_세고_막은_처리_건을_JSON_으로_답한다(world):
     """관리 탭 [기준으로 되돌리기]는 수업 흐름(c3_cooling — 강사가 배포한 학생 판본)을 남긴다. 옛 판의 되돌리기 전 확인은 수업 흐름을 빼지 않고 세어,
     수업 흐름 처리 건이 진행 중이면 「내가 가져온 흐름으로 진행 중」이라는 틀린 사유로 거절했다(전수검사 12-2). 내가 가져온 흐름의 처리 건은 막는다.
@@ -300,6 +311,26 @@ def test_학생이_만든_역할은_출발본에_담기고_불러오면_흐름�
     assert [s['key'] for s in seen['steps']] == (['validate', 'check', 'backup', 'deploy_reset', 'flows_reset', 'agents_reset', 'mcp_reset']
                                                  + [k for k, _ in cb.STEPS] + ['verify'])
     assert {s['key']: s['note'] for s in seen['steps'] if s['key'] in dict(cb.STEPS)} == {a['step']: f"{a['count']}건" for a in out['applied']}
+
+
+def test_사례_하나만_내보내면_그_사례의_흐름이_담당으로_쓰는_학생_역할만_담긴다(world, authored):
+    """사례로 고른 출발본(student_cases.select_bundle)에 역할이 통째로 빠지면 불러온 PC 에서 흐름의 레인이 가리킬 역할이 없고, 쓰지 않는 역할까지
+    담기면 남의 PC 에 관계없는 역할이 생긴다. 흐름에 꼬리표를 붙이고, 어느 흐름도 쓰지 않는 역할을 하나 더 만든 뒤 그 사례만 고른다."""
+    from procsvc import student_cases
+    from procsvc.flows_api import default_base_loader
+    spare = A.create_role(world.rt.repo, TENANT, {'name': '칸 시험 안 쓰는 역할', 'key': 'u-lane-spare'}, by=ME)
+    tags = student_cases.Store(world.rt.repo, TENANT)
+    tags.set('flows', LANE_FLOW, '칸 시험 사례')
+    try:
+        bundle = cb.export_bundle(world.rt, default_base_loader)
+        assert {r['id'] for r in bundle['content']['roles']} == {ROLE_ID, spare['id']}
+        picked = student_cases.select_bundle(world.rt, bundle, '칸 시험 사례')
+    finally:
+        tags.set('flows', LANE_FLOW, '')
+        A.delete_role(world.rt, spare['id'], by=ME)
+    assert picked['content']['roles'] == [{'id': ROLE_ID, 'name': ROLE_NAME, 'kind': 'manager'}] and picked['summary']['roles'] == 1
+    assert [f['definition_id'] for f in picked['content']['flows']] == [LANE_FLOW]
+    cb.validate(world.rt, default_base_loader, picked)                  # 고른 묶음은 그대로 불러올 수 있는 출발본이다(레인의 역할이 파일 안에 있다)
 
 
 def test_불러오기가_중간에_실패하면_학생이_만든_역할_에이전트_스킬_흐름_도구_서버가_불러오기_전_그대로다(world, authored):
