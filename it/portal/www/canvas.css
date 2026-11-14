@@ -2,11 +2,6 @@
    기준: 디자인기준.md 5-7 ~ 5-10 · 6절. 값은 tokens.css 의 토큰만 쓴다. 그림 자리는 홈 그림과 같은 어두운 캔버스(--cv-*)다.
    그리는 코드: enterprise.js(지식 지도 · 규칙 판단 · 업무 시스템 기록) · main.js(홈 그림) · flow.js(흐름 그림) · app.js(설비 카드 · 회로 · 시스템 구성) */
 
-/* ================================================================= 지식 지도의 상세 칸 · 이력 표 · 판단 실험(enterprise.js) */
-
-/* ---------------- 판단 실험: 조건 카드 ---------------- */
-#view-decision { container-type: inline-size; }
-
 /* ================================================================= 홈 그림(main.js) */
 .m-hero {
   border-radius: 12px;
@@ -227,15 +222,20 @@
 #ontoNote { margin: 0 0 12px; }
 .kg { display: grid; grid-template-columns: minmax(0, 1fr) 348px; gap: 16px; height: calc(100dvh - var(--top-h) - 150px); min-height: 540px; }
 .kg-canvas { height: 100%; min-width: 0; }
-.kg-map { position: absolute; inset: 0; }
+.kg-map { position: absolute; inset: 0; z-index: 0; }
+/* 캔버스 안 도구 줄 · 묶음 조각 뒤에 바탕색을 옅게 깔아, 확대해서 점과 선이 그 밑으로 와도 도구가 읽힌다(이름은 그 자리에 쓰지 않는다 — enterprise.js kgLabels) */
+.kg-canvas::before, .kg-canvas::after { content: ""; position: absolute; left: 0; right: 0; z-index: 3; pointer-events: none; }
+.kg-canvas::before { top: 0; height: 84px; background: linear-gradient(var(--cv-bg) 55%, transparent); }
+.kg-canvas::after { bottom: 0; height: 84px; background: linear-gradient(transparent, var(--cv-bg) 60%); }
 .kg-map:focus-visible { outline: 2px solid var(--cv-now); outline-offset: -2px; border-radius: 12px; }
-.kg-canvas .canvas-bar { gap: 8px 10px; }
+.kg-canvas .canvas-bar { gap: 4px 10px; flex-wrap: wrap; }
 .kg-canvas .canvas-bar > * { flex: none; }
 .kg-canvas .canvas-bar > .grow { flex: 1; }
 .kg-canvas .cv-search input { width: 150px; }
 .kg-canvas .cv-search .ic { width: 14px; height: 14px; }
 .kg-canvas .cv-tools .ic { width: 15px; height: 15px; }
-.kg-canvas .canvas-bar > .kg-stat { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* 통계 한 줄은 도구 줄의 둘째 줄에 둔다(첫 줄에 두면 좁은 폭 · 검색 중에 잘린다) */
+.kg-canvas .canvas-bar > .kg-stat { order: 9; flex: 1 1 100%; }
 .kg-stat { font-size: 12.5px; color: var(--cv-ink-2); padding: 0 4px; white-space: nowrap; }
 .kg-select { height: 30px; padding: 0 28px 0 10px; border-radius: 8px; background: var(--cv-tool) var(--chevron-down-icon) no-repeat right 8px center / 14px; border: 1px solid var(--cv-border); color: var(--cv-ink);
   font: inherit; font-size: 13px; appearance: none; max-width: 190px; backdrop-filter: blur(6px); }
@@ -249,8 +249,14 @@
 .kg-hint { position: absolute; left: 12px; right: 12px; bottom: 46px; z-index: 4; margin: 0; text-align: center; font-size: 12px; line-height: 18px; color: var(--cv-ink-2); pointer-events: none; text-shadow: 0 0 6px var(--cv-bg), 0 0 2px var(--cv-bg); }
 /* 오른쪽 칸(밝은 판) */
 .kg-side { display: flex; flex-direction: column; min-width: 0; overflow: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--card); }
-.kg-side > .empty { margin: auto 0; border: 0; padding: 28px 18px 16px; }
-.kg-side > .empty:first-child:not(:last-child) { margin: 12px 0 0; }
+/* 안 골랐을 때: 목차(묶음 → 종류 → 항목 이름) */
+.kg-index-head h2 { margin-top: 0; font-size: 15px; line-height: 22px; }
+.kg-index { padding: 4px 18px; border-bottom: 1px solid var(--border); }
+.kg-group > summary { flex-wrap: wrap; row-gap: 0; padding: 10px 0; }
+.kg-group > summary .gtag { font-size: 13.5px; font-weight: 600; color: var(--foreground); }
+.kg-group > summary .kg-kinds { flex: 1 1 100%; padding-left: 22px; font-size: 12px; line-height: 18px; font-weight: 400; color: var(--muted-foreground); }
+.kg-group > .fold-body { padding: 2px 0 14px 22px; }
+.kg-group .rel-more .chip { cursor: pointer; }
 .node-head { position: sticky; top: 0; z-index: 1; padding: 18px 18px 14px; border-bottom: 1px solid var(--border); background: var(--card); }
 .node-head h2 { margin: 8px 0 0; font-size: 18px; line-height: 26px; font-weight: 650; overflow-wrap: anywhere; }
 .node-head p { margin: 2px 0 0; font-size: 13px; color: var(--muted-foreground); overflow-wrap: anywhere; }
@@ -288,10 +294,8 @@
   .kg { grid-template-columns: minmax(0, 1fr); height: auto; }
   .kg-canvas { height: 62vh; min-height: 440px; }
   .kg-side { max-height: none; }
-  .kg-side > .empty { margin: 0; }
 }
 @media (max-width: 640px) {
-  .kg-canvas .canvas-bar { flex-wrap: wrap; }
   .kg-canvas .canvas-bar > .cv-search { flex: 1 1 100%; }
   .kg-canvas .cv-search input { flex: 1; width: auto; min-width: 0; }
   .kg-canvas .canvas-bar > .kg-select { flex: 1; max-width: none; min-width: 0; }
@@ -586,27 +590,11 @@
 .kpi-lines > li { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; font-size: 13.5px; }
 .kpi-lines small { display: block; color: var(--muted-foreground); font-size: 12.5px; }
 
-/* ================================================================= 판단 실험 — 규칙 판단 (5-8): 왼쪽 조건 · 오른쪽 결과(결론 → 표 → 접기) */
-.dc-in .label { margin: 8px 0 0; }
-.dc-out > .empty { padding-top: 0; }
-.dc-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 0 0 8px; }
-.dc-head h2 { margin: 0; font-size: 16px; line-height: 24px; font-weight: 600; }
-.dc-head p { flex-basis: 100%; margin: 0; font-size: 13px; line-height: 20px; color: var(--muted-foreground); }
+/* ================================================================= 판단 요약 한 줄과 그 아래 접기(enterprise.js summaryBlock — 업무 시스템 기록의 「처리 건 없이 제출된 판단」). 규칙 판단 화면의 배치는 reading.css(.io)에 있다 */
 .dc-conclusion { margin: 0 0 8px; font-size: 16px; line-height: 24px; font-weight: 600; max-width: 72ch; }
 .dc-more { margin: 0 0 8px; color: var(--ink-2); max-width: 72ch; }
-.dc-note { margin: 0 0 8px; font-size: 13px; line-height: 20px; color: var(--muted-foreground); max-width: 72ch; }
-.dc-sec { margin: 24px 0 8px; font-size: 16px; line-height: 24px; font-weight: 600; }
-.dc-sec small { margin-left: 8px; font-size: 12px; font-weight: 400; color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
-.dc-table td small { display: block; font-size: 13px; line-height: 20px; color: var(--muted-foreground); }
-.dc-table td small.out { color: var(--danger-ink); }
-.dc-table tr.out td:not(:last-child) b { font-weight: 400; color: var(--ink-2); }
 .dc-folds { display: flex; flex-direction: column; align-items: flex-start; margin-top: 24px; padding-top: 12px; border-top: 1px solid var(--border); }
 .dc-folds > details { width: 100%; }
-.dc-evidence { margin: 8px 0 0; padding: 0; list-style: none; }
-.dc-evidence li { display: flex; flex-wrap: wrap; gap: 0 8px; font-size: 13px; line-height: 20px; color: var(--ink-2); }
-.dc-evidence .ok { color: var(--ok-ink); }
-.dc-evidence .no { color: var(--danger-ink); }
-.dc-evidence .unknown { color: var(--muted-foreground); }
 
-/* 규칙 판단: 조치 후보의 절차 목록(번호가 칸 안에 들어오게) */
+/* 조치 후보 카드(enterprise.js cardHtml)의 절차 목록(번호가 칸 안에 들어오게) */
 .dc-steps { margin: 0; padding-left: 16px; }

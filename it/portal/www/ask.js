@@ -1,27 +1,32 @@
 /* B5 에이전트에게 질문하기 — window.hydAsk.mount(el). 주소 #/ask
-   질문 하나 = 처리 건 하나(정식 정의 ask_agent). 답할 에이전트를 고르고 보내면, 진행 중에는 도구 호출이 한 줄씩 나타나고(1.5초마다 다시 읽음),
-   끝나면 답 + 근거(실행한 질의 · 조회 결과 · 실행 기록에서 확인됐는지) 또는 "답할 수 없음 + 이유"와 "처리 건에서 보기" 링크.
-   한 질문 → 한 답(이전 질문을 기억하지 않음). 지난 질문 목록. 서버: process GET/POST /api/ask* (it/process/procsvc/ask.py).
-   짜임: 왼쪽에 질문 칸(답할 에이전트 → 질문 → [보내기])과 그 아래 대화(질문 → 답 → 근거 → 처리 과정), 오른쪽에 지난 질문 목록.
-   답이 먼저이고 근거(실행한 질의 · 조회 결과)와 처리 과정(도구 호출)은 그 아래 접기 안에 있다. 진행 중에는 처리 과정이 열려 있다.
+   질문 하나 = 처리 건 하나(정식 정의 ask_agent). 답할 에이전트를 고르고 보내면, 에이전트가 무엇을 읽고 불렀는지가 실시간 상자에 한 줄씩 붙고
+   (디자인 기준 7절 — hydLive.agentWork: 도구 호출이 생기는 대로, 연결이 끊긴 동안만 다시 묻는다), 끝나면 그 자리에 답이 온다:
+   답(결론) → 근거(실행한 질의 · 조회 결과 · 실행 기록에서 확인됐는지) → 처리 과정(접기) 또는 「답할 수 없음 + 이유」, 그리고 「처리 건에서 보기」.
+   한 질문 → 한 답(이전 질문을 기억하지 않음). 서버: process GET/POST /api/ask* (it/process/procsvc/ask.py).
+   짜임: 왼쪽에 질문 칸(답할 에이전트 → 질문 → [보내기])과 그 아래 질문 · 답, 오른쪽에 지난 질문 목록.
    원본 대응: process-gpt-vue3 ui/WorkItemChat.vue(도구 입력 · 결과 접기), apps/todolist/InstanceTimeline.vue(작업 하나 = 메시지 하나). */
 (function () {
   const LIVE = new Set(['waiting', 'running', 'submitted', 'correcting', 'asking']);
-  const STATE = { waiting: ['대기 중', 'neutral'], running: ['조회 중', 'accent'], submitted: ['정리 중', 'accent'], correcting: ['답 형식 확인 중', 'warning'],
-    asking: ['사람에게 질문', 'warning'], done: ['답변 완료', 'success'], failed: ['실패', 'danger'], closed: ['종료', 'neutral'], broken: ['오류', 'danger'] };
-  const A = { el: null, status: null, statusErr: '', agents: [], agent: '', draft: '', sending: false, err: '', cur: null, history: [], timer: null, histErr: '' };
+  const STATE = { waiting: ['대기 중', ''], running: ['조회 중', 'brand'], submitted: ['정리 중', 'brand'], correcting: ['답 형식 확인 중', 'warn'],
+    asking: ['사람에게 질문', 'warn'], done: ['답변 완료', 'ok'], failed: ['실패', 'danger'], closed: ['종료', ''], broken: ['오류', 'danger'] };
+  const A = { el: null, status: null, statusErr: '', agents: [], agent: '', wanted: '', wantedMiss: '', draft: '', sending: false, err: '', cur: null, history: [], timer: null, histErr: '',
+    work: null, workHost: null, workFor: null, processOpen: false, retryNote: '', retryId: null };
   const api = path => API.process + '/api/ask' + path;
   const uuid = () => UI.uuid();   // 비보안 문맥(IP 주소로 연 포털)에서도 같은 공용 생성기
-  const toolName = c => UI.toolName(c.raw_tool || c.tool);
-  // 키 없는 PC(AI 응답 재생): 강의에서 다룬 질문에만 저장된 답이 있다 — 예시를 그 질문으로 보이고, 다시 진행은 같은 거절이라 숨긴다
+  const icon = (name, cls) => UI.icon(name, cls);
+  const tag = (label, tone) => `<span class="tag"${tone ? ` data-tone="${tone}"` : ''}>${esc(label)}</span>`;
+  const alertBox = (name, title, body, variant) => `<div class="alert"${variant ? ` data-variant="${variant}" role="alert"` : ' role="status"'}>${icon(name)}<h2>${esc(title)}</h2>${body ? `<section>${body}</section>` : ''}</div>`;
+  // AI 키 없이 도는 재생 모드: 저장된 답이 있는 질문에만 답한다 — 그 질문을 예시 단추로 보이고, 다시 진행은 같은 거절이라 숨긴다
   const replay = () => A.status?.worker?.ai_mode === 'replay';
   const recorded = () => A.status?.worker?.replay_questions || [];
-  const picks = () => recorded().length ? `<div class="row-wrap ask-picks">${recorded().map(q => `<button type="button" class="btn small" data-ask-pick="${esc(q)}">${esc(q)}</button>`).join('')}</div>` : '';
+  const picks = () => recorded().length ? `<div class="ask-picks"><p class="muted">지금 답할 수 있는 질문 — 누르면 질문 칸에 들어갑니다</p><div class="chips">${recorded().map(q => `<button type="button" class="chip" data-ask-pick="${esc(q)}">${esc(q)}</button>`).join('')}</div></div>` : '';
 
   async function loadStatus() {
     try {
       A.status = await getJ(api('/status')); A.statusErr = '';
       A.agents = A.status.agents || [];
+      // 다른 화면(에이전트의 [시험해 보기])이 고른 에이전트가 있으면 그 에이전트로. 질문에 답할 수 없는 에이전트면 그 사실을 말하고 기본 에이전트로 둔다
+      if (A.wanted) { const id = A.wanted; A.wanted = ''; if (A.agents.some(a => a.id === id)) { A.agent = id; A.wantedMiss = ''; } else A.wantedMiss = UI.who(id); }
       if (!A.agent || !A.agents.some(a => a.id === A.agent)) A.agent = A.status.default || (A.agents[0] && A.agents[0].id) || '';
     } catch (e) { A.status = null; A.statusErr = e.message; }
   }
@@ -41,29 +46,42 @@
     A.sending = true; A.err = ''; render();
     try {
       A.cur = await postJ(api(''), { question: q, agent: A.agent || null, by: ((window.hydInbox && window.hydInbox.me && window.hydInbox.me()) || {}).name || '', request_id: uuid() });
-      A.draft = '';
+      A.draft = ''; const t = A.el.querySelector('#askText'); if (t) t.value = '';
       poll();
       loadHistory().then(render);
     } catch (e) { A.err = e.message; }
     finally { A.sending = false; render(); }
   }
   async function open(id) {
-    if (A.cur?.id!==id) { A.retryNote='';A.retryId=null; }
+    if (A.cur?.id !== id) { A.retryNote = ''; A.retryId = null; A.processOpen = false; }
     try { A.cur = await getJ(api('/' + encodeURIComponent(id))); A.err = ''; poll(); }
     catch (e) { A.err = '질문을 읽지 못했습니다: ' + e.message; }
     render();
+    const thread = A.el.querySelector('[data-ask-thread]'); if (thread && A.cur) thread.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }
   async function retry() {
-    if (!A.cur || A.cur.state!=='failed' || A.sending) return;
-    A.retryNote=A.el.querySelector('#askRetryNote')?.value || A.retryNote || '';
-    A.sending=true; A.err=''; render();
-    A.retryId=A.retryId || uuid();
+    if (!A.cur || A.cur.state !== 'failed' || A.sending) return;
+    A.retryNote = A.el.querySelector('#askRetryNote')?.value || A.retryNote || '';
+    A.sending = true; A.err = ''; render();
+    A.retryId = A.retryId || uuid();
     try {
-      A.cur=await postJ(api('/'+encodeURIComponent(A.cur.id)+'/retry'),
-        {request_id:A.retryId,by:A.cur.asked_by,reason:A.retryNote.trim() || '연결 상태 확인 후 같은 질문을 다시 진행합니다.'});
-      A.retryId=null;poll();loadHistory().then(render);
-    } catch(e) { A.err=e.message; }
-    finally { A.sending=false;render(); }
+      A.cur = await postJ(api('/' + encodeURIComponent(A.cur.id) + '/retry'),
+        { request_id: A.retryId, by: A.cur.asked_by, reason: A.retryNote.trim() || '연결 상태 확인 후 같은 질문을 다시 진행합니다.' });
+      A.retryId = null; poll(); loadHistory().then(render);
+    } catch (e) { A.err = e.message; }
+    finally { A.sending = false; render(); }
+  }
+  // 질문의 상태(대기 → 조회 → 정리 → 끝)는 1.5초마다 다시 읽는다. 도구 호출 줄은 실시간 연결(hydLive.agentWork)로 온다
+  async function refresh() {
+    if (!A.cur) return;
+    try {
+      const was = A.cur.state, id = A.cur.id;
+      const next = await getJ(api('/' + encodeURIComponent(id)));
+      if (!A.cur || A.cur.id !== id) return;
+      A.cur = next;
+      if (was !== A.cur.state && !LIVE.has(A.cur.state)) loadHistory().then(render);
+    } catch (e) { A.err = '진행 상황을 읽지 못했습니다: ' + e.message; }
+    render();
   }
   function poll() {
     clearTimeout(A.timer);
@@ -71,181 +89,169 @@
     A.timer = setTimeout(async () => {
       const view = document.getElementById('view-ask');
       if (view && !view.classList.contains('active')) { poll(); return; }           // 화면을 떠나 있으면 읽지 않고 기다린다
-      try {
-        const was = A.cur.state;
-        A.cur = await getJ(api('/' + encodeURIComponent(A.cur.id)));
-        if (was !== A.cur.state && !LIVE.has(A.cur.state)) loadHistory().then(render);
-        if (A.traceWid) loadItem();                                       // A161-U1: the trace also re-reads (SSE may lag)
-      } catch (e) { A.err = '진행 상황을 읽지 못했습니다: ' + e.message; }
-      render(); poll();
+      await refresh(); poll();
     }, 1500);
   }
   async function reset() {
-    const ok = await UI.confirm({ title: '지난 질문 기록 지우기', body: '끝난 질문 기록을 목록에서 지웁니다. 질문 정의 · 에이전트 · 업무 DB · 지식은 그대로입니다.', danger: true });
+    const ok = await UI.confirm({ title: '끝난 질문 기록을 지울까요?', body: '끝난 질문 기록을 목록에서 지웁니다. 질문 정의 · 에이전트 · 업무 DB · 지식은 그대로입니다.', ok: '지우기', danger: true });
     if (!ok) return;
-    try { const r = await postJ(api('/reset'), {}); UI.toast(r.note, { tone: 'ok' }); if (A.cur && A.cur.state === 'done') A.cur = null; }
+    try { const r = await postJ(api('/reset'), {}); UI.toast(r.note, { tone: 'ok' }); if (A.cur && !LIVE.has(A.cur.state)) A.cur = null; }
     catch (e) { A.err = '지우지 못했습니다: ' + e.message; }
     await loadHistory(); render();
   }
 
   /* ---------------------------------------------------------------- 그리기
-     A161-U1: 질문 칸은 한 번만 그리고(입력 중에 다시 그려 글자 · 초점을 잃지 않게), 대화 부분만 갱신한다.
-     대화 = 질문 말풍선 → 에이전트 카드(실시간 처리 과정: trace.js, SSE 로 도구 호출이 생기는 즉시) → 답 카드.
-     참고: Dify base/chat/chat/answer/workflow-process.tsx(답 위의 "처리 과정" 접이 카드, 실행 중 회전) · tool-detail.tsx(도구 한 줄, 펼치면 요청 · 응답),
-           process-gpt-vue3 components/ui/WorkItemChat.vue · ds/components/PgMessage.vue(사용자 말풍선 오른쪽, 에이전트 왼쪽). */
+     A161-U1: 질문 칸은 한 번만 그리고(입력 중에 다시 그려 글자 · 초점을 잃지 않게), 질문 · 답 부분만 갱신한다. */
   function readyHtml() {
-    if (A.statusErr) return `<p class="field-error" role="alert">질문 기능 상태를 읽지 못했습니다: ${esc(A.statusErr)}</p>`;
+    if (A.statusErr) return UI.errorBlock('질문 기능의 상태를 읽지 못했습니다', A.statusErr, { retry: true });
     const s = A.status;
-    if (!s) return UI.loading('상태를 확인하는 중', 'compact');
-    if (s.ready) return '';      // 준비됐으면 따로 말하지 않는다 — 안 될 때만 까닭을 보인다
-    return `<p class="rd-state warn" role="status">지금은 답할 AI 에이전트가 없습니다${s.reason ? ' — ' + esc(s.reason) : ''}</p>`;
+    if (!s) return UI.loading('');
+    const miss = A.wantedMiss ? alertBox('info', `「${A.wantedMiss}」에게는 질문할 수 없습니다`, '질문에 답할 수 있게 설정된 에이전트가 아닙니다. 아래에서 다른 에이전트를 고르세요.') : '';
+    if (s.ready) return miss;      // 준비됐으면 따로 말하지 않는다 — 안 될 때만 까닭을 보인다
+    return miss + alertBox('triangle-alert', '지금은 답할 AI 에이전트가 없습니다', esc(s.reason || ''));
   }
   function agentOptions() {
     return A.agents.map(a => `<option value="${esc(a.id)}" ${a.id === A.agent ? 'selected' : ''}>${esc(a.name)}${a.default ? ' (기본)' : a.mine ? ' (내가 만든 것)' : ''}</option>`).join('');
   }
-  // 고른 에이전트가 무엇을 하고 질문에 어떤 도구 서버 · 스킬을 쓰는지 글로(칩으로 늘어놓지 않는다)
+  // 고른 에이전트가 무엇을 하고 질문에 어떤 도구 서버 · 스킬을 쓰는지 한 줄씩
   function agentLine() {
     const a = A.agents.find(x => x.id === A.agent);
     if (!a) return '';
-    // 질문에 실제로 연결하는 도구 서버(서버 계산 a.servers — 질문용 조회 도구가 있는 서버만, 워커와 같은 규칙)와 질문에는 쓰지 않는 서버(a.left_out)
+    // 질문에 실제로 연결하는 도구 서버(서버 계산 a.servers — 질문용 조회 도구가 있는 서버만, AI 에이전트 실행 서비스와 같은 규칙)와 질문에는 쓰지 않는 서버(a.left_out)
     const serverLabel = t => hydWords.serverName(t);
-    const uses = [a.servers.length ? '도구 서버 ' + a.servers.map(serverLabel).join(', ') : '', a.skills.length ? '스킬 ' + a.skills.join(', ') : ''].filter(Boolean).join(' · ');
-    return (a.goal || a.role ? `<p class="rd-note">${esc(a.goal || a.role)}</p>` : '') +
-      (a.servers.length ? `<p class="rd-note">질문에 쓰는 것: ${esc(uses)}</p>` : `<p class="rd-state warn">이 에이전트에는 질문에 쓸 도구 서버가 없습니다${a.skills.length ? ' (스킬 ' + esc(a.skills.join(', ')) + ')' : ''}</p>`) +
-      (a.left_out.length ? `<p class="rd-note">질문에는 쓰지 않는 도구 서버(질문용 조회 도구가 없음): ${a.left_out.map(t => esc(serverLabel(t))).join(', ')}</p>` : '');
+    const rows = [[a.goal || a.role ? '하는 일' : '', esc(a.goal || a.role || '')],
+      ['질문에 쓰는 도구 서버', a.servers.length ? a.servers.map(t => esc(serverLabel(t))).join(', ') : ''],
+      ['스킬', a.skills.length ? a.skills.map(esc).join(', ') : ''],
+      ['질문에는 쓰지 않는 도구 서버', a.left_out.length ? a.left_out.map(t => esc(serverLabel(t))).join(', ') + ' <span class="muted">— 질문용 조회 도구가 없습니다</span>' : '']].filter(([k, v]) => k && v);
+    return (rows.length ? `<dl class="kv ask-agent">${rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${v}</dd>`).join('')}</dl>` : '') +
+      (a.servers.length ? '' : alertBox('triangle-alert', '이 에이전트에는 질문에 쓸 도구 서버가 없습니다', '조회할 도구가 없어 답할 수 없습니다. 다른 에이전트를 고르거나, 에이전트 · 스킬 화면에서 이 에이전트에 도구 서버를 붙이세요.'));
   }
-  // 답 → 근거(접기). 답할 수 없으면 그 이유가 답 자리에 온다
+  // 답(결론) → 근거. 답할 수 없으면 그 이유가 답 자리에 온다
   function resultHtml(v) {
     const r = v.result;
     if (!r) return '';
     if (r.kind === 'answered') {
-      const ev = (r.evidence || []).map(x => `<li><p class="rd-state ${x.verified ? 'ok' : 'warn'}"><span><b>${esc(UI.toolName(x.tool))}</b> — ${x.verified ? '실행 기록에서 확인됨' : '실행 기록에 없음'}</span></p>
-          <div class="ask-query"><code>${esc(UI.clean(x.query))}</code></div>${x.result != null ? `<div class="muted">에이전트 요약: ${esc(window.hydTrace ? hydTrace.outBrief(x.result, 200) : String(x.result))}</div>` : ''}
-          <div class="muted">실제 조회 결과: ${esc(x.actual_result || '원문 없음')}</div>
-          ${x.result_check ? `<p class="rd-note">${esc(x.result_check.note)}${x.result_check.missing?.length ? `: ${esc(x.result_check.missing.join(', '))}` : ''}</p>` : ''}</li>`).join('');
-      return `<div class="ask-answer"><h3 class="rd-label">답</h3><p>${esc(UI.clean(r.answer))}</p>
-        ${r.answer_check ? `<p class="rd-note">${esc(r.answer_check.note)}${r.answer_check.missing?.length ? `: ${esc(r.answer_check.missing.join(', '))}` : ''}</p>` : ''}</div>`
-        + UI.fold(`근거 · 실행한 질의와 조회 결과 ${(r.evidence || []).length}건`, `<p class="rd-note">실행 기록과 맞은 근거 ${esc(r.verified)}건 · 성공한 조회 ${esc(r.queried)}건</p><ol class="stack-list">${ev}</ol>`
-          + (r.note ? `<p class="rd-note">고른 근거: ${esc(UI.clean(r.note))}</p>` : ''), { cls: 'small' });
+      const check = c => c ? `<p class="muted">${esc(c.note)}${c.missing?.length ? `: ${esc(c.missing.join(', '))}` : ''}</p>` : '';
+      const ev = (r.evidence || []).map(x => `<li>${icon(x.verified ? 'circle-check' : 'triangle-alert')}<div><p><b>${esc(UI.toolName(x.tool))}</b> — ${x.verified ? '실행 기록에서 확인됨' : '실행 기록에 없음'}</p>
+          <pre class="code">${esc(UI.clean(x.query))}</pre>${x.result != null ? `<p class="muted">에이전트 요약: ${esc(window.hydTrace ? hydTrace.outBrief(x.result, 200) : String(x.result))}</p>` : ''}
+          <p class="muted">실제 조회 결과: ${esc(x.actual_result || '원문 없음')}</p>${check(x.result_check)}</div></li>`).join('');
+      return `<div class="result"><div class="result-label">답</div><div class="prose ask-answer" data-md="${esc(UI.clean(r.answer))}"></div>${check(r.answer_check)}</div>`
+        + `<details class="fold" open><summary>근거<span class="muted">실행 기록과 맞은 근거 ${esc(r.verified)}건 · 성공한 조회 ${esc(r.queried)}건</span></summary><div class="fold-body">`
+        + (ev ? `<ul class="evid ask-evid">${ev}</ul>` : '<p class="muted">근거로 적은 질의가 없습니다.</p>') + (r.note ? `<p class="muted">고른 근거: ${esc(UI.clean(r.note))}</p>` : '') + '</div></details>';
     }
-    return `<div class="ask-answer warn" role="status"><h3 class="rd-label">답</h3><p class="rd-state warn">답할 수 없음 — ${esc(UI.clean(r.reason || '이유가 기록되지 않았습니다'))}</p>
-      <p class="rd-note">${r.by === 'server' ? '에이전트가 낸 답을 실제 도구 호출 기록과 대조했지만 근거를 찾지 못했습니다.' : '에이전트가 조회해 보고 답할 수 없다고 했습니다.'}</p></div>`
-      + (r.claimed ? UI.fold('에이전트가 낸 답 (근거 확인 안 됨)', `<p>${esc(UI.clean(r.claimed))}</p>`, { cls: 'small' }) : '');
+    return `<div class="result">${alertBox('triangle-alert', '답할 수 없음', esc(UI.clean(r.reason || '이유가 기록되지 않았습니다')) +
+      `<p class="muted">${r.by === 'server' ? '에이전트가 낸 답을 실제 도구 호출 기록과 대조했지만 근거를 찾지 못했습니다.' : '에이전트가 조회해 보고 답할 수 없다고 했습니다.'}</p>`)}</div>`
+      + (r.claimed ? UI.fold('에이전트가 낸 답<span class="muted">근거 확인 안 됨</span>', `<div class="prose" data-md="${esc(UI.clean(r.claimed))}"></div>`) : '');
   }
-  // 진행 중인 질문: 실시간 연결 상태를 글자로 보이고, 끊겼으면 그 사실과 지금 어떻게 확인하는지를 말한다(줄은 연결 하나 hydStream 에서 온다)
-  function liveLine() {
-    const c = hydStream.conn();
-    return `<p class="lv-work-note"><span class="live-conn ${c.ok ? 'on' : c.state}" data-live-conn>${esc(c.text)}</span>${c.ok ? ' · 도구 호출이 생기는 대로 아래에 붙습니다' : ' · 실시간 연결이 끊겨 1.5초마다 다시 읽어 보입니다'}</p>`;
-  }
-  // the agent's work as a live trace (one work item, flat rows) — fed by GET /api/todolist/{id} and the SSE bus
-  function ensureTrace(v) {
-    if (!window.hydTrace || !v.workitem) return null;
-    if (A.traceWid === v.workitem && A.traceErr) return null;     // 처리 과정을 못 읽은 질문 — 다른 질문을 열면 다시 읽는다
-    if (A.traceWid !== v.workitem) {
-      A.traceErr = '';
-      A.traceWid = v.workitem; A.item = null;
-      A.traceHost = document.createElement('div'); A.traceHost.className = 'ask-trace';
-      A.trace = hydTrace.mount(A.traceHost, { flat: true, workitem: () => A.traceWid, detachedOk: true });
-      loadItem();
+  // 에이전트가 하는 일의 실시간 상자(hydLive.agentWork) — 질문마다 하나. 도는 동안은 답 자리에 그대로 보이고, 끝나면 「처리 과정」 접기 안으로 들어간다
+  function workOf(v) {
+    if (!v.workitem) return null;
+    if (A.workFor !== v.workitem) {
+      if (A.work) A.work.stop();
+      A.workFor = v.workitem;
+      A.workHost = document.createElement('div'); A.workHost.className = 'ask-work';
+      A.work = hydLive.agentWork(A.workHost, { tab: 'ask', onChange: () => { if (A.cur && LIVE.has(A.cur.state)) refresh(); } });
     }
-    return A.trace;
+    const live = LIVE.has(v.state), [label] = STATE[v.state] || [v.state], who = v.agent ? v.agent.name : 'AI 에이전트';
+    A.work.set({ items: [{ id: v.workitem, instance: v.id, state: live ? 'run' : v.state === 'done' ? 'done' : 'fail' }], running: live, since: v.started,
+      headline: live ? `${who}${window.hydWords.josa(who, '이/가')} 일하는 중 — ${label}` : `${who}의 처리 과정`, note: '' });
+    return A.workHost;
   }
-  async function loadItem() {
-    const wid = A.traceWid; if (!wid) return;
-    // 처리 과정을 못 읽으면 빈 접기로 두지 않는다 — 처리 과정 자리를 버리고 질문이 가진 도구 호출 목록 + 사유 한 줄로 그린다
-    try { const item = await getJ(API.process + '/api/todolist/' + encodeURIComponent(wid)); if (wid === A.traceWid) { A.item = item; A.traceErr = ''; feed(); } }
-    catch (e) { if (wid === A.traceWid) { A.traceErr = e.message; A.traceHost = null; A.trace = null; render(); } }
-  }
-  function feed() {
-    if (!A.trace || !A.item || !A.cur) return;
-    hydTrace.TR.mounted.add(A.trace);
-    A.trace.update({ instance: { status: LIVE.has(A.cur.state) ? 'RUNNING' : 'COMPLETED' }, definition: { activities: [] }, workitems: [A.item], events: A.item.events || [] });
-  }
-  // 도구 호출 한 줄: 상태 칩은 실행 중 · 실패일 때만
-  function callRow(c) {
-    const chip = c.running ? UI.chipText('실행 중', 'accent') : c.ok === false ? UI.chipText('실패', 'danger') : '';
-    return `<li><b>${esc(toolName(c))}</b> ${chip} <span class="muted">${esc(UI.clean(c.input_text || ''))}</span>${c.problem ? `<div class="neg">${esc(UI.clean(c.problem))}</div>` : ''}</li>`;
-  }
-  function threadHtml(staticCalls) {
+  function threadHtml() {
     const v = A.cur;
-    if (!v) return UI.empty('아직 보낸 질문이 없습니다', replay() ? '위의 질문 단추를 누르면 질문 칸에 들어갑니다. [보내기]를 누르면 답과 근거가 여기에 나옵니다.'
-      : '위 칸에 질문을 적고 [보내기]를 누르면 답과 근거가 여기에 나옵니다. 예: 완제품 재고가 가장 적은 설비와 그 수량은? · HYD-01 팬 진동 최근 최대값은?', 'compact');
-    const [label, tone] = STATE[v.state] || [v.state, 'neutral'];
-    const live = LIVE.has(v.state);
-    const calls = v.tool_calls || [];
-    // 차례: 질문 → (누가 · 상태) → 답 → 근거 → 처리 과정. 진행 중에는 답이 아직 없어 처리 과정이 열려 있다
-    return `<div class="ask-thread">
-      <div class="ask-q"><div class="ask-bubble">${esc(v.question)}</div><span class="muted">${esc(v.asked_by || '')} · ${esc(UI.dateTime(v.started))}</span></div>
-      <div class="ask-a card">
-        <header class="rd-head"><div><div class="rd-title"><h3>${esc(v.agent ? v.agent.name : '')}</h3>${UI.chipText(label, tone)}</div>${v.message ? `<p class="rd-sub">${esc(UI.clean(v.message))}</p>` : ''}</div></header>
-        ${resultHtml(v)}
-        <details class="fold small ask-process" ${live || A.processOpen ? 'open' : ''}><summary>처리 과정 · 도구 호출 ${calls.length}건 ${live && window.hydTrace ? hydTrace.spinner('sm') : ''}${live && v.started ? ' ' + hydLive.timeHtml(v.started) : ''}</summary><div class="fold-body">${live ? liveLine() : ''}${A.traceErr ? `<p class="rd-note">자세한 처리 과정을 읽지 못해 도구 호출 목록만 보입니다 — ${esc(A.traceErr)}</p>` : ''}<div data-ask-trace>${staticCalls ? `<ol class="stack-list">${calls.map(callRow).join('')}</ol>` : ''}</div></div></details>
-        ${v.state==='failed' && replay() ? '<p class="rd-note" role="status">AI 키가 없을 때 쓰는 재생 모드에서는 같은 질문을 다시 진행할 수 없습니다.</p>' : ''}
-        ${v.state==='failed' && !replay() ? UI.field({label:'다시 진행할 때 반영할 내용(선택)',input:`<textarea id="askRetryNote" rows="2">${esc(A.retryNote || '')}</textarea>`}) : ''}
-        <div class="rd-form-actions">${v.state==='failed' && !replay() ? `<button class="btn small" id="askRetry" ${A.sending?'disabled':''}>같은 질문 다시 진행</button>` : ''}<a class="link-btn" href="${esc(v.link)}">처리 건에서 보기 →</a></div></div></div>`;
+    if (!v) return `<section class="empty"><header><figure>${icon('message-circle-question')}</figure><h3>아직 보낸 질문이 없습니다</h3><p>${replay() ? '위의 질문 단추를 누르면 질문 칸에 들어갑니다. [보내기]를 누르면 에이전트가 조회하는 과정과 답이 여기에 나옵니다.'
+      : '위 칸에 질문을 적고 [보내기]를 누르면 에이전트가 조회하는 과정과 답이 여기에 나옵니다. 예: 완제품 재고가 가장 적은 설비와 그 수량은? · HYD-01 팬 진동 최근 최대값은?'}</p></header></section>`;
+    const [label, tone] = STATE[v.state] || [v.state, ''];
+    const live = LIVE.has(v.state), calls = (v.tool_calls || []).length;
+    // 차례: 질문 → 누가 · 상태 → (도는 동안) 실시간 상자 / (끝난 뒤) 답 → 근거 → 처리 과정(접기)
+    return `<div class="ask-q"><div class="ask-bubble">${esc(v.question)}</div><span class="muted">${esc(v.asked_by || '')} · ${esc(UI.dateTime(v.started))}</span></div>
+      <section class="panel ask-a">
+        <div class="panel-head pane-head"><span class="pane-ic" data-kind="agent">${icon('bot')}</span><div class="pane-title"><h2>${esc(v.agent ? v.agent.name : 'AI 에이전트')}${tag(label, tone)}</h2></div>
+          <div class="pane-acts"><a class="btn" data-variant="outline" data-size="sm" href="${esc(v.link)}">처리 건에서 보기${icon('arrow-right')}</a></div></div>
+        <div class="panel-sec ask-body">
+          ${live ? `<div data-ask-work>${v.workitem ? '' : hydLive.waitHtml('에이전트가 질문을 받는 중', { since: v.started, hint: '처리 건이 열리고 에이전트가 일을 시작하면 조회 과정이 여기에 한 줄씩 붙습니다.' })}</div>${v.message ? `<p class="typing">${esc(UI.clean(v.message))}</p>` : ''}` : ''}
+          ${!live && v.state === 'failed' ? alertBox('circle-alert', '답을 받지 못했습니다', esc(UI.clean(v.message || '에이전트 실행이 실패했습니다.')), 'destructive') : ''}
+          ${!live && v.state !== 'failed' && !v.result && v.message ? `<p class="muted">${esc(UI.clean(v.message))}</p>` : ''}
+          ${resultHtml(v)}
+          ${!live && v.workitem ? `<details class="fold ask-process" ${A.processOpen ? 'open' : ''}><summary>처리 과정<span class="muted">도구 호출 ${calls}건</span></summary><div class="fold-body"><div data-ask-work></div></div></details>` : ''}
+          ${v.state === 'failed' && replay() ? alertBox('info', '같은 질문을 다시 진행할 수 없습니다', 'AI 키가 없을 때 쓰는 재생 모드에서는 저장된 답이 있는 질문에만 답합니다. 위의 질문 단추에 있는 질문을 보내 보세요.') : ''}
+          ${v.state === 'failed' && !replay() ? UI.field({ label: '다시 진행할 때 반영할 내용(선택)', input: `<textarea id="askRetryNote" rows="2">${esc(A.retryNote || '')}</textarea>` }) +
+            `<footer class="form-foot"><button type="button" class="btn" data-variant="outline" id="askRetry" ${A.sending ? 'disabled' : ''}>${icon('rotate-ccw')}같은 질문 다시 진행</button></footer>` : ''}
+        </div></section>`;
   }
   function historyHtml() {
-    if (A.histErr) return UI.errorBlock('지난 질문을 읽지 못했습니다', A.histErr, { cls: 'compact' });
-    if (!A.history.length) return UI.empty('아직 질문이 없습니다', '질문을 보내면 여기에 쌓이고, 누르면 그 답을 다시 볼 수 있습니다.', 'compact');
-    const kind = h => h.verdict === 'answered' ? UI.chipText('답함', 'success') : h.verdict === 'unanswerable' ? UI.chipText('답할 수 없음', 'warning')
-      : UI.chipText((STATE[h.state] || [h.state])[0], (STATE[h.state] || [0, 'neutral'])[1]);
-    return `<div class="list ask-history">${A.history.map(h => `<button type="button" class="item${A.cur && A.cur.id === h.id ? ' sel' : ''}" data-ask-open="${esc(h.id)}"><div class="row"><strong>${esc(h.question)}</strong>${kind(h)}</div>
-      <span class="sub">${esc(h.agent ? h.agent.name : '')} · ${esc(UI.dateTime(h.started))}</span></button>`).join('')}</div>`
-      + `<p class="rd-foot"><span>끝난 질문 기록을 목록에서 지웁니다.</span><button type="button" class="btn small danger" id="askReset">끝난 질문 기록 지우기</button></p>`;
+    if (A.histErr) return `<div class="pane-list-note">${UI.errorBlock('지난 질문을 읽지 못했습니다', A.histErr, { retry: true })}</div>`;
+    if (!A.history.length) return `<div class="pane-list-note">${UI.empty('아직 질문이 없습니다', '질문을 보내면 여기에 쌓이고, 누르면 그 답을 다시 볼 수 있습니다.')}</div>`;
+    const kind = h => h.verdict === 'answered' ? tag('답함', 'ok') : h.verdict === 'unanswerable' ? tag('답할 수 없음', 'warn') : tag((STATE[h.state] || [h.state])[0], (STATE[h.state] || [0, ''])[1]);
+    return A.history.map(h => `<button type="button" class="row" data-ask-open="${esc(h.id)}"${A.cur && A.cur.id === h.id ? ' aria-current="true"' : ''}><span class="row-ic">${icon('message-square')}</span><span class="row-title">${esc(h.question)}</span>${kind(h)}
+      <span class="row-meta">${esc(h.agent ? h.agent.name : '')} · ${esc(UI.dateTime(h.started))}</span></button>`).join('');
   }
   function formHtml() {
-    return `${readyHtml()}
+    const off = A.sending || !A.draft.trim();
+    return `<div class="panel-sec ask-compose">${readyHtml()}
         ${UI.field({ label: '답할 에이전트', input: `<select id="askAgent">${agentOptions()}</select>` })}${agentLine()}
-        <div class="ask-input">${UI.field({ label: '질문', hint: 'Enter 보내기 · Shift+Enter 줄바꿈. 에이전트는 자기 도구로 실제 조회한 결과만으로 답합니다.', input: `<textarea id="askText" rows="3" maxlength="${esc(window.hydCourseAccess.questionMaxChars || '')}"></textarea>` })}${replay() ? picks() : ''}</div>
-        <div class="rd-form-actions"><button class="btn primary" id="askSend" ${A.sending || !A.draft.trim() ? 'disabled' : ''}>${A.sending ? '보내는 중…' : '보내기'}</button></div>`;
+        ${UI.field({ label: '질문', hint: 'Enter 보내기 · Shift+Enter 줄바꿈', input: `<textarea id="askText" rows="3" maxlength="${esc(window.hydCourseAccess.questionMaxChars || '')}" placeholder="에이전트가 자기 도구로 조회해 답할 수 있는 것을 묻습니다"></textarea>` })}${replay() ? picks() : ''}
+        <footer class="form-foot"><span class="muted" role="status" data-ask-why>${A.draft.trim() ? '' : '질문을 적으면 보낼 수 있습니다.'}</span><button type="button" class="btn" id="askSend" ${off ? 'disabled' : ''}>${icon('send')}보내기</button></footer></div>`;
   }
-  const layout = (form, err, thread, hist) => `<p class="page-lead">에이전트에게 질문 하나를 보내면 처리 건 하나로 돌고, 도구로 실제 조회한 결과만으로 답합니다.</p>` +
-        `<div class="ask-layout"><div class="ask-main"><section class="ask-compose rd-form" data-ask-form>${form}</section><div data-ask-err>${err}</div><div data-ask-thread>${thread}</div></div>
-        <aside class="ask-side"><h2 class="rd-sec">지난 질문</h2><div data-ask-history>${hist}</div></aside></div>`;
+  const layout = () => `<div class="ask-layout"><div class="ask-main"><section class="panel" data-ask-form aria-label="질문 보내기"></section><div data-ask-err class="pane-msg"></div><div class="ask-thread" data-ask-thread></div></div>
+        <aside class="ask-side pane-side"><div class="sec-head"><h2>지난 질문</h2><button type="button" class="btn" data-variant="ghost" data-size="sm" id="askReset" hidden>${icon('trash-2')}끝난 기록 지우기</button></div><div class="rows" data-ask-history></div></aside></div>`;
+  async function renderMarkdown(root) {
+    const nodes = [...root.querySelectorAll('[data-md]')]; if (!nodes.length) return;
+    try { await UI.need('markdown'); nodes.forEach(n => { n.innerHTML = DOMPurify.sanitize(marked.parse(n.dataset.md)); n.removeAttribute('data-md'); }); }
+    catch (e) { nodes.forEach(n => { n.textContent = n.dataset.md; n.removeAttribute('data-md'); }); console.error('마크다운 부품을 싣지 못해 글 그대로 보입니다:', e.message); }
+  }
+  const syncSend = form => {
+    const b = form.querySelector('#askSend'), why = form.querySelector('[data-ask-why]');
+    if (b) b.disabled = A.sending || !A.draft.trim();
+    if (why) why.textContent = A.draft.trim() ? '' : '질문을 적으면 보낼 수 있습니다.';
+  };
   function render() {
     if (!A.el) return;
-    if (!A.el.querySelector('[data-ask-form]')) A.el.innerHTML = layout('', '', '', '');
+    if (!A.el.querySelector('[data-ask-form]')) {
+      A.el.innerHTML = layout();
+      A.el.querySelector('#askReset').addEventListener('click', reset);
+      A.el.querySelector('[data-ask-history]').addEventListener('click', e => {
+        const row = e.target.closest('[data-ask-open]');
+        if (row) open(row.dataset.askOpen); else if (e.target.closest('[data-retry]')) loadHistory().then(render);
+      });
+    }
     const form = A.el.querySelector('[data-ask-form]');
-    const formSig = JSON.stringify([A.status, A.statusErr, A.agents.map(a => a.id), A.agent, A.sending]);
+    const formSig = JSON.stringify([A.status, A.statusErr, A.agents.map(a => a.id), A.agent, A.sending, A.wantedMiss]);
     if (form._sig !== formSig) {
       form._sig = formSig;
       form.innerHTML = formHtml();
-      const t = form.querySelector('#askText'); t.value = A.draft;
+      const t = form.querySelector('#askText'); if (t) t.value = A.draft;
       wireForm(form);
-    } else { const b = form.querySelector('#askSend'); if (b) b.disabled = A.sending || !A.draft.trim(); }
-    A.el.querySelector('[data-ask-err]').innerHTML = A.err ? `<p class="field-error" role="alert">${esc(A.err)}</p>` : '';
+    } else syncSend(form);
+    A.el.querySelector('[data-ask-err]').innerHTML = A.err ? UI.errorBlock('질문을 처리하지 못했습니다', A.err) : '';
     const thread = A.el.querySelector('[data-ask-thread]');
-    const v = A.cur, trace = v ? ensureTrace(v) : null;
+    const v = A.cur, host = v ? workOf(v) : null;
     const proc = thread.querySelector('.ask-process'); if (proc) A.processOpen = proc.open;
-    const tSig = JSON.stringify(v && [v.id, v.state, v.message, (v.tool_calls || []).length, v.result, (v.agent || {}).name, A.sending, A.traceErr, v && LIVE.has(v.state) && hydStream.conn().ok]);
+    const tSig = JSON.stringify([replay(), v && [v.id, v.state, v.message, (v.tool_calls || []).length, v.result, (v.agent || {}).name, v.workitem, A.sending]]);
     if (thread._sig !== tSig) {
       thread._sig = tSig;
-      thread.innerHTML = threadHtml(!A.traceHost);
-      const slot = thread.querySelector('[data-ask-trace]'); if (slot && A.traceHost) slot.replaceWith(A.traceHost);
+      thread.innerHTML = threadHtml();
+      const slot = thread.querySelector('[data-ask-work]'); if (slot && host) slot.replaceWith(host);
       thread.querySelector('.ask-process')?.addEventListener('toggle', e => { A.processOpen = e.target.open; });
-      thread.querySelector('#askRetry')?.addEventListener('click',retry);
+      thread.querySelector('#askRetry')?.addEventListener('click', retry);
+      renderMarkdown(thread);
     }
-    if (trace) feed();
     const hist = A.el.querySelector('[data-ask-history]');
     const hSig = JSON.stringify([A.history, A.histErr, A.cur && A.cur.id]);
-    if (hist._sig !== hSig) {
-      hist._sig = hSig; hist.innerHTML = historyHtml();
-      hist.querySelectorAll('[data-ask-open]').forEach(b => b.addEventListener('click', () => open(b.dataset.askOpen)));
-      hist.querySelector('#askReset')?.addEventListener('click', reset);
-    }
+    if (hist._sig !== hSig) { hist._sig = hSig; hist.innerHTML = historyHtml(); }
+    A.el.querySelector('#askReset').hidden = !A.history.length;
   }
   function wireForm(form) {
     const q = s => form.querySelector(s);
-    q('#askAgent')?.addEventListener('change', e => { A.agent = e.target.value; render(); });
+    q('#askAgent')?.addEventListener('change', e => { A.agent = e.target.value; A.wantedMiss = ''; render(); });
+    q('[data-retry]')?.addEventListener('click', () => loadStatus().then(render));
     const t = q('#askText');
-    t?.addEventListener('input', e => { A.draft = e.target.value; const b = q('#askSend'); if (b) b.disabled = A.sending || !A.draft.trim(); });
+    t?.addEventListener('input', e => { A.draft = e.target.value; syncSend(form); });
     t?.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); } });
     q('#askSend')?.addEventListener('click', send);
-    form.querySelectorAll('[data-ask-pick]').forEach(b => b.addEventListener('click', () => {
-      A.draft = b.dataset.askPick; t.value = A.draft; t.focus(); const s = q('#askSend'); if (s) s.disabled = A.sending;
-    }));
+    form.querySelectorAll('[data-ask-pick]').forEach(b => b.addEventListener('click', () => { A.draft = b.dataset.askPick; t.value = A.draft; t.focus(); syncSend(form); }));
   }
 
-  // 셸이 처음 열 때 mount, 다시 열 때 show
-  window.hydAsk = { mount, show };
+  // 셸이 처음 열 때 mount, 다시 열 때 show. prefer(에이전트 id): 다른 화면(에이전트의 [시험해 보기])이 이 화면을 그 에이전트를 고른 채 열 때 부른다
+  window.hydAsk = { mount, show, prefer: id => { A.wanted = id; } };
 })();

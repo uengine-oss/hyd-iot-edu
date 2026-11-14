@@ -97,7 +97,7 @@
     <!-- 왼쪽 큰 캔버스(Cytoscape — enterprise.js) + 오른쪽 348px 밝은 칸(고른 항목). 찾기 · 이상 패턴 경로 · 확대 도구 · 묶음 켜고 끄기는 캔버스 안에 있다(디자인 기준 5-9 · 6-3). 모양은 canvas.css -->
     <div class="page-head"><div><h1 data-term="nav.ontology">지식 지도</h1><p>AI가 판단할 때 읽는 온톨로지입니다. 항목을 누르면 무엇과 이어져 있는지 보입니다.</p></div>
       <div class="page-tools">
-        <select class="select" id="ontoAsset" aria-label="설비"><option>HYD-01</option><option>HYD-02</option><option>HYD-03</option></select>
+        <select class="select" id="ontoAsset" aria-label="설비"></select><!-- 설비 목록은 서버가 준다(enterprise.js ontoAssets) -->
         <select class="select" id="ontoNs" aria-label="지식 묶음" hidden><option value="">기본 지식</option></select>
         <button type="button" class="btn" data-variant="outline" id="ontoReload" data-icon="refresh-cw">다시 읽기</button>
       </div></div>
@@ -139,7 +139,7 @@
         <div class="panel-head"><div><h2>판단 조건</h2></div></div>
         <div class="panel-sec">
           <fieldset class="fieldset"><legend>판단 대상</legend><div role="group">
-            <div role="group" class="field"><label for="decAsset">설비</label><select class="select" id="decAsset"><option>HYD-01</option><option>HYD-02</option><option>HYD-03</option></select></div>
+            <div role="group" class="field"><label for="decAsset">설비</label><select class="select" id="decAsset"></select></div>
             <div role="group" class="field"><label for="decPattern">이상 패턴</label><select class="select" id="decPattern"></select></div>
           </div></fieldset>
           <fieldset class="fieldset"><legend>가정할 조건</legend><div role="group">
@@ -314,7 +314,7 @@
       <div class="admin-detail">
         <details class="panel admin-pane" id="configBundlePanel" open><summary>내 설정</summary>
           <div class="panel-head"><div><h2>내 설정</h2><p>내가 만든 설정을 파일로 내보내거나 불러오고, 처음 상태(기준)로 되돌립니다.</p></div></div>
-          <div class="panel-sec" id="configBundleView"></div></details>
+          <div id="configBundleView" data-kit></div></details>   <!-- configBundle.js 가 절(.panel-sec) 넷을 그린다: 내 사례 · 내보내기 · 불러오기 · 기준으로 되돌리기 -->
         <details class="panel admin-pane" id="sourceEventsPanel" data-kit><summary>접수 기록</summary>
           <div class="panel-head"><div><h2>접수 기록</h2><p>들어온 경보와 명령 응답이 어떻게 접수됐는지 보고, 실패한 접수를 다시 처리합니다.</p></div></div>
           <div class="panel-sec">
@@ -359,19 +359,19 @@
   </section>
 
   <!-- ───────── A5 (U7) 새 화면 자리: 각 단위가 window.hyd<X>.mount(<컨테이너>) 로 채운다 ───────── -->
-  <section class="view" id="view-ask">
-    <div class="page-head"><h1 data-term="nav.ask">질문하기</h1></div>
+  <section class="view" id="view-ask" data-kit>
+    <div class="page-head"><div><h1 data-term="nav.ask">질문하기</h1><p>AI 에이전트에게 질문 하나를 보내면 처리 건 하나로 돌고, 에이전트는 자기 도구로 실제 조회한 결과만으로 답합니다.</p></div></div>
     <div class="shell-mount" id="askView"></div>
   </section>
-  <section class="view" id="view-agents">
+  <section class="view" id="view-agents" data-kit>
     <div class="shell-mount" id="agentsView"></div>   <!-- 제목 · 행동 단추는 agents.js 가 그린다(제목 한 벌) -->
   </section>
-  <section class="view" id="view-mcp">
+  <section class="view" id="view-mcp" data-kit>
     <div class="shell-mount" id="mcpView"></div>   <!-- 제목은 mcp.js 가 그린다 -->
   </section>
   <!-- 판단 실험의 나머지 셋도 「조건 → 결과」(디자인 기준 5-6): 왼쪽 조건 판, 오른쪽 결과. 격자는 reading.css(.io), 그리는 코드는 compare.js · evaluation.js · whatif.js -->
   <section class="view" id="view-compare" data-kit>
-    <div class="page-head"><div><h1 data-term="nav.compare">에이전트 시험 비교</h1><p>같은 입력으로 에이전트 둘의 판단 단계를 모의해, 원인과 1순위 조치, 도구 호출이 어떻게 다른지 나란히 봅니다.</p></div></div>
+    <div class="page-head"><div><h1 data-term="nav.compare">에이전트 시험 비교</h1><p>에이전트 둘의 구성(도구 서버와 스킬 문서)을 같은 입력에 대어, 판단 엔진이 계산한 원인과 1순위 조치, 도구 호출이 어떻게 달라지는지 나란히 봅니다. AI 모델은 돌리지 않습니다.</p></div></div>
     <div class="shell-mount" id="compareView"></div>
   </section>
   <section class="view" id="view-eval" data-kit>
@@ -385,7 +385,7 @@
     <div class="shell-mount" id="kpiView"></div><!-- 화면 제목은 kpi.js 가 그린다(기간 고르기와 한 줄) — 여기에 또 두면 제목이 두 번 보인다 -->
   </section>
   <section class="view" id="view-fabric" data-kit>
-    <div class="page-head"><div><h1 data-term="nav.fabric">데이터 원천</h1><p>업무 DB와 시계열 DB를 읽기만 해서 설비 하나로 묶어 보고, 지식의 클래스가 실제 표와 열에 닿는지 확인합니다.</p></div></div>
+    <div class="page-head"><div><h1 data-term="nav.fabric">데이터 원천</h1><p>업무 DB와 시계열 DB의 값을 설비 하나로 묶어 보고, AI가 판단에 쓰는 값이 실제로 어느 표와 열에서 오는지 확인합니다. 읽기만 합니다.</p></div></div>
     <div class="shell-mount" id="fabricView"></div><!-- fabric.js 가 그린다: 지금 상태(숫자 타일) → 보기 셋 -->
   </section>
   <!-- ───────── 흐름: 목록 + 상세(디자인 기준 5-4). 왼쪽 흐름 목록, 오른쪽에 고른 흐름 하나 —
@@ -395,7 +395,7 @@
     <div class="page-head"><div><h1 data-term="nav.flows">흐름</h1><p>bpmn.io에서 그린 흐름을 가져와 단계마다 누가 무엇을 할지 정하고, 판본으로 등록 · 배포해 처리 건으로 돌립니다.</p></div>
       <div class="page-tools"><button type="button" class="btn" data-variant="outline" id="flowReload" data-icon="refresh-cw">다시 읽기</button><button type="button" class="btn" id="flowImportOpen" data-icon="file-up">흐름 가져오기</button></div></div>
     <div class="split">
-      <div class="flow-side"><div class="seg" role="group" aria-label="흐름 구분" id="flowKind"></div><div class="rows" id="flowList" aria-label="흐름 목록"></div></div>
+      <div class="pane-side"><div class="seg" role="group" aria-label="흐름 구분" id="flowKind"></div><div class="rows" id="flowList" aria-label="흐름 목록"></div></div>
       <section class="panel flow-panel" id="flowPanel" aria-label="고른 흐름">
         <div class="shell-mount" id="flowsView"></div>
         <div class="panel-sec" id="definitionDeployPanel" hidden>
@@ -417,9 +417,9 @@
       <div class="sec-head"><h2 id="flowRoutesTitle">경보별 운영 흐름</h2><span class="muted" id="deployRoutesNote"></span></div>
       <div id="deployRoutes"></div>
       <details class="fold flow-resets"><summary>기준으로 되돌리기<span class="muted">내가 배포한 흐름 내리기 · 가져온 흐름 지우기</span></summary><div class="fold-body">
-        <div class="flow-reset"><div><b>기준 흐름으로 되돌리기</b><p class="muted">내가 배포한 흐름을 경보 경로에서 내리고, 기준 흐름의 운영 판본을 기준 판본으로 돌립니다. 등록한 판본과 열린 처리 건은 그대로입니다.</p><p class="muted" id="deployResetWhy"></p></div>
+        <div class="pane-reset"><div><b>기준 흐름으로 되돌리기</b><p class="muted">내가 배포한 흐름을 경보 경로에서 내리고, 기준 흐름의 운영 판본을 기준 판본으로 돌립니다. 등록한 판본과 열린 처리 건은 그대로입니다.</p><p class="muted" id="deployResetWhy"></p></div>
           <button type="button" class="btn" data-variant="outline" id="deployResetRef" data-deploy-reset disabled>기준 흐름으로 되돌리기</button></div>
-        <div class="flow-reset"><div><b>가져온 흐름을 기준으로 되돌리기</b><p class="muted">내가 가져온 흐름과 그 판본, 단계 설정 초안을 모두 지웁니다. 기준 흐름과 지금 배포된 흐름은 남습니다.</p></div>
+        <div class="pane-reset"><div><b>가져온 흐름을 기준으로 되돌리기</b><p class="muted">내가 가져온 흐름과 그 판본, 단계 설정 초안을 모두 지웁니다. 기준 흐름과 지금 배포된 흐름은 남습니다.</p></div>
           <button type="button" class="btn" data-variant="destructive" id="flowReset">가져온 흐름을 기준으로 되돌리기</button></div>
         <div class="alert" hidden><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="vendor/lucide/icons.svg#info"/></svg><h2 id="deployResetMessage"></h2></div>
       </div></details>
@@ -476,7 +476,6 @@
 <script src="kpi.js"></script>
 <script src="ask.js"></script>
 <script src="compare.js"></script>
-<script src="bpmnView.js"></script>
 <script src="flows.js"></script>
 <script src="studentCases.js"></script>
 <script src="configBundle.js"></script>

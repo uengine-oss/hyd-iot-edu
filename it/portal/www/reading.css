@@ -1,15 +1,13 @@
-/* 화면의 내용 짜임(무엇이 위에 오고 무엇을 접는가) — 디자인 기준 5절 「화면 종류별 본」의 배치만 둔다.
-   대상 화면: 지식(조치 방법 · 문서 등록 · 데이터 원천), AI 에이전트(에이전트와 스킬 · 도구 연결 · 질문하기),
-   판단 실험(손익 · 채점 · 시험 비교), 시스템(성과 지표 · 관리).
-   단추 · 칩 · 카드 · 접기 · 탭의 색과 크기는 전역 CSS 가 정한다. 여기에는 토큰(tokens.css) 값만 쓰고 색을 새로 박지 않는다.
-   이름은 모두 rd- 로 시작한다(다른 화면의 규칙과 겹치지 않게). */
+/* 화면의 내용 짜임 — 화면 배치(격자 · 폭)만 둔다. 부품의 모양 · 색 · 글자는 portal-kit.css 와 키트(vendor/basecoat)가 정한다.
+   판단 실험(규칙 판단 · 조건별 손익 · 판단 채점 · 에이전트 시험 비교)의 「조건 → 결과」 격자(.io)가 이 파일의 본문이고,
+   그 아래는 아직 옛 읽는 판 이름(rd-*)을 쓰는 화면(질문하기 · 처리 건의 실행 중인 AI 에이전트 · 도구 연결)의 배치다 — 그 화면을 옮기는 갈래가 함께 지운다. */
 
 /* ---------------- 조건 → 결과(디자인 기준 5-6): 왼쪽 조건 판 320px · 오른쪽 결과. 판단 실험 네 화면이 쓴다 ----------------
    부품은 키트의 것이다(panel · fieldset · field · result · turn-facts · opts · evid · stream). 여기는 격자와 폭만 정한다 */
 .io { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 24px; align-items: start; }
 .io > * { min-width: 0; }
 .io > .io-in { position: sticky; top: 68px; }      /* 위 막대(52px) 아래에 붙어 따라온다 */
-.io-in :is(.select, .input, .textarea) { width: 100%; }
+.io-in :is(.select, .input:not([type="checkbox"]), .textarea) { width: 100%; }
 .io-in .fieldset + .fieldset { margin-top: 20px; }
 .io-in .form-foot { justify-content: flex-start; }
 .io-in .form-foot > .btn:first-child { flex: 1; }
@@ -17,10 +15,14 @@
 .io-in .seg > button { flex: 1; justify-content: center; padding: 0 6px; }
 .io-out { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
 .io-out .panel-head > div:first-child { min-width: 0; }
+.io-out .fieldset :is(.select, .input:not([type="checkbox"]), .textarea) { width: 100%; }
 .io-out .panel-head h2 { max-width: 60ch; }
 .io-out .panel > .turn-facts { border-color: var(--border); }
 .io-out .turn-facts dd { overflow-wrap: anywhere; }
 .io-out .table :is(td, th) { white-space: normal; vertical-align: top; }      /* 키트의 표는 줄을 바꾸지 않는다 — 계산식 · 출처처럼 긴 글이 든 칸은 줄을 바꿔 판 폭 안에 둔다 */
+.io-out .table td { overflow-wrap: anywhere; }
+.io-out .table.io-even { table-layout: fixed; }      /* A · B 두 칸을 같은 폭으로 */
+.io-out .table.io-even td + td { padding-left: 16px; }
 .io-out .table :is(td, th):first-child { padding-left: 0; }
 .io-out .table :is(td, th):last-child { padding-right: 0; }
 .io-out .opts td small { display: block; font-size: 12.5px; line-height: 18px; color: var(--muted-foreground); }
@@ -30,7 +32,7 @@
 .io-out .panel-sec > .fold:last-child:not([open]) > summary { padding-bottom: 0; }
 .io-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }      /* 둘을 나란히(에이전트 A · B) */
 .io-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin: -4px 0 16px; }      /* 보기 바꾸기 줄 */
-.io-progress { display: grid; gap: 6px; padding: 12px 14px 0; font-size: 12.5px; color: var(--muted-foreground); }      /* 센 값이 있는 진행 막대(12개 가운데 5개) */
+.io-progress { display: grid; gap: 6px; padding: 4px 14px 12px; font-size: 12.5px; color: var(--muted-foreground); }      /* 센 값이 있는 진행 막대(12개 가운데 5개) */
 @media (max-width: 1000px) {
   .io { grid-template-columns: minmax(0, 1fr); }
   .io > .io-in { position: static; }
@@ -40,149 +42,24 @@
 /* ---------------- 화면 머리 아래 한 문장 · 화면 맨 아래 한 줄 ---------------- */
 .rd-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 13px; line-height: 20px; color: var(--muted-foreground); }
 
-/* ---------------- 목록 + 상세(기준 5-1): 왼쪽 목록 320px · 오른쪽 상세 ---------------- */
-.rd-split { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 24px; align-items: start; }
-.rd-split > * { min-width: 0; }
-.rd-split > .rd-side { position: sticky; top: 16px; display: flex; flex-direction: column; gap: 12px; }
-.rd-side .list { max-height: calc(100vh - 240px); }
-
 /* 상세 머리: 이름 + 상태 칩 하나 · 한 줄 요약 · 오른쪽에 동작 */
 .rd-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px 16px; flex-wrap: wrap; }
 .rd-head .rd-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .rd-head h2, .rd-head h3 { margin: 0; font-size: 16px; line-height: 24px; font-weight: 600; }
 .rd-sub { margin: 4px 0 0; font-size: 13px; line-height: 20px; color: var(--muted-foreground); max-width: 72ch; }
-.rd-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 
 /* 묶음: 테두리 없이 여백 24px 과 작은 이름표로 가른다(기준 원칙 4) */
 .rd-group { margin-top: 24px; }
 .rd-group:first-child { margin-top: 0; }
 .rd-label { margin: 0 0 8px; font-size: 12px; line-height: 16px; font-weight: 600; color: var(--muted-foreground); letter-spacing: 0; }
 .rd-sec { margin: 0 0 12px; font-size: 16px; line-height: 24px; font-weight: 600; }
-.rd-sec-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 0 0 12px; }
-.rd-sec-head .rd-sec { margin: 0; }
 .rd-note { margin: 0 0 12px; font-size: 13px; line-height: 20px; color: var(--muted-foreground); max-width: 72ch; }
-.rd-p { margin: 0 0 12px; max-width: 72ch; color: var(--ink-2); }
-.rd-rule { border: 0; border-top: 1px solid var(--border); margin: 16px 0; }
-.rd-after { margin-top: 12px; }
-
-/* 결론 문장(기준 5-3 첫째 무게): 이름표 12px + 문장 16px · 600 */
-.rd-conclusion { margin: 0 0 12px; font-size: 16px; line-height: 24px; font-weight: 600; max-width: 72ch; }
-.rd-conclusion.rd-state { margin-bottom: 8px; }      /* 상태 점이 붙은 결론 */
-
-/* 한 줄씩 놓는 글 목록(맡은 단계, 붙은 에이전트, 쓰는 곳) */
-.rd-lines { list-style: none; margin: 0; padding: 0; }
-.rd-lines > li { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 32px; padding: 4px 0; border-bottom: 1px solid var(--border); }
-.rd-lines > li:last-child { border-bottom: 0; }
-.rd-lines > li > small { font-size: 13px; color: var(--muted-foreground); flex: none; }
-.rd-inline { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.rd-inline > input, .rd-inline > select { min-width: 200px; }
-
-/* 표(기준 4절 .tbl): 머리 바탕 없음 · 줄 아래 선만 · 숫자 열 오른쪽. 전역에 .tbl 이 생기면 이 규칙은 지운다 */
-
-table.tbl tr[data-row-open] { cursor: pointer; }
-.rd-scroll { max-width: 100%; overflow-x: auto; }
-
-/* 읽는 문서 원문(스킬 문서 · 지시문): 높이를 넘으면 그 안에서 스크롤 */
-.rd-doc { margin: 0; max-height: 480px; overflow: auto; }
 
 /* 폼(기준 5-6): 한 열 · 폭 720px 까지 · 단추 줄은 맨 아래 왼쪽에 주 단추 먼저 */
 .rd-form { max-width: 720px; }
 .rd-form-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 24px; }
-.rd-form-actions .rd-end { margin-left: auto; }
-.rd-checks { display: flex; flex-direction: column; gap: 8px; }
 
-/* ---------------- 입력 → 결과(기준 5-8): 왼쪽 조건 360px · 오른쪽 결과 ---------------- */
-.rd-io { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 24px; align-items: start; }
-.rd-io > * { min-width: 0; }
-.rd-io > .rd-in { position: sticky; top: 16px; display: flex; flex-direction: column; gap: 16px; }
-.rd-in .field { margin: 0; }
-.rd-in .rd-in-note { margin: 0; font-size: 13px; line-height: 20px; color: var(--muted-foreground); }
-.rd-in .rd-in-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.rd-out > .rd-group:first-child { margin-top: 0; }
-
-/* ---------------- 단계 줄(기준 5-5): 번호 점 셋을 선으로 잇는다 ---------------- */
-.rd-steps { display: flex; align-items: center; gap: 12px; list-style: none; margin: 0 0 16px; padding: 0; font-size: 14px; line-height: 22px; color: var(--muted-foreground); }
-.rd-steps li { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
-.rd-steps li + li::before { content: ""; width: 48px; height: 1px; background: var(--input); margin-right: 4px; }
-.rd-steps .n { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--input); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; flex: none; }
-.rd-steps li.on { color: var(--foreground); font-weight: 600; }
-.rd-steps li.on .n { background: var(--brand); border-color: var(--brand); color: var(--card); }
-.rd-steps li.done { color: var(--ink-2); }
-.rd-steps li.done .n { background: var(--ok-soft); border-color: var(--ok-soft); color: var(--ok-ink); }
-
-/* ---------------- 좁은 화면: 두 칸을 한 칸으로 쌓는다(기준 3절) ---------------- */
-@media (max-width: 1100px) {
-  .rd-split, .rd-io { grid-template-columns: minmax(0, 1fr); }
-  .rd-split > .rd-side, .rd-io > .rd-in { position: static; }
-  .rd-side .list { max-height: 320px; }
-  .rd-steps { flex-wrap: wrap; }
-  .rd-steps li + li::before { width: 16px; }
-}
-
-/* 폼은 한 열이다(기준 5-6) — 전역 폼 격자의 여러 열을 이 폼에서는 쓰지 않는다 */
-.rd-form .form-grid { grid-template-columns: minmax(0, 1fr); }
-
-/* ---------------- 도구 연결: 도구 한 줄 아래에 열리는 설명 · 입력 형식, 호출 기록의 거르기, 맨 아래 「고급」 ---------------- */
-[data-mcp-why]:empty, [data-mcp-missing]:empty { display: none; }
-.rd-tool-more { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
-.rd-tool-more .rd-label { margin-top: 12px; }
-.rd-tool-more .rd-label:first-child { margin-top: 0; }
-.rd-call-filter { margin: 0 0 12px; }
-.rd-call-filter .rd-note { margin: 0; }
-.rd-advanced { margin-top: 32px; }
-.rd-advanced .rd-foot { margin-top: 24px; }
-.mcp-calls li > .link-btn { font-size: 13px; }
-.mcp-call-head .muted { margin-left: auto; font-size: 13px; }
-
-/* ---------------- 데이터 원천: 지금 상태 줄 · 표 고르기 ---------------- */
-.rd-status { list-style: none; margin: 0 0 24px; padding: 0; }
-.rd-status .rd-state { margin: 0 0 4px; max-width: none; }
-.rd-status b { font-weight: 600; }
-.rd-picks { display: flex; flex-wrap: wrap; gap: 4px; margin: 12px 0; }
-.rd-source + .rd-source { margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border); }
-
-/* ---------------- 시험 비교: A · B 나란히 · 호출 줄의 「A에만」 표시 · 지난 시험 ---------------- */
-.cmp-side { display: flex; flex-direction: column; gap: 12px; padding: 16px 24px; }
-.rd-mark { margin-left: auto; font-size: 12px; line-height: 16px; font-weight: 600; color: var(--ink-2); }
-.cmp-args { margin: 4px 0 0; font-size: 13px; overflow-wrap: anywhere; }
-.rd-history { margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border); }
-table.tbl tr.cmp-changed td { background: var(--brand-soft); }
-
-/* ---------------- 판단 채점: 항목별 결과 · 검사 네 줄 ---------------- */
-.rd-item { padding-top: 16px; border-top: 1px solid var(--border); }
-.rd-item .rd-head { margin-bottom: 8px; }
-.rd-score { font-size: 16px; line-height: 24px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.rd-checklist { list-style: none; margin: 0 0 8px; padding: 0; }
-.rd-checklist .rd-state { margin: 0 0 4px; max-width: none; }
-[data-view][hidden] { display: none; }
-[data-r="knowledge"]:empty { display: none; }
-
-/* ---------------- 성과 지표: 기간 고르기 · 지표 표 · 줄 아래에 열리는 계산 근거 ---------------- */
-.rd-kpi-table td:last-child { width: 1%; white-space: nowrap; }
-.rd-kpi-table .rd-actions { flex-wrap: nowrap; justify-content: flex-end; }
-table.tbl tr.rd-row-more > td { background: var(--muted); padding: 12px 16px; }
-.rd-num-input { width: 8em; }
-.rd-persp + .rd-persp { margin-top: 32px; }
-.kpi-insts > li { align-items: flex-start; }
-
-/* ---------------- 질문하기: 질문 칸 · 답 카드 ---------------- */
-.ask-compose { margin-bottom: 24px; }
-.ask-a.card { display: flex; flex-direction: column; gap: 12px; padding: 16px 24px; }
-.ask-answer .rd-label { margin-bottom: 4px; }
-.ask-answer > p { margin: 0 0 8px; max-width: 72ch; }
-.ask-side .rd-foot { margin-top: 16px; }
-
-/* 실행 중인 AI 에이전트(처리 건 화면의 접기 안): 단계 한 줄이 단추다 */
-.agent-tasks button.item { width: 100%; text-align: left; font: inherit; cursor: pointer; }
-.agents-service { margin-bottom: 12px; }
 
 /* ---------------- 문서 등록 · 조치 방법 ---------------- */
-.rd-wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
 #manualSteps { padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
-.golden-item h4 { margin: 0; font-size: 14px; line-height: 22px; font-weight: 600; }
 
-/* ---------------- 관리: 출발본 세 가지 일 · 접수 목록 ---------------- */
-.rd-part + .rd-part { padding-top: 24px; border-top: 1px solid var(--border); }
-.rd-part .form-msg { font-size: 13px; }
-#sourceEventList button.item { width: 100%; text-align: left; font: inherit; cursor: pointer; }
-#sourceEventDetail .rd-label { margin-top: 16px; }

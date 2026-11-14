@@ -23,14 +23,24 @@ const LABEL_KO = { Perspective: '관점', Objective: '전략 목표', Measure: '
   KnowledgeSource: '지식 출처', ExternalVariable: '외부 변수', Forecast: '예측', Incident: '사건', DecisionCase: '판단 사례' };
 // 지식 지도 상세 칸의 속성 이름(그래프 속성 키 → 화면 이름). 여기에 없는 키(적재 출처 · 해시 · 정책 원문 같은 내부 값)는 「그 밖의 속성」 접기에 원래 이름으로 둔다
 const PROP_KO = { description: '설명', annotation: '풀이', text: '내용', title: '제목', excerpt: '원문 발췌', citation: '인용 위치', ref: '참조 번호', order: '순서',
-  aliases: '다른 이름', kind: '종류', code: '코드', unit: '단위', variable: '변수', tag: '태그', zone: '구역', level: '수준', scope: '범위', source: '출처',
+  aliases: '다른 이름', kind: '종류', unit: '단위', tag: '태그', zone: '구역', level: '수준', scope: '범위', source: '출처',
   kpiRole: '지표 성격', frequency: '측정 주기', direction: '좋은 방향', target: '목표', normal: '정상 범위', min: '최소', max: '최대', limit: '한도',
   rule: '규칙 식', formula: '계산식', when: '조건', effect: '효과', expect: '기대 값', hitPolicy: '적용 방식', weight: '가중치', prior: '사전 확률', penalty: '감점',
   threshold: '임계값', thresholdWarn: '경고 임계값', thresholdCrit: '위험 임계값', detectionMode: '감지 방식', holdSeconds: '지속 시간(초)',
   windowSeconds: '관찰 구간(초)', slopeWindowSeconds: '기울기 구간(초)', clearRule: '해제 규칙', clearHoldSeconds: '해제 지속 시간(초)', severity: '심각도',
-  sopId: '절차 번호', executable: '실행 가능', isExecutable: '실행 가능', partNo: '부품 번호', avl: '승인 공급사', oem: '순정품', resource: '자원',
+  sopId: '절차 번호', executable: '실행 가능', isExecutable: '실행 가능', partNo: '부품 번호', avl: '승인 공급사', oem: '순정품', 
   question: '질문', note: '비고', virtual: '가상 값' };
-const PROP_VALUE_KO = { kpiRole: { lagging: '후행 지표(결과)', leading: '선행 지표(결과를 움직이는 요인)' }, direction: { UP: '높을수록 좋음', DOWN: '낮을수록 좋음' } };
+// 속성 값의 화면 말(열거 값). 여기에 없는 값은 받은 그대로 보인다. 식별자 성격의 값(코드 · 변수 · 자원 이름)은 이름표(PROP_KO)에 두지 않아 「그 밖의 속성」 접기로 간다
+const PROP_VALUE_KO = { kpiRole: { lagging: '후행 지표(결과)', leading: '선행 지표(결과를 움직이는 요인)' }, direction: { UP: '높을수록 좋음', DOWN: '낮을수록 좋음' },
+  severity: { CRITICAL: '매우 높음', HIGH: '높음', MEDIUM: '보통', LOW: '낮음' },
+  detectionMode: { held: '조건이 지속 시간 동안 이어지면 경보', 'plc-trip': 'PLC 보호 정지 신호가 오면 경보' },
+  effect: { SELECT: '후보로 고름', EXCLUDE: '후보에서 제외', PENALTY: '감점', WARN: '경고', RANK: '순위 매김' },
+  hitPolicy: { UNIQUE: '맞는 규칙 하나', PRIORITY: '맞는 규칙 가운데 우선순위가 높은 것', COLLECT: '맞는 규칙 모두' },
+  kind: { command: '설비 명령', control: '설비 제어', work_order: '정비 요청', transaction: '업무 거래', reference: '참고 절차', manual: '매뉴얼', policy: '정책', regulation: '규정', strategy: '전략',
+    controlled: '제어되는 변수', manipulated: '조작하는 변수', disturbance: '외란' },
+  expect: { gte: '이상', gt: '초과', lte: '이하', lt: '미만', eq: '같음' }, scope: { purchase: '구매' }, zone: { OT: 'OT(현장)', DMZ: 'DMZ(경계망)', IT: 'IT(업무)' } };
+// 식(규칙 식 · 해제 규칙 · 계산식 · 조건)은 식 그대로 고정폭 글꼴로 보인다. 태그는 설비 값 이름 뒤에 태그 코드를 작게 붙인다
+const PROP_EXPR = ['rule', 'clearRule', 'formula', 'when'];
 const RELATION_KO = {
   IN_PERSPECTIVE: '속한 관점', SUPPORTS: '받쳐 주는 목표', MEASURES: '측정하는 목표', OWNED_BY: '담당 부서', INFLUENCES: '영향 (+/−)',
   ACHIEVES: '달성하는 조직 목표', HAS_NODE: '흐름 노드', SEQUENCE_FLOW: '다음 단계', ATTACHED_TO: '경계 이벤트', PERFORMED_BY: '수행자', READS: '읽는 데이터',
@@ -83,10 +93,25 @@ async function loadNamespaces(force) {
 }
 const nsNote = text => { const o = new Option(text, ''); o.disabled = true; o.dataset.note = '1'; return o; };
 const ontoShown = () => !!$('#view-ontology')?.classList?.contains('active');
+// 설비 고르기의 목록은 서버가 준다(plant /api/state 의 units — 유압 설비 화면이 읽는 그 응답). 화면에 설비 이름을 적어 두지 않는다
+async function ontoAssets() {
+  const sel = $('#ontoAsset'); if (sel.options.length) return;
+  const units = (state.plant && state.plant.units) || (await getJ(API.plant + '/api/state')).units || {};
+  if (!Object.keys(units).length) throw new Error('설비 상태 응답에 설비가 없습니다. 가상 설비 서비스를 확인한 뒤 다시 시도하세요.');
+  Object.keys(units).forEach(a => sel.append(new Option(a, a)));
+}
 async function loadGraph(force) {
   // 가려진 동안에는 그리지 않는다(캔버스의 크기가 0 이라 배치할 수 없다) — 다음에 이 화면을 열 때 다시 읽는다. 문서 적재 · 되돌리기 뒤에 다른 화면이 부른다
   if (!ontoShown()) { if (force) ent.stale = true; return; }
   if (ent.stale) { force = true; ent.stale = false; }
+  try { await ontoAssets(); }
+  catch (e) {
+    ent.graph = null; kgDrop();
+    $('#ontoStats').textContent = UI.t('error.load'); $('#ontoNode').dataset.sig = '';
+    $('#ontoNode').innerHTML = `<div class="node-sec">${UI.errorBlock('설비 목록을 읽지 못했습니다', e.message, { retry: true })}</div>`;
+    $('#ontoNode').querySelector('[data-retry]')?.addEventListener('click', () => loadGraph(true));
+    return;
+  }
   const asset = $('#ontoAsset').value + '|' + (($('#ontoNs') || {}).value || '');
   if (ent.graph && ent.graphAsset === asset && !force) { drawGraph(); return; }
   $('#ontoStats').textContent = UI.t('loading');
@@ -192,26 +217,55 @@ function kgPathLay(center, path, box) {
    고름: 고른 항목은 제자리에 두고 이어진 항목을 그 둘레로 모은다 — 고른 항목을 가리키는 것은 왼쪽 호, 고른 항목이 가리키는 것은 오른쪽 호에 관계 이름별로
      세로로 놓고(kgGather), 이름은 호의 바깥쪽에 쓴다. 관계 묶음마다 그 위에 관계 이름(한국어, RELATION_KO)을 한 줄 적는다. 화면은 그 전체가 보이게 옮겨 간다.
      고름을 풀면 항목과 화면이 제자리로 돌아간다.
-   글자: 캔버스 바탕 위에 바탕색 테두리와 함께 쓴다(점의 채움 위에 쓰지 않는다). 고른 것 · 이어진 것 · 검색에 걸린 것 · 경로의 뼈대는 확대 배율과 상관없이
-     화면에서 같은 크기로 보이고, 나머지 이름은 확대하면(또는 마우스를 올리면) 보인다. */
+   글자: 캔버스 바탕 위에 바탕색 테두리와 함께 쓰고, 확대 배율과 상관없이 화면에서 같은 크기다. 고른 것 · 모은 이웃 · 경로의 이름은 늘 보이고, 그 밖의 이름은
+     서로 겹치지 않고 점과 캔버스 안 도구를 가리지 않는 것만 보인다 — 검색에 걸린 것, 이어진 수가 많은 것부터 자리를 잡고(kgPlaceLabels) 확대할수록 더 많이 보인다.
+     숨은 이름은 점에 마우스를 올리면 보인다. 전체에서 무엇이 들어 있는지는 오른쪽 칸의 목차(묶음 → 종류 → 항목 이름)로 읽고, 묶음을 펼치면 지도도 그 묶음을 크게 보인다(kgGroup). */
 const KG = { SEED: 20261114, HUB: 14, ZOOM_MAX: 3, ZOOM_PICK: 1.25, STEP: [17, 26], STEP_TIGHT: 15, LABEL: 180, BG: '#16202d', NOW: '#8b93ff', HIT: '#f5c46b', BLUE: '#7aa2ff',
   PATH_RELS: ['DETECTS', 'INDICATES', 'CAUSES', 'MITIGATED_BY', 'REMEDIED_BY', 'PREVENTED_BY'],
+  FONT: 11.5, FONT_HUB: 12.5, NAME_W: 120, NAME_W_HUB: 180, NAME_W_HIT: 220,      // 이름의 글자 크기(px)와 한 줄 폭의 한도 — 넘으면 말줄임
   nearSize: ele => 11 + ele.data('size') * 0.14 };      // 모은 이웃의 점은 화면에서 13 ~ 17px(이어진 수의 차이는 남기되 세로 간격 안에 들어오게)
 const kgCollator = new Intl.Collator('ko');
+// 이름의 화면 폭(px): 브라우저에서는 실제 글꼴로 재고, 잴 수 없는 곳(시험의 node)에서는 어림한다(한글 · 한자는 글자 크기만큼, 그 밖은 0.6배)
+function kgTextW(text, px, weight = 500) {
+  if (typeof document !== 'undefined' && document.createElement) {
+    const ctx = kgTextW.ctx || (kgTextW.ctx = document.createElement('canvas').getContext?.('2d'));
+    if (ctx && ctx.measureText) { ctx.font = `${weight} ${px}px "Pretendard Variable", Pretendard, sans-serif`; const w = ctx.measureText(String(text)).width; if (w > 0) return w; }
+  }
+  let w = 0; for (const ch of String(text)) w += ch.charCodeAt(0) > 0x2E7F ? px : ch === ' ' ? px * 0.3 : px * 0.6; return w;
+}
+/** 겹치지 않게 보일 이름을 고른다(화면 좌표). 늘 보이는 이름이 서로 포개지거나 점에 가려 읽히지 않던 것을 막는다.
+    items: [{ id, x, y, r(점 반지름), w, h(이름 상자), prio }] — prio 가 큰 것부터 자리를 잡는다. fixed: 이미 자리가 정해진 글자 상자들 [x0, y0, x1, y1](고른 항목 · 모은 이웃 · 묶음 이름).
+    discs: 가리면 안 되는 점들 [{ id, x, y, r }]. zones: 글자를 쓰지 않는 자리(캔버스 안 도구 줄 · 묶음 조각). size: 캔버스 { w, h }.
+    이름은 점 아래 → 위 → 오른쪽 → 왼쪽 차례로 빈 자리를 찾고, 없으면 보이지 않는다(확대하면 자리가 생겨 나온다). → Map(id → 'b' | 't' | 'r' | 'l') */
+function kgPlaceLabels(items, fixed, discs, zones, size) {
+  const placed = fixed.map(b => b.slice()), out = new Map(), PAD = 3;
+  const cross = (a, b) => a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3];
+  const free = (box, self) => box[0] >= 2 && box[2] <= size.w - 2 && box[1] >= 2 && box[3] <= size.h - 2 && !zones.some(z => cross(box, z)) && !placed.some(p => cross(box, p))
+    && !discs.some(d => d.id !== self && d.x + d.r > box[0] && d.x - d.r < box[2] && d.y + d.r > box[1] && d.y - d.r < box[3]);
+  for (const it of items.slice().sort((a, b) => b.prio - a.prio || (a.id < b.id ? -1 : 1))) {
+    const { x, y, r, w, h } = it, g = 4;
+    const at = { b: [x - w / 2 - PAD, y + r + g - 1, x + w / 2 + PAD, y + r + g + h + PAD], t: [x - w / 2 - PAD, y - r - g - h - PAD, x + w / 2 + PAD, y - r - g + 1],
+      r: [x + r + g - 1, y - h / 2 - PAD, x + r + g + w + 2 * PAD, y + h / 2 + PAD], l: [x - r - g - w - 2 * PAD, y - h / 2 - PAD, x - r - g + 1, y + h / 2 + PAD] };
+    const side = ['b', 't', 'r', 'l'].find(k => free(at[k], it.id));
+    if (side) { placed.push(at[side]); out.set(it.id, side); }
+  }
+  return out;
+}
 const kgSize = deg => Math.round(14 + Math.min(26, Math.sqrt(deg) * 5.2));      // 점의 지름: 이어진 수의 제곱근에 비례(14 ~ 40)
 
-/** 항목 하나의 표시. s = { sel, near: Set, path: Set | null, match: Set, query: boolean } → ['pick' | 'near', 'path', 'hit', 'dim'] 가운데 해당하는 것.
-    밝은 것 = 고른 것(pick) · 바로 이어진 것(near) · 이상 패턴 경로(path) · 검색에 걸린 것(hit). 그 가운데 하나라도 켜져 있으면 나머지는 흐리다(dim) */
+/** 항목 하나의 표시. s = { sel, near: Set, path: Set | null, match: Set, query: boolean, only: Set | null } → ['pick' | 'near', 'path', 'hit', 'dim'] 가운데 해당하는 것.
+    밝은 것 = 고른 것(pick) · 바로 이어진 것(near) · 이상 패턴 경로(path) · 검색에 걸린 것(hit). 그 가운데 하나라도 켜져 있으면 나머지는 흐리다(dim).
+    only = 펼쳐 보는 묶음의 항목들: 고름 · 경로 · 검색이 없을 때 그 묶음 밖의 항목이 흐리다 */
 function kgMarks(id, s) {
   const pick = id === s.sel, near = !pick && s.near.has(id), path = !!s.path && s.path.has(id), hit = s.match.has(id);
-  const dim = !(pick || near || path || hit) && (s.sel != null || !!s.path || s.query);
+  const dim = !(pick || near || path || hit) && (s.sel != null || !!s.path || s.query || (!!s.only && !s.only.has(id)));
   return [pick && 'pick', near && 'near', path && 'path', hit && 'hit', dim && 'dim'].filter(Boolean);
 }
 /** 선의 표시: 고른 항목에 닿으면 near, 아니고 두 끝이 모두 경로 안이며 관계(type)가 경로의 관계(KG.PATH_RELS)면 path, 그 밖은 상태가 하나라도 있을 때 dim */
 function kgEdgeMarks(a, b, s, type) {
   if (s.sel != null && (a === s.sel || b === s.sel)) return ['near'];
   if (s.path && s.path.has(a) && s.path.has(b) && KG.PATH_RELS.includes(type)) return ['path'];
-  return s.sel != null || s.path || s.query ? ['dim'] : [];
+  return s.sel != null || s.path || s.query || (s.only && !(s.only.has(a) && s.only.has(b))) ? ['dim'] : [];
 }
 /** 한 항목에 이어진 것을 방향 · 관계 종류로 묶는다 → { out: [[type, [id…]]…], inn: […] }. out = 이 항목이 가리키는 것, inn = 이 항목을 가리키는 것.
     묶음은 많은 것부터(같으면 관계 종류 이름 순), 묶음 안은 받은 차례. 오른쪽 칸과 캔버스의 모으기가 같은 차례를 쓴다 */
@@ -279,38 +333,45 @@ function kgStyle() {
   const font = 'Pretendard Variable, Pretendard, sans-serif', BG = KG.BG;
   return [
     { selector: 'node', style: { width: 'data(size)', height: 'data(size)', 'background-color': 'data(color)', 'background-opacity': 0.92, 'border-width': 1.5, 'border-color': BG,
-        label: 'data(name)', color: '#cfd8e3', 'font-family': font, 'font-size': 11, 'font-weight': 500, 'text-valign': 'bottom', 'text-halign': 'center', 'text-margin-y': 5, 'text-margin-x': 0,
-        'text-max-width': 110, 'text-wrap': 'ellipsis', 'min-zoomed-font-size': 10.5, 'text-outline-color': BG, 'text-outline-width': 2, 'text-outline-opacity': 0.92, 'overlay-opacity': 0,
+        label: '', color: '#d5dde8', 'font-family': font, 'font-size': kgPx(KG.FONT), 'font-weight': 500, 'text-valign': 'bottom', 'text-halign': 'center', 'text-margin-y': kgPx(4), 'text-margin-x': 0,
+        'text-max-width': kgPx(KG.NAME_W), 'text-wrap': 'ellipsis', 'min-zoomed-font-size': 0, 'text-outline-color': BG, 'text-outline-width': kgPx(2.5), 'text-outline-opacity': 1, 'overlay-opacity': 0,
         'transition-property': 'opacity, border-width, border-color', 'transition-duration': 180 } },
-    { selector: 'node[?hub]', style: { 'font-size': ele => Math.max(12.5, 11 / ele.cy().zoom()), 'font-weight': 600, color: '#ffffff', 'min-zoomed-font-size': 0, 'text-max-width': ele => 200 / Math.min(1, ele.cy().zoom()) } },
+    // 이름: 겹치지 않게 자리를 잡은 것만 보인다(kgLabels 가 lab 과 자리 lp 를 단다). 글자는 화면에서 늘 같은 크기이고 캔버스 바탕색 테두리를 둘러 점 · 선 위에서도 읽힌다
+    { selector: 'node.lab', style: { label: 'data(name)' } },
+    { selector: 'node.lab[?hub]', style: { 'font-size': kgPx(KG.FONT_HUB), 'font-weight': 600, color: '#ffffff', 'text-max-width': kgPx(KG.NAME_W_HUB) } },
+    { selector: 'node.lab[lp = "t"]', style: { 'text-valign': 'top', 'text-margin-y': kgPx(-4) } },
+    { selector: 'node.lab[lp = "r"]', style: { 'text-valign': 'center', 'text-halign': 'right', 'text-margin-x': kgPx(4), 'text-margin-y': 0 } },
+    { selector: 'node.lab[lp = "l"]', style: { 'text-valign': 'center', 'text-halign': 'left', 'text-margin-x': kgPx(-4), 'text-margin-y': 0 } },
     { selector: 'edge', style: { width: 1, 'line-color': '#53637a', opacity: 0.38, 'curve-style': 'bezier', 'target-arrow-shape': 'triangle', 'target-arrow-color': '#53637a', 'arrow-scale': 0.7,
         'font-family': font, 'font-size': kgPx(10.5), 'font-weight': 500, color: '#c5cdf8', 'text-background-color': BG, 'text-background-opacity': 0.92, 'text-background-padding': 2, 'text-background-shape': 'roundrectangle',
         'overlay-opacity': 0, 'transition-property': 'opacity, line-color', 'transition-duration': 180 } },
     { selector: 'node.gtitle', style: { width: 1, height: 1, 'background-opacity': 0, 'border-width': 0, label: 'data(name)', color: 'data(color)', 'font-size': kgPx(13), 'font-weight': 600, 'text-valign': 'top', 'text-margin-y': 0,
-        'text-max-width': 600, 'text-wrap': 'none', 'min-zoomed-font-size': 0, 'text-outline-width': 4, 'text-opacity': 0.95, events: 'no' } },
+        'text-max-width': 600, 'text-wrap': 'none', 'text-outline-width': kgPx(4), 'text-opacity': 0.95 } },
+    { selector: 'node.tuck', style: { 'text-opacity': 0 } },
     { selector: '.dim', style: { opacity: 0.1, 'text-opacity': 0 } },
     { selector: 'edge.dim', style: { opacity: 0.04 } },
-    { selector: 'node.hover', style: { color: '#ffffff', 'font-size': kgPx(12), 'min-zoomed-font-size': 0, 'text-opacity': 1, 'text-max-width': kgPx(220), 'z-index': 70 } },
-    { selector: 'node.path', style: { 'border-color': '#ffffff', 'border-width': kgPx(1.5), color: '#ffffff', 'font-size': kgPx(12), 'min-zoomed-font-size': 0, 'text-max-width': kgPx(150), 'z-index': 40 } },
+    { selector: 'node.hover', style: { label: 'data(name)', color: '#ffffff', 'font-size': kgPx(12), 'text-opacity': 1, 'text-max-width': kgPx(260), 'z-index': 70 } },
+    { selector: 'node.path', style: { 'border-color': '#ffffff', 'border-width': kgPx(1.5), color: '#ffffff', 'z-index': 40 } },
+    { selector: 'node.path[side]', style: { label: 'data(name)', 'font-size': kgPx(12) } },
     // 경로를 줄로 놓았을 때(고른 것이 없을 때): 앞 세 줄은 이름을 점 아래에, 마지막 줄은 오른쪽에
     { selector: 'node.path[side = "B"]', style: { width: kgPx(18), height: kgPx(18), 'text-margin-y': kgPx(5), 'text-max-width': ele => kg.colW / ele.cy().zoom() } },
     { selector: 'node.path[side = "R"]', style: { width: ele => KG.nearSize(ele) / ele.cy().zoom(), height: ele => KG.nearSize(ele) / ele.cy().zoom(), 'text-valign': 'center', 'text-halign': 'right', 'text-margin-x': kgPx(6), 'text-margin-y': 0,
         'text-max-width': ele => kg.labelW / ele.cy().zoom() } },
     { selector: 'edge.path', style: { opacity: 0.9, width: kgPx(1.4), 'line-color': KG.BLUE, 'target-arrow-color': KG.BLUE, 'arrow-scale': 0.9, 'z-index': 35 } },
-    { selector: 'node.near', style: { width: ele => KG.nearSize(ele) / ele.cy().zoom(), height: ele => KG.nearSize(ele) / ele.cy().zoom(), 'border-color': '#ffffff', 'border-width': kgPx(1.5), color: '#ffffff', 'font-size': kgPx(12), 'min-zoomed-font-size': 0, 'text-valign': 'center', 'text-margin-y': 0,
+    { selector: 'node.near', style: { width: ele => KG.nearSize(ele) / ele.cy().zoom(), height: ele => KG.nearSize(ele) / ele.cy().zoom(), 'border-color': '#ffffff', 'border-width': kgPx(1.5), label: 'data(name)', color: '#ffffff', 'font-size': kgPx(12), 'text-valign': 'center', 'text-margin-y': 0,
         'text-max-width': ele => kg.labelW / ele.cy().zoom(), 'z-index': 50 } },
     { selector: 'node.near[side = "R"]', style: { 'text-halign': 'right', 'text-margin-x': kgPx(6) } },
     { selector: 'node.near[side = "L"]', style: { 'text-halign': 'left', 'text-margin-x': kgPx(-6) } },
     { selector: 'edge.near', style: { opacity: 0.95, width: kgPx(1.5), 'line-color': KG.NOW, 'target-arrow-color': KG.NOW, 'arrow-scale': 0.9, 'z-index': 45 } },
     // 관계 이름: 모은 이웃의 줄에서 관계 묶음마다 그 위에 한 줄로 적는다(선을 따라 적으면 선이 모이는 곳에서 글이 겹치고 기운다). 점은 그리지 않는다
     { selector: 'node.rhead', style: { width: 1, height: 1, 'background-opacity': 0, 'border-width': 0, label: 'data(name)', color: '#aab2ff', 'font-size': kgPx(10.5), 'font-weight': 600, 'text-valign': 'center',
-        'text-margin-y': 0, 'text-wrap': 'none', 'text-max-width': 600, 'min-zoomed-font-size': 0, events: 'no', 'z-index': 48 } },
+        'text-margin-y': 0, 'text-wrap': 'none', 'text-max-width': 600, events: 'no', 'z-index': 48 } },
     { selector: 'node.rhead[side = "R"]', style: { 'text-halign': 'right', 'text-margin-x': kgPx(-2) } },
     { selector: 'node.rhead[side = "L"]', style: { 'text-halign': 'left', 'text-margin-x': kgPx(2) } },
     { selector: 'node.rhead[side = "B"]', style: { 'text-halign': 'center', color: '#9aa7b5' } },
-    { selector: 'node.hit', style: { 'border-color': KG.HIT, 'border-width': 3, color: KG.HIT, 'font-size': kgPx(12.5), 'font-weight': 600, 'min-zoomed-font-size': 0, 'text-max-width': kgPx(240), 'z-index': 60 } },
+    { selector: 'node.hit', style: { 'border-color': KG.HIT, 'border-width': kgPx(2.5), color: KG.HIT, 'font-size': kgPx(KG.FONT_HUB), 'font-weight': 600, 'text-max-width': kgPx(KG.NAME_W_HIT), 'z-index': 60 } },
     { selector: 'node.pick', style: { width: kgPx(26), height: kgPx(26), 'border-color': '#ffffff', 'border-width': kgPx(3), 'underlay-color': KG.NOW, 'underlay-opacity': 0.35, 'underlay-padding': kgPx(8), 'underlay-shape': 'ellipse', color: '#ffffff',
-        'font-size': kgPx(14), 'font-weight': 650, 'min-zoomed-font-size': 0, 'z-index': 99, 'text-wrap': 'none', 'text-valign': 'top', 'text-halign': 'center', 'text-margin-y': kgPx(-8), 'text-margin-x': 0 } },
+        label: 'data(name)', 'font-size': kgPx(14), 'font-weight': 700, 'z-index': 99, 'text-wrap': 'none', 'text-max-width': 2000, 'text-valign': 'top', 'text-halign': 'center', 'text-margin-y': kgPx(-8), 'text-margin-x': 0 } },
     { selector: 'node.pick.hit', style: { 'border-color': KG.HIT, color: '#ffe6ad' } },      // 고른 것이 검색에도 걸렸다: 테두리는 검색의 노랑, 글자는 밝은 노랑
     { selector: '.off', style: { display: 'none' } },
   ];
@@ -356,18 +417,63 @@ function kgBuild(g) {
   // 묶음 조각(캔버스 아래쪽 — 범례를 겸한다): 항목이 있는 묶음만. 누르면 그 묶음이 꺼지고 켜진다
   $('#ontoLayers').innerHTML = groups.map(gr => `<button type="button" class="cv-chip" data-layer="${gr.key}" aria-pressed="true" style="--c:${gr.color}"><i></i>${esc(gr.title)}<span class="num">${gr.count}</span></button>`).join('');
   [...ent.hidden].forEach(key => { if (!groups.some(gr => gr.key === key)) ent.hidden.delete(key); });
+  if (ent.group && !groups.some(gr => gr.key === ent.group)) ent.group = null;
   if (ent.sel != null && !kg.home.has(ent.sel)) ent.sel = null;
   kgFit(true);
   cy.on('zoom', () => { if (!kg.raf) kg.raf = requestAnimationFrame(() => { kg.raf = 0; if (kg.cy === cy) cy.style().update(); }); });
   cy.on('scrollzoom dragpan pinchzoom', () => { kg.moved = true; });
-  cy.on('tap', 'node', ev => kgPick(ev.target.id()));
+  cy.on('viewport', () => kgLabelsSoon());
+  cy.on('tap', 'node', ev => { if (ev.target.hasClass('gtitle')) kgGroup(ent.group === ev.target.data('g') ? null : ev.target.data('g')); else kgPick(ev.target.id()); });
   cy.on('tap', ev => { if (ev.target === cy && ent.sel != null) kgPick(null); });      // 빈 곳을 누르면 고른 것이 풀린다
-  cy.on('mouseover', 'node', ev => { ev.target.addClass('hover'); $('#ontoMap').style.cursor = 'pointer'; });
+  cy.on('mouseover', 'node', ev => { if (!ev.target.hasClass('gtitle')) ev.target.addClass('hover'); $('#ontoMap').style.cursor = 'pointer'; });
   cy.on('mouseout', 'node', ev => { ev.target.removeClass('hover'); $('#ontoMap').style.cursor = ''; });
 }
+// 보일 이름을 다시 고른다(kgPlaceLabels). 부르는 때: 그린 뒤 · 상태가 바뀐 뒤 · 항목이 옮겨 간 뒤 · 화면을 옮기거나 확대한 뒤 · 캔버스 크기가 바뀐 뒤
+function kgLabels() {
+  const cy = kg.cy; if (!cy) return;
+  const W = cy.width(), H = cy.height(), z = cy.zoom(); if (!W || !H) return;
+  const bar = $('#view-ontology .canvas-bar'), foot = $('#ontoLayers'), hint = $('#ontoHint');
+  const top = bar && bar.offsetHeight ? bar.offsetTop + bar.offsetHeight + 4 : 0, low = Math.min(foot && foot.offsetHeight ? foot.offsetTop : H, hint && hint.offsetHeight ? hint.offsetTop : H) - 4;
+  const zones = [[0, 0, W, top], [0, low, W, H]];      // 캔버스 안 도구 줄 · 안내 한 줄 · 묶음 조각 자리에는 이름을 쓰지 않는다
+  const fixed = [], discs = [], items = [];
+  const box = (n, px, weight, maxW, how) => {      // 자리가 정해진 글자(고른 항목 · 모은 이웃 · 줄 이름 · 묶음 이름)의 상자
+    const p = n.renderedPosition(), r = n.renderedWidth() / 2, w = Math.min(maxW, kgTextW(n.data('name'), px, weight)) + 6, h = px * 1.4;
+    return how === 'T' ? [p.x - w / 2, p.y - r - h - 10, p.x + w / 2, p.y - r - 2] : how === 'B' ? [p.x - w / 2, p.y + r + 2, p.x + w / 2, p.y + r + h + 8]
+      : how === 'R' ? [p.x + r + 3, p.y - h / 2 - 2, p.x + r + w + 9, p.y + h / 2 + 2] : how === 'L' ? [p.x - r - w - 9, p.y - h / 2 - 2, p.x - r - 3, p.y + h / 2 + 2] : [p.x - w / 2, p.y - h / 2, p.x + w / 2, p.y + h / 2];
+  };
+  cy.nodes().forEach(n => {
+    if (!n.visible()) return;
+    if (n.hasClass('gtitle')) {      // 묶음 이름: 테두리(4px)까지 넉넉히 잡는다. 캔버스 안 도구 자리에 걸리면 그동안 보이지 않는다
+      const b = box(n, 13, 600, 600, 'T'), wide = [b[0] - 8, b[1] - 12, b[2] + 8, b[3] + 8], tucked = zones.some(zn => wide[0] < zn[2] && zn[0] < wide[2] && wide[1] < zn[3] && zn[1] < wide[3]);
+      if (n.hasClass('tuck') !== tucked) n.toggleClass('tuck', tucked);
+      if (!n.hasClass('dim') && !tucked) fixed.push(wide);
+      return;
+    }
+    if (n.hasClass('rhead')) { fixed.push(box(n, 10.5, 600, 600, n.data('side') === 'B' ? 'C' : n.data('side'))); return; }
+    if (n.hasClass('dim')) return;
+    const p = n.renderedPosition(), r = n.renderedWidth() / 2;
+    discs.push({ id: n.id(), x: p.x, y: p.y, r: r + 1 });
+    if (n.hasClass('pick')) fixed.push(box(n, 14, 700, 2000, 'T'));
+    else if (n.hasClass('near')) fixed.push(box(n, 12, 500, kg.labelW, n.data('side') || 'R'));
+    else if (n.hasClass('path') && n.data('side')) fixed.push(box(n, 12, 500, n.data('side') === 'B' ? kg.colW : kg.labelW, n.data('side')));
+    else {
+      const hit = n.hasClass('hit'), hub = n.data('hub'), px = hit || hub ? KG.FONT_HUB : KG.FONT;
+      items.push({ id: n.id(), x: p.x, y: p.y, r, w: Math.min(hit ? KG.NAME_W_HIT : hub ? KG.NAME_W_HUB : KG.NAME_W, kgTextW(n.data('name'), px, hit || hub ? 600 : 500)) + 2, h: px * 1.3,
+        prio: (hit ? 1e6 : n.hasClass('path') ? 5e5 : 0) + n.data('deg') });
+    }
+  });
+  const sides = kgPlaceLabels(items, fixed, discs, zones, { w: W, h: H });
+  cy.batch(() => cy.nodes().forEach(n => {
+    const side = sides.get(n.id());
+    if (side) { if (n.data('lp') !== side) n.data('lp', side); n.addClass('lab'); }
+    else if (n.hasClass('lab')) n.removeClass('lab');
+  }));
+}
+// 조금 뒤에 한 번(끌거나 확대하는 동안은 기다렸다가 멈춘 뒤, 항목이 옮겨 가는 동안은 다 옮겨 간 뒤)
+function kgLabelsSoon(ms = 90) { clearTimeout(kg.labelTimer); kg.labelTimer = setTimeout(() => { if (kg.cy) kgLabels(); }, ms); }
 // 화면을 상자(배치 좌표)가 다 보이게 옮긴다. 위의 도구 줄과 아래의 묶음 조각 자리는 비운다
 function kgShow(box, max, still = kgStill()) {
-  const cy = kg.cy, W = cy.width(), H = cy.height(), top = 58, bottom = 78, side = 16;      // 위의 도구 줄 · 아래의 안내 한 줄과 묶음 조각 자리
+  const cy = kg.cy, W = cy.width(), H = cy.height(), top = 82, bottom = 78, side = 16;      // 위의 도구 줄 · 아래의 안내 한 줄과 묶음 조각 자리
   const bw = Math.max(1, box.x1 - box.x0), bh = Math.max(1, box.y1 - box.y0);
   const zoom = Math.max(cy.minZoom(), Math.min(max, (W - 2 * side) / bw, (H - top - bottom) / bh));
   const pan = { x: W / 2 - (box.x0 + bw / 2) * zoom, y: top + (H - top - bottom) / 2 - (box.y0 + bh / 2) * zoom };
@@ -421,6 +527,8 @@ function kgArrange() {
     }
   }
   const still = kgStill();
+  cy.nodes('.lab').removeClass('lab');      // 옮겨 가는 동안에는 이름을 걷고, 다 옮겨 간 뒤 다시 고른다
+  kgLabelsSoon(still ? 30 : 440);
   cy.nodes().not('.gtitle').forEach(n => {
     const to = want.get(n.id()) || kg.home.get(n.id()), p = n.position();
     if (Math.abs(p.x - to.x) < 0.5 && Math.abs(p.y - to.y) < 0.5 && !n.animated()) return;
@@ -438,19 +546,21 @@ function kgApplyState() {
   const match = new Set(q ? ids.filter(id => !off(id) && (cy.getElementById(id).data('name').toLowerCase().includes(q) || id.toLowerCase().includes(q))) : []);
   const near = new Set();
   if (ent.sel != null) cy.getElementById(ent.sel).neighborhood('node').forEach(n => near.add(n.id()));
-  const s = { sel: ent.sel, near, path, match, query: !!q };
+  if (ent.group && ent.hidden.has(ent.group)) ent.group = null;
+  const only = ent.group ? new Set(ids.filter(id => kgKey(kg.raw.get(id)) === ent.group)) : null;
+  const s = { sel: ent.sel, near, path, match, query: !!q, only };
   const arrange = !kg.state || kg.state.sel !== s.sel || kg.state.hidden !== [...ent.hidden].sort().join('|') || kg.state.focus !== ent.focus;
   kg.state = { ...s, route, hidden: [...ent.hidden].sort().join('|'), focus: ent.focus };
   const ALL = 'pick near path hit dim';
   cy.batch(() => {
     cy.nodes().forEach(n => {
       if (n.hasClass('rhead')) return;
-      if (n.hasClass('gtitle')) { n.toggleClass('off', ent.hidden.has(n.data('g'))).toggleClass('dim', s.sel != null || !!s.path || s.query); return; }
+      if (n.hasClass('gtitle')) { n.toggleClass('off', ent.hidden.has(n.data('g'))).toggleClass('dim', s.sel != null || !!s.path || s.query || (!!ent.group && ent.group !== n.data('g'))); return; }
       n.removeClass(ALL).addClass(kgMarks(n.id(), s).join(' ')).toggleClass('off', off(n.id()));
     });
     cy.edges().forEach(e => e.removeClass('near path dim').addClass(kgEdgeMarks(e.data('source'), e.data('target'), s, e.data('type')).join(' ')));
   });
-  if (arrange) kgArrange();
+  if (arrange) kgArrange(); else kgLabelsSoon(220);      // 흐리던 항목이 밝아지는 0.18초 뒤에
   $('#ontoLayers').querySelectorAll('[data-layer]').forEach(b => b.setAttribute('aria-pressed', String(!ent.hidden.has(b.dataset.layer))));
   // 검색에 걸린 것의 차례: 묶음 → 이름
   kg.matches = ids.filter(id => match.has(id)).sort((a, b) => groupOf(kg.raw.get(a).label) - groupOf(kg.raw.get(b).label) || kgCollator.compare(cy.getElementById(a).data('name'), cy.getElementById(b).data('name')) || (a < b ? -1 : 1));
@@ -459,7 +569,8 @@ function kgApplyState() {
   $('#ontoHint').textContent = s.sel != null ? '왼쪽은 고른 항목을 가리키는 것, 오른쪽은 고른 항목이 가리키는 것입니다. 빈 곳을 누르면 제자리로 돌아갑니다'
     : path ? `「${cy.getElementById(ent.focus).data('name') || ''}」 경보에서 증상 · 고장 유형 · 원인 · 조치 방법으로 가는 길입니다. 항목을 누르면 그 항목에 이어진 것이 보입니다`
     : q ? (match.size ? `이름에 「${word}」이 든 항목 ${fmtN(match.size)}개가 밝게 보입니다. Enter 를 누르면 차례로 고릅니다` : `이름에 「${word}」이 든 항목이 없습니다`)
-    : '점을 누르면 이어진 항목이 그 둘레에 모입니다. 끌어서 옮기고 휠로 확대합니다';
+    : ent.group ? `「${ONTO_GROUPS.find(x => x.key === ent.group).title}」 묶음만 밝게 보입니다. 확대하면 이름이 더 보이고, 묶음 이름을 다시 누르면 전체로 돌아갑니다`
+    : '점을 누르면 이어진 항목이 그 둘레에 모입니다. 묶음 이름을 누르면 그 묶음을 크게 봅니다';
   $('#ontoStats').textContent = `항목 ${fmtN(kg.of.nodes.length)} · 연결 ${fmtN(kg.of.edges.length)}` + (path ? ` · 강조 경로 ${fmtN(path.size)}개` : '') + (q ? ` · 검색 결과 ${fmtN(match.size)}개` : '');
   const next = $('#ontoNext'); next.hidden = match.size < 2;
   next.querySelector('.num').textContent = `${Math.min(kg.matchAt + 1, match.size)} / ${match.size}`;
@@ -481,6 +592,15 @@ function kgPick(id) {
   if (ent.sel != null && kg.at) kgShow(kg.at.bounds, KG.ZOOM_PICK);
   else if (ent.sel == null && was != null && kg.back) { cy.stop(); if (kgStill()) cy.viewport(kg.back); else cy.animate(kg.back, { duration: 340, easing: 'ease-out-cubic' }); kg.back = null; }
 }
+// 묶음 하나를 크게 본다(key) 또는 전체로 돌아간다(null): 그 묶음만 밝게 하고 그 묶음이 캔버스에 차게 옮긴다. 오른쪽 칸의 묶음 접기와 지도의 묶음 이름이 함께 쓴다
+function kgGroup(key) {
+  const cy = kg.cy; if (!cy) return;
+  ent.group = key || null;
+  if (ent.sel != null) { kg.back = null; kgPick(null); } else { kgApplyState(); renderNodePanel(); }
+  if (ent.focus) return;      // 이상 패턴 경로를 보는 중이면 그 화면을 지킨다
+  const own = ent.group ? cy.nodes().filter(n => !n.hasClass('gtitle') && !n.hasClass('rhead') && n.data('g') === ent.group && n.visible()) : null;
+  if (own && own.length) kgShow(kgBoxOf(own), 2.2); else kgFit();
+}
 // 흐름 이름을 못 읽었을 때의 한 줄(화면 머리 아래) — 통계 글에 이어 붙이지 않는다
 function ontoNote(text) { const n = $('#ontoNote'); n.textContent = text; n.hidden = !text; }
 
@@ -489,27 +609,43 @@ function renderNodePanel() {
   const box = $('#ontoNode');
   const g = ent.graph; if (!g || !kg.cy) return;
   const n = ent.sel != null ? kg.raw.get(ent.sel) : null;
-  const sig = JSON.stringify([ent.graphAsset, ent.sel, g.nodes.length, g.edges.length, UI.namesVersion, ent.definitionNamesError]);
+  const sig = JSON.stringify([ent.graphAsset, ent.sel, ent.sel == null ? ent.group : '', g.nodes.length, g.edges.length, UI.namesVersion, ent.definitionNamesError]);
   if (box.dataset.sig === sig && box.innerHTML) return;      // 검색 · 확대처럼 고른 항목이 그대로인 동안에는 다시 그리지 않는다(읽던 자리 · 편 접기가 유지된다)
   box.dataset.sig = sig;
   const chip = (id, extra = '') => { const m = kg.raw.get(id); return m ? `<button type="button" class="chip" data-go="${esc(id)}" style="--c:${kgColor(m)}" title="${esc(LABEL_KO[m.label] || m.label)}"><i></i><span>${esc(nodeName(m))}</span>${extra}</button>` : ''; };
   if (!n) {
-    // 아무것도 고르지 않았을 때: 무엇을 하면 채워지는지 + 가장 많이 이어진 항목 + (접어서) 묶음마다 어떤 종류가 몇 개인지
-    const top = [...kg.home.keys()].sort((a, b) => (kg.deg.get(b) || 0) - (kg.deg.get(a) || 0) || (a < b ? -1 : 1)).slice(0, 8);
-    const counts = {}; g.nodes.forEach(x => { counts[x.label] = (counts[x.label] || 0) + 1; });
-    const kinds = ONTO_GROUPS.map((gr, gi) => {
-      const labels = gr.other ? Object.keys(counts).filter(l => groupOf(l) === gi).sort() : gr.labels.filter(l => counts[l]);
-      return labels.length ? `<dt><span class="gtag" style="--c:${gr.color}"><i></i>${esc(gr.title)}</span></dt><dd>${labels.map(l => `${esc(LABEL_KO[l] || l)} <span class="num">${counts[l]}</span>`).join(' · ')}</dd>` : '';
+    // 아무것도 고르지 않았을 때: 이 지도에 무엇이 들어 있는지의 목차 — 묶음마다 종류와 수가 한 줄로 보이고, 묶음을 펼치면 그 묶음의 항목 이름이 종류별로 다 보인다
+    // (펼친 묶음은 지도에서도 크게 보인다 — kgGroup). 이름을 누르면 그 항목이 골라진다. 그 아래에 가장 많이 이어진 항목
+    const top = [...kg.home.keys()].sort((a, b) => (kg.deg.get(b) || 0) - (kg.deg.get(a) || 0) || (a < b ? -1 : 1)).slice(0, 6);
+    const byLabel = new Map();
+    [...kg.home.keys()].forEach(id => { const l = kg.raw.get(id).label; (byLabel.get(l) || byLabel.set(l, []).get(l)).push(id); });
+    const nameOf = id => kg.cy.getElementById(id).data('name');
+    byLabel.forEach(ids => ids.sort((a, b) => kgCollator.compare(nameOf(a), nameOf(b)) || (a < b ? -1 : 1)));
+    let groupsN = 0;
+    const index = ONTO_GROUPS.map((gr, gi) => {
+      const labels = gr.other ? [...byLabel.keys()].filter(l => groupOf(l) === gi).sort() : gr.labels.filter(l => byLabel.has(l));
+      if (!labels.length) return '';
+      groupsN++;
+      const total = labels.reduce((sum, l) => sum + byLabel.get(l).length, 0), open = ent.group === gr.key;
+      // 항목 이름은 펼친 묶음에만 그린다(닫힌 묶음까지 다 그리면 조각이 수백 개다)
+      const body = open ? labels.map(l => { const ids = byLabel.get(l);
+        return `<section class="rel-group"><h4>${esc(LABEL_KO[l] || l)} <span class="num">${ids.length}</span></h4><div class="chips">${ids.slice(0, 12).map(id => chip(id)).join('')}` +
+          (ids.length > 12 ? `<details class="rel-more"><summary class="chip">+${ids.length - 12}</summary><div class="chips">${ids.slice(12).map(id => chip(id)).join('')}</div></details>` : '') + `</div></section>`; }).join('') : '';
+      return `<details class="fold kg-group" data-group="${gr.key}"${open ? ' open' : ''}><summary><span class="gtag" style="--c:${gr.color}"><i></i>${esc(gr.title)}</span><span class="muted num">${total}</span>` +
+        `<span class="kg-kinds">${labels.map(l => `${esc(LABEL_KO[l] || l)} ${byLabel.get(l).length}`).join(' · ')}</span></summary><div class="fold-body">${body}</div></details>`;
     }).join('');
-    box.innerHTML = `<section class="empty"><header><figure>${UI.icon('network')}</figure><h3>항목을 골라 보세요</h3><p>지도에서 점을 누르면 그 항목의 속성과 이어진 항목이 여기에 보입니다.</p></header></section>` +
-      (top.length ? `<div class="node-sec"><h3>가장 많이 이어진 항목</h3><div class="chips">${top.map(id => chip(id, `<span class="num muted">${kg.deg.get(id) || 0}</span>`)).join('')}</div></div>` : '') +
-      (kinds ? `<div class="node-sec node-fold">${UI.fold('묶음마다 들어 있는 종류', `<dl class="kv">${kinds}</dl>`)}</div>` : '');
+    box.innerHTML = `<div class="node-head kg-index-head"><h2>이 지도에 들어 있는 것</h2><p>항목 ${kg.home.size.toLocaleString('ko-KR')}개가 묶음 ${groupsN}개에 들어 있습니다. 묶음을 펼치면 항목 이름이 보이고, 이름이나 지도의 점을 누르면 그 항목의 속성과 이어진 항목이 나옵니다.</p></div>` +
+      `<div class="kg-index">${index}</div>` +
+      (top.length ? `<div class="node-sec"><h3>가장 많이 이어진 항목</h3><div class="chips">${top.map(id => chip(id, `<span class="num muted">${kg.deg.get(id) || 0}</span>`)).join('')}</div></div>` : '');
+    box.querySelectorAll('details.kg-group > summary').forEach(sum => sum.addEventListener('click', ev => { ev.preventDefault(); const key = sum.parentElement.dataset.group; kgGroup(ent.group === key ? null : key); }));
   } else {
     const group = ONTO_GROUPS[groupOf(n.label)], id = String(n.id);
     const lead = n.props?.description || '';                 // 한 줄 설명은 서버가 준 값이 있을 때만(화면이 지어 붙이지 않는다)
     const props = Object.entries(n.props || {}).filter(([k, v]) => !['id', 'name', 'description'].includes(k) && v !== '' && v != null);
     const named = props.filter(([k]) => PROP_KO[k]), other = props.filter(([k]) => !PROP_KO[k]);
-    const value = v => { const text = typeof v === 'string' ? v : typeof v === 'boolean' ? (v ? '예' : '아니요') : Array.isArray(v) && v.every(x => typeof x !== 'object') ? v.join(', ') : typeof v === 'number' ? String(v) : JSON.stringify(v);
+    const value = (v, k) => { const text = typeof v === 'string' ? v : typeof v === 'boolean' ? (v ? '예' : '아니요') : Array.isArray(v) && v.every(x => typeof x !== 'object') ? v.join(', ') : typeof v === 'number' ? String(v) : JSON.stringify(v);
+      if (PROP_EXPR.includes(k)) return `<span class="mono">${esc(text)}</span>`;
+      if (k === 'tag') { const name = window.hydWords.fieldName(text.toLowerCase()); return name && name !== text.toLowerCase() ? `${esc(name)} <span class="mono muted">${esc(text)}</span>` : `<span class="mono">${esc(text)}</span>`; }
       return text.length > 160 ? `<details class="kv-more"><summary>${esc(text.slice(0, 60))}…</summary><div>${esc(text)}</div></details>` : esc(text); };
     // 이어진 것을 관계 이름별로 묶는다. 관계 이름표(RELATION_KO)는 나가는 쪽에서 본 말이라(증상 → 고장 「나타내는 고장」) 들어오는 쪽에 그대로 붙이면 거꾸로 읽힌다 —
     // 나가는 관계는 관계 이름으로, 들어오는 관계는 상대의 종류(증상 · 원인 …)로 묶고 관계 이름은 작게 곁들인다
@@ -524,7 +660,7 @@ function renderNodePanel() {
       `<div class="chips">${x.ids.slice(0, 14).map(o => chip(o)).join('')}${x.ids.length > 14 ? `<details class="rel-more"><summary class="chip">+${x.ids.length - 14}</summary><div class="chips">${x.ids.slice(14).map(o => chip(o)).join('')}</div></details>` : ''}</div></section>`).join('');
     box.innerHTML = `<div class="node-head fade-in"><span class="gtag" style="--c:${group.color}"><i></i>${esc(group.title)} · ${esc(LABEL_KO[n.label] || n.label)}</span><h2>${esc(nodeName(n))}</h2><p class="mono">${esc(id)}</p>` +
       (lead ? `<p class="node-lead">${esc(UI.words(lead))}</p>` : '') + `</div>` +
-      (named.length ? `<div class="node-sec"><dl class="kv">${named.map(([k, v]) => `<dt>${esc(PROP_KO[k])}</dt><dd>${value((PROP_VALUE_KO[k] || {})[v] || v)}</dd>`).join('')}</dl></div>` : '') +
+      (named.length ? `<div class="node-sec"><dl class="kv">${named.map(([k, v]) => `<dt>${esc(PROP_KO[k])}</dt><dd>${value((PROP_VALUE_KO[k] || {})[v] || v, k)}</dd>`).join('')}</dl></div>` : '') +
       `<div class="node-sec"><h3>이어진 항목<span class="num">${total}</span></h3>${relHtml || '<p class="muted">이어진 항목이 없습니다.</p>'}</div>` +
       (other.length ? `<div class="node-sec node-fold">${UI.fold(`그 밖의 속성<span class="muted num">${other.length}</span>`, `<dl class="kv">${other.map(([k, v]) => `<dt class="mono">${esc(k)}</dt><dd>${value(v)}</dd>`).join('')}</dl>`)}</div>` : '');
     box.scrollTop = 0;
@@ -534,7 +670,7 @@ function renderNodePanel() {
 function initOntology() {
   const map = $('#ontoMap');
   // 캔버스 크기가 바뀌면 그림도 따라간다. 사람이 옮기거나 확대하지 않았고 고른 것이 없으면 전체가 보이게 다시 맞춘다
-  new ResizeObserver(() => { const cy = kg.cy; if (!cy || !map.clientWidth) return; cy.resize(); if (!kg.moved && ent.sel == null && !ent.focus) kgFit(true); }).observe(map);
+  new ResizeObserver(() => { const cy = kg.cy; if (!cy || !map.clientWidth) return; cy.resize(); if (!kg.moved && ent.sel == null && !ent.focus && !ent.group) kgFit(true); else kgLabelsSoon(); }).observe(map);
   // 키보드: 화살표로 옮기고 + · − 로 확대 · 축소, 0 은 화면에 맞춤, Esc 는 고른 것 풀기. 항목은 찾기 칸에서 이름을 치고 Enter 로 고르거나 오른쪽 칸의 조각으로 고른다
   map.addEventListener('keydown', ev => {
     const cy = kg.cy; if (!cy || ev.ctrlKey || ev.metaKey || ev.altKey) return;
@@ -698,11 +834,20 @@ const decEmpty = () => `<section class="empty"><header><figure>${UI.icon('scale'
 async function loadDecisionView() {
   const sel = $('#decPattern'), box = $('#decResult');
   if (!box.innerHTML) box.innerHTML = decEmpty();
-  if (sel.options.length) return;
-  const pats = await loadPatterns();
+  // 설비 목록은 서버가 준다(plant /api/state 의 units — 유압 설비 화면이 읽는 그 응답). 화면에 설비 이름을 적어 두지 않는다
+  const assetSel = $('#decAsset');
+  if (!assetSel.options.length) {
+    try { const units = (state.plant && state.plant.units) || (await getJ(API.plant + '/api/state')).units || {}; Object.keys(units).forEach(a => assetSel.append(new Option(a, a))); ent.assetsError = Object.keys(units).length ? '' : '설비 상태 응답에 설비가 없습니다'; }
+    catch (e) { ent.assetsError = e.message; }
+  }
+  if (sel.options.length && assetSel.options.length) return;
+  const pats = sel.options.length ? [...sel.options] : await loadPatterns();
+  if (!sel.options.length)
   pats.forEach(p => sel.append(new Option(`${p.name}${p.failureModes && p.failureModes.length ? ' → ' + p.failureModes.join(', ') : ''}`, p.code)));
-  $('#decRun').disabled = !pats.length;
+  $('#decRun').disabled = !pats.length || !assetSel.options.length;
   if (!pats.length) box.innerHTML = UI.errorBlock(UI.t('dec.noPatterns'), ent.patternsError || '지식 그래프에 이상 패턴이 없습니다', { retry: true });
+  else if (!assetSel.options.length) box.innerHTML = UI.errorBlock('설비 목록을 읽지 못했습니다', ent.assetsError, { retry: true });
+  else if (box.querySelector('.alert')) box.innerHTML = decEmpty();      // 다시 읽어 됐으면 앞의 오류 판을 거둔다
   box.querySelector('[data-retry]')?.addEventListener('click', () => loadDecisionView());
 }
 async function runDecision() {
@@ -754,7 +899,9 @@ function renderDecision() {
   if (!d || !d.result) { box.innerHTML = UI.errorBlock(UI.status(d && d.status) || UI.t('dec.failed'), (d && d.error) || '판단 결과가 오지 않았습니다. 조건을 바꿔 다시 눌러 보세요.'); return; }
   const r = d.result, opts = r.options || [], causes = d.causes || [], c0 = causes[0], trace = r.trace || [];
   const maxAbs = Math.max(1, ...opts.map(o => Math.abs(o.score || 0)));
-  const text = UI.idText(r.explanation), first = firstSentence(text), rest = String(text || '').slice(first.length).trim();      // 결론 문장은 서버가 준 설명의 첫 문장 그대로다(화면이 지어 붙이지 않는다)
+  // 결론 문장은 서버가 준 설명의 첫 문장 그대로다(화면이 지어 붙이지 않는다). 첫 문장이 후보마다의 사유를 줄줄이 단 긴 문장이면(「…제외됐다: A(…); B(…)」) 쌍점 앞까지만 큰 글로 두고 나머지는 그 아래 줄글로 내린다
+  const text = UI.idText(r.explanation), sentence = firstSentence(text), colon = sentence.length > 110 ? sentence.indexOf(': ') : -1;
+  const first = colon > 0 ? sentence.slice(0, colon) + '.' : sentence, rest = String(text || '').slice(colon > 0 ? colon + 2 : sentence.length).trim();
   const top = opts.find(o => o.id === r.recommended) || null;
   const feasible = opts.filter(o => o.feasible), second = feasible.filter(o => !top || o.id !== top.id).sort((a, b) => (a.rank || 99) - (b.rank || 99))[0];
   const gap = top && second && Number.isFinite(top.score) && Number.isFinite(second.score) ? `<small>2순위보다 ${(top.score - second.score).toFixed(2)} 높음</small>` : '';
@@ -953,4 +1100,4 @@ function txDiffFold(x) {
 initOntology();
 setInterval(() => { if (state.tab === 'process') refreshProcess(); }, 2500);
 // kgMarks · kgEdgeMarks · kgRelGroups · kgGather · kgMakeRoom · kgPath · kgPathLay: 지식 지도의 상태 판정과 이웃을 모으고 비켜 주는 자리(DOM 없이 도는 부분 — 시험이 그대로 부른다). kg: 지금 그린 지도(kg.cy = Cytoscape)
-window.hydEnt = { ent, systemBoards, runDecision, loadGraph, refreshProcess, loadDecisionView, renderDecision, kgMarks, kgEdgeMarks, kgRelGroups, kgGather, kgMakeRoom, kgPath, kgPathLay, KG, kg, RELATION_KO };
+window.hydEnt = { ent, systemBoards, runDecision, loadGraph, refreshProcess, loadDecisionView, renderDecision, kgMarks, kgEdgeMarks, kgRelGroups, kgGather, kgMakeRoom, kgPath, kgPathLay, kgPlaceLabels, KG, kg, RELATION_KO };

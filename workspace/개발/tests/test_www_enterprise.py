@@ -184,6 +184,7 @@ def serve_onto(holder, width=1366):
             page.route('**/svc/agent/api/ontology/patterns', give([{'id': 'pattern:cool', 'code': 'COOLER_DEGRADATION', 'name': '쿨러 성능 저하', 'failureModes': ['쿨러 냉각 성능 상실']}]))
             page.route('**/svc/agent/api/ontology/namespaces', give([]))
             page.route('**/svc/process/api/process/definitions', give([]))
+            page.route('**/svc/plant-sim/api/state', give({'units': {'HYD-01': {}, 'HYD-02': {}}}))      # 설비 고르기의 목록은 가상 설비 서비스가 준다
             page.goto(served.url + '/index.html')
             page.wait_for_function('() => window.hydEnt && window.hydMenu')
             open_screen(page, 'ontology')
@@ -220,7 +221,22 @@ def test_지식_지도를_눌러_고르면_이웃이_모이고_겹친_상태에�
     low = lambda: [x for x in page.evaluate(CONTRAST_JS) if x['ratio'] < 4.5]
     home = page.evaluate(POS_JS)
     assert set(marks(page).values()) == {''} and not low() and page.inner_text('#ontoStats') == '항목 10 · 연결 9'
-    assert page.locator('#ontoNode .empty').count() == 1 and '가장 많이 이어진 항목' in page.inner_text('#ontoNode')
+    # 설비 고르기는 서버가 준 설비 목록이다(화면에 적어 둔 이름이 아니다)
+    assert page.locator('#ontoAsset option').all_inner_texts() == ['HYD-01', 'HYD-02']
+    # 안 골랐을 때 오른쪽 칸은 목차다: 묶음마다 종류와 수가 보이고, 묶음을 펼치면 그 묶음의 항목 이름이 다 보이며 지도는 그 묶음만 밝게 크게 보인다
+    index = page.inner_text('#ontoNode')
+    assert '이 지도에 들어 있는 것' in index and '증상 2' in index and '조치 방법 2' in index and '가장 많이 이어진 항목' in index
+    assert page.locator('#ontoNode .kg-group[open]').count() == 0
+    z0 = page.evaluate('hydEnt.kg.cy.zoom()')
+    page.click("#ontoNode .kg-group[data-group='diagnosis'] > summary")
+    page.wait_for_timeout(500)
+    opened = page.inner_text("#ontoNode .kg-group[data-group='diagnosis']")
+    assert all(name in opened for name in ('쿨러 성능 저하', '유온 상승', '냉각 효율 저하', '쿨러 냉각 성능 상실', '쿨러 핀 오염'))
+    got = marks(page)
+    assert got['fm:cool'] == '' and got['skill:fan'] == 'dim' and got['obj:up'] == 'dim' and page.evaluate('hydEnt.kg.cy.zoom()') > z0
+    page.click("#ontoNode .kg-group[data-group='diagnosis'] > summary")      # 다시 누르면 전체로
+    page.wait_for_timeout(500)
+    assert set(marks(page).values()) == {''} and abs(page.evaluate('hydEnt.kg.cy.zoom()') - z0) < 1e-6
     # 눌러서 고름: 고른 것 · 바로 이어진 것만 밝고 나머지는 흐리다. 오른쪽 칸에 묶음 · 종류 → 이름 → ID → 속성 → 이어진 것이 나온다
     tap(page, 'fm:cool')
     assert marks(page) == {'pattern:cool': 'dim', 'sym:hot': 'near', 'sym:ce': 'dim', 'fm:cool': 'pick', 'cause:fin': 'near', 'skill:fan': 'near', 'skill:wash': 'near', 'role:op': 'dim', 'obj:up': 'dim', 'comp:fan': 'dim'}
@@ -304,9 +320,96 @@ def test_지식_지도를_눌러_고르면_이웃이_모이고_겹친_상태에�
     assert round(page.evaluate('hydEnt.kg.cy.pan().x') - pan) == 80 and set(marks(page).values()) == {''}      # 끌기는 고르기가 아니다
     page.click('#ontoFit')
     page.wait_for_timeout(450)
-    assert abs(page.evaluate('hydEnt.kg.cy.zoom()') - k0) < 1e-6
+    assert abs(page.evaluate('hydEnt.kg.cy.zoom()') - k0) < 5e-3                                          # 같은 보기로 돌아온다
     out = page.evaluate("() => { const cy = hydEnt.kg.cy; return cy.nodes().filter(n => { const p = n.renderedPosition(); return p.x < 0 || p.x > cy.width() || p.y < 0 || p.y > cy.height(); }).length; }")
     assert out == 0                                                         # 화면에 맞추면 모든 항목이 캔버스 안에 있다
+
+
+# 수업 데이터 크기(항목 330여 개 · 연결 730여 개)의 그래프. 종류별 수는 수업 그래프(HYD-01)와 같고, 연결은 정해진 식으로 만든다(난수 없음)
+COUNTS = {'Perspective': 4, 'Objective': 8, 'Measure': 21, 'Process': 3, 'OrgUnit': 7, 'Role': 7, 'System': 10, 'Asset': 1, 'Component': 6, 'Sensor': 5, 'Actuator': 3,
+          'StateVariable': 11, 'Part': 4, 'Supplier': 3, 'AnomalyPattern': 9, 'Symptom': 6, 'FailureMode': 2, 'Cause': 5, 'Evidence': 6, 'ManualSection': 25, 'Skill': 19, 'Step': 74,
+          'Action': 9, 'Decision': 4, 'DecisionTable': 4, 'Rule': 25, 'InputData': 36, 'KnowledgeSource': 11, 'ExternalVariable': 4}
+
+
+def big_graph():
+    nodes = [{'id': f'{label.lower()}:{i:03d}', 'label': label, 'name': f'{label} 항목의 긴 이름 {i}번', 'props': {'severity': 'HIGH', 'detectionMode': 'held', 'code': 'COOLER_DEGRADATION',
+              'rule': 'TS1 > 55 and CE < 70'} if label == 'AnomalyPattern' else {}} for label, n in COUNTS.items() for i in range(n)]
+    total = len(nodes)
+    pairs = {(i, (i * 7 + 3) % total) for i in range(total)} | {(i, (i * 13 + 5) % total) for i in range(total)} | {(i, 60 + i % 3) for i in range(0, total, 5)}
+    return {'nodes': nodes, 'edges': [{'from': nodes[a]['id'], 'to': nodes[b]['id'], 'type': 'LEADS_TO'} for a, b in sorted(pairs) if a != b]}
+
+
+# 화면에 그려진 이름(점 · 묶음 이름 · 관계 이름 줄)의 상자와 점의 상자를 Cytoscape 가 그린 그대로 읽어, 이름끼리 겹친 쌍 · 이름이 다른 점을 덮은 쌍 · 캔버스 안 도구 자리에 쓴 이름을 센다
+OVERLAP_JS = r"""() => {
+  const cy = hydEnt.kg.cy, cross = (a, b) => a.x1 < b.x2 && b.x1 < a.x2 && a.y1 < b.y2 && b.y1 < a.y2, shrink = (b, d) => ({ x1: b.x1 + d, y1: b.y1 + d, x2: b.x2 - d, y2: b.y2 - d });
+  const shown = cy.nodes().filter(n => n.visible() && n.style('label') && Number(n.style('text-opacity')) > 0 && Number(n.style('opacity')) > 0.5);
+  const labels = shown.map(n => ({ id: n.id(), box: shrink(n.renderedBoundingBox({ includeNodes: false, includeLabels: true, includeOverlays: false }), 1.5) }));
+  const dots = cy.nodes().filter(n => n.visible() && !n.hasClass('gtitle') && !n.hasClass('rhead') && Number(n.style('opacity')) > 0.5).map(n => ({ id: n.id(), box: shrink(n.renderedBoundingBox({ includeLabels: false, includeOverlays: false }), 1.5) }));
+  const bar = document.querySelector('#view-ontology .canvas-bar'), foot = document.getElementById('ontoLayers'), top = bar.offsetTop + bar.offsetHeight, low = foot.offsetTop;
+  const pairs = [], covered = [], tools = [];
+  labels.forEach((a, i) => { labels.slice(i + 1).forEach(b => { if (cross(a.box, b.box)) pairs.push([a.id, b.id]); });
+    dots.forEach(d => { if (d.id !== a.id && cross(a.box, d.box)) covered.push([a.id, d.id]); });
+    const inside = a.box.x2 > 0 && a.box.x1 < cy.width() && a.box.y2 > 0 && a.box.y1 < cy.height();      // 캔버스 밖으로 나간 이름은 보이지 않는다
+    if (inside && (a.box.y1 < top || a.box.y2 > low)) tools.push(a.id); });
+  return { labels: labels.length, plain: shown.filter(n => n.hasClass('lab')).length, pairs, covered, tools };
+}"""
+
+
+def test_보이는_이름은_서로_겹치지_않고_점과_캔버스_안_도구를_가리지_않는다(onto):
+    """「전체 보기에서 이름이 포개져 읽을 수 없다 · 확대해도 풀리지 않는다 · 이름이 찾기 칸과 묶음 조각 위에 그려진다」를 수업 크기의 그래프로 실제 화면에서 잰다."""
+    page = onto
+
+    def reload(graph):
+        HOLDER['graph'] = graph
+        page.evaluate("() => { hydEnt.kg.cy.scratch('old', true); }")
+        page.click('#ontoReload')
+        page.wait_for_function("() => hydEnt.kg.cy && !hydEnt.kg.cy.scratch('old')")
+        page.wait_for_timeout(400)
+
+    def clean(said):
+        page.wait_for_timeout(700)                                          # 옮겨 가기 0.38초 + 이름 다시 고르기
+        got = page.evaluate(OVERLAP_JS)
+        assert not got['pairs'] and not got['covered'] and not got['tools'], (said, got)
+        return got
+    try:
+        reload(big_graph())
+        first = clean('전체 보기')
+        assert first['plain'] >= 12, first                                  # 전체 보기에서도 이름이 여럿 보인다(다 숨겨서 겹침을 없앤 것이 아니다)
+        for i in range(3):                                                  # 확대하면 이름이 더 보이고, 그래도 겹치지 않는다
+            page.click('#ontoZoomIn')
+        zoomed = clean('세 번 확대')
+        assert zoomed['plain'] > 0
+        box = page.locator('#ontoMap').bounding_box()                       # 끌어 옮긴 뒤에도
+        page.mouse.move(box['x'] + 300, box['y'] + 300)
+        page.mouse.down()
+        page.mouse.move(box['x'] + 180, box['y'] + 120, steps=4)
+        page.mouse.up()
+        clean('끌어 옮김')
+        page.click('#ontoFit')
+        page.fill('#ontoSearch', 'Step')                                    # 찾기에 걸린 74개: 보이는 이름끼리 겹치지 않는다
+        found = clean('찾기')
+        assert found['plain'] > 0
+        page.fill('#ontoSearch', '')
+        page.click("#ontoNode .kg-group[data-group='skill'] > summary")     # 묶음을 펼쳐 크게 본 때
+        opened = clean('묶음 펼침')
+        assert opened['plain'] > 0 and page.locator("#ontoNode .kg-group[data-group='skill'] [data-go]").count() == 182      # 그 묶음의 항목 이름은 오른쪽 칸에 다 있다
+        page.click("#ontoNode .kg-group[data-group='skill'] > summary")
+        tap(page, 'decision:000')                                           # 고른 때(이웃을 모은 줄 + 그 밖의 이름)
+        clean('고름')
+        # 고른 항목의 속성 값: 열거 값은 한국어로, 식은 식 그대로, 식별자 성격의 코드는 「그 밖의 속성」 접기 안에
+        tap(page, 'decision:000')
+        page.fill('#ontoSearch', 'AnomalyPattern 항목의 긴 이름 0번')
+        page.press('#ontoSearch', 'Enter')
+        page.wait_for_timeout(500)
+        head = page.inner_text('#ontoNode .node-sec >> nth=0')
+        assert '심각도' in head and '높음' in head and 'HIGH' not in head and '조건이 지속 시간 동안 이어지면 경보' in head and 'held' not in head
+        assert 'TS1 > 55 and CE < 70' in head and 'COOLER_DEGRADATION' not in head
+        assert page.locator('#ontoNode .node-fold .fold:not([open])').count() == 1 and 'COOLER_DEGRADATION' in page.locator('#ontoNode .node-fold').inner_html()
+        page.fill('#ontoSearch', '')
+    finally:
+        page.focus('#ontoMap')
+        page.keyboard.press('Escape')
+        reload(SMALL)
 
 
 def test_같은_그래프는_서버가_준_차례가_달라도_늘_같은_자리에_놓인다(onto):

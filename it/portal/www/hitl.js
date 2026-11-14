@@ -125,7 +125,7 @@
     if (!k) { box.innerHTML = `<div class="panel-body sk-none">${UI.empty(UI.t('skill.select'), '왼쪽 목록에서 고르면 절차와 연결된 지식이 보입니다.')}</div>`; return; }
     const sel = (id, items, cur, blank) => `<select id="${id}"><option value="">${esc(blank)}</option>${items.map(x => `<option value="${esc(x.id)}" ${cur === x.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>`;
     const fromDoc = !H.skillNew && !!k.source_document;
-    const catalogAlert = H.catalogError && !fromDoc ? `<div class="alert" data-variant="destructive" role="alert">${icon('circle-alert')}<h2>승인 역할 · 고장 유형 목록을 읽지 못했습니다</h2><section>고를 칸이 비어 있습니다 — ${esc(H.catalogError)}. [취소]를 누르면 다시 읽습니다.</section></div>` : '';
+    const catalogAlert = H.catalogError && !fromDoc ? `<div class="alert" data-variant="destructive" role="alert">${icon('circle-alert')}<h2>승인 역할 · 고장 유형 목록을 읽지 못했습니다</h2><section>고를 칸이 비어 있습니다 — ${esc(H.catalogError)}. [${esc(UI.t('btn.cancel'))}]를 누르면 다시 읽습니다.</section></div>` : '';
     // 고치는 폼(같은 판 안의 fieldset): 새로 만들 때는 판의 본문이고, 손으로 더한 것을 고칠 때는 [고치기] 접기 안이다. 문서에서 온 것에는 폼이 없다
     const form = fromDoc ? '' : catalogAlert +
       UI.section(H.skillNew ? UI.t('method') : '',
@@ -182,7 +182,7 @@
     if (draftError) {
       fields.forEach(n => { n.disabled = true; });
       $('#skSave').disabled = true;
-      note($('#skMsg'), draftError + ' 초안은 보존되어 있습니다. [취소]를 누르면 이 초안을 버리고 서버의 저장본을 다시 읽습니다.', true);
+      note($('#skMsg'), draftError + ` 초안은 보존되어 있습니다. [${UI.t('btn.cancel')}]를 누르면 이 초안을 버리고 서버의 저장본을 다시 읽습니다.`, true);
       $('#skReload').addEventListener('click', async () => {
         if (!await UI.confirm({ title: '읽을 수 없는 초안을 버릴까요?', body: '이 브라우저의 초안만 버립니다. 서버의 저장본은 바뀌지 않습니다.', ok: '초안 버리기', danger: true })) return;
         clearSkillDraft(key); box.dataset.key = ''; if (key === '__new__') H.skillNew = false; await loadSkills();
@@ -224,7 +224,7 @@
       } catch (e) {
         if (e.status >= 400 && e.status < 500) { draft.pending = null; saveSkillDraft(key, draft); }
         if (box.dataset.key === key) {
-          lockFields(); note($('#skMsg'), '저장하지 못했습니다: ' + e.message + (draft.pending ? ' 응답을 받지 못했습니다. [저장 결과 확인]을 눌러 저장됐는지 확인하세요.' : e.status === 409 ? ' 다른 곳에서 먼저 고쳤을 수 있습니다 — [취소]로 저장본을 다시 읽은 뒤 고치세요.' : ''), true);
+          lockFields(); note($('#skMsg'), '저장하지 못했습니다: ' + e.message + (draft.pending ? ' 응답을 받지 못했습니다. [저장 결과 확인]을 눌러 저장됐는지 확인하세요.' : e.status === 409 ? ` 다른 곳에서 먼저 고쳤을 수 있습니다 — [${UI.t('btn.cancel')}]로 저장본을 다시 읽은 뒤 고치세요.` : ''), true);
         }
       }
     });
@@ -866,7 +866,8 @@
       commitView(true, { busy: true });
       $('#manualCommitTitle').textContent = '검토한 내용을 지식 지도에 적재하는 중입니다';
       const flow = hydLive.steps($('#manualCommitSteps'), [...(r.previous_batch ? [{ key: 'changes', label: '개정으로 빠지는 항목 확인', hint: '이전 판본과 새 판본을 견주는 중입니다.' }] : []),
-        { key: 'commit', label: '검토한 내용을 지식 지도에 적재', hint: '절 · 조치 방법 · 단계 · 규칙 연결을 한 번에 넣는 중입니다. 도중에 실패하면 아무것도 들어가지 않습니다.' },
+        { key: 'commit', label: `검토한 내용을 지식 지도에 적재 — 매뉴얼 절 ${r.sections.length}개 · 조치 방법 ${r.procedures.length}개 · 단계 ${r.procedures.reduce((n, p) => n + p.steps.length, 0)}개` +
+            (KNOW_GROUPS.some(([g]) => ((r.knowledge || {})[g] || []).length) ? ' · ' + KNOW_GROUPS.filter(([g]) => ((r.knowledge || {})[g] || []).length).map(([g, title]) => `${title} ${r.knowledge[g].length - box.querySelectorAll(`[data-know-drop="${g}"]:checked`).length}개`).join(' · ') : ''), hint: '절 · 조치 방법 · 단계 · 규칙 연결을 한 번에 넣는 중입니다. 도중에 실패하면 아무것도 들어가지 않습니다.' },
         { key: 'reload', label: '등록된 문서 목록과 지식 지도 다시 읽기' }], { label: '적재 단계' });
       // 적재하지 않고 검토로 돌아갈 때: 단계 줄은 3단계로, 까닭은 그 아래 한 줄로
       const back = (text, bad) => { commitView(false); msg(text, bad); };

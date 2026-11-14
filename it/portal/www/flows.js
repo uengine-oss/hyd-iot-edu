@@ -2,7 +2,7 @@
    화면은 목록 + 상세다(index.html view-flows, 디자인 기준 5-4). 왼쪽은 이 시스템의 흐름 전부(기본 제공 · 내가 가져온 것), 오른쪽은 고른 흐름 하나:
      머리(이름 · 상태) → 단계 줄(가져오기 → 단계 설정 · 검사 → 판본 등록 → 배포 → 시작 가운데 어디까지 왔는지) → 흐름 그림 → 단계 설정 → 검사 · 판본 등록 — 이 파일이 #flowsView 에,
      판본 · 배포 — definitionDeploy.js 가 #definitionDeployPanel 에, 시작 — 이 파일이 #flowsStart 에 그린다.
-   흐름 그림은 bpmn-js 로 학생이 그린 배치 그대로 보여 주기만 한다(bpmnView.js). 포털에서 그리지 않는다.
+   흐름 그림은 bpmn-js 로 학생이 그린 배치 그대로 보여 주기만 한다(flow.js 의 hydFlow.show — 처리 건의 진행 길과 같은 부품). 포털에서 그리지 않는다.
    window.hydFlows.mount(el) 이 그린다(셸 MOUNTS.flows).
    API: procsvc/flows_api.py (/api/flows/catalog · import · {id} · {id}/mapping · {id}/check · {id}/register ·
         {id}/versions/{v}/bpmn · reset), 직접 시작은 기존 POST /api/instances/start.
@@ -114,15 +114,15 @@
     $('flowKind').innerHTML = [['all', '전체', all.length], ['base', '기본 제공', all.filter(x => !x.mine).length], ['mine', '내가 가져온 것', all.filter(x => x.mine).length]]
       .map(([k, label, n]) => `<button type="button" aria-pressed="${k === S.kind}" data-flow-kind="${k}">${h(label)}<span class="num">${n}</span></button>`).join('');
     const box = $('flowList');
-    if (S.listError) { box.innerHTML = `<div class="flow-list-note">${UI.errorBlock('흐름 목록을 불러오지 못했습니다', S.listError, { retry: true })}</div>`; return; }
+    if (S.listError) { box.innerHTML = `<div class="pane-list-note">${UI.errorBlock('흐름 목록을 불러오지 못했습니다', S.listError, { retry: true })}</div>`; return; }
     if (!S.list) { box.innerHTML = Array.from({ length: 4 }, () => `<div class="sk-row"><div class="skeleton sk-line" style="width:55%"></div><div class="skeleton sk-line" style="width:35%"></div></div>`).join(''); return; }
     if (!shown.length) {
-      box.innerHTML = `<div class="flow-list-note">${S.kind === 'mine' ? UI.empty('내가 가져온 흐름이 없습니다', '화면 위의 [흐름 가져오기]로 bpmn.io에서 그린 .bpmn 파일을 가져오면 여기에 남습니다.')
+      box.innerHTML = `<div class="pane-list-note">${S.kind === 'mine' ? UI.empty('내가 가져온 흐름이 없습니다', '화면 위의 [흐름 가져오기]로 bpmn.io에서 그린 .bpmn 파일을 가져오면 여기에 남습니다.')
         : UI.empty('등록된 흐름이 없습니다', '화면 위의 [흐름 가져오기]로 .bpmn 파일을 가져오면 여기에 나타납니다.')}</div>`;
       return;
     }
     box.innerHTML = shown.map(x => {
-      const state = x.deployed ? tag('운영 중', 'ok') : x.versions.length ? tag('배포 전') : tag('등록 전');
+      const state = x.deployed ? tag('운영 중', 'ok') : x.versions.length ? tag('등록됨') : tag('등록 전');
       const meta = [x.mine ? '내가 가져온 것' : '기본 제공', x.versions.length ? `판본 ${x.versions[x.versions.length - 1]}${x.versions.length > 1 ? ` 외 ${x.versions.length - 1}` : ''}` : '판본 없음'].join(' · ');
       return `<button type="button" class="row" data-open="${h(x.id)}"${x.id === S.sel && !S.importing ? ' aria-current="true"' : ''}><span class="row-ic">${icon('workflow')}</span><span class="row-title">${h(x.name)}</span>${state}<span class="row-meta">${h(meta)}</span></button>`;
     }).join('');
@@ -135,6 +135,8 @@
       S.list = list; S.defs = defs; S.listError = '';
     } catch (e) { S.listError = e.message; renderList(); return; }
     const all = items();
+    // 다른 화면(에이전트의 맡은 단계)이 열어 달라고 한 흐름이 있으면 그 흐름을 고른다
+    if (S.wanted) { const id = S.wanted; S.wanted = null; if (all.some(x => x.id === id)) { S.importing = false; S.kind = 'all'; return select(id); } }
     if (S.sel && !all.some(x => x.id === S.sel)) { S.sel = null; S.view = null; S.mapping = null; }
     if (!S.sel && all.length && !S.importing) return select(all[0].id);
     renderList();
@@ -165,7 +167,7 @@
     const item = itemOf(S.sel);
     if (!item) {
       S.drawn = null; $('definitionDeployPanel').hidden = true; $('flowsStart').hidden = true;
-      box.innerHTML = `<div class="flow-none">${S.list ? `<section class="empty"><header><figure>${icon('workflow')}</figure><h3>흐름을 고르세요</h3><p>왼쪽 목록에서 흐름을 고르면 그림과 단계 설정, 판본이 여기에 보입니다. 새 흐름은 화면 위의 [흐름 가져오기]로 가져옵니다.</p></header></section>` : UI.loading('')}</div>`;
+      box.innerHTML = `<div class="pane-none">${S.list ? `<section class="empty"><header><figure>${icon('workflow')}</figure><h3>흐름을 고르세요</h3><p>왼쪽 목록에서 흐름을 고르면 그림과 단계 설정, 판본이 여기에 보입니다. 새 흐름은 화면 위의 [흐름 가져오기]로 가져옵니다.</p></header></section>` : UI.loading('')}</div>`;
       return;
     }
     if (S.drawn !== item.id) {
@@ -174,7 +176,7 @@
         <div class="stream-phases flow-phases" id="flowSteps" role="list" aria-label="이 흐름이 어디까지 왔는지"></div>
         <div id="flowNote"></div>
         <div class="panel-sec"><h3>${icon('workflow', 'ic-sm')}흐름 그림<span class="muted">bpmn.io에서 그린 배치 그대로 보여 줍니다</span></h3><div id="flowPicture"></div></div>
-        <div class="panel-sec flow-fold" id="flowEditorSec" hidden><details class="fold" id="flowEditorFold"><summary>단계 설정<span class="muted" id="flowEditorSum"></span></summary><div class="fold-body"><div id="flowEditor"></div></div></details></div>
+        <div class="panel-sec pane-fold" id="flowEditorSec" hidden><details class="fold" id="flowEditorFold"><summary>단계 설정<span class="muted" id="flowEditorSum"></span></summary><div class="fold-body"><div id="flowEditor"></div></div></details></div>
         <div class="panel-sec" id="flowRegisterSec" hidden><h3>${icon('clipboard-check', 'ic-sm')}검사 · 판본 등록<span class="muted" id="flowNextVersion"></span></h3><div id="flowProblems"></div><div id="flowMsg" aria-live="polite"></div><footer class="form-foot" id="flowActions"></footer></div>`;
       wire();
     }
@@ -185,7 +187,7 @@
   function drawHead() {
     const item = itemOf(S.sel), head = $('flowHead'); if (!item || !head) return;
     const p = S.view && S.view.parsed, st = window.hydDefinitionDeploy.status();
-    const state = item.deployed ? tag(`운영 중 · 판본 ${item.deployed}`, 'ok') : item.versions.length ? tag('배포 전') : tag('등록 전');
+    const state = item.deployed ? tag(`운영 중 · 판본 ${item.deployed}`, 'ok') : item.versions.length ? tag('등록됨') : tag('등록 전');
     const what = S.viewError ? '' : p ? `${S.view.file_name || '그림 파일'} · 단계 ${p.tasks.length}개 · 갈림 ${p.gateways.length}개 · 연결선 ${p.flows.length}개`
       : item.draft ? '단계 설정을 읽는 중입니다.' : '그림 파일 없이 정의로 등록된 흐름입니다. 단계 설정은 정의에 들어 있어 여기서 고치지 않습니다.';
     const start = st ? (st.alert_entry ? `경보(${(st.alert_patterns || []).map(x => UI.patternName(x)).join(' · ') || '시작 조건의 경보'})가 나면 시작합니다.` : '직접 시작하는 흐름입니다.') : '';
@@ -231,19 +233,19 @@
     const version = item.deployed || item.versions[item.versions.length - 1] || null, fresh = S.xml[item.id];
     if (!fresh && !version && !S.view) {      // 등록 전 초안: 단계 설정을 읽어야 그릴 수 있다
       if (S.viewError) host.innerHTML = UI.errorBlock('흐름 그림을 그리지 못했습니다', S.viewError);
-      else if (!host._bv) host.innerHTML = `<div class="canvas flow-canvas"><div class="flow-wait">${UI.loading('', 'compact')}</div></div>`;
+      else if (!host._flow) host.innerHTML = `<div class="canvas flow-canvas"><div class="flow-wait">${UI.loading('', 'compact')}</div></div>`;
       return;
     }
-    window.hydBpmnView.mount(host, {
+    window.hydFlow.show(host, {
       key: `${item.id}|${fresh ? 'file' + fresh.length : version ? 'v' + version : 'draft' + (item.draft.updated_at || '')}`,
       title: `${item.name} · ${fresh ? '방금 가져온 그림' : version ? '판본 ' + version : '등록 전 초안'}`,
       load: async () => {
-        if (fresh) return { xml: fresh };
+        if (fresh) return { xml: fresh, source: 'file' };
         if (version) {
           const got = await window.hydFlow.xmlOf(await defOf(item.id, version));
-          return { xml: got.xml, laidOut: got.laidOut && got.source === 'file', note: got.laidOut && got.source !== 'file' ? '그림 파일 없이 등록된 흐름이라 단계 정의에서 자동으로 그렸습니다' : '' };
+          return got;
         }
-        return { xml: window.hydFlow.defToXml(parsedDef(item, S.view.parsed)),
+        return { xml: window.hydFlow.defToXml(parsedDef(item, S.view.parsed)), source: 'draft',
           note: '등록 전 초안은 가져온 그림을 다시 받을 수 없어 단계에서 자동으로 그렸습니다 — 그림을 다시 가져오거나 판본으로 등록하면 그린 배치 그대로 보입니다' };
       },
     });
@@ -326,7 +328,7 @@
   function renderEditor() {
     const v = S.view, p = v.parsed, m = S.mapping, box = $('flowEditor');
     const start = m.start || {};
-    const patterns = S.cat.patterns.map(pt => `<label class="flow-opt"><input type="checkbox" class="input" data-pattern="${h(pt)}" ${(start.patterns || []).includes(pt) ? 'checked' : ''}>${h(UI.patternName(pt))}</label>`).join('');
+    const patterns = S.cat.patterns.map(pt => `<label class="pane-opt"><input type="checkbox" class="input" data-pattern="${h(pt)}" ${(start.patterns || []).includes(pt) ? 'checked' : ''}>${h(UI.patternName(pt))}</label>`).join('');
     const lanes = p.lanes.map(l => UI.field({ label: l.name || '(이름 없는 칸)', input: `<select data-lane="${h(l.id)}"><option value="">(고르지 않음)</option>${roleOpts(m.lanes[l.id] || '', false)}</select>` })).join('');
     $('flowEditorSum').textContent = `단계 ${p.tasks.length} · 갈림 ${p.gateways.length}${v.class_flow ? ' · 읽기만' : v.check && v.check.ok ? ' · 검사 통과' : ` · 고칠 곳 ${((v.check || {}).problems || []).length}`}`;
     box.innerHTML = `<section aria-label="단계 설정" class="flow-editor">
@@ -334,9 +336,9 @@
         <div data-editable-note></div>
         ${UI.section('흐름', UI.field({ label: '흐름 이름', input: `<input id="flowName" value="${h(m.name || p.process.name || '')}">` }))}
         ${UI.section('시작 조건', `
-          <div class="flow-start"><label class="flow-opt"><input type="radio" class="input" name="flowStart" value="alert" ${start.kind === 'alert' ? 'checked' : ''}>경보로 시작</label>
+          <div class="flow-start"><label class="pane-opt"><input type="radio" class="input" name="flowStart" value="alert" ${start.kind === 'alert' ? 'checked' : ''}>경보로 시작</label>
             <div class="flow-opts">${patterns}</div><p class="muted">회복 기준은 기준 흐름의 것을 그대로 씁니다.</p></div>
-          <div class="flow-start"><label class="flow-opt"><input type="radio" class="input" name="flowStart" value="human" ${start.kind === 'human' ? 'checked' : ''}>사람 입력 · 직접 시작</label>
+          <div class="flow-start"><label class="pane-opt"><input type="radio" class="input" name="flowStart" value="human" ${start.kind === 'human' ? 'checked' : ''}>사람 입력 · 직접 시작</label>
             <div id="flowStartFields" data-rows-of="start"></div>
             <p class="muted">칸마다 값 이름(영문) · 화면 이름 · 종류를 고릅니다. 고르기 칸의 고를 값은 쉼표로 나눕니다.</p></div>`, 'flow-one')}
         ${lanes ? UI.section('그림의 칸(레인)마다 맡는 역할', lanes) : ''}
@@ -491,7 +493,7 @@
       return `<div class="flow-branch" data-row="${h(g.id)}"><p class="flow-sub-h">분기 「${h(g.name || '(이름 없음)')}」</p>${outs.map(f => {
         const c = S.mapping.flows[f.id] || {};
         return `<div class="flow-branch-line" data-row="${h(f.id)}"><span class="flow-branch-to">${icon('corner-down-right', 'ic-sm')}<span>${h(nodeName(f.target))}${f.name ? `<small class="muted">${h(f.name)}</small>` : ''}</span></span>
-          <label class="flow-opt"><input type="checkbox" class="input" data-default="${h(f.id)}" ${c.default ? 'checked' : ''}>그 밖의 경우</label>
+          <label class="pane-opt"><input type="checkbox" class="input" data-default="${h(f.id)}" ${c.default ? 'checked' : ''}>그 밖의 경우</label>
           <select class="select" data-var="${h(f.id)}" aria-label="분기할 값" ${c.default ? 'disabled' : ''}><option value="">값 선택</option>${vals.map(x => `<option value="${h(x)}" ${x === c.var ? 'selected' : ''}>${h(valueLabel(x) || x)}</option>`).join('')}</select>
           <select class="select" data-op="${h(f.id)}" aria-label="비교 방법" ${c.default ? 'disabled' : ''}>${S.cat.ops.map(o => `<option value="${h(o)}" ${o === (c.op || '==') ? 'selected' : ''}>${h(({ '==': '같음', '!=': '다름', '>': '초과', '>=': '이상', '<': '미만', '<=': '이하' })[o] || o)}</option>`).join('')}</select>
           ${c.var === 'approval' ? `<select class="select" data-value="${h(f.id)}" aria-label="승인 결과" ${c.default ? 'disabled' : ''}><option value="">결과 선택</option>${['승인', '반려'].map(x => `<option ${c.value === x ? 'selected' : ''}>${x}</option>`).join('')}</select>` : `<input class="input" data-value="${h(f.id)}" aria-label="비교할 값" value="${h(c.value === undefined ? '' : c.value === true ? '예' : c.value === false ? '아니요' : c.value)}" placeholder="기준 (예/아니요 · 숫자 · 글)" ${c.default ? 'disabled' : ''}>`}</div>`;
@@ -698,8 +700,8 @@
       const fields = (d.startForm && d.startForm.fields_json) || [], blocked = hydCourseAccess.startBlocked(id);
       const primary = stageOf(item) === 4;      // 이 흐름이 지금 할 단계가 「시작」일 때만 주 단추
       slot.innerHTML = (fields.length ? UI.section('시작할 때 넣을 값', fields.map(f => UI.field({ label: f.text || f.key, input: f.type === 'select'
-        ? `<select data-sv="${h(f.key)}" data-choose="${h(f.text || f.key)}"><option value="">선택</option>${(f.items || []).map(i => `<option>${h(typeof i === 'string' ? i : Object.keys(i)[0])}</option>`).join('')}</select>`
-        : f.type === 'boolean' ? `<select data-sv="${h(f.key)}" data-bool="1" data-choose="${h(f.text || f.key)}"><option value="">선택</option><option value="true">예</option><option value="false">아니요</option></select>`
+        ? `<select data-sv="${h(f.key)}" data-choose="${h(f.text || f.key)}"><option value="">고르세요</option>${(f.items || []).map(i => `<option>${h(typeof i === 'string' ? i : Object.keys(i)[0])}</option>`).join('')}</select>`
+        : f.type === 'boolean' ? `<select data-sv="${h(f.key)}" data-bool="1" data-choose="${h(f.text || f.key)}"><option value="">고르세요</option><option value="true">예</option><option value="false">아니요</option></select>`
         : f.type === 'textarea' ? `<textarea data-sv="${h(f.key)}" data-kind="textarea" rows="4"></textarea>`
         : `<input data-sv="${h(f.key)}" data-kind="${h(f.type)}" data-label="${h(f.text || f.key)}">` })).join('')) : '<p class="muted">넣을 값 없이 바로 시작합니다.</p>') +
         `<div data-start-msg aria-live="polite"></div><footer class="form-foot">${blocked ? `<span class="muted">${h(blocked)}</span>` : ''}<button type="button" class="btn"${primary ? '' : ' data-variant="outline"'} data-go="1"${blocked ? ' disabled' : ''}>${icon('play')}처리 건 시작</button></footer>`;
@@ -769,5 +771,6 @@
     if (!S.importing && S.view && S.mapping && $('flowEditor') && JSON.stringify(S.cat.agents) !== before) { collect(); renderEditor(); }
   }
 
-  window.hydFlows = { mount, show };
+  // pick(흐름 id): 다른 화면이 이 화면을 그 흐름을 고른 채 열 때 부른다(화면을 여는 것은 셸 — 열릴 때 목록을 읽고 고른다)
+  window.hydFlows = { mount, show, pick: id => { S.wanted = id; } };
 })();

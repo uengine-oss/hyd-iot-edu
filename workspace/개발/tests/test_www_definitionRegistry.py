@@ -70,8 +70,8 @@ out({ during, after: buttons.map(b => b.disabled), busy: t.busy, afterCalls, sec
     ([False, True, False], None, {'textContent': '', 'className': ''}),
     ([True], None, {'textContent': '', 'className': ''}),
     ([], None, {'textContent': '', 'className': ''}),
-    # 실패는 패널 알림 줄에 그 문장 그대로, 알림 줄 모양(form-msg)은 그대로
-    ([False, True], '서버가 거절했습니다', {'textContent': '서버가 거절했습니다', 'className': 'form-msg neg'}),
+    # 실패는 패널 알림 줄에 그 문장 그대로, 실패라는 상태(data-tone=danger)와 함께
+    ([False, True], '서버가 거절했습니다', {'textContent': '서버가 거절했습니다', 'className': '', 'dataset': {'tone': 'danger'}}),
 ])
 def test_패널_일은_도는_동안_단추를_모두_끄고_끝나면_그_전_상태로_되돌린다(before, fail, note):
     got = js(TASK, {'before': before, 'fail': fail})
@@ -85,7 +85,7 @@ if (DATA.option) { const o = document.createElement('option'); o.value = JSON.st
 FETCHED.length = 0;   // 실릴 때 ui.js 가 이름 사전(names.json)을 읽는 것은 빼고, 단추를 누른 뒤의 요청만 본다
 await $(DATA.click).fire('click');
 const msg = $('definitionMessage');
-out({ text: msg.textContent, cls: msg.className, disabled: $('definitionEditor').querySelectorAll('button').map(b => [b.id, b.disabled]).filter(([, d]) => d), fetched: FETCHED });
+out({ text: msg.textContent, tone: msg.dataset.tone, disabled: $('definitionEditor').querySelectorAll('button').map(b => [b.id, b.disabled]).filter(([, d]) => d), fetched: FETCHED });
 """
 
 
@@ -103,4 +103,4 @@ out({ text: msg.textContent, cls: msg.className, disabled: $('definitionEditor')
 ])
 def test_등록_실행_단추는_서버를_부르기_전에_틀린_입력을_학생_말로_멈추고_단추를_되살린다(click, values, option, text):
     got = js(PANEL, {'click': click, 'values': values, 'option': option})
-    assert got == {'text': text, 'cls': 'form-msg neg', 'disabled': [], 'fetched': []}
+    assert got == {'text': text, 'tone': 'danger', 'disabled': [], 'fetched': []}

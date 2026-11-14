@@ -180,7 +180,7 @@ def test_기준으로_되돌리기_화면은_요청에_요청_번호를_싣고_�
             page.locator('#cfgReset').click()
             said = page.inner_text('dialog.confirm-dialog')
             assert '내가 가져온 흐름으로 끝난 처리 건은 [처리 건] 목록에서 숨겨집니다' in said
-            assert '수업 흐름(시작할 때 설치되는 A · B · C)과 그 처리 건, 기준 구성은 남습니다' in said and '업무분장' not in said
+            assert '기본 제공 흐름(시작할 때 설치되는 A · B · C)과 그 처리 건, 기준 구성은 남습니다' in said and '업무분장' not in said
             page.locator("dialog.confirm-dialog button[value='ok']").click()
             job.do(lambda p: (p.plan(plan), p.start('check')))
             _wait_steps(page, '#cfgResetResult', ['run:' + names['check']] + ['wait:' + label for key, label in plan[1:]])
@@ -343,13 +343,13 @@ def test_시험_비교_화면은_서버가_적는_단계를_채우고_화면이_
             page.select_option("#compareView [data-f='scenario']", 'cooler')
             page.locator("#compareView [data-act='run']").click()
             job.do(lambda p: (p.plan(plan), p.start('input')))
-            _wait_steps(page, '#compareView .cmp-result', ['run:입력 스냅숏 준비', 'wait:에이전트 A 시험', 'wait:에이전트 B 시험', 'wait:두 결과 비교'])
+            _wait_steps(page, "#compareView [data-r='result']", ['run:입력 스냅숏 준비', 'wait:에이전트 A 시험', 'wait:에이전트 B 시험', 'wait:두 결과 비교'])
             [body] = job.bodies
             assert body['scenario'] == 'cooler' and progress.read(body['request_id'])['state'] == 'running'
             page.select_option("#compareView [data-f='input']", 'latest')                # 화면이 통째로 다시 그려진다
             job.do(lambda p: (p.done('input', '새 입력 스냅숏을 만듦'), p.start('side:0')))
-            _wait_steps(page, '#compareView .cmp-result', ['ok:입력 스냅숏 준비', 'run:에이전트 A 시험', 'wait:에이전트 B 시험', 'wait:두 결과 비교'])
-            assert page.locator('#compareView .cmp-result .lv-steps').count() == 1       # 목록은 하나다(다시 그릴 때마다 늘지 않는다)
+            _wait_steps(page, "#compareView [data-r='result']", ['ok:입력 스냅숏 준비', 'run:에이전트 A 시험', 'wait:에이전트 B 시험', 'wait:두 결과 비교'])
+            assert page.locator("#compareView [data-r='result'] .lv-steps").count() == 1       # 목록은 하나다(다시 그릴 때마다 늘지 않는다)
             job.crash('판단 서비스(agent)에 연결하지 못했습니다')
             page.wait_for_function("document.querySelector('#compareView').textContent.includes('시험을 실행하지 못했습니다')", timeout=8000)
             assert page.locator('#compareView .lv-step').count() == 0 and not page.locator("#compareView [data-act='run']").is_disabled()
@@ -384,19 +384,23 @@ def test_판단_채점_화면은_항목이_끝날_때마다_서버가_적는_결
             page.wait_for_selector("#evalView [data-act='run']:not([disabled])", timeout=8000)
             page.locator("#evalView [data-act='run']").click()
             job.do(lambda p: (p.plan([('golden', '정답표 읽기'), ('knowledge', '지식 상태 읽기')]), p.start('golden')))
-            _wait_steps(page, "#evalView [data-msg='run']", ['run:정답표 읽기', 'wait:지식 상태 읽기'])
+            _wait_steps(page, "#evalView [data-r='live']", ['run:정답표 읽기', 'wait:지식 상태 읽기'])
             [body] = job.bodies
             assert (body['path'], body['by'], body['repeats']) == ('decide', 'user:me', 1) and progress.read(body['request_id'])['state'] == 'running'
             job.do(lambda p: (p.done('golden', '항목 1개'), p.start('knowledge'), p.done('knowledge'),
                               p.plan([('item:0', item['title']), ('save', '채점 기록 저장')]), p.start('item:0')))
-            _wait_steps(page, "#evalView [data-msg='run']", ['ok:정답표 읽기', 'ok:지식 상태 읽기', 'run:쿨러 성능 저하', 'wait:채점 기록 저장'])
+            _wait_steps(page, "#evalView [data-r='live']", ['ok:정답표 읽기', 'ok:지식 상태 읽기', 'run:쿨러 성능 저하', 'wait:채점 기록 저장'])
             job.do(lambda p: (p.done('item:0', '항목 1/1 끝 · 100.0점 · 원인 맞음 · 1위 조치 맞음'), p.start('save')))
-            _wait_steps(page, "#evalView [data-msg='run']", ['ok:정답표 읽기', 'ok:지식 상태 읽기', 'ok:쿨러 성능 저하', 'run:채점 기록 저장'])
-            assert '항목 1/1 끝 · 100.0점' in page.inner_text("#evalView [data-msg='run'] [data-step='item:0'] .lv-note")
+            _wait_steps(page, "#evalView [data-r='live']", ['ok:정답표 읽기', 'ok:지식 상태 읽기', 'ok:쿨러 성능 저하', 'run:채점 기록 저장'])
+            assert '항목 1/1 끝 · 100.0점' in page.inner_text("#evalView [data-r='live'] [data-step='item:0'] .lv-note")
+            # 진행 막대는 서버가 적은 항목 단계를 센 값이다(항목 1개 가운데 1개 끝남) — 항목 단계가 생기기 전에는 없다
+            assert page.inner_text("#evalView [data-r='live'] .io-progress [data-r='count']") == '항목 1개 가운데 1개 끝남'
+            assert page.get_attribute("#evalView [data-r='live'] [role='progressbar']", 'aria-valuenow') == '1'
             assert page.locator("#evalView [data-act='run']").is_disabled() and page.inner_text("#evalView [data-act='run']").startswith('채점하는 중')
             job.crash('채점 기록을 저장하지 못했습니다')
             page.wait_for_selector("#evalView [data-act='run']:not([disabled])", timeout=8000)
-            assert page.locator('#evalView .lv-step').count() == 0 and page.inner_text("#evalView [data-msg='run']") != ''      # 왜 안 됐는지 한 줄
+            assert page.locator('#evalView .lv-step').count() == 0
+            assert '채점하지 못했습니다' in page.inner_text("#evalView [data-r='live'] [role='alert']")      # 실시간 상자가 있던 자리에 왜 안 됐는지가 남는다
             _reads_stop(page, wire, '채점이 끝났는데도 진행을 계속 읽는다')
             b.close()
     finally:

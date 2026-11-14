@@ -7,6 +7,7 @@
      ② 그림 원본 없이 정의(JSON)로만 등록된 흐름 — 정의의 단계 · 갈림 · 선으로 BPMN XML 을 만들고(defToXml) 자동 배치한다. 그 사실도 그림 위에 알린다.
    처리 건 화면(instances.js)이 쓰는 것:
      pathModel(def, workitems, instance)   지나온 단계와 남은 길(「몇 단계 가운데 몇 번째」 · 「남은 단계」 줄)
+     show(host, { key, title, load })       흐름 화면(flows.js)의 흐름 그림: 상태 표시 없이 그림만, 축소 · 확대 · 화면에 맞춤 · 전체 흐름 보기
      mount(host, view, { mine, onPick })    진행 길 캔버스: 지금 단계가 왼쪽 40 % 자리에 오게 열고, 축소 · 확대 · 지금 단계로 · 전체 흐름(큰 대화상자)
    2초마다 다시 읽어도 같은 처리 건이면 그림을 다시 싣지 않는다 — 상태 표시만 바꾸고, 끌어 옮긴 자리와 배율은 그대로 둔다. 지금 단계가 바뀐 때에만 그 단계로 옮긴다. */
 (function () {
@@ -113,6 +114,13 @@
       parts.push(`<bpmn:sequenceFlow id="${xa(q.id || `Flow_${i}`)}"${q.name ? ` name="${xa(UI.flowSeq(q.name) || q.name)}"` : ''} sourceRef="${xa(q.source)}" targetRef="${xa(q.target)}"/>`));
     return `<?xml version="1.0" encoding="UTF-8"?><bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="D_${pid}" targetNamespace="http://bpmn.io/schema/bpmn"><bpmn:process id="${pid}"${name(def.processDefinitionName)} isExecutable="false">${parts.join('')}</bpmn:process></bpmn:definitions>`;
   }
+  // 그림 원문 하나({ xml, source, note? }) → 배치 정보가 없으면 자동으로 놓은 것({ …, laidOut: true }). 이미 놓인 것은 그대로 돌려준다
+  async function laidOutSrc(src) {
+    if (/<(\w+:)?BPMNDiagram[\s>]/.test(src.xml)) return { laidOut: false, ...src };
+    await UI.need('bpmn-layout');
+    const laid = await hydBpmnLayout.ensureLayout(src.xml);
+    return { ...src, xml: laid.xml, laidOut: laid.laidOut };
+  }
   // 흐름 판본마다 한 번만 읽고 배치한다(같은 Promise). 실패하면 지워 다음에 다시 읽는다
   const XML = new Map();
   function xmlOf(def) {
@@ -126,10 +134,7 @@
         else if (r.status !== 404) throw new Error(`흐름 그림 원본을 읽지 못했습니다(${r.status})`);
       }
       if (!xml) xml = defToXml(def);
-      if (/<(\w+:)?BPMNDiagram[\s>]/.test(xml)) return { xml, source, laidOut: false };
-      await UI.need('bpmn-layout');
-      const laid = await hydBpmnLayout.ensureLayout(xml);
-      return { xml: laid.xml, source, laidOut: laid.laidOut };
+      return laidOutSrc({ xml, source });
     })();
     XML.set(key, job);
     job.catch(() => XML.delete(key));
@@ -185,20 +190,44 @@
   }
   // 전체를 맞춰 보이되 가장자리에 붙지 않게 조금 물린다(위 도구 줄 자리도 비운다)
   function fit(D) { const canvas = D.viewer.get('canvas'); canvas.zoom('fit-viewport', 'auto'); canvas.zoom(canvas.zoom() * 0.9); }
+  // 흐름 화면의 그림: 전체가 글자를 읽을 만한 크기로 들어가면 전체를 맞추고, 너무 길어 작아지면 시작 쪽을 읽을 만한 크기로 연다(나머지는 끌어서 · 전체 흐름 보기로)
+  function fitReadable(D) {
+    fit(D);
+    const canvas = D.viewer.get('canvas'), vb = canvas.viewbox(), o = vb.outer, inner = vb.inner;
+    if (canvas.zoom() >= 0.62 || !o.width || !inner.width) return;
+    const z = Math.min(0.8, Math.max(0.62, (o.height - 60) / inner.height)), w = o.width / z, h = o.height / z;
+    canvas.viewbox({ x: inner.x - 24, y: inner.y + inner.height / 2 - h / 2 - 12 / z, width: w, height: h });
+  }
   async function draw(container, view, opts = {}) {
     await UI.need('bpmn');
-    const src = await xmlOf(view.definition);
+    // opts.src: 그림 원문을 주는 함수(흐름 화면 — 가져온 그림 · 등록 전 초안). 없으면 처리 건의 흐름 판본에서 읽는다
+    const src = opts.src ? await laidOutSrc(await opts.src()) : await xmlOf(view.definition);
     const viewer = new BpmnJS(viewerOptions(container));
-    await viewer.importXML(src.xml);
+    try { await viewer.importXML(src.xml); } catch (err) { viewer.destroy(); throw new Error('BPMN 그림을 열지 못했습니다 — ' + (err.message || err)); }
     const D = { viewer, src, marks: null };
-    paint(D, view, opts.mine);
-    if (opts.fit) fit(D); else focus(D);
+    if (!opts.plain) paint(D, view, opts.mine);      // plain: 상태 표시 없이 그림만(흐름 화면)
+    if (opts.fit) fit(D); else if (opts.plain) fitReadable(D); else focus(D);
     if (opts.onPick) viewer.get('eventBus').on('element.click', ev => { const el = ev.element; if (!skip(el) && isBox(el)) opts.onPick(el.id); });
     return D;
   }
   const LEGEND = '<span><i style="background:var(--cv-green)"></i>끝남</span><span><i style="background:var(--cv-now)"></i>지금</span><span><i></i>남음</span>';
-  const noticeText = src => !src.laidOut ? '' : src.source === 'file' ? '배치 정보가 없어 자동으로 놓았습니다 — bpmn.io 에서 열어 배치를 고치면 그대로 보입니다'
-    : '그림 원본 없이 등록된 흐름이라 단계 정의에서 자동으로 그렸습니다';
+  const noticeText = src => src.note || (!src.laidOut ? '' : src.source === 'file' ? '배치 정보가 없어 자동으로 놓았습니다 — bpmn.io에서 열어 배치를 고치면 그대로 보입니다'
+    : '그림 원본 없이 등록된 흐름이라 단계 정의에서 자동으로 그렸습니다');
+  const zoomBy = (D, dir) => { const canvas = D.viewer.get('canvas'); canvas.zoom(Math.min(2.5, Math.max(0.2, canvas.zoom() * (dir > 0 ? 1.2 : 1 / 1.2)))); };
+  // 캔버스 도구의 누름(진행 길 · 흐름 그림이 함께 쓴다): 축소 · 확대 · 지금 단계로 · 화면에 맞춤 · 전체 흐름
+  function wireHost(host) {
+    if (host._flowWired) return;
+    host._flowWired = true;
+    host.addEventListener('click', ev => {
+      const F = host._flow, D = F && F.D; if (!D) return;
+      const zb = ev.target.closest('[data-flow-zoom]');
+      if (zb) zoomBy(D, zb.dataset.flowZoom === '1' ? 1 : -1);
+      else if (ev.target.closest('[data-flow-now]')) focus(D);
+      else if (ev.target.closest('[data-flow-fit]')) fit(D);
+      else if (ev.target.closest('[data-flow-all]')) openFull(F.view, F.plain ? { plain: true, title: F.plain.title, src: () => D.src } : F.opts);
+    });
+  }
+  const zoomTools = `<button type="button" data-flow-zoom="-1" aria-label="축소" data-tooltip="축소" data-side="bottom">${UI.icon('minus')}</button><button type="button" data-flow-zoom="1" aria-label="확대" data-tooltip="확대" data-side="bottom">${UI.icon('plus')}</button>`;
 
   /* 진행 길 캔버스. host 는 instances.js 가 한 건의 뼈대에 둔 칸 하나다. 같은 처리 건 · 같은 흐름 판본이면 상태 표시만 고친다 */
   function mount(host, view, opts = {}) {
@@ -218,7 +247,7 @@
     if (F && F.D) F.D.viewer.destroy();
     F = host._flow = { key, sig, view, opts, D: null };
     host.innerHTML = `<div class="canvas flow-canvas"><div class="canvas-bar"><span class="cv-legend" data-flow-legend>${LEGEND}</span><span class="grow"></span>
-      <span class="cv-tools" role="group" aria-label="그림 도구"><button type="button" data-flow-zoom="-1" aria-label="축소" data-tooltip="축소" data-side="bottom">${UI.icon('minus')}</button><button type="button" data-flow-zoom="1" aria-label="확대" data-tooltip="확대" data-side="bottom">${UI.icon('plus')}</button><button type="button" data-flow-now aria-label="지금 단계로" data-tooltip="지금 단계로" data-side="bottom">${UI.icon('locate-fixed')}</button><button type="button" class="wide" data-flow-all>${UI.icon('maximize-2')}전체 흐름</button></span></div>
+      <span class="cv-tools" role="group" aria-label="그림 도구">${zoomTools}<button type="button" data-flow-now aria-label="지금 단계로" data-tooltip="지금 단계로" data-side="bottom">${UI.icon('locate-fixed')}</button><button type="button" class="wide" data-flow-all>${UI.icon('maximize-2')}전체 흐름</button></span></div>
       <div class="bpmn" data-flow-stage role="img" aria-label="진행 길"></div><p class="flow-note" data-flow-note hidden></p><div class="flow-wait" data-flow-wait>${UI.loading('', 'compact')}</div></div>`;
     const stage = host.querySelector('[data-flow-stage]'), wait = host.querySelector('[data-flow-wait]');
     draw(stage, view, { mine: opts.mine, onPick: id => host._flow && host._flow.opts.onPick && host._flow.opts.onPick(id) }).then(D => {
@@ -233,16 +262,32 @@
       wait.innerHTML = UI.errorBlock('흐름 그림을 그리지 못했습니다', err.message, { retry: true });
       wait.querySelector('[data-retry]')?.addEventListener('click', () => { host._flow = null; mount(host, F.view, F.opts); });
     });
-    if (host._flowWired) return;
-    host._flowWired = true;
-    host.addEventListener('click', ev => {
-      const F2 = host._flow, D = F2 && F2.D; if (!D) return;
-      const canvas = D.viewer.get('canvas');
-      const zb = ev.target.closest('[data-flow-zoom]');
-      if (zb) { canvas.zoom(Math.min(2.5, Math.max(0.3, canvas.zoom() * (zb.dataset.flowZoom === '1' ? 1.2 : 1 / 1.2)))); return; }
-      if (ev.target.closest('[data-flow-now]')) { focus(D); return; }
-      if (ev.target.closest('[data-flow-all]')) openFull(F2.view, F2.opts);
+    wireHost(host);
+  }
+
+  /* 흐름 그림 한 장(상태 표시 없이) — 흐름 화면이 쓴다. o = { key, title, load() → { xml, source?, note? } }.
+     같은 key 로 다시 부르면 다시 그리지 않는다(끌어 옮긴 자리 · 배율이 남는다). 배치 정보가 없으면 자동으로 놓고 그 사실을 그림 위에 알린다 */
+  function show(host, o) {
+    let F = host._flow;
+    if (F && F.key === o.key) return;
+    if (F && F.D) F.D.viewer.destroy();
+    F = host._flow = { key: o.key, plain: o, view: null, D: null };
+    host.innerHTML = `<div class="canvas flow-canvas"><div class="canvas-bar"><span class="cv-legend flow-title">${e(o.title || '')}</span><span class="grow"></span>
+      <span class="cv-tools" role="group" aria-label="그림 도구">${zoomTools}<button type="button" data-flow-fit aria-label="화면에 맞춤" data-tooltip="화면에 맞춤" data-side="bottom">${UI.icon('scan')}</button><button type="button" class="wide" data-flow-all>${UI.icon('maximize-2')}전체 흐름 보기</button></span></div>
+      <div class="bpmn" data-flow-stage role="img" aria-label="${e(o.title || '흐름 그림')}"></div><p class="flow-note" data-flow-note hidden></p><div class="flow-wait" data-flow-wait>${UI.loading('', 'compact')}</div></div>`;
+    const wait = host.querySelector('[data-flow-wait]');
+    draw(host.querySelector('[data-flow-stage]'), null, { plain: true, src: o.load }).then(D => {
+      if (host._flow !== F) { D.viewer.destroy(); return; }
+      F.D = D; wait.remove();
+      const note = host.querySelector('[data-flow-note]'), text = noticeText(D.src);
+      note.hidden = !text; note.textContent = text;
+    }).catch(err => {
+      if (host._flow !== F) return;
+      console.error('[hydFlow] 흐름 그림을 그리지 못했습니다', o.key, err);
+      wait.innerHTML = UI.errorBlock('흐름 그림을 그리지 못했습니다', err.message, { retry: true });
+      wait.querySelector('[data-retry]')?.addEventListener('click', () => { host._flow = null; show(host, o); });
     });
+    wireHost(host);
   }
 
   /* 전체 흐름: 큰 대화상자에 전체를 맞춰 연다(같은 상태 표시). 닫으면 그림을 치운다 */
@@ -250,9 +295,9 @@
     document.querySelector('dialog.flow-dialog')?.remove();
     const dlg = document.createElement('dialog');
     dlg.className = 'dialog flow-dialog';
-    const title = UI.flowName((view.definition || {}).processDefinitionName || '') || '흐름';
+    const title = opts.title || UI.flowName(((view || {}).definition || {}).processDefinitionName || '') || '흐름';
     dlg.setAttribute('aria-label', `전체 흐름 — ${title}`);
-    dlg.innerHTML = `<div><div class="canvas"><div class="canvas-bar"><span class="cv-legend">${LEGEND}</span><span class="cv-legend flow-title">${e(title)}${view.instance?.proc_inst_name ? ` · ${e(view.instance.proc_inst_name)}` : ''}</span><span class="grow"></span>
+    dlg.innerHTML = `<div><div class="canvas"><div class="canvas-bar">${opts.plain ? '' : `<span class="cv-legend">${LEGEND}</span>`}<span class="cv-legend flow-title">${e(title)}${view && view.instance?.proc_inst_name ? ` · ${e(view.instance.proc_inst_name)}` : ''}</span><span class="grow"></span>
       <span class="cv-tools" role="group" aria-label="그림 도구"><button type="button" data-fd-zoom="-1" aria-label="축소">${UI.icon('minus')}</button><button type="button" data-fd-zoom="1" aria-label="확대">${UI.icon('plus')}</button><button type="button" class="wide" data-fd-fit>${UI.icon('scan')}화면에 맞춤</button><button type="button" class="wide" data-fd-close>${UI.icon('x')}닫기</button></span></div>
       <div class="bpmn" data-fd-stage role="img" aria-label="전체 흐름"></div><p class="flow-note" data-flow-note hidden></p><div class="flow-wait" data-flow-wait>${UI.loading('', 'compact')}</div></div></div>`;
     document.body.append(dlg);
@@ -261,13 +306,13 @@
     dlg.addEventListener('click', ev => {
       if ((ev.target === dlg && down) || ev.target.closest('[data-fd-close]')) { dlg.close(); return; }
       if (!D) return;
-      const canvas = D.viewer.get('canvas'), zb = ev.target.closest('[data-fd-zoom]');
-      if (zb) canvas.zoom(Math.min(2.5, Math.max(0.2, canvas.zoom() * (zb.dataset.fdZoom === '1' ? 1.2 : 1 / 1.2))));
+      const zb = ev.target.closest('[data-fd-zoom]');
+      if (zb) zoomBy(D, zb.dataset.fdZoom === '1' ? 1 : -1);
       else if (ev.target.closest('[data-fd-fit]')) fit(D);
     });
     dlg.addEventListener('close', () => { if (D) D.viewer.destroy(); dlg.remove(); });
     dlg.showModal();
-    draw(dlg.querySelector('[data-fd-stage]'), view, { mine: opts.mine, fit: true }).then(d => {
+    draw(dlg.querySelector('[data-fd-stage]'), view, { mine: opts.mine, fit: true, plain: opts.plain, src: opts.src }).then(d => {
       if (!dlg.isConnected) { d.viewer.destroy(); return; }
       D = d; dlg.querySelector('[data-flow-wait]').remove();
       const note = dlg.querySelector('[data-flow-note]'), text = noticeText(d.src);
@@ -277,5 +322,5 @@
     return dlg;
   }
 
-  window.hydFlow = { pathModel, marksOf, defToXml, xmlOf, mount, openFull };
+  window.hydFlow = { pathModel, marksOf, defToXml, xmlOf, mount, show, openFull };
 })();

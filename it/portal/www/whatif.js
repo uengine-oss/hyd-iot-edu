@@ -5,7 +5,7 @@
    부품은 키트의 것(panel · fieldset · field · seg · turn-facts · opts · table · fold)이고 격자는 reading.css(.io)다. 색은 상태에만 쓴다 — 출처의 종류(데이터 · 문서 · 가정 · 시험값)와 순위의 종류는 글로 쓴다.
    B5: 「규칙」 보기의 "관점 중요도" — 성과 관점(이름은 지식 그래프에서)마다 비중을 주면 조치 점수의 성과 지표 득실이 그 비중으로 다시 계산된다. */
 (function () {
-  const W = { el: null, asset: 'HYD-01', pattern: '', patterns: null, base: null, view: null, bounds: null, boundsMsg: '', tab: 'money',
+  const W = { el: null, asset: '', assets: null, assetsError: '', pattern: '', patterns: null, base: null, view: null, bounds: null, boundsMsg: '', tab: 'money',
     busy: false, msg: '', card: '', values: {}, policy: { weights: {}, penalties: {}, perspectives: {} }, perspForm: {}, weeks: null, weeksForm: { card: '', variable: 'load_pct', value: '', weeks: 4 },
     ruleForm: { target: '', value: '' } };
   const won = v => v == null ? '미확인' : `${v < 0 ? '−' : v > 0 ? '+' : ''}${Math.abs(v).toLocaleString('ko-KR')}원`;
@@ -26,11 +26,14 @@
   function mount(el) {
     W.el = el;
     render();
+    // 설비 목록은 서버가 준다(plant /api/state 의 units — 유압 설비 화면이 읽는 그 응답). 화면에 설비 이름을 적어 두지 않는다
+    if (!W.assets) getJ(API.plant + '/api/state').then(p => { W.assets = Object.keys((p && p.units) || {}); W.assetsError = W.assets.length ? '' : '설비 상태 응답에 설비가 없습니다'; if (!W.asset) W.asset = W.assets[0] || ''; render(); })
+      .catch(e => { W.assets = null; W.assetsError = e.message; render(); });
     if (!W.patterns) getJ(API.agent + '/api/ontology/patterns').then(p => { W.patterns = p || []; W.patternsError = ''; if (!W.pattern && W.patterns[0]) W.pattern = W.patterns[0].code; render(); })
       .catch(e => { W.patterns = null; W.patternsError = e.message; render(); });
   }
   // 패턴 목록을 못 읽었으면 셸이 메뉴를 다시 열 때 새로 읽는다
-  const failed = () => !W.patterns && !!W.patternsError;
+  const failed = () => (!W.patterns && !!W.patternsError) || (!W.assets && !!W.assetsError);
 
   async function load() {
     if (W.busy) return;
@@ -101,15 +104,16 @@
     const loadMain = !v || W.tab === 'money';
     let left = `<div class="panel-head"><div><h2>시험 조건</h2></div></div><div class="panel-sec">` +
       UI.section('시험 기준',
-        UI.field({ label: '설비', input: `<select id="wiAsset">${['HYD-01', 'HYD-02', 'HYD-03'].map(a => `<option ${a === W.asset ? 'selected' : ''}>${a}</option>`).join('')}</select>` }) +
+        UI.field({ label: '설비', input: `<select id="wiAsset" ${W.assets && W.assets.length ? '' : 'disabled'}>${(W.assets || []).map(a => `<option ${a === W.asset ? 'selected' : ''}>${esc(a)}</option>`).join('')}</select>` }) +
         UI.field({ label: '이상 패턴', input: `<select id="wiPattern">${pats}</select>`, hint: '판단을 한 번 계산해 기준으로 삼습니다. 바꾸는 값은 이 계산에만 쓰고 업무 DB · 지식 · 순위 정책은 그대로 둡니다.' })) +
-      foot(`<button type="button" class="btn"${loadMain ? '' : ' data-variant="outline"'} id="wiLoad" ${W.busy || !W.pattern ? 'disabled' : ''}>${UI.icon(v ? 'refresh-cw' : 'play')}${v ? '다시 불러오기' : '불러오기'}</button>`) +
+      foot(`<button type="button" class="btn"${loadMain ? '' : ' data-variant="outline"'} id="wiLoad" ${W.busy || !W.pattern || !W.asset ? 'disabled' : ''}>${UI.icon(v ? 'refresh-cw' : 'play')}${v ? '다시 불러오기' : '불러오기'}</button>`) +
       (stale ? note(`설비나 이상 패턴을 바꿨습니다. 오른쪽은 앞서 불러온 ${esc(W.loaded.asset)}의 결과이며, [다시 불러오기]를 눌러야 바뀝니다.`, ' role="status"') : '') + `</div>`;
     if (v) left += `<div class="panel-sec"><fieldset class="fieldset"><legend>바꿔 볼 것</legend><div role="group">` +
       `<div class="seg" role="group" aria-label="바꿔 볼 것">${TABS.map(([k, l]) => `<button type="button" data-wi-tab="${k}" aria-pressed="${k === W.tab}">${esc(l)}${count[k] ? `<span class="num">${count[k]}</span>` : ''}</button>`).join('')}</div>` +
       note(esc(TAB_SAYS[W.tab])) + `</div></fieldset>` + inputsPane(v) + `</div>`;
     // 오른쪽: 결과
-    let right = W.patternsError && !W.patterns ? UI.errorBlock('이상 패턴 목록을 읽지 못했습니다', W.patternsError, { retry: true }) : '';
+    let right = W.patternsError && !W.patterns ? UI.errorBlock('이상 패턴 목록을 읽지 못했습니다', W.patternsError, { retry: true })
+      : W.assetsError && !(W.assets && W.assets.length) ? UI.errorBlock('설비 목록을 읽지 못했습니다', W.assetsError, { retry: true }) : '';
     if (W.msg) right += UI.errorBlock('계산하지 못했습니다', W.msg);
     right += v ? resultPane(v) : W.busy ? hydLive.waitHtml('시험 기준을 계산하는 중', { since: W.busySince, hint: '고른 설비와 이상 패턴으로 판단을 한 번 계산해 기준으로 잡는 중입니다(원인 진단 → 조치 후보 → 손익).' })
       : right ? '' : `<section class="empty"><header><figure>${UI.icon('calculator')}</figure><h3>아직 불러온 시험 기준이 없습니다</h3><p>왼쪽에서 설비와 이상 패턴을 고르고 [불러오기]를 누르면 조치 후보별 손익(원), 1순위가 바뀌는 값, 몇 주 뒤 지표를 시험해 볼 수 있습니다.</p></header></section>`;
@@ -291,7 +295,7 @@
     q('#wiAsset')?.addEventListener('change', e => { W.asset = e.target.value; if (W.view) render(); });
     q('#wiPattern')?.addEventListener('change', e => { W.pattern = e.target.value; if (W.view) render(); });
     q('#wiLoad')?.addEventListener('click', load);
-    q('[data-retry]')?.addEventListener('click', () => { W.patternsError = ''; mount(W.el); });      // 이상 패턴 목록을 다시 읽는다
+    q('[data-retry]')?.addEventListener('click', () => { W.patternsError = W.assetsError = ''; if (W.assets && !W.assets.length) W.assets = null; mount(W.el); });      // 설비 · 이상 패턴 목록을 다시 읽는다
     el.querySelectorAll('[data-wi-card]').forEach(b => b.addEventListener('click', () => { W.card = b.dataset.wiCard; render(); }));
     q('#wiReset')?.addEventListener('click', reset);
     el.querySelectorAll('[data-wi-tab]').forEach(b => b.addEventListener('click', () => { W.tab = b.dataset.wiTab; W.msg = ''; render(); }));
