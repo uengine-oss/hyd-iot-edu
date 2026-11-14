@@ -193,3 +193,30 @@ def test_거래_기록은_무엇을_어느_설비에_어느_조치_방법으로_
     assert '작업지시' not in shown and 'CMMS' not in page.inner_text('#txList .line-text b')
     # 정비 관리 표도 같은 칸으로 — 정비 시점이 보인다
     assert page.eval_on_selector_all('#sysBoards table tbody tr:first-child td', 'ns => ns.map(n => n.textContent)') == ['WO-1', 'HYD-01', '팬 최대 운전', '야간 정비 시간 11-14 19:00', '배정됨']
+
+
+def test_결함_시뮬레이션은_범위를_한_번만_말하고_단추가_하는_일은_도움말로_닿는다(world):
+    """화면은 읽는 곳이 아니라 보고 누르는 곳이다: 「명령 관문을 거치지 않는다」는 화면에 한 번만 보이고, 설명 문단 대신 단추마다 도움말(올리거나 초점을 주면 나온다)이 있다."""
+    w, page = world, world.page
+    page.goto(w.base + '/index.html#/scenario')
+    page.wait_for_selector("#units .unit[data-asset='HYD-01'] button[data-act='degrade']")
+    for card in page.locator('#units .unit details').all():      # 접기를 모두 펴도 되풀이되지 않는다
+        card.evaluate('d => { d.open = true; }')
+    text = page.inner_text('#view-scenario')
+    assert text.count('명령 관문을 거치지 않습니다') == 1
+    # 카드에 늘 보이는 설명 문장은 사실 한 줄까지 — 결함 절에 문단이 없다
+    assert page.eval_on_selector_all("#units .lab-exp > p:not(.lab-note)", "ns => ns.every(n => n.getBoundingClientRect().height <= 24)")
+    assert page.inner_text("#units .unit[data-asset='HYD-01'] .repeat-guide") == ''      # 그 상황이 아니면 안내 줄이 없다
+    # 도움말: 주입 단추에 초점을 주면 그 단추가 하는 일이 뜬다(키보드로도 닿는다)
+    button = "#units .unit[data-asset='HYD-01'] button[data-act='degrade']"
+    tip = page.get_attribute(button, 'data-tooltip')
+    assert tip and '경보' in tip
+    page.focus(button)
+    page.keyboard.press('Shift+Tab'); page.keyboard.press('Tab')      # 키보드로 옮겨 온 초점
+    assert page.evaluate("sel => document.activeElement === document.querySelector(sel) && document.activeElement.matches(':focus-visible')", button)
+    page.wait_for_timeout(500)                                          # 도움말이 나타나는 움직임(0.15초)이 끝난 뒤에 잰다
+    shown = page.evaluate("sel => { const s = getComputedStyle(document.querySelector(sel), '::before'); return [s.content, s.visibility, s.opacity]; }", button)
+    assert tip in shown[0] and shown[1] == 'visible' and float(shown[2]) > 0, shown
+    # 결함이 걸린 채 새 경보가 나지 않는 상황이 되면 그때만 한 줄
+    w.units['HYD-01'] = unit('HYD-01', ts1=50.0, health=0.55)
+    page.wait_for_function("document.querySelector(\"#units .unit[data-asset='HYD-01'] .repeat-guide\").textContent.includes('쿨러 복구')", timeout=8000)
