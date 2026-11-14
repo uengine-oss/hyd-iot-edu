@@ -84,6 +84,12 @@ def test_결과_카드는_끝_이벤트_이름이_끝이면_끝난_곳을_따로
     ok = card({'outcome': '정상', 'level': 'ok', 'title': 'HYD-01 긴급 대응 결과', 'summary': '유온 정상 · 경보 해제'}, '끝')
     assert '끝난 곳' not in ok and '에서 끝났습니다' not in ok
     assert '<div class="result-main">유온 정상 · 경보 해제</div>' in ok and 'data-tone="ok">정상</span>' in ok
+    # 긴 결과 문장은 결론 한 마디만 굵게, 나머지 근거는 그 아래에 그대로 잇는다(굵은 글씨 여섯 줄이 화면을 덮었다)
+    long = '펌프 축 씰 키트 발주 7개 중 6개 입고 · 1개 검수 불합격 반품 (발주 PR-1, 로트 LOT-PR-1, A정밀 불량률 12 % × 7개 = 기대 불량 0.84개) — 업무 시간 리드타임 2일을 실제 24초로 줄여 기다린 뒤 입고했습니다'
+    short = card({'outcome': '미달', 'level': 'fail', 'title': '재고 보충 결과', 'summary': long}, '끝')
+    assert '<div class="result-main">펌프 축 씰 키트 발주 7개 중 6개 입고 · 1개 검수 불합격 반품</div>' in short
+    assert '<div class="result-sub" data-rest>(발주 PR-1, 로트 LOT-PR-1, A정밀 불량률 12 % × 7개 = 기대 불량 0.84개) — 업무 시간' in short and '입고했습니다</div>' in short
+    assert 'data-rest' not in ok
     rejected = card({'outcome': '반려', 'verdict': 'rejected', 'title': 'HYD-01 냉각 조치 결과', 'summary': '담당자가 거절했습니다'}, '거절 종결')
     assert '처리 건은 「거절 종결」에서 끝났습니다.' in rejected
     assert 'data-tone="danger"' not in rejected and '<span class="tag">반려</span>' in rejected
