@@ -1,6 +1,7 @@
 """Read-only candidate forecast using fresh, explicitly modelled plant status."""
 from datetime import datetime, timezone
 import math
+import time
 from urllib.parse import quote
 
 from copy import deepcopy
@@ -81,23 +82,60 @@ def binding(kg, asset):
     return row
 
 
-def source(asset):
-    source = f'{decide.PROCESS_URL}/api/plant/{quote(asset, safe="")}/status'
-    snapshot = decide._get_json(source)
-    if snapshot.get('asset') != asset:
-        raise ValueError(f'설비 상태 응답이 {asset}의 것이 아닙니다')
+#: 설비 상태가 낡았거나 아직 없을 때 새 값을 다시 읽는 간격과 한도(벽시계 초 — 설비는 상태를 벽시계 1초마다 낸다. 배속과 무관하다).
+#: 한도는 승인 검사를 부르는 process 의 기다림(current_approval 20초)과 재생 워커의 쓰기 도구 기다림(60초) 안에 든다.
+SOURCE_REREAD_EVERY_S = 1.0
+SOURCE_REREAD_FOR_S = 8.0
+SOURCE_NAME = '설비 상태'
+SOURCE_SYSTEM = '설비 상태 수집'
+
+
+def _read_source(asset):
+    """process 가 들고 있는 설비 최신 상태 한 번 읽기 → (상태, 나이 초). 아직 쓸 수 없는 까닭(곧 풀릴 수 있는 것: 닿지 못함 · 아직 없음 ·
+    낡음)은 (None, 까닭 문장). 응답 자체가 틀린 것(다른 설비 · 시각 없음 · 앞선 시각)은 다시 읽어도 같으므로 바로 FactUnavailable."""
+    from urllib.error import HTTPError
+
+    def broken(reason):
+        return decide.FactUnavailable('plant_status', SOURCE_NAME, SOURCE_SYSTEM, reason)
+    try:
+        snapshot = decide._get_json(f'{decide.PROCESS_URL}/api/plant/{quote(asset, safe="")}/status')
+    except HTTPError as exc:
+        if exc.code == 404:
+            return None, f'{asset}의 설비 상태가 아직 들어오지 않았습니다'
+        return None, f'설비 상태를 읽지 못했습니다(응답 {exc.code})'
+    except OSError:
+        return None, '설비 상태를 들고 있는 처리 서비스에 닿지 못했습니다'
+    if not isinstance(snapshot, dict) or snapshot.get('asset') != asset:
+        raise broken(f'설비 상태 응답이 {asset}의 것이 아닙니다')
     try:
         stamp = datetime.fromisoformat(str(snapshot.get('t') or '').replace('Z', '+00:00'))
     except ValueError:
-        raise ValueError('설비 상태에 읽을 수 있는 관측 시각이 없습니다') from None
+        raise broken('설비 상태에 읽을 수 있는 관측 시각이 없습니다') from None
     if stamp.tzinfo is None:
-        raise ValueError('설비 상태 관측 시각에 시간대가 없습니다')
+        raise broken('설비 상태 관측 시각에 시간대가 없습니다')
     age = (datetime.now(timezone.utc) - stamp).total_seconds()
-    if not -2 <= age <= decide.MAX_APPROVAL_FACT_AGE_S:
-        raise ValueError(f'설비 상태가 {age:.0f}초 전 값이라 지금 예측에 쓸 수 없습니다({decide.MAX_APPROVAL_FACT_AGE_S:g}초 이내만) — '
-                         '설비 시뮬레이터와 수집이 도는지 확인하고 다시 판단하세요')
-    return snapshot, {'source':'process plant.status', 'kind':'explicit simulator model state',
-                      'asset':asset, 'observed_at':snapshot['t'], 'age_seconds':age}
+    if age < -2:
+        raise broken(f'설비 상태의 관측 시각이 지금보다 {-age:.0f}초 앞서 있습니다')
+    if age > decide.MAX_APPROVAL_FACT_AGE_S:
+        return None, (f'설비 상태가 {age:.0f}초 전 값에서 새로 들어오지 않았습니다'
+                      f'(예측에는 {decide.MAX_APPROVAL_FACT_AGE_S:g}초 이내 값만 씁니다)')
+    return snapshot, age
+
+
+def source(asset):
+    """예측에 쓸 설비 상태(지금 값)와 그 출처. 낡았거나 아직 없으면 SOURCE_REREAD_FOR_S 동안 다시 읽고, 그래도 없으면 FactUnavailable 로
+    멈춘다 — 낡은 값으로 예측하지 않고, 「예측을 확인할 수 없음」을 조치 안의 제외 사유로 굳히지도 않는다. 수집이 잠깐 밀린 한 번이 그 판단의
+    모든 안을 제외로 저장해 값이 돌아온 뒤에도 승인할 수 없게 됐다(2026-11-14 01:01 처리 건). 문턱(MAX_APPROVAL_FACT_AGE_S)은 그대로다."""
+    deadline = time.monotonic() + SOURCE_REREAD_FOR_S
+    while True:
+        snapshot, found = _read_source(asset)
+        if snapshot is not None:
+            return snapshot, {'source':'process plant.status', 'kind':'explicit simulator model state',
+                              'asset':asset, 'observed_at':snapshot['t'], 'age_seconds':found}
+        if time.monotonic() + SOURCE_REREAD_EVERY_S > deadline:
+            raise decide.FactUnavailable('plant_status', SOURCE_NAME, SOURCE_SYSTEM,
+                                         f'{found}. {SOURCE_REREAD_FOR_S:g}초 동안 다시 읽어도 같았습니다 — 잠시 뒤 다시 시도하세요')
+        time.sleep(SOURCE_REREAD_EVERY_S)
 
 
 #: 작업지시를 지금 시행하는 카드(cards.option_window 즉시)의 예측: 정비하는 동안 설비가 서 있다. 시스템이 PLC 에 정지 명령을 보내는
@@ -130,13 +168,15 @@ def current(kg, asset, actions, horizon_s):
 
 def candidates(kg, asset, skills, stopping=frozenset()):
     """One bound model and one fresh snapshot for all candidates. Never use design constants.
-    stopping: 지금 설비를 세우고 작업지시를 시행하는 카드 id(cards.option_window 가 즉시라고 정한 것) — 정지한 설비로 예측한다."""
+    stopping: 지금 설비를 세우고 작업지시를 시행하는 카드 id(cards.option_window 가 즉시라고 정한 것) — 정지한 설비로 예측한다.
+    설비 예측 모델 연결이 지식에 없는 것은 그 지식을 고칠 때까지 그대로인 사실이라 안마다 「예측을 확인할 수 없음」으로 싣는다. 설비 상태를
+    받지 못한 것(source 의 FactUnavailable)은 곧 풀릴 수 있는 일이라 싣지 않고 그대로 올린다 — 부른 쪽(판단 · 승인 검사)이 그 까닭으로 멈춘다."""
     forecasts, contexts = {}, {}
     try:
         bound = binding(kg, asset)
-        snapshot, provenance = source(asset)
-    except Exception as exc:
+    except ValueError as exc:
         return {}, {sid: {'error': str(exc)[:300], 'execution_authorized': False} for sid in skills}
+    snapshot, provenance = source(asset)
     for sid, skill in skills.items():
         try:
             result = _predict(bound, snapshot, provenance, plant_actions(skill, snapshot, sid in stopping), bound['horizon_s'])

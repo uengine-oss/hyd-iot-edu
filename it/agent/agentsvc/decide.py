@@ -426,7 +426,13 @@ def decide(kg, registry: DecisionRegistry, tsdb, asset: str, pattern: str, cause
         compliance = [r for r in dmn if r['decision'] == 'dec:compliance']
         stopping = {sid for sid, k in skills.items()
                     if cards.stops_now(cards.option_window(compliance, sid, k, facts.get('windows_by_variable')))}
-        forecasts, forecast_contexts = ({}, None) if purchase_part is not None else forecasting.candidates(kg, asset, skills, stopping)
+        try:
+            forecasts, forecast_contexts = ({}, None) if purchase_part is not None else forecasting.candidates(kg, asset, skills, stopping)
+        except FactUnavailable as exc:
+            # 예측에 쓸 설비 상태를 받지 못했다 — 판단 사실을 못 읽은 것과 같은 길로 멈춘다(모든 안을 「예측 미확인」 제외로 채운 판단을 내지 않는다)
+            rec['error_code'] = 'SOURCE_UNAVAILABLE'
+            step('forecast', {"error": str(exc)}, "예측에 쓸 설비 상태를 받지 못해 판단을 멈췄다", status="FAILED")
+            raise
         step('forecast', forecast_contexts, '구매는 물리 예측을 사용하지 않고 검토된 원문 총비용과 실제 부품 견적을 비교한다' if purchase_part is not None
              else '설비별 명시 모델과 동일 시점 원천으로 조치별 예측(지금 작업지시를 시행하는 카드는 정지한 설비로); 고정 설계점으로 대체하지 않음')
         precedents = kg.precedents(cause.get("failureModeId") or "")

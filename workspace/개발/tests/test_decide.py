@@ -2,6 +2,8 @@
 가정 실험의 바꿔 넣는 값은 판단 변수의 형식으로만. 실제 agent 서비스(stack) · 실제 그래프 · 업무 시스템(enterprise-sim)을 지난다."""
 import json
 import math
+import threading
+import time
 import urllib.error
 import urllib.request
 
@@ -98,6 +100,84 @@ def test_업무_시스템이_답하지_않으면_판단은_그_자리_까닭으�
     cooling.reported_for('HYD-01', seconds=120)     # 업무 시스템이 멈춘 동안에도 설비는 1초마다 보고했다(근거 구간에 빈칸이 없다 — 시험 시간과 무관하게)
     status, again = post(agent, {'asset': 'HYD-01', 'pattern': 'COOLER_DEGRADATION'})          # 다시 답하면 같은 요청이 그대로 된다
     assert status == 200 and again['status'] != 'FAILED', again.get('error')
+
+
+# ---------------------------------------------------------------- 예측에 쓰는 설비 상태가 낡았을 때(벽시계 15초 — decide.MAX_APPROVAL_FACT_AGE_S)
+class _Handed(dict):
+    """process 가 들고 있는 설비 최신 상태(main.plant_status)에 붙인 관측 지점: 판단이 그 설비의 상태를 읽어 간 때를 시험이 안다(값 · 동작은 그대로)."""
+    def __init__(self, held, asset):
+        super().__init__(held)
+        self.asset, self.read = asset, threading.Event()
+
+    def get(self, key, default=None):
+        if key == self.asset:
+            self.read.set()
+        return super().get(key, default)
+
+
+def _cooling_alert(world, monkeypatch, late_s):
+    """쿨러 오염으로 유온이 경보선 위에 머문 HYD-01 에 냉각 성능 저하 경보가 올라 처리 건이 AI 판단 단계에서 기다린다. 그동안 process 가 받은
+    설비 상태는 late_s 초 전에 관측된 것 하나뿐이다(수집이 그만큼 밀렸다). 돌려줌 = (처리 건 id, 판단이 상태를 읽어 간 때를 아는 관측 지점)."""
+    from datetime import datetime, timedelta, timezone
+    from conftest import COOLING
+    from hydcommon import topics
+    pattern, asset = COOLING
+    world.plant.inject(asset, 'cooler_degradation', severity='moderate')
+    world.settle(1800)
+    tags = world.plant.tags(asset)
+    _, pid = world.raise_alert(pattern, asset, ts1=tags['TS1'], ce=tags['CE'])
+    world.stack.timescale.write(asset, tags)
+    seen = (datetime.now(timezone.utc) - timedelta(seconds=late_s)).isoformat(timespec='milliseconds').replace('+00:00', 'Z')
+    world.receive(topics.K_STATUS, world.plant.status(asset, seen))
+    handed = _Handed(world.main.plant_status, asset)
+    monkeypatch.setattr(world.main, 'plant_status', handed)
+    return pid, handed
+
+
+def _decisions_of(world, pid):
+    return [d for d in world.main.book.values() if ((d.get('origin') or {}).get('process_scope') or {}).get('instance') == pid]
+
+
+def test_판단할_때_낡았던_설비_상태가_몇_초_뒤_새로_들어오면_제외가_굳지_않고_정상_판단이_등록된다(world, monkeypatch):
+    """2026-11-14 01:01 처리 건: 수집이 잠깐 밀려 15초 넘은 설비 상태를 한 번 읽은 판단이 네 안을 모두 「현재 조치 예측을 확인할 수 없습니다」
+    제외로 저장했고, 1초 뒤 값이 돌아왔는데도 그 건은 승인할 수 없었다. 실제 워커(재생) · 실제 판단 등록(dmn-mcp)으로 본다."""
+    pid, handed = _cooling_alert(world, monkeypatch, late_s=15.5)
+    box = {}
+    run = threading.Thread(target=lambda: box.update(handled=world.runner('replay').poll_once()))
+    run.start()
+    assert handed.read.wait(120), '판단이 설비 상태를 읽지 않았다'
+    time.sleep(3)                               # 판단은 낡은 값을 받은 채 3초를 더 기다린다
+    world.report('HYD-01')                      # 설비 보고가 다시 들어온다(지금 값)
+    run.join(180)
+    row = world.row(pid, 'T_agent')
+    assert box.get('handled') == 1 and row['status'] in ('SUBMITTED', 'DONE'), (box, row['status'], world._failure(row))
+    (made,) = _decisions_of(world, pid)
+    assert made['recommended'], made.get('explanation')
+    for option in made['options']:
+        assert not (option.get('forecastContext') or {}).get('error'), option['forecastContext']
+        assert not [v for v in option['violations'] if v['rule'] == 'forecast:model-unavailable'], option['violations']
+        assert 0 <= option['forecastContext']['provenance']['age_seconds'] <= decide.MAX_APPROVAL_FACT_AGE_S
+
+
+def test_설비_상태가_끝내_새로_들어오지_않으면_모든_안을_제외한_판단을_등록하지_않고_그_까닭으로_단계가_멈춘다(world, monkeypatch):
+    """낡은 값으로 예측하지도, 「예측 미확인」으로 모든 안을 제외한 판단을 남기지도 않는다 — 판단 사실을 못 읽은 것과 같은 길(FactUnavailable)로
+    멈추고, 그 단계는 실패로 남아 사람이 다시 수행할 수 있다(처리 건은 닫히지 않는다)."""
+    from agentsvc import forecasting
+    pid, handed = _cooling_alert(world, monkeypatch, late_s=15.5)
+    started = time.monotonic()
+    handled = world.runner('replay').poll_once()
+    waited = time.monotonic() - started
+    assert _decisions_of(world, pid) == []
+    row = world.row(pid, 'T_agent')
+    assert handled == 1 and (row['status'], row['draft_status']) == ('IN_PROGRESS', 'FAILED'), (handled, row['status'], row['draft_status'])
+    assert handed.read.is_set() and waited >= forecasting.SOURCE_REREAD_FOR_S - 1, waited      # 바로 포기하지 않고 그동안 다시 읽었다
+    said = world._failure(row)['friendly']
+    assert '설비 상태' in said and '새로 들어오지 않았습니다' in said and '판단을 멈췄습니다' in said, said
+    assert 'forecast_ts1' not in said and '시뮬레이터' not in said, said
+    status, view = world.api('GET', f'/api/instances/{pid}')
+    assert status == 200 and view['instance']['status'] == 'RUNNING', view
+    (stuck,) = view['attention']['steps']
+    assert (stuck['activity'], stuck['kind'], stuck['actions']) == ('T_agent', 'failed', ['rework', 'close']) and stuck['reason'] == said, stuck
 
 
 @pytest.mark.parametrize('facts, needle', [({'fan100_hours': -5}, '음수일 수 없습니다'), ({'secret_fact': 1}, '바꿔 넣을 수 없는 사실')],
