@@ -665,7 +665,7 @@
   const watchValue = w => `<span data-cr-tag="${e(w.asset + ':' + w.tag)}" data-cr-op="${e(w.op)}" data-cr-limit="${e(w.limit == null ? '' : w.limit)}">–</span>`;
   function watchLine(w) {
     const u = watchUnit(w);
-    return `지금 ${e(W().fieldName(String(w.tag).toLowerCase()))} <b class="num">${watchValue(w)}${u ? ' ' + e(u) : ''}</b>${w.limit != null ? ` · 기준 ${e(W().sym(w.op))} ${e(W().num(w.limit))}${u ? ' ' + e(u) : ''}` : ''}${w.plan ? ` · 판정까지 <b class="num" data-cr-until="${e(w.plan.due_at)}">–</b>` : ''}`;
+    return `지금 ${e(W().fieldName(String(w.tag).toLowerCase()))} <b class="num">${watchValue(w)}${u ? ' ' + e(u) : ''}</b>${w.limit != null ? ` · 기준 ${e(W().sym(w.op))} ${e(W().num(w.limit))}${u ? ' ' + e(u) : ''}` : ''}${w.plan ? ` · <b class="num" data-cr-until="${e(w.plan.due_at)}" data-cr-label>–</b>` : ''}`;
   }
   function watchBox(b, w) {
     const u = watchUnit(w), name = W().fieldName(String(w.tag).toLowerCase());
@@ -696,7 +696,7 @@
     });
     document.querySelectorAll('[data-cr-until]').forEach(n => {
       const left = Math.ceil((Date.parse(n.dataset.crUntil) - Date.now()) / 1000);
-      const text = Number.isFinite(left) ? (left > 0 ? fmtMs(left * 1000) : '판정하는 중') : '–';
+      const text = Number.isFinite(left) ? (left > 0 ? ('crLabel' in n.dataset ? '판정까지 ' : '') + fmtMs(left * 1000) : '판정하는 중') : '–';
       if (n.textContent !== text) n.textContent = text;
     });
   }
