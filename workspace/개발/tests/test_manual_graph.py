@@ -102,6 +102,46 @@ def test_적재한_문서를_다시_열면_응답이_이미_적재된_판을_말
     assert reopen(plan['source_id'])['loaded'] is None
 
 
+def test_적재한_파일을_새_문서로_다시_올리면_응답이_같은_원본으로_적재한_문서를_말한다(seeded_graph, archive):
+    """2026-11-14: 이미 적재한 매뉴얼을 「새 문서 등록」으로 다시 올리면 새 문서가 생기고 응답에는 적재 사실이 없어, 화면이 「아직 AI가 문서를 읽기 전」을
+    보이고 적재는 절차 번호가 먼저 적재한 문서와 겹쳐 「다른 원천/기존 지식이 소유합니다」로 끝났다. 올린 응답(POST …/preview)은 같은 원본 파일로 만든
+    판이 적재돼 있는 다른 문서(same_original — 그 문서 id · 파일 이름 · 절차 수)를 싣는다. 적재 전 · 다른 내용의 파일 · 그 문서의 개정으로 올린 경우 ·
+    되돌린 뒤에는 None 이다."""
+    import base64
+    from contextlib import contextmanager
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from procsvc import course_policy as cp, manual_api
+    from procsvc.manual_approved_cache import ApprovedExtractions
+
+    @contextmanager
+    def driver():
+        yield seeded_graph.driver
+    app = FastAPI()
+    app.state.course = cp.Policy(cp.Phase('pbl'))
+    manual_api.register(app, archive_factory=lambda: archive, driver_factory=driver, tenant='hyd', audit=lambda *a, **k: None,
+                        runtime_factory=lambda: None, approved_cache=ApprovedExtractions())
+    client = TestClient(app)
+    raw, name = DOCS['HM-8']['raw'], DOCS['HM-8']['filename']
+
+    def upload(data, document_id=None):
+        r = client.post('/api/kg/manuals/preview', json={'filename': name, 'data': base64.b64encode(data).decode(), 'document_id': document_id})
+        assert r.status_code == 200, r.text
+        return r.json()
+    assert upload(raw)['same_original'] is None                       # 아직 아무것도 적재하지 않았다
+    plan = plan_of(archive, 'HM-8')                                   # 같은 파일을 새 문서로 올려 적재한다
+    commit(seeded_graph, plan)
+    twin = upload(raw)                                                # 같은 파일을 「새 문서 등록」으로 한 번 더
+    assert twin['document_id'] != plan['document_id'] and twin['loaded'] is None
+    same = twin['same_original']
+    assert (same['document_id'], same['batch'], same['filename'], same['procedures']) == (plan['document_id'], plan['batch'], plan['filename'], len(plan['procedures']))
+    revise = upload(raw, document_id=same['document_id'])             # 화면의 [이 문서 개정]이 보내는 것
+    assert revise['loaded']['same_source'] is True and revise['same_original'] is None
+    assert upload(raw + '\n\n(다른 글)\n'.encode())['same_original'] is None          # 내용이 다른 파일은 같은 원본이 아니다
+    session_call(seeded_graph, manual_graph.rollback, 'hyd', plan['batch'], '담당자')
+    assert upload(raw)['same_original'] is None                       # 되돌린 문서는 적재된 판이 없다
+
+
 def test_같은_배치를_다시_보내면_한_번만_적용되고_다른_내용이면_거절한다(seeded_graph, archive):
     plan = plan_of(archive, 'HM-8')
     commit(seeded_graph, plan)

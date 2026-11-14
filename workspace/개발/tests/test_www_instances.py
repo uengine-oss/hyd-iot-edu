@@ -67,3 +67,29 @@ def test_사람이_맡는_역할이_없는_흐름의_다시_수행은_폼을_내
             b.close()
     finally:
         served.close()
+
+
+def test_자세한_기록은_사람_id와_안쪽_이름을_그대로_보이지_않고_이름_붙은_사건은_그_이름으로_적는다():
+    """2026-11-14 화면 정돈: 처리 건 「자세한 기록」의 처리 건 값에 승인자가 `user:me` 로, 단계 표의 출력 이름에 `cliagents session id` 가 보였고,
+    실시간 활동 줄은 시스템이 이름 붙인 사건(승인 접수 · 결함 시뮬레이션의 단추 · 효과 확인 시작)까지 모두 「진행 · 담당자」라 무슨 일인지 알 수 없었다."""
+    t = '2026-11-14T13:53:40Z'
+    view = {'instance': {'proc_inst_id': 'c.1', 'proc_def_id': 'c3_cooling', 'proc_def_version': '1', 'status': 'COMPLETED', 'start_date': t, 'end_date': t,
+                         'variables_data': [{'key': 'approved_by', 'value': 'user:me'}, {'key': 'approved_role', 'value': 'role:operator'}],
+                         'variable_sources': {}, 'initial_variables': None},
+            'workitems': [{'id': 'w1', 'activity_id': 'T_agent', 'activity_name': '원인 진단', 'status': 'DONE', 'user_id': 'agent:cooling', 'start_date': t, 'end_date': t,
+                           'output': {'cause': 'cause:x', 'text': '끝', 'cliagents_session_id': 'replay:1'}}],
+            'events': [{'event_type': 'task_working', 'crew_type': 'human', 'job_id': 'SCENARIO_BUTTON', 'timestamp': t, 'data': {'by': '담당자', 'name': '결함 시뮬레이션의 [쿨러 열화 주입]'}},
+                       {'event_type': 'task_working', 'crew_type': 'human', 'job_id': 'APPROVAL_ACCEPTED', 'timestamp': t, 'data': {'by': 'user:me', 'name': '승인 접수', 'role': 'role:operator'}},
+                       {'event_type': 'task_working', 'crew_type': 'result', 'job_id': 'REOBSERVE_STARTED', 'timestamp': t, 'data': {'name': '효과 확인 시작 (설비 명령 뒤)', 'plan': {}}},
+                       {'event_type': 'task_working', 'crew_type': 'cliagents:claude-code', 'job_id': 'run-1', 'timestamp': t, 'data': {'type': 'run_start', 'model': 'coding'}},
+                       {'event_type': 'task_started', 'crew_type': 'result', 'job_id': 'run-1', 'timestamp': t, 'data': {'goal': '원인 진단', 'name': 'Claude Code'}}]}
+    got = run(FILES, """UI.performers['user:me'] = '담당자'; UI.performers['role:operator'] = '운전원';
+        const text = h => h.replace(/<pre[\\s\\S]*?<\\/pre>/g, '').replace(/<[^>]+>/g, '|').replace(/\\|+/g, '|');
+        out({ log: text(hydInstances.logPane(DATA)), values: text(hydInstances.valuesPane(DATA, { approved_by: 'user:me' })) })""", view, prelude=PRELUDE)
+    log, values = got['log'], got['values']
+    assert '|승인자|담당자|' in values and 'user:me' not in values and '|승인 역할|운전원|' in values
+    assert '출력 원인' in log and 'cliagents' not in log and 'session' not in log
+    for line in ('|결함 시뮬레이션의 [쿨러 열화 주입]|담당자|', '|승인 접수|담당자 · 운전원|', '|효과 확인 시작 (설비 명령 뒤)|시스템|', '|진행|AI 에이전트 · AI 실행을 시작했습니다|',
+                 '|단계 시작|시스템 · 원인 진단 · Claude Code|'):
+        assert line in log, (line, log)
+    assert '담당자 · 담당자' not in log

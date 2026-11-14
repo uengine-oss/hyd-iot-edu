@@ -218,7 +218,6 @@ const UI = {
   // 문장 속 경보 패턴 코드(그래프 규칙 설명 「COOLER_DEGRADATION 경보에서 …」 등)도 사람 이름으로 — 표에 있는 코드만 바꾼다
   // 옛 판본으로 돈 처리 건의 저장된 기록에만 남아 있는 말(「수업 버튼 [쿨러 열화 주입]」 · 「재관측」)도 여기서 지금 화면 말로 읽는다 — 단계 기록 · 실시간 기록 · 단계 표가 모두 이 한 곳을 거친다(새 서버는 이 말을 내지 않는다)
   words(text) { return String(text ?? '').replace(/수업 버튼\s*(?=\[)/g, '결함 시뮬레이션 ').replace(/수업 버튼/g, '결함 시뮬레이션 단추').replace(/효과 재관측/g, '효과 확인').replace(/재관측/g, '효과 확인')
-    .replace(/(정비 범위 [^—·\n]*?) 오더 (등록|취소)/g, '$1 정비 요청 $2')      // 업무 DB 거래가 남기는 글(「원문 정비 범위 HYD-02 오더 등록」)의 화면 말 — 문서 인용의 「정비 오더」는 원문이라 건드리지 않는다
     .replace(/야간\s*정비창/g, '야간 정비 시간').replace(/정비창/g, '예정된 정비 시간').replace(/\b[A-Z][A-Z_]{3,}[A-Z]\b/g, code => this.patterns[code] || code); },
   // 이름 사전 읽기: 실패를 삼키지 않는다 — 머리에 한 번 알리고 10초 뒤 다시 읽는다(그동안 원래 id · 「표시 이름 미등록」이 보일 수 있다, W1-28)
   async loadNames() {
@@ -918,12 +917,17 @@ Object.assign(UI.terms, {
     const button=event.target.closest('[data-tool-payload-retry]'); if(!button)return;
     const entry=toolPayloads.get(button.dataset.toolPayloadRetry); if(entry) UI.loadFullToolIO(entry.event,JSON.parse(button.dataset.toolPayloadRetry)[3],true);
   });
+  // 그 단계가 등록한 판단을 찾는다. 판단 기록(decision)은 다시 평가되면 처음 판(original_decision)을 안에 지닌다 — 단계가 결과에 적어 둔 것(recorded:
+  // 추천 · 후보마다 순위와 점수)과 같은 판을 고른다. 점수까지 같은 판이 먼저이고, 없으면 추천 · 후보 · 순위가 같은 판이다: 결과 글의 점수는 그 글을 쓸 때의
+  // 값이라, 준비된 결과 글을 재생한 단계에서는 이 PC 가 등록한 판단의 점수와 다를 수 있다(그때도 그 단계가 등록한 판단은 이 id 의 것이고, 승인 판이 보이는
+  // 것도 그 판단이다 — 전에는 점수가 다르면 판단이 없는 것으로 읽어 AI 단계의 결론에 추천안이 빠졌다). 추천이나 후보 · 순위가 다르면 다른 판단이므로 없음(null)
   UI.recordedDecision = (decision, recorded, id) => {
     if (!id || decision?.id!==id) return null;
     if (!recorded) return decision;
-    const matches = d => d?.id===id && (!recorded.recommended || d.recommended===recorded.recommended) &&
-      (recorded.order || []).every(o=>(d.options || []).some(x=>x.id===o.id && (o.rank==null || x.rank===o.rank) && (o.score==null || x.score===o.score)));
-    return [decision.original_decision,decision].find(matches) || null;
+    const matches = (d, scores) => d?.id===id && (!recorded.recommended || d.recommended===recorded.recommended) &&
+      (recorded.order || []).every(o=>(d.options || []).some(x=>x.id===o.id && (o.rank==null || x.rank===o.rank) && (!scores || o.score==null || x.score===o.score)));
+    const versions = [decision.original_decision,decision];
+    return versions.find(d => matches(d, true)) || versions.find(d => matches(d, false)) || null;
   };
   UI.taskExecution = (w, events = [], instance = {}) => {
     const relevant = events.filter(ev => ev.todo_id === w.id);

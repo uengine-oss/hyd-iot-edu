@@ -376,6 +376,11 @@
 .lab-exp > p { margin: 0 0 10px; font-size: var(--fs-sm); line-height: 20px; color: var(--muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }      /* 사실 한 줄 */
 .lab-exp > p[data-tone="warn"] { color: var(--warn-ink); }
 #units .unit { overflow: visible; }      /* 단추의 도움말이 카드 밖으로 나올 수 있게 */
+/* 카드 셋의 높이를 맞춘다: 설비마다 단추 줄 수와 「처리 건에서 보기」 줄이 달라 아래 끝이 들쭉날쭉했다 — 한 줄에 놓인 카드는 가장 긴 카드의 높이로 늘리고,
+   맨 아래 「현장 패널」 접기를 카드 바닥에 붙인다(폭이 좁아 한 칸씩 쌓일 때는 저마다의 높이 그대로다) */
+#units { align-items: stretch; }
+#units .unit { display: flex; flex-direction: column; }
+#units .unit > .fold { margin-top: auto; }
 /* 키트는 키보드 초점에서 도움말을 감춘다 — 이 화면의 단추는 설명을 도움말에만 두므로 키보드로 옮겨 와도 보이게 한다 */
 #units [data-tooltip]:focus-visible::before { display: block; visibility: visible; opacity: 1; scale: 1; translate: 0 0; }
 #units .unit-go { border-top: 0; padding-top: 0; }
@@ -613,6 +618,19 @@
 .admin-fold { margin-top: 24px; }
 .admin-fold .panel-sec { padding-inline: 0; }
 .admin-tools { display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+/* 내 설정 판(configBundle.js): 절 넷(내 사례 · 내보내기 · 불러오기 · 기준으로 되돌리기)이 같은 짜임으로 읽히게 한다.
+   - 첫 절의 위 선은 판의 테두리와 겹쳐 두 줄로 보였다 — 뺀다. 「내 사례」 제목은 다른 절의 제목(h3)과 같은 크기 · 같은 간격으로 둔다
+   - 고르기 칸 옆의 작은 단추와 안내 글은 칸의 아래 끝이 아니라 칸 높이의 가운데에 맞춘다
+   - 막힌 [불러오기]의 까닭은 단추 옆에 길게 붙지 않고 단추 줄 위의 한 줄로 둔다 */
+#configBundleView > .panel-sec:first-child { border-top: 0; }
+#configBundleView .cases .sec-head { margin: 0 0 6px; }
+#configBundleView .cases .sec-head h2 { font-size: var(--fs-sm); line-height: 20px; }
+#configBundleView .cases > p.muted { margin: 0 0 12px; font-size: var(--fs-sm); }
+#configBundleView .panel-sec > p.muted { font-size: var(--fs-sm); }
+#configBundleView .admin-tools > .btn, #configBundleView .admin-tools > .muted { margin-bottom: 4px; }
+#configBundleView .admin-tools > .muted { font-size: var(--fs-sm); line-height: 28px; }
+#configBundleView .form-foot > [data-course-why] { order: -1; flex: 1 1 100%; font-size: var(--fs-sm); line-height: 20px; }
+#configBundleView .panel-sec > p.muted + .field, #cfgResetWhat { margin-top: 12px; }
 .admin-tools .field { width: 200px; }
 .admin-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; }
 .admin-wide { grid-column: 1 / -1; }

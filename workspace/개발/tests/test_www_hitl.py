@@ -106,3 +106,61 @@ def test_화면에서_만든_조치_방법만_지우기_단추가_있고_거절�
             b.close()
     finally:
         served.close()
+
+
+def test_적재한_파일을_새_문서로_다시_올리면_적재_사실과_이_문서_개정이_나오고_누르면_그_문서의_개정으로_다시_올린다():
+    """2026-11-14: 이미 적재한 매뉴얼을 「새 문서 등록」으로 다시 올리면 화면이 「아직 AI가 문서를 읽기 전입니다」라고 했고, 그대로 검토 · 적재하면
+    「다른 원천/기존 지식이 소유합니다」로 끝났다. 서버는 같은 원본으로 적재한 문서(same_original)를 올린 응답에 싣는다(procsvc manual_api.preview) —
+    화면은 그 사실을 말하고 주 단추를 [이 문서 개정]으로 두며, 누르면 방금 고른 파일을 그 문서의 개정(document_id)으로 다시 올린다."""
+    from playwright.sync_api import sync_playwright
+    app = FastAPI()
+    app.mount('/', StaticFiles(directory=WWW, html=True))
+    served = Served(app)
+    name, loaded_doc = 'HI-01_shift-inspection-supplement.md', 'doc-loaded'
+    fact = {'batch': 'b1', 'at': '2026-11-14T02:00:00+00:00', 'by': '담당자', 'source_id': f'manual:{loaded_doc}:abc', 'filename': name, 'sections': 5,
+            'procedures': 3, 'steps': 12, 'provided': False, 'extraction': None}
+    base = {'filename': name, 'batch': 'b2', 'previous_batch': None, 'status': 'READY', 'chars': 1800, 'pages': 1, 'warnings': []}
+    posted = []
+
+    def answer(route):
+        path, method = route.request.url.split('?')[0], route.request.method
+        if path.endswith('/api/kg/manuals/preview') and method == 'POST':
+            body = route.request.post_data_json
+            posted.append(body.get('document_id'))
+            if body.get('document_id') == loaded_doc:            # 그 문서의 개정으로 올림: 적재된 판이 이 원문에서 나왔다
+                return route.fulfill(json={**base, 'source_id': f'manual:{loaded_doc}:abc', 'document_id': loaded_doc, 'previous_batch': 'b1',
+                                           'loaded': {**fact, 'same_source': True}, 'same_original': None})
+            return route.fulfill(json={**base, 'source_id': 'manual:doc-new:abc', 'document_id': 'doc-new', 'loaded': None,
+                                       'same_original': {**fact, 'document_id': loaded_doc}})
+        if path.endswith('/api/kg/manuals/sources'):
+            return route.fulfill(json={'items': [], 'offset': 0, 'limit': 50, 'total': 0, 'next_offset': None})
+        if path.endswith('/api/kg/manuals') or path.endswith('/api/kg/skills') or path.endswith('/api/kg/ingests'):
+            return route.fulfill(json=[])
+        if path.endswith('/api/inbox/users'):
+            return route.fulfill(json=[{'id': 'user:me', 'name': '담당자', 'roles': []}])
+        return route.fulfill(json={})
+    try:
+        with sync_playwright() as p:
+            b = p.chromium.launch()
+            page = b.new_page()
+            page.route('**/svc/**', answer)
+            page.goto(served.url + '/index.html')
+            open_screen(page, 'knowledge')
+            page.set_input_files('#manualFile', {'name': name, 'mimeType': 'text/markdown', 'buffer': '# 보충 매뉴얼\n'.encode()})
+            page.click('#manualPreview')
+            page.wait_for_selector('#manualResult .mprev', timeout=15000)
+            said = page.inner_text('#manualResult .result')
+            assert '이미 적재한 원문' in said and f'「{name}」로 이미 적재돼 있습니다' in said and '절차 3개' in said and '담당자' in said
+            assert '아직 AI가 문서를 읽기 전' not in said
+            # 주 단추는 [이 문서 개정] 하나이고 AI 추출 시작은 보조 단추다(그대로 적재하면 거절된다는 것을 위에서 말했다)
+            assert page.locator('#manualReviseSame').get_attribute('data-variant') is None
+            assert page.locator('#manualAgentExtract').get_attribute('data-variant') == 'outline'
+            page.click('#manualReviseSame')
+            page.wait_for_function("document.querySelector('#manualResult .result-label')?.textContent === '이미 적재된 문서'", timeout=15000)
+            assert posted == [None, loaded_doc]                   # 처음은 새 문서로, [이 문서 개정]은 그 문서의 개정으로
+            again = page.inner_text('#manualResult .result')
+            assert '이 원문으로 만든 판이 지식 지도에 적재돼 있습니다' in again and page.locator('#manualReviseSame').count() == 0
+            assert page.locator('#manualAgentExtract').get_attribute('data-variant') is None      # 이제 주 단추는 AI 추출 시작
+            b.close()
+    finally:
+        served.close()

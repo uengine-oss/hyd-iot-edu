@@ -1049,16 +1049,27 @@
     const rec = opts.find(o => o.id === d.recommended) || null;
     const recName = rec ? W().text(rec.name) : '';
     const mock = rec && UI.evaluationInfo(rec, d).state === 'analysis';
+    // 원인을 어느 길로 정했는가(판단 origin.cause_route — plainWords.js causeWords): 센서 진단이면 「원인은 …로 보고」, 정기 정비 · 부품 부족 같은 업무 경보면
+    // 고장을 판정한 것이 아니라 「정기 정비로 막는 원인」 · 「이 부품이 고치는 원인」을 찾은 것이다 — 그 말로 쓴다. 구매 부품 경로는 원인을 정하지 않는다.
+    // 이 단계가 판단을 냈는데 그 판단을 읽지 못했으면(d 없음) 어느 길인지 모르므로 원인 문장을 쓰지 않는다
+    const route = d ? (d.origin && d.origin.cause_route) || null : null;
+    const cw = W().causeWords(route), diagnosed = route == null || route === 'diagnosis';
+    const told = cause && route !== 'purchase-part' && !(owns('decision') && !d) ? cause : '';
+    const act = mock ? '모의 1순위로 계산했습니다' : '추천합니다';
     let verdict = '';
-    if (rec && cause) verdict = `원인은 ${cause}${W().josa(cause, '으로/로')} 보고, 「${recName}」${W().josa(recName, '을/를')} ${mock ? '모의 1순위로 계산했습니다' : '추천합니다'}.`;
-    else if (rec) verdict = `조치 ${opts.length}개를 비교해 「${recName}」${W().josa(recName, '을/를')} ${mock ? '모의 1순위로 계산했습니다' : '추천합니다'}.`;
-    else if (cause) verdict = `원인을 ${cause}${W().josa(cause, '으로/로')} 판단했습니다.`;
+    if (rec && told) verdict = diagnosed ? `원인은 ${told}${W().josa(told, '으로/로')} 보고, 「${recName}」${W().josa(recName, '을/를')} ${act}.`
+      : `${cw.found(told)}, 「${recName}」${W().josa(recName, '을/를')} ${act}.`;
+    else if (rec) verdict = `조치 ${opts.length}개를 비교해 「${recName}」${W().josa(recName, '을/를')} ${act}.`;
+    else if (told) verdict = diagnosed ? `원인을 ${told}${W().josa(told, '으로/로')} 판단했습니다.` : `${cw.cause}${W().josa(cw.cause, '은/는')} ${told}입니다.`;
     // 결론 아래 한 줄: 추천안의 예측 · 좋아지는 것 · 감수할 것(승인 카드와 같은 함수 — approvalCard.js reasons)
     // 주의(감점 · 경고 규칙의 글)는 문장이 길어 이 한 줄에 잇지 않고 아래 근거 줄 하나로 보인다
     const sub = rec && window.hydApprove ? hydApprove.reasons(rec, d, { warn: false }).slice(0, 3).join(' · ') : '';
     // 근거: 원인(고장 유형) → 원인 판정에 쓴 관측값(잰 값과 기준, 여섯 줄까지) → 판단 엔진이 그 안에 대해 한 말
     const evid = [];
-    if (cause) evid.push(['network', `지식 지도의 원인 후보 가운데 <b>${e(cause)}</b>${W().josa(cause, '이/가')} 관측값과 맞습니다${top && top.failureMode ? ` <span class="muted">— 고장 유형: ${e(top.failureMode)}</span>` : ''}.`]);
+    // 「관측값과 맞습니다」는 센서 진단일 때만 한다 — 업무 경보의 원인은 관측값으로 가린 것이 아니라 지식 지도의 길(정비가 막는 고장 · 부품이 고치는 원인)로 찾은 것이다
+    const fmName = d && d.scenario && d.scenario.failureMode ? W().text(d.scenario.failureMode) : '';
+    if (told && diagnosed) evid.push(['network', `지식 지도의 원인 후보 가운데 <b>${e(told)}</b>${W().josa(told, '이/가')} 관측값과 맞습니다${top && top.failureMode ? ` <span class="muted">— 고장 유형: ${e(top.failureMode)}</span>` : ''}.`]);
+    else if (told) evid.push(['network', `${e(cw.cause)}${W().josa(cw.cause, '은/는')} <b>${e(told)}</b>입니다${fmName && cw.failureMode ? ` <span class="muted">— ${e(cw.failureMode)}: ${e(fmName)}</span>` : ''}. 지식 지도에서 찾았고, 센서 값으로 진단한 것이 아닙니다.`]);
     const tagOf = x => x.tag || (x.coverage && x.coverage.tag) || '';      // 증거가 읽은 시계열 태그(단위를 여기서 찾는다)
     const unit = x => tagOf(x) ? W().unit(String(tagOf(x)).toLowerCase()) : '';
     (top ? (top.evidence || []).filter(x => x && x.name && x.value != null).slice(0, 6) : []).forEach(x =>

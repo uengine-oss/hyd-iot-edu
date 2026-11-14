@@ -9,6 +9,8 @@ Docker 는 같은 망에 붙은 컨테이너끼리만 닿게 하므로, 「누�
   - 올라오는 길(설비 → 브로커 → 수집 중계 → 이벤트 로그)과 내려가는 길(process → 이벤트 로그 → 명령 관문 → 브로커 → 설비)이 이어져 있다.
   - 서비스가 환경 값 · 포털 길 표 · 감시 대상으로 부르는 다른 서비스는 실제로 닿는 망에 있다(망을 나누다 길이 끊기지 않게).
   - 브로커가 호스트에 여는 것은 구독만 되는 바깥 입구뿐이다(안쪽 입구 · 관리 API 는 열지 않는다 — 관리 API 가 꺼져 있는지는 test_emqx.py).
+  - 시스템 구성 화면이 그리는 표(it/portal/www/layers.js 의 부품마다 nets · zone, 망 목록 NETS)가 compose 의 망 정의와 같다. 화면은 이 표로 부품을
+    영역 띠와 망에 놓으므로, 표가 compose 와 어긋나면 그림이 실제와 다른 구조를 말한다.
 """
 import re
 
@@ -89,3 +91,39 @@ def test_서비스가_부르는_서비스는_닿는_망에_있다():
 def test_브로커가_호스트에_여는_것은_구독만_되는_바깥_입구뿐이다():
     inside = {int(str(line).rsplit(':', 1)[1]) for line in SERVICES['emqx'].get('ports') or []}
     assert inside == {1884, 8083}                          # ot/emqx/emqx.conf: 1884 · 8083 = 계정 student(구독만). 1883(서비스 이름만) · 18083(관리 API)은 열지 않는다
+
+
+# ---------------------------------------------------------------- 시스템 구성 화면의 표(layers.js) = compose
+def _diagram():
+    """화면이 읽는 표를 실제 layers.js 에서 꺼낸다: 부품마다 이름 · 붙은 망 · 영역, 그리고 망 목록."""
+    from www_node import run
+    return run(['layers.js'], "out({ comps: LAYERS.flatMap(L => L.comps.map(c => ({ name: c.name, nets: c.nets || null, zone: c.zone }))), nets: NETS.map(n => n.id) })")
+
+
+#: 그림에 상자가 없는데 IT 망 밖의 망에 붙는 서비스와 그 까닭. 여기에 없는 서비스가 OT · 경계 · 가상 설비 API 망에 붙으면 그림이 그 사실을 빠뜨린 것이다
+NOT_DRAWN = {
+    'fuxa-init': '관제 화면(FUXA)에 화면 설정을 한 번 넣고 끝나는 작업 — 떠 있는 부품이 아니다',
+    'dmn-mcp': '판단 서비스(agent)의 도구 서버 — 그림의 망 설명이 「포털 · 판단 서비스는 이 망으로 두 부품의 상태만 읽습니다」로 함께 말한다',
+}
+
+
+def test_시스템_구성_화면의_부품마다_붙은_망이_compose와_같다():
+    comps = _diagram()['comps']
+    assert len(comps) >= 15 and all(c['nets'] for c in comps), [c['name'] for c in comps if not c['nets']]      # 표를 실제로 읽었고 망이 빈 부품이 없다
+    unknown = [c['name'] for c in comps if c['name'].lower() not in SERVICES]
+    assert unknown == []                                             # 그림의 부품은 모두 compose 의 서비스다(이름은 대소문자만 다르다)
+    assert {c['name']: sorted(c['nets']) for c in comps if set(c['nets']) != NETS[c['name'].lower()]} == {}
+
+
+def test_시스템_구성_화면의_망_목록과_영역이_compose에서_나온_것과_같다():
+    diagram = _diagram()
+    compose_nets = list(yaml.safe_load((ROOT / 'compose.yaml').read_text(encoding='utf8'))['networks'])
+    assert diagram['nets'] == compose_nets                           # 망 다섯의 이름과 차례
+    zone_of = {**{s: 'ot' for s in OT}, **{s: 'dmz' for s in DMZ}, **{s: 'it' for s in IT}}
+    assert {c['name']: c['zone'] for c in diagram['comps'] if c['zone'] != zone_of[c['name'].lower()]} == {}
+
+
+def test_IT_망_밖의_망에_붙는_서비스는_모두_그림에_있다():
+    drawn = {c['name'].lower() for c in _diagram()['comps']}
+    outside = {s for s, nets in NETS.items() if nets - {IT_NET}}      # OT · 경계 망 둘 · 가상 설비 API 망 가운데 하나에라도 붙는 서비스
+    assert outside - drawn == set(NOT_DRAWN)

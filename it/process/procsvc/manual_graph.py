@@ -552,6 +552,15 @@ def head(session, tenant, document_id):
     return row['head'] if row else None
 
 
+def _loaded_of(receipt):
+    """적재 기록(receipt) 한 건 → 화면이 「이미 적재됨」을 말하는 데 쓰는 칸."""
+    receipt = _plain_by(receipt)
+    return {'batch': receipt['batch'], 'at': receipt.get('t'), 'by': receipt.get('by'), 'source_id': receipt.get('source_id'),
+            'filename': receipt.get('filename'), 'sections': receipt.get('sections'), 'procedures': receipt.get('procedures'),
+            'steps': receipt.get('steps'), 'provided': bool(receipt.get('provided_revision')),
+            'extraction': (receipt.get('extraction') or {}).get('instance') if isinstance(receipt.get('extraction'), dict) else None}
+
+
 def loaded(session, tenant, document_id):
     """이 문서의 지금 적재된 판(없으면 None): 적재 기록(receipt)에서 화면이 「이미 적재됨」을 말하는 데 쓰는 칸만.
     문서를 다시 열었을 때 「아직 AI가 문서를 읽기 전」으로 보이지 않게 하는 사실이다 — source_id 는 그 판을 만든 원문(다시 연 원문과 같은지
@@ -559,10 +568,18 @@ def loaded(session, tenant, document_id):
     row = session.run('MATCH (d:ManualIngestionDocument {id:$id, tenant:$tenant}) WHERE d.head IS NOT NULL '
                       'MATCH (b:ManualIngestionBatch {id:d.head, tenant:$tenant}) RETURN b.receipt AS receipt',
                       id=document_key(tenant, document_id), tenant=tenant).single()
-    if not row:
-        return None
-    receipt = _plain_by(json.loads(row['receipt']))
-    return {'batch': receipt['batch'], 'at': receipt.get('t'), 'by': receipt.get('by'), 'source_id': receipt.get('source_id'),
-            'filename': receipt.get('filename'), 'sections': receipt.get('sections'), 'procedures': receipt.get('procedures'),
-            'steps': receipt.get('steps'), 'provided': bool(receipt.get('provided_revision')),
-            'extraction': (receipt.get('extraction') or {}).get('instance') if isinstance(receipt.get('extraction'), dict) else None}
+    return _loaded_of(json.loads(row['receipt'])) if row else None
+
+
+def loaded_original(session, tenant, sha256, *, other_than):
+    """같은 원본 파일(sha256)로 만든 판이 지금 적재돼 있는 **다른** 문서(없으면 None). 원문 id 는 `manual:<문서>:<원본 sha256>` 이다(manual_sources).
+    이미 적재한 파일을 「새 문서 등록」으로 다시 올리면 새 문서가 생기는데, 그대로 검토 · 적재하면 절차 번호가 먼저 적재한 문서의 것과 겹쳐 적재가
+    「다른 원천/기존 지식이 소유합니다」로 끝난다 — 올린 직후에 그 사실과 개정할 문서(document_id)를 말하게 하는 칸이다."""
+    rows = session.run('MATCH (d:ManualIngestionDocument {tenant:$tenant}) WHERE d.head IS NOT NULL '
+                       'MATCH (b:ManualIngestionBatch {id:d.head, tenant:$tenant}) RETURN b.receipt AS receipt ORDER BY b.createdAt DESC',
+                       tenant=tenant).data()
+    for row in rows:
+        receipt = json.loads(row['receipt'])
+        if str(receipt.get('source_id') or '').endswith(':' + sha256) and receipt.get('document_id') != other_than:
+            return dict(_loaded_of(receipt), document_id=receipt.get('document_id'))
+    return None

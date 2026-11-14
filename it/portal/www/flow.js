@@ -259,7 +259,17 @@
     try { await viewer.importXML(src.xml); } catch (err) { viewer.destroy(); throw new Error('BPMN 그림을 열지 못했습니다 — ' + (err.message || err)); }
     const D = { viewer, src, marks: null };
     if (!opts.plain) paint(D, view, opts.mine);      // plain: 상태 표시 없이 그림만(흐름 화면)
-    if (opts.fit) openAt(D, opts.plain); else if (opts.plain) fitReadable(D); else focus(D);
+    // 그림을 놓는 일(맞춤 · 지금 단계로)은 캔버스에 크기가 있어야 한다. 가려진 화면에서 그리면 — 다른 화면에 있는 동안 흐름 목록이 다시 읽힐 때(관리 화면의
+    // 기준으로 되돌리기 등) — 크기가 0 이라 bpmn-js 의 배율이 0 이 되고 다음 배율 계산이 0 으로 나눠 「흐름 그림을 그리지 못했습니다」로 끝났다.
+    // 그림은 실어 두고, 캔버스가 보이는 순간 한 번 놓는다(opts.onPlace: 놓은 뒤에 정해지는 알림 — 긴 흐름이라 시작 쪽만 열었는지 — 을 화면이 다시 적는다)
+    const place = () => { if (opts.fit) openAt(D, opts.plain); else if (opts.plain) fitReadable(D); else focus(D); if (opts.onPlace) opts.onPlace(D); };
+    const sized = () => { const r = container.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+    if (sized()) place();
+    else {
+      const seen = new ResizeObserver(() => { if (!sized()) return; seen.disconnect(); viewer.get('canvas').resized(); place(); });
+      seen.observe(container);
+      viewer.get('eventBus').on('diagram.destroy', () => seen.disconnect());
+    }
     if (opts.onPick) viewer.get('eventBus').on('element.click', ev => { const el = ev.element; if (!skip(el) && isBox(el)) opts.onPick(defIdOf(el.id)); });
     return D;
   }
@@ -330,12 +340,14 @@
       <div class="bpmn" data-flow-stage role="img" aria-label="${e(o.title || '흐름 그림')}"></div><div class="flow-wait" data-flow-wait>${UI.loading('', 'compact')}</div></div>
       <p class="flow-cap muted"><span data-flow-cap>${e(o.cap || '')}</span><span data-flow-note hidden></span></p>`;
     const wait = host.querySelector('[data-flow-wait]');
-    draw(host.querySelector('[data-flow-stage]'), null, { plain: true, src: o.load }).then(D => {
+    // 그림 위 알림: 어떻게 놓은 그림인지 + (길어서 시작 쪽만 열었으면) 나머지를 보는 길 — 그림을 놓은 뒤에 정해진다
+    const sayNote = D => { if (host._flow !== F) return;
+      const note = host.querySelector('[data-flow-note]'), text = [noticeText(D.src, o.mine), D.partial ? '긴 흐름이라 시작 쪽을 읽을 크기로 열었습니다. 끌어서 옮기거나 [전체 흐름]으로 한 번에 봅니다' : ''].filter(Boolean).join(' · ');
+      note.hidden = !text; note.textContent = text; };
+    draw(host.querySelector('[data-flow-stage]'), null, { plain: true, src: o.load, onPlace: sayNote }).then(D => {
       if (host._flow !== F) { D.viewer.destroy(); return; }
       F.D = D; wait.remove();
-      // 그림 위 알림: 어떻게 놓은 그림인지 + (길어서 시작 쪽만 열었으면) 나머지를 보는 길
-      const note = host.querySelector('[data-flow-note]'), text = [noticeText(D.src, o.mine), D.partial ? '긴 흐름이라 시작 쪽을 읽을 크기로 열었습니다. 끌어서 옮기거나 [전체 흐름]으로 한 번에 봅니다' : ''].filter(Boolean).join(' · ');
-      note.hidden = !text; note.textContent = text;
+      sayNote(D);
     }).catch(err => {
       if (host._flow !== F) return;
       console.error('[hydFlow] 흐름 그림을 그리지 못했습니다', o.key, err);

@@ -156,3 +156,7 @@ def test_승인한_원문_정비_범위_오더는_묶음_전체를_취소하고_
                                               "WHERE id=%s)", (forward.json()['ref'],)).fetchall()}
         after = dict(db.execute('SELECT part_no, reserved FROM ent.spare_stock WHERE part_no = ANY(%s)', (list(parts),)).fetchall())
     assert statuses == {'취소'} and after == before
+    # 거래 기록의 글은 처리 건의 결과 보고 줄과 업무 시스템 기록이 그대로 보인다 — 화면 용어 「정비 요청」으로 적는다(079, 「오더」가 아니다)
+    with psycopg.connect(stack.dsn) as db:
+        details = dict(db.execute('SELECT id, detail FROM ent.transactions WHERE id = ANY(%s)', ([forward.json()['id'], undo.json()['id']],)).fetchall())
+    assert details[forward.json()['id']] == '원문 정비 범위 HYD-02 정비 요청 등록' and details[undo.json()['id']] == '원문 정비 범위 HYD-02 정비 요청 전체 취소'

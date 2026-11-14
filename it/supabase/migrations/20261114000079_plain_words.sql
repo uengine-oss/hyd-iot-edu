@@ -4,7 +4,7 @@
 --     「작업지시만」을 「반려하면 비운다」 · 「조치 방법」 · 「조치 후보」 · 「정비 요청만」으로 바꿨다. 폼의 정본은 정의 판본 안의 forms 이고
 --     seed.sql 은 새 DB 에만 들어가므로, 이미 쓰던 DB 의 행을 seed.sql 과 같은 내용으로 바꾼다(073 과 같은 방식 — 새 DB 에서는 행이 아직 없어
 --     아무것도 바뀌지 않는다).
---  2. 업무 거래 함수 둘(ent.exec_skill · ent.exec_compensation)이 거래 기록 · 거절 사유에 적는 글의 「작업지시」를 「정비 요청」으로.
+--  2. 업무 거래 함수 둘(ent.exec_skill · ent.exec_compensation)이 거래 기록 · 거절 사유에 적는 글의 「작업지시」 · 「오더」(정비)를 「정비 요청」으로.
 --     처리 건의 정비 완료 문장(「HYD-01 정비 완료 — … 작업지시 WO-… 완료」)과 업무 시스템 기록이 이 글을 그대로 보인다. 함수의 동작은
 --     그대로다 — 074(exec_skill) · 069(exec_compensation)의 정의에서 글 일곱 곳만 바꿨다. 이미 적힌 거래 기록의 글은 바꾸지 않는다.
 
@@ -41,20 +41,20 @@ begin
   if not exists (select 1 from ent.assets where code = v_asset) then
     raise exception '등록되지 않은 설비입니다: %', v_asset using errcode = '22023';
   end if;
-  -- 원문 정비 범위 오더는 현장 · 시운전 기록 확인 뒤에만 끝난다
+  -- 원문 정비 범위의 정비 요청은 현장 · 시운전 기록 확인 뒤에만 끝난다
   if v_skill = 'skill:pm-reset' and exists (select 1 from ent.work_orders w join ent.pm_counters c on c.plan_wo = w.id
        where c.asset = v_asset and w.maintenance_plan is not null) then
-    raise exception '원문 정비 범위 오더가 걸린 설비는 현장 · 시운전 완료 확인 뒤에 운전시간 계수기를 리셋합니다' using errcode = '22023';
+    raise exception '원문 정비 범위의 정비 요청이 걸린 설비는 현장 · 시운전 완료 확인 뒤에 운전시간 계수기를 리셋합니다' using errcode = '22023';
   end if;
   if v_skill = 'skill:complete-maintenance' and exists (select 1 from ent.work_orders where id = v_params->>'ref' and maintenance_plan is not null) then
-    raise exception '원문 정비 범위 오더의 완료는 현장 기록과 시운전 기록이 확인되어야 합니다' using errcode = '22023';
+    raise exception '원문 정비 범위의 정비 요청 완료는 현장 기록과 시운전 기록이 확인되어야 합니다' using errcode = '22023';
   end if;
 
-  -- ---- 기존 정기 정비 오더 일정 변경 (054 · 058)
+  -- ---- 기존 정기 정비 요청 일정 변경 (054 · 058)
   if v_skill = 'skill:reschedule-maintenance' then
     if coalesce(v_decision, '') = '' or coalesce(p->>'by', '') = '' or coalesce(p->>'option', '') = '' or coalesce(v_params->>'ref', '') = ''
        or coalesce(v_params->>'window_id', '') = '' or jsonb_typeof(v_params->'expected_order') is distinct from 'object' then
-      raise exception '정비 일정 변경에는 승인 · 기존 오더 사진(expected_order) · 정확한 목표 정비 시간(window_id)이 필요합니다' using errcode = '22023';
+      raise exception '정비 일정 변경에는 승인 · 기존 정비 요청 사진(expected_order) · 정확한 목표 정비 시간(window_id)이 필요합니다' using errcode = '22023';
     end if;
     if v_plan is not null then
       perform ent.pm_scope_check(v_plan, v_asset, false);
@@ -72,11 +72,11 @@ begin
     end if;
     select * into v_pm from ent.pm_counters where asset = v_asset for update;
     if not found or v_pm.plan_wo is distinct from v_params->>'ref' or v_pm.cycle is distinct from (v_params->>'cycle')::integer then
-      raise exception '오더 %는 이번 정기 정비 차례의 오더가 아닙니다', v_params->>'ref' using errcode = '22023';
+      raise exception '정비 요청 %는 이번 정기 정비 차례의 정비 요청이 아닙니다', v_params->>'ref' using errcode = '22023';
     end if;
     select * into v_wo from ent.work_orders where id = v_pm.plan_wo and asset = v_asset for update;
     if not found or v_wo.status <> '배정됨' or v_wo.completed_at is not null or to_jsonb(v_wo) is distinct from v_params->'expected_order' then
-      raise exception '승인한 뒤 오더 %가 바뀌었거나 일정을 바꿀 수 없는 상태입니다', v_params->>'ref' using errcode = '22023';
+      raise exception '승인한 뒤 정비 요청 %가 바뀌었거나 일정을 바꿀 수 없는 상태입니다', v_params->>'ref' using errcode = '22023';
     end if;
     select * into v_status from ent.pm_status where asset = v_asset;
     if v_status.following_window_id is distinct from v_params->>'window_id'
@@ -94,7 +94,7 @@ begin
     select to_jsonb(w) into v_after from ent.work_orders w where id = v_wo.id;
     insert into ent.transactions (id, system, skill, ref, detail, asset, decision_id, option_id, requested_by, fingerprint, before, after)
     values (ent.new_ref('TX'), v_system, v_skill, v_wo.id,
-            format('%s 정기 정비 오더 %s 일정 변경 — %s %s', v_asset, v_wo.id, v_window.label,
+            format('%s 정기 정비 요청 %s 일정 변경 — %s %s', v_asset, v_wo.id, v_window.label,
                    to_char(v_window.starts_at at time zone 'Asia/Seoul', 'MM-DD HH24:MI')),
             v_asset, v_decision, p->>'option', p->>'by', v_fp, v_before, v_after)
     returning * into v_row;
@@ -103,10 +103,10 @@ begin
 
   v_fp := md5(jsonb_build_object('decision', p->'decision', 'option', p->'option', 'skill', p->'skill', 'asset', p->'asset', 'params', p->'params')::text);
 
-  -- ---- 원문 정비 범위 오더 등록 (056 · 058)
+  -- ---- 원문 정비 범위의 정비 요청 등록 (056 · 058)
   if v_skill = 'skill:schedule-maintenance-scoped' then
     if coalesce(v_decision, '') = '' or coalesce(p->>'by', '') = '' or coalesce(p->>'option', '') = '' or v_plan->>'code' is distinct from 'WO_CREATE' then
-      raise exception '원문 정비 범위 오더 등록에는 승인한 정비 계획(WO_CREATE)이 필요합니다' using errcode = '22023';
+      raise exception '원문 정비 범위의 정비 요청 등록에는 승인한 정비 계획(WO_CREATE)이 필요합니다' using errcode = '22023';
     end if;
     perform pg_advisory_xact_lock(hashtextextended('ent.exec_skill:' || v_decision || ':' || v_skill, 0));
     select * into v_prior from ent.transactions where decision_id = v_decision and skill = v_skill and compensates is null;
@@ -146,7 +146,7 @@ begin
       from ent.work_orders w where scope_group = v_group;
     insert into ent.transactions (id, system, skill, ref, detail, asset, decision_id, option_id, requested_by, fingerprint, before, after)
     values (ent.new_ref('TX'), v_system, v_skill, v_first,
-            '원문 정비 범위 ' || (select string_agg(x->>'asset', ', ' order by ord) from jsonb_array_elements(v_plan->'assets') with ordinality as a(x, ord)) || ' 오더 등록',
+            '원문 정비 범위 ' || (select string_agg(x->>'asset', ', ' order by ord) from jsonb_array_elements(v_plan->'assets') with ordinality as a(x, ord)) || ' 정비 요청 등록',
             v_asset, v_decision, p->>'option', p->>'by', v_fp, null, v_after)
     returning * into v_row;
     return ent.tx_response(v_row);
@@ -409,7 +409,7 @@ begin
       return ent.tx_response(v_prior);
     end if;
     select scope_group into v_group from ent.work_orders where id = v_ref;
-    if v_group is null then raise exception '원문 정비 범위의 오더 묶음을 찾을 수 없습니다: %', v_ref using errcode = '22023'; end if;
+    if v_group is null then raise exception '원문 정비 범위의 정비 요청 묶음을 찾을 수 없습니다: %', v_ref using errcode = '22023'; end if;
     if v_forward.after->'plan'->>'stock_effect' = 'issue' then
       raise exception '실제로 출고한 부품은 반납 확인 뒤에만 전체를 되돌립니다' using errcode = '22023';
     end if;
@@ -418,7 +418,7 @@ begin
     perform 1 from ent.spare_stock s where s.part_no in (select part_no from ent.pm_part_reservations
        where work_order in (select id from ent.work_orders where scope_group = v_group)) order by s.part_no for update;
     if (select count(*) from ent.work_orders where scope_group = v_group) <> jsonb_array_length(v_forward.after->'orders') then
-      raise exception '원문 정비 범위의 오더 묶음이 등록 때와 다릅니다' using errcode = '22023';
+      raise exception '원문 정비 범위의 정비 요청 묶음이 등록 때와 다릅니다' using errcode = '22023';
     end if;
     for v_order in select * from ent.work_orders where scope_group = v_group order by asset loop
       select * into v_counter from ent.pm_counters where asset = v_order.asset;
@@ -433,7 +433,7 @@ begin
                     lateral jsonb_array_elements(x->'parts') required where x->>'asset' = v_order.asset and not exists
                     (select 1 from ent.pm_part_reservations r where r.work_order = v_order.id and r.part_no = required->>'part_no'
                       and r.qty = (required->>'qty')::numeric and r.released_at is null)) then
-        raise exception '범위 안 설비 %의 오더가 진행돼 전체 취소를 다시 검토해야 합니다', v_order.asset using errcode = '22023';
+        raise exception '범위 안 설비 %의 정비 요청이 진행돼 전체 취소를 다시 검토해야 합니다', v_order.asset using errcode = '22023';
       end if;
     end loop;
     select jsonb_build_object('plan', v_forward.after->'plan', 'orders', jsonb_agg(to_jsonb(w) || jsonb_build_object('ref', w.id) order by w.asset)) into v_before
@@ -454,14 +454,14 @@ begin
       from ent.work_orders w where scope_group = v_group;
     insert into ent.transactions (id, system, skill, ref, detail, asset, decision_id, option_id, requested_by, fingerprint, compensates, before, after)
     values (ent.new_ref('TX'), v_system, v_skill, v_ref,
-            '원문 정비 범위 ' || (select string_agg(x->>'asset', ', ' order by x->>'asset') from jsonb_array_elements(v_forward.after->'plan'->'assets') x) || ' 오더 전체 취소',
+            '원문 정비 범위 ' || (select string_agg(x->>'asset', ', ' order by x->>'asset') from jsonb_array_elements(v_forward.after->'plan'->'assets') x) || ' 정비 요청 전체 취소',
             p->>'asset', v_decision, p->>'option', p->>'by', v_fp, v_forward.id, v_before, v_after)
     returning * into v_row;
     return ent.tx_response(v_row);
   end if;
 
   if v_skill = 'skill:cancel-work-order' and exists (select 1 from ent.work_orders where id = v_ref and scope_group is not null) then
-    raise exception '원문 정비 범위 오더는 묶음 전체로만 취소합니다(skill:cancel-maintenance-scoped)' using errcode = '22023';
+    raise exception '원문 정비 범위의 정비 요청은 묶음 전체로만 취소합니다(skill:cancel-maintenance-scoped)' using errcode = '22023';
   end if;
   if v_decision is not null then
     perform pg_advisory_xact_lock(hashtextextended('ent.exec_compensation:' || v_decision || ':' || v_skill || ':' || v_ref, 0));
@@ -484,7 +484,7 @@ begin
     end if;
     v_before := to_jsonb(v_wo);
     update ent.work_orders set status = '취소', cancelled_at = now() where id = v_ref;
-    -- 이 오더가 '이번 회차 정기 정비 오더'(trigger ent.mark_pm_plan)였으면 표시를 지운다 — 남기면 정기 정비 도래 경보가 꺼진 채 B가 거절됐다
+    -- 이 정비 요청이 '이번 회차 정기 정비 요청'(trigger ent.mark_pm_plan)이었으면 표시를 지운다 — 남기면 정기 정비 도래 경보가 꺼진 채 B가 거절됐다
     update ent.pm_counters set plan_wo = null, plan_window = null, planned_at = null, updated_at = now() where plan_wo = v_ref;
     select to_jsonb(w) into v_after from ent.work_orders w where w.id = v_ref;
     v_asset := v_wo.asset; v_detail := format('%s 정비 요청 %s 취소 (%s)', v_wo.asset, v_ref, v_wo.task);

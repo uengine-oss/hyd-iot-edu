@@ -585,17 +585,21 @@
       const ready = r.status === 'READY';
       // 다시 연 문서: 서버가 이 문서의 지금 적재된 판(r.loaded — 언제 · 누가 · 절차 수 · 그 판을 만든 원문이 지금 연 원문인가)을 준다.
       // 적재된 문서를 「아직 AI가 읽기 전」이라고 말하지 않는다
-      const L = r.loaded || null, here = !!(L && L.same_source);
+      // 같은 원본 파일을 「새 문서 등록」으로 다시 올린 문서: 이 문서에는 적재된 판이 없지만 서버가 같은 파일로 적재한 다른 문서(r.same_original)를 준다.
+      // 그대로 추출 · 적재하면 절차 번호가 그 문서의 것과 겹쳐 적재가 거절되므로, 올린 직후에 그 사실을 말하고 주 단추를 [이 문서 개정]으로 둔다
+      const L = r.loaded || null, here = !!(L && L.same_source), twin = L ? null : r.same_original || null;
       const count = x => Array.isArray(x) ? x.length : x;
-      const loadedFacts = L ? [L.at ? UI.dateTime(L.at) : '', L.provided ? '기본 제공' : L.by ? UI.who(L.by) : '', count(L.procedures) != null ? `절차 ${count(L.procedures)}개` : ''].filter(Boolean).join(' · ') : '';
+      const factsOf = x => [x.at ? UI.dateTime(x.at) : '', x.provided ? '기본 제공' : x.by ? UI.who(x.by) : '', count(x.procedures) != null ? `절차 ${count(x.procedures)}개` : ''].filter(Boolean).join(' · ');
+      const loadedFacts = L ? factsOf(L) : '';
       box.innerHTML = `<div class="panel-sec mprev" data-doc-stage="2">
-        <div class="result"><div class="result-label">${here ? '이미 적재된 문서' : '올린 문서'}</div><div class="result-main">${esc(r.filename)} <span class="muted num">${r.chars.toLocaleString()}자</span></div>
+        <div class="result"><div class="result-label">${here ? '이미 적재된 문서' : twin ? '이미 적재한 원문' : '올린 문서'}</div><div class="result-main">${esc(r.filename)} <span class="muted num">${r.chars.toLocaleString()}자</span></div>
           <p class="result-sub" id="manualStageNote">${!ready ? `이 문서는 「${esc(UI.status(r.status))}」 상태라 AI 추출을 시작할 수 없습니다.`
             : here ? `이 원문으로 만든 판이 지식 지도에 적재돼 있습니다 — ${esc(loadedFacts)}. AI 추출을 다시 시작하면 새 결과를 검토해 이 문서를 개정합니다.`
             : L ? `이 문서는 다른 원문${L.filename ? `(${esc(L.filename)})` : ''}으로 만든 판이 적재돼 있습니다 — ${esc(loadedFacts)}. 지금 연 원문은 AI가 아직 읽지 않았습니다. AI 추출을 시작해 검토한 뒤 적재하면 그 판을 개정합니다.`
+            : twin ? `같은 원문이 등록한 문서 「${esc(twin.filename || '')}」로 이미 적재돼 있습니다 — ${esc(factsOf(twin))}. 새 문서로 적재하면 절차 번호가 그 문서와 겹쳐 거절됩니다. 고쳐 넣으려면 그 문서의 개정으로 여세요.`
             : '아직 AI가 문서를 읽기 전입니다. AI 추출을 시작하면 문서에서 조치 절차 · 고장 유형 · 원인을 찾아 정리합니다. 결과는 사람이 검토한 뒤에만 지식으로 적재됩니다.'}</p></div>
         <section class="doc-live" id="manualLive" aria-label="AI 추출 과정" hidden><div class="doc-progress" data-live-progress hidden></div><div data-live-host></div><div data-live-fail></div></section>
-        <footer class="form-foot"><span id="manualAgentStatus" role="status" class="muted"></span>${another}<button type="button" class="btn" id="manualAgentExtract" ${ready ? '' : 'disabled'}>${icon('sparkles')}AI 추출 시작</button></footer>
+        <footer class="form-foot"><span id="manualAgentStatus" role="status" class="muted"></span>${another}<button type="button" class="btn" ${twin ? 'data-variant="outline" ' : ''}id="manualAgentExtract" ${ready ? '' : 'disabled'}>${icon('sparkles')}AI 추출 시작</button>${twin ? `<button type="button" class="btn" id="manualReviseSame">${icon('pencil')}${esc(UI.t('kn.revise'))}</button>` : ''}</footer>
         <div class="doc-folds">${readWarnings}${sourceFold}${history}</div></div>`;
     } else {
       const k = r.knowledge || {}, groups = KNOW_GROUPS.filter(([g]) => (k[g] || []).length);
@@ -674,6 +678,15 @@
         if (tag) tag.innerHTML = input.checked ? UI.chipText('제외', 'neutral') : '';
       }));
     }
+    // [이 문서 개정](같은 원문이 이미 적재된 문서로): 등록한 문서 목록의 [이 문서 개정]과 같은 길이다 — 「등록할 문서」를 그 문서로 고른다. 방금 고른 파일이
+    // 칸에 남아 있으면 그 문서의 개정으로 바로 다시 올리고, 없으면(보관한 원문을 다시 연 경우) 파일을 고르게 1단계로 돌아간다
+    $('#manualReviseSame')?.addEventListener('click', () => {
+      selectManualDocument(r.same_original.document_id, r.same_original.filename);
+      if ($('#manualFile').files[0]) { $('#manualPreview').click(); return; }
+      H.preview = null; H.commit = null; renderPreview();
+      note($('#manualStatus'), '개정할 문서를 골랐습니다. 새 판본 파일을 고르고 [문서 올리기]를 누르세요.');
+      $('#manualUpload').scrollIntoView({ block: 'start' });
+    });
     $('#manualAnother').addEventListener('click', () => {      // 1단계로: 고른 파일과 「문서 개정」 선택을 비우고 파일 고르기 칸을 다시 보인다
       H.preview = null; H.commit = null; $('#manualFile').value = ''; $('#manualFilename').textContent = UI.t('kn.noFile'); $('#manualDocumentId').value = ''; renderPreview();
     });

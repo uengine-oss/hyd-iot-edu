@@ -149,3 +149,41 @@ def test_남은_길은_지금_단계에_걸린_기한이_먼저_오면_가는_�
     assert got['fork'] == ['승인', '거절']
     view['workitems'] = [wi('T_agent', 'IN_PROGRESS', '01'), wi('T_approve', 'TODO', None)]      # AI 단계가 지금: 승인 단계의 기한은 아직 걸리지 않았다
     assert run(FILES, "out(hydFlow.pathModel(DATA.definition, DATA.workitems, DATA.instance).timers)", view) == []
+
+
+def test_가려진_화면에서_그린_흐름_그림은_오류_없이_실리고_보이는_순간_읽을_크기로_놓인다():
+    """2026-11-14 한 바퀴: 관리 화면에서 [기준으로 되돌리기]를 하면 흐름 화면이 가려진 채 목록을 다시 읽어 그림을 그린다. 캔버스 크기가 0 이라 bpmn-js 의
+    배율이 0 이 되고 「흐름 그림을 그리지 못했습니다 — … non-finite」로 끝나, 그 뒤 흐름 화면을 열면 그림 대신 오류 판이 보였다.
+    실제 index.html · flow.js · bpmn-js 를 실제 브라우저로 연다(브라우저 밖의 process 응답만 빈 값으로 준다)."""
+    from fastapi import FastAPI
+    from fastapi.staticfiles import StaticFiles
+    from playwright.sync_api import sync_playwright
+    from conftest import ROOT, WWW, Served
+    app = FastAPI()
+    app.mount('/', StaticFiles(directory=WWW, html=True))
+    served = Served(app)
+    xml = (ROOT / 'it/process/definitions/shift_handover.bpmn').read_text(encoding='utf-8')
+    try:
+        with sync_playwright() as p:
+            b = p.chromium.launch()
+            page = b.new_page(viewport={'width': 1440, 'height': 900})
+            errors = []
+            page.on('console', lambda m: m.type == 'error' and 'hydFlow' in m.text and errors.append(m.text))
+            page.route('**/svc/**', lambda route: route.fulfill(json={}))
+            page.goto(served.url + '/index.html')
+            page.wait_for_function("() => typeof hydFlow !== 'undefined' && typeof UI !== 'undefined'")
+            page.evaluate("""xml => { const box = document.createElement('div'); box.id = 'hiddenFlow'; box.style.display = 'none';
+                const host = document.createElement('div'); host.id = 'hiddenFlowHost'; box.appendChild(host); document.querySelector('main').appendChild(box);
+                hydFlow.show(host, { key: 'k1', title: '교대', cap: '판본 1', mine: false, load: async () => ({ xml }) }); }""", xml)
+            page.wait_for_function("() => { const h = document.querySelector('#hiddenFlowHost'); return h._flow && (h._flow.D || h.querySelector('.alert')); }", timeout=20000)
+            assert errors == [] and page.locator('#hiddenFlowHost .alert').count() == 0          # 가려진 채로도 그림은 오류 없이 실린다
+            page.evaluate("() => { document.querySelector('#hiddenFlow').style.display = ''; }")
+            page.wait_for_function("() => { const z = document.querySelector('#hiddenFlowHost')._flow.D.viewer.get('canvas').zoom(); return Number.isFinite(z) && z > 0; }", timeout=10000)
+            page.wait_for_timeout(300)
+            got = page.evaluate("""() => { const host = document.querySelector('#hiddenFlowHost'), c = host._flow.D.viewer.get('canvas'), vb = c.viewbox();
+                return { zoom: c.zoom(), inside: vb.x <= vb.inner.x && vb.inner.x < vb.x + vb.width, boxes: host.querySelectorAll('.djs-shape').length }; }""")
+            assert 0.85 <= got['zoom'] <= 1 and got['inside'] and got['boxes'] > 5, got                # 보이는 순간 읽을 크기로, 그림의 시작 쪽이 판 안에 놓인다
+            assert errors == []
+            b.close()
+    finally:
+        served.close()

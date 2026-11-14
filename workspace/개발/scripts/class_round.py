@@ -65,7 +65,7 @@ _NOT_HUMAN = re.compile(r"Traceback|Exception|\bError\b|Error:|[A-Z][a-z]+Error\
                         r"|\{\"|\bdetail\s*:|\[object Object\]", re.M)
 
 
-_PROCEDURE_NO = re.compile(r"\bSOP-[A-Z]+-\d+\b|\bkWh\b")     # 매뉴얼의 절차 번호(SOP-COOL-11)는 학생이 원문과 대조하는 번호, kWh 는 단위 — 화면에 그대로 둔다
+_PROCEDURE_NO = re.compile(r"(?<![A-Za-z0-9_])SOP-[A-Z]+-\d+\b|\bkWh\b")     # 매뉴얼의 절차 번호(SOP-COOL-11)는 학생이 원문과 대조하는 번호, kWh 는 단위 — 화면에 그대로 둔다
 
 
 def raw_ids(text: str) -> list[str]:
@@ -837,45 +837,73 @@ def confirm_ok(r: Round, timeout: float = 5) -> bool:
     return True
 
 
+def more_menu(r: Round, menu_id: str, item: str):
+    """화면 머리 · 한 건 머리의 더 보기 메뉴(ui.js moreMenu — 키트 dropdown-menu)를 열고 그 안의 줄을 누른다. 「다시 읽기」처럼 자주 쓰지 않는 동작은
+    이 메뉴 안에 있어, 메뉴를 열기 전에는 보이지 않는다."""
+    r.page.locator(f"#{menu_id}-trigger").click()
+    r.page.locator(f"#{menu_id}-menu {item}").click()
+
+
+def kg_pick(r: Round, node_id: str, name: str) -> bool:
+    """지식 지도의 항목 하나를 고른다. 지도는 캔버스 그림이라 점마다의 요소가 없다 — 학생의 다른 길인 이름 찾기(이름을 치고 Enter 로 걸린 항목을
+    차례로 고른다 — enterprise.js goMatch)로 고른다. 고른 항목은 화면 상태(hydEnt.ent.sel)로 확인한다."""
+    page = r.page
+    page.fill("#ontoSearch", name)
+    page.wait_for_timeout(600)
+    for _ in range(40):
+        if page.evaluate("id => window.hydEnt.ent.sel === id", node_id):
+            return True
+        page.press("#ontoSearch", "Enter")
+        page.wait_for_timeout(250)
+    return bool(page.evaluate("id => window.hydEnt.ent.sel === id", node_id))
+
+
 def select_instance(r: Round, pid: str) -> bool:
-    """처리 건 목록에서 그 처리 건 카드(data-inst)를 누른다. 목록에 없으면 알림 링크와 같은 주소로 연다."""
+    """처리 건 목록의 「전체」에서 그 처리 건 줄(#instList .row[data-inst] — instances.js renderList)을 누른다. 목록은 스스로 다시 읽힌다(2초).
+    앞 20줄 밖이라 목록에 없으면 알림 링크와 같은 주소로 연다. 열렸는지는 화면이 고른 처리 건(hydInstances.I.sel · I.view)과 한 건의 틀(#casePath)로 본다
+    (처리 건 id 글자는 접힌 「자세한 기록 › 처리 건 값」에만 있다)."""
     r.tab("instances")
     r.page.wait_for_selector("#instList", timeout=15_000)
-    r.page.locator("#instReload").click()
-    r.page.wait_for_timeout(1200)
-    card = r.page.locator(f"#instList .inst-card[data-inst='{pid}']").first
-    if card.count():
-        card.click()
+    r.page.locator("#instTabs [data-inst-filter='all']").click()
+    card = r.page.locator(f"#instList .row[data-inst='{pid}']").first
+    if r.wait(8, lambda: card.count() > 0, every=0.5):
+        if card.get_attribute("aria-current") != "true":
+            card.click()
     else:
         r.page.evaluate("id => { location.hash = '#/instances/' + encodeURIComponent(id); }", pid)
-    return bool(r.wait(15, lambda: pid in all_txt(r, "#instDetail"), every=0.5))
+    return bool(r.wait(15, lambda: r.page.evaluate("id => { const I = window.hydInstances && hydInstances.I; return !!I && I.sel === id && !!I.view && I.view.instance.proc_inst_id === id && !!document.querySelector('#instDetail #casePath'); }", pid), every=0.5))
 
 
 def open_task(r: Round, pid: str, task_id: str):
-    """처리 건 화면 「내가 할 일」의 그 단계 줄(#todoList .item[data-todo-task] — instances.js renderTodo)을 누른다. 옛 「내 작업함」 화면은
-    처리 건 화면으로 합쳐졌다(shell.js MOVED). 줄이 아직 없으면 같은 주소로 연다 — 알림 링크와 같은 길."""
+    """처리 건 화면 목록의 「내 할 일」 거르기에서 그 단계 줄(#instList .row[data-todo-task] — instances.js renderList)을 누른다. 한 건 맨 위에
+    「내가 할 일」 판(#todoPanel section.turn — todoCard)이 열린다. 줄이 아직 없으면 같은 주소로 연다 — 알림 링크와 같은 길."""
     r.tab("instances")
-    link = r.page.locator(f"#todoList .item[data-todo-task='{task_id}']")
+    r.page.locator("#instTabs [data-inst-filter='mine']").click()
+    link = r.page.locator(f"#instList .row[data-todo-task='{task_id}']")
     if r.wait(20, lambda: link.count() > 0, every=1):
         link.first.click()
     else:
         r.page.evaluate("h => { location.hash = h }", f"#/instances/{pid}/task/{task_id}")
-    r.page.wait_for_selector("#todoPanel section.todo-panel", timeout=30_000)
+    r.page.wait_for_selector("#todoPanel section.turn", timeout=30_000)
     r.wait(30, lambda: "불러오는 중" not in r.page.locator("#todoPanel").inner_text(), every=0.5)
     r.page.wait_for_timeout(2500)        # 패널은 다음 갱신(2초)에 다시 그린다 — 그 뒤에 누른다
 
 
 def panel_msg(r: Round) -> str:
-    loc = r.page.locator("#todoPanel .form-actions .form-msg")
+    """「내가 할 일」 판의 까닭 줄(막힌 까닭 · 서버가 거절한 까닭 — instances.js todoCard 의 .turn-msg[role=status])."""
+    loc = r.page.locator("#todoPanel .turn-msg[role='status']")
     return loc.first.inner_text().strip() if loc.count() else ""
 
 
 def card_decide(r: Round, pid: str, task: dict, approve: bool, reason: str = "") -> tuple[bool, str]:
-    """조치 카드 승인 패널에서 [승인] 또는 사유 + [반려](#tdRejectCard). 화면 글만 돌려준다(도구가 대신 채우지 않는다)."""
+    """조치 카드 승인 판에서 [승인], 또는 [반려] → 사유 → [반려 확정](#tdRejectOpen → #tdReason → #tdRejectCard). 화면 글만 돌려준다
+    (도구가 대신 채우지 않는다). 사유 칸은 반려할 때와 다른 안을 고를 때만 나온다(instances.js renderSelectPanel)."""
     open_task(r, pid, task["id"])
-    if reason:
-        r.page.fill("#tdReason", reason)
     if not approve:
+        if not r.page.locator("#tdRejectCard").count():                    # [반려]는 사유 칸을 여닫는다 — 이미 열려 있으면 다시 누르지 않는다
+            r.page.click("#tdRejectOpen")
+        if reason:
+            r.page.fill("#tdReason", reason)
         r.page.click("#tdRejectCard")
     else:
         go = r.page.locator("#tdGo")
@@ -894,9 +922,7 @@ def close_step(r: Round, pid: str, wid: str, reason: str) -> str:
     """처리 건 화면의 [단계 닫기](보류 · 멈춘 AI 단계) — 학생이 닫는 길. 닫는 사람은 화면이 담당자 id 를 숨은 칸에 싣는다(ui.js actorInput)."""
     if not select_instance(r, pid):
         raise ScreenMissing(f"처리 건 {pid} 를 열지 못함")
-    # [단계 닫기]는 「진행 상황」 탭의 단계 줄에 있다(instances.js stepExtra). 처리 건 화면은 마지막에 고른 탭을 기억해(I.tab) 앞 실습이 연
-    # 「처리 기록」 탭이면 단추가 숨어 있다(한바퀴3: 93 시간 초과) — 학생처럼 그 탭을 누른다
-    r.page.locator("#instDetail [data-inst-tab='flow']").first.click(); r.page.wait_for_timeout(500)
+    # [단계 닫기]는 단계 기록의 그 단계 아래 칸에 있다(instances.js stepExtra — 멈춘 단계에만 나온다). 한 건 화면에 탭은 없다
     btn = r.page.locator(f"#instDetail [data-close-task='{wid}']").first
     if not r.wait(30, lambda: btn.count() > 0, every=1):
         raise ScreenMissing(f"[단계 닫기]가 없음({wid})")
@@ -1086,16 +1112,22 @@ def preview_file(r: Round, key: str) -> str | None:
     """지식 관리 → 파일 선택 → (이미 적재된 같은 문서면 「문서 개정」) → [문서 등록]. 원문 판본 id(화면의 보관 원본 링크)."""
     page = r.page
     r.tab("knowledge")
+    page.locator("#docKinds [data-doc-kind='manual']").click()             # 문서 등록 화면의 보기 「매뉴얼」(앞 실습이 「업무 DB 표 정의」 보기에 두고 갔을 수 있다)
     opts = page.locator("#manualDocumentId option").evaluate_all("ns => ns.map(n => [n.value, n.textContent])")
     rev = [v for v, t in opts if v and DOCS[key] in t and "문서 개정" in t]
     if rev:
         # 학생 길: 등록된 매뉴얼 카드의 [이 문서 개정]. 앞 미리보기가 화면에 남아 있으면 「등록할 문서」 칸은 잠겨 있고(hitl.js renderPreview),
         # 같은 파일을 다시 골라도 브라우저는 change 를 내지 않아 풀리지 않는다 — 칸을 직접 고르지 않는다(한바퀴3: 잠긴 칸에 select_option 시간 초과)
         page.locator(f"#manualHistory [data-manual-revise='{rev[0]}']").first.click()
+    # 앞 문서의 판(② AI 추출 · ③ 검토 · ④ 적재 끝)이 화면에 남아 있으면 파일 고르기 칸이 없다 — 학생처럼 [다른 문서 올리기]로 ① 단계로 돌아간다
+    if page.locator("#manualPick").is_hidden():
+        page.locator("#manualNext:visible, #manualAnother:visible").first.click()
+        page.locator("#manualPick").wait_for(state="visible", timeout=5000)
     page.set_input_files("#manualFile", str(SAMPLES / DOCS[key]))
     page.click("#manualPreview")
-    page.wait_for_selector("#manualResult .mprev, #manualResult .neg", timeout=60_000)
-    if page.locator("#manualResult .neg").count():
+    # 올리면 ② AI 추출 판(.mprev), 서버가 거절하면 그 자리에 오류 판(UI.errorBlock — .alert[data-variant=destructive])이 나온다(hitl.js #manualPreview)
+    page.wait_for_selector("#manualResult .mprev, #manualResult .alert[data-variant='destructive']", timeout=60_000)
+    if page.locator("#manualResult .alert[data-variant='destructive']").count():
         return None
     href = page.locator("#manualResult a[href*='/original']").first.get_attribute("href") or ""
     m = re.search(r"/sources/([^/]+)/original", href)
@@ -1133,7 +1165,9 @@ def run_extraction(r: Round, key: str, sid: str) -> dict:
         return {"seconds": seconds, "instance": inst, "error": f"추출이 끝나지 않음: 상태 {body.get('status')} · {str(body.get('log') or '')[:200]}{r.waited()}",
                 "accepted": accepted}
     page.wait_for_timeout(4000)                                           # 화면의 다음 확인(3초 주기)이 새 결과로 다시 그릴 시간 — 앞 결과 화면을 새 결과로 읽지 않는다
-    if not r.wait(60, lambda: page.locator("#manualCommit").count() > 0 and "AI 추출 결과" in status(), every=1):
+    # 검토 단계(③ — #manualReview[data-doc-stage=3]): 그 판의 상태 줄은 「AI 추출 결과입니다 …」, 저장된 추출 결과를 쓰는 제공 문서는
+    # 「저장된 추출 결과입니다 — 이 문서는 AI가 다시 읽지 않습니다 …」다(hitl.js renderPreview · 실시간 상자)
+    if not r.wait(60, lambda: page.locator("#manualReview[data-doc-stage='3'] #manualCommit").count() > 0 and "추출 결과입니다" in status(), every=1):
         return {"seconds": seconds, "instance": inst, "error": f"추출은 끝났는데 화면이 검토 단계로 넘어가지 않음: {status()}", "accepted": accepted}
     return {"seconds": seconds, "instance": inst, "accepted": accepted, "cache": body.get("cache") or {},
             "corrections": (body.get("corrections") or {}).get("attempts") or 0, **preview_summary(body["preview"]),
@@ -1147,22 +1181,32 @@ def apply_review(r: Round, key: str, preview_body: dict) -> list[str]:
     src = source_procedures(text)
     phrases = [m.group(1).strip() for m in re.finditer(r"([가-힣][가-힣 ]{3,30}?)(?:은|는) [가-힣A-Z0-9 ]{1,20}에서 생기", text)]
     done = []
-    # 절차마다 수정 칸은 「연결 · 단계 수정」에 접혀 있다(hitl.js renderPreview — details.mproc-edit) — 학생처럼 펼친 뒤 고친다(접힌 칸은 누를 수 없다)
-    for fold in page.locator("#manualResult details.mproc-edit").all():
-        open_fold(fold)
+
+    def show(sop: str):
+        """검토는 목록 + 상세다(hitl.js renderPreview): 「조치 방법」 종류의 그 절차 줄을 눌러야 오른쪽에 그 절차의 고칠 칸이 보인다 — 학생처럼
+        줄을 고른 뒤 고친다(고르지 않은 절차의 판은 숨어 있어 누를 수 없다)."""
+        row = page.locator(f"#manualItems [data-item='proc:{sop}']")
+        if row.get_attribute("aria-current") != "true":
+            page.locator("#manualReview [data-review-kind='proc']").click()
+            row.click()
+        page.locator(f"#manualPanes [data-pane='proc:{sop}']").wait_for(state="visible", timeout=5000)
+
     for f in extraction_quality(src, preview_body):
         if f.get("order") and f.get("source"):
             ta = page.locator(f"textarea[data-manual-step='{f['sop']}'][data-order='{f['order']}']")
             if ta.count():
+                show(f["sop"])
                 ta.fill(f["source"]); done.append(f"수정 {f['sop']}#{f['order']}: {f['kind']}")
         elif f["kind"].startswith("원문 SOP 목록에 없는"):
             kind = page.locator(f"select[data-kind='{f['sop']}']")
             if kind.count():
+                show(f["sop"])
                 kind.select_option("reference")
                 page.select_option(f"select[data-reference-executable='{f['sop']}']", "false")
                 done.append(f"제외 {f['sop']}")
     for sel in page.locator("select[data-fm]:not([disabled])").all():
         sop = sel.get_attribute("data-fm")
+        show(sop)
         scope = page.locator(f"select[data-manual-scope='{sop}']")
         if scope.count() and scope.input_value() == "purchase":
             continue
@@ -1176,6 +1220,7 @@ def apply_review(r: Round, key: str, preview_body: dict) -> list[str]:
             sel.select_option(good[0]); done.append(f"고장 유형 교정 {sop}")
     for sel in page.locator("select[data-manual-executable]").all():
         sop = sel.get_attribute("data-manual-executable")
+        show(sop)
         if page.locator(f"[data-purchase-fields='{sop}']").is_hidden():
             continue
         if not sel.input_value():
@@ -1235,7 +1280,7 @@ def ingest_manual(r: Round, key: str, label: str) -> dict | None:
 
 def onto_stats(r: Round) -> str:
     r.tab("ontology")
-    r.page.click("#ontoReload")
+    more_menu(r, "ontologyHeadMore", "#ontoReload")
     r.wait(20, lambda: "항목" in r.page.locator("#ontoStats").inner_text(), every=1)
     return r.page.locator("#ontoStats").inner_text()
 
@@ -1265,11 +1310,14 @@ def agent_form(r: Round, *, name=None, role=None, goal=None, persona=None, tools
             if box.is_checked() != (box.get_attribute("value") in tools):
                 box.click()
     page.evaluate("() => document.querySelectorAll('#toaster .toast').forEach(n => n.remove())")
-    page.evaluate("() => document.querySelectorAll('[data-ag-detail] .form-msg.neg').forEach(n => { n.textContent = ''; n.classList.remove('neg'); })")
+    # 저장이 거절되면 폼이 다시 그려지고 단추 줄 위에 오류 판(「에이전트를 저장하지 못했습니다」 + 서버가 준 까닭)이 나온다(agents.js formActions · submitForm).
+    # 앞 시도의 오류 판에는 표시를 해 두고, 이번 저장 뒤에 새로 그려진 판만 읽는다
+    fresh = "[data-ag-form] .alert[data-variant='destructive']:not([data-seen])"
+    page.evaluate("() => document.querySelectorAll('[data-ag-form] .alert').forEach(n => { n.dataset.seen = '1'; })")
     form.locator("button[type=submit]").click()
-    r.wait(15, lambda: page.locator("[data-ag-form]").count() == 0 or page.locator("[data-ag-detail] .form-msg.neg").count(), every=0.5)
-    err = page.locator("[data-ag-detail] .form-msg.neg")
-    return err.first.inner_text().strip() if err.count() else ""
+    r.wait(15, lambda: page.locator("[data-ag-form]").count() == 0 or page.locator(fresh).filter(has_text="저장하지 못했습니다").count(), every=0.5)
+    err = page.locator(fresh).filter(has_text="저장하지 못했습니다")
+    return err.first.locator("section").inner_text().strip() if err.count() else ""
 
 
 MY_PROFILE = dict(name=MY_AGENT, role="쿨러 열화 경보를 먼저 보는 점검 담당",
@@ -1310,7 +1358,7 @@ def ask(r: Round, agent_id: str, question: str) -> dict:
                                     if h not in seen), None), every=0.5) or ""
     pid = href.split("/")[2] if href.count("/") >= 2 else ""
     if not pid:
-        return {"seconds": round(time.monotonic() - t0, 1), "error": f"질문이 접수되지 않음: {txt(r, '#askMsg') or txt(r, '[data-ask-form]')[:200]}"}
+        return {"seconds": round(time.monotonic() - t0, 1), "error": f"질문이 접수되지 않음: {txt(r, '[data-ask-err]') or txt(r, '[data-ask-form]')[:200]}"}
     view = r.wait(ASK_LIMIT_S + 60, lambda: (lambda v: v if v.get("state") in ASK_END else None)(r.get(f"{r.process}/api/ask/{pid}")), every=3) or {}
     seconds = round(time.monotonic() - t0, 1)
     page.wait_for_timeout(2500)                                           # 화면 폴링(1.5초)이 끝난 상태를 그릴 시간
@@ -1390,9 +1438,11 @@ def lab_01_runtime(r: Round):
     seen: dict = {}
     pattern = re.compile(r".*(/svc/plant-sim|:" + str(urllib.parse.urlparse(r.plant).port) + r")/(healthz|api/state).*")
     try:
-        r.page.route(pattern, lambda route: route.fulfill(status=404, content_type="application/json", body='{"detail":"Not Found"}'))
+        # 꺼진 서비스는 응답 자체가 없다 — 연결 거부로 흉내 낸다(404 로 답하게 하면 「주소가 없습니다」라는 다른 까닭이 화면에 나온다)
+        r.page.route(pattern, lambda route: route.abort("connectionrefused"))
         r.tab("main")
         seen["header"] = r.wait(20, lambda: (lambda h: h if 0 <= h[0] < h[1] else None)(header_health(r)), every=1)
+        seen["which"] = r.page.locator("#railStatus").get_attribute("title") or ""
         r.page.wait_for_timeout(2500)
         seen["stats"] = txt(r, "#mainStats")
         r.tab("scenario")
@@ -1407,10 +1457,13 @@ def lab_01_runtime(r: Round):
     r.logs.pop(r.lab, None)
     r.lab = code
     h = seen.get("header")
-    r.check("(모의) 설비가 꺼지면 상단이 「응답 없음: plant-sim」", bool(h) and "응답 없음" in h[3] and "plant" in h[3] and "down" in h[2], h[3] if h else "상태 점이 바뀌지 않음",
+    # 메뉴 줄 아래 한 줄은 「서비스 13/14 · 1개 응답 없음」과 주황 점이고, 어느 서비스인지는 그 줄의 설명(title)이 말한다(app.js pollHealth)
+    r.check("(모의) 설비가 꺼지면 서비스 상태 줄이 「n-1/n · 1개 응답 없음」 · 주황 점 · 설명에 plant-sim", bool(h) and h[0] == h[1] - 1 and "1개 응답 없음" in h[3]
+            and h[2] == "warn" and "응답 없음: plant-sim" in seen.get("which", ""), f"{h[3]} · 점 {h[2]} · 설명 {seen.get('which', '')[:60]}" if h else "상태 점이 바뀌지 않음",
             kind="exception", axis=AXES[1])
-    r.human("(모의) 홈 요약이 한국어로 「설비 연결 끊김」과 다시 연결 안내", seen.get("stats", ""), "끊김" in seen.get("stats", "") and "연결되면" in seen.get("stats", ""))
-    r.check("(모의) 결함 시뮬레이션 화면도 연결 불가를 한국어로 안내", "연결할 수 없습니다" in seen.get("scenario", ""), seen.get("scenario", "")[:160], kind="exception", axis=AXES[1])
+    r.human("(모의) 홈 요약이 한국어로 「설비 연결 끊김」과 다시 보이는 조건 안내", seen.get("stats", ""), "끊김" in seen.get("stats", "") and "응답하면 저절로 다시 보입니다" in seen.get("stats", ""))
+    r.human("(모의) 결함 시뮬레이션 화면도 설비 값을 못 읽은 것을 한국어로 안내", seen.get("scenario", ""), "설비 값을 읽지 못했습니다" in seen.get("scenario", "")
+            and "응답하면 저절로 다시 보입니다" in seen.get("scenario", ""))
     r.check("(모의) 응답이 돌아오면 새로 고침 없이 상단 n/n · 요약에 설비 3기", bool(back) and re.search(r"(?<!\d)3기", seen.get("stats_back", "")) is not None, seen.get("stats_back", "")[:120],
             kind="exception", axis=AXES[3])
     r.keyless("키 없는 PC: AI 에이전트 실행 서비스 상태 API가 「닿음 · 오류 없음」(키가 없어도 꺼진 것으로 나오지 않음)", bool(status.get("reachable")) and not status.get("error"), json.dumps(status, ensure_ascii=False)[:200])
@@ -1508,7 +1561,9 @@ def lab_03_ontology(r: Round):
     r.check("지식 지도 숫자(항목 · 연결) = 그래프 API", bool(m) and (int(m.group(1).replace(",", "")), int(m.group(2).replace(",", ""))) == (o["nodes"], o["edges"]),
             f"화면 {o['stats']} / API {o['nodes']}·{o['edges']}")
     r.memo["03_before"] = {k: o[k] for k in ("nodes", "edges", "labels")}
-    r.page.locator("#ontoMap [data-id='asset:hyd-01']").first.click()
+    if not kg_pick(r, "asset:hyd-01", "HYD-01"):
+        raise ScreenMissing("지식 지도에서 이름 찾기로 설비 HYD-01 을 고르지 못함")
+    r.page.fill("#ontoSearch", "")
     r.page.wait_for_timeout(800)
     panel = txt(r, "#ontoNode", required=True)
     groups = r.page.locator("#ontoNode section.rel-group").count()        # 이어진 항목은 관계 이름 · 종류 이름 묶음으로 보인다(enterprise.js renderNodePanel)
@@ -1525,9 +1580,11 @@ def lab_03_ontology(r: Round):
     # 실전 21: 한 부품을 사용하는 설비를 찾는다 — 화면 패널의 들어오는 연결과 그래프 API 가 같은가(연결이 있다 ≠ 재고가 있다)
     part = next((e["to"] for e in o["graph"]["edges"] if e["to"].startswith("part:") and e["type"] in ("USES_PART", "HAS_PART", "INVOLVES_PART")), None)
     if part:
-        r.page.fill("#ontoSearch", next(n["name"] for n in o["graph"]["nodes"] if n["id"] == part))
+        if not kg_pick(r, part, next(n["name"] for n in o["graph"]["nodes"] if n["id"] == part)):
+            raise ScreenMissing(f"지식 지도에서 이름 찾기로 부품 {part} 을 고르지 못함")
         r.page.wait_for_timeout(800)
-        r.page.locator(f"#ontoMap [data-id='{part}']").first.click(); r.page.wait_for_timeout(800)
+        for more in r.page.locator("#ontoNode details.rel-more").all():      # 한 묶음에 14개가 넘으면 나머지는 「+n」 접기 안에 있다 — 학생처럼 편다
+            open_fold(more)
         ptxt = txt(r, "#ontoNode")
         users = {n["name"] for e in o["graph"]["edges"] if e["to"] == part for n in o["graph"]["nodes"] if n["id"] == e["from"]}
         r.check("부품 노드에서 그 부품을 쓰는 쪽(들어오는 연결)이 그래프 API 와 같다", all(u in ptxt for u in users), f"{part} ← {sorted(users)} · 화면 {ptxt[:200]}")
@@ -1557,6 +1614,7 @@ def decide_screen(r: Round, **facts) -> str:
     r.wait(20, lambda: r.page.locator("#decPattern option").count() > 0, every=1)
     r.page.select_option("#decAsset", "HYD-01")
     r.page.select_option("#decPattern", "COOLER_DEGRADATION")
+    open_fold(r.page.locator("#decForm details.io-more"))                 # 가정할 조건 넷(운전 모드 · 설비 상태 · 예비 펌프 · 팬 연속 운전)은 「조건 바꿔 보기」 접기 안에 있다
     r.page.select_option("#decMode", facts.get("mode", ""))
     r.page.select_option("#decState", facts.get("state", ""))
     r.page.select_option("#decStandby", facts.get("standby", ""))
@@ -1626,6 +1684,7 @@ def lab_04_rules_whatif_kpi(r: Round):
             f"엔진 제외 {[o['name'] for o in excluded]} · 화면 {manual[:200]}", kind="exception", axis=AXES[1])
     neg = decide_screen(r, fan=-5)
     code_neg = r.api("POST", f"{r.agent}/api/agent/decide", {"asset": "HYD-01", "pattern": "COOLER_DEGRADATION", "facts": {"fan100_hours": -5}})[0]
+    # 음수는 판단 엔진이 거절하고 그 까닭을 화면이 그대로 보인다(폼은 novalidate — 브라우저의 칸 검사는 브라우저 언어로 말하고 서버의 까닭을 가린다)
     r.check("팬 연속 운전 시간에 음수 → 판단 엔진이 4xx로 거절하고 화면에 「음수일 수 없습니다」", 400 <= code_neg < 500 and "음수일 수 없습니다" in neg,
             f"엔진 {code_neg} · 화면 {neg[:300]}", kind="exception", axis=AXES[1])
     r.tab("whatif")
@@ -1633,10 +1692,11 @@ def lab_04_rules_whatif_kpi(r: Round):
     r.page.select_option("#wiAsset", "HYD-01")
     r.page.select_option("#wiPattern", "COOLER_DEGRADATION")
     r.page.click("#wiLoad")
-    r.wait(120, lambda: r.page.locator("[data-wi-tab]").count() > 0 or r.page.locator("#whatifView p.neg").count() > 0, every=1)
-    view = txt(r, "#whatifView", 5000)
+    r.wait(120, lambda: r.page.locator("[data-wi-tab]").count() > 0 or r.page.locator("#whatifView .alert[data-variant='destructive']").count() > 0, every=1)
+    view = txt(r, "#whatifView .io-out", 5000)
     loaded = r.page.locator("[data-wi-tab]").count() > 0
-    r.check("손익 · What-if 기준을 불러온다 · 요약에 「원본 그대로」", loaded and "원본 그대로" in view, view[:300])
+    # 결과 머리의 숫자 줄: 시험값이 없으면 「시험값 없음 · 기준 그대로」, 있으면 「n개 적용 중」과 「시험값 n개를 적용한 결과입니다. 업무 DB와 지식의 값은 그대로입니다.」(whatif.js)
+    r.check("조건별 손익 기준을 불러온다 · 요약에 「시험값 없음 · 기준 그대로」", loaded and re.search(r"시험값\s*없음\s*기준 그대로", view) is not None, view[:300])
     if loaded:
         r.page.locator("[data-wi-tab='values']").click()
         fields = r.page.locator("[data-wi-var]")
@@ -1646,12 +1706,15 @@ def lab_04_rules_whatif_kpi(r: Round):
             for attempt in (1, 2):
                 fields.first.fill("1")
                 r.page.click("#wiTry")
-                r.wait(60, lambda: "시험값 1개 적용 중" in txt(r, "#whatifView"), every=1)
-                after = txt(r, "#whatifView", 5000)
-                r.check(f"값 하나를 바꿔 다시 계산 → 「시험값 1개 적용 중」 · 원본 그대로({attempt}번째)", "시험값 1개 적용 중" in after and "원본 그대로" in after, after[:300],
-                        axis=AXES[0] if attempt == 1 else AXES[3])
+                applied = "시험값 1개를 적용한 결과입니다. 업무 DB와 지식의 값은 그대로입니다."
+                r.wait(60, lambda: applied in txt(r, "#whatifView .io-out"), every=1)
+                after = txt(r, "#whatifView .io-out", 5000)
+                r.check(f"값 하나를 바꿔 다시 계산 → 「시험값 1개 적용 중」 · 업무 DB와 지식의 값은 그대로({attempt}번째)", applied in after
+                        and re.search(r"시험값\s*1\s*개 적용 중", after) is not None, after[:300], axis=AXES[0] if attempt == 1 else AXES[3])
                 r.page.click("#wiReset"); r.page.wait_for_timeout(800)
-                r.check(f"[원래대로] → 시험값이 사라진다({attempt}번째)", "적용 중" not in txt(r, "#whatifView"), "", kind="exception", axis=AXES[1])
+                back = txt(r, "#whatifView .io-out")
+                r.check(f"[원래대로] → 시험값이 사라진다({attempt}번째)", "적용 중" not in back and re.search(r"시험값\s*없음\s*기준 그대로", back) is not None, back[:200],
+                        kind="exception", axis=AXES[1])
     r.tab("kpi")
     r.wait(30, lambda: r.page.locator("[data-kpi-target]").count() > 0 or "없" in txt(r, "#kpiView"), every=1)
     kpi_before = r.get(r.process + "/api/kpi?period=7d")
@@ -1693,16 +1756,18 @@ def lab_05_manual_to_knowledge(r: Round):
     total0 = r.get(f"{r.process}/api/kg/manuals/sources?limit=1")["total"]
     page.set_input_files("#manualFile", [])          # 앞 실습(02)이 고른 파일이 이 화면에 남아 있다 — 「파일 없이」는 파일 칸을 비운 뒤다(한바퀴3)
     page.click("#manualPreview")
-    r.check("파일 없이 [문서 등록] → 「등록할 파일을 먼저 선택하세요」", "파일을 먼저 선택" in page.locator("#manualResult").inner_text(), page.locator("#manualResult").inner_text(),
-            kind="exception", axis=AXES[1])
+    said = txt(r, "#manualStatus")                    # 올리기 단추 옆의 안내 줄(hitl.js #manualPreview)
+    r.human("파일 없이 [문서 올리기] → 「올릴 파일을 먼저 선택하세요」", said, "파일을 먼저 선택" in said)
     for label, f in [("빈 파일", {"name": "empty.md", "mimeType": "text/markdown", "buffer": b""}),
                      ("제공하지 않은 문서", {"name": "my-notes.md", "mimeType": "text/markdown", "buffer": "# 내 메모\n\n1. 팬을 끈다".encode()}),
                      ("PDF 이름의 텍스트", {"name": "fake.pdf", "mimeType": "application/pdf", "buffer": "가짜 PDF".encode()})]:
         page.set_input_files("#manualFile", f)
         page.click("#manualPreview")
-        page.wait_for_selector("#manualResult .neg, #manualResult .mprev", timeout=30_000)
+        page.wait_for_selector("#manualResult .alert[data-variant='destructive'], #manualResult .mprev", timeout=30_000)
         text = page.locator("#manualResult").inner_text()
-        r.human(f"잘못된 파일 거절 — {label}", text.replace("문서를 등록하지 못했습니다:", "").strip(), "문서를 등록하지 못했습니다" in text)   # hitl.js #manualPreview
+        # 거절은 오류 판(제목 「문서를 올리지 못했습니다」 + 서버가 준 까닭)으로 보인다(hitl.js #manualPreview)
+        r.human(f"잘못된 파일 거절 — {label}", text.replace("문서를 올리지 못했습니다", "").strip(), "문서를 올리지 못했습니다" in text
+                and page.locator("#manualResult .mprev").count() == 0)
     r.check("거절된 파일은 보관 원문에 남지 않는다", r.get(f"{r.process}/api/kg/manuals/sources?limit=1")["total"] == total0, kind="exception", axis=AXES[1])
     got = ingest_manual(r, "HM-8", "HM-8")
     if not got:
@@ -1716,19 +1781,15 @@ def lab_05_manual_to_knowledge(r: Round):
     after = label_counts(graph(r))
     shrank = {k: (v, after.get(k, 0)) for k, v in before.items() if k in ("Skill", "FailureMode", "Cause", "Rule") and after.get(k, 0) < v}
     r.check("개정 적재 뒤 조치 방법 · 고장 유형 · 원인 · 규칙이 줄지 않았다", not shrank, json.dumps(shrank or after, ensure_ascii=False)[:300], axis=AXES[3])
-    r.tab("ontology")
-    page.click("#ontoReload")
-    r.wait(20, lambda: page.locator("#ontoMap .o-node").count() > 0, every=1)
-    page.fill("#ontoSearch", "팬 최대 운전")
-    node = page.locator("#ontoMap .o-node[aria-label*='조치 방법'][aria-label*='팬 최대 운전']").first
+    onto_stats(r)                                     # 지식 지도를 다시 읽는다(화면 머리의 더 보기 › 다시 읽기)
+    skill = next((n for n in graph(r)["nodes"] if n.get("label") == "Skill" and "팬 최대 운전" in (n.get("name") or "")), None)
     trail = []
-    if node.count():
-        node.click()
+    if skill and kg_pick(r, skill["id"], "팬 최대 운전"):
         for rel in ("절차 단계", "근거 매뉴얼", "속한 문서"):
             # 나가는 관계는 관계 이름을 제목으로 한 묶음이다: <section class="rel-group"><h4>관계 이름 <span class="n">수</span>…(enterprise.js renderNodePanel).
             # 들어오는 묶음은 제목이 종류 이름이고 관계 이름은 꼬리표라, 제목이 그 관계 이름으로 시작하는 묶음만 고른다
             group = page.locator("#ontoNode section.rel-group").filter(has=page.locator("h4", has_text=re.compile(rf"^\s*{re.escape(rel)}\s*\d")))
-            link = group.locator("a[data-go]").first
+            link = group.locator("[data-go]").first
             if not link.count():
                 break
             trail.append(link.inner_text()); link.click(); page.wait_for_timeout(400)
@@ -1761,12 +1822,16 @@ def lab_06_legacy_db(r: Round):
 
     def load_once(n: int) -> str | None:
         r.tab("knowledge")
+        page.locator("#docKinds [data-doc-kind='ddl']").click()            # 문서 등록 화면의 보기 「업무 DB 표 정의」
+        if page.locator("#ddlPick").is_hidden():                           # 앞 파일의 판(② · ③ 단계)이 남아 있으면 파일 고르기 칸이 없다 — [다른 파일 올리기]로 ① 단계로
+            page.locator("#ddlAnother").click()
         page.set_input_files("#ddlFile", str(SAMPLES / "legacy-plant-db.sql"))
         page.click("#ddlPreview")
-        page.wait_for_selector("#ddlResult .mprev, #ddlResult .neg", timeout=60_000)
-        head = txt(r, "#ddlResult .mprev .muted") or txt(r, "#ddlResult")
+        # 읽으면 ② 표와 열 고르기 판(.mprev), 못 읽으면 그 자리에 오류 판 하나(판 안의 「확인할 것」 알림과 다르다 — hitl.js #ddlPreview)
+        page.wait_for_selector("#ddlResult .mprev, #ddlResult > .panel-sec > .alert[data-variant='destructive']", timeout=60_000)
+        head = txt(r, "#ddlResult .mprev .result-sub") or txt(r, "#ddlResult")
         tables = re.findall(r'CREATE TABLE "([^"]+)"', (SAMPLES / "legacy-plant-db.sql").read_text(encoding="utf-8"))
-        r.check(f"옛 설비 DB 구조 파일 미리보기 — 표 {len(tables)}개({n}번째)", f"테이블 {len(tables)}개" in head, head, axis=AXES[0] if n == 1 else AXES[3])
+        r.check(f"옛 설비 DB 구조 파일 미리보기 — 표 {len(tables)}개({n}번째)", f"표 {len(tables)}개를 읽었습니다" in head, head, axis=AXES[0] if n == 1 else AXES[3])
         # 표마다 출처 시스템을 정하고(미리 고른 값이 없으면 첫 시스템) 연결할 열은 미리 고른 그대로 둔다
         for sel in page.locator("#ddlResult select[data-sys]").all():
             if not sel.input_value():
@@ -1819,8 +1884,8 @@ def lab_06_legacy_db(r: Round):
 
     def revert(n: int):
         r.tab("knowledge")
+        page.locator("#docKinds [data-doc-kind='ddl']").click()
         page.wait_for_selector(f"#ddlHistory [data-clear='{batch_now}']", timeout=15_000)
-        open_fold(page.locator("#ddlHistory details").first)             # 되돌리기 단추는 「연결 이력」 접기 안에 있다(hitl.js loadIngests)
         page.locator(f"#ddlHistory [data-clear='{batch_now}']").click()
         if not confirm_ok(r):                                              # 브라우저 확인 창이 아니라 포털 확인 창이다(UI.confirm)
             raise ScreenMissing("[되돌리기]의 확인 창이 뜨지 않음")
@@ -1851,14 +1916,18 @@ def lab_07_first_agent(r: Round):
     page.locator("[data-pick-agent='agent:cooling']").first.click()
     r.wait(15, lambda: "불러오는 중" not in page.locator("[data-ag-detail]").inner_text(), every=0.5)
     d = page.locator("[data-ag-detail]").inner_text()
-    r.check("기준 에이전트: 목표 · 지침(실행 지시문) · 쓰는 도구가 보이고 API 와 같다", bool(base_agent) and "목표" in d and "쓰는 도구" in d and "지시문" in all_txt(r, "[data-ag-detail]")
-            and (base_agent.get("goal") or "")[:20] in d, d[:300])
+    # 상세 판(agents.js agentDetail): 이름 아래 한 문장이 목표(API goal), 「도구 서버」 절에 붙은 도구 서버마다 한 줄(data-goto-server), 실행 지시문은 맨 아래 접기 안
+    shown_tools = sorted(page.locator("[data-ag-detail] [data-goto-server]").evaluate_all("bs => bs.map(b => b.dataset.gotoServer)"))
+    api_tools = sorted(t.get("name") if isinstance(t, dict) else t for t in (base_agent or {}).get("tools") or [])
+    r.check("기준 에이전트: 목표 · 지침(실행 지시문) · 도구 서버가 보이고 API 와 같다", bool(base_agent) and bool(base_agent.get("goal")) and base_agent["goal"][:20] in d
+            and "도구 서버" in d and bool(api_tools) and shown_tools == api_tools and "실행 지시문에 더해지는 내용" in all_txt(r, "[data-ag-detail]"),
+            f"화면 도구 서버 {shown_tools} · API {api_tools} · {d[:200]}")
     page.click("[data-new-agent]")
     err = agent_form(r)
-    r.check("빈 폼 저장 → 「이름 칸을 채워야 합니다」", "이름" in err and "채워야" in err, err, kind="exception", axis=AXES[1])
+    r.human("빈 폼 저장 → 서버가 거절하고 「이름 칸을 채워야 합니다」", err, "이름" in err and "채워야" in err)
     form_text = page.locator("[data-ag-form]").inner_text()
-    r.check("모델은 고르는 칸 없이 「수업 모델(강사 지정)」로 보인다", page.locator("[data-ag-form] [data-f='model']").count() == 0 and "수업 모델" in form_text, form_text[:200],
-            kind="exception", axis=AXES[1])
+    r.check("모델은 고르는 칸 없이 「기본 모델 — 이 시스템이 정한 하나를 씁니다. 바꿀 수 없습니다」로 보인다", page.locator("[data-ag-form] [data-f='model']").count() == 0
+            and "기본 모델" in form_text and "바꿀 수 없습니다" in form_text, form_text[:200], kind="exception", axis=AXES[1])
     err = agent_form(r, name="냉각 긴급 대응 에이전트", goal="기본 에이전트와 같은 이름")
     r.human("기본 에이전트와 같은 이름 → 거절", err, "같은 이름" in err)
     mine = my_agent(r)
@@ -1881,7 +1950,9 @@ def lab_07_first_agent(r: Round):
     page.locator(f"[data-pick-agent='{mine['id']}']").first.click()
     r.wait(15, lambda: "불러오는 중" not in page.locator("[data-ag-detail]").inner_text(), every=0.5)
     detail = page.locator("[data-ag-detail]").inner_text()
-    r.check("상세: 「내가 만든」 · 목표 · 쓰는 도구가 보인다", "내가 만든" in detail and "목표" in detail and "쓰는 도구" in detail, detail[:300])
+    mine_tools = sorted(page.locator("[data-ag-detail] [data-goto-server]").evaluate_all("bs => bs.map(b => b.dataset.gotoServer)"))
+    r.check("상세: 「내가 만든 것」 · 목표 · 고른 도구 서버가 보인다", "내가 만든 것" in detail and MY_PROFILE["goal"][:20] in detail and mine_tools == sorted(MY_PROFILE["tools"]),
+            f"도구 서버 {mine_tools} · {detail[:300]}")
     roles = known_roles(r)
     mitigations = {s["sopId"] for s in r.get(f"{r.process}/api/kg/skills")
                    if any(f.get("id") == "fm:cooler-cooling-loss" and f.get("relation") == "MITIGATED_BY" for f in s.get("failureModes") or [])}
@@ -1925,7 +1996,7 @@ def lab_07_first_agent(r: Round):
                                                                       "model": "gpt-9-ultra"})
     detail = str(body.get("detail") if isinstance(body, dict) else body)
     after = next(a for a in agents(r) if a["id"] == mine["id"])
-    r.human("수업 모델 밖 모델을 서버에 직접 보내면 거절되고 원래 설정을 유지한다", detail, 400 <= code < 500 and "수업 모델" in detail and after.get("model") == before.get("model"))
+    r.human("수업 모델 밖 모델을 서버에 직접 보내면 거절되고 원래 설정을 유지한다", detail, 400 <= code < 500 and "연결된 모델" in detail and "하나만" in detail and after.get("model") == before.get("model"))
     r.tab("ask")
     r.check("질문 화면 에이전트 도구 칩이 사람 이름으로 보인다", "도구 표시 이름" not in page.locator("[data-ask-form]").inner_text(),
             page.locator("[data-ask-form]").inner_text()[:300], kind="quality")
@@ -1942,55 +2013,71 @@ def lab_08_trends(r: Round):
     try:
         view = got["view"]
         alert = vars_of(view["instance"]).get("alert") or {}
+        # 실시간 모니터링(app.js TREND): 설비 카드 셋(#monUnits) + 고른 설비의 추이 판(uPlot, #trendChart). 값은 포털이 1초마다 읽는 설비 상태이고
+        # 추이는 이 창을 연 뒤부터 모은 것이다. 기준선은 감지기의 이상 패턴 조건에서 온다(GET /api/detector/patterns)
         r.tab("trends")
-        page.select_option("#selAsset", "HYD-01"); page.wait_for_timeout(1500)
-        srcs = {f: page.locator(f"#{f}").get_attribute("src") or "" for f in ("pTs1", "pScore", "pCe")}
-        r.check("실시간 모니터링: 그 설비의 유온 · 이상 점수 · 냉각 효율 패널(설비 변수 = HYD-01)", all("var-asset=HYD-01" in s and "panelId=" in s for s in srcs.values()),
-                json.dumps(srcs)[:300])
-        rendered = {}
-        for f in srcs:
-            frame = page.frame_locator(f"#{f}")
-            try:
-                frame.locator("body").wait_for(timeout=20_000)
-                r.page.wait_for_timeout(3000)
-                rendered[f] = frame.locator("body").inner_text(timeout=10_000)
-            except Exception as e:
-                rendered[f] = f"패널을 그리지 못함: {type(e).__name__}"
-        bad = {f: t[:80] for f, t in rendered.items() if not t.strip() or re.search(r"No data|Panel not found|Dashboard not found|패널을 그리지 못함", t)}
-        r.check("세 패널이 데이터와 함께 그려진다(빈 패널 · 「No data」 아님)", not bad, json.dumps(bad, ensure_ascii=False))
-        # 경보 시각 · 측정값: 처리 건의 경보(alert.t · evidence)와 설비 회로 화면의 사건 · 처리 기록의 에이전트 근거가 같은 구간인가
+        card = page.locator("#monUnits .unit[data-asset='HYD-01']")
+        card.locator(".unit-pick").click(); page.wait_for_timeout(1500)
+
+        def card_ts() -> float:
+            return float(card.locator("[data-f='TS1']").inner_text().strip())
+        api_ts = float(plant_unit(r, "HYD-01")["tags"]["TS1"])
+        shown_ts = card_ts()
+        r.check("실시간 모니터링: HYD-01 카드의 유온 = 설비 API 값(1초 주기 — 1.5 ℃ 안) · 경보가 난 설비로 표시", abs(shown_ts - api_ts) <= 1.5
+                and card.get_attribute("data-alert") in ("warn", "danger") and "경보" in card.locator("[data-f='state']").inner_text(),
+                f"화면 {shown_ts} · API {api_ts} · 표시 {card.get_attribute('data-alert')} {card.locator('[data-f=state]').inner_text().strip()}")
+        page.locator("#trendMetric [data-tag='TS1']").click()
+        r.wait(20, lambda: page.evaluate("() => TREND.hist['HYD-01'] ? TREND.hist['HYD-01'].t.length : 0") >= 5, every=1)
+        cond = str((((r.get(r.detector + "/api/detector/patterns").get("applied") or {}).get("catalog") or {}).get("COOLER_DEGRADATION") or {}).get("condition") or "")
+        ts_limit = re.search(r"TS1 > (\d+(?:\.\d+)?)", cond)
+        ce_limit = re.search(r"CE < (\d+(?:\.\d+)?)", cond)
+        legend = txt(r, "#trendLegend")
+        m = re.search(r"유온\s*(-?\d+(?:\.\d+)?)", legend)
+        drawn = page.evaluate("() => { const c = document.querySelector('#trendChart canvas'); return c ? [c.width, c.height, TREND.hist['HYD-01'].t.length] : null; }")
+        r.check("추이 판: HYD-01 유온이 그려지고(모은 점 5개 이상), 범례의 지금 값 = 카드 값, 기준선 = 감지기의 쿨러 성능 저하 조건 · 보호 정지",
+                txt(r, "#trendTitle") == "HYD-01 추이" and bool(drawn) and drawn[0] > 0 and drawn[2] >= 5 and bool(m) and abs(float(m.group(1)) - card_ts()) <= 1.5
+                and bool(ts_limit) and f"조건 {float(ts_limit.group(1)):g} ℃ 초과" in legend and "보호 정지" in legend, f"그림 {drawn} · 감지기 조건 {cond} · 범례 {legend}")
+        page.locator("#trendMetric [data-tag='CE']").click(); page.wait_for_timeout(800)
+        legend_ce = txt(r, "#trendLegend")
+        r.check("볼 값을 냉각 효율로 바꾸면 범례 · 기준선이 그 값의 것(감지기 조건의 냉각 효율 문턱)으로 바뀐다", "냉각 효율" in legend_ce and bool(ce_limit)
+                and f"조건 {float(ce_limit.group(1)):g} % 미만" in legend_ce and "보호 정지" not in legend_ce, legend_ce)
+        bad = {} if drawn and drawn[0] > 0 else {"trendChart": "그림 없음"}
+        # 경보 시각 · 측정값: 처리 건의 경보(alert.t · evidence)와 그 처리 건 단계 기록의 에이전트 근거가 같은 구간인가
         inc = vars_of(view["instance"]).get("incident")
-        r.tab("incidents")
-        r.page.locator("#btnAllInc").click(); r.page.wait_for_timeout(800)
-        item = page.locator(f"#incList .item[data-item-id='{inc}']").first
-        r.wait(20, lambda: item.count() > 0, every=1)
-        item.click(); page.wait_for_timeout(1500)
-        det = all_txt(r, "#incDetail")
         ev = alert.get("evidence") or {}
-        r.check("설비 회로: 그 사건 상세가 열리고 사건 경과 · 「기록」 칸과 [이 사건의 처리 건 보기]가 있다(원인 근거는 처리 건 처리 기록 한 곳 — 다음 판정)",
-                bool(inc) and "기록" in det and page.locator("#incDetail #btnIncInstance").count() == 1, det[:300])
-        card = vars_of(view["instance"]).get("guide_card") or {}
-        evs = [e for c in card.get("causes") or [] for e in c.get("evidence") or []]
+        # 설비 회로(app.js renderIncList): 설비를 고르면 그 설비의 경보로 열린 처리 건 수와 [진행 중인 처리 건 열기] 하나가 나온다 — 사건 목록의 사본은 두지 않는다
+        r.tab("incidents")
+        page.locator("#scada .ucard[data-asset='HYD-01']").click(); page.wait_for_timeout(1200)
+        line = txt(r, "#incList")
+        mine_open = len(running_on(r, "HYD-01"))
+        n = re.search(r"진행 중\s*(\d+)", line)
+        r.check("설비 회로: HYD-01 을 고르면 그 설비의 처리 건 수(진행 중 = 처리 건 API)와 [진행 중인 처리 건 열기]가 나온다",
+                "HYD-01의 경보로 열린 처리 건" in line and bool(n) and int(n.group(1)) == mine_open and page.locator("#incList [data-open-incident]").count() == 1,
+                f"{line.replace(chr(10), ' ')} · API 진행 중 {mine_open}")
+        card_ = vars_of(view["instance"]).get("guide_card") or {}
+        evs = [e for c in card_.get("causes") or [] for e in c.get("evidence") or []]
         alert_t = datetime.fromisoformat(str(alert.get("t")).replace("Z", "+00:00"))
         dec = decision_of(r, view)
         made = datetime.fromisoformat(str(dec.get("created")).replace("Z", "+00:00"))
         r.check("에이전트가 근거로 든 측정값은 경보 뒤 · 판단 전 구간에서 읽은 값", bool(evs) and alert_t <= made and all(e.get("coverage", {}).get("covered") for e in evs[:2]),
                 f"경보 {alert_t:%H:%M:%S} · 판단 {made:%H:%M:%S} · 근거 {[(e.get('id'), round(float(e.get('value') or 0), 2)) for e in evs[:3]]}", kind="quality")
-        # 원인 근거(진단 카드의 증거)는 설비 회로 화면에 사본을 두지 않는다 — [이 사건의 처리 건 보기] → 처리 건 「처리 기록」 탭에서 본다
-        page.locator("#incDetail #btnIncInstance").click()
-        r.wait(15, lambda: page.evaluate("() => state.tab") == "instances" and pid in all_txt(r, "#instDetail"), every=0.5)
-        page.locator("#instDetail [data-inst-tab='record']").click(); page.wait_for_timeout(1500)
-        record = all_txt(r, "#instRecord")
+        # 원인 근거(진단 카드의 증거)는 설비 회로 화면에 사본을 두지 않는다 — [진행 중인 처리 건 열기] → 처리 건의 단계 기록에서 본다
+        page.locator("#incList [data-open-incident]").click()
+        opened = r.wait(15, lambda: page.evaluate("id => state.tab === 'instances' && hydInstances.I.sel === id && !!hydInstances.I.view", pid), every=0.5)
+        page.wait_for_timeout(1500)
+        record = txt(r, "#instRecord")                 # AI 단계의 근거는 펼쳐진 채 시작한다(디자인 기준 5-2) — 보이는 글만 읽는다
         shown = [e for e in evs[:2] if e.get("name") and e["name"] in record]
-        r.check("설비 회로의 [이 사건의 처리 건 보기]로 연 처리 기록의 근거 이름 = 처리 건에 남은 근거(에이전트가 든 측정값)", bool(evs) and len(shown) == len(evs[:2]),
-                f"{[(e.get('name'), e.get('value')) for e in evs[:2]]}")
+        r.check("설비 회로의 [진행 중인 처리 건 열기]로 연 처리 건(사건 " + str(inc) + ")의 단계 기록에 에이전트가 든 근거 이름이 보인다", bool(opened) and bool(evs)
+                and len(shown) == len(evs[:2]), f"{[(e.get('name'), e.get('value')) for e in evs[:2]]}")
         r.check("경보 근거 값(유온 · 냉각 효율)이 패턴 문장의 기준을 넘었다(함께 움직인 값 ≠ 원인 단정)", float(ev.get("ts1") or 0) > 55 and float(ev.get("ce") or 100) < 70,
                 json.dumps(ev, ensure_ascii=False)[:200], kind="quality")
-        r.keyless("키 없는 PC: 실시간 패널 · 설비 회로는 AI 없이 그대로 보인다", not bad, "")
-        r.tab("trends")                       # 앞 판정이 다른 화면으로 옮겨 갔다 — 설비 고르기는 실시간 모니터링 화면에 있다(한바퀴3)
-        page.select_option("#selAsset", "HYD-02"); page.wait_for_timeout(800)
-        page.select_option("#selAsset", "HYD-01"); page.wait_for_timeout(800)
-        r.check("설비를 바꿨다 돌아와도 패널이 그 설비로 다시 그려진다", "var-asset=HYD-01" in (page.locator("#pTs1").get_attribute("src") or ""), "", axis=AXES[3])
+        r.keyless("키 없는 PC: 실시간 모니터링 · 설비 회로는 AI 없이 그대로 보인다", not bad, "")
+        r.tab("trends")                       # 앞 판정이 다른 화면으로 옮겨 갔다 — 설비 카드는 실시간 모니터링 화면에 있다
+        page.locator("#monUnits .unit[data-asset='HYD-02'] .unit-pick").click(); page.wait_for_timeout(800)
+        other = txt(r, "#trendTitle")
+        page.locator("#monUnits .unit[data-asset='HYD-01'] .unit-pick").click(); page.wait_for_timeout(800)
+        r.check("설비를 바꿨다 돌아와도 추이 판이 그 설비로 다시 그려진다(제목 · Grafana 링크의 설비)", other == "HYD-02 추이" and txt(r, "#trendTitle") == "HYD-01 추이"
+                and "var-asset=HYD-01" in (page.locator("#grafanaLink").get_attribute("href") or ""), f"{other} → {txt(r, '#trendTitle')}", axis=AXES[3])
     finally:
         restore_and_close(r, pid)
 
@@ -2013,9 +2100,15 @@ def lab_09_skill(r: Round):
     page.locator("[data-pick-skill='cooling-emergency-response']").first.click()
     r.wait(15, lambda: "불러오는 중" not in page.locator("[data-ag-detail]").inner_text(), every=0.5)
     content = r.get(f"{r.process}/api/skills/cooling-emergency-response").get("content") or ""
-    doc = all_txt(r, "[data-ag-detail] pre")
-    r.check("기준 스킬의 SKILL.md 원문이 화면에 그대로(공백만 빼고 저장본과 글자까지 같다)", bool(content.strip()) and " ".join(doc.split()) == " ".join(content.split()),
-            f"화면 {len(doc.strip())}자 · 저장 {len(content.strip())}자")
+    # 스킬 문서는 마크다운으로 그려 보인다(agents.js renderMarkdown — 문서 머리의 YAML 은 본문이 아니라 빼고, 이름 · 설명은 판 머리에 있다).
+    # 그려진 글은 마크다운 기호 · 목록 번호가 빠지므로 본문의 낱말(한글 · 영문)이 차례까지 같은지와, 문서 띠의 글자 수 = 저장본 글자 수로 본다
+    r.wait(15, lambda: page.locator("[data-ag-detail] .doc .prose:not([data-md])").count() > 0, every=0.5)
+    doc = txt(r, "[data-ag-detail] .doc .prose")
+    words = lambda t: re.findall(r"[가-힣A-Za-z]+", t)                    # noqa: E731
+    body = re.sub(r"^---\n[\s\S]*?\n---\n?", "", content)
+    bar = txt(r, "[data-ag-detail] .doc .doc-bar")
+    r.check("기준 스킬의 SKILL.md 본문이 화면에 그대로(낱말이 차례까지 같고, 문서 띠의 글자 수 = 저장본)", bool(body.strip()) and words(doc) == words(body)
+            and f"{len(content):,}자" in bar, f"화면 낱말 {len(words(doc))} · 저장 낱말 {len(words(body))} · 띠 {bar} · 저장 {len(content)}자")
     taken = {s["skill_name"] for s in r.get(f"{r.process}/api/skills")}
     if MY_SKILL not in taken:
         page.locator("[data-new-skill]").click()
@@ -2031,8 +2124,10 @@ def lab_09_skill(r: Round):
         page.locator("[data-new-skill]").click()
         page.locator('[data-f="skill_name"]').fill(MY_SKILL)
         page.locator('[data-f="content"]').fill(f"---\nname: {MY_SKILL}\n---\n같은 이름")
-        page.locator("[data-ag-form] button[type='submit']").click(); page.wait_for_timeout(1500)
-        err = txt(r, "[data-ag-detail] .form-msg.neg") or txt(r, "#toaster")
+        page.locator("[data-ag-form] button[type='submit']").click()
+        refused = page.locator("[data-ag-form] .alert[data-variant='destructive']").filter(has_text="스킬을 저장하지 못했습니다")
+        r.wait(15, lambda: refused.count() > 0 or page.locator("[data-ag-form]").count() == 0, every=0.5)
+        err = refused.first.locator("section").inner_text().strip() if refused.count() else ""
         r.human("같은 이름의 스킬을 또 만들면 거절 · 사람 글", err, axis=AXES[3])
         if page.locator("[data-f-cancel]").count():
             page.locator("[data-f-cancel]").first.click()
@@ -2040,8 +2135,13 @@ def lab_09_skill(r: Round):
     def attach(n: int):
         r.tab("agents"); page.locator('[data-ag-tab="skills"]').click()
         page.locator(f"[data-pick-skill='{MY_SKILL}']").first.click()
-        r.wait(15, lambda: page.locator("[data-attach-to], [data-detach]").count(), every=0.5)
-        page.select_option("[data-attach-to]", mine["id"])
+        r.wait(15, lambda: page.locator("[data-attach-to], [data-detach]").count() and MY_SKILL in txt(r, "[data-ag-detail] .doc-bar"), every=0.5)
+        # 화면을 열면 목록을 다시 읽어 상세를 한 번 더 그린다(agents.js mount → load) — 그 전에 고른 값은 지워진다. 학생처럼 그려진 뒤에 고르고,
+        # 고른 것이 남아 단추가 켜졌는지 보고 누른다
+        chosen = r.wait(10, lambda: (page.select_option("[data-attach-to]", mine["id"]), page.wait_for_timeout(700))
+                        and page.locator("[data-attach-to]").input_value() == mine["id"] and page.locator("[data-attach]").is_enabled(), every=0.5)
+        if not chosen:
+            raise ScreenMissing("붙일 에이전트를 골랐는데 [내 에이전트에 붙이기]가 켜지지 않음")
         page.locator("[data-attach]").click()
         ok = r.wait(15, lambda: any(a["id"] == mine["id"] for a in next(s for s in r.get(f"{r.process}/api/skills") if s["skill_name"] == MY_SKILL)["agents"]), every=1)
         r.check(f"나의 에이전트에 스킬 붙이기({n}번째)", bool(ok), "", axis=AXES[0] if n == 1 else AXES[3])
@@ -2079,9 +2179,11 @@ def lab_09_skill(r: Round):
 def mcp_select(r: Round, name: str):
     r.tab("mcp")
     page = r.page
-    r.wait(15, lambda: page.locator(f"#mcpServers [data-open='{name}']").count(), every=1)
-    page.locator(f"#mcpServers [data-open='{name}']").first.click()
-    page.locator("#mcpDetail .mcp-detail").wait_for(timeout=10_000)
+    # 서버 목록의 줄(#mcpServers .row[data-name])을 누르면 오른쪽 판에 그 서버의 상세(연결 검사 단추 #mcpProbe · 도구 · 호출 기록)가 열린다(mcp.js)
+    row = page.locator(f"#mcpServers .row[data-name='{name}']")
+    r.wait(15, lambda: row.count(), every=1)
+    row.first.click()
+    r.wait(10, lambda: row.first.get_attribute("aria-current") == "true" and page.locator("#mcpDetail #mcpProbe").count() > 0, every=0.5)
 
 
 def mcp_try(r: Round, tool: str, inputs: dict) -> str:
@@ -2112,7 +2214,7 @@ def lab_10_mcp_tools(r: Round):
     page = r.page
     phase = course_phase(r)
     r.tab("mcp")
-    r.wait(20, lambda: page.locator("#mcpServers [data-open='hyd-dmn']").count(), every=0.5)
+    r.wait(20, lambda: page.locator("#mcpServers .row[data-name='hyd-dmn']").count(), every=0.5)
     names = {s["name"] for s in r.get(f"{r.process}/api/mcp/servers").get("servers", [])}
     # 기본 서버가 모두 있어야 한다 — 학생이 PBL에서 등록한 서버는 더 있어도 된다(같다로 재면 PBL에서 거짓 실패), 수업 단계는 등록이 막혀 기본뿐
     r.check("준비된 서버(에이전트가 쓰는 기본 서버 전부)가 연결 상태와 함께 보인다",
@@ -2192,12 +2294,9 @@ def lab_11_human(r: Round):
         dec = decision_of(r, view)
         card = card_summary(dec)
         task = rows_of(view).get("T_approve") or {}
-        inc = vars_of(view["instance"]).get("incident")
-        r.tab("incidents")
-        page.locator("#btnAllInc").click(); page.wait_for_timeout(800)
-        page.locator(f"#incList .item[data-item-id='{inc}']").first.click(); page.wait_for_timeout(1500)
-        det = all_txt(r, "#incDetail")
-        r.evidence("설비 회로: 승인 전에 학생이 읽는 이 사건의 상세", det, "「읽을 수 있다」는 글의 양 · 낱말로 판정할 수 없다 — 원문을 읽는다")
+        # 승인 전에 학생이 읽는 것은 처리 건 한 건의 「내가 할 일」 판(물음 · 까닭 · 판단에 쓸 숫자)이다 — 설비 회로 화면은 사건 상세의 사본을 두지 않는다
+        open_task(r, pid, task["id"])
+        r.evidence("처리 건: 승인 전에 학생이 읽는 「내가 할 일」 판", txt(r, "#todoPanel", required=True), "「읽을 수 있다」는 글의 양 · 낱말로 판정할 수 없다 — 원문을 읽는다")
         # 담당 배정: 사람은 이 PC의 담당자 한 명이고 모든 역할을 맡는다 — 화면에서 사람을 넣고 빼지 않는다(agents.js 「역할」 카드).
         # 이 카드의 승인 역할을 담당자가 맡고 있는지(업무분장 API)와 화면이 그렇게 말하는지 본다
         board = r.get(f"{r.process}/api/agent-assignments")
@@ -2207,13 +2306,17 @@ def lab_11_human(r: Round):
         r.wait(15, lambda: owned in txt(r, "#view-agents"), every=0.5)
         shown = txt(r, "#view-agents", 5000)
         r.check("담당 배정: 「역할」 카드가 모든 역할을 담당자가 맡는다고 보이고, 이 카드의 승인 역할 구성원이 담당자 한 명(업무분장 API)",
-                owned in shown and "담당자가 연결되어 있지 않아" not in shown and members.get(card.get("approver")) == {ME},
+                owned in shown and "담당자가 연결되어 있지 않습니다" not in shown and members.get(card.get("approver")) == {ME},
                 f"승인 역할 {card.get('approver')} · 구성원 {sorted(members.get(card.get('approver')) or [])}")
         r.tab("instances")
-        row = page.locator(f"#todoList .item[data-todo-task='{task.get('id')}']")
+        page.locator("#instTabs [data-inst-filter='mine']").click()
+        row = page.locator(f"#instList .row[data-todo-task='{task.get('id')}']")
         seen = r.wait(20, lambda: row.count() > 0, every=1)
-        row_text = row.first.inner_text() if seen else txt(r, "#todoList")
-        r.check("승인 대기 건이 처리 건 화면 「내가 할 일」에 「승인 요청」 줄로 보인다(줄마다 그 일을 맡는 역할 칩 — instances.js renderTodo)", bool(seen) and "승인 요청" in row_text, row_text[:200])
+        row_text = row.first.inner_text() if seen else txt(r, "#instList")
+        role_name = next((x.get("name") for x in board["roles"] if x["id"] == card.get("approver")), None)
+        # 「내 할 일」 거르기의 한 줄 = 사람이 처리할 단계 하나: 처리 건 이름 · 「내 차례」 · 둘째 줄에 그 단계 이름과 그 일을 맡는 역할(instances.js rowHtml)
+        r.check("승인 대기 건이 처리 건 목록 「내 할 일」에 「내 차례」 줄로 보이고, 그 줄에 승인 단계 이름과 맡는 역할이 있다", bool(seen) and "내 차례" in row_text
+                and str(task.get("activity_name")) in row_text and bool(role_name) and role_name in row_text, f"역할 {role_name} · {row_text[:200]}")
         r.not_measure("권한 없는 사람이 승인 → 막힘 · 사람을 고르지 않았을 때의 안내",
                       "화면에 사람 · 역할 고르기가 없다(쓰는 사람은 담당자 한 명이고 모든 역할의 구성원 — www/inbox.js 머리말). 화면에서 만들 수 없는 길이라 "
                       "서버의 역할 검사(403)는 서버 시험(workspace/개발/tests)이 잰다", axis=AXES[1])
@@ -2254,10 +2357,13 @@ def lab_12_compare_eval(r: Round):
 
     def run_trial(label: str, axis: str) -> str:
         cv("[data-act='run']").click()
-        r.wait(300, lambda: "시험 중" not in cv("[data-act='run']").inner_text() and (cv(".cmp-headline").count() or cv(".form-msg.neg").count()), every=2)
-        out = txt(r, "#view-compare", 5000, required=True)
-        ok = cv(".cmp-headline").count() > 0 and "도구 호출 순서" in out and "1순위" in out
-        r.check(f"{label}: 결과에 비교 머리줄 · 「1순위」 · 「도구 호출 순서」 칸이 나온다", ok, out[:300], axis=axis)
+        # 도는 동안 결과 자리는 실시간 상자(data-cmp-track)이고 단추는 꺼져 있다. 끝나면 결과 판(머리 「결론」 한 문장)이나 오류 판이 그 자리에 온다(compare.js render)
+        headline = cv("[data-r='result'] .panel-head h2")
+        r.wait(300, lambda: cv("[data-cmp-track]").count() == 0 and not cv("[data-act='run']").is_disabled()
+               and (headline.count() or cv(".alert[data-variant='destructive']").count() or cv("[role='alert']").count()), every=2)
+        out = txt(r, "#view-compare [data-r='result']", 5000, required=True)
+        ok = headline.count() > 0 and "결론" in out and "도구 호출 순서" in out and "1순위" in out
+        r.check(f"{label}: 결과에 결론 한 문장 · 「1순위」 · 「도구 호출 순서」 칸이 나온다", ok, out[:300], axis=axis)
         trials.append(ok)
         return out
     trials: list[bool] = []
@@ -2267,46 +2373,79 @@ def lab_12_compare_eval(r: Round):
     open_fold(cv("details:has([data-drop='tool'])").first)      # 「B를 바꿔 보기」 접기는 기본 닫힘(compare.js formCard) — 학생도 펴고 고른다(한바퀴3)
     cv("[data-drop='tool']").first.uncheck()
     page.wait_for_timeout(500)
-    out = run_trial("도구 하나를 뺀 변형", AXES[0])
-    r.check("뺀 도구가 「뺌」으로 보인다", "뺌" in out, out[:200])
+    run_trial("도구 하나를 뺀 변형", AXES[0])
+    dropped = txt(r, "#view-compare details[data-cmp-drop] > summary")     # 뺀 수는 「B에서 빼 보기」 접기의 머리에 적힌다(compare.js)
+    r.check("뺀 도구가 「1개 뺌」으로 보인다", "1개 뺌" in dropped, dropped)
     cv("[data-act='reset']").click(); page.wait_for_timeout(500)
     run_trial("원래대로 다시", AXES[3])
     r.check("시험 비교는 처리 건 · 설비 명령을 만들지 않는다", instance_ids(r) == before and cmds() == gw0,
             f"처리 건 {len(instance_ids(r) - before)} · 마지막 명령 {gw0} → {cmds()}", kind="exception", axis=AXES[1])
     r.check("방금 한 시험이 새 기록으로 남는다(앞 기록 id와 다른 행)", bool(hist), f"새 기록 {len(hist)}")
     # 판단 채점: 기대 판단을 정답표 항목으로 — 기대 원인은 그래프(쿨러 열화가 흔드는 외란의 원인), 원격 수동이면 원격 제어 조치가 빠져야 한다(원문 HM-8 8절)
+    # 판단 채점(evaluation.js): 보기 셋(채점 · 정답표 · 전 · 후 비교). 정답표 항목은 「정답표」 보기에서 적고, 칸에는 지식의 이름을 골라 넣는다(id 를 적지 않는다)
     r.tab("eval")
     ev = lambda css: page.locator(f"#view-eval {css}")   # noqa: E731
-    r.wait(20, lambda: ev("[data-act='new']").count(), every=1)
+    r.wait(20, lambda: ev("nav [data-act='view'][data-to='golden']").count(), every=1)
+    ev("nav [data-act='view'][data-to='golden']").click()
+    r.wait(20, lambda: ev("[data-act='new']").is_visible(), every=1)
     cause = sorted(expected_causes(graph(r), "cooler_degradation"))[0]
     remote = [s for s in r.get(f"{r.process}/api/kg/skills") if s.get("kind") == "control" and any(f["id"] == "fm:cooler-cooling-loss" for f in s.get("failureModes") or [])]
     allowed = [s for s in r.get(f"{r.process}/api/kg/skills") if s.get("kind") != "control" and any(f["id"] == "fm:cooler-cooling-loss" for f in s.get("failureModes") or [])]
-    item_id = f"class-round-{int(time.time()) % 100000}"
+    golden_ids = lambda: {i.get("id") for i in r.get(f"{r.process}/api/eval/golden").get("items") or []}   # noqa: E731
+    ids0 = golden_ids()
+    names = page.evaluate("() => UI.names")
+    kinds = {"cause": ("cause:",), "fm": ("fm:",), "skill": ("skill:",), "evidence": ("evd:", "rule:", "ks:")}
+
+    def shown_name(kind: str, node_id: str) -> str:
+        """정답표 폼의 고르기 목록에 보이는 이름(evaluation.js nameMap): 지식의 이름, 같은 종류에 같은 이름이 둘이면 뒤에 구분 글."""
+        same = [i for i, n in names.items() if n == names.get(node_id) and i.startswith(kinds[kind])]
+        return f"{names[node_id]} ({node_id.split(':')[-1]})" if len(same) > 1 else names[node_id]
+
     ev("[data-act='new']").click()
-    for key, val in (("title", "쿨러 성능 저하 · 원격 수동(수업 한 바퀴)"), ("id", item_id), ("cause", cause), ("failure_mode", "fm:cooler-cooling-loss"),
-                     ("allowed_top", "\n".join(s["id"] for s in allowed)), ("forbidden", "\n".join(f"{s['id']} = 제외" for s in remote)),
-                     ("required_evidence", "evd:cooler-fouling-ce-low")):      # 「누가」 칸은 없다 — 화면이 담당자 id 를 싣는다(evaluation.js meId)
-        ev(f"[data-f='{key}']").fill(val)
+    ev("[data-f='title']").fill("쿨러 성능 저하 · 원격 수동(수업 한 바퀴)")
     ev("[data-f='asset']").select_option("HYD-01")
     ev("[data-f='pattern']").select_option("COOLER_DEGRADATION")
     ev("[data-f='plc_mode']").select_option(json.dumps("REMOTE_MANUAL"))     # 가정 사실 고르기 값은 JSON 글(참 · 거짓도 담게 — evaluation.js sel)(한바퀴3)
-    ev("[data-act='save']").click()
-    saved = r.wait(15, lambda: any(i.get("id") == item_id for i in r.get(f"{r.process}/api/eval/golden").get("items") or []), every=1)
-    r.check("정답표 항목을 적어 저장", bool(saved), txt(r, "#view-eval [data-msg='form']"))
+    ev("[data-f='cause']").fill(shown_name("cause", cause))
+    ev("[data-f='failure_mode']").fill(shown_name("fm", "fm:cooler-cooling-loss"))
+    for field, kind, picks in (("allowed_top", "skill", [x["id"] for x in allowed]), ("forbidden", "skill", [x["id"] for x in remote]),
+                               ("required_evidence", "evidence", ["evd:cooler-fouling-ce-low"])):
+        for node_id in picks:                                              # 이름으로 찾아 넣기: 고르면 아래 「고른 것」에 한 줄이 더해지고 칸이 비워진다
+            box = ev(f"[data-add-to='{field}']")
+            box.press_sequentially(shown_name(kind, node_id))           # 학생처럼 이름을 치고 칸을 떠난다 — 칸이 바뀌었다는 사건(change)에 한 줄이 더해진다
+            box.press("Tab")
+            page.wait_for_timeout(200)
+        r.check(f"정답표 폼: 「{field}」에 고른 것이 이름으로 {len(picks)}줄 보인다", ev(f"[data-picks='{field}'] li").count() == len(picks),
+                txt(r, f"#view-eval [data-picks='{field}']")[:200])
+    forbids = ev("[data-picks='forbidden'] select[data-forbid]").evaluate_all("ss => ss.map(s => s.value)")
+    ev("[data-act='save']").click()                                        # 「누가」 칸은 없다 — 화면이 담당자 id 를 싣는다(evaluation.js meId)
+    saved = r.wait(15, lambda: golden_ids() - ids0, every=1) or set()
+    r.check("정답표 항목을 적어 저장(빠져야 할 조치의 기대는 「제외돼야 함」)", len(saved) == 1 and bool(forbids) and set(forbids) == {"excluded"}, txt(r, "#view-eval [data-msg='form']"))
+    if len(saved) != 1:
+        return
+    item_id = next(iter(saved))
     ev("[data-act='new']").click()
-    ev("[data-f='forbidden']").fill("이건 형식이 아님")
-    ev("[data-f='asset']").select_option("HYD-01")                           # 설비 · 이상 패턴은 미리 골라져 있지 않다 — 고르지 않으면 그 안내가 먼저 나온다(evaluation.js collect)
-    ev("[data-f='pattern']").select_option("COOLER_DEGRADATION")
-    ev("[data-act='save']").click(); page.wait_for_timeout(800)
-    r.human("빠질 조치 줄 형식이 틀리면 사람 글로 막는다", txt(r, "#view-eval [data-msg='form']"))
+    ev("[data-add-to='forbidden']").press_sequentially("이건 지식에 없는 이름")
+    ev("[data-add-to='forbidden']").press("Tab")
+    page.wait_for_timeout(500)
+    r.human("빠져야 할 조치에 목록에 없는 이름을 넣으면 사람 글로 막는다", txt(r, "#view-eval [data-msg='form']"),
+            "목록에 있는 이름을 고르세요" in txt(r, "#view-eval [data-msg='form']") and ev("[data-picks='forbidden'] li").count() == 0)
     ev("[data-act='cancel']").click()
     ev(f"[data-pick='{item_id}']").check()
+    ev("nav [data-act='view'][data-to='run']").click()
+    open_fold(ev("details[data-eval-more]"))                               # 반복 횟수 · 메모는 접기 안에 있다
     ev("[data-f='repeats']").fill("3")
     runs0 = len(r.get(f"{r.process}/api/eval/runs?limit=50"))
     for n in (1, 2):
         ev("[data-act='run']").click()
-        r.wait(300, lambda: "채점 완료" in txt(r, "#view-eval [data-msg='run']") or "neg" in (ev("[data-msg='run']").get_attribute("class") or ""), every=2)
-        r.check(f"채점 실행({n}번째) → 채점 완료", "채점 완료" in txt(r, "#view-eval [data-msg='run']"), txt(r, "#view-eval [data-msg='run']"), axis=AXES[0] if n == 1 else AXES[3])
+        done = r.wait(300, lambda: len(r.get(f"{r.process}/api/eval/runs?limit=50")) - runs0 >= n and not ev("[data-act='run']").is_disabled()
+                      and ev("[data-r='live']").is_hidden(), every=2)
+        newest = r.get(f"{r.process}/api/eval/runs?limit=50")[0]
+        head = txt(r, "#view-eval [data-r='detail'] .panel-head")
+        # 끝나면 결과 자리에 그 실행이 열린다: 결론 「평균 n점 — 항목 1개 · …」(evaluation.js renderDetail). 실패면 실시간 상자 자리에 오류 판이 남는다
+        r.check(f"채점 실행({n}번째) → 결과 자리에 그 실행의 결론(평균 점수 = 실행 기록)", bool(done) and f"평균 {newest['summary']['score']:g}점" in head and "항목 1개" in head,
+                head or txt(r, "#view-eval [data-r='live']"), axis=AXES[0] if n == 1 else AXES[3])
+        open_fold(ev("details[data-eval-more]"))
     runs = r.get(f"{r.process}/api/eval/runs?limit=50")
     latest = r.get(f"{r.process}/api/eval/runs/{runs[0]['id']}")
     item = next((i for i in latest.get("items") or [] if i.get("item") == item_id), {})
@@ -2325,13 +2464,13 @@ def lab_12_compare_eval(r: Round):
     r.check("채점은 처리 건 · 설비 명령을 만들지 않는다", instance_ids(r) == before and cmds() == gw0, "", kind="exception", axis=AXES[1])
     r.keyless("키 없는 PC: 이 실행의 시험 비교 세 번 · 판단 채점 두 번이 끝까지 됐다", len(trials) == 3 and all(trials) and len(runs) - runs0 == 2,
               f"시험 {trials} · 채점 기록 {len(runs) - runs0}")
+    ev("nav [data-act='view'][data-to='golden']").click()
     ev(f"[data-edit='{item_id}']").click(); page.wait_for_timeout(500)
-    ev("details").filter(has_text="이 항목 지우기").locator("summary").click()
-    ev("[data-act='delete']").click()
+    ev("[data-act='delete']").click()                                     # 고치는 폼의 단추 줄 왼쪽 [이 항목 지우기]
     if not confirm_ok(r):                                                 # 지우기는 먼저 묻는다(evaluation.js — UI.confirm)
         raise ScreenMissing("[지우기]의 확인 창이 뜨지 않음")
-    r.check("시험 항목을 지운다(지난 실행 기록은 남음)", bool(r.wait(15, lambda: not any(i.get("id") == item_id for i in r.get(f"{r.process}/api/eval/golden").get("items") or []), every=1)),
-            "", axis=AXES[1])
+    r.check("시험 항목을 지운다(지난 실행 기록은 남음)", bool(r.wait(15, lambda: item_id not in golden_ids(), every=1))
+            and len(r.get(f"{r.process}/api/eval/runs?limit=50")) == len(runs), "", axis=AXES[1])
 
 
 # ====================================================================== 13 통합 98 · 실전 76
@@ -2339,18 +2478,21 @@ CLASS_STEPS = {"c3_cooling": ("T_agent", "T_approve", "T_cmd", "T_reobs"), "c3_p
 
 
 def import_flow(r: Round, xml: str, file_name: str) -> tuple[str, bool]:
-    """[흐름 가져오기]: 파일 고르기 → [가져오기]. 수업 단계에서는 흐름 id 칸이 잠겨 그림의 프로세스 id 를 쓴다. (메시지, 성공?)"""
+    """화면 머리의 [흐름 가져오기] → 파일 고르기 → [가져오기](flows.js openImport · doImport). 수업 단계에서는 흐름 구분 이름 칸이 잠겨 그림의 프로세스 id 를 쓴다.
+    되면 그 흐름의 판이 열리고 판 위에 「그림을 가져왔습니다 …」 알림(#flowNote)이, 안 되면 가져오기 판에 「그림을 가져오지 못했습니다」와 까닭(#flowImportMsg)이 나온다.
+    (메시지, 성공?)"""
     r.tab("flows")
+    r.page.locator("#flowImportOpen").click()
     r.page.wait_for_selector("#flowFile", state="attached")
     r.page.set_input_files("#flowFile", files=[{"name": file_name, "mimeType": "application/xml", "buffer": xml.encode("utf-8")}])
     r.page.click("#flowImport")
-    msg = r.page.locator("#flowImportMsg")
-    r.wait(30, lambda: msg.inner_text().strip() not in ("", "읽는 중…"), every=0.5)
-    text = msg.inner_text().strip()
-    ok = "form-msg pos" in (msg.get_attribute("class") or "") or text.startswith(("가져왔습니다", "다시 가져왔습니다"))      # flows.js importFlow
+    msg, note = r.page.locator("#flowImportMsg .alert"), r.page.locator("#flowNote .flow-note-box")
+    r.wait(30, lambda: msg.count() > 0 or note.count() > 0, every=0.5)
+    ok = note.count() > 0 and msg.count() == 0
+    text = (note if ok else msg).first.inner_text().strip() if (note.count() or msg.count()) else txt(r, "#flowPanel")[:300]
     if ok:
-        r.page.wait_for_selector("#flowEditor #flowCheck"); r.page.wait_for_timeout(900)
-    return text, ok
+        r.page.wait_for_selector("#flowEditor section.flow-editor"); r.page.wait_for_timeout(900)
+    return text, ok and text.startswith(("그림을 가져왔습니다", "그림을 다시 가져왔습니다"))
 
 
 def structurally_changed(xml: str) -> str:
@@ -2375,36 +2517,55 @@ def lab_13_flow_mapping(r: Round):
         acts = {x.get("id"): x for x in class_definition(r, did).get("activities") or []}
         r.check(f"{did}: 등록 흐름에 비교할 작업 · 승인 역할이 있다", all(s in acts for s in steps) and bool((acts.get("T_approve") or {}).get("role")),
                 ", ".join(f"{s}={(acts.get(s) or {}).get('name')}" for s in steps))
-    # 등록된 냉각 대응 흐름의 [매핑 열기] — 시작 조건 · 에이전트 · 운전원 역할 · 시스템 기능 · 분기 조건을 화면에서 읽는다(= 배포된 정의)
+    # 등록된 냉각 대응 흐름의 「단계 설정」 — 기본 제공 흐름은 읽기 전용 표다(flows.js readOnlyEditor): 이름–값(흐름 이름 · 시작) → 단계 표(단계 · 종류 · 누가 · 기한)
+    # → 갈림 표(갈림 · 조건 · 가는 곳). 화면의 표 = 배포된 정의 · 저장된 단계 설정(매핑)인가
     defn = class_definition(r, "c3_cooling")
     acts = {a["id"]: a for a in defn["activities"]}
-    mapping = r.get(f"{r.process}/api/flows/c3_cooling")["mapping"]
+    flow_view = r.get(f"{r.process}/api/flows/c3_cooling")
+    mapping, parsed = flow_view["mapping"], flow_view["parsed"]
+    catalog = r.get(f"{r.process}/api/flows/catalog")
+    parts = {x["key"]: x for x in catalog["parts"]}
+    agent_names = {a["id"]: a.get("name") for a in agents(r)}
     opened: list[bool] = []
     for n in (1, 2):
         r.tab("flows")
         btn = page.locator("#flowList [data-open='c3_cooling']").first
         if not r.wait(15, lambda: btn.count(), every=1):
-            r.check("흐름 가져오기 목록에 등록된 냉각 대응 흐름의 [매핑 열기]가 있다", False, txt(r, "#flowList")[:200]); return
+            r.check("흐름 목록에 등록된 냉각 대응 흐름이 있다", False, txt(r, "#flowList")[:200]); return
         btn.click()
-        r.page.wait_for_selector("#flowEditor table.flow-map", timeout=15_000); page.wait_for_timeout(1200)
-        start_ok = page.locator("#flowEditor input[name=flowStart][value=alert]").is_checked() and page.locator("#flowEditor [data-pattern='COOLER_DEGRADATION']").is_checked()
-        agent = page.locator("#flowEditor select[data-agent='T_agent']").input_value() if page.locator("#flowEditor select[data-agent='T_agent']").count() else None
-        role = page.locator("#flowEditor select[data-role='T_approve'] option:checked").inner_text() if page.locator("#flowEditor select[data-role='T_approve']").count() else None
-        parts = {t: page.locator(f"#flowEditor select[data-part='{t}']").input_value() for t in mapping["tasks"]
-                 if page.locator(f"#flowEditor select[data-part='{t}']").count()}
-        conds = {f: page.locator(f"#flowEditor select[data-var='{f}']").input_value() for f, spec in mapping["flows"].items()
-                 if not spec.get("default") and page.locator(f"#flowEditor select[data-var='{f}']").count()}
-        r.check(f"[매핑 열기]({n}번째): 쿨러 경보 시작 · 진단 에이전트 · 운전원 승인 역할(= 배포된 정의) · 단계별 실행 기능 · 승인/반려 · 회복 분기 조건(= 저장된 매핑)",
-                start_ok and agent == acts["T_agent"].get("agent") and (role or "").strip() == acts["T_approve"]["role"]
-                and parts == {t: m["part"] for t, m in mapping["tasks"].items()}
-                and conds == {f: spec["var"] for f, spec in mapping["flows"].items() if not spec.get("default")},
-                f"시작 {start_ok} · 에이전트 {agent} · 역할 {role} · 기능 {parts} · 조건 {conds}", axis=AXES[0] if n == 1 else AXES[3])
-        opened.append(bool(start_ok) and bool(parts))
+        r.wait(15, lambda: page.locator("#flowEditorFold").get_attribute("data-for") == "c3_cooling", every=0.5)
+        open_fold(page.locator("#flowEditorFold"))                          # 기본 제공 흐름의 단계 설정은 접힌 채 열린다
+        page.wait_for_selector("#flowEditor section.flow-readonly", timeout=15_000); page.wait_for_timeout(600)
+        seen = page.evaluate("""() => { const box = document.querySelector('#flowEditor section.flow-readonly'), tables = box.querySelectorAll('table');
+            const cells = t => [...t.querySelectorAll('tbody tr')].map(tr => [...tr.children].map(td => td.textContent.trim()));
+            return { kv: Object.fromEntries([...box.querySelectorAll('dl.kv dt')].map(dt => [dt.textContent.trim(), dt.nextElementSibling.textContent.trim()])),
+                     steps: cells(tables[0]), branches: tables[1] ? cells(tables[1]) : [], note: box.querySelector(':scope > p.muted')?.textContent.trim() || '' }; }""")
+        words = page.evaluate("""a => ({ pattern: UI.patternName('COOLER_DEGRADATION'), steps: a.steps.map(n => UI.flowName(n || '(이름 없음)')),
+            parts: Object.fromEntries(a.parts.map(([k, name]) => [k, ({ human: '담당자 입력', agent: 'AI 에이전트 작업' })[k] || UI.flowName(name)])) })""",
+                              {"steps": [t.get("name") for t in parsed["tasks"]], "parts": [[k, x.get("name")] for k, x in parts.items()]})
+        by_step = {row[0]: row for row in seen["steps"]}
+        want_kind = {words["steps"][i]: words["parts"].get((mapping["tasks"].get(t["id"]) or {}).get("part"), "정해지지 않음") for i, t in enumerate(parsed["tasks"])}
+        step_of = {t["id"]: words["steps"][i] for i, t in enumerate(parsed["tasks"])}
+        outs: dict = {}
+        for f in parsed["flows"]:
+            outs.setdefault(f["source"], []).append(f)
+        forks = [f for g in parsed["gateways"] if g.get("gateway_type") == "exclusiveGateway" and len(outs.get(g["id"], [])) >= 2 for f in outs[g["id"]]]
+        start_ok = seen["kv"].get("시작", "").startswith("경보로 시작") and words["pattern"] in seen["kv"].get("시작", "") and seen["kv"].get("흐름 이름") == mapping.get("name")
+        kinds_ok = len(seen["steps"]) == len(parsed["tasks"]) and all((by_step.get(k) or ["", ""])[1] == v for k, v in want_kind.items())
+        who_agent, who_role = (by_step.get(step_of["T_agent"]) or ["", "", ""])[2], (by_step.get(step_of["T_approve"]) or ["", "", ""])[2]
+        defaults = sum(1 for row in seen["branches"] if "그 밖의 경우" in " ".join(row))
+        branch_ok = len(seen["branches"]) == len(forks) and defaults == sum(1 for f in forks if (mapping["flows"].get(f["id"]) or {}).get("default"))
+        r.check(f"「단계 설정」({n}번째): 쿨러 경보 시작 · 진단 에이전트 · 운전원 승인 역할(= 배포된 정의) · 단계마다의 종류 · 갈림 수와 「그 밖의 경우」 수(= 저장된 단계 설정)",
+                start_ok and kinds_ok and who_agent == agent_names.get(acts["T_agent"].get("agent")) and who_role == acts["T_approve"]["role"] and branch_ok,
+                f"시작 {seen['kv'].get('시작')} · 에이전트 {who_agent} · 역할 {who_role} · 단계 {len(seen['steps'])}/{len(parsed['tasks'])} · 종류 일치 {kinds_ok} · 갈림 {len(seen['branches'])}/{len(forks)}",
+                axis=AXES[0] if n == 1 else AXES[3])
+        opened.append(bool(start_ok) and bool(kinds_ok))
     if course_phase(r) == "course":
-        # 강사가 설치한 수업 흐름은 매핑을 읽기만 한다 — [저장 · 검사] · [판본 등록] 단추 대신 그 까닭 한 줄(flows.js actionsHtml class_flow)
-        hint = txt(r, "#flowEditor #flowActions .field-hint")
-        r.human("수업 흐름 매핑은 저장 단추 없이 읽기만 하고 까닭이 사람 글", hint, page.locator("#flowEditor #flowCheck").count() == 0 and "읽기만" in hint)
-        r.check("매핑을 열어 봐도 배포된 수업 흐름 · 저장된 매핑이 그대로", routes(r) == rt and r.get(f"{r.process}/api/flows/c3_cooling")["mapping"] == mapping, "",
+        # 기본 제공 흐름은 단계 설정을 읽기만 한다 — [저장 · 검사] · [판본 등록]이 든 「검사 · 판본 등록」 절이 없고 표 아래에 그 까닭 한 줄이 있다(flows.js readOnlyEditor · drawRegister)
+        hint = seen["note"]
+        r.human("기본 제공 흐름의 단계 설정은 저장 단추 없이 읽기만 하고 까닭이 사람 글", hint, page.locator("#flowRegisterSec").is_hidden()
+                and page.locator("#flowEditor select, #flowEditor input").count() == 0 and "읽기만" in hint)
+        r.check("단계 설정을 열어 봐도 배포된 흐름 · 저장된 단계 설정이 그대로", routes(r) == rt and r.get(f"{r.process}/api/flows/c3_cooling")["mapping"] == mapping, "",
                 kind="exception", axis=AXES[1])
     # 준비되지 않은 흐름 가져오기: 형식은 맞지만 구조를 바꾼 제공 교대 그림 → 403(수업 경계), 깨진 그림 → 400(형식) — 둘 다 사람 글
     shipped = (ROOT / "it/process/definitions/shift_handover.bpmn").read_text(encoding="utf-8")
@@ -2420,7 +2581,7 @@ def lab_13_flow_mapping(r: Round):
     reason = detail.get("reason") if isinstance(detail, dict) else detail
     r.human("BPMN 이 아닌 파일은 형식 검사가 거절(400)", reason, code == 400)
     r.check("거절 뒤 경보 경로는 그대로", routes(r) == rt, kind="exception", axis=AXES[1])
-    r.keyless("키 없는 PC: 이 실행의 [매핑 열기]가 매번 시작 · 단계 기능을 그렸다", bool(opened) and all(opened), f"열기 {opened}")
+    r.keyless("키 없는 PC: 이 실행의 「단계 설정」이 매번 시작 · 단계의 종류를 그렸다", bool(opened) and all(opened), f"열기 {opened}")
 
 
 # ====================================================================== 14 통합 99 · 실전 78
@@ -2439,17 +2600,19 @@ def lab_14_history(r: Round):
                 f"{view['instance']['proc_def_id']} v{view['instance'].get('proc_def_version')}")
         # 다시 수행의 [영향 확인] — 미리 보기만(제출하지 않는다), 승인 대기 중인 처리 건에서
         select_instance(r, pid)
-        fold = page.locator("#instDetail details", has_text="다시 수행").first
-        if fold.count() and not fold.evaluate("d => d.open"):
-            fold.locator("summary").first.click()
+        # 「다시 수행」은 한 건 머리의 더 보기 › 자세한 기록 › 「다시 수행 · 복구」 보기에 있다(instances.js renderRecovery · instanceRework.js)
+        more_menu(r, "caseMenu", "[data-case-act='more']")
+        page.locator("#caseMoreTabs [data-more-tab='recover']").click()
+        page.locator("#reworkPanel details").first.wait_for(state="attached", timeout=15_000)
+        open_fold(page.locator("#reworkPanel details").first)
         for n, start in ((1, "T_agent"), (2, "T_approve")):
             wid = (rows_of(view_of(r, pid)).get(start) or {}).get("id")
             r.page.wait_for_selector("#rwStart", timeout=15_000)
             page.select_option("#rwStart", wid)
             page.click("#rwPreview")
-            r.wait(30, lambda: "영향받는 단계" in txt(r, "#instDetail") or page.locator("#instDetail .neg").count(), every=1)
+            r.wait(30, lambda: "영향받는 단계" in txt(r, "#reworkPanel") or page.locator("#reworkPanel [data-tone='danger']").count(), every=1)
             pv = r.get(f"{r.process}/api/instances/{urllib.parse.quote(pid, safe='')}/rework-preview?workitem_id={wid}")
-            shown = txt(r, "#instDetail", 5000)
+            shown = txt(r, "#reworkPanel", 5000)
             r.check(f"다시 수행 [영향 확인]({start}부터): 영향받는 · 취소될 단계 수가 화면 = 서버", f"영향받는 단계 {len(pv['affected_workitems'])}건" in shown
                     and f"취소될 단계 {len(pv['cancel_workitems'])}건" in shown, shown[shown.find("영향 범위"):][:200], axis=AXES[0] if n == 1 else AXES[3])
         v_after = view_of(r, pid)
@@ -2462,30 +2625,38 @@ def lab_14_history(r: Round):
         r.check("판단 · 승인 · 명령 · 재관측이 모두 끝났다", end["instance"]["status"] == "COMPLETED" and all((rows.get(k) or {}).get("status") == "DONE" for k in CLASS_STEPS["c3_cooling"]),
                 end["instance"]["status"])
         select_instance(r, pid)
-        page.locator("#instDetail [data-inst-tab='record']").click(); page.wait_for_timeout(1500)
-        rec = page.locator("#instDetail").inner_text()
-        order = [rec.find(names[k]) for k in CLASS_STEPS["c3_cooling"]]
-        r.check("처리 기록에 단계가 순서대로(판단 → 승인 → 명령 → 재관측)", all(i >= 0 for i in order) and order == sorted(order), str(order))
-        r.check("처리 기록에 승인한 사람이 이름으로 보인다", vars_of(end["instance"]).get("approved_by_name", "@@") in rec, vars_of(end["instance"]).get("approved_by_name"))
+        page.wait_for_timeout(1500)
+        # 한 건 화면의 「단계 기록」(#instRecord — caseRecord.js): 단계가 한 줄씩(.step[data-step]) 차례대로 있고, 단계마다 누가 했는지가 머리에 있다
+        rec = txt(r, "#instRecord", required=True)
+        shown_steps = page.locator("#instRecord .step[data-step]").evaluate_all("ss => ss.map(s => s.dataset.step)")
+        order = [shown_steps.index(rows[k]["id"]) if rows.get(k) and rows[k]["id"] in shown_steps else -1 for k in CLASS_STEPS["c3_cooling"]]
+        flow_names = page.evaluate("ns => ns.map(n => UI.flowName(n))", [names[k] for k in CLASS_STEPS["c3_cooling"]])
+        r.check("단계 기록에 단계가 순서대로(판단 → 승인 → 명령 → 효과 확인) 이름과 함께 보인다", all(i >= 0 for i in order) and order == sorted(order)
+                and all(n in rec for n in flow_names), f"{order} · {flow_names}")
+        r.check("단계 기록에 승인한 사람이 이름으로 보인다", vars_of(end["instance"]).get("approved_by_name", "@@") in rec, vars_of(end["instance"]).get("approved_by_name"))
         wo = (vars_of(end["instance"]).get("work_order") or {}).get("ref")
         wo_row = next((o for o in ent(r)["cmms"]["work_orders"] if o.get("id") == wo), {})
         r.check("명령 처리 · 온도 회복과 작업지시 등록 · 정비 완료를 따로 확인(작업지시는 등록만 — 완료 아님)", vars_of(end["instance"]).get("recovered") is True
-                and bool(wo) and wo_row.get("status") != "완료" and wo in rec, f"회복 {vars_of(end['instance']).get('recovered')} · {wo} {wo_row.get('status')}")
-        # 처리 기록에서 단계를 펼쳐 도구 호출 원문을 다시 읽는다 — 화면의 원문 = 이벤트 기록
-        page.locator("#instDetail [data-cr-all]").click(); page.wait_for_timeout(1500)
-        # 보조 작업(쓸 도구 불러오기 · 파일 쓰기 · 명령 실행 — li.minor)은 [보조 작업도 보기] 전에는 숨어 있다(caseRecord.js) — 업무 도구 호출을 연다(한바퀴3)
-        # 단계를 펼쳐도 도구 호출은 그 단계의 「도구 호출 n회」 접기(details.cr-tools) 안에 닫혀 있다 — 학생처럼 그 접기를 먼저 편다
-        call = page.locator("#instDetail li.cr-r.tool:not(.minor) details.cr-call").first
+                and bool(wo) and wo_row.get("status") != "완료" and wo in all_txt(r, "#instRecord"), f"회복 {vars_of(end['instance']).get('recovered')} · {wo} {wo_row.get('status')}")
+        # AI 단계의 [실행 기록] → 그 단계의 자세히 판(dialog) → 「원문」 보기: 도구마다 묶음(details.cr-call) 안에 도구 식별자와 호출마다의 요청 · 결과 원문이 있다.
+        # 보조 작업(쓸 도구 불러오기 · 파일 읽기 · 쓰기 — li[data-minor])이 아닌 업무 도구 호출의 요청 원문 = 이벤트 기록인가
+        page.locator(f"#instRecord .step[data-step='{rows['T_agent']['id']}'] [data-cr-sheet]").first.click()
+        sheet = page.locator("[data-cr-sheet-box]")
+        sheet.locator("[data-cr-tab='raw']").click(); page.wait_for_timeout(800)
+        call = sheet.locator("li.tg:not([data-minor]) details.cr-call").first
         if call.count():
-            open_fold(call.locator("xpath=ancestor::details[contains(concat(' ', @class, ' '), ' cr-tools ')]").first)
-            call.locator(":scope > summary").click(); page.wait_for_timeout(500)
-            raw = call.inner_text()
-            tool = call.locator("code").first.inner_text()
+            open_fold(call)
+            tool = call.locator(".cr-toolid [data-id-copy]").first.get_attribute("data-id-copy") or ""
+            asked = call.locator("details.fold.raw").filter(has_text="요청 원문").first
+            open_fold(asked); page.wait_for_timeout(500)
+            raw = asked.inner_text()
             starts = [e for e in end["events"] if e["event_type"] == "tool_usage_started" and (e.get("data") or {}).get("tool") == tool]
             inp = json.dumps((starts[0].get("data") or {}).get("input"), ensure_ascii=False, indent=2) if starts else ""
-            r.check("처리 기록 단계를 펼치면 도구 호출 원문(요청 원문)이 이벤트 기록과 같다", bool(starts) and all(line.strip() in raw for line in inp.splitlines()[:4]), f"{tool} · {inp[:120]}")
+            r.check("단계 기록의 AI 단계 → 자세히 판의 「원문」에서 도구 호출의 요청 원문이 이벤트 기록과 같다", bool(starts) and bool(inp.strip())
+                    and all(line.strip() in raw for line in inp.splitlines()[:4]), f"{tool} · {inp[:120]}")
         else:
-            r.check("처리 기록에 도구 호출 단계가 있다", False, rec[:200])
+            r.check("단계 기록의 AI 단계에 도구 호출 원문이 있다", False, sheet.inner_text()[:200])
+        sheet.locator("[data-cr-sheet-close]").click()
         statuses = {c.get("pid"): c.get("end") for c in r.memo.get("02_cards") or []}
         if statuses:
             r.check("승인 대기 · 정상 종료 · 반려로 끝난 처리 건을 처리 건 목록에서 구분", all(view_of(r, p)["instance"]["status"] == s for p, s in statuses.items() if p and s), str(statuses))
@@ -2581,6 +2752,7 @@ def biz_round(r: Round, kind: str, asset: str, check_effects) -> list[dict]:
         task = item_named(view, approve["name"])
         if i == 0:
             open_task(r, pid, task["id"])
+            r.page.click("#tdRejectOpen")
             r.page.fill("#tdReason", "")
             r.page.click("#tdRejectCard"); r.page.wait_for_timeout(600)
             r.human(f"{label}: 사유 없이 [반려] → 「반려 사유를 1~2000자로 적으세요」", panel_msg(r), "반려 사유" in panel_msg(r))      # instances.js rejectCard
@@ -2592,10 +2764,12 @@ def biz_round(r: Round, kind: str, asset: str, check_effects) -> list[dict]:
 
     runs = r.repeat3(f"{label} 판단 · 제안", run_once, ("definition", "recommended", "approver", "evidence") + (("window",) if kind == "pm" else ("supplier", "qty", "amount")),
                      limit_s=AGENT_LIMIT_S, single=1)
-    ok_outcome = "정상" if kind == "pm" else "입고 완료"
+    # 승인 뒤의 정상 끝: 그 흐름의 결과 보고 단계(R_ok)가 내는 결과 이름 — 흐름의 단계 설정(매핑)에서 읽는다(정기 정비 「정비 요청 등록」 · 예비품 구매 「입고 완료」)
+    ok_outcome = (((r.get(f"{r.process}/api/flows/{did}")["mapping"]["tasks"].get("R_ok") or {}).get("config") or {}).get("outcome"))
     r.check(f"{label}: 처리 건이 모두 준비된 수업 흐름으로 열렸다", all(x.get("definition") == did for x in runs), str([x.get("definition") for x in runs]))
     r.check(f"{label}: 카드 승인 역할 = 흐름 승인 담당({approve.get('role')})", all(x.get("approver") == approver for x in runs if not x.get("error")), str([x.get("approver") for x in runs]))
-    r.check(f"{label}: [반려] → 반려, 승인 → 정상 종결", [x.get("outcome") for x in runs] == (["반려", ok_outcome, "반려"] if r.ai_runs >= 3 else [ok_outcome]), str([x.get("outcome") for x in runs]))
+    r.check(f"{label}: [반려] → 반려, 승인 → 흐름의 정상 결과 보고(「{ok_outcome}」)로 끝남", bool(ok_outcome)
+            and [x.get("outcome") for x in runs] == (["반려", ok_outcome, "반려"] if r.ai_runs >= 3 else [ok_outcome]), str([x.get("outcome") for x in runs]))
     route = routes(r).get(pattern) or {}
     r.check(f"{label}: 실행 뒤에도 경보 경로는 준비된 수업 흐름", route.get("definition") == did and route.get("class_flow") is True, json.dumps(route, ensure_ascii=False), axis=AXES[3])
     return runs
@@ -2675,31 +2849,32 @@ def h_submit(r: Round, pid, task, values, *, expect_done=True):
 def set_fields(r: Round, editor, fields: list[dict]):
     if editor.locator("[data-add]").count() and editor.locator("[data-add]").first.is_disabled():
         # 수업 단계의 제공 교대 흐름: 칸 줄은 제공 연결로 채워져 잠겨 있다(flows.js W3-08) — 바라는 칸 이름이 다 있는지만 본다
-        keys = {x.input_value() for x in editor.locator(".field-row:not(.head) [data-k=key]").all()}
+        keys = {x.input_value() for x in editor.locator(".flow-row-line:not(.flow-row-head) [data-k=key]").all()}
         missing = [f["key"] for f in fields if f["key"] not in keys]
         if missing:
             raise ScreenMissing(f"잠긴 칸 줄에 바라는 칸이 없음: {missing} (화면 {sorted(keys)})")
         return
     for f in fields:
         editor.locator("[data-add]").click()
-        row = editor.locator(".field-row:not(.head)").last
+        row = editor.locator(".flow-row-line:not(.flow-row-head)").last
         row.locator("[data-k=key]").fill(f["key"])
         row.locator("[data-k=text]").fill(f.get("text") or f["key"])
         if (f.get("type") or "text") != "text":
             row.locator("select[data-k=type]").select_option(f["type"])
-            row = editor.locator(".field-row:not(.head)").last
+            row = editor.locator(".flow-row-line:not(.flow-row-head)").last
         if f.get("items"):
             row.locator("[data-k=items]").fill(", ".join(f["items"]))
     r.page.wait_for_timeout(500)
 
 
 def map_row(r: Round, step_name: str) -> str:
-    rows = r.page.locator("#flowEditor table.flow-map tr[data-row]")
+    """단계 설정의 단계 한 칸(.flow-task[data-row] — 머리에 그림의 단계 이름, flows.js taskRow)의 단계 id."""
+    rows = r.page.locator("#flowEditor .flow-task[data-row]")
     for i in range(rows.count()):
         row = rows.nth(i)
-        if row.locator("td[data-label='단계'] b").inner_text().strip() == step_name:
+        if row.locator(".flow-task-head b").inner_text().strip() == step_name:
             return row.get_attribute("data-row")
-    raise ScreenMissing(f"매핑 표에 단계 '{step_name}' 이(가) 없습니다")
+    raise ScreenMissing(f"단계 설정에 단계 '{step_name}' 이(가) 없습니다")
 
 
 def apply_task(r: Round, step_name: str, m: dict):
@@ -2723,9 +2898,9 @@ def apply_task(r: Round, step_name: str, m: dict):
     if m.get("inputs") and q(f"input[data-inputs='{tid}']").count():
         q(f"input[data-inputs='{tid}']").fill(", ".join(m["inputs"]))
     if m.get("outputs"):
-        set_fields(r, q(f"tr[data-row='{tid}'] [data-outputs='{tid}'][data-rows-of]").first, m["outputs"])
+        set_fields(r, q(f".flow-task[data-row='{tid}'] [data-outputs='{tid}'][data-rows-of]").first, m["outputs"])
     if m.get("fields"):
-        set_fields(r, q(f"tr[data-row='{tid}'] [data-fields='{tid}'][data-rows-of]").first, m["fields"])
+        set_fields(r, q(f".flow-task[data-row='{tid}'] [data-fields='{tid}'][data-rows-of]").first, m["fields"])
     for key, val in (m.get("config") or {}).items():
         if key == "mail" and isinstance(val, dict):
             for mk, mv in val.items():
@@ -2771,16 +2946,23 @@ def apply_branch(r: Round, fid: str, spec: dict):
 
 
 def flow_check(r: Round) -> tuple[bool, list[str]]:
-    r.page.click("#flowEditor #flowCheck")
-    r.wait(30, lambda: r.page.locator("#flowMsg").inner_text().strip() not in ("", "검사 중…"), every=0.5)
+    """「검사 · 판본 등록」 절의 [저장 · 검사](flows.js recheck): 끝나면 알림 줄(#flowMsg)에 「단계 설정을 저장했습니다 …」(또는 못 한 까닭)이,
+    검사 결과(#flowProblems)에 「구조 검사를 통과했습니다」 또는 고칠 곳 목록(ul.flow-issues)이 나온다. (통과?, 고칠 곳)"""
+    r.page.click("#flowActions #flowCheck")
+    said = r.page.locator("#flowMsg .alert")
+    r.wait(30, lambda: said.count() > 0 and r.page.locator("#flowMsg .lv-wait").count() == 0, every=0.5)
     r.page.wait_for_timeout(600)
-    return r.page.locator("#flowProblems .kv-line.pos").count() > 0, [x.inner_text().strip() for x in r.page.locator("#flowProblems .flow-problems li").all()]
+    saved = "단계 설정을 저장했습니다" in txt(r, "#flowMsg")
+    problems = [x.inner_text().strip() for x in r.page.locator("#flowProblems ul.flow-issues li").all()]
+    passed = saved and r.page.locator("#flowProblems .alert").filter(has_text="구조 검사를 통과했습니다").count() > 0 and not problems
+    return passed, problems or ([] if saved else [txt(r, "#flowMsg")])
 
 
 def flow_register(r: Round) -> tuple[bool, str, str | None]:
-    r.page.click("#flowEditor #flowRegister")
+    r.page.click("#flowActions #flowRegister")
     msg = r.page.locator("#flowMsg")
-    r.wait(30, lambda: ("등록" in msg.inner_text()) or "neg" in (msg.get_attribute("class") or ""), every=0.5)
+    # 되면 「<이름> 판본 n을 등록했습니다」와 다음 할 일, 안 되면 「판본을 등록하지 못했습니다」와 까닭(flows.js doRegister)
+    r.wait(30, lambda: "등록했습니다" in msg.inner_text() or "등록하지 못했습니다" in msg.inner_text(), every=0.5)
     text = msg.inner_text().strip()
     m = re.search(r"판본 (\S+?)(?:을|를) 등록했습니다", text)
     return bool(m), text, (m.group(1) if m else None)
@@ -2851,7 +3033,7 @@ def lab_17_shift_handover(r: Round):
     if not ok:
         return
     apply_start(r, mapping['start'])
-    keys = [x.input_value() for x in page.locator("#flowEditor #flowStartFields[data-rows-of] .field-row:not(.head) [data-k=key]").all()]
+    keys = [x.input_value() for x in page.locator("#flowEditor #flowStartFields[data-rows-of] .flow-row-line:not(.flow-row-head) [data-k=key]").all()]
     r.check('116행: 시작 입력 항목(설비 · 교대 · 기준 시각 · 작업 메모) = 교대 계약', set(keys) == set(HANDOVER_START), f"화면 {keys} · 계약 {sorted(HANDOVER_START)}")
     for key, item in mapping['tasks'].items():
         value = dict(item)
@@ -2869,8 +3051,12 @@ def lab_17_shift_handover(r: Round):
     if not registered:
         return
     did = 'ShiftHandover'
-    page.locator(f"[data-start='{did}'][data-version='{version}']").click()
-    box = page.locator(f"[data-startbox='{did}@{version}']")
+    # 직접 시작하는 흐름은 그 흐름 판 아래 「시작」 절(#flowsStart — flows.js drawStart)에서 연다. 판본이 여럿이면 시작할 판본을 고른다
+    box = page.locator("#flowsStart")
+    r.wait(15, lambda: box.is_visible() and box.locator("[data-sv='asset']").count() > 0, every=0.5)
+    if box.locator("[data-start-version]").count():
+        box.locator("[data-start-version]").select_option(str(version)); page.wait_for_timeout(800)
+    r.check("교대 「시작」 절이 방금 등록한 판본으로 열렸다", f"판본 {version}" in box.locator("h3").inner_text(), box.locator("h3").inner_text())
     values = dict(asset='HYD-01', shift_label='다음 교대', as_of=datetime.now(timezone.utc).isoformat(),
                   work_notes='작업 메모: 정비 완료라고 전달받음. 부품 도착 예정이라고 전달받음. 실제 열린 작업지시와 현재 재고를 대조해야 함.')
     for key, value in values.items():
@@ -2984,7 +3170,9 @@ def lab_91_config_bundle(r: Round):
     r.page.wait_for_timeout(800)
     button = r.page.locator("#cfgImport")
     if phase == "course":
-        reason = button.get_attribute("title") if button.is_disabled() else None
+        # 막힌 단추 옆에 서버가 준 까닭 한 줄이 있다(courseAccess.js attrs · apply — span[data-course-why])
+        reason = (r.page.evaluate("() => document.querySelector('#cfgImport').parentElement.querySelector('[data-course-why]')?.textContent || ''").strip()
+                  if button.is_disabled() else None)
         if reason is None:
             button.click()
             if r.page.locator("dialog.confirm-dialog button[value=ok]").count():
@@ -3029,7 +3217,10 @@ def lab_92_biz_reset(r: Round):
         chip = biz_chip(r, asset)
         r.check(f"{key} [초기화] 뒤 표시 「{label}」", label in chip, chip, axis=AXES[3])
         press = r.page.locator(f"#gwLog .biz-press[data-asset='{asset}']").text_content() or ""      # 화면 아래 「조작 기록」 접기 안(접혀 있어도 글은 있다)
-        r.check(f"{key} 설비에서 마지막으로 누른 단추(무엇 · 언제)가 조작 기록에 남는다", "[초기화]" in press, press)      # app.js renderGwLog
+        # 그 단추의 이름은 서버가 준다(scenario_buttons — 「업무 데이터 초기화」). 조작 기록의 줄은 「<설비> [<단추 이름>] · 누가 · 시각」이다(app.js pressLines)
+        reset_name = r.page.locator(f"#units .unit[data-asset='{asset}'] button[data-act='biz-reset']").inner_text().strip()
+        r.check(f"{key} 설비에서 마지막으로 누른 단추(무엇 · 언제)가 조작 기록에 남는다", bool(reset_name) and f"{asset} [{reset_name}]" in press
+                and re.search(r"\d{1,2}:\d{2}:\d{2}", press) is not None, press)
         # 진행 중 [초기화]는 거절한다(초기화가 그 처리 건의 발주 · 오더 기록을 바꾸므로 — scenario_buttons) · 처리 건은 그대로 진행
         before = instance_ids(r)
         unit_button(r, asset, "biz-start")

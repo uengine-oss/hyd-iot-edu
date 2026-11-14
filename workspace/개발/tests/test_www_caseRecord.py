@@ -206,3 +206,59 @@ def test_AI_결론의_근거_줄은_조사를_바로_앞_낱말에_맞추고_주
     opts[0]['sopId'] = 'SOP-PUR-12'                                  # 번호가 「이」로 끝나면 「가」
     got = run(FILES, "out(hydRecord.agentFront(DATA.s, DATA.m).evid.map(x => x[1].replace(/<[^>]+>/g, '')).join(' '))", data)
     assert 'SOP-PUR-12가 −420점으로' in got
+
+
+def _agent_front(decision, recorded, cause='cause:pump-shaft-seal-wear'):
+    """AI 단계 하나(이 단계가 원인과 판단을 냈다 — variable_sources)의 결론 · 근거 줄(hydRecord.agentFront)."""
+    sources = {k: {'kind': 'workitem', 'id': 'w1'} for k in ('cause', 'decision', 'decision_id')}
+    data = {'s': {'w': {'id': 'w1', 'output': {'decision': recorded, 'decision_id': 'D1'}}, 'type': 'agent'},
+            'm': {'v': {'cause': cause, 'guide_card': {}}, 'inst': {'variable_sources': sources}, 'steps': [{'type': 'agent'}], 'decision': decision}}
+    return run(FILES, "UI.names['cause:pump-shaft-seal-wear'] = '펌프 축 씰 마모'; const f = hydRecord.agentFront(DATA.s, DATA.m);"
+                      "out({ verdict: f.verdict, evid: f.evid.map(x => x[1].replace(/<[^>]+>/g, '')), opts: f.opts.map(o => [o.id, o.score]) })", data)
+
+
+PM_OPTS = [{'id': 'skill:sop-pm-11', 'name': '이번 예정된 정비 시간에 단독 시행', 'sopId': 'SOP-PM-11', 'score': 2.04, 'feasible': True, 'rank': 1},
+           {'id': 'skill:sop-pm-12', 'name': '지금 바로 정지하고 시행', 'sopId': 'SOP-PM-12', 'score': -2.04, 'feasible': True, 'rank': 2}]
+
+
+def _pm_decision(route='prevention', recommended='skill:sop-pm-11'):
+    return {'id': 'D1', 'recommended': recommended, 'options': PM_OPTS, 'facts': {},
+            'scenario': {'cause': '펌프 축 씰 마모', 'failureMode': '주 펌프 체적 효율 저하'}, 'origin': {'cause_route': route} if route else {}}
+
+
+def test_결과_글의_점수가_등록한_판단과_달라도_AI_단계의_결론은_그_단계가_등록한_판단의_추천안을_말한다():
+    """2026-11-14 정기 정비 한 건: 준비된 결과 글을 재생한 단계는 결과에 그 글을 쓸 때의 점수(1.54)를 적는데, 이 PC 가 등록한 판단의 점수는 2.04 였다.
+    점수까지 같아야 같은 판단으로 읽어, 결론이 추천안 없이 「원인을 … 판단했습니다」뿐이었다(승인 단계는 그 추천안을 승인했다고 말하는데).
+    추천 · 후보 · 순위가 같으면 그 단계가 등록한 판단이다 — 결론이 추천안을 말하고 점수는 등록한 판단의 것이다. 추천이 다르면 다른 판단이라 쓰지 않는다."""
+    replayed = {'recommended': 'skill:sop-pm-11', 'order': [{'id': 'skill:sop-pm-11', 'rank': 1, 'score': 1.54}, {'id': 'skill:sop-pm-12', 'rank': 2, 'score': -2.54}]}
+    got = _agent_front(_pm_decision(), replayed)
+    assert '「이번 예정된 정비 시간에 단독 시행」을 추천합니다' in got['verdict'], got
+    assert got['opts'] == [['skill:sop-pm-11', 2.04], ['skill:sop-pm-12', -2.04]]
+    other = _agent_front(_pm_decision(), dict(replayed, recommended='skill:sop-pm-12'))            # 결과가 적은 추천이 등록한 판단과 다르다
+    assert other['opts'] == [] and '추천합니다' not in other['verdict'] and other['verdict'] == '', other
+    swapped = _agent_front(_pm_decision(), {'recommended': 'skill:sop-pm-11', 'order': [{'id': 'skill:sop-pm-11', 'rank': 2}, {'id': 'skill:sop-pm-12', 'rank': 1}]})
+    assert swapped['opts'] == [] and swapped['verdict'] == '', swapped                              # 순위가 다르다
+
+
+def test_다시_평가한_판단에서는_결과가_적은_점수와_같은_판을_고른다():
+    """판단 기록은 다시 평가되면 처음 판(original_decision)을 안에 지닌다. 추천 · 순위가 같은 두 판 가운데 결과가 적은 점수와 같은 판이 그 단계의 판단이다."""
+    first = dict(_pm_decision(), options=[dict(PM_OPTS[0], score=1.54), dict(PM_OPTS[1], score=-2.54)])
+    now = dict(_pm_decision(), original_decision=first)
+    made_first = {'recommended': 'skill:sop-pm-11', 'order': [{'id': 'skill:sop-pm-11', 'rank': 1, 'score': 1.54}, {'id': 'skill:sop-pm-12', 'rank': 2, 'score': -2.54}]}
+    made_now = {'recommended': 'skill:sop-pm-11', 'order': [{'id': 'skill:sop-pm-11', 'rank': 1, 'score': 2.04}, {'id': 'skill:sop-pm-12', 'rank': 2, 'score': -2.04}]}
+    assert _agent_front(now, made_first)['opts'] == [['skill:sop-pm-11', 1.54], ['skill:sop-pm-12', -2.54]]
+    assert _agent_front(now, made_now)['opts'] == [['skill:sop-pm-11', 2.04], ['skill:sop-pm-12', -2.04]]
+
+
+def test_정기_정비처럼_센서로_진단하지_않은_판단의_결론은_원인을_진단했다고_말하지_않는다():
+    """정기 정비 도래 건의 결론이 「원인을 펌프 축 씰 마모로 판단했습니다」 · 근거가 「… 관측값과 맞습니다」였다. 그 원인은 센서 값으로 가린 것이 아니라
+    지식 지도에서 「정기 정비로 막는 원인」으로 찾은 것이다(판단 origin.cause_route = prevention). 센서 진단인 판단은 그대로 「원인은 …로 보고」다."""
+    made = {'recommended': 'skill:sop-pm-11', 'order': [{'id': 'skill:sop-pm-11', 'rank': 1, 'score': 2.04}]}
+    pm = _agent_front(_pm_decision('prevention'), made)
+    assert pm['verdict'] == '정기 정비로 막는 원인 ‘펌프 축 씰 마모’를 찾고, 「이번 예정된 정비 시간에 단독 시행」을 추천합니다.', pm
+    line = pm['evid'][0]
+    assert '관측값과 맞습니다' not in ' '.join(pm['evid']) and '정기 정비로 막는 원인은 펌프 축 씰 마모입니다' in line and '정기 정비로 막는 고장: 주 펌프 체적 효율 저하' in line
+    assert '센서 값으로 진단한 것이 아닙니다' in line
+    sensed = _agent_front(_pm_decision('diagnosis'), made)
+    assert sensed['verdict'].startswith('원인은 펌프 축 씰 마모로 보고, ') and '관측값과 맞습니다' in sensed['evid'][0]
+    assert _agent_front(_pm_decision(None), made)['verdict'].startswith('원인은 펌프 축 씰 마모로 보고, ')      # 이 칸이 생기기 전의 판단 기록은 진단으로 읽는다

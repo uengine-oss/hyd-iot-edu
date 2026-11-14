@@ -116,6 +116,10 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
         loaded = graph(lambda session: manual_graph.loaded(session, tenant, source['document_id']))
         result['previous_batch'] = loaded['batch'] if loaded else None
         result['loaded'] = dict(loaded, same_source=loaded['source_id'] == source['source_id']) if loaded else None
+        # same_original: 이 문서에는 적재된 판이 없는데, 같은 원본 파일로 만든 판이 다른 문서로 적재돼 있으면 그 문서(document_id · 파일 이름 · 언제 ·
+        # 누가 · 절차 수). 이미 적재한 파일을 「새 문서 등록」으로 다시 올린 경우다 — 화면이 그 사실과 [이 문서 개정]으로 가는 길을 올린 직후에 보인다
+        result['same_original'] = None if loaded else graph(lambda session: manual_graph.loaded_original(
+            session, tenant, source['sha256'], other_than=source['document_id']))
         return result
 
     @app.post('/api/kg/manuals/preview')

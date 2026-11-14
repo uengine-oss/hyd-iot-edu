@@ -1042,7 +1042,7 @@
       const shown = row.key === 'pattern' ? UI.patternName(value) : row.key === 'chosen_skill_kind' ? (value === 'control' ? UI.t('chip.control') : value === 'work_order' ? UI.t('chip.workOrder') : value)
         : row.key === 'cause' ? (((v.guide_card || {}).causes || []).find(c => c.id === value) || (v.guide_card || {}).topCause || {}).name || UI.name(value)
         : row.key === 'failure_mode' ? UI.idText((typeof (v.guide_card || {}).failureMode === 'object' ? (v.guide_card.failureMode || {}).name : (v.decision || {}).failureMode) || UI.name(value))
-        : row.key === 'chosen_skill' ? ((v.chosen_option || {}).name || UI.name(value)) : row.key === 'approved_role' ? who(value) : typeof value === 'string' ? UI.idText(value) : value;
+        : row.key === 'chosen_skill' ? ((v.chosen_option || {}).name || UI.name(value)) : ['approved_role', 'approved_by'].includes(row.key) ? who(value) : typeof value === 'string' ? UI.idText(value) : value;
       const body = value !== null && typeof value === 'object' ? UI.raw(value, { title: UI.t('inst.structured') }) : esc(shown === true ? UI.t('yes') : shown === false ? UI.t('no') : shown ?? UI.t('inst.noValue'));
       const source = (inst.variable_sources || {})[row.key];
       const producer = source?.kind === 'workitem' ? view.workitems.find(w => w.id === source.id) : null;
@@ -1065,15 +1065,22 @@
     // A141: 최근 20건만 먼저, 나머지는 더 보기. 도구 이름은 UI.toolName(원문은 각 기록의 원문 접기에 그대로)
     const all = evs.reverse().filter(e => !(e.event_type === 'tool_usage_started' && evs.some(x => x.event_type === 'tool_usage_finished' && x.data?.tool_use_id === e.data?.tool_use_id)));
     const events = all.slice(0, I.eventsShown).map(e => {
-      let detail = eventDetail(e), name = e.job_id === 'TASK_REVIEW_REQUIRED' ? e.job_id : e.event_type;
+      // 줄의 굵은 글: 시스템이 이름 붙인 사건(data.name — 「승인 접수」 · 「효과 확인 시작」 · 「결함 시뮬레이션의 [쿨러 열화 주입]」 …)은 그 이름으로 적는다.
+      // 그런 이름이 없는 진행 기록만 「진행」이다(전에는 모두 「진행 · 담당자」라 무슨 일인지 알 수 없었다). AI 실행의 것(data.name 이 실행기 이름)은 사건 종류 그대로
+      const named = typeof e.data?.name === 'string' && e.event_type !== 'task_started' && !e.data.tool && !e.data.goal ? UI.words(e.data.name) : '';
+      let detail = eventDetail(e), name = e.job_id === 'TASK_REVIEW_REQUIRED' ? e.job_id : named || e.event_type;
       if (e.event_type === 'tool_usage_finished') { const s0 = started.get(e.data?.tool_use_id); if (s0) detail = `${UI.toolName(e.data.tool)} · ${hydTrace.fmtMs(new Date(e.timestamp) - new Date(s0.timestamp))}`; name = 'tool_usage_started'; }
       // A132: the worker says where the result came from (result_source file | message)
       const chips = e.event_type === 'task_completed' && e.data?.result_source === 'file' ? `<span class="muted">${esc(UI.t('inst.resultFile'))}</span>` : '';
-      return UI.eventRecord({ time: e.timestamp, name, actor: CREW[e.crew_type] || (/^cliagents:/.test(e.crew_type || '') ? 'AI 에이전트' : ''), detail, raw: e.data, chips });
+      const actor = CREW[e.crew_type] || (/^cliagents:/.test(e.crew_type || '') ? 'AI 에이전트' : '');
+      if (actor && (detail === actor || detail.startsWith(actor + ' · '))) detail = detail.slice(actor.length).replace(/^ · /, '');      // 「담당자 · 담당자」처럼 같은 이름을 두 번 적지 않는다
+      return UI.eventRecord({ time: e.timestamp, name, actor, detail, raw: e.data, chips });
     }).join('') + (all.length > I.eventsShown ? `<button type="button" class="btn more" data-variant="ghost" data-size="sm" data-events-more>${esc(UI.t('inst.eventsMore'))} (남은 ${all.length - I.eventsShown}건)</button>` : '');
     return `<h3 class="case-sub">${esc(UI.t('inst.steps'))} ${view.workitems.length}줄</h3><div class="table-container"><table class="table case-table"><thead><tr><th>${esc(UI.t('inst.stepTable.step'))}</th><th>${esc(UI.t('inst.stepTable.status'))}</th><th>${esc(UI.t('inst.stepTable.who'))}</th><th>${esc(UI.t('inst.stepTable.when'))}</th><th>${esc(UI.t('inst.stepTable.result'))}</th></tr></thead><tbody>${rows}</tbody></table></div>
       <h3 class="case-sub">${esc(UI.t('inst.events'))} ${view.events.length}줄</h3><div class="stream-log case-events">${events || `<p class="muted">${esc(UI.t('empty.noData'))}</p>`}</div>`;
   }
+  // 지식 지도 반영 표의 「지식」 칸: 그 단계가 가리키는 지식 항목의 종류(지식 지도의 이름 — enterprise.js LABEL_KO 와 같은 말)
+  const KNOWLEDGE_KIND = { Task: '단계', Event: '이벤트', Gateway: '분기' };
   function graphHtml(inst) {
     const g = I.graph;
     if (!g && !I.caseProjection) return `<p class="muted">${esc(UI.t('loading'))}</p>`;   // 이 탭을 연 뒤 첫 읽기가 끝나기 전
@@ -1090,7 +1097,7 @@
     const cy = UI.raw(g.cypher, { title: UI.t('inst.query'), lang: 'cypher' }) + UI.raw(g.params, { title: '질의 조건 값' });
     const x = g.graph;
     if (!x) return sync + '<p class="muted">조회 가능한 반영 내역이 없습니다.</p>' + cy;
-    const rows = (x.workitems || []).map(w => `<tr data-status="${esc(w.status)}"><td>${esc(UI.flowName(w.activity_name || w.activity_id || ''))}</td><td>${UI.chip(w.status)}</td><td>${w.executes ? `${esc(w.executes_name || '')}<br><span class="muted">${esc(w.executes_type || '')}</span>` : '–'}</td><td>${w.assigned_to ? w.assigned_to.split(',').map(id => esc(who(id))).join(', ') : '–'}</td></tr>`).join('');
+    const rows = (x.workitems || []).map(w => `<tr data-status="${esc(w.status)}"><td>${esc(UI.flowName(w.activity_name || w.activity_id || ''))}</td><td>${UI.chip(w.status)}</td><td>${w.executes ? `${esc(UI.flowName(w.executes_name || ''))}<br><span class="muted">${esc(KNOWLEDGE_KIND[w.executes_type] || w.executes_type || '')}</span>` : '–'}</td><td>${w.assigned_to ? w.assigned_to.split(',').map(id => esc(who(id))).join(', ') : '–'}</td></tr>`).join('');
     const warnings = (x.warnings || []).map(w => `<p class="muted" data-tone="danger">확인 필요: ${esc(w)}</p>`).join('');
     const version = x.definition || {};
     return sync + warnings + `<p>흐름 <b title="${esc(version.id || '')}">${esc(UI.defName(version.id || ''))}</b> · 판 ${esc(version.version || x.process.version || '')}${x.asset ? ` · ${esc(UI.t('dec.asset'))} ${esc(x.asset)}` : ''}</p>
@@ -1098,7 +1105,8 @@
   }
   // 기록 줄의 「누가」: 실행기 이름(cliagents:claude-code) 같은 내부 값을 그대로 보이지 않는다. 값 이름(영문 키)은 이름 사전으로, 원문(JSON)은 그 줄의 원문 접기에만 둔다
   const CREW = { agent: 'AI 에이전트', human: '담당자', result: '시스템' };
-  const valueNames = keys => (keys || []).filter(k => k !== 'text').map(k => UI.terms['var.' + k] || hydWords.fieldName(k)).join(', ');
+  // 출력 이름: 업무 값만 이름으로 적는다. 끝맺는 글(text)과 AI 실행기가 붙이는 실행 번호(cliagents_session_id)는 값 이름이 아니다 — 원문 접기에 그대로 있다
+  const valueNames = keys => (keys || []).filter(k => !['text', 'cliagents_session_id'].includes(k)).map(k => UI.terms['var.' + k] || hydWords.fieldName(k)).join(', ');
   const plainContent = c => { const t = String(c || '').trim(); return /^[\[{]/.test(t) ? '결과를 정해진 꼴(JSON)로 냈습니다 — 원문은 아래에 있습니다' : UI.clean(hydWords.text(t)).slice(0, 200); };
   function eventDetail(e) {
     const d = e.data || {};
@@ -1106,6 +1114,9 @@
     if (d.recovery === 'new_judgment_and_consent') return '현재 조건 검사로 명령을 보류했습니다. 판단 단계에서 새 검토와 승인을 진행하세요. ' + ((d.assessment || {}).reasons || []).join('; ');
     if (d.tool) return `${UI.toolName(d.tool)}${d.input ? ' ' + String(hydWords.ask(d.tool, d.input) || '').slice(0, 120) : ''}${d.output ? ' → ' + String(hydWords.got(d.tool, d.output) || '').slice(0, 120) : ''}`;      // 처리 과정(trace.js)과 같은 요약 — JSON 원문은 각 기록의 원문 접기에
     if (d.goal) return `${UI.logText(d.goal)}${d.name ? ' · ' + UI.who(d.name) : ''}`;
+    if (d.type === 'run_start') return 'AI 실행을 시작했습니다';
+    if (d.type === 'text' && d.complete && !d.content) return '글 한 토막을 끝냈습니다';
+    if (d.by && typeof d.by === 'string' && !d.message && !d.note && !d.reason) return [UI.who(d.by), d.role ? UI.who(d.role) : ''].filter(Boolean).join(' · ');
     if (d.text || d.question) return humanQuestionText(d).slice(0, 160);
     return UI.logText(d.message || d.note || d.friendly || d.raw_error || d.reason || '') || (d.content ? plainContent(d.content) : '') || (d.output_keys ? UI.t('inst.output') + ' ' + valueNames(d.output_keys) : '') || (d.answer ? UI.t('form.answer') + ' ' + d.answer : '');
   }
@@ -1243,5 +1254,5 @@
   setInterval(updateApprovalClock, 1000);
   // 셸이 주소에 적는 지금 화면: 처리 건 + 열어 둔 단계(단계 상세가 열려 있으면 그 단계, 아니면 「내 할 일」에서 고른 단계)
   const route = () => ({ inst: I.sel || null, task: (window.hydTaskDetail && hydTaskDetail.T.wid) || I.taskSel || null });
-  window.hydInstances = { I, load, openTask, route, counts, stateOf };
+  window.hydInstances = { I, load, openTask, route, counts, stateOf, logPane, valuesPane };   // logPane · valuesPane: 「자세한 기록」의 보기 둘(시험이 그 글을 본다)
 })();
