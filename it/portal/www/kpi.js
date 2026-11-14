@@ -114,8 +114,8 @@
       <td><input type="number" step="any" class="input" data-kpi-target="${escH(m.id)}" value="${st.targets[m.id] ?? ''}" placeholder="그대로" aria-label="${escH(m.name)} 시험 목표"></td>
       <td>${escH(STATUS[m.status] || m.status)}</td></tr>`).join('');
     // 접기: 실적을 보러 온 사람에게는 보조 도구다. 한 번 쓰면(시험 목표를 넣거나 판정하면) 펴 둔다
-    return `<details class="fold kpi-trial" data-kpi-trial-fold${st.trialOpen || trialOn(st) ? ' open' : ''}><summary>목표값 바꿔 보기 <span class="muted">시험 목표로 달성 · 미달을 다시 판정합니다. 원본 목표는 바꾸지 않습니다</span></summary><div class="fold-body">
-      <p class="muted">시험 목표를 넣고 [시험 판정]을 누르면 달성 · 미달과 달성률을 그 목표로 다시 판정합니다. 비운 칸은 지식 그래프의 목표 그대로입니다.</p>
+    return `<details class="fold kpi-trial" data-kpi-trial-fold${st.trialOpen || trialOn(st) ? ' open' : ''}><summary>목표값 바꿔 보기</summary><div class="fold-body">
+      <p class="muted">시험 목표로 달성 · 미달을 다시 판정합니다. 비운 칸은 원래 목표 그대로이고, 원본 목표는 바뀌지 않습니다.</p>
       <div class="table-container"><table class="table"><thead><tr><th>지표</th><th class="num">원래 목표</th><th>시험 목표</th><th>지금 판정</th></tr></thead><tbody>${rows}</tbody></table></div>
       ${st.trialError ? UI.errorBlock('시험 판정을 하지 못했습니다', st.trialError) : ''}
       <footer class="form-foot">${trialOn(st) ? '<button type="button" class="btn" data-variant="ghost" data-kpi-trial-reset>원래대로</button>' : ''}<button type="button" class="btn" data-variant="outline" data-kpi-trial-run>시험 판정</button></footer></div></details>`;
@@ -138,7 +138,7 @@
       // 결론 먼저: 지표 몇 개 가운데 미달 · 달성 몇 개. 그 아래에 기간과 판정하지 못한 수
       const head = `<section class="panel kpi-result result"><p class="result-label">결론</p>` +
         `<p class="result-main">지표 ${s.total}개 가운데 ${chip(`미달 ${s.missed}개`, s.missed > 0 ? 'danger' : 'neutral')} ${chip(`달성 ${s.met}개`, s.met > 0 ? 'success' : 'neutral')}</p>` +
-        `<p class="result-sub">${escH(d.window.label)}${d.window.start ? ` (${when(d.window.start)} ~ ${when(d.window.end)})` : ''}${s.missed > 0 ? ' · 미달 지표의 [원인 찾기]를 누르면 영향 경로와 같은 기간의 처리 건을 찾습니다' : ''}</p>` +
+        `<p class="result-sub">${escH(d.window.label)}${d.window.start ? ` (${when(d.window.start)} ~ ${when(d.window.end)})` : ''}</p>` +
         kv([['목표 판정 없음', noVerdict ? `${noVerdict}개 <span class="muted">(목표 없음 ${s.no_target} · 단위가 달라 판정 안 함 ${s.incomparable} · 부분 실적 ${s.partial})</span>` : ''],
           ['계산 불가 · 기록 없음', noCalc ? `${noCalc}개 <span class="muted">(원천 없음 ${s.unavailable} · 기록 없음 ${s.no_data} · 조회 실패 ${s.error})</span>` : '']]) + '</section>';
       const persp = d.perspectives.map(p => `<section class="panel kpi-persp"><div class="panel-head"><h2>${escH(p.name)}</h2></div>${p.objectives.map(o =>

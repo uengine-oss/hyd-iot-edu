@@ -180,7 +180,9 @@ def test_기준으로_되돌리기_화면은_요청에_요청_번호를_싣고_�
             page.locator('#cfgReset').click()
             said = page.inner_text('dialog.confirm-dialog')
             assert '내가 가져온 흐름으로 끝난 처리 건은 [처리 건] 목록에서 숨겨집니다' in said
-            assert '기본 제공 흐름(시작할 때 설치되는 A · B · C)과 그 처리 건, 기준 구성은 남습니다' in said and '업무분장' not in said
+            # 확인 창은 지우는 것과 남는 것(그리고 그것을 되돌리는 자리)을 둘 다 말한다 — 이 단추만으로 처음 상태가 된다고 믿지 않게
+            assert '남는 것' in said and '이 단추만으로 처음 상태가 되지는 않습니다' in said and '「지식 › 문서 등록」' in said and '「지식 › 조치 방법」' in said
+            assert '기본 제공 흐름과 그 처리 건' in said and '업무분장' not in said and 'A · B · C' not in said
             page.locator("dialog.confirm-dialog button[value='ok']").click()
             job.do(lambda p: (p.plan(plan), p.start('check')))
             _wait_steps(page, '#cfgResetResult', ['run:' + names['check']] + ['wait:' + label for key, label in plan[1:]])

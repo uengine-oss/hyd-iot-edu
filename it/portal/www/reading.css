@@ -16,6 +16,8 @@
 .io-out { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
 .io-out .panel-head > div:first-child { min-width: 0; }
 .io-out .fieldset :is(.select, .input:not([type="checkbox"]), .textarea) { width: 100%; }
+.io-out .fieldset .evid :is(.select, .input:not([type="checkbox"])) { width: auto; min-width: 200px; margin: 0 4px; }      /* 고른 것 목록의 줄 안 고르기 칸(정답표 폼)은 한 줄에 */
+.io-out .fieldset .evid { margin-top: 8px; }
 .io-out .panel-head h2 { max-width: 60ch; }
 .io-out .panel > .turn-facts { border-color: var(--border); }
 .io-out .turn-facts dd { overflow-wrap: anywhere; }
@@ -52,6 +54,7 @@
   .io-out .table.io-even .io-side { display: inline-block; }
 }
 .io-side { display: none; margin-right: 6px; font-weight: 600; }
+.confirm-dialog header p { white-space: pre-line; }      /* 확인 창 글의 줄바꿈(지우는 것 / 남는 것 목록)을 그대로 보인다 */
 
 /* ---------------- 화면 머리 아래 한 문장 · 화면 맨 아래 한 줄 ---------------- */
 .rd-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 13px; line-height: 20px; color: var(--muted-foreground); }

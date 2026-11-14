@@ -1113,7 +1113,7 @@ function txRecordHtml(x) {
   const rows = [['설비', esc(x.asset || '–')], ['조치 방법', esc((x.option && UI.names[x.option]) || '–')], when ? ['정비 시점', esc(when)] : null,
     ['번호', `<span class="mono">${esc(x.ref || x.id)}</span>`], ['누가', esc(UI.who(x.by))]].filter(Boolean);
   return `<article class="event-record"><div class="line">${UI.icon(x.compensates ? 'rotate-ccw' : 'receipt-text')}<span class="line-text"><b>${esc(what)}${x.compensates ? ' 되돌림' : ''}</b>` +
-    `<span class="line-sub">${esc(system)}${product !== system ? ` (${esc(product)})` : ''}에 남은 기록</span></span><time class="line-time num" title="${esc(UI.dateTime(x.t))}">${esc(UI.dateTime(x.t))}</time></div>` +
+    `<span class="line-sub">${esc(system)}${product !== system ? ` (${esc(product)})` : ''}</span></span><time class="line-time num" title="${esc(UI.dateTime(x.t))}">${esc(UI.dateTime(x.t))}</time></div>` +
     `<dl class="bz-kv">${rows.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${v}</dd></div>`).join('')}</dl>${txDiffFold(x)}` +
     UI.fold(esc(UI.t('raw')), `<pre class="code">${esc(JSON.stringify(x, null, 2))}</pre>`) + '</article>';
 }

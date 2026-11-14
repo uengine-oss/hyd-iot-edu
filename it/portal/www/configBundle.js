@@ -27,20 +27,39 @@
   }
 
   const counts = s => Object.entries(COUNT_WORDS).filter(([k]) => s && s[k]).map(([k, [w, unit]]) => `${w} ${s[k]}${unit}`).join(' · ') || '내가 만든 것 없음(기준 그대로)';
+  // 출발본에는 기본 제공 흐름(시작할 때 설치되는 흐름 — 파일의 배포 줄에 class_flow 표시)의 지금 판본도 담긴다(불러오기가 흐름을 모두 내리고 파일대로 다시 세우기 때문이다).
+  // 서버 요약(summary)은 그것까지 「흐름 3개 · 배포 3건」으로 세므로, 화면은 내가 만든 것과 기본 제공 흐름을 갈라 말한다
+  function bundleCounts(bundle) {
+    const c = bundle.content || {}, base = new Set(((c.deployments || {}).flows || []).filter(d => d.class_flow).map(d => d.definition_id));
+    if (!bundle.content) return counts(bundle.summary);
+    const mine = (c.flows || []).filter(f => !base.has(f.definition_id)), s = { ...bundle.summary, flows: mine.length, flow_versions: mine.reduce((n, f) => n + (f.versions || []).length, 0),
+      deployments: ((c.deployments || {}).flows || []).filter(d => !d.class_flow).length };
+    return counts(s) + (base.size ? ` · 함께 담긴 기본 제공 흐름 ${base.size}개(지금 배포된 판본)` : '');
+  }
+  // [기준으로 되돌리기]가 지우는 것과 남기는 것 — 절 문구와 확인 창이 이 한 곳을 쓴다(서버 config_bundle._reset_steps 가 하는 일 그대로. 서버가 범위를 바꾸면 여기만 고친다)
+  const RESET_REMOVES = '내가 만든 AI 에이전트 · 스킬 · 역할 · 단계 배정 · 도구 서버 · 비밀 값, 내가 가져온 흐름과 그 배포, 끝난 질문 기록, 판단 채점의 정답표와 실행 기록, 에이전트 시험 비교 기록';
+  const RESET_KEEPS = [
+    ['등록한 문서에서 넣은 지식과 연결한 업무 DB 표 정의', '「지식 › 문서 등록」의 등록 이력에서 묶음마다 되돌립니다'],
+    ['「지식 › 조치 방법」에서 만들거나 고친 조치 방법', '지우는 길이 없습니다. 그 화면에서 다시 고칩니다'],
+    ['모의 업무 시스템에 생긴 발주 · 정비 요청', '「유압 설비 › 결함 시뮬레이션」에서 그 상황의 [초기화]로 되돌립니다'],
+    ['기본 제공 흐름과 그 처리 건, 처리 건 기록', '그대로 둡니다'],
+  ];
+  const RESET_NOTE = '이 단추만으로 처음 상태가 되지는 않습니다.';
 
   function render(el) {
     // 세 가지 일을 위에서 아래로: 받기 → 불러오기 → 되돌리기. 일마다 판의 한 절(키트 .panel-sec) — 제목 · 한 문장 · 단추 하나, 그 아래에 진행(실시간 상자)과 결과
     const part = (icon, title, note, body) => `<div class="panel-sec"><h3>${UI.icon(icon)}${title}</h3><p class="muted">${note}</p>${body}</div>`;
     const foot = (button, msgId) => `<footer class="form-foot"><span class="muted" id="${msgId}" role="status"></span>${button}</footer>`;
     el.innerHTML = '<div class="panel-sec"><div id="studentCasesView"></div></div>' +
-      part('download', '출발본 내보내기', '지금 내가 만든 구성만 파일 하나로 받습니다. 기준 구성과 비밀값은 들어가지 않습니다.',
+      part('download', '출발본 내보내기', '지금 내가 만든 구성을 파일 하나로 받습니다. 기본 제공 에이전트 · 스킬 · 도구 서버와 비밀값은 들어가지 않습니다. 기본 제공 흐름은 지금 배포된 판본이 함께 담깁니다(불러오기가 흐름을 모두 내리고 파일대로 다시 세우기 때문입니다).',
         foot(`<button type="button" class="btn" data-variant="outline" id="cfgExport">${UI.icon('download')}파일 받기</button>`, 'cfgExportMsg')) +
       part('upload', '출발본 불러오기', '받은 출발본 파일을 올리면 지금 구성을 기준으로 되돌린 뒤 파일 내용으로 다시 세웁니다. 망쳐도 다시 불러오면 됩니다.',
         `<div role="group" class="field"><label for="cfgFile">출발본 파일(.json)</label><input type="file" id="cfgFile" accept=".json,application/json"></div>
           <div id="cfgSecrets"></div>` +
           foot(`<button type="button" class="btn" id="cfgImport"${hydCourseAccess.attrs(IMPORT)}>${UI.icon('upload')}불러오기</button>`, 'cfgImportMsg') +
           `<div id="cfgImportResult" aria-live="polite"></div>`) +
-      part('rotate-ccw', '기준으로 되돌리기', '내가 만든 AI 에이전트 · 스킬 · 역할 · 배정 · 도구 서버 · 비밀 값 · 흐름 · 배포와 끝난 질문 · 판단 채점 · 에이전트 시험 비교 기록을 지웁니다. 기준은 그대로입니다.',
+      part('rotate-ccw', '기준으로 되돌리기', `<b>지우는 것</b> ${H(RESET_REMOVES)}.`,
+        `<p class="muted"><b>남는 것</b> ${H(RESET_NOTE)}</p><ul class="evid" data-reset-keeps>${RESET_KEEPS.map(([what, where]) => `<li>${UI.icon('circle-dashed')}<span><b>${H(what)}</b> ${H(where)}</span></li>`).join('')}</ul>` +
         foot(`<button type="button" class="btn" data-variant="destructive" id="cfgReset">${UI.icon('rotate-ccw')}기준으로 되돌리기</button>`, 'cfgResetMsg') +
           `<div id="cfgResetResult" aria-live="polite"></div>`);
     const $ = id => el.querySelector('#' + id);
@@ -60,7 +79,7 @@
         const a = document.createElement('a');
         a.href = URL.createObjectURL(new Blob([JSON.stringify(body, null, 2)], { type: 'application/json' }));
         a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-        msg('cfgExportMsg', `받았습니다 — ${counts(body.summary)}` + (body.not_included.length ? ` · 담지 않은 것 ${body.not_included.length}건: ${body.not_included.map(x => x.what + ' — ' + x.reason).join(' / ')}` : ''));
+        msg('cfgExportMsg', `받았습니다 — ${bundleCounts(body)}` + (body.not_included.length ? ` · 담지 않은 것 ${body.not_included.length}건: ${body.not_included.map(x => x.what + ' — ' + x.reason).join(' / ')}` : ''));
       } catch (e) { msg('cfgExportMsg', e.message, true); }
       finally { end(false); }
     });
@@ -120,16 +139,17 @@
       const f = $('cfgFile').files[0]; if (!f) return;
       try {
         pending = hydDefinitions.readObject(await f.text(), '출발본 파일');   // 틀린 자리를 한국어로(줄 · 글자) — 브라우저의 영문 오류 문장을 붙이지 않는다
-        msg('cfgImportMsg', `${f.name} — ${counts(pending.summary)}`);
+        msg('cfgImportMsg', `${f.name} — ${bundleCounts(pending)}`);
       } catch (e) { msg('cfgImportMsg', `${e.message} — [파일 받기]로 받은 출발본 파일 그대로인지 확인하세요.`, true); }
     });
     $('cfgImport').addEventListener('click', async () => {
       if (!pending) { msg('cfgImportMsg', '출발본 파일을 고르세요', true); return; }
-      const yes = await UI.confirm({ title: '출발본을 불러올까요?', body: '지금 내가 만든 구성(AI 에이전트 · 스킬 · 역할 · 단계 배정 · 도구 서버 · 흐름 · 배포)을 지우고 파일 내용으로 다시 세웁니다. 기본 제공 흐름(시작할 때 설치되는 A · B · C)도 지우고 파일 내용대로 다시 세웁니다. 지운 흐름으로 끝난 처리 건은 [처리 건] 목록에서 숨겨집니다. 진행 중인 처리 건이 있으면 아무것도 바꾸지 않고 멈춥니다. 기준 구성, 비밀 값, 질문 · 판단 채점 · 에이전트 시험 비교 기록은 그대로입니다.', ok: '불러오기' });
+      const yes = await UI.confirm({ title: '출발본을 불러올까요?', body: '지금 내가 만든 구성(AI 에이전트 · 스킬 · 역할 · 단계 배정 · 도구 서버 · 흐름 · 배포)을 지우고 파일 내용으로 다시 세웁니다. 기본 제공 흐름(시작할 때 설치되는 흐름)도 지우고 파일 내용대로 다시 세웁니다. 지운 흐름으로 끝난 처리 건은 [처리 건] 목록에서 숨겨집니다. 진행 중인 처리 건이 있으면 아무것도 바꾸지 않고 멈춥니다. 기준 구성, 비밀 값, 질문 · 판단 채점 · 에이전트 시험 비교 기록은 그대로입니다.', ok: '불러오기' });
       if (yes) run(false);
     });
     $('cfgReset').addEventListener('click', async () => {
-      const yes = await UI.confirm({ title: '기준으로 되돌릴까요?', body: '내가 만든 구성(AI 에이전트 · 스킬 · 역할 · 단계 배정 · 도구 서버 · 흐름 · 배포)과 비밀 값, 끝난 질문 · 판단 채점 · 에이전트 시험 비교 기록을 모두 지웁니다. 내가 가져온 흐름으로 끝난 처리 건은 [처리 건] 목록에서 숨겨집니다. 기본 제공 흐름(시작할 때 설치되는 A · B · C)과 그 처리 건, 기준 구성은 남습니다. 먼저 출발본으로 받아 두면 구성은 다시 불러올 수 있습니다(비밀 값 · 기록은 파일에 없습니다).', ok: '되돌리기', danger: true });
+      const yes = await UI.confirm({ title: '기준으로 되돌릴까요?', ok: '되돌리기', danger: true,
+        body: `지우는 것: ${RESET_REMOVES}. 내가 가져온 흐름으로 끝난 처리 건은 [처리 건] 목록에서 숨겨집니다.\n\n남는 것 — ${RESET_NOTE}\n${RESET_KEEPS.map(([what, where]) => `· ${what} — ${where}`).join('\n')}\n\n먼저 출발본으로 받아 두면 구성은 다시 불러올 수 있습니다(비밀 값과 기록은 파일에 없습니다).` });
       if (!yes) return;
       const end = hydLive.busy($('cfgReset'), '되돌리는 중');
       $('cfgResetMsg').textContent = '';

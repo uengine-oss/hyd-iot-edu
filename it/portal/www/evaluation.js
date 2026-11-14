@@ -127,6 +127,7 @@
 
   function renderForm() {
     const host = q('[data-r="form"]');
+    const add = q('[data-act="new"]'); if (add) { if (E.editing) add.dataset.variant = 'outline'; else delete add.dataset.variant; }      // 폼이 열려 있는 동안 주 단추는 [저장] 하나
     if (!E.editing) { host.innerHTML = ''; return; }
     const it = E.editing.item || { facts: {}, expected: {}, allowed_top: [], forbidden: [], required_evidence: [] };
     const isNew = !E.editing.item;
@@ -201,6 +202,8 @@
     const cands = q('[data-r="cands"]'); cands.hidden = path !== 'worker'; cands.innerHTML = path === 'worker' ? renderCands() : '';
     showRunWait();
   }
+  // 서버 문장 속의 처리 건 안쪽 번호와 경보 코드는 화면 말로 바꾼다(「처리 건 c3_cooling.6655…(HYD-01 · COOLER_DEGRADATION)에 …」 → 「이 처리 건(HYD-01 · 쿨러 성능 저하)에 …」)
+  const matchNote = text => String(text || '맞는 항목 없음').replace(/처리 건 \S+?\(([^)]*)\)/, (m, inner) => `이 처리 건(${inner.split(' · ').map(x => patternName(x)).join(' · ')})`);
   function renderCands() {
     const panel = body => `<section class="panel"><div class="panel-head"><div><h2>채점할 지난 처리 건</h2><p>원인 진단과 조치 후보 단계까지 끝난 처리 건입니다. 정답표에 맞는 항목이 있는 건만 고를 수 있습니다.</p></div></div><div class="panel-sec">${body}</div></section>`;
     if (E.cands == null) return panel(UI.loading());
@@ -211,7 +214,7 @@
       return `<tr><td><input type="checkbox" class="input" data-cand="${esc(c.instance)}" ${item ? '' : 'disabled'} aria-label="${esc(c.name || '처리 건')} 채점에 포함"></td>
         <td>${esc(c.name || '이름 없는 처리 건')}<p class="muted">${esc(UI.dateTime(c.started))} · ${esc(UI.status(c.status))}</p></td>
         <td>${nm(c.cause)} → ${nm(c.chosen_skill)}<p class="muted">${esc(factsText(c.facts))}</p></td>
-        <td>${item ? esc(item.title) : `<span class="muted">${esc(c.match_note || '맞는 항목 없음')}</span>`}</td></tr>`;
+        <td>${item ? esc(item.title) : `<span class="muted">${esc(matchNote(c.match_note))}</span>`}</td></tr>`;
     }).join('')));
   }
   async function loadCands() {
@@ -389,8 +392,8 @@
     const verdict = { improved: ['좋아짐', 'success'], regressed: ['나빠짐', 'danger'], same: ['같음', 'neutral'] };
     const delta = c.delta == null ? '–' : (c.delta > 0 ? '+' : '') + c.delta;
     const title = i => esc((E.golden.find(it => it.id === i) || {}).title || i);
-    // 한쪽에만 있는 항목의 이름: 지금 정답표 → 그 실행이 채점할 때 적어 둔 제목 → 둘 다 없으면(지워진 항목) 그렇게 말한다
-    const runTitle = (cmp, i) => { const g = E.golden.find(it => it.id === i), r = [...(cmp.before.items || []), ...(cmp.after.items || [])].find(x => (x.id || x.item) === i); return esc((g && g.title) || (r && r.title) || '지금은 정답표에 없는 항목'); };
+    // 한쪽 실행에서만 채점한 항목: 지금 정답표에 있으면 제목으로, 지워진 항목은 수로 말한다(항목의 안쪽 이름을 보이지 않는다)
+    const onlyOne = [...c.only_before, ...c.only_after], onlyNames = onlyOne.map(i => (E.golden.find(it => it.id === i) || {}).title).filter(Boolean), onlyGone = onlyOne.length - onlyNames.length;
     const says = c.delta == null ? '두 실행에 함께 채점한 항목이 없어 평균 점수를 견줄 수 없습니다.' : c.delta === 0 ? '평균 점수가 그대로입니다.' : `평균 점수가 ${Math.abs(c.delta)}점 ${c.delta > 0 ? '올랐습니다' : '내렸습니다'}.`;
     host.innerHTML = `<section class="panel"><div class="panel-head"><div><div class="result-label">${UI.icon('sparkles')}결론</div><h2>${esc(says)}</h2>` +
       `<p>전 ${esc(UI.dateTime(c.before.created))} ${esc(c.before.note || '')} → 후 ${esc(UI.dateTime(c.after.created))} ${esc(c.after.note || '')}</p></div></div>` +
@@ -401,7 +404,7 @@
           <td>${esc(r.title)}</td><td class="num">${esc(r.before)}</td><td class="num">${esc(r.after)}</td><td><span class="num">${(r.delta > 0 ? '+' : '') + esc(r.delta)}</span> ${UI.chipText(verdict[r.verdict][0], verdict[r.verdict][1])}</td>
           <td>${r.changed.map(x => `${esc(CHECK[x.check])} ${x.before ? '맞음' : '틀림'} → ${x.after ? '맞음' : '틀림'}`).join('<br>') || '–'}${r.evidence_lost.length ? `<p class="muted">잃은 근거 ${r.evidence_lost.map(nm).join(', ')}</p>` : ''}${r.evidence_gained.length ? `<p class="muted">얻은 근거 ${r.evidence_gained.map(nm).join(', ')}</p>` : ''}</td>
           <td>${esc(outcomeText(r.outcome_before))}<p class="muted">→ ${esc(outcomeText(r.outcome_after))}</p></td></tr>`).join('')) +
-        (c.only_before.length || c.only_after.length ? note(`한쪽 실행에서만 채점한 항목(견주지 않음): ${[...c.only_before, ...c.only_after].map(i => runTitle(c, i)).join(', ')}`) : '')) + `</section>`;
+        (c.only_before.length || c.only_after.length ? note(`한쪽 실행에서만 채점해 견주지 않은 항목 ${onlyOne.length}개${onlyNames.length ? ': ' + esc(onlyNames.join(', ')) : ''}${onlyGone ? ` (지금은 정답표에서 지워진 항목 ${onlyGone}개${onlyNames.length ? ' 포함' : ''})` : ''}`) : '')) + `</section>`;
   }
   async function compare() {
     E.cmpBefore = q('[data-f="before"]').value; E.cmpAfter = q('[data-f="after"]').value;

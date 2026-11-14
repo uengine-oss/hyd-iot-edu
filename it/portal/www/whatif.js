@@ -14,7 +14,7 @@
   const fact = (label, value) => `<div><dt>${esc(label)}</dt><dd>${value}</dd></div>`;
   const note = (text, attrs = '') => text ? `<p class="muted"${attrs}>${text}</p>` : '';
   // 출처 한 줄: 종류 · 어디서. 원천 위치(표 · 열 경로)는 그 줄에 마우스를 올리면 보인다
-  const sourceLines = list => (list || []).map(s => `<div${s.ref ? ` title="${esc(s.ref)}"` : ''}>${esc(s.kind)} · ${esc(s.where)}</div>`).join('') || '<span class="muted">출처 없음</span>';
+  const sourceLines = list => (list || []).map(s => `<div${s.ref ? ` title="${esc(s.ref)}"` : ''}>${esc(s.kind)} · ${esc(plainUnits(s.where))}</div>`).join('') || '<span class="muted">출처 없음</span>';
   const kindLabel = { decision: '판단 순위', money: '손익 순위' };
   const ruleCount = () => Object.keys(W.policy.weights).length + Object.keys(W.policy.penalties).length + Object.keys(W.policy.perspectives || {}).length;
   const trialCount = () => Object.keys(W.values).length + ruleCount();
@@ -146,7 +146,7 @@
     if (W.tab === 'rules') {
       const p = v.policy || { components: [], penalties: [] };
       const opts = p.components.map(c => [`w:${c.key}`, `순위 항목 '${c.label}' 가중치 (기준 1배)`])
-        .concat(p.penalties.map(r => [`p:${r.rule}`, `감점 규칙 '${UI.idText(r.annotation || r.rule)}' 감점 (기준 ${r.penalty})`]));
+        .concat(p.penalties.map(r => [`p:${r.rule}`, `감점 규칙 '${ruleShort(r.annotation || r.rule)}' 감점 (기준 ${r.penalty})`]));      // 고르기 줄에는 규칙 주석의 첫 문장만(주석 전문은 규칙 판단의 「적용한 규칙」에 있다)
       if (!W.ruleForm.target && opts[0]) W.ruleForm.target = opts[0][0];
       const pv = v.perspectives || { available: false, reason: '관점 정보가 없습니다', perspectives: [] };
       // B5 관점 중요도: 이름 · 지표 소속은 지식 그래프(Perspective ← Objective ← Measure)에서. 기준은 모두 1배
@@ -206,11 +206,19 @@
     return html + `<div class="panel-sec">${v.original && v.original.note ? note(esc(v.original.note)) : ''}${UI.evaluationHtml(v)}</div></section>`;
   }
 
+  // 규칙 주석의 첫 문장(마침표나 줄표 앞까지), 길면 줄인다
+  const ruleShort = text => { const t = UI.idText(text), cut = t.split(/(?<=[.。])\s|\s—\s/)[0]; return cut.length > 60 ? cut.slice(0, 58) + '…' : cut; };
+  // 계산식 글의 영문 단위를 화면 말로(시간 · 개). 서버가 글로 만들어 주는 식이라 단위 낱말만 바꾼다
+  const plainUnits = text => String(text || '').replace(/ea\/h\b/g, '개/시간').replace(/\/h\b/g, '/시간').replace(/(\d)\s?h\b/g, '$1시간').replace(/(\d)\s?ea\b/g, '$1개');
+  // 손익 내역: 첫 화면에는 합계와 항목별 금액만 둔다(결론 먼저). 항목마다의 계산식과 출처는 그 아래 접기 안이다
   function moneyTable(m) {
-    return `<div class="table-container"><table class="table"><thead><tr><th>항목</th><th class="num">손익</th><th>계산</th><th>출처</th></tr></thead><tbody>${m.items.map(i => `<tr>
-      <td>${esc(i.label)}</td><td class="num">${i.value_won == null ? `<span class="muted">미확인</span>` : esc(won(i.value_won))}</td>
-      <td>${esc(i.formula || i.missing || '')}</td><td class="muted">${sourceLines(i.sources)}</td></tr>`).join('')}</tbody></table></div>` +
-      note(`${esc(m.basis || '')}${m.hours != null ? ` · 기간 ${num(m.hours, '시간')}` : ''}`);
+    const value = i => i.value_won == null ? `<span class="muted">미확인${i.missing ? ' — ' + esc(plainUnits(i.missing)) : ''}</span>` : esc(won(i.value_won));
+    return `<div class="table-container"><table class="table"><thead><tr><th>항목</th><th class="num">손익</th></tr></thead><tbody>${m.items.map(i => `<tr>
+      <td>${esc(i.label)}</td><td class="num">${value(i)}</td></tr>`).join('')}` +
+      `<tr><td><b>합계</b></td><td class="num"><b>${m.total_won == null ? '미확인' : esc(won(m.total_won))}</b></td></tr></tbody></table></div>` +
+      note(`${esc(plainUnits(m.basis || ''))}${m.hours != null ? ` · 기간 ${num(m.hours, '시간')}` : ''}`) +
+      UI.fold(`항목별 계산식과 출처<span class="muted">${m.items.length}개</span>`, `<div class="table-container"><table class="table"><thead><tr><th>항목</th><th>계산</th><th>출처</th></tr></thead><tbody>${m.items.map(i => `<tr>
+      <td>${esc(i.label)}</td><td>${esc(plainUnits(i.formula || i.missing || ''))}</td><td class="muted">${sourceLines(i.sources)}</td></tr>`).join('')}</tbody></table></div>`);
   }
 
   // 1순위가 바뀌는 값: 무엇을 얼마로 바꾸면 1순위가 무엇이 되는지 한 줄씩, 줄 끝의 단추가 그 값으로 다시 계산한다
@@ -218,6 +226,8 @@
     if (!W.bounds && W.boundsSince) return hydLive.waitHtml('1순위가 바뀌는 값을 찾는 중', { since: W.boundsSince, hint: '값을 하나씩 바꿔 가며 판단을 다시 계산해 1순위가 바뀌는 지점을 찾는 중입니다.' });
     if (!W.bounds) return note(esc(W.boundsMsg || '1순위가 바뀌는 값이 아직 없습니다.'), ' role="status"');
     if (!list.length) return note('시험 범위 안에서 1순위를 바꾸는 값이 없습니다.');
+    // 글자까지 같은 줄(같은 값 · 같은 방향 · 같은 결과)은 한 번만 보인다 — 조치 후보마다 같은 경계가 따로 계산돼 온다
+    const seen = new Set(); list = list.filter(b => { const k = [b.kind, b.label, b.base, b.value, b.direction, b.topAfterName].join('|'); if (seen.has(k)) return false; seen.add(k); return true; });
     return `<div class="table-container"><table class="table"><thead><tr><th>순위</th><th>바꾸는 값</th><th class="num">지금</th><th class="num">바뀌는 값</th><th>바뀐 1순위</th><th></th></tr></thead><tbody>${list.map(b => `<tr>
       <td>${esc(kindLabel[b.kind])}</td><td>${esc(b.label)}</td><td class="num">${esc(num(b.base, b.unit))}</td><td class="num"><b>${esc(num(b.value, b.unit))} ${esc(b.direction)}</b></td><td>${esc(b.topAfterName || '없음')}</td>
       <td class="num"><button type="button" class="btn" data-variant="outline" data-size="sm" data-wi-bound="${W.bounds.indexOf(b)}">이 값으로 계산</button></td></tr>`).join('')}</tbody></table></div>`;

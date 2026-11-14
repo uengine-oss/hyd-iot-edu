@@ -373,7 +373,11 @@
 .lab-exp { padding: 14px 16px; border-top: 1px solid var(--border); }
 .lab-exp h3 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-height: 22px; margin: 0 0 4px; font-size: 13px; font-weight: 650; }
 .lab-exp h3 a.tag { text-decoration: none; }
-.lab-exp > p { margin: 0 0 10px; font-size: 13px; line-height: 20px; color: var(--muted-foreground); }
+.lab-exp > p { margin: 0 0 10px; font-size: 13px; line-height: 20px; color: var(--muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }      /* 사실 한 줄 */
+.lab-exp > p[data-tone="warn"] { color: var(--warn-ink); }
+#units .unit { overflow: visible; }      /* 단추의 도움말이 카드 밖으로 나올 수 있게 */
+#units .unit-go { border-top: 0; padding-top: 0; }
+.lab-scope { margin: 14px 0 0; font-size: 13px; line-height: 20px; }
 .lab-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
 .lab-note { margin: 8px 0 0; font-size: 12.5px; line-height: 19px; color: var(--muted-foreground); }
 .lab-note:empty { display: none; }
@@ -383,7 +387,8 @@
 #units .fold-body h4 { margin: 4px 0 8px; font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
 #units .fold-body .lab-buttons + h4 { margin-top: 14px; }
 #units .seg button { height: 26px; }
-.lab-msg { min-height: 20px; margin: 12px 0 0; font-size: 13px; line-height: 20px; }
+.lab-msg { margin: 6px 0 0; font-size: 13px; line-height: 20px; }
+.lab-msg:empty { display: none; }
 .lab-msg[data-tone="danger"] { color: var(--danger-ink); }
 .lab-log { margin-top: 20px; }
 .lab-log h4 { margin: 8px 0 4px; font-size: 12.5px; font-weight: 600; color: var(--ink-2); }

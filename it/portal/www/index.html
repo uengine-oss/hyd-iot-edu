@@ -73,7 +73,7 @@
   <section class="view" id="view-home" data-kit>
     <!-- 구조 그림(디자인 기준 5-8): 어두운 캔버스 하나에 세로 띠 셋(OT · DMZ · IT) × 계층 아홉(위가 업무, 아래가 현장), 부품 상자, 길 셋. 부품에 올리거나 초점을 주면 아래 정보 띠가 바뀐다.
          app.js renderStack 이 layers.js 의 표(역할 · 현업 대응 · 주소 · 상태 확인 주소)로 그린다. 모양은 canvas.css(.sys-*) -->
-    <div class="page-head"><div><h1 data-term="nav.home">시스템 구성</h1><p>현장의 값은 DMZ를 거쳐 위로 올라오고, 사람이 승인한 명령만 명령 관문을 거쳐 내려갑니다. 부품을 누르면 그 도구가 새 탭으로 열립니다.</p></div>
+    <div class="page-head"><div><h1 data-term="nav.home">시스템 구성</h1><p>현장의 값은 DMZ를 거쳐 올라오고, 사람이 승인한 명령만 명령 관문을 거쳐 내려갑니다.</p></div>
       <div class="page-tools"><span class="tag" id="sysSum" role="status">서비스 확인 중</span></div></div>
     <div class="canvas sys-arch">
       <div class="canvas-bar sys-bar">
@@ -87,11 +87,10 @@
       <div class="sys-info" id="sysInfo" aria-live="polite"></div>
     </div>
     <div class="sys-zones">
-      <div class="sys-zone" data-zone="ot"><h2><i></i>OT · 현장</h2><p>설비와 PLC, 센서, 운전 화면이 있고 실시간으로 제어합니다. 업무망에서 오는 명령은 명령 관문이 검증한 것만 받고, PLC가 받을지 다시 정합니다.</p></div>
-      <div class="sys-zone" data-zone="dmz"><h2><i></i>DMZ · 경계망</h2><p>올라가는 값과 승인된 명령이 지나는 유일한 구역입니다. 값은 수집 중계가 그대로 올리고, 명령은 명령 관문이 검증한 것만 내립니다. 이 시스템에서는 두 부품이 현장 브로커에 접속해 주고받습니다. 설비 곁 현장 패널 조작은 이 길 밖입니다.</p></div>
-      <div class="sys-zone" data-zone="it"><h2><i></i>IT · 업무와 분석</h2><p>이벤트를 저장하고 이상을 찾습니다. 지식 그래프를 읽은 AI 에이전트가 판단하고, 흐름 엔진이 승인과 실행을 이끕니다. AI 에이전트는 설비로 가는 길이 없습니다.</p></div>
+      <div class="sys-zone" data-zone="ot"><h2><i></i>OT · 현장</h2><p>설비 · PLC · 센서 · 운전 화면이 있습니다. 내려온 명령을 받을지는 PLC가 다시 정합니다.</p></div>
+      <div class="sys-zone" data-zone="dmz"><h2><i></i>DMZ · 경계망</h2><p>값은 수집 중계가 그대로 올리고, 명령은 명령 관문이 검증한 것만 내립니다. 이 시스템에서는 두 부품이 현장 브로커에 접속해 주고받습니다.</p></div>
+      <div class="sys-zone" data-zone="it"><h2><i></i>IT · 업무와 분석</h2><p>이상을 찾고, AI 에이전트가 지식 그래프를 읽어 판단하고, 흐름 엔진이 승인과 실행을 이끕니다. AI 에이전트는 설비로 가는 길이 없습니다.</p></div>
     </div>
-    <p class="sys-note">이 길 밖에 있는 것: 결함 시뮬레이션의 현장 패널 조작과 정비 수행은 설비 곁에서 사람이 하는 일이고, 결함 주입 · 복구는 가상 설비의 상태를 바꾸는 시뮬레이션 조작입니다. 셋 다 가상 설비 3기에 직접 적용되고 명령 관문을 거치지 않습니다.</p>
   </section>
 
   <!-- ───────── 지식 지도 ───────── -->
@@ -160,11 +159,11 @@
   <!-- ───────── 업무 시스템 기록(유압 설비): 업무 시스템의 표와 거래 전 · 후 값. 판단 · 승인 · 실행 결과는 처리 건 화면 한 곳에 있다 ───────── -->
   <section class="view" id="view-process" data-kit>
     <!-- 결론(#bzSummary: 조치가 남긴 거래 수 · 시스템마다 지금 있는 기록 수) → 거래 기록(한 줄 = 무엇을 · 어느 설비에 · 어느 조치 방법으로 · 언제 · 누가, 변경 전 · 후와 원문은 접기) → 업무 시스템마다 표 한 장. 그리는 코드는 enterprise.js renderSystems -->
-    <div class="page-head"><div><h1 data-term="nav.process">업무 시스템 기록</h1><p>사람이 승인한 조치가 실행되면 업무 시스템에 거래가 한 줄씩 남습니다. 그 거래와 생산 관리 · 정비 관리 · 구매 · 재고 관리의 지금 기록을 봅니다. 판단과 승인은 처리 건에서 봅니다.</p></div><div class="page-tools"><button type="button" class="btn" data-variant="outline" data-go-tab="instances"><span data-icon="inbox"></span>처리 건 열기</button></div></div>
+    <div class="page-head"><div><h1 data-term="nav.process">업무 시스템 기록</h1><p>승인한 조치가 업무 시스템에 남긴 거래와, 업무 시스템의 지금 기록입니다.</p></div><div class="page-tools"><button type="button" class="btn" data-variant="outline" data-go-tab="instances"><span data-icon="inbox"></span>처리 건 열기</button></div></div>
     <div class="stats bz-stats" id="bzSummary" role="status"></div>
-    <div class="sec-head"><h2>거래 기록</h2><span class="muted">승인된 조치로 업무 시스템이 실행한 거래 · 최근 12건</span></div>
+    <div class="sec-head"><h2>거래 기록</h2><span class="muted">최근 12건</span></div>
     <div class="panel bz-tx" id="txFold"><div class="stream-log" id="txList"></div></div>
-    <div class="sec-head"><h2>업무 시스템의 지금 기록</h2><span class="muted">원래 있던 기록과 조치로 생긴 기록이 함께 있습니다</span></div>
+    <div class="sec-head"><h2>업무 시스템의 지금 기록</h2><span class="muted">원래 있던 것 포함</span></div>
     <div class="bz-boards" id="sysBoards"></div>
     <!-- 처리 건 없이 제출된 판단: 지금 서버는 받지 않는다(process main.py 판단 접수 — 사건과 처리 건이 있어야 받는다). 옛 판에서 남은 것이 있을 때만 이 절이 보인다(enterprise.js) -->
     <section id="decOrphans" hidden>
@@ -211,23 +210,25 @@
   <section class="view" id="view-scenario" data-kit>
     <!-- 결함을 넣고 경보가 날 때까지를 본다: 머리 → 주입 뒤의 과정(#labFollow — hydLive.follow, 실제 사건이 올 때만 넘어간다) → 설비 카드 셋 → 범위 한 문장 → 조작 기록 접기.
          그리는 코드는 app.js renderUnits · followFault, 모양은 canvas.css(.unit* · .lab-*) -->
-    <div class="page-head"><div><h1 data-term="nav.scenario">결함 시뮬레이션</h1><p>가상 설비 3기에 결함을 넣어 경보를 냅니다. 경보가 나면 처리 건이 열리고 AI 에이전트가 판단을 시작합니다. 결함 주입 · 복구는 가상 설비 3기의 상태를 직접 바꾸는 조작이라 명령 관문을 거치지 않습니다.</p></div>
+    <div class="page-head"><div><h1 data-term="nav.scenario">결함 시뮬레이션</h1><p>가상 설비 3기에 결함을 넣어 경보를 내고 처리 건을 엽니다.</p></div>
       <div class="page-tools"><span class="live-pill" id="scaleFixed"><i class="dot" id="labDot"></i><span>설비 시각 <b id="labSimT" class="num">–</b> · <b id="scaleNow" class="num">20</b>배속</span></span><button type="button" class="btn" data-variant="outline" id="btnReset"><span data-icon="rotate-ccw"></span>전체 초기화</button></div></div>
     <div id="scaleWhy" hidden></div>
     <section class="panel lab-follow" id="labFollowPanel" aria-label="결함 주입 뒤의 과정" hidden>
-      <div class="panel-head"><div><h2 id="labFollowTitle"></h2><p id="labFollowNote">일이 실제로 일어날 때마다 한 줄씩 채워집니다.</p></div><button type="button" class="btn" data-variant="ghost" data-size="icon-sm" id="labFollowClose" aria-label="과정 닫기" data-tooltip="닫기" data-side="left"><span data-icon="x"></span></button></div>
+      <div class="panel-head"><div><h2 id="labFollowTitle"></h2><p id="labFollowNote" hidden></p></div><button type="button" class="btn" data-variant="ghost" data-size="icon-sm" id="labFollowClose" aria-label="과정 닫기" data-tooltip="닫기" data-side="left"><span data-icon="x"></span></button></div>
       <div class="panel-body" id="labFollow"></div>
     </section>
     <div class="units" id="units"></div>
+    <!-- 범위는 화면에 한 번만 말한다(카드마다 · 단추마다 되풀이하지 않는다) -->
+    <p class="lab-scope muted">이 화면의 조작(결함 주입 · 현장 패널)은 설비에 직접 적용되며 명령 관문을 거치지 않습니다.</p>
     <p id="scenarioMsg" class="lab-msg muted" role="status" aria-live="polite"></p>
-    <details class="fold lab-log"><summary>조작 기록 <span class="muted">이 화면에서 누른 단추의 결과 · 명령 관문이 검증한 명령</span></summary><div class="fold-body"><div id="gwLog"></div></div></details>
+    <details class="fold lab-log"><summary>조작 기록</summary><div class="fold-body"><div id="gwLog"></div></div></details>
   </section>
 
   <!-- ───────── 설비 회로(유압 설비): 회로 그림과 지금 값. 사건의 경과 · 판단 · 승인 · 결과는 처리 건 화면 한 곳에 있다 — 이 화면은 그리로 잇는다 ───────── -->
   <section class="view" id="view-incidents" data-kit>
     <!-- 어두운 캔버스 하나에 회로 그림 셋(디자인 기준 6-4) + 캔버스 아래 정보 띠(고른 설비의 상태와 처리 건으로 가는 길) → 고른 설비에서 난 사건 목록(누르면 처리 건).
          그리는 코드는 app.js renderScada · renderIncList, 모양은 canvas.css(.hc-*) -->
-    <div class="page-head"><div><h1 data-term="nav.incidents">설비 회로</h1><p>가상 설비 3기의 유압 회로와 지금 값입니다. 설비를 고르면 그 설비의 경보로 열린 처리 건이 아래에 나오고, 줄을 누르면 그 처리 건이 열립니다.</p></div></div>
+    <div class="page-head"><div><h1 data-term="nav.incidents">설비 회로</h1><p>가상 설비 3기의 유압 회로와 지금 값입니다. 설비를 고르면 그 설비의 처리 건이 아래에 나옵니다.</p></div></div>
     <div class="canvas hc-canvas">
       <div class="canvas-bar hc-bar"><span class="cv-legend"><span><i class="hc-lg pipe"></i>작동유가 흐르는 배관</span><span><i class="hc-lg sensor"></i>센서</span><span><i class="hc-lg hot"></i>경보 기준을 넘은 값</span></span></div>
       <div class="hc-grid" id="scada" role="group" aria-label="설비 고르기"></div>
@@ -241,7 +242,7 @@
   <section class="view" id="view-trends" data-kit>
     <!-- 설비 카드 셋(큰 값 · 작은 추이 선 · 눈금 막대 · 작은 값 여섯) → 추이 판(uPlot, 한 차트에 값 하나, 기준선 점선) — 디자인 기준 5-5.
          값은 포털이 1초마다 읽는 설비 상태(app.js refreshFast)를 이 창을 연 뒤부터 모은 것이다. 더 긴 기간은 Grafana 에서 본다. 그리는 코드는 app.js renderTrends, 모양은 canvas.css(.unit* · .trend*) -->
-    <div class="page-head"><div><h1 data-term="nav.trends">실시간 모니터링</h1><p>가상 설비 3기의 지금 값과 추이입니다. 유온이 <span id="monHot" class="num">55</span> ℃를 넘으면 경보 조건에 들고 <span id="monTrip" class="num">65</span> ℃에서 설비가 스스로 멈춥니다.</p></div>
+    <div class="page-head"><div><h1 data-term="nav.trends">실시간 모니터링</h1><p>가상 설비 3기의 지금 값과 추이입니다.</p></div>
       <div class="page-tools"><span class="live-pill" id="monLive"><i class="dot"></i><span>설비 값 읽는 중</span></span><a id="grafanaLink" class="btn" data-variant="outline" target="_blank" rel="noopener">Grafana에서 열기<span data-icon="external-link"></span></a></div></div>
     <div id="trendsNotice" hidden></div>
     <div class="units" id="monUnits" role="group" aria-label="설비 고르기"></div>
@@ -305,7 +306,7 @@
   <section class="view" id="view-admin">
     <!-- 목록 + 상세(디자인 기준 5-4): 왼쪽에 도구 셋, 오른쪽에 고른 도구. 오른쪽 판은 details 셋이고 왼쪽 줄이 그 열림을 바꾼다(app.js 「관리」) —
          딸린 모듈(configBundle.js · sourceEvents.js · definitionRegistry.js)은 자기 판이 열릴 때(toggle) 읽는다. -->
-    <div class="page-head"><div><h1 data-term="nav.admin">관리</h1><p>내가 만든 설정을 파일로 옮기고, 접수에 실패한 경보를 다시 처리하고, 흐름 정의를 JSON으로 다룹니다. 흐름을 경보에 쓰는 배포는 흐름 화면에 있습니다.</p></div>
+    <div class="page-head"><div><h1 data-term="nav.admin">관리</h1><p>내 설정을 파일로 옮기고, 실패한 접수를 다시 처리하고, 흐름 정의를 JSON으로 다룹니다.</p></div>
       <div class="page-tools"><button type="button" class="btn" data-variant="outline" data-go-tab="flows"><span data-icon="workflow"></span>흐름 열기</button></div></div>
     <div class="split admin-split">
       <div class="rows" id="adminList" role="group" aria-label="관리 도구">
