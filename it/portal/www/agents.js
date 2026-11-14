@@ -27,8 +27,6 @@
   const tag = (label, tone, plain) => `<span class="tag"${tone ? ` data-tone="${tone}"` : ''}${plain ? ' data-plain' : ''}>${esc(label)}</span>`;
   // 구분 뱃지: 기본 제공 / 내가 만든 것(상태가 아니라 종류라 점 없이)
   const originTag = o => tag(o === 'user' ? '내가 만든 것' : '기본 제공', o === 'user' ? 'brand' : '', true);
-  // 기본 제공 스킬의 이름 · 설명 · 문서에 붙어 있는 「(시나리오 A)」 꼬리표는 화면에 보이지 않는다
-  const plainName = t => String(t || '').replace(/\s*\(시나리오 [A-Z]\)/g, '');
   // 오류 · 읽는 중은 ui.js 의 부품을 쓴다. 이름–값은 값이 없는 줄을 그리지 않는다
   const errBox = (what, why) => UI.errorBlock(what, why, { retry: true });      // [다시 시도]는 onClick 의 data-retry 가 받는다
   const loading = () => UI.loading('');
@@ -137,7 +135,7 @@
   function skillRow(s) {
     // 뱃지는 한 줄에 하나: 어느 에이전트에도 붙지 않은 스킬은 그 상태를(주의), 나머지는 기본 제공 / 내가 만든 것을 보인다
     return `<button type="button" class="row" data-pick-skill="${esc(s.skill_name)}"${s.skill_name === st.pick.skills && !st.form ? ' aria-current="true"' : ''}><span class="row-ic">${icon('file-text')}</span>` +
-      `<span class="row-title">${esc(plainName(s.title))}</span>${s.agents.length ? originTag(s.origin) : tag('붙은 에이전트 없음', 'warn')}<span class="row-meta">${esc(plainName(s.description) || '설명 없음')}</span></button>`;
+      `<span class="row-title">${esc(s.title)}</span>${s.agents.length ? originTag(s.origin) : tag('붙은 에이전트 없음', 'warn')}<span class="row-meta">${esc(s.description || '설명 없음')}</span></button>`;
   }
   function listHtml() {
     if (!st.agents) return ROW_SKELETON;
@@ -170,7 +168,7 @@
       `<div class="pane-title"><h2>${esc(d.name)}${state}${isAgent ? originTag(d.origin) : ''}</h2><p>${longText('goal:' + d.id, note)}</p></div><div class="pane-acts">${agentActs(d)}</div></div>`;
     if (isAgent) {
       const skills = d.skills.length ? d.skills.map((s, i) => s.found
-        ? `<button type="button" class="use" data-skill-doc="${esc(s.skill_name)}" aria-expanded="${s.skill_name === docSkill(d)}">${icon('file-text')}<span><b>${esc(plainName(s.title))}</b></span><span class="muted mono">${esc(s.skill_name)}</span></button>`
+        ? `<button type="button" class="use" data-skill-doc="${esc(s.skill_name)}" aria-expanded="${s.skill_name === docSkill(d)}">${icon('file-text')}<span><b>${esc(s.title)}</b></span><span class="muted mono">${esc(s.skill_name)}</span></button>`
         : `<div class="use">${icon('circle-alert')}<span><b>본문 없는 스킬</b></span><span class="muted mono">${esc(s.skill_name)}</span></div>`).join('')
         : '<p class="muted">붙은 스킬이 없습니다. 스킬이 없으면 목표와 작업 규칙만으로 판단합니다.</p>';
       const tools = d.tools.length ? d.tools.map(t => `<button type="button" class="use" data-goto-server="${esc(t.name)}">${icon('plug')}<span><b>${esc(serverName(t.name, t.description))}</b></span>` +
@@ -185,22 +183,22 @@
           action: isAgent ? { label: '담당 배정 열기', attrs: 'data-goto-assign', icon: 'arrow-right' } : null })) + '</div>';
     if (isAgent) {
       const rules = d.work_rules_detail?.error ? d.work_rules_detail.error : d.work_rules_detail ? d.work_rules_detail.label : d.work_rules ? '작업 규칙 내용을 읽지 못했습니다' : '공통 안전 규칙만 적용';
-      html += `<div class="panel-sec"><h3>${icon('sliders-horizontal', 'ic-sm')}설정<span class="muted">${d.editable ? '고친 내용은 다음 실행부터 쓰입니다' : '기본 제공 에이전트는 고칠 수 없습니다. 복제해서 내 것으로 고칩니다'}</span></h3>` +
+      html += `<div class="panel-sec"><h3>${icon('sliders-horizontal', 'ic-sm')}설정${d.editable ? '<span class="muted">다음 실행부터 적용</span>' : ''}</h3>` +
         kv([['역할', esc(d.role || '')], ['성격 · 말투', d.persona ? longText('persona:' + d.id, d.persona) : ''], ['모델', esc(modelText(d.model))], ['작업 규칙', esc(rules)]]) + '</div>';
-      if (d.work_rules_detail && !d.work_rules_detail.error) html += `<div class="panel-sec pane-fold"><details class="fold"><summary>작업 규칙<span class="muted">${esc(d.work_rules_detail.label)} · 모든 판단에 함께 적용</span></summary><div class="fold-body"><div class="doc prose" data-md="${esc(d.work_rules_detail.content)}"></div></div></details></div>`;
+      if (d.work_rules_detail && !d.work_rules_detail.error) html += `<div class="panel-sec pane-fold"><details class="fold"><summary>작업 규칙 전문<span class="muted">${esc(d.work_rules_detail.label)}</span></summary><div class="fold-body"><div class="doc prose" data-md="${esc(d.work_rules_detail.content)}"></div></div></details></div>`;
       const run = d.run || {};
       const stepRows = (run.steps || []).map(s => {
         const x = s.settings;
         return `<tr><td>${esc(UI.flowName(s.name))}</td><td>${esc(modelText(x.model))}${x.model_source ? `<p class="muted">${esc(MODEL_FROM[x.model_source] || '')}</p>` : ''}</td>` +
           `<td>${esc(runServersText(s.servers))}${x.tools_source ? `<p class="muted">${esc(TOOLS_FROM[x.tools_source] || '')}</p>` : ''}</td>` +
-          `<td>${esc(x.skills.length ? x.skills.map(n => plainName(skillName(n, x.skill_labels || []))).join(', ') : '없음')}${x.missing_skills.length ? `<p class="muted" data-tone="danger">본문 없는 스킬 ${x.missing_skills.length}개</p>` : ''}</td></tr>`;
+          `<td>${esc(x.skills.length ? x.skills.map(n => skillName(n, x.skill_labels || [])).join(', ') : '없음')}${x.missing_skills.length ? `<p class="muted" data-tone="danger">본문 없는 스킬 ${x.missing_skills.length}개</p>` : ''}</td></tr>`;
       }).join('');
       const more = `<h4 class="ag-sub">단계별 실제 실행 설정</h4>` + (stepRows ? `<div class="table-container"><table class="table"><thead><tr><th>단계</th><th>모델</th><th>도구 서버</th><th>스킬</th></tr></thead><tbody>${stepRows}</tbody></table></div>`
           : '<p class="muted">맡은 단계가 없어 처리 건에서는 불리지 않습니다.</p>') +
         `<h4 class="ag-sub">실행 지시문에 더해지는 내용</h4>` + (run.instructions ? `<pre class="code">${esc(run.instructions)}</pre><p class="muted">AI 에이전트가 이 내용을 지시문에 넣고, 스킬은 실행 작업 폴더에 SKILL.md 파일로 씁니다.</p>`
           : '<p class="muted">더해지는 내용이 없습니다. 이름 · 목표 · 성격 · 스킬이 비어 있습니다.</p>') +
         `<h4 class="ag-sub">식별자</h4>` + kv([['식별자', `<span class="mono">${esc(d.id)}</span>`], ['등록된 도구 서버', esc(((d.run || {}).servers_registered || []).map(n => serverName(n.name, n.description)).join(', '))]]);
-      html += `<div class="panel-sec pane-fold"><details class="fold"><summary>자세히<span class="muted">단계별 실행 설정 · 실행 지시문 · 식별자</span></summary><div class="fold-body">${more}</div></details></div>`;
+      html += `<div class="panel-sec pane-fold"><details class="fold"><summary>단계별 실행 설정 · 실행 지시문 · 식별자</summary><div class="fold-body">${more}</div></details></div>`;
     } else {
       html += `<div class="panel-sec">${kv([['역할', esc(d.role || '')], ['식별자', `<span class="mono">${esc(d.id)}</span>`]])}</div>`;
     }
@@ -216,7 +214,7 @@
     const nodes = [...root.querySelectorAll('[data-md]')]; if (!nodes.length) return;
     try {
       await UI.need('markdown');
-      nodes.forEach(n => { n.innerHTML = DOMPurify.sanitize(marked.parse(plainName(String(n.dataset.md).replace(/^---\n[\s\S]*?\n---\n?/, '')))); n.removeAttribute('data-md'); });
+      nodes.forEach(n => { n.innerHTML = DOMPurify.sanitize(marked.parse(String(n.dataset.md).replace(/^---\n[\s\S]*?\n---\n?/, ''))); n.removeAttribute('data-md'); });
     } catch (e) { nodes.forEach(n => { n.classList.remove('prose'); n.innerHTML = `<pre class="code">${esc(n.dataset.md)}</pre>`; n.removeAttribute('data-md'); }); console.error('마크다운 부품을 싣지 못해 원문으로 보입니다:', e.message); }
   }
   async function drawSkillDoc() {
@@ -247,13 +245,13 @@
       : `<p class="muted">${mineAgents.length ? '내 에이전트에는 이미 모두 붙어 있습니다.' : '붙일 수 있는 내 에이전트가 없습니다. 기본 제공 에이전트에는 붙일 수 없으니, 에이전트를 복제하거나 새로 만들어 붙입니다.'}</p>`;
     const acts = mine ? `<button type="button" class="btn" data-variant="outline" data-edit-skill>${icon('pencil')}고치기</button>` +
       `<button type="button" class="btn" data-variant="ghost" data-size="icon" data-del-skill aria-label="지우기" data-tooltip="지우기" data-side="bottom">${icon('trash-2')}</button>` : '';
-    return `<div class="panel-head pane-head"><span class="pane-ic">${icon('file-text')}</span><div class="pane-title"><h2>${esc(plainName(s.title))}${originTag(s.origin)}</h2>` +
-      `<p>${esc(plainName(s.description) || (mine ? '설명이 적혀 있지 않습니다.' : ''))}</p></div><div class="pane-acts">${acts}</div></div>` +
+    return `<div class="panel-head pane-head"><span class="pane-ic">${icon('file-text')}</span><div class="pane-title"><h2>${esc(s.title)}${originTag(s.origin)}</h2>` +
+      `<p>${esc(s.description || (mine ? '설명이 적혀 있지 않습니다.' : ''))}</p></div><div class="pane-acts">${acts}</div></div>` +
       `<div class="panel-sec"><h3>${icon('book-open', 'ic-sm')}스킬 문서<span class="muted">${mine ? '붙은 에이전트가 실행될 때 작업 폴더에 SKILL.md로 들어갑니다' : '기본 제공 스킬은 고칠 수 없습니다. 새 스킬을 만들어 씁니다'}</span></h3>` +
       `<div class="doc"><div class="doc-bar">${icon('file-text', 'ic-sm')}<span class="mono">${esc(s.skill_name)}/SKILL.md</span><span class="num">${(s.content || '').length.toLocaleString('ko-KR')}자</span></div><div class="prose" data-md="${esc(s.content || '')}"></div></div></div>` +
       `<div class="panel-sec"><h3>${icon('bot', 'ic-sm')}붙은 에이전트</h3>${agents}${attach}</div>` +
       (s.steps.length ? `<div class="panel-sec"><h3>${icon('workflow', 'ic-sm')}선언한 단계<span class="muted num">${s.steps.length}</span></h3>${s.steps.map(stepUse).join('')}</div>` : '') +
-      `<div class="panel-sec pane-fold"><details class="fold"><summary>자세히<span class="muted">폴더 이름 · 고친 시각</span></summary><div class="fold-body">${kv([['폴더 이름', `<span class="mono">${esc(s.skill_name)}</span>`],
+      `<div class="panel-sec pane-fold"><details class="fold"><summary>폴더 이름 · 고친 시각</summary><div class="fold-body">${kv([['폴더 이름', `<span class="mono">${esc(s.skill_name)}</span>`],
         ['고친 시각', s.updated_at ? esc(UI.dateTime(s.updated_at)) : '']])}</div></details></div>`;
   }
 
@@ -281,7 +279,7 @@
       const tools = o.servers.length ? o.servers.map(s => { const on = d.tools.includes(s.name);
         return check('data-f-tool', s.name, on, !s.selectable && !on, esc(serverName(s.name, s.description)) + (s.selectable ? '' : ` <span class="muted">붙일 수 없음${s.reason ? ' — ' + esc(s.reason) : ''}</span>`)); }).join('')
         : '<p class="muted">등록된 도구 서버가 없습니다.</p>';
-      const skills = o.skills.length ? o.skills.map(s => check('data-f-skill', s.skill_name, d.skills.includes(s.skill_name), false, esc(plainName(UI.skillLabel(s).label)) + (s.origin === 'user' ? ' <span class="muted">내가 만든 것</span>' : ''))).join('')
+      const skills = o.skills.length ? o.skills.map(s => check('data-f-skill', s.skill_name, d.skills.includes(s.skill_name), false, esc(UI.skillLabel(s).label) + (s.origin === 'user' ? ' <span class="muted">내가 만든 것</span>' : ''))).join('')
         : '<p class="muted">아직 스킬이 없습니다. 먼저 [스킬 만들기]로 만든 뒤 이 에이전트를 고쳐 붙입니다.</p>';
       return head(f.id ? '에이전트 고치기' : '새 에이전트', (f.cloned ? '기본 제공 에이전트를 복제한 사본입니다. 저장하지 않고 취소하면 사본은 지워집니다. ' : '') + '저장하면 다음 실행부터 이 설정으로 실행됩니다. 단계를 맡기려면 저장한 뒤 [담당 배정]에서 고릅니다.') +
         `<form data-ag-form class="panel-sec ag-form">${o.error ? UI.errorBlock('도구 서버 · 스킬 목록을 읽지 못했습니다', o.error) : ''}` +
@@ -392,6 +390,8 @@
   }
 
   /* ---------- 행동 ---------- */
+  // 역할을 만들거나 지운 응답의 knowledge(서버 agent_authoring.sync_roles): 지식 지도에 바로 옮겼는지, 못 옮겼으면 서버가 준 까닭(1분 안에 다시 반영)을 그대로 말한다
+  const roleKnowledge = (k, removed = false) => !k ? '' : k.synced ? (removed ? '지식 지도에서도 뺐습니다.' : '지식 지도에도 옮겨, 문서 · 조치 방법의 승인 역할로 바로 고를 수 있습니다.') : (k.reason || '지식 지도에는 아직 반영하지 못했습니다.');
   async function act(fn, ok) {
     try { const out = await fn(); if (ok) UI.toast(typeof ok === 'function' ? ok(out) : ok, { tone: 'ok' }); return out; }
     catch (e) { UI.toast(reason(e), { tone: 'neg', timeout: 8000 }); return null; }
@@ -485,7 +485,7 @@
     }
     if (t.hasAttribute('data-role-add')) {
       const name = (st.host.querySelector('[data-role-name]') || {}).value || '', key = (st.host.querySelector('[data-role-key]') || {}).value || '';
-      if (await once('role-add', t, () => act(() => postJ(api('/api/roles'), { name: name.trim(), key: key.trim() || null }), r => `역할 '${r.name}'${window.hydWords.josa(r.name, '을/를')} 만들었습니다. 이 역할도 이 PC의 담당자가 맡습니다.`))) { await loadBoard(); render(); }
+      if (await once('role-add', t, () => act(() => postJ(api('/api/roles'), { name: name.trim(), key: key.trim() || null }), r => `역할 '${r.name}'${window.hydWords.josa(r.name, '을/를')} 만들었습니다. 이 역할도 이 PC의 담당자가 맡습니다. ${roleKnowledge(r.knowledge)}`))) { await loadBoard(); render(); }
       return;
     }
     if (t.dataset.roleDel) {
@@ -493,7 +493,7 @@
       const roleName = role.name || UI.performers[t.dataset.roleDel] || '이름 없는 역할';
       if (!await UI.confirm({ title: `역할 '${roleName}'${window.hydWords.josa(roleName, '을/를')} 지울까요?`,
         body: '흐름 정의가 이 역할을 쓰거나 이 역할에 끝나지 않은 작업이 있으면 지울 수 없고, 그 까닭을 알려 줍니다. 지운 역할은 되살릴 수 없습니다.', ok: '지우기', danger: true })) return;
-      if (await act(() => del(api('/api/roles/' + encodeURIComponent(t.dataset.roleDel))), '역할을 지웠습니다')) { await loadBoard(); render(); }
+      if (await act(() => del(api('/api/roles/' + encodeURIComponent(t.dataset.roleDel))), r => `역할을 지웠습니다. ${roleKnowledge(r.knowledge, true)}`)) { await loadBoard(); render(); }
       return;
     }
     if (t.dataset.foldText) { st.open[t.dataset.foldText] = !st.open[t.dataset.foldText]; drawDetail(); }

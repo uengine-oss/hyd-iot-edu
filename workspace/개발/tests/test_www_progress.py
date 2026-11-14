@@ -177,24 +177,45 @@ def test_기준으로_되돌리기_화면은_요청에_요청_번호를_싣고_�
             page.goto(served.url + '/index.html')
             _open(page, 'admin')
             page.wait_for_function('window.hydInbox && hydInbox.me()', timeout=8000)
+            # 절의 글: 지우는 것에 지식(적재한 문서 · 표 정의 · 화면에서 만든 조치 방법)이 들어 있고, 남는 것은 한 줄이다
+            what = page.inner_text('#cfgResetWhat')
+            assert '내가 적재한 문서의 지식' in what and '업무 DB 표 정의' in what and '화면에서 만든 조치 방법' in what
+            assert page.locator('#cfgResetWhat [data-reset-keeps]').count() == 1 and '처리 건과 처리 건 기록' in page.inner_text('#cfgResetWhat [data-reset-keeps]')
             page.locator('#cfgReset').click()
             said = page.inner_text('dialog.confirm-dialog')
-            assert '내가 가져온 흐름으로 끝난 처리 건은 [처리 건] 목록에서 숨겨집니다' in said
-            # 확인 창은 지우는 것과 남는 것(그리고 그것을 되돌리는 자리)을 둘 다 말한다 — 이 단추만으로 처음 상태가 된다고 믿지 않게
-            assert '남는 것' in said and '이 단추만으로 처음 상태가 되지는 않습니다' in said and '「지식 › 문서 등록」' in said and '「지식 › 조치 방법」' in said
-            assert '기본 제공 흐름과 그 처리 건' in said and '업무분장' not in said and 'A · B · C' not in said
+            # 확인 창은 지우는 것과 남는 것(그리고 그것을 되돌리는 자리)을 둘 다 말한다. 지식은 이제 지우는 쪽이다 — 「남는 것」에서 문서 등록 · 조치 방법을 가리키지 않는다
+            lost, kept = said.split('남는 것:')
+            assert '내가 적재한 문서의 지식' in lost and '화면에서 만든 조치 방법' in lost and '업무 DB 표 정의' in lost
+            assert '「지식 › 문서 등록」' not in said and '「지식 › 조치 방법」' not in said and '이 단추만으로 처음 상태가 되지는 않습니다' not in said
+            assert '지운 흐름으로 끝난 처리 건만 목록에서 숨깁니다' in kept and '「유압 설비 › 결함 시뮬레이션」의 [초기화]' in kept and '기본 제공 문서의 지식' in kept
+            assert '업무분장' not in said and 'A · B · C' not in said
+            for line in config_bundle.RESET_KEPT:      # 서버가 「남긴 것」으로 돌려주는 줄마다, 화면이 미리 말하는 「남는 것」에 그 줄의 머리말이 있다
+                assert line.split(' — ')[0].split('(')[0].split(' · ')[0][:8] in kept, line
             page.locator("dialog.confirm-dialog button[value='ok']").click()
             job.do(lambda p: (p.plan(plan), p.start('check')))
             _wait_steps(page, '#cfgResetResult', ['run:' + names['check']] + ['wait:' + label for key, label in plan[1:]])
             [body] = job.bodies
             assert body['by'] == 'user:me' and progress.read(body['request_id'])['state'] == 'running'      # 화면이 실은 번호의 기록을 서버가 연다
-            job.do(lambda p: (p.done('check', '막는 처리 건 없음'), p.start('deploy_reset'), p.done('deploy_reset', '이미 기준 흐름입니다'),
-                              p.start('flows_reset')))
-            _wait_steps(page, '#cfgResetResult', ['ok:' + names['check'], 'ok:' + names['deploy_reset'], 'run:' + names['flows_reset']]
-                        + ['wait:' + label for key, label in plan[3:]])
+            assert [k for k, _ in plan[:4]] == ['check', 'knowledge_reset', 'deploy_reset', 'flows_reset']      # 지식을 맨 먼저 되돌린다(서버 _reset_steps)
+            job.do(lambda p: (p.done('check', '막는 처리 건 없음'), p.start('knowledge_reset'), p.done('knowledge_reset', '적재한 문서 판 1개'),
+                              p.start('deploy_reset'), p.done('deploy_reset', '이미 기준 흐름입니다'), p.start('flows_reset')))
+            _wait_steps(page, '#cfgResetResult', ['ok:' + names['check'], 'ok:' + names['knowledge_reset'], 'ok:' + names['deploy_reset'], 'run:' + names['flows_reset']]
+                        + ['wait:' + label for key, label in plan[4:]])
             assert page.locator('#cfgReset').is_disabled() and page.inner_text('#cfgReset').startswith('되돌리는 중')
-            job.end({'message': '기준으로 되돌렸습니다', 'steps': [{'step': k, 'label': label, 'text': '없음'} for k, label in plan[1:]]})
+            # 실제 되돌리기의 응답 꼴(reset_summary): 지운 것 · 남긴 것 · 지금 없는 기본 제공 문서. 도구 서버를 만들 수 없는 단계라 내 서버를 남긴 경우다
+            steps = [{'step': 'knowledge_reset', 'result': {'documents': [{'filename': 'my.md', 'batch': 'b2', 'restored_batch': None}], 'skills': [{'id': 'skill:x'}], 'ddl_batches': [],
+                                                           'base_missing': ['HM-8_cooler-fan-manual.md']}},
+                     {'step': 'agents_reset', 'result': {'agents': 2, 'skills': 0, 'roles': 0, 'assignments': 0}},
+                     {'step': 'mcp_reset', 'result': {'removed_servers': [], 'removed_secrets': 0, 'kept_servers': ['my-shop'], 'kept_secrets': 1, 'locked': '지금 단계에서는 도구 서버를 등록할 수 없습니다'}}]
+            summary = config_bundle.reset_summary(steps)
+            job.end({'message': '기준으로 되돌렸습니다', **summary, 'steps': [{'step': k, 'label': label, 'text': '없음'} for k, label in plan[1:]]})
             page.wait_for_function("document.querySelector('#cfgResetResult').textContent.includes('지운 것')", timeout=8000)
+            shown = page.inner_text('#cfgResetResult')
+            for line in summary['removed'] + summary['kept']:
+                assert line in shown, line
+            assert '적재한 문서 판 1개' in shown and '화면에서 만든 조치 방법 1개' in shown and '내 도구 서버 1개와 비밀 값 1개' in shown and '지금 단계에서는 도구 서버를 등록할 수 없습니다' in shown
+            assert 'HM-8_cooler-fan-manual.md' in page.inner_text('#cfgResetResult [data-reset-missing]') and '시작 파일을 다시 실행' in shown
+            assert page.locator('#cfgResetResult details.fold').count() == 1 and not page.locator('#cfgResetResult details.fold .evid').is_visible()      # 단계별 결과는 접혀 있다
             assert page.locator('#cfgResetResult .lv-step').count() == 0 and not page.locator('#cfgReset').is_disabled()
             page.wait_for_timeout(1200)
             reads = wire.reads
@@ -211,7 +232,7 @@ def test_출발본_불러오기_화면은_파일과_요청_번호를_싣고_서�
     job, wire = Job(), Wire('/api/config/import')
     served = _serve(job, '/api/config/import')
     plan = [*config_bundle.IMPORT_HEAD, *config_bundle.reset_plan(False), *config_bundle.STEPS, config_bundle.VERIFY_STEP]      # 실제 불러오기가 적는 단계 그대로
-    bundle = {'format': config_bundle.FORMAT, 'format_version': config_bundle.FORMAT_VERSION, 'summary': {'roles': 1},
+    bundle = {'format': config_bundle.FORMAT, 'format_version': config_bundle.FORMAT_VERSION, 'summary': {'roles': 1, 'flows': 0, 'deployments': 0, 'provided_flows': 3},
               'content': {'roles': [{'id': 'role:u-x', 'name': '내 역할', 'kind': 'manager'}]}}
     try:
         with sync_playwright() as p:
@@ -223,6 +244,8 @@ def test_출발본_불러오기_화면은_파일과_요청_번호를_싣고_서�
             page.wait_for_function('window.hydInbox && hydInbox.me()', timeout=8000)
             page.set_input_files('#cfgFile', {'name': '출발본.json', 'mimeType': 'application/json', 'buffer': json.dumps(bundle, ensure_ascii=False).encode()})
             page.wait_for_function("document.querySelector('#cfgImportMsg').textContent.includes('역할 1개')", timeout=8000)
+            # 파일의 요약: 서버가 내 것(flows · deployments)과 기본 제공 흐름(provided_flows)을 갈라 센 수를 그대로 말한다
+            assert page.inner_text('#cfgImportMsg') == '출발본.json — 역할 1개 · 함께 담긴 기본 제공 흐름 3개(지금 배포된 판본)'
             page.locator('#cfgImport').click()
             page.locator("dialog.confirm-dialog button[value='ok']").click()
             job.do(lambda p: (p.plan(plan), p.start('validate'), p.done('validate'), p.start('check')))

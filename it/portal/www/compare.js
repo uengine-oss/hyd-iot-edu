@@ -49,7 +49,9 @@
   const scenarioOf = t => (S.opts?.scenarios || []).find(s => s.asset === t.asset && s.pattern === t.pattern);
   const scenarioLabel = t => scenarioOf(t)?.label || `${UI.name(t.pattern)} · ${t.asset}`;
   const skillShow = name => { for (const a of S.opts?.agents || []) { const k = (a.skills || []).find(x => x.name === name); if (k) return UI.skillLabel(k).label; } return name; };      // 스킬은 등록한 설명으로 부른다(없으면 등록 이름)
-  const plainReason = s => UI.idText(String(s || '').replaceAll('판단 엔진 도구(hyd-dmn)', '판단 시스템 도구 서버').replace(/hyd-dmn 가/g, '판단 시스템 도구 서버가').replaceAll('hyd-dmn', serverName('hyd-dmn')));      // 서버 문구 속의 도구 서버 id 는 이름표로
+  // 서버 문장 속의 도구 서버 id(「… 은 enterprise 서버의 도구입니다」)는 이름표로 읽는다. 앞의 두 바꿈은 옛 서버 판본이 저장한 시험 기록(지난 시험과 비교)에만 남아 있는 말이다
+  const plainReason = s => UI.idText(String(s || '').replaceAll('판단 엔진 도구(hyd-dmn)', '판단 시스템 도구 서버').replace(/hyd-dmn 가/g, '판단 시스템 도구 서버가')
+    .replace(/\b(hyd-dmn|enterprise-maint|enterprise-purchase|enterprise|neo4j)(?= 서버)/g, id => serverName(id)).replaceAll('hyd-dmn', serverName('hyd-dmn')));
   // 한쪽이 판단에 이르렀는가: ok = 원인과 1순위 조치까지 / hold = 근거가 없어 판단하지 않음(정상 결과) / none = 판단에 이르지 못함
   const reach = t => t.status === 'EVALUATED' ? 'ok' : t.status === 'WITHHELD' ? 'hold' : 'none';
   const whyNot = t => t.status === 'NO_ENGINE_TOOL' ? '구성에 판단 시스템 도구 서버가 없어 원인 진단부터 하지 못했습니다'
@@ -177,7 +179,8 @@
       `<p>${esc(callSummary(c))}</p>${by ? `<p class="muted">${esc(by)}</p>` : ''}${c.status === 'DONE' && c.reason ? `<p class="muted">${esc(plainReason(c.reason))}</p>` : ''}</td>`;
   }
   // 호출 결과 한 줄: 서버 요약의 내부 말(「후보 4장 · 제외 0장」, id)을 화면 말로
-  const callSummary = c => plainReason(c.summary || c.reason || '').replace(/후보 (\d+)장/g, '조치 후보 $1개').replace(/제외 (\d+)장/g, '제외 $1개');
+  // 「후보 n장」은 옛 서버 판본이 저장한 시험 기록에만 남아 있는 말이다(지금 서버는 「조치 후보 n개」로 준다)
+  const callSummary = c => plainReason(c.summary || c.reason || '').replace(/(?<!조치 )후보 (\d+)장/g, '조치 후보 $1개').replace(/제외 (\d+)장/g, '제외 $1개');
 
   function callTable(r) {
     const A = r.a.result.calls, B = r.b.result.calls;

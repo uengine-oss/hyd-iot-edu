@@ -7,7 +7,7 @@
 .io { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 24px; align-items: start; }
 .io > * { min-width: 0; }
 .io > .io-in { position: sticky; top: 68px; }      /* 위 막대(52px) 아래에 붙어 따라온다 */
-.io-in :is(.select, .input:not([type="checkbox"]), .textarea) { width: 100%; }
+.io-in :is(.select, .input:not([type="checkbox"]):not([type="radio"]), .textarea) { width: 100%; }
 .io-in .fieldset + .fieldset { margin-top: 20px; }
 .io-fields { display: grid; gap: 14px; }      /* 조건 판의 입력 칸 묶음(머리 없이) */
 .io-more { margin-top: 12px; }

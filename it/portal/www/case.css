@@ -171,10 +171,6 @@ dialog.flow-dialog .canvas { height: min(760px, calc(100dvh - 96px)); border: 0;
 .cr-h { font-size: var(--fs-xs); line-height: 18px; font-weight: 600; color: var(--muted-foreground); }
 .cr-sec-body { min-width: 0; display: grid; gap: 6px; font-size: var(--fs-sm); }
 .cr-sec-body .cr-h, .fold-body > .cr-h { margin-top: 6px; color: var(--ink-2); }
-.cr-kv { display: grid; grid-template-columns: repeat(auto-fill, minmax(192px, 1fr)); gap: 8px 24px; }
-.cr-kv > div { min-width: 0; }
-.cr-kv dt { font-size: var(--fs-xs); color: var(--muted-foreground); }
-.cr-kv dd { overflow-wrap: anywhere; }
 .cr-table { min-width: 420px; }
 .cr-table tr[data-pick] td { background: var(--brand-soft); }
 .cr-table tr[data-pick] td:first-child { box-shadow: inset 3px 0 0 var(--brand); }
@@ -207,7 +203,6 @@ ol.cr-list { list-style: decimal; }
 .cr-dur { font-size: var(--fs-xs); color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
 .cr-older { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; font-size: var(--fs-sm); }
 .cr-series { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: center; }
-.cr-series .cr-kv { flex: 1; min-width: 220px; }
 .cr-spark { width: 280px; max-width: 100%; height: 64px; border: 1px solid var(--border); border-radius: 8px; }
 .cr-spark .val { fill: none; stroke: var(--brand); stroke-width: 1.6; stroke-linejoin: round; }
 .cr-spark .lim { stroke: var(--danger); stroke-width: 1; stroke-dasharray: 4 3; }
@@ -237,7 +232,7 @@ ol.cr-list { list-style: decimal; }
 .cr-r { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 8px; align-items: start; padding: 2px 0; font-size: var(--fs-sm); line-height: 20px; }
 .cr-r q { display: block; quotes: none; padding-left: 8px; border-left: 2px solid var(--border); color: var(--ink-2); }
 .cr-r b { font-weight: 600; }
-@media (max-width: 640px) { .cr-kv { grid-template-columns: repeat(auto-fill, minmax(144px, 1fr)); } .cr-r, .tg-line { grid-template-columns: 52px minmax(0, 1fr); } }
+@media (max-width: 640px) { .cr-r, .tg-line { grid-template-columns: 52px minmax(0, 1fr); } }
 
 /* ───────── 「자세한 기록」 접기(한 건의 맨 아래 하나) ───────── */
 .case-more { margin-top: 32px; }
@@ -266,3 +261,9 @@ ol.cr-list { list-style: decimal; }
 /* 흐름 화면의 그림 아래 한 줄(flow.js show): 어느 그림인지(판본 · 초안) · 알림 — 캔버스 위에는 도구 막대 하나만 둔다 */
 .flow-cap { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 8px 2px 0; font-size: var(--fs-xs); }
 .flow-cap > [data-flow-note]:not([hidden])::before { content: "· "; }
+.rework-who { display: grid; gap: 12px; margin-top: 12px; }
+/* 실행의 알림 줄(재생한 결과 글의 조회 값 안내 등): AI 단계의 결론 아래와, 그 글을 읽고 결정하는 「내가 할 일」 카드 */
+.cr-notices { padding: 0 16px 12px; display: grid; gap: 6px; }
+.cr-notice, .turn-notice { display: flex; gap: 8px; align-items: flex-start; margin: 0; font-size: var(--fs-sm); line-height: 20px; color: var(--ink-2); }
+.cr-notice .ic, .turn-notice .ic { width: 14px; height: 14px; flex: none; margin-top: 3px; color: var(--muted-foreground); }
+.turn-notice { margin-top: 8px; }

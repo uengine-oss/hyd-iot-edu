@@ -264,10 +264,10 @@ def test_질문_끝_상태는_서버의_질문_상태_함수가_내는_값과_�
     assert states == cr.ASK_END | waiting, '질문 상태가 늘거나 줄었다 — class_round.ASK_END(끝 상태)를 서버와 맞춘다'
 
 
-def test_시스템_실행_이력_접기를_펼_때_안의_거래_접기가_여럿이어도_접기_자신만_편다():
-    """한바퀴3 고침 2: 15 · 16 두 번째 실행부터 「#txFold summary」가 거래마다 붙은 접기(원문 · 변경 전후)의 summary 까지 3 · 7개를 골라
-    strict mode violation 으로 멈췄다(화면은 정상 — 확인 도구 선택자 결함). 실제 index.html · enterprise.js 가 거래 둘을 그리게 한다 — 브라우저
-    밖의 업무 시스템 응답만 이 시험이 준다(상태 · 거래 기록 꼴은 enterprise-sim /api/state · /api/transactions)."""
+def test_업무_시스템_기록의_거래_줄을_펼_때_줄_안의_원문_접기가_있어도_줄_자신만_편다():
+    """한바퀴3 고침 2: 거래마다 붙은 접기(원문 · 변경 전후)의 summary 까지 골라 strict mode violation 으로 멈췄다(화면은 정상 — 확인 도구 선택자
+    결함). 지금 화면의 거래 기록은 표 한 장이고(접기 #txFold 는 없다) 줄(details.tx)을 누르면 변경 전 · 후가 열린다 — 확인 도구가 누르는 그 길을
+    실제 index.html · enterprise.js 로 판정한다. 브라우저 밖의 업무 시스템 응답만 이 시험이 준다(enterprise-sim /api/state · /api/transactions)."""
     from playwright.sync_api import sync_playwright
     from fastapi import FastAPI
     from fastapi.staticfiles import StaticFiles
@@ -288,10 +288,12 @@ def test_시스템_실행_이력_접기를_펼_때_안의_거래_접기가_여�
             page.locator("#menuList summary[data-menu='plant']").click()      # 메뉴 줄에서 메뉴를 펼치고 업무 시스템 기록 화면을 누른다(확인 도구 Round.tab 과 같은 길)
             page.locator("#menuList a[data-tab='process']").click()
             page.wait_for_function("document.querySelectorAll('#txList article.event-record').length === 2", timeout=15000)
-            fold = page.locator('#txFold')
-            assert fold.locator('summary').count() > 1, '접기 안의 거래에도 summary 가 있다(옛 선택자가 여럿을 고르는 조건)'
-            cr.open_fold(fold)
-            assert fold.evaluate('d => d.open') and page.locator('#txList details[open]').count() == 0
+            rows = page.locator('#txList details.tx')
+            assert rows.count() == 2 and rows.first.locator('summary').count() > 1, '거래 줄 안의 원문 접기에도 summary 가 있다(옛 선택자가 여럿을 고르는 조건)'
+            for d in rows.all():
+                cr.open_fold(d)                                             # class_round.process_screen_shows 가 누르는 길
+            assert page.locator('#txList details.tx[open]').count() == 2 and page.locator('#txList details.raw[open]').count() == 0
+            assert '변경 전' in page.inner_text('#txList')                   # 판정이 읽는 글이 열린 줄에 있다
             b.close()
     finally:
         served.close()

@@ -164,7 +164,7 @@
   }
 
   function select(name) {
-    S.sel = name; S.tab = 'tools'; S.trying = null; S.info = null; S.openCall = null; S.callTool = '';
+    S.sel = name; S.tab = 'tools'; S.trying = null; S.info = null; S.openCall = null; S.callTool = ''; S.removed = null;
     if (S.form) { S.form = null; renderForm(); }      // 다른 서버를 고르면 쓰던 등록 폼을 닫는다(상세 자리는 하나다)
     renderServers(); renderDetail(); UI.revealDetail(S.el.querySelector('#mcpPanel'));
   }
@@ -175,7 +175,7 @@
     const box = S.el.querySelector('#mcpDetail');
     if (S.form) { box.innerHTML = ''; return; }      // 등록 · 고치기 폼을 쓰는 동안 상세 자리는 폼이 쓴다
     const s = S.servers.find(x => x.name === S.sel);
-    if (!s) { box.innerHTML = S.servers.length ? `<div class="pane-none">${UI.empty({ icon: 'plug', title: `도구 서버를 고르세요`, sub: `왼쪽 목록에서 고르면 그 서버의 도구와 호출 기록이 보입니다.` })}</div>` : ''; return; }
+    if (!s) { box.innerHTML = removedNote() + (S.servers.length ? `<div class="pane-none">${UI.empty({ icon: 'plug', title: `도구 서버를 고르세요`, sub: `왼쪽 목록에서 고르면 그 서버의 도구와 호출 기록이 보입니다.` })}</div>` : ''); return; }
     const r = S.tools[s.name] || { loading: true };
     const tools = r.status === 'ok' ? r.tools : [];
     const limit = r.timeout_s || S.listTimeout;
@@ -191,9 +191,13 @@
       `<button type="button" role="tab" aria-selected="${k === S.tab}" tabindex="${k === S.tab ? 0 : -1}" data-mcp-tab="${k}">${esc(l)}${n != null ? `<span class="num">${n}</span>` : ''}</button>`).join('');
     const agents = s.agents.length ? s.agents.map(a => `<button type="button" class="use" data-goto-agent="${esc(a.id)}">${icon('bot')}<span><b>${esc(a.name)}</b></span><span class="muted">에이전트 보기</span></button>`).join('')
       : '<p class="muted">이 서버를 쓰는 에이전트가 없습니다.</p>';
-    // 단계마다 실제 담당과 그 실행이 이 서버로 쓰는 도구(서버 계산 — agents_store.run_servers, AI 에이전트 실행 서비스와 같은 규칙)
-    const steps = s.tasks.length ? s.tasks.map(t => `<button type="button" class="use" data-goto-flow="${esc(t.definition)}">${icon('workflow')}<span><b>${esc(t.definition_name || UI.defName(t.definition))}</b></span>${icon('chevron-right', 'ic-sm')}<span>${esc(UI.flowName(t.activity_name))}</span>` +
-      `<span class="muted">${esc(t.agent || '담당 없음')}${t.fixed_tools ? ' · 정해진 조회 도구만' : ''}</span></button>`).join('') : '<p class="muted">이 서버로 도는 에이전트 단계가 없습니다.</p>';
+    // 이 서버로 도는 에이전트 단계(서버 계산 — agents_store.run_servers, AI 에이전트 실행 서비스와 같은 규칙)는 흐름마다 한 줄로 모은다(단계 열두 줄을 늘어놓지 않는다)
+    const byFlow = new Map();
+    s.tasks.forEach(t => { if (!byFlow.has(t.definition)) byFlow.set(t.definition, { name: t.definition_name || UI.defName(t.definition), steps: [] }); byFlow.get(t.definition).steps.push(UI.flowName(t.activity_name)); });
+    const steps = [...byFlow].map(([id, f]) => `<button type="button" class="use" data-goto-flow="${esc(id)}">${icon('workflow')}<span><b>${esc(f.name)}</b> <span class="mcp-step-names">${esc(f.steps.join(' · '))}</span></span><span class="muted">단계 ${f.steps.length}</span></button>`).join('');
+    // 이 서버의 도구를 직접 부르는 흐름 단계(「승인 뒤 MCP 호출」 — 서버 mcp_dependencies.steps_using). 지우면 이 단계가 멈춘다
+    const calls = (s.flow_steps || []).map(t => `<button type="button" class="use" data-goto-flow="${esc(t.definition)}">${icon('zap')}<span><b>${esc(t.definition_name || UI.defName(t.definition))}</b> ${esc(UI.flowName(t.activity_name))}</span>` +
+      `<span class="muted">${esc([`도구 ${t.tool || '미정'}`, `판본 ${t.version}`, t.running ? `진행 중 ${t.running}건` : ''].filter(Boolean).join(' · '))}</span></button>`).join('');
     box.innerHTML = `<div class="panel-head pane-head"><span class="pane-ic">${icon('plug')}</span><div class="pane-title"><h2>${esc(serverLabel(s.name))}${statusTag(s.name)}${originTag(s)}</h2><p>${esc(about)}</p></div>` +
       `<div class="pane-acts"><button type="button" class="btn" data-variant="outline" id="mcpProbe" ${r.loading || s.config_error ? 'disabled' : ''}>${icon('activity')}연결 검사</button>` +
       (s.editable ? `<button type="button" class="btn" data-variant="outline" id="mcpEdit"${reg()}>${icon('pencil')}고치기</button>` +
@@ -201,10 +205,11 @@
       `</div></div>` +
       `<div class="panel-sec mcp-state">${gateLine(s, r)}${status}</div>` +
       `<div class="panel-sec"><h3>${icon('bot', 'ic-sm')}쓰는 에이전트<span class="muted num">${s.agents.length || ''}</span></h3><div class="mcp-uses">${agents}</div></div>` +
-      `<div class="panel-sec"><h3>${icon('workflow', 'ic-sm')}이 서버로 도는 단계<span class="muted num">${s.tasks.length}</span></h3><div class="mcp-steps">${steps}</div></div>` +
+      (calls ? `<div class="panel-sec" data-mcp-calls><h3>${icon('zap', 'ic-sm')}이 서버를 부르는 흐름 단계<span class="muted num">${s.flow_steps.length}</span></h3><div class="mcp-steps">${calls}</div></div>` : '') +
+      `<div class="panel-sec" data-mcp-flows><h3>${icon('workflow', 'ic-sm')}이 서버로 도는 흐름<span class="muted num">${byFlow.size || ''}</span></h3><div class="mcp-steps">${steps || '<p class="muted">이 서버로 도는 에이전트 단계가 없습니다.</p>'}</div></div>` +
       `<div class="panel-sec"><div class="tabs view-tabs" data-size="sm"><nav role="tablist" aria-orientation="horizontal" aria-label="보기">${seg}</nav></div><div id="mcpPane"></div></div>` +
-      `<div class="panel-sec pane-fold"><details class="fold"><summary>자세히<span class="muted">연결 설정 · 비밀값은 ******** 로 가림</span></summary><div class="fold-body">${kv(settings.map(([k, v]) => [k, v ? `<code class="inline">${esc(v)}</code>` : '']))}` +
-        `<p class="muted">${s.editable ? '고치기는 연결 검사를 통과해야 저장됩니다.' : '기본 제공 서버는 고치거나 지울 수 없습니다. 내 서버는 새 이름으로 등록해 씁니다.'}</p></div></details></div>`;
+      `<div class="panel-sec pane-fold"><details class="fold"><summary>연결 설정</summary><div class="fold-body">${kv(settings.map(([k, v]) => [k, v ? `<code class="inline">${esc(v)}</code>` : '']))}` +
+        `<p class="muted">비밀 값은 ******** 로 가려 보입니다. ${s.editable ? '고치기는 연결 검사를 통과해야 저장됩니다.' : '기본 제공 서버는 고치거나 지울 수 없습니다. 내 서버는 새 이름으로 등록해 씁니다.'}</p></div></details></div>`;
     if (r.loading && r.track) r.track.mount(box.querySelector('[data-mcp-track]'));      // [연결 검사]가 도는 동안: 서버가 적는 단계(hydLive.track)
     box.querySelector('#mcpProbe')?.addEventListener('click', ev => checkSaved(s.name, ev.currentTarget));
     box.querySelector('#mcpEdit')?.addEventListener('click', () => openForm(s));
@@ -487,23 +492,35 @@
     renderForm();
   }
 
-  // 지우기 확인: 이 서버를 쓰는 에이전트와 이 서버로 도는 흐름 단계를 함께 보이고, 지운 뒤에 무엇이 달라지는지 말한다
+  // 지우기 확인: 이 서버를 쓰는 에이전트와 이 서버를 부르는 흐름 단계(서버 flow_steps)를 함께 보이고, 지운 뒤에 무엇이 달라지는지 말한다.
+  // 쓰는 것이 있으면 서버는 force 없이 지우지 않는다(409) — 확인 창에서 그것을 읽고 지우기로 했으므로 force 로 보낸다
+  const stepText = t => `「${t.definition_name || UI.defName(t.definition)}」의 「${UI.flowName(t.activity_name)}」(도구 ${t.tool || '미정'}${t.running ? ` · 진행 중인 처리 건 ${t.running}건` : ''})`;
   async function removeServer(s, button) {
     const by = actor(); if (!by) return;      // 확인을 묻기 전에 막는다
-    const using = s.agents.map(a => a.name);
-    const steps = s.tasks.map(t => `${t.definition_name || UI.defName(t.definition)} › ${UI.flowName(t.activity_name)}`);
+    const using = s.agents.map(a => a.name), calls = (s.flow_steps || []).map(stepText);
     const body = [using.length ? `이 서버를 쓰는 에이전트: ${using.join(', ')}.` : '이 서버를 쓰는 에이전트는 없습니다.',
-      steps.length ? `이 서버로 도는 흐름 단계: ${steps.join(', ')}.` : '',
-      using.length || steps.length ? '지우면 그 에이전트와 단계는 이 서버 없이 실행됩니다.' : '', '연결 검사 기록도 함께 지웁니다. 지운 서버는 다시 등록해야 합니다.'].filter(Boolean).join(' ');
+      calls.length ? `이 서버를 부르는 흐름 단계: ${calls.join(', ')}.` : '이 서버를 부르는 흐름 단계는 없습니다.',
+      using.length ? '지우면 그 에이전트는 이 서버 없이 실행됩니다.' : '', calls.length ? '그 흐름 단계는 실행될 때 서버가 없다는 까닭으로 멈춥니다.' : '',
+      '연결 검사 기록도 함께 지웁니다. 지운 서버는 다시 등록해야 합니다.'].filter(Boolean).join(' ');
     const ok = await UI.confirm({ title: `${serverLabel(s.name)} 서버를 지울까요?`, body, ok: '지우기', danger: true });
     if (!ok) return;
     return once('delete:' + s.name, button, async () => {
       try {
-        await requestJ(api(`/api/mcp/servers/${encodeURIComponent(s.name)}?force=${using.length ? 'true' : 'false'}&by=${encodeURIComponent(by)}`), { method: 'DELETE' });
+        const r = await requestJ(api(`/api/mcp/servers/${encodeURIComponent(s.name)}?force=${using.length || calls.length ? 'true' : 'false'}&by=${encodeURIComponent(by)}`), { method: 'DELETE' });
+        const left = r.flow_steps_still_calling_it || [], naming = r.agents_still_naming_it || [];
         UI.toast(`${serverLabel(s.name)}: 지웠습니다`, { tone: 'ok' }); S.sel = null;
+        S.removed = left.length || naming.length ? { name: serverLabel(s.name), steps: left, agents: naming } : null;
       } catch (e) { UI.toast(`${serverLabel(s.name)}: ${e.message}`, { tone: 'neg', timeout: 8000 }); }
       await load();
     });
+  }
+  // 방금 지운 서버를 아직 가리키는 것(지우기 응답의 flow_steps_still_calling_it · agents_still_naming_it) — 다른 서버를 고를 때까지 상세 자리에 남는다
+  function removedNote() {
+    const d = S.removed; if (!d) return '';
+    const rows = [...d.steps.map(t => `<li>${icon('zap')}<span><b>${esc(t.definition_name)}</b> ${esc(UI.flowName(t.activity_name))} <span class="muted">도구 ${esc(t.tool || '미정')} · 판본 ${esc(t.version)}${t.running ? ` · 진행 중 ${t.running}건` : ''}</span></span></li>`),
+      ...d.agents.map(n => `<li>${icon('bot')}<span><b>${esc(n)}</b> <span class="muted">이 서버 없이 실행됩니다</span></span></li>`)].join('');
+    return `<div class="alert" data-mcp-removed>${icon('triangle-alert')}<h2>지운 ${esc(d.name)} 서버를 아직 가리키는 곳이 있습니다</h2><section>` +
+      (d.steps.length ? `<p>아래 흐름 단계는 실행될 때 서버가 없다는 까닭으로 멈춥니다. 흐름에서 그 단계의 도구 서버를 바꾸거나 같은 이름으로 서버를 다시 등록하세요.</p>` : '') + `<ul class="evid">${rows}</ul></section></div>`;
   }
 
   // ---------------------------------------------------------------- G2 비밀 값 (${SECRET:이름}) — 값은 넣기만 하고 다시 보이지 않는다

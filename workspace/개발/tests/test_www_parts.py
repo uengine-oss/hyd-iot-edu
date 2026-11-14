@@ -187,3 +187,40 @@ def test_되돌리기는_관리_내_설정_한_곳에만_있고_다른_화면은
         assert page.locator('#configBundlePanel').evaluate('d => d.open')
         assert page.locator('#cfgResetScope').input_value() == scope, '보낸 화면의 범위가 골라져 있다'
         assert page.locator('#cfgReset').is_visible()
+
+
+def test_입력_칸에_id_가_없어도_이름표는_그_칸과_이어지고_다시_그려도_같은_id_다():
+    """흐름의 시작 폼(교대 인수인계의 「설비」 · 「작업 메모」)처럼 id 없이 만든 입력은 이름표와 이어지지 않았다(for 없음) — 이름표를 눌러도 칸이 잡히지
+    않고 화면 읽기 도구가 칸의 이름을 모른다. 폼 부품(UI.field)이 한 번에 잇는다."""
+    from www_node import run
+    got = run(['ui.js'], """const a = UI.field({ label: '작업 메모', input: '<textarea data-sv="work_notes" rows="4"></textarea>' });
+      const b = UI.field({ label: '작업 메모', input: '<textarea data-sv="work_notes" rows="4"></textarea>' });
+      const c = UI.field({ label: '설비', input: '<select data-sv="asset"><option>HYD-01</option></select>' });
+      const d = UI.field({ label: '이름', input: '<input id="skName" data-id="x">' });
+      const pair = h => [/<label for="([^"]+)"/.exec(h)[1], /<(?:textarea|select|input)[^>]*?\\sid="([^"]+)"/.exec(h)[1]];
+      out([pair(a), pair(b), pair(c), pair(d)])""")
+    (fa, ia), (fb, ib), (fc, ic), (fd, idd) = got
+    assert fa == ia and fc == ic and ia != ic            # 이름표의 for = 그 칸의 id, 칸마다 다르다
+    assert ia == ib                                      # 같은 칸은 다시 그려도 같은 id(HTML 이 달라져 다시 그리기가 헛돌지 않는다)
+    assert fd == idd == 'skName'                         # 이미 id 가 있으면 그대로(data-id 를 id 로 읽지 않는다)
+
+
+def test_다시_그려도_사람이_편_접기는_열린_채이고_처음_나온_접기만_HTML_의_기본을_따른다(portal):
+    """처리 건의 복구 묶음([다시 수행] · 실행 효과)은 2초마다 다시 그려진다. 다시 그릴 때마다 접기가 기본값(닫힘)으로 돌아가 학생이 연 [다시 수행]이
+    2초 안에 저절로 닫혔다 — 주기적으로 다시 그리는 자리는 UI.swap 으로 바꾼다."""
+    page = portal
+    got = page.evaluate("""() => { const host = document.createElement('div'); document.querySelector('main .view.active').prepend(host);
+      const html = open => UI.fold('다시 수행', '<p>폼</p>', { open }) + UI.fold('실행 효과 <span class="tag">확인할 조치 2</span>', '<p>표</p>');
+      UI.swap(host, html(false));
+      const first = [...host.querySelectorAll('details')].map(d => d.open);
+      host.querySelector('details').open = true;                          // 사람이 [다시 수행]을 편다
+      UI.swap(host, html(false));                                         // 2초 뒤 다시 그리기(기본은 닫힘)
+      const kept = [...host.querySelectorAll('details')].map(d => d.open);
+      host.querySelectorAll('details')[0].open = false;                   // 사람이 다시 접는다
+      UI.swap(host, html(true));                                          // 기본이 열림으로 바뀌어도 사람이 접은 것은 접힌 채
+      const closed = [...host.querySelectorAll('details')].map(d => d.open);
+      UI.swap(host, html(true) + UI.fold('새 접기', '<p>x</p>', { open: true }));
+      const fresh = [...host.querySelectorAll('details')].map(d => d.open);
+      host.remove(); return { first, kept, closed, fresh }; }""")
+    assert got == {'first': [False, False], 'kept': [True, False], 'closed': [False, False], 'fresh': [False, False, True]}, got
+

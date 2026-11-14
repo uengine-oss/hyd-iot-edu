@@ -350,7 +350,7 @@
       const policy=comparison.policy || {};
       rows.push(['원문 비용 기준',`불량 1개당 손실 ${costValue(policy.loss_per_failure)} · 검사 기준 ${typeof policy.inspection_threshold==='number' ? W.num(policy.inspection_threshold*100)+' % 초과' : '기록 미확인'} · 전수 검사비 ${costValue(policy.inspection_cost)}`]);
     } else rows.push(['구매 총비용 비교','비교한 기록이 없습니다.']);
-    return `<section class="ap-business" aria-label="구매 요청"><b>구매 요청</b><dl class="meta-list">${rows.map(([label,value])=>`<div><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`).join('')}</dl><p class="muted">구매 요청 계획입니다. 승인 전이라 발주하지 않았습니다.</p>${UI.raw({part:part || null,facts:values,resolvedSupplier:option.resolvedSupplier || null,economicComparison:option.economicComparison || null,actions:option.actions}, { title: '구매 요청 근거 원문' })}</section>`;
+    return `<section class="ap-business" aria-label="구매 요청"><b>구매 요청</b><dl class="kv">${rows.map(([label,value])=>`<dt>${esc(label)}</dt><dd>${esc(value)}</dd>`).join('')}</dl><p class="muted">구매 요청 계획입니다. 승인 전이라 발주하지 않았습니다.</p>${UI.raw({part:part || null,facts:values,resolvedSupplier:option.resolvedSupplier || null,economicComparison:option.economicComparison || null,actions:option.actions}, { title: '구매 요청 근거 원문' })}</section>`;
   };
   W.purchaseAsk = (name, input) => {
     const i=parse(input) || {}, use=name==='purchase_context' ? '부족 재고와 원문 구매 절차 확인' : name==='evaluate_purchase' ? '구매 후보 비교(조회와 계산만)' : '이 처리 건에 구매 판단 등록 요청(승인 전)';
@@ -466,7 +466,7 @@
     'mcp__hyd-dmn__precedents': { name: '과거 선택 조회', sys: '판단 시스템', ask: i => nm(i.failure_mode || ''),
       got: o => { const d = doc(parse(o)); return Array.isArray(d) ? `${d.length}건 · ${list(d.map(x => nm(x.skill)), 2)}` : ''; } },
     'mcp__hyd-dmn__submit_decision': { name: '판단 제출', sys: '판단 시스템', ask: i => i.recommended ? `추천 ‘${nm(i.recommended)}’` : (i.asset || ''),
-      got: o => { const d = doc(parse(o)) || {}; return d.id ? `판단 ${d.id} 저장${d.recommended ? ` · 추천 ‘${nm(d.recommended)}’` : ''}` : ''; } },
+      got: o => { const d = doc(parse(o)) || {}; return d.id ? `판단을 저장했습니다${d.recommended ? ` · 추천 ‘${nm(d.recommended)}’` : ''}` : ''; } },      // 판단 번호(DEC-…)는 문장에 넣지 않는다 — 원문 보기와 처리 건의 번호 조각에 있다
     'mcp__hyd-dmn__forecast_actions': { name: '조치 효과 예측', sys: '판단 시스템' },
     'mcp__hyd-dmn__tradeoffs': { name: '성과 지표 득실 경로', sys: '판단 시스템 · 지식 그래프' },
     'mcp__hyd-dmn__inputs': { name: '판단 입력 보기', sys: '판단 시스템' },
@@ -537,6 +537,10 @@
     if (m && KIND[m[1]]) return `${KIND[m[1]]} 표시 이름 미등록`;
     return k;
   };
+  // 알림 문장 속의 업무 DB 표 이름(「업무 DB 조회(ent.work_orders)」)에 사람 말을 붙인다 — 표 이름은 처리 과정의 그 조회에도 보이므로 지우지 않고 앞에 이름을 단다
+  const TABLES = { work_orders: '정비 요청', purchase_requests: '구매 요청', goods_receipts: '입고', spare_stock: '예비품 재고', production_orders: '생산 오더', suppliers: '공급사', parts: '부품',
+    assets: '설비', pm_status: '정기 정비 상태', maintenance_history: '정비 이력', part_quotes: '부품 견적', stock_movements: '재고 이동' };
+  W.tableWords = t => String(t ?? '').replace(/\bent\.([a-z_]+)\b/g, (m, name) => TABLES[name] ? `${TABLES[name]} 표 ${m}` : m);
   W.text = t => UI.words(String(t ?? '').replace(UI.ID_RE, m => W.idName(m)));
 
   /* ---------------------------------------------------------------- 조사: 앞말 끝소리로 고른다 ("발주를" · "씰 마모를" · "WO-1009-E85A를" · "김운전이")

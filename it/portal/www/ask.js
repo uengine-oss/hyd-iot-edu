@@ -137,8 +137,8 @@
     if (r.kind === 'answered') {
       const check = c => c ? `<p class="muted">${esc(c.note)}${c.missing?.length ? `: ${esc(c.missing.join(', '))}` : ''}</p>` : '';
       const ev = (r.evidence || []).map(x => `<li>${icon(x.verified ? 'circle-check' : 'triangle-alert')}<div><p><b>${esc(UI.toolName(x.tool))}</b> — ${x.verified ? '실행 기록에서 확인됨' : '실행 기록에 없음'}</p>
-          <pre class="code">${esc(UI.clean(x.query))}</pre>${x.result != null ? `<p class="muted">에이전트 요약: ${esc(window.hydTrace ? hydTrace.outBrief(x.result, 200) : String(x.result))}</p>` : ''}
-          <p class="muted">실제 조회 결과: ${esc(x.actual_result || '원문 없음')}</p>${check(x.result_check)}</div></li>`).join('');
+          ${x.result != null ? `<p class="muted">에이전트 요약: ${esc(window.hydTrace ? hydTrace.outBrief(x.result, 200) : String(x.result))}</p>` : ''}
+          ${check(x.result_check)}${UI.raw(UI.clean(x.query), { title: '조회문', lang: /\bMATCH\b/i.test(x.query || '') ? 'cypher' : /\bSELECT\b/i.test(x.query || '') ? 'sql' : '' })}${x.actual_result ? UI.raw(x.actual_result, { title: '실제 조회 결과' }) : '<p class="muted">실제 조회 결과 원문이 남아 있지 않습니다.</p>'}</div></li>`).join('');
       return `<div class="result"><div class="result-label">답</div><div class="prose ask-answer" data-md="${esc(UI.clean(r.answer))}"></div>${check(r.answer_check)}</div>`
         + `<details class="fold" open><summary>근거<span class="muted">실행 기록과 맞은 근거 ${esc(r.verified)}건 · 성공한 조회 ${esc(r.queried)}건</span></summary><div class="fold-body">`
         + (ev ? `<ul class="evid ask-evid">${ev}</ul>` : '<p class="muted">근거로 적은 질의가 없습니다.</p>') + (r.note ? `<p class="muted">고른 근거: ${esc(UI.clean(r.note))}</p>` : '') + '</div></details>';
@@ -168,12 +168,13 @@
     const [label, tone] = STATE[v.state] || [v.state, ''];
     const live = LIVE.has(v.state), calls = (v.tool_calls || []).length;
     // 차례: 질문 → 누가 · 상태 → (도는 동안) 실시간 상자 / (끝난 뒤) 답 → 근거 → 처리 과정(접기)
+    // 처리 건의 단계가 이미 열려 실시간 상자가 과정을 보이는 동안에는 서버의 「아직 질문을 맡지 않았습니다」(상태 waiting 의 글)를 함께 적지 않는다 — 상자가 지금 일어나는 일을 말한다
     return `<div class="ask-q"><div class="ask-bubble">${esc(v.question)}</div><span class="muted">${esc(v.asked_by || '')} · ${esc(UI.dateTime(v.started))}</span></div>
       <section class="panel ask-a">
         <div class="panel-head pane-head"><span class="pane-ic" data-kind="agent">${icon('bot')}</span><div class="pane-title"><h2>${esc(v.agent ? v.agent.name : 'AI 에이전트')}${tag(label, tone)}</h2></div>
           <div class="pane-acts"><a class="btn" data-variant="outline" data-size="sm" href="${esc(v.link)}">처리 건에서 보기${icon('arrow-right')}</a></div></div>
         <div class="panel-sec ask-body">
-          ${live ? `<div data-ask-work>${v.workitem ? '' : hydLive.waitHtml('에이전트가 질문을 받는 중', { since: v.started, hint: '처리 건이 열리고 에이전트가 일을 시작하면 조회 과정이 여기에 한 줄씩 붙습니다.' })}</div>${v.message ? `<p class="typing">${esc(UI.clean(v.message))}</p>` : ''}` : ''}
+          ${live ? `<div data-ask-work>${v.workitem ? '' : hydLive.waitHtml('에이전트가 질문을 받는 중', { since: v.started, hint: '처리 건이 열리고 에이전트가 일을 시작하면 조회 과정이 여기에 한 줄씩 붙습니다.' })}</div>${v.message && !(v.state === 'waiting' && v.workitem) ? `<p class="typing">${esc(UI.clean(v.message))}</p>` : ''}` : ''}
           ${!live && v.state === 'failed' ? alertBox('circle-alert', '답을 받지 못했습니다', esc(UI.clean(v.message || '에이전트 실행이 실패했습니다.')), 'destructive') : ''}
           ${!live && v.state !== 'failed' && !v.result && v.message ? `<p class="muted">${esc(UI.clean(v.message))}</p>` : ''}
           ${resultHtml(v)}

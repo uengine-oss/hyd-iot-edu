@@ -27,24 +27,19 @@
   }
 
   const counts = s => Object.entries(COUNT_WORDS).filter(([k]) => s && s[k]).map(([k, [w, unit]]) => `${w} ${s[k]}${unit}`).join(' · ') || '내가 만든 것 없음(기준 그대로)';
-  // 출발본에는 기본 제공 흐름(시작할 때 설치되는 흐름 — 파일의 배포 줄에 class_flow 표시)의 지금 판본도 담긴다(불러오기가 흐름을 모두 내리고 파일대로 다시 세우기 때문이다).
-  // 서버 요약(summary)은 그것까지 「흐름 3개 · 배포 3건」으로 세므로, 화면은 내가 만든 것과 기본 제공 흐름을 갈라 말한다
-  function bundleCounts(bundle) {
-    const c = bundle.content || {}, base = new Set(((c.deployments || {}).flows || []).filter(d => d.class_flow).map(d => d.definition_id));
-    if (!bundle.content) return counts(bundle.summary);
-    const mine = (c.flows || []).filter(f => !base.has(f.definition_id)), s = { ...bundle.summary, flows: mine.length, flow_versions: mine.reduce((n, f) => n + (f.versions || []).length, 0),
-      deployments: ((c.deployments || {}).flows || []).filter(d => !d.class_flow).length };
-    return counts(s) + (base.size ? ` · 함께 담긴 기본 제공 흐름 ${base.size}개(지금 배포된 판본)` : '');
-  }
-  // [기준으로 되돌리기]가 지우는 것과 남기는 것 — 절 문구와 확인 창이 이 한 곳을 쓴다(서버 config_bundle._reset_steps 가 하는 일 그대로. 서버가 범위를 바꾸면 여기만 고친다)
-  const RESET_REMOVES = '내가 만든 AI 에이전트 · 스킬 · 역할 · 단계 배정 · 도구 서버 · 비밀 값, 내가 가져온 흐름과 그 배포, 끝난 질문 기록, 판단 채점의 정답표와 실행 기록, 에이전트 시험 비교 기록';
+  // 출발본에는 기본 제공 흐름(시작할 때 설치되는 흐름)의 지금 판본도 담긴다(불러오기가 흐름을 모두 내리고 파일대로 다시 세우기 때문이다).
+  // 서버 요약(summary)이 내가 만든 것(flows · flow_versions · deployments)과 기본 제공 흐름(provided_flows)을 갈라 센다 — 화면은 그 수를 그대로 말한다
+  const bundleCounts = bundle => { const s = bundle.summary || {}; return counts(s) + (s.provided_flows ? ` · 함께 담긴 기본 제공 흐름 ${s.provided_flows}개(지금 배포된 판본)` : ''); };
+  // [기준으로 되돌리기]가 지우는 것과 남기는 것 — 절 문구와 확인 창이 이 한 곳을 쓴다. 서버 config_bundle.py 가 하는 일 그대로다: 단계는 RESET_STEPS(지식 → 배포 → 흐름 →
+  // 에이전트 → 도구 서버 → 질문 · 채점 · 시험 기록), 남기는 것은 RESET_KEPT. 서버가 범위를 바꾸면 여기만 고친다. 실제로 지운 것 · 남긴 것은 응답(removed · kept · base_missing)을 그대로 보인다
+  const RESET_REMOVES = '내가 적재한 문서의 지식(기본 제공 판으로 돌아갑니다) · 업무 DB 표 정의 · 화면에서 만든 조치 방법, 내가 만든 AI 에이전트 · 스킬 · 역할 · 단계 배정 · 도구 서버 · 비밀 값, 내가 가져온 흐름과 그 배포, 끝난 질문 기록, 판단 채점의 정답표와 실행 기록, 에이전트 시험 비교 기록';
   const RESET_KEEPS = [
-    ['등록한 문서에서 넣은 지식과 연결한 업무 DB 표 정의', '「지식 › 문서 등록」의 등록 이력에서 묶음마다 되돌립니다'],
-    ['「지식 › 조치 방법」에서 만들거나 고친 조치 방법', '지우는 길이 없습니다. 그 화면에서 다시 고칩니다'],
-    ['모의 업무 시스템에 생긴 발주 · 정비 요청', '「유압 설비 › 결함 시뮬레이션」에서 그 상황의 [초기화]로 되돌립니다'],
-    ['기본 제공 흐름과 그 처리 건, 처리 건 기록', '그대로 둡니다'],
+    ['기본 제공 에이전트 · 스킬 · 역할 · 도구 서버 · 흐름과 기본 제공 문서의 지식', '그대로 둡니다'],
+    ['처리 건과 처리 건 기록', '그대로 둡니다. 지운 흐름으로 끝난 처리 건만 목록에서 숨깁니다'],
+    ['모의 업무 시스템에 생긴 발주 · 정비 요청과 가상 설비의 상태', '「유압 설비 › 결함 시뮬레이션」의 [초기화]로 되돌립니다'],
   ];
-  const RESET_NOTE = '이 단추만으로 처음 상태가 되지는 않습니다.';
+  const RESET_NOTE = '내가 만든 구성과 넣은 지식은 처음 상태가 됩니다. 처리 건 기록과 모의 업무 시스템의 기록은 남습니다.';
+  const SERVERS = 'tool_servers.register';               // 도구 서버를 만들 수 없는 단계에서는 되돌리기가 내 도구 서버와 비밀 값을 지우지 않는다(서버 mcp_reset 의 locked)
   // 되돌리는 범위 — 「내가 만든 것을 지운다」는 포털에서 이 한 곳뿐이다(흐름 · 에이전트 · 도구 연결 화면은 여기로 보낸다). 종류 하나만 되돌리는 것은 그 종류의 서버 API 를 그대로 부른다.
   // [키, 이름, 지우는 것과 남는 것, 요청, 결과 문장(응답 → 글), 수업 경계 행동 키(막힌 단계면 단추가 꺼지고 까닭이 보인다)]
   const josa = (word, pair) => window.hydWords.josa(word, pair);
@@ -136,6 +131,14 @@
       }
       $('cfgImportResult').innerHTML = parts.join('');
     }
+    // 되돌리기 결과: 실제로 지운 것(removed) · 남긴 것(kept) · 지금 없는 기본 제공 문서(base_missing)를 서버가 준 말 그대로. 단계별 결과는 접어 둔다
+    function resetResult(r) {
+      const removed = r.removed || [], kept = r.kept || [], missing = r.base_missing || [], steps = r.steps || [];
+      return block('지운 것', removed.length ? lines('check', removed.map(x => [x, ''])) : '<p class="muted">지울 것이 없었습니다. 기록(끝난 질문 · 판단 채점 · 시험 비교)만 비웠습니다.</p>')
+        + block('남긴 것', lines('circle-dashed', kept.map(x => [x, ''])))
+        + (missing.length ? `<div class="alert" data-reset-missing>${UI.icon('triangle-alert')}<h2>기본 제공 문서 ${missing.length}개의 지식이 지금 없습니다</h2><section>${H(missing.join(', '))} — 시작 파일을 다시 실행하면 다시 적재됩니다.</section></div>` : '')
+        + (steps.length ? UI.fold(`단계별 결과<span class="muted num">${steps.length}</span>`, lines('check', steps.map(s => [s.label, s.text]))) : '');
+    }
     let importing = false;                                // 불러오기 · 건너뛰고 불러오기는 한 번에 하나(두 번 누름)
     async function run(skip) {
       if (!pending) { msg('cfgImportMsg', '출발본 파일을 고르세요', true); return; }
@@ -172,8 +175,10 @@
     const scopeOf = () => SCOPES.find(x => x[0] === $('cfgResetScope').value) || SCOPES[0];
     const paintScope = ev => {
       const [key, , what, , , action] = scopeOf(), why = action ? hydCourseAccess.blocked(action) : '';
+      const locked = key === 'all' ? hydCourseAccess.blocked(SERVERS) : '';      // 전체 되돌리기는 막히지 않는다 — 그 단계에서는 도구 서버와 비밀 값만 남긴다
       $('cfgResetWhat').innerHTML = key === 'all'
-        ? `<p class="muted"><b>지우는 것</b> ${H(what)}.</p><p class="muted"><b>남는 것</b> ${H(RESET_NOTE)}</p><ul class="evid" data-reset-keeps>${RESET_KEEPS.map(([w, where]) => `<li>${UI.icon('circle-dashed')}<span><b>${H(w)}</b> ${H(where)}</span></li>`).join('')}</ul>`
+        ? `<p class="muted"><b>지우는 것</b> ${H(what)}.</p><p class="muted" data-reset-keeps><b>남는 것</b> ${H(RESET_KEEPS.map(([w]) => w).join(', '))}.</p>`
+          + (locked ? `<p class="muted" data-reset-locked role="status" title="${H(locked)}">지금은 도구 서버를 등록할 수 없는 단계라 내 도구 서버와 비밀 값도 남깁니다.</p>` : '')
         : `<p class="muted">${H(what)}</p>` + (why ? `<p class="muted" data-tone="danger" role="status">${H(why)}</p>` : '');
       $('cfgReset').disabled = !!why;
       if (ev) { msg('cfgResetMsg', ''); $('cfgResetResult').innerHTML = ''; }      // 범위를 바꿨을 때만 앞 결과를 비운다(수업 단계 정보가 다시 읽힐 때는 그대로 둔다)
@@ -195,7 +200,7 @@
         return;
       }
       const yes = await UI.confirm({ title: '기준으로 되돌릴까요?', ok: '되돌리기', danger: true,
-        body: `지우는 것: ${RESET_REMOVES}. 내가 가져온 흐름으로 끝난 처리 건은 [처리 건] 목록에서 숨겨집니다.\n\n남는 것 — ${RESET_NOTE}\n${RESET_KEEPS.map(([what, where]) => `· ${what} — ${where}`).join('\n')}\n\n먼저 출발본으로 받아 두면 구성은 다시 불러올 수 있습니다(비밀 값과 기록은 파일에 없습니다).` });
+        body: `지우는 것: ${RESET_REMOVES}.\n\n남는 것:\n${RESET_KEEPS.map(([what, where]) => `· ${what} — ${where}`).join('\n')}${hydCourseAccess.blocked(SERVERS) ? '\n· 내 도구 서버와 비밀 값 — 지금은 도구 서버를 등록할 수 없는 단계라 지우지 않습니다' : ''}\n\n${RESET_NOTE} 먼저 출발본으로 받아 두면 구성은 다시 불러올 수 있습니다(지식 · 비밀 값 · 기록은 파일에 없습니다).` });
       if (!yes) return;
       const end = hydLive.busy($('cfgReset'), '되돌리는 중');
       $('cfgResetMsg').textContent = '';
@@ -203,13 +208,17 @@
       track.mount($('cfgResetResult'));
       try {
         const { body } = await call('/api/config/reset', { by: actor(), request_id: track.id });
-        msg('cfgResetMsg', body.message); $('cfgResetResult').innerHTML = block('지운 것', lines('check', body.steps.map(s => [s.label, s.text])));
+        msg('cfgResetMsg', '기준으로 되돌렸습니다'); $('cfgResetResult').innerHTML = resetResult(body);
         UI.toast(body.message, { tone: 'ok' });
         window.dispatchEvent(new CustomEvent('hyd-config-reset', { detail: { scope: 'all' } }));
       } catch (e) {
         msg('cfgResetMsg', e.message, true);
         const d = e.detail || {};
-        $('cfgResetResult').innerHTML = d.blocking ? block('막은 것', lines('x', d.blocking.map(b => [b.reason, '']))) : d.done ? block('멈추기 전에 지운 단계', lines('check', d.done.map(x => [x.label, ''])) || '<p class="muted">없음</p>') : '';
+        // 지식 되돌리기가 도중에 멈췄으면 그때까지 되돌린 것(partial)도 말한다 — 「아무것도 바뀌지 않았다」로 읽히지 않게
+        const p = d.partial || {}, part = [[(p.documents || []).length, '적재한 문서 판', '개'], [(p.skills || []).length, '화면에서 만든 조치 방법', '개'], [(p.ddl_batches || []).length, '업무 DB 표 정의 묶음', '개']].filter(([n]) => n).map(([n, w, u]) => [`${w} ${n}${u}`, '']);
+        $('cfgResetResult').innerHTML = d.blocking ? block('막은 것', lines('x', d.blocking.map(b => [b.reason, ''])))
+          : (d.done ? block('멈추기 전에 지운 단계', lines('check', d.done.map(x => [x.label, x.text || ''])) || '<p class="muted">없음</p>') : '')
+            + block('멈춘 단계에서 이미 되돌린 것', lines('circle-dot', part));
       } finally { track.stop(); end(false); }
     });
   }

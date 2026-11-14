@@ -231,3 +231,27 @@ def test_결함_시뮬레이션은_범위를_한_번만_말하고_단추가_하�
     # 결함이 걸린 채 새 경보가 나지 않는 상황이 되면 그때만 한 줄
     w.units['HYD-01'] = unit('HYD-01', ts1=50.0, health=0.55)
     page.wait_for_function("document.querySelector(\"#units .unit[data-asset='HYD-01'] .repeat-guide\").textContent.includes('쿨러 복구')", timeout=8000)
+
+
+def test_진행_중인_처리_건이_있는_업무_사건의_시작_단추는_꺼져_있고_눌러도_요청을_보내지_않고_까닭을_말한다(world):
+    """한 바퀴 23: 정기 정비 처리 건이 진행 중인데 [정기 정비 시작]이 켜져 있어 누르면 409 가 났다. 누를 수 없으면 꺼 두고 까닭을 한 줄로 말하며,
+    그 건으로 가는 길(카드 아래 「처리 건에서 보기」)을 둔다. 사건 줄의 pattern 으로 이 경보 종류의 사건만 잇는다."""
+    w, page = world, world.page
+    running = {'instance': 'c3_pm.1', 'status': 'RUNNING', 'started_at': '2026-11-14T00:08:43Z', 'ended_at': None, 'outcome': None}
+    scen = {'key': 'B', 'asset': 'HYD-02', 'pattern': 'PM_DUE', 'label': '정기 점검 도래', 'button': '정기 점검', 'title': '정기 정비', 'alert': True,
+            'facts': {'pm_since_h': 1950, 'pm_interval_h': 2000, 'pm_due_in_h': 50}, 'running': running, 'last': running, 'events': []}
+    posts = []
+    page.on('request', lambda r: posts.append(r.url) if r.method == 'POST' else None)
+    w.extra['/svc/process/api/scenario/status'] = {'scenarios': {'B': scen}, 'presses': {}}
+    orig = w.answer
+    page.unroute('**/*')
+    page.route('**/*', lambda route: route.fulfill(status=200, content_type='application/json', body=json.dumps(w.extra['/svc/process/api/scenario/status']))
+               if route.request.url.split('?')[0].endswith('/api/scenario/status') else orig(route))
+    page.goto(w.base + '/index.html#/scenario')
+    start = page.locator("#units .unit[data-asset='HYD-02'] button[data-act='biz-start']")
+    start.wait_for(timeout=8000)
+    assert start.get_attribute('aria-disabled') == 'true' and '진행 중인 처리 건이 있어' in start.get_attribute('data-tooltip')
+    assert page.locator("#units .unit[data-asset='HYD-02'] .unit-go").is_visible()      # 그 건으로 가는 길
+    start.click(force=True)
+    page.wait_for_function("document.querySelector('#scenarioMsg').textContent.includes('진행 중인 처리 건이 있어')", timeout=8000)
+    assert not any('/api/scenario/B/start' in u for u in posts), posts                   # 서버에 409 를 받으러 가지 않는다

@@ -96,7 +96,7 @@
   const foot = (button, msg = '') => `<footer class="form-foot">${button}</footer>${msg}`;
   function render() {
     if (!W.el) return;
-    const pats = (W.patterns || []).map(p => `<option value="${esc(p.code)}" ${p.code === W.pattern ? 'selected' : ''}>${esc(p.name)}${p.failureModes && p.failureModes.length ? ' → ' + esc(p.failureModes.join(', ')) : ''}</option>`).join('');
+    const pats = UI.patternOptions(W.patterns, W.pattern), patWhy = UI.patternWhy(W.patterns, W.pattern);      // 원인 진단 대상이 아닌 패턴은 서버가 준 까닭을 칸 아래에 보이고 불러오지 않는다
     const v = W.view;
     const stale = v && W.loaded && (W.loaded.asset !== W.asset || W.loaded.pattern !== W.pattern);
     const count = { values: Object.keys(W.values).length || null, rules: ruleCount() || null };
@@ -105,8 +105,8 @@
     let left = `<div class="panel-head"><div><h2>시험 조건</h2></div></div><div class="panel-sec">` +
       UI.section('시험 기준',
         UI.field({ label: '설비', input: `<select id="wiAsset" ${W.assets && W.assets.length ? '' : 'disabled'}>${(W.assets || []).map(a => `<option ${a === W.asset ? 'selected' : ''}>${esc(a)}</option>`).join('')}</select>` }) +
-        UI.field({ label: '이상 패턴', input: `<select id="wiPattern">${pats}</select>`, hint: '판단을 한 번 계산해 기준으로 삼습니다. 바꾸는 값은 저장되지 않습니다.' })) +
-      foot(`<button type="button" class="btn"${loadMain ? '' : ' data-variant="outline"'} id="wiLoad" ${W.busy || !W.pattern || !W.asset ? 'disabled' : ''}>${UI.icon(v ? 'refresh-cw' : 'play')}${v ? '다시 불러오기' : '불러오기'}</button>`) +
+        UI.field({ label: '이상 패턴', input: `<select id="wiPattern">${pats}</select>`, hint: patWhy || '판단을 한 번 계산해 기준으로 삼습니다. 바꾸는 값은 저장되지 않습니다.' })) +
+      foot(`<button type="button" class="btn"${loadMain ? '' : ' data-variant="outline"'} id="wiLoad" ${W.busy || !W.pattern || !W.asset || patWhy ? 'disabled' : ''}>${UI.icon(v ? 'refresh-cw' : 'play')}${v ? '다시 불러오기' : '불러오기'}</button>`) +
       (stale ? note(`설비나 이상 패턴을 바꿨습니다. 오른쪽은 앞서 불러온 ${esc(W.loaded.asset)}의 결과이며, [다시 불러오기]를 눌러야 바뀝니다.`, ' role="status"') : '') + `</div>`;
     if (v) left += `<div class="panel-sec"><fieldset class="fieldset"><legend>바꿔 볼 것</legend><div role="group">` +
       UI.viewTabs(TABS.map(([k, l]) => [k, l, count[k] || null]), W.tab, 'data-wi-tab', { label: '바꿔 볼 것', small: true }) +
@@ -333,15 +333,15 @@
     q('#wiWeeks')?.addEventListener('click', runWeeks);
   }
 
-  // 조치 후보 카드에 붙는 손익 접기 (enterprise.js cardHtml). 합계는 접힌 줄에 바로 보인다.
-  function moneyFold(m) {
+  // 조치 후보의 근거(enterprise.js optionDetail)에 붙는 손익 표 — 접지 않는다. 합계가 머리에 있다
+  function moneyHtml(m) {
     const rows = m.items.map(i => `<tr><td>${esc(i.label)}<p class="muted">${esc(i.formula || i.missing || '')}</p></td>` +
       `<td class="num">${i.value_won == null ? '<span class="muted">미확인</span>' : esc(won(i.value_won))}</td><td class="muted">${sourceLines(i.sources)}</td></tr>`).join('');
-    return UI.fold(`예상 손익 <b class="num">${esc(won(m.total_won))}</b>${m.complete || m.total_won == null ? '' : ' · 일부 미확인'}`,
+    return `<h4 class="opt-money">예상 손익 <b class="num">${esc(won(m.total_won))}</b>${m.complete || m.total_won == null ? '' : ' <span class="muted">일부 미확인</span>'}</h4>` +
       `<div class="table-container"><table class="table"><thead><tr><th>항목 · 계산</th><th class="num">손익</th><th>출처</th></tr></thead><tbody>${rows}</tbody></table></div>` +
-      `<p class="muted">${esc(m.basis || '')} <a href="#/whatif">조건별 손익에서 값 바꿔 보기 →</a></p>`);
+      `<p class="muted">${esc(m.basis || '')} <a href="#/whatif">조건별 손익에서 값 바꿔 보기 →</a></p>`;
   }
 
-  window.hydWhatif = { mount, failed, moneyFold };
+  window.hydWhatif = { mount, failed, moneyHtml };
   // 셸(shell.js MOUNTS.whatif)이 #/whatif 를 처음 열 때 mount(#whatifView)를 부른다.
 })();

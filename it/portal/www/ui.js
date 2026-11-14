@@ -216,7 +216,9 @@ const UI = {
   idText(text) { return this.words(String(text ?? '').replace(this.ID_RE, m => this.names[m] || m)); },
   // A161-U1: 화면에 쓰지 않는 말(데이터 · 온톨로지 원문에 남은 것) → 화면 말. "정비창"은 "예정된 정비 시간"으로 부른다(사용자 결정 2026-10-09).
   // 문장 속 경보 패턴 코드(그래프 규칙 설명 「COOLER_DEGRADATION 경보에서 …」 등)도 사람 이름으로 — 표에 있는 코드만 바꾼다
-  words(text) { return String(text ?? '').replace(/야간\s*정비창/g, '야간 정비 시간').replace(/정비창/g, '예정된 정비 시간').replace(/\b[A-Z][A-Z_]{3,}[A-Z]\b/g, code => this.patterns[code] || code); },
+  // 옛 판본으로 돈 처리 건의 저장된 기록에만 남아 있는 말(「수업 버튼 [쿨러 열화 주입]」 · 「재관측」)도 여기서 지금 화면 말로 읽는다 — 단계 기록 · 실시간 기록 · 단계 표가 모두 이 한 곳을 거친다(새 서버는 이 말을 내지 않는다)
+  words(text) { return String(text ?? '').replace(/수업 버튼\s*(?=\[)/g, '결함 시뮬레이션 ').replace(/수업 버튼/g, '결함 시뮬레이션 단추').replace(/효과 재관측/g, '효과 확인').replace(/재관측/g, '효과 확인')
+    .replace(/야간\s*정비창/g, '야간 정비 시간').replace(/정비창/g, '예정된 정비 시간').replace(/\b[A-Z][A-Z_]{3,}[A-Z]\b/g, code => this.patterns[code] || code); },
   // 이름 사전 읽기: 실패를 삼키지 않는다 — 머리에 한 번 알리고 10초 뒤 다시 읽는다(그동안 원래 id · 「표시 이름 미등록」이 보일 수 있다, W1-28)
   async loadNames() {
     try {
@@ -335,6 +337,18 @@ const UI = {
   doerOf(w) { return w.agent_orch === 'cliagents' || w.agent_mode ? 'agent' : !w.agent_orch && !w.agent_mode ? 'human' : 'system'; },
   // 처리 건 작업 행을 일어난 차례로: 시작 시각 → 끝 시각 → 같은 순간이면 흐름 순서(서버 view.flow_order = 정의의 흐름 차례 — 단계 id → 순번).
   // 한 트랜잭션에서 연달아 끝난 시스템 단계(정비 오더 등록 → 결과 보고)는 시각이 같다 — 시각만으로는 순서가 거꾸로 보일 수 있다(W1-01).
+  /* 가지 않은 길의 단계: 처리 건이 열릴 때(다시 수행이면 새 차수가 열릴 때) 예정으로 만들어졌다가 한 번도 시작되지 않은 채 닫힌 작업 행.
+     처리 건이 다른 갈래로 끝났거나(반려 · 다른 조치 종류) 다시 수행이 새 차수를 열어 닫힌 것이라, 실행된 일도 실패도 아니다 — 단계 기록 · 진행 길 · 단계 표가 모두 이 한 판정을 쓴다.
+     판정: 취소됨 + 실행 기록 없음 + 워커가 가져간 적 없음 + 결과 없음 + 시작 시각이 그 차수의 줄들이 만들어진 순간 그대로(시작되면 시작 시각이 그때로 바뀐다).
+     서버가 적는 까닭 글(「cancelled: …」 · 「취소: …」)의 말에 기대지 않는다 — 그 글이 한국어로 바뀌자 옛 판정이 모두 빗나가 취소 줄이 「명령을 보냈습니다」로 읽혔다 */
+  neverReached(w, workitems, hasEvents = false) {
+    if (!w || w.status !== 'CANCELLED' || hasEvents || (w.claim_count || 0) > 0) return false;
+    const out = w.output; if (out && typeof out === 'object' ? Object.keys(out).length : out) return false;
+    const gen = w.generation || 0, at = x => Date.parse(x || '') || 0;
+    const mine = at(w.start_date); if (!mine) return true;      // 시작 시각이 없으면 시작된 적이 없다
+    const born = Math.min(...(workitems || [w]).filter(x => (x.generation || 0) === gen).map(x => at(x.start_date)).filter(Boolean));
+    return mine === born;
+  },
   workitemOrder(view) {
     const rank = new Map(Object.entries(view?.flow_order || {}));
     const at = x => { const t = x ? Date.parse(x) : NaN; return Number.isFinite(t) ? t : 9e15; };
@@ -369,6 +383,14 @@ const UI = {
   },
   // 표에 없는 코드(PBL 에서 학생이 만든 경보 등)는 지어내지 않고 원래 코드를 그대로 둔다
   patternName(code) { return code ? this.patterns[code] || this.idText(code) : ''; },
+  // 이상 패턴 고르기 칸의 선택지(규칙 판단 · 조건별 손익 · 정답표가 함께 쓴다). 서버가 줄마다 판단할 수 있는지(judgeable)와 못 하는 까닭(reason)을 준다 —
+  // 화면이 짐작하지 않고 그 칸으로 가른다: 판단할 수 있는 패턴이 먼저, 판단할 수 없는 패턴은 묶음 아래에(고르면 patternWhy 의 까닭이 칸 아래에 보인다)
+  patternOptions(list, selected) {
+    const opt = p => `<option value="${esc(p.code)}"${p.code === selected ? ' selected' : ''}>${esc(p.name)}${p.failureModes && p.failureModes.length ? ' → ' + esc(p.failureModes.join(', ')) : ''}</option>`;
+    const ok = (list || []).filter(p => p.judgeable !== false), no = (list || []).filter(p => p.judgeable === false);
+    return ok.map(opt).join('') + (no.length ? `<optgroup label="원인 진단 대상이 아님">${no.map(opt).join('')}</optgroup>` : '');
+  },
+  patternWhy(list, code) { const p = (list || []).find(x => x.code === code); return p && p.judgeable === false ? p.reason || '이 이상 패턴은 원인을 진단할 수 없습니다' : ''; },
 
   /* ---------- 수행 주체 (명칭표 "행위자") ---------- */
   // 시스템(sys:* · actr:* · 감지기) 이름은 plainWords W.system 한 길(W2-03 — 「정비 시스템」/「정비 관리」 두 벌이었다) — 그래프 id 의 이름은 names.json(portal_names.PLAIN). 여기는 사람 역할 · 수행 갈래만
@@ -464,7 +486,14 @@ const UI = {
       tag === 'input' && /\btype="(checkbox|radio|range|file|hidden)"/.test(rest) ? all : `<${tag} class="${tag}"${rest}>`);
   },
   field({ label, input, hint = '', required = false, cls = '', error = '' }) {
-    const inputId = /\bid="([^"]+)"/.exec(input)?.[1];
+    // 이름표는 늘 입력 칸과 이어진다(for/id). 입력에 id 가 없으면 이름표와 그 칸의 data-* 로 정한 id 를 붙인다 — 다시 그려도 같은 id 라 HTML 이 달라지지 않는다
+    let inputId = /(?:^|\s)id="([^"]+)"/.exec(input)?.[1];
+    if (!inputId && /<(input|select|textarea)\b/.test(input)) {
+      const seed = String(label) + '|' + ((/\sdata-[\w-]+="[^"]*"/.exec(input) || [''])[0]);
+      let h = 0; for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+      inputId = 'fld-' + h.toString(36);
+      input = String(input).replace(/<(input|select|textarea)\b/, `<$1 id="${inputId}"`);
+    }
     // 도움말 · 오류 줄의 field-hint · field-error 는 모양이 아니라 찾는 이름이다(flows.js idField 가 도움말을 바꿔 쓴다)
     return `<div role="group" class="field${cls ? ' ' + cls : ''}"${error ? ' data-invalid' : ''}><label${inputId ? ` for="${inputId}"` : ''}>${esc(label)}${required ? ' <span aria-hidden="true">*</span>' : ''}</label>${this.kitInput(input)}${error ? `<p class="field-error" role="alert">${esc(error)}</p>` : hint ? `<p class="field-hint">${esc(hint)}</p>` : ''}</div>`;
   },
@@ -476,6 +505,14 @@ const UI = {
   fold(summary, body, { open = false, cls = '' } = {}) {
     const extra = cls.split(/\s+/).filter(c => c && c !== 'small').join(' ');
     return `<details class="fold${extra ? ' ' + extra : ''}" ${open ? 'open' : ''}><summary>${summary}</summary><div class="fold-body">${body}</div></details>`;
+  },
+  /* 주기적으로 다시 그리는 자리(처리 건의 복구 묶음 — 2초마다)의 HTML 바꾸기: 사람이 펴거나 접은 접기는 다시 그려도 그대로 둔다.
+     접기의 열쇠는 data-k, 없으면 요약 줄의 첫 글. 처음 나오는 접기만 그 HTML 의 open 을 따른다. 전에는 다시 그릴 때마다 기본값으로 돌아가 학생이 연 [다시 수행]이 2초 안에 닫혔다 */
+  swap(host, html) {
+    const key = d => d.dataset.k || (d.querySelector('summary')?.firstChild?.textContent || '').trim();
+    const open = new Map([...host.querySelectorAll('details')].map(d => [key(d), d.open]));
+    host.innerHTML = html;
+    host.querySelectorAll('details').forEach(d => { const k = key(d); if (open.has(k)) d.open = open.get(k); });
   },
   // empty: 빈 상태 하나(키트 .empty). 두 가지로 부른다
   //   empty({ icon, title, sub, action, cls, attrs }) — 화면 · 판의 빈 상태: 아이콘 + 제목 + 설명(두 줄까지) + 채울 단추 하나.

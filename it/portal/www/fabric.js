@@ -27,20 +27,26 @@
   }
 
   /* ---------- 지금 상태 ---------- */
-  // 숫자 타일 한 줄: 원천마다 연결됐는지, 클래스가 표 · 열에 닿는지. 응답 전에는 읽는 중, 실제로 못 읽었을 때만 확인 실패
-  // (화면을 열 때마다 0.1초씩 실패가 보였다 — 1회차 04 촬영 검토)
+  // 숫자 타일 둘: 원천 몇 개가 연결됐는지, 지식 지도의 항목이 표 · 열에 닿는지. 숫자 자리에는 숫자만 둔다(원천마다 「연결됨」을 큰 글로 되풀이하지 않는다) —
+  // 연결되지 않았거나 읽기 전용이 아닌 원천만 이름과 까닭을 보조 줄에 적는다. 응답 전에는 읽는 중, 실제로 못 읽었을 때만 확인 실패
   function summary() {
-    const tile = (tone, name, value, sub) => `<div class="stat"><div class="stat-label">${esc(name)}</div><div class="stat-value">${dot(tone)}${esc(value)}</div><div class="stat-note">${sub}</div></div>`;
-    const tiles = (S.sources || []).map(s => tile(s.ok ? (s.read_only ? 'ok' : 'warn') : 'danger', `${s.label} · ${s.engine}`, s.ok ? '연결됨' : '연결 실패',
-      s.ok ? `표 ${s.tables.length}개 · ${s.read_only ? '읽기 전용 확인됨' : '읽기 전용이 아님'}` : esc(s.reason)));
-    if (!S.sources) tiles.push(S.errors.sources ? tile('danger', '원천', '확인 실패', esc(S.errors.sources) + ' — 화면을 다시 열면 다시 읽습니다') : tile('', '원천', '읽는 중…', '업무 DB와 시계열 DB의 연결을 확인하고 있습니다'));
+    const tile = (name, value, sub, tone) => `<div class="stat"><div class="stat-label">${esc(name)}</div><div class="stat-value">${value}</div><div class="stat-note"${tone ? ` data-tone="${tone}"` : ''}>${sub}</div></div>`;
+    const big = (n, unit) => `<span class="num">${esc(n)}</span><small>${esc(unit)}</small>`;
+    const tiles = [];
+    if (S.sources) {
+      const bad = S.sources.filter(x => !x.ok), rw = S.sources.filter(x => x.ok && !x.read_only);
+      if (!S.sources.length) tiles.push(tile('원천', big(0, '개'), '등록된 원천이 없습니다 — 처리 서비스의 원천 설정을 확인하세요', 'warn'));
+      else tiles.push(tile('원천', big(`${S.sources.length - bad.length} / ${S.sources.length}`, '연결됨'),
+        bad.length ? esc(bad.map(x => `${x.label}: ${x.reason}`).join(' · ')) : rw.length ? esc(`읽기 전용이 아닌 원천: ${rw.map(x => x.label).join(', ')}`) : esc(S.sources.map(x => x.label).join(' · ') + ' — 모두 읽기 전용'),
+        bad.length ? 'danger' : rw.length ? 'warn' : ''));
+    } else tiles.push(S.errors.sources ? tile('원천', '확인 실패', esc(S.errors.sources) + ' — 화면을 다시 열면 다시 읽습니다', 'danger') : tile('원천', '<div class="skeleton" style="height:22px;width:90px"></div>', '업무 DB와 시계열 DB의 연결을 확인하고 있습니다'));
     const cls = S.links ? S.links.classes : [];
     const ok = cls.filter(c => c.state === 'OK').length;
     const unbound = S.links ? S.links.inputs.filter(i => i.state === 'UNBOUND').length : 0;
-    // 지식 지도의 항목 종류(설비 · 센서 · 판단 입력 …)가 원천의 표 · 열에 닿는가. 판단 입력 가운데 표 · 열을 정하지 않은 것이 있으면 초록이 아니다(「다 좋다」로 읽히지 않게)
-    tiles.push(S.links ? tile(S.links.graph.ok && ok === cls.length && !unbound ? 'ok' : 'warn', '지식 지도 ↔ 표 · 열', unbound ? `판단 입력 ${unbound}개 미연결` : `${ok} / ${cls.length} 연결됨`,
-        S.links.graph.ok ? `항목 종류 ${cls.length}개 가운데 ${ok}개가 원천에 닿습니다` : esc(S.links.graph.reason))
-      : S.errors.links ? tile('danger', '지식 지도 ↔ 표 · 열', '확인 실패', esc(S.errors.links) + ' — 화면을 다시 열면 다시 읽습니다') : tile('', '지식 지도 ↔ 표 · 열', '읽는 중…', '지식 지도의 항목과 원천의 표를 대조하고 있습니다'));
+    // 지식 지도의 항목 종류(설비 · 센서 · 판단 입력 …)가 원천의 표 · 열에 닿는가. 판단 입력 가운데 표 · 열을 정하지 않은 것이 있으면 그 수를 말한다(「다 좋다」로 읽히지 않게)
+    tiles.push(S.links ? tile('지식 지도 ↔ 표 · 열', unbound ? big(unbound, '개 판단 입력 미연결') : big(`${ok} / ${cls.length}`, '연결됨'),
+        S.links.graph.ok ? `항목 종류 ${cls.length}개 가운데 ${ok}개가 원천에 닿습니다` : esc(S.links.graph.reason), S.links.graph.ok ? (unbound ? 'warn' : '') : 'danger')
+      : S.errors.links ? tile('지식 지도 ↔ 표 · 열', '확인 실패', esc(S.errors.links) + ' — 화면을 다시 열면 다시 읽습니다', 'danger') : tile('지식 지도 ↔ 표 · 열', '<div class="skeleton" style="height:22px;width:90px"></div>', '지식 지도의 항목과 원천의 표를 대조하고 있습니다'));
     return `<div class="stats fab-stats" aria-label="원천과 연결의 지금 상태">${tiles.join('')}</div>`;
   }
 
@@ -53,14 +59,16 @@
   function joinTab() {
     const opts = [['asset', '설비 하나로 두 원천 값 합치기'], ...S.queries.map(q => [q.id, q.title])];
     const q = S.queries.find(x => x.id === S.query);
-    const form = `<div class="fab-in">` + UI.section('조건',
-      UI.field({ label: '설비', input: `<input id="fabAsset" list="fabAssets" value="${esc(S.asset)}"><datalist id="fabAssets">${assetCodes().map(c => `<option value="${esc(c)}">`).join('')}</datalist>` }) +
+    // 설비는 고르기 칸이다(지식 지도에 이어진 업무 DB 의 설비 코드). 목록을 못 읽었으면 적는 칸으로 둔다
+    const codes = assetCodes(), assetInput = codes.length ? `<select id="fabAsset">${[...new Set([S.asset, ...codes])].map(c => `<option${c === S.asset ? ' selected' : ''}>${esc(c)}</option>`).join('')}</select>`
+      : `<input id="fabAsset" value="${esc(S.asset)}">`;
+    const form = `<form class="panel io-in" aria-label="조건" onsubmit="return false"><div class="panel-head"><div><h2>조건</h2></div></div><div class="panel-sec"><div class="io-fields">` +
+      UI.field({ label: '설비', input: assetInput }) +
       UI.field({ label: '질문', input: `<select id="fabQuery">${opts.map(([k, l]) => `<option value="${esc(k)}"${k === S.query ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>`,
                  error: S.errors.queries ? `준비된 질문 목록을 읽지 못했습니다 — ${S.errors.queries}` : '',
-                 hint: q ? q.question : '업무 DB에서 설비 코드로 이어진 표와 시계열 DB의 태그별 최신값을, 어느 원천에서 왔는지와 함께 모읍니다' })) +
-      `<footer class="form-foot"><button type="button" class="btn" id="fabRun"${S.busy ? ' disabled aria-busy="true"' : ''}>${S.busy ? '읽는 중…' : UI.icon('database') + '묶어 보기'}</button></footer>` +
-      `<p class="muted">읽기 전용 계정으로만 조회합니다. 조회 한 번은 5초까지이고 행 수 제한이 있습니다.</p></div>`;
-    return `<div class="fab-io">${form}<div class="fab-out" id="fabResult">${result()}</div></div>`;
+                 hint: q ? q.question : '업무 DB와 시계열 DB의 값을, 어느 원천에서 왔는지와 함께 모읍니다.' }) + `</div>` +
+      `<footer class="form-foot"><button type="button" class="btn" id="fabRun"${S.busy ? ' disabled aria-busy="true"' : ''}>${UI.icon('database')}${S.busy ? '읽는 중' : '묶어 보기'}</button></footer></div></form>`;
+    return `<div class="io">${form}<div class="io-out fab-out" id="fabResult">${result()}</div></div>`;
   }
   // 결과의 차례: 무엇을 물었나(결론 한 문장) → 읽은 값 표 → 접기(실행한 조회문과 받은 행)
   function result() {
@@ -82,9 +90,9 @@
     const got = r.answer.filter(a => a.value != null), inputs = r.answer.filter(a => a.inputs && a.inputs.length || a.klass === 'InputData');
     const main = r.query === 'asset' ? `${r.asset}의 값 ${got.length}개를 두 원천에서 읽었습니다${inputs.length ? ` — 그 가운데 ${inputs.length}개가 AI 판단의 입력으로 쓰입니다` : ''}`
       : got.length === r.answer.length ? `물은 항목 ${r.answer.length}개의 값을 모두 읽었습니다` : `물은 항목 ${r.answer.length}개 가운데 ${got.length}개만 값이 있습니다`;
-    return `<div class="result"><div class="result-label">${esc(r.question || r.title)}</div><div class="result-main">${esc(main)}</div>` +
-      `<p class="result-sub">${esc(r.asset)} · ${when(r.at)} · 읽은 원천 ${esc(used)} · 조회마다 최대 ${r.row_limit}행${r.partial ? ' · 일부만 읽었습니다' : ''}</p></div>` +
-      warn + notes + answer + UI.fold(`실행한 조회<span class="muted">SQL · 받은 행 · ${r.parts.length}개</span>`, parts);
+    return `<section class="panel"><div class="panel-head"><div><div class="result-label">${esc(r.question || r.title)}</div><h2>${esc(main)}</h2>` +
+      `<p>${esc(r.asset)} · ${when(r.at)} · 읽은 원천 ${esc(used)} · 조회마다 최대 ${r.row_limit}행(읽기 전용, 5초 제한)${r.partial ? ' · 일부만 읽었습니다' : ''}</p></div></div>` +
+      `<div class="panel-sec fab-answer">${warn}${notes}${answer}</div><div class="panel-sec">${UI.fold(`실행한 조회<span class="muted num">${r.parts.length}</span>`, parts)}</div></section>`;
   }
   function partTable(r, a) {
     const p = r.parts.find(x => x.id === a.part);

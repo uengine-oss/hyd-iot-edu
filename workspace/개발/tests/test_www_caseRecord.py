@@ -116,3 +116,56 @@ def test_검수에서_일부가_불합격인_입고는_정상이_아니라_기�
             'output': {'received': received, 'goods_receipt': {'ref': 'GR-1', 'detail': '씰 키트 6개 가운데 4개 입고', 'after': {'rejected_qty': rejected}}}}]
     got = run(FILES, "const s = hydRecord.build(DATA, { agents: [], people: [] }, []).steps.find(s => s.title === '입고 확인'); out([s.type, s.state || 'ok', s.sentence])", view(wis, ['T_gr']))
     assert got[0] == 'check' and got[1] == state and word in got[2], got
+
+
+def test_잘려_온_도구_결과는_JSON_오류로_읽지_않고_보관된_전체_결과를_기다리며_정말_못_읽는_결과만_그_까닭을_적는다():
+    """워커는 4,000자를 넘는 도구 결과를 잘라 보내고(output_truncated) 전체는 따로 보관한다(full_output). 실행 기록의 한 줄이 잘린 미리보기를 JSON 으로
+    읽어, 성공한 줄에 「구조화 응답을 JSON으로 읽을 수 없습니다」가 붙었다(화면 정돈 2단계는 그 말을 끝난 줄에서 숨기기만 했다)."""
+    def ev(kind, tid, **data):
+        return {'id': f'{kind}-{tid}', 'event_type': kind, 'timestamp': T, 'proc_inst_id': 'c.1', 'todo_id': 'w1', 'job_id': 'j1', 'data': {'tool': 'mcp__hyd-dmn__diagnose', 'tool_use_id': tid, **data}}
+    cut = '{"result":"ok","document":{"withheld":false,"causes":[{"name":"쿨러 핀 오염"'      # 4,000자에서 잘린 JSON(닫히지 않았다)
+    ref = {'stored': True, 'ref': 'a' * 64, 'sha256': 'b' * 64, 'chars': 9000, 'original_chars': 9000, 'cut': False, 'content_type': 'json', 'source': 'tool_result'}
+    events = [ev('tool_usage_started', 't1', input={'asset': 'HYD-01'}), ev('tool_usage_finished', 't1', output=cut, output_truncated=True, full_output=ref, is_error=False),
+              ev('tool_usage_started', 't2', input={'asset': 'HYD-01'}), ev('tool_usage_finished', 't2', output='{"result":"ok","document":{"note":"짧은 결과"}}', is_error=False),
+              ev('tool_usage_started', 't3', input={'asset': 'HYD-01'}), ev('tool_usage_finished', 't3', output='{"result": 깨진 글', is_error=False)]
+    got = run(FILES, "const rows = hydRecord.rowsOf(DATA).filter(r => r.kind === 'tool'); out(rows.map(r => hydRecord.lineOf(r, false, false)))", events,
+              prelude='globalThis.queueMicrotask = () => {};')      # 브라우저의 것: 보관된 전체 결과를 읽으러 가는 예약(시험 문맥에는 서버가 없다)
+    assert len(got) == 3
+    assert 'JSON으로 읽을 수 없습니다' not in got[0] and '마쳤습니다' in got[0]            # 잘린 미리보기: 전체 결과를 읽어 오는 동안 받은 것을 비워 둔다(오류로 적지 않는다)
+    assert 'JSON으로 읽을 수 없습니다' not in got[1] and '마쳤습니다' in got[1]
+    assert 'JSON으로 읽을 수 없습니다' in got[2]                                          # 잘리지 않았는데 정말 읽을 수 없는 결과는 숨기지 않는다
+
+
+def test_가지_않은_길의_단계는_단계_기록의_본줄에_서지_않고_이름만_따로_모이며_한_일의_문장을_만들지_않는다():
+    """반려로 끝난 건의 단계 기록에 「냉각 명령 — 취소: … — 설비 제어에 명령을 보냈고 …」(보내지 않았다)와 「효과 확인 … 회복으로 판정했습니다」가
+    붉은 ✕로 줄줄이 섰다. 한 번도 시작되지 않은 채 닫힌 줄은 일어난 일이 아니다 — 본줄에서 빼고 이름만 모은다(build().skipped)."""
+    T0, T1 = '2026-10-30T05:40:00.000Z', T
+    wis = [{'id': 'w1', 'activity_id': 'R_rej', 'activity_name': '결과 보고: 반려', 'tool': 'process:report', 'start_date': T1, 'end_date': T1},
+           {'id': 'w2', 'activity_id': 'T_cmd', 'activity_name': '냉각 명령', 'tool': 'incident:command', 'status': 'CANCELLED', 'start_date': T0, 'end_date': T1, 'log': '취소: 처리 건이 끝남 — 반려 종결; '},
+           {'id': 'w3', 'activity_id': 'T_obs', 'activity_name': '효과 확인', 'tool': 'incident:reobserve', 'status': 'CANCELLED', 'start_date': T0, 'end_date': T1, 'log': '취소: 처리 건이 끝남 — 반려 종결; '}]
+    v = view(wis, ['T_cmd', 'T_obs', 'R_rej'])
+    v['workitems'].append({'id': 'w0', 'activity_id': 'T_a', 'activity_name': '원인 진단', 'status': 'DONE', 'agent_orch': 'system', 'start_date': T0, 'end_date': T1})
+    got = run(FILES, "const m = hydRecord.build(DATA, { agents: [], people: [] }, []); out({ titles: m.steps.map(s => s.title), skipped: m.skipped.map(x => x.name), said: m.steps.map(s => s.sentence || '').join(' ') })", v)
+    assert '냉각 명령' not in got['titles'] and '효과 확인' not in got['titles'] and got['skipped'] == ['냉각 명령', '효과 확인']
+    assert '명령을 보냈' not in got['said'] and '판정했습니다' not in got['said']
+
+
+def test_효과_확인이_늘어나면_연장됐다는_것과_까닭을_말하고_판정_전을_판정_중했습니다로_적지_않는다():
+    """판정 예정 시각이 지나면 말없이 「판정까지 11초」를 다시 셌다(서버는 값이 기준 안인데 경보가 아직 꺼지지 않아 늘린 것 — 기록 줄
+    REOBSERVATION_EXTENDED). 연장 중 머리 문장은 「… 51 % — 판정 중했습니다.」였다."""
+    a = '2026-10-30T05:43:42.000Z'
+    series = {'tag': 'TS1', 'op': '<', 'limit': 55, 'first': 60.3, 'last': 52.3, 'inside_share': 0.51, 'inside_last': True, 'from': a, 'to': T, 'points': [{'t': a, 'v': 60.3}, {'t': T, 'v': 52.3}]}
+    inc = {'id': 'INC-1', 'asset': 'HYD-01', 'state': 'RE_OBSERVING', 'recoveryPolicy': {'criterion': ['TS1', '<', 55]},
+           'history': [{'state': 'RE_OBSERVING', 't': a, 'reobservation': {'sim_s': 900, 'tag': 'TS1', 'op': '<', 'limit': 55}}], 'reobsSeries': series}
+    plan = {'kind': 'command', 'due_at': '2099-01-01T00:00:00Z', 'window_s': 45.0, 'extensions': 1, 'started_at': a}
+    events = [{'id': 'e1', 'event_type': 'task_working', 'timestamp': T, 'proc_inst_id': 'c.1', 'todo_id': 'w1', 'job_id': 'REOBSERVATION_EXTENDED',
+               'data': {'name': '효과 확인 연장 (값은 기준 안, 경보 해제 대기)', 'plan': plan, 'reading': {'tag': 'TS1', 'op': '<', 'limit': 55, 'value': 52.3, 'inside': True}}}]
+    wis = [{'id': 'w1', 'activity_id': 'T_reobs', 'activity_name': '효과 확인', 'tool': 'incident:reobserve', 'status': 'IN_PROGRESS', 'start_date': a, 'end_date': None}]
+    v = view(wis, ['T_reobs'], variables=[('incident', 'INC-1'), ('asset', 'HYD-01')], events=events)
+    v['instance'].update(status='RUNNING', end_date=None)
+    got = run(FILES, "const m = hydRecord.build(DATA.v, { agents: [], people: [], incident: DATA.inc }, DATA.v.events); const s = m.steps.find(x => x.title === '효과 확인'); out([s.sentence, s.liveLine || '', s.liveBox || ''])",
+              {'v': v, 'inc': inc}, prelude="globalThis.state = { plant: { units: { 'HYD-01': { tags: { TS1: 52.3 } } } } };")
+    sentence, line, box = got
+    assert '판정 중했습니다' not in sentence and sentence.endswith('아직 판정하지 않았습니다.'), sentence
+    assert '연장됨 — 값은 기준 안인데 경보가 아직 꺼지지 않아 더 지켜봅니다' in line and '연장됨' in box and '판정까지 (연장)' in box
+    assert '>52.3</span>' in line and '판정까지 ' in line and '>–<' not in line      # 그릴 때 아는 값과 남은 시간을 바로 적는다(「– ℃ · –」로 그렸다가 채우지 않는다)

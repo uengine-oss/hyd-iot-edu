@@ -75,13 +75,15 @@ def test_조건별_손익은_설비_목록을_읽지_못하면_빈_목록으로_
         close()
 
 
-def test_규칙_판단은_설비_목록을_서버에서_읽고_긴_첫_문장은_쌍점_앞까지만_결론으로_올린다():
-    """규칙 판단의 설비 고르기도 화면에 박혀 있었다. 결론은 서버 설명의 첫 문장인데, 후보마다의 제외 사유가 한 문장에 줄줄이 달리면
-    (가능한 조치가 없을 때) 큰 글 한 줄이 문단이 됐다 — 쌍점 앞까지만 결론에 두고 나머지는 그 아래로 내린다."""
+def test_규칙_판단은_설비_목록을_서버에서_읽고_결론을_응답의_칸으로_짓는다():
+    """규칙 판단의 설비 고르기도 화면에 박혀 있었다. 결론은 서버 설명문의 첫 문장을 문장 부호로 잘라 쓰던 것이었는데(후보마다의 제외 사유가 한 문장에
+    줄줄이 달리면 큰 글 한 줄이 문단이 됐다), 이제 응답의 칸(1순위 원인 · 추천 · 후보)으로 짓고 설명문 전문은 「원문」 보기에 받은 그대로 둔다."""
     why = '; '.join(f'SOP-X-{n} 조치 {n} (현재 조치 예측을 확인할 수 없습니다: 지금 바뀌는 중인 외란이 있어 입력을 고정한 예측이 맞지 않습니다)' for n in range(1, 4))
+    options = [{'id': f'skill:x-{n}', 'name': f'조치 {n}', 'sopId': f'SOP-X-{n}', 'feasible': False, 'rank': None, 'score': None, 'actions': [], 'approver': {'name': '운전원'},
+                'violations': [{'rule': 'rule:forecast', 'annotation': '현재 조치 예측을 확인할 수 없습니다'}]} for n in range(1, 4)]
     decided = {'id': 'EVAL-1', 'created': '2026-11-14T00:00:00Z', 'asset': 'PRESS-08', 'status': 'NO_FEASIBLE_OPTION', 'steps': [], 'causes': [], 'provenance': [],
                'scenario': {'name': '씰 마모 조치 판단'}, 'facts': {},
-               'result': {'options': [], 'recommended': None, 'trace': [], 'explanation': f'씰 마모 — 후보 3장 모두 규정상 제외됐다: {why}.'}}
+               'result': {'options': options, 'recommended': None, 'trace': [], 'explanation': f'씰 마모 — 후보 3장 모두 규정상 제외됐다: {why}.'}}
     sent = []
     page, close = _page({'/plant-sim/api/state': PLANT, '/api/ontology/patterns': PATTERNS, '/api/agent/decide': decided}, sent)
     try:
@@ -92,11 +94,13 @@ def test_규칙_판단은_설비_목록을_서버에서_읽고_긴_첫_문장은
         page.locator('#decRun').click()
         page.wait_for_selector('#decResult .panel-head h2', timeout=8000)
         assert [body for url, body in sent if url.endswith('/api/agent/decide')] == [{'asset': 'PRESS-08', 'pattern': 'SEAL_WEAR', 'facts': {}}]
-        assert page.inner_text('#decResult .panel-head h2') == '씰 마모 — 후보 3장 모두 규정상 제외됐다.'
+        # 결론 문장은 응답의 칸(추천 없음 · 후보 3개 모두 제외)으로 짓는다 — 서버 설명문의 첫 문장을 잘라 쓰지 않는다
+        assert page.inner_text('#decResult .panel-head h2') == '추천할 조치가 없습니다 — 조치 후보 3개가 모두 규정에서 제외됐습니다.'
         # 나머지 설명문은 버리지 않되 첫 화면에 줄글로 펼치지 않는다 — 결과 아래의 하나뿐인 접기(「자세히 보기」)의 「원문」 보기 안에 있고 접혀서 시작한다
         fold = page.locator('#decResult details', has=page.locator('.result-sub'))
         assert 'SOP-X-3 조치 3' in fold.locator('.result-sub').text_content() and fold.evaluate('d => d.open') is False
-        assert page.locator('#decResult details').count() == page.locator('#decResult details.raw').count() + page.locator('#decResult .hitl-opts details').count() + page.locator('#decResult .panel-sec > details').count()      # 근거 줄 사이에 따로 선 접기가 없다
+        assert page.locator('#decResult details').count() == page.locator('#decResult details.raw').count() + page.locator('#decResult .panel-sec > details').count()      # 근거 줄 사이에 따로 선 접기가 없고, 후보별 근거(optionDetail) 안에도 접기가 없다(접기 안의 접기 금지)
+        assert page.locator('#decResult [data-dec-body="options"] .opt-detail').count() == 3 and page.locator('#decResult [data-opt-pick] option').count() == 3
         assert fold.locator('summary').first.inner_text().strip() == '자세히 보기'
         fold.locator('summary').first.click(); page.click('#decResult [data-dec-pane="raw"]')
         shown = page.inner_text('#decResult [data-dec-body="raw"]')
@@ -219,5 +223,31 @@ def test_에이전트_시험_비교의_결론은_호출_기록의_지문이_아�
         page.select_option("#compareView [data-pick='b']", 'TRY-2')
         assert page.locator("#compareView [data-act='diff']").is_disabled()
         assert '시나리오가 다릅니다' in page.inner_text('#compareView .io-out > .panel')
+    finally:
+        close()
+
+
+def test_원인_진단_대상이_아닌_이상_패턴을_고르면_누르기_전에_서버의_까닭을_보이고_실행_단추를_끈다():
+    """이상 패턴 목록이 줄마다 주는 judgeable · reason 을 쓴다. 전에는 모든 패턴을 똑같이 늘어놓아, 정기 정비 도래 같은 업무 경보를 골라 누른 뒤에야 404 로 까닭을 봤다."""
+    why = "'정기 정비 도래'는 고장 원인을 진단하는 이상 패턴이 아닙니다 — 업무 흐름의 에이전트가 판단합니다"
+    patterns = [{'id': 'pattern:pm', 'code': 'PM_DUE', 'name': '정기 정비 도래', 'failureModes': [], 'judgeable': False, 'reason': why},
+                {'id': 'pattern:x', 'code': 'SEAL_WEAR', 'name': '씰 마모', 'failureModes': ['씰 누설'], 'judgeable': True, 'reason': None}]
+    sent = []
+    page, close = _page({'/plant-sim/api/state': PLANT, '/api/ontology/patterns': patterns}, sent)
+    try:
+        open_screen(page, 'decision')
+        page.wait_for_function("document.querySelectorAll('#decPattern option').length === 2", timeout=8000)
+        # 판단할 수 있는 패턴이 먼저(기본으로 골라진다), 판단할 수 없는 패턴은 묶음 아래에
+        assert page.eval_on_selector('#decPattern', 's => s.value') == 'SEAL_WEAR' and page.locator('#decPattern optgroup option').all_inner_texts() == ['정기 정비 도래']
+        assert page.locator('#decWhy').is_hidden() and not page.locator('#decRun').is_disabled()
+        page.select_option('#decPattern', 'PM_DUE')
+        assert page.inner_text('#decWhy') == why and page.locator('#decRun').is_disabled()
+        page.select_option('#decPattern', 'SEAL_WEAR')
+        assert page.locator('#decWhy').is_hidden() and not page.locator('#decRun').is_disabled()
+        open_screen(page, 'whatif')
+        page.wait_for_function("document.querySelectorAll('#wiPattern option').length === 2", timeout=8000)
+        page.select_option('#wiPattern', 'PM_DUE')
+        page.wait_for_function("document.querySelector('#wiLoad').disabled", timeout=8000)
+        assert why in page.inner_text('#whatifView .io-in, #whatifView')
     finally:
         close()

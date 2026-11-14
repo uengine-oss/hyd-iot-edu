@@ -135,7 +135,7 @@
           <!-- 고를 것(설비 · 이상 패턴)만 위에 둔다. 가정할 조건 넷은 기본이 「지금 값 그대로」라 접어 둔다 -->
           <div class="io-fields">
             <div role="group" class="field"><label for="decAsset">설비</label><select class="select" id="decAsset"></select></div>
-            <div role="group" class="field"><label for="decPattern">이상 패턴</label><select class="select" id="decPattern"></select></div>
+            <div role="group" class="field"><label for="decPattern">이상 패턴</label><select class="select" id="decPattern"></select><p id="decWhy" role="status" hidden></p></div>
           </div>
           <details class="fold io-more"><summary>조건 바꿔 보기<span class="muted">기본은 지금 값</span></summary><div class="fold-body io-fields">
             <div role="group" class="field"><label for="decMode">운전 모드</label><select class="select" id="decMode"><option value="">지금 값 그대로</option><option value="REMOTE_AUTO">원격 자동</option><option value="REMOTE_MANUAL">원격 수동</option><option value="LOCAL">현장 제어</option></select></div>
@@ -281,7 +281,7 @@
       </div>
       <div id="ddlHistory"></div>
     </div>
-    <details class="fold doc-tpl" id="ontoTplFold"><summary>질의 보기<span class="muted">지식 지도를 읽는 질의문(Cypher)을 종류별로 봅니다</span></summary><div class="fold-body">
+    <details class="fold doc-tpl" id="ontoTplFold"><summary>지식 지도를 읽는 질의문 보기<span class="muted">Cypher</span></summary><div class="fold-body">
       <div class="chips" id="ontoTpl" role="group" aria-label="질의 종류">
         <button type="button" class="chip" aria-pressed="false" data-t="t1_causes">경보 → 원인 · 증거</button><button type="button" class="chip" aria-pressed="false" data-t="t2_skills">고장 유형 → 조치 방법</button>
         <button type="button" class="chip" aria-pressed="false" data-t="t3_dmn">규칙 · 임계값</button><button type="button" class="chip" aria-pressed="false" data-t="t3_inputs">판단 입력과 출처</button>

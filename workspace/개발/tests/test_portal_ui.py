@@ -21,7 +21,10 @@ SIZES = [(1366, 768), (1920, 1080)]
 LOADING_LIMIT_S = 14
 # 로딩 자리 표시: 「…중…」(말줄임표로 끝나는 진행 표시)와 말줄임표 없는 몇 가지. 「승인을 기다리는 중입니다」 같은 진행 상태 문장은 로딩이 아니다
 LOADING = re.compile(r'([가-힣]+ 중…|불러오는 중|연결 확인 중|조회 중)')
-from student_words import JARGON      # 내부어 목록은 한 곳(student_words.py) — 서버 응답을 훑는 시험과 같은 표
+from student_words import JARGON, WORKER_TALK      # 내부어 · 작업자 말 목록은 한 곳(student_words.py) — 서버 응답을 훑는 시험과 같은 표
+# 작업자 말 가운데 화면이 고칠 수 없는 것: 강사 서명 묶음의 문서 원문(HM-8 「PLC 운전 모드가 REMOTE_AUTO인지 확인한다」)이 그대로 보이는 화면.
+# 문서를 고치고 다시 서명해야 없어진다(사용자가 정할 일 — 기록.md 「사용자만 정할 수 있는 것」). 그 밖의 화면에서는 이 말도 결함이다
+DOCUMENT_WORDS = {'REMOTE_AUTO': {'skills', 'instances', 'knowledge', 'decision'}}
 # 수업 단계에서 그 메뉴에 반드시 있어야 하는 행동 키(막힌 단추가 꺼진 채 보이는지 볼 자리)
 EXPECTED_ACTIONS = {'mcp': ['tool_servers.register'], 'admin': ['config.import']}
 
@@ -237,6 +240,9 @@ def test_메뉴를_열면_오류_로딩_내부어_넘침_눌리는데_거절이_
     jargon = sorted(set(m.group(0) for m in JARGON.finditer(t.words())))
     if jargon:
         problems.append(f'내부어: {", ".join(jargon)}')
+    talk = sorted(w for w in set(m.group(0) for m in WORKER_TALK.finditer(t.words())) if tab not in DOCUMENT_WORDS.get(w, ()))
+    if talk:
+        problems.append(f'작업자 말: {", ".join(talk)}')
     ov = t.overflow()
     if ov['pageScroll']:
         problems.append('페이지 가로 스크롤')

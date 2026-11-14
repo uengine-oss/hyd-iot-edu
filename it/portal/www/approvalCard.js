@@ -52,8 +52,8 @@
     const purchase = (o.actions || []).some(a => a.code === 'PO_CREATE');
     const maintenance = (o.actions || []).some(a => a.code === 'WO_CREATE');
     const keys = purchase ? ['part_no', 'need_qty', 'po_amount', 'lead_slack_days'] : maintenance ? ['hours_since_pm', 'pm_interval_h', 'pm_due_in_h', 'spare_available'] : [];
-    const rows = keys.filter(k => values[k] != null).map(k => `<div><dt>${e(W.fieldName(k))}</dt><dd>${e(W.value(k, values[k]))}</dd></div>`).join('');
-    return rows ? `<section class="cr-sec" aria-label="${purchase ? '구매 요청' : '정비 요청'}"><h4 class="cr-h">${purchase ? '구매 요청' : '정비 요청'}</h4><dl class="cr-kv">${rows}</dl></section>` : '';
+    const rows = keys.filter(k => values[k] != null).map(k => `<dt>${e(W.fieldName(k))}</dt><dd>${e(W.value(k, values[k]))}</dd>`).join('');
+    return rows ? `<section class="cr-sec" aria-label="${purchase ? '구매 요청' : '정비 요청'}"><h4 class="cr-h">${purchase ? '구매 요청' : '정비 요청'}</h4><dl class="kv">${rows}</dl></section>` : '';
   }
 
   // 짧은 이유(최대 4줄): 머리말 값(예측 또는 이 안의 업무 값) · 좋아지는 지표 · 나빠지는 지표 · 같은 선택 선례 · 주의(감점 · 경고)

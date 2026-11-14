@@ -117,3 +117,23 @@ def test_끝_이름이_처리_완료이면_어디서_끝났는지를_따로_말�
 
 def test_옛_판본으로_돈_처리_건의_옛_단계_이름은_지금_이름으로_보인다():
     assert run(['ui.js'], "out(['재관측', '작업지시 등록', '결과 보고: 거절', '거절 종결', '원인 진단'].map(x => UI.flowName(x)))") == ['효과 확인', '정비 요청 등록', '결과 보고: 반려', '반려 종결', '원인 진단']
+
+
+def test_가지_않은_길의_취소_줄은_지나온_것도_멈춤도_아니고_다시_수행_뒤에는_앞_차수의_닫힌_줄이_지금_단계를_가리지_않는다():
+    """서버가 취소 까닭을 한국어(「취소: 처리 건이 끝남 — …」)로 적기 시작하자, 글머리 「cancelled:」로 가르던 화면이 가지 않은 길의 줄을 모두
+    「멈춤」으로 그렸다. 판정은 까닭 글이 아니라 줄의 사실(취소됨 · 시작된 적 없음)로 한다. 다시 수행 뒤에는 앞 차수의 닫힌 줄이 남아 머리 줄이
+    「1번째 단계 … 에서 멈춤」이라고 했다 — 지금 차수의 줄만 지금 상태다."""
+    T0, T1, T2 = '2026-11-14T06:33:04.882Z', '2026-11-14T06:33:07.835Z', '2026-11-14T06:34:37.270Z'
+    rows = [   # 반려로 끝난 건: 냉각 명령은 처리 건이 열릴 때 만들어져 한 번도 시작되지 않고 닫혔다(까닭 글은 한국어)
+        wi('T_agent', 'DONE', T0, end_date=T1), wi('T_approve', 'DONE', T1, end_date=T2),
+        wi('T_cmd', 'CANCELLED', T0, end_date=T2, log='취소: 처리 건이 끝남 — 거절 종결; '), wi('R_rej', 'DONE', T2, end_date=T2)]
+    got = marks(rows, status='COMPLETED', end_event='E_rej')
+    assert 'T_cmd' not in got['st'] and got['st']['R_rej'] == 'done' and got['now'] == []
+    # 다시 수행: 앞 차수(0)의 승인 줄은 기다리던 중에 닫혔고(시작된 적 있음), 새 차수(1)의 승인 줄이 지금 내 차례다
+    again = [dict(wi('T_agent', 'DONE', T0, end_date=T1), id='a0', generation=0), dict(wi('T_approve', 'CANCELLED', T1, end_date=T2, log='rework superseded: r1; '), id='p0', generation=0),
+             dict(wi('T_cmd', 'CANCELLED', T1, end_date=T2, log='rework superseded: r1; '), id='c0', generation=0),      # 앞 차수에서 시작됐다가 닫힌 줄 — 새 차수의 같은 단계는 아직 예정이다
+             dict(wi('T_agent', 'DONE', T2, end_date=T2), id='a1', generation=1), dict(wi('T_approve', 'IN_PROGRESS', T2), id='p1', generation=1), dict(wi('T_cmd', 'TODO', T2), id='c1', generation=1)]
+    view = {'definition': DEF, 'instance': {'proc_inst_id': 'p', 'status': 'RUNNING'}, 'workitems': again}
+    nodes = run(FILES, "const m = hydFlow.pathModel(DATA.definition, DATA.workitems, DATA.instance); out(m.nodes.map(n => [n.id, n.state]))", view)
+    assert ['T_approve', 'now'] in nodes and not any(state == 'fail' for _, state in nodes), nodes
+    assert marks(again)['now'] == ['T_approve']

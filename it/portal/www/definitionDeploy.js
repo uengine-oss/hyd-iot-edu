@@ -72,7 +72,7 @@
   function versionTag(v) {
     if (v.deployed) return tag('운영 중', 'ok');
     if (!v.deployable) return tag('검사 실패 · 배포 불가', 'danger');
-    return tag('배포 가능');
+    return tag(status && status.alert_entry ? '배포 가능' : '등록됨');      // 직접 시작하는 흐름은 배포하지 않는다 — 「배포 가능」이라고 하지 않는다
   }
   function render() {
     const s = status;
@@ -87,9 +87,9 @@
       `<span class="muted">${v.registered_at ? '등록 ' + esc(UI.dateTime(v.registered_at)) : '등록 시각 없음'}</span><span class="flow-ver-acts">` +
       (s.deployed_version && !v.deployed ? `<button type="button" class="btn" data-variant="ghost" data-size="sm" data-compare="${esc(v.version)}">운영 판본과 비교</button>` : '') +
       (refComparable(s, v) ? `<button type="button" class="btn" data-variant="ghost" data-size="sm" data-refcompare="${esc(v.version)}">기준과 비교</button>` : '') +
-      (v.deployed ? '' : `<button type="button" class="btn" data-variant="outline" data-size="sm" data-deploy="${esc(v.version)}"${v === next ? ' data-deploy-next' : ''} ${v.deployable ? '' : 'disabled'}>${UI.icon('upload')}이 판본 배포</button>`) +
+      (v.deployed || !s.alert_entry ? '' : `<button type="button" class="btn" data-variant="outline" data-size="sm" data-deploy="${esc(v.version)}"${v === next ? ' data-deploy-next' : ''} ${v.deployable ? '' : 'disabled'}>${UI.icon('upload')}이 판본 배포</button>`) +
       `</span></div>${v.problem ? `<div class="alert" data-variant="destructive" role="alert">${UI.icon('circle-alert')}<h2>이 판본은 검사에 실패해 배포할 수 없습니다</h2><section>${esc(v.problem)}</section></div>` : ''}</li>`).join('')}</ul>`;
-    $d('deployReasonField').hidden = !s.versions.some(v => !v.deployed && v.deployable) && !s.rollback_version;
+    $d('deployReasonField').hidden = !s.alert_entry || (!s.versions.some(v => !v.deployed && v.deployable) && !s.rollback_version);
     $d('deployCompare').innerHTML = s.versions.length > 1 ? UI.fold('판본 비교<span class="muted">두 판본에서 바뀐 단계 · 연결 · 조건</span>', `<div class="flow-compare">` +
       UI.field({ label: '기준', input: `<select id="deployFrom">${s.versions.map(v => `<option value="${esc(v.version)}" ${v.deployed ? 'selected' : ''}>${esc(v.version)}${v.deployed ? ' (운영)' : ''}</option>`).join('')}</select>` }) +
       UI.field({ label: '비교 대상', input: `<select id="deployTo">${s.versions.map(v => `<option value="${esc(v.version)}" ${v.version === (compareWith || s.versions[s.versions.length - 1].version) ? 'selected' : ''}>${esc(v.version)}</option>`).join('')}</select>` }) +

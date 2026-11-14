@@ -1565,27 +1565,32 @@ def lab_04_rules_whatif_kpi(r: Round):
     graph_before = graph(r)
     # 조치 방법: 쿨러 조치의 수행 단계 · 담당 · 승인 역할 · 연결된 고장 유형 — 화면 = 지식 API = 원문 HM-8
     r.tab("skills")
-    r.wait(20, lambda: r.page.locator("#skillList .item").count() > 0, every=1)
+    r.wait(20, lambda: r.page.locator("#skillList .row").count() > 0, every=1)
     skills = r.get(f"{r.process}/api/kg/skills")
     src = source_doc("HM-8")
     for sop in ("SOP-COOL-11", "SOP-COOL-14"):
         k = next((x for x in skills if x.get("sopId") == sop), None)
         if not k:
             r.check(f"조치 방법에 {sop} 가 있다", False, "지식 API 에 없음"); continue
-        r.page.locator("#skillList .item", has_text=k["name"]).first.click()
+        r.page.locator(f"#skillList .row[data-skill='{k['id']}']").first.click()
         r.page.wait_for_timeout(800)
         detail = txt(r, "#skillDetail", required=True)
         want = src.get(sop) or {}
-        # 승인 역할은 「이름 · 승인 역할 · 설명 고치기」 접기 안의 고르기 칸(#skRole)에 있다(hitl.js renderSkill — details[data-skill-edit]) — 학생처럼 펴서 고른 값을 읽는다
-        open_fold(r.page.locator("#skillDetail details[data-skill-edit]").first)
-        shown_role = r.page.locator("#skRole option:checked").inner_text().strip()
+        # 승인 역할: 문서에서 온 조치 방법은 「연결된 지식」의 이름–값 줄(승인 역할)에 글로 있고(고치는 폼이 없다), 화면에서 직접 더한 것만
+        # 「이름 · 승인 역할 · 설명 고치기」 접기 안의 고르기 칸(#skRole)에 있다(hitl.js renderSkillDetail)
+        fold = r.page.locator("#skillDetail details[data-skill-edit]")
+        if fold.count():
+            open_fold(fold.first)
+            shown_role = r.page.locator("#skRole option:checked").inner_text().strip()
+        else:
+            shown_role = r.page.evaluate("() => { const dt = [...document.querySelectorAll('#skillDetail dl.kv dt')].find(x => x.textContent.trim() === '승인 역할'); return dt ? dt.nextElementSibling.textContent.trim() : ''; }")
         r.check(f"조치 방법 {sop}: 화면의 수행 단계 수 · 승인 역할 · 고장 유형 = 원문 · 지식", len(k.get("steps") or []) == len(want.get("steps") or [])
                 and (k.get("approver") or {}).get("name") == want.get("approver") and shown_role == want.get("approver", "?")
                 and all(f["name"] in detail for f in k.get("failureModes") or []) and all(s["text"][:15] in detail for s in k.get("steps") or []),
                 f"원문 단계 {len(want.get('steps') or [])} · 승인 {want.get('approver')} / 지식 {len(k.get('steps') or [])} · {(k.get('approver') or {}).get('name')} / 화면 승인 역할 {shown_role} · {detail[:160]}")
     base = decide_screen(r)
     r.human("[모의 판단](현재 값) → 결과가 한국어로 보인다", base, axis=AXES[0], kind="normal")
-    n_cards = r.page.locator("#decResult .hitl-opts > *").count()
+    n_cards = r.page.locator("#decResult .opts tbody tr").count()      # 조치 후보는 표 한 장(UI.optionsTable)의 줄이다 — 옛 조치 카드(.hitl-opts)는 없어졌다
     api = r.api("POST", f"{r.agent}/api/agent/decide", {"asset": "HYD-01", "pattern": "COOLER_DEGRADATION", "facts": {}})[1] or {}
     api_n = len(((api.get("result") or api).get("options")) or [])
     r.check("조치 후보 카드 수 = 판단 엔진 결과(입력 · 적용 규칙 · 후보)", n_cards > 0 and n_cards == api_n, f"화면 {n_cards} · 엔진 {api_n}")
@@ -2497,11 +2502,11 @@ def process_screen_shows(r: Round, refs: list[str]) -> tuple[bool, str]:
     """업무 시스템 기록 화면(유압 실습장 메뉴의 process 탭)의 업무 시스템 현황 · 거래(변경 전 · 후)에 그 거래들이 보이는가."""
     r.tab("process")
     r.page.wait_for_timeout(3000)
-    open_fold(r.page.locator("#txFold"))
-    r.page.wait_for_timeout(1000)
-    for d in r.page.locator("#txList details").all()[:12]:
+    # 거래 기록은 표 한 장이고(접기 #txFold 는 없어졌다 — 보기 「거래 기록」이 처음부터 펴져 있다), 줄(details.tx)을 누르면 변경 전 · 후가 그 아래에 열린다.
+    # 줄 안의 원문 접기에도 summary 가 있으므로 줄 자신의 summary 만 누른다(open_fold)
+    for d in r.page.locator("#txList details.tx").all()[:12]:
         try:
-            d.locator("summary").first.click()
+            open_fold(d)
         except Exception as e:
             if not transient(e):
                 raise

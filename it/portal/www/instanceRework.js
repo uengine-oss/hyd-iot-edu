@@ -59,7 +59,8 @@
       const roles = p?.request_roles || (s.role ? [s.role] : []);
       const prior = (view.approvals || []).map(a => a.payload && a.payload.role).filter(Boolean).pop() || UI.valuesOf(view.instance).approved_role || '';
       if (p && roles.length && !roles.includes(s.role)) s.role = roles.includes(prior) ? prior : roles[0];
-      const roleField = !roles.length ? UI.readonly('요청 역할', p ? '<span class="muted" data-tone="danger">이 흐름에는 사람이 맡는 역할이 없어 다시 수행을 요청할 수 없습니다.</span>' : `<span class="muted">[${esc(UI.t('btn.effects'))}]를 누르면 표시됩니다.</span>`)
+      const noRole = !!p && !roles.length;      // 사람이 맡는 역할이 없는 흐름(질문 · 문서 추출): 요청할 수 없다 — 폼을 내지 않고 까닭만 말한다
+      const roleField = !roles.length ? ''
         : UI.readonly('요청 역할', esc(roleName(s.role)), roles.length === 1 ? '이 흐름에서 사람이 맡는 역할이 하나뿐이라 이 역할로 요청합니다.' : s.role === prior ? '이전 승인을 한 역할로 요청하고 기록합니다.' : '이 흐름에서 사람이 맡는 역할로 요청하고 기록합니다.');
       let detail = '';
       if (p) {
@@ -69,7 +70,7 @@
           <p>다시 만들 값: ${esc(names(p.invalidated_variables) || '없음')}<br>시작 값으로 되돌릴 값: ${esc(names(p.restored_input_variables) || '없음')}<br>앞 단계 결과를 그대로 쓸 값: ${esc(names(p.retained_outputs.map(x => x.variable)) || '없음')}</p>
           ${Object.values(p.reasons || {}).some(items => items.some(x => x.kind === 'condition_recheck')) ? '<p>바뀐 입력을 쓰는 분기 앞의 검토 단계도 다시 수행합니다.</p>' : ''}
           ${inc ? `<p>연결된 사건: ${UI.chip(inc.state)} · 설비 명령 ${inc.cmdId ? '보냄' : '보내지 않음'} · 업무 실행 기록 ${esc(receipts)}건 · 폐기할 이전 승인 ${esc((p.retire_approvals || []).length)}건</p>` : '<p>연결된 설비 사건이 없는 처리 건입니다.</p>'}
-          ${p.blockers.length ? `<div class="rework-blocked"><b>추가 검토가 필요합니다</b><ul>${p.blockers.map(b => `<li>${esc(b.text)}${b.variable ? ` <span class="muted">(값: ${esc(valueName(b.variable))})</span>` : b.workitem ? ` <span class="muted">(단계: ${esc(taskName(b.workitem))})</span>` : ''}</li>`).join('')}</ul></div>` : '<p>새 차수를 요청할 수 있습니다. 접수 시 상태와 효과를 다시 확인합니다.</p>'}
+          ${noRole ? '' : p.blockers.length ? `<div class="rework-blocked"><b>추가 검토가 필요합니다</b><ul>${p.blockers.map(b => `<li>${esc(b.text)}${b.variable ? ` <span class="muted">(값: ${esc(valueName(b.variable))})</span>` : b.workitem ? ` <span class="muted">(단계: ${esc(taskName(b.workitem))})</span>` : ''}</li>`).join('')}</ul></div>` : '<p>새 차수를 요청할 수 있습니다. 접수 시 상태와 효과를 다시 확인합니다.</p>'}
           ${UI.raw({ workitems: p.affected_workitems, reasons: p.reasons, candidate_variables: p.candidate_variables, blockers: p.blockers, effects: p.effects })}` });
       }
       const finished = view.instance.status !== 'RUNNING' && !s.pending;   // A091: a finished instance folds this panel to one line
@@ -78,16 +79,19 @@
         <fieldset class="fieldset"><div role="group">${UI.field({ label: '다시 시작할 단계', required: true, hint: '조건이나 판단 근거가 바뀌었다면 시작할 단계를 고릅니다. 이전 결과는 이력으로 남습니다.', input: `<select id="rwStart" ${locked}><option value="">${esc(UI.t('step'))} 선택</option>${list.map(w => `<option value="${esc(w.id)}" ${w.id === s.workitem ? 'selected' : ''}>${esc(UI.flowName(w.activity_name))}${w.generation ? ` · ${esc(w.generation)}${esc(UI.t('inst.gen'))}` : ''} · ${esc(UI.status(w.status))}</option>`).join('')}</select>` })}
           <div class="rework-go"><button type="button" class="btn" data-variant="outline" id="rwPreview" ${locked}>${esc(UI.t('btn.effects'))}</button></div></div></fieldset>
         ${detail}
-        <fieldset class="fieldset"><legend>${esc(UI.t('form.section.who'))}</legend><div role="group">
+        ${noRole ? `<div class="alert" data-rework-norole role="status">${UI.icon('info')}<h2>이 처리 건은 다시 수행을 요청할 수 없습니다</h2><section>이 흐름에는 사람이 맡는 역할이 없습니다. 다시 수행은 사람이 맡는 단계가 있는 흐름에서 그 역할로 요청합니다.</section></div>` : `
+        <div class="rework-who">
           ${UI.actorInput('id="rwBy"', s.by, locked)}
           ${roleField}
           ${UI.field({ label: UI.t('form.reason'), required: true, cls: 'wide', input: `<textarea id="rwReason" rows="2" ${locked}>${esc(s.reason)}</textarea>` })}
-        </div></fieldset>
-        ${s.pending ? `<p>앞 요청의 응답을 받지 못했습니다. 눌러서 처리됐는지 확인하세요. 같은 요청을 다시 확인하는 것이라 차수가 두 번 만들어지지 않습니다.</p> ${UI.actions(`<button type="button" class="btn" data-variant="outline" id="rwRetry" ${s.busy ? 'disabled' : ''}>요청 결과 확인</button>`, s.error)}` : `
+        </div>`}
+        ${noRole ? '' : s.pending ? `<p>앞 요청의 응답을 받지 못했습니다. 눌러서 처리됐는지 확인하세요. 같은 요청을 다시 확인하는 것이라 차수가 두 번 만들어지지 않습니다.</p> ${UI.actions(`<button type="button" class="btn" data-variant="outline" id="rwRetry" ${s.busy ? 'disabled' : ''}>요청 결과 확인</button>`, s.error)}` : `
          <label class="rework-check"><input type="checkbox" id="rwConfirm" ${s.confirmed ? 'checked' : ''} ${!p?.execution_available || s.busy ? 'disabled' : ''}> 영향 범위와 이전 승인 처리 내용을 확인했습니다.</label>
         ${UI.actions(`<button class="btn" id="rwSubmit" ${eligible() ? '' : 'disabled'}>${esc(UI.t('btn.rework'))}</button>`, s.error)}`}</div>`}
         ${s.busy && window.hydLive ? hydLive.waitHtml('다시 수행 요청을 보내는 중', { hint: '처리 서비스가 영향 범위를 다시 확인하고 새 차수를 만듭니다.' }) : ''}${finished && s.error ? `<p class="muted" data-tone="danger" role="alert">${esc(s.error)}</p>` : ''}`;
-      host.innerHTML = UI.fold(esc(UI.t('inst.rework')), body, { open: !finished && (!!s.workitem || !!s.pending) });
+      // 사람이 연 접기는 다시 그려도 열린 채다(UI.swap). 응답을 못 받은 요청이 있으면 늘 펴서 [요청 결과 확인]을 보인다
+      UI.swap(host, UI.fold(esc(UI.t('inst.rework')), body, { open: !finished && (!!s.workitem || !!s.pending) }));
+      if (s.pending) host.querySelector('details').open = true;
       host.querySelector('#rwStart')?.addEventListener('change', e => {
         s.workitem = e.target.value; s.preview = null; s.confirmed = false; s.error = ''; draw();
       });

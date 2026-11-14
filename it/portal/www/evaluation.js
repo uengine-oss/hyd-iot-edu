@@ -68,13 +68,15 @@
   }
   // 보기 줄(건수는 이름 뒤 작은 숫자)과 그 오른쪽의 지금 지식 한 줄
   function renderStats() {
-    const seg = [['run', '채점', E.runsError ? null : E.runs.length], ['golden', '정답표', E.goldenError ? null : E.golden.length], ['cmp', '전 · 후 비교', null]];
+    const seg = [['run', '채점', E.runsError || !E.runsRead ? null : E.runs.length], ['golden', '정답표', E.goldenError || !E.goldenRead ? null : E.golden.length], ['cmp', '전 · 후 비교', null]];      // 아직 읽지 못한 것을 0으로 보이지 않는다
     q('[data-r="seg"]').innerHTML = seg.map(([k, l, n]) =>
       `<button type="button" role="tab" data-act="view" data-to="${k}" aria-selected="${k === E.view}" tabindex="${k === E.view ? 0 : -1}">${esc(l)}${n != null ? `<span class="num">${esc(n)}</span>` : ''}</button>`).join('');
     const k = E.knowledge, host = q('[data-r="knowledge"]');
     if (!k) { host.textContent = E.knowledgeError || ''; if (E.knowledgeError) host.dataset.tone = 'danger'; else delete host.dataset.tone; return; }
     delete host.dataset.tone;
-    host.textContent = `지금 지식: 항목 ${k.nodes}개 · 연결 ${k.relationships}개${k.last_change ? ' · 마지막 변경 ' + UI.dateTime(k.last_change) : k.last_change_note ? ' · ' + k.last_change_note : ''}`;
+    // 이 수가 세는 범위(서버 scope — 가상 설비 3기 전체)는 마우스를 올리면 뜬다: 지식 지도는 고른 설비 하나로 세므로 수가 다르다
+    host.title = k.scope || '';
+    host.textContent = `지금 지식(설비 전체): 항목 ${k.nodes}개 · 연결 ${k.relationships}개${k.last_change ? ' · 마지막 변경 ' + UI.dateTime(k.last_change) : k.last_change_note ? ' · ' + k.last_change_note : ''}`;
   }
 
   /* ---------------------------------------------------------------- 1. 정답표 */
@@ -142,7 +144,7 @@
       UI.section('경보 상황',
         UI.field({ label: '제목', required: true, input: `<input data-f="title" value="${esc(it.title || '')}" placeholder="예: 쿨러 성능 저하 · 원격 자동 운전">` }) +
         UI.field({ label: '설비', required: true, input: sel('asset', E.assets.map(a => [a, a]), it.asset || '', '설비 선택') }) +
-        UI.field({ label: '이상 패턴', required: true, error: E.patterns ? '' : E.patternError || '', input: pats.length ? sel('pattern', pats, it.pattern || '', '이상 패턴 선택') : '<select data-f="pattern" disabled><option value="">목록을 읽지 못함</option></select>' })) +
+        UI.field({ label: '이상 패턴', required: true, error: E.patterns ? '' : E.patternError || '', input: pats.length ? `<select data-f="pattern"><option value="">이상 패턴 선택</option>${UI.patternOptions(E.patterns, it.pattern || '')}</select>` : '<select data-f="pattern" disabled><option value="">목록을 읽지 못함</option></select>' })) +
       UI.section('가정 사실(비우면 지금 값을 씁니다)', Object.entries(E.facts).map(([k, spec]) => UI.field({ label: spec.label,
         input: spec.number ? `<input data-f="${esc(k)}" data-fact="number" type="number" min="0" step="1" value="${esc(f[k] ?? '')}" placeholder="지금 값">`
           : sel(k, [['', '지금 값'], ...spec.choices.map(([v, l]) => [JSON.stringify(v), l])], f[k] == null ? '' : JSON.stringify(f[k])) })).join('')) +
@@ -368,10 +370,11 @@
     const host = q('[data-r="cmp"]'), c = E.cmp;
     if (!c) { host.innerHTML = `${UI.empty({ icon: 'git-compare', title: `아직 비교한 결과가 없습니다`, sub: `왼쪽에서 고치기 전 실행과 고친 뒤 실행을 고르고 [두 실행 비교]를 누릅니다.` })}`; return; }
     const kd = c.knowledge || {};
-    // 지식 변화: 지식 지도에 이름이 있는 항목과 연결만 첫 화면에 이름으로 보인다. 이름이 없는 것(에이전트 실행 기록처럼 그래프에 함께 저장되는 기록 — id 가 UUID)은 수만 말하고 원문은 접기에 둔다.
-    // 서버의 항목 수 · 연결 수는 그 기록까지 센 그래프 전체 수다(judgment_eval.KNOWLEDGE_Q) — 「지식이 바뀌었다」로 읽히지 않게 그렇게 적는다
-    const named = id => !!UI.names[id];
-    const rel = (x) => `${nm(x.from)} → <span class="muted">${esc(relName(x.type))}</span> → ${nm(x.to)}`;
+    // 지식 변화: 서버가 바뀐 항목의 이름을 함께 준다(kd.names — 지식 지도와 같은 차례로 고른 이름). 이름이 있는 항목과 연결은 이름으로 보이고,
+    // 이름이 없는 항목은 수만 말하고 원문은 접기에 둔다. 서버의 항목 수 · 연결 수는 지식 지도가 그리는 것만 센다(실행 기록 · 적재 이력은 세지 않는다 — judgment_eval.NOT_KNOWLEDGE_LABELS)
+    const names = kd.names || {}, named = id => !!names[id] || !!UI.names[id];
+    const nk = id => `<span title="${esc(id || '')}">${esc(names[id] || UI.name(id) || '–')}</span>`;
+    const rel = (x) => `${nk(x.from)} → <span class="muted">${esc(relName(x.type))}</span> → ${nk(x.to)}`;
     const line = (icon, label, body) => `<li>${UI.icon(icon)}<span><b>${label}</b> ${body}</span></li>`;
     const split = (xs, ok) => [(xs || []).filter(ok), (xs || []).filter(x => !ok(x))];
     const relOk = x => named(x.from) && named(x.to);
@@ -380,19 +383,20 @@
     const shownN = remR.length + addR.length + addN.length + remN.length + chgN.length, restN = remRx.length + addRx.length + addNx.length + remNx.length + chgNx.length;
     const rawRel = x => `${x.from} -[${x.type}]-> ${x.to}`;
     const rest = restN ? UI.raw([
-      ...addNx.map(x => '새 항목  ' + x), ...remNx.map(x => '없어진 항목  ' + x), ...chgNx.map(x => '속성 바뀜  ' + x), ...addRx.map(x => '연결 추가  ' + rawRel(x)), ...remRx.map(x => '연결 삭제  ' + rawRel(x))].join('\n'), { title: `이름이 없는 기록 항목의 변화 ${restN}개` }) : '';
+      ...addNx.map(x => '새 항목  ' + x), ...remNx.map(x => '없어진 항목  ' + x), ...chgNx.map(x => '속성 바뀜  ' + x), ...addRx.map(x => '연결 추가  ' + rawRel(x)), ...remRx.map(x => '연결 삭제  ' + rawRel(x))].join('\n'), { title: `이름이 없는 항목의 변화 ${restN}개` }) : '';
     const know = !kd.comparable ? note(esc(kd.note || '')) : !kd.changed ? note('두 실행 사이에 지식 그래프가 바뀌지 않았습니다.') :
-      (kd.counts ? `<p>${shownN ? `지식 지도에 이름이 있는 항목과 연결 ${shownN}곳이 바뀌었습니다.` : '지식 지도에 이름이 있는 항목과 연결(원인 · 증거 · 규칙 · 조치 방법 · 매뉴얼)은 바뀌지 않았습니다.'}` +
-          `${restN ? ` 그 밖에 이름이 없는 기록 항목(에이전트에게 한 질문이나 처리 건이 그래프에 남기는 실행 기록 등) ${restN}개가 달라졌습니다 — 판단에 쓰는 지식이 아닙니다.` : ''}</p>` +
+      (kd.counts ? `<p>${shownN ? `지식 항목과 연결 ${shownN}곳이 바뀌었습니다.` : '이름이 있는 지식 항목과 연결(원인 · 증거 · 규칙 · 조치 방법 · 매뉴얼)은 바뀌지 않았습니다.'}` +
+          `${restN ? ` 그 밖에 이름이 없는 항목 ${restN}개가 달라졌습니다.` : ''}</p>` +
         (shownN ? `<ul class="evid">${remR.map(x => line('unlink', '연결 삭제', rel(x))).join('')}${addR.map(x => line('link', '연결 추가', rel(x))).join('')}` +
-          `${addN.length ? line('plus', '새 항목', addN.map(nm).join(', ')) : ''}${remN.length ? line('minus', '없어진 항목', remN.map(nm).join(', ')) : ''}` +
-          `${chgN.length ? line('pencil', '속성 바뀜', chgN.map(nm).join(', ')) : ''}</ul>` : '') + rest : note(esc(kd.note || ''))) +
-      note(`그래프 전체 수(실행 기록 포함): 항목 ${esc(kd.nodes[0])}개 → ${esc(kd.nodes[1])}개 · 연결 ${esc(kd.relationships[0])}개 → ${esc(kd.relationships[1])}개`);
+          `${addN.length ? line('plus', '새 항목', addN.map(nk).join(', ')) : ''}${remN.length ? line('minus', '없어진 항목', remN.map(nk).join(', ')) : ''}` +
+          `${chgN.length ? line('pencil', '속성 바뀜', chgN.map(nk).join(', ')) : ''}</ul>` : '') + rest : note(esc(kd.note || ''))) +
+      note(`지식 항목 ${esc(kd.nodes[0])}개 → ${esc(kd.nodes[1])}개 · 연결 ${esc(kd.relationships[0])}개 → ${esc(kd.relationships[1])}개 (가상 설비 3기 전체)`);
     const verdict = { improved: ['좋아짐', 'success'], regressed: ['나빠짐', 'danger'], same: ['같음', 'neutral'] };
     const delta = c.delta == null ? '–' : (c.delta > 0 ? '+' : '') + c.delta;
     const title = i => esc((E.golden.find(it => it.id === i) || {}).title || i);
     // 한쪽 실행에서만 채점한 항목: 지금 정답표에 있으면 제목으로, 지워진 항목은 수로 말한다(항목의 안쪽 이름을 보이지 않는다)
-    const onlyOne = [...c.only_before, ...c.only_after], onlyNames = onlyOne.map(i => (E.golden.find(it => it.id === i) || {}).title).filter(Boolean), onlyGone = onlyOne.length - onlyNames.length;
+    // 제목은 서버가 그 실행에 적힌 것으로 준다(item_titles — 정답표에서 지워진 항목도 채점 당시 제목이 있다). 제목이 없는 것만 수로 말한다
+    const onlyOne = [...c.only_before, ...c.only_after], onlyNames = onlyOne.map(i => (c.item_titles || {})[i] || (E.golden.find(it => it.id === i) || {}).title).filter(Boolean), onlyGone = onlyOne.length - onlyNames.length;
     const says = c.delta == null ? '두 실행에 함께 채점한 항목이 없어 평균 점수를 견줄 수 없습니다.' : c.delta === 0 ? '평균 점수가 그대로입니다.' : `평균 점수가 ${Math.abs(c.delta)}점 ${c.delta > 0 ? '올랐습니다' : '내렸습니다'}.`;
     host.innerHTML = `<section class="panel"><div class="panel-head"><div><div class="result-label">${UI.icon('sparkles')}결론</div><h2>${esc(says)}</h2>` +
       `<p>전 ${esc(UI.dateTime(c.before.created))} ${esc(c.before.note || '')} → 후 ${esc(UI.dateTime(c.after.created))} ${esc(c.after.note || '')}</p></div></div>` +
@@ -403,7 +407,7 @@
           <td>${esc(r.title)}</td><td class="num">${esc(r.before)}</td><td class="num">${esc(r.after)}</td><td><span class="num">${(r.delta > 0 ? '+' : '') + esc(r.delta)}</span> ${UI.chipText(verdict[r.verdict][0], verdict[r.verdict][1])}</td>
           <td>${r.changed.map(x => `${esc(CHECK[x.check])} ${x.before ? '맞음' : '틀림'} → ${x.after ? '맞음' : '틀림'}`).join('<br>') || '–'}${r.evidence_lost.length ? `<p class="muted">잃은 근거 ${r.evidence_lost.map(nm).join(', ')}</p>` : ''}${r.evidence_gained.length ? `<p class="muted">얻은 근거 ${r.evidence_gained.map(nm).join(', ')}</p>` : ''}</td>
           <td>${esc(outcomeText(r.outcome_before))}<p class="muted">→ ${esc(outcomeText(r.outcome_after))}</p></td></tr>`).join('')) +
-        (c.only_before.length || c.only_after.length ? note(`한쪽 실행에서만 채점해 견주지 않은 항목 ${onlyOne.length}개${onlyNames.length ? ': ' + esc(onlyNames.join(', ')) : ''}${onlyGone ? ` (지금은 정답표에서 지워진 항목 ${onlyGone}개${onlyNames.length ? ' 포함' : ''})` : ''}`) : '')) + `</section>`;
+        (c.only_before.length || c.only_after.length ? note(`한쪽 실행에서만 채점해 견주지 않은 항목 ${onlyOne.length}개${onlyNames.length ? ': ' + esc(onlyNames.join(', ')) : ''}${onlyGone ? ` (제목이 남지 않은 항목 ${onlyGone}개${onlyNames.length ? ' 포함' : ''})` : ''}`) : '')) + `</section>`;
   }
   async function compare() {
     E.cmpBefore = q('[data-f="before"]').value; E.cmpAfter = q('[data-f="after"]').value;
@@ -481,14 +485,14 @@
       const g = await getJ(API.process + '/api/eval/golden');
       E.golden = g.items || []; E.storage = g.storage; E.paths = g.paths || {}; E.maxRepeats = g.max_repeats; E.assets = g.assets || []; E.facts = g.facts || {};
       for (const id of [...E.picked]) if (!E.golden.some(it => it.id === id)) E.picked.delete(id);
-      E.goldenError = '';
+      E.goldenError = ''; E.goldenRead = true;
       renderGolden();
     } catch (e) { E.golden = []; E.goldenError = e.message; q('[data-r="golden"]').innerHTML = UI.errorBlock('정답표를 읽지 못했습니다', e.message, { retry: true }); }
     renderRunForm(); renderStats();
     if (E.goldenError) msg('run', '정답표를 읽지 못해 채점할 수 없습니다: ' + E.goldenError);
   }
   async function loadRuns() {
-    try { E.runs = await getJ(API.process + '/api/eval/runs?limit=50'); E.runsError = ''; renderRuns(); }
+    try { E.runs = await getJ(API.process + '/api/eval/runs?limit=50'); E.runsError = ''; E.runsRead = true; renderRuns(); }
     catch (e) { E.runs = []; E.runsError = e.message; q('[data-r="runs"]').innerHTML = UI.errorBlock('실행 기록을 읽지 못했습니다', e.message, { retry: true }); }
     renderCmpForm(); renderStats();
   }

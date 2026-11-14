@@ -67,9 +67,12 @@
   }
   function latestRows(workitems, known) {
     const latest = new Map();
+    // 다시 수행으로 새 차수가 열리면 앞 차수의 닫힌 줄(취소됨)은 지금의 상태가 아니다 — 그 줄을 「멈춤」으로 세면 머리 줄과 그림이 지금 단계 대신 옛 줄을 가리킨다
+    const maxGen = Math.max(0, ...(workitems || []).map(w => w.generation || 0));
     (workitems || []).forEach(w => {
       if (!known(w.activity_id) || w.status === 'TODO') return;
-      if (w.status === 'CANCELLED' && /^cancelled:/i.test(String(w.log || '').trim())) return;
+      if (w.status === 'CANCELLED' && (w.generation || 0) < maxGen) return;
+      if (UI.neverReached(w, workitems)) return;      // 가지 않은 길의 단계는 지나온 것이 아니다(그림에서 남음으로 흐리게)
       const o = latest.get(w.activity_id);
       if (!o || (w.generation || 0) > (o.generation || 0) || ((w.generation || 0) === (o.generation || 0) && String(w.start_date || '') >= String(o.start_date || ''))) latest.set(w.activity_id, w);
     });
@@ -204,12 +207,13 @@
       canvas.addMarker(el.id, s === 'done' ? 'is-done' : s === 'now' ? 'is-now' : s === 'hold' ? 'is-hold' : s === 'fail' ? 'is-fail' : 'is-todo');
       if (s === 'done' && isBox(el)) overlays.add(el.id, { position: { top: -8, right: 10 }, html: '<div class="bpmn-check"></div>' });
     });
-    // 지금 단계 꼬리표는 상자 위 가운데에 둔다. 그 자리에 선 이름(「전달」 · 「예」)이 놓여 있으면 가리지 않게 상자 아래로 내린다
-    const labels = reg.filter(x => x.type === 'label' && x.labelTarget && x.labelTarget.waypoints);
+    // 지금 단계 꼬리표는 상자 위 가운데에 둔다. 그 자리에 이름표(선 이름 「전달」 · 「예」, 끝 이벤트 이름 「실행하지 않음」)가 놓여 있으면 가리지 않게 상자 아래로 내린다(아래도 가리면 위에 둔다)
+    const labels = reg.filter(x => x.type === 'label' && x.labelTarget);
     m.now.forEach(id => { const el = reg.get(xid(id)); if (!el || skip(el)) return; const s = m.st[id];
-      const text = tipText(view, id, s, mine), half = Math.max(40, text.length * 7 + 20) / 2, cx = el.x + el.width / 2;      // 꼬리표가 차지할 자리(글자 수로 어림한 폭, 높이 24 + 꼬리 12)
-      const hit = labels.some(l => l.x < cx + half && l.x + l.width > cx - half && l.y < el.y && l.y + l.height > el.y - 40);
-      overlays.add(el.id, { position: hit ? { bottom: -12, left: el.width / 2 } : { top: -12, left: el.width / 2 }, html: `<div class="bpmn-tip" data-state="${e(s)}"${hit ? ' data-side="below"' : ''}><i></i>${e(text)}</div>` }); });
+      const text = tipText(view, id, s, mine), half = Math.max(40, text.length * 7 + 20) / 2, cx = el.x + el.width / 2;      // 꼬리표가 차지할 자리(글자 수로 어림한 폭, 높이 24 + 꼬리 · 틈 16)
+      const covers = (top, bottom) => labels.some(l => l.x < cx + half && l.x + l.width > cx - half && l.y < bottom && l.y + l.height > top);
+      const below = covers(el.y - 44, el.y - 4) && !covers(el.y + el.height + 4, el.y + el.height + 44);
+      overlays.add(el.id, { position: below ? { bottom: -12, left: el.width / 2 } : { top: -12, left: el.width / 2 }, html: `<div class="bpmn-tip" data-state="${e(s)}"${below ? ' data-side="below"' : ''}><i></i>${e(text)}</div>` }); });
     D.marks = m;
     return m;
   }
@@ -231,15 +235,15 @@
     canvas.viewbox({ x, y, width: w, height: h });
   }
   // 전체를 맞춰 보이되 가장자리에 붙지 않게 조금 물린다(위 도구 줄 자리도 비운다)
-  function fit(D) { const canvas = D.viewer.get('canvas'); canvas.zoom('fit-viewport', 'auto'); canvas.zoom(canvas.zoom() * 0.9); }
+  function fit(D) { const canvas = D.viewer.get('canvas'); canvas.zoom('fit-viewport', 'auto'); canvas.zoom(canvas.zoom() * 0.94); }
   // 흐름 화면의 그림: 전체가 글자를 읽을 만한 크기로 들어가면 전체를 맞추고, 너무 길어 작아지면 시작 쪽을 읽을 만한 크기로 연다(나머지는 끌어서 · 전체 흐름 보기로)
   function fitReadable(D) {
     fit(D);
     const canvas = D.viewer.get('canvas'), vb = canvas.viewbox(), o = vb.outer, inner = vb.inner;
     D.partial = false;
-    if (canvas.zoom() >= 0.8 || !o.width || !inner.width) return;      // 0.8 아래로 줄면 상자 글자(13px)가 10px 밑으로 내려가 읽히지 않는다
+    if (canvas.zoom() >= 0.85 || !o.width || !inner.width) return;      // 0.85 아래로 줄면 상자 글자(13px)가 11px 밑으로 내려가 읽기 어렵다
     D.partial = true;                                                  // 시작 쪽만 보인다 — 그림 위 알림이 그 사실과 나머지를 보는 길을 말한다
-    const z = Math.min(1, Math.max(0.8, (o.height - 60) / inner.height)), w = o.width / z, h = o.height / z;
+    const z = Math.min(1, Math.max(0.92, (o.height - 60) / inner.height)), w = o.width / z, h = o.height / z;      // 진행 길과 같은 배율(상자 글자 약 12px)
     // 위 도구 막대(44px)가 그림의 상자를 가리지 않게: 그림이 판보다 높으면 맨 윗줄을 막대 아래에서 시작하고, 낮으면 가운데에 두되 막대 자리는 비운다
     const top = inner.y - 56 / z, mid = inner.y + inner.height / 2 - h / 2 - 12 / z;
     canvas.viewbox({ x: inner.x - 24, y: Math.min(mid, top), width: w, height: h });

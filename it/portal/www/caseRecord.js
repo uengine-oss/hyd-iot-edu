@@ -56,8 +56,6 @@
   const extState = (x, id) => !id ? 'none' : x === undefined ? 'loading' : x && x.error ? 'error' : 'ok';
 
   /* ================================================================ 이벤트 → 도구 호출 · 말 · 시스템 기록 행 */
-  // 서버가 기록 줄에 적어 보내는 작업자 말(「수업 버튼 [쿨러 열화 주입]」 — procsvc/instances.py · main.py)은 화면에서 「결함 시뮬레이션 [쿨러 열화 주입]」으로 읽는다. 원문 접기에는 받은 그대로 둔다
-  const noJargon = t => String(t || '').replace(/수업 버튼\s*(?=\[)/g, '결함 시뮬레이션 ').replace(/수업 버튼/g, '결함 시뮬레이션 단추');
   function rowsOf(evs) {
     if (window.hydTrace) evs=hydTrace.publicNotes(evs);
     const rows = [], byTool = new Map();
@@ -84,12 +82,13 @@
       } else if (ev.event_type === 'task_working' && d.type === 'file_artifact') {
         rows.push({ key: 'f:' + ev.id, kind: 'file', t0: ev.timestamp, minor: true, text: UI.baseName(d.path || '') });
       } else if (ev.event_type === 'task_working' && (d.type === 'notice' || d.type === 'evidence')) {
-        rows.push({ key: 'n:' + ev.id, kind: 'note', t0: ev.timestamp, text: UI.clean(W().text(d.content || d.name || '')) });
+        // 알림(notice): 워커가 이 실행에 대해 사람에게 알리는 말(재생한 결과 글의 조회 값이 준비 당시 값이라는 것 등) — 줄이지 않고 결론 아래에 그대로 보인다
+        rows.push({ key: 'n:' + ev.id, kind: 'note', notice: d.type === 'notice', t0: ev.timestamp, text: UI.clean(W().tableWords(W().text(d.content || d.name || ''))) });
       } else if (ev.event_type === 'task_working' && d.name && !d.type) {
         // 서버가 기록 줄 이름에 적어 보내는 「수업 버튼 [쿨러 열화 주입]」은 화면에서 「결함 시뮬레이션 [쿨러 열화 주입]」으로 읽는다(서버 문구는 instances.py — 화면은 원문 접기에 그대로 둔다)
-        rows.push({ key: 's:' + ev.id, kind: 'sys', t0: ev.timestamp, job: ev.job_id, text: noJargon(UI.clean(UI.logText(d.name))) + (d.attempt_failed ? ' · 실패한 시도' : ''), data: d });
+        rows.push({ key: 's:' + ev.id, kind: 'sys', t0: ev.timestamp, job: ev.job_id, text: UI.clean(UI.logText(d.name)) + (d.attempt_failed ? ' · 실패한 시도' : ''), data: d });
       } else if (ev.event_type === 'error') {
-        rows.push({ key: 'e:' + ev.id, kind: 'error', t0: ev.timestamp, text: noJargon(UI.clean(d.friendly || d.message || d.name || '오류')), data: d });
+        rows.push({ key: 'e:' + ev.id, kind: 'error', t0: ev.timestamp, text: UI.clean(d.friendly || d.message || d.name || '오류'), data: d });
       } else if (ev.event_type === 'human_asked') {
         rows.push({ key: 'a:' + ev.id, kind: 'note', t0: ev.timestamp, text: '사람에게 물음: ' + UI.clean(d.text || d.question || '') });
       } else if (ev.event_type === 'human_response') {
@@ -129,7 +128,10 @@
     const ctx = { inst, v, d, inc, agents, read, view, running, byTodo, acts, evDefs, gaps: [], producedBy, olderDone: !!ext.olderDone };
     const steps = [];
     steps.push(startStep(ctx));
-    const neverRan = w => w.status === 'CANCELLED' && !byTodo.has(w.id) && /^cancelled:/i.test(String(w.log || '').trim());
+    // 가지 않은 길의 단계(한 번도 시작되지 않은 채 닫힌 줄 — ui.js neverReached)는 본줄에 세우지 않고 이름만 모아 맨 아래 한 줄로 보인다(실패가 아니다)
+    const neverRan = w => UI.neverReached(w, view.workitems, byTodo.has(w.id));
+    const skipped = (view.workitems || []).filter(w => neverRan(w) && !evDefs[w.activity_id]).sort(UI.workitemOrder(view))
+      .map(w => ({ id: w.id, name: UI.flowName(w.activity_name || (acts[w.activity_id] || {}).name || w.activity_id), gen: w.generation || 0 }));
     const wis = (view.workitems || []).filter(w => !(w.status === 'TODO' && !byTodo.has(w.id)) && !neverRan(w))
       .filter(w => !(evDefs[w.activity_id] && w.status === 'CANCELLED'))        // 울리지 않은 타이머(승인이 먼저 옴)는 일어난 일이 아니다
       .filter(w => !(evDefs[w.activity_id] && evDefs[w.activity_id].eventDefinition !== 'timer'))
@@ -151,7 +153,14 @@
       s.state = s.state || (w.status === 'DONE' || w.status === 'COMPLETED' ? 'ok' : w.status === 'CANCELLED' ? 'stop' : w.draft_status === 'FAILED' ? 'fail' : execution.awaiting || execution.terminal?.event_type === 'task_deferred' ? 'wait' : live ? (w.status === 'PENDING' ? 'wait' : 'run') : 'idle');
       // 일은 끝냈는데 엔진이 아직 다음 단계로 넘기지 않은 순간(작업 행이 진행 중 · 제출됨): 「남음」(점선)이 아니라 「지금」으로 보인다
       if (s.state === 'idle' && running && ['IN_PROGRESS', 'SUBMITTED'].includes(w.status)) s.state = 'run';
-      if (w.status === 'CANCELLED' && !s.stopNote) s.stopNote = UI.logText(w.log) || '취소됨';
+      // 시작은 됐지만 실행 기록 없이 취소된 단계: 한 일의 문장(「명령을 보냈고 …」 · 「회복으로 판정했습니다」)을 만들지 않는다 — 실행하지 않았다는 것과 까닭만 말한다.
+      // (입고 대기처럼 그 단계의 만들개가 멈춘 까닭을 스스로 적은 것은 그대로 둔다)
+      if (w.status === 'CANCELLED' && !s.stopNote) {
+        s.stopNote = UI.logText(w.log) || '취소됨';
+        if (!byTodo.has(w.id) && s.type !== 'approve' && s.type !== 'human') Object.assign(s, { sentence: '이 단계는 실행하지 않았습니다.', chips: [], verdict: null, sections: (s.sections || []).filter(x => x && x.raw), notRun: true });
+        // 다시 수행으로 닫힌 앞 차수의 줄(사람이 답하기 전이던 단계 등): 실패가 아니다 — 붉은 표시 없이, 새 차수에서 다시 진행했다는 것만 말한다(까닭 글을 두 번 적지 않는다)
+        if (/^rework superseded/i.test(String(w.log || '').trim())) Object.assign(s, { state: 'idle', stopNote: '', sentence: '다시 수행을 요청해 이 단계는 닫혔고, 새 차수에서 다시 진행했습니다.' });
+      }
       steps.push(s);
     });
     for (const ev of byTodo.get('') || []) {
@@ -165,7 +174,7 @@
     if (!running && !steps.some(s => s.type === 'report')) { const r = endStep(ctx); if (r) steps.push(r); }
     gapsOf(ctx, steps);
     const t0 = inst.start_date, t1 = inst.end_date;
-    return { inst, v, steps, gaps: ctx.gaps, running, t0, t1, tools: steps.reduce((n, s) => n + (s.rows || []).filter(r => r.kind === 'tool').length, 0),
+    return { inst, v, steps, skipped, gaps: ctx.gaps, running, t0, t1, tools: steps.reduce((n, s) => n + (s.rows || []).filter(r => r.kind === 'tool').length, 0),
       outcome: window.hydResultReport ? hydResultReport.fromValues(v) : null, decision: d,
       namesUnread: read.agents.state === 'error' || read.people.state === 'error' };   // 이름 목록(AI 에이전트 · 사람)을 못 읽음 — 머리 요약에 한 줄(사유는 「기록에 없는 것」)
   }
@@ -624,7 +633,7 @@
         chips.push(chip('값 흐름 못 읽음', 'warning'));
       } else if (series && (series.points || []).length) {
         b.series = series;
-        sentence = `${seriesSentence(series, simS)} — ${rec == null ? '판정 중' : rec ? '회복으로 판정' : '미회복으로 판정'}했습니다.`;
+        sentence = `${seriesSentence(series, simS)} — ${rec == null ? '아직 판정하지 않았습니다' : rec ? '회복으로 판정했습니다' : '미회복으로 판정했습니다'}.`;
         sections.unshift(sec('지켜본 동안의 값', seriesHtml(series), { open: true }));
         chips.push(chip(`기준 안 ${Math.round((series.inside_share || 0) * 100)} %`, series.inside_last ? 'success' : 'danger'));
       }
@@ -669,22 +678,28 @@
      - 기준: 사건 기록의 재관측 기준(태그 · 비교 · 한계)
      - 판정까지: 서버가 기록 줄(REOBSERVE_STARTED · REOBSERVATION_EXTENDED)에 적은 마감 시각. 마감이 없으면 그 칸을 그리지 않는다(시간으로 차오르는 막대를 만들지 않는다) */
   const watchUnit = w => W().unit(String(w.tag).toLowerCase());
-  const watchValue = w => `<span data-cr-tag="${e(w.asset + ':' + w.tag)}" data-cr-op="${e(w.op)}" data-cr-limit="${e(w.limit == null ? '' : w.limit)}">–</span>`;
+  // 그릴 때 이미 아는 값(화면이 1초마다 받는 설비 상태)과 남은 시간을 바로 적는다 — 「–」로 그렸다가 다음 똑딱임에 채우면 첫 1초 동안 「지금 유온 – ℃ · –」가 보인다
+  const plantTag = (asset, tag) => { const units = typeof state === 'object' && state && state.plant && state.plant.units ? state.plant.units : null;
+    const raw = units && units[asset] && units[asset].tags ? units[asset].tags[tag] : null, val = raw == null ? null : Number(raw); return val == null || !Number.isFinite(val) ? null : val; };
+  const untilText = (due, label) => { const left = Math.ceil((Date.parse(due) - Date.now()) / 1000); return Number.isFinite(left) ? (left > 0 ? (label ? '판정까지 ' : '') + fmtMs(left * 1000) : '판정하는 중') : '–'; };
+  const watchValue = w => { const val = plantTag(w.asset, w.tag); return `<span data-cr-tag="${e(w.asset + ':' + w.tag)}" data-cr-op="${e(w.op)}" data-cr-limit="${e(w.limit == null ? '' : w.limit)}">${val == null ? '–' : e(W().num(val))}</span>`; };
+  // 효과 확인이 늘어났으면(서버 기록 줄 REOBSERVATION_EXTENDED 의 plan.extensions) 그 사실과 까닭을 말한다 — 말없이 「판정까지」를 다시 세지 않는다
+  const extendedNote = w => w.plan && w.plan.extensions > 0 ? `연장됨${w.plan.extensions > 1 ? ` ${w.plan.extensions}번째` : ''} — 값은 기준 안인데 경보가 아직 꺼지지 않아 더 지켜봅니다` : '';
   function watchLine(w) {
     const u = watchUnit(w);
-    return `지금 ${e(W().fieldName(String(w.tag).toLowerCase()))} <b class="num">${watchValue(w)}${u ? ' ' + e(u) : ''}</b>${w.limit != null ? ` · 기준 ${e(W().sym(w.op))} ${e(W().num(w.limit))}${u ? ' ' + e(u) : ''}` : ''}${w.plan ? ` · <b class="num" data-cr-until="${e(w.plan.due_at)}" data-cr-label>–</b>` : ''}`;
+    return `지금 ${e(W().fieldName(String(w.tag).toLowerCase()))} <b class="num">${watchValue(w)}${u ? ' ' + e(u) : ''}</b>${w.limit != null ? ` · 기준 ${e(W().sym(w.op))} ${e(W().num(w.limit))}${u ? ' ' + e(u) : ''}` : ''}${w.plan ? ` · <b class="num" data-cr-until="${e(w.plan.due_at)}" data-cr-label>${e(untilText(w.plan.due_at, true))}</b>` : ''}${extendedNote(w) ? ` · <span data-cr-extended>${e(extendedNote(w))}</span>` : ''}`;
   }
   function watchBox(b, w) {
     const u = watchUnit(w), name = W().fieldName(String(w.tag).toLowerCase());
     const lines = b.rows.filter(r => r.kind === 'sys' || r.kind === 'error').map(r => {
       const d = r.data || {}, rd = d.reading, p = d.plan;
       const sub = [rd && rd.value != null ? `${name} ${W().num(rd.value)}${u ? ' ' + u : ''} — 기준 ${rd.inside ? '안' : '밖'}` : '', p && p.window_s != null && !rd ? `${fmtMs(p.window_s * 1000)} 동안 지켜봅니다` : '', p && p.due_at ? `판정 예정 ${hhmmss(p.due_at)}` : ''].filter(Boolean).join(' · ');
-      return `<div class="line" data-kind="${r.kind === 'error' ? 'fail' : 'ok'}">${UI.icon(r.kind === 'error' ? 'x' : 'check')}<span class="line-text"><b>${e(noJargon(r.text).replace(/효과 재관측/g, '효과 확인').replace(/재관측/g, '효과 확인'))}</b>${sub ? `<span class="line-sub">${e(sub)}</span>` : ''}</span><span class="line-time num">${e(hhmmss(r.t0))}</span></div>`;
+      return `<div class="line" data-kind="${r.kind === 'error' ? 'fail' : 'ok'}">${UI.icon(r.kind === 'error' ? 'x' : 'check')}<span class="line-text"><b>${e(r.text)}</b>${sub ? `<span class="line-sub">${e(sub)}</span>` : ''}</span><span class="line-time num">${e(hhmmss(r.t0))}</span></div>`;
     }).join('');
-    return `<div class="stream" data-cr-watch><div class="stream-head"><i class="dot" data-tone="brand" data-live></i><span><b>효과 확인</b><span class="muted"> — 설비가 기준 안으로 돌아오는지 지켜보는 중</span></span>${b.t0 ? `<span class="elapsed num" data-since="${e(b.t0)}">${e(fmtMs(Date.now() - ts(b.t0)))}</span>` : ''}</div>
+    return `<div class="stream" data-cr-watch><div class="stream-head"><i class="dot" data-tone="brand" data-live></i><span><b>효과 확인</b><span class="muted"> — ${extendedNote(w) ? e(extendedNote(w)) : '설비가 기준 안으로 돌아오는지 지켜보는 중'}</span></span>${b.t0 ? `<span class="elapsed num" data-since="${e(b.t0)}">${e(fmtMs(Date.now() - ts(b.t0)))}</span>` : ''}</div>
       <dl class="turn-facts watch-facts"><dt>지금 ${e(name)}</dt><dd class="num">${watchValue(w)}${u ? `<small>${e(u)}</small>` : ''}<span class="tag" data-cr-inside hidden></span></dd>
         ${w.limit != null ? `<dt>기준</dt><dd class="num">${e(W().sym(w.op))} ${e(W().num(w.limit))}${u ? `<small>${e(u)}</small>` : ''}</dd>` : ''}
-        ${w.plan ? `<dt>판정까지</dt><dd class="num" data-cr-until="${e(w.plan.due_at)}">–</dd>` : ''}
+        ${w.plan ? `<dt>판정까지${w.plan.extensions > 0 ? ' (연장)' : ''}</dt><dd class="num" data-cr-until="${e(w.plan.due_at)}">${e(untilText(w.plan.due_at, false))}</dd>` : ''}
         ${w.simS != null ? `<dt>지켜보는 시간</dt><dd class="num">${e(fmtMs(w.simS * 1000))}<small>설비 시간${w.plan && w.plan.window_s != null ? ` · 실제 ${e(fmtMs(w.plan.window_s * 1000))}` : ''}</small></dd>` : ''}</dl>
       ${lines ? `<div class="stream-log" data-cr-livelog>${lines}</div>` : ''}</div>`;
   }
@@ -695,15 +710,14 @@
     const units = typeof state === 'object' && state && state.plant && state.plant.units ? state.plant.units : null;
     document.querySelectorAll('[data-cr-tag]').forEach(n => {
       const [asset, tag] = n.dataset.crTag.split(':');
-      const raw = units && units[asset] && units[asset].tags ? units[asset].tags[tag] : null, val = raw == null ? null : Number(raw);
-      const text = val == null || !Number.isFinite(val) ? '–' : W().num(val);
+      const val = plantTag(asset, tag);
+      const text = val == null ? '–' : W().num(val);
       if (n.textContent !== text) n.textContent = text;
       const badge = n.parentElement.querySelector('[data-cr-inside]'), cmp = INSIDE[n.dataset.crOp], limit = n.dataset.crLimit === '' ? null : Number(n.dataset.crLimit);
       if (badge && cmp && limit != null && val != null && Number.isFinite(val)) { const inside = cmp(val, limit); badge.hidden = false; badge.textContent = inside ? '기준 안' : '기준 밖'; badge.dataset.tone = inside ? 'ok' : 'warn'; }
     });
     document.querySelectorAll('[data-cr-until]').forEach(n => {
-      const left = Math.ceil((Date.parse(n.dataset.crUntil) - Date.now()) / 1000);
-      const text = Number.isFinite(left) ? (left > 0 ? ('crLabel' in n.dataset ? '판정까지 ' : '') + fmtMs(left * 1000) : '판정하는 중') : '–';
+      const text = untilText(n.dataset.crUntil, 'crLabel' in n.dataset);
       if (n.textContent !== text) n.textContent = text;
     });
   }
@@ -942,6 +956,14 @@
 
   /* 실시간 줄(키트 .line): AI 가 한 일 한 가지 = 한 줄. 아이콘(끝남 체크 · 하는 중은 도구 종류 · 실패 ×) + 굵은 한 문장 + 보조 줄(어느 도구 · 물음 → 받은 것) + 오른쪽 시각.
      보조 작업(쓸 도구 불러오기 · 파일 읽기 · 명령 실행)은 줄로 세우지 않는다 — 스킬 문서 읽기와 결과 파일 작성은 그 기록 줄이 따로 온다 */
+  // 스킬의 등록 이름(GET /api/skills 의 title) — 처음 한 번 읽고, 읽히면 다시 그린다. 못 읽었으면 「스킬 문서」라고만 한다(영문 이름을 내밀지 않는다)
+  let SKILLS = null;
+  function skillTitle(d) {
+    const id = d.skill || d.name || d.skill_name || '';
+    if (SKILLS === null && typeof getJ === 'function') { SKILLS = {}; getJ(API.process + '/api/skills').then(rows => { (rows || []).forEach(k => { if (k.title) SKILLS[k.skill_name] = k.title; }); redrawAll(); }).catch(() => {}); }
+    const known = UI.skillLabel(d, true);
+    return (SKILLS && SKILLS[id]) || (known.label !== known.raw ? known.label : '스킬 문서');
+  }
   const TOOL_ICON = [[/diagnos|cause/i, 'network'], [/evaluat|rank|compar/i, 'scale'], [/submit|decision/i, 'send'], [/neo4j|cypher|graph/i, 'network'], [/sql|query|select|timeseries/i, 'database'], [/mail|notify/i, 'send']];
   const toolIcon = tool => (TOOL_ICON.find(([re]) => re.test(String(tool || ''))) || [0, 'plug'])[1];
   const lineRows = s => (s.rows || []).filter(r => (r.kind === 'tool' && !r.minor) || r.kind === 'skill' || r.kind === 'file' || r.kind === 'error');
@@ -952,14 +974,16 @@
       const ask = r.inputEvent ? UI.toolAsk(r.inputEvent, true).summary : W().ask(r.tool, r.input);
       if (r.status === 'running') return live ? wrap('tool', toolIcon(r.tool), `${name} 중`, [sys, ask].filter(Boolean).join(' · '), true)
         : wrap('', toolIcon(r.tool), `${name} — 결과 기록 없음`, [sys, ask].filter(Boolean).join(' · '));
-      // 받은 것은 기록 줄의 미리보기로 요약한다. 화면이 보관된 원문을 다시 읽는 사정(「원문 읽는 중」)은 AI 가 한 일이 아니라 이 줄에 적지 않는다 — 잘림 · 막힘만 꼬리에 붙인다
-      // 기록 줄의 미리보기는 잘린 JSON 이라 화면이 못 읽을 수 있다 — 그것은 화면의 사정이지 AI 가 한 일의 결과가 아니므로 끝난 줄에 적지 않는다(전체 결과는 「원문」 보기에 있다)
-      const got = W().got(r.tool, r.output).replace(/^.*JSON으로 읽을 수 없습니다.*$/, '');
+      // 받은 것 한 줄: 워커는 4,000자를 넘는 도구 결과를 잘라 보내고(output_truncated) 전체는 따로 보관한다(full_output). 잘린 미리보기를 JSON 으로 읽지 않고
+      // 보관된 전체 결과로 요약한다(UI.fullToolIO — 처음 한 번 읽어 오고, 읽히면 다시 그린다). 읽어 오는 동안은 비워 둔다 — 그것은 화면의 사정이지 AI 가 한 일의 결과가 아니다
+      const io = r.ioEvent ? UI.fullToolIO(r.ioEvent, 'output', true) : UI.normalizeToolOutput(r.output);
+      const got = ['inline', 'text', 'complete'].includes(io.state) ? W().got(r.tool, io.value) : ['needs_full', 'loading'].includes(io.state) ? '' : io.error || '';
       const bad = r.status === 'fail', flag = ['warn', 'blocked'].includes(r.status) && r.badge ? ` — ${r.badge}` : '';
       return wrap(bad ? 'fail' : 'ok', bad ? 'x' : 'check', bad ? `${name}에 실패했습니다` : `${name}${W().josa(name, '을/를')} 마쳤습니다${flag}`, [sys, [ask, got].filter(Boolean).join(' → ')].filter(Boolean).join(' · '));
     }
-    if (r.kind === 'skill') return wrap('ok', 'check', '스킬 문서를 읽었습니다', UI.skillLabel(r.data, true).label);
-    if (r.kind === 'file') return wrap('ok', 'check', '결과를 적었습니다', r.text);
+    // 스킬은 등록한 이름으로(영문 폴더 이름 cooling-emergency-response 는 원문 보기에만), 결과 파일 이름(result.json)은 줄에 적지 않는다
+    if (r.kind === 'skill') return wrap('ok', 'check', '스킬 문서를 읽었습니다', skillTitle(r.data));
+    if (r.kind === 'file') return wrap('ok', 'check', '결과를 적었습니다', '');
     if (r.kind === 'error') return wrap('fail', 'x', r.text, '');
     return '';
   }
@@ -1044,6 +1068,9 @@
     return UI.optionsTable(opts.map((o, i) => ({ rank: o.rank || i + 1, name: W().text(o.name), code: o.sopId, kind: KIND[o.kind], note: why(o), pick: !!(rec && o.id === rec.id), out: !o.feasible,
       score: o.feasible && !cost(o) && Number.isFinite(+o.score) && o.score !== null ? +o.score : null, scoreHtml: !o.feasible || cost(o) ? e(score(o)) : null, role: o.approver && o.approver.name })));
   }
+  // 이 실행의 알림 줄(같은 말은 한 번): 결론 바로 아래, 읽히는 크기의 한 문단씩
+  const noticeTexts = rows => [...new Set((rows || []).filter(r => r.kind === 'note' && r.notice && r.text).map(r => r.text))];
+  const noticeHtml = rows => { const xs = noticeTexts(rows); return xs.length ? `<div class="cr-notices">${xs.map(t => `<p class="cr-notice">${UI.icon('info')}<span>${e(t)}</span></p>`).join('')}</div>` : ''; };
   function agentCard(s, m, gaps, seen) {
     const failed = ['fail', 'stop', 'bad'].includes(s.state);
     if (s.live && !failed) return liveBox(s, seen);
@@ -1061,8 +1088,9 @@
     }
     const evid = f.evid.length ? `<div class="step-evid"><ul class="evid">${f.evid.map(([ic, html]) => `<li>${UI.icon(ic)}<span>${html}</span></li>`).join('')}</ul></div>` : '';
     const alts = f.opts.length ? `<details class="fold" data-k="${e(s.key + ':opts')}"><summary>후보 비교<span class="muted num">${f.opts.length}</span></summary><div class="fold-body" data-flush>${optsTable(f)}</div></details>` : '';
+    const notices = noticeHtml(s.rows);
     const exec = `<footer class="step-foot">${sheetButton(s, '실행 기록', `도구 호출 ${tools}번${dur ? ` · ${dur}` : ''}`)}</footer>`;
-    return `<div class="step-card">${result}${evid}${alts}${exec}</div>`;
+    return `<div class="step-card">${result}${notices}${evid}${alts}${exec}</div>`;
   }
   // 한 단계의 조각 셋: 표시 아이콘 · 머리(이름 · 누가 · 시각) · 본문
   function stepParts(s, i, m, gaps, mine, seen) {
@@ -1242,7 +1270,8 @@
       // 남은 단계는 이름만 한 줄(진행 길의 남은 상자와 같은 차례)
       const path = m.running && window.hydFlow ? hydFlow.pathModel(C.view.definition || {}, C.view.workitems, m.inst) : null;
       const rest = path ? path.nodes.filter(n => n.state === 'todo') : [], fork = path ? path.fork : null;
-      const want = shown.map(s => s.key).concat(rest.length || fork ? ['next'] : []);
+      const skip = m.skipped || [];
+      const want = shown.map(s => s.key).concat(rest.length || fork ? ['next'] : [], skip.length ? ['skipped'] : []);
       [...box.children].forEach(li => { if (!want.includes(li.dataset.key)) li.remove(); });
       const place = (key, i, state, parts) => {
         let li = [...box.children].find(x => x.dataset.key === key);
@@ -1284,6 +1313,12 @@
       });
       // 남은 단계는 맨 아래 한 줄에 화살표로 이어 적는다(진행 길의 남은 상자와 같은 차례)
       if (rest.length || fork) place('next', shown.length, 'todo', { mark: 'circle-dashed', head: '<span class="step-title">남은 단계</span>', body: restHtml(rest, fork) });
+      // 가지 않은 길: 맨 아래 한 줄(수만), 펼치면 이름만. 실패가 아니므로 붉은 표시를 쓰지 않는다
+      if (skip.length) {
+        const names = [...new Set(skip.map(x => x.name))];
+        place('skipped', shown.length + (rest.length || fork ? 1 : 0), 'todo', { mark: 'minus', head: `<span class="step-title">가지 않은 길</span><span class="step-who">${names.length}단계</span>`,
+          body: `<details class="fold cr-skipped" data-k="skipped"><summary>이 처리 건이 지나가지 않은 단계의 이름</summary><div class="fold-body"><p class="muted">${e(names.join(' · '))}</p></div></details>` });
+      }
       tickWatch();
       drawSheet();
       if (opts.onDraw) opts.onDraw(m, host);
@@ -1298,5 +1333,5 @@
   wireBus();
   window.addEventListener('hyd-tool-payload',redrawAll);
 
-  window.hydRecord = { mount, build, rowsOf, mounted, altHtml, knowledgeHtml, agentFront };   // altHtml · knowledgeHtml: 판단 한 건만으로 그리는 부분(시험 · 다른 화면)
+  window.hydRecord = { mount, build, rowsOf, lineOf, noticeTexts, mounted, altHtml, knowledgeHtml, agentFront };   // altHtml · knowledgeHtml: 판단 한 건만으로 그리는 부분(시험 · 다른 화면)
 })();

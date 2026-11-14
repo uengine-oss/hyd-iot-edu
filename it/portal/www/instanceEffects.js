@@ -52,7 +52,7 @@
       if (!host.isConnected) return;
       const d = s.data;
       if (!d) {
-        host.innerHTML = UI.fold(esc(UI.t('inst.effects')), s.error ? UI.errorBlock('실행 효과를 읽지 못했습니다', s.error, { retry: true }) : UI.loading(), { open: !!s.error });
+        UI.swap(host, UI.fold(esc(UI.t('inst.effects')), s.error ? UI.errorBlock('실행 효과를 읽지 못했습니다', s.error, { retry: true }) : UI.loading(), { open: !!s.error }));
         host.querySelector('[data-retry]')?.addEventListener('click', () => { s.basis = null; load(); });
         return;
       }
@@ -77,7 +77,7 @@
         : UI.readonly('확인 역할', esc(roleName(s.role)), roles.length === 1 ? '이 흐름에서 사람이 맡는 역할이 하나뿐이라 이 역할로 요청합니다.' : s.role === prior ? '이전 승인을 한 역할로 요청하고 기록합니다.' : '이 흐름에서 사람이 맡는 역할로 요청하고 기록합니다.');
       const body = `<p>연결된 사건: ${UI.chip(d.incident.state)} · 설비 명령 ${d.incident.cmdId ? '보냄' : '보내지 않음'}</p>
         ${rows ? `<div class="table-container"><table class="table case-table"><thead><tr><th>확인</th><th>종류</th><th>내용</th><th>처리 방법</th><th>상태</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<p class="muted">기록된 외부 효과가 없습니다.</p>'}
-        <div><fieldset class="fieldset"><legend>${esc(UI.t('form.section.who'))}</legend><div role="group">
+        <div><fieldset class="fieldset"><div role="group">
           ${UI.actorInput('id="efBy"', s.by, s.busy ? 'disabled' : '')}
           ${roleField}
           ${UI.field({ label: UI.t('form.reason'), required: true, cls: 'wide', input: `<textarea id="efReason" rows="2" ${s.busy ? 'disabled' : ''}>${esc(s.reason)}</textarea>` })}
@@ -87,7 +87,7 @@
         ${pending.size === 0 && (d.effects || []).length ? `<p class="rework-done" role="status">모든 효과가 해결됐습니다. ${esc(UI.t('inst.rework'))}에서 새 차수를 요청할 수 있습니다.</p>` : ''}
         ${receipts ? UI.fold(`확인 기록 ${(d.receipts || []).length}건`, `<ul>${receipts}</ul>`) : ''}
         ${s.notice ? `<p role="status">${esc(s.notice)}</p>` : ''}`;
-      host.innerHTML = UI.fold(`${esc(UI.t('inst.effects'))} ${pending.size ? UI.chipText(`확인할 조치 ${pending.size}`, 'neutral') : ''}`, body, { open: !!s.pending });   // A161-U1 결함 8: 끝난 처리 건에서 폼이 펼쳐져 나오지 않게(필요할 때 연다)
+      UI.swap(host, UI.fold(`${esc(UI.t('inst.effects'))} ${pending.size ? UI.chipText(`확인할 조치 ${pending.size}`, 'neutral') : ''}`, body, { open: !!s.pending }));   // A161-U1 결함 8: 끝난 처리 건에서 폼이 펼쳐져 나오지 않게(필요할 때 연다)
       host.querySelectorAll('input[data-effect]').forEach(cb => cb.addEventListener('change', e => { e.target.checked ? s.picked.add(e.target.dataset.effect) : s.picked.delete(e.target.dataset.effect); draw(); }));
       host.querySelector('#efBy')?.addEventListener('input', e => s.by = e.target.value);
       host.querySelector('#efReason')?.addEventListener('input', e => s.reason = e.target.value);

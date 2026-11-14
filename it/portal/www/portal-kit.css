@@ -497,6 +497,9 @@ button:disabled { cursor: not-allowed; }
 .sidebar ul ul { margin: 2px 0 6px 15px; }
 .sidebar ul ul a:hover { color: var(--foreground); }
 .sidebar ul ul a[aria-current="page"]:hover { color: var(--brand-ink); background: var(--brand-soft); }
+/* 긴 도움말(꺼진 단추의 까닭 한 문장)은 한 줄로 뻗지 않고 줄을 바꾼다 — 좁은 폭에서 화면 밖으로 넘쳐 가로 스크롤을 만들었다 */
+[data-tooltip]::before { width: max-content; max-width: min(320px, 72vw); white-space: normal; text-align: left; }
+@media (max-width: 640px) { main [data-tooltip]::before { display: none; } }      /* 좁은 폭(손가락)에서는 뜨는 도움말을 끈다 — 단추 옆에 뜬 조각이 화면 밖으로 나가 가로 스크롤을 만든다 */
 .sidebar [data-tooltip]::before { display: none; }               /* 펼친 메뉴 줄에서는 이름이 보이므로 툴팁을 끈다 */
 .nav-count:empty { display: none; }
 .nav-count.unknown { background: none; color: var(--muted-foreground); box-shadow: inset 0 0 0 1px var(--input); }
@@ -672,8 +675,8 @@ dialog.sheet .view-tabs { margin: 0; padding: 0 24px; flex: none; }
 
 /* ═══════════════════════════════════════════════════════════════════════════════════════════════
    아직 옛 마크업에 기대는 곳을 받치는 규칙 — 화면 정돈 2단계에서 쓰는 곳이 없는 규칙 112개를 지웠고, 아래는 화면 모듈이 아직 내는 것만 남았다.
-   남은 것: 속성 없는 `btn`(= 보통 단추)을 내는 [data-kit] 밖의 자리, 옛 조치 카드(hopt 묶음 — hitl.js · enterprise.js cardHtml), 옛 상태 칩(chip tone 없는 것) · 점(dot up/down/off),
-   옛 목록(list > item) · 옛 이름–값(meta-list · cr-kv) · 감사 기록(audit · event-record), 그리고 클래스 없는 요소의 기본값(제목 · 문단 · 목록 · 표 · 입력 — `@layer base`).
+   남은 것: 속성 없는 `btn`(= 보통 단추)을 내는 [data-kit] 밖의 자리, 옛 상태 칩(chip tone 없는 것) · 점(dot up/down/off),
+   옛 목록(list > item) · 기록 줄(event-record), 그리고 클래스 없는 요소의 기본값(제목 · 문단 · 목록 · 표 · 입력 — `@layer base`).
    새로 쓰는 마크업은 이 규칙에 기대지 않는다(디자인기준.md 8-3 의 오른쪽 칸을 쓴다). 그 화면을 새 부품으로 옮기면 그 줄을 지운다.
    ═══════════════════════════════════════════════════════════════════════════════════════════════ */
 
@@ -743,7 +746,6 @@ a.btn:hover { text-decoration: none; }
 /* 글자색만 바꾸던 옛 표시 */
 .pos { color: var(--ok-ink); }
 .neg { color: var(--danger-ink); }
-.hint { margin: 8px 0; font-size: var(--fs-sm); color: var(--muted-foreground); }
 .muted { font-size: var(--fs-sm); line-height: 20px; }
 /* 옛 캔버스 도구 줄(.cv-bar — 이제 .canvas-bar) */
 .canvas svg { display: block; width: 100%; height: auto; font-family: var(--font-sans); }
@@ -795,7 +797,7 @@ a.btn:hover { text-decoration: none; }
   /* 옛 styles.css · components.css 에서 화면이 아직 쓰는 부품(토큰만 새 것으로 바꿈) */
   .split > * { min-width: 0; }
   .detail { min-width: 0; container-type: inline-size; overflow-wrap: anywhere; }
-  .board, .audit, .summary { overflow-wrap: anywhere; }
+  .board, .summary { overflow-wrap: anywhere; }
   @media (min-width: 1101px) {
     .split > div:first-child { position: sticky; top: 0; }
     .split > div:first-child .list { max-height: calc(100dvh - 240px); }
@@ -807,16 +809,11 @@ a.btn:hover { text-decoration: none; }
   .log { font-size: var(--fs-sm); line-height: 20px; color: var(--ink-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 16px; max-height: 240px; overflow: auto; }
   .log div { padding: 4px 0; border-bottom: 1px solid var(--border); }
   .log div:last-child { border-bottom: 0; }
-  .audit { font-size: var(--fs-sm); }
-  .audit > div { padding: 12px 0; border-bottom: 1px solid var(--border); }
-  .audit > div:last-child { border-bottom: 0; }
   .trace { border-left: 1px solid var(--border); margin: 16px 0 0 8px; padding-left: 24px; }
   .trace details summary { font-size: var(--fs-sm); cursor: pointer; color: var(--muted-foreground); }
   .event-record { padding: 12px 0; border-bottom: 1px solid var(--border); }
   .event-record:last-child { border-bottom: 0; }
-  .event-record > header { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }
   .event-record time { color: var(--muted-foreground); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
-  .event-record header > span { color: var(--muted-foreground); font-size: var(--fs-sm); }
   .event-record p { margin: 4px 0; color: var(--ink-2); }
   .z { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 999px; font-size: var(--fs-xs); font-weight: 600; font-style: normal; white-space: nowrap; }
   .z.ot { background: var(--ot-bg); color: var(--ot); }
@@ -843,11 +840,8 @@ a.btn:hover { text-decoration: none; }
   .list { display: flex; flex-direction: column; max-height: 70vh; overflow: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); }
   .list:empty { display: none; }
   dl.kv { display: grid; grid-template-columns: minmax(6em, max-content) minmax(0, 1fr); gap: 6px 24px; margin: 0; }
-  .meta-list { display: grid; gap: 6px 24px; margin: 0; }
-  .meta-list { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
-  .meta-list > div, .hopt .fold-body dl > div { display: grid; grid-template-columns: 7em minmax(0, 1fr); gap: 16px; }
-  dl.kv dt, .meta-list dt, .cr-kv dt, .hopt .fold-body dt { font-size: var(--fs-sm); line-height: 22px; color: var(--muted-foreground); }
-  dl.kv dd, .meta-list dd, .cr-kv dd, .hopt .fold-body dd { margin: 0; min-width: 0; color: var(--foreground); overflow-wrap: anywhere; }
+  dl.kv dt { font-size: var(--fs-sm); line-height: 22px; color: var(--muted-foreground); }
+  dl.kv dd { margin: 0; min-width: 0; color: var(--foreground); overflow-wrap: anywhere; }
   .form { display: flex; flex-direction: column; gap: 24px; }
   .field input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]), .field select, .field textarea { width: 100%; }
   .field.range .range-row { display: flex; align-items: center; gap: 8px; min-height: 32px; }
@@ -858,37 +852,6 @@ a.btn:hover { text-decoration: none; }
   .check input { margin-top: 4px; }
   .flow-cap { display: flex; justify-content: space-between; align-items: center; gap: 8px 16px; flex-wrap: wrap; margin-bottom: 8px; font-size: var(--fs-sm); color: var(--muted-foreground); }
   .hitl { padding: 16px 20px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); }
-  .hitl-opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-  @media (max-width: 1100px) {
-    .hitl-opts { grid-template-columns: 1fr; }
-  }
-  .hopt { display: grid; grid-template-columns: 24px 32px minmax(0, 1fr); gap: 8px; align-items: start; padding: 12px 16px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); cursor: pointer; }
-  div.hopt { cursor: default; }
-  .hopt:hover { border-color: var(--input); }
-  .hopt.sel { border-color: var(--brand); background: var(--brand-soft); }
-  .hopt.chosen { border-color: var(--ok-ink); }
-  .hopt.out { cursor: not-allowed; background: var(--sidebar); color: var(--muted-foreground); }
-  .hopt input { margin-top: 4px; }
-  .hrank { font-size: var(--fs-md); line-height: 24px; font-weight: 600; color: var(--ink-2); font-variant-numeric: tabular-nums; }
-  .hopt.out .hrank { color: var(--ink-4); }
-  .hbody { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-  .htitle { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: var(--fs-base); font-weight: 600; }
-  .hsub { font-size: var(--fs-sm); color: var(--muted-foreground); }
-  .hbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; }
-  .hbar i { display: block; height: 6px; max-width: 60%; border-radius: 999px; background: var(--ink-4); }
-  .hbar i.pos { background: var(--ok-ink); }
-  .hbar i.neg { background: var(--danger-ink); }
-  .hbar b { font-size: var(--fs-sm); white-space: nowrap; font-variant-numeric: tabular-nums; }
-  .hline { display: flex; gap: 12px; flex-wrap: wrap; font-size: var(--fs-sm); color: var(--ink-2); }
-  .hline b { color: var(--foreground); }
-  .hkpi { display: flex; flex-wrap: wrap; gap: 4px; }
-  .hkpi span { display: inline-flex; align-items: center; min-height: 22px; padding: 0 8px; border-radius: 999px; box-shadow: inset 0 0 0 1px var(--border); font-size: var(--fs-xs); color: var(--ink-2); }
-  .hkpi span.pos { color: var(--ok-ink); }
-  .hkpi span.neg { color: var(--danger-ink); }
-  .hkpi.cond .muted { box-shadow: none; padding: 0; }
-  .hmeta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: var(--fs-sm); color: var(--muted-foreground); }
-  .hopt .fold-body dl, .hopt .fold-body ol { margin: 8px 0; }
-  .hopt .fold-body .hmeta { display: inline-flex; gap: 4px; }
   .boards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: stretch; }
   @media (max-width: 1100px) {
     .boards { grid-template-columns: 1fr; }

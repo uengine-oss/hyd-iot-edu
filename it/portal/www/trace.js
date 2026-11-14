@@ -296,7 +296,7 @@
     evs.forEach(e => { const k = e.todo_id || ''; if (!byTodo.has(k)) byTodo.set(k, []); byTodo.get(k).push(e); });
     // a branch the engine cancelled before anyone worked on it (other path won, case ended) did not happen — the diagram shows it
     // as skipped; the trace lists only what ran. A person's close/cancel leaves events, so it stays.
-    const neverRan = w => w.status === 'CANCELLED' && !byTodo.has(w.id) && /^cancelled:/i.test(String(w.log || '').trim());
+    const neverRan = w => UI.neverReached(w, view ? view.workitems : null, byTodo.has(w.id));      // 가지 않은 길의 단계(ui.js) — 일어난 일만 적는다
     let wis = (view ? view.workitems || [] : []).filter(w => (w.status !== 'TODO' || byTodo.has(w.id)) && !neverRan(w));
     if (onlyWorkitem) wis = wis.filter(w => w.id === onlyWorkitem);
     const running = view && view.instance && view.instance.status === 'RUNNING';

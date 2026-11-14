@@ -337,6 +337,8 @@
 .unit-go { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 16px; border-top: 1px solid var(--border); font-size: var(--fs-sm); font-weight: 550; color: var(--brand-ink); }
 .unit-go:hover { background: var(--brand-soft); }
 .unit-go[hidden] { display: none; }
+.unit-go-none { margin: 0; padding: 10px 16px; border-top: 1px solid var(--border); font-size: var(--fs-sm); }
+.unit-go-none[hidden] { display: none; }
 .unit-go .ic { width: 14px; height: 14px; }
 @media (max-width: 1000px) { .units { grid-template-columns: minmax(0, 1fr); } }
 
@@ -457,7 +459,7 @@
 .sys-info p b { font-weight: 500; color: var(--cv-ink); }
 .sys-info .state { grid-column: 2; grid-row: 1 / span 2; display: inline-flex; align-items: center; gap: 7px; height: 26px; padding: 0 10px; border: 1px solid var(--cv-border); border-radius: 999px; font-size: var(--fs-xs); color: var(--cv-ink); white-space: nowrap; }
 .sys-info .open { grid-column: 3; grid-row: 1 / span 2; }
-.sys-info .hint { grid-column: 1 / -1; font-size: var(--fs-sm); color: var(--cv-ink-3); }
+.sys-info .sys-hint { grid-column: 1 / -1; font-size: var(--fs-sm); color: var(--cv-ink-3); }
 .btn-cv { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 1px solid rgb(255 255 255 / .14); border-radius: 8px; background: rgb(255 255 255 / .08); color: #fff; font-size: var(--fs-sm); font-weight: 500; white-space: nowrap; cursor: pointer; }
 .btn-cv:hover { background: rgb(255 255 255 / .14); }
 .btn-cv:focus-visible { outline: 2px solid var(--cv-now); outline-offset: 2px; }
@@ -465,15 +467,12 @@
 @media (max-width: 900px) { .sys-info { grid-template-columns: minmax(0, 1fr); } .sys-info .state, .sys-info .open { grid-column: 1; grid-row: auto; justify-self: start; } }
 
 /* ---------------- 오일 분석 입력: 폼 한 열(왼쪽) + 결과(오른쪽) ---------------- */
-.oil { display: grid; grid-template-columns: minmax(0, 420px) minmax(0, 1fr); gap: 24px; align-items: start; }
-.oil-form .fieldset > [role="group"] { display: grid; gap: 16px; }
-.oil-form select { width: 100%; }
 .oil-choice { display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 8px 24px; min-height: 32px; align-items: center; }
 .oil-choice label { display: inline-flex; align-items: center; gap: 8px; font-size: var(--fs-base); font-weight: 400; cursor: pointer; }
-.oil-form .form-foot { justify-content: flex-start; flex-wrap: wrap; }
+.oil-why { margin-top: 14px; }
+.oil-by { margin: 8px 0 0; font-size: var(--fs-xs); }
 .oil-result .panel-sec p { color: var(--ink-2); font-size: var(--fs-sm); }
 .oil-result .kv { margin-top: 10px; }
-@media (max-width: 1000px) { .oil { grid-template-columns: minmax(0, 1fr); } }
 
 /* ---------------- 업무 시스템 기록: 숫자 타일 → 업무 시스템마다 표 한 장 → 거래 기록 ---------------- */
 .bz-stats { margin-bottom: 20px; }
@@ -652,11 +651,8 @@
 .kpi-lines > li { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; font-size: var(--fs-sm); }
 .kpi-lines small { display: block; color: var(--muted-foreground); font-size: var(--fs-xs); }
 
-/* ================================================================= 판단 요약 한 줄과 그 아래 접기(enterprise.js summaryBlock — 업무 시스템 기록의 「처리 건 없이 제출된 판단」). 규칙 판단 화면의 배치는 reading.css(.io)에 있다 */
-.dc-conclusion { margin: 0 0 8px; font-size: var(--fs-md); line-height: 24px; font-weight: 600; max-width: 72ch; }
-.dc-more { margin: 0 0 8px; color: var(--ink-2); max-width: 72ch; }
+/* 처리 건 없이 남은 판단(업무 시스템 기록)의 접기 줄 */
 .dc-folds { display: flex; flex-direction: column; align-items: flex-start; margin-top: 24px; padding-top: 12px; border-top: 1px solid var(--border); }
 .dc-folds > details { width: 100%; }
 
-/* 조치 후보 카드(enterprise.js cardHtml)의 절차 목록(번호가 칸 안에 들어오게) */
-.dc-steps { margin: 0; padding-left: 16px; }
+.lab-buttons [data-tooltip]::before { max-width: 200px; }      /* 카드 안에서 뜨는 도움말이 카드 밖(화면 오른쪽 끝)으로 나가 가로 스크롤을 만들지 않게 */

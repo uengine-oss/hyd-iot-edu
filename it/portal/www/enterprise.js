@@ -734,13 +734,6 @@ function initOntology() {
 
 /* ================================================= action candidate cards (shared with hitl.js and instances.js) */
 function signNum(v) { return (v > 0 ? '+' : '') + Number(v).toFixed(2); }
-function effChip(x, cls) {
-  const t = `${x.name} ${x.dir === 1 ? '↑' : '↓'}${x.owner ? ' · ' + x.owner : ''}`;
-  return `<span class="${cls}" title="영향 강도 ${x.weight}${x.conds && x.conds.length ? ' · 조건: ' + x.conds.join(', ') : ''}">${esc(t)}</span>`;
-}
-function ruleChip(r, cls, label) {
-  return `<span class="${cls}" title="${esc((r.when || '') + (r.sources && r.sources.length ? ' · 근거 ' + r.sources.join(', ') : ''))}">${esc(label)} · ${esc(UI.ruleLabel(r))}${r.annotation || UI.names[r.rule] ? '' : UI.raw(r, { title: '규칙 원문' })}</span>`;
-}
 // FAN_SET=100 → "팬 100 %" (명칭표 "카드"): the action code and target stay in the evidence fold
 const ACTION_KO = { FAN_SET: ['팬', ' %'], LOAD_SET: ['부하', ' %'], PUMP_SELECT: ['펌프', ''], WO_CREATE: [null, ''], PR_CREATE: ['구매 요청', ''] };
 function actionLabel(a, option) {
@@ -763,64 +756,62 @@ function forecastLine(o) {
 // 머리말 값: 예측이 고르는 근거인 안만 예측, 아니면 이 안의 업무 값(규칙은 approvalCard.js forecastDecides · ownValues 한 곳)
 // decision: 같은 판단 {options, facts} — 카드 한 장만으로는 "안마다 예측이 갈리는가"를 알 수 없다
 function headValue(o, decision) {
-  if (!decision || !Array.isArray(decision.options)) throw new Error('cardHtml: opt.decision({options, facts})이 필요합니다');
+  if (!decision || !Array.isArray(decision.options)) throw new Error('optionDetail: opt.decision({options, facts})이 필요합니다');
   if (hydApprove.forecastDecides(o, decision.options)) return forecastLine(o);
   const v = hydApprove.ownValues(o, decision);
   return v.length ? `이 안의 값 <b>${esc(v.join(' · '))}</b>` : '';
 }
-function forecastContextHtml(c) {
-  if (!c) return '';
-  if (c.error) return `<p class="neg">${esc(c.error)}</p>`;
-  const val = k => Number.isFinite(c.values?.[k]) ? Number(c.values[k]).toFixed(1) : '미확인';
-  const inputLabels = { ts1: '현재 유온 ℃', t_amb: '주변 온도 ℃', fan_pct: '팬 %', load_pct: '부하 %', cooler_health: '냉각 성능 비율', leak: '누설 비율', bearing_wear: '베어링 마모', state: '설비 상태', pump: '운전 펌프' };
-  return `<p>${esc(c.horizon_s)}초 뒤 유온 ${val('ts1')} ℃ · 압력 ${val('ps1')} bar · 진동 ${val('vs1')} mm/s · 구간 최대 유온 ${val('ts1_peak')} ℃</p>
-    <p class="muted">설비 예측 모델의 계산입니다. 지금의 열화와 주변 온도가 그대로 유지된다는 조건이며, 조치 뒤 다시 잰 값이 아닙니다. 모델 ${esc(c.model_id)} · 판본 ${esc(c.model_revision)} · 입력 시점 ${esc(UI.dateTime(c.source_t))}</p>
-    <p class="muted">${Object.entries(inputLabels).map(([k, label]) => `${label} ${esc(c.inputs?.[k] ?? '미확인')}`).join(' · ')}</p>`;
-}
-function cardHtml(o, opt = {}) {
-  const evaluation=UI.evaluationInfo(o,opt.decision), blocked=UI.executionBlocked(o,opt.decision);
-  const hasCmd = (o.actions || []).some(a => a.kind === 'command'), hasTx = (o.actions || []).some(a => a.kind !== 'command');
+/* 조치 후보 하나의 근거(펼친 한 판) — 조치 후보 표(UI.optionsTable)의 한 줄을 자세히 볼 때 쓴다: 규칙 판단의 「후보별 근거」, 값 조정 미리 보기의 검토 결과, 처리 건 없이 남은 판단.
+   옛 조치 카드(hopt)를 대신한다. 접기를 두지 않는다 — 이름–값 줄(dl.kv) 하나와 손익 표 하나다. 순위 · 점수 막대 · 종류 · 승인 역할은 표가 이미 말하므로 되풀이하지 않는다.
+   opt = { rec(추천 안 id), chosen(고른 안 id), decision({options, facts} — 머리 값이 예측인지 업무 값인지 가른다) } */
+function optionDetail(o, opt = {}) {
+  const evaluation = UI.evaluationInfo(o, opt.decision);
   const uncond = x => !x.conditional, cond = x => x.conditional;
   const sp = o.scoreParts || {};
   const scoreLabels = { bsc: UI.t('score.bsc'), forecast: UI.t('score.forecast'), warn: UI.t('score.warn'), penalty: UI.t('score.penalty'), precedent: UI.t('score.precedent'), delivery: UI.t('score.delivery'), quality: UI.t('score.quality') };
   const ranking = o.rankingEvidence;
-  const chips = [o.id === opt.rec ? UI.chipText(evaluation.state==='analysis' ? '모의 1순위' : UI.t('chip.recommended'), 'accent') : '', hasCmd ? UI.chipText(UI.t('chip.control'), 'neutral') : '', hasTx ? UI.chipText(UI.t('chip.workOrder'), 'warning') : '',
+  const chips = [o.id === opt.rec ? UI.chipText(evaluation.state === 'analysis' ? '모의 1순위' : UI.t('chip.recommended'), 'accent') : '',
     o.id === opt.chosen ? UI.chipText(UI.t('chip.chosen'), 'success') : '', o.feasible ? '' : UI.chipText(UI.t('chip.excluded'), 'danger')].join('');
-  const line = [headValue(o, opt.decision), `${esc(UI.t('card.approver'))} <b>${esc((o.approver || {}).name || '–')}</b>`, o.precedent && o.precedent.n ? `${esc(UI.t('card.precedent'))} <b>${o.precedent.n}건 (${Math.round(o.precedent.share * 100)} %)</b> <span class="muted">${esc(UI.t('card.precedentFixed'))}</span>` : ''].filter(Boolean).map(x => `<span>${x}</span>`).join('');
-  // A141: 성과 지표 칩 묶음 · 감점/경고 칩 · 절차 번호는 근거 접기 안으로 (화면에는 행동 근거인 점수 · 예상 유온 · 승인 역할 · 제외 사유만)
-  const kpiAll = `<span class="hkpi">${(o.gains || []).filter(uncond).map(x => effChip(x, 'pos')).join('')}${(o.losses || []).filter(uncond).map(x => effChip(x, 'neg')).join('')}</span>`;
-  const softAll = `${(o.penalties || []).map(v => ruleChip(v, 'soft', `${UI.t('card.penalty')} ${v.penalty}`)).join('')}${(o.warnings || []).map(v => ruleChip(v, 'soft', UI.t('card.warn'))).join('')}`;
-  const evidence = `
-    ${o.reviewed_choice ? `<p><b>${esc(UI.t('card.baseSop'))}</b> ${esc(o.reviewed_choice.reference_name || o.sopId)} · ${(o.reviewed_choice.reference_actions || []).map(a => esc(actionLabel(a, o))).join(' · ')}</p>` : ''}
-    <dl>${o.sopId ? `<div><dt>${esc(UI.t('card.sop'))}</dt><dd>${esc(o.sopId)}</dd></div>` : ''}
-    <div><dt>${esc(UI.t('card.score'))}</dt><dd>${Object.entries(sp).map(([key, value]) => `${esc(scoreLabels[key] || key)} ${Number.isFinite(value) ? signNum(value) : '미확인'}`).join(' · ') || '–'}</dd></div>
-    ${(o.gains || []).some(uncond) || (o.losses || []).some(uncond) ? `<div><dt>${esc(UI.t('fold.kpi'))}</dt><dd>${kpiAll}</dd></div>` : ''}
-    ${softAll ? `<div><dt>${esc(UI.t('fold.penalty'))}</dt><dd><span class="hmeta">${softAll}</span></dd></div>` : ''}
-    <div><dt>${esc(UI.t('skill.actions'))}</dt><dd>${(o.actions || []).map(a => `${esc(actionLabel(a, o))} <span class="muted">(${esc(a.code)}${a.value != null ? '=' + esc(a.value) : ''}${a.targetName ? ' → ' + esc(a.targetName) : ''})</span>`).join(' · ') || esc(UI.t('card.noAction'))}</dd></div>
-    ${(o.forecast || []).length ? `<div><dt>${esc(UI.t('score.forecast'))}</dt><dd>${(o.forecast || []).map(f => `<span title="계산 방법: ${esc(f.method)}">${esc(f.name)} ${esc(f.value)}${esc(f.unit || '')}</span>`).join(' · ')}</dd></div>` : ''}
-    ${(o.gains || []).some(cond) || (o.losses || []).some(cond) ? `<div><dt>${esc(UI.t('card.expected'))}</dt><dd><span class="hkpi">${(o.gains || []).filter(cond).map(x => effChip(x, 'pos')).join('')}${(o.losses || []).filter(cond).map(x => effChip(x, 'neg')).join('')}</span></dd></div>` : ''}
-    ${(o.selectedBy || []).length ? `<div><dt>${esc(UI.t('skill.rules'))}</dt><dd>${(o.selectedBy || []).map(r => `${esc(UI.ruleLabel(r))}${(r.sources || []).length ? ` <span class="muted">(${esc(r.sources.join(', '))})</span>` : ''}${r.annotation || UI.names[r.rule] ? '' : UI.raw(r, { title: '규칙 원문' })}`).join('<br>')}</dd></div>` : ''}
-    ${(o.steps || []).length ? `<div><dt>${esc(UI.t('card.steps'))}</dt><dd><ol class="dc-steps">${(o.steps || []).map(s => `<li>${esc(UI.idText(s.text))}${s.manual ? ` <span class="muted" title="${esc(s.manual.excerpt || '')}">[${esc(s.manual.ref)} ${esc(s.manual.title || '')}]</span>` : ''}</li>`).join('')}</ol></dd></div>` : ''}
-    ${o.precedent && o.precedent.reasons && o.precedent.reasons.length ? `<div><dt>${esc(UI.t('card.precedent'))}</dt><dd>${o.precedent.reasons.map(esc).join(' / ')}</dd></div>` : ''}</dl>
-    ${o.forecastContext ? UI.fold(esc(UI.t('card.forecastLimits')), forecastContextHtml(o.forecastContext), { cls: 'small' }) : ''}
-    ${ranking ? UI.fold(esc(UI.t('card.scoreHow')), `${Object.entries(ranking.policy?.components || {}).map(([key, expr]) => `<div>${esc(scoreLabels[key] || key)}: <code>${esc(expr)}</code> = ${esc(sp[key])}</div>`).join('')}<div class="muted">${esc(ranking.conditionMode || '')}</div>`, { cls: 'small' }) : ''}
-    ${(o.tradeoffEvaluation || []).length ? UI.fold(`${esc(UI.t('kpi'))} 경로와 조건 판정 ${o.tradeoffEvaluation.length}건`, o.tradeoffEvaluation.map(p => `<div><b>${esc(CHECK_STATUS[p.status] || p.status)}</b> ${esc(p.name)} · 강도 ${esc(p.weight)}<br><span class="muted">${esc((p.nodes || []).join(' → '))}</span>${(p.checks || []).filter(c => c.description || c.status !== 'TRUE').map(c => `<p>${esc(c.description)} · ${esc(CHECK_STATUS[c.status] || c.status)}<br>${Object.entries(c.inputs || {}).map(([alias, v]) => `<span title="${esc(alias)} · ${esc(v.variable)}">${esc(v.source === 'forecast' ? '후보 예측' : '현재 사실')} ${esc(window.hydWords.fieldName(v.variable))} = ${esc(v.value == null ? '미확인' : factValue(v.variable, v.value))}</span>`).join(' · ')}${c.error ? `<br>${esc(c.error)}` : ''}</p>`).join('')}</div>`).join(''), { cls: 'small' }) : ''}`;
-  const head = `<span class="hrank">${o.feasible ? o.rank : '–'}</span>
-    <span class="hbody"><span class="htitle">${esc(UI.idText(o.name))} ${chips}</span>
-      ${o.description ? `<span class="hsub">${esc(UI.idText(o.description))}</span>` : ''}
-      <span class="hbar"><i style="width:${Math.min(100, Math.round(Math.abs(o.score || 0) / (opt.maxAbs || 1) * 100))}%" class="${(o.score || 0) >= 0 ? 'pos' : 'neg'}"></i><b class="num">${esc(UI.t('card.score'))} ${signNum(o.score || 0)}</b></span>
-      <span class="hline">${line}</span>
-      ${UI.evaluationHtml(o,opt.decision)}
-      ${window.hydWords?.purchaseContextHtml(o,opt.decision) || ''}
-      ${window.hydWords?.maintenanceHtml(o) || ''}
-      ${(o.violations || []).length ? `<span class="hmeta">${ruleChip(o.violations[0], 'hard', UI.t('chip.excluded'))}${o.violations.length > 1 ? `<span class="muted">+${o.violations.length - 1}</span>` : ''}</span>` : ''}
-      ${o.money && window.hydWhatif ? hydWhatif.moneyFold(o.money) : ''}
-      ${UI.fold(esc(UI.t('card.evidence')), ((o.violations || []).length > 1 ? `<p><b>${esc(UI.t('fold.violations'))}</b> <span class="hmeta">${o.violations.map(v => ruleChip(v, 'hard', UI.t('chip.excluded'))).join('')}</span></p>` : '') + evidence, { cls: 'small' })}
-    </span>`;
-  if (!opt.selectable) return `<div class="hopt ${o.feasible ? '' : 'out'} ${o.id === opt.rec ? 'rec' : ''} ${o.id === opt.chosen ? 'chosen' : ''}">${'<span></span>' + head}</div>`;
-  return `<label class="hopt ${o.feasible ? '' : 'out'} ${opt.selected ? 'sel' : ''} ${o.id === opt.rec ? 'rec' : ''} ${o.id === opt.chosen ? 'chosen' : ''}">
-    <input type="radio" name="${opt.name || 'hopt'}" value="${esc(o.id)}" ${opt.selected ? 'checked' : ''} ${(o.feasible || opt.reviewable) && opt.pending && !blocked ? '' : 'disabled'}>${head}</label>`;
+  const eff = xs => xs.map(x => `<span title="영향 강도 ${esc(x.weight)}${x.conds && x.conds.length ? ' · 조건: ' + esc(x.conds.join(', ')) : ''}">${esc(x.name)} ${x.dir === 1 ? '↑' : '↓'}${x.owner ? ` <span class="muted">${esc(x.owner)}</span>` : ''}</span>`).join(' · ');
+  const rule = (r, label) => `<span title="${esc((r.when || '') + (r.sources && r.sources.length ? ' · 근거 ' + r.sources.join(', ') : ''))}">${esc(label)} — ${esc(UI.ruleLabel(r))}</span>`;
+  const gains = (o.gains || []), losses = (o.losses || []);
+  const fc = o.forecastContext, fcVal = k => Number.isFinite(fc?.values?.[k]) ? Number(fc.values[k]).toFixed(1) : '미확인';
+  const rows = [
+    [UI.t('fold.violations'), (o.violations || []).map(v => rule(v, UI.t('chip.excluded'))).join('<br>')],
+    ['', headValue(o, opt.decision)],
+    [UI.t('card.baseSop'), o.reviewed_choice ? `${esc(o.reviewed_choice.reference_name || o.sopId)} · ${(o.reviewed_choice.reference_actions || []).map(a => esc(actionLabel(a, o))).join(' · ')}` : ''],
+    [UI.t('skill.actions'), (o.actions || []).map(a => `${esc(actionLabel(a, o))}${a.targetName ? ` <span class="muted">→ ${esc(a.targetName)}</span>` : ''}`).join(' · ') || esc(UI.t('card.noAction'))],
+    [UI.t('card.score'), Object.entries(sp).map(([key, value]) => `${esc(scoreLabels[key] || key)} <span class="num">${Number.isFinite(value) ? signNum(value) : '미확인'}</span>`).join(' · ')],
+    ['좋아지는 지표', eff(gains.filter(uncond))], ['나빠지는 지표', eff(losses.filter(uncond))],
+    [UI.t('card.expected'), eff([...gains.filter(cond), ...losses.filter(cond)])],
+    [UI.t('fold.penalty'), [...(o.penalties || []).map(v => rule(v, `${UI.t('card.penalty')} ${v.penalty}`)), ...(o.warnings || []).map(v => rule(v, UI.t('card.warn')))].join('<br>')],
+    [UI.t('score.forecast'), (o.forecast || []).map(f => `<span title="계산 방법: ${esc(f.method)}">${esc(f.name)} ${esc(f.value)}${esc(f.unit || '')}</span>`).join(' · ') +
+      (fc ? fc.error ? `<p class="muted" data-tone="danger">${esc(fc.error)}</p>` : `<p class="muted">${esc(fc.horizon_s)}초 뒤 유온 ${fcVal('ts1')} ℃ · 압력 ${fcVal('ps1')} bar · 진동 ${fcVal('vs1')} mm/s · 구간 최대 유온 ${fcVal('ts1_peak')} ℃. 설비 예측 모델의 계산이며, 지금의 열화와 주변 온도가 그대로라는 조건입니다(조치 뒤 다시 잰 값이 아닙니다).</p>` : '')],
+    [UI.t('skill.rules'), (o.selectedBy || []).map(r => `${esc(UI.ruleLabel(r))}${(r.sources || []).length ? ` <span class="muted">(${esc(r.sources.join(', '))})</span>` : ''}`).join('<br>')],
+    [UI.t('card.precedent'), o.precedent && o.precedent.n ? `${o.precedent.n}건 (${Math.round(o.precedent.share * 100)} %) <span class="muted">${esc(UI.t('card.precedentFixed'))}</span>${(o.precedent.reasons || []).length ? `<p class="muted">${o.precedent.reasons.map(esc).join(' / ')}</p>` : ''}` : ''],
+    [UI.t('card.steps'), (o.steps || []).length ? `<ol class="opt-steps">${o.steps.map(st => `<li>${esc(UI.idText(st.text))}${st.manual ? ` <span class="badge" data-variant="outline" title="${esc(st.manual.excerpt || '')}">${esc(st.manual.ref)}</span>` : ''}</li>`).join('')}</ol>` : ''],
+    [UI.t('card.scoreHow'), ranking ? Object.entries(ranking.policy?.components || {}).map(([key, expr]) => `<div>${esc(scoreLabels[key] || key)} ${UI.code(expr)} <span class="num">= ${esc(sp[key])}</span></div>`).join('') + (ranking.conditionMode ? `<p class="muted">${esc(ranking.conditionMode)}</p>` : '') : ''],
+    [`${UI.t('kpi')} 경로`, (o.tradeoffEvaluation || []).map(p => `<div><b>${esc(CHECK_STATUS[p.status] || p.status)}</b> ${esc(p.name)} <span class="muted">강도 ${esc(p.weight)} · ${esc((p.nodes || []).join(' → '))}</span>` +
+      (p.checks || []).filter(c => c.description || c.status !== 'TRUE').map(c => `<p class="muted">${esc(c.description)} · ${esc(CHECK_STATUS[c.status] || c.status)}${c.error ? ' · ' + esc(c.error) : ''}</p>`).join('') + '</div>').join('')],
+    [UI.t('card.sop'), o.sopId ? `<span class="mono">${esc(o.sopId)}</span>` : ''],
+  ].filter(([, v]) => v);
+  const money = o.money && window.hydWhatif ? hydWhatif.moneyHtml(o.money) : '';
+  return `<article class="opt-detail" data-opt="${esc(o.id)}"><header class="opt-detail-head"><span class="rank num">${o.feasible ? esc(o.rank ?? '–') : '–'}</span><b>${esc(UI.idText(o.name))}</b>${chips}</header>` +
+    (o.description ? `<p class="muted">${esc(UI.idText(o.description))}</p>` : '') +
+    `${UI.evaluationHtml(o, opt.decision)}${window.hydWords?.purchaseContextHtml(o, opt.decision) || ''}${window.hydWords?.maintenanceHtml(o) || ''}` +
+    `<dl class="kv">${rows.map(([n, v]) => n ? `<dt>${esc(n)}</dt><dd>${v}</dd>` : `<dt class="sr-only">핵심 값</dt><dd class="opt-key">${v}</dd>`).join('')}</dl>${money}</article>`;
 }
+// 조치 후보 여럿의 근거를 한 번에 하나씩: 위에 고르기 칸, 아래에 고른 후보의 근거(optionDetail). 후보가 하나면 고르기 칸을 두지 않는다
+function optionDetails(opts, opt = {}) {
+  if (!opts.length) return '';
+  const first = opts.find(o => o.id === opt.rec) || opts[0];
+  const pick = opts.length > 1 ? `<div role="group" class="field opt-pick"><label>조치 후보</label><select class="select" data-opt-pick>${opts.map(o => `<option value="${esc(o.id)}"${o === first ? ' selected' : ''}>${o.feasible ? esc(o.rank ?? '') + '순위 · ' : '제외 · '}${esc(UI.idText(o.name))}</option>`).join('')}</select></div>` : '';
+  return `<div class="opt-details">${pick}${opts.map(o => `<div data-opt-body="${esc(o.id)}"${o === first ? '' : ' hidden'}>${optionDetail(o, opt)}</div>`).join('')}</div>`;
+}
+document.addEventListener('change', ev => {
+  const sel = ev.target.closest && ev.target.closest('[data-opt-pick]'); if (!sel) return;
+  sel.closest('.opt-details').querySelectorAll('[data-opt-body]').forEach(n => { n.hidden = n.dataset.optBody !== sel.value; });
+});
 function reviewMatches(review, decision, option, parameters, scope = {}) {
   const saved = review?.snapshot?.options?.[0]?.reviewed_choice?.parameters;
   return !!(review?.id && review?.snapshot?.id === decision && review?.snapshot?.options?.[0]?.id === option
@@ -833,7 +824,7 @@ function reviewMatches(review, decision, option, parameters, scope = {}) {
 function rangeField(id, label, a, value) {
   return `<div class="field range"><label for="${id}">${esc(label)}</label><div class="range-row"><input type="range" id="${id}" min="${a.min ?? 0}" max="${a.max ?? 100}" value="${esc(value)}"><output for="${id}">${esc(value)} %</output></div></div>`;
 }
-window.hydCards = { cardHtml, reviewMatches, rangeField, actionLabel };
+window.hydCards = { optionDetail, optionDetails, reviewMatches, rangeField, actionLabel };
 
 /* ================================================= 규칙 판단(판단 실험)
    짜임(디자인 기준 5-6): 왼쪽 조건 판(index.html #decForm) → 오른쪽 결과(#decResult). 결과는 결론 한 줄과 숫자 넷 → 조치 후보 비교(.opts) → 근거(원인 · 증거) → 원문 접기.
@@ -850,13 +841,19 @@ async function loadDecisionView() {
   }
   if (sel.options.length && assetSel.options.length) return;
   const pats = sel.options.length ? [...sel.options] : await loadPatterns();
-  if (!sel.options.length)
-  pats.forEach(p => sel.append(new Option(`${p.name}${p.failureModes && p.failureModes.length ? ' → ' + p.failureModes.join(', ') : ''}`, p.code)));
+  if (!sel.options.length) { sel.innerHTML = UI.patternOptions(pats); sel.onchange = decPatternWhy; }
   $('#decRun').disabled = !pats.length || !assetSel.options.length;
+  decPatternWhy();
   if (!pats.length) box.innerHTML = UI.errorBlock(UI.t('dec.noPatterns'), ent.patternsError || '지식 그래프에 이상 패턴이 없습니다', { retry: true });
   else if (!assetSel.options.length) box.innerHTML = UI.errorBlock('설비 목록을 읽지 못했습니다', ent.assetsError, { retry: true });
   else if (box.querySelector('.alert')) box.innerHTML = decEmpty();      // 다시 읽어 됐으면 앞의 오류 판을 거둔다
   box.querySelector('[data-retry]')?.addEventListener('click', () => loadDecisionView());
+}
+// 고른 이상 패턴이 원인 진단 대상이 아니면(서버 judgeable=false) 누르기 전에 그 까닭(서버 reason)을 칸 아래에 보이고 [모의 판단]을 끈다
+function decPatternWhy() {
+  const why = UI.patternWhy(ent.patterns, $('#decPattern').value), line = $('#decWhy');
+  line.hidden = !why; line.textContent = why;
+  if ($('#decPattern').options.length && $('#decAsset').options.length) $('#decRun').disabled = !!why;
 }
 async function runDecision() {
   if (ent.busy) return; ent.busy = true;
@@ -908,13 +905,8 @@ const dedupeText = text => {
   }
   return out.map(o => o.text != null ? o.text : `${o.subjects.join(', ')} — ${o.reason}${o.tail}`).join('; ');
 };
-// first sentence = up to a period followed by whitespace or the end ("점수 3.87" must not cut)
-const firstSentence = text => { const m = String(text || '').match(/^[\s\S]*?[.。](?=\s|$)/); return m ? m[0] : String(text || ''); };
-function summaryBlock(raw) {
-  const text = UI.idText(raw);                       // A141: 레거시 판단의 fm:/cause: id → 이름
-  const first = firstSentence(text), rest = String(text || '').slice(first.length).trim();
-  return `<p class="dc-conclusion">${esc(first)}</p>${rest ? UI.fold(esc(UI.t('dec.summaryMore')), `<p class="dc-more">${esc(rest)}</p>`) : ''}`;
-}
+// 처리 건 없이 남은 옛 판단의 설명문: 받은 글 그대로 한 문단(문장 부호로 쪼개 결론을 만들지 않는다)
+const summaryBlock = raw => raw ? `<p class="result-sub">${esc(UI.idText(raw))}</p>` : '';
 // 판단에 쓴 값 한 칸: 문자열 코드는 화면 말, 참거짓은 예 · 아니요, 숫자는 단위와 함께(plainWords.js value). 묶음 값만 원문
 const factValue = (key, v) => v !== null && typeof v === 'object' ? JSON.stringify(v) : window.hydWords.value(key, v);
 const CHECK_STATUS = { TRUE: '적용', FALSE: '미적용', UNKNOWN: '미확인' };
@@ -941,11 +933,14 @@ function renderDecision() {
   const d = ent.result; const box = $('#decResult');
   if (!d || !d.result) { box.innerHTML = UI.errorBlock(UI.status(d && d.status) || UI.t('dec.failed'), (d && d.error) || '판단 결과가 오지 않았습니다. 조건을 바꿔 다시 눌러 보세요.'); return; }
   const r = d.result, opts = r.options || [], causes = d.causes || [], c0 = causes[0], trace = r.trace || [];
-  const maxAbs = Math.max(1, ...opts.map(o => Math.abs(o.score || 0)));
-  // 결론 문장은 서버가 준 설명의 첫 문장 그대로다(화면이 지어 붙이지 않는다). 첫 문장이 후보마다의 사유를 줄줄이 단 긴 문장이면(「…제외됐다: A(…); B(…)」) 쌍점 앞까지만 큰 글로 두고 나머지는 그 아래 줄글로 내린다
-  const text = UI.idText(r.explanation), sentence = firstSentence(text), colon = sentence.length > 110 ? sentence.indexOf(': ') : -1;
-  const first = colon > 0 ? sentence.slice(0, colon) + '.' : sentence, rest = String(text || '').slice(colon > 0 ? colon + 2 : sentence.length).trim();
+  // 결론 문장은 판단 응답의 칸으로 짓는다(1순위 원인 causes[0] · 추천 recommended · 후보 options[]) — 서버 설명문을 문장 부호로 쪼개 읽지 않는다. 처리 건의 AI 단계 결론과 같은 꼴이다.
+  // 설명문 전문은 「자세히 보기 › 원문」에 받은 그대로 둔다
+  const text = UI.idText(r.explanation), josa = (w, pair) => window.hydWords.josa(w, pair);
   const top = opts.find(o => o.id === r.recommended) || null;
+  const topName = top ? UI.idText(top.name) : '', causeName = c0 ? UI.idText(c0.name) : '';
+  const first = top && causeName ? `원인은 ${causeName}${josa(causeName, '으로/로')} 보고, 「${topName}」${josa(topName, '을/를')} 1순위로 계산했습니다.`
+    : top ? `조치 후보 ${opts.length}개를 비교해 「${topName}」${josa(topName, '을/를')} 1순위로 계산했습니다.`
+    : opts.length ? `추천할 조치가 없습니다 — 조치 후보 ${opts.length}개가 모두 규정에서 제외됐습니다.` : '이 설비와 이상 패턴에 맞는 조치 후보가 지식에 없습니다.';
   const feasible = opts.filter(o => o.feasible), second = feasible.filter(o => !top || o.id !== top.id).sort((a, b) => (a.rank || 99) - (b.rank || 99))[0];
   const gap = top && second && Number.isFinite(top.score) && Number.isFinite(second.score) ? `<small>2순위보다 ${(top.score - second.score).toFixed(2)} 높음</small>` : '';
   const fact = (label, value) => `<div><dt>${esc(label)}</dt><dd>${value}</dd></div>`;
@@ -1002,7 +997,7 @@ function renderDecision() {
       ? `<div class="table-container"><table class="table"><thead><tr><th>${esc(UI.t('dec.col.input'))}</th><th>${esc(UI.t('dec.col.value'))}</th><th>${esc(UI.t('dec.col.source'))}</th><th>${esc(UI.t('dec.col.how'))}</th></tr></thead><tbody>` +
         prov.map(p => `<tr><td>${esc(p.name)}</td><td>${p.error ? `<span class="muted" data-tone="danger">${esc(p.error)}</span>` : esc(factValue(p.variable, p.value))}</td><td>${esc(p.sourceName || UI.who(p.source))}</td><td class="muted">${esc(p.how || '')}</td></tr>`).join('') + '</tbody></table></div>'
       : `<p class="muted">이 판단은 입력 값의 출처를 남기지 않았습니다.</p>`],
-    ['options', '후보별 근거', opts.length, `<div class="hitl-opts">` + opts.map(o => cardHtml(o, { rec: r.recommended, maxAbs, decision: { ...r, facts: d.facts, origin: d.origin } })).join('') + '</div>'],
+    ['options', '후보별 근거', opts.length, optionDetails(ordered, { rec: r.recommended, decision: { ...r, facts: d.facts, origin: d.origin } })],
     ['rules', UI.t('dec.rules'), `${firedN}/${tr.length}`,
       `<div class="table-container"><table class="table"><thead><tr><th>${esc(UI.t('dec.col.rule'))}</th><th>${esc(UI.t('dec.col.target'))}</th><th>${esc(UI.t('dec.col.result'))}</th></tr></thead><tbody>` +
       tr.map(t => `<tr><td title="${esc([t.rule, t.when].filter(Boolean).join(' — '))}">${esc(UI.ruleLabel(t))}<p class="muted">${esc(t.decision === 'dec:action-candidates' ? UI.t('dec.ruleSelect') : UI.t('dec.ruleCompliance'))}</p></td><td>${esc(target(t))}</td>` +
@@ -1080,11 +1075,10 @@ function renderDecisionApproval() {
   if (!d) { ent.lastDetailSig = null; box.innerHTML = ent.decSel && ent.decDetailError ? UI.errorBlock('고른 판단을 읽지 못했습니다', ent.decDetailError + ' — 잠시 뒤 다시 읽습니다') : UI.empty(UI.t('proc.select')); return; }
   // the 2.5 s refresh must not wipe what the approver is typing or selecting: redraw only when the decision changed
   const sig = d.id + '|' + d.state + '|' + (d.executions || []).length + '|' + (d.history || []).length + '|' + UI.namesVersion;
-  if (sig === ent.lastDetailSig && box.querySelector('.hitl-opts')) return;
+  if (sig === ent.lastDetailSig && box.querySelector('.bz-orphan-head')) return;
   ent.lastDetailSig = sig;
   const pending = d.state === 'PENDING_APPROVAL';
   const opts = d.options || [];
-  const maxAbs = Math.max(1, ...opts.map(o => Math.abs(o.score || 0)));
   const sc = d.scenario || {};
   // A141: 제출 시각 · id · 사건 정보(설비 · 고장 유형 · 원인)는 접기로. 화면에는 제목 · 상태 · 한 줄 요약 · 선택 카드 · 사유 · 승인 버튼만
   let html = `<header class="bz-orphan-head"><h2>${esc(UI.idText(sc.name || ''))} ${UI.chip(d.state)}</h2><p class="muted">${esc(d.asset || '')}${d.approvedBy ? ` · ${esc(UI.t('inc.approvedBy'))} ${esc(UI.who(d.approvedBy))}` : ''}</p></header>`;
@@ -1093,14 +1087,14 @@ function renderDecisionApproval() {
   // 판단은 처리 건의 승인 단계에서만 승인 · 반려한다(서버에 판단 단독 승인 길이 없다 — test_main.test_처리_건_밖의_옛_승인_경로는_없다).
   // 이 절에 오는 것은 처리 건 없이 남은 판단뿐이라, 승인을 기다리는 것이면 승인할 길이 없음을 그대로 알린다
   if (pending) {
-    html += `<div class="hitl-opts">${opts.map(o => cardHtml(o, { rec: d.recommended, chosen: d.chosen, maxAbs, decision: d })).join('')}</div>` +
+    html += optionDetails(opts, { rec: d.recommended, chosen: d.chosen, decision: d }) +
       `<div class="alert" role="status">${UI.icon('info')}<h2>이 판단은 승인하거나 반려할 수 없습니다</h2><section>경보로 열린 처리 건 없이 제출된 판단입니다. 판단은 처리 건 안에서만 승인합니다. 결함 시뮬레이션으로 경보를 내어 처리 건을 열고 그 승인 단계에서 고르세요.</section></div>`;
   } else {
-    html += `<h3 class="bz-orphan-sec">${esc(UI.t('decisions'))}</h3><div class="hitl-opts">` + opts.map(o => cardHtml(o, { rec: d.recommended, chosen: d.chosen, maxAbs, decision: d })).join('') + '</div>';
+    html += `<h3 class="bz-orphan-sec">${esc(UI.t('decisions'))}</h3>` + optionDetails(opts, { rec: d.recommended, chosen: d.chosen, decision: d });
   }
   if ((d.executions || []).length) html += `<h3 class="bz-orphan-sec">${esc(UI.t('proc.executions'))}</h3><div class="bz-orphan-cards">` +
     d.executions.map(x => UI.card({ title: esc(UI.who(x.system) + (x.code ? ' · ' + actionLabel({ code: x.code }) : '')), chips: UI.chip(x.status), value: x.ref ? `<span class="kv mono">${esc(x.ref)}</span>` : '', sub: esc(x.detail || ''), cls: 'soft' })).join('') + '</div>';
-  html += `<div class="dc-folds">` + UI.fold(`${esc(UI.t('proc.history'))} ${(d.history || []).length}`, '<div class="audit">' + (d.history || []).map(h => UI.eventRecord({ time: h.t, name: h.state, actor: h.by, detail: h.reason || '', raw: h })).join('') + '</div>') + '</div>';
+  html += `<div class="dc-folds">` + UI.fold(`${esc(UI.t('proc.history'))} ${(d.history || []).length}`, '<div class="stream-log">' + (d.history || []).map(h => UI.eventRecord({ time: h.t, name: h.state, actor: h.by, detail: h.reason || '', raw: h })).join('') + '</div>') + '</div>';
   box.innerHTML = html;
 }
 // 업무 시스템 보드: 업무 상태(/api/state — 생산 주문 · 정비 오더 · 구매 요청 · 입고)에 있는 표만 그린다.

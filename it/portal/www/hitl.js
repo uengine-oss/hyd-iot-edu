@@ -150,16 +150,19 @@
         [UI.t('skill.actions'), (k.actions || []).map(a => `${esc(hydCards.actionLabel(a))} <span class="muted">${esc(a.name)}</span>`).join('<br>')],
         [UI.t('skill.rules'), (k.rules || []).map(r => `${esc(RULE[r.effect] || r.effect)} — ${esc(UI.ruleLabel(r))}`).join('<br>')],
         [UI.t('skill.affects'), (k.affects || []).map(a => `${esc(a.name)} ${a.sign > 0 ? '↑' : '↓'}`).join(', ')],
-        [UI.t('skill.approver'), esc((k.approver || {}).name || '')]].filter(([, v]) => v);
+        [UI.t('skill.approver'), esc((k.approver || {}).name || '')],
+        // 출처: 문서에서 온 것은 그 문서로 가는 링크 하나(고치는 길이 거기다), 손으로 더한 것은 그 사실
+        ['출처', fromDoc ? `<button type="button" class="btn" data-variant="link" id="skSource">${icon('file-text')}문서 등록에서 열기</button><p class="muted">이름 · 승인 역할 · 절차는 그 문서를 개정해 고칩니다.</p>` : '이 화면에서 직접 추가']].filter(([, v]) => v);
       const steps = k.steps || [];
-      box.innerHTML = `<header class="panel-head sk-head" data-skill-body><span class="sk-ic">${kindIcon(k)}</span><div><h2>${esc(k.name)}${badge(kindName(k))}${badge(fromDoc ? '문서에서' : '직접 추가')}</h2>` +
-        `<p>${esc(k.description || (k.sopId ? '절차 번호 ' + k.sopId : ''))}</p></div></header>` +
+      // 지우기는 화면에서 직접 더한 조치 방법에만 있다(문서에서 온 것은 그 문서를 되돌리면 함께 지워진다 — 서버 skill_graph.remove)
+      box.innerHTML = `<header class="panel-head sk-head" data-skill-body><span class="sk-ic">${kindIcon(k)}</span><div><h2>${esc(k.name)}${badge(kindName(k))}${fromDoc ? '' : badge('직접 추가')}</h2>` +
+        `<p>${esc(k.description || (k.sopId ? '절차 번호 ' + k.sopId : ''))}</p></div>` +
+        (fromDoc ? '' : `<div class="pane-acts"><button type="button" class="btn" data-variant="ghost" data-size="icon" id="skDelete" aria-label="${esc(UI.acts.remove[0])}" data-tooltip="${esc(UI.acts.remove[0])}" data-side="bottom">${icon(UI.acts.remove[1])}</button></div>`) + `</header><div id="skAlert"></div>` +
         `<div class="panel-sec"><h3>${esc(UI.t('skill.stepsTitle'))}<span class="muted num">${steps.length ? '단계 ' + steps.length : ''}</span></h3>` +
           (steps.length ? `<ol class="sk-steps">${steps.map(s => `<li>${esc(s.text)}${s.manual ? ` <span class="badge" data-variant="outline">${esc(s.manual)}</span>` : ''}</li>`).join('')}</ol>` : `<p class="muted">${esc(UI.t('skill.noSteps'))}</p>`) + `</div>` +
         `<div class="panel-sec"><h3>${esc(UI.t('skill.linked'))}</h3><dl class="kv">${rows.map(([n, v]) => `<dt>${esc(n)}</dt><dd>${v}</dd>`).join('')}</dl></div>` +
-        (fromDoc ? `<div class="panel-sec sk-source"><p class="muted">올린 문서에서 만든 조치 방법입니다. 이름 · 승인 역할 · 절차는 문서 등록에서 그 문서를 개정해 고칩니다.</p>` +
-            `<footer class="form-foot"><span id="skMsg" class="muted" role="status"></span><button type="button" class="btn" data-variant="outline" data-size="sm" id="skSource">${icon('file-text')}문서 등록에서 열기</button></footer></div>`
-          : `<div class="panel-sec sk-fold"><details class="fold" data-skill-edit><summary>고치기<span class="muted">이름 · 승인 역할 · 설명</span></summary><div class="fold-body sk-form">${form}</div></details></div>`) +
+        (fromDoc ? `<span id="skMsg" class="muted sk-msg" role="status"></span>`
+          : `<div class="panel-sec sk-fold"><details class="fold" data-skill-edit><summary>이름 · 승인 역할 · 설명 고치기</summary><div class="fold-body sk-form">${form}</div></details></div>`) +
         `<div class="panel-sec sk-fold">${UI.fold('식별자', `<dl class="kv"><dt>조치 식별자</dt><dd class="mono">${esc(k.id)}</dd>${k.sopId ? `<dt>절차 번호</dt><dd class="mono">${esc(k.sopId)}</dd>` : ''}</dl>`)}</div>`;
     }
     $('#skSource')?.addEventListener('click', async (ev) => {
@@ -174,6 +177,24 @@
       finally { end(false); }
     });
     if (fromDoc) return;
+    // 지우기: 확인 → DELETE /api/kg/skills/{id}?by=. 문서의 규칙이 가리키는 조치 방법이면 서버가 409 와 까닭(먼저 되돌릴 문서)을 준다 — 그 문장을 판 위에 그대로 보인다.
+    // 지워지면 이 조치 방법을 고른 판단 기록이 몇 건 남는지(decision_cases)와 함께 지운 후보 규칙 수(removed_rules)를 말한다
+    $('#skDelete')?.addEventListener('click', async ev => {
+      const button = ev.currentTarget, by = manualActor();
+      if (!by) { $('#skAlert').innerHTML = UI.errorBlock('지우지 못했습니다', '담당자 정보를 읽지 못했습니다. 화면을 새로 고친 뒤 다시 해 주세요.'); return; }
+      if (!await UI.confirm({ title: `「${k.name}」 조치 방법을 지울까요?`, body: '지식 지도에서 이 조치 방법과 그 절차를 지웁니다. AI가 조치 후보로 더는 고르지 않습니다. 이 조치 방법을 고른 판단 기록은 남습니다.', ok: UI.acts.remove[0], danger: true })) return;
+      const end = hydLive.busy(button, '지우는 중');
+      try {
+        const r = await requestJ(API.process + '/api/kg/skills/' + encodeURIComponent(k.id) + '?by=' + encodeURIComponent(by) + '&request_id=' + UI.uuid(), { method: 'DELETE' });
+        clearSkillDraft(key); H.skillSel = null; box.dataset.key = '';
+        UI.toast(`「${r.name || k.name}」 조치 방법을 지웠습니다.` + (r.decision_cases ? ` 이 조치 방법을 고른 판단 기록 ${r.decision_cases}건은 남습니다.` : ' 이 조치 방법을 고른 판단 기록은 없었습니다.')
+          + ((r.removed_rules || []).length ? ` 이 조치 방법만 내던 후보 규칙 ${r.removed_rules.length}개도 함께 지웠습니다.` : ''), { tone: 'ok', timeout: 8000 });
+        await loadSkills();
+      } catch (e) {
+        end(false);
+        if (box.dataset.key === key) $('#skAlert').innerHTML = UI.errorBlock('지우지 못했습니다', e.message);
+      }
+    });
     const fields = [...box.querySelectorAll('.sk-form input, .sk-form textarea, .sk-form select')];
     let draft = H.skillDrafts.get(key), draftError = '';
     if (!draft) { try { draft = JSON.parse(sessionStorage.getItem(draftKey(key)) || 'null'); } catch (_) { draftError = '저장한 초안을 읽을 수 없습니다.'; } }
@@ -377,7 +398,7 @@
     }
   }, 2000);
 
-  // 등록된 문서: 표 한 장(문서 · 판본 · 절 · 조치 방법 · 단계). 줄의 [열기]를 누르면 그 아래에 「이 문서로 답할 수 있는 질문」과 이 판본 되돌리기가 열린다
+  // 등록된 문서: 표 한 장(문서 · 절 · 조치 방법 · 단계). 줄의 [열기]를 누르면 그 아래에 「이 문서로 답할 수 있는 질문」과 이 판본 되돌리기가 열린다
   async function loadUploads() {
     await loadManualSources();
     try {
@@ -388,15 +409,16 @@
       if (H.docOpen && !current.some(u => u.batch === H.docOpen)) H.docOpen = null;
       const counts = u => `${UI.t('kn.sections')} ${u.sections} · ${UI.t('kn.procedures')} ${u.procedures} · ${UI.t('kn.steps')} ${u.steps}`;
       const versionText = u => u.status === 'ROLLED_BACK' ? UI.t('kn.rolledBack') : u.current ? UI.t('kn.current') : UI.t('kn.previous');
-      const revise = u => `<button type="button" class="btn" data-variant="outline" data-size="sm" data-manual-revise="${esc(u.document_id)}">${esc(UI.t('kn.revise'))}</button>`;
+      const revise = u => `<button type="button" class="btn" data-variant="ghost" data-size="sm" data-manual-revise="${esc(u.document_id)}">${icon('pencil')}${esc(UI.t('kn.revise'))}</button>`;
       const undo = u => u.current && u.status === 'ACTIVE' ? `<button type="button" class="btn" data-variant="destructive" data-size="sm" data-manual-undo="${esc(u.batch)}">${esc(UI.t('kn.undo'))}</button>` : '';
       const file = u => `<a href="${API.process}/api/kg/manuals/sources/${encodeURIComponent(u.source_id)}/original" title="보관한 원본 내려받기">${esc(u.filename)}</a>`;
-      const rows = current.map(u => `<tr${u.batch === H.docOpen ? ' data-state="selected"' : ''}><td>${file(u)}</td><td>${u.status === 'ROLLED_BACK' ? UI.chipText(UI.t('kn.rolledBack'), 'neutral') : esc(versionText(u))}</td>` +
+      // 이 표의 줄은 모두 지금 판본이다 — 줄마다 같은 「현재 판본」을 적지 않고, 되돌려진 판본일 때만 이름 옆에 그 표시를 단다
+      const rows = current.map(u => `<tr${u.batch === H.docOpen ? ' data-state="selected"' : ''}><td>${file(u)}${u.status === 'ROLLED_BACK' ? ' ' + UI.chipText(UI.t('kn.rolledBack'), 'neutral') : ''}</td>` +
         `<td class="num">${esc(u.sections)}</td><td class="num">${esc(u.procedures)}</td><td class="num">${esc(u.steps)}</td>` +
         `<td class="doc-acts">${revise(u)}<button type="button" class="btn" data-variant="ghost" data-size="sm" data-doc-open="${esc(u.batch)}" aria-expanded="${u.batch === H.docOpen}">${icon(u.batch === H.docOpen ? 'chevron-up' : 'chevron-down')}${u.batch === H.docOpen ? '닫기' : '질문 확인'}</button></td></tr>` +
-        (u.batch === H.docOpen ? `<tr class="doc-open"><td colspan="6"><div data-golden="${esc(u.batch)}">${goldenSection(u.batch)}</div>${undo(u) ? `<footer class="form-foot doc-undo"><span class="muted">이 판본이 넣은 지식을 지식 지도에서 뺍니다. 보관한 원문은 남습니다.</span>${undo(u)}</footer>` : ''}</td></tr>` : '')).join('');
+        (u.batch === H.docOpen ? `<tr class="doc-open"><td colspan="5"><div data-golden="${esc(u.batch)}">${goldenSection(u.batch)}</div>${undo(u) ? `<footer class="form-foot doc-undo"><span class="muted">이 판본이 넣은 지식을 지식 지도에서 뺍니다. 보관한 원문은 남습니다.</span>${undo(u)}</footer>` : ''}</td></tr>` : '')).join('');
       history.innerHTML = `<div class="sec-head"><h2>${esc(UI.t('kn.docs'))}</h2><span class="muted num">${current.length ? current.length + '건' : ''}</span></div>`
-        + (current.length ? table(`<th>문서</th><th>판본</th><th class="num">${esc(UI.t('kn.sections'))}</th><th class="num">${esc(UI.t('kn.procedures'))}</th><th class="num">${esc(UI.t('kn.steps'))}</th><th></th>`, rows)
+        + (current.length ? table(`<th>문서</th><th class="num">${esc(UI.t('kn.sections'))}</th><th class="num">${esc(UI.t('kn.procedures'))}</th><th class="num">${esc(UI.t('kn.steps'))}</th><th></th>`, rows)
           : UI.empty(UI.t('kn.docsEmpty'), UI.t('kn.docsEmptySub')))
         + '<p class="muted" id="manualHistoryMsg" role="status"></p>'
         + (ups.length ? UI.fold(`${esc(UI.t('kn.history'))}<span class="muted num">${ups.length}건</span>`, table('<th>문서</th><th>넣은 내용</th><th>담당자</th><th>등록 시각</th><th>판본</th><th></th>',
@@ -703,10 +725,16 @@
       const others = L.state === 'failed' && (result.segments || []).some(s => WAITING.includes(s.status));      // 한 구간이 멈췄어도 다른 구간은 계속 돈다
       const running = L.state === 'starting' || L.state === 'running' || others;
       const p = result && result.progress, c = result && result.corrections;
-      const headline = L.state === 'starting' ? 'AI 추출 작업을 여는 중' : L.state === 'done' ? 'AI 추출이 끝났습니다'
+      // 저장된 추출 결과를 쓰는 문서(제공 문서 — 서버 result.cache)는 AI가 다시 읽지 않는다. 한 화면에서 「AI가 읽고 있습니다」와 「다시 읽지 않습니다」를 함께 말하지 않고,
+      // 실제로 일어나는 일 하나만 말한다(이것은 키가 있을 때도 같은 제품 동작이라 숨길 재생 사정이 아니다 — 본 것을 사실로 믿을 수 있어야 한다). 실행 기록이 없으니 「추출 과정 보기」도 내지 않는다
+      const cached = !!(result && result.cache);
+      const proc = document.getElementById('manualProcess'); if (proc) proc.hidden = cached;
+      const said = document.getElementById('manualAgentStatus');
+      if (said && cached && stage === 3 && !said.dataset.tone) said.textContent = '저장된 추출 결과입니다 — 이 문서는 AI가 다시 읽지 않습니다. 원문과 대조해 검토한 뒤 적재하세요.';
+      const headline = cached ? (L.state === 'done' ? '저장된 추출 결과를 불러왔습니다' : L.state === 'failed' ? '저장된 추출 결과를 불러오지 못했습니다' : '저장된 추출 결과를 불러오는 중 — 이 문서는 AI가 다시 읽지 않습니다')
+        : L.state === 'starting' ? 'AI 추출 작업을 여는 중' : L.state === 'done' ? 'AI 추출이 끝났습니다'
         : L.state === 'failed' ? (others ? '한 구간이 멈췄습니다 — 남은 구간은 계속 읽는 중' : 'AI 추출이 끝나지 않았습니다') : p ? `AI가 문서를 읽고 있습니다 — 구간 ${p.total}개 가운데 ${p.done}개를 마쳤습니다` : 'AI가 문서를 읽고 있습니다';
-      const info = [result && result.cache ? '이 문서는 저장된 추출 결과가 있어 AI가 다시 읽지 않습니다.' : '',
-        c && c.attempts ? `낸 결과가 검증에서 ${c.attempts}번 되돌아갔습니다${(c.reasons || []).length ? ` — 마지막 사유: ${c.reasons[c.reasons.length - 1]}` : ''}` : ''].filter(Boolean).join(' ');
+      const info = [c && c.attempts ? `낸 결과가 검증에서 ${c.attempts}번 되돌아갔습니다${(c.reasons || []).length ? ` — 마지막 사유: ${c.reasons[c.reasons.length - 1]}` : ''}` : ''].filter(Boolean).join(' ');
       L.work.set({ items: result ? liveItems(result) : [], running, since: L.since, headline, note: info });
       // 센 값이 있을 때만 진행 막대(구간 몇 개 가운데 몇 개) — 시간으로 차오르는 막대는 그리지 않는다
       const bar = slot.querySelector('[data-live-progress]');

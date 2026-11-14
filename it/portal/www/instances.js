@@ -78,6 +78,7 @@
     // 읽는 중에 다시 읽기를 부르면 그 다음 읽기가 끝날 때 끝나는 약속을 돌려준다(누른 쪽이 새 화면을 기다릴 수 있게)
     if (I.loading) { I.reload = I.reload || force; return I.reloadDone || (I.reloadDone = new Promise(r => { I.reloadResolve = r; })); }
     I.loading = true;
+    if (!I.loaded) { renderList(); renderDetail(); }      // 처음 읽는 동안: 빈 화면이 아니라 목록과 한 건의 뼈대(스켈레톤)
     const prevTask = I.taskView ? I.taskView.id : null;
     let loadErr = '';
     try {
@@ -352,7 +353,7 @@
     const names = {asset:'설비',as_of:'인계 기준시각',shift_label:'교대',work_notes:'작업 메모',handover_summary:'인계안 요약',sender_notes:'인계자 확인 사항',receiver_notes:'인수자 보완 요청'};
     const areas = {equipment:'설비 관측',work_orders:'정비 작업지시',parts:'부품·재고',work_notes:'작업 메모 대조'};
     const states = {observed:'조회 확인',needs_check:'확인 필요',conflict:'기록 불일치'};
-    const rows = Object.entries(values || {}).filter(([k]) => !['checks','evidence'].includes(k)).map(([k,v]) => UI.readonly(names[k] || k,esc(typeof v==='string' ? v : JSON.stringify(v)))).join('');
+    const rows = Object.entries(values || {}).filter(([k, v]) => !['checks','evidence'].includes(k) && v != null && v !== '').map(([k,v]) => UI.readonly(names[k] || k,esc(typeof v==='string' ? v : JSON.stringify(v)))).join('');
     const checks = (Array.isArray(values?.checks) ? values.checks : []).map(c => `<section class="turn-check"><h4>${esc(areas[c.area] || c.area)} · ${esc(states[c.state] || c.state)}</h4><p>${esc(c.finding || '')}</p><p><b>다음 근무자가 확인할 일</b> ${esc(c.next_action || '')}</p><p class="muted">조회 근거 ${(c.evidence_indices || []).map(i=>esc(String(i+1))).join(', ') || '없음 · 확인 필요'}</p></section>`).join('');
     const evidence = (Array.isArray(values?.evidence) ? values.evidence : []).map((e,i) => UI.raw(e, { title: `조회 근거 ${i+1} · ${UI.toolName(e.tool) || e.tool || '도구 기록 없음'}` })).join('');
     return `${rows}${checks}${evidence}`;
@@ -360,7 +361,17 @@
   // 판의 틀(키트 .turn): 머리(아이콘 칸 · 「내가 할 일 · 승인」 · 기한 · 물음 한 문장 · 까닭) → 판단에 쓸 숫자(최대 넷) → (펼친 것) → 단추 줄(오른쪽 끝에 어느 역할로 기록되는지) → 까닭 한 줄
   // facts: [[이름, 값, 단위]] · late: 기한 줄(clockLine) · who: 「운전원 역할로 기록됩니다」
   // msg: 막힌 까닭 · 서버가 거절한 까닭(빨간 글) · note: 알아 둘 것(보통 글)
+  // 앞 AI 단계가 남긴 알림 가운데 「결과 글」에 대한 것(재생한 결과 글의 조회 값이 준비 당시 값이라는 것 · 지금 값과 다른 곳): 그 글을 읽고 결정하는 자리에도 같은 말을 보인다.
+  // 가장 최근에 끝난 AI 단계의 것만 본다(단계 기록의 그 단계 결론 아래에 같은 문장이 있다)
+  function resultNotices() {
+    const view = I.view; if (!view || !window.hydRecord) return [];
+    const agentRows = (view.workitems || []).filter(w => (w.agent_orch === 'cliagents' || w.agent_mode) && w.end_date).sort((a, b) => String(b.end_date).localeCompare(String(a.end_date)));
+    if (!agentRows.length) return [];
+    return hydRecord.noticeTexts(hydRecord.rowsOf((view.events || []).filter(ev => ev.todo_id === agentRows[0].id))).filter(t => /^결과 글/.test(t));
+  }
   function todoCard({ label, icon = 'user-check', title, desc = '', late = '', facts = [], acts = '', who = '', more = '', msg = '', note = '', attrs = '' }) {
+    const told = resultNotices().map(t => `<p class="turn-notice">${UI.icon('info')}<span>${esc(t)}</span></p>`).join('');
+    if (told) desc += told;
     return `<section class="turn" aria-label="내가 할 일" ${attrs}>
       <div class="turn-head"><span class="turn-badge">${UI.icon(icon, 'ic-lg')}</span><div><div class="turn-eyebrow">${esc(label)}${late}</div><h3>${esc(title)}</h3>${desc}</div></div>
       ${facts.length ? `<dl class="turn-facts">${facts.map(([k, x, u]) => `<div><dt>${esc(k)}</dt><dd class="num">${esc(x)}${u ? `<small>${esc(u)}</small>` : ''}</dd></div>`).join('')}</dl>` : ''}
@@ -551,7 +562,6 @@
     const meSigns = !!meNow && signs(I.form.role, reviewed || chosen);
     const meRejects = !!meNow && (!opts.length || opts.some(o => signs(I.form.role, o)));
     const roleHint = meNow && !meSigns ? `이 안은 ${needName} 역할이 승인하는데, 이 PC의 담당자가 그 역할에 들어 있지 않아 승인할 수 없습니다. 메뉴 「AI 에이전트」의 「${UI.t('nav.agents')}」 화면에서 담당 배정을 확인하세요.` : '';
-    const maxAbs = Math.max(1, ...opts.map(x => Math.abs(x.score || 0)));
     const timer = timerFor(task);
     const activity = (I.view?.definition?.activities || []).find(a => a.id === task.activity_id);
     const canReject = (activity?.outputData || []).includes('approval');
@@ -564,7 +574,7 @@
     const P = window.hydApprove.pick(d, I.form.option);
     // 값 조정 · 미리 보기(설비에 보내는 값이 있는 안)와 사건 정보는 [다른 안 고르기]를 편 자리에 있다
     const adjust = fanA || loadA || pumpA || chosen.maintenancePlan || chosen.economicComparison ? UI.fold(fanA || loadA || pumpA ? '조치 값 조정 · 미리 보기' : '현재 조건 다시 확인 · 미리 보기', UI.section('', `${pumpA ? UI.readonly(UI.t('form.pump'), esc(pumpA.value)) : ''}${fanA ? hydCards.rangeField('tdFan', UI.t('form.fan'), fanA, I.form.fan) : ''}${loadA ? hydCards.rangeField('tdLoad', UI.t('form.load'), loadA, I.form.load) : ''}`) +
-      `<div id="tdReviewed">${reviewed ? `<p><b>${esc(UI.t('card.reviewed'))}</b> · ${esc(UI.dateTime(review.created))}</p>${hydCards.cardHtml(reviewed, { maxAbs, decision: review.snapshot })}` : `<p class="muted">${esc(UI.t('form.hint.preview'))}</p>`}</div>` +
+      `<div id="tdReviewed">${reviewed ? `<p><b>${esc(UI.t('card.reviewed'))}</b> · ${esc(UI.dateTime(review.created))}</p>${hydCards.optionDetail(reviewed, { decision: review.snapshot })}` : `<p class="muted">${esc(UI.t('form.hint.preview'))}</p>`}</div>` +
       UI.actions(`<button type="button" class="btn" data-variant="outline" data-size="sm" id="tdPreview" ${I.busy || !I.form.option ? 'disabled' : ''}>${esc(UI.t('btn.preview'))}</button>`), { open: !!changed || !!reviewed || !!I.form.needPreview }) : '';
     // 실행할 수 있는 안이 하나도 없으면 [승인]이 꺼진 이유와 다음 행동을 까닭 줄에 말한다
     const noneFeasible = !reviewed?.feasible && !opts.some(o => o.feasible);
@@ -784,8 +794,8 @@
     }
     const a = view.attention;
     if (!a) return '';
-    const rows = (a.steps || []).map(s => `<li><span><b>${esc(UI.flowName(s.name))}</b> <span class="muted">· ${esc(s.label || '')}</span>${s.reason ? `<br>${esc(UI.logText(s.reason))}` : ''}</span>${s.workitem ? `<button type="button" class="btn" data-variant="outline" data-size="sm" data-goto-step="${esc(s.workitem)}">이 단계에서 조치하기</button>` : ''}</li>`).join('');
-    return `<div class="alert" data-variant="destructive" role="status" aria-label="멈춘 단계">${UI.icon('triangle-alert')}<h2>사람 조치 필요 — ${esc(a.label || '멈춤')}</h2><section><ul class="stuck-list">${rows}</ul></section></div>`;
+    const rows = (a.steps || []).map(s => `<li><span><b>${esc(UI.flowName(s.name))}</b> ${s.label && s.label !== a.label ? `<span class="muted">· ${esc(s.label)}</span>` : ''}${s.reason ? `<br>${esc(UI.logText(s.reason))}` : ''}</span>${s.workitem ? `<button type="button" class="btn" data-variant="outline" data-size="sm" data-goto-step="${esc(s.workitem)}">이 단계에서 조치하기</button>` : ''}</li>`).join('');
+    return `<div class="alert" data-variant="destructive" role="status" aria-label="멈춘 단계">${UI.icon('triangle-alert')}<h2>${esc(/사람 조치 필요/.test(a.label || '') ? a.label : `사람 조치 필요 — ${a.label || '멈춤'}`)}</h2><section><ul class="stuck-list">${rows}</ul></section></div>`;
   }
   function flowNotes(view) {
     const inst = view.instance; let html = '';
@@ -1040,7 +1050,7 @@
     const rows = view.workitems.map(w => `<tr data-status="${esc(w.status)}"><td>${esc(UI.flowName(w.activity_name))}${w.generation ? `<br><span class="muted">${esc(w.generation)}${esc(UI.t('inst.gen'))}</span>` : ''}</td><td>${esc(UI.status(w.status))}${w.draft_status && w.status !== 'DONE' ? `<br><span class="muted">${esc(UI.status(w.draft_status))}</span>` : ''}</td>
       <td>${esc(who(w.user_id))}</td>
       <td class="num">${esc(UI.time(w.start_date))}${w.end_date ? ' → ' + esc(UI.time(w.end_date)) : ''}${w.due_date && !w.end_date ? `<br><span class="muted">${esc(UI.t('inst.due'))} ${esc(UI.time(w.due_date))}</span>` : ''}</td>
-      <td class="case-memo">${esc(UI.logText(w.log || ''))}${w.output && Object.keys(w.output).length ? UI.raw(w.output, { title: `${UI.t('inst.output')} ${Object.keys(w.output).filter(k => k !== 'text').join(', ') || 'text'}` }) : ''}${UI.raw({ id: w.id, activity_id: w.activity_id, log: w.log, generation: w.generation, agent_orch: w.agent_orch, agent_mode: w.agent_mode, consumer: w.consumer, draft_status: w.draft_status, supersedes_id: w.supersedes_id, gateway_decisions: w.gateway_decisions })}</td></tr>`).join('');
+      <td class="case-memo">${esc(UI.logText(w.log || ''))}${w.output && Object.keys(w.output).length ? UI.raw(w.output, { title: `${UI.t('inst.output')} ${valueNames(Object.keys(w.output)) || '글'}` }) : ''}${UI.raw({ id: w.id, activity_id: w.activity_id, log: w.log, generation: w.generation, agent_orch: w.agent_orch, agent_mode: w.agent_mode, consumer: w.consumer, draft_status: w.draft_status, supersedes_id: w.supersedes_id, gateway_decisions: w.gateway_decisions })}</td></tr>`).join('');
     // a tool call and its result become one record with the duration
     const evs = view.events.slice();
     const started = new Map(); evs.forEach(e => { if (e.event_type === 'tool_usage_started' && e.data?.tool_use_id) started.set(e.data.tool_use_id, e); });
@@ -1051,7 +1061,7 @@
       if (e.event_type === 'tool_usage_finished') { const s0 = started.get(e.data?.tool_use_id); if (s0) detail = `${UI.toolName(e.data.tool)} · ${hydTrace.fmtMs(new Date(e.timestamp) - new Date(s0.timestamp))}`; name = 'tool_usage_started'; }
       // A132: the worker says where the result came from (result_source file | message)
       const chips = e.event_type === 'task_completed' && e.data?.result_source === 'file' ? `<span class="muted">${esc(UI.t('inst.resultFile'))}</span>` : '';
-      return UI.eventRecord({ time: e.timestamp, name, actor: e.crew_type || '', detail, raw: e.data, chips });
+      return UI.eventRecord({ time: e.timestamp, name, actor: CREW[e.crew_type] || (/^cliagents:/.test(e.crew_type || '') ? 'AI 에이전트' : ''), detail, raw: e.data, chips });
     }).join('') + (all.length > I.eventsShown ? `<button type="button" class="btn more" data-variant="ghost" data-size="sm" data-events-more>${esc(UI.t('inst.eventsMore'))} (남은 ${all.length - I.eventsShown}건)</button>` : '');
     return `<h3 class="case-sub">${esc(UI.t('inst.steps'))} ${view.workitems.length}줄</h3><div class="table-container"><table class="table case-table"><thead><tr><th>${esc(UI.t('inst.stepTable.step'))}</th><th>${esc(UI.t('inst.stepTable.status'))}</th><th>${esc(UI.t('inst.stepTable.who'))}</th><th>${esc(UI.t('inst.stepTable.when'))}</th><th>${esc(UI.t('inst.stepTable.result'))}</th></tr></thead><tbody>${rows}</tbody></table></div>
       <h3 class="case-sub">${esc(UI.t('inst.events'))} ${view.events.length}줄</h3><div class="stream-log case-events">${events || `<p class="muted">${esc(UI.t('empty.noData'))}</p>`}</div>`;
@@ -1078,6 +1088,10 @@
     return sync + warnings + `<p>흐름 <b title="${esc(version.id || '')}">${esc(UI.defName(version.id || ''))}</b> · 판 ${esc(version.version || x.process.version || '')}${x.asset ? ` · ${esc(UI.t('dec.asset'))} ${esc(x.asset)}` : ''}</p>
       <div class="table-container"><table class="table case-table"><thead><tr><th>${esc(UI.t('step'))}</th><th>${esc(UI.t('inst.stepTable.status'))}</th><th>${esc(UI.t('knowledge'))}</th><th>${esc(UI.t('inst.stepTable.who'))}</th></tr></thead><tbody>${rows}</tbody></table></div>${cy}`;
   }
+  // 기록 줄의 「누가」: 실행기 이름(cliagents:claude-code) 같은 내부 값을 그대로 보이지 않는다. 값 이름(영문 키)은 이름 사전으로, 원문(JSON)은 그 줄의 원문 접기에만 둔다
+  const CREW = { agent: 'AI 에이전트', human: '담당자', result: '시스템' };
+  const valueNames = keys => (keys || []).filter(k => k !== 'text').map(k => UI.terms['var.' + k] || hydWords.fieldName(k)).join(', ');
+  const plainContent = c => { const t = String(c || '').trim(); return /^[\[{]/.test(t) ? '결과를 정해진 꼴(JSON)로 냈습니다 — 원문은 아래에 있습니다' : UI.clean(hydWords.text(t)).slice(0, 200); };
   function eventDetail(e) {
     const d = e.data || {};
     if (d.recovery === 'verify_external_effect') return '외부 작업이 이미 실행됐을 수 있어 자동 재시도를 멈췄습니다. 외부 시스템의 실제 처리 결과를 확인하세요. ' + (d.raw_error || '');
@@ -1085,7 +1099,7 @@
     if (d.tool) return `${UI.toolName(d.tool)}${d.input ? ' ' + String(hydWords.ask(d.tool, d.input) || '').slice(0, 120) : ''}${d.output ? ' → ' + String(hydWords.got(d.tool, d.output) || '').slice(0, 120) : ''}`;      // 처리 과정(trace.js)과 같은 요약 — JSON 원문은 각 기록의 원문 접기에
     if (d.goal) return `${UI.logText(d.goal)}${d.name ? ' · ' + UI.who(d.name) : ''}`;
     if (d.text || d.question) return humanQuestionText(d).slice(0, 160);
-    return UI.logText(d.message || d.note || d.friendly || d.raw_error || d.reason || '') || d.content || (d.output_keys ? UI.t('inst.output') + ' ' + d.output_keys.join(', ') : '') || (d.answer ? UI.t('form.answer') + ' ' + d.answer : '');
+    return UI.logText(d.message || d.note || d.friendly || d.raw_error || d.reason || '') || (d.content ? plainContent(d.content) : '') || (d.output_keys ? UI.t('inst.output') + ' ' + valueNames(d.output_keys) : '') || (d.answer ? UI.t('form.answer') + ' ' + d.answer : '');
   }
 
   /* ------------------------------------------------ 단계 아래 칸의 단추(위임 한 번 — 칸은 스스로 다시 그려진다) */

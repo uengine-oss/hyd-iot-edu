@@ -65,19 +65,20 @@
     if (!p) { O.el.innerHTML = UI.empty('오일 분석 입력 칸이 서버에 없습니다', '처리 서비스가 이 화면과 다른 판입니다. 서비스를 이 화면과 같은 판으로 다시 시작하세요.'); return; }
     const opt = (v, t, sel) => `<option value="${esc(v)}" ${v === sel ? 'selected' : ''}>${esc(t)}</option>`;
     const unit = (p.items.find(i => i.key === d.item) || {}).unit || '';
-    // 왼쪽에 폼(한 열), 오른쪽에 결과. 주 단추 하나(입력 보내기). 꺼진 단추의 까닭과 오류는 단추 아래 판에 글로
+    // 조건 → 결과(판단 실험 화면과 같은 격자 .io): 왼쪽에 폼 판(주 단추 하나 — 입력 보내기), 오른쪽에 결과. 꺼진 단추의 까닭과 오류는 단추 위 판에 글로
     const why = !m ? '담당자 정보를 읽지 못해 보낼 수 없습니다. 화면을 새로 고친 뒤 다시 해 주세요.' : O.err;
-    O.el.innerHTML = `<div class="oil"><div class="oil-form">${UI.section('분석 결과', `
+    O.el.innerHTML = `<div class="io"><form class="panel io-in" aria-label="분석 결과"><div class="panel-head"><div><h2>분석 결과</h2></div></div><div class="panel-sec"><div class="io-fields">
         ${UI.field({ label: '설비', required: true, input: `<select id="oilAsset"><option value="">설비 선택</option>${O.form.assets.map(a => opt(a, a, d.asset)).join('')}</select>` })}
         ${UI.field({ label: '분석 항목', required: true, input: `<select id="oilItem"><option value="">항목 선택</option>${p.items.map(i => opt(i.key, i.text, d.item)).join('')}</select>` })}
-        ${UI.field({ label: `측정값${unit ? ' (' + unit + ')' : ''}`, hint: '없으면 비워 둡니다', input: `<input id="oilValue" type="number" step="any" value="${esc(d.value)}">` })}
+        ${UI.field({ label: `측정값${unit ? ' (' + unit + ')' : ''} (선택)`, input: `<input id="oilValue" type="number" step="any" value="${esc(d.value)}">` })}
         <div role="radiogroup" class="field" aria-labelledby="oilOutLabel"><label id="oilOutLabel">기준 이탈 여부 <span aria-hidden="true">*</span></label><div class="oil-choice">
             <label><input type="radio" class="input" name="oilOut" value="1" ${d.out === true ? 'checked' : ''}>예 (기준 이탈)</label>
             <label><input type="radio" class="input" name="oilOut" value="0" ${d.out === false ? 'checked' : ''}>아니요 (기준 안)</label></div></div>
-        ${UI.field({ label: '메모', input: `<textarea id="oilMemo" rows="3" maxlength="2000">${esc(d.memo)}</textarea>` })}`)}
-      ${why ? `<div class="alert" data-variant="destructive" role="alert">${UI.icon('circle-alert')}<h2>보내지 못했습니다</h2><section>${esc(why)}</section></div>` : ''}
-      <footer class="form-foot"><button type="button" class="btn" id="oilSend" ${O.sending || !m ? 'disabled' : ''}>${UI.icon('send')}${O.sending ? '보내는 중' : '입력 보내기'}</button><span class="muted">입력자: ${esc(m ? m.name : '담당자')}</span></footer></div>
-      <div class="oil-result">${resultHtml()}</div></div>`;
+        ${UI.field({ label: '메모 (선택)', input: `<textarea id="oilMemo" rows="3" maxlength="2000">${esc(d.memo)}</textarea>` })}</div>
+      ${why ? `<div class="alert oil-why" data-variant="destructive" role="alert">${UI.icon('circle-alert')}<h2>보내지 못했습니다</h2><section>${esc(why)}</section></div>` : ''}
+      <footer class="form-foot"><button type="button" class="btn" id="oilSend" ${O.sending || !m ? 'disabled' : ''}>${UI.icon('send')}${O.sending ? '보내는 중' : '입력 보내기'}</button></footer>
+      <p class="muted oil-by">${esc(m ? m.name : '담당자')} 이름으로 기록됩니다.</p></div></form>
+      <div class="io-out oil-result">${resultHtml()}</div></div>`;
     wire();
   }
   function wire() {

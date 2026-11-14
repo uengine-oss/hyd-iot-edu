@@ -122,7 +122,7 @@
     }
     const entries = Object.entries(value);
     if (!entries.length) return `<span class="muted">${esc(UI.t('empty.noData'))}</span>`;
-    const dl = `<dl class="cr-kv td-kv">${entries.slice(0, 16).map(([k, x]) => `<div><dt title="${esc(k)}">${esc(k==='package' && value.package_semantics==='base_interval_configuration' ? '등록된 기본 정비 내용' : UI.terms['var.' + k] || hydWords.fieldName(k))}</dt><dd>${x !== null && typeof x === 'object' ? (depth < 1 ? valueHtml(k, x, v, depth + 1) : esc(brief(x, 100))) : esc(k==='package_semantics' && UI.terms['val.'+x] ? UI.terms['val.'+x] : brief(x, 120) || UI.t('inst.noValue'))}</dd></div>`).join('')}</dl>`;
+    const dl = `<dl class="kv">${entries.slice(0, 16).map(([k, x]) => `<dt title="${esc(k)}">${esc(k==='package' && value.package_semantics==='base_interval_configuration' ? '등록된 기본 정비 내용' : UI.terms['var.' + k] || hydWords.fieldName(k))}</dt><dd>${x !== null && typeof x === 'object' ? (depth < 1 ? valueHtml(k, x, v, depth + 1) : esc(brief(x, 100))) : esc(k==='package_semantics' && UI.terms['val.'+x] ? UI.terms['val.'+x] : brief(x, 120) || UI.t('inst.noValue'))}</dd>`).join('')}</dl>`;
     return dl + (depth === 0 ? rawFold(value, 'raw:' + key) : '');
   }
   const optionName = o => (o && UI.idText(o.name || (window.hydWords ? hydWords.idName(o.id) : UI.name(o.id)) || '대안 표시 이름 기록 없음')) || '';
